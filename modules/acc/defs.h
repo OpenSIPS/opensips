@@ -23,28 +23,30 @@
  * You should have received a copy of the GNU General Public License 
  * along with this program; if not, write to the Free Software 
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
+ * History:
+ * ---------
+ * 2003-04-04  grand acc cleanup (jiri)
  */
 
+#ifndef _ACC_DEFS_H
+#define _ACC_DEFS_H
 
-#ifndef PARSE_URI_H
-#define PARSE_URI_H
+/* how many columns may an accouting report have at most? */
+#define MAX_ACC_COLUMNS 16
+/* method, in-uri, out-uri, callid, from, status */
+#define DEFAULT_LOG_FMT "miocfs"
+/* Callid, to-tag (Dst), From, In-uri, Method, Out-uri, 
+ * fRom-tag, Status,  To, digest User_id, userPart in-uri,
+ * From Uri Userpart 0, To Uri Userpart 1, From uri , To uri  */ 
+#define ALL_LOG_FMT "cdfimorstup01FT"
+#define ALL_LOG_FMT_LEN (sizeof(ALL_LOG_FMT)-1)
 
-/*
- * SIP URI parser
- */
+#ifdef SQL_ACC
+#	define SQL_ACC_FMT "FTmiofcts0"
+#	define SQL_ACC_FMT_LEN (sizeof(SQL_ACC_FMT)-1)
+#	define SQL_MC_FMT "FTmiofctsp"
+#	define SQL_MC_FMT_LEN (sizeof(SQL_MC_FMT)-1)
+#endif
 
-
-#include "../str.h"
-#include "../parser/msg_parser.h"
-
-
-
-/* buf= pointer to begining of uri (sip:x@foo.bar:5060;a=b?h=i)
- * len= len of uri
- * returns: fills uri & returns <0 on error or 0 if ok 
- */
-int parse_uri(char *buf, int len, struct sip_uri* uri);
-int parse_sip_msg_uri(struct sip_msg* msg);
-int parse_orig_ruri(struct sip_msg* msg);
-
-#endif /* PARSE_URI_H */
+#endif
