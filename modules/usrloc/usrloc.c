@@ -4,7 +4,7 @@
  * Usrloc interface
  */
 
-#include "../usrloc/usrloc.h"
+#include "usrloc.h"
 #include "../../sr_module.h"
 
 
