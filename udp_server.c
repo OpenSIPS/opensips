@@ -235,7 +235,6 @@ int udp_send(struct socket_info *source, char *buf, unsigned len,
 
 	int n;
 
-
 again:
 	n=sendto(source->socket, buf, len, 0, &to->s, tolen);
 	if (n==-1){
