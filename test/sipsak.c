@@ -22,13 +22,13 @@ bouquets and brickbats to farhan@hotfoon.com
 #include <unistd.h>
 #include <netdb.h>
 #include <sys/socket.h>
-
 #include <sys/utsname.h>
 
 #include <regex.h>
+#include <netinet/in.h>
 
 #define RESIZE		1024
-#define BUFSIZE		1600
+#define BUFSIZE		1500
 #define VIA_BEGIN_STR "Via: SIP/2.0/UDP "
 #define VIA_BEGIN_STR_LEN 17
 #define MAX_FRW_STR "Max-Forwards: "
@@ -142,20 +142,34 @@ void set_maxforw(char *mes, int maxfw){
 /* This function tries to add a Via Header Field in the message. */
 void add_via(char *mes, int port)
 {
-	struct utsname myname;
-	char *via_line, *via, *backup;
+	char *via_line, *via, *backup; 
+	char hname[100], dname[100], fqdnname[200];
+	size_t namelen=100;
 
-	/* get our address, only the first one */
-	if (uname (&myname) <0){
-		printf("cannot determine hostname\n");
+	if (gethostname(&hname[0], namelen) < 0) {
+		printf("error: cannot determine domainname\n");
 		exit(2);
 	}
+	if ((strchr(hname, '.'))==NULL) {
 #ifdef DEBUG
-	printf("determined hostname: %s\n", myname.nodename);
+		printf("hostname without dots. determine domainname...\n");
+#endif
+		if (getdomainname(&dname[0], namelen) < 0) {
+			printf("error: cannot determine domainname\n");
+			exit(2);
+		}
+		sprintf(fqdnname, "%s.%s", hname, dname);
+	}
+	else {
+		strcpy(fqdnname, hname);
+	}
+
+#ifdef DEBUG
+	printf("fqdnhostname: %s\n", fqdnname);
 #endif
 
-	via_line = malloc(VIA_BEGIN_STR_LEN + strlen(myname.nodename) + 9);
-	sprintf(via_line, "%s%s:%i\r\n", VIA_BEGIN_STR, myname.nodename, port);
+	via_line = malloc(VIA_BEGIN_STR_LEN+strlen(fqdnname)+9);
+	sprintf(via_line, "%s%s:%i\r\n", VIA_BEGIN_STR, fqdnname, port);
 #ifdef DEBUG
 	printf("our Via-Line: %s\n", via_line);
 #endif
