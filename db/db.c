@@ -1,9 +1,5 @@
-/*
- * $Id$
- */
-
 #include "db.h"
-#include "../../sr_module.h"
+#include "../sr_module.h"
 
 db_func_t dbf;
 
