@@ -1,0 +1,386 @@
+$Id$
+
+
+     ===========================================
+
+            OpenSER Installation Notes
+
+             http://www.openser.org/
+
+     ===========================================
+
+  This memo gives you hints how to set up OpenSER quickly. To 
+  understand how OpenSER works and how to configure it properly,
+  read admin's guide available from OpenSER website. We also
+  urge you to read latest ISSUES (available from OpenSER website 
+  too) and check for potential problems in this release.
+  Users of previous releases are encouraged to read NEWS to
+  learn how to move to this new OpenSER version.
+  
+
+TOC
+
+1. Supported Architectures and Requirements
+2. Howto Build openser From Source Distribution
+3. Quick-Start Installation Guide
+   A) Getting Help
+   B) Disclaimers
+   C) Quick Start
+   D) openser with Persistent Data Storage
+4. Troubleshooting
+
+
+
+1. Supported Architectures and Requirements
+-------------------------------------------
+
+Supported architectures: Linux/i386, Linux/armv4l, FreeBSD/i386, OpenBSD/i386
+Solaris/sparc64, NetBSD/sparc64
+(for other architectures the Makefiles might need to be edited)
+
+There are various configuration options defined in the Makefile.
+
+Requirements:
+
+
+- gcc or icc : gcc >= 2.9x; 3.[12] recommended (it will work with older version
+  but it might require some options tweaking for best performance)
+- bison or yacc (Berkley yacc)
+- flex
+- GNU make (on Linux this is the standard "make", on FreeBSD and Solaris is
+ called "gmake") version >= 3.79.
+- sed and tr (used in the makefiles)
+- GNU tar ("gtar" on Solaris) and gzip if you want "make tar" to work
+- GNU install or BSD install (on Solaris "ginstall") if you want "make
+  install", "make bin", "make sunpkg" to work
+- libmysqlclient & libz (zlib) if you want mysql support (the mysql module)
+- libexpat if you want the jabber gateway support (the jabber module)
+
+
+OS Notes:
+
+- FreeBSD/OpenBSD/NetBSD: make sure gmake, bison or yacc & flex are installed
+- Solaris: as above; you can use Solaris's yacc instead of bison. You might
+  need also gtar and ginstall.
+    
+
+2. Howto Build opwnser From Source Distribution
+-------------------------------------------
+
+(NOTE: if make doesn't work try gmake  instead)
+
+- compile with default options:
+
+make   #builds only openser core, equivalent to make ser
+make modules
+
+or make all #builds everything
+
+-compile debug mode version
+
+make mode=debug all
+
+-compile only the print module
+
+make modules=modules/print modules
+
+-compile all the "default" modules except textops and mysql
+
+make skip_modules="textops mysql" modules
+
+-compile all default modules and include uri_radius (not compiled by default):
+
+make include_modules="uri_radius" modules
+
+-compile all the modules from the modules subdirectory (even the one excluded
+by default):
+
+make exclude_modules="" modules
+
+-compile all the modules from the modules subdirectory excluding exec:
+
+make exclude_modules=exec modules
+or
+make exclude_modules="" skip_modules=exec modules
+
+-compile with gcc-3.2 instead of gcc
+
+make CC=gcc-3.2 all
+
+or
+
+CC=gcc-3.2 make all
+
+
+
+Make targets:
+
+Clean:
+
+make clean   (clean the modules too)
+make proper  (clean also the dependencies)
+make distclean (the same as proper)
+make mantainer-clean (clean everything, including auto generated files,
+ tags, *.dbg a.s.o)
+
+Compile:
+
+make proper
+make
+(or gmake on non-Linux systems)
+make modules 
+or make modules exclude_modules="CVS exec" etc.
+
+Make tags:
+
+make TAGS
+
+Create a tar.gz with the sources (in ../):
+
+make tar
+
+Create a tar.gz with the binary distribution (in ../):
+
+make bin
+
+Create a gzipped solaris package (in ../):
+
+make sunpkg
+
+Create debian packages (in ../):
+
+make deb
+
+or
+
+dpkg-buildpackage
+
+Install:
+
+make prefix=/usr/local  install
+
+Note: If you use prefix parameter in make install then you also need
+to use this parameter in previous make commands, i.e. make, make modules,
+or make all. If you fail to do this then OpenSER will look for the default
+configuration file in a wrong directory, because the directory of the
+default configuration file is hard coded into openser during compile time. 
+When you use a different prefix parameter when installing then the 
+directory hard coded in openser and the directory in which the file will be 
+installed by make install will not match. (You can specify exact location
+of the configuration file using -f parameter of ser).
+
+For example, if you do the following:
+make all
+make prefix=/ install
+
+Then the installation will put the default configuration file into
+/etc/ser/ser.cfg (because prefix is /), but openser will look for the file
+in /usr/local/etc/ser/ser.cfg (because there was no prefix parameter
+in make all and /usr/local is the default value of prefix).
+
+Workaround is trivial, use the same parameters in all make commands:
+make prefix=/ all
+make prefix=/ install
+
+That applies to other make parameters as well (for example parameters
+"modules" or "excluded_modules").
+
+
+3. Quick-Start Installation Guide
+----------------------------------------------
+
+A) Getting Help
+
+This guide gives you instructions on how to set up the Open SIP Express 
+Router (ser) on your box quickly. In case the default configuration
+does not fly, check documentation at openser site
+  http://www.openser.org/
+to learn how to configure OpenSER for your site.
+
+If the documentation does not resolve your problem you may try contacting 
+our user forum by E-mail at users@openser.org -- that is the mailing list 
+of openser community. To participate in the mailing list, subscribe at the 
+following web address:
+  http://www.openser.org/cgi-bin/mailman/listinfo/users
+
+
+B) Disclaimers
+ 
+Note well the default "quick-start" configuration is very simple in order 
+to be easily installable. It provides minimum features. Particularly, 
+authentication is by default disabled, which means anyone can register using
+any name with the server. (This is on purpose to avoid installation 
+dependencies on MySQL which is needed for storing user credentials.)
+
+
+C) Quick Start
+
+The following step-by step guide gives you instructions how to install the 
+sql-free distribution of ser. If you need persistence and authentication, 
+then you have to install additional MySql support -- proceed to section D)
+after you are finished with C).
+
+1) Download an RPM or debian package from our site
+    http://www.openser.org
+If you don't use an rpm or debian based distribution, try our tar.gz'ed 
+binaries.
+If you use Solaris 8 you can try our solaris package.
+If you use Gentoo Linux you do not have to download a package.
+
+2) install the package
+RPM:
+    rpm -i <package_name>
+debian:
+    dpkg -i <package_name>
+gentoo:
+    emerge ser
+	(or if use only stable packets:
+	 ACCEPT_KEYWORDS="~x86" emerge ser)
+tar.gz:
+    cd /; tar zxvf <package_name>_os_arch.tar.gz
+    (it will install in /usr/local/, and the configuration file in
+     /usr/local/etc/openser/openser.cfg)
+Solaris:
+    gunzip <package_name>.gz ; pkgadd -d <package_name>
+*BSD:
+    pkg_add package_name
+    
+3) start the server
+RPM + gentoo:
+    /etc/init.d/openser start
+debian:
+    openser is started automatically after the install
+    (in case something fails you can start it with /etc/init.d/openser start)
+tar.gz:
+    the tar.gz does not include an init.d script, you'll have to create one of
+    your own or adapt one from the source distribution (debian/init.d,
+    rpm/openser.init.*, gentoo/openser.init)
+    You can start openser directly with /usr/local/sbin/openser.
+Solaris:
+    see tar.gz.
+    
+4) optionally, watch server's health using the
+   openserctl utility
+    - to do so, first set the environment variable SIP_DOMAIN to your domain 
+      name, e.g., in Bourne shell, call
+        export SIP_DOMAIN="myserver.foobar.com"
+	- if you are using other than 'localhost' mysql server for maintaining
+	  subscriber database, change the variable 'SQL_HOST' to the proper
+	  host name in the openserctl script
+    - run the openserctl utility
+        /usr/sbin/serctl moni
+      or
+        /usr/local/sbin/serctl moni (if you installed from a tar.gz or solaris
+        package)
+    - you can create a resource file for openserctl, name it .openserctl and
+	place it in your home directory. You can set there the values for
+	openserctl variables (e.g., SIP_DOMAIN, SQL_HOST, SQL_USER, SQL_DB ...)
+
+5) Register with the server using your favorite
+   SIP User Agent.
+   For example, users of Windows Messenger need to set
+   in Tools->Options->Accounts the following values:
+     Sign-in Name: <username>@<your_server_address>
+     Advanced->Configure Settings (on)
+     Advanced->Server: <your_server_address>
+     Connect Using: UDP
+
+
+
+D) openser with Persistent Data Storage
+
+The default configuration is very simple and features many simplifications. 
+In particular, it does not authenticate users and loses User Location database 
+on reboot. To provide persistence, keep user credentials and remember users' 
+locations across reboots, openser can be configured to use MySQL. Before you proceed, 
+you need to make sure MySQL is installed on your box. Your MySQL server must be 
+configured to deal with a large number of connection. To increase it, set the 
+following line in [mysqld] section of your configuration file:
+
+   set-variable    = max_connections=500
+
+1) Download the package containing mysql support for openser from: 
+    http://www.openser.org/pub/openser/
+    (rpm and deb provided, most of the binary tar.gz distributions and the 
+     solaris package include it; if it is not present you'll have to rebuild
+     from the source).
+	For gentoo please include 'mysql' to your USE variable in /etc/make.conf
+	or give it as variable to the emerge command.
+2) install the package
+    rpm -i <package_name>
+    or
+    dpkg -i <package_name>
+	or
+	emerge openser
+	(if do not want to put 'mysql' into your USE variable you can type:
+	 USE="mysql" emerge openser)
+3) create MySQL tables
+	- if you have a previously installed OpenSER on your system, use
+    	/usr/sbin/ser_mysql.sh reinstall 
+	  to convert your OpenSER database into new structures
+	- otherwise, if this is your very first installation, use
+    	/usr/sbin/ser_mysql.sh create
+	  to create OpenSER database structures
+   (you will be prompted for password of MySql "root" user)
+4) configure openser to use SQL
+    uncomment all lines in configuration file openser.cfg which are related to 
+    authentication:
+    - loadmodule "/usr/lib/openser/modules/mysql.so"
+    - loadmodule "/usr/lib/openser/modules/auth.so"
+    - loadmodule "/usr/lib/openser/modules/auth_db.so"
+    - modparam("usrloc", "db_mode", 2)
+    - modparam("auth", "calculate_ha1", yes)
+    - modparam("auth_db", "password_column", "password")
+    - if (!www_authorize("sip.org", "subscriber")) {
+        www_challenge("sip.org", "0"); 
+        break;
+      }; 
+5) be sure to replace realm, the first parameter in www_* actions, 
+   with name of your server; some broken UAC implementations don't 
+   authenticate otherwise; the authentication command in your
+   configuration script should look then like this:
+      if (!www_authorize("myserver.foobar.com", "subscriber")) {
+        www_challenge("myserver.foobar.com", "0"); 
+        break;
+      }
+6) restart the server
+    /etc/init.d/ser restart
+7) you can now start  managing the server using the openserctl utility; 
+   you need to first set the environment variable SIP_DOMAIN to your 
+   local SIP realm, e.g.,
+       export SIP_DOMAIN="myserver.foobar.com"
+
+   a) watch the server status using 'serctl moni'
+   b) try to login with your SIP client as user 'admin' with password 'heslo'
+   c) try adding new users using 
+       'serctl add <name> <password> <email>'
+
+
+4. Troubleshooting
+------------------
+
+Q: Windows Messenger authentication fails. 
+
+A: The most likely reason for this problem is a bug in Windows Messenger. 
+   WM only authenticates if server name in request URI equals authentication 
+   realm. After a challenge is sent by SIP server, WM does not resubmit the 
+   challenged request at all and pops up authentication window again. If you 
+   want to authenticate WM, you need to set up your realm value to equal server 
+   name. If your server has no name, IP address can be used as realm too.
+
+Q: SIP requests are replied by openser with "483 Too Many Hops" or 
+   "513 Message Too Large"
+
+A: In both cases, the reason is probably an error in request routing script 
+   which caused an infinite loop. You can easily verify whether this happens 
+   by watching SIP traffic on loopback interface. A typical reason for
+   misrouting is a failure to match local domain correctly. If a server fails
+   to recognize a request for itself, it will try to forward it to current URI
+   in believe it would forward them to a foreign domain. Alas, it forwards the
+   request to itself again. This continues to happen until value of
+   max_forwards header field reaches zero or the request grows too big.
+   Solutions is easy: make sure that domain matching 
+   is correctly configured. A quick way to achieve that is to introduce a config
+   option to openser.cfg: alias=domainname, where domainname shall be replaced
+   with name of domain, which you wish to server and which appears in
+   request-URIs.

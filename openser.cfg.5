@@ -1,0 +1,51 @@
+.\" $Id$
+.TH openser.cfg 5 15.07.2002 openser "Open Sip Express Router" 
+.\" Process with
+.\" groff -man -Tascii ser.cfg.5 
+.\"
+.SH NAME
+opneser.cfg \- openser configuration file
+.SH SYNOPSIS
+.I /etc/openser/openser.cfg
+.SH DESCRIPTION
+.B openser
+reads the configuration data from
+.I /etc/openser/openser.cfg
+(or the file specified with
+.B \-f
+on the command line).
+The file contains global configuration parameters, module loading commands and the script that will be executed for each received request. Lines starting with
+.B #
+or enclosed in
+.B /* ... */
+are interpreted as comments.
+.PP
+This manual page is incomplete. For further information please read the
+.I openser documentation (http://www.openser.org/).
+
+.SH FILES
+.bL
+.I /etc/openser/openser.cfg
+.br
+
+.SH AUTHORS
+
+see 
+.B /usr/share/doc/openser/AUTHORS
+
+.SH SEE ALSO
+.BR openser(8)
+.PP
+Full documentation on openser is available at
+.I http://www.openser.org/.
+.PP
+For reporting  bugs see
+.I
+http://www.openser.org/.
+.PP
+Mailing lists:
+.nf 
+users@openser.org - openser user community
+.nf 
+devel@openser.org - openser development, new features and unstable version
+

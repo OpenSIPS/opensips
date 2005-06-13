@@ -1,0 +1,267 @@
+# $Id$
+
+'Use' tells how deployable a module is. Regular indicates
+we deploy and use this feature in our infrastructure.
+Experimental tells we are still gaining operation experience.
+Temporary labels modules which momentarily fix some
+bugs/lacks and will disappear later. Example modules
+are primarily useful as educational source code for
+ser programmers.
+
+'Maturity' is label as stable if a module has been deployed
+for longer time, alpha if it is still being developed and
+beta if it is under test.
+
+'Depends on' field tells which modules the module needs. 
+
+
+List of currently available ser modules:
+
+Name:       acc
+Use:        regular
+Maturity:   stable
+Depends on: tm
+Purpose:    Transaction accounting/example (the module server also as an
+            example of how to bind to transaction management)
+
+Name:       auth
+Use:        regular
+Maturity:   stable
+Depends on: sl
+Purpose:    Common functions for digest authentication
+
+Name:       auth_db
+Use:        regular
+Maturity:   stable
+Depends on: mysql auth
+Purpose:    Database support for digest authentication
+
+Name:       auth_radius
+Use:        experimental
+Maturity:   beta
+Depends on: auth
+Purpose:    Radius support for digest authentication
+
+Name:       avp_radius
+Use:        regular
+Maturity:   beta
+Depends on: avp
+Purpose:    Radius support for avps
+
+Name:       avpops
+Use:        regular
+Maturity:   beta
+Depends on: 
+Purpose:    avp operations, pseudo-variable support
+
+Name:       cpl-c
+Use:        regular
+Maturity:   beta
+Depends on: -
+Purpose:    Call Processing Language
+
+Name:       dbtext
+Use:        regular
+Maturity:   beta
+Depends on: -
+Purpose:    Database emulation in plaintext files
+
+Name:       dispatcher
+Use:        experimental
+Maturity:   beta
+Depends on: -
+Purpose:    Implements a dispatcher for incoming requests using hashes
+
+Name:       diversion
+Use:        experimental
+Maturity:   alpha
+Depends on: -
+Purpose:    Support for the Diversion extensions (draft-levy-sip-diversion-08)
+
+Name:       exec
+Use:        regular
+Maturity:   beta
+Depends on: -
+Purpose:    Execution of external URI processing logic
+
+Name:       flatstore
+Use:        experimental
+Maturity:   beta
+Depends on: -
+Purpose:    Very fast accounting in flat text files
+
+Name:       gflags
+Use:        experimental
+Maturity:   beta
+Depends on: -
+Purpose:    global flags that can be changed by fifo commands
+
+Name:       group
+Use:        regular
+Maturity:   stable
+Depends on: database
+Purpose:    Group membership checking using database
+
+Name:       group_radius
+Use:        experimental
+Maturity:   beta
+Depends on: -
+Purpose:    Group membership checking using Radius
+
+Name:       jabber
+Use:        experimental
+Maturity:   beta
+Depends on: database tm
+Purpose:    SIMPLE 2 Jabber gateway
+
+Name:       maxfwd
+Use:        regular
+Maturity:   stable
+Depends on: -
+Purpose:    Max-Forwards check
+
+Name:       msilo
+Use:        experimental
+Maturity:   beta
+Depends on: database tm
+Purpose:    Message store
+
+Name:       mysql
+Use:        regular
+Maturity:   stable
+Depends on: -
+Purpose:    MySQL database support
+
+Name:       options
+Use:        experimental
+Maturity:   beta
+Depends on: -
+Purpose:    Answers server options requests
+
+Name:       pa
+Use:        experimental
+Maturity:   alpha
+Depends on: tm (usrloc jabber)
+Purpose:    Presence agent
+
+Name:       pike
+Use:        experimental
+Maturity:   alpha
+Depends on: -
+Purpose:    Excessive load detection
+
+Name:       registrar
+Use:        regular
+Maturity:   stable
+Depends on: usrloc sl
+Purpose:    Registrar
+
+Name:       rr
+Use:        regular
+Maturity:   stable
+Depends on: -
+Purpose:    Routing and Record-Routing
+
+Name:       sl
+Use:        regular
+Maturity:   stable
+Depends on: -
+Purpose:    Stateless replies
+
+Name:       sms
+Use:        regular
+Maturity:   stable
+Depends on: tm
+Purpose:    SMS gateway
+
+Name:       speeddial
+Use:        regular
+Maturity:   beta
+Depends on: -
+Purpose:    On-server speed dial facilities
+
+Name:       textops
+Use:        regular
+Maturity:   stable
+Depends on: -
+Purpose:    Message Textual Operations
+
+Name:       tm
+Use:        regular
+Maturity:   beta
+Depends on: -
+Purpose:    Transaction Management
+
+Name:       uri
+Use:        regular
+Maturity:   stable
+Depends on: database
+Purpose:    Various URI checks
+
+Name:       uri_db
+Use:        experimental
+Maturity:   beta
+Depends on: mysql uri
+Purpose:    URI checking using DB
+
+Name:       uri_radius
+Use:        experimental
+Maturity:   beta
+Depends on: -
+Purpose:    URI checking using Radius
+
+Name:       usrloc
+Use:        regular
+Maturity:   stable
+Depends on: database
+Purpose:    User location support
+
+Name:       xlog
+Use:        regular
+Maturity:   stable
+Depends on: 
+Purpose:    formatted logging (printf style)
+
+Contributions
+-------------
+Name:       domain
+Use:        experimental
+Maturity:   beta
+Depends on: mysql
+Purpose:    Local domain lists and related functions
+
+Name:       enum
+Use:        experimental
+Maturity:   beta
+Depends on: -
+Purpose:    Enum support
+
+Name:       domain
+Use:        experimental
+Maturity:   beta
+Depends on: -
+Purpose:    support for maintenance of multiple domains
+
+Name:       mediaproxy
+Use:        regular
+Maturity:   stable
+Depends on: mediaproxy media relay
+Purpose:    nat traversal
+
+Name:       nathelper
+Use:        regular
+Maturity:   stable
+Depends on: rtpproxy
+Purpose:    nat traversal
+
+Name:		permissions
+Use:		experimental
+Maturity:	beta
+Depends on:	-
+Purpose:	hosts.allow-like ACLs
+
+Name:       postgress
+Use:        experimental
+Maturity:   beta
+Depends on: -
+Purpose:    Postgress DB support

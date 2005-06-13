@@ -1,0 +1,69 @@
+$Id$
+
+******************************************************************************
+*                                                                            *
+*                   Welcome to OpenSER Project                               *
+*                                                                            *
+******************************************************************************
+
+
+
+About
+-----
+
+OpenSER is a GPL licensed SIP server implementation. It started as a fork of
+Fokus Fraunhofer SIP Express Router (SER) project. OpenSER wants to be a more
+open project, not only from license point of view, but more open as project
+management, especially for external contributions.
+
+OpenSER wants to overcome the development latency of current SER project,
+to ensure a shorter path into a release for new added features.
+OpenSER is a project maintained by Voice System
+           http://voice-system.ro
+by a team including core and main developers of SER project.
+
+
+Info
+----
+
+NEWS files contains detailed listing of all new features and fixes brought
+by this OpenSER release. For information regarding the OpenSER installation,
+please see the INSTALL file.
+
+For current developers/contributors of this project, see the CREDITS and
+AUTHORS file. For complete license information, please see the COPYING file.
+For a quick overview of OpenSER modules, please see the README-MODULES file.
+
+
+Docs
+----
+
+Documentation about each module can be found in the README file in each
+module directory. For online documentation, please see
+           http://www.openser.org/docs
+
+For additional documentation, tutorials and examples please see also
+           http://voice-system.ro/docs
+
+
+
+Questions
+---------
+
+For any question related to the OpenSER usage, please use the
+           users@openser.org
+public mailing list.
+
+For questions regarding the development of OpenSER - like contributions, bug
+reports, etc - please use the
+           devel@openser.org
+public mailing list.
+
+For any technical questions which you want to keep private, please use
+           team@openser.org
+mailing list.
+
+For any other non-technical questions related to this project, please use
+           openser@voice-system.ro
+email address.
+

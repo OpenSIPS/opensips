@@ -1,0 +1,94 @@
+/*
+ * $Id$
+ *
+ * Script callbacks
+ *
+ * Copyright (C) 2001-2003 FhG Fokus
+ *
+ * This file is part of openser, a free SIP server.
+ *
+ * openser is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version
+ *
+ * openser is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License 
+ * along with this program; if not, write to the Free Software 
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
+ * History:
+ * --------
+ *  2003-03-29  cleaning pkg allocation introduced (jiri)
+ *  2003-03-19  replaced all mallocs/frees w/ pkg_malloc/pkg_free (andrei)
+ */
+
+
+#include <stdlib.h>
+#include "script_cb.h"
+#include "dprint.h"
+#include "error.h"
+#include "mem/mem.h"
+
+static struct script_cb *pre_cb=0;
+static struct script_cb *post_cb=0;
+static unsigned int cb_id=0;
+
+int register_script_cb( cb_function f, callback_t t, void *param )
+{
+	struct script_cb *new_cb;
+
+	new_cb=pkg_malloc(sizeof(struct script_cb));
+	if (new_cb==0) {
+		LOG(L_ERR, "ERROR: register_script_cb: out of memory\n");
+		return E_OUT_OF_MEM;
+	}
+	new_cb->cbf=f;
+	new_cb->id=cb_id++;
+	new_cb->param=param;
+	/* insert into appropriate list */
+	if (t==PRE_SCRIPT_CB) {
+		new_cb->next=pre_cb;
+		pre_cb=new_cb;
+	} else if (t==POST_SCRIPT_CB) {
+		new_cb->next=post_cb;
+		post_cb=new_cb;
+	} else {
+		LOG(L_CRIT, "ERROR: register_script_cb: unknown CB type\n");
+		return E_BUG;
+	}
+	/* ok, callback installed */
+	return 1;
+}
+
+void destroy_script_cb()
+{
+	struct script_cb *cb, *foo;
+
+	cb=pre_cb;
+	while(cb) { foo=cb->next;pkg_free(cb);cb=foo; }
+	cb=post_cb;
+	while(cb) { foo=cb->next;pkg_free(cb);cb=foo; }
+}
+
+int exec_pre_cb( struct sip_msg *msg)
+{
+	struct script_cb *i;
+	for (i=pre_cb; i; i=i->next) {
+		/* stop on error */
+		if (i->cbf(msg, i->param)==0)
+			return 0;
+	}
+	return 1;
+}
+
+void exec_post_cb( struct sip_msg *msg)
+{
+	struct script_cb *i;
+	for (i=post_cb; i; i=i->next) i->cbf(msg, i->param);
+}
+

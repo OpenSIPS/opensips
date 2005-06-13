@@ -1,0 +1,98 @@
+#
+# $Id$
+#
+#
+# common Makefile rules, included by main Makefile & the  modules
+#
+
+#
+# Uses: NAME, ALLDEP, CC, CFLAGS, DEFS, LIBS, MKDEP, auto_gen, depends, objs,
+# extra_objs, static_modules, static_modules_path
+# (all this must  be defined previously!,  see Makefile.defs & Makefile)
+#
+
+
+
+#implicit rules
+%.o:%.c  $(ALLDEP)
+	$(CC) $(CFLAGS) $(DEFS) -c $< -o $@
+
+%.d: %.c $(ALLDEP)
+	@set -e; $(MKDEP) $(DEFS) $< \
+	|  sed 's#\(\($*D)\)\?$(*F)\)\.o[ :]*#$*.o $@ : #g' > $@; \
+	[ -s $@ ] || rm -f $@
+
+
+# normal rules
+$(NAME): $(objs) $(ALLDEP)
+	$(LD) $(LDFLAGS) $(objs) $(extra_objs) $(LIBS) -o $(NAME) 
+
+
+.PHONY: all
+all: $(NAME) modules
+
+.PHONY: dep
+dep: $(depends)
+
+.PHONY: static
+static: $(objs)
+
+.PHONY: docbook-clean
+docbook-clean: 
+	-@for r in $(modules) $(static_modules_path) "" ; do \
+		if [ -d "$$r" ]; then \
+			if [ -d "$$r"/doc ]; then \
+				echo "module $$r" ; \
+				rm -f "$$r"/doc/*.txt ; \
+				rm -f "$$r"/doc/*.html ; \
+				rm -f "$$r"/doc/*.pdf ; \
+			fi ; \
+		fi ; \
+	done
+
+.PHONY: clean
+clean: docbook-clean
+	-@rm -f $(objs) $(NAME) $(objs:.o=.il) 2>/dev/null
+	-@for r in $(modules) $(static_modules_path) "" ; do \
+		if [ -d "$$r" ]; then \
+			echo "module $$r" ; \
+			$(MAKE) -C $$r clean ; \
+		fi ; \
+	done
+	@if [ -n "$(modules)" -a -d utils/gen_ha1 ]; then \
+		cd utils/gen_ha1; $(MAKE) clean; \
+		cd ../openserunix; $(MAKE) clean; \
+	fi
+
+.PHONY: proper
+.PHONY: distclean
+.PHONY: realclean
+proper realclean distclean: clean 
+	-@rm -f $(depends) $(auto_gen) 2>/dev/null
+	-@for r in $(modules) "" ; do \
+		if [ -d "$$r" ]; then \
+			 $(MAKE) -C $$r proper ; \
+		fi ; \
+	done 
+
+.PHONY: mantainer-clean
+mantainer-clean: distclean
+	-rm -f TAGS tags *.dbg .*.swp
+	-@for r in $(modules) "" ; do \
+		if [ -d "$$r" ]; then \
+			$(MAKE) -C $$r mantainer-clean; \
+		fi ; \
+	 done 
+
+
+.PHONY: TAGS
+TAGS:
+	$(MKTAGS) 
+	
+ifeq (,$(MAKECMDGOALS))
+include $(depends)
+endif
+ifneq (,$(filter-out clean proper distclean realclean mantainer-clean TAGS \
+		tar modules, $(MAKECMDGOALS)))
+include $(depends)
+endif
