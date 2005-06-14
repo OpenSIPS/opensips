@@ -292,12 +292,8 @@ D) openser with Persistent Data Storage
 The default configuration is very simple and features many simplifications. 
 In particular, it does not authenticate users and loses User Location database 
 on reboot. To provide persistence, keep user credentials and remember users' 
-locations across reboots, openser can be configured to use MySQL. Before you proceed, 
-you need to make sure MySQL is installed on your box. Your MySQL server must be 
-configured to deal with a large number of connection. To increase it, set the 
-following line in [mysqld] section of your configuration file:
-
-   set-variable    = max_connections=500
+locations across reboots, openser can be configured to use MySQL. Before you
+proceed, you need to make sure MySQL is installed on your box.
 
 1) Download the package containing mysql support for openser from: 
     http://www.openser.org/pub/openser/
