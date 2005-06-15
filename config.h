@@ -169,7 +169,9 @@
 #define MCOOKIE "z9hG4bK"
 #define MCOOKIE_LEN (sizeof(MCOOKIE)-1)
 /* Maximum length of values appended to Via-branch parameter */
-#define MAX_BRANCH_PARAM_LEN  (MCOOKIE_LEN+48)
+#define MAX_BRANCH_PARAM_LEN  (MCOOKIE_LEN+8 /*int2hex*/ + 1 /*sep*/ + \
+								MD5_LEN + 1 /*sep*/ + 8 /*int2hex*/ + \
+								1 /*extra space, needed by t_calc_branch*/)
 
 
 /* maximum path length */
