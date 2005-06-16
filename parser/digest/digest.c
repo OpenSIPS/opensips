@@ -115,16 +115,6 @@ dig_err_t check_dig_cred(dig_cred_t* _c)
 	     /* Realm must be present */
 	if (_c->realm.s == 0)  res |= E_DIG_REALM;
 
-	     /* If there is a domain in username, it must be same
-	      * as realm
-	      */
-	if (_c->username.domain.len) {
-		if ((_c->username.domain.len != _c->realm.len) ||
-		    (strncasecmp(_c->username.domain.s, _c->realm.s, _c->realm.len))) {
-			res |= E_DIG_DOMAIN;
-		}
-	}
-
 	     /* Nonce that was used must be specified */
 	if (_c->nonce.s == 0) res |= E_DIG_NONCE;
 
@@ -202,8 +192,8 @@ int mark_authorized_cred(struct sip_msg* _m, struct hdr_field* _h)
 	struct hdr_field* f;
 	
 	switch(_h->type) {
-	case HDR_AUTHORIZATION: f = _m->authorization; break;
-	case HDR_PROXYAUTH:     f = _m->proxy_auth;    break;
+	case HDR_AUTHORIZATION_T: f = _m->authorization; break;
+	case HDR_PROXYAUTH_T:     f = _m->proxy_auth;    break;
 	default:
 		LOG(L_ERR, "mark_authorized_cred(): Invalid header field type\n");
 		return -1;

@@ -2,6 +2,10 @@
  * $Id$
  *
  * Event header field body parser.
+ * The parser was written for Presence Agent module only.
+ * it recognize presence package only, no sub-packages, no parameters
+ * It should be replaced by a more generic parser if sub-packages or
+ * parameters should be parsed too.
  *
  * Copyright (C) 2001-2003 FhG Fokus
  *
@@ -20,11 +24,6 @@
  * You should have received a copy of the GNU General Public License 
  * along with this program; if not, write to the Free Software 
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- *
- * The parser was written for Presence Agent module only.
- * it recognize presence package only, no sub-packages, no parameters
- * It should be replaced by a more generic parser if sub-packages or
- * parameters should be parsed too.
  *
  * History:
  * --------
@@ -50,9 +49,8 @@
 #define PRES_XCAP_CHANGE_STR "xcap-change"
 #define PRES_XCAP_CHANGE_STR_LEN 11
 
-#define PRES_LOCATION_STR "location"
-#define PRES_LOCATION_STR_LEN 8
-
+#define PRES_SIP_PROFILE_STR "sip-profile"
+#define PRES_SIP_PROFILE_STR_LEN 11
 
 
 static inline char* skip_token(char* _b, int _l)
@@ -105,12 +103,12 @@ static inline int event_parser(char* _s, int _l, event_t* _e)
 	} else if ((_e->text.len == PRES_XCAP_CHANGE_STR_LEN) && 
 		   !strncasecmp(PRES_XCAP_CHANGE_STR, tmp.s, _e->text.len)) {
 		_e->parsed = EVENT_XCAP_CHANGE;
-	} else if ((_e->text.len == PRES_LOCATION_STR_LEN) && 
-		   !strncasecmp(PRES_LOCATION_STR, tmp.s, _e->text.len)) {
-		_e->parsed = EVENT_LOCATION;
 	} else if ((_e->text.len == PRES_WINFO_STR_LEN) && 
 		   !strncasecmp(PRES_WINFO_STR, tmp.s, _e->text.len)) {
 		_e->parsed = EVENT_PRESENCE_WINFO;
+	} else if ((_e->text.len == PRES_SIP_PROFILE_STR_LEN) && 
+		   !strncasecmp(PRES_SIP_PROFILE_STR, tmp.s, _e->text.len)) {
+		_e->parsed = EVENT_SIP_PROFILE;
 	} else {
 		_e->parsed = EVENT_OTHER;
 	}

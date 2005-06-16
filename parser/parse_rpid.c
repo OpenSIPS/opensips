@@ -1,6 +1,7 @@
-/*
- * Copyright (C) 2001-2003 Juha Heinanen
+/* $Id$
  *
+ * Copyright (C) 2001-2003 Juha Heinanen
+ * 
  * This file is part of openser, a free SIP server.
  *
  * openser is free software; you can redistribute it and/or modify
@@ -16,6 +17,7 @@
  * You should have received a copy of the GNU General Public License 
  * along with this program; if not, write to the Free Software 
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
  */
  
 #include "parse_from.h"
@@ -39,7 +41,7 @@ int parse_rpid_header( struct sip_msg *msg )
 {
 	struct to_body* rpid_b;
 	
- 	if ( !msg->rpid && (parse_headers(msg,HDR_RPID,0)==-1 || !msg->rpid)) {
+ 	if ( !msg->rpid && (parse_headers(msg, HDR_RPID_F, 0)==-1 || !msg->rpid)) {
  		goto error;
  	}
  

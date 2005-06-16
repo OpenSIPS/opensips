@@ -39,7 +39,7 @@
 
 
 #define is_mime_char(_c_) \
-	(isalpha((int)_c_) || (_c_)=='-' || (_c_)=='+')
+	(isalpha((int)_c_) || (_c_)=='-' || (_c_)=='+' || (_c_)=='.')
 #define is_char_equal(_c_,_cs_) \
 	( (isalpha((int)_c_)?(((_c_)|0x20)==(_cs_)):((_c_)==(_cs_)))==1 )
 
@@ -57,18 +57,26 @@ typedef struct type_node_s {
 
 
 static type_node_t type_tree[] = {
-	{'t',TYPE_UNKNOWN,1,4},
+	{'t',TYPE_UNKNOWN,1,4}, /* 0 */
 		{'e',TYPE_UNKNOWN,1,-1},
 			{'x',TYPE_UNKNOWN,1,-1},
 				{'t',TYPE_TEXT,0,-1},
-	{'m',TYPE_UNKNOWN,1,11},
-		{'e',TYPE_UNKNOWN,1,-1},
+	{'m',TYPE_UNKNOWN,2,19}, /* 4 */
+		{'e',TYPE_UNKNOWN,1,11}, /* 5 */
 			{'s',TYPE_UNKNOWN,1,-1},
 				{'s',TYPE_UNKNOWN,1,-1},
 					{'a',TYPE_UNKNOWN,1,-1},
 						{'g',TYPE_UNKNOWN,1,-1},
 							{'e',TYPE_MESSAGE,0,-1},
-	{'a',TYPE_UNKNOWN,1,-1},
+		{'u',TYPE_UNKNOWN,1,-1}, /* 11 */
+			{'l',TYPE_UNKNOWN,1,-1},
+				{'t',TYPE_UNKNOWN,1,-1},
+					{'i',TYPE_UNKNOWN,1,-1},
+						{'p',TYPE_UNKNOWN,1,-1},
+							{'a',TYPE_UNKNOWN,1,-1},
+								{'r',TYPE_UNKNOWN,1,-1},
+									{'t',TYPE_MULTIPART,0,-1},
+	{'a',TYPE_UNKNOWN,1,-1}, /* 19 */
 		{'p',TYPE_UNKNOWN,1,-1},
 			{'p',TYPE_UNKNOWN,1,-1},
 				{'l',TYPE_UNKNOWN,1,-1},
@@ -78,27 +86,109 @@ static type_node_t type_tree[] = {
 								{'t',TYPE_UNKNOWN,1,-1},
 									{'i',TYPE_UNKNOWN,1,-1},
 										{'o',TYPE_UNKNOWN,1,-1},
-											{'n',TYPE_APPLICATION,0,-1}
+											{'n',TYPE_APPLICATION,0,-1},
 	};
 
 static type_node_t subtype_tree[] = {
-		{'p',SUBTYPE_UNKNOWN,1,5},
-			{'l',SUBTYPE_UNKNOWN,1,-1},
-				{'a',SUBTYPE_UNKNOWN,1,-1},
-					{'i',SUBTYPE_UNKNOWN,1,-1},
-						{'n',SUBTYPE_PLAIN,0,-1},
-		{'c',SUBTYPE_UNKNOWN,1,10},
-			{'p',SUBTYPE_UNKNOWN,2,-1},
-				{'i',SUBTYPE_UNKNOWN,1,9},
-					{'m',SUBTYPE_CPIM,0,-1},
-				{'l',SUBTYPE_UNKNOWN,1,-1},
+	{'p',SUBTYPE_UNKNOWN,2,13},
+		{'l',SUBTYPE_UNKNOWN,1,5},
+			{'a',SUBTYPE_UNKNOWN,1,-1},
+				{'i',SUBTYPE_UNKNOWN,1,-1},
+					{'n',SUBTYPE_PLAIN,0,-1},
+		{'i',SUBTYPE_UNKNOWN,1,-1}, /* 5 */
+			{'d',SUBTYPE_UNKNOWN,1,-1},
+				{'f',SUBTYPE_UNKNOWN,1,-1},
 					{'+',TYPE_UNKNOWN,1,-1},
 						{'x',TYPE_UNKNOWN,1,-1},
 							{'m',TYPE_UNKNOWN,1,-1},
-								{'l',SUBTYPE_CPLXML,0,-1},
-		{'s',SUBTYPE_UNKNOWN,1,-1},
-			{'d',SUBTYPE_UNKNOWN,1,-1},
-				{'p',SUBTYPE_SDP,0,-1},
+								{'l',SUBTYPE_PIDFXML,0,-1},
+									{'l',SUBTYPE_PIDFXML,0,-1},
+	{'s',SUBTYPE_UNKNOWN,1,16}, /* 13 */
+		{'d',SUBTYPE_UNKNOWN,1,-1},
+			{'p',SUBTYPE_SDP,0,-1},
+	{'c',SUBTYPE_UNKNOWN,1,25}, /* 16 */
+		{'p',SUBTYPE_UNKNOWN,2,-1},
+			{'i',SUBTYPE_UNKNOWN,1,20},
+				{'m',SUBTYPE_CPIM,0,-1},
+			{'l',SUBTYPE_UNKNOWN,1,-1},
+				{'+',TYPE_UNKNOWN,1,-1},
+					{'x',TYPE_UNKNOWN,1,-1},
+						{'m',TYPE_UNKNOWN,1,-1},
+							{'l',SUBTYPE_CPLXML,0,-1},
+	{'r',SUBTYPE_UNKNOWN,2,39}, /* 25 */
+		{'l',SUBTYPE_UNKNOWN,1,33},/* 26 */
+			{'m',SUBTYPE_UNKNOWN,1,-1},
+				{'i',SUBTYPE_UNKNOWN,1,-1},
+					{'+',TYPE_UNKNOWN,1,-1},
+						{'x',TYPE_UNKNOWN,1,-1},
+							{'m',TYPE_UNKNOWN,1,-1},
+								{'l',SUBTYPE_RLMIXML,0,-1},
+		{'e',SUBTYPE_UNKNOWN,1,-1}, /* 33 */
+			{'l',SUBTYPE_UNKNOWN,1,-1},
+				{'a',SUBTYPE_UNKNOWN,1,-1},
+					{'t',SUBTYPE_UNKNOWN,1,-1},
+						{'e',SUBTYPE_UNKNOWN,1,-1},
+							{'d',SUBTYPE_RELATED,0,-1},
+	{'l',SUBTYPE_UNKNOWN,1,48}, /* 39 */
+		{'p',SUBTYPE_UNKNOWN,1,-1},
+			{'i',SUBTYPE_UNKNOWN,1,-1},
+				{'d',SUBTYPE_UNKNOWN,1,-1},
+					{'f',SUBTYPE_UNKNOWN,1,-1},
+						{'+',SUBTYPE_UNKNOWN,1,-1},
+							{'x',SUBTYPE_UNKNOWN,1,-1},
+								{'m',SUBTYPE_UNKNOWN,1,-1},
+									{'l',SUBTYPE_LPIDFXML,0,-1},
+	{'w',SUBTYPE_UNKNOWN,1,63}, /* 48 */
+		{'a',SUBTYPE_UNKNOWN,1,-1},
+			{'t',SUBTYPE_UNKNOWN,1,-1},
+				{'c',SUBTYPE_UNKNOWN,1,-1},
+					{'h',SUBTYPE_UNKNOWN,1,-1},
+						{'e',SUBTYPE_UNKNOWN,1,-1},
+							{'r',SUBTYPE_UNKNOWN,1,-1},
+								{'i',TYPE_UNKNOWN,1,-1},
+									{'n',TYPE_UNKNOWN,1,-1},
+										{'f',TYPE_UNKNOWN,1,-1},
+											{'o',TYPE_UNKNOWN,1,-1},
+												{'+',TYPE_UNKNOWN,1,-1},
+													{'x',TYPE_UNKNOWN,1,-1},
+														{'m',TYPE_UNKNOWN,1,-1},
+															{'l',SUBTYPE_WATCHERINFOXML,0,-1},
+	{'x',SUBTYPE_UNKNOWN,2,85}, /* 63 */
+		{'p',SUBTYPE_UNKNOWN,1,72}, /* 64 */
+			{'i',SUBTYPE_UNKNOWN,1,-1},
+				{'d',SUBTYPE_UNKNOWN,1,-1},
+					{'f',SUBTYPE_UNKNOWN,1,-1},
+						{'+',SUBTYPE_UNKNOWN,1,-1},
+							{'x',SUBTYPE_UNKNOWN,1,-1},
+								{'m',SUBTYPE_UNKNOWN,1,-1},
+									{'l',SUBTYPE_XPIDFXML,0,-1},
+		{'m',SUBTYPE_UNKNOWN,1,-1}, /* 72 */
+			{'l',SUBTYPE_UNKNOWN,1,-1},
+				{'+',SUBTYPE_UNKNOWN,1,-1},
+					{'m',SUBTYPE_UNKNOWN,1,-1},
+						{'s',SUBTYPE_UNKNOWN,1,-1},
+							{'r',SUBTYPE_UNKNOWN,1,-1},
+								{'t',SUBTYPE_UNKNOWN,1,-1},
+									{'c',SUBTYPE_UNKNOWN,1,-1},
+										{'.',SUBTYPE_UNKNOWN,1,-1},
+											{'p',SUBTYPE_UNKNOWN,1,-1},
+												{'i',SUBTYPE_UNKNOWN,1,-1}, 
+													{'d',SUBTYPE_UNKNOWN,1,-1},
+														{'f',SUBTYPE_XML_MSRTC_PIDF,0,-1},
+	{'e',SUBTYPE_UNKNOWN,1,-1}, /* 85 */
+		{'x',SUBTYPE_UNKNOWN,1,-1},
+			{'t',SUBTYPE_UNKNOWN,1,-1},
+				{'e',SUBTYPE_UNKNOWN,1,-1},
+					{'r',SUBTYPE_UNKNOWN,1,-1},
+						{'n',SUBTYPE_UNKNOWN,1,-1},
+							{'a',SUBTYPE_UNKNOWN,1,-1},
+								{'l',SUBTYPE_UNKNOWN,1,-1},
+									{'-',SUBTYPE_UNKNOWN,1,-1},
+										{'b',SUBTYPE_UNKNOWN,1,-1},
+											{'o',SUBTYPE_UNKNOWN,1,-1},
+												{'d',SUBTYPE_UNKNOWN,1,-1},
+													{'y',SUBTYPE_EXTERNAL_BODY,0,-1},
+
 	};
 
 
@@ -236,14 +326,14 @@ char* decode_mime_type(char *start, char *end, unsigned int *mime_type)
 
 	/* check the format of the decoded mime */
 	if ((*mime_type)>>16==TYPE_ALL && ((*mime_type)&0x00ff)!=SUBTYPE_ALL) {
-		LOG(L_ERR,"ERROR:decode_mine_type: invalid mime format found "
+		LOG(L_ERR,"ERROR:decode_mime_type: invalid mime format found "
 			" <*/submime> in [%.*s]!!\n", (int)(end-start),start);
 		return 0;
 	}
 
 	return p;
 error:
-	LOG(L_ERR,"ERROR:decode_mine_type: parse error near in [%.*s] char"
+	LOG(L_ERR,"ERROR:decode_mime_type: parse error near in [%.*s] char"
 		"[%d][%c] offset=%d\n", (int)(end-start),start,*p,*p,(int)(p-start));
 	return 0;
 }
@@ -262,7 +352,7 @@ int parse_content_type_hdr( struct sip_msg *msg )
 	/* is the header already found? */
 	if ( msg->content_type==0 ) {
 		/* if not, found it */
-		if ( parse_headers(msg,HDR_CONTENTTYPE,0)==-1)
+		if ( parse_headers(msg, HDR_CONTENTTYPE_F, 0)==-1)
 			goto error;
 		if ( msg->content_type==0 ) {
 			DBG("DEBUG:parse_content_type_hdr: missing Content-Type"
@@ -314,7 +404,7 @@ int parse_accept_hdr( struct sip_msg *msg )
 	/* is the header already found? */
 	if ( msg->accept==0 ) {
 		/* if not, found it */
-		if ( parse_headers(msg,HDR_ACCEPT,0)==-1)
+		if ( parse_headers(msg, HDR_ACCEPT_F, 0)==-1)
 			goto error;
 		if ( msg->accept==0 ) {
 			DBG("DEBUG:parse_accept_hdr: missing Accept header\n");

@@ -5,6 +5,7 @@
  *
  * Copyright (C) 2001-2003 FhG Fokus
  *
+ *
  * This file is part of openser, a free SIP server.
  *
  * openser is free software; you can redistribute it and/or modify

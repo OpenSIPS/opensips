@@ -2,6 +2,10 @@
  * $Id$
  *
  * Event header field body parser
+ * This parser was written for Presence Agent module only.
+ * it recognizes presence package only, no subpackages, no parameters
+ * It should be replaced by a more generic parser if subpackages or
+ * parameters should be parsed too.
  *
  * Copyright (C) 2001-2003 FhG Fokus
  *
@@ -20,13 +24,6 @@
  * You should have received a copy of the GNU General Public License 
  * along with this program; if not, write to the Free Software 
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- *
- *
- * This parser was written for Presence Agent module only.
- * it recognizes presence package only, no subpackages, no parameters
- * It should be replaced by a more generic parser if subpackages or
- * parameters should be parsed too.
- *
  */
 
 
@@ -39,8 +36,8 @@
 #define EVENT_OTHER          0
 #define EVENT_PRESENCE       1
 #define EVENT_PRESENCE_WINFO 2
-#define EVENT_XCAP_CHANGE    3
-#define EVENT_LOCATION       4
+#define EVENT_SIP_PROFILE    3
+#define EVENT_XCAP_CHANGE    4
 
 typedef struct event {
 	str text;       /* Original string representation */

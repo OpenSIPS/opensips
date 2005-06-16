@@ -31,7 +31,7 @@
      p += 4;                        \
      switch(LOWER_BYTE(*p)) {       \
      case 'e':                      \
-	     hdr->type = HDR_ROUTE; \
+	     hdr->type = HDR_ROUTE_T; \
 	     p++;                   \
 	     goto dc_end;           \
                                     \

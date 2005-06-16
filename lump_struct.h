@@ -36,6 +36,7 @@
 #ifndef lump_struct_h
 #define lump_struct_h
 
+#include "./parser/hf.h"
 
 
 enum lump_op { LUMP_NOP=0, LUMP_DEL, LUMP_ADD, LUMP_ADD_SUBST, LUMP_ADD_OPT };
@@ -72,7 +73,7 @@ enum lump_flag { LUMPFLAG_NONE=0, LUMPFLAG_DUPED=1, LUMPFLAG_SHMEM=2 };
 
 
 struct lump{
-	int type; /* VIA, OTHER, UNSPEC(=0), ... */
+	enum _hdr_types_t type; /* HDR_VIA_T, HDR_OTHER_T (0), ... */
 	enum lump_op op;   /* DEL, ADD, NOP, UNSPEC(=0) */
 	
 	union{

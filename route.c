@@ -566,7 +566,7 @@ static int eval_elem(struct expr* e, struct sip_msg* msg)
 				}
 				break;
 		case TO_URI_O:
-				if ((msg->to==0) && ((parse_headers(msg, HDR_TO, 0)==-1) ||
+				if ((msg->to==0) && ((parse_headers(msg, HDR_TO_F, 0)==-1) ||
 							(msg->to==0))){
 					LOG(L_ERR, "ERROR: eval_elem: bad or missing"
 								" To: header\n");

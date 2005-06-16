@@ -29,7 +29,7 @@
 
 #define tion_CASE                             \
         if (LOWER_DWORD(val) == _tion_) {     \
-	        hdr->type = HDR_ORGANIZATION; \
+	        hdr->type = HDR_ORGANIZATION_T; \
 		p += 4;                       \
 		goto dc_end;                  \
 	}                                     \

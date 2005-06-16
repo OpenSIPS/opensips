@@ -28,6 +28,8 @@
  * 2003-04-11  ser_error is now set in parse_uri (andrei)
  * 2003-04-26  ZSW (jiri)
  * 2003-07-03  sips:, r2, lr=on support added (andrei)
+ * 2005-02-25  preliminary tel uri support (andrei)
+ * 2005-03-03  more tel uri fixes (andrei)
  */
 
 
@@ -91,6 +93,12 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 	char* pass;
 	int found_user;
 	int error_headers;
+	unsigned int scheme;
+	uri_type backup;
+	
+#define SIP_SCH		0x3a706973
+#define SIPS_SCH	0x73706973
+#define TEL_SCH		0x3a6c6574
 	
 #define case_port( ch, var) \
 	case ch: \
@@ -107,9 +115,12 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 							}else{ \
 								user.len=p-user.s; \
 							}\
+							/* save the uri type/scheme */ \
+							backup=uri->type; \
 							/* everything else is 0 */ \
 							memset(uri, 0, sizeof(struct sip_uri)); \
-							/* copy user & pass */ \
+							/* restore the scheme, copy user & pass */ \
+							uri->type=backup; \
 							uri->user=user; \
 							if (pass)	uri->passwd=password;  \
 							s=p+1; \
@@ -310,15 +321,18 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 	port_no=0;
 	state=URI_INIT;
 	memset(uri, 0, sizeof(struct sip_uri)); /* zero it all, just to be sure*/
-	/*look for sip:*/
+	/*look for sip:, sips: or tel:*/
 	if (len<5) goto error_too_short;
-	if (! ( ((buf[0]|0x20)=='s')&&((buf[1]|0x20)=='i')&&((buf[2]|0x20)=='p')))
-		goto error_bad_uri;
-	if (buf[3]!=':'){
-		/* parse also sips: */
-		if  (((buf[3]|0x20)=='s')&&(buf[4]==':')) {p++; uri->secure=1;}
+	scheme=buf[0]+(buf[1]<<8)+(buf[2]<<16)+(buf[3]<<24);
+	scheme|=0x20202020;
+	if (scheme==SIP_SCH){
+		uri->type=SIP_URI_T;
+	}else if(scheme==SIPS_SCH){
+		if(buf[4]==':'){ p++; uri->type=SIPS_URI_T;}
 		else goto error_bad_uri;
-	}
+	}else if (scheme==TEL_SCH){
+		uri->type=TEL_URI_T;
+	}else goto error_bad_uri;
 	
 	s=p;
 	for(;p<end; p++){
@@ -937,11 +951,50 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 		default:
 			goto error_bug;
 	}
-	
-#if EXTRA_DEBUG
+	switch(uri->type){
+		case SIP_URI_T:
+			if ((uri->user_param_val.len == 5) &&
+				(strncmp(uri->user_param_val.s, "phone", 5) == 0)) {
+				uri->type = TEL_URI_T;
+				/* move params from user into uri->params */
+				p=q_memchr(uri->user.s, ';', uri->user.len);
+				if (p){
+					uri->params.s=p+1;
+					uri->params.len=uri->user.s+uri->user.len-uri->params.s;
+					uri->user.len=p-uri->user.s;
+				}
+			}
+			break;
+		case SIPS_URI_T:
+			if ((uri->user_param_val.len == 5) &&
+				(strncmp(uri->user_param_val.s, "phone", 5) == 0)) {
+				uri->type = TELS_URI_T;
+				p=q_memchr(uri->user.s, ';', uri->user.len);
+				if (p){
+					uri->params.s=p+1;
+					uri->params.len=uri->user.s+uri->user.len-uri->params.s;
+					uri->user.len=p-uri->user.s;
+				}
+			}
+			break;
+		case TEL_URI_T:
+		case TELS_URI_T:
+			/* fix tel uris, move the number in uri and empty the host */
+			uri->user=uri->host;
+			uri->host.s="";
+			uri->host.len=0;
+			break;
+		case ERROR_URI_T:
+			LOG(L_ERR, "ERROR: parse_uri unexpected error (BUG?)\n"); 
+			goto error_bad_uri;
+			break; /* do nothing, avoids a compilation warning */
+	}
+#ifdef EXTRA_DEBUG
 	/* do stuff */
-	DBG("parsed uri:\n user=<%.*s>(%d)\n passwd=<%.*s>(%d)\n host=<%.*s>(%d)\n"
-			" port=<%.*s>(%d): %d\n params=<%.*s>(%d)\n headers=<%.*s>(%d)\n",
+	DBG("parsed uri:\n type=%d user=<%.*s>(%d)\n passwd=<%.*s>(%d)\n"
+			" host=<%.*s>(%d)\n port=<%.*s>(%d): %d\n params=<%.*s>(%d)\n"
+			" headers=<%.*s>(%d)\n",
+			uri->type,
 			uri->user.len, ZSW(uri->user.s), uri->user.len,
 			uri->passwd.len, ZSW(uri->passwd.s), uri->passwd.len,
 			uri->host.len, ZSW(uri->host.s), uri->host.len,
@@ -971,43 +1024,44 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 error_too_short:
 	LOG(L_ERR, "ERROR: parse_uri: uri too short: <%.*s> (%d)\n",
 			len, ZSW(buf), len);
-	ser_error=E_BAD_URI;
-	return E_BAD_URI;
+	goto error_exit;
 error_bad_char:
 	LOG(L_ERR, "ERROR: parse_uri: bad char '%c' in state %d"
 			" parsed: <%.*s> (%d) / <%.*s> (%d)\n",
-			*p, state, (int)(p-buf), ZSW(buf), (int)(p-buf), len, ZSW(buf), len);
-	return E_BAD_URI;
+			*p, state, (int)(p-buf), ZSW(buf), (int)(p-buf),
+			len, ZSW(buf), len);
+	goto error_exit;
 error_bad_host:
 	LOG(L_ERR, "ERROR: parse_uri: bad host in uri (error at char %c in"
 			" state %d) parsed: <%.*s>(%d) /<%.*s> (%d)\n",
-			*p, state, (int)(p-buf), ZSW(buf), (int)(p-buf), len, ZSW(buf), len);
-	ser_error=E_BAD_URI;
-	return E_BAD_URI;
+			*p, state, (int)(p-buf), ZSW(buf), (int)(p-buf),
+			len, ZSW(buf), len);
+	goto error_exit;
 error_bad_port:
 	LOG(L_ERR, "ERROR: parse_uri: bad port in uri (error at char %c in"
 			" state %d) parsed: <%.*s>(%d) /<%.*s> (%d)\n",
-			*p, state, (int)(p-buf), ZSW(buf), (int)(p-buf), len, ZSW(buf), len);
-	ser_error=E_BAD_URI;
-	return E_BAD_URI;
+			*p, state, (int)(p-buf), ZSW(buf), (int)(p-buf),
+			len, ZSW(buf), len);
+	goto error_exit;
 error_bad_uri:
 	LOG(L_ERR, "ERROR: parse_uri: bad uri,  state %d"
 			" parsed: <%.*s> (%d) / <%.*s> (%d)\n",
-			 state, (int)(p-buf), ZSW(buf), (int)(p-buf), len, ZSW(buf), len);
-	ser_error=E_BAD_URI;
-	return E_BAD_URI;
+			 state, (int)(p-buf), ZSW(buf), (int)(p-buf), len,
+			 ZSW(buf), len);
+	goto error_exit;
 error_headers:
 	LOG(L_ERR, "ERROR: parse_uri: bad uri headers: <%.*s>(%d)"
 			" / <%.*s>(%d)\n",
 			uri->headers.len, ZSW(uri->headers.s), uri->headers.len,
 			len, ZSW(buf), len);
-	ser_error=E_BAD_URI;
-	return E_BAD_URI;
+	goto error_exit;
 error_bug:
 	LOG(L_CRIT, "BUG: parse_uri: bad  state %d"
 			" parsed: <%.*s> (%d) / <%.*s> (%d)\n",
 			 state, (int)(p-buf), ZSW(buf), (int)(p-buf), len, ZSW(buf), len);
+error_exit:
 	ser_error=E_BAD_URI;
+	uri->type=ERROR_URI_T;
 	return E_BAD_URI;
 }
 

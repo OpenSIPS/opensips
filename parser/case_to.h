@@ -33,7 +33,7 @@
 
 
 #define to12_CASE           \
-        hdr->type = HDR_TO; \
+        hdr->type = HDR_TO_T; \
         hdr->name.len = 2;  \
         return (p + 4);
 

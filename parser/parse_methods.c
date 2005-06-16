@@ -3,6 +3,7 @@
  *
  * Copyright (c) 2004 Juha Heinanen
  *
+ *
  * This file is part of openser, a free SIP server.
  *
  * openser is free software; you can redistribute it and/or modify

@@ -32,6 +32,7 @@
  *  2003-04-12  added msg_flags to sip_msg (andrei)
  *  2003-11-02  added diversion header field to sip_msg (jh)
  *  2004-11-08  added force_send_socket (andrei)
+ *  2005-02-25  uri types added (sip, sips & tel)  (andrei)
  */
 
 
@@ -60,7 +61,7 @@
 
 /* number methods as power of two to allow bitmap matching */
 enum request_method { METHOD_UNDEF=0, METHOD_INVITE=1, METHOD_CANCEL=2, METHOD_ACK=4, 
-	METHOD_BYE=8, METHOD_OTHER=16 };
+	METHOD_BYE=8, METHOD_INFO=16, METHOD_OTHER=32 };
 
 #define FL_FORCE_RPORT    1  /* force rport */
 #define FL_FORCE_ACTIVE   2  /* force active SDP */
@@ -116,6 +117,9 @@ struct sip_uri {
 };
 #endif
 
+enum _uri_type{ERROR_URI_T=0, SIP_URI_T, SIPS_URI_T, TEL_URI_T, TELS_URI_T};
+typedef enum _uri_type uri_type;
+
 struct sip_uri {
 	str user;     /* Username */
 	str passwd;   /* Password */
@@ -125,7 +129,7 @@ struct sip_uri {
 	str headers;  
 	unsigned short port_no;
 	unsigned short proto; /* from transport */
-	int secure; /* 1 if is a sips, 0 otherwise */
+	uri_type type; /* uri scheme */
 	/* parameters */
 	str transport;
 	str ttl;
@@ -152,7 +156,7 @@ struct sip_msg {
 	struct via_body* via2;         /* The second via */
 	struct hdr_field* headers;     /* All the parsed headers*/
 	struct hdr_field* last_header; /* Pointer to the last parsed header*/
-	int parsed_flag;               /* Already parsed header field types */
+	hdr_flags_t parsed_flag;       /* Already parsed header field types */
 
 	     /* Via, To, CSeq, Call-Id, From, end of header*/
 	     /* pointers to the first occurrences of these headers;
@@ -189,6 +193,7 @@ struct sip_msg {
 	struct hdr_field* accept_disposition;
 	struct hdr_field* diversion;
 	struct hdr_field* rpid;
+	struct hdr_field* refer_to;
 
 	char* eoh;        /* pointer to the end of header (if found) or null */
 	char* unparsed;   /* here we stopped parsing*/
@@ -248,7 +253,7 @@ extern int via_cnt;
 
 int parse_msg(char* buf, unsigned int len, struct sip_msg* msg);
 
-int parse_headers(struct sip_msg* msg, int flags, int next);
+int parse_headers(struct sip_msg* msg, hdr_flags_t flags, int next);
 
 char* get_hdr_field(char* buf, char* end, struct hdr_field* hdr);
 
@@ -301,7 +306,7 @@ inline static char* get_body(struct sip_msg *msg)
 	int offset;
 	int len;
 
-	if ( parse_headers(msg,HDR_EOH, 0)==-1 )
+	if ( parse_headers(msg,HDR_EOH_F, 0)==-1 )
 		return 0;
 
 	if (msg->unparsed){

@@ -33,6 +33,8 @@
 #if !defined(q_malloc_h) && !defined(VQ_MALLOC) && !defined(F_MALLOC)
 #define q_malloc_h
 
+#include "meminfo.h"
+
 
 
 /* defs*/
@@ -142,6 +144,7 @@ void* qm_realloc(struct qm_block*, void* p, unsigned long size);
 #endif
 
 void  qm_status(struct qm_block*);
+void  qm_info(struct qm_block*, struct meminfo*);
 
 
 #endif

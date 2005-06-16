@@ -29,7 +29,7 @@
 
 #define OUTE_CASE                            \
         if (LOWER_DWORD(val) == _oute_) {    \
-	        hdr->type = HDR_RECORDROUTE; \
+	        hdr->type = HDR_RECORDROUTE_T; \
 		p += 4;                      \
 		goto dc_end;                 \
 	}                                    \

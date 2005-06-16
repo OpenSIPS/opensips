@@ -36,7 +36,7 @@
 #define TH_CASE                                        \
         switch(LOWER_DWORD(val)) {                     \
         case _th12_:                                   \
-                hdr->type = HDR_CONTENTLENGTH;         \
+                hdr->type = HDR_CONTENTLENGTH_T;         \
                 hdr->name.len = 14;                    \
                 return (p + 4);                        \
         }                                              \
@@ -44,7 +44,7 @@
         if (LOWER_BYTE(*p) == 't') {                   \
                 p++;                                   \
                 if (LOWER_BYTE(*p) == 'h') {           \
-                        hdr->type = HDR_CONTENTLENGTH; \
+                        hdr->type = HDR_CONTENTLENGTH_T; \
                         p++;                           \
                         goto dc_end;                   \
                 }                                      \
@@ -54,12 +54,12 @@
 #define ion_CASE                                    \
         switch(LOWER_DWORD(val)) {                  \
         case _ion1_:                                \
-	        hdr->type = HDR_CONTENTDISPOSITION; \
+	        hdr->type = HDR_CONTENTDISPOSITION_T; \
 	        hdr->name.len = 19;                 \
 	        return (p + 4);                     \
                                                     \
         case _ion2_:                                \
-                hdr->type = HDR_CONTENTDISPOSITION; \
+                hdr->type = HDR_CONTENTDISPOSITION_T; \
                 p += 4;                             \
 	        goto dc_end;                        \
         }
@@ -84,7 +84,7 @@
                 goto other;                  \
                                              \
         case _type_:                         \
-                hdr->type = HDR_CONTENTTYPE; \
+                hdr->type = HDR_CONTENTTYPE_T; \
                 p += 4;                      \
                 goto dc_end;                 \
                                              \
@@ -99,12 +99,12 @@
 #define ACT_ENT_CASE                     \
         switch(LOWER_DWORD(val)) {       \
         case _act1_:                     \
-	        hdr->type = HDR_CONTACT; \
+	        hdr->type = HDR_CONTACT_T; \
 	        hdr->name.len = 7;       \
 	        return (p + 4);          \
 	                                 \
         case _act2_:                     \
-	        hdr->type = HDR_CONTACT; \
+	        hdr->type = HDR_CONTACT_T; \
 	        p += 4;                  \
 	        goto dc_end;             \
                                          \

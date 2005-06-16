@@ -231,6 +231,7 @@ tar:
 		--exclude=$(notdir $(CURDIR))/ser_tls* \
 		--exclude=CVS* \
 		--exclude=.cvsignore \
+		--exclude=.svn* \
 		--exclude=*.[do] \
 		--exclude=*.so \
 		--exclude=*.il \

@@ -140,7 +140,7 @@ int contact_iterator(contact_t** c, struct sip_msg* msg, contact_t* prev)
 		      */
 		hdr = msg->contact;
 		if (!hdr) {
-			if (parse_headers(msg, HDR_CONTACT, 0) == -1) {
+			if (parse_headers(msg, HDR_CONTACT_F, 0) == -1) {
 				LOG(L_ERR, "contact_iterator: Error while parsing headers\n");
 				return -1;
 			}
@@ -179,7 +179,7 @@ int contact_iterator(contact_t** c, struct sip_msg* msg, contact_t* prev)
 		     /* Search another already parsed Contact
 		      * header field
 		      */
-		while(hdr && hdr->type != HDR_CONTACT) {
+		while(hdr && hdr->type != HDR_CONTACT_T) {
 			hdr = hdr->next;
 		}
 
@@ -187,7 +187,7 @@ int contact_iterator(contact_t** c, struct sip_msg* msg, contact_t* prev)
 			     /* Look for another Contact HF in unparsed
 			      * part of the message header
 			      */
-			if (parse_headers(msg, HDR_CONTACT, 1) == -1) {
+			if (parse_headers(msg, HDR_CONTACT_F, 1) == -1) {
 				LOG(L_ERR, "contact_iterator: Error while parsing message header\n");
 				return -1;
 			}
@@ -197,7 +197,7 @@ int contact_iterator(contact_t** c, struct sip_msg* msg, contact_t* prev)
 			      * previous Contact HF (that indicates that the previous 
 			      * one was the last header field in the header)
 			      */
-			if ((msg->last_header->type == HDR_CONTACT) &&
+			if ((msg->last_header->type == HDR_CONTACT_T) &&
 			    (msg->last_header != last)) {
 				hdr = msg->last_header;
 			} else {

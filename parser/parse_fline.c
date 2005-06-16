@@ -29,10 +29,10 @@
  */
 
 
+#include "../dprint.h"
 #include "msg_parser.h"
 #include "parser_f.h"
 #include "../mem/mem.h"
-#include "../dprint.h"
 #include "../ut.h"
 
 /* grammar:
@@ -1185,6 +1185,7 @@ char* parse_first_line(char* buffer, unsigned int len, struct msg_start * fl)
 	else IFISMETHOD( CANCEL, 'C')
 	else IFISMETHOD( ACK, 'A' )
 	else IFISMETHOD( BYE, 'B' ) 
+	else IFISMETHOD( INFO, 'I' )
 	/* if you want to add another method XXX, include METHOD_XXX in
            H-file (this is the value which you will take later in
            processing and define XXX_LEN as length of method name;

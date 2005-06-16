@@ -2,7 +2,7 @@
  * $Id$ 
  *
  * via parsing automaton
- *
+ * 
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of openser, a free SIP server.
@@ -20,9 +20,11 @@
  * You should have received a copy of the GNU General Public License 
  * along with this program; if not, write to the Free Software 
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- *
- * History:
- * --------
+ */
+
+
+
+/* 
  *  2003-01-21  added rport parsing code, contributed by
  *               Maxim Sobolev  <sobomax@FreeBSD.org>
  *  2003-01-23  added extra via param parsing code (i=...), used
