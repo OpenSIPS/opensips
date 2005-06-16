@@ -1254,7 +1254,7 @@ void tcp_main_loop()
 						if (tcpconn){
 							bytes=receive_fd(pt[r].unix_sock, &tcpconn,
 									sizeof(tcpconn), &tcpconn->s);
-								if (bytes<sizeof(tcpconn)){
+								if (bytes<(int)sizeof(tcpconn)){
 									if (bytes<0){
 										LOG(L_CRIT, "BUG: tcp_main_loop:"
 												" CONN_NEW: receive_fd "

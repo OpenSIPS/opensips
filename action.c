@@ -286,7 +286,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 			ret=append_branch( msg, a->p1.string, 
 					a->p1.string ? strlen(a->p1.string):0,
 					msg->dst_uri.len?msg->dst_uri.s:0, msg->dst_uri.len,
-					a->p2.number);
+					a->p2.number, 0);
 			break;
 		case LEN_GT_T:
 			if (a->p1_type!=NUMBER_ST) {

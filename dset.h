@@ -30,18 +30,11 @@ struct sip_msg;
 
 extern unsigned int nr_branches;
 
-#define append_branch( _msg_, _uri_, _uri_l_, _dst_uri_, _dst_uri_l_, _q_) \
-	append_branch2( _msg_, _uri_, _uri_l_, _dst_uri_, _dst_uri_l_, _q_, 0)
-
-#define next_branch( _len_, _q_, _dst_uri_, _dst_len_) \
-	next_branch2( _len_, _q_, _dst_uri_, _dst_len_, 0)
-
-
 
 /* 
  * Add a new branch to current transaction 
  */
-int append_branch2(struct sip_msg* msg, char* uri, int uri_len, char* dst_uri,
+int append_branch(struct sip_msg* msg, char* uri, int uri_len, char* dst_uri,
 		int dst_uri_len, qvalue_t q, struct socket_info* force_socket);
 
 
@@ -54,7 +47,7 @@ void init_branch_iterator(void);
 /*
  * Get the next branch in the current transaction
  */
-char* next_branch2(int* len, qvalue_t* q, char** dst_uri, int* dst_len,
+char* next_branch(int* len, qvalue_t* q, char** dst_uri, int* dst_len,
 		struct socket_info** force_socket);
 
 
