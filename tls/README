@@ -1,0 +1,946 @@
+
+TLS support
+
+Peter Griffiths
+
+   unknown
+
+Edited by
+
+Bogdan-Andrei Iancu
+
+Cesc Santasusana
+
+   Copyright © 2005 voice-system.ro
+
+   Copyright © 2005 Cesc Santasusana
+     _________________________________________________________
+
+   Table of Contents
+   1. User's Guide
+
+        1.1. Overview
+        1.2. Scenario
+        1.3. Compilling TLS support
+
+              1.3.1. Dependencies of external libraries
+
+        1.4. TLS setup
+
+              1.4.1. Creating CA certificate
+              1.4.2. Setting OpenSER to use the certificate
+              1.4.3. TLS OpenSER authentication behaviour
+              1.4.4. OpenSER TLS configuration parameters
+
+                    1.4.4.1. disable_tls=integer
+                    1.4.4.2. listen=interface
+                    1.4.4.3. tls_port_no=number
+                    1.4.4.4. tls_method=value
+                    1.4.4.5. tls_certificate=file
+                    1.4.4.6. tls_private_key=file
+                    1.4.4.7. tls_ca_list=file
+                    1.4.4.8. tls_ciphers_list=string
+                    1.4.4.9. tls_verify=number and
+                            tls_require_certificate=number
+
+                    1.4.4.10. tls_handshake_timeout=number and
+                            tls_send_timeout=number
+
+                    1.4.4.11. tls_domain section
+
+        1.5. OpenSER with TLS - script example
+
+   2. Developer's Guide
+
+        2.1. TLS_CONFIG
+        2.2. TLS_INIT
+
+              2.2.1. default ssl context
+              2.2.2. init_tls
+              2.2.3. destroy_tls
+              2.2.4. tls_init
+              2.2.5. ser_malloc, ser_realloc, ser_free
+
+        2.3. TLS_SERVER
+
+              2.3.1. SSL data per connection
+              2.3.2. tls_print_errstack
+              2.3.3. tls_tcpconn_init
+              2.3.4. tls_tcpconn_clean
+              2.3.5. tls_blocking_write
+              2.3.6. tls_read
+              2.3.7. tls_fix_read_conn
+
+        2.4. TLS_DOMAIN
+
+              2.4.1. tls_domains
+              2.4.2. tls_find_domain
+              2.4.3. tls_new_domain
+              2.4.4. tls_free_domains
+
+   3. Frequently Asked Questions
+
+   List of Examples
+   1-1. Set disable_tls variable
+   1-2. Set listen variable
+   1-3. Set tls_port_no variable
+   1-4. Set tls_method variable
+   1-5. Set tls_certificate variable
+   1-6. Set tls_private_key variable
+   1-7. Set tls_ca_list variable
+   1-8. Set tls_ciphers_list variable
+   1-9. Set tls_verify & tls_require_certificate variable
+   1-10. Set tls_handshake_timeout & tls_send_timeout variable
+   1-11. Usage of tls_domain block
+   1-12. Script with TLS support
+     _________________________________________________________
+
+Chapter 1. User's Guide
+
+1.1. Overview
+
+   TLS is an optional part of the OpenSER's core, not a module.
+   TLS, as defined in SIP RFC 3261, is a mandatory feature for
+   proxies and can be used to secure the SIP signalling on a
+   hop-by-hop basis (not end-to-end). TLS works on top of TCP.
+   DTLS, or TLS over UDP is already defined by IETF and may
+   become available in the future.
+     _________________________________________________________
+
+1.2. Scenario
+
+   By the increased number of providers the SIP world is
+   continuously growing. More users means more calls and more
+   calls means a high probability for a user to receive calls
+   from totally unknown people or, in the worst case, to receive
+   unwanted calls. To prevent this, a defense mechanism must be
+   adopted by the SIP provider. Since only the called user is
+   fully able to classify a call as being unwanted, the SIP
+   server, based on all information regarding the call should
+   notify the user about the desirability of the call.
+   Information like the caller domain, the received source or the
+   incoming protocol can be very useful for a SIP server to
+   establish the nature of the call.
+
+   As this information is quite limited, is very improbable for a
+   server to be able detect the unwanted calls - there are many
+   calls that it cannot predict anything about its status
+   (neutral calls). So, instead on alerting the called user about
+   unwanted calls, the server can notify the user about calls
+   that are considered trusted - calls for which the server is
+   100% sure there are not unwanted.
+
+   So, a trust concept must be defined for SIP servers. Which
+   calls are trusted and which are not? A call is trusted if the
+   caller can be identify as a trustable user - a user about we
+   have reliable information.
+
+   Since all the user from its domain are authenticated (or
+   should be), a SIP server can consider all the calls generated
+   by its user as trusted. Now we have to extend the trust
+   concept to the multi-domain level. A mutual agreement, between
+   several domains, can establish a trusting relationship. So, a
+   domain (called A) will consider also as trusted calls all the
+   calls generated by user from a different domain (called B) and
+   vice-versa. But just an agreement is not enough; since the
+   authentication information is strictly limited to a domain (a
+   domain can authenticate only its own user, not the user from
+   other domains), there is still the problem of checking the
+   authenticity of the caller - he can impersonate (by a false
+   FROM header) a user from a domain that is trusted.
+
+   The answer to this problem is TLS (Transport Layer Security).
+   All calls via domain A and domain B will be done via TLS.
+   Authentication in origin domain plus TLS transport between
+   domains will make the call 100% trusted for the target domain.
+
+   For such a mechanism to work, the following requirements must
+   be met:
+
+     * all UA must have set as outbound proxy their home server.
+     * all SIP servers must authenticated all the calls generated
+       by their own users.
+     * all SIP servers must relay the calls generated be their
+       user to a trusted domain via TLS.
+
+   Based on this, a server can classify as trusted a call for one
+   of its user only if the call is also generated by one of its
+   users or is the call is received from a trusted domain ( which
+   is equivalent with a call received via TLS). Untrusted call
+   will be calls received from users belonging to untrusted
+   domains or from users from trusted domains, but whose calls
+   are not routed via their home server (so, they are not
+   authenticated by there home servers).
+
+   Once the server is able to tell if the call is trusted or not,
+   the still open issue is about the mechanism used by server to
+   notify the called user about the nature of the incoming call.
+
+   One way to do it is by remotely changing the ringing type of
+   the called user's phone. This can be done by inserting special
+   header into the INVITE request. Such feature is supported by
+   now by several hardphones like CISCO ATA, CISCO 7960 and SNOM.
+   This phones can change their ringing tone based on the present
+   or content of the "Alert-Info" SIP header as follows:
+
+     * CISCO ATA - it has 4 pre-defined ringing types. The
+       Alert-Info header must look like "Alert-info: Bellcore-drX
+       EOH"" where X can be between 1 and 4. Note that 1 is the
+       phone default ringing tone.
+     * CISCO 7960 - it has 2 pre-defined ringing types and the
+       possibility of uploading new ones. The "Alert-Info" header
+       must look like "Alert-info: X EOH" where X can be whatever
+       number. When this header is present, the phones will not
+       change the ringing tone, but the ringing pattern.
+       Normally, the phone rings like
+       [ring.........ring..........ring] where [ring] is the
+       ringing tone; if the header is present, the ringing
+       pattern will be [ring.ring.........ring.ring........]. So,
+       to be able to hear some difference between the two
+       patterns (and not only as length), its strongly
+       recommended to have a highly asymmetric ringing type (as
+       the pre-defined are not!!).
+     * SNOM - The "Alert-Info" header must look like "Alert-info:
+       URL EOH"" where URL can be a HTTP URL (for example) from
+       where the phone can retrieve a ringing tone.
+
+   A script example which implements this scenario can be found
+   in Section 1.5.
+     _________________________________________________________
+
+1.3. Compilling TLS support
+
+   To compile OpenSER with the TLS support, the environment
+   variable TLS must be set. Note that this is required for all
+   make commands (and not only for compiling). To set the
+   variable, there are several ways to do it:
+
+     * run all make commands like "TLS=1 make
+       all|clean|install|etc"
+     * before starting, export the TLS variable like "export
+       TLS=1" (in bash) and use the make commands as usual. NOTE:
+       the exported variable will be available only in current
+       shell!
+     * comment (to disable) or uncomment (to enable) the "TLS=1"
+       line in the Makefile file; use the make commands as usual
+       without any limitations.
+     _________________________________________________________
+
+1.3.1. Dependencies of external libraries
+
+   OpenSER TLS support requires the following packages:
+
+     * openssl or libssl >= 0.9.6
+     * openssl-dev or libssl-dev
+     _________________________________________________________
+
+1.4. TLS setup
+
+   TLS provides for strong authentication mechanism, as well as
+   encryption following authentication. Of course, null
+   encryption can be used, as well as weak authentication
+   mechanisms (for example, anonymous, that is, no
+   authentication).
+
+   How does verification work? Verification is the process by
+   which the authentication data provided by the peers is
+   checked. This data consists usually of a peer certificate,
+   plus a chain of trusted certification authorities. If for
+   whatever reason, either of the peers thinks that the handshake
+   is not valid, the ssl connection is not established. The
+   reasons could be many: untrusted server certficate, too-weak
+   algorithm, invalid client cert, no client authentication, ...
+
+   This paragraph describe how to generate all the needed keys
+   and certificates for establishing TLS connection with SER. The
+   described TLS setup is based on the assumption that we run our
+   own certificate authority (CA) and we want to connect via TLS
+   several OpenSER servers (SIP domain).
+
+   Warning
+
+   In this setup the private key is not encrypted. The client and
+   server keys must not be encrypted (or else SER will ask you
+   for a password on startup or will fail to load the
+   certificates), but you should use a password at least for your
+   CA private key.
+     _________________________________________________________
+
+1.4.1. Creating CA certificate
+
+   This part must be done only once, disregarding the number of
+   how many interconnected OpenSER's we want to have.
+
+   The first step is to create the directory that will contain
+   the CA certificate:
+
+     * mkdir ca
+     * cd ca
+
+   Create ca sub-directory structure and populate it with files.
+   For more information about this, please consult the man page
+   ca(1):
+
+     * mkdir demoCA
+
+   This is the default CA name and it must be exactly as set in
+   your openssl configuration /etc/ss/openssl.cnf :
+
+     * mkdir demoCA/private
+     * mkdir demoCA/newcerts
+     * touch demoCA/index.txt
+     * echo 01 >demoCA/serial
+
+   For creating CA private key run the following command in the
+   ca directory:
+
+     * openssl genrsa -out demoCA/private/cakey.pem 2048
+     * chmod 600 demoCA/private/cakey.pem
+
+   Now create CA self-signed certificate :
+
+     * openssl req -out demoCA/cacert.pem -x509 -new -key
+       demoCA/private/cakey.pem
+     _________________________________________________________
+
+1.4.2. Setting OpenSER to use the certificate
+
+   Create or append to the CA list file your newly created CA
+   certificate ( this list must contain all CA certificates you
+   intend to use) :
+
+     * cat demoCA/cacert.pem >> openserX/calist.pem
+
+   Now copy intended OpenSER certificate, private key and ca list
+   file (basically the whole content of the openserX directory)
+   to your intended machine in some directory (which will be
+   further refer by path "path").
+
+   There are some OpenSER TLS specific parameter that must be set
+   up in SER configuration file to use the certificate:
+
+     * set up ser.cfg to use the certificate :
+       tls_certificate=/path/serX_cert.pem
+     * set up ser to use the private key :
+       tls_private_key=/path/privkey.pem
+     * set up ser to use the CA list (optional - make sens only
+       if tls_verify is turned on)
+       tls_ca_list=/path/calist.pem
+     _________________________________________________________
+
+1.4.3. TLS OpenSER authentication behaviour
+
+   The "tls_verify" and "tls_require_certificate" are
+   OpenSER-names for the OpenSSL defined flags:
+
+     * SSL_VERIFY_PEER is tls_verify
+     * SSL_VERIFY_FAIL_IF_NO_PEER_CERT is tls_require_certificate
+       (tls_require_certificate is only used if tls_verify=1)
+
+   If your OpenSER is acting as a server, it will always send its
+   server-side certificate to the client. If tls_verify is
+   disabled (set to 0), your OpenSER will not request the client
+   a client-certificate. This means that the client is not
+   authenticated. If tls_verify=1, your OpenSER (the server)
+   sends a client-certificate request to the client. But the
+   client is free to not provide any. In this case,
+   tls_require_certificate comes into play:
+
+     * tls_require_cert=0 - the verification process will succedd
+       if the client does not provide a certificate, or if it
+       provides one, it verifies correctly against the server's
+       list of trusted certification authorities.
+     * tls_require_cert=1 - the verification process will only
+       succeed if the client provides a certificate and this
+       verifies correctly against the server's list of trusted
+       CAs.
+
+   For more details see page man verify(1).
+     _________________________________________________________
+
+1.4.4. OpenSER TLS configuration parameters
+
+   All these parameters can be used from the openser.cfg file, to
+   configure the behavior of OpenSER-TLS.
+     _________________________________________________________
+
+1.4.4.1. disable_tls=integer
+
+   Disables TLS (no server is created on the listen addresses, no
+   outgoing connections can be set up). A non 0 value means
+   disable.
+
+   It's usable only if TLS support was compiled.
+
+   Default value is 0 (TLS enabled). 
+
+   Example 1-1. Set disable_tls variable
+...
+disable_tls = 1
+...
+     _________________________________________________________
+
+1.4.4.2. listen=interface
+
+   Not specific to TLS. Allows to specify the protocol (udp, tcp,
+   tls), the IP address and the port where the listening server
+   will be.
+
+   Example 1-2. Set listen variable
+...
+listen = tls:1.2.3.4:5061
+...
+     _________________________________________________________
+
+1.4.4.3. tls_port_no=number
+
+   Sets the default TLS listening port.
+
+   It's usable only if TLS support was compiled.
+
+   Default value is 5061. 
+
+   Example 1-3. Set tls_port_no variable
+...
+tls_port_no = 5062
+...
+     _________________________________________________________
+
+1.4.4.4. tls_method=value
+
+   Sets the TLS protocol method which can be:
+
+     * TLSv1 - means OpenSER will accept only TLSv1 connections
+       (rfc3261 conformant).
+     * SSLv3 - means OpenSER will accept only SSLv3 connections
+     * SSLv3 - means OpenSER will accept only SSLv2 connections
+       (almost all old clients support this).
+     * SSLv23 - means OpenSER will accept any of the above
+       methods, but the initial SSL hello must be v2 (in the
+       initial hello all the supported protocols are advertised
+       enabling switching to a higher and more secure version).
+       The initial v2 hello means it will not accept connections
+       from SSLv3 or TLSv1 only clients.
+
+   It's usable only if TLS support was compiled.
+
+   Default value is SSLv23. 
+
+   Warning
+
+   Best is to use SSLv23, for extended compatibility. Using any
+   of the other will restrict the version to just that one
+   version. In fact, SSLv2 is disabled in the source code; to use
+   it, you need to edit tls/tls_init.c
+
+   If you want RFC3261 conformance and all your clients support
+   TLSv1 (or you are planning to use encrypted "tunnels" only
+   between different OpenSER proxies) use TLSv1. If you want to
+   support older clients use SSLv23 (in fact most of the
+   applications with SSL support use the SSLv23 method).
+
+   Example 1-4. Set tls_method variable
+...
+tls_method = TLSv1
+...
+     _________________________________________________________
+
+1.4.4.5. tls_certificate=file
+
+   Public certificate file for OpenSER. It will be used as
+   server-side certificate for incoming TLS connections, and as a
+   client-side certificate for outgoing TLS connections.
+
+   See previous chapter Section 1.4.2 for more information.
+
+   It's usable only if TLS support was compiled.
+
+   Default value is "CFG_DIR/cert.pem". 
+
+   Example 1-5. Set tls_certificate variable 
+...
+tls_certificate="/mycerts/certs/openser_server_cert.pem"
+...
+     _________________________________________________________
+
+1.4.4.6. tls_private_key=file
+
+   Private key of the above certificate. I must be kept in a safe
+   place with tight permissions!
+
+   See previous chapter Section 1.4.2 for more information.
+
+   It's usable only if TLS support was compiled.
+
+   Default value is "CFG_DIR/prik.pem". 
+
+   Example 1-6. Set tls_private_key variable 
+...
+tls_private_key="/mycerts/private/prik.pem"
+...
+     _________________________________________________________
+
+1.4.4.7. tls_ca_list=file
+
+   List of trusted CAs. The file contains the certificates
+   accepted, one after the other. It MUST be a file, not a
+   folder.
+
+   See previous chapter Section 1.4.2 for more information.
+
+   It's usable only if TLS support was compiled.
+
+   Default value is "". 
+
+   Example 1-7. Set tls_ca_list variable
+...
+tls_ca_list="/mycerts/certs/ca_list.pem"
+...
+     _________________________________________________________
+
+1.4.4.8. tls_ciphers_list=string
+
+   You can specify the list of algorithms for authentication and
+   encryption that you allow. To obtain a list of ciphers and
+   then choose, use the openssl application:
+
+     * openssl ciphers 'ALL:eNULL:!LOW:!EXPORT'
+
+   Warning
+
+   Do not use the NULL algorithms ... only for testing!!!
+
+   It's usable only if TLS support was compiled.
+
+   Default ciphers choosen by OpenSSL. 
+
+   Example 1-8. Set tls_ciphers_list variable 
+...
+tls_ciphers_list="NULL-SHA:NULL-MD5:AES256-SHA:AES128-SHA"
+...
+     _________________________________________________________
+
+1.4.4.9. tls_verify=number and tls_require_certificate=number
+
+   Technically, tls_verify activates SSL_VERIFY_PEER in the
+   ssl_context. tls_require_certificate does the same with
+   SSL_VERIFY_FAIL_IF_NO_PEER_CERT, which is only possible if
+   SSL_VERIFY_PEER is also turned on.
+
+   See previous chapter Section 1.4.3 for more information.
+
+   It's usable only if TLS support was compiled.
+
+   Default value for both is 0. 
+
+   Example 1-9. Set tls_verify & tls_require_certificate variable
+...
+# turn on the strictest and strongest authentication possible
+tls_verify = 1
+tls_require_certificate = 1
+...
+     _________________________________________________________
+
+1.4.4.10. tls_handshake_timeout=number and tls_send_timeout=number
+
+   Timeouts ... advanced users only
+
+   It's usable only if TLS support was compiled.
+
+   Default value for both is 120. 
+
+   Example 1-10. Set tls_handshake_timeout & tls_send_timeout
+   variable
+...
+tls_handshake_timeout=119    # number of seconds
+tls_send_timeout=121         # number of seconds
+...
+     _________________________________________________________
+
+1.4.4.11. tls_domain section
+
+   If you only run one domain, the main one is enough. If you are
+   running several TLS servers (that is, you have more than one
+   listen=tls:ip:port entry in the config file), you can specify
+   some parameters for each of them separately (not all the
+   above).
+
+   NOTE: For now, tls_ciphers_list cannot be specified on a per
+   domain basis.
+
+   It's usable only if TLS support was compiled.
+
+   Example 1-11. Usage of tls_domain block 
+...
+tls_domain[IP_2:port2] {
+    #specify parameters for a domain in particular, otherwise,
+    #it will use the default. These are the possible parameters to
+    #change for each domain
+    tls_certificate="new_cert"
+    tls_private_key="new_cert_key"
+    tls_ca_list="other ca"
+    tls_method="tlsv1"
+}
+tls_domain[IP_3:port3] {
+    ...
+}
+...
+     _________________________________________________________
+
+1.5. OpenSER with TLS - script example
+
+   IMPORTANT: The TLS support is based on TCP, and for allowing
+   OpenSER to use TCP, it must be started in multi-process mode.
+   So, there is a must to have the "fork" parameter set to "yes":
+
+   NOTE: Since the TLS engine is quite memory consuming, increse
+   the used memory by the run time parameter "-m" (see OpenSER -h
+   for more detailes).
+
+     * fork = yes
+
+   Example 1-12. Script with TLS support
+  # ----------- global configuration parameters -----------------------
+-
+  debug=3
+  fork=yes
+  log_stderror=no
+
+  check_via=no
+  dns=no
+  rev_dns=no
+  listen=_your_serv_IP_
+  port=5060
+  children=4
+  fifo="/tmp/openser_fifo"
+
+  #TLS specific settings
+  tls_certificate="/path/openserX_cert.pem"
+  tls_private_key="/path/privkey.pem"
+  tls_ca_list="/path/calist.pem"
+  tls_verify=on
+  tls_require_certificate=on
+
+  alias=_DNS_ALIAS_
+
+  # ------------------ module loading ---------------------------------
+-
+
+  loadmodule "modules/sl/sl.so"
+  loadmodule "modules/rr/rr.so"
+  loadmodule "modules/maxfwd/maxfwd.so"
+  loadmodule "modules/mysql/mysql.so"
+  loadmodule "modules/usrloc/usrloc.so"
+  loadmodule "modules/registrar/registrar.so"
+  loadmodule "modules/tm/tm.so"
+  loadmodule "modules/auth/auth.so"
+  loadmodule "modules/auth_db/auth_db.so"
+  loadmodule "modules/textops/textops.so"
+  loadmodule "modules/uri_db/uri_db.so"
+
+  # ----------------- setting module-specific parameters --------------
+-
+
+  # -- auth_db params --
+  modparam("auth_db", "db_url", "sql_url")
+  modparam("auth_db", "password_column", "password")
+  modparam("auth_db", "calculate_ha1", 1)
+
+  # -- registrar params --
+  # no multiple registrations
+  modparam("registrar", "append_branches", 0)
+
+  # -- rr params --
+  # add value to ;lr param to make some broken UAs happy
+  modparam("rr", "enable_full_lr", 1)
+
+  # -------------------------  request routing logic ------------------
+-
+
+  # main routing logic
+
+  route{
+
+  # initial sanity checks
+  if (!mf_process_maxfwd_header("10")) {
+      sl_send_reply("483","Too Many Hops");
+      break;
+  };
+
+  # if somene claims to belong to our domain in From,
+  # challenge him (skip REGISTERs -- we will chalenge them later)
+  if (from_uri==myself) {
+      setflag(1);
+      if ( (method=="INVITE" || method=="SUBSCRIBE" || method=="MESSAGE
+")
+      &&  !(src_ip==myself) ) {
+          if  (!(proxy_authorize( "domA.net", "subscriber" ))) {
+              proxy_challenge("domA.net","0"/*no-qop*/);
+              break;
+          };
+          if (!check_from()) {
+              log("LOG: From Cheating attempt in INVITE\n");
+              sl_send_reply("403",
+                  "That is ugly -- use From=id next time (OB)");
+              break;
+          };
+      }; # non-REGISTER from other domain
+  } else if ( method=="INVITE" && uri!=myself ) {
+      sl_send_reply("403", "No relaying");
+      break;
+  };
+
+  /* ********   do record-route and loose-route ******* */
+  if (!(method=="REGISTER"))
+      record_route();
+
+  if (loose_route()) {
+      append_hf("P-hint: rr-enforced\r\n");
+      route(1);
+      break;
+  };
+
+  /* ******* check for requests targeted out of our domain ******* */
+  if ( uri!=myself ) {
+      append_hf("P-hint: OUTBOUND\r\n");
+      if (uri=~".*@domB.net") {
+          t_relay_to_tls("domB.net","5061");
+      } else if (uri=~".*@domC.net") {
+          t_relay_to_tls("domC.net","5061");
+      } else {
+          route(1);
+      };
+      break;
+  };
+
+  /* ******* divert to other domain according to prefixes ******* */
+  if (method!="REGISTER") {
+      if ( uri=~"sip:201") {
+          strip(3);
+          sethost("domB.net");
+          t_relay_to_tls("domB.net","5061");
+          break;
+      } else if ( uri=~"sip:202" ) {
+          strip(3);
+          sethost("domC.net");
+          t_relay_to_tls("domC.net","5061");
+          break;
+      };
+  };
+
+  /* ************ requests for our domain ********** */
+  if (method=="REGISTER") {
+      if (!www_authorize( "domA.net", "subscriber" )) {
+          # challenge if none or invalid credentials
+          www_challenge( "domA.net" /* realm */,
+              "0" /* no qop -- some phones can't deal with it */);
+          break;
+      };
+      if (!check_to()) {
+          log("LOG: To Cheating attempt\n");
+          sl_send_reply("403", "That is ugly -- use To=id in REGISTERs"
+);
+          break;
+      };
+      # it is an authenticated request, update Contact database now
+      if (!save("location")) {
+          sl_reply_error();
+      };
+      break;
+  };
+
+  # native SIP destinations are handled using USRLOC DB
+  if (!lookup("location")) {
+      # handle user which was not found
+      sl_send_reply("404", "Not Found");
+      break;
+  };
+
+  # remove all present Alert-info headers
+  remove_hf("Alert-Info");
+
+  if (method=="INVITE" && (proto==tls || isflagset(1))) {
+      append_hf("Alert-info: 1\r\n");                     # cisco 7960
+      append_hf("Alert-info: Bellcore-dr4\r\n");          # cisco ATA
+      append_hf("Alert-info: http://foo.bar/x.wav\r\n");  # snom
+  };
+
+  # do forwarding
+  if (!t_relay()) {
+      sl_reply_error();
+  };
+
+  #end of script
+  }
+     _________________________________________________________
+
+Chapter 2. Developer's Guide
+
+2.1. TLS_CONFIG
+
+   It contains configuration variables for ser's tls (timeouts,
+   file paths, etc).
+     _________________________________________________________
+
+2.2. TLS_INIT
+
+   Initialization related functions and parameters.
+     _________________________________________________________
+
+2.2.1. default ssl context
+
+   extern SSL_CTX *default_ctx;
+
+   It is the common context for all tls sockets. If domains are
+   used, each has its own.
+     _________________________________________________________
+
+2.2.2. init_tls
+
+   int init_tls(void);
+
+   Called once to initialize the tls subsystem, from the main().
+     _________________________________________________________
+
+2.2.3. destroy_tls
+
+   void destroy_tls(void);
+
+   Called once, just before cleanup.
+     _________________________________________________________
+
+2.2.4. tls_init
+
+   int tls_init(struct socket_info *c);
+
+   Called once for each tls socket created.
+     _________________________________________________________
+
+2.2.5. ser_malloc, ser_realloc, ser_free
+
+   Wrapper functions around the shm_* functions. OpenSSL uses
+   non-shared memory to create its objects, thus it would not
+   work in OpenSER. By creating these wrappers and configuring
+   OpenSSL to use them instead of its default memory functions,
+   we have all OpenSSL objects in shared memory, ready to use.
+     _________________________________________________________
+
+2.3. TLS_SERVER
+
+2.3.1. SSL data per connection
+
+   Each TLS connection, incoming or outgoing, creates an SSL *
+   object, where configuration inherited from the SSL_CTX * and
+   particular info on that socket are stored. This SSL *
+   structure is kept in OpenSER as long as the connection is
+   alive, as part of the "struct tcp_connection *" object:
+...
+struct tcp_connection *c;
+SSL *ssl;
+
+/*create somehow SSL object*/
+c->extra_data = (void *) ssl;
+ssl = (SSL *) c->extra_data;
+...
+     _________________________________________________________
+
+2.3.2. tls_print_errstack
+
+   void tls_print_errstack(void);
+
+   Dumps ssl error stack.
+     _________________________________________________________
+
+2.3.3. tls_tcpconn_init
+
+   int tls_tcpconn_init( struct tcp_connection *c, int fd);
+
+   Called when new tcp connection is accepted
+     _________________________________________________________
+
+2.3.4. tls_tcpconn_clean
+
+   void tls_tcpconn_clean( struct tcp_connection *c);
+
+   Shuts down the TLS connection.
+     _________________________________________________________
+
+2.3.5. tls_blocking_write
+
+   size_t tls_blocking_write( struct tcp_connection *c, int fd,
+   const char *buf, size_t len);
+
+   Writes a memory chunk in blocking mode (syncron).
+     _________________________________________________________
+
+2.3.6. tls_read
+
+   size_t tls_read( struct tcp_connection *c);
+
+   Reads from a TLS connection. Return the number of bytes read.
+     _________________________________________________________
+
+2.3.7. tls_fix_read_conn
+
+   void tls_tcpconn_clean( struct tcp_connection *c);
+
+   Shuts down the TLS connection.
+     _________________________________________________________
+
+2.4. TLS_DOMAIN
+
+2.4.1. tls_domains
+
+   extern struct tls_domain *tls_domains;
+
+   List with defined domains.
+     _________________________________________________________
+
+2.4.2. tls_find_domain
+
+   struct tls_domain *tls_find_domain(struct ip_addr *ip,
+   unsigned short port);
+
+   Find domain with given ip and port.
+     _________________________________________________________
+
+2.4.3. tls_new_domain
+
+   int tls_new_domain(struct ip_addr *ip, unsigned short port);
+
+   Creates and adds to the list a new domain.
+     _________________________________________________________
+
+2.4.4. tls_free_domains
+
+   void tls_free_domains(void);
+
+   Cleans up the entire domain list.
+     _________________________________________________________
+
+Chapter 3. Frequently Asked Questions
+
+   3.1. Where can I post a question about TLS?
+   3.2. How can I report a bug?
+
+   3.1. Where can I post a question about TLS?
+
+   Use one (the most appropriate) of the OpenSER mailing lists:
+
+     * User Mailing List -
+       http://openser.org/mailman/listinfo/users
+     * Developer Mailing List -
+       http://openser.org/mailman/listinfo/devel
+
+   Remember: first at all, check if your question wasn't already
+   answered.
+
+   if you want to keep the mail private, send it to
+   <team@openser.org>.
+
+   3.2. How can I report a bug?
+
+   Accumulate as much as possible information (OpenSER version,
+   openser -V output, your OS (uname -a), OpenSER logs, network
+   dumps, core dump files, configuration file) and send a mail to
+   http://openser.org/mailman/listinfo/devel.

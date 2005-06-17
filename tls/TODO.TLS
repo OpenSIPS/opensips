@@ -1,0 +1,15 @@
+$Id$
+
+* Finish up the documentation
+	item date: 16 June 2005
+	
+* Commit test certificates to ease testing
+	item date: 16 June 2005
+
+* tls domains: allow more configurability and test the whole thing
+	item date: 16 June 2005
+
+Mantainer:
+cesc dot santa at gmail dot com
+
+

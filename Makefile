@@ -31,6 +31,7 @@
 #               referred in the man pages
 #
 
+#TLS=1
 auto_gen=lex.yy.c cfg.tab.c   #lexx, yacc etc
 
 #include  source related defs

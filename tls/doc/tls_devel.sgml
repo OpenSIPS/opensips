@@ -1,0 +1,206 @@
+<!-- Module Developer's Guide -->
+
+<chapter>
+	<chapterinfo>
+	<revhistory>
+		<revision>
+		<revnumber>$Revision$</revnumber>
+		<date>$Date$</date>
+		</revision>
+	</revhistory>
+	</chapterinfo>
+	<title>Developer's Guide</title>
+
+	<section>
+		<title>TLS_CONFIG</title>
+		<para>
+		It contains configuration variables for ser's tls (timeouts, 
+		file paths, etc).
+		</para>
+	</section>
+
+	<section>
+		<title>TLS_INIT</title>
+		<para>
+		Initialization related functions and parameters.
+		</para>
+		<section>
+			<title>default ssl context</title>
+			<para>
+			extern SSL_CTX *default_ctx;
+			</para>
+			<para>
+			It is the common context for all tls sockets. If domains are 
+			used, each has its own.
+			</para>
+		</section>
+		<section>
+			<title>init_tls</title>
+			<para>
+			int init_tls(void);
+			</para>
+			<para>
+			Called once to initialize the tls subsystem, from the main().
+			</para>
+		</section>
+		<section>
+			<title>destroy_tls</title>
+			<para>
+			void destroy_tls(void);
+			</para>
+			<para>
+			Called once, just before cleanup.
+			</para>
+		</section>
+		<section>
+			<title>tls_init</title>
+			<para>
+			int tls_init(struct socket_info *c);
+			</para>
+			<para>
+			Called once for each tls socket created.
+			</para>
+		</section>
+		<section>
+			<title>ser_malloc, ser_realloc, ser_free</title>
+			<para>
+			Wrapper functions around the shm_* functions. OpenSSL uses 
+			non-shared memory to create its objects, thus it would not 
+			work in &ser;. By creating these wrappers and configuring 
+			OpenSSL to use them instead of its default memory functions, 
+			we have all OpenSSL objects in shared memory, ready to use.
+			</para>
+		</section>
+	</section>
+
+	<section>
+		<title>TLS_SERVER</title>
+		<section>
+			<title>SSL data per connection</title>
+			<para>
+			Each TLS connection, incoming or outgoing, creates an 
+			SSL * object, where configuration inherited from the 
+			SSL_CTX * and particular info on that socket are stored. 
+			This SSL * structure is kept in &ser; as  long as the connection
+			is alive, as part of the <quote>struct tcp_connection *</quote>
+			object:
+			<programlisting format="linespecific">
+...
+struct tcp_connection *c;
+SSL *ssl;
+
+/*create somehow SSL object*/
+c->extra_data = (void *) ssl; 
+ssl = (SSL *) c->extra_data;
+...
+</programlisting>
+			</para>
+		</section>
+		<section>
+			<title>tls_print_errstack</title>
+			<para>
+			void  tls_print_errstack(void);
+			</para>
+			<para>
+			Dumps ssl error stack.
+			</para>
+		</section>
+		<section>
+			<title>tls_tcpconn_init</title>
+			<para>
+			int tls_tcpconn_init( struct tcp_connection *c, int fd);
+			</para>
+			<para>
+			Called when new tcp connection is accepted 
+			</para>
+		</section>
+		<section>
+			<title>tls_tcpconn_clean</title>
+			<para>
+			void tls_tcpconn_clean( struct tcp_connection *c);
+			</para>
+			<para>
+			Shuts down the TLS connection.
+			</para>
+		</section>
+		<section>
+			<title>tls_blocking_write</title>
+			<para>
+			size_t tls_blocking_write( struct tcp_connection *c, int fd, 
+			const char *buf, size_t len);
+			</para>
+			<para>
+			Writes a memory chunk in blocking mode (syncron).
+			</para>
+		</section>
+		<section>
+			<title>tls_read</title>
+			<para>
+			size_t tls_read( struct tcp_connection *c);
+			</para>
+			<para>
+			Reads from a TLS connection. Return the number of bytes read.
+			</para>
+		</section>
+		<section>
+			<title>tls_fix_read_conn</title>
+			<para>
+			void tls_tcpconn_clean( struct tcp_connection *c);
+			</para>
+			<para>
+			Shuts down the TLS connection.
+			</para>
+		</section>
+	</section>
+
+	<section>
+		<title>TLS_DOMAIN</title>
+		<section>
+			<title>tls_domains</title>
+			<para>
+			extern struct tls_domain *tls_domains;
+			</para>
+			<para>
+			List with defined domains.
+			</para>
+		</section>
+		<section>
+			<title>tls_find_domain</title>
+			<para>
+			struct tls_domain *tls_find_domain(struct ip_addr *ip,
+			unsigned short port);
+			</para>
+			<para>
+			Find domain with given ip and port.
+			</para>
+		</section>
+		<section>
+			<title>tls_new_domain</title>
+			<para>
+			int tls_new_domain(struct ip_addr *ip, unsigned short port);
+			</para>
+			<para>
+			Creates and adds to the list a new domain.
+			</para>
+		</section>
+		<section>
+			<title>tls_free_domains</title>
+			<para>
+			void tls_free_domains(void);
+			</para>
+			<para>
+			Cleans up the entire domain list.
+			</para>
+		</section>
+	</section>
+
+
+
+
+</chapter>
+
+<!-- Keep this element at the end of the file
+Local Variables:
+sgml-parent-document: ("tls.sgml" "book" "chapter")
+End:
+-->
