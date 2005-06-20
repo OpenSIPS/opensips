@@ -14,7 +14,7 @@
 	<section>
 		<title>TLS_CONFIG</title>
 		<para>
-		It contains configuration variables for ser's tls (timeouts, 
+		It contains configuration variables for &ser;'s TLS (timeouts, 
 		file paths, etc).
 		</para>
 	</section>

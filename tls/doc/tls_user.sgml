@@ -24,6 +24,22 @@
 	</section>
 
 	<section>
+		<title>History</title>
+		<para>
+		The TLS support was originally developed by Peter Griffiths and posted
+		as a patch on SER development mailing list. Thanks to Cesc 
+		Santasusana, several problems were fixed and some improvements were 
+		added.
+		</para>
+		<para>
+		The TLS support was simultaneously added in both projects. In SER,
+		the support was committed in a separate <quote>experimental</quote> 
+		CVS tree, as patch to the main CVS tree. In OpenSER, the support was
+		integrated directly into the CVS tree, as a buid-in component.
+		</para>
+	</section>
+
+	<section>
 		<title>Scenario</title>
 		<para>
 		By the increased number of providers the SIP world is continuously 
@@ -152,7 +168,7 @@
 	</section>
 
 	<section>
-		<title>Compilling TLS support</title>
+		<title>Compiling TLS support</title>
 		<para>
 		To compile &ser; with the TLS support, the environment variable 
 		TLS must be set. Note that this is required for all make commands 
@@ -217,7 +233,7 @@
 		certification authorities. If for whatever reason, either of the 
 		peers thinks that the handshake is not valid, the ssl connection is 
 		not established. The reasons could be many: untrusted server 
-		certficate, too-weak algorithm, invalid client cert, no client 
+		certificate, too-weak algorithm, invalid client cert, no client 
 		authentication, ...
 		</para>
 		<para>
@@ -229,7 +245,7 @@
 		</para>
 		<warning><para>
 		In this setup the private key is not encrypted. The client 
-		and server keys must not be encrypted (or else SER will ask you for 
+		and server keys must not be encrypted (or else &ser; will ask you for 
 		a password on startup or will fail to load the certificates), but 
 		you should use a password at least for your CA private key.
 		</para></warning>
@@ -323,7 +339,7 @@
 			</para>
 			<para>
 			There are some &ser; TLS specific parameter that must be set up 
-			in SER configuration file to use the certificate:
+			in &ser; configuration file to use the certificate:
 			</para>
 			<itemizedlist>
 				<listitem>
@@ -343,7 +359,7 @@
 		</section>
 
 		<section id="tls-auth-model">
-			<title>TLS &ser; authentication behaviour</title>
+			<title>TLS &ser; authentication behavior</title>
 			<para>
 			The "tls_verify" and "tls_require_certificate" are &ser;-names 
 			for the OpenSSL defined flags:
@@ -372,7 +388,7 @@
 			<itemizedlist>
 				<listitem>
 				<para><emphasis>tls_require_cert=0</emphasis> - the 
-				verification process will succedd if the client does not 
+				verification process will succeed if the client does not 
 				provide a certificate, or if it provides one, it verifies 
 				correctly against the server's list of trusted certification 
 				authorities.
@@ -621,7 +637,7 @@ tls_ca_list="/mycerts/certs/ca_list.pem"
 				It's usable only if TLS support was compiled.
 				</para>
 				<para><emphasis>
-					Default ciphers choosen by OpenSSL.
+					Default ciphers chosen by OpenSSL.
 				</emphasis></para>
 				<example>
 					<title>Set <varname>tls_ciphers_list</varname> variable
@@ -742,9 +758,9 @@ tls_domain[IP_3:port3] {
 		a must to have the "fork" parameter set to "yes":
 		</para>
 		<para>
-		NOTE: Since the TLS engine is quite memory consuming, increse the 
+		NOTE: Since the TLS engine is quite memory consuming, increase the 
 		used memory by the run time parameter "-m" (see &ser; -h for more 
-		detailes).
+		details).
 		</para>
 		<itemizedlist>
 			<listitem>
