@@ -107,7 +107,10 @@ static struct ip_addr* ip_tmp;
 
 static void warn(char* s);
 static struct socket_id* mk_listen_id(char*, int, int);
- 
+
+static char *mpath=NULL;
+static char mpath_buf[256];
+static int  mpath_len = 0;
 
 %}
 
@@ -210,6 +213,7 @@ static struct socket_id* mk_listen_id(char*, int, int);
 %token SERVER_SIGNATURE
 %token REPLY_TO_VIA
 %token LOADMODULE
+%token MPATH
 %token MODPARAM
 %token MAXBUFFER
 %token USER
@@ -676,13 +680,33 @@ assign_stm:	DEBUG EQUAL NUMBER { debug=$3; }
 								#endif
 		  }
 		| MCAST_TTL EQUAL error { yyerror("number expected"); }
+		| MPATH EQUAL STRING { mpath=$3; strcpy(mpath_buf, $3);
+								mpath_len=strlen($3); 
+								if(mpath_buf[mpath_len-1]!='/') {
+									mpath_buf[mpath_len]='/';
+									mpath_len++;
+									mpath_buf[mpath_len]='\0';
+								}
+							}
+		| MPATH EQUAL error  { yyerror("string value expected"); }
 		| error EQUAL { yyerror("unknown config variable"); }
 	;
 
-module_stm:	LOADMODULE STRING	{ DBG("loading module %s\n", $2);
-		  						  if (load_module($2)!=0){
-								  		yyerror("failed to load module");
-								  }
+module_stm:	LOADMODULE STRING	{	if(*$2!='/' && mpath!=NULL
+										&& strlen($2)+mpath_len<255)
+									{
+										strcpy(mpath_buf+mpath_len, $2);
+										DBG("loading module %s\n", mpath_buf);
+										if (load_module(mpath_buf)!=0){
+											yyerror("failed to load module");
+										}
+										mpath_buf[mpath_len]='\0';
+									} else {
+										DBG("loading module %s\n", $2);
+										if (load_module($2)!=0){
+											yyerror("failed to load module");
+										}
+									}
 								}
 		 | LOADMODULE error	{ yyerror("string expected");  }
                  | MODPARAM LPAREN STRING COMMA STRING COMMA STRING RPAREN {

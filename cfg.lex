@@ -225,6 +225,7 @@ OPEN_FD_LIMIT		"open_files_limit"
 MCAST_LOOPBACK		"mcast_loopback"
 MCAST_TTL			"mcast_ttl"
 
+MPATH	mpath
 LOADMODULE	loadmodule
 MODPARAM        modparam
 
@@ -413,6 +414,7 @@ EAT_ABLE	[\ \t\b\r]
 									return MCAST_LOOPBACK; }
 <INITIAL>{MCAST_TTL}		{	count(); yylval.strval=yytext;
 									return MCAST_TTL; }
+<INITIAL>{MPATH}	{ count(); yylval.strval=yytext; return MPATH; }
 <INITIAL>{LOADMODULE}	{ count(); yylval.strval=yytext; return LOADMODULE; }
 <INITIAL>{MODPARAM}     { count(); yylval.strval=yytext; return MODPARAM; }
 
