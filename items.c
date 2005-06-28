@@ -49,9 +49,6 @@
 
 #include "items.h"
 
-#define ITEM_MARKER_STR	"$"
-#define ITEM_MARKER	'$'
-
 static str str_null   = { "<null>", 6 };
 static str str_empty  = { "", 0 };
 static str str_marker = { ITEM_MARKER_STR, 1 };
@@ -1144,7 +1141,7 @@ done:
 	return 0;
 }
 
-char* xl_parse_name(char *s, xl_elem_p e, int mode, int flags)
+char* xl_parse_name(char *s, xl_spec_p e, int mode, int flags)
 {
 	char *p, c;
 	struct hdr_field hdr;
@@ -1161,6 +1158,7 @@ char* xl_parse_name(char *s, xl_elem_p e, int mode, int flags)
 	avp_mode = 0;
 	p = s;
 	p++;
+	e->hindex = 0;
 	/* we expect a letter, : or $ */
 	if(mode==1)
 	{
@@ -1317,7 +1315,7 @@ error:
 	return NULL;
 }
 
-char* xl_parse_item(char *s, xl_elem_p e, int flags)
+char* xl_parse_spec(char *s, xl_spec_p e, int flags)
 {
 	char *p, *p0;
 	
@@ -1660,7 +1658,7 @@ int xl_parse_format(char *s, xl_elem_p *el, int flags)
 		if(*p == '\0')
 			break;
 
-		p0 = xl_parse_item(p, e, flags);
+		p0 = xl_parse_spec(p, &e->spec, flags);
 		
 		if(p0==NULL)
 			goto error;
@@ -1677,6 +1675,46 @@ error:
 	*el = NULL;
 	return -1;
 }
+
+int xl_get_spec_value(struct sip_msg* msg, xl_spec_p sp, str *value)
+{
+	if(msg==NULL || sp==NULL || sp->itf==NULL || value==NULL)
+		return -1;
+
+	return (*sp->itf)(msg, value, &(sp->hparam), sp->hindex);
+}
+
+int xl_print_spec(struct sip_msg* msg, xl_spec_p sp, char *buf, int *len)
+{
+	str tok;
+	if(msg==NULL || sp==NULL || buf==NULL || len==NULL)
+		return -1;
+
+	if(*len <= 0)
+		return -1;
+	
+	memset(&tok, 0, sizeof(str));
+	
+	/* put the value of the specifier */
+	if(sp->itf 
+			&& !((*sp->itf)(msg, &tok, &(sp->hparam), sp->hindex)))
+	{
+		if(tok.len < *len)
+			memcpy(buf, tok.s, tok.len);
+		else
+			goto overflow;
+	}
+	
+	*len = tok.len;
+	buf[tok.len] = '\0';
+	return 0;
+	
+overflow:
+	LOG(L_ERR,
+		"xl_printf: buffer overflow -- increase the buffer size...\n");
+	return -1;
+}
+
 
 int xl_printf(struct sip_msg* msg, xl_elem_p list, char *buf, int *len)
 {
@@ -1711,8 +1749,9 @@ int xl_printf(struct sip_msg* msg, xl_elem_p list, char *buf, int *len)
 				goto overflow;
 		}
 		/* put the value of the specifier */
-		if(it->itf 
-				&& !((*it->itf)(msg, &tok, &(it->hparam), it->hindex)))
+		if(it->spec.itf 
+				&& !((*it->spec.itf)(msg, &tok, &(it->spec.hparam),
+						it->spec.hindex)))
 		{
 			if(n+tok.len < *len)
 			{
@@ -1721,9 +1760,8 @@ int xl_printf(struct sip_msg* msg, xl_elem_p list, char *buf, int *len)
 				cur += tok.len;
 				
 				/* check for color entries to reset later */
-				if (*it->itf == xl_get_color) {
+				if (*it->spec.itf == xl_get_color)
 					h = 1;
-				}
 			}
 			else
 				goto overflow;

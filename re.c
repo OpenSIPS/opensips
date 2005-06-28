@@ -68,6 +68,7 @@ struct subst_expr* subst_parser(str* subst)
 	char c;
 	char* end;
 	char* p;
+	char* p0;
 	char* re;
 	char* re_end;
 	char* repl;
@@ -148,6 +149,12 @@ found_re:
 					rw[rw_no].type=REPLACE_CHAR;
 					rw[rw_no].u.c='\t';
 					break;
+				case ITEM_MARKER:
+					rw[rw_no].size=2;
+					rw[rw_no].offset=(p-1)-repl;
+					rw[rw_no].type=REPLACE_CHAR;
+					rw[rw_no].u.c=ITEM_MARKER;
+					break;
 				/* special sip msg parts escapes */
 				case 'u':
 					rw[rw_no].size=2;
@@ -190,7 +197,21 @@ found_re:
 				goto error;
 			}
 		}else if (*p=='\\') escape=1;
-		else  if (*p==c) goto found_repl;
+		else if (*p==ITEM_MARKER) {
+			p0 = xl_parse_spec(p, &rw[rw_no].u.spec,
+					XL_DISABLE_COLORS|XL_THROW_ERROR );
+			if(p0==NULL)
+			{
+				LOG(L_ERR, "ERROR: subst_parser: bad specifier in"
+							" replace part %.*s\n", subst->len, subst->s);
+				goto error;
+			}
+			rw[rw_no].size=p0-p;
+			rw[rw_no].offset=p-repl;
+			rw[rw_no].type=REPLACE_SPEC;
+			rw_no++;
+			p=p0;
+		}else  if (*p==c) goto found_repl;
 	}
 	LOG(L_ERR, "ERROR: subst_parser: missing separator: %.*s\n", subst->len, 
 			subst->s);
@@ -263,7 +284,7 @@ error:
 }
 
 
-
+#if 0
 static int replace_len(const char* match, int nmatch, regmatch_t* pmatch,
 					struct subst_expr* se, struct sip_msg* msg)
 {
@@ -306,7 +327,7 @@ static int replace_len(const char* match, int nmatch, regmatch_t* pmatch,
 	return len;
 }
 
-
+#endif
 
 /* rpl.s will be alloc'ed with the proper size & rpl.len set
  * returns 0 on success, <0 on error*/
@@ -315,11 +336,16 @@ static int replace_build(const char* match, int nmatch, regmatch_t* pmatch,
 {
 	int r;
 	str* uri;
+	str s;
 	char* p;
 	char* dest;
 	char* end;
 	int size;
+#define REPLACE_BUFFER_SIZE	1024
+	static char rbuf[REPLACE_BUFFER_SIZE];
 	
+#if 0
+	/* use static bufer now since we cannot easily get the length */
 	rpl->len=replace_len(match, nmatch, pmatch, se, msg);
 	if (rpl->len==0){
 		rpl->s=0; /* empty string */
@@ -330,12 +356,18 @@ static int replace_build(const char* match, int nmatch, regmatch_t* pmatch,
 		LOG(L_ERR, "ERROR: replace_build: out of mem (rpl)\n");
 		goto error;
 	}
+#endif
+	
 	p=se->replacement.s;
 	end=p+se->replacement.len;
-	dest=rpl->s;
+	dest=rbuf;
 	for (r=0; r<se->n_escapes; r++){
 		/* copy the unescaped parts */
 		size=se->replacement.s+se->replace[r].offset-p;
+		if(dest-rbuf+size>=REPLACE_BUFFER_SIZE-1){
+			LOG(L_ERR, "ERROR: replace_build: out of mem (rpl)\n");
+			goto error;
+		}
 		memcpy(dest, p, size);
 		p+=size+se->replace[r].size;
 		dest+=size;
@@ -346,6 +378,11 @@ static int replace_build(const char* match, int nmatch, regmatch_t* pmatch,
 						/* do the replace */
 						size=pmatch[se->replace[r].u.nmatch].rm_eo-
 								pmatch[se->replace[r].u.nmatch].rm_so;
+						if(dest-rbuf+size>=REPLACE_BUFFER_SIZE-1){
+							LOG(L_ERR,
+								"ERROR: replace_build: out of mem (rpl)\n");
+							goto error;
+						}
 						memcpy(dest, 
 								match+pmatch[se->replace[r].u.nmatch].rm_so,
 								size);
@@ -353,6 +390,10 @@ static int replace_build(const char* match, int nmatch, regmatch_t* pmatch,
 				};
 				break;
 			case REPLACE_CHAR:
+				if(dest-rbuf+1>=REPLACE_BUFFER_SIZE-1){
+					LOG(L_ERR, "ERROR: replace_build: out of mem (rpl)\n");
+					goto error;
+				}
 				*dest=se->replace[r].u.c;
 				dest++;
 				break;
@@ -364,8 +405,26 @@ static int replace_build(const char* match, int nmatch, regmatch_t* pmatch,
 				}
 				uri= (msg->new_uri.s)?(&msg->new_uri):
 					(&msg->first_line.u.request.uri);
+				if(dest-rbuf+uri->len>=REPLACE_BUFFER_SIZE-1){
+					LOG(L_ERR, "ERROR: replace_build: out of mem (rpl)\n");
+					goto error;
+				}
 				memcpy(dest, uri->s, uri->len);
 				dest+=uri->len;
+				break;
+			case REPLACE_SPEC:
+				if(xl_get_spec_value(msg, &se->replace[r].u.spec, &s)!=0)
+				{
+					LOG(L_CRIT, "BUG: replace_build: item substitution"
+								" returned error\n");
+					break; /* ignore, we can continue */
+				}
+				if(dest-rbuf+s.len>=REPLACE_BUFFER_SIZE-1){
+					LOG(L_ERR, "ERROR: replace_build: out of mem (rpl)\n");
+					goto error;
+				}
+				memcpy(dest, s.s, s.len);
+				dest+=s.len;
 				break;
 			default:
 				LOG(L_CRIT, "BUG: replace_build: unknown type %d\n", 
@@ -374,6 +433,15 @@ static int replace_build(const char* match, int nmatch, regmatch_t* pmatch,
 		}
 	}
 	memcpy(dest, p, end-p);
+	
+	rpl->len = (dest-rbuf)+(end-p);
+	rpl->s=pkg_malloc(rpl->len);
+	if (rpl->s==0){
+		LOG(L_ERR, "ERROR: replace_build: out of mem (rpl)\n");
+		goto error;
+	}
+	memcpy(rpl->s, rbuf, rpl->len);
+	
 	return 0;
 error:
 	return -1;

@@ -25,6 +25,10 @@
 
 #include "parser/msg_parser.h"
 
+#define ITEM_MARKER_STR	"$"
+#define ITEM_MARKER	'$'
+
+
 #define XL_DISABLE_NONE		0
 #define XL_THROW_ERROR		1
 #define XL_DISABLE_MULTI	2
@@ -32,18 +36,25 @@
 
 typedef int (*item_func_t) (struct sip_msg*, str*, str*, int);
 
-typedef struct _xl_elem
+typedef struct _xl_spec
 {
-	str text;
 	str hparam;
 	int hindex;
 	item_func_t itf;
+} xl_spec_t, *xl_spec_p;
+
+typedef struct _xl_elem
+{
+	str text;
+	xl_spec_t spec;
 	struct _xl_elem *next;
 } xl_elem_t, *xl_elem_p;
 
 int xl_elem_free_all(xl_elem_p list);
-char* xl_parse_item(char *s, xl_elem_p el, int flags);
+char* xl_parse_spec(char *s, xl_spec_p sp, int flags);
 int xl_parse_format(char *s, xl_elem_p *el, int flags);
+int xl_get_spec_value(struct sip_msg* msg, xl_spec_p sp, str *value);
+int xl_print_spec(struct sip_msg* msg, xl_spec_p sp, char *buf, int *len);
 int xl_printf(struct sip_msg* msg, xl_elem_p list, char *buf, int *len);
 
 #endif
