@@ -282,8 +282,6 @@ inline static int comp_no( int port, void *param, int op, int subtype )
 		LOG(L_CRIT, "BUG: comp_no: number expected: %d\n", subtype );
 		return E_BUG;
 	}
-	LOG(L_INFO, "comp_no: number %d/%ld/%d/%d\n", port, (long)param, op,
-			subtype );
 	switch (op){
 		case EQUAL_OP:
 			return port==(long)param;
