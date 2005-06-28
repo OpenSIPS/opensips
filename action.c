@@ -67,6 +67,7 @@
 #endif
 
 int action_flags = 0;
+int return_code  = 0;
 
 /* ret= 0! if action -> end of list(e.g DROP), 
       > 0 to continue processing next actions
@@ -363,7 +364,8 @@ int do_action(struct action* a, struct sip_msg* msg)
 				ret=E_CFG;
 				break;
 			}
-			ret=((ret=run_actions(rlist[a->p1.number], msg))<0)?ret:1;
+			return_code=run_actions(rlist[a->p1.number], msg);
+			ret=(return_code<0)?return_code:1;
 			break;
 		case EXEC_T:
 			if (a->p1_type!=STRING_ST){
@@ -575,11 +577,13 @@ int do_action(struct action* a, struct sip_msg* msg)
 				/* if null expr => ignore if? */
 				if ((a->p1_type==EXPR_ST)&&a->p1.data){
 					v=eval_expr((struct expr*)a->p1.data, msg);
+					/* set return code to expr value */
 					if (v<0 || (action_flags&ACT_FL_RETURN)
 							|| (action_flags&ACT_FL_EXIT) ){
 						if (v==EXPR_DROP || (action_flags&ACT_FL_RETURN)
 								|| (action_flags&ACT_FL_EXIT) ){ /* hack to quit on DROP*/
 							ret=0;
+							return_code = 0;
 							break;
 						}else{
 							LOG(L_WARN,"WARNING: do_action:"
@@ -591,9 +595,13 @@ int do_action(struct action* a, struct sip_msg* msg)
 					if (v>0) {
 						if ((a->p2_type==ACTIONS_ST)&&a->p2.data){
 							ret=run_action_list((struct action*)a->p2.data,msg);
-						}
-					}else if ((a->p3_type==ACTIONS_ST)&&a->p3.data){
+							return_code = ret;
+						} else return_code = v;
+					}else{
+						if ((a->p3_type==ACTIONS_ST)&&a->p3.data){
 							ret=run_action_list((struct action*)a->p3.data,msg);
+							return_code = ret;
+						} else return_code = v;
 					}
 				}
 			break;
@@ -670,6 +678,9 @@ int do_action(struct action* a, struct sip_msg* msg)
 		default:
 			LOG(L_CRIT, "BUG: do_action: unknown type %d\n", a->type);
 	}
+
+	if((unsigned char)a->type!=IF_T && (unsigned char)a->type!=ROUTE_T)
+		return_code = ret;
 /*skip:*/
 	return ret;
 	

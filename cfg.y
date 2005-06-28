@@ -135,6 +135,7 @@ static struct socket_id* mk_listen_id(char*, int, int);
 %token DROP
 %token EXIT
 %token RETURN
+%token RETCODE
 %token LOG_TOK
 %token ERROR
 %token ROUTE
@@ -883,6 +884,10 @@ exp_elem:	METHOD strop STRING	{$$= mk_elem(	$2, STRING_ST,
 												AF_O, (void *) $3 ); }
 		| AF intop error { $$=0; yyerror("number expected"); }
 		| AF error { $$=0; yyerror("equal/!= operator expected"); }
+		| RETCODE intop NUMBER	{ $$=mk_elem(	$2, NUMBER_ST,
+												RETCODE_O, (void *) $3 ); }
+		| RETCODE intop error { $$=0; yyerror("number expected"); }
+		| RETCODE error { $$=0; yyerror("==, >, <, != ... operator expected"); }
 		| MSGLEN intop NUMBER	{ $$=mk_elem(	$2, NUMBER_ST,
 												MSGLEN_O, (void *) $3 ); }
 		| MSGLEN intop MAX_LEN	{ $$=mk_elem(	$2, NUMBER_ST,

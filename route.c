@@ -71,6 +71,7 @@ struct action* failure_rlist[FAILURE_RT_NO];
 
 static int fix_actions(struct action* a); /*fwd declaration*/
 
+extern int return_code;
 
 /* traverses an expr tree and compiles the REs where necessary) 
  * returns: 0 for ok, <0 if errors */
@@ -281,6 +282,8 @@ inline static int comp_no( int port, void *param, int op, int subtype )
 		LOG(L_CRIT, "BUG: comp_no: number expected: %d\n", subtype );
 		return E_BUG;
 	}
+	LOG(L_INFO, "comp_no: number %d/%ld/%d/%d\n", port, (long)param, op,
+			subtype );
 	switch (op){
 		case EQUAL_OP:
 			return port==(long)param;
@@ -615,6 +618,9 @@ static int eval_elem(struct expr* e, struct sip_msg* msg)
 				break;
 		case AF_O:
 				ret=comp_no(msg->rcv.src_ip.af, e->r.param, e->op, e->subtype);
+				break;
+		case RETCODE_O:
+				ret=comp_no(return_code, e->r.param, e->op, e->subtype);
 				break;
 		case MSGLEN_O:
 				ret=comp_no(msg->len, e->r.param, e->op, e->subtype);

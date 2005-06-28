@@ -111,6 +111,23 @@ static int xl_get_pid(struct sip_msg *msg, str *res, str *hp, int hi)
 	return 0;
 }
 
+extern int return_code;
+static int xl_get_return_code(struct sip_msg *msg, str *res, str *hp, int hi)
+{
+	int l = 0;
+	char *s = NULL;
+
+	if(msg==NULL || res==NULL)
+		return -1;
+
+	s = int2str(return_code, &l);
+
+	res->s = s;
+	res->len = l;
+
+	return 0;
+}
+
 static int xl_get_times(struct sip_msg *msg, str *res, str *hp, int hi)
 {
 	int l = 0;
@@ -1509,6 +1526,9 @@ char* xl_parse_spec(char *s, xl_spec_p e, int flags)
 			p++;
 			switch(*p)
 			{
+				case 'c':
+					e->itf = xl_get_return_code;
+				break;
 				case 'd':
 					e->itf = xl_get_ruri_domain;
 				break;

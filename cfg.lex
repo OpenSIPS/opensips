@@ -99,6 +99,7 @@ FORWARD_TLS	forward_tls
 DROP	"drop"|"break"
 EXIT	"exit"
 RETURN	"return"
+RETCODE	"retcode"|"$\?"
 SEND	send
 SEND_TCP	send_tcp
 LOG		log
@@ -286,6 +287,7 @@ EAT_ABLE	[\ \t\b\r]
 <INITIAL>{DROP}	{ count(); yylval.strval=yytext; return DROP; }
 <INITIAL>{EXIT}	{ count(); yylval.strval=yytext; return EXIT; }
 <INITIAL>{RETURN}	{ count(); yylval.strval=yytext; return RETURN; }
+<INITIAL>{RETCODE}	{ count(); yylval.strval=yytext; return RETCODE; }
 <INITIAL>{SEND}	{ count(); yylval.strval=yytext; return SEND; }
 <INITIAL>{SEND_TCP}	{ count(); yylval.strval=yytext; return SEND_TCP; }
 <INITIAL>{LOG}	{ count(); yylval.strval=yytext; return LOG_TOK; }
