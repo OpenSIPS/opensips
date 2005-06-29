@@ -1179,22 +1179,26 @@ char* xl_parse_name(char *s, xl_spec_p e, int mode, int flags)
 	/* we expect a letter, : or $ */
 	if(mode==1)
 	{
-		if(*p!='$' && *p!=':'
-			&& ((*p!='i' && *p!='I' && *p!='s' && *p!='S')
-				|| *(p+1)!=':'))
-		{
-			LOG(L_ERR, "xl_parse_name: error parsing format"
-				" [%s]\n", p);
-			goto error;
-		}
 		avp_mode = 1;
 		if(*p=='$')
+		{ /* alias */
 			avp_mode |= 2;
-		if(*p!='i' || *p!='I')
-			avp_mode |= 4;
-		if(*p!='$' && *p!=':')
 			p++;
-		p++;
+		} else {
+			if(*p==':' || (*p=='s' && *(p+1)==':') || (*p=='S' && *(p+1)==':'))
+			{
+				if(*p==':')
+					p++;
+				else
+					p+=2;
+			} else {
+				if((*p=='i' && *(p+1)==':') || (*p=='I' && *(p+1)==':'))
+				{
+					avp_mode |= 4;
+					p+=2;
+				}
+			}
+		}
 	} else {
 		if(((*p < 'A' || *p > 'Z') && (*p < 'a' || *p > 'z')))
 		{
@@ -1213,7 +1217,7 @@ char* xl_parse_name(char *s, xl_spec_p e, int mode, int flags)
 			" [%s] expecting ')'\n", e->hparam.s);
 		goto error;
 	}
-		e->hparam.len = p - e->hparam.s;
+	e->hparam.len = p - e->hparam.s;
 	/* check if we have index */
 	if(*p == '[')
 	{
