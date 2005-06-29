@@ -216,6 +216,7 @@ TLS_REQUIRE_CERTIFICATE "tls_require_certificate"
 TLS_CERTIFICATE	"tls_certificate"
 TLS_PRIVATE_KEY "tls_private_key"
 TLS_CA_LIST		"tls_ca_list"
+TLS_CIPHERS_LIST	"tls_ciphers_list"
 TLS_HANDSHAKE_TIMEOUT	"tls_handshake_timeout"
 TLS_SEND_TIMEOUT	"tls_send_timeout"
 ADVERTISED_ADDRESS	"advertised_address"
@@ -224,6 +225,7 @@ DISABLE_CORE		"disable_core_dump"
 OPEN_FD_LIMIT		"open_files_limit"
 MCAST_LOOPBACK		"mcast_loopback"
 MCAST_TTL			"mcast_ttl"
+TLS_DOMAIN              "tls_domain"
 
 MPATH	mpath
 LOADMODULE	loadmodule
@@ -387,6 +389,8 @@ EAT_ABLE	[\ \t\b\r]
 										return TLS_PRIVATE_KEY; }
 <INITIAL>{TLS_CA_LIST}	{ count(); yylval.strval=yytext; 
 										return TLS_CA_LIST; }
+<INITIAL>{TLS_CIPHERS_LIST}	{ count(); yylval.strval=yytext; 
+										return TLS_CIPHERS_LIST; }
 <INITIAL>{TLS_HANDSHAKE_TIMEOUT}	{ count(); yylval.strval=yytext;
 										return TLS_HANDSHAKE_TIMEOUT; }
 <INITIAL>{TLS_SEND_TIMEOUT}	{ count(); yylval.strval=yytext;
@@ -414,9 +418,11 @@ EAT_ABLE	[\ \t\b\r]
 									return MCAST_LOOPBACK; }
 <INITIAL>{MCAST_TTL}		{	count(); yylval.strval=yytext;
 									return MCAST_TTL; }
-<INITIAL>{MPATH}	{ count(); yylval.strval=yytext; return MPATH; }
-<INITIAL>{LOADMODULE}	{ count(); yylval.strval=yytext; return LOADMODULE; }
-<INITIAL>{MODPARAM}     { count(); yylval.strval=yytext; return MODPARAM; }
+<INITIAL>{TLS_DOMAIN}  { count(); yylval.strval=yytext; return TLS_DOMAIN; }
+
+<INITIAL>{MPATH}	   { count(); yylval.strval=yytext; return MPATH; }
+<INITIAL>{LOADMODULE}  { count(); yylval.strval=yytext; return LOADMODULE; }
+<INITIAL>{MODPARAM}    { count(); yylval.strval=yytext; return MODPARAM; }
 
 <INITIAL>{EQUAL}	{ count(); return EQUAL; }
 <INITIAL>{EQUAL_T}	{ count(); return EQUAL_T; }
