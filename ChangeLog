@@ -1,2 +1,48 @@
-* 2005-06-02
- - Initial version of 
+# $Id$
+
+===================== Changes since release 0.9.4 ============================
+
+* 2005-06-29 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- acc: accounting failed transactions - failed transactions can be logged
+  one by one marking them with a special flag
+
+* 2005-06-28 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- acc: call leg accounting support -- proper CDR generation in case of forward
+  and redirect on server.
+
+* 2005-06-28 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- core: config 'mpath' parameter to specify the common path for modules
+- core: config 'retcode' variable to check the code returned by last function
+  executed
+
+* 2005-06-27 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- textops: subst(), subst_uri() and subst_user() have support for
+  pseudo-variables
+
+* 2005-06-24 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- uac_redirect: new module for handling redirect replies (3xx) on server
+  (written by Bogdan-Andrei Iancu).
+
+* 2005-06-23 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- core: xlog specifiers moved in core and made availabe as pseudo-variables
+- xlog: uses pseudo-variables to print log messages
+- avpops: new method avp_printf() that prints a formatted string which can
+  include pseudo-variables
+
+* 2005-06-18 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- xlog: support for color printing using escape sequences (patch by
+  iwolfsberger@gmx.net)
+
+* 2005-06-17 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- avpops: support for dst_ip (patch by evan.borgstrom@ca.mci.com)
+
+* 2005-06-17 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- lcr: imported module in the trunk (written by Juha Heinanen)
+- uac: imported module in the trunk (written by Elena-Ramona Modroiu)
+- core: added TLS support (by Cesc Santasusana, originaly written by
+  Peter Griffiths)
+
+====================== 2005-06-14 Release 0.9.4 ==============================
+
+* 2005-06-14
+ - Initial release of OpenSER (v0.9.4) spawned from SER branch 0.9.0
