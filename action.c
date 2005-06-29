@@ -50,6 +50,7 @@
 #include "mem/mem.h"
 #include "globals.h"
 #include "dset.h"
+#include "flags.h"
 #ifdef USE_TCP
 #include "tcp_server.h"
 #endif
