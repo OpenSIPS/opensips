@@ -355,6 +355,8 @@ proceed, you need to make sure MySQL is installed on your box.
 - DEFAULT_DB_URL="mysql://openser:openserrw@localhost/openser"
 - r/w user: openser ; passwd: openserrw
 - r/o user: openserro ; passwd: openserro
+  NOTE: for security reasons, do change the values of passwords
+  after installation
 
 4. Troubleshooting
 ------------------
