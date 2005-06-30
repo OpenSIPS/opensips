@@ -210,7 +210,7 @@ found_re:
 			rw[rw_no].offset=p-repl;
 			rw[rw_no].type=REPLACE_SPEC;
 			rw_no++;
-			p=p0;
+			p=p0-1;
 		}else  if (*p==c) goto found_repl;
 	}
 	LOG(L_ERR, "ERROR: subst_parser: missing separator: %.*s\n", subst->len, 
