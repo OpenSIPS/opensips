@@ -174,9 +174,9 @@ make all
 make prefix=/ install
 
 Then the installation will put the default configuration file into
-/etc/ser/ser.cfg (because prefix is /), but openser will look for the file
-in /usr/local/etc/ser/ser.cfg (because there was no prefix parameter
-in make all and /usr/local is the default value of prefix).
+/etc/openser/openser.cfg (because prefix is /), but openser will look for the
+file in /usr/local/etc/openser/openser.cfg (because there was no prefix
+parameter in make all and /usr/local is the default value of prefix).
 
 Workaround is trivial, use the same parameters in all make commands:
 make prefix=/ all
@@ -351,6 +351,10 @@ proceed, you need to make sure MySQL is installed on your box.
    c) try adding new users using 
        'serctl add <name> <password> <email>'
 
+8) default values (database url, users and passwords) are:
+- DEFAULT_DB_URL="mysql://openser:openserrw@localhost/openser"
+- r/w user: openser ; passwd: openserrw
+- r/o user: openserro ; passwd: openserro
 
 4. Troubleshooting
 ------------------
