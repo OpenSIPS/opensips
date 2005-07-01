@@ -149,7 +149,7 @@ endif
 
 INSTALL-TOUCH = touch          # used to create the file first (good to 
                                #  make solaris install work)
-# INSTALL-CFG = $(INSTALL) -m 644
+INSTALL-CFG = $(INSTALL) -m 644
 INSTALL-BIN = $(INSTALL) -m 755
 INSTALL-MODULES = $(INSTALL) -m 755
 INSTALL-DOC = $(INSTALL) -m 644
@@ -456,6 +456,13 @@ ifeq		($(CC_NAME), gcc)
 				#common stuff
 				CFLAGS=-g -O9 -funroll-loops  -Wcast-align $(PROFILE) \
 					-Wall  
+			#if gcc 4.0+
+ifeq			($(CC_SHORTVER), 4.0)
+					CPU ?= athlon
+					CFLAGS+=-minline-all-stringops -malign-double \
+							-falign-loops \
+							-mtune=$(CPU) 
+else
 			#if gcc 3.4+
 ifeq			($(CC_SHORTVER), 3.4)
 					CPU ?= athlon
@@ -484,6 +491,7 @@ $(warning			You are using an old and unsupported gcc \
 endif			# CC_SHORTVER, 2.9x
 endif			# CC_SHORTVER, 3.0
 endif			# CC_SHORTVER, 3.4
+endif			# CC_SHORTVER, 4.0
 
 else		# CC_NAME, gcc
 ifeq		($(CC_NAME), icc)

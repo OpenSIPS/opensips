@@ -493,6 +493,7 @@ char* parse_to(char* buffer, char *end, struct to_body *to_b)
 	char  *tmp,*foo;
 
 	status=START_TO;
+	saved_status=START_TO;
 	to_b->error=PARSE_OK;
 	to_b->uri.len = 0;
 	to_b->uri.s= 0;

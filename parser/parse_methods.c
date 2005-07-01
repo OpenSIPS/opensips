@@ -219,11 +219,11 @@ static int parse_method(str* _next, unsigned int* _method)
   * Parse comma separated list of methods pointed by _body and assign their
   * enum bits to _methods.  Returns 1 on success and 0 on failure.
   */
- int parse_methods(str* _body, unsigned int* _methods)
- {
- 	str next;
- 	unsigned int method;
- 
+int parse_methods(str* _body, unsigned int* _methods)
+{
+	str next;
+	unsigned int method;
+
 	if (!_body || !_methods) {
 		LOG(L_ERR, "parse_methods: Invalid parameter value\n");
 		return 0;
@@ -231,42 +231,43 @@ static int parse_method(str* _next, unsigned int* _method)
 
 	next.len = _body->len;
 	next.s = _body->s;
- 
- 	trim_leading(&next);
- 
- 	if (next.len == 0) {
- 		LOG(L_ERR, "ERROR: parse_methods: Empty body\n");
- 		return 0;
- 	}
 
-  	*_methods = 0;
- 
- 	while (1) {
- 		if (parse_method(&next, &method)) {
- 			*_methods |= method;
- 		} else {
- 			LOG(L_ERR, "ERROR: parse_methods: Invalid method\n");
- 			return 0;
- 		}
+	trim_leading(&next);
+
+	if (next.len == 0) {
+		LOG(L_ERR, "ERROR: parse_methods: Empty body\n");
+		return 0;
+	}
+
+	*_methods = 0;
+	method = 0;
+
+	while (1) {
+		if (parse_method(&next, &method)) {
+			*_methods |= method;
+		} else {
+			LOG(L_ERR, "ERROR: parse_methods: Invalid method\n");
+			return 0;
+		}
 		
- 		trim_leading(&next);
- 		if (next.len) {
- 			if (next.s[0] == ',') {
- 				next.len--;
- 				next.s++;
- 				trim_leading(&next);
- 				if (next.len == 0) {
- 					LOG(L_ERR, "ERROR: parse_methods: Method expected\n");
- 					return 0;
- 				}
- 			} else {
- 				LOG(L_ERR, "ERROR: parse_methods: Comma expected\n");
- 				return 0;
- 			}
- 		} else {
- 			break;
- 		}
- 	}
+		trim_leading(&next);
+		if (next.len) {
+			if (next.s[0] == ',') {
+				next.len--;
+				next.s++;
+				trim_leading(&next);
+				if (next.len == 0) {
+					LOG(L_ERR, "ERROR: parse_methods: Method expected\n");
+					return 0;
+				}
+			} else {
+				LOG(L_ERR, "ERROR: parse_methods: Comma expected\n");
+				return 0;
+			}
+		} else {
+			break;
+		}
+	}
 
- 	return 1;
- }
+	return 1;
+}

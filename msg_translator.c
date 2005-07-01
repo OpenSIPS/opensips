@@ -1595,6 +1595,8 @@ char * build_res_buf_from_sip_req( unsigned int code, char *text ,str *new_tag,
 
 	body = 0;
 	buf=0;
+	to_tag.s = 0;
+	to_tag.len = 0;
 	received_buf=rport_buf=warning_buf=content_len_buf=0;
 	received_len=rport_len=warning_len=content_len_len=0;
 	
@@ -1764,7 +1766,7 @@ char * build_res_buf_from_sip_req( unsigned int code, char *text ,str *new_tag,
 				break;
 			case HDR_TO_T:
 				if (new_tag && new_tag->len){
-					if (to_tag.s ) { /* replacement */
+					if (to_tag.len ) { /* replacement */
 						/* before to-tag */
 						append_str( p, hdr->name.s, to_tag.s-hdr->name.s);
 						/* to tag replacement */

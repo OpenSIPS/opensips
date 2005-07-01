@@ -328,7 +328,10 @@ install-cfg: $(cfg-prefix)/$(cfg-dir)
 			mv -f $(cfg-prefix)/$(cfg-dir)$(NAME).cfg.sample \
 				$(cfg-prefix)/$(cfg-dir)$(NAME).cfg; \
 		fi
-#		$(INSTALL-CFG) etc/$(NAME).cfg $(cfg-prefix)/$(cfg-dir)
+		# radius dictionary
+		$(INSTALL-TOUCH) $(cfg-prefix)/$(cfg-dir)/dictionary.radius
+		$(INSTALL-CFG) etc/dictionary.radius $(cfg-prefix)/$(cfg-dir)
+		#$(INSTALL-CFG) etc/$(NAME).cfg $(cfg-prefix)/$(cfg-dir)
 
 install-bin: $(bin-prefix)/$(bin-dir) utils/gen_ha1/gen_ha1 utils/$(NAME)unix/$(NAME)unix
 		$(INSTALL-TOUCH) $(bin-prefix)/$(bin-dir)/$(NAME) 

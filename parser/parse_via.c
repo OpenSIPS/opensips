@@ -1004,6 +1004,7 @@ parse_again:
 	vb->error=PARSE_ERROR;
 	/* parse start of via ( SIP/2.0/UDP    )*/
 	state=F_SIP;
+	saved_state=0; /*it should generate error if it's used without set*/
 	param_start=0;
 	for(tmp=buffer;tmp<end;tmp++){
 		switch(*tmp){
