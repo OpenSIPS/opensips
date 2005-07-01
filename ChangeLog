@@ -2,6 +2,9 @@
 
 ===================== Changes since release 0.9.4 ============================
 
+* 2005-06-30 Elena-Ramona Modroiu <ramona@voice-system.ro>
+- avpops: new function avp_subst() to apply perl/sed-like subst to AVP
+
 * 2005-06-29 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
 - acc: accounting failed transactions - failed transactions can be logged
   one by one marking them with a special flag
