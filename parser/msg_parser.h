@@ -60,8 +60,23 @@
 #define REPLY_CLASS(_reply) ((_reply)->REPLY_STATUS/100)
 
 /* number methods as power of two to allow bitmap matching */
-enum request_method { METHOD_UNDEF=0, METHOD_INVITE=1, METHOD_CANCEL=2, METHOD_ACK=4, 
-	METHOD_BYE=8, METHOD_INFO=16, METHOD_OTHER=32 };
+enum request_method {
+	METHOD_UNDEF=0,
+	METHOD_INVITE=1,
+	METHOD_CANCEL=2,
+	METHOD_ACK=4,
+	METHOD_BYE=8,
+	METHOD_INFO=16,
+	METHOD_OPTIONS=32,
+	METHOD_UPDATE=64,
+	METHOD_REGISTER=128,
+	METHOD_MESSAGE=256,
+	METHOD_SUBSCRIBE=512, 
+	METHOD_NOTIFY=1024,
+	METHOD_PRACK=2048, 
+	METHOD_REFER=4096,
+	METHOD_OTHER=8192
+};
 
 #define FL_FORCE_RPORT    1  /* force rport */
 #define FL_FORCE_ACTIVE   2  /* force active SDP */

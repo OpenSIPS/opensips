@@ -57,7 +57,7 @@ int parse_allow_header(struct hdr_field* _hf)
  		return -1;
  	}
 
-	if (!parse_methods(&(_hf->body), methods)) {
+	if (parse_methods(&(_hf->body), methods)!=0) {
  		LOG(L_ERR, "ERROR:parse_allow_header: Bad allow header\n"); 
  		pkg_free(methods);
 		return -1;

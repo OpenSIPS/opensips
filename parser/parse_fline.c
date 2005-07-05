@@ -32,6 +32,7 @@
 #include "../dprint.h"
 #include "msg_parser.h"
 #include "parser_f.h"
+#include "parse_methods.h"
 #include "../mem/mem.h"
 #include "../ut.h"
 
@@ -1206,10 +1207,16 @@ char* parse_first_line(char* buffer, unsigned int len, struct msg_start * fl)
 			goto error1;
 		}
 		fl->type=SIP_REQUEST;
-		fl->u.request.method_value=METHOD_OTHER;
+		/* see if it is another known method */
+		/* fl->u.request.method_value=METHOD_OTHER; */
+		if(parse_method(buffer, tmp, &fl->u.request.method_value)==0)
+		{
+			LOG(L_INFO, "ERROR:parse_first_line: error parsing the method\n");
+			goto error1;
+		}
 		fl->u.request.method.len=tmp-buffer;
 	}
-
+	
 
 	/* identifying type of message over now; 
 	   tmp points at space after; go ahead */

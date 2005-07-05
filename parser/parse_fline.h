@@ -38,9 +38,11 @@
 #define SIP_VERSION "SIP/2.0"
 #define SIP_VERSION_LEN 7
 
-#define CANCEL "CANCEL"
-#define ACK    "ACK"
-#define INVITE "INVITE"
+#define INVITE	"INVITE"
+#define CANCEL	"CANCEL"
+#define ACK		"ACK"
+#define BYE		"BYE"
+#define INFO	"INFO"
 
 #define INVITE_LEN 6
 #define CANCEL_LEN 6

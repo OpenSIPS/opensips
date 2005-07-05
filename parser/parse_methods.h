@@ -25,31 +25,11 @@
 
 #include "../str.h"
 
-/*
- * Methods found in methods Contact parameter or Allow header.
- */
-enum method {
-	METH_UNKNOWN = 1, 
-	METH_ACK = 2, 
-	METH_BYE = 4, 
-	METH_CANCEL = 8,
-	METH_INFO = 16, 
-	METH_INVITE = 32, 
-	METH_NOTIFY = 64,
-	METH_OPTIONS = 128, 
-	METH_PRACK = 256, 
-	METH_REGISTER  = 512,
-	METH_SUBSCRIBE = 1024, 
-	METH_UPDATE = 2048, 
-	METH_MESSAGE = 4096,
-	METH_REFER = 8192
-};
-
-
 /* 
  * Parse comma separated list of methods pointed by _body and assign their
  * enum bits to _methods.  Returns 1 on success and 0 on failure.
  */
+char* parse_method(char* start, char* end, unsigned int* method);
 int parse_methods(str* _body, unsigned int* _methods);
 
 
