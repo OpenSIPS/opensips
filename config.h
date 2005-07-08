@@ -192,5 +192,7 @@
 #define MIN_UDP_PACKET        32
 
 
+#define DEFAULT_RADIUSCLEINT_CONF \
+	"/usr/local/etc/radiusclient-ng/radiusclient.conf"
 
 #endif
