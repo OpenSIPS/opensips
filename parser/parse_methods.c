@@ -278,8 +278,8 @@ char* parse_method(char* start, char* end, unsigned int* method)
 done:
 	if(!end || (end && len < max))
 	{
-		if(start[len]!='\0' && start[len]!=' ' && start[len]!='\t'
-				&& start[len]!='\r' && start[len]!='\n')
+		if(start[len]!='\0' && start[len]!=',' && start[len]!=' '
+				&& start[len]!='\t' && start[len]!='\r' && start[len]!='\n')
 			goto unknown;
 	}
 	
@@ -294,16 +294,17 @@ unknown:
 			if(!method_char(start[len]))
 				return NULL;
 			
-			if((start[len]=='\0' || start[len]!=' ' || start[len]=='\t'
-						|| start[len]=='\r' || start[len]=='\n'))
+			if((start[len]=='\0' || start[len]==',' || start[len]==' '
+						|| start[len]=='\t' || start[len]=='\r'
+						|| start[len]=='\n'))
 				return (start+len);
 			len++;
 		}
 		return end;
 	}
 	
-	while(start[len]!='\0' && start[len]!=' ' && start[len]!='\t'
-			&& start[len]!='\r' && start[len]!='\n')
+	while(start[len]!='\0' && start[len]!=',' && start[len]!=' '
+			&& start[len]!='\t' && start[len]!='\r' && start[len]!='\n')
 	{
 		if(!method_char(start[len]))
 			return NULL;
@@ -345,7 +346,7 @@ int parse_methods(str* _body, unsigned int* _methods)
 	p = next.s;
 	
 	while (p<next.s+next.len) {
-		if((p0=parse_method(p, next.s+next.len, &method))) {
+		if((p0=parse_method(p, next.s+next.len, &method))!=NULL) {
 			*_methods |= method;
 			p = p0;
 		} else {
@@ -356,7 +357,7 @@ int parse_methods(str* _body, unsigned int* _methods)
 		while(p<next.s+next.len && (*p==' ' || *p=='\t'
 					|| *p=='\r' || *p=='\n'))
 			p++;
-		if(p>=next.s+next.len)
+		if(p>=next.s+next.len || *p == '\0')
 			return 0;
 		
 		
