@@ -88,6 +88,10 @@ int do_action(struct action* a, struct sip_msg* msg)
 	struct sip_uri *u;
 	unsigned short port;
 	int proto;
+	int rcode;
+	int cmatch;
+	struct action *aitem;
+	struct action *adefault;
 
 	/* reset the value of error to E_UNSPEC so avoid unknowledgable
 	   functions to return with error (status<0) and not setting it
@@ -605,6 +609,56 @@ int do_action(struct action* a, struct sip_msg* msg)
 						} else return_code = v;
 					}
 				}
+			break;
+		case SWITCH_T:
+			if (a->p1_type!=NUMBER_ST){
+				LOG(L_CRIT, "BUG: do_action: bad switch() type %d\n",
+						a->p1_type);
+				ret=E_BUG;
+				break;
+			}
+			if (a->p1.number!=1){
+				LOG(L_ERR, "ERROR: invalid switch parameter (%lu)\n",
+						a->p1.number);
+				ret=E_CFG;
+				break;
+			}
+			if(a->p2_type!=ACTIONS_ST) {
+				LOG(L_CRIT, "BUG: do_action: bad switch() actions\n");
+				ret=E_BUG;
+				break;
+			}
+			rcode = return_code;
+			return_code=1;
+			adefault = NULL;
+			aitem = (struct action*)a->p2.data;
+			cmatch=0;
+			while(aitem)
+			{
+				if((unsigned char)aitem->type==DEFAULT_T)
+					adefault=aitem;
+				if((cmatch==1) || ((unsigned char)aitem->type==CASE_T
+						&& rcode==aitem->p1.number))
+				{
+					cmatch = 1;
+					if(aitem->p2.data)
+					{
+						return_code=run_actions((struct action*)aitem->p2.data,
+								msg);
+					}
+					if(aitem->p3.number==1)
+						break;
+				}
+				aitem = aitem->next;
+			}
+			if((cmatch==0) && (adefault!=NULL))
+			{
+				DBG("do_action: swtich: running default statement\n");
+				if(adefault->p1.data)
+					return_code=run_actions((struct action*)adefault->p1.data,
+							msg);
+			}
+			ret=(return_code<0)?return_code:1;
 			break;
 		case MODULE_T:
 			if ( ((a->p1_type==CMDF_ST)&&a->p1.data)/*&&

@@ -161,6 +161,10 @@ static int  mpath_len = 0;
 %token FORCE_TCP_ALIAS
 %token IF
 %token ELSE
+%token SWITCH
+%token CASE
+%token DEFAULT
+%token SBREAK
 %token SET_ADV_ADDRESS
 %token SET_ADV_PORT
 %token FORCE_SEND_SOCKET
@@ -293,7 +297,7 @@ static int  mpath_len = 0;
 
 /*non-terminals */
 %type <expr> exp exp_elem /*, condition*/
-%type <action> action actions cmd if_cmd stm
+%type <action> action actions cmd if_cmd stm switch_cmd switch_stm case_stms case_stm default_stm
 %type <ipaddr> ipv4 ipv6 ipv6addr ip
 %type <ipnet> ipnet
 %type <strval> host
@@ -1134,6 +1138,7 @@ actions:	actions action	{$$=append_action($1, $2); }
 
 action:		cmd SEMICOLON {$$=$1;}
 		| if_cmd {$$=$1;}
+		| switch_cmd {$$=$1;}
 		| SEMICOLON /* null action */ {$$=0;}
 		| cmd error { $$=0; yyerror("bad command: missing ';'?"); }
 	;
@@ -1153,6 +1158,57 @@ if_cmd:		IF exp stm				{ $$=mk_action3( IF_T,
 													 $2,
 													 $3,
 													 $5);
+									}
+	;
+
+switch_cmd:		SWITCH LPAREN RETCODE RPAREN LBRACE switch_stm	RBRACE	{
+											$$=mk_action( SWITCH_T,
+														NUMBER_ST,
+														ACTIONS_ST,
+														(void*)1,
+														$6);
+									}
+	;
+
+switch_stm: case_stms default_stm { $$=append_action($1, $2); }
+		|	case_stms		{ $$=$1; }
+	;
+case_stms:	case_stms case_stm	{$$=append_action($1, $2); }
+		| case_stm			{$$=$1;}
+	;
+
+case_stm: CASE NUMBER COLON actions SBREAK SEMICOLON 
+										{ $$=mk_action3(CASE_T,
+													NUMBER_ST,
+													ACTIONS_ST,
+													NUMBER_ST,
+													(void*)$2,
+													$4,
+													(void*)1);
+											}
+		| CASE NUMBER COLON actions { $$=mk_action3(CASE_T,
+													NUMBER_ST,
+													ACTIONS_ST,
+													NUMBER_ST,
+													(void*)$2,
+													$4,
+													(void*)0);
+									}
+		| CASE NUMBER COLON { $$=mk_action3(CASE_T,
+													NUMBER_ST,
+													ACTIONS_ST,
+													NUMBER_ST,
+													(void*)$2,
+													0,
+													(void*)0);
+							}
+	;
+
+default_stm: DEFAULT COLON actions { $$=mk_action(DEFAULT_T,
+													ACTIONS_ST,
+													0,
+													$3,
+													0);
 									}
 	;
 

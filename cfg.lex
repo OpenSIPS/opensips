@@ -126,6 +126,10 @@ STRIP_TAIL		"strip_tail"
 APPEND_BRANCH	"append_branch"
 IF				"if"
 ELSE			"else"
+SWITCH			"switch"
+CASE			"case"
+DEFAULT			"default"
+SBREAK			"sbreak"
 SET_ADV_ADDRESS	"set_advertised_address"
 SET_ADV_PORT	"set_advertised_port"
 FORCE_SEND_SOCKET	"force_send_socket"
@@ -322,6 +326,11 @@ EAT_ABLE	[\ \t\b\r]
 								return FORCE_TCP_ALIAS; }
 <INITIAL>{IF}	{ count(); yylval.strval=yytext; return IF; }
 <INITIAL>{ELSE}	{ count(); yylval.strval=yytext; return ELSE; }
+
+<INITIAL>{SWITCH}	{ count(); yylval.strval=yytext; return SWITCH; }
+<INITIAL>{CASE}		{ count(); yylval.strval=yytext; return CASE; }
+<INITIAL>{DEFAULT}	{ count(); yylval.strval=yytext; return DEFAULT; }
+<INITIAL>{SBREAK}	{ count(); yylval.strval=yytext; return SBREAK; }
 
 <INITIAL>{SET_ADV_ADDRESS}	{ count(); yylval.strval=yytext;
 										return SET_ADV_ADDRESS; }

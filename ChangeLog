@@ -2,6 +2,37 @@
 
 ===================== Changes since release 0.9.4 ============================
 
+* 2005-07-10 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- core: 'switch' statement in config file to test the returned code 'retcode'
+
+* 2005-07-09 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- misc: added sc.dbtext - openserctl-like script for use with dbtext
+  (contributed by Cesc Santasusana)
+
+* 2005-07-08 Elena-Ramona Modroiu <ramona@voice-system.ro>
+- textops: added support to chech method value against a list in is_method()
+  (e.g., is_method("INVITE|CANCEL|BYE"))
+
+* 2005-06-08 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- core: define in config.h for default radiusclient configuration file set to
+  "/usr/local/etc/radiusclient-ng/radiusclient.conf"
+- auth_radius, avp_radius: possibility to use STRING/ID name and STRING/NUMBER
+  value in SIP-AVP
+- auth_radius: backward compatibility with RPID RADIUS AVP dropped
+
+* 2005-07-05 Elena-Ramona Modroiu <ramona@voice-system.ro>
+- core: merged method types from parse_methods.c with msg_parser.c
+- core: method type is cached in cseq header structure
+- textops: new function is_method() to check the method value using types
+
+* 2005-07-04 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- dispatcher: added new function ds_select_domain() which replaces the
+  host:port in R-URI with selected destination address
+
+* 2005-07-02 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- enum: support for compound NAPTRs and lookup of multiple service types with
+  a single DNS lookup (patch by Klaus Darilion)
+
 * 2005-06-30 Elena-Ramona Modroiu <ramona@voice-system.ro>
 - avpops: new function avp_subst() to apply perl/sed-like subst to AVP
 
