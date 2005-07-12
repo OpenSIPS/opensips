@@ -932,7 +932,7 @@ int register_core_fifo()
 		return -1;
 	}
 	if (fifo_db_url==0) {
-		LOG(L_WARN,"WARNING: no fifo_db_url given - "
+		LOG(L_INFO,"INFO: no fifo_db_url given - "
 			"fifo DB commands disabled!\n");
 	} else if (init_db_fifo(fifo_db_url)<0){
 		return -1;
