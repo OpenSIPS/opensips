@@ -72,11 +72,13 @@ int parse_from_header( struct sip_msg *msg)
 		free_to(from_b);
 		goto error;
 	}
+	/* REGISTER doesn't have a from tag :( -bogdan
 	if (from_b->tag_value.len==0 || from_b->tag_value.s==0) {
 		LOG(L_ERR, "ERROR:parse_from_header: missing TAG value\n");
 		free_to(from_b);
 		goto error;
 	}
+	*/
 	msg->from->parsed = from_b;
 
 	return 0;
