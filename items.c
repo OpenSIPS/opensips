@@ -1162,6 +1162,7 @@ done:
 char* xl_parse_name(char *s, xl_spec_p e, int mode, int flags)
 {
 	char *p, c;
+	char *p0;
 	struct hdr_field hdr;
 	int_str avp_name;
 	int avp_type;
@@ -1259,6 +1260,7 @@ char* xl_parse_name(char *s, xl_spec_p e, int mode, int flags)
 			" [%s] expecting ')'!\n", e->hparam.s);
 		goto error;
 	}
+	p++;
 		
 	DBG("xl_parse_name: name [%.*s] index [%d]\n",
 			e->hparam.len, e->hparam.s, e->hindex);
@@ -1311,13 +1313,13 @@ char* xl_parse_name(char *s, xl_spec_p e, int mode, int flags)
 		} else {
 			if(avp_mode&4)
 			{
-				p = e->hparam.s;
+				p0 = e->hparam.s;
 				avp_type = 0;
-				while(*p>='0' && *p<='9'
-						&& p < e->hparam.s + e->hparam.len)
+				while(*p0>='0' && *p0<='9'
+						&& p0 < e->hparam.s + e->hparam.len)
 				{
-					avp_type = avp_type * 10 + *p - '0';
-					p++;
+					avp_type = avp_type * 10 + *p0 - '0';
+					p0++;
 				}
 				e->hparam.s = NULL;
 				e->hparam.len = avp_type;						
