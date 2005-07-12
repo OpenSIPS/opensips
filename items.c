@@ -1260,7 +1260,6 @@ char* xl_parse_name(char *s, xl_spec_p e, int mode, int flags)
 			" [%s] expecting ')'!\n", e->hparam.s);
 		goto error;
 	}
-	p++;
 		
 	DBG("xl_parse_name: name [%.*s] index [%d]\n",
 			e->hparam.len, e->hparam.s, e->hindex);
