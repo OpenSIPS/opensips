@@ -18,6 +18,10 @@
  * You should have received a copy of the GNU General Public License 
  * along with this program; if not, write to the Free Software 
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
+ * History:
+ * --------
+ * 2005-07-12 missing TAG is reported as error (bogdan)
  */
 
 
@@ -65,7 +69,12 @@ int parse_from_header( struct sip_msg *msg)
 	parse_to(msg->from->body.s,msg->from->body.s+msg->from->body.len+1,from_b);
 	if (from_b->error == PARSE_ERROR) {
 		LOG(L_ERR, "ERROR:parse_from_header: bad from header\n");
-		pkg_free(from_b);
+		free_to(from_b);
+		goto error;
+	}
+	if (from_b->tag_value.len==0 || from_b->tag_value.s==0) {
+		LOG(L_ERR, "ERROR:parse_from_header: missing TAG value\n");
+		free_to(from_b);
 		goto error;
 	}
 	msg->from->parsed = from_b;

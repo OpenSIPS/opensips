@@ -43,7 +43,7 @@ struct to_body{
 	int error;                    /* Error code */
 	str body;                     /* The whole header field body */
 	str uri;                      /* URI */
-	str display;				  /* Display Name */
+	str display;                  /* Display Name */
 	str tag_value;                /* Value of tag */
 	struct to_param *param_lst;   /* Linked list of parameters */
 	struct to_param *last_param;  /* Last parameter in the list */
