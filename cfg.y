@@ -1614,6 +1614,18 @@ cmd:		FORWARD LPAREN host RPAREN	{ $$=mk_action(	FORWARD_T,
 																(void*)$3,
 																0);
 												}
+		| RETURN LPAREN RPAREN	{$$=mk_action( RETURN_T,
+																NUMBER_ST, 
+																0,
+																(void*)1,
+																0);
+												}
+		| RETURN				{$$=mk_action( RETURN_T,
+																NUMBER_ST, 
+																0,
+																(void*)1,
+																0);
+												}
 		| LOG_TOK LPAREN STRING RPAREN	{$$=mk_action(	LOG_T, NUMBER_ST, 
 													STRING_ST,(void*)4,$3);
 									}
