@@ -169,6 +169,38 @@ static inline char* int2str(unsigned long l, int* len)
 	return &r[i+1];
 }
 
+#define SINT2STR_MAX_LEN  (1+19+1+1) /* 2^64~= 16*10^18 => s+19+1 digits + \0 */
+
+/* signed int to str
+ * returns a pointer to a static buffer containing l in asciiz & sets len */
+static inline char* sint2str(long l, int* len)
+{
+	static char rs[SINT2STR_MAX_LEN];
+	int i;
+	int s;
+	
+	i=SINT2STR_MAX_LEN-2;
+	rs[SINT2STR_MAX_LEN-1]=0; /* null terminate */
+	s = 0;
+	if(l<0) {
+		s = 1;
+		l = -l;
+	}
+	do{
+		rs[i]=l%10+'0';
+		i--;
+		l/=10;
+	}while(l && (i>=0));
+	if (l && (i<=0)){
+		LOG(L_CRIT, "BUG: sint2str: overflow\n");
+	}
+	if(s) {
+		rs[i]='-';
+		i--;
+	}
+	if (len) *len=(SINT2STR_MAX_LEN-2)-i;
+	return &rs[i+1];
+}
 
 
 /* faster memchr version */
@@ -388,6 +420,33 @@ static inline int str2int(str* _s, unsigned int* _r)
 		}
 	}
 	
+	return 0;
+}
+
+/*
+ * Convert a str into signed integer
+ */
+static inline int str2sint(str* _s, int* _r)
+{
+	int i;
+	int s;
+	
+	*_r = 0;
+	s = 1;
+	i=0;
+	if(_s->s[i]=='-') {
+		s=-1;
+		i++;
+	}
+	for(; i < _s->len; i++) {
+		if ((_s->s[i] >= '0') && (_s->s[i] <= '9')) {
+			*_r *= 10;
+			*_r += _s->s[i] - '0';
+		} else {
+			return -1;
+		}
+	}
+	*_r *= s;
 	return 0;
 }
 
