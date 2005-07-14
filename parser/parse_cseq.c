@@ -68,7 +68,7 @@ char* parse_cseq(char *buf, char* end, struct cseq_body* cb)
 	cb->method.len=t-cb->method.s;
 	
 	/* cache the method id */
-	if(parse_method(cb->method.s, t, &cb->method_id)==0)
+	if(parse_method(cb->method.s, t, (unsigned int*)&cb->method_id)==0)
 	{
 		LOG(L_ERR, "ERROR: parse_cseq: cannot parse the method\n");
 		goto error;
