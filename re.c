@@ -336,7 +336,7 @@ static int replace_build(const char* match, int nmatch, regmatch_t* pmatch,
 {
 	int r;
 	str* uri;
-	str s;
+	xl_value_t sv;
 	char* p;
 	char* dest;
 	char* end;
@@ -413,18 +413,18 @@ static int replace_build(const char* match, int nmatch, regmatch_t* pmatch,
 				dest+=uri->len;
 				break;
 			case REPLACE_SPEC:
-				if(xl_get_spec_value(msg, &se->replace[r].u.spec, &s)!=0)
+				if(xl_get_spec_value(msg, &se->replace[r].u.spec, &sv)!=0)
 				{
 					LOG(L_CRIT, "BUG: replace_build: item substitution"
 								" returned error\n");
 					break; /* ignore, we can continue */
 				}
-				if(dest-rbuf+s.len>=REPLACE_BUFFER_SIZE-1){
+				if(dest-rbuf+sv.rs.len>=REPLACE_BUFFER_SIZE-1){
 					LOG(L_ERR, "ERROR: replace_build: out of mem (rpl)\n");
 					goto error;
 				}
-				memcpy(dest, s.s, s.len);
-				dest+=s.len;
+				memcpy(dest, sv.rs.s, sv.rs.len);
+				dest+=sv.rs.len;
 				break;
 			default:
 				LOG(L_CRIT, "BUG: replace_build: unknown type %d\n", 

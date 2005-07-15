@@ -2,6 +2,34 @@
 
 ===================== Changes since release 0.9.4 ============================
 
+* 2005-07-14 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- nathelper: posibility of mangling the IP address of the SDP origin
+  description (o=): via new flag "0x08" in fix_nated_sdp() and via new flag
+  "o" in force_rtp_proxy()
+- tm: tw_append definition migrated to pseudo-variables; now anything that
+  can be defined via pseudo-variables (headers, avps, message and system info)
+  can be also written to fifo/unix sockets
+
+* 2005-07-14 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- usrloc: versioning policy changed and added checking of table version
+
+* 2005-07-13 Elena-Ramona Modroiu <ramona@voice-system.ro>
+- avpops: added avp_op() - for integer operations with avps
+- avpops: avp_copy() can do now string-int and viceversa conversions
+- avpops: more operators for avp_check()
+- core: new signed-int to str and viceversa conversion functions
+
+* 2005-07-13 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- acc: acc_extra definition migrated to pseudo-variables
+
+* 2005-07-12 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- core: allow 'return' with no parameters, equivalent to 'return(1)' as
+  replacement for 'break'
+
+* 2005-07-12 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- nathelper: possibility to send natpings per user with OPTIONS messages
+  (stateless)
+
 * 2005-07-10 Daniel-Constantin Mierla <daniel@voice-system.ro>
 - core: 'switch' statement in config file to test the returned code 'retcode'
 
