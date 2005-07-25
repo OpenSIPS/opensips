@@ -96,7 +96,7 @@ FORWARD	forward
 FORWARD_TCP	forward_tcp
 FORWARD_UDP	forward_udp
 FORWARD_TLS	forward_tls
-DROP	"drop"|"break"
+DROP	"drop"
 EXIT	"exit"
 RETURN	"return"
 RETCODE	"retcode"|"$\?"
@@ -129,7 +129,7 @@ ELSE			"else"
 SWITCH			"switch"
 CASE			"case"
 DEFAULT			"default"
-SBREAK			"sbreak"|"esac"
+SBREAK			"break"|"esac"
 SET_ADV_ADDRESS	"set_advertised_address"
 SET_ADV_PORT	"set_advertised_port"
 FORCE_SEND_SOCKET	"force_send_socket"

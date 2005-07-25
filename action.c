@@ -103,7 +103,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 	ret=E_BUG;
 	switch ((unsigned char)a->type){
 		case DROP_T:
-				ret=1;
+				ret=0;
 				action_flags |= ACT_FL_RETURN;
 			break;
 		case EXIT_T:
