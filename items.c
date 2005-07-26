@@ -72,7 +72,7 @@ static int xl_get_null(struct sip_msg *msg, xl_value_t *res, xl_param_t *param)
 	res->rs.s = str_null.s;
 	res->rs.len = str_null.len;
 	res->ri = 0;
-	res->flags = XL_VAL_NONE;
+	res->flags = XL_VAL_NULL;
 	return 0;
 }
 

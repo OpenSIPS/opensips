@@ -35,8 +35,9 @@
 #define XL_DISABLE_COLORS	4
 
 #define XL_VAL_NONE			0
-#define XL_VAL_STR			1
-#define XL_VAL_INT			2
+#define XL_VAL_NULL			1
+#define XL_VAL_STR			2
+#define XL_VAL_INT			4
 
 enum _xl_type { 
 	XL_NONE=0,           XL_EMPTY,             XL_NULL, 
