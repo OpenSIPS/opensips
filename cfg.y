@@ -53,6 +53,7 @@
  *              (andrei)
  * 2004-10-19  added FROM_URI, TO_URI (andrei)
  * 2004-11-30  added force_send_socket (andrei)
+ * 2005-07-26  default onreply route added (andrei)
  */
 
 
@@ -905,7 +906,10 @@ failure_route_stm: ROUTE_FAILURE LBRACK NUMBER RBRACK LBRACE actions RBRACE {
 		| ROUTE_FAILURE error { yyerror("invalid failure_route statement"); }
 	;
 
-onreply_route_stm: ROUTE_ONREPLY LBRACK NUMBER RBRACK LBRACE actions RBRACE {
+onreply_route_stm: ROUTE_ONREPLY LBRACE actions RBRACE {
+										push($3, &onreply_rlist[DEFAULT_RT]);
+										}
+		| ROUTE_ONREPLY LBRACK NUMBER RBRACK LBRACE actions RBRACE {
 										if (($3<ONREPLY_RT_NO)&&($3>=1)){
 											push($6, &onreply_rlist[$3]);
 										} else {

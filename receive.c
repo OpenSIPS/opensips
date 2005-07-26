@@ -32,6 +32,7 @@
  * 2004-04-30 exec_pre_cb is called after basic sanity checks (at least one
  *            via present & parsed ok)  (andrei)
  * 2004-08-23 avp core changed - destroy_avp-> reset_avps (bogdan)
+ * 2005-07-26 default onreply route added (andrei)
  */
 
 
@@ -76,6 +77,7 @@ str default_via_port={0,0};
 int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info) 
 {
 	struct sip_msg* msg;
+	int ret;
 #ifdef STATS
 	int skipped = 1;
 	struct timeval tvb, tve;	
@@ -154,20 +156,19 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info)
 			goto end; /* drop the message */
 
 		/* exec the routing script */
-		if (run_actions(rlist[0], msg)<0) {
+		if (run_actions(rlist[DEFAULT_RT], msg)<0) {
 			LOG(L_WARN, "WARNING: receive_msg: "
 					"error while trying script\n");
-			goto error_req;
-		}
-
+		} else {
 #ifdef STATS
-		gettimeofday( & tve, &tz );
-		diff = (tve.tv_sec-tvb.tv_sec)*1000000+(tve.tv_usec-tvb.tv_usec);
-		stats->processed_requests++;
-		stats->acc_req_time += diff;
-		DBG("successfully ran routing scripts...(%d usec)\n", diff);
-		STATS_RX_REQUEST( msg->first_line.u.request.method_value );
+			gettimeofday( & tve, &tz );
+			diff = (tve.tv_sec-tvb.tv_sec)*1000000+(tve.tv_usec-tvb.tv_usec);
+			stats->processed_requests++;
+			stats->acc_req_time += diff;
+			DBG("successfully ran routing scripts...(%d usec)\n", diff);
+			STATS_RX_REQUEST( msg->first_line.u.request.method_value );
 #endif
+		}
 
 		/* execute post request-script callbacks */
 		exec_post_req_cb(msg);
@@ -194,25 +195,35 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info)
 		if (exec_pre_rpl_cb(msg)==0 )
 			goto end; /* drop the request */
 
-		/* send the msg */
-		forward_reply(msg);
-
+		/* exec the onreply routing script */
+		if (onreply_rlist[DEFAULT_RT] &&
+		(ret=run_actions(onreply_rlist[DEFAULT_RT],msg))<=0 ) {
+			if (ret<0) {
+				LOG(L_WARN, "WARNING: receive_msg: "
+					"error while trying onreply script\n");
+			} else {
+				goto end; /* drop the message */
+			}
+		} else {
+			/* send the msg */
+			forward_reply(msg);
 #ifdef STATS
-		gettimeofday( & tve, &tz );
-		diff = (tve.tv_sec-tvb.tv_sec)*1000000+(tve.tv_usec-tvb.tv_usec);
-		stats->processed_responses++;
-		stats->acc_res_time+=diff;
-		DBG("successfully ran reply processing...(%d usec)\n", diff);
+			gettimeofday( & tve, &tz );
+			diff = (tve.tv_sec-tvb.tv_sec)*1000000+(tve.tv_usec-tvb.tv_usec);
+			stats->processed_responses++;
+			stats->acc_res_time+=diff;
+			DBG("successfully ran reply processing...(%d usec)\n", diff);
 #endif
+		}
 
 		/* execute post reply-script callbacks */
 		exec_post_rpl_cb(msg);
 	}
 
-end:
 #ifdef STATS
 	skipped = 0;
 #endif
+end:
 	/* free possible loaded avps -bogdan */
 	reset_avps();
 	DBG("receive_msg: cleaning up\n");
@@ -222,17 +233,13 @@ end:
 	if (skipped) STATS_RX_DROPS;
 #endif
 	return 0;
-error_req:
-	DBG("receive_msg: error:...\n");
-	/* execute post request-script callbacks */
-	exec_post_req_cb(msg);
-	/* free possible loaded avps -bogdan */
-	reset_avps();
 error02:
 	free_sip_msg(msg);
 	pkg_free(msg);
 error00:
+#ifdef STATS
 	STATS_RX_DROPS;
+#endif
 	return -1;
 }
 
