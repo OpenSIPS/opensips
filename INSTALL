@@ -71,7 +71,7 @@ OS Notes:
 
 - compile with default options:
 
-make   #builds only openser core, equivalent to make ser
+make   #builds only openser core, equivalent to make openser
 make modules
 
 or make all #builds everything
@@ -167,7 +167,7 @@ default configuration file is hard coded into openser during compile time.
 When you use a different prefix parameter when installing then the 
 directory hard coded in openser and the directory in which the file will be 
 installed by make install will not match. (You can specify exact location
-of the configuration file using -f parameter of ser).
+of the configuration file using -f parameter of openser).
 
 For example, if you do the following:
 make all
@@ -192,7 +192,7 @@ That applies to other make parameters as well (for example parameters
 A) Getting Help
 
 This guide gives you instructions on how to set up the Open SIP Express 
-Router (ser) on your box quickly. In case the default configuration
+Router (openser) on your box quickly. In case the default configuration
 does not fly, check documentation at openser site
   http://www.openser.org/
 to learn how to configure OpenSER for your site.
@@ -216,7 +216,7 @@ dependencies on MySQL which is needed for storing user credentials.)
 C) Quick Start
 
 The following step-by step guide gives you instructions how to install the 
-sql-free distribution of ser. If you need persistence and authentication, 
+sql-free distribution of openser. If you need persistence and authentication, 
 then you have to install additional MySql support -- proceed to section D)
 after you are finished with C).
 
@@ -233,9 +233,9 @@ RPM:
 debian:
     dpkg -i <package_name>
 gentoo:
-    emerge ser
+    emerge openser
 	(or if use only stable packets:
-	 ACCEPT_KEYWORDS="~x86" emerge ser)
+	 ACCEPT_KEYWORDS="~x86" emerge openser)
 tar.gz:
     cd /; tar zxvf <package_name>_os_arch.tar.gz
     (it will install in /usr/local/, and the configuration file in
@@ -268,12 +268,12 @@ Solaris:
 	  subscriber database, change the variable 'SQL_HOST' to the proper
 	  host name in the openserctl script
     - run the openserctl utility
-        /usr/sbin/serctl moni
+        /usr/sbin/openserctl moni
       or
-        /usr/local/sbin/serctl moni (if you installed from a tar.gz or solaris
-        package)
-    - you can create a resource file for openserctl, name it .openserctl and
-	place it in your home directory. You can set there the values for
+        /usr/local/sbin/openserserctl moni (if you installed from a tar.gz
+		or solaris package)
+    - you can create a resource file for openserctl, name it .openserctlrc
+	and place it in your home directory. You can set there the values for
 	openserctl variables (e.g., SIP_DOMAIN, SQL_HOST, SQL_USER, SQL_DB ...)
 
 5) Register with the server using your favorite
@@ -312,10 +312,10 @@ proceed, you need to make sure MySQL is installed on your box.
 	 USE="mysql" emerge openser)
 3) create MySQL tables
 	- if you have a previously installed OpenSER on your system, use
-    	/usr/sbin/ser_mysql.sh reinstall 
+    	/usr/sbin/openser_mysql.sh reinstall 
 	  to convert your OpenSER database into new structures
 	- otherwise, if this is your very first installation, use
-    	/usr/sbin/ser_mysql.sh create
+    	/usr/sbin/openser_mysql.sh create
 	  to create OpenSER database structures
    (you will be prompted for password of MySql "root" user)
 4) configure openser to use SQL
@@ -340,7 +340,7 @@ proceed, you need to make sure MySQL is installed on your box.
         break;
       }
 6) restart the server
-    /etc/init.d/ser restart
+    /etc/init.d/openser restart
 7) you can now start  managing the server using the openserctl utility; 
    you need to first set the environment variable SIP_DOMAIN to your 
    local SIP realm, e.g.,
@@ -349,7 +349,7 @@ proceed, you need to make sure MySQL is installed on your box.
    a) watch the server status using 'serctl moni'
    b) try to login with your SIP client as user 'admin' with password 'heslo'
    c) try adding new users using 
-       'serctl add <name> <password> <email>'
+       'openserctl add <name> <password> <email>'
 
 8) default values (database url, users and passwords) are:
 - DEFAULT_DB_URL="mysql://openser:openserrw@localhost/openser"

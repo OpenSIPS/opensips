@@ -2,6 +2,13 @@
 
 ===================== Changes since release 0.9.4 ============================
 
+* 2005-07-26 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- avpops: db-related function can take the URI parameter from an AVP
+- group: is_user_in() can take the URI parameter form an AVP
+
+* 2005-07-26 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- core: added default onreply_route in config (port from ser)
+
 * 2005-07-25 Daniel-Constantin Mierla <daniel@voice-system.ro>
 - core: old 'break' removed, 'return' must be used from now on. 'break' is
   now valid only to end a 'case' block in a 'switch' statement
