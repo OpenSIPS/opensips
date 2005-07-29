@@ -794,6 +794,7 @@ error_port:
 /* main loop */
 int main_loop()
 {
+	static int chd_rank;
 	int  i;
 	pid_t pid;
 	struct socket_info* si;
@@ -802,8 +803,9 @@ int main_loop()
 #endif
 
 	/* one "main" process and n children handling i/o */
-
 	is_main=0;
+	chd_rank=0;
+
 	if (dont_fork){
 #ifdef STATS
 		setstats( 0 );
@@ -893,13 +895,10 @@ int main_loop()
 		snprintf(pt[process_no].desc, MAX_PT_DESC, 
 			"stand-alone receiver @ %s:%s", 
 			 bind_address->name.s, bind_address->port_no_str.s );
-		
-		
-		     /* We will call child_init even if we
-		      * do not fork - and it will be called with rank 1 because
-		      * in fact we behave like a child, not like main process
-		      */
 
+		/* We will call child_init even if we
+		 * do not fork - and it will be called with rank 1 because
+		 * in fact we behave like a child, not like main process */
 		if (init_child(1) < 0) {
 			LOG(L_ERR, "main_dontfork: init_child failed\n");
 			goto error;
@@ -985,9 +984,8 @@ int main_loop()
 			LOG(L_ERR, "starting fifo server failed\n");
 			goto error;
 		}
-		     /* Spawn children listening on unix domain socket if and only if
-		      * the unix domain socket server has not been disabled (i == 0)
-		      */
+		/* Spawn children listening on unix domain socket if and only if
+		 * the unix domain socket server has not been disabled (i == 0) */
 		if (init_unixsock_children()<0) {
 			LOG(L_ERR, "ERROR: Could not initialize unix domain socket server\n");
 			goto error;
@@ -997,6 +995,7 @@ int main_loop()
 		for(si=udp_listen; si; si=si->next){
 			for(i=0;i<children_no;i++){
 				process_no++;
+				chd_rank++;
 #ifdef USE_TCP
 				if(!tcp_disable){
 		 			if (socketpair(AF_UNIX, SOCK_STREAM, 0, sockfd)<0){
@@ -1018,7 +1017,7 @@ int main_loop()
 					}
 #endif
 					bind_address=si; /* shortcut */
-					if (init_child(i + 1) < 0) {
+					if (init_child(chd_rank) < 0) {
 						LOG(L_ERR, "init_child failed\n");
 						goto error;
 					}
@@ -1046,9 +1045,8 @@ int main_loop()
 		}
 	}
 
-	/*this is the main process*/
-	bind_address=0;				/* main proc -> it shouldn't send anything, */
-	
+	/* this is the main process -> it shouldn't send anything */
+	bind_address=0;
 
 #ifdef USE_TCP
 	/* if we are using tcp we always need the timer */
@@ -1107,7 +1105,7 @@ int main_loop()
 #ifdef USE_TCP
 		if (!tcp_disable){
 				/* start tcp  & tls receivers */
-			if (tcp_init_children()<0) goto error;
+			if (tcp_init_children(&chd_rank)<0) goto error;
 				/* start tcp+tls master proc */
 			process_no++;
 			if ((pid=fork())<0){

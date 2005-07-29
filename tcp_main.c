@@ -1379,7 +1379,7 @@ void destroy_tcp()
 
 
 /* starts the tcp processes */
-int tcp_init_children()
+int tcp_init_children(int *chd_rank)
 {
 	int r;
 	int sockfd[2];
@@ -1404,6 +1404,7 @@ int tcp_init_children()
 		}
 		
 		process_no++;
+		(*chd_rank)++;
 		pid=fork();
 		if (pid<0){
 			LOG(L_ERR, "ERROR: tcp_main: fork failed: %s\n",
@@ -1428,7 +1429,7 @@ int tcp_init_children()
 			unix_tcp_sock=sockfd[1];
 			bind_address=0; /* force a SEGFAULT if someone uses a non-init.
 							   bind address on tcp */
-			if (init_child(r+children_no+1) < 0) {
+			if (init_child(*chd_rank) < 0) {
 				LOG(L_ERR, "init_children failed\n");
 				goto error;
 			}

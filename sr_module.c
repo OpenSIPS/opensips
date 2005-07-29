@@ -354,84 +354,33 @@ void destroy_modules()
 	modules=0;
 }
 
-#ifdef NO_REVERSE_INIT
-
-/*
- * Initialize all loaded modules, the initialization
- * is done *AFTER* the configuration file is parsed
- */
-int init_modules(void)
-{
-	struct sr_module* t;
-	
-	for(t = modules; t; t = t->next) {
-		if ((t->exports) && (t->exports->init_f))
-			if (t->exports->init_f() != 0) {
-				LOG(L_ERR, "init_modules(): Error while initializing"
-							" module %s\n", t->exports->name);
-				return -1;
-			}
-	}
-	return 0;
-}
-
-/*
- * per-child initialization
- */
-int init_child(int rank)
-{
-	struct sr_module* t;
-	char* type;
-
-	switch(rank) {
-	case PROC_MAIN:     type = "PROC_MAIN";     break;
-	case PROC_TIMER:    type = "PROC_TIMER";    break;
-	case PROC_FIFO:     type = "PROC_FIFO";     break;
-	case PROC_TCP_MAIN: type = "PROC_TCP_MAIN"; break;
-	default:            type = "CHILD";         break;
-	}
-	DBG("init_child: initializing %s with rank %d\n", type, rank);
-	
-
-	for(t = modules; t; t = t->next) {
-		if (t->exports->init_child_f) {
-			if ((t->exports->init_child_f(rank)) < 0) {
-				LOG(L_ERR, "init_child(): Initialization of child %d failed\n",
-						rank);
-				return -1;
-			}
-		}
-	}
-	return 0;
-}
-
-#else
-
 
 /* recursive module child initialization; (recursion is used to
    process the module linear list in the same order in
    which modules are loaded in config file
 */
 
-static int init_mod_child( struct sr_module* m, int rank )
+static int init_mod_child( struct sr_module* m, int rank, char *type )
 {
 	if (m) {
 		/* iterate through the list; if error occurs,
-		   propagate it up the stack
-		 */
-		if (init_mod_child(m->next, rank)!=0) return -1;
+		   propagate it up the stack */
+		if (init_mod_child(m->next, rank, type)!=0)
+			return -1;
+
 		if (m->exports && m->exports->init_child_f) {
-			DBG("DEBUG: init_mod_child (%d): %s\n", 
-					rank, m->exports->name);
+			DBG("DEBUG:init_mod_child: %s , rank=%d, module=%s\n", 
+					type, rank, m->exports->name);
 			if (m->exports->init_child_f(rank)<0) {
-				LOG(L_ERR, "init_mod_child(): Error while initializing"
-							" module %s\n", m->exports->name);
+				LOG(L_ERR, "ERROR:init_mod_child: Error while initializing"
+							" module %s, rank %d\n", m->exports->name,rank);
 				return -1;
 			} else {
 				/* module correctly initialized */
 				return 0;
 			}
 		}
+
 		/* no init function -- proceed with success */
 		return 0;
 	} else {
@@ -446,7 +395,26 @@ static int init_mod_child( struct sr_module* m, int rank )
  */
 int init_child(int rank)
 {
-	return init_mod_child(modules, rank);
+	char* type;
+
+	type = 0;
+
+	switch(rank) {
+	case PROC_MAIN:     type = "PROC_MAIN";     break;
+	case PROC_TIMER:    type = "PROC_TIMER";    break;
+	case PROC_FIFO:     type = "PROC_FIFO";     break;
+	case PROC_TCP_MAIN: type = "PROC_TCP_MAIN"; break;
+	case PROC_UNIXSOCK: type = "PROC_UBIXSOCK"; break;
+	}
+
+	if (!type) {
+		if (rank>0)
+			type = "CHILD";
+		else
+			type = "UNKNOWN";
+	}
+
+	return init_mod_child(modules, rank, type);
 }
 
 
@@ -490,5 +458,3 @@ int init_modules(void)
 {
 	return init_mod(modules);
 }
-
-#endif
