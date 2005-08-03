@@ -55,7 +55,8 @@ enum _xl_type {
 	XL_RCVIP,            XL_RCVPORT,           XL_REFER_TO,
 	XL_DSET,             XL_DSTURI,            XL_COLOR,
 	XL_BRANCH,           XL_BRANCHES,          XL_CONTENT_TYPE,
-	XL_CONTENT_LENGTH,   XL_MSG_BODY
+	XL_CONTENT_LENGTH,   XL_MSG_BODY,          XL_AUTH_USERNAME,
+	XL_AUTH_REALM
 };
 typedef enum _xl_type xl_type_t;
 

@@ -47,6 +47,7 @@
 #include "parser/parse_hname2.h"
 #include "parser/parse_content.h"
 #include "parser/parse_refer_to.h"
+#include "parser/digest/digest.h"
 
 #include "items.h"
 
@@ -901,6 +902,42 @@ static int xl_get_msg_body(struct sip_msg *msg, xl_value_t *res, xl_param_t *par
     return 0;
 }
 
+static int xl_get_authattr(struct sip_msg *msg, xl_value_t *res,
+		xl_param_t *param)
+{
+	struct hdr_field *hdr;
+	
+    if(msg==NULL || res==NULL)
+		return -1;
+    
+	if ((msg->REQ_METHOD == METHOD_ACK) || (msg->REQ_METHOD == METHOD_CANCEL))
+		return xl_get_empty(msg, res, param);
+
+	if ((parse_headers(msg, HDR_PROXYAUTH_F|HDR_AUTHORIZATION_F, 0)==-1)
+			|| (msg->proxy_auth==0 && msg->authorization==0))
+	{
+		LOG(L_ERR, "find_credentials(): Error while parsing headers\n");
+		return -1;
+	}
+
+	hdr = (msg->proxy_auth==0)?msg->authorization:msg->proxy_auth;
+	
+	if(parse_credentials(hdr)!=0)
+		return xl_get_empty(msg, res, param);
+	
+	if(param->hparam.len==2)
+	{
+	    res->rs.s   = ((auth_body_t*)(hdr->parsed))->digest.realm.s;
+		res->rs.len = ((auth_body_t*)(hdr->parsed))->digest.realm.len;
+	} else {
+	    res->rs.s   = ((auth_body_t*)(hdr->parsed))->digest.username.user.s;
+		res->rs.len = ((auth_body_t*)(hdr->parsed))->digest.username.user.len;
+	}
+	
+	res->flags = XL_VAL_STR;
+    return 0;
+}
+
 #define COL_BUF 10
 
 #define append_sstring(p, end, str) \
@@ -1520,11 +1557,27 @@ char* xl_parse_spec(char *s, xl_spec_p e, int flags)
 				if(p0==NULL)
 					goto error;
 				p = p0;
+				e->type = XL_AVP;
 			} else {
-				LOG(L_ERR, "xl_parse_item: error - bad specifier [%s]\n", p);
-				goto error;
+				p++;
+				switch(*p)
+				{
+					case 'r':
+						e->itf = xl_get_authattr;
+						e->p.hparam.len = 2;
+						e->type = XL_AUTH_REALM;
+					break;
+					case 'u':
+						e->itf = xl_get_authattr;
+						e->p.hparam.len = 1;
+						e->type = XL_AUTH_USERNAME;
+					break;
+					default:
+						LOG(L_ERR,
+							"xl_parse_item: error - bad specifier [%s]\n",p-2);
+						goto error;
+				}
 			}
-			e->type = XL_AVP;
 		break;
 		case 'b':
 			p++;

@@ -2,6 +2,26 @@
 
 ===================== Changes since release 0.9.4 ============================
 
+* 2005-08-03 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- core: new pseudo-varibles: $au - auth username; $ar - auth realm
+
+* 2005-08-01 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- rr: new function is_direction("upstream|downstream") to detect message flow
+  direction
+- rr: added Route generic parameter parser
+
+* 2005-07-29 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- gen_ha1 renamed as openser_gen_ha1 at installation and packaging to avoid
+  conflicts with SER packages (credits to Klaus Darilion)
+
+* 2005-07-29 Elena-Ramona Modroiu <ramona@voice-system.ro>
+- uac: pseudo-variables support in uac_replace_from()
+
+* 2005-07-29 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- avpops: is_avp_set("name") to test if an avp exists
+- avpops: allow hexadecimal format for integer values of avp_write(),
+  avp_check() and avp_op() (to ease bitwise operations)
+
 * 2005-07-26 Daniel-Constantin Mierla <daniel@voice-system.ro>
 - avpops: db-related function can take the URI parameter from an AVP
 - group: is_user_in() can take the URI parameter form an AVP
