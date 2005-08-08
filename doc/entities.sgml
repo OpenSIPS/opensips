@@ -11,9 +11,9 @@
 
 <!ENTITY serhome "http://openser.org/">
 <!ENTITY serbugs "http://openser.org/bugs">
-<!ENTITY serhelp "http://openser.org/mailman/listinfo/team">
-<!ENTITY serusers "http://openser.org/mailman/listinfo/users">
-<!ENTITY serdev "http://openser.org/mailman/listinfo/devel">
+<!ENTITY serhelp "http://openser.org/cgi-bin/mailman/listinfo/team">
+<!ENTITY serusers "http://openser.org/cgi-bin/mailman/listinfo/users">
+<!ENTITY serdev "http://openser.org/cgi-bin/mailman/listinfo/devel">
 
 <!ENTITY serhomelink "<ulink url='&serhome;'>&serhome</ulink>">
 <!ENTITY serbugslink "<ulink url='&serbugs;'>&serbugs</ulink>">
