@@ -113,6 +113,7 @@ struct rdata* get_record(char* name, int type);
 void free_rdata_list(struct rdata* head);
 
 
+extern int dns_try_ipv6;
 
 
 #define rev_resolvehost(ip)\
@@ -325,7 +326,7 @@ static inline struct hostent* resolvehost(char* name)
 	/* ipv4 */
 	he=gethostbyname(name);
 #ifdef USE_IPV6
-	if(he==0){
+	if(he==0 && dns_try_ipv6){
 #ifndef DNS_IP_HACK
 skip_ipv4:
 #endif
@@ -350,5 +351,6 @@ skip_ipv4:
 }
 
 
+int resolv_init();
 
 #endif

@@ -1411,6 +1411,9 @@ try_again:
 	
 	print_rl();
 	
+	/* init the resolver, before fixing the config */
+	resolv_init();
+
 	/* fix parameters */
 	if (port_no<=0) port_no=SIP_PORT;
 #ifdef USE_TLS
