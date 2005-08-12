@@ -78,12 +78,13 @@ enum request_method {
 	METHOD_OTHER=8192
 };
 
-#define FL_FORCE_RPORT    1  /* force rport */
-#define FL_FORCE_ACTIVE   2  /* force active SDP */
-#define FL_SDP_IP_AFS     4  /* SDP IP rewritten */
-#define FL_SDP_PORT_AFS   8  /* SDP port rewritten */
-#define FL_SHM_CLONE     16  /* msg cloned in SHM as a single chunk */
-#define FL_USE_UAC_FROM  32  /* take from hdr from UAC insteas of UAS */
+#define FL_FORCE_RPORT			1   /* force rport (top via) */
+#define FL_FORCE_ACTIVE			2   /* force active SDP */
+#define FL_SDP_IP_AFS			4   /* SDP IP rewritten */
+#define FL_SDP_PORT_AFS			8   /* SDP port rewritten */
+#define FL_SHM_CLONE			16  /* msg cloned in SHM as a single chunk */
+#define FL_USE_UAC_FROM			32  /* take from hdr from UAC insteas of UAS */
+#define FL_FORCE_LOCAL_RPORT    64  /* force local rport (local via) */
 
 
 #define IFISMETHOD(methodname,firstchar)                                  \

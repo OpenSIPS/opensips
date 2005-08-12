@@ -159,6 +159,7 @@ static int  mpath_len = 0;
 %token SET_URI
 %token REVERT_URI
 %token FORCE_RPORT
+%token FORCE_LOCAL_RPORT
 %token FORCE_TCP_ALIAS
 %token IF
 %token ELSE
@@ -1749,6 +1750,10 @@ cmd:		FORWARD LPAREN host RPAREN	{ $$=mk_action(	FORWARD_T,
 		| REVERT_URI { $$=mk_action( REVERT_URI_T, 0,0,0,0); }
 		| FORCE_RPORT LPAREN RPAREN	{ $$=mk_action(FORCE_RPORT_T,0, 0, 0, 0); }
 		| FORCE_RPORT				{$$=mk_action(FORCE_RPORT_T,0, 0, 0, 0); }
+		| FORCE_LOCAL_RPORT LPAREN RPAREN	{
+					$$=mk_action(FORCE_LOCAL_RPORT_T,0, 0, 0, 0); }
+		| FORCE_LOCAL_RPORT				{
+					$$=mk_action(FORCE_LOCAL_RPORT_T,0, 0, 0, 0); }
 		| FORCE_TCP_ALIAS LPAREN NUMBER RPAREN	{
 					#ifdef USE_TCP
 						$$=mk_action(FORCE_TCP_ALIAS_T,NUMBER_ST, 0,

@@ -673,6 +673,10 @@ int do_action(struct action* a, struct sip_msg* msg)
 			msg->msg_flags|=FL_FORCE_RPORT;
 			ret=1; /* continue processing */
 			break;
+		case FORCE_LOCAL_RPORT_T:
+			msg->msg_flags|=FL_FORCE_LOCAL_RPORT;
+			ret=1; /* continue processing */
+			break;
 		case SET_ADV_ADDR_T:
 			if (a->p1_type!=STR_ST){
 				LOG(L_CRIT, "BUG: do_action: bad set_advertised_address() "

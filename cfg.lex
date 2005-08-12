@@ -109,6 +109,7 @@ ROUTE_FAILURE failure_route
 ROUTE_ONREPLY onreply_route
 EXEC	exec
 FORCE_RPORT		"force_rport"|"add_rport"
+FORCE_LOCAL_RPORT		"force_local_rport"|"add_local_rport"
 FORCE_TCP_ALIAS		"force_tcp_alias"|"add_tcp_alias"
 SETFLAG		setflag
 RESETFLAG	resetflag
@@ -327,6 +328,7 @@ EAT_ABLE	[\ \t\b\r]
 <INITIAL>{APPEND_BRANCH}	{ count(); yylval.strval=yytext; 
 								return APPEND_BRANCH; }
 <INITIAL>{FORCE_RPORT}	{ count(); yylval.strval=yytext; return FORCE_RPORT; }
+<INITIAL>{FORCE_LOCAL_RPORT}	{ count(); yylval.strval=yytext; return FORCE_LOCAL_RPORT; }
 <INITIAL>{FORCE_TCP_ALIAS}	{ count(); yylval.strval=yytext;
 								return FORCE_TCP_ALIAS; }
 <INITIAL>{IF}	{ count(); yylval.strval=yytext; return IF; }

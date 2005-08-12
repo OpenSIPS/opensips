@@ -1333,6 +1333,34 @@ char * build_req_buf_from_sip_req( struct sip_msg* msg,
 		extra_params.len=id_len;
 	}
 #endif
+
+	/* check whether to add rport parameter to local via */
+	if(msg->msg_flags&FL_FORCE_LOCAL_RPORT) {
+		id_buf=extra_params.s;
+		id_len=extra_params.len;
+		extra_params.len += RPORT_LEN-1; /* last char in RPORT define is '=' 
+										which is not added, but the new buffer
+										will be null terminated */
+		extra_params.s = (char*)pkg_malloc(extra_params.len+1);
+		if(extra_params.s==0) {
+			if(id_buf!=0)
+				pkg_free(id_buf);
+			LOG(L_ERR, "ERROR: build_req_buf_from_sip_req:"
+							" extra params building failed\n");
+			goto error00; /* we don't need to free anything,
+			                 nothing else alloc'ed yet*/
+		}
+		
+		if(id_buf!=0) {
+			memcpy(extra_params.s, id_buf, id_len);
+			pkg_free(id_buf);
+		}
+		memcpy(extra_params.s+id_len, RPORT, RPORT_LEN-1);
+		extra_params.s[extra_params.len]='\0';
+		DBG("build_req_from_req: extra param added: <%.*s>\n",
+				extra_params.len, extra_params.s);
+	}
+	
 	     /* Calculate message body difference and adjust
 	      * Content-Length
 	      */
