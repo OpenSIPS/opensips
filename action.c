@@ -78,7 +78,6 @@ int do_action(struct action* a, struct sip_msg* msg)
 	int ret;
 	int v;
 	union sockaddr_union* to;
-	struct socket_info* send_sock;
 	struct proxy_l* p;
 	char* tmp;
 	char *new_uri, *end, *crt;
@@ -203,7 +202,6 @@ int do_action(struct action* a, struct sip_msg* msg)
 					goto error_fwd_uri;
 				}
 				ret=forward_request(msg, p, proto);
-				/*free_uri(&uri); -- no longer needed, in sip_msg*/
 				free_proxy(p); /* frees only p content, not p itself */
 				pkg_free(p);
 				if (ret>=0) ret=1;
@@ -244,26 +242,14 @@ int do_action(struct action* a, struct sip_msg* msg)
 					p->addr_idx=0;
 				p->ok=1;
 			}
-			ret=hostent2su(	to, &p->host, p->addr_idx,
+			ret=hostent2su(to, &p->host, p->addr_idx,
 						(p->port)?p->port:SIP_PORT );
 			if (ret==0){
 				p->tx++;
 				p->tx_bytes+=msg->len;
-				if (a->type==SEND_T){
-					/*udp*/
-					send_sock=get_send_socket(msg, to, PROTO_UDP);
-					if (send_sock!=0){
-						ret=udp_send(send_sock, msg->buf, msg->len, to);
-					}else{
-						ret=-1;
-					}
-				}
-#ifdef USE_TCP
-					else{
-					/*tcp*/
-					ret=tcp_send(PROTO_TCP, msg->buf, msg->len, to, 0);
-				}
-#endif
+				proto = (a->type==SEND_T)?PROTO_UDP:PROTO_TCP;
+				ret = msg_send(0/*send_sock*/, proto, to, 0/*id*/,
+						msg->buf, msg->len);
 			}
 			pkg_free(to);
 			if (ret<0){

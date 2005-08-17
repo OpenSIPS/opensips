@@ -333,7 +333,7 @@ struct tcp_connection* tcpconn_new(int sock, union sockaddr_union* su,
 		c->rcv.dst_ip=ba->address;
 		c->rcv.dst_port=ba->port_no;
 	}
-	print_ip("tcpconn_new: new tcp connection: ", &c->rcv.src_ip, "\n");
+	print_ip("tcpconn_new: new tcp connection to: ", &c->rcv.src_ip, "\n");
 	DBG(     "tcpconn_new: on port %d, type %d\n", c->rcv.src_port, type);
 	init_tcp_req(&c->req);
 	c->id=(*connection_id)++;
@@ -363,14 +363,13 @@ error:
 
 
 
-struct tcp_connection* tcpconn_connect(union sockaddr_union* server, int type)
+struct tcp_connection* tcpconn_connect(struct socket_info* send_sock,
+									union sockaddr_union* server, int type)
 {
 	int s;
-	struct socket_info* si;
 	union sockaddr_union my_name;
 	socklen_t my_name_len;
 	struct tcp_connection* con;
-	struct ip_addr ip;
 
 	s=socket(AF2PF(server->s.sa_family), SOCK_STREAM, 0);
 	if (s==-1){
@@ -382,33 +381,19 @@ struct tcp_connection* tcpconn_connect(union sockaddr_union* server, int type)
 		LOG(L_ERR, "ERROR: tcpconn_connect: init_sock_opt failed\n");
 		goto error;
 	}
+	my_name_len = sockaddru_len(send_sock->su);
+	memcpy( &my_name, &send_sock->su, my_name_len);
+	su_setport( &my_name, 0);
+	if (bind(s, &my_name.s, my_name_len )!=0) {
+		LOG(L_ERR, "ERROR: tcpconn_connect: bind failed (%d) %s\n",
+				errno,strerror(errno));
+		goto error;
+	}
 	if (tcp_blocking_connect(s, &server->s, sockaddru_len(*server))<0){
 		LOG(L_ERR, "ERROR: tcpconn_connect: tcp_blocking_connect failed\n");
 		goto error;
 	}
-	my_name_len=sizeof(my_name);
-	if (getsockname(s, &my_name.s, &my_name_len)!=0){
-		LOG(L_ERR, "ERROR: tcp_connect: getsockname failed: %s(%d)\n",
-				strerror(errno), errno);
-		si=0; /* try to go on */
-	}
-	su2ip_addr(&ip, &my_name);
-#ifdef USE_TLS
-	if (type==PROTO_TLS)
-		si=find_si(&ip, 0, PROTO_TLS);
-	else
-#endif
-		si=find_si(&ip, 0, PROTO_TCP);
-
-	if (si==0){
-		LOG(L_ERR, "ERROR: tcp_connect: could not find corresponding"
-				" listening socket, using default...\n");
-		if (server->s.sa_family==AF_INET) si=sendipv4_tcp;
-#ifdef USE_IPV6
-		else si=sendipv6_tcp;
-#endif
-	}
-	con=tcpconn_new(s, server, si, type, S_CONN_CONNECT);
+	con=tcpconn_new(s, server, send_sock, type, S_CONN_CONNECT);
 	if (con==0){
 		LOG(L_ERR, "ERROR: tcp_connect: tcpconn_new failed, closing the "
 				 " socket\n");
@@ -626,8 +611,8 @@ void tcpconn_put(struct tcp_connection* c)
 
 
 /* finds a tcpconn & sends on it */
-int tcp_send(int type, char* buf, unsigned len, union sockaddr_union* to,
-				int id)
+int tcp_send(struct socket_info* send_sock, int type, char* buf, unsigned len,
+									union sockaddr_union* to, int id)
 {
 	struct tcp_connection *c;
 	struct tcp_connection *tmp;
@@ -666,7 +651,7 @@ no_id:
 		if (c==0){
 			DBG("tcp_send: no open tcp connection found, opening new one\n");
 			/* create tcp connection */
-			if ((c=tcpconn_connect(to, type))==0){
+			if ((c=tcpconn_connect(send_sock, to, type))==0){
 				LOG(L_ERR, "ERROR: tcp_send: connect failed\n");
 				return -1;
 			}
