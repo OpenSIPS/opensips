@@ -560,7 +560,11 @@ static void sig_usr(int signo)
 					exit(0);
 					break;
 			case SIGUSR1:
-				/* statistics, do nothing, printed only from the main proc */
+					/* statistics -> show only pkg mem */
+					#ifdef PKG_MALLOC
+					LOG(memlog, "Memory status (pkg):\n");
+					pkg_status();
+					#endif
 					break;
 				/* ignored*/
 			case SIGUSR2:
