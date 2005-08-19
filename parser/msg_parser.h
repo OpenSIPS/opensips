@@ -71,20 +71,22 @@ enum request_method {
 	METHOD_UPDATE=64,
 	METHOD_REGISTER=128,
 	METHOD_MESSAGE=256,
-	METHOD_SUBSCRIBE=512, 
+	METHOD_SUBSCRIBE=512,
 	METHOD_NOTIFY=1024,
-	METHOD_PRACK=2048, 
+	METHOD_PRACK=2048,
 	METHOD_REFER=4096,
 	METHOD_OTHER=8192
 };
 
-#define FL_FORCE_RPORT			1   /* force rport (top via) */
-#define FL_FORCE_ACTIVE			2   /* force active SDP */
-#define FL_SDP_IP_AFS			4   /* SDP IP rewritten */
-#define FL_SDP_PORT_AFS			8   /* SDP port rewritten */
-#define FL_SHM_CLONE			16  /* msg cloned in SHM as a single chunk */
-#define FL_USE_UAC_FROM			32  /* take from hdr from UAC insteas of UAS */
-#define FL_FORCE_LOCAL_RPORT    64  /* force local rport (local via) */
+#define FL_FORCE_RPORT        (1<<0) /* force rport (top via) */
+#define FL_FORCE_ACTIVE       (1<<1) /* force active SDP */
+#define FL_FORCE_LOCAL_RPORT  (1<<2) /* force local rport (local via) */
+#define FL_SDP_IP_AFS         (1<<3) /* SDP IP rewritten */
+#define FL_SDP_PORT_AFS       (1<<4) /* SDP port rewritten */
+#define FL_SHM_CLONE          (1<<5) /* msg cloned in SHM as a single chunk */
+#define FL_USE_UAC_FROM       (1<<6) /* take FROM hdr from UAC insteas of UAS */
+#define FL_USE_UAC_TO         (1<<7) /* take TO hdr from UAC insteas of UAS */
+#define FL_USE_UAC_CSEQ       (1<<8) /* take CSEQ hdr from UAC insteas of UAS */
 
 
 #define IFISMETHOD(methodname,firstchar)                                  \
@@ -119,19 +121,6 @@ if (  (*tmp==(firstchar) || *tmp==((firstchar) | 32)) &&                  \
 #define GET_RURI(m) \
 (((m)->new_uri.s && (m)->new_uri.len) ? (&(m)->new_uri) : (&(m)->first_line.u.request.uri))
 
-
-#if 0
-	/* old version */
-struct sip_uri {
-	str user;     /* Username */
-	str passwd;   /* Password */
-	str host;     /* Host name */
-	str port;     /* Port number */
-	str params;   /* Parameters */
-	str headers;  
-	unsigned short port_no;
-};
-#endif
 
 enum _uri_type{ERROR_URI_T=0, SIP_URI_T, SIPS_URI_T, TEL_URI_T, TELS_URI_T};
 typedef enum _uri_type uri_type;
@@ -174,10 +163,10 @@ struct sip_msg {
 	struct hdr_field* last_header; /* Pointer to the last parsed header*/
 	hdr_flags_t parsed_flag;       /* Already parsed header field types */
 
-	     /* Via, To, CSeq, Call-Id, From, end of header*/
-	     /* pointers to the first occurrences of these headers;
-		  * everything is also saved in 'headers'
-		  * (WARNING: do not deallocate them twice!)*/
+	/* Via, To, CSeq, Call-Id, From, end of header*/
+	/* pointers to the first occurrences of these headers;
+	 * everything is also saved in 'headers'
+	 * (WARNING: do not deallocate them twice!)*/
 
 	struct hdr_field* h_via1;
 	struct hdr_field* h_via2;
@@ -217,47 +206,52 @@ struct sip_msg {
 	struct receive_info rcv; /* source & dest ip, ports, proto a.s.o*/
 
 	char* buf;        /* scratch pad, holds a modified message,
-					   *  via, etc. point into it */
+                       *  via, etc. point into it */
 	unsigned int len; /* message len (orig) */
 
-	     /* modifications */
-	
-	str new_uri; /* changed first line uri, when you change this
-	                don't forget to set parsed_uri_ok to 0*/
+	/* modifications */
 
-	str dst_uri; /* Destination URI, must be forwarded to this URI if len != 0 */
+	str new_uri; /* changed first line uri, when you change this
+                  * don't forget to set parsed_uri_ok to 0 */
+
+	str dst_uri; /* Destination URI, must be forwarded to this URI if len!=0 */
 
 	/* current uri */
 	int parsed_uri_ok; /* 1 if parsed_uri is valid, 0 if not, set if to 0
 	                      if you modify the uri (e.g change new_uri)*/
 	struct sip_uri parsed_uri; /* speed-up > keep here the parsed uri*/
+
 	/* the same for original uri */
 	int parsed_orig_ruri_ok;
 	struct sip_uri parsed_orig_ruri;
-	
+
 	struct lump* add_rm;       /* used for all the forwarded requests/replies */
 	struct lump* body_lumps;     /* Lumps that update Content-Length */
 	struct lump_rpl *reply_lump; /* only for localy generated replies !!!*/
 
-	/* str add_to_branch; 
-	   whatever whoever want to append to branch comes here 
-	*/
+	/* whatever whoever want to append to branch comes here */
 	char add_to_branch_s[MAX_BRANCH_PARAM_LEN];
 	int add_to_branch_len;
 	
-	     /* index to TM hash table; stored in core to avoid unnecessary calculations */
+	/* index to TM hash table; stored in core to avoid 
+	 * unnecessary calculations */
 	unsigned int  hash_index;
-	unsigned int msg_flags; /* flags used by core */
-	     /* allows to set various flags on the message; may be used for 
-	      *	simple inter-module communication or remembering processing state
-	      * reached 
-	      */
-	flag_t flags;	
+
+	/* flags used by core - allows to set various flags on the message; may 
+	 * be used for simple inter-module communication or remembering 
+	 * processing state reached */
+	flag_t flags;
+
+	/* flags used from script */
+	unsigned int msg_flags;
+
 	str set_global_address;
 	str set_global_port;
-	struct socket_info* force_send_socket; /* force sending on this socket,
-											  if ser */
+
+	/* force sending on this socket */
+	struct socket_info* force_send_socket;
 };
+
 
 /* pointer to a fakes message which was never received ;
    (when this message is "relayed", it is generated out
