@@ -70,7 +70,6 @@ str default_via_address={0,0};
 str default_via_port={0,0};
 
 
-
 /* WARNING: buf must be 0 terminated (buf[len]=0) or some things might 
  * break (e.g.: modules/textops)
  */
@@ -80,7 +79,7 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info)
 	int ret;
 #ifdef STATS
 	int skipped = 1;
-	struct timeval tvb, tve;	
+	struct timeval tvb, tve;
 	struct timezone tz;
 	unsigned int diff;
 #endif
@@ -145,13 +144,16 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info)
 #ifdef  STATS
 		gettimeofday( & tvb, &tz );
 #endif
-		/* execute pre-script callbacks, if any */
-		/* if some of the callbacks said not to continue with
-		   script processing, don't do so
-		   if we are here basic sanity checks are already done
-		   (like presence of at least one via), so you can count
-		   on via1 being parsed in a pre-script callback --andrei
-		*/
+		/* set request route type --bogdan*/
+		set_route_type( REQUEST_ROUTE );
+
+		/* execute pre-script callbacks, if any;
+		 * if some of the callbacks said not to continue with
+		 * script processing, don't do so;
+		 * if we are here basic sanity checks are already done
+		 * (like presence of at least one via), so you can count
+		 * on via1 being parsed in a pre-script callback --andrei
+		 */
 		if (exec_pre_req_cb(msg)==0 )
 			goto end; /* drop the message */
 
@@ -184,19 +186,21 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info)
 		gettimeofday( & tvb, &tz );
 		STATS_RX_RESPONSE ( msg->first_line.u.reply.statuscode / 100 );
 #endif
-		
-		/* execute pre-script callbacks, if any */
-		/* if some of the callbacks said not to continue with
-		   script processing, don't do so
-		   if we are here basic sanity checks are already done
-		   (like presence of at least one via), so you can count
-		   on via1 being parsed in a pre-script callback --andrei
-		*/
+		/* set reply route type --bogdan*/
+		set_route_type( ONREPLY_ROUTE );
+
+		/* execute pre-script callbacks, if any ;
+		 * if some of the callbacks said not to continue with
+		 * script processing, don't do so ;
+		 * if we are here, basic sanity checks are already done
+		 * (like presence of at least one via), so you can count
+		 * on via1 being parsed in a pre-script callback --andrei
+		 */
 		if (exec_pre_rpl_cb(msg)==0 )
 			goto end; /* drop the request */
 
 		/* exec the onreply routing script */
-		if (onreply_rlist[DEFAULT_RT] &&
+		if ( onreply_rlist[DEFAULT_RT]!=0 &&
 		(ret=run_actions(onreply_rlist[DEFAULT_RT],msg))<=0 ) {
 			if (ret<0) {
 				LOG(L_WARN, "WARNING: receive_msg: "

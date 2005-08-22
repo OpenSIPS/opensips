@@ -68,6 +68,8 @@ struct action* rlist[RT_NO];
 struct action* onreply_rlist[ONREPLY_RT_NO];
 struct action* failure_rlist[FAILURE_RT_NO];
 
+int route_type = REQUEST_ROUTE;
+
 
 static int fix_actions(struct action* a); /*fwd declaration*/
 

@@ -42,6 +42,23 @@ extern struct action* rlist[RT_NO];
 extern struct action* onreply_rlist[RT_NO];
 extern struct action* failure_rlist[RT_NO];
 
+#define REQUEST_ROUTE 1  /* Request route block */
+#define FAILURE_ROUTE 2  /* Negative-reply route block */
+#define ONREPLY_ROUTE 4  /* Received-reply route block */
+
+extern int route_type;
+
+#define set_route_type(_new_type) \
+	do{\
+		route_type=_new_type;\
+	}while(0)
+
+#define swap_route_type(_backup, _new_type) \
+	do{\
+		_backup=route_type;\
+		route_type=_new_type;\
+	}while(0)
+
 
 void push(struct action* a, struct action** head);
 int add_actions(struct action* a, struct action** head);

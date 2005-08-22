@@ -39,6 +39,7 @@
 
 #include "parser/msg_parser.h" /* for sip_msg */
 #include "version.h"
+#include "route.h"
 
 typedef  struct module_exports* (*module_register)();
 typedef  int (*cmd_function)(struct sip_msg*, char*, char*);
@@ -58,10 +59,6 @@ typedef int (*child_init_function)(int rank);
 typedef unsigned int modparam_t;
 
 typedef int (*param_func_t)( modparam_t type, void* val);
-
-#define REQUEST_ROUTE 1  /* Function can be used in request route blocks */
-#define FAILURE_ROUTE 2  /* Function can be used in reply route blocks */
-#define ONREPLY_ROUTE 4  /* Function can be used in on_reply */
 
 /* Macros - used as rank in child_init function */
 #define PROC_MAIN      0  /* Main ser process */
