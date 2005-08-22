@@ -57,6 +57,7 @@ enum {
 		(_body)->last_param =(_param);\
 		if ((_param)->type==TAG_PARAM)\
 			memcpy(&((_body)->tag_value),&((_param)->value),sizeof(str));\
+		(_param) = 0;\
 	}while(0);
 
 
@@ -744,7 +745,7 @@ char* parse_to(char* buffer, char *end, struct to_body *to_b)
 endofheader:
 	if (to_b->display.len==0) to_b->display.s=0;
 	status=saved_status;
-	DBG("end of header reached, state=%d\n", status);
+	DBG("DEBUG:parse_to:end of header reached, state=%d\n", status);
 	/* check if error*/
 	switch(status){
 		case MAYBE_URI_END:
