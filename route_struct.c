@@ -335,6 +335,21 @@ void print_action(struct action* a)
 			case RETURN_T:
 					DBG("return(");
 					break;
+			case EXIT_T:
+					DBG("exit(");
+					break;
+			case SWITCH_T:
+					DBG("switch(");
+					break;
+			case CASE_T:
+					DBG("case(");
+					break;
+			case DEFAULT_T:
+					DBG("default(");
+					break;
+			case SBREAK_T:
+					DBG("sbreak(");
+					break;
 			default:
 					DBG("UNKNOWN(");
 		}
