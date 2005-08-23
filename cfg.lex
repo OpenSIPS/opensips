@@ -107,6 +107,7 @@ ERROR	error
 ROUTE	route
 ROUTE_FAILURE failure_route
 ROUTE_ONREPLY onreply_route
+ROUTE_BRANCH branch_route
 EXEC	exec
 FORCE_RPORT		"force_rport"|"add_rport"
 FORCE_LOCAL_RPORT		"force_local_rport"|"add_local_rport"
@@ -314,6 +315,7 @@ EAT_ABLE	[\ \t\b\r]
 								return ROUTE_ONREPLY; }
 <INITIAL>{ROUTE_FAILURE}	{ count(); yylval.strval=yytext;
 								return ROUTE_FAILURE; }
+<INITIAL>{ROUTE_BRANCH} { count(); yylval.strval=yytext; return ROUTE_BRANCH; }
 <INITIAL>{EXEC}	{ count(); yylval.strval=yytext; return EXEC; }
 <INITIAL>{SET_HOST}	{ count(); yylval.strval=yytext; return SET_HOST; }
 <INITIAL>{SET_HOSTPORT}	{ count(); yylval.strval=yytext; return SET_HOSTPORT; }

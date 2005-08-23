@@ -53,6 +53,7 @@
 #define RT_NO 40 /* routing tables number */
 #define FAILURE_RT_NO RT_NO /* on_failure routing tables number */
 #define ONREPLY_RT_NO RT_NO /* on_reply routing tables number */
+#define BRANCH_RT_NO  RT_NO /* T-branch routing tables number */
 #define DEFAULT_RT 0 /* default routing table */
 
 #define MAX_REC_LEV 100 /* maximum number of recursive calls */

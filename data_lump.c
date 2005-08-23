@@ -26,6 +26,10 @@
  *  2003-10-20  anchor_lump & del_lump will automatically choose the lump list
  *              based on  msg->eoh comparisons (andrei)
  *  2003-10-28  added extra checks (paranoia) for {anchor,del}_lump (andrei)
+ *  2005-08-22  added init_lump_flags -initial flags- for all built lumps
+ *              (bogdan)
+ *  2005-08-23  del_nonshm_lump() -> del_flaged_lumps(LUMPFLAG_SHMEM) (bogdan)
+
  */
 
 
@@ -47,6 +51,8 @@
 
 enum lump_dir { LD_NEXT, LD_BEFORE, LD_AFTER };
 
+int init_lump_flags = 0;
+
 /* adds a header to the end
  * returns  pointer on success, 0 on error */
 struct lump* append_new_lump(struct lump** list, char* new_hdr,
@@ -65,6 +71,7 @@ struct lump* append_new_lump(struct lump** list, char* new_hdr,
 		
 	memset(tmp,0,sizeof(struct lump));
 	tmp->type=type;
+	tmp->flags=init_lump_flags;
 	tmp->op=LUMP_ADD;
 	tmp->u.value=new_hdr;
 	tmp->len=len;
@@ -89,6 +96,7 @@ struct lump* insert_new_lump(struct lump** list, char* new_hdr,
 	memset(tmp,0,sizeof(struct lump));
 	tmp->next=*list;
 	tmp->type=type;
+	tmp->flags=init_lump_flags;
 	tmp->op=LUMP_ADD;
 	tmp->u.value=new_hdr;
 	tmp->len=len;
@@ -114,6 +122,7 @@ struct lump* insert_new_lump_after( struct lump* after, char* new_hdr,
 	memset(tmp,0,sizeof(struct lump));
 	tmp->after=after->after;
 	tmp->type=type;
+	tmp->flags=init_lump_flags;
 	tmp->op=LUMP_ADD;
 	tmp->u.value=new_hdr;
 	tmp->len=len;
@@ -139,6 +148,7 @@ struct lump* insert_new_lump_before( struct lump* before, char* new_hdr,
 	memset(tmp,0,sizeof(struct lump));
 	tmp->before=before->before;
 	tmp->type=type;
+	tmp->flags=init_lump_flags;
 	tmp->op=LUMP_ADD;
 	tmp->u.value=new_hdr;
 	tmp->len=len;
@@ -164,6 +174,7 @@ struct lump* insert_subst_lump_after( struct lump* after, enum lump_subst subst,
 	memset(tmp,0,sizeof(struct lump));
 	tmp->after=after->after;
 	tmp->type=type;
+	tmp->flags=init_lump_flags;
 	tmp->op=LUMP_ADD_SUBST;
 	tmp->u.subst=subst;
 	tmp->len=0;
@@ -190,6 +201,7 @@ struct lump* insert_subst_lump_before(	struct lump* before,
 	memset(tmp,0,sizeof(struct lump));
 	tmp->before=before->before;
 	tmp->type=type;
+	tmp->flags=init_lump_flags;
 	tmp->op=LUMP_ADD_SUBST;
 	tmp->u.subst=subst;
 	tmp->len=0;
@@ -215,6 +227,7 @@ struct lump* insert_cond_lump_after( struct lump* after, enum lump_conditions c,
 	memset(tmp,0,sizeof(struct lump));
 	tmp->after=after->after;
 	tmp->type=type;
+	tmp->flags=init_lump_flags;
 	tmp->op=LUMP_ADD_OPT;
 	tmp->u.cond=c;
 	tmp->len=0;
@@ -241,6 +254,7 @@ struct lump* insert_cond_lump_before(	struct lump* before,
 	memset(tmp,0,sizeof(struct lump));
 	tmp->before=before->before;
 	tmp->type=type;
+	tmp->flags=init_lump_flags;
 	tmp->op=LUMP_ADD_OPT;
 	tmp->u.cond=c;
 	tmp->len=0;
@@ -286,6 +300,7 @@ struct lump* del_lump(struct sip_msg* msg, int offset, int len,
 	memset(tmp,0,sizeof(struct lump));
 	tmp->op=LUMP_DEL;
 	tmp->type=type;
+	tmp->flags=init_lump_flags;
 	tmp->u.offset=offset;
 	tmp->len=len;
 	prev=0;
@@ -342,6 +357,7 @@ struct lump* anchor_lump(struct sip_msg* msg, int offset, int len,
 	memset(tmp,0,sizeof(struct lump));
 	tmp->op=LUMP_NOP;
 	tmp->type=type;
+	tmp->flags=init_lump_flags;
 	tmp->u.offset=offset;
 	tmp->len=len;
 	prev=0;
@@ -449,7 +465,7 @@ static struct lump *dup_lump_list_r( struct lump *l,
 	if (!new_lump) { *error=1; return 0; }
 
 	memcpy(new_lump, l, sizeof(struct lump));
-	new_lump->flags=LUMPFLAG_DUPED;
+	new_lump->flags=init_lump_flags|LUMPFLAG_DUPED;
 	new_lump->next=new_lump->before=new_lump->after=0;
 
 	switch(dir) {
@@ -540,7 +556,7 @@ void free_duped_lump_list(struct lump* l)
 
 
 
-void del_nonshm_lump( struct lump** lump_list )
+void del_flaged_lumps( struct lump** lump_list, enum lump_flag flags )
 {
 	struct lump *r, *foo, *crt, **prev, *prev_r;
 
@@ -548,7 +564,7 @@ void del_nonshm_lump( struct lump** lump_list )
 	crt = *lump_list;
 
 	while (crt) {
-		if (crt->flags!=LUMPFLAG_SHMEM) {
+		if ( (crt->flags&flags)==flags ) {
 			/* unlink it */
 			foo = crt;
 			crt = crt->next;

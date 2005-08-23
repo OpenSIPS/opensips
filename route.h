@@ -39,12 +39,14 @@
 /* main "script table" */
 extern struct action* rlist[RT_NO];
 /* main reply route table */
-extern struct action* onreply_rlist[RT_NO];
-extern struct action* failure_rlist[RT_NO];
+extern struct action* onreply_rlist[ONREPLY_RT_NO];
+extern struct action* failure_rlist[FAILURE_RT_NO];
+extern struct action* branch_rlist[BRANCH_RT_NO];
 
 #define REQUEST_ROUTE 1  /* Request route block */
 #define FAILURE_ROUTE 2  /* Negative-reply route block */
 #define ONREPLY_ROUTE 4  /* Received-reply route block */
+#define BRANCH_ROUTE  8  /* Sending-branch route block */
 
 extern int route_type;
 

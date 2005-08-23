@@ -146,6 +146,7 @@ static int  mpath_len = 0;
 %token ROUTE
 %token ROUTE_FAILURE
 %token ROUTE_ONREPLY
+%token ROUTE_BRANCH
 %token EXEC
 %token SET_HOST
 %token SET_HOSTPORT
@@ -337,6 +338,7 @@ statement:	assign_stm
 		| {rt=REQUEST_ROUTE;} route_stm 
 		| {rt=FAILURE_ROUTE;} failure_route_stm
 		| {rt=ONREPLY_ROUTE;} onreply_route_stm
+		| {rt=BRANCH_ROUTE;} branch_route_stm
 
 		| CR	/* null statement*/
 	;
@@ -935,6 +937,18 @@ onreply_route_stm: ROUTE_ONREPLY LBRACE actions RBRACE {
 										}
 		| ROUTE_ONREPLY error { yyerror("invalid onreply_route statement"); }
 	;
+
+branch_route_stm: ROUTE_BRANCH LBRACK NUMBER RBRACK LBRACE actions RBRACE {
+										if (($3<BRANCH_RT_NO)&&($3>=1)){
+											push($6, &branch_rlist[$3]);
+										} else {
+											yyerror("invalid branch routing"
+												"table number");
+											YYABORT; }
+										}
+		| ROUTE_BRANCH error { yyerror("invalid branch_route statement"); }
+	;
+
 /*
 rules:	rules rule { push($2, &$1); $$=$1; }
 	| rule {$$=$1; }

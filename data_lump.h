@@ -39,6 +39,20 @@
 #include "parser/msg_parser.h"
 #include "parser/hf.h"
 
+extern int init_lump_flags;
+
+
+#define set_init_lump_flags(_flags) \
+	do{\
+		init_lump_flags = _flags;\
+	}while(0)
+
+#define reset_init_lump_flags() \
+	do{\
+		init_lump_flags = 0;\
+	}while(0)
+
+
 /* adds a header to the end */
 struct lump* append_new_lump(struct lump** list, char* new_hdr,
 							 int len, enum _hdr_types_t type);
@@ -74,7 +88,7 @@ struct lump* dup_lump_list( struct lump *l );
 void free_duped_lump_list(struct lump* l);
 
 
-/* remove all non-SHMEM lumps from the list */
-void del_nonshm_lump( struct lump** lump_list );
+/* remove all flaged lumps from the list */
+void del_flaged_lumps( struct lump** lump_list, enum lump_flag flags );
 
 #endif
