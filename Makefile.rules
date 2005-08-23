@@ -42,7 +42,6 @@ docbook-clean:
 	-@for r in $(modules) $(static_modules_path) "" ; do \
 		if [ -d "$$r" ]; then \
 			if [ -d "$$r"/doc ]; then \
-				echo "module $$r" ; \
 				rm -f "$$r"/doc/*.txt ; \
 				rm -f "$$r"/doc/*.html ; \
 				rm -f "$$r"/doc/*.pdf ; \
@@ -55,7 +54,6 @@ clean: docbook-clean
 	-@rm -f $(objs) $(NAME) $(objs:.o=.il) 2>/dev/null
 	-@for r in $(modules) $(static_modules_path) "" ; do \
 		if [ -d "$$r" ]; then \
-			echo "module $$r" ; \
 			$(MAKE) -C $$r clean ; \
 		fi ; \
 	done
