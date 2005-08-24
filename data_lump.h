@@ -90,5 +90,6 @@ void free_duped_lump_list(struct lump* l);
 
 /* remove all flaged lumps from the list */
 void del_flaged_lumps( struct lump** lump_list, enum lump_flag flags );
+void del_notflaged_lumps( struct lump** lump_list, enum lump_flag not_flags);
 
 #endif

@@ -564,7 +564,7 @@ void del_flaged_lumps( struct lump** lump_list, enum lump_flag flags )
 	crt = *lump_list;
 
 	while (crt) {
-		if ( (crt->flags&flags)==flags ) {
+		if ( crt->flags&flags ) {
 			/* unlink it */
 			foo = crt;
 			crt = crt->next;
@@ -574,12 +574,12 @@ void del_flaged_lumps( struct lump** lump_list, enum lump_flag flags )
 			/* entire before/after list must be removed */
 			free_lump_list( foo );
 		} else {
-			/* check on before and prev list for non-shmem lumps */
+			/* check on before and prev list for flaged lumps */
 			r = crt->after;
 			prev_r = crt;
 			while(r){
 				foo=r; r=r->after;
-				if (foo->flags!=LUMPFLAG_SHMEM) {
+				if ( crt->flags&flags ) {
 					prev_r->after = r;
 					free_lump(foo);
 					pkg_free(foo);
@@ -592,7 +592,59 @@ void del_flaged_lumps( struct lump** lump_list, enum lump_flag flags )
 			prev_r = crt;
 			while(r){
 				foo=r; r=r->before;
-				if (foo->flags!=LUMPFLAG_SHMEM) {
+				if ( crt->flags&flags ) {
+					prev_r->before = r;
+					free_lump(foo);
+					pkg_free(foo);
+				} else {
+					prev_r = foo;
+				}
+			}
+			/* go to next lump */
+			prev = &(crt->next);
+			crt = crt->next;
+		}
+	}
+}
+
+
+void del_notflaged_lumps( struct lump** lump_list, enum lump_flag not_flags )
+{
+	struct lump *r, *foo, *crt, **prev, *prev_r;
+
+	prev = lump_list;
+	crt = *lump_list;
+
+	while (crt) {
+		if ( (~crt->flags)&not_flags ) {
+			/* unlink it */
+			foo = crt;
+			crt = crt->next;
+			foo->next = 0;
+			/* update the 'next' link of the previous lump */
+			*prev = crt;
+			/* entire before/after list must be removed */
+			free_lump_list( foo );
+		} else {
+			/* check on before and prev list for not_flaged lumps */
+			r = crt->after;
+			prev_r = crt;
+			while(r){
+				foo=r; r=r->after;
+				if ( (~crt->flags)&not_flags ) {
+					prev_r->after = r;
+					free_lump(foo);
+					pkg_free(foo);
+				} else {
+					prev_r = foo;
+				}
+			}
+			/* before */
+			r = crt->before;
+			prev_r = crt;
+			while(r){
+				foo=r; r=r->before;
+				if ( (~crt->flags)&not_flags ) {
 					prev_r->before = r;
 					free_lump(foo);
 					pkg_free(foo);
