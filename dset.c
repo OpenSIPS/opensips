@@ -100,8 +100,8 @@ char* next_branch(int* len, qvalue_t* q, char** dst_uri, int* dst_len,
 		*len = branches[i].len;
 		*q = branches[i].q;
 		if (dst_uri && dst_len) {
-			*dst_uri = branches[i].dst_uri;
 			*dst_len = branches[i].dst_uri_len;
+			*dst_uri = (*dst_len)?branches[i].dst_uri:0;
 		}
 		if (force_socket) {
 			*force_socket = branches[i].force_send_socket;
