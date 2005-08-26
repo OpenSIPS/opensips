@@ -83,6 +83,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 	char *new_uri, *end, *crt;
 	int len;
 	int user;
+	str s;
 	struct sip_uri uri, next_hop;
 	struct sip_uri *u;
 	unsigned short port;
@@ -564,6 +565,33 @@ int do_action(struct action* a, struct sip_msg* msg)
 				msg->parsed_uri_ok=0;
 				ret=1;
 				break;
+		case SET_DSTURI_T:
+			if (a->p1_type!=STRING_ST){
+				LOG(L_CRIT, "BUG: do_action: bad setdsturi() type %d\n",
+							a->p1_type);
+				ret=E_BUG;
+				break;
+			}
+			s.s = a->p1.string;
+			s.len = strlen(s.s);
+			if(set_dst_uri(msg, &s)!=0)
+				ret = -1;
+			else
+				ret = 1;
+			break;
+		case RESET_DSTURI_T:
+			if(msg->dst_uri.s!=0)
+				pkg_free(msg->dst_uri.s);
+			msg->dst_uri.s = 0;
+			msg->dst_uri.len = 0;
+			ret = 1;
+			break;
+		case ISDSTURISET_T:
+			if(msg->dst_uri.s==0 || msg->dst_uri.len<=0)
+				ret = -1;
+			else
+				ret = 1;
+			break;
 		case IF_T:
 				/* if null expr => ignore if? */
 				if ((a->p1_type==EXPR_ST)&&a->p1.data){

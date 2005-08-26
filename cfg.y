@@ -159,6 +159,9 @@ static int  mpath_len = 0;
 %token SET_PORT
 %token SET_URI
 %token REVERT_URI
+%token SET_DSTURI
+%token RESET_DSTURI
+%token ISDSTURISET
 %token FORCE_RPORT
 %token FORCE_LOCAL_RPORT
 %token FORCE_TCP_ALIAS
@@ -1762,6 +1765,15 @@ cmd:		FORWARD LPAREN host RPAREN	{ $$=mk_action(	FORWARD_T,
 										"string expected"); }
 		| REVERT_URI LPAREN RPAREN { $$=mk_action( REVERT_URI_T, 0,0,0,0); }
 		| REVERT_URI { $$=mk_action( REVERT_URI_T, 0,0,0,0); }
+		| SET_DSTURI LPAREN STRING RPAREN { $$=mk_action( SET_DSTURI_T,
+													STRING_ST, 0, $3, 0); }
+		| SET_DSTURI error { $$=0; yyerror("missing '(' or ')' ?"); }
+		| SET_DSTURI LPAREN error RPAREN { $$=0; yyerror("bad argument, "
+										"string expected"); }
+		| RESET_DSTURI LPAREN RPAREN { $$=mk_action( RESET_DSTURI_T, 0,0,0,0); }
+		| RESET_DSTURI { $$=mk_action( RESET_DSTURI_T, 0,0,0,0); }
+		| ISDSTURISET LPAREN RPAREN { $$=mk_action( ISDSTURISET_T, 0,0,0,0); }
+		| ISDSTURISET { $$=mk_action( ISDSTURISET_T, 0,0,0,0); }
 		| FORCE_RPORT LPAREN RPAREN	{ $$=mk_action(FORCE_RPORT_T,0, 0, 0, 0); }
 		| FORCE_RPORT				{$$=mk_action(FORCE_RPORT_T,0, 0, 0, 0); }
 		| FORCE_LOCAL_RPORT LPAREN RPAREN	{

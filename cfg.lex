@@ -122,6 +122,9 @@ SET_USERPASS	"rewriteuserpass"|"setuserpass"|"setup"
 SET_PORT		"rewriteport"|"setport"|"setp"
 SET_URI			"rewriteuri"|"seturi"
 REVERT_URI		"revert_uri"
+SET_DSTURI		"setdsturi"|"setduri"
+RESET_DSTURI	"resetdsturi"|"resetduri"
+ISDSTURISET		"isdsturiset"|"isduriset"
 PREFIX			"prefix"
 STRIP			"strip"
 STRIP_TAIL		"strip_tail"
@@ -324,6 +327,9 @@ EAT_ABLE	[\ \t\b\r]
 <INITIAL>{SET_PORT}	{ count(); yylval.strval=yytext; return SET_PORT; }
 <INITIAL>{SET_URI}	{ count(); yylval.strval=yytext; return SET_URI; }
 <INITIAL>{REVERT_URI}	{ count(); yylval.strval=yytext; return REVERT_URI; }
+<INITIAL>{SET_DSTURI}	{ count(); yylval.strval=yytext; return SET_DSTURI; }
+<INITIAL>{RESET_DSTURI}	{ count(); yylval.strval=yytext; return RESET_DSTURI; }
+<INITIAL>{ISDSTURISET}	{ count(); yylval.strval=yytext; return ISDSTURISET; }
 <INITIAL>{PREFIX}	{ count(); yylval.strval=yytext; return PREFIX; }
 <INITIAL>{STRIP}	{ count(); yylval.strval=yytext; return STRIP; }
 <INITIAL>{STRIP_TAIL}	{ count(); yylval.strval=yytext; return STRIP_TAIL; }
