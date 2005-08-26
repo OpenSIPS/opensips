@@ -56,7 +56,8 @@ enum _xl_type {
 	XL_DSET,             XL_DSTURI,            XL_COLOR,
 	XL_BRANCH,           XL_BRANCHES,          XL_CONTENT_TYPE,
 	XL_CONTENT_LENGTH,   XL_MSG_BODY,          XL_AUTH_USERNAME,
-	XL_AUTH_REALM
+	XL_AUTH_REALM,       XL_RURI_PROTOCOL,     XL_DSTURI_DOMAIN,
+	XL_DSTURI_PORT,      XL_DSTURI_PROTOCOL
 };
 typedef enum _xl_type xl_type_t;
 

@@ -54,6 +54,8 @@
 static str str_null   = { "<null>", 6 };
 static str str_empty  = { "", 0 };
 static str str_marker = { ITEM_MARKER_STR, 1 };
+static str str_udp    = { "UDP", 3 };
+static str str_5060   = { "5060", 4 };
 
 int msg_id = 0;
 time_t msg_tm = 0;
@@ -97,6 +99,30 @@ static int xl_get_marker(struct sip_msg *msg, xl_value_t *res, xl_param_t *param
 	res->rs.s = str_marker.s;
 	res->rs.len = str_marker.len;
 	res->ri = (int)str_marker.s[0];
+	res->flags = XL_VAL_STR|XL_VAL_INT;
+	return 0;
+}
+
+static int xl_get_udp(struct sip_msg *msg, xl_value_t *res, xl_param_t *param)
+{
+	if(msg==NULL || res==NULL)
+		return -1;
+	
+	res->rs.s = str_udp.s;
+	res->rs.len = str_udp.len;
+	res->ri = PROTO_UDP;
+	res->flags = XL_VAL_STR|XL_VAL_INT;
+	return 0;
+}
+
+static int xl_get_5060(struct sip_msg *msg, xl_value_t *res, xl_param_t *param)
+{
+	if(msg==NULL || res==NULL)
+		return -1;
+	
+	res->rs.s = str_5060.s;
+	res->rs.len = str_5060.len;
+	res->ri = 5060;
 	res->flags = XL_VAL_STR|XL_VAL_INT;
 	return 0;
 }
@@ -162,6 +188,7 @@ static int xl_get_times(struct sip_msg *msg, xl_value_t *res, xl_param_t *param)
 	res->flags = XL_VAL_STR|XL_VAL_INT;
 	return 0;
 }
+
 static int xl_get_timef(struct sip_msg *msg, xl_value_t *res, xl_param_t *param)
 {
 	char *ch = NULL;
@@ -281,7 +308,7 @@ static int xl_get_ruri(struct sip_msg *msg, xl_value_t *res, xl_param_t *param)
 	return 0;
 }
 
-static int xl_get_ruri_username(struct sip_msg *msg, xl_value_t *res, xl_param_t *param)
+static int xl_get_ruri_attr(struct sip_msg *msg, xl_value_t *res, xl_param_t *param)
 {
 	if(msg==NULL || res==NULL)
 		return -1;
@@ -292,62 +319,38 @@ static int xl_get_ruri_username(struct sip_msg *msg, xl_value_t *res, xl_param_t
 	if(msg->parsed_uri_ok==0 /* R-URI not parsed*/ && parse_sip_msg_uri(msg)<0)
 	{
 		LOG(L_ERR,
-			"xl_get_ruri_username: ERROR while parsing the R-URI\n");
+			"xl_get_ruri_attr: ERROR while parsing the R-URI\n");
 		return xl_get_null(msg, res, param);
 	}
 	
-	res->rs.s   = msg->parsed_uri.user.s;
-	res->rs.len = msg->parsed_uri.user.len;
-	
-	res->flags = XL_VAL_STR;
-	return 0;
-}
-
-static int xl_get_ruri_domain(struct sip_msg *msg, xl_value_t *res, xl_param_t *param)
-{
-	if(msg==NULL || res==NULL)
-		return -1;
-
-	if(msg->first_line.type == SIP_REPLY)	/* REPLY doesnt have a ruri */
-		return xl_get_null(msg, res, param);
-
-	if(msg->parsed_uri_ok==0 /* R-URI not parsed*/ && parse_sip_msg_uri(msg)<0)
+	if(param->hparam.len==1) /* username */
 	{
-		LOG(L_ERR,
-			"xl_get_ruri_domain: ERROR while parsing the R-URI\n");
+		res->rs.s   = msg->parsed_uri.user.s;
+		res->rs.len = msg->parsed_uri.user.len;
+		res->flags = XL_VAL_STR;
+	} else if(param->hparam.len==2) /* domain */ {
+		res->rs.s   = msg->parsed_uri.host.s;
+		res->rs.len = msg->parsed_uri.host.len;
+		res->flags  = XL_VAL_STR;
+	} else if(param->hparam.len==3) /* port */ {
+		if(msg->parsed_uri.port.s==NULL)
+			return xl_get_5060(msg, res, param);
+		res->rs.s   = msg->parsed_uri.port.s;
+		res->rs.len = msg->parsed_uri.port.len;
+		res->ri     = (int)msg->parsed_uri.port_no;
+		res->flags  = XL_VAL_STR|XL_VAL_INT;
+	} else if(param->hparam.len==4) /* protocol */ {
+		if(msg->parsed_uri.transport_val.s==NULL)
+			return xl_get_udp(msg, res, param);
+		res->rs.s   = msg->parsed_uri.transport_val.s;
+		res->rs.len = msg->parsed_uri.transport_val.len;
+		res->ri     = (int)msg->parsed_uri.proto;
+		res->flags  = XL_VAL_STR|XL_VAL_INT;
+	} else {
+		LOG(L_ERR, "xl_get_ruri_attr: unknown specifier\n");
 		return xl_get_null(msg, res, param);
 	}
 	
-	res->rs.s   = msg->parsed_uri.host.s;
-	res->rs.len = msg->parsed_uri.host.len;
-	
-	res->flags = XL_VAL_STR;
-	return 0;
-}
-
-static int xl_get_ruri_port(struct sip_msg *msg, xl_value_t *res, xl_param_t *param)
-{
-	if(msg==NULL || res==NULL)
-		return -1;
-
-	if(msg->first_line.type == SIP_REPLY)	/* REPLY doesnt have a ruri */
-		return xl_get_null(msg, res, param);
-
-	if(msg->parsed_uri_ok==0 /* R-URI not parsed*/ && parse_sip_msg_uri(msg)<0)
-	{
-		LOG(L_ERR,
-			"xl_get_ruri_domain: ERROR while parsing the R-URI\n");
-		return xl_get_null(msg, res, param);
-	}
-
-	if(msg->parsed_uri.port.s==NULL)
-		return xl_get_empty(msg, res, param);
-	
-	res->rs.s   = msg->parsed_uri.port.s;
-	res->rs.len = msg->parsed_uri.port.len;
-	
-	res->ri    = (int)msg->parsed_uri.port_no;
-	res->flags = XL_VAL_STR|XL_VAL_INT;
 	return 0;
 }
 
@@ -371,7 +374,6 @@ static int xl_get_contact(struct sip_msg* msg, xl_value_t *res, xl_param_t *para
 	res->rs.s = msg->contact->body.s;
 	res->rs.len = msg->contact->body.len;
 
-	
 //	res->s = ((struct to_body*)msg->contact->parsed)->uri.s;
 //	res->len = ((struct to_body*)msg->contact->parsed)->uri.len;
 
@@ -830,12 +832,57 @@ static int xl_get_dsturi(struct sip_msg *msg, xl_value_t *res, xl_param_t *param
     if(msg==NULL || res==NULL)
 		return -1;
     
-    if (msg->dst_uri.s == NULL) return xl_get_null(msg, res, param);
+    if (msg->dst_uri.s == NULL)
+		return xl_get_empty(msg, res, param);
 
 	res->rs.s = msg->dst_uri.s;
     res->rs.len = msg->dst_uri.len;
 
 	res->flags = XL_VAL_STR;
+    return 0;
+}
+
+static int xl_get_dsturi_attr(struct sip_msg *msg, xl_value_t *res,
+		xl_param_t *param)
+{
+	struct sip_uri uri;
+    if(msg==NULL || res==NULL)
+		return -1;
+    
+    if (msg->dst_uri.s == NULL)
+		return xl_get_empty(msg, res, param);
+
+	if(parse_uri(msg->dst_uri.s, msg->dst_uri.len, &uri)!=0)
+	{
+		LOG(L_ERR, "xl_get_dsturi_attr: ERROR cannot parse dst uri\n");
+		return xl_get_null(msg, res, param);
+	}
+	
+	if(param->hparam.len==1) /* domain */
+	{
+		res->rs.s = uri.host.s;
+		res->rs.len = uri.host.len;
+		res->flags = XL_VAL_STR;
+	} else if(param->hparam.len==2) /* port */ {
+		if(uri.port.s==NULL)
+			return xl_get_5060(msg, res, param);
+		res->rs.s   = uri.port.s;
+		res->rs.len = uri.port.len;
+		res->ri     = (int)uri.port_no;
+		res->flags  = XL_VAL_STR|XL_VAL_INT;
+		return 0;
+	} else if(param->hparam.len==3) /* proto */ {
+		if(uri.transport_val.s==NULL)
+			return xl_get_udp(msg, res, param);
+		res->rs.s   = uri.transport_val.s;
+		res->rs.len = uri.transport_val.len;
+		res->ri     = (int)uri.proto;
+		res->flags  = XL_VAL_STR|XL_VAL_INT;
+	} else {
+		LOG(L_ERR, "xl_get_dsturi_attr: invalid specifier\n");
+		return xl_get_null(msg, res, param);
+	}
+
     return 0;
 }
 
@@ -1676,6 +1723,21 @@ char* xl_parse_spec(char *s, xl_spec_p e, int flags)
 			p++;
 			switch(*p)
 			{
+				case 'd':
+					e->itf = xl_get_dsturi_attr;
+					e->p.hparam.len = 1;
+					e->type = XL_DSTURI_DOMAIN;
+				break;
+				case 'p':
+					e->itf = xl_get_dsturi_attr;
+					e->p.hparam.len = 2;
+					e->type = XL_DSTURI_PORT;
+				break;
+				case 'P':
+					e->itf = xl_get_dsturi_attr;
+					e->p.hparam.len = 3;
+					e->type = XL_DSTURI_PROTOCOL;
+				break;
 				case 's':
 					e->itf = xl_get_dset;
 					e->type = XL_DSET;
@@ -1785,7 +1847,8 @@ char* xl_parse_spec(char *s, xl_spec_p e, int flags)
 					e->type = XL_RETURN_CODE;
 				break;
 				case 'd':
-					e->itf = xl_get_ruri_domain;
+					e->itf = xl_get_ruri_attr;
+					e->p.hparam.len = 2;
 					e->type = XL_RURI_DOMAIN;
 				break;
 				case 'm':
@@ -1793,8 +1856,14 @@ char* xl_parse_spec(char *s, xl_spec_p e, int flags)
 					e->type = XL_METHOD;
 				break;
 				case 'p':
-					e->itf = xl_get_ruri_port;
+					e->itf = xl_get_ruri_attr;
+					e->p.hparam.len = 3;
 					e->type = XL_RURI_PORT;
+				break;
+				case 'P':
+					e->itf = xl_get_ruri_attr;
+					e->p.hparam.len = 4;
+					e->type = XL_RURI_PROTOCOL;
 				break;
 				case 'r':
 					e->itf = xl_get_reason;
@@ -1812,7 +1881,8 @@ char* xl_parse_spec(char *s, xl_spec_p e, int flags)
 					e->type = XL_RURI;
 				break;
 				case 'U':
-					e->itf = xl_get_ruri_username;
+					e->itf = xl_get_ruri_attr;
+					e->p.hparam.len = 1;
 					e->type = XL_RURI_USERNAME;
 				break;
 				default:
