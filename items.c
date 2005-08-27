@@ -1876,6 +1876,7 @@ char* xl_parse_spec(char *s, xl_spec_p e, int flags)
 				case 't':
 					e->itf = xl_get_refer_to;
 					e->type = XL_REFER_TO;
+				break;
 				case 'u':
 					e->itf = xl_get_ruri;
 					e->type = XL_RURI;
