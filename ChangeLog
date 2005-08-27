@@ -2,6 +2,48 @@
 
 ===================== Changes since release 0.9.4 ============================
 
+* 2005-08-26 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- core: new pseudo-variables:
+    - $rP - transport protocol of RURI
+    - $dd - dst_uri domain
+    - $dp - dst_uri port
+    - $dP - dst_uri transport protocol
+- core: new core functions to manage next hop destination address (dst_uri)
+    - setdsturi("uri") - set the value of dst_uri - the value of the parameter
+      must be a valid sip uri
+    - resetdsturi() - reset dst_uri
+    - isdsturiset() - test if there is a dst_uri address set
+- avpops: avp_write() and avp_pushto() can access and set dst_uri field (if
+  set, this is the next hop, regardless of r-uri address) via '$duri'
+
+* 2005-08-25 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- core: in failure route will be visible the RURI of the selected branch
+  (so far was all the time the RURI of the first branch).
+- core: dst_uri (per branch) available in branch route - it can be also changed
+
+* 2005-08-24 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- tm: new function t_check_trans(): checks if the request belongs to a
+  transacation as follows:
+     - non-CANCEL;non-ACK - checks if the the transaction already exists
+       (retransmission)
+     - ACK - returns true if it's local e2e ACK; false otherwise;
+     - CANCEL - returns true if the coresponding INVITE transaction exists.
+
+* 2005-08-23 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- core: branch_route[] support added (route blocks to be executed for each
+  branch)
+
+* 2005-08-20 Juha Heinanen <jh@tutpro.com>
+- lcr: added support for gateway prefixes.
+
+* 2005-08-19 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- tm: local builded requests (CANCEL and ACK) use UAC info (instead of UAS)
+  if FL_USE_UAC_TO or FL_USE_UAC_CSEQ flags are set
+- uac: proper TO mangling in sequential request due FROM magling in initial
+  request. By this, FROM mangling may be used in full automatic mode - all
+  sequential replies and requests (in all directions) will be automatically
+  fixed.
+
 * 2005-08-15 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
 - tm: delayed CANCEL feature added - cancelled transactions will be marked to be
   able to cancel delayed replies
