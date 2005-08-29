@@ -754,6 +754,128 @@ int fix_rls()
 }
 
 
+static int rcheck_stack[RT_NO];
+static int rcheck_stack_p = 0;
+static int rcheck_status = 0;
+
+static int check_actions(struct action *a, int r_type)
+{
+	struct action *aitem;
+	cmd_export_t  *fct;
+	int n;
+
+	for( ; a ; a=a->next ) {
+		switch (a->type) {
+			case ROUTE_T:
+				/* this route is already on the current path ? */
+				for( n=0 ; n<rcheck_stack_p ; n++ ) {
+					if (rcheck_stack[n]==(int)a->p1.number)
+						break;
+				}
+				if (n!=rcheck_stack_p)
+					break;
+				if (++rcheck_stack_p==RT_NO) {
+					LOG(L_CRIT,"BUG:check_actions: stack overflow (%d)\n",
+						rcheck_stack_p);
+					goto error;
+				}
+				rcheck_stack[rcheck_stack_p] = a->p1.number;
+				if (check_actions( rlist[a->p1.number], r_type)!=0)
+					goto error;
+				rcheck_stack_p--;
+				break;
+			case IF_T:
+				if (check_actions((struct action*)a->p2.data, r_type)!=0)
+					goto error;
+				if (check_actions((struct action*)a->p3.data, r_type)!=0)
+					goto error;
+				break;
+			case SWITCH_T:
+				aitem = (struct action*)a->p2.data;
+				for( ; aitem ; aitem=aitem->next ) {
+					n = check_actions((struct action*)aitem->p2.data, r_type);
+					if (n!=0) goto error;
+				}
+				break;
+			case MODULE_T:
+				/* do check :D */
+				fct = find_exportp((cmd_function)(a->p1.data));
+				if (fct==0) {
+					LOG(L_CRIT,"BUG:check_actions: script function not found"
+						" in exports\n");
+					goto error;
+				}
+				if ( (fct->flags&r_type)!=r_type ) {
+					rcheck_status = -1;
+					LOG(L_ERR,"ERROR:check_actions: script function "
+						"\"%s\" (types=%d) does not support route type "
+						"(%d)\n",fct->name, fct->flags, r_type);
+					for( n=rcheck_stack_p-1; n>=0 ; n-- ) {
+						LOG(L_ERR,"ERROR:check_actions: route "
+							"stack[%d]=%d\n",n,rcheck_stack[n]);
+					}
+				}
+				break;
+			default:
+				break;
+		}
+	}
+
+	return 0;
+error:
+	return -1;
+}
+
+
+/* check all routing tables for compatiblity between
+ * route types and called module functions;
+ * returns 0 if ok , <0 on error */
+int check_rls()
+{
+	int i,ret;
+
+	rcheck_status = 0;
+
+	if(rlist[0]){
+		if ((ret=check_actions(rlist[0],REQUEST_ROUTE))!=0){
+			LOG(L_ERR,"ERROR:check_rls: check failed for main "
+				"request route\n");
+			return ret;
+		}
+	}
+	for(i=0;i<ONREPLY_RT_NO;i++){
+		if(onreply_rlist[i]){
+			if ((ret=check_actions(onreply_rlist[i],ONREPLY_ROUTE))!=0){
+				LOG(L_ERR,"ERROR:check_rls: check failed for "
+					"onreply_route[%d]\n",i);
+				return ret;
+			}
+		}
+	}
+	for(i=0;i<FAILURE_RT_NO;i++){
+		if(failure_rlist[i]){
+			if ((ret=check_actions(failure_rlist[i],FAILURE_ROUTE))!=0){
+				LOG(L_ERR,"ERROR:check_rls: check failed for "
+					"failure_route[%d]\n",i);
+				return ret;
+			}
+		}
+	}
+	for(i=0;i<BRANCH_RT_NO;i++){
+		if(branch_rlist[i]){
+			if ((ret=check_actions(branch_rlist[i],BRANCH_ROUTE))!=0){
+				LOG(L_ERR,"ERROR:check_rls: check failed for "
+					"branch_route[%d]\n",i);
+				return ret;
+			}
+		}
+	}
+	return rcheck_status;
+}
+
+
+
+
 /* debug function, prints main routing table */
 void print_rl()
 {

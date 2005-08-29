@@ -66,6 +66,7 @@ void push(struct action* a, struct action** head);
 int add_actions(struct action* a, struct action** head);
 void print_rl();
 int fix_rls();
+int check_rls();
 
 int eval_expr(struct expr* e, struct sip_msg* msg);
 

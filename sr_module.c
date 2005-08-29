@@ -265,6 +265,30 @@ cmd_function find_export(char* name, int param_no, int flags)
 
 
 
+/* searches through the exported functions (from all modules) for the
+ * pointer function "fp";
+ * returns full function description if found;
+ */
+cmd_export_t* find_exportp(cmd_function fp)
+{
+	struct sr_module* t;
+	cmd_export_t* cmd;
+
+	for(t=modules;t;t=t->next){
+		for(cmd=t->exports->cmds; cmd && cmd->name; cmd++){
+			if( cmd->function==fp ){
+				//DBG("find_exportp: found <%s>[%p] in module %s [%s]\n",
+				//	cmd->name, fp, t->exports->name, t->path);
+				return cmd;
+			}
+		}
+	}
+	DBG("find_exportp: <%p> not found \n", fp);
+	return 0;
+}
+
+
+
 /*
  * searches the module list and returns pointer to "name" function in module "mod"
  * 0 if not found

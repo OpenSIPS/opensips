@@ -230,9 +230,7 @@ void print_expr(struct expr* exp)
 		DBG("ERROR:print_expr: unknown type\n");
 	}
 }
-					
 
-					
 
 void print_action(struct action* a)
 {

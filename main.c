@@ -1213,15 +1213,19 @@ int main(int argc, char** argv)
 #ifdef STATS
 	"s:"
 #endif
-	"f:cm:b:l:n:N:rRvdDETVhw:t:u:g:P:G:i:x:";
+	"f:cCm:b:l:n:N:rRvdDETVhw:t:u:g:P:G:i:x:";
 	
 	while((c=getopt(argc,argv,options))!=-1){
 		switch(c){
 			case 'f':
 					cfg_file=optarg;
 					break;
+			case 'C':
+					config_check |= 2;
 			case 'c':
-					config_check=1;
+					if (config_check==3)
+						break;
+					config_check |= 1;
 					log_stderr=1; /* force stderr logging */
 					break;
 			case 's':
@@ -1393,14 +1397,6 @@ try_again:
 	DBG("seeding PRNG with %u\n", seed);
 	srand(seed);
 	DBG("test random number %u\n", rand());
-	
-	
-	
-	/* register a diagnostic FIFO command  - moved to fifo server - bogdan
-	if (register_core_fifo()<0) {
-		LOG(L_CRIT, "unable to register core FIFO commands\n");
-		goto error;
-	}*/
 
 	/*register builtin  modules*/
 	register_builtin_modules();
@@ -1410,11 +1406,13 @@ try_again:
 		fprintf(stderr, "ERROR: bad config file (%d errors)\n", cfg_errors);
 		goto error;
 	}
-	
-	
-	
+
+	if (config_check>1 && check_rls()!=0) {
+		fprintf(stderr, "ERROR: bad function call in config file\n");
+		goto error;
+	}
 	print_rl();
-	
+
 	/* init the resolver, before fixing the config */
 	resolv_init();
 
@@ -1481,6 +1479,7 @@ try_again:
 	}
 	if (config_check){
 		fprintf(stderr, "config file ok, exiting...\n");
+		ret = 0;
 		goto error;
 	}
 
@@ -1567,18 +1566,13 @@ try_again:
 #endif
 	
 	ret=main_loop();
-	/*kill everything*/
-	kill_all_children(SIGTERM);
-	/*clean-up*/
-	cleanup(0);
-	return ret;
 
 error:
 	/*kill everything*/
 	kill_all_children(SIGTERM);
 	/*clean-up*/
 	cleanup(0);
-	return -1;
+	return ret;
 
 }
 
