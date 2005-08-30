@@ -66,22 +66,8 @@ static struct branch branches[MAX_BRANCHES - 1];
 /* how many of them we have */
 unsigned int nr_branches = 0;
 
-/* branch iterator */
-static int branch_iterator = 0;
-
 /* The q parameter of the Request-URI */
 static qvalue_t ruri_q = Q_UNSPECIFIED; 
-
-
-/*
- * Initialize the branch iterator, the next
- * call to next_branch will return the first
- * contact from the dset array
- */
-void init_branch_iterator(void)
-{
-	branch_iterator = 0;
-}
 
 
 /*
@@ -89,24 +75,20 @@ void init_branch_iterator(void)
  * array, 0 is returned if there are no
  * more branches
  */
-char* next_branch(int* len, qvalue_t* q, char** dst_uri, int* dst_len, 
+char* get_branch(int idx, int* len, qvalue_t* q, char** dst_uri, int* dst_len,
 		struct socket_info** force_socket)
 {
-	unsigned int i;
-
-	i = branch_iterator;
-	if (i < nr_branches) {
-		branch_iterator++;
-		*len = branches[i].len;
-		*q = branches[i].q;
+	if (idx < nr_branches) {
+		*len = branches[idx].len;
+		*q = branches[idx].q;
 		if (dst_uri && dst_len) {
-			*dst_len = branches[i].dst_uri_len;
-			*dst_uri = (*dst_len)?branches[i].dst_uri:0;
+			*dst_len = branches[idx].dst_uri_len;
+			*dst_uri = (*dst_len)?branches[idx].dst_uri:0;
 		}
 		if (force_socket) {
-			*force_socket = branches[i].force_send_socket;
+			*force_socket = branches[idx].force_send_socket;
 		}
-		return branches[i].uri;
+		return branches[idx].uri;
 	} else {
 		*len = 0;
 		*q = Q_UNSPECIFIED;
@@ -192,7 +174,7 @@ int append_branch(struct sip_msg* msg, char* uri, int uri_len, char* dst_uri,
  */
 char* print_dset(struct sip_msg* msg, int* len) 
 {
-	int cnt, i;
+	int cnt, i, idx;
 	unsigned int qlen;
 	qvalue_t q;
 	str uri;
@@ -210,8 +192,7 @@ char* print_dset(struct sip_msg* msg, int* len)
 		*len = 0;
 	}
 
-	init_branch_iterator();
-	while ((uri.s = next_branch(&uri.len, &q, 0, 0, 0))) {
+	for( idx=0 ; (uri.s=get_branch(idx,&uri.len,&q,0,0,0))!=0 ; idx++ ) {
 		cnt++;
 		*len += uri.len;
 		if (q != Q_UNSPECIFIED) {
@@ -251,8 +232,7 @@ char* print_dset(struct sip_msg* msg, int* len)
 		i = 0;
 	}
 
-	init_branch_iterator();
-	while ((uri.s = next_branch(&uri.len, &q, 0, 0, 0))) {
+	for( idx=0 ; (uri.s=get_branch(idx,&uri.len,&q,0,0,0))!=0 ; idx++ ) {
 		if (i) {
 			memcpy(p, CONTACT_DELIM, CONTACT_DELIM_LEN);
 			p += CONTACT_DELIM_LEN;
