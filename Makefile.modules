@@ -18,7 +18,7 @@ override static_modules_path=
 ifeq ($(MAKELEVEL), 0)
 # make called directly in the module dir!
 
-$(warning "you should run make from the main ser directory")
+$(warning "you should run make from the main openser directory")
 ifneq ($(makefile_defs), 1)
 $(error "the local makefile does not include Makefile.defs!")
 endif
