@@ -103,11 +103,9 @@ int do_action(struct action* a, struct sip_msg* msg)
 	ret=E_BUG;
 	switch ((unsigned char)a->type){
 		case DROP_T:
-				ret=0;
-				action_flags |= ACT_FL_RETURN;
-			break;
+				action_flags |= ACT_FL_DROP;
 		case EXIT_T:
-				ret=a->p1.number;
+				ret=0;
 				action_flags |= ACT_FL_EXIT;
 			break;
 		case RETURN_T:
@@ -794,7 +792,7 @@ int run_actions(struct action* a, struct sip_msg* msg)
 {
 	int ret=E_UNSPEC;
 	static int rec_lev=0;
-	struct sr_module *mod;
+	/*struct sr_module *mod;*/
 
 	/* reset flags */
 	if (rec_lev==0)
@@ -802,16 +800,17 @@ int run_actions(struct action* a, struct sip_msg* msg)
 
 	rec_lev++;
 	if (rec_lev>ROUTE_MAX_REC_LEV){
-		LOG(L_ERR, "WARNING: too many recursive routing table lookups (%d)"
-					" giving up!\n", rec_lev);
+		LOG(L_ERR, "ERROR:run_action: too many recursive routing "
+				"table lookups (%d) giving up!\n", rec_lev);
 		ret=E_UNSPEC;
 		goto error;
 	}
-		
+
 	if (a==0){
-		LOG(L_ERR, "WARNING: run_actions: null action list (rec_level=%d)\n", 
+		LOG(L_WARN, "WARNING: run_actions: null action list (rec_level=%d)\n", 
 			rec_lev);
-		ret=0;
+		ret=1;
+		goto error;
 	}
 
 	ret=run_action_list(a, msg);
@@ -819,15 +818,16 @@ int run_actions(struct action* a, struct sip_msg* msg)
 	/* if 'return', reset the flag */
 	if(action_flags&ACT_FL_RETURN)
 		action_flags &= ~ACT_FL_RETURN;
-	
+
 	rec_lev--;
-	/* process module onbreak handlers if present */
+	/* process module onbreak handlers if present -- TO REMOVE -bogdan
 	if (rec_lev==0 && ret==0) 
 		for (mod=modules;mod;mod=mod->next) 
 			if (mod->exports && mod->exports->onbreak_f) {
 				mod->exports->onbreak_f( msg );
 				DBG("DEBUG: %s onbreak handler called\n", mod->exports->name);
 			}
+	*/
 	return ret;
 
 error:

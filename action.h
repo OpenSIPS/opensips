@@ -29,6 +29,7 @@
 
 #define ACT_FL_EXIT		1
 #define ACT_FL_RETURN	2
+#define ACT_FL_DROP		4
 
 extern int action_flags;
 
