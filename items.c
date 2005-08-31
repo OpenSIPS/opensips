@@ -1120,8 +1120,7 @@ static int xl_get_branch(struct sip_msg *msg, xl_value_t *res, xl_param_t *param
 		return xl_get_null(msg, res, param);
 
 
-	init_branch_iterator();
-	branch.s = next_branch(&branch.len, &q, 0, 0, 0);
+	branch.s = get_branch(0, &branch.len, &q, 0, 0, 0);
 	if (!branch.s) {
 		return xl_get_null(msg, res, param);
 	}
@@ -1152,8 +1151,7 @@ static int xl_get_branches(struct sip_msg *msg, xl_value_t *res, xl_param_t *par
   
 	cnt = len = 0;
 
-	init_branch_iterator();
-	while ((uri.s = next_branch(&uri.len, &q, 0, 0, 0)))
+	while ((uri.s = get_branch(cnt, &uri.len, &q, 0, 0, 0)))
 	{
 		cnt++;
 		len += uri.len;
@@ -1177,8 +1175,7 @@ static int xl_get_branches(struct sip_msg *msg, xl_value_t *res, xl_param_t *par
 	i = 0;
 	p = local_buf;
 
-	init_branch_iterator();
-	while ((uri.s = next_branch(&uri.len, &q, 0, 0, 0)))
+	while ((uri.s = get_branch(i, &uri.len, &q, 0, 0, 0)))
 	{
 		if (i)
 		{
