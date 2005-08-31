@@ -903,13 +903,24 @@ tls_var : TLS_METHOD EQUAL SSLv23 {
 	| TLS_CIPHERS_LIST EQUAL error { yyerror("string value expected"); }
 ;
 
-route_stm:  ROUTE LBRACE actions RBRACE { push($3, &rlist[DEFAULT_RT]); }
-
-	    | ROUTE LBRACK NUMBER RBRACK LBRACE actions RBRACE { 
+route_stm:  ROUTE LBRACE actions RBRACE {
+										if (rlist[DEFAULT_RT]!=0) {
+											yyerror("overwritting default "
+													"request routing table");
+											YYABORT;
+										}
+										push($3, &rlist[DEFAULT_RT]);
+										}
+		| ROUTE LBRACK NUMBER RBRACK LBRACE actions RBRACE { 
 										if (($3<RT_NO) && ($3>=0)){
+											if (rlist[$3]!=0) {
+												yyerror("overwritting request "
+													"routing table");
+												YYABORT;
+											}
 											push($6, &rlist[$3]);
 										}else{
-											yyerror("invalid routing"
+											yyerror("invalid routing "
 													"table number");
 											YYABORT; }
 										}
@@ -918,9 +929,14 @@ route_stm:  ROUTE LBRACE actions RBRACE { push($3, &rlist[DEFAULT_RT]); }
 
 failure_route_stm: ROUTE_FAILURE LBRACK NUMBER RBRACK LBRACE actions RBRACE {
 										if (($3<FAILURE_RT_NO)&&($3>=1)){
+											if (failure_rlist[$3]!=0) {
+												yyerror("overwritting failure "
+													"routing table");
+												YYABORT;
+											}
 											push($6, &failure_rlist[$3]);
 										} else {
-											yyerror("invalid reply routing"
+											yyerror("invalid reply routing "
 												"table number");
 											YYABORT; }
 										}
@@ -928,13 +944,23 @@ failure_route_stm: ROUTE_FAILURE LBRACK NUMBER RBRACK LBRACE actions RBRACE {
 	;
 
 onreply_route_stm: ROUTE_ONREPLY LBRACE actions RBRACE {
+										if (onreply_rlist[DEFAULT_RT]!=0) {
+											yyerror("overwritting default "
+													"onreply routing table");
+											YYABORT;
+										}
 										push($3, &onreply_rlist[DEFAULT_RT]);
 										}
 		| ROUTE_ONREPLY LBRACK NUMBER RBRACK LBRACE actions RBRACE {
 										if (($3<ONREPLY_RT_NO)&&($3>=1)){
+											if (onreply_rlist[$3]!=0) {
+												yyerror("overwritting onreply "
+													"routing table");
+												YYABORT;
+											}
 											push($6, &onreply_rlist[$3]);
 										} else {
-											yyerror("invalid reply routing"
+											yyerror("invalid reply routing "
 												"table number");
 											YYABORT; }
 										}
@@ -943,9 +969,14 @@ onreply_route_stm: ROUTE_ONREPLY LBRACE actions RBRACE {
 
 branch_route_stm: ROUTE_BRANCH LBRACK NUMBER RBRACK LBRACE actions RBRACE {
 										if (($3<BRANCH_RT_NO)&&($3>=1)){
+											if (branch_rlist[$3]!=0) {
+												yyerror("overwritting branch "
+													"routing table");
+												YYABORT;
+											}
 											push($6, &branch_rlist[$3]);
 										} else {
-											yyerror("invalid branch routing"
+											yyerror("invalid branch routing "
 												"table number");
 											YYABORT; }
 										}
