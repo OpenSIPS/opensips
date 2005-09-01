@@ -76,7 +76,6 @@ str default_via_port={0,0};
 int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info) 
 {
 	struct sip_msg* msg;
-	int ret;
 #ifdef STATS
 	int skipped = 1;
 	struct timeval tvb, tve;
@@ -201,13 +200,11 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info)
 
 		/* exec the onreply routing script */
 		if ( onreply_rlist[DEFAULT_RT]!=0 &&
-		(ret=run_actions(onreply_rlist[DEFAULT_RT],msg))<=0 ) {
-			if (ret<0) {
-				LOG(L_WARN, "WARNING: receive_msg: "
-					"error while trying onreply script\n");
-			} else {
-				goto end; /* drop the message */
-			}
+		run_actions(onreply_rlist[DEFAULT_RT],msg)==0
+		&& msg->REPLY_STATUS<200 && (action_flags&ACT_FL_DROP)) {
+			DBG("DEBUG:received: dropping provisional reply %d\n",
+				msg->REPLY_STATUS);
+			goto end; /* drop the message */
 		} else {
 			/* send the msg */
 			forward_reply(msg);
