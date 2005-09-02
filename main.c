@@ -230,6 +230,8 @@ int dont_fork = 0;
 int log_stderr = 0;
 /* log facility (see syslog(3)) */
 int log_facility = LOG_DAEMON;
+/* the id to be printed in syslog */
+char *log_name = 0;
 int config_check = 0;
 /* check if reply first via host==us */
 int check_via =  0;        
@@ -1521,7 +1523,7 @@ try_again:
 #endif /* USE_TCP */
 	/* init_daemon? */
 	if (!dont_fork){
-		if ( daemonize(argv[0]) <0 ) goto error;
+		if ( daemonize((log_name==0)?argv[0]:log_name) <0 ) goto error;
 	}
 	if (install_sigs() != 0){
 		fprintf(stderr, "ERROR: could not install the signal handlers\n");

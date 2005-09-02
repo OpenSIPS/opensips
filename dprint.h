@@ -41,6 +41,7 @@
 extern int debug;
 extern int log_stderr;
 extern int log_facility;
+extern char* log_name;
 
 
 #define DPRINT_LEV	1
