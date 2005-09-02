@@ -54,6 +54,7 @@ struct branch
 
 	int q; /* Preference of the contact among contact within the array */
 	struct socket_info* force_send_socket;
+	int flags;
 };
 
 
@@ -75,30 +76,32 @@ static qvalue_t ruri_q = Q_UNSPECIFIED;
  * array, 0 is returned if there are no
  * more branches
  */
-char* get_branch(int idx, int* len, qvalue_t* q, char** dst_uri, int* dst_len,
+char* get_branch(int idx, int* len, qvalue_t* q, str* dst_uri, int *flags,
 		struct socket_info** force_socket)
 {
 	if (idx < nr_branches) {
 		*len = branches[idx].len;
 		*q = branches[idx].q;
-		if (dst_uri && dst_len) {
-			*dst_len = branches[idx].dst_uri_len;
-			*dst_uri = (*dst_len)?branches[idx].dst_uri:0;
+		if (dst_uri) {
+			dst_uri->len = branches[idx].dst_uri_len;
+			dst_uri->s = (dst_uri->len)?branches[idx].dst_uri:0;
 		}
-		if (force_socket) {
+		if (force_socket)
 			*force_socket = branches[idx].force_send_socket;
-		}
+		if (flags)
+			*flags = branches[idx].flags;
 		return branches[idx].uri;
 	} else {
 		*len = 0;
 		*q = Q_UNSPECIFIED;
-		if (dst_uri && dst_len) {
-			*dst_uri = 0;
-			*dst_len = 0;
+		if (dst_uri) {
+			dst_uri->s = 0;
+			dst_uri->len = 0;
 		}
-		if (force_socket) {
+		if (force_socket)
 			*force_socket = 0;
-		}
+		if (flags)
+			*flags = 0;
 		return 0;
 	}
 }
@@ -117,52 +120,54 @@ void clear_branches(void)
 /* 
  * Add a new branch to current transaction 
  */
-int append_branch(struct sip_msg* msg, char* uri, int uri_len, char* dst_uri,
-		int dst_uri_len, qvalue_t q, struct socket_info* force_socket)
+int append_branch(struct sip_msg* msg, str* uri, str* dst_uri, qvalue_t q,
+		int flags, struct socket_info* force_socket)
 {
-	     /* if we have already set up the maximum number
-	      * of branches, don't try new ones 
-	      */
+	str luri;
+
+	/* if we have already set up the maximum number
+	 * of branches, don't try new ones 
+	 */
 	if (nr_branches == MAX_BRANCHES - 1) {
 		LOG(L_ERR, "ERROR: append_branch: max nr of branches exceeded\n");
 		ser_error = E_TOO_MANY_BRANCHES;
 		return -1;
 	}
 
-	if (uri_len > MAX_URI_SIZE - 1) {
+	if (uri->len > MAX_URI_SIZE - 1) {
 		LOG(L_ERR, "ERROR: append_branch: too long uri: %.*s\n",
-		    uri_len, uri);
+		    uri->len, uri->s);
 		return -1;
 	}
 
-	     /* if not parameterized, take current uri */
-	if (uri == 0) {
-		if (msg->new_uri.s) { 
-			uri = msg->new_uri.s;
-			uri_len = msg->new_uri.len;
-		} else {
-			uri = msg->first_line.u.request.uri.s;
-			uri_len = msg->first_line.u.request.uri.len;
-		}
+	/* if not parameterized, take current uri */
+	if (uri==0 || uri->len==0 || uri->s==0) {
+		if (msg->new_uri.s)
+			luri = msg->new_uri;
+		else
+			luri = msg->first_line.u.request.uri;
+	} else {
+		luri = *uri;
 	}
 	
-	memcpy(branches[nr_branches].uri, uri, uri_len);
-	     /* be safe -- add zero termination */
-	branches[nr_branches].uri[uri_len] = 0;
-	branches[nr_branches].len = uri_len;
+	memcpy(branches[nr_branches].uri, luri.s, luri.len);
+	/* be safe -- add zero termination */
+	branches[nr_branches].uri[luri.len] = 0;
+	branches[nr_branches].len = luri.len;
 	branches[nr_branches].q = q;
-	
- 	if (dst_uri && dst_uri_len) {
-  		memcpy(branches[nr_branches].dst_uri, dst_uri, dst_uri_len);
-  		branches[nr_branches].dst_uri[dst_uri_len] = 0;
-  		branches[nr_branches].dst_uri_len = dst_uri_len;
- 	} else {
- 		branches[nr_branches].dst_uri[0] = '\0';
- 		branches[nr_branches].dst_uri_len = 0;
+
+	if (dst_uri && dst_uri->len && dst_uri->s) {
+		memcpy(branches[nr_branches].dst_uri, dst_uri->s, dst_uri->len);
+		branches[nr_branches].dst_uri[dst_uri->len] = 0;
+		branches[nr_branches].dst_uri_len = dst_uri->len;
+	} else {
+		branches[nr_branches].dst_uri[0] = '\0';
+		branches[nr_branches].dst_uri_len = 0;
 	}
 
 	branches[nr_branches].force_send_socket = force_socket;
-	
+	branches[nr_branches].flags = flags;
+
 	nr_branches++;
 	return 1;
 }
@@ -284,7 +289,7 @@ qvalue_t get_ruri_q(void)
  */
 int get_request_uri(struct sip_msg* _m, str* _u)
 {
-	     /* Use new_uri if present */
+	/* Use new_uri if present */
 	if (_m->new_uri.s) {
 		_u->s = _m->new_uri.s;
 		_u->len = _m->new_uri.len;
