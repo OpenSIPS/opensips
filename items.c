@@ -156,7 +156,7 @@ static int xl_get_return_code(struct sip_msg *msg, xl_value_t *res, xl_param_t *
 	if(msg==NULL || res==NULL)
 		return -1;
 
-	s = int2str(return_code, &l);
+	s = sint2str(return_code, &l);
 
 	res->rs.s = s;
 	res->rs.len = l;
