@@ -32,6 +32,7 @@
 #
 
 #TLS=1
+mode=debug
 auto_gen=lex.yy.c cfg.tab.c   #lexx, yacc etc
 
 #include  source related defs

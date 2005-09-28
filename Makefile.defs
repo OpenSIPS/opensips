@@ -312,10 +312,10 @@ DEFS+= $(extra_defs) \
 	 -DUSE_TCP \
 	 -DDISABLE_NAGLE \
 	 -DHAVE_RESOLV_RES \
-	 -DF_MALLOC \
-	 #-DDBG_QM_MALLOC \
+	 -DDBG_QM_MALLOC \
+	 # -DF_MALLOC \
 	 #-DDBG_F_MALLOC \
-	 #-DF_MALLOC \
+	 #-DDBG_QM_MALLOC \
 	 #-DDBG_F_MALLOC \
 	 #-DNO_DEBUG \
 	 #-DNO_LOG \
@@ -331,8 +331,8 @@ DEFS+= $(extra_defs) \
 #PROFILE=  -pg #set this if you want profiling
 
 # WARNING: do not add mode=debug or mode=release anymore in the Makefile,
-# use make mode=debug all instead. Anyway no by default openser is  compiled w/ 
-# debugging symbols in all cases (-g). --andrei
+# use make mode=debug all instead. Anyway no by default openser 
+# is  compiled w/ debugging symbols in all cases (-g). --andrei
 
 ifneq ($(TLS),)
 	DEFS+= -DUSE_TLS
