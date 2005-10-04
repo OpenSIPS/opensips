@@ -52,10 +52,10 @@ export makefile_defs
 MAIN_NAME=openser
 
 #version number
-VERSION = 0
-PATCHLEVEL = 10
+VERSION = 1
+PATCHLEVEL = 0
 SUBLEVEL = 0
-EXTRAVERSION = -dev12
+EXTRAVERSION = -pre0
 
 RELEASE=$(VERSION).$(PATCHLEVEL).$(SUBLEVEL)$(EXTRAVERSION)
 OS = $(shell uname -s | sed -e s/SunOS/solaris/ | tr "[A-Z]" "[a-z]")
