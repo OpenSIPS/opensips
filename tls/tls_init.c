@@ -410,11 +410,10 @@ init_tls(void)
 #if OPENSSL_VERSION_NUMBER < 0x00907000L
 	LOG(L_ERR, "WARNING! You are using an old version of OpenSSL (< 0.9.7). Upgrade!\n");
 #endif
-	LOG(L_ALERT, "WARNING! TLS is considered as an EXPERIMENTAL module\n" );	
 	/*
-		* this has to be called before any function calling CRYPTO_malloc,
-		* CRYPTO_malloc will set allow_customize in openssl to 0 
-		*/
+	* this has to be called before any function calling CRYPTO_malloc,
+	* CRYPTO_malloc will set allow_customize in openssl to 0 
+	*/
 	if (!CRYPTO_set_mem_functions(ser_malloc, ser_realloc, ser_free)) {
 		LOG(L_ERR,
 			"init_tls: Unable to set the memory allocation functions\n");
