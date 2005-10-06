@@ -859,10 +859,11 @@ int tcp_init(struct socket_info* sock_info)
 		/* continue since this is not critical */
 	}
 	if (bind(sock_info->socket, &addr->s, sockaddru_len(*addr))==-1){
-		LOG(L_ERR, "ERROR: tcp_init: bind(%x, %p, %d) on %s: %s\n",
+		LOG(L_ERR, "ERROR: tcp_init: bind(%x, %p, %d) on %s:%d : %s\n",
 				sock_info->socket, &addr->s, 
 				(unsigned)sockaddru_len(*addr),
 				sock_info->address_str.s,
+				sock_info->port_no,
 				strerror(errno));
 		goto error;
 	}
