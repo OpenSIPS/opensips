@@ -273,8 +273,9 @@ load_private_key(SSL_CTX * ctx, char *filename)
 		if ( ret_pwd ) {
 			break;
 		} else {
-			fprintf( stderr,
-				"load_private_key: Unable to load private key file '%s'. \n\nRetry (%d left) (check password case)\n",
+			LOG( L_ERR,
+				"load_private_key: Unable to load private key file '%s'. \n"
+				"Retry (%d left) (check password case)\n",
 				filename, (NUM_RETRIES - idx -1) );
 			continue;
 		}
