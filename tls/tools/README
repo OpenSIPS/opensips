@@ -1,0 +1,27 @@
+
+Please see and understand the README file from the above directory. It's 
+essential in order to use properly these two scripts.
+
+
+gen_rootca.sh - creates the CA root self-signed certificate
+
+May get a single parameter which is a path where to build the CA directory 
+tree. If no parameter is supplied, the local directory is used as path.
+The CA top level directory will be named "demoCA".
+
+Ex: ./gen_rootca.sh /etc/openser/tls
+
+
+
+gen_usercert.sh - creates a server/client certificate
+
+Gets mandatory parameter which is a directory name used to place the generated
+private key, the certificate and the CA list.
+The content of the output directory has all the filed required for the 
+configuration of one OpenSER TLS instance.
+IMPORTANT: it must be run from the parent directory of "demoCA" directory!!!!
+
+Ex: ./gen_usercert.sh openser1
+
+
+
