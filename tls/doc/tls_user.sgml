@@ -251,7 +251,7 @@
 		</para></warning>
 
 		<section>
-			<title>Creating CA certificate</title>
+			<title>Creating CA root certificate</title>
 			<para>
 			This part must be done only once, disregarding the number of 
 			how many interconnected &ser;'s we want to have.
@@ -319,12 +319,50 @@
 			</itemizedlist>
 		</section>
 
+		<section>
+			<title>Creating a server/client certificate</title>
+			<para>
+			This part must be done for each OpenSER server interconnected 
+			into your TLS enabled network. To avoid any mix-ups, create a 
+			separate directory into the CA directory for each server - in the 
+			following commands set, X is a number designating a unique OpenSER 
+			server from your network (ex: x=1....n).
+			</para>
+			<itemizedlist>
+				<listitem>
+				<para>mkdir openserX</para>
+				</listitem>
+			</itemizedlist>
+			<para>
+			Create a certificate request and its private key:
+			</para>
+			<itemizedlist>
+				<listitem>
+				<para>openssl req -out openserX/cert_req.pem 
+				-keyout openserX/privkey.pem -new -nodes
+				</para>
+				</listitem>
+			</itemizedlist>
+			<warning><para>
+			The organization name should be the same as in the CA certificate.
+			</para></warning>
+			<para>
+			Now sign certificate request with the ca certificate
+			</para>
+			<itemizedlist>
+				<listitem>
+				<para>openssl ca -in openserX/cert_req.pem 
+				-out openserX/cert.pem</para>
+				</listitem>
+			</itemizedlist>
+		</section>
+
 		<section id="tls-set-ca">
 			<title>Setting &ser; to use the certificate</title>
 			<para>
 			Create or append to the CA list file your newly created CA 
-			certificate ( this list must contain all CA certificates you 
-			intend to use) :
+			root certificate ( this list must contain all CA root 
+			certificates to be accepted by your server):
 			</para>
 			<itemizedlist>
 				<listitem>
@@ -344,7 +382,7 @@
 			<itemizedlist>
 				<listitem>
 				<para>set up ser.cfg to use the certificate :</para>
-				<para>tls_certificate=/path/serX_cert.pem</para>
+				<para>tls_certificate=/path/cert.pem</para>
 				</listitem>
 				<listitem>
 				<para>set up ser to use the private key :</para>

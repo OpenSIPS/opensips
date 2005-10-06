@@ -28,26 +28,27 @@ Cesc Santasusana
 
         1.5. TLS setup
 
-              1.5.1. Creating CA certificate
-              1.5.2. Setting OpenSER to use the certificate
-              1.5.3. TLS OpenSER authentication behavior
-              1.5.4. OpenSER TLS configuration parameters
+              1.5.1. Creating CA root certificate
+              1.5.2. Creating a server/client certificate
+              1.5.3. Setting OpenSER to use the certificate
+              1.5.4. TLS OpenSER authentication behavior
+              1.5.5. OpenSER TLS configuration parameters
 
-                    1.5.4.1. disable_tls=integer
-                    1.5.4.2. listen=interface
-                    1.5.4.3. tls_port_no=number
-                    1.5.4.4. tls_method=value
-                    1.5.4.5. tls_certificate=file
-                    1.5.4.6. tls_private_key=file
-                    1.5.4.7. tls_ca_list=file
-                    1.5.4.8. tls_ciphers_list=string
-                    1.5.4.9. tls_verify=number and
+                    1.5.5.1. disable_tls=integer
+                    1.5.5.2. listen=interface
+                    1.5.5.3. tls_port_no=number
+                    1.5.5.4. tls_method=value
+                    1.5.5.5. tls_certificate=file
+                    1.5.5.6. tls_private_key=file
+                    1.5.5.7. tls_ca_list=file
+                    1.5.5.8. tls_ciphers_list=string
+                    1.5.5.9. tls_verify=number and
                             tls_require_certificate=number
 
-                    1.5.4.10. tls_handshake_timeout=number and
+                    1.5.5.10. tls_handshake_timeout=number and
                             tls_send_timeout=number
 
-                    1.5.4.11. tls_domain section
+                    1.5.5.11. tls_domain section
 
         1.6. OpenSER with TLS - script example
 
@@ -281,7 +282,7 @@ Chapter 1. User's Guide
    CA private key.
      _________________________________________________________
 
-1.5.1. Creating CA certificate
+1.5.1. Creating CA root certificate
 
    This part must be done only once, disregarding the number of
    how many interconnected OpenSER's we want to have.
@@ -318,11 +319,37 @@ Chapter 1. User's Guide
        demoCA/private/cakey.pem
      _________________________________________________________
 
-1.5.2. Setting OpenSER to use the certificate
+1.5.2. Creating a server/client certificate
+
+   This part must be done for each OpenSER server interconnected
+   into your TLS enabled network. To avoid any mix-ups, create a
+   separate directory into the CA directory for each server - in
+   the following commands set, X is a number designating a unique
+   OpenSER server from your network (ex: x=1....n).
+
+     * mkdir openserX
+
+   Create a certificate request and its private key:
+
+     * openssl req -out openserX/cert_req.pem -keyout
+       openserX/privkey.pem -new -nodes
+
+   Warning
+
+   The organization name should be the same as in the CA
+   certificate.
+
+   Now sign certificate request with the ca certificate
+
+     * openssl ca -in openserX/cert_req.pem -out
+       openserX/cert.pem
+     _________________________________________________________
+
+1.5.3. Setting OpenSER to use the certificate
 
    Create or append to the CA list file your newly created CA
-   certificate ( this list must contain all CA certificates you
-   intend to use) :
+   root certificate ( this list must contain all CA root
+   certificates to be accepted by your server):
 
      * cat demoCA/cacert.pem >> openserX/calist.pem
 
@@ -335,7 +362,7 @@ Chapter 1. User's Guide
    up in OpenSER configuration file to use the certificate:
 
      * set up ser.cfg to use the certificate :
-       tls_certificate=/path/serX_cert.pem
+       tls_certificate=/path/cert.pem
      * set up ser to use the private key :
        tls_private_key=/path/privkey.pem
      * set up ser to use the CA list (optional - make sens only
@@ -343,7 +370,7 @@ Chapter 1. User's Guide
        tls_ca_list=/path/calist.pem
      _________________________________________________________
 
-1.5.3. TLS OpenSER authentication behavior
+1.5.4. TLS OpenSER authentication behavior
 
    The "tls_verify" and "tls_require_certificate" are
    OpenSER-names for the OpenSSL defined flags:
@@ -373,13 +400,13 @@ Chapter 1. User's Guide
    For more details see page man verify(1).
      _________________________________________________________
 
-1.5.4. OpenSER TLS configuration parameters
+1.5.5. OpenSER TLS configuration parameters
 
    All these parameters can be used from the openser.cfg file, to
    configure the behavior of OpenSER-TLS.
      _________________________________________________________
 
-1.5.4.1. disable_tls=integer
+1.5.5.1. disable_tls=integer
 
    Disables TLS (no server is created on the listen addresses, no
    outgoing connections can be set up). A non 0 value means
@@ -395,7 +422,7 @@ disable_tls = 1
 ...
      _________________________________________________________
 
-1.5.4.2. listen=interface
+1.5.5.2. listen=interface
 
    Not specific to TLS. Allows to specify the protocol (udp, tcp,
    tls), the IP address and the port where the listening server
@@ -407,7 +434,7 @@ listen = tls:1.2.3.4:5061
 ...
      _________________________________________________________
 
-1.5.4.3. tls_port_no=number
+1.5.5.3. tls_port_no=number
 
    Sets the default TLS listening port.
 
@@ -421,7 +448,7 @@ tls_port_no = 5062
 ...
      _________________________________________________________
 
-1.5.4.4. tls_method=value
+1.5.5.4. tls_method=value
 
    Sets the TLS protocol method which can be:
 
@@ -460,13 +487,13 @@ tls_method = TLSv1
 ...
      _________________________________________________________
 
-1.5.4.5. tls_certificate=file
+1.5.5.5. tls_certificate=file
 
    Public certificate file for OpenSER. It will be used as
    server-side certificate for incoming TLS connections, and as a
    client-side certificate for outgoing TLS connections.
 
-   See previous chapter Section 1.5.2 for more information.
+   See previous chapter Section 1.5.3 for more information.
 
    It's usable only if TLS support was compiled.
 
@@ -478,12 +505,12 @@ tls_certificate="/mycerts/certs/openser_server_cert.pem"
 ...
      _________________________________________________________
 
-1.5.4.6. tls_private_key=file
+1.5.5.6. tls_private_key=file
 
    Private key of the above certificate. I must be kept in a safe
    place with tight permissions!
 
-   See previous chapter Section 1.5.2 for more information.
+   See previous chapter Section 1.5.3 for more information.
 
    It's usable only if TLS support was compiled.
 
@@ -495,13 +522,13 @@ tls_private_key="/mycerts/private/prik.pem"
 ...
      _________________________________________________________
 
-1.5.4.7. tls_ca_list=file
+1.5.5.7. tls_ca_list=file
 
    List of trusted CAs. The file contains the certificates
    accepted, one after the other. It MUST be a file, not a
    folder.
 
-   See previous chapter Section 1.5.2 for more information.
+   See previous chapter Section 1.5.3 for more information.
 
    It's usable only if TLS support was compiled.
 
@@ -513,7 +540,7 @@ tls_ca_list="/mycerts/certs/ca_list.pem"
 ...
      _________________________________________________________
 
-1.5.4.8. tls_ciphers_list=string
+1.5.5.8. tls_ciphers_list=string
 
    You can specify the list of algorithms for authentication and
    encryption that you allow. To obtain a list of ciphers and
@@ -535,14 +562,14 @@ tls_ciphers_list="NULL-SHA:NULL-MD5:AES256-SHA:AES128-SHA"
 ...
      _________________________________________________________
 
-1.5.4.9. tls_verify=number and tls_require_certificate=number
+1.5.5.9. tls_verify=number and tls_require_certificate=number
 
    Technically, tls_verify activates SSL_VERIFY_PEER in the
    ssl_context. tls_require_certificate does the same with
    SSL_VERIFY_FAIL_IF_NO_PEER_CERT, which is only possible if
    SSL_VERIFY_PEER is also turned on.
 
-   See previous chapter Section 1.5.3 for more information.
+   See previous chapter Section 1.5.4 for more information.
 
    It's usable only if TLS support was compiled.
 
@@ -556,7 +583,7 @@ tls_require_certificate = 1
 ...
      _________________________________________________________
 
-1.5.4.10. tls_handshake_timeout=number and tls_send_timeout=number
+1.5.5.10. tls_handshake_timeout=number and tls_send_timeout=number
 
    Timeouts ... advanced users only
 
@@ -572,7 +599,7 @@ tls_send_timeout=121         # number of seconds
 ...
      _________________________________________________________
 
-1.5.4.11. tls_domain section
+1.5.5.11. tls_domain section
 
    If you only run one domain, the main one is enough. If you are
    running several TLS servers (that is, you have more than one
@@ -943,9 +970,9 @@ Chapter 3. Frequently Asked Questions
    Use one (the most appropriate) of the OpenSER mailing lists:
 
      * User Mailing List -
-       http://openser.org/mailman/listinfo/users
+       http://openser.org/cgi-bin/mailman/listinfo/users
      * Developer Mailing List -
-       http://openser.org/mailman/listinfo/devel
+       http://openser.org/cgi-bin/mailman/listinfo/devel
 
    Remember: first at all, check if your question wasn't already
    answered.
@@ -967,7 +994,7 @@ Chapter 3. Frequently Asked Questions
    Accumulate as much as possible information (OpenSER version,
    openser -V output, your OS (uname -a), OpenSER logs, network
    dumps, core dump files, configuration file) and send a mail to
-   http://openser.org/mailman/listinfo/devel
+   http://openser.org/cgi-bin/mailman/listinfo/devel
 
    Also you may try SER's bug report web page:
    http://bugs.sip-router.org
