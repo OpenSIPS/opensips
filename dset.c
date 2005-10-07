@@ -134,12 +134,6 @@ int append_branch(struct sip_msg* msg, str* uri, str* dst_uri, qvalue_t q,
 		return -1;
 	}
 
-	if (uri->len > MAX_URI_SIZE - 1) {
-		LOG(L_ERR, "ERROR: append_branch: too long uri: %.*s\n",
-		    uri->len, uri->s);
-		return -1;
-	}
-
 	/* if not parameterized, take current uri */
 	if (uri==0 || uri->len==0 || uri->s==0) {
 		if (msg->new_uri.s)
@@ -150,6 +144,12 @@ int append_branch(struct sip_msg* msg, str* uri, str* dst_uri, qvalue_t q,
 		luri = *uri;
 	}
 	
+	if (luri.len > MAX_URI_SIZE - 1) {
+		LOG(L_ERR, "ERROR: append_branch: too long uri: %.*s\n",
+		    luri.len, luri.s);
+		return -1;
+	}
+
 	memcpy(branches[nr_branches].uri, luri.s, luri.len);
 	/* be safe -- add zero termination */
 	branches[nr_branches].uri[luri.len] = 0;
