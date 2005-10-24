@@ -1204,7 +1204,7 @@ stm:		cmd						{ $$=$1; }
 
 actions:	actions action	{$$=append_action($1, $2); }
 		| action			{$$=$1;}
-		| actions error { $$=0; yyerror("bad command (!!!attention: from v0.10.0+ use 'return' instead of 'break'!!!)"); }
+		| actions error { $$=0; yyerror("bad command (!!!attention: from v1.0.0+ use 'return' instead of 'break'!!!)"); }
 	;
 
 action:		cmd SEMICOLON {$$=$1;}
