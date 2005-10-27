@@ -30,14 +30,16 @@
 #include "../tcp_init.h"
 #include "tls_domain.h"
 
+#include <openssl/ui.h>
 #include <openssl/ssl.h>
 #include <openssl/opensslv.h>
 
+#include <netinet/in_systm.h>
 #include <netinet/tcp.h>
 #include <netinet/ip.h>
 #include <unistd.h>
 
-#define SER_SSL_SESS_ID "ser-tls-0.9.0"
+#define SER_SSL_SESS_ID ((unsigned char*)"openser-tls-1.0.0")
 #define SER_SSL_SESS_ID_LEN (sizeof(SER_SSL_SESS_ID)-1)
 
 
