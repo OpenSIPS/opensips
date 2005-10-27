@@ -2,6 +2,89 @@
 
 ===================== Changes since release 0.9.4 ============================
 
+* 2005-10-00 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+* 2005-10-00 Daniel-Constantin Mierla <daniel@voice-system.ro>
+* 2005-10-00 Elena-Ramona Modroiu <ramona@voice-system.ro>
+- modules' documentation updated to list the route types where the exported
+  functions can be used
+
+* 2005-09-15 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- maxfwd: max_limit of MAX-FORWARDS cannot exceed 256 (as per RFC)
+
+* 2005-09-11 Klaus Darilion <klaus.mailinglists@pernau.at>
+- postgres: adding transaction rollback for failed queries (postgres module
+  encapsulates every query into transaction. If the query failed, the
+  transcation was not finished, thus a new database connection was created
+  on the next query)
+
+* 2005-09-09 Elena-Ramona Modroiu <ramona@voice-system.ro>
+- avpops: avp_write() allow $hdr(name) to be coherent with avp_printf()
+- avpops: old format $hdr[name] is still valid
+
+* 2005-09-07 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- tm: t_flush_flags() - flush to T (UAS side) only the global flags
+
+* 2005-09-07 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- core: return code is printed to a string as signed int (was printed unsigned
+  until now)
+
+* 2005-09-06 Juha Heinanen <jh@tutpro.com>
+- domain: is_uri_host_local() can now be called also from failure route,
+  where it checks host part of first branch (which thus must have been earlier
+  appended to the transaction)
+
+* 2005-09-05 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- acc: DB support is compiled by default
+- acc: DB support disabled by default (db_url=0)
+- tm: inconsistency in "tw_append: parameter definition fixed: "msg(body)"
+  proprietary specifier migrated to $rb pseudo variable; message body must
+  be deal separately since it have a special status in the fifo/unix syntax.
+
+* 2005-09-01 Juha Heinanen <jh@tutpro.com>
+- lcr: Request-URI user part can be modified between load_gws() and first
+  next_gw() calls.
+
+* 2005-09-03 Elena-Ramona Modroiu <ramona@voice-system.ro>
+- xlog: xlog() prints to level 'L_ERR' if the first parameter is omitted
+
+* 2005-09-02 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- core: full suppor for per-branch flags
+- registrar: may use the branch flags for NAT marking
+- registrar: new module parameter "use_branch_flags": if enabled the branch
+  flags will be used for NAT flag.
+- tm: new param "branch_flag_mask" which defined which flags shall be
+  considered to be branch flags; it's bit mask in 2, 10 or 16 base;
+
+* 2005-09-02 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- core: new global parameter 'log_name' to set the id to be printed in
+  syslog - the value must be a string and has effect only when openser runs
+  in daemon mode (fork=yes), after daemonize. Default value is argv[0].
+
+* 2005-09-01 Juha Heinanen <jh@tutpro.com>
+- auth: append_rpid_hf function can now be called from branch_route block.
+
+* 2005-08-31 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- core: "drop" statement has special meaning in some route types (by default
+  it's equivalent to "exit"):
+    - BRANCH ROUTE - the request branch is discarded (not fwd);
+    - ONREPLY ROUTE - if provisional reply (<200), it will be discarded (not
+      fwd, not stored, but only timers updated)
+
+* 2005-08-29 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- core: new internal core function for checking if a module function may or
+  may be not called from a script route (based on route type); all route
+  inclusions are followed, but avoiding potential loops.
+- core: new command line parameter (-C) - similar to (-c), but additioanly
+  force the above described checking. (-C implies -c)
+- tm: t_was_cancelled() - says if the transaction was cancelled or
+  not from the UAC side.
+- tm: request fwd functions break if the transaction was already cancelled.
+- cpl-c: CPL interpreter stop floowing the negative replies in proxy node if
+  the INVITE was cancelled.
+
+* 2005-08-29 Juha Heinanen <jh@tutpro.com>
+- auth: append_rpid_hf function can now be called from branch_route block.
+
 * 2005-08-26 Daniel-Constantin Mierla <daniel@voice-system.ro>
 - core: new pseudo-variables:
     - $rP - transport protocol of RURI
