@@ -26,17 +26,27 @@
 #  2005-10-06  first version (bogdan)
 #
 
+CA_DIR=rootCA
 
 if [ -z $1 ]
 then
-	echo "ERROR: missing first parameter: no user directory"
+	echo -e "ERROR: missing first parameter: no user specified"
+	exit 1
+fi
+
+if [ -f $1.conf ]
+then
+	echo -e "\n***** Using config file $1.conf *****"
+else
+	echo -e "ERROR: missing first parameter: config file $1.conf not found"
+	exit 1
 fi
 
 USER_DIR=$1
-CA_DIR=demoCA
+USER=$1
 
 
-echo -e "\n***** Creating directory $USER_DIR#****"
+echo -e "\n***** Creating directory $USER_DIR *****"
 mkdir -p $USER_DIR
 if [ $? -ne 0 ] ; then
 	echo "Failed to create user directory"
@@ -45,24 +55,28 @@ fi
 rm -fr $USER_DIR/*
 
 
-echo -e "\n***** Creating user certificate request#****"
-openssl req -out $USER_DIR/cert_req.pem -keyout $USER_DIR/privkey.pem -new -nodes
+echo -e "\n***** Creating user certificate request *****"
+openssl req  -config $USER.conf -out $USER_DIR/$USER-cert_req.pem -keyout $USER_DIR/$USER-privkey.pem -new -nodes
 if [ $? -ne 0 ] ; then
 	echo "Failed to generate certificate request"
 	exit 1
 fi
 
 
-echo -e "\n***** Signing certificate request#****"
-openssl ca -in $USER_DIR/cert_req.pem -out $USER_DIR/cert.pem
+echo -e "\n******  Signing certificate request ******"
+openssl ca -config request.conf -in $USER_DIR/$USER-cert_req.pem -out $USER_DIR/$USER-cert.pem
 if [ $? -ne 0 ] ; then
 	echo "Failed to generate certificate request"
 	exit 1
 fi
 
-echo -e "\n***** Generating CA list#****"
-cat $CA_DIR/cacert.pem >> $USER_DIR/calist.pem
+echo -e "\n***** Generating CA list *****"
+cat $CA_DIR/cacert.pem >> $USER_DIR/$USER-calist.pem
 
 
-echo -e "\n***** DONE #****\n"
+echo -e "\n***** Private key is locate at $USER_DIR/$USER-privkey.pem "
+echo -e "\n***** Certificate is locate at $USER_DIR/$USER-cert.pem "
+echo -e "\n***** CA -List is locate at $USER_DIR/$USER-calist.pem "
+
+echo -e "\n********   DONE   *********\n"
 

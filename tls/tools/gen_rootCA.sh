@@ -27,13 +27,13 @@
 #
 
 
-CA_DIR=demoCA
+CA_PATH='./rootCA'
 
 if [ -z $1 ]
 then
-	CA_PATH='./'$CA_DIR
+	CA_CONF='ca.conf'
 else
-	CA_PATH=$1'/'$CA_DIR
+	CA_PATH=$1
 fi
 
 echo -e "\n***** Creating directory $CA_PATH and its sub-tree *****"
@@ -44,28 +44,24 @@ if [ $? -ne 0 ] ; then
 fi
 rm -fr $CA_PATH/*
 mkdir $CA_PATH/private
-mkdir $CA_PATH/newcerts
+mkdir $CA_PATH/certs
 touch $CA_PATH/index.txt
 echo 01 >$CA_PATH/serial
 
 
-echo -e "\n***** Creating CA private key *****"
-openssl genrsa -out $CA_PATH/private/cakey.pem 2048
-if [ $? -ne 0 ] ; then
-	echo "Failed to generate CA private key"
-	exit 1
-fi
-chmod 600 $CA_PATH/private/cakey.pem
-
-
 echo -e "\n***** Creating CA self-signed certificate *****"
-openssl req -out $CA_PATH/cacert.pem -x509 -days 365 -new -key $CA_PATH/private/cakey.pem
+( cd $CA_PATH; openssl req -config ../$CA_CONF -x509 -newkey rsa:2048 -days 365 -out ./cacert.pem -outform PEM )
 if [ $? -ne 0 ] ; then
 	echo "Failed to create self-signed certificate"
 	exit 1
 fi
 
 
+echo -e "\n***** Protecting CA private key *****"
+chmod 600 $CA_PATH/private/cakey.pem
+
+
 echo -e "\n***** DONE  *****"
+echo -e "\nPrivate key can be found in $CA_PATH/private/cakey.pem\n"
 echo -e "\nCertificate can be found in $CA_PATH/cacert.pem\n"
 
