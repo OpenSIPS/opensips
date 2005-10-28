@@ -220,7 +220,7 @@ int tcp_children_no = 0;
 int tcp_disable = 0; /* 1 if tcp is disabled */
 #endif
 #ifdef USE_TLS
-int tls_disable = 0; /* 1 if tls is disabled */
+int tls_disable = 1; /* 1 if tls is disabled */
 #endif
 struct process_table *pt=0;		/*array with children pids, 0= main proc,
 									alloc'ed in shared mem if possible*/
