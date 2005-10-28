@@ -257,116 +257,53 @@
 			how many interconnected &ser;'s we want to have.
 			</para>
 			<para>
-			The first step is to create the directory that will contain the 
-			CA certificate:
+			Using <quote>gen_rootCA.sh</quote> located in tls/tools directory
+			you may create a local root CA. Please refere to the local README
+			file for instructions about how to use the script.
 			</para>
-			<itemizedlist>
-				<listitem>
-				<para>mkdir ca</para>
-				</listitem>
-				<listitem>
-				<para>cd ca</para>
-				</listitem>
-			</itemizedlist>
 			<para>
-			Create ca sub-directory structure and populate it with files.
-			For more information about this, please consult the 
-			man page ca(1):
+			The script will produce the private key (which will be used to
+			sign client/server certificates) and the self-signed certificate 
+			authority.
 			</para>
-			<itemizedlist>
-				<listitem>
-				<para>mkdir demoCA</para>
-				</listitem>
-			</itemizedlist>
-			<para>
-			This is the default CA name and it must be exactly as set in 
-			your openssl configuration /etc/ss/openssl.cnf :
-			</para>
-			<itemizedlist>
-				<listitem>
-				<para>mkdir demoCA/private</para>
-				</listitem>
-				<listitem>
-				<para>mkdir demoCA/newcerts</para>
-				</listitem>
-				<listitem>
-				<para>touch demoCA/index.txt</para>
-				</listitem>
-				<listitem>
-				<para>echo 01 >demoCA/serial</para>
-				</listitem>
-			</itemizedlist>
-			<para>
-			For creating CA private key run the following command in the ca 
-			directory:
-			</para>
-			<itemizedlist>
-				<listitem>
-				<para>openssl genrsa -out demoCA/private/cakey.pem 2048</para>
-				</listitem>
-				<listitem>
-				<para>chmod 600 demoCA/private/cakey.pem</para>
-				</listitem>
-			</itemizedlist>
-			<para>
-			Now create CA self-signed certificate :
-			</para>
-			<itemizedlist>
-				<listitem>
-				<para>openssl req -out demoCA/cacert.pem -x509 -new -key 
-				demoCA/private/cakey.pem</para>
-				</listitem>
-			</itemizedlist>
 		</section>
 
 		<section>
 			<title>Creating a server/client certificate</title>
 			<para>
 			This part must be done for each OpenSER server interconnected 
-			into your TLS enabled network. To avoid any mix-ups, create a 
-			separate directory into the CA directory for each server - in the 
-			following commands set, X is a number designating a unique OpenSER 
-			server from your network (ex: x=1....n).
+			into your TLS enabled network: build a certificate request and
+			sign it with a root CA (yourself or from third party).
 			</para>
-			<itemizedlist>
-				<listitem>
-				<para>mkdir openserX</para>
-				</listitem>
-			</itemizedlist>
 			<para>
-			Create a certificate request and its private key:
+			For this purpose you may use the <quote>gen_usercert.sh</quote> 
+			script which is located in tls/tools directory. Please refere to 
+			the local README file for instructions about how to use the script.
 			</para>
-			<itemizedlist>
-				<listitem>
-				<para>openssl req -out openserX/cert_req.pem 
-				-keyout openserX/privkey.pem -new -nodes
-				</para>
-				</listitem>
-			</itemizedlist>
-			<warning><para>
-			The organization name should be the same as in the CA certificate.
-			</para></warning>
 			<para>
-			Now sign certificate request with the ca certificate
+			The output of the script will be a directory containing all needed
+			TLS files for configuring the &ser; proxy (private key, signed 
+			certificate and CA list)
 			</para>
-			<itemizedlist>
-				<listitem>
-				<para>openssl ca -in openserX/cert_req.pem 
-				-out openserX/cert.pem</para>
-				</listitem>
-			</itemizedlist>
 		</section>
 
 		<section id="tls-set-ca">
 			<title>Setting &ser; to use the certificate</title>
 			<para>
-			Create or append to the CA list file your newly created CA 
-			root certificate ( this list must contain all CA root 
-			certificates to be accepted by your server):
+			Append to the CA list file all the  CA root certificates 
+			( this list must contain all CA root certificates to be 
+			accepted by your server):
+			</para>
+			<para>
+			If you use the <quote>gen_usercert.sh</quote>, it will create
+			an one element CA list with the CA used to sign the certificate.
+			</para>
+			<para>
+			To add more CAs to your list, just do:
 			</para>
 			<itemizedlist>
 				<listitem>
-				<para>cat demoCA/cacert.pem >> openserX/calist.pem</para>
+				<para>cat add_cacert.pem >> calist.pem</para>
 				</listitem>
 			</itemizedlist>
 			<para>

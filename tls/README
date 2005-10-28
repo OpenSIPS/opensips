@@ -287,71 +287,43 @@ Chapter 1. User's Guide
    This part must be done only once, disregarding the number of
    how many interconnected OpenSER's we want to have.
 
-   The first step is to create the directory that will contain
-   the CA certificate:
+   Using "gen_rootCA.sh" located in tls/tools directory you may
+   create a local root CA. Please refere to the local README file
+   for instructions about how to use the script.
 
-     * mkdir ca
-     * cd ca
-
-   Create ca sub-directory structure and populate it with files.
-   For more information about this, please consult the man page
-   ca(1):
-
-     * mkdir demoCA
-
-   This is the default CA name and it must be exactly as set in
-   your openssl configuration /etc/ss/openssl.cnf :
-
-     * mkdir demoCA/private
-     * mkdir demoCA/newcerts
-     * touch demoCA/index.txt
-     * echo 01 >demoCA/serial
-
-   For creating CA private key run the following command in the
-   ca directory:
-
-     * openssl genrsa -out demoCA/private/cakey.pem 2048
-     * chmod 600 demoCA/private/cakey.pem
-
-   Now create CA self-signed certificate :
-
-     * openssl req -out demoCA/cacert.pem -x509 -new -key
-       demoCA/private/cakey.pem
+   The script will produce the private key (which will be used to
+   sign client/server certificates) and the self-signed
+   certificate authority.
      _________________________________________________________
 
 1.5.2. Creating a server/client certificate
 
    This part must be done for each OpenSER server interconnected
-   into your TLS enabled network. To avoid any mix-ups, create a
-   separate directory into the CA directory for each server - in
-   the following commands set, X is a number designating a unique
-   OpenSER server from your network (ex: x=1....n).
+   into your TLS enabled network: build a certificate request and
+   sign it with a root CA (yourself or from third party).
 
-     * mkdir openserX
+   For this purpose you may use the "gen_usercert.sh" script
+   which is located in tls/tools directory. Please refere to the
+   local README file for instructions about how to use the
+   script.
 
-   Create a certificate request and its private key:
-
-     * openssl req -out openserX/cert_req.pem -keyout
-       openserX/privkey.pem -new -nodes
-
-   Warning
-
-   The organization name should be the same as in the CA
-   certificate.
-
-   Now sign certificate request with the ca certificate
-
-     * openssl ca -in openserX/cert_req.pem -out
-       openserX/cert.pem
+   The output of the script will be a directory containing all
+   needed TLS files for configuring the OpenSER proxy (private
+   key, signed certificate and CA list)
      _________________________________________________________
 
 1.5.3. Setting OpenSER to use the certificate
 
-   Create or append to the CA list file your newly created CA
-   root certificate ( this list must contain all CA root
-   certificates to be accepted by your server):
+   Append to the CA list file all the CA root certificates ( this
+   list must contain all CA root certificates to be accepted by
+   your server):
 
-     * cat demoCA/cacert.pem >> openserX/calist.pem
+   If you use the "gen_usercert.sh", it will create an one
+   element CA list with the CA used to sign the certificate.
+
+   To add more CAs to your list, just do:
+
+     * cat add_cacert.pem >> calist.pem
 
    Now copy intended OpenSER certificate, private key and ca list
    file (basically the whole content of the openserX directory)
