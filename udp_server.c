@@ -314,9 +314,10 @@ int udp_init(struct socket_info* sock_info)
 	if (addr->s.sa_family==AF_INET){
 		if (setsockopt(sock_info->socket, IPPROTO_IP, IP_MULTICAST_LOOP, 
 						&mcast_loopback, sizeof(mcast_loopback))==-1){
-			LOG(L_ERR, "ERROR: udp_init: setsockopt(IP_MULTICAST_LOOP): %s\n",
-						strerror(errno));
-			goto error;
+			LOG(L_WARN, "WARNING: udp_init: setsockopt(IP_MULTICAST_LOOP):"
+						" %s\n", strerror(errno));
+			/* it's only a warning because we might get this error if the
+			  network interface doesn't support multicasting -- andrei */
 		}
 		if (mcast_ttl>=0){
 			if (setsockopt(sock_info->socket, IPPROTO_IP, IP_MULTICAST_TTL,
