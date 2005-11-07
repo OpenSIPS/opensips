@@ -2025,6 +2025,7 @@ int xl_parse_format(char *s, xl_elem_p *el, int flags)
 		while(*p && *p!=ITEM_MARKER)
 			p++;
 		e->text.len = p - e->text.s;
+		
 		if(*p == '\0')
 			break;
 
@@ -2081,7 +2082,7 @@ int xl_print_spec(struct sip_msg* msg, xl_spec_p sp, char *buf, int *len)
 	
 overflow:
 	LOG(L_ERR,
-		"xl_printf: buffer overflow -- increase the buffer size...\n");
+		"xl_print_spec: buffer overflow -- increase the buffer size...\n");
 	return -1;
 }
 
@@ -2114,9 +2115,10 @@ int xl_printf(struct sip_msg* msg, xl_elem_p list, char *buf, int *len)
 				memcpy(cur, it->text.s, it->text.len);
 				n += it->text.len;
 				cur += it->text.len;
-			}
-			else
+			} else {
+				LOG(L_ERR, "xl_printf: no more space for text [%d]\n",it->text.len);
 				goto overflow;
+			}
 		}
 		/* put the value of the specifier */
 		if(it->spec.itf 
@@ -2131,9 +2133,10 @@ int xl_printf(struct sip_msg* msg, xl_elem_p list, char *buf, int *len)
 				/* check for color entries to reset later */
 				if (*it->spec.itf == xl_get_color)
 					h = 1;
-			}
-			else
+			} else {
+				LOG(L_ERR, "xl_printf: no more space for spec value\n");
 				goto overflow;
+			}
 		}
 	}
 
@@ -2146,9 +2149,10 @@ int xl_printf(struct sip_msg* msg, xl_elem_p list, char *buf, int *len)
 			memcpy(cur, "\033[0m", h);
 			n += h;
 			cur += h;
-			} else {
-				goto overflow;
-			}
+		} else {
+			goto overflow;
+			LOG(L_ERR, "xl_printf: no more space for color spec\n");
+		}
 	}
 
 	goto done;

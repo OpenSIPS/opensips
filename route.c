@@ -228,6 +228,24 @@ static int fix_actions(struct action* a)
 						return ret;
 				}
 				break;
+			case SWITCH_T:
+				if ( (t->p2_type==ACTIONS_ST)&&(t->p2.data) ){
+						if ((ret=fix_actions((struct action*)t->p2.data))<0)
+						return ret;
+				}
+				break;
+			case CASE_T:
+				if ( (t->p2_type==ACTIONS_ST)&&(t->p2.data) ){
+						if ((ret=fix_actions((struct action*)t->p2.data))<0)
+						return ret;
+				}
+				break;
+			case DEFAULT_T:
+				if ( (t->p1_type==ACTIONS_ST)&&(t->p1.data) ){
+						if ((ret=fix_actions((struct action*)t->p1.data))<0)
+						return ret;
+				}
+				break;
 			case MODULE_T:
 				if ((mod=find_module(t->p1.data, &cmd))!=0){
 					DBG("fixing %s %s\n", mod->path, cmd->name);
