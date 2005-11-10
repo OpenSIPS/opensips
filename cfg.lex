@@ -211,6 +211,8 @@ UNIX_SOCK unix_sock
 UNIX_SOCK_CHILDREN unix_sock_children
 UNIX_TX_TIMEOUT unix_tx_timeout
 SERVER_SIGNATURE server_signature
+SERVER_HEADER server_header
+USER_AGENT_HEADER user_agent_header
 REPLY_TO_VIA reply_to_via
 USER		"user"|"uid"
 GROUP		"group"|"gid"
@@ -441,6 +443,8 @@ EAT_ABLE	[\ \t\b\r]
 <INITIAL>{UNIX_SOCK_CHILDREN} { count(); yylval.strval=yytext; return UNIX_SOCK_CHILDREN; }
 <INITIAL>{UNIX_TX_TIMEOUT} { count(); yylval.strval=yytext; return UNIX_TX_TIMEOUT; }
 <INITIAL>{SERVER_SIGNATURE}	{ count(); yylval.strval=yytext; return SERVER_SIGNATURE; }
+<INITIAL>{SERVER_HEADER}	{ count(); yylval.strval=yytext; return SERVER_HEADER; }
+<INITIAL>{USER_AGENT_HEADER}	{ count(); yylval.strval=yytext; return USER_AGENT_HEADER; }
 <INITIAL>{REPLY_TO_VIA}	{ count(); yylval.strval=yytext; return REPLY_TO_VIA; }
 <INITIAL>{ADVERTISED_ADDRESS}	{	count(); yylval.strval=yytext;
 									return ADVERTISED_ADDRESS; }

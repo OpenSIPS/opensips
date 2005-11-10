@@ -86,6 +86,8 @@ extern int syn_branch;
 /* extern int process_no; */
 extern int sip_warning;
 extern int server_signature;
+extern str server_header;
+extern str user_agent_header;
 extern char* user;
 extern char* group;
 extern char* sock_user;

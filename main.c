@@ -247,6 +247,14 @@ int sip_warning = 1;
    be default yes, good for trouble-shooting
 */
 int server_signature=1;
+/* Server header to be used when proxy generates request as UAS.
+   Default is to use SERVER_HDR CRLF (assigned later).
+*/
+str server_header = {SERVER_HDR,sizeof(SERVER_HDR)-1};
+/* User-Agent header to be used when proxy generates request as UAC.
+   Default is to use USER_AGENT CRLF (assigned later).
+*/
+str user_agent_header = {USER_AGENT,sizeof(USER_AGENT)-1};
 /* should ser try to locate outbound interface on multihomed
  * host? by default not -- too expensive
  */
@@ -1433,7 +1441,7 @@ try_again:
 #endif
 	
 	if (working_dir==0) working_dir="/";
-	
+
 	/* get uid/gid */
 	if (user){
 		if (user2uid(&uid, &gid, user)<0){
