@@ -29,13 +29,13 @@
 /* 
  * casting macro for accessing RPID body 
  */
-#define get_allow_methods(p_msg) (unsigned int)(p_msg)->allow->parsed)
+#define get_allow_methods(p_msg) ((unsigned int)(p_msg)->allow->parsed)
 
 
 /*
  * Parse Allow HF body
  */
-int parse_allow(struct hdr_field* _h);
+int parse_allow_header(struct hdr_field* _h);
 
 
 /*
