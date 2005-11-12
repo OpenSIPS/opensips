@@ -57,7 +57,7 @@ static str str_marker = { ITEM_MARKER_STR, 1 };
 static str str_udp    = { "UDP", 3 };
 static str str_5060   = { "5060", 4 };
 
-int msg_id = 0;
+int _it_msg_id = 0;
 time_t msg_tm = 0;
 int cld_pid = 0;
 
@@ -174,10 +174,10 @@ static int xl_get_times(struct sip_msg *msg, xl_value_t *res, xl_param_t *param)
 	if(msg==NULL || res==NULL)
 		return -1;
 
-	if(msg_id != msg->id || msg_tm==0)
+	if(_it_msg_id != msg->id || msg_tm==0)
 	{
 		msg_tm = time(NULL);
-		msg_id = msg->id;
+		_it_msg_id = msg->id;
 	}
 	ch = int2str(msg_tm, &l);
 	
@@ -195,10 +195,10 @@ static int xl_get_timef(struct sip_msg *msg, xl_value_t *res, xl_param_t *param)
 	
 	if(msg==NULL || res==NULL)
 		return -1;
-	if(msg_id != msg->id || msg_tm==0)
+	if(_it_msg_id != msg->id || msg_tm==0)
 	{
 		msg_tm = time(NULL);
-		msg_id = msg->id;
+		_it_msg_id = msg->id;
 	}
 	
 	ch = ctime(&msg_tm);
