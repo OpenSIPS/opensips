@@ -237,11 +237,19 @@ static int xl_get_method(struct sip_msg *msg, xl_value_t *res, xl_param_t *param
 	{
 		res->rs.s = msg->first_line.u.request.method.s;
 		res->rs.len = msg->first_line.u.request.method.len;
+		res->ri = (int)msg->first_line.u.request.method_value;
+	} else {
+		if(msg->cseq==NULL && ((parse_headers(msg, HDR_CSEQ_F, 0)==-1) || 
+				(msg->cseq==NULL)))
+		{
+			LOG(L_ERR, "xl_get_method: ERROR cannot parse CSEQ header\n");
+			return xl_get_null(msg, res, param);
+		}
+		res->rs.s = get_cseq(msg)->method.s;
+		res->rs.len = get_cseq(msg)->method.len;
+		res->ri = get_cseq(msg)->method_id;
 	}
-	else
-		return xl_get_null(msg, res, param);
 	
-	res->ri = (int)msg->first_line.u.request.method_value;
 	res->flags = XL_VAL_STR|XL_VAL_INT;
 	return 0;
 }
@@ -382,28 +390,8 @@ static int xl_get_contact(struct sip_msg* msg, xl_value_t *res, xl_param_t *para
 }
 
 
-static int xl_get_from(struct sip_msg *msg, xl_value_t *res, xl_param_t *param)
-{
-	if(msg==NULL || res==NULL)
-		return -1;
-
-	if(parse_from_header(msg)==-1)
-	{
-		LOG(L_ERR, "xl_get_from: ERROR cannot parse FROM header\n");
-		return xl_get_null(msg, res, param);
-	}
-	
-	if(msg->from==NULL || get_from(msg)==NULL)
-		return xl_get_null(msg, res, param);
-
-	res->rs.s = get_from(msg)->uri.s;
-	res->rs.len = get_from(msg)->uri.len; 
-	
-	res->flags = XL_VAL_STR;
-	return 0;
-}
-
-static int xl_get_from_username(struct sip_msg *msg, xl_value_t *res, xl_param_t *param)
+static int xl_get_from_attr(struct sip_msg *msg, xl_value_t *res,
+		xl_param_t *param)
 {
 	struct sip_uri uri;
 	if(msg==NULL || res==NULL)
@@ -411,103 +399,68 @@ static int xl_get_from_username(struct sip_msg *msg, xl_value_t *res, xl_param_t
 
 	if(parse_from_header(msg)==-1)
 	{
-		LOG(L_ERR,
-			"xl_get_from_username: ERROR cannot parse FROM header\n");
+		LOG(L_ERR, "xl_get_from_attr: ERROR cannot parse FROM header\n");
 		return xl_get_null(msg, res, param);
 	}
 	
 	if(msg->from==NULL || get_from(msg)==NULL)
 		return xl_get_null(msg, res, param);
+
+	if(param->hparam.len==1) /* uri */
+	{
+		res->rs.s = get_from(msg)->uri.s;
+		res->rs.len = get_from(msg)->uri.len; 
+		res->flags = XL_VAL_STR;
+		return 0;
+	}
+	
+	if(param->hparam.len==4) /* tag */
+	{
+		if(get_from(msg)->tag_value.s==NULL||get_from(msg)->tag_value.len<=0)
+			return xl_get_null(msg, res, param);
+		res->rs.s = get_from(msg)->tag_value.s;
+		res->rs.len = get_from(msg)->tag_value.len; 
+		res->flags = XL_VAL_STR;
+		return 0;
+	}
+
+	if(param->hparam.len==5) /* display name */
+	{
+		if(get_from(msg)->display.s==NULL||get_from(msg)->display.len<=0)
+			return xl_get_empty(msg, res, param);
+		res->rs.s = get_from(msg)->display.s;
+		res->rs.len = get_from(msg)->display.len; 
+		res->flags = XL_VAL_STR;
+		return 0;
+	}
 
 	memset(&uri, 0, sizeof(struct sip_uri));
 	if (parse_uri(get_from(msg)->uri.s, get_from(msg)->uri.len , &uri)<0)
 	{
-		LOG(L_ERR,"xl_get_from_username: failed to parse From uri\n");
+		LOG(L_ERR,"xl_get_from_attr: failed to parse From uri\n");
 		return xl_get_null(msg, res, param);
 	}
 	
-	if(uri.user.s==NULL)
-		return xl_get_empty(msg, res, param);
-
-	res->rs.s   = uri.user.s;
-	res->rs.len = uri.user.len; 
-	res->flags = XL_VAL_STR;
-	return 0;
-}
-
-static int xl_get_from_domain(struct sip_msg *msg, xl_value_t *res, xl_param_t *param)
-{
-	struct sip_uri uri;
-	if(msg==NULL || res==NULL)
-		return -1;
-
-	if(parse_from_header(msg)==-1)
-	{
-		LOG(L_ERR,
-			"xl_get_from_domain: ERROR cannot parse FROM header\n");
+	if(param->hparam.len==2) /* username */ {
+		if(uri.user.s==NULL)
+			return xl_get_empty(msg, res, param);
+		res->rs.s   = uri.user.s;
+		res->rs.len = uri.user.len; 
+		res->flags = XL_VAL_STR;
+	} else if(param->hparam.len==3) /* domain */ {
+		res->rs.s   = uri.host.s;
+		res->rs.len = uri.host.len; 
+		res->flags = XL_VAL_STR;
+	} else {
+		LOG(L_ERR, "xl_get_from_attr: unknown specifier\n");
 		return xl_get_null(msg, res, param);
 	}
-	
-	if(msg->from==NULL || get_from(msg)==NULL)
-		return xl_get_null(msg, res, param);
-
-	memset(&uri, 0, sizeof(struct sip_uri));
-	if (parse_uri(get_from(msg)->uri.s, get_from(msg)->uri.len , &uri)<0)
-	{
-		LOG(L_ERR,"xl_get_from_domain: failed to parse From uri\n");
-		return xl_get_null(msg, res, param);
-	}
-	
-	res->rs.s   = uri.host.s;
-	res->rs.len = uri.host.len; 
-	res->flags = XL_VAL_STR;
-	return 0;
-}
-
-static int xl_get_from_tag(struct sip_msg *msg, xl_value_t *res, xl_param_t *param)
-{
-	if(msg==NULL || res==NULL)
-		return -1;
-
-	if(parse_from_header(msg)==-1)
-	{
-		LOG(L_ERR, "xl_get_from: ERROR cannot parse FROM header\n");
-		return xl_get_null(msg, res, param);
-	}
-	
-	if(msg->from==NULL || get_from(msg)==NULL 
-			|| get_from(msg)->tag_value.s==NULL)
-		return xl_get_null(msg, res, param);
-
-	res->rs.s = get_from(msg)->tag_value.s;
-	res->rs.len = get_from(msg)->tag_value.len; 
-
-	res->flags = XL_VAL_STR;
 	return 0;
 }
 
 
-static int xl_get_to(struct sip_msg *msg, xl_value_t *res, xl_param_t *param)
-{
-	if(msg==NULL || res==NULL)
-		return -1;
-
-	if(msg->to==NULL && parse_headers(msg, HDR_TO_F, 0)==-1)
-	{
-		LOG(L_ERR, "xl_get_to: ERROR cannot parse TO header\n");
-		return xl_get_null(msg, res, param);
-	}
-	if(msg->to==NULL || get_to(msg)==NULL)
-		return xl_get_null(msg, res, param);
-
-	res->rs.s = get_to(msg)->uri.s;
-	res->rs.len = get_to(msg)->uri.len; 
-	
-	res->flags = XL_VAL_STR;
-	return 0;
-}
-
-static int xl_get_to_username(struct sip_msg *msg, xl_value_t *res, xl_param_t *param)
+static int xl_get_to_attr(struct sip_msg *msg, xl_value_t *res,
+		xl_param_t *param)
 {
 	struct sip_uri uri;
 	if(msg==NULL || res==NULL)
@@ -515,76 +468,61 @@ static int xl_get_to_username(struct sip_msg *msg, xl_value_t *res, xl_param_t *
 
 	if(msg->to==NULL && parse_headers(msg, HDR_TO_F, 0)==-1)
 	{
-		LOG(L_ERR, "xl_get_to_username: ERROR cannot parse TO header\n");
+		LOG(L_ERR, "xl_get_to_attr: ERROR cannot parse TO header\n");
 		return xl_get_null(msg, res, param);
 	}
 	if(msg->to==NULL || get_to(msg)==NULL)
 		return xl_get_null(msg, res, param);
+
+	if(param->hparam.len==1) /* uri */
+	{
+		res->rs.s = get_to(msg)->uri.s;
+		res->rs.len = get_to(msg)->uri.len; 
+		res->flags = XL_VAL_STR;
+		return 0;
+	}
+	
+	if(param->hparam.len==4) /* tag */
+	{
+		if (get_to(msg)->tag_value.s==NULL||get_to(msg)->tag_value.len<=0) 
+			return xl_get_null(msg, res, param);
+		res->rs.s = get_to(msg)->tag_value.s;
+		res->rs.len = get_to(msg)->tag_value.len;
+		res->flags = XL_VAL_STR;
+		return 0;
+	}
+
+	if(param->hparam.len==5) /* display name */
+	{
+		if(get_to(msg)->display.s==NULL||get_to(msg)->display.len<=0)
+			return xl_get_empty(msg, res, param);
+		res->rs.s = get_to(msg)->display.s;
+		res->rs.len = get_to(msg)->display.len; 
+		res->flags = XL_VAL_STR;
+		return 0;
+	}
 
 	memset(&uri, 0, sizeof(struct sip_uri));
 	if (parse_uri(get_to(msg)->uri.s, get_to(msg)->uri.len , &uri)<0)
 	{
-		LOG(L_ERR,"xl_get_to_username: failed to parse To uri\n");
+		LOG(L_ERR,"xl_get_to_attr: failed to parse To uri\n");
 		return xl_get_null(msg, res, param);
 	}
 	
-	if(uri.user.s==NULL)
-		return xl_get_empty(msg, res, param);
-
-	res->rs.s   = uri.user.s;
-	res->rs.len = uri.user.len; 
-	
-	res->flags = XL_VAL_STR;
-	return 0;
-}
-
-static int xl_get_to_domain(struct sip_msg *msg, xl_value_t *res, xl_param_t *param)
-{
-	struct sip_uri uri;
-	if(msg==NULL || res==NULL)
-		return -1;
-
-	if(msg->to==NULL && parse_headers(msg, HDR_TO_F, 0)==-1)
-	{
-		LOG(L_ERR, "xl_get_to_domain: ERROR cannot parse TO header\n");
+	if(param->hparam.len==2) /* username */ {
+		if(uri.user.s==NULL)
+			return xl_get_empty(msg, res, param);
+		res->rs.s   = uri.user.s;
+		res->rs.len = uri.user.len; 
+		res->flags = XL_VAL_STR;
+	} else if(param->hparam.len==3) /* domain */ {
+		res->rs.s   = uri.host.s;
+		res->rs.len = uri.host.len; 
+		res->flags = XL_VAL_STR;
+	} else {
+		LOG(L_ERR, "xl_get_to_attr: unknown specifier\n");
 		return xl_get_null(msg, res, param);
 	}
-	if(msg->to==NULL || get_to(msg)==NULL)
-		return xl_get_null(msg, res, param);
-
-	memset(&uri, 0, sizeof(struct sip_uri));
-	if (parse_uri(get_to(msg)->uri.s, get_to(msg)->uri.len , &uri)<0)
-	{
-		LOG(L_ERR,"xl_get_to_domain: failed to parse To uri\n");
-		return xl_get_null(msg, res, param);
-	}
-	
-	res->rs.s   = uri.host.s;
-	res->rs.len = uri.host.len; 
-	
-	res->flags = XL_VAL_STR;
-	return 0;
-}
-
-static int xl_get_to_tag(struct sip_msg* msg, xl_value_t *res, xl_param_t *param)
-{
-	if(msg==NULL || res==NULL)
-		return -1;
-
-	if(msg->to==NULL && ((parse_headers(msg, HDR_TO_F, 0)==-1) || 
-				(msg->to==NULL)) )
-	{
-		LOG(L_ERR, "xl_get_to_tag: ERROR cannot parse TO header\n");
-		return xl_get_null(msg, res, param);
-	}
-	
-	if (get_to(msg)->tag_value.len <= 0) 
-		return xl_get_null(msg, res, param);
-	
-	res->rs.s = get_to(msg)->tag_value.s;
-	res->rs.len = get_to(msg)->tag_value.len;
-
-	res->flags = XL_VAL_STR;
 	return 0;
 }
 
@@ -1753,19 +1691,28 @@ char* xl_parse_spec(char *s, xl_spec_p e, int flags)
 			switch(*p)
 			{
 				case 'd':
-					e->itf = xl_get_from_domain;
+					e->itf = xl_get_from_attr;
+					e->p.hparam.len = 3;
 					e->type = XL_FROM_DOMAIN;
 				break;
+				case 'n':
+					e->itf = xl_get_from_attr;
+					e->p.hparam.len = 5;
+					e->type = XL_FROM_DISPLAYNAME;
+				break;
 				case 't':
-					e->itf = xl_get_from_tag;
+					e->itf = xl_get_from_attr;
+					e->p.hparam.len = 4;
 					e->type = XL_FROM_TAG;
 				break;
 				case 'u':
-					e->itf = xl_get_from;
+					e->itf = xl_get_from_attr;
+					e->p.hparam.len = 1;
 					e->type = XL_FROM;
 				break;
 				case 'U':
-					e->itf = xl_get_from_username;
+					e->itf = xl_get_from_attr;
+					e->p.hparam.len = 2;
 					e->type = XL_FROM_USERNAME;
 				break;
 				default:
@@ -1927,19 +1874,28 @@ char* xl_parse_spec(char *s, xl_spec_p e, int flags)
 			switch(*p)
 			{
 				case 'd':
-					e->itf = xl_get_to_domain;
+					e->itf = xl_get_to_attr;
+					e->p.hparam.len = 3;
 					e->type = XL_TO_DOMAIN;
 				break;
+				case 'n':
+					e->itf = xl_get_to_attr;
+					e->p.hparam.len = 5;
+					e->type = XL_TO_DISPLAYNAME;
+				break;
 				case 't':
-					e->itf = xl_get_to_tag;
+					e->itf = xl_get_to_attr;
+					e->p.hparam.len = 4;
 					e->type = XL_TO_TAG;
 				break;
 				case 'u':
-					e->itf = xl_get_to;
+					e->itf = xl_get_to_attr;
+					e->p.hparam.len = 1;
 					e->type = XL_TO;
 				break;
 				case 'U':
-					e->itf = xl_get_to_username;
+					e->itf = xl_get_to_attr;
+					e->p.hparam.len = 2;
 					e->type = XL_TO_USERNAME;
 				break;
 				default:
