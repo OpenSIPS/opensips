@@ -656,7 +656,7 @@ assign_stm:	DEBUG EQUAL NUMBER { debug=$3; }
 		| SERVER_SIGNATURE EQUAL NUMBER { server_signature=$3; }
 		| SERVER_SIGNATURE EQUAL error { yyerror("boolean value expected"); }
 		| SERVER_HEADER EQUAL STRING { server_header.s=$3;
-									server_header.len=strlen($3)
+									server_header.len=strlen($3);
 									}
 		| SERVER_HEADER EQUAL error { yyerror("string value expected"); }
 		| USER_AGENT_HEADER EQUAL STRING { user_agent_header.s=$3;
