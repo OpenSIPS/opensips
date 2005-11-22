@@ -103,11 +103,7 @@ extern int mcast_loopback;
 extern int mcast_ttl;
 #endif /* USE_MCAST */
 
-/*
- * debug & log_stderr moved to dprint.h*/
-
-/* extern process_bm_t process_bit; */
-/* extern int *pids; -moved to pt.h */
+extern int tos;
 
 extern int cfg_errors;
 extern unsigned int msg_no;
@@ -127,11 +123,6 @@ extern int unixsock_tx_timeout; /* Timeout (in ms) used when sending data */
 
 /* AVP configuration */
 extern char *avp_db_url;  /* db url used by user preferences (AVPs) */
-
-/* moved to pt.h
-extern int *pids;
-extern int process_no;
-*/
 
 extern int reply_to_via;
 

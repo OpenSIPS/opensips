@@ -47,6 +47,7 @@
  *  2004-10-08  more escapes: \", \xHH, \nnn and minor optimizations (andrei)
  *  2004-10-19  added FROM_URI and TO_URI (andrei)
  *  2004-11-30  added force_send_socket
+ *  2005-12-22  added tos configurability (thanks to Andreas Granig)
  */
 
 
@@ -242,7 +243,8 @@ DISABLE_CORE		"disable_core_dump"
 OPEN_FD_LIMIT		"open_files_limit"
 MCAST_LOOPBACK		"mcast_loopback"
 MCAST_TTL			"mcast_ttl"
-TLS_DOMAIN              "tls_domain"
+TOS					"tos"
+TLS_DOMAIN			"tls_domain"
 
 MPATH	mpath
 LOADMODULE	loadmodule
@@ -452,13 +454,16 @@ EAT_ABLE	[\ \t\b\r]
 									return ADVERTISED_PORT; }
 <INITIAL>{DISABLE_CORE}		{	count(); yylval.strval=yytext;
 									return DISABLE_CORE; }
-<INITIAL>{OPEN_FD_LIMIT}		{	count(); yylval.strval=yytext;
+<INITIAL>{OPEN_FD_LIMIT}	{	count(); yylval.strval=yytext;
 									return OPEN_FD_LIMIT; }
-<INITIAL>{MCAST_LOOPBACK}		{	count(); yylval.strval=yytext;
+<INITIAL>{MCAST_LOOPBACK}	{	count(); yylval.strval=yytext;
 									return MCAST_LOOPBACK; }
 <INITIAL>{MCAST_TTL}		{	count(); yylval.strval=yytext;
 									return MCAST_TTL; }
-<INITIAL>{TLS_DOMAIN}  { count(); yylval.strval=yytext; return TLS_DOMAIN; }
+<INITIAL>{TOS}				{	count(); yylval.strval=yytext;
+									return TOS; }
+<INITIAL>{TLS_DOMAIN}		{ count(); yylval.strval=yytext;
+									return TLS_DOMAIN; }
 
 <INITIAL>{MPATH}	   { count(); yylval.strval=yytext; return MPATH; }
 <INITIAL>{LOADMODULE}  { count(); yylval.strval=yytext; return LOADMODULE; }

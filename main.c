@@ -52,6 +52,7 @@
  *               crashed childvwhich still holds the lock  (andrei)
  *  2004-12-02  removed -p, extended -l to support [proto:]address[:port],
  *               added parse_phostport, parse_proto (andrei)
+ *  2005-12-22  added tos configurability (thanks to Andreas Granig)
  */
 
 
@@ -64,6 +65,7 @@
 #include <unistd.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <netinet/ip.h>
 #include <arpa/inet.h>
 #include <sys/utsname.h>
 #include <sys/types.h>
@@ -287,12 +289,8 @@ int mcast_loopback = 0;
 int mcast_ttl = -1; /* if -1, don't touch it, use the default (usually 1) */
 #endif /* USE_MCAST */
 
-#if 0
-char* names[MAX_LISTEN];              /* our names */
-int names_len[MAX_LISTEN];            /* lengths of the names*/
-struct ip_addr addresses[MAX_LISTEN]; /* our ips */
-int addresses_no=0;                   /* number of names/ips */
-#endif
+int tos = IPTOS_LOWDELAY;
+
 struct socket_info* udp_listen=0;
 #ifdef USE_TCP
 struct socket_info* tcp_listen=0;

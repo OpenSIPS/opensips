@@ -54,6 +54,7 @@
  * 2004-10-19  added FROM_URI, TO_URI (andrei)
  * 2004-11-30  added force_send_socket (andrei)
  * 2005-07-26  default onreply route added (andrei)
+ * 2005-12-22  added tos configurability (thanks to Andreas Granig)
  */
 
 
@@ -64,6 +65,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <netinet/ip.h>
 #include <arpa/inet.h>
 #include <string.h>
 #include <errno.h>
@@ -267,6 +269,7 @@ static int  mpath_len = 0;
 %token OPEN_FD_LIMIT
 %token MCAST_LOOPBACK
 %token MCAST_TTL
+%token TOS
 %token TLS_DOMAIN
 
 
@@ -730,7 +733,29 @@ assign_stm:	DEBUG EQUAL NUMBER { debug=$3; }
 									warn("no multicast support compiled in");
 								#endif
 		  }
-		| MCAST_TTL EQUAL error { yyerror("number expected"); }
+		| MCAST_TTL EQUAL error { yyerror("number expected as tos"); }
+		| TOS EQUAL NUMBER { tos = $3;
+							if (tos<=0)
+								yyerror("invalid tos value")
+		 }
+		| TOS EQUAL ID { if (strcasecmp($3,"IPTOS_LOWDELAY")) {
+								tos=IPTOS_LOWDELAY;
+							} else if (strcasecmp($3,"IPTOS_THROUGHPUT")) {
+								tos=IPTOS_THROUGHPUT;
+							} else if (strcasecmp($3,"IPTOS_RELIABILITY")) {
+								tos=IPTOS_RELIABILITY;
+							} else if (strcasecmp($3,"IPTOS_LOWCOST")) {
+								tos=IPTOS_LOWCOST;
+							} else if (strcasecmp($3,"IPTOS_MINCOST")) {
+								tos=IPTOS_MINCOST;
+							} else {
+								yyerror("invalid tos value - allowed: "
+									"IPTOS_LOWDELAY,IPTOS_THROUGHPUT,"
+									"IPTOS_RELIABILITY,IPTOS_LOWCOST,"
+									"IPTOS_MINCOST\n");
+							}
+		 }
+		| TOS EQUAL error { yyerror("number expected"); }
 		| MPATH EQUAL STRING { mpath=$3; strcpy(mpath_buf, $3);
 								mpath_len=strlen($3); 
 								if(mpath_buf[mpath_len-1]!='/') {
