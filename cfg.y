@@ -65,6 +65,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <netinet/in_systm.h>
 #include <netinet/ip.h>
 #include <arpa/inet.h>
 #include <string.h>
@@ -736,7 +737,7 @@ assign_stm:	DEBUG EQUAL NUMBER { debug=$3; }
 		| MCAST_TTL EQUAL error { yyerror("number expected as tos"); }
 		| TOS EQUAL NUMBER { tos = $3;
 							if (tos<=0)
-								yyerror("invalid tos value")
+								yyerror("invalid tos value");
 		 }
 		| TOS EQUAL ID { if (strcasecmp($3,"IPTOS_LOWDELAY")) {
 								tos=IPTOS_LOWDELAY;
@@ -744,8 +745,6 @@ assign_stm:	DEBUG EQUAL NUMBER { debug=$3; }
 								tos=IPTOS_THROUGHPUT;
 							} else if (strcasecmp($3,"IPTOS_RELIABILITY")) {
 								tos=IPTOS_RELIABILITY;
-							} else if (strcasecmp($3,"IPTOS_LOWCOST")) {
-								tos=IPTOS_LOWCOST;
 							} else if (strcasecmp($3,"IPTOS_MINCOST")) {
 								tos=IPTOS_MINCOST;
 							} else {
