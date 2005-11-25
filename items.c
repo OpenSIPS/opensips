@@ -316,6 +316,62 @@ static int xl_get_ruri(struct sip_msg *msg, xl_value_t *res, xl_param_t *param)
 	return 0;
 }
 
+static int xl_get_ouri(struct sip_msg *msg, xl_value_t *res, xl_param_t *param)
+{
+	if(msg==NULL || res==NULL)
+		return -1;
+
+	if(msg->first_line.type == SIP_REPLY)	/* REPLY doesnt have a ruri */
+		return xl_get_null(msg, res, param);
+
+	if(msg->parsed_orig_ruri_ok==0
+			/* orig R-URI not parsed*/ && parse_orig_ruri(msg)<0)
+	{
+		LOG(L_ERR, "xl_get_ouri: ERROR while parsing the R-URI\n");
+		return xl_get_null(msg, res, param);
+	}
+	
+	res->rs.s   = msg->first_line.u.request.uri.s;
+	res->rs.len = msg->first_line.u.request.uri.len;
+	
+	res->flags = XL_VAL_STR;
+	return 0;
+}
+
+static int xl_get_xuri_attr(struct sip_msg *msg, xl_value_t *res,
+		xl_param_t *param, struct sip_uri *parsed_uri)
+{
+	if(param->hparam.len==1) /* username */
+	{
+		res->rs.s   = parsed_uri->user.s;
+		res->rs.len = parsed_uri->user.len;
+		res->flags = XL_VAL_STR;
+	} else if(param->hparam.len==2) /* domain */ {
+		res->rs.s   = parsed_uri->host.s;
+		res->rs.len = parsed_uri->host.len;
+		res->flags  = XL_VAL_STR;
+	} else if(param->hparam.len==3) /* port */ {
+		if(parsed_uri->port.s==NULL)
+			return xl_get_5060(msg, res, param);
+		res->rs.s   = parsed_uri->port.s;
+		res->rs.len = parsed_uri->port.len;
+		res->ri     = (int)parsed_uri->port_no;
+		res->flags  = XL_VAL_STR|XL_VAL_INT;
+	} else if(param->hparam.len==4) /* protocol */ {
+		if(parsed_uri->transport_val.s==NULL)
+			return xl_get_udp(msg, res, param);
+		res->rs.s   = parsed_uri->transport_val.s;
+		res->rs.len = parsed_uri->transport_val.len;
+		res->ri     = (int)parsed_uri->proto;
+		res->flags  = XL_VAL_STR|XL_VAL_INT;
+	} else {
+		LOG(L_ERR, "xl_get_xuri_attr: unknown specifier\n");
+		return xl_get_null(msg, res, param);
+	}
+	
+	return 0;
+}
+
 static int xl_get_ruri_attr(struct sip_msg *msg, xl_value_t *res, xl_param_t *param)
 {
 	if(msg==NULL || res==NULL)
@@ -330,38 +386,27 @@ static int xl_get_ruri_attr(struct sip_msg *msg, xl_value_t *res, xl_param_t *pa
 			"xl_get_ruri_attr: ERROR while parsing the R-URI\n");
 		return xl_get_null(msg, res, param);
 	}
-	
-	if(param->hparam.len==1) /* username */
+	return xl_get_xuri_attr(msg, res, param, &(msg->parsed_uri));
+}	
+
+static int xl_get_ouri_attr(struct sip_msg *msg, xl_value_t *res, xl_param_t *param)
+{
+	if(msg==NULL || res==NULL)
+		return -1;
+
+	if(msg->first_line.type == SIP_REPLY)	/* REPLY doesnt have a ruri */
+		return xl_get_null(msg, res, param);
+
+	if(msg->parsed_orig_ruri_ok==0
+			/* orig R-URI not parsed*/ && parse_orig_ruri(msg)<0)
 	{
-		res->rs.s   = msg->parsed_uri.user.s;
-		res->rs.len = msg->parsed_uri.user.len;
-		res->flags = XL_VAL_STR;
-	} else if(param->hparam.len==2) /* domain */ {
-		res->rs.s   = msg->parsed_uri.host.s;
-		res->rs.len = msg->parsed_uri.host.len;
-		res->flags  = XL_VAL_STR;
-	} else if(param->hparam.len==3) /* port */ {
-		if(msg->parsed_uri.port.s==NULL)
-			return xl_get_5060(msg, res, param);
-		res->rs.s   = msg->parsed_uri.port.s;
-		res->rs.len = msg->parsed_uri.port.len;
-		res->ri     = (int)msg->parsed_uri.port_no;
-		res->flags  = XL_VAL_STR|XL_VAL_INT;
-	} else if(param->hparam.len==4) /* protocol */ {
-		if(msg->parsed_uri.transport_val.s==NULL)
-			return xl_get_udp(msg, res, param);
-		res->rs.s   = msg->parsed_uri.transport_val.s;
-		res->rs.len = msg->parsed_uri.transport_val.len;
-		res->ri     = (int)msg->parsed_uri.proto;
-		res->flags  = XL_VAL_STR|XL_VAL_INT;
-	} else {
-		LOG(L_ERR, "xl_get_ruri_attr: unknown specifier\n");
+		LOG(L_ERR, "xl_get_ouri: ERROR while parsing the R-URI\n");
 		return xl_get_null(msg, res, param);
 	}
-	
-	return 0;
-}
+	return xl_get_xuri_attr(msg, res, param, &(msg->parsed_orig_ruri));
+}	
 
+	
 static int xl_get_contact(struct sip_msg* msg, xl_value_t *res, xl_param_t *param)
 {
 	if(msg==NULL || res==NULL)
@@ -1764,7 +1809,40 @@ char* xl_parse_spec(char *s, xl_spec_p e, int flags)
 					e->itf = xl_get_null;
 					e->type = XL_NULL;
 			}
-			break;
+		break;
+		case 'o':
+			p++;
+			switch(*p)
+			{
+				case 'd':
+					e->itf = xl_get_ouri_attr;
+					e->p.hparam.len = 2;
+					e->type = XL_OURI_DOMAIN;
+				break;
+				case 'u':
+					e->itf = xl_get_ouri;
+					e->type = XL_OURI;
+				break;
+				case 'U':
+					e->itf = xl_get_ouri_attr;
+					e->p.hparam.len = 1;
+					e->type = XL_OURI_USERNAME;
+				break;
+				case 'p':
+					e->itf = xl_get_ouri_attr;
+					e->p.hparam.len = 3;
+					e->type = XL_OURI_PORT;
+				break;
+				case 'P':
+					e->itf = xl_get_ouri_attr;
+					e->p.hparam.len = 4;
+					e->type = XL_OURI_PROTOCOL;
+				break;
+				default:
+					e->itf = xl_get_null;
+					e->type = XL_NULL;
+			}
+		break;
 		case 'p':
 			p++;
 			switch(*p)
