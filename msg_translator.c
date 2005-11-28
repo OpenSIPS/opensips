@@ -1292,15 +1292,12 @@ char * build_req_buf_from_sip_req( struct sip_msg* msg,
 	str branch;
 	str extra_params;
 	struct hostport hp;
-
-#ifdef USE_TCP
 	char* id_buf;
 	unsigned int id_len;
 	
 	
 	id_buf=0;
 	id_len=0;
-#endif
 	via_insert_param=0;
 	extra_params.len=0;
 	extra_params.s=0;
