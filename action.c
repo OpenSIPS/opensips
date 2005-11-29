@@ -32,6 +32,7 @@
  *  2003-10-02  added SET_ADV_ADDR_T & SET_ADV_PORT_T (andrei)
  *  2003-10-29  added FORCE_TCP_ALIAS_T (andrei)
  *  2004-11-30  added FORCE_SEND_SOCKET_T (andrei)
+ *  2005-11-29  added serialize_branches and next_branches (bogdan)
  */
 
 
@@ -51,6 +52,7 @@
 #include "globals.h"
 #include "dset.h"
 #include "flags.h"
+#include "serialize.h"
 #ifdef USE_TCP
 #include "tcp_server.h"
 #endif
@@ -727,7 +729,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 						
 				if (tcpconn_add_alias(msg->rcv.proto_reserved1, port,
 									msg->rcv.proto)!=0){
-					LOG(L_ERR, " ERROR: receive_msg: tcp alias failed\n");
+					LOG(L_ERR, " ERROR:do_action: tcp alias failed\n");
 					ret=E_UNSPEC;
 					break;
 				}
@@ -743,6 +745,28 @@ int do_action(struct action* a, struct sip_msg* msg)
 				break;
 			}
 			msg->force_send_socket=(struct socket_info*)a->p1.data;
+			ret=1; /* continue processing */
+			break;
+		case SERIALIZE_BRANCHES_T:
+			if (a->p1_type!=NUMBER_ST){
+				LOG(L_CRIT, "BUG: do_action: bad serialize_branches argument"
+						" type: %d\n", a->p1_type);
+				ret=E_BUG;
+				break;
+			}
+			if (serialize_branches(msg,(int)a->p1.number)!=0) {
+				LOG(L_ERR, "ERROR: do_action: serialize_branches failed\n");
+				ret=E_UNSPEC;
+				break;
+			}
+			ret=1; /* continue processing */
+			break;
+		case NEXT_BRANCHES_T:
+			if (next_branches(msg)!=0) {
+				LOG(L_ERR, "ERROR: do_action: next_branches failed\n");
+				ret=E_UNSPEC;
+				break;
+			}
 			ret=1; /* continue processing */
 			break;
 		default:

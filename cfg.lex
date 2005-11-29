@@ -47,7 +47,8 @@
  *  2004-10-08  more escapes: \", \xHH, \nnn and minor optimizations (andrei)
  *  2004-10-19  added FROM_URI and TO_URI (andrei)
  *  2004-11-30  added force_send_socket
- *  2005-12-22  added tos configurability (thanks to Andreas Granig)
+ *  2005-11-22  added tos configurability (thanks to Andreas Granig)
+ *  2005-11-29  added serialize_branches and next_branches (bogdan)
  */
 
 
@@ -139,6 +140,8 @@ SBREAK			"break"|"esac"
 SET_ADV_ADDRESS	"set_advertised_address"
 SET_ADV_PORT	"set_advertised_port"
 FORCE_SEND_SOCKET	"force_send_socket"
+SERIALIZE_BRANCHES	"serialize_branches"
+NEXT_BRANCHES	"next_branches"
 
 /*ACTION LVALUES*/
 URIHOST			"uri:host"
@@ -358,6 +361,10 @@ EAT_ABLE	[\ \t\b\r]
 										return SET_ADV_PORT; }
 <INITIAL>{FORCE_SEND_SOCKET}	{	count(); yylval.strval=yytext;
 									return FORCE_SEND_SOCKET; }
+<INITIAL>{SERIALIZE_BRANCHES}	{	count(); yylval.strval=yytext;
+									return SERIALIZE_BRANCHES; }
+<INITIAL>{NEXT_BRANCHES}	{	count(); yylval.strval=yytext;
+									return NEXT_BRANCHES; }
 
 <INITIAL>{URIHOST}	{ count(); yylval.strval=yytext; return URIHOST; }
 <INITIAL>{URIPORT}	{ count(); yylval.strval=yytext; return URIPORT; }

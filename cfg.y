@@ -54,7 +54,8 @@
  * 2004-10-19  added FROM_URI, TO_URI (andrei)
  * 2004-11-30  added force_send_socket (andrei)
  * 2005-07-26  default onreply route added (andrei)
- * 2005-12-22  added tos configurability (thanks to Andreas Granig)
+ * 2005-11-22  added tos configurability (thanks to Andreas Granig)
+ * 2005-11-29  added serialize_branches and next_branches (bogdan)
  */
 
 
@@ -177,6 +178,8 @@ static int  mpath_len = 0;
 %token SET_ADV_ADDRESS
 %token SET_ADV_PORT
 %token FORCE_SEND_SOCKET
+%token SERIALIZE_BRANCHES
+%token NEXT_BRANCHES
 %token URIHOST
 %token URIPORT
 %token MAX_LEN
@@ -1907,37 +1910,55 @@ cmd:		FORWARD LPAREN host RPAREN	{ $$=mk_action(	FORWARD_T,
 								}
 								            }
 		| SET_ADV_PORT LPAREN error RPAREN { $$=0; yyerror("bad argument, "
-														"string expected"); }
+								"string expected"); }
 		| SET_ADV_PORT  error {$$=0; yyerror("missing '(' or ')' ?"); }
 		| FORCE_SEND_SOCKET LPAREN phostport RPAREN {
-										$$=mk_action(FORCE_SEND_SOCKET_T,
-														SOCKID_ST, 0, $3, 0);
-													}
+								$$=mk_action(FORCE_SEND_SOCKET_T,
+									SOCKID_ST, 0, $3, 0);
+								}
 		| FORCE_SEND_SOCKET LPAREN error RPAREN { $$=0; yyerror("bad argument,"
-											" [proto:]host[:port] expected"); }
+								" [proto:]host[:port] expected");
+								}
 		| FORCE_SEND_SOCKET error {$$=0; yyerror("missing '(' or ')' ?"); }
-		| ID LPAREN RPAREN			{ f_tmp=(void*)find_export($1, 0, rt);
-									   if (f_tmp==0){
-										   if (find_export($1, 0, 0)) {
-											   yyerror("Command cannot be used in the block\n");
-										   } else {
-											   yyerror("unknown command, missing"
-												   " loadmodule?\n");
-										   }
+		| SERIALIZE_BRANCHES LPAREN NUMBER RPAREN {
+								$$=mk_action(SERIALIZE_BRANCHES_T,
+									NUMBER_ST, 0, (void*)(long)$3, 0);
+								}
+		| SERIALIZE_BRANCHES LPAREN error RPAREN {$$=0; yyerror("bad argument,"
+								" number expected");
+								}
+		| SERIALIZE_BRANCHES error {$$=0; yyerror("missing '(' or ')' ?"); }
+		| NEXT_BRANCHES LPAREN RPAREN {
+								$$=mk_action(NEXT_BRANCHES_T, 0, 0, 0, 0);
+								}
+		| NEXT_BRANCHES LPAREN error RPAREN {$$=0; yyerror("no argument is"
+								" expected");
+								}
+		| NEXT_BRANCHES error {$$=0; yyerror("missing '(' or ')' ?"); }
+		| ID LPAREN RPAREN		{ f_tmp=(void*)find_export($1, 0, rt);
+									if (f_tmp==0){
+										if (find_export($1, 0, 0)) {
+											yyerror("Command cannot be "
+												"used in the block\n");
+										} else {
+											yyerror("unknown command, "
+												"missing loadmodule?\n");
+										}
 										$$=0;
-									   }else{
+									}else{
 										$$=mk_action(	MODULE_T,
-														CMDF_ST,
-														0,
-														f_tmp,
-														0
-													);
-									   }
+													CMDF_ST,
+													0,
+													f_tmp,
+													0
+												);
 									}
+								}
 		| ID LPAREN STRING RPAREN { f_tmp=(void*)find_export($1, 1, rt);
 									if (f_tmp==0){
 										if (find_export($1, 1, 0)) {
-											yyerror("Command cannot be used in the block\n");
+											yyerror("Command cannot be used "
+												"in the block\n");
 										} else {
 											yyerror("unknown command, missing"
 												" loadmodule?\n");
@@ -1956,7 +1977,8 @@ cmd:		FORWARD LPAREN host RPAREN	{ $$=mk_action(	FORWARD_T,
 								  { f_tmp=(void*)find_export($1, 2, rt);
 									if (f_tmp==0){
 										if (find_export($1, 2, 0)) {
-											yyerror("Command cannot be used in the block\n");
+											yyerror("Command cannot be used "
+												"in the block\n");
 										} else {
 											yyerror("unknown command, missing"
 												" loadmodule?\n");

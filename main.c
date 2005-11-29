@@ -109,6 +109,7 @@
 #include "pt.h"
 #include "script_cb.h"
 #include "ut.h"
+#include "serialize.h"
 #ifdef USE_TCP
 #include "tcp_init.h"
 #ifdef USE_TLS
@@ -1439,7 +1440,13 @@ try_again:
 			goto error;
 		}
 	}
-	
+
+	/* init serial forking engine */
+	if (init_serialization()!=0) {
+		fprintf(stderr, "ERROR: error while initializing serialization\n");
+		goto error;
+	}
+	/* init modules */
 	if (init_modules() != 0) {
 		fprintf(stderr, "ERROR: error while initializing modules\n");
 		goto error;
