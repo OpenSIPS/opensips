@@ -64,6 +64,14 @@ ARCH = $(shell uname -m |sed -e s/i.86/i386/ -e s/sun4u/sparc64/  \
 			-e s/amd64/x86_64/ )
 OSREL = $(shell uname -r)
 
+# nicer compilation?
+Q=
+NICER ?= 
+ifneq ($(NICER),)
+	Q=@
+endif
+
+
 # TLS support
 TLS ?= 
 ifneq ($(TLS),)

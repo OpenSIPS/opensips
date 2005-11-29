@@ -11,11 +11,10 @@
 # (all this must  be defined previously!,  see Makefile.defs & Makefile)
 #
 
-
-
 #implicit rules
 %.o:%.c  $(ALLDEP)
-	$(CC) $(CFLAGS) $(DEFS) -c $< -o $@
+	@echo "Compiling $<"
+	$(Q)$(CC) $(CFLAGS) $(DEFS) -c $< -o $@
 
 %.d: %.c $(ALLDEP)
 	@set -e; $(MKDEP) $(DEFS) $< \
@@ -25,7 +24,8 @@
 
 # normal rules
 $(NAME): $(objs) $(ALLDEP)
-	$(LD) $(LDFLAGS) $(objs) $(extra_objs) $(LIBS) -o $(NAME) 
+	@echo "Linking $(NAME)"
+	$(Q)$(LD) $(LDFLAGS) $(objs) $(extra_objs) $(LIBS) -o $(NAME) 
 
 
 .PHONY: all
@@ -86,11 +86,11 @@ mantainer-clean: distclean
 .PHONY: TAGS
 TAGS:
 	$(MKTAGS) 
-	
+
 ifeq (,$(MAKECMDGOALS))
-include $(depends)
+-include $(depends)
 endif
 ifneq (,$(filter-out clean proper distclean realclean mantainer-clean TAGS \
 		tar modules, $(MAKECMDGOALS)))
-include $(depends)
+-include $(depends)
 endif
