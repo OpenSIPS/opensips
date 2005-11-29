@@ -682,7 +682,7 @@ int start_fifo_server()
 		}
 		/* a real server doesn't die if writing to reply fifo fails */
 		signal(SIGPIPE, SIG_IGN);
-		LOG(L_INFO, "SER: open_uac_fifo: fifo server up at %s...\n",
+		LOG(L_INFO, "INFO:open_uac_fifo: fifo server up at %s...\n",
 			fifo);
 		fifo_server( fifo_stream ); /* never returns */
 	}
