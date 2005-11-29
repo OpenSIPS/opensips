@@ -310,7 +310,6 @@ struct usr_avp *search_next_avp( struct usr_avp *avp,  int_str *val )
 
 
 
-
 /********* free functions ********/
 
 void destroy_avp( struct usr_avp *avp_del)
@@ -328,6 +327,22 @@ void destroy_avp( struct usr_avp *avp_del)
 			return;
 		}
 	}
+}
+
+
+int destroy_avps( unsigned short name_type, int_str name, int all)
+{
+	struct usr_avp *avp;
+	int n;
+
+	n = 0;
+	while ( (avp=search_first_avp( name_type, name, 0))!=0 ) {
+		destroy_avp( avp );
+		n++;
+		if ( !all )
+			break;
+	}
+	return n;
 }
 
 

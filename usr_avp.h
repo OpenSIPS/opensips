@@ -19,6 +19,11 @@
  * along with this program; if not, write to the Free Software 
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
+ * TODO (by bogdan)
+ * ----------------
+ *    1) int_str -> (int,str)
+ *    2) avp is double linked list (faster at delete and insert)
+ *
  * History:
  * ---------
  *  2004-07-21  created (bogdan)
@@ -31,12 +36,14 @@
 
 /*
  *   LIST with the allocated flags, their meaning and owner
+ *   [0-7] - core owned flag; [8-15] - to be used by modules
+ *
  *   flag no.    owner            description
  *   -------------------------------------------------------
  *     0        avp_core          avp has a string name
  *     1        avp_core          avp has a string value
- *     3        avpops module     avp was loaded from DB
- *     4        lcr module        contact avp qvalue change
+ *     2        core              contact avp qvalue change
+ *     8        avpops module     avp was loaded from DB
  *
  */
  
@@ -76,6 +83,7 @@ struct usr_avp *search_next_avp( struct usr_avp *avp, int_str *val  );
 /* free functions */
 void reset_avps( );
 void destroy_avp( struct usr_avp *avp);
+int  destroy_avps( unsigned short name_type, int_str name, int all);
 void destroy_avp_list( struct usr_avp **list );
 void destroy_avp_list_unsafe( struct usr_avp **list );
 
