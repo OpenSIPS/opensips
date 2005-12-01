@@ -68,9 +68,8 @@ OSREL = $(shell uname -r)
 Q=
 NICER ?= 
 ifneq ($(NICER),)
-	Q=@
+	export Q=@
 endif
-
 
 # TLS support
 TLS ?= 
@@ -904,6 +903,12 @@ ifeq	($(CC_NAME), suncc)
 endif
 
 endif #mode=release
+
+# during development, don't let errors in
+ISDEVEL=$(shell ls -d CVS 2>/dev/null)
+ifneq ($(ISDEVEL),)
+	CFLAGS+=-Werror
+endif
 
 
 #*FLAGS used for compiling the modules
