@@ -399,8 +399,14 @@ acl() {
 			if [ $# -eq 2 ] ; then
 				is_user $2
 				if [ $? -ne 0 ] ; then
-					echo non-existent user
-					exit 1;
+					printf "Non-existent user. Still proceeding? \
+						[Y|N] " > /dev/stderr
+					read answer
+					if [ "$answer" = "y" -o "$answer" = "Y" ] ; then
+						echo "Proceeding with non-local user"
+					else
+						exit 1
+					fi
 				fi
 				CLAUSE=" WHERE $ACL_USER_COLUMN='$2' "
 			elif [ $# -ne 1 ] ; then
@@ -420,8 +426,14 @@ acl() {
 			prompt_pw
 			is_user $2
 			if [ $? -ne 0 ] ; then
-				echo non-existent user
-				exit 1
+				printf "Non-existent user. Still proceeding?\
+					[Y|N] " > /dev/stderr
+				read answer
+				if [ "$answer" = "y" -o "$answer" = "Y" ] ; then
+					echo "Proceeding with non-local user"
+				else
+					exit 1
+				fi
 			fi
 			SIP_USER="$2"
 			shift 2
@@ -442,9 +454,9 @@ acl() {
 					fi
 				fi
 
-        		QUERY="insert into $ACL_TABLE \
-                	($ACL_USER_COLUMN,$ACL_GROUP_COLUMN,$ACL_MODIFIED_COLUMN) \
-                	values ('$SIP_USER','$1', now());"
+				QUERY="insert into $ACL_TABLE \
+					($ACL_USER_COLUMN,$ACL_GROUP_COLUMN,$ACL_MODIFIED_COLUMN) \
+					values ('$SIP_USER','$1', now());"
 				sql_query "$QUERY"
 				if [ $? -ne 0 ] ; then
 					echo "SQL Error"
@@ -463,7 +475,8 @@ acl() {
 			elif [ $# -ne 2 ] ; then
 				usage
 				exit 1
-			fi	
+			fi
+			prompt_pw
 
 			QUERY="delete from $ACL_TABLE where \
 				$ACL_TABLE.$ACL_USER_COLUMN='$2' $CLAUSE"
