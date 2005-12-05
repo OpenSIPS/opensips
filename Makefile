@@ -46,7 +46,7 @@ skip_cfg_install?=
 skip_modules?=
 
 # if not set on the cmd. line or the env, exclude this modules:
-exclude_modules?= 		jabber cpl-c pa postgres mysql osp \
+exclude_modules?= 		jabber cpl-c pa postgres osp unixodbc \
 						avp_radius auth_radius group_radius uri_radius
 # always exclude the CVS dir
 override exclude_modules+= CVS $(skip_modules)
@@ -320,8 +320,8 @@ $(man-prefix)/$(man-dir)/man5:
 		
 # note: on solaris 8 sed: ? or \(...\)* (a.s.o) do not work
 install-cfg: $(cfg-prefix)/$(cfg-dir)
-		sed -e "s#/usr/.*lib/$(NAME)/modules/#$(modules-target)#g" \
-			< etc/$(NAME).cfg > $(cfg-prefix)/$(cfg-dir)$(NAME).cfg.sample
+		sed -e "s#/usr/.*lib/openser/modules/#$(modules-target)#g" \
+			< etc/openser.cfg > $(cfg-prefix)/$(cfg-dir)$(NAME).cfg.sample
 		chmod 644 $(cfg-prefix)/$(cfg-dir)$(NAME).cfg.sample
 		if [ -z "${skip_cfg_install}" -a \
 				! -f $(cfg-prefix)/$(cfg-dir)$(NAME).cfg ]; then \

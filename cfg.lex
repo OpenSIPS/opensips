@@ -93,6 +93,9 @@
 /* start conditions */
 %x STRING1 STRING2 COMMENT COMMENT_LN
 
+/* Don't emit a yyunput function in the generated scanner.  */
+%option nounput
+
 /* action keywords */
 FORWARD	forward
 FORWARD_TCP	forward_tcp
