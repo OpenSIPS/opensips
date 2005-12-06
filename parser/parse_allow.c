@@ -30,18 +30,18 @@
 
  
 /*
- * This method is used to parse Allow header.
+ * This method is used to parse Allow HF body.
  *
  * params: msg : sip msg
  * returns 0 on success,
  *        -1 on failure.
  */
-int parse_allow_header(struct hdr_field* _hf)
+int parse_allow(struct hdr_field* _hf)
 {
 	unsigned int* methods;
 	
 	if (!_hf) {
-		LOG(L_ERR, "parse_allow_header: Invalid parameter value\n");
+		LOG(L_ERR, "parse_allow: Invalid parameter value\n");
 		return -1;
 	}
 	
@@ -53,12 +53,12 @@ int parse_allow_header(struct hdr_field* _hf)
 	     /* bad luck! :-( - we have to parse it */
 	methods = pkg_malloc(sizeof(unsigned int));
  	if (methods == 0) {
- 		LOG(L_ERR, "ERROR:parse_allow_header: Out of pkg_memory\n");
+ 		LOG(L_ERR, "ERROR:parse_allow: Out of pkg_memory\n");
  		return -1;
  	}
 
 	if (parse_methods(&(_hf->body), methods)!=0) {
- 		LOG(L_ERR, "ERROR:parse_allow_header: Bad allow header\n"); 
+ 		LOG(L_ERR, "ERROR:parse_allow: Bad allow header\n"); 
  		pkg_free(methods);
 		return -1;
  	}

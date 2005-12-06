@@ -339,7 +339,7 @@ int parse_methods(str* _body, unsigned int* _methods)
 	*_methods = 0;
 	if (next.len == 0) {
 		LOG(L_ERR, "ERROR: parse_methods: Empty body\n");
-		return 0;
+		return -1;
 	}
 
 	method = 0;
