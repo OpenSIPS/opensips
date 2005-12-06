@@ -111,7 +111,9 @@ static str* str_tmp;
 static str s_tmp;
 static struct ip_addr* ip_tmp;
 
+#if !defined(USE_TLS) || !defined(USE_TCP)
 static void warn(char* s);
+#endif
 static struct socket_id* mk_listen_id(char*, int, int);
 
 static char *mpath=NULL;
@@ -2004,12 +2006,14 @@ cmd:		FORWARD LPAREN host RPAREN	{ $$=mk_action(	FORWARD_T,
 extern int line;
 extern int column;
 extern int startcolumn;
+#if !defined(USE_TLS) || !defined(USE_TCP)
 static void warn(char* s)
 {
 	LOG(L_WARN, "cfg. warning: (%d,%d-%d): %s\n", line, startcolumn, 
 			column, s);
 	cfg_errors++;
 }
+#endif
 
 static void yyerror(char* s)
 {
