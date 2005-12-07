@@ -25,6 +25,8 @@
 
 #include "../str.h"
 
+#define ALL_METHODS  (0xFFFFFFFF)
+
 /* 
  * Parse comma separated list of methods pointed by _body and assign their
  * enum bits to _methods.  Returns 1 on success and 0 on failure.
