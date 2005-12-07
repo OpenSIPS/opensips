@@ -36,43 +36,26 @@
  * returns 0 on success,
  *        -1 on failure.
  */
-int parse_allow(struct hdr_field* _hf)
+int parse_allow(struct sip_msg *msg)
 {
-	unsigned int* methods;
-	
-	if (!_hf) {
-		LOG(L_ERR, "parse_allow: Invalid parameter value\n");
+	unsigned int methods;
+
+	if (!msg->allow && (parse_headers(msg,HDR_ALLOW_F,0)==-1 || !msg->allow)) {
+		LOG(L_ERR,"ERROR:parse_allow: bad msg or missing ALLOW header\n");
 		return -1;
 	}
-	
-	     /* maybe the header is already parsed! */
- 	if (_hf->parsed) {
- 		return 0;
+
+	/* maybe the header is already parsed! */
+	if (msg->allow->parsed)
+		return 0;
+
+	/* bad luck! :-( - we have to parse it */
+	if (parse_methods(&(msg->allow->body), &methods)!=0) {
+		LOG(L_ERR, "ERROR:parse_allow: Bad allow body header\n"); 
+		return -1;
 	}
 
-	     /* bad luck! :-( - we have to parse it */
-	methods = pkg_malloc(sizeof(unsigned int));
- 	if (methods == 0) {
- 		LOG(L_ERR, "ERROR:parse_allow: Out of pkg_memory\n");
- 		return -1;
- 	}
-
-	if (parse_methods(&(_hf->body), methods)!=0) {
- 		LOG(L_ERR, "ERROR:parse_allow: Bad allow header\n"); 
- 		pkg_free(methods);
-		return -1;
- 	}
-
- 	_hf->parsed = methods;
- 	return 0;
+	msg->allow->parsed = (void*)(long)methods;
+	return 0;
 }
 
-
-/*
- * Release memory
- */
-void free_allow(unsigned int** _methods)
-{
-	if (_methods && *_methods) pkg_free(*_methods);
-	*_methods = 0;
-}

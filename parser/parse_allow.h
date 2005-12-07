@@ -23,24 +23,19 @@
 #ifndef PARSE_ALLOW_H
 #define PARSE_ALLOW_H
  
-#include "hf.h"
+#include "msg_parser.h"
 
  
 /* 
  * casting macro for accessing Allow body 
  */
-#define get_allow_methods(p_msg) ((unsigned int)(p_msg)->allow->parsed)
+#define get_allow_methods(p_msg) ((unsigned int)(long)(p_msg)->allow->parsed)
 
 
 /*
  * Parse Allow HF body
  */
-int parse_allow(struct hdr_field* _h);
+int parse_allow( struct sip_msg *msg);
 
-
-/*
- * Release memory
- */
-void free_allow(unsigned int** _methods);
 
 #endif /* PARSE_ALLOW_H */
