@@ -40,10 +40,8 @@ int parse_allow(struct sip_msg *msg)
 {
 	unsigned int methods;
 
-	if (!msg->allow && (parse_headers(msg,HDR_ALLOW_F,0)==-1 || !msg->allow)) {
-		LOG(L_ERR,"ERROR:parse_allow: bad msg or missing ALLOW header\n");
+	if (!msg->allow && (parse_headers(msg,HDR_ALLOW_F,0)==-1 || !msg->allow))
 		return -1;
-	}
 
 	/* maybe the header is already parsed! */
 	if (msg->allow->parsed)
