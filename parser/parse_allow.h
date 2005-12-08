@@ -29,7 +29,7 @@
 /* 
  * casting macro for accessing Allow body 
  */
-#define get_allow_methods(p_msg) ((unsigned int)(long)(p_msg)->allow->parsed)
+#define get_allow_methods(p_msg) (*((unsigned int*)(p_msg)->allow->parsed))
 
 
 /*

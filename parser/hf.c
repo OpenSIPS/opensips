@@ -114,6 +114,7 @@ void clean_hdr_field(struct hdr_field* hf)
 			break;
 
 		case HDR_ALLOW_T:
+			pkg_free(hf->parsed);
 			break;
 
 		case HDR_EVENT_T:
