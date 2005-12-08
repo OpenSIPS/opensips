@@ -38,6 +38,7 @@
 #include "ip_addr.h" 
 #include "dprint.h"
 #include "globals.h"
+#include "ut.h"
 /* struct socket_info is defined in ip_addr.h */
 
 struct socket_info* udp_listen;
@@ -230,6 +231,62 @@ error_port:
 }
 
 
+#define MAX_SOCKET_STR ( 4 + 1 + IP_ADDR_MAX_STR_SIZE+1+INT2STR_MAX_LEN+1)
+#define sock_str_len(_sock) ( 3 + 1*((_sock)->proto==PROTO_SCTP) + 1 + \
+		(_sock)->address_str.len + 1 + (_sock)->port_no_str.len)
+
+static inline char* socket2str(struct socket_info *sock, char *s, int* len)
+{
+#define PROTOC2UINT(a, b, c, d) htonl((	(((unsigned int)(a))<<24)+ \
+								(((unsigned int)(b))<<16)+  \
+								(((unsigned int)(c))<<8)+  \
+								((unsigned int)(d)) ) | 0x20202020)
+
+	static char buf[MAX_SOCKET_STR];
+	char *p,*p1;
+
+	if (s) {
+		/* buffer provided -> check lenght */
+		if ( sock_str_len(sock) > *len ) {
+			LOG(L_ERR,"ERROR:socket2str: buffer too short\n");
+			return 0;
+		}
+		p = p1 = s;
+	} else {
+		p = p1 = buf;
+	}
+
+	switch (sock->proto) {
+		case PROTO_UDP:
+			*((unsigned int*)p) = PROTOC2UINT('u', 'd', 'p', ':');
+			p += 4;
+			break;
+		case PROTO_TCP:
+			*((unsigned int*)p) = PROTOC2UINT('t', 'c', 'p', ':');
+			p += 4;
+			break;
+		case PROTO_TLS:
+			*((unsigned int*)p) = PROTOC2UINT('t', 'l', 's', ':');
+			p += 4;
+			break;
+		case PROTO_SCTP:
+			*((unsigned int*)p) = PROTOC2UINT('s', 'c', 't', 'p');
+			p += 4;
+			*(p++) = ':';
+			break;
+		default:
+			LOG(L_CRIT,"BUG:socket2str: unsupported proto %d\n", sock->proto);
+			return 0;
+	}
+	memcpy( p, sock->address_str.s, sock->address_str.len);
+	p += sock->address_str.len;
+	*(p++) = ':';
+	memcpy( p, sock->port_no_str.s, sock->port_no_str.len);
+	p += sock->port_no_str.len;
+	*len = (int)(long)(p-p1);
+	DBG("DEBUG:socket2str: <%.*s>\n",*len,p1);
+	return p1;
+}
 
 
 
