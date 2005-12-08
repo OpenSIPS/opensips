@@ -40,7 +40,7 @@
 
 /*
  * Try to find out parameter name, recognized parameters
- * are q, expires and method
+ * are q, expires and methods
  */
 static inline void parse_contact_class(param_hooks_t* _h, param_t* _p)
 {
