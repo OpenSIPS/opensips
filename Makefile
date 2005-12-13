@@ -332,7 +332,7 @@ install-cfg: $(cfg-prefix)/$(cfg-dir)
 		$(INSTALL-TOUCH) $(cfg-prefix)/$(cfg-dir)/dictionary.radius
 		$(INSTALL-CFG) etc/dictionary.radius $(cfg-prefix)/$(cfg-dir)
 		#$(INSTALL-CFG) etc/$(NAME).cfg $(cfg-prefix)/$(cfg-dir)
-		if [ -z $(TLS) ]; then \
+		if [ -z "$(TLS)" ]; then \
 			echo  "No TLS scripts installed" ; \
 		else \
 			mkdir $(cfg-prefix)/$(cfg-dir)/tls ; \
