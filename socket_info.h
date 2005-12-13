@@ -148,22 +148,24 @@ inline static int parse_proto(unsigned char* s, long len, int* proto)
  * where proto= udp|tcp|tls
  * returns 0 on success and -1 on failure
  */
-inline static int parse_phostport(char* s, char** host, int* hlen, 
+inline static int parse_phostport(char* s, int slen, char** host, int* hlen,
 													int* port, int* proto)
 {
 	char* first; /* first ':' occurrence */
 	char* second; /* second ':' occurrence */
 	char* p;
-	int bracket;
-	char* tmp;
+	int   bracket;
+	str   tmp;
+	char* end;
 	
 	first=second=0;
 	bracket=0;
+	end = s + slen;
 	
 	/* find the first 2 ':', ignoring possible ipv6 addresses
 	 * (substrings between [])
 	 */
-	for(p=s; *p; p++){
+	for(p=s; p<end ; p++){
 		switch(*p){
 			case '[':
 				bracket++;
@@ -195,15 +197,17 @@ inline static int parse_phostport(char* s, char** host, int* hlen,
 	if (second){ /* 2 ':' found => check if valid */
 		if (parse_proto((unsigned char*)s, first-s, proto)<0)
 			goto error_proto;
-		*port=strtol(second+1, &tmp, 10);
-		if ((tmp==0)||(*tmp)||(tmp==second+1)) goto error_port;
+		tmp.s = second+1;
+		tmp.len = end - tmp.s;
+		if (str2int( &tmp, (unsigned int*)port )==-1) goto error_port;
 		*host=first+1;
 		*hlen=(int)(second-*host);
 		return 0;
 	}
 	/* only 1 ':' found => it's either proto:host or host:port */
-	*port=strtol(first+1, &tmp, 10);
-	if ((tmp==0)||(*tmp)||(tmp==first+1)){
+	tmp.s = first+1;
+	tmp.len = end - tmp.s;
+	if (str2int( &tmp, (unsigned int*)port )==-1) {
 		/* invalid port => it's proto:host */
 		if (parse_proto((unsigned char*)s, first-s, proto)<0) goto error_proto;
 		*port=0;

@@ -1144,7 +1144,7 @@ int main(int argc, char** argv)
 					}
 					break;
 			case 'l':
-					if (parse_phostport(optarg, &tmp, &tmp_len,
+					if (parse_phostport(optarg, strlen(optarg), &tmp, &tmp_len,
 											&port, &proto)<0){
 						fprintf(stderr, "bad -l address specifier: %s\n",
 										optarg);
