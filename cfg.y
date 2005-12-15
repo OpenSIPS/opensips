@@ -1239,6 +1239,7 @@ host:	ID				{ $$=$1; }
 stm:		cmd						{ $$=$1; }
 		|	if_cmd					{ $$=$1; }
 		|	LBRACE actions RBRACE	{ $$=$2; }
+		|	LBRACE RBRACE			{ $$=0; }
 	;
 
 actions:	actions action	{$$=append_action($1, $2); }
@@ -1296,6 +1297,15 @@ case_stm: CASE NUMBER COLON actions SBREAK SEMICOLON
 													$4,
 													(void*)1);
 											}
+		| CASE NUMBER COLON SBREAK SEMICOLON 
+										{ $$=mk_action3(CASE_T,
+													NUMBER_ST,
+													ACTIONS_ST,
+													NUMBER_ST,
+													(void*)$2,
+													0,
+													(void*)1);
+											}
 		| CASE NUMBER COLON actions { $$=mk_action3(CASE_T,
 													NUMBER_ST,
 													ACTIONS_ST,
@@ -1318,6 +1328,12 @@ default_stm: DEFAULT COLON actions { $$=mk_action(DEFAULT_T,
 													ACTIONS_ST,
 													0,
 													$3,
+													0);
+									}
+		| DEFAULT COLON { $$=mk_action(DEFAULT_T,
+													ACTIONS_ST,
+													0,
+													0,
 													0);
 									}
 	;
