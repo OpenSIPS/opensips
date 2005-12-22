@@ -328,17 +328,16 @@ int udp_init(struct socket_info* sock_info)
 		}
 #ifdef USE_IPV6
 	} else if (addr->s.sa_family==AF_INET6){
-		m_optval = mcast_loopback;
 		if (setsockopt(sock_info->socket, IPPROTO_IPV6, IPV6_MULTICAST_LOOP, 
-						&m_optval, sizeof(m_optval))==-1){
-			LOG(L_ERR, "ERROR: udp_init: setsockopt (IPV6_MULTICAST_LOOP):"
+						&mcast_loopback, sizeof(mcast_loopback))==-1){
+			LOG(L_WARN, "WARNING: udp_init: setsockopt (IPV6_MULTICAST_LOOP):"
 					" %s\n", strerror(errno));
-			goto error;
+			/* it's only a warning because we might get this error if the
+			  network interface doesn't support multicasting -- andrei */
 		}
 		if (mcast_ttl>=0){
-			m_optval = mcast_ttl;
 			if (setsockopt(sock_info->socket, IPPROTO_IP, IPV6_MULTICAST_HOPS,
-						&m_optval, sizeof(m_optval))==-1){
+						&mcast_ttl, sizeof(mcast_ttl))==-1){
 				LOG(L_ERR, "ERROR: udp_init: setssckopt (IPV6_MULTICAST_HOPS):"
 						" %s\n", strerror(errno));
 				goto error;
