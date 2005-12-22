@@ -905,7 +905,7 @@ static int xl_get_content_length(struct sip_msg *msg, xl_value_t *res, xl_param_
 	res->rs.len = msg->content_length->body.len;
 	trim(&res->rs);
 
-	res->ri = (int)msg->content_length->parsed;
+	res->ri = (int)(long)msg->content_length->parsed;
 	res->flags = XL_VAL_STR | XL_VAL_INT;
 
 	return 0;
