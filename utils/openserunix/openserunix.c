@@ -54,7 +54,7 @@ int main(int argc, char** argv)
 	int sock, len;
 	socklen_t from_len;
 	struct sockaddr_un from, to;
-	char name[]=""'
+	char *name;
 	static char buffer[BUF_SIZE];
 
 	if (argc != 2) {
