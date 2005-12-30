@@ -371,6 +371,9 @@ install-bin: $(bin-prefix)/$(bin-dir) utils/gen_ha1/gen_ha1 utils/$(NAME)unix/$(
 		$(INSTALL-TOUCH)   $(bin-prefix)/$(bin-dir)/mysqldb.sh  
 		$(INSTALL-BIN) scripts/mysqldb.sh  $(bin-prefix)/$(bin-dir)
 		mv -f $(bin-prefix)/$(bin-dir)/mysqldb.sh $(bin-prefix)/$(bin-dir)/$(NAME)_mysql.sh
+		$(INSTALL-TOUCH)   $(bin-prefix)/$(bin-dir)/postgresqldb.sh
+		$(INSTALL-BIN) scripts/postgresqldb.sh  $(bin-prefix)/$(bin-dir)
+		mv -f $(bin-prefix)/$(bin-dir)/postgresqldb.sh $(bin-prefix)/$(bin-dir)/$(NAME)_postgresql.sh
 		$(INSTALL-TOUCH)   $(bin-prefix)/$(bin-dir)/$(NAME)_gen_ha1
 		$(INSTALL-BIN) utils/gen_ha1/gen_ha1 $(bin-prefix)/$(bin-dir)/$(NAME)_gen_ha1
 		$(INSTALL-TOUCH)   $(bin-prefix)/$(bin-dir)/$(NAME)unix
