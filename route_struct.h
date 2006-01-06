@@ -123,7 +123,7 @@ struct action* append_action(struct action* a, struct action* b);
 
 void print_action(struct action* a);
 void print_expr(struct expr* exp);
-
+void print_actions(struct action* a);
 
 
 

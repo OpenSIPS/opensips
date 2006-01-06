@@ -25,12 +25,13 @@
  * History:
  * --------
  *  2005-03-02  created (andrei)
+ *  2006-01-05  renamed meminfo to mem_info due to name conflict on solaris
  */
 
 #ifndef meminfo_h
 #define meminfo_h
 
-struct meminfo{
+struct mem_info{
 	unsigned long total_size;
 	unsigned long free;
 	unsigned long used;

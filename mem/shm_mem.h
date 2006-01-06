@@ -134,7 +134,7 @@ inline static void* _shm_malloc(unsigned int size,
 
 
 inline static void* _shm_realloc(void *ptr, unsigned int size, 
-		char* file, const char* function, int line )
+		const char* file, const char* function, int line )
 {
 	void *p;
 	shm_lock();

@@ -320,7 +320,7 @@ static int  mpath_len = 0;
 
 /*non-terminals */
 %type <expr> exp exp_elem /*, condition*/
-%type <action> action actions cmd if_cmd stm switch_cmd switch_stm case_stms case_stm default_stm
+%type <action> action actions cmd if_cmd stm exp_stm switch_cmd switch_stm case_stms case_stm default_stm
 %type <ipaddr> ipv4 ipv6 ipv6addr ip
 %type <ipnet> ipnet
 %type <strval> host
@@ -1191,7 +1191,7 @@ exp_elem:	METHOD strop STRING	{$$= mk_elem(	$2, STRING_ST,
 		| MYSELF error	{ $$=0; 
 							yyerror ("invalid operator, == or != expected");
 						}
-		| stm				{ $$=mk_elem( NO_OP, ACTIONS_ST, ACTION_O, $1 ); }
+		| exp_stm				{ $$=mk_elem( NO_OP, ACTIONS_ST, ACTION_O, $1 ); }
 		| NUMBER		{$$=mk_elem( NO_OP, NUMBER_ST, NUMBER_O, (void*)$1 ); }
 	;
 
@@ -1236,8 +1236,13 @@ host:	ID				{ $$=$1; }
 	;
 
 
-stm:		cmd						{ $$=$1; }
+exp_stm:	cmd						{ $$=$1; }
 		|	if_cmd					{ $$=$1; }
+		|	LBRACE actions RBRACE	{ $$=$2; }
+		|	LBRACE RBRACE			{ $$=0; }
+	;
+
+stm:		action					{ $$=$1; }
 		|	LBRACE actions RBRACE	{ $$=$2; }
 		|	LBRACE RBRACE			{ $$=0; }
 	;

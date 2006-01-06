@@ -897,8 +897,7 @@ int check_rls()
 /* debug function, prints main routing table */
 void print_rl()
 {
-	struct action* t;
-	int i,j;
+	int j;
 
 	for(j=0; j<RT_NO; j++){
 		if (rlist[j]==0){
@@ -906,9 +905,7 @@ void print_rl()
 			continue;
 		}
 		DBG("routing table %d:\n",j);
-		for (t=rlist[j],i=0; t; i++, t=t->next){
-			print_action(t);
-		}
+		print_actions(rlist[j]);
 		DBG("\n");
 	}
 	for(j=0; j<ONREPLY_RT_NO; j++){
@@ -916,9 +913,7 @@ void print_rl()
 			continue;
 		}
 		DBG("onreply routing table %d:\n",j);
-		for (t=onreply_rlist[j],i=0; t; i++, t=t->next){
-			print_action(t);
-		}
+		print_actions(onreply_rlist[j]);
 		DBG("\n");
 	}
 	for(j=0; j<FAILURE_RT_NO; j++){
@@ -926,9 +921,7 @@ void print_rl()
 			continue;
 		}
 		DBG("failure routing table %d:\n",j);
-		for (t=failure_rlist[j],i=0; t; i++, t=t->next){
-			print_action(t);
-		}
+		print_actions(failure_rlist[j]);
 		DBG("\n");
 	}
 	for(j=0; j<BRANCH_RT_NO; j++){
@@ -936,9 +929,7 @@ void print_rl()
 			continue;
 		}
 		DBG("T-branch routing table %d:\n",j);
-		for (t=branch_rlist[j],i=0; t; i++, t=t->next){
-			print_action(t);
-		}
+		print_actions(branch_rlist[j]);
 		DBG("\n");
 	}
 }

@@ -39,7 +39,6 @@
 
 #include "meminfo.h"
 
-
 /* defs*/
 
 #ifdef DBG_F_MALLOC
@@ -132,7 +131,7 @@ void*  fm_realloc(struct fm_block*, void* p, unsigned long size);
 #endif
 
 void  fm_status(struct fm_block*);
-void  fm_info(struct fm_block*, struct meminfo*);
+void  fm_info(struct fm_block*, struct mem_info*);
 
 
 #endif
