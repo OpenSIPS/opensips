@@ -55,14 +55,36 @@ MAIN_NAME=openser
 VERSION = 1
 PATCHLEVEL = 1
 SUBLEVEL = 0
-EXTRAVERSION = -dev4 
+EXTRAVERSION = -dev5 
 
 RELEASE=$(VERSION).$(PATCHLEVEL).$(SUBLEVEL)$(EXTRAVERSION)
 OS = $(shell uname -s | sed -e s/SunOS/solaris/ | tr "[A-Z]" "[a-z]")
-ARCH = $(shell uname -m |sed -e s/i.86/i386/ -e s/sun4u/sparc64/  \
-			-e s/armv4l/arm/ -e "s/Power Macintosh/ppc/" -e "s/cobalt/mips2/" \
+
+ifeq ($(OS),solaris)
+	GETARCH=uname -p
+else
+	GETARCH=uname -m
+endif
+
+ARCH := $(shell $(GETARCH) |sed -e s/i.86/i386/ -e s/sun4u/sparc64/  \
+			-e s/armv4l/arm/ -e "s/Power Macintosh/ppc/" \
+			-e "s/cobalt/mips2/" \
 			-e s/amd64/x86_64/ )
+# fix sparc -> sparc64
+ifeq ($(ARCH),sparc)
+	ifeq ($(shell uname -m),sun4u)
+		ARCH := sparc64
+	endif
+endif
+
 OSREL = $(shell uname -r)
+# numerical version (good for comparisons: A.B.C => A*1000000+B*1000+C)
+OSREL_N= $(shell echo $(OSREL) | sed -e 's/^[^0-9]*//' \
+		-e 's/^\([0-9][0-9]*\(\.[0-9][0-9]*\)*\).*$$/\1/g' | \
+		(IFS=. read A B C D; R=0; \
+		[ -n "$$A" ] && R=`expr $$R \* 1000 + $$A` && \
+		[ -n "$$B" ] && R=`expr $$R \* 1000 + $$B` && \
+		[ -n "$$C" ] && R=`expr $$R \* 1000 + $$C`; echo $$R ) )
 
 # nicer compilation?
 Q=
@@ -186,16 +208,18 @@ MKTAGS=ctags -R .
 
 ifneq (,$(findstring gcc, $(CC_LONGVER)))
 	CC_NAME=gcc
-	CC_VER=$(CC) $(shell $(CC) --version|head -n 1| \
-				 sed -e 's/^[^0-9]*\([0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\).*/\1/' -e 's/^[^0-9]*\([0-9][0-9]*\.[0-9][0-9]*\).*/\1/')
+	CC_VER=$(word 1,$(CC)) $(shell $(CC) - --version|head -n 1|cut -d" " -f 3|\
+			 sed -e 's/^.*\([0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\).*/\1/' \
+			 	 -e 's/^[^0-9].*\([0-9][0-9]*\.[0-9][0-9]*\).*/\1/')
 	# sun sed is a little brain damaged => this complicated expression
 	MKDEP=$(CC) -MM 
-	#transform gcc version into 2.9x or 3.0
+	#transform gcc version into 2.9x, 3.x or 4.x
 	CC_SHORTVER=$(shell echo "$(CC_VER)" | cut -d" " -f 2| \
 				 sed -e 's/[^0-9]*-\(.*\)/\1/'| \
 				 sed -e 's/2\.9.*/2.9x/' -e 's/3\.[0-3]\..*/3.0/' -e \
 				 	's/3\.[0-3]/3.0/' -e 's/3\.[4-9]\..*/3.4/' -e \
-					's/3\.[4-9]/3.4/' )
+					's/3\.[4-9]/3.4/' -e 's/4\.[0-9]\..*/4.x/' -e \
+					's/4\.[0-9]/4.x/' )
 endif
 
 ifneq (, $(findstring Sun, $(CC_LONGVER)))
@@ -355,7 +379,7 @@ endif
 # platform dependent settings
 
 # find ld & as name (gnu or solaris)
-ifeq ($(ARCH), sparc64)
+ifeq ($(OS), solaris)
 ifeq ($(CC_NAME), gcc)
 		LDGCC=$(shell $(CC) -v 2>&1 | grep with-ld| \
 				   sed -e 's/.*--with-ld=\([^ ][^ ]*\).*/\1/' )
@@ -468,23 +492,24 @@ ifeq		($(CC_NAME), gcc)
 				CFLAGS=-g -O9 -funroll-loops  -Wcast-align $(PROFILE) \
 					-Wall  
 			#if gcc 4.0+
-ifeq			($(CC_SHORTVER), 4.0)
-					CPU ?= athlon
-					CFLAGS+=-minline-all-stringops -malign-double \
+ifeq			($(CC_SHORTVER), 4.x)
+					CPU ?= athlon64
+					CFLAGS+=-minline-all-stringops \
 							-falign-loops \
+							-ftree-vectorize \
 							-mtune=$(CPU) 
 else
 			#if gcc 3.4+
 ifeq			($(CC_SHORTVER), 3.4)
 					CPU ?= athlon
-					CFLAGS+=-minline-all-stringops -malign-double \
+					CFLAGS+=-minline-all-stringops \
 							-falign-loops \
 							-mtune=$(CPU) 
 else
 			#if gcc 3.0+
 ifeq			($(CC_SHORTVER), 3.0)
 					CPU ?= athlon
-					CFLAGS+=-minline-all-stringops -malign-double \
+					CFLAGS+=-minline-all-stringops \
 							-falign-loops \
 							-mcpu=$(CPU) 
 else
@@ -502,7 +527,7 @@ $(warning			You are using an old and unsupported gcc \
 endif			# CC_SHORTVER, 2.9x
 endif			# CC_SHORTVER, 3.0
 endif			# CC_SHORTVER, 3.4
-endif			# CC_SHORTVER, 4.0
+endif			# CC_SHORTVER, 4.x
 
 else		# CC_NAME, gcc
 ifeq		($(CC_NAME), icc)
@@ -526,6 +551,14 @@ ifeq		($(CC_NAME), gcc)
 				#common stuff
 				CFLAGS=-g -O9 -funroll-loops  -Wcast-align $(PROFILE) \
 					-Wall 
+			#if gcc 4.0+
+ifeq			($(CC_SHORTVER), 4.x)
+					CPU ?= opteron
+					CFLAGS+=-minline-all-stringops \
+							-falign-loops \
+							-ftree-vectorize \
+							-mtune=$(CPU) 
+else
 			#if gcc 3.4
 ifeq			($(CC_SHORTVER), 3.4)
 					CPU ?= athlon64
@@ -554,6 +587,7 @@ $(warning			You are using an old and unsupported gcc \
 endif			# CC_SHORTVER, 2.9x
 endif			# CC_SHORTVER, 3.0
 endif			# CC_SHORTVER, 3.4
+endif			# CC_SHORTVER, 4.x
 
 else		# CC_NAME, gcc
 ifeq		($(CC_NAME), icc)
@@ -579,6 +613,14 @@ ifeq		($(CC_NAME), gcc)
 					-Wall\
 					#-Wcast-align \
 					#-Wmissing-prototypes 
+				#if gcc 4.x
+ifeq			($(CC_SHORTVER), 4.x)
+					CPU ?= ultrasparc
+					#use 32bit for now
+					CFLAGS+=-mcpu=ultrasparc -minline-all-stringops \
+							-mtune=$(CPU) \
+							-ftree-vectorize
+else
 				#if gcc 3.4
 ifeq			($(CC_SHORTVER), 3.4)
 					CPU ?= ultrasparc
@@ -603,7 +645,7 @@ $(warning 			Old gcc detected ($(CC_SHORTVER)), use  gcc >= 3.1 \
 					for better results)
 ifneq				($(OS), netbsd)
 						# on netbsd/sparc64,  gcc 2.95.3 does not compile
-						# openser with -mv8
+						# ser with -mv8
 						CFLAGS+= -mv8 
 endif
 ifeq					($(ASTYPE), solaris)
@@ -622,6 +664,7 @@ endif
 endif			#CC_SHORTVER, 2.9x
 endif			#CC_SHORTVER, 3.0
 endif			#CC_SHORTVER, 3.4
+endif			#CC_SHORTVER, 4.x
 
 else		#CC_NAME, gcc
 ifeq		($(CC_NAME), suncc)
@@ -642,6 +685,11 @@ ifeq		($(CC_NAME), gcc)
 				#common stuff
 				CFLAGS=-O9 -funroll-loops  -Wcast-align $(PROFILE) \
 					-Wall   
+			#if gcc 4.x+
+ifeq			($(CC_SHORTVER), 4.x)
+					CFLAGS+=-mcpu=strongarm1100 -minline-all-stringops \
+							-ftree-vectorize
+else
 			#if gcc 3.4+
 ifeq			($(CC_SHORTVER), 3.4)
 					CFLAGS+= -mcpu=strongarm1100
@@ -664,6 +712,7 @@ $(warning			You are using an old and unsupported gcc \
 endif			# CC_SHORTVER, 2.9x
 endif			# CC_SHORTVER, 3.0
 endif			# CC_SHORTVER, 3.4
+endif			# CC_SHORTVER, 4.0
 	
 else		# CC_NAME, gcc
 				#other compilers
@@ -678,6 +727,11 @@ ifeq		($(CC_NAME), gcc)
 				#common stuff
 				CFLAGS=-O9 -funroll-loops  -Wcast-align $(PROFILE) \
 					-Wall 
+			#if gcc 4.0+
+ifeq			($(CC_SHORTVER), 4.x)
+					CFLAGS+=-mcpu=r3000 -minline-all-stringops \
+							-ftree-vectorize
+else
 			#if gcc 3.4+
 ifeq			($(CC_SHORTVER), 3.4)
 					CFLAGS+= -mcpu=r3000
@@ -700,6 +754,7 @@ $(warning			You are using an old and unsupported gcc \
 endif			# CC_SHORTVER, 2.9x
 endif			# CC_SHORTVER, 3.0
 endif			# CC_SHORTVER, 3.4
+endif			# CC_SHORTVER, 4.x
 	
 else		# CC_NAME, gcc
 				#other compilers
@@ -714,6 +769,10 @@ ifeq		($(CC_NAME), gcc)
 				#common stuff
 				CFLAGS= -mips2 -O9 -funroll-loops $(PROFILE) \
 					-Wall 
+			#if gcc 4.0+
+ifeq			($(CC_SHORTVER), 4.x)
+					CFLAGS+=-minline-all-stringops -ftree-vectorize
+else
 			#if gcc 3.4+
 ifeq			($(CC_SHORTVER), 3.4)
 					CFLAGS+=
@@ -734,6 +793,7 @@ $(warning			You are using an old and unsupported gcc \
 endif			# CC_SHORTVER, 2.9x
 endif			# CC_SHORTVER, 3.0
 endif			# CC_SHORTVER, 3.4
+endif			# CC_SHORTVER, 4.x
 	
 else		# CC_NAME, gcc
 				#other compilers
@@ -748,6 +808,10 @@ ifeq	($(ARCH), alpha)
 ifeq		($(CC_NAME), gcc)
 				#common stuff
 				CFLAGS= -O9 -funroll-loops $(PROFILE)  -Wall 
+			#if gcc 4.0+
+ifeq			($(CC_SHORTVER), 4.x)
+					CFLAGS+=-minline-all-stringops
+else
 			#if gcc 3.4+
 ifeq			($(CC_SHORTVER), 3.4)
 					CFLAGS+=
@@ -768,6 +832,7 @@ $(warning			You are using an old and unsupported gcc \
 endif			# CC_SHORTVER, 2.9x
 endif			# CC_SHORTVER, 3.0
 endif			# CC_SHORTVER, 3.4
+endif			# CC_SHORTVER, 4.x
 	
 else		# CC_NAME, gcc
 				#other compilers
@@ -781,6 +846,12 @@ ifeq	($(ARCH), ppc)
 ifeq		($(CC_NAME), gcc)
 				#common stuff
 				CFLAGS= -O9 -funroll-loops $(PROFILE)  -Wall 
+			#if gcc 4.0+
+ifeq			($(CC_SHORTVER), 4.x)
+					CPU ?= powerpc
+					CFLAGS+=-ftree-vectorize \
+							-mtune=$(CPU) -maltivec
+else
 			#if gcc 3.4+
 ifeq			($(CC_SHORTVER), 3.4)
 					CFLAGS+=
@@ -801,6 +872,7 @@ $(warning			You are using an old and unsupported gcc \
 endif			# CC_SHORTVER, 2.9x
 endif			# CC_SHORTVER, 3.0
 endif			# CC_SHORTVER, 3.4
+endif			# CC_SHORTVER, 4.x
 	
 else		# CC_NAME, gcc
 				#other compilers
@@ -814,6 +886,11 @@ ifeq	($(ARCH), ppc64)
 ifeq		($(CC_NAME), gcc)
 				#common stuff
 				CFLAGS= -O9 -funroll-loops $(PROFILE)  -Wall 
+ifeq			($(CC_SHORTVER), 4.x)
+					CPU ?= powerpc64
+					CFLAGS+=-ftree-vectorize \
+							-mtune=$(CPU) -maltivec
+else
 			#if gcc 3.4+
 ifeq			($(CC_SHORTVER), 3.4)
 					CFLAGS+=
@@ -834,6 +911,7 @@ $(warning			You are using an old and unsupported gcc \
 endif			# CC_SHORTVER, 2.9x
 endif			# CC_SHORTVER, 3.0
 endif			# CC_SHORTVER, 3.4
+endif			# CC_SHORTVER, 4.x
 	
 else		# CC_NAME, gcc
 				#other compilers
@@ -841,26 +919,19 @@ $(error 			Unsupported compiler ($(CC):$(CC_NAME)), try gcc)
 endif		#CC_NAME, gcc
 endif	#ARCH, ppc 
 
-
 CFLAGS+= $(CC_EXTRA_OPTS)
 
 
 # setting LDFLAGS
 ifeq	($(CC_NAME), gcc)
-ifeq		($(ARCH), sparc64)
-ifeq			($(LDTYPE), solaris)
-					# solaris ld
-					LDFLAGS+=-O2 $(PROFILE)
-					MOD_LDFLAGS=-G $(LDFLAGS)
-else			
-					#gcc and maybe others, on solaris, with gnu ld
-					LDFLAGS+=-Wl,-O2 -Wl,-E $(PROFILE) 
-					MOD_LDFLAGS=-shared $(LDFLAGS)
-endif
-else
-			#gcc and maybe others
-			LDFLAGS+=-Wl,-O2 -Wl,-E $(PROFILE) 
-			MOD_LDFLAGS=-shared $(LDFLAGS)
+ifeq		($(LDTYPE), solaris)
+		# solaris ld
+		LDFLAGS+=-O2 $(PROFILE)
+		MOD_LDFLAGS=-G $(LDFLAGS)
+else		
+		#gcc and maybe others, => gnu ld
+		LDFLAGS+=-Wl,-O2 -Wl,-E $(PROFILE) 
+		MOD_LDFLAGS=-shared $(LDFLAGS)
 endif
 endif
 ifeq	($(CC_NAME), icc)
@@ -904,12 +975,6 @@ endif
 
 endif #mode=release
 
-# during development, don't let errors in
-ISDEVEL=$(shell ls -d CVS 2>/dev/null)
-ifneq ($(ISDEVEL),)
-	CFLAGS+=-Werror
-endif
-
 
 #*FLAGS used for compiling the modules
 ifeq	($(CC_NAME), gcc)
@@ -936,19 +1001,46 @@ LIBS= -lfl -ldl -lresolv
 #os specific stuff
 ifeq ($(OS), linux)
 	DEFS+=-DHAVE_GETHOSTBYNAME2 -DHAVE_UNION_SEMUN -DHAVE_SCHED_YIELD \
-			-DHAVE_MSG_NOSIGNAL -DHAVE_MSGHDR_MSG_CONTROL -DHAVE_ALLOCA_H
+			-DHAVE_MSG_NOSIGNAL -DHAVE_MSGHDR_MSG_CONTROL -DHAVE_ALLOCA_H \
+			-DHAVE_TIMEGM
 	ifneq ($(found_lock_method), yes)
 		DEFS+= -DUSE_SYSV_SEM  # try posix sems
 		found_lock_method=yes
+	endif
+	# check for >= 2.5.44
+	ifeq ($(shell [ $(OSREL_N) -ge 2005044 ] && echo has_epoll), has_epoll)
+		ifeq ($(NO_EPOLL),)
+			DEFS+=-DHAVE_EPOLL
+			# linux + gcc >= 3.0 + -malign-double + epoll => problems
+			CFLAGS:=$(filter-out -malign-double, $(CFLAGS))
+		endif
+	endif
+	# check for >= 2.2.0
+	ifeq ($(shell [ $(OSREL_N) -ge 2002000 ] && echo has_sigio), has_sigio)
+		ifeq ($(NO_SIGIO),)
+			DEFS+=-DHAVE_SIGIO_RT
+		endif
+	endif
+	ifeq ($(NO_SELECT),)
+		DEFS+=-DHAVE_SELECT
 	endif
 endif
 
 ifeq  ($(OS), solaris)
 	DEFS+= -DHAVE_GETIPNODEBYNAME -DHAVE_SYS_SOCKIO_H -DHAVE_SCHED_YIELD \
-			-DHAVE_ALLOCA_H
+			-DHAVE_ALLOCA_H -DUSE_SIGACTION
 	ifneq ($(found_lock_method), yes)
 		DEFS+= -DUSE_PTHREAD_MUTEX  # try pthread sems
 		found_lock_method=yes
+	endif
+	# check for ver >= 5.7
+	ifeq ($(shell [ $(OSREL_N) -gt 5007 ] && echo has_devpoll), has_devpoll)
+		ifeq ($(NO_DEVPOLL),)
+			DEFS+=-DHAVE_DEVPOLL
+		endif
+	endif
+	ifeq ($(NO_SELECT),)
+		DEFS+=-DHAVE_SELECT
 	endif
 	ifeq ($(mode), release)
 		#use these only if you're using gcc with Solaris ld
@@ -958,9 +1050,6 @@ ifeq  ($(OS), solaris)
 		#LDFLAGS=-g $(PROFILE)
 		#MOD_LDFLAGS=-g -G
 	endif
-ifneq ($(TLS),)
-	DEFS+= -I/usr/local/ssl/include
-endif
 	YACC=yacc
 
 ifeq ($(CC_NAME), suncc)
@@ -979,7 +1068,9 @@ endif
 
 ifeq ($(OS), freebsd)
 	DEFS+=-DHAVE_SOCKADDR_SA_LEN -DHAVE_GETHOSTBYNAME2 -DHAVE_UNION_SEMUN \
-		-DHAVE_SCHED_YIELD -DHAVE_MSGHDR_MSG_CONTROL -DHAVE_CONNECT_ECONNRESET_BUG
+		-DHAVE_SCHED_YIELD -DHAVE_MSGHDR_MSG_CONTROL \
+		-DHAVE_CONNECT_ECONNRESET_BUG -DHAVE_TIMEGM \
+		-DHAVE_NETINET_IN_SYSTM
 	ifneq ($(found_lock_method), yes)
 		DEFS+= -DUSE_PTHREAD_MUTEX  # try pthread sems
 		found_lock_method=yes
@@ -987,15 +1078,34 @@ ifeq ($(OS), freebsd)
 	else
 		LIBS= -lfl  #dlopen is in libc
 	endif
+	# check for ver >= 4.1
+	ifeq ($(shell [ $(OSREL_N) -gt 4001 ] && echo has_kqueue), has_kqueue)
+		ifeq ($(NO_KQUEUE),)
+			DEFS+=-DHAVE_KQUEUE
+		endif
+	endif
+	ifeq ($(NO_SELECT),)
+		DEFS+=-DHAVE_SELECT
+	endif
 	YACC=yacc
 endif
 
 ifeq ($(OS), openbsd)
 	DEFS+=-DHAVE_SOCKADDR_SA_LEN  -DHAVE_GETHOSTBYNAME2 \
-		-DHAVE_UNION_SEMUN -DHAVE_MSGHDR_MSG_CONTROL -DHAVE_CONNECT_ECONNRESET_BUG
+		-DHAVE_UNION_SEMUN -DHAVE_MSGHDR_MSG_CONTROL \
+		-DHAVE_CONNECT_ECONNRESET_BUG -DHAVE_TIMEGM
 	ifneq ($(found_lock_method), yes)
 		DEFS+= -DUSE_PTHREAD_MUTEX  # try pthread sems
 		found_lock_method=yes
+	endif
+	# check for ver >=2 9
+	ifeq ($(shell [ $(OSREL_N) -ge 2009 ] && echo has_kqueue), has_kqueue)
+		ifeq ($(NO_KQUEUE),)
+			DEFS+=-DHAVE_KQUEUE
+		endif
+	endif
+	ifeq ($(NO_SELECT),)
+		DEFS+=-DHAVE_SELECT
 	endif
 	# (symbols on openbsd are prefixed by "_")
 	YACC=yacc
@@ -1021,10 +1131,21 @@ endif   # if opensd
 	
 ifeq ($(OS), netbsd)
 	DEFS+=-DHAVE_SOCKADDR_SA_LEN -DHAVE_GETHOSTBYNAME2 \
-		-DHAVE_MSGHDR_MSG_CONTROL -DHAVE_CONNECT_ECONNRESET_BUG
+		-DHAVE_MSGHDR_MSG_CONTROL -DHAVE_CONNECT_ECONNRESET_BUG -DHAVE_TIMEGM
 	ifneq ($(found_lock_method), yes)
 		DEFS+= -DUSE_SYSV_SEM  # try pthread sems
 		found_lock_method=yes
+	endif
+	# check for ver >= 2.0.0
+	ifeq ($(shell [ $(OSREL_N) -ge 2000000 ] && echo has_kqueue), has_kqueue)
+		ifeq ($(NO_KQUEUE),)
+			DEFS+=-DHAVE_KQUEUE
+			# netbsd + kqueue and -malign-double don't work
+			CFLAGS:=$(filter-out -malign-double, $(CFLAGS))
+		endif
+	endif
+	ifeq ($(NO_SELECT),)
+		DEFS+=-DHAVE_SELECT
 	endif
 	YACC=yacc
 	LIBS= -lfl 
@@ -1035,7 +1156,7 @@ ifeq ($(OS), darwin)
 	DEFS+=-DHAVE_SOCKADDR_SA_LEN -DHAVE_GETHOSTBYNAME2 -DHAVE_UNION_SEMUN \
 		-DHAVE_SCHED_YIELD -DHAVE_MSGHDR_MSG_CONTROL \
 		-DUSE_ANON_MMAP \
-		-DNDEBUG -DHAVE_CONNECT_ECONNRESET_BUG
+		-DNDEBUG -DHAVE_CONNECT_ECONNRESET_BUG -DHAVE_TIMEGM
 	# -DNDEBUG used to turn off assert (assert wants to call
 	# eprintf which doesn't seem to be defined in any shared lib
 	ifneq ($(found_lock_method), yes)
@@ -1044,6 +1165,12 @@ ifeq ($(OS), darwin)
 		LIBS= -pthread -lfl -lresolv  #dlopen is in libc
 	else
 		LIBS= -lfl -lresolv  #dlopen is in libc
+	endif
+	ifeq ($(NO_KQUEUE),)
+		DEFS+=-DHAVE_KQUEUE
+	endif
+	ifeq ($(NO_SELECT),)
+		DEFS+=-DHAVE_SELECT
 	endif
 	LDFLAGS=        # darwin doesn't like -O2 or -E
 	MOD_LDFLAGS= -bundle -bundle_loader ../../$(MAIN_NAME)
@@ -1069,9 +1196,6 @@ $(warning	No locking method found so far, trying SYS V sems)
 		DEFS+= -DUSE_SYSV_SEM  # try sys v sems
 		found_lock_method=yes
 endif
-
-
-
 
 
 endif  # ifeq ($(makefile_defs, 1)
