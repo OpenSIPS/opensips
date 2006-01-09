@@ -30,6 +30,7 @@
 #include "types.h"
 #include "ip_addr.h"
 #include "str.h"
+#include "poll_types.h"
 
 #define NO_DNS     0
 #define DO_DNS     1
@@ -74,6 +75,10 @@ extern int tcp_disable;
 extern int tcp_accept_aliases;
 extern int tcp_connect_timeout;
 extern int tcp_send_timeout;
+extern int tcp_con_lifetime; /* connection lifetime */
+extern enum poll_types tcp_poll_method;
+extern int tcp_max_fd_no;
+extern int tcp_max_connections;
 #endif
 #ifdef USE_TLS
 extern int tls_disable;
@@ -111,9 +116,9 @@ extern unsigned int msg_no;
 extern unsigned long shm_mem_size;
 
 /* FIFO server config */
-char extern *fifo; /* FIFO name */
+extern char *fifo; /* FIFO name */
 extern int fifo_mode;
-char extern *fifo_dir; /* dir. where  reply fifos are allowed */
+extern char *fifo_dir; /* dir. where  reply fifos are allowed */
 extern char *fifo_db_url;  /* db url used by db_fifo interface */
 
 /* UNIX domain socket configuration */

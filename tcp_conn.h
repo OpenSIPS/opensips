@@ -39,12 +39,12 @@
 #define TCP_CON_MAX_ALIASES 4 /* maximum number of port aliases */
 
 #define TCP_BUF_SIZE 65535
-#define TCP_CON_TIMEOUT 120 /* in  seconds */
-#define TCP_CON_SEND_TIMEOUT 120 /* timeout after a send */
+#define DEFAULT_TCP_CONNECTION_LIFETIME 120 /* in  seconds */
 #define DEFAULT_TCP_SEND_TIMEOUT 10 /* if a send can't write for more then 10s,
 									   timeout */
 #define DEFAULT_TCP_CONNECT_TIMEOUT 10 /* if a connect doesn't complete in this
 										  time, timeout */
+#define DEFAULT_TCP_MAX_CONNECTIONS 2048 /* maximum connections */
 #define TCP_CHILD_TIMEOUT 5 /* after 5 seconds, the child "returns" 
 							 the connection to the tcp master process */
 #define TCP_MAIN_SELECT_TIMEOUT 5 /* how often "tcp main" checks for timeout*/
@@ -53,6 +53,7 @@
 
 /* tcp connection flags */
 #define F_CONN_NON_BLOCKING 1
+#define F_CONN_REMOVED      2 /* no longer  in "main" listen fd list */
 
 
 enum tcp_req_errors {	TCP_REQ_INIT, TCP_REQ_OK, TCP_READ_ERROR,
@@ -120,14 +121,14 @@ struct tcp_connection{
 	int flags; /* connection related flags */
 	enum tcp_conn_states state; /* connection state */
 	void* extra_data; /* extra data associated to the connection, 0 for tcp*/
-	int timeout; /* connection timeout, after this it will be removed*/
+	unsigned int timeout;/* connection timeout, after this it will be removed*/
 	unsigned id_hash; /* hash index in the id_hash */
-	int aliases; /* aliases number, at least 1 */
-	struct tcp_conn_alias con_aliases[TCP_CON_MAX_ALIASES];
 	struct tcp_connection* id_next; /* next, prev in id hash table */
 	struct tcp_connection* id_prev;
 	struct tcp_connection* c_next; /* child next prev (use locally) */
 	struct tcp_connection* c_prev;
+	struct tcp_conn_alias con_aliases[TCP_CON_MAX_ALIASES];
+	int aliases; /* aliases number, at least 1 */
 };
 
 
@@ -188,5 +189,4 @@ static inline unsigned tcp_addr_hash(struct ip_addr* ip, unsigned short port)
 
 
 #endif
-
 
