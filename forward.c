@@ -150,7 +150,7 @@ struct socket_info* get_send_socket(struct sip_msg *msg,
 		if (msg->force_send_socket && (msg->force_send_socket->socket!=-1)) 
 			return msg->force_send_socket;
 		else{
-			if (msg->force_send_socket->socket==-1)
+			if (msg->force_send_socket && msg->force_send_socket->socket==-1)
 				LOG(L_WARN, "WARNING: get_send_socket: not listening"
 						 " on the requested socket, no fork mode?\n");
 			else
