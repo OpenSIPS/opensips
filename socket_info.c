@@ -628,10 +628,24 @@ static int fix_socket_list(struct socket_info **list)
 				}
 		}
 
+		/* build and set string encoding */
+		tmp = socket2str( si, 0, &si->sock_str.len);
+		if (tmp==0) {
+			LOG(L_ERR,"ERROR: fix_socket_list: failed to convert "
+				"socket to string");
+			goto error;
+		}
+		si->sock_str.s=(char*)pkg_malloc(si->sock_str.len);
+		if (si->sock_str.s==0) {
+			LOG(L_ERR, "ERROR: fix_socket_list: out of memory.\n");
+			goto error;
+		}
+		memcpy(si->sock_str.s, tmp, si->sock_str.len);
+
 #ifdef USE_MCAST
-		     /* Check if it is an multicast address and
-		      * set the flag if so
-		      */
+		/* Check if it is an multicast address and
+		 * set the flag if so
+		 */
 		if (is_mcast(&si->address)) {
 			si->flags |= SI_IS_MCAST;
 		}

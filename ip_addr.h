@@ -82,8 +82,9 @@ struct socket_info{
 	unsigned short port_no;  /* port number */
 	str port_no_str; /* port number converted to string -- optimization*/
 	enum si_flags flags; /* SI_IS_IP | SI_IS_LO | SI_IS_MCAST */
-	union sockaddr_union su; 
+	union sockaddr_union su;
 	int proto; /* tcp or udp*/
+	str sock_str;
 	struct socket_info* next;
 	struct socket_info* prev;
 };
