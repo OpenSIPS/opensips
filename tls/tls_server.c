@@ -418,7 +418,7 @@ tls_tcpconn_init(struct tcp_connection *c, int sock)
 	c->type = PROTO_TLS;
 	c->rcv.proto = PROTO_TLS;
 	c->flags = 0;
-	c->timeout = get_ticks() + TCP_CON_TIMEOUT;
+	c->timeout = get_ticks() + DEFAULT_TCP_CONNECTION_LIFETIME;
 
 	if (c->state == S_CONN_ACCEPT) {
 		DBG("tls_tcpconn_init: Looking up tls domain [%s:%d]\n",
