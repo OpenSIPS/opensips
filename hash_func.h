@@ -18,6 +18,12 @@
  * You should have received a copy of the GNU General Public License 
  * along with this program; if not, write to the Free Software 
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
+ * History:
+ *---------
+ *
+ * 2006-01-20 - new_hash1() added; support for configurable hash size
+ *              added (bogdan)
  */
 
 
@@ -31,10 +37,12 @@
 #define T_TABLE_POWER    16 
 #define TABLE_ENTRIES    (1 << (T_TABLE_POWER))
 
-int new_hash( str  call_id, str cseq_nr );
-int new_hash2( str  call_id, str cseq_nr );
+int new_hash2( str  call_id, str cseq_nr, unsigned int size );
 
+int new_hash1( str s, unsigned int size);
 
-#define hash( cid, cseq) new_hash2( cid, cseq )
+#define hash( cid, cseq) new_hash2( cid, cseq , TABLE_ENTRIES)
+#define hash1( s )       new_hash1( cid, cseq , TABLE_ENTRIES)
+
 
 #endif
