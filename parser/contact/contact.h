@@ -47,7 +47,7 @@ typedef struct contact {
 	param_t* received;      /* received parameter hook */
 	param_t* params;        /* List of all parameters */
 	int len;                /* Total length of the element */
-        struct contact* next; /* Next contact in the list */
+	struct contact* next;   /* Next contact in the list */
 } contact_t;
 
 
