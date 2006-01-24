@@ -328,6 +328,9 @@ endif
 # -DHAVE_RESOLV_RES
 #		support for changing some of the resolver parameters present
 #		 (_res structure in <resolv.h>)
+# -DSTATISTICS
+#		enables statistics manager - support for collecting statistics
+#		from core and all modules; all info may be fetch via FIFO/UNIX_SOCK
 
 
 
@@ -344,6 +347,7 @@ DEFS+= $(extra_defs) \
 	 -DDISABLE_NAGLE \
 	 -DHAVE_RESOLV_RES \
 	 -DF_MALLOC \
+	 #-DSTATISTICS \
 	 #-DDBG_F_MALLOC \
 	 #-DDBG_QM_MALLOC \
 	 #-DDBG_F_MALLOC \

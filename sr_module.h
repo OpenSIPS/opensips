@@ -38,6 +38,7 @@
 #define sr_module_h
 
 #include "parser/msg_parser.h" /* for sip_msg */
+#include "statistics.h"
 #include "version.h"
 #include "route.h"
 
@@ -98,6 +99,9 @@ struct module_exports{
 									   commands */
 	param_export_t* params;         /* null terminated array of the exported
 									   module parameters */
+
+	stat_export_t* stats;          /* null terminated array of the exported
+									   module statistics */
 
 	init_function init_f;           /* Initialization function */
 	response_function response_f;   /* function used for responses,

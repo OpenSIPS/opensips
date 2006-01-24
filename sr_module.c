@@ -253,8 +253,8 @@ cmd_function find_export(char* name, int param_no, int flags)
 			   (cmd->param_no==param_no) &&
 			   ((cmd->flags & flags) == flags)
 			  ){
-				DBG("find_export: found <%s> in module %s [%s]\n",
-				    name, t->exports->name, t->path);
+				DBG("find_export: found <%s>(%d) in module %s [%s]\n",
+					name, param_no, t->exports->name, t->path);
 				return cmd->function;
 			}
 		}
@@ -459,14 +459,22 @@ static int init_mod( struct sr_module* m )
 			DBG("DEBUG: init_mod: %s\n", m->exports->name);
 			if (m->exports->init_f()!=0) {
 				LOG(L_ERR, "init_mod(): Error while initializing"
-							" module %s\n", m->exports->name);
+					" module %s\n", m->exports->name);
 				return -1;
-			} else {
-				/* module correctly initialized */
-				return 0;
 			}
 		}
-		/* no init function -- proceed with success */
+		/* no init function -- proceed further */
+#ifdef STATISTICS
+		if (m->exports && m->exports->stats) {
+			DBG("DEBUG: init_stats: %s\n", m->exports->name);
+			if (register_module_stats(m->exports->name,m->exports->stats)!=0) {
+				LOG(L_ERR, "init_(): Error while initializing"
+					" statistics for module %s\n", m->exports->name);
+				return -1;
+			}
+		}
+#endif
+		/* proceed with success */
 		return 0;
 	} else {
 		/* end of list */
