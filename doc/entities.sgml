@@ -10,7 +10,7 @@
 <!ENTITY sername "Open SIP Express Router">
 
 <!ENTITY serhome "http://openser.org/">
-<!ENTITY serbugs "http://openser.org/bugs">
+<!ENTITY serbugs "http://sourceforge.net/tracker/?group_id=139143">
 <!ENTITY serhelp "http://openser.org/cgi-bin/mailman/listinfo/team">
 <!ENTITY serusers "http://openser.org/cgi-bin/mailman/listinfo/users">
 <!ENTITY serdev "http://openser.org/cgi-bin/mailman/listinfo/devel">
