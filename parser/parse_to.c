@@ -491,7 +491,8 @@ char* parse_to(char* buffer, char *end, struct to_body *to_b)
 {
 	int status;
 	int saved_status;
-	char  *tmp,*foo;
+	char  *tmp;
+	char  *end_mark;
 
 	status=START_TO;
 	saved_status=START_TO;
@@ -500,7 +501,7 @@ char* parse_to(char* buffer, char *end, struct to_body *to_b)
 	to_b->uri.s= 0;
 	to_b->display.len = 0;
 	to_b->display.s = 0;
-	foo=0;
+	end_mark=0;
 
 	for( tmp=buffer; tmp<end; tmp++)
 	{
@@ -521,7 +522,7 @@ char* parse_to(char* buffer, char *end, struct to_body *to_b)
 						status = E_URI_ENCLOSED;
 						break;
 					case URI_OR_TOKEN:
-						foo = tmp;
+						end_mark = tmp;
 						status = MAYBE_URI_END;
 						break;
 				}
@@ -530,7 +531,7 @@ char* parse_to(char* buffer, char *end, struct to_body *to_b)
 				switch (status)
 				{
 					case URI_OR_TOKEN:
-						foo = tmp;
+						end_mark = tmp;
 						status = MAYBE_URI_END;
 					case MAYBE_URI_END:
 					case DISPLAY_TOKEN:
@@ -557,7 +558,7 @@ char* parse_to(char* buffer, char *end, struct to_body *to_b)
 				switch (status)
 				{
 					case URI_OR_TOKEN:
-						foo = tmp;
+						end_mark = tmp;
 						status = MAYBE_URI_END;
 					case MAYBE_URI_END:
 					case DISPLAY_TOKEN:
@@ -620,9 +621,10 @@ char* parse_to(char* buffer, char *end, struct to_body *to_b)
 						status = S_URI_ENCLOSED;
 						break;
 					case URI_OR_TOKEN:
+						end_mark = tmp;
 					case DISPLAY_TOKEN: 
 					case MAYBE_URI_END:
-						to_b->display.len=foo-to_b->display.s;
+						to_b->display.len=end_mark-to_b->display.s;
 						status = S_URI_ENCLOSED;
 						break;
 					case F_CRLF:
@@ -646,7 +648,6 @@ char* parse_to(char* buffer, char *end, struct to_body *to_b)
 						to_b->uri.len = tmp - to_b->uri.s;
 					case E_URI_ENCLOSED:
 						status = END;
-						foo = 0;
 						break;
 					case F_CRLF:
 					case F_LF:
@@ -691,9 +692,9 @@ char* parse_to(char* buffer, char *end, struct to_body *to_b)
 					case URI_ENCLOSED:
 						break;
 					case URI_OR_TOKEN:
-						foo = tmp;
+						end_mark = tmp;
 					case MAYBE_URI_END:
-						to_b->uri.len = foo - to_b->uri.s;
+						to_b->uri.len = end_mark - to_b->uri.s;
 					case END:
 						to_b->body.len = tmp-to_b->body.s;
 						tmp = parse_to_param(tmp,end,to_b,&saved_status);
@@ -744,12 +745,13 @@ char* parse_to(char* buffer, char *end, struct to_body *to_b)
 
 endofheader:
 	if (to_b->display.len==0) to_b->display.s=0;
+	DBG("xxxxxxxxxxx %p, %d\n",to_b->display.s,to_b->display.len);
 	status=saved_status;
 	DBG("DEBUG:parse_to:end of header reached, state=%d\n", status);
 	/* check if error*/
 	switch(status){
 		case MAYBE_URI_END:
-			to_b->uri.len = foo - to_b->uri.s;
+			to_b->uri.len = end_mark - to_b->uri.s;
 		case END:
 			to_b->body.len = tmp - to_b->body.s;
 		case E_PARA_VALUE:
