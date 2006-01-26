@@ -52,6 +52,10 @@ struct branch
 	char dst_uri[MAX_URI_SIZE];
 	unsigned int dst_uri_len;
 
+	/* Path vector of the request */
+	char path[MAX_PATH_SIZE];
+	unsigned int path_len;
+
 	int q; /* Preference of the contact among contact within the array */
 	struct socket_info* force_send_socket;
 	int flags;
@@ -76,8 +80,8 @@ static qvalue_t ruri_q = Q_UNSPECIFIED;
  * array, 0 is returned if there are no
  * more branches
  */
-char* get_branch(int idx, int* len, qvalue_t* q, str* dst_uri, int *flags,
-		struct socket_info** force_socket)
+char* get_branch(int idx, int* len, qvalue_t* q, str* dst_uri, str* path, 
+		int *flags, struct socket_info** force_socket)
 {
 	if (idx < nr_branches) {
 		*len = branches[idx].len;
@@ -85,6 +89,10 @@ char* get_branch(int idx, int* len, qvalue_t* q, str* dst_uri, int *flags,
 		if (dst_uri) {
 			dst_uri->len = branches[idx].dst_uri_len;
 			dst_uri->s = (dst_uri->len)?branches[idx].dst_uri:0;
+		}
+		if (path) {
+			path->len = branches[idx].path_len;
+			path->s = (path->len)?branches[idx].path:0;
 		}
 		if (force_socket)
 			*force_socket = branches[idx].force_send_socket;
@@ -120,8 +128,8 @@ void clear_branches(void)
 /* 
  * Add a new branch to current transaction 
  */
-int append_branch(struct sip_msg* msg, str* uri, str* dst_uri, qvalue_t q,
-		int flags, struct socket_info* force_socket)
+int append_branch(struct sip_msg* msg, str* uri, str* dst_uri, str* path,
+		qvalue_t q, int flags, struct socket_info* force_socket)
 {
 	str luri;
 
@@ -164,6 +172,15 @@ int append_branch(struct sip_msg* msg, str* uri, str* dst_uri, qvalue_t q,
 		branches[nr_branches].dst_uri[0] = '\0';
 		branches[nr_branches].dst_uri_len = 0;
 	}
+	
+	if (path && path->len && path->s) {
+		memcpy(branches[nr_branches].path, path->s, path->len);
+		branches[nr_branches].path[path->len] = 0;
+		branches[nr_branches].path_len = path->len;
+	} else {
+		branches[nr_branches].path[0] = '\0';
+		branches[nr_branches].path_len = 0;
+	}
 
 	branches[nr_branches].force_send_socket = force_socket;
 	branches[nr_branches].flags = flags;
@@ -197,7 +214,7 @@ char* print_dset(struct sip_msg* msg, int* len)
 		*len = 0;
 	}
 
-	for( idx=0 ; (uri.s=get_branch(idx,&uri.len,&q,0,0,0))!=0 ; idx++ ) {
+	for( idx=0 ; (uri.s=get_branch(idx,&uri.len,&q,0,0,0,0))!=0 ; idx++ ) {
 		cnt++;
 		*len += uri.len;
 		if (q != Q_UNSPECIFIED) {
@@ -237,7 +254,7 @@ char* print_dset(struct sip_msg* msg, int* len)
 		i = 0;
 	}
 
-	for( idx=0 ; (uri.s=get_branch(idx,&uri.len,&q,0,0,0))!=0 ; idx++ ) {
+	for( idx=0 ; (uri.s=get_branch(idx,&uri.len,&q,0,0,0,0))!=0 ; idx++ ) {
 		if (i) {
 			memcpy(p, CONTACT_DELIM, CONTACT_DELIM_LEN);
 			p += CONTACT_DELIM_LEN;

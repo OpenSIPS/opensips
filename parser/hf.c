@@ -86,6 +86,10 @@ void clean_hdr_field(struct hdr_field* hf)
 			free_rr((rr_t**)(&hf->parsed));
 			break;
 
+		case HDR_PATH_T:
+			free_rr((rr_t**)(&hf->parsed));
+			break;
+
 		case HDR_CONTENTTYPE_T:
 			break;
 
@@ -105,6 +109,7 @@ void clean_hdr_field(struct hdr_field* hf)
 			break;
 
 		case HDR_SUPPORTED_T:
+			pkg_free(hf->parsed);
 			break;
 
 		case HDR_PROXYREQUIRE_T:

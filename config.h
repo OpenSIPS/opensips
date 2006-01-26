@@ -62,6 +62,9 @@
 
 #define MAX_URI_SIZE 1024	/* used when rewriting URIs */
 
+/* TODO: varchar-restriction for mysql-based usrloc? */
+#define MAX_PATH_SIZE 255	/* maximum length of Path header */
+
 #define MY_VIA "Via: SIP/2.0/UDP "
 #define MY_VIA_LEN (sizeof(MY_VIA) - 1)
 

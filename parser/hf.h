@@ -55,6 +55,7 @@ enum _hdr_types_t {
 	HDR_MAXFORWARDS_T			       /* MaxForwards header field */,
 	HDR_ROUTE_T					       /* Route header field */,
 	HDR_RECORDROUTE_T			       /* Record-Route header field */,
+	HDR_PATH_T				           /* Path header fiels */,
 	HDR_CONTENTTYPE_T			       /* Content-Type header field */,
 	HDR_CONTENTLENGTH_T			       /* Content-Length header field */,
 	HDR_AUTHORIZATION_T			       /* Authorization header field */,
@@ -104,6 +105,7 @@ typedef unsigned long long hdr_flags_t;
 #define HDR_MAXFORWARDS_F			HDR_F_DEF(MAXFORWARDS)
 #define HDR_ROUTE_F					HDR_F_DEF(ROUTE)
 #define HDR_RECORDROUTE_F			HDR_F_DEF(RECORDROUTE)
+#define HDR_PATH_F					HDR_F_DEF(PATH)
 #define HDR_CONTENTTYPE_F			HDR_F_DEF(CONTENTTYPE)
 #define HDR_CONTENTLENGTH_F			HDR_F_DEF(CONTENTLENGTH)
 #define HDR_AUTHORIZATION_F			HDR_F_DEF(AUTHORIZATION)
@@ -153,6 +155,7 @@ static inline int hdr_allocs_parse(struct hdr_field* hdr)
 		case HDR_CONTACT_T:
 		case HDR_ROUTE_T:
 		case HDR_RECORDROUTE_T:
+		case HDR_PATH_T:
 		case HDR_AUTHORIZATION_T:
 		case HDR_EXPIRES_T:
 		case HDR_PROXYAUTH_T:

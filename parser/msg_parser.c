@@ -180,6 +180,7 @@ char* get_hdr_field(char* buf, char* end, struct hdr_field* hdr)
 		case HDR_CONTACT_T:
 		case HDR_ROUTE_T:
 		case HDR_RECORDROUTE_T:
+		case HDR_PATH_T:
 		case HDR_MAXFORWARDS_T:
 		case HDR_AUTHORIZATION_T:
 		case HDR_EXPIRES_T:
@@ -321,6 +322,10 @@ int parse_headers(struct sip_msg* msg, hdr_flags_t flags, int next)
 			case HDR_RECORDROUTE_T:
 				if (msg->record_route==0) msg->record_route = hf;
 				msg->parsed_flag|=HDR_RECORDROUTE_F;
+				break;
+			case HDR_PATH_T:
+				if (msg->path==0) msg->path=hf;
+				msg->parsed_flag|=HDR_PATH_F;
 				break;
 			case HDR_CONTENTTYPE_T:
 				if (msg->content_type==0) msg->content_type = hf;
@@ -650,6 +655,36 @@ int set_dst_uri(struct sip_msg* msg, str* uri)
 		if (msg->dst_uri.s) pkg_free(msg->dst_uri.s);
 		msg->dst_uri.s = ptr;
 		msg->dst_uri.len = uri->len;
+	}
+	return 0;
+}
+
+/*
+ * Make a private copy of the string and assign it to path_vec
+ */
+int set_path_vector(struct sip_msg* msg, str* path)
+{
+	char* ptr;
+
+	if (!msg || !path) {
+		LOG(L_ERR, "set_path_vector: Invalid parameter value\n");
+		return -1;
+	}
+
+	if (msg->path_vec.s && (msg->path_vec.len >= path->len)) {
+		memcpy(msg->path_vec.s, path->s, path->len);
+		msg->path_vec.len = path->len;
+	} else {
+		ptr = (char*)pkg_malloc(path->len);
+		if (!ptr) {
+			LOG(L_ERR, "set_path_vector: Not enough memory\n");
+			return -1;
+		}
+
+		memcpy(ptr, path->s, path->len);
+		if (msg->path_vec.s) pkg_free(msg->path_vec.s);
+		msg->path_vec.s = ptr;
+		msg->path_vec.len = path->len;
 	}
 	return 0;
 }

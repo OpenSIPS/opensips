@@ -34,15 +34,15 @@ extern unsigned int nr_branches;
 /* 
  * Add a new branch to current transaction 
  */
-int append_branch(struct sip_msg* msg, str* uri, str* dst_uri, qvalue_t q,
-		int flags, struct socket_info* force_socket);
+int append_branch(struct sip_msg* msg, str* uri, str* dst_uri, str* path,
+		qvalue_t q, int flags, struct socket_info* force_socket);
 
 
 /*
  * Get the next branch in the current transaction
  */
-char* get_branch( int idx, int* len, qvalue_t* q, str* dst_uri, int *flags,
-		struct socket_info** force_socket);
+char* get_branch( int idx, int* len, qvalue_t* q, str* dst_uri, str* path,
+		int *flags, struct socket_info** force_socket);
 
 
 /*

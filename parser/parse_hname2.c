@@ -64,6 +64,7 @@ static inline char* skip_ws(char* p, unsigned int size)
 #include "case_rout.h"     /* Route */
 #include "case_max.h"      /* Max-Forwards */
 #include "case_reco.h"     /* Record-Route */
+#include "case_path.h"     /* Path */
 #include "case_auth.h"     /* Authorization */
 #include "case_expi.h"     /* Expires */
 #include "case_prox.h"     /* Proxy-Authorization, Proxy-Require */
@@ -101,6 +102,7 @@ static inline char* skip_ws(char* p, unsigned int size)
 	case _expi_: expi_CASE; \
 	case _prox_: prox_CASE; \
 	case _allo_: allo_CASE; \
+	case _path_: path_CASE; \
 	case _unsu_: unsu_CASE; \
         case _even_: even_CASE; \
         case _acce_: acce_CASE; \

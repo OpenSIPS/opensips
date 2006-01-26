@@ -178,6 +178,7 @@ struct sip_msg {
 	struct hdr_field* maxforwards;
 	struct hdr_field* route;
 	struct hdr_field* record_route;
+	struct hdr_field* path;
 	struct hdr_field* content_type;
 	struct hdr_field* content_length;
 	struct hdr_field* authorization;
@@ -215,7 +216,7 @@ struct sip_msg {
                   * don't forget to set parsed_uri_ok to 0 */
 
 	str dst_uri; /* Destination URI, must be forwarded to this URI if len!=0 */
-
+	
 	/* current uri */
 	int parsed_uri_ok; /* 1 if parsed_uri is valid, 0 if not, set if to 0
 	                      if you modify the uri (e.g change new_uri)*/
@@ -250,6 +251,9 @@ struct sip_msg {
 
 	/* force sending on this socket */
 	struct socket_info* force_send_socket;
+
+	/* create a route HF out of this path vector */
+	str path_vec;
 };
 
 
@@ -338,6 +342,11 @@ inline static char* get_body(struct sip_msg *msg)
  * Make a private copy of the string and assign it to dst_uri
  */
 int set_dst_uri(struct sip_msg* msg, str* uri);
+
+/*
+ * Make a private copy of the string and assign it to path_vec
+ */
+int set_path_vector(struct sip_msg* msg, str* path);
 
 
 #endif

@@ -74,6 +74,7 @@
 #define _ire2_ 0x20657269   /* "ire " */
 #define _ire1_ 0x3a657269   /* "ire:" */
 #define _rout_ 0x74756f72   /* "rout" */
+#define _path_ 0x68746170   /* "path" */
 #define _supp_ 0x70707573   /* "supp" */
 #define _orte_ 0x6574726f   /* "orte" */
 #define _to12_ 0x203a6f74   /* "to: " */
@@ -122,5 +123,7 @@
 
 #define _refe_ 0x65666572   /* "refe" */
 #define _r_to_ 0x6f742d72   /* "r-to" */
+
+#define _rel1_ 0x316c6572	/* "rel1" */
 
 #endif /* KEYS_H */

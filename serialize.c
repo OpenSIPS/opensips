@@ -86,7 +86,7 @@ int serialize_branches(struct sip_msg *msg, int clean_before )
 	ruri = GET_RURI(msg);
 	ruri_q = get_ruri_q();
 
-	for( idx=0 ; (branch.s=get_branch(idx,&branch.len,&q,0,0,0))!=0 ; idx++ ) {
+	for( idx=0 ; (branch.s=get_branch(idx,&branch.len,&q,0,0,0,0))!=0 ; idx++ ) {
 		if (q != ruri_q)
 			break;
 	}
@@ -107,7 +107,7 @@ int serialize_branches(struct sip_msg *msg, int clean_before )
 	n++;
 
 	/* Insert branch URIs to contact list in increasing q order */
-	for( idx=0 ; (branch.s=get_branch(idx,&branch.len,&q,0,0,0))!=0 ; idx++ ) {
+	for( idx=0 ; (branch.s=get_branch(idx,&branch.len,&q,0,0,0,0))!=0 ; idx++ ) {
 		contacts[n].uri = branch;
 		contacts[n].q = q;
 
