@@ -709,7 +709,7 @@ tls_domain[IP_2:port2] {
     tls_certificate="new_cert"
     tls_private_key="new_cert_key"
     tls_ca_list="other ca"
-    tls_method="tlsv1"
+    tls_method=tlsv1
 }
 tls_domain[IP_3:port3] {
     ...
