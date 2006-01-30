@@ -55,7 +55,7 @@ MAIN_NAME=openser
 VERSION = 1
 PATCHLEVEL = 1
 SUBLEVEL = 0
-EXTRAVERSION = -dev9 
+EXTRAVERSION = -dev10 
 
 RELEASE=$(VERSION).$(PATCHLEVEL).$(SUBLEVEL)$(EXTRAVERSION)
 OS = $(shell uname -s | sed -e s/SunOS/solaris/ | tr "[A-Z]" "[a-z]")
@@ -75,6 +75,13 @@ ifeq ($(ARCH),sparc)
 	ifeq ($(shell uname -m),sun4u)
 		ARCH := sparc64
 	endif
+endif
+
+SMP_STR = $(shell uname -v | grep -i "SMP")
+ifneq ($(SMP_STR),"")
+	ISSMP=no
+else
+	ISSMP=yes
 endif
 
 OSREL = $(shell uname -r)
@@ -337,7 +344,7 @@ endif
 DEFS+= $(extra_defs) \
 	 -DNAME='"$(MAIN_NAME)"' -DVERSION='"$(RELEASE)"' -DARCH='"$(ARCH)"' \
 	 -DOS='"$(OS)"' -DCOMPILER='"$(CC_VER)"' -D__CPU_$(ARCH) -D__OS_$(OS) \
-	 -DCFG_DIR='"$(cfg-target)"'\
+	 -D__SMP_$(ISSMP) -DCFG_DIR='"$(cfg-target)"'\
 	 -DPKG_MALLOC \
 	 -DSHM_MEM  -DSHM_MMAP \
 	 -DDNS_IP_HACK \
@@ -347,7 +354,7 @@ DEFS+= $(extra_defs) \
 	 -DDISABLE_NAGLE \
 	 -DHAVE_RESOLV_RES \
 	 -DF_MALLOC \
-	 #-DSTATISTICS \
+	 -DSTATISTICS \
 	 #-DDBG_F_MALLOC \
 	 #-DDBG_QM_MALLOC \
 	 #-DDBG_F_MALLOC \

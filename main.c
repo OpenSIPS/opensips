@@ -741,11 +741,6 @@ int main_loop()
 			LOG(L_ERR, "Error while creating unix domain sockets\n");
 			goto error;
 		}
-		/* Init statistics */
-		if (init_stats_collector()<0) {
-			LOG(L_ERR, "Error while initializing statistics\n");
-			goto error;
-		}
 		if (do_suid()==-1) goto error; /* try to drop privileges */
 		/* process_no now initialized to zero -- increase from now on
 		   as new processes are forked (while skipping 0 reserved for main 
@@ -883,11 +878,6 @@ int main_loop()
 		     /* Create the unix domain sockets */
 		if (init_unixsock_socket()<0) {
 			LOG(L_ERR, "ERROR: Could not create unix domain sockets\n");
-			goto error;
-		}
-		/* Init statistics */
-		if (init_stats_collector()<0) {
-			LOG(L_ERR, "Error while initializing statistics\n");
 			goto error;
 		}
 
@@ -1490,6 +1480,11 @@ try_again:
 		fprintf(stderr, "ERROR: error while initializing serialization\n");
 		goto error;
 	}
+	/* Init statistics */
+	if (init_stats_collector()<0) {
+		LOG(L_ERR, "Error while initializing statistics\n");
+		goto error;
+	}
 	/* init modules */
 	if (init_modules() != 0) {
 		fprintf(stderr, "ERROR: error while initializing modules\n");
@@ -1505,7 +1500,7 @@ try_again:
 #ifdef STATS
 	if (init_stats(  dont_fork ? 1 : children_no  )==-1) goto error;
 #endif
-	
+
 	ret=main_loop();
 
 error:

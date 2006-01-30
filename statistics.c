@@ -29,7 +29,6 @@
 #include <string.h>
 
 #include "dprint.h"
-#include "mem/mem.h"
 #include "mem/shm_mem.h"
 #include "fifo_server.h"
 #include "locking.h"
@@ -38,38 +37,50 @@
 
 #ifdef STATISTICS
 
-static stats_collector collector;
+static stats_collector *collector;
 
 static int fifo_get_stats( FILE *fifo, char *response_file );
 static int fifo_reset_stats( FILE *fifo, char *response_file );
 
+#ifdef NO_ATOMIC_OPS
+#warning "STATISTICS: Architecture with no support for atomic operations."
+         "Using Locks!!\n"
 gen_lock_t *stat_lock = 0;
+#endif
 
 
 int init_stats_collector()
 {
-	/* clear the collector */
-	memset( &collector, 0 , sizeof(collector));
+	/* init the collector */
+	collector = (stats_collector*)shm_malloc(sizeof(stats_collector));
+	if (collector==0) {
+		LOG(L_ERR,"ERROR:init_stats_collector: no more shm mem\n");
+		goto error;
+	}
+	memset( collector, 0 , sizeof(stats_collector));
 
+#ifdef NO_ATOMIC_OPS
 	/* init BIG (really BIG) lock */
 	stat_lock = lock_alloc();
 	if (stat_lock==0 || lock_init( stat_lock )==0 ) {
 		LOG(L_ERR,"ERROR:init_stats_collector: failed to init the really "
 			"BIG lock\n");
-		return -1;
+		goto error;
 	}
+#endif
 
 	/* register FIFO commands */
 	if (register_fifo_cmd( fifo_get_stats, "get_statistics", 0)!=1) {
 		LOG(L_ERR,"ERROR:init_stats_collector: failed to register fifo "
 			"command\n");
-		return -1;
+		goto error;
 	}
 
 	/* register FIFO commands */
 	if (register_fifo_cmd( fifo_reset_stats, "reset_statistics", 0)!=1) {
 		LOG(L_ERR,"ERROR:init_stats_collector: failed to register fifo "
 			"command\n");
+		goto error;
 		return -1;
 	}
 
@@ -77,10 +88,13 @@ int init_stats_collector()
 	if (register_module_stats( "core", core_stats)!=0 ) {
 		LOG(L_ERR,"ERROR:init_stats_collector: failed to register core "
 			"statistics\n");
-		return -1;
+		goto error;
 	}
+	LOG(L_INFO,"INFO: statistics manager successfully initialized\n");
 
 	return 0;
+error:
+	return -1;
 }
 
 
@@ -90,23 +104,31 @@ void destroy_stats_collector()
 	stat_var *tmp_stat;
 	int i;
 
+#ifdef NO_ATOMIC_OPS
 	/* destroy big lock */
-	lock_destroy( stat_lock );
+	if (stat_lock)
+		lock_destroy( stat_lock );
+#endif
 
-	/* destroy hash table */
-	for( i=0 ; i<STATS_HASH_SIZE ; i++ ) {
-		for( stat=collector.hstats[i] ; stat ; ) {
-			tmp_stat = stat;
-			stat = stat->hnext;
-			if (tmp_stat->val)
-				shm_free(tmp_stat->val);
-			pkg_free(tmp_stat);
+	if (collector) {
+		/* destroy hash table */
+		for( i=0 ; i<STATS_HASH_SIZE ; i++ ) {
+			for( stat=collector->hstats[i] ; stat ; ) {
+				tmp_stat = stat;
+				stat = stat->hnext;
+				if (tmp_stat->val)
+					shm_free(tmp_stat->val);
+				shm_free(tmp_stat);
+			}
 		}
-	}
 
-	/* destroy sts_module array */
-	if (collector.amodules)
-		pkg_free(collector.amodules);
+		/* destroy sts_module array */
+		if (collector->amodules)
+			shm_free(collector->amodules);
+
+		/* destroy the collector */
+		shm_free(collector);
+	}
 
 	return;
 }
@@ -119,10 +141,10 @@ static inline module_stats* get_stat_module( str *module)
 	if ( (module==0) || module->s==0 || module->len==0 )
 		return 0;
 
-	for( i=0 ; i<collector.mod_no ; i++ ) {
-		if ( (collector.amodules[i].name.len = module->len) &&
-		(strncasecmp(collector.amodules[i].name.s,module->s,module->len)==0) )
-			return &collector.amodules[i];
+	for( i=0 ; i<collector->mod_no ; i++ ) {
+		if ( (collector->amodules[i].name.len = module->len) &&
+		(strncasecmp(collector->amodules[i].name.s,module->s,module->len)==0) )
+			return &collector->amodules[i];
 	}
 
 	return 0;
@@ -138,17 +160,17 @@ static inline module_stats* add_stat_module( char *module)
 	if ( (module==0) || ((len = strlen(module))==0 ) )
 		return 0;
 
-	amods = (module_stats*)pkg_realloc( collector.amodules,
-			(collector.mod_no+1)*sizeof(module_stats) );
+	amods = (module_stats*)shm_realloc( collector->amodules,
+			(collector->mod_no+1)*sizeof(module_stats) );
 	if (amods==0) {
-		LOG(L_ERR,"ERROR:add_stat_module: no more pkg memory\n");
+		LOG(L_ERR,"ERROR:add_stat_module: no more shm memory\n");
 		return 0;
 	}
 
-	collector.amodules = amods;
-	collector.mod_no++;
+	collector->amodules = amods;
+	collector->mod_no++;
 
-	mods = &amods[collector.mod_no-1];
+	mods = &amods[collector->mod_no-1];
 	memset( mods, 0, sizeof(module_stats) );
 
 	mods->name.s = module;
@@ -172,9 +194,9 @@ int register_stat( char *module, char *name, stat_var **pvar, int flags)
 		goto error;
 	}
 
-	stat = (stat_var*)pkg_malloc(sizeof(stat_var));
+	stat = (stat_var*)shm_malloc(sizeof(stat_var));
 	if (stat==0) {
-		LOG(L_ERR,"ERROR:register_stat: no more pkg memory\n");
+		LOG(L_ERR,"ERROR:register_stat: no more shm memory\n");
 		goto error;
 	}
 	memset( stat, 0, sizeof(stat_var));
@@ -184,7 +206,11 @@ int register_stat( char *module, char *name, stat_var **pvar, int flags)
 		LOG(L_ERR,"ERROR:register_stat: no more shm memory\n");
 		goto error1;
 	}
+#ifdef NO_ATOMIC_OPS
 	*(stat->val) = 0;
+#else
+	atomic_set(stat->val,0);
+#endif
 
 	/* is the module already recorded? */
 	smodule.s = module;
@@ -210,15 +236,15 @@ int register_stat( char *module, char *name, stat_var **pvar, int flags)
 	hash = new_hash1( stat->name , STATS_HASH_SIZE) ;
 
 	/* link it */
-	if (collector.hstats[hash]==0) {
-		collector.hstats[hash] = stat;
+	if (collector->hstats[hash]==0) {
+		collector->hstats[hash] = stat;
 	} else {
-		it = collector.hstats[hash];
+		it = collector->hstats[hash];
 		while(it->hnext)
 			it = it->hnext;
 		it->hnext = stat;
 	}
-	collector.stats_no++;
+	collector->stats_no++;
 
 	/* add the statistic also to the module statistic list */
 	if (mods->tail) {
@@ -234,7 +260,7 @@ int register_stat( char *module, char *name, stat_var **pvar, int flags)
 error2:
 	shm_free(*pvar);
 error1:
-	pkg_free(stat);
+	shm_free(stat);
 error:
 	*pvar = 0;
 	return -1;
@@ -276,7 +302,7 @@ stat_var* get_stat( str *name )
 	hash = new_hash1( *name , STATS_HASH_SIZE) ;
 
 	/* and look for it */
-	for( stat=collector.hstats[hash] ; stat ; stat=stat->hnext ) {
+	for( stat=collector->hstats[hash] ; stat ; stat=stat->hnext ) {
 		if ( (stat->name.len==name->len) &&
 		(strncasecmp( stat->name.s, name->s, name->len)==0) )
 			return stat;
@@ -302,7 +328,8 @@ static void inline fifo_print_stat(FILE *rf, str *name)
 
 	fprintf(rf,"%.*s:%.*s = %d\n",
 		stat->module->name.len, stat->module->name.s,
-		stat->name.len, stat->name.s, *(stat->val));
+		stat->name.len, stat->name.s,
+		get_stat_val(stat) );
 }
 
 
@@ -316,7 +343,8 @@ static void inline fifo_print_module_stats(FILE *rf, module_stats *mods)
 	for( stat=mods->head ; stat ; stat=stat->lnext) {
 		fprintf(rf,"%.*s:%.*s = %d\n",
 			mods->name.len, mods->name.s,
-			stat->name.len, stat->name.s, *(stat->val));
+			stat->name.len, stat->name.s,
+			get_stat_val(stat) );
 	}
 }
 
@@ -325,11 +353,11 @@ static void fifo_all_stats(FILE *rf)
 {
 	int i;
 
-	fprintf(rf,"Total statistics = %d\n",collector.stats_no);
-	fprintf(rf,"Total modules = %d\n",collector.mod_no);
+	fprintf(rf,"Total statistics = %d\n",collector->stats_no);
+	fprintf(rf,"Total modules = %d\n",collector->mod_no);
 
-	for( i=0 ; i<collector.mod_no ;i++ )
-		fifo_print_module_stats( rf, &collector.amodules[i] );
+	for( i=0 ; i<collector->mod_no ;i++ )
+		fifo_print_module_stats( rf, &collector->amodules[i] );
 }
 
 

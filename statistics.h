@@ -30,7 +30,10 @@
 #define _STATISTICS_H_
 
 #include "hash_func.h"
+#include "atomic.h"
+#ifdef NO_ATOMIC_OPS
 #include "locking.h"
+#endif
 
 #define STATS_HASH_POWER   8
 #define STATS_HASH_SIZE    (1<<(STATS_HASH_POWER))
@@ -39,7 +42,11 @@
 #define STAT_NO_RESET  (1<<0)
 #define STAT_NO_SYNC   (1<<1)
 
+#ifdef NO_ATOMIC_OPS
 typedef unsigned int stat_val;
+#else
+typedef atomic_t stat_val;
+#endif
 
 struct module_stats_;
 
@@ -85,39 +92,62 @@ int register_module_stats(char *module, stat_export_t *stats);
 
 stat_var* get_stat( str *name );
 
+unsigned int get_stat_val( stat_var *var );
+
+#ifdef NO_ATOMIC_OPS
 extern gen_lock_t *stat_lock;
+#endif
+
 #else
 	#define init_stats_collector()  0
 	#define destroy_stats_collector()
 	#define register_module_stats(_mod,_stats)
 	#define register_stat( _mod, _name, _pvar, _flags)
 	#define get_stat( _name )  0
+	#define get_stat_val( _var ) 0
 #endif
 
 
 #ifdef STATISTICS
-	#define update_stat( _var, _n) \
-		do { \
-			if ((_var)->flags&STAT_NO_SYNC) {\
-				*((_var)->val) += _n;\
-			} else {\
-				lock_get(stat_lock);\
-				*((_var)->val) += _n;\
-				lock_release(stat_lock);\
-			}\
-		}while(0)
-	#define reset_stat( _var) \
-		do { \
-			if ( ((_var)->flags&STAT_NO_RESET)==0 ) {\
+	#ifdef NO_ATOMIC_OPS
+		#define update_stat( _var, _n) \
+			do { \
 				if ((_var)->flags&STAT_NO_SYNC) {\
-					*((_var)->val) = 0;\
+					*((_var)->val) += _n;\
 				} else {\
 					lock_get(stat_lock);\
-					*((_var)->val) = 0;\
+					*((_var)->val) += _n;\
 					lock_release(stat_lock);\
 				}\
-			}\
-		}while(0)
+			}while(0)
+		#define reset_stat( _var) \
+			do { \
+				if ( ((_var)->flags&STAT_NO_RESET)==0 ) {\
+					if ((_var)->flags&STAT_NO_SYNC) {\
+						*((_var)->val) = 0;\
+					} else {\
+						lock_get(stat_lock);\
+						*((_var)->val) = 0;\
+						lock_release(stat_lock);\
+					}\
+				}\
+			}while(0)
+		#define get_stat_val( _var ) \
+			(*((_var)->val))
+	#else
+		#define update_stat( _var, _n) \
+			do { \
+				atomic_add( _n, _var->val);\
+			}while(0)
+		#define reset_stat( _var) \
+			do { \
+				if ( ((_var)->flags&STAT_NO_RESET)==0 ) {\
+					atomic_set( _var->val, 0);\
+				}\
+			}while(0)
+		#define get_stat_val( _var ) \
+			((_var)->val->counter)
+	#endif
 #else
 	#define update_stat( _var, _n)
 	#define reset_stat( _var)
