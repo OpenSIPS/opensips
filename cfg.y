@@ -800,13 +800,19 @@ assign_stm:	DEBUG EQUAL NUMBER { debug=$3; }
 								tos=IPTOS_THROUGHPUT;
 							} else if (strcasecmp($3,"IPTOS_RELIABILITY")) {
 								tos=IPTOS_RELIABILITY;
+#if !defined(__OS_solaris) || !defined(__OS_netbsd)
 							} else if (strcasecmp($3,"IPTOS_MINCOST")) {
 								tos=IPTOS_MINCOST;
+#endif
 							} else {
 								yyerror("invalid tos value - allowed: "
 									"IPTOS_LOWDELAY,IPTOS_THROUGHPUT,"
-									"IPTOS_RELIABILITY,IPTOS_LOWCOST,"
-									"IPTOS_MINCOST\n");
+									"IPTOS_RELIABILITY,IPTOS_LOWCOST"
+#if !defined(__OS_solaris) || !defined(__OS_netbsd)
+									",IPTOS_MINCOST\n");
+#else
+									"\n");
+#endif
 							}
 		 }
 		| TOS EQUAL error { yyerror("number expected"); }
