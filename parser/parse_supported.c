@@ -71,7 +71,7 @@ static int parse_supported_body(struct hdr_field* _h)
 
 			/* "path" */
 			case _path_:
-				if(pos + 4 < len && IS_DELIM(p+4)) {
+				if(pos + 4 <= len && IS_DELIM(p+4)) {
 					*sup |= F_SUPPORTED_PATH;
 					pos += 5; p += 5;
 				}
@@ -79,7 +79,7 @@ static int parse_supported_body(struct hdr_field* _h)
 
 			/* "rel100" */
 			case _rel1_:
-				if(pos + 6 < len && *(p+4) == '0' && *(p+5) == '0' && IS_DELIM(p+6)) {
+				if(pos + 6 <= len && *(p+4) == '0' && *(p+5) == '0' && IS_DELIM(p+6)) {
 					*sup |= F_SUPPORTED_REL100;
 					pos += 7; p += 7;
 				}
