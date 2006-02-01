@@ -745,7 +745,6 @@ char* parse_to(char* buffer, char *end, struct to_body *to_b)
 
 endofheader:
 	if (to_b->display.len==0) to_b->display.s=0;
-	DBG("xxxxxxxxxxx %p, %d\n",to_b->display.s,to_b->display.len);
 	status=saved_status;
 	DBG("DEBUG:parse_to:end of header reached, state=%d\n", status);
 	/* check if error*/
