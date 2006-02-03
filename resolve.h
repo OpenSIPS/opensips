@@ -127,6 +127,8 @@ extern int dns_try_ipv6;
 		(((c)>='a') && ((c)<='f'))? ((c)-'a')+10 : -1 )
 
 
+#define get_naptr(_rdata) \
+	( ((struct naptr_rdata*)(_rdata)->rdata) )
 
 
 
@@ -274,7 +276,8 @@ error_char:
 
 
 
-struct hostent* sip_resolvehost(str* name, unsigned short* port, int proto);
+struct hostent* sip_resolvehost(str* name, unsigned short* port,
+		int *proto, int is_sips);
 
 
 

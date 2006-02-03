@@ -131,6 +131,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 			else if (a->type==FORWARD_TLS_T) proto= PROTO_TLS;
 #endif
 			else proto= PROTO_NONE;
+
 			if (a->p1_type==URIHOST_ST){
 				/*parse uri*/
 
@@ -161,55 +162,35 @@ int do_action(struct action* a, struct sip_msg* msg)
 							ret=E_UNSPEC;
 							goto error_fwd_uri;
 				}
-				if (proto == PROTO_NONE){ /* only if proto not set get it
-											 from the uri */
-					switch(u->proto){
-						case PROTO_NONE:
-							proto=PROTO_UDP;
-							break;
-						case PROTO_UDP:
-#ifdef USE_TCP
-						case PROTO_TCP:
-#endif
+				
+				/* only if proto not set get it from the uri */
+				if (proto == PROTO_NONE)
+					proto=u->proto;
 #ifdef USE_TLS
-						case PROTO_TLS:
-#endif
-							proto=u->proto;
-							break;
-						default:
-							LOG(L_ERR,"ERROR: do action: forward: bad uri"
-									" transport %d\n", u->proto);
-							ret=E_BAD_PROTO;
-							goto error_fwd_uri;
-					}
-#ifdef USE_TLS
-					if (u->type==SIPS_URI_T){
-						if (u->proto==PROTO_UDP){
-							LOG(L_ERR, "ERROR: do_action: forward: secure uri"
-								" incompatible with transport %d\n", u->proto);
-							ret=E_BAD_PROTO;
-							goto error_fwd_uri;
-						}
-						proto=PROTO_TLS;
-					}
-#endif
+				if (u->type==SIPS_URI_T && proto==PROTO_UDP) {
+					LOG(L_ERR, "ERROR: do_action: forward: secure uri"
+						" incompatible with transport %d\n", u->proto);
+					ret=E_BAD_PROTO;
+					goto error_fwd_uri;
 				}
+#endif
 				/* create a temporary proxy*/
-				p=mk_proxy(&u->host, port, proto);
+				p=mk_proxy(&u->host, port, proto,
+					(u->type==SIPS_URI_T)?1:0 );
 				if (p==0){
 					LOG(L_ERR, "ERROR:  bad host name in uri,"
 							" dropping packet\n");
 					ret=E_BAD_ADDRESS;
 					goto error_fwd_uri;
 				}
-				ret=forward_request(msg, p, proto);
+				ret=forward_request(msg, p);
 				free_proxy(p); /* frees only p content, not p itself */
 				pkg_free(p);
 				if (ret>=0) ret=1;
 			}else if ((a->p1_type==PROXY_ST) && (a->p2_type==NUMBER_ST)){
-				if (proto==PROTO_NONE)
-					proto=msg->rcv.proto;
-				ret=forward_request(msg,(struct proxy_l*)a->p1.data, proto);
+				((struct proxy_l*)a->p1.data)->proto =
+					(proto==PROTO_NONE) ? msg->rcv.proto : proto;
+				ret=forward_request(msg,(struct proxy_l*)a->p1.data);
 				if (ret>=0) ret=1;
 			}else{
 				LOG(L_CRIT, "BUG: do_action: bad forward() types %d, %d\n",

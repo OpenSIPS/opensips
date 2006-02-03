@@ -147,7 +147,7 @@ extern int version_len;
  *  resolver = DO_DNS | DO_REV_DNS; if 0 no dns check is made
  * return 0 if equal */
 static int check_via_address(struct ip_addr* ip, str *name, 
-				unsigned short port, int resolver)
+				unsigned short port, int proto, int resolver)
 {
 	struct hostent* he;
 	int i;
@@ -186,7 +186,7 @@ static int check_via_address(struct ip_addr* ip, str *name,
 	if (resolver&DO_DNS){
 		DBG("check_via_address: doing dns lookup\n");
 		/* try all names ips */
-		he=sip_resolvehost(name, &port, 0); /* FIXME proto? */
+		he=sip_resolvehost(name, &port, &proto, 0);
 		if (he && ip->af==he->h_addrtype){
 			for(i=0;he && he->h_addr_list[i];i++){
 				if ( memcmp(&he->h_addr_list[i], ip->u.addr, ip->len)==0)
@@ -214,9 +214,8 @@ int received_test( struct sip_msg *msg )
 {
 	int rcvd;
 
-	rcvd=msg->via1->received
-			|| check_via_address(&msg->rcv.src_ip, &msg->via1->host,
-							msg->via1->port, received_dns);
+	rcvd = msg->via1->received || check_via_address(&msg->rcv.src_ip,
+			&msg->via1->host, msg->via1->port, msg->via1->proto, received_dns);
 	return rcvd;
 }
 

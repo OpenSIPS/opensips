@@ -35,6 +35,7 @@
 #include "dprint.h"
 #include "mem/mem.h"
 #include "ip_addr.h"
+#include "globals.h"
 
 
 
@@ -192,7 +193,6 @@ struct naptr_rdata* dns_naptr_parser( unsigned char* msg, unsigned char* end,
 								  unsigned char* rdata)
 {
 	struct naptr_rdata* naptr;
-	int len;
 	
 	naptr = 0;
 	if ((rdata + 7) >= end) goto error;
@@ -219,7 +219,8 @@ struct naptr_rdata* dns_naptr_parser( unsigned char* msg, unsigned char* end,
 				naptr->services_len, naptr->regexp_len);
 	rdata = rdata + 7 + naptr->flags_len + naptr->services_len + 
 			naptr->regexp_len;
-	if ((len=dn_expand(msg, end, rdata, naptr->repl, MAX_DNS_NAME-1)) == -1)
+	naptr->repl_len=dn_expand(msg, end, rdata, naptr->repl, MAX_DNS_NAME-1);
+	if ( naptr->repl_len==-1 )
 		goto error;
 	/* add terminating 0 ? (warning: len=compressed name len) */
 	return naptr;
@@ -485,7 +486,7 @@ not_found:
 }
 
 
-
+#if 0
 /* resolves a host name trying SRV lookup if *port==0 or normal A/AAAA lookup
  * if *port!=0.
  * when performing SRV lookup (*port==0) it will use proto to look for
@@ -493,7 +494,7 @@ not_found:
  * returns: hostent struct & *port filled with the port from the SRV record;
  *  0 on error
  */
-struct hostent* sip_resolvehost(str* name, unsigned short* port, int proto)
+struct hostent* sip_resolvehost_old(str* name, unsigned short* port, int proto)
 {
 	struct hostent* he;
 	struct rdata* head;
@@ -578,3 +579,280 @@ skip_srv:
 	he=resolvehost(tmp);
 	return he;
 }
+#endif
+
+
+
+static inline struct hostent* do_srv_lookup(char *name, unsigned short* port)
+{
+	struct hostent* he;
+	struct srv_rdata* srv;
+	struct rdata *head;
+	struct rdata *rd;
+
+	/* perform SRV lookup */
+	head = get_record( name, T_SRV);
+	for( rd=head; rd ; rd=rd->next ) {
+		if (rd->type!=T_SRV)
+			continue; /*should never happen*/
+		srv = (struct srv_rdata*) rd->rdata;
+		if (srv==0) {
+			LOG(L_CRIT, "BUG:do_srv_lookup: null rdata\n");
+			free_rdata_list(head);
+			return 0;
+		}
+		he = resolvehost(srv->name);
+		if ( he!=0 ) {
+			DBG("DEBUG:do_srv_lookup: SRV(%s) = %s:%d\n",
+				name, srv->name, srv->port);
+			*port=srv->port;
+			free_rdata_list(head);
+			return he;
+		}
+	}
+	if (head)
+		free_rdata_list(head);
+	return 0;
+}
+
+
+#define naptr_prio(_naptr) \
+	((((_naptr)->order) << 16) + ((_naptr)->pref))
+
+static inline int get_naptr_proto(struct naptr_rdata *n)
+{
+#ifdef USE_TLS
+	if (n->service[3]=='s' || n->service[3]=='S' )
+		return PROTO_TLS;
+#endif
+	switch (n->services[n->services_len-1]) {
+		case 'U':
+		case 'u':
+			return PROTO_UDP;
+			break;
+#ifdef USE_TCP
+		case 'T':
+		case 't':
+			return PROTO_TCP;
+			break;
+#endif
+	}
+	LOG(L_CRIT,"BUG:get_naptr_proto: failed to detect proto\n");
+	return PROTO_NONE;
+}
+
+
+static inline void filter_and_sort_naptr( struct rdata** head_p,
+									struct rdata** filtered_p, int is_sips)
+{
+	struct naptr_rdata *naptr;
+	struct rdata *head;
+	struct rdata *last;
+	struct rdata *out;
+	struct rdata *l, *ln, *it, *itp;
+	unsigned int prio;
+	char p;
+
+	head = 0;
+	last = 0;
+	out = 0;
+
+	for( l=*head_p ; l ; l=ln ) {
+		ln = l->next;
+
+		if (l->type != T_NAPTR)
+			continue; /*should never happen*/
+
+		naptr = (struct naptr_rdata*)l->rdata;
+		if (naptr == 0) {
+			LOG(L_CRIT, "BUG:filter_and_sort_naptr: null rdata\n");
+			continue;
+		}
+
+		/* first filter out by flag and service */
+		if (naptr->flags_len!=1 || (naptr->flags[0]!='s'&&naptr->flags[0]!='S'))
+			goto skip;
+		if (naptr->repl_len==0 || naptr->regexp_len!=0 )
+			goto skip;
+		if ( (is_sips || naptr->services_len!=7 ||
+			strncasecmp(naptr->services,"sip+d2",6) ) &&
+		(
+#ifdef USE_TLS
+		tls_disable ||
+#endif
+		naptr->services_len!=8 || strncasecmp(naptr->services,"sips+d2",7)))
+			goto skip;
+		p = naptr->services[naptr->services_len-1];
+		/* by default we do not support SCTP */
+		if ( p!='U' && p!='u'
+#ifdef USE_TCP
+		&& (tcp_disable || (p!='T' && p!='t'))
+#endif
+		)
+			goto skip;
+		/* is it valid? (SIPS+D2U is not!) */
+		if ( naptr->services_len==8 && (p=='U' || p=='u'))
+			goto skip;
+
+		DBG("DEBUG:filter_and_sort_naptr: found valid %s -> %s\n",
+			naptr->services, naptr->repl);
+
+		/* this is a supported service -> add it according to order to the 
+		 * new head list */
+		prio = naptr_prio(get_naptr(l));
+		if (head==0) {
+			head = last = l;
+			l->next = 0;
+		} else if ( naptr_prio(get_naptr(head)) >= prio ) {
+			l->next = head;
+			head = l;
+		} else if ( prio >= naptr_prio(get_naptr(last)) ) {
+			l->next = 0;
+			last->next = l;
+			last = l;
+		} else {
+			for( itp=head,it=head->next ; it && it->next ; itp=it,it=it->next ){
+				if ( prio <= naptr_prio(get_naptr(it)))
+					break;
+			}
+			l->next = itp->next;
+			itp->next = l;
+		}
+
+		continue;
+skip:
+		DBG("DEBUG:filter_and_sort_naptr: skipping %s -> %s\n",
+			naptr->services, naptr->repl);
+		l->next = out;
+		out = l;
+	}
+
+	*head_p = head;
+	*filtered_p = out;
+}
+
+
+struct hostent* sip_resolvehost(str* name, unsigned short* port, int *proto,
+																int is_sips)
+{
+	static char tmp[MAX_DNS_NAME];
+	struct ip_addr *ip;
+	struct rdata *head;
+	struct rdata *rd;
+	struct hostent* he;
+
+	/* check if it's an ip address */
+	if ( ((ip=str2ip(name))!=0)
+#ifdef USE_IPV6
+	|| ((ip=str2ip6(name))!=0)
+#endif
+	){
+		/* we are lucky, this is an ip address */
+		return ip_addr2he(name,ip);
+	}
+
+	/* do we have a port? */
+	if ( !port || (*port)!=0 ) {
+		/* have port -> no NAPTR, no SRV lookup, just A record lookup */
+		DBG("DEBUG:sip_resolvehost2: has port -> do A record lookup!\n");
+		goto do_a;
+	}
+	*port = (is_sips)?SIPS_PORT:SIP_PORT; /* set defaults */
+
+	/* no port... what about proto? */
+	if ( !proto || (*proto)!=PROTO_NONE ) {
+		/* have proto, but no port -> do SRV lookup */
+		DBG("DEBUG:sip_resolvehost2: no port, has proto -> do SRV lookup!\n");
+		goto do_srv;
+	}
+
+	DBG("DEBUG:sip_resolvehost2: no port, no proto -> do NAPTR lookup!\n");
+	/* no proto, no port -> do NAPTR lookup */
+	if (name->len >= MAX_DNS_NAME) {
+		LOG(L_ERR, "ERROR:sip_resolvehost2: domain name too long\n");
+		return 0;
+	}
+	memcpy(tmp, name->s, name->len);
+	tmp[name->len] = '\0';
+	/* do NAPTR lookup */
+	head = get_record( tmp, T_NAPTR);
+	if (head) {
+		/* filter and sort the records */
+		filter_and_sort_naptr( &head, &rd, is_sips);
+		/* free what is useless */
+		free_rdata_list( rd );
+		/* process the NAPTR records */
+		for( rd=head ; rd ; rd=rd->next ) {
+			he = do_srv_lookup( get_naptr(rd)->repl, port );
+			if ( he ) {
+				*proto = get_naptr_proto( get_naptr(rd) );
+				DBG("DEBUG:sip_resolvehost2: found!\n");
+				free_rdata_list(head);
+				return he;
+			}
+		}
+		if (head)
+			free_rdata_list(head);
+	}
+	DBG("DEBUG:sip_resolvehost2: no valid NAPTR record found for %.*s," 
+		" trying direct SRV lookup...\n", name->len, name->s);
+
+	*proto = (is_sips)?PROTO_TLS:PROTO_UDP; /* set defaults */
+
+	if ((name->len+SRV_MAX_PREFIX_LEN+1)>MAX_DNS_NAME) {
+		LOG(L_WARN, "WARNING:sip_resolvehost2: domain name too long (%d),"
+			" unable to perform SRV lookup\n", name->len);
+		goto do_a;
+	}
+
+do_srv:
+	switch (*proto) {
+		case PROTO_UDP:
+			memcpy(tmp, SRV_UDP_PREFIX, SRV_UDP_PREFIX_LEN);
+			memcpy(tmp+SRV_UDP_PREFIX_LEN, name->s, name->len);
+			tmp[SRV_UDP_PREFIX_LEN + name->len] = '\0';
+			break;
+#ifdef USE_TCP
+		case PROTO_TCP:
+			if (tcp_disable) goto err_proto;
+			memcpy(tmp, SRV_TCP_PREFIX, SRV_TCP_PREFIX_LEN);
+			memcpy(tmp+SRV_TCP_PREFIX_LEN, name->s, name->len);
+			tmp[SRV_TCP_PREFIX_LEN + name->len] = '\0';
+			break;
+#endif
+#ifdef USE_TLS
+		case PROTO_TLS:
+			if (tls_disable) goto err_proto;
+			memcpy(tmp, SRV_TLS_PREFIX, SRV_TLS_PREFIX_LEN);
+			memcpy(tmp+SRV_TLS_PREFIX_LEN, name->s, name->len);
+			tmp[SRV_TLS_PREFIX_LEN + name->len] = '\0';
+			break;
+#endif
+		default:
+			goto err_proto;
+	}
+
+	he = do_srv_lookup( tmp, port );
+	if (he)
+		return he;
+	
+	DBG("DEBUG:sip_resolvehost2: no valid SRV record found for %s," 
+		" trying A record lookup...\n", tmp);
+
+do_a:
+	/* do A record lookup */
+	if (name->len >= MAX_DNS_NAME) {
+		LOG(L_ERR, "ERROR:sip_resolvehost2: domain name too long\n");
+		return 0;
+	}
+	memcpy(tmp, name->s, name->len);
+	tmp[name->len] = '\0';
+	he = resolvehost(tmp);
+	return he;
+err_proto:
+	LOG(L_ERR, "ERROR:sip_resolvehost: unsupported proto %d\n",
+		*proto);
+	return 0;
+}
+
+

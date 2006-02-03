@@ -53,7 +53,7 @@ struct proxy_l{
 extern struct proxy_l* proxies;
 
 struct proxy_l* add_proxy(str* name, unsigned short port, int proto);
-struct proxy_l* mk_proxy(str* name, unsigned short port, int proto);
+struct proxy_l* mk_proxy(str* name, unsigned short port, int proto,int is_sips);
 struct proxy_l* mk_proxy_from_ip(struct ip_addr* ip, unsigned short port,
 									int proto);
 void free_proxy(struct proxy_l* p);

@@ -177,7 +177,7 @@ struct proxy_l* add_proxy(str* name, unsigned short port, int proto)
 	struct proxy_l* p;
 	
 	if ((p=find_proxy(name, port, proto))!=0) return p;
-	if ((p=mk_proxy(name, port, proto))==0) goto error;
+	if ((p=mk_proxy(name, port, proto, 0))==0) goto error;
 	/* add p to the proxy list */
 	p->next=proxies;
 	proxies=p;
@@ -193,7 +193,7 @@ error:
 /* same as add_proxy, but it doesn't add the proxy to the list
  * uses also SRV if possible & port==0 (quick hack) */
 
-struct proxy_l* mk_proxy(str* name, unsigned short port, int proto)
+struct proxy_l* mk_proxy(str* name, unsigned short port, int proto, int is_sips)
 {
 	struct proxy_l* p;
 	struct hostent* he;
@@ -210,7 +210,7 @@ struct proxy_l* mk_proxy(str* name, unsigned short port, int proto)
 	p->proto=proto;
 
 	DBG("DEBUG: mk_proxy: doing DNS lookup...\n");
-	he=sip_resolvehost(name, &(p->port), proto);
+	he=sip_resolvehost(name, &(p->port), &p->proto, is_sips);
 	if (he==0){
 		ser_error=E_BAD_ADDRESS;
 		LOG(L_CRIT, "ERROR: mk_proxy: could not resolve hostname:"

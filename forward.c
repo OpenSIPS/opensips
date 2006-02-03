@@ -252,7 +252,7 @@ found:
 
 
 
-int forward_request( struct sip_msg* msg, struct proxy_l * p, int proto)
+int forward_request( struct sip_msg* msg, struct proxy_l * p)
 {
 	unsigned int len;
 	char* buf;
@@ -287,10 +287,11 @@ int forward_request( struct sip_msg* msg, struct proxy_l * p, int proto)
 	p->tx_bytes+=len;
 	
 
-	send_sock=get_send_socket(msg, to, proto);
+	send_sock=get_send_socket(msg, to, p->proto);
 	if (send_sock==0){
 		LOG(L_ERR, "forward_req: ERROR: cannot forward to af %d, proto %d "
-				"no corresponding listening socket\n", to->s.sa_family, proto);
+				"no corresponding listening socket\n",
+				to->s.sa_family, p->proto);
 		ser_error=E_NO_SOCKET;
 		goto error1;
 	}
@@ -320,16 +321,16 @@ int forward_request( struct sip_msg* msg, struct proxy_l * p, int proto)
 		}
 	}
 
-	buf = build_req_buf_from_sip_req( msg, &len, send_sock,  proto);
+	buf = build_req_buf_from_sip_req( msg, &len, send_sock, p->proto);
 	if (!buf){
 		LOG(L_ERR, "ERROR: forward_request: building failed\n");
 		goto error1;
 	}
 	 /* send it! */
 	DBG("Sending:\n%.*s.\n", (int)len, buf);
-	DBG("orig. len=%d, new_len=%d, proto=%d\n", msg->len, len, proto );
+	DBG("orig. len=%d, new_len=%d, proto=%d\n", msg->len, len, p->proto );
 	
-	if (msg_send(send_sock, proto, to, 0, buf, len)<0){
+	if (msg_send(send_sock, p->proto, to, 0, buf, len)<0){
 		ser_error=E_SEND;
 		p->errors++;
 		p->ok=0;
@@ -396,16 +397,8 @@ int update_sock_struct_from_via( union sockaddr_union* to,
 			if (port==0) port=via->port;
 		}
 	}
-	/* we do now a malloc/memcpy because gethostbyname loves \0-terminated 
-	   strings; -jiri 
-	   but only if host is not null terminated
-	   (host.s[len] will always be ok for a via)
-	    BTW: when is via->host.s non null terminated? tm copy? - andrei 
-	    Yes -- it happened on generating a 408 by TM; -jiri
-	    sip_resolvehost now accepts str -janakj
-	*/
 	DBG("update_sock_struct_from_via: trying SRV lookup\n");
-	he=sip_resolvehost(name, &port, via->proto);
+	he=sip_resolvehost(name, &port, &via->proto, 0);
 	
 	if (he==0){
 		LOG(L_NOTICE, "ERROR:forward_reply:resolve_host(%.*s) failure\n",
