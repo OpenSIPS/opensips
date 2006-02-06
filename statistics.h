@@ -147,11 +147,22 @@ extern gen_lock_t *stat_lock;
 			}while(0)
 		#define get_stat_val( _var ) \
 			((_var)->val->counter)
-	#endif
+	#endif /* NO_ATOMIC_OPS */
+
+	#define if_update_stat(_c, _var, _n) \
+		do { \
+			if (_c) update_stat( _var, _n); \
+		}while(0)
+	#define if_reset_stat(_c, _var, _n) \
+		do { \
+			if (_c) reset_stat( _var, _n); \
+		}while(0)
 #else
 	#define update_stat( _var, _n)
 	#define reset_stat( _var)
-#endif
+	#define if_update_stat( _c, _var, _n)
+	#define if_reset_stat( _c, _var)
+#endif /*STATISTICS*/
 
 
 #endif
