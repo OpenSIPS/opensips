@@ -48,7 +48,6 @@
 #include "forward.h"
 #include "action.h"
 #include "mem/mem.h"
-#include "stats.h"
 #include "ip_addr.h"
 #include "script_cb.h"
 #include "dset.h"

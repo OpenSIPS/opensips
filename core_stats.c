@@ -35,6 +35,8 @@
 
 stat_var* rcv_reqs;
 stat_var* rcv_rpls;
+stat_var* fwd_reqs;
+stat_var* fwd_rpls;
 stat_var* drp_reqs;
 stat_var* drp_rpls;
 stat_var* err_reqs;
@@ -43,6 +45,8 @@ stat_var* err_rpls;
 stat_export_t core_stats[] = {
 	{"rcv_requests" ,         0,  &rcv_reqs      },
 	{"rcv_replies" ,          0,  &rcv_rpls      },
+	{"fwd_requests" ,         0,  &fwd_reqs      },
+	{"fwd_replies" ,          0,  &fwd_rpls      },
 	{"drop_requests" ,        0,  &drp_reqs      },
 	{"drop_replies" ,         0,  &drp_rpls      },
 	{"err_requests" ,         0,  &err_reqs      },

@@ -81,6 +81,7 @@
 #include <pwd.h>
 #include <grp.h>
 #include <signal.h>
+#include <time.h>
 
 #include <sys/ioctl.h>
 #include <net/if.h>
@@ -120,14 +121,6 @@
 #ifdef USE_TLS
 #include "tls/tls_init.h"
 #endif
-#endif
-
-
-
-#include "stats.h"
-
-#ifdef DEBUG_DMALLOC
-#include <dmalloc.h>
 #endif
 #include "version.h"
 
@@ -176,9 +169,6 @@ Options:\n\
     -G file      Create a pgid file\n\
     -i fifo_path Create a fifo (useful for monitoring " NAME ") \n\
     -x socket    Create a unix domain socket \n"
-#ifdef STATS
-"    -s file     File to which statistics is dumped (disabled otherwise)\n"
-#endif
 ;
 
 /* print compile-time constants */
@@ -479,9 +469,6 @@ void handle_sigs()
 			break;
 			
 		case SIGUSR1:
-#ifdef STATS
-			dump_all_statistic();
-#endif
 #ifdef PKG_MALLOC
 			LOG(memlog, "Memory status (pkg):\n");
 			pkg_status();
@@ -712,9 +699,6 @@ int main_loop()
 	chd_rank=0;
 
 	if (dont_fork){
-#ifdef STATS
-		setstats( 0 );
-#endif
 		if (udp_listen==0){
 			LOG(L_ERR, "ERROR: no fork mode requires at least one"
 					" udp listen address, exiting...\n");
@@ -932,9 +916,6 @@ int main_loop()
 						LOG(L_ERR, "init_child failed\n");
 						goto error;
 					}
-#ifdef STATS
-					setstats( i+r*children_no );
-#endif
 					return udp_rcv_loop();
 				}else{
 						pt[process_no].pid=pid; /*should be in shared mem.*/
@@ -1122,11 +1103,7 @@ int main(int argc, char** argv)
 
 	/* process command line (get port no, cfg. file path etc) */
 	opterr=0;
-	options=
-#ifdef STATS
-	"s:"
-#endif
-	"f:cCm:b:l:n:N:rRvdDETVhw:t:u:g:P:G:i:x:W:";
+	options="f:cCm:b:l:n:N:rRvdDETVhw:t:u:g:P:G:i:x:W:";
 	
 	while((c=getopt(argc,argv,options))!=-1){
 		switch(c){
@@ -1140,11 +1117,6 @@ int main(int argc, char** argv)
 						break;
 					config_check |= 1;
 					log_stderr=1; /* force stderr logging */
-					break;
-			case 's':
-				#ifdef STATS
-					stat_file=optarg;
-				#endif
 					break;
 			case 'm':
 					shm_mem_size=strtol(optarg, &tmp, 10) * 1024 * 1024;
@@ -1496,10 +1468,6 @@ try_again:
 						r);
 		goto error;
 	};
-
-#ifdef STATS
-	if (init_stats(  dont_fork ? 1 : children_no  )==-1) goto error;
-#endif
 
 	ret=main_loop();
 

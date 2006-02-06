@@ -203,7 +203,6 @@ DNS_RETR_NO     dns_retr_no
 DNS_SERVERS_NO  dns_servers_no
 DNS_USE_SEARCH  dns_use_search_list
 PORT	port
-STAT	statistics
 MAXBUFFER maxbuffer
 CHILDREN children
 CHECK_VIA	check_via
@@ -411,7 +410,6 @@ EAT_ABLE	[\ \t\b\r]
 <INITIAL>{DNS_USE_SEARCH}	{ count(); yylval.strval=yytext;
 								return DNS_USE_SEARCH; }
 <INITIAL>{PORT}	{ count(); yylval.strval=yytext; return PORT; }
-<INITIAL>{STAT}	{ count(); yylval.strval=yytext; return STAT; }
 <INITIAL>{MAXBUFFER}	{ count(); yylval.strval=yytext; return MAXBUFFER; }
 <INITIAL>{CHILDREN}	{ count(); yylval.strval=yytext; return CHILDREN; }
 <INITIAL>{CHECK_VIA}	{ count(); yylval.strval=yytext; return CHECK_VIA; }

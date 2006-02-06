@@ -39,6 +39,12 @@ extern stat_var* rcv_reqs;
 /* received replies */
 extern stat_var* rcv_rpls;
 
+/* forwarded requests */
+extern stat_var* fwd_reqs;
+
+/* forwarded replies */
+extern stat_var* fwd_rpls;
+
 /* dropped requests */
 extern stat_var* drp_reqs;
 

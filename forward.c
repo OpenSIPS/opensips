@@ -48,6 +48,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <errno.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
@@ -70,10 +71,7 @@
 #include "resolve.h"
 #include "name_alias.h"
 #include "socket_info.h"
-
-#ifdef DEBUG_DMALLOC
-#include <dmalloc.h>
-#endif
+#include "core_stats.h"
 
 
 
@@ -334,12 +332,12 @@ int forward_request( struct sip_msg* msg, struct proxy_l * p)
 		ser_error=E_SEND;
 		p->errors++;
 		p->ok=0;
-		STATS_TX_DROPS;
+		update_stat( drp_reqs, 1);
 		goto error1;
 	}
 	
 	/* sent requests stats */
-	STATS_TX_REQUEST(  msg->first_line.u.request.method_value );
+	update_stat( fwd_reqs, 1);
 	
 	pkg_free(buf);
 	pkg_free(to);
@@ -474,7 +472,6 @@ int forward_reply(struct sip_msg* msg)
 	proto=msg->via2->proto;
 	if (update_sock_struct_from_via( to, msg, msg->via2 )==-1) goto error;
 
-
 #ifdef USE_TCP
 	if (proto==PROTO_TCP
 #ifdef USE_TLS
@@ -485,17 +482,16 @@ int forward_reply(struct sip_msg* msg)
 		if (msg->via1->i&&msg->via1->i->value.s){
 			s=msg->via1->i->value.s;
 			len=msg->via1->i->value.len;
-			DBG("forward_reply: i=%.*s\n",len, s);
 			id=reverse_hex2int(s, len);
-			DBG("forward_reply: id= %x\n", id);
-		}		
-				
-	} 
+		}
+	}
 #endif
-	if (msg_send(0, proto, to, id, new_buf, new_len)<0) goto error;
-#ifdef STATS
-	STATS_TX_RESPONSE(  (msg->first_line.u.reply.statuscode/100) );
-#endif
+
+	if (msg_send(0, proto, to, id, new_buf, new_len)<0) {
+		update_stat( drp_rpls, 1);
+		goto error0;
+	}
+	update_stat( fwd_rpls, 1);
 
 	DBG(" reply forwarded to %.*s:%d\n", 
 			msg->via2->host.len, msg->via2->host.s,
@@ -506,6 +502,8 @@ int forward_reply(struct sip_msg* msg)
 skip:
 	return 0;
 error:
+	update_stat( err_rpls, 1);
+error0:
 	if (new_buf) pkg_free(new_buf);
 	if (to) pkg_free(to);
 	return -1;

@@ -261,9 +261,6 @@ endif
 
 # compile-time options
 #
-# -DSTATS
-#		allows to print out number of packets processed on CTRL-C;
-# 		implementation still nasty and reports per-process
 # -DNO_DEBUG
 #		turns off some of the debug messages (DBG(...)).
 # -DNO_LOG
@@ -366,7 +363,6 @@ DEFS+= $(extra_defs) \
 	 #-DNOSMP \
 	 #-DEXTRA_DEBUG \
 	 #-DUSE_SHM_MEM \
-	 #-DSTATS \
 	 #-DNO_LOG
 
 #PROFILE=  -pg #set this if you want profiling

@@ -222,7 +222,6 @@ static int  mpath_len = 0;
 %token DNS_SERVERS_NO
 %token DNS_USE_SEARCH
 %token PORT
-%token STAT
 %token CHILDREN
 %token CHECK_VIA
 %token SYN_BRANCH
@@ -448,11 +447,6 @@ assign_stm:	DEBUG EQUAL NUMBER { debug=$3; }
 		| DNS_USE_SEARCH EQUAL NUMBER   { dns_search_list=$3; }
 		| DNS_USE_SEARCH error { yyerror("boolean value expected"); }
 		| PORT EQUAL NUMBER   { port_no=$3; }
-		| STAT EQUAL STRING {
-					#ifdef STATS
-							stat_file=$3;
-					#endif
-							}
 		| MAXBUFFER EQUAL NUMBER { maxbuffer=$3; }
 		| MAXBUFFER EQUAL error { yyerror("number expected"); }
 		| PORT EQUAL error    { yyerror("number expected"); } 
