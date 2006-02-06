@@ -622,7 +622,7 @@ static inline struct hostent* do_srv_lookup(char *name, unsigned short* port)
 static inline int get_naptr_proto(struct naptr_rdata *n)
 {
 #ifdef USE_TLS
-	if (n->service[3]=='s' || n->service[3]=='S' )
+	if (n->services[3]=='s' || n->services[3]=='S' )
 		return PROTO_TLS;
 #endif
 	switch (n->services[n->services_len-1]) {
