@@ -392,7 +392,8 @@ static int fifo_get_stats( FILE *fifo, char *reply_file )
 
 	if (n==0 || (n==3 && strncasecmp(buf,"all",3)==0 ) ) {
 		is_mod = 0;
-		n = 0;
+		arg.s = 0;
+		arg.len = 0;
 	} else {
 		/* parse argument */
 		if ( buf[n-1]!=':' ) {
@@ -414,7 +415,7 @@ static int fifo_get_stats( FILE *fifo, char *reply_file )
 		goto error;
 	}
 
-	if (n==0) {
+	if (arg.len==0) {
 		/* write all statistics */
 		fifo_all_stats( rfifo );
 	} else if (is_mod) {
