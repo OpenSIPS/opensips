@@ -748,6 +748,10 @@ struct hostent* sip_resolvehost(str* name, unsigned short* port, int *proto,
 #endif
 	){
 		/* we are lucky, this is an ip address */
+		if (port && *port==0)
+			*port = (is_sips)?SIPS_PORT:SIP_PORT;
+		if (proto && *proto==PROTO_NONE)
+			*proto = (is_sips)?PROTO_TLS:PROTO_UDP;
 		return ip_addr2he(name,ip);
 	}
 
@@ -755,9 +759,11 @@ struct hostent* sip_resolvehost(str* name, unsigned short* port, int *proto,
 	if ( !port || (*port)!=0 ) {
 		/* have port -> no NAPTR, no SRV lookup, just A record lookup */
 		DBG("DEBUG:sip_resolvehost2: has port -> do A record lookup!\n");
+		/* set default PROTO if not set */
+		if (proto && *proto==PROTO_NONE)
+			*proto = (is_sips)?PROTO_TLS:PROTO_UDP;
 		goto do_a;
 	}
-	*port = (is_sips)?SIPS_PORT:SIP_PORT; /* set defaults */
 
 	/* no port... what about proto? */
 	if ( !proto || (*proto)!=PROTO_NONE ) {
@@ -796,16 +802,17 @@ struct hostent* sip_resolvehost(str* name, unsigned short* port, int *proto,
 	}
 	DBG("DEBUG:sip_resolvehost2: no valid NAPTR record found for %.*s," 
 		" trying direct SRV lookup...\n", name->len, name->s);
+	*proto = (is_sips)?PROTO_TLS:PROTO_UDP;
 
-	*proto = (is_sips)?PROTO_TLS:PROTO_UDP; /* set defaults */
-
+do_srv:
 	if ((name->len+SRV_MAX_PREFIX_LEN+1)>MAX_DNS_NAME) {
 		LOG(L_WARN, "WARNING:sip_resolvehost2: domain name too long (%d),"
 			" unable to perform SRV lookup\n", name->len);
+		/* set defaults */
+		*port = (is_sips)?SIPS_PORT:SIP_PORT;
 		goto do_a;
 	}
 
-do_srv:
 	switch (*proto) {
 		case PROTO_UDP:
 			memcpy(tmp, SRV_UDP_PREFIX, SRV_UDP_PREFIX_LEN);
@@ -838,6 +845,8 @@ do_srv:
 	
 	DBG("DEBUG:sip_resolvehost2: no valid SRV record found for %s," 
 		" trying A record lookup...\n", tmp);
+	/* set default port */
+	*port = (is_sips)?SIPS_PORT:SIP_PORT;
 
 do_a:
 	/* do A record lookup */
