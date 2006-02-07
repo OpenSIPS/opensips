@@ -137,7 +137,10 @@ extern gen_lock_t *stat_lock;
 	#else
 		#define update_stat( _var, _n) \
 			do { \
-				atomic_add( _n, _var->val);\
+				if (_n>=0) \
+					atomic_add( _n, _var->val);\
+				else \
+					atomic_sub( -(_n), _var->val);\
 			}while(0)
 		#define reset_stat( _var) \
 			do { \
