@@ -118,6 +118,8 @@ void destroy_stats_collector()
 				stat = stat->hnext;
 				if (tmp_stat->val)
 					shm_free(tmp_stat->val);
+				if ( (tmp_stat->flags&STAT_SHM_NAME) && tmp_stat->name.s)
+					shm_free(tmp_stat->name.s);
 				shm_free(tmp_stat);
 			}
 		}

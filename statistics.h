@@ -41,6 +41,7 @@
 
 #define STAT_NO_RESET  (1<<0)
 #define STAT_NO_SYNC   (1<<1)
+#define STAT_SHM_NAME  (1<<2)
 
 #ifdef NO_ATOMIC_OPS
 typedef unsigned int stat_val;
