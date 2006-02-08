@@ -93,7 +93,7 @@ struct fm_frag_lnk{
 
 struct fm_block{
 	unsigned long size; /* total size */
-#if defined(DBG_F_MALLOC) || defined(MALLOC_STATS)
+#if defined(DBG_F_MALLOC) || defined(STATISTICS)
 	unsigned long used; /* alloc'ed size*/
 	unsigned long real_used; /* used+malloc overhead*/
 	unsigned long max_real_used;
@@ -132,6 +132,39 @@ void*  fm_realloc(struct fm_block*, void* p, unsigned long size);
 
 void  fm_status(struct fm_block*);
 void  fm_info(struct fm_block*, struct mem_info*);
+
+
+#ifdef STATISTICS
+static inline unsigned long fm_get_size(struct fm_block* qm)
+{
+	return qm->size;
+}
+static inline unsigned long fm_get_used(struct fm_block* qm)
+{
+	return qm->used;
+}
+static inline unsigned long fm_get_free(struct fm_block* qm)
+{
+	return qm->size-qm->real_used;
+}
+static inline unsigned long fm_get_real_used(struct fm_block* qm)
+{
+	return qm->real_used;
+}
+static inline unsigned long fm_get_max_real_used(struct fm_block* qm)
+{
+	return qm->max_real_used;
+}
+static inline unsigned long fm_get_frags(struct fm_block* qm)
+{
+	unsigned long frags;
+	int r;
+	for(r=0,frags=0;r<F_HASH_SIZE; r++){
+		frags+=qm->free_hash[r].no;
+	}
+	return frags;
+}
+#endif /*STATISTICS*/
 
 
 #endif

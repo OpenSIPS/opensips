@@ -40,6 +40,7 @@
 #include "f_malloc.h"
 #include "../dprint.h"
 #include "../globals.h"
+#include "../statistics.h"
 
 
 /*useful macros*/
@@ -84,6 +85,8 @@
  * MEM_FRAG_AVOIDANCE
  */
 #define MEM_FRAG_AVOIDANCE
+
+
 
 
 /* computes hash number for big buckets*/
@@ -157,7 +160,7 @@ void fm_split_frag(struct fm_block* qm, struct fm_frag* frag,
 		n=FRAG_NEXT(frag);
 		n->size=rest-FRAG_OVERHEAD;
 		FRAG_CLEAR_USED(n); /* never used */
-#if defined(DBG_F_MALLOC) || defined(MALLOC_STATS)
+#if defined(DBG_F_MALLOC) || defined(STATISTICS)
 		qm->real_used+=FRAG_OVERHEAD;
 #endif
 #ifdef DBG_F_MALLOC
@@ -209,7 +212,7 @@ struct fm_block* fm_malloc_init(char* address, unsigned long size)
 	qm=(struct fm_block*)start;
 	memset(qm, 0, sizeof(struct fm_block));
 	qm->size=size;
-#if defined(DBG_F_MALLOC) || defined(MALLOC_STATS)
+#if defined(DBG_F_MALLOC) || defined(STATISTICS)
 	qm->real_used=init_overhead;
 	qm->max_real_used=qm->real_used;
 #endif
@@ -289,7 +292,7 @@ found:
 #else
 	fm_split_frag(qm, frag, size);
 #endif
-#if defined(DBG_F_MALLOC) || defined(MALLOC_STATS)
+#if defined(DBG_F_MALLOC) || defined(STATISTICS)
 	qm->real_used+=frag->size;
 	qm->used+=frag->size;
 	if (qm->max_real_used<qm->real_used)
@@ -329,7 +332,8 @@ void fm_free(struct fm_block* qm, void* p)
 			f->line);
 #endif
 	size=f->size;
-#if defined(DBG_F_MALLOC) || defined(MALLOC_STATS)
+
+#if defined(DBG_F_MALLOC) || defined(STATISTICS)
 	qm->used-=size;
 	qm->real_used-=size;
 #endif
@@ -396,7 +400,7 @@ void* fm_realloc(struct fm_block* qm, void* p, unsigned long size)
 #else
 		fm_split_frag(qm, f, size);
 #endif
-#if defined(DBG_F_MALLOC) || defined(MALLOC_STATS)
+#if defined(DBG_F_MALLOC) || defined(STATISTICS)
 		qm->real_used-=(orig_size-f->size-FRAG_OVERHEAD);
 		qm->used-=(orig_size-f->size);
 #endif
@@ -426,7 +430,7 @@ void* fm_realloc(struct fm_block* qm, void* p, unsigned long size)
 			qm->free_hash[hash].no--;
 			/* join */
 			f->size+=n->size+FRAG_OVERHEAD;
-		#if defined(DBG_F_MALLOC) || defined(MALLOC_STATS)
+		#if defined(DBG_F_MALLOC) || defined(STATISTICS)
 			qm->real_used-=FRAG_OVERHEAD;
 		#endif
 			/* split it if necessary */
@@ -438,7 +442,7 @@ void* fm_realloc(struct fm_block* qm, void* p, unsigned long size)
 				fm_split_frag(qm, f, size);
 		#endif
 			}
-		#if defined(DBG_F_MALLOC) || defined(MALLOC_STATS)
+		#if defined(DBG_F_MALLOC) || defined(STATISTICS)
 			qm->real_used+=(f->size-orig_size);
 			qm->used+=(f->size-orig_size);
 		#endif
@@ -449,7 +453,7 @@ void* fm_realloc(struct fm_block* qm, void* p, unsigned long size)
 	#else
 			ptr=fm_malloc(qm, size);
 	#endif
-			if (ptr)
+			if (ptr) {
 				/* copy, need by libssl */
 				memcpy(ptr, p, orig_size);
 	#ifdef DBG_F_MALLOC
@@ -457,8 +461,9 @@ void* fm_realloc(struct fm_block* qm, void* p, unsigned long size)
 	#else
 				fm_free(qm, p);
 	#endif
-				p=ptr;
 			}
+			p=ptr;
+		}
 	}else{
 		/* do nothing */
 #ifdef DBG_F_MALLOC
@@ -486,7 +491,7 @@ void fm_status(struct fm_block* qm)
 	if (!qm) return;
 
 	LOG(memlog, " heap size= %ld\n", qm->size);
-#if defined(DBG_F_MALLOC) || defined(MALLOC_STATS)
+#if defined(DBG_F_MALLOC) || defined(STATISTICS)
 	LOG(memlog, " used= %lu, used+overhead=%lu, free=%lu\n",
 			qm->used, qm->real_used, qm->size-qm->real_used);
 	LOG(memlog, " max used (+overhead)= %lu\n", qm->max_real_used);
@@ -554,7 +559,7 @@ void fm_info(struct fm_block* qm, struct mem_info* info)
 {
 	int r;
 	long total_frags;
-#if !defined(DBG_F_MALLOC) && !defined(MALLOC_STATS)
+#if !defined(DBG_F_MALLOC) && !defined(STATISTICS)
 	struct fm_frag* f;
 #endif
 	
@@ -562,7 +567,7 @@ void fm_info(struct fm_block* qm, struct mem_info* info)
 	total_frags=0;
 	info->total_size=qm->size;
 	info->min_frag=MIN_FRAG_SIZE;
-#if defined(DBG_F_MALLOC) || defined(MALLOC_STATS)
+#if defined(DBG_F_MALLOC) || defined(STATISTICS)
 	info->free=qm->size-qm->real_used;
 	info->used=qm->used;
 	info->real_used=qm->real_used;
@@ -588,6 +593,7 @@ void fm_info(struct fm_block* qm, struct mem_info* info)
 #endif
 	info->total_frags=total_frags;
 }
+
 
 
 #endif

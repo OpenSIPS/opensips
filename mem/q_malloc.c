@@ -44,6 +44,7 @@
 #include "q_malloc.h"
 #include "../dprint.h"
 #include "../globals.h"
+#include "../statistics.h"
 
 
 /*useful macros*/
@@ -102,6 +103,7 @@
  */
 
 #define MEM_FRAG_AVOIDANCE
+
 
 
 /* computes hash number for big buckets*/
@@ -594,7 +596,7 @@ void* qm_realloc(struct qm_block* qm, void* p, unsigned long size)
 	#else
 				ptr=qm_malloc(qm, size);
 	#endif
-				if (ptr)
+				if (ptr) {
 					/* copy, need by libssl */
 					memcpy(ptr, p, orig_size);
 	#ifdef DBG_QM_MALLOC
@@ -602,6 +604,7 @@ void* qm_realloc(struct qm_block* qm, void* p, unsigned long size)
 	#else
 					qm_free(qm, p);
 	#endif
+				}
 				p=ptr;
 			}
 	}else{

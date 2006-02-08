@@ -42,6 +42,7 @@
 #define STAT_NO_RESET  (1<<0)
 #define STAT_NO_SYNC   (1<<1)
 #define STAT_SHM_NAME  (1<<2)
+#define STAT_IS_FUNC   (1<<3)
 
 #ifdef NO_ATOMIC_OPS
 typedef unsigned int stat_val;
@@ -49,13 +50,18 @@ typedef unsigned int stat_val;
 typedef atomic_t stat_val;
 #endif
 
+typedef unsigned long (*stat_function)(void);
+
 struct module_stats_;
 
 typedef struct stat_var_{
 	struct module_stats_ *module;
 	str name;
 	int flags;
-	stat_val *val;
+	union{
+		stat_val *val;
+		stat_function f;
+	}u;
 	struct stat_var_ *hnext;
 	struct stat_var_ *lnext;
 } stat_var;
@@ -102,8 +108,8 @@ extern gen_lock_t *stat_lock;
 #else
 	#define init_stats_collector()  0
 	#define destroy_stats_collector()
-	#define register_module_stats(_mod,_stats)
-	#define register_stat( _mod, _name, _pvar, _flags)
+	#define register_module_stats(_mod,_stats) 0
+	#define register_stat( _mod, _name, _pvar, _flags) 0
 	#define get_stat( _name )  0
 	#define get_stat_val( _var ) 0
 #endif
@@ -113,44 +119,48 @@ extern gen_lock_t *stat_lock;
 	#ifdef NO_ATOMIC_OPS
 		#define update_stat( _var, _n) \
 			do { \
-				if ((_var)->flags&STAT_NO_SYNC) {\
-					*((_var)->val) += _n;\
-				} else {\
-					lock_get(stat_lock);\
-					*((_var)->val) += _n;\
-					lock_release(stat_lock);\
-				}\
-			}while(0)
-		#define reset_stat( _var) \
-			do { \
-				if ( ((_var)->flags&STAT_NO_RESET)==0 ) {\
+				if ( !((_var)->flags&STAT_IS_FUNC) ) {\
 					if ((_var)->flags&STAT_NO_SYNC) {\
-						*((_var)->val) = 0;\
+						*((_var)->u.val) += _n;\
 					} else {\
 						lock_get(stat_lock);\
-						*((_var)->val) = 0;\
+						*((_var)->u.val) += _n;\
 						lock_release(stat_lock);\
 					}\
 				}\
 			}while(0)
-		#define get_stat_val( _var ) \
-			(*((_var)->val))
+		#define reset_stat( _var) \
+			do { \
+				if ( ((_var)->flags&(STAT_NO_RESET|STAT_IS_FUNC))==0 ) {\
+					if ((_var)->flags&STAT_NO_SYNC) {\
+						*((_var)->u.val) = 0;\
+					} else {\
+						lock_get(stat_lock);\
+						*((_var)->u.val) = 0;\
+						lock_release(stat_lock);\
+					}\
+				}\
+			}while(0)
+		#define get_stat_val( _var ) ((unsigned long)\
+			((_var)->flags&STAT_IS_FUNC)?(_var)->u.f():*((_var)->u.val))
 	#else
 		#define update_stat( _var, _n) \
 			do { \
-				if (_n>=0) \
-					atomic_add( _n, _var->val);\
-				else \
-					atomic_sub( -(_n), _var->val);\
+				if ( !((_var)->flags&STAT_IS_FUNC) ) {\
+					if (_n>=0) \
+						atomic_add( _n, _var->u.val);\
+					else \
+						atomic_sub( -(_n), _var->u.val);\
+				}\
 			}while(0)
 		#define reset_stat( _var) \
 			do { \
-				if ( ((_var)->flags&STAT_NO_RESET)==0 ) {\
-					atomic_set( _var->val, 0);\
+				if ( ((_var)->flags&(STAT_NO_RESET|STAT_IS_FUNC))==0 ) {\
+					atomic_set( _var->u.val, 0);\
 				}\
 			}while(0)
-		#define get_stat_val( _var ) \
-			((_var)->val->counter)
+		#define get_stat_val( _var ) ((unsigned long)\
+			((_var)->flags&STAT_IS_FUNC)?(_var)->u.f():(_var)->u.val->counter)
 	#endif /* NO_ATOMIC_OPS */
 
 	#define if_update_stat(_c, _var, _n) \

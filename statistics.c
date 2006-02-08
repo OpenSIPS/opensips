@@ -90,6 +90,12 @@ int init_stats_collector()
 			"statistics\n");
 		goto error;
 	}
+	/* register sh_mem statistics */
+	if (register_module_stats( "shmem", shm_stats)!=0 ) {
+		LOG(L_ERR,"ERROR:init_stats_collector: failed to register sh_mem "
+			"statistics\n");
+		goto error;
+	}
 	LOG(L_INFO,"INFO: statistics manager successfully initialized\n");
 
 	return 0;
@@ -116,8 +122,8 @@ void destroy_stats_collector()
 			for( stat=collector->hstats[i] ; stat ; ) {
 				tmp_stat = stat;
 				stat = stat->hnext;
-				if (tmp_stat->val)
-					shm_free(tmp_stat->val);
+				if ((tmp_stat->flags&STAT_IS_FUNC)==0 && tmp_stat->u.val)
+					shm_free(tmp_stat->u.val);
 				if ( (tmp_stat->flags&STAT_SHM_NAME) && tmp_stat->name.s)
 					shm_free(tmp_stat->name.s);
 				shm_free(tmp_stat);
@@ -203,16 +209,21 @@ int register_stat( char *module, char *name, stat_var **pvar, int flags)
 	}
 	memset( stat, 0, sizeof(stat_var));
 
-	stat->val = (stat_val*)shm_malloc(sizeof(stat_val));
-	if (stat->val==0) {
-		LOG(L_ERR,"ERROR:register_stat: no more shm memory\n");
-		goto error1;
-	}
+	if ( (flags&STAT_IS_FUNC)==0 ) {
+		stat->u.val = (stat_val*)shm_malloc(sizeof(stat_val));
+		if (stat->u.val==0) {
+			LOG(L_ERR,"ERROR:register_stat: no more shm memory\n");
+			goto error1;
+		}
 #ifdef NO_ATOMIC_OPS
-	*(stat->val) = 0;
+		*(stat->u.val) = 0;
 #else
-	atomic_set(stat->val,0);
+		atomic_set(stat->u.val,0);
 #endif
+		*pvar = stat;
+	} else {
+		stat->u.f = (stat_function)(pvar);
+	}
 
 	/* is the module already recorded? */
 	smodule.s = module;
@@ -257,10 +268,12 @@ int register_stat( char *module, char *name, stat_var **pvar, int flags)
 	mods->tail = stat;
 	mods->no++;
 
-	*pvar = stat;
 	return 0;
 error2:
-	shm_free(*pvar);
+	if ( (flags&STAT_IS_FUNC)==0 ) {
+		shm_free(*pvar);
+		*pvar = 0;
+	}
 error1:
 	shm_free(stat);
 error:
@@ -328,7 +341,7 @@ static void inline fifo_print_stat(FILE *rf, str *name)
 		return;
 	}
 
-	fprintf(rf,"%.*s:%.*s = %d\n",
+	fprintf(rf,"%.*s:%.*s = %lu\n",
 		stat->module->name.len, stat->module->name.s,
 		stat->name.len, stat->name.s,
 		get_stat_val(stat) );
@@ -343,7 +356,7 @@ static void inline fifo_print_module_stats(FILE *rf, module_stats *mods)
 	fprintf(rf,"Module name = %.*s; statistics=%d\n",
 		mods->name.len, mods->name.s, mods->no);
 	for( stat=mods->head ; stat ; stat=stat->lnext) {
-		fprintf(rf,"%.*s:%.*s = %d\n",
+		fprintf(rf,"%.*s:%.*s = %lu\n",
 			mods->name.len, mods->name.s,
 			stat->name.len, stat->name.s,
 			get_stat_val(stat) );

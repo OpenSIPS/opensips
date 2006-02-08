@@ -48,6 +48,19 @@
 #endif
 
 
+#ifdef STATISTICS
+stat_export_t shm_stats[] = {
+	{"total_size" ,     STAT_IS_FUNC,    (stat_var**)shm_get_size     },
+	{"used_size" ,      STAT_IS_FUNC,    (stat_var**)shm_get_used     },
+	{"real_used_size" , STAT_IS_FUNC,    (stat_var**)shm_get_rused    },
+	{"max_used_size" ,  STAT_IS_FUNC,    (stat_var**)shm_get_mused    },
+	{"free_size" ,      STAT_IS_FUNC,    (stat_var**)shm_get_free     },
+	{"fragments" ,      STAT_IS_FUNC,    (stat_var**)shm_get_frags    },
+	{0,0,0}
+};
+#endif
+
+
 
 #ifndef SHM_MMAP
 static int shm_shmid=-1; /*shared memory id*/

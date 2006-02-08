@@ -30,6 +30,8 @@
 
 #ifdef SHM_MEM
 
+#include "../statistics.h"
+
 #ifndef shm_mem_h
 #define shm_mem_h
 
@@ -81,6 +83,14 @@
 #	define MY_REALLOC fm_realloc
 #	define MY_STATUS fm_status
 #	define MY_MEMINFO	fm_info
+#	ifdef STATISTICS
+#		define MY_GET_SIZE	fm_get_size
+#		define MY_GET_USED	fm_get_used
+#		define MY_GET_RUSED	fm_get_real_used
+#		define MY_GET_MUSED	fm_get_max_real_used
+#		define MY_GET_FREE	fm_get_free
+#		define MY_GET_FRAGS	fm_get_frags
+#	endif
 #	define  shm_malloc_init fm_malloc_init
 #else
 #	include "q_malloc.h"
@@ -90,6 +100,14 @@
 #	define MY_REALLOC qm_realloc
 #	define MY_STATUS qm_status
 #	define MY_MEMINFO	qm_info
+#	ifdef STATISTICS
+#		define MY_GET_SIZE	qm_get_size
+#		define MY_GET_USED	qm_get_used
+#		define MY_GET_RUSED	qm_get_real_used
+#		define MY_GET_MUSED	qm_get_max_real_used
+#		define MY_GET_FREE	qm_get_free
+#		define MY_GET_FRAGS	qm_get_frags
+#	endif
 #	define  shm_malloc_init qm_malloc_init
 #endif
 
@@ -232,6 +250,29 @@ do{\
 	shm_unlock(); \
 }while(0)
 
+
+#ifdef STATISTICS
+extern stat_export_t shm_stats[];
+
+inline static unsigned long shm_get_size() {
+	return MY_GET_SIZE(shm_block);
+}
+inline static unsigned long shm_get_used() {
+	return MY_GET_USED(shm_block);
+}
+inline static unsigned long shm_get_rused() {
+	return MY_GET_RUSED(shm_block);
+}
+inline static unsigned long shm_get_mused() {
+	return MY_GET_MUSED(shm_block);
+}
+inline static unsigned long shm_get_free() {
+	return MY_GET_FREE(shm_block);
+}
+inline static unsigned long shm_get_frags() {
+	return MY_GET_FRAGS(shm_block);
+}
+#endif /*STATISTICS*/
 
 #endif
 

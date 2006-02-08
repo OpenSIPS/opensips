@@ -145,4 +145,37 @@ void  qm_status(struct qm_block*);
 void  qm_info(struct qm_block*, struct mem_info*);
 
 
+#ifdef STATISTICS
+static inline unsigned long qm_get_size(struct qm_block* qm)
+{
+	return qm->size;
+}
+static inline unsigned long qm_get_used(struct qm_block* qm)
+{
+	return qm->used;
+}
+static inline unsigned long qm_get_free(struct qm_block* qm)
+{
+	return qm->size-qm->real_used;
+}
+static inline unsigned long qm_get_real_used(struct qm_block* qm)
+{
+	return qm->real_used;
+}
+static inline unsigned long qm_get_max_real_used(struct qm_block* qm)
+{
+	return qm->max_real_used;
+}
+static inline unsigned long qm_get_frags(struct qm_block* qm)
+{
+	int r;
+	unsigned long frags;
+	for(r=0,frags=0;r<QM_HASH_SIZE; r++){
+		frags+=qm->free_hash[r].no;
+	}
+	return frags;
+}
+#endif /* STATISTICS */
+
+
 #endif
