@@ -42,7 +42,7 @@ int new_hash2( str  call_id, str cseq_nr, unsigned int size );
 int new_hash1( str s, unsigned int size);
 
 #define hash( cid, cseq) new_hash2( cid, cseq , TABLE_ENTRIES)
-#define hash1( s )       new_hash1( cid, cseq , TABLE_ENTRIES)
+#define hash1( s )       new_hash1( cid, TABLE_ENTRIES)
 
 
 #endif
