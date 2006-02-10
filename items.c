@@ -1744,6 +1744,8 @@ char* xl_parse_vname(char *s, xl_spec_p e, int flags)
 						"\"%.*s\"\n", alias.len, alias.s);
 					goto error;
 				}
+				DBG("xl_parse_vname: alias found [%.*s]\n",
+						alias.len, alias.s);
 				if(avp_type&AVP_NAME_STR)
 				{
 					e->p.val.s = avp_name.s.s;
@@ -1803,7 +1805,7 @@ done:
 	if(*p != ITEM_RNBRACKET)
 	{
 		LOG(L_ERR, "xl_parse_vname: error parsing format"
-			" [%s] expecting '%c'!\n", e->p.val.s, ITEM_RNBRACKET);
+			" [%s] expecting '%c'!\n", s, ITEM_RNBRACKET);
 		goto error;
 	}
 	
@@ -1823,7 +1825,10 @@ error:
 char* xl_parse_spec(char *s, xl_spec_p e, int flags)
 {
 	char *p, *p0;
-	
+	str alias;
+	int_str avp_name;
+	int avp_type;
+
 	if(s==NULL || e==NULL || *s!=ITEM_MARKER)
 	{
 		LOG(L_ERR, "xl_parse_item: error - bad parameters\n");
@@ -1864,9 +1869,7 @@ char* xl_parse_spec(char *s, xl_spec_p e, int flags)
 						e->type = XL_AUTH_USERNAME;
 					break;
 					default:
-						LOG(L_ERR,
-							"xl_parse_item: error - bad specifier [%s]\n",p-2);
-						goto error;
+						goto extra_spec;
 				}
 			}
 		break;
@@ -1883,8 +1886,7 @@ char* xl_parse_spec(char *s, xl_spec_p e, int flags)
 					e->type = XL_BRANCHES;
 				break;
 				default:
-					e->itf = xl_get_null;
-					e->type = XL_NULL;
+					goto extra_spec;
 			}
 		break;
 		case 'c':
@@ -1912,8 +1914,7 @@ char* xl_parse_spec(char *s, xl_spec_p e, int flags)
 					e->type = XL_CONTENT_TYPE;
 				break;
 				default:
-					e->itf = xl_get_null;
-					e->type = XL_NULL;
+					goto extra_spec;
 			}
 		break;
 		case 'C':
@@ -1932,8 +1933,7 @@ char* xl_parse_spec(char *s, xl_spec_p e, int flags)
 				case 'W':
 				break;
 				default: 
-					e->itf = xl_get_empty;
-					goto error;
+					goto extra_spec;
 			}
 			p++;
                                
@@ -1946,8 +1946,7 @@ char* xl_parse_spec(char *s, xl_spec_p e, int flags)
 				case 'c': case 'w':
 				break;   
 				default: 
-					e->itf = xl_get_empty;
-					goto error;
+					goto extra_spec;
 			}
   
 			/* end */
@@ -1991,8 +1990,7 @@ char* xl_parse_spec(char *s, xl_spec_p e, int flags)
 					e->type = XL_DSTURI;
 				break;
 				default:
-					e->itf = xl_get_null;
-					e->type = XL_NULL;
+					goto extra_spec;
 			}
 		break;
 		case 'f':
@@ -2025,8 +2023,7 @@ char* xl_parse_spec(char *s, xl_spec_p e, int flags)
 					e->type = XL_FROM_USERNAME;
 				break;
 				default:
-					e->itf = xl_get_null;
-					e->type = XL_NULL;
+					goto extra_spec;
 			}
 		break;
 		case 'h':
@@ -2040,8 +2037,7 @@ char* xl_parse_spec(char *s, xl_spec_p e, int flags)
 					goto error;
 				p = p0;
 			} else {
-				LOG(L_ERR, "xl_parse_item: error - bad specifier [%s]\n", p);
-				goto error;
+				goto extra_spec;
 			}
 			e->type = XL_HDR;
 		break;
@@ -2070,8 +2066,7 @@ char* xl_parse_spec(char *s, xl_spec_p e, int flags)
 					e->type = XL_MSG_LEN;
 				break;
 				default:
-					e->itf = xl_get_null;
-					e->type = XL_NULL;
+					goto extra_spec;
 			}
 		break;
 		case 'o':
@@ -2103,8 +2098,7 @@ char* xl_parse_spec(char *s, xl_spec_p e, int flags)
 					e->type = XL_OURI_PROTOCOL;
 				break;
 				default:
-					e->itf = xl_get_null;
-					e->type = XL_NULL;
+					goto extra_spec;
 			}
 		break;
 		case 'p':
@@ -2116,8 +2110,7 @@ char* xl_parse_spec(char *s, xl_spec_p e, int flags)
 					e->type = XL_PID;
 				break;
 				default:
-					e->itf = xl_get_null;
-					e->type = XL_NULL;
+					goto extra_spec;
 			}
 		break;
 		case 'r':
@@ -2173,8 +2166,7 @@ char* xl_parse_spec(char *s, xl_spec_p e, int flags)
 					e->type = XL_RURI_USERNAME;
 				break;
 				default:
-					e->itf = xl_get_null;
-					e->type = XL_NULL;
+					goto extra_spec;
 			}
 		break;
 		case 'R':
@@ -2190,8 +2182,7 @@ char* xl_parse_spec(char *s, xl_spec_p e, int flags)
 					e->type = XL_RCVPORT;
 				break;
 				default:
-					e->itf = xl_get_null; 			
-					e->type = XL_NULL;
+					goto extra_spec;
 			}
 		break;
 		case 's':
@@ -2207,8 +2198,7 @@ char* xl_parse_spec(char *s, xl_spec_p e, int flags)
 					e->type = XL_SRCPORT;
 				break;
 				default:
-					e->itf = xl_get_null; 			
-					e->type = XL_NULL;
+					goto extra_spec;
 			}
 		break;
 		case 't':
@@ -2241,8 +2231,7 @@ char* xl_parse_spec(char *s, xl_spec_p e, int flags)
 					e->type = XL_TO_USERNAME;
 				break;
 				default:
-					e->itf = xl_get_null;
-					e->type = XL_NULL;
+					goto extra_spec;
 			}
 		break;
 		case 'T':
@@ -2258,8 +2247,7 @@ char* xl_parse_spec(char *s, xl_spec_p e, int flags)
 					e->type = XL_TIMES;
 				break;
 				default:
-					e->itf = xl_get_null;
-					e->type = XL_NULL;
+					goto extra_spec;
 			}
 		break;
 		case 'u':
@@ -2271,14 +2259,62 @@ char* xl_parse_spec(char *s, xl_spec_p e, int flags)
 					e->type = XL_USERAGENT;
 				break;
 				default:
-					e->itf = xl_get_null;
-					e->type = XL_NULL;
+					goto extra_spec;
 			}
 		break;
 		default:
+			goto extra_spec;
+	}
+
+	goto next_spec;
+
+extra_spec:
+	if(flags&XL_LEVEL2)
+	{
+		p0 = p;
+		while(p && *p!='\0' && *p!=ITEM_MARKER)
+			 p--;
+		if(p && *p!=ITEM_MARKER)
+		{
 			e->itf = xl_get_null;
 			e->type = XL_NULL;
+			p = p0;
+			goto next_spec;
+		}
+		p++;
+		alias.s = p;
+		p = strchr(alias.s, ITEM_RNBRACKET);
+		if(p==NULL)
+		{
+			LOG(L_ERR, "ERROR:xl_parse_spec: bad pvar name "
+				"\"%s\"\n", p0);
+			goto error;
+		}
+		alias.len = p-alias.s;
+		/* look for avp alias */
+		if(lookup_avp_galias(&alias, &avp_type,
+						&avp_name)==-1)
+		{
+			e->itf = xl_get_null;
+			e->type = XL_NULL;
+			p = p0;
+			goto next_spec;
+		}
+		if(avp_type&AVP_NAME_STR)
+		{
+			e->p.val.s = avp_name.s.s;
+			e->p.val.len = avp_name.s.len;
+		} else {
+			e->p.val.s = NULL;
+			e->p.val.len = avp_name.n;
+		}
+	} else {
+		e->itf = xl_get_null;
+		e->type = XL_NULL;
 	}
+
+next_spec:
+	/* avp alias ?!? */
 	if(*p != '\0')
 		p++;
 	return p;
