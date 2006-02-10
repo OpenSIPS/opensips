@@ -1564,6 +1564,7 @@ char* xl_parse_vname(char *s, xl_spec_p e, int flags)
 	int_str avp_name;
 	int avp_type;
 	int mode;
+	str alias;
 	xl_spec_t e0;
 
 	if(s==NULL || e==NULL || *s!=ITEM_MARKER)
@@ -1703,6 +1704,7 @@ char* xl_parse_vname(char *s, xl_spec_p e, int flags)
 		if(*p==ITEM_MARKER)
 		{ /* pseudo var */
 			/* backup for avp aliases */
+			p0 = p;
 			p = xl_parse_spec(p, &e0, flags|XL_LEVEL2);
 			if(p==NULL)
 				goto error;
@@ -1722,13 +1724,24 @@ char* xl_parse_vname(char *s, xl_spec_p e, int flags)
 					goto error;
 				e->flags |= XL_DPARAM;
 			} else {
+				p0++;
+				alias.s = p0;
+				p = strchr(p0, ITEM_RNBRACKET);
+				if(p==NULL)
+				{
+					LOG(L_ERR,
+						"ERROR:xl_parse_vname: bad alias name "
+						"\"%s\"\n", p0);
+					goto error;
+				}
+				alias.len = p-p0;
 				/* look for avp alias */
-				if(lookup_avp_galias(&e0.p.val, &avp_type,
+				if(lookup_avp_galias(&alias, &avp_type,
 						&avp_name)==-1)
 				{
 					LOG(L_ERR,
 						"ERROR:xl_parse_vname: unknow avp alias"
-						"\"%.*s\"\n", e0.p.val.len, e0.p.val.s);
+						"\"%.*s\"\n", alias.len, alias.s);
 					goto error;
 				}
 				if(avp_type&AVP_NAME_STR)
