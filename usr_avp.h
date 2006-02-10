@@ -52,7 +52,7 @@
 
 typedef union {
 	int  n;
-	str *s;
+	str s;
 } int_str;
 
 

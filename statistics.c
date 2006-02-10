@@ -395,7 +395,7 @@ static int fifo_get_stats( FILE *fifo, char *reply_file )
 #define MAX_FS_BUF 512
 	static char buf[MAX_FS_BUF];
 	FILE *rfifo;
-	str arg;
+	str arg = {0, 0};
 	int n;
 	int is_mod;
 

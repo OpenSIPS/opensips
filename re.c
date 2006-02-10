@@ -413,7 +413,7 @@ static int replace_build(const char* match, int nmatch, regmatch_t* pmatch,
 				dest+=uri->len;
 				break;
 			case REPLACE_SPEC:
-				if(xl_get_spec_value(msg, &se->replace[r].u.spec, &sv)!=0)
+				if(xl_get_spec_value(msg, &se->replace[r].u.spec, &sv, 0)!=0)
 				{
 					LOG(L_CRIT, "BUG: replace_build: item substitution"
 								" returned error\n");

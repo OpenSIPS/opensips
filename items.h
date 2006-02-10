@@ -28,16 +28,30 @@
 #define ITEM_MARKER_STR	"$"
 #define ITEM_MARKER	'$'
 
+#define ITEM_LNBRACKET_STR	"("
+#define ITEM_LNBRACKET		'('
+#define ITEM_RNBRACKET_STR	")"
+#define ITEM_RNBRACKET		')'
+
+#define ITEM_LIBRACKET_STR	"["
+#define ITEM_LIBRACKET		'['
+#define ITEM_RIBRACKET_STR	"]"
+#define ITEM_RIBRACKET		']'
 
 #define XL_DISABLE_NONE		0
 #define XL_THROW_ERROR		1
 #define XL_DISABLE_MULTI	2
 #define XL_DISABLE_COLORS	4
+#define XL_DISABLE_PVARS	8
+#define XL_DPARAM			16
+#define XL_LEVEL2			32
 
 #define XL_VAL_NONE			0
 #define XL_VAL_NULL			1
-#define XL_VAL_STR			2
-#define XL_VAL_INT			4
+#define XL_VAL_EMPTY		2
+#define XL_VAL_STR			4
+#define XL_VAL_INT			8
+#define XL_TYPE_INT			16
 
 enum _xl_type { 
 	XL_NONE=0,           XL_EMPTY,             XL_NULL, 
@@ -73,17 +87,26 @@ typedef struct _xl_value
 
 typedef struct _xl_param
 {
-	str hparam;
-	int hindex;
+	str val;
+	int ind;
 } xl_param_t, *xl_param_p;
 
-typedef int (*item_func_t) (struct sip_msg*, xl_value_t*,  xl_param_t*);
+typedef int (*item_func_t) (struct sip_msg*, xl_value_t*,  xl_param_t*, int);
 
-typedef struct _xl_spec
+typedef int xl_flags_t;
+
+typedef struct _xl_dparam
 {
-	xl_param_t p;
-	xl_type_t type;
 	item_func_t itf;
+	int ind;
+} xl_dparam_t, *xl_dparam_p;
+
+typedef struct _xl_spec {
+	xl_type_t   type;
+	xl_flags_t  flags;
+	item_func_t itf;
+	xl_param_t  p;
+	xl_dparam_t dp;
 } xl_spec_t, *xl_spec_p;
 
 typedef struct _xl_elem
@@ -96,7 +119,10 @@ typedef struct _xl_elem
 int xl_elem_free_all(xl_elem_p list);
 char* xl_parse_spec(char *s, xl_spec_p sp, int flags);
 int xl_parse_format(char *s, xl_elem_p *el, int flags);
-int xl_get_spec_value(struct sip_msg* msg, xl_spec_p sp, xl_value_t *value);
+int xl_get_spec_value(struct sip_msg* msg, xl_spec_p sp, xl_value_t *value,
+		int flags);
+int xl_get_spec_name(struct sip_msg* msg, xl_spec_p sp, xl_value_t *value,
+		int flags);
 int xl_print_spec(struct sip_msg* msg, xl_spec_p sp, char *buf, int *len);
 int xl_printf(struct sip_msg* msg, xl_elem_p list, char *buf, int *len);
 

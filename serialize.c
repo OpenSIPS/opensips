@@ -145,14 +145,14 @@ int serialize_branches(struct sip_msg *msg, int clean_before )
 
 	/* Add contacts to "contacts" AVP */
 	for ( i=first ; i!=-1; i=contacts[i].next ) {
-		val.s = &(contacts[i].uri);
+		val.s = contacts[i].uri;
 		if (add_avp( AVP_VAL_STR|contacts[i].q_flag, (int_str)serial_avp_id,
 		val)!=0 ) {
 			LOG(L_ERR,"ERROR:serialize_branches: failed to add avp\n");
 			goto error;
 		}
 		DBG("DEBUG:serialize_branches: loaded <%s>, q=%d q_flag <%d>\n",
-			val.s->s, contacts[i].q, contacts[i].q_flag);
+			val.s.s, contacts[i].q, contacts[i].q_flag);
 	}
 
 	/* Clear all branches */
@@ -198,11 +198,11 @@ int next_branches( struct sip_msg *msg)
 		/* Set Request-URI */
 		act.type = SET_URI_T;
 		act.p1_type = STRING_ST;
-		act.p1.string = val.s->s;
+		act.p1.string = val.s.s;
 		rval = do_action(&act, msg);
 		if (rval != 1)
 			goto error1;
-		DBG("DEBUG:next_branches: R-URI is <%s>\n", val.s->s);
+		DBG("DEBUG:next_branches: R-URI is <%s>\n", val.s.s);
 		if (avp->flags & Q_FLAG) {
 			destroy_avp(avp);
 			return 0;
@@ -216,7 +216,7 @@ int next_branches( struct sip_msg *msg)
 	do {
 		act.type = APPEND_BRANCH_T;
 		act.p1_type = STRING_ST;
-		act.p1.string = val.s->s;
+		act.p1.string = val.s.s;
 		act.p2_type = NUMBER_ST;
 		act.p2.number = 0;
 		rval = do_action(&act, msg);
@@ -225,7 +225,7 @@ int next_branches( struct sip_msg *msg)
 				"with return value <%d>\n", rval);
 			goto error1;
 			}
-		DBG("DEBUG:next_branches: branch is <%s>\n", val.s->s);
+		DBG("DEBUG:next_branches: branch is <%s>\n", val.s.s);
 
 		/* continuu ? */
 		if (avp->flags & Q_FLAG) {
