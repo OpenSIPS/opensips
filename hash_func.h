@@ -28,8 +28,8 @@
 
 
 
-#ifndef _HASH_H
-#define _HASH_H
+#ifndef _HASH_FUNC_H_
+#define _HASH_FUNC_H_
 
 #include "str.h"
 
