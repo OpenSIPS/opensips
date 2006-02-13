@@ -6,6 +6,26 @@
 <!ENTITY vsname "Voice Sistem SRL">
 <!ENTITY iptel "<ulink url='http://iptel.org'>iptel.org</ulink>">
 <!ENTITY voicesystem "<ulink url='http://www.voice-system.ro'>voice-system.ro</ulink>">
+
+<!ENTITY openser "OpenSER">
+<!ENTITY opensername "Open SIP Express Router">
+
+<!ENTITY openserhome "http://openser.org/">
+<!ENTITY openserbugs "http://sourceforge.net/tracker/?group_id=139143">
+<!ENTITY openserhelp "http://openser.org/cgi-bin/mailman/listinfo/team">
+<!ENTITY openserusers "http://openser.org/cgi-bin/mailman/listinfo/users">
+<!ENTITY openserdev "http://openser.org/cgi-bin/mailman/listinfo/devel">
+
+<!ENTITY openserhomelink "<ulink url='&serhome;'>&serhome</ulink>">
+<!ENTITY openserbugslink "<ulink url='&serbugs;'>&serbugs</ulink>">
+<!ENTITY openserhelplink "<ulink url='&serhelp;'>&serhelp</ulink>">
+<!ENTITY openseruserslink "<ulink url='&serusers;'>&serusers</ulink>">
+<!ENTITY openserdevlink "<ulink url='&serdev;'>&serdev</ulink>">
+
+<!ENTITY openserhelpmail "<email>team@openser.org</email>">
+<!ENTITY openserusersmail "<email>users@openser.org</email>">
+<!ENTITY openserdevmail "<email>devel@openser.org</email>">
+
 <!ENTITY ser "OpenSER">
 <!ENTITY sername "Open SIP Express Router">
 
