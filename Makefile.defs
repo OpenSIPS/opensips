@@ -267,8 +267,6 @@ endif
 #		completely turns of all the logging (and DBG(...))
 # -DEXTRA_DEBUG
 #		compiles in some extra debugging code
-# -DDNS_IP_HACK
-#		faster ip address resolver for ip strings (e.g "127.0.0.1")
 # -DSHM_MEM
 #		compiles in shared mem. support, needed by some modules and
 #		by USE_SHM_MEM
@@ -344,7 +342,6 @@ DEFS+= $(extra_defs) \
 	 -D__SMP_$(ISSMP) -DCFG_DIR='"$(cfg-target)"'\
 	 -DPKG_MALLOC \
 	 -DSHM_MEM  -DSHM_MMAP \
-	 -DDNS_IP_HACK \
 	 -DUSE_IPV6 \
 	 -DUSE_MCAST \
 	 -DUSE_TCP \

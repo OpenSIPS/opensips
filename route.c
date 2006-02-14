@@ -270,7 +270,7 @@ static int fix_actions(struct action* a)
 								t->p1_type);
 					return E_BUG;
 				}
-				he=resolvehost(((struct socket_id*)t->p1.data)->name);
+				he=resolvehost(((struct socket_id*)t->p1.data)->name,0);
 				if (he==0){
 					LOG(L_ERR, "ERROR: fix_actions: force_send_socket:"
 								" could not resolve %s\n",
@@ -473,7 +473,7 @@ inline static int comp_ip(struct ip_addr* ip, void* param, int op, int subtype)
 					if (ret==1) break;
 					/* 2: resolve (name) & compare w/ all the ips */
 					if (subtype==STRING_ST){
-						he=resolvehost((char*)param);
+						he=resolvehost((char*)param,0);
 						if (he==0){
 							DBG("comp_ip: could not resolve %s\n",
 									(char*)param);

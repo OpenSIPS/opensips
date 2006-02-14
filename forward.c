@@ -386,8 +386,7 @@ int update_sock_struct_from_via( union sockaddr_union* to,
 		if (via->received){
 			DBG("update_sock_struct_from_via: using 'received'\n");
 			name=&(via->received->value);
-			/* making sure that we won't do SRV lookup on "received"
-			 * (possible if no DNS_IP_HACK is used)*/
+			/* making sure that we won't do SRV lookup on "received" */
 			if (port==0) port=via->port?via->port:SIP_PORT; 
 		}else{
 			DBG("update_sock_struct_from_via: using via host\n");

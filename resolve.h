@@ -284,55 +284,35 @@ struct hostent* sip_resolvehost(str* name, unsigned short* port,
 /* gethostbyname wrappers
  * use this, someday they will use a local cache */
 
-static inline struct hostent* resolvehost(char* name)
+static inline struct hostent* resolvehost(char* name, int no_ip_test)
 {
 	static struct hostent* he=0;
 #ifdef HAVE_GETIPNODEBYNAME 
 	int err;
 	static struct hostent* he2=0;
 #endif
-#ifndef DNS_IP_HACK
-#ifdef USE_IPV6
-	int len;
-#endif
-#endif
-#ifdef DNS_IP_HACK
 	struct ip_addr* ip;
 	str s;
 
-	s.s = (char*)name;
-	s.len = strlen(name);
+	if (!no_ip_test) {
+		s.s = (char*)name;
+		s.len = strlen(name);
 
-	/* check if it's an ip address */
-	if ( ((ip=str2ip(&s))!=0)
-#ifdef	USE_IPV6
-		  || ((ip=str2ip6(&s))!=0)
+		/* check if it's an ip address */
+		if ( ((ip=str2ip(&s))!=0)
+#ifdef USE_IPV6
+			|| ((ip=str2ip6(&s))!=0)
 #endif
 		){
-		/* we are lucky, this is an ip address */
-		return ip_addr2he(&s, ip);
-	}
-	
-#else /* DNS_IP_HACK */
-#ifdef USE_IPV6
-	len=0;
-	if (*name=='['){
-		len=strlen(name);
-		if (len && (name[len-1]==']')){
-			name[len-1]=0; /* remove '[' */
-			name++; /* skip '[' */
-			goto skip_ipv4;
+			/* we are lucky, this is an ip address */
+			return ip_addr2he(&s, ip);
 		}
 	}
-#endif
-#endif
+
 	/* ipv4 */
 	he=gethostbyname(name);
 #ifdef USE_IPV6
 	if(he==0 && dns_try_ipv6){
-#ifndef DNS_IP_HACK
-skip_ipv4:
-#endif
 		/*try ipv6*/
 	#ifdef HAVE_GETHOSTBYNAME2
 		he=gethostbyname2(name, AF_INET6);
@@ -345,9 +325,6 @@ skip_ipv4:
 	#else
 		#error neither gethostbyname2 or getipnodebyname present
 	#endif
-#ifndef DNS_IP_HACK
-		if (len) name[len-2]=']'; /* restore */
-#endif
 	}
 #endif
 	return he;

@@ -601,7 +601,7 @@ static inline struct hostent* do_srv_lookup(char *name, unsigned short* port)
 			free_rdata_list(head);
 			return 0;
 		}
-		he = resolvehost(srv->name);
+		he = resolvehost(srv->name, 1);
 		if ( he!=0 ) {
 			DBG("DEBUG:do_srv_lookup: SRV(%s) = %s:%d\n",
 				name, srv->name, srv->port);
@@ -856,7 +856,7 @@ do_a:
 	}
 	memcpy(tmp, name->s, name->len);
 	tmp[name->len] = '\0';
-	he = resolvehost(tmp);
+	he = resolvehost(tmp,1);
 	return he;
 err_proto:
 	LOG(L_ERR, "ERROR:sip_resolvehost: unsupported proto %d\n",

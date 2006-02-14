@@ -564,7 +564,7 @@ static int fix_socket_list(struct socket_info **list)
 		si->port_no_str.len=len;
 		
 		/* get "official hostnames", all the aliases etc. */
-		he=resolvehost(si->name.s);
+		he=resolvehost(si->name.s,0);
 		if (he==0){
 			LOG(L_ERR, "ERROR: fix_socket_list: could not resolve %s\n",
 					si->name.s);
