@@ -30,13 +30,19 @@
 #include "hf.h"
 
 #define F_SUPPORTED_PATH	(1 << 0)
-#define F_SUPPORTED_REL100	(1 << 1)
+#define F_SUPPORTED_100REL	(1 << 1)
+#define F_SUPPORTED_TIMER	(1 << 2)
 
 #define SUPPORTED_PATH_STR		"path"
 #define SUPPORTED_PATH_LEN		(sizeof(SUPPORTED_PATH_STR)-1)
 
-#define SUPPORTED_REL100_STR	"rel100"
-#define SUPPORTED_REL100_LEN	(sizeof(SUPPORTED_REL100_STR)-1)
+/* RFC 3262 */
+#define SUPPORTED_100REL_STR	"100rel"
+#define SUPPORTED_100REL_LEN	(sizeof(SUPPORTED_100REL_STR)-1)
+
+/* RFC 4028 */
+#define SUPPORTED_TIMER_STR		"timer"
+#define SUPPORTED_TIMER_LEN		(sizeof(SUPPORTED_TIMER_STR)-1)
 
 /*
  * Parse Supported header.

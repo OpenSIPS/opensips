@@ -30,6 +30,7 @@
 #define IS_DELIM(c) (*(c) == ' ' || *(c) == '\t' || *(c) == '\r' || *(c) == '\n' || *(c) == ',')
 
 /* from parser/parse_hname2.c: */
+#define LOWER_BYTE(b) ((b) | 0x20)
 #define LOWER_DWORD(d) ((d) | 0x20202020)
 #define READ(val) \
 	(*(val + 0) + (*(val + 1) << 8) + (*(val + 2) << 16) + (*(val + 3) << 24))
@@ -77,11 +78,24 @@ static int parse_supported_body(struct hdr_field* _h)
 				}
 				break;
 
-			/* "rel100" */
-			case _rel1_:
-				if(pos + 6 <= len && *(p+4) == '0' && *(p+5) == '0' && IS_DELIM(p+6)) {
-					*sup |= F_SUPPORTED_REL100;
-					pos += 7; p += 7;
+			/* "100rel" */
+			case _100r_:
+				if ( pos+6 <= len
+					 && LOWER_BYTE(*(p+4))=='e' && LOWER_BYTE(*(p+5))=='l'
+					 && IS_DELIM(p+6)) {
+					*sup |= F_SUPPORTED_100REL;
+					pos += SUPPORTED_100REL_LEN + 1;
+					p   += SUPPORTED_100REL_LEN + 1;
+				}
+				break;
+
+			/* "timer" */
+			case _time_:
+				if ( pos+5 <= len && LOWER_BYTE(*(p+4))=='r'
+					 && IS_DELIM(p+5) ) {
+					*sup |= F_SUPPORTED_TIMER;
+					pos += SUPPORTED_TIMER_LEN + 1;
+					p   += SUPPORTED_TIMER_LEN + 1;
 				}
 				break;
 

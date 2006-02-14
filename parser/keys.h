@@ -124,6 +124,9 @@
 #define _refe_ 0x65666572   /* "refe" */
 #define _r_to_ 0x6f742d72   /* "r-to" */
 
-#define _rel1_ 0x316c6572	/* "rel1" */
+#define _100r_ 0x72303031   /* "100r" for "100rel" */
+
+#define _time_ 0x656d6974   /* "time" */
+
 
 #endif /* KEYS_H */
