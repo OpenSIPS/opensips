@@ -24,6 +24,7 @@
 #define _ITEMS_H_
 
 #include "parser/msg_parser.h"
+#include "usr_avp.h"
 
 #define ITEM_MARKER_STR	"$"
 #define ITEM_MARKER	'$'
@@ -124,6 +125,8 @@ int xl_get_spec_value(struct sip_msg* msg, xl_spec_p sp, xl_value_t *value,
 		int flags);
 int xl_get_spec_name(struct sip_msg* msg, xl_spec_p sp, xl_value_t *value,
 		int flags);
+int xl_get_avp_name(struct sip_msg* msg, xl_spec_p sp, int_str *avp_name,
+		unsigned short *name_type);
 int xl_print_spec(struct sip_msg* msg, xl_spec_p sp, char *buf, int *len);
 int xl_printf(struct sip_msg* msg, xl_elem_p list, char *buf, int *len);
 

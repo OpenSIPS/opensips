@@ -2430,6 +2430,50 @@ int xl_get_spec_name(struct sip_msg* msg, xl_spec_p sp, xl_value_t *value,
 }
 
 
+int xl_get_avp_name(struct sip_msg* msg, xl_spec_p sp, int_str *avp_name,
+		unsigned short *name_type)
+{
+	xl_value_t xv;
+
+	if(sp==NULL || avp_name==NULL || name_type==NULL)
+	{
+		LOG(L_ERR, "xl_get_avp_name: bad parameters\n");
+		return -1;
+	}
+	memset(avp_name, 0, sizeof(int_str));
+	*name_type = 0;
+	if((sp->flags & XL_DPARAM)&&(sp->dp.itf!=0))
+	{
+		memset(&xv, 0, sizeof(xl_value_t));
+		if((*sp->dp.itf)(msg, &xv, &(sp->p), 0)!=0)
+		{
+			LOG(L_ERR, "xl_get_avp_name: unable to get dynamic name\n");
+			return -1;
+		}
+		if(xv.flags&XL_NULL || xv.flags&XL_EMPTY)
+		{
+			LOG(L_ERR, "xl_get_avp_name: null or empty dynamic name\n");
+			return -1;
+		}
+		if((xv.flags&XL_TYPE_INT) && (xv.flags&XL_VAL_INT))
+		{
+			avp_name->n = xv.ri;
+		} else {
+			avp_name->s = xv.rs;
+			*name_type = AVP_NAME_STR;
+		}
+	} else {
+		if(sp->p.val.s!=NULL) {
+			*name_type = AVP_NAME_STR;
+			avp_name->s = sp->p.val;
+		} else {
+			avp_name->n = sp->p.val.len;
+		}
+	}
+		
+	return 0;
+}
+
 int xl_get_spec_value(struct sip_msg* msg, xl_spec_p sp, xl_value_t *value,
 		int flags)
 {
