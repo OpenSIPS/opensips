@@ -337,10 +337,11 @@ static void inline fifo_print_stat(FILE *rf, str *name)
 
 	stat = get_stat( name );
 	if (stat==0) {
-		fprintf(rf,"404 statistic not found\n");
+		fprintf(rf,"404 Statistic not found\n");
 		return;
 	}
 
+	fprintf(rf,"200 OK\n");
 	fprintf(rf,"%.*s:%.*s = %lu\n",
 		stat->module->name.len, stat->module->name.s,
 		stat->name.len, stat->name.s,
@@ -368,6 +369,7 @@ static void fifo_all_stats(FILE *rf)
 {
 	int i;
 
+	fprintf(rf,"200 OK\n");
 	fprintf(rf,"Total statistics = %d\n",collector->stats_no);
 	fprintf(rf,"Total modules = %d\n",collector->mod_no);
 
@@ -382,10 +384,11 @@ static void fifo_module_stats( FILE *rf, str *mod)
 
 	mods = get_stat_module( mod );
 	if (mods==0) {
-		fprintf(rf,"404 module not found\n");
+		fprintf(rf,"404 Module not found\n");
 		return;
 	}
 
+	fprintf(rf,"200 OK\n");
 	fifo_print_module_stats( rf, mods );
 }
 
@@ -401,7 +404,7 @@ static int fifo_get_stats( FILE *fifo, char *reply_file )
 
 	if (read_line( buf, MAX_FS_BUF, fifo, &n)!=1) {
 		LOG(L_ERR,"ERROR:fifo_get_stats: failed to read argument from fifo\n");
-		fifo_reply( reply_file, "500: Read error\n");
+		fifo_reply( reply_file, "500 Read error\n");
 		goto error;
 	}
 
@@ -459,25 +462,25 @@ static int fifo_reset_stats( FILE *fifo, char *reply_file )
 
 	if (read_line( buf, MAX_FS_BUF, fifo, &name.len)!=1) {
 		LOG(L_ERR,"ERROR:fifo_reset_stats: failed to read arg. from fifo\n");
-		fifo_reply( reply_file, "500: Read error\n");
+		fifo_reply( reply_file, "500 Read error\n");
 		goto error;
 	}
 
 	if (name.len==0) {
 		LOG(L_ERR,"ERROR:fifo_reset_stats: no arg found\n");
-		fifo_reply( reply_file, "400: Statistic name expected\n");
+		fifo_reply( reply_file, "400 Statistic name expected\n");
 		goto error;
 	}
 	name.s = buf;
 
 	stat = get_stat( &name );
 	if (stat==0) {
-		fifo_reply( reply_file,"404: statistic not found\n");
+		fifo_reply( reply_file,"404 Statistic not found\n");
 		goto error;
 	}
 
 	reset_stat( stat );
-	fifo_reply( reply_file,"200: OK\n");
+	fifo_reply( reply_file,"200 OK\n");
 	return 0;
 error:
 	return -1;
