@@ -335,11 +335,11 @@ install-cfg: $(cfg-prefix)/$(cfg-dir)
 		if [ -z "$(TLS)" ]; then \
 			echo  "No TLS scripts installed" ; \
 		else \
-			mkdir $(cfg-prefix)/$(cfg-dir)/tls ; \
-			mkdir $(cfg-prefix)/$(cfg-dir)/tls/rootCA ; \
-			mkdir $(cfg-prefix)/$(cfg-dir)/tls/rootCA/certs ; \
-			mkdir $(cfg-prefix)/$(cfg-dir)/tls/rootCA/private ; \
-			mkdir $(cfg-prefix)/$(cfg-dir)/tls/user ; \
+			mkdir -p $(cfg-prefix)/$(cfg-dir)/tls ; \
+			mkdir -p $(cfg-prefix)/$(cfg-dir)/tls/rootCA ; \
+			mkdir -p $(cfg-prefix)/$(cfg-dir)/tls/rootCA/certs ; \
+			mkdir -p $(cfg-prefix)/$(cfg-dir)/tls/rootCA/private ; \
+			mkdir -p $(cfg-prefix)/$(cfg-dir)/tls/user ; \
 			$(INSTALL-TOUCH) etc/tls/README $(cfg-prefix)/$(cfg-dir)/tls/; \
 			$(INSTALL) etc/tls/README $(cfg-prefix)/$(cfg-dir)/tls/; \
 			$(INSTALL-TOUCH) etc/tls/rootCA/index.txt $(cfg-prefix)/$(cfg-dir)/tls/rootCA/; \
@@ -354,7 +354,7 @@ install-cfg: $(cfg-prefix)/$(cfg-dir)
 			$(INSTALL) etc/tls/rootCA/private/cakey.pem $(cfg-prefix)/$(cfg-dir)/tls/rootCA/private/; \
 			$(INSTALL-TOUCH) etc/tls/user/user-calist.pem $(cfg-prefix)/$(cfg-dir)/tls/user/; \
 			$(INSTALL) etc/tls/user/user-calist.pem $(cfg-prefix)/$(cfg-dir)/tls/user/; \
-			$(INSTALL-TOUCH) etc/tls/user/user-cert.pem $(cfg-prefix)/$(cfg-dir)/tls/users/; \
+			$(INSTALL-TOUCH) etc/tls/user/user-cert.pem $(cfg-prefix)/$(cfg-dir)/tls/user/; \
 			$(INSTALL) etc/tls/user/user-cert.pem $(cfg-prefix)/$(cfg-dir)/tls/user/; \
 			$(INSTALL-TOUCH) etc/tls/user/user-privkey.pem $(cfg-prefix)/$(cfg-dir)/tls/user/; \
 			$(INSTALL) etc/tls/user/user-privkey.pem $(cfg-prefix)/$(cfg-dir)/tls/user/; \
