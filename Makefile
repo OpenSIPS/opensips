@@ -369,15 +369,21 @@ install-cfg: $(cfg-prefix)/$(cfg-dir)
 install-bin: $(bin-prefix)/$(bin-dir) utils/gen_ha1/gen_ha1 utils/$(NAME)unix/$(NAME)unix
 		$(INSTALL-TOUCH) $(bin-prefix)/$(bin-dir)/$(NAME) 
 		$(INSTALL-BIN) $(NAME) $(bin-prefix)/$(bin-dir)
-		$(INSTALL-TOUCH)   $(bin-prefix)/$(bin-dir)/sc
-		$(INSTALL-BIN) scripts/sc $(bin-prefix)/$(bin-dir)
-		mv -f $(bin-prefix)/$(bin-dir)/sc $(bin-prefix)/$(bin-dir)/$(NAME)ctl
-		$(INSTALL-TOUCH)   $(bin-prefix)/$(bin-dir)/mysqldb.sh  
-		$(INSTALL-BIN) scripts/mysqldb.sh  $(bin-prefix)/$(bin-dir)
-		mv -f $(bin-prefix)/$(bin-dir)/mysqldb.sh $(bin-prefix)/$(bin-dir)/$(NAME)_mysql.sh
-		$(INSTALL-TOUCH)   $(bin-prefix)/$(bin-dir)/postgresqldb.sh
-		$(INSTALL-BIN) scripts/postgresqldb.sh  $(bin-prefix)/$(bin-dir)
-		mv -f $(bin-prefix)/$(bin-dir)/postgresqldb.sh $(bin-prefix)/$(bin-dir)/$(NAME)_postgresql.sh
+		sed -e "s#PATH:/usr/local/sbin#PATH:$(bin-prefix)/$(bin-dir)#g" \
+			< scripts/sc > /tmp/$(NAME)ctl
+		$(INSTALL-TOUCH)   $(bin-prefix)/$(bin-dir)/$(NAME)ctl
+		$(INSTALL-BIN) /tmp/$(NAME)ctl $(bin-prefix)/$(bin-dir)
+		rm -fr /tmp/$(NAME)ctl
+		sed -e "s#PATH:/usr/local/sbin#PATH:$(bin-prefix)/$(bin-dir)#g" \
+			< scripts/mysqldb.sh > /tmp/$(NAME)_mysql.sh
+		$(INSTALL-TOUCH)   $(bin-prefix)/$(bin-dir)/$(NAME)_mysql.sh
+		$(INSTALL-BIN) /tmp/$(NAME)_mysql.sh  $(bin-prefix)/$(bin-dir)
+		rm -fr /tmp/$(NAME)_mysql.sh
+		sed -e "s#PATH:/usr/local/sbin#PATH:$(bin-prefix)/$(bin-dir)#g" \
+			< scripts/postgresqldb.sh > /tmp/$(NAME)_postgresql.sh
+		$(INSTALL-TOUCH)   $(bin-prefix)/$(bin-dir)/$(NAME)_postgresql.sh
+		$(INSTALL-BIN) /tmp/$(NAME)_postgresql.sh $(bin-prefix)/$(bin-dir)
+		rm -fr /tmp/$(NAME)_postgresql.sh
 		$(INSTALL-TOUCH)   $(bin-prefix)/$(bin-dir)/$(NAME)_gen_ha1
 		$(INSTALL-BIN) utils/gen_ha1/gen_ha1 $(bin-prefix)/$(bin-dir)/$(NAME)_gen_ha1
 		$(INSTALL-TOUCH)   $(bin-prefix)/$(bin-dir)/$(NAME)unix
