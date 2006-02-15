@@ -783,6 +783,20 @@ static int xl_get_rcvport(struct sip_msg *msg, xl_value_t *res, xl_param_t *para
 	return 0;
 }
 
+static int xl_get_force_sock(struct sip_msg *msg, xl_value_t *res,
+												xl_param_t *param,int flags)
+{
+	if(msg==NULL || res==NULL)
+		return -1;
+	
+	if (msg->force_send_socket==0)
+		return xl_get_null(msg, res, param, flags);
+
+	res->rs = msg->force_send_socket->sock_str;
+	res->flags = XL_VAL_STR;
+	return 0;
+}
+
 static int xl_get_useragent(struct sip_msg *msg, xl_value_t *res, xl_param_t *param,
 		int flags)
 {
@@ -2006,6 +2020,10 @@ char* xl_parse_spec(char *s, xl_spec_p e, int flags)
 					e->itf = xl_get_from_attr;
 					e->p.val.len = 5;
 					e->type = XL_FROM_DISPLAYNAME;
+				break;
+				case 's':
+					e->itf = xl_get_force_sock;
+					e->type = XL_FORCE_SOCK;
 				break;
 				case 't':
 					e->itf = xl_get_from_attr;
