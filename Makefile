@@ -321,7 +321,11 @@ $(man-prefix)/$(man-dir)/man5:
 # note: on solaris 8 sed: ? or \(...\)* (a.s.o) do not work
 install-cfg: $(cfg-prefix)/$(cfg-dir)
 		sed -e "s#/usr/.*lib/$(NAME)/modules/#$(modules-target)#g" \
-			< etc/$(NAME).cfg > $(cfg-prefix)/$(cfg-dir)$(NAME).cfg.sample
+			< etc/$(NAME).cfg > $(cfg-prefix)/$(cfg-dir)$(NAME).cfg.sample0
+		sed -e "s#/usr/.*etc/$(NAME)/tls/#$(cfg-prefix)/$(cfg-dir)tls/#g" \
+			< $(cfg-prefix)/$(cfg-dir)$(NAME).cfg.sample0 \
+			> $(cfg-prefix)/$(cfg-dir)$(NAME).cfg.sample
+		rm -fr $(cfg-prefix)/$(cfg-dir)$(NAME).cfg.sample0
 		chmod 644 $(cfg-prefix)/$(cfg-dir)$(NAME).cfg.sample
 		if [ -z "${skip_cfg_install}" -a \
 				! -f $(cfg-prefix)/$(cfg-dir)$(NAME).cfg ]; then \
