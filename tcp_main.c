@@ -803,10 +803,9 @@ send_it:
 		if (n<=0){
 			LOG(L_ERR, "BUG: tcp_send: error return failed (write):%s (%d)\n",
 					strerror(errno), errno);
-			n=-1;
 		}
 		close(fd);
-		return n; /* error return, no tcpconn_put */
+		return -1; /* error return, no tcpconn_put */
 	}
 end:
 	close(fd);
