@@ -365,9 +365,15 @@ init_ssl_ctx_behavior( SSL_CTX *_ctx ) {
 	 *     no session resumption
 	 *     choose cipher according to server's preference's*/
 
-#if OPENSSL_VERSION_NUMBER >= 0x000907000
+#if OPENSSL_VERSION_NUMBER >= 0x000907000L
 	SSL_CTX_set_options(_ctx, 
-			SSL_OP_ALL | SSL_OP_NO_SSLv2 | SSL_OP_NO_SESSION_RESUMPTION_ON_RENEGOTIATION | SSL_OP_CIPHER_SERVER_PREFERENCE);
+			(SSL_OP_ALL | SSL_OP_NO_SSLv2 |
+			SSL_OP_NO_SESSION_RESUMPTION_ON_RENEGOTIATION |
+			SSL_OP_CIPHER_SERVER_PREFERENCE)
+			#if OPENSSL_VERSION_NUMBER >= 0x000908000L
+			& (~SSL_OP_TLS_BLOCK_PADDING_BUG)
+			#endif
+			);
 #else
 	SSL_CTX_set_options(_ctx, 
 			SSL_OP_ALL | SSL_OP_NO_SSLv2 );
@@ -401,6 +407,7 @@ init_ssl_ctx_behavior( SSL_CTX *_ctx ) {
 	SSL_CTX_set_session_id_context( _ctx, SER_SSL_SESS_ID, SER_SSL_SESS_ID_LEN );
 }
 
+
 /*
  * called once from main.c (main process) 
  */
@@ -408,7 +415,12 @@ int
 init_tls(void)
 {
 	struct tls_domain *d;
+#if (OPENSSL_VERSION_NUMBER >= 0x00908000L) && !defined(OPENSSL_NO_COMP)
+	STACK_OF(SSL_COMP)* comp_methods;
+#endif
+
 	DBG("init_tls: Entered\n");
+
 #if OPENSSL_VERSION_NUMBER < 0x00907000L
 	LOG(L_ERR, "WARNING! You are using an old version of OpenSSL (< 0.9.7). Upgrade!\n");
 #endif
@@ -421,7 +433,18 @@ init_tls(void)
 			"init_tls: Unable to set the memory allocation functions\n");
 		return -1;
 	}
-	
+
+#if (OPENSSL_VERSION_NUMBER >= 0x00908000L) && !defined(OPENSSL_NO_COMP)
+	/* disabling compression */
+	LOG(L_ERR, "WARNING:init_tls: disabling compression due ZLIB problems\n");
+	comp_methods = SSL_COMP_get_compression_methods();
+	if (comp_methods==0) {
+		LOG(L_ERR, "ERRRO:init_tls: null openssl compression methods\n");
+		return -1;
+	}
+	sk_SSL_COMP_zero(comp_methods);
+#endif
+
 	SSL_library_init();
 	SSL_load_error_strings();
 	init_ssl_methods();
