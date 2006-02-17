@@ -47,6 +47,8 @@
 #include "parser/parse_hname2.h"
 #include "parser/parse_content.h"
 #include "parser/parse_refer_to.h"
+#include "parser/parse_rpid.h"
+#include "parser/parse_diversion.h"
 #include "parser/digest/digest.h"
 
 #include "items.h"
@@ -840,6 +842,51 @@ static int xl_get_refer_to(struct sip_msg *msg, xl_value_t *res, xl_param_t *par
 	return 0;
 }
 
+static int xl_get_diversion(struct sip_msg *msg, xl_value_t *res, xl_param_t *param,
+		int flags)
+{
+	if(msg==NULL || res==NULL)
+		return -1;
+
+	if(parse_diversion_header(msg)==-1)
+	{
+		LOG(L_ERR,
+			"xl_get_diversion: ERROR cannot parse Diversion header\n");
+		return xl_get_null(msg, res, param, flags);
+	}
+	
+	if(msg->diversion==NULL || get_diversion(msg)==NULL)
+		return xl_get_null(msg, res, param, flags);
+
+	res->rs.s = get_diversion(msg)->uri.s;
+	res->rs.len = get_diversion(msg)->uri.len; 
+	
+	res->flags = XL_VAL_STR;
+	return 0;
+}
+
+static int xl_get_rpid(struct sip_msg *msg, xl_value_t *res, xl_param_t *param,
+		int flags)
+{
+	if(msg==NULL || res==NULL)
+		return -1;
+
+	if(parse_rpid_header(msg)==-1)
+	{
+		LOG(L_ERR,
+			"xl_get_rpid: ERROR cannot parse RPID header\n");
+		return xl_get_null(msg, res, param, flags);
+	}
+	
+	if(msg->rpid==NULL || get_rpid(msg)==NULL)
+		return xl_get_null(msg, res, param, flags);
+
+	res->rs.s = get_rpid(msg)->uri.s;
+	res->rs.len = get_rpid(msg)->uri.len; 
+	
+	res->flags = XL_VAL_STR;
+	return 0;
+}
 
 static int xl_get_dset(struct sip_msg *msg, xl_value_t *res, xl_param_t *param,
 		int flags)
@@ -1985,6 +2032,10 @@ char* xl_parse_spec(char *s, xl_spec_p e, int flags)
 					e->p.val.len = 1;
 					e->type = XL_DSTURI_DOMAIN;
 				break;
+				case 'i':
+					e->itf = xl_get_diversion;
+					e->type = XL_DIVERSION;
+				break;
 				case 'p':
 					e->itf = xl_get_dsturi_attr;
 					e->p.val.len = 2;
@@ -2147,6 +2198,10 @@ char* xl_parse_spec(char *s, xl_spec_p e, int flags)
 					e->itf = xl_get_ruri_attr;
 					e->p.val.len = 2;
 					e->type = XL_RURI_DOMAIN;
+				break;
+				case 'e':
+					e->itf = xl_get_rpid;
+					e->type = XL_RPID;
 				break;
 				case 'm':
 					e->itf = xl_get_method;

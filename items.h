@@ -75,7 +75,7 @@ enum _xl_type {
 	XL_DSTURI_PORT,      XL_DSTURI_PROTOCOL,   XL_FROM_DISPLAYNAME,
 	XL_TO_DISPLAYNAME,   XL_OURI,              XL_OURI_USERNAME,
 	XL_OURI_DOMAIN,      XL_OURI_PORT,         XL_OURI_PROTOCOL,
-	XL_FORCE_SOCK
+	XL_FORCE_SOCK,       XL_RPID,              XL_DIVERSION
 };
 typedef enum _xl_type xl_type_t;
 
