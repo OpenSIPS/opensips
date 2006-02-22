@@ -38,6 +38,13 @@
 				<email>cesc.santa@gmail.com</email>
 			</address>
 		</editor>
+		<editor>
+			<firstname>Klaus</firstname>
+			<surname>Darilion</surname>
+			<address>
+				<email>klaus.darilion@nic.at</email>
+			</address>
+		</editor>
 	</authorgroup>
 	<copyright>
 		<year>2005</year>
@@ -46,6 +53,10 @@
 	<copyright>
 		<year>2005</year>
 		<holder>Cesc Santasusana</holder>
+	</copyright>
+	<copyright>
+		<year>2006</year>
+		<holder>nic.at</holder>
 	</copyright>
 	<revhistory>
 		<revision>

@@ -30,7 +30,8 @@
 
 extern SSL_CTX *ssl_contexts[TLS_USE_SSLv23 + 1];
 
-extern SSL_CTX *default_ctx;
+extern SSL_CTX *default_client_ctx;
+extern SSL_CTX *default_server_ctx;
 
 /*
  * just once before cleanup 

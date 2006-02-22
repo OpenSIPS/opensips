@@ -29,7 +29,8 @@ int             tls_log;
 
 int             tls_method = TLS_USE_SSLv23;
 
-int             tls_verify_cert = 0;
+int             tls_verify_client_cert = 0;
+int             tls_verify_server_cert = 0;
 int             tls_require_cert = 0;
 char           *tls_cert_file = TLS_CERT_FILE;
 char           *tls_pkey_file = TLS_PKEY_FILE;

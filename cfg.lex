@@ -239,7 +239,8 @@ DISABLE_TLS		"disable_tls"
 TLSLOG			"tlslog"|"tls_log"
 TLS_PORT_NO		"tls_port_no"
 TLS_METHOD		"tls_method"
-TLS_VERIFY		"tls_verify"
+TLS_VERIFY_CLIENT	"tls_verify_client"
+TLS_VERIFY_SERVER	"tls_verify_server"
 TLS_REQUIRE_CERTIFICATE "tls_require_certificate"
 TLS_CERTIFICATE	"tls_certificate"
 TLS_PRIVATE_KEY "tls_private_key"
@@ -439,7 +440,8 @@ EAT_ABLE	[\ \t\b\r]
 <INITIAL>{TLSLOG}		{ count(); yylval.strval=yytext; return TLS_PORT_NO; }
 <INITIAL>{TLS_PORT_NO}	{ count(); yylval.strval=yytext; return TLS_PORT_NO; }
 <INITIAL>{TLS_METHOD}	{ count(); yylval.strval=yytext; return TLS_METHOD; }
-<INITIAL>{TLS_VERIFY}	{ count(); yylval.strval=yytext; return TLS_VERIFY; }
+<INITIAL>{TLS_VERIFY_CLIENT}	{ count(); yylval.strval=yytext; return TLS_VERIFY_CLIENT; }
+<INITIAL>{TLS_VERIFY_SERVER}	{ count(); yylval.strval=yytext; return TLS_VERIFY_SERVER; }
 <INITIAL>{TLS_REQUIRE_CERTIFICATE}	{ count(); yylval.strval=yytext;
 										return TLS_REQUIRE_CERTIFICATE; }
 <INITIAL>{TLS_CERTIFICATE}	{ count(); yylval.strval=yytext; 

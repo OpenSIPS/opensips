@@ -70,6 +70,21 @@
 		</para></warning>
 	</answer>
 	</qandaentry>
+	<qandaentry>
+		<question>
+		<para>How can I debug ssl/tls problems?</para>
+		</question>
+		<answer>
+		<para>
+			Increase the log level in openser.cfg (debug=4) and watch the log
+			statements in syslog.
+		</para>
+		<para>
+			Install the ssldump utility and start it. This will give you a trace
+			of the ssl/tls connections.
+		</para>
+	</answer>
+	</qandaentry>
 
 	</qandaset>
 </chapter>

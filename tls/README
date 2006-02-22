@@ -11,9 +11,13 @@ Bogdan-Andrei Iancu
 
 Cesc Santasusana
 
+Klaus Darilion
+
    Copyright © 2005 voice-system.ro
 
    Copyright © 2005 Cesc Santasusana
+
+   Copyright © 2006 nic.at
      _________________________________________________________
 
    Table of Contents
@@ -33,22 +37,6 @@ Cesc Santasusana
               1.5.3. Setting OpenSER to use the certificate
               1.5.4. TLS OpenSER authentication behavior
               1.5.5. OpenSER TLS configuration parameters
-
-                    1.5.5.1. disable_tls=integer
-                    1.5.5.2. listen=interface
-                    1.5.5.3. tls_port_no=number
-                    1.5.5.4. tls_method=value
-                    1.5.5.5. tls_certificate=file
-                    1.5.5.6. tls_private_key=file
-                    1.5.5.7. tls_ca_list=file
-                    1.5.5.8. tls_ciphers_list=string
-                    1.5.5.9. tls_verify=number and
-                            tls_require_certificate=number
-
-                    1.5.5.10. tls_handshake_timeout=number and
-                            tls_send_timeout=number
-
-                    1.5.5.11. tls_domain section
 
         1.6. OpenSER with TLS - script example
 
@@ -91,10 +79,11 @@ Cesc Santasusana
    1-6. Set tls_private_key variable
    1-7. Set tls_ca_list variable
    1-8. Set tls_ciphers_list variable
-   1-9. Set tls_verify & tls_require_certificate variable
-   1-10. Set tls_handshake_timeout & tls_send_timeout variable
-   1-11. Usage of tls_domain block
-   1-12. Script with TLS support
+   1-9. Set tls_verify_client & tls_require_certificate variable
+   1-10. Set tls_verify_server variable
+   1-11. Set tls_handshake_timeout & tls_send_timeout variable
+   1-12. Usage of tls_domain block
+   1-13. Script with TLS support
      _________________________________________________________
 
 Chapter 1. User's Guide
@@ -344,21 +333,24 @@ Chapter 1. User's Guide
 
 1.5.4. TLS OpenSER authentication behavior
 
-   The "tls_verify" and "tls_require_certificate" are
-   OpenSER-names for the OpenSSL defined flags:
+   The "tls_verify_server", "tls_verify_client" and
+   "tls_require_certificate" are OpenSER-names for the OpenSSL
+   defined flags:
 
-     * SSL_VERIFY_PEER is tls_verify
+     * SSL_VERIFY_PEER is tls_verify_client/tls_verify_server
      * SSL_VERIFY_FAIL_IF_NO_PEER_CERT is tls_require_certificate
-       (tls_require_certificate is only used if tls_verify=1)
+       (tls_require_certificate is only used if
+       tls_verify_client=1)
 
-   If your OpenSER is acting as a server, it will always send its
-   server-side certificate to the client. If tls_verify is
-   disabled (set to 0), your OpenSER will not request the client
-   a client-certificate. This means that the client is not
-   authenticated. If tls_verify=1, your OpenSER (the server)
-   sends a client-certificate request to the client. But the
-   client is free to not provide any. In this case,
-   tls_require_certificate comes into play:
+   If your OpenSER is acting as a server (incoming TLS
+   connections), it will always send its server-side certificate
+   to the client. If tls_verify_client is disabled (set to 0),
+   your OpenSER will not request the client a client-certificate.
+   This means that the client is not authenticated. If
+   tls_verify_client=1, your OpenSER (the server) sends a
+   client-certificate request to the client. But the client is
+   free to not provide any. In this case, tls_require_certificate
+   comes into play:
 
      * tls_require_cert=0 - the verification process will succeed
        if the client does not provide a certificate, or if it
@@ -368,6 +360,15 @@ Chapter 1. User's Guide
        succeed if the client provides a certificate and this
        verifies correctly against the server's list of trusted
        CAs.
+
+   If your OpenSER is acting as a client (outgoing TLS
+   connections), it will always receive a certificate from the
+   peer. If tls_verify_server is disabled (set to 0), your
+   OpenSER will not verifiy the certificate and allows TLS
+   connections to servers which do not present a valid
+   certificate. If tls_verify_server=1, your OpenSER (the client)
+   verifies the server certificate and will close the TLS
+   connection if the server certificate is not valid.
 
    For more details see page man verify(1).
      _________________________________________________________
@@ -427,7 +428,7 @@ tls_port_no = 5062
      * TLSv1 - means OpenSER will accept only TLSv1 connections
        (rfc3261 conformant).
      * SSLv3 - means OpenSER will accept only SSLv3 connections
-     * SSLv3 - means OpenSER will accept only SSLv2 connections
+     * SSLv2 - means OpenSER will accept only SSLv2 connections
        (almost all old clients support this).
      * SSLv23 - means OpenSER will accept any of the above
        methods, but the initial SSL hello must be v2 (in the
@@ -534,12 +535,15 @@ tls_ciphers_list="NULL-SHA:NULL-MD5:AES256-SHA:AES128-SHA"
 ...
      _________________________________________________________
 
-1.5.5.9. tls_verify=number and tls_require_certificate=number
+1.5.5.9. tls_verify_client=number and tls_require_certificate=number
 
-   Technically, tls_verify activates SSL_VERIFY_PEER in the
-   ssl_context. tls_require_certificate does the same with
+   Technically, tls_verify_client activates SSL_VERIFY_PEER in
+   the ssl_context. tls_require_certificate does the same with
    SSL_VERIFY_FAIL_IF_NO_PEER_CERT, which is only possible if
    SSL_VERIFY_PEER is also turned on.
+
+   These two parameters are used for incoming TLS connections,
+   where OpenSER acts as server.
 
    See previous chapter Section 1.5.4 for more information.
 
@@ -547,15 +551,37 @@ tls_ciphers_list="NULL-SHA:NULL-MD5:AES256-SHA:AES128-SHA"
 
    Default value for both is 0. 
 
-   Example 1-9. Set tls_verify & tls_require_certificate variable
+   Example 1-9. Set tls_verify_client & tls_require_certificate
+   variable
 ...
 # turn on the strictest and strongest authentication possible
-tls_verify = 1
+tls_verify_client = 1
 tls_require_certificate = 1
 ...
      _________________________________________________________
 
-1.5.5.10. tls_handshake_timeout=number and tls_send_timeout=number
+1.5.5.10. tls_verify_server=number
+
+   Technically, tls_verify_server activates SSL_VERIFY_PEER in
+   the ssl_context.
+
+   This parameter is used for outgoing TLS connections, where
+   OpenSER acts as client.
+
+   See previous chapter Section 1.5.4 for more information.
+
+   It's usable only if TLS support was compiled.
+
+   Default value is 0. 
+
+   Example 1-10. Set tls_verify_server variable
+...
+# turn on the strictest and strongest authentication possible
+tls_verify_server = 1
+...
+     _________________________________________________________
+
+1.5.5.11. tls_handshake_timeout=number and tls_send_timeout=number
 
    Timeouts ... advanced users only
 
@@ -563,7 +589,7 @@ tls_require_certificate = 1
 
    Default value for both is 120. 
 
-   Example 1-10. Set tls_handshake_timeout & tls_send_timeout
+   Example 1-11. Set tls_handshake_timeout & tls_send_timeout
    variable
 ...
 tls_handshake_timeout=119    # number of seconds
@@ -571,7 +597,7 @@ tls_send_timeout=121         # number of seconds
 ...
      _________________________________________________________
 
-1.5.5.11. tls_domain section
+1.5.5.12. tls_domain section
 
    If you only run one domain, the main one is enough. If you are
    running several TLS servers (that is, you have more than one
@@ -579,13 +605,17 @@ tls_send_timeout=121         # number of seconds
    some parameters for each of them separately (not all the
    above).
 
+   NOTE: Make sure to also configure OpenSER to listen on the
+   specified IP:port.
+
    NOTE: For now, tls_ciphers_list cannot be specified on a per
    domain basis.
 
    It's usable only if TLS support was compiled.
 
-   Example 1-11. Usage of tls_domain block 
+   Example 1-12. Usage of tls_domain block 
 ...
+listen=tls:IP_2:port2
 tls_domain[IP_2:port2] {
     #specify parameters for a domain in particular, otherwise,
     #it will use the default. These are the possible parameters to
@@ -613,7 +643,7 @@ tls_domain[IP_3:port3] {
 
      * fork = yes
 
-   Example 1-12. Script with TLS support
+   Example 1-13. Script with TLS support
   # ----------- global configuration parameters -----------------------
 -
   debug=3
@@ -936,6 +966,7 @@ Chapter 3. Frequently Asked Questions
 
    3.1. Where can I post a question about TLS?
    3.2. How can I report a bug?
+   3.3. How can I debug ssl/tls problems?
 
    3.1. Where can I post a question about TLS?
 
@@ -976,3 +1007,11 @@ Chapter 3. Frequently Asked Questions
    NOTE that SER TLS and OpenSER TLS may not be compatible (as
    code) in the future, each version having its own
    bugs/problems.
+
+   3.3. How can I debug ssl/tls problems?
+
+   Increase the log level in openser.cfg (debug=4) and watch the
+   log statements in syslog.
+
+   Install the ssldump utility and start it. This will give you a
+   trace of the ssl/tls connections.

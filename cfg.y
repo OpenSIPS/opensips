@@ -267,7 +267,8 @@ static int  mpath_len = 0;
 %token SSLv2
 %token SSLv3
 %token TLSv1
-%token TLS_VERIFY
+%token TLS_VERIFY_CLIENT
+%token TLS_VERIFY_SERVER
 %token TLS_REQUIRE_CERTIFICATE
 %token TLS_CERTIFICATE
 %token TLS_PRIVATE_KEY
@@ -640,14 +641,22 @@ assign_stm:	DEBUG EQUAL NUMBER { debug=$3; }
 									#endif
 									}
 										
-		| TLS_VERIFY EQUAL NUMBER {
+		| TLS_VERIFY_CLIENT EQUAL NUMBER {
 									#ifdef USE_TLS
-										tls_verify_cert=$3;
+										tls_verify_client_cert=$3;
 									#else
 										warn("tls support not compiled in");
 									#endif
 									}
-		| TLS_VERIFY EQUAL error { yyerror("boolean value expected"); }
+		| TLS_VERIFY_CLIENT EQUAL error { yyerror("boolean value expected"); }
+		| TLS_VERIFY_SERVER EQUAL NUMBER {
+									#ifdef USE_TLS
+										tls_verify_server_cert=$3;
+									#else
+										warn("tls support not compiled in");
+									#endif
+									}
+		| TLS_VERIFY_SERVER EQUAL error { yyerror("boolean value expected"); }
 		| TLS_REQUIRE_CERTIFICATE EQUAL NUMBER {
 									#ifdef USE_TLS
 										tls_require_cert=$3;

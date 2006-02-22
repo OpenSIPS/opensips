@@ -429,11 +429,12 @@ tls_tcpconn_init(struct tcp_connection *c, int sock)
 			ip_addr2a(&dom->addr), dom->port);
 			c->extra_data = SSL_new(dom->ctx);
 		} else {
-			DBG("tls_tcpconn_init: Using default tls settings\n");
-			c->extra_data = SSL_new(default_ctx);
+			DBG("tls_tcpconn_init: Using default tls server settings\n");
+			c->extra_data = SSL_new(default_server_ctx);
 		}
 	} else if (c->state == S_CONN_CONNECT) {
-		c->extra_data = SSL_new(default_ctx);
+		DBG("tls_tcpconn_init: Using default tls client settings\n");
+		c->extra_data = SSL_new(default_client_ctx);
 	} else {
 		LOG(L_ERR,
 			"tls_tcpconn_init: Invalid connection state (bug in TCP code)\n");
