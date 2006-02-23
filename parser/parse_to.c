@@ -522,8 +522,9 @@ char* parse_to(char* buffer, char *end, struct to_body *to_b)
 						status = E_URI_ENCLOSED;
 						break;
 					case URI_OR_TOKEN:
-						end_mark = tmp;
 						status = MAYBE_URI_END;
+					case DISPLAY_TOKEN:
+						end_mark = tmp;
 						break;
 				}
 				break;
@@ -622,7 +623,7 @@ char* parse_to(char* buffer, char *end, struct to_body *to_b)
 						break;
 					case URI_OR_TOKEN:
 						end_mark = tmp;
-					case DISPLAY_TOKEN: 
+					case DISPLAY_TOKEN:
 					case MAYBE_URI_END:
 						to_b->display.len=end_mark-to_b->display.s;
 						status = S_URI_ENCLOSED;
