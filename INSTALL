@@ -64,7 +64,7 @@ OS Notes:
   need also gtar and ginstall.
     
 
-2. Howto Build opwnser From Source Distribution
+2. Howto Build openser From Source Distribution
 -------------------------------------------
 
 (NOTE: if make doesn't work try gmake  instead)
@@ -276,7 +276,7 @@ Solaris:
 	and place it in your home directory. You can set there the values for
 	openserctl variables (e.g., SIP_DOMAIN, SQL_HOST, SQL_USER, SQL_DB ...)
 
-5) Register with the server using your favorite
+5) Register with the server using your favourite
    SIP User Agent.
    For example, users of Windows Messenger need to set
    in Tools->Options->Accounts the following values:
