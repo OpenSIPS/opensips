@@ -24,6 +24,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <stdlib.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/un.h>
@@ -54,7 +55,7 @@ int main(int argc, char** argv)
 	int sock, len;
 	socklen_t from_len;
 	struct sockaddr_un from, to;
-	char *name;
+	char name[32];
 	static char buffer[BUF_SIZE];
 
 	if (argc != 2) {
@@ -71,7 +72,12 @@ int main(int argc, char** argv)
 	memset(&from, 0, sizeof(from));
 	from.sun_family = PF_LOCAL;
 	
-	name = tmpnam(0);
+        sprintf(name, "/tmp/OpenSER.%d.XXXXXX", getpid());
+        if (mkstemp(name) == -1) {
+          return -2;
+        }
+        unlink(name); 
+
 	strncpy(from.sun_path, name, strlen(name) - 1);
 
 	if (bind(sock, (struct sockaddr*)&from, SUN_LEN(&from)) == -1) {
