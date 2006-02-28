@@ -26,6 +26,7 @@
  * 2003-02-28 scratchpad compatibility abandoned (jiri)
  * 2003-01-27 next baby-step to removing ZT - PRESERVE_ZT (jiri)
  * 2003-05-01 added support for Accept HF (janakj)
+ * 2006-02-17 Session-Expires, Min-SE (dhsueh@somanetworks.com)
  */
 
 
@@ -59,8 +60,9 @@ static inline char* skip_ws(char* p, unsigned int size)
 #include "case_to.h"       /* To */
 #include "case_cseq.h"     /* CSeq */
 #include "case_call.h"     /* Call-ID */
-#include "case_cont.h"     /* Contact, Content-Type, Content-Length, Content-Purpose, 
-			    * Content-Action, Content-Disposition */
+#include "case_cont.h"     /* Contact, Content-Type, Content-Length,
+                              Content-Purpose, Content-Action,
+                              Content-Disposition */
 #include "case_rout.h"     /* Route */
 #include "case_max.h"      /* Max-Forwards */
 #include "case_reco.h"     /* Record-Route */
@@ -80,6 +82,8 @@ static inline char* skip_ws(char* p, unsigned int size)
 #include "case_dive.h"     /* Diversion */
 #include "case_remo.h"     /* Remote-Party-ID */
 #include "case_refe.h"     /* Refer-To */
+#include "case_sess.h"     /* Session-Expires */
+#include "case_min_.h"     /* Min-SE */
 
 
 #define READ(val) \
@@ -104,15 +108,17 @@ static inline char* skip_ws(char* p, unsigned int size)
 	case _allo_: allo_CASE; \
 	case _path_: path_CASE; \
 	case _unsu_: unsu_CASE; \
-        case _even_: even_CASE; \
-        case _acce_: acce_CASE; \
-        case _orga_: orga_CASE; \
-        case _prio_: prio_CASE; \
-        case _subj_: subj_CASE; \
-        case _user_: user_CASE; \
-        case _dive_: dive_CASE; \
-        case _remo_: remo_CASE; \
-        case _refe_: refe_CASE;
+	case _even_: even_CASE; \
+	case _acce_: acce_CASE; \
+	case _orga_: orga_CASE; \
+	case _prio_: prio_CASE; \
+	case _subj_: subj_CASE; \
+	case _user_: user_CASE; \
+	case _dive_: dive_CASE; \
+	case _remo_: remo_CASE; \
+	case _refe_: refe_CASE; \
+	case _sess_: sess_CASE; \
+	case _min__: min__CASE; \
 
 
 #define PARSE_COMPACT(id)          \
@@ -172,6 +178,7 @@ char* parse_hname2(char* begin, char* end, struct hdr_field* hdr)
 		case 'k': PARSE_COMPACT(HDR_SUPPORTED_T);     break;
 		case 'c': PARSE_COMPACT(HDR_CONTENTTYPE_T);   break;
 		case 'o': PARSE_COMPACT(HDR_EVENT_T);         break;
+		case 'x': PARSE_COMPACT(HDR_SESSION_EXPIRES_T); break;
 		}
 		goto other;
         }

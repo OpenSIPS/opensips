@@ -33,6 +33,7 @@
  *  2003-11-02  added diversion header field to sip_msg (jh)
  *  2004-11-08  added force_send_socket (andrei)
  *  2005-02-25  uri types added (sip, sips & tel)  (andrei)
+ *  2006-02-17 Session-Expires, Min-SE (dhsueh@somanetworks.com)
  */
 
 
@@ -200,6 +201,8 @@ struct sip_msg {
 	struct hdr_field* diversion;
 	struct hdr_field* rpid;
 	struct hdr_field* refer_to;
+	struct hdr_field* session_expires;
+	struct hdr_field* min_se;
 
 	char* eoh;        /* pointer to the end of header (if found) or null */
 	char* unparsed;   /* here we stopped parsing*/

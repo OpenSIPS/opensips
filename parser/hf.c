@@ -24,6 +24,7 @@
  * 2003-03-26 Frees also hdr->parsed for Route & Record-Route (janakj)
  * 2003-04-26 ZSW (jiri)
  * 2003-08-05 free the parsed part of Accept header (bogdan)
+ * 2006-02-17 Session-Expires, Min-SE (dhsueh@somanetworks.com)
  */
 
 
@@ -42,6 +43,7 @@
 #include "parse_disposition.h"
 #include "../ut.h"
 #include "parse_allow.h"
+#include "parse_sst.h"
 
 
 /* 
@@ -162,6 +164,13 @@ void clean_hdr_field(struct hdr_field* hf)
 
 		case HDR_REFER_TO_T:
 			free_to(hf->parsed);
+			break;
+
+		case HDR_SESSION_EXPIRES_T:
+			free_session_expires( (struct session_expires *)hf->parsed );
+			break;
+
+		case HDR_MIN_SE_T:
 			break;
 
 		default:

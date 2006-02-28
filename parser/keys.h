@@ -26,6 +26,8 @@
  * 2003-05-01 _acce_ macro added (janakj)
  * 2003-05-01 Macros for Accept-Disposition added (janakj)
  * 2003-11-02 Macros for Diversion added (jh)
+ * 2006-02-xx mod 100rel; add timer, Session-Expires,
+ *            Min-SE (dhsueh@somanetworks.com)
  */
 
 #ifndef KEYS_H
@@ -127,6 +129,14 @@
 #define _100r_ 0x72303031   /* "100r" for "100rel" */
 
 #define _time_ 0x656d6974   /* "time" */
+
+#define _sess_ 0x73736573   /* "sess" */
+#define _ion__ 0x2d6e6f69   /* "ion-" */
+#define _expi_ 0x69707865   /* "expi" */
+#define _res2_ 0x20736572   /* "res " */
+#define _res1_ 0x3a736572   /* "res:" */
+
+#define _min__ 0x2d6e696d   /* "min-" for "min-se" */
 
 
 #endif /* KEYS_H */

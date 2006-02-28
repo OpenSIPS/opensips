@@ -30,6 +30,7 @@
  *  2003-04-26 ZSW (jiri)
  *  2003-05-01  parser extended to support Accept header field (janakj)
  *  2005-03-02  free_via_list(vb) on via parse error (andrei)
+ *  2006-02-17 Session-Expires, Min-SE (dhsueh@somanetworks.com)
  */
 
 
@@ -200,6 +201,8 @@ char* get_hdr_field(char* buf, char* end, struct hdr_field* hdr)
 		case HDR_DIVERSION_T:
 		case HDR_RPID_T:
 		case HDR_REFER_TO_T:
+		case HDR_SESSION_EXPIRES_T:
+		case HDR_MIN_SE_T:
 		case HDR_OTHER_T:
 			/* just skip over it */
 			hdr->body.s=tmp;
@@ -410,6 +413,14 @@ int parse_headers(struct sip_msg* msg, hdr_flags_t flags, int next)
 			case HDR_REFER_TO_T:
 				if (msg->refer_to==0) msg->refer_to = hf;
 				msg->parsed_flag|=HDR_REFER_TO_F;
+				break;
+			case HDR_SESSION_EXPIRES_T:
+				if ( msg->session_expires == 0 ) msg->session_expires = hf;
+				msg->parsed_flag |= HDR_SESSION_EXPIRES_F;
+				break;
+			case HDR_MIN_SE_T:
+				if ( msg->min_se == 0 ) msg->min_se = hf;
+				msg->parsed_flag |= HDR_MIN_SE_F;
 				break;
 			case HDR_VIA_T:
 				msg->parsed_flag|=HDR_VIA_F;

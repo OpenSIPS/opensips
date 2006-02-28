@@ -24,6 +24,7 @@
  * 2003-02-28 scratchpad compatibility abandoned (jiri)
  * 2003-01-27 next baby-step to removing ZT - PRESERVE_ZT (jiri)
  * 2003-05-01 HDR_ACCEPT added (janakj)
+ * 2006-02-17 Session-Expires, Min-SE (dhsueh@somanetworks.com)
  */
 
 
@@ -77,6 +78,8 @@ enum _hdr_types_t {
 	HDR_DIVERSION_T				       /* Diversion header field */,
 	HDR_RPID_T					       /* Remote-Party-ID header field */,
 	HDR_REFER_TO_T				       /* Refer-To header fiels */,
+	HDR_SESSION_EXPIRES_T		       /* Session-Expires header field */,
+	HDR_MIN_SE_T				       /* Min-SE header field */,
 	HDR_EOH_T				       /* Some other header field */
 };
 
@@ -127,6 +130,8 @@ typedef unsigned long long hdr_flags_t;
 #define HDR_DIVERSION_F				HDR_F_DEF(DIVERSION)
 #define HDR_RPID_F					HDR_F_DEF(RPID)
 #define HDR_REFER_TO_F				HDR_F_DEF(REFER_TO)
+#define HDR_SESSION_EXPIRES_F		HDR_F_DEF(SESSION_EXPIRES)
+#define HDR_MIN_SE_F				HDR_F_DEF(MIN_SE)
 #define HDR_OTHER_F					HDR_F_DEF(OTHER)
 
 typedef enum _hdr_types_t hdr_types_t;
@@ -165,6 +170,7 @@ static inline int hdr_allocs_parse(struct hdr_field* hdr)
 		case HDR_DIVERSION_T:
 		case HDR_RPID_T:
 		case HDR_REFER_TO_T:
+		case HDR_SESSION_EXPIRES_T:
 			return 1;
 		default:
 			return 0;
