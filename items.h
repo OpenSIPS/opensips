@@ -46,6 +46,7 @@
 #define XL_DISABLE_PVARS	8
 #define XL_DPARAM			16
 #define XL_LEVEL2			32
+#define XL_EXTRA_FOUND		64
 
 #define XL_VAL_NONE			0
 #define XL_VAL_NULL			1
@@ -75,7 +76,8 @@ enum _xl_type {
 	XL_DSTURI_PORT,      XL_DSTURI_PROTOCOL,   XL_FROM_DISPLAYNAME,
 	XL_TO_DISPLAYNAME,   XL_OURI,              XL_OURI_USERNAME,
 	XL_OURI_DOMAIN,      XL_OURI_PORT,         XL_OURI_PROTOCOL,
-	XL_FORCE_SOCK,       XL_RPID,              XL_DIVERSION
+	XL_FORCE_SOCK,       XL_RPID_URI,          XL_DIVERSION_URI,
+	XL_ITEM_EXTRA /* keep it last */
 };
 typedef enum _xl_type xl_type_t;
 
@@ -118,6 +120,7 @@ typedef struct _xl_elem
 	struct _xl_elem *next;
 } xl_elem_t, *xl_elem_p;
 
+
 int xl_elem_free_all(xl_elem_p list);
 char* xl_parse_spec(char *s, xl_spec_p sp, int flags);
 int xl_parse_format(char *s, xl_elem_p *el, int flags);
@@ -129,6 +132,11 @@ int xl_get_avp_name(struct sip_msg* msg, xl_spec_p sp, int_str *avp_name,
 		unsigned short *name_type);
 int xl_print_spec(struct sip_msg* msg, xl_spec_p sp, char *buf, int *len);
 int xl_printf(struct sip_msg* msg, xl_elem_p list, char *buf, int *len);
+
+int xl_add_extra_spec(str *name, xl_spec_p sp);
+int xl_fill_extra_spec(xl_spec_p sp);
+int xl_init_extra_spec();
+int xl_free_extra_spec();
 
 #endif
 

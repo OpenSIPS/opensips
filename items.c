@@ -1639,6 +1639,8 @@ char* xl_parse_vname(char *s, xl_spec_p e, int flags)
 	DBG("xl_parse_vname: parsing [%s]\n", p);
 #endif
 	p++;
+	if(*p==ITEM_LNBRACKET)
+		p++;
 	e->p.ind = 0;
 	if(p[0]=='a' || p[0]=='A')
 	{ 
@@ -1761,7 +1763,7 @@ char* xl_parse_vname(char *s, xl_spec_p e, int flags)
 					e->p.val.len, e->p.ind, e->p.ind);
 		goto done;
 	} else {
-		/* avp  - we expect s:, i:, :, letter or $ */
+		/* avp  - we expect s:, i:, letter or $ */
 		if(*p==ITEM_MARKER)
 		{ /* pseudo var */
 			/* backup for avp aliases */
@@ -1819,17 +1821,16 @@ char* xl_parse_vname(char *s, xl_spec_p e, int flags)
 		} else {
 			/* name */
 			avp_type = 0;
-			if(*p==':' || (*p=='s' && *(p+1)==':') || (*p=='S' && *(p+1)==':'))
+			if((*p=='s' && *(p+1)==':') || (*p=='S' && *(p+1)==':'))
 			{
-				if(*p==':')
-					p++;
-				else
-					p+=2;
+				p+=2;
 			} else {
 				if((*p=='i' && *(p+1)==':') || (*p=='I' && *(p+1)==':'))
 				{
 					avp_type = 1;
 					p+=2;
+				} else {
+					avp_type = 2;
 				}
 			}
 			
@@ -1848,6 +1849,29 @@ char* xl_parse_vname(char *s, xl_spec_p e, int flags)
 				}
 				e->p.val.s = NULL;
 				e->p.val.len = avp_type;						
+			} else if(avp_type==2) {
+				/* avp alias */
+				if(lookup_avp_galias(&e->p.val, &avp_type,
+						&avp_name)==-1)
+				{
+					LOG(L_ERR, "xl_parse_vname: error - avp alias [%.*s]"
+						" not found!\n", e->p.val.len, e->p.val.s);
+					goto error;
+				}
+				if(avp_type&AVP_NAME_STR)
+				{
+					DBG("xl_parse_vname: alias [%.*s] => [s:%.*s]\n",
+							e->p.val.len, e->p.val.s,
+							avp_name.s.len, avp_name.s.s);
+					e->p.val.s = avp_name.s.s;
+					e->p.val.len = avp_name.s.len;
+				} else {
+					DBG("xl_parse_vname: alias [%.*s] => [i:%d]\n",
+							e->p.val.len, e->p.val.s,
+							avp_name.n);
+					e->p.val.s = NULL;
+					e->p.val.len = avp_name.n;
+				}
 			}
 		}
 		
@@ -1883,99 +1907,239 @@ error:
 
 }
 
+
+/***** pseudo-variables table *****/
+/**
+ * { { name.s, name.len }, 
+ *		{ spec.type, spec.flags, spec.itf, 
+ *			{ { spec.p.val.s, spec.p.val.len }, spec.p.ind},
+ *				{ spec.dp.itf, spec.dp.ind } } }
+ */
+static struct _xl_table {
+	str name;
+	xl_spec_t spec;
+} _xl_names_table[] = {
+	{{"ar", (sizeof("ar")-1)}, /* auth realm */
+		{ XL_AUTH_REALM, 0, xl_get_authattr, {{0, 2}, 0}, {0, 0}}},
+	{{"au", (sizeof("au")-1)}, /* */
+		{ XL_AUTH_USERNAME, 0, xl_get_authattr, {{0, 1}, 0}, {0, 0}}},
+	{{"br", (sizeof("br")-1)}, /* */
+		{ XL_BRANCH, 0, xl_get_branch, {{0, 0}, 0}, {0, 0}}},
+	{{"bR", (sizeof("bR")-1)}, /* */
+		{ XL_BRANCHES, 0, xl_get_branches, {{0, 0}, 0}, {0, 0}}},
+	{{"ci", (sizeof("ci")-1)}, /* */
+		{ XL_CALLID, 0, xl_get_callid, {{0, 0}, 0}, {0, 0}}},
+	{{"cl", (sizeof("cl")-1)}, /* */
+		{ XL_CONTENT_LENGTH, 0, xl_get_content_length, {{0, 0}, 0}, {0, 0}}},
+	{{"cs", (sizeof("cs")-1)}, /* */
+		{ XL_CSEQ, 0, xl_get_cseq, {{0, 0}, 0}, {0, 0}}},
+	{{"ct", (sizeof("ct")-1)}, /* */
+		{ XL_CONTACT, 0, xl_get_contact, {{0, 0}, 0}, {0, 0}}},
+	{{"cT", (sizeof("cT")-1)}, /* */
+		{ XL_CONTENT_TYPE, 0, xl_get_content_type, {{0, 0}, 0}, {0, 0}}},
+	{{"dd", (sizeof("dd")-1)}, /* */
+		{ XL_DSTURI_DOMAIN, 0, xl_get_dsturi_attr, {{0, 1}, 0}, {0, 0}}},
+	{{"di", (sizeof("di")-1)}, /* */
+		{ XL_DIVERSION_URI, 0, xl_get_diversion, {{0, 0}, 0}, {0, 0}}},
+	{{"dp", (sizeof("dp")-1)}, /* */
+		{ XL_DSTURI_PORT, 0, xl_get_dsturi_attr, {{0, 2}, 0}, {0, 0}}},
+	{{"dP", (sizeof("dP")-1)}, /* */
+		{ XL_DSTURI_PROTOCOL, 0, xl_get_dsturi_attr, {{0, 3}, 0}, {0, 0}}},
+	{{"ds", (sizeof("ds")-1)}, /* */
+		{ XL_DSET, 0, xl_get_dset, {{0, 0}, 0}, {0, 0}}},
+	{{"du", (sizeof("du")-1)}, /* */
+		{ XL_DSTURI, 0, xl_get_dsturi, {{0, 0}, 0}, {0, 0}}},
+	{{"duri", (sizeof("duri")-1)}, /* */
+		{ XL_DSTURI, 0, xl_get_dsturi, {{0, 0}, 0}, {0, 0}}},
+	{{"fd", (sizeof("fd")-1)}, /* */
+		{ XL_FROM_DOMAIN, 0, xl_get_from_attr, {{0, 3}, 0}, {0, 0}}},
+	{{"from", (sizeof("from")-1)}, /* */
+		{ XL_FROM, 0, xl_get_from_attr, {{0, 1}, 0}, {0, 0}}},
+	{{"fn", (sizeof("fn")-1)}, /* */
+		{ XL_FROM_DISPLAYNAME, 0, xl_get_from_attr, {{0, 5}, 0}, {0, 0}}},
+	{{"fs", (sizeof("fs")-1)}, /* */
+		{ XL_FORCE_SOCK, 0, xl_get_force_sock, {{0, 0}, 0}, {0, 0}}},
+	{{"ft", (sizeof("ft")-1)}, /* */
+		{ XL_FROM_TAG, 0, xl_get_from_attr, {{0, 4}, 0}, {0, 0}}},
+	{{"fu", (sizeof("fu")-1)}, /* */
+		{ XL_FROM, 0, xl_get_from_attr, {{0, 1}, 0}, {0, 0}}},
+	{{"fU", (sizeof("fU")-1)}, /* */
+		{ XL_FROM_USERNAME, 0, xl_get_from_attr, {{0, 2}, 0}, {0, 0}}},
+	{{"mb", (sizeof("mb")-1)}, /* */
+		{ XL_MSG_BUF, 0, xl_get_msg_buf, {{0, 0}, 0}, {0, 0}}},
+	{{"mf", (sizeof("mf")-1)}, /* */
+		{ XL_FLAGS, 0, xl_get_flags, {{0, 0}, 0}, {0, 0}}},
+	{{"mF", (sizeof("mF")-1)}, /* */
+		{ XL_HEXFLAGS, 0, xl_get_hexflags, {{0, 0}, 0}, {0, 0}}},
+	{{"mi", (sizeof("mi")-1)}, /* */
+		{ XL_MSGID, 0, xl_get_msgid, {{0, 0}, 0}, {0, 0}}},
+	{{"ml", (sizeof("ml")-1)}, /* */
+		{ XL_MSG_LEN, 0, xl_get_msg_len, {{0, 0}, 0}, {0, 0}}},
+	{{"od", (sizeof("od")-1)}, /* */
+		{ XL_OURI_DOMAIN, 0, xl_get_ouri_attr, {{0, 2}, 0}, {0, 0}}},
+	{{"op", (sizeof("op")-1)}, /* */
+		{ XL_OURI_PORT, 0, xl_get_ouri_attr, {{0, 3}, 0}, {0, 0}}},
+	{{"oP", (sizeof("oP")-1)}, /* */
+		{ XL_OURI_PROTOCOL, 0, xl_get_ouri_attr, {{0, 4}, 0}, {0, 0}}},
+	{{"ou", (sizeof("ou")-1)}, /* */
+		{ XL_OURI, 0, xl_get_ouri, {{0, 0}, 0}, {0, 0}}},
+	{{"ouri", (sizeof("ouri")-1)}, /* */
+		{ XL_OURI, 0, xl_get_ouri, {{0, 0}, 0}, {0, 0}}},
+	{{"oU", (sizeof("oU")-1)}, /* */
+		{ XL_OURI_USERNAME, 0, xl_get_ouri_attr, {{0, 1}, 0}, {0, 0}}},
+	{{"pp", (sizeof("pp")-1)}, /* */
+		{ XL_PID, 0, xl_get_pid, {{0, 0}, 0}, {0, 0}}},
+	{{"rb", (sizeof("rb")-1)}, /* */
+		{ XL_MSG_BODY, 0, xl_get_msg_body, {{0, 0}, 0}, {0, 0}}},
+	{{"rc", (sizeof("rc")-1)}, /* */
+		{ XL_RETURN_CODE, 0, xl_get_return_code, {{0, 0}, 0}, {0, 0}}},
+	{{"rd", (sizeof("rd")-1)}, /* */
+		{ XL_RURI_DOMAIN, 0, xl_get_ruri_attr, {{0, 2}, 0}, {0, 0}}},
+	{{"re", (sizeof("re")-1)}, /* */
+		{ XL_RPID_URI, 0, xl_get_rpid, {{0, 0}, 0}, {0, 0}}},
+	{{"rm", (sizeof("rm")-1)}, /* */
+		{ XL_METHOD, 0, xl_get_method, {{0, 0}, 0}, {0, 0}}},
+	{{"rp", (sizeof("rp")-1)}, /* */
+		{ XL_RURI_PORT, 0, xl_get_ruri_attr, {{0, 3}, 0}, {0, 0}}},
+	{{"rP", (sizeof("rP")-1)}, /* */
+		{ XL_RURI_PROTOCOL, 0, xl_get_ruri_attr, {{0, 4}, 0}, {0, 0}}},
+	{{"rr", (sizeof("rr")-1)}, /* */
+		{ XL_REASON, 0, xl_get_reason, {{0, 0}, 0}, {0, 0}}},
+	{{"rs", (sizeof("rs")-1)}, /* */
+		{ XL_STATUS, 0, xl_get_status, {{0, 0}, 0}, {0, 0}}},
+	{{"rt", (sizeof("rt")-1)}, /* */
+		{ XL_REFER_TO, 0, xl_get_refer_to, {{0, 0}, 0}, {0, 0}}},
+	{{"ru", (sizeof("ru")-1)}, /* */
+		{ XL_RURI, 0, xl_get_ruri, {{0, 0}, 0}, {0, 0}}},
+	{{"ruri", (sizeof("ruri")-1)}, /* */
+		{ XL_RURI, 0, xl_get_ruri, {{0, 0}, 0}, {0, 0}}},
+	{{"rU", (sizeof("rU")-1)}, /* */
+		{ XL_RURI_USERNAME, 0, xl_get_ruri_attr, {{0, 1}, 0}, {0, 0}}},
+	{{"Ri", (sizeof("Ri")-1)}, /* */
+		{ XL_RCVIP, 0, xl_get_rcvip, {{0, 0}, 0}, {0, 0}}},
+	{{"Rp", (sizeof("Rp")-1)}, /* */
+		{ XL_RCVPORT, 0, xl_get_rcvport, {{0, 0}, 0}, {0, 0}}},
+	{{"src_ip", (sizeof("src_ip")-1)}, /* */
+		{ XL_SRCIP, 0, xl_get_srcip, {{0, 0}, 0}, {0, 0}}},
+	{{"Si", (sizeof("Si")-1)}, /* */
+		{ XL_SRCIP, 0, xl_get_srcip, {{0, 0}, 0}, {0, 0}}},
+	{{"Sp", (sizeof("Sp")-1)}, /* */
+		{ XL_SRCPORT, 0, xl_get_srcport, {{0, 0}, 0}, {0, 0}}},
+	{{"td", (sizeof("td")-1)}, /* */
+		{ XL_TO_DOMAIN, 0, xl_get_to_attr, {{0, 3}, 0}, {0, 0}}},
+	{{"to", (sizeof("to")-1)}, /* */
+		{ XL_TO, 0, xl_get_to_attr, {{0, 1}, 0}, {0, 0}}},
+	{{"tn", (sizeof("tn")-1)}, /* */
+		{ XL_TO_DISPLAYNAME, 0, xl_get_to_attr, {{0, 5}, 0}, {0, 0}}},
+	{{"tt", (sizeof("tt")-1)}, /* */
+		{ XL_TO_TAG, 0, xl_get_to_attr, {{0, 4}, 0}, {0, 0}}},
+	{{"tu", (sizeof("tu")-1)}, /* */
+		{ XL_TO, 0, xl_get_to_attr, {{0, 1}, 0}, {0, 0}}},
+	{{"tU", (sizeof("tU")-1)}, /* */
+		{ XL_TO_USERNAME, 0, xl_get_to_attr, {{0, 2}, 0}, {0, 0}}},
+	{{"Tf", (sizeof("tf")-1)}, /* */
+		{ XL_TIMEF, 0, xl_get_timef, {{0, 0}, 0}, {0, 0}}},
+	{{"Ts", (sizeof("ts")-1)}, /* */
+		{ XL_TIMES, 0, xl_get_times, {{0, 0}, 0}, {0, 0}}},
+	{{"ua", (sizeof("ua")-1)}, /* */
+		{ XL_USERAGENT, 0, xl_get_useragent, {{0, 0}, 0}, {0, 0}}},
+	{{0, 0}, { 0, 0, 0, {{0, 0}, 0}, {0, 0}}}
+};
+
+int xl_lookup_spec_name(str *pvname, xl_spec_p e, int flags)
+{
+	int i;
+	if(pvname==0 || e==0)
+	{
+		LOG(L_ERR, "xl_lookup_spec_name: error - bad parameters\n");
+		return -1;
+	}
+	for(i=0; _xl_names_table[i].name.s!=0; i++)
+	{
+		if(_xl_names_table[i].name.len==pvname->len
+			&& memcmp(_xl_names_table[i].name.s, pvname->s, pvname->len)==0)
+		{
+			DBG("xl_lookup_spec_name: found [%.*s] [%d]\n",
+					pvname->len, pvname->s, _xl_names_table[i].spec.type);
+			memcpy(e, &_xl_names_table[i].spec, sizeof(xl_spec_t));
+			return 0;
+		}
+	}
+
+	e->p.val = *pvname;
+	e->itf  = NULL;
+	e->type = XL_ITEM_EXTRA;
+	i = xl_fill_extra_spec(e);
+
+	if(i<0)
+	{
+		LOG(L_ERR, "xl_lookup_spec_name: error - searching in extra items\n");
+		return -1;
+	}
+
+	if(i==0)
+	{
+		DBG("xl_lookup_spec_name: found [%.*s] in extra items\n",
+				pvname->len, pvname->s);
+		return 0;
+	}
+	
+	DBG("xl_lookup_spec_name: not found [%.*s]\n", pvname->len, pvname->s);
+	return 0;
+}
+
 char* xl_parse_spec(char *s, xl_spec_p e, int flags)
 {
 	char *p, *p0;
-	str alias;
-	int_str avp_name;
-	int avp_type;
+	str pvname;
+	int pvstate;
+	int found;
 
 	if(s==NULL || e==NULL || *s!=ITEM_MARKER)
 	{
 		LOG(L_ERR, "xl_parse_item: error - bad parameters\n");
 		return NULL;
 	}
+	pvstate = 0;
+	found = 0;
 	memset(e, 0, sizeof(xl_spec_t));
 	p = s;
 	p++;
+	if(*p==ITEM_LNBRACKET)
+	{
+		p++;
+		pvstate = 1;
+	}
+	pvname.s = p;
+	
+	/* parse special pvar : marker, avp, hdr, colors */
 	switch(*p)
 	{
 		case ITEM_MARKER:
 			e->itf = xl_get_marker;
 			e->type = XL_MARKER;
+			found = 1;
 		break;
 		case 'a':
 		case 'A':
-			if(p[1]=='v' || p[1]=='V' ||  p[1]==ITEM_LNBRACKET
-				|| p[1]=='t' || p[1]=='T' ||  p[1]=='g' ||  p[1]=='G'
-				|| p[1]=='p' || p[1]=='P' ||  p[1]=='s' ||  p[1]=='S')
+			if((p[1]==ITEM_LNBRACKET)
+				|| ((p[1]=='t'||p[1]=='T'||p[1]=='g'|| p[1]=='G'
+						||p[1]=='p'||p[1]=='P'||p[1]=='s'||p[1]=='S')
+					&&(p[2]==ITEM_LNBRACKET))
+				|| ((p[1]=='v' || p[1]=='V')
+					&&(p[2]=='p' || p[2]=='P')
+					&&((p[3]==ITEM_LNBRACKET)
+						||((p[3]=='t'||p[3]=='T'||p[3]=='g'||p[3]=='G'
+							||p[3]=='p'||p[3]=='P'||p[3]=='s'||p[3]=='s')
+							&&(p[4]==ITEM_LNBRACKET))))
+				)
 			{
-				p0 = xl_parse_vname(p-1, e, flags);
+				p0 = xl_parse_vname((pvstate==1)?p-2:p-1, e, flags);
 				if(p0==NULL)
 					goto error;
 				p = p0;
 				e->type = XL_AVP;
-			} else {
-				p++;
-				switch(*p)
-				{
-					case 'r':
-						e->itf = xl_get_authattr;
-						e->p.val.len = 2;
-						e->type = XL_AUTH_REALM;
-					break;
-					case 'u':
-						e->itf = xl_get_authattr;
-						e->p.val.len = 1;
-						e->type = XL_AUTH_USERNAME;
-					break;
-					default:
-						goto extra_spec;
-				}
-			}
-		break;
-		case 'b':
-			p++;
-			switch(*p)
-			{
-				case 'r':
-					e->itf = xl_get_branch;
-					e->type = XL_BRANCH;
-				break;
-				case 'R':
-					e->itf = xl_get_branches;
-					e->type = XL_BRANCHES;
-				break;
-				default:
-					goto extra_spec;
-			}
-		break;
-		case 'c':
-			p++;
-			switch(*p)
-			{
-				case 'i':
-					e->itf = xl_get_callid;
-					e->type = XL_CALLID;
-				break;
-				case 'l':
-					e->itf = xl_get_content_length;
-					e->type = XL_CONTENT_LENGTH;
-				break;
-				case 's':
-					e->itf = xl_get_cseq;
-					e->type = XL_CSEQ;
-				break;
-				case 't':
-					e->itf = xl_get_contact;
-					e->type = XL_CONTACT;
-				break;
-				case 'T':
-					e->itf = xl_get_content_type;
-					e->type = XL_CONTENT_TYPE;
-				break;
-				default:
-					goto extra_spec;
+				found = 1;
 			}
 		break;
 		case 'C':
@@ -2022,86 +2186,15 @@ char* xl_parse_spec(char *s, xl_spec_p e, int flags)
 				e->itf = xl_get_color;
 				e->type = XL_COLOR;
 			}
+			found = 1;
 		break;  
-		case 'd':
-			p++;
-			switch(*p)
-			{
-				case 'd':
-					e->itf = xl_get_dsturi_attr;
-					e->p.val.len = 1;
-					e->type = XL_DSTURI_DOMAIN;
-				break;
-				case 'i':
-					e->itf = xl_get_diversion;
-					e->type = XL_DIVERSION;
-				break;
-				case 'p':
-					e->itf = xl_get_dsturi_attr;
-					e->p.val.len = 2;
-					e->type = XL_DSTURI_PORT;
-				break;
-				case 'P':
-					e->itf = xl_get_dsturi_attr;
-					e->p.val.len = 3;
-					e->type = XL_DSTURI_PROTOCOL;
-				break;
-				case 's':
-					e->itf = xl_get_dset;
-					e->type = XL_DSET;
-				break;
-				case 'u':
-					e->itf = xl_get_dsturi;
-					e->type = XL_DSTURI;
-				break;
-				default:
-					goto extra_spec;
-			}
-		break;
-		case 'f':
-			p++;
-			switch(*p)
-			{
-				case 'd':
-					e->itf = xl_get_from_attr;
-					e->p.val.len = 3;
-					e->type = XL_FROM_DOMAIN;
-				break;
-				case 'n':
-					e->itf = xl_get_from_attr;
-					e->p.val.len = 5;
-					e->type = XL_FROM_DISPLAYNAME;
-				break;
-				case 's':
-					e->itf = xl_get_force_sock;
-					e->type = XL_FORCE_SOCK;
-				break;
-				case 't':
-					e->itf = xl_get_from_attr;
-					e->p.val.len = 4;
-					e->type = XL_FROM_TAG;
-				break;
-				case 'u':
-					e->itf = xl_get_from_attr;
-					e->p.val.len = 1;
-					e->type = XL_FROM;
-				break;
-				case 'U':
-					e->itf = xl_get_from_attr;
-					e->p.val.len = 2;
-					e->type = XL_FROM_USERNAME;
-				break;
-				default:
-					goto extra_spec;
-			}
-		break;
 		case 'h':
 		case 'H':
 			if((p[1]==ITEM_LNBRACKET)
 				|| ((p[1]=='d' || p[1]=='D')
 					&& (p[2]=='r' || p[2]=='R') && p[3]==ITEM_LNBRACKET))
 			{
-				p0 = xl_parse_vname(p-1, e, flags);
+				p0 = xl_parse_vname((pvstate==1)?p-2:p-1, e, flags);
 				if(p0==NULL)
 					goto error;
 				p = p0;
@@ -2109,283 +2202,60 @@ char* xl_parse_spec(char *s, xl_spec_p e, int flags)
 				goto extra_spec;
 			}
 			e->type = XL_HDR;
+			found = 1;
 		break;
-		case 'm':
-			p++;
-			switch(*p)
-			{
-				case 'b':
-					e->itf = xl_get_msg_buf;
-					e->type = XL_MSG_BUF;
-				break;
-				case 'f':
-					e->itf = xl_get_flags;
-					e->type = XL_FLAGS;
-				break;
-				case 'F':
-					e->itf = xl_get_hexflags;
-					e->type = XL_HEXFLAGS;
-				break;
-				case 'i':
-					e->itf = xl_get_msgid;
-					e->type = XL_MSGID;
-				break;
-				case 'l':
-					e->itf = xl_get_msg_len;
-					e->type = XL_MSG_LEN;
-				break;
-				default:
-					goto extra_spec;
-			}
-		break;
-		case 'o':
-			p++;
-			switch(*p)
-			{
-				case 'd':
-					e->itf = xl_get_ouri_attr;
-					e->p.val.len = 2;
-					e->type = XL_OURI_DOMAIN;
-				break;
-				case 'u':
-					e->itf = xl_get_ouri;
-					e->type = XL_OURI;
-				break;
-				case 'U':
-					e->itf = xl_get_ouri_attr;
-					e->p.val.len = 1;
-					e->type = XL_OURI_USERNAME;
-				break;
-				case 'p':
-					e->itf = xl_get_ouri_attr;
-					e->p.val.len = 3;
-					e->type = XL_OURI_PORT;
-				break;
-				case 'P':
-					e->itf = xl_get_ouri_attr;
-					e->p.val.len = 4;
-					e->type = XL_OURI_PROTOCOL;
-				break;
-				default:
-					goto extra_spec;
-			}
-		break;
-		case 'p':
-			p++;
-			switch(*p)
-			{
-				case 'p':
-					e->itf = xl_get_pid;
-					e->type = XL_PID;
-				break;
-				default:
-					goto extra_spec;
-			}
-		break;
-		case 'r':
-			p++;
-			switch(*p)
-			{
-				case 'b':
-					e->itf = xl_get_msg_body;
-					e->type = XL_MSG_BODY;
-				break;
-				case 'c':
-					e->itf = xl_get_return_code;
-					e->type = XL_RETURN_CODE;
-				break;
-				case 'd':
-					e->itf = xl_get_ruri_attr;
-					e->p.val.len = 2;
-					e->type = XL_RURI_DOMAIN;
-				break;
-				case 'e':
-					e->itf = xl_get_rpid;
-					e->type = XL_RPID;
-				break;
-				case 'm':
-					e->itf = xl_get_method;
-					e->type = XL_METHOD;
-				break;
-				case 'p':
-					e->itf = xl_get_ruri_attr;
-					e->p.val.len = 3;
-					e->type = XL_RURI_PORT;
-				break;
-				case 'P':
-					e->itf = xl_get_ruri_attr;
-					e->p.val.len = 4;
-					e->type = XL_RURI_PROTOCOL;
-				break;
-				case 'r':
-					e->itf = xl_get_reason;
-					e->type = XL_REASON;
-				break;
-				case 's':
-					e->itf = xl_get_status;
-					e->type = XL_STATUS;
-				break;
-				case 't':
-					e->itf = xl_get_refer_to;
-					e->type = XL_REFER_TO;
-				break;
-				case 'u':
-					e->itf = xl_get_ruri;
-					e->type = XL_RURI;
-				break;
-				case 'U':
-					e->itf = xl_get_ruri_attr;
-					e->p.val.len = 1;
-					e->type = XL_RURI_USERNAME;
-				break;
-				default:
-					goto extra_spec;
-			}
-		break;
-		case 'R':
-			p++;
-			switch(*p)
-			{
-				case 'i':
-					e->itf = xl_get_rcvip;
-					e->type = XL_RCVIP;
-				break;
-				case 'p':
-					e->itf = xl_get_rcvport;
-					e->type = XL_RCVPORT;
-				break;
-				default:
-					goto extra_spec;
-			}
-		break;
-		case 's':
-			p++;
-			switch(*p)
-			{
-				case 'i':
-					e->itf = xl_get_srcip;
-					e->type = XL_SRCIP;
-				break;
-				case 'p':
-					e->itf = xl_get_srcport;
-					e->type = XL_SRCPORT;
-				break;
-				default:
-					goto extra_spec;
-			}
-		break;
-		case 't':
-			p++;
-			switch(*p)
-			{
-				case 'd':
-					e->itf = xl_get_to_attr;
-					e->p.val.len = 3;
-					e->type = XL_TO_DOMAIN;
-				break;
-				case 'n':
-					e->itf = xl_get_to_attr;
-					e->p.val.len = 5;
-					e->type = XL_TO_DISPLAYNAME;
-				break;
-				case 't':
-					e->itf = xl_get_to_attr;
-					e->p.val.len = 4;
-					e->type = XL_TO_TAG;
-				break;
-				case 'u':
-					e->itf = xl_get_to_attr;
-					e->p.val.len = 1;
-					e->type = XL_TO;
-				break;
-				case 'U':
-					e->itf = xl_get_to_attr;
-					e->p.val.len = 2;
-					e->type = XL_TO_USERNAME;
-				break;
-				default:
-					goto extra_spec;
-			}
-		break;
-		case 'T':
-			p++;
-			switch(*p)
-			{
-				case 'f':
-					e->itf = xl_get_timef;
-					e->type = XL_TIMEF;
-				break;
-				case 's':
-					e->itf = xl_get_times;
-					e->type = XL_TIMES;
-				break;
-				default:
-					goto extra_spec;
-			}
-		break;
-		case 'u':
-			p++;
-			switch(*p)
-			{
-				case 'a':
-					e->itf = xl_get_useragent;
-					e->type = XL_USERAGENT;
-				break;
-				default:
-					goto extra_spec;
-			}
-		break;
-		default:
-			goto extra_spec;
 	}
-
-	goto next_spec;
-
-extra_spec:
-	if(flags&XL_LEVEL2)
+	if(found==1)
 	{
-		p0 = p;
-		while(p && *p!='\0' && *p!=ITEM_MARKER)
-			 p--;
-		if(p && *p!=ITEM_MARKER)
+		if(pvstate==1)
 		{
-			e->itf = xl_get_null;
-			e->type = XL_NULL;
-			p = p0;
-			goto next_spec;
-		}
-		p++;
-		alias.s = p;
-		p = strchr(alias.s, ITEM_RNBRACKET);
-		if(p==NULL)
-		{
-			LOG(L_ERR, "ERROR:xl_parse_spec: bad pvar name "
-				"\"%s\"\n", p0);
+			if(*(++p) == ITEM_RNBRACKET)
+				goto next_spec;
+			LOG(L_ERR, "ERROR:xl_parse_spec: bad pvar name at: "
+				"\"%s\"\n", pvname.s);
 			goto error;
 		}
-		alias.len = p-alias.s;
-		/* look for avp alias */
-		if(lookup_avp_galias(&alias, &avp_type,
-						&avp_name)==-1)
-		{
-			e->itf = xl_get_null;
-			e->type = XL_NULL;
-			p = p0;
-			goto next_spec;
-		}
-		if(avp_type&AVP_NAME_STR)
-		{
-			e->p.val.s = avp_name.s.s;
-			e->p.val.len = avp_name.s.len;
-		} else {
-			e->p.val.s = NULL;
-			e->p.val.len = avp_name.n;
-		}
-	} else {
-		e->itf = xl_get_null;
-		e->type = XL_NULL;
+		goto next_spec;
 	}
 
+extra_spec:
+	/* look for invalid name char */
+	p = pvname.s;
+
+	while(p && *p)
+	{
+		if((*p>='0' && *p<='9') || (*p>='a' && *p<='z') || (*p>='A' && *p<='Z')
+				|| (*p=='_') || (*p=='.'))
+		{
+			p++;
+		} else {
+			break;
+		}
+	}
+	
+	if(pvstate==1)
+	{
+		/* look for ')' */
+		if(p && *p!=ITEM_RNBRACKET)
+		{
+			LOG(L_ERR, "ERROR:xl_parse_spec: bad pvar name "
+				"\"%s\"\n", pvname.s);
+			goto error;
+		}
+		pvname.len = p - pvname.s;
+	} else {
+		pvname.len = p - pvname.s;
+		p--; /* skip the end again */
+	}
+
+	/*DBG("xl_parse_spec: searching [%.*s]\n", pvname.len, pvname.s);*/
+	if(xl_lookup_spec_name(&pvname, e, flags)!=0)
+	{
+		LOG(L_ERR, "ERROR:xl_parse_spec: error searching pvar "
+			"\"%.*s\"\n", pvname.len, pvname.s);
+		goto error;
+	}
+	
 next_spec:
 	/* avp alias ?!? */
 	if(*p != '\0')
@@ -2537,6 +2407,16 @@ int xl_get_spec_value(struct sip_msg* msg, xl_spec_p sp, xl_value_t *value,
 	if(msg==NULL || sp==NULL || sp->itf==NULL || value==NULL)
 		return -1;
 	memset(value, 0, sizeof(xl_value_t));
+	
+	if(sp->type==XL_ITEM_EXTRA && sp->itf==NULL)
+	{
+		if(xl_fill_extra_spec(sp)<0)
+		{
+			LOG(L_ERR, "xl_get_spec_value: error - filling extra spec\n");
+			return -1;
+		}
+	}
+	
 	if(sp->flags&XL_DPARAM) {
 		if(sp->dp.itf==NULL)
 		{
