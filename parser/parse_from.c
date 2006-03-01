@@ -40,8 +40,8 @@
  * rad_acc module and any other modules that needs the FROM header.
  *
  * params: msg : sip msg
- * returns 0 on success,
- *        -1 on failure.
+ * returns =0 on success,
+ *         <0 on failure.
  */
 int parse_from_header( struct sip_msg *msg)
 {

@@ -464,7 +464,7 @@ static int xl_get_from_attr(struct sip_msg *msg, xl_value_t *res,
 	if(msg==NULL || res==NULL)
 		return -1;
 
-	if(parse_from_header(msg)==-1)
+	if(parse_from_header(msg)<0)
 	{
 		LOG(L_ERR, "xl_get_from_attr: ERROR cannot parse FROM header\n");
 		return xl_get_null(msg, res, param, flags);

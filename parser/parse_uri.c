@@ -1065,21 +1065,6 @@ error_exit:
 }
 
 
-static inline int _parse_ruri(str *uri,
-	int *status, struct sip_uri *parsed_uri)
-{
-	if (*status) return 1;
-
-	if (parse_uri(uri->s, uri->len, parsed_uri)<0) {
-		LOG(L_ERR, "ERROR: _parse_ruri: bad uri <%.*s>\n", 
-				uri->len, ZSW(uri->s));
-		*status=0;
-		return -1;
-	}
-	*status=1;
-	return 1;
-}
-
 int parse_sip_msg_uri(struct sip_msg* msg)
 {
 	char* tmp;
@@ -1100,15 +1085,26 @@ int parse_sip_msg_uri(struct sip_msg* msg)
 		return -1;
 	}
 	msg->parsed_uri_ok=1;
-	return 1;
+	return 0;
 }
+
 
 int parse_orig_ruri(struct sip_msg* msg)
 {
-	int ret;
+	str *uri;
 
-	ret=_parse_ruri(&REQ_LINE(msg).uri,
-		&msg->parsed_orig_ruri_ok, &msg->parsed_orig_ruri);
-	if (ret<0) LOG(L_ERR, "ERROR: parse_orig_ruri failed\n");
-	return ret;
+	if (msg->parsed_orig_ruri_ok)
+		return 1;
+
+	uri = &REQ_LINE(msg).uri;
+
+	if (parse_uri(uri->s, uri->len, &msg->parsed_orig_ruri)<0) {
+		LOG(L_ERR, "ERROR:parse_orig_ruri: bad uri <%.*s>\n",
+			uri->len, ZSW(uri->s));
+		msg->parsed_orig_ruri_ok = 0;
+		return -1;
+	}
+
+	msg->parsed_orig_ruri_ok = 1;
+	return 0;
 }

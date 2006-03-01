@@ -569,7 +569,7 @@ static int eval_elem(struct expr* e, struct sip_msg* msg)
 				}
 				break;
 		case FROM_URI_O:
-				if (parse_from_header(msg)!=0){
+				if (parse_from_header(msg)<0){
 					LOG(L_ERR, "ERROR: eval_elem: bad or missing"
 								" From: header\n");
 					goto error;
