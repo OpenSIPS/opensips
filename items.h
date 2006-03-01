@@ -138,5 +138,21 @@ int xl_fill_extra_spec(xl_spec_p sp);
 int xl_init_extra_spec();
 int xl_free_extra_spec();
 
+
+#define XL_PRINT_BUF_SIZE  1024
+static inline int xl_printf_s(struct sip_msg* msg, xl_elem_p list, str *s)
+{
+	static char buf[XL_PRINT_BUF_SIZE];
+
+	if (list->next==0 && list->spec.itf==0) {
+		*s = list->text;
+		return 0;
+	} else {
+		s->s = buf;
+		s->len = XL_PRINT_BUF_SIZE;
+		return xl_printf( msg, list,buf, &s->len);
+	}
+}
+
 #endif
 
