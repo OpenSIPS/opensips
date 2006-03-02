@@ -27,6 +27,8 @@
  *  2003-03-29  cleaning pkg_mallocs introduced (jiri)
  *  2003-04-24  module version checking introduced (jiri)
  *  2004-09-19  compile flags are checked too (andrei)
+ *  2006-03-02  added find_cmd_export_t(), killed find_exportp() and
+ *              find_module() (bogdan)
  */
 
 
@@ -244,6 +246,22 @@ skip:
  */
 cmd_function find_export(char* name, int param_no, int flags)
 {
+	cmd_export_t* cmd;
+
+	cmd = find_cmd_export_t(name, param_no, flags);
+	if (cmd==0)
+		return 0;
+	return cmd->function;
+}
+
+
+
+/* searches the module list and returns pointer to the "name" cmd_export_t
+ * structure or 0 if not found 
+ * flags parameter is OR value of all flags that must match
+ */
+cmd_export_t* find_cmd_export_t(char* name, int param_no, int flags)
+{
 	struct sr_module* t;
 	cmd_export_t* cmd;
 
@@ -253,37 +271,13 @@ cmd_function find_export(char* name, int param_no, int flags)
 			   (cmd->param_no==param_no) &&
 			   ((cmd->flags & flags) == flags)
 			  ){
-				DBG("find_export: found <%s>(%d) in module %s [%s]\n",
+				DBG("find_cmd_export_t: found <%s>(%d) in module %s [%s]\n",
 					name, param_no, t->exports->name, t->path);
-				return cmd->function;
-			}
-		}
-	}
-	DBG("find_export: <%s> not found \n", name);
-	return 0;
-}
-
-
-
-/* searches through the exported functions (from all modules) for the
- * pointer function "fp";
- * returns full function description if found;
- */
-cmd_export_t* find_exportp(cmd_function fp)
-{
-	struct sr_module* t;
-	cmd_export_t* cmd;
-
-	for(t=modules;t;t=t->next){
-		for(cmd=t->exports->cmds; cmd && cmd->name; cmd++){
-			if( cmd->function==fp ){
-				//DBG("find_exportp: found <%s>[%p] in module %s [%s]\n",
-				//	cmd->name, fp, t->exports->name, t->path);
 				return cmd;
 			}
 		}
 	}
-	DBG("find_exportp: <%p> not found \n", fp);
+	DBG("find_cmd_export_t: <%s> not found \n", name);
 	return 0;
 }
 
@@ -340,25 +334,6 @@ void* find_param_export(char* mod, char* name, modparam_t type)
 	}
 	DBG("find_param_export: parameter <%s> or module <%s> not found\n",
 			name, mod);
-	return 0;
-}
-
-
-/* finds a module, given a pointer to a module function *
- * returns pointer to module, & if  c!=0, *c=pointer to the
- * function cmd_export structure*/
-struct sr_module* find_module(void* f, cmd_export_t  **c)
-{
-	struct sr_module* t;
-	cmd_export_t* cmd;
-	
-	for (t=modules;t;t=t->next){
-		for(cmd=t->exports->cmds; cmd && cmd->name; cmd++) 
-			if (f==(void*)cmd->function) {
-				if (c) *c=cmd;
-				return t;
-			}
-	}
 	return 0;
 }
 

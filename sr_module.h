@@ -31,6 +31,7 @@
  *  2004-09-19  switched to version.h for the module versions checks (andrei)
  *  2004-12-03  changed param_func_t to (modparam_t, void*), killed
  *               param_func_param_t   (andrei)
+ *  2006-03-02  added find_cmd_export_t(), killed find_exportp() (bogdan)
  */
 
 
@@ -129,10 +130,9 @@ struct sr_module* modules; /* global module list*/
 int register_builtin_modules();
 int register_module(struct module_exports*, char*,  void*);
 int load_module(char* path);
-cmd_export_t* find_exportp(cmd_function fp);
+cmd_export_t* find_cmd_export_t(char* name, int param_no, int flags);
 cmd_function find_export(char* name, int param_no, int flags);
 cmd_function find_mod_export(char* mod, char* name, int param_no, int flags);
-struct sr_module* find_module(void *f, cmd_export_t** cmd);
 void destroy_modules();
 int init_child(int rank);
 int init_modules(void);

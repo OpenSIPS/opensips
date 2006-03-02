@@ -34,6 +34,9 @@
  *              the ip with all the addresses (andrei)
  *  2003-10-10  added more operators support to comp_* (<,>,<=,>=,!=) (andrei)
  *  2004-10-19  added from_uri & to_uri (andrei)
+ *  2006-03-02  MODULE_T action points to a cmd_export_t struct instead to 
+ *               a function address - more info is accessible (bogdan)
+ *              Fixup failure reports the config line (bogdan)
  */
 
  
@@ -151,7 +154,6 @@ static int fix_actions(struct action* a)
 	char *tmp;
 	int ret;
 	cmd_export_t* cmd;
-	struct sr_module* mod;
 	str s;
 	struct hostent* he;
 	struct ip_addr ip;
@@ -176,7 +178,8 @@ static int fix_actions(struct action* a)
 							if (tmp==0){
 								LOG(L_CRIT, "ERROR: fix_actions:"
 										"memory allocation failure\n");
-								return E_OUT_OF_MEM;
+								ret = E_OUT_OF_MEM;
+								goto error;
 							}
 							t->p1_type=STRING_ST;
 							t->p1.string=tmp;
@@ -247,19 +250,18 @@ static int fix_actions(struct action* a)
 				}
 				break;
 			case MODULE_T:
-				if ((mod=find_module(t->p1.data, &cmd))!=0){
-					DBG("fixing %s %s\n", mod->path, cmd->name);
-					if (cmd->fixup){
-						if (cmd->param_no>0){
-							ret=cmd->fixup(&t->p2.data, 1);
-							t->p2_type=MODFIXUP_ST;
-							if (ret<0) return ret;
-						}
-						if (cmd->param_no>1){
-							ret=cmd->fixup(&t->p3.data, 2);
-							t->p3_type=MODFIXUP_ST;
-							if (ret<0) return ret;
-						}
+				cmd = (cmd_export_t*)t->p1.data;
+				DBG("fixing %s, line %d\n", cmd->name, t->line);
+				if (cmd->fixup){
+					if (cmd->param_no>0){
+						ret=cmd->fixup(&t->p2.data, 1);
+						t->p2_type=MODFIXUP_ST;
+						if (ret<0) goto error;
+					}
+					if (cmd->param_no>1){
+						ret=cmd->fixup(&t->p3.data, 2);
+						t->p3_type=MODFIXUP_ST;
+						if (ret<0) goto error;
 					}
 				}
 				break;
@@ -275,7 +277,8 @@ static int fix_actions(struct action* a)
 					LOG(L_ERR, "ERROR: fix_actions: force_send_socket:"
 								" could not resolve %s\n",
 								((struct socket_id*)t->p1.data)->name);
-					return E_BAD_ADDRESS;
+					ret = E_BAD_ADDRESS;
+					goto error;
 				}
 				hostent2ip_addr(&ip, he, 0);
 				si=find_si(&ip, ((struct socket_id*)t->p1.data)->port,
@@ -285,7 +288,8 @@ static int fix_actions(struct action* a)
 							" argument: %s:%d (ser doesn't listen on it)\n",
 							((struct socket_id*)t->p1.data)->name,
 							((struct socket_id*)t->p1.data)->port);
-					return E_BAD_ADDRESS;
+					ret = E_BAD_ADDRESS;
+					goto error;
 				}
 				t->p1.data=si;
 				t->p1_type=SOCKETINFO_ST;
@@ -293,6 +297,10 @@ static int fix_actions(struct action* a)
 		}
 	}
 	return 0;
+error:
+	LOG(L_ERR,"ERROR: fix_actions: fixing failed (code=%d) at cfg line %d\n",
+		ret, t->line);
+	return ret;
 }
 
 
@@ -817,12 +825,7 @@ static int check_actions(struct action *a, int r_type)
 				break;
 			case MODULE_T:
 				/* do check :D */
-				fct = find_exportp((cmd_function)(a->p1.data));
-				if (fct==0) {
-					LOG(L_CRIT,"BUG:check_actions: script function not found"
-						" in exports\n");
-					goto error;
-				}
+				fct = (cmd_export_t*)(a->p1.data);
 				if ( (fct->flags&r_type)!=r_type ) {
 					rcheck_status = -1;
 					LOG(L_ERR,"ERROR:check_actions: script function "

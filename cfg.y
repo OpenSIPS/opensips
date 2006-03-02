@@ -58,6 +58,10 @@
  * 2005-07-26  default onreply route added (andrei)
  * 2005-11-22  added tos configurability (thanks to Andreas Granig)
  * 2005-11-29  added serialize_branches and next_branches (bogdan)
+ * 2006-03-02  MODULE_T action points to a cmd_export_t struct instead to 
+ *              a function address - more info is accessible (bogdan)
+ * 2006-03-02  store the cfg line into the action struct to be able to
+ *              give more hints if fixups fail (bogdan)
  */
 
 
@@ -106,7 +110,7 @@ extern int yylex();
 static void yyerror(char* s);
 static char* tmp;
 static int i_tmp;
-static void* f_tmp;
+static void* cmd_tmp;
 static struct socket_id* lst_tmp;
 static int rt;  /* Type of route block for find_export */
 static str* str_tmp;
@@ -121,6 +125,12 @@ static struct socket_id* mk_listen_id(char*, int, int);
 static char *mpath=NULL;
 static char mpath_buf[256];
 static int  mpath_len = 0;
+
+extern int line;
+#define mk_action(_type, _p1_type, _p2_type, _p1, _p2) \
+	mk_action_2p(_type, _p1_type, _p2_type, _p1, _p2, line)
+#define mk_action3(_type, _p1_type, _p2_type, _p3_type, _p1, _p2, _p3) \
+	mk_action_3p(_type, _p1_type, _p2_type, _p3_type, _p1, _p2, _p3, line)
 
 %}
 
@@ -2017,9 +2027,9 @@ cmd:		FORWARD LPAREN host RPAREN	{ $$=mk_action(	FORWARD_T,
 								" expected");
 								}
 		| NEXT_BRANCHES error {$$=0; yyerror("missing '(' or ')' ?"); }
-		| ID LPAREN RPAREN		{ f_tmp=(void*)find_export($1, 0, rt);
-									if (f_tmp==0){
-										if (find_export($1, 0, 0)) {
+		| ID LPAREN RPAREN		{ cmd_tmp=(void*)find_cmd_export_t($1, 0, rt);
+									if (cmd_tmp==0){
+										if (find_cmd_export_t($1, 0, 0)) {
 											yyerror("Command cannot be "
 												"used in the block\n");
 										} else {
@@ -2029,16 +2039,16 @@ cmd:		FORWARD LPAREN host RPAREN	{ $$=mk_action(	FORWARD_T,
 										$$=0;
 									}else{
 										$$=mk_action(	MODULE_T,
-													CMDF_ST,
+													CMD_ST,
 													0,
-													f_tmp,
+													cmd_tmp,
 													0
 												);
 									}
 								}
-		| ID LPAREN STRING RPAREN { f_tmp=(void*)find_export($1, 1, rt);
-									if (f_tmp==0){
-										if (find_export($1, 1, 0)) {
+		| ID LPAREN STRING RPAREN { cmd_tmp=(void*)find_cmd_export_t($1,1,rt);
+									if (cmd_tmp==0){
+										if (find_cmd_export_t($1, 1, 0)) {
 											yyerror("Command cannot be used "
 												"in the block\n");
 										} else {
@@ -2048,17 +2058,17 @@ cmd:		FORWARD LPAREN host RPAREN	{ $$=mk_action(	FORWARD_T,
 										$$=0;
 									}else{
 										$$=mk_action(	MODULE_T,
-														CMDF_ST,
+														CMD_ST,
 														STRING_ST,
-														f_tmp,
+														cmd_tmp,
 														$3
 													);
 									}
 								  }
 		| ID LPAREN STRING  COMMA STRING RPAREN 
-								  { f_tmp=(void*)find_export($1, 2, rt);
-									if (f_tmp==0){
-										if (find_export($1, 2, 0)) {
+								  { cmd_tmp=(void*)find_cmd_export_t($1,2,rt);
+									if (cmd_tmp==0){
+										if (find_cmd_export_t($1, 2, 0)) {
 											yyerror("Command cannot be used "
 												"in the block\n");
 										} else {
@@ -2068,10 +2078,10 @@ cmd:		FORWARD LPAREN host RPAREN	{ $$=mk_action(	FORWARD_T,
 										$$=0;
 									}else{
 										$$=mk_action3(	MODULE_T,
-														CMDF_ST,
+														CMD_ST,
 														STRING_ST,
 														STRING_ST,
-														f_tmp,
+														cmd_tmp,
 														$3,
 														$5
 													);
@@ -2118,11 +2128,3 @@ static struct socket_id* mk_listen_id(char* host, int proto, int port)
 	return l;
 }
 
-
-/*
-int main(int argc, char ** argv)
-{
-	if (yyparse()!=0)
-		fprintf(stderr, "parsing error\n");
-}
-*/

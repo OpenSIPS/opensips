@@ -33,6 +33,8 @@
  *  2003-10-29  added FORCE_TCP_ALIAS_T (andrei)
  *  2004-11-30  added FORCE_SEND_SOCKET_T (andrei)
  *  2005-11-29  added serialize_branches and next_branches (bogdan)
+ *  2006-03-02  MODULE_T action points to a cmd_export_t struct instead to 
+ *               a function address - more info is accessible (bogdan)
  */
 
 
@@ -655,10 +657,9 @@ int do_action(struct action* a, struct sip_msg* msg)
 			ret=(return_code<0)?return_code:1;
 			break;
 		case MODULE_T:
-			if ( ((a->p1_type==CMDF_ST)&&a->p1.data)/*&&
-					((a->p2_type==STRING_ST)&&a->p2.data)*/ ){
-				ret=((cmd_function)(a->p1.data))(msg, (char*)a->p2.data,
-													  (char*)a->p3.data);
+			if ( (a->p1_type==CMD_ST) && a->p1.data ) {
+				ret=((cmd_export_t*)(a->p1.data))->function(msg,
+						(char*)a->p2.data, (char*)a->p3.data);
 			}else{
 				LOG(L_CRIT,"BUG: do_action: bad module call\n");
 			}
@@ -764,7 +765,6 @@ error_uri:
 	if (new_uri) pkg_free(new_uri);
 	return E_UNSPEC;
 error_fwd_uri:
-	/*free_uri(&uri); -- not needed anymore, using msg->parsed_uri*/
 	return ret;
 }
 

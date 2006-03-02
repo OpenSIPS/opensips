@@ -27,6 +27,8 @@
  *  2003-03-19  replaced all mallocs/frees w/ pkg_malloc/pkg_free (andrei)
  *  2003-04-12  FORCE_RPORT_T added (andrei)
  *  2003-10-02  added SET_ADV_ADDRESS & SET_ADV_PORT (andrei)
+ *  2006-03-02  mk_action -> mk_action_2p and mk_action3 -> mk_action_3p;
+ *              both functions take as extra param the cfg line (bogdan)
  */
 
 
@@ -37,6 +39,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "sr_module.h"
 #include "dprint.h"
 #include "ip_addr.h"
 #include "mem/mem.h"
@@ -77,8 +80,8 @@ error:
 
 
 
-struct action* mk_action(int type, int p1_type, int p2_type,
-											void* p1, void* p2)
+struct action* mk_action_2p(int type, int p1_type, int p2_type,
+											void* p1, void* p2, int line)
 {
 	struct action* a;
 	a=(struct action*)pkg_malloc(sizeof(struct action));
@@ -89,6 +92,7 @@ struct action* mk_action(int type, int p1_type, int p2_type,
 	a->p2_type=p2_type;
 	a->p1.string=(char*) p1;
 	a->p2.string=(char*) p2;
+	a->line = line;
 	a->next=0;
 	return a;
 	
@@ -99,12 +103,12 @@ error:
 }
 
 
-struct action* mk_action3(int type, int p1_type, int p2_type, int p3_type,
-							void* p1, void* p2, void* p3)
+struct action* mk_action_3p(int type, int p1_type, int p2_type, int p3_type,
+							void* p1, void* p2, void* p3, int line)
 {
 	struct action* a;
 
-	a=mk_action(type, p1_type, p2_type, p1, p2);
+	a=mk_action_2p(type, p1_type, p2_type, p1, p2, line);
 	if (a){
 			a->p3_type=p3_type;
 			a->p3.data=p3;
@@ -382,8 +386,8 @@ void print_action(struct action* t)
 		case ACTIONS_ST:
 				print_actions((struct action*)t->p1.data);
 				break;
-		case CMDF_ST:
-				DBG("f_ptr<%p>",t->p1.data);
+		case CMD_ST:
+				DBG("f<%s>",((cmd_export_t*)t->p1.data)->name);
 				break;
 		case SOCKID_ST:
 				DBG("%d:%s:%d",

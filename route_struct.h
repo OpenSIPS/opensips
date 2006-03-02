@@ -26,6 +26,7 @@
  *  2003-04-22  strip_tail added (jiri)
  *  2003-10-10  >,<,>=,<=, != and MSGLEN_O added (andrei)
  *  2003-10-28  FORCE_TCP_ALIAS added (andrei)
+ *  2006-03-02  new field "line" in action struct - the cfg line (bogdan)
  */
 
 
@@ -77,7 +78,7 @@ enum { FORWARD_T=1, SEND_T, DROP_T, LOG_T, ERROR_T, ROUTE_T, EXEC_T,
 		SET_DSTURI_T, RESET_DSTURI_T, ISDSTURISET_T
 };
 enum { NOSUBTYPE=0, STRING_ST, NET_ST, NUMBER_ST, IP_ST, RE_ST, PROXY_ST,
-		EXPR_ST, ACTIONS_ST, CMDF_ST, MODFIXUP_ST, URIHOST_ST, URIPORT_ST,
+		EXPR_ST, ACTIONS_ST, CMD_ST, MODFIXUP_ST, URIHOST_ST, URIPORT_ST,
 		MYSELF_ST, STR_ST, SOCKID_ST, SOCKETINFO_ST };
 
 	
@@ -107,6 +108,7 @@ struct action{
 		char* string;
 		void* data;
 	}p1, p2, p3;
+	int line;
 	struct action* next;
 };
 
@@ -114,10 +116,10 @@ struct action{
 
 struct expr* mk_exp(int op, struct expr* left, struct expr* right);
 struct expr* mk_elem(int op, int subtype, int operand, void* param);
-struct action* mk_action(int type, int p1_type, int p2_type,
-							void* p1, void* p2);
-struct action* mk_action3(int type, int p1_type, int p2_type, int p3_type, 
-							void* p1, void* p2, void* p3);
+struct action* mk_action_2p(int type, int p1_type, int p2_type,
+							void* p1, void* p2, int line);
+struct action* mk_action_3p(int type, int p1_type, int p2_type, int p3_type, 
+							void* p1, void* p2, void* p3, int line);
 struct action* append_action(struct action* a, struct action* b);
 
 
