@@ -2021,9 +2021,9 @@ static struct _xl_table {
 		{ XL_RCVPORT, 0, xl_get_rcvport, {{0, 0}, 0}, {0, 0}}},
 	{{"src_ip", (sizeof("src_ip")-1)}, /* */
 		{ XL_SRCIP, 0, xl_get_srcip, {{0, 0}, 0}, {0, 0}}},
-	{{"Si", (sizeof("Si")-1)}, /* */
+	{{"si", (sizeof("si")-1)}, /* */
 		{ XL_SRCIP, 0, xl_get_srcip, {{0, 0}, 0}, {0, 0}}},
-	{{"Sp", (sizeof("Sp")-1)}, /* */
+	{{"sp", (sizeof("sp")-1)}, /* */
 		{ XL_SRCPORT, 0, xl_get_srcport, {{0, 0}, 0}, {0, 0}}},
 	{{"td", (sizeof("td")-1)}, /* */
 		{ XL_TO_DOMAIN, 0, xl_get_to_attr, {{0, 3}, 0}, {0, 0}}},
