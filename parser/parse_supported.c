@@ -39,30 +39,17 @@
 /*
  * Parse Supported HF body.
  */
-static int parse_supported_body(struct hdr_field* _h)
+static inline int parse_supported_body(str *body, unsigned int *sup)
 {
 	register char* p;
 	register unsigned int val;
-	char *buf;
 	int len, pos = 0;
-	unsigned int *sup;
 
-	buf = _h->body.s;
-	len = _h->body.len;
-	if (!buf || len <= 0) {
-		LOG(L_ERR, "ERROR: parse_supported_body(): No body for Supported HF\n");
-		return -1;
-	}
-
-	_h->parsed = pkg_malloc(sizeof(unsigned int));
-	if(!_h->parsed) {
-		LOG(L_ERR, "ERROR: parse_supported_body(): No memory left for supported-bitmap\n");
-		return -1;
-	}
-	sup = (unsigned int*)_h->parsed;
 	*sup = 0;
 
-	p = buf;
+	p = body->s;
+	len = body->len;
+
 	while (pos < len) {
 		/* skip spaces and commas */
 		for (; pos < len && IS_DELIM(p); ++pos, ++p);
@@ -111,19 +98,43 @@ static int parse_supported_body(struct hdr_field* _h)
 }
 
 /*
- * Parse Supported header.
+ * Parse all Supported headers
  */
-int parse_supported(struct hdr_field* _h, unsigned int *supported)
+int parse_supported( struct sip_msg *msg)
 {
-	if (!supported) {
-		LOG(L_ERR, "parse_supported(): NULL pointer for supported-bitmap passed\n");
+	unsigned int supported;
+	struct hdr_field  *hdr;
+	struct supported_body *sb;
+
+	/* maybe the header is already parsed! */
+	if (msg->supported && msg->supported->parsed)
+		return 0;
+
+	/* parse to the end in order to get all SUPPORTED headers */
+	if (parse_headers(msg,HDR_EOH_F,0)==-1 || !msg->supported)
 		return -1;
+
+	/* bad luck! :-( - we have to parse them */
+	supported = 0;
+	for( hdr=msg->supported ; hdr ; hdr=hdr->sibling) {
+		if (hdr->parsed) {
+			supported |= ((struct supported_body*)hdr->parsed)->supported;
+			continue;
+		}
+
+		sb = (struct supported_body*)pkg_malloc(sizeof(struct supported_body));
+		if (sb == 0) {
+			LOG(L_ERR, "ERROR:parse_supported: Out of pkg_memory\n");
+			return -1;
+		}
+
+		parse_supported_body(&(hdr->body), &(sb->supported));
+		sb->supported_all = 0;
+		hdr->parsed = (void*)sb;
+		supported |= sb->supported;
 	}
 
-	if (!_h->parsed && parse_supported_body(_h) < 0) {
-		return -1;
-	}
-
-	*supported = *(unsigned int*)_h->parsed;
+	((struct supported_body*)msg->supported->parsed)->supported_all = 
+		supported;
 	return 0;
 }

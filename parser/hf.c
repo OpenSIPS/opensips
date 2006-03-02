@@ -42,6 +42,7 @@
 #include "contact/parse_contact.h"
 #include "parse_disposition.h"
 #include "../ut.h"
+#include "parse_supported.h"
 #include "parse_allow.h"
 #include "parse_sst.h"
 
@@ -111,7 +112,7 @@ void clean_hdr_field(struct hdr_field* hf)
 			break;
 
 		case HDR_SUPPORTED_T:
-			pkg_free(hf->parsed);
+			free_supported((struct supported_body**)(&(hf->parsed)));
 			break;
 
 		case HDR_PROXYREQUIRE_T:
@@ -121,7 +122,7 @@ void clean_hdr_field(struct hdr_field* hf)
 			break;
 
 		case HDR_ALLOW_T:
-			pkg_free(hf->parsed);
+			free_allow((struct allow_body**)(&(hf->parsed)));
 			break;
 
 		case HDR_EVENT_T:

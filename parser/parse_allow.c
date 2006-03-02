@@ -18,6 +18,11 @@
  * You should have received a copy of the GNU General Public License 
  * along with this program; if not, write to the Free Software 
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
+ * History:
+ * -------
+ * 2006-03-02  parse_allow() parses and cumulates all ALLOW headers (bogdan)
+
  */
 
 #include <stdlib.h>
@@ -28,9 +33,9 @@
 #include "parse_methods.h"
 #include "msg_parser.h"
 
- 
+
 /*
- * This method is used to parse Allow HF body.
+ * This method is used to parse all Allow HF body.
  *
  * params: msg : sip msg
  * returns 0 on success,
@@ -38,28 +43,42 @@
  */
 int parse_allow(struct sip_msg *msg)
 {
-	unsigned int *methods;
-
-	if (!msg->allow && (parse_headers(msg,HDR_ALLOW_F,0)==-1 || !msg->allow))
-		return -1;
+	unsigned int allow;
+	struct hdr_field  *hdr;
+	struct allow_body *ab;
 
 	/* maybe the header is already parsed! */
-	if (msg->allow->parsed)
+	if (msg->allow && msg->allow->parsed)
 		return 0;
 
-	/* bad luck! :-( - we have to parse it */
-	methods = pkg_malloc(sizeof(unsigned int));
-	if (methods == 0) {
-		LOG(L_ERR, "ERROR:parse_allow: Out of pkg_memory\n");
+	/* parse to the end in order to get all ALLOW headers */
+	if (parse_headers(msg,HDR_EOH_F,0)==-1 || !msg->allow)
 		return -1;
+
+	/* bad luck! :-( - we have to parse them */
+	allow = 0;
+	for( hdr=msg->allow ; hdr ; hdr=hdr->sibling) {
+		if (hdr->parsed) {
+			allow |= ((struct allow_body*)hdr->parsed)->allow;
+			continue;
+		}
+
+		ab = (struct allow_body*)pkg_malloc(sizeof(struct allow_body));
+		if (ab == 0) {
+			LOG(L_ERR, "ERROR:parse_allow: Out of pkg_memory\n");
+			return -1;
+		}
+
+		if (parse_methods(&(hdr->body), &(ab->allow))!=0) {
+			LOG(L_ERR, "ERROR:parse_allow: Bad allow body header\n"); 
+			return -1;
+		}
+		ab->allow_all = 0;
+		hdr->parsed = (void*)ab;
+		allow |= ab->allow;
 	}
 
-	if (parse_methods(&(msg->allow->body), methods)!=0) {
-		LOG(L_ERR, "ERROR:parse_allow: Bad allow body header\n"); 
-		return -1;
-	}
-
-	msg->allow->parsed = (void*)methods;
+	((struct allow_body*)msg->allow->parsed)->allow_all = allow;
 	return 0;
 }
 

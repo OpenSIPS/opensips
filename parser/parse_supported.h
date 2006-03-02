@@ -21,13 +21,19 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
+ *
+ * History:
+ * -------
+ * 2006-03-02  parse_supported() parses and cumulates all SUPPORTED 
+ *             headers (bogdan)
  */
 
 #ifndef PARSE_SUPPORTED_H
 #define PARSE_SUPPORTED_H
 
 #include "msg_parser.h"
-#include "hf.h"
+#include "../mem/mem.h"
+
 
 #define F_SUPPORTED_PATH	(1 << 0)
 #define F_SUPPORTED_100REL	(1 << 1)
@@ -44,9 +50,31 @@
 #define SUPPORTED_TIMER_STR		"timer"
 #define SUPPORTED_TIMER_LEN		(sizeof(SUPPORTED_TIMER_STR)-1)
 
+
+#define get_supported(p_msg) \
+	(((struct supported_body*)(p_msg)->supported->parsed)->supported_all)
+
+
+struct supported_body {
+	unsigned int supported;        /* supported mask for the current hdr */
+	unsigned int supported_all;    /* suppoted mask for the all "supported" hdr
+	                                *  - it's set only for the first hdr in 
+	                                *  sibling list*/
+};
+
+
 /*
- * Parse Supported header.
+ * Parse all Supported headers.
  */
-int parse_supported(struct hdr_field* _h, unsigned int *supported);
+int parse_supported( struct sip_msg *msg);
+
+
+static inline void free_supported(struct supported_body **sb)
+{
+	if (sb && *sb) {
+		pkg_free(*sb);
+		*sb = 0;
+	}
+}
 
 #endif /* PARSE_SUPPORTED_H */

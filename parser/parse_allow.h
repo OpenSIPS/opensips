@@ -18,24 +18,45 @@
  * You should have received a copy of the GNU General Public License 
  * along with this program; if not, write to the Free Software 
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
+ * History:
+ * -------
+ * 2006-03-02  parse_allow() parses and cumulates all ALLOW headers (bogdan)
  */
- 
+
 #ifndef PARSE_ALLOW_H
 #define PARSE_ALLOW_H
- 
+
+#include "../mem/mem.h"
 #include "msg_parser.h"
 
  
 /* 
  * casting macro for accessing Allow body 
  */
-#define get_allow_methods(p_msg) (*((unsigned int*)(p_msg)->allow->parsed))
+#define get_allow_methods(p_msg) \
+	(((struct allow_body*)(p_msg)->allow->parsed)->allow_all)
 
+
+struct allow_body {
+	unsigned int allow;            /* allow mask for the current hdr */
+	unsigned int allow_all;        /* allow mask for the all allow hdr - it's
+	                                * set only for the first hdr in sibling
+	                                * list*/
+};
 
 /*
- * Parse Allow HF body
+ * Parse all Allow HFs
  */
 int parse_allow( struct sip_msg *msg);
 
+
+static inline void free_allow(struct allow_body **ab)
+{
+	if (ab && *ab) {
+		pkg_free(*ab);
+		*ab = 0;
+	}
+}
 
 #endif /* PARSE_ALLOW_H */

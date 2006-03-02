@@ -25,6 +25,7 @@
  * 2003-01-27 next baby-step to removing ZT - PRESERVE_ZT (jiri)
  * 2003-05-01 HDR_ACCEPT added (janakj)
  * 2006-02-17 Session-Expires, Min-SE (dhsueh@somanetworks.com)
+ * 2006-03-02 header of same type are linked as sibling (bogdan)
  */
 
 
@@ -143,9 +144,10 @@ struct hdr_field {
 	hdr_types_t type;       /* Header field type */
 	str name;               /* Header field name */
 	str body;               /* Header field body (may not include CRLF) */
-	int len;		/* length from hdr start until EoHF (incl.CRLF) */
+	int len;                /* length from hdr start until EoHF (incl.CRLF) */
 	void* parsed;           /* Parsed data structures */
 	struct hdr_field* next; /* Next header field in the list */
+	struct hdr_field* sibling; /* Next header of same type */
 };
 
 

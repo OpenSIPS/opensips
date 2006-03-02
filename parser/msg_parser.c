@@ -31,6 +31,7 @@
  *  2003-05-01  parser extended to support Accept header field (janakj)
  *  2005-03-02  free_via_list(vb) on via parse error (andrei)
  *  2006-02-17 Session-Expires, Min-SE (dhsueh@somanetworks.com)
+ *  2006-03-02 header of same type are linked as sibling (bogdan)
  */
 
 
@@ -257,11 +258,21 @@ error:
 */
 int parse_headers(struct sip_msg* msg, hdr_flags_t flags, int next)
 {
-	struct hdr_field* hf;
+	struct hdr_field *hf;
+	struct hdr_field *itr;
 	char* tmp;
 	char* rest;
 	char* end;
 	hdr_flags_t orig_flag;
+
+#define link_sibling_hdr(_hook, _hdr) \
+	do{ \
+		if (msg->_hook==0) msg->_hook=_hdr;\
+			else {\
+				for(itr=msg->_hook;itr->sibling;itr=itr->sibling);\
+				itr->sibling = _hdr;\
+			}\
+	}while(0)
 
 	end=msg->buf+msg->len;
 	tmp=msg->unparsed;
@@ -311,7 +322,7 @@ int parse_headers(struct sip_msg* msg, hdr_flags_t flags, int next)
 				msg->parsed_flag|=HDR_FROM_F;
 				break;
 			case HDR_CONTACT_T:
-				if (msg->contact==0) msg->contact=hf;
+				link_sibling_hdr(contact,hf);
 				msg->parsed_flag|=HDR_CONTACT_F;
 				break;
 			case HDR_MAXFORWARDS_T:
@@ -319,15 +330,15 @@ int parse_headers(struct sip_msg* msg, hdr_flags_t flags, int next)
 				msg->parsed_flag|=HDR_MAXFORWARDS_F;
 				break;
 			case HDR_ROUTE_T:
-				if (msg->route==0) msg->route=hf;
+				link_sibling_hdr(route,hf);
 				msg->parsed_flag|=HDR_ROUTE_F;
 				break;
 			case HDR_RECORDROUTE_T:
-				if (msg->record_route==0) msg->record_route = hf;
+				link_sibling_hdr(record_route,hf);
 				msg->parsed_flag|=HDR_RECORDROUTE_F;
 				break;
 			case HDR_PATH_T:
-				if (msg->path==0) msg->path=hf;
+				link_sibling_hdr(path,hf);
 				msg->parsed_flag|=HDR_PATH_F;
 				break;
 			case HDR_CONTENTTYPE_T:
@@ -339,7 +350,7 @@ int parse_headers(struct sip_msg* msg, hdr_flags_t flags, int next)
 				msg->parsed_flag|=HDR_CONTENTLENGTH_F;
 				break;
 			case HDR_AUTHORIZATION_T:
-				if (msg->authorization==0) msg->authorization = hf;
+				link_sibling_hdr(authorization,hf);
 				msg->parsed_flag|=HDR_AUTHORIZATION_F;
 				break;
 			case HDR_EXPIRES_T:
@@ -347,35 +358,35 @@ int parse_headers(struct sip_msg* msg, hdr_flags_t flags, int next)
 				msg->parsed_flag|=HDR_EXPIRES_F;
 				break;
 			case HDR_PROXYAUTH_T:
-				if (msg->proxy_auth==0) msg->proxy_auth = hf;
+				link_sibling_hdr(proxy_auth,hf);
 				msg->parsed_flag|=HDR_PROXYAUTH_F;
 				break;
 			case HDR_PROXYREQUIRE_T:
-				if (msg->proxy_require==0) msg->proxy_require = hf;
+				link_sibling_hdr(proxy_require,hf);
 				msg->parsed_flag|=HDR_PROXYREQUIRE_F;
 				break;
 			case HDR_SUPPORTED_T:
-				if (msg->supported==0) msg->supported=hf;
+				link_sibling_hdr(supported,hf);
 				msg->parsed_flag|=HDR_SUPPORTED_F;
 				break;
 			case HDR_UNSUPPORTED_T:
-				if (msg->unsupported==0) msg->unsupported=hf;
+				link_sibling_hdr(unsupported,hf);
 				msg->parsed_flag|=HDR_UNSUPPORTED_F;
 				break;
 			case HDR_ALLOW_T:
-				if (msg->allow==0) msg->allow = hf;
+				link_sibling_hdr(allow,hf);
 				msg->parsed_flag|=HDR_ALLOW_F;
 				break;
 			case HDR_EVENT_T:
-				if (msg->event==0) msg->event = hf;
+				link_sibling_hdr(event,hf);
 				msg->parsed_flag|=HDR_EVENT_F;
 				break;
 			case HDR_ACCEPT_T:
-				if (msg->accept==0) msg->accept = hf;
+				link_sibling_hdr(accept,hf);
 				msg->parsed_flag|=HDR_ACCEPT_F;
 				break;
 			case HDR_ACCEPTLANGUAGE_T:
-				if (msg->accept_language==0) msg->accept_language = hf;
+				link_sibling_hdr(accept_language,hf);
 				msg->parsed_flag|=HDR_ACCEPTLANGUAGE_F;
 				break;
 			case HDR_ORGANIZATION_T:
@@ -399,11 +410,11 @@ int parse_headers(struct sip_msg* msg, hdr_flags_t flags, int next)
 				msg->parsed_flag|=HDR_CONTENTDISPOSITION_F;
 				break;
 			case HDR_ACCEPTDISPOSITION_T:
-				if (msg->accept_disposition==0) msg->accept_disposition = hf;
+				link_sibling_hdr(accept_disposition,hf);
 				msg->parsed_flag|=HDR_ACCEPTDISPOSITION_F;
 				break;
 			case HDR_DIVERSION_T:
-				if (msg->diversion==0) msg->diversion = hf;
+				link_sibling_hdr(diversion,hf);
 				msg->parsed_flag|=HDR_DIVERSION_F;
 				break;
 			case HDR_RPID_T:
