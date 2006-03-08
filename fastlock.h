@@ -98,7 +98,7 @@ inline static int tsl(volatile int* lock)
 	asm volatile(
 		" btsl $0, %1 \n\t"
 		" adcl $0, %0 \n\t"
-		: "=q" (val), "=m" (*lock) : "0"(val) : "memory", "cc" /* "cc" */
+		: "=q" (val), "=m" (*lock) : "0"(val) : "memory", "cc"
 	);
 #else
 	val=1;
@@ -156,8 +156,7 @@ inline static int tsl(volatile int* lock)
         );
 #elif defined(__CPU_mips2) || defined(__CPU_mips32) || defined(__CPU_mips64)
 	long tmp;
-	tmp=1; /* just to kill a gcc 2.95 warning */
-
+	
 	asm volatile(
 		".set noreorder\n\t"
 		"1:  ll %1, %2   \n\t"
@@ -165,10 +164,13 @@ inline static int tsl(volatile int* lock)
 		"    sc %0, %2  \n\t"
 		"    beqz %0, 1b \n\t"
 		"    nop \n\t"
+#ifndef NOSMP
+		"    sync \n\t"
+#endif
 		".set reorder\n\t"
-		: "=&r" (tmp), "=&r" (val), "=m" (*lock)
-		: "0" (tmp), "2" (*lock)
-		: "cc"
+		: "=&r" (tmp), "=&r" (val), "=m" (*lock) 
+		: "m" (*lock) 
+		: "memory"
 	);
 #elif defined __CPU_alpha
 	long tmp;
@@ -250,10 +252,8 @@ inline static void release_lock(fl_lock_t* lock_struct)
 #endif
 
 #if defined(__CPU_i386) || defined(__CPU_x86_64)
-/*	char val;
-	val=0; */
 	asm volatile(
-		" movb $0, (%0)" : /*no output*/ : "r"(lock): "memory"
+		" movb $0, %0" : "=m"(*lock) : : "memory"
 		/*" xchg %b0, %1" : "=q" (val), "=m" (*lock) : "0" (val) : "memory"*/
 	);
 #elif defined(__CPU_sparc64) || defined(__CPU_sparc)
@@ -296,10 +296,12 @@ inline static void release_lock(fl_lock_t* lock_struct)
 #elif defined(__CPU_mips2) || defined(__CPU_mips32) || defined(__CPU_mips64)
 	asm volatile(
 		".set noreorder \n\t"
+#ifndef NOSMP
 		"    sync \n\t"
+#endif
 		"    sw $0, %0 \n\t"
 		".set reorder \n\t"
-		: /*no output*/  : "m" (*lock) : "memory"
+		: "=m" (*lock)  : /* no input */ : "memory"
 	);
 #elif defined __CPU_alpha
 	asm volatile(
