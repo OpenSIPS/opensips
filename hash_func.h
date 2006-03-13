@@ -24,6 +24,9 @@
  *
  * 2006-01-20 - new_hash1() added; support for configurable hash size
  *              added (bogdan)
+ * 2006-03-13 - new_hash1() and new_hash2() merged into core_hash();
+ *              added core_case_hash() for case insensitive hashes;
+ *              all TM dependet stuff moved to TM config file (bogdan)
  */
 
 
@@ -33,16 +36,71 @@
 
 #include "str.h"
 
-/* always use a power of 2 for hash table size */
-#define T_TABLE_POWER    16 
-#define TABLE_ENTRIES    (1 << (T_TABLE_POWER))
 
-int new_hash2( str  call_id, str cseq_nr, unsigned int size );
+#define ch_h_inc h+=v^(v>>3)
+#define ch_icase(_c) (((_c)>='A'&&(_c)<='Z')?((_c)|0x20):(_c))
+static inline unsigned int core_hash( str *s1, str *s2, unsigned int size )
+{
+	char *p, *end;
+	register unsigned v;
+	register unsigned h;
 
-int new_hash1( str s, unsigned int size);
+	h=0;
 
-#define hash( cid, cseq) new_hash2( cid, cseq , TABLE_ENTRIES)
-#define hash1( s )       new_hash1( cid, TABLE_ENTRIES)
+	end=s1->s+s1->len;
+	for ( p=s1->s ; p<=(end-4) ; p+=4 ){
+		v=(*p<<24)+(p[1]<<16)+(p[2]<<8)+p[3];
+		ch_h_inc;
+	}
+	v=0;
+	for (; p<end ; p++){ v<<=8; v+=*p;}
+	ch_h_inc;
+
+	if (s2) {
+		end=s2->s+s2->len;
+		for (p=s2->s; p<=(end-4); p+=4){
+			v=(*p<<24)+(p[1]<<16)+(p[2]<<8)+p[3];
+			ch_h_inc;
+		}
+		v=0;
+		for (; p<end ; p++){ v<<=8; v+=*p;}
+		ch_h_inc;
+	}
+	h=((h)+(h>>11))+((h>>13)+(h>>23));
+	return size?((h)&(size-1)):h;
+}
+
+
+static inline unsigned int core_case_hash( str *s1, str *s2, unsigned int size)
+{
+	char *p, *end;
+	register unsigned v;
+	register unsigned h;
+
+	h=0;
+
+	end=s1->s+s1->len;
+	for ( p=s1->s ; p<=(end-4) ; p+=4 ){
+		v=(ch_icase(*p)<<24)+(p[1]<<16)+(p[2]<<8)+p[3];
+		ch_h_inc;
+	}
+	v=0;
+	for (; p<end ; p++){ v<<=8; v+=ch_icase(*p);}
+	ch_h_inc;
+
+	if (s2) {
+		end=s2->s+s2->len;
+		for (p=s2->s; p<=(end-4); p+=4){
+			v=(ch_icase(*p)<<24)+(p[1]<<16)+(p[2]<<8)+p[3];
+			ch_h_inc;
+		}
+		v=0;
+		for (; p<end ; p++){ v<<=8; v+=ch_icase(*p);}
+		ch_h_inc;
+	}
+	h=((h)+(h>>11))+((h>>13)+(h>>23));
+	return size?((h)&(size-1)):h;
+}
 
 
 #endif

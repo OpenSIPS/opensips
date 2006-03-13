@@ -48,6 +48,7 @@ static int fifo_reset_stats( FILE *fifo, char *response_file );
 gen_lock_t *stat_lock = 0;
 #endif
 
+#define stat_hash(_s) core_hash( _s, 0, STATS_HASH_SIZE)
 
 int init_stats_collector()
 {
@@ -246,7 +247,7 @@ int register_stat( char *module, char *name, stat_var **pvar, int flags)
 
 
 	/* compute the hash by name */
-	hash = new_hash1( stat->name , STATS_HASH_SIZE) ;
+	hash = stat_hash( &stat->name );
 
 	/* link it */
 	if (collector->hstats[hash]==0) {
@@ -314,7 +315,7 @@ stat_var* get_stat( str *name )
 		return 0;
 
 	/* compute the hash by name */
-	hash = new_hash1( *name , STATS_HASH_SIZE) ;
+	hash = stat_hash( name );
 
 	/* and look for it */
 	for( stat=collector->hstats[hash] ; stat ; stat=stat->hnext ) {

@@ -311,7 +311,8 @@ int forward_request( struct sip_msg* msg, struct proxy_l * p)
 			LOG(L_ERR, "ERROR: forward_request: char_msg_val failed\n");
 			goto error1;
 		}
-		msg->hash_index=hash( msg->callid->body, get_cseq(msg)->number);
+		msg->hash_index = core_hash( &msg->callid->body,
+				&(get_cseq(msg)->number), TM_TABLE_ENTRIES);
 		if (!branch_builder( msg->hash_index, 0, md5, id /* 0-th branch */,
 					msg->add_to_branch_s, &msg->add_to_branch_len )) {
 			LOG(L_ERR, "ERROR: forward_request: branch_builder failed\n");

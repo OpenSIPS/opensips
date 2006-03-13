@@ -198,4 +198,8 @@
 #define DEFAULT_RADIUSCLEINT_CONF \
 	"/usr/local/etc/radiusclient-ng/radiusclient.conf"
 
+/* size of TM hash table */
+#define TM_TABLE_ENTRIES     (1<<16)
+
+
 #endif
