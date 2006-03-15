@@ -148,15 +148,15 @@ extern gen_lock_t *stat_lock;
 			do { \
 				if ( !((_var)->flags&STAT_IS_FUNC) ) {\
 					if (_n>=0) \
-						atomic_add( _n, _var->u.val);\
+						atomic_add( _n, (_var)->u.val);\
 					else \
-						atomic_sub( -(_n), _var->u.val);\
+						atomic_sub( -(_n), (_var)->u.val);\
 				}\
 			}while(0)
 		#define reset_stat( _var) \
 			do { \
 				if ( ((_var)->flags&(STAT_NO_RESET|STAT_IS_FUNC))==0 ) {\
-					atomic_set( _var->u.val, 0);\
+					atomic_set( (_var)->u.val, 0);\
 				}\
 			}while(0)
 		#define get_stat_val( _var ) ((unsigned long)\
