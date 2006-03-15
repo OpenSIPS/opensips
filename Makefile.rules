@@ -67,11 +67,16 @@ clean: docbook-clean
 .PHONY: realclean
 proper realclean distclean: clean 
 	-@rm -f $(depends) $(auto_gen) 2>/dev/null
+	-@rm -f cfg.tab.h 2>/dev/null
 	-@for r in $(modules) "" ; do \
 		if [ -d "$$r" ]; then \
 			 $(MAKE) -C $$r proper ; \
 		fi ; \
 	done 
+	@if [ -n "$(modules)" -a -d utils/gen_ha1 ]; then \
+		cd utils/gen_ha1; $(MAKE) proper; \
+		cd ../openserunix; $(MAKE) proper; \
+	fi
 
 .PHONY: mantainer-clean
 mantainer-clean: distclean
