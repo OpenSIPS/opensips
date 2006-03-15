@@ -140,17 +140,24 @@ int xl_free_extra_spec();
 
 
 #define XL_PRINT_BUF_SIZE  1024
+#define XL_PRINT_BUF_NO    3
+/*IMPORTANT NOTE - even if the function prints and returns a static buffer, it
+ * has built-in support for 3 level of nesting (or cuncurrent usage).
+ * If you think it's not enough for you, either use xl_printf() directly,
+ * either increase XL_PRINT_BUF_NO   --bogdan */
 static inline int xl_printf_s(struct sip_msg* msg, xl_elem_p list, str *s)
 {
-	static char buf[XL_PRINT_BUF_SIZE];
+	static int buf_itr = 0;
+	static char buf[XL_PRINT_BUF_NO][XL_PRINT_BUF_SIZE];
 
 	if (list->next==0 && list->spec.itf==0) {
 		*s = list->text;
 		return 0;
 	} else {
-		s->s = buf;
+		s->s = buf[buf_itr];
 		s->len = XL_PRINT_BUF_SIZE;
-		return xl_printf( msg, list,buf, &s->len);
+		buf_itr = (buf_itr+1)%XL_PRINT_BUF_NO;
+		return xl_printf( msg, list, s->s, &s->len);
 	}
 }
 
