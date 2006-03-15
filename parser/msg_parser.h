@@ -62,21 +62,22 @@
 
 /* number methods as power of two to allow bitmap matching */
 enum request_method {
-	METHOD_UNDEF=0,
-	METHOD_INVITE=1,
-	METHOD_CANCEL=2,
-	METHOD_ACK=4,
-	METHOD_BYE=8,
-	METHOD_INFO=16,
-	METHOD_OPTIONS=32,
-	METHOD_UPDATE=64,
-	METHOD_REGISTER=128,
-	METHOD_MESSAGE=256,
-	METHOD_SUBSCRIBE=512,
-	METHOD_NOTIFY=1024,
-	METHOD_PRACK=2048,
-	METHOD_REFER=4096,
-	METHOD_OTHER=8192
+	METHOD_UNDEF=0,           /* 0 - --- */
+	METHOD_INVITE=1,          /* 1 - 2^0 */
+	METHOD_CANCEL=2,          /* 2 - 2^1 */
+	METHOD_ACK=4,             /* 3 - 2^2 */
+	METHOD_BYE=8,             /* 4 - 2^3 */
+	METHOD_INFO=16,           /* 5 - 2^4 */
+	METHOD_OPTIONS=32,        /* 6 - 2^5 */
+	METHOD_UPDATE=64,         /* 7 - 2^6 */
+	METHOD_REGISTER=128,      /* 8 - 2^7 */
+	METHOD_MESSAGE=256,       /* 9 - 2^8 */
+	METHOD_SUBSCRIBE=512,     /* 10 - 2^9 */
+	METHOD_NOTIFY=1024,       /* 11 - 2^10 */
+	METHOD_PRACK=2048,        /* 12 - 2^11 */
+	METHOD_REFER=4096,        /* 13 - 2^12 */
+	METHOD_PUBLISH=8192,      /* 14 - 2^13 */
+	METHOD_OTHER=16384        /* 15 - 2^14 */
 };
 
 #define FL_FORCE_RPORT        (1<<0) /* force rport (top via) */

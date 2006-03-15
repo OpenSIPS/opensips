@@ -203,13 +203,28 @@ char* parse_method(char* start, char* end, unsigned int* method)
 				len = 5;
 				goto done;
 			}
+			
+			if(end && max<7)
+				goto unknown;
+			
+			if ((start[1]=='u' || start[1]=='U')
+					 && (start[2]=='b' || start[2]=='B')
+					 && (start[3]=='l' || start[3]=='L')
+					 && (start[4]=='i' || start[4]=='I')
+					 && (start[5]=='s' || start[5]=='S')
+					 && (start[6]=='h' || start[6]=='H'))
+			{
+				*method = METHOD_PUBLISH;
+				len = 7;
+				goto done;
+			}
 			goto unknown;
 
 		case 'R':
 		case 'r':
 			if(end && max<5)
 				goto unknown;
-			if(start[1]=='e' && start[1]=='E')
+			if(start[1]!='e' && start[1]!='E')
 				goto unknown;
 			
  			if((start[2]=='f' || start[2]=='F')
