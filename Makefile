@@ -355,25 +355,25 @@ install-cfg: $(cfg-prefix)/$(cfg-dir)
 			mkdir -p $(cfg-prefix)/$(cfg-dir)/tls/rootCA/private ; \
 			mkdir -p $(cfg-prefix)/$(cfg-dir)/tls/user ; \
 			$(INSTALL-TOUCH) etc/tls/README $(cfg-prefix)/$(cfg-dir)/tls/; \
-			$(INSTALL) etc/tls/README $(cfg-prefix)/$(cfg-dir)/tls/; \
+			$(INSTALL-CFG) etc/tls/README $(cfg-prefix)/$(cfg-dir)/tls/; \
 			$(INSTALL-TOUCH) etc/tls/rootCA/index.txt $(cfg-prefix)/$(cfg-dir)/tls/rootCA/; \
-			$(INSTALL) etc/tls/rootCA/index.txt $(cfg-prefix)/$(cfg-dir)/tls/rootCA/; \
+			$(INSTALL-CFG) etc/tls/rootCA/index.txt $(cfg-prefix)/$(cfg-dir)/tls/rootCA/; \
 			$(INSTALL-TOUCH) etc/tls/rootCA/serial $(cfg-prefix)/$(cfg-dir)/tls/rootCA/; \
-			$(INSTALL) etc/tls/rootCA/serial $(cfg-prefix)/$(cfg-dir)/tls/rootCA/; \
+			$(INSTALL-CFG) etc/tls/rootCA/serial $(cfg-prefix)/$(cfg-dir)/tls/rootCA/; \
 			$(INSTALL-TOUCH) etc/tls/rootCA/cacert.pem $(cfg-prefix)/$(cfg-dir)/tls/rootCA/; \
-			$(INSTALL) etc/tls/rootCA/cacert.pem $(cfg-prefix)/$(cfg-dir)/tls/rootCA/; \
+			$(INSTALL-CFG) etc/tls/rootCA/cacert.pem $(cfg-prefix)/$(cfg-dir)/tls/rootCA/; \
 			$(INSTALL-TOUCH) etc/tls/rootCA/certs/01.pem $(cfg-prefix)/$(cfg-dir)/tls/rootCA/certs/; \
-			$(INSTALL) etc/tls/rootCA/certs/01.pem $(cfg-prefix)/$(cfg-dir)/tls/rootCA/certs/; \
+			$(INSTALL-CFG) etc/tls/rootCA/certs/01.pem $(cfg-prefix)/$(cfg-dir)/tls/rootCA/certs/; \
 			$(INSTALL-TOUCH) etc/tls/rootCA/private/cakey.pem $(cfg-prefix)/$(cfg-dir)/tls/rootCA/private/; \
-			$(INSTALL) etc/tls/rootCA/private/cakey.pem $(cfg-prefix)/$(cfg-dir)/tls/rootCA/private/; \
+			$(INSTALL-CFG) etc/tls/rootCA/private/cakey.pem $(cfg-prefix)/$(cfg-dir)/tls/rootCA/private/; \
 			$(INSTALL-TOUCH) etc/tls/user/user-calist.pem $(cfg-prefix)/$(cfg-dir)/tls/user/; \
-			$(INSTALL) etc/tls/user/user-calist.pem $(cfg-prefix)/$(cfg-dir)/tls/user/; \
+			$(INSTALL-CFG) etc/tls/user/user-calist.pem $(cfg-prefix)/$(cfg-dir)/tls/user/; \
 			$(INSTALL-TOUCH) etc/tls/user/user-cert.pem $(cfg-prefix)/$(cfg-dir)/tls/user/; \
 			$(INSTALL) etc/tls/user/user-cert.pem $(cfg-prefix)/$(cfg-dir)/tls/user/; \
 			$(INSTALL-TOUCH) etc/tls/user/user-privkey.pem $(cfg-prefix)/$(cfg-dir)/tls/user/; \
-			$(INSTALL) etc/tls/user/user-privkey.pem $(cfg-prefix)/$(cfg-dir)/tls/user/; \
+			$(INSTALL-CFG) etc/tls/user/user-privkey.pem $(cfg-prefix)/$(cfg-dir)/tls/user/; \
 			$(INSTALL-TOUCH) etc/tls/user/user-cert_req.pem $(cfg-prefix)/$(cfg-dir)/tls/user/; \
-			$(INSTALL) etc/tls/user/user-cert_req.pem $(cfg-prefix)/$(cfg-dir)/tls/user/; \
+			$(INSTALL-CFG) etc/tls/user/user-cert_req.pem $(cfg-prefix)/$(cfg-dir)/tls/user/; \
 		fi
 
 install-bin: $(bin-prefix)/$(bin-dir) utils/gen_ha1/gen_ha1 utils/$(NAME)unix/$(NAME)unix
