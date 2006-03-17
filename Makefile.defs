@@ -55,7 +55,7 @@ MAIN_NAME=openser
 VERSION = 1
 PATCHLEVEL = 1
 SUBLEVEL = 0
-EXTRAVERSION = -dev15 
+EXTRAVERSION = -dev16 
 
 RELEASE=$(VERSION).$(PATCHLEVEL).$(SUBLEVEL)$(EXTRAVERSION)
 OS = $(shell uname -s | sed -e s/SunOS/solaris/ | tr "[A-Z]" "[a-z]")
@@ -104,6 +104,8 @@ endif
 TLS ?= 
 ifneq ($(TLS),)
 	RELEASE:=$(RELEASE)-tls
+else
+	RELEASE:=$(RELEASE)-notls
 endif
 # extra CC command line options (e.g  -march=athlon-mp)
 CC_EXTRA_OPTS ?=

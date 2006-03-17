@@ -265,8 +265,18 @@ bin:
 
 .PHONY: deb
 deb:
-	ln -sf packaging/debian debian
-	dpkg-buildpackage -rfakeroot -tc
+	ln -sf packaging/debian
+	$(MAKE) -C debian
+	dpkg-buildpackage -rfakeroot -tc $(DEBBUILD_EXTRA_OPTIONS)
+	$(MAKE) -C debian clean
+	rm -f debian
+
+.PHONY: deb-notls
+deb-notls:
+	ln -sf packaging/debian
+	NOTLS=1 $(MAKE) -C debian
+	dpkg-buildpackage -rfakeroot -tc $(DEBBUILD_EXTRA_OPTIONS)
+	$(MAKE) -C debian clean
 	rm -f debian
 
 .PHONY: sunpkg
