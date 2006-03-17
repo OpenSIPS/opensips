@@ -108,4 +108,10 @@ int parse_accept_hdr( struct sip_msg *msg );
  */
 char* parse_content_length( char* buffer, char* end, int* len);
 
+
+/*
+ * parse a string containing a mime description
+ */
+char* decode_mime_type(char *start, char *end, unsigned int *mime_type);
+
 #endif
