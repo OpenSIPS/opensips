@@ -189,8 +189,7 @@ inline static int tsl(volatile int* lock)
 		"    mb           \n\t"
 		"2:               \n\t"
 		:"=&r" (val), "=m"(*lock), "=r"(tmp)
-		:"1"(*lock)  /* warning on gcc 3.4: replace it with m or remove
-						it and use +m in the input line ? */
+		:"m"(*lock) 
 		: "memory"
 	);
 #else
