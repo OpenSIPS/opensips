@@ -56,6 +56,12 @@
 	#define sched_yield()	sleep(0)
 #endif
 
+
+#define SPIN_OPTIMIZE /* if defined optimize spining on the lock:
+                         try first the lock with non-atomic/non memory locking
+                         operations, and only if the lock appears to be free
+                         switch to the more expensive version */
+
 /*! The actual lock */
 #ifndef DBG_LOCK
 typedef  volatile int fl_lock_t;
@@ -94,16 +100,27 @@ inline static int tsl(volatile int* lock)
 #if defined(__CPU_i386) || defined(__CPU_x86_64)
 
 #ifdef NOSMP
-	val=0;
 	asm volatile(
-		" btsl $0, %1 \n\t"
-		" adcl $0, %0 \n\t"
-		: "=q" (val), "=m" (*lock) : "0"(val) : "memory", "cc"
+		" xor %0, %0 \n\t"
+		" btsl $0, %2 \n\t"
+		" setc %b0 \n\t"
+		: "=q" (val), "=m" (*lock) : "m"(*lock) : "memory", "cc"
 	);
 #else
-	val=1;
 	asm volatile(
-		" xchg %1, %0" : "=q" (val), "=m" (*lock) : "0" (val) : "memory"
+#ifdef SPIN_OPTIMIZE
+		" cmpb $0, %2 \n\t"
+		" mov $1, %0 \n\t"
+		" jnz 1f \n\t"
+#else
+		" mov $1, %0 \n\t"
+#endif
+		" xchgb %2, %b0 \n\t"
+		"1: \n\t"
+		: "=q" (val), "=m" (*lock) : "m"(*lock) : "memory"
+#ifdef SPIN_OPTIMIZE
+			, "cc"
+#endif
 	);
 #endif /*NOSMP*/
 #elif defined(__CPU_sparc64) || defined(__CPU_sparc)
@@ -252,10 +269,26 @@ inline static void release_lock(fl_lock_t* lock_struct)
 	lock_struct->line = 0;
 #endif
 
-#if defined(__CPU_i386) || defined(__CPU_x86_64)
+#if defined(__CPU_i386) 
+#ifdef NOSMP
 	asm volatile(
-		" movb $0, %0" : "=m"(*lock) : : "memory"
-		/*" xchg %b0, %1" : "=q" (val), "=m" (*lock) : "0" (val) : "memory"*/
+		" movb $0, %0 \n\t" 
+		: "=m"(*lock) : : "memory"
+	); 
+#else /* ! NOSMP */
+	int val;
+	/* a simple mov $0, (lock) does not force StoreStore ordering on all
+	   x86 versions and it doesn't seem to force LoadStore either */
+	asm volatile(
+		" xchgb %b0, %1 \n\t"
+		: "=q" (val), "=m" (*lock) : "0" (0) : "memory"
+	);
+#endif /* NOSMP */
+#elif defined(__CPU_x86_64)
+	asm volatile(
+		" movb $0, %0 \n\t" /* on amd64 membar StoreStore | LoadStore is 
+							   implicit (at least on the same mem. type) */
+		: "=m"(*lock) : : "memory"
 	);
 #elif defined(__CPU_sparc64) || defined(__CPU_sparc)
 	asm volatile(
