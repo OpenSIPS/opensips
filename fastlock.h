@@ -104,7 +104,7 @@ inline static int tsl(volatile int* lock)
 		" xor %0, %0 \n\t"
 		" btsl $0, %2 \n\t"
 		" setc %b0 \n\t"
-		: "=q" (val), "=m" (*lock) : "m"(*lock) : "memory", "cc"
+		: "=&q" (val), "=m" (*lock) : "m"(*lock) : "memory", "cc"
 	);
 #else
 	asm volatile(
@@ -117,7 +117,7 @@ inline static int tsl(volatile int* lock)
 #endif
 		" xchgb %2, %b0 \n\t"
 		"1: \n\t"
-		: "=q" (val), "=m" (*lock) : "m"(*lock) : "memory"
+		: "=&q" (val), "=m" (*lock) : "m"(*lock) : "memory"
 #ifdef SPIN_OPTIMIZE
 			, "cc"
 #endif
@@ -129,15 +129,14 @@ inline static int tsl(volatile int* lock)
 #ifndef NOSMP
 			"membar #StoreStore | #StoreLoad \n\t"
 #endif
-			: "=r"(val) : "r"(lock):"memory"
+			: "=&r"(val) : "r"(lock):"memory"
 	);
 
 #elif defined __CPU_arm
 	asm volatile(
 			"# here \n\t"
 			"swpb %0, %1, [%2] \n\t"
-			: "=&r" (val)
-			: "r"(1), "r" (lock) : "memory"
+			: "=&r" (val) : "r"(1), "r" (lock) : "memory"
 	);
 
 #elif defined(__CPU_arm6) || defined(__CPU_arm7)
@@ -152,8 +151,7 @@ inline static int tsl(volatile int* lock)
 			"mcr p15, #0, r1, c7, c10, #5\n\t"
 #endif
 #endif
-			: "=&r" (val)
-			: "r"(1), "r" (lock) : "memory"
+			: "=&r" (val) : "r"(1), "r" (lock) : "memory"
 	);
 #elif defined(__CPU_ppc) || defined(__CPU_ppc64)
 	asm volatile(
@@ -167,9 +165,7 @@ inline static int tsl(volatile int* lock)
 							   [ IBM Programming environments Manual, D.4.1.1]
 							 */
 			"0:\n\t"
-			: "=r" (val)
-			: "r"(1), "b" (lock) :
-			"memory", "cc"
+			: "=&r" (val) : "r"(1), "b" (lock) : "memory", "cc"
         );
 #elif defined(__CPU_mips2) || defined(__CPU_mips32) || defined(__CPU_mips64)
 	long tmp;
@@ -187,9 +183,7 @@ inline static int tsl(volatile int* lock)
 		"    sync \n\t"
 #endif
 		".set pop\n\t"
-		: "=&r" (tmp), "=&r" (val), "=m" (*lock) 
-		: "m" (*lock) 
-		: "memory"
+		: "=&r" (tmp), "=&r" (val), "=m" (*lock) : "m" (*lock) : "memory"
 	);
 #elif defined __CPU_alpha
 	long tmp;
@@ -205,9 +199,7 @@ inline static int tsl(volatile int* lock)
 		"    beq %2, 1b   \n\t"
 		"    mb           \n\t"
 		"2:               \n\t"
-		:"=&r" (val), "=m"(*lock), "=r"(tmp)
-		:"m"(*lock) 
-		: "memory"
+		:"=&r" (val), "=m"(*lock), "=&r"(tmp) :"m"(*lock) : "memory"
 	);
 #else
 #error "unknown architecture"
@@ -321,10 +313,8 @@ inline static void release_lock(fl_lock_t* lock_struct)
 			 *             [IBM Programming Environments Manual, D.4.2.2]
 			 */
 			"lwsync\n\t"
-			"stw %0, 0(%1)\n\t"
-			: /* no output */
-			: "r"(0), "b" (lock)
-			: "memory"
+			"stwx %1, 0, %2\n\t"
+			: "=m"(*lock) : "r"(0), "r"(lock) : "memory"
     );
 	*lock = 0;
 #elif defined(__CPU_mips2) || defined(__CPU_mips32) || defined(__CPU_mips64)
