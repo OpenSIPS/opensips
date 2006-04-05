@@ -40,6 +40,21 @@ gen_lock_t  *_xl_extra_lock=0;
 xl_extra_p  *_xl_extra_list=0;
 
 
+
+int xl_add_extra(char *name, item_func_t fct, int type )
+{
+	xl_spec_t tmspec;
+	str pvname;
+
+	memset(&tmspec, 0, sizeof(xl_spec_t));
+	tmspec.type = type;
+	tmspec.itf = fct;
+	pvname.s   = name;
+	pvname.len = strlen(pvname.s);
+	return xl_add_extra_spec(&pvname, &tmspec);
+}
+
+
 /**
  *
  */
