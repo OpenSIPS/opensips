@@ -34,7 +34,7 @@
 extern int action_flags;
 
 int do_action(struct action* a, struct sip_msg* msg);
-int run_actions(struct action* a, struct sip_msg* msg);
+int run_top_route(struct action* a, struct sip_msg* msg);
 int run_action_list(struct action* a, struct sip_msg* msg);
 
 #endif

@@ -74,6 +74,89 @@
 int action_flags = 0;
 int return_code  = 0;
 
+static int rec_lev=0;
+
+
+/* run a list of actions */
+int run_action_list(struct action* a, struct sip_msg* msg)
+{
+	int ret=E_UNSPEC;
+	struct action* t;
+	for (t=a; t!=0; t=t->next){
+		ret=do_action(t, msg);
+		/* if action returns 0, then stop processing the script */
+		if(ret==0)
+			action_flags |= ACT_FL_EXIT;
+		
+		if((action_flags&ACT_FL_RETURN) || (action_flags&ACT_FL_EXIT))
+			break;
+	}
+	return ret;
+}
+
+
+/* run actions from a route */
+/* returns: 0, or 1 on success, <0 on error */
+/* (0 if drop or break encountered, 1 if not ) */
+static inline int run_actions(struct action* a, struct sip_msg* msg)
+{
+	int ret;
+
+	rec_lev++;
+	if (rec_lev>ROUTE_MAX_REC_LEV){
+		LOG(L_ERR, "ERROR:run_action: too many recursive routing "
+				"table lookups (%d) giving up!\n", rec_lev);
+		ret=E_UNSPEC;
+		goto error;
+	}
+
+	if (a==0){
+		LOG(L_WARN, "WARNING: run_actions: null action list (rec_level=%d)\n", 
+			rec_lev);
+		ret=1;
+		goto error;
+	}
+
+	ret=run_action_list(a, msg);
+
+	/* if 'return', reset the flag */
+	if(action_flags&ACT_FL_RETURN)
+		action_flags &= ~ACT_FL_RETURN;
+
+	rec_lev--;
+	return ret;
+
+error:
+	rec_lev--;
+	return ret;
+}
+
+
+
+int run_top_route(struct action* a, struct sip_msg* msg)
+{
+	int bk_action_flags;
+	int bk_rec_lev;
+	int ret;
+
+	bk_action_flags = action_flags;
+	bk_rec_lev = rec_lev;
+
+	action_flags = 0;
+	rec_lev = 0;
+
+	run_actions(a, msg);
+	ret = action_flags;
+
+	action_flags = bk_action_flags;
+	rec_lev = bk_rec_lev;
+
+	return ret;
+}
+
+
+
+
 /* ret= 0! if action -> end of list(e.g DROP), 
       > 0 to continue processing next actions
    and <0 on error */
@@ -639,8 +722,8 @@ int do_action(struct action* a, struct sip_msg* msg)
 					cmatch = 1;
 					if(aitem->p2.data)
 					{
-						return_code=run_actions((struct action*)aitem->p2.data,
-								msg);
+						return_code=run_action_list(
+							(struct action*)aitem->p2.data, msg);
 					}
 					if(aitem->p3.number==1)
 						break;
@@ -651,8 +734,8 @@ int do_action(struct action* a, struct sip_msg* msg)
 			{
 				DBG("do_action: swtich: running default statement\n");
 				if(adefault->p1.data)
-					return_code=run_actions((struct action*)adefault->p1.data,
-							msg);
+					return_code=run_action_list(
+						(struct action*)adefault->p1.data, msg);
 			}
 			ret=(return_code<0)?return_code:1;
 			break;
@@ -765,77 +848,6 @@ error_uri:
 	if (new_uri) pkg_free(new_uri);
 	return E_UNSPEC;
 error_fwd_uri:
-	return ret;
-}
-
-
-/* run a list of actions */
-int run_action_list(struct action* a, struct sip_msg* msg)
-{
-	int ret=E_UNSPEC;
-	struct action* t;
-	for (t=a; t!=0; t=t->next){
-		ret=do_action(t, msg);
-		/* if action returns 0, then stop processing the script */
-		if(ret==0)
-			action_flags |= ACT_FL_EXIT;
-		
-		if((action_flags&ACT_FL_RETURN) || (action_flags&ACT_FL_EXIT))
-			break;
-		/* ignore errors */
-		/*else if (ret<0){ ret=-1; goto error; }*/
-	}
-	return ret;
-}
-
-
-/* run actions from a route */
-/* returns: 0, or 1 on success, <0 on error */
-/* (0 if drop or break encountered, 1 if not ) */
-int run_actions(struct action* a, struct sip_msg* msg)
-{
-	int ret=E_UNSPEC;
-	static int rec_lev=0;
-	/*struct sr_module *mod;*/
-
-	/* reset flags */
-	if (rec_lev==0)
-		action_flags=0;
-
-	rec_lev++;
-	if (rec_lev>ROUTE_MAX_REC_LEV){
-		LOG(L_ERR, "ERROR:run_action: too many recursive routing "
-				"table lookups (%d) giving up!\n", rec_lev);
-		ret=E_UNSPEC;
-		goto error;
-	}
-
-	if (a==0){
-		LOG(L_WARN, "WARNING: run_actions: null action list (rec_level=%d)\n", 
-			rec_lev);
-		ret=1;
-		goto error;
-	}
-
-	ret=run_action_list(a, msg);
-	
-	/* if 'return', reset the flag */
-	if(action_flags&ACT_FL_RETURN)
-		action_flags &= ~ACT_FL_RETURN;
-
-	rec_lev--;
-	/* process module onbreak handlers if present -- TO REMOVE -bogdan
-	if (rec_lev==0 && ret==0) 
-		for (mod=modules;mod;mod=mod->next) 
-			if (mod->exports && mod->exports->onbreak_f) {
-				mod->exports->onbreak_f( msg );
-				DBG("DEBUG: %s onbreak handler called\n", mod->exports->name);
-			}
-	*/
-	return ret;
-
-error:
-	rec_lev--;
 	return ret;
 }
 
