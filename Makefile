@@ -376,7 +376,7 @@ install-cfg: $(cfg-prefix)/$(cfg-dir)
 			$(INSTALL-CFG) etc/tls/user/user-cert_req.pem $(cfg-prefix)/$(cfg-dir)/tls/user/; \
 		fi
 
-install-bin: $(bin-prefix)/$(bin-dir) utils/gen_ha1/gen_ha1 utils/$(NAME)unix/$(NAME)unix
+install-bin: $(bin-prefix)/$(bin-dir) utils/$(NAME)unix/$(NAME)unix
 		$(INSTALL-TOUCH) $(bin-prefix)/$(bin-dir)/$(NAME) 
 		$(INSTALL-BIN) $(NAME) $(bin-prefix)/$(bin-dir)
 		sed -e "s#PATH:/usr/local/sbin#PATH:$(bin-prefix)/$(bin-dir)#g" \
@@ -394,13 +394,8 @@ install-bin: $(bin-prefix)/$(bin-dir) utils/gen_ha1/gen_ha1 utils/$(NAME)unix/$(
 		$(INSTALL-TOUCH)   $(bin-prefix)/$(bin-dir)/$(NAME)_postgresql.sh
 		$(INSTALL-BIN) /tmp/$(NAME)_postgresql.sh $(bin-prefix)/$(bin-dir)
 		rm -fr /tmp/$(NAME)_postgresql.sh
-		$(INSTALL-TOUCH)   $(bin-prefix)/$(bin-dir)/$(NAME)_gen_ha1
-		$(INSTALL-BIN) utils/gen_ha1/gen_ha1 $(bin-prefix)/$(bin-dir)/$(NAME)_gen_ha1
 		$(INSTALL-TOUCH)   $(bin-prefix)/$(bin-dir)/$(NAME)unix
 		$(INSTALL-BIN) utils/$(NAME)unix/$(NAME)unix $(bin-prefix)/$(bin-dir)
-
-utils/gen_ha1/gen_ha1:
-		cd utils/gen_ha1; $(MAKE) all
 
 utils/$(NAME)unix/$(NAME)unix:
 		cd utils/$(NAME)unix; $(MAKE) all

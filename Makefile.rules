@@ -57,10 +57,6 @@ clean: docbook-clean
 			$(MAKE) -C $$r clean ; \
 		fi ; \
 	done
-	@if [ -n "$(modules)" -a -d utils/gen_ha1 ]; then \
-		cd utils/gen_ha1; $(MAKE) clean; \
-		cd ../openserunix; $(MAKE) clean; \
-	fi
 
 .PHONY: proper
 .PHONY: distclean
@@ -73,10 +69,6 @@ proper realclean distclean: clean
 			 $(MAKE) -C $$r proper ; \
 		fi ; \
 	done 
-	@if [ -n "$(modules)" -a -d utils/gen_ha1 ]; then \
-		cd utils/gen_ha1; $(MAKE) proper; \
-		cd ../openserunix; $(MAKE) proper; \
-	fi
 
 .PHONY: mantainer-clean
 mantainer-clean: distclean
