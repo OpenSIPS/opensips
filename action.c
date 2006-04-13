@@ -724,6 +724,9 @@ int do_action(struct action* a, struct sip_msg* msg)
 					{
 						return_code=run_action_list(
 							(struct action*)aitem->p2.data, msg);
+						if ((action_flags&ACT_FL_RETURN) ||
+						(action_flags&ACT_FL_EXIT))
+							break;
 					}
 					if(aitem->p3.number==1)
 						break;
