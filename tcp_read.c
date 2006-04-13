@@ -802,6 +802,18 @@ error:
 
 
 
+static unsigned int c_tcp_con_lifetime = 0;
+static int c_tcp_con_id = -1;
+
+
+void force_tcp_conn_lifetime(struct receive_info *rcv, unsigned int timeout)
+{
+	c_tcp_con_lifetime = get_ticks() + timeout;
+	c_tcp_con_id = rcv->proto_reserved1;
+}
+
+
+
 /* releases expired connections and cleans up bad ones (state<0) */
 static inline void tcp_receive_timeout()
 {
@@ -823,8 +835,11 @@ static inline void tcp_receive_timeout()
 		}
 		if (con->timeout<=ticks){
 			/* expired, return to "tcp main" */
-			DBG("tcp_receive_loop: %p expired (%d, %d)\n",
-					con, con->timeout, ticks);
+			if (c_tcp_con_id==con->id) {
+				con->lifetime = c_tcp_con_lifetime;
+			}
+			DBG("tcp_receive_timeout: %p expired (%d, %d) lt=%d\n",
+					con, con->timeout, ticks,con->lifetime);
 			/* fd will be closed in release_tcpconn */
 			io_watch_del(&io_w, con->fd, -1, IO_FD_CLOSING);
 			tcpconn_listrm(tcp_conn_lst, con, c_next, c_prev);

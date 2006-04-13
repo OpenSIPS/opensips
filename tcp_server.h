@@ -36,7 +36,7 @@ int tcp_send(struct socket_info* send_sock, int type, char* buf, unsigned len,
 
 int tcpconn_add_alias(int id, int port, int proto);
 
-
+void force_tcp_conn_lifetime(struct receive_info *rcv, unsigned int timeout);
 
 
 

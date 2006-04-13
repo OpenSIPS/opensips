@@ -52,8 +52,8 @@
 
 
 /* tcp connection flags */
-#define F_CONN_NON_BLOCKING 1
-#define F_CONN_REMOVED      2 /* no longer  in "main" listen fd list */
+#define F_CONN_NON_BLOCKING   1
+#define F_CONN_REMOVED        2 /* no longer in "main" listen fd list */
 
 
 enum tcp_req_errors {	TCP_REQ_INIT, TCP_REQ_OK, TCP_READ_ERROR,
@@ -122,6 +122,7 @@ struct tcp_connection{
 	enum tcp_conn_states state; /* connection state */
 	void* extra_data; /* extra data associated to the connection, 0 for tcp*/
 	unsigned int timeout;/* connection timeout, after this it will be removed*/
+	unsigned int lifetime; /* lifetime to be set for the connection */
 	unsigned id_hash; /* hash index in the id_hash */
 	struct tcp_connection* id_next; /* next, prev in id hash table */
 	struct tcp_connection* id_prev;

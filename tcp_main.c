@@ -590,7 +590,7 @@ struct tcp_connection* tcpconn_get(int id, struct ip_addr* ip, int port,
 	struct tcp_connection* c;
 	TCPCONN_LOCK;
 	c=_tcpconn_find(id, ip, port);
-	if (c){ 
+	if (c) {
 			c->refcnt++;
 			c->timeout=get_ticks()+timeout;
 	}
@@ -1104,6 +1104,22 @@ error:
 
 
 
+static inline void set_tcp_timeout(struct tcp_connection *c)
+{
+	int timeout = get_ticks() + tcp_con_lifetime;
+
+	if (c->lifetime) {
+		if ( c->lifetime < timeout )
+			c->timeout = timeout;
+		else
+			c->timeout = c->lifetime;
+		c->lifetime = 0;
+	} else {
+		c->timeout = timeout;
+	}
+}
+
+
 /* handles io from a tcp child process
  * params: tcp_c - pointer in the tcp_children array, to the entry for
  *                 which an io event was detected 
@@ -1182,8 +1198,8 @@ inline static int handle_tcp_child(struct tcp_child* tcp_c, int fd_i)
 				tcpconn_destroy(tcpconn);
 				break;
 			}
-			/* update the timeout*/
-			tcpconn->timeout=get_ticks()+tcp_con_lifetime;
+			/* update the timeout (lifetime) */
+			set_tcp_timeout( tcpconn );
 			tcpconn_put(tcpconn);
 			/* must be after the de-ref*/
 			io_watch_add(&io_h, tcpconn->s, F_TCPCONN, tcpconn);
