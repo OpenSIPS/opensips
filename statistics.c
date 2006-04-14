@@ -151,7 +151,7 @@ static inline module_stats* get_stat_module( str *module)
 		return 0;
 
 	for( i=0 ; i<collector->mod_no ; i++ ) {
-		if ( (collector->amodules[i].name.len = module->len) &&
+		if ( (collector->amodules[i].name.len == module->len) &&
 		(strncasecmp(collector->amodules[i].name.s,module->s,module->len)==0) )
 			return &collector->amodules[i];
 	}
