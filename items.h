@@ -133,7 +133,7 @@ int xl_get_avp_name(struct sip_msg* msg, xl_spec_p sp, int_str *avp_name,
 int xl_print_spec(struct sip_msg* msg, xl_spec_p sp, char *buf, int *len);
 int xl_printf(struct sip_msg* msg, xl_elem_p list, char *buf, int *len);
 
-int xl_add_extra(char *name, item_func_t fct, int type );
+int xl_add_extra(char *name, item_func_t fct, int type, xl_param_t *param);
 int xl_add_extra_spec(str *name, xl_spec_p sp);
 int xl_fill_extra_spec(xl_spec_p sp);
 int xl_init_extra_spec();

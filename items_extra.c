@@ -41,14 +41,22 @@ xl_extra_p  *_xl_extra_list=0;
 
 
 
-int xl_add_extra(char *name, item_func_t fct, int type )
+int xl_add_extra(char *name, item_func_t fct, int type, xl_param_t *param)
 {
 	xl_spec_t tmspec;
 	str pvname;
 
+	if(name==NULL || fct==NULL)
+	{
+		LOG(L_ERR, "xl_add_extra: error - invalid parameters\n");
+		return -1;
+	}
+	
 	memset(&tmspec, 0, sizeof(xl_spec_t));
 	tmspec.type = type;
 	tmspec.itf = fct;
+	if(param!=NULL)
+		memcpy(&tmspec.p, param, sizeof(xl_param_t));
 	pvname.s   = name;
 	pvname.len = strlen(pvname.s);
 	return xl_add_extra_spec(&pvname, &tmspec);
