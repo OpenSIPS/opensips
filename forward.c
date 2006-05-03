@@ -281,9 +281,6 @@ int forward_request( struct sip_msg* msg, struct proxy_l * p)
 	
 	hostent2su(to, &p->host, p->addr_idx, 
 				(p->port)?p->port:SIP_PORT);
-	p->tx++;
-	p->tx_bytes+=len;
-	
 
 	send_sock=get_send_socket(msg, to, p->proto);
 	if (send_sock==0){
@@ -336,6 +333,9 @@ int forward_request( struct sip_msg* msg, struct proxy_l * p)
 		update_stat( drp_reqs, 1);
 		goto error1;
 	}
+	
+	p->tx++;
+	p->tx_bytes+=len;
 	
 	/* sent requests stats */
 	update_stat( fwd_reqs, 1);
