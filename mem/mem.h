@@ -118,6 +118,10 @@
 	(  { void *v; v=malloc((s)); \
 	   DBG("malloc %p size %d end %p\n", v, s, (char*)v+(s));\
 	   v; } )
+#	define pkg_realloc(ptr, s) \
+	(  { void *v; v=realloc((ptr), (s)); \
+	   DBG("realloc old %p to %p size %d end %p\n", ptr, v, s, (char*)v+(s));\
+	   v; } )
 #	define pkg_free(p)  do{ DBG("free %p\n", (p)); free((p)); }while(0);
 #	define pkg_status()
 #endif
