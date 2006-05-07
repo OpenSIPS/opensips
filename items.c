@@ -1397,18 +1397,18 @@ static int xl_get_avp(struct sip_msg *msg, xl_value_t *res, xl_param_t *param,
 	
 	if(param->val.s==NULL)
 	{
-		name_type = 0;
+		name_type = flags>>16;
 		avp_name.n = param->val.len;
 	}
 	else
 	{
-		name_type = AVP_NAME_STR;
+		name_type = flags>>16;
 		avp_name.s = param->val;
 	}
 	
 	p = local_buf;
 	
-	if ((avp=search_first_avp(name_type, avp_name, &avp_value))==0)
+	if ((avp=search_first_avp(name_type, avp_name, &avp_value, 0))==0)
 		return xl_get_null(msg, res, param, flags);
 
 	do {
@@ -1459,7 +1459,7 @@ static int xl_get_avp(struct sip_msg *msg, xl_value_t *res, xl_param_t *param,
 			s.s   = NULL;
 			s.len = 0;
 		}
-	} while ((avp=search_next_avp(avp, &avp_value))!=0);
+	} while ((avp=search_first_avp(name_type, avp_name, &avp_value, avp))!=0);
 	
 done:
 	res->flags = XL_VAL_STR;
@@ -1625,7 +1625,6 @@ char* xl_parse_vname(char *s, xl_spec_p e, int flags)
 	int_str avp_name;
 	int avp_type;
 	int mode;
-	str alias;
 	xl_spec_t e0;
 
 	if(s==NULL || e==NULL || *s!=ITEM_MARKER)
@@ -1766,113 +1765,58 @@ char* xl_parse_vname(char *s, xl_spec_p e, int flags)
 		/* avp  - we expect s:, i:, letter or $ */
 		if(*p==ITEM_MARKER)
 		{ /* pseudo var */
-			/* backup for avp aliases */
-			p0 = p;
+			if(flags&XL_LEVEL2)
+			{
+				LOG(L_ERR, "xl_parse_vname: error - too many var levels"
+					" [%s]!!\n", p);
+				goto error;
+			}
+			p0 =p;
 			p = xl_parse_spec(p, &e0, flags|XL_LEVEL2);
 			if(p==NULL)
 				goto error;
 			if(e0.type!=XL_NULL && e0.itf!=NULL)
 			{
-				if(flags&XL_LEVEL2)
-				{
-					LOG(L_ERR, "xl_parse_vname: error - too many var levels"
-						" [%s]!!\n", p);
-					goto error;
-				}
 				/* dynamic name */
 				e->dp.itf = e0.itf;
 				memcpy(&(e->p), &(e0.p), sizeof(xl_param_t));
+				p0 = p;
 				p = xl_parse_index(p, &(e->dp.ind));
 				if(p==NULL)
 					goto error;
 				e->flags |= XL_DPARAM;
 			} else {
-				p0++;
-				alias.s = p0;
-				p = strchr(p0, ITEM_RNBRACKET);
-				if(p==NULL)
-				{
-					LOG(L_ERR,
-						"ERROR:xl_parse_vname: bad alias name "
+				LOG(L_ERR, "ERROR:xl_parse_vname: unknow pseudo-variable"
 						"\"%s\"\n", p0);
-					goto error;
-				}
-				alias.len = p-p0;
-				/* look for avp alias */
-				if(lookup_avp_galias(&alias, &avp_type,
-						&avp_name)==-1)
-				{
-					LOG(L_ERR,
-						"ERROR:xl_parse_vname: unknow avp alias"
-						"\"%.*s\"\n", alias.len, alias.s);
-					goto error;
-				}
-				DBG("xl_parse_vname: alias found [%.*s]\n",
-						alias.len, alias.s);
-				if(avp_type&AVP_NAME_STR)
-				{
-					e->p.val.s = avp_name.s.s;
-					e->p.val.len = avp_name.s.len;
-				} else {
-					e->p.val.s = NULL;
-					e->p.val.len = avp_name.n;
-				}
+				goto error;
 			}
 		} else {
-			/* name */
+			/* name or alias */
 			avp_type = 0;
-			if((*p=='s' && *(p+1)==':') || (*p=='S' && *(p+1)==':'))
-			{
-				p+=2;
-			} else {
-				if((*p=='i' && *(p+1)==':') || (*p=='I' && *(p+1)==':'))
-				{
-					avp_type = 1;
-					p+=2;
-				} else {
-					avp_type = 2;
-				}
-			}
 			
 			p = xl_parse_name(p, e);
 			if(p==NULL)
 				goto error;
-			if(avp_type==1)
-			{	/* convert to int */
-				p0 = e->p.val.s;
-				avp_type = 0;
-				while(*p0>='0' && *p0<='9'
-						&& p0 < e->p.val.s + e->p.val.len)
-				{
-					avp_type = avp_type * 10 + *p0 - '0';
-					p0++;
-				}
-				e->p.val.s = NULL;
-				e->p.val.len = avp_type;						
-			} else if(avp_type==2) {
-				/* avp alias */
-				if(lookup_avp_galias(&e->p.val, &avp_type,
-						&avp_name)==-1)
-				{
-					LOG(L_ERR, "xl_parse_vname: error - avp alias [%.*s]"
-						" not found!\n", e->p.val.len, e->p.val.s);
-					goto error;
-				}
-				if(avp_type&AVP_NAME_STR)
-				{
-					DBG("xl_parse_vname: alias [%.*s] => [s:%.*s]\n",
-							e->p.val.len, e->p.val.s,
-							avp_name.s.len, avp_name.s.s);
-					e->p.val.s = avp_name.s.s;
-					e->p.val.len = avp_name.s.len;
-				} else {
-					DBG("xl_parse_vname: alias [%.*s] => [i:%d]\n",
-							e->p.val.len, e->p.val.s,
-							avp_name.n);
-					e->p.val.s = NULL;
-					e->p.val.len = avp_name.n;
-				}
+
+			/* identify avp */
+			if(parse_avp_spec(&e->p.val, &avp_type, &avp_name)!=0)
+			{
+				LOG(L_ERR, "xl_parse_vname: error - bad avp name [%.*s]\n",
+						e->p.val.len, e->p.val.s);
+				goto error;
 			}
+			if(avp_type&AVP_NAME_STR)
+			{
+				DBG("xl_parse_vname: avp [s:%.*s]\n", avp_name.s.len,
+						avp_name.s.s);
+				e->p.val.s = avp_name.s.s;
+				e->p.val.len = avp_name.s.len;
+			} else {
+				DBG("xl_parse_vname: avp [i:%d]\n", avp_name.n);
+				e->p.val.s = NULL;
+				e->p.val.len = avp_name.n;
+			}
+			e->flags |= (avp_type<<16);
 		}
 		
 		e->itf = xl_get_avp;
@@ -2395,7 +2339,8 @@ int xl_get_avp_name(struct sip_msg* msg, xl_spec_p sp, int_str *avp_name,
 			avp_name->n = sp->p.val.len;
 		}
 	}
-		
+	
+	*name_type |= (sp->flags&0xffff0000)>>16;
 	return 0;
 }
 
@@ -2444,7 +2389,8 @@ int xl_get_spec_value(struct sip_msg* msg, xl_spec_p sp, xl_value_t *value,
 		tp.ind = sp->dp.ind;
 		return (*sp->itf)(msg, value, &tp, flags);
 	} else {
-		return (*sp->itf)(msg, value, &(sp->p), flags);
+		return (*sp->itf)(msg, value, &(sp->p), 
+				(flags|(sp->flags&0xffff0000)));
 	}
 }
 

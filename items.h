@@ -39,14 +39,15 @@
 #define ITEM_RIBRACKET_STR	"]"
 #define ITEM_RIBRACKET		']'
 
-#define XL_DISABLE_NONE		0
-#define XL_THROW_ERROR		1
-#define XL_DISABLE_MULTI	2
-#define XL_DISABLE_COLORS	4
-#define XL_DISABLE_PVARS	8
-#define XL_DPARAM			16
-#define XL_LEVEL2			32
-#define XL_EXTRA_FOUND		64
+/* flags [16-31] are reserved for avps */
+#define XL_DISABLE_NONE		0		/* 0 */
+#define XL_THROW_ERROR		1		/* 0 */
+#define XL_DISABLE_MULTI	2		/* 1 */
+#define XL_DISABLE_COLORS	4		/* 2 */
+#define XL_DISABLE_PVARS	8		/* 3 */
+#define XL_DPARAM			16		/* 4 */
+#define XL_LEVEL2			32		/* 5 */
+#define XL_EXTRA_FOUND		64		/* 6 */
 
 #define XL_VAL_NONE			0
 #define XL_VAL_NULL			1

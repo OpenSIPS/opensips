@@ -36,14 +36,14 @@
 
 /*
  *   LIST with the allocated flags, their meaning and owner
- *   [0-7] - core owned flag; [8-15] - to be used by modules
+ *   [0-7] - internal flags; [8-15] - to be used by script
  *
  *   flag no.    owner            description
  *   -------------------------------------------------------
  *     0        avp_core          avp has a string name
  *     1        avp_core          avp has a string value
  *     2        core              contact avp qvalue change
- *     8        avpops module     avp was loaded from DB
+ *     7        avpops module     avp was loaded from DB
  *
  */
  
@@ -63,6 +63,14 @@ struct usr_avp {
 	void *data;
 };
 
+#define AVP_NAME_DELIM	':'
+
+#define AVP_NAME_VALUE_MASK	0x0003
+#define AVP_CORE_MASK		0x00ff
+#define AVP_SCRIPT_MASK		0xff00
+#define avp_core_flags(f)	((f)&0x00ff)
+#define avp_script_flags(f)	(((f)<<8)&0xff00)
+#define avp_get_script_flags(f)	(((f)&0xff00)>>8)
 
 #define AVP_NAME_STR     (1<<0)
 #define AVP_VAL_STR      (1<<1)
@@ -76,14 +84,14 @@ struct usr_avp {
 int add_avp( unsigned short flags, int_str name, int_str val);
 
 /* search functions */
-struct usr_avp *search_first_avp( unsigned short name_type, int_str name,
-															int_str *val );
+struct usr_avp *search_first_avp( unsigned short flags, int_str name,
+									int_str *val,  struct usr_avp *start);
 struct usr_avp *search_next_avp( struct usr_avp *avp, int_str *val  );
 
 /* free functions */
 void reset_avps( );
 void destroy_avp( struct usr_avp *avp);
-int  destroy_avps( unsigned short name_type, int_str name, int all);
+int  destroy_avps( unsigned short flags, int_str name, int all);
 void destroy_avp_list( struct usr_avp **list );
 void destroy_avp_list_unsafe( struct usr_avp **list );
 

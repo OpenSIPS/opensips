@@ -188,7 +188,7 @@ int next_branches( struct sip_msg *msg)
 	}
 
 	/* Find first avp  */
-	avp = search_first_avp( 0, (int_str)serial_avp_id, &val);
+	avp = search_first_avp( 0, (int_str)serial_avp_id, &val, 0);
 	if (!avp) {
 		DBG("DEBUG:next_branches: no AVPs -- we are done!\n");
 		goto error;

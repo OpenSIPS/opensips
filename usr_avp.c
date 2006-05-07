@@ -229,10 +229,11 @@ struct usr_avp** get_avp_list( )
 /* search functions */
 
 inline static struct usr_avp *internal_search_ID_avp( struct usr_avp *avp,
-												unsigned short id)
+								unsigned short id, unsigned short flags)
 {
 	for( ; avp ; avp=avp->next ) {
-		if ( id==avp->id && (avp->flags&AVP_NAME_STR)==0  ) {
+		if ( id==avp->id && (avp->flags&AVP_NAME_STR)==0 
+				&& (flags==0 || (flags&avp->flags))) {
 			return avp;
 		}
 	}
@@ -242,30 +243,43 @@ inline static struct usr_avp *internal_search_ID_avp( struct usr_avp *avp,
 
 
 inline static struct usr_avp *internal_search_name_avp( struct usr_avp *avp,
-												unsigned short id, str *name)
+						unsigned short id, str *name, unsigned short flags)
 {
 	str * avp_name;
 
 	for( ; avp ; avp=avp->next )
-		if ( id==avp->id && avp->flags&AVP_NAME_STR &&
-		(avp_name=get_avp_name(avp))!=0 && avp_name->len==name->len
-		 && !strncasecmp( avp_name->s, name->s, name->len) ) {
+		if ( id==avp->id && avp->flags&AVP_NAME_STR
+		&& (flags==0 || (flags&avp->flags))
+		&& (avp_name=get_avp_name(avp))!=0 && avp_name->len==name->len
+		&& !strncasecmp( avp_name->s, name->s, name->len) ) {
 			return avp;
 		}
 	return 0;
 }
 
 
-
-struct usr_avp *search_first_avp( unsigned short name_type,
-										int_str name, int_str *val)
+/**
+ * search first avp begining with 'start->next'
+ * if start==NULL, beging from head of avp list
+ */
+struct usr_avp *search_first_avp( unsigned short flags,
+					int_str name, int_str *val,  struct usr_avp *start)
 {
+	struct usr_avp *head;
 	struct usr_avp *avp;
 
-	assert( crt_avps!=0 );
+	if(start==0)
+	{
+		assert( crt_avps!=0 );
 	
-	if (*crt_avps==0)
-		return 0;
+		if (*crt_avps==0)
+			return 0;
+		head = *crt_avps;
+	} else {
+		if(start->next==0)
+			return 0;
+		head = start->next;
+	}
 
 	if ( name.n==0) {
 		LOG(L_ERR,"ERROR:avp:search_first_avp: 0 ID or NULL NAME AVP!");
@@ -273,14 +287,16 @@ struct usr_avp *search_first_avp( unsigned short name_type,
 	}
 
 	/* search for the AVP by ID (&name) */
-	if (name_type&AVP_NAME_STR) {
+	if (flags&AVP_NAME_STR) {
 		if ( name.s.s==0 || name.s.len==0) {
 			LOG(L_ERR,"ERROR:avp:search_first_avp: EMPTY NAME AVP!");
 			return 0;
 		}
-		avp = internal_search_name_avp(*crt_avps,compute_ID(&name.s),&name.s);
+		avp = internal_search_name_avp(head,compute_ID(&name.s),&name.s,
+				flags&AVP_SCRIPT_MASK);
 	} else {
-		avp = internal_search_ID_avp( *crt_avps, name.n );
+		avp = internal_search_ID_avp(head, name.n,
+				flags&AVP_SCRIPT_MASK);
 	}
 
 	/* get the value - if required */
@@ -298,9 +314,11 @@ struct usr_avp *search_next_avp( struct usr_avp *avp,  int_str *val )
 		return 0;
 
 	if (avp->flags&AVP_NAME_STR)
-		avp = internal_search_name_avp( avp->next, avp->id, get_avp_name(avp));
+		avp = internal_search_name_avp( avp->next, avp->id, get_avp_name(avp),
+				avp->flags&AVP_SCRIPT_MASK );
 	else
-		avp = internal_search_ID_avp( avp->next, avp->id );
+		avp = internal_search_ID_avp( avp->next, avp->id,
+				avp->flags&AVP_SCRIPT_MASK );
 
 	if (avp && val)
 		get_avp_val(avp, val);
@@ -330,13 +348,13 @@ void destroy_avp( struct usr_avp *avp_del)
 }
 
 
-int destroy_avps( unsigned short name_type, int_str name, int all)
+int destroy_avps( unsigned short flags, int_str name, int all)
 {
 	struct usr_avp *avp;
 	int n;
 
 	n = 0;
-	while ( (avp=search_first_avp( name_type, name, 0))!=0 ) {
+	while ( (avp=search_first_avp( flags, name, 0, 0))!=0 ) {
 		destroy_avp( avp );
 		n++;
 		if ( !all )
@@ -513,42 +531,57 @@ int lookup_avp_galias(str *alias, int *type, int_str *avp_name)
 int parse_avp_name( str *name, int *type, int_str *avp_name)
 {
 	unsigned int id;
+	unsigned int flags;
+	char *p;
 	char c;
+	str s;
 
 	if (name==0 || name->s==0 || name->len==0)
 		goto error;
 
-	if (name->len>=2 && name->s[1]==':') {
-		c = name->s[0];
-		name->s += 2;
-		name->len -= 2;
-		if (name->len==0)
+	p = (char*)memchr((void*)name->s, AVP_NAME_DELIM, name->len);
+	c = name->s[0];
+	if((c!='i' && c!='I' && c!='s' && c!='S') || p==NULL)
+	{
+		LOG(L_ERR,
+		"parse_avp_name: error - use type (s: or i:) in front of avp name\n");
+		goto error;
+	}
+	/* flags */
+	flags = 0;
+	if(p>name->s+1)
+	{
+		s.s = name->s+1;
+		s.len = p - s.s;
+		if(str2int(&s, &flags)!=0)
+		{
+			LOG(L_ERR, "parse_avp_name: error - bad avp flags\n");
 			goto error;
-		switch (c) {
-			case 's': case 'S':
-				*type = AVP_NAME_STR;
-				avp_name->s = *name;
-				break;
-			case 'i': case 'I':
-				*type = 0;
-				if (str2int( name, &id)!=0) {
-					LOG(L_ERR, "ERROR:parse_avp_name: invalid ID "
-						"<%.*s> - not a number\n", name->len, name->s);
-					goto error;
-				}
-				avp_name->n = (int)id;
-				break;
-			default:
-				LOG(L_ERR, "ERROR:parse_avp_name: unsupported type "
-					"[%c]\n", c);
-				goto error;
 		}
-	} else {
-		/*default is string name*/
-		*type = AVP_NAME_STR;
-		avp_name->s = *name;
+	}
+	name->len -= p-name->s+1;
+	name->s    = p+1;
+	switch (c) {
+		case 's': case 'S':
+			*type = AVP_NAME_STR;
+			avp_name->s = *name;
+			break;
+		case 'i': case 'I':
+			*type = 0;
+			if (str2int( name, &id)!=0) {
+				LOG(L_ERR, "ERROR:parse_avp_name: invalid ID "
+					"<%.*s> - not a number\n", name->len, name->s);
+				goto error;
+			}
+			avp_name->n = (int)id;
+			break;
+		default:
+			LOG(L_ERR, "ERROR:parse_avp_name: unsupported type "
+				"[%c]\n", c);
+			goto error;
 	}
 
+	*type |= avp_script_flags(flags);
 	return 0;
 error:
 	return -1;
@@ -557,20 +590,15 @@ error:
 
 int parse_avp_spec( str *name, int *type, int_str *avp_name)
 {
-	str alias;
+	char *p;
 
 	if (name==0 || name->s==0 || name->len==0)
 		return -1;
 
-	if (name->s[0]==GALIAS_CHAR_MARKER) {
+	p = (char*)memchr((void*)name->s, AVP_NAME_DELIM, name->len);
+	if (p==NULL) {
 		/* it's an avp alias */
-		if (name->len==1) {
-			LOG(L_ERR,"ERROR:parse_avp_spec: empty alias\n");
-			return -1;
-		}
-		alias.s = name->s+1;
-		alias.len = name->len-1;
-		return lookup_avp_galias( &alias, type, avp_name);
+		return lookup_avp_galias( name, type, avp_name);
 	} else {
 		return parse_avp_name( name, type, avp_name);
 	}
