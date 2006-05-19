@@ -72,5 +72,6 @@ qvalue_t get_ruri_q(void);
 int get_request_uri(struct sip_msg* _m, str* _u);
 int rewrite_uri(struct sip_msg* _m, str* _s);
 
+int branch_uri2dset( str *new_uri );
 
 #endif /* _DSET_H */

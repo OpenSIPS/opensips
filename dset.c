@@ -324,27 +324,50 @@ int get_request_uri(struct sip_msg* _m, str* _u)
  */
 int rewrite_uri(struct sip_msg* _m, str* _s)
 {
-        char* buf;
+	char* buf;
 
-        buf = (char*)pkg_malloc(_s->len + 1);
-        if (!buf) {
-                LOG(L_ERR, "ERROR: rewrite_uri: No memory left\n");
-                return -1;
-        }
+	buf = (char*)pkg_malloc(_s->len + 1);
+	if (!buf) {
+		LOG(L_ERR, "ERROR: rewrite_uri: No memory left\n");
+		return -1;
+	}
 
-        memcpy(buf, _s->s, _s->len);
-        buf[_s->len] = '\0';
+	memcpy(buf, _s->s, _s->len);
+	buf[_s->len] = '\0';
 
-        _m->parsed_uri_ok = 0;
-        if (_m->new_uri.s) {
-                pkg_free(_m->new_uri.s);
-        }
+	_m->parsed_uri_ok = 0;
+	if (_m->new_uri.s) {
+		pkg_free(_m->new_uri.s);
+	}
 
-        _m->new_uri.s = buf;
-        _m->new_uri.len = _s->len;
+	_m->new_uri.s = buf;
+	_m->new_uri.len = _s->len;
 
-        DBG("rewrite_uri: Rewriting Request-URI with '%.*s'\n", _s->len, 
-																		   buf);
-        return 1;
+	DBG("rewrite_uri: Rewriting Request-URI with '%.*s'\n", _s->len, buf);
+	return 1;
 }
 
+
+/* moves the uri to destination for all branches and
+ * all uris are set to given uri */
+int branch_uri2dset( str *new_uri )
+{
+	int b;
+
+	if (new_uri->len+1 > MAX_URI_SIZE) {
+		LOG(L_ERR,"ERROR:uri2dset: new uri too long (%d)\n",new_uri->len);
+		return -1;
+	}
+
+	for( b=0 ; b<nr_branches ; b++ ) {
+		/* move uri to dst */
+		memcpy( branches[b].dst_uri,  branches[b].uri,  branches[b].len+1);
+		branches[b].dst_uri_len =  branches[b].len;
+		/* set new uri */
+		memcpy( branches[b].uri,  new_uri->s,  new_uri->len);
+		branches[b].len =  new_uri->len;
+		branches[b].uri[new_uri->len] = 0;
+	}
+
+	return 0;
+}
