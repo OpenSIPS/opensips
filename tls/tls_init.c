@@ -3,6 +3,7 @@
  *
  * Copyright (C) 2001-2003 FhG Fokus
  * Copyright (C) 2004,2005 Free Software Foundation, Inc.
+ * Copyright (C) 2006 enum.at
  *
  * This file is part of openser, a free SIP server.
  *
@@ -28,6 +29,7 @@
 #include "../dprint.h"
 #include "../mem/shm_mem.h"
 #include "../tcp_init.h"
+#include "../ut.h"
 #include "tls_domain.h"
 
 #include <openssl/ui.h>
@@ -53,12 +55,6 @@
 #endif
 
 SSL_METHOD     *ssl_methods[TLS_USE_SSLv23 + 1];
-
-/* default context, for outgoing connections  */
-SSL_CTX        *default_client_ctx;
-/* default context, for incoming connections  */
-SSL_CTX        *default_server_ctx;
-
 
 #define VERIFY_DEPTH_S 3
 
@@ -345,94 +341,21 @@ init_ssl_methods(void)
 }
 
 /*
- * Setup default SSL_CTX (and SSL * ) client behavior:
+ * Setup default SSL_CTX (and SSL * ) behavior:
  *     verification, cipherlist, acceptable versions, ...
  */
-static void
-init_ssl_ctx_client_behavior( SSL_CTX *_ctx ) {
+static int
+init_ssl_ctx_behavior( struct tls_domain *d ) {
 	int verify_mode;
-	if( tls_ciphers_list != 0 ) {
-		if( SSL_CTX_set_cipher_list(_ctx, tls_ciphers_list) == 0 )
-			LOG( L_ERR, "init_ssl_ctx_client_behavior: failure to set SSL context cipher list\n");
-		else
-			LOG( L_NOTICE, "init_ssl_ctx_client_behavior: cipher list set to %s\n", tls_ciphers_list);
+	if( d->ciphers_list != 0 ) {
+		if( SSL_CTX_set_cipher_list(d->ctx, d->ciphers_list) == 0 ) {
+			LOG( L_ERR, "init_ssl_ctx_behavior: failure to set SSL context cipher list '%s'\n", d->ciphers_list);
+			return -1;
+		} else {
+			LOG( L_NOTICE, "init_ssl_ctx_behavior: cipher list set to %s\n", d->ciphers_list);
+		}
 	} else {
-		DBG( "init_ssl_ctx_client_behavior: cipher list null ... setting default\n");
-	}
-
-	/* Set a bunch of options: 
-	 *     do not accept SSLv2
-	 *     no session resumption
-	 *     choose cipher according to server's preference's*/
-
-#if OPENSSL_VERSION_NUMBER >= 0x000907000L
-	SSL_CTX_set_options(_ctx, 
-			(SSL_OP_ALL | SSL_OP_NO_SSLv2 |
-			SSL_OP_NO_SESSION_RESUMPTION_ON_RENEGOTIATION |
-			SSL_OP_CIPHER_SERVER_PREFERENCE)
-			#if OPENSSL_VERSION_NUMBER >= 0x000908000L
-			& (~SSL_OP_TLS_BLOCK_PADDING_BUG)
-			#endif
-			);
-#else
-	SSL_CTX_set_options(_ctx, 
-			SSL_OP_ALL | SSL_OP_NO_SSLv2 );
-#endif
-
-	/* Set verification procedure
-	 * The verification can be made null with SSL_VERIFY_NONE, or 
-	 * at least easier with SSL_VERIFY_CLIENT_ONCE instead of SSL_VERIFY_FAIL_IF_NO_PEER_CERT.
-	 *   For extra control, instead of 0, we can specify a callback function:
-	 *           int (*verify_callback)(int, X509_STORE_CTX *)
-	 * Also, depth 2 may be not enough in some scenarios ... though no need
-	 * to increase it much further */
-
-	/* Client mode:
-	 * SSL_VERIFY_NONE
-	 *   if not using an anonymous cipher (by default disabled), the server will send 
-	 *   a certificate which will be checked. The result of the certificate verification 
-	 *   process can be checked after the TLS/SSL handshake using the SSL_get_verify_result(3) 
-	 *   function. The handshake will be continued regardless of the verification result.
-	 * SSL_VERIFY_PEER
-	 *   the server certificate is verified. If the verification process fails, 
-	 *   the TLS/SSL handshake is immediately terminated with an alert message containing the 
-	 *   reason for the verification failure. If no server certificate is sent, because an 
-	 *   anonymous cipher is used, SSL_VERIFY_PEER is ignored.
-	 * SSL_VERIFY_FAIL_IF_NO_PEER_CERT
-	 *   ignored
-	 * SSL_VERIFY_CLIENT_ONCE
-	 *   ignored
-	 */
-
-	if( tls_verify_server_cert ) {
-		verify_mode = SSL_VERIFY_PEER;
-		LOG( L_WARN, "TLS: Server verification activated.\n");
-	} else {
-		verify_mode = SSL_VERIFY_NONE;
-		LOG( L_WARN, "TLS: Server verification NOT activated. Weaker security.\n");
-	}
-	
-	SSL_CTX_set_verify( _ctx, verify_mode, verify_callback);	
-	SSL_CTX_set_verify_depth( _ctx, VERIFY_DEPTH_S);
-	
-	SSL_CTX_set_session_cache_mode( _ctx, SSL_SESS_CACHE_SERVER );
-	SSL_CTX_set_session_id_context( _ctx, SER_SSL_SESS_ID, SER_SSL_SESS_ID_LEN );
-}
-
-/*
- * Setup default SSL_CTX (and SSL * ) server behavior:
- *     verification, cipherlist, acceptable versions, ...
- */
-static void
-init_ssl_ctx_server_behavior( SSL_CTX *_ctx ) {
-	int verify_mode;
-	if( tls_ciphers_list != 0 ) {
-		if( SSL_CTX_set_cipher_list(_ctx, tls_ciphers_list) == 0 )
-			LOG( L_ERR, "init_ssl_ctx_server_behavior: failure to set SSL context cipher list\n");
-		else
-			LOG( L_NOTICE, "init_ssl_ctx_server_behavior: cipher list set to %s\n", tls_ciphers_list);
-	} else {
-		DBG( "init_ssl_ctx_server_behavior: cipher list null ... setting default\n");
+		DBG( "init_ssl_ctx_behavior: cipher list null ... setting default\n");
 	}
 
 	/* Set a bunch of options: 
@@ -441,10 +364,10 @@ init_ssl_ctx_server_behavior( SSL_CTX *_ctx ) {
 	 *     choose cipher according to server's preference's*/
 
 #if OPENSSL_VERSION_NUMBER >= 0x000907000
-	SSL_CTX_set_options(_ctx, 
+	SSL_CTX_set_options(d->ctx, 
 			SSL_OP_ALL | SSL_OP_NO_SSLv2 | SSL_OP_NO_SESSION_RESUMPTION_ON_RENEGOTIATION | SSL_OP_CIPHER_SERVER_PREFERENCE);
 #else
-	SSL_CTX_set_options(_ctx, 
+	SSL_CTX_set_options(d->ctx, 
 			SSL_OP_ALL | SSL_OP_NO_SSLv2 );
 #endif
 
@@ -456,41 +379,70 @@ init_ssl_ctx_server_behavior( SSL_CTX *_ctx ) {
 	 * Also, depth 2 may be not enough in some scenarios ... though no need
 	 * to increase it much further */
 
-	/* Server mode:
-	 * SSL_VERIFY_NONE
-	 *   the server will not send a client certificate request to the client, so the client 
-	 *    will not send a certificate.
-	 * SSL_VERIFY_PEER
-	 *   the server sends a client certificate request to the client. The certificate returned
-	 *   (if any) is checked. If the verification process fails, the TLS/SSL handshake is 
-	 *   immediately terminated with an alert message containing the reason for the verification 
-	 *   failure. The behaviour can be controlled by the additional SSL_VERIFY_FAIL_IF_NO_PEER_CERT 
-	 *   and SSL_VERIFY_CLIENT_ONCE flags.
-	 * SSL_VERIFY_FAIL_IF_NO_PEER_CERT
-	 *   if the client did not return a certificate, the TLS/SSL handshake is immediately terminated 
-	 *   with a ``handshake failure'' alert. This flag must be used together with SSL_VERIFY_PEER.
-	 * SSL_VERIFY_CLIENT_ONCE
-	 *   only request a client certificate on the initial TLS/SSL handshake. Do not ask for a client 
-	 *   certificate again in case of a renegotiation. This flag must be used together with SSL_VERIFY_PEER.
-	 */
+	if (d->type & TLS_DOMAIN_SRV) {
+		/* Server mode:
+		 * SSL_VERIFY_NONE
+		 *   the server will not send a client certificate request to the client, so the client 
+		 *    will not send a certificate.
+		 * SSL_VERIFY_PEER
+		 *   the server sends a client certificate request to the client. The certificate returned
+		 *   (if any) is checked. If the verification process fails, the TLS/SSL handshake is 
+		 *   immediately terminated with an alert message containing the reason for the verification 
+		 *   failure. The behaviour can be controlled by the additional SSL_VERIFY_FAIL_IF_NO_PEER_CERT 
+		 *   and SSL_VERIFY_CLIENT_ONCE flags.
+		 * SSL_VERIFY_FAIL_IF_NO_PEER_CERT
+		 *   if the client did not return a certificate, the TLS/SSL handshake is immediately terminated 
+		 *   with a ``handshake failure'' alert. This flag must be used together with SSL_VERIFY_PEER.
+		 * SSL_VERIFY_CLIENT_ONCE
+		 *   only request a client certificate on the initial TLS/SSL handshake. Do not ask for a client 
+		 *   certificate again in case of a renegotiation. This flag must be used together with SSL_VERIFY_PEER.
+		 */
 
-	if( tls_verify_client_cert ) {
-		verify_mode = SSL_VERIFY_PEER;
-		if( tls_require_cert ) {
-			LOG( L_WARN, "TLS: Client verification activated. Client certificates are mandatory.\n");
-			verify_mode |= SSL_VERIFY_FAIL_IF_NO_PEER_CERT;
-		} else
-			LOG( L_WARN, "TLS: Client verification activated. Client certificates are NOT mandatory.\n");
+		if( d->verify_cert ) {
+			verify_mode = SSL_VERIFY_PEER;
+			if( d->require_client_cert ) {
+				LOG( L_WARN, "TLS: Client verification activated. Client certificates are mandatory.\n");
+				verify_mode |= SSL_VERIFY_FAIL_IF_NO_PEER_CERT;
+			} else
+				LOG( L_WARN, "TLS: Client verification activated. Client certificates are NOT mandatory.\n");
+		} else {
+			verify_mode = SSL_VERIFY_NONE;
+			LOG( L_WARN, "TLS: Client verification NOT activated. Weaker security.\n");
+		}
 	} else {
-		verify_mode = SSL_VERIFY_NONE;
-		LOG( L_WARN, "TLS: Client verification NOT activated. Weaker security.\n");
+		/* Client mode:
+		 * SSL_VERIFY_NONE
+		 *   if not using an anonymous cipher (by default disabled), the server will send 
+		 *   a certificate which will be checked. The result of the certificate verification 
+		 *   process can be checked after the TLS/SSL handshake using the SSL_get_verify_result(3) 
+		 *   function. The handshake will be continued regardless of the verification result.
+		 * SSL_VERIFY_PEER
+		 *   the server certificate is verified. If the verification process fails, 
+		 *   the TLS/SSL handshake is immediately terminated with an alert message containing the 
+		 *   reason for the verification failure. If no server certificate is sent, because an 
+		 *   anonymous cipher is used, SSL_VERIFY_PEER is ignored.
+		 * SSL_VERIFY_FAIL_IF_NO_PEER_CERT
+		 *   ignored
+		 * SSL_VERIFY_CLIENT_ONCE
+		 *   ignored
+		 */
+
+		if( d->verify_cert ) {
+			verify_mode = SSL_VERIFY_PEER;
+			LOG( L_WARN, "TLS: Server verification activated.\n");
+		} else {
+			verify_mode = SSL_VERIFY_NONE;
+			LOG( L_WARN, "TLS: Server verification NOT activated. Weaker security.\n");
+		}
 	}
 	
-	SSL_CTX_set_verify( _ctx, verify_mode, verify_callback);	
-	SSL_CTX_set_verify_depth( _ctx, VERIFY_DEPTH_S);
-	
-	SSL_CTX_set_session_cache_mode( _ctx, SSL_SESS_CACHE_SERVER );
-	SSL_CTX_set_session_id_context( _ctx, SER_SSL_SESS_ID, SER_SSL_SESS_ID_LEN );
+	SSL_CTX_set_verify( d->ctx, verify_mode, verify_callback);	
+	SSL_CTX_set_verify_depth( d->ctx, VERIFY_DEPTH_S);
+
+	SSL_CTX_set_session_cache_mode( d->ctx, SSL_SESS_CACHE_SERVER );
+	SSL_CTX_set_session_id_context( d->ctx, SER_SSL_SESS_ID, SER_SSL_SESS_ID_LEN );	
+
+	return 0;
 }
 
 
@@ -500,7 +452,7 @@ init_ssl_ctx_server_behavior( SSL_CTX *_ctx ) {
 int
 init_tls(void)
 {
-	struct tls_domain *d;
+	int i;
 #if (OPENSSL_VERSION_NUMBER >= 0x00908000L) && !defined(OPENSSL_NO_COMP)
 	STACK_OF(SSL_COMP)* comp_methods;
 #endif
@@ -535,43 +487,49 @@ init_tls(void)
 	SSL_load_error_strings();
 	init_ssl_methods();
 
-	/* initialize default context for client mode (outgoing connections) */
-	default_client_ctx = SSL_CTX_new(ssl_methods[tls_method - 1]);
-	if (default_client_ctx == NULL) {
-		LOG(L_ERR, "init_tls: Cannot create default client ssl context\n");
-		return -1;
+	/*
+	 * now initialize tls default domains 
+	 */
+	if ( (i=init_tls_domains(tls_default_server_domain)) ) {
+		return i;
 	}
-	init_ssl_ctx_client_behavior( default_client_ctx );
-	if (load_certificate(default_client_ctx, tls_cert_file) < 0)
-		return -1;
-	if (tls_ca_file && load_ca(default_client_ctx, tls_ca_file) < 0)
-		return -1;
-	if (load_private_key(default_client_ctx, tls_pkey_file) < 0)
-		return -1;
-
-	/* initialize default context for server mode (incoming connections) */
-	default_server_ctx = SSL_CTX_new(ssl_methods[tls_method - 1]);
-	if (default_server_ctx == NULL) {
-		LOG(L_ERR, "init_tls: Cannot create default server ssl context\n");
-		return -1;
+	if ( (i=init_tls_domains(tls_default_client_domain)) ) {
+		return i;
 	}
-	init_ssl_ctx_server_behavior( default_server_ctx );
-	if (load_certificate(default_server_ctx, tls_cert_file) < 0)
-		return -1;
-	if (tls_ca_file && load_ca(default_server_ctx, tls_ca_file) < 0)
-		return -1;
-	if (load_private_key(default_server_ctx, tls_pkey_file) < 0)
-		return -1;
-
 	/*
 	 * now initialize tls virtual domains 
 	 */
-	d = tls_domains;
+	if ( (i=init_tls_domains(tls_server_domains)) ) {
+		return i;
+	}
+	if ( (i=init_tls_domains(tls_client_domains)) ) {
+		return i;
+	}
+	/*
+	 * we are all set 
+	 */
+	return 0;
+}
+
+/*
+ * initialize tls virtual domains
+ */
+int
+init_tls_domains(struct tls_domain *d)
+{
+	struct tls_domain *dom;
+	dom = d;
 	while (d) {
-		DBG("init_tls: Processing TLS domain [%s:%d]\n",
-				ip_addr2a(&d->addr), d->port);
+		if (d->name.len) {
+			LOG(L_INFO, "init_tls: Processing TLS domain '%.*s'\n",
+                                         d->name.len, ZSW(d->name.s));
+		} else {
+			LOG(L_INFO, "init_tls: Processing TLS domain [%s:%d]\n",
+					ip_addr2a(&d->addr), d->port);
+		}
+
 		/*
-		* create context 
+		* set method 
 		*/
 		if (d->method == TLS_METHOD_UNSPEC) {
 			DBG("init_tls: No method for tls[%s:%d], using default\n",
@@ -579,6 +537,9 @@ init_tls(void)
 			d->method = tls_method;
 		}
 	
+		/*
+		* create context 
+		*/
 		d->ctx = SSL_CTX_new(ssl_methods[d->method - 1]);
 		if (d->ctx == NULL) {
 			LOG(L_ERR,
@@ -586,7 +547,9 @@ init_tls(void)
 				ip_addr2a(&d->addr), d->port);
 			return -1;
 		}
-		init_ssl_ctx_server_behavior( d->ctx );
+		if (init_ssl_ctx_behavior( d ) < 0)
+			return -1;
+
 		/*
 		* load certificate 
 		*/
@@ -614,9 +577,9 @@ init_tls(void)
 	}
 
 	/*
-		* load all private keys as the last step (may prompt for password) 
-		*/
-	d = tls_domains;
+	* load all private keys as the last step (may prompt for password) 
+	*/
+	d = dom;
 	while (d) {
 		if (!d->pkey_file) {
 			LOG(L_NOTICE,
@@ -628,12 +591,8 @@ init_tls(void)
 			return -1;
 		d = d->next;
 	}
-	/*
-	 * we are all set 
-	 */
 	return 0;
 }
-
 
 /*
  * called from main.c when ser exits (main process) 
@@ -644,15 +603,49 @@ destroy_tls(void)
 	struct tls_domain *d;
 	DBG("destroy_tls: Entered\n");
 	
-	d = tls_domains;
+	d = tls_server_domains;
 	while (d) {
 		if (d->ctx)
 			SSL_CTX_free(d->ctx);
 		d = d->next;
 	}
-	if (default_client_ctx)
-		SSL_CTX_free(default_client_ctx);
-	if (default_server_ctx)
-		SSL_CTX_free(default_server_ctx);
+	d = tls_client_domains;
+	while (d) {
+		if (d->ctx)
+			SSL_CTX_free(d->ctx);
+		d = d->next;
+	}
+	if (tls_default_server_domain) {
+		if (tls_default_server_domain->ctx) {
+                        SSL_CTX_free(tls_default_server_domain->ctx);
+		}
+	}
+	if (tls_default_client_domain) {
+		if (tls_default_client_domain->ctx) {
+                        SSL_CTX_free(tls_default_client_domain->ctx);
+		}
+	}
 	tls_free_domains();
 }
+
+/*
+ * called once from main.c (main process) before
+ * parsing the configuration
+ */
+int pre_init_tls(void)
+{
+	DBG("pre_init_tls: Entered\n");
+
+	if ( !(tls_default_client_domain = tls_new_domain(TLS_DOMAIN_DEF | TLS_DOMAIN_CLI)) ) {
+		LOG(L_ERR, "pre_init_tls: ERROR: failed to initialize tls_default_client_domain\n");
+		return -1;
+	}
+
+	if ( !(tls_default_server_domain = tls_new_domain(TLS_DOMAIN_DEF | TLS_DOMAIN_SRV)) ) {
+		LOG(L_ERR, "pre_init_tls: ERROR: failed to initialize tls_default_server_domain\n");
+		return -1;
+	}
+
+	return 0;
+}
+

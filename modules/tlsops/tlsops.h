@@ -1,8 +1,6 @@
 /*
  * $Id$
  *
- * Copyright (C) 2001-2003 FhG Fokus
- * Copyright (C) 2004,2005 Free Software Foundation, Inc.
  * Copyright (C) 2006 enum.at
  *
  * This file is part of openser, a free SIP server.
@@ -22,38 +20,21 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef tls_init_h
-#define tls_init_h
+#ifndef _TLSOPS_H_
+#define _TLSOPS_H_
 
-#include <openssl/ssl.h>
-#include "tls_config.h"
-#include "tls_domain.h"
-#include "../tcp_conn.h"
+#include "../../parser/msg_parser.h"
+#include "tls_select.h"
 
-/*
- * just once before cleanup 
- */
-void            destroy_tls(void);
+typedef  int (*pseudo_function)(struct sip_msg *msg, xl_value_t *res, xl_param_t *param, int flags);
 
-/*
- * for each socket 
- */
-int             tls_init(struct socket_info *si);
 
-/*
- * just once, pre-initialize the tls subsystem
- * (allocate memory for the default TLS domains)
- */
-int             pre_init_tls(void);
+struct pseudo_export_ {
+	char *name;
+	pseudo_function function;
+	int flags;
+};
 
-/*
- * just once, initialize the tls subsystem 
- */
-int             init_tls(void);
-
-/*
- * initialize tls domains
- */
-int		init_tls_domains(struct tls_domain *d);
+typedef struct pseudo_export_ pseudo_export_t;
 
 #endif

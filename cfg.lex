@@ -5,6 +5,7 @@
  *
  * Copyright (C) 2001-2003 FhG Fokus
  * Copyright (C) 2005-2006 Voice Sistem S.R.L.
+ * Copyright (C) 2006 enum.at
  *
  * This file is part of openser, a free SIP server.
  *
@@ -242,13 +243,16 @@ TLS_PORT_NO		"tls_port_no"
 TLS_METHOD		"tls_method"
 TLS_VERIFY_CLIENT	"tls_verify_client"
 TLS_VERIFY_SERVER	"tls_verify_server"
-TLS_REQUIRE_CERTIFICATE "tls_require_certificate"
+TLS_REQUIRE_CLIENT_CERTIFICATE "tls_require_client_certificate"
 TLS_CERTIFICATE	"tls_certificate"
 TLS_PRIVATE_KEY "tls_private_key"
 TLS_CA_LIST		"tls_ca_list"
 TLS_CIPHERS_LIST	"tls_ciphers_list"
 TLS_HANDSHAKE_TIMEOUT	"tls_handshake_timeout"
 TLS_SEND_TIMEOUT	"tls_send_timeout"
+TLS_SERVER_DOMAIN	"tls_server_domain"
+TLS_CLIENT_DOMAIN	"tls_client_domain"
+TLS_CLIENT_DOMAIN_AVP	"tls_client_domain_avp"
 ADVERTISED_ADDRESS	"advertised_address"
 ADVERTISED_PORT		"advertised_port"
 DISABLE_CORE		"disable_core_dump"
@@ -256,7 +260,6 @@ OPEN_FD_LIMIT		"open_files_limit"
 MCAST_LOOPBACK		"mcast_loopback"
 MCAST_TTL			"mcast_ttl"
 TOS					"tos"
-TLS_DOMAIN			"tls_domain"
 
 MPATH	mpath
 LOADMODULE	loadmodule
@@ -436,8 +439,8 @@ EAT_ABLE	[\ \t\b\r]
 <INITIAL>{TLS_METHOD}	{ count(); yylval.strval=yytext; return TLS_METHOD; }
 <INITIAL>{TLS_VERIFY_CLIENT}	{ count(); yylval.strval=yytext; return TLS_VERIFY_CLIENT; }
 <INITIAL>{TLS_VERIFY_SERVER}	{ count(); yylval.strval=yytext; return TLS_VERIFY_SERVER; }
-<INITIAL>{TLS_REQUIRE_CERTIFICATE}	{ count(); yylval.strval=yytext;
-										return TLS_REQUIRE_CERTIFICATE; }
+<INITIAL>{TLS_REQUIRE_CLIENT_CERTIFICATE}	{ count(); yylval.strval=yytext;
+										return TLS_REQUIRE_CLIENT_CERTIFICATE;}
 <INITIAL>{TLS_CERTIFICATE}	{ count(); yylval.strval=yytext; 
 										return TLS_CERTIFICATE; }
 <INITIAL>{TLS_PRIVATE_KEY}	{ count(); yylval.strval=yytext; 
@@ -450,6 +453,12 @@ EAT_ABLE	[\ \t\b\r]
 										return TLS_HANDSHAKE_TIMEOUT; }
 <INITIAL>{TLS_SEND_TIMEOUT}	{ count(); yylval.strval=yytext;
 										return TLS_SEND_TIMEOUT; }
+<INITIAL>{TLS_SERVER_DOMAIN}		{ count(); yylval.strval=yytext;
+									return TLS_SERVER_DOMAIN; }
+<INITIAL>{TLS_CLIENT_DOMAIN}		{ count(); yylval.strval=yytext;
+									return TLS_CLIENT_DOMAIN; }
+<INITIAL>{TLS_CLIENT_DOMAIN_AVP}	{ count(); yylval.strval=yytext;
+										return TLS_CLIENT_DOMAIN_AVP; }
 <INITIAL>{FIFO}	{ count(); yylval.strval=yytext; return FIFO; }
 <INITIAL>{FIFO_DIR}	{ count(); yylval.strval=yytext; return FIFO_DIR; }
 <INITIAL>{FIFO_DB_URL}	{ count(); yylval.strval=yytext; return FIFO_DB_URL; }
@@ -477,8 +486,6 @@ EAT_ABLE	[\ \t\b\r]
 									return MCAST_TTL; }
 <INITIAL>{TOS}				{	count(); yylval.strval=yytext;
 									return TOS; }
-<INITIAL>{TLS_DOMAIN}		{ count(); yylval.strval=yytext;
-									return TLS_DOMAIN; }
 
 <INITIAL>{MPATH}	   { count(); yylval.strval=yytext; return MPATH; }
 <INITIAL>{LOADMODULE}  { count(); yylval.strval=yytext; return LOADMODULE; }

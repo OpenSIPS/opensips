@@ -3,6 +3,7 @@
  *
  * Copyright (C) 2001-2003 FhG Fokus
  * Copyright (C) 2004,2005 Free Software Foundation, Inc.
+ * Copyright (C) 2006 enum.at
  *
  * This file is part of openser, a free SIP server.
  *
@@ -32,6 +33,8 @@
 #include <openssl/ssl.h>
 #include "../mem/shm_mem.h"
 #include "../timer.h"
+#include "../usr_avp.h"
+#include "../ut.h"
 
 /*
  * Open questions:
@@ -93,40 +96,121 @@ tls_print_errstack(void)
 	}
 }
 
-/*
-	Output some warning info in case the verification 
-	fails, but no verification was requested, or it was 
-	not mandatory.
- */
-int tls_after_handshake (SSL * ssl ) {
-	X509 *peer;
-	int verify_res;
-	verify_res = SSL_get_verify_result( ssl );
-	
-	/* If we are a client, with no verification of the server cert,
-	warn in case the server certificate verification failed*/
-	if( ssl->verify_mode == SSL_VERIFY_NONE 
-			&& ssl->type == SSL_ST_CONNECT 
-			&& verify_res != X509_V_OK ) {
-		LOG( L_WARN, "tls_after_handshake: Server certificate verification failed!\n");
-		return 1;
+static void tls_dump_cert_info(char* s,	X509* cert)
+{
+	char* subj;
+	char* issuer;
+
+	subj   = X509_NAME_oneline(X509_get_subject_name(cert), 0, 0);
+	issuer = X509_NAME_oneline(X509_get_issuer_name(cert), 0, 0);
+
+	DBG("%s subject:%s\n", s ? s : "", subj);
+	DBG("%s issuer: %s\n", s ? s : "", issuer);
+	OPENSSL_free(subj);
+	OPENSSL_free(issuer);
+}
+
+
+static void tls_dump_verification_failure(long verification_result)
+{
+	switch(verification_result) {
+	case X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT:
+		DBG("verification failure: unable to get issuer certificate\n");
+		break;
+	case X509_V_ERR_UNABLE_TO_GET_CRL:
+		DBG("verification failure: unable to get certificate CRL\n");
+		break;
+	case X509_V_ERR_UNABLE_TO_DECRYPT_CERT_SIGNATURE:
+		DBG("verification failure: unable to decrypt certificate's signature\n");
+		break;
+	case X509_V_ERR_UNABLE_TO_DECRYPT_CRL_SIGNATURE:
+		DBG("verification failure: unable to decrypt CRL's signature\n");
+		break;
+	case X509_V_ERR_UNABLE_TO_DECODE_ISSUER_PUBLIC_KEY:
+		DBG("verification failure: unable to decode issuer public key\n");
+		break;
+	case X509_V_ERR_CERT_SIGNATURE_FAILURE:
+		DBG("verification failure: certificate signature failure\n");
+		break;
+	case X509_V_ERR_CRL_SIGNATURE_FAILURE:
+		DBG("verification failure: CRL signature failure\n");
+		break;
+	case X509_V_ERR_CERT_NOT_YET_VALID:
+		DBG("verification failure: certificate is not yet valid\n");
+		break;
+	case X509_V_ERR_CERT_HAS_EXPIRED:
+		DBG("verification failure: certificate has expired\n");
+		break;
+	case X509_V_ERR_CRL_NOT_YET_VALID:
+		DBG("verification failure: CRL is not yet valid\n");
+		break;
+	case X509_V_ERR_CRL_HAS_EXPIRED:
+		DBG("verification failure: CRL has expired\n");
+		break;
+	case X509_V_ERR_ERROR_IN_CERT_NOT_BEFORE_FIELD:
+		DBG("verification failure: format error in certificate's notBefore field\n");
+		break;
+	case X509_V_ERR_ERROR_IN_CERT_NOT_AFTER_FIELD:
+		DBG("verification failure: format error in certificate's notAfter field\n");
+		break;
+	case X509_V_ERR_ERROR_IN_CRL_LAST_UPDATE_FIELD:
+		DBG("verification failure: format error in CRL's lastUpdate field\n");
+		break;
+	case X509_V_ERR_ERROR_IN_CRL_NEXT_UPDATE_FIELD:
+		DBG("verification failure: format error in CRL's nextUpdate field\n");
+		break;
+	case X509_V_ERR_OUT_OF_MEM:
+		DBG("verification failure: out of memory\n");
+		break;
+	case X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT:
+		DBG("verification failure: self signed certificate\n");
+		break;
+	case X509_V_ERR_SELF_SIGNED_CERT_IN_CHAIN:
+		DBG("verification failure: self signed certificate in certificate chain\n");
+		break;
+	case X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY:
+		DBG("verification failure: unable to get local issuer certificate\n");
+		break;
+	case X509_V_ERR_UNABLE_TO_VERIFY_LEAF_SIGNATURE:
+		DBG("verification failure: unable to verify the first certificate\n");
+		break;
+	case X509_V_ERR_CERT_CHAIN_TOO_LONG:
+		DBG("verification failure: certificate chain too long\n");
+		break;
+	case X509_V_ERR_CERT_REVOKED:
+		DBG("verification failure: certificate revoked\n");
+		break;
+	case X509_V_ERR_INVALID_CA:
+		DBG("verification failure: invalid CA certificate\n");
+		break;
+	case X509_V_ERR_PATH_LENGTH_EXCEEDED:
+		DBG("verification failure: path length constraint exceeded\n");
+		break;
+	case X509_V_ERR_INVALID_PURPOSE:
+		DBG("verification failure: unsupported certificate purpose\n");
+		break;
+	case X509_V_ERR_CERT_UNTRUSTED:
+		DBG("verification failure: certificate not trusted\n");
+		break;
+	case X509_V_ERR_CERT_REJECTED:
+		DBG("verification failure: certificate rejected\n");
+		break;
+	case X509_V_ERR_SUBJECT_ISSUER_MISMATCH:
+		DBG("verification failure: subject issuer mismatch\n");
+		break;
+	case X509_V_ERR_AKID_SKID_MISMATCH:
+		DBG("verification failure: authority and subject key identifier mismatch\n");
+		break;
+	case X509_V_ERR_AKID_ISSUER_SERIAL_MISMATCH:
+		DBG("verification failure: authority and issuer serial number mismatch\n");
+		break;
+	case X509_V_ERR_KEYUSAGE_NO_CERTSIGN:
+		DBG("verification failure: key usage does not include certificate signing\n");
+		break;
+	case X509_V_ERR_APPLICATION_VERIFICATION:
+		DBG("verification failure: application verification failure\n");
+		break;
 	}
-	
-	/* If we are a server, with only VERIFY_PEER. This flags makes
-	the server request a client certificate. The handshake succeeds if:
-		- the client does not send a certificate
-		- if the client sends a certificate and this is correctly verified */
-	if( ((ssl->verify_mode & SSL_VERIFY_PEER) == SSL_VERIFY_PEER) 
-			&& ssl->type == SSL_ST_ACCEPT ) {
-		peer = SSL_get_peer_certificate( ssl );
-		if( peer == NULL ) {
-			LOG( L_WARN, "tls_after_handshake: No client certificate presented!\n");
-		} else {
-			X509_free( peer );
-		}
-		return 1;
-	}
-	return 1;
 }
 
 /*
@@ -135,9 +219,9 @@ int tls_after_handshake (SSL * ssl ) {
 static int
 tls_accept(struct tcp_connection *c)
 {
-	int             ret,
-					err;
-	SSL            *ssl;
+	int ret, err;
+	SSL *ssl;
+	X509* cert;
 
 	/* DBG("tls_accept: Entered\n"); //very noisy debug */
 
@@ -153,7 +237,34 @@ tls_accept(struct tcp_connection *c)
 	if (ret > 0) {
 		DBG("tls_accept: TLS handshake successful\n");
 		c->state = S_CONN_OK;
-		tls_after_handshake(ssl);
+
+		DBG("tls_accept: new connection from %s:%d using %s %s %d\n",
+			ip_addr2a(&c->rcv.src_ip), c->rcv.src_port,
+			SSL_get_cipher_version(ssl), SSL_get_cipher_name(ssl),
+			SSL_get_cipher_bits(ssl, 0)
+			);
+		DBG("tls_accept: local socket: %s:%d\n",
+			ip_addr2a(&c->rcv.dst_ip), c->rcv.dst_port
+			);
+		cert = SSL_get_peer_certificate(ssl);
+		if (cert != 0) {
+			tls_dump_cert_info("tls_accept: client certificate", cert);
+			if (SSL_get_verify_result(ssl) != X509_V_OK) {
+				LOG(L_WARN, "WARNING: tls_accept: client certificate "
+					"verification failed!!!\n");
+				tls_dump_verification_failure(SSL_get_verify_result(ssl));
+			}
+			X509_free(cert);
+		} else {
+			LOG(L_INFO, "tls_accept: client did not present a certificate\n");
+		}
+		cert = SSL_get_certificate(ssl);
+		if (cert != 0) {
+			tls_dump_cert_info("tls_accept: local (server) certificate", cert);
+		} else {
+			/* this should not happen, servers always present a cert */
+			LOG(L_ERR, "tls_accept: ERRROR: local TLS server domain has no certificate\n");
+		}
 		return 0;
 	} else {
 		err = SSL_get_error(ssl, ret);
@@ -191,9 +302,9 @@ tls_accept(struct tcp_connection *c)
 static int
 tls_connect(struct tcp_connection *c)
 {
-	SSL            *ssl;
-	int             ret,
-					err;
+	int ret, err;
+	SSL *ssl;
+	X509* cert;
 
 	/* DBG("tls_connect: Entered\n"); //Very noisy debug  */
 
@@ -209,7 +320,33 @@ tls_connect(struct tcp_connection *c)
 	if (ret > 0) {
 		DBG("tls_connect: SSL/TLS connect successuful\n");
 		c->state = S_CONN_OK;
-		tls_after_handshake(ssl);
+		DBG("tls_connect: new connection to %s:%d using %s %s %d\n",
+			ip_addr2a(&c->rcv.src_ip), c->rcv.src_port,
+			SSL_get_cipher_version(ssl), SSL_get_cipher_name(ssl),
+			SSL_get_cipher_bits(ssl, 0)
+			);
+		DBG("tls_connect: sending socket: %s:%d \n",
+			ip_addr2a(&c->rcv.dst_ip), c->rcv.dst_port
+			);
+		cert = SSL_get_peer_certificate(ssl);
+		if (cert != 0) {
+			tls_dump_cert_info("tls_connect: server certificate", cert);
+			if (SSL_get_verify_result(ssl) != X509_V_OK) {
+				LOG(L_WARN, "WARNING: tls_connect: server certificate "
+					"verification failed!!!\n");
+				tls_dump_verification_failure(SSL_get_verify_result(ssl));
+			}
+			X509_free(cert);
+		} else {
+			/* this should not happen, servers always present a cert */
+			LOG(L_ERR, "tls_connect: ERRROR: server did not present a certificate\n");
+		}
+		cert = SSL_get_certificate(ssl);
+		if (cert != 0) {
+			tls_dump_cert_info("tls_connect: local (client) certificate", cert);
+		} else {
+			LOG(L_INFO, "tls_connect: local TLS client domain does not have a certificate\n");
+		}
 		return 0;
     } else {
 		err = SSL_get_error(ssl, ret);
@@ -407,6 +544,15 @@ tls_tcpconn_init(struct tcp_connection *c, int sock)
 {
 	struct tls_domain *dom;
 
+	struct usr_avp *avp;
+	int_str val;
+	int_str avp_tlscdom_name;
+	unsigned short avp_tlscdom_name_type;
+
+	// we use integer name avp, configured via openser.cfg
+	avp_tlscdom_name.n = tls_client_domain_avp;
+	avp_tlscdom_name_type = 0;
+
 	/*
 	* new connection within a single process, no lock necessary 
 	*/
@@ -421,20 +567,55 @@ tls_tcpconn_init(struct tcp_connection *c, int sock)
 	c->timeout = get_ticks() + DEFAULT_TCP_CONNECTION_LIFETIME;
 
 	if (c->state == S_CONN_ACCEPT) {
-		DBG("tls_tcpconn_init: Looking up tls domain [%s:%d]\n",
+		DBG("tls_tcpconn_init: Looking up socket based TLS server domain [%s:%d]\n",
 			ip_addr2a(&c->rcv.dst_ip), c->rcv.dst_port);
-		dom = tls_find_domain(&c->rcv.dst_ip, c->rcv.dst_port);
+		dom = tls_find_server_domain(&c->rcv.dst_ip, c->rcv.dst_port);
 		if (dom) {
-			DBG("tls_tcpconn_init: Found tls_domain [%s:%d]\n",
+			DBG("tls_tcpconn_init: Found socket based TLS server domain [%s:%d]\n",
 			ip_addr2a(&dom->addr), dom->port);
 			c->extra_data = SSL_new(dom->ctx);
 		} else {
-			DBG("tls_tcpconn_init: Using default tls server settings\n");
-			c->extra_data = SSL_new(default_server_ctx);
+			LOG(L_ERR,"tls_tcpconn_init: ERROR: no TLS server domain found\n");
+			return -1;
 		}
 	} else if (c->state == S_CONN_CONNECT) {
-		DBG("tls_tcpconn_init: Using default tls client settings\n");
-		c->extra_data = SSL_new(default_client_ctx);
+		avp = NULL;
+		if (avp_tlscdom_name.n) {
+			avp = search_first_avp(avp_tlscdom_name_type, avp_tlscdom_name, &val, 0);
+		} else {
+			DBG("tls_tcpconn_init: name based TLS client domains are disabled\n");
+		}
+		if (!avp) {
+			DBG("tls_tcpconn_init: no TLS client doman AVP set, looking for socket based TLS client domain\n");
+			dom = tls_find_client_domain(&c->rcv.src_ip, c->rcv.src_port);
+			if (dom) {
+				DBG("tls_tcpconn_init: Found socket based TLS client domain [%s:%d]\n",
+				ip_addr2a(&dom->addr), dom->port);
+				c->extra_data = SSL_new(dom->ctx);
+			} else {
+				LOG(L_ERR,"tls_tcpconn_init: ERROR: no TLS client domain found\n");
+				return -1;
+			}
+		} else {
+			DBG("tls_tcpconn_init: TLS client domain AVP found = '%.*s'\n", val.s.len, ZSW(val.s.s));
+			dom = tls_find_client_domain_name(val.s);
+			if (dom) {
+				DBG("tls_tcpconn_init: Found name based TLS client domain '%.*s'\n",
+					 val.s.len, ZSW(val.s.s));
+				c->extra_data = SSL_new(dom->ctx);
+			} else {
+				DBG("tls_tcpconn_init: No name based TLS client domain found, trying socket based TLS client domains\n");
+				dom = tls_find_client_domain(&c->rcv.src_ip, c->rcv.src_port);
+				if (dom) {
+					DBG("tls_tcpconn_init: Found socket based TLS client domain [%s:%d]\n",
+					ip_addr2a(&dom->addr), dom->port);
+					c->extra_data = SSL_new(dom->ctx);
+				} else {
+					LOG(L_ERR,"tls_tcpconn_init: ERROR: no TLS client domain found\n");
+					return -1;
+				}
+			}
+		}
 	} else {
 		LOG(L_ERR,
 			"tls_tcpconn_init: Invalid connection state (bug in TCP code)\n");

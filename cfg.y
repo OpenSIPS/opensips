@@ -5,6 +5,7 @@
  *
  * Copyright (C) 2001-2003 FhG Fokus
  * Copyright (C) 2005-2006 Voice Sistem S.R.L.
+ * Copyright (C) 2006 enum.at
  *
  * This file is part of openser, a free SIP server.
  *
@@ -270,13 +271,16 @@ extern int line;
 %token TLS_METHOD
 %token TLS_HANDSHAKE_TIMEOUT
 %token TLS_SEND_TIMEOUT
+%token TLS_SERVER_DOMAIN
+%token TLS_CLIENT_DOMAIN
+%token TLS_CLIENT_DOMAIN_AVP
 %token SSLv23
 %token SSLv2
 %token SSLv3
 %token TLSv1
 %token TLS_VERIFY_CLIENT
 %token TLS_VERIFY_SERVER
-%token TLS_REQUIRE_CERTIFICATE
+%token TLS_REQUIRE_CLIENT_CERTIFICATE
 %token TLS_CERTIFICATE
 %token TLS_PRIVATE_KEY
 %token TLS_CA_LIST
@@ -288,7 +292,6 @@ extern int line;
 %token MCAST_LOOPBACK
 %token MCAST_TTL
 %token TOS
-%token TLS_DOMAIN
 
 
 
@@ -575,7 +578,7 @@ assign_stm:	DEBUG EQUAL NUMBER { debug=$3; }
 												"value");
 										}
 									#else
-										warn("tcp support not compiled in");	
+										warn("tcp support not compiled in");
 									#endif
 									}
 		| TCP_POLL_METHOD EQUAL error { yyerror("poll method name expected"); }
@@ -613,28 +616,40 @@ assign_stm:	DEBUG EQUAL NUMBER { debug=$3; }
 		| TLS_PORT_NO EQUAL error { yyerror("number expected"); }
 		| TLS_METHOD EQUAL SSLv23 {
 									#ifdef USE_TLS
-										tls_method=TLS_USE_SSLv23;
+										tls_default_server_domain->method =
+											TLS_USE_SSLv23;
+										tls_default_client_domain->method =
+											TLS_USE_SSLv23;
 									#else
 										warn("tls support not compiled in");
 									#endif
 									}
 		| TLS_METHOD EQUAL SSLv2 {
 									#ifdef USE_TLS
-										tls_method=TLS_USE_SSLv2;
+										tls_default_server_domain->method =
+											TLS_USE_SSLv2;
+										tls_default_client_domain->method =
+											TLS_USE_SSLv2;
 									#else
 										warn("tls support not compiled in");
 									#endif
 									}
 		| TLS_METHOD EQUAL SSLv3 {
 									#ifdef USE_TLS
-										tls_method=TLS_USE_SSLv3;
+										tls_default_server_domain->method =
+											TLS_USE_SSLv3;
+										tls_default_client_domain->method =
+											TLS_USE_SSLv3;
 									#else
 										warn("tls support not compiled in");
 									#endif
 									}
 		| TLS_METHOD EQUAL TLSv1 {
 									#ifdef USE_TLS
-										tls_method=TLS_USE_TLSv1;
+										tls_default_server_domain->method =
+											TLS_USE_TLSv1;
+										tls_default_client_domain->method =
+											TLS_USE_TLSv1;
 									#else
 										warn("tls support not compiled in");
 									#endif
@@ -650,7 +665,8 @@ assign_stm:	DEBUG EQUAL NUMBER { debug=$3; }
 										
 		| TLS_VERIFY_CLIENT EQUAL NUMBER {
 									#ifdef USE_TLS
-										tls_verify_client_cert=$3;
+										tls_default_server_domain->verify_cert
+											= $3;
 									#else
 										warn("tls support not compiled in");
 									#endif
@@ -658,24 +674,27 @@ assign_stm:	DEBUG EQUAL NUMBER { debug=$3; }
 		| TLS_VERIFY_CLIENT EQUAL error { yyerror("boolean value expected"); }
 		| TLS_VERIFY_SERVER EQUAL NUMBER {
 									#ifdef USE_TLS
-										tls_verify_server_cert=$3;
+										tls_default_client_domain->verify_cert
+											=$3;
 									#else
 										warn("tls support not compiled in");
 									#endif
 									}
 		| TLS_VERIFY_SERVER EQUAL error { yyerror("boolean value expected"); }
-		| TLS_REQUIRE_CERTIFICATE EQUAL NUMBER {
+		| TLS_REQUIRE_CLIENT_CERTIFICATE EQUAL NUMBER {
 									#ifdef USE_TLS
-										tls_require_cert=$3;
+										tls_default_client_domain->require_client_cert=$3;
 									#else
 										warn( "tls support not compiled in");
 									#endif
 									}
-		| TLS_REQUIRE_CERTIFICATE EQUAL error { yyerror("boolean value"
-																" expected"); }
+		| TLS_REQUIRE_CLIENT_CERTIFICATE EQUAL error { yyerror("boolean value expected"); }
 		| TLS_CERTIFICATE EQUAL STRING { 
 									#ifdef USE_TLS
-											tls_cert_file=$3;
+										tls_default_server_domain->cert_file=
+											$3;
+										tls_default_client_domain->cert_file=
+											$3;
 									#else
 										warn("tls support not compiled in");
 									#endif
@@ -683,7 +702,10 @@ assign_stm:	DEBUG EQUAL NUMBER { debug=$3; }
 		| TLS_CERTIFICATE EQUAL error { yyerror("string value expected"); }
 		| TLS_PRIVATE_KEY EQUAL STRING { 
 									#ifdef USE_TLS
-											tls_pkey_file=$3;
+										tls_default_server_domain->pkey_file=
+											$3;
+										tls_default_client_domain->pkey_file=
+											$3;
 									#else
 										warn("tls support not compiled in");
 									#endif
@@ -691,7 +713,10 @@ assign_stm:	DEBUG EQUAL NUMBER { debug=$3; }
 		| TLS_PRIVATE_KEY EQUAL error { yyerror("string value expected"); }
 		| TLS_CA_LIST EQUAL STRING { 
 									#ifdef USE_TLS
-											tls_ca_file=$3;
+										tls_default_server_domain->ca_file =
+											$3;
+										tls_default_client_domain->ca_file =
+											$3;
 									#else
 										warn("tls support not compiled in");
 									#endif
@@ -699,7 +724,10 @@ assign_stm:	DEBUG EQUAL NUMBER { debug=$3; }
 		| TLS_CA_LIST EQUAL error { yyerror("string value expected"); }
 		| TLS_CIPHERS_LIST EQUAL STRING { 
 									#ifdef USE_TLS
-											tls_ciphers_list=$3;
+										tls_default_server_domain->ciphers_list
+											= $3;
+										tls_default_client_domain->ciphers_list
+											= $3;
 									#else
 										warn("tls support not compiled in");
 									#endif
@@ -721,7 +749,16 @@ assign_stm:	DEBUG EQUAL NUMBER { debug=$3; }
 									#endif
 									}
 		| TLS_SEND_TIMEOUT EQUAL error { yyerror("number expected"); }
-		| tls_domain_stm
+		| TLS_CLIENT_DOMAIN_AVP EQUAL NUMBER {
+									#ifdef USE_TLS
+										tls_client_domain_avp=$3;
+									#else
+										warn("tls support not compiled in");
+									#endif
+									}
+		| TLS_CLIENT_DOMAIN_AVP EQUAL error { yyerror("number expected"); }
+		| tls_server_domain_stm
+		| tls_client_domain_stm
 		| SERVER_SIGNATURE EQUAL NUMBER { server_signature=$3; }
 		| SERVER_SIGNATURE EQUAL error { yyerror("boolean value expected"); }
 		| SERVER_HEADER EQUAL STRING { server_header.s=$3;
@@ -854,19 +891,19 @@ module_stm:	LOADMODULE STRING	{	if(*$2!='/' && mpath!=NULL
 										}
 									}
 								}
-		 | LOADMODULE error	{ yyerror("string expected");  }
-                 | MODPARAM LPAREN STRING COMMA STRING COMMA STRING RPAREN {
-			 if (set_mod_param_regex($3, $5, STR_PARAM, $7) != 0) {
-				 yyerror("Can't set module parameter");
-			 }
-		   }
-                 | MODPARAM LPAREN STRING COMMA STRING COMMA NUMBER RPAREN {
-			 if (set_mod_param_regex($3, $5, INT_PARAM, (void*)$7) != 0) {
-				 yyerror("Can't set module parameter");
-			 }
-		   }
-                 | MODPARAM error { yyerror("Invalid arguments"); }
-		 ;
+		| LOADMODULE error	{ yyerror("string expected");  }
+		| MODPARAM LPAREN STRING COMMA STRING COMMA STRING RPAREN {
+				if (set_mod_param_regex($3, $5, STR_PARAM, $7) != 0) {
+					yyerror("Can't set module parameter");
+				}
+			}
+		| MODPARAM LPAREN STRING COMMA STRING COMMA NUMBER RPAREN {
+				if (set_mod_param_regex($3, $5, INT_PARAM, (void*)$7) != 0) {
+					yyerror("Can't set module parameter");
+				}
+			}
+		| MODPARAM error { yyerror("Invalid arguments"); }
+		;
 
 
 ip:		 ipv4  { $$=$1; }
@@ -931,45 +968,71 @@ ipv6:	ipv6addr { $$=$1; }
 	| LBRACK ipv6addr RBRACK {$$=$2; }
 ;
 
-tls_domain_stm : TLS_DOMAIN LBRACK ip COLON port RBRACK { 
+tls_server_domain_stm : TLS_SERVER_DOMAIN LBRACK ip COLON port RBRACK { 
 						#ifdef USE_TLS
-							if (tls_new_domain($3, $5)) yyerror("tls_new_domain failed");
+							if (tls_new_server_domain($3, $5)) 
+								yyerror("tls_new_server_domain failed");
 						#else	
 							warn("tls support not compiled in");
 						#endif
 							}
-	         LBRACE tls_decls RBRACE
+	         LBRACE tls_server_decls RBRACE
 ;
 
-tls_decls : tls_var
-          | tls_decls tls_var
+tls_client_domain_stm : TLS_CLIENT_DOMAIN LBRACK ip COLON port RBRACK { 
+						#ifdef USE_TLS
+							if (tls_new_client_domain($3, $5))
+								yyerror("tls_new_client_domain failed");
+						#else	
+							warn("tls support not compiled in");
+						#endif
+							}
+	         LBRACE tls_client_decls RBRACE
 ;
 
+tls_client_domain_stm : TLS_CLIENT_DOMAIN LBRACK STRING RBRACK { 
+						#ifdef USE_TLS
+							if (tls_new_client_domain_name($3, strlen($3)))
+								yyerror("tls_new_client_domain_name failed");
+						#else	
+							warn("tls support not compiled in");
+						#endif
+							}
+	         LBRACE tls_client_decls RBRACE
+;
+
+tls_server_decls : tls_server_var
+          | tls_server_decls tls_server_var
+;
+
+tls_client_decls : tls_client_var
+          | tls_client_decls tls_client_var
+;
 	
-tls_var : TLS_METHOD EQUAL SSLv23 { 
+tls_server_var : TLS_METHOD EQUAL SSLv23 { 
 						#ifdef USE_TLS
-									tls_domains->method=TLS_USE_SSLv23;
+									tls_server_domains->method=TLS_USE_SSLv23;
 						#else
 									warn("tls support not compiled in");
 						#endif
 								}
-		| TLS_METHOD EQUAL SSLv2 { 
+	| TLS_METHOD EQUAL SSLv2 { 
 						#ifdef USE_TLS
-									tls_domains->method=TLS_USE_SSLv2;
+									tls_server_domains->method=TLS_USE_SSLv2;
 						#else
 									warn("tls support not compiled in");
 						#endif
 								}
-		| TLS_METHOD EQUAL SSLv3 { 
+	| TLS_METHOD EQUAL SSLv3 { 
 						#ifdef USE_TLS
-									tls_domains->method=TLS_USE_SSLv3;
+									tls_server_domains->method=TLS_USE_SSLv3;
 						#else
 									warn("tls support not compiled in");
 						#endif
 								}
-		| TLS_METHOD EQUAL TLSv1 { 
+	| TLS_METHOD EQUAL TLSv1 { 
 						#ifdef USE_TLS
-									tls_domains->method=TLS_USE_TLSv1;
+									tls_server_domains->method=TLS_USE_TLSv1;
 						#else
 									warn("tls support not compiled in");
 						#endif
@@ -977,7 +1040,7 @@ tls_var : TLS_METHOD EQUAL SSLv23 {
 	| TLS_METHOD EQUAL error { yyerror("SSLv23, SSLv2, SSLv3 or TLSv1 expected"); }
 	| TLS_CERTIFICATE EQUAL STRING { 
 						#ifdef USE_TLS
-									tls_domains->cert_file=$3;
+									tls_server_domains->cert_file=$3;
 						#else
 									warn("tls support not compiled in");
 						#endif
@@ -986,7 +1049,7 @@ tls_var : TLS_METHOD EQUAL SSLv23 {
 
 	| TLS_PRIVATE_KEY EQUAL STRING { 
 						#ifdef USE_TLS
-									tls_domains->pkey_file=$3;
+									tls_server_domains->pkey_file=$3;
 						#else
 									warn("tls support not compiled in");
 						#endif
@@ -995,7 +1058,7 @@ tls_var : TLS_METHOD EQUAL SSLv23 {
 
 	| TLS_CA_LIST EQUAL STRING { 
 						#ifdef USE_TLS
-									tls_domains->ca_file=$3; 
+									tls_server_domains->ca_file=$3; 
 						#else
 									warn("tls support not compiled in");
 						#endif
@@ -1003,12 +1066,103 @@ tls_var : TLS_METHOD EQUAL SSLv23 {
 	| TLS_CA_LIST EQUAL error { yyerror("string value expected"); }
 	| TLS_CIPHERS_LIST EQUAL STRING { 
 						#ifdef USE_TLS
-									tls_domains->ca_file=$3;
+									tls_server_domains->ciphers_list=$3;
 						#else
 									warn("tls support not compiled in");
 						#endif
 								}
 	| TLS_CIPHERS_LIST EQUAL error { yyerror("string value expected"); }
+	| TLS_VERIFY_CLIENT EQUAL NUMBER {
+						#ifdef USE_TLS
+									tls_server_domains->verify_cert=$3;
+						#else
+									warn("tls support not compiled in");
+						#endif
+								}
+	| TLS_VERIFY_CLIENT EQUAL error { yyerror("boolean value expected"); }
+	| TLS_REQUIRE_CLIENT_CERTIFICATE EQUAL NUMBER {
+						#ifdef USE_TLS
+									tls_server_domains->require_client_cert=$3;
+						#else
+									warn( "tls support not compiled in");
+						#endif
+								}
+	| TLS_REQUIRE_CLIENT_CERTIFICATE EQUAL error { 
+						yyerror("boolean value expected"); }
+;
+
+tls_client_var : TLS_METHOD EQUAL SSLv23 { 
+						#ifdef USE_TLS
+									tls_client_domains->method=TLS_USE_SSLv23;
+						#else
+									warn("tls support not compiled in");
+						#endif
+								}
+	| TLS_METHOD EQUAL SSLv2 { 
+						#ifdef USE_TLS
+									tls_client_domains->method=TLS_USE_SSLv2;
+						#else
+									warn("tls support not compiled in");
+						#endif
+								}
+	| TLS_METHOD EQUAL SSLv3 { 
+						#ifdef USE_TLS
+									tls_client_domains->method=TLS_USE_SSLv3;
+						#else
+									warn("tls support not compiled in");
+						#endif
+								}
+	| TLS_METHOD EQUAL TLSv1 { 
+						#ifdef USE_TLS
+									tls_client_domains->method=TLS_USE_TLSv1;
+						#else
+									warn("tls support not compiled in");
+						#endif
+								}
+	| TLS_METHOD EQUAL error {
+						yyerror("SSLv23, SSLv2, SSLv3 or TLSv1 expected"); }
+	| TLS_CERTIFICATE EQUAL STRING { 
+						#ifdef USE_TLS
+									tls_client_domains->cert_file=$3;
+						#else
+									warn("tls support not compiled in");
+						#endif
+								}
+	| TLS_CERTIFICATE EQUAL error { yyerror("string value expected"); }
+
+	| TLS_PRIVATE_KEY EQUAL STRING { 
+						#ifdef USE_TLS
+									tls_client_domains->pkey_file=$3;
+						#else
+									warn("tls support not compiled in");
+						#endif
+								}
+	| TLS_PRIVATE_KEY EQUAL error { yyerror("string value expected"); }
+
+	| TLS_CA_LIST EQUAL STRING { 
+						#ifdef USE_TLS
+									tls_client_domains->ca_file=$3; 
+						#else
+									warn("tls support not compiled in");
+						#endif
+								}	
+	| TLS_CA_LIST EQUAL error { yyerror("string value expected"); }
+	| TLS_CIPHERS_LIST EQUAL STRING { 
+						#ifdef USE_TLS
+									tls_client_domains->ciphers_list=$3;
+						#else
+									warn("tls support not compiled in");
+						#endif
+								}
+	| TLS_CIPHERS_LIST EQUAL error { yyerror("string value expected"); }
+	| TLS_VERIFY_SERVER EQUAL NUMBER {
+						#ifdef USE_TLS
+									tls_client_domains->verify_cert=$3;
+						#else
+									warn("tls support not compiled in");
+						#endif
+								}
+	| TLS_VERIFY_SERVER EQUAL error { yyerror("boolean value expected"); }
 ;
 
 route_stm:  ROUTE LBRACE actions RBRACE {
@@ -1257,7 +1411,7 @@ exp_elem:	METHOD strop STRING	{$$= mk_elem(	$2, STRING_ST,
 		| MYSELF error	{ $$=0; 
 							yyerror ("invalid operator, == or != expected");
 						}
-		| exp_stm				{ $$=mk_elem( NO_OP, ACTIONS_ST, ACTION_O, $1 ); }
+		| exp_stm		{$$=mk_elem( NO_OP, ACTIONS_ST, ACTION_O, $1 ); }
 		| NUMBER		{$$=mk_elem( NO_OP, NUMBER_ST, NUMBER_O, (void*)$1 ); }
 	;
 
@@ -1524,13 +1678,13 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ $$=mk_action( FORWARD_T,
 				yyerror("bad argument, q value expected");
 			}
 			$$=mk_action(APPEND_BRANCH_T, STRING_ST, NUMBER_ST, $3, 
-							(void *)(long)q); } 
+						(void *)(long)q); } 
 		}
 		| APPEND_BRANCH LPAREN STRING RPAREN { $$=mk_action( APPEND_BRANCH_T,
-													STRING_ST, NUMBER_ST, $3, (void *)Q_UNSPECIFIED) ; }
+						STRING_ST, NUMBER_ST, $3, (void *)Q_UNSPECIFIED) ; }
 		| APPEND_BRANCH LPAREN RPAREN { $$=mk_action( APPEND_BRANCH_T,
-													STRING_ST, NUMBER_ST, 0, (void *)Q_UNSPECIFIED ) ; }
-		| APPEND_BRANCH {  $$=mk_action( APPEND_BRANCH_T, STRING_ST, 0, 0, 0 ) ; }
+						STRING_ST, NUMBER_ST, 0, (void *)Q_UNSPECIFIED ) ; }
+		| APPEND_BRANCH { $$=mk_action( APPEND_BRANCH_T, STRING_ST, 0, 0, 0 );}
 
 		| SET_HOSTPORT LPAREN STRING RPAREN { $$=mk_action( SET_HOSTPORT_T, 
 														STRING_ST, 0, $3, 0); }

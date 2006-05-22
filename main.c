@@ -2,6 +2,7 @@
  * $Id$
  *
  * Copyright (C) 2001-2003 FhG Fokus
+ * Copyright (C) 2005-2006 Voice Sistem S.R.L.
  *
  * This file is part of openser, a free SIP server.
  *
@@ -56,6 +57,7 @@
  *               parent & once in the child to avoid a short window when one
  *               of them might use it "unset" (andrei)
  *  2005-12-22  added tos configurability (thanks to Andreas Granig)
+ *  2006-04-26  2-stage TLS init: before and after config file parsing (klaus)
  */
 
 
@@ -1036,16 +1038,6 @@ int main_loop()
 		unix_tcp_sock=-1;
 	}
 #endif
-	/*DEBUG- remove it*/
-#ifdef DEBUG
-	fprintf(stderr, "\n% 3d processes (%3d), % 3d children * "
-			"listening addresses + tcp listeners + tls listeners"
-			"+ main + fifo %s\n", process_no+1, process_count(), children_no,
-			(timer_list)?"+ timer":"");
-	for (r=0; r<=process_no; r++){
-		fprintf(stderr, "% 3d   % 5d - %s\n", r, pt[r].pid, pt[r].desc);
-	}
-#endif
 	process_no=0; 
 	/* process_bit = 0; */
 	is_main=1;
@@ -1297,6 +1289,15 @@ try_again:
 
 	/*register builtin  modules*/
 	register_builtin_modules();
+
+#ifdef USE_TLS
+	/* initialize default TLS domains,
+	   must be done before reading the config */
+	if (pre_init_tls()<0){
+		LOG(L_CRIT, "ERROR:main:could not pre_init_tls, exiting...\n");
+		goto error;
+	}
+#endif /* USE_TLS */
 
 	yyin=cfg_stream;
 	if ((yyparse()!=0)||(cfg_errors)){

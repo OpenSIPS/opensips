@@ -3,6 +3,7 @@
  *
  * Copyright (C) 2001-2003 FhG Fokus
  * Copyright (C) 2004,2005 Free Software Foundation, Inc.
+ * Copyright (C) 2006 enum.at
  *
  * This file is part of openser, a free SIP server.
  *
@@ -29,12 +30,24 @@ int             tls_log;
 
 int             tls_method = TLS_USE_SSLv23;
 
-int             tls_verify_client_cert = 0;
-int             tls_verify_server_cert = 0;
-int             tls_require_cert = 0;
+/*
+ * These are the default values which will be used
+ * for default domains AND virtual domains
+ */
+
+/* no certificate validation */
+int             tls_verify_client_cert  = 0;
+int             tls_verify_server_cert  = 0;
+int             tls_require_client_cert = 0;
+/* default location of certificates */
 char           *tls_cert_file = TLS_CERT_FILE;
 char           *tls_pkey_file = TLS_PKEY_FILE;
-char           *tls_ca_file = TLS_CA_FILE;
+char           *tls_ca_file   = TLS_CA_FILE;
+/* defaul cipher=0, this means the DEFAULT ciphers */
 char           *tls_ciphers_list = 0;
-int             tls_handshake_timeout = 120;
-int             tls_send_timeout = 120;
+/* TLS timeouts; should be low to detect problems fast */
+int             tls_handshake_timeout = 30;
+int             tls_send_timeout      = 30;
+/* per default, the TLS domains do not have a name */
+int             tls_client_domain_avp = 0;
+

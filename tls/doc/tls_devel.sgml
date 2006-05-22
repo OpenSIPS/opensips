@@ -25,13 +25,23 @@
 		Initialization related functions and parameters.
 		</para>
 		<section>
-			<title>default ssl context</title>
+			<title>ssl context</title>
 			<para>
-			extern SSL_CTX *default_ctx;
+			extern SSL_CTX *default_client_ctx;
 			</para>
 			<para>
-			It is the common context for all tls sockets. If domains are 
-			used, each has its own.
+			The ssl context is a member of the TLS domain strcuture. Thus, every
+			TLS domain, default and virtual - servers and clients, have its own SSL context.
+			</para>
+		</section>
+		<section>
+			<title>pre_init_tls</title>
+			<para>
+			int init_tls(void);
+			</para>
+			<para>
+			Called once to pre_initialize the tls subsystem, from the main().
+			Called before parsing the configuration file.
 			</para>
 		</section>
 		<section>
@@ -41,6 +51,7 @@
 			</para>
 			<para>
 			Called once to initialize the tls subsystem, from the main().
+			Called after parsing the configuration file.
 			</para>
 		</section>
 		<section>
@@ -58,7 +69,7 @@
 			int tls_init(struct socket_info *c);
 			</para>
 			<para>
-			Called once for each tls socket created.
+			Called once for each tls socket created, from main.c
 			</para>
 		</section>
 		<section>
@@ -158,29 +169,95 @@ ssl = (SSL *) c->extra_data;
 		<section>
 			<title>tls_domains</title>
 			<para>
-			extern struct tls_domain *tls_domains;
+			extern struct tls_domain *tls_default_server_domain;
 			</para>
 			<para>
-			List with defined domains.
+			The default TLS server domain.
+			</para>
+			<para>
+			extern struct tls_domain *tls_default_client_domain;
+			</para>
+			<para>
+			The default TLS client domain.
+			</para>
+			<para>
+			extern struct tls_domain *tls_server_domains;
+			</para>
+			<para>
+			List with defined server domains.
+			</para>
+			<para>
+			extern struct tls_domain *tls_client_domains;
+			</para>
+			<para>
+			List with defined client domains.
 			</para>
 		</section>
 		<section>
-			<title>tls_find_domain</title>
+			<title>tls_find_server_domain</title>
 			<para>
-			struct tls_domain *tls_find_domain(struct ip_addr *ip,
+			struct tls_domain *tls_find_server_domain(struct ip_addr *ip,
 			unsigned short port);
 			</para>
 			<para>
-			Find domain with given ip and port.
+			Find a TLS server domain with given ip and port 
+			(local listening socket).
 			</para>
 		</section>
 		<section>
-			<title>tls_new_domain</title>
+			<title>tls_find_client_domain</title>
 			<para>
-			int tls_new_domain(struct ip_addr *ip, unsigned short port);
+			struct tls_domain *tls_find_client_domain(struct ip_addr *ip,
+			unsigned short port);
 			</para>
 			<para>
-			Creates and adds to the list a new domain.
+			Find TLS client domain with given ip and port 
+			(socket of the remote destination).
+			</para>
+		</section>
+		<section>
+			<title>tls_find_client_domain_name</title>
+			<para>
+			struct tls_domain *tls_find_client_name(str name);
+			</para>
+			<para>
+			Find TLS client domain with given name.
+			</para>
+		</section>
+		<section>
+			<title>tls_new__domain</title>
+			<para>
+			struct tls_domain *tls_new_domain(int type);
+			</para>
+			<para>
+			Creates new TLS: allocate memory, set the type and initialize members
+			</para>
+		</section>
+		<section>
+			<title>tls_new_server_domain</title>
+			<para>
+			int tls_new_server_domain(struct ip_addr *ip, unsigned short port);
+			</para>
+			<para>
+			Creates and adds to the list of TLS server domains a new domain.
+			</para>
+		</section>
+		<section>
+			<title>tls_new_client_domain</title>
+			<para>
+			int tls_new_client_domain(struct ip_addr *ip, unsigned short port);
+			</para>
+			<para>
+			Creates and adds to the list of TLS client domains a new socket based domain.
+			</para>
+		</section>
+		<section>
+			<title>tls_new_client_domain_name</title>
+			<para>
+			int tls_new_client_domain_name(char *s, int len);
+			</para>
+			<para>
+			Creates and adds to the list of TLS client domains a new name based domain.
 			</para>
 		</section>
 		<section>
@@ -189,13 +266,10 @@ ssl = (SSL *) c->extra_data;
 			void tls_free_domains(void);
 			</para>
 			<para>
-			Cleans up the entire domain list.
+			Cleans up the entire domain lists.
 			</para>
 		</section>
 	</section>
-
-
-
 
 </chapter>
 

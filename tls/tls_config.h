@@ -47,12 +47,13 @@ extern int      tls_method;
 
 extern int      tls_verify_client_cert;
 extern int      tls_verify_server_cert;
-extern int      tls_require_cert;
+extern int      tls_require_client_cert;
 extern char    *tls_cert_file;
 extern char    *tls_pkey_file;
 extern char    *tls_ca_file;
 extern char    *tls_ciphers_list;
 extern int      tls_handshake_timeout;
 extern int      tls_send_timeout;
+extern int      tls_client_domain_avp;
 
 #endif

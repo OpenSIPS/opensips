@@ -3,6 +3,7 @@
  *
  * Copyright (C) 2001-2003 FhG Fokus
  * Copyright (C) 2004,2005 Free Software Foundation, Inc.
+ * Copyright (C) 2006 enum.at
  *
  * This file is part of openser, a free SIP server.
  *
@@ -25,45 +26,176 @@
 #include "tls_domain.h"
 #include <stdlib.h>
 
-struct tls_domain *tls_domains = NULL;
+struct tls_domain *tls_server_domains = NULL;
+struct tls_domain *tls_client_domains = NULL;
+struct tls_domain *tls_default_server_domain = NULL;
+struct tls_domain *tls_default_client_domain = NULL;
 
 /*
- * find domain with given ip and port 
+ * find server domain with given ip and port 
+ * return default domain if virtual domain not found
  */
 struct tls_domain *
-tls_find_domain(struct ip_addr *ip, unsigned short port)
+tls_find_server_domain(struct ip_addr *ip, unsigned short port)
 {
-	struct tls_domain *p = tls_domains;
+	struct tls_domain *p = tls_server_domains;
 	while (p) {
-		if ((p->port == port) && ip_addr_cmp(&p->addr, ip))
+		if ((p->port == port) && ip_addr_cmp(&p->addr, ip)) {
+			DBG("tls_find_server_domain: virtual TLS server domain found\n");
 			return p;
+		}
 		p = p->next;
-    }
-    return 0;
+	}
+	DBG("tls_find_server_domain: virtual TLS server domain not found, "
+		"Using default TLS server domain settings\n");
+	return tls_default_server_domain;
 }
 
+/*
+ * find client domain with given ip and port,
+ * return default domain if virtual domain not found
+ */
+struct tls_domain *
+tls_find_client_domain(struct ip_addr *ip, unsigned short port)
+{
+	struct tls_domain *p = tls_client_domains;
+	while (p) {
+		if ((p->name.len == 0) && (p->port == port) && ip_addr_cmp(&p->addr, ip)) {
+			DBG("tls_find_client_domain: virtual TLS client domain found\n");
+			return p;
+		}
+		p = p->next;
+	}
+	DBG("tls_find_client_domain: virtual TLS client domain not found, "
+		"Using default TLS client domain settings\n");
+	return tls_default_client_domain;
+}
 
 /*
- * create a new domain 
+ * find client domain with given name,
+ * return 0 if name based virtual domain not found
  */
-int
-tls_new_domain(struct ip_addr *ip, unsigned short port)
+struct tls_domain *
+tls_find_client_domain_name(str name)
 {
-	struct tls_domain *d;
-
-	d = pkg_malloc(sizeof(struct tls_domain));
-	if (d == NULL) {
-		LOG(L_ERR, "tls_new_domain: Memory allocation failure\n");
-		return -1;
+	struct tls_domain *p = tls_client_domains;
+	while (p) {
+		if ((p->name.len == name.len) && !strncasecmp(p->name.s, name.s, name.len)) {
+			DBG("tls_find_client_domain_name: virtual TLS client domain found\n");
+			return p;
+		}
+		p = p->next;
 	}
-	memset(d, '\0', sizeof(struct tls_domain));
-	memcpy(&d->addr, ip, sizeof(struct ip_addr));
-	d->port = port;
-	d->next = tls_domains;
-	tls_domains = d;
+	DBG("tls_find_client_domain_name: virtual TLS client domain not found\n");
 	return 0;
 }
 
+
+/*
+ * create a new server domain (identified by a socket)
+ */
+int
+tls_new_server_domain(struct ip_addr *ip, unsigned short port)
+{
+	struct tls_domain *d;
+
+	d = tls_new_domain(TLS_DOMAIN_SRV);
+	if (d == NULL) {
+		LOG(L_ERR, "tls_new_server_domain: Memory allocation failure\n");
+		return -1;
+	}
+
+	/* fill socket data */
+	memcpy(&d->addr, ip, sizeof(struct ip_addr));
+	d->port = port;
+
+	/* add this new domain to the linked list */
+	d->next = tls_server_domains;
+	tls_server_domains = d;
+	return 0;
+}
+
+/*
+ * create a new client domain (identified by a socket)
+ */
+int
+tls_new_client_domain(struct ip_addr *ip, unsigned short port)
+{
+	struct tls_domain *d;
+
+	d = tls_new_domain(TLS_DOMAIN_CLI);
+	if (d == NULL) {
+		LOG(L_ERR, "tls_new_client_domain: Memory allocation failure\n");
+		return -1;
+	}
+
+	/* fill socket data */
+	memcpy(&d->addr, ip, sizeof(struct ip_addr));
+	d->port = port;
+
+	/* add this new domain to the linked list */
+	d->next = tls_client_domains;
+	tls_client_domains = d;
+	return 0;
+}
+
+/*
+ * create a new client domain (identified by a string)
+ */
+int
+tls_new_client_domain_name(char *s, int len)
+{
+	struct tls_domain *d;
+
+	d = tls_new_domain(TLS_DOMAIN_CLI | TLS_DOMAIN_NAME);
+	if (d == NULL) {
+		LOG(L_ERR, "tls_new_client_domain: Memory allocation failure\n");
+		return -1;
+	}
+
+	/* initialize name data */
+	d->name.s = pkg_malloc(len);
+	if (d->name.s == NULL) {
+		LOG(L_ERR, "tls_new_client_domain: Memory allocation failure for domain name\n");
+		pkg_free(d);
+		return -1;
+	}
+	memcpy(d->name.s, s, len);
+	d->name.len = len;
+
+	/* add this new domain to the linked list */
+	d->next = tls_client_domains;
+	tls_client_domains = d;
+	return 0;
+}
+
+/*
+ * allocate memory and set default values for
+ * TLS domain structure
+ */
+struct tls_domain *tls_new_domain(int type)
+{
+	struct tls_domain *d;
+	d = pkg_malloc(sizeof(struct tls_domain));
+	if (d == NULL) {
+		LOG(L_ERR, "pre_init_tls_domain: Memory allocation failure\n");
+		return 0;
+	}
+	memset(d, '\0', sizeof(struct tls_domain));
+
+	d->type = type;
+
+	if (type & TLS_DOMAIN_SRV) {
+		d->verify_cert         = tls_verify_server_cert;
+		d->require_client_cert = tls_require_client_cert;
+	} else {
+		d->verify_cert         = tls_verify_client_cert;
+		d->require_client_cert = 0;
+	}
+	d->method       = TLS_METHOD_UNSPEC;
+
+	return d;
+}
 
 /*
  * clean up 
@@ -72,9 +204,22 @@ void
 tls_free_domains(void)
 {
 	struct tls_domain *p;
-	while (tls_domains) {
-		p = tls_domains;
-		tls_domains = tls_domains->next;
+	while (tls_server_domains) {
+		p = tls_server_domains;
+		tls_server_domains = tls_server_domains->next;
 		pkg_free(p);
-    }
+	}
+	while (tls_client_domains) {
+		p = tls_client_domains;
+		tls_client_domains = tls_client_domains->next;
+		/* ToDo: If socket based client domains will be implemented, the name may
+		   be empty (must be set to NULL manually). Thus no need to free it */
+		if (p->name.s) {
+			pkg_free(p->name.s);
+		}
+		pkg_free(p);
+	}
+	pkg_free(tls_default_client_domain);
+	pkg_free(tls_default_server_domain);
 }
+
