@@ -4,6 +4,7 @@
  *  cfg grammar
  *
  * Copyright (C) 2001-2003 FhG Fokus
+ * Copyright (C) 2005-2006 Voice Sistem S.R.L.
  *
  * This file is part of openser, a free SIP server.
  *
@@ -62,6 +63,8 @@
  *              a function address - more info is accessible (bogdan)
  * 2006-03-02  store the cfg line into the action struct to be able to
  *              give more hints if fixups fail (bogdan)
+ * 2006-05-22  forward(_udp,_tcp,_tls) and send(_tcp) merged in forward() and
+ *              send() (bogdan)
  */
 
 
@@ -150,11 +153,7 @@ extern int line;
 
 /* keywords */
 %token FORWARD
-%token FORWARD_TCP
-%token FORWARD_TLS
-%token FORWARD_UDP
 %token SEND
-%token SEND_TCP
 %token DROP
 %token EXIT
 %token RETURN
@@ -194,8 +193,6 @@ extern int line;
 %token FORCE_SEND_SOCKET
 %token SERIALIZE_BRANCHES
 %token NEXT_BRANCHES
-%token URIHOST
-%token URIPORT
 %token MAX_LEN
 %token SETFLAG
 %token RESETFLAG
@@ -1412,397 +1409,31 @@ default_stm: DEFAULT COLON actions { $$=mk_action(DEFAULT_T,
 									}
 	;
 
-cmd:		FORWARD LPAREN host RPAREN	{ $$=mk_action(	FORWARD_T,
-														STRING_ST,
-														NUMBER_ST,
-														$3,
-														0);
+cmd:	 FORWARD LPAREN STRING RPAREN	{ $$=mk_action( FORWARD_T,
+											STRING_ST,
+											0,
+											$3,
+											0);
 										}
-		| FORWARD LPAREN STRING RPAREN	{ $$=mk_action(	FORWARD_T,
-														STRING_ST,
-														NUMBER_ST,
-														$3,
-														0);
-										}
-		| FORWARD LPAREN ip RPAREN	{ $$=mk_action(	FORWARD_T,
-														IP_ST,
-														NUMBER_ST,
-														(void*)$3,
-														0);
-										}
-		| FORWARD LPAREN host COMMA NUMBER RPAREN { $$=mk_action(FORWARD_T,
-																 STRING_ST,
-																 NUMBER_ST,
-																$3,
-																(void*)$5);
-												 }
-		| FORWARD LPAREN STRING COMMA NUMBER RPAREN {$$=mk_action(FORWARD_T,
-																 STRING_ST,
-																 NUMBER_ST,
-																$3,
-																(void*)$5);
-													}
-		| FORWARD LPAREN ip COMMA NUMBER RPAREN { $$=mk_action(FORWARD_T,
-																 IP_ST,
-																 NUMBER_ST,
-																 (void*)$3,
-																(void*)$5);
-												  }
-		| FORWARD LPAREN URIHOST COMMA URIPORT RPAREN {
-													$$=mk_action(FORWARD_T,
-																 URIHOST_ST,
-																 URIPORT_ST,
-																0,
-																0);
-													}
-													
-									
-		| FORWARD LPAREN URIHOST COMMA NUMBER RPAREN {
-													$$=mk_action(FORWARD_T,
-																 URIHOST_ST,
-																 NUMBER_ST,
-																0,
-																(void*)$5);
-													}
-		| FORWARD LPAREN URIHOST RPAREN {
-													$$=mk_action(FORWARD_T,
-																 URIHOST_ST,
-																 NUMBER_ST,
-																0,
-																0);
+		| FORWARD LPAREN RPAREN {
+										$$=mk_action(FORWARD_T,
+											0,
+											0,
+											0,
+											0);
 										}
 		| FORWARD error { $$=0; yyerror("missing '(' or ')' ?"); }
 		| FORWARD LPAREN error RPAREN { $$=0; yyerror("bad forward"
 										"argument"); }
-		| FORWARD_UDP LPAREN host RPAREN	{ $$=mk_action(	FORWARD_UDP_T,
-														STRING_ST,
-														NUMBER_ST,
-														$3,
-														0);
-										}
-		| FORWARD_UDP LPAREN STRING RPAREN	{ $$=mk_action(	FORWARD_UDP_T,
-														STRING_ST,
-														NUMBER_ST,
-														$3,
-														0);
-										}
-		| FORWARD_UDP LPAREN ip RPAREN	{ $$=mk_action(	FORWARD_UDP_T,
-														IP_ST,
-														NUMBER_ST,
-														(void*)$3,
-														0);
-										}
-		| FORWARD_UDP LPAREN host COMMA NUMBER RPAREN { $$=mk_action(
-																FORWARD_UDP_T,
-																 STRING_ST,
-																 NUMBER_ST,
-																$3,
-																(void*)$5);
-												 }
-		| FORWARD_UDP LPAREN STRING COMMA NUMBER RPAREN {$$=mk_action(
-																FORWARD_UDP_T,
-																 STRING_ST,
-																 NUMBER_ST,
-																$3,
-																(void*)$5);
-													}
-		| FORWARD_UDP LPAREN ip COMMA NUMBER RPAREN { $$=mk_action(
-																FORWARD_UDP_T,
-																 IP_ST,
-																 NUMBER_ST,
-																 (void*)$3,
-																(void*)$5);
-												  }
-		| FORWARD_UDP LPAREN URIHOST COMMA URIPORT RPAREN {
-													$$=mk_action(FORWARD_UDP_T,
-																 URIHOST_ST,
-																 URIPORT_ST,
-																0,
-																0);
-													}
-													
-									
-		| FORWARD_UDP LPAREN URIHOST COMMA NUMBER RPAREN {
-													$$=mk_action(FORWARD_UDP_T,
-																 URIHOST_ST,
-																 NUMBER_ST,
-																0,
-																(void*)$5);
-													}
-		| FORWARD_UDP LPAREN URIHOST RPAREN {
-													$$=mk_action(FORWARD_UDP_T,
-																 URIHOST_ST,
-																 NUMBER_ST,
-																0,
-																0);
-										}
-		| FORWARD_UDP error { $$=0; yyerror("missing '(' or ')' ?"); }
-		| FORWARD_UDP LPAREN error RPAREN { $$=0; yyerror("bad forward_udp"
-										"argument"); }
-		| FORWARD_TCP LPAREN host RPAREN	{ $$=mk_action(	FORWARD_TCP_T,
-														STRING_ST,
-														NUMBER_ST,
-														$3,
-														0);
-										}
-		| FORWARD_TCP LPAREN STRING RPAREN	{ $$=mk_action(	FORWARD_TCP_T,
-														STRING_ST,
-														NUMBER_ST,
-														$3,
-														0);
-										}
-		| FORWARD_TCP LPAREN ip RPAREN	{ $$=mk_action(	FORWARD_TCP_T,
-														IP_ST,
-														NUMBER_ST,
-														(void*)$3,
-														0);
-										}
-		| FORWARD_TCP LPAREN host COMMA NUMBER RPAREN { $$=mk_action(
-																FORWARD_TCP_T,
-																 STRING_ST,
-																 NUMBER_ST,
-																$3,
-																(void*)$5);
-												 }
-		| FORWARD_TCP LPAREN STRING COMMA NUMBER RPAREN {$$=mk_action(
-																FORWARD_TCP_T,
-																 STRING_ST,
-																 NUMBER_ST,
-																$3,
-																(void*)$5);
-													}
-		| FORWARD_TCP LPAREN ip COMMA NUMBER RPAREN { $$=mk_action(FORWARD_TCP_T,
-																 IP_ST,
-																 NUMBER_ST,
-																 (void*)$3,
-																(void*)$5);
-												  }
-		| FORWARD_TCP LPAREN URIHOST COMMA URIPORT RPAREN {
-													$$=mk_action(FORWARD_TCP_T,
-																 URIHOST_ST,
-																 URIPORT_ST,
-																0,
-																0);
-													}
-													
-									
-		| FORWARD_TCP LPAREN URIHOST COMMA NUMBER RPAREN {
-													$$=mk_action(FORWARD_TCP_T,
-																 URIHOST_ST,
-																 NUMBER_ST,
-																0,
-																(void*)$5);
-													}
-		| FORWARD_TCP LPAREN URIHOST RPAREN {
-													$$=mk_action(FORWARD_TCP_T,
-																 URIHOST_ST,
-																 NUMBER_ST,
-																0,
-																0);
-										}
-		| FORWARD_TCP error { $$=0; yyerror("missing '(' or ')' ?"); }
-		| FORWARD_TCP LPAREN error RPAREN { $$=0; yyerror("bad forward_tcp"
-										"argument"); }
-		| FORWARD_TLS LPAREN host RPAREN	{
-										#ifdef USE_TLS
-											$$=mk_action(	FORWARD_TLS_T,
-														STRING_ST,
-														NUMBER_ST,
-														$3,
-														0);
-										#else
-											$$=0;
-											yyerror("tls support not "
-													"compiled in");
-										#endif
-										}
-		| FORWARD_TLS LPAREN STRING RPAREN	{
-										#ifdef USE_TLS
-											$$=mk_action(	FORWARD_TLS_T,
-															STRING_ST,
-															NUMBER_ST,
-															$3,
-															0);
-										#else
-											$$=0;
-											yyerror("tls support not "
-													"compiled in");
-										#endif
-										}
-		| FORWARD_TLS LPAREN ip RPAREN	{ 
-										#ifdef USE_TLS
-											$$=mk_action(	FORWARD_TLS_T,
-															IP_ST,
-															NUMBER_ST,
-															(void*)$3,
-															0);
-										#else
-											$$=0;
-											yyerror("tls support not "
-													"compiled in");
-										#endif
-										}
-		| FORWARD_TLS LPAREN host COMMA NUMBER RPAREN { 
-										#ifdef USE_TLS
-											$$=mk_action(	FORWARD_TLS_T,
-															 STRING_ST,
-															 NUMBER_ST,
-															$3,
-															(void*)$5);
-										#else
-											$$=0;
-											yyerror("tls support not "
-													"compiled in");
-										#endif
-												 }
-		| FORWARD_TLS LPAREN STRING COMMA NUMBER RPAREN {
-										#ifdef USE_TLS
-											$$=mk_action(	FORWARD_TLS_T,
-															 STRING_ST,
-															 NUMBER_ST,
-															$3,
-															(void*)$5);
-										#else
-											$$=0;
-											yyerror("tls support not "
-													"compiled in");
-										#endif
-													}
-		| FORWARD_TLS LPAREN ip COMMA NUMBER RPAREN {
-										#ifdef USE_TLS
-											$$=mk_action(	FORWARD_TLS_T,
-															 IP_ST,
-															 NUMBER_ST,
-															 (void*)$3,
-															(void*)$5);
-										#else
-											$$=0;
-											yyerror("tls support not "
-													"compiled in");
-										#endif
-												  }
-		| FORWARD_TLS LPAREN URIHOST COMMA URIPORT RPAREN {
-										#ifdef USE_TLS
-											$$=mk_action(	FORWARD_TLS_T,
-															 URIHOST_ST,
-															 URIPORT_ST,
-															0,
-															0);
-										#else
-											$$=0;
-											yyerror("tls support not "
-													"compiled in");
-										#endif
-													}
-													
-									
-		| FORWARD_TLS LPAREN URIHOST COMMA NUMBER RPAREN {
-										#ifdef USE_TLS
-											$$=mk_action(	FORWARD_TLS_T,
-															 URIHOST_ST,
-															 NUMBER_ST,
-															0,
-															(void*)$5);
-										#else
-											$$=0;
-											yyerror("tls support not "
-													"compiled in");
-										#endif
-													}
-		| FORWARD_TLS LPAREN URIHOST RPAREN {
-										#ifdef USE_TLS
-											$$=mk_action(	FORWARD_TLS_T,
-															 URIHOST_ST,
-															 NUMBER_ST,
-															0,
-															0);
-										#else
-											$$=0;
-											yyerror("tls support not "
-													"compiled in");
-										#endif
-										}
-		| FORWARD_TLS error { $$=0; yyerror("missing '(' or ')' ?"); }
-		| FORWARD_TLS LPAREN error RPAREN { $$=0; yyerror("bad forward_tls"
-										"argument"); }
 		
-		| SEND LPAREN host RPAREN	{ $$=mk_action(	SEND_T,
-													STRING_ST,
-													NUMBER_ST,
-													$3,
-													0);
-									}
-		| SEND LPAREN STRING RPAREN { $$=mk_action(	SEND_T,
-													STRING_ST,
-													NUMBER_ST,
-													$3,
-													0);
-									}
-		| SEND LPAREN ip RPAREN		{ $$=mk_action(	SEND_T,
-													IP_ST,
-													NUMBER_ST,
-													(void*)$3,
-													0);
-									}
-		| SEND LPAREN host COMMA NUMBER RPAREN	{ $$=mk_action(	SEND_T,
-																STRING_ST,
-																NUMBER_ST,
-																$3,
-																(void*)$5);
-												}
-		| SEND LPAREN STRING COMMA NUMBER RPAREN {$$=mk_action(	SEND_T,
-																STRING_ST,
-																NUMBER_ST,
-																$3,
-																(void*)$5);
-												}
-		| SEND LPAREN ip COMMA NUMBER RPAREN { $$=mk_action(	SEND_T,
-																IP_ST,
-																NUMBER_ST,
-																(void*)$3,
-																(void*)$5);
-											   }
+		| SEND LPAREN STRING RPAREN { $$=mk_action( SEND_T,
+											STRING_ST,
+											0,
+											$3,
+											0);
+										}
 		| SEND error { $$=0; yyerror("missing '(' or ')' ?"); }
 		| SEND LPAREN error RPAREN { $$=0; yyerror("bad send"
-													"argument"); }
-		| SEND_TCP LPAREN host RPAREN	{ $$=mk_action(	SEND_TCP_T,
-													STRING_ST,
-													NUMBER_ST,
-													$3,
-													0);
-									}
-		| SEND_TCP LPAREN STRING RPAREN { $$=mk_action(	SEND_TCP_T,
-													STRING_ST,
-													NUMBER_ST,
-													$3,
-													0);
-									}
-		| SEND_TCP LPAREN ip RPAREN		{ $$=mk_action(	SEND_TCP_T,
-													IP_ST,
-													NUMBER_ST,
-													(void*)$3,
-													0);
-									}
-		| SEND_TCP LPAREN host COMMA NUMBER RPAREN	{ $$=mk_action(	SEND_TCP_T,
-																STRING_ST,
-																NUMBER_ST,
-																$3,
-																(void*)$5);
-												}
-		| SEND_TCP LPAREN STRING COMMA NUMBER RPAREN {$$=mk_action(	SEND_TCP_T,
-																STRING_ST,
-																NUMBER_ST,
-																$3,
-																(void*)$5);
-												}
-		| SEND_TCP LPAREN ip COMMA NUMBER RPAREN { $$=mk_action(	SEND_TCP_T,
-																IP_ST,
-																NUMBER_ST,
-																(void*)$3,
-																(void*)$5);
-											   }
-		| SEND_TCP error { $$=0; yyerror("missing '(' or ')' ?"); }
-		| SEND_TCP LPAREN error RPAREN { $$=0; yyerror("bad send_tcp"
 													"argument"); }
 		| DROP LPAREN RPAREN	{$$=mk_action(DROP_T,0, 0, 0, 0); }
 		| DROP					{$$=mk_action(DROP_T,0, 0, 0, 0); }

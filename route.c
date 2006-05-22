@@ -4,6 +4,7 @@
  * SIP routing engine
  *
  * Copyright (C) 2001-2003 FhG Fokus
+ * Copyright (C) 2005-2006 Voice Sistem S.R.L.
  *
  * This file is part of openser, a free SIP server.
  *
@@ -149,15 +150,16 @@ static int fix_expr(struct expr* exp)
 /* returns 0 if ok, <0 on error */
 static int fix_actions(struct action* a)
 {
-	struct action *t;
-	struct proxy_l* p;
-	char *tmp;
+	struct action
+		*t;
 	int ret;
 	cmd_export_t* cmd;
-	str s;
 	struct hostent* he;
 	struct ip_addr ip;
 	struct socket_info* si;
+	str host;
+	int proto, port;
+	struct proxy_l *p;
 	
 	if (a==0){
 		LOG(L_CRIT,"BUG: fix_actions: null pointer\n");
@@ -166,41 +168,30 @@ static int fix_actions(struct action* a)
 	for(t=a; t!=0; t=t->next){
 		switch(t->type){
 			case FORWARD_T:
-			case FORWARD_TLS_T:
-			case FORWARD_TCP_T:
-			case FORWARD_UDP_T:
-			case SEND_T:
-			case SEND_TCP_T:
-					switch(t->p1_type){
-						case IP_ST: 
-							tmp=strdup(ip_addr2a(
-										(struct ip_addr*)t->p1.data));
-							if (tmp==0){
-								LOG(L_CRIT, "ERROR: fix_actions:"
-										"memory allocation failure\n");
-								ret = E_OUT_OF_MEM;
-								goto error;
-							}
-							t->p1_type=STRING_ST;
-							t->p1.string=tmp;
-							/* no break */
-						case STRING_ST:
-							s.s = t->p1.string;
-							s.len = strlen(s.s);
-							p=add_proxy(&s, t->p2.number, 0); /* FIXME proto*/
-							if (p==0) return E_BAD_ADDRESS;
-							t->p1.data=p;
-							t->p1_type=PROXY_ST;
-							break;
-						case URIHOST_ST:
-							break;
-						default:
-							LOG(L_CRIT, "BUG: fix_actions: invalid type"
-									"%d (should be string or number)\n",
-										t->type);
-							return E_BUG;
-					}
+				if (t->p1_type==NOSUBTYPE)
 					break;
+			case SEND_T:
+				if (t->p1_type!=STRING_ST) {
+					LOG(L_CRIT, "BUG: fix_actions: invalid type"
+						"%d (should be string)\n", t->type);
+					return E_BUG;
+				}
+				ret = parse_phostport( t->p1.string, strlen(t->p1.string),
+						&host.s, &host.len, &port, &proto);
+				if (ret!=0) {
+					LOG(L_ERR,"ERROR:fix_actions: FORWARD/SEND bad "
+						"argument\n");
+					return E_CFG;
+				}
+				p = add_proxy( &host,(unsigned short)port, proto);
+				if (p==0) {
+					LOG(L_ERR,"ERROR:fix_actions: FORWARD/SEND failed to "
+						"add proxy");
+					return E_CFG;
+				}
+				t->p1_type = PROXY_ST;
+				t->p1.data = (void*)p;
+				break;
 			case IF_T:
 				if (t->p1_type!=EXPR_ST){
 					LOG(L_CRIT, "BUG: fix_actions: invalid subtype"

@@ -4,6 +4,7 @@
  * scanner for cfg files
  *
  * Copyright (C) 2001-2003 FhG Fokus
+ * Copyright (C) 2005-2006 Voice Sistem S.R.L.
  *
  * This file is part of openser, a free SIP server.
  *
@@ -314,15 +315,11 @@ EAT_ABLE	[\ \t\b\r]
 <INITIAL>{EAT_ABLE}	{ count(); }
 
 <INITIAL>{FORWARD}	{count(); yylval.strval=yytext; return FORWARD; }
-<INITIAL>{FORWARD_TCP}	{count(); yylval.strval=yytext; return FORWARD_TCP; }
-<INITIAL>{FORWARD_TLS}	{count(); yylval.strval=yytext; return FORWARD_TLS; }
-<INITIAL>{FORWARD_UDP}	{count(); yylval.strval=yytext; return FORWARD_UDP; }
 <INITIAL>{DROP}	{ count(); yylval.strval=yytext; return DROP; }
 <INITIAL>{EXIT}	{ count(); yylval.strval=yytext; return EXIT; }
 <INITIAL>{RETURN}	{ count(); yylval.strval=yytext; return RETURN; }
 <INITIAL>{RETCODE}	{ count(); yylval.strval=yytext; return RETCODE; }
 <INITIAL>{SEND}	{ count(); yylval.strval=yytext; return SEND; }
-<INITIAL>{SEND_TCP}	{ count(); yylval.strval=yytext; return SEND_TCP; }
 <INITIAL>{LOG}	{ count(); yylval.strval=yytext; return LOG_TOK; }
 <INITIAL>{ERROR}	{ count(); yylval.strval=yytext; return ERROR; }
 <INITIAL>{SETFLAG}	{ count(); yylval.strval=yytext; return SETFLAG; }
@@ -373,9 +370,6 @@ EAT_ABLE	[\ \t\b\r]
 									return SERIALIZE_BRANCHES; }
 <INITIAL>{NEXT_BRANCHES}	{	count(); yylval.strval=yytext;
 									return NEXT_BRANCHES; }
-
-<INITIAL>{URIHOST}	{ count(); yylval.strval=yytext; return URIHOST; }
-<INITIAL>{URIPORT}	{ count(); yylval.strval=yytext; return URIPORT; }
 
 <INITIAL>{MAX_LEN}	{ count(); yylval.strval=yytext; return MAX_LEN; }
 

@@ -2,6 +2,7 @@
  * $Id$
  *
  * Copyright (C) 2001-2003 FhG Fokus
+ * Copyright (C) 2005-2006 Voice Sistem S.R.L.
  *
  * This file is part of openser, a free SIP server.
  *
@@ -35,6 +36,8 @@
  *  2005-11-29  added serialize_branches and next_branches (bogdan)
  *  2006-03-02  MODULE_T action points to a cmd_export_t struct instead to 
  *               a function address - more info is accessible (bogdan)
+ *  2006-05-22  forward(_udp,_tcp,_tls) and send(_tcp) merged in forward() and
+ *               send() (bogdan)
  */
 
 
@@ -174,7 +177,6 @@ int do_action(struct action* a, struct sip_msg* msg)
 	struct sip_uri uri, next_hop;
 	struct sip_uri *u;
 	unsigned short port;
-	int proto;
 	int rcode;
 	int cmatch;
 	struct action *aitem;
@@ -200,67 +202,23 @@ int do_action(struct action* a, struct sip_msg* msg)
 				action_flags |= ACT_FL_RETURN;
 			break;
 		case FORWARD_T:
-#ifdef USE_TCP
-		case FORWARD_TCP_T:
-#endif
-#ifdef USE_TLS
-		case FORWARD_TLS_T:
-#endif
-		case FORWARD_UDP_T:
-
-			if (a->type==FORWARD_UDP_T) proto=PROTO_UDP;
-#ifdef USE_TCP
-			else if (a->type==FORWARD_TCP_T) proto= PROTO_TCP;
-#endif
-#ifdef USE_TLS
-			else if (a->type==FORWARD_TLS_T) proto= PROTO_TLS;
-#endif
-			else proto= PROTO_NONE;
-
-			if (a->p1_type==URIHOST_ST){
-				/*parse uri*/
-
+			if (a->p1_type==NOSUBTYPE){
+				/* parse uri and build a proxy */
 				if (msg->dst_uri.len) {
-					ret = parse_uri(msg->dst_uri.s, msg->dst_uri.len, &next_hop);
+					ret = parse_uri(msg->dst_uri.s, msg->dst_uri.len,
+						&next_hop);
 					u = &next_hop;
 				} else {
 					ret = parse_sip_msg_uri(msg);
 					u = &msg->parsed_uri;
 				}
-
 				if (ret<0) {
 					LOG(L_ERR, "ERROR: do_action: forward: bad_uri "
 								" dropping packet\n");
 					break;
 				}
-				
-				switch (a->p2_type){
-					case URIPORT_ST:
-									port=u->port_no;
-									break;
-					case NUMBER_ST:
-									port=a->p2.number;
-									break;
-					default:
-							LOG(L_CRIT, "BUG: do_action bad forward 2nd"
-										" param type (%d)\n", a->p2_type);
-							ret=E_UNSPEC;
-							goto error_fwd_uri;
-				}
-				
-				/* only if proto not set get it from the uri */
-				if (proto == PROTO_NONE)
-					proto=u->proto;
-#ifdef USE_TLS
-				if (u->type==SIPS_URI_T && proto==PROTO_UDP) {
-					LOG(L_ERR, "ERROR: do_action: forward: secure uri"
-						" incompatible with transport %d\n", u->proto);
-					ret=E_BAD_PROTO;
-					goto error_fwd_uri;
-				}
-#endif
 				/* create a temporary proxy*/
-				p=mk_proxy(&u->host, port, proto,
+				p=mk_proxy(&u->host, u->port_no, u->proto,
 					(u->type==SIPS_URI_T)?1:0 );
 				if (p==0){
 					LOG(L_ERR, "ERROR:  bad host name in uri,"
@@ -272,9 +230,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 				free_proxy(p); /* frees only p content, not p itself */
 				pkg_free(p);
 				if (ret>=0) ret=1;
-			}else if ((a->p1_type==PROXY_ST) && (a->p2_type==NUMBER_ST)){
-				((struct proxy_l*)a->p1.data)->proto =
-					(proto==PROTO_NONE) ? msg->rcv.proto : proto;
+			}else if ((a->p1_type==PROXY_ST)) {
 				ret=forward_request(msg,(struct proxy_l*)a->p1.data);
 				if (ret>=0) ret=1;
 			}else{
@@ -284,10 +240,8 @@ int do_action(struct action* a, struct sip_msg* msg)
 			}
 			break;
 		case SEND_T:
-		case SEND_TCP_T:
-			if ((a->p1_type!= PROXY_ST)|(a->p2_type!=NUMBER_ST)){
-				LOG(L_CRIT, "BUG: do_action: bad send() types %d, %d\n",
-						a->p1_type, a->p2_type);
+			if (a->p1_type!= PROXY_ST){
+				LOG(L_CRIT,"BUG: do_action: bad send() type %d\n",a->p1_type);
 				ret=E_BUG;
 				break;
 			}
@@ -314,8 +268,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 			if (ret==0){
 				p->tx++;
 				p->tx_bytes+=msg->len;
-				proto = (a->type==SEND_T)?PROTO_UDP:PROTO_TCP;
-				ret = msg_send(0/*send_sock*/, proto, to, 0/*id*/,
+				ret = msg_send(0/*send_sock*/, p->proto, to, 0/*id*/,
 						msg->buf, msg->len);
 			}
 			pkg_free(to);

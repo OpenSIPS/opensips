@@ -1,6 +1,7 @@
 /* $Id$
  *
  * Copyright (C) 2001-2003 FhG Fokus
+ * Copyright (C) 2005-2006 Voice Sistem S.R.L.
  *
  * This file is part of openser, a free SIP server.
  *
@@ -769,6 +770,11 @@ struct hostent* sip_resolvehost(str* name, unsigned short* port, int *proto,
 	if ( !proto || (*proto)!=PROTO_NONE ) {
 		/* have proto, but no port -> do SRV lookup */
 		DBG("DEBUG:sip_resolvehost2: no port, has proto -> do SRV lookup!\n");
+		if (is_sips && (*proto)!=PROTO_TLS) {
+			LOG(L_ERR, "ERROR:sip_resolvehost2: forced proto %d not matching "
+				"sips uri\n", *proto);
+			return 0;
+		}
 		goto do_srv;
 	}
 
