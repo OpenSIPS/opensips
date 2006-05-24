@@ -52,7 +52,7 @@
 
 
 #define get_supported(p_msg) \
-	(((struct supported_body*)(p_msg)->supported->parsed)->supported_all)
+	((p_msg)->supported ? ((struct supported_body*)(p_msg)->supported->parsed)->supported_all : 0)
 
 
 struct supported_body {
