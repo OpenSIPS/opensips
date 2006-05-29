@@ -22,6 +22,9 @@
  * History:
  * ---------
  * 2003-04-26 ZSW (jiri)
+ * 2006-05-29 removed the NO_PINGTEL_TAG_HACK - it's conflicting the RFC 3261;
+ *            TAG parameter must have value; other parameters are accepted
+ *            without value (bogdan)
  */
 
 
@@ -64,7 +67,7 @@ enum {
 
 
 
-static /*inline*/ char* parse_to_param(char *buffer, char *end,
+static inline char* parse_to_param(char *buffer, char *end,
 					struct to_body *to_b,
 					int *returned_status)
 {
@@ -78,6 +81,8 @@ static /*inline*/ char* parse_to_param(char *buffer, char *end,
 	saved_status=E_PARA_VALUE;
 	for( tmp=buffer; tmp<end; tmp++)
 	{
+		DBG("------c=%c, status=%d , saved_status=%d\n",
+				*tmp, status, saved_status);
 		switch(*tmp)
 		{
 			case ' ':
@@ -138,10 +143,7 @@ static /*inline*/ char* parse_to_param(char *buffer, char *end,
 						status=saved_status;
 						goto endofheader;
 					default:
-						LOG( L_ERR , "ERROR: parse_to_param : "
-							"unexpected char [%c] in status %d: <<%.*s>> .\n",
-							*tmp,status, (int)(tmp-buffer), ZSW(buffer));
-						goto error;
+						goto parse_error;
 				}
 				break;
 			case '\r':
@@ -175,25 +177,19 @@ static /*inline*/ char* parse_to_param(char *buffer, char *end,
 						status=saved_status;
 						goto endofheader;
 					default:
-						LOG( L_ERR , "ERROR: parse_to_param : "
-							"unexpected char [%c] in status %d: <<%.*s>> .\n",
-							*tmp,status, (int)(tmp-buffer), ZSW(buffer));
-						goto error;
+						goto parse_error;
 				}
 				break;
 			case 0:
 				switch (status)
 				{
-#ifndef NO_PINGTEL_TAG_HACK
-					case TAG3:
-						param->type = TAG_PARAM;
-						param->name.len = 3;
-						status = S_EQUAL;
+					case PARA_NAME:
+						param->name.len = tmp-param->name.s;
 					case S_EQUAL:
 					case S_PARA_VALUE:
-						saved_status=status;
-						goto endofheader;
-#endif
+						if (param->type==TAG_PARAM)
+							goto parse_error;
+						param->value.s = tmp;
 					case PARA_VALUE_TOKEN:
 						status = E_PARA_VALUE;
 						param->value.len = tmp-param->value.s;
@@ -203,10 +199,7 @@ static /*inline*/ char* parse_to_param(char *buffer, char *end,
 						goto endofheader;
 						break;
 					default:
-						LOG( L_ERR , "ERROR: parse_to_param : "
-							"unexpected char [%c] in status %d: <<%.*s>> .\n",
-							*tmp,status, (int)(tmp-buffer), ZSW(buffer));
-						goto error;
+						goto parse_error;
 				}
 				break;
 			case '\\':
@@ -222,10 +215,7 @@ static /*inline*/ char* parse_to_param(char *buffer, char *end,
 								tmp++;
 						}
 					default:
-						LOG( L_ERR , "ERROR: parse_to_param : "
-							"unexpected char [%c] in status %d: <<%.*s>> .\n",
-							*tmp,status, (int)(tmp-buffer), ZSW(buffer));
-						goto error;
+						goto parse_error;
 				}
 				break;
 			case '"':
@@ -246,10 +236,7 @@ static /*inline*/ char* parse_to_param(char *buffer, char *end,
 						/*previous=crlf and now !=' '*/
 						goto endofheader;
 					default:
-						LOG( L_ERR , "ERROR: parse_to_param :"
-							"unexpected char [%c] in status %d: <<%.*s>> .\n",
-							*tmp,status,(int)(tmp-buffer), ZSW(buffer));
-						goto error;
+						goto parse_error;
 				}
 				break;
 			case ';' :
@@ -257,21 +244,13 @@ static /*inline*/ char* parse_to_param(char *buffer, char *end,
 				{
 					case PARA_VALUE_QUOTED:
 						break;
-#ifndef NO_PINGTEL_TAG_HACK
-					case TAG3:
-						param->type = TAG_PARAM;
-						param->name.len = 3;
+					case PARA_NAME:
+						param->name.len = tmp-param->name.s;
 					case S_EQUAL:
 					case S_PARA_VALUE:
 						if (param->type==TAG_PARAM)
-							param->value.s = tmp;
-						else {
-							LOG( L_ERR , "ERROR: parse_to_param : unexpected "
-								"char [%c] in status %d: <<%.*s>> .\n",
-								*tmp,status, (int)(tmp-buffer), ZSW(buffer));
-							goto error;
-						}
-#endif
+							goto parse_error;
+						param->value.s = tmp;
 					case PARA_VALUE_TOKEN:
 						param->value.len=tmp-param->value.s;
 						add_param(param,to_b);
@@ -293,10 +272,7 @@ static /*inline*/ char* parse_to_param(char *buffer, char *end,
 						/*previous=crlf and now !=' '*/
 						goto endofheader;
 					default:
-						LOG( L_ERR , "ERROR: parse_to_param :"
-							"unexpected char [%c] in status %d: <<%.*s>> .\n",
-							*tmp,status, (int)(tmp-buffer), ZSW(buffer));
-						goto error;
+						goto parse_error;
 				}
 				break;
 			case 'T':
@@ -326,10 +302,7 @@ static /*inline*/ char* parse_to_param(char *buffer, char *end,
 						/*previous=crlf and now !=' '*/
 						goto endofheader;
 					default:
-						LOG( L_ERR , "ERROR: parse_to_param :"
-							"unexpected char [%c] in status %d: <<%.*s>> .\n",
-							*tmp,status, (int)(tmp-buffer), ZSW(buffer));
-						goto error;
+						goto parse_error;
 				}
 				break;
 			case 'A':
@@ -361,10 +334,7 @@ static /*inline*/ char* parse_to_param(char *buffer, char *end,
 						/*previous=crlf and now !=' '*/
 						goto endofheader;
 					default:
-						LOG( L_ERR , "ERROR: parse_to_param : "
-							"unexpected char [%c] in status %d: <<%.*s>> .\n",
-							*tmp,status, (int)(tmp-buffer), ZSW(buffer));
-						goto error;
+						goto parse_error;
 				}
 				break;
 			case 'G':
@@ -396,10 +366,7 @@ static /*inline*/ char* parse_to_param(char *buffer, char *end,
 						/*previous=crlf and now !=' '*/
 						goto endofheader;
 					default:
-						LOG( L_ERR , "ERROR: parse_to_param : "
-							"unexpected char [%c] in status %d: <<%.*s>> .\n",
-							*tmp,status, (int)(tmp-buffer), ZSW(buffer));
-						goto error;
+						goto parse_error;
 				}
 				break;
 			case '=':
@@ -424,10 +391,7 @@ static /*inline*/ char* parse_to_param(char *buffer, char *end,
 						/*previous=crlf and now !=' '*/
 						goto endofheader;
 					default:
-						LOG( L_ERR , "ERROR: parse_to_param : "
-							"unexpected char [%c] in status %d: <<%.*s>> .\n",
-							*tmp,status, (int)(tmp-buffer), ZSW(buffer));
-						goto error;
+						goto parse_error;
 				}
 				break;
 			default:
@@ -465,18 +429,21 @@ static /*inline*/ char* parse_to_param(char *buffer, char *end,
 
 
 endofheader:
-#ifndef NO_PINGTEL_TAG_HACK
-	if (param && param->type==TAG_PARAM 
-	&& (saved_status==S_EQUAL||saved_status==S_PARA_VALUE) ) {
-			saved_status = E_PARA_VALUE;
-			param->value.s= 0;
-			param->value.len=0;
-			add_param(param, to_b);
+	if (param && (saved_status==S_EQUAL||saved_status==S_PARA_VALUE) ) {
+		saved_status = E_PARA_VALUE;
+		param->value.s= 0;
+		param->value.len=0;
+		if (param->type==TAG_PARAM)
+			goto parse_error;
+		add_param(param, to_b);
 	}
-#endif
 	*returned_status=saved_status;
 	return tmp;
 
+parse_error:
+	LOG( L_ERR , "ERROR: parse_to_param : "
+		"unexpected char [%c] in status %d: <<%.*s>> .\n",
+		*tmp,status, (int)(tmp-buffer), ZSW(buffer));
 error:
 	if (param) pkg_free(param);
 	to_b->error=PARSE_ERROR;
@@ -549,10 +516,7 @@ char* parse_to(char* buffer, char *end, struct to_body *to_b)
 						status=saved_status;
 						goto endofheader;
 					default:
-						LOG( L_ERR , "ERROR: parse_to : unexpected char [%c] "
-							"in status %d: <<%.*s>> .\n",
-							*tmp,status, (int)(tmp-buffer), ZSW(buffer));
-						goto error;
+						goto parse_error;
 				}
 				break;
 			case '\r':
@@ -574,10 +538,7 @@ char* parse_to(char* buffer, char *end, struct to_body *to_b)
 						status=saved_status;
 						goto endofheader;
 					default:
-						LOG( L_ERR , "ERROR: parse_to : unexpected char [%c] "
-							"in status %d: <<%.*s>> .\n",
-							*tmp,status, (int)(tmp-buffer), ZSW(buffer));
-						goto error;
+						goto parse_error;
 				}
 				break;
 			case 0:
@@ -590,10 +551,7 @@ char* parse_to(char* buffer, char *end, struct to_body *to_b)
 						saved_status = status = END;
 						goto endofheader;
 					default:
-						LOG( L_ERR , "ERROR: parse_to : unexpected char [%c] "
-							"in status %d: <<%.*s>> .\n",
-							*tmp,status, (int)(tmp-buffer), ZSW(buffer));
-						goto error;
+						goto parse_error;
 				}
 				break;
 			case '\\':
@@ -603,10 +561,7 @@ char* parse_to(char* buffer, char *end, struct to_body *to_b)
 						tmp++; /* jump over next char */
 						break;
 					default:
-						LOG( L_ERR , "ERROR: parse_to : unexpected char [%c] "
-							"in status %d: <<%.*s>> .\n",
-							*tmp,status, (int)(tmp-buffer), ZSW(buffer));
-						goto error;
+						goto parse_error;
 				}
 				break;
 			case '<':
@@ -634,10 +589,7 @@ char* parse_to(char* buffer, char *end, struct to_body *to_b)
 						/*previous=crlf and now !=' '*/
 						goto endofheader;
 					default:
-						LOG( L_ERR , "ERROR: parse_to : unexpected char [%c] "
-							"in status %d: <<%.*s>> .\n",
-							*tmp,status, (int)(tmp-buffer), ZSW(buffer));
-						goto error;
+						goto parse_error;
 				}
 				break;
 			case '>':
@@ -656,10 +608,7 @@ char* parse_to(char* buffer, char *end, struct to_body *to_b)
 						/*previous=crlf and now !=' '*/
 						goto endofheader;
 					default:
-						LOG( L_ERR , "ERROR: parse_to : unexpected char [%c] "
-							"in status %d: <<%.*s>> .\n",
-							*tmp,status, (int)(tmp-buffer), ZSW(buffer));
-						goto error;
+						goto parse_error;
 				}
 				break;
 			case '"':
@@ -680,10 +629,7 @@ char* parse_to(char* buffer, char *end, struct to_body *to_b)
 						/*previous=crlf and now !=' '*/
 						goto endofheader;
 					default:
-						LOG( L_ERR , "ERROR: parse_to : unexpected char [%c] "
-							"in status %d: <<%.*s>> .\n",
-							*tmp,status, (int)(tmp-buffer), buffer);
-						goto error;
+						goto parse_error;
 				}
 				break;
 			case ';' :
@@ -706,10 +652,7 @@ char* parse_to(char* buffer, char *end, struct to_body *to_b)
 						/*previous=crlf and now !=' '*/
 						goto endofheader;
 					default:
-						LOG( L_ERR , "ERROR: parse_to : unexpected char [%c] "
-							"in status %d: <<%.*s>> .\n",
-							*tmp,status, (int)(tmp-buffer), buffer);
-						goto error;
+						goto parse_error;
 				}
 				break;
 			default:
@@ -763,6 +706,10 @@ endofheader:
 	}
 	return tmp;
 
+parse_error:
+	LOG( L_ERR , "ERROR: parse_to : unexpected char [%c] "
+		"in status %d: <<%.*s>> .\n",
+		*tmp,status, (int)(tmp-buffer), buffer);
 error:
 	to_b->error=PARSE_ERROR;
 	return tmp;
