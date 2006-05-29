@@ -78,7 +78,7 @@ ifeq ($(ARCH),sparc)
 endif
 
 SMP_STR = $(shell uname -v | grep -i "SMP")
-ifneq ($(SMP_STR),"")
+ifeq (,$(SMP_STR))
 	ISSMP=no
 else
 	ISSMP=yes
