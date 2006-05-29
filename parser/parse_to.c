@@ -81,8 +81,6 @@ static inline char* parse_to_param(char *buffer, char *end,
 	saved_status=E_PARA_VALUE;
 	for( tmp=buffer; tmp<end; tmp++)
 	{
-		DBG("------c=%c, status=%d , saved_status=%d\n",
-				*tmp, status, saved_status);
 		switch(*tmp)
 		{
 			case ' ':
