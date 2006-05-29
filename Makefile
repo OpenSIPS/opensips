@@ -128,7 +128,7 @@ cfg.tab.c cfg.tab.h: cfg.y  $(ALLDEP)
 	$(YACC) $(YACC_FLAGS) $<
 
 .PHONY: all
-all: $(NAME) modules
+all: $(NAME) modules utils
 
 
 
@@ -376,7 +376,7 @@ install-cfg: $(cfg-prefix)/$(cfg-dir)
 			$(INSTALL-CFG) etc/tls/user/user-cert_req.pem $(cfg-prefix)/$(cfg-dir)/tls/user/; \
 		fi
 
-install-bin: $(bin-prefix)/$(bin-dir) utils/$(NAME)unix/$(NAME)unix
+install-bin: $(bin-prefix)/$(bin-dir) utils
 		$(INSTALL-TOUCH) $(bin-prefix)/$(bin-dir)/$(NAME) 
 		$(INSTALL-BIN) $(NAME) $(bin-prefix)/$(bin-dir)
 		sed -e "s#PATH:/usr/local/sbin#PATH:$(bin-prefix)/$(bin-dir)#g" \
@@ -397,7 +397,8 @@ install-bin: $(bin-prefix)/$(bin-dir) utils/$(NAME)unix/$(NAME)unix
 		$(INSTALL-TOUCH)   $(bin-prefix)/$(bin-dir)/$(NAME)unix
 		$(INSTALL-BIN) utils/$(NAME)unix/$(NAME)unix $(bin-prefix)/$(bin-dir)
 
-utils/$(NAME)unix/$(NAME)unix:
+.PHONY: utils
+utils:
 		cd utils/$(NAME)unix; $(MAKE) all
 
 install-modules: modules $(modules-prefix)/$(modules-dir)
