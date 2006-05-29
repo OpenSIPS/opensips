@@ -113,7 +113,18 @@ CC_EXTRA_OPTS ?=
 # dirs 
 cfg-dir = etc/$(MAIN_NAME)/
 bin-dir = sbin/
-modules-dir = lib/$(MAIN_NAME)/modules/
+
+ARCH_B= $(shell echo $(ARCH) | sed -e 's/.*64.*/64b/')
+ifeq ($(ARCH_B),64b)
+	LIBDIR ?= lib64
+else
+	LIBDIR ?= lib
+	# assume 32b - it is not really used further
+	ARCH_B=32b
+endif
+
+modules-dir = $(LIBDIR)/$(MAIN_NAME)/modules/
+
 ifeq ($(OS), linux)
 	doc-dir = share/doc/$(MAIN_NAME)/
 	man-dir = share/man/
