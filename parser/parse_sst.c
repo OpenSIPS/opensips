@@ -199,7 +199,7 @@ parse_min_se_body( struct hdr_field *hf )
 	int len = hf->body.len;
 	char *p = hf->body.s;
 	int pos = 0;
-	unsigned  interval = 0;
+	unsigned int interval = 0;
 
 	/* skip whitespace */
 	for ( ; pos < len && is_space(*p); ++pos, ++p )
@@ -214,13 +214,13 @@ parse_min_se_body( struct hdr_field *hf )
 		/*nothing*/;
 	if ( pos != len ) /* shouldn't be any more junk */
 		return parse_sst_parse_error;
-	hf->parsed=(void*)interval;
+	hf->parsed=(void*)(long)interval;
 	return parse_sst_success;
 }
 
 
 enum parse_sst_result
-parse_min_se( struct sip_msg *msg, unsigned *min_se )
+parse_min_se( struct sip_msg *msg, unsigned int *min_se )
 {
 	enum parse_sst_result result;
 
@@ -231,7 +231,7 @@ parse_min_se( struct sip_msg *msg, unsigned *min_se )
 			return result;
 		}
 		if ( min_se ) {
-			*min_se = (unsigned)msg->min_se->parsed;
+			*min_se = (unsigned int)(long)msg->min_se->parsed;
 		}
 		return parse_sst_success;
 	}
