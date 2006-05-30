@@ -254,6 +254,10 @@ static int fix_actions(struct action* a)
 						t->p3_type=MODFIXUP_ST;
 						if (ret<0) goto error;
 					}
+					if (cmd->param_no==0){
+						ret=cmd->fixup( 0, 0);
+						if (ret<0) goto error;
+					}
 				}
 				break;
 			case FORCE_SEND_SOCKET_T:
