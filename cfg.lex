@@ -686,4 +686,5 @@ static void count()
 	}
 }
 
+int yywrap() { return 1; }
 

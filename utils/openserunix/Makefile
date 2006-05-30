@@ -10,7 +10,13 @@ NAME=openserunix
 
 
 include ../../Makefile.sources
+
+# if you want to tune or reset flags
+#DEFS:= 
+#LDFLAGS:= 
+#LIBS:= 
+
 include ../../Makefile.rules
 
-
 modules:
+
