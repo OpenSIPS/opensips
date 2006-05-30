@@ -38,7 +38,7 @@
 
 
 enum {
-	START_TO, DISPLAY_QUOTED, E_DISPLAY_QUOTED, DISPLAY_TOKEN,
+	START_TO, DISPLAY_QUOTED, E_DISPLAY_QUOTED, DISPLAY_TOKEN, DISPLAY_TOKEN2,
 	S_URI_ENCLOSED, URI_ENCLOSED, E_URI_ENCLOSED,
 	URI_OR_TOKEN, MAYBE_URI_END, END, F_CR, F_LF, F_CRLF
 };
@@ -488,8 +488,11 @@ char* parse_to(char* buffer, char *end, struct to_body *to_b)
 						break;
 					case URI_OR_TOKEN:
 						status = MAYBE_URI_END;
+						end_mark = tmp;
+						break;
 					case DISPLAY_TOKEN:
 						end_mark = tmp;
+						status = DISPLAY_TOKEN2;
 						break;
 				}
 				break;
@@ -501,6 +504,7 @@ char* parse_to(char* buffer, char *end, struct to_body *to_b)
 						status = MAYBE_URI_END;
 					case MAYBE_URI_END:
 					case DISPLAY_TOKEN:
+					case DISPLAY_TOKEN2:
 					case E_DISPLAY_QUOTED:
 					case END:
 						saved_status=status;
@@ -525,6 +529,7 @@ char* parse_to(char* buffer, char *end, struct to_body *to_b)
 						status = MAYBE_URI_END;
 					case MAYBE_URI_END:
 					case DISPLAY_TOKEN:
+					case DISPLAY_TOKEN2:
 					case E_DISPLAY_QUOTED:
 					case END:
 						saved_status=status;
@@ -575,8 +580,9 @@ char* parse_to(char* buffer, char *end, struct to_body *to_b)
 						status = S_URI_ENCLOSED;
 						break;
 					case URI_OR_TOKEN:
-						end_mark = tmp;
 					case DISPLAY_TOKEN:
+						end_mark = tmp;
+					case DISPLAY_TOKEN2:
 					case MAYBE_URI_END:
 						to_b->display.len=end_mark-to_b->display.s;
 						status = S_URI_ENCLOSED;
@@ -666,6 +672,7 @@ char* parse_to(char* buffer, char *end, struct to_body *to_b)
 						status=URI_ENCLOSED;
 						break;
 					case MAYBE_URI_END:
+					case DISPLAY_TOKEN2:
 						status = DISPLAY_TOKEN;
 					case DISPLAY_QUOTED:
 					case DISPLAY_TOKEN:
@@ -702,6 +709,10 @@ endofheader:
 					"end of header in state %d\n", status);
 			goto error;
 	}
+
+	DBG("DBUG:parse_to: display={%.*s}, ruri={%.*s}\n",
+		to_b->display.len, ZSW(to_b->display.s),
+		to_b->uri.len, ZSW(to_b->uri.s));
 	return tmp;
 
 parse_error:
