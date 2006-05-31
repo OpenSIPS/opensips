@@ -749,10 +749,10 @@ struct hostent* sip_resolvehost(str* name, unsigned short* port, int *proto,
 #endif
 	){
 		/* we are lucky, this is an ip address */
-		if (port && *port==0)
-			*port = (is_sips)?SIPS_PORT:SIP_PORT;
 		if (proto && *proto==PROTO_NONE)
 			*proto = (is_sips)?PROTO_TLS:PROTO_UDP;
+		if (port && *port==0)
+			*port = (is_sips||((*proto)==PROTO_TLS))?SIPS_PORT:SIP_PORT;
 		return ip_addr2he(name,ip);
 	}
 
@@ -852,7 +852,7 @@ do_srv:
 	DBG("DEBUG:sip_resolvehost2: no valid SRV record found for %s," 
 		" trying A record lookup...\n", tmp);
 	/* set default port */
-	*port = (is_sips)?SIPS_PORT:SIP_PORT;
+	*port = (is_sips||((*proto)==PROTO_TLS))?SIPS_PORT:SIP_PORT;
 
 do_a:
 	/* do A record lookup */
