@@ -567,13 +567,13 @@ tls_tcpconn_init(struct tcp_connection *c, int sock)
 	c->timeout = get_ticks() + DEFAULT_TCP_CONNECTION_LIFETIME;
 
 	if (c->state == S_CONN_ACCEPT) {
-		DBG("tls_tcpconn_init: Looking up socket based TLS server domain [%s:%d]\n",
-			ip_addr2a(&c->rcv.dst_ip), c->rcv.dst_port);
+		DBG("tls_tcpconn_init: Looking up socket based TLS server "
+			"domain [%s:%d]\n", ip_addr2a(&c->rcv.dst_ip), c->rcv.dst_port);
 		dom = tls_find_server_domain(&c->rcv.dst_ip, c->rcv.dst_port);
 		if (dom) {
-			DBG("tls_tcpconn_init: Found socket based TLS server domain [%s:%d]\n",
-			ip_addr2a(&dom->addr), dom->port);
-			c->extra_data = SSL_new(dom->ctx);
+			DBG("tls_tcpconn_init: Found socket based TLS server domain "
+				"[%s:%d]\n", ip_addr2a(&dom->addr), dom->port);
+				c->extra_data = SSL_new(dom->ctx);
 		} else {
 			LOG(L_ERR,"tls_tcpconn_init: ERROR: no TLS server domain found\n");
 			return -1;
@@ -581,49 +581,56 @@ tls_tcpconn_init(struct tcp_connection *c, int sock)
 	} else if (c->state == S_CONN_CONNECT) {
 		avp = NULL;
 		if (avp_tlscdom_name.n) {
-			avp = search_first_avp(avp_tlscdom_name_type, avp_tlscdom_name, &val, 0);
+			avp = search_first_avp(avp_tlscdom_name_type, avp_tlscdom_name,
+				&val, 0);
 		} else {
-			DBG("tls_tcpconn_init: name based TLS client domains are disabled\n");
+			DBG("tls_tcpconn_init: name based TLS client domains are"
+				" disabled\n");
 		}
 		if (!avp) {
-			DBG("tls_tcpconn_init: no TLS client doman AVP set, looking for socket based TLS client domain\n");
+			DBG("tls_tcpconn_init: no TLS client doman AVP set, looking "
+				"for socket based TLS client domain\n");
 			dom = tls_find_client_domain(&c->rcv.src_ip, c->rcv.src_port);
 			if (dom) {
-				DBG("tls_tcpconn_init: Found socket based TLS client domain [%s:%d]\n",
-				ip_addr2a(&dom->addr), dom->port);
-				c->extra_data = SSL_new(dom->ctx);
+				DBG("tls_tcpconn_init: Found socket based TLS client domain "
+					"[%s:%d]\n", ip_addr2a(&dom->addr), dom->port);
+					c->extra_data = SSL_new(dom->ctx);
 			} else {
-				LOG(L_ERR,"tls_tcpconn_init: ERROR: no TLS client domain found\n");
+				LOG(L_ERR,"tls_tcpconn_init: ERROR: no TLS client "
+					"domain found\n");
 				return -1;
 			}
 		} else {
-			DBG("tls_tcpconn_init: TLS client domain AVP found = '%.*s'\n", val.s.len, ZSW(val.s.s));
+			DBG("tls_tcpconn_init: TLS client domain AVP found = '%.*s'\n",
+				val.s.len, ZSW(val.s.s));
 			dom = tls_find_client_domain_name(val.s);
 			if (dom) {
-				DBG("tls_tcpconn_init: Found name based TLS client domain '%.*s'\n",
-					 val.s.len, ZSW(val.s.s));
+				DBG("tls_tcpconn_init: Found name based TLS client domain "
+					"'%.*s'\n", val.s.len, ZSW(val.s.s));
 				c->extra_data = SSL_new(dom->ctx);
 			} else {
-				DBG("tls_tcpconn_init: No name based TLS client domain found, trying socket based TLS client domains\n");
+				DBG("tls_tcpconn_init: No name based TLS client domain found, "
+					"trying socket based TLS client domains\n");
 				dom = tls_find_client_domain(&c->rcv.src_ip, c->rcv.src_port);
 				if (dom) {
-					DBG("tls_tcpconn_init: Found socket based TLS client domain [%s:%d]\n",
+					DBG("tls_tcpconn_init: Found socket based TLS client "
+						"domain [%s:%d]\n",
 					ip_addr2a(&dom->addr), dom->port);
 					c->extra_data = SSL_new(dom->ctx);
 				} else {
-					LOG(L_ERR,"tls_tcpconn_init: ERROR: no TLS client domain found\n");
+					LOG(L_ERR,"tls_tcpconn_init: ERROR: no TLS client "
+						"domain found\n");
 					return -1;
 				}
 			}
 		}
 	} else {
-		LOG(L_ERR,
-			"tls_tcpconn_init: Invalid connection state (bug in TCP code)\n");
+		LOG(L_ERR,"ERROR:tls_tcpconn_init: Invalid connection "
+			"state (bug in TCP code)\n");
 		return -1;
 	}
 	if (!c->extra_data) {
-		LOG(L_ERR,
-			"tls_tcpconn_init: Error while creating SSL structure\n");
+		LOG(L_ERR,"ERROR:tls_tcpconn_init: failed to create SSL structure\n");
 		return -1;
 	}
 

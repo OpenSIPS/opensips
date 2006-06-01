@@ -176,12 +176,13 @@ tls_new_client_domain_name(char *s, int len)
 struct tls_domain *tls_new_domain(int type)
 {
 	struct tls_domain *d;
+
 	d = pkg_malloc(sizeof(struct tls_domain));
 	if (d == NULL) {
-		LOG(L_ERR, "pre_init_tls_domain: Memory allocation failure\n");
+		LOG(L_ERR,"ERROR:tls:pre_init_tls_domain: memory allocation failed\n");
 		return 0;
 	}
-	memset(d, '\0', sizeof(struct tls_domain));
+	memset( d, 0, sizeof(struct tls_domain));
 
 	d->type = type;
 
@@ -192,7 +193,7 @@ struct tls_domain *tls_new_domain(int type)
 		d->verify_cert         = tls_verify_client_cert;
 		d->require_client_cert = 0;
 	}
-	d->method       = TLS_METHOD_UNSPEC;
+	d->method = TLS_METHOD_UNSPEC;
 
 	return d;
 }

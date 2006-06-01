@@ -4,7 +4,7 @@ essential in order to use properly these two scripts.
 Note that the scripts work only in directory where they are placed.
 
 
-gen_rootca.sh - creates the CA root self-signed certificate
+gen_rootCA.sh - creates the CA root self-signed certificate
 
 May get a single parameter which is a the complete file name containing the CA
 configuration. If none is supplied, the default one "ca.conf" will be used 
@@ -16,7 +16,7 @@ password. REMEMBER the password since you will need it to sign certificates.
 Also take care and protect your key file - by default the script changes the
 permissions to 0660.
 
-Ex: ./gen_rootca.sh ca.conf
+Ex: ./gen_rootCA.sh ca.conf
 
 
 

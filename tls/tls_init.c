@@ -518,14 +518,15 @@ int
 init_tls_domains(struct tls_domain *d)
 {
 	struct tls_domain *dom;
+
 	dom = d;
 	while (d) {
 		if (d->name.len) {
 			LOG(L_INFO, "init_tls: Processing TLS domain '%.*s'\n",
-                                         d->name.len, ZSW(d->name.s));
+				d->name.len, ZSW(d->name.s));
 		} else {
 			LOG(L_INFO, "init_tls: Processing TLS domain [%s:%d]\n",
-					ip_addr2a(&d->addr), d->port);
+				ip_addr2a(&d->addr), d->port);
 		}
 
 		/*
@@ -533,7 +534,7 @@ init_tls_domains(struct tls_domain *d)
 		*/
 		if (d->method == TLS_METHOD_UNSPEC) {
 			DBG("init_tls: No method for tls[%s:%d], using default\n",
-			ip_addr2a(&d->addr), d->port);
+				ip_addr2a(&d->addr), d->port);
 			d->method = tls_method;
 		}
 	
@@ -542,8 +543,7 @@ init_tls_domains(struct tls_domain *d)
 		*/
 		d->ctx = SSL_CTX_new(ssl_methods[d->method - 1]);
 		if (d->ctx == NULL) {
-			LOG(L_ERR,
-				"init_tls: Cannot create ssl context for tls[%s:%d]\n",
+			LOG(L_ERR, "init_tls: Cannot create ssl context for tls[%s:%d]\n",
 				ip_addr2a(&d->addr), d->port);
 			return -1;
 		}
@@ -554,9 +554,9 @@ init_tls_domains(struct tls_domain *d)
 		* load certificate 
 		*/
 		if (!d->cert_file) {
-			LOG(L_NOTICE,
-				"init_tls: No certificate for tls[%s:%d] defined, using default '%s'\n",
-				ip_addr2a(&d->addr), d->port, tls_cert_file);
+			LOG(L_NOTICE, "init_tls: No certificate for tls[%s:%d] defined, "
+				"using default '%s'\n", ip_addr2a(&d->addr), d->port,
+				tls_cert_file);
 			d->cert_file = tls_cert_file;
 		}
 		if (load_certificate(d->ctx, d->cert_file) < 0)
@@ -595,7 +595,7 @@ init_tls_domains(struct tls_domain *d)
 }
 
 /*
- * called from main.c when ser exits (main process) 
+ * called from main.c when openser exits (main process) 
  */
 void
 destroy_tls(void)
@@ -615,15 +615,11 @@ destroy_tls(void)
 			SSL_CTX_free(d->ctx);
 		d = d->next;
 	}
-	if (tls_default_server_domain) {
-		if (tls_default_server_domain->ctx) {
-                        SSL_CTX_free(tls_default_server_domain->ctx);
-		}
+	if (tls_default_server_domain && tls_default_server_domain->ctx) {
+		SSL_CTX_free(tls_default_server_domain->ctx);
 	}
-	if (tls_default_client_domain) {
-		if (tls_default_client_domain->ctx) {
-                        SSL_CTX_free(tls_default_client_domain->ctx);
-		}
+	if (tls_default_client_domain && tls_default_client_domain->ctx) {
+		SSL_CTX_free(tls_default_client_domain->ctx);
 	}
 	tls_free_domains();
 }
@@ -636,15 +632,21 @@ int pre_init_tls(void)
 {
 	DBG("pre_init_tls: Entered\n");
 
-	if ( !(tls_default_client_domain = tls_new_domain(TLS_DOMAIN_DEF | TLS_DOMAIN_CLI)) ) {
-		LOG(L_ERR, "pre_init_tls: ERROR: failed to initialize tls_default_client_domain\n");
+	tls_default_client_domain = tls_new_domain(TLS_DOMAIN_DEF|TLS_DOMAIN_CLI);
+	if (tls_default_client_domain==0) {
+		LOG(L_ERR, "ERROR:tls:pre_init_tls: failed to initialize "
+			"tls_default_client_domain\n");
 		return -1;
 	}
+	tls_default_client_domain->addr.af = AF_INET;
 
-	if ( !(tls_default_server_domain = tls_new_domain(TLS_DOMAIN_DEF | TLS_DOMAIN_SRV)) ) {
-		LOG(L_ERR, "pre_init_tls: ERROR: failed to initialize tls_default_server_domain\n");
+	tls_default_server_domain = tls_new_domain(TLS_DOMAIN_DEF|TLS_DOMAIN_SRV);
+	if (tls_default_server_domain==0) {
+		LOG(L_ERR, "ERROR:tls:pre_init_tls: failed to initialize "
+			"tls_default_server_domain\n");
 		return -1;
 	}
+	tls_default_server_domain->addr.af = AF_INET;
 
 	return 0;
 }
