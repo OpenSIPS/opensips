@@ -1043,7 +1043,7 @@ static inline void process_lumps(	struct sip_msg* msg,
 							SUBST_LUMP(r);
 							break;
 						case LUMP_ADD_OPT:
-							/* skip if this is an OPT lump and the condition is 
+							/* skip if this is an OPT lump and the condition is
 					 		* not satisfied */
 							if (!lump_check_opt(r->u.cond, msg, send_sock))
 								goto skip_before;
