@@ -407,12 +407,7 @@ void free_lump_list(struct lump* l)
 	while(t){
 		crt=t;
 		t=t->next;
-	/*
-		 dangerous recursive clean
-		if (crt->before) free_lump_list(crt->before);
-		if (crt->after)  free_lump_list(crt->after);
-	*/
-		/* no more recursion, clean after and before and that's it */
+
 		r=crt->before;
 		while(r){
 			foo=r; r=r->before;
@@ -579,7 +574,7 @@ void del_flaged_lumps( struct lump** lump_list, enum lump_flag flags )
 			prev_r = crt;
 			while(r){
 				foo=r; r=r->after;
-				if ( crt->flags&flags ) {
+				if ( foo->flags&flags ) {
 					prev_r->after = r;
 					free_lump(foo);
 					pkg_free(foo);
@@ -592,7 +587,7 @@ void del_flaged_lumps( struct lump** lump_list, enum lump_flag flags )
 			prev_r = crt;
 			while(r){
 				foo=r; r=r->before;
-				if ( crt->flags&flags ) {
+				if ( foo->flags&flags ) {
 					prev_r->before = r;
 					free_lump(foo);
 					pkg_free(foo);
@@ -631,7 +626,7 @@ void del_notflaged_lumps( struct lump** lump_list, enum lump_flag not_flags )
 			prev_r = crt;
 			while(r){
 				foo=r; r=r->after;
-				if ( (~crt->flags)&not_flags ) {
+				if ( (~foo->flags)&not_flags ) {
 					prev_r->after = r;
 					free_lump(foo);
 					pkg_free(foo);
@@ -644,7 +639,7 @@ void del_notflaged_lumps( struct lump** lump_list, enum lump_flag not_flags )
 			prev_r = crt;
 			while(r){
 				foo=r; r=r->before;
-				if ( (~crt->flags)&not_flags ) {
+				if ( (~foo->flags)&not_flags ) {
 					prev_r->before = r;
 					free_lump(foo);
 					pkg_free(foo);
