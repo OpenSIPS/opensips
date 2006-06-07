@@ -86,9 +86,10 @@ enum request_method {
 #define FL_SDP_IP_AFS         (1<<3) /* SDP IP rewritten */
 #define FL_SDP_PORT_AFS       (1<<4) /* SDP port rewritten */
 #define FL_SHM_CLONE          (1<<5) /* msg cloned in SHM as a single chunk */
-#define FL_USE_UAC_FROM       (1<<6) /* take FROM hdr from UAC insteas of UAS */
+#define FL_USE_UAC_FROM       (1<<6) /* take FROM hdr from UAC insteas of UAS*/
 #define FL_USE_UAC_TO         (1<<7) /* take TO hdr from UAC insteas of UAS */
-#define FL_USE_UAC_CSEQ       (1<<8) /* take CSEQ hdr from UAC insteas of UAS */
+#define FL_USE_UAC_CSEQ       (1<<8) /* take CSEQ hdr from UAC insteas of UAS*/
+#define FL_REQ_UPSTREAM       (1<<9) /* it's an upstream going request */
 
 
 #define IFISMETHOD(methodname,firstchar)                                  \
