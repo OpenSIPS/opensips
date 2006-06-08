@@ -137,6 +137,8 @@ Usage: " NAME " -l address [-p port] [-l address [-p port]...] [options]\n\
 Options:\n\
     -f file      Configuration file (default " CFG_FILE ")\n\
     -c           Check configuration file for errors\n\
+    -C           Similar to '-c' but in addition checks the flags of exported\n\
+                  functions from included route blocks\n\
     -l address   Listen on the specified address/interface (multiple -l\n\
                   mean listening on more addresses).  The address format is\n\
                   [proto:]addr[:port], where proto=udp|tcp and \n\
@@ -155,8 +157,8 @@ Options:\n\
     -E           Log to stderr\n"
 #ifdef USE_TCP
 "    -T           Disable tcp\n\
-	-N           Number of tcp child processes (default: equal to `-n`)\n\
-	-W           poll method\n"
+    -N processes Number of tcp child processes (default: equal to `-n`)\n\
+    -W method    poll method\n"
 #endif
 "    -V           Version number\n\
     -h           This help message\n\

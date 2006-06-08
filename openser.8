@@ -1,14 +1,15 @@
 .\" $Id$
-.TH openser 8 15.07.2002 openser "Open Sip Express Router" 
 .\" Process with
-.\" groff -man -Tascii ser.8
-.\"
-.SH NAME
-openser \- very fast and configurable sip proxy
-.SH SYNOPSIS
+.\" groff -man -Tascii openser.8
+.\" 
+.TH "OpenSER" "8" "08.06.2006" "OpenSER" "VoIP SIP Server"
+.SH "NAME"
+openser \- flexible and roboust SIP (RFC3261, RFC3263) server for Voice over IP (VoIP)
+
+.SH "SYNOPSIS"
 .B openser
 [
-.B \-hcrRvdDEVT
+.B \-hcCrRvdDEVT
 ] [
 .BI \-f " config\-file"
 ] [
@@ -24,6 +25,8 @@ openser \- very fast and configurable sip proxy
 ] [
 .BI \-w " working\-dir"
 ] [
+.BI \-W " method"
+] [
 .BI \-t " chroot\-dir"
 ] [
 .BI \-u " uid"
@@ -37,111 +40,128 @@ openser \- very fast and configurable sip proxy
 .BI \-x " socket\-path"
 ]
 
-.SH DESCRIPTION
-.B openser 
-or
-.BR Open
-.BR Sip
-.BR Express 
-.BR Router 
-is a very fast and configurable SIP proxy. 
-
-.SH OPTIONS
+.SH "DESCRIPTION"
+.B OpenSER 
+.BR  
+is a SIP\-based VoIP server running on most Unix\-like operating systems. It supports UDP, TCP and TLS transport layers. Among its features:
+.IP  *
+SIP Proxy Server, SIP Registrar Server, SIP Redirect Server, SIP Location Server, SIP Application Server
+.IP  *
+Call Processing Language (RFC3880)
+.IP  *
+ENUM support
+.IP  *
+server side NAT traversal
+.IP  *
+LCR \- least cost routing
+.IP  *
+load balancing
+.IP  *
+AAA with database (MySQL, Postgres, Unixodbc) or RADIUS backend
+.IP  *
+audio, video, instant messaging and pressence
+.SH "OPTIONS"
 .TP 12
 .B \-h
 Displays a short usage description, including all available options.
-.TP
+.TP 
 .BI \-c
 Checks the config file and displays the aliases and listen interface list.
-.TP
+.TP 
+.BI \-C
+Similar to \-c but in addition checks the flags of exported functions from included route blocks.
+.TP 
 .BI \-r
 Uses dns to check if it is necessary to add a "received=" field to a via.
-.TP
+.TP 
 .BI \-R
 Same as 
 .B \-r
 but uses reverse dns.
-.TP
+.TP 
 .BI \-v
 Turns on via host checking when forwarding replies.
-.TP
+.TP 
 .BI \-d
 Turns on debugging, multiple
-.B -d
+.B \-d
 increase the debug level.
-.TP
+.TP 
 .BI \-D
 Runs openser in the foreground (it doesn't fork into daemon mode).
-.TP
+.TP 
 .BI \-E
 Sends all the log messages to stderr.
-.TP
+.TP 
 .BI \-T
 Disables TCP support.
-.TP
+.TP 
 .BI \-V
 Displays the version number.
-.TP
+.TP 
 .BI \-f " config\-file"
 Reads the configuration from 
 .B " config\-file" 
 (default
 .I  /etc/openser/openser.cfg
 ).
-.TP
+.TP 
 .BI \-l " address"
 Listens on the specified address/interface. Multiple 
 .B \-l
 mean listening on multiple addresses. The address format is 
 [proto:]address[:port], where proto = udp|tcp and
-address = host|ip_address|interface_name. Example: -l localhost, 
--l udp:127.0.0.1:5080, -l eth0:5062.
+address = host|ip_address|interface_name. Example: \-l localhost, 
+\-l udp:127.0.0.1:5080, \-l eth0:5062.
 The default behaviour is to listen on all the ipv4 interfaces.
-.TP
+.TP 
 .BI \-n " processes\-no"
 Specifies the number of children processes forked per interface (default 8).
-.TP
+.TP 
 .BI \-N " tcp processes\-no"
 Specifies the number of children processes forked to handle tcp incoming connections (by default is equal to
 .BI \-n
 ).
-.TP
+.TP 
 .BI \-b " max_rcv_buf_size"
-Maximum receive buffer size which will not be exceeded by the auto-probing procedure even if the OS allows.
-.TP
+Maximum receive buffer size which will not be exceeded by the auto\-probing procedure even if the OS allows.
+.TP 
 .BI \-m " shared_mem_size"
 Size of the shared memory which will be allocated (in Megabytes).
-.TP
+.TP 
 .BI \-w " working\-dir" 
 Specifies the working directory. In the very improbable event that 
 .B openser 
 will crash, the core file will be generated here.
-.TP
+.TP 
+.BI \-W " method"
+Specify poll method.
+.TP 
 .BI \-t " chroot\-dir"
 Forces 
-.B ser 
+.B openser 
 to chroot after reading the config file.
-.TP
+.TP 
 .BI \-u " uid"
 Changes the user id under which 
 .B openser
 runs.
-.TP
+.TP 
 .BI \-g " gid"
 Changes the group id under which 
 .B openser 
 runs.
-.TP
+.TP 
 .BI \-P " pid\-file"
 Creates a file containing the pid of the main 
 .B openser 
 process.
-.TP
+.TP 
 .BI \-i " fifo\-path"
 Creates a fifo, usefull for monitoring
 .B openser
 status.
-.TP
+.TP 
 .BI \-x " socket\-path"
 Creates a unix socket, usefull for monitoring
 .B openser
@@ -150,31 +170,30 @@ status ( same as
 but using instead unix sockets).
 
 
-.SH FILES
+.SH "FILES"
 .PD 0
 .B /usr/sbin/openser
-.br
+.br 
 .B /etc/openser/openser.cfg
-.br
+.br 
 .B /usr/lib/openser/modules/*
 .PD
-.SH AUTHORS
-
+.SH "AUTHORS"
 see 
 .B /usr/share/doc/openser/AUTHORS
 
-.SH SEE ALSO
+.SH "SEE ALSO"
 .BR openser.cfg(5)
-.PP
+.PP 
 Full documentation on openser is available at
 .I http://www.openser.org/.
 .PP 
-For reporting  bugs see
-.I
-http://www.openser.org/bugs/.
-.PP
+Project tracker and CVS
+.I 
+http://sourceforge.net/projects/openser/.
+.PP 
 Mailing lists:
 .nf 
-users@openser.org - openser user community
+users@openser.org \- openser user community
 .nf 
-devel@openser.org - openser development, new features and unstable version
+devel@openser.org \- openser development, new features and unstable version
