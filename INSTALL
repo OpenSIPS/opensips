@@ -346,8 +346,9 @@ proceed, you need to make sure MySQL is installed on your box.
    local SIP realm, e.g.,
        export SIP_DOMAIN="myserver.foobar.com"
 
-   a) watch the server status using 'serctl moni'
-   b) try to login with your SIP client as user 'admin' with password 'heslo'
+   a) watch the server status using 'openserctl moni'
+   b) try to login with your SIP client as user 'admin' with 
+      password 'openserrw'
    c) try adding new users using 
        'openserctl add <name> <password> <email>'
 
