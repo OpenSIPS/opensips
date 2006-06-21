@@ -43,8 +43,8 @@ static int fifo_get_stats( FILE *fifo, char *response_file );
 static int fifo_reset_stats( FILE *fifo, char *response_file );
 
 #ifdef NO_ATOMIC_OPS
-#warning "STATISTICS: Architecture with no support for atomic operations."
-         "Using Locks!!\n"
+#warning STATISTICS: Architecture with no support for atomic operations. \
+         Using Locks!!
 gen_lock_t *stat_lock = 0;
 #endif
 

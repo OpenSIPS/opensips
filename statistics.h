@@ -31,9 +31,6 @@
 
 #include "hash_func.h"
 #include "atomic.h"
-#ifdef NO_ATOMIC_OPS
-#include "locking.h"
-#endif
 
 #define STATS_HASH_POWER   8
 #define STATS_HASH_SIZE    (1<<(STATS_HASH_POWER))
@@ -84,7 +81,7 @@ typedef struct stat_export_ {
 	char* name;                /* null terminated statistic name */
 	int flags;                 /* flags */
 	stat_var** stat_pointer;   /* pointer to the variable's mem location *
-	                            * NOTE - it;s in shm mem */
+	                            * NOTE - it's in shm mem */
 } stat_export_t;
 
 
@@ -102,6 +99,7 @@ stat_var* get_stat( str *name );
 unsigned int get_stat_val( stat_var *var );
 
 #ifdef NO_ATOMIC_OPS
+#include "locking.h"
 extern gen_lock_t *stat_lock;
 #endif
 
