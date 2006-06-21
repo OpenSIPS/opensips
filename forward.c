@@ -300,20 +300,22 @@ int forward_request( struct sip_msg* msg, struct proxy_l * p)
        if it is turned on, we don't care about reboot; we simply put a simple
 	   value in there; better for performance
 	*/
-	if (syn_branch ) {
-		*msg->add_to_branch_s='0';
-		msg->add_to_branch_len=1;
-	} else {
-		if (!char_msg_val( msg, md5 )) 	{ /* parses transaction key */
-			LOG(L_ERR, "ERROR: forward_request: char_msg_val failed\n");
-			goto error1;
-		}
-		msg->hash_index = core_hash( &msg->callid->body,
-				&(get_cseq(msg)->number), TM_TABLE_ENTRIES);
-		if (!branch_builder( msg->hash_index, 0, md5, id /* 0-th branch */,
-					msg->add_to_branch_s, &msg->add_to_branch_len )) {
-			LOG(L_ERR, "ERROR: forward_request: branch_builder failed\n");
-			goto error1;
+	if ( msg->add_to_branch_len==0 ) {
+		if (syn_branch ) {
+			*msg->add_to_branch_s='0';
+			msg->add_to_branch_len=1;
+		} else {
+			if (!char_msg_val( msg, md5 )) 	{ /* parses transaction key */
+				LOG(L_ERR, "ERROR: forward_request: char_msg_val failed\n");
+				goto error1;
+			}
+			msg->hash_index = core_hash( &msg->callid->body,
+					&(get_cseq(msg)->number), TM_TABLE_ENTRIES);
+			if (!branch_builder( msg->hash_index, 0, md5, id /* 0-th branch */,
+						msg->add_to_branch_s, &msg->add_to_branch_len )) {
+				LOG(L_ERR, "ERROR: forward_request: branch_builder failed\n");
+				goto error1;
+			}
 		}
 	}
 
