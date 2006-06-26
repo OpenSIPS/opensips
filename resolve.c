@@ -662,12 +662,12 @@ static inline void filter_and_sort_naptr( struct rdata** head_p,
 		ln = l->next;
 
 		if (l->type != T_NAPTR)
-			continue; /*should never happen*/
+			goto skip; /*should never happen*/
 
 		naptr = (struct naptr_rdata*)l->rdata;
 		if (naptr == 0) {
 			LOG(L_CRIT, "BUG:filter_and_sort_naptr: null rdata\n");
-			continue;
+			goto skip;
 		}
 
 		/* first filter out by flag and service */
