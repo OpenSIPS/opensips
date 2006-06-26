@@ -243,12 +243,12 @@ struct sip_msg {
 	 * unnecessary calculations */
 	unsigned int  hash_index;
 
+	/* flags used from script */
+	flag_t flags;
+
 	/* flags used by core - allows to set various flags on the message; may 
 	 * be used for simple inter-module communication or remembering 
 	 * processing state reached */
-	flag_t flags;
-
-	/* flags used from script */
 	unsigned int msg_flags;
 
 	str set_global_address;
