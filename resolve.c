@@ -662,12 +662,12 @@ static inline void filter_and_sort_naptr( struct rdata** head_p,
 		ln = l->next;
 
 		if (l->type != T_NAPTR)
-			goto skip; /*should never happen*/
+			goto skip0; /*should never happen*/
 
 		naptr = (struct naptr_rdata*)l->rdata;
 		if (naptr == 0) {
 			LOG(L_CRIT, "BUG:filter_and_sort_naptr: null rdata\n");
-			goto skip;
+			goto skip0;
 		}
 
 		/* first filter out by flag and service */
@@ -724,6 +724,7 @@ static inline void filter_and_sort_naptr( struct rdata** head_p,
 skip:
 		DBG("DEBUG:filter_and_sort_naptr: skipping %.*s -> %s\n",
 			naptr->services_len, naptr->services, naptr->repl);
+skip0:
 		l->next = out;
 		out = l;
 	}
