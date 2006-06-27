@@ -154,17 +154,17 @@ int append_branch(struct sip_msg* msg, str* uri, str* dst_uri, str* path,
 
 	if (luri.len > MAX_URI_SIZE - 1) {
 		LOG(L_ERR, "ERROR: append_branch: too long uri: %.*s\n",
-		    luri.len, luri.s);
+			luri.len, luri.s);
 		return -1;
 	}
 
-	memcpy(branches[nr_branches].uri, luri.s, luri.len);
-	/* be safe -- add zero termination */
-	branches[nr_branches].uri[luri.len] = 0;
-	branches[nr_branches].len = luri.len;
-	branches[nr_branches].q = q;
-
+	/* copy the dst_uri */
 	if (dst_uri && dst_uri->len && dst_uri->s) {
+		if (dst_uri->len > MAX_URI_SIZE - 1) {
+			LOG(L_ERR, "ERROR: append_branch: too long dst_uri: %.*s\n",
+				dst_uri->len, dst_uri->s);
+			return -1;
+		}
 		memcpy(branches[nr_branches].dst_uri, dst_uri->s, dst_uri->len);
 		branches[nr_branches].dst_uri[dst_uri->len] = 0;
 		branches[nr_branches].dst_uri_len = dst_uri->len;
@@ -172,8 +172,14 @@ int append_branch(struct sip_msg* msg, str* uri, str* dst_uri, str* path,
 		branches[nr_branches].dst_uri[0] = '\0';
 		branches[nr_branches].dst_uri_len = 0;
 	}
-	
+
+	/* copy the path string */
 	if (path && path->len && path->s) {
+		if (path->len > MAX_PATH_SIZE - 1) {
+			LOG(L_ERR, "ERROR: append_branch: too long path: %.*s\n",
+				path->len, path->s);
+			return -1;
+		}
 		memcpy(branches[nr_branches].path, path->s, path->len);
 		branches[nr_branches].path[path->len] = 0;
 		branches[nr_branches].path_len = path->len;
@@ -181,6 +187,12 @@ int append_branch(struct sip_msg* msg, str* uri, str* dst_uri, str* path,
 		branches[nr_branches].path[0] = '\0';
 		branches[nr_branches].path_len = 0;
 	}
+
+	/* copy the ruri */
+	memcpy(branches[nr_branches].uri, luri.s, luri.len);
+	branches[nr_branches].uri[luri.len] = 0;
+	branches[nr_branches].len = luri.len;
+	branches[nr_branches].q = q;
 
 	branches[nr_branches].force_send_socket = force_socket;
 	branches[nr_branches].flags = flags;
