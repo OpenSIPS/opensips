@@ -3,10 +3,6 @@
 'Use' tells how deployable a module is. Regular indicates
 we deploy and use this feature in our infrastructure.
 Experimental tells we are still gaining operation experience.
-Temporary labels modules which momentarily fix some
-bugs/lacks and will disappear later. Example modules
-are primarily useful as educational source code for
-ser programmers.
 
 'Maturity' is label as stable if a module has been deployed
 for longer time, alpha if it is still being developed and
@@ -15,14 +11,20 @@ beta if it is under test.
 'Depends on' field tells which modules the module needs. 
 
 
-List of currently available ser modules:
+List of currently available openser modules:
 
 Name:       acc
 Use:        regular
 Maturity:   stable
-Depends on: tm
-Purpose:    Transaction accounting/example (the module server also as an
-            example of how to bind to transaction management)
+Depends on: tm, rr, mysql|postgres|unixodbc|dbtext|flatstore
+Purpose:    Transaction accounting
+
+Name:       alias_db
+Use:        regular
+Maturity:   stable
+Depends on: mysql|postgres|unixodbc|dbtext
+Purpose:    Alias with DB support (no caching).
+
 
 Name:       auth
 Use:        regular
@@ -36,11 +38,23 @@ Maturity:   stable
 Depends on: mysql auth
 Purpose:    Database support for digest authentication
 
-Name:       auth_radius
+Name:       auth_diameter
 Use:        experimental
+Maturity:   alpha
+Depends on: auth
+Purpose:    Diameter support for digest authentication
+
+Name:       auth_radius
+Use:        regular
 Maturity:   beta
 Depends on: auth
 Purpose:    Radius support for digest authentication
+
+Name:       avpops
+Use:        regular
+Maturity:   stable
+Depends on:
+Purpose:    avp operations, pseudo-variable support
 
 Name:       avp_radius
 Use:        regular
@@ -48,27 +62,27 @@ Maturity:   beta
 Depends on: avp
 Purpose:    Radius support for avps
 
-Name:       avpops
-Use:        regular
-Maturity:   beta
-Depends on: 
-Purpose:    avp operations, pseudo-variable support
-
 Name:       cpl-c
 Use:        regular
-Maturity:   beta
-Depends on: -
-Purpose:    Call Processing Language
+Maturity:   stable
+Depends on: tm, sl, usrloc
+Purpose:    Call Processing Language interpreter
 
 Name:       dbtext
 Use:        regular
-Maturity:   beta
+Maturity:   stable
 Depends on: -
 Purpose:    Database emulation in plaintext files
 
+Name:       dialog
+Use:        experimental
+Maturity:   alpha
+Depends on: tm, rr
+Purpose:    Dialog support, call tracking
+
 Name:       dispatcher
 Use:        experimental
-Maturity:   beta
+Maturity:   stable
 Depends on: -
 Purpose:    Implements a dispatcher for incoming requests using hashes
 
@@ -77,6 +91,18 @@ Use:        experimental
 Maturity:   alpha
 Depends on: -
 Purpose:    Support for the Diversion extensions (draft-levy-sip-diversion-08)
+
+Name:       domain
+Use:        regular
+Maturity:   stable
+Depends on: mysql
+Purpose:    support for maintenance of multiple domains and related functions
+
+Name:       enum
+Use:        regular
+Maturity:   stable
+Depends on: -
+Purpose:    Enum support
 
 Name:       exec
 Use:        regular
@@ -91,8 +117,8 @@ Depends on: -
 Purpose:    Very fast accounting in flat text files
 
 Name:       gflags
-Use:        experimental
-Maturity:   beta
+Use:        regular
+Maturity:   stable
 Depends on: -
 Purpose:    global flags that can be changed by fifo commands
 
@@ -114,15 +140,33 @@ Maturity:   beta
 Depends on: database tm
 Purpose:    SIMPLE 2 Jabber gateway
 
+Name:       lcr
+Use:        experimental
+Maturity:   beta
+Depends on: database
+Purpose:    Least Cost Routing engine
+
+Name:       mangler
+Use:        experimental
+Maturity:   alpha
+Depends on: -
+Purpose:    Helper with SDP mangling
+
 Name:       maxfwd
 Use:        regular
 Maturity:   stable
 Depends on: -
 Purpose:    Max-Forwards check
 
+Name:       mediaproxy
+Use:        regular
+Maturity:   stable
+Depends on: mediaproxy media relay
+Purpose:    nat traversal
+
 Name:       msilo
-Use:        experimental
-Maturity:   beta
+Use:        regular
+Maturity:   stable
 Depends on: database tm
 Purpose:    Message store
 
@@ -132,11 +176,23 @@ Maturity:   stable
 Depends on: -
 Purpose:    MySQL database support
 
+Name:       nathelper
+Use:        regular
+Maturity:   stable
+Depends on: rtpproxy
+Purpose:    nat traversal
+
 Name:       options
 Use:        experimental
 Maturity:   beta
 Depends on: -
 Purpose:    Answers server options requests
+
+Name:       osp
+Use:        experimental
+Maturity:   alpha
+Depends on: textops, OSP Toolkit
+Purpose:    Secure, multi-lateral peering using the OSP standard
 
 Name:       pa
 Use:        experimental
@@ -144,11 +200,35 @@ Maturity:   alpha
 Depends on: tm (usrloc jabber)
 Purpose:    Presence agent
 
-Name:       pike
+Name:       path
 Use:        experimental
 Maturity:   alpha
+Depends on: rr
+Purpose:    PATH support for complex routing
+
+Name:       pdt
+Use:        regular
+Maturity:   stable
+Depends on: database
+Purpose:    Prefix to Domain translation
+
+Name:       permissions
+Use:        experimental
+Maturity:   beta
+Depends on: database
+Purpose:    hosts.allow-like ACLs
+
+Name:       pike
+Use:        experimental
+Maturity:   beta
 Depends on: -
 Purpose:    Excessive load detection
+
+Name:       postgress
+Use:        experimental
+Maturity:   beta
+Depends on: -
+Purpose:    Postgress DB support
 
 Name:       registrar
 Use:        regular
@@ -161,6 +241,12 @@ Use:        regular
 Maturity:   stable
 Depends on: -
 Purpose:    Routing and Record-Routing
+
+Name:       siptrace
+Use:        experimental
+Maturity:   alpha
+Depends on: tm, sl
+Purpose:    SIP traffic logging
 
 Name:       sl
 Use:        regular
@@ -176,9 +262,15 @@ Purpose:    SMS gateway
 
 Name:       speeddial
 Use:        regular
-Maturity:   beta
-Depends on: -
+Maturity:   stable
+Depends on: database
 Purpose:    On-server speed dial facilities
+
+Name:       statistics
+Use:        experimental
+Maturity:   alpha
+Depends on: -
+Purpose:    Routing script statistics
 
 Name:       textops
 Use:        regular
@@ -186,11 +278,35 @@ Maturity:   stable
 Depends on: -
 Purpose:    Message Textual Operations
 
+Name:       tlsops
+Use:        experimental
+Maturity:   alpha
+Depends on: -
+Purpose:    Helper TLS information and control
+
 Name:       tm
 Use:        regular
 Maturity:   beta
 Depends on: -
 Purpose:    Transaction Management
+
+Name:       uac
+Use:        experimental
+Maturity:   beta
+Depends on: tm, rr
+Purpose:    User Agent Client functionalities
+
+Name:       uac_redirect
+Use:        experimental
+Maturity:   beta
+Depends on: tm, acc
+Purpose:    Redirect reply processing on server
+
+Name:       unixodbc
+Use:        experimental
+Maturity:   alpha
+Depends on: -
+Purpose:    Unixodbc DB support
 
 Name:       uri
 Use:        regular
@@ -199,9 +315,9 @@ Depends on: database
 Purpose:    Various URI checks
 
 Name:       uri_db
-Use:        experimental
-Maturity:   beta
-Depends on: mysql uri
+Use:        regular
+Maturity:   stable
+Depends on: mysql
 Purpose:    URI checking using DB
 
 Name:       uri_radius
@@ -219,49 +335,7 @@ Purpose:    User location support
 Name:       xlog
 Use:        regular
 Maturity:   stable
-Depends on: 
+Depends on: -
 Purpose:    formatted logging (printf style)
 
-Contributions
--------------
-Name:       domain
-Use:        experimental
-Maturity:   beta
-Depends on: mysql
-Purpose:    Local domain lists and related functions
 
-Name:       enum
-Use:        experimental
-Maturity:   beta
-Depends on: -
-Purpose:    Enum support
-
-Name:       domain
-Use:        experimental
-Maturity:   beta
-Depends on: -
-Purpose:    support for maintenance of multiple domains
-
-Name:       mediaproxy
-Use:        regular
-Maturity:   stable
-Depends on: mediaproxy media relay
-Purpose:    nat traversal
-
-Name:       nathelper
-Use:        regular
-Maturity:   stable
-Depends on: rtpproxy
-Purpose:    nat traversal
-
-Name:		permissions
-Use:		experimental
-Maturity:	beta
-Depends on:	-
-Purpose:	hosts.allow-like ACLs
-
-Name:       postgress
-Use:        experimental
-Maturity:   beta
-Depends on: -
-Purpose:    Postgress DB support
