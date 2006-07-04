@@ -345,6 +345,9 @@ install-cfg: $(cfg-prefix)/$(cfg-dir)
 		# radius dictionary
 		$(INSTALL-TOUCH) $(cfg-prefix)/$(cfg-dir)/dictionary.radius
 		$(INSTALL-CFG) etc/dictionary.radius $(cfg-prefix)/$(cfg-dir)
+		# openserctl config
+		$(INSTALL-TOUCH)   $(cfg-prefix)/$(cfg-dir)/openserctlrc
+		$(INSTALL-CFG) scripts/openserctlrc $(cfg-prefix)/$(cfg-dir)
 		#$(INSTALL-CFG) etc/$(NAME).cfg $(cfg-prefix)/$(cfg-dir)
 		if [ -z "$(TLS)" ]; then \
 			echo  "No TLS scripts installed" ; \
@@ -379,11 +382,49 @@ install-cfg: $(cfg-prefix)/$(cfg-dir)
 install-bin: $(bin-prefix)/$(bin-dir) utils
 		$(INSTALL-TOUCH) $(bin-prefix)/$(bin-dir)/$(NAME) 
 		$(INSTALL-BIN) $(NAME) $(bin-prefix)/$(bin-dir)
-		sed -e "s#PATH:/usr/local/sbin#PATH:$(bin-prefix)/$(bin-dir)#g" \
-			< scripts/sc > /tmp/$(NAME)ctl
-		$(INSTALL-TOUCH)   $(bin-prefix)/$(bin-dir)/$(NAME)ctl
-		$(INSTALL-BIN) /tmp/$(NAME)ctl $(bin-prefix)/$(bin-dir)
-		rm -fr /tmp/$(NAME)ctl
+		sed -e "s#/usr/local#$(bin-prefix)#g" \
+			< scripts/openserctl > /tmp/openserctl
+		$(INSTALL-TOUCH) $(bin-prefix)/$(bin-dir)/openserctl
+		$(INSTALL-BIN) /tmp/openserctl $(bin-prefix)/$(bin-dir)
+		rm -fr /tmp/openserctl
+		sed -e "s#/usr/local#$(bin-prefix)#g" \
+			< scripts/openserctl.base > /tmp/openserctl.base
+		mkdir -p $(modules-prefix)/$(lib-dir)/openserctl 
+		$(INSTALL-TOUCH) \
+			$(modules-prefix)/$(lib-dir)/openserctl
+		$(INSTALL-CFG) /tmp/openserctl.base \
+			$(modules-prefix)/$(lib-dir)/openserctl/openserctl.base
+		rm -fr /tmp/openserctl.base
+		sed -e "s#/usr/local#$(bin-prefix)#g" \
+			< scripts/openserctl.ctlbase > /tmp/openserctl.ctlbase
+		$(INSTALL-CFG) /tmp/openserctl.ctlbase \
+			$(modules-prefix)/$(lib-dir)/openserctl/openserctl.ctlbase
+		rm -fr /tmp/openserctl.ctlbase
+		sed -e "s#/usr/local#$(bin-prefix)#g" \
+			< scripts/openserctl.fifo > /tmp/openserctl.fifo
+		$(INSTALL-CFG) /tmp/openserctl.fifo \
+			$(modules-prefix)/$(lib-dir)/openserctl/openserctl.fifo
+		rm -fr /tmp/openserctl.fifo
+		sed -e "s#/usr/local#$(bin-prefix)#g" \
+			< scripts/openserctl.unixsock > /tmp/openserctl.unixsock
+		$(INSTALL-CFG) /tmp/openserctl.unixsock \
+			$(modules-prefix)/$(lib-dir)/openserctl/openserctl.unixsock
+		rm -fr /tmp/openserctl.unixsock
+		sed -e "s#/usr/local#$(bin-prefix)#g" \
+			< scripts/openserctl.sqlbase > /tmp/openserctl.sqlbase
+		$(INSTALL-CFG) /tmp/openserctl.sqlbase \
+			$(modules-prefix)/$(lib-dir)/openserctl/openserctl.sqlbase
+		rm -fr /tmp/openserctl.sqlbase
+		sed -e "s#/usr/local#$(bin-prefix)#g" \
+			< scripts/openserctl.mysql > /tmp/openserctl.mysql
+		$(INSTALL-CFG) /tmp/openserctl.mysql \
+			$(modules-prefix)/$(lib-dir)/openserctl/openserctl.mysql
+		rm -fr /tmp/openserctl.mysql
+		sed -e "s#/usr/local#$(bin-prefix)#g" \
+			< scripts/openserctl.pgsql > /tmp/openserctl.pgsql
+		$(INSTALL-CFG) /tmp/openserctl.pgsql \
+			$(modules-prefix)/$(lib-dir)/openserctl/openserctl.pgsql
+		rm -fr /tmp/openserctl.pgsql
 		sed -e "s#PATH:/usr/local/sbin#PATH:$(bin-prefix)/$(bin-dir)#g" \
 			< scripts/mysqldb.sh > /tmp/$(NAME)_mysql.sh
 		$(INSTALL-TOUCH)   $(bin-prefix)/$(bin-dir)/$(NAME)_mysql.sh

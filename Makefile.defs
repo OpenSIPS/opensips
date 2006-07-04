@@ -55,7 +55,7 @@ MAIN_NAME=openser
 VERSION = 1
 PATCHLEVEL = 1
 SUBLEVEL = 0
-EXTRAVERSION = -pre3
+EXTRAVERSION = -pre4
 
 RELEASE=$(VERSION).$(PATCHLEVEL).$(SUBLEVEL)$(EXTRAVERSION)
 OS = $(shell uname -s | sed -e s/SunOS/solaris/ | tr "[A-Z]" "[a-z]")
@@ -123,6 +123,7 @@ else
 	ARCH_B=32b
 endif
 
+lib-dir = $(LIBDIR)/$(MAIN_NAME)
 modules-dir = $(LIBDIR)/$(MAIN_NAME)/modules/
 
 ifeq ($(OS), linux)
