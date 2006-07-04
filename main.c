@@ -117,6 +117,7 @@
 #include "ut.h"
 #include "serialize.h"
 #include "statistics.h"
+#include "items.h"
 #ifdef USE_TCP
 #include "poll_types.h"
 #include "tcp_init.h"
@@ -373,6 +374,7 @@ void cleanup(show_status)
 	destroy_fifo();
 	destroy_stats_collector();
 	destroy_script_cb();
+	xl_free_extra_spec();
 #ifdef PKG_MALLOC
 	if (show_status){
 		LOG(memlog, "Memory status (pkg):\n");
