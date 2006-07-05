@@ -346,8 +346,13 @@ install-cfg: $(cfg-prefix)/$(cfg-dir)
 		$(INSTALL-TOUCH) $(cfg-prefix)/$(cfg-dir)/dictionary.radius
 		$(INSTALL-CFG) etc/dictionary.radius $(cfg-prefix)/$(cfg-dir)
 		# openserctl config
-		$(INSTALL-TOUCH)   $(cfg-prefix)/$(cfg-dir)/openserctlrc
-		$(INSTALL-CFG) scripts/openserctlrc $(cfg-prefix)/$(cfg-dir)
+		$(INSTALL-TOUCH)   $(cfg-prefix)/$(cfg-dir)/openserctlrc.sample
+		$(INSTALL-CFG) scripts/openserctlrc \
+			$(cfg-prefix)/$(cfg-dir)/openserctlrc.sample
+		if [ ! -f $(cfg-prefix)/$(cfg-dir)/openserctlrc ]; then \
+			mv -f $(cfg-prefix)/$(cfg-dir)/openserctlrc.sample \
+				$(cfg-prefix)/$(cfg-dir)/openserctlrc; \
+		fi
 		#$(INSTALL-CFG) etc/$(NAME).cfg $(cfg-prefix)/$(cfg-dir)
 		if [ -z "$(TLS)" ]; then \
 			echo  "No TLS scripts installed" ; \
