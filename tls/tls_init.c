@@ -35,13 +35,14 @@
 #include <openssl/ui.h>
 #include <openssl/ssl.h>
 #include <openssl/opensslv.h>
+#include <openssl/err.h>
 
 #include <netinet/in_systm.h>
 #include <netinet/tcp.h>
 #include <netinet/ip.h>
 #include <unistd.h>
 
-#define SER_SSL_SESS_ID ((unsigned char*)"openser-tls-1.0.0")
+#define SER_SSL_SESS_ID ((unsigned char*)"openser-tls-1.1.0")
 #define SER_SSL_SESS_ID_LEN (sizeof(SER_SSL_SESS_ID)-1)
 
 
@@ -436,7 +437,7 @@ init_ssl_ctx_behavior( struct tls_domain *d ) {
 		}
 	}
 	
-	SSL_CTX_set_verify( d->ctx, verify_mode, verify_callback);	
+	SSL_CTX_set_verify( d->ctx, verify_mode, verify_callback);
 	SSL_CTX_set_verify_depth( d->ctx, VERIFY_DEPTH_S);
 
 	SSL_CTX_set_session_cache_mode( d->ctx, SSL_SESS_CACHE_SERVER );
@@ -522,10 +523,10 @@ init_tls_domains(struct tls_domain *d)
 	dom = d;
 	while (d) {
 		if (d->name.len) {
-			LOG(L_INFO, "init_tls: Processing TLS domain '%.*s'\n",
+			LOG(L_INFO, "init_tls_domains: Processing TLS domain '%.*s'\n",
 				d->name.len, ZSW(d->name.s));
 		} else {
-			LOG(L_INFO, "init_tls: Processing TLS domain [%s:%d]\n",
+			LOG(L_INFO, "init_tls_domains: Processing TLS domain [%s:%d]\n",
 				ip_addr2a(&d->addr), d->port);
 		}
 
@@ -533,7 +534,7 @@ init_tls_domains(struct tls_domain *d)
 		* set method 
 		*/
 		if (d->method == TLS_METHOD_UNSPEC) {
-			DBG("init_tls: No method for tls[%s:%d], using default\n",
+			DBG("init_tls_domains: No method for tls[%s:%d], using default\n",
 				ip_addr2a(&d->addr), d->port);
 			d->method = tls_method;
 		}
@@ -543,8 +544,8 @@ init_tls_domains(struct tls_domain *d)
 		*/
 		d->ctx = SSL_CTX_new(ssl_methods[d->method - 1]);
 		if (d->ctx == NULL) {
-			LOG(L_ERR, "init_tls: Cannot create ssl context for tls[%s:%d]\n",
-				ip_addr2a(&d->addr), d->port);
+			LOG(L_ERR, "init_tls_domains: Cannot create ssl context for "
+				"tls[%s:%d]\n", ip_addr2a(&d->addr), d->port);
 			return -1;
 		}
 		if (init_ssl_ctx_behavior( d ) < 0)
@@ -554,8 +555,8 @@ init_tls_domains(struct tls_domain *d)
 		* load certificate 
 		*/
 		if (!d->cert_file) {
-			LOG(L_NOTICE, "init_tls: No certificate for tls[%s:%d] defined, "
-				"using default '%s'\n", ip_addr2a(&d->addr), d->port,
+			LOG(L_NOTICE, "init_tls_domains: No certificate for tls[%s:%d] "
+				"defined, using default '%s'\n", ip_addr2a(&d->addr), d->port,
 				tls_cert_file);
 			d->cert_file = tls_cert_file;
 		}
@@ -566,9 +567,9 @@ init_tls_domains(struct tls_domain *d)
 		* load ca 
 		*/
 		if (!d->ca_file) {
-			LOG(L_NOTICE,
-				"init_tls: No CA for tls[%s:%d] defined, using default '%s'\n",
-				ip_addr2a(&d->addr), d->port, tls_ca_file);
+			LOG(L_NOTICE, "init_tls_domains: No CA for tls[%s:%d] defined, "
+				"using default '%s'\n", ip_addr2a(&d->addr), d->port,
+				tls_ca_file);
 			d->ca_file = tls_ca_file;
 		}
 		if (d->ca_file && load_ca(d->ctx, d->ca_file) < 0)
@@ -582,9 +583,9 @@ init_tls_domains(struct tls_domain *d)
 	d = dom;
 	while (d) {
 		if (!d->pkey_file) {
-			LOG(L_NOTICE,
-				"init_tls: No private key for tls[%s:%d] defined, using default '%s'\n",
-				ip_addr2a(&d->addr), d->port, tls_pkey_file);
+			LOG(L_NOTICE, "init_tls_domain: No private key for tls[%s:%d] "
+				"defined, using default '%s'\n", ip_addr2a(&d->addr),
+				d->port, tls_pkey_file);
 			d->pkey_file = tls_pkey_file;
 		}
 		if (load_private_key(d->ctx, d->pkey_file) < 0)
@@ -622,6 +623,9 @@ destroy_tls(void)
 		SSL_CTX_free(tls_default_client_domain->ctx);
 	}
 	tls_free_domains();
+
+	/* library destroy */
+	ERR_free_strings();
 }
 
 /*
