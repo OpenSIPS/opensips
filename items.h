@@ -125,6 +125,7 @@ typedef struct _xl_elem
 int xl_elem_free_all(xl_elem_p list);
 char* xl_parse_spec(char *s, xl_spec_p sp, int flags);
 int xl_parse_format(char *s, xl_elem_p *el, int flags);
+int xl_get_spec_index(xl_spec_p sp, int *idx);
 int xl_get_spec_value(struct sip_msg* msg, xl_spec_p sp, xl_value_t *value,
 		int flags);
 int xl_get_spec_name(struct sip_msg* msg, xl_spec_p sp, xl_value_t *value,

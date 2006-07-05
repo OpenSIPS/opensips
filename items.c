@@ -2344,14 +2344,32 @@ int xl_get_avp_name(struct sip_msg* msg, xl_spec_p sp, int_str *avp_name,
 	return 0;
 }
 
+int xl_get_spec_index(xl_spec_p sp, int *idx)
+{
+	if(sp==NULL || idx==NULL)
+		return -1;
+
+	*idx = 0;
+	if(sp->flags&XL_DPARAM) {
+		*idx = sp->dp.ind;
+	} else {
+		*idx = sp->p.ind;
+	}
+	return 0;
+}
+
 int xl_get_spec_value(struct sip_msg* msg, xl_spec_p sp, xl_value_t *value,
 		int flags)
 {
 	xl_param_t tp;
 	xl_value_t tv;
-	if(msg==NULL || sp==NULL || sp->itf==NULL || value==NULL)
+	if(msg==NULL || sp==NULL || value==NULL)
 		return -1;
+	
 	memset(value, 0, sizeof(xl_value_t));
+	
+	if(sp->type==XL_NONE)
+		return -1;
 	
 	if(sp->type==XL_ITEM_EXTRA && sp->itf==NULL)
 	{
@@ -2361,7 +2379,13 @@ int xl_get_spec_value(struct sip_msg* msg, xl_spec_p sp, xl_value_t *value,
 			return -1;
 		}
 	}
-	
+
+	if(sp->itf==NULL)
+	{
+		LOG(L_ERR, "xl_get_spec_value: error - null sp->itf\n");
+		return -1;
+	}
+
 	if(sp->flags&XL_DPARAM) {
 		if(sp->dp.itf==NULL)
 		{
@@ -2459,14 +2483,18 @@ int xl_printf(struct sip_msg* msg, xl_elem_p list, char *buf, int *len)
 			}
 		}
 		/* put the value of the specifier */
-		if(xl_get_spec_value(msg, &(it->spec), &tok, 0)==0)
+		if(it->spec.type!=XL_NONE && xl_get_spec_value(msg, &(it->spec),
+					&tok, 0)==0)
 		{
 			if(n+tok.rs.len < *len)
 			{
-				memcpy(cur, tok.rs.s, tok.rs.len);
-				n += tok.rs.len;
-				cur += tok.rs.len;
-				
+				if(tok.rs.len>0)
+				{
+					memcpy(cur, tok.rs.s, tok.rs.len);
+					n += tok.rs.len;
+					cur += tok.rs.len;
+				}
+
 				/* check for color entries to reset later */
 				if (*it->spec.itf == xl_get_color)
 					h = 1;
