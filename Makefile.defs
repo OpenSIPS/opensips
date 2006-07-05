@@ -409,7 +409,7 @@ ifeq ($(CC_NAME), gcc)
 						else echo "as" ; \
 						fi\
 						fi)
-							
+
 		LDTYPE=$(shell if $(LDPATH) -V 1>/dev/null  2>/dev/null; then \
 							if $(LDPATH) -V 2>&1|grep GNU >/dev/null; \
 							then echo gnu; \
@@ -490,8 +490,10 @@ ifeq ($(use_fast_lock), yes)
 	found_lock_method=yes
 endif
 
-CFLAGS+=
+CFLAGS=$(shell echo "$${CFLAGS}")
 LDFLAGS+=
+
+ifeq (,$(CFLAGS))
 # setting CFLAGS
 ifeq ($(mode), release)
 	#if i386
@@ -526,7 +528,7 @@ else
 ifeq			($(CC_SHORTVER), 2.9x) #older gcc version (2.9[1-5])
 $(warning 			Old gcc detected ($(CC_SHORTVER)), use  gcc >= 3.1 \
 					for better results)
-					
+
 					CFLAGS+=-m486 \
 							-malign-loops=4
 else
@@ -586,7 +588,7 @@ else
 ifeq			($(CC_SHORTVER), 2.9x) #older gcc version (2.9[1-5])
 $(warning 			Old gcc detected ($(CC_SHORTVER)), use  gcc >= 3.1 \
 					for better results)
-					
+
 					CFLAGS+=-m486 \
 							-malign-loops=4
 else
@@ -665,12 +667,12 @@ else			#CC_SHORTVER, 2.9x
 				#really old version
 $(warning			You are using an old and unsupported gcc \
 					 version ($(CC_SHORTVER)), compile at your own risk!)
-					
+
 					CFLAGS+= -mv8 
 ifeq					($(ASTYPE), solaris)
 							CFLAGS+= -Wa,-xarch=v8plus
 endif					
-	
+
 endif			#CC_SHORTVER, 2.9x
 endif			#CC_SHORTVER, 3.0
 endif			#CC_SHORTVER, 3.4
@@ -754,18 +756,18 @@ else
 ifeq			($(CC_SHORTVER), 2.9x) #older gcc version (2.9[1-5])
 $(warning 			Old gcc detected ($(CC_SHORTVER)), use  gcc 3.0.x \
 					for better results)
-					
+
 					CFLAGS+=-mcpu=r3000
 else
 				#really old version
 $(warning			You are using an old and unsupported gcc \
 					 version ($(CC_SHORTVER)), compile at your own risk!)
-	
+
 endif			# CC_SHORTVER, 2.9x
 endif			# CC_SHORTVER, 3.0
 endif			# CC_SHORTVER, 3.4
 endif			# CC_SHORTVER, 4.x
-	
+
 else		# CC_NAME, gcc
 				#other compilers
 $(error 			Unsupported compiler ($(CC):$(CC_NAME)), try gcc)
@@ -799,18 +801,17 @@ else
 				#really old version
 $(warning			You are using an old and unsupported gcc \
 					 version ($(CC_SHORTVER)), compile at your own risk!)
-	
+
 endif			# CC_SHORTVER, 2.9x
 endif			# CC_SHORTVER, 3.0
 endif			# CC_SHORTVER, 3.4
 endif			# CC_SHORTVER, 4.x
-	
+
 else		# CC_NAME, gcc
 				#other compilers
 $(error 			Unsupported compiler ($(CC):$(CC_NAME)), try gcc)
 endif		#CC_NAME, gcc
 endif	#ARCH, mips2
-
 
 #if  alpha
 ifeq	($(ARCH), alpha)
@@ -838,12 +839,12 @@ else
 				#really old version
 $(warning			You are using an old and unsupported gcc \
 					 version ($(CC_SHORTVER)), compile at your own risk!)
-	
+
 endif			# CC_SHORTVER, 2.9x
 endif			# CC_SHORTVER, 3.0
 endif			# CC_SHORTVER, 3.4
 endif			# CC_SHORTVER, 4.x
-	
+
 else		# CC_NAME, gcc
 				#other compilers
 $(error 			Unsupported compiler ($(CC):$(CC_NAME)), try gcc)
@@ -878,12 +879,12 @@ else
 				#really old version
 $(warning			You are using an old and unsupported gcc \
 					 version ($(CC_SHORTVER)), compile at your own risk!)
-	
+
 endif			# CC_SHORTVER, 2.9x
 endif			# CC_SHORTVER, 3.0
 endif			# CC_SHORTVER, 3.4
 endif			# CC_SHORTVER, 4.x
-	
+
 else		# CC_NAME, gcc
 				#other compilers
 $(error 			Unsupported compiler ($(CC):$(CC_NAME)), try gcc)
@@ -929,6 +930,8 @@ $(error 			Unsupported compiler ($(CC):$(CC_NAME)), try gcc)
 endif		#CC_NAME, gcc
 endif	#ARCH, ppc 
 
+endif   # CFLAGS not set
+
 CFLAGS+= $(CC_EXTRA_OPTS)
 
 
@@ -958,7 +961,7 @@ endif
 	# -andrei
 else	#mode,release
 ifeq	($(CC_NAME), gcc)
-		CFLAGS+=-g -Wcast-align $(PROFILE)
+		CFLAGS += -g -Wcast-align $(PROFILE)
 ifeq		($(ARCH), sparc64)
 			CFLAGS+= -mcpu=ultrasparc 
 endif
@@ -1132,13 +1135,13 @@ ifeq	($(ARCH), sparc64)
 		OPENBSD_IS_AOUT:=no
 endif
 endif
-	
+
 ifeq ($(OPENBSD_IS_AOUT), yes)
 		DEFS+=-DDLSYM_PREFIX='"_"'
 		LDFLAGS=        # openbsd ld doesn't like -O2 or -E
 endif
-endif   # if opensd
-	
+endif   # if openbsd
+
 ifeq ($(OS), netbsd)
 	DEFS+=-DHAVE_SOCKADDR_SA_LEN -DHAVE_GETHOSTBYNAME2 \
 		-DHAVE_MSGHDR_MSG_CONTROL -DHAVE_CONNECT_ECONNRESET_BUG -DHAVE_TIMEGM
