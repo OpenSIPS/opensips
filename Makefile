@@ -504,6 +504,12 @@ install-man: $(man-prefix)/$(man-dir)/man8 $(man-prefix)/$(man-dir)/man5
 			-e "s#/usr/share/doc/$(NAME)/#$(doc-target)#g" \
 			< $(NAME).cfg.5 >  $(man-prefix)/$(man-dir)/man5/$(NAME).cfg.5
 		chmod 644  $(man-prefix)/$(man-dir)/man5/$(NAME).cfg.5
+		sed -e "s#/etc/$(NAME)/$(NAME)\.cfg#$(cfg-target)$(NAME).cfg#g" \
+			-e "s#/usr/sbin/#$(bin-target)#g" \
+			-e "s#/usr/lib/$(NAME)/modules/#$(modules-target)#g" \
+			-e "s#/usr/share/doc/$(NAME)/#$(doc-target)#g" \
+			< scripts/openserctl.8 > $(man-prefix)/$(man-dir)/man8/openserctl.8
+		chmod 644  $(man-prefix)/$(man-dir)/man8/$(NAME).8
 
 install-modules-docbook: $(doc-prefix)/$(doc-dir)
 	-@for r in $(modules_basenames) "" ; do \
