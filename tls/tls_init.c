@@ -626,6 +626,9 @@ destroy_tls(void)
 
 	/* library destroy */
 	ERR_free_strings();
+	/*SSL_free_comp_methods(); - this function is not on std. openssl*/
+	EVP_cleanup();
+	CRYPTO_cleanup_all_ex_data();
 }
 
 /*
