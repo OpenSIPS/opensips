@@ -1,5 +1,1092 @@
 # $Id$
 
+===================== 2006-07-10 OpenSER v1.1.0 released ======================
+
+===================== Changes since release 1.0.0 ============================
+
+* 2006-05-31 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- core:  bug fixed in choosing the default port: if proto is TLS and no port
+  or SRV is available, use 5061 as default port for outgoing connections.
+- gflags: flag range checked for script functions
+- gflags: proper cleanup at module destroy
+- gflags: got rid of memory allocation in fixup function
+- gflags: optimized fixup function -> compute directly the bitmap
+- gflags: allowed script functions to be used from BRANCH_ROUTE (reported by
+  Juha Heinanen)
+
+* 2006-05-30 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- dbtext: added support DB_BITMAP in update() - reported by Ovidiu Sas
+- core: fixed linking error on solaris for utils' tools due to -lfl (reported
+  by Ryan matty91@gmail.com)
+
+* 2006-05-30 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- core: even if it has no script parameters, a function may export a fixup
+  function. If, param  no. = 0, the fixup will be called with param index 0.
+  If function has params, nothing is changed. The possibility to have a fixup
+  function even if no param is exported is useful when checking global settings
+  that may affect the behaviour of the function.
+- uri_db: "db_url" module parameter may be set to empty string in orer to
+  disable DB support in the module - this is needed if you want to use
+  check_to() or check_from() to check the user against credentials in a non DB
+  environment.
+- tm: fixed branch picking algorithm - if cancelled, but not 487 replied
+  received, fallback and use classical algorithm.
+- tm: fixed bug in CANCEL retransmission - an implementation more closer to the
+  hop by hop CANCEL processing concept
+- core: - fixed bug in parsing display name in format:
+  "From: token1 token2<uri>"
+
+* 2006-05-29 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- dbtext: dbt_row_set_val() accepts DB_BITMAP (reported by Ovidiu Sas)
+
+* 2006-05-29 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- avpops: memory leak fixed in avp_raw_query()
+  Credits go to John Riordan <john@junctionnetworks.com>
+- core: FROM / TO header paramter parsing fixed:
+    1) TAG parameter must have value, but any other parameters are accepted
+        without value
+    2) removed the NO_PINGTEL_TAG_HACK (long time ago, pingtel phones were
+        sending empty tag param in TO) - it's conflicting the RFC 3261;
+  Reported by Ovidiu Sas <osas@somanetworks.com>.
+- permissions: fixed crash when permission module was shutdown after an
+  incomplete startup. Reported by  Elton Machado (lowgitek).
+- tm: bug fixed in building ACKs for negative replies to local INVITEs. RURI
+  must be the same as in INVITE and Route hdr have no send to be added.
+  Thanks to Elias Baixas <elias.baixas@voztele.com> for troubleshooting the
+  problem.
+
+* 2006-05-26 Juha Heinanen <jh@tutpro.com>
+- lcr: if R-URI userpart becomes empty, @ sign is not included in R-URI.
+
+* 2006-05-25 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- postgres: bug fixed - postgres may return a row without a column value, so
+  we need to double check it. Credits go to
+  Arve Rasmussen <Arve.Rasmussen@iplink.no>
+- auth_db: module accepts DB_STR type for credentials (dbtext beckend returns
+  only DB_STR and not DB_STRING).
+  Reported by Ovidiu Sas <osas@somanetworks.com>.
+
+* 2006-05-24 Andreas Granig <andreas.granig@inode.info>
+- core: heck for null-pointer before accessing Supported-flags.
+
+* 2006-05-24 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- unixodbc: unixodbc patch wasteful memory fixes and reconnect, patch by
+  Sumeet Gupta <skg1010@hotmail.com>
+- uac_redirect: bug fixed - q value is also pushed into branches in order to 
+  allow serial forking. Based on an original patch from
+  Michael Samuel <michael.samuel@ipsystems.com.au>
+
+* 2006-05-22 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- core: forward and send functions merged by including the protocol, host and
+  port into a single parameter like [proto:]host[:port]. Aligned to t_relay()
+  and t_forward() format and NAPTR lookup enabled also.
+- core: applied patch from Klaus Darilion :  provides TLS client domains
+  (name/socket based) and more script config capabilities
+- tlsops: new module for TLS operations, patch by Klaus Darilion
+
+* 2006-05-22 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- acc: null pseudo-variable values are stoared as "n/a" to keep consistency
+  with acc format (reported by Juha Heinanen)
+
+* 2006-05-19 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- avpops: branch can be used as new destinaton for avp_pushto().
+    Ex: avp_pushto("$br","$avp(i:30)");  - it will push the avp directly as a
+        new branch without affecting the RURI.
+- acc: bugs fixed:
+  ~ the "missed call" report will display as outgoing uri exactly the RURI used
+    for that branch
+  ~ the accounting report will display as outgoing uri the RURI of the winning
+    branch
+  ~ proper internally handling (set/reset) of the "missed call" flag
+- acc: behaviour fix:
+  ~ the "missed call" flag has effect only on the next serial fork - once
+    triggered to report a missed call (a serial fork step ended), the flag is
+    automatically reset by module. To catch the potential "missed call" reports
+    due next serial forks, you need to re-arm the flag from failure route.
+    This behaviour gives full control over what branches should be or not
+    accounted as "missed calls".
+- tm: branch selection algorithm centralized in a single place - more coherent
+    and easier to maintain.
+  ~ the selected branch in stored in a static variable to avoid multiple
+    computation for same transaction (so far, each t_check_status() call was
+    triggering computation of the selected branch)
+  ~ TM API exports a new function for making public the selected branch (how
+    the winning branch is selected must be transparent for the other modules)
+  ~ fixed the branch selection algorithm - if the transaction was cancelled, the
+    "487 Request cancelled" reply will have priority and it will be sent to UAC.
+- usrloc: module is able to detect retransmissions based on Callid and Cseq. The
+  retransmission detecton is controled via the new "cseq_delay" module
+  parameter.
+  REGISTER retransmissions (inside the cseq_delay interval) will not generate
+  error, but they will be accepted and properly replied without any update on
+  the location status.
+  This solves the problem of retransmissions without having a statefull
+  processing on requests.
+- core:  new function added : int branch_uri2dset( str *new_uri ) ->
+  moves the uri to destination for all branches and all uris are set to
+  given uri; to be used to implement replication to multiple destinations
+- tm: t_replicate() takes as parameter a SIP URI instead of a destination (in
+  order to align the format as for append_branch() ).
+- tm: t_replicate() uses the set branches to perform parallel replication to
+  multiple destinations
+
+* 2006-05-15 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- nathelper: applied patch for fixing the multiple stream handling in
+  sequential requests. Patch by Laurent Schweizer <laurent.schweizer@gmail.com>
+
+* 2006-05-13 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- rr: bug fixed in routing after a strict router
+  Reported by Walter Schober <walter.schober@neotel.at>
+
+* 2006-05-07 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- core: added support to manage AVP flags from configuration script
+  ~ flags are 8bit long and have to specified after the AVP name type and before the semicolon, e.g., s3:rpid - string-named AVP with flags 1 and 2 set
+  ~ avp naming is now $avp(name_type[flags]:name_id) - name_type = s | i;
+    script_flags = 1..255
+  ~ a reference to an AVP via alias is now: $avp(alias)
+  ~ updated AVP API to allow flags usage
+
+* 2006-05-05 Dan Pascu <dan@ag-projects.com>
+- auth_db: Properly handle integer columns in the subscriber table when
+  generating the AVPs specified by the auth_db/load_credentials module
+  parameter. This fixes crahses caused by invalid memory access when a
+  non-string column was specified to be loaded in load_credentials.
+   With this patch, string and integer table columns are properly handled and
+  will create an AVP with a string respectively an integer value depending
+  on the type of the column in the subscriber table that is loaded.
+  Other column types are currently not handled and will generate an error
+  message in the logs if used, however if need arises they can be handled by
+  converting them to a string and creating an AVP with a string value.
+- core: Added missing definition for pkg_realloc if PKG_MALLOC was not defined
+  and the standard libc allocation functions were used
+
+* 2006-05-04 Klaus Darilion <klaus.mailinglists@pernau.at>
+- dialog: added newly introduced parameter when registering pseudo variables
+
+* 2006-05-03 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- core: old statistics incrementation moved after the length of message is
+  computed to access the rigth value (reported by Dan Pascu)
+
+* 2006-05-02 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- core: allow to set parameter for callback functions of extra pseudo-variables
+
+* 2006-04-28 Juha Heinanen <jh@tutpro.com>
+- lcr: applied patch by Andreas Granig that adds optional group id parameter
+  to load_gws(), from_gw(), and to_gw() functions.
+
+* 2006-04-26 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- tm: use new_uri instead of original uri in t_write().
+  Credits go to Juha Heinanen <jh@tutpro.com>
+
+* 2006-04-21 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- dialog: more dialog callbacks added: DLGCB_EARLY and DLGCB_RESPONSE_FWDED
+  Patch provided by Ron Winacott <ronw@somanetworks.com>
+
+* 2006-04-19 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- dialog: callback types renamed to avoid overlapping with some TM defines.
+  Reporded by Ron Winacott <ronw@somanetworks.com>
+
+* 2006-04-14 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- dialog: new module for dialog support
+- unixodbc: leaking memory in the covert rows function; removes some deprecated
+  ODBC functions; invalid cursort state on error; error reporting from ODBC;
+  patch by Sumeet Gupta <skg1010@hotmail.com>
+
+* 2006-04-13 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- core: fixed bug when using exit/return within a switch statement
+- core: support for setting custom lifetime (expire time) for the TCP
+  connections
+- registrar: module may set for TCP connection a custom lifetime for keeping
+  it open as long as the registered contact is valid.
+
+* 2006-04-13 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- avpops: fixed crash when using global flags in avp_pushto() (reported by
+Christian Schlatter)
+
+* 2006-04-11 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- avpops: fixed avp_db_load() when loading all avps of a type (reported by
+  Andreas Granig)
+
+* 2006-04-10 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- usrloc: bug fixed in print_contacts() - sock may be null
+- uac: forbid from changing in auto mode only for URI, but allow it for display
+
+* 2006-04-07 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- scripts: replaced gen_ha1 with md5sum
+
+* 2006-04-07 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- siptrace: siptrace
+  ~ allow to intercept the SIP messages processed by the sip server and store
+  them in a database
+  ~ messages are stored along with destination IP and changes made by proxy to
+  the original messages
+  ~ ability to send a duplicate of the message to a configurable address
+
+* 2006-04-06 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- cpl-c: fixed bug in processing DROP / EXIT in branch route (due nested
+  execution). Reported by Tavis P <tavis.lists@galaxytelecom.net>
+
+* 2006-03-29 Juha Heinanen <jh@tutpro.com>
+- core: check_dig_cred() now checks that if digest username has domain, it
+  must match realm.
+
+* 2006-03-29 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- tm: new TM callbacks added:
+          TMCB_TRANS_DELETED - called when the transaction is deleted
+          TMCB_REQUEST_BUILT - called just before sending out a request
+- tm: callback can get more paramters via extra params
+- tm: 'char * buffer' and 'int len' fields in 'struct retr_buf' merged into a
+  'str' for better manipulation
+- sl: callbacks added - the only event is sending a stateless reply
+- nathelper: bug fixed in processing the newly added "c" flag in
+  force_rtp_proxy(). Reported by Bayan Towfiq <bayan@towfiq.com>
+
+* 2006-03-28 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- acc: bug fixed in acc with serial forking: o-uri contains the uri of the
+  winning branch and not the the first one.
+- unixodbc: fixed bug in function db_update() : the query string was null
+  terminated only if exist 'where' parameters.
+- unixodbc: appled patch to support ODBC reconnect when connection not open or
+  communication link failure - by Alex Gradinar <Alex.Gradinar@cartel.md>
+- tm: applied patch provided by Juha Heinanen <jh@tutpro.com> : port from
+  SER of "pass_provisional_replies" TM options (pass back through unixsock
+  the provisional replies and not only the final one).
+  This was required in order to maintain compatbility with latest SEMS
+  version.
+- nathelper: added support for changing session-level SDP connection (c=) IP
+  when media-description also includes connection information.
+  This can be enabled by setting the "c" flag to force_rtp_proxy()
+  Based on a patch sent by Bayan Towfiq <bayan@towfiq.com>
+
+* 2006-03-24 Dan Pascu <dan@ag-projects.com>
+- mediaproxy: do not print error to syslog is SDP body is missing. Return a
+  different negative code instead (-2) and let the caller handle the error
+  (there are cases where a missing SDP body is not an error and can be ignored).
+  This also helps by avoiding the need to call a has_body() function prior
+  to calling use_media_proxy(). Instead call use_media_proxy() directly and
+  it will tell you if it can't find a body, but without giving an error to
+  syslog
+
+* 2006-03-20 Juha Heinanen <jh@tutpro.com>
+- lcr: stripping was not done when next_gw() was called in  FAILURE_ROUTE.
+
+* 2006-03-19 Juha Heinanen <jh@tutpro.com>
+- permissions: if a trusted peer has a non-NULL tag field and if peer_tag_avp
+  module parameter is defined, tag value of matching is added to AVP specified
+  by peer_tag_avp as side effect of allow_trusted() call.
+
+* 2006-03-17 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- textops: applied patch (modified) from Marc Haisenko <haisenko@comdasys.com>:
+  provides new function has_body([mime])
+
+* 2006-03-15 Jesus Rodriguez <jesusr@voztele.com>
+- packaging: fix undefined symbols problems
+- the HEAD branch of the CVS will keep the FreeBSD port files to build the
+  last stable version. A tarball (and its checksum) is needed to build the
+  port and this is not (easily) possible with current.
+
+* 2006-03-15 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- core: xl_printf_s() has now support for nested calls - fixes in the simplest
+  way the bug in uac_replace_from() when both parameters contains
+  pseudo-variables. Reported by Urtho <junk@urtho.net>.
+- core: bug fixed in extracting proper Route parameters after a strict router.
+  Reported by Dan Pascu <dan@ag-projects.com>
+- nathelper: bogus error message removed - if the contact header does not
+  contain any URI, do not report it as a contact-body parse error - it may be
+  a (*) body.
+
+* 2006-03-15 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- core: added PUBLISH in the list of known methods
+
+* 2006-03-14 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- uac: uac_auth() bug fixed in parsing the auth challenge - not all values are
+  expected to be quoted.
+- usrloc: get_contacts fifo and unixsock functions retunrn more additional info
+  related to the contact:
+          expires;flags;socket;methods;received?;user_agent?;path?
+  values marked with ? may be missing if empty.
+- statistics: new module to provide statistic variables support directly into
+  the script
+
+* 2006-03-13  Di-Shi Sun <di-shi@transnexus.com>
+- osp: fixed several typos in usage.c
+
+* 2006-03-13 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- osp: module aligned to use the RR functionality via the RR API to avoid
+  mismatches between function prototypes.
+- core: more hash functionality:
+  1) hash support in core
+      - new_hash1() and new_hash2() merged into core_hash()
+      - added core_case_hash() for case insensitive hashes
+      - all TM related definitions moved into TM config file
+      - if hash size param is 0, the functions will return the hash id
+        instead of hash entry.
+  2) domain module
+      - use the case insensitive hash function
+  3) pdt module
+      - use the case insensitive hash function
+  4) permission module
+      - just updated according to coe hash changes
+  5) TM module
+      - updated according to coe hash changes
+      - TM related stuff moved localy from core hash
+- registrar: fixed memory bug - build_path_vector() does not allocated memory
+  for the path array (returns a static buffer), so no free is needed anymore.
+  Reported by Helge Waastad <helge@smartnet.no>
+- registrar: build_path_vector() use the sibling link between the headers in
+  order to have a faster access to all PATH headers.
+
+* 2006-03-09 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- tm: bug fixed in processing the failure handlers (callbacks and route); error
+  cases were not properly handled.
+  Reported by Matt Schulte <mschulte@netlogic.net>
+
+* 2006-03-08 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- nathelper: several upgrades to existing functions:
+   - fix_nated_sdp() may take one more param to force a specific IP instead of
+        the signalling IP
+   - force_rtp_proxy() accepts a new flag 's' to swap creation/confirmation
+        between requests/replies (this is needed to be able to cope with SDPs
+        advertised via 200OK / ACK)
+   - add_rcv_param() may take as parameter a flag telling if the parameter
+     should go to the contact URI or contact header; make sense if you forward
+     REGISTER requests and need the registrar to save the parameter as part of
+     URI.
+- usrloc: bug fixed when getting all contacts - most probably the bug was
+  inserted when the DB_ONLY mode was added
+
+* 2006-03-07 Dmitry Isakbayev <isakdim@gmail.com>
+ - osp: update module for:
+  1. int_str casing issue, in destination.c and usage.c
+  2. inculde data_lump.h in sipheader.c
+  3. add_rr_param issuer, in osp_mod.h, osp_mod.c and usage.c.
+  4. some compiling warnings.
+
+* 2006-03-07 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- core: fixed equal operator in comparison (reported by D. Hsueh)
+
+* 2006-03-07 Andreas Granig <andreas.granig@inode.info>
+- registrar: fixed lazy-mode-handling if no Supported HF is present.
+
+* 2006-03-07 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- acc: etc/dictionary.radius contains only the OpenSER proprietary attributes
+  and values; All standard (IANA registered) attributes are defined in the
+  default dictionary of the radiusclient-ng library
+- acc: values for Sip-Method attribute set as they are used by OpenSER. NOTE
+  they overwrite the default values as defined by radiusclient-ng library.
+
+* 2006-03-03 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- osp: removed dependency of textops module - append_hf() replaced with a local
+  function
+
+* 2006-03-03 Andreas Granig <andreas.granig@inode.info>
+- path: new module for intermediate proxies to add Path-HFs and route
+  requests according to the received-parameter of Route-HF URIs.
+
+* 2006-03-03 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- registrar: support in registrar for loadbalancing using Path-HF with
+  NAT-Support applied, patch by Andreas Granig <andreas.granig@inode.info>
+- uac: default value for "from_restore_mode" switch to auto
+- uac: new module parameter "from_passwd" - used to encrypt the RR parameter
+  which contains the original FROM URI
+- uac: uac_replace_from() adds the display name if not present (so far it only
+  replaced it); uri is enclosed between brackets if not.
+  Actually, now you can set a display name if none was present.
+
+* 2006-03-02 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- $si and $sp were mistakenly changed in $Si and $Sp by previous commit
+  - reverted now (reported by Thomas Gelf)
+
+* 2006-03-02 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- uac: when performing UAC authentication, look in predefined AVPs for
+  credentials before using the static set credentials (via modparam)
+- uac: new module parameters for defining the AVPs to contain realm, username
+  and password for authentication.
+- core: new header chaining based on type - all headers of same type are linked
+  together via sibling link (Ex: msg->allow points to first Allow hdr;
+  msg->allow->sibling to the second Allow hdr, and so on).
+- core: parser for Allow ans Supported headers updated to parse and merge the
+  values from all headers. This fixes problems in REGISTER module when PATH or
+  method filtering supports are used - originally only the first
+  allow/supported hdr was processed, the rest of them being ignore. This was
+  problem maker if a client was registering with multiple Allow hdr, for
+  example - reported by Daniel Hsueh <dhsueh@somanetworks.com>.
+- core: several changes into routing/scripting internal tree:
+  1) allow module to export same C function with same name, but with different
+     parameter number - a lot of wrapper functions will become obsolete
+  
+  2) keep inside the tree nodes the corresponding config line to be able to
+     give a more detailed report if fixup functions fails (like line number)
+  
+  3) some cleanup to simplify the association between the tree actions and
+     exported functions
+
+* 2006-03-01 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- core: XL_RPID, XL_DIVERSION types renamed to XL_RPID_URI, XL_DIVERSION_URI
+- core: allow long names for pseudo-variables in format $(name)
+- core: possibility to register pseudo-variables from modules
+- tm:  module exports $T_branch_idx pseudo-variable refering to the index of
+  the branch for which the branch_route[] is executed
+- core: avp names must use i: or s: in front of IDs to avoid confusions
+- core: avp alias is specified without $
+
+* 2006-03-01 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- acc: Radius acc requests include an event time stamp (Event-Timestamp Radius
+  AVP - see RFC2869). The Radius server timpstamp is not reliable since it
+  contains also the delays due possible RADIUS retransmissions.
+- unixodbc: several problems fixed:
+  1) memory allocation size problem when converting the returned rows.
+  2) use a define for the size of the static strings - avoid mem. overrides
+     if changing the size
+  3) more general connection cleanup (properly supported by a larger number
+     of drivers)  before submitting a new query
+- core: returne codes alligned (for widly used core functions) in order to
+  avoid confusions
+          == 0 - success
+           < 0 - error
+- cpl-c: applied patch from John Riordan <john@junctionnetworks.com> : provides
+  NAT traversal support (via received) for the lookup CPL node.
+- cpl-c: added per branch nat flags support for lookup CPL node
+- auth: realm string in www/proxy challenge/authorize support pseudo variables.
+  Allows dynamic realm definition in multi domain env.
+
+* 2006-02-28 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- core: applied patch for Session-Timer header parsing support; provided by
+  Daniel Hsueh <dhsueh@somanetworks.com>
+
+* 2006-02-24 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- core: fixed parsing bug when spaces are present in non-quoted display name.
+  reported by Raymond Chen <rchen@broadz.com>
+- usrloc: fixed bug when insertion contacts in a new built AOR record - use
+    get_ucontact() to detect contact duplicates.
+    An initial REGISTER may contain several contacts and some of them may be
+    identical. IF DB is used, this will lead to primary key (username, domain,
+    contact URI) violation due double insert. Also un-necessary parallel fork
+    to same destination is avoided.
+  
+    This may happen with bogus clients (I see no reason why a UAC may duplicate
+    a contact in same REGISTER), so the fix is protection mechanism for the
+    proxy.
+
+* 2006-02-23 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- usrloc: new DB mode - DB-Only - no memory cache is kept, all operation being
+    directly done into DB.
+    Allows DB sharing between multiple proxies without the need of additional
+    replication mechanism.
+    Drawbacks:
+          - some performance penalties due intensive DB usage
+          - location watcher disabled (cannot be bind to a record into mem)
+                          => PA cannot be used
+          - statistics do not work since events cannot be properly been traced
+            without a mem cache
+
+* 2006-02-22 Klaus Darilion <klaus.mailinglists@pernau.at>
+- core: introduction of the parameters tls_verify_server and tls_verify_client:
+  allows to have different policies for incoming and outgoing TLS connections
+
+* 2006-02-21 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- textops: new set of function to work on the body of the message:
+          - search_body()
+          - search_append_body()
+          - replace_body()
+          - replace_body_all()
+          - subst_body()
+
+* 2006-02-17 Juha Heinanen <jh@tutpro.com>
+- permissions: allow_trusted() from_pattern can now be empty (NULL value in DB).
+  Empty from_pattern matches any From URI.
+
+* 2006-02-17 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- core: applied patch from Juha Heinanen <jh@tutpro.com> : new pseudo-variables
+  are available: $re -Remote-Party-ID header URI; $di -Diversion header URI
+
+* 2006-02-16 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- core: fixed several bugs strictly related to libssl version 0.9.8:
+  1) bad record mac because of wrong SSL_OP_TLS_BLOCK_PADDING_BUG handling
+     (see http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=338006 for more
+     info ; original bug registration to libssl at
+     http://www.aet.tu-cottbus.de/rt2/Ticket/Display.html?id=1204 - note, it
+     requires subscription)
+  2) zlib compression does work correctly anymore in multi-process env. due
+     problem with mem. allocation functions. Fix: disable compression.
+     (see http://www.aet.tu-cottbus.de/rt2/NoAuth/Buglist.html - again,
+     subscription is required)
+- core: bug fixed : return code of tcp_send() set to negative value if write()
+    failed; this was preventing the proxy to generate a negative reply in case
+    of connection error via TCP (TLS was affected too).
+    Reported by Klaus Darilion <klaus.mailinglists@pernau.at>
+
+* 2006-02-15 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- core: function to get avp name from pseudo-variable specifier
+- avpops: new function avp_db_query() to execute raw query and store the result
+  in avps, e.g,
+  avp_db_query("select password from subscriber where username='$fU'",
+    "$avp(s:password)");
+
+* 2006-02-15 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- core: new pseudo-variable available: $fs - returns the forced socket (if any)
+  for current request; format is "proto:ip:port"
+
+* 2006-02-14 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- rr: obsolete function strict_route() removed
+- rr: add_rr_param may be called from BRANCH and FAILURE route
+- rr: record_route() may take a parameter containing RR params
+- rr: "lr" param is added as first param  to speed up the loose_routing
+  processing
+- rr: record_route / add_rr_param / record_route_preset accept pseudo-variables
+  in params
+- rr: extra checking to void double record routing via record_route and
+  record_route_preset
+- rr: callbacks are executed after all routing changes were done - this allows
+  the usage of callback that may change the routing info without overlapping
+  with the RR processing.
+- core: applied patch from Daniel Hsueh <dhsueh@somanetworks.com> for
+  SUPPORTED hdr: 1) corrects "rel100" to "100rel" (according to RFC 3262);
+  2) supports "timer" according to RFC 4028
+- core: DNS_IP_HACK define removed -> it will be always be used (great speed up)
+- core: some improvements in DNS lookups by avoiding re-testing several times
+  if IP or not
+
+* 2006-02-14 Dan Pascu <dan@ag-projects.com>
+- fixed parse_contact return test
+- fixed test for return of parse_uri
+- fixed test for parse_headers
+
+* 2006-02-13 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- avpops: added db_url parameter same as 'avp_url' to have same name across
+  modules
+- avpops: fixed do {} while(); block in avp_pushto() - reported by Helge Wastad
+
+* 2006-02-10 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- tm: bug fixed - transactions that gave error during relay stick into memory
+  for ever. This memory leak occures only when using directly from script
+  the "t_forward_nonack" function.
+
+* 2006-02-10 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- core: int_str structure changed from (int, str*) to (int, str)
+- avpops: avpops uses the same format for avp names as pseudo-variables. All
+  parameters being an avp name must now be specified as $avp(name) and aliase
+  as $avp($alias)
+- core: support for dynamic avp/hdr names
+    ~ $avp($pvar) refers to the avp having the name the value of $pvar
+    ~ $hdr($pvar) refers to the header having the name the value of $pvar
+- avpops: avp_pushto("header", "value") - is obsoleted, same functionality
+  being offered by textops module via append_hf() and append_to_reply()
+- avpops: all avpops parameters expecting a value can be now pseudo-variables
+  (e.g., avp_check("$fu", "eq/$tu") returns true if From URI equals To URI;
+  avp_write("$tU", "$avp($fU)") - writes the username in To header in the avp
+  having the name the username from From header)
+
+* 2006-02-09 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- domain: fixed conflicts due definition of HASH_SIZE and hash() by the core
+  and the domain and permissions modules
+- permissions: reduce code duplicity - domain and permissions modules are using
+  hash function from the core (hash_func.h)
+- core: support for registering function to provide as statistics values.
+- core: shm memory exports as module "shmem" the following stats: total_size -
+  total memory; used_size - used memory; real_used_size - real used memeory
+  (used mem + overhead); max_used_size - maximum of real used memory;
+  fragments - number of memory fragments
+- cpl-c: multi domain support added
+
+* 2006-02-07 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- tm: advanced TM monitoring; available statistic variables: received_replies -
+  statefull received replies; relayed_replies - statefull relayed replies;
+  local_replies - statefull local generated replies; UAS_transactions -
+  no. of processed UAS transactions; UAC_transactions - no. of processed UAC
+  transactions; 2xx_transactions - no. of trasactions finished via 2xx
+  replies; 3xx_transactions - no. of trasactions finished via 3xx replies;
+  4xx_transactions - no. of trasactions finished via 4xx replies;
+  5xx_transactions - no. of trasactions finished via 5xx replies;
+  6xx_transactions - no. of trasactions finished via 6xx replies;
+  inuse_transactions - no. of current in memory transactions
+- core: negative values accepted for updates via atomic ops
+- usrloc: usrloc module export dynamic statistic for each register domain (as
+  location or aliases). Available statistics: number of registered users (AORs);
+  number of registered contacts (>= AORs); number of expired contacts
+- core: statistics manager supports dynamic allocated names (new falg
+  STATS_SHM_NAME)
+
+* 2006-02-06 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- core: core uses new statistics support
+- core: old stattistics (based on snmp module) removed - functionality
+  preserverd.
+- sl: statistics support
+- sl: new module parameter to enable/disable the statistics support
+- sl: available statistics: 1xx_replies - 1xx replies sent out; 2xx_replies
+  - 2xx replies sent out; 3xx_replies - 3xx replies sent out; 4xx_replies -
+  4xx replies sent out; 5xx_replies - 5xx replies sent out; 6xx_replies -
+  6xx replies sent out; sent_replies - total number of replies sent out
+  sent_err_replies - number of replies triggered by sl_reply_error();
+  received_ACKs - number of local ACK received
+
+* 2006-02-05 Juha Heinanen <jh@tutpro.com>
+- permissions: added "none" protocol option that never matches and thus
+  disables the peer.
+- permissions: free shm memory in case hash_table_insert call results in an
+  error.
+
+* 2006-02-03 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- core: NAPTR lookup support added according the RFC3263 "Locating SIP Servers"
+- core: stateless forwarding functions - proto param merged into proxy
+  struct to eliminate duplication
+
+* 2006-02-02 Dan Pascu <dan@ag-projects.com>
+- auth_db: fixed issue introduced by last commit, in which extra user
+  properties were no longer loaded into avps with along with load_credentials.
+
+* 2006-02-02 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- uac: uac_replace_from() denys FROM replace in sequential requenst
+  *ONLY* in AUTO mode; otherwise manual mode can work on seq. requests
+
+* 2006-01-31 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- registrar: bug fixed - improper param passing - reported by
+  Andreas Granig <andreas.granig@inode.info>
+
+* 2006-01-31 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- msilo: added statistics: stored_messages - how many messages were stored;
+  dumped_messages - how many messages were sent; failed_messages - how many;
+  messages failed to be delivered; dumped_reminders - how many reminders were
+  sent; failed_reminders - how many reminders failed to be delivered
+
+* 2006-01-30 Andreas Granig <andreas.granig@inode.info>
+- tm: fixed inserting of Route after Via.
+- core: fixed bug in parsing Supported header (reported by Helge Waastad).
+
+* 2006-01-30 Elena-Ramona Modroiu <ramona@voice-system.ro>
+- pdt: multi-domain support added
+
+* 2006-01-30 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- core: fixed compiling error on solaris: IPTOS_MINCOST is not defined on
+  solaris and netbsd. Reported by martin@campus-merseburg.de
+- enum: new functions (or new vresions of them): enum_fquery(), 
+  is_from_user_e164(), is_from_user_enum() (patch by 
+  Greg Fausak <lgfausak@gmail.com>)
+- core: support for atomic operations (assembler code) - only for i386 right
+  now
+- core: detection for SMP kernels - useful for atomic ops code
+- core: statistics code uses atomic operations if available since they are much
+  much faster - no locking required.
+- core: statistics manager moved completly into shm mem to all dynamic
+  registration/removal of statitstic variables.
+
+* 2006-01-30 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- core: added OP_NEQ (!=) to database operators
+- msilo: added reminder features (patch subbmited by Andrea Giordana)
+- textops: append_to_reply() has support for pseudo-variables
+
+* 2006-01-27 Andreas Granig <andreas.granig@inode.info>
+- registrar: fixed detection of lr-parameter (reported by
+  Helge Waastad <helge@smartnet.no>)
+
+* 2006-01-26 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- cpl: column name may be configured via module parameters
+- cpl: column for storing user name moved from "user" to "user_id"; was
+  reported that columns named "user" are conflicting on postgres DB
+- registrar: added len checks for username, domain, contact, received, callid
+  and user-agent. The lens are limited to avoid DB error (columns have limited
+  size) and DOS at memory and DB level
+- registrar: request with failed checks are negativly replied with err headers
+  for hints
+- core: applied patch for Path support according to RFC 3327 for usage in
+  registrars and home-proxies. Patch provided by
+  Andreas Granig <andreas.granig@inode.info>
+
+* 2006-01-25 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- core: fixed bug in to/from parser; display lenght was poorly computed in some
+  cases. Reported by Lars Sundqvist <lars.sundqvist@algitech.com> and
+  H Quintana <hjqlopez@yahoo.com>
+- postgres: proper support form BLOB in postgres - patch submitted by
+  Steen, Gerd <gerd.steen@de.thalesgroup.com>. It makes possible the usage of
+  cpl-c with postgre DB.
+
+* 2006-01-24 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- core: first version of a global Statistics Manager (core and modules exports
+  statistics variables to the Manager which is centralized collector and access
+  point for fetching statististics.
+- core: module interfaces updated to export statistics (none so far)
+- core: some basic statistics exported by core - how many replies/request were
+  received, how many were dropped by script/callbacks and how many were bogus.
+- core: new compilation define STATISTICS - if the statistics manaer and
+  collection should be compiled or not (default no)
+- core: onbreak module function removed from module interface : not used
+  anymore, it;s functionality took-ver by post-script callbacks
+- nathelper: crash fix for rtp proxy goes down during rtpp_test VF query;
+  credits go to Andrei
+
+* 2006-01-22 Dan Pascu <dan@ag-projects.com>
+- domain: added is_domain_local(variable)
+
+* 2006-01-17 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- tm: fixed bug in the new TM API (actually an old misfunctionality was
+  triggered: exported functions with same names and same C function but with
+  different number of parameter overlaps) - reported by
+  Helge Waastad <helge@smartnet.no>
+- lcr: allow prefix field to be NULL inside the lcr table (by Ovidiu Sas)
+
+* 2006-01-17 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- tm: t_relay*() returns 1 instead of 0 when forwarding ACK (reported by
+  Dan Pascu)
+- core: bmark initialization fix provided by Quang Minh Phan
+
+* 2006-01-15 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+relay functions merging:
+- tm: t_relay_to_udp(), t_relay_to_tcp(), t_relay_to_tls() merged into
+  t_relay(proto:host:port)
+- tm: t_forward_nonack_uri(), t_forward_nonack_udp(), t_forward_nonack_tcp(),
+  t_forward_nonack_tls() merged into t_forward_nonack(proto:host:port) and
+  t_forward_nonack()
+- tm: t_replicate_udp(), t_replicate_tcp(), t_replicate_tls() merged into
+  t_replicate(proto:host:port)
+
+* 2006-01-14 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- mysql: reconnect option is explicitly forced after mysql_real_connect()
+- usrloc: socket_info structure contains static string representation as
+  "proto:IP:port" (built only once at init time) -> avoid repeated computing
+  on the string during usrloc DB update and add_sock_hdr() call
+
+* 2006-01-13 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- acc: direction detection and compensation for sequential requests (request
+  from Lenir <lenirsantiago@yahoo.com>
+- acc: new module paramater "detect_direction" to enable/disable the above
+  feature
+
+* 2006-01-12 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- core: fixed crash when caller initiate call on TCP/TLS and expects subsequent
+  requests on UDP -- reported by Adrian Georgescu and Dan Pascu
+- msilo: callee user ID can be taken from an avp (fixes re-processing of R-URI
+  to detect the destination of the message)
+
+* 2006-01-10 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- unixodbc: added to connection string the UID (username) and PWD (password)
+  attributes
+- unixodbc: printf() replaced with LOG() or DBG()
+- unixodbc: malloc()/free() replaced by pkg_malloc()/pkg_free()
+- unixodbc: added checks for the returned values of malloc functions
+- lcr: applied LCR patch for DB caching and FROM regexp matching from
+  Ovidiu Sas <osas@somanetworks.com>
+- lcr: DB caching of the DB content on startup or reload.
+- lcr: DB operations alligned to internal DB API (no more raw queries)
+- lcr: regexp matching for from field
+- lcr: new module paramter "db_mode" may toggle between the old behaviour
+  (no caching) - 1 - and the new one (DB cahing) - 0.
+- scripts: applied patch from Ovidiu Sas <osas@somanetworks.com> :  The
+  openser script will allow adding a temporary UrLoc entry if expires is
+  specified: ul add <username> <uri> <expires>
+
+* 2006-01-09 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- core: support for more than 1024 tcp connections on various systems
+- core: more tcp options via global parameters (credits to Andrei)
+
+* 2006-01-09 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- uac: place a space between the new dispaly name and the RURI - reported by
+  "unplug <maillisting@gmail.com>"
+- tm: proper cloning of DIVERSION, RPID and REFER-TO headers - reported by
+  Dan Pascu <dan@ag-projects.com>
+
+* 2006-01-09 Klaus Darilion <klaus.mailinglists@pernau.at>
+- postgres: copied DB_BITMAP-to-string conversion from mysql module
+
+* 2006-01-06 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- core: renamed meminfo structure to avoid conflicts in different OSes
+
+* 2005-12-23 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- registrar: fixed crash on register with contacts without "methods" parameter
+  reported by Helge Waastad
+
+* 2005-12-22 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- core: for IPv6, setsockopt expects int as value and not char as for IPv4.
+- core: failure of setting IPV6_MULTICAST_LOOP for IPv6 reported just as
+  warning instead of error (same as for IPv4)
+- usrloc: contact maching algorithm aligned to the RFC 3261 specs (added extra
+  checking based on callid and cseq);
+- usrloc: configurable multi-algorithm for contact matching:
+  1) contact only based (as in RFC)
+  2) contac and callid based
+- usrloc: received (via AVPs) is looked up only if valid contact found
+- usrloc: received contact param is evaluated for each contact
+
+* 2005-12-21 Dmitry Isakbayev <isakdim@gmail.com>
+- osp: changed the length of AVP keys to be a multiple of 8.
+
+* 2005-12-19 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- core: setsockopt() for IP_MULTICAST_LOOP and IP_MULTICAST_TTL expects on
+  some OS unsigned char for option value instead of int
+- rr: the Route headers paramter's string checked by check_route_param()
+  include also the leading ";" -> ";param1=val1;param2=val2" instead of
+  "param1=val1;param2=val2" - all parameter names as consistent as format
+  and can be much easier checked via regexp - credits go to Juha Heinanen
+  for tracing the issue
+
+* 2005-11-18 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- dispatcher: dispatcher has failover support
+- dispatcher: to enable failover, set bit 2 of 'flags' parameter
+- dispatcher: when failover is enabled, selected destination is added as
+  dst_uri or domain part of r-uri and the rest of addresses in destination set
+  are added in AVP list
+- dispatcher: ds_next_{dst,domain} can be used in failure_route to get the
+  next address in dst_uri or r-uri domain
+
+* 2005-11-15 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- core: allow empty action list in switch for case and default statements
+- core: allow empty action list in if statements: if(expr) {};
+
+* 2005-11-14 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- msilo: bug fixed when marking sent messages (occured due to tm callback
+  parameters which are given as reference instead of value)
+
+* 2005-12-13 Juha Heinanen <jh@tutpro.com>
+- textops: function is_method() can be called from BRANCH_ROUTE.
+- tm: unction t_on_reply() can be called from BRANCH_ROUTE block
+
+* 2005-12-09 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- registrar: method filtering performed by lookup()
+
+* 2005-12-08 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- core: new function socket2str() - prints a scoket_info as string in format
+  "proto:IP:port"; it may print into an internal static buffer or into a
+  given buffer (as param)
+
+* 2005-12-08 Juha Heinanen <jh@tutpro.com>
+- core: methods lists can be empty
+
+* 2005-12-07 Marco Lorrai <marco.lorrai@abbeynet.it>
+- unixodbc: return values of insert
+
+* 2005-12-07 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- usrloc: supported methods are saved into usrloc - patch contributed by
+  Juha Heinanen <jh@tutpro.com>
+- usrloc: DB operations optimized - domain name is kept null terminated;
+  avoid extra memcpy() during each DB query
+- core: the parsed methods (bitmap on unsigned int) in mapped directly over
+  "parsed" pointer instead of allocated new mem chunk
+- core: the function encapsulate complete functionality: find the header
+  (new) and parse its body.
+- core: defined ALL_METHODS as (0xFFFFFFFF)
+- registrar: in REGISTER, the Allow header is parsed *only* if a contact
+  without "methods"parameter is found (avoid unnecessary parsing)
+
+* 2005-12-06 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- core: complete support for Allow header (parsing and accessing) - part of
+  the patch submitted by Juha Heinanen <jh@tutpro.com>
+
+* 2005-12-06 Juha Heinanen <jh@tutpro.com>
+- domain: Made calculation of domain hash case insensitive (thanks to
+  Alex Boeger)
+
+* 2005-12-05 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- tm: fixed the set/unset of avp list during callbacks - credits go to
+  Cesc Santasusana <cesc.santa@gmail.com>
+
+* 2005-12-05 Juha Heinanen <jh@tutpro.com>
+- lcr: added "strip_column" module parameter
+
+* 2005-12-05 Dan Pascu <dan@ag-projects.com>
+- mediaproxy: allow fixing of contacts independent of transport
+
+* 2005-12-01 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- usrloc: display received URI with "opensertcl ul show" (patch from
+  Klaus Darilion)
+- unixodbc: unixodbc
+
+* 2005-12-01 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- exec: functions exported by exec module can include pseudo-variables in
+  parameters (credits to Patrick Jordan-Smith for testing)
+  ~ caution: if the var your passing out has a bash special character in it,
+  the var needs to be placed inside quotes, for ex:
+  exec_msg("print-contact.sh '$ct'");
+- dispatcher: proper parameters in example config file for 'forward()' function
+
+* 2005-11-30 Klaus Darilion <klaus.mailinglists@pernau.at>
+- scripts: increased user_agent to varchar(255), 50 is to small
+
+* 2005-11-30 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- scripts: "acl grant" and "acl show" accespts also non-local users (with
+  confirmation) this is necessary if you have groups based on destinations
+  which can be non-subscriber numbers.
+
+* 2005-11-29 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- core: AVP flags reordered - 0-7 core ; 8-15 for module usage
+- core: new avp function added - destroy_avps() == search&delete
+- avpops: avpops uses destroy_avps()
+- avpops: avp_print() prints on INFO level instead of DEBUG
+- lcr: AVP flag "Q_FLAG" mapped over core flag (prepare for core migration)
+- core: serial forking support added in core (migrated from LCR module)
+
+* 2005-11-28 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- usrloc: saved socket info contains now also the protocol. The socket is saved
+  as: proto:ip:port
+- tm: t_uac_dlg get an optional parameter which defined the socket to be used
+  for sending the request
+
+* 2005-11-28 Klaus Darilion <klaus.mailinglists@pernau.at>
+- scripts: changed acc columns src and dst to src_leg and dst_leg
+
+* 2005-11-25 Elena-Ramona Modroiu <ramona@voice-system.ro>
+- core: $od - domain of original r-uri
+- core: $op - port of original r-uri
+- core: $oP - protocol of original r-uri
+- core: $ou - original r-uri
+- core: $oU - username in original r-uri
+
+* 2005-11-23 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- textops: added insert_hf(txt) - insert txt as header before the first header
+- textops: added insert_hf(txt, hdr) - insert txt as header before hdr
+- textops: added append_hf(txt, hdr) - add txt as header after hdr
+- textops: txt parameter of new functions as well as for old append_hf(txt) has
+  support for pseudo-variables
+
+* 2005-11-23 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- lcr: strip Option patch submitted - provided by Bayan William Towfiq
+  <william@telepacket.com>
+
+* 2005-11-22 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- core: configurable TOS added (thanks to Andreas Granig)
+
+* 2005-11-22 Klaus Darilion <klaus.mailinglists@pernau.at>
+- openserctl: applied patch from Ovidiu Sas to add "prefix" to gw table
+
+* 2005-11-21 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- group: regular expression based group matching added
+
+* 2005-11-17 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- rr: fixed double routing handeling for after_strict case
+- rr: proper send socket set in after_strict case
+- rr: proper call of rr callbacks in after_strict case
+
+* 2005-11-13 Elena-Ramona Modroiu <ramona@voice-system.ro>
+- core: $rm prints method from cseq hearder for replies
+- core: new $fn and $tn for From and To display name
+
+* 2005-11-12 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- core: global var msg_id renamed to avoid overlaping with similar var from
+  modules
+
+* 2005-11-10 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- core: customizable Server and User-Agent headers (provided by Juha Heinanen)
+- rr: add_username alters also the behaviour of record_route_preset()
+
+* 2005-11-07 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- core: proper fixup for switch statement
+
+* 2005-11-07 Dmitry Isakbayev <isakdim@gmail.com>
+- osp: new module
+
+* 2005-11-03 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- maxfwd: better error reporting for mf_process_maxfwd_header()
+- maxfwd: store MF value in parsed structure for later usage
+- maxfwd: new function is_maxfwd_lt() added
+
+* 2005-11-03 Jesus Rodriguez <jesusr@voztele.com>
+- packaging FreeBSD
+  ~ Do not overwrite configuration files across updates
+  ~ Respect ${CC}, ${CFLAGS}, ${PTHREAD_CFLAGS}, ${PTHREAD_LIBS},
+    ${OPENSSLINC}, ${OPENSSLLIB}, ${INSTALL_*}, ${NOPORTDOCS}
+  ~ Fixup hardcoded paths (respect ${PREFIX} and ${LOCALBASE})
+  ~ Put acc config in ${PREFIX}/etc/acc
+  ~ Use OPTIONS to select compile (TLS/Mysql/Postgres) options
+
+
+===================== 2006-02-27 OpenSER v1.0.1 released ======================
+
+===================== Changes since release 1.0.0 ============================
+
+* 2006-02-24 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- registrar: check the presence of same contact address many times in same
+  REGISTER message to avoid DB key violation and unecessary paralel forking
+
+* 2006-02-23 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- core: fixed parsing of To/From headers when spaces are present in non-quoted
+  display name
+
+* 2006-02-16 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- core: fixed several bugs strictly related to libssl version 0.9.8:
+    1) bad record mac because of wrong SSL_OP_TLS_BLOCK_PADDING_BUG handling
+       (see http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=338006 for more
+       info ; original bug registration to libssl at
+       http://www.aet.tu-cottbus.de/rt2/Ticket/Display.html?id=1204)
+    2) zlib compression does work correctly anymore in multi-process env. due
+       problem with mem. allocation functions.
+       (see http://www.aet.tu-cottbus.de/rt2/NoAuth/Buglist.html)
+- core: return code of tcp_send() set to negative value if write() failed
+  forcing the proxy to send negative reply immediately
+
+* 2006-02-14 Dan Pascu <dan@ag-projects.com>
+- core: fixed tests for return value of parse_uri() and parse_headers()
+
+* 2006-02-10 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- tm: fixed memory leal for transactions that gave error during relay when using
+  t_forward_nonack() in configuration script
+
+* 2006-02-01 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- auth_db: check loaded credentials for 0 length
+- rr: fixed uninitialized value for user part if add_username is disabled
+- uac: uac_replace_from() denied the replace of FROM in sequential requensts
+  when working in AUTO mode
+
+* 2006-01-25 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- core: fix in to/from parser; lenght of display name was poorly computed in
+  some cases
+- rr: add_username parameter was not properly done by the record_route_preset()
+
+* 2006-01-24 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- nathelper: fix when rtp proxy goes down during rtpp_test VF query at startup
+
+* 2006-01-17 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- tm: t_relay*() returns 1 instead of 0 when forwarding ACK
+
+* 2006-01-16 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- mysql: reconnect option is explicitly forced after mysql_real_connect()
+
+* 2006-01-12 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- core: fix for nested transport protocols in same call
+
+* 2006-01-09 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- uac: place a space between the new dispaly name and the URI
+- tm: proper cloning of DIVERSION, RPID and REFER-TO headers
+
+* 2006-01-06 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- core: renamed meminfo structure to avoid conflicts in different OSes
+
+* 2005-12-29 Klaus Darilion <klaus.mailinglists@pernau.at>
+- gflags: added documentation of fifo commands
+
+* 2005-12-14 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- msilo: fixed marking sent messages
+
+* 2005-12-05 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- tm: fixed the set/unset of avp list during callbacks
+
+* 2005-12-05 Dan Pascu <dan@ag-projects.com>
+- mediaproxy: allow fixing of contacts independent of transport
+
+* 2005-11-28 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- tm: fixed matching local ACKs versus e2e ACKs
+
+* 2005-11-28 Klaus Darilion <klaus.mailinglists@pernau.at>
+- scripts: mysqldb.sh postgresqldb.sh - changed columns 'src' and 'dst'
+  to 'src_leg' and 'dst_leg' in 'acc' and 'missed_calls' tables
+  (fixes #1367858)
+
+* 2005-11-22 Klaus Darilion <klaus.mailinglists@pernau.at>
+- scripts: sc - backport of lcr gw prefix
+- scripts: sc - bacport of "ul rm" of a dedicated contact
+
+* 2005-11-22 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- rr: fixed double routing handeling for after_strict case
+- rr: proper send socket set in after_strict case
+- rr: proper call of rr callbacks in after_strict case
+
+* 2005-11-07 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- core: proper fixup for switch statement
+
+* 2005-10-31 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- core: IP_MULTICAST_LOOP error switched to warning (specific to openBSD amd64)
+- core: fixed TCP fd passing error (specifc to openBSD amd64)
+
+
+===================== 2005-10-28 OpenSER v1.0.0 released ======================
+
 ===================== Changes since release 0.9.4 ============================
 
 * 2005-10-00 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
