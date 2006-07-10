@@ -1,0 +1,57 @@
+.\" $Id$
+.TH openserunix 8 21.06.2006 openser "OpenSER" 
+.\" Process with
+.\" groff -man -Tascii openserunix.8 
+.\"
+.SH NAME
+openserunix \- openser UNIX socket wrapper
+.SH SYNOPSIS
+.B openserunix
+.BI path_to_socket
+
+.SH DESCRIPTION
+.B openserunix
+is a wrapper for sending external commands
+.B to OpenSER SIP server
+via UNIX sockets interface.
+.br
+This is a binary alternative to the textual FIFO interface.
+.PP
+.B openserunix
+reads from standard input one
+.B OpenSER
+command along with its paramters (if any) and prints the response 
+to standard output.
+
+.SH PARAMETERS
+.TP 3
+.B path_to_socket
+full path of the UNIX socket file used by OpenSER to receive the
+external commands
+
+.SH EXAMPLES
+.PP
+An OpenSER commands consists in one ore more lines: first contains the
+command name enclosed between ":", the following lines containing the 
+command parameters, one per line.
+.PP
+echo ":uptime:" | openserunix /tmp/openser.sock
+
+
+.SH AUTHORS
+
+see 
+.B /usr/share/doc/openser/AUTHORS
+
+.SH SEE ALSO
+.BR openser(8), openser.cfg(5), openserctl(8)
+.PP
+Full documentation on openser is available at
+.I http://www.openser.org/.
+.PP
+Mailing lists:
+.nf 
+users@openser.org - openser user community
+.nf 
+devel@openser.org - openser development, new features and unstable version
+
