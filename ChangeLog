@@ -4,6 +4,131 @@
 
 ===================== Changes since release 1.0.0 ============================
 
+* 2006-07-06 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- packaging: added new openserctl
+
+* 2006-07-06 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- dialog: several bugs fixed:
+  1) fixed shutdown crash when dialog module was cleaned before TM module
+  2) the dialog structure must be refed by the transaction callback.
+  3) fixed missing unlock which leads to dead lock
+-core:  more TLS functions to perform proper shared memory clenaup on shutdown
+
+* 2006-07-05 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- avpops: is_avp_set() handles properly the index of AVPs (reported by
+  Norman Brandinger)
+
+* 2006-07-05 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- domain: clean shutdown: free all used shared memory on exit
+- core: - more validity checks for table_version() - check if returned field
+  has INT type and if it's not null
+- memory cleanup on exit
+
+* 2006-07-04 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- scripts: new version of openserctl
+
+* 2006-07-04 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- core: at shutdown, do memory cleanup for extra iteams.
+
+* 2006-07-03 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- pdt: avoid resynchronization when other worker processes still have to do it
+  and diff list is not freed
+
+* 2006-07-03 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- usrloc: bug fixed in updating the contact records.
+- usrloc: - fixed bogus test for return code of new_ucontact()
+- registrar: fixed bug in build_path_vector() - do not return a pointer to
+  a str that in freed, but return the full str as parameter.
+
+* 2006-07-02 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- core: check the type of table_version result (reported by
+  Ryan (Matty <matty91@gmail.com>))
+- mysql: free mysql connection from pool only when found
+
+* 2006-06-30 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- packaging: various packaging control files updated
+
+* 2006-06-29 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- pike: bug fixed - due bogus flag testing, race between timer and ip tree
+  could occurred
+
+* 2006-06-27 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- core: buffer overflow fixed in append_branch() function - dst_uri and path
+  strings were not checked as length before being pushed into the static
+  buffers;
+- core: append_branch() push into internal branch structure the forced socket
+  also.
+- registrar: fixed mem leak during lookup in DB_ONLY mode
+  Reported by Andreas Granig <andreas.granig@inode.info>
+- tm: receiving more replies after the final reply is not reported anymore as
+  error. The cause is signalling related and cannot be controlled.
+  Reported by Andreas Granig <andreas.granig@inode.info>
+- permissions: fixed crash on permissions module  when reload_trusted() failed.
+- permissions: fixed clenup on error in init_trusted()
+  Reported by Raymond Chen <rchen@broadz.com>
+
+* 2006-06-26 Andreas Granig <andreas.granig@inode.info>
+- path: fixed mem-leak in parsing route-params.
+
+* 2006-06-26 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- core: fixed small potential memory leak in SIP resolver.
+  Reported by Douglas Garstang <dgarstang@oneeighty.com>
+- acc: fixed bug - the internal and script sets of flags whre swapped when
+  using the FL_REQ_UPSTREAM flag
+  Credits go to razvan radu <openser-devel@list.coretech.ro>.
+
+* 2006-06-23 Andreas Granig <andreas.granig@inode.info>
+- core: fixed two mem-leaks in Path-handling.
+
+* 2006-06-22 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- acc: bug fixed:
+     do not install FAILURE callback for CANCELs since TM does not allows it.
+     Reported by Sumeet Gupta <skg1010@hotmail.com>
+- acc: small optimization:
+     install only really needed TM callbacks (for missed calls and ACK reports)
+     Suggested by Juha Heinanen <jh@tutpro.com>
+
+* 2006-06-21 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- core: fixed computation of VIA branch param for end2end ACK
+
+* 2006-06-21 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- scripts: added manual page for openserctl
+
+* 2006-06-20 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- usrloc: memory leak fixed. Reported by Christian Schlatter <cs@unc.edu>
+
+* 2006-06-14 Elena-Ramona Modroiu <ramona@voice-system.ro>
+- pdt: proper cleanup when server does not initialize
+
+* 2006-06-13 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- acc: "0" and "1" FMT entries overlapps due internal usage of same
+   parsed_uri structure.
+- tm: tw_append should not append non-existing values
+  Credits go to Juha Heinanen <jh@tutpro.com>
+
+* 2006-06-09 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- usrloc: fixed bug in fetching all contacts in db_mode=3 (DB_ONLY).
+  Reported by Christian Schlatter <cs@unc.edu>
+
+* 2006-06-07 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- acc: fixed bug in direction detection algorithm during accounting.
+  Reported by Glenn Dalgliesh <glenn@routerboy.com>
+- gflags: functionality fix - added a new fifo function to be able to read
+  the current bitmap of gflags. Reported by Helge Waastad <helge@smartnet.no>
+- nathelper: fixed building of received uri when IPv6 is used.
+  Credits go to Klaus Darilion <klaus.mailinglists@pernau.at>
+
+* 2006-06-06 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- core: check for null passwords (on some OS strcmp crashes) - reported by
+  Edgar Barbosa
+
+* 2006-06-05 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- core: fixed bug in cleaning lump lists based on flags - this was generating
+  double inserts in Branch routes or memeory leaks in Failure routes.
+
+* 2006-06-01 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- core: fixed init of default server and client tls domains
+
 * 2006-05-31 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
 - core:  bug fixed in choosing the default port: if proto is TLS and no port
   or SRV is available, use 5061 as default port for outgoing connections.
