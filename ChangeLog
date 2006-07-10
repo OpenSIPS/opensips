@@ -943,6 +943,9 @@ relay functions merging:
   and can be much easier checked via regexp - credits go to Juha Heinanen
   for tracing the issue
 
+* 2005-11-29 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- core: serial forking support added in core (migrated from LCR module)
+
 * 2005-11-18 Daniel-Constantin Mierla <daniel@voice-system.ro>
 - dispatcher: dispatcher has failover support
 - dispatcher: to enable failover, set bit 2 of 'flags' parameter
