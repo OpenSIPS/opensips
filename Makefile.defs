@@ -184,6 +184,7 @@ ut-prefix = $(basedir)$(prefix)
 # target dirs for various stuff
 cfg-target = $(prefix)/$(cfg-dir)
 bin-target = $(prefix)/$(bin-dir)
+lib-target = $(prefix)/$(lib-dir)
 modules-target = $(prefix)/$(modules-dir)
 doc-target = $(prefix)/$(doc-dir)
 

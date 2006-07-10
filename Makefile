@@ -392,12 +392,14 @@ install-cfg: $(cfg-prefix)/$(cfg-dir)
 install-bin: $(bin-prefix)/$(bin-dir) utils
 		$(INSTALL-TOUCH) $(bin-prefix)/$(bin-dir)/$(NAME) 
 		$(INSTALL-BIN) $(NAME) $(bin-prefix)/$(bin-dir)
-		sed -e "s#/usr/local#$(bin-prefix)#g" \
+		sed -e "s#/usr/local/sbin#$(bin-target)#g" \
 			< scripts/openserctl > /tmp/openserctl
+		sed -i -e "s#/usr/local/lib/openser#$(lib-target)#g" /tmp/openserctl
+		sed -i -e "s#/usr/local/etc/openser#$(cfg-target)#g" /tmp/openserctl
 		$(INSTALL-TOUCH) $(bin-prefix)/$(bin-dir)/openserctl
 		$(INSTALL-BIN) /tmp/openserctl $(bin-prefix)/$(bin-dir)
 		rm -fr /tmp/openserctl
-		sed -e "s#/usr/local#$(bin-prefix)#g" \
+		sed -e "s#/usr/local/sbin#$(bin-target)#g" \
 			< scripts/openserctl.base > /tmp/openserctl.base
 		mkdir -p $(modules-prefix)/$(lib-dir)/openserctl 
 		$(INSTALL-TOUCH) \
@@ -405,51 +407,26 @@ install-bin: $(bin-prefix)/$(bin-dir) utils
 		$(INSTALL-CFG) /tmp/openserctl.base \
 			$(modules-prefix)/$(lib-dir)/openserctl/openserctl.base
 		rm -fr /tmp/openserctl.base
-		sed -e "s#/usr/local#$(bin-prefix)#g" \
+		sed -e "s#/usr/local#$(bin-target)#g" \
 			< scripts/openserctl.ctlbase > /tmp/openserctl.ctlbase
 		$(INSTALL-CFG) /tmp/openserctl.ctlbase \
 			$(modules-prefix)/$(lib-dir)/openserctl/openserctl.ctlbase
 		rm -fr /tmp/openserctl.ctlbase
-		sed -e "s#/usr/local#$(bin-prefix)#g" \
+		sed -e "s#/usr/local#$(bin-target)#g" \
 			< scripts/openserctl.fifo > /tmp/openserctl.fifo
 		$(INSTALL-CFG) /tmp/openserctl.fifo \
 			$(modules-prefix)/$(lib-dir)/openserctl/openserctl.fifo
 		rm -fr /tmp/openserctl.fifo
-		sed -e "s#/usr/local#$(bin-prefix)#g" \
+		sed -e "s#/usr/local#$(bin-target)#g" \
 			< scripts/openserctl.unixsock > /tmp/openserctl.unixsock
 		$(INSTALL-CFG) /tmp/openserctl.unixsock \
 			$(modules-prefix)/$(lib-dir)/openserctl/openserctl.unixsock
 		rm -fr /tmp/openserctl.unixsock
-		sed -e "s#/usr/local#$(bin-prefix)#g" \
+		sed -e "s#/usr/local#$(bin-target)#g" \
 			< scripts/openserctl.sqlbase > /tmp/openserctl.sqlbase
 		$(INSTALL-CFG) /tmp/openserctl.sqlbase \
 			$(modules-prefix)/$(lib-dir)/openserctl/openserctl.sqlbase
 		rm -fr /tmp/openserctl.sqlbase
-		if [ "$(MYSQLON)" = "yes" ]; then \
-			sed -e "s#/usr/local#$(bin-prefix)#g" \
-				< scripts/openserctl.mysql > /tmp/openserctl.mysql ; \
-			$(INSTALL-CFG) /tmp/openserctl.mysql \
-				$(modules-prefix)/$(lib-dir)/openserctl/openserctl.mysql ; \
-			rm -fr /tmp/openserctl.mysql ; \
-			sed -e "s#PATH:/usr/local/sbin#PATH:$(bin-prefix)/$(bin-dir)#g" \
-				< scripts/mysqldb.sh > /tmp/$(NAME)_mysql.sh ; \
-			$(INSTALL-TOUCH)   $(bin-prefix)/$(bin-dir)/$(NAME)_mysql.sh ; \
-			$(INSTALL-BIN) /tmp/$(NAME)_mysql.sh  $(bin-prefix)/$(bin-dir) ; \
-			rm -fr /tmp/$(NAME)_mysql.sh ; \
-		fi
-		if [ "$(PGSQLON)" = "yes" ]; then \
-			sed -e "s#/usr/local#$(bin-prefix)#g" \
-				< scripts/openserctl.pgsql > /tmp/openserctl.pgsql ; \
-			$(INSTALL-CFG) /tmp/openserctl.pgsql \
-				$(modules-prefix)/$(lib-dir)/openserctl/openserctl.pgsql ; \
-			rm -fr /tmp/openserctl.pgsql ; \
-			sed -e "s#PATH:/usr/local/sbin#PATH:$(bin-prefix)/$(bin-dir)#g" \
-				< scripts/postgresqldb.sh > /tmp/$(NAME)_postgresql.sh ; \
-			$(INSTALL-TOUCH) $(bin-prefix)/$(bin-dir)/$(NAME)_postgresql.sh ; \
-			$(INSTALL-BIN) /tmp/$(NAME)_postgresql.sh \
-				$(bin-prefix)/$(bin-dir) ; \
-			rm -fr /tmp/$(NAME)_postgresql.sh ; \
-		fi
 		$(INSTALL-TOUCH)   $(bin-prefix)/$(bin-dir)/$(NAME)unix
 		$(INSTALL-BIN) utils/$(NAME)unix/$(NAME)unix $(bin-prefix)/$(bin-dir)
 
@@ -457,7 +434,7 @@ install-bin: $(bin-prefix)/$(bin-dir) utils
 utils:
 		cd utils/$(NAME)unix; $(MAKE) all
 
-install-modules: modules $(modules-prefix)/$(modules-dir)
+install-modules: modules install-modules-tools $(modules-prefix)/$(modules-dir)
 	-@for r in $(modules_full_path) "" ; do \
 		if [ -n "$$r" ]; then \
 			if [ -f "$$r" ]; then \
@@ -472,6 +449,35 @@ install-modules: modules $(modules-prefix)/$(modules-dir)
 
 
 install-modules-all: install-modules install-modules-doc
+
+install-modules-tools: $(bin-prefix)/$(bin-dir)
+		if [ "$(MYSQLON)" = "yes" ]; then \
+			mkdir -p $(modules-prefix)/$(lib-dir)/openserctl ; \
+			sed -e "s#/usr/local#$(bin-target)#g" \
+				< scripts/openserctl.mysql > /tmp/openserctl.mysql ; \
+			$(INSTALL-CFG) /tmp/openserctl.mysql \
+				$(modules-prefix)/$(lib-dir)/openserctl/openserctl.mysql ; \
+			rm -fr /tmp/openserctl.mysql ; \
+			sed -e "s#PATH:/usr/local/sbin#PATH:$(bin-target)#g" \
+				< scripts/mysqldb.sh > /tmp/$(NAME)_mysql.sh ; \
+			$(INSTALL-TOUCH)   $(bin-prefix)/$(bin-dir)/$(NAME)_mysql.sh ; \
+			$(INSTALL-BIN) /tmp/$(NAME)_mysql.sh  $(bin-prefix)/$(bin-dir) ; \
+			rm -fr /tmp/$(NAME)_mysql.sh ; \
+		fi
+		if [ "$(PGSQLON)" = "yes" ]; then \
+			mkdir -p $(modules-prefix)/$(lib-dir)/openserctl ; \
+			sed -e "s#/usr/local#$(bin-target)#g" \
+				< scripts/openserctl.pgsql > /tmp/openserctl.pgsql ; \
+			$(INSTALL-CFG) /tmp/openserctl.pgsql \
+				$(modules-prefix)/$(lib-dir)/openserctl/openserctl.pgsql ; \
+			rm -fr /tmp/openserctl.pgsql ; \
+			sed -e "s#PATH:/usr/local/sbin#PATH:$(bin-target)#g" \
+				< scripts/postgresqldb.sh > /tmp/$(NAME)_postgresql.sh ; \
+			$(INSTALL-TOUCH) $(bin-prefix)/$(bin-dir)/$(NAME)_postgresql.sh ; \
+			$(INSTALL-BIN) /tmp/$(NAME)_postgresql.sh \
+				$(bin-prefix)/$(bin-dir) ; \
+			rm -fr /tmp/$(NAME)_postgresql.sh ; \
+		fi
 
 
 install-doc: $(doc-prefix)/$(doc-dir) install-modules-doc
