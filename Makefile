@@ -84,6 +84,18 @@ modules_basenames=$(shell echo $(modules)| \
 #modules_names=$(patsubst modules/%, %.so, $(modules))
 modules_full_path=$(join  $(modules), $(addprefix /, $(modules_names)))
 
+MODULE_MYSQL_INCLUDED=$(shell echo $(modules)| grep mysql )
+ifeq (,$(MODULE_MYSQL_INCLUDED))
+	MYSQLON=no
+else
+	MYSQLON=yes
+endif
+MODULE_PGSQL_INCLUDED=$(shell echo $(modules)| grep postgres )
+ifeq (,$(MODULE_PGSQL_INCLUDED))
+	PGSQLON=no
+else
+	PGSQLON=yes
+endif
 
 ALLDEP=Makefile Makefile.sources Makefile.defs Makefile.rules
 
@@ -269,17 +281,7 @@ bin:
 .PHONY: deb
 deb:
 	ln -sf packaging/debian
-	$(MAKE) -C debian
 	dpkg-buildpackage -rfakeroot -tc $(DEBBUILD_EXTRA_OPTIONS)
-	$(MAKE) -C debian clean
-	rm -f debian
-
-.PHONY: deb-notls
-deb-notls:
-	ln -sf packaging/debian
-	NOTLS=1 $(MAKE) -C debian
-	dpkg-buildpackage -rfakeroot -tc $(DEBBUILD_EXTRA_OPTIONS)
-	$(MAKE) -C debian clean
 	rm -f debian
 
 .PHONY: sunpkg
@@ -423,26 +425,31 @@ install-bin: $(bin-prefix)/$(bin-dir) utils
 		$(INSTALL-CFG) /tmp/openserctl.sqlbase \
 			$(modules-prefix)/$(lib-dir)/openserctl/openserctl.sqlbase
 		rm -fr /tmp/openserctl.sqlbase
-		sed -e "s#/usr/local#$(bin-prefix)#g" \
-			< scripts/openserctl.mysql > /tmp/openserctl.mysql
-		$(INSTALL-CFG) /tmp/openserctl.mysql \
-			$(modules-prefix)/$(lib-dir)/openserctl/openserctl.mysql
-		rm -fr /tmp/openserctl.mysql
-		sed -e "s#/usr/local#$(bin-prefix)#g" \
-			< scripts/openserctl.pgsql > /tmp/openserctl.pgsql
-		$(INSTALL-CFG) /tmp/openserctl.pgsql \
-			$(modules-prefix)/$(lib-dir)/openserctl/openserctl.pgsql
-		rm -fr /tmp/openserctl.pgsql
-		sed -e "s#PATH:/usr/local/sbin#PATH:$(bin-prefix)/$(bin-dir)#g" \
-			< scripts/mysqldb.sh > /tmp/$(NAME)_mysql.sh
-		$(INSTALL-TOUCH)   $(bin-prefix)/$(bin-dir)/$(NAME)_mysql.sh
-		$(INSTALL-BIN) /tmp/$(NAME)_mysql.sh  $(bin-prefix)/$(bin-dir)
-		rm -fr /tmp/$(NAME)_mysql.sh
-		sed -e "s#PATH:/usr/local/sbin#PATH:$(bin-prefix)/$(bin-dir)#g" \
-			< scripts/postgresqldb.sh > /tmp/$(NAME)_postgresql.sh
-		$(INSTALL-TOUCH)   $(bin-prefix)/$(bin-dir)/$(NAME)_postgresql.sh
-		$(INSTALL-BIN) /tmp/$(NAME)_postgresql.sh $(bin-prefix)/$(bin-dir)
-		rm -fr /tmp/$(NAME)_postgresql.sh
+		if [ "$(MYSQLON)" = "yes" ]; then \
+			sed -e "s#/usr/local#$(bin-prefix)#g" \
+				< scripts/openserctl.mysql > /tmp/openserctl.mysql ; \
+			$(INSTALL-CFG) /tmp/openserctl.mysql \
+				$(modules-prefix)/$(lib-dir)/openserctl/openserctl.mysql ; \
+			rm -fr /tmp/openserctl.mysql ; \
+			sed -e "s#PATH:/usr/local/sbin#PATH:$(bin-prefix)/$(bin-dir)#g" \
+				< scripts/mysqldb.sh > /tmp/$(NAME)_mysql.sh ; \
+			$(INSTALL-TOUCH)   $(bin-prefix)/$(bin-dir)/$(NAME)_mysql.sh ; \
+			$(INSTALL-BIN) /tmp/$(NAME)_mysql.sh  $(bin-prefix)/$(bin-dir) ; \
+			rm -fr /tmp/$(NAME)_mysql.sh ; \
+		fi
+		if [ "$(PGSQLON)" = "yes" ]; then \
+			sed -e "s#/usr/local#$(bin-prefix)#g" \
+				< scripts/openserctl.pgsql > /tmp/openserctl.pgsql ; \
+			$(INSTALL-CFG) /tmp/openserctl.pgsql \
+				$(modules-prefix)/$(lib-dir)/openserctl/openserctl.pgsql ; \
+			rm -fr /tmp/openserctl.pgsql ; \
+			sed -e "s#PATH:/usr/local/sbin#PATH:$(bin-prefix)/$(bin-dir)#g" \
+				< scripts/postgresqldb.sh > /tmp/$(NAME)_postgresql.sh ; \
+			$(INSTALL-TOUCH) $(bin-prefix)/$(bin-dir)/$(NAME)_postgresql.sh ; \
+			$(INSTALL-BIN) /tmp/$(NAME)_postgresql.sh \
+				$(bin-prefix)/$(bin-dir) ; \
+			rm -fr /tmp/$(NAME)_postgresql.sh ; \
+		fi
 		$(INSTALL-TOUCH)   $(bin-prefix)/$(bin-dir)/$(NAME)unix
 		$(INSTALL-BIN) utils/$(NAME)unix/$(NAME)unix $(bin-prefix)/$(bin-dir)
 
