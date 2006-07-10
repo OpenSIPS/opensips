@@ -253,6 +253,9 @@ static inline int su_cmp(union sockaddr_union* s1, union sockaddr_union* s2)
 /* gets the port number (host byte order) */
 static inline unsigned short su_getport(union sockaddr_union* su)
 {
+	if(su==0)
+		return 0;
+
 	switch(su->s.sa_family){
 		case AF_INET:
 			return ntohs(su->sin.sin_port);
