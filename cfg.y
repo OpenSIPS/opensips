@@ -408,7 +408,14 @@ listen_id:	ip			{	tmp=ip_addr2a($1);
 
 proto:	  UDP	{ $$=PROTO_UDP; }
 		| TCP	{ $$=PROTO_TCP; }
-		| TLS	{ $$=PROTO_TLS; }
+		| TLS	{
+			#ifdef USE_TLS
+				$$=PROTO_TLS;
+			#else
+				$$=PROTO_TCP;
+				warn("tls support not compiled in");
+			#endif
+			}
 		| STAR	{ $$=0; }
 		;
 
