@@ -854,19 +854,25 @@ assign_stm:	DEBUG EQUAL NUMBER { debug=$3; }
 								tos=IPTOS_THROUGHPUT;
 							} else if (strcasecmp($3,"IPTOS_RELIABILITY")) {
 								tos=IPTOS_RELIABILITY;
-#if !defined(__OS_solaris) || !defined(__OS_netbsd)
+#if defined(IPTOS_MINCOST)
 							} else if (strcasecmp($3,"IPTOS_MINCOST")) {
 								tos=IPTOS_MINCOST;
+#endif
+#if defined(IPTOS_LOWCOST)
+							} else if (strcasecmp($3,"IPTOS_LOWCOST")) {
+								tos=IPTOS_LOWCOST;
 #endif
 							} else {
 								yyerror("invalid tos value - allowed: "
 									"IPTOS_LOWDELAY,IPTOS_THROUGHPUT,"
-									"IPTOS_RELIABILITY,IPTOS_LOWCOST"
-#if !defined(__OS_solaris) || !defined(__OS_netbsd)
-									",IPTOS_MINCOST\n");
-#else
-									"\n");
+									"IPTOS_RELIABILITY"
+#if defined(IPTOS_LOWCOST)
+									",IPTOS_LOWCOST"
 #endif
+#if !defined(IPTOS_MINCOST)
+									",IPTOS_MINCOST"
+#endif
+									"\n");
 							}
 		 }
 		| TOS EQUAL error { yyerror("number expected"); }
