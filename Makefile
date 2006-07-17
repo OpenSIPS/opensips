@@ -337,7 +337,7 @@ $(man-prefix)/$(man-dir)/man5:
 install-cfg: $(cfg-prefix)/$(cfg-dir)
 		sed -e "s#/usr/.*lib/$(NAME)/modules/#$(modules-target)#g" \
 			< etc/$(NAME).cfg > $(cfg-prefix)/$(cfg-dir)$(NAME).cfg.sample0
-		sed -e "s#/usr/.*etc/$(NAME)/tls/#$(cfg-prefix)/$(cfg-dir)tls/#g" \
+		sed -e "s#/usr/.*etc/$(NAME)/tls/#$(cfg-target)tls/#g" \
 			< $(cfg-prefix)/$(cfg-dir)$(NAME).cfg.sample0 \
 			> $(cfg-prefix)/$(cfg-dir)$(NAME).cfg.sample
 		rm -fr $(cfg-prefix)/$(cfg-dir)$(NAME).cfg.sample0
