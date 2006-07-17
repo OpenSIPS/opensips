@@ -373,7 +373,7 @@
 				</para>
 				</listitem>
 				<listitem>
-				<para><emphasis>tls_require_certificate=1</emphasis> - the 
+				<para><emphasis>tls_require_client_certificate=1</emphasis> - the 
 				verification process will only succeed if the client 
 				provides a certificate and this verifies correctly
 				against the server's list of trusted CAs.

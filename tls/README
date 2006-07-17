@@ -388,10 +388,10 @@ Chapter 1. User's Guide
        certificate, or if it provides one, it verifies correctly
        against the server's list of trusted certification
        authorities.
-     * tls_require_certificate=1 - the verification process will
-       only succeed if the client provides a certificate and this
-       verifies correctly against the server's list of trusted
-       CAs.
+     * tls_require_client_certificate=1 - the verification
+       process will only succeed if the client provides a
+       certificate and this verifies correctly against the
+       server's list of trusted CAs.
 
    If your OpenSER is acting as a client (outgoing TLS
    connections), it will always receive a certificate from the
