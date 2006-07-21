@@ -487,16 +487,22 @@ struct replace_lst* subst_run(struct subst_expr* se, const char* input,
 		if (r==0){ /* != REG_NOMATCH */
 			/* change eflags, not to match any more at string start */
 			eflags|=REG_NOTBOL;
+			/* some checks */
+			if (pmatch[0].rm_so==-1){
+				LOG(L_ERR, "ERROR: subst_run: unknown offset?\n");
+				goto error;
+			}
+			if (pmatch[0].rm_so==pmatch[0].rm_eo){
+				LOG(L_ERR, "ERROR: subst_run: matched string is empty..."
+					"invalid regexp?\n");
+				goto error;
+			}
 			*crt=pkg_malloc(sizeof(struct replace_lst));
 			if (*crt==0){
 				LOG(L_ERR, "ERROR: subst_run: out of mem (crt)\n");
 				goto error;
 			}
 			memset(*crt, 0, sizeof(struct replace_lst));
-			if (pmatch[0].rm_so==-1){
-				LOG(L_ERR, "ERROR: subst_run: unknown offset?\n");
-				goto error;
-			}
 			(*crt)->offset=pmatch[0].rm_so+(int)(p-input);
 			(*crt)->size=pmatch[0].rm_eo-pmatch[0].rm_so;
 			DBG("subst_run: matched (%d, %d): [%.*s]\n",
