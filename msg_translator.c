@@ -1314,13 +1314,13 @@ char * build_req_buf_from_sip_req( struct sip_msg* msg,
 	/* add id if tcp */
 	if (msg->rcv.proto==PROTO_TCP
 #ifdef USE_TLS
-			|| msg->rcv.proto==PROTO_TLS
+	|| msg->rcv.proto==PROTO_TLS
 #endif
-			){
+	){
 		if  ((id_buf=id_builder(msg, &id_len))==0){
 			LOG(L_ERR, "ERROR: build_req_buf_from_sip_req:"
 							" id_builder failed\n");
-			goto error00; /* we don't need to free anything,
+			goto error; /* we don't need to free anything,
 			                 nothing alloc'ed yet*/
 		}
 		DBG("build_req_from_req: id added: <%.*s>, rcv proto=%d\n",
@@ -1339,12 +1339,10 @@ char * build_req_buf_from_sip_req( struct sip_msg* msg,
 										will be null terminated */
 		extra_params.s = (char*)pkg_malloc(extra_params.len+1);
 		if(extra_params.s==0) {
-			if(id_buf!=0)
-				pkg_free(id_buf);
 			LOG(L_ERR, "ERROR: build_req_buf_from_sip_req:"
 							" extra params building failed\n");
-			goto error00; /* we don't need to free anything,
-			                 nothing else alloc'ed yet*/
+			if (id_buf) pkg_free(id_buf);
+			goto error;
 		}
 		
 		if(id_buf!=0) {
@@ -1357,9 +1355,9 @@ char * build_req_buf_from_sip_req( struct sip_msg* msg,
 				extra_params.len, extra_params.s);
 	}
 	
-	     /* Calculate message body difference and adjust
-	      * Content-Length
-	      */
+	/* Calculate message body difference and adjust
+	 * Content-Length
+	 */
 	body_delta = lumps_len(msg, msg->body_lumps, send_sock);
 	if (adjust_clen(msg, body_delta, proto) < 0) {
 		LOG(L_ERR, "ERROR: build_req_buf_from_sip_req: Error while adjusting"
@@ -1417,12 +1415,6 @@ char * build_req_buf_from_sip_req( struct sip_msg* msg,
 				/*size+=strlen(msg->via1->hdr.s+size+1)+1;*/
 				size += msg->via1->port_str.len + 1; /* +1 for ':'*/
 			}
-#if 0
-			/* no longer necessary, now hots.s contains [] */
-		#ifdef USE_IPV6
-			if(send_sock->address.af==AF_INET6) size+=1; /* +1 for ']'*/
-		#endif
-#endif
 	}
 	/* if received needs to be added, add anchor after host and add it, or 
 	 * overwrite the previous one if already present */
@@ -1454,7 +1446,6 @@ char * build_req_buf_from_sip_req( struct sip_msg* msg,
 		if (insert_new_lump_after(via_insert_param, rport_buf, rport_len,
 									HDR_VIA_T) ==0 )
 			goto error03; /* free rport_buf */
-			
 	}
 
 	/* compute new msg len and fix overlapping zones*/
@@ -1503,10 +1494,7 @@ char * build_req_buf_from_sip_req( struct sip_msg* msg,
 
 	*returned_len=new_len;
 	/* cleanup */
-#ifdef USE_TCP
-	if (id_buf) pkg_free(id_buf); /* it's not in a lump => we don't need it
-									 anymore */
-#endif
+	if (extra_params.s) pkg_free(extra_params.s);
 	return new_buf;
 
 error01:
@@ -1516,9 +1504,8 @@ error02:
 error03:
 	if (rport_buf) pkg_free(rport_buf);
 error00:
-#ifdef USE_TCP
-	if (id_buf) pkg_free(id_buf);
-#endif
+	if (extra_params.s) pkg_free(extra_params.s);
+error:
 	*returned_len=0;
 	return 0;
 }
