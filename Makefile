@@ -46,7 +46,7 @@ skip_cfg_install?=
 skip_modules?=
 
 # if not set on the cmd. line or the env, exclude this modules:
-exclude_modules?= 		jabber cpl-c mysql pa postgres osp unixodbc \
+exclude_modules?= 		jabber cpl-c pa postgres osp unixodbc \
 						avp_radius auth_radius group_radius uri_radius
 ifeq ($(TLS),)
 	exclude_modules+= tlsops
@@ -392,10 +392,10 @@ install-cfg: $(cfg-prefix)/$(cfg-dir)
 install-bin: $(bin-prefix)/$(bin-dir) utils
 		$(INSTALL-TOUCH) $(bin-prefix)/$(bin-dir)/$(NAME) 
 		$(INSTALL-BIN) $(NAME) $(bin-prefix)/$(bin-dir)
-		sed -e "s#/usr/local/sbin#$(bin-target)#g" \
-			< scripts/openserctl > /tmp/openserctl
-		sed -i -e "s#/usr/local/lib/openser#$(lib-target)#g" /tmp/openserctl
-		sed -i -e "s#/usr/local/etc/openser#$(cfg-target)#g" /tmp/openserctl
+		cat scripts/openserctl | \
+		sed -e "s#/usr/local/sbin#$(bin-target)#g" | \
+		sed -e "s#/usr/local/lib/openser#$(lib-target)#g" | \
+		sed -e "s#/usr/local/etc/openser#$(cfg-target)#g"  >/tmp/openserctl
 		$(INSTALL-TOUCH) $(bin-prefix)/$(bin-dir)/openserctl
 		$(INSTALL-BIN) /tmp/openserctl $(bin-prefix)/$(bin-dir)
 		rm -fr /tmp/openserctl
