@@ -48,12 +48,7 @@ int isflagset( struct sip_msg* msg, flag_t flag ) {
 }
 
 int flag_in_range( flag_t flag ) {
-	if (flag > MAX_FLAG ) {
-		LOG(L_ERR, "ERROR: message flag %d too high; MAX=%d\n",
-			flag, MAX_FLAG );
-		return 0;
-	}
-	if (flag<=0) {
+	if (flag < 0 || flag > MAX_FLAG ) {
 		LOG(L_ERR, "ERROR: message flag (%d) must be in range %d..%d\n",
 			flag, 1, MAX_FLAG );
 		return 0;
