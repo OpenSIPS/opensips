@@ -434,6 +434,7 @@ int parse_headers(struct sip_msg* msg, hdr_flags_t flags, int next)
 				msg->parsed_flag |= HDR_MIN_SE_F;
 				break;
 			case HDR_VIA_T:
+				link_sibling_hdr(h_via1,hf);
 				msg->parsed_flag|=HDR_VIA_F;
 				DBG("parse_headers: Via found, flags=%llx\n",
 						(unsigned long long)flags);
