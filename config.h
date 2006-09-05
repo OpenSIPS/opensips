@@ -123,11 +123,11 @@
 /* size of the size2bucket table; everything beyond that asks for
    a variable-size kilo-bucket
  */
-#define MAX_FIXED_BLOCK         3072
+#define MAX_FIXED_BLOCK   3072
 /* distance of kilo-buckets */
-#define BLOCK_STEP                      512
+#define BLOCK_STEP        512
 /* maximum number of possible buckets */
-#define MAX_BUCKET		15
+#define MAX_BUCKET        15
 
 /* receive buffer size -- preferably set low to
    avoid terror of excessively huge messages; they are
@@ -194,12 +194,7 @@
 /* minimum packet size; smaller packets will be dropped silently */
 #define MIN_UDP_PACKET        32
 
-
 #define DEFAULT_RADIUSCLEINT_CONF \
 	"/usr/local/etc/radiusclient-ng/radiusclient.conf"
-
-/* size of TM hash table */
-#define TM_TABLE_ENTRIES     (1<<16)
-
 
 #endif
