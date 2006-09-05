@@ -208,7 +208,6 @@ PORT	port
 MAXBUFFER maxbuffer
 CHILDREN children
 CHECK_VIA	check_via
-SYN_BRANCH syn_branch
 MEMLOG		"memlog"|"mem_log"
 SIP_WARNING sip_warning
 FIFO fifo
@@ -411,7 +410,6 @@ EAT_ABLE	[\ \t\b\r]
 <INITIAL>{MAXBUFFER}	{ count(); yylval.strval=yytext; return MAXBUFFER; }
 <INITIAL>{CHILDREN}	{ count(); yylval.strval=yytext; return CHILDREN; }
 <INITIAL>{CHECK_VIA}	{ count(); yylval.strval=yytext; return CHECK_VIA; }
-<INITIAL>{SYN_BRANCH}	{ count(); yylval.strval=yytext; return SYN_BRANCH; }
 <INITIAL>{MEMLOG}	{ count(); yylval.strval=yytext; return MEMLOG; }
 <INITIAL>{SIP_WARNING}	{ count(); yylval.strval=yytext; return SIP_WARNING; }
 <INITIAL>{USER}		{ count(); yylval.strval=yytext; return USER; }

@@ -56,13 +56,8 @@
 #include <arpa/inet.h>
 
 #include "forward.h"
-#include "hash_func.h"
-#include "config.h"
 #include "parser/msg_parser.h"
-#include "route.h"
 #include "dprint.h"
-#include "globals.h"
-#include "data_lump.h"
 #include "ut.h"
 #include "mem/mem.h"
 #include "msg_translator.h"
@@ -256,12 +251,9 @@ int forward_request( struct sip_msg* msg, struct proxy_l * p)
 	char* buf;
 	union sockaddr_union* to;
 	struct socket_info* send_sock;
-	char md5[MD5_LEN];
-	int id; /* used as branch for tcp! */
-	
+
 	to=0;
 	buf=0;
-	id=0;
 	
 	to=(union sockaddr_union*)pkg_malloc(sizeof(union sockaddr_union));
 	if (to==0){
@@ -291,32 +283,14 @@ int forward_request( struct sip_msg* msg, struct proxy_l * p)
 		goto error1;
 	}
 
-	/* calculate branch for outbound request;  if syn_branch is turned off,
-	   calculate is from transaction key, i.e., as an md5 of From/To/CallID/
-	   CSeq exactly the same way as TM does; good for reboot -- than messages
-	   belonging to transaction lost due to reboot will still be forwarded
-	   with the same branch parameter and will be match-able downstream
-
-       if it is turned on, we don't care about reboot; we simply put a simple
-	   value in there; better for performance
-	*/
+	/* calculate branch for outbound request - if the branch buffer is already
+	 * set (maybe by an upper level as TM), used it; otherwise computes 
+	 * the branch for stateless fwd. . According to the latest discussions
+	 * on the topic, you should reuse the latest statefull branch; but for the
+	 * moment just put 0 :)   --bogdan */
 	if ( msg->add_to_branch_len==0 ) {
-		if (syn_branch ) {
-			*msg->add_to_branch_s='0';
-			msg->add_to_branch_len=1;
-		} else {
-			if (!char_msg_val( msg, md5 )) 	{ /* parses transaction key */
-				LOG(L_ERR, "ERROR: forward_request: char_msg_val failed\n");
-				goto error1;
-			}
-			msg->hash_index = core_hash( &msg->callid->body,
-					&(get_cseq(msg)->number), TM_TABLE_ENTRIES);
-			if (!branch_builder( msg->hash_index, 0, md5, id /* 0-th branch */,
-						msg->add_to_branch_s, &msg->add_to_branch_len )) {
-				LOG(L_ERR, "ERROR: forward_request: branch_builder failed\n");
-				goto error1;
-			}
-		}
+		*msg->add_to_branch_s='0';
+		msg->add_to_branch_len=1;
 	}
 
 	buf = build_req_buf_from_sip_req( msg, &len, send_sock, p->proto);

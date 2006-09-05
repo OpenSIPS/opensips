@@ -87,7 +87,6 @@ extern unsigned short tls_port_no;
 extern int dont_fork;
 extern int check_via;
 extern int received_dns;
-extern int syn_branch;
 /* extern int process_no; */
 extern int sip_warning;
 extern int server_signature;
