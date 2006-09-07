@@ -52,7 +52,7 @@ typedef unsigned long (*stat_function)(void);
 struct module_stats_;
 
 typedef struct stat_var_{
-	struct module_stats_ *module;
+	unsigned int mod_idx;
 	str name;
 	int flags;
 	union{

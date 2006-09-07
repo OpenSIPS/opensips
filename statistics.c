@@ -239,7 +239,7 @@ int register_stat( char *module, char *name, stat_var **pvar, int flags)
 	}
 
 	/* fill the stat record */
-	stat->module = mods;
+	stat->mod_idx = collector->mod_no-1;
 
 	stat->name.s = name;
 	stat->name.len = strlen(name);
@@ -344,7 +344,8 @@ static void inline fifo_print_stat(FILE *rf, str *name)
 
 	fprintf(rf,"200 OK\n");
 	fprintf(rf,"%.*s:%.*s = %lu\n",
-		stat->module->name.len, stat->module->name.s,
+		collector->amodules[stat->mod_idx].name.len,
+		collector->amodules[stat->mod_idx].name.s,
 		stat->name.len, stat->name.s,
 		get_stat_val(stat) );
 }
