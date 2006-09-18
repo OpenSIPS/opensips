@@ -57,6 +57,7 @@ clean: docbook-clean
 			$(MAKE) -C $$r clean ; \
 		fi ; \
 	done
+	-@if [ -d utils/openserunix ]; then $(MAKE) -C utils/openserunix clean; fi
 
 .PHONY: proper
 .PHONY: distclean
@@ -69,6 +70,7 @@ proper realclean distclean: clean
 			 $(MAKE) -C $$r proper ; \
 		fi ; \
 	done 
+	-@if [ -d utils/openserunix ]; then $(MAKE) -C utils/openserunix proper; fi
 
 .PHONY: mantainer-clean
 mantainer-clean: distclean
@@ -78,6 +80,7 @@ mantainer-clean: distclean
 			$(MAKE) -C $$r mantainer-clean; \
 		fi ; \
 	 done 
+	-@if [ -d utils/openserunix ]; then $(MAKE) -C utils/openserunix mantainer-clean; fi
 
 
 .PHONY: TAGS
