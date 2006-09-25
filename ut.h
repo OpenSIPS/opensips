@@ -471,4 +471,9 @@ static inline int str2sint(str* _s, int* _r)
 	return 0;
 }
 
+
+int user2uid(int* uid, int* gid, char* user);
+
+int group2gid(int* gid, char* group);
+
 #endif
