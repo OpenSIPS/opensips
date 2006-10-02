@@ -28,8 +28,9 @@
 
 #include <string.h>
 
-#include "dprint.h"
 #include "mem/shm_mem.h"
+#include "mi/mi.h"
+#include "dprint.h"
 #include "fifo_server.h"
 #include "locking.h"
 #include "core_stats.h"
@@ -41,6 +42,9 @@ static stats_collector *collector;
 
 static int fifo_get_stats( FILE *fifo, char *response_file );
 static int fifo_reset_stats( FILE *fifo, char *response_file );
+
+static struct mi_node *mi_get_stats(struct mi_node *cmd, void *param);
+static struct mi_node *mi_reset_stats(struct mi_node *cmd, void *param);
 
 #ifdef NO_ATOMIC_OPS
 #warning STATISTICS: Architecture with no support for atomic operations. \
@@ -77,9 +81,22 @@ int init_stats_collector()
 		goto error;
 	}
 
-	/* register FIFO commands */
 	if (register_fifo_cmd( fifo_reset_stats, "reset_statistics", 0)!=1) {
 		LOG(L_ERR,"ERROR:init_stats_collector: failed to register fifo "
+			"command\n");
+		goto error;
+		return -1;
+	}
+
+	/* register MI commands */
+	if (register_mi_cmd( mi_get_stats, "get_statistics", 0)!=0) {
+		LOG(L_ERR,"ERROR:init_stats_collector: failed to register MI "
+			"command\n");
+		goto error;
+	}
+
+	if (register_mi_cmd( mi_reset_stats, "reset_statistics", 0)!=0) {
+		LOG(L_ERR,"ERROR:init_stats_collector: failed to register MI "
 			"command\n");
 		goto error;
 		return -1;
@@ -486,6 +503,136 @@ static int fifo_reset_stats( FILE *fifo, char *reply_file )
 	return 0;
 error:
 	return -1;
+}
+
+
+
+
+
+
+/***************************** MI STUFF ********************************/
+
+static int inline mi_add_stat(struct mi_node *rpl, stat_var *stat)
+{
+	struct mi_node *node;
+
+	node = addf_mi_node_child(rpl, 0, 0, 0, "%.*s:%.*s = %lu",
+		collector->amodules[stat->mod_idx].name.len,
+		collector->amodules[stat->mod_idx].name.s,
+		stat->name.len, stat->name.s,
+		get_stat_val(stat) );
+
+	if (node==0)
+		return -1;
+	return 0;
+}
+
+static int inline mi_add_module_stats(struct mi_node *rpl,
+													module_stats *mods)
+{
+	struct mi_node *node;
+	stat_var *stat;
+
+	for( stat=mods->head ; stat ; stat=stat->lnext) {
+		node = addf_mi_node_child(rpl, 0, 0, 0, "%.*s:%.*s = %lu",
+			mods->name.len, mods->name.s,
+			stat->name.len, stat->name.s,
+			get_stat_val(stat) );
+		if (node==0)
+			return -1;
+	}
+	return 0;
+}
+
+
+static struct mi_node *mi_get_stats(struct mi_node *cmd, void *param)
+{
+	struct mi_node *rpl;
+	struct mi_node *arg;
+	module_stats   *mods;
+	stat_var       *stat;
+	str val;
+	int i;
+
+	if (cmd->kids==NULL)
+		return init_mi_tree( "400 Missing arguments", 21);
+
+	rpl = init_mi_tree( MI_200_OK_S, MI_200_OK_LEN);
+
+	for( arg=cmd->kids ; arg ; arg=arg->next) {
+		if (arg->value.len==0)
+			continue;
+
+		val = arg->value;
+
+		if ( val.len==3 && memcmp(val.s,"all",3)==0) {
+			/* add all statistic variables */
+			for( i=0 ; i<collector->mod_no ;i++ ) {
+				if (mi_add_module_stats( rpl, &collector->amodules[i] )!=0)
+					goto error;
+			}
+		} else if ( val.len>1 && val.s[val.len-1]==':') {
+			/* add module statistics */
+			val.len--;
+			mods = get_stat_module( &val );
+			if (mods==0)
+				continue;
+			if (mi_add_module_stats( rpl, mods )!=0)
+				goto error;
+		} else {
+			/* add only one statistic */
+			stat = get_stat( &val );
+			if (stat==0)
+				continue;
+			if (mi_add_stat(rpl,stat)!=0)
+				goto error;
+		}
+	}
+
+	if (rpl->kids==0) {
+		free_mi_tree(rpl);
+		return init_mi_tree( "404 Statistics Not Found", 24);
+	}
+
+	return rpl;
+error:
+	free_mi_tree(rpl);
+	return 0;
+}
+
+
+
+static struct mi_node *mi_reset_stats(struct mi_node *cmd, void *param)
+{
+	struct mi_node *rpl;
+	struct mi_node *arg;
+	stat_var       *stat;
+	int found;
+
+	if (cmd->kids==NULL)
+		return init_mi_tree( "400 Missing arguments", 21);
+
+	rpl = init_mi_tree( MI_200_OK_S, MI_200_OK_LEN);
+	found = 0;
+
+	for( arg=cmd->kids ; arg ; arg=arg->next) {
+		if (arg->value.len==0)
+			continue;
+
+		stat = get_stat( &arg->value );
+		if (stat==0)
+			continue;
+
+		reset_stat( stat );
+		found = 1;
+	}
+
+	if (!found) {
+		free_mi_tree(rpl);
+		return init_mi_tree( "404 Statistics Not Found", 24);
+	}
+
+	return rpl;
 }
 
 
