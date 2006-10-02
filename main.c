@@ -126,6 +126,7 @@
 #endif
 #endif
 #include "version.h"
+#include "mi/mi_core.h"
 
 static char id[]="@(#) $Id$";
 static char* version=SER_FULL_VERSION;
@@ -1408,6 +1409,12 @@ try_again:
 		LOG(L_ERR, "Error while initializing statistics\n");
 		goto error;
 	}
+	/* Init MI */
+	if (init_mi_core()<0) {
+		LOG(L_ERR, "Error while initializing MI core\n");
+		goto error;
+	}
+
 	/* init modules */
 	if (init_modules() != 0) {
 		fprintf(stderr, "ERROR: error while initializing modules\n");
