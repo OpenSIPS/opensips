@@ -1,0 +1,209 @@
+/*
+ * $Id$
+ *
+ * Copyright (C) 2006 Voice Sistem SRL
+ *
+ * This file is part of openser, a free SIP server.
+ *
+ * openser is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * openser is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ *
+ *
+ * History:
+ * ---------
+ *  2006-09-08  first version (bogdan)
+ */
+
+
+
+#include <string.h>
+#include <stdio.h>
+#include <errno.h>
+#include "../mem/mem.h"
+#include "../dprint.h"
+#include "tree.h"
+#include "fmt.h"
+
+
+
+struct mi_node *init_mi_tree( char *reason, int reason_len)
+{
+	struct mi_node *root;
+
+	root = (struct mi_node *)pkg_malloc(sizeof(struct mi_node));
+	if (!root) {
+		LOG(L_ERR,"ERROR:mi:init_mi_tree: no more pkg mem\n");
+		return NULL;
+	}
+
+	memset(root,0,sizeof(struct mi_node));
+	root->next = root->last = root;
+
+	if (reason && reason_len) {
+		root->value.s = reason;
+		root->value.len = reason_len;
+	}
+
+	return root;
+}
+
+
+void free_mi_tree(struct mi_node *parent)
+{
+	struct mi_node *p, *q;
+	
+	for(p = parent->kids ; p ; ){
+		q = p;
+		p = p->next;
+		free_mi_tree(q);
+	}
+
+	del_mi_attr_list(parent);
+	pkg_free(parent);
+}
+
+
+static inline struct mi_node *create_mi_node(char *name, int name_len,
+									char *value, int value_len, int flags)
+{
+	struct mi_node *new;
+	int size_mem;
+	int name_pos;
+	int value_pos;
+
+	if (!name) name_len=0;
+	if (!name_len) name=0;
+	if (!value) value_len=0;
+	if (!value_len) value=0;
+
+	if (!name && !value)
+		return NULL;
+
+	size_mem = sizeof(struct mi_node);
+	value_pos = name_pos = 0;
+
+	if (name && (flags & MI_DUP_NAME)){
+		name_pos = size_mem;
+		size_mem += name_len;
+	}
+	if (value && (flags & MI_DUP_VALUE)){
+		value_pos = size_mem;
+		size_mem += value_len;
+	}
+
+	new = (struct mi_node *)pkg_malloc(size_mem);
+	if(!new) {
+		LOG(L_ERR,"ERROR:mi:init_mi_tree: no more pkg mem\n");
+		return NULL;
+	}
+	memset(new,0,size_mem);
+
+	if (name) {
+		new->name.len = name_len;
+		if(flags & MI_DUP_NAME){
+			new->name.s = ((char *)new) + name_pos;
+			strncpy(new->name.s, name, name_len);
+		} else{
+			new->name.s = name;
+		}
+	}
+
+	if (value) {
+		new->value.len = value_len;
+		if(flags & MI_DUP_VALUE){
+			new->value.s = ((char *)new) + value_pos;
+			strncpy(new->value.s, value, value_len);
+		}else{
+			new->value.s = value;
+		}
+	}
+	new->last = new;
+
+	return new;
+}
+
+
+static inline struct mi_node *add_next(struct mi_node *brother,
+			char *name, int name_len, char *value, int value_len, int flags)
+{
+	struct mi_node *new;
+
+	if(!brother)
+		return NULL;
+	
+	new = create_mi_node(name, name_len, value, value_len, flags);
+	if(!new)
+		return NULL;
+
+	brother->last->next = new;
+	brother->last = new;
+
+	return new;
+}
+
+
+struct mi_node *add_mi_node_sibling( struct mi_node *brother, int flags,
+						char *name, int name_len, char *value, int value_len)
+{
+	return add_next(brother, name, name_len, value, value_len, flags);
+}
+
+
+struct mi_node *addf_mi_node_sibling(struct mi_node *brother, int flags,
+							char *name, int name_len, char *fmt_val, ...)
+{
+	va_list ap;
+	char *p;
+	int  len;
+
+	va_start(ap, fmt_val);
+	p = mi_print_fmt( fmt_val, ap, &len);
+	va_end(ap);
+	if (p==NULL)
+		return 0;
+	return add_mi_node_sibling( brother, flags|MI_DUP_VALUE,
+		name, name_len, p, len);
+}
+
+
+struct mi_node *add_mi_node_child( struct mi_node *parent, int flags,
+						char *name, int name_len, char *value, int value_len)
+{
+	if(parent->kids){
+		return add_next(parent->kids, name, name_len, value, value_len, flags);
+	}else{
+		parent->kids = create_mi_node(name, name_len, value, value_len, flags);
+		return parent->kids;
+	}
+}
+
+
+struct mi_node *addf_mi_node_child(struct mi_node *parent, int flags,
+							char *name, int name_len, char *fmt_val, ...)
+{
+	va_list ap;
+	char *p;
+	int  len;
+
+	va_start(ap, fmt_val);
+	p = mi_print_fmt( fmt_val, ap, &len);
+	va_end(ap);
+	if (p==NULL)
+		return 0;
+	return add_mi_node_child( parent, flags|MI_DUP_VALUE,
+		name, name_len, p, len);
+}
+
+
+
