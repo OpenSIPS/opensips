@@ -256,7 +256,7 @@ inline static int int2reverse_hex( char **c, int *size, int nr )
 	return nr ? -1 /* number not processed; too little space */ : 1;
 }
 
-inline static int hexstr2int(char *c, int len, int *val)
+inline static int hexstr2int(char *c, int len, unsigned int *val)
 {
 	char *pc;
 	int r;
