@@ -60,7 +60,42 @@ static inline struct mi_cmd* lookup_mi_cmd_id(int id,char *name, int len)
 }
 
 
-int register_mi_cmd( mi_cmd_f f, char *name, void *param)
+int register_mi_mod( char *mod_name, mi_export_t *mis)
+{
+	int ret;
+	int i;
+
+	if (mis==0)
+		return 0;
+
+	for ( i=0 ; mis[i].name ; i++ ) {
+		ret = register_mi_cmd( mis[i].cmd, mis[i].name, mis[i].param,
+			mis[i].init_f);
+		if (ret!=0) {
+			LOG(L_ERR,"ERROR:mi:register_mi_mod: failed to register cmd <%s>"
+				"for module %s\n",mis[i].name,mod_name);
+		}
+	}
+	return 0;
+}
+
+
+int init_mi_child()
+{
+	int i;
+
+	for ( i=0 ; i<mi_cmds_no ; i++ ) {
+		if ( mi_cmds[i].init_f && mi_cmds[i].init_f()!=0 ) {
+			LOG(L_ERR,"ERROR:mi:init_mi_child: failed to init <%.*s>\n",
+				mi_cmds[i].name.len,mi_cmds[i].name.s);
+		}
+	}
+	return 0;
+}
+
+
+
+int register_mi_cmd( mi_cmd_f f, char *name, void *param, mi_child_init_f in)
 {
 	struct mi_cmd *cmds;
 	int id;
@@ -94,6 +129,7 @@ int register_mi_cmd( mi_cmd_f f, char *name, void *param)
 	cmds = &cmds[mi_cmds_no-1];
 
 	cmds->f = f;
+	cmds->init_f = in;
 	cmds->name.s = name;
 	cmds->name.len = len;
 	cmds->id = id;

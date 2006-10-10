@@ -430,7 +430,9 @@ static int init_mod( struct sr_module* m )
 		   propagate it up the stack
 		 */
 		if (init_mod(m->next)!=0) return -1;
-		if (m->exports && m->exports->init_f) {
+		if (m->exports==0)
+			return 0;
+		if (m->exports->init_f) {
 			DBG("DEBUG: init_mod: %s\n", m->exports->name);
 			if (m->exports->init_f()!=0) {
 				LOG(L_ERR, "init_mod(): Error while initializing"
@@ -440,15 +442,24 @@ static int init_mod( struct sr_module* m )
 		}
 		/* no init function -- proceed further */
 #ifdef STATISTICS
-		if (m->exports && m->exports->stats) {
-			DBG("DEBUG: init_stats: %s\n", m->exports->name);
+		if (m->exports->stats) {
+			DBG("DEBUG: register_stats: %s\n", m->exports->name);
 			if (register_module_stats(m->exports->name,m->exports->stats)!=0) {
-				LOG(L_ERR, "init_(): Error while initializing"
-					" statistics for module %s\n", m->exports->name);
+				LOG(L_ERR, "init_mod(): Error while registering "
+					"statistics for module %s\n", m->exports->name);
 				return -1;
 			}
 		}
 #endif
+		/* register MI functions */
+		if (m->exports->mi_cmds) {
+			DBG("DEBUG: register_mi: %s\n", m->exports->name);
+			if (register_mi_mod(m->exports->name,m->exports->mi_cmds)!=0) {
+				LOG(L_ERR, "init_mod(): Error while registering "
+					"MI functions for module %s\n", m->exports->name);
+			}
+		}
+
 		/* proceed with success */
 		return 0;
 	} else {

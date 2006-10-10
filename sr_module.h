@@ -40,6 +40,7 @@
 
 #include "parser/msg_parser.h" /* for sip_msg */
 #include "statistics.h"
+#include "mi/mi.h"
 #include "version.h"
 #include "route.h"
 
@@ -96,21 +97,23 @@ struct module_exports{
 	char* name;                     /* null terminated module name */
 	
 	cmd_export_t* cmds;             /* null terminated array of the exported
-									   commands */
+	                                   commands */
 	param_export_t* params;         /* null terminated array of the exported
-									   module parameters */
+	                                   module parameters */
 
-	stat_export_t* stats;          /* null terminated array of the exported
-									   module statistics */
+	stat_export_t* stats;           /* null terminated array of the exporte
+	                                   module statistics */
+
+	mi_export_t* mi_cmds;           /* null terminated array of the exported
+	                                   MI functions */
 
 	init_function init_f;           /* Initialization function */
 	response_function response_f;   /* function used for responses,
-									   returns yes or no; can be null */
+	                                   returns yes or no; can be null */
 	destroy_function destroy_f;     /* function called when the module should
-									   be "destroyed", e.g: on ser exit;
-									   can be null */
-	child_init_function init_child_f;  /* function called by all processes
-										  after the fork */
+	                                   be "destroyed", e.g: on openser exit */
+	child_init_function init_child_f;/* function called by all processes
+	                                    after the fork */
 };
 
 

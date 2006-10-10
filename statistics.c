@@ -46,6 +46,14 @@ static int fifo_reset_stats( FILE *fifo, char *response_file );
 static struct mi_node *mi_get_stats(struct mi_node *cmd, void *param);
 static struct mi_node *mi_reset_stats(struct mi_node *cmd, void *param);
 
+static mi_export_t mi_stat_cmds[] = {
+	{ "get_statistics",    mi_get_stats,    0,  0 },
+	{ "reset_statistics",  mi_reset_stats,  0,  0 },
+	{ 0, 0, 0, 0}
+};
+
+
+
 #ifdef NO_ATOMIC_OPS
 #warning STATISTICS: Architecture with no support for atomic operations. \
          Using Locks!!
@@ -89,17 +97,9 @@ int init_stats_collector()
 	}
 
 	/* register MI commands */
-	if (register_mi_cmd( mi_get_stats, "get_statistics", 0)!=0) {
-		LOG(L_ERR,"ERROR:init_stats_collector: failed to register MI "
-			"command\n");
+	if (register_mi_mod( "statistics", mi_stat_cmds)<0) {
+		LOG(L_ERR, "ERROR:init_stats_collector: unable to register MI cmds\n");
 		goto error;
-	}
-
-	if (register_mi_cmd( mi_reset_stats, "reset_statistics", 0)!=0) {
-		LOG(L_ERR,"ERROR:init_stats_collector: failed to register MI "
-			"command\n");
-		goto error;
-		return -1;
 	}
 
 	/* register core statistics */

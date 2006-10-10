@@ -44,8 +44,19 @@
 #define MAX_CTIME_LEN 24
 
 static time_t up_since;
-static char up_since_ctime[MAX_CTIME_LEN];
+static char *up_since_ctime;
 
+static int init_mi_uptime()
+{
+	time(&up_since);
+	up_since_ctime = (char*)pkg_malloc(MAX_CTIME_LEN+1);
+	if (up_since_ctime==0) {
+		LOG(L_ERR,"ERROR:mi:init_mi_uptime: no more pkg mem\n");
+		return -1;
+	}
+	sprintf( up_since_ctime, "%s" , ctime(&up_since));
+	return 0;
+}
 
 
 static struct mi_node *mi_uptime(struct mi_node *cmd, void *param)
@@ -253,43 +264,23 @@ static struct mi_node *mi_kill(struct mi_node *cmd, void *param)
 }
 
 
+static mi_export_t mi_core_cmds[] = {
+	{ "uptime",   mi_uptime,   0,  init_mi_uptime },
+	{ "version",  mi_version,  0,  0 },
+	{ "pwd",      mi_pwd,      0,  0 },
+	{ "arg",      mi_arg,      0,  0 },
+	{ "which",    mi_which,    0,  0 },
+	{ "ps",       mi_ps,       0,  0 },
+	{ "kill",     mi_kill,     0,  0 },
+	{ 0, 0, 0, 0}
+};
+
+
 
 int init_mi_core()
 {
-	if (register_mi_cmd( mi_uptime, "uptime", 0)<0) {
-		LOG(L_ERR, "ERROR: unable to register 'uptime' MI cmd\n");
-		return -1;
-	}
-	time(&up_since);
-	sprintf( up_since_ctime, "%s" , ctime(&up_since));
-
-	if (register_mi_cmd( mi_version, "version", 0)<0) {
-		LOG(L_ERR, "ERROR: unable to register 'version' MI cmd\n");
-		return -1;
-	}
-
-	if (register_mi_cmd( mi_pwd, "pwd", 0)<0) {
-		LOG(L_ERR, "ERROR: unable to register 'pwd' MI cmd\n");
-		return -1;
-	}
-
-	if (register_mi_cmd( mi_arg, "arg", 0)<0) {
-		LOG(L_ERR, "ERROR: unable to register 'arg' MI cmd\n");
-		return -1;
-	}
-
-	if (register_mi_cmd( mi_which, "which", 0)<0) {
-		LOG(L_ERR, "ERROR: unable to register 'which' MI cmd\n");
-		return -1;
-	}
-
-	if (register_mi_cmd( mi_ps, "ps", 0)<0) {
-		LOG(L_ERR, "ERROR: unable to register 'ps' MI cmd\n");
-		return -1;
-	}
-
-	if (register_mi_cmd( mi_kill, "kill", 0)<0) {
-		LOG(L_CRIT, "ERROR: unable to register 'kill' MI cmd\n");
+	if (register_mi_mod( "core", mi_core_cmds)<0) {
+		LOG(L_ERR, "ERROR:mi: unable to register core MI cmds\n");
 		return -1;
 	}
 

@@ -34,16 +34,30 @@
 #include "tree.h"
 
 typedef struct mi_node* (mi_cmd_f)(struct mi_node*, void *param);
+typedef int (mi_child_init_f)();
 
 struct mi_cmd {
 	int id;
 	str name;
+	mi_child_init_f *init_f;
 	mi_cmd_f *f;
 	void *param;
 };
 
 
-int register_mi_cmd( mi_cmd_f f, char *name, void *param);
+typedef struct mi_export_ {
+	char *name;
+	mi_cmd_f *cmd;
+	void *param;
+	mi_child_init_f *init_f;
+}mi_export_t;
+
+
+int register_mi_cmd( mi_cmd_f f, char *name, void *param, mi_child_init_f in);
+
+int register_mi_mod( char *mod_name, mi_export_t *mis);
+
+int init_mi_child();
 
 struct mi_cmd* lookup_mi_cmd( char *name, int len);
 
