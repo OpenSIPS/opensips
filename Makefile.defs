@@ -55,7 +55,7 @@ MAIN_NAME=openser
 VERSION = 1
 PATCHLEVEL = 2
 SUBLEVEL = 0
-EXTRAVERSION = -dev5
+EXTRAVERSION = -dev6
 
 RELEASE=$(VERSION).$(PATCHLEVEL).$(SUBLEVEL)$(EXTRAVERSION)
 OS = $(shell uname -s | sed -e s/SunOS/solaris/ | tr "[A-Z]" "[a-z]")
@@ -168,7 +168,7 @@ prefix = $(PREFIX)
 # example:
 #  creating a bin. archive in /tmp, which unpacks in /usr/local
 #  basedir=/tmp
-prefix=/usr/local/openser-1.2.0-presence
+#  prefix=/usr/local
 
 BASEDIR ?=
 basedir = $(BASEDIR)
@@ -355,8 +355,7 @@ DEFS+= $(extra_defs) \
 	 -DDISABLE_NAGLE \
 	 -DHAVE_RESOLV_RES \
 	 -DSTATISTICS \
-	 -DDBG_F_MALLOC \
-	 # -DF_MALLOC \
+	 -DF_MALLOC \
 	 #-DDBG_F_MALLOC \
 	 #-DDBG_QM_MALLOC \
 	 #-DDBG_F_MALLOC \
