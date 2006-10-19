@@ -39,6 +39,11 @@
 #  2004-12-19  amd64 transformed in x86_64 (andrei)
 #  2005-04-27  alpha support added (andrei)
 #  2005-06-01  use $(LOCALBASE) instead of /usr/{local,pkg} (andrei)
+#  2006-10-19  gcc-3.4 and gcc-3.0 cases merged as they proved to be identical;
+#              CC_CLASS replaces CC_SHORTVER while CC_SHORTVER is keept without
+#              any wildcards;
+#              for gcc 4.1, warnings about strict-aliasing are suppressed
+#              (bogdan)
 
 
 # check if already included/exported
@@ -235,13 +240,13 @@ ifneq (,$(findstring gcc, $(CC_LONGVER)))
 			 	 -e 's/^[^0-9].*\([0-9][0-9]*\.[0-9][0-9]*\).*/\1/')
 	# sun sed is a little brain damaged => this complicated expression
 	MKDEP=$(CC) -MM 
-	#transform gcc version into 2.9x, 3.x or 4.x
 	CC_SHORTVER=$(shell echo "$(CC_VER)" | cut -d" " -f 2| \
 				 sed -e 's/[^0-9]*-\(.*\)/\1/'| \
-				 sed -e 's/2\.9.*/2.9x/' -e 's/3\.[0-3]\..*/3.0/' -e \
-				 	's/3\.[0-3]/3.0/' -e 's/3\.[4-9]\..*/3.4/' -e \
-					's/3\.[4-9]/3.4/' -e 's/4\.[0-9]\..*/4.x/' -e \
-					's/4\.[0-9]/4.x/' )
+				 sed -e 's/\([0-9]\+\.[0-9]\+\).*/\1/' )
+	#transform gcc version into 2.9x, 3.x or 4.x
+	CC_CLASS=$(shell echo "$(CC_SHORTVER)" | \
+				 sed -e 's/2\.9.*/2.9x/' -e 's/3\.[0-9]/3.x/' \
+				 -e 's/4\.[0-9]/4.x/')
 endif
 
 ifneq (, $(findstring Sun, $(CC_LONGVER)))
@@ -356,7 +361,6 @@ DEFS+= $(extra_defs) \
 	 -DHAVE_RESOLV_RES \
 	 -DSTATISTICS \
 	 -DF_MALLOC \
-	 #-DDBG_F_MALLOC \
 	 #-DDBG_QM_MALLOC \
 	 #-DDBG_F_MALLOC \
 	 #-DNO_DEBUG \
@@ -502,29 +506,25 @@ ifeq		($(CC_NAME), gcc)
 				#common stuff
 				CFLAGS+=-g -O9 -funroll-loops  -Wcast-align $(PROFILE) \
 					-Wall  
+ifeq			($(CC_SHORTVER), 4.1)
+					CFLAGS+=-Wno-strict-aliasing 
+endif
 			#if gcc 4.0+
-ifeq			($(CC_SHORTVER), 4.x)
+ifeq			($(CC_CLASS), 4.x)
 					CPU ?= athlon64
 					CFLAGS+=-minline-all-stringops \
 							-falign-loops \
 							-ftree-vectorize \
 							-mtune=$(CPU) 
 else
-			#if gcc 3.4+
-ifeq			($(CC_SHORTVER), 3.4)
-					CPU ?= athlon
-					CFLAGS+=-minline-all-stringops \
-							-falign-loops \
-							-mtune=$(CPU) 
-else
 			#if gcc 3.0+
-ifeq			($(CC_SHORTVER), 3.0)
+ifeq			($(CC_CLASS), 3.x)
 					CPU ?= athlon
 					CFLAGS+=-minline-all-stringops \
 							-falign-loops \
 							-mcpu=$(CPU) 
 else
-ifeq			($(CC_SHORTVER), 2.9x) #older gcc version (2.9[1-5])
+ifeq			($(CC_CLASS), 2.9x) #older gcc version (2.9[1-5])
 $(warning 			Old gcc detected ($(CC_SHORTVER)), use  gcc >= 3.1 \
 					for better results)
 
@@ -535,10 +535,9 @@ else
 $(warning			You are using an old and unsupported gcc \
 					 version  ($(CC_SHORTVER)), compile at your own risk!)
 
-endif			# CC_SHORTVER, 2.9x
-endif			# CC_SHORTVER, 3.0
-endif			# CC_SHORTVER, 3.4
-endif			# CC_SHORTVER, 4.x
+endif			# CC_CLASS, 2.9x
+endif			# CC_CLASS, 3.x
+endif			# CC_CLASS, 4.x
 
 else		# CC_NAME, gcc
 ifeq		($(CC_NAME), icc)
@@ -563,28 +562,20 @@ ifeq		($(CC_NAME), gcc)
 				CFLAGS+=-g -O9 -funroll-loops  -Wcast-align $(PROFILE) \
 					-Wall 
 			#if gcc 4.0+
-ifeq			($(CC_SHORTVER), 4.x)
+ifeq			($(CC_CLASS), 4.x)
 					CPU ?= opteron
 					CFLAGS+=-minline-all-stringops \
 							-falign-loops \
 							-ftree-vectorize \
 							-mtune=$(CPU) 
 else
-			#if gcc 3.4
-ifeq			($(CC_SHORTVER), 3.4)
+			#if gcc 3.0+
+ifeq			($(CC_CLASS), 3.x)
 					CPU ?= athlon64
 					CFLAGS+=-minline-all-stringops \
 							-falign-loops 
 else
-			#if gcc 3.0
-ifeq			($(CC_SHORTVER), 3.0)
-					CPU ?= athlon64
-					CFLAGS+=-minline-all-stringops \
-							-falign-loops 
-							#-mcpu=$(CPU) \ # not working on all x86_64 gccs
-							#-mcpu=athlon
-else
-ifeq			($(CC_SHORTVER), 2.9x) #older gcc version (2.9[1-5])
+ifeq			($(CC_CLASS), 2.9x) #older gcc version (2.9[1-5])
 $(warning 			Old gcc detected ($(CC_SHORTVER)), use  gcc >= 3.1 \
 					for better results)
 
@@ -595,10 +586,9 @@ else
 $(warning			You are using an old and unsupported gcc \
 					 version  ($(CC_SHORTVER)), compile at your own risk!)
 
-endif			# CC_SHORTVER, 2.9x
-endif			# CC_SHORTVER, 3.0
-endif			# CC_SHORTVER, 3.4
-endif			# CC_SHORTVER, 4.x
+endif			# CC_CLASS, 2.9x
+endif			# CC_CLASS, 3.x
+endif			# CC_CLASS, 4.x
 
 else		# CC_NAME, gcc
 ifeq		($(CC_NAME), icc)
@@ -625,21 +615,15 @@ ifeq		($(CC_NAME), gcc)
 					#-Wcast-align \
 					#-Wmissing-prototypes 
 				#if gcc 4.x
-ifeq			($(CC_SHORTVER), 4.x)
+ifeq			($(CC_CLASS), 4.x)
 					CPU ?= ultrasparc
 					#use 32bit for now
 					CFLAGS+=-mcpu=ultrasparc -minline-all-stringops \
 							-mtune=$(CPU) \
 							-ftree-vectorize
 else
-				#if gcc 3.4
-ifeq			($(CC_SHORTVER), 3.4)
-					CPU ?= ultrasparc
-					#use 32bit for now
-					CFLAGS+= -mcpu=ultrasparc -mtune=$(CPU)
-else
-				#if gcc 3.0
-ifeq			($(CC_SHORTVER), 3.0)
+				#if gcc 3.0+
+ifeq			($(CC_CLASS), 3.x)
 					CPU ?= ultrasparc
 					#use 32bit for now
 					CFLAGS+= -mcpu=ultrasparc -mtune=$(CPU)   \
@@ -650,8 +634,8 @@ ifeq			($(CC_SHORTVER), 3.0)
 					#-mno-epilogue #try to inline function exit code
 					#-mflat # omit save/restore
 					#-,faster-structs #faster non Sparc ABI structure copy ops
-else			# CC_SHORTVER, 3.0
-ifeq			($(CC_SHORTVER), 2.9x) #older gcc version (2.9[1-5])
+else			# CC_CLASS, 3.0
+ifeq			($(CC_CLASS), 2.9x) #older gcc version (2.9[1-5])
 $(warning 			Old gcc detected ($(CC_SHORTVER)), use  gcc >= 3.1 \
 					for better results)
 ifneq				($(OS), netbsd)
@@ -662,7 +646,7 @@ endif
 ifeq					($(ASTYPE), solaris)
 							CFLAGS+= -Wa,-xarch=v8plus
 endif					
-else			#CC_SHORTVER, 2.9x
+else			#CC_CLASS, 2.9x
 				#really old version
 $(warning			You are using an old and unsupported gcc \
 					 version ($(CC_SHORTVER)), compile at your own risk!)
@@ -672,10 +656,9 @@ ifeq					($(ASTYPE), solaris)
 							CFLAGS+= -Wa,-xarch=v8plus
 endif					
 
-endif			#CC_SHORTVER, 2.9x
-endif			#CC_SHORTVER, 3.0
-endif			#CC_SHORTVER, 3.4
-endif			#CC_SHORTVER, 4.x
+endif			#CC_CLASS, 2.9x
+endif			#CC_CLASS, 3.x
+endif			#CC_CLASS, 4.x
 
 else		#CC_NAME, gcc
 ifeq		($(CC_NAME), suncc)
@@ -697,20 +680,15 @@ ifeq		($(CC_NAME), gcc)
 				CFLAGS+=-O9 -funroll-loops  -Wcast-align $(PROFILE) \
 					-Wall   
 			#if gcc 4.x+
-ifeq			($(CC_SHORTVER), 4.x)
+ifeq			($(CC_CLASS), 4.x)
 					CFLAGS+=-mcpu=strongarm1100 -minline-all-stringops \
 							-ftree-vectorize
 else
-			#if gcc 3.4+
-ifeq			($(CC_SHORTVER), 3.4)
+			#if gcc 3.0+
+ifeq			($(CC_CLASS), 3.x)
 					CFLAGS+= -mcpu=strongarm1100
 else
-			#if gcc 3.0
-ifeq			($(CC_SHORTVER), 3.0)
-					CFLAGS+= -mcpu=strongarm1100
-							#-mcpu=athlon
-else
-ifeq			($(CC_SHORTVER), 2.9x) #older gcc version (2.9[1-5])
+ifeq			($(CC_CLASS), 2.9x) #older gcc version (2.9[1-5])
 $(warning 			Old gcc detected ($(CC_SHORTVER)), use  gcc 3.0.x \
 					for better results)
 					
@@ -720,10 +698,9 @@ else
 $(warning			You are using an old and unsupported gcc \
 					 version ($(CC_SHORTVER)), compile at your own risk!)
 	
-endif			# CC_SHORTVER, 2.9x
-endif			# CC_SHORTVER, 3.0
-endif			# CC_SHORTVER, 3.4
-endif			# CC_SHORTVER, 4.0
+endif			# CC_CLASS, 2.9x
+endif			# CC_CLASS, 3.x
+endif			# CC_CLASS, 4.0
 	
 else		# CC_NAME, gcc
 				#other compilers
@@ -739,20 +716,16 @@ ifeq		($(CC_NAME), gcc)
 				CFLAGS+=-O9 -funroll-loops  -Wcast-align $(PROFILE) \
 					-Wall 
 			#if gcc 4.0+
-ifeq			($(CC_SHORTVER), 4.x)
+ifeq			($(CC_CLASS), 4.x)
 					CFLAGS+=-mcpu=r3000 -minline-all-stringops \
 							-ftree-vectorize
 else
-			#if gcc 3.4+
-ifeq			($(CC_SHORTVER), 3.4)
-					CFLAGS+= -mcpu=r3000
-else
-			#if gcc 3.0
-ifeq			($(CC_SHORTVER), 3.0)
+			#if gcc 3.0+
+ifeq			($(CC_CLASS), 3.x)
 					CFLAGS+= -mcpu=r3000
 							#-mcpu=athlon
 else
-ifeq			($(CC_SHORTVER), 2.9x) #older gcc version (2.9[1-5])
+ifeq			($(CC_CLASS), 2.9x) #older gcc version (2.9[1-5])
 $(warning 			Old gcc detected ($(CC_SHORTVER)), use  gcc 3.0.x \
 					for better results)
 
@@ -762,10 +735,9 @@ else
 $(warning			You are using an old and unsupported gcc \
 					 version ($(CC_SHORTVER)), compile at your own risk!)
 
-endif			# CC_SHORTVER, 2.9x
-endif			# CC_SHORTVER, 3.0
-endif			# CC_SHORTVER, 3.4
-endif			# CC_SHORTVER, 4.x
+endif			# CC_CLASS, 2.9x
+endif			# CC_CLASS, 3.x
+endif			# CC_CLASS, 4.x
 
 else		# CC_NAME, gcc
 				#other compilers
@@ -781,18 +753,14 @@ ifeq		($(CC_NAME), gcc)
 				CFLAGS+= -mips2 -O9 -funroll-loops $(PROFILE) \
 					-Wall 
 			#if gcc 4.0+
-ifeq			($(CC_SHORTVER), 4.x)
+ifeq			($(CC_CLASS), 4.x)
 					CFLAGS+=-minline-all-stringops -ftree-vectorize
 else
-			#if gcc 3.4+
-ifeq			($(CC_SHORTVER), 3.4)
+			#if gcc 3.0+
+ifeq			($(CC_CLASS), 3.x)
 					CFLAGS+=
 else
-			#if gcc 3.0
-ifeq			($(CC_SHORTVER), 3.0)
-					CFLAGS+=
-else
-ifeq			($(CC_SHORTVER), 2.9x) #older gcc version (2.9[1-5])
+ifeq			($(CC_CLASS), 2.9x) #older gcc version (2.9[1-5])
 $(warning 			Old gcc detected ($(CC_SHORTVER)), use  gcc 3.0.x \
 					for better results)
 					CFLAGS+=
@@ -801,10 +769,9 @@ else
 $(warning			You are using an old and unsupported gcc \
 					 version ($(CC_SHORTVER)), compile at your own risk!)
 
-endif			# CC_SHORTVER, 2.9x
-endif			# CC_SHORTVER, 3.0
-endif			# CC_SHORTVER, 3.4
-endif			# CC_SHORTVER, 4.x
+endif			# CC_CLASS, 2.9x
+endif			# CC_CLASS, 3.x
+endif			# CC_CLASS, 4.x
 
 else		# CC_NAME, gcc
 				#other compilers
@@ -819,18 +786,14 @@ ifeq		($(CC_NAME), gcc)
 				#common stuff
 				CFLAGS+= -O9 -funroll-loops $(PROFILE)  -Wall 
 			#if gcc 4.0+
-ifeq			($(CC_SHORTVER), 4.x)
+ifeq			($(CC_CLASS), 4.x)
 					CFLAGS+=-minline-all-stringops
 else
-			#if gcc 3.4+
-ifeq			($(CC_SHORTVER), 3.4)
+			#if gcc 3.0+
+ifeq			($(CC_CLASS), 3.x)
 					CFLAGS+=
 else
-			#if gcc 3.0
-ifeq			($(CC_SHORTVER), 3.0)
-					CFLAGS+=
-else
-ifeq			($(CC_SHORTVER), 2.9x) #older gcc version (2.9[1-5])
+ifeq			($(CC_CLASS), 2.9x) #older gcc version (2.9[1-5])
 $(warning 			Old gcc detected ($(CC_SHORTVER)), use  gcc 3.0.x \
 					for better results)
 					CFLAGS+=
@@ -839,10 +802,9 @@ else
 $(warning			You are using an old and unsupported gcc \
 					 version ($(CC_SHORTVER)), compile at your own risk!)
 
-endif			# CC_SHORTVER, 2.9x
-endif			# CC_SHORTVER, 3.0
-endif			# CC_SHORTVER, 3.4
-endif			# CC_SHORTVER, 4.x
+endif			# CC_CLASS, 2.9x
+endif			# CC_CLASS, 3.x
+endif			# CC_CLASS, 4.x
 
 else		# CC_NAME, gcc
 				#other compilers
@@ -857,20 +819,16 @@ ifeq		($(CC_NAME), gcc)
 				#common stuff
 				CFLAGS+= -O9 -funroll-loops $(PROFILE)  -Wall 
 			#if gcc 4.0+
-ifeq			($(CC_SHORTVER), 4.x)
+ifeq			($(CC_CLASS), 4.x)
 					CPU ?= powerpc
 					CFLAGS+=-ftree-vectorize \
 							-mtune=$(CPU) -maltivec
 else
-			#if gcc 3.4+
-ifeq			($(CC_SHORTVER), 3.4)
+			#if gcc 3.0+
+ifeq			($(CC_CLASS), 3.x)
 					CFLAGS+=
 else
-			#if gcc 3.0
-ifeq			($(CC_SHORTVER), 3.0)
-					CFLAGS+=
-else
-ifeq			($(CC_SHORTVER), 2.9x) #older gcc version (2.9[1-5])
+ifeq			($(CC_CLASS), 2.9x) #older gcc version (2.9[1-5])
 $(warning 			Old gcc detected ($(CC_SHORTVER)), use  gcc 3.0.x \
 					for better results)
 					CFLAGS+=
@@ -879,10 +837,9 @@ else
 $(warning			You are using an old and unsupported gcc \
 					 version ($(CC_SHORTVER)), compile at your own risk!)
 
-endif			# CC_SHORTVER, 2.9x
-endif			# CC_SHORTVER, 3.0
-endif			# CC_SHORTVER, 3.4
-endif			# CC_SHORTVER, 4.x
+endif			# CC_CLASS, 2.9x
+endif			# CC_CLASS, 3.x
+endif			# CC_CLASS, 4.x
 
 else		# CC_NAME, gcc
 				#other compilers
@@ -896,20 +853,16 @@ ifeq	($(ARCH), ppc64)
 ifeq		($(CC_NAME), gcc)
 				#common stuff
 				CFLAGS+= -O9 -funroll-loops $(PROFILE)  -Wall 
-ifeq			($(CC_SHORTVER), 4.x)
+ifeq			($(CC_CLASS), 4.x)
 					CPU ?= powerpc64
 					CFLAGS+=-ftree-vectorize \
 							-mtune=$(CPU) -maltivec
 else
-			#if gcc 3.4+
-ifeq			($(CC_SHORTVER), 3.4)
+			#if gcc 3.0+
+ifeq			($(CC_CLASS), 3.x)
 					CFLAGS+=
 else
-			#if gcc 3.0
-ifeq			($(CC_SHORTVER), 3.0)
-					CFLAGS+=
-else
-ifeq			($(CC_SHORTVER), 2.9x) #older gcc version (2.9[1-5])
+ifeq			($(CC_CLASS), 2.9x) #older gcc version (2.9[1-5])
 $(warning 			Old gcc detected ($(CC_SHORTVER)), use  gcc 3.0.x \
 					for better results)
 					CFLAGS+=
@@ -918,10 +871,9 @@ else
 $(warning			You are using an old and unsupported gcc \
 					 version ($(CC_SHORTVER)), compile at your own risk!)
 	
-endif			# CC_SHORTVER, 2.9x
-endif			# CC_SHORTVER, 3.0
-endif			# CC_SHORTVER, 3.4
-endif			# CC_SHORTVER, 4.x
+endif			# CC_CLASS, 2.9x
+endif			# CC_CLASS, 3.x
+endif			# CC_CLASS, 4.x
 	
 else		# CC_NAME, gcc
 				#other compilers
