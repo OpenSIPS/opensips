@@ -90,7 +90,7 @@ inline static int tsl(fl_lock_t* lock)
 	asm volatile(
 			"# here \n\t"
 			"swpb %0, %1, [%2] \n\t"
-			: "=r" (val)
+			: "=&r" (val)
 			: "r"(1), "r" (lock) : "memory"
 	);
 	
