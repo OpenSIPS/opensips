@@ -1069,6 +1069,99 @@ static int xl_get_authattr(struct sip_msg *msg, xl_value_t *res,
     return 0;
 }
 
+static inline str *cred_user(struct sip_msg *rq)
+{
+	struct hdr_field* h;
+	auth_body_t* cred;
+
+	get_authorized_cred(rq->proxy_auth, &h);
+	if (!h) get_authorized_cred(rq->authorization, &h);
+	if (!h) return 0;
+	cred=(auth_body_t*)(h->parsed);
+	if (!cred || !cred->digest.username.user.len) 
+			return 0;
+	return &cred->digest.username.user;
+}
+
+
+static inline str *cred_realm(struct sip_msg *rq)
+{
+	str* realm;
+	struct hdr_field* h;
+	auth_body_t* cred;
+
+	get_authorized_cred(rq->proxy_auth, &h);
+	if (!h) get_authorized_cred(rq->authorization, &h);
+	if (!h) return 0;
+	cred=(auth_body_t*)(h->parsed);
+	if (!cred) return 0;
+	realm = GET_REALM(&cred->digest);
+	if (!realm->len || !realm->s) {
+		return 0;
+	}
+	return realm;
+}
+
+static int xl_get_acc_username(struct sip_msg *msg, xl_value_t *res,
+			       xl_param_t *param,
+			       int flags)
+{
+	static char buf[MAX_URI_SIZE];
+	str* user;
+	str* realm;
+	struct sip_uri puri;
+	struct to_body* from;
+
+	/* try to take it from credentials */
+	user = cred_user(msg);
+	if (user) {
+		realm = cred_realm(msg);
+		if (realm) {
+			res->rs.len = user->len+1+realm->len;
+			if (res->rs.len > MAX_URI_SIZE) {
+				LOG(L_ERR, "xl_get_acc_username: URI too long\n");
+				return xl_get_null(msg, res, param, flags);
+			}
+			res->rs.s = buf;
+			memcpy(res->rs.s, user->s, user->len);
+			(res->rs.s)[user->len] = '@';
+			memcpy(res->rs.s+user->len+1, realm->s, realm->len);
+		} else {
+			res->rs.len = user->len;
+			res->rs.s = user->s;
+		}
+	} else {
+		/* from from uri */
+	        if(parse_from_header(msg)<0)
+		{
+		    LOG(L_ERR, "xl_get_acc_username: ERROR cannot parse FROM header\n");
+		    return xl_get_null(msg, res, param, flags);
+		}
+		if (msg->from && (from=get_from(msg)) && from->uri.len) {
+			if (parse_uri(from->uri.s, from->uri.len, &puri) < 0 ) {
+				LOG(L_ERR, "xl_get_acc_username: Bad From URI\n");
+				return xl_get_null(msg, res, param, flags);
+			}
+			res->rs.len = puri.user.len + 1 + puri.host.len;
+			if (res->rs.len > MAX_URI_SIZE) {
+				LOG(L_ERR, "xl_acc__username: URI too long\n");
+				return xl_get_null(msg, res, param, flags);
+			}
+			res->rs.s = buf;
+			memcpy(res->rs.s, puri.user.s, puri.user.len);
+			(res->rs.s)[puri.user.len] = '@';
+			memcpy(res->rs.s + puri.user.len + 1, puri.host.s,
+			       puri.host.len);
+		} else {
+			res->rs.len = 0;
+			res->rs.s = 0;
+		}
+	}
+	res->flags = XL_VAL_STR;
+	return 0;
+}
+
+
 #define COL_BUF 10
 
 #define append_sstring(p, end, str) \
@@ -1867,6 +1960,8 @@ static struct _xl_table {
 		{ XL_AUTH_REALM, 0, xl_get_authattr, {{0, 2}, 0}, {0, 0}}},
 	{{"au", (sizeof("au")-1)}, /* */
 		{ XL_AUTH_USERNAME, 0, xl_get_authattr, {{0, 1}, 0}, {0, 0}}},
+	{{"Au", (sizeof("Au")-1)}, /* */
+		{ XL_ACC_USERNAME, 0, xl_get_acc_username, {{0, 1}, 0}, {0, 0}}},
 	{{"br", (sizeof("br")-1)}, /* */
 		{ XL_BRANCH, 0, xl_get_branch, {{0, 0}, 0}, {0, 0}}},
 	{{"bR", (sizeof("bR")-1)}, /* */
