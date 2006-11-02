@@ -50,7 +50,8 @@
 #define MAX_DNS_NAME 256
 #define MAX_DNS_STRING 255
 
-
+/* this is not official yet */
+#define T_EBL		65300
 
 /* query union*/
 union dns_query{
@@ -106,6 +107,23 @@ struct aaaa_rdata {
 struct cname_rdata {
 	char name[MAX_DNS_NAME];
 };
+
+/* txt rec. struct*/
+/* This is not strictly correct as TXT records *could* contain multiple strings. */
+struct txt_rdata {
+	char txt[MAX_DNS_NAME];
+};
+
+/* EBL rec. struct*/
+/* This is an experimental RR for infrastructure ENUM */
+struct ebl_rdata {
+	unsigned char position;
+	unsigned int separator_len;
+	char separator[MAX_DNS_NAME];
+	unsigned int apex_len;
+	char apex[MAX_DNS_NAME];
+};
+
 
 
 

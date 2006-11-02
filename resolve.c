@@ -294,6 +294,91 @@ error:
 	return 0;
 }
 
+/* RFC1035:
+ *
+ * <character-string> is a single length octet followed by that number of characters.
+ * TXT-DATA        One or more <character-string>s.
+ *
+ * We only take the first string here.
+ */
+/* parses a TXT record into a txt_rdata structure */
+struct txt_rdata* dns_txt_parser( unsigned char* msg, unsigned char* end,
+									  unsigned char* rdata)
+{
+	struct txt_rdata* txt;
+	int len;
+	
+	txt=0;
+	txt=(struct txt_rdata*)local_malloc(sizeof(struct txt_rdata));
+	if(txt==0){
+		LOG(L_ERR, "ERROR: dns_txt_parser: out of memory\n");
+		goto error;
+	}
+
+	len = *rdata;
+	if (rdata + 1 + len >= end) goto error;	/*  something fishy in the record */
+	if (len >= sizeof(txt->txt)) goto error; /* not enough space? */
+	memcpy(txt->txt, rdata+1, len);
+	txt->txt[len] = 0;		/* 0-terminate string */
+	return txt;
+
+error:
+	if (txt) local_free(txt);
+	return 0;
+}
+
+
+/* EBL Record
+ *
+ *    0  1  2  3  4  5  6  7
+ *    +--+--+--+--+--+--+--+--+
+ *    |       POSITION        |
+ *    +--+--+--+--+--+--+--+--+
+ *    /       SEPARATOR       /
+ *    +--+--+--+--+--+--+--+--+
+ *    /         APEX          /
+ *    +--+--+--+--+--+--+--+--+
+ */
+/* parses a EBL record into a ebl_rdata structure */
+struct ebl_rdata* dns_ebl_parser( unsigned char* msg, unsigned char* end,
+									  unsigned char* rdata)
+{
+	struct ebl_rdata* ebl;
+	int len;
+	
+	ebl=0;
+	ebl=(struct ebl_rdata*)local_malloc(sizeof(struct ebl_rdata));
+	if(ebl==0){
+		LOG(L_ERR, "ERROR: dns_ebl_parser: out of memory\n");
+		goto error;
+	}
+
+	len = *rdata;
+	if (rdata + 1 + len >= end) goto error;	/*  something fishy in the record */
+
+	ebl->position = *rdata;
+	if ( ebl->position > 15 ) goto error; /* doesn't make sense: E.164 numbers can't be longer */
+
+	rdata++;
+
+	ebl->separator_len = (int) *rdata;
+	rdata++;
+	if ((rdata + 1 +  ebl->separator_len) >= end) goto error;
+	memcpy((void*)&ebl->separator, rdata, ebl->separator_len);
+	rdata += ebl->separator_len;
+
+	ebl->apex_len=dn_expand(msg, end, rdata, ebl->apex, MAX_DNS_NAME-1);
+	if ( ebl->apex_len==-1 )
+		goto error;
+	ebl->apex[ebl->apex_len] = 0; /* 0-terminate string */
+	return ebl;
+
+error:
+	if (ebl) local_free(ebl);
+	return 0;
+}
+
+
 
 
 /* frees completely a struct rdata list */
@@ -457,6 +542,18 @@ struct rdata* get_record(char* name, int type)
 				break;
 			case T_NAPTR:
 				rd->rdata=(void*) dns_naptr_parser(buff.buff, end, p);
+				if(rd->rdata==0) goto error_parse;
+				*last=rd;
+				last=&(rd->next);
+				break;
+			case T_TXT:
+				rd->rdata=(void*) dns_txt_parser(buff.buff, end, p);
+				if(rd->rdata==0) goto error_parse;
+				*last=rd;
+				last=&(rd->next);
+				break;
+			case T_EBL:
+				rd->rdata=(void*) dns_ebl_parser(buff.buff, end, p);
 				if(rd->rdata==0) goto error_parse;
 				*last=rd;
 				last=&(rd->next);
