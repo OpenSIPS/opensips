@@ -40,8 +40,15 @@ struct mi_node;
 #define MI_DUP_NAME   (1<<0)
 #define MI_DUP_VALUE  (1<<1)
 
-#define MI_200_OK_S   "200 OK"
-#define MI_200_OK_LEN (sizeof(MI_200_OK_S)-1)
+#define MI_200_OK_S          "200 OK"
+#define MI_200_OK_LEN        (sizeof(MI_200_OK_S)-1)
+#define MI_INTERNAL_ERR_S    "500 Server Internal Error"
+#define MI_INTERNAL_ERR_LEN  (sizeof(MI_INTERNAL_ERR_S)-1)
+#define MI_MISSING_PARM_S    "400 Too few or too many arguments"
+#define MI_MISSING_PARM_LEN  (sizeof(MI_MISSING_PARM_S)-1)
+#define MI_BAD_PARM_S        "400 Bad parameter"
+#define MI_BAD_PARM_LEN      (sizeof(MI_BAD_PARM_S)-1)
+
 
 struct mi_node{
 	str value;
