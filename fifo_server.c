@@ -703,7 +703,7 @@ int start_fifo_server()
 static int print_version_cmd( FILE *stream, char *response_file )
 {
 	if (response_file) {
-		fifo_reply(response_file, "200 ok\n" SERVER_HDR CRLF );
+		fifo_reply(response_file, "200 ok\n" SERVER_HDR);
 	} else {
 		LOG(L_ERR, "ERROR: no file for %s\n", "print_version_cmd" );
 	}
