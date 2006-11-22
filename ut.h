@@ -472,6 +472,21 @@ static inline int str2sint(str* _s, int* _r)
 }
 
 
+/*
+ * Convert a str (base 10 or 16) into integer
+ */
+static inline int strno2int( str *val, unsigned int *mask )
+{
+	/* hexa or decimal*/
+	if (val->len>2 && val->s[0]=='0' && val->s[1]=='x') {
+		return hexstr2int( val->s+2, val->len-2, mask);
+	} else {
+		return str2int( val, mask);
+	}
+}
+
+
+
 int user2uid(int* uid, int* gid, char* user);
 
 int group2gid(int* gid, char* group);
