@@ -290,3 +290,23 @@ int xl_free_extra_spec()
 }
 
 
+int register_items_mod(char *mod_name, item_export_t *items)
+{
+	int ret;
+	int i;
+
+	if (items==0)
+		return 0;
+
+	for ( i=0 ; items[i].name ; i++ ) {
+		ret = xl_add_extra(items[i].name, items[i].fct, items[i].type,
+				&items[i].param);
+		if (ret!=0) {
+			LOG(L_ERR,"ERROR:items:register_items_mod: failed to register"
+				" pseudo-variable <%s> for module %s\n", items[i].name,
+				mod_name);
+		}
+	}
+	return 0;
+}
+

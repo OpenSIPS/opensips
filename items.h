@@ -141,6 +141,15 @@ int xl_fill_extra_spec(xl_spec_p sp);
 int xl_init_extra_spec();
 int xl_free_extra_spec();
 
+typedef struct item_export_
+{
+	char *name;
+	item_func_t fct;
+	int type;
+	xl_param_t param;
+} item_export_t;
+
+int register_items_mod(char *mod_name, item_export_t *items);
 
 #define XL_PRINT_BUF_SIZE  1024
 #define XL_PRINT_BUF_NO    3

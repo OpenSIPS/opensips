@@ -460,6 +460,15 @@ static int init_mod( struct sr_module* m )
 			}
 		}
 
+		/* register module pseudo-variables */
+		if (m->exports->items) {
+			DBG("DEBUG: register_pv: %s\n", m->exports->name);
+			if (register_items_mod(m->exports->name,m->exports->items)!=0) {
+				LOG(L_ERR, "init_mod(): Error while registering "
+					"pseudo-variables for module %s\n", m->exports->name);
+			}
+		}
+
 		/* proceed with success */
 		return 0;
 	} else {

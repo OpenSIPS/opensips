@@ -41,6 +41,7 @@
 #include "parser/msg_parser.h" /* for sip_msg */
 #include "statistics.h"
 #include "mi/mi.h"
+#include "items.h"
 #include "version.h"
 #include "route.h"
 
@@ -101,11 +102,14 @@ struct module_exports{
 	param_export_t* params;         /* null terminated array of the exported
 	                                   module parameters */
 
-	stat_export_t* stats;           /* null terminated array of the exporte
+	stat_export_t* stats;           /* null terminated array of the exported
 	                                   module statistics */
 
 	mi_export_t* mi_cmds;           /* null terminated array of the exported
 	                                   MI functions */
+
+	item_export_t* items;           /* null terminated array of the exported
+	                                   module items (pseudo-variables) */
 
 	init_function init_f;           /* Initialization function */
 	response_function response_f;   /* function used for responses,
