@@ -687,7 +687,7 @@ assign_stm:	DEBUG EQUAL NUMBER { debug=$3; }
 		| TLS_VERIFY_SERVER EQUAL error { yyerror("boolean value expected"); }
 		| TLS_REQUIRE_CLIENT_CERTIFICATE EQUAL NUMBER {
 									#ifdef USE_TLS
-										tls_default_client_domain->require_client_cert=$3;
+										tls_default_server_domain->require_client_cert=$3;
 									#else
 										warn( "tls support not compiled in");
 									#endif

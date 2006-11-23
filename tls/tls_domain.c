@@ -187,10 +187,10 @@ struct tls_domain *tls_new_domain(int type)
 	d->type = type;
 
 	if (type & TLS_DOMAIN_SRV) {
-		d->verify_cert         = tls_verify_server_cert;
+		d->verify_cert         = tls_verify_client_cert;
 		d->require_client_cert = tls_require_client_cert;
 	} else {
-		d->verify_cert         = tls_verify_client_cert;
+		d->verify_cert         = tls_verify_server_cert;
 		d->require_client_cert = 0;
 	}
 	d->method = TLS_METHOD_UNSPEC;
