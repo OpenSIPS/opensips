@@ -38,6 +38,8 @@
 #ifndef sr_module_h
 #define sr_module_h
 
+#include <dlfcn.h>
+
 #include "parser/msg_parser.h" /* for sip_msg */
 #include "statistics.h"
 #include "mi/mi.h"
@@ -70,6 +72,15 @@ typedef int (*param_func_t)( modparam_t type, void* val);
 #define PROC_TCP_MAIN -4  /* TCP main process */
 #define PROC_UNIXSOCK -5  /* Unix domain socket server processes */
 
+#define DEFAULT_DLFLAGS	0 /* value that signals to module loader to
+							use default dlopen flags in openser */
+#ifndef RTLD_NOW
+/* for openbsd */
+#define RTLD_NOW DL_LAZY
+#endif
+
+#define OPENSER_DLFLAGS	RTLD_NOW
+
 #define MODULE_VERSION \
 	char *module_version=SER_FULL_VERSION; \
 	char *module_flags=SER_COMPILE_FLAGS;
@@ -96,6 +107,7 @@ typedef struct param_export_ param_export_t;
 
 struct module_exports{
 	char* name;                     /* null terminated module name */
+	unsigned int dlflags;           /* flags for dlopen */
 	
 	cmd_export_t* cmds;             /* null terminated array of the exported
 	                                   commands */

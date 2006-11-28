@@ -37,7 +37,6 @@
 #include "error.h"
 #include "mem/mem.h"
 
-#include <dlfcn.h>
 #include <strings.h>
 #include <stdlib.h>
 #include <string.h>
@@ -196,15 +195,12 @@ static inline int version_control(void *handle, char *path)
 int load_module(char* path)
 {
 	void* handle;
+	unsigned int moddlflags;
 	char* error;
 	struct module_exports* exp;
 	struct sr_module* t;
 	
-#ifndef RTLD_NOW
-/* for openbsd */
-#define RTLD_NOW DL_LAZY
-#endif
-	handle=dlopen(path, RTLD_NOW); /* resolve all symbols now */
+	handle=dlopen(path, OPENSER_DLFLAGS); /* resolve all symbols now */
 	if (handle==0){
 		LOG(L_ERR, "ERROR: load_module: could not open module <%s>: %s\n",
 					path, dlerror() );
@@ -222,12 +218,30 @@ int load_module(char* path)
 	if (!version_control(handle, path)) {
 		exit(0);
 	}
-	/* launch register */
 	exp = (struct module_exports*)dlsym(handle, DLSYM_PREFIX "exports");
 	if ( (error =(char*)dlerror())!=0 ){
 		LOG(L_ERR, "ERROR: load_module: %s\n", error);
 		goto error1;
 	}
+	if(exp->dlflags!=DEFAULT_DLFLAGS && exp->dlflags!=OPENSER_DLFLAGS) {
+		moddlflags = exp->dlflags;
+		dlclose(handle);
+		DBG("DEBUG:load_module:Reloading module %s with flags %d\n",
+			 path, moddlflags);
+		handle = dlopen(path, moddlflags);
+		if (handle==0){
+			LOG(L_ERR, "ERROR: load_module: could not open module <%s>: %s\n",
+					path, dlerror() );
+			goto error;
+		}
+		exp = (struct module_exports*)dlsym(handle, DLSYM_PREFIX "exports");
+		if ( (error =(char*)dlerror())!=0 ){
+			LOG(L_ERR, "ERROR: load_module: %s\n", error);
+			goto error1;
+		}
+	}
+
+	/* launch register */
 	if (register_module(exp, path, handle)<0) goto error1;
 	return 0;
 
