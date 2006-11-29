@@ -417,7 +417,7 @@ int init_child(int rank)
 	case PROC_TIMER:    type = "PROC_TIMER";    break;
 	case PROC_FIFO:     type = "PROC_FIFO";     break;
 	case PROC_TCP_MAIN: type = "PROC_TCP_MAIN"; break;
-	case PROC_UNIXSOCK: type = "PROC_UBIXSOCK"; break;
+	case PROC_UNIXSOCK: type = "PROC_UNIXSOCK"; break;
 	}
 
 	if (!type) {
