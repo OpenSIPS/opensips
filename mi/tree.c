@@ -37,39 +37,53 @@
 
 
 
-struct mi_node *init_mi_tree( char *reason, int reason_len)
+struct mi_root *init_mi_tree(unsigned int code, char *reason, int reason_len)
 {
-	struct mi_node *root;
+	struct mi_root *root;
 
-	root = (struct mi_node *)pkg_malloc(sizeof(struct mi_node));
+	root = (struct mi_root *)pkg_malloc(sizeof(struct mi_root));
 	if (!root) {
 		LOG(L_ERR,"ERROR:mi:init_mi_tree: no more pkg mem\n");
 		return NULL;
 	}
 
-	memset(root,0,sizeof(struct mi_node));
-	root->next = root->last = root;
+	memset(root,0,sizeof(struct mi_root));
+	root->node.next = root->node.last = &root->node;
 
 	if (reason && reason_len) {
-		root->value.s = reason;
-		root->value.len = reason_len;
+		root->reason.s = reason;
+		root->reason.len = reason_len;
 	}
+	root->code = code;
 
 	return root;
 }
 
 
-void free_mi_tree(struct mi_node *parent)
+static void free_mi_node(struct mi_node *parent)
 {
 	struct mi_node *p, *q;
-	
+
 	for(p = parent->kids ; p ; ){
 		q = p;
 		p = p->next;
-		free_mi_tree(q);
+		free_mi_node(q);
 	}
 
 	del_mi_attr_list(parent);
+	pkg_free(parent);
+}
+
+void free_mi_tree(struct mi_root *parent)
+{
+	struct mi_node *p, *q;
+
+	for(p = parent->node.kids ; p ; ){
+		q = p;
+		p = p->next;
+		free_mi_node(q);
+	}
+
 	pkg_free(parent);
 }
 

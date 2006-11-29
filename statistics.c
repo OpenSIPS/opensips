@@ -43,8 +43,8 @@ static stats_collector *collector;
 static int fifo_get_stats( FILE *fifo, char *response_file );
 static int fifo_reset_stats( FILE *fifo, char *response_file );
 
-static struct mi_node *mi_get_stats(struct mi_node *cmd, void *param);
-static struct mi_node *mi_reset_stats(struct mi_node *cmd, void *param);
+static struct mi_root *mi_get_stats(struct mi_root *cmd, void *param);
+static struct mi_root *mi_reset_stats(struct mi_root *cmd, void *param);
 
 static mi_export_t mi_stat_cmds[] = {
 	{ "get_statistics",    mi_get_stats,    0,  0 },
@@ -545,8 +545,9 @@ static int inline mi_add_module_stats(struct mi_node *rpl,
 }
 
 
-static struct mi_node *mi_get_stats(struct mi_node *cmd, void *param)
+static struct mi_root *mi_get_stats(struct mi_root *cmd, void *param)
 {
+	struct mi_root *rpl_tree;
 	struct mi_node *rpl;
 	struct mi_node *arg;
 	module_stats   *mods;
@@ -554,12 +555,15 @@ static struct mi_node *mi_get_stats(struct mi_node *cmd, void *param)
 	str val;
 	int i;
 
-	if (cmd->kids==NULL)
-		return init_mi_tree( "400 Missing arguments", 21);
+	if (cmd->node.kids==NULL)
+		return init_mi_tree( 400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
 
-	rpl = init_mi_tree( MI_200_OK_S, MI_200_OK_LEN);
+	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
+	if (rpl_tree==0)
+		return 0;
+	rpl = &rpl_tree->node;
 
-	for( arg=cmd->kids ; arg ; arg=arg->next) {
+	for( arg=cmd->node.kids ; arg ; arg=arg->next) {
 		if (arg->value.len==0)
 			continue;
 
@@ -590,32 +594,34 @@ static struct mi_node *mi_get_stats(struct mi_node *cmd, void *param)
 	}
 
 	if (rpl->kids==0) {
-		free_mi_tree(rpl);
-		return init_mi_tree( "404 Statistics Not Found", 24);
+		free_mi_tree(rpl_tree);
+		return init_mi_tree( 404, "Statistics Not Found", 20);
 	}
 
-	return rpl;
+	return rpl_tree;
 error:
-	free_mi_tree(rpl);
+	free_mi_tree(rpl_tree);
 	return 0;
 }
 
 
 
-static struct mi_node *mi_reset_stats(struct mi_node *cmd, void *param)
+static struct mi_root *mi_reset_stats(struct mi_root *cmd, void *param)
 {
-	struct mi_node *rpl;
+	struct mi_root *rpl_tree;
 	struct mi_node *arg;
 	stat_var       *stat;
 	int found;
 
-	if (cmd->kids==NULL)
-		return init_mi_tree( "400 Missing arguments", 21);
+	if (cmd->node.kids==NULL)
+		return init_mi_tree( 400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
 
-	rpl = init_mi_tree( MI_200_OK_S, MI_200_OK_LEN);
+	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
+	if (rpl_tree==0)
+		return 0;
 	found = 0;
 
-	for( arg=cmd->kids ; arg ; arg=arg->next) {
+	for( arg=cmd->node.kids ; arg ; arg=arg->next) {
 		if (arg->value.len==0)
 			continue;
 
@@ -628,11 +634,11 @@ static struct mi_node *mi_reset_stats(struct mi_node *cmd, void *param)
 	}
 
 	if (!found) {
-		free_mi_tree(rpl);
-		return init_mi_tree( "404 Statistics Not Found", 24);
+		free_mi_tree(rpl_tree);
+		return init_mi_tree( 404, "Statistics Not Found", 20);
 	}
 
-	return rpl;
+	return rpl_tree;
 }
 
 

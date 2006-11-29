@@ -33,7 +33,7 @@
 #include "../str.h"
 #include "tree.h"
 
-typedef struct mi_node* (mi_cmd_f)(struct mi_node*, void *param);
+typedef struct mi_root* (mi_cmd_f)(struct mi_root*, void *param);
 typedef int (mi_child_init_f)();
 
 struct mi_cmd {
@@ -61,7 +61,7 @@ int init_mi_child();
 
 struct mi_cmd* lookup_mi_cmd( char *name, int len);
 
-static inline struct mi_node* run_mi_cmd(struct mi_cmd *cmd, struct mi_node *t)
+static inline struct mi_root* run_mi_cmd(struct mi_cmd *cmd, struct mi_root *t)
 {
 	return cmd->f( t, cmd->param);
 }

@@ -59,15 +59,17 @@ static int init_mi_uptime()
 }
 
 
-static struct mi_node *mi_uptime(struct mi_node *cmd, void *param)
+static struct mi_root *mi_uptime(struct mi_root *cmd, void *param)
 {
+	struct mi_root *rpl_tree;
 	struct mi_node *rpl;
 	struct mi_node *node;
 	time_t now;
 
-	rpl = init_mi_tree(MI_200_OK_S,MI_200_OK_LEN);
-	if (rpl==0)
+	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
+	if (rpl_tree==0)
 		return 0;
+	rpl = &rpl_tree->node;
 
 	time(&now);
 	node = add_mi_node_child( rpl, MI_DUP_VALUE, "Now", 3, ctime(&now),
@@ -85,41 +87,44 @@ static struct mi_node *mi_uptime(struct mi_node *cmd, void *param)
 	if (node==0)
 		goto error;
 
-	return rpl;
+	return rpl_tree;
 error:
 	LOG(L_ERR,"ERROR:mi_uptime: failed to add node\n");
-	free_mi_tree(rpl);
+	free_mi_tree(rpl_tree);
 	return 0;
 }
 
 
 
-static struct mi_node *mi_version(struct mi_node *cmd, void *param)
+static struct mi_root *mi_version(struct mi_root *cmd, void *param)
 {
+	struct mi_root *rpl_tree;
 	struct mi_node *rpl;
 	struct mi_node *node;
 
-	rpl = init_mi_tree(MI_200_OK_S,MI_200_OK_LEN);
-	if (rpl==0)
+	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
+	if (rpl_tree==0)
 		return 0;
+	rpl = &rpl_tree->node;
 
 	node = add_mi_node_child( rpl, 0, "Server", 6, SERVER_HDR+8,
 		SERVER_HDR_LEN-8);
 	if (node==0) {
 		LOG(L_ERR,"ERROR:mi_version: failed to add node\n");
-		free_mi_tree(rpl);
+		free_mi_tree(rpl_tree);
 		return 0;
 	}
 
-	return rpl;
+	return rpl_tree;
 }
 
 
 
-static struct mi_node *mi_pwd(struct mi_node *cmd, void *param)
+static struct mi_root *mi_pwd(struct mi_root *cmd, void *param)
 {
 	static int max_len = 0;
 	static char *cwd_buf = 0;
+	struct mi_root *rpl_tree;
 	struct mi_node *rpl;
 	struct mi_node *node;
 
@@ -132,83 +137,89 @@ static struct mi_node *mi_pwd(struct mi_node *cmd, void *param)
 		}
 	}
 
-	rpl = init_mi_tree(MI_200_OK_S,MI_200_OK_LEN);
-	if (rpl==0)
+	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
+	if (rpl_tree==0)
 		return 0;
+	rpl = &rpl_tree->node;
 
 	if (getcwd(cwd_buf, max_len)==0) {
 		LOG(L_ERR,"ERROR:mi_pwd: getcwd failed = %s\n",strerror(errno));
 		goto error;
 	}
 
-	node = add_mi_node_child( rpl, 0, "WD", 2, cwd_buf, strlen(cwd_buf));
+	node = add_mi_node_child( rpl, 0, "WD", 2, cwd_buf,strlen(cwd_buf));
 	if (node==0) {
 		LOG(L_ERR,"ERROR:mi_pwd: failed to add node\n");
 		goto error;
 	}
 
-	return rpl;
+	return rpl_tree;
 error:
-	free_mi_tree(rpl);
+	free_mi_tree(rpl_tree);
 	return 0;
 }
 
 
 
-static struct mi_node *mi_arg(struct mi_node *cmd, void *param)
+static struct mi_root *mi_arg(struct mi_root *cmd, void *param)
 {
+	struct mi_root *rpl_tree;
 	struct mi_node *rpl;
 	struct mi_node *node;
 	int n;
 
-	rpl = init_mi_tree(MI_200_OK_S,MI_200_OK_LEN);
-	if (rpl==0)
+	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
+	if (rpl_tree==0)
 		return 0;
+	rpl = &rpl_tree->node;
 
 	for ( n=0; n<my_argc ; n++ ) {
 		node = add_mi_node_child(rpl, 0, 0, 0, my_argv[n], strlen(my_argv[n]));
 		if (node==0) {
 			LOG(L_ERR,"ERROR:mi_arg: failed to add node\n");
-			free_mi_tree(rpl);
+			free_mi_tree(rpl_tree);
 			return 0;
 		}
 	}
 
-	return rpl;
+	return rpl_tree;
 }
 
 
 
-static struct mi_node *mi_which(struct mi_node *cmd, void *param)
+static struct mi_root *mi_which(struct mi_root *cmd, void *param)
 {
+	struct mi_root *rpl_tree;
 	struct mi_cmd  *cmds;
 	struct mi_node *rpl;
 	struct mi_node *node;
 	int size;
 	int i;
 
-	rpl = init_mi_tree(MI_200_OK_S,MI_200_OK_LEN);
-	if (rpl==0)
+	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
+	if (rpl_tree==0)
 		return 0;
+	rpl = &rpl_tree->node;
 
 	get_mi_cmds( &cmds, &size);
 	for ( i=0 ; i<size ; i++ ) {
-		node = add_mi_node_child(rpl, 0, 0, 0, cmds[i].name.s,
+		node = add_mi_node_child( rpl, 0, 0, 0, cmds[i].name.s,
 			cmds[i].name.len);
 		if (node==0) {
 			LOG(L_ERR,"ERROR:mi_which: failed to add node\n");
-			free_mi_tree(rpl);
+			free_mi_tree(rpl_tree);
 			return 0;
 		}
 	}
 
-	return rpl;
+	return rpl_tree;
 }
 
 
 
-static struct mi_node *mi_ps(struct mi_node *cmd, void *param)
+static struct mi_root *mi_ps(struct mi_root *cmd, void *param)
 {
+	struct mi_root *rpl_tree;
 	struct mi_node *rpl;
 	struct mi_node *node;
 	struct mi_attr *attr;
@@ -216,9 +227,10 @@ static struct mi_node *mi_ps(struct mi_node *cmd, void *param)
 	int len;
 	int i;
 
-	rpl = init_mi_tree(MI_200_OK_S,MI_200_OK_LEN);
-	if (rpl==0)
+	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
+	if (rpl_tree==0)
 		return 0;
+	rpl = &rpl_tree->node;
 
 	for ( i=0 ; i<process_count() ; i++ ) {
 		node = add_mi_node_child(rpl, 0, "Process", 7, 0, 0 );
@@ -241,26 +253,20 @@ static struct mi_node *mi_ps(struct mi_node *cmd, void *param)
 			goto error;
 	}
 
-	return rpl;
+	return rpl_tree;
 error:
 	LOG(L_ERR,"ERROR:mi_ps: failed to add node\n");
-	free_mi_tree(rpl);
+	free_mi_tree(rpl_tree);
 	return 0;
 }
 
 
 
-static struct mi_node *mi_kill(struct mi_node *cmd, void *param)
+static struct mi_root *mi_kill(struct mi_root *cmd, void *param)
 {
-	struct mi_node *rpl;
-
-	rpl = init_mi_tree(MI_200_OK_S,MI_200_OK_LEN);
-	if (rpl==0)
-		return 0;
-
 	kill(0, SIGTERM);
 
-	return rpl;
+	return 0;
 }
 
 
