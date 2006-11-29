@@ -385,7 +385,10 @@ error:
 void free_rdata_list(struct rdata* head)
 {
 	struct rdata* l;
-	for(l=head; l; l=l->next){
+	struct rdata* next_l;
+
+	for( l=head; l ; l=next_l) {
+		next_l = l->next;
 		/* free the parsed rdata*/
 		if (l->rdata) local_free(l->rdata);
 		local_free(l);
@@ -770,7 +773,7 @@ static inline void filter_and_sort_naptr( struct rdata** head_p,
 		}
 
 		/* first filter out by flag and service */
-		if (naptr->flags_len!=1 || (naptr->flags[0]!='s'&&naptr->flags[0]!='S'))
+		if (naptr->flags_len!=1||(naptr->flags[0]!='s'&&naptr->flags[0]!='S'))
 			goto skip;
 		if (naptr->repl_len==0 || naptr->regexp_len!=0 )
 			goto skip;
