@@ -60,7 +60,7 @@ MAIN_NAME=openser
 VERSION = 1
 PATCHLEVEL = 2
 SUBLEVEL = 0
-EXTRAVERSION = -dev10
+EXTRAVERSION = -dev11
 
 RELEASE=$(VERSION).$(PATCHLEVEL).$(SUBLEVEL)$(EXTRAVERSION)
 OS = $(shell uname -s | sed -e s/SunOS/solaris/ | tr "[A-Z]" "[a-z]")
