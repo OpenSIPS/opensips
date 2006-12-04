@@ -76,24 +76,12 @@ char * build_res_buf_from_sip_res(	struct sip_msg* msg,
 
 
 char * build_res_buf_from_sip_req( unsigned int code ,
-				char *text ,
+				str *text ,
 				str *new_tag ,
 				struct sip_msg* msg,
 				unsigned int *returned_len,
 				struct bookmark *bmark);
-/*
-char * build_res_buf_with_body_from_sip_req(	unsigned int code ,
-				char *text ,
-				char *new_tag ,
-				unsigned int new_tag_len ,
-				char *body ,
-				unsigned int body_len,
-				char *content_type,
-				unsigned int content_type_len,
-				struct sip_msg* msg,
-				unsigned int *returned_len,
-				struct bookmark *bmark);
-*/
+
 char* via_builder( unsigned int *len,
 	struct socket_info* send_sock,
 	str *branch, str* extra_params, int proto, struct hostport *hp );
