@@ -413,7 +413,7 @@
 			It's usable only if TLS support was compiled.
 			</para>
 			<para><emphasis>
-				Default value is 0 (TLS enabled).
+				Default value is 1 (TLS disabled).
 			</emphasis></para>
 			<example>
 				<title>Set <varname>disable_tls</varname> variable</title>
@@ -620,20 +620,20 @@ tls_ca_list="/mycerts/certs/ca_list.pem"
 				</listitem>
 			</itemizedlist>
 			<warning><para>
-			Do not use the NULL algorithms ... only for testing!!!
+			Do not use the NULL algorithms (no encryption) ... only for testing!!!
 			</para></warning>
 			<para>
 			It's usable only if TLS support was compiled.
 			</para>
 			<para><emphasis>
-				Default ciphers chosen by OpenSSL.
+				It defaults to the OpenSSL default ciphers.
 			</emphasis></para>
 			<example>
 				<title>Set <varname>tls_ciphers_list</varname> variable
 					</title>
 				<programlisting format="linespecific">
 ...
-tls_ciphers_list="NULL-SHA:NULL-MD5:AES256-SHA:AES128-SHA"
+tls_ciphers_list="NULL"
 ...
 				</programlisting>
 			</example>
@@ -660,7 +660,7 @@ tls_ciphers_list="NULL-SHA:NULL-MD5:AES256-SHA:AES128-SHA"
 			It's usable only if TLS support was compiled.
 			</para>
 			<para><emphasis>
-				Default value for both is 0.
+				Default value for both is 1.
 			</emphasis></para>
 			<example>
 				<title>Set <varname>tls_verify_client & tls_require_client_certificate
@@ -693,7 +693,7 @@ tls_require_client_certificate = 1
 			It's usable only if TLS support was compiled.
 			</para>
 			<para><emphasis>
-				Default value is 0.
+				Default value is 1.
 			</emphasis></para>
 			<example>
 				<title>Set <varname>tls_verify_server </varname> variable</title>

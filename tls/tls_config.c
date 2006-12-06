@@ -35,10 +35,10 @@ int             tls_method = TLS_USE_SSLv23;
  * for default domains AND virtual domains
  */
 
-/* no certificate validation */
-int             tls_verify_client_cert  = 0;
-int             tls_verify_server_cert  = 0;
-int             tls_require_client_cert = 0;
+/* enable certificate validation as default value */
+int             tls_verify_client_cert  = 1;
+int             tls_verify_server_cert  = 1;
+int             tls_require_client_cert = 1;
 /* default location of certificates */
 char           *tls_cert_file = TLS_CERT_FILE;
 char           *tls_pkey_file = TLS_PKEY_FILE;

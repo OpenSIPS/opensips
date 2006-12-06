@@ -419,7 +419,7 @@ Chapter 1. User's Guide
 
    It's usable only if TLS support was compiled.
 
-   Default value is 0 (TLS enabled). 
+   Default value is 1 (TLS disabled). 
 
    Example 1-1. Set disable_tls variable
 ...
@@ -555,15 +555,16 @@ tls_ca_list="/mycerts/certs/ca_list.pem"
 
    Warning
 
-   Do not use the NULL algorithms ... only for testing!!!
+   Do not use the NULL algorithms (no encryption) ... only for
+   testing!!!
 
    It's usable only if TLS support was compiled.
 
-   Default ciphers chosen by OpenSSL. 
+   It defaults to the OpenSSL default ciphers. 
 
    Example 1-8. Set tls_ciphers_list variable 
 ...
-tls_ciphers_list="NULL-SHA:NULL-MD5:AES256-SHA:AES128-SHA"
+tls_ciphers_list="NULL"
 ...
      _________________________________________________________
 
@@ -582,7 +583,7 @@ tls_require_client_certificate=number
 
    It's usable only if TLS support was compiled.
 
-   Default value for both is 0. 
+   Default value for both is 1. 
 
    Example 1-9. Set tls_verify_client &
    tls_require_client_certificate variable
@@ -605,7 +606,7 @@ tls_require_client_certificate = 1
 
    It's usable only if TLS support was compiled.
 
-   Default value is 0. 
+   Default value is 1. 
 
    Example 1-10. Set tls_verify_server variable
 ...
