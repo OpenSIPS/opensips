@@ -29,6 +29,7 @@
  *  2004-09-19  compile flags are checked too (andrei)
  *  2006-03-02  added find_cmd_export_t(), killed find_exportp() and
  *              find_module() (bogdan)
+ *  2006-11-28  added module_loaded() (Jeffrey Magder - SOMA Networks)
  */
 
 
@@ -298,8 +299,8 @@ cmd_export_t* find_cmd_export_t(char* name, int param_no, int flags)
 
 
 /*
- * searches the module list and returns pointer to "name" function in module "mod"
- * 0 if not found
+ * searches the module list and returns pointer to "name" function in module 
+ * "mod" or 0 if not found
  * flags parameter is OR value of all flags that must match
  */
 cmd_function find_mod_export(char* mod, char* name, int param_no, int flags)
@@ -499,3 +500,19 @@ int init_modules(void)
 {
 	return init_mod(modules);
 }
+
+/* Returns 1 if the module with name 'name' is loaded, and zero otherwise. */
+int module_loaded(char *name) {
+
+	struct sr_module *currentMod;
+
+	for (currentMod=modules; currentMod; currentMod=currentMod->next) {
+		if (strcasecmp(name,currentMod->exports->name)==0) {
+			return 1;
+		}
+
+	}
+
+	return 0;
+}
+

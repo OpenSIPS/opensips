@@ -23,6 +23,8 @@
  * History:
  * ---------
  *  2006-01-16  first version (bogdan)
+ *  2006-11-28  added get_stat_var_from_num_code() (Jeffrey Magder -
+ *              SOMA Networks)
  */
 
 
@@ -97,6 +99,17 @@ int register_module_stats(char *module, stat_export_t *stats);
 stat_var* get_stat( str *name );
 
 unsigned int get_stat_val( stat_var *var );
+
+/* Returns the statistic associated with 'numerical_code' and 'is_a_reply'.
+ * Specifically:
+ *
+ *  - if in_codes is nonzero, then the stat_var for the number of messages 
+ *    _received_ with the 'numerical_code' will be returned if it exists.
+ *  - otherwise, the stat_var for the number of messages _sent_ with the 
+ *    'numerical_code' will be returned, if the stat exists. 
+ */
+stat_var *get_stat_var_from_num_code(unsigned int numerical_code, int in_codes);
+
 
 #ifdef NO_ATOMIC_OPS
 #include "locking.h"

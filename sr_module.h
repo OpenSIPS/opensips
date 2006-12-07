@@ -32,6 +32,7 @@
  *  2004-12-03  changed param_func_t to (modparam_t, void*), killed
  *               param_func_param_t   (andrei)
  *  2006-03-02  added find_cmd_export_t(), killed find_exportp() (bogdan)
+ *  2006-11-28  added module_loaded() (Jeffrey Magder - SOMA Networks)
  */
 
 
@@ -171,5 +172,7 @@ void* find_param_export(char* mod, char* name, modparam_t type);
  *  - returns >0 if ok, 0 to drop message
  */
 
+/* Returns 1 if the module with name 'name' is loaded, and zero otherwise. */
+int module_loaded(char *name);
 
 #endif

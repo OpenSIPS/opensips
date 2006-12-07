@@ -23,6 +23,8 @@
  * History:
  * ---------
  *  2006-01-23  first version (bogdan)
+ *  2006-11-28  Added statistics for the number of bad URI's, methods, and 
+ *              proxy requests (Jeffrey Magder - SOMA Networks)
  */
 
 #ifndef _CORE_STATS_H_
@@ -57,6 +59,15 @@ extern stat_var* err_reqs;
 /* error replies */
 extern stat_var* err_rpls;
 
+/* Set in parse_uri() */
+extern stat_var* bad_URIs;
+
+/* Set in parse_method() */
+extern stat_var* bad_methods;
+
+/* Set in get_hdr_field(). */
+extern stat_var* bad_proxy_req;
+ 
 #endif /*STATISTICS*/
 
 #endif /*_CORE_STATS_H_*/

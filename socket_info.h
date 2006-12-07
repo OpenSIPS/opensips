@@ -61,6 +61,31 @@ struct socket_info* grep_sock_info(str* host, unsigned short port,
 struct socket_info* find_si(struct ip_addr* ip, unsigned short port,
 												unsigned short proto);
 
+
+static inline struct socket_info** get_sock_info_list(unsigned short proto)
+{
+	
+	switch(proto){
+		case PROTO_UDP:
+			return &udp_listen;
+			break;
+#ifdef USE_TCP
+		case PROTO_TCP:
+			return &tcp_listen;
+			break;
+#endif
+#ifdef USE_TLS
+		case PROTO_TLS:
+			return &tls_listen;
+			break;
+#endif
+		default:
+			LOG(L_CRIT, "BUG: get_sock_info_list: invalid proto %d\n", proto);
+	}
+	return 0;
+}
+
+
 /* helper function:
  * returns next protocol, if the last one is reached return 0
  * useful for cycling on the supported protocols */

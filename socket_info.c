@@ -158,31 +158,6 @@ static char* get_proto_name(unsigned short proto)
 }
 
 
-static struct socket_info** get_sock_info_list(unsigned short proto)
-{
-	
-	switch(proto){
-		case PROTO_UDP:
-			return &udp_listen;
-			break;
-#ifdef USE_TCP
-		case PROTO_TCP:
-			return &tcp_listen;
-			break;
-#endif
-#ifdef USE_TLS
-		case PROTO_TLS:
-			return &tls_listen;
-			break;
-#endif
-		default:
-			LOG(L_CRIT, "BUG: get_sock_info_list: invalid proto %d\n", proto);
-	}
-	return 0;
-}
-
-
-
 /* checks if the proto: host:port is one of the address we listen on
  * and returns the corresponding socket_info structure.
  * if port==0, the  port number is ignored

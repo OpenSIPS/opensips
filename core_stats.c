@@ -23,6 +23,8 @@
  * History:
  * ---------
  *  2006-01-23  first version (bogdan)
+ *  2006-11-28  Added statistics for the number of bad URI's, methods, and 
+ *              proxy requests (Jeffrey Magder - SOMA Networks)
  */
 
 
@@ -41,6 +43,10 @@ stat_var* drp_reqs;
 stat_var* drp_rpls;
 stat_var* err_reqs;
 stat_var* err_rpls;
+stat_var* bad_URIs;
+stat_var* bad_methods;
+stat_var* bad_proxy_req;
+
 
 stat_export_t core_stats[] = {
 	{"rcv_requests" ,         0,  &rcv_reqs      },
@@ -51,6 +57,9 @@ stat_export_t core_stats[] = {
 	{"drop_replies" ,         0,  &drp_rpls      },
 	{"err_requests" ,         0,  &err_reqs      },
 	{"err_replies" ,          0,  &err_rpls      },
+	{"bad_URIs_rcvd",         0,  &bad_URIs      },
+	{"bad_methods_rcvd",      0,  &bad_methods   },
+	{"bad_proxy_req",         0,  &bad_proxy_req },
 	{0,0,0}
 };
 

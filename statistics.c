@@ -23,6 +23,8 @@
  * History:
  * ---------
  *  2006-01-16  first version (bogdan)
+ *  2006-11-28  added get_stat_var_from_num_code() (Jeffrey Magder -
+ *              SOMA Networks)
  */
 
 
@@ -30,6 +32,7 @@
 
 #include "mem/shm_mem.h"
 #include "mi/mi.h"
+#include "ut.h"
 #include "dprint.h"
 #include "fifo_server.h"
 #include "locking.h"
@@ -61,6 +64,39 @@ gen_lock_t *stat_lock = 0;
 #endif
 
 #define stat_hash(_s) core_hash( _s, 0, STATS_HASH_SIZE)
+
+
+
+/* Returns the statistic associated with 'numerical_code' and 'out_codes'.
+ * Specifically:
+ *
+ *  - if out_codes is nonzero, then the stat_var for the number of messages 
+ *    _sent out_ with the 'numerical_code' will be returned if it exists.
+ *  - otherwise, the stat_var for the number of messages _received_ with the 
+ *    'numerical_code' will be returned, if the stat exists. 
+ */
+stat_var *get_stat_var_from_num_code(unsigned int numerical_code, int out_codes)
+{
+	static char msg_code[INT2STR_MAX_LEN+4];
+	str stat_name;
+
+	stat_name.s = int2bstr( (unsigned long)numerical_code, msg_code, 
+		&stat_name.len);
+	stat_name.s[stat_name.len++] = '_';
+
+	if (out_codes) {
+		stat_name.s[stat_name.len++] = 'o';
+		stat_name.s[stat_name.len++] = 'u';
+		stat_name.s[stat_name.len++] = 't';
+	} else {
+		stat_name.s[stat_name.len++] = 'i';
+		stat_name.s[stat_name.len++] = 'n';
+	}
+
+	return get_stat(&stat_name);
+}
+
+
 
 int init_stats_collector()
 {
