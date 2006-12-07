@@ -33,8 +33,19 @@
 #include "../str.h"
 #include "tree.h"
 
+#define MI_ASYNC_RPL_FLAG   (1<<0)
+#define MI_NO_INPUT_FLAG    (1<<1)
+
 typedef struct mi_root* (mi_cmd_f)(struct mi_root*, void *param);
-typedef int (mi_child_init_f)();
+typedef int (mi_child_init_f)(void);
+typedef void (mi_handler_f)(void *param);
+
+
+struct mi_handler {
+	mi_handler_f *handler_f;
+	void * param;
+};
+
 
 struct mi_cmd {
 	int id;
@@ -48,6 +59,7 @@ struct mi_cmd {
 typedef struct mi_export_ {
 	char *name;
 	mi_cmd_f *cmd;
+	unsigned int flags;
 	void *param;
 	mi_child_init_f *init_f;
 }mi_export_t;

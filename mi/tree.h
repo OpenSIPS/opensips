@@ -34,6 +34,7 @@
 #include "../str.h"
 
 struct mi_node;
+struct mi_handler;
 
 #include "attr.h"
 
@@ -50,7 +51,7 @@ struct mi_node;
 #define MI_BAD_PARM_LEN      (sizeof(MI_BAD_PARM_S)-1)
 
 
-struct mi_node{
+struct mi_node {
 	str value;
 	str name;
 	struct mi_node *kids;
@@ -59,10 +60,11 @@ struct mi_node{
 	struct mi_attr *attributes;
 };
 
-struct mi_root{
-	unsigned int  code;
-	str           reason;
-	struct mi_node node;
+struct mi_root {
+	unsigned int       code;
+	str                reason;
+	struct mi_handler  *async_hdl;
+	struct mi_node     node;
 };
 
 struct mi_root *init_mi_tree(unsigned int code, char *reason, int reason_len);
