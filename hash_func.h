@@ -81,7 +81,8 @@ static inline unsigned int core_case_hash( str *s1, str *s2, unsigned int size)
 
 	end=s1->s+s1->len;
 	for ( p=s1->s ; p<=(end-4) ; p+=4 ){
-		v=(ch_icase(*p)<<24)+(p[1]<<16)+(p[2]<<8)+p[3];
+		v=(ch_icase(*p)<<24)+(ch_icase(p[1])<<16)+(ch_icase(p[2])<<8)
+			+ ch_icase(p[3]);
 		ch_h_inc;
 	}
 	v=0;
@@ -91,7 +92,8 @@ static inline unsigned int core_case_hash( str *s1, str *s2, unsigned int size)
 	if (s2) {
 		end=s2->s+s2->len;
 		for (p=s2->s; p<=(end-4); p+=4){
-			v=(ch_icase(*p)<<24)+(p[1]<<16)+(p[2]<<8)+p[3];
+			v=(ch_icase(*p)<<24)+(ch_icase(p[1])<<16)+(ch_icase(p[2])<<8)
+				+ ch_icase(p[3]);
 			ch_h_inc;
 		}
 		v=0;
