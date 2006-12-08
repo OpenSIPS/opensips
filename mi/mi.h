@@ -36,9 +36,13 @@
 #define MI_ASYNC_RPL_FLAG   (1<<0)
 #define MI_NO_INPUT_FLAG    (1<<1)
 
+#define MI_ROOT_ASYNC_RPL   ((struct mi_root*)-1)
+
+struct mi_handler;
+
 typedef struct mi_root* (mi_cmd_f)(struct mi_root*, void *param);
 typedef int (mi_child_init_f)(void);
-typedef void (mi_handler_f)(void *param);
+typedef void (mi_handler_f)(struct mi_root *, struct mi_handler *, int);
 
 
 struct mi_handler {
@@ -52,6 +56,7 @@ struct mi_cmd {
 	str name;
 	mi_child_init_f *init_f;
 	mi_cmd_f *f;
+	unsigned int flags;
 	void *param;
 };
 
@@ -65,7 +70,8 @@ typedef struct mi_export_ {
 }mi_export_t;
 
 
-int register_mi_cmd( mi_cmd_f f, char *name, void *param, mi_child_init_f in);
+int register_mi_cmd( mi_cmd_f f, char *name, void *param,
+		mi_child_init_f in, unsigned int flags;);
 
 int register_mi_mod( char *mod_name, mi_export_t *mis);
 

@@ -95,7 +95,8 @@ int init_mi_child()
 
 
 
-int register_mi_cmd( mi_cmd_f f, char *name, void *param, mi_child_init_f in)
+int register_mi_cmd( mi_cmd_f f, char *name, void *param,
+									mi_child_init_f in, unsigned int flags)
 {
 	struct mi_cmd *cmds;
 	int id;
@@ -130,6 +131,7 @@ int register_mi_cmd( mi_cmd_f f, char *name, void *param, mi_child_init_f in)
 
 	cmds->f = f;
 	cmds->init_f = in;
+	cmds->flags = flags;
 	cmds->name.s = name;
 	cmds->name.len = len;
 	cmds->id = id;
