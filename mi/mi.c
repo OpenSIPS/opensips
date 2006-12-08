@@ -70,7 +70,7 @@ int register_mi_mod( char *mod_name, mi_export_t *mis)
 
 	for ( i=0 ; mis[i].name ; i++ ) {
 		ret = register_mi_cmd( mis[i].cmd, mis[i].name, mis[i].param,
-			mis[i].init_f);
+			mis[i].init_f, mis[i].flags);
 		if (ret!=0) {
 			LOG(L_ERR,"ERROR:mi:register_mi_mod: failed to register cmd <%s>"
 				"for module %s\n",mis[i].name,mod_name);
