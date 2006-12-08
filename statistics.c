@@ -50,8 +50,8 @@ static struct mi_root *mi_get_stats(struct mi_root *cmd, void *param);
 static struct mi_root *mi_reset_stats(struct mi_root *cmd, void *param);
 
 static mi_export_t mi_stat_cmds[] = {
-	{ "get_statistics",    mi_get_stats,    0,  0 },
-	{ "reset_statistics",  mi_reset_stats,  0,  0 },
+	{ "get_statistics",    mi_get_stats,    0  ,  0,  0 },
+	{ "reset_statistics",  mi_reset_stats,  0  ,  0,  0 },
 	{ 0, 0, 0, 0}
 };
 
