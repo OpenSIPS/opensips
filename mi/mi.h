@@ -71,7 +71,7 @@ typedef struct mi_export_ {
 
 
 int register_mi_cmd( mi_cmd_f f, char *name, void *param,
-		mi_child_init_f in, unsigned int flags;);
+		mi_child_init_f in, unsigned int flags);
 
 int register_mi_mod( char *mod_name, mi_export_t *mis);
 
