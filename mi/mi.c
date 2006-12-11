@@ -108,6 +108,11 @@ int register_mi_cmd( mi_cmd_f f, char *name, void *param,
 		return -1;
 	}
 
+	if (flags&MI_NO_INPUT_FLAG && flags&MI_ASYNC_RPL_FLAG) {
+		LOG(L_ERR,"ERROR:mi:register_mi_cmd: invalids flags for <%s> - "
+			"async functions must take input\n",name);
+	}
+
 	len = strlen(name);
 	id = get_mi_id(name,len);
 
