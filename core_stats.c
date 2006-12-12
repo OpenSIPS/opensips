@@ -44,22 +44,22 @@ stat_var* drp_rpls;
 stat_var* err_reqs;
 stat_var* err_rpls;
 stat_var* bad_URIs;
-stat_var* bad_methods;
-stat_var* bad_proxy_req;
+stat_var* unsupported_methods;
+stat_var* bad_msg_hdr;
 
 
 stat_export_t core_stats[] = {
-	{"rcv_requests" ,         0,  &rcv_reqs      },
-	{"rcv_replies" ,          0,  &rcv_rpls      },
-	{"fwd_requests" ,         0,  &fwd_reqs      },
-	{"fwd_replies" ,          0,  &fwd_rpls      },
-	{"drop_requests" ,        0,  &drp_reqs      },
-	{"drop_replies" ,         0,  &drp_rpls      },
-	{"err_requests" ,         0,  &err_reqs      },
-	{"err_replies" ,          0,  &err_rpls      },
-	{"bad_URIs_rcvd",         0,  &bad_URIs      },
-	{"bad_methods_rcvd",      0,  &bad_methods   },
-	{"bad_proxy_req",         0,  &bad_proxy_req },
+	{"rcv_requests" ,         0,  &rcv_reqs              },
+	{"rcv_replies" ,          0,  &rcv_rpls              },
+	{"fwd_requests" ,         0,  &fwd_reqs              },
+	{"fwd_replies" ,          0,  &fwd_rpls              },
+	{"drop_requests" ,        0,  &drp_reqs              },
+	{"drop_replies" ,         0,  &drp_rpls              },
+	{"err_requests" ,         0,  &err_reqs              },
+	{"err_replies" ,          0,  &err_rpls              },
+	{"bad_URIs_rcvd",         0,  &bad_URIs              },
+	{"unsupported_methods",   0,  &unsupported_methods   },
+	{"bad_msg_hdr",           0,  &bad_msg_hdr           },
 	{0,0,0}
 };
 

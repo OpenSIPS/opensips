@@ -30,6 +30,8 @@
  * 2003-07-03  sips:, r2, lr=on support added (andrei)
  * 2005-02-25  preliminary tel uri support (andrei)
  * 2005-03-03  more tel uri fixes (andrei)
+ * 2006-11-28  Added statistic support for the number of bad URI's
+ *             (Jeffrey Magder - SOMA Networks
  */
 
 
@@ -38,6 +40,7 @@
 #include "../dprint.h"
 #include "../ut.h"   /* q_memchr */
 #include "../error.h"
+#include "../core_stats.h"
 
 /* buf= pointer to begining of uri (sip:x@foo.bar:5060;a=b?h=i)
  * len= len of uri
@@ -1061,6 +1064,7 @@ error_bug:
 error_exit:
 	ser_error=E_BAD_URI;
 	uri->type=ERROR_URI_T;
+	update_stat(bad_URIs, 1);
 	return E_BAD_URI;
 }
 

@@ -32,6 +32,8 @@
  *  2005-03-02  free_via_list(vb) on via parse error (andrei)
  *  2006-02-17 Session-Expires, Min-SE (dhsueh@somanetworks.com)
  *  2006-03-02 header of same type are linked as sibling (bogdan)
+ *  2006-11-28 Added statistic support for bad message headers.
+ *             (Jeffrey Magder - SOMA Networks)
  */
 
 
@@ -47,6 +49,7 @@
 #include "../mem/mem.h"
 #include "../error.h"
 #include "../globals.h"
+#include "../core_stats.h"
 #include "parse_hname2.h"
 #include "parse_uri.h"
 #include "parse_content.h"
@@ -237,6 +240,7 @@ char* get_hdr_field(char* buf, char* end, struct hdr_field* hdr)
 	return tmp;
 error:
 	DBG("get_hdr_field: error exit\n");
+	update_stat( bad_msg_hdr, 1);
 	hdr->type=HDR_ERROR_T;
 	hdr->len=tmp-hdr->name.s;
 	return tmp;

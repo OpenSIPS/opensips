@@ -63,10 +63,10 @@ extern stat_var* err_rpls;
 extern stat_var* bad_URIs;
 
 /* Set in parse_method() */
-extern stat_var* bad_methods;
+extern stat_var* unsupported_methods;
 
 /* Set in get_hdr_field(). */
-extern stat_var* bad_proxy_req;
+extern stat_var* bad_msg_hdr;
  
 #endif /*STATISTICS*/
 

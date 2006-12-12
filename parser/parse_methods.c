@@ -30,6 +30,7 @@
 #include <strings.h>
 #include "../dprint.h"
 #include "../trim.h"
+#include "../core_stats.h"
 #include "parse_methods.h"
 #include "msg_parser.h"
 
@@ -301,7 +302,8 @@ done:
 	return (start+len);
 
 unknown:
- 	*method = METHOD_OTHER;
+	update_stat(unsupported_methods, 1);
+	*method = METHOD_OTHER;
 	if(end)
 	{
 		while(len < max)
