@@ -242,7 +242,7 @@ ifneq (,$(findstring gcc, $(CC_LONGVER)))
 	MKDEP=$(CC) -MM 
 	CC_SHORTVER=$(shell echo "$(CC_VER)" | cut -d" " -f 2| \
 				 sed -e 's/[^0-9]*-\(.*\)/\1/'| \
-				 sed -e 's/\([0-9]\+\.[0-9]\+\).*/\1/' )
+				 sed -e 's/\([0-9][0-9]*\.[0-9][0-9]*\).*/\1/' )
 	#transform gcc version into 2.9x, 3.x or 4.x
 	CC_CLASS=$(shell echo "$(CC_SHORTVER)" | \
 				 sed -e 's/2\.9.*/2.9x/' -e 's/3\.[0-9]/3.x/' \
