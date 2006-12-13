@@ -1192,7 +1192,7 @@ static int xl_get_color(struct sip_msg *msg, xl_value_t *res, xl_param_t *param,
         
 	if(param->val.s[0]!='_')
 	{
-		if (islower(param->val.s[0]))
+		if (islower((int)param->val.s[0]))
 		{
 			/* normal font */
 			append_sstring(p, end, "0;");
