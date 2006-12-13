@@ -60,7 +60,7 @@ MAIN_NAME=openser
 VERSION = 1
 PATCHLEVEL = 2
 SUBLEVEL = 0
-EXTRAVERSION = -dev12
+EXTRAVERSION = -dev13
 
 RELEASE=$(VERSION).$(PATCHLEVEL).$(SUBLEVEL)$(EXTRAVERSION)
 OS = $(shell uname -s | sed -e s/SunOS/solaris/ | tr "[A-Z]" "[a-z]")
@@ -362,6 +362,7 @@ DEFS+= $(extra_defs) \
 	 -DSTATISTICS \
 	 -DDBG_QM_MALLOC \
 	 #-DF_MALLOC \
+	 #-DDBG_QM_MALLOC \
 	 #-DDBG_QM_MALLOC \
 	 #-DDBG_F_MALLOC \
 	 #-DNO_DEBUG \

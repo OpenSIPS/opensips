@@ -440,7 +440,7 @@ static void sig_alarm_abort(int signo)
 }
 
 
-
+#define OPENSER_SHUTDOWN_TIME	60
 void handle_sigs()
 {
 	pid_t	chld;
@@ -464,11 +464,19 @@ void handle_sigs()
 				
 			/* first of all, kill the children also */
 			kill_all_children(SIGTERM);
+			if (signal(SIGALRM, sig_alarm_kill) == SIG_ERR ) {
+				LOG(L_ERR, "ERROR: could not install SIGALARM handler\n");
+				/* continue, the process will die anyway if no
+				 * alarm is installed which is exactly what we want */
+			}
+			alarm(OPENSER_SHUTDOWN_TIME); /* 1 minute close timeout */
 
-			     /* Wait for all the children to die */
-			while(wait(0) > 0);
-			
+			while(wait(0) > 0); /* Wait for all the children to terminate */
+			signal(SIGALRM, sig_alarm_abort);
+
 			cleanup(1); /* cleanup & show status*/
+			alarm(0);
+			signal(SIGALRM, SIG_IGN);
 			dprint("Thank you for flying " NAME "\n");
 			exit(0);
 			break;
@@ -516,7 +524,7 @@ void handle_sigs()
 				/* continue, the process will die anyway if no
 				 * alarm is installed which is exactly what we want */
 			}
-			alarm(60); /* 1 minute close timeout */
+			alarm(OPENSER_SHUTDOWN_TIME); /* 1 minute close timeout */
 			while(wait(0) > 0); /* wait for all the children to terminate*/
 			signal(SIGALRM, sig_alarm_abort);
 			cleanup(1); /* cleanup & show status*/
