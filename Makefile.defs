@@ -665,7 +665,7 @@ endif			#CC_CLASS, 4.x
 else		#CC_NAME, gcc
 ifeq		($(CC_NAME), suncc)
 			CFLAGS+=-g -xO5 -fast -native -xarch=v8plusa -xCC \
-					-xc99 # C99 support
+					-xc99=no_lib # C99 support
 			# -Dinline="" # add this if cc < 5.3 (define inline as null)
 else
 				#other compilers
