@@ -360,7 +360,8 @@ DEFS+= $(extra_defs) \
 	 -DDISABLE_NAGLE \
 	 -DHAVE_RESOLV_RES \
 	 -DSTATISTICS \
-	 -DF_MALLOC \
+	 -DDBG_QM_MALLOC \
+	 #-DF_MALLOC \
 	 #-DDBG_QM_MALLOC \
 	 #-DDBG_F_MALLOC \
 	 #-DNO_DEBUG \
@@ -951,13 +952,8 @@ ifeq	($(CC_NAME), suncc)
 MOD_CFLAGS=-xcode=pic32  $(CFLAGS)
 endif
 
-ifeq ($(LEX),)
-	LEX=flex
-endif
-ifeq ($(YACC),)
-	YACC=bison
-endif
-YACC_FLAGS=-d -b cfg
+DEFAULT_YACC=bison
+
 # on solaris add -lxnet (e.g. LIBS= -lxnet)
 LIBS= -ldl -lresolv
 
@@ -1014,7 +1010,7 @@ ifeq  ($(OS), solaris)
 		#LDFLAGS=-g $(PROFILE)
 		#MOD_LDFLAGS=-g -G
 	endif
-	YACC=yacc
+	DEFAULT_YACC=yacc
 
 ifeq ($(CC_NAME), suncc)
 	LIBS= -lfast -ldl -lresolv
@@ -1051,7 +1047,7 @@ ifeq ($(OS), freebsd)
 	ifeq ($(NO_SELECT),)
 		DEFS+=-DHAVE_SELECT
 	endif
-	YACC=yacc
+	DEFAULT_YACC=yacc
 endif
 
 ifeq ($(OS), openbsd)
@@ -1072,7 +1068,7 @@ ifeq ($(OS), openbsd)
 		DEFS+=-DHAVE_SELECT
 	endif
 	# (symbols on openbsd are prefixed by "_")
-	YACC=yacc
+	DEFAULT_YACC=yacc
 	# no sched_yield on openbsd unless linking with c_r (not recommended)
 	LIBS= 
 	OPENBSD_IS_AOUT= $(shell echo "$(OSREL)" | \
@@ -1111,7 +1107,7 @@ ifeq ($(OS), netbsd)
 	ifeq ($(NO_SELECT),)
 		DEFS+=-DHAVE_SELECT
 	endif
-	YACC=yacc
+	DEFAULT_YACC=yacc
 	LIBS= 
 endif
 
@@ -1138,8 +1134,16 @@ ifeq ($(OS), darwin)
 	endif
 	LDFLAGS=        # darwin doesn't like -O2 or -E
 	MOD_LDFLAGS= -bundle -bundle_loader ../../$(MAIN_NAME)
-	YACC=yacc
+	DEFAULT_YACC=yacc
 endif
+
+ifeq ($(LEX),)
+	LEX=flex
+endif
+ifeq ($(YACC),)
+	YACC=$(DEFAULT_YACC)
+endif
+YACC_FLAGS=-d -b cfg
 
 ifneq (,$(findstring CYGWIN, $(OS)))
 	#cygwin is the same as common
