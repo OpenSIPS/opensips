@@ -47,8 +47,10 @@ struct serial_contact {
 #define Q_FLAG            (1<<4)
 /* avp alias to be used */
 #define SERIAL_AVP_ALIAS  "serial_branch"
+/* avp ID of serial AVP */
+#define SERIAL_AVL_ID     0xff3434
 
-static int serial_avp_id = 0xff3434;
+static int_str serial_avp;
 
 
 
@@ -56,7 +58,8 @@ int init_serialization()
 {
 	str alias = { SERIAL_AVP_ALIAS, sizeof(SERIAL_AVP_ALIAS)-1 };
 
-	return add_avp_galias( &alias, 0 /*type*/, (int_str)serial_avp_id );
+	serial_avp.n = SERIAL_AVL_ID;
+	return add_avp_galias( &alias, 0 /*type*/, serial_avp );
 }
 
 
@@ -141,12 +144,12 @@ int serialize_branches(struct sip_msg *msg, int clean_before )
 	}
 
 	if (clean_before)
-		destroy_avps( 0/*type*/, (int_str)serial_avp_id, 1/*all*/);
+		destroy_avps( 0/*type*/, serial_avp, 1/*all*/);
 
 	/* Add contacts to "contacts" AVP */
 	for ( i=first ; i!=-1; i=contacts[i].next ) {
 		val.s = contacts[i].uri;
-		if (add_avp( AVP_VAL_STR|contacts[i].q_flag, (int_str)serial_avp_id,
+		if (add_avp( AVP_VAL_STR|contacts[i].q_flag, serial_avp,
 		val)!=0 ) {
 			LOG(L_ERR,"ERROR:serialize_branches: failed to add avp\n");
 			goto error;
@@ -167,10 +170,10 @@ error:
 
 /*
  * Adds to request a destination set that includes all highest priority
- * class contacts in "serial_avp_id" AVP.   If called from a route block,
+ * class contacts in "serial_avp" AVP.   If called from a route block,
  * rewrites the request uri with first contact and adds the remaining
  * contacts as branches.  If called from failure route block, adds all
- * contacts as brances.  Removes added contacts from "serial_avp_id" AVP.
+ * contacts as brances.  Removes added contacts from "serial_avp" AVP.
  */
 
 int next_branches( struct sip_msg *msg)
@@ -188,7 +191,7 @@ int next_branches( struct sip_msg *msg)
 	}
 
 	/* Find first avp  */
-	avp = search_first_avp( 0, (int_str)serial_avp_id, &val, 0);
+	avp = search_first_avp( 0, serial_avp, &val, 0);
 	if (!avp) {
 		DBG("DEBUG:next_branches: no AVPs -- we are done!\n");
 		goto error;

@@ -354,7 +354,7 @@ char* pgid_file = 0;
 
 
 /* call it before exiting; if show_status==1, mem status is displayed */
-void cleanup(show_status)
+void cleanup(int show_status)
 {
 	/*clean-up*/
 	if (mem_lock) 
