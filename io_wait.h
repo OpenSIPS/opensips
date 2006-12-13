@@ -200,7 +200,9 @@ static inline struct fd_map* hash_fd_map(	io_wait_h* h,
  */
 inline static int handle_io(struct fd_map* fm, int idx);
 #else
-int handle_io(struct fd_map* fm, int idx);
+static int handle_io(struct fd_map* fm, int idx) {
+	return 0;
+}
 #endif
 
 
