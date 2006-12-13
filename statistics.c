@@ -129,7 +129,6 @@ int init_stats_collector()
 		LOG(L_ERR,"ERROR:init_stats_collector: failed to register fifo "
 			"command\n");
 		goto error;
-		return -1;
 	}
 
 	/* register MI commands */
