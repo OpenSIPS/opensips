@@ -360,9 +360,7 @@ DEFS+= $(extra_defs) \
 	 -DDISABLE_NAGLE \
 	 -DHAVE_RESOLV_RES \
 	 -DSTATISTICS \
-	 -DDBG_QM_MALLOC \
-	 #-DF_MALLOC \
-	 #-DDBG_QM_MALLOC \
+	 -DF_MALLOC \
 	 #-DDBG_QM_MALLOC \
 	 #-DDBG_F_MALLOC \
 	 #-DNO_DEBUG \
@@ -524,7 +522,7 @@ ifeq			($(CC_CLASS), 3.x)
 					CPU ?= athlon
 					CFLAGS+=-minline-all-stringops \
 							-falign-loops \
-							-mcpu=$(CPU) 
+							-march=$(CPU) 
 else
 ifeq			($(CC_CLASS), 2.9x) #older gcc version (2.9[1-5])
 $(warning 			Old gcc detected ($(CC_SHORTVER)), use  gcc >= 3.1 \
