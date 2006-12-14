@@ -798,7 +798,7 @@ static inline void filter_and_sort_naptr( struct rdata** head_p,
 			goto skip;
 
 		DBG("DEBUG:filter_and_sort_naptr: found valid %.*s -> %s\n",
-			naptr->services_len,naptr->services, naptr->repl);
+			(int)naptr->services_len,naptr->services, naptr->repl);
 
 		/* this is a supported service -> add it according to order to the 
 		 * new head list */
@@ -825,7 +825,7 @@ static inline void filter_and_sort_naptr( struct rdata** head_p,
 		continue;
 skip:
 		DBG("DEBUG:filter_and_sort_naptr: skipping %.*s -> %s\n",
-			naptr->services_len, naptr->services, naptr->repl);
+			(int)naptr->services_len, naptr->services, naptr->repl);
 skip0:
 		l->next = out;
 		out = l;
