@@ -84,6 +84,7 @@ static inline char* skip_ws(char* p, unsigned int size)
 #include "case_refe.h"     /* Refer-To */
 #include "case_sess.h"     /* Session-Expires */
 #include "case_min_.h"     /* Min-SE */
+#include "case_p_pr.h"     /* P-Preferred-Identity */
 
 
 #define READ(val) \
@@ -119,6 +120,7 @@ static inline char* skip_ws(char* p, unsigned int size)
 	case _refe_: refe_CASE; \
 	case _sess_: sess_CASE; \
 	case _min__: min__CASE; \
+	case _p_pr_: p_pr_CASE; \
 
 
 #define PARSE_COMPACT(id)          \

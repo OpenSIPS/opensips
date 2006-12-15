@@ -174,6 +174,10 @@ void clean_hdr_field(struct hdr_field* hf)
 		case HDR_MIN_SE_T:
 			break;
 
+		case HDR_PPI_T:
+			free_to(hf->parsed);
+			break;
+
 		default:
 			LOG(L_CRIT, "BUG: clean_hdr_field: unknown header type %d\n",
 			    hf->type);

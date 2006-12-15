@@ -138,5 +138,10 @@
 
 #define _min__ 0x2d6e696d   /* "min-" for "min-se" */
 
+#define _p_pr_ 0x72702d70   /* "p-pr" for "p-preferred-identity" */
+#define _efer_ 0x72656665   /* "efer" */
+#define _red__ 0x2d646572   /* "red-" */
+#define _iden_ 0x6e656469   /* "iden" */
+#define _tity_ 0x79746974   /* "tity" */
 
 #endif /* KEYS_H */

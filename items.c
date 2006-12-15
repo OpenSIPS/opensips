@@ -49,6 +49,7 @@
 #include "parser/parse_refer_to.h"
 #include "parser/parse_rpid.h"
 #include "parser/parse_diversion.h"
+#include "parser/parse_ppi.h"
 #include "parser/digest/digest.h"
 
 #include "items.h"
@@ -886,6 +887,29 @@ static int xl_get_rpid(struct sip_msg *msg, xl_value_t *res, xl_param_t *param,
 	
 	res->flags = XL_VAL_STR;
 	return 0;
+}
+
+static int xl_get_ppi(struct sip_msg *msg, xl_value_t *res, xl_param_t *param,
+		      int flags)
+{
+    if(msg==NULL || res==NULL)
+	return -1;
+    
+    if(parse_ppi_header(msg)==-1)
+    {
+	LOG(L_ERR,
+	    "xl_get_ppi: ERROR cannot parse P-Preferred-Identity header\n");
+	return xl_get_null(msg, res, param, flags);
+    }
+	
+    if(msg->ppi==NULL || get_ppi(msg)==NULL)
+	return xl_get_null(msg, res, param, flags);
+    
+    res->rs.s = get_ppi(msg)->uri.s;
+    res->rs.len = get_ppi(msg)->uri.len; 
+    
+    res->flags = XL_VAL_STR;
+    return 0;
 }
 
 static int xl_get_dset(struct sip_msg *msg, xl_value_t *res, xl_param_t *param,
@@ -2026,6 +2050,8 @@ static struct _xl_table {
 		{ XL_OURI, 0, xl_get_ouri, {{0, 0}, 0}, {0, 0}}},
 	{{"oU", (sizeof("oU")-1)}, /* */
 		{ XL_OURI_USERNAME, 0, xl_get_ouri_attr, {{0, 1}, 0}, {0, 0}}},
+	{{"pi", (sizeof("pi")-1)}, /* */
+		{ XL_PPI_URI, 0, xl_get_ppi, {{0, 0}, 0}, {0, 0}}},
 	{{"pp", (sizeof("pp")-1)}, /* */
 		{ XL_PID, 0, xl_get_pid, {{0, 0}, 0}, {0, 0}}},
 	{{"rb", (sizeof("rb")-1)}, /* */
