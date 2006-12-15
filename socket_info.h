@@ -266,11 +266,6 @@ error_port:
 
 static inline char* socket2str(struct socket_info *sock, char *s, int* len)
 {
-#define PROTOC2UINT(a, b, c, d) htonl((	(((unsigned int)(a))<<24)+ \
-								(((unsigned int)(b))<<16)+  \
-								(((unsigned int)(c))<<8)+  \
-								((unsigned int)(d)) ) | 0x20202020)
-
 	static char buf[MAX_SOCKET_STR];
 	char *p,*p1;
 
@@ -287,26 +282,31 @@ static inline char* socket2str(struct socket_info *sock, char *s, int* len)
 
 	switch (sock->proto) {
 		case PROTO_UDP:
-			*((unsigned int*)p) = PROTOC2UINT('u', 'd', 'p', ':');
-			p += 4;
+			*(p++) = 'u';
+			*(p++) = 'd';
+			*(p++) = 'p';
 			break;
 		case PROTO_TCP:
-			*((unsigned int*)p) = PROTOC2UINT('t', 'c', 'p', ':');
-			p += 4;
+			*(p++) = 't';
+			*(p++) = 'c';
+			*(p++) = 'p';
 			break;
 		case PROTO_TLS:
-			*((unsigned int*)p) = PROTOC2UINT('t', 'l', 's', ':');
-			p += 4;
+			*(p++) = 't';
+			*(p++) = 'l';
+			*(p++) = 's';
 			break;
 		case PROTO_SCTP:
-			*((unsigned int*)p) = PROTOC2UINT('s', 'c', 't', 'p');
-			p += 4;
-			*(p++) = ':';
+			*(p++) = 's';
+			*(p++) = 'c';
+			*(p++) = 't';
+			*(p++) = 'p';
 			break;
 		default:
 			LOG(L_CRIT,"BUG:socket2str: unsupported proto %d\n", sock->proto);
 			return 0;
 	}
+	*(p++) = ':';
 	memcpy( p, sock->address_str.s, sock->address_str.len);
 	p += sock->address_str.len;
 	*(p++) = ':';
