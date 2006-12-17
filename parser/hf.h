@@ -82,6 +82,7 @@ enum _hdr_types_t {
 	HDR_SESSION_EXPIRES_T		       /* Session-Expires header field */,
 	HDR_MIN_SE_T				       /* Min-SE header field */,
 	HDR_PPI_T			       /* P-Preferred-Identity header field */,
+	HDR_PAI_T			       /* P-Asserted-Identity header field */,
 	HDR_EOH_T				       /* Some other header field */
 };
 
@@ -135,6 +136,7 @@ typedef unsigned long long hdr_flags_t;
 #define HDR_SESSION_EXPIRES_F		HDR_F_DEF(SESSION_EXPIRES)
 #define HDR_MIN_SE_F				HDR_F_DEF(MIN_SE)
 #define HDR_PPI_F				HDR_F_DEF(PPI)
+#define HDR_PAI_F				HDR_F_DEF(PAI)
 #define HDR_OTHER_F					HDR_F_DEF(OTHER)
 
 typedef enum _hdr_types_t hdr_types_t;
@@ -176,6 +178,7 @@ static inline int hdr_allocs_parse(struct hdr_field* hdr)
 		case HDR_REFER_TO_T:
 		case HDR_SESSION_EXPIRES_T:
 		case HDR_PPI_T:
+		case HDR_PAI_T:
 			return 1;
 		default:
 			return 0;

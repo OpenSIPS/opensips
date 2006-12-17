@@ -50,6 +50,7 @@
 #include "parser/parse_rpid.h"
 #include "parser/parse_diversion.h"
 #include "parser/parse_ppi.h"
+#include "parser/parse_pai.h"
 #include "parser/digest/digest.h"
 
 #include "items.h"
@@ -907,6 +908,29 @@ static int xl_get_ppi(struct sip_msg *msg, xl_value_t *res, xl_param_t *param,
     
     res->rs.s = get_ppi(msg)->uri.s;
     res->rs.len = get_ppi(msg)->uri.len; 
+    
+    res->flags = XL_VAL_STR;
+    return 0;
+}
+
+static int xl_get_pai(struct sip_msg *msg, xl_value_t *res, xl_param_t *param,
+		      int flags)
+{
+    if(msg==NULL || res==NULL)
+	return -1;
+    
+    if(parse_pai_header(msg)==-1)
+    {
+	LOG(L_ERR,
+	    "xl_get_pai: ERROR cannot parse P-Asserted-Identity header\n");
+	return xl_get_null(msg, res, param, flags);
+    }
+	
+    if(msg->pai==NULL || get_pai(msg)==NULL)
+	return xl_get_null(msg, res, param, flags);
+    
+    res->rs.s = get_pai(msg)->uri.s;
+    res->rs.len = get_pai(msg)->uri.len; 
     
     res->flags = XL_VAL_STR;
     return 0;
@@ -1980,6 +2004,8 @@ static struct _xl_table {
 	str name;
 	xl_spec_t spec;
 } _xl_names_table[] = {
+	{{"ai", (sizeof("ai")-1)}, /* */
+		{ XL_PAI_URI, 0, xl_get_pai, {{0, 0}, 0}, {0, 0}}},
 	{{"ar", (sizeof("ar")-1)}, /* auth realm */
 		{ XL_AUTH_REALM, 0, xl_get_authattr, {{0, 2}, 0}, {0, 0}}},
 	{{"au", (sizeof("au")-1)}, /* */

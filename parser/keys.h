@@ -144,4 +144,11 @@
 #define _iden_ 0x6e656469   /* "iden" */
 #define _tity_ 0x79746974   /* "tity" */
 
+#define _p_as_ 0x73612d70   /* "p-as" for "p-asserted-identity" */
+#define _sert_ 0x74726573   /* "sert" */
+#define _ed_i_ 0x692d6465   /* "ed-i" */
+#define _dent_ 0x746e6564   /* "dent" */
+#define _ity2_ 0x20797469   /* "ity " */
+#define _ity1_ 0x3a797469   /* "ity:" */
+
 #endif /* KEYS_H */

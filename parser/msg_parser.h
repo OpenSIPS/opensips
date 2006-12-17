@@ -206,6 +206,7 @@ struct sip_msg {
 	struct hdr_field* session_expires;
 	struct hdr_field* min_se;
         struct hdr_field* ppi;
+        struct hdr_field* pai;
 
 	char* eoh;        /* pointer to the end of header (if found) or null */
 	char* unparsed;   /* here we stopped parsing*/
