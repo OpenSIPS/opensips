@@ -151,4 +151,8 @@
 #define _ity2_ 0x20797469   /* "ity " */
 #define _ity1_ 0x3a797469   /* "ity:" */
 
+#define _priv_ 0x76697270   /* "priv" for "privacy" */
+#define _acy2_ 0x20796361   /* "acy " */
+#define _acy1_ 0x3a796361   /* "acy:" */
+
 #endif /* KEYS_H */

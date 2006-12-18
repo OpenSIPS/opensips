@@ -83,7 +83,8 @@ enum _hdr_types_t {
 	HDR_MIN_SE_T				       /* Min-SE header field */,
 	HDR_PPI_T			       /* P-Preferred-Identity header field */,
 	HDR_PAI_T			       /* P-Asserted-Identity header field */,
-	HDR_EOH_T				       /* Some other header field */
+	HDR_PRIVACY_T			       /* Privacy header field */,
+	HDR_EOH_T			       /* Some other header field */
 };
 
 
@@ -137,6 +138,7 @@ typedef unsigned long long hdr_flags_t;
 #define HDR_MIN_SE_F				HDR_F_DEF(MIN_SE)
 #define HDR_PPI_F				HDR_F_DEF(PPI)
 #define HDR_PAI_F				HDR_F_DEF(PAI)
+#define HDR_PRIVACY_F				HDR_F_DEF(PRIVACY)
 #define HDR_OTHER_F					HDR_F_DEF(OTHER)
 
 typedef enum _hdr_types_t hdr_types_t;

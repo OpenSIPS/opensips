@@ -51,6 +51,7 @@
 #include "parser/parse_diversion.h"
 #include "parser/parse_ppi.h"
 #include "parser/parse_pai.h"
+#include "parser/parse_privacy.h"
 #include "parser/digest/digest.h"
 
 #include "items.h"
@@ -156,6 +157,42 @@ static int xl_get_pid(struct sip_msg *msg, xl_value_t *res, xl_param_t *param,
 	res->flags = XL_VAL_STR|XL_VAL_INT|XL_TYPE_INT;
 	return 0;
 }
+
+static int xl_get_privacy(struct sip_msg *msg, xl_value_t *res,
+			  xl_param_t *param, int flags)
+{
+    unsigned int values;
+    int len;
+    char *p = NULL;
+
+    if(msg==NULL || res==NULL)
+	return -1;
+    
+    if(parse_privacy(msg) == -1) {
+	LOG(L_ERR,
+	    "xl_get_privacy: ERROR cannot parse Privacy\n");
+	return xl_get_null(msg, res, param, flags);
+    }
+
+    if (msg->privacy != NULL) {
+	values = get_privacy_values(msg);
+	if (values == 0) {
+	    return xl_get_null(msg, res, param, flags);
+	}
+    } else {
+	return xl_get_null(msg, res, param, flags);
+    }	
+
+    p = int2str((int)values, &len);
+
+    res->rs.s = p;
+    res->rs.len = len;
+
+    res->ri = values;
+    res->flags = XL_VAL_STR|XL_VAL_INT|XL_TYPE_INT;
+    return 0;
+}
+
 
 extern int return_code;
 static int xl_get_return_code(struct sip_msg *msg, xl_value_t *res, xl_param_t *param,
@@ -2080,6 +2117,8 @@ static struct _xl_table {
 		{ XL_PPI_URI, 0, xl_get_ppi, {{0, 0}, 0}, {0, 0}}},
 	{{"pp", (sizeof("pp")-1)}, /* */
 		{ XL_PID, 0, xl_get_pid, {{0, 0}, 0}, {0, 0}}},
+	{{"pr", (sizeof("pr")-1)}, /* */
+		{ XL_PRIVACY, 0, xl_get_privacy, {{0, 0}, 0}, {0, 0}}},
 	{{"rb", (sizeof("rb")-1)}, /* */
 		{ XL_MSG_BODY, 0, xl_get_msg_body, {{0, 0}, 0}, {0, 0}}},
 	{{"rc", (sizeof("rc")-1)}, /* */
