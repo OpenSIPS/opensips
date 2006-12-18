@@ -19,9 +19,12 @@
  * along with this program; if not, write to the Free Software 
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
+ * http://www.iana.org/assignments/sip-parameters
+ *
  * History:
  * --------
  * 2003-04-04 phrase length corrected not to include trailer 0 (jiri)
+ * 2006-12-18 error phrases updates (norman)
  */
 
 
@@ -128,6 +131,7 @@ char *error_text( int code )
 		case 183: return "Session Progress";
 
 		case 200: return "OK";
+		case 202: return "Accepted";
 
 		case 300: return "Multiple Choices";
 		case 301: return "Moved Permanently";
@@ -142,16 +146,26 @@ char *error_text( int code )
 		case 404: return "Not Found";
 		case 405: return "Method not Allowed";
 		case 406: return "Not Acceptable";
-		case 407: return "Proxy authentication Required";
+		case 407: return "Proxy Authentication Required";
 		case 408: return "Request Timeout";
+		case 409: return "Conflict";
 		case 410: return "Gone";
+		case 411: return "Length Required";
+		case 412: return "Conditional Request Failed";
 		case 413: return "Request Entity Too Large";
 		case 414: return "Request-URI Too Long";
 		case 415: return "Unsupported Media Type";
 		case 416: return "Unsupported URI Scheme";
-		case 417: return "Bad Extension";
+		case 417: return "Unknown Resource-Priority";
+		case 420: return "Bad Extension";
 		case 421: return "Extension Required";
+		case 422: return "Session Interval Too Small";
 		case 423: return "Interval Too Brief";
+		case 428: return "Use Identity Header";
+		case 429: return "Provide Referrer Identity";
+		case 436: return "Bad Identity-Info";
+		case 437: return "Unsupported Certificate";
+		case 438: return "Invalid Identity Header";
 		case 480: return "Temporarily Unavailable";
 		case 481: return "Call/Transaction Does not Exist";
 		case 482: return "Loop Detected";
@@ -161,15 +175,19 @@ char *error_text( int code )
 		case 486: return "Busy Here";
 		case 487: return "Request Terminated";
 		case 488: return "Not Acceptable Here";
+		case 489: return "Bad Event";
 		case 491: return "Request Pending";
-	
+		case 493: return "Undecipherable";
+		case 494: return "Security Agreement Required";
+
 		case 500: return "Server Internal Error";
 		case 501: return "Not Implemented";
 		case 502: return "Bad Gateway";
 		case 503: return "Service Unavailable";
 		case 504: return "Server Time-out";
-		case 505: return "Version not Supported";
+		case 505: return "Version Not Supported";
 		case 513: return "Message Too Large";
+		case 580: return "Precondition Failure";
 
 		case 600: return "Busy Everywhere";
 		case 603: return "Decline";
