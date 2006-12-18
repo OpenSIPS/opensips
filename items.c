@@ -927,27 +927,42 @@ static int xl_get_rpid(struct sip_msg *msg, xl_value_t *res, xl_param_t *param,
 	return 0;
 }
 
-static int xl_get_ppi(struct sip_msg *msg, xl_value_t *res, xl_param_t *param,
-		      int flags)
+static int xl_get_ppi_attr(struct sip_msg *msg, xl_value_t *res,
+			   xl_param_t *param, int flags)
 {
     if(msg==NULL || res==NULL)
 	return -1;
-    
-    if(parse_ppi_header(msg)==-1)
+
+    if(parse_ppi_header(msg)<0)
     {
-	LOG(L_ERR,
-	    "xl_get_ppi: ERROR cannot parse P-Preferred-Identity header\n");
+	LOG(L_ERR, "xl_get_ppi_attr: ERROR cannot parse P-Preferred-Identity "
+	    "header\n");
 	return xl_get_null(msg, res, param, flags);
     }
 	
     if(msg->ppi==NULL || get_ppi(msg)==NULL)
 	return xl_get_null(msg, res, param, flags);
     
-    res->rs.s = get_ppi(msg)->uri.s;
-    res->rs.len = get_ppi(msg)->uri.len; 
-    
-    res->flags = XL_VAL_STR;
-    return 0;
+    if(param->val.len==1) /* uri */
+    {
+	res->rs.s = get_ppi(msg)->uri.s;
+	res->rs.len = get_ppi(msg)->uri.len; 
+	res->flags = XL_VAL_STR;
+	return 0;
+    }
+	
+    if(param->val.len==2) /* display name */
+    {
+	if(get_ppi(msg)->display.s==NULL||get_ppi(msg)->display.len<=0)
+	    return xl_get_empty(msg, res, param, flags);
+	res->rs.s = get_ppi(msg)->display.s;
+	res->rs.len = get_ppi(msg)->display.len; 
+	res->flags = XL_VAL_STR;
+	return 0;
+    }
+
+    LOG(L_ERR, "xl_get_ppi_attr: unknown specifier\n");
+    return xl_get_null(msg, res, param, flags);
 }
 
 static int xl_get_pai(struct sip_msg *msg, xl_value_t *res, xl_param_t *param,
@@ -2114,7 +2129,10 @@ static struct _xl_table {
 	{{"oU", (sizeof("oU")-1)}, /* */
 		{ XL_OURI_USERNAME, 0, xl_get_ouri_attr, {{0, 1}, 0}, {0, 0}}},
 	{{"pi", (sizeof("pi")-1)}, /* */
-		{ XL_PPI_URI, 0, xl_get_ppi, {{0, 0}, 0}, {0, 0}}},
+		{ XL_PPI_URI, 0, xl_get_ppi_attr, {{0, 1}, 0}, {0, 0}}},
+	{{"pn", (sizeof("pn")-1)}, /* */
+		{ XL_PPI_DISPLAYNAME, 0, xl_get_ppi_attr, {{0, 2}, 0},
+		  {0, 0}}},
 	{{"pp", (sizeof("pp")-1)}, /* */
 		{ XL_PID, 0, xl_get_pid, {{0, 0}, 0}, {0, 0}}},
 	{{"pr", (sizeof("pr")-1)}, /* */

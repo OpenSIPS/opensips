@@ -78,8 +78,8 @@ enum _xl_type {
 	XL_TO_DISPLAYNAME,   XL_OURI,              XL_OURI_USERNAME,
 	XL_OURI_DOMAIN,      XL_OURI_PORT,         XL_OURI_PROTOCOL,
 	XL_FORCE_SOCK,       XL_RPID_URI,          XL_DIVERSION_URI,
-	XL_ACC_USERNAME,     XL_PPI_URI,           XL_PAI_URI,
-	XL_PRIVACY,          XL_ITEM_EXTRA /* keep it last */
+	XL_ACC_USERNAME,     XL_PPI_URI,           XL_PPI_DISPLAYNAME,
+	XL_PAI_URI,          XL_PRIVACY,           XL_ITEM_EXTRA /* keep it last */
 };
 typedef enum _xl_type xl_type_t;
 
