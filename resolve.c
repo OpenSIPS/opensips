@@ -845,6 +845,16 @@ struct hostent* sip_resolvehost(str* name, unsigned short* port, int *proto,
 	struct rdata *rd;
 	struct hostent* he;
 
+	if ( (is_sips)
+#ifdef USE_TLS
+	&& (tls_disable)
+#endif
+	) {
+		LOG(L_ERR, "ERROR:sip_resolvehost2: cannot resolve SIPS as no TLS "
+				"support is configured\n");
+		return 0;
+	}
+
 	/* check if it's an ip address */
 	if ( ((ip=str2ip(name))!=0)
 #ifdef USE_IPV6
