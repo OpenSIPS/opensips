@@ -48,7 +48,8 @@ skip_modules?=
 # if not set on the cmd. line or the env, exclude this modules:
 exclude_modules?= 		jabber cpl-c mysql pa postgres osp unixodbc \
 						avp_radius auth_radius group_radius uri_radius xmpp \
-						presence pua pua_mi pua_usrloc mi_xmlrpc perl
+						presence pua pua_mi pua_usrloc \
+						mi_xmlrpc perl snmpstats
 ifeq ($(TLS),)
 	exclude_modules+= tlsops
 endif
