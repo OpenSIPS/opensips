@@ -1492,11 +1492,12 @@ static int xl_get_branches(struct sip_msg *msg, xl_value_t *res, xl_param_t *par
 #define ITEM_PRINT_ALL	-2
 #define ITEM_PRINT_LAST	-1
 
-static int xl_get_header(struct sip_msg *msg, xl_value_t *res, xl_param_t *param,
-		int flags)
+static int xl_get_header(struct sip_msg *msg, xl_value_t *res,
+		xl_param_t *param, int flags)
 {
 	struct hdr_field *hf, *hf0;
 	char *p;
+	int lidx;
 	
 	if(msg==NULL || res==NULL)
 		return -1;
@@ -1509,6 +1510,7 @@ static int xl_get_header(struct sip_msg *msg, xl_value_t *res, xl_param_t *param
 
 	/* we need to be sure we have parsed all headers */
 	parse_headers(msg, HDR_EOH_F, 0);
+	lidx = param->ind;
 	for (hf=msg->headers; hf; hf=hf->next)
 	{
 		if(param->val.s==NULL)
@@ -1523,7 +1525,7 @@ static int xl_get_header(struct sip_msg *msg, xl_value_t *res, xl_param_t *param
 		}
 		
 		hf0 = hf;
-		if(param->ind==ITEM_PRINT_ALL)
+		if(lidx==ITEM_PRINT_ALL)
 		{
 			if(p!=local_buf)
 			{
@@ -1548,15 +1550,15 @@ static int xl_get_header(struct sip_msg *msg, xl_value_t *res, xl_param_t *param
 			continue;
 		}
 		
-		if(param->ind==0)
+		if(lidx==0)
 			goto done;
-		if(param->ind>0)
-			param->ind--;
+		if(lidx>0)
+			lidx--;
 	}
 	
 done:
 	res->flags = XL_VAL_STR;
-	if(param->ind==ITEM_PRINT_ALL)
+	if(lidx==ITEM_PRINT_ALL)
 	{
 		*p = 0;
 		res->rs.s = local_buf;
@@ -1564,7 +1566,7 @@ done:
 		return 0;
 	}
 	
-	if(hf0==NULL || param->ind>0)
+	if(hf0==NULL || lidx>0)
 		return xl_get_null(msg, res, param, flags);
 	res->rs.s = hf0->body.s;
 	res->rs.len = hf0->body.len;
@@ -1580,6 +1582,7 @@ static int xl_get_avp(struct sip_msg *msg, xl_value_t *res, xl_param_t *param,
 	int_str avp_value;
 	struct usr_avp *avp;
 	char *p;
+	int lidx;
 	str s = {0, 0};
 	
 	if(msg==NULL || res==NULL)
@@ -1604,10 +1607,11 @@ static int xl_get_avp(struct sip_msg *msg, xl_value_t *res, xl_param_t *param,
 	if ((avp=search_first_avp(name_type, avp_name, &avp_value, 0))==0)
 		return xl_get_null(msg, res, param, flags);
 
+	lidx = param->ind;
+	
 	do {
 		/* todo: optimization for last avp !!! */
-		if(param->ind==0 || param->ind==ITEM_PRINT_ALL
-				|| param->ind==ITEM_PRINT_LAST)
+		if(lidx==0 || lidx==ITEM_PRINT_ALL || lidx==ITEM_PRINT_LAST)
 		{
 			if(avp->flags & AVP_VAL_STR)
 			{
@@ -1618,7 +1622,7 @@ static int xl_get_avp(struct sip_msg *msg, xl_value_t *res, xl_param_t *param,
 			}
 		}
 		
-		if(param->ind==ITEM_PRINT_ALL)
+		if(lidx==ITEM_PRINT_ALL)
 		{
 			if(p!=local_buf)
 			{
@@ -1643,11 +1647,11 @@ static int xl_get_avp(struct sip_msg *msg, xl_value_t *res, xl_param_t *param,
 			continue;
 		}
 		
-		if(param->ind==0)
+		if(lidx==0)
 			goto done;
-		if(param->ind>0)
-			param->ind--;
-		if(param->ind!=ITEM_PRINT_LAST)
+		if(lidx>0)
+			lidx--;
+		if(lidx!=ITEM_PRINT_LAST)
 		{
 			s.s   = NULL;
 			s.len = 0;
@@ -1656,7 +1660,7 @@ static int xl_get_avp(struct sip_msg *msg, xl_value_t *res, xl_param_t *param,
 	
 done:
 	res->flags = XL_VAL_STR;
-	if(param->ind==ITEM_PRINT_ALL)
+	if(lidx==ITEM_PRINT_ALL)
 	{
 		*p = 0;
 		res->rs.s = local_buf;
@@ -1670,7 +1674,7 @@ done:
 		}
 	}
 	
-	if(s.s==NULL || param->ind>0)
+	if(s.s==NULL || lidx>0)
 		return xl_get_empty(msg, res, param, flags);
 	res->rs.s = s.s;
 	res->rs.len = s.len;
