@@ -210,7 +210,7 @@ int parse_privacy(struct sip_msg *msg)
 	return -1;
     }
 
-    msg->privacy->parsed = (void *)values;
+    msg->privacy->parsed = (void *)(long)values;
 
     return 0;
 
