@@ -45,7 +45,7 @@ enum privacy_value {
  * casting macro for accessing enumeration of priv-values
  */
 #define get_privacy_values(p_msg) \
-	((unsigned int)((p_msg)->privacy->parsed))
+	((unsigned int)(long)((p_msg)->privacy->parsed))
 
 
 /*
