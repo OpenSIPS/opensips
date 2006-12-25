@@ -51,7 +51,6 @@
 #include "parser/parse_diversion.h"
 #include "parser/parse_ppi.h"
 #include "parser/parse_pai.h"
-#include "parser/parse_privacy.h"
 #include "parser/digest/digest.h"
 
 #include "items.h"
@@ -156,41 +155,6 @@ static int xl_get_pid(struct sip_msg *msg, xl_value_t *res, xl_param_t *param,
 	res->ri = cld_pid;
 	res->flags = XL_VAL_STR|XL_VAL_INT|XL_TYPE_INT;
 	return 0;
-}
-
-static int xl_get_privacy(struct sip_msg *msg, xl_value_t *res,
-			  xl_param_t *param, int flags)
-{
-    unsigned int values;
-    int len;
-    char *p = NULL;
-
-    if(msg==NULL || res==NULL)
-	return -1;
-    
-    if(parse_privacy(msg) == -1) {
-	LOG(L_ERR,
-	    "xl_get_privacy: ERROR cannot parse Privacy\n");
-	return xl_get_null(msg, res, param, flags);
-    }
-
-    if (msg->privacy != NULL) {
-	values = get_privacy_values(msg);
-	if (values == 0) {
-	    return xl_get_null(msg, res, param, flags);
-	}
-    } else {
-	return xl_get_null(msg, res, param, flags);
-    }	
-
-    p = int2str((int)values, &len);
-
-    res->rs.s = p;
-    res->rs.len = len;
-
-    res->ri = values;
-    res->flags = XL_VAL_STR|XL_VAL_INT|XL_TYPE_INT;
-    return 0;
 }
 
 
@@ -930,30 +894,29 @@ static int xl_get_rpid(struct sip_msg *msg, xl_value_t *res, xl_param_t *param,
 static int xl_get_ppi_attr(struct sip_msg *msg, xl_value_t *res,
 			   xl_param_t *param, int flags)
 {
+    struct sip_uri uri;
+    
     if(msg==NULL || res==NULL)
 	return -1;
 
-    if(parse_ppi_header(msg)<0)
-    {
+    if(parse_ppi_header(msg) < 0) {
 	LOG(L_ERR, "xl_get_ppi_attr: ERROR cannot parse P-Preferred-Identity "
 	    "header\n");
 	return xl_get_null(msg, res, param, flags);
     }
 	
-    if(msg->ppi==NULL || get_ppi(msg)==NULL)
+    if(msg->ppi == NULL || get_ppi(msg) == NULL)
 	return xl_get_null(msg, res, param, flags);
     
-    if(param->val.len==1) /* uri */
-    {
+    if(param->val.len == 1) { /* uri */
 	res->rs.s = get_ppi(msg)->uri.s;
 	res->rs.len = get_ppi(msg)->uri.len; 
 	res->flags = XL_VAL_STR;
 	return 0;
     }
 	
-    if(param->val.len==2) /* display name */
-    {
-	if(get_ppi(msg)->display.s==NULL||get_ppi(msg)->display.len<=0)
+    if(param->val.len==4) { /* display name */
+	if(get_ppi(msg)->display.s == NULL || get_ppi(msg)->display.len <= 0)
 	    return xl_get_empty(msg, res, param, flags);
 	res->rs.s = get_ppi(msg)->display.s;
 	res->rs.len = get_ppi(msg)->display.len; 
@@ -961,8 +924,29 @@ static int xl_get_ppi_attr(struct sip_msg *msg, xl_value_t *res,
 	return 0;
     }
 
-    LOG(L_ERR, "xl_get_ppi_attr: unknown specifier\n");
-    return xl_get_null(msg, res, param, flags);
+    memset(&uri, 0, sizeof(struct sip_uri));
+    if (parse_uri(get_ppi(msg)->uri.s, get_ppi(msg)->uri.len , &uri) < 0) {
+	LOG(L_ERR,"xl_get_ppi_attr: failed to parse P-Preferred-Identity "
+	    "URI\n");
+	return xl_get_null(msg, res, param, flags);
+    }
+	
+    if(param->val.len==2) { /* username */
+	if(uri.user.s==NULL)
+	    return xl_get_empty(msg, res, param, flags);
+	res->rs.s   = uri.user.s;
+	res->rs.len = uri.user.len; 
+	res->flags = XL_VAL_STR;
+    } else if(param->val.len==3) { /* domain */
+	res->rs.s   = uri.host.s;
+	res->rs.len = uri.host.len; 
+	res->flags = XL_VAL_STR;
+    } else {
+	LOG(L_ERR, "xl_get_ppi_attr: unknown specifier\n");
+	return xl_get_null(msg, res, param, flags);
+    }
+
+    return 0;
 }
 
 static int xl_get_pai(struct sip_msg *msg, xl_value_t *res, xl_param_t *param,
@@ -2132,15 +2116,17 @@ static struct _xl_table {
 		{ XL_OURI, 0, xl_get_ouri, {{0, 0}, 0}, {0, 0}}},
 	{{"oU", (sizeof("oU")-1)}, /* */
 		{ XL_OURI_USERNAME, 0, xl_get_ouri_attr, {{0, 1}, 0}, {0, 0}}},
-	{{"pi", (sizeof("pi")-1)}, /* */
-		{ XL_PPI_URI, 0, xl_get_ppi_attr, {{0, 1}, 0}, {0, 0}}},
+	{{"pd", (sizeof("pd")-1)}, /* */
+		{ XL_PPI_DOMAIN, 0, xl_get_ppi_attr, {{0, 3}, 0}, {0, 0}}},
 	{{"pn", (sizeof("pn")-1)}, /* */
-		{ XL_PPI_DISPLAYNAME, 0, xl_get_ppi_attr, {{0, 2}, 0},
+		{ XL_PPI_DISPLAYNAME, 0, xl_get_ppi_attr, {{0, 4}, 0},
 		  {0, 0}}},
+	{{"pu", (sizeof("pu")-1)}, /* */
+		{ XL_PPI, 0, xl_get_ppi_attr, {{0, 1}, 0}, {0, 0}}},
+	{{"pU", (sizeof("pU")-1)}, /* */
+		{ XL_PPI_USERNAME, 0, xl_get_ppi_attr, {{0, 2}, 0}, {0, 0}}},
 	{{"pp", (sizeof("pp")-1)}, /* */
 		{ XL_PID, 0, xl_get_pid, {{0, 0}, 0}, {0, 0}}},
-	{{"pr", (sizeof("pr")-1)}, /* */
-		{ XL_PRIVACY, 0, xl_get_privacy, {{0, 0}, 0}, {0, 0}}},
 	{{"rb", (sizeof("rb")-1)}, /* */
 		{ XL_MSG_BODY, 0, xl_get_msg_body, {{0, 0}, 0}, {0, 0}}},
 	{{"rc", (sizeof("rc")-1)}, /* */
