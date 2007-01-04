@@ -1391,7 +1391,7 @@ relay functions merging:
     - dns_retr_time= time(in s)
     - dns_retr_no = no.
     - dns_use_search_list=yes|no
-    - dns_server_no= no
+    - dns_servers_no= no
 
 * 2005-08-08 Daniel-Constantin Mierla <daniel@voice-system.ro>
 - dispatcher: added a new flag parameter which can be used (for now) to
