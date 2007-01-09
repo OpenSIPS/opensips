@@ -73,6 +73,7 @@ struct action* rlist[RT_NO];
 struct action* onreply_rlist[ONREPLY_RT_NO];
 struct action* failure_rlist[FAILURE_RT_NO];
 struct action* branch_rlist[BRANCH_RT_NO];
+struct action* error_rlist;
 
 int route_type = REQUEST_ROUTE;
 
@@ -80,6 +81,18 @@ int route_type = REQUEST_ROUTE;
 static int fix_actions(struct action* a); /*fwd declaration*/
 
 extern int return_code;
+
+/*
+ *
+ */
+void init_route_lists()
+{
+	memset(rlist, 0, sizeof(rlist));
+	memset(onreply_rlist, 0, sizeof(onreply_rlist));
+	memset(failure_rlist, 0, sizeof(failure_rlist));
+	memset(branch_rlist, 0, sizeof(branch_rlist));
+	error_rlist = 0;
+}
 
 /* traverses an expr tree and compiles the REs where necessary) 
  * returns: 0 for ok, <0 if errors */
@@ -816,6 +829,11 @@ int fix_rls()
 			}
 		}
 	}
+	if(error_rlist){
+		if ((ret=fix_actions(error_rlist))!=0){
+			return ret;
+		}
+	}
 	return 0;
 }
 
@@ -929,6 +947,13 @@ int check_rls()
 					"branch_route[%d]\n",i);
 				return ret;
 			}
+		}
+	}
+	if(error_rlist){
+		if ((ret=check_actions(error_rlist,ERROR_ROUTE))!=0){
+			LOG(L_ERR,"ERROR:check_rls: check failed for "
+				"error_route\n");
+			return ret;
 		}
 	}
 	return rcheck_status;

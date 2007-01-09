@@ -40,6 +40,7 @@
 #include "../dprint.h"
 #include "../ut.h"   /* q_memchr */
 #include "../error.h"
+#include "../errinfo.h"
 #include "../core_stats.h"
 
 /* buf= pointer to begining of uri (sip:x@foo.bar:5060;a=b?h=i)
@@ -1086,6 +1087,8 @@ int parse_sip_msg_uri(struct sip_msg* msg)
 		LOG(L_ERR, "ERROR: parse_sip_msg_uri: bad uri <%.*s>\n",
 					tmp_len, tmp);
 		msg->parsed_uri_ok=0;
+		set_err_info(OSER_EC_PARSER, OSER_EL_MEDIUM, "error parsing r-uri");
+		set_err_reply(400, "bad r-uri");
 		return -1;
 	}
 	msg->parsed_uri_ok=1;
@@ -1106,6 +1109,9 @@ int parse_orig_ruri(struct sip_msg* msg)
 		LOG(L_ERR, "ERROR:parse_orig_ruri: bad uri <%.*s>\n",
 			uri->len, ZSW(uri->s));
 		msg->parsed_orig_ruri_ok = 0;
+		set_err_info(OSER_EC_PARSER, OSER_EL_MEDIUM,
+				"error parsing incoming uri");
+		set_err_reply(400, "bad i-uri");
 		return -1;
 	}
 

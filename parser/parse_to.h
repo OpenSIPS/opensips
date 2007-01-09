@@ -26,6 +26,7 @@
 #define PARSE_TO
 
 #include "../str.h"
+#include "msg_parser.h"
 
 enum {
 	TAG_PARAM = 400, GENERAL_PARAM
@@ -38,20 +39,20 @@ struct to_param{
 	struct to_param* next; /* Next parameter in the list */
 };
 
-
 struct to_body{
 	int error;                    /* Error code */
 	str body;                     /* The whole header field body */
 	str uri;                      /* URI */
 	str display;                  /* Display Name */
 	str tag_value;                /* Value of tag */
+	struct sip_uri parsed_uri;    /* Parsed URI */
 	struct to_param *param_lst;   /* Linked list of parameters */
 	struct to_param *last_param;  /* Last parameter in the list */
 };
 
 
 /* casting macro for accessing To body */
-#define get_to( p_msg)      ((struct to_body*)(p_msg)->to->parsed)
+#define get_to(p_msg)     ((struct to_body*)(p_msg)->to->parsed)
 
 
 /*
@@ -59,6 +60,7 @@ struct to_body{
  */
 char* parse_to(char* buffer, char *end, struct to_body *to_b);
 
+struct sip_uri *parse_to_uri(struct sip_msg *msg);
 
 void free_to(struct to_body* tb);
 

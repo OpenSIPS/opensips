@@ -33,8 +33,10 @@
 #include <string.h>
 #include "../dprint.h"
 #include "msg_parser.h"
+#include "parse_uri.h"
 #include "../ut.h"
 #include "../mem/mem.h"
+#include "../errinfo.h"
 
 
 enum {
@@ -736,4 +738,30 @@ void free_to(struct to_body* tb)
 		tp=foo;
 	}
 	pkg_free(tb);
+}
+
+/**
+ *
+ */
+struct sip_uri *parse_to_uri(struct sip_msg *msg)
+{
+	struct to_body *tb = NULL;
+	if(msg==NULL || msg->to==NULL || msg->to->parsed==NULL)
+		return NULL;
+
+	tb = get_to(msg);
+
+	if(tb->parsed_uri.user.s!=NULL || tb->parsed_uri.host.s!=NULL)
+		return &tb->parsed_uri;
+
+	if (parse_uri(tb->uri.s, tb->uri.len , &tb->parsed_uri)<0)
+	{
+		LOG(L_ERR,"parse_to_uri: failed to parse To uri\n");
+		memset(&tb->parsed_uri, 0, sizeof(struct sip_uri));
+		set_err_info(OSER_EC_PARSER, OSER_EL_MEDIUM, "error parsing To uri");
+		set_err_reply(400, "bad To uri");
+		return NULL;
+	}
+
+	return &tb->parsed_uri;
 }

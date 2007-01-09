@@ -50,6 +50,7 @@
 #include "../error.h"
 #include "../globals.h"
 #include "../core_stats.h"
+#include "../errinfo.h"
 #include "parse_hname2.h"
 #include "parse_uri.h"
 #include "parse_content.h"
@@ -115,6 +116,10 @@ char* get_hdr_field(char* buf, char* end, struct hdr_field* hdr)
 			tmp=parse_via(tmp, end, vb);
 			if (vb->error==PARSE_ERROR){
 				LOG(L_ERR, "ERROR: get_hdr_field: bad via\n");
+				set_err_info(OSER_EC_PARSER, OSER_EL_MEDIUM,
+						"error parsing Via");
+				set_err_reply(400, "bad Via header");
+
 				free_via_list(vb);
 				goto error;
 			}
@@ -134,6 +139,9 @@ char* get_hdr_field(char* buf, char* end, struct hdr_field* hdr)
 			tmp=parse_cseq(tmp, end, cseq_b);
 			if (cseq_b->error==PARSE_ERROR){
 				LOG(L_ERR, "ERROR: get_hdr_field: bad cseq\n");
+				set_err_info(OSER_EC_PARSER, OSER_EL_MEDIUM,
+						"error parsing CSeq`");
+				set_err_reply(400, "bad CSeq header");
 				pkg_free(cseq_b);
 				goto error;
 			}
@@ -155,6 +163,9 @@ char* get_hdr_field(char* buf, char* end, struct hdr_field* hdr)
 			tmp=parse_to(tmp, end,to_b);
 			if (to_b->error==PARSE_ERROR){
 				LOG(L_ERR, "ERROR: get_hdr_field: bad to header\n");
+				set_err_info(OSER_EC_PARSER, OSER_EL_MEDIUM,
+						"error parsing To header");
+				set_err_reply(400, "bad To header");
 				pkg_free(to_b);
 				goto error;
 			}
@@ -171,6 +182,9 @@ char* get_hdr_field(char* buf, char* end, struct hdr_field* hdr)
 			tmp=parse_content_length(tmp,end, &integer);
 			if (tmp==0){
 				LOG(L_ERR, "ERROR:get_hdr_field: bad content_length header\n");
+				set_err_info(OSER_EC_PARSER, OSER_EL_MEDIUM,
+						"error parsing Content-Length");
+				set_err_reply(400, "bad Content-Length header");
 				goto error;
 			}
 			hdr->parsed=(void*)(long)integer;
@@ -224,6 +238,9 @@ char* get_hdr_field(char* buf, char* end, struct hdr_field* hdr)
 							"ERROR: get_hdr_field: bad body for <%s>(%d)\n",
 							hdr->name.s, hdr->type);
 					/* abort(); */
+					set_err_info(OSER_EC_PARSER, OSER_EL_MEDIUM,
+						"error parsing headers");
+					set_err_reply(400, "bad headers");
 					tmp=end;
 					goto error;
 				}
@@ -303,7 +320,7 @@ int parse_headers(struct sip_msg* msg, hdr_flags_t flags, int next)
 		rest=get_hdr_field(tmp, msg->buf+msg->len, hf);
 		switch (hf->type){
 			case HDR_ERROR_T:
-				LOG(L_INFO,"ERROR: bad header  field\n");
+				LOG(L_INFO,"ERROR: bad header field\n");
 				goto  error;
 			case HDR_EOH_T:
 				msg->eoh=tmp; /* or rest?*/

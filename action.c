@@ -58,6 +58,7 @@
 #include "globals.h"
 #include "dset.h"
 #include "flags.h"
+#include "errinfo.h"
 #include "serialize.h"
 #ifdef USE_TCP
 #include "tcp_server.h"
@@ -80,23 +81,7 @@ int return_code  = 0;
 
 static int rec_lev=0;
 
-
-/* run a list of actions */
-int run_action_list(struct action* a, struct sip_msg* msg)
-{
-	int ret=E_UNSPEC;
-	struct action* t;
-	for (t=a; t!=0; t=t->next){
-		ret=do_action(t, msg);
-		/* if action returns 0, then stop processing the script */
-		if(ret==0)
-			action_flags |= ACT_FL_EXIT;
-		
-		if((action_flags&ACT_FL_RETURN) || (action_flags&ACT_FL_EXIT))
-			break;
-	}
-	return ret;
-}
+extern err_info_t _oser_err_info;
 
 
 /* run actions from a route */
@@ -135,6 +120,34 @@ error:
 	return ret;
 }
 
+/* run a list of actions */
+int run_action_list(struct action* a, struct sip_msg* msg)
+{
+	int ret=E_UNSPEC;
+	struct action* t;
+	for (t=a; t!=0; t=t->next){
+		ret=do_action(t, msg);
+		/* if action returns 0, then stop processing the script */
+		if(ret==0)
+			action_flags |= ACT_FL_EXIT;
+		if(error_rlist!=NULL && !is_route_type(ERROR_ROUTE)
+				&& !is_route_type(ONREPLY_ROUTE)
+				&& _oser_err_info.eclass!=0)
+		{
+			DBG("run_action_list: jumping to error route\n");
+			set_route_type( ERROR_ROUTE );
+			run_actions(error_rlist, msg);
+			/* if don't exit, then reset error info */
+			if(!(action_flags&ACT_FL_EXIT))
+				init_err_info();
+		}
+		
+		if((action_flags&ACT_FL_RETURN) || (action_flags&ACT_FL_EXIT))
+			break;
+	}
+	return ret;
+}
+
 
 
 int run_top_route(struct action* a, struct sip_msg* msg)
@@ -148,6 +161,7 @@ int run_top_route(struct action* a, struct sip_msg* msg)
 
 	action_flags = 0;
 	rec_lev = 0;
+	init_err_info();
 
 	resetsflag( (unsigned int)-1 );
 

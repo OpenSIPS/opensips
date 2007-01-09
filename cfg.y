@@ -166,6 +166,7 @@ extern int line;
 %token ROUTE_FAILURE
 %token ROUTE_ONREPLY
 %token ROUTE_BRANCH
+%token ROUTE_ERROR
 %token EXEC
 %token SET_HOST
 %token SET_HOSTPORT
@@ -375,6 +376,7 @@ statement:	assign_stm
 		| {rt=FAILURE_ROUTE;} failure_route_stm
 		| {rt=ONREPLY_ROUTE;} onreply_route_stm
 		| {rt=BRANCH_ROUTE;} branch_route_stm
+		| {rt=ERROR_ROUTE;} error_route_stm
 
 		| CR	/* null statement*/
 	;
@@ -1260,6 +1262,17 @@ branch_route_stm: ROUTE_BRANCH LBRACK NUMBER RBRACK LBRACE actions RBRACE {
 											YYABORT; }
 										}
 		| ROUTE_BRANCH error { yyerror("invalid branch_route statement"); }
+	;
+
+error_route_stm:  ROUTE_ERROR LBRACE actions RBRACE {
+										if (error_rlist!=0) {
+											yyerror("overwritting default "
+													"error routing table");
+											YYABORT;
+										}
+										push($3, &error_rlist);
+										}
+		| ROUTE_ERROR error { yyerror("invalid error_route statement"); }
 	;
 
 /*

@@ -1051,7 +1051,7 @@ int main(int argc, char** argv)
 #endif
 
 
-
+	init_route_lists();
 	/* process command line (get port no, cfg. file path etc) */
 	opterr=0;
 	options="f:cCm:b:l:n:N:rRvdDETVhw:t:u:g:P:G:i:x:W:";

@@ -48,7 +48,6 @@
 #include "../config.h"
 #include "parse_def.h"
 #include "parse_cseq.h"
-#include "parse_to.h"
 #include "parse_via.h"
 #include "parse_fline.h"
 #include "hf.h"
@@ -156,6 +155,8 @@ struct sip_uri {
 	str r2_val;
 };
 
+
+#include "parse_to.h"
 
 struct sip_msg {
 	unsigned int id;               /* message id, unique/process*/

@@ -41,6 +41,7 @@
 #include "trim.h" 
 #include "dset.h"
 #include "usr_avp.h"
+#include "errinfo.h"
 
 #include "parser/parse_from.h"
 #include "parser/parse_uri.h"
@@ -458,12 +459,59 @@ static int xl_get_contact(struct sip_msg* msg, xl_value_t *res, xl_param_t *para
 	return 0;
 }
 
+extern err_info_t _oser_err_info;
+static int xl_get_errinfo_attr(struct sip_msg *msg, xl_value_t *res,
+		xl_param_t *param,
+		int flags)
+{
+	int l = 0;
+	char *ch = NULL;
+
+	if(msg==NULL || res==NULL)
+		return -1;
+
+	if(param->val.len==0) /* class */ {
+		ch = int2str(_oser_err_info.eclass, &l);
+		res->rs.s = ch;
+		res->rs.len = l;
+		res->ri = (int)_oser_err_info.eclass;
+		res->flags = XL_VAL_STR|XL_VAL_INT|XL_TYPE_INT;
+	} else if(param->val.len==1) /* level */ {
+		ch = int2str(_oser_err_info.level, &l);
+		res->rs.s = ch;
+		res->rs.len = l;
+		res->ri = (int)_oser_err_info.level;
+		res->flags = XL_VAL_STR|XL_VAL_INT|XL_TYPE_INT;
+	} else if(param->val.len==2) /* info */ {
+		if(_oser_err_info.info.s==NULL)
+			xl_get_null(msg, res, param, flags);
+		res->rs.s = _oser_err_info.info.s;
+		res->rs.len = _oser_err_info.info.len;
+		res->flags = XL_VAL_STR;
+	} else if(param->val.len==3) /* rcode */ {
+		ch = int2str(_oser_err_info.rcode, &l);
+		res->rs.s = ch;
+		res->rs.len = l;
+		res->ri = (int)_oser_err_info.rcode;
+		res->flags = XL_VAL_STR|XL_VAL_INT|XL_TYPE_INT;
+	} else if(param->val.len==4) /* rreason */ {
+		if(_oser_err_info.rreason.s==NULL)
+			xl_get_null(msg, res, param, flags);
+		res->rs.s   = _oser_err_info.rreason.s;
+		res->rs.len = _oser_err_info.rreason.len;
+		res->flags = XL_VAL_STR;
+	} else {
+		DBG("xl_get_errinfo_attr: invalid attribute!\n");
+		return xl_get_null(msg, res, param, flags);
+	}
+	return 0;
+}
 
 static int xl_get_from_attr(struct sip_msg *msg, xl_value_t *res,
 		xl_param_t *param,
 		int flags)
 {
-	struct sip_uri uri;
+	struct sip_uri *uri;
 	if(msg==NULL || res==NULL)
 		return -1;
 
@@ -504,22 +552,18 @@ static int xl_get_from_attr(struct sip_msg *msg, xl_value_t *res,
 		return 0;
 	}
 
-	memset(&uri, 0, sizeof(struct sip_uri));
-	if (parse_uri(get_from(msg)->uri.s, get_from(msg)->uri.len , &uri)<0)
-	{
-		LOG(L_ERR,"xl_get_from_attr: failed to parse From uri\n");
+	if((uri=parse_from_uri(msg))==NULL)
 		return xl_get_null(msg, res, param, flags);
-	}
-	
+
 	if(param->val.len==2) /* username */ {
-		if(uri.user.s==NULL)
+		if(uri->user.s==NULL)
 			return xl_get_empty(msg, res, param, flags);
-		res->rs.s   = uri.user.s;
-		res->rs.len = uri.user.len; 
+		res->rs.s   = uri->user.s;
+		res->rs.len = uri->user.len; 
 		res->flags = XL_VAL_STR;
 	} else if(param->val.len==3) /* domain */ {
-		res->rs.s   = uri.host.s;
-		res->rs.len = uri.host.len; 
+		res->rs.s   = uri->host.s;
+		res->rs.len = uri->host.len; 
 		res->flags = XL_VAL_STR;
 	} else {
 		LOG(L_ERR, "xl_get_from_attr: unknown specifier\n");
@@ -533,7 +577,7 @@ static int xl_get_to_attr(struct sip_msg *msg, xl_value_t *res,
 		xl_param_t *param,
 		int flags)
 {
-	struct sip_uri uri;
+	struct sip_uri *uri;
 	if(msg==NULL || res==NULL)
 		return -1;
 
@@ -573,22 +617,18 @@ static int xl_get_to_attr(struct sip_msg *msg, xl_value_t *res,
 		return 0;
 	}
 
-	memset(&uri, 0, sizeof(struct sip_uri));
-	if (parse_uri(get_to(msg)->uri.s, get_to(msg)->uri.len , &uri)<0)
-	{
-		LOG(L_ERR,"xl_get_to_attr: failed to parse To uri\n");
+	if((uri=parse_to_uri(msg))==NULL)
 		return xl_get_null(msg, res, param, flags);
-	}
-	
+
 	if(param->val.len==2) /* username */ {
-		if(uri.user.s==NULL)
+		if(uri->user.s==NULL)
 			return xl_get_empty(msg, res, param, flags);
-		res->rs.s   = uri.user.s;
-		res->rs.len = uri.user.len; 
+		res->rs.s   = uri->user.s;
+		res->rs.len = uri->user.len; 
 		res->flags = XL_VAL_STR;
 	} else if(param->val.len==3) /* domain */ {
-		res->rs.s   = uri.host.s;
-		res->rs.len = uri.host.len; 
+		res->rs.s   = uri->host.s;
+		res->rs.len = uri->host.len; 
 		res->flags = XL_VAL_STR;
 	} else {
 		LOG(L_ERR, "xl_get_to_attr: unknown specifier\n");
@@ -2141,6 +2181,16 @@ static struct _xl_table {
 		{ XL_DSTURI, 0, xl_get_dsturi, {{0, 0}, 0}, {0, 0}}},
 	{{"duri", (sizeof("duri")-1)}, /* */
 		{ XL_DSTURI, 0, xl_get_dsturi, {{0, 0}, 0}, {0, 0}}},
+	{{"err.class", (sizeof("err.class")-1)}, /* */
+		{ XL_ERR_CLASS, 0, xl_get_errinfo_attr, {{0, 0}, 0}, {0, 0}}},
+	{{"err.level", (sizeof("err.level")-1)}, /* */
+		{ XL_ERR_LEVEL, 0, xl_get_errinfo_attr, {{0, 1}, 0}, {0, 0}}},
+	{{"err.info", (sizeof("err.info")-1)}, /* */
+		{ XL_ERR_INFO, 0, xl_get_errinfo_attr, {{0, 2}, 0}, {0, 0}}},
+	{{"err.rcode", (sizeof("err.rcode")-1)}, /* */
+		{ XL_ERR_RCODE, 0, xl_get_errinfo_attr, {{0, 3}, 0}, {0, 0}}},
+	{{"err.rreason", (sizeof("err.rreason")-1)}, /* */
+		{ XL_ERR_RREASON, 0, xl_get_errinfo_attr, {{0, 4}, 0}, {0, 0}}},
 	{{"fd", (sizeof("fd")-1)}, /* */
 		{ XL_FROM_DOMAIN, 0, xl_get_from_attr, {{0, 3}, 0}, {0, 0}}},
 	{{"from", (sizeof("from")-1)}, /* */

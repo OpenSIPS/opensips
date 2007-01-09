@@ -118,6 +118,7 @@ ROUTE	route
 ROUTE_FAILURE failure_route
 ROUTE_ONREPLY onreply_route
 ROUTE_BRANCH branch_route
+ROUTE_ERROR error_route
 EXEC	exec
 FORCE_RPORT		"force_rport"|"add_rport"
 FORCE_LOCAL_RPORT		"force_local_rport"|"add_local_rport"
@@ -348,6 +349,7 @@ EAT_ABLE	[\ \t\b\r]
 <INITIAL>{ROUTE_FAILURE}	{ count(); yylval.strval=yytext;
 								return ROUTE_FAILURE; }
 <INITIAL>{ROUTE_BRANCH} { count(); yylval.strval=yytext; return ROUTE_BRANCH; }
+<INITIAL>{ROUTE_ERROR} { count(); yylval.strval=yytext; return ROUTE_ERROR; }
 <INITIAL>{EXEC}	{ count(); yylval.strval=yytext; return EXEC; }
 <INITIAL>{SET_HOST}	{ count(); yylval.strval=yytext; return SET_HOST; }
 <INITIAL>{SET_HOSTPORT}	{ count(); yylval.strval=yytext; return SET_HOSTPORT; }

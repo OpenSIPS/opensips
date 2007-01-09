@@ -34,8 +34,10 @@
 
 
 /*
- * To header field parser
+ * From header field parser
  */
 int parse_from_header( struct sip_msg *msg);
+
+struct sip_uri *parse_from_uri(struct sip_msg *msg);
 
 #endif

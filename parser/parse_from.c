@@ -27,11 +27,13 @@
 
 #include "parse_from.h"
 #include "parse_to.h"
+#include "parse_uri.h"
 #include <stdlib.h>
 #include <string.h>
 #include "../dprint.h"
 #include "msg_parser.h"
 #include "../ut.h"
+#include "../errinfo.h"
 #include "../mem/mem.h"
 
 /*
@@ -70,6 +72,8 @@ int parse_from_header( struct sip_msg *msg)
 	if (from_b->error == PARSE_ERROR) {
 		LOG(L_ERR, "ERROR:parse_from_header: bad from header\n");
 		free_to(from_b);
+		set_err_info(OSER_EC_PARSER, OSER_EL_MEDIUM, "error parsing From");
+		set_err_reply(400, "bad From header");
 		goto error;
 	}
 	/* REGISTER doesn't have a from tag :( -bogdan
@@ -86,4 +90,38 @@ error:
 	return -1;
 }
 
+/**
+ *
+ */
+struct sip_uri *parse_from_uri(struct sip_msg *msg)
+{
+	struct to_body *tb = NULL;
+	
+	if(msg==NULL)
+		return NULL;
 
+	if(parse_from_header(msg)<0)
+	{
+		LOG(L_ERR, "parse_from_uri: ERROR cannot parse FROM header\n");
+		return NULL;
+	}
+	
+	if(msg->from==NULL || get_from(msg)==NULL)
+		return NULL;
+
+	tb = get_from(msg);
+
+	if(tb->parsed_uri.user.s!=NULL || tb->parsed_uri.host.s!=NULL)
+		return &tb->parsed_uri;
+
+	if (parse_uri(tb->uri.s, tb->uri.len , &tb->parsed_uri)<0)
+	{
+		LOG(L_ERR,"parse_from_uri: failed to parse From uri\n");
+		memset(&tb->parsed_uri, 0, sizeof(struct sip_uri));
+		set_err_info(OSER_EC_PARSER, OSER_EL_MEDIUM, "error parsing From uri");
+		set_err_reply(400, "bad From uri");
+		return NULL;
+	}
+
+	return &tb->parsed_uri;
+}

@@ -42,11 +42,13 @@ extern struct action* rlist[RT_NO];
 extern struct action* onreply_rlist[ONREPLY_RT_NO];
 extern struct action* failure_rlist[FAILURE_RT_NO];
 extern struct action* branch_rlist[BRANCH_RT_NO];
+extern struct action* error_rlist;
 
 #define REQUEST_ROUTE 1  /* Request route block */
 #define FAILURE_ROUTE 2  /* Negative-reply route block */
 #define ONREPLY_ROUTE 4  /* Received-reply route block */
 #define BRANCH_ROUTE  8  /* Sending-branch route block */
+#define ERROR_ROUTE  16  /* Error-handling route block */
 
 extern int route_type;
 
@@ -61,7 +63,9 @@ extern int route_type;
 		route_type=_new_type;\
 	}while(0)
 
+#define is_route_type(_type) (route_type==_type)
 
+void init_route_lists();
 void push(struct action* a, struct action** head);
 int add_actions(struct action* a, struct action** head);
 void print_rl();
@@ -69,10 +73,6 @@ int fix_rls();
 int check_rls();
 
 int eval_expr(struct expr* e, struct sip_msg* msg);
-
-
-
-
 
 
 #endif

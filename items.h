@@ -86,7 +86,9 @@ enum _xl_type {
 	XL_ACC_USERNAME,     XL_PPI,               XL_PPI_DISPLAYNAME,
 	XL_PPI_DOMAIN,       XL_PPI_USERNAME,      XL_PAI_URI,
 	XL_BFLAGS,           XL_HEXBFLAGS,         XL_SFLAGS,
-	XL_HEXSFLAGS,        XL_ITEM_EXTRA /* keep it last */
+	XL_HEXSFLAGS,        XL_ERR_CLASS,         XL_ERR_LEVEL,
+	XL_ERR_INFO,         XL_ERR_RCODE,         XL_ERR_RREASON,
+	XL_ITEM_EXTRA /* keep it last */
 };
 typedef enum _xl_type xl_type_t;
 
