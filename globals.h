@@ -110,7 +110,6 @@ extern int mcast_ttl;
 extern int tos;
 
 extern int cfg_errors;
-extern unsigned int msg_no;
 
 extern unsigned long shm_mem_size;
 
