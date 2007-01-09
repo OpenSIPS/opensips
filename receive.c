@@ -33,6 +33,7 @@
  *            via present & parsed ok)  (andrei)
  * 2004-08-23 avp core changed - destroy_avp-> reset_avps (bogdan)
  * 2005-07-26 default onreply route added (andrei)
+ * 2006-12-22 functions for script flags added (bogdan)
  */
 
 
@@ -62,7 +63,7 @@
 #include <mem/dmalloc.h>
 #endif
 
-unsigned int msg_no=0;
+static unsigned int msg_no=0;
 /* address preset vars */
 str default_global_address={0,0};
 str default_global_port={0,0};

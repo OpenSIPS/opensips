@@ -53,6 +53,7 @@
  *  2004-11-30  added force_send_socket
  *  2005-11-22  added tos configurability (thanks to Andreas Granig)
  *  2005-11-29  added serialize_branches and next_branches (bogdan)
+ *  2006-12-22  functions for script and branch flags added (bogdan)
  */
 
 
@@ -124,6 +125,12 @@ FORCE_TCP_ALIAS		"force_tcp_alias"|"add_tcp_alias"
 SETFLAG		setflag
 RESETFLAG	resetflag
 ISFLAGSET	isflagset
+SETBFLAG		"setbflag"|"setbranchflag"
+RESETBFLAG		"resetbflag"|"resetbranchflag"
+ISBFLAGSET		"isbflagset"|"isbranchflagset"
+SETSFLAG		"setsflag"|"setscriptflag"
+RESETSFLAG		"resetsflag"|"resetscriptflag"
+ISSFLAGSET		"issflagset"|"isscriptflagset"
 SET_HOST		"rewritehost"|"sethost"|"seth"
 SET_HOSTPORT	"rewritehostport"|"sethostport"|"sethp"
 SET_USER		"rewriteuser"|"setuser"|"setu"
@@ -149,6 +156,7 @@ SET_ADV_PORT	"set_advertised_port"
 FORCE_SEND_SOCKET	"force_send_socket"
 SERIALIZE_BRANCHES	"serialize_branches"
 NEXT_BRANCHES	"next_branches"
+
 
 /*ACTION LVALUES*/
 URIHOST			"uri:host"
@@ -327,6 +335,12 @@ EAT_ABLE	[\ \t\b\r]
 <INITIAL>{SETFLAG}	{ count(); yylval.strval=yytext; return SETFLAG; }
 <INITIAL>{RESETFLAG}	{ count(); yylval.strval=yytext; return RESETFLAG; }
 <INITIAL>{ISFLAGSET}	{ count(); yylval.strval=yytext; return ISFLAGSET; }
+<INITIAL>{SETBFLAG}	{ count(); yylval.strval=yytext; return SETBFLAG; }
+<INITIAL>{RESETBFLAG}	{ count(); yylval.strval=yytext; return RESETBFLAG; }
+<INITIAL>{ISBFLAGSET}	{ count(); yylval.strval=yytext; return ISBFLAGSET; }
+<INITIAL>{SETSFLAG}	{ count(); yylval.strval=yytext; return SETSFLAG; }
+<INITIAL>{RESETSFLAG}	{ count(); yylval.strval=yytext; return RESETSFLAG; }
+<INITIAL>{ISSFLAGSET}	{ count(); yylval.strval=yytext; return ISSFLAGSET; }
 <INITIAL>{MSGLEN}	{ count(); yylval.strval=yytext; return MSGLEN; }
 <INITIAL>{ROUTE}	{ count(); yylval.strval=yytext; return ROUTE; }
 <INITIAL>{ROUTE_ONREPLY}	{ count(); yylval.strval=yytext;

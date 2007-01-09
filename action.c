@@ -38,6 +38,7 @@
  *               a function address - more info is accessible (bogdan)
  *  2006-05-22  forward(_udp,_tcp,_tls) and send(_tcp) merged in forward() and
  *               send() (bogdan)
+ *  2006-12-22  functions for script and branch flags added (bogdan)
  */
 
 
@@ -147,6 +148,8 @@ int run_top_route(struct action* a, struct sip_msg* msg)
 
 	action_flags = 0;
 	rec_lev = 0;
+
+	resetsflag( (unsigned int)-1 );
 
 	run_actions(a, msg);
 	ret = action_flags;
@@ -297,8 +300,8 @@ int do_action(struct action* a, struct sip_msg* msg)
 			}
 			s.s = a->p1.string;
 			s.len = s.s?strlen(s.s):0;
-			ret = append_branch( msg, &s, &msg->dst_uri, 0, a->p2.number, 0,
-					msg->force_send_socket);
+			ret = append_branch( msg, &s, &msg->dst_uri, 0, a->p2.number,
+					getb0flags(), msg->force_send_socket);
 			break;
 		case LEN_GT_T:
 			if (a->p1_type!=NUMBER_ST) {
@@ -310,46 +313,31 @@ int do_action(struct action* a, struct sip_msg* msg)
 			ret = msg->len >= a->p1.number ? 1 : -1;
 			break;
 		case SETFLAG_T:
-			if (a->p1_type!=NUMBER_ST) {
-				LOG(L_CRIT, "BUG: do_action: bad setflag() type %d\n",
-					a->p1_type );
-				ret=E_BUG;
-				break;
-			}
-			if (!flag_in_range( a->p1.number )) {
-				ret=E_CFG;
-				break;
-			}
-			setflag( msg, a->p1.number );
-			ret=1;
+			ret = setflag( msg, a->p1.number );
 			break;
 		case RESETFLAG_T:
-			if (a->p1_type!=NUMBER_ST) {
-				LOG(L_CRIT, "BUG: do_action: bad resetflag() type %d\n",
-					a->p1_type );
-				ret=E_BUG;
-				break;
-			}
-			if (!flag_in_range( a->p1.number )) {
-				ret=E_CFG;
-				break;
-			}
-			resetflag( msg, a->p1.number );
-			ret=1;
+			ret = resetflag( msg, a->p1.number );
 			break;
-			
 		case ISFLAGSET_T:
-			if (a->p1_type!=NUMBER_ST) {
-				LOG(L_CRIT, "BUG: do_action: bad isflagset() type %d\n",
-					a->p1_type );
-				ret=E_BUG;
-				break;
-			}
-			if (!flag_in_range( a->p1.number )) {
-				ret=E_CFG;
-				break;
-			}
-			ret=isflagset( msg, a->p1.number );
+			ret = isflagset( msg, a->p1.number );
+			break;
+		case SETSFLAG_T:
+			ret = setsflag( a->p1.number );
+			break;
+		case RESETSFLAG_T:
+			ret = resetsflag( a->p1.number );
+			break;
+		case ISSFLAGSET_T:
+			ret = issflagset( a->p1.number );
+			break;
+		case SETBFLAG_T:
+			ret = setbflag( a->p1.number, a->p2.number );
+			break;
+		case RESETBFLAG_T:
+			ret = resetbflag( a->p1.number, a->p2.number  );
+			break;
+		case ISBFLAGSET_T:
+			ret = isbflagset( a->p1.number, a->p2.number  );
 			break;
 		case ERROR_T:
 			if ((a->p1_type!=STRING_ST)|(a->p2_type!=STRING_ST)){

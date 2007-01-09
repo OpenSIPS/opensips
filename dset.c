@@ -20,6 +20,12 @@
  * You should have received a copy of the GNU General Public License 
  * along with this program; if not, write to the Free Software 
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
+ * History:
+ * ========
+ *
+ *  2006-12-22  functions branch flags added (bogdan)
+ *
  */
 
 #include <string.h>
@@ -58,7 +64,7 @@ struct branch
 
 	int q; /* Preference of the contact among contact within the array */
 	struct socket_info* force_send_socket;
-	int flags;
+	unsigned int flags;
 };
 
 
@@ -75,13 +81,92 @@ unsigned int nr_branches = 0;
 static qvalue_t ruri_q = Q_UNSPECIFIED; 
 
 
+/* Branch flags of the Request-URI */
+static unsigned int ruri_bflags = 0;
+
+
+
+static inline unsigned int* get_ptr_bflags(unsigned int b_idx)
+{
+	if (b_idx==0) {
+		return &ruri_bflags;
+	} else {
+		if (b_idx-1<nr_branches) {
+			return &branches[b_idx-1].flags;
+		} else {
+			return 0;
+		}
+	}
+}
+
+
+/*
+ * Get the per branch flags for RURI
+ */
+unsigned int getb0flags()
+{
+	return ruri_bflags;
+}
+
+
+unsigned int setb0flags( unsigned int flags)
+{
+	ruri_bflags = flags;
+	return 0;
+}
+
+
+int setbflag(unsigned int b_idx, unsigned int mask)
+{
+	unsigned int *flags;
+
+	flags = get_ptr_bflags( b_idx );
+	if (flags==0)
+		return -1;
+
+	(*flags) |= mask;
+	return 1;
+}
+
+
+/*
+ * Tests the per branch flags
+ */
+int isbflagset(unsigned int b_idx, unsigned int mask)
+{
+	unsigned int *flags;
+
+	flags = get_ptr_bflags( b_idx );
+	if (flags==0)
+		return -1;
+
+	return ( (*flags) & mask) ? 1 : -1;
+}
+
+
+/*
+ * Resets the per branch flags
+ */
+int resetbflag(unsigned int b_idx, unsigned int mask)
+{
+	unsigned int *flags;
+
+	flags = get_ptr_bflags( b_idx );
+	if (flags==0)
+		return -1;
+
+	(*flags) &= ~mask;
+	return 1;
+}
+
+
 /*
  * Return the next branch from the dset
  * array, 0 is returned if there are no
  * more branches
  */
 char* get_branch(int idx, int* len, qvalue_t* q, str* dst_uri, str* path, 
-		int *flags, struct socket_info** force_socket)
+		unsigned int *flags, struct socket_info** force_socket)
 {
 	if (idx < nr_branches) {
 		*len = branches[idx].len;
@@ -122,6 +207,7 @@ void clear_branches(void)
 {
 	nr_branches = 0;
 	ruri_q = Q_UNSPECIFIED;
+	ruri_bflags = 0;
 }
 
 
@@ -129,7 +215,7 @@ void clear_branches(void)
  * Add a new branch to current transaction 
  */
 int append_branch(struct sip_msg* msg, str* uri, str* dst_uri, str* path,
-		qvalue_t q, int flags, struct socket_info* force_socket)
+		qvalue_t q, unsigned int flags, struct socket_info* force_socket)
 {
 	str luri;
 
@@ -196,6 +282,7 @@ int append_branch(struct sip_msg* msg, str* uri, str* dst_uri, str* path,
 
 	branches[nr_branches].force_send_socket = force_socket;
 	branches[nr_branches].flags = flags;
+	DBG("******* setting for branch %d flags %X\n",nr_branches,flags);
 
 	nr_branches++;
 	return 1;

@@ -29,6 +29,7 @@
  *  2003-10-02  added SET_ADV_ADDRESS & SET_ADV_PORT (andrei)
  *  2006-03-02  mk_action -> mk_action_2p and mk_action3 -> mk_action_3p;
  *              both functions take as extra param the cfg line (bogdan)
+ *  2006-12-22  support for script and branch flags added (bogdan)
  */
 
 
@@ -300,6 +301,24 @@ void print_action(struct action* t)
 				break;
 		case ISFLAGSET_T:
 				DBG("isflagset(");
+				break;
+		case SETBFLAG_T:
+				DBG("setbflag(");
+				break;
+		case RESETBFLAG_T:
+				DBG("resetbflag(");
+				break;
+		case ISBFLAGSET_T:
+				DBG("isbflagset(");
+				break;
+		case SETSFLAG_T:
+				DBG("setsflag(");
+				break;
+		case RESETSFLAG_T:
+				DBG("resetsflag(");
+				break;
+		case ISSFLAGSET_T:
+				DBG("issflagset(");
 				break;
 		case SET_HOST_T:
 				DBG("sethost(");

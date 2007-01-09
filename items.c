@@ -633,15 +633,10 @@ static int xl_get_msg_buf(struct sip_msg *msg, xl_value_t *res, xl_param_t *para
 static int xl_get_msg_len(struct sip_msg *msg, xl_value_t *res, xl_param_t *param,
 		int flags)
 {
-	int l = 0;
-	char *ch = NULL;
-
 	if(msg==NULL || res==NULL)
 		return -1;
 
-	ch = int2str(msg->len, &l);
-	res->rs.s = ch;
-	res->rs.len = l;
+	res->rs.s = int2str(msg->len, &res->rs.len);
 
 	res->ri = (int)msg->len;
 	res->flags = XL_VAL_STR|XL_VAL_INT;
@@ -651,15 +646,10 @@ static int xl_get_msg_len(struct sip_msg *msg, xl_value_t *res, xl_param_t *para
 static int xl_get_flags(struct sip_msg *msg, xl_value_t *res, xl_param_t *param,
 		int flags)
 {
-	int l = 0;
-	char *ch = NULL;
-
 	if(msg==NULL || res==NULL)
 		return -1;
 
-	ch = int2str(msg->flags, &l);
-	res->rs.s = ch;
-	res->rs.len = l;
+	res->rs.s = int2str(msg->flags, &res->rs.len);
 
 	res->ri = (int)msg->flags;
 	res->flags = XL_VAL_STR|XL_VAL_INT;
@@ -687,8 +677,8 @@ static inline char* int_to_8hex(int val)
 	return outbuf;
 }
 
-static int xl_get_hexflags(struct sip_msg *msg, xl_value_t *res, xl_param_t *param,
-		int flags)
+static int xl_get_hexflags(struct sip_msg *msg, xl_value_t *res,
+												xl_param_t *param, int flags)
 {
 	if(msg==NULL || res==NULL)
 		return -1;
@@ -697,6 +687,60 @@ static int xl_get_hexflags(struct sip_msg *msg, xl_value_t *res, xl_param_t *par
 	res->rs.len = 8;
 
 	res->ri = (int)msg->flags;
+	res->flags = XL_VAL_STR|XL_VAL_INT;
+	return 0;
+}
+
+static int xl_get_bflags(struct sip_msg *msg, xl_value_t *res,
+												xl_param_t *param,int flags)
+{
+	if(res==NULL)
+		return -1;
+
+	res->ri = (int)getb0flags();
+	res->rs.s = int2str( res->ri, &res->rs.len);
+
+	res->flags = XL_VAL_STR|XL_VAL_INT;
+	return 0;
+}
+
+static int xl_get_hexbflags(struct sip_msg *msg, xl_value_t *res,
+												xl_param_t *param, int flags)
+{
+	if(res==NULL)
+		return -1;
+
+	res->ri = (int)getb0flags();
+	res->rs.s = int_to_8hex(res->ri);
+	res->rs.len = 8;
+
+	res->flags = XL_VAL_STR|XL_VAL_INT;
+	return 0;
+}
+
+static int xl_get_sflags(struct sip_msg *msg, xl_value_t *res,
+												xl_param_t *param,int flags)
+{
+	if(res==NULL)
+		return -1;
+
+	res->ri = (int)getsflags();
+	res->rs.s = int2str( res->ri, &res->rs.len);
+
+	res->flags = XL_VAL_STR|XL_VAL_INT;
+	return 0;
+}
+
+static int xl_get_hexsflags(struct sip_msg *msg, xl_value_t *res,
+												xl_param_t *param, int flags)
+{
+	if(res==NULL)
+		return -1;
+
+	res->ri = (int)getsflags();
+	res->rs.s = int_to_8hex(res->ri);
+	res->rs.len = 8;
+
 	res->flags = XL_VAL_STR|XL_VAL_INT;
 	return 0;
 }
@@ -2065,6 +2109,10 @@ static struct _xl_table {
 		{ XL_AUTH_USERNAME, 0, xl_get_authattr, {{0, 1}, 0}, {0, 0}}},
 	{{"Au", (sizeof("Au")-1)}, /* */
 		{ XL_ACC_USERNAME, 0, xl_get_acc_username, {{0, 1}, 0}, {0, 0}}},
+	{{"bf", (sizeof("bf")-1)}, /* */
+		{ XL_BFLAGS, 0, xl_get_bflags, {{0, 0}, 0}, {0, 0}}},
+	{{"bF", (sizeof("bF")-1)}, /* */
+		{ XL_HEXBFLAGS, 0, xl_get_hexbflags, {{0, 0}, 0}, {0, 0}}},
 	{{"br", (sizeof("br")-1)}, /* */
 		{ XL_BRANCH, 0, xl_get_branch, {{0, 0}, 0}, {0, 0}}},
 	{{"bR", (sizeof("bR")-1)}, /* */
@@ -2132,8 +2180,7 @@ static struct _xl_table {
 	{{"pd", (sizeof("pd")-1)}, /* */
 		{ XL_PPI_DOMAIN, 0, xl_get_ppi_attr, {{0, 3}, 0}, {0, 0}}},
 	{{"pn", (sizeof("pn")-1)}, /* */
-		{ XL_PPI_DISPLAYNAME, 0, xl_get_ppi_attr, {{0, 4}, 0},
-		  {0, 0}}},
+		{ XL_PPI_DISPLAYNAME, 0, xl_get_ppi_attr, {{0, 2}, 0}, {0, 0}}},
 	{{"pu", (sizeof("pu")-1)}, /* */
 		{ XL_PPI, 0, xl_get_ppi_attr, {{0, 1}, 0}, {0, 0}}},
 	{{"pU", (sizeof("pU")-1)}, /* */
@@ -2170,6 +2217,10 @@ static struct _xl_table {
 		{ XL_RCVIP, 0, xl_get_rcvip, {{0, 0}, 0}, {0, 0}}},
 	{{"Rp", (sizeof("Rp")-1)}, /* */
 		{ XL_RCVPORT, 0, xl_get_rcvport, {{0, 0}, 0}, {0, 0}}},
+	{{"sf", (sizeof("sf")-1)}, /* */
+		{ XL_SFLAGS, 0, xl_get_sflags, {{0, 0}, 0}, {0, 0}}},
+	{{"sF", (sizeof("sF")-1)}, /* */
+		{ XL_HEXSFLAGS, 0, xl_get_hexsflags, {{0, 0}, 0}, {0, 0}}},
 	{{"src_ip", (sizeof("src_ip")-1)}, /* */
 		{ XL_SRCIP, 0, xl_get_srcip, {{0, 0}, 0}, {0, 0}}},
 	{{"si", (sizeof("si")-1)}, /* */

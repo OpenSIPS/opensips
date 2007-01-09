@@ -27,6 +27,7 @@
  *  2003-10-10  >,<,>=,<=, != and MSGLEN_O added (andrei)
  *  2003-10-28  FORCE_TCP_ALIAS added (andrei)
  *  2006-03-02  new field "line" in action struct - the cfg line (bogdan)
+ *  2006-12-22  support for script and branch flags added (bogdan)
  */
 
 
@@ -57,6 +58,8 @@ enum { FORWARD_T=1, SEND_T, DROP_T, LOG_T, ERROR_T, ROUTE_T, EXEC_T,
 		SET_HOST_T, SET_HOSTPORT_T, SET_USER_T, SET_USERPASS_T, 
 		SET_PORT_T, SET_URI_T, IF_T, MODULE_T,
 		SETFLAG_T, RESETFLAG_T, ISFLAGSET_T ,
+		SETSFLAG_T, RESETSFLAG_T, ISSFLAGSET_T ,
+		SETBFLAG_T, RESETBFLAG_T, ISBFLAGSET_T ,
 		LEN_GT_T, PREFIX_T, STRIP_T,STRIP_TAIL_T,
 		APPEND_BRANCH_T,
 		REVERT_URI_T,

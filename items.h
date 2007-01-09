@@ -18,6 +18,11 @@
  * You should have received a copy of the GNU General Public License 
  * along with this program; if not, write to the Free Software 
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
+ * History:
+ * =======
+ *  2006-12-22  PV for script and branch flags added (bogdan)
+ *
  */
 
 #ifndef _ITEMS_H_
@@ -80,7 +85,8 @@ enum _xl_type {
 	XL_FORCE_SOCK,       XL_RPID_URI,          XL_DIVERSION_URI,
 	XL_ACC_USERNAME,     XL_PPI,               XL_PPI_DISPLAYNAME,
 	XL_PPI_DOMAIN,       XL_PPI_USERNAME,      XL_PAI_URI,
-        XL_ITEM_EXTRA /* keep it last */
+	XL_BFLAGS,           XL_HEXBFLAGS,         XL_SFLAGS,
+	XL_HEXSFLAGS,        XL_ITEM_EXTRA /* keep it last */
 };
 typedef enum _xl_type xl_type_t;
 

@@ -35,14 +35,14 @@ extern unsigned int nr_branches;
  * Add a new branch to current transaction 
  */
 int append_branch(struct sip_msg* msg, str* uri, str* dst_uri, str* path,
-		qvalue_t q, int flags, struct socket_info* force_socket);
+		qvalue_t q, unsigned int flags, struct socket_info* force_socket);
 
 
 /*
  * Get the next branch in the current transaction
  */
 char* get_branch( int idx, int* len, qvalue_t* q, str* dst_uri, str* path,
-		int *flags, struct socket_info** force_socket);
+		unsigned int *flags, struct socket_info** force_socket);
 
 
 /*
@@ -73,5 +73,31 @@ int get_request_uri(struct sip_msg* _m, str* _u);
 int rewrite_uri(struct sip_msg* _m, str* _s);
 
 int branch_uri2dset( str *new_uri );
+
+
+/*
+ * Get/set the per branch flags for the RURI (branch 0)
+ */
+unsigned int getb0flags();
+unsigned int setb0flags(unsigned int flags);
+
+
+/*
+ * Set the per branch flag
+ */
+int setbflag(unsigned int b_idx, unsigned int mask);
+
+
+/*
+ * Test the per branch flag
+ */
+int isbflagset(unsigned int b_idx, unsigned int mask);
+
+
+/*
+ * Reset the per branch flag
+ */
+int resetbflag(unsigned int b_idx, unsigned int mask);
+
 
 #endif /* _DSET_H */

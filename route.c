@@ -38,6 +38,7 @@
  *  2006-03-02  MODULE_T action points to a cmd_export_t struct instead to 
  *               a function address - more info is accessible (bogdan)
  *              Fixup failure reports the config line (bogdan)
+ *  2006-12-22  support for script and branch flags added (bogdan)
  */
 
  
@@ -288,6 +289,50 @@ static int fix_actions(struct action* a)
 				}
 				t->p1.data=si;
 				t->p1_type=SOCKETINFO_ST;
+				break;
+			case SETFLAG_T:
+			case RESETFLAG_T:
+			case ISFLAGSET_T:
+				if (t->p1_type!=NUMBER_ST) {
+					LOG(L_CRIT, "BUG: fix_actions: bad xxxflag() type %d\n",
+						t->p1_type );
+					ret=E_BUG;
+					goto error;
+				}
+				if (!flag_in_range( a->p1.number )) {
+					ret=E_CFG;
+					goto error;
+				}
+				break;
+			case SETSFLAG_T:
+			case RESETSFLAG_T:
+			case ISSFLAGSET_T:
+				if (t->p1_type!=NUMBER_ST) {
+					LOG(L_CRIT, "BUG: fix_actions: bad xxxsflag() type %d\n",
+						t->p1_type );
+					ret=E_BUG;
+					goto error;
+				}
+				t->p1.number = fixup_flag( t->p1.number );
+				if (t->p1.data==0) {
+					ret=E_CFG;
+					goto error;
+				}
+				break;
+			case SETBFLAG_T:
+			case RESETBFLAG_T:
+			case ISBFLAGSET_T:
+				if (t->p1_type!=NUMBER_ST || t->p2_type!=NUMBER_ST) {
+					LOG(L_CRIT, "BUG: fix_actions: bad xxxbflag() type "
+						"%d,%d\n", t->p1_type, t->p2_type);
+					ret=E_BUG;
+					goto error;
+				}
+				t->p2.number = fixup_flag( t->p2.number );
+				if (t->p2.data==0) {
+					ret=E_CFG;
+					goto error;
+				}
 				break;
 		}
 	}

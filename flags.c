@@ -2,6 +2,7 @@
  * $Id$
  *
  * Copyright (C) 2001-2003 FhG Fokus
+ * Copyright (C) 2006 Voice Sistem SRL
  *
  * This file is part of openser, a free SIP server.
  *
@@ -22,6 +23,7 @@
  * History:
  * --------
  *  2003-03-19  replaced all mallocs/frees w/ pkg_malloc/pkg_free (andrei)
+ *  2006-12-22  added script flags (bogdan)
  */
 
 
@@ -30,8 +32,8 @@
 #include "dprint.h"
 #include "parser/msg_parser.h"
 #include "flags.h"
-#include "error.h"
-#include "stdlib.h"
+
+/*********************** msg flags ****************************/
 
 int setflag( struct sip_msg* msg, flag_t flag ) {
 	msg->flags |= 1 << flag;
@@ -57,75 +59,40 @@ int flag_in_range( flag_t flag ) {
 }
 
 
-#ifdef _GET_AWAY
+/*********************** script flags ****************************/
 
-/* wrapping functions for flag processing  */
-static int fixup_t_flag(void** param, int param_no)
+static unsigned int sflags = 0;
+
+unsigned int fixup_flag(unsigned int idx)
 {
-    unsigned int *code;
-	char *c;
-	int token;
-
-	DBG("DEBUG: fixing flag: %s\n", (char *) (*param));
-
-	if (param_no!=1) {
-		LOG(L_ERR, "ERROR: TM module: only parameter #1 for flags can be"
-					" fixed\n");
-		return E_BUG;
-	};
-
-	if ( !(code =pkg_malloc( sizeof( unsigned int) )) ) return E_OUT_OF_MEM;
-
-	*code = 0;
-	c = *param;
-	while ( *c && (*c==' ' || *c=='\t')) c++; /* initial whitespaces */
-
-	token=1;
-	if (strcasecmp(c, "white")==0) *code=FL_WHITE;
-	else if (strcasecmp(c, "yellow")==0) *code=FL_YELLOW;
-	else if (strcasecmp(c, "green")==0) *code=FL_GREEN;
-	else if (strcasecmp(c, "red")==0) *code=FL_RED;
-	else if (strcasecmp(c, "blue")==0) *code=FL_BLUE;
-	else if (strcasecmp(c, "magenta")==0) *code=FL_MAGENTA;
-	else if (strcasecmp(c, "brown")==0) *code=FL_BROWN;
-	else if (strcasecmp(c, "black")==0) *code=FL_BLACK;
-	else if (strcasecmp(c, "acc")==0) *code=FL_ACC;
-	else {
-		token=0;
-		while ( *c && *c>='0' && *c<='9' ) {
-			*code = *code*10+ *c-'0';
-			if (*code > (sizeof( flag_t ) * CHAR_BIT - 1 )) {
-				LOG(L_ERR, "ERROR: TM module: too big flag number: %s; MAX=%d\n",
-					(char *) (*param), sizeof( flag_t ) * CHAR_BIT - 1 );
-				goto error;
-			}
-			c++;
-		}
+	if (idx<0 || idx>MAX_FLAG) {
+		LOG(L_ERR, "ERROR:fixup_flag: flag (%d) out of range %d..%d\n",
+			idx, 0, MAX_FLAG );
+		return 0;
 	}
-	while ( *c && (*c==' ' || *c=='\t')) c++; /* terminating whitespaces */
+	return (1<<idx);
+}
 
-	if ( *code == 0 ) {
-		LOG(L_ERR, "ERROR: TM module: bad flag number: %s\n", (char *) (*param));
-		goto error;
-	}
+int setsflag( unsigned int mask )
+{
+	sflags |= mask;
+	return 1;
+}
 
-	if (*code < FL_MAX && token==0) {
-		LOG(L_ERR, "ERROR: TM module: too high flag number: %s (%d)\n; lower number"
-			" bellow %d reserved\n", (char *) (*param), *code, FL_MAX );
-		goto error;
-	}
+int resetsflag( unsigned int mask )
+{
+	sflags &= ~ mask;
+	return 1;
+}
 
-	/* free string */
-	pkg_free( *param );
-	/* fix now */
-	*param = code;
-	
-	return 0;
+int issflagset( unsigned int mask )
+{
+	return ( sflags & mask) ? 1 : -1;
+}
 
-error:
-	pkg_free( code );
-	return E_CFG;
+unsigned int getsflags()
+{
+	return sflags;
 }
 
 
-#endif
