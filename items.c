@@ -1482,6 +1482,7 @@ static int xl_get_header(struct sip_msg *msg, xl_value_t *res,
 	struct hdr_field *hf, *hf0;
 	char *p;
 	int lidx;
+	int found;
 	
 	if(msg==NULL || res==NULL)
 		return -1;
@@ -1493,8 +1494,13 @@ static int xl_get_header(struct sip_msg *msg, xl_value_t *res,
 	p = local_buf;
 
 	/* we need to be sure we have parsed all headers */
-	parse_headers(msg, HDR_EOH_F, 0);
+	if(parse_headers(msg, HDR_EOH_F, 0)<0)
+	{
+		LOG(L_ERR,"xl_get_header: error parsing headers\n");
+		return xl_get_null(msg, res, param, flags);
+	}
 	lidx = param->ind;
+	found = 0;
 	for (hf=msg->headers; hf; hf=hf->next)
 	{
 		if(param->val.s==NULL)
@@ -1534,8 +1540,10 @@ static int xl_get_header(struct sip_msg *msg, xl_value_t *res,
 			continue;
 		}
 		
-		if(lidx==0)
+		if(lidx==0) {
+			found = 1;
 			goto done;
+		}
 		if(lidx>0)
 			lidx--;
 	}
@@ -1544,18 +1552,23 @@ done:
 	res->flags = XL_VAL_STR;
 	if(lidx==ITEM_PRINT_ALL)
 	{
-		*p = 0;
-		res->rs.s = local_buf;
-		res->rs.len = p - local_buf;
-		return 0;
+		if(p != local_buf)
+		{
+			*p = 0;
+			res->rs.s = local_buf;
+			res->rs.len = p - local_buf;
+			return 0;
+		} else return xl_get_null(msg, res, param, flags);
 	}
 	
-	if(hf0==NULL || lidx>0)
-		return xl_get_null(msg, res, param, flags);
-	res->rs.s = hf0->body.s;
-	res->rs.len = hf0->body.len;
-	trim(&res->rs);
-	return 0;
+	if(hf0!=NULL && (found==1 || lidx==ITEM_PRINT_LAST))
+	{
+		res->rs.s = hf0->body.s;
+		res->rs.len = hf0->body.len;
+		trim(&res->rs);
+		return 0;
+	}
+	return xl_get_null(msg, res, param, flags);
 }
 
 static int xl_get_avp(struct sip_msg *msg, xl_value_t *res, xl_param_t *param,
