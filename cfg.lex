@@ -54,6 +54,7 @@
  *  2005-11-22  added tos configurability (thanks to Andreas Granig)
  *  2005-11-29  added serialize_branches and next_branches (bogdan)
  *  2006-12-22  functions for script and branch flags added (bogdan)
+ *  2007-01-11  auto_aliases option added (bogdan)
  */
 
 
@@ -206,6 +207,7 @@ LOGFACILITY	log_facility
 LOGNAME		log_name
 LISTEN		listen
 ALIAS		alias
+AUTO_ALIASES	auto_aliases
 DNS		 dns
 REV_DNS	 rev_dns
 DNS_TRY_IPV6    dns_try_ipv6
@@ -410,6 +412,7 @@ EAT_ABLE	[\ \t\b\r]
 <INITIAL>{LOGNAME}	{ yylval.strval=yytext; return LOGNAME; }
 <INITIAL>{LISTEN}	{ count(); yylval.strval=yytext; return LISTEN; }
 <INITIAL>{ALIAS}	{ count(); yylval.strval=yytext; return ALIAS; }
+<INITIAL>{AUTO_ALIASES}	{ count(); yylval.strval=yytext; return AUTO_ALIASES; }
 <INITIAL>{DNS}	{ count(); yylval.strval=yytext; return DNS; }
 <INITIAL>{REV_DNS}	{ count(); yylval.strval=yytext; return REV_DNS; }
 <INITIAL>{DNS_TRY_IPV6}		{ count(); yylval.strval=yytext;

@@ -114,6 +114,7 @@
 #include "hash_func.h"
 #include "pt.h"
 #include "script_cb.h"
+
 #include "ut.h"
 #include "serialize.h"
 #include "statistics.h"
@@ -262,7 +263,7 @@ str server_header = {SERVER_HDR,sizeof(SERVER_HDR)-1};
    Default is to use USER_AGENT CRLF (assigned later).
 */
 str user_agent_header = {USER_AGENT,sizeof(USER_AGENT)-1};
-/* should ser try to locate outbound interface on multihomed
+/* should openser try to locate outbound interface on multihomed
  * host? by default not -- too expensive
  */
 int mhomed=0;
@@ -316,6 +317,10 @@ struct socket_info* sendipv4_tls;
 struct socket_info* sendipv6_tls;
 #endif
 
+/* if aliases should be automatically discovered and added 
+ * during fixing listening sockets */
+int auto_aliases=1;
+
 unsigned short port_no=0; /* default port*/
 #ifdef USE_TLS
 unsigned short tls_port_no=0; /* default port */
@@ -349,7 +354,7 @@ extern int yyparse();
 
 int is_main=1; /* flag = is this the  "main" process? */
 
-char* pid_file = 0; /* filename as asked by use */
+char* pid_file = 0; /* filename as asked by user */
 char* pgid_file = 0;
 
 
@@ -401,12 +406,12 @@ void cleanup(int show_status)
  * to the shell which launched us => most signals will kill it if 
  * it's not in interactive mode and we don't want this. The non-daemonized 
  * case can occur when an error is encountered before daemonize is called 
- * (e.g. when parsing the config file) or when ser is started in "dont-fork"
- *  mode. Sending the signal to all the processes in pt[] will not work
- *  for processes forked from modules (which have no correspondent entry in 
- *  pt), but this can happen only in dont_fork mode (which is only for
- *  debugging). So in the worst case + "dont-fork" we might leave some
- *  zombies. -- andrei */
+ * (e.g. when parsing the config file) or when openser is started in 
+ * "dont-fork" mode. Sending the signal to all the processes in pt[] will not 
+ * work for processes forked from modules (which have no correspondent entry in
+ * pt), but this can happen only in dont_fork mode (which is only for
+ * debugging). So in the worst case + "dont-fork" we might leave some
+ * zombies. -- andrei */
 static void kill_all_children(int signum)
 {
 	int r;
@@ -1046,8 +1051,8 @@ int main(int argc, char** argv)
 		goto error;
 
 #ifdef DBG_MSG_QA
-	fprintf(stderr, "WARNING: ser startup: "
-		"DBG_MSG_QA enabled, ser may exit abruptly\n");
+	fprintf(stderr, "WARNING: OpenSER startup: "
+		"DBG_MSG_QA enabled, OpenSER may exit abruptly\n");
 #endif
 
 
@@ -1076,7 +1081,7 @@ int main(int argc, char** argv)
 										optarg);
 						goto error;
 					};
-					LOG(L_INFO, "ser: shared memory: %ld bytes\n",
+					LOG(L_INFO, "openser:main: shared memory: %ld bytes\n",
 									shm_mem_size );
 					break;
 
@@ -1188,9 +1193,9 @@ int main(int argc, char** argv)
 			case 'P':
 					pid_file=optarg;
 					break;
-		        case 'G':
-				        pgid_file=optarg;
-				        break;
+			case 'G':
+					pgid_file=optarg;
+					break;
 			case 'i':
 					fifo=optarg;
 					break;

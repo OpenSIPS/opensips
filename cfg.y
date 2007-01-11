@@ -67,6 +67,7 @@
  * 2006-05-22  forward(_udp,_tcp,_tls) and send(_tcp) merged in forward() and
  *              send() (bogdan)
  *  2006-12-22  functions for script and branch flags added (bogdan)
+ *  2007-01-11  auto_aliases option added (bogdan)
  */
 
 
@@ -230,6 +231,7 @@ extern int line;
 %token LOGNAME
 %token LISTEN
 %token ALIAS
+%token AUTO_ALIASES
 %token DNS
 %token REV_DNS
 %token DNS_TRY_IPV6
@@ -805,6 +807,8 @@ assign_stm:	DEBUG EQUAL NUMBER { debug=$3; }
 											lst_tmp->port, lst_tmp->proto);
 							  }
 		| ALIAS  EQUAL error  { yyerror(" hostname expected"); }
+		| AUTO_ALIASES EQUAL NUMBER { auto_aliases=$3; }
+		| AUTO_ALIASES EQUAL error  { yyerror("number  expected"); }
 		| ADVERTISED_ADDRESS EQUAL listen_id {
 								default_global_address.s=$3;
 								default_global_address.len=strlen($3);

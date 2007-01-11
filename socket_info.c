@@ -29,6 +29,7 @@
  *  2003-10-22  created by andrei
  *  2004-10-10  added grep_sock_info (andrei)
  *  2004-11-08  added find_si (andrei)
+ *  2007-01-11  auto_aliases option added (bogdan)
  */
 
 
@@ -53,7 +54,6 @@
 #include "ut.h"
 #include "resolve.h"
 #include "name_alias.h"
-
 
 
 /* list manip. functions (internal use only) */
@@ -485,7 +485,6 @@ error:
 }
 
 
-
 /* fixes a socket list => resolve addresses, 
  * interface names, fills missing members, remove duplicates */
 static int fix_socket_list(struct socket_info **list)
@@ -537,7 +536,6 @@ static int fix_socket_list(struct socket_info **list)
 		}
 		strncpy(si->port_no_str.s, tmp, len+1);
 		si->port_no_str.len=len;
-		
 		/* get "official hostnames", all the aliases etc. */
 		he=resolvehost(si->name.s,0);
 		if (he==0){
@@ -547,7 +545,7 @@ static int fix_socket_list(struct socket_info **list)
 		}
 		/* check if we got the official name */
 		if (strcasecmp(he->h_name, si->name.s)!=0){
-			if (add_alias(si->name.s, si->name.len,
+			if (auto_aliases && add_alias(si->name.s, si->name.len,
 							si->port_no, si->proto)<0){
 				LOG(L_ERR, "ERROR: fix_socket_list: add_alias failed\n");
 			}
@@ -562,10 +560,12 @@ static int fix_socket_list(struct socket_info **list)
 			strncpy(si->name.s, he->h_name, si->name.len+1);
 		}
 		/* add the aliases*/
-		for(h=he->h_aliases; h && *h; h++)
-			if (add_alias(*h, strlen(*h), si->port_no, si->proto)<0){
-				LOG(L_ERR, "ERROR: fix_socket_list: add_alias failed\n");
-			}
+		if (auto_aliases) {
+			for(h=he->h_aliases; h && *h; h++)
+				if (add_alias(*h, strlen(*h), si->port_no, si->proto)<0){
+					LOG(L_ERR, "ERROR: fix_socket_list: add_alias failed\n");
+				}
+		}
 		hostent2ip_addr(&si->address, he, 0); /*convert to ip_addr 
 														 format*/
 		if ((tmp=ip_addr2a(&si->address))==0) goto error;
@@ -577,7 +577,7 @@ static int fix_socket_list(struct socket_info **list)
 		strncpy(si->address_str.s, tmp, strlen(tmp)+1);
 		/* set is_ip (1 if name is an ip address, 0 otherwise) */
 		si->address_str.len=strlen(tmp);
-		if 	(	(si->address_str.len==si->name.len)&&
+		if ( auto_aliases && (si->address_str.len==si->name.len) &&
 				(strncasecmp(si->address_str.s, si->name.s,
 								si->address_str.len)==0)
 			){
