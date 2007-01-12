@@ -312,7 +312,7 @@ static int fix_actions(struct action* a)
 					ret=E_BUG;
 					goto error;
 				}
-				if (!flag_in_range( a->p1.number )) {
+				if (!flag_in_range( t->p1.number )) {
 					ret=E_CFG;
 					goto error;
 				}
