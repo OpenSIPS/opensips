@@ -108,7 +108,6 @@
 #include "resolve.h"
 #include "parser/parse_hname2.h"
 #include "parser/digest/digest_parser.h"
-#include "fifo_server.h"
 #include "unixsock_server.h"
 #include "name_alias.h"
 #include "hash_func.h"
@@ -174,7 +173,6 @@ Options:\n\
     -g gid       Change gid \n\
     -P file      Create a pid file\n\
     -G file      Create a pgid file\n\
-    -i fifo_path Create a fifo (useful for monitoring " NAME ") \n\
     -x socket    Create a unix domain socket \n"
 ;
 
@@ -375,7 +373,6 @@ void cleanup(int show_status)
 #endif
 	destroy_timer();
 	close_unixsock_server();
-	destroy_fifo();
 	destroy_stats_collector();
 	destroy_script_cb();
 	xl_free_extra_spec();
@@ -679,14 +676,7 @@ int main_loop()
 			LOG(L_WARN, "WARNING: using only the first listen address"
 						" (no fork)\n");
 		}
-		/* initialize fifo server -- we need to open the fifo before
-		 * do_suid() and start the fifo server after all the socket 
-		 * are initialized, to inherit them*/
-		if (init_fifo_server()<0) {
-			LOG(L_ERR, "initializing fifo server failed\n");
-			goto error;
-		}
-		 /* Initialize Unix domain socket server */
+		/* Initialize Unix domain socket server */
 		if (init_unixsock_socket()<0) {
 			LOG(L_ERR, "Error while creating unix domain sockets\n");
 			goto error;
@@ -732,14 +722,6 @@ int main_loop()
 						pt[process_no].pid=pid; /*should be shared mem anyway*/
 						strncpy(pt[process_no].desc, "timer", MAX_PT_DESC );
 				}
-		}
-
-		/* if configured, start a server for accepting FIFO commands,
-		 * we need to do it after all the sockets are initialized, to 
-		 * inherit them*/
-		if (start_fifo_server()<0) {
-			LOG(L_ERR, "starting fifo server failed\n");
-			goto error;
 		}
 
 		if (init_unixsock_children()<0) {
@@ -817,15 +799,7 @@ int main_loop()
 #endif /* USE_TLS */
 #endif /* USE_TCP */
 
-		/* initialize fifo server -- we need to open the fifo before
-		 * do_suid() and start the fifo server after all the socket 
-		 * are initialized, to inherit them*/
-		if (init_fifo_server()<0) {
-			LOG(L_ERR, "initializing fifo server failed\n");
-			goto error;
-		}
-		 /* Initialize Unix domain socket server */
-		     /* Create the unix domain sockets */
+		/* Initialize Unix domain socket server */
 		if (init_unixsock_socket()<0) {
 			LOG(L_ERR, "ERROR: Could not create unix domain sockets\n");
 			goto error;
@@ -835,13 +809,6 @@ int main_loop()
 			 * so we open all first*/
 		if (do_suid()==-1) goto error; /* try to drop privileges */
 
-		/* if configured, start a server for accepting FIFO commands,
-		 * we need to do it after all the sockets are initialized, to 
-		 * inherit them*/
-		if (start_fifo_server()<0) {
-			LOG(L_ERR, "starting fifo server failed\n");
-			goto error;
-		}
 		/* Spawn children listening on unix domain socket if and only if
 		 * the unix domain socket server has not been disabled (i == 0) */
 		if (init_unixsock_children()<0) {
@@ -1196,9 +1163,6 @@ int main(int argc, char** argv)
 			case 'G':
 					pgid_file=optarg;
 					break;
-			case 'i':
-					fifo=optarg;
-					break;
 			case 'x':
 					unixsock_name=optarg;
 					break;
@@ -1307,7 +1271,7 @@ try_again:
 			goto error;
 		}
 	}
-	/* fix sock/fifo uid/gid */
+	/* fix sock uid/gid */
 	if (sock_user){
 		if (user2uid(&sock_uid, 0, sock_user)<0){
 			fprintf(stderr, "bad socket user name/uid number %s\n", user);

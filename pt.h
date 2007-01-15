@@ -66,8 +66,6 @@ inline static int process_count()
 		/* timer process */
 		+ 1 /* always, we need it in most cases, and we can't tell here
 			   & now if we don't need it */
-		/* fifo server */
-		+((fifo==NULL || strlen(fifo)==0) ? 0 : 1 )
 		/* unixsock server*/
 		+(unixsock_name?unixsock_children:0)
 #ifdef USE_TCP

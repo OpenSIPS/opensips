@@ -36,6 +36,7 @@
 #include <signal.h>
 #include <stdarg.h>
 #include <time.h>
+#include <stdio.h>
 #include <fcntl.h>
 #include "config.h"
 #include "ut.h"
@@ -44,7 +45,6 @@
 #include "pt.h"
 #include "sr_module.h"
 #include "mem/mem.h"
-#include "fifo_server.h" /* CMD_SEPARATOR */
 #include "unixsock_server.h"
 #include "tsend.h"
 
@@ -64,6 +64,8 @@
 					 (size_t)(((struct sockaddr_un*)0)->sun_path) )
 #endif
 
+#define CMD_SEPARATOR ':'
+#define MAX_CTIME_LEN 128
 
 #define UNIXSOCK_BUF_SIZE BUF_SIZE
 

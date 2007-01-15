@@ -244,12 +244,9 @@ extern int line;
 %token CHECK_VIA
 %token MEMLOG
 %token SIP_WARNING
-%token FIFO
-%token FIFO_DIR
 %token SOCK_MODE
 %token SOCK_USER
 %token SOCK_GROUP
-%token FIFO_DB_URL
 %token UNIX_SOCK
 %token UNIX_SOCK_CHILDREN
 %token UNIX_TX_TIMEOUT
@@ -486,10 +483,6 @@ assign_stm:	DEBUG EQUAL NUMBER { debug=$3; }
 		| MEMLOG EQUAL error { yyerror("int value expected"); }
 		| SIP_WARNING EQUAL NUMBER { sip_warning=$3; }
 		| SIP_WARNING EQUAL error { yyerror("boolean value expected"); }
-		| FIFO EQUAL STRING { fifo=$3; }
-		| FIFO EQUAL error { yyerror("string value expected"); }
-		| FIFO_DIR EQUAL STRING { fifo_dir=$3; }
-		| FIFO_DIR EQUAL error { yyerror("string value expected"); }
 		| SOCK_MODE EQUAL NUMBER { sock_mode=$3; }
 		| SOCK_MODE EQUAL error { yyerror("int value expected"); }
 		| SOCK_USER EQUAL STRING { sock_user=$3; }
@@ -498,8 +491,6 @@ assign_stm:	DEBUG EQUAL NUMBER { debug=$3; }
 		| SOCK_GROUP EQUAL STRING { sock_group=$3; }
 		| SOCK_GROUP EQUAL ID     { sock_group=$3; }
 		| SOCK_GROUP EQUAL error { yyerror("string value expected"); }
-		| FIFO_DB_URL EQUAL STRING { fifo_db_url=$3; }
-		| FIFO_DB_URL EQUAL error  { yyerror("string value expected"); }
 		| UNIX_SOCK EQUAL STRING { unixsock_name=$3; }
 		| UNIX_SOCK EQUAL error { yyerror("string value expected"); }
 		| UNIX_SOCK_CHILDREN EQUAL NUMBER { unixsock_children=$3; }

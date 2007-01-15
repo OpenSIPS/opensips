@@ -34,7 +34,6 @@
 #include "mi/mi.h"
 #include "ut.h"
 #include "dprint.h"
-#include "fifo_server.h"
 #include "locking.h"
 #include "core_stats.h"
 #include "statistics.h"
@@ -42,9 +41,6 @@
 #ifdef STATISTICS
 
 static stats_collector *collector;
-
-static int fifo_get_stats( FILE *fifo, char *response_file );
-static int fifo_reset_stats( FILE *fifo, char *response_file );
 
 static struct mi_root *mi_get_stats(struct mi_root *cmd, void *param);
 static struct mi_root *mi_reset_stats(struct mi_root *cmd, void *param);
@@ -117,19 +113,6 @@ int init_stats_collector()
 		goto error;
 	}
 #endif
-
-	/* register FIFO commands */
-	if (register_fifo_cmd( fifo_get_stats, "get_statistics", 0)!=1) {
-		LOG(L_ERR,"ERROR:init_stats_collector: failed to register fifo "
-			"command\n");
-		goto error;
-	}
-
-	if (register_fifo_cmd( fifo_reset_stats, "reset_statistics", 0)!=1) {
-		LOG(L_ERR,"ERROR:init_stats_collector: failed to register fifo "
-			"command\n");
-		goto error;
-	}
 
 	/* register MI commands */
 	if (register_mi_mod( "statistics", mi_stat_cmds)<0) {
@@ -378,170 +361,6 @@ stat_var* get_stat( str *name )
 
 	return 0;
 }
-
-
-
-
-/***************************** FIFO STUFF ********************************/
-
-static void inline fifo_print_stat(FILE *rf, str *name)
-{
-	stat_var *stat;
-
-	stat = get_stat( name );
-	if (stat==0) {
-		fprintf(rf,"404 Statistic not found\n");
-		return;
-	}
-
-	fprintf(rf,"200 OK\n");
-	fprintf(rf,"%.*s:%.*s = %lu\n",
-		collector->amodules[stat->mod_idx].name.len,
-		collector->amodules[stat->mod_idx].name.s,
-		stat->name.len, stat->name.s,
-		get_stat_val(stat) );
-}
-
-
-
-static void inline fifo_print_module_stats(FILE *rf, module_stats *mods)
-{
-	stat_var *stat;
-	
-	fprintf(rf,"Module name = %.*s; statistics=%d\n",
-		mods->name.len, mods->name.s, mods->no);
-	for( stat=mods->head ; stat ; stat=stat->lnext) {
-		fprintf(rf,"%.*s:%.*s = %lu\n",
-			mods->name.len, mods->name.s,
-			stat->name.len, stat->name.s,
-			get_stat_val(stat) );
-	}
-}
-
-
-static void fifo_all_stats(FILE *rf)
-{
-	int i;
-
-	fprintf(rf,"200 OK\n");
-	fprintf(rf,"Total statistics = %d\n",collector->stats_no);
-	fprintf(rf,"Total modules = %d\n",collector->mod_no);
-
-	for( i=0 ; i<collector->mod_no ;i++ )
-		fifo_print_module_stats( rf, &collector->amodules[i] );
-}
-
-
-static void fifo_module_stats( FILE *rf, str *mod)
-{
-	module_stats *mods;
-
-	mods = get_stat_module( mod );
-	if (mods==0) {
-		fprintf(rf,"404 Module not found\n");
-		return;
-	}
-
-	fprintf(rf,"200 OK\n");
-	fifo_print_module_stats( rf, mods );
-}
-
-
-static int fifo_get_stats( FILE *fifo, char *reply_file )
-{
-#define MAX_FS_BUF 512
-	static char buf[MAX_FS_BUF];
-	FILE *rfifo;
-	str arg = {0, 0};
-	int n;
-	int is_mod;
-
-	if (read_line( buf, MAX_FS_BUF, fifo, &n)!=1) {
-		LOG(L_ERR,"ERROR:fifo_get_stats: failed to read argument from fifo\n");
-		fifo_reply( reply_file, "500 Read error\n");
-		goto error;
-	}
-
-	if (n==0 || (n==3 && strncasecmp(buf,"all",3)==0 ) ) {
-		is_mod = 0;
-		arg.s = 0;
-		arg.len = 0;
-	} else {
-		/* parse argument */
-		if ( buf[n-1]!=':' ) {
-			/* whole argument is just statistic's name */
-			is_mod = 0;
-		} else {
-			/* arg is a module name */
-			buf[--n]=0;
-			is_mod = 1;
-		}
-		arg.s = buf;
-		arg.len = n;
-	}
-
-	/* open reply fifo */
-	rfifo = open_reply_pipe( reply_file );
-	if (rfifo==0) {
-		LOG(L_ERR,"ERROR:fifo_get_stats: failed to open reply fifo\n");
-		goto error;
-	}
-
-	if (arg.len==0) {
-		/* write all statistics */
-		fifo_all_stats( rfifo );
-	} else if (is_mod) {
-		/* write module statistics */
-		fifo_module_stats( rfifo, &arg);
-	} else {
-		/* write statistic */
-		fifo_print_stat( rfifo, &arg);
-	}
-
-	fclose(rfifo);
-
-	return 0;
-error:
-	return -1;
-}
-
-
-
-static int fifo_reset_stats( FILE *fifo, char *reply_file )
-{
-#define MAX_FS_BUF 512
-	static char buf[MAX_FS_BUF];
-	stat_var *stat;
-	str name;
-
-	if (read_line( buf, MAX_FS_BUF, fifo, &name.len)!=1) {
-		LOG(L_ERR,"ERROR:fifo_reset_stats: failed to read arg. from fifo\n");
-		fifo_reply( reply_file, "500 Read error\n");
-		goto error;
-	}
-
-	if (name.len==0) {
-		LOG(L_ERR,"ERROR:fifo_reset_stats: no arg found\n");
-		fifo_reply( reply_file, "400 Statistic name expected\n");
-		goto error;
-	}
-	name.s = buf;
-
-	stat = get_stat( &name );
-	if (stat==0) {
-		fifo_reply( reply_file,"404 Statistic not found\n");
-		goto error;
-	}
-
-	reset_stat( stat );
-	fifo_reply( reply_file,"200 OK\n");
-	return 0;
-error:
-	return -1;
-}
-
-
-
 
 
 

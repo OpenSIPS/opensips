@@ -221,13 +221,10 @@ CHILDREN children
 CHECK_VIA	check_via
 MEMLOG		"memlog"|"mem_log"
 SIP_WARNING sip_warning
-FIFO fifo
-FIFO_DIR  fifo_dir
-SOCK_MODE "fifo_mode"|"sock_mode"|"file_mode"
-SOCK_USER "fifo_user"|"sock_user"
-SOCK_GROUP "fifo_group"|"sock_group"
-FIFO_DB_URL fifo_db_url
 UNIX_SOCK unix_sock
+SOCK_MODE "sock_mode"
+SOCK_USER "sock_user"
+SOCK_GROUP "sock_group"
 UNIX_SOCK_CHILDREN unix_sock_children
 UNIX_TX_TIMEOUT unix_tx_timeout
 SERVER_SIGNATURE server_signature
@@ -476,9 +473,6 @@ EAT_ABLE	[\ \t\b\r]
 									return TLS_CLIENT_DOMAIN; }
 <INITIAL>{TLS_CLIENT_DOMAIN_AVP}	{ count(); yylval.strval=yytext;
 										return TLS_CLIENT_DOMAIN_AVP; }
-<INITIAL>{FIFO}	{ count(); yylval.strval=yytext; return FIFO; }
-<INITIAL>{FIFO_DIR}	{ count(); yylval.strval=yytext; return FIFO_DIR; }
-<INITIAL>{FIFO_DB_URL}	{ count(); yylval.strval=yytext; return FIFO_DB_URL; }
 <INITIAL>{SOCK_MODE}	{ count(); yylval.strval=yytext; return SOCK_MODE; }
 <INITIAL>{SOCK_USER}	{ count(); yylval.strval=yytext; return SOCK_USER; }
 <INITIAL>{SOCK_GROUP}	{ count(); yylval.strval=yytext; return SOCK_GROUP; }
