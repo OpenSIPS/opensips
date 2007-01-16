@@ -32,6 +32,7 @@
 #
 
 #TLS=1
+#FREERADIUS=1
 auto_gen=lex.yy.c cfg.tab.c   #lexx, yacc etc
 
 #include  source related defs
@@ -112,7 +113,7 @@ NAME=$(MAIN_NAME)
 
 #export relevant variables to the sub-makes
 export DEFS PROFILE CC LD MKDEP MKTAGS CFLAGS LDFLAGS MOD_CFLAGS MOD_LDFLAGS 
-export LIBS
+export LIBS RADIUS_LIB
 export LEX YACC YACC_FLAGS
 export PREFIX LOCALBASE
 # export relevant variables for recursive calls of this makefile 

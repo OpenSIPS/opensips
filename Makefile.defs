@@ -377,6 +377,13 @@ DEFS+= $(extra_defs) \
 # use make mode=debug all instead. Anyway no by default openser 
 # is  compiled w/ debugging symbols in all cases (-g). --andrei
 
+ifneq ($(FREERADIUS),)
+	DEFS+= -DUSE_FREERADIUS
+	RADIUS_LIB= -lfreeradius-client
+else
+	RADIUS_LIB= -lradiusclient-ng
+endif
+
 ifneq ($(TLS),)
 	DEFS+= -DUSE_TLS
 endif

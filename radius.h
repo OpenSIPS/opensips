@@ -25,8 +25,15 @@
  *
  */
 
-#ifndef _ACC_DICT_H
-#define _ACC_DICT_H
+#ifndef _RADIUS_CORE_H
+#define _RADIUS_CORE_H
+
+#ifndef USE_FREERADIUS
+	#include <radiusclient-ng.h>
+#else
+	#include <freeradius-client.h>
+#endif
+
 
 struct attr {
 	const char *n;
