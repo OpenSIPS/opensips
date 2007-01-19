@@ -131,6 +131,11 @@ typedef struct _xl_elem
 	struct _xl_elem *next;
 } xl_elem_t, *xl_elem_p;
 
+typedef struct _itemname_list {
+	xl_spec_t sname;
+	struct _itemname_list *next;
+} itemname_list_t, *itemname_list_p;
+
 
 int xl_elem_free_all(xl_elem_p list);
 char* xl_parse_spec(char *s, xl_spec_p sp, int flags);
@@ -144,6 +149,9 @@ int xl_get_avp_name(struct sip_msg* msg, xl_spec_p sp, int_str *avp_name,
 		unsigned short *name_type);
 int xl_print_spec(struct sip_msg* msg, xl_spec_p sp, char *buf, int *len);
 int xl_printf(struct sip_msg* msg, xl_elem_p list, char *buf, int *len);
+
+itemname_list_t* parse_itemname_list(char *s, int type);
+
 
 int xl_add_extra(char *name, item_func_t fct, int type, xl_param_t *param);
 int xl_add_extra_spec(str *name, xl_spec_p sp);

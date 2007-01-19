@@ -2011,6 +2011,7 @@ char* xl_parse_vname(char *s, xl_spec_p e, int flags)
 			
 			/* dynamic name */
 			e->dp.itf = e0.itf;
+			e->flags |= e0.flags;
 			memcpy(&(e->p), &(e0.p), sizeof(xl_param_t));
 			p = xl_parse_index(p, &(e->dp.ind));
 			if(p==NULL)
@@ -2034,10 +2035,10 @@ char* xl_parse_vname(char *s, xl_spec_p e, int flags)
 		e->type = XL_HDR;
 		if(e->flags&XL_DPARAM)
 			DBG("xl_parse_vname: hdr double reference (%p/%p) (%.*s)"
-					" (%d) (%d/%d)\n", e->itf, e->dp.itf,
+					" (%d) (%d/0x%X)\n", e->itf, e->dp.itf,
 					(e->p.val.s)?e->p.val.len:0,
 					(e->p.val.s)?e->p.val.s:"",
-					e->p.val.len, e->p.ind, e->p.ind);
+					e->p.val.len, e->p.ind, e->flags);
 		goto done;
 	} else {
 		/* avp  - we expect s:, i:, letter or $ */
@@ -2057,6 +2058,7 @@ char* xl_parse_vname(char *s, xl_spec_p e, int flags)
 			{
 				/* dynamic name */
 				e->dp.itf = e0.itf;
+				e->flags |= e0.flags;
 				memcpy(&(e->p), &(e0.p), sizeof(xl_param_t));
 				p0 = p;
 				p = xl_parse_index(p, &(e->dp.ind));
@@ -2101,10 +2103,10 @@ char* xl_parse_vname(char *s, xl_spec_p e, int flags)
 		e->type = XL_AVP;
 		if(e->flags&XL_DPARAM)
 			DBG("xl_parse_vname: avp double reference (%p/%p) (%.*s)"
-					" (%d) (%d/%d)\n", e->itf, e->dp.itf,
+					" (%d) (%d/0x%d)\n", e->itf, e->dp.itf,
 					(e->p.val.s)?e->p.val.len:0,
 					(e->p.val.s)?e->p.val.s:"",
-					e->p.val.len, e->p.ind, e->p.ind);
+					e->p.val.len, e->p.ind, e->flags);
 		goto done;
 	}
 
@@ -2701,7 +2703,7 @@ int xl_get_spec_value(struct sip_msg* msg, xl_spec_p sp, xl_value_t *value,
 			return -1;
 		}
 		memset(&tv, 0, sizeof(xl_value_t));
-		(*sp->dp.itf)(msg, &tv, &(sp->p), flags);
+		(*sp->dp.itf)(msg, &tv, &(sp->p), (flags|(sp->flags&0xffff0000)));
 		if(tv.flags&XL_VAL_NULL)
 			return xl_get_null(msg, value, &(sp->p), flags);
 		memset(&tp, 0, sizeof(xl_param_t));
@@ -2854,5 +2856,68 @@ int xl_elem_free_all(xl_elem_p log)
 		pkg_free(t);
 	}
 	return 0;
+}
+
+itemname_list_t* parse_itemname_list(char *s, int type)
+{
+	itemname_list_t* head = NULL;
+	itemname_list_t* al = NULL;
+	char *p;
+	xl_spec_t spec;
+
+	if(s==NULL)
+	{
+		LOG(L_ERR, "parse_itemname_list: error - bad parameters\n");
+		return NULL;
+	}
+
+	p = s;
+	while(*p)
+	{
+		while(*p && (*p==' '||*p=='\t'||*p==','||*p==';'))
+			p++;
+		if(*p=='\0')
+		{
+			if(head==NULL)
+				LOG(L_ERR,
+				"parse_itemname_list: error - wrong item name list [%s]\n", s);
+			return head;
+		}
+		p = xl_parse_spec(p, &spec,
+				XL_THROW_ERROR|XL_DISABLE_MULTI|XL_DISABLE_COLORS);
+		if(p==NULL || (type && spec.type!=type))
+		{
+			LOG(L_ERR,
+			"parse_itemname_list: error - wrong item name list [%s]!\n",
+				s);
+			goto error;
+		}
+		al = (itemname_list_t*)pkg_malloc(sizeof(itemname_list_t));
+		if(al==NULL)
+		{
+			LOG(L_ERR, "parse_itemname_list: error - no more memory!\n");
+			goto error;
+		}
+		memset(al, 0, sizeof(itemname_list_t));
+		memcpy(&al->sname, &spec, sizeof(xl_spec_t));
+
+		if(head==NULL)
+			head = al;
+		else {
+			al->next = head;
+			head = al;
+		}
+	}
+
+	return head;
+
+error:
+	while(head)
+	{
+		al = head;
+		head=head->next;
+		pkg_free(al);
+	}
+	return NULL;
 }
 
