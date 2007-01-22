@@ -5,7 +5,7 @@
 # Environment variables:
 #   PREFIX, LOCALBASE, BASEDIR
 #   INSTALL, TAR , CC, LEX, YACC,
-#   CPU, CC_EXTRA_OPTS,
+#   CPU, CC_EXTRA_OPTS, LD_EXTRA_OPTS
 #   exclude_modules, skip_modules, include_modules
 #   extra_defs
 #
@@ -892,6 +892,7 @@ endif   # CFLAGS not set
 
 CFLAGS+= $(CC_EXTRA_OPTS)
 
+LD_EXTRA_OPTS ?=
 
 # setting LDFLAGS
 ifeq	($(CC_NAME), gcc)
@@ -1150,6 +1151,8 @@ ifeq ($(YACC),)
 	YACC=$(DEFAULT_YACC)
 endif
 YACC_FLAGS=-d -b cfg
+
+LDFLAGS+= $(LD_EXTRA_OPTS)
 
 ifneq (,$(findstring CYGWIN, $(OS)))
 	#cygwin is the same as common
