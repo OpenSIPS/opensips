@@ -111,6 +111,8 @@ extern int mcast_ttl;
 
 extern int tos;
 
+extern int disable_dns_failover;
+
 extern int cfg_errors;
 
 extern unsigned long shm_mem_size;

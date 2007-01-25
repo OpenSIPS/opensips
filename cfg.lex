@@ -55,6 +55,7 @@
  *  2005-11-29  added serialize_branches and next_branches (bogdan)
  *  2006-12-22  functions for script and branch flags added (bogdan)
  *  2007-01-11  auto_aliases option added (bogdan)
+ *  2007-01-25  disable_dns_failover option added (bogdan)
  */
 
 
@@ -267,6 +268,7 @@ OPEN_FD_LIMIT		"open_files_limit"
 MCAST_LOOPBACK		"mcast_loopback"
 MCAST_TTL			"mcast_ttl"
 TOS					"tos"
+DISABLE_DNS_FAILOVER "disable_dns_failover"
 
 MPATH	mpath
 LOADMODULE	loadmodule
@@ -497,6 +499,8 @@ EAT_ABLE	[\ \t\b\r]
 									return MCAST_TTL; }
 <INITIAL>{TOS}				{	count(); yylval.strval=yytext;
 									return TOS; }
+<INITIAL>{DISABLE_DNS_FAILOVER}	{	count(); yylval.strval=yytext;
+									return DISABLE_DNS_FAILOVER; }
 
 <INITIAL>{MPATH}	   { count(); yylval.strval=yytext; return MPATH; }
 <INITIAL>{LOADMODULE}  { count(); yylval.strval=yytext; return LOADMODULE; }

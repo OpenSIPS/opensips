@@ -40,9 +40,10 @@
  *               send() (bogdan)
  *  2006-12-22  functions for script and branch flags added (bogdan)
  */
+#define ACTION_H "action.h"
 
 
-#include "action.h"
+#include ACTION_H
 #include "config.h"
 #include "error.h"
 #include "dprint.h"
@@ -273,27 +274,17 @@ int do_action(struct action* a, struct sip_msg* msg)
 			
 			p=(struct proxy_l*)a->p1.data;
 			
-			if (p->ok==0){
-				if (p->host.h_addr_list[p->addr_idx+1])
-					p->addr_idx++;
-				else 
-					p->addr_idx=0;
-				p->ok=1;
-			}
 			ret=hostent2su(to, &p->host, p->addr_idx,
 						(p->port)?p->port:SIP_PORT );
 			if (ret==0){
-				p->tx++;
-				p->tx_bytes+=msg->len;
 				ret = msg_send(0/*send_sock*/, p->proto, to, 0/*id*/,
 						msg->buf, msg->len);
+				if (ret!=0 && p->host.h_addr_list[p->addr_idx+1])
+					p->addr_idx++;
 			}
 			pkg_free(to);
-			if (ret<0){
-				p->errors++;
-				p->ok=0;
-			}else ret=1;
-			
+			if (ret>=0)
+				ret=1;
 			break;
 		case LOG_T:
 			if ((a->p1_type!=NUMBER_ST)|(a->p2_type!=STRING_ST)){

@@ -68,6 +68,7 @@
  *              send() (bogdan)
  *  2006-12-22  functions for script and branch flags added (bogdan)
  *  2007-01-11  auto_aliases option added (bogdan)
+ *  2007-01-25  disable_dns_failover option added (bogdan)
  */
 
 
@@ -298,6 +299,7 @@ extern int line;
 %token MCAST_LOOPBACK
 %token MCAST_TTL
 %token TOS
+%token DISABLE_DNS_FAILOVER
 
 
 
@@ -886,6 +888,10 @@ assign_stm:	DEBUG EQUAL NUMBER { debug=$3; }
 								}
 							}
 		| MPATH EQUAL error  { yyerror("string value expected"); }
+		| DISABLE_DNS_FAILOVER EQUAL NUMBER {
+										disable_dns_failover=$3;
+									}
+		| DISABLE_DNS_FAILOVER error { yyerror("boolean value expected"); }
 		| error EQUAL { yyerror("unknown config variable"); }
 	;
 

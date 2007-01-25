@@ -1,7 +1,7 @@
 /* $Id$
  *
  * Copyright (C) 2001-2003 FhG Fokus
- * Copyright (C) 2005-2006 Voice Sistem S.R.L.
+ * Copyright (C) 2005-2007 Voice Sistem S.R.L.
  *
  * This file is part of openser, a free SIP server.
  *
@@ -23,6 +23,7 @@
  * -------
  *  2003-02-13  added proto to sip_resolvehost, for SRV lookups (andrei)
  *  2003-07-03  default port value set according to proto (andrei)
+ *  2007-01-25  support for DNS failover added (bogdan)
  */ 
 
 
@@ -32,13 +33,22 @@
 #include <resolv.h>
 #include <string.h>
 
+#include "mem/mem.h"
+#include "mem/shm_mem.h"
 #include "resolve.h"
 #include "dprint.h"
-#include "mem/mem.h"
 #include "ip_addr.h"
 #include "globals.h"
 
 
+/* stuff related to DNS failover */
+#define DNS_NODE_SRV   1
+#define DNS_NODE_A     2
+
+struct dns_val {
+	unsigned int ival;
+	char *sval;
+};
 
 /* mallocs for local stuff */
 #define local_malloc pkg_malloc
@@ -589,138 +599,6 @@ not_found:
 }
 
 
-#if 0
-/* resolves a host name trying SRV lookup if *port==0 or normal A/AAAA lookup
- * if *port!=0.
- * when performing SRV lookup (*port==0) it will use proto to look for
- * tcp or udp hosts, otherwise proto is unused; if proto==0 => no SRV lookup
- * returns: hostent struct & *port filled with the port from the SRV record;
- *  0 on error
- */
-struct hostent* sip_resolvehost_old(str* name, unsigned short* port, int proto)
-{
-	struct hostent* he;
-	struct rdata* head;
-	struct rdata* l;
-	struct srv_rdata* srv;
-	struct ip_addr* ip;
-	static char tmp[MAX_DNS_NAME]; /* tmp. buff. for SRV lookups */
-
-	/* try SRV if no port specified (draft-ietf-sip-srv-06) */
-	if ((port)&&(*port==0)){
-		*port=(proto==PROTO_TLS)?SIPS_PORT:SIP_PORT; /* just in case we don't
-														find another */
-		if ((name->len+SRV_MAX_PREFIX_LEN+1)>MAX_DNS_NAME){
-			LOG(L_WARN, "WARNING: sip_resolvehost: domain name too long (%d),"
-						" unable to perform SRV lookup\n", name->len);
-		}else{
-			/* check if it's an ip address */
-			if ( ((ip=str2ip(name))!=0)
-#ifdef	USE_IPV6
-				  || ((ip=str2ip6(name))!=0)
-#endif
-				){
-				/* we are lucky, this is an ip address */
-				return ip_addr2he(name,ip);
-			}
-			
-			switch(proto){
-				case PROTO_NONE: /* no proto specified, use udp */
-					goto skip_srv;
-				case PROTO_UDP:
-					memcpy(tmp, SRV_UDP_PREFIX, SRV_UDP_PREFIX_LEN);
-					memcpy(tmp+SRV_UDP_PREFIX_LEN, name->s, name->len);
-					tmp[SRV_UDP_PREFIX_LEN + name->len] = '\0';
-					break;
-				case PROTO_TCP:
-					memcpy(tmp, SRV_TCP_PREFIX, SRV_TCP_PREFIX_LEN);
-					memcpy(tmp+SRV_TCP_PREFIX_LEN, name->s, name->len);
-					tmp[SRV_TCP_PREFIX_LEN + name->len] = '\0';
-					break;
-				case PROTO_TLS:
-					memcpy(tmp, SRV_TLS_PREFIX, SRV_TLS_PREFIX_LEN);
-					memcpy(tmp+SRV_TLS_PREFIX_LEN, name->s, name->len);
-					tmp[SRV_TLS_PREFIX_LEN + name->len] = '\0';
-					break;
-				default:
-					LOG(L_CRIT, "BUG: sip_resolvehost: unknown proto %d\n",
-							proto);
-					return 0;
-			}
-
-			head=get_record(tmp, T_SRV);
-			for(l=head; l; l=l->next){
-				if (l->type!=T_SRV) continue; /*should never happen*/
-				srv=(struct srv_rdata*) l->rdata;
-				if (srv==0){
-					LOG(L_CRIT, "sip_resolvehost: BUG: null rdata\n");
-					free_rdata_list(head);
-					break;
-				}
-				he=resolvehost(srv->name);
-				if (he!=0){
-					/* we found it*/
-					DBG("sip_resolvehost: SRV(%s) = %s:%d\n",
-							tmp, srv->name, srv->port);
-					*port=srv->port;
-					free_rdata_list(head); /*clean up*/
-					return he;
-				}
-			}
-			if (head) free_rdata_list(head); /*clean up*/
-			DBG("sip_resolvehost: no SRV record found for %.*s," 
-					" trying 'normal' lookup...\n", name->len, name->s);
-		}
-	}
-skip_srv:
-	if (name->len >= MAX_DNS_NAME) {
-		LOG(L_ERR, "sip_resolvehost: domain name too long\n");
-		return 0;
-	}
-	memcpy(tmp, name->s, name->len);
-	tmp[name->len] = '\0';
-	he=resolvehost(tmp);
-	return he;
-}
-#endif
-
-
-
-static inline struct hostent* do_srv_lookup(char *name, unsigned short* port)
-{
-	struct hostent* he;
-	struct srv_rdata* srv;
-	struct rdata *head;
-	struct rdata *rd;
-
-	/* perform SRV lookup */
-	head = get_record( name, T_SRV);
-	for( rd=head; rd ; rd=rd->next ) {
-		if (rd->type!=T_SRV)
-			continue; /*should never happen*/
-		srv = (struct srv_rdata*) rd->rdata;
-		if (srv==0) {
-			LOG(L_CRIT, "BUG:do_srv_lookup: null rdata\n");
-			free_rdata_list(head);
-			return 0;
-		}
-		he = resolvehost(srv->name, 1);
-		if ( he!=0 ) {
-			DBG("DEBUG:do_srv_lookup: SRV(%s) = %s:%d\n",
-				name, srv->name, srv->port);
-			*port=srv->port;
-			free_rdata_list(head);
-			return he;
-		}
-	}
-	if (head)
-		free_rdata_list(head);
-	return 0;
-}
-
-
-#define naptr_prio(_naptr) \
-	((((_naptr)->order) << 16) + ((_naptr)->pref))
 
 static inline int get_naptr_proto(struct naptr_rdata *n)
 {
@@ -744,6 +622,127 @@ static inline int get_naptr_proto(struct naptr_rdata *n)
 	return PROTO_NONE;
 }
 
+
+
+static inline int srv2dns_node(struct rdata *head, struct dns_node **dn)
+{
+	unsigned int mem;
+	unsigned int l;
+	struct rdata *r;
+	struct dns_node *n;
+	char *p;
+
+	/* calculate how much mem is required */
+	mem = sizeof(struct dns_node);
+	for( r=head,l=0 ; r ; r=r->next,l++ )
+		mem +=sizeof(struct dns_val) + get_naptr(r)->repl_len + 1;
+
+	n = (struct dns_node*)shm_malloc(mem);
+	if (n==NULL) {
+		LOG(L_ERR,"ERROR:srv2dns_node: no more shm mem (%d)\n", mem);
+		return -1;
+	}
+
+	n->type = DNS_NODE_SRV;
+	n->size = mem;
+	n->idx = 0;
+	n->no = l;
+	n->kids = *dn;
+	*dn = n;
+
+	n->vals = (struct dns_val*)(n+1);
+	p = (char*)(n->vals+l);
+	for( r=head,l=0 ; r ; r=r->next,l++ ) {
+		n->vals[l].ival = get_naptr_proto( get_naptr(r) );
+		n->vals[l].sval = p;
+		memcpy( p, get_naptr(r)->repl, get_naptr(r)->repl_len );
+		p += get_naptr(r)->repl_len;
+		*(p++) = 0;
+	}
+	return 0;
+}
+
+
+static inline int a2dns_node(struct rdata *head, struct dns_node **dn)
+{
+	unsigned int mem;
+	unsigned int l;
+	struct rdata *r;
+	struct dns_node *n;
+	char *p;
+
+	/* calculate how much mem is required */
+	mem = sizeof(struct dns_node);
+	for( r=head,l=0 ; r ; r=r->next,l++ ) {
+		get_srv(r)->name_len = strlen(get_srv(r)->name);
+		mem +=sizeof(struct dns_val) + get_srv(r)->name_len + 1;
+		}
+
+	n = (struct dns_node*)shm_malloc(mem);
+	if (n==NULL) {
+		LOG(L_ERR,"ERROR:a2dns_node: no more shm mem (%d)\n", mem);
+		return -1;
+	}
+
+	n->type = DNS_NODE_A;
+	n->size = mem;
+	n->idx = 0;
+	n->no = l;
+	n->kids = 0;
+	*dn = n;
+
+	n->vals = (struct dns_val*)(n+1);
+	p = (char*)(n->vals+l);
+	for( r=head,l=0 ; r ; r=r->next,l++ ) {
+		n->vals[l].ival = get_srv(r)->port;
+		n->vals[l].sval = p;
+		memcpy( p, get_srv(r)->name, get_srv(r)->name_len );
+		p += get_srv(r)->name_len;
+		*(p++) = 0;
+	}
+
+	return 0;
+}
+
+
+static inline struct hostent* do_srv_lookup(char *name,
+							unsigned short* port, struct dns_node **dn)
+{
+	struct hostent *he;
+	struct srv_rdata *srv;
+	struct rdata *head;
+	struct rdata *rd;
+
+	/* perform SRV lookup */
+	head = get_record( name, T_SRV);
+	for( rd=head; rd ; rd=rd->next ) {
+		if (rd->type!=T_SRV)
+			continue; /*should never happen*/
+		srv = (struct srv_rdata*) rd->rdata;
+		if (srv==0) {
+			LOG(L_CRIT, "BUG:do_srv_lookup: null rdata\n");
+			free_rdata_list(head);
+			return 0;
+		}
+		he = resolvehost(srv->name, 1);
+		if ( he!=0 ) {
+			DBG("DEBUG:do_srv_lookup: SRV(%s) = %s:%d\n",
+				name, srv->name, srv->port);
+			*port=srv->port;
+			if (dn && rd->next && a2dns_node( rd->next, dn)==-1)
+					*dn = 0;
+			free_rdata_list(head);
+			return he;
+		}
+	}
+	if (head)
+		free_rdata_list(head);
+	return 0;
+}
+
+
+#define naptr_prio(_naptr) \
+	((((_naptr)->order) << 16) + ((_naptr)->pref))
 
 static inline void filter_and_sort_naptr( struct rdata** head_p,
 									struct rdata** filtered_p, int is_sips)
@@ -835,7 +834,7 @@ skip0:
 	*filtered_p = out;
 }
 
-
+#if 0
 struct hostent* sip_resolvehost(str* name, unsigned short* port, int *proto,
 																int is_sips)
 {
@@ -981,6 +980,334 @@ err_proto:
 	LOG(L_ERR, "ERROR:sip_resolvehost: unsupported proto %d\n",
 		*proto);
 	return 0;
+}
+#endif
+
+
+
+struct hostent* sip_resolvehost( str* name, unsigned short* port, int *proto,
+									int is_sips, struct dns_node **dn)
+{
+	static char tmp[MAX_DNS_NAME];
+	struct ip_addr *ip;
+	struct rdata *head;
+	struct rdata *rd;
+	struct hostent* he;
+
+	if ( (is_sips)
+#ifdef USE_TLS
+	&& (tls_disable)
+#endif
+	) {
+		LOG(L_ERR, "ERROR:sip_resolvehost2: cannot resolve SIPS as no TLS "
+				"support is configured\n");
+		return 0;
+	}
+
+	if (dn)
+		*dn = 0;
+
+	/* check if it's an ip address */
+	if ( ((ip=str2ip(name))!=0)
+#ifdef USE_IPV6
+	|| ((ip=str2ip6(name))!=0)
+#endif
+	){
+		/* we are lucky, this is an ip address */
+		if (proto && *proto==PROTO_NONE)
+			*proto = (is_sips)?PROTO_TLS:PROTO_UDP;
+		if (port && *port==0)
+			*port = (is_sips||((*proto)==PROTO_TLS))?SIPS_PORT:SIP_PORT;
+		return ip_addr2he(name,ip);
+	}
+
+	/* do we have a port? */
+	if ( !port || (*port)!=0 ) {
+		/* have port -> no NAPTR, no SRV lookup, just A record lookup */
+		DBG("DEBUG:sip_resolvehost2: has port -> do A record lookup!\n");
+		/* set default PROTO if not set */
+		if (proto && *proto==PROTO_NONE)
+			*proto = (is_sips)?PROTO_TLS:PROTO_UDP;
+		goto do_a;
+	}
+
+	/* no port... what about proto? */
+	if ( !proto || (*proto)!=PROTO_NONE ) {
+		/* have proto, but no port -> do SRV lookup */
+		DBG("DEBUG:sip_resolvehost2: no port, has proto -> do SRV lookup!\n");
+		if (is_sips && (*proto)!=PROTO_TLS) {
+			LOG(L_ERR, "ERROR:sip_resolvehost2: forced proto %d not matching "
+				"sips uri\n", *proto);
+			return 0;
+		}
+		goto do_srv;
+	}
+
+	DBG("DEBUG:sip_resolvehost2: no port, no proto -> do NAPTR lookup!\n");
+	/* no proto, no port -> do NAPTR lookup */
+	if (name->len >= MAX_DNS_NAME) {
+		LOG(L_ERR, "ERROR:sip_resolvehost2: domain name too long\n");
+		return 0;
+	}
+	memcpy(tmp, name->s, name->len);
+	tmp[name->len] = '\0';
+	/* do NAPTR lookup */
+	head = get_record( tmp, T_NAPTR);
+	if (head) {
+		/* filter and sort the records */
+		filter_and_sort_naptr( &head, &rd, is_sips);
+		/* free what is useless */
+		free_rdata_list( rd );
+		/* process the NAPTR records */
+		for( rd=head ; rd ; rd=rd->next ) {
+			*proto = get_naptr_proto( get_naptr(rd) );
+			he = do_srv_lookup( get_naptr(rd)->repl, port, dn);
+			if ( he ) {
+				DBG("DEBUG:sip_resolvehost2: found!\n");
+				if (dn) {
+					/* save the state of the resolver for failure cases */
+					if (*dn==NULL)
+						rd = rd->next;
+					if (rd && srv2dns_node( rd, dn)!=0) {
+						shm_free(*dn);
+						*dn = 0;
+					}
+				}
+				free_rdata_list(head);
+				return he;
+			}
+		}
+		if (head)
+			free_rdata_list(head);
+	}
+	DBG("DEBUG:sip_resolvehost2: no valid NAPTR record found for %.*s," 
+		" trying direct SRV lookup...\n", name->len, name->s);
+	*proto = (is_sips)?PROTO_TLS:PROTO_UDP;
+
+do_srv:
+	if ((name->len+SRV_MAX_PREFIX_LEN+1)>MAX_DNS_NAME) {
+		LOG(L_WARN, "WARNING:sip_resolvehost2: domain name too long (%d),"
+			" unable to perform SRV lookup\n", name->len);
+		/* set defaults */
+		*port = (is_sips)?SIPS_PORT:SIP_PORT;
+		goto do_a;
+	}
+
+	switch (*proto) {
+		case PROTO_UDP:
+			memcpy(tmp, SRV_UDP_PREFIX, SRV_UDP_PREFIX_LEN);
+			memcpy(tmp+SRV_UDP_PREFIX_LEN, name->s, name->len);
+			tmp[SRV_UDP_PREFIX_LEN + name->len] = '\0';
+			break;
+#ifdef USE_TCP
+		case PROTO_TCP:
+			if (tcp_disable) goto err_proto;
+			memcpy(tmp, SRV_TCP_PREFIX, SRV_TCP_PREFIX_LEN);
+			memcpy(tmp+SRV_TCP_PREFIX_LEN, name->s, name->len);
+			tmp[SRV_TCP_PREFIX_LEN + name->len] = '\0';
+			break;
+#endif
+#ifdef USE_TLS
+		case PROTO_TLS:
+			if (tls_disable) goto err_proto;
+			memcpy(tmp, SRV_TLS_PREFIX, SRV_TLS_PREFIX_LEN);
+			memcpy(tmp+SRV_TLS_PREFIX_LEN, name->s, name->len);
+			tmp[SRV_TLS_PREFIX_LEN + name->len] = '\0';
+			break;
+#endif
+		default:
+			goto err_proto;
+	}
+
+	he = do_srv_lookup( tmp, port, dn);
+	if (he)
+		return he;
+	
+	DBG("DEBUG:sip_resolvehost2: no valid SRV record found for %s," 
+		" trying A record lookup...\n", tmp);
+	/* set default port */
+	*port = (is_sips||((*proto)==PROTO_TLS))?SIPS_PORT:SIP_PORT;
+
+do_a:
+	/* do A record lookup */
+	if (name->len >= MAX_DNS_NAME) {
+		LOG(L_ERR, "ERROR:sip_resolvehost2: domain name too long\n");
+		return 0;
+	}
+	memcpy(tmp, name->s, name->len);
+	tmp[name->len] = '\0';
+	he = resolvehost(tmp,1);
+	return he;
+err_proto:
+	LOG(L_ERR, "ERROR:sip_resolvehost: unsupported proto %d\n",
+		*proto);
+	return 0;
+}
+
+
+
+static inline struct hostent* get_next_he(struct dns_node **node,
+							unsigned short *proto, unsigned short *port)
+{
+	struct hostent  *he;
+	struct dns_node *n;
+	struct dns_node *last_srv;
+	struct dns_node *dn;
+
+	if (node==NULL || *node==NULL)
+		return 0;
+
+	n = *node;
+	last_srv = NULL;
+	he = 0;
+
+	do {
+		switch (n->type) {
+			case DNS_NODE_SRV:
+				last_srv = n;
+				if (n->kids==NULL) {
+					/* need to resolve this SRV and get all the AAA records */
+					do {
+						dn = 0;
+						he = do_srv_lookup( n->vals[n->idx].sval, port, &dn);
+						if (he) {
+							*proto = n->vals[n->idx].ival;
+							break;
+						}
+						n->idx++;
+					} while(n->idx<=n->no);
+					if (he==NULL || (he && n->idx+1==n->no) ) {
+						/* colapse the SRV node */
+						shm_free(n);
+						*node = dn;
+						return he;
+					}
+					n->kids = dn;
+					return he;
+				}
+				/* go for the AAA records */
+				n = n->kids;
+				break;
+			case DNS_NODE_A:
+				/* do resolve until success */
+				do {
+					he = resolvehost(n->vals[n->idx].sval,1);
+					if (he) {
+						*port = n->vals[n->idx].ival;
+						break;
+					}
+					n->idx++;
+				}while(n->idx<n->no);
+				/* found something? */
+				if (he==NULL || (he && n->idx+1==n->no)) {
+					shm_free(n);
+					/* any SRV level? */
+					if (last_srv==NULL) {
+						/* nothing left */
+						*node = 0;
+						return he;
+					}
+					last_srv->kids = 0;
+					/* increase the index on the SRV level */
+					if (++last_srv->idx<last_srv->no)
+						return he;
+					/* colapse the SRV node also */
+					shm_free(last_srv);
+					*node = 0;
+				}
+				return he;
+				break;
+			default:
+				LOG(L_CRIT,"BUG:dns_get_next_ip: unknown %d node type\n",
+					n->type);
+				return 0;
+		}
+	} while(1);
+}
+
+
+
+void free_dns_res( struct proxy_l *p )
+{
+	if (p==NULL || p->dn==NULL)
+		return;
+
+	if (p->dn->kids)
+		shm_free(p->dn->kids);
+	shm_free(p->dn);
+	p->dn = 0;
+}
+
+
+
+int get_next_su(struct proxy_l *p, union sockaddr_union* su)
+{
+	struct hostent *he;
+	int n;
+
+	/* any more available IPs in he ? */
+	if ( p->host.h_addr_list[++p->addr_idx] ) {
+		/* yes -> return the IP*/
+		hostent2su( su, &p->host, p->addr_idx, (p->port)?p->port:SIP_PORT);
+		return 0;
+	}
+
+	/* get a new he from DNS */
+	he = get_next_he( &p->dn, (unsigned short*)&p->proto, &p->port);
+	if (he==NULL)
+		return -1;
+
+	/* replace the current he */
+	if (p->flags&PROXY_SHM_FLAG) {
+		free_shm_hostent( &p->host );
+		n = hostent_shm_cpy(&(p->host), he);
+	} else {
+		free_hostent( &p->host );
+		n = hostent_cpy(&(p->host), he);
+	}
+	if (n!=0) {
+		free_dns_res( p );
+		return -1;
+	}
+
+	hostent2su( su, &p->host, 0, (p->port)?p->port:SIP_PORT);
+	p->addr_idx = 0;
+	return 0;
+}
+
+static inline struct dns_node *dns_node_copy(struct dns_node *s)
+{
+	struct dns_node *d;
+	unsigned int i;
+
+	d = (struct dns_node*)shm_malloc(s->size);
+	if (d==NULL) {
+		LOG(L_ERR,"ERROR:dns_node_copy: no more shm mem\n");
+		return 0;
+	}
+	memcpy( d, s, s->size);
+	d->vals = (struct dns_val*)((char*)d + ((char*)s->vals-(char*)s));
+	for( i=0 ; i<s->no ; i++ )
+		d->vals[i].sval = (char*)d + ((char*)s->vals[i].sval-(char*)s);
+	return d;
+}
+
+
+struct dns_node *dns_res_copy(struct dns_node *s)
+{
+	struct dns_node *d;
+
+	d = dns_node_copy(s);
+	if (d==NULL)
+		return 0;
+	if (s->kids) {
+		d->kids = dns_node_copy(s->kids);
+		if (d->kids==NULL) {
+			shm_free(d);
+			return 0;
+		}
+	}
+	return d;
 }
 
 

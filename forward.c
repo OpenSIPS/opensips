@@ -297,41 +297,14 @@ found:
 
 int forward_request( struct sip_msg* msg, struct proxy_l * p)
 {
+	union sockaddr_union to;
 	unsigned int len;
 	char* buf;
-	union sockaddr_union* to;
 	struct socket_info* send_sock;
+	struct socket_info* last_sock;
 	str *branch;
 
-	to=0;
 	buf=0;
-
-	to=(union sockaddr_union*)pkg_malloc(sizeof(union sockaddr_union));
-	if (to==0){
-		ser_error=E_OUT_OF_MEM;
-		LOG(L_ERR, "ERROR:forward_request: out of pkg memory\n");
-		goto error;
-	}
-
-	/* if error try next ip address if possible */
-	if (p->ok==0){
-		if (p->host.h_addr_list[p->addr_idx+1])
-			p->addr_idx++;
-		else p->addr_idx=0;
-		p->ok=1;
-	}
-
-	hostent2su(to, &p->host, p->addr_idx, 
-				(p->port)?p->port:SIP_PORT);
-
-	send_sock=get_send_socket(msg, to, p->proto);
-	if (send_sock==0){
-		LOG(L_ERR, "ERROR:forward_request: cannot forward to af %d, proto %d "
-				"no corresponding listening socket\n",
-				to->s.sa_family, p->proto);
-		ser_error=E_NO_SOCKET;
-		goto error1;
-	}
 
 	/* calculate branch for outbound request - if the branch buffer is already
 	 * set (maybe by an upper level as TM), used it; otherwise computes 
@@ -342,43 +315,66 @@ int forward_request( struct sip_msg* msg, struct proxy_l * p)
 		branch = get_sl_branch(msg);
 		if (branch==0) {
 			LOG(L_ERR,"ERROR:forward_request: unable to compute branch\n");
-			goto error1;
+			goto error;
 		}
 		msg->add_to_branch_len = branch->len;
 		memcpy( msg->add_to_branch_s, branch->s, branch->len);
 	}
 
-	buf = build_req_buf_from_sip_req( msg, &len, send_sock, p->proto);
-	if (!buf){
-		LOG(L_ERR, "ERROR:forward_request: building req buf failed\n");
-		goto error1;
-	}
-	 /* send it! */
-	DBG("DEBUG:forward_request: sending:\n%.*s.\n", (int)len, buf);
-	DBG("DEBUG:forward_request: orig. len=%d, new_len=%d, proto=%d\n",
-		msg->len, len, p->proto );
+	hostent2su( &to, &p->host, p->addr_idx, (p->port)?p->port:SIP_PORT);
+	last_sock = 0;
 
-	if (msg_send(send_sock, p->proto, to, 0, buf, len)<0){
-		ser_error=E_SEND;
-		p->errors++;
-		p->ok=0;
+	do {
+		send_sock=get_send_socket( msg, &to, p->proto);
+		if (send_sock==0){
+			LOG(L_ERR, "ERROR:forward_request: cannot forward to af %d, "
+				"proto %d no corresponding listening socket\n",
+				to.s.sa_family, p->proto);
+			ser_error=E_NO_SOCKET;
+			continue;
+		}
+
+		if ( last_sock!=send_sock ) {
+
+			if (buf)
+				pkg_free(buf);
+
+			buf = build_req_buf_from_sip_req( msg, &len, send_sock, p->proto);
+			if (!buf){
+				LOG(L_ERR, "ERROR:forward_request: building req buf failed\n");
+				goto error;
+			}
+
+			last_sock = send_sock;
+		}
+
+		/* send it! */
+		DBG("DEBUG:forward_request: sending:\n%.*s.\n", (int)len, buf);
+		DBG("DEBUG:forward_request: orig. len=%d, new_len=%d, proto=%d\n",
+			msg->len, len, p->proto );
+
+		if (msg_send(send_sock, p->proto, &to, 0, buf, len)<0){
+			ser_error=E_SEND;
+			continue;
+		}
+
+		ser_error = 0;
+		break;
+
+	}while( get_next_su( p, &to)==0 );
+
+	if (ser_error) {
 		update_stat( drp_reqs, 1);
-		goto error1;
+		goto error;
 	}
-	
-	p->tx++;
-	p->tx_bytes+=len;
-	
+
 	/* sent requests stats */
 	update_stat( fwd_reqs, 1);
-	
+
 	pkg_free(buf);
-	pkg_free(to);
 	/* received_buf & line_buf will be freed in receive_msg by free_lump_list*/
 	return 0;
 
-error1:
-	pkg_free(to);
 error:
 	if (buf) pkg_free(buf);
 	return -1;
@@ -428,7 +424,7 @@ int update_sock_struct_from_via( union sockaddr_union* to,
 		}
 	}
 	DBG("DEBUG:update_sock_struct_from_via: trying SRV lookup\n");
-	he=sip_resolvehost(name, &port, &via->proto, 0);
+	he=sip_resolvehost(name, &port, &via->proto, 0, 0);
 	
 	if (he==0){
 		LOG(L_NOTICE, "DEBUG:forward_reply:resolve_host(%.*s) failure\n",
@@ -436,7 +432,7 @@ int update_sock_struct_from_via( union sockaddr_union* to,
 		return -1;
 	}
 		
-	hostent2su(to, he, 0, port);
+	hostent2su( to, he, 0, port);
 	return 1;
 }
 

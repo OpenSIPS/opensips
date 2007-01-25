@@ -80,7 +80,7 @@ struct via_body {
 	struct via_param* param_lst;  /* list of parameters*/
 	struct via_param* last_param; /*last via parameter, internal use*/
 
-	     /* shortcuts to "important" params*/
+	/* shortcuts to "important" params*/
 	struct via_param* branch;
 	str tid; /* transaction id, part of branch */
 	struct via_param* received;

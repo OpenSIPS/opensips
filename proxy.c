@@ -25,15 +25,19 @@
  * -------
  *  2003-02-13  all *proxy functions are now proto aware (andrei)
  *  2003-03-19  replaced all mallocs/frees w/ pkg_malloc/pkg_free (andrei)
+ *  2007-01-25  support for DNS failover added into proxy structure;
+ *              new shm functions for copy/free added (bogdan)
  */
 
 
 
 #include "config.h"
+#include "globals.h"
 #include "proxy.h"
 #include "error.h"
 #include "dprint.h"
 #include "mem/mem.h"
+#include "mem/shm_mem.h"
 
 #include <string.h>
 #include <stdlib.h>
@@ -50,7 +54,7 @@
 
 struct proxy_l* proxies=0;
 
-
+int disable_dns_failover=0;
 
 /* searches for the proxy named 'name', on port 'port' with 
    proto 'proto'; if proto==0 => proto wildcard (will match any proto)
@@ -68,9 +72,41 @@ static struct proxy_l* find_proxy(str *name, unsigned short port, int proto)
 }
 
 
+int hostent_shm_cpy(struct hostent *dst, struct hostent* src)
+{
+	int  i;
+	char *p;
+
+	for( i=0 ; src->h_addr_list[i] ; i++ );
+
+	dst->h_addr_list = (char**)shm_malloc
+		(i * (src->h_length + sizeof(char*)) + sizeof(char*));
+	if (dst->h_addr_list==NULL)
+		return -1;
+
+	p = ((char*)dst->h_addr_list) + (i+1)*sizeof(char*);
+	for( i-- ; i>=0 ; i-- ) {
+		dst->h_addr_list[i] = p;
+		memcpy( dst->h_addr_list[i], src->h_addr_list[i], src->h_length );
+		p += src->h_length;
+	}
+
+	dst->h_addr = dst->h_addr_list[0];
+	dst->h_addrtype = src->h_addrtype;
+	dst->h_length = src->h_length;
+	return 0;
+}
+
+
+void free_shm_hostent(struct hostent *dst)
+{
+	if (dst->h_addr_list)
+		shm_free(dst->h_addr_list);
+}
+
 
 /* copies a hostent structure*, returns 0 on success, <0 on error*/
-static int hostent_cpy(struct hostent *dst, struct hostent* src)
+int hostent_cpy(struct hostent *dst, struct hostent* src)
 {
 	unsigned len,len2;
 	int r,ret,i;
@@ -171,7 +207,6 @@ void free_hostent(struct hostent *dst)
 
 
 
-
 struct proxy_l* add_proxy(str* name, unsigned short port, int proto)
 {
 	struct proxy_l* p;
@@ -210,7 +245,8 @@ struct proxy_l* mk_proxy(str* name, unsigned short port, int proto, int is_sips)
 	p->proto=proto;
 
 	DBG("DEBUG: mk_proxy: doing DNS lookup...\n");
-	he=sip_resolvehost(name, &(p->port), &p->proto, is_sips);
+	he = sip_resolvehost(name, &(p->port), &p->proto, is_sips,
+		disable_dns_failover?0:&p->dn );
 	if (he==0){
 		ser_error=E_BAD_ADDRESS;
 		LOG(L_CRIT, "ERROR: mk_proxy: could not resolve hostname:"
@@ -219,10 +255,10 @@ struct proxy_l* mk_proxy(str* name, unsigned short port, int proto, int is_sips)
 		goto error;
 	}
 	if (hostent_cpy(&(p->host), he)!=0){
+		free_dns_res( p );
 		pkg_free(p);
 		goto error;
 	}
-	p->ok=1;
 	return p;
 error:
 	return 0;
@@ -267,8 +303,13 @@ error:
 
 
 
-
 void free_proxy(struct proxy_l* p)
 {
-	if (p) free_hostent(&p->host);
+	if (p) {
+		free_hostent(&p->host);
+		free_dns_res( p );
+	}
 }
+
+
+

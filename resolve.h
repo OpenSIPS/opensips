@@ -25,6 +25,7 @@
  * --------
  *  2003-04-12  support for resolving ipv6 address references added (andrei)
  *  2004-07-28  darwin needs nameser_compat.h (andrei)
+ *  2007-01-25  support for DNS failover added (bogdan)
  */
 
 
@@ -42,6 +43,7 @@
 #endif
 
 #include "ip_addr.h"
+#include "proxy.h"
 
 
 #define MAX_QUERY_SIZE 8192
@@ -124,7 +126,15 @@ struct ebl_rdata {
 	char apex[MAX_DNS_NAME];
 };
 
-
+/* DNS failover related structures */
+struct dns_node {
+	unsigned short type;
+	unsigned short size;
+	unsigned short idx;
+	unsigned short no;
+	struct dns_val *vals;
+	struct dns_node *kids;
+};
 
 
 struct rdata* get_record(char* name, int type);
@@ -147,6 +157,9 @@ extern int dns_try_ipv6;
 
 #define get_naptr(_rdata) \
 	( ((struct naptr_rdata*)(_rdata)->rdata) )
+
+#define get_srv(_rdata) \
+	( ((struct srv_rdata*)(_rdata)->rdata) )
 
 
 
@@ -293,9 +306,8 @@ error_char:
 }
 
 
-
 struct hostent* sip_resolvehost(str* name, unsigned short* port,
-		int *proto, int is_sips);
+		int *proto, int is_sips, struct dns_node **dn);
 
 
 
@@ -347,6 +359,16 @@ static inline struct hostent* resolvehost(char* name, int no_ip_test)
 #endif
 	return he;
 }
+
+
+/* free the DNS resolver state machine */
+void free_dns_res( struct proxy_l *p );
+
+/* make a perfect copy of a resolver state machine */
+struct dns_node *dns_res_copy(struct dns_node *s);
+
+/* taked the next destination from a resolver state machine */
+int get_next_su(struct proxy_l *p, union sockaddr_union* su);
 
 
 int resolv_init();

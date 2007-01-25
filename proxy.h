@@ -22,32 +22,33 @@
  * History:
  * -------
  *  2003-02-13  added proto to struct proxy_l & to *_proxy functions (andrei)
+ *  2007-01-25  support for DNS failover added into proxy structure;
+ *              unused members removed (bogdan)
  */
 
 
-#ifndef proxy_h
-#define proxy_h
+#ifndef _core_proxy_h
+#define _core_proxy_h
 
 #include <netdb.h>
 #include "ip_addr.h"
 #include "str.h"
 
+struct dns_node;
+
+#define PROXY_SHM_FLAG  (1<<0)
+
 struct proxy_l{
 	struct proxy_l* next;
 	str name; /* original name */
-	struct hostent host; /* addresses */
+	unsigned short flags;
 	unsigned short port;
-	unsigned short reserved; /*align*/
 	int proto;
-	
-	/* socket ? */
 
+	struct hostent host; /* addresses */
 	int addr_idx;	/* crt. addr. idx. */
-	int ok; /* 0 on error */
-	/*statistics*/
-	int tx;
-	int tx_bytes;
-	int errors;
+
+	struct dns_node *dn;
 };
 
 extern struct proxy_l* proxies;
@@ -58,6 +59,16 @@ struct proxy_l* mk_proxy_from_ip(struct ip_addr* ip, unsigned short port,
 									int proto);
 void free_proxy(struct proxy_l* p);
 
+
+void free_hostent(struct hostent *dst);
+
+int  hostent_cpy(struct hostent *dst, struct hostent* src);
+
+int  hostent_shm_cpy(struct hostent *dst, struct hostent* src);
+
+void free_shm_hostent(struct hostent *dst);
+
+#include "resolve.h"
 
 #endif
 
