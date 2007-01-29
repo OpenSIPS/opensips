@@ -197,7 +197,7 @@ NOTMATCH	!~
 BAND	"&"
 BOR		"|"
 BXOR	"^"
-BNOT	"`"
+BNOT	"~"
 NOT		!|"not"
 AND		"and"|"&&"
 OR		"or"|"||"

@@ -1104,7 +1104,6 @@ static int eval_elem(struct expr* e, struct sip_msg* msg, xl_value_t *val)
 					xl_value_destroy(&lval);
 					xl_value_destroy(&rval);
 					if(val!=NULL) val->ri = ival;
-					DBG("++++++++ %d\n", ival);
 					return (ival)?1:0;
 				} else {
 					if(!(rval.flags&XL_VAL_STR))

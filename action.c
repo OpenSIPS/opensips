@@ -192,12 +192,9 @@ int do_assign(struct sip_msg* msg, struct action* a)
 	char backup;
 
 	ret = eval_expr((struct expr*)a->elem[1].u.data, msg, &val);
-	if(val.flags&XL_VAL_STR) {
-		DBG("do_assign: eq - sval [%.*s]\n", val.rs.len, val.rs.s);
-	} else if(val.flags&XL_VAL_INT) {
-		DBG("do_assign: eq - ival [%d]\n", val.ri);
-	} else {
-		DBG("do_assign: eq - no value\n");
+	if(!((val.flags&XL_VAL_STR)||(val.flags&XL_VAL_INT))) {
+		LOG(L_ERR, "do_assign: no value in right expression\n");
+		goto error;
 	}
 
 	dspec = (xl_spec_p)a->elem[0].u.data;
