@@ -200,8 +200,8 @@ int next_branches( struct sip_msg *msg)
 	if ( route_type == REQUEST_ROUTE) {
 		/* Set Request-URI */
 		act.type = SET_URI_T;
-		act.p1_type = STRING_ST;
-		act.p1.string = val.s.s;
+		act.elem[0].type = STRING_ST;
+		act.elem[0].u.string = val.s.s;
 		rval = do_action(&act, msg);
 		if (rval != 1)
 			goto error1;
@@ -218,10 +218,10 @@ int next_branches( struct sip_msg *msg)
 	/* Append branches until out of branches or Q_FLAG is set */
 	do {
 		act.type = APPEND_BRANCH_T;
-		act.p1_type = STRING_ST;
-		act.p1.string = val.s.s;
-		act.p2_type = NUMBER_ST;
-		act.p2.number = 0;
+		act.elem[0].type = STRING_ST;
+		act.elem[0].u.string = val.s.s;
+		act.elem[1].type = NUMBER_ST;
+		act.elem[1].u.number = 0;
 		rval = do_action(&act, msg);
 		if (rval != 1) {
 			LOG(L_ERR, "ERRORL:next_branches: do_action failed "

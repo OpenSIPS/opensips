@@ -110,46 +110,62 @@ static int fix_expr(struct expr* exp)
 		switch(exp->op){
 			case AND_OP:
 			case OR_OP:
-						if ((ret=fix_expr(exp->l.expr))!=0)
+						if ((ret=fix_expr(exp->left.v.expr))!=0)
 							return ret;
-						ret=fix_expr(exp->r.expr);
+						ret=fix_expr(exp->right.v.expr);
 						break;
 			case NOT_OP:
-						ret=fix_expr(exp->l.expr);
+			case EVAL_OP:
+						ret=fix_expr(exp->left.v.expr);
 						break;
 			default:
 						LOG(L_CRIT, "BUG: fix_expr: unknown op %d\n",
 								exp->op);
 		}
 	}else if (exp->type==ELEM_T){
-			if (exp->op==MATCH_OP){
-				if (exp->subtype==STRING_ST){
+			if (exp->op==MATCH_OP || exp->op==NOTMATCH_OP){
+				if (exp->right.type==STRING_ST){
 					re=(regex_t*)pkg_malloc(sizeof(regex_t));
 					if (re==0){
 						LOG(L_CRIT, "ERROR: fix_expr: memory allocation"
 								" failure\n");
 						return E_OUT_OF_MEM;
 					}
-					if (regcomp(re, (char*) exp->r.param,
+					if (regcomp(re, (char*) exp->right.v.data,
 								REG_EXTENDED|REG_NOSUB|REG_ICASE) ){
 						LOG(L_CRIT, "ERROR: fix_expr : bad re \"%s\"\n",
-									(char*) exp->r.param);
+									(char*) exp->right.v.data);
 						pkg_free(re);
 						return E_BAD_RE;
 					}
 					/* replace the string with the re */
-					pkg_free(exp->r.param);
-					exp->r.param=re;
-					exp->subtype=RE_ST;
-				}else if (exp->subtype!=RE_ST){
+					pkg_free(exp->right.v.data);
+					exp->right.v.data=re;
+					exp->right.type=RE_ST;
+				}else if (exp->right.type!=RE_ST
+						&& exp->right.type!=SCRIPTVAR_ST){
 					LOG(L_CRIT, "BUG: fix_expr : invalid type for match\n");
 					return E_BUG;
 				}
 			}
-			if (exp->l.operand==ACTION_O){
-				ret=fix_actions((struct action*)exp->r.param);
+			if (exp->left.type==ACTION_O){
+				ret=fix_actions((struct action*)exp->right.v.data);
 				if (ret!=0){
 					LOG(L_CRIT, "ERROR: fix_expr : fix_actions error\n");
+					return ret;
+				}
+			}
+			if (exp->left.type==EXPR_O){
+				ret=fix_expr(exp->left.v.expr);
+				if (ret!=0){
+					LOG(L_CRIT, "ERROR: fix_expr : fix left exp error\n");
+					return ret;
+				}
+			}
+			if (exp->right.type==EXPR_ST){
+				ret=fix_expr(exp->right.v.expr);
+				if (ret!=0){
+					LOG(L_CRIT, "ERROR: fix_expr : fix rigth exp error\n");
 					return ret;
 				}
 			}
@@ -182,15 +198,16 @@ static int fix_actions(struct action* a)
 	for(t=a; t!=0; t=t->next){
 		switch(t->type){
 			case FORWARD_T:
-				if (t->p1_type==NOSUBTYPE)
+				if (t->elem[0].type==NOSUBTYPE)
 					break;
 			case SEND_T:
-				if (t->p1_type!=STRING_ST) {
+				if (t->elem[0].type!=STRING_ST) {
 					LOG(L_CRIT, "BUG: fix_actions: invalid type"
 						"%d (should be string)\n", t->type);
 					return E_BUG;
 				}
-				ret = parse_phostport( t->p1.string, strlen(t->p1.string),
+				ret = parse_phostport( t->elem[0].u.string,
+						strlen(t->elem[0].u.string),
 						&host.s, &host.len, &port, &proto);
 				if (ret!=0) {
 					LOG(L_ERR,"ERROR:fix_actions: FORWARD/SEND bad "
@@ -203,69 +220,71 @@ static int fix_actions(struct action* a)
 						"add proxy");
 					return E_CFG;
 				}
-				t->p1_type = PROXY_ST;
-				t->p1.data = (void*)p;
+				t->elem[0].type = PROXY_ST;
+				t->elem[0].u.data = (void*)p;
 				break;
 			case IF_T:
-				if (t->p1_type!=EXPR_ST){
+				if (t->elem[0].type!=EXPR_ST){
 					LOG(L_CRIT, "BUG: fix_actions: invalid subtype"
 								"%d for if (should be expr)\n",
-								t->p1_type);
+								t->elem[0].type);
 					return E_BUG;
-				}else if( (t->p2_type!=ACTIONS_ST)&&(t->p2_type!=NOSUBTYPE) ){
+				}else if( (t->elem[1].type!=ACTIONS_ST)
+						&&(t->elem[1].type!=NOSUBTYPE) ){
 					LOG(L_CRIT, "BUG: fix_actions: invalid subtype"
 								"%d for if() {...} (should be action)\n",
-								t->p2_type);
+								t->elem[1].type);
 					return E_BUG;
-				}else if( (t->p3_type!=ACTIONS_ST)&&(t->p3_type!=NOSUBTYPE) ){
+				}else if( (t->elem[2].type!=ACTIONS_ST)
+						&&(t->elem[2].type!=NOSUBTYPE) ){
 					LOG(L_CRIT, "BUG: fix_actions: invalid subtype"
 								"%d for if() {} else{...}(should be action)\n",
-								t->p3_type);
+								t->elem[2].type);
 					return E_BUG;
 				}
-				if (t->p1.data){
-					if ((ret=fix_expr((struct expr*)t->p1.data))<0)
+				if (t->elem[0].u.data){
+					if ((ret=fix_expr((struct expr*)t->elem[0].u.data))<0)
 						return ret;
 				}
-				if ( (t->p2_type==ACTIONS_ST)&&(t->p2.data) ){
-					if ((ret=fix_actions((struct action*)t->p2.data))<0)
+				if ( (t->elem[1].type==ACTIONS_ST)&&(t->elem[1].u.data) ){
+					if ((ret=fix_actions((struct action*)t->elem[1].u.data))<0)
 						return ret;
 				}
-				if ( (t->p3_type==ACTIONS_ST)&&(t->p3.data) ){
-						if ((ret=fix_actions((struct action*)t->p3.data))<0)
+				if ( (t->elem[2].type==ACTIONS_ST)&&(t->elem[2].u.data) ){
+					if((ret=fix_actions((struct action*)t->elem[2].u.data))<0)
 						return ret;
 				}
 				break;
 			case SWITCH_T:
-				if ( (t->p2_type==ACTIONS_ST)&&(t->p2.data) ){
-						if ((ret=fix_actions((struct action*)t->p2.data))<0)
+				if ( (t->elem[1].type==ACTIONS_ST)&&(t->elem[1].u.data) ){
+					if ((ret=fix_actions((struct action*)t->elem[1].u.data))<0)
 						return ret;
 				}
 				break;
 			case CASE_T:
-				if ( (t->p2_type==ACTIONS_ST)&&(t->p2.data) ){
-						if ((ret=fix_actions((struct action*)t->p2.data))<0)
+				if ( (t->elem[1].type==ACTIONS_ST)&&(t->elem[1].u.data) ){
+					if ((ret=fix_actions((struct action*)t->elem[1].u.data))<0)
 						return ret;
 				}
 				break;
 			case DEFAULT_T:
-				if ( (t->p1_type==ACTIONS_ST)&&(t->p1.data) ){
-						if ((ret=fix_actions((struct action*)t->p1.data))<0)
+				if ( (t->elem[0].type==ACTIONS_ST)&&(t->elem[0].u.data) ){
+					if ((ret=fix_actions((struct action*)t->elem[0].u.data))<0)
 						return ret;
 				}
 				break;
 			case MODULE_T:
-				cmd = (cmd_export_t*)t->p1.data;
+				cmd = (cmd_export_t*)t->elem[0].u.data;
 				DBG("fixing %s, line %d\n", cmd->name, t->line);
 				if (cmd->fixup){
 					if (cmd->param_no>0){
-						ret=cmd->fixup(&t->p2.data, 1);
-						t->p2_type=MODFIXUP_ST;
+						ret=cmd->fixup(&t->elem[1].u.data, 1);
+						t->elem[1].type=MODFIXUP_ST;
 						if (ret<0) goto error;
 					}
 					if (cmd->param_no>1){
-						ret=cmd->fixup(&t->p3.data, 2);
-						t->p3_type=MODFIXUP_ST;
+						ret=cmd->fixup(&t->elem[2].u.data, 2);
+						t->elem[2].type=MODFIXUP_ST;
 						if (ret<0) goto error;
 					}
 					if (cmd->param_no==0){
@@ -275,44 +294,44 @@ static int fix_actions(struct action* a)
 				}
 				break;
 			case FORCE_SEND_SOCKET_T:
-				if (t->p1_type!=SOCKID_ST){
+				if (t->elem[0].type!=SOCKID_ST){
 					LOG(L_CRIT, "BUG: fix_actions: invalid subtype"
 								"%d for force_send_socket\n",
-								t->p1_type);
+								t->elem[0].type);
 					return E_BUG;
 				}
-				he=resolvehost(((struct socket_id*)t->p1.data)->name,0);
+				he=resolvehost(((struct socket_id*)t->elem[0].u.data)->name,0);
 				if (he==0){
 					LOG(L_ERR, "ERROR: fix_actions: force_send_socket:"
 								" could not resolve %s\n",
-								((struct socket_id*)t->p1.data)->name);
+								((struct socket_id*)t->elem[0].u.data)->name);
 					ret = E_BAD_ADDRESS;
 					goto error;
 				}
 				hostent2ip_addr(&ip, he, 0);
-				si=find_si(&ip, ((struct socket_id*)t->p1.data)->port,
-								((struct socket_id*)t->p1.data)->proto);
+				si=find_si(&ip, ((struct socket_id*)t->elem[0].u.data)->port,
+								((struct socket_id*)t->elem[0].u.data)->proto);
 				if (si==0){
 					LOG(L_ERR, "ERROR: fix_actions: bad force_send_socket"
 							" argument: %s:%d (ser doesn't listen on it)\n",
-							((struct socket_id*)t->p1.data)->name,
-							((struct socket_id*)t->p1.data)->port);
+							((struct socket_id*)t->elem[0].u.data)->name,
+							((struct socket_id*)t->elem[0].u.data)->port);
 					ret = E_BAD_ADDRESS;
 					goto error;
 				}
-				t->p1.data=si;
-				t->p1_type=SOCKETINFO_ST;
+				t->elem[0].u.data=si;
+				t->elem[0].type=SOCKETINFO_ST;
 				break;
 			case SETFLAG_T:
 			case RESETFLAG_T:
 			case ISFLAGSET_T:
-				if (t->p1_type!=NUMBER_ST) {
+				if (t->elem[0].type!=NUMBER_ST) {
 					LOG(L_CRIT, "BUG: fix_actions: bad xxxflag() type %d\n",
-						t->p1_type );
+						t->elem[0].type );
 					ret=E_BUG;
 					goto error;
 				}
-				if (!flag_in_range( t->p1.number )) {
+				if (!flag_in_range( t->elem[0].u.number )) {
 					ret=E_CFG;
 					goto error;
 				}
@@ -320,14 +339,14 @@ static int fix_actions(struct action* a)
 			case SETSFLAG_T:
 			case RESETSFLAG_T:
 			case ISSFLAGSET_T:
-				if (t->p1_type!=NUMBER_ST) {
+				if (t->elem[0].type!=NUMBER_ST) {
 					LOG(L_CRIT, "BUG: fix_actions: bad xxxsflag() type %d\n",
-						t->p1_type );
+						t->elem[0].type );
 					ret=E_BUG;
 					goto error;
 				}
-				t->p1.number = fixup_flag( t->p1.number );
-				if (t->p1.data==0) {
+				t->elem[0].u.number = fixup_flag( t->elem[0].u.number );
+				if (t->elem[0].u.data==0) {
 					ret=E_CFG;
 					goto error;
 				}
@@ -335,17 +354,32 @@ static int fix_actions(struct action* a)
 			case SETBFLAG_T:
 			case RESETBFLAG_T:
 			case ISBFLAGSET_T:
-				if (t->p1_type!=NUMBER_ST || t->p2_type!=NUMBER_ST) {
+				if (t->elem[0].type!=NUMBER_ST || t->elem[1].type!=NUMBER_ST) {
 					LOG(L_CRIT, "BUG: fix_actions: bad xxxbflag() type "
-						"%d,%d\n", t->p1_type, t->p2_type);
+						"%d,%d\n", t->elem[0].type, t->elem[0].type);
 					ret=E_BUG;
 					goto error;
 				}
-				t->p2.number = fixup_flag( t->p2.number );
-				if (t->p2.data==0) {
+				t->elem[1].u.number = fixup_flag( t->elem[1].u.number );
+				if (t->elem[1].u.data==0) {
 					ret=E_CFG;
 					goto error;
 				}
+				break;
+			case EQ_T:
+			case PLUSEQ_T:
+			case MINUSEQ_T:
+			case DIVEQ_T:
+			case MULTEQ_T:
+			case MODULOEQ_T:
+			case BANDEQ_T:
+			case BOREQ_T:
+			case BXOREQ_T:
+				if (t->elem[1].u.data){
+					if ((ret=fix_expr((struct expr*)t->elem[1].u.data))<0)
+						return ret;
+				}
+
 				break;
 		}
 	}
@@ -384,51 +418,81 @@ inline static int comp_no( int port, void *param, int op, int subtype )
 }
 
 /* eval_elem helping function, returns str op param */
-inline static int comp_strstr(str* str, void* param, int op, int subtype)
+inline static int comp_strval(struct sip_msg *msg, int op, str* ival,
+		operand_t *opd)
 {
 	int ret;
+	regex_t* re;
 	char backup;
+	char backup2;
+	str res;
+	xl_value_t value;
 	
+	res.s = 0; res.len = 0;
+	if(opd->type == SCRIPTVAR_ST)
+	{
+		if(xl_get_spec_value(msg, opd->v.spec, &value, 0)!=0)
+		{
+			LOG(L_CRIT, "comp_strval: cannot get var value\n");
+			goto error;
+		}
+		if(value.flags&XL_VAL_STR)
+		{
+			res = value.rs;
+		} else {
+			res.s = sint2str(value.ri, &res.len);
+		}
+	} else if(opd->type == NUMBER_ST) {
+		res.s = sint2str(opd->v.n, &res.len);
+	}else if(opd->type == STRING_ST) {
+		res = opd->v.s;
+	} else {
+		if(op!=MATCH_OP || opd->type != RE_ST)
+		{
+			LOG(L_CRIT, "comp_strval: invalid operation %d/%d\n", op,
+					opd->type);
+			goto error;
+		}
+	}
+
+
 	ret=-1;
 	switch(op){
 		case EQUAL_OP:
-			if (subtype!=STRING_ST){
-				LOG(L_CRIT, "BUG: comp_str: bad type %d, "
-						"string expected\n", subtype);
-				goto error;
-			}
-			ret=(strncasecmp(str->s, (char*)param, str->len)==0);
+			if(ival->len != res.len) return 0;
+			ret=(strncasecmp(ival->s, res.s, ival->len)==0);
 			break;
 		case DIFF_OP:
-			if (subtype!=STRING_ST){
-				LOG(L_CRIT, "BUG: comp_str: bad type %d, "
-						"string expected\n", subtype);
-				goto error;
-			}
-			ret=(strncasecmp(str->s, (char*)param, str->len)!=0);
+			if(ival->len != res.len) return 1;
+			ret=(strncasecmp(ival->s, res.s, ival->len)!=0);
 			break;
 		case MATCH_OP:
-			if (subtype!=RE_ST){
-				LOG(L_CRIT, "BUG: comp_str: bad type %d, "
-						" RE expected\n", subtype);
-				goto error;
+			backup=ival->s[ival->len];ival->s[ival->len]='\0';
+
+			if(opd->type == SCRIPTVAR_ST) {
+				re=(regex_t*)pkg_malloc(sizeof(regex_t));
+				if (re==0){
+					LOG(L_CRIT, "ERROR: comp_strval: memory allocation"
+					    " failure\n");
+					ival->s[ival->len]=backup;
+					goto error;
+				}
+				backup2 = res.s[res.len];res.s[res.len] = '\0';
+				if (regcomp(re, res.s, REG_EXTENDED|REG_NOSUB|REG_ICASE)) {
+					pkg_free(re);
+					res.s[res.len] = backup2;
+					ival->s[ival->len]=backup;
+					goto error;
+				}
+				ret=(regexec(re, ival->s, 0, 0, 0)==0);
+				regfree(re);
+				pkg_free(re);
+				res.s[res.len] = backup2;
+			} else {
+				ret=(regexec((regex_t*)opd->v.data, ival->s, 0, 0, 0)==0);
 			}
-		/* this is really ugly -- we put a temporary zero-terminating
-		 * character in the original string; that's because regexps
-         * take 0-terminated strings and our messages are not
-         * zero-terminated; it should not hurt as long as this function
-		 * is applied to content of pkg mem, which is always the case
-		 * with calls from route{}; the same goes for fline in reply_route{};
-         *
-         * also, the received function should always give us an extra
-         * character, into which we can put the 0-terminator now;
-         * an alternative would be allocating a new piece of memory,
-         * which might be too slow
-         * -jiri
-         */
-			backup=str->s[str->len];str->s[str->len]=0;
-			ret=(regexec((regex_t*)param, str->s, 0, 0, 0)==0);
-			str->s[str->len]=backup;
+
+			ival->s[ival->len]=backup;
 			break;
 		default:
 			LOG(L_CRIT, "BUG: comp_str: unknown op %d\n", op);
@@ -503,7 +567,8 @@ inline static int check_self_op(int op, str* s, unsigned short p)
 
 
 /* eval_elem helping function, returns an op param */
-inline static int comp_ip(struct ip_addr* ip, void* param, int op, int subtype)
+inline static int comp_ip(struct sip_msg *msg, int op, struct ip_addr* ip,
+		operand_t *opd)
 {
 	struct hostent* he;
 	char ** h;
@@ -511,14 +576,14 @@ inline static int comp_ip(struct ip_addr* ip, void* param, int op, int subtype)
 	str tmp;
 
 	ret=-1;
-	switch(subtype){
+	switch(opd->type){
 		case NET_ST:
 			switch(op){
 				case EQUAL_OP:
-					ret=(matchnet(ip, (struct net*) param)==1);
+					ret=(matchnet(ip, (struct net*)opd->v.data)==1);
 					break;
 				case DIFF_OP:
-					ret=(matchnet(ip, (struct net*) param)!=1);
+					ret=(matchnet(ip, (struct net*)opd->v.data)!=1);
 					break;
 				default:
 					goto error_op;
@@ -530,14 +595,14 @@ inline static int comp_ip(struct ip_addr* ip, void* param, int op, int subtype)
 				case EQUAL_OP:
 				case MATCH_OP:
 					/* 1: compare with ip2str*/
-					ret=comp_str(ip_addr2a(ip), param, op, subtype);
+					ret=comp_str(ip_addr2a(ip), opd->v.data, op, opd->type);
 					if (ret==1) break;
 					/* 2: resolve (name) & compare w/ all the ips */
-					if (subtype==STRING_ST){
-						he=resolvehost((char*)param,0);
+					if (opd->type==STRING_ST){
+						he=resolvehost((char*)opd->v.data,0);
 						if (he==0){
 							DBG("comp_ip: could not resolve %s\n",
-									(char*)param);
+									(char*)opd->v.data);
 						}else if (he->h_addrtype==ip->af){
 							for(h=he->h_addr_list;(ret!=1)&& (*h); h++){
 								ret=(memcmp(ip->u.addr, *h, ip->len)==0);
@@ -555,15 +620,15 @@ inline static int comp_ip(struct ip_addr* ip, void* param, int op, int subtype)
 					ret=0;
 					}else{
 						/*  compare with primary host name */
-						ret=comp_str(he->h_name, param, op, subtype);
+						ret=comp_str(he->h_name, opd->v.data, op, opd->type);
 						/* compare with all the aliases */
 						for(h=he->h_aliases; (ret!=1) && (*h); h++){
-							ret=comp_str(*h, param, op, subtype);
+							ret=comp_str(*h, opd->v.data, op, opd->type);
 						}
 					}
 					break;
 				case DIFF_OP:
-					ret=comp_ip(ip, param, EQUAL_OP, subtype);
+					ret=comp_ip(msg, op, ip, opd);
 					if (ret>=0) ret=!ret;
 					break;
 				default:
@@ -577,7 +642,7 @@ inline static int comp_ip(struct ip_addr* ip, void* param, int op, int subtype)
 			break;
 		default:
 			LOG(L_CRIT, "BUG: comp_ip: invalid type for "
-						" src_ip or dst_ip (%d)\n", subtype);
+						" src_ip or dst_ip (%d)\n", opd->type);
 			ret=-1;
 	}
 	return ret;
@@ -587,45 +652,298 @@ error_op:
 	
 }
 
+/* compare str to str */
+inline static int comp_s2s(int op, str *s1, str *s2)
+{
+	char backup;
+	char backup2;
+	int n;
+	int rt;
+	int ret;
+	regex_t* re;
+
+	ret = -1;
+	switch(op) {
+		case EQUAL_OP:
+			if(s1->len != s2->len) return 0;
+			ret=(strncasecmp(s1->s, s2->s, s2->len)==0);
+		break;
+		case DIFF_OP:
+			if(s1->len != s2->len) return 1;
+			ret=(strncasecmp(s1->s, s2->s, s2->len)!=0);
+			break;
+		case GT_OP:
+			n = (s1->len>=s2->len)?s1->len:s2->len;
+			rt = strncasecmp(s1->s,s2->s, n);
+			if (rt>0)
+				ret = 1;
+			else if(rt==0 && s1->len>s1->len)
+				ret = 1;
+			else ret = 0;
+			break;
+		case GTE_OP:
+			n = (s1->len>=s2->len)?s1->len:s2->len;
+			rt = strncasecmp(s1->s,s2->s, n);
+			if (rt>0)
+				ret = 1;
+			else if(rt==0 && s1->len>=s1->len)
+				ret = 1;
+			else ret = 0;
+			break;
+		case LT_OP:
+			n = (s1->len>=s2->len)?s1->len:s2->len;
+			rt = strncasecmp(s1->s,s2->s, n);
+			if (rt<0)
+				ret = 1;
+			else if(rt==0 && s1->len<s1->len)
+				ret = 1;
+			else ret = 0;
+			break;
+		case LTE_OP:
+			n = (s1->len>=s2->len)?s1->len:s2->len;
+			rt = strncasecmp(s1->s,s2->s, n);
+			if (rt<0)
+				ret = 1;
+			else if(rt==0 && s1->len<=s1->len)
+				ret = 1;
+			else ret = 0;
+			break;
+		case MATCH_OP:
+			backup  = s1->s[s1->len];  s1->s[s1->len] = '\0';
+			ret=(regexec((regex_t*)s2, s1->s, 0, 0, 0)==0);
+			s1->s[s1->len] = backup;
+			break;
+		case NOTMATCH_OP:
+			backup  = s1->s[s1->len];  s1->s[s1->len] = '\0';
+			ret=(regexec((regex_t*)s2, s1->s, 0, 0, 0)!=0);
+			s1->s[s1->len] = backup;
+			break;
+		case MATCHD_OP:
+		case NOTMATCHD_OP:
+			re=(regex_t*)pkg_malloc(sizeof(regex_t));
+			if (re==0) {
+				LOG(L_CRIT, "ERROR: comp_strval: memory allocation failure\n");
+				return -1;
+			}
+
+			backup  = s1->s[s1->len];  s1->s[s1->len] = '\0';
+			backup2 = s2->s[s2->len];  s2->s[s2->len] = '\0';
+
+			if (regcomp(re, s2->s, REG_EXTENDED|REG_NOSUB|REG_ICASE)) {
+				pkg_free(re);
+				s2->s[s2->len] = backup2;
+				s1->s[s1->len] = backup;
+				return -1;
+			}
+			if(op==MATCHD_OP)
+				ret=(regexec(re, s1->s, 0, 0, 0)==0);
+			else
+				ret=(regexec(re, s1->s, 0, 0, 0)!=0);
+			regfree(re);
+			pkg_free(re);
+			s2->s[s2->len] = backup2;
+			s1->s[s1->len] = backup;
+			break;
+		default:
+			LOG(L_CRIT, "BUG: comp_s2s: unknown op %d\n", op);
+	}
+	return ret;
+}
+
+/* compare nr to nr */
+inline static int comp_n2n(int op, int n1, int n2)
+{
+	switch(op) {
+		case EQUAL_OP:
+		case MATCH_OP:
+		case MATCHD_OP:
+			if(n1 == n2)
+				return 1;
+			return 0;
+		case NOTMATCH_OP:
+		case NOTMATCHD_OP:
+		case DIFF_OP:
+			if(n1 != n2)
+				return 1;
+			return 0;
+		case GT_OP:
+			if(n1 > n2)
+				return 1;
+			return 0;
+		case GTE_OP:
+			if(n1 >= n2)
+				return 1;
+			return 0;
+		case LT_OP:
+			if(n1 < n2)
+				return 1;
+			return 0;
+		case LTE_OP:
+			if(n1 <= n2)
+				return 1;
+			return 0;
+		default:
+			LOG(L_CRIT, "BUG: comp_n2n: unknown op %d\n", op);
+	}
+	return -1;
+}
+
+
+inline static int comp_scriptvar(struct sip_msg *msg, int op, operand_t *left,
+		operand_t *right)
+{
+	str lstr;
+	str rstr;
+	int ln;
+	int rn;
+	xl_value_t lvalue;
+	xl_value_t rvalue;
+	int type;
+	
+	lstr.s = 0; lstr.len = 0;
+	rstr.s = 0; rstr.len = 0;
+	ln = 0; rn =0;
+	if(xl_get_spec_value(msg, left->v.spec, &lvalue, 0)!=0)
+	{
+		LOG(L_CRIT, "comp_scriptvar: cannot get left var value\n");
+		goto error;
+	}
+	lstr = lvalue.rs;
+	ln   = lvalue.ri;
+	type = 0;
+
+	if(right->type == SCRIPTVAR_ST)
+	{
+		if(xl_get_spec_value(msg, right->v.spec, &rvalue, 0)!=0)
+		{
+			LOG(L_CRIT, "comp_scriptvar: cannot get right var value\n");
+			goto error;
+		}
+		
+		if(op==MATCH_OP||op==NOTMATCH_OP)
+		{
+			if(!((rvalue.flags&XL_VAL_STR) && (lvalue.flags&XL_VAL_STR)))
+			{
+				LOG(L_CRIT, "comp_scriptvar: invalid operation %d/%d\n", op,
+					right->type);
+				goto error;
+			}
+			if(op==MATCH_OP)
+				return comp_s2s(MATCHD_OP, &lstr, &rvalue.rs);
+			else
+				return comp_s2s(NOTMATCHD_OP, &lstr, &rvalue.rs);
+		}
+
+		if((rvalue.flags&XL_VAL_INT) && (lvalue.flags&XL_VAL_INT)) {
+			/* comparing int */
+			rn = rvalue.ri;
+			type =2;
+		} else if((rvalue.flags&XL_VAL_STR) && (lvalue.flags&XL_VAL_STR)) {
+			/* comparing string */
+			rstr = rvalue.rs;
+			type =1;
+		} else {
+			LOG(L_CRIT, "comp_scriptvar: invalid operation %d/%d!\n", op,
+					right->type);
+			goto error;
+		}
+	} else if(right->type == NUMBER_ST) {
+		if(!(lvalue.flags&XL_VAL_INT))
+		{
+			LOG(L_CRIT, "comp_scriptvar: invalid operation %d/%d/%d!!\n", op,
+					right->type, lvalue.flags);
+			goto error;
+		}
+		/* comparing int */
+		type =2;
+		rn = right->v.n;
+	} else if(right->type == STRING_ST) {
+		if(!(lvalue.flags&XL_VAL_STR))
+		{
+			LOG(L_CRIT, "comp_scriptvar: invalid operation %d/%d!!!\n", op,
+					right->type);
+			goto error;
+		}
+		/* comparing string */
+		type =1;
+		rstr = right->v.s;
+	} else {
+		if(op==MATCH_OP || op==NOTMATCH_OP)
+		{
+			if(!(lvalue.flags&XL_VAL_STR) || right->type != RE_ST)
+			{
+				LOG(L_CRIT, "comp_scriptvar: invalid operation %d/%d\n", op,
+					right->type);
+				goto error;
+			}
+			return comp_s2s(op, &lstr, (str*)right->v.expr);
+		}
+		/* comparing others */
+		type = 0;
+	}
+
+	if(type==1) { /* compare str */
+		DBG("comp_scriptvar: str %d : %.*s\n", op, lstr.len, lstr.s); 
+		return comp_s2s(op, &lstr, &rstr);
+	} else if(type==2) {
+		DBG("comp_scriptvar: int %d : %d / %d\n", op, ln, rn); 
+		return comp_n2n(op, ln, rn);
+	} else {
+		LOG(L_CRIT, "comp_scriptvar: invalid operation %d/%d\n", op,
+			right->type);
+	}
+	
+error:
+	return -1;
+}
 
 
 /* returns: 0/1 (false/true) or -1 on error, -127 EXPR_DROP */
-static int eval_elem(struct expr* e, struct sip_msg* msg)
+static int eval_elem(struct expr* e, struct sip_msg* msg, xl_value_t *val)
 {
 
 	struct sip_uri uri;
 	int ret;
+	int retl;
+	int retr;
+	int ival;
 	ret=E_BUG;
+	xl_value_t lval;
+	xl_value_t rval;
+	char *p;
 	
 	if (e->type!=ELEM_T){
 		LOG(L_CRIT," BUG: eval_elem: invalid type\n");
 		goto error;
 	}
-	switch(e->l.operand){
+	
+	if(val) memset(val, 0, sizeof(xl_value_t));
+
+	switch(e->left.type){
 		case METHOD_O:
-				ret=comp_strstr(&msg->first_line.u.request.method, e->r.param,
-								e->op, e->subtype);
+				ret=comp_strval(msg, e->op, &msg->first_line.u.request.method,
+						&e->right);
 				break;
 		case URI_O:
 				if(msg->new_uri.s){
-					if (e->subtype==MYSELF_ST){
+					if (e->right.type==MYSELF_ST){
 						if (parse_sip_msg_uri(msg)<0) ret=-1;
 						else	ret=check_self_op(e->op, &msg->parsed_uri.host,
 									msg->parsed_uri.port_no?
 									msg->parsed_uri.port_no:SIP_PORT);
 					}else{
-						ret=comp_strstr(&msg->new_uri, e->r.param,
-										e->op, e->subtype);
+						ret=comp_strval(msg, e->op, &msg->new_uri, &e->right);
 					}
 				}else{
-					if (e->subtype==MYSELF_ST){
+					if (e->right.type==MYSELF_ST){
 						if (parse_sip_msg_uri(msg)<0) ret=-1;
 						else	ret=check_self_op(e->op, &msg->parsed_uri.host,
 									msg->parsed_uri.port_no?
 									msg->parsed_uri.port_no:SIP_PORT);
 					}else{
-						ret=comp_strstr(&msg->first_line.u.request.uri,
-										 e->r.param, e->op, e->subtype);
+						ret=comp_strval(msg, e->op,
+								&msg->first_line.u.request.uri,
+								&e->right);
 					}
 				}
 				break;
@@ -635,7 +953,7 @@ static int eval_elem(struct expr* e, struct sip_msg* msg)
 								" From: header\n");
 					goto error;
 				}
-				if (e->subtype==MYSELF_ST){
+				if (e->right.type==MYSELF_ST){
 					if (parse_uri(get_from(msg)->uri.s, get_from(msg)->uri.len,
 									&uri) < 0){
 						LOG(L_ERR, "ERROR: eval_elem: bad uri in From:\n");
@@ -644,8 +962,8 @@ static int eval_elem(struct expr* e, struct sip_msg* msg)
 					ret=check_self_op(e->op, &uri.host,
 										uri.port_no?uri.port_no:SIP_PORT);
 				}else{
-					ret=comp_strstr(&get_from(msg)->uri,
-							e->r.param, e->op, e->subtype);
+					ret=comp_strval(msg, e->op, &get_from(msg)->uri,
+							&e->right);
 				}
 				break;
 		case TO_URI_O:
@@ -656,7 +974,7 @@ static int eval_elem(struct expr* e, struct sip_msg* msg)
 					goto error;
 				}
 				/* to content is parsed automatically */
-				if (e->subtype==MYSELF_ST){
+				if (e->right.type==MYSELF_ST){
 					if (parse_uri(get_to(msg)->uri.s, get_to(msg)->uri.len,
 									&uri) < 0){
 						LOG(L_ERR, "ERROR: eval_elem: bad uri in To:\n");
@@ -665,59 +983,305 @@ static int eval_elem(struct expr* e, struct sip_msg* msg)
 					ret=check_self_op(e->op, &uri.host,
 										uri.port_no?uri.port_no:SIP_PORT);
 				}else{
-					ret=comp_strstr(&get_to(msg)->uri,
-										e->r.param, e->op, e->subtype);
+					ret=comp_strval(msg, e->op, &get_to(msg)->uri,
+										&e->right);
 				}
 				break;
 		case SRCIP_O:
-				ret=comp_ip(&msg->rcv.src_ip, e->r.param, e->op, e->subtype);
+				ret=comp_ip(msg, e->op, &msg->rcv.src_ip, &e->right);
 				break;
 		case DSTIP_O:
-				ret=comp_ip(&msg->rcv.dst_ip, e->r.param, e->op, e->subtype);
+				ret=comp_ip(msg, e->op, &msg->rcv.dst_ip, &e->right);
 				break;
 		case NUMBER_O:
-				ret=!(!e->r.intval); /* !! to transform it in {0,1} */
+				ret=!(!e->right.v.n); /* !! to transform it in {0,1} */
 				break;
 		case ACTION_O:
-				ret=run_action_list( (struct action*)e->r.param, msg);
+				ret=run_action_list( (struct action*)e->right.v.data, msg);
+				if(val)
+				{
+					val->flags = XL_TYPE_INT|XL_VAL_INT;
+					val->ri = ret;
+				}
 				if (ret<=0) ret=(ret==0)?EXPR_DROP:0;
 				else ret=1;
+				return ret;
+		case EXPR_O:
+				retl = retr = 0;
+				memset(&lval, 0, sizeof(xl_value_t));
+				memset(&rval, 0, sizeof(xl_value_t));
+				if(e->left.v.data)
+					retl=eval_expr((struct expr*)e->left.v.data,msg,&lval);
+				if(lval.flags == XL_VAL_NONE)
+				{
+					xl_value_destroy(&lval);
+					xl_value_destroy(&rval);
+					return 0;
+				}
+				if(e->op == BNOT_OP)
+				{
+					if(lval.flags&XL_VAL_INT)
+					{
+						if(val!=NULL)
+						{
+							val->flags = XL_TYPE_INT|XL_VAL_INT;
+							val->ri = ~lval.ri;
+						}
+						xl_value_destroy(&lval);
+						xl_value_destroy(&rval);
+						return (val->ri)?1:0;
+					}
+					LOG(L_ERR, "eval_elem: binary NOT on non-numeric value\n");
+					xl_value_destroy(&lval);
+					xl_value_destroy(&rval);
+					return 0;
+				}
+				if(e->right.v.data)
+					retr=eval_expr((struct expr*)e->right.v.data,msg,&rval);
+			
+				if(lval.flags&XL_TYPE_INT)
+				{
+					if(!(rval.flags&XL_VAL_INT))
+					{
+						LOG(L_ERR, "eval_elem: invalid numeric operands\n");
+						xl_value_destroy(&lval);
+						xl_value_destroy(&rval);
+						return 0;
+					}
+					if(val!=NULL)
+						val->flags = XL_TYPE_INT|XL_VAL_INT;
+
+					ival = 0;
+					switch(e->op) {
+						case PLUS_OP:
+							ival = lval.ri + rval.ri;
+							break;
+						case MINUS_OP:
+							ival = lval.ri - rval.ri;
+							break;
+						case DIV_OP:
+							if(rval.ri==0)
+							{
+								LOG(L_ERR,
+									"eval_elem: divide by 0\n");
+								xl_value_destroy(&lval);
+								xl_value_destroy(&rval);
+								return 0;
+							} else 
+								ival = lval.ri / rval.ri;
+							break;
+						case MULT_OP:
+							ival = lval.ri * rval.ri;
+							break;
+						case MODULO_OP:
+							if(rval.ri==0)
+							{
+								LOG(L_ERR,
+									"eval_elem: divide by 0\n");
+								xl_value_destroy(&lval);
+								xl_value_destroy(&rval);
+								return 0;
+							} else 
+								ival = lval.ri % rval.ri;
+							break;
+						case BAND_OP:
+							ival = lval.ri & rval.ri;
+							break;
+						case BOR_OP:
+							ival = lval.ri | rval.ri;
+							break;
+						case BXOR_OP:
+							ival = lval.ri ^ rval.ri;
+							break;
+						default:
+							LOG(L_ERR,
+									"eval_elem: invalid int op %d\n", e->op);
+								val->ri = 0;
+							xl_value_destroy(&lval);
+							xl_value_destroy(&rval);
+							return 0;
+					}
+					xl_value_destroy(&lval);
+					xl_value_destroy(&rval);
+					if(val!=NULL) val->ri = ival;
+					DBG("++++++++ %d\n", ival);
+					return (ival)?1:0;
+				} else {
+					if(!(rval.flags&XL_VAL_STR))
+					{
+						LOG(L_ERR,
+								"eval_elem: invalid string operands\n");
+						xl_value_destroy(&lval);
+						xl_value_destroy(&rval);
+						return 0;
+					}
+					if(e->op != PLUS_OP)
+					{
+						LOG(L_ERR,
+								"eval_elem: invalid string operator %d\n",
+								e->op);
+						xl_value_destroy(&lval);
+						xl_value_destroy(&rval);
+						return 0;
+					}
+					if(val==NULL)
+					{
+						ret = (lval.rs.len>0 || rval.rs.len>0);
+						xl_value_destroy(&lval);
+						xl_value_destroy(&rval);
+						return ret;
+					}
+					val->rs.s=(char*)pkg_malloc((lval.rs.len+rval.rs.len+1)
+							*sizeof(char));
+					if(val->rs.s==0)
+					{
+						LOG(L_ERR, "eval_elem: no more memory\n");
+						xl_value_destroy(&lval);
+						xl_value_destroy(&rval);
+						return 0;
+					}
+					val->flags = XL_VAL_PKG|XL_VAL_STR;
+					memcpy(val->rs.s, lval.rs.s, lval.rs.len);
+					memcpy(val->rs.s+lval.rs.len, rval.rs.s, rval.rs.len);
+					val->rs.len = lval.rs.len + rval.rs.len;
+					val->rs.s[val->rs.len] = '\0';
+					xl_value_destroy(&lval);
+					xl_value_destroy(&rval);
+					return 1;
+				}
 				break;
 		case SRCPORT_O:
 				ret=comp_no(msg->rcv.src_port, 
-					e->r.param, /* e.g., 5060 */
+					e->right.v.data, /* e.g., 5060 */
 					e->op, /* e.g. == */
-					e->subtype /* 5060 is number */);
+					e->right.type /* 5060 is number */);
 				break;
 		case DSTPORT_O:
-				ret=comp_no(msg->rcv.dst_port, e->r.param, e->op, 
-							e->subtype);
+				ret=comp_no(msg->rcv.dst_port, e->right.v.data, e->op, 
+							e->right.type);
 				break;
 		case PROTO_O:
-				ret=comp_no(msg->rcv.proto, e->r.param, e->op, e->subtype);
+				ret=comp_no(msg->rcv.proto, e->right.v.data, e->op,
+						e->right.type);
 				break;
 		case AF_O:
-				ret=comp_no(msg->rcv.src_ip.af, e->r.param, e->op, e->subtype);
+				ret=comp_no(msg->rcv.src_ip.af, e->right.v.data, e->op,
+						e->right.type);
 				break;
 		case RETCODE_O:
-				ret=comp_no(return_code, e->r.param, e->op, e->subtype);
+				ret=comp_no(return_code, e->right.v.data, e->op,
+						e->right.type);
 				break;
 		case MSGLEN_O:
-				ret=comp_no(msg->len, e->r.param, e->op, e->subtype);
+				ret=comp_no(msg->len, e->right.v.data, e->op,
+						e->right.type);
+				break;
+		case STRINGV_O:
+				if(val) {
+					val->flags = XL_VAL_STR;
+					val->rs = e->left.v.s;
+				}
+				/* optimization for no dup ?!?! */
+				return (e->left.v.s.len>0)?1:0;
+		case NUMBERV_O:
+				if(val) {
+					val->flags = XL_TYPE_INT|XL_VAL_INT;
+					val->ri = e->left.v.n;
+				}
+				ret=!(!e->left.v.n); /* !! to transform it in {0,1} */
+				return ret;
+		case SCRIPTVAR_O:
+				if(e->op==NO_OP)
+				{
+					memset(&rval, 0, sizeof(xl_value_t));
+					if(xl_get_spec_value(msg, e->right.v.spec, &rval, 0)==0)
+					{
+						if(rval.flags==XL_VAL_NONE || (rval.flags&XL_VAL_NULL)
+								|| (rval.flags&XL_VAL_EMPTY)
+								|| ((rval.flags&XL_TYPE_INT)&&rval.ri==0))
+						{
+							xl_value_destroy(&rval);
+							return 0;
+						}
+						if(rval.flags&XL_TYPE_INT)
+						{
+							xl_value_destroy(&rval);
+							return 1;
+						}
+						if(rval.rs.len!=0)
+						{
+							xl_value_destroy(&rval);
+							return 1;
+						}
+						xl_value_destroy(&rval);
+					}
+					return 0;
+				}
+				if(e->op==VALUE_OP)
+				{
+					if(xl_get_spec_value(msg, e->left.v.spec, &lval, 0)==0)
+					{
+						if(val!=NULL)
+							memcpy(val, &lval, sizeof(xl_value_t));
+						if(lval.flags&XL_VAL_STR)
+						{
+							if(!((lval.flags&XL_VAL_PKG) 
+									|| (lval.flags&XL_VAL_SHM)))
+							{
+								if(val!=NULL)
+								{
+									/* do pkg duplicate */
+									p = (char*)pkg_malloc((val->rs.len+1)*sizeof(char));
+									if(p==0)
+									{
+										LOG(L_ERR, "eval_elem: no more memory\n");
+										memset(val, 0, sizeof(xl_value_t));
+										return 0;
+									}
+									memcpy(p, val->rs.s, val->rs.len);
+									p[val->rs.len] = 0;
+									val->rs.s = p;
+								}
+							}
+							return 1;
+						}
+						if(lval.flags==XL_VAL_NONE 
+								|| (lval.flags & XL_VAL_NULL)
+								|| (lval.flags & XL_VAL_EMPTY))
+							return 0;
+						if(lval.flags&XL_TYPE_INT)
+							return (lval.ri!=0);
+						else
+							return (lval.rs.len>0);
+					}
+					return 0;
+				}
+
+				ret=comp_scriptvar(msg, e->op, &e->left, &e->right);
 				break;
 		default:
 				LOG(L_CRIT, "BUG: eval_elem: invalid operand %d\n",
-							e->l.operand);
+							e->left.type);
+	}
+	if(val)
+	{
+		val->flags = XL_TYPE_INT|XL_VAL_INT;
+		val->ri = ret;
 	}
 	return ret;
 error:
+	if(val)
+	{
+		val->flags = XL_TYPE_INT|XL_VAL_INT;
+		val->ri = -1;
+	}
 	return -1;
 }
 
 
 
 /* ret= 0/1 (true/false) ,  -1 on error or EXPR_DROP (-127)  */
-int eval_expr(struct expr* e, struct sip_msg* msg)
+int eval_expr(struct expr* e, struct sip_msg* msg, xl_value_t *val)
 {
 	static int rec_lev=0;
 	int ret;
@@ -731,25 +1295,28 @@ int eval_expr(struct expr* e, struct sip_msg* msg)
 	}
 	
 	if (e->type==ELEM_T){
-		ret=eval_elem(e, msg);
+		ret=eval_elem(e, msg, val);
 	}else if (e->type==EXP_T){
 		switch(e->op){
 			case AND_OP:
-				ret=eval_expr(e->l.expr, msg);
+				ret=eval_expr(e->left.v.expr, msg, val);
 				/* if error or false stop evaluating the rest */
 				if (ret!=1) break;
-				ret=eval_expr(e->r.expr, msg); /*ret1 is 1*/
+				ret=eval_expr(e->right.v.expr, msg, val); /*ret1 is 1*/
 				break;
 			case OR_OP:
-				ret=eval_expr(e->l.expr, msg);
+				ret=eval_expr(e->left.v.expr, msg, val);
 				/* if true or error stop evaluating the rest */
 				if (ret!=0) break;
-				ret=eval_expr(e->r.expr, msg); /* ret1 is 0 */
+				ret=eval_expr(e->right.v.expr, msg, val); /* ret1 is 0 */
 				break;
 			case NOT_OP:
-				ret=eval_expr(e->l.expr, msg);
+				ret=eval_expr(e->left.v.expr, msg, val);
 				if (ret<0) break;
 				ret= ! ret;
+				break;
+			case EVAL_OP:
+				ret=eval_expr(e->left.v.expr, msg, val);
 				break;
 			default:
 				LOG(L_CRIT, "BUG: eval_expr: unknown op %d\n", e->op);
@@ -777,8 +1344,6 @@ void push(struct action* a, struct action** head)
 	for (t=*head; t->next;t=t->next);
 	t->next=a;
 }
-
-
 
 
 int add_actions(struct action* a, struct action** head)
@@ -853,7 +1418,7 @@ static int check_actions(struct action *a, int r_type)
 			case ROUTE_T:
 				/* this route is already on the current path ? */
 				for( n=0 ; n<rcheck_stack_p ; n++ ) {
-					if (rcheck_stack[n]==(int)a->p1.number)
+					if (rcheck_stack[n]==(int)a->elem[0].u.number)
 						break;
 				}
 				if (n!=rcheck_stack_p)
@@ -863,27 +1428,28 @@ static int check_actions(struct action *a, int r_type)
 						rcheck_stack_p);
 					goto error;
 				}
-				rcheck_stack[rcheck_stack_p] = a->p1.number;
-				if (check_actions( rlist[a->p1.number], r_type)!=0)
+				rcheck_stack[rcheck_stack_p] = a->elem[0].u.number;
+				if (check_actions( rlist[a->elem[0].u.number], r_type)!=0)
 					goto error;
 				rcheck_stack_p--;
 				break;
 			case IF_T:
-				if (check_actions((struct action*)a->p2.data, r_type)!=0)
+				if (check_actions((struct action*)a->elem[1].u.data, r_type)!=0)
 					goto error;
-				if (check_actions((struct action*)a->p3.data, r_type)!=0)
+				if (check_actions((struct action*)a->elem[2].u.data, r_type)!=0)
 					goto error;
 				break;
 			case SWITCH_T:
-				aitem = (struct action*)a->p2.data;
+				aitem = (struct action*)a->elem[1].u.data;
 				for( ; aitem ; aitem=aitem->next ) {
-					n = check_actions((struct action*)aitem->p2.data, r_type);
+					n = check_actions((struct action*)aitem->elem[1].u.data,
+							r_type);
 					if (n!=0) goto error;
 				}
 				break;
 			case MODULE_T:
 				/* do check :D */
-				fct = (cmd_export_t*)(a->p1.data);
+				fct = (cmd_export_t*)(a->elem[0].u.data);
 				if ( (fct->flags&r_type)!=r_type ) {
 					rcheck_status = -1;
 					LOG(L_ERR,"ERROR:check_actions: script function "

@@ -54,8 +54,8 @@ struct expr* mk_exp(int op, struct expr* left, struct expr* right)
 	if (e==0) goto error;
 	e->type=EXP_T;
 	e->op=op;
-	e->l.expr=left;
-	e->r.expr=right;
+	e->left.v.expr=left;
+	e->right.v.expr=right;
 	return e;
 error:
 	LOG(L_CRIT, "ERROR: mk_exp: memory allocation failure\n");
@@ -63,16 +63,21 @@ error:
 }
 
 
-struct expr* mk_elem(int op, int subtype, int operand, void* param)
+struct expr* mk_elem(int op, int leftt, void *leftd, int rightt, void *rightd)
 {
 	struct expr * e;
 	e=(struct expr*)pkg_malloc(sizeof (struct expr));
 	if (e==0) goto error;
 	e->type=ELEM_T;
 	e->op=op;
-	e->subtype=subtype;
-	e->l.operand=operand;
-	e->r.param=param;
+	e->left.type    = leftt;
+	e->left.v.data  = leftd;
+	if(e->left.type==STRING_ST || e->left.type==STRINGV_O)
+		e->left.v.s.len = strlen(e->left.v.s.s);
+	e->right.type   = rightt;
+	e->right.v.data = rightd;
+	if(e->right.type==STRING_ST || e->right.type==STRINGV_O)
+		e->right.v.s.len = strlen(e->right.v.s.s);
 	return e;
 error:
 	LOG(L_CRIT, "ERROR: mk_elem: memory allocation failure\n");
@@ -81,18 +86,31 @@ error:
 
 
 
-struct action* mk_action_2p(int type, int p1_type, int p2_type,
-											void* p1, void* p2, int line)
+struct action* mk_action(int type, int n, action_elem_t *elem, int line)
 {
+	int i;
 	struct action* a;
+	
+	if(n>MAX_ACTION_ELEMS)
+	{
+		LOG(L_ERR, "mk_action: too many action elements at line %d for %d",
+				line, type);
+		return 0;
+	}
+
 	a=(struct action*)pkg_malloc(sizeof(struct action));
 	if (a==0) goto  error;
 	memset(a,0,sizeof(struct action));
 	a->type=type;
-	a->p1_type=p1_type;
-	a->p2_type=p2_type;
-	a->p1.string=(char*) p1;
-	a->p2.string=(char*) p2;
+
+	for(i=0; i<n; i++)
+	{
+		a->elem[i].type = elem[i].type;
+		a->elem[i].u.data = elem[i].u.data;
+		if(a->elem[i].type==STRING_ST)
+			a->elem[i].u.s.len = strlen(a->elem[i].u.s.s);
+	}
+
 	a->line = line;
 	a->next=0;
 	return a;
@@ -102,21 +120,6 @@ error:
 	return 0;
 
 }
-
-
-struct action* mk_action_3p(int type, int p1_type, int p2_type, int p3_type,
-							void* p1, void* p2, void* p3, int line)
-{
-	struct action* a;
-
-	a=mk_action_2p(type, p1_type, p2_type, p1, p2, line);
-	if (a){
-			a->p3_type=p3_type;
-			a->p3.data=p3;
-	}
-	return a;
-}
-
 
 
 struct action* append_action(struct action* a, struct action* b)
@@ -139,7 +142,7 @@ void print_expr(struct expr* exp)
 		return;
 	}
 	if (exp->type==ELEM_T){
-		switch(exp->l.operand){
+		switch(exp->left.type){
 			case METHOD_O:
 				DBG("method");
 				break;
@@ -198,50 +201,50 @@ void print_expr(struct expr* exp)
 			default:
 				DBG("<UNKNOWN>");
 		}
-		switch(exp->subtype){
+		switch(exp->right.type){
 			case NOSUBTYPE: 
 					DBG("N/A");
 					break;
 			case STRING_ST:
-					DBG("\"%s\"", ZSW((char*)exp->r.param));
+					DBG("\"%s\"", ZSW((char*)exp->right.v.data));
 					break;
 			case NET_ST:
-					print_net((struct net*)exp->r.param);
+					print_net((struct net*)exp->right.v.data);
 					break;
 			case IP_ST:
-					print_ip("", (struct ip_addr*)exp->r.param, "");
+					print_ip("", (struct ip_addr*)exp->right.v.data, "");
 					break;
 			case ACTIONS_ST:
-					print_actions((struct action*)exp->r.param);
+					print_actions((struct action*)exp->right.v.data);
 					break;
 			case NUMBER_ST:
-					DBG("%d",exp->r.intval);
+					DBG("%d",exp->right.v.n);
 					break;
 			case MYSELF_ST:
 					DBG("_myself_");
 					break;
 			default:
-					DBG("type<%d>", exp->subtype);
+					DBG("type<%d>", exp->right.type);
 		}
 	}else if (exp->type==EXP_T){
 		switch(exp->op){
 			case AND_OP:
 					DBG("AND( ");
-					print_expr(exp->l.expr);
+					print_expr(exp->left.v.expr);
 					DBG(", ");
-					print_expr(exp->r.expr);
+					print_expr(exp->right.v.expr);
 					DBG(" )");
 					break;
 			case OR_OP:
 					DBG("OR( ");
-					print_expr(exp->l.expr);
+					print_expr(exp->left.v.expr);
 					DBG(", ");
-					print_expr(exp->r.expr);
+					print_expr(exp->right.v.expr);
 					DBG(" )");
 					break;
 			case NOT_OP:	
 					DBG("NOT( ");
-					print_expr(exp->l.expr);
+					print_expr(exp->left.v.expr);
 					DBG(" )");
 					break;
 			default:
@@ -380,86 +383,86 @@ void print_action(struct action* t)
 		default:
 				DBG("UNKNOWN(");
 	}
-	switch(t->p1_type){
+	switch(t->elem[0].type){
 		case STRING_ST:
-				DBG("\"%s\"", ZSW(t->p1.string));
+				DBG("\"%s\"", ZSW(t->elem[0].u.string));
 				break;
 		case NUMBER_ST:
-				DBG("%lu",t->p1.number);
+				DBG("%lu",t->elem[0].u.number);
 				break;
 		case IP_ST:
-				print_ip("", (struct ip_addr*)t->p1.data, "");
+				print_ip("", (struct ip_addr*)t->elem[0].u.data, "");
 				break;
 		case EXPR_ST:
-				print_expr((struct expr*)t->p1.data);
+				print_expr((struct expr*)t->elem[0].u.data);
 				break;
 		case ACTIONS_ST:
-				print_actions((struct action*)t->p1.data);
+				print_actions((struct action*)t->elem[0].u.data);
 				break;
 		case CMD_ST:
-				DBG("f<%s>",((cmd_export_t*)t->p1.data)->name);
+				DBG("f<%s>",((cmd_export_t*)t->elem[0].u.data)->name);
 				break;
 		case SOCKID_ST:
 				DBG("%d:%s:%d",
-						((struct socket_id*)t->p1.data)->proto,
-						ZSW(((struct socket_id*)t->p1.data)->name),
-						((struct socket_id*)t->p1.data)->port
+						((struct socket_id*)t->elem[0].u.data)->proto,
+						ZSW(((struct socket_id*)t->elem[0].u.data)->name),
+						((struct socket_id*)t->elem[0].u.data)->port
 						);
 				break;
 		default:
-				DBG("type<%d>", t->p1_type);
+				DBG("type<%d>", t->elem[0].type);
 	}
 	if (t->type==IF_T) DBG(") {");
-	switch(t->p2_type){
+	switch(t->elem[1].type){
 		case NOSUBTYPE:
 				break;
 		case STRING_ST:
-				DBG(", \"%s\"", ZSW(t->p2.string));
+				DBG(", \"%s\"", ZSW(t->elem[1].u.string));
 				break;
 		case NUMBER_ST:
-				DBG(", %lu",t->p2.number);
+				DBG(", %lu",t->elem[1].u.number);
 				break;
 		case EXPR_ST:
-				print_expr((struct expr*)t->p2.data);
+				print_expr((struct expr*)t->elem[1].u.data);
 				break;
 		case ACTIONS_ST:
-				print_actions((struct action*)t->p2.data);
+				print_actions((struct action*)t->elem[1].u.data);
 				break;
 		case SOCKID_ST:
 				DBG("%d:%s:%d",
-						((struct socket_id*)t->p1.data)->proto,
-						ZSW(((struct socket_id*)t->p1.data)->name),
-						((struct socket_id*)t->p1.data)->port
+						((struct socket_id*)t->elem[1].u.data)->proto,
+						ZSW(((struct socket_id*)t->elem[1].u.data)->name),
+						((struct socket_id*)t->elem[1].u.data)->port
 						);
 				break;
 		default:
-				DBG(", type<%d>", t->p2_type);
+				DBG(", type<%d>", t->elem[1].type);
 	}
 	if (t->type==IF_T) DBG("} else {");
-	switch(t->p3_type){
+	switch(t->elem[2].type){
 		case NOSUBTYPE:
 				break;
 		case STRING_ST:
-				DBG(", \"%s\"", ZSW(t->p3.string));
+				DBG(", \"%s\"", ZSW(t->elem[2].u.string));
 				break;
 		case NUMBER_ST:
-				DBG(", %lu",t->p3.number);
+				DBG(", %lu",t->elem[2].u.number);
 				break;
 		case EXPR_ST:
-				print_expr((struct expr*)t->p3.data);
+				print_expr((struct expr*)t->elem[2].u.data);
 				break;
 		case ACTIONS_ST:
-				print_actions((struct action*)t->p3.data);
+				print_actions((struct action*)t->elem[2].u.data);
 				break;
 		case SOCKID_ST:
 				DBG("%d:%s:%d",
-					((struct socket_id*)t->p1.data)->proto,
-					ZSW(((struct socket_id*)t->p1.data)->name),
-					((struct socket_id*)t->p1.data)->port
+					((struct socket_id*)t->elem[2].u.data)->proto,
+					ZSW(((struct socket_id*)t->elem[2].u.data)->name),
+					((struct socket_id*)t->elem[2].u.data)->port
 					);
 			break;
 	default:
-			DBG(", type<%d>", t->p3_type);
+			DBG(", type<%d>", t->elem[2].type);
 	}
 	if (t->type==IF_T) DBG("}; ");
 	else	DBG("); ");

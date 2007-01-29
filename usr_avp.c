@@ -282,14 +282,14 @@ struct usr_avp *search_first_avp( unsigned short flags,
 	}
 
 	if ( name.n==0) {
-		LOG(L_ERR,"ERROR:avp:search_first_avp: 0 ID or NULL NAME AVP!");
+		LOG(L_ERR,"ERROR:avp:search_first_avp: 0 ID or NULL NAME AVP!\n");
 		return 0;
 	}
 
 	/* search for the AVP by ID (&name) */
 	if (flags&AVP_NAME_STR) {
 		if ( name.s.s==0 || name.s.len==0) {
-			LOG(L_ERR,"ERROR:avp:search_first_avp: EMPTY NAME AVP!");
+			LOG(L_ERR,"ERROR:avp:search_first_avp: EMPTY NAME AVP!\n");
 			return 0;
 		}
 		avp = internal_search_name_avp(head,compute_ID(&name.s),&name.s,

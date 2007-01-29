@@ -74,6 +74,7 @@
 	#define COMMENT_S		1
 	#define COMMENT_LN_S	2
 	#define STRING_S		3
+	#define SCRIPTVAR_S		4
 
 	#define STR_BUF_ALLOC_UNIT	128
 	struct str_buf{
@@ -87,6 +88,8 @@
 	static int state=0;
 	static struct str_buf s_buf;
 	int line=1;
+	int np=0;
+	int svar_tlen=0;
 	int column=1;
 	int startcolumn=1;
 
@@ -98,10 +101,7 @@
 %}
 
 /* start conditions */
-%x STRING1 STRING2 COMMENT COMMENT_LN
-
-/* Don't emit a yyunput function in the generated scanner.  */
-%option nounput
+%x STRING1 STRING2 COMMENT COMMENT_LN SCRIPTVARS
 
 /* action keywords */
 FORWARD	forward
@@ -111,7 +111,6 @@ FORWARD_TLS	forward_tls
 DROP	"drop"
 EXIT	"exit"
 RETURN	"return"
-RETCODE	"retcode"|"$\?"
 SEND	send
 SEND_TCP	send_tcp
 LOG		log
@@ -121,7 +120,6 @@ ROUTE_FAILURE failure_route
 ROUTE_ONREPLY onreply_route
 ROUTE_BRANCH branch_route
 ROUTE_ERROR error_route
-EXEC	exec
 FORCE_RPORT		"force_rport"|"add_rport"
 FORCE_LOCAL_RPORT		"force_local_rport"|"add_local_rport"
 FORCE_TCP_ALIAS		"force_tcp_alias"|"add_tcp_alias"
@@ -185,6 +183,7 @@ PROTO	proto
 AF		af
 MYSELF	myself
 MSGLEN			"msg:len"
+
 /* operators */
 EQUAL	=
 EQUAL_T	==
@@ -193,12 +192,35 @@ LT	<
 GTE	>=
 LTE	<=
 DIFF	!=
-MATCH	=~
+MATCH		=~
+NOTMATCH	!~
+BAND	"&"
+BOR		"|"
+BXOR	"^"
+BNOT	"`"
 NOT		!|"not"
-AND		"and"|"&&"|"&"
-OR		"or"|"||"|"|"
+AND		"and"|"&&"
+OR		"or"|"||"
 PLUS	"+"
 MINUS	"-"
+MULT	"*"
+MODULO	"%"
+PLUSEQ	"+="
+MINUSEQ	"-="
+SLASHEQ	"/="
+MULTEQ	"*="
+MODULOEQ	"%="
+BANDEQ	"&="
+BOREQ	"|="
+BXOREQ	"^="
+
+ASSIGNOP	{EQUAL}|{PLUSEQ}|{MINUSEQ}|{SLASHEQ}|{MULTEQ}|{MODULOEQ}|{BANDEQ}|{BOREQ}|{BXOREQ}
+BITOP		{BAND}|{BOR}|{BXOR}|{BNOT}
+ARITHOP		{PLUS}|{MINUS}|{SLASH}|{MULT}|{MODULO}
+LOGOP		{EQUAL_T}|{GT}|{LT}|{GTE}|{LTE}|{DIFF}|{MATCH}|{NOTMATCH}|{NOT}|{AND}|{OR}
+
+/* variables */
+SCRIPTVAR_START	"$"
 
 /* config vars. */
 DEBUG	debug
@@ -286,6 +308,7 @@ SSLv23			"sslv23"|"SSLv23"|"SSLV23"
 SSLv2			"sslv2"|"SSLv2"|"SSLV2"
 SSLv3			"sslv3"|"SSLv3"|"SSLV3"
 TLSv1			"tlsv1"|"TLSv1"|"TLSV1"
+NULLV			"null"|"NULL"
 
 LETTER		[a-zA-Z]
 DIGIT		[0-9]
@@ -309,10 +332,10 @@ LBRACK		\[
 RBRACK		\]
 COMMA		","
 COLON		":"
-STAR		\*
 DOT			\.
 CR			\n
 
+ANY		"any"
 
 
 COM_LINE	#
@@ -320,6 +343,7 @@ COM_START	"/\*"
 COM_END		"\*/"
 
 EAT_ABLE	[\ \t\b\r]
+WHITESPACE	[ \t\r\n]
 
 %%
 
@@ -330,7 +354,6 @@ EAT_ABLE	[\ \t\b\r]
 <INITIAL>{DROP}	{ count(); yylval.strval=yytext; return DROP; }
 <INITIAL>{EXIT}	{ count(); yylval.strval=yytext; return EXIT; }
 <INITIAL>{RETURN}	{ count(); yylval.strval=yytext; return RETURN; }
-<INITIAL>{RETCODE}	{ count(); yylval.strval=yytext; return RETCODE; }
 <INITIAL>{SEND}	{ count(); yylval.strval=yytext; return SEND; }
 <INITIAL>{LOG}	{ count(); yylval.strval=yytext; return LOG_TOK; }
 <INITIAL>{ERROR}	{ count(); yylval.strval=yytext; return ERROR; }
@@ -351,7 +374,6 @@ EAT_ABLE	[\ \t\b\r]
 								return ROUTE_FAILURE; }
 <INITIAL>{ROUTE_BRANCH} { count(); yylval.strval=yytext; return ROUTE_BRANCH; }
 <INITIAL>{ROUTE_ERROR} { count(); yylval.strval=yytext; return ROUTE_ERROR; }
-<INITIAL>{EXEC}	{ count(); yylval.strval=yytext; return EXEC; }
 <INITIAL>{SET_HOST}	{ count(); yylval.strval=yytext; return SET_HOST; }
 <INITIAL>{SET_HOSTPORT}	{ count(); yylval.strval=yytext; return SET_HOSTPORT; }
 <INITIAL>{SET_USER}	{ count(); yylval.strval=yytext; return SET_USER; }
@@ -514,11 +536,26 @@ EAT_ABLE	[\ \t\b\r]
 <INITIAL>{LTE}	{ count(); return LTE; }
 <INITIAL>{DIFF}	{ count(); return DIFF; }
 <INITIAL>{MATCH}	{ count(); return MATCH; }
+<INITIAL>{NOTMATCH}	{ count(); return NOTMATCH; }
 <INITIAL>{NOT}		{ count(); return NOT; }
 <INITIAL>{AND}		{ count(); return AND; }
 <INITIAL>{OR}		{ count(); return OR;  }
 <INITIAL>{PLUS}		{ count(); return PLUS; }
 <INITIAL>{MINUS}	{ count(); return MINUS; }
+<INITIAL>{BAND}	{ count(); return BAND; }
+<INITIAL>{BOR}	{ count(); return BOR; }
+<INITIAL>{BXOR}	{ count(); return BXOR; }
+<INITIAL>{BNOT}	{ count(); return BNOT; }
+<INITIAL>{MULT}	{ count(); return MULT; }
+<INITIAL>{MODULO}	{ count(); return MODULO; }
+<INITIAL>{PLUSEQ}	{ count(); return PLUSEQ; }
+<INITIAL>{MINUSEQ}	{ count(); return MINUSEQ; }
+<INITIAL>{SLASHEQ}	{ count(); return SLASHEQ; }
+<INITIAL>{MULTEQ}	{ count(); return MULTEQ; }
+<INITIAL>{MODULOEQ}	{ count(); return MODULOEQ; }
+<INITIAL>{BANDEQ}	{ count(); return BANDEQ; }
+<INITIAL>{BOREQ}	{ count(); return BOREQ; }
+<INITIAL>{BXOREQ}	{ count(); return BXOREQ; }
 
 
 
@@ -530,6 +567,8 @@ EAT_ABLE	[\ \t\b\r]
 							return NUMBER; }
 <INITIAL>{YES}			{ count(); yylval.intval=1; return NUMBER; }
 <INITIAL>{NO}			{ count(); yylval.intval=0; return NUMBER; }
+<INITIAL>{NULLV}		{ count(); yylval.intval=0; return NUMBER;
+							/*return NULLV;*/ }
 <INITIAL>{TCP}			{ count(); return TCP; }
 <INITIAL>{UDP}			{ count(); return UDP; }
 <INITIAL>{TLS}			{ count(); return TLS; }
@@ -549,18 +588,85 @@ EAT_ABLE	[\ \t\b\r]
 <INITIAL>{COMMA}		{ count(); return COMMA; }
 <INITIAL>{SEMICOLON}	{ count(); return SEMICOLON; }
 <INITIAL>{COLON}	{ count(); return COLON; }
-<INITIAL>{STAR}	{ count(); return STAR; }
 <INITIAL>{RPAREN}	{ count(); return RPAREN; }
 <INITIAL>{LPAREN}	{ count(); return LPAREN; }
 <INITIAL>{LBRACE}	{ count(); return LBRACE; }
 <INITIAL>{RBRACE}	{ count(); return RBRACE; }
 <INITIAL>{LBRACK}	{ count(); return LBRACK; }
 <INITIAL>{RBRACK}	{ count(); return RBRACK; }
-<INITIAL>{SLASH}	{ count(); return SLASH; }
 <INITIAL>{DOT}		{ count(); return DOT; }
 <INITIAL>\\{CR}		{count(); } /* eat the escaped CR */
 <INITIAL>{CR}		{ count();/* return CR;*/ }
+<INITIAL>{ANY}	{ count(); return ANY; }
+<INITIAL>{SLASH}	{ count(); return SLASH; }
 
+<INITIAL>{SCRIPTVAR_START} { count(); np=0; state=SCRIPTVAR_S;
+								svar_tlen = yyleng;
+								yymore();
+								BEGIN(SCRIPTVARS);
+							}
+<SCRIPTVARS>{LPAREN} { count(); np++; yymore(); svar_tlen = yyleng; }
+<SCRIPTVARS>{RPAREN} { 
+			count();
+			if(np==0 || np==1) {
+				if(np==0)
+				{
+					addstr(&s_buf, yytext, yyleng-1);
+					unput(yytext[yyleng-1]);
+					yyleng--;
+				} else {
+					addstr(&s_buf, yytext, yyleng);
+					np--;
+				}
+				state=INITIAL_S;
+				BEGIN(INITIAL);
+				yylval.strval=s_buf.s;
+				memset(&s_buf, 0, sizeof(s_buf));
+				return SCRIPTVAR;
+			} else {
+				np--;
+				yymore();
+				svar_tlen = yyleng;
+			}
+		}
+<SCRIPTVARS>{WHITESPACE} {
+			count();
+			if(np==0) {
+				addstr(&s_buf, yytext, yyleng-1);
+				unput(yytext[yyleng-1]);
+				yyleng--;
+				state=INITIAL_S;
+				BEGIN(INITIAL);
+				yylval.strval=s_buf.s;
+				memset(&s_buf, 0, sizeof(s_buf));
+				return SCRIPTVAR;
+			} else {
+				yymore();
+				svar_tlen = yyleng;
+			}
+		}
+<SCRIPTVARS>{SEMICOLON}|{ASSIGNOP}|{ARITHOP}|{BITOP}|{LOGOP} {
+						count();
+						if(np==0) {
+							addstr(&s_buf, yytext, svar_tlen);
+							while(yyleng>svar_tlen) {
+								unput(yytext[yyleng-1]);
+								yyleng--;
+							}
+							state=INITIAL_S;
+							BEGIN(INITIAL);
+							yylval.strval=s_buf.s;
+							printf("====== [%s] \n", yylval.strval);
+							memset(&s_buf, 0, sizeof(s_buf));
+							return SCRIPTVAR;
+						} else {
+							state=INITIAL_S;
+							BEGIN(INITIAL);
+							memset(&s_buf, 0, sizeof(s_buf));
+							return SCRIPTVARERR;
+						}
+				}
+<SCRIPTVARS>.	{ yymore(); svar_tlen = yyleng; }
 
 <INITIAL>{QUOTES} { count(); state=STRING_S; BEGIN(STRING1); }
 <INITIAL>{TICK} { count(); state=STRING_S; BEGIN(STRING2); }

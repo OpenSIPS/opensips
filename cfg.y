@@ -96,6 +96,7 @@
 #include "name_alias.h"
 #include "ut.h"
 #include "dset.h"
+#include "items.h"
 
 
 #include "config.h"
@@ -123,6 +124,9 @@ static int rt;  /* Type of route block for find_export */
 static str* str_tmp;
 static str s_tmp;
 static struct ip_addr* ip_tmp;
+static xl_spec_t *spec;
+
+action_elem_t elems[MAX_ACTION_ELEMS];
 
 #if !defined(USE_TLS) || !defined(USE_TCP)
 static void warn(char* s);
@@ -134,10 +138,35 @@ static char mpath_buf[256];
 static int  mpath_len = 0;
 
 extern int line;
-#define mk_action(_type, _p1_type, _p2_type, _p1, _p2) \
-	mk_action_2p(_type, _p1_type, _p2_type, _p1, _p2, line)
-#define mk_action3(_type, _p1_type, _p2_type, _p3_type, _p1, _p2, _p3) \
-	mk_action_3p(_type, _p1_type, _p2_type, _p3_type, _p1, _p2, _p3, line)
+
+#define mk_action0(_res, _type, _p1_type, _p2_type, _p1, _p2) \
+	do { \
+		_res = mk_action(_type, 0, 0, line); \
+	} while(0)
+#define mk_action1(_res, _type, _p1_type, _p2_type, _p1, _p2) \
+	do { \
+		elems[0].type = _p1_type; \
+		elems[0].u.data = _p1; \
+		_res = mk_action(_type, 1, elems, line); \
+	} while(0)
+#define mk_action2(_res, _type, _p1_type, _p2_type, _p1, _p2) \
+	do { \
+		elems[0].type = _p1_type; \
+		elems[0].u.data = _p1; \
+		elems[1].type = _p2_type; \
+		elems[1].u.data = _p2; \
+		_res = mk_action(_type, 2, elems, line); \
+	} while(0)
+#define mk_action3(_res, _type, _p1_type, _p2_type, _p3_type, _p1, _p2, _p3) \
+	do { \
+		elems[0].type = _p1_type; \
+		elems[0].u.data = _p1; \
+		elems[1].type = _p2_type; \
+		elems[1].u.data = _p2; \
+		elems[2].type = _p3_type; \
+		elems[2].u.data = _p3; \
+		_res = mk_action(_type, 3, elems, line); \
+	} while(0)
 
 %}
 
@@ -150,6 +179,7 @@ extern int line;
 	struct net* ipnet;
 	struct ip_addr* ipaddr;
 	struct socket_id* sockid;
+	struct _xl_spec *specval;
 }
 
 /* terminals */
@@ -161,7 +191,6 @@ extern int line;
 %token DROP
 %token EXIT
 %token RETURN
-%token RETCODE
 %token LOG_TOK
 %token ERROR
 %token ROUTE
@@ -169,7 +198,6 @@ extern int line;
 %token ROUTE_ONREPLY
 %token ROUTE_BRANCH
 %token ROUTE_ERROR
-%token EXEC
 %token SET_HOST
 %token SET_HOSTPORT
 %token PREFIX
@@ -223,6 +251,7 @@ extern int line;
 %token UDP
 %token TCP
 %token TLS
+%token NULLV
 
 /* config vars. */
 %token DEBUG
@@ -313,16 +342,26 @@ extern int line;
 %nonassoc LTE
 %nonassoc DIFF
 %nonassoc MATCH
-%left OR
-%left AND
-%left NOT
-%left PLUS
-%left MINUS
+%nonassoc NOTMATCH
+%nonassoc PLUSEQ
+%nonassoc MINUSEQ
+%nonassoc SLASHEQ
+%nonassoc MULTEQ
+%nonassoc MODULOEQ
+%nonassoc BANDEQ
+%nonassoc BOREQ
+%nonassoc BXOREQ
+
+%left OR AND
+%left BOR BAND BXOR
+%left PLUS MINUS SLASH MULT MODULO
+%right NOT BNOT
 
 /* values */
 %token <intval> NUMBER
 %token <strval> ID
 %token <strval> STRING
+%token <strval> SCRIPTVAR
 %token <strval> IPV6ADDR
 
 /* other */
@@ -338,25 +377,26 @@ extern int line;
 %token DOT
 %token CR
 %token COLON
-%token STAR
+%token ANY
+%token SCRIPTVARERR
 
 
 /*non-terminals */
-%type <expr> exp exp_elem /*, condition*/
-%type <action> action actions cmd if_cmd stm exp_stm switch_cmd switch_stm case_stms case_stm default_stm
+%type <expr> exp exp_elem exp_cond assignexp /*, condition*/
+%type <action> action actions cmd if_cmd stm exp_stm assign_cmd
+%type <action> switch_cmd switch_stm case_stms case_stm default_stm
 %type <ipaddr> ipv4 ipv6 ipv6addr ip
 %type <ipnet> ipnet
+%type <specval> script_var
 %type <strval> host
 %type <strval> listen_id
 %type <sockid>  id_lst
 %type <sockid>  phostport
 %type <intval> proto port
-%type <intval> equalop strop intop
 %type <strval> host_sep
 %type <intval> uri_type
-/*%type <route_el> rules;
-  %type <route_el> rule;
-*/
+%type <intval> equalop compop matchop strop intop
+%type <intval> assignop
 
 
 
@@ -425,11 +465,11 @@ proto:	  UDP	{ $$=PROTO_UDP; }
 				warn("tls support not compiled in");
 			#endif
 			}
-		| STAR	{ $$=0; }
+		| ANY	{ $$=0; }
 		;
 
 port:	  NUMBER	{ $$=$1; }
-		| STAR		{ $$=0; }
+		| ANY		{ $$=0; }
 ;
 
 phostport:	listen_id				{ $$=mk_listen_id($1, 0, 0); }
@@ -1276,174 +1316,181 @@ error_route_stm:  ROUTE_ERROR LBRACE actions RBRACE {
 		| ROUTE_ERROR error { yyerror("invalid error_route statement"); }
 	;
 
-/*
-rules:	rules rule { push($2, &$1); $$=$1; }
-	| rule {$$=$1; }
-	| rules error { $$=0; yyerror("invalid rule"); }
-	 ;
-
-rule:	condition	actions CR {
-								$$=0;
-								if (add_rule($1, $2, &$$)<0) {
-									yyerror("error calling add_rule");
-									YYABORT;
-								}
-							  }
-	| CR		{ $$=0;}
-	| condition error { $$=0; yyerror("bad actions in rule"); }
-	;
-
-condition:	exp {$$=$1;}
-*/
-
 exp:	exp AND exp 	{ $$=mk_exp(AND_OP, $1, $3); }
 	| exp OR  exp		{ $$=mk_exp(OR_OP, $1, $3);  }
 	| NOT exp 			{ $$=mk_exp(NOT_OP, $2, 0);  }
-	| LPAREN exp RPAREN	{ $$=$2; }
+	| LPAREN exp RPAREN	{ $$=mk_exp(EVAL_OP, $2, 0); }
+	| LBRACK assignexp RBRACK { $$=$2; }
 	| exp_elem			{ $$=$1; }
 	;
 
 equalop:	  EQUAL_T {$$=EQUAL_OP; }
 			| DIFF	{$$=DIFF_OP; }
 		;
-		
-intop:	equalop	{$$=$1; }
-		|  GT	{$$=GT_OP; }
+
+compop:	GT	{$$=GT_OP; }
 		| LT	{$$=LT_OP; }
 		| GTE	{$$=GTE_OP; }
 		| LTE	{$$=LTE_OP; }
-		;
+	;		
+matchop: MATCH	{$$=MATCH_OP; }
+		| NOTMATCH	{$$=NOTMATCH_OP; }
+	;
+
+intop:	equalop	{$$=$1; }
+	 | compop	{$$=$1; }
+	;
 		
 strop:	equalop	{$$=$1; }
-		| MATCH	{$$=MATCH_OP; }
-		;
+	    | compop {$$=$1; }
+		| matchop	{$$=$1; }
+	;
 
 uri_type:	URI			{$$=URI_O;}
 		|	FROM_URI	{$$=FROM_URI_O;}
 		|	TO_URI		{$$=TO_URI_O;}
 		;
 
-exp_elem:	METHOD strop STRING	{$$= mk_elem(	$2, STRING_ST, 
-													METHOD_O, $3);
+script_var:	SCRIPTVAR	{ 
+				/* printf("\n+++ scriptvar <%s>\n", $1); */
+				spec = (xl_spec_t*)pkg_malloc(sizeof(xl_spec_t));
+				memset(spec, 0, sizeof(xl_spec_t));
+				if(xl_parse_spec($1, spec, 0)==NULL)
+				{
+					yyerror("unknown script variable");
+				}
+				$$ = spec;
+			}
+		| SCRIPTVARERR {
+			$$=0; yyerror("invalid script variable name");
+		}
+		;
+
+exp_elem: exp_cond		{$$=$1}
+		| exp_stm		{$$=mk_elem( NO_OP, ACTION_O, 0, ACTIONS_ST, $1 ); }
+		| NUMBER		{$$=mk_elem( NO_OP, NUMBER_O, 0, NUMBER_ST, 
+											(void*)$1 ); }
+		| script_var    {
+				$$=mk_elem(NO_OP, SCRIPTVAR_O,0,SCRIPTVAR_ST,(void*)$1);
+			}
+		| uri_type strop host 	{$$ = mk_elem($2, $1, 0, STRING_ST, $3); 
+				 			}
+		| DSTIP equalop ipnet	{ $$=mk_elem($2, DSTIP_O, 0, NET_ST, $3);
+								}
+		| DSTIP strop host	{ $$=mk_elem($2, DSTIP_O, 0, STRING_ST, $3);
+								}
+		| SRCIP equalop ipnet	{ $$=mk_elem($2, SRCIP_O, 0, NET_ST, $3);
+								}
+		| SRCIP strop host	{ $$=mk_elem($2, SRCIP_O, 0, STRING_ST, $3);
+								}
+	;
+
+exp_cond:	METHOD strop STRING	{$$= mk_elem($2, METHOD_O, 0, STRING_ST, $3);
 									}
-		| METHOD strop  ID	{$$ = mk_elem(	$2, STRING_ST,
-											METHOD_O, $3); 
+		| METHOD strop  ID	{$$ = mk_elem($2, METHOD_O, 0, STRING_ST, $3); 
 				 			}
 		| METHOD strop error { $$=0; yyerror("string expected"); }
 		| METHOD error	{ $$=0; yyerror("invalid operator,"
 										"== , !=, or =~ expected");
 						}
-		| uri_type strop STRING	{$$ = mk_elem(	$2, STRING_ST,
-												$1, $3); 
+		| script_var strop script_var {
+				$$=mk_elem( $2, SCRIPTVAR_O,(void*)$1,SCRIPTVAR_ST,(void*)$3);
+			}
+		| script_var strop STRING {
+				$$=mk_elem( $2, SCRIPTVAR_O,(void*)$1,STRING_ST,$3);
+			}
+		| script_var strop ID {
+				$$=mk_elem( $2, SCRIPTVAR_O,(void*)$1,STRING_ST,$3);
+			}
+		| script_var intop NUMBER {
+				$$=mk_elem( $2, SCRIPTVAR_O,(void*)$1,NUMBER_ST,(void *)$3);
+			}
+		| script_var equalop MYSELF	{ 
+				$$=mk_elem( $2, SCRIPTVAR_O,(void*)$1, MYSELF_ST, 0);
+			}
+		| uri_type strop STRING	{$$ = mk_elem($2, $1, 0, STRING_ST, $3); 
 				 				}
-		| uri_type strop host 	{$$ = mk_elem(	$2, STRING_ST,
-											$1, $3); 
-				 			}
-		| uri_type equalop MYSELF	{ $$=mk_elem(	$2, MYSELF_ST,
-													$1, 0);
+		| uri_type equalop MYSELF	{ $$=mk_elem($2, $1, 0, MYSELF_ST, 0);
 								}
 		| uri_type strop error { $$=0; yyerror("string or MYSELF expected"); }
 		| uri_type error	{ $$=0; yyerror("invalid operator,"
 									" == , != or =~ expected");
 					}
-		| SRCPORT intop NUMBER	{ $$=mk_elem(	$2, NUMBER_ST,
-												SRCPORT_O, (void *) $3 ); }
+		| SRCPORT intop NUMBER	{ $$=mk_elem($2, SRCPORT_O, 0, NUMBER_ST,
+												(void *) $3 ); }
 		| SRCPORT intop error { $$=0; yyerror("number expected"); }
 		| SRCPORT error { $$=0; yyerror("==, !=, <,>, >= or <=  expected"); }
-		| DSTPORT intop NUMBER	{ $$=mk_elem(	$2, NUMBER_ST,
-												DSTPORT_O, (void *) $3 ); }
+		| DSTPORT intop NUMBER	{ $$=mk_elem($2, DSTPORT_O, 0, NUMBER_ST,
+												(void *) $3 ); }
 		| DSTPORT intop error { $$=0; yyerror("number expected"); }
 		| DSTPORT error { $$=0; yyerror("==, !=, <,>, >= or <=  expected"); }
-		| PROTO intop proto	{ $$=mk_elem(	$2, NUMBER_ST,
-												PROTO_O, (void *) $3 ); }
+		| PROTO intop proto	{ $$=mk_elem($2, PROTO_O, 0, NUMBER_ST,
+												(void *) $3 ); }
 		| PROTO intop error { $$=0;
 								yyerror("protocol expected (udp, tcp or tls)");
 							}
 		| PROTO error { $$=0; yyerror("equal/!= operator expected"); }
-		| AF intop NUMBER	{ $$=mk_elem(	$2, NUMBER_ST,
-												AF_O, (void *) $3 ); }
+		| AF intop NUMBER	{ $$=mk_elem($2, AF_O, 0, NUMBER_ST,
+												(void *) $3 ); }
 		| AF intop error { $$=0; yyerror("number expected"); }
 		| AF error { $$=0; yyerror("equal/!= operator expected"); }
-		| RETCODE intop NUMBER	{ $$=mk_elem(	$2, NUMBER_ST,
-												RETCODE_O, (void *) $3 ); }
-		| RETCODE intop error { $$=0; yyerror("number expected"); }
-		| RETCODE error { $$=0; yyerror("==, >, <, != ... operator expected"); }
-		| MSGLEN intop NUMBER	{ $$=mk_elem(	$2, NUMBER_ST,
-												MSGLEN_O, (void *) $3 ); }
-		| MSGLEN intop MAX_LEN	{ $$=mk_elem(	$2, NUMBER_ST,
-												MSGLEN_O, (void *) BUF_SIZE); }
+		| MSGLEN intop NUMBER	{ $$=mk_elem($2, MSGLEN_O, 0, NUMBER_ST,
+												(void *) $3 ); }
+		| MSGLEN intop MAX_LEN	{ $$=mk_elem($2, MSGLEN_O, 0, NUMBER_ST,
+												(void *) BUF_SIZE); }
 		| MSGLEN intop error { $$=0; yyerror("number expected"); }
 		| MSGLEN error { $$=0; yyerror("equal/!= operator expected"); }
-		| SRCIP equalop ipnet	{ $$=mk_elem(	$2, NET_ST,
-												SRCIP_O, $3);
-								}
 		| SRCIP strop STRING	{	s_tmp.s=$3;
 									s_tmp.len=strlen($3);
 									ip_tmp=str2ip(&s_tmp);
 									if (ip_tmp==0)
 										ip_tmp=str2ip6(&s_tmp);
 									if (ip_tmp){
-										$$=mk_elem(	$2, NET_ST, SRCIP_O,
+										$$=mk_elem($2, SRCIP_O, 0, NET_ST,
 												mk_net_bitlen(ip_tmp, 
 														ip_tmp->len*8) );
 									}else{
-										$$=mk_elem(	$2, STRING_ST,
-												SRCIP_O, $3);
+										$$=mk_elem($2, SRCIP_O, 0, STRING_ST,
+												$3);
 									}
 								}
-		| SRCIP strop host	{ $$=mk_elem(	$2, STRING_ST,
-												SRCIP_O, $3);
-								}
-		| SRCIP equalop MYSELF  { $$=mk_elem(	$2, MYSELF_ST,
-												SRCIP_O, 0);
+		| SRCIP equalop MYSELF  { $$=mk_elem($2, SRCIP_O, 0, MYSELF_ST, 0);
 								}
 		| SRCIP strop error { $$=0; yyerror( "ip address or hostname"
 						 "expected" ); }
 		| SRCIP error  { $$=0; 
 						 yyerror("invalid operator, ==, != or =~ expected");}
-		| DSTIP equalop ipnet	{ $$=mk_elem(	$2, NET_ST,
-												DSTIP_O, $3);
-								}
 		| DSTIP strop STRING	{	s_tmp.s=$3;
 									s_tmp.len=strlen($3);
 									ip_tmp=str2ip(&s_tmp);
 									if (ip_tmp==0)
 										ip_tmp=str2ip6(&s_tmp);
 									if (ip_tmp){
-										$$=mk_elem(	$2, NET_ST, DSTIP_O,
+										$$=mk_elem($2, DSTIP_O, 0, NET_ST,
 												mk_net_bitlen(ip_tmp, 
 														ip_tmp->len*8) );
 									}else{
-										$$=mk_elem(	$2, STRING_ST,
-												DSTIP_O, $3);
+										$$=mk_elem($2, DSTIP_O, 0, STRING_ST,
+												$3);
 									}
 								}
-		| DSTIP strop host	{ $$=mk_elem(	$2, STRING_ST,
-												DSTIP_O, $3);
-								}
-		| DSTIP equalop MYSELF  { $$=mk_elem(	$2, MYSELF_ST,
-												DSTIP_O, 0);
+		| DSTIP equalop MYSELF  { $$=mk_elem($2, DSTIP_O, 0, MYSELF_ST, 0);
 								}
 		| DSTIP strop error { $$=0; yyerror( "ip address or hostname"
 						 			"expected" ); }
 		| DSTIP error { $$=0; 
 						yyerror("invalid operator, ==, != or =~ expected");}
-		| MYSELF equalop uri_type	{ $$=mk_elem(	$2, MYSELF_ST,
-													$3, 0);
+		| MYSELF equalop uri_type	{ $$=mk_elem($2, $3, 0, MYSELF_ST, 0);
 								}
-		| MYSELF equalop SRCIP  { $$=mk_elem(	$2, MYSELF_ST,
-												SRCIP_O, 0);
+		| MYSELF equalop SRCIP  { $$=mk_elem($2, SRCIP_O, 0, MYSELF_ST, 0);
 								}
-		| MYSELF equalop DSTIP  { $$=mk_elem(	$2, MYSELF_ST,
-												DSTIP_O, 0);
+		| MYSELF equalop DSTIP  { $$=mk_elem($2, DSTIP_O, 0, MYSELF_ST, 0);
 								}
 		| MYSELF equalop error {	$$=0; 
 									yyerror(" URI, SRCIP or DSTIP expected"); }
 		| MYSELF error	{ $$=0; 
 							yyerror ("invalid operator, == or != expected");
 						}
-		| exp_stm		{$$=mk_elem( NO_OP, ACTIONS_ST, ACTION_O, $1 ); }
-		| NUMBER		{$$=mk_elem( NO_OP, NUMBER_ST, NUMBER_O, (void*)$1 ); }
 	;
 
 ipnet:	ip SLASH ip	{ $$=mk_net($1, $3); } 
@@ -1486,9 +1533,77 @@ host:	ID				{ $$=$1; }
 	| host DOT error { $$=0; pkg_free($1); yyerror("invalid hostname"); }
 	;
 
+assignop:
+	EQUAL { $$ = EQ_T; }
+	| PLUSEQ { $$ = PLUSEQ_T; }
+	| MINUSEQ { $$ = MINUSEQ_T; }
+	| SLASHEQ { $$ = DIVEQ_T; }
+	| MULTEQ { $$ = MULTEQ_T; }
+	| MODULOEQ { $$ = MODULOEQ_T; }
+	| BANDEQ { $$ = BANDEQ_T; }
+	| BOREQ { $$ = BOREQ_T; }
+	| BXOREQ { $$ = BXOREQ_T; } 
+	;
 
+assignexp :
+	NUMBER { $$ = mk_elem(VALUE_OP, NUMBERV_O, (void*)$1, 0, 0); }
+	| STRING { $$ = mk_elem(VALUE_OP, STRINGV_O, $1, 0, 0); }
+	| ID { $$ = mk_elem(VALUE_OP, STRINGV_O, $1, 0, 0); }
+	| script_var { $$ = mk_elem(VALUE_OP, SCRIPTVAR_O, $1, 0, 0); }
+	| exp_cond { $$= $1 }
+	| cmd { $$=mk_elem( NO_OP, ACTION_O, 0, ACTIONS_ST, $1 ); }
+	| assignexp PLUS assignexp { 
+				$$ = mk_elem(PLUS_OP, EXPR_O, $1, EXPR_ST, $3);
+			}
+	| assignexp MINUS assignexp { 
+				$$ = mk_elem(MINUS_OP, EXPR_O, $1, EXPR_ST, $3); 
+			}
+	| assignexp MULT assignexp { 
+				$$ = mk_elem(MULT_OP, EXPR_O, $1, EXPR_ST, $3);
+			}
+	| assignexp SLASH assignexp { 
+				$$ = mk_elem(DIV_OP, EXPR_O, $1, EXPR_ST, $3);
+			}
+	| assignexp MODULO assignexp { 
+				$$ = mk_elem(MODULO_OP, EXPR_O, $1, EXPR_ST, $3);
+			}
+	| assignexp BAND assignexp { 
+				$$ = mk_elem(BAND_OP, EXPR_O, $1, EXPR_ST, $3);
+			}
+	| assignexp BOR assignexp { 
+				$$ = mk_elem(BOR_OP, EXPR_O, $1, EXPR_ST, $3);
+			}
+	| assignexp BXOR assignexp { 
+				$$ = mk_elem(BXOR_OP, EXPR_O, $1, EXPR_ST, $3);
+			}
+	| BNOT assignexp { 
+				$$ = mk_elem(BNOT_OP, EXPR_O, $2, 0, 0);
+			}
+	| LPAREN assignexp RPAREN { $$ = $2; }
+	;
+
+assign_cmd: script_var assignop assignexp {	
+					switch($1->type) {
+						case XL_AVP:
+						case XL_SCRIPTVAR:
+						case XL_RURI:
+						case XL_RURI_USERNAME:
+						case XL_RURI_DOMAIN:
+						case XL_DSTURI:
+						break;
+						default:
+						yyerror("invalid left operand in assignment");
+					}
+					mk_action2( $$, $2,
+							SCRIPTVAR_ST,
+							EXPR_ST,
+							$1,
+							$3);
+						}
+		  ; 
 exp_stm:	cmd						{ $$=$1; }
 		|	if_cmd					{ $$=$1; }
+		|	assign_cmd				{ $$=$1; }
 		|	LBRACE actions RBRACE	{ $$=$2; }
 		|	LBRACE RBRACE			{ $$=0; }
 	;
@@ -1500,17 +1615,18 @@ stm:		action					{ $$=$1; }
 
 actions:	actions action	{$$=append_action($1, $2); }
 		| action			{$$=$1;}
-		| actions error { $$=0; yyerror("bad command (!!!attention: from v1.0.0+ use 'return' instead of 'break'!!!)"); }
+		| actions error { $$=0; yyerror("bad command!)"); }
 	;
 
 action:		cmd SEMICOLON {$$=$1;}
 		| if_cmd {$$=$1;}
 		| switch_cmd {$$=$1;}
+		| assign_cmd SEMICOLON {$$=$1;}
 		| SEMICOLON /* null action */ {$$=0;}
 		| cmd error { $$=0; yyerror("bad command: missing ';'?"); }
 	;
 
-if_cmd:		IF exp stm				{ $$=mk_action3( IF_T,
+if_cmd:		IF exp stm				{ mk_action3( $$, IF_T,
 													 EXPR_ST,
 													 ACTIONS_ST,
 													 NOSUBTYPE,
@@ -1518,7 +1634,7 @@ if_cmd:		IF exp stm				{ $$=mk_action3( IF_T,
 													 $3,
 													 0);
 									}
-		|	IF exp stm ELSE stm		{ $$=mk_action3( IF_T,
+		| IF exp stm ELSE stm		{ mk_action3( $$, IF_T,
 													 EXPR_ST,
 													 ACTIONS_ST,
 													 ACTIONS_ST,
@@ -1526,13 +1642,14 @@ if_cmd:		IF exp stm				{ $$=mk_action3( IF_T,
 													 $3,
 													 $5);
 									}
+
 	;
 
-switch_cmd:		SWITCH LPAREN RETCODE RPAREN LBRACE switch_stm	RBRACE	{
-											$$=mk_action( SWITCH_T,
-														NUMBER_ST,
+switch_cmd:		SWITCH LPAREN script_var RPAREN LBRACE switch_stm	RBRACE	{
+											mk_action2( $$, SWITCH_T,
+														SCRIPTVAR_ST,
 														ACTIONS_ST,
-														(void*)1,
+														$3,
 														$6);
 									}
 	;
@@ -1545,7 +1662,7 @@ case_stms:	case_stms case_stm	{$$=append_action($1, $2); }
 	;
 
 case_stm: CASE NUMBER COLON actions SBREAK SEMICOLON 
-										{ $$=mk_action3(CASE_T,
+										{ mk_action3( $$, CASE_T,
 													NUMBER_ST,
 													ACTIONS_ST,
 													NUMBER_ST,
@@ -1554,7 +1671,7 @@ case_stm: CASE NUMBER COLON actions SBREAK SEMICOLON
 													(void*)1);
 											}
 		| CASE NUMBER COLON SBREAK SEMICOLON 
-										{ $$=mk_action3(CASE_T,
+										{ mk_action3( $$, CASE_T,
 													NUMBER_ST,
 													ACTIONS_ST,
 													NUMBER_ST,
@@ -1562,7 +1679,7 @@ case_stm: CASE NUMBER COLON actions SBREAK SEMICOLON
 													0,
 													(void*)1);
 											}
-		| CASE NUMBER COLON actions { $$=mk_action3(CASE_T,
+		| CASE NUMBER COLON actions { mk_action3( $$, CASE_T,
 													NUMBER_ST,
 													ACTIONS_ST,
 													NUMBER_ST,
@@ -1570,7 +1687,7 @@ case_stm: CASE NUMBER COLON actions SBREAK SEMICOLON
 													$4,
 													(void*)0);
 									}
-		| CASE NUMBER COLON { $$=mk_action3(CASE_T,
+		| CASE NUMBER COLON { mk_action3( $$, CASE_T,
 													NUMBER_ST,
 													ACTIONS_ST,
 													NUMBER_ST,
@@ -1578,15 +1695,50 @@ case_stm: CASE NUMBER COLON actions SBREAK SEMICOLON
 													0,
 													(void*)0);
 							}
+		| CASE STRING COLON actions SBREAK SEMICOLON 
+										{ mk_action3( $$, CASE_T,
+													STRING_ST,
+													ACTIONS_ST,
+													NUMBER_ST,
+													(void*)$2,
+													$4,
+													(void*)1);
+											}
+		| CASE STRING COLON SBREAK SEMICOLON 
+										{ mk_action3( $$, CASE_T,
+													STRING_ST,
+													ACTIONS_ST,
+													NUMBER_ST,
+													(void*)$2,
+													0,
+													(void*)1);
+											}
+		| CASE STRING COLON actions { mk_action3( $$, CASE_T,
+													STRING_ST,
+													ACTIONS_ST,
+													NUMBER_ST,
+													(void*)$2,
+													$4,
+													(void*)0);
+									}
+		| CASE STRING COLON { mk_action3( $$, CASE_T,
+													STRING_ST,
+													ACTIONS_ST,
+													NUMBER_ST,
+													(void*)$2,
+													0,
+													(void*)0);
+							}
+
 	;
 
-default_stm: DEFAULT COLON actions { $$=mk_action(DEFAULT_T,
+default_stm: DEFAULT COLON actions { mk_action2( $$, DEFAULT_T,
 													ACTIONS_ST,
 													0,
 													$3,
 													0);
 									}
-		| DEFAULT COLON { $$=mk_action(DEFAULT_T,
+		| DEFAULT COLON { mk_action2( $$, DEFAULT_T,
 													ACTIONS_ST,
 													0,
 													0,
@@ -1594,14 +1746,14 @@ default_stm: DEFAULT COLON actions { $$=mk_action(DEFAULT_T,
 									}
 	;
 
-cmd:	 FORWARD LPAREN STRING RPAREN	{ $$=mk_action( FORWARD_T,
+cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 											STRING_ST,
 											0,
 											$3,
 											0);
 										}
 		| FORWARD LPAREN RPAREN {
-										$$=mk_action(FORWARD_T,
+										mk_action2( $$, FORWARD_T,
 											0,
 											0,
 											0,
@@ -1611,7 +1763,7 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ $$=mk_action( FORWARD_T,
 		| FORWARD LPAREN error RPAREN { $$=0; yyerror("bad forward"
 										"argument"); }
 		
-		| SEND LPAREN STRING RPAREN { $$=mk_action( SEND_T,
+		| SEND LPAREN STRING RPAREN { mk_action2( $$, SEND_T,
 											STRING_ST,
 											0,
 											$3,
@@ -1620,32 +1772,32 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ $$=mk_action( FORWARD_T,
 		| SEND error { $$=0; yyerror("missing '(' or ')' ?"); }
 		| SEND LPAREN error RPAREN { $$=0; yyerror("bad send"
 													"argument"); }
-		| DROP LPAREN RPAREN	{$$=mk_action(DROP_T,0, 0, 0, 0); }
-		| DROP					{$$=mk_action(DROP_T,0, 0, 0, 0); }
-		| EXIT LPAREN RPAREN	{$$=mk_action(EXIT_T,0, 0, 0, 0); }
-		| EXIT					{$$=mk_action(EXIT_T,0, 0, 0, 0); }
-		| RETURN LPAREN NUMBER RPAREN	{$$=mk_action( RETURN_T,
+		| DROP LPAREN RPAREN	{mk_action2( $$, DROP_T,0, 0, 0, 0); }
+		| DROP					{mk_action2( $$, DROP_T,0, 0, 0, 0); }
+		| EXIT LPAREN RPAREN	{mk_action2( $$, EXIT_T,0, 0, 0, 0); }
+		| EXIT					{mk_action2( $$, EXIT_T,0, 0, 0, 0); }
+		| RETURN LPAREN NUMBER RPAREN	{mk_action2( $$, RETURN_T,
 																NUMBER_ST, 
 																0,
 																(void*)$3,
 																0);
 												}
-		| RETURN LPAREN RPAREN	{$$=mk_action( RETURN_T,
+		| RETURN LPAREN RPAREN	{mk_action2( $$, RETURN_T,
 																NUMBER_ST, 
 																0,
 																(void*)1,
 																0);
 												}
-		| RETURN				{$$=mk_action( RETURN_T,
+		| RETURN				{mk_action2( $$, RETURN_T,
 																NUMBER_ST, 
 																0,
 																(void*)1,
 																0);
 												}
-		| LOG_TOK LPAREN STRING RPAREN	{$$=mk_action(	LOG_T, NUMBER_ST, 
+		| LOG_TOK LPAREN STRING RPAREN	{mk_action2( $$, LOG_T, NUMBER_ST, 
 													STRING_ST,(void*)4,$3);
 									}
-		| LOG_TOK LPAREN NUMBER COMMA STRING RPAREN	{$$=mk_action(	LOG_T,
+		| LOG_TOK LPAREN NUMBER COMMA STRING RPAREN	{mk_action2( $$, LOG_T,
 																NUMBER_ST, 
 																STRING_ST,
 																(void*)$3,
@@ -1654,50 +1806,51 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ $$=mk_action( FORWARD_T,
 		| LOG_TOK error { $$=0; yyerror("missing '(' or ')' ?"); }
 		| LOG_TOK LPAREN error RPAREN { $$=0; yyerror("bad log"
 									"argument"); }
-		| SETFLAG LPAREN NUMBER RPAREN {$$=mk_action( SETFLAG_T, NUMBER_ST, 0,
+		| SETFLAG LPAREN NUMBER RPAREN {mk_action2( $$, SETFLAG_T, NUMBER_ST, 0,
 													(void *)$3, 0 ); }
 		| SETFLAG error { $$=0; yyerror("missing '(' or ')'?"); }
-		| RESETFLAG LPAREN NUMBER RPAREN {$$=mk_action(RESETFLAG_T, NUMBER_ST,
-													0, (void *)$3, 0 ); }
+		| RESETFLAG LPAREN NUMBER RPAREN {mk_action2( $$, RESETFLAG_T,
+										NUMBER_ST, 0, (void *)$3, 0 ); }
 		| RESETFLAG error { $$=0; yyerror("missing '(' or ')'?"); }
-		| ISFLAGSET LPAREN NUMBER RPAREN {$$=mk_action( ISFLAGSET_T, NUMBER_ST,
-													0, (void *)$3, 0 ); }
+		| ISFLAGSET LPAREN NUMBER RPAREN {mk_action2( $$, ISFLAGSET_T,
+										NUMBER_ST, 0, (void *)$3, 0 ); }
 		| ISFLAGSET error { $$=0; yyerror("missing '(' or ')'?"); }
-		| SETSFLAG LPAREN NUMBER RPAREN {$$=mk_action( SETSFLAG_T, NUMBER_ST,0,
-													(void *)$3, 0 ); }
+		| SETSFLAG LPAREN NUMBER RPAREN {mk_action2( $$, SETSFLAG_T, NUMBER_ST,
+										0, (void *)$3, 0 ); }
 		| SETSFLAG error { $$=0; yyerror("missing '(' or ')'?"); }
-		| RESETSFLAG LPAREN NUMBER RPAREN {$$=mk_action(RESETSFLAG_T,NUMBER_ST,
-													0, (void *)$3, 0 ); }
+		| RESETSFLAG LPAREN NUMBER RPAREN {mk_action2( $$, RESETSFLAG_T,
+										NUMBER_ST, 0, (void *)$3, 0 ); }
 		| RESETSFLAG error { $$=0; yyerror("missing '(' or ')'?"); }
-		| ISSFLAGSET LPAREN NUMBER RPAREN {$$=mk_action(ISSFLAGSET_T,NUMBER_ST,
-													0, (void *)$3, 0 ); }
+		| ISSFLAGSET LPAREN NUMBER RPAREN {mk_action2( $$, ISSFLAGSET_T,
+										NUMBER_ST, 0, (void *)$3, 0 ); }
 		| ISSFLAGSET error { $$=0; yyerror("missing '(' or ')'?"); }
-		| SETBFLAG LPAREN NUMBER COMMA NUMBER RPAREN {$$=mk_action( SETBFLAG_T,
+		| SETBFLAG LPAREN NUMBER COMMA NUMBER RPAREN {mk_action2( $$,
+													SETBFLAG_T,
 													NUMBER_ST, NUMBER_ST,
 													(void *)$3, (void *)$5 ); }
-		| SETBFLAG LPAREN NUMBER RPAREN {$$=mk_action( SETBFLAG_T,
+		| SETBFLAG LPAREN NUMBER RPAREN {mk_action2( $$, SETBFLAG_T,
 													NUMBER_ST, NUMBER_ST,
 													0, (void *)$3 ); }
 		| SETBFLAG error { $$=0; yyerror("missing '(' or ')'?"); }
-		| RESETBFLAG LPAREN NUMBER COMMA NUMBER RPAREN {$$=mk_action( 
+		| RESETBFLAG LPAREN NUMBER COMMA NUMBER RPAREN {mk_action2( $$, 
 													RESETBFLAG_T,
 													NUMBER_ST, NUMBER_ST,
 													(void *)$3, (void *)$5 ); }
-		| RESETBFLAG LPAREN NUMBER RPAREN {$$=mk_action( 
+		| RESETBFLAG LPAREN NUMBER RPAREN {mk_action2( $$, 
 													RESETBFLAG_T,
 													NUMBER_ST, NUMBER_ST,
 													0, (void *)$3 ); }
 		| RESETBFLAG error { $$=0; yyerror("missing '(' or ')'?"); }
-		| ISBFLAGSET LPAREN NUMBER COMMA NUMBER RPAREN {$$=mk_action(
+		| ISBFLAGSET LPAREN NUMBER COMMA NUMBER RPAREN {mk_action2( $$, 
 													ISBFLAGSET_T,
 													NUMBER_ST, NUMBER_ST,
 													(void *)$3, (void *)$5 ); }
-		| ISBFLAGSET LPAREN NUMBER RPAREN {$$=mk_action(
+		| ISBFLAGSET LPAREN NUMBER RPAREN {mk_action2( $$, 
 													ISBFLAGSET_T,
 													NUMBER_ST, NUMBER_ST,
 													0, (void *)$3 ); }
 		| ISBFLAGSET error { $$=0; yyerror("missing '(' or ')'?"); }
-		| ERROR LPAREN STRING COMMA STRING RPAREN {$$=mk_action(ERROR_T,
+		| ERROR LPAREN STRING COMMA STRING RPAREN {mk_action2( $$, ERROR_T,
 																STRING_ST, 
 																STRING_ST,
 																$3,
@@ -1706,33 +1859,30 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ $$=mk_action( FORWARD_T,
 		| ERROR error { $$=0; yyerror("missing '(' or ')' ?"); }
 		| ERROR LPAREN error RPAREN { $$=0; yyerror("bad error"
 														"argument"); }
-		| ROUTE LPAREN NUMBER RPAREN	{ $$=mk_action(ROUTE_T, NUMBER_ST,
+		| ROUTE LPAREN NUMBER RPAREN	{ mk_action2( $$, ROUTE_T, NUMBER_ST,
 														0, (void*)$3, 0);
 										}
 		| ROUTE error { $$=0; yyerror("missing '(' or ')' ?"); }
 		| ROUTE LPAREN error RPAREN { $$=0; yyerror("bad route"
 						"argument"); }
-		| EXEC LPAREN STRING RPAREN	{ $$=mk_action(	EXEC_T, STRING_ST, 0,
-													$3, 0);
-									}
-		| SET_HOST LPAREN STRING RPAREN { $$=mk_action(SET_HOST_T, STRING_ST,
+		| SET_HOST LPAREN STRING RPAREN { mk_action2( $$, SET_HOST_T, STRING_ST,
 														0, $3, 0); }
 		| SET_HOST error { $$=0; yyerror("missing '(' or ')' ?"); }
 		| SET_HOST LPAREN error RPAREN { $$=0; yyerror("bad argument, "
 														"string expected"); }
 
-		| PREFIX LPAREN STRING RPAREN { $$=mk_action(PREFIX_T, STRING_ST,
+		| PREFIX LPAREN STRING RPAREN { mk_action2( $$, PREFIX_T, STRING_ST,
 														0, $3, 0); }
 		| PREFIX error { $$=0; yyerror("missing '(' or ')' ?"); }
 		| PREFIX LPAREN error RPAREN { $$=0; yyerror("bad argument, "
 														"string expected"); }
-		| STRIP_TAIL LPAREN NUMBER RPAREN { $$=mk_action(STRIP_TAIL_T, 
+		| STRIP_TAIL LPAREN NUMBER RPAREN { mk_action2( $$, STRIP_TAIL_T, 
 									NUMBER_ST, 0, (void *) $3, 0); }
 		| STRIP_TAIL error { $$=0; yyerror("missing '(' or ')' ?"); }
 		| STRIP_TAIL LPAREN error RPAREN { $$=0; yyerror("bad argument, "
 														"number expected"); }
 
-		| STRIP LPAREN NUMBER RPAREN { $$=mk_action(STRIP_T, NUMBER_ST,
+		| STRIP LPAREN NUMBER RPAREN { mk_action2( $$, STRIP_T, NUMBER_ST,
 														0, (void *) $3, 0); }
 		| STRIP error { $$=0; yyerror("missing '(' or ')' ?"); }
 		| STRIP LPAREN error RPAREN { $$=0; yyerror("bad argument, "
@@ -1742,60 +1892,63 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ $$=mk_action( FORWARD_T,
 			if (str2q(&q, $5, strlen($5)) < 0) {
 				yyerror("bad argument, q value expected");
 			}
-			$$=mk_action(APPEND_BRANCH_T, STRING_ST, NUMBER_ST, $3, 
+			mk_action2( $$, APPEND_BRANCH_T, STRING_ST, NUMBER_ST, $3, 
 						(void *)(long)q); } 
 		}
-		| APPEND_BRANCH LPAREN STRING RPAREN { $$=mk_action( APPEND_BRANCH_T,
+		| APPEND_BRANCH LPAREN STRING RPAREN { mk_action2( $$, APPEND_BRANCH_T,
 						STRING_ST, NUMBER_ST, $3, (void *)Q_UNSPECIFIED) ; }
-		| APPEND_BRANCH LPAREN RPAREN { $$=mk_action( APPEND_BRANCH_T,
+		| APPEND_BRANCH LPAREN RPAREN { mk_action2( $$, APPEND_BRANCH_T,
 						STRING_ST, NUMBER_ST, 0, (void *)Q_UNSPECIFIED ) ; }
-		| APPEND_BRANCH { $$=mk_action( APPEND_BRANCH_T, STRING_ST, 0, 0, 0 );}
+		| APPEND_BRANCH { mk_action2( $$, APPEND_BRANCH_T, STRING_ST,0,0,0 );}
 
-		| SET_HOSTPORT LPAREN STRING RPAREN { $$=mk_action( SET_HOSTPORT_T, 
+		| SET_HOSTPORT LPAREN STRING RPAREN { mk_action2( $$, SET_HOSTPORT_T, 
 														STRING_ST, 0, $3, 0); }
 		| SET_HOSTPORT error { $$=0; yyerror("missing '(' or ')' ?"); }
 		| SET_HOSTPORT LPAREN error RPAREN { $$=0; yyerror("bad argument,"
 												" string expected"); }
-		| SET_PORT LPAREN STRING RPAREN { $$=mk_action( SET_PORT_T, STRING_ST,
+		| SET_PORT LPAREN STRING RPAREN { mk_action2( $$, SET_PORT_T, STRING_ST,
 														0, $3, 0); }
 		| SET_PORT error { $$=0; yyerror("missing '(' or ')' ?"); }
 		| SET_PORT LPAREN error RPAREN { $$=0; yyerror("bad argument, "
 														"string expected"); }
-		| SET_USER LPAREN STRING RPAREN { $$=mk_action( SET_USER_T, STRING_ST,
+		| SET_USER LPAREN STRING RPAREN { mk_action2( $$, SET_USER_T,
+														STRING_ST,
 														0, $3, 0); }
 		| SET_USER error { $$=0; yyerror("missing '(' or ')' ?"); }
 		| SET_USER LPAREN error RPAREN { $$=0; yyerror("bad argument, "
 														"string expected"); }
-		| SET_USERPASS LPAREN STRING RPAREN { $$=mk_action( SET_USERPASS_T, 
+		| SET_USERPASS LPAREN STRING RPAREN { mk_action2( $$, SET_USERPASS_T, 
 														STRING_ST, 0, $3, 0); }
 		| SET_USERPASS error { $$=0; yyerror("missing '(' or ')' ?"); }
 		| SET_USERPASS LPAREN error RPAREN { $$=0; yyerror("bad argument, "
 														"string expected"); }
-		| SET_URI LPAREN STRING RPAREN { $$=mk_action( SET_URI_T, STRING_ST, 
+		| SET_URI LPAREN STRING RPAREN { mk_action2( $$, SET_URI_T, STRING_ST, 
 														0, $3, 0); }
 		| SET_URI error { $$=0; yyerror("missing '(' or ')' ?"); }
 		| SET_URI LPAREN error RPAREN { $$=0; yyerror("bad argument, "
 										"string expected"); }
-		| REVERT_URI LPAREN RPAREN { $$=mk_action( REVERT_URI_T, 0,0,0,0); }
-		| REVERT_URI { $$=mk_action( REVERT_URI_T, 0,0,0,0); }
-		| SET_DSTURI LPAREN STRING RPAREN { $$=mk_action( SET_DSTURI_T,
+		| REVERT_URI LPAREN RPAREN { mk_action2( $$, REVERT_URI_T, 0,0,0,0); }
+		| REVERT_URI { mk_action2( $$, REVERT_URI_T, 0,0,0,0); }
+		| SET_DSTURI LPAREN STRING RPAREN { mk_action2( $$, SET_DSTURI_T,
 													STRING_ST, 0, $3, 0); }
 		| SET_DSTURI error { $$=0; yyerror("missing '(' or ')' ?"); }
 		| SET_DSTURI LPAREN error RPAREN { $$=0; yyerror("bad argument, "
 										"string expected"); }
-		| RESET_DSTURI LPAREN RPAREN { $$=mk_action( RESET_DSTURI_T, 0,0,0,0); }
-		| RESET_DSTURI { $$=mk_action( RESET_DSTURI_T, 0,0,0,0); }
-		| ISDSTURISET LPAREN RPAREN { $$=mk_action( ISDSTURISET_T, 0,0,0,0); }
-		| ISDSTURISET { $$=mk_action( ISDSTURISET_T, 0,0,0,0); }
-		| FORCE_RPORT LPAREN RPAREN	{ $$=mk_action(FORCE_RPORT_T,0, 0, 0, 0); }
-		| FORCE_RPORT				{$$=mk_action(FORCE_RPORT_T,0, 0, 0, 0); }
+		| RESET_DSTURI LPAREN RPAREN { mk_action2( $$, RESET_DSTURI_T,
+															0,0,0,0); }
+		| RESET_DSTURI { mk_action2( $$, RESET_DSTURI_T, 0,0,0,0); }
+		| ISDSTURISET LPAREN RPAREN { mk_action2( $$, ISDSTURISET_T, 0,0,0,0); }
+		| ISDSTURISET { mk_action2( $$, ISDSTURISET_T, 0,0,0,0); }
+		| FORCE_RPORT LPAREN RPAREN	{ mk_action2( $$, FORCE_RPORT_T,
+															0, 0, 0, 0); }
+		| FORCE_RPORT		{ mk_action2( $$, FORCE_RPORT_T,0, 0, 0, 0); }
 		| FORCE_LOCAL_RPORT LPAREN RPAREN	{
-					$$=mk_action(FORCE_LOCAL_RPORT_T,0, 0, 0, 0); }
+					mk_action2( $$, FORCE_LOCAL_RPORT_T,0, 0, 0, 0); }
 		| FORCE_LOCAL_RPORT				{
-					$$=mk_action(FORCE_LOCAL_RPORT_T,0, 0, 0, 0); }
+					mk_action2( $$, FORCE_LOCAL_RPORT_T,0, 0, 0, 0); }
 		| FORCE_TCP_ALIAS LPAREN NUMBER RPAREN	{
 					#ifdef USE_TCP
-						$$=mk_action(FORCE_TCP_ALIAS_T,NUMBER_ST, 0,
+						mk_action2( $$, FORCE_TCP_ALIAS_T,NUMBER_ST, 0,
 										(void*)$3, 0);
 					#else
 						yyerror("tcp support not compiled in");
@@ -1803,14 +1956,14 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ $$=mk_action( FORWARD_T,
 												}
 		| FORCE_TCP_ALIAS LPAREN RPAREN	{
 					#ifdef USE_TCP
-						$$=mk_action(FORCE_TCP_ALIAS_T,0, 0, 0, 0); 
+						mk_action2( $$, FORCE_TCP_ALIAS_T,0, 0, 0, 0); 
 					#else
 						yyerror("tcp support not compiled in");
 					#endif
 										}
 		| FORCE_TCP_ALIAS				{
 					#ifdef USE_TCP
-						$$=mk_action(FORCE_TCP_ALIAS_T,0, 0, 0, 0);
+						mk_action2( $$, FORCE_TCP_ALIAS_T,0, 0, 0, 0);
 					#else
 						yyerror("tcp support not compiled in");
 					#endif
@@ -1826,7 +1979,7 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ $$=mk_action( FORWARD_T,
 								}else{
 										str_tmp->s=$3;
 										str_tmp->len=strlen($3);
-										$$=mk_action(SET_ADV_ADDR_T, STR_ST,
+										mk_action2( $$, SET_ADV_ADDR_T, STR_ST,
 										             0, str_tmp, 0);
 								}
 												  }
@@ -1846,7 +1999,7 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ $$=mk_action( FORWARD_T,
 									}else{
 										memcpy(str_tmp->s, tmp, i_tmp);
 										str_tmp->len=i_tmp;
-										$$=mk_action(SET_ADV_PORT_T, STR_ST,
+										mk_action2( $$, SET_ADV_PORT_T, STR_ST,
 													0, str_tmp, 0);
 									}
 								}
@@ -1855,7 +2008,7 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ $$=mk_action( FORWARD_T,
 								"string expected"); }
 		| SET_ADV_PORT  error {$$=0; yyerror("missing '(' or ')' ?"); }
 		| FORCE_SEND_SOCKET LPAREN phostport RPAREN {
-								$$=mk_action(FORCE_SEND_SOCKET_T,
+								mk_action2( $$, FORCE_SEND_SOCKET_T,
 									SOCKID_ST, 0, $3, 0);
 								}
 		| FORCE_SEND_SOCKET LPAREN error RPAREN { $$=0; yyerror("bad argument,"
@@ -1863,7 +2016,7 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ $$=mk_action( FORWARD_T,
 								}
 		| FORCE_SEND_SOCKET error {$$=0; yyerror("missing '(' or ')' ?"); }
 		| SERIALIZE_BRANCHES LPAREN NUMBER RPAREN {
-								$$=mk_action(SERIALIZE_BRANCHES_T,
+								mk_action2( $$, SERIALIZE_BRANCHES_T,
 									NUMBER_ST, 0, (void*)(long)$3, 0);
 								}
 		| SERIALIZE_BRANCHES LPAREN error RPAREN {$$=0; yyerror("bad argument,"
@@ -1871,7 +2024,7 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ $$=mk_action( FORWARD_T,
 								}
 		| SERIALIZE_BRANCHES error {$$=0; yyerror("missing '(' or ')' ?"); }
 		| NEXT_BRANCHES LPAREN RPAREN {
-								$$=mk_action(NEXT_BRANCHES_T, 0, 0, 0, 0);
+								mk_action2( $$, NEXT_BRANCHES_T, 0, 0, 0, 0);
 								}
 		| NEXT_BRANCHES LPAREN error RPAREN {$$=0; yyerror("no argument is"
 								" expected");
@@ -1888,7 +2041,7 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ $$=mk_action( FORWARD_T,
 										}
 										$$=0;
 									}else{
-										$$=mk_action(	MODULE_T,
+										mk_action2( $$, MODULE_T,
 													CMD_ST,
 													0,
 													cmd_tmp,
@@ -1907,7 +2060,7 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ $$=mk_action( FORWARD_T,
 										}
 										$$=0;
 									}else{
-										$$=mk_action(	MODULE_T,
+										mk_action2( $$, MODULE_T,
 														CMD_ST,
 														STRING_ST,
 														cmd_tmp,
@@ -1927,7 +2080,7 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ $$=mk_action( FORWARD_T,
 										}
 										$$=0;
 									}else{
-										$$=mk_action3(	MODULE_T,
+										mk_action3( $$, MODULE_T,
 														CMD_ST,
 														STRING_ST,
 														STRING_ST,

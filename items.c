@@ -37,6 +37,7 @@
 
 #include "dprint.h"
 #include "mem/mem.h"
+#include "mem/shm_mem.h"
 #include "ut.h" 
 #include "trim.h" 
 #include "dset.h"
@@ -54,6 +55,7 @@
 #include "parser/parse_pai.h"
 #include "parser/digest/digest.h"
 
+#include "script_var.h"
 #include "items.h"
 
 static str str_null   = { "<null>", 6 };
@@ -1557,6 +1559,37 @@ static int xl_get_branches(struct sip_msg *msg, xl_value_t *res, xl_param_t *par
 	return 0;
 }
 
+static int xl_get_script_var(struct sip_msg *msg, xl_value_t *res,
+		xl_param_t *param, int flags)
+{
+	int l = 0;
+	char *ch = NULL;
+	script_var_t *sv=NULL;
+	
+	if(msg==NULL || res==NULL)
+		return -1;
+
+	if(param==NULL || param->data==0)
+		return xl_get_null(msg, res, param, flags);
+	
+	sv= (script_var_t*)param->data;
+
+	if(sv->v.flags&&VAR_VAL_STR)
+	{
+		res->rs = sv->v.value.s;
+		res->flags = XL_VAL_STR;
+	} else {
+		ch = int2str(sv->v.value.n, &l);
+
+		res->rs.s = ch;
+		res->rs.len = l;
+
+		res->ri = sv->v.value.n;
+		res->flags = XL_VAL_STR|XL_VAL_INT|XL_TYPE_INT;
+	}
+	return 0;
+}
+
 #define ITEM_PRINT_ALL	-2
 #define ITEM_PRINT_LAST	-1
 
@@ -1896,6 +1929,86 @@ error:
 	return NULL;
 }
 
+char* xl_parse_svname(char *s, xl_spec_p e, int flags)
+{
+	char *p;
+	int mode = 0;
+
+	if(s==NULL || e==NULL || *s!=ITEM_MARKER)
+	{
+		LOG(L_ERR, "xl_parse_svname: error - bad parameters\n");
+		return NULL;
+	}
+	
+	DBG("xl_parse_svname: error - parsing [%s]\n", s);
+
+	p = s;
+	p++;
+	if(*p==ITEM_LNBRACKET)
+	{
+		mode = 1;
+		p++;
+	}
+	if(p && (*p=='v' || *p=='V'))
+		p++;
+	else {
+		LOG(L_ERR, "xl_parse_svname: error - bad name [%s]\n", s);
+		goto error;
+	}
+	if(p==0)
+	{
+		LOG(L_ERR, "xl_parse_svname: error - bad name [%s]!\n", s);
+		goto error;
+	}
+
+	if(*p==ITEM_LNBRACKET)
+		p++;
+	else {
+		if((p[0]!='a' && p[0]!='A') || (p[1]!='r' && p[1]!='R')
+				|| (p[2]!=ITEM_LNBRACKET))
+		{
+			LOG(L_ERR, "xl_parse_svname: error - bad name [%s/%s]!!\n", s, p);
+			goto error;
+		}
+		p += 3;
+	}
+	e->p.val.s = p;
+	while(p && *p!='\0' && *p!=ITEM_RNBRACKET)
+		p++;
+
+	if(p==0 || *p!=ITEM_RNBRACKET)
+	{
+		LOG(L_ERR, "xl_parse_svname: error - bad name [%s]!!!\n", s);
+		goto error;
+	}
+
+	e->p.val.len = p - e->p.val.s;
+	//p++;
+	if(mode==1)
+	{
+		while (p && *p==' ') p++;
+		if(*p!=ITEM_RNBRACKET)
+		{
+			LOG(L_ERR, "xl_parse_svname: error - bad name [%s]!!!!\n", s);
+			goto error;
+		}
+		//p++;
+	}
+	e->p.data = (void*)add_var(&e->p.val);
+	if(e->p.data==NULL)
+	{
+		LOG(L_ERR, "xl_parse_svname: error - no more mem for [%s]\n", s);
+		goto error;
+	}
+	e->itf = xl_get_script_var;
+	e->type = XL_SCRIPTVAR;
+
+	return p;
+
+error:
+	memset(e, 0, sizeof(xl_spec_t));
+	return NULL;
+}
 char* xl_parse_vname(char *s, xl_spec_p e, int flags)
 {
 	char *p;
@@ -2243,6 +2356,8 @@ static struct _xl_table {
 		{ XL_MSG_BODY, 0, xl_get_msg_body, {{0, 0}, 0}, {0, 0}}},
 	{{"rc", (sizeof("rc")-1)}, /* */
 		{ XL_RETURN_CODE, 0, xl_get_return_code, {{0, 0}, 0}, {0, 0}}},
+	{{"retcode", (sizeof("retcode")-1)}, /* */
+		{ XL_RETURN_CODE, 0, xl_get_return_code, {{0, 0}, 0}, {0, 0}}},
 	{{"rd", (sizeof("rd")-1)}, /* */
 		{ XL_RURI_DOMAIN, 0, xl_get_ruri_attr, {{0, 2}, 0}, {0, 0}}},
 	{{"re", (sizeof("re")-1)}, /* */
@@ -2456,6 +2571,22 @@ char* xl_parse_spec(char *s, xl_spec_p e, int flags)
 				goto extra_spec;
 			}
 			e->type = XL_HDR;
+			found = 1;
+		break;
+		case 'v':
+		case 'V':
+			if((p[1]==ITEM_LNBRACKET)
+				|| ((p[1]=='a' || p[1]=='A')
+					&& (p[2]=='r' || p[2]=='R') && p[3]==ITEM_LNBRACKET))
+			{
+				p0 = xl_parse_svname((pvstate==1)?p-2:p-1, e, flags);
+				if(p0==NULL)
+					goto error;
+				p = p0;
+			} else {
+				goto extra_spec;
+			}
+			e->type = XL_SCRIPTVAR;
 			found = 1;
 		break;
 	}
@@ -2919,5 +3050,13 @@ error:
 		pkg_free(al);
 	}
 	return NULL;
+}
+
+void xl_value_destroy(xl_value_t *val)
+{
+	if(val==0) return;
+	if(val->flags&XL_VAL_PKG) pkg_free(val->rs.s);
+	if(val->flags&XL_VAL_SHM) shm_free(val->rs.s);
+	memset(val, 0, sizeof(xl_value_t));
 }
 

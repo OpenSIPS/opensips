@@ -48,11 +48,13 @@
 
 
 enum { EXP_T=1, ELEM_T };
-enum { AND_OP=1, OR_OP, NOT_OP };
-enum { EQUAL_OP=10, MATCH_OP, GT_OP, LT_OP, GTE_OP, LTE_OP, DIFF_OP, NO_OP };
+enum { AND_OP=1, OR_OP, NOT_OP, EVAL_OP, PLUS_OP, MINUS_OP, DIV_OP, MULT_OP, MODULO_OP,
+		BAND_OP, BOR_OP, BXOR_OP, BNOT_OP };
+enum { EQUAL_OP=20, MATCH_OP, NOTMATCH_OP, MATCHD_OP, NOTMATCHD_OP, 
+	GT_OP, LT_OP, GTE_OP, LTE_OP, DIFF_OP, VALUE_OP, NO_OP };
 enum { METHOD_O=1, URI_O, FROM_URI_O, TO_URI_O, SRCIP_O, SRCPORT_O,
 	   DSTIP_O, DSTPORT_O, PROTO_O, AF_O, MSGLEN_O, DEFAULT_O, ACTION_O,
-	   NUMBER_O, RETCODE_O};
+	   EXPR_O, NUMBER_O, NUMBERV_O, STRINGV_O, RETCODE_O, SCRIPTVAR_O};
 
 enum { FORWARD_T=1, SEND_T, DROP_T, LOG_T, ERROR_T, ROUTE_T, EXEC_T,
 		SET_HOST_T, SET_HOSTPORT_T, SET_USER_T, SET_USERPASS_T, 
@@ -74,39 +76,52 @@ enum { FORWARD_T=1, SEND_T, DROP_T, LOG_T, ERROR_T, ROUTE_T, EXEC_T,
 		RETURN_T,
 		EXIT_T,
 		SWITCH_T, CASE_T, DEFAULT_T, SBREAK_T,
-		SET_DSTURI_T, RESET_DSTURI_T, ISDSTURISET_T
+		SET_DSTURI_T, RESET_DSTURI_T, ISDSTURISET_T,
+		EQ_T, PLUSEQ_T, MINUSEQ_T, DIVEQ_T, MULTEQ_T, MODULOEQ_T, BANDEQ_T,
+		BOREQ_T, BXOREQ_T
 };
 enum { NOSUBTYPE=0, STRING_ST, NET_ST, NUMBER_ST, IP_ST, RE_ST, PROXY_ST,
 		EXPR_ST, ACTIONS_ST, CMD_ST, MODFIXUP_ST,
-		MYSELF_ST, STR_ST, SOCKID_ST, SOCKETINFO_ST };
+		MYSELF_ST, STR_ST, SOCKID_ST, SOCKETINFO_ST, SCRIPTVAR_ST };
 
-	
+struct expr;
+#include "items.h"
+
+typedef struct operand {
+	int type;
+	union operand_val {
+		struct expr* expr;
+		str s;
+		int n;
+		xl_spec_t* spec;
+		void* data;
+	} v;	
+} operand_t, *operand_p;
+
+
 struct expr{
 	int type; /* exp, exp_elem */
 	int op; /* and, or, not | ==,  =~ */
-	int  subtype;
-	union {
-		struct expr* expr;
-		int operand;
-	}l;
-	union {
-		struct expr* expr;
-		void* param;
-		int   intval;
-	}r;
+	operand_t left;
+	operand_t right;
 };
 
-
-struct action{
-	int type;  /* forward, drop, log, send ...*/
-	int p1_type;
-	int p2_type;
-	int p3_type;
+typedef struct action_elem_ {
+	int type;
 	union {
 		long number;
 		char* string;
 		void* data;
-	}p1, p2, p3;
+		str s;
+		xl_spec_t* item;
+	} u;
+} action_elem_t, *action_elem_p;
+
+#define MAX_ACTION_ELEMS	5
+struct action{
+	int type;  /* forward, drop, log, send ...*/
+	int n;
+	action_elem_t elem[MAX_ACTION_ELEMS];
 	int line;
 	struct action* next;
 };
@@ -114,11 +129,8 @@ struct action{
 
 
 struct expr* mk_exp(int op, struct expr* left, struct expr* right);
-struct expr* mk_elem(int op, int subtype, int operand, void* param);
-struct action* mk_action_2p(int type, int p1_type, int p2_type,
-							void* p1, void* p2, int line);
-struct action* mk_action_3p(int type, int p1_type, int p2_type, int p3_type, 
-							void* p1, void* p2, void* p3, int line);
+struct expr* mk_elem(int op, int leftt, void *leftd, int rightt, void *rightd);
+struct action* mk_action(int type, int n, action_elem_t *elem, int line);
 struct action* append_action(struct action* a, struct action* b);
 
 

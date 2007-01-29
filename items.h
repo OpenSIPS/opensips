@@ -60,6 +60,8 @@
 #define XL_VAL_STR			4
 #define XL_VAL_INT			8
 #define XL_TYPE_INT			16
+#define XL_VAL_PKG			32
+#define XL_VAL_SHM			64
 
 enum _xl_type { 
 	XL_NONE=0,           XL_EMPTY,             XL_NULL, 
@@ -88,7 +90,7 @@ enum _xl_type {
 	XL_BFLAGS,           XL_HEXBFLAGS,         XL_SFLAGS,
 	XL_HEXSFLAGS,        XL_ERR_CLASS,         XL_ERR_LEVEL,
 	XL_ERR_INFO,         XL_ERR_RCODE,         XL_ERR_RREASON,
-	XL_ITEM_EXTRA /* keep it last */
+	XL_SCRIPTVAR,        XL_ITEM_EXTRA /* keep it last */
 };
 typedef enum _xl_type xl_type_t;
 
@@ -104,6 +106,7 @@ typedef struct _xl_param
 {
 	str val;
 	int ind;
+	void *data;
 } xl_param_t, *xl_param_p;
 
 typedef int (*item_func_t) (struct sip_msg*, xl_value_t*,  xl_param_t*, int);
@@ -136,7 +139,7 @@ typedef struct _itemname_list {
 	struct _itemname_list *next;
 } itemname_list_t, *itemname_list_p;
 
-
+void xl_value_destroy(xl_value_t *val);
 int xl_elem_free_all(xl_elem_p list);
 char* xl_parse_spec(char *s, xl_spec_p sp, int flags);
 int xl_parse_format(char *s, xl_elem_p *el, int flags);
