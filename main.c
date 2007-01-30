@@ -113,6 +113,7 @@
 #include "hash_func.h"
 #include "pt.h"
 #include "script_cb.h"
+#include "blacklists.h"
 
 #include "ut.h"
 #include "serialize.h"
@@ -376,6 +377,7 @@ void cleanup(int show_status)
 	destroy_stats_collector();
 	destroy_script_cb();
 	xl_free_extra_spec();
+	destroy_black_lists();
 #ifdef PKG_MALLOC
 	if (show_status){
 		LOG(memlog, "Memory status (pkg):\n");
@@ -1227,6 +1229,11 @@ try_again:
 	}
 #endif /* USE_TLS */
 
+	if (preinit_black_lists()!=0) {
+		LOG(L_CRIT, "ERROR:main: failed to alloc black list's anchor\n");
+		goto error;
+	}
+
 	yyin=cfg_stream;
 	if ((yyparse()!=0)||(cfg_errors)){
 		fprintf(stderr, "ERROR: bad config file (%d errors)\n", cfg_errors);
@@ -1391,6 +1398,16 @@ try_again:
 		LOG(L_ERR, "Error while initializing MI core\n");
 		goto error;
 	}
+	/* init black list engine */
+	if (init_black_lists()!=0) {
+		LOG(L_CRIT, "ERROR:main: failed to init black lists\n");
+		goto error;
+	}
+	/* init resolver's blacklist */
+	if (resolv_blacklist_init()!=0) {
+		LOG(L_CRIT, "ERROR:main: failed to create DNS blacklist\n");
+		goto error;
+	}
 
 	/* init modules */
 	if (init_modules() != 0) {
@@ -1403,6 +1420,7 @@ try_again:
 						r);
 		goto error;
 	};
+
 
 	ret=main_loop();
 

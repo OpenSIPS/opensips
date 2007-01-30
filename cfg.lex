@@ -157,6 +157,7 @@ SET_ADV_PORT	"set_advertised_port"
 FORCE_SEND_SOCKET	"force_send_socket"
 SERIALIZE_BRANCHES	"serialize_branches"
 NEXT_BRANCHES	"next_branches"
+USE_BLACKLIST	"use_blacklist"
 
 
 /*ACTION LVALUES*/
@@ -290,7 +291,9 @@ OPEN_FD_LIMIT		"open_files_limit"
 MCAST_LOOPBACK		"mcast_loopback"
 MCAST_TTL			"mcast_ttl"
 TOS					"tos"
-DISABLE_DNS_FAILOVER "disable_dns_failover"
+DISABLE_DNS_FAILOVER  "disable_dns_failover"
+DISABLE_DNS_BLACKLIST "disable_dns_blacklist"
+DST_BLACKLIST		"dst_blacklist"
 
 MPATH	mpath
 LOADMODULE	loadmodule
@@ -411,6 +414,8 @@ WHITESPACE	[ \t\r\n]
 									return SERIALIZE_BRANCHES; }
 <INITIAL>{NEXT_BRANCHES}	{	count(); yylval.strval=yytext;
 									return NEXT_BRANCHES; }
+<INITIAL>{USE_BLACKLIST}	{	count(); yylval.strval=yytext;
+									return USE_BLACKLIST; }
 
 <INITIAL>{MAX_LEN}	{ count(); yylval.strval=yytext; return MAX_LEN; }
 
@@ -523,6 +528,10 @@ WHITESPACE	[ \t\r\n]
 									return TOS; }
 <INITIAL>{DISABLE_DNS_FAILOVER}	{	count(); yylval.strval=yytext;
 									return DISABLE_DNS_FAILOVER; }
+<INITIAL>{DISABLE_DNS_BLACKLIST}	{	count(); yylval.strval=yytext;
+									return DISABLE_DNS_BLACKLIST; }
+<INITIAL>{DST_BLACKLIST}	{	count(); yylval.strval=yytext;
+									return DST_BLACKLIST; }
 
 <INITIAL>{MPATH}	   { count(); yylval.strval=yytext; return MPATH; }
 <INITIAL>{LOADMODULE}  { count(); yylval.strval=yytext; return LOADMODULE; }

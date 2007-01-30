@@ -97,6 +97,7 @@
 #include "ut.h"
 #include "dset.h"
 #include "items.h"
+#include "blacklists.h"
 
 
 #include "config.h"
@@ -125,6 +126,8 @@ static str* str_tmp;
 static str s_tmp;
 static struct ip_addr* ip_tmp;
 static xl_spec_t *spec;
+static struct bl_rule *bl_head = 0;
+static struct bl_rule *bl_tail = 0;
 
 action_elem_t elems[MAX_ACTION_ELEMS];
 
@@ -226,6 +229,7 @@ extern int line;
 %token FORCE_SEND_SOCKET
 %token SERIALIZE_BRANCHES
 %token NEXT_BRANCHES
+%token USE_BLACKLIST
 %token MAX_LEN
 %token SETFLAG
 %token RESETFLAG
@@ -329,6 +333,8 @@ extern int line;
 %token MCAST_TTL
 %token TOS
 %token DISABLE_DNS_FAILOVER
+%token DISABLE_DNS_BLACKLIST
+%token DST_BLACKLIST
 
 
 
@@ -482,6 +488,28 @@ phostport:	listen_id				{ $$=mk_listen_id($1, 0, 0); }
 id_lst:		phostport		{  $$=$1 ; }
 		| phostport id_lst	{ $$=$1; $$->next=$2; }
 		;
+
+
+blst_elem: LPAREN  proto COMMA ipnet COMMA port COMMA STRING RPAREN {
+				s_tmp.s=$8;
+				s_tmp.len=strlen($8);
+				if (add_rule_to_list(&bl_head,&bl_tail,$4,&s_tmp,$6,$2,0)) {
+					yyerror("failed to add backlist element\n");YYABORT;
+				}
+			}
+		| NOT  LPAREN  proto COMMA ipnet COMMA port COMMA STRING RPAREN {
+				s_tmp.s=$9;
+				s_tmp.len=strlen($9);
+				if (add_rule_to_list(&bl_head,&bl_tail,$5,&s_tmp,
+				$7,$3,BLR_APPLY_CONTRARY)) {
+					yyerror("failed to add backlist element\n");YYABORT;
+				}
+			}
+		;
+
+blst_elem_list: blst_elem_list COMMA blst_elem {}
+		| blst_elem {}
+		| blst_elem_list error { yyerror("bad black list element");}
 
 
 assign_stm:	DEBUG EQUAL NUMBER { debug=$3; }
@@ -932,7 +960,21 @@ assign_stm:	DEBUG EQUAL NUMBER { debug=$3; }
 										disable_dns_failover=$3;
 									}
 		| DISABLE_DNS_FAILOVER error { yyerror("boolean value expected"); }
+		| DISABLE_DNS_BLACKLIST EQUAL NUMBER {
+										disable_dns_blacklist=$3;
+									}
+		| DISABLE_DNS_BLACKLIST error { yyerror("boolean value expected"); }
 		| error EQUAL { yyerror("unknown config variable"); }
+		| DST_BLACKLIST EQUAL ID COLON LBRACE blst_elem_list RBRACE {
+				s_tmp.s = $3;
+				s_tmp.len = strlen($3);
+				if ( create_bl_head( BL_CORE_ID, BL_READONLY_LIST,
+				bl_head, bl_tail, &s_tmp)==0) {
+					yyerror("failed to create blacklist\n");
+					YYABORT;
+				}
+				bl_head = bl_tail = 0;
+				}
 	;
 
 module_stm:	LOADMODULE STRING	{	if(*$2!='/' && mpath!=NULL
@@ -2030,6 +2072,14 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 								" expected");
 								}
 		| NEXT_BRANCHES error {$$=0; yyerror("missing '(' or ')' ?"); }
+		| USE_BLACKLIST LPAREN STRING RPAREN {
+								mk_action2( $$, USE_BLACKLIST_T,
+									STRING_ST, 0, $3, 0);
+								}
+		| USE_BLACKLIST LPAREN error RPAREN {$$=0; yyerror("bad argument,"
+								" string expected");
+								}
+		| USE_BLACKLIST error {$$=0; yyerror("missing '(' or ')' ?"); }
 		| ID LPAREN RPAREN		{ cmd_tmp=(void*)find_cmd_export_t($1, 0, rt);
 									if (cmd_tmp==0){
 										if (find_cmd_export_t($1, 0, 0)) {

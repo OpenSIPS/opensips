@@ -24,32 +24,36 @@
 #ifndef error_h
 #define error_h
 
-#define E_UNSPEC      -1
-#define E_OUT_OF_MEM  -2
-#define E_BAD_RE      -3
+#define E_UNSPEC            -1
+#define E_OUT_OF_MEM        -2
+#define E_BAD_RE            -3
 /* #define E_BAD_ADDRESS -4 */
-#define E_BUG         -5
-#define E_CFG         -6
-#define E_NO_SOCKET		-7
+#define E_BUG               -5
+#define E_CFG               -6
+#define E_NO_SOCKET	        -7
 /* unresolvable topmost Via */
-#define E_BAD_VIA		-8
+#define E_BAD_VIA           -8
 /* incomplete transaction tuple */
-#define E_BAD_TUPEL		-9
+#define E_BAD_TUPEL         -9
 /* script programming error */
-#define E_SCRIPT		-10
+#define E_SCRIPT            -10
 /* error in execution of external tools */
-#define E_EXEC			-11
+#define E_EXEC              -11
 /* too many branches demanded */
 #define E_TOO_MANY_BRANCHES -12
-#define E_BAD_TO	-13
+#define E_BAD_TO            -13
 /* invalid params */
-#define E_INVALID_PARAMS -14
-
-#define E_Q_INV_CHAR    -15 /* Invalid character in q */
-#define E_Q_EMPTY       -16 /* Empty q */
-#define E_Q_TOO_BIG     -17 /* q too big (> 1) */
-#define E_Q_DEC_MISSING -18 /* Decimal part missing */
-
+#define E_INVALID_PARAMS    -14
+/* Invalid character in q */
+#define E_Q_INV_CHAR        -15
+/* Empty q */
+#define E_Q_EMPTY           -16
+/* q too big (> 1) */
+#define E_Q_TOO_BIG         -17
+/* Decimal part missing */
+#define E_Q_DEC_MISSING     -18
+/* destination blocked by blacklist */
+#define E_IP_BLOCKED        -19
 
 #define E_SEND		  -477
 /* unresolvable next-hop address */

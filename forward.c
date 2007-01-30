@@ -2,7 +2,7 @@
  * $Id$
  *
  * Copyright (C) 2001-2003 FhG Fokus
- * Copyright (C) 2005-2006 Voice Sistem SRL
+ * Copyright (C) 2005-2007 Voice Sistem SRL
  *
  * This file is part of openser, a free SIP server.
  *
@@ -71,6 +71,7 @@
 #include "name_alias.h"
 #include "socket_info.h"
 #include "core_stats.h"
+#include "blacklists.h"
 
 
 
@@ -348,6 +349,12 @@ int forward_request( struct sip_msg* msg, struct proxy_l * p)
 			last_sock = send_sock;
 		}
 
+		if (check_blacklists(p->port,(unsigned short)p->proto,&to,buf,len)) {
+			DBG("DEBUG:forward_request: blocked by blacklists\n");
+			ser_error=E_IP_BLOCKED;
+			continue;
+		}
+
 		/* send it! */
 		DBG("DEBUG:forward_request: sending:\n%.*s.\n", (int)len, buf);
 		DBG("DEBUG:forward_request: orig. len=%d, new_len=%d, proto=%d\n",
@@ -361,7 +368,7 @@ int forward_request( struct sip_msg* msg, struct proxy_l * p)
 		ser_error = 0;
 		break;
 
-	}while( get_next_su( p, &to)==0 );
+	}while( get_next_su( p, &to, (ser_error==E_IP_BLOCKED)?0:1)==0 );
 
 	if (ser_error) {
 		update_stat( drp_reqs, 1);

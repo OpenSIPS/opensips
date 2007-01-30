@@ -40,10 +40,8 @@
  *               send() (bogdan)
  *  2006-12-22  functions for script and branch flags added (bogdan)
  */
-#define ACTION_H "action.h"
 
-
-#include ACTION_H
+#include "action.h"
 #include "config.h"
 #include "error.h"
 #include "dprint.h"
@@ -61,6 +59,7 @@
 #include "flags.h"
 #include "errinfo.h"
 #include "serialize.h"
+#include "blacklists.h"
 #ifdef USE_TCP
 #include "tcp_server.h"
 #endif
@@ -165,6 +164,7 @@ int run_top_route(struct action* a, struct sip_msg* msg)
 	action_flags = 0;
 	rec_lev = 0;
 	init_err_info();
+	reset_bl_markers();
 
 	resetsflag( (unsigned int)-1 );
 
@@ -933,6 +933,9 @@ int do_action(struct action* a, struct sip_msg* msg)
 		case BOREQ_T:
 		case BXOREQ_T:
 			ret = do_assign(msg, a);
+			break;
+		case USE_BLACKLIST_T:
+			mark_for_search((struct bl_head*)a->elem[0].u.data);
 			break;
 		default:
 			LOG(L_CRIT, "BUG: do_action: unknown type %d\n", a->type);

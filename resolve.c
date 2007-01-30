@@ -37,8 +37,10 @@
 #include "mem/shm_mem.h"
 #include "resolve.h"
 #include "dprint.h"
+#include "ut.h"
 #include "ip_addr.h"
 #include "globals.h"
+#include "blacklists.h"
 
 
 /* stuff related to DNS failover */
@@ -60,8 +62,13 @@ int dns_retr_time=-1;
 int dns_retr_no=-1;
 int dns_servers_no=-1;
 int dns_search_list=-1;
-  	 
-  	 
+int disable_dns_blacklist=0;
+
+static struct bl_head *failover_bl=0;
+#define DNS_REVOLVER_BL_ID    17
+#define DNS_REVOLVER_BL_NAME  "dns"
+#define DNS_BL_EXPIRE         4*60
+
 /* init. the resolver
  * params: retr_time  - time before retransmitting (must be >0)
  *         retr_no    - retransmissions number
@@ -93,6 +100,24 @@ int resolv_init()
 	LOG(L_WARN, "WARNING: resolv_init: no resolv options support - resolv"
 		" options will be ignored\n");
 #endif
+	return 0;
+}
+
+
+
+int resolv_blacklist_init()
+{
+	str name = str_init(DNS_REVOLVER_BL_NAME);
+
+	if (!disable_dns_blacklist) {
+		failover_bl = create_bl_head( DNS_REVOLVER_BL_ID,
+			BL_DO_EXPIRE|BL_BY_DEFAULT, 0, 0, &name);
+		if (failover_bl==NULL) {
+			LOG(L_ERR,"ERROR:resolv_blacklist_init: failed to create "
+				"blacklist\n");
+			return -1;
+		}
+	}
 	return 0;
 }
 
@@ -1240,10 +1265,26 @@ void free_dns_res( struct proxy_l *p )
 
 
 
-int get_next_su(struct proxy_l *p, union sockaddr_union* su)
+int get_next_su(struct proxy_l *p, union sockaddr_union* su, int add_to_bl)
 {
 	struct hostent *he;
+	struct bl_rule *list;
+	struct net  ip_net;
 	int n;
+
+	if (failover_bl && add_to_bl) {
+		memset( &ip_net, 0xff , sizeof(struct net));
+		hostent2ip_addr( &ip_net.ip, &p->host, p->addr_idx);
+		ip_net.mask.af = ip_net.ip.af;
+		ip_net.mask.len = ip_net.ip.len;
+		list = 0;
+		n = add_rule_to_list( &list, &list, &ip_net, 0, p->port, p->proto, 0);
+		if (n!=0) {
+			LOG(L_ERR,"ERROR:get_next_su: failed to build bl rule\n");
+		} else {
+			add_list_to_head( failover_bl, list, list, 0, DNS_BL_EXPIRE);
+		}
+	}
 
 	/* any more available IPs in he ? */
 	if ( p->host.h_addr_list[++p->addr_idx] ) {
@@ -1274,6 +1315,8 @@ int get_next_su(struct proxy_l *p, union sockaddr_union* su)
 	p->addr_idx = 0;
 	return 0;
 }
+
+
 
 static inline struct dns_node *dns_node_copy(struct dns_node *s)
 {

@@ -368,9 +368,12 @@ void free_dns_res( struct proxy_l *p );
 struct dns_node *dns_res_copy(struct dns_node *s);
 
 /* taked the next destination from a resolver state machine */
-int get_next_su(struct proxy_l *p, union sockaddr_union* su);
+int get_next_su(struct proxy_l *p, union sockaddr_union* su, int add_to_bl);
 
 
 int resolv_init();
+
+int resolv_blacklist_init();
+
 
 #endif

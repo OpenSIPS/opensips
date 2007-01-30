@@ -112,6 +112,7 @@ extern int mcast_ttl;
 extern int tos;
 
 extern int disable_dns_failover;
+extern int disable_dns_blacklist;
 
 extern int cfg_errors;
 

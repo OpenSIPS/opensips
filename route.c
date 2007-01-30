@@ -61,6 +61,7 @@
 #include "ip_addr.h"
 #include "resolve.h"
 #include "socket_info.h"
+#include "blacklists.h"
 #include "parser/parse_uri.h"
 #include "parser/parse_from.h"
 #include "parser/parse_to.h"
@@ -190,7 +191,8 @@ static int fix_actions(struct action* a)
 	str host;
 	int proto, port;
 	struct proxy_l *p;
-	
+	struct bl_head *blh;
+
 	if (a==0){
 		LOG(L_CRIT,"BUG: fix_actions: null pointer\n");
 		return E_BUG;
@@ -379,7 +381,25 @@ static int fix_actions(struct action* a)
 					if ((ret=fix_expr((struct expr*)t->elem[1].u.data))<0)
 						return ret;
 				}
-
+				break;
+			case USE_BLACKLIST_T:
+				if (t->elem[0].type!=STRING_ST) {
+					LOG(L_CRIT, "BUG: fix_actions: bad USE_BLACKLIST type "
+						"%d\n", t->elem[0].type);
+					ret=E_BUG;
+					goto error;
+				}
+				host.s = t->elem[0].u.string;
+				host.len = strlen(host.s);
+				blh = get_bl_head_by_name(&host);
+				if (blh==NULL) {
+					LOG(L_ERR, "ERROR: fix_actions: USE_BLACKLIST - list "
+						"%s not configured\n", t->elem[0].u.string);
+					ret=E_CFG;
+					goto error;
+				}
+				t->elem[0].type = BLACKLIST_ST;
+				t->elem[0].u.data = blh;
 				break;
 		}
 	}
