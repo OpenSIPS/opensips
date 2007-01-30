@@ -68,15 +68,18 @@ struct expr* mk_elem(int op, int leftt, void *leftd, int rightt, void *rightd)
 	struct expr * e;
 	e=(struct expr*)pkg_malloc(sizeof (struct expr));
 	if (e==0) goto error;
+	memset(e, 0, sizeof(struct expr));
 	e->type=ELEM_T;
 	e->op=op;
 	e->left.type    = leftt;
 	e->left.v.data  = leftd;
-	if(e->left.type==STRING_ST || e->left.type==STRINGV_O)
+	if((e->left.type==STRING_ST || e->left.type==STRINGV_O)
+			&& e->left.v.s.s!=NULL)
 		e->left.v.s.len = strlen(e->left.v.s.s);
 	e->right.type   = rightt;
 	e->right.v.data = rightd;
-	if(e->right.type==STRING_ST || e->right.type==STRINGV_O)
+	if((e->right.type==STRING_ST || e->right.type==STRINGV_O)
+			&& e->right.v.s.s!=0)
 		e->right.v.s.len = strlen(e->right.v.s.s);
 	return e;
 error:
@@ -107,7 +110,7 @@ struct action* mk_action(int type, int n, action_elem_t *elem, int line)
 	{
 		a->elem[i].type = elem[i].type;
 		a->elem[i].u.data = elem[i].u.data;
-		if(a->elem[i].type==STRING_ST)
+		if(a->elem[i].type==STRING_ST && a->elem[i].u.s.s!=NULL)
 			a->elem[i].u.s.len = strlen(a->elem[i].u.s.s);
 	}
 
