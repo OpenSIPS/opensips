@@ -85,6 +85,8 @@ int hostent_shm_cpy(struct hostent *dst, struct hostent* src)
 		return -1;
 
 	p = ((char*)dst->h_addr_list) + (i+1)*sizeof(char*);
+	dst->h_addr_list[i] = 0;
+
 	for( i-- ; i>=0 ; i-- ) {
 		dst->h_addr_list[i] = p;
 		memcpy( dst->h_addr_list[i], src->h_addr_list[i], src->h_length );
