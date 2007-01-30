@@ -665,7 +665,6 @@ WHITESPACE	[ \t\r\n]
 							state=INITIAL_S;
 							BEGIN(INITIAL);
 							yylval.strval=s_buf.s;
-							printf("====== [%s] \n", yylval.strval);
 							memset(&s_buf, 0, sizeof(s_buf));
 							return SCRIPTVAR;
 						} else {
