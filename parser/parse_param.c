@@ -369,6 +369,7 @@ int parse_params(str* _s, pclass_t _c, param_hooks_t* _h, param_t** _p)
 		trim_leading(_s);
 		
 		if (_s->len == 0) { /* The last parameter without body */
+			t->len = t->name.len;
 			goto ok;
 		}
 		
