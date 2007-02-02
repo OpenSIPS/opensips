@@ -263,6 +263,7 @@ extern int line;
 %token LOGSTDERROR
 %token LOGFACILITY
 %token LOGNAME
+%token AVP_ALIASES
 %token LISTEN
 %token ALIAS
 %token AUTO_ALIASES
@@ -527,6 +528,12 @@ assign_stm:	DEBUG EQUAL NUMBER { debug=$3; }
 		| LOGFACILITY EQUAL error { yyerror("ID expected"); }
 		| LOGNAME EQUAL STRING { log_name=$3; }
 		| LOGNAME EQUAL error { yyerror("string value expected"); }
+		| AVP_ALIASES EQUAL STRING { 
+				if ($3!=0 && $3[0]!=0)
+					if ( add_avp_galias_str($3)!=0 )
+						yyerror("invalid AVP aliases");;
+			}
+		| AVP_ALIASES EQUAL error { yyerror("string value expected"); }
 		| DNS EQUAL NUMBER   { received_dns|= ($3)?DO_DNS:0; }
 		| DNS EQUAL error { yyerror("boolean value expected"); }
 		| REV_DNS EQUAL NUMBER { received_dns|= ($3)?DO_REV_DNS:0; }
@@ -1636,6 +1643,10 @@ assign_cmd: script_var assignop assignexp {
 						default:
 						yyerror("invalid left operand in assignment");
 					}
+					if($1->trans!=0)
+						yyerror(
+					"transformations not accepted in right side of assignment");
+
 					mk_action2( $$, $2,
 							SCRIPTVAR_ST,
 							EXPR_ST,

@@ -231,7 +231,6 @@ int do_assign(struct sip_msg* msg, struct action* a)
 						goto error;
 					}
 
-					DBG("do_assign: avp added\n");
 				break;
 				case XL_SCRIPTVAR:
 					if(dspec->p.data==0)
@@ -790,8 +789,6 @@ int do_action(struct action* a, struct sip_msg* msg)
 				{
 					if(aitem->elem[0].type==STRING_ST)
 					{
-						DBG("do_action: switch string value [%s/%d]\n",
-								aitem->elem[0].u.s.s, aitem->elem[0].u.s.len);
 						if(val.flags&XL_VAL_STR
 								&& val.rs.len==aitem->elem[0].u.s.len
 								&& strncasecmp(val.rs.s, aitem->elem[0].u.s.s,

@@ -229,6 +229,7 @@ FORK	fork
 LOGSTDERROR	log_stderror
 LOGFACILITY	log_facility
 LOGNAME		log_name
+AVP_ALIASES	avp_aliases
 LISTEN		listen
 ALIAS		alias
 AUTO_ALIASES	auto_aliases
@@ -436,6 +437,7 @@ WHITESPACE	[ \t\r\n]
 <INITIAL>{LOGSTDERROR}	{ yylval.strval=yytext; return LOGSTDERROR; }
 <INITIAL>{LOGFACILITY}	{ yylval.strval=yytext; return LOGFACILITY; }
 <INITIAL>{LOGNAME}	{ yylval.strval=yytext; return LOGNAME; }
+<INITIAL>{AVP_ALIASES}	{ yylval.strval=yytext; return AVP_ALIASES; }
 <INITIAL>{LISTEN}	{ count(); yylval.strval=yytext; return LISTEN; }
 <INITIAL>{ALIAS}	{ count(); yylval.strval=yytext; return ALIAS; }
 <INITIAL>{AUTO_ALIASES}	{ count(); yylval.strval=yytext; return AUTO_ALIASES; }
@@ -668,10 +670,8 @@ WHITESPACE	[ \t\r\n]
 							memset(&s_buf, 0, sizeof(s_buf));
 							return SCRIPTVAR;
 						} else {
-							state=INITIAL_S;
-							BEGIN(INITIAL);
-							memset(&s_buf, 0, sizeof(s_buf));
-							return SCRIPTVARERR;
+							yymore();
+							svar_tlen = yyleng;
 						}
 				}
 <SCRIPTVARS>.	{ yymore(); svar_tlen = yyleng; }

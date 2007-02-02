@@ -120,11 +120,12 @@ typedef struct _xl_dparam
 } xl_dparam_t, *xl_dparam_p;
 
 typedef struct _xl_spec {
-	xl_type_t   type;
-	xl_flags_t  flags;
-	item_func_t itf;
-	xl_param_t  p;
-	xl_dparam_t dp;
+	xl_type_t    type;
+	xl_flags_t   flags;
+	item_func_t  itf;
+	xl_param_t   p;
+	xl_dparam_t  dp;
+	void         *trans;
 } xl_spec_t, *xl_spec_p;
 
 typedef struct _xl_elem
@@ -161,6 +162,8 @@ int xl_add_extra_spec(str *name, xl_spec_p sp);
 int xl_fill_extra_spec(xl_spec_p sp);
 int xl_init_extra_spec();
 int xl_free_extra_spec();
+
+void xl_spec_free(xl_spec_t *spec);
 
 typedef struct item_export_
 {
