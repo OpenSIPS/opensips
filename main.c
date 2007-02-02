@@ -694,9 +694,9 @@ int main_loop()
 		 * we cannot count on select timeout to measure time
 		 * (it works only on linux)
 		 */
-		if ((!tcp_disable)||(timer_list))
+		if ((!tcp_disable)||(has_timers()))
 #else
-		if (timer_list)
+		if (has_timers())
 #endif
 		{
 				process_no++;
@@ -716,10 +716,7 @@ int main_loop()
 						LOG(L_ERR, "timer: init_child failed\n");
 						goto error;
 					}
-					for(;;){
-						sleep(TIMER_TICK);
-						timer_ticker();
-					}
+					run_timer();
 				}else{
 						pt[process_no].pid=pid; /*should be shared mem anyway*/
 						strncpy(pt[process_no].desc, "timer", MAX_PT_DESC );
@@ -877,9 +874,9 @@ int main_loop()
 
 #ifdef USE_TCP
 	/* if we are using tcp we always need the timer */
-	if ((!tcp_disable)||(timer_list))
+	if ((!tcp_disable)||(has_timers()))
 #else
-	if (timer_list)
+	if (has_timers())
 #endif
 	{
 #ifdef USE_TCP
@@ -913,13 +910,7 @@ int main_loop()
 				goto error;
 			}
 			
-			for(;;){
-				/* debug:  instead of doing something useful */
-				/* (placeholder for timers, etc.) */
-				sleep(TIMER_TICK);
-				/* if we received a signal => TIMER_TICK may have not elapsed*/
-				timer_ticker();
-			}
+			run_timer();
 		}else{
 			pt[process_no].pid=pid;
 			strncpy(pt[process_no].desc, "timer", MAX_PT_DESC );

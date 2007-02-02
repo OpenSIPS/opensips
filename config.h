@@ -118,6 +118,7 @@
 #define SHM_MEM_SIZE 32
 
 #define TIMER_TICK 1
+#define UTIMER_TICK 100*1000 /* 100 miliseconds*/
 
 /* dimensioning buckets in q_malloc */
 /* size of the size2bucket table; everything beyond that asks for
