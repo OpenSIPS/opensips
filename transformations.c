@@ -83,6 +83,18 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 			val->ri = val->rs.len;
 			val->rs.s = int2str(val->ri, &val->rs.len);
 			break;
+		case TR_S_INT:
+			if(!(val->flags&XL_VAL_INT))
+			{
+				if(str2sint(&val->rs, &val->ri)!=0)
+					return -1;
+			} else { 
+				if(!(val->flags&XL_VAL_STR))
+					val->rs.s = int2str(val->ri, &val->rs.len);
+			}
+
+			val->flags = XL_TYPE_INT|XL_VAL_INT|XL_VAL_STR;
+			break;
 		case TR_S_MD5:
 			if(!(val->flags&XL_VAL_STR))
 				val->rs.s = int2str(val->ri, &val->rs.len);
@@ -881,6 +893,9 @@ char* tr_parse_string(char* s, trans_t *t)
 	if(name.len==3 && strncasecmp(name.s, "len", 3)==0)
 	{
 		t->subtype = TR_S_LEN;
+		return p;
+	} else if(name.len==3 && strncasecmp(name.s, "int", 3)==0) {
+		t->subtype = TR_S_INT;
 		return p;
 	} else if(name.len==3 && strncasecmp(name.s, "md5", 3)==0) {
 		t->subtype = TR_S_MD5;
