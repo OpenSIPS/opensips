@@ -41,9 +41,7 @@
 #  2005-06-01  use $(LOCALBASE) instead of /usr/{local,pkg} (andrei)
 #  2006-10-19  gcc-3.4 and gcc-3.0 cases merged as they proved to be identical;
 #              CC_CLASS replaces CC_SHORTVER while CC_SHORTVER is keept without
-#              any wildcards;
-#              for gcc 4.1, warnings about strict-aliasing are suppressed
-#              (bogdan)
+#              any wildcards (bogdan)
 
 
 # check if already included/exported
@@ -513,9 +511,6 @@ ifeq		($(CC_NAME), gcc)
 				#common stuff
 				CFLAGS+=-g -O9 -funroll-loops  -Wcast-align $(PROFILE) \
 					-Wall  
-ifeq			($(CC_SHORTVER), 4.1)
-					CFLAGS+= #-Wno-strict-aliasing 
-endif
 			#if gcc 4.0+
 ifeq			($(CC_CLASS), 4.x)
 					CPU ?= athlon64
