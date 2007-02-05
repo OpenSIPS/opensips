@@ -307,7 +307,7 @@ error_char:
 
 
 struct hostent* sip_resolvehost(str* name, unsigned short* port,
-		int *proto, int is_sips, struct dns_node **dn);
+		unsigned short *proto, int is_sips, struct dns_node **dn);
 
 
 

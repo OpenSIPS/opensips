@@ -68,15 +68,15 @@ struct via_body {
 	int error;
 	str hdr;   /* Contains "Via" or "v" */
 	str name;
-	str version;   
+	str version;
 	str transport;
-	int proto; /* transport */
 	str host;
-	int port;
+	unsigned short proto; /* transport */
+	unsigned short port;
 	str port_str;
 	str params;
 	str comment;
-	int bsize;                    /* body size, not including hdr */
+	unsigned int bsize;           /* body size, not including hdr */
 	struct via_param* param_lst;  /* list of parameters*/
 	struct via_param* last_param; /*last via parameter, internal use*/
 

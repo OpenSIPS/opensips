@@ -432,7 +432,7 @@ int update_sock_struct_from_via( union sockaddr_union* to,
 	}
 	DBG("DEBUG:update_sock_struct_from_via: trying SRV lookup\n");
 	he=sip_resolvehost(name, &port, &via->proto, 0, 0);
-	
+
 	if (he==0){
 		LOG(L_NOTICE, "DEBUG:forward_reply:resolve_host(%.*s) failure\n",
 				name->len, name->s);

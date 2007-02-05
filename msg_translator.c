@@ -147,7 +147,7 @@ extern int version_len;
  *  resolver = DO_DNS | DO_REV_DNS; if 0 no dns check is made
  * return 0 if equal */
 static int check_via_address(struct ip_addr* ip, str *name, 
-				unsigned short port, int proto, int resolver)
+				unsigned short port, unsigned short proto, int resolver)
 {
 	struct hostent* he;
 	int i;

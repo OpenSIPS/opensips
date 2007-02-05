@@ -43,20 +43,23 @@ struct proxy_l{
 	str name; /* original name */
 	unsigned short flags;
 	unsigned short port;
-	int proto;
+	unsigned short proto;
 
-	struct hostent host; /* addresses */
-	int addr_idx;	/* crt. addr. idx. */
+	unsigned short addr_idx; /* crt. addr. idx. */
+	struct hostent host;     /* addresses */
 
 	struct dns_node *dn;
 };
 
 extern struct proxy_l* proxies;
 
-struct proxy_l* add_proxy(str* name, unsigned short port, int proto);
-struct proxy_l* mk_proxy(str* name, unsigned short port, int proto,int is_sips);
+struct proxy_l* add_proxy( str* name, unsigned short port,
+		unsigned short proto);
+
+struct proxy_l* mk_proxy( str* name, unsigned short port, unsigned short proto,
+		int is_sips);
 struct proxy_l* mk_proxy_from_ip(struct ip_addr* ip, unsigned short port,
-									int proto);
+		unsigned short proto);
 void free_proxy(struct proxy_l* p);
 
 

@@ -209,7 +209,8 @@ void free_hostent(struct hostent *dst)
 
 
 
-struct proxy_l* add_proxy(str* name, unsigned short port, int proto)
+struct proxy_l* add_proxy( str* name, unsigned short port,
+		unsigned short proto)
 {
 	struct proxy_l* p;
 	
@@ -230,7 +231,8 @@ error:
 /* same as add_proxy, but it doesn't add the proxy to the list
  * uses also SRV if possible & port==0 (quick hack) */
 
-struct proxy_l* mk_proxy(str* name, unsigned short port, int proto, int is_sips)
+struct proxy_l* mk_proxy(str* name, unsigned short port, unsigned short proto,
+		int is_sips)
 {
 	struct proxy_l* p;
 	struct hostent* he;
@@ -270,7 +272,7 @@ error:
 
 /* same as mk_proxy, but get the host as an ip*/
 struct proxy_l* mk_proxy_from_ip(struct ip_addr* ip, unsigned short port,
-									int proto)
+		unsigned short proto)
 {
 	struct proxy_l* p;
 

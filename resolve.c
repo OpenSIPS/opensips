@@ -1010,8 +1010,8 @@ err_proto:
 
 
 
-struct hostent* sip_resolvehost( str* name, unsigned short* port, int *proto,
-									int is_sips, struct dns_node **dn)
+struct hostent* sip_resolvehost( str* name, unsigned short* port,
+		unsigned short *proto, int is_sips, struct dns_node **dn)
 {
 	static char tmp[MAX_DNS_NAME];
 	struct ip_addr *ip;
@@ -1294,7 +1294,7 @@ int get_next_su(struct proxy_l *p, union sockaddr_union* su, int add_to_bl)
 	}
 
 	/* get a new he from DNS */
-	he = get_next_he( &p->dn, (unsigned short*)&p->proto, &p->port);
+	he = get_next_he( &p->dn, &p->proto, &p->port);
 	if (he==NULL)
 		return -1;
 
