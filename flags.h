@@ -36,6 +36,7 @@ int flag_in_range( flag_t flag );
 int setflag( struct sip_msg* msg, flag_t flag );
 int resetflag( struct sip_msg* msg, flag_t flag );
 int isflagset( struct sip_msg* msg, flag_t flag );
+int flag_idx2mask(int *flag);
 
 
 unsigned int fixup_flag(unsigned int idx);

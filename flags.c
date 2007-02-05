@@ -58,6 +58,20 @@ int flag_in_range( flag_t flag ) {
 	return 1;
 }
 
+int flag_idx2mask(int *flag)
+{
+	if (*flag<0) {
+		*flag = 0;
+	} else if (*flag>MAX_FLAG) {
+		LOG(L_ERR,"ERROR:flag_idx2mask: flag %d out of range\n",*flag);
+		return -1;
+	} else {
+		*flag = 1<<(*flag);
+	}
+	return 0;
+}
+
+
 
 /*********************** script flags ****************************/
 
