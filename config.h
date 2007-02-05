@@ -77,7 +77,7 @@
 #define SERVER_HDR_LEN (sizeof(SERVER_HDR)-1)
 
 #define MAX_WARNING_LEN  256
-		
+
 #define MY_BRANCH ";branch="
 #define MY_BRANCH_LEN (sizeof(MY_BRANCH) - 1)
 
@@ -117,8 +117,8 @@
 /*used if SH_MEM is defined*/
 #define SHM_MEM_SIZE 32
 
-#define TIMER_TICK 1
-#define UTIMER_TICK 100*1000 /* 100 miliseconds*/
+#define TIMER_TICK   1  /* one second */
+#define UTIMER_TICK  100*1000 /* 100 miliseconds*/
 
 /* dimensioning buckets in q_malloc */
 /* size of the size2bucket table; everything beyond that asks for
@@ -144,30 +144,8 @@
 /* maximum number of branches per transaction */
 #define MAX_BRANCHES    12
 
-/* maximum length of a FIFO server command */
-#define MAX_FIFO_COMMAND 512
-
-/* buffer dimensions for FIFO server */
-#define MAX_CONSUME_BUFFER 1024
-/* where reply pipes may be opened */
-#define DEFAULT_FIFO_DIR "/tmp/"
-/* max length of the text of fifo 'print' command */
-#define MAX_PRINT_TEXT 256
-
 /* maximum length of Contact header field in redirection replies */
 #define MAX_REDIRECTION_LEN 512
-
-/* used by FIFO statistics in module to terminate line;
-   extra whitespaces are used to overwrite remainders of
-   previous line if longer than current one
-*/
-#define CLEANUP_EOL "      \n"
-
-/* how patient is ser with FIFO clients not awaiting a reply? 
-	4 x 80ms = 0.32 sec
-*/
-#define FIFO_REPLY_RETRIES	4
-#define FIFO_REPLY_WAIT		80000
 
 /* magic cookie for transaction matching as defined in RFC3261 */
 #define MCOOKIE "z9hG4bK"
@@ -176,7 +154,6 @@
 #define MAX_BRANCH_PARAM_LEN  (MCOOKIE_LEN+8 /*int2hex*/ + 1 /*sep*/ + \
 								MD5_LEN + 1 /*sep*/ + 8 /*int2hex*/ + \
 								1 /*extra space, needed by t_calc_branch*/)
-
 
 /* maximum path length */
 #define PATH_MAX_GUESS	1024
@@ -187,15 +164,12 @@
 #define DEFAULT_RODB_URL "mysql://openserro:openserro@localhost/openser"
 #define DEFAULT_RODB_URL_LEN (sizeof(DEFAULT_RODB_URL) - 1)
 
-/* table holding versions of other ser tables */
-#define VERSION_TABLE "version"
-#define VERSION_COLUMN "table_version"
-#define TABLENAME_COLUMN "table_name"
+/* table holding versions of other openser tables */
+#define VERSION_TABLE     "version"
+#define VERSION_COLUMN    "table_version"
+#define TABLENAME_COLUMN  "table_name"
 
 /* minimum packet size; smaller packets will be dropped silently */
 #define MIN_UDP_PACKET        32
-
-#define DEFAULT_RADIUSCLEINT_CONF \
-	"/usr/local/etc/radiusclient-ng/radiusclient.conf"
 
 #endif
