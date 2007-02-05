@@ -133,7 +133,7 @@ int add_avp(unsigned short flags, int_str name, int_str val)
 			break;
 		case AVP_NAME_STR:
 			/* avp type str, int value */
-			sid = (struct str_int_data*)&(avp->data);
+			sid = (struct str_int_data*)(void*)&(avp->data);
 			sid->val = val.n;
 			sid->name.len =name.s.len;
 			sid->name.s = (char*)sid + sizeof(struct str_int_data);
@@ -141,7 +141,7 @@ int add_avp(unsigned short flags, int_str name, int_str val)
 			break;
 		case AVP_VAL_STR:
 			/* avp type ID, str value */
-			s = (str*)&(avp->data);
+			s = (str*)(void*)&(avp->data);
 			s->len = val.s.len;
 			s->s = (char*)s + sizeof(str);
 			memcpy( s->s, val.s.s , s->len);
@@ -149,7 +149,7 @@ int add_avp(unsigned short flags, int_str name, int_str val)
 			break;
 		case AVP_NAME_STR|AVP_VAL_STR:
 			/* avp type str, str value */
-			ssd = (struct str_str_data*)&(avp->data);
+			ssd = (struct str_str_data*)(void*)&(avp->data);
 			ssd->name.len = name.s.len;
 			ssd->name.s = (char*)ssd + sizeof(struct str_str_data);
 			memcpy( ssd->name.s , name.s.s, name.s.len);
@@ -179,10 +179,10 @@ inline str* get_avp_name(struct usr_avp *avp)
 			return 0;
 		case AVP_NAME_STR:
 			/* avp type str, int value */
-			return &((struct str_int_data*)&avp->data)->name;
+			return &((struct str_int_data*)(void*)&avp->data)->name;
 		case AVP_NAME_STR|AVP_VAL_STR:
 			/* avp type str, str value */
-			return &((struct str_str_data*)&avp->data)->name;
+			return &((struct str_str_data*)(void*)&avp->data)->name;
 	}
 
 	LOG(L_ERR,"BUG:avp:get_avp_name: unknown avp type (name&val) %d\n",
@@ -203,15 +203,15 @@ inline void get_avp_val(struct usr_avp *avp, int_str *val)
 			break;
 		case AVP_NAME_STR:
 			/* avp type str, int value */
-			val->n = ((struct str_int_data*)(&avp->data))->val;
+			val->n = ((struct str_int_data*)(void*)(&avp->data))->val;
 			break;
 		case AVP_VAL_STR:
 			/* avp type ID, str value */
-			val->s = *((str*)(&avp->data));
+			val->s = *((str*)(void*)(&avp->data));
 			break;
 		case AVP_NAME_STR|AVP_VAL_STR:
 			/* avp type str, str value */
-			val->s = ((struct str_str_data*)(&avp->data))->val;
+			val->s = ((struct str_str_data*)(void*)(&avp->data))->val;
 			break;
 	}
 }

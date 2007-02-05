@@ -80,7 +80,7 @@ int parse_credentials(struct hdr_field* _h)
 	res = parse_digest_cred(&(_h->body), &(((auth_body_t*)(_h->parsed))->digest));
 	
 	if (res != 0) {
-		free_credentials((auth_body_t**)&(_h->parsed));
+		free_credentials((auth_body_t**)(void*)&(_h->parsed));
 	}
 
 	return res;

@@ -514,7 +514,7 @@ ifeq		($(CC_NAME), gcc)
 				CFLAGS+=-g -O9 -funroll-loops  -Wcast-align $(PROFILE) \
 					-Wall  
 ifeq			($(CC_SHORTVER), 4.1)
-					CFLAGS+=-Wno-strict-aliasing 
+					CFLAGS+= #-Wno-strict-aliasing 
 endif
 			#if gcc 4.0+
 ifeq			($(CC_CLASS), 4.x)

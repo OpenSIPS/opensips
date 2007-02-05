@@ -75,22 +75,22 @@ void clean_hdr_field(struct hdr_field* hf)
 			break;
 
 		case HDR_CONTACT_T:
-			free_contact((contact_body_t**)(&(hf->parsed)));
+			free_contact((contact_body_t**)(void*)(&(hf->parsed)));
 			break;
 
 		case HDR_MAXFORWARDS_T:
 			break;
 
 		case HDR_ROUTE_T:
-			free_rr((rr_t**)(&hf->parsed));
+			free_rr((rr_t**)(void*)(&hf->parsed));
 			break;
 
 		case HDR_RECORDROUTE_T:
-			free_rr((rr_t**)(&hf->parsed));
+			free_rr((rr_t**)(void*)(&hf->parsed));
 			break;
 
 		case HDR_PATH_T:
-			free_rr((rr_t**)(&hf->parsed));
+			free_rr((rr_t**)(void*)(&hf->parsed));
 			break;
 
 		case HDR_CONTENTTYPE_T:
@@ -100,19 +100,19 @@ void clean_hdr_field(struct hdr_field* hf)
 			break;
 
 		case HDR_AUTHORIZATION_T:
-			free_credentials((auth_body_t**)(&(hf->parsed)));
+			free_credentials((auth_body_t**)(void*)(&(hf->parsed)));
 			break;
 
 		case HDR_EXPIRES_T:
-			free_expires((exp_body_t**)(&(hf->parsed)));
+			free_expires((exp_body_t**)(void*)(&(hf->parsed)));
 			break;
 
 		case HDR_PROXYAUTH_T:
-			free_credentials((auth_body_t**)(&(hf->parsed)));
+			free_credentials((auth_body_t**)(void*)(&(hf->parsed)));
 			break;
 
 		case HDR_SUPPORTED_T:
-			free_supported((struct supported_body**)(&(hf->parsed)));
+			free_supported((struct supported_body**)(void*)(&(hf->parsed)));
 			break;
 
 		case HDR_PROXYREQUIRE_T:
@@ -122,11 +122,11 @@ void clean_hdr_field(struct hdr_field* hf)
 			break;
 
 		case HDR_ALLOW_T:
-			free_allow((struct allow_body**)(&(hf->parsed)));
+			free_allow((struct allow_body**)(void*)(&(hf->parsed)));
 			break;
 
 		case HDR_EVENT_T:
-			free_event((event_t**)(&(hf->parsed)));
+			free_event((event_t**)(void*)(&(hf->parsed)));
 			break;
 
 		case HDR_ACCEPT_T:
@@ -152,7 +152,7 @@ void clean_hdr_field(struct hdr_field* hf)
 			break;
 
 		case HDR_CONTENTDISPOSITION_T:
-			free_disposition( ((struct disposition**)(&hf->parsed)) );
+			free_disposition( ((struct disposition**)(void*)(&hf->parsed)) );
 			break;
 
 		case HDR_DIVERSION_T:
@@ -168,7 +168,7 @@ void clean_hdr_field(struct hdr_field* hf)
 			break;
 
 		case HDR_SESSION_EXPIRES_T:
-			free_session_expires( (struct session_expires *)hf->parsed );
+			free_session_expires((struct session_expires*)hf->parsed );
 			break;
 
 		case HDR_MIN_SE_T:
