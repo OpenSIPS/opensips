@@ -130,7 +130,7 @@ int register_module(struct module_exports* e, char* path, void* handle)
 
 	/* add module to the list */
 	if ((mod=pkg_malloc(sizeof(struct sr_module)))==0){
-		LOG(L_ERR, "load_module: memory allocation failure\n");
+		LOG(L_ERR, "register_module: memory allocation failure\n");
 		ret=E_OUT_OF_MEM;
 		goto error;
 	}
@@ -193,7 +193,7 @@ static inline int version_control(void *handle, char *path)
 }
 
 /* returns 0 on success , <0 on error */
-int load_module(char* path)
+int sr_load_module(char* path)
 {
 	void* handle;
 	unsigned int moddlflags;
