@@ -1415,7 +1415,7 @@ script_var:	SCRIPTVAR	{
 		}
 		;
 
-exp_elem: exp_cond		{$$=$1}
+exp_elem: exp_cond		{$$=$1; }
 		| exp_stm		{$$=mk_elem( NO_OP, ACTION_O, 0, ACTIONS_ST, $1 ); }
 		| NUMBER		{$$=mk_elem( NO_OP, NUMBER_O, 0, NUMBER_ST, 
 											(void*)$1 ); }
@@ -1599,7 +1599,7 @@ assignexp :
 	| STRING { $$ = mk_elem(VALUE_OP, STRINGV_O, $1, 0, 0); }
 	| ID { $$ = mk_elem(VALUE_OP, STRINGV_O, $1, 0, 0); }
 	| script_var { $$ = mk_elem(VALUE_OP, SCRIPTVAR_O, $1, 0, 0); }
-	| exp_cond { $$= $1 }
+	| exp_cond { $$= $1; }
 	| cmd { $$=mk_elem( NO_OP, ACTION_O, 0, ACTIONS_ST, $1 ); }
 	| assignexp PLUS assignexp { 
 				$$ = mk_elem(PLUS_OP, EXPR_O, $1, EXPR_ST, $3);
