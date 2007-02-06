@@ -709,6 +709,7 @@ WHITESPACE	[ \t\r\n]
 <STRING1>\\[0-7]{2,3}	{ count(); addchar(&s_buf, 
 											(char)strtol(yytext+1, 0, 8));  }
 <STRING1>\\{CR}		{ count(); } /* eat escaped CRs */
+<STRING1>{CR}	{ count();addchar(&s_buf, *yytext); }
 <STRING1>.|{EAT_ABLE}|{CR}	{ addchar(&s_buf, *yytext); }
 
 
