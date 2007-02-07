@@ -1941,18 +1941,19 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 		| STRIP LPAREN error RPAREN { $$=0; yyerror("bad argument, "
 														"number expected"); }
 		| APPEND_BRANCH LPAREN STRING COMMA STRING RPAREN { 
-			{   qvalue_t q;
-			if (str2q(&q, $5, strlen($5)) < 0) {
-				yyerror("bad argument, q value expected");
-			}
-			mk_action2( $$, APPEND_BRANCH_T, STRING_ST, NUMBER_ST, $3, 
+				{   qvalue_t q;
+				if (str2q(&q, $5, strlen($5)) < 0) {
+					yyerror("bad argument, q value expected");
+				}
+				mk_action2( $$, APPEND_BRANCH_T, STRING_ST, NUMBER_ST, $3,
 						(void *)(long)q); } 
 		}
 		| APPEND_BRANCH LPAREN STRING RPAREN { mk_action2( $$, APPEND_BRANCH_T,
 						STRING_ST, NUMBER_ST, $3, (void *)Q_UNSPECIFIED) ; }
 		| APPEND_BRANCH LPAREN RPAREN { mk_action2( $$, APPEND_BRANCH_T,
+						STRING_ST, NUMBER_ST, 0, (void *)Q_UNSPECIFIED) ; }
+		| APPEND_BRANCH { mk_action2( $$, APPEND_BRANCH_T,
 						STRING_ST, NUMBER_ST, 0, (void *)Q_UNSPECIFIED ) ; }
-		| APPEND_BRANCH { mk_action2( $$, APPEND_BRANCH_T, STRING_ST,0,0,0 );}
 
 		| SET_HOSTPORT LPAREN STRING RPAREN { mk_action2( $$, SET_HOSTPORT_T, 
 														STRING_ST, 0, $3, 0); }

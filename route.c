@@ -181,8 +181,7 @@ static int fix_expr(struct expr* exp)
 /* returns 0 if ok, <0 on error */
 static int fix_actions(struct action* a)
 {
-	struct action
-		*t;
+	struct action *t;
 	int ret;
 	cmd_export_t* cmd;
 	struct hostent* he;

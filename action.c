@@ -326,7 +326,6 @@ int do_action(struct action* a, struct sip_msg* msg)
 	char *new_uri, *end, *crt;
 	int len;
 	int user;
-	str s;
 	struct sip_uri uri, next_hop;
 	struct sip_uri *u;
 	unsigned short port;
@@ -434,16 +433,27 @@ int do_action(struct action* a, struct sip_msg* msg)
 			ret=1;
 			break;
 		case APPEND_BRANCH_T:
+			/* WARNING: even if type is STRING_ST, it expects a str !!!*/
 			if ((a->elem[0].type!=STRING_ST)) {
 				LOG(L_CRIT, "BUG: do_action: bad append_branch_t %d\n",
 					a->elem[0].type );
 				ret=E_BUG;
 				break;
 			}
-			s.s = a->elem[0].u.string;
-			s.len = s.s?strlen(s.s):0;
-			ret = append_branch( msg, &s, &msg->dst_uri, 0, a->elem[1].u.number,
-					getb0flags(), msg->force_send_socket);
+			if (a->elem[0].u.s.s==NULL) {
+				ret = append_branch(msg, 0, &msg->dst_uri, 0,
+					a->elem[1].u.number, getb0flags(), msg->force_send_socket);
+				/* reset all branch info */
+				msg->force_send_socket = 0;
+				setb0flags(0);
+				if(msg->dst_uri.s!=0)
+					pkg_free(msg->dst_uri.s);
+				msg->dst_uri.s = 0;
+				msg->dst_uri.len = 0;
+			} else {
+				ret = append_branch(msg, &a->elem[0].u.s, &msg->dst_uri, 0,
+					a->elem[1].u.number, getb0flags(), msg->force_send_socket);
+			}
 			break;
 		case LEN_GT_T:
 			if (a->elem[0].type!=NUMBER_ST) {
@@ -697,15 +707,14 @@ int do_action(struct action* a, struct sip_msg* msg)
 				ret=1;
 				break;
 		case SET_DSTURI_T:
+			/* WARNING: even if type is STRING_ST, it expects a str !!!*/
 			if (a->elem[0].type!=STRING_ST){
 				LOG(L_CRIT, "BUG: do_action: bad setdsturi() type %d\n",
 							a->elem[0].type);
 				ret=E_BUG;
 				break;
 			}
-			s.s = a->elem[0].u.string;
-			s.len = strlen(s.s);
-			if(set_dst_uri(msg, &s)!=0)
+			if(set_dst_uri(msg, &a->elem[0].u.s)!=0)
 				ret = -1;
 			else
 				ret = 1;

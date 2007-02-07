@@ -219,7 +219,7 @@ int next_branches( struct sip_msg *msg)
 	do {
 		act.type = APPEND_BRANCH_T;
 		act.elem[0].type = STRING_ST;
-		act.elem[0].u.string = val.s.s;
+		act.elem[0].u.s = val.s;
 		act.elem[1].type = NUMBER_ST;
 		act.elem[1].u.number = 0;
 		rval = do_action(&act, msg);
