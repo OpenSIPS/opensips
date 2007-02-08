@@ -52,17 +52,20 @@
 #define E_Q_TOO_BIG         -17
 /* Decimal part missing */
 #define E_Q_DEC_MISSING     -18
-/* destination blocked by blacklist */
-#define E_IP_BLOCKED        -19
 
-#define E_SEND		  -477
-/* unresolvable next-hop address */
-#define E_BAD_ADDRESS -478
-/* unparseable URI */
-#define E_BAD_URI 	  -479
+/* openser specific error codes */
+/* destination filtered */
+#define E_IP_BLOCKED      -473
 /* bad protocol, like */
-#define E_BAD_PROTO	  -480
-/* malformed request */
+#define E_BAD_PROTO       -474
+/* unparseable URI */
+#define E_BAD_URI         -475
+/* unresolvable next-hop address */
+#define E_BAD_ADDRESS     -476
+/* generic send error */
+#define E_SEND            -477
+
+/* generic malformed request */
 #define E_BAD_REQ	  -400
 
 /* error in server */

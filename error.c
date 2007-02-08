@@ -51,8 +51,12 @@ int err2reason_phrase(
 	char *error_txt;
 
 	switch( ser_error ) {
+		case E_IP_BLOCKED:
+			error_txt="Filtered destination";
+			*sip_error=-ser_error;
+			break;
 		case E_SEND:
-			error_txt="Unfortunately error on sending to next hop occurred";
+			error_txt="Send failed";
 			*sip_error=-ser_error;
 			break;
 		case E_BAD_ADDRESS:
@@ -64,7 +68,7 @@ int err2reason_phrase(
 			*sip_error=-ser_error;
 			break;
 		case E_BAD_URI:
-			error_txt="Regretfully, we were not able to process the URI";
+			error_txt="Bad URI";
 			*sip_error=-ser_error;
 			break;
 		case E_BAD_TUPEL:
@@ -107,7 +111,7 @@ int err2reason_phrase(
 			break;
 #endif
 		default:
-			error_txt="I'm terribly sorry, server error occurred";
+			error_txt="Server error occurred";
 			*sip_error=500;
 			break;
 	}

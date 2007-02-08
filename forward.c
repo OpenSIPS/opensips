@@ -349,7 +349,7 @@ int forward_request( struct sip_msg* msg, struct proxy_l * p)
 			last_sock = send_sock;
 		}
 
-		if (check_blacklists(p->port,(unsigned short)p->proto,&to,buf,len)) {
+		if (check_blacklists( p->port, p->proto, &to, buf, len)) {
 			DBG("DEBUG:forward_request: blocked by blacklists\n");
 			ser_error=E_IP_BLOCKED;
 			continue;
