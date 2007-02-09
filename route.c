@@ -682,6 +682,9 @@ inline static int comp_s2s(int op, str *s1, str *s2)
 	regex_t* re;
 
 	ret = -1;
+	/* if any of values is NULL return FALSE */
+	if(s1->s==NULL || s2->s==NULL)
+		return 0;
 	switch(op) {
 		case EQUAL_OP:
 			if(s1->len != s2->len) return 0;
@@ -902,7 +905,7 @@ inline static int comp_scriptvar(struct sip_msg *msg, int op, operand_t *left,
 	}
 
 	if(type==1) { /* compare str */
-		DBG("comp_scriptvar: str %d : %.*s\n", op, lstr.len, lstr.s); 
+		DBG("comp_scriptvar: str %d : %.*s\n", op, lstr.len, ZSW(lstr.s)); 
 		return comp_s2s(op, &lstr, &rstr);
 	} else if(type==2) {
 		DBG("comp_scriptvar: int %d : %d / %d\n", op, ln, rn); 
