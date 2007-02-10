@@ -980,7 +980,7 @@ static int xl_get_rpid(struct sip_msg *msg, xl_value_t *res, xl_param_t *param,
 static int xl_get_ppi_attr(struct sip_msg *msg, xl_value_t *res,
 			   xl_param_t *param, int flags)
 {
-    struct sip_uri uri;
+    struct sip_uri *uri;
     
     if(msg==NULL || res==NULL)
 	return -1;
@@ -1010,22 +1010,18 @@ static int xl_get_ppi_attr(struct sip_msg *msg, xl_value_t *res,
 	return 0;
     }
 
-    memset(&uri, 0, sizeof(struct sip_uri));
-    if (parse_uri(get_ppi(msg)->uri.s, get_ppi(msg)->uri.len , &uri) < 0) {
-	LOG(L_ERR,"xl_get_ppi_attr: failed to parse P-Preferred-Identity "
-	    "URI\n");
+    if((uri=parse_ppi_uri(msg))==NULL)
 	return xl_get_null(msg, res, param, flags);
-    }
 	
     if(param->val.len==2) { /* username */
-	if(uri.user.s==NULL)
+	if(uri->user.s==NULL)
 	    return xl_get_empty(msg, res, param, flags);
-	res->rs.s   = uri.user.s;
-	res->rs.len = uri.user.len; 
+	res->rs.s   = uri->user.s;
+	res->rs.len = uri->user.len; 
 	res->flags = XL_VAL_STR;
     } else if(param->val.len==3) { /* domain */
-	res->rs.s   = uri.host.s;
-	res->rs.len = uri.host.len; 
+	res->rs.s   = uri->host.s;
+	res->rs.len = uri->host.len; 
 	res->flags = XL_VAL_STR;
     } else {
 	LOG(L_ERR, "xl_get_ppi_attr: unknown specifier\n");
@@ -2391,7 +2387,7 @@ static struct _xl_table {
 	{{"pd", (sizeof("pd")-1)}, /* */
 		{ XL_PPI_DOMAIN, 0, xl_get_ppi_attr, {{0, 3}, 0}, {0, 0}, 0}},
 	{{"pn", (sizeof("pn")-1)}, /* */
-		{ XL_PPI_DISPLAYNAME, 0, xl_get_ppi_attr, {{0, 2}, 0}, {0, 0}, 0}},
+		{ XL_PPI_DISPLAYNAME, 0, xl_get_ppi_attr, {{0, 4}, 0}, {0, 0}, 0}},
 	{{"pu", (sizeof("pu")-1)}, /* */
 		{ XL_PPI, 0, xl_get_ppi_attr, {{0, 1}, 0}, {0, 0}, 0}},
 	{{"pU", (sizeof("pU")-1)}, /* */

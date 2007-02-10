@@ -19,13 +19,15 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
  
-#include "parse_from.h"
+#include "parse_ppi.h"
 #include "parse_to.h"
+#include "parse_uri.h"
 #include <stdlib.h>
 #include <string.h>
 #include "../dprint.h"
 #include "msg_parser.h"
 #include "../ut.h"
+#include "../errinfo.h"
 #include "../mem/mem.h"
 
  
@@ -75,4 +77,41 @@ int parse_ppi_header( struct sip_msg *msg )
  	return 0;
  error:
  	return -1;
+}
+
+
+/**
+ * Parse P-Preferred-Identity header URI
+ */
+struct sip_uri *parse_ppi_uri(struct sip_msg *msg)
+{
+	struct to_body *tb = NULL;
+	
+	if(msg==NULL)
+		return NULL;
+
+	if(parse_ppi_header(msg)<0)
+	{
+		LOG(L_ERR, "parse_ppi_uri: ERROR cannot parse P-P-I header\n");
+		return NULL;
+	}
+	
+	if(msg->ppi==NULL || get_ppi(msg)==NULL)
+		return NULL;
+
+	tb = get_ppi(msg);
+
+	if(tb->parsed_uri.user.s!=NULL || tb->parsed_uri.host.s!=NULL)
+		return &tb->parsed_uri;
+
+	if (parse_uri(tb->uri.s, tb->uri.len , &tb->parsed_uri)<0)
+	{
+		LOG(L_ERR,"parse_ppi_uri: failed to parse P-P-I URI\n");
+		memset(&tb->parsed_uri, 0, sizeof(struct sip_uri));
+		set_err_info(OSER_EC_PARSER, OSER_EL_MEDIUM, "error parsing P-P-I URI");
+		set_err_reply(400, "bad P-Preferred-Identity uri");
+		return NULL;
+	}
+
+	return &tb->parsed_uri;
 }
