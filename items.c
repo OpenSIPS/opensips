@@ -2350,8 +2350,8 @@ static struct _xl_table {
 		{ XL_ERR_RREASON, 0, xl_get_errinfo_attr, {{0, 4}, 0}, {0, 0}, 0}},
 	{{"fd", (sizeof("fd")-1)}, /* */
 		{ XL_FROM_DOMAIN, 0, xl_get_from_attr, {{0, 3}, 0}, {0, 0}, 0}},
-	{{"from", (sizeof("from")-1)}, /* */
-		{ XL_FROM, 0, xl_get_from_attr, {{0, 1}, 0}, {0, 0}, 0}},
+	{{"from.domain", (sizeof("from.domain")-1)}, /* */
+		{ XL_FROM_DOMAIN, 0, xl_get_from_attr, {{0, 3}, 0}, {0, 0}, 0}},
 	{{"fn", (sizeof("fn")-1)}, /* */
 		{ XL_FROM_DISPLAYNAME, 0, xl_get_from_attr, {{0, 5}, 0}, {0, 0}, 0}},
 	{{"fs", (sizeof("fs")-1)}, /* */
@@ -2360,7 +2360,11 @@ static struct _xl_table {
 		{ XL_FROM_TAG, 0, xl_get_from_attr, {{0, 4}, 0}, {0, 0}, 0}},
 	{{"fu", (sizeof("fu")-1)}, /* */
 		{ XL_FROM, 0, xl_get_from_attr, {{0, 1}, 0}, {0, 0}, 0}},
+	{{"from", (sizeof("from")-1)}, /* */
+		{ XL_FROM, 0, xl_get_from_attr, {{0, 1}, 0}, {0, 0}, 0}},
 	{{"fU", (sizeof("fU")-1)}, /* */
+		{ XL_FROM_USERNAME, 0, xl_get_from_attr, {{0, 2}, 0}, {0, 0}, 0}},
+	{{"from.user", (sizeof("from.user")-1)}, /* */
 		{ XL_FROM_USERNAME, 0, xl_get_from_attr, {{0, 2}, 0}, {0, 0}, 0}},
 	{{"mb", (sizeof("mb")-1)}, /* */
 		{ XL_MSG_BUF, 0, xl_get_msg_buf, {{0, 0}, 0}, {0, 0}, 0}},
@@ -2402,6 +2406,8 @@ static struct _xl_table {
 		{ XL_RETURN_CODE, 0, xl_get_return_code, {{0, 0}, 0}, {0, 0}, 0}},
 	{{"rd", (sizeof("rd")-1)}, /* */
 		{ XL_RURI_DOMAIN, 0, xl_get_ruri_attr, {{0, 2}, 0}, {0, 0}, 0}},
+	{{"ruri.domain", (sizeof("ruri.domain")-1)}, /* */
+		{ XL_RURI_DOMAIN, 0, xl_get_ruri_attr, {{0, 2}, 0}, {0, 0}, 0}},
 	{{"re", (sizeof("re")-1)}, /* */
 		{ XL_RPID_URI, 0, xl_get_rpid, {{0, 0}, 0}, {0, 0}, 0}},
 	{{"rm", (sizeof("rm")-1)}, /* */
@@ -2422,6 +2428,8 @@ static struct _xl_table {
 		{ XL_RURI, 0, xl_get_ruri, {{0, 0}, 0}, {0, 0}, 0}},
 	{{"rU", (sizeof("rU")-1)}, /* */
 		{ XL_RURI_USERNAME, 0, xl_get_ruri_attr, {{0, 1}, 0}, {0, 0}, 0}},
+	{{"ruri.user", (sizeof("ruri.user")-1)}, /* */
+		{ XL_RURI_USERNAME, 0, xl_get_ruri_attr, {{0, 1}, 0}, {0, 0}, 0}},
 	{{"Ri", (sizeof("Ri")-1)}, /* */
 		{ XL_RCVIP, 0, xl_get_rcvip, {{0, 0}, 0}, {0, 0}, 0}},
 	{{"Rp", (sizeof("Rp")-1)}, /* */
@@ -2438,15 +2446,19 @@ static struct _xl_table {
 		{ XL_SRCPORT, 0, xl_get_srcport, {{0, 0}, 0}, {0, 0}, 0}},
 	{{"td", (sizeof("td")-1)}, /* */
 		{ XL_TO_DOMAIN, 0, xl_get_to_attr, {{0, 3}, 0}, {0, 0}, 0}},
-	{{"to", (sizeof("to")-1)}, /* */
-		{ XL_TO, 0, xl_get_to_attr, {{0, 1}, 0}, {0, 0}, 0}},
+	{{"to.domain", (sizeof("to.domain")-1)}, /* */
+		{ XL_TO_DOMAIN, 0, xl_get_to_attr, {{0, 3}, 0}, {0, 0}, 0}},
 	{{"tn", (sizeof("tn")-1)}, /* */
 		{ XL_TO_DISPLAYNAME, 0, xl_get_to_attr, {{0, 5}, 0}, {0, 0}, 0}},
 	{{"tt", (sizeof("tt")-1)}, /* */
 		{ XL_TO_TAG, 0, xl_get_to_attr, {{0, 4}, 0}, {0, 0}, 0}},
 	{{"tu", (sizeof("tu")-1)}, /* */
 		{ XL_TO, 0, xl_get_to_attr, {{0, 1}, 0}, {0, 0}, 0}},
+	{{"to", (sizeof("to")-1)}, /* */
+		{ XL_TO, 0, xl_get_to_attr, {{0, 1}, 0}, {0, 0}, 0}},
 	{{"tU", (sizeof("tU")-1)}, /* */
+		{ XL_TO_USERNAME, 0, xl_get_to_attr, {{0, 2}, 0}, {0, 0}, 0}},
+	{{"to.user", (sizeof("to.user")-1)}, /* */
 		{ XL_TO_USERNAME, 0, xl_get_to_attr, {{0, 2}, 0}, {0, 0}, 0}},
 	{{"Tf", (sizeof("tf")-1)}, /* */
 		{ XL_TIMEF, 0, xl_get_timef, {{0, 0}, 0}, {0, 0}, 0}},
@@ -2488,14 +2500,16 @@ int xl_lookup_spec_name(str *pvname, xl_spec_p e, int flags)
 		return -1;
 	}
 
-	if(i==0)
+	if(i!=0)
 	{
-		DBG("xl_lookup_spec_name: found [%.*s] in extra items\n",
+		LOG(L_ERR, "xl_lookup_spec_name: not found PV [%.*s]\n",
 				pvname->len, pvname->s);
-		return 0;
+		return -1;
 	}
+
+	DBG("xl_lookup_spec_name: found [%.*s] in extra items\n",
+				pvname->len, pvname->s);
 	
-	DBG("xl_lookup_spec_name: not found [%.*s]\n", pvname->len, pvname->s);
 	return 0;
 }
 
@@ -2997,7 +3011,8 @@ int xl_printf(struct sip_msg* msg, xl_elem_p list, char *buf, int *len)
 				n += it->text.len;
 				cur += it->text.len;
 			} else {
-				LOG(L_ERR, "xl_printf: no more space for text [%d]\n",it->text.len);
+				LOG(L_ERR, "xl_printf: no more space for text [%d]\n",
+						it->text.len);
 				goto overflow;
 			}
 		}

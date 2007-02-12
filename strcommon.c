@@ -105,3 +105,190 @@ void compute_md5(char *dst, char *src, int src_len)
 	MD5Final (digest, &context);
 	string2hex(digest, 16, dst);
 }
+
+/* unscape all printable ascii characters */
+int unescape_user(str *sin, str *sout)
+{
+	char *at, *p, c;
+
+	if(sin==NULL || sout==NULL || sin->s==NULL || sout->s==NULL
+			|| sin->len<=0 || sout->len < sin->len+1)
+		return -1;
+
+	at = sout->s;
+	p  = sin->s;
+	while(p < sin->s+sin->len)
+	{
+	    if (*p == '%')
+		{
+			p++;
+			switch (*p)
+			{
+				case '0':
+				case '1':
+				case '2':
+				case '3':
+				case '4':
+				case '5':
+				case '6':
+				case '7':
+				case '8':
+				case '9':
+				    c = (*p - '0') << 4;
+			    break;
+				case 'a':
+				case 'b':
+				case 'c':
+				case 'd':
+				case 'e':
+				case 'f':
+				    c = (*p - 'a' + 10) << 4;
+			    break;
+				case 'A':
+				case 'B':
+				case 'C':
+				case 'D':
+				case 'E':
+				case 'F':
+				    c = (*p - 'A' + 10) << 4;
+			    break;
+				default:
+				    LOG(L_ERR, "unescape_user:Invalid hex digit <%u>\n",
+							(unsigned int)*p);
+				    return -1;
+			}
+			p++;
+			switch (*p)
+			{
+				case '0':
+				case '1':
+				case '2':
+				case '3':
+				case '4':
+				case '5':
+				case '6':
+				case '7':
+				case '8':
+				case '9':
+				    c =  c + (*p - '0');
+			    break;
+				case 'a':
+				case 'b':
+				case 'c':
+				case 'd':
+				case 'e':
+				case 'f':
+				    c = c + (*p - 'a' + 10);
+			    break;
+				case 'A':
+				case 'B':
+				case 'C':
+				case 'D':
+				case 'E':
+				case 'F':
+				    c = c + (*p - 'A' + 10);
+			    break;
+				default:
+				    LOG(L_ERR, "unescape_user: invalid hex digit <%u>\n",
+							(unsigned int)*p);
+				    return -1;
+			}
+			if ((c < 32) || (c > 126))
+			{
+			    LOG(L_ERR, "unescape_user: invalid escaped character <%u>\n",
+				   (unsigned int)c);
+			    return -1;
+			}
+			*at++ = c;
+	    } else {
+			*at++ = *p;
+	    }
+		p++;
+	}
+
+	*at = 0;
+	sout->len = at - sout->s;
+	
+	DBG("unescape_user: unescaped string is <%s>\n", sout->s);
+	return 0;
+}
+
+int escape_user(str *sin, str *sout)
+{
+
+	/* escape all printable characters that are not valid in user
+	 * part of request uri
+	 * no_need_to_escape = unreserved | user-unreserved
+	 * unreserved = aplhanum | mark
+	 * mark = - | _ | . | ! | ~ | * | ' | ( | )
+	 * user-unreserved = & | = | + | $ | , | ; | ? | /
+	 */
+
+	char *at, *p;
+	unsigned char x;
+
+	if(sin==NULL || sout==NULL || sin->s==NULL || sout->s==NULL
+			|| sin->len<=0 || sout->len < 3*sin->len+1)
+		return -1;
+
+
+	at = sout->s;
+	p  = sin->s;
+	while (p < sin->s+sin->len)
+	{
+	    if (*p < 32 || *p > 126)
+		{
+			LOG(L_ERR, "escape_user:invalid escaped character <%u>\n",
+					(unsigned int)*p);
+			return -1;
+	    }
+	    if (isdigit(*p) || ((*p >= 'A') && (*p <= 'Z')) ||
+				((*p >= 'a') && (*p <= 'z')))
+		{
+			*at = *p;
+	    } else {
+			switch (*p) {
+				case '-':
+				case '_':
+				case '.':
+				case '!':
+				case '~':
+				case '*':
+				case '\'':
+				case '(':
+				case ')':
+				case '&':
+				case '=':
+				case '+':
+				case '$':
+				case ',':
+				case ';':
+				case '?':
+				    *at = *p;
+				break;
+				default:
+				    *at++ = '%';
+				    x = (*p) >> 4;
+				    if (x < 10)
+					{
+						*at++ = x + '0';
+				    } else {
+						*at++ = x - 10 + 'a';
+				    }
+				    x = (*p) & 0x0f;
+				    if (x < 10) {
+						*at = x + '0';
+				    } else {
+						*at = x - 10 + 'a';
+				    }
+			}
+	    }
+	    at++;
+	    p++;
+	}
+	*at = 0;
+	sout->len = at - sout->s;
+	DBG("escape_user: escaped string is <%s>\n", sout->s);
+	return 0;
+}
+

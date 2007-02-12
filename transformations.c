@@ -69,6 +69,7 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 {
 	int i, j;
 	char *p, *s;
+	str st;
 	xl_value_t v;
 	if(val==NULL)
 		return -1;
@@ -164,7 +165,6 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 			val->rs.s = _tr_buffer;
 			val->rs.len = i;
 			break;
-			break;
 		case TR_S_UNESCAPECOMMON:
 			if(!(val->flags&XL_VAL_STR))
 				val->rs.s = int2str(val->ri, &val->rs.len);
@@ -177,6 +177,29 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 			val->rs.s = _tr_buffer;
 			val->rs.len = i;
 			break;
+		case TR_S_ESCAPEUSER:
+			if(!(val->flags&XL_VAL_STR))
+				val->rs.s = int2str(val->ri, &val->rs.len);
+			if(val->rs.len>TR_BUFFER_SIZE/2-1)
+				return -1;
+			st.s = _tr_buffer;
+			st.len = TR_BUFFER_SIZE;
+			escape_user(&val->rs, &st);
+			memset(val, 0, sizeof(xl_value_t));
+			val->flags = XL_VAL_STR;
+			val->rs = st;
+			break;
+		case TR_S_UNESCAPEUSER:
+			if(!(val->flags&XL_VAL_STR))
+				val->rs.s = int2str(val->ri, &val->rs.len);
+			if(val->rs.len>TR_BUFFER_SIZE-1)
+				return -1;
+			st.s = _tr_buffer;
+			st.len = TR_BUFFER_SIZE;
+			unescape_user(&val->rs, &st);
+			memset(val, 0, sizeof(xl_value_t));
+			val->flags = XL_VAL_STR;
+			val->rs = st;
 			break;
 		case TR_S_SUBSTR:
 			if(tp==NULL || tp->next==NULL)
@@ -911,6 +934,12 @@ char* tr_parse_string(char* s, trans_t *t)
 		return p;
 	} else if(name.len==15 && strncasecmp(name.s, "unescape.common", 15)==0) {
 		t->subtype = TR_S_UNESCAPECOMMON;
+		return p;
+	} else if(name.len==11 && strncasecmp(name.s, "escape.user", 11)==0) {
+		t->subtype = TR_S_ESCAPEUSER;
+		return p;
+	} else if(name.len==13 && strncasecmp(name.s, "unescape.user", 13)==0) {
+		t->subtype = TR_S_UNESCAPEUSER;
 		return p;
 	} else if(name.len==6 && strncasecmp(name.s, "substr", 6)==0) {
 		t->subtype = TR_S_SUBSTR;

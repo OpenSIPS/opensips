@@ -377,8 +377,9 @@ inline static int un_escape(str *user, str *new_user )
 			}
 			hi=hex2int(user->s[i + 1]);
 			if (hi<0) {
-				LOG(L_ERR, "ERROR: un_escape: non-hex high digit in an escape sequence in"
-					" '%.*s' @ %d\n",
+				LOG(L_ERR,
+					"ERROR: un_escape: non-hex high digit in an escape"
+					" sequence in '%.*s' @ %d\n",
 					user->len, user->s, i+1 );
 				goto error;
 			}
@@ -391,7 +392,8 @@ inline static int un_escape(str *user, str *new_user )
 			}
 			value=(hi<<4)+lo;
 			if (value < 32 || value > 126) {
-				LOG(L_ERR, "ERROR: non-ASCII escaped character in '%.*s' @ %d\n",
+				LOG(L_ERR,
+					"ERROR: non-ASCII escaped character in '%.*s' @ %d\n",
 					user->len, user->s, i );
 				goto error;
 			}

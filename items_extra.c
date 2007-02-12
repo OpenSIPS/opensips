@@ -25,7 +25,7 @@
 #include <unistd.h>
 
 #include "dprint.h"
-#include "locking.h"
+#include "mem/mem.h"
 #include "items.h"
 
 typedef struct _xl_extra
@@ -34,8 +34,6 @@ typedef struct _xl_extra
 	xl_spec_t spec;
 	struct _xl_extra *next;
 } xl_extra_t, *xl_extra_p;
-
-gen_lock_t  *_xl_extra_lock=0;
 
 xl_extra_p  *_xl_extra_list=0;
 
@@ -81,7 +79,7 @@ int xl_add_extra_spec(str *name, xl_spec_p sp)
 		LOG(L_ERR, "xl_add_extra_spec: bad parameters\n");
 		return -1;
 	}
-	if(_xl_extra_list==0 || _xl_extra_lock==0)
+	if(_xl_extra_list==0)
 	{
 		DBG("xl_add_extra_spec: extra items list is not initialized\n");
 		if(xl_init_extra_spec()!=0)
@@ -110,7 +108,6 @@ int xl_add_extra_spec(str *name, xl_spec_p sp)
 	i = 0;
 	xe1 = 0;
 	
-	lock_get(_xl_extra_lock);
 	xe0 = *_xl_extra_list;
 	while(xe0)
 	{
@@ -126,7 +123,6 @@ int xl_add_extra_spec(str *name, xl_spec_p sp)
 				LOG(L_ERR,
 					"xl_add_extra_spec: extra item [%.*s] already exists\n",
 					name->len, name->s);
-				lock_release(_xl_extra_lock);
 				return -1;
 			}
 		}
@@ -139,11 +135,10 @@ int xl_add_extra_spec(str *name, xl_spec_p sp)
 	if(sp->p.val.s!=0 && sp->p.val.len>0)
 		size += (sp->p.val.len+1)*sizeof(char);
 
-	xe = (xl_extra_p)shm_malloc(size);
+	xe = (xl_extra_p)pkg_malloc(size);
 	if(xe == 0)
 	{
 		LOG(L_ERR, "xl_add_extra_spec: cannot alloc extra item\n");
-		lock_release(_xl_extra_lock);
 		return -1;
 	}
 	memset(xe, 0, size);
@@ -173,7 +168,6 @@ int xl_add_extra_spec(str *name, xl_spec_p sp)
 	xe1->next = xe;
 	
 done:
-	lock_release(_xl_extra_lock);
 	return 0;
 }
 
@@ -192,7 +186,7 @@ int xl_fill_extra_spec(xl_spec_p sp)
 		return -1;
 	}
 	
-	if(_xl_extra_list==0 || _xl_extra_lock==0)
+	if(_xl_extra_list==0)
 	{
 		LOG(L_ERR, "xl_fill_extra_spec: extra items list is not initialized\n");
 		return -1;
@@ -201,7 +195,6 @@ int xl_fill_extra_spec(xl_spec_p sp)
 	found = 0;
 	name = sp->p.val;
 	
-	lock_get(_xl_extra_lock);
 	xe0 = *_xl_extra_list;
 	while(xe0)
 	{
@@ -215,18 +208,20 @@ int xl_fill_extra_spec(xl_spec_p sp)
 			if(found==0)
 			{
 				LOG(L_ERR,
-					"xl_add_extra_spec: found extra item [%.*s]\n",
+					"xl_fill_extra_spec: found extra item [%.*s]\n",
 					name.len, name.s);
 				memcpy(sp, &xe0->spec, sizeof(xl_spec_t));
 				sp->flags |= XL_EXTRA_FOUND;
-				lock_release(_xl_extra_lock);
 				return 0;
 			}
 		}
 		xe0 = xe0->next;
 	}
+
+	LOG(L_ERR,
+		"xl_fill_extra_spec: extra item [%.*s] not found\n",
+		name.len, name.s);
 	
-	lock_release(_xl_extra_lock);
 	return 1;
 }
 
@@ -235,27 +230,13 @@ int xl_fill_extra_spec(xl_spec_p sp)
  */
 int xl_init_extra_spec()
 {
-	_xl_extra_list = (xl_extra_p*)shm_malloc(sizeof(xl_extra_p));
+	_xl_extra_list = (xl_extra_p*)pkg_malloc(sizeof(xl_extra_p));
 	if(_xl_extra_list==0)
 	{
 		LOG(L_ERR, "xl_init_extra_spec: cannot alloc extra items list\n");
 		return -1;
 	}
 	*_xl_extra_list=0;
-	_xl_extra_lock = (gen_lock_t*)shm_malloc(sizeof(gen_lock_t));
-	if(_xl_extra_lock==0)
-	{
-		LOG(L_ERR, "xl_init_extra_spec: cannot alloc extra items lock\n");
-		shm_free(_xl_extra_list);
-		return -1;
-	}
-	if(lock_init(_xl_extra_lock)==0)
-	{
-		LOG(L_CRIT, "xl_init_extra_spec: cannot alloc extra items lock\n");
-		shm_free(_xl_extra_list);
-		shm_free((void*)_xl_extra_lock);
-		return -1;
-	};
 	return 0;
 }
 
@@ -273,17 +254,10 @@ int xl_free_extra_spec()
 		{
 			xe1 = xe;
 			xe = xe->next;
-			shm_free(xe1);
+			pkg_free(xe1);
 		}
-		shm_free(_xl_extra_list);
+		pkg_free(_xl_extra_list);
 		_xl_extra_list = 0;
-	}
-	
-	if(_xl_extra_lock!=0)
-	{
-		lock_destroy(_xl_extra_lock);
-		shm_free((void*)_xl_extra_lock);
-		_xl_extra_lock = 0;
 	}
 	
 	return 0;

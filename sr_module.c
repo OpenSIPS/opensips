@@ -140,6 +140,18 @@ int register_module(struct module_exports* e, char* path, void* handle)
 	mod->exports=e;
 	mod->next=modules;
 	modules=mod;
+
+	/* register module pseudo-variables */
+	if (e->items) {
+		DBG("DEBUG: register_pv: %s\n", e->name);
+		if (register_items_mod(e->name, e->items)!=0) {
+			LOG(L_ERR, "register_module: Error while registering "
+				"pseudo-variables for module %s\n", e->name);
+			pkg_free(mod);
+			return -1;
+		}
+	}
+
 	return 0;
 error:
 	return ret;
@@ -471,15 +483,6 @@ static int init_mod( struct sr_module* m )
 			if (register_mi_mod(m->exports->name,m->exports->mi_cmds)!=0) {
 				LOG(L_ERR, "init_mod(): Error while registering "
 					"MI functions for module %s\n", m->exports->name);
-			}
-		}
-
-		/* register module pseudo-variables */
-		if (m->exports->items) {
-			DBG("DEBUG: register_pv: %s\n", m->exports->name);
-			if (register_items_mod(m->exports->name,m->exports->items)!=0) {
-				LOG(L_ERR, "init_mod(): Error while registering "
-					"pseudo-variables for module %s\n", m->exports->name);
 			}
 		}
 

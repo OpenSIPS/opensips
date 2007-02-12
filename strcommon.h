@@ -38,5 +38,9 @@ int unescape_common(char *dst, char *src, int src_len);
 
 void compute_md5(char *dst, char *src, int src_len);
 
+int escape_user(str *sin, str *sout);
+
+int unescape_user(str *sin, str *sout);
+
 #endif
 
