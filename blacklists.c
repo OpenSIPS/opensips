@@ -254,13 +254,13 @@ static inline void delete_expired(struct bl_head *elem, unsigned int ticks)
 	lock_get(elem->lock);
 	while(elem->count_write){
 		lock_release(elem->lock);
-		usleep(5);
+		sleep_us(5);
 		lock_get(elem->lock);
 	}
 	elem->count_write = 1;
 	while(elem->count_read){
 		lock_release(elem->lock);
-		usleep(5);
+		sleep_us(5);
 		lock_get(elem->lock);
 	}
 	lock_release(elem->lock);
@@ -454,13 +454,13 @@ static inline int reload_permanent_list(struct bl_rule *first,
 	lock_get( head->lock);
 	while(head->count_write){
 		lock_release( head->lock );
-		usleep(5);
+		sleep_us(5);
 		lock_get( head->lock );
 	}
 	head->count_write = 1;
 	while(head->count_read){
 		lock_release( head->lock );
-		usleep(5);
+		sleep_us(5);
 		lock_get( head->lock );
 	}
 	lock_release( head->lock );
@@ -521,13 +521,13 @@ int add_list_to_head( struct bl_head *head,
 	lock_get(head->lock);
 	while(head->count_write){
 		lock_release( head->lock );
-		usleep(5);
+		sleep_us(5);
 		lock_get( head->lock );
 	}
 	head->count_write = 1;
 	while(head->count_read){
 		lock_release( head->lock );
-		usleep(5);
+		sleep_us(5);
 		lock_get( head->lock );
 	}
 	lock_release( head->lock );
@@ -620,7 +620,7 @@ static inline int check_against_rule_list(struct ip_addr *ip, str *text,
 		lock_get( blst_heads[i].lock );
 		while(blst_heads[i].count_write) {
 			lock_release( blst_heads[i].lock );
-			usleep(5);
+			sleep_us(5);
 			lock_get( blst_heads[i].lock );
 		}
 		blst_heads[i].count_read++;
@@ -689,7 +689,7 @@ static struct mi_root* mi_print_blacklists(struct mi_root *cmd, void *param)
 				lock_get( blst_heads[i].lock );
 			while(blst_heads[i].count_write) {
 				lock_release( blst_heads[i].lock );
-				usleep(5);
+				sleep_us(5);
 				lock_get( blst_heads[i].lock );
 			}
 			blst_heads[i].count_read++;
