@@ -115,7 +115,7 @@ NAME=$(MAIN_NAME)
 export DEFS PROFILE CC LD MKDEP MKTAGS CFLAGS LDFLAGS MOD_CFLAGS MOD_LDFLAGS 
 export LIBS RADIUS_LIB
 export LEX YACC YACC_FLAGS
-export PREFIX LOCALBASE
+export PREFIX LOCALBASE SYSBASE
 # export relevant variables for recursive calls of this makefile 
 # (e.g. make deb)
 #export LIBS

@@ -3,7 +3,7 @@
 # makefile defs (CC, LD,a.s.o)
 #
 # Environment variables:
-#   PREFIX, LOCALBASE, BASEDIR
+#   PREFIX, LOCALBASE, SYSBASE, BASEDIR
 #   INSTALL, TAR , CC, LEX, YACC,
 #   CPU, CC_EXTRA_OPTS, LD_EXTRA_OPTS
 #   exclude_modules, skip_modules, include_modules
@@ -42,6 +42,8 @@
 #  2006-10-19  gcc-3.4 and gcc-3.0 cases merged as they proved to be identical;
 #              CC_CLASS replaces CC_SHORTVER while CC_SHORTVER is keept without
 #              any wildcards (bogdan)
+#  2007-02-12  use $(SYSBASE) instead of /usr - easy to switch to another
+#              root for cross compiling (bogdan)
 
 
 # check if already included/exported
@@ -113,6 +115,9 @@ endif
 # extra CC command line options (e.g  -march=athlon-mp)
 CC_EXTRA_OPTS ?=
 
+# system base
+SYSBASE ?= /usr
+
 # dirs 
 cfg-dir = etc/$(MAIN_NAME)/
 bin-dir = sbin/
@@ -132,31 +137,31 @@ modules-dir = $(LIBDIR)/$(MAIN_NAME)/modules/
 ifeq ($(OS), linux)
 	doc-dir = share/doc/$(MAIN_NAME)/
 	man-dir = share/man/
-	LOCALBASE ?= /usr/local
+	LOCALBASE ?= $(SYSBASE)/local
 else
 ifeq ($(OS), freebsd)
 	doc-dir = share/doc/$(MAIN_NAME)/
 	man-dir = man/
-	LOCALBASE ?= /usr/local
+	LOCALBASE ?= $(SYSBASE)/local
 else
 ifeq ($(OS), openbsd)
 	doc-dir = share/doc/$(MAIN_NAME)/
 	man-dir = man/
-	LOCALBASE ?= /usr/local
+	LOCALBASE ?= $(SYSBASE)/local
 else
 ifeq ($(OS), netbsd)
 	doc-dir = share/doc/$(MAIN_NAME)
 	man-dir = man/
-	LOCALBASE ?= /usr/pkg
+	LOCALBASE ?= $(SYSBASE)/pkg
 else
 ifeq ($(OS), darwin)
 	doc-dir = share/doc/$(MAIN_NAME)/
 	man-dir = man/
-	LOCALBASE ?= /usr/local
+	LOCALBASE ?= $(SYSBASE)/local
 else
 	doc-dir = doc/$(MAIN_NAME)/
 	man-dir = man/
-	LOCALBASE ?= /usr/local
+	LOCALBASE ?= $(SYSBASE)/local
 endif
 endif
 endif
