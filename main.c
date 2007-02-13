@@ -514,13 +514,11 @@ void handle_sigs()
 								" signal %d\n", chld,
 								 WSTOPSIG(chld_status));
 			}
-#ifndef STOP_JIRIS_CHANGES
 			if (dont_fork) {
 				LOG(L_INFO, "INFO: dont_fork turned on, living on\n");
 				break;
-			} 
+			}
 			LOG(L_INFO, "INFO: terminating due to SIGCHLD\n");
-#endif
 			/* exit */
 			kill_all_children(SIGTERM);
 			if (signal(SIGALRM, sig_alarm_kill) == SIG_ERR ) {
@@ -557,8 +555,6 @@ void handle_sigs()
 */
 static void sig_usr(int signo)
 {
-
-
 	if (is_main){
 		if (sig_flag==0) sig_flag=signo;
 		else /*  previous sig. not processed yet, ignoring? */
@@ -595,12 +591,8 @@ static void sig_usr(int signo)
 			case SIGHUP:
 					break;
 			case SIGCHLD:
-#ifndef 			STOP_JIRIS_CHANGES
 					DBG("SIGCHLD received: "
 						"we do not worry about grand-children\n");
-#else
-					exit(0); /* terminate if one child died */
-#endif
 		}
 	}
 }

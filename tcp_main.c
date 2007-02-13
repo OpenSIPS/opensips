@@ -112,9 +112,6 @@
 #include "io_wait.h"
 #include <fcntl.h> /* must be included after io_wait.h if SIGIO_RT is used */
 
-#define MAX_TCP_CHILDREN 100
-
-
 
 enum fd_types { F_NONE, F_SOCKINFO /* a tcp_listen fd */,
 				F_TCPCONN, F_TCPCHILD, F_PROC };
@@ -145,7 +142,7 @@ struct tcp_conn_alias** tcpconn_aliases_hash=0;
 struct tcp_connection** tcpconn_id_hash=0;
 gen_lock_t* tcpconn_lock=0;
 
-struct tcp_child tcp_children[MAX_TCP_CHILDREN];
+struct tcp_child *tcp_children=0;
 static int* connection_id=0; /*  unique for each connection, used for 
 								quickly finding the corresponding connection
 								for a reply */
@@ -1616,6 +1613,14 @@ int init_tcp()
 		tcpconn_lock=0;
 		goto error;
 	}
+	/* init tcp children array */
+	tcp_children = (struct tcp_child*)pkg_malloc
+		( tcp_children_no*sizeof(struct tcp_child) );
+	if (tcp_children==0) {
+		LOG(L_CRIT, "ERROR: init_tcp: could not alloc tcp_children array\n");
+		goto error;
+	}
+	memset( tcp_children, 0, tcp_children_no*sizeof(struct tcp_child));
 	/* init globals */
 	connection_id=(int*)shm_malloc(sizeof(int));
 	if (connection_id==0){
