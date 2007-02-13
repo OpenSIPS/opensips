@@ -1457,6 +1457,9 @@ exp_cond:	METHOD strop STRING	{$$= mk_elem($2, METHOD_O, 0, STRING_ST, $3);
 		| script_var equalop MYSELF	{ 
 				$$=mk_elem( $2, SCRIPTVAR_O,(void*)$1, MYSELF_ST, 0);
 			}
+		| script_var equalop NULLV	{ 
+				$$=mk_elem( $2, SCRIPTVAR_O,(void*)$1, NULLV_ST, 0);
+			}
 		| uri_type strop STRING	{$$ = mk_elem($2, $1, 0, STRING_ST, $3); 
 				 				}
 		| uri_type equalop MYSELF	{ $$=mk_elem($2, $1, 0, MYSELF_ST, 0);
@@ -1632,28 +1635,49 @@ assignexp :
 	;
 
 assign_cmd: script_var assignop assignexp {	
-					switch($1->type) {
-						case XL_AVP:
-						case XL_SCRIPTVAR:
-						case XL_RURI:
-						case XL_RURI_USERNAME:
-						case XL_RURI_DOMAIN:
-						case XL_DSTURI:
-						break;
-						default:
-						yyerror("invalid left operand in assignment");
-					}
-					if($1->trans!=0)
-						yyerror(
+			switch($1->type) {
+				case XL_AVP:
+				case XL_SCRIPTVAR:
+				case XL_RURI:
+				case XL_RURI_USERNAME:
+				case XL_RURI_DOMAIN:
+				case XL_DSTURI:
+				break;
+				default:
+					yyerror("invalid left operand in assignment");
+			}
+			if($1->trans!=0)
+				yyerror(
 					"transformations not accepted in right side of assignment");
 
-					mk_action2( $$, $2,
-							SCRIPTVAR_ST,
-							EXPR_ST,
-							$1,
-							$3);
-						}
-		  ; 
+			mk_action2( $$, $2,
+					SCRIPTVAR_ST,
+					EXPR_ST,
+					$1,
+					$3);
+		}
+	|  script_var EQUAL NULLV {
+			switch($1->type) {
+				case XL_AVP:
+				case XL_SCRIPTVAR:
+				case XL_DSTURI:
+				case XL_RURI_USERNAME:
+				break;
+				default:
+					yyerror("invalid left operand in NULL assignment");
+			}
+			if($1->trans!=0)
+				yyerror(
+					"transformations not accepted in right side of assignment");
+
+			mk_action2( $$, EQ_T,
+					SCRIPTVAR_ST,
+					NULLV_ST,
+					$1,
+					0);
+		}
+	; 
+
 exp_stm:	cmd						{ $$=$1; }
 		|	if_cmd					{ $$=$1; }
 		|	assign_cmd				{ $$=$1; }

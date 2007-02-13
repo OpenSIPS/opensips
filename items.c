@@ -80,8 +80,7 @@ static int xl_get_null(struct sip_msg *msg, xl_value_t *res, xl_param_t *param,
 	if(msg==NULL || res==NULL)
 		return -1;
 	
-	res->rs.s = str_null.s;
-	res->rs.len = str_null.len;
+	res->rs = str_empty;
 	res->ri = 0;
 	res->flags = XL_VAL_NULL;
 	return 0;
@@ -93,21 +92,19 @@ static int xl_get_empty(struct sip_msg *msg, xl_value_t *res, xl_param_t *param,
 	if(msg==NULL || res==NULL)
 		return -1;
 	
-	res->rs.s = str_empty.s;
-	res->rs.len = str_empty.len;
+	res->rs = str_empty;
 	res->ri = 0;
 	res->flags = XL_VAL_STR|XL_VAL_INT|XL_VAL_EMPTY;
 	return 0;
 }
 
-static int xl_get_marker(struct sip_msg *msg, xl_value_t *res, xl_param_t *param,
-		int flags)
+static int xl_get_marker(struct sip_msg *msg, xl_value_t *res,
+		xl_param_t *param, int flags)
 {
 	if(msg==NULL || res==NULL)
 		return -1;
 	
-	res->rs.s = str_marker.s;
-	res->rs.len = str_marker.len;
+	res->rs = str_marker;
 	res->ri = (int)str_marker.s[0];
 	res->flags = XL_VAL_STR|XL_VAL_INT;
 	return 0;
@@ -119,8 +116,7 @@ static int xl_get_udp(struct sip_msg *msg, xl_value_t *res, xl_param_t *param,
 	if(msg==NULL || res==NULL)
 		return -1;
 	
-	res->rs.s = str_udp.s;
-	res->rs.len = str_udp.len;
+	res->rs = str_udp;
 	res->ri = PROTO_UDP;
 	res->flags = XL_VAL_STR|XL_VAL_INT;
 	return 0;
@@ -132,8 +128,7 @@ static int xl_get_5060(struct sip_msg *msg, xl_value_t *res, xl_param_t *param,
 	if(msg==NULL || res==NULL)
 		return -1;
 	
-	res->rs.s = str_5060.s;
-	res->rs.len = str_5060.len;
+	res->rs = str_5060;
 	res->ri = 5060;
 	res->flags = XL_VAL_STR|XL_VAL_INT;
 	return 0;
@@ -162,8 +157,8 @@ static int xl_get_pid(struct sip_msg *msg, xl_value_t *res, xl_param_t *param,
 
 
 extern int return_code;
-static int xl_get_return_code(struct sip_msg *msg, xl_value_t *res, xl_param_t *param,
-		int flags)
+static int xl_get_return_code(struct sip_msg *msg, xl_value_t *res,
+		xl_param_t *param, int flags)
 {
 	int l = 0;
 	char *s = NULL;
@@ -246,8 +241,8 @@ static int xl_get_msgid(struct sip_msg *msg, xl_value_t *res, xl_param_t *param,
 	return 0;
 }
 
-static int xl_get_method(struct sip_msg *msg, xl_value_t *res, xl_param_t *param,
-		int flags)
+static int xl_get_method(struct sip_msg *msg, xl_value_t *res,
+		xl_param_t *param, int flags)
 {
 	if(msg==NULL || res==NULL)
 		return -1;
@@ -273,8 +268,8 @@ static int xl_get_method(struct sip_msg *msg, xl_value_t *res, xl_param_t *param
 	return 0;
 }
 
-static int xl_get_status(struct sip_msg *msg, xl_value_t *res, xl_param_t *param,
-		int flags)
+static int xl_get_status(struct sip_msg *msg, xl_value_t *res,
+		xl_param_t *param, int flags)
 {
 	if(msg==NULL || res==NULL)
 		return -1;
@@ -292,8 +287,8 @@ static int xl_get_status(struct sip_msg *msg, xl_value_t *res, xl_param_t *param
 	return 0;
 }
 
-static int xl_get_reason(struct sip_msg *msg, xl_value_t *res, xl_param_t *param,
-		int flags)
+static int xl_get_reason(struct sip_msg *msg, xl_value_t *res,
+		xl_param_t *param, int flags)
 {
 	if(msg==NULL || res==NULL)
 		return -1;
@@ -367,6 +362,8 @@ static int xl_get_xuri_attr(struct sip_msg *msg, xl_value_t *res,
 {
 	if(param->val.len==1) /* username */
 	{
+		if(parsed_uri->user.s==NULL || parsed_uri->user.len<=0)
+			return xl_get_null(msg, res, param, flags);
 		res->rs.s   = parsed_uri->user.s;
 		res->rs.len = parsed_uri->user.len;
 		res->flags = XL_VAL_STR;
@@ -396,8 +393,8 @@ static int xl_get_xuri_attr(struct sip_msg *msg, xl_value_t *res,
 	return 0;
 }
 
-static int xl_get_ruri_attr(struct sip_msg *msg, xl_value_t *res, xl_param_t *param,
-		int flags)
+static int xl_get_ruri_attr(struct sip_msg *msg, xl_value_t *res,
+		xl_param_t *param, int flags)
 {
 	if(msg==NULL || res==NULL)
 		return -1;
@@ -414,8 +411,8 @@ static int xl_get_ruri_attr(struct sip_msg *msg, xl_value_t *res, xl_param_t *pa
 	return xl_get_xuri_attr(msg, res, param, &(msg->parsed_uri), flags);
 }	
 
-static int xl_get_ouri_attr(struct sip_msg *msg, xl_value_t *res, xl_param_t *param,
-		int flags)
+static int xl_get_ouri_attr(struct sip_msg *msg, xl_value_t *res,
+		xl_param_t *param, int flags)
 {
 	if(msg==NULL || res==NULL)
 		return -1;
@@ -433,8 +430,8 @@ static int xl_get_ouri_attr(struct sip_msg *msg, xl_value_t *res, xl_param_t *pa
 }	
 
 	
-static int xl_get_contact(struct sip_msg* msg, xl_value_t *res, xl_param_t *param,
-		int flags)
+static int xl_get_contact(struct sip_msg* msg, xl_value_t *res,
+		xl_param_t *param, int flags)
 {
 	if(msg==NULL || res==NULL)
 		return -1;
@@ -558,8 +555,8 @@ static int xl_get_from_attr(struct sip_msg *msg, xl_value_t *res,
 		return xl_get_null(msg, res, param, flags);
 
 	if(param->val.len==2) /* username */ {
-		if(uri->user.s==NULL)
-			return xl_get_empty(msg, res, param, flags);
+		if(uri->user.s==NULL || uri->user.len<=0)
+			return xl_get_null(msg, res, param, flags);
 		res->rs.s   = uri->user.s;
 		res->rs.len = uri->user.len; 
 		res->flags = XL_VAL_STR;
@@ -623,8 +620,8 @@ static int xl_get_to_attr(struct sip_msg *msg, xl_value_t *res,
 		return xl_get_null(msg, res, param, flags);
 
 	if(param->val.len==2) /* username */ {
-		if(uri->user.s==NULL)
-			return xl_get_empty(msg, res, param, flags);
+		if(uri->user.s==NULL || uri->user.len<=0)
+			return xl_get_null(msg, res, param, flags);
 		res->rs.s   = uri->user.s;
 		res->rs.len = uri->user.len; 
 		res->flags = XL_VAL_STR;
@@ -659,8 +656,8 @@ static int xl_get_cseq(struct sip_msg *msg, xl_value_t *res, xl_param_t *param,
 	return 0;
 }
 
-static int xl_get_msg_buf(struct sip_msg *msg, xl_value_t *res, xl_param_t *param,
-		int flags)
+static int xl_get_msg_buf(struct sip_msg *msg, xl_value_t *res,
+		xl_param_t *param, int flags)
 {
 	if(msg==NULL || res==NULL)
 		return -1;
@@ -672,8 +669,8 @@ static int xl_get_msg_buf(struct sip_msg *msg, xl_value_t *res, xl_param_t *para
 	return 0;
 }
 
-static int xl_get_msg_len(struct sip_msg *msg, xl_value_t *res, xl_param_t *param,
-		int flags)
+static int xl_get_msg_len(struct sip_msg *msg, xl_value_t *res,
+		xl_param_t *param, int flags)
 {
 	if(msg==NULL || res==NULL)
 		return -1;
@@ -709,7 +706,7 @@ static inline char* int_to_8hex(int val)
 	{
 		if(val!=0)
 		{
-			digit =  val & 0xf;
+			digit =  val & 0x0f;
 			outbuf[7-i] = digit >= 10 ? digit + 'a' - 10 : digit + '0';
 			val >>= 4;
 		}
@@ -734,7 +731,7 @@ static int xl_get_hexflags(struct sip_msg *msg, xl_value_t *res,
 }
 
 static int xl_get_bflags(struct sip_msg *msg, xl_value_t *res,
-												xl_param_t *param,int flags)
+		xl_param_t *param,int flags)
 {
 	if(res==NULL)
 		return -1;
@@ -747,7 +744,7 @@ static int xl_get_bflags(struct sip_msg *msg, xl_value_t *res,
 }
 
 static int xl_get_hexbflags(struct sip_msg *msg, xl_value_t *res,
-												xl_param_t *param, int flags)
+		xl_param_t *param, int flags)
 {
 	if(res==NULL)
 		return -1;
@@ -761,7 +758,7 @@ static int xl_get_hexbflags(struct sip_msg *msg, xl_value_t *res,
 }
 
 static int xl_get_sflags(struct sip_msg *msg, xl_value_t *res,
-												xl_param_t *param,int flags)
+		xl_param_t *param,int flags)
 {
 	if(res==NULL)
 		return -1;
@@ -774,7 +771,7 @@ static int xl_get_sflags(struct sip_msg *msg, xl_value_t *res,
 }
 
 static int xl_get_hexsflags(struct sip_msg *msg, xl_value_t *res,
-												xl_param_t *param, int flags)
+		xl_param_t *param, int flags)
 {
 	if(res==NULL)
 		return -1;
@@ -787,8 +784,8 @@ static int xl_get_hexsflags(struct sip_msg *msg, xl_value_t *res,
 	return 0;
 }
 
-static int xl_get_callid(struct sip_msg *msg, xl_value_t *res, xl_param_t *param,
-		int flags)
+static int xl_get_callid(struct sip_msg *msg, xl_value_t *res,
+		xl_param_t *param, int flags)
 {
 	if(msg==NULL || res==NULL)
 		return -1;
@@ -821,8 +818,8 @@ static int xl_get_srcip(struct sip_msg *msg, xl_value_t *res, xl_param_t *param,
 	return 0;
 }
 
-static int xl_get_srcport(struct sip_msg *msg, xl_value_t *res, xl_param_t *param,
-		int flags)
+static int xl_get_srcport(struct sip_msg *msg, xl_value_t *res,
+		xl_param_t *param, int flags)
 {
 	int l = 0;
 	char *ch = NULL;
@@ -856,8 +853,8 @@ static int xl_get_rcvip(struct sip_msg *msg, xl_value_t *res, xl_param_t *param,
 	return 0;
 }
 
-static int xl_get_rcvport(struct sip_msg *msg, xl_value_t *res, xl_param_t *param,
-		int flags)
+static int xl_get_rcvport(struct sip_msg *msg, xl_value_t *res,
+		xl_param_t *param, int flags)
 {
 	if(msg==NULL || res==NULL)
 		return -1;
@@ -875,7 +872,7 @@ static int xl_get_rcvport(struct sip_msg *msg, xl_value_t *res, xl_param_t *para
 }
 
 static int xl_get_force_sock(struct sip_msg *msg, xl_value_t *res,
-												xl_param_t *param,int flags)
+		xl_param_t *param,int flags)
 {
 	if(msg==NULL || res==NULL)
 		return -1;
@@ -888,8 +885,8 @@ static int xl_get_force_sock(struct sip_msg *msg, xl_value_t *res,
 	return 0;
 }
 
-static int xl_get_useragent(struct sip_msg *msg, xl_value_t *res, xl_param_t *param,
-		int flags)
+static int xl_get_useragent(struct sip_msg *msg, xl_value_t *res,
+		xl_param_t *param, int flags)
 {
 	if(msg==NULL || res==NULL) 
 		return -1;
@@ -908,8 +905,8 @@ static int xl_get_useragent(struct sip_msg *msg, xl_value_t *res, xl_param_t *pa
 	return 0;
 }
 
-static int xl_get_refer_to(struct sip_msg *msg, xl_value_t *res, xl_param_t *param,
-		int flags)
+static int xl_get_refer_to(struct sip_msg *msg, xl_value_t *res,
+		xl_param_t *param, int flags)
 {
 	if(msg==NULL || res==NULL)
 		return -1;
@@ -931,8 +928,8 @@ static int xl_get_refer_to(struct sip_msg *msg, xl_value_t *res, xl_param_t *par
 	return 0;
 }
 
-static int xl_get_diversion(struct sip_msg *msg, xl_value_t *res, xl_param_t *param,
-		int flags)
+static int xl_get_diversion(struct sip_msg *msg, xl_value_t *res,
+		xl_param_t *param, int flags)
 {
 	if(msg==NULL || res==NULL)
 		return -1;
@@ -992,13 +989,13 @@ static int xl_get_ppi_attr(struct sip_msg *msg, xl_value_t *res,
     }
 	
     if(msg->ppi == NULL || get_ppi(msg) == NULL)
-	return xl_get_null(msg, res, param, flags);
+		return xl_get_null(msg, res, param, flags);
     
     if(param->val.len == 1) { /* uri */
-	res->rs.s = get_ppi(msg)->uri.s;
-	res->rs.len = get_ppi(msg)->uri.len; 
-	res->flags = XL_VAL_STR;
-	return 0;
+		res->rs.s = get_ppi(msg)->uri.s;
+		res->rs.len = get_ppi(msg)->uri.len; 
+		res->flags = XL_VAL_STR;
+		return 0;
     }
 	
     if(param->val.len==4) { /* display name */
@@ -1011,21 +1008,21 @@ static int xl_get_ppi_attr(struct sip_msg *msg, xl_value_t *res,
     }
 
     if((uri=parse_ppi_uri(msg))==NULL)
-	return xl_get_null(msg, res, param, flags);
+		return xl_get_null(msg, res, param, flags);
 	
     if(param->val.len==2) { /* username */
-	if(uri->user.s==NULL)
-	    return xl_get_empty(msg, res, param, flags);
-	res->rs.s   = uri->user.s;
-	res->rs.len = uri->user.len; 
-	res->flags = XL_VAL_STR;
+		if(uri->user.s==NULL || uri->user.len<=0)
+		    return xl_get_empty(msg, res, param, flags);
+		res->rs.s   = uri->user.s;
+		res->rs.len = uri->user.len; 
+		res->flags = XL_VAL_STR;
     } else if(param->val.len==3) { /* domain */
-	res->rs.s   = uri->host.s;
-	res->rs.len = uri->host.len; 
-	res->flags = XL_VAL_STR;
+		res->rs.s   = uri->host.s;
+		res->rs.len = uri->host.len; 
+		res->flags = XL_VAL_STR;
     } else {
-	LOG(L_ERR, "xl_get_ppi_attr: unknown specifier\n");
-	return xl_get_null(msg, res, param, flags);
+		LOG(L_ERR, "xl_get_ppi_attr: unknown specifier\n");
+		return xl_get_null(msg, res, param, flags);
     }
 
     return 0;
@@ -1071,8 +1068,8 @@ static int xl_get_dset(struct sip_msg *msg, xl_value_t *res, xl_param_t *param,
 }
 
 
-static int xl_get_dsturi(struct sip_msg *msg, xl_value_t *res, xl_param_t *param,
-		int flags)
+static int xl_get_dsturi(struct sip_msg *msg, xl_value_t *res,
+		xl_param_t *param, int flags)
 {
     if(msg==NULL || res==NULL)
 		return -1;
@@ -1088,8 +1085,7 @@ static int xl_get_dsturi(struct sip_msg *msg, xl_value_t *res, xl_param_t *param
 }
 
 static int xl_get_dsturi_attr(struct sip_msg *msg, xl_value_t *res,
-		xl_param_t *param,
-		int flags)
+		xl_param_t *param, int flags)
 {
 	struct sip_uri uri;
     if(msg==NULL || res==NULL)
@@ -1132,8 +1128,8 @@ static int xl_get_dsturi_attr(struct sip_msg *msg, xl_value_t *res,
     return 0;
 }
 
-static int xl_get_content_type(struct sip_msg *msg, xl_value_t *res, xl_param_t *param,
-		int flags)
+static int xl_get_content_type(struct sip_msg *msg, xl_value_t *res,
+		xl_param_t *param, int flags)
 {
 	if(msg==NULL || res==NULL) 
 		return -1;
@@ -1153,8 +1149,8 @@ static int xl_get_content_type(struct sip_msg *msg, xl_value_t *res, xl_param_t 
 	return 0;
 }
 
-static int xl_get_content_length(struct sip_msg *msg, xl_value_t *res, xl_param_t *param,
-		int flags)
+static int xl_get_content_length(struct sip_msg *msg, xl_value_t *res,
+		xl_param_t *param, int flags)
 {
 	if(msg==NULL || res==NULL) 
 		return -1;
@@ -1176,8 +1172,8 @@ static int xl_get_content_length(struct sip_msg *msg, xl_value_t *res, xl_param_
 	return 0;
 }
 
-static int xl_get_msg_body(struct sip_msg *msg, xl_value_t *res, xl_param_t *param,
-		int flags)
+static int xl_get_msg_body(struct sip_msg *msg, xl_value_t *res,
+		xl_param_t *param, int flags)
 {
     if(msg==NULL || res==NULL)
 	return -1;
@@ -1199,8 +1195,7 @@ static int xl_get_msg_body(struct sip_msg *msg, xl_value_t *res, xl_param_t *par
 }
 
 static int xl_get_authattr(struct sip_msg *msg, xl_value_t *res,
-		xl_param_t *param,
-		int flags)
+		xl_param_t *param, int flags)
 {
 	struct hdr_field *hdr;
 	
@@ -1269,8 +1264,7 @@ static inline str *cred_realm(struct sip_msg *rq)
 }
 
 static int xl_get_acc_username(struct sip_msg *msg, xl_value_t *res,
-			       xl_param_t *param,
-			       int flags)
+		xl_param_t *param, int flags)
 {
 	static char buf[MAX_URI_SIZE];
 	str* user;
@@ -1452,8 +1446,8 @@ error:
 }
 
 
-static int xl_get_branch(struct sip_msg *msg, xl_value_t *res, xl_param_t *param,
-		int flags)
+static int xl_get_branch(struct sip_msg *msg, xl_value_t *res,
+		xl_param_t *param, int flags)
 {
 	str branch;
 	qvalue_t q;
@@ -1480,8 +1474,8 @@ static int xl_get_branch(struct sip_msg *msg, xl_value_t *res, xl_param_t *param
 #define Q_PARAM ">;q="
 #define Q_PARAM_LEN (sizeof(Q_PARAM) - 1)
 
-static int xl_get_branches(struct sip_msg *msg, xl_value_t *res, xl_param_t *param,
-		int flags)
+static int xl_get_branches(struct sip_msg *msg, xl_value_t *res,
+		xl_param_t *param, int flags)
 {
 	str uri;
 	qvalue_t q;
@@ -2965,6 +2959,8 @@ int xl_print_spec(struct sip_msg* msg, xl_spec_p sp, char *buf, int *len)
 	/* put the value of the specifier */
 	if(xl_get_spec_value(msg, sp, &tok, 0)==0)
 	{
+		if(tok.flags&XL_VAL_NULL)
+			tok.rs = str_null;
 		if(tok.rs.len < *len)
 			memcpy(buf, tok.rs.s, tok.rs.len);
 		else
@@ -3020,6 +3016,8 @@ int xl_printf(struct sip_msg* msg, xl_elem_p list, char *buf, int *len)
 		if(it->spec.type!=XL_NONE && xl_get_spec_value(msg, &(it->spec),
 					&tok, 0)==0)
 		{
+			if(tok.flags&XL_VAL_NULL)
+				tok.rs = str_null;
 			if(n+tok.rs.len < *len)
 			{
 				if(tok.rs.len>0)

@@ -191,10 +191,15 @@ int do_assign(struct sip_msg* msg, struct action* a)
 	struct action  act;
 	char backup;
 
-	ret = eval_expr((struct expr*)a->elem[1].u.data, msg, &val);
-	if(!((val.flags&XL_VAL_STR)||(val.flags&XL_VAL_INT))) {
-		LOG(L_ERR, "do_assign: no value in right expression\n");
-		goto error;
+	ret = -1;
+	memset(&val, 0, sizeof(xl_value_t));
+	if(a->elem[1].type != NULLV_ST)
+	{
+		ret = eval_expr((struct expr*)a->elem[1].u.data, msg, &val);
+		if(!((val.flags&XL_VAL_STR)||(val.flags&XL_VAL_INT))) {
+			LOG(L_ERR, "do_assign: no value in right expression\n");
+			goto error;
+		}
 	}
 
 	dspec = (xl_spec_p)a->elem[0].u.data;
@@ -216,6 +221,12 @@ int do_assign(struct sip_msg* msg, struct action* a)
 								" dst AVP name\n");
 						goto error;
 					}
+					if(a->elem[1].type == NULLV_ST)
+					{
+						destroy_avps(name_type, avp_name, 0);
+						return 1;
+					}
+
 					flags = name_type;
 					if(val.flags&XL_TYPE_INT)
 					{
@@ -238,6 +249,12 @@ int do_assign(struct sip_msg* msg, struct action* a)
 						LOG(L_ERR, "do_assign: error - cannot find svar\n");
 						goto error;
 					}
+					if(a->elem[1].type == NULLV_ST)
+					{
+						avp_val.n = 0;
+						set_var_value((script_var_t*)dspec->p.data,&avp_val,0);
+						return 1;
+					}
 					flags = 0;
 					if(val.flags&XL_TYPE_INT)
 					{
@@ -255,9 +272,24 @@ int do_assign(struct sip_msg* msg, struct action* a)
 						goto error;
 					}
 				break;
-				case XL_RURI:
 				case XL_RURI_USERNAME:
+					if(a->elem[1].type == NULLV_ST)
+					{
+						memset(&act, 0, sizeof(act));
+						act.type = SET_USER_T;
+						act.elem[0].type = STRING_ST;
+						act.elem[0].u.string = "";
+						if (do_action(&act, msg)<0)
+						{
+							LOG(L_ERR,
+								"do_assign: error - do action failed %d\n",
+								act.type);
+							goto error;
+						}
+						return 1;
+					}
 				case XL_RURI_DOMAIN:
+				case XL_RURI:
 					if(!(val.flags&XL_VAL_STR))
 					{
 						LOG(L_ERR,"do_assign: error - str value requred to"
@@ -285,6 +317,19 @@ int do_assign(struct sip_msg* msg, struct action* a)
 					val.rs.s[val.rs.len] = backup;
 				break;
 				case XL_DSTURI:
+					if(a->elem[1].type == NULLV_ST)
+					{
+						memset(&act, 0, sizeof(act));
+						act.type = RESET_DSTURI_T;
+						if (do_action(&act, msg)<0)
+						{
+							LOG(L_ERR,
+								"do_assign: error - do action failed %d\n",
+								act.type);
+							goto error;
+						}
+						return 1;
+					}
 					if(!(val.flags&XL_VAL_STR))
 					{
 						LOG(L_ERR,"do_assign: error - str value requred to"
@@ -310,7 +355,7 @@ int do_assign(struct sip_msg* msg, struct action* a)
 
 error:
 	xl_value_destroy(&val);
-	return E_BUG;
+	return -1;
 }
 
 /* ret= 0! if action -> end of list(e.g DROP), 

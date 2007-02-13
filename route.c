@@ -830,6 +830,20 @@ inline static int comp_scriptvar(struct sip_msg *msg, int op, operand_t *left,
 		LOG(L_CRIT, "comp_scriptvar: cannot get left var value\n");
 		goto error;
 	}
+	if(right->type==NULLV_ST)
+	{
+		if(op==EQUAL_OP)
+		{
+			if(lvalue.flags&XL_VAL_NULL)
+				return 1;
+			return 0;
+		} else {
+			if(lvalue.flags&XL_VAL_NULL)
+				return 0;
+			return 1;
+		}
+	}
+
 	lstr = lvalue.rs;
 	ln   = lvalue.ri;
 	type = 0;
@@ -1252,10 +1266,12 @@ static int eval_elem(struct expr* e, struct sip_msg* msg, xl_value_t *val)
 								if(val!=NULL)
 								{
 									/* do pkg duplicate */
-									p = (char*)pkg_malloc((val->rs.len+1)*sizeof(char));
+									p = (char*)pkg_malloc((val->rs.len+1)
+											*sizeof(char));
 									if(p==0)
 									{
-										LOG(L_ERR, "eval_elem: no more memory\n");
+										LOG(L_ERR,
+												"eval_elem: no more memory\n");
 										memset(val, 0, sizeof(xl_value_t));
 										return 0;
 									}

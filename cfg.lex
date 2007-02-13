@@ -578,8 +578,7 @@ WHITESPACE	[ \t\r\n]
 							return NUMBER; }
 <INITIAL>{YES}			{ count(); yylval.intval=1; return NUMBER; }
 <INITIAL>{NO}			{ count(); yylval.intval=0; return NUMBER; }
-<INITIAL>{NULLV}		{ count(); yylval.intval=0; return NUMBER;
-							/*return NULLV;*/ }
+<INITIAL>{NULLV}		{ count(); yylval.intval=0; return NULLV; }
 <INITIAL>{TCP}			{ count(); return TCP; }
 <INITIAL>{UDP}			{ count(); return UDP; }
 <INITIAL>{TLS}			{ count(); return TLS; }
