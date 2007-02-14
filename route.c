@@ -943,11 +943,11 @@ static int eval_elem(struct expr* e, struct sip_msg* msg, xl_value_t *val)
 	int retl;
 	int retr;
 	int ival;
-	ret=E_BUG;
 	xl_value_t lval;
 	xl_value_t rval;
 	char *p;
 	
+	ret=E_BUG;
 	if (e->type!=ELEM_T){
 		LOG(L_CRIT," BUG: eval_elem: invalid type\n");
 		goto error;
