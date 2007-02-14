@@ -3084,6 +3084,7 @@ itemname_list_t* parse_itemname_list(char *s, int type)
 {
 	itemname_list_t* head = NULL;
 	itemname_list_t* al = NULL;
+	itemname_list_t* last = NULL;
 	char *p;
 	xl_spec_t spec;
 
@@ -3123,11 +3124,13 @@ itemname_list_t* parse_itemname_list(char *s, int type)
 		memset(al, 0, sizeof(itemname_list_t));
 		memcpy(&al->sname, &spec, sizeof(xl_spec_t));
 
-		if(head==NULL)
+		if(last==NULL)
+		{
 			head = al;
-		else {
-			al->next = head;
-			head = al;
+			last = al;
+		} else {
+			last->next = al;
+			last = al;
 		}
 	}
 
