@@ -23,6 +23,8 @@
  * --------
  * 2003-04-05  DEFAULT_*_URL introduced (jiri)
  * 2003-07-04  fixed SRV lookup prefix for TLS/sips (andrei)
+ * 2007-02-16  Added an OPENSER_OID define to localize OpenSER's IANA assigned
+ *             OID under the enterprise branch (jmagder)
  */
 
 
@@ -171,5 +173,7 @@
 
 /* minimum packet size; smaller packets will be dropped silently */
 #define MIN_UDP_PACKET        32
+
+#define OPENSER_OID   1,3,6,1,4,1,27483
 
 #endif
