@@ -848,6 +848,9 @@ inline static int comp_scriptvar(struct sip_msg *msg, int op, operand_t *left,
 	ln   = lvalue.ri;
 	type = 0;
 
+	if(lvalue.flags&XL_VAL_NULL)
+		return 0;
+
 	if(right->type == SCRIPTVAR_ST)
 	{
 		if(xl_get_spec_value(msg, right->v.spec, &rvalue, 0)!=0)
@@ -855,6 +858,8 @@ inline static int comp_scriptvar(struct sip_msg *msg, int op, operand_t *left,
 			LOG(L_CRIT, "comp_scriptvar: cannot get right var value\n");
 			goto error;
 		}
+		if(rvalue.flags&XL_VAL_NULL)
+			return 0;
 		
 		if(op==MATCH_OP||op==NOTMATCH_OP)
 		{
