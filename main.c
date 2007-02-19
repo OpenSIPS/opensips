@@ -880,7 +880,7 @@ int main_loop()
 			}
 		}
 #endif
-		/* fork again for the attendant process*/
+		/* fork again for the timer process*/
 		process_no++;
 		if ((pid=fork())<0){
 			LOG(L_CRIT, "main_loop: cannot fork timer process\n");

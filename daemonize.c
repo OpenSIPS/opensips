@@ -48,6 +48,9 @@
 #include <sys/time.h>    
 #include <sys/resource.h> /* setrlimit */
 #include <unistd.h>
+#ifdef __OS_linux
+#include <sys/prctl.h>
+#endif
 
 #include "daemonize.h"
 #include "globals.h"
@@ -107,6 +110,13 @@ int daemonize(char*  name)
 		/*parent process => exit */
 		exit(0);
 	}
+
+#ifdef __OS_linux
+	/* setsid may disables core dumping on linux, reenable it */
+	if ( !disable_core_dump && prctl(PR_SET_DUMPABLE, 1)) {
+		LOG(L_ERR, "Cannot enable core dumping after setuid\n");
+	}
+#endif
 
 	/* added by noh: create a pid file for the main process */
 	if (pid_file!=0){
@@ -217,6 +227,14 @@ int do_suid()
 			goto error;
 		}
 	}
+	
+#ifdef __OS_linux
+	/* setuid disables core dumping on linux, reenable it */
+	if ( !disable_core_dump && prctl(PR_SET_DUMPABLE, 1)) {
+		LOG(L_ERR, "Cannot enable core dumping after setuid\n");
+	}
+#endif
+
 	return 0;
 error:
 	return -1;
