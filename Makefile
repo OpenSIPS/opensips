@@ -444,6 +444,7 @@ install-modules: modules install-modules-tools $(modules-prefix)/$(modules-dir)
 				$(INSTALL-TOUCH) \
 					$(modules-prefix)/$(modules-dir)/`basename "$$r"` ; \
 				$(INSTALL-MODULES)  "$$r"  $(modules-prefix)/$(modules-dir) ; \
+				$(MAKE) -C `dirname "$$r"` install_module_custom ; \
 			else \
 				echo "ERROR: module $$r not compiled" ; \
 			fi ;\

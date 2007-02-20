@@ -83,6 +83,9 @@ mantainer-clean: distclean
 	-@if [ -d utils/openserunix ]; then $(MAKE) -C utils/openserunix mantainer-clean; fi
 
 
+.PHONY: install_module_custom
+
+
 .PHONY: TAGS
 TAGS:
 	$(MKTAGS) 
