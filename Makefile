@@ -152,7 +152,8 @@ all: $(NAME) modules utils
 
 .PHONY: modules
 modules:
-	-@for r in $(modules) "" ; do \
+	@set -e; \
+	for r in $(modules) "" ; do \
 		if [ -n "$$r" ]; then \
 			echo  "" ; \
 			echo  "" ; \
@@ -162,7 +163,8 @@ modules:
 
 .PHONY: modules-readme
 modules-readme:
-	-@for r in  $(modules_basenames) "" ; do \
+	@set -e; \
+	for r in  $(modules_basenames) "" ; do \
 		if [ -d "modules/$$r/doc" ]; then \
 			cd "modules/$$r/doc" ; \
 			if [ -f "$$r".sgml ]; then \
@@ -177,7 +179,8 @@ modules-readme:
 
 .PHONY: modules-docbook-txt
 modules-docbook-txt:
-	-@for r in  $(modules_basenames) "" ; do \
+	@set -e; \
+	for r in  $(modules_basenames) "" ; do \
 		if [ -d "modules/$$r/doc" ]; then \
 			cd "modules/$$r/doc" ; \
 			if [ -f "$$r".sgml ]; then \
@@ -191,7 +194,8 @@ modules-docbook-txt:
 
 .PHONY: modules-docbook-html
 modules-docbook-html:
-	-@for r in  $(modules_basenames) "" ; do \
+	@set -e; \
+	for r in  $(modules_basenames) "" ; do \
 		if [ -d "modules/$$r/doc" ]; then \
 			cd "modules/$$r/doc" ; \
 			if [ -f "$$r".sgml ]; then \
@@ -205,7 +209,8 @@ modules-docbook-html:
 
 .PHONY: modules-docbook-pdf
 modules-docbook-pdf:
-	-@for r in  $(modules_basenames) "" ; do \
+	@set -e; \
+	for r in  $(modules_basenames) "" ; do \
 		if [ -d "modules/$$r/doc" ]; then \
 			cd "modules/$$r/doc" ; \
 			if [ -f "$$r".sgml ]; then \
@@ -223,7 +228,8 @@ modules-docbook: modules-docbook-txt modules-docbook-html modules-docbook-pdf
 
 $(extra_objs):
 	-@echo "Extra objs: $(extra_objs)" 
-	-@for r in $(static_modules_path) "" ; do \
+	@set -e; \
+	for r in $(static_modules_path) "" ; do \
 		if [ -n "$$r" ]; then \
 			echo  "" ; \
 			echo  "Making static module $r" ; \
@@ -438,7 +444,7 @@ utils:
 		cd utils/$(NAME)unix; $(MAKE) all
 
 install-modules: modules install-modules-tools $(modules-prefix)/$(modules-dir)
-	-@for r in $(modules_full_path) "" ; do \
+	@for r in $(modules_full_path) "" ; do \
 		if [ -n "$$r" ]; then \
 			if [ -f "$$r" ]; then \
 				$(INSTALL-TOUCH) \
