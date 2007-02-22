@@ -2,6 +2,8 @@
  * $Id$
  *
  * Copyright (C) 2001-2003 FhG Fokus
+ * Copyright (C) 2006 Andreas Granig <agranig@linguin.org>
+ *   ( covers insert_path_as_route() )
  *
  * This file is part of openser, a free SIP server.
  *
@@ -50,6 +52,9 @@
  * 2003-10-08  receive_test function-alized (jiri)
  * 2003-10-20  added body_lump list (sip_msg), adjust_clen (andrei & jan)
  * 2003-11-11  type of rpl_lumps replaced by flags (bogdan)
+ * 2007-02-22  insert_path_as_route() imported from TM as we need it for
+ *             stateless processing also; contributed by Andreas Granig
+ *             (bogdan)
  *
  */
 /* Via special params:
@@ -1274,6 +1279,66 @@ error:
 }
 
 
+/*
+ * Save given Path body as Route header in message.
+ * 
+ * If another Route HF is found, it's placed right before that. 
+ * Otherwise, it's placed after the last Via HF. If also no 
+ * Via HF is found, it's placed as first HF.
+ */
+#define ROUTE_STR  "Route: "
+#define ROUTE_LEN  (sizeof(ROUTE_STR)-1)
+static inline int insert_path_as_route(struct sip_msg* msg, str* path)
+{
+	struct lump *anchor;
+	char *route;
+	struct hdr_field *hf, *last_via=0;
+
+	for (hf = msg->headers; hf; hf = hf->next) {
+		if (hf->type == HDR_ROUTE_T) {
+			break;
+		} else if (hf->type == HDR_VIA_T) {
+			last_via = hf;
+		}
+	}
+	if (hf) {
+		/* Route HF found, insert before it */
+		anchor = anchor_lump(msg, hf->name.s - msg->buf, 0, 0);
+	} else if(last_via) {
+		if (last_via->next) {
+			/* Via HF in between, insert after it */
+			anchor = anchor_lump(msg, last_via->next->name.s - msg->buf, 0, 0);
+		} else {
+			/* Via HF is last, so append */
+			anchor = anchor_lump(msg, msg->unparsed - msg->buf, 0, 0);
+		}
+	} else {
+		/* None of the above, insert as first */
+		anchor = anchor_lump(msg, msg->headers->name.s - msg->buf, 0, 0);
+	}
+
+	if (anchor == 0) {
+		LOG(L_ERR, "ERROR: insert_path_as_route(): Failed to get anchor\n");
+		return -1;
+	}
+
+	route = pkg_malloc(ROUTE_LEN + path->len + CRLF_LEN);
+	if (!route) {
+		LOG(L_ERR, "ERROR: insert_path_as_route(): Out of memory\n");
+		return -1;
+	}
+	memcpy(route, ROUTE_STR, ROUTE_LEN);
+	memcpy(route + ROUTE_LEN, path->s, path->len);
+	memcpy(route + ROUTE_LEN + path->len, CRLF, CRLF_LEN);
+
+	if (insert_new_lump_before(anchor, route, ROUTE_LEN + path->len + CRLF_LEN, 0) == 0) {
+		LOG(L_ERR, "ERROR: insert_path_as_route(): Failed to insert lump\n");
+		return -1;
+	}
+
+	return 0;
+}
+
 
 char * build_req_buf_from_sip_req( struct sip_msg* msg,
 								unsigned int *returned_len,
@@ -1329,6 +1394,14 @@ char * build_req_buf_from_sip_req( struct sip_msg* msg,
 		extra_params.len=id_len;
 	}
 #endif
+
+	if (msg->path_vec.len) {
+		if (insert_path_as_route(msg, &msg->path_vec) < 0) {
+			LOG(L_ERR,"ERROR: build_req_buf_from_sip_req: "
+				"adding path lumps failed\n");
+			goto error;
+		}
+	}
 
 	/* check whether to add rport parameter to local via */
 	if(msg->msg_flags&FL_FORCE_LOCAL_RPORT) {
