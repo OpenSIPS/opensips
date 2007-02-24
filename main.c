@@ -197,22 +197,6 @@ void print_ct_constants()
 #endif
 }
 
-/* debugging function */
-/*
-void receive_stdin_loop()
-{
-	#define BSIZE 1024
-	char buf[BSIZE+1];
-	int len;
-
-	while(1){
-		len=fread(buf,1,BSIZE,stdin);
-		buf[len+1]=0;
-		receive_msg(buf, len);
-		printf("-------------------------\n");
-	}
-}
-*/
 
 /* global vars */
 
