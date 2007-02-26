@@ -2,8 +2,9 @@
 # The format of this file was inspired by the Linux kernel CREDITS file.
 # 
 # Authors and contributors are listed alphabetically (first name).
-# 
-# The fields are: name (N), email (E), web-address (W), CVS account login (C),
+# -- faster updated version is in "Contributions" page of openser.org
+#
+# The fields are: name (N), email (E), web-address (W), SVN account login (C),
 # PGP key ID and fingerprint (P), description (D), and activity status (S).
 
 

@@ -139,7 +139,7 @@ make proper
 make
 (or gmake on non-Linux systems)
 make modules 
-or make modules exclude_modules="CVS exec" etc.
+or make modules exclude_modules="exec" etc.
 
 Make tags:
 

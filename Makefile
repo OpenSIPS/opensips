@@ -54,8 +54,8 @@ exclude_modules?= 		jabber cpl-c mysql pa postgres osp unixodbc \
 ifeq ($(TLS),)
 	exclude_modules+= tlsops
 endif
-# always exclude the CVS dir
-override exclude_modules+= CVS $(skip_modules)
+# always exclude the SVN dir
+override exclude_modules+= .svn $(skip_modules)
 
 #always include this modules
 include_modules?=
