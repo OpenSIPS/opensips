@@ -44,6 +44,8 @@
 #              any wildcards (bogdan)
 #  2007-02-12  use $(SYSBASE) instead of /usr - easy to switch to another
 #              root for cross compiling (bogdan)
+#  2007-02-12  CPU replaced with CPU_TYPE to avoid overlapping with system 
+#              env. variables on some OS. (bogdan)
 
 
 # check if already included/exported
@@ -518,18 +520,18 @@ ifeq		($(CC_NAME), gcc)
 					-Wall  
 			#if gcc 4.0+
 ifeq			($(CC_CLASS), 4.x)
-					CPU ?= athlon64
+					CPU_TYPE ?= athlon64
 					CFLAGS+=-minline-all-stringops \
 							-falign-loops \
 							-ftree-vectorize \
-							-mtune=$(CPU) 
+							-mtune=$(CPU_TYPE) 
 else
 			#if gcc 3.0+
 ifeq			($(CC_CLASS), 3.x)
-					CPU ?= athlon
+					CPU_TYPE ?= athlon
 					CFLAGS+=-minline-all-stringops \
 							-falign-loops \
-							-march=$(CPU) 
+							-march=$(CPU_TYPE) 
 else
 ifeq			($(CC_CLASS), 2.9x) #older gcc version (2.9[1-5])
 $(warning 			Old gcc detected ($(CC_SHORTVER)), use  gcc >= 3.1 \
@@ -570,15 +572,15 @@ ifeq		($(CC_NAME), gcc)
 					-Wall 
 			#if gcc 4.0+
 ifeq			($(CC_CLASS), 4.x)
-					CPU ?= opteron
+					CPU_TYPE ?= opteron
 					CFLAGS+=-minline-all-stringops \
 							-falign-loops \
 							-ftree-vectorize \
-							-mtune=$(CPU) 
+							-mtune=$(CPU_TYPE) 
 else
 			#if gcc 3.0+
 ifeq			($(CC_CLASS), 3.x)
-					CPU ?= athlon64
+					CPU_TYPE ?= athlon64
 					CFLAGS+=-minline-all-stringops \
 							-falign-loops 
 else
@@ -623,17 +625,17 @@ ifeq		($(CC_NAME), gcc)
 					#-Wmissing-prototypes 
 				#if gcc 4.x
 ifeq			($(CC_CLASS), 4.x)
-					CPU ?= ultrasparc
+					CPU_TYPE ?= ultrasparc
 					#use 32bit for now
 					CFLAGS+=-mcpu=ultrasparc -minline-all-stringops \
-							-mtune=$(CPU) \
+							-mtune=$(CPU_TYPE) \
 							-ftree-vectorize
 else
 				#if gcc 3.0+
 ifeq			($(CC_CLASS), 3.x)
-					CPU ?= ultrasparc
+					CPU_TYPE ?= ultrasparc
 					#use 32bit for now
-					CFLAGS+= -mcpu=ultrasparc -mtune=$(CPU)   \
+					CFLAGS+= -mcpu=ultrasparc -mtune=$(CPU_TYPE)   \
 					# use -m64 to force 64 bit (but add it also to LDFLAGS), 
 					# -m32 for 32 bit (default on solaris),
 					# nothing for arch. default
@@ -827,9 +829,9 @@ ifeq		($(CC_NAME), gcc)
 				CFLAGS+= -O9 -funroll-loops $(PROFILE)  -Wall 
 			#if gcc 4.0+
 ifeq			($(CC_CLASS), 4.x)
-					CPU ?= powerpc
+					CPU_TYPE ?= powerpc
 					CFLAGS+=-ftree-vectorize \
-							-mtune=$(CPU) -maltivec
+							-mtune=$(CPU_TYPE) -maltivec
 else
 			#if gcc 3.0+
 ifeq			($(CC_CLASS), 3.x)
@@ -861,9 +863,9 @@ ifeq		($(CC_NAME), gcc)
 				#common stuff
 				CFLAGS+= -O9 -funroll-loops $(PROFILE)  -Wall 
 ifeq			($(CC_CLASS), 4.x)
-					CPU ?= powerpc64
+					CPU_TYPE ?= powerpc64
 					CFLAGS+=-ftree-vectorize \
-							-mtune=$(CPU) -maltivec
+							-mtune=$(CPU_TYPE) -maltivec
 else
 			#if gcc 3.0+
 ifeq			($(CC_CLASS), 3.x)
