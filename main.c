@@ -233,7 +233,7 @@ int memlog = L_DBG;
 /* should replies include extensive warnings? by default yes,
    good for trouble-shooting
 */
-int sip_warning = 1;
+int sip_warning = 0;
 /* should localy-generated messages include server's signature?
    be default yes, good for trouble-shooting
 */
