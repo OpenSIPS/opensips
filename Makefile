@@ -120,12 +120,12 @@ export PREFIX LOCALBASE SYSBASE
 # (e.g. make deb)
 #export LIBS
 #export TAR 
-#export NAME RELEASE OS ARCH 
-#export cfg-prefix cfg-dir bin-prefix bin-dir modules-prefix modules-dir
-#export doc-prefix doc-dir man-prefix man-dir ut-prefix ut-dir
-#export cfg-target modules-target
-#export INSTALL INSTALL-CFG INSTALL-BIN INSTALL-MODULES INSTALL-DOC INSTALL-MAN 
-#export INSTALL-TOUCH
+export NAME RELEASE OS ARCH 
+export cfg-prefix cfg-dir bin-prefix bin-dir modules-prefix modules-dir
+export doc-prefix doc-dir man-prefix man-dir ut-prefix ut-dir
+export cfg-target modules-target
+export INSTALL INSTALL-CFG INSTALL-BIN INSTALL-MODULES INSTALL-DOC INSTALL-MAN 
+export INSTALL-TOUCH
 
 ifneq ($(TLS),)
 	tar_extra_args+=
