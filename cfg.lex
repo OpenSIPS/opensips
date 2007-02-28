@@ -317,7 +317,8 @@ NULLV			"null"|"NULL"
 LETTER		[a-zA-Z]
 DIGIT		[0-9]
 ALPHANUM	{LETTER}|{DIGIT}|[_]
-NUMBER		0|(([-+])?[1-9]{DIGIT}*)
+NUMBER		0|([1-9]{DIGIT}*)
+/*NUMBER		0|(([-+])?[1-9]{DIGIT}*)*/
 ID			{LETTER}{ALPHANUM}*
 HEX			[0-9a-fA-F]
 HEXNUMBER	0x{HEX}+

@@ -397,13 +397,14 @@ extern int line;
 %type <specval> script_var
 %type <strval> host
 %type <strval> listen_id
-%type <sockid>  id_lst
-%type <sockid>  phostport
+%type <sockid> id_lst
+%type <sockid> phostport
 %type <intval> proto port
 %type <strval> host_sep
 %type <intval> uri_type
 %type <intval> equalop compop matchop strop intop
 %type <intval> assignop
+%type <intval> snumber
 
 
 
@@ -478,6 +479,12 @@ proto:	  UDP	{ $$=PROTO_UDP; }
 port:	  NUMBER	{ $$=$1; }
 		| ANY		{ $$=0; }
 ;
+
+snumber:	NUMBER	{ $$=$1; }
+		| PLUS NUMBER	{ $$=$2; }
+		| MINUS NUMBER	{ $$=-$2; }
+;
+
 
 phostport:	listen_id				{ $$=mk_listen_id($1, 0, 0); }
 			| listen_id COLON port	{ $$=mk_listen_id($1, 0, $3); }
@@ -1006,7 +1013,7 @@ module_stm:	LOADMODULE STRING	{	if(*$2!='/' && mpath!=NULL
 					yyerror("Can't set module parameter");
 				}
 			}
-		| MODPARAM LPAREN STRING COMMA STRING COMMA NUMBER RPAREN {
+		| MODPARAM LPAREN STRING COMMA STRING COMMA snumber RPAREN {
 				if (set_mod_param_regex($3, $5, INT_PARAM, (void*)$7) != 0) {
 					yyerror("Can't set module parameter");
 				}
@@ -1417,7 +1424,7 @@ script_var:	SCRIPTVAR	{
 
 exp_elem: exp_cond		{$$=$1; }
 		| exp_stm		{$$=mk_elem( NO_OP, ACTION_O, 0, ACTIONS_ST, $1 ); }
-		| NUMBER		{$$=mk_elem( NO_OP, NUMBER_O, 0, NUMBER_ST, 
+		| snumber		{$$=mk_elem( NO_OP, NUMBER_O, 0, NUMBER_ST, 
 											(void*)$1 ); }
 		| script_var    {
 				$$=mk_elem(NO_OP, SCRIPTVAR_O,0,SCRIPTVAR_ST,(void*)$1);
@@ -1451,7 +1458,7 @@ exp_cond:	METHOD strop STRING	{$$= mk_elem($2, METHOD_O, 0, STRING_ST, $3);
 		| script_var strop ID {
 				$$=mk_elem( $2, SCRIPTVAR_O,(void*)$1,STRING_ST,$3);
 			}
-		| script_var intop NUMBER {
+		| script_var intop snumber {
 				$$=mk_elem( $2, SCRIPTVAR_O,(void*)$1,NUMBER_ST,(void *)$3);
 			}
 		| script_var equalop MYSELF	{ 
@@ -1598,7 +1605,7 @@ assignop:
 	;
 
 assignexp :
-	NUMBER { $$ = mk_elem(VALUE_OP, NUMBERV_O, (void*)$1, 0, 0); }
+	snumber { $$ = mk_elem(VALUE_OP, NUMBERV_O, (void*)$1, 0, 0); }
 	| STRING { $$ = mk_elem(VALUE_OP, STRINGV_O, $1, 0, 0); }
 	| ID { $$ = mk_elem(VALUE_OP, STRINGV_O, $1, 0, 0); }
 	| script_var { $$ = mk_elem(VALUE_OP, SCRIPTVAR_O, $1, 0, 0); }
@@ -1738,7 +1745,7 @@ case_stms:	case_stms case_stm	{$$=append_action($1, $2); }
 		| case_stm			{$$=$1;}
 	;
 
-case_stm: CASE NUMBER COLON actions SBREAK SEMICOLON 
+case_stm: CASE snumber COLON actions SBREAK SEMICOLON 
 										{ mk_action3( $$, CASE_T,
 													NUMBER_ST,
 													ACTIONS_ST,
@@ -1747,7 +1754,7 @@ case_stm: CASE NUMBER COLON actions SBREAK SEMICOLON
 													$4,
 													(void*)1);
 											}
-		| CASE NUMBER COLON SBREAK SEMICOLON 
+		| CASE snumber COLON SBREAK SEMICOLON 
 										{ mk_action3( $$, CASE_T,
 													NUMBER_ST,
 													ACTIONS_ST,
@@ -1756,7 +1763,7 @@ case_stm: CASE NUMBER COLON actions SBREAK SEMICOLON
 													0,
 													(void*)1);
 											}
-		| CASE NUMBER COLON actions { mk_action3( $$, CASE_T,
+		| CASE snumber COLON actions { mk_action3( $$, CASE_T,
 													NUMBER_ST,
 													ACTIONS_ST,
 													NUMBER_ST,
@@ -1764,7 +1771,7 @@ case_stm: CASE NUMBER COLON actions SBREAK SEMICOLON
 													$4,
 													(void*)0);
 									}
-		| CASE NUMBER COLON { mk_action3( $$, CASE_T,
+		| CASE snumber COLON { mk_action3( $$, CASE_T,
 													NUMBER_ST,
 													ACTIONS_ST,
 													NUMBER_ST,
@@ -1853,7 +1860,7 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 		| DROP					{mk_action2( $$, DROP_T,0, 0, 0, 0); }
 		| EXIT LPAREN RPAREN	{mk_action2( $$, EXIT_T,0, 0, 0, 0); }
 		| EXIT					{mk_action2( $$, EXIT_T,0, 0, 0, 0); }
-		| RETURN LPAREN NUMBER RPAREN	{mk_action2( $$, RETURN_T,
+		| RETURN LPAREN snumber RPAREN	{mk_action2( $$, RETURN_T,
 																NUMBER_ST, 
 																0,
 																(void*)$3,
@@ -1874,7 +1881,7 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 		| LOG_TOK LPAREN STRING RPAREN	{mk_action2( $$, LOG_T, NUMBER_ST, 
 													STRING_ST,(void*)4,$3);
 									}
-		| LOG_TOK LPAREN NUMBER COMMA STRING RPAREN	{mk_action2( $$, LOG_T,
+		| LOG_TOK LPAREN snumber COMMA STRING RPAREN	{mk_action2( $$, LOG_T,
 																NUMBER_ST, 
 																STRING_ST,
 																(void*)$3,
