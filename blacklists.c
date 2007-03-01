@@ -238,8 +238,13 @@ void destroy_black_lists()
 			shm_free(q);
 		}
 
+		if (blst_heads[i].name.s)
+			shm_free(blst_heads[i].name.s);
+
 		blst_heads[i].first = blst_heads[i].last = NULL;
 	}
+
+	shm_free(blst_heads);
 }
 
 
