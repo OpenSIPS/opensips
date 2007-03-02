@@ -25,6 +25,8 @@
 #ifndef _FLAGS_H
 #define _FLAGS_H
 
+#include <limits.h>
+
 typedef unsigned int flag_t;
 
 #define MAX_FLAG  ((unsigned int)( sizeof(flag_t) * CHAR_BIT - 1 ))

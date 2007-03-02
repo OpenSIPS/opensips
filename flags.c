@@ -27,7 +27,6 @@
  */
 
 
-#include <limits.h>
 #include "sr_module.h"
 #include "dprint.h"
 #include "parser/msg_parser.h"
