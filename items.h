@@ -154,6 +154,9 @@ int xl_get_avp_name(struct sip_msg* msg, xl_spec_p sp, int_str *avp_name,
 int xl_print_spec(struct sip_msg* msg, xl_spec_p sp, char *buf, int *len);
 int xl_printf(struct sip_msg* msg, xl_elem_p list, char *buf, int *len);
 
+int xl_get_null(struct sip_msg *msg, xl_value_t *res, xl_param_t *param,
+		int flags);
+
 itemname_list_t* parse_itemname_list(char *s, int type);
 
 

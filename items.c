@@ -74,7 +74,7 @@ int cld_pid = 0;
 #define LOCAL_BUF_SIZE	511
 static char local_buf[LOCAL_BUF_SIZE+1];
 
-static int xl_get_null(struct sip_msg *msg, xl_value_t *res, xl_param_t *param,
+int xl_get_null(struct sip_msg *msg, xl_value_t *res, xl_param_t *param,
 		int flags)
 {
 	if(msg==NULL || res==NULL)
