@@ -31,17 +31,22 @@
 #include <stdio.h>
 #include <errno.h>
 #include "../mem/mem.h"
+#include "../mem/shm_mem.h"
 #include "../dprint.h"
 #include "tree.h"
 #include "fmt.h"
 
 
+static int use_shm = 0;
 
 struct mi_root *init_mi_tree(unsigned int code, char *reason, int reason_len)
 {
 	struct mi_root *root;
 
-	root = (struct mi_root *)pkg_malloc(sizeof(struct mi_root));
+	if (use_shm)
+		root = (struct mi_root *)shm_malloc(sizeof(struct mi_root));
+	else
+		root = (struct mi_root *)pkg_malloc(sizeof(struct mi_root));
 	if (!root) {
 		LOG(L_ERR,"ERROR:mi:init_mi_tree: no more pkg mem\n");
 		return NULL;
@@ -70,8 +75,12 @@ static void free_mi_node(struct mi_node *parent)
 		free_mi_node(q);
 	}
 
-	del_mi_attr_list(parent);
-	pkg_free(parent);
+	if (use_shm) {
+		shm_free(parent);
+	} else {
+		del_mi_attr_list(parent);
+		pkg_free(parent);
+	}
 }
 
 void free_mi_tree(struct mi_root *parent)
@@ -84,7 +93,10 @@ void free_mi_tree(struct mi_root *parent)
 		free_mi_node(q);
 	}
 
-	pkg_free(parent);
+	if (use_shm)
+		shm_free(parent);
+	else
+		pkg_free(parent);
 }
 
 
@@ -116,7 +128,10 @@ static inline struct mi_node *create_mi_node(char *name, int name_len,
 		size_mem += value_len;
 	}
 
-	new = (struct mi_node *)pkg_malloc(size_mem);
+	if (use_shm)
+		new = (struct mi_node *)shm_malloc(size_mem);
+	else
+		new = (struct mi_node *)pkg_malloc(size_mem);
 	if(!new) {
 		LOG(L_ERR,"ERROR:mi:init_mi_tree: no more pkg mem\n");
 		return NULL;
@@ -220,4 +235,48 @@ struct mi_node *addf_mi_node_child(struct mi_node *parent, int flags,
 }
 
 
+static int clone_mi_node(struct mi_node *org, struct mi_node *parent)
+{
+	struct mi_node *p, *q;
 
+	for(p = org->kids ; p ; p=p->next){
+		q = add_mi_node_child( parent, MI_DUP_VALUE|MI_DUP_NAME,
+			p->name.s, p->name.len, p->value.s, p->value.len);
+		if (q==NULL)
+			return -1;
+		if (clone_mi_node( p, q)!=0)
+			return -1;
+	}
+	return 0;
+}
+
+
+struct mi_root* clone_mi_tree(struct mi_root *org, int shm)
+{
+	struct mi_root *root;
+
+	use_shm = shm?1:0;
+
+	root = init_mi_tree( org->code, org->reason.s, org->reason.len);
+	if (root==NULL)
+		goto done;
+
+	if (clone_mi_node( &(org->node), &(root->node) )!=0 ) {
+		free_mi_tree(root);
+		root = NULL;
+		goto done;
+	}
+
+done:
+	use_shm=0;
+	return root;
+}
+
+
+
+void free_shm_mi_tree(struct mi_root *parent)
+{
+	use_shm = 1;
+	free_mi_tree(parent);
+	use_shm = 0;
+}

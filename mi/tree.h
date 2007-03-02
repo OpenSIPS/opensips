@@ -83,5 +83,9 @@ struct mi_node *add_mi_node_child(struct mi_node *parent, int flags,
 struct mi_node *addf_mi_node_child(struct mi_node *parent, int flags,
 	char *name, int name_len, char *fmt_val, ...);
 
+struct mi_root* clone_mi_tree(struct mi_root *org, int shm);
+
+void free_shm_mi_tree(struct mi_root *parent);
+
 #endif
 
