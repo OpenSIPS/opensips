@@ -221,8 +221,12 @@ CC   := $(shell echo "$${CC}")
 LEX  := $(shell echo "$${LEX}")
 YACC := $(shell echo "$${YACC}")
 
-
-
+SVNREVISION=$(shell if [ -d .svn -a -f main.c ] ; then \
+				if which svnversion 1>/dev/null; then \
+					$(INSTALL-TOUCH) main.c ;\
+					svnversion -n -c ;\
+				fi ;\
+		fi )
 
 # find compiler name & version
 ifeq ($(CC),)
@@ -381,6 +385,10 @@ DEFS+= $(extra_defs) \
 # WARNING: do not add mode=debug or mode=release anymore in the Makefile,
 # use make mode=debug all instead. Anyway no by default openser 
 # is  compiled w/ debugging symbols in all cases (-g). --andrei
+
+ifneq ($(SVNREVISION),)
+	DEFS+= -DSVNREVISION='"$(SVNREVISION)"' 
+endif
 
 ifneq ($(FREERADIUS),)
 	DEFS+= -DUSE_FREERADIUS
