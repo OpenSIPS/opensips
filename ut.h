@@ -291,9 +291,9 @@ inline static int string2hex(
 	orig_len=len;
 	while ( len ) {
 
-		*hex=fourbits2char[(*str) >> 4];
+		*hex=fourbits2char[((*str) >> 4) & 0x0f];
 		hex++;
-		*hex=fourbits2char[(*str) & 0xf];
+		*hex=fourbits2char[(*str) & 0x0f];
 		hex++;
 		len--;
 		str++;
