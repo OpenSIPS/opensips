@@ -170,19 +170,35 @@ void print_expr(struct expr* exp)
 			case DSTPORT_O:
 				DBG("dstport");
 				break;
+			case SCRIPTVAR_O:
+				DBG("scriptvar[%d]", exp->left.v.spec->type);
+				break;
 			case NUMBER_O:
+			case NUMBERV_O:
+				DBG("%d",exp->left.v.n);
+				break;
+			case STRINGV_O:
+				DBG("\"%s\"", ZSW((char*)exp->left.v.data));
 				break;
 			case ACTION_O:
 				break;
+			case EXPR_O:
+				print_expr((struct expr*)exp->left.v.data);
+				break;
 			default:
-				DBG("UNKNOWN");
+				DBG("UNKNOWN[%d]", exp->left.type);
 		}
 		switch(exp->op){
 			case EQUAL_OP:
 				DBG("==");
 				break;
+			case MATCHD_OP:
 			case MATCH_OP:
 				DBG("=~");
+				break;
+			case NOTMATCHD_OP:
+			case NOTMATCH_OP:
+				DBG("!~");
 				break;
 			case GT_OP:
 				DBG(">");
@@ -199,14 +215,42 @@ void print_expr(struct expr* exp)
 			case DIFF_OP:
 				DBG("!=");
 				break;
+			case PLUS_OP:
+				DBG("+");
+				break;
+			case MINUS_OP:
+				DBG("-");
+				break;
+			case DIV_OP:
+				DBG("/");
+				break;
+			case MULT_OP:
+				DBG("*");
+				break;
+			case MODULO_OP:
+				DBG(" mod ");
+				break;
+			case BAND_OP:
+				DBG("&");
+				break;
+			case BOR_OP:
+				DBG("|");
+				break;
+			case BXOR_OP:
+				DBG("^");
+				break;
+			case BNOT_OP:
+				DBG("~");
+				break;
+			case VALUE_OP:
 			case NO_OP:
 				break;
 			default:
-				DBG("<UNKNOWN>");
+				DBG("<UNKNOWN[%d]>", exp->op);
 		}
 		switch(exp->right.type){
 			case NOSUBTYPE: 
-					DBG("N/A");
+					/* DBG("N/A"); */
 					break;
 			case STRING_ST:
 					DBG("\"%s\"", ZSW((char*)exp->right.v.data));
@@ -225,6 +269,15 @@ void print_expr(struct expr* exp)
 					break;
 			case MYSELF_ST:
 					DBG("_myself_");
+					break;
+			case SCRIPTVAR_ST:
+					DBG("scriptvar[%d]", exp->right.v.spec->type);
+					break;
+			case NULLV_ST:
+					DBG("null");
+					break;
+			case EXPR_ST:
+					print_expr((struct expr*)exp->right.v.data);
 					break;
 			default:
 					DBG("type<%d>", exp->right.type);
@@ -250,8 +303,74 @@ void print_expr(struct expr* exp)
 					print_expr(exp->left.v.expr);
 					DBG(" )");
 					break;
+			case EVAL_OP:
+					DBG("EVAL( ");
+					print_expr(exp->left.v.expr);
+					DBG(" )");
+					break;
+			case PLUS_OP:
+					DBG("PLUS( ");
+					print_expr(exp->left.v.expr);
+					DBG(", ");
+					print_expr(exp->right.v.expr);
+					DBG(" )");
+					break;
+			case MINUS_OP:
+					DBG("MINUS( ");
+					print_expr(exp->left.v.expr);
+					DBG(", ");
+					print_expr(exp->right.v.expr);
+					DBG(" )");
+					break;
+			case DIV_OP:
+					DBG("DIV( ");
+					print_expr(exp->left.v.expr);
+					DBG(", ");
+					print_expr(exp->right.v.expr);
+					DBG(" )");
+					break;
+			case MULT_OP:
+					DBG("MULT( ");
+					print_expr(exp->left.v.expr);
+					DBG(", ");
+					print_expr(exp->right.v.expr);
+					DBG(" )");
+					break;
+			case MODULO_OP:
+					DBG("MODULO( ");
+					print_expr(exp->left.v.expr);
+					DBG(", ");
+					print_expr(exp->right.v.expr);
+					DBG(" )");
+					break;
+			case BAND_OP:
+					DBG("BAND( ");
+					print_expr(exp->left.v.expr);
+					DBG(", ");
+					print_expr(exp->right.v.expr);
+					DBG(" )");
+					break;
+			case BOR_OP:
+					DBG("BOR( ");
+					print_expr(exp->left.v.expr);
+					DBG(", ");
+					print_expr(exp->right.v.expr);
+					DBG(" )");
+					break;
+			case BXOR_OP:
+					DBG("BXOR( ");
+					print_expr(exp->left.v.expr);
+					DBG(", ");
+					print_expr(exp->right.v.expr);
+					DBG(" )");
+					break;
+			case BNOT_OP:
+					DBG("BNOT( ");
+					print_expr(exp->left.v.expr);
+					DBG(" )");
+					break;
 			default:
-					DBG("UNKNOWN_EXP ");
+					DBG("UNKNOWN_EXP[%d] ", exp->op);
 		}
 					
 	}else{
@@ -383,6 +502,9 @@ void print_action(struct action* t)
 		case SBREAK_T:
 				DBG("sbreak(");
 				break;
+		case EQ_T:
+				DBG("assign(");
+				break;
 		default:
 				DBG("UNKNOWN(");
 	}
@@ -392,6 +514,9 @@ void print_action(struct action* t)
 				break;
 		case NUMBER_ST:
 				DBG("%lu",t->elem[0].u.number);
+				break;
+		case SCRIPTVAR_ST:
+				DBG("scriptvar[%d]",t->elem[0].u.item->type);
 				break;
 		case IP_ST:
 				print_ip("", (struct ip_addr*)t->elem[0].u.data, "");
@@ -441,7 +566,7 @@ void print_action(struct action* t)
 		default:
 				DBG(", type<%d>", t->elem[1].type);
 	}
-	if (t->type==IF_T) DBG("} else {");
+	if (t->type==IF_T && t->elem[2].type!=NOSUBTYPE) DBG(" } else { ");
 	switch(t->elem[2].type){
 		case NOSUBTYPE:
 				break;
@@ -464,7 +589,7 @@ void print_action(struct action* t)
 					((struct socket_id*)t->elem[2].u.data)->port
 					);
 			break;
-	default:
+		default:
 			DBG(", type<%d>", t->elem[2].type);
 	}
 	if (t->type==IF_T) DBG("}; ");
