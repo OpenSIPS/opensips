@@ -467,6 +467,31 @@ init_ssl_ctx_behavior( struct tls_domain *d ) {
 }
 
 
+static int check_for_krb()
+{
+	SSL_CTX *xx;
+	int j;
+
+	xx = SSL_CTX_new(ssl_methods[tls_method - 1]);
+	if (xx==NULL)
+		return -1;
+
+	for( j=0 ; j<M_sk_num(xx->cipher_list) ; j++) {
+		SSL_CIPHER *yy = (SSL_CIPHER*)M_sk_value(xx->cipher_list,j);
+		if ( yy->id>=SSL3_CK_KRB5_DES_64_CBC_SHA &&
+		 yy->id<=SSL3_CK_KRB5_RC4_40_MD5 ) {
+			LOG(L_INFO,"INFO:tls:check_for_krb: KRB5 cipher %s found\n",
+				yy->name);
+			SSL_CTX_free(xx);
+			return 1;
+		}
+	}
+
+	SSL_CTX_free(xx);
+	return 0;
+}
+
+
 /*
  * called once from main.c (main process) 
  */
@@ -509,6 +534,25 @@ init_tls(void)
 	SSL_library_init();
 	SSL_load_error_strings();
 	init_ssl_methods();
+
+	i = check_for_krb();
+	if (i==-1) {
+		LOG(L_ERR, "ERROR:init_tls: kerberos check failed\n");
+		return -1;
+	}
+
+	if ( ( i ^ 
+#ifndef OPENSSL_NO_KRB5
+	1
+#else
+	0
+#endif
+	)!=0 ) {
+		LOG(L_ERR, "ERROR:init_tls: compiled agaist an openssl with %s"
+			"kerberos, but run with one with %skerberos\n",
+			(i==1)?"":"no ",(i!=1)?"no ":"");
+		return -1;
+	}
 
 	/*
 	 * now initialize tls default domains 

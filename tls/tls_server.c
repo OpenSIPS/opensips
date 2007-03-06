@@ -69,8 +69,6 @@ tls_update_fd(struct tcp_connection *c, int fd)
 	*/
 	SSL            *ssl;
 
-	/* DBG("tls_update_fd: Entered\n"); //noisy */
-
 	ssl = (SSL *) c->extra_data;
 
 	if (!SSL_set_fd(ssl, fd)) {
@@ -223,8 +221,6 @@ tls_accept(struct tcp_connection *c)
 	SSL *ssl;
 	X509* cert;
 
-	/* DBG("tls_accept: Entered\n"); //very noisy debug */
-
 	if (c->state != S_CONN_ACCEPT) {
 		LOG(L_ERR,
 			"tcp_accept: Invalid connection state (bug in TLS code)\n");
@@ -263,7 +259,8 @@ tls_accept(struct tcp_connection *c)
 			tls_dump_cert_info("tls_accept: local (server) certificate", cert);
 		} else {
 			/* this should not happen, servers always present a cert */
-			LOG(L_ERR, "tls_accept: ERRROR: local TLS server domain has no certificate\n");
+			LOG(L_ERR, "tls_accept: ERRROR: local TLS server domain has no "
+				"certificate\n");
 		}
 		return 0;
 	} else {
@@ -276,8 +273,6 @@ tls_accept(struct tcp_connection *c)
 		
 			case SSL_ERROR_WANT_READ:
 			case SSL_ERROR_WANT_WRITE:
-				
-				/*DBG("tls_accept: Not complete yet, more runs necessary\n"); //noisy */
 				/*
 				* nothing to do here 
 				*/
@@ -305,8 +300,6 @@ tls_connect(struct tcp_connection *c)
 	int ret, err;
 	SSL *ssl;
 	X509* cert;
-
-	/* DBG("tls_connect: Entered\n"); //Very noisy debug  */
 
 	if (c->state != S_CONN_CONNECT) {
 		LOG(L_ERR,
@@ -339,16 +332,19 @@ tls_connect(struct tcp_connection *c)
 			X509_free(cert);
 		} else {
 			/* this should not happen, servers always present a cert */
-			LOG(L_ERR, "tls_connect: ERRROR: server did not present a certificate\n");
+			LOG(L_ERR, "tls_connect: ERRROR: server did not present a "
+				"certificate\n");
 		}
 		cert = SSL_get_certificate(ssl);
 		if (cert != 0) {
-			tls_dump_cert_info("tls_connect: local (client) certificate", cert);
+			tls_dump_cert_info("tls_connect: local (client) certificate",
+				cert);
 		} else {
-			LOG(L_INFO, "tls_connect: local TLS client domain does not have a certificate\n");
+			LOG(L_INFO, "tls_connect: local TLS client domain does not have "
+				"a certificate\n");
 		}
 		return 0;
-    } else {
+	} else {
 		err = SSL_get_error(ssl, ret);
 		switch (err) {
 			case SSL_ERROR_ZERO_RETURN:
@@ -358,8 +354,6 @@ tls_connect(struct tcp_connection *c)
 		
 			case SSL_ERROR_WANT_READ:
 			case SSL_ERROR_WANT_WRITE:
-				/* Do not use this debug ... it generates a lot of noise*/
-				/*DBG("tls_connect: Not complete yet, more runs necessary\n");*/
 				/*
 				* nothing to do here 
 				*/
@@ -387,8 +381,6 @@ tls_shutdown(struct tcp_connection *c)
 					err;
 	SSL            *ssl;
 
-	/* DBG("tls_shutdown: Entered\n"); //noisy */
-
 	/*
 	* we do not implement full ssl shutdown 
 	*/
@@ -402,10 +394,11 @@ tls_shutdown(struct tcp_connection *c)
 	if (ret == 1) {
 		DBG("tls_shutdown: Shutdown successful\n");
 		return 0;
-    } else if (ret == 0) {
-		DBG("tls_shutdown: First phase of 2-way handshake completed succesfuly\n");
+	} else if (ret == 0) {
+		DBG("tls_shutdown: First phase of 2-way handshake completed "
+			"succesfuly\n");
 		return 0;
-    } else {
+	} else {
 		err = SSL_get_error(ssl, ret);
 		switch (err) {
 			case SSL_ERROR_ZERO_RETURN:
@@ -444,8 +437,6 @@ tls_write(struct tcp_connection *c, int fd, const void *buf, size_t len)
 	*/
 	SSL            *ssl;
 
-	/* DBG("tls_write: Entered\n"); //noisy */
-
 	ssl = (SSL *) c->extra_data;
 
 	ret = SSL_write(ssl, buf, len);
@@ -462,8 +453,6 @@ tls_write(struct tcp_connection *c, int fd, const void *buf, size_t len)
 	
 		case SSL_ERROR_WANT_READ:
 		case SSL_ERROR_WANT_WRITE:
-			/* Do not use this debug ... it generates a lot of noise*/
-			/*DBG("tls_write: Not completed yet, more calls to tls_write are necessary\n"); */
 			return 0;
 	
 		default:
@@ -493,8 +482,6 @@ _tls_read(struct tcp_connection *c, void *buf, size_t len)
 					err;
 	SSL            *ssl;
 
-	/* DBG("_tls_read: Entered\n"); //noisy */
-
 	ssl = c->extra_data;
 
 	ret = SSL_read(ssl, buf, len);
@@ -514,8 +501,6 @@ _tls_read(struct tcp_connection *c, void *buf, size_t len)
 	
 		case SSL_ERROR_WANT_READ:
 		case SSL_ERROR_WANT_WRITE:
-			/* Do not use this debug ... it generates a lot of noise*/
-			/*DBG("_tls_read: nothing to read\n");*/
 			return 0;
 	
 		default:
@@ -634,6 +619,13 @@ tls_tcpconn_init(struct tcp_connection *c, int sock)
 		return -1;
 	}
 
+#ifndef OPENSSL_NO_KRB5
+	if ( ((SSL *)c->extra_data)->kssl_ctx ) {
+		kssl_ctx_free( ((SSL *)c->extra_data)->kssl_ctx );
+		((SSL *)c->extra_data)->kssl_ctx = 0;
+	}
+#endif
+
 	if (c->state == S_CONN_ACCEPT) {
 		DBG("tls_tcpconn_init: Setting in ACCEPT mode (server)\n");
 		SSL_set_accept_state((SSL *) c->extra_data);
@@ -705,7 +697,7 @@ tls_blocking_write(struct tcp_connection *c, int fd, const char *buf,
 		goto error;
 
 	timeout = tls_send_timeout;
-  again:
+again:
 	n = 0;
 	switch (c->state) {
 		case S_CONN_ACCEPT:
@@ -728,7 +720,7 @@ tls_blocking_write(struct tcp_connection *c, int fd, const char *buf,
 		default:
 			LOG(L_ERR, "tls_blocking_write: Broken connection\n");
 			goto error;
-    }
+	}
 
 	if (n < 0) {
 		LOG(L_ERR, "tls_blocking_write: failed to send data\n");
@@ -742,14 +734,14 @@ tls_blocking_write(struct tcp_connection *c, int fd, const char *buf,
 		*/
 		buf += n;
 		len -= n;
-    } else {
+	} else {
 		/*
 		* successful full write 
 		*/
 		return written;
-    }
+	}
 
-  poll_loop:
+poll_loop:
 	while (1) {
 		/*
 		* keep tls_send_timeout in seconds to be compatible with
@@ -787,9 +779,9 @@ tls_blocking_write(struct tcp_connection *c, int fd, const char *buf,
 		* although poll should never signal them since we're not
 		* interested in them => we should never reach this point) 
 		*/
-    }
+}
 
-  error:
+error:
 	return -1;
 }
 
@@ -814,8 +806,6 @@ tls_read(struct tcp_connection * c)
 	struct tcp_req *r;
 	int             fd,
 					read;
-
-	/* DBG("tls_read: Entered\n"); //noisy */
 
 	r = &c->req;
 	fd = c->fd;
@@ -854,7 +844,6 @@ tls_fix_read_conn(struct tcp_connection *c)
 	* no lock acquired 
 	*/
 	int             ret;
-	/* DBG("tls_fix_read_conn: Entered\n"); //noisy */
 
 	ret = 0;
 
@@ -866,14 +855,12 @@ tls_fix_read_conn(struct tcp_connection *c)
 	lock_get(&c->write_lock);
     switch (c->state) {
 		case S_CONN_ACCEPT:
-			/* DBG("tls_fix_read_conn: Running tls_accept\n"); //noisy */
 			ret = tls_update_fd(c, c->fd);
 			if (!ret) 
 				ret = tls_accept(c);
 			break;
 	
 		case S_CONN_CONNECT:
-			/* DBG("tls_fix_read_conn: Running tls_connect\n"); //noisy */
 			ret = tls_update_fd(c, c->fd);
 			if (!ret)
 				ret = tls_connect(c);
