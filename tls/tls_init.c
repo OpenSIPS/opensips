@@ -42,7 +42,7 @@
 #include <netinet/ip.h>
 #include <unistd.h>
 
-#define SER_SSL_SESS_ID ((unsigned char*)"openser-tls-1.1.0")
+#define SER_SSL_SESS_ID ((unsigned char*)"openser-tls-1.2.0")
 #define SER_SSL_SESS_ID_LEN (sizeof(SER_SSL_SESS_ID)-1)
 
 
@@ -70,12 +70,14 @@ int verify_callback(int pre_verify_ok, X509_STORE_CTX *ctx) {
 	depth = X509_STORE_CTX_get_error_depth(ctx);
 	LOG( 2, "tls_init: verify_callback: depth = %d\n",depth);
 	if ( depth > VERIFY_DEPTH_S ) {
-		LOG( 2, "tls_init: verify_callback: cert chain too long ( depth > VERIFY_DEPTH_S)\n");
+		LOG( 2, "tls_init: verify_callback: cert chain too long "
+			"( depth > VERIFY_DEPTH_S)\n");
 		pre_verify_ok=0;
 	}
 	
 	if( pre_verify_ok ) {
-		LOG( 2, "tls_init: verify_callback: preverify is good: verify return: %d\n", pre_verify_ok);
+		LOG( 2, "tls_init: verify_callback: preverify is good: "
+			"verify return: %d\n", pre_verify_ok);
 		return pre_verify_ok;
 	}
 	
@@ -84,43 +86,41 @@ int verify_callback(int pre_verify_ok, X509_STORE_CTX *ctx) {
 	X509_NAME_oneline(X509_get_subject_name(err_cert),buf,sizeof buf);
 	
 	LOG( 2, "tls_init: verify_callback: subject = %s\n", buf);
-	LOG( 2, "tls_init: verify_callback: verify error:num=%d:%s\n", err, X509_verify_cert_error_string(err));	
+	LOG( 2, "tls_init: verify_callback: verify error:num=%d:%s\n",
+		err, X509_verify_cert_error_string(err));
 	LOG( 2, "tls_init: verify_callback: error code is %d\n", ctx->error);
 	
 	switch (ctx->error) {
 		case X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT:
-			X509_NAME_oneline(X509_get_issuer_name(ctx->current_cert),buf,sizeof buf);
+			X509_NAME_oneline(X509_get_issuer_name(ctx->current_cert),
+				buf,sizeof buf);
 			LOG( 2, "tls_init: verify_callback: issuer= %s\n",buf);
 			break;
-			
 		case X509_V_ERR_ERROR_IN_CERT_NOT_BEFORE_FIELD:
 		case X509_V_ERR_CERT_NOT_YET_VALID:
 			LOG( 2, "tls_init: verify_callback: notBefore\n");
 			break;
-		
 		case X509_V_ERR_ERROR_IN_CERT_NOT_AFTER_FIELD:
 		case X509_V_ERR_CERT_HAS_EXPIRED:
 			LOG( 2, "tls_init: verify_callback: notAfter\n");
 			break;
-			
 		case X509_V_ERR_CERT_SIGNATURE_FAILURE:
 		case X509_V_ERR_UNABLE_TO_DECRYPT_CERT_SIGNATURE:
-			LOG( 2, "tls_init: verify_callback: unable to decrypt cert signature\n");
+			LOG( 2, "tls_init: verify_callback: unable to decrypt cert "
+				"signature\n");
 			break;
-			
 		case X509_V_ERR_UNABLE_TO_DECODE_ISSUER_PUBLIC_KEY:
-			LOG( 2, "tls_init: verify_callback: unable to decode issuer public key\n");
+			LOG( 2, "tls_init: verify_callback: unable to decode issuer "
+				"public key\n");
 			break;
-			
 		case X509_V_ERR_OUT_OF_MEM:
 			LOG( 2, "tls_init: verify_callback: Out of memory \n");
 			break;
-			
 		case X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT:
 		case X509_V_ERR_SELF_SIGNED_CERT_IN_CHAIN:
-			LOG( 2, "tls_init: verify_callback: Self signed certificate issue\n");
+			LOG( 2, "tls_init: verify_callback: Self signed certificate "
+				"issue\n");
 			break;
-
 		case X509_V_ERR_CERT_CHAIN_TOO_LONG:
 			LOG( 2, "tls_init: verify_callback: certificate chain too long\n");
 			break;
@@ -141,7 +141,8 @@ int verify_callback(int pre_verify_ok, X509_STORE_CTX *ctx) {
 			break;
 		
 		default:
-			LOG( 2, "tls_init: verify_callback: something wrong with the cert ... error code is %d (check x509_vfy.h)\n", ctx->error);
+			LOG( 2, "tls_init: verify_callback: something wrong with the cert"
+				" ... error code is %d (check x509_vfy.h)\n", ctx->error);
 			break;
 	}
 	
@@ -149,10 +150,11 @@ int verify_callback(int pre_verify_ok, X509_STORE_CTX *ctx) {
 	return(pre_verify_ok);
 }
 
+
 static int
 passwd_cb(char *buf, int size, int rwflag, void *filename)
 {
-#if OPENSSL_VERSION_NUMBER >= 0x00907000L	
+#if OPENSSL_VERSION_NUMBER >= 0x00907000L
 	UI             *ui;
 	const char     *prompt;
 	
@@ -165,8 +167,8 @@ passwd_cb(char *buf, int size, int rwflag, void *filename)
 	UI_process(ui);
 	UI_free(ui);
 	return strlen(buf);
- 
- err:
+
+err:
 	LOG(L_ERR, "tls: tls_init: passwd_cb: Error in passwd_cb\n");
 	if (ui)
 		UI_free(ui);
@@ -341,6 +343,7 @@ init_ssl_methods(void)
 	ssl_methods[TLS_USE_SSLv23 - 1] = SSLv23_method();
 }
 
+
 /*
  * Setup default SSL_CTX (and SSL * ) behavior:
  *     verification, cipherlist, acceptable versions, ...
@@ -350,10 +353,12 @@ init_ssl_ctx_behavior( struct tls_domain *d ) {
 	int verify_mode;
 	if( d->ciphers_list != 0 ) {
 		if( SSL_CTX_set_cipher_list(d->ctx, d->ciphers_list) == 0 ) {
-			LOG( L_ERR, "init_ssl_ctx_behavior: failure to set SSL context cipher list '%s'\n", d->ciphers_list);
+			LOG( L_ERR, "init_ssl_ctx_behavior: failure to set SSL context "
+				"cipher list '%s'\n", d->ciphers_list);
 			return -1;
 		} else {
-			LOG( L_NOTICE, "init_ssl_ctx_behavior: cipher list set to %s\n", d->ciphers_list);
+			LOG( L_NOTICE, "init_ssl_ctx_behavior: cipher list set to %s\n",
+				d->ciphers_list);
 		}
 	} else {
 		DBG( "init_ssl_ctx_behavior: cipher list null ... setting default\n");
@@ -366,16 +371,19 @@ init_ssl_ctx_behavior( struct tls_domain *d ) {
 
 #if OPENSSL_VERSION_NUMBER >= 0x000907000
 	SSL_CTX_set_options(d->ctx, 
-			SSL_OP_ALL | SSL_OP_NO_SSLv2 | SSL_OP_NO_SESSION_RESUMPTION_ON_RENEGOTIATION | SSL_OP_CIPHER_SERVER_PREFERENCE);
+		SSL_OP_ALL | SSL_OP_NO_SSLv2 |
+		SSL_OP_NO_SESSION_RESUMPTION_ON_RENEGOTIATION |
+		SSL_OP_CIPHER_SERVER_PREFERENCE);
 #else
-	SSL_CTX_set_options(d->ctx, 
-			SSL_OP_ALL | SSL_OP_NO_SSLv2 );
+	SSL_CTX_set_options(d->ctx,
+		SSL_OP_ALL | SSL_OP_NO_SSLv2 );
 #endif
 
 	/* Set verification procedure
 	 * The verification can be made null with SSL_VERIFY_NONE, or 
-	 * at least easier with SSL_VERIFY_CLIENT_ONCE instead of SSL_VERIFY_FAIL_IF_NO_PEER_CERT.
-	 *   For extra control, instead of 0, we can specify a callback function:
+	 * at least easier with SSL_VERIFY_CLIENT_ONCE instead of 
+	 * SSL_VERIFY_FAIL_IF_NO_PEER_CERT.
+	 * For extra control, instead of 0, we can specify a callback function:
 	 *           int (*verify_callback)(int, X509_STORE_CTX *)
 	 * Also, depth 2 may be not enough in some scenarios ... though no need
 	 * to increase it much further */
@@ -383,45 +391,55 @@ init_ssl_ctx_behavior( struct tls_domain *d ) {
 	if (d->type & TLS_DOMAIN_SRV) {
 		/* Server mode:
 		 * SSL_VERIFY_NONE
-		 *   the server will not send a client certificate request to the client, so the client 
-		 *    will not send a certificate.
+		 *   the server will not send a client certificate request to the 
+		 *   client, so the client  will not send a certificate.
 		 * SSL_VERIFY_PEER
-		 *   the server sends a client certificate request to the client. The certificate returned
-		 *   (if any) is checked. If the verification process fails, the TLS/SSL handshake is 
-		 *   immediately terminated with an alert message containing the reason for the verification 
-		 *   failure. The behaviour can be controlled by the additional SSL_VERIFY_FAIL_IF_NO_PEER_CERT 
-		 *   and SSL_VERIFY_CLIENT_ONCE flags.
+		 *   the server sends a client certificate request to the client. 
+		 *   The certificate returned (if any) is checked. If the verification 
+		 *   process fails, the TLS/SSL handshake is immediately terminated 
+		 *   with an alert message containing the reason for the verification 
+		 *   failure. The behaviour can be controlled by the additional 
+		 *   SSL_VERIFY_FAIL_IF_NO_PEER_CERT and SSL_VERIFY_CLIENT_ONCE flags.
 		 * SSL_VERIFY_FAIL_IF_NO_PEER_CERT
-		 *   if the client did not return a certificate, the TLS/SSL handshake is immediately terminated 
-		 *   with a ``handshake failure'' alert. This flag must be used together with SSL_VERIFY_PEER.
+		 *   if the client did not return a certificate, the TLS/SSL handshake 
+		 *   is immediately terminated with a ``handshake failure'' alert. 
+		 *   This flag must be used together with SSL_VERIFY_PEER.
 		 * SSL_VERIFY_CLIENT_ONCE
-		 *   only request a client certificate on the initial TLS/SSL handshake. Do not ask for a client 
-		 *   certificate again in case of a renegotiation. This flag must be used together with SSL_VERIFY_PEER.
+		 *   only request a client certificate on the initial TLS/SSL 
+		 *   handshake. Do not ask for a client certificate again in case of 
+		 *   a renegotiation. This flag must be used together with 
+		 *   SSL_VERIFY_PEER.
 		 */
 
 		if( d->verify_cert ) {
 			verify_mode = SSL_VERIFY_PEER;
 			if( d->require_client_cert ) {
-				LOG( L_WARN, "TLS: Client verification activated. Client certificates are mandatory.\n");
+				LOG( L_WARN, "TLS: Client verification activated. Client "
+					"certificates are mandatory.\n");
 				verify_mode |= SSL_VERIFY_FAIL_IF_NO_PEER_CERT;
 			} else
-				LOG( L_WARN, "TLS: Client verification activated. Client certificates are NOT mandatory.\n");
+				LOG( L_WARN, "TLS: Client verification activated. Client "
+					"certificates are NOT mandatory.\n");
 		} else {
 			verify_mode = SSL_VERIFY_NONE;
-			LOG( L_WARN, "TLS: Client verification NOT activated. Weaker security.\n");
+			LOG( L_WARN, "TLS: Client verification NOT activated. Weaker "
+				"security.\n");
 		}
 	} else {
 		/* Client mode:
 		 * SSL_VERIFY_NONE
-		 *   if not using an anonymous cipher (by default disabled), the server will send 
-		 *   a certificate which will be checked. The result of the certificate verification 
-		 *   process can be checked after the TLS/SSL handshake using the SSL_get_verify_result(3) 
-		 *   function. The handshake will be continued regardless of the verification result.
+		 *   if not using an anonymous cipher (by default disabled), the 
+		 *   server will send a certificate which will be checked. The result 
+		 *   of the certificate verification process can be checked after the 
+		 *   TLS/SSL handshake using the SSL_get_verify_result(3) function.
+		 *   The handshake will be continued regardless of the verification 
+		 *   result.
 		 * SSL_VERIFY_PEER
-		 *   the server certificate is verified. If the verification process fails, 
-		 *   the TLS/SSL handshake is immediately terminated with an alert message containing the 
-		 *   reason for the verification failure. If no server certificate is sent, because an 
-		 *   anonymous cipher is used, SSL_VERIFY_PEER is ignored.
+		 *   the server certificate is verified. If the verification process 
+		 *   fails, the TLS/SSL handshake is immediately terminated with an 
+		 *   alert message containing the reason for the verification failure.
+		 *   If no server certificate is sent, because an anonymous cipher is 
+		 *   used, SSL_VERIFY_PEER is ignored.
 		 * SSL_VERIFY_FAIL_IF_NO_PEER_CERT
 		 *   ignored
 		 * SSL_VERIFY_CLIENT_ONCE
@@ -433,7 +451,8 @@ init_ssl_ctx_behavior( struct tls_domain *d ) {
 			LOG( L_WARN, "TLS: Server verification activated.\n");
 		} else {
 			verify_mode = SSL_VERIFY_NONE;
-			LOG( L_WARN, "TLS: Server verification NOT activated. Weaker security.\n");
+			LOG( L_WARN, "TLS: Server verification NOT activated. Weaker "
+				"security.\n");
 		}
 	}
 	
@@ -441,7 +460,8 @@ init_ssl_ctx_behavior( struct tls_domain *d ) {
 	SSL_CTX_set_verify_depth( d->ctx, VERIFY_DEPTH_S);
 
 	SSL_CTX_set_session_cache_mode( d->ctx, SSL_SESS_CACHE_SERVER );
-	SSL_CTX_set_session_id_context( d->ctx, SER_SSL_SESS_ID, SER_SSL_SESS_ID_LEN );	
+	SSL_CTX_set_session_id_context( d->ctx, SER_SSL_SESS_ID, 
+		SER_SSL_SESS_ID_LEN );
 
 	return 0;
 }
@@ -461,8 +481,10 @@ init_tls(void)
 	DBG("init_tls: Entered\n");
 
 #if OPENSSL_VERSION_NUMBER < 0x00907000L
-	LOG(L_ERR, "WARNING! You are using an old version of OpenSSL (< 0.9.7). Upgrade!\n");
+	LOG(L_ERR, "WARNING! You are using an old version of OpenSSL (< 0.9.7). "
+		"Upgrade!\n");
 #endif
+
 	/*
 	* this has to be called before any function calling CRYPTO_malloc,
 	* CRYPTO_malloc will set allow_customize in openssl to 0 
