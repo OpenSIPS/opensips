@@ -220,13 +220,15 @@ INSTALL-MAN = $(INSTALL) -m 644
 CC   := $(shell echo "$${CC}")
 LEX  := $(shell echo "$${LEX}")
 YACC := $(shell echo "$${YACC}")
-
-SVNREVISION=$(shell if [ -d .svn -a -f main.c ] ; then \
+ 
+ifeq ($(SVNREVISION),)
+SVNREVISION=$(shell if [ -d .svn -a -f main.c -a -f Makefile.defs ] ; then \
 				if which svnversion 1>/dev/null; then \
 					$(INSTALL-TOUCH) main.c ;\
-					svnversion -n -c ;\
+					svnversion -n -c . ;\
 				fi ;\
 		fi )
+endif
 
 # find compiler name & version
 ifeq ($(CC),)
