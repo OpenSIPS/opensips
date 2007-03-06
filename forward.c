@@ -252,6 +252,7 @@ found:
 
 static inline str* get_sl_branch(struct sip_msg* msg)
 {
+	static str default_branch = str_init("0");
 	struct hdr_field *h_via;
 	struct via_body  *b_via;
 	str *branch;
@@ -289,8 +290,13 @@ static inline str* get_sl_branch(struct sip_msg* msg)
 
 	/* no statefull branch :(.. -> use the branch from the last via */
 found:
-	if (branch && branch->len>MAX_BRANCH_PARAM_LEN)
-		branch->len = MAX_BRANCH_PARAM_LEN;
+	if (branch) {
+		if (branch->len>MAX_BRANCH_PARAM_LEN)
+			branch->len = MAX_BRANCH_PARAM_LEN;
+	} else {
+		/* no branch found/...use a default one*/
+		branch = &default_branch;
+	}
 	return branch;
 }
 
