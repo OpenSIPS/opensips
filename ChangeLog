@@ -1,5 +1,559 @@
 # $Id$
 
+===================== 2007-03-12 OpenSER v1.2.0 released ======================
+
+===================== Changes since release 1.1.0 ============================
+
+
+
+* 2006-11-16 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+ - MI support added (existing FIFO functions migrated to MI)
+
+* 2006-11-16 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- fixed bug in loading the radius values in the ACC module
+  Closes 1596427 (reported by Philippe Sultan)
+  Most probably it will be needed to do a RADIUS cleanup in all the radius related modules as the original idea of aloading the radius dictionary does not scale anymore.
+
+* 2006-11-13 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+ Issue:
+In CPL, during a proxy to a location set the
+value of the branch flag being passed to append_branch
+is currently the configured value for "nat_flag" (ie 6).
+However, append_branch is expecting a bit mapped flag value (ie 0x40).
+Also in CPL, the nat flag is getting set for the msg
+if any branches have the nat flag set. This can cause
+the RURI branch to have the nat flag set when the
+location associated with the RURI branch does not
+have the branch flag set.
+Also, to be consistant with the default used in the
+registrar module, made the default for nat flag -1
+in the cpl-c module.
+ Patch provided by John Riordan <john@junctionnetworks.com>
+
+
+* 2006-11-13 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+ Issue:
+In CPL, during a location lookup, the lookup fails
+for users with an '_' in the user portion of the AOR.
+For example, if the AOR is user_1@domain.com, cpl
+registration lookup always fail.
+
+ Patch:
+Use tolower(c) instead of (0x20)|(c) when building
+the interpreters copy of the AOR.
+ Patch provided by John Riordan <john@junctionnetworks.com>
+
+
+* 2006-11-08 Norman Brandinger <norm@goes.com>
+ - Removed warning messages generated on 64-bit systems.   printf("%d",sizeof(x)) changed to printf("%lu",(unsigned long)sizeof(x)).  Tested ok on both 32 and 64 bit systems.
+
+* 2006-11-02 Juha Heinanen <jh@tutpro.com>
+- Split enum_query function into pre-processing stuff and do_query
+  function that does the actual query.
+- Introduced infrastructure enum query function i_enum_query and
+  associated module variables (contributed by Otmar Lendl).
+
+
+* 2006-11-02 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- the ACK TM callback set in the "reply code" param the method ID - this leads to incompatibilities in the ACC module -> use the code directly from transaction
+  Problem reported by Norman Brandinger <norm@goes.com
+
+* 2006-11-01 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- fixed memory free - the private memory used by the fifo parser cannot be freed in module destroy since allocation is done in a different process
+ Reported by Anca-Maria Vamanu <anca@voice-system.ro>
+
+* 2006-11-01 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+ - avp_radius module added to openser-radius-modules debian package
+
+* 2006-11-01 Daniel-Constantin Mierla <daniel@voice-system.ro>
+-  fix of usrloc callbaks: invoke only if the type of event matches with callback function type
+
+* 2006-10-31 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+ - fixed some low probability races. Patch sent by Andrei Pelinescu-Onciul
+ <andrei@iptel.org>
+
+* 2006-10-31 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+Major rewritting of postgres module, contributed by Norman Brandinger <norm@goes.com>:
+ 1. aug_* memory routines are gone.
+
+ 2. connection pooling has been implemented.
+
+ 3. fetch support has been implemented.
+
+ 4. many sanity checks (set by PARANOID in defs.h) have been added.
+
+ 5. general code cleanup has taken place.  this was done, only for the code that was involved in the update.
+
+ 6. renamed / combined some files to make it easier to locate subroutines.
+
+ 7. renamed many subroutines with pg_ prefix to be globally unique across OpenSER.
+
+* 2006-10-30 Anca Vamanu <anca@voice-system.ro>
+-send NOTIFY after each SUBSCRIBE(reported by Franz Edler)
+-don't save when initial SUBSCRIBE has expires 0
+
+* 2006-10-30 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+-DB name updated - reported by Doug Meredith <doug.meredith@systemguard.com>
+
+* 2006-10-27 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- new pseudo-variable- $Au (accounting username) item that gets username the
+  same way as accounting module was doing - try to get it first from credentials
+  and if nor present, use the FROM URI.
+  This PV will compensate (read : make life easier) the removel of USERNAME
+  RADIUS AVP in ACC module
+
+  Credits go to Juha Heinanen <jh@tutpro.com>.
+
+* 2006-10-27 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+ - ACC DB aligned to latest changes in ACC module - from_uri, to_uri and cseq columns were dropped.
+
+* 2006-10-27 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- the minimal ACC set reduced even more (FROM and TO uri and cseq no) - see the thread on devel@openser.org for reasons.
+- for RADIUS acc, the USERNAME RADIUS avp is not added by default - it will be replaced by a pseudo-variable, thanks to Juha
+
+* 2006-10-26 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- support for read-only query in 'openserctl db'
+- support to define queries in variables inside openserctlrc and then run it via variable name with 'openserctl db [ro]run varquery'
+- example:
+openserctlrc: LISTUSERS="select username,domain,email,rpid from subscriber"
+> openserctl db rorun LISTUSERS
+
+* 2006-10-26 Dan Pascu <dan@ag-projects.com>
+- Added ability to specify the NAT IP address of the signaling via and AVP
+  If this AVP is set, it should contain an IP address that will be used as
+  the address of the NAT from where the SIP signaling originated, else src_ip
+  will be used (previous behaviour). This is useful in cases where the SIP
+  proxy that actually starts mediaproxy does not receive the signaling
+  directly from the UA, but there are other proxies in the path in front of
+  it. In such a case a way to propagate the NAT IP is required and than that
+  IP should be set into the signaling_ip_avp for mediaproxy to use.
+
+
+* 2006-10-24 Klaus Darilion <klaus.mailinglists@pernau.at>
+- new module: domainpolicy
+- adds domainpolicy lookup according to draft-lendl-domain-policy-ddds-02
+  and draft-lendl-speermint-federations-02
+- can be used for static+dynamic peering
+- see README for more details
+
+
+* 2006-10-23 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- Fix asm constraint to avoid register overlap on arm
+  Credits got to Julien Blache <jblache@debian.org>
+
+* 2006-10-19 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+ table "address" added, thanks to Norman Brandinger <norm@goes.com>
+
+* 2006-10-19 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- gcc-3.4 and gcc-3.0 cases merged as they proved to be identical
+- CC_CLASS replaces CC_SHORTVER while CC_SHORTVER is kept without any wildcards
+- for gcc 4.1, warnings about strict-aliasing are suppressed
+
+* 2006-10-19 Juha Heinanen <jh@tutpro.com>
+ - Changed two addf_mi_node_child calls to add_mi_node_child calls.
+
+* 2006-10-19 Juha Heinanen <jh@tutpro.com>
+ - Introduced mi interface to permissions module.
+
+* 2006-10-17 Juha Heinanen <jh@tutpro.com>
+ - Example now uses avpops instead of textops.
+
+* 2006-10-13 Anca Vamanu <anca@voice-system.ro>
+- new presence server implementation (RFC3265, RFC3856, RFC3857...)
+- works in db-only mode now
+- support for handling PUBLISH and aggregation of muliple presence documents
+- support to interpret XCAP
+- support for handling watcher info documents
+- see more at: http://openser.org/dokuwiki/doku.php?id=presence:presence-module
+
+* 2006-10-13 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- ability to get To tag from avp
+- dev version increased
+
+* 2006-10-06 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- MI interface extended:
+        - each MI function may register an init function to be called from the
+          MI processes
+        - module may register MI functions in a more simpler way, via module's
+          export interface instead of using register_mi_cmd()
+
+- all module migrated to the changes in the module_export
+
+- some syncronizations fixes in the MI functions in imc module
+
+- new module ported to the new MI - flatstore and pdt
+
+* 2006-10-10 Ron Winacott <ronw@somanetworks.com>
+ - Made the sst module compliant with the RFC.
+and now the 422 reply will carry the Min-SE: header.
+
+* 2006-10-10 Ron Winacott <ronw@somanetworks.com>
+ - Updated the documents to match the new API/RFC compliant
+functionality.
+
+* 2006-10-09 Elena-Ramona Modroiu <ramona@voice-system.ro>
+- bug fix reported by Julien Blache
+
+* 2006-10-09 Anca Vamanu <anca@voice-system.ro>
+ - external functions implemented for MI also
+
+* 2006-10-07 Julien Blache
+- Add back DH_COMPAT=5 emulation code for openser-dbg.
+
+* 2006-10-06 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+-applied patch from Carsten Bock, BASIS AudioNet GmbH for removing the "desc_time_order" module parameter as its functionality was migrated to usrloc module.
+
+* 2006-10-06 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- "desc_time_order" usrloc module parameter controls the contacts order per
+  user both at insert and update time.
+  If enabled, the first contacts in the list will be the latest modified
+  (inserted or updated); otherwise the list will be kept order by the q
+  value.
+- "desc_time_order" has also affect if db_mod is DB_ONLY.
+
+* 2006-10-06 Anca Vamanu <anca@voice-system.ro>
+- new module imc: Instant Messaging Conferencing
+- IRC-like conferencing style, using embedded commands in body of MESSAGEs
+- allow to create/delete a room, invite/remove users to rooms
+- provides short help command
+- possibility to create public/private rooms
+- restart survive by storing rooms in database
+
+* 2006-10-06 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- the MI functions accepts the flag bitmap in hexa format also
+
+* 2006-10-05 Juha Heinanen <jh@tutpro.com>
+- Removed unused r_uri column of silo table.
+- Added into silo table an index on ($USERNAME, domain).
+
+* 2006-10-05 Juha Heinanen <jh@tutpro.com>
+ - Added max_messages module variable that may be used to limit how many
+  messages can be sgtored for an AoR.
+ - Removed unnecessary code.
+ - Fixed ms_snd_time_avp test.
+ - Updated documentation.
+
+* 2006-10-04 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- as there is no way to constrain a callback function to change the
+  pointer and len of the received parameter string, be sure to pass to the
+  callback a copy in order to protect the internal values.
+  For example, the "path" module does this, so all later call of
+  check_route_param () will fail.
+
+  Many thanks to Helge Waastad <helge@smartnet.no> for the help to
+  debug this.
+
+* 2006-10-02 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- New module for implementing FIFO transport layer for Management Interface.
+In the near future it will replace te current FIFO implementation (core and modules).
+
+* 2006-10-02 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+ - Statistic external functions are also exported via the new Management Interface.
+ The new functions are more flexible since they accept as arguments a list of modules or statistic variables to be listed/reset
+
+Ex: get_statistics usrloc: shmem: inuse_transactions
+    # this lists all variables from usrloc and shmem modules and the
+	# inuse_transactions variable
+
+	reset_statistics rcv_requests rcv_replies
+	# resets a list of statistic variables
+
+
+* 2006-10-02 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+Management Interface (MI) - interface to provide common functions and data structure between the implementation and transport part for management functions (external triggers for OpenSER); Disregarding the transport/connection type (fifo, unixsocks, netsocks), the implementation will be the same using the data structures (for reading the commands and writing the replies) provided by the interface.
+New specific OpenSER modules will implement the transport layer - they will read, parse and build the data structures according to interface specifications; the data is passed to the processing function (which are exported by whatever module or by core) - as reply the functions will return the response packed in some data type; this reply will be written according to the implemented transport layer.
+
+MI interface and future module for transport layer implementation will replace the current FIFO and UNIXSOCK removing the core dependency to the transport layer.
+
+Also the approach offers more flexibility from both modules and core point of view:
+    1) core does not need to be changed each type a new transport is to be implemented; this will simple be a new module
+    2) modules will not have to implement same exported functions depending of the transport layer (like one implementation for FIFO, one for unixsocks, etc) - will be only one implementation for MI and the function will be visible via all transport layers.
+
+
+* 2006-10-01 Juha Heinanen <jh@tutpro.com>
+- A faster implementation is_domain_local() that accepts only a pseudo
+  variable as argument.
+
+* 2006-09-30 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+ - fixed compile error when SQL_ACC is nod enabled
+   Reported by Juha Heinanen <jh@tutpro.com>
+
+* 2006-09-30 Dan Pascu <dan@ag-projects.com>
+ - Extended the is_domain_local() function to accept any pseudo variable or AVP
+specification, as well as fixed strings for parameters.
+This adapts the function to the new pseudo variable and AVP specs that were
+introduced by openser 1.1.x
+ - The old $ruri and $from shortcuts are gone, but they can be replaced by $rd
+respectively by $fd to obtain the same result.
+
+* 2006-09-29 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- removed special characters used by 'show create', they conflict with shell special quotes (reported by Rafael J. Risco)
+
+* 2006-09-28 Dan Pascu <dan@ag-projects.com>
+-Do not restrict what methods are processed. Fixes bug with devices using
+UPDATE to change the session on the fly not working.
+
+* 2006-09-25 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- user2uid() and group2gid() moved from main.c to ut.c to be also used
+  by modules.
+
+* 2006-09-25 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- SIP-to-XMPP gateway implementation following the latest XMPP standards from IETF (RFC3920/RFC3921)
+- this first version works for instant messaging (to follow: presence. voice)
+- allow communication with any XMPP server, including Google Talk
+- ability to work as standalone XMPP server or as component to other XMPP server
+- no need to map SIP users to XMPP users, everything is transalted on the fly
+- the address resolution follows the scheme from old jabber module
+
+* 2006-09-22 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+-grand ACC restructuring and clean-up:
+    - simplify internal logic for preparing and message selection
+    - more efficient data collection
+    - eliminate the FMT-based accounting; instead of it, a default set of
+      basic values are all the time accounted; for more, extra accounting
+      should be used -> this leads to a more selective / flexible / performant
+      accounting
+    - pre-builds sets of names / columns / RADIUS AVPs / DIAMETER AVPs instead
+      of doing it each time a request is accounted
+    - "n/a" string for not found/available values replaced with empty string ""
+    - eliminated a lot of un-necessary functions - heritage from the all TM
+      callback design (pre pre-transaction transaction)
+    - DB accounting table redesigned
+    - accounting logic separated in a new file for a better modularity.
+    - implemented an accounting environment for storing data; helps in reducing
+      the number of function's parameters and of internal functions; more
+      important, useless conversions from str to int and to int again are
+      eliminated
+
+* 2006-09-22 Klaus Darilion <klaus.mailinglists@pernau.at>
+- Add support for extended Secure RTP Profile for RTCP. (ported from ser)
+
+* 2006-09-21 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- fix potential race condition - the callback is not sncronized, so the
+  hook from TM may change -> make a copy a pass a local hook to the callback
+
+* 2006-09-19 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- new function added "int2bstr" - same as "int2str" but instead of using a
+  static buffer it takes one as parameter - allows sequential calls without
+  overwriting the result.
+- some code duplicity removed
+
+
+* 2006-09-19 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- New module uploaded: SIP Session Timer (sst)
+  Provided by Ron Winacott <ronw@somanetworks.com>
+
+  Description:
+  The new module gives OpenSER basic SIP Session Timer support. See rfc4028 for
+  more information on SST. This new module uses the new dialog module to track
+  the creation, updating and termination of SIP dialogs. The dialog module
+  supports timed out termination of the dialog but at this time the timeout
+  value is hardcoded (avp accessable and modparam() settable)
+
+  What the sst module does is uses the dialogs own callbacks to update the
+  dialog timeout value based on the current expire: header value.
+
+  There is also a script function called sstCheckMin(min_se_value) that can be
+  used in a proxy configuration to reply with a 422 "Session Interval Too
+  Small" to a INVITE with a small MIN_SE value.
+
+
+* 2006-09-19 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- updated doc for avp_pushto() to reflect ability to push any pseudo-variable in parts of SIP message (reported by Juha Heinanen)
+- fixed incorrect (harmless) usage of FM operator in case of division and enabled modulo operator
+
+* 2006-09-19 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- the AOR may be transmitted via an AVP instead of being fetched from
+  the proccessed request.
+- new module parameter "aor_avp_id" to enable/disable/configure this feature
+
+* 2006-09-18 Dan Pascu <dan@ag-projects.com>
+- clean utils/openserunix as well
+
+* 2006-09-17 Juha Heinanen <jh@tutpro.com>
+- Added 'id' auto-increment primary key to 'address' table.
+
+* 2006-09-14 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- example scripts updated (break replaced with exit)
+  Reported by Ruchir Brahmbhatt <ruchir.brahmbhatt@gmail.com>
+
+
+* 2006-09-13 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- check supported methods before dumping stored messages (patch by Juha Heinanen)
+- option to turn off the addition of received date to dumped messages
+
+* 2006-09-08 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- more flexible implementation for multi-leg accounting:
+  instead of logging only src and dst pairs, you mau define how many AVP you
+  want to be logged for each leg (definition includes also specification of
+  storeage targed - depending of the DB backend)
+- code cleanup for low level functions:
+  reduced redundant code
+  reduce static used memory
+  optimized the coletction mechanism for data to be accounted
+
+TO FOLLOW:
+- review of the high level accouting logic
+- review of the FMTs for a greater flexibility
+- try to simplify some parts of the code
+
+* 2006-09-07 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- harmless bug fixed - it was triggering some integrity tests in EXTRA_DEBUG.
+  Reported by Mark Kent <mark@noc.mainstreet.net>
+
+* 2006-09-06 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+ - added new algorithm for building VIA branch parameter for stateless
+   requests - it complies to RFC3261 requirement to be unique through time
+   and space.
+
+   For more details about the recomandations regarding this algorithm, please
+   see:
+   https://lists.cs.columbia.edu/pipermail/sip-implementors/2006-January/011864.html
+
+* 2006-09-05 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- syn_branch parameter moved from core parameter to TM module paraemter;
+  it controlls only the statefull behaviour so it must be only in TM.
+
+* 2006-09-04 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- build the sibling linked list also for the VIA hdrs
+
+* 2006-09-02 Juha Heinanen <jh@tutpro.com>
+- Introduced set_address_group, allow_address, and allow_source_address
+  permission module script functions and address database table.
+
+* 2006-08-24 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- if the AOR does not contain a username part, when use_domain is
+  enabled, used an empty string as username part and do not report BUG
+  Reported by Helge Waastad <helge@smartnet.no>.
+  Closes 1545219.
+
+* 2006-08-15 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- replaced bash dependent expression with usage of 'expr' from coreutils
+- reverted commit which introduced space after AWK -F
+- should fix itmes #1540127, #1540132
+
+* 2006-08-14 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- maddr is automatically handled by RR processing (initial patch by graphy, Simon Morvan)
+
+* 2006-08-12 Julien Blache <jblache@debian.org>
+- Adding Debian packaging for Debian 3.1 Sarge.
+
+* 2006-08-09 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- support asynchronous query, steps required for fetch support (patch by Norman Brandinger)
+- for the moment, transcation support in postrgres module is suppressed
+
+* 2006-08-06  Di-Shi Sun <di-shi@transnexus.com>
+- Use get_from/to/rpid instead of accessing date directly.
+
+* 2006-08-03 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- applied patch for better get_result() handling from Norman Brandiger
+
+* 2006-08-03 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- flag index 0 enabled
+  reported by Tavis P <tavis.lists@galaxytelecom.net
+
+* 2006-08-02  Di-Shi Sun <di-shi@transnexus.com>
+1. Change reporting usage from cookie not to use called number in Request-Line of BYE messages.
+   The BYE messages from source and from destination have different called number if called number is translated.
+2. Change a log using "[x.x.x.x]" format for the source device.
+
+* 2006-07-31  Di-Shi Sun <di-shi@transnexus.com>
+1. Fix [1524079] bug reported for Scalable SIP server project in SourceForge.
+   Please check OpenSER tracker for details.
+2. Change getting destination protocol & OSP version. If these functions fail,
+   using the default protocol & OSP version.
+
+* 2006-07-27 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- got rid of the "-i" sed parameter since it is not available on all OS.
+  Credits go to Wolfgang Hottgenroth <woho@hottis.de>
+
+* 2006-07-27 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- applied patch from Norman Brandinger <norm@goes.com> : maps the postgres
+  data type BPCHAROID as intternal string.
+  Closes patch 1529340.
+
+* 2006-07-27 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- fixed memory leak and double free.
+  Thanks to Marcos Hack <marcosh@voicetechnology.com.br> for debugging.
+
+* 2006-07-23 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- location records loading is performed by first child (this exists in no-fork mode as well)
+- all the other children can process SIP messages immediately after OpenSER start/restart
+- chance to access usrloc (read/insert/update) data is given to all processes even when usrloc records are loaded
+- great performace improvement for usrloc records loading
+- devel version increased
+
+* 2006-07-19 Juha Heinanen <jh@tutpro.com>
+- Introduced is_uri_user_e164() function.
+
+* 2006-07-17  Di-Shi Sun <di-shi@transnexus.com>
+1. Re-formated all source code. Added comments for all functions.
+2. Fix [1524046] bug reported for Scalable SIP server project in SourceForge.
+   Please check OpenSER tracker for details.
+
+* 2006-07-17 Juha Heinanen <jh@tutpro.com>
+* Replaced allow_refer_to functions with more general purpose allow_uri
+  function.
+
+* 2006-07-17 Klaus Darilion <klaus.mailinglists@pernau.at>
+- fixed typo in TLS documentation
+- updated TLS settings in default openser.cfg to the new TLS syntax
+
+* 2006-07-17 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- reactivated username/domain flags in avp_write() for all pseudo-variables and static values - reported by Juha Heinanen
+- flags were processed but they didn't propagate from fixup
+- old parameters that accepted these flags have equivalent in pseudo-variables (e.g., $ruri/domain == $rd)
+
+* 2006-07-17 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- removed double definition of "usr_preferences_types" table and added
+ missing definition of "active_sessions" table
+ Reported by Klaus Darilion <klaus.mailinglists@pernau.at
+
+* 2006-07-15 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- fixed compilling problem on platform which does not define
+  IPTOS_MINCOST and IPTOS_LOWCOST. Previous fix had a static
+  approach which was now replced wiht a more flexible one.
+  Reported by Frank Garcia <fg-lists@ipnat.net>
+
+* 2006-07-14 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- Applied path for correcting syntax from MySQL to Postgres (credits go to Norman Brandinger <norm@goes.com>
+):
+ - moved INDEX creation out of CREATE table statement into
+   CREATE INDEX (usr_preferences, trusted)
+ - auto_increment isn't valid in Postgres, replaced with
+   local AUTO_INCREMENT
+ - datetime isn't valid in Postgres, replaced with local DATETIME
+ - split GRANTs for SERWeb tables so that it is only executed
+   if SERWeb tables are created
+ - added GRANTs for re_grp table
+ - added CREATE pd_multidomain table (from PDT module)
+ - corrected comments to indicate Postgres as opposed to MySQL
+ - made last_modified/created stamps consistent to now() using
+   local TIMESTAMP
+
+* 2006-07-14 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- hash_size - new parameter to tune the size of usrloc hash table
+- the number of entries in the hash is 2^hash_size (e.g, if hash_size=4,
+the number of entries in hash table is 2^4 = 16)
+
+
+* 2006-07-14 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- added support for fetch_result() in DB API
+- drivers supporting fetch_result() will advertise DB_CAP_FETCH as capability
+- added support for fetch_result() in mysql module
+- usrloc modules uses fetch_result() if available when loads location records
+- this removes the issue with loading huge numbers of location records which
+required increase of PGK memory size and recompilation of OpenSER
+- from the tests, with 1MB memory (default) the out of memory occured
+approximately around row 4300
+- usrloc has a new parameter 'fetch_rows' for tunning the number of the rows
+to be fetched at once, default is 2000
+
+* 2006-07-10 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- fixed memory leak in DNS resolver when overflow happens (credits go to Juha
+Heinanen)
+
+
 ===================== 2006-07-10 OpenSER v1.1.0 released ======================
 
 ===================== Changes since release 1.0.0 ============================
