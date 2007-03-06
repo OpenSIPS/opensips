@@ -225,13 +225,24 @@ ifeq ($(SVNVERSION),)
 SVNVERSION = $(shell which svnversion)
 endif
 
+ifeq ($(OLDSVNREVISION),)
+OLDSVNREVISION = $(shell if [ -f ".svnrevision" ] ; then \
+					 cat .svnrevision ;\
+				 fi )
+endif
+
 ifeq ($(SVNREVISION),)
-SVNREVISION=$(shell if [ -d .svn -a -f main.c -a -f Makefile.defs ] ; then \
+SVNREVISION = $(shell if [ -d .svn -a -f main.c -a -f Makefile.defs ] ; then \
 				if [ -x "$(SVNVERSION)" ] ; then \
-					$(INSTALL-TOUCH) main.c ;\
 					$(SVNVERSION) -n -c . ;\
 				fi ;\
 		fi )
+endif
+
+ifneq ($(SVNREVISION),)
+NEWSVNREVISION = $(shell if [ "$(SVNREVISION)" != "$(OLDSVNREVISION)" ] ; then \
+						echo "dosvnrev" ; \
+					fi )
 endif
 
 # find compiler name & version

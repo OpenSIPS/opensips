@@ -12,7 +12,7 @@
 #
 
 #implicit rules
-%.o:%.c  $(ALLDEP)
+%.o: %.c $(ALLDEP)
 	@echo "Compiling $<"
 	$(Q)$(CC) $(CFLAGS) $(DEFS) -c $< -o $@
 
@@ -23,7 +23,7 @@
 
 
 # normal rules
-$(NAME): $(objs) $(ALLDEP)
+$(NAME): $(NEWSVNREVISION) $(objs) $(ALLDEP)
 	@echo "Linking $(NAME)"
 	$(Q)$(LD) $(LDFLAGS) $(objs) $(extra_objs) $(LIBS) -o $(NAME) 
 
@@ -36,6 +36,14 @@ dep: $(depends)
 
 .PHONY: static
 static: $(objs)
+
+.PHONY: dosvnrev
+dosvnrev:
+	@echo "New SVN revision: $(SVNREVISION)"
+	@if [ -f "main.o" ] ; then \
+		rm main.o ; \
+	fi
+	@echo "$(SVNREVISION)" >.svnrevision
 
 .PHONY: docbook-clean
 docbook-clean: 

@@ -3,3 +3,4 @@ cfg.tab.h
 lex.yy.c
 openser
 .*.swp
+.svnrevision
