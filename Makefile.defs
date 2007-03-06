@@ -221,11 +221,15 @@ CC   := $(shell echo "$${CC}")
 LEX  := $(shell echo "$${LEX}")
 YACC := $(shell echo "$${YACC}")
  
+ifeq ($(SVNVERSION),)
+SVNVERSION = $(shell which svnversion)
+endif
+
 ifeq ($(SVNREVISION),)
 SVNREVISION=$(shell if [ -d .svn -a -f main.c -a -f Makefile.defs ] ; then \
-				if which svnversion 1>/dev/null; then \
+				if [ -x "$(SVNVERSION)" ] ; then \
 					$(INSTALL-TOUCH) main.c ;\
-					svnversion -n -c . ;\
+					$(SVNVERSION) -n -c . ;\
 				fi ;\
 		fi )
 endif
