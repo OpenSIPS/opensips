@@ -306,9 +306,7 @@ Chapter 1. User's Guide
    This part must be done only once, disregarding the number of
    how many interconnected OpenSER's we want to have.
 
-   Using "gen_rootCA.sh" located in tls/tools directory you may
-   create a local root CA. Please refere to the local README file
-   for instructions about how to use the script.
+   Using "openserctl tls rootCA", you may create a local root CA.
 
    The script will produce the private key (which will be used to
    sign client/server certificates) and the self-signed
@@ -321,10 +319,7 @@ Chapter 1. User's Guide
    into your TLS enabled network: build a certificate request and
    sign it with a root CA (yourself or from third party).
 
-   For this purpose you may use the "gen_usercert.sh" script
-   which is located in tls/tools directory. Please refere to the
-   local README file for instructions about how to use the
-   script.
+   For this purpose you may use the "openserctl tls userCERT"
 
    The output of the script will be a directory containing all
    needed TLS files for configuring the OpenSER proxy (private
@@ -337,8 +332,8 @@ Chapter 1. User's Guide
    list must contain all CA root certificates to be accepted by
    your server):
 
-   If you use the "gen_usercert.sh", it will create an one
-   element CA list with the CA used to sign the certificate.
+   If you use the "openserctl tls userCERT", it will create an
+   one element CA list with the CA used to sign the certificate.
 
    To add more CAs to your list, just do:
 

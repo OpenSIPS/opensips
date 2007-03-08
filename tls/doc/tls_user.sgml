@@ -258,9 +258,8 @@
 			how many interconnected &ser;'s we want to have.
 			</para>
 			<para>
-			Using <quote>gen_rootCA.sh</quote> located in tls/tools directory
-			you may create a local root CA. Please refere to the local README
-			file for instructions about how to use the script.
+			Using <quote>openserctl tls rootCA</quote>, you may create a local 
+			root CA.
 			</para>
 			<para>
 			The script will produce the private key (which will be used to
@@ -277,9 +276,8 @@
 			sign it with a root CA (yourself or from third party).
 			</para>
 			<para>
-			For this purpose you may use the <quote>gen_usercert.sh</quote> 
-			script which is located in tls/tools directory. Please refere to 
-			the local README file for instructions about how to use the script.
+			For this purpose you may use the 
+			<quote>openserctl tls userCERT</quote>
 			</para>
 			<para>
 			The output of the script will be a directory containing all needed
@@ -296,8 +294,9 @@
 			accepted by your server):
 			</para>
 			<para>
-			If you use the <quote>gen_usercert.sh</quote>, it will create
-			an one element CA list with the CA used to sign the certificate.
+			If you use the <quote>openserctl tls userCERT</quote>, it will 
+			create an one element CA list with the CA used to sign the 
+			certificate.
 			</para>
 			<para>
 			To add more CAs to your list, just do:
