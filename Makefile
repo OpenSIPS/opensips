@@ -363,34 +363,22 @@ install-cfg: $(cfg-prefix)/$(cfg-dir)
 				$(cfg-prefix)/$(cfg-dir)/openserctlrc; \
 		fi
 		#$(INSTALL-CFG) etc/$(NAME).cfg $(cfg-prefix)/$(cfg-dir)
-		if [ -z "$(TLS)" ]; then \
-			echo  "No TLS scripts installed" ; \
-		else \
+		if [ "$(TLS)" != "" ] ; then \
 			mkdir -p $(cfg-prefix)/$(cfg-dir)/tls ; \
 			mkdir -p $(cfg-prefix)/$(cfg-dir)/tls/rootCA ; \
 			mkdir -p $(cfg-prefix)/$(cfg-dir)/tls/rootCA/certs ; \
 			mkdir -p $(cfg-prefix)/$(cfg-dir)/tls/rootCA/private ; \
 			mkdir -p $(cfg-prefix)/$(cfg-dir)/tls/user ; \
-			$(INSTALL-TOUCH) etc/tls/README $(cfg-prefix)/$(cfg-dir)/tls/; \
-			$(INSTALL-CFG) etc/tls/README $(cfg-prefix)/$(cfg-dir)/tls/; \
-			$(INSTALL-TOUCH) etc/tls/rootCA/index.txt $(cfg-prefix)/$(cfg-dir)/tls/rootCA/; \
-			$(INSTALL-CFG) etc/tls/rootCA/index.txt $(cfg-prefix)/$(cfg-dir)/tls/rootCA/; \
-			$(INSTALL-TOUCH) etc/tls/rootCA/serial $(cfg-prefix)/$(cfg-dir)/tls/rootCA/; \
-			$(INSTALL-CFG) etc/tls/rootCA/serial $(cfg-prefix)/$(cfg-dir)/tls/rootCA/; \
-			$(INSTALL-TOUCH) etc/tls/rootCA/cacert.pem $(cfg-prefix)/$(cfg-dir)/tls/rootCA/; \
-			$(INSTALL-CFG) etc/tls/rootCA/cacert.pem $(cfg-prefix)/$(cfg-dir)/tls/rootCA/; \
-			$(INSTALL-TOUCH) etc/tls/rootCA/certs/01.pem $(cfg-prefix)/$(cfg-dir)/tls/rootCA/certs/; \
-			$(INSTALL-CFG) etc/tls/rootCA/certs/01.pem $(cfg-prefix)/$(cfg-dir)/tls/rootCA/certs/; \
-			$(INSTALL-TOUCH) etc/tls/rootCA/private/cakey.pem $(cfg-prefix)/$(cfg-dir)/tls/rootCA/private/; \
-			$(INSTALL-CFG) etc/tls/rootCA/private/cakey.pem $(cfg-prefix)/$(cfg-dir)/tls/rootCA/private/; \
-			$(INSTALL-TOUCH) etc/tls/user/user-calist.pem $(cfg-prefix)/$(cfg-dir)/tls/user/; \
-			$(INSTALL-CFG) etc/tls/user/user-calist.pem $(cfg-prefix)/$(cfg-dir)/tls/user/; \
-			$(INSTALL-TOUCH) etc/tls/user/user-cert.pem $(cfg-prefix)/$(cfg-dir)/tls/user/; \
-			$(INSTALL) etc/tls/user/user-cert.pem $(cfg-prefix)/$(cfg-dir)/tls/user/; \
-			$(INSTALL-TOUCH) etc/tls/user/user-privkey.pem $(cfg-prefix)/$(cfg-dir)/tls/user/; \
-			$(INSTALL-CFG) etc/tls/user/user-privkey.pem $(cfg-prefix)/$(cfg-dir)/tls/user/; \
-			$(INSTALL-TOUCH) etc/tls/user/user-cert_req.pem $(cfg-prefix)/$(cfg-dir)/tls/user/; \
-			$(INSTALL-CFG) etc/tls/user/user-cert_req.pem $(cfg-prefix)/$(cfg-dir)/tls/user/; \
+			(cd etc ; \
+			for FILE in tls/* tls/rootCA/* tls/rootCA/certs/* \
+					tls/rootCA/private/* tls/user/* ; do \
+				if [ -f $$FILE ] ; then \
+					$(INSTALL-TOUCH) $$FILE \
+						$(cfg-prefix)/$(cfg-dir)/$$FILE ; \
+					$(INSTALL-CFG) $$FILE \
+						$(cfg-prefix)/$(cfg-dir)/$$FILE ; \
+				fi ;\
+			done ) ; \
 		fi
 
 install-bin: $(bin-prefix)/$(bin-dir) utils
