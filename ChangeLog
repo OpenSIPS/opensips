@@ -4,7 +4,362 @@
 
 ===================== Changes since release 1.1.0 ============================
 
+ 2006-12-22 Elias Baixas <elias.baixas@voztele.com>
+ - Added SEAS module.
 
+* 2006-12-22 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- socket description includes all info (protocol too). Based on the modified patch from Ovidiu Sas (Soma Networks).
+  Closes 1614047.
+
+* 2006-12-13 Bastian Friedrich <bastian.friedrich@collax.com>
+ - Fixing Makefile to use MOD_CFLAGS while compiling openserxs.c. Needed on x86-64
+
+* 2006-12-21 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- added paameter 'trace_table_avp' to be able to specify dinamically via AVP where to record the messages
+- 'traced_user_avp' parameter is now string, to allow specifing AVP name as string or integer
+
+* 2006-12-20 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- initial version of xmpp API to be used for SIMPLE-XMPP presence translation (not tested yet)
+
+* 2006-12-19 Juha Heinanen <jh@tutpro.com>
+ - Introduced in textops module is_privacy(privacy_type) script function
+  for testing if SIP request has a privacy header that includes the given
+  privacy_type as one of its privacy values.
+
+* 2006-12-18 Jeffrey Magder <jmagder@somanetworks.com>
+ -Initial release of the SNMPStats OpenSER module.
+
+* 2006-12-18 Juha Heinanen <jh@tutpro.com>
+ - Added pseudo variable $pn for accessing display name of
+  P-Preferred-Identity header.
+
+* 2006-12-18 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- compare string lengths if strncasecmp returns 0 for '>' and '<' comparisons
+- check return code against 0, not all systems return -1 and 1 for              strncasecmp() in case of '<' and '>'
+- reported by Juan Carlos Castro y Castro
+
+* 2006-12-18 Juha Heinanen <jh@tutpro.com>
+ - Added parsing of Privacy header (RFC 3323)
+ - Added string and integer valued pseudo variable $pr for accessing
+  parsed privacy header
+
+* 2006-12-18 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- applied patch from Norman Brandinger <norm@goes.com> to update the reply reason phrase accordingly to http://www.iana.org/assignments/sip-parameters
+  Closes 1615280.
+
+* 2006-12-18 Anca Vamanu <anca@voice-system.ro>
+- extended primary key for table "xcap_xml" (reported by Mircea Amarascu)
+
+* 2006-12-16 Juha Heinanen <jh@tutpro.com>
+ - Added parsing of P-Asserted-Identity header (RFC 3325).
+ - Introduced $ai pseudo variable for accessing P-A-I header URI.
+
+* 2006-12-15 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- applied patch from Ovidiu Sas <osas@somanetworks.com> to fix socket description string on arch with no BE (16-bit atomic element) - like ARM
+  Closes 1614192.
+
+* 2006-12-15 Juha Heinanen <jh@tutpro.com>
+ - Added parsing of P-Preferred-Identity header (RFC 3325).
+
+* 2006-12-15 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- new state added for a dialog : DLG_STATE_CONFIRMED_NA - confirmed by a final reply but no ACK received. Existent state DLG_STATE_CONFIRMED means confirmed and ACK received.
+
+- new pseudo variables available from dialog module:
+	DLG_lifetime - duration of the dialog from confirmation up to the
+	               current moment
+	DLG_status - dialog status
+
+* 2006-12-13 Bastian Friedrich <bastian.friedrich@collax.com>
+ - Perl 5.8.x is supported; compilation possible with 5.6.x. Earlier versions do not work. #ifdefs in perl.c, doc updates.
+
+* 2006-12-15 Anca Vamanu <anca@voice-system.ro>
+- modified agregate_xmls function to correctly treat the case in which the body does not have a person id
+( reported by Adrian Georgescu)
+
+* 2006-12-14 Anca Vamanu <anca@voice-system.ro>
+- solved a nested sql query, and therefore eliminated memory leak problems
+- removed manually parsing cseq numerical value and
+- modified xml building functions by using only the api from libxml2,
+and therefore eliminated compiling errors in solaris
+
+* 2006-12-13 Bastian Friedrich <bastian.friedrich@collax.com>
+ - New perl method: getBody()
+
+* 2006-12-12 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- applied patch from Elias Baixas <elias.baixas@voztele.com>; it provides more TM functionality required by an upcoming module that will be a binary interface to an Application Server.
+ Mainly it is about:
+ 	1) new "t_uac_cancel" function to build CANCEL local transactions
+	2) more functions are made available via TM API
+
+* 2006-12-12 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+ - applied patch from Jeffrey Magder <jmagder@somanetworks.com> :
+ - new statistic varibale is offered by usrloc module: the total number of registered users (to be used in the upcoming SNMP module)
+
+* 2006-12-08 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- asyncronous reply support added in MI interface
+- added implementation for async reply in mi_fifo module
+- TM t_uac_dlg() uses async replying when available
+
+* 2006-12-09 Bastian Friedrich <bastian.friedrich@collax.com>
+ - Initial import of Perl module.
+
+* 2006-12-07 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- descriptionof MI command changed - a new field was added to allow passing some flags to MI core like:
+	MI_ASYNC_RPL_FLAG - if the reply is send asynchronous
+	MI_NO_INPUT_FLAG - if the command does not require any input
+
+* 2006-12-07 Juha Heinanen <jh@tutpro.com>
+* Group identifier argument of allow_source_address and
+  set_address_group functions can now be either an integer string or
+  a pseudo variable.
+
+* 2006-12-07 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+ - applied patch from Jeffrey Magder <jmagder@somanetworks.com> - it provides more statistics:
+ - new "bad_URIs_rcvd", "bad_proxy_req" and "bad_methods" core statistics
+ - new module_loaded(name) test function added
+ - new get_stat_var_from_num_code(code) function added - very handy when dealling with statistics with dynamic names
+ - get_sock_info_list() function made available from modules
+
+* 2006-12-07 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- latest modules added into debian packaging:
+   1) xmpp module was added to the openser-jabber-module package
+   2) presence pua pua_mi pua_usrloc modules form a a new openser-presence-modules package
+   3) mi_xmlrpc module form a a new openser-xmlrpc-module package
+
+- osp module is excluded from packaging since its dependencies cannot be solved by other Debian packages.
+ Reported by Juha Heinanen <jh@tutpro.com>.
+
+* 2006-12-07 Anca Vamanu <anca@voice-system.ro>
+- corrected action sequence to enable sending Notify with basic status closed when Publish expires
+
+* 2006-12-06 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- new PV added to make available the reply code in all types of routes
+  $T_reply_code
+
+* 2006-12-06 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- t_relay() and t_relay(OBP) functions can take as extra parameter as set of flags for internal controll: if a provisional reply shoud be sent or not, if a negative reply should be automatically generated in case of failure or not.
+  For more, please refer to the docs.
+
+* 2006-12-06 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- split to get more modularity
+- add content-type for sent messages (reported by Henri Keski-Sikkila)
+- send message back if unknown message
+- dev version increased
+
+* 2006-12-06 Anca Vamanu <anca@voice-system.ro>
+- set default not to send usrloc publish
+
+* 2006-12-06 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- new tranaction flags added:
+	/* ACK must not be auto generated for the local transaction */
+	#define T_NO_AUTOACK_FLAG       (1<<5)
+	/* provisional replies must trigger callbacks for local transaction */
+	#define T_PASS_PROVISIONAL_FLAG (1<<6)
+- actions related to these flags added:
+	if T_NO_AUTOACK_FLAG is set, no ACK will be generated for the 200 OK for local requests
+	if T_PASS_PROVISIONAL_FLAG is set, the provisional replies to local requests will be pushed via the TMCB_LOCAL_RESPONSE_OUT callback
+
+* 2006-12-06 Klaus Darilion <klaus.mailinglists@pernau.at>
+- TLS certificate validation is now on by default
+- docs updated
+
+* 2006-12-06 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- parsing bug fixed: the "stale" field in digest challange hdr may take not quoted value (as well as quoted)
+  Credits go to Christophe Irles <christophe.irles@alcatel.fr>
+
+* 2006-12-06 Klaus Darilion <klaus.mailinglists@pernau.at>
+- added a note that a default admin user is created during serwerb table
+  installation (a default user is always a security issue)
+- changed the postgresql ALTER TABLE statement for extending the subscriber
+  table for serweb to work with postgres 7.4.7
+
+* 2006-12-05 Anca Vamanu <anca@voice-system.ro>
+- added verification in callback function if reply message is FAKED_REPLY
+
+* 2006-12-05 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+ - Fixed problem when creating tables using default "utf8" or "ucs2" charsets - they use 3 bytes for char and generates error about the lenght of the keys:
+  ERROR 1071 (42000): Specified key was too long; max key length is 1000 bytes
+Solution was to:
+1) Test what's the character encoding is used in database.
+2) If it's a UCS-2 or UTF8 (where 3 bytes per char are used) then warn
+user that db couldn't be created and prompt him to select another
+character encoding among available.
+3) In a "CREATE DATABASE" use closure "CHARACTER SET"
+ Patch submitted by Khalukhin Alexander <khalukhin@gmail.com>.Thanks!!
+ Closes bug 1605410.
+
+* 2006-12-05 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- fixed credentials calculation for admin user in serweb section
+  Reported by Klaus Darilion <klaus.mailinglists@pernau.at>
+
+* 2006-12-05 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- removed old fifo commands - they were used only for debug purposes and had no value in a usage scenario
+- add new MI function 'pike_list' - returns all IP addresses marked as flooding source.
+
+* 2006-12-05 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+-last MI functions added: t_uac_dlg & t_uac_cancel
+ Syntax had slitly changed :
+	Syntax of "t_uac_dlg" :
+		method
+		RURI
+		NEXT_HOP?
+		socket?
+		headers?
+		[Body]
+	Syntax of "t_uac_cancel" :
+		callid
+		cseq
+ Nodes marked ? may be replaced with "." as empty marker. [] is an optional node.
+
+* 2006-11-05 Juha Heinanen <jh@tutpro.com>
+* Added subnet support to allow_address functions.
+
+* 2006-12-05 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- docs updated (module dependencies)
+  Reported by Nicolas Palix <nicolas.palix@labri.fr
+
+* 2006-12-04 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- added MI functions for TM (partial)
+- protoype of internal functions changed in TM: reply reason is str* instead of char * - avoids doing strlen() for each reply; better do it once at startup.
+
+* 2006-12-04 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- all FIFO functions ported to MI interface - they can be now accessed via
+  XMLRPC also.
+- fixed bug in the ul_dump function - no locking was done when dumping the table
+
+* 2006-11-30 Anca Vamanu <anca@voice-system.ro>
+- presence user agent client support
+- pua: common API
+- pua_mi: MI PUA extension
+- pua_usrloc: usrloc PUA extension
+
+ PUA_MI
+ - provides functionality to publish presence information from
+ independent applications (like scripts, web pages ...) via MI
+
+ PUA_USRLOC
+ - enhance openser to be able to publish online/offline status
+ for SIP devices with no presence extension support
+
+
+* 2006-11-30 Lavinia Andrei <lavinia@voice-system.ro>
+- initial upload of a XMLRPC implementation for MI interface.
+
+* 2006-11-29 Dan Pascu <dan@ag-projects.com>
+ - Fixed domain_reload and trusted_reload commands not working over the UNIX
+socket interface.
+ - It's possible that other commands may have been fixed by this as well.
+Basically any command that needed a database connection was not working
+over the UNIX socket interface as the process carrying the unix domain
+socket server didn't have a database connection.
+
+* 2006-11-29 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- bug fixed: improper free of linked list (first delete and later iterate)
+  based on a patch submitted by Jan Andres <jan.andres@freenet-ag.de> for SER
+
+* 2006-11-29 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- added BLOB support in flatstore - useful if you want to used along siptrace module.
+  Based on an original patch sent by Francisco Olarte Sanz
+  <folarte@peoplecall.com>
+
+* 2006-11-29 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- MI tree changed: the top node has a different structure in order to accomodate a reply code and reason.
+
+* 2006-11-28  Di-Shi Sun <di-shi@transnexus.com>
+ - Merge the changes in rel_1_1_0 to CVS HEAD on 11/28/06.
+
+* 2006-11-28 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- dynamic library loading flags can be specific per module
+- new modules under development requires such features
+- by default RTLD_NOW is used, see 'man dlopen' for more options
+- thanks to Bastian Friedrich <bastian.friedrich@collax.com
+
+* 2006-11-28 Anca Vamanu <anca@voice-system.ro>
+ - local generated requests will include a Content-Length header all the time.
+reported by Chris Robson <Chris.Robson@nrl.navy.mil>
+
+* 2006-11-28 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- usage of AoR hash to index the records
+- tests with hundreds of records per hashtable entry having same length of AoR proved that hash value is different which increase the probability that a integer comparison will match the AoR, avoiding string comparisons quite a lot
+- devel version increased
+- some extra debug messages to help in testing (to be removed later once proves stable)
+
+* 2006-11-27 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- added missing documentation of traced_user_avp
+- ability to disable usage of traced_user_avp
+
+* 2006-11-27 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- detailed description of loose_route() function added to docs.
+  Credits go to Klaus Darilion <klaus.mailinglists@pernau.at
+
+* 2006-11-27 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- fixed bug - un-initialized global variable may lead to a crash if openser destroies the sl module without initializing it (during a failed startup). Some compilers init vars with 0, but not all.
+
+* 2006-11-24 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- immproved locking system to access location entries
+- updated all modules to the new interface
+- NOTE: not yet heavy tested, please report any issue to devel@openser.org
+- devel version increased
+
+
+* 2006-11-24 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- bug fixed: User-Agent was not reloaded from DB during restart.
+  Closes bug 1602339.
+
+* 2006-11-24 Daniel-Constantin Mierla <daniel@voice-system.ro>
+-added new field for pseudo-variables in exported interface
+
+* 2006-11-23 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- modules can register pseudo-variables via export structure
+- a null terminated list with PVs is now part of module's exports
+	{ pv-name, pv-function, pv-type, pv-parameter }
+- the old function to register PV can be still used
+- small tlsops updates: module name in exports aligned with external name
+and old TLS pseudo-variables moved to new structure (some by Klaus Darilion)
+
+* 2006-11-23 Klaus Darilion <klaus.mailinglists@pernau.at>
+- fixed require_client_certificate for default TLS server domain
+  (reported and patch contributed by Philippe phgs@free.fr
+- fixed default TLS client/server verification (had no impact as both
+  default values are 0)
+
+* 2006-11-23 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- fromip for outbound proxy-ed requests set to local ip (credits to Dan Pascu)
+
+* 2006-11-22 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- fixed display problem in "openserctl monit"; "tput cup 0 0" replaced with "tput clear" - it is inevitable to do a clear since the printed lines may vary as length (get smaller); also a printed line may be wrapped over several terminal raws if the terminal size is changed on the fly.
+Closes 1528402.
+
+* 2006-11-22 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- applied patch from Marcos Hack for adding SQL_DECIMAL type. Closes 1598507.
+- more data types added:
+   SQL_NUMERIC for integer
+   SQL_DATE, SQL_TIME, SQL_TIMESTAMP, SQL_TYPE_DATE, SQL_TYPE_TIME for data-time
+
+* 2006-11-22 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- "use_domain" module parameter removed as now it is internally imported from the usrloc module
+- save_memory() and save_noreply() merged into save(domain,flags) - more flexible in combination of functionalitites
+- configuration error is generated if MEMORY ONLY flag is used on save() while the DB_ONLY mode is configured in usrloc.
+- docs and faq updated
+
+* 2006-11-22 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+ - local function mi_get_mask() replaced with the new core function strno2int()
+
+* 2006-11-22 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+ - new functions strno2int() added - a warpper on top of int2str() and strhex2int() for easy conversion of strings in decimal and hexa format; binary format should be also added in future
+
+* 2006-11-22 Daniel-Constantin Mierla <daniel@voice-system.ro>
+- fromip for local generated messages is set to the address of the socket used to send
+- toip for sip_trace() recorded messages is set the address of the socked where the message was received
+
+* 2006-11-21 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+-fixed handeling of the permanent contacts (to work properly in DB_ONLY mode):
+	- FL_PRESISTENT flag removed
+	- persistent contacts are identified by having the expires=0
+	- timer routine for deleting expire contacts in DB_ONLY does not need to deal with flags for skipping the permanent contacts (flag testing in quite impossible via the current DB API)
+- removed unused flag from usrloc
+- openserctl ul ops updated to reflect the changes for the persistent contacts
+Closes 1579127.
 
 * 2006-11-16 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
  - MI support added (existing FIFO functions migrated to MI)
