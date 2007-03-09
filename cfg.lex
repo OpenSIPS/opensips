@@ -159,6 +159,9 @@ SERIALIZE_BRANCHES	"serialize_branches"
 NEXT_BRANCHES	"next_branches"
 USE_BLACKLIST	"use_blacklist"
 
+SET_TIME_STAMP		"set_time_stamp"
+RESET_TIME_STAMP	"reset_time_stamp"
+DIFF_TIME_STAMP		"diff_time_stamp"
 
 /*ACTION LVALUES*/
 URIHOST			"uri:host"
@@ -392,6 +395,9 @@ WHITESPACE	[ \t\r\n]
 <INITIAL>{PREFIX}	{ count(); yylval.strval=yytext; return PREFIX; }
 <INITIAL>{STRIP}	{ count(); yylval.strval=yytext; return STRIP; }
 <INITIAL>{STRIP_TAIL}	{ count(); yylval.strval=yytext; return STRIP_TAIL; }
+<INITIAL>{SET_TIME_STAMP}	{ count(); yylval.strval=yytext; return SET_TIME_STAMP; }
+<INITIAL>{RESET_TIME_STAMP}	{ count(); yylval.strval=yytext; return RESET_TIME_STAMP; }
+<INITIAL>{DIFF_TIME_STAMP}	{ count(); yylval.strval=yytext; return DIFF_TIME_STAMP; }
 <INITIAL>{APPEND_BRANCH}	{ count(); yylval.strval=yytext; 
 								return APPEND_BRANCH; }
 <INITIAL>{FORCE_RPORT}	{ count(); yylval.strval=yytext; return FORCE_RPORT; }

@@ -48,6 +48,47 @@
 #include "dprint.h"
 #include "str.h"
 
+#ifdef TIMING_INFO
+#include <time.h>
+
+static struct timespec _init_tspec = {0, 0};
+static char *_init_tspec_text = "init";
+
+static inline void reset_time_stamp()
+{
+	_init_tspec.tv_sec = 0;
+	_init_tspec.tv_nsec = 0;
+	_init_tspec_text = "init";
+}
+
+static inline void set_time_stamp(char *text)
+{
+	if(clock_gettime(CLOCK_REALTIME, &_init_tspec)!=0)
+	{
+		LOG(L_ERR, "set_time_stamp: error getting current time\n");
+		return;
+	}
+	_init_tspec_text = text;
+}
+
+
+static inline void diff_time_stamp(int level, char *text)
+{
+	struct timespec now;
+	unsigned long long tdiff;
+	if(clock_gettime(CLOCK_REALTIME, &now)!=0)
+	{
+		LOG(L_ERR, "diff_time_stamp: error getting current time\n");
+		return;
+	}
+	tdiff = (now.tv_sec-_init_tspec.tv_sec)*1000000000
+				+ now.tv_nsec - _init_tspec.tv_nsec;
+	LOG(level, "+++ [%s] => [%s]: %llu.%09llu sec ( %llu nsec )\n",
+			_init_tspec_text, text,
+			tdiff/1000000000, tdiff%1000000000, tdiff);
+}
+
+#endif
 
 struct sip_msg;
 

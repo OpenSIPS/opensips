@@ -991,6 +991,11 @@ DEFAULT_YACC=bison
 # on solaris add -lxnet (e.g. LIBS= -lxnet)
 LIBS= -ldl -lresolv
 
+ifeq ($(tinfo),yes)
+    DEFS+= -DTIMING_INFO
+	LIBS+= -lrt
+endif
+
 
 #os specific stuff
 ifeq ($(OS), linux)

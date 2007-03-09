@@ -204,6 +204,9 @@ extern int line;
 %token SET_HOST
 %token SET_HOSTPORT
 %token PREFIX
+%token SET_TIME_STAMP
+%token RESET_TIME_STAMP
+%token DIFF_TIME_STAMP
 %token STRIP
 %token STRIP_TAIL
 %token APPEND_BRANCH
@@ -1970,6 +1973,38 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 														0, (void *) $3, 0); }
 		| STRIP error { $$=0; yyerror("missing '(' or ')' ?"); }
 		| STRIP LPAREN error RPAREN { $$=0; yyerror("bad argument, "
+														"number expected"); }
+		| SET_TIME_STAMP LPAREN STRING RPAREN { 
+					#ifdef TIMING_INFO
+						mk_action2( $$, SET_TIME_STAMP_T, STRING_ST, 0,
+								(void *) $3, 0);
+					#else
+						warn("timing infor support not compiled in");
+					#endif
+				}
+		| SET_TIME_STAMP error { $$=0; yyerror("missing '(' or ')' ?"); }
+		| SET_TIME_STAMP LPAREN error RPAREN { $$=0; yyerror("bad argument, "
+														"number expected"); }
+		| RESET_TIME_STAMP LPAREN RPAREN { 
+					#ifdef TIMING_INFO
+						mk_action2( $$, RESET_TIME_STAMP_T, 0, 0, 0, 0);
+					#else
+						warn("timing infor support not compiled in");
+					#endif
+				}
+		| DIFF_TIME_STAMP LPAREN NUMBER COMMA STRING RPAREN { 
+					#ifdef TIMING_INFO
+						mk_action2( $$, DIFF_TIME_STAMP_T, NUMBER_ST, 
+								STRING_ST, (void *) $3, (void *) $5);
+					#else
+						warn("timing infor support not compiled in");
+					#endif
+				}
+		| DIFF_TIME_STAMP error { $$=0; yyerror("missing '(' or ')' ?"); }
+		| DIFF_TIME_STAMP LPAREN error RPAREN { $$=0; yyerror("bad argument, "
+														"number expected"); }
+		| RESET_TIME_STAMP error { $$=0; yyerror("missing '(' or ')' ?"); }
+		| RESET_TIME_STAMP LPAREN error RPAREN { $$=0; yyerror("bad argument, "
 														"number expected"); }
 		| APPEND_BRANCH LPAREN STRING COMMA STRING RPAREN { 
 				{   qvalue_t q;
