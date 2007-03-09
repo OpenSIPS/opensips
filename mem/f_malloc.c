@@ -195,7 +195,7 @@ struct fm_block* fm_malloc_init(char* address, unsigned long size)
 			F_HASH_SIZE, (long)sizeof(struct fm_block));
 	DBG("fm_malloc_init(%p, %lu), start=%p\n", address, size, start);
 
-	if (size<start-address) return 0;
+	if (size<(unsigned long)(start-address)) return 0;
 	size-=(start-address);
 	if (size <(MIN_FRAG_SIZE+FRAG_OVERHEAD)) return 0;
 	size=ROUNDDOWN(size);
@@ -248,7 +248,7 @@ void* fm_malloc(struct fm_block* qm, unsigned long size)
 {
 	struct fm_frag** f;
 	struct fm_frag* frag;
-	int hash;
+	unsigned int hash;
 	
 #ifdef DBG_F_MALLOC
 	DBG("fm_malloc(%p, %lu) called from %s: %s(%d)\n", qm, size, file, func,
@@ -482,8 +482,8 @@ void* fm_realloc(struct fm_block* qm, void* p, unsigned long size)
 void fm_status(struct fm_block* qm)
 {
 	struct fm_frag* f;
-	int i,j;
-	int h;
+	unsigned int i,j;
+	unsigned int h;
 	int unused;
 	unsigned long size;
 
@@ -557,7 +557,7 @@ void fm_status(struct fm_block* qm)
  * if a parameter is not supported, it will be filled with 0 */
 void fm_info(struct fm_block* qm, struct mem_info* info)
 {
-	int r;
+	unsigned int r;
 	long total_frags;
 #if !defined(DBG_F_MALLOC) && !defined(STATISTICS)
 	struct fm_frag* f;

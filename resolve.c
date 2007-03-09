@@ -256,7 +256,7 @@ struct naptr_rdata* dns_naptr_parser( unsigned char* msg, unsigned char* end,
 	rdata = rdata + 7 + naptr->flags_len + naptr->services_len + 
 			naptr->regexp_len;
 	naptr->repl_len=dn_expand(msg, end, rdata, naptr->repl, MAX_DNS_NAME-1);
-	if ( naptr->repl_len==-1 )
+	if ( naptr->repl_len==(unsigned int)-1 )
 		goto error;
 	/* add terminating 0 ? (warning: len=compressed name len) */
 	return naptr;
@@ -341,7 +341,7 @@ struct txt_rdata* dns_txt_parser( unsigned char* msg, unsigned char* end,
 									  unsigned char* rdata)
 {
 	struct txt_rdata* txt;
-	int len;
+	unsigned int len;
 	
 	txt=0;
 	txt=(struct txt_rdata*)local_malloc(sizeof(struct txt_rdata));
@@ -403,7 +403,7 @@ struct ebl_rdata* dns_ebl_parser( unsigned char* msg, unsigned char* end,
 	rdata += ebl->separator_len;
 
 	ebl->apex_len=dn_expand(msg, end, rdata, ebl->apex, MAX_DNS_NAME-1);
-	if ( ebl->apex_len==-1 )
+	if ( ebl->apex_len==(unsigned int)-1 )
 		goto error;
 	ebl->apex[ebl->apex_len] = 0; /* 0-terminate string */
 	return ebl;
@@ -461,7 +461,7 @@ struct rdata* get_record(char* name, int type)
 		DBG("get_record: lookup(%s, %d) failed\n", name, type);
 		goto not_found;
 	}
-	else if (size > sizeof(buff)) size=sizeof(buff);
+	else if ((unsigned int)size > sizeof(buff)) size=sizeof(buff);
 	head=rd=0;
 	last=crt=&head;
 	
@@ -767,7 +767,7 @@ static inline struct hostent* do_srv_lookup(char *name,
 
 
 #define naptr_prio(_naptr) \
-	((((_naptr)->order) << 16) + ((_naptr)->pref))
+	((unsigned int)((((_naptr)->order) << 16) + ((_naptr)->pref)))
 
 static inline void filter_and_sort_naptr( struct rdata** head_p,
 									struct rdata** filtered_p, int is_sips)

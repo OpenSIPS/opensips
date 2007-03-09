@@ -157,10 +157,11 @@ int xl_printf(struct sip_msg* msg, xl_elem_p list, char *buf, int *len);
 int xl_get_null(struct sip_msg *msg, xl_value_t *res, xl_param_t *param,
 		int flags);
 
-itemname_list_t* parse_itemname_list(char *s, int type);
+itemname_list_t* parse_itemname_list(char *s, unsigned int type);
 
 
-int xl_add_extra(char *name, item_func_t fct, int type, xl_param_t *param);
+int xl_add_extra(char *name, item_func_t fct, unsigned int type,
+		xl_param_t *param);
 int xl_add_extra_spec(str *name, xl_spec_p sp);
 int xl_fill_extra_spec(xl_spec_p sp);
 int xl_init_extra_spec();
@@ -172,7 +173,7 @@ typedef struct item_export_
 {
 	char *name;
 	item_func_t fct;
-	int type;
+	unsigned int type;
 	xl_param_t param;
 } item_export_t;
 

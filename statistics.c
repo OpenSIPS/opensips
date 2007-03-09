@@ -48,7 +48,7 @@ static struct mi_root *mi_reset_stats(struct mi_root *cmd, void *param);
 static mi_export_t mi_stat_cmds[] = {
 	{ "get_statistics",    mi_get_stats,    0  ,  0,  0 },
 	{ "reset_statistics",  mi_reset_stats,  0  ,  0,  0 },
-	{ 0, 0, 0, 0}
+	{ 0, 0, 0, 0, 0}
 };
 
 
@@ -366,7 +366,7 @@ stat_var* get_stat( str *name )
 
 /***************************** MI STUFF ********************************/
 
-static int inline mi_add_stat(struct mi_node *rpl, stat_var *stat)
+inline static int mi_add_stat(struct mi_node *rpl, stat_var *stat)
 {
 	struct mi_node *node;
 
@@ -381,7 +381,7 @@ static int inline mi_add_stat(struct mi_node *rpl, stat_var *stat)
 	return 0;
 }
 
-static int inline mi_add_module_stats(struct mi_node *rpl,
+inline static int mi_add_module_stats(struct mi_node *rpl,
 													module_stats *mods)
 {
 	struct mi_node *node;

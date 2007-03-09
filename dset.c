@@ -165,8 +165,8 @@ int resetbflag(unsigned int b_idx, unsigned int mask)
  * array, 0 is returned if there are no
  * more branches
  */
-char* get_branch(int idx, int* len, qvalue_t* q, str* dst_uri, str* path, 
-		unsigned int *flags, struct socket_info** force_socket)
+char* get_branch(unsigned int idx, int* len, qvalue_t* q, str* dst_uri,
+		str* path, unsigned int *flags, struct socket_info** force_socket)
 {
 	if (idx < nr_branches) {
 		*len = branches[idx].len;
@@ -451,7 +451,7 @@ int rewrite_uri(struct sip_msg* _m, str* _s)
  * all uris are set to given uri */
 int branch_uri2dset( str *new_uri )
 {
-	int b;
+	unsigned int b;
 
 	if (new_uri->len+1 > MAX_URI_SIZE) {
 		LOG(L_ERR,"ERROR:uri2dset: new uri too long (%d)\n",new_uri->len);

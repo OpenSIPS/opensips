@@ -819,7 +819,7 @@ static inline void tcp_receive_timeout()
 {
 	struct tcp_connection* con;
 	struct tcp_connection* next;
-	int ticks;
+	unsigned int ticks;
 	
 	ticks=get_ticks();
 	for (con=tcp_conn_lst; con; con=next){

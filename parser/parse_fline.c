@@ -1146,7 +1146,7 @@ char* parse_first_line(char* buffer, unsigned int len, struct msg_start * fl)
 	char* second;
 	char* third;
 	char* nl;
-	int offset;
+	unsigned int offset;
 	/* int l; */
 	char* end;
 	char s1,s2,s3;

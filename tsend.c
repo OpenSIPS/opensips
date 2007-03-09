@@ -107,7 +107,7 @@ again:
 		);
 	TSEND_ERR_CHECK("tsend_stream");
 	written+=n; 
-	if (n<len){ 
+	if ((unsigned int)n<len){ 
 		/* partial write */ 
 		buf+=n; 
 		len-=n; 

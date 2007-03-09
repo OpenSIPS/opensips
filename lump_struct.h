@@ -78,12 +78,12 @@ struct lump{
 	enum lump_op op;   /* DEL, ADD, NOP, UNSPEC(=0) */
 	
 	union{
-		int offset; /* used for DEL, MODIFY */
+		unsigned int offset; /* used for DEL, MODIFY */
 		enum lump_subst subst; /*what to subst: ip addr, port, proto*/
 		enum lump_conditions cond; /* condition for LUMP_ADD_OPT */
 		char * value; /* used for ADD */
 	}u;
-	int len; /* length of this header field */
+	unsigned int len; /* length of this header field */
 	
 	
 	struct lump* before; /* list of headers to be inserted in front of the

@@ -1103,7 +1103,7 @@ error:
 
 static inline void set_tcp_timeout(struct tcp_connection *c)
 {
-	int timeout = get_ticks() + tcp_con_lifetime;
+	unsigned int timeout = get_ticks() + tcp_con_lifetime;
 
 	if (c->lifetime) {
 		if ( c->lifetime < timeout )
@@ -1400,7 +1400,7 @@ error:
 static inline void tcpconn_timeout(int force)
 {
 	struct tcp_connection *c, *next;
-	int ticks;
+	unsigned int ticks;
 	unsigned h;
 	int fd;
 	

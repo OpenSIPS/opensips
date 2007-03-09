@@ -1556,7 +1556,7 @@ exp_cond:	METHOD strop STRING	{$$= mk_elem($2, METHOD_O, 0, STRING_ST, $3);
 	;
 
 ipnet:	ip SLASH ip	{ $$=mk_net($1, $3); } 
-	| ip SLASH NUMBER 	{	if (($3<0) || ($3>$1->len*8)){
+	| ip SLASH NUMBER 	{	if (($3<0) || ($3>(long)$1->len*8)){
 								yyerror("invalid bit number in netmask");
 								$$=0;
 							}else{

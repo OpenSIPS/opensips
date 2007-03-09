@@ -126,12 +126,12 @@ qa_passed:
 
 int probe_max_receive_buffer( int udp_sock )
 {
-	int optval;
-	int ioptval;
+	unsigned int optval;
+	unsigned int ioptval;
 	unsigned int ioptvallen;
-	int foptval;
+	unsigned int foptval;
 	unsigned int foptvallen;
-	int voptval;
+	unsigned int voptval;
 	unsigned int voptvallen;
 	int phase=0;
 
@@ -379,7 +379,7 @@ error:
 
 int udp_rcv_loop()
 {
-	unsigned len;
+	int len;
 #ifdef DYN_BUF
 	char* buf;
 #else

@@ -158,7 +158,7 @@ static inline unsigned long fm_get_max_real_used(struct fm_block* qm)
 static inline unsigned long fm_get_frags(struct fm_block* qm)
 {
 	unsigned long frags;
-	int r;
+	unsigned int r;
 	for(r=0,frags=0;r<F_HASH_SIZE; r++){
 		frags+=qm->free_hash[r].no;
 	}

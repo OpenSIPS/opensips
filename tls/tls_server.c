@@ -228,8 +228,17 @@ tls_accept(struct tcp_connection *c)
 	}
 
 	ssl = (SSL *) c->extra_data;
-
+#ifndef OPENSSL_NO_KRB5
+	if ( ssl->kssl_ctx==NULL )
+		ssl->kssl_ctx = kssl_ctx_new( );
+#endif
 	ret = SSL_accept(ssl);
+#ifndef OPENSSL_NO_KRB5
+	if ( ssl->kssl_ctx ) {
+		kssl_ctx_free( ssl->kssl_ctx );
+		ssl->kssl_ctx = 0;
+	}
+#endif
 	if (ret > 0) {
 		DBG("tls_accept: TLS handshake successful\n");
 		c->state = S_CONN_OK;

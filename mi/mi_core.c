@@ -272,13 +272,13 @@ static struct mi_root *mi_kill(struct mi_root *cmd, void *param)
 
 static mi_export_t mi_core_cmds[] = {
 	{ "uptime",   mi_uptime,   MI_NO_INPUT_FLAG,  0,  init_mi_uptime },
-	{ "version",  mi_version,  MI_NO_INPUT_FLAG,  0 },
-	{ "pwd",      mi_pwd,      MI_NO_INPUT_FLAG,  0 },
-	{ "arg",      mi_arg,      MI_NO_INPUT_FLAG,  0 },
-	{ "which",    mi_which,    MI_NO_INPUT_FLAG,  0 },
-	{ "ps",       mi_ps,       MI_NO_INPUT_FLAG,  0 },
-	{ "kill",     mi_kill,     MI_NO_INPUT_FLAG,  0 },
-	{ 0, 0, 0, 0}
+	{ "version",  mi_version,  MI_NO_INPUT_FLAG,  0,  0 },
+	{ "pwd",      mi_pwd,      MI_NO_INPUT_FLAG,  0,  0 },
+	{ "arg",      mi_arg,      MI_NO_INPUT_FLAG,  0,  0 },
+	{ "which",    mi_which,    MI_NO_INPUT_FLAG,  0,  0 },
+	{ "ps",       mi_ps,       MI_NO_INPUT_FLAG,  0,  0 },
+	{ "kill",     mi_kill,     MI_NO_INPUT_FLAG,  0,  0 },
+	{ 0, 0, 0, 0, 0}
 };
 
 

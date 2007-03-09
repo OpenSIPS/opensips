@@ -41,8 +41,8 @@ int append_branch(struct sip_msg* msg, str* uri, str* dst_uri, str* path,
 /*
  * Get the next branch in the current transaction
  */
-char* get_branch( int idx, int* len, qvalue_t* q, str* dst_uri, str* path,
-		unsigned int *flags, struct socket_info** force_socket);
+char* get_branch( unsigned int idx, int* len, qvalue_t* q, str* dst_uri,
+		str* path, unsigned int *flags, struct socket_info** force_socket);
 
 
 /*

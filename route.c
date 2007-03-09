@@ -622,7 +622,7 @@ inline static int comp_ip(struct sip_msg *msg, int op, struct ip_addr* ip,
 						if (he==0){
 							DBG("comp_ip: could not resolve %s\n",
 									(char*)opd->v.data);
-						}else if (he->h_addrtype==ip->af){
+						}else if (he->h_addrtype==(int)ip->af){
 							for(h=he->h_addr_list;(ret!=1)&& (*h); h++){
 								ret=(memcmp(ip->u.addr, *h, ip->len)==0);
 							}

@@ -448,7 +448,7 @@ enum poll_types choose_poll_method()
 
 char* poll_method_name(enum poll_types poll_method)
 {
-	if ((poll_method>=POLL_NONE) && (poll_method<POLL_END))
+	if ( poll_method<POLL_END )
 		return poll_method_str[poll_method];
 	else
 		return "invalid poll method";
@@ -462,7 +462,7 @@ char* poll_method_name(enum poll_types poll_method)
 enum poll_types get_poll_type(char* s)
 {
 	int r;
-	int l;
+	unsigned int l;
 	
 	l=strlen(s);
 	for (r=POLL_END-1; r>POLL_NONE; r--)

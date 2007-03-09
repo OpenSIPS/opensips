@@ -40,7 +40,7 @@ struct net* mk_net(struct ip_addr* ip, struct ip_addr* mask)
 {
 	struct net* n;
 	int warning;
-	int r;
+	unsigned int r;
 	
 	warning=0;
 	if ((ip->af != mask->af) || (ip->len != mask->len)){
@@ -77,7 +77,7 @@ error:
 struct net* mk_net_bitlen(struct ip_addr* ip, unsigned int bitlen)
 {
 	struct ip_addr mask;
-	int r;
+	unsigned int r;
 	
 	if (bitlen>ip->len*8){
 		LOG(L_CRIT, "ERROR: mk_net_bitlen: bad bitlen number %d\n", bitlen);

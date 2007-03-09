@@ -690,7 +690,7 @@ int unixsock_register_cmd(char* command, unixsock_f* f)
 
 int unixsock_add_to_reply(const char* buf, size_t len)
 {
-	if (reply_pos.len < len) {
+	if ((size_t)reply_pos.len < len) {
 		LOG(L_ERR, "unixsock_add_to_reply: Buffer too small\n");
 		return -1;
 	}

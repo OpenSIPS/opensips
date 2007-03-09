@@ -539,7 +539,7 @@ int parse_msg(char* buf, unsigned int len, struct sip_msg* msg)
 
 	/* eat crlf from the beginning */
 	for (tmp=buf; (*tmp=='\n' || *tmp=='\r')&&
-			tmp-buf < len ; tmp++);
+			(unsigned int)(tmp-buf) < len ; tmp++);
 	offset=tmp-buf;
 	fl=&(msg->first_line);
 	rest=parse_first_line(tmp, len-offset, fl);

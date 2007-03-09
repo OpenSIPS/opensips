@@ -64,7 +64,7 @@ static str str_marker = { ITEM_MARKER_STR, 1 };
 static str str_udp    = { "UDP", 3 };
 static str str_5060   = { "5060", 4 };
 
-int _it_msg_id = 0;
+unsigned int _it_msg_id = 0;
 time_t msg_tm = 0;
 int cld_pid = 0;
 
@@ -2293,174 +2293,174 @@ static struct _xl_table {
 	xl_spec_t spec;
 } _xl_names_table[] = {
 	{{"ai", (sizeof("ai")-1)}, /* */
-		{ XL_PAI_URI, 0, xl_get_pai, {{0, 0}, 0}, {0, 0}, 0}},
+		{ XL_PAI_URI, 0, xl_get_pai, {{0, 0}, 0, 0}, {0, 0}, 0}},
 	{{"ar", (sizeof("ar")-1)}, /* auth realm */
-		{ XL_AUTH_REALM, 0, xl_get_authattr, {{0, 2}, 0}, {0, 0}, 0}},
+		{ XL_AUTH_REALM, 0, xl_get_authattr, {{0, 2}, 0, 0}, {0, 0}, 0}},
 	{{"au", (sizeof("au")-1)}, /* */
-		{ XL_AUTH_USERNAME, 0, xl_get_authattr, {{0, 1}, 0}, {0, 0}, 0}},
+		{ XL_AUTH_USERNAME, 0, xl_get_authattr, {{0, 1}, 0, 0}, {0, 0}, 0}},
 	{{"Au", (sizeof("Au")-1)}, /* */
-		{ XL_ACC_USERNAME, 0, xl_get_acc_username, {{0, 1}, 0}, {0, 0}, 0}},
+		{ XL_ACC_USERNAME, 0, xl_get_acc_username, {{0, 1}, 0, 0}, {0, 0}, 0}},
 	{{"bf", (sizeof("bf")-1)}, /* */
-		{ XL_BFLAGS, 0, xl_get_bflags, {{0, 0}, 0}, {0, 0}, 0}},
+		{ XL_BFLAGS, 0, xl_get_bflags, {{0, 0}, 0, 0}, {0, 0}, 0}},
 	{{"bF", (sizeof("bF")-1)}, /* */
-		{ XL_HEXBFLAGS, 0, xl_get_hexbflags, {{0, 0}, 0}, {0, 0}, 0}},
+		{ XL_HEXBFLAGS, 0, xl_get_hexbflags, {{0, 0}, 0, 0}, {0, 0}, 0}},
 	{{"br", (sizeof("br")-1)}, /* */
-		{ XL_BRANCH, 0, xl_get_branch, {{0, 0}, 0}, {0, 0}, 0}},
+		{ XL_BRANCH, 0, xl_get_branch, {{0, 0}, 0, 0}, {0, 0}, 0}},
 	{{"bR", (sizeof("bR")-1)}, /* */
-		{ XL_BRANCHES, 0, xl_get_branches, {{0, 0}, 0}, {0, 0}, 0}},
+		{ XL_BRANCHES, 0, xl_get_branches, {{0, 0}, 0, 0}, {0, 0}, 0}},
 	{{"ci", (sizeof("ci")-1)}, /* */
-		{ XL_CALLID, 0, xl_get_callid, {{0, 0}, 0}, {0, 0}, 0}},
+		{ XL_CALLID, 0, xl_get_callid, {{0, 0}, 0, 0}, {0, 0}, 0}},
 	{{"cl", (sizeof("cl")-1)}, /* */
-		{ XL_CONTENT_LENGTH, 0, xl_get_content_length, {{0, 0}, 0}, {0, 0}, 0}},
+		{ XL_CONTENT_LENGTH, 0, xl_get_content_length, {{0, 0}, 0, 0}, {0, 0}, 0}},
 	{{"cs", (sizeof("cs")-1)}, /* */
-		{ XL_CSEQ, 0, xl_get_cseq, {{0, 0}, 0}, {0, 0}, 0}},
+		{ XL_CSEQ, 0, xl_get_cseq, {{0, 0}, 0, 0}, {0, 0}, 0}},
 	{{"ct", (sizeof("ct")-1)}, /* */
-		{ XL_CONTACT, 0, xl_get_contact, {{0, 0}, 0}, {0, 0}, 0}},
+		{ XL_CONTACT, 0, xl_get_contact, {{0, 0}, 0, 0}, {0, 0}, 0}},
 	{{"cT", (sizeof("cT")-1)}, /* */
-		{ XL_CONTENT_TYPE, 0, xl_get_content_type, {{0, 0}, 0}, {0, 0}, 0}},
+		{ XL_CONTENT_TYPE, 0, xl_get_content_type, {{0, 0}, 0, 0}, {0, 0}, 0}},
 	{{"dd", (sizeof("dd")-1)}, /* */
-		{ XL_DSTURI_DOMAIN, 0, xl_get_dsturi_attr, {{0, 1}, 0}, {0, 0}, 0}},
+		{ XL_DSTURI_DOMAIN, 0, xl_get_dsturi_attr, {{0, 1}, 0, 0}, {0, 0}, 0}},
 	{{"di", (sizeof("di")-1)}, /* */
-		{ XL_DIVERSION_URI, 0, xl_get_diversion, {{0, 0}, 0}, {0, 0}, 0}},
+		{ XL_DIVERSION_URI, 0, xl_get_diversion, {{0, 0}, 0, 0}, {0, 0}, 0}},
 	{{"dp", (sizeof("dp")-1)}, /* */
-		{ XL_DSTURI_PORT, 0, xl_get_dsturi_attr, {{0, 2}, 0}, {0, 0}, 0}},
+		{ XL_DSTURI_PORT, 0, xl_get_dsturi_attr, {{0, 2}, 0, 0}, {0, 0}, 0}},
 	{{"dP", (sizeof("dP")-1)}, /* */
-		{ XL_DSTURI_PROTOCOL, 0, xl_get_dsturi_attr, {{0, 3}, 0}, {0, 0}, 0}},
+		{ XL_DSTURI_PROTOCOL, 0, xl_get_dsturi_attr, {{0, 3}, 0, 0}, {0, 0}, 0}},
 	{{"ds", (sizeof("ds")-1)}, /* */
-		{ XL_DSET, 0, xl_get_dset, {{0, 0}, 0}, {0, 0}, 0}},
+		{ XL_DSET, 0, xl_get_dset, {{0, 0}, 0, 0}, {0, 0}, 0}},
 	{{"du", (sizeof("du")-1)}, /* */
-		{ XL_DSTURI, 0, xl_get_dsturi, {{0, 0}, 0}, {0, 0}, 0}},
+		{ XL_DSTURI, 0, xl_get_dsturi, {{0, 0}, 0, 0}, {0, 0}, 0}},
 	{{"duri", (sizeof("duri")-1)}, /* */
-		{ XL_DSTURI, 0, xl_get_dsturi, {{0, 0}, 0}, {0, 0}, 0}},
+		{ XL_DSTURI, 0, xl_get_dsturi, {{0, 0}, 0, 0}, {0, 0}, 0}},
 	{{"err.class", (sizeof("err.class")-1)}, /* */
-		{ XL_ERR_CLASS, 0, xl_get_errinfo_attr, {{0, 0}, 0}, {0, 0}, 0}},
+		{ XL_ERR_CLASS, 0, xl_get_errinfo_attr, {{0, 0}, 0, 0}, {0, 0}, 0}},
 	{{"err.level", (sizeof("err.level")-1)}, /* */
-		{ XL_ERR_LEVEL, 0, xl_get_errinfo_attr, {{0, 1}, 0}, {0, 0}, 0}},
+		{ XL_ERR_LEVEL, 0, xl_get_errinfo_attr, {{0, 1}, 0, 0}, {0, 0}, 0}},
 	{{"err.info", (sizeof("err.info")-1)}, /* */
-		{ XL_ERR_INFO, 0, xl_get_errinfo_attr, {{0, 2}, 0}, {0, 0}, 0}},
+		{ XL_ERR_INFO, 0, xl_get_errinfo_attr, {{0, 2}, 0, 0}, {0, 0}, 0}},
 	{{"err.rcode", (sizeof("err.rcode")-1)}, /* */
-		{ XL_ERR_RCODE, 0, xl_get_errinfo_attr, {{0, 3}, 0}, {0, 0}, 0}},
+		{ XL_ERR_RCODE, 0, xl_get_errinfo_attr, {{0, 3}, 0, 0}, {0, 0}, 0}},
 	{{"err.rreason", (sizeof("err.rreason")-1)}, /* */
-		{ XL_ERR_RREASON, 0, xl_get_errinfo_attr, {{0, 4}, 0}, {0, 0}, 0}},
+		{ XL_ERR_RREASON, 0, xl_get_errinfo_attr, {{0, 4}, 0, 0}, {0, 0}, 0}},
 	{{"fd", (sizeof("fd")-1)}, /* */
-		{ XL_FROM_DOMAIN, 0, xl_get_from_attr, {{0, 3}, 0}, {0, 0}, 0}},
+		{ XL_FROM_DOMAIN, 0, xl_get_from_attr, {{0, 3}, 0, 0}, {0, 0}, 0}},
 	{{"from.domain", (sizeof("from.domain")-1)}, /* */
-		{ XL_FROM_DOMAIN, 0, xl_get_from_attr, {{0, 3}, 0}, {0, 0}, 0}},
+		{ XL_FROM_DOMAIN, 0, xl_get_from_attr, {{0, 3}, 0, 0}, {0, 0}, 0}},
 	{{"fn", (sizeof("fn")-1)}, /* */
-		{ XL_FROM_DISPLAYNAME, 0, xl_get_from_attr, {{0, 5}, 0}, {0, 0}, 0}},
+		{ XL_FROM_DISPLAYNAME, 0, xl_get_from_attr, {{0, 5}, 0, 0}, {0, 0}, 0}},
 	{{"fs", (sizeof("fs")-1)}, /* */
-		{ XL_FORCE_SOCK, 0, xl_get_force_sock, {{0, 0}, 0}, {0, 0}, 0}},
+		{ XL_FORCE_SOCK, 0, xl_get_force_sock, {{0, 0}, 0, 0}, {0, 0}, 0}},
 	{{"ft", (sizeof("ft")-1)}, /* */
-		{ XL_FROM_TAG, 0, xl_get_from_attr, {{0, 4}, 0}, {0, 0}, 0}},
+		{ XL_FROM_TAG, 0, xl_get_from_attr, {{0, 4}, 0, 0}, {0, 0}, 0}},
 	{{"fu", (sizeof("fu")-1)}, /* */
-		{ XL_FROM, 0, xl_get_from_attr, {{0, 1}, 0}, {0, 0}, 0}},
+		{ XL_FROM, 0, xl_get_from_attr, {{0, 1}, 0, 0}, {0, 0}, 0}},
 	{{"from", (sizeof("from")-1)}, /* */
-		{ XL_FROM, 0, xl_get_from_attr, {{0, 1}, 0}, {0, 0}, 0}},
+		{ XL_FROM, 0, xl_get_from_attr, {{0, 1}, 0, 0}, {0, 0}, 0}},
 	{{"fU", (sizeof("fU")-1)}, /* */
-		{ XL_FROM_USERNAME, 0, xl_get_from_attr, {{0, 2}, 0}, {0, 0}, 0}},
+		{ XL_FROM_USERNAME, 0, xl_get_from_attr, {{0, 2}, 0, 0}, {0, 0}, 0}},
 	{{"from.user", (sizeof("from.user")-1)}, /* */
-		{ XL_FROM_USERNAME, 0, xl_get_from_attr, {{0, 2}, 0}, {0, 0}, 0}},
+		{ XL_FROM_USERNAME, 0, xl_get_from_attr, {{0, 2}, 0, 0}, {0, 0}, 0}},
 	{{"mb", (sizeof("mb")-1)}, /* */
-		{ XL_MSG_BUF, 0, xl_get_msg_buf, {{0, 0}, 0}, {0, 0}, 0}},
+		{ XL_MSG_BUF, 0, xl_get_msg_buf, {{0, 0}, 0, 0}, {0, 0}, 0}},
 	{{"mf", (sizeof("mf")-1)}, /* */
-		{ XL_FLAGS, 0, xl_get_flags, {{0, 0}, 0}, {0, 0}, 0}},
+		{ XL_FLAGS, 0, xl_get_flags, {{0, 0}, 0, 0}, {0, 0}, 0}},
 	{{"mF", (sizeof("mF")-1)}, /* */
-		{ XL_HEXFLAGS, 0, xl_get_hexflags, {{0, 0}, 0}, {0, 0}, 0}},
+		{ XL_HEXFLAGS, 0, xl_get_hexflags, {{0, 0}, 0, 0}, {0, 0}, 0}},
 	{{"mi", (sizeof("mi")-1)}, /* */
-		{ XL_MSGID, 0, xl_get_msgid, {{0, 0}, 0}, {0, 0}, 0}},
+		{ XL_MSGID, 0, xl_get_msgid, {{0, 0}, 0, 0}, {0, 0}, 0}},
 	{{"ml", (sizeof("ml")-1)}, /* */
-		{ XL_MSG_LEN, 0, xl_get_msg_len, {{0, 0}, 0}, {0, 0}, 0}},
+		{ XL_MSG_LEN, 0, xl_get_msg_len, {{0, 0}, 0, 0}, {0, 0}, 0}},
 	{{"od", (sizeof("od")-1)}, /* */
-		{ XL_OURI_DOMAIN, 0, xl_get_ouri_attr, {{0, 2}, 0}, {0, 0}, 0}},
+		{ XL_OURI_DOMAIN, 0, xl_get_ouri_attr, {{0, 2}, 0, 0}, {0, 0}, 0}},
 	{{"op", (sizeof("op")-1)}, /* */
-		{ XL_OURI_PORT, 0, xl_get_ouri_attr, {{0, 3}, 0}, {0, 0}, 0}},
+		{ XL_OURI_PORT, 0, xl_get_ouri_attr, {{0, 3}, 0, 0}, {0, 0}, 0}},
 	{{"oP", (sizeof("oP")-1)}, /* */
-		{ XL_OURI_PROTOCOL, 0, xl_get_ouri_attr, {{0, 4}, 0}, {0, 0}, 0}},
+		{ XL_OURI_PROTOCOL, 0, xl_get_ouri_attr, {{0, 4}, 0, 0}, {0, 0}, 0}},
 	{{"ou", (sizeof("ou")-1)}, /* */
-		{ XL_OURI, 0, xl_get_ouri, {{0, 0}, 0}, {0, 0}, 0}},
+		{ XL_OURI, 0, xl_get_ouri, {{0, 0}, 0, 0}, {0, 0}, 0}},
 	{{"ouri", (sizeof("ouri")-1)}, /* */
-		{ XL_OURI, 0, xl_get_ouri, {{0, 0}, 0}, {0, 0}, 0}},
+		{ XL_OURI, 0, xl_get_ouri, {{0, 0}, 0, 0}, {0, 0}, 0}},
 	{{"oU", (sizeof("oU")-1)}, /* */
-		{ XL_OURI_USERNAME, 0, xl_get_ouri_attr, {{0, 1}, 0}, {0, 0}, 0}},
+		{ XL_OURI_USERNAME, 0, xl_get_ouri_attr, {{0, 1}, 0, 0}, {0, 0}, 0}},
 	{{"pd", (sizeof("pd")-1)}, /* */
-		{ XL_PPI_DOMAIN, 0, xl_get_ppi_attr, {{0, 3}, 0}, {0, 0}, 0}},
+		{ XL_PPI_DOMAIN, 0, xl_get_ppi_attr, {{0, 3}, 0, 0}, {0, 0}, 0}},
 	{{"pn", (sizeof("pn")-1)}, /* */
-		{ XL_PPI_DISPLAYNAME, 0, xl_get_ppi_attr, {{0, 4}, 0}, {0, 0}, 0}},
+		{ XL_PPI_DISPLAYNAME, 0, xl_get_ppi_attr, {{0, 4}, 0, 0}, {0, 0}, 0}},
 	{{"pu", (sizeof("pu")-1)}, /* */
-		{ XL_PPI, 0, xl_get_ppi_attr, {{0, 1}, 0}, {0, 0}, 0}},
+		{ XL_PPI, 0, xl_get_ppi_attr, {{0, 1}, 0, 0}, {0, 0}, 0}},
 	{{"pU", (sizeof("pU")-1)}, /* */
-		{ XL_PPI_USERNAME, 0, xl_get_ppi_attr, {{0, 2}, 0}, {0, 0}, 0}},
+		{ XL_PPI_USERNAME, 0, xl_get_ppi_attr, {{0, 2}, 0, 0}, {0, 0}, 0}},
 	{{"pp", (sizeof("pp")-1)}, /* */
-		{ XL_PID, 0, xl_get_pid, {{0, 0}, 0}, {0, 0}, 0}},
+		{ XL_PID, 0, xl_get_pid, {{0, 0}, 0, 0}, {0, 0}, 0}},
 	{{"rb", (sizeof("rb")-1)}, /* */
-		{ XL_MSG_BODY, 0, xl_get_msg_body, {{0, 0}, 0}, {0, 0}, 0}},
+		{ XL_MSG_BODY, 0, xl_get_msg_body, {{0, 0}, 0, 0}, {0, 0}, 0}},
 	{{"rc", (sizeof("rc")-1)}, /* */
-		{ XL_RETURN_CODE, 0, xl_get_return_code, {{0, 0}, 0}, {0, 0}, 0}},
+		{ XL_RETURN_CODE, 0, xl_get_return_code, {{0, 0}, 0, 0}, {0, 0}, 0}},
 	{{"retcode", (sizeof("retcode")-1)}, /* */
-		{ XL_RETURN_CODE, 0, xl_get_return_code, {{0, 0}, 0}, {0, 0}, 0}},
+		{ XL_RETURN_CODE, 0, xl_get_return_code, {{0, 0}, 0, 0}, {0, 0}, 0}},
 	{{"rd", (sizeof("rd")-1)}, /* */
-		{ XL_RURI_DOMAIN, 0, xl_get_ruri_attr, {{0, 2}, 0}, {0, 0}, 0}},
+		{ XL_RURI_DOMAIN, 0, xl_get_ruri_attr, {{0, 2}, 0, 0}, {0, 0}, 0}},
 	{{"ruri.domain", (sizeof("ruri.domain")-1)}, /* */
-		{ XL_RURI_DOMAIN, 0, xl_get_ruri_attr, {{0, 2}, 0}, {0, 0}, 0}},
+		{ XL_RURI_DOMAIN, 0, xl_get_ruri_attr, {{0, 2}, 0, 0}, {0, 0}, 0}},
 	{{"re", (sizeof("re")-1)}, /* */
-		{ XL_RPID_URI, 0, xl_get_rpid, {{0, 0}, 0}, {0, 0}, 0}},
+		{ XL_RPID_URI, 0, xl_get_rpid, {{0, 0}, 0, 0}, {0, 0}, 0}},
 	{{"rm", (sizeof("rm")-1)}, /* */
-		{ XL_METHOD, 0, xl_get_method, {{0, 0}, 0}, {0, 0}, 0}},
+		{ XL_METHOD, 0, xl_get_method, {{0, 0}, 0, 0}, {0, 0}, 0}},
 	{{"rp", (sizeof("rp")-1)}, /* */
-		{ XL_RURI_PORT, 0, xl_get_ruri_attr, {{0, 3}, 0}, {0, 0}, 0}},
+		{ XL_RURI_PORT, 0, xl_get_ruri_attr, {{0, 3}, 0, 0}, {0, 0}, 0}},
 	{{"rP", (sizeof("rP")-1)}, /* */
-		{ XL_RURI_PROTOCOL, 0, xl_get_ruri_attr, {{0, 4}, 0}, {0, 0}, 0}},
+		{ XL_RURI_PROTOCOL, 0, xl_get_ruri_attr, {{0, 4}, 0, 0}, {0, 0}, 0}},
 	{{"rr", (sizeof("rr")-1)}, /* */
-		{ XL_REASON, 0, xl_get_reason, {{0, 0}, 0}, {0, 0}, 0}},
+		{ XL_REASON, 0, xl_get_reason, {{0, 0}, 0, 0}, {0, 0}, 0}},
 	{{"rs", (sizeof("rs")-1)}, /* */
-		{ XL_STATUS, 0, xl_get_status, {{0, 0}, 0}, {0, 0}, 0}},
+		{ XL_STATUS, 0, xl_get_status, {{0, 0}, 0, 0}, {0, 0}, 0}},
 	{{"rt", (sizeof("rt")-1)}, /* */
-		{ XL_REFER_TO, 0, xl_get_refer_to, {{0, 0}, 0}, {0, 0}, 0}},
+		{ XL_REFER_TO, 0, xl_get_refer_to, {{0, 0}, 0, 0}, {0, 0}, 0}},
 	{{"ru", (sizeof("ru")-1)}, /* */
-		{ XL_RURI, 0, xl_get_ruri, {{0, 0}, 0}, {0, 0}, 0}},
+		{ XL_RURI, 0, xl_get_ruri, {{0, 0}, 0, 0}, {0, 0}, 0}},
 	{{"ruri", (sizeof("ruri")-1)}, /* */
-		{ XL_RURI, 0, xl_get_ruri, {{0, 0}, 0}, {0, 0}, 0}},
+		{ XL_RURI, 0, xl_get_ruri, {{0, 0}, 0, 0}, {0, 0}, 0}},
 	{{"rU", (sizeof("rU")-1)}, /* */
-		{ XL_RURI_USERNAME, 0, xl_get_ruri_attr, {{0, 1}, 0}, {0, 0}, 0}},
+		{ XL_RURI_USERNAME, 0, xl_get_ruri_attr, {{0, 1}, 0, 0}, {0, 0}, 0}},
 	{{"ruri.user", (sizeof("ruri.user")-1)}, /* */
-		{ XL_RURI_USERNAME, 0, xl_get_ruri_attr, {{0, 1}, 0}, {0, 0}, 0}},
+		{ XL_RURI_USERNAME, 0, xl_get_ruri_attr, {{0, 1}, 0, 0}, {0, 0}, 0}},
 	{{"Ri", (sizeof("Ri")-1)}, /* */
-		{ XL_RCVIP, 0, xl_get_rcvip, {{0, 0}, 0}, {0, 0}, 0}},
+		{ XL_RCVIP, 0, xl_get_rcvip, {{0, 0}, 0, 0}, {0, 0}, 0}},
 	{{"Rp", (sizeof("Rp")-1)}, /* */
-		{ XL_RCVPORT, 0, xl_get_rcvport, {{0, 0}, 0}, {0, 0}, 0}},
+		{ XL_RCVPORT, 0, xl_get_rcvport, {{0, 0}, 0, 0}, {0, 0}, 0}},
 	{{"sf", (sizeof("sf")-1)}, /* */
-		{ XL_SFLAGS, 0, xl_get_sflags, {{0, 0}, 0}, {0, 0}, 0}},
+		{ XL_SFLAGS, 0, xl_get_sflags, {{0, 0}, 0, 0}, {0, 0}, 0}},
 	{{"sF", (sizeof("sF")-1)}, /* */
-		{ XL_HEXSFLAGS, 0, xl_get_hexsflags, {{0, 0}, 0}, {0, 0}, 0}},
+		{ XL_HEXSFLAGS, 0, xl_get_hexsflags, {{0, 0}, 0, 0}, {0, 0}, 0}},
 	{{"src_ip", (sizeof("src_ip")-1)}, /* */
-		{ XL_SRCIP, 0, xl_get_srcip, {{0, 0}, 0}, {0, 0}, 0}},
+		{ XL_SRCIP, 0, xl_get_srcip, {{0, 0}, 0, 0}, {0, 0}, 0}},
 	{{"si", (sizeof("si")-1)}, /* */
-		{ XL_SRCIP, 0, xl_get_srcip, {{0, 0}, 0}, {0, 0}, 0}},
+		{ XL_SRCIP, 0, xl_get_srcip, {{0, 0}, 0, 0}, {0, 0}, 0}},
 	{{"sp", (sizeof("sp")-1)}, /* */
-		{ XL_SRCPORT, 0, xl_get_srcport, {{0, 0}, 0}, {0, 0}, 0}},
+		{ XL_SRCPORT, 0, xl_get_srcport, {{0, 0}, 0, 0}, {0, 0}, 0}},
 	{{"td", (sizeof("td")-1)}, /* */
-		{ XL_TO_DOMAIN, 0, xl_get_to_attr, {{0, 3}, 0}, {0, 0}, 0}},
+		{ XL_TO_DOMAIN, 0, xl_get_to_attr, {{0, 3}, 0, 0}, {0, 0}, 0}},
 	{{"to.domain", (sizeof("to.domain")-1)}, /* */
-		{ XL_TO_DOMAIN, 0, xl_get_to_attr, {{0, 3}, 0}, {0, 0}, 0}},
+		{ XL_TO_DOMAIN, 0, xl_get_to_attr, {{0, 3}, 0, 0}, {0, 0}, 0}},
 	{{"tn", (sizeof("tn")-1)}, /* */
-		{ XL_TO_DISPLAYNAME, 0, xl_get_to_attr, {{0, 5}, 0}, {0, 0}, 0}},
+		{ XL_TO_DISPLAYNAME, 0, xl_get_to_attr, {{0, 5}, 0, 0}, {0, 0}, 0}},
 	{{"tt", (sizeof("tt")-1)}, /* */
-		{ XL_TO_TAG, 0, xl_get_to_attr, {{0, 4}, 0}, {0, 0}, 0}},
+		{ XL_TO_TAG, 0, xl_get_to_attr, {{0, 4}, 0, 0}, {0, 0}, 0}},
 	{{"tu", (sizeof("tu")-1)}, /* */
-		{ XL_TO, 0, xl_get_to_attr, {{0, 1}, 0}, {0, 0}, 0}},
+		{ XL_TO, 0, xl_get_to_attr, {{0, 1}, 0, 0}, {0, 0}, 0}},
 	{{"to", (sizeof("to")-1)}, /* */
-		{ XL_TO, 0, xl_get_to_attr, {{0, 1}, 0}, {0, 0}, 0}},
+		{ XL_TO, 0, xl_get_to_attr, {{0, 1}, 0, 0}, {0, 0}, 0}},
 	{{"tU", (sizeof("tU")-1)}, /* */
-		{ XL_TO_USERNAME, 0, xl_get_to_attr, {{0, 2}, 0}, {0, 0}, 0}},
+		{ XL_TO_USERNAME, 0, xl_get_to_attr, {{0, 2}, 0, 0}, {0, 0}, 0}},
 	{{"to.user", (sizeof("to.user")-1)}, /* */
-		{ XL_TO_USERNAME, 0, xl_get_to_attr, {{0, 2}, 0}, {0, 0}, 0}},
+		{ XL_TO_USERNAME, 0, xl_get_to_attr, {{0, 2}, 0, 0}, {0, 0}, 0}},
 	{{"Tf", (sizeof("tf")-1)}, /* */
-		{ XL_TIMEF, 0, xl_get_timef, {{0, 0}, 0}, {0, 0}, 0}},
+		{ XL_TIMEF, 0, xl_get_timef, {{0, 0}, 0, 0}, {0, 0}, 0}},
 	{{"Ts", (sizeof("ts")-1)}, /* */
-		{ XL_TIMES, 0, xl_get_times, {{0, 0}, 0}, {0, 0}, 0}},
+		{ XL_TIMES, 0, xl_get_times, {{0, 0}, 0, 0}, {0, 0}, 0}},
 	{{"ua", (sizeof("ua")-1)}, /* */
-		{ XL_USERAGENT, 0, xl_get_useragent, {{0, 0}, 0}, {0, 0}, 0}},
-	{{0, 0}, { 0, 0, 0, {{0, 0}, 0}, {0, 0}, 0}}
+		{ XL_USERAGENT, 0, xl_get_useragent, {{0, 0}, 0, 0}, {0, 0}, 0}},
+	{{0, 0}, { 0, 0, 0, {{0, 0}, 0, 0}, {0, 0}, 0}}
 };
 
 int xl_lookup_spec_name(str *pvname, xl_spec_p e, int flags)
@@ -3080,7 +3080,7 @@ int xl_elem_free_all(xl_elem_p log)
 	return 0;
 }
 
-itemname_list_t* parse_itemname_list(char *s, int type)
+itemname_list_t* parse_itemname_list(char *s, unsigned int type)
 {
 	itemname_list_t* head = NULL;
 	itemname_list_t* al = NULL;

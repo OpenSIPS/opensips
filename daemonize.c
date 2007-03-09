@@ -243,7 +243,7 @@ error:
 
 
 /* try to increase the open file limit */
-int increase_open_fds(int target)
+int increase_open_fds(unsigned int target)
 {
 	struct rlimit lim;
 	struct rlimit orig;
@@ -297,7 +297,7 @@ error:
 
 
 /* enable core dumps */
-int set_core_dump(int enable, int size)
+int set_core_dump(int enable, unsigned int size)
 {
 	struct rlimit lim;
 	struct rlimit newlim;

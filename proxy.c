@@ -110,8 +110,8 @@ void free_shm_hostent(struct hostent *dst)
 /* copies a hostent structure*, returns 0 on success, <0 on error*/
 int hostent_cpy(struct hostent *dst, struct hostent* src)
 {
-	unsigned len,len2;
-	int r,ret,i;
+	unsigned int len,len2, i, r;
+	int ret;
 
 	/* start copying the host entry.. */
 	/* copy h_name */

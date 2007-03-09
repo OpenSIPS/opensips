@@ -272,7 +272,7 @@ static inline str* get_sl_branch(struct sip_msg* msg)
 				continue;
 			branch = &b_via->branch->value;
 			/* check if the branch param has the magic cookie */
-			if (branch->len <= MCOOKIE_LEN
+			if (branch->len <= (int)MCOOKIE_LEN
 			|| memcmp( branch->s, MCOOKIE, MCOOKIE_LEN)!=0 )
 				continue;
 			/* found a statefull branch -> use it */
@@ -291,7 +291,7 @@ static inline str* get_sl_branch(struct sip_msg* msg)
 	/* no statefull branch :(.. -> use the branch from the last via */
 found:
 	if (branch) {
-		if (branch->len>MAX_BRANCH_PARAM_LEN)
+		if (branch->len>(int)MAX_BRANCH_PARAM_LEN)
 			branch->len = MAX_BRANCH_PARAM_LEN;
 	} else {
 		/* no branch found/...use a default one*/

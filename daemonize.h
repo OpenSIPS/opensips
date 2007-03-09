@@ -29,8 +29,8 @@
 
 int daemonize(char* name);
 int do_suid();
-int increase_open_fds(int target);
-int set_core_dump(int enable, int size);
+int increase_open_fds(unsigned int target);
+int set_core_dump(int enable, unsigned int size);
 
 
 #endif

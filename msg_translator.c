@@ -192,7 +192,7 @@ static int check_via_address(struct ip_addr* ip, str *name,
 		DBG("check_via_address: doing dns lookup\n");
 		/* try all names ips */
 		he=sip_resolvehost(name, &port, &proto, 0, 0);
-		if (he && ip->af==he->h_addrtype){
+		if (he && (int)ip->af==he->h_addrtype){
 			for(i=0;he && he->h_addr_list[i];i++){
 				if ( memcmp(&he->h_addr_list[i], ip->u.addr, ip->len)==0)
 					return 0;
@@ -496,10 +496,11 @@ static inline int lump_check_opt(	enum lump_conditions cond,
 
 /* computes the "unpacked" len of a lump list,
    code moved from build_req_from_req */
-static inline int lumps_len(struct sip_msg* msg, struct lump* lumps, struct socket_info* send_sock)
+static inline int lumps_len(struct sip_msg* msg, struct lump* lumps,
+											struct socket_info* send_sock)
 {
-	int s_offset;
-	int new_len;
+	unsigned int s_offset;
+	unsigned int new_len;
 	struct lump* t;
 	struct lump* r;
 	str* send_address_str;
@@ -770,9 +771,9 @@ static inline void process_lumps(	struct sip_msg* msg,
 	struct lump *t;
 	struct lump *r;
 	char* orig;
-	int size;
-	int offset;
-	int s_offset;
+	unsigned int size;
+	unsigned int offset;
+	unsigned int s_offset;
 	str* send_address_str;
 	str* send_port_str;
 
@@ -1920,7 +1921,7 @@ char * build_res_buf_from_sip_req( unsigned int code, str *text ,str *new_tag,
 		append_str( p, body->text.s, body->text.len );
 	}
 
-	if (len!=p-buf)
+	if (len!=(unsigned long)(p-buf))
 		LOG(L_CRIT,"BUG:build_res_from_sip_req: diff len=%d p-buf=%d\n",
 					len, (int)(p-buf));
 
