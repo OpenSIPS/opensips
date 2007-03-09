@@ -242,7 +242,7 @@ int escape_user(str *sin, str *sout)
 					(unsigned int)*p);
 			return -1;
 	    }
-	    if (isdigit(*p) || ((*p >= 'A') && (*p <= 'Z')) ||
+	    if (isdigit((int)*p) || ((*p >= 'A') && (*p <= 'Z')) ||
 				((*p >= 'a') && (*p <= 'z')))
 		{
 			*at = *p;
