@@ -58,7 +58,7 @@ static struct mi_root* mi_print_blacklists(struct mi_root *cmd, void *param);
 
 static mi_export_t mi_bl_cmds[] = {
 	{ "list_blacklists", mi_print_blacklists,  MI_NO_INPUT_FLAG  ,  0,  0 },
-	{ 0, 0, 0, 0}
+	{ 0, 0, 0, 0, 0}
 };
 
 
@@ -87,7 +87,7 @@ int init_black_lists()
 	struct bl_rule *tail;
 	struct bl_rule *it, *it1;
 	unsigned int old_used_heads;
-	int i;
+	unsigned int i;
 
 	if (!no_shm) {
 		LOG(L_CRIT,"BUG:init_black_lists: called twice\n");
@@ -156,7 +156,7 @@ int init_black_lists()
 struct bl_head *create_bl_head(int owner, int flags, struct bl_rule *head,
 											struct bl_rule *tail, str *name)
 {
-	int i;
+	unsigned int i;
 
 	i = used_heads;
 	if (i==max_heads) {
@@ -219,7 +219,7 @@ struct bl_head *create_bl_head(int owner, int flags, struct bl_rule *head,
 
 void destroy_black_lists()
 {
-	int i;
+	unsigned int i;
 	struct bl_rule *p, *q;
 
 	if (no_shm)
@@ -309,7 +309,7 @@ done:
 
 static void delete_expired_routine(unsigned int ticks, void* param)
 {
-	int i;
+	unsigned int i;
 
 	for(i = 0 ; i < used_heads ; i++){
 		if( blst_heads[i].flags&BL_DO_EXPIRE &&  blst_heads[i].first)
@@ -574,7 +574,7 @@ done:
 
 struct bl_head *get_bl_head_by_name(str *name)
 {
-	int i;
+	unsigned int i;
 
 	for(i = 0 ; i < used_heads ; i++){
 		if ((name->len == blst_heads[i].name.len) &&
@@ -589,9 +589,9 @@ struct bl_head *get_bl_head_by_name(str *name)
 
 int mark_for_search(struct bl_head *list)
 {
-	int n;
+	unsigned int n;
 
-	if( (n=(list - blst_heads)) >= used_heads )
+	if( list<blst_heads || (n=(list - blst_heads)) >= used_heads )
 		return 0;
 
 	bl_marker |= (1<<n);
@@ -658,7 +658,7 @@ static inline int check_against_rule_list(struct ip_addr *ip, str *text,
 int check_against_blacklist(struct ip_addr *ip, str *text,
 			unsigned short port, unsigned short proto)
 {
-	int i;
+	unsigned int i;
 
 	for(i = 0 ; i < used_heads ; i++)
 		if( (bl_marker&(1<<i)) &&
