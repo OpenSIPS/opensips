@@ -122,7 +122,7 @@ export PREFIX LOCALBASE SYSBASE
 #export TAR 
 export NAME RELEASE OS ARCH 
 export cfg-prefix cfg-dir bin-prefix bin-dir modules-prefix modules-dir
-export doc-prefix doc-dir man-prefix man-dir ut-prefix ut-dir
+export doc-prefix doc-dir man-prefix man-dir ut-prefix ut-dir lib-dir
 export cfg-target modules-target
 export INSTALL INSTALL-CFG INSTALL-BIN INSTALL-MODULES INSTALL-DOC INSTALL-MAN 
 export INSTALL-TOUCH
