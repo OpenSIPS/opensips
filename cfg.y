@@ -131,7 +131,7 @@ static struct bl_rule *bl_tail = 0;
 
 action_elem_t elems[MAX_ACTION_ELEMS];
 
-#if !defined(USE_TLS) || !defined(USE_TCP)
+#if !defined(USE_TLS) || !defined(USE_TCP) || !defined(TIMING_INFO)
 static void warn(char* s);
 #endif
 static struct socket_id* mk_listen_id(char*, int, int);
