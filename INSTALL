@@ -60,11 +60,20 @@ Requirements:
    support (the postgres module)
 - unixodbc -libs and devel headers- if you want unixodbc DB
    support (the unixodbc module)
-- libexpat if you want the jabber gateway support (the jabber module)
-- libxml2 if you want to use the cpl-c (Call Processing Language) and
-   PA (Presence Agent) modules
+- libexpat if you want the jabber gateway support (the jabber module) or the
+   XMPP gateway support
+- libxml2 if you want to use the cpl-c (Call Processing Language) or
+   the presence modules (presence and pua*)
 - libradius-ng -libs and devel headers- if you want to use functionalities
    with radius support - authentication, accounting, group support, etc
+- unixodbc - libs and devel headers - if you want UNIXODBC support as
+   DB underlayer
+- libxmlrpc-c3 - libs and devel headers - if you want to have XML-RPC support
+   for the Management interface (MI)
+- libperl - libs and devel headers - if you want PERL connector to support
+   perl scripting from you config file (perl module)
+- libsnmp9 - libs and devel headers - if you want SNMP client functionality 
+   (SNMP AgentX subagent) for openser
 
 
 OS Notes:
@@ -235,10 +244,9 @@ after you are finished with C).
 If you don't use an rpm or debian based distribution, see if corresponding 
 packages are available or try our tar.gz'ed binaries.
 If you use Gentoo Linux you do not have to download a package.
-For debian, APT repositories are available for all versions at:
-     deb http://www.openser.org/debian etch main
-     deb http://www.openser.org/debian sarge main
-     deb http://www.openser.org/debian sid main
+For debian, packages are available via the Debian official repositories for
+testing and unstable. For stable, use the project's repository at:
+     deb http://www.openser.org/debian stable main
 
 2) install the package
 RPM:
@@ -329,7 +337,7 @@ proceed, you need to make sure MySQL is installed on your box.
     If you use MySQL support, use openser_mysql.sh. For Postgres use
     openser_postgres.sh.
     - if you have a previously installed OpenSER on your system, use
-         /usr/sbin/openser_mysql.sh reinstall
+         /usr/sbin/openser_mysql.sh migrate
       to convert your OpenSER database into new structures
     - otherwise, if this is your very first installation, use
          /usr/sbin/openser_mysql.sh create

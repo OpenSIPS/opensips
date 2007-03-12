@@ -9,6 +9,13 @@
 
 
 
+N: Anca Vamanu
+C: anca_vamanu
+E: anca@voice-system.ro
+D: Contributor to OpenSER
+S: ACTIVE
+
+
 N: Andreas Granig
 C: agranig
 E: andreas.granig@inode.info
@@ -21,6 +28,13 @@ E: pelinescu-onciul@fokus.fraunhofer.de
 P: 2CF56A2D   D96D 8B80 BA31 9B93 6208  5D68 3910 FA00 2CF5 6A2D
 D: Core developer of SER
 S: INACTIVE
+
+
+N: Bastian Friedrich
+C: bastian
+E: bastian.friedrich@collax.com
+D: Contributor to OpenSER
+S: ACTIVE
 
 
 N: Bogdan Andrei Iancu
@@ -60,6 +74,13 @@ D: Contributor to OpenSER
 S: ACTIVE
 
 
+N: Elias Baixas
+C: eliasbaixas
+E: elias.baixas@voztele.com
+D: Contributor to OpenSER
+S: ACTIVE
+
+
 N: Gabriel Vasile
 D: Contributor to SER
 S: INACTIVE
@@ -81,6 +102,13 @@ S: INACTIVE
 N: Jamey Hicks
 D: Contributor to SER
 S: INACTIVE
+
+
+N: Jeffrey Magder
+C: jmagder
+E: jmagder@somanetworks.com
+D: Contributor to OpenSER
+S: ACTIVE
 
 
 N: Jesus Rodrigues
@@ -110,6 +138,14 @@ W: http://www.enum.at/
 D: Contributor to OpenSER
 S: ACTIVE
 
+
+N: Lavinia Andrei Spirea
+C: lavinia_andreea
+E: lavinia@voice-system.ro
+D: Contributor to OpenSER
+S: ACTIVE
+
+
 N: Marco Lorrai
 E: marco.lorrai@abbeynet.it
 D: Contributor to OpenSER
@@ -134,6 +170,13 @@ D: Contributor to SER
 S: INACTIVE
 
 
+N: Norman Brandinger
+C: goestelecom
+E: norm@goes.com
+D: Contributor to OpenSER
+S: ACTIVE
+
+
 N: Ramona-Elena Modroiu
 C: ramona
 E: ramona@voice-system.ro
@@ -152,6 +195,12 @@ N: Ricardo Baratto
 D: Minor contributor to SER
 S: INACTIVE
 
+
+N: Ron Winacott
+C: karwin
+E: ronw@somanetworks.com
+D: Contributor to OpenSER
+S: ACTIVE
 
 N: Stelios Sidiroglou-Douskos
 D: Minor contributor to SER
