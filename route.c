@@ -466,7 +466,7 @@ inline static int comp_strval(struct sip_msg *msg, int op, str* ival,
 	}else if(opd->type == STRING_ST) {
 		res = opd->v.s;
 	} else {
-		if(op!=MATCH_OP || opd->type != RE_ST)
+		if((op!=MATCH_OP && op!=NOTMATCH_OP) || opd->type != RE_ST)
 		{
 			LOG(L_CRIT, "comp_strval: invalid operation %d/%d\n", op,
 					opd->type);
@@ -486,6 +486,7 @@ inline static int comp_strval(struct sip_msg *msg, int op, str* ival,
 			ret=(strncasecmp(ival->s, res.s, ival->len)!=0);
 			break;
 		case MATCH_OP:
+		case NOTMATCH_OP:
 			backup=ival->s[ival->len];ival->s[ival->len]='\0';
 
 			if(opd->type == SCRIPTVAR_ST) {
@@ -512,9 +513,11 @@ inline static int comp_strval(struct sip_msg *msg, int op, str* ival,
 			}
 
 			ival->s[ival->len]=backup;
+			if(op==NOTMATCH_OP)
+				ret = !ret;
 			break;
 		default:
-			LOG(L_CRIT, "BUG: comp_str: unknown op %d\n", op);
+			LOG(L_CRIT, "BUG: comp_strval: unknown op %d\n", op);
 			goto error;
 	}
 	return ret;
@@ -553,6 +556,14 @@ inline static int comp_str(char* str, void* param, int op, int subtype)
 				goto error;
 			}
 			ret=(regexec((regex_t*)param, str, 0, 0, 0)==0);
+			break;
+		case NOTMATCH_OP:
+			if (subtype!=RE_ST){
+				LOG(L_CRIT, "BUG: comp_str: bad type %d, "
+						" RE expected!\n", subtype);
+				goto error;
+			}
+			ret=(regexec((regex_t*)param, str, 0, 0, 0)!=0);
 			break;
 		default:
 			LOG(L_CRIT, "BUG: comp_str: unknown op %d\n", op);
