@@ -217,10 +217,10 @@ static inline char* int2bstr(unsigned long l, char *s, int* len)
 
 /* INTeger-TO-STRing : convers an unsigned long to a string 
  * returns a pointer to a static buffer containing l in asciiz & sets len */
+extern char int2str_buf[INT2STR_MAX_LEN];
 static inline char* int2str(unsigned long l, int* len)
 {
-	static char r[INT2STR_MAX_LEN];
-	return int2bstr( l, r, len);
+	return int2bstr( l, int2str_buf, len);
 }
 
 

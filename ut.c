@@ -30,6 +30,10 @@
 #include <stdlib.h>
 #include <pwd.h>
 #include <grp.h>
+#include "ut.h"
+
+char int2str_buf[INT2STR_MAX_LEN];
+
 
 /* converts a username into uid:gid,
  * returns -1 on error & 0 on success */
