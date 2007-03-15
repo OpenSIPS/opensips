@@ -131,7 +131,8 @@ static struct bl_rule *bl_tail = 0;
 
 action_elem_t elems[MAX_ACTION_ELEMS];
 
-#if !defined(USE_TLS) || !defined(USE_TCP) || !defined(TIMING_INFO)
+#if !defined(USE_TLS) || !defined(USE_TCP) || !defined(TIMING_INFO) \
+		||  !defined(USE_MCAST)
 static void warn(char* s);
 #endif
 static struct socket_id* mk_listen_id(char*, int, int);
@@ -2227,7 +2228,8 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 extern int line;
 extern int column;
 extern int startcolumn;
-#if !defined(USE_TLS) || !defined(USE_TCP)
+#if !defined(USE_TLS) || !defined(USE_TCP) || !defined(TIMING_INFO) \
+		||  !defined(USE_MCAST)
 static void warn(char* s)
 {
 	LOG(L_WARN, "cfg. warning: (%d,%d-%d): %s\n", line, startcolumn, 
