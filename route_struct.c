@@ -171,7 +171,8 @@ void print_expr(struct expr* exp)
 				DBG("dstport");
 				break;
 			case SCRIPTVAR_O:
-				DBG("scriptvar[%d]", exp->left.v.spec->type);
+				DBG("scriptvar[%d]",
+					(exp->left.v.spec)?exp->left.v.spec->type:0);
 				break;
 			case NUMBER_O:
 			case NUMBERV_O:
