@@ -1294,6 +1294,7 @@ static int eval_elem(struct expr* e, struct sip_msg* msg, xl_value_t *val)
 									memcpy(p, val->rs.s, val->rs.len);
 									p[val->rs.len] = 0;
 									val->rs.s = p;
+									val->flags|= XL_VAL_PKG;
 								}
 							}
 							return 1;
