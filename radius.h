@@ -30,11 +30,11 @@
 
 #ifndef USE_FREERADIUS
 	#include <radiusclient-ng.h>
-	#define DEFAULT_RADIUSCLEINT_CONF \
+	#define DEFAULT_RADIUSCLIENT_CONF \
 		"/usr/local/etc/radiusclient-ng/radiusclient.conf"
 #else
 	#include <freeradius-client.h>
-	#define DEFAULT_RADIUSCLEINT_CONF ""
+	#define DEFAULT_RADIUSCLIENT_CONF ""
 #endif
 
 
