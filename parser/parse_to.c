@@ -67,6 +67,23 @@ enum {
 
 
 
+inline static void free_to_params(struct to_body* tb)
+{
+	struct to_param *tp=tb->param_lst;
+	struct to_param *foo;
+	while (tp){
+		foo = tp->next;
+		pkg_free(tp);
+		tp=foo;
+	}
+}
+
+
+void free_to(struct to_body* tb)
+{
+	free_to_params(tb);
+	pkg_free(tb);
+}
 
 
 static inline char* parse_to_param(char *buffer, char *end,
@@ -446,6 +463,7 @@ parse_error:
 		*tmp,status, (int)(tmp-buffer), ZSW(buffer));
 error:
 	if (param) pkg_free(param);
+	free_to_params(to_b);
 	to_b->error=PARSE_ERROR;
 	*returned_status = status;
 	return tmp;
@@ -727,18 +745,6 @@ error:
 
 }
 
-
-void free_to(struct to_body* tb)
-{
-	struct to_param *tp=tb->param_lst;
-	struct to_param *foo;
-	while (tp){
-		foo = tp->next;
-		pkg_free(tp);
-		tp=foo;
-	}
-	pkg_free(tb);
-}
 
 /**
  *
