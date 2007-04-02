@@ -37,7 +37,6 @@
  * Parse CSeq header field
  */
 
-/*BUGGY*/
 char* parse_cseq(char *buf, char* end, struct cseq_body* cb)
 {
 	char *t, *m, *m_end;
