@@ -167,10 +167,7 @@ inline static gen_lock_t* lock_init(gen_lock_t* lock)
 
 inline static void lock_destroy(gen_lock_t* lock)
 {
-	union semun su;
-
-	su.val = 0;
-	semctl(*lock, 0, IPC_RMID, su);
+	semctl(*lock, 0, IPC_RMID, (union semun)(int)0);
 }
 
 
@@ -277,8 +274,7 @@ inline static gen_lock_set_t* lock_set_init(gen_lock_set_t* s)
 		if (semctl(s->semid, r, SETVAL, su)==-1){
 			LOG(L_CRIT, "ERROR: lock_set_init (SYSV): semctl failed on sem %d"
 					": %s\n", r, strerror(errno));
-			su.val = 0;
-			semctl(s->semid, 0, IPC_RMID, su);
+			semctl(s->semid, 0, IPC_RMID, (union semun)(int)0);
 			return 0;
 		}
 	}
@@ -287,10 +283,7 @@ inline static gen_lock_set_t* lock_set_init(gen_lock_set_t* s)
 
 inline static void lock_set_destroy(gen_lock_set_t* s)
 {
-	union semun su;
-
-	su.val = 0;
-	semctl(s->semid, 0, IPC_RMID, su);
+	semctl(s->semid, 0, IPC_RMID, (union semun)(int)0);
 }
 
 inline static void lock_set_get(gen_lock_set_t* s, int n)
