@@ -581,9 +581,15 @@ ifeq		($(CC_NAME), icc)
 				#( ty to inline acroos files, unroll loops,prefetch,
 				# optimize for PIII, use PIII instructions & vect.,
 				# mutlithread loops)
+else		#CC_NAME, icc
+ifeq		($(CC_NAME), suncc)
+			CFLAGS+=-g -xO5 -fast -native -xCC \
+					-xc99=no_lib # C99 support
+			# -Dinline="" # add this if cc < 5.3 (define inline as null)
 else
 				#other compilers
 $(error 			Unsupported compiler ($(CC):$(CC_NAME)), try gcc)
+endif		#CC_NAME, suncc
 endif		#CC_NAME, icc
 endif		#CC_NAME, gcc
 endif	#ARCH, i386
@@ -983,7 +989,8 @@ ifeq	($(CC_NAME), icc)
 MOD_CFLAGS=-Kpic $(CFLAGS)
 endif
 ifeq	($(CC_NAME), suncc)
-MOD_CFLAGS=-xcode=pic32  $(CFLAGS)
+#MOD_CFLAGS=-xcode=pic32  $(CFLAGS)
+MOD_CFLAGS=-Kpic  $(CFLAGS)
 endif
 
 DEFAULT_YACC=bison

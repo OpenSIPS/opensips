@@ -31,7 +31,7 @@
 #define _ATOMIC_OPS_H_
 
 /************************* i386 & x86_64 ARCH ****************************/
-#if defined(__CPU_i386) || defined(__CPU_x86_64)
+#if defined(__CPU_zzi386) || defined(__CPU_zzx86_64)
 
 #if defined(__SMP_yes)
 	#define LOCK "lock ; "
