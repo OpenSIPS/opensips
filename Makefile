@@ -124,8 +124,8 @@ export NAME RELEASE OS ARCH
 export cfg-prefix cfg-dir bin-prefix bin-dir modules-prefix modules-dir
 export doc-prefix doc-dir man-prefix man-dir ut-prefix ut-dir lib-dir
 export cfg-target modules-target
-export INSTALL INSTALL-CFG INSTALL-BIN INSTALL-MODULES INSTALL-DOC INSTALL-MAN 
-export INSTALL-TOUCH
+export INSTALL INSTALL_CFG INSTALL_BIN INSTALL_MODULES INSTALL_DOC INSTALL_MAN 
+export INSTALL_TOUCH
 
 ifneq ($(TLS),)
 	tar_extra_args+=
@@ -352,17 +352,17 @@ install-cfg: $(cfg-prefix)/$(cfg-dir)
 				$(cfg-prefix)/$(cfg-dir)$(NAME).cfg; \
 		fi
 		# radius dictionary
-		$(INSTALL-TOUCH) $(cfg-prefix)/$(cfg-dir)/dictionary.radius
-		$(INSTALL-CFG) etc/dictionary.radius $(cfg-prefix)/$(cfg-dir)
+		$(INSTALL_TOUCH) $(cfg-prefix)/$(cfg-dir)/dictionary.radius
+		$(INSTALL_CFG) etc/dictionary.radius $(cfg-prefix)/$(cfg-dir)
 		# openserctl config
-		$(INSTALL-TOUCH)   $(cfg-prefix)/$(cfg-dir)/openserctlrc.sample
-		$(INSTALL-CFG) scripts/openserctlrc \
+		$(INSTALL_TOUCH)   $(cfg-prefix)/$(cfg-dir)/openserctlrc.sample
+		$(INSTALL_CFG) scripts/openserctlrc \
 			$(cfg-prefix)/$(cfg-dir)/openserctlrc.sample
 		if [ ! -f $(cfg-prefix)/$(cfg-dir)/openserctlrc ]; then \
 			mv -f $(cfg-prefix)/$(cfg-dir)/openserctlrc.sample \
 				$(cfg-prefix)/$(cfg-dir)/openserctlrc; \
 		fi
-		#$(INSTALL-CFG) etc/$(NAME).cfg $(cfg-prefix)/$(cfg-dir)
+		#$(INSTALL_CFG) etc/$(NAME).cfg $(cfg-prefix)/$(cfg-dir)
 		if [ "$(TLS)" != "" ] ; then \
 			mkdir -p $(cfg-prefix)/$(cfg-dir)/tls ; \
 			mkdir -p $(cfg-prefix)/$(cfg-dir)/tls/rootCA ; \
@@ -373,54 +373,54 @@ install-cfg: $(cfg-prefix)/$(cfg-dir)
 			for FILE in tls/* tls/rootCA/* tls/rootCA/certs/* \
 					tls/rootCA/private/* tls/user/* ; do \
 				if [ -f $$FILE ] ; then \
-					$(INSTALL-TOUCH) $$FILE \
+					$(INSTALL_TOUCH) $$FILE \
 						$(cfg-prefix)/$(cfg-dir)/$$FILE ; \
-					$(INSTALL-CFG) $$FILE \
+					$(INSTALL_CFG) $$FILE \
 						$(cfg-prefix)/$(cfg-dir)/$$FILE ; \
 				fi ;\
 			done ) ; \
 		fi
 
 install-bin: $(bin-prefix)/$(bin-dir) utils
-		$(INSTALL-TOUCH) $(bin-prefix)/$(bin-dir)/$(NAME) 
-		$(INSTALL-BIN) $(NAME) $(bin-prefix)/$(bin-dir)
+		$(INSTALL_TOUCH) $(bin-prefix)/$(bin-dir)/$(NAME) 
+		$(INSTALL_BIN) $(NAME) $(bin-prefix)/$(bin-dir)
 		cat scripts/openserctl | \
 		sed -e "s#/usr/local/sbin#$(bin-target)#g" | \
 		sed -e "s#/usr/local/lib/openser#$(lib-target)#g" | \
 		sed -e "s#/usr/local/etc/openser#$(cfg-target)#g"  >/tmp/openserctl
-		$(INSTALL-TOUCH) $(bin-prefix)/$(bin-dir)/openserctl
-		$(INSTALL-BIN) /tmp/openserctl $(bin-prefix)/$(bin-dir)
+		$(INSTALL_TOUCH) $(bin-prefix)/$(bin-dir)/openserctl
+		$(INSTALL_BIN) /tmp/openserctl $(bin-prefix)/$(bin-dir)
 		rm -fr /tmp/openserctl
 		sed -e "s#/usr/local/sbin#$(bin-target)#g" \
 			< scripts/openserctl.base > /tmp/openserctl.base
 		mkdir -p $(modules-prefix)/$(lib-dir)/openserctl 
-		$(INSTALL-TOUCH) \
+		$(INSTALL_TOUCH) \
 			$(modules-prefix)/$(lib-dir)/openserctl
-		$(INSTALL-CFG) /tmp/openserctl.base \
+		$(INSTALL_CFG) /tmp/openserctl.base \
 			$(modules-prefix)/$(lib-dir)/openserctl/openserctl.base
 		rm -fr /tmp/openserctl.base
 		sed -e "s#/usr/local#$(bin-target)#g" \
 			< scripts/openserctl.ctlbase > /tmp/openserctl.ctlbase
-		$(INSTALL-CFG) /tmp/openserctl.ctlbase \
+		$(INSTALL_CFG) /tmp/openserctl.ctlbase \
 			$(modules-prefix)/$(lib-dir)/openserctl/openserctl.ctlbase
 		rm -fr /tmp/openserctl.ctlbase
 		sed -e "s#/usr/local#$(bin-target)#g" \
 			< scripts/openserctl.fifo > /tmp/openserctl.fifo
-		$(INSTALL-CFG) /tmp/openserctl.fifo \
+		$(INSTALL_CFG) /tmp/openserctl.fifo \
 			$(modules-prefix)/$(lib-dir)/openserctl/openserctl.fifo
 		rm -fr /tmp/openserctl.fifo
 		sed -e "s#/usr/local#$(bin-target)#g" \
 			< scripts/openserctl.unixsock > /tmp/openserctl.unixsock
-		$(INSTALL-CFG) /tmp/openserctl.unixsock \
+		$(INSTALL_CFG) /tmp/openserctl.unixsock \
 			$(modules-prefix)/$(lib-dir)/openserctl/openserctl.unixsock
 		rm -fr /tmp/openserctl.unixsock
 		sed -e "s#/usr/local#$(bin-target)#g" \
 			< scripts/openserctl.sqlbase > /tmp/openserctl.sqlbase
-		$(INSTALL-CFG) /tmp/openserctl.sqlbase \
+		$(INSTALL_CFG) /tmp/openserctl.sqlbase \
 			$(modules-prefix)/$(lib-dir)/openserctl/openserctl.sqlbase
 		rm -fr /tmp/openserctl.sqlbase
-		$(INSTALL-TOUCH)   $(bin-prefix)/$(bin-dir)/$(NAME)unix
-		$(INSTALL-BIN) utils/$(NAME)unix/$(NAME)unix $(bin-prefix)/$(bin-dir)
+		$(INSTALL_TOUCH)   $(bin-prefix)/$(bin-dir)/$(NAME)unix
+		$(INSTALL_BIN) utils/$(NAME)unix/$(NAME)unix $(bin-prefix)/$(bin-dir)
 
 .PHONY: utils
 utils:
@@ -430,9 +430,9 @@ install-modules: modules install-modules-tools $(modules-prefix)/$(modules-dir)
 	@for r in $(modules_full_path) "" ; do \
 		if [ -n "$$r" ]; then \
 			if [ -f "$$r" ]; then \
-				$(INSTALL-TOUCH) \
+				$(INSTALL_TOUCH) \
 					$(modules-prefix)/$(modules-dir)/`basename "$$r"` ; \
-				$(INSTALL-MODULES)  "$$r"  $(modules-prefix)/$(modules-dir) ; \
+				$(INSTALL_MODULES)  "$$r"  $(modules-prefix)/$(modules-dir) ; \
 				$(MAKE) -C `dirname "$$r"` install_module_custom ; \
 			else \
 				echo "ERROR: module $$r not compiled" ; \
@@ -448,50 +448,50 @@ install-modules-tools: $(bin-prefix)/$(bin-dir)
 			mkdir -p $(modules-prefix)/$(lib-dir)/openserctl ; \
 			sed -e "s#/usr/local#$(bin-target)#g" \
 				< scripts/openserctl.mysql > /tmp/openserctl.mysql ; \
-			$(INSTALL-CFG) /tmp/openserctl.mysql \
+			$(INSTALL_CFG) /tmp/openserctl.mysql \
 				$(modules-prefix)/$(lib-dir)/openserctl/openserctl.mysql ; \
 			rm -fr /tmp/openserctl.mysql ; \
 			sed -e "s#PATH:/usr/local/sbin#PATH:$(bin-target)#g" \
 				< scripts/mysqldb.sh > /tmp/$(NAME)_mysql.sh ; \
-			$(INSTALL-TOUCH)   $(bin-prefix)/$(bin-dir)/$(NAME)_mysql.sh ; \
-			$(INSTALL-BIN) /tmp/$(NAME)_mysql.sh  $(bin-prefix)/$(bin-dir) ; \
+			$(INSTALL_TOUCH)   $(bin-prefix)/$(bin-dir)/$(NAME)_mysql.sh ; \
+			$(INSTALL_BIN) /tmp/$(NAME)_mysql.sh  $(bin-prefix)/$(bin-dir) ; \
 			rm -fr /tmp/$(NAME)_mysql.sh ; \
 		fi
 		if [ "$(PGSQLON)" = "yes" ]; then \
 			mkdir -p $(modules-prefix)/$(lib-dir)/openserctl ; \
 			sed -e "s#/usr/local#$(bin-target)#g" \
 				< scripts/openserctl.pgsql > /tmp/openserctl.pgsql ; \
-			$(INSTALL-CFG) /tmp/openserctl.pgsql \
+			$(INSTALL_CFG) /tmp/openserctl.pgsql \
 				$(modules-prefix)/$(lib-dir)/openserctl/openserctl.pgsql ; \
 			rm -fr /tmp/openserctl.pgsql ; \
 			sed -e "s#PATH:/usr/local/sbin#PATH:$(bin-target)#g" \
 				< scripts/postgresqldb.sh > /tmp/$(NAME)_postgresql.sh ; \
-			$(INSTALL-TOUCH) $(bin-prefix)/$(bin-dir)/$(NAME)_postgresql.sh ; \
-			$(INSTALL-BIN) /tmp/$(NAME)_postgresql.sh \
+			$(INSTALL_TOUCH) $(bin-prefix)/$(bin-dir)/$(NAME)_postgresql.sh ; \
+			$(INSTALL_BIN) /tmp/$(NAME)_postgresql.sh \
 				$(bin-prefix)/$(bin-dir) ; \
 			rm -fr /tmp/$(NAME)_postgresql.sh ; \
 		fi
 
 
 install-doc: $(doc-prefix)/$(doc-dir) install-modules-doc
-	$(INSTALL-TOUCH) $(doc-prefix)/$(doc-dir)/INSTALL 
-	$(INSTALL-DOC) INSTALL $(doc-prefix)/$(doc-dir)
-	$(INSTALL-TOUCH) $(doc-prefix)/$(doc-dir)/README-MODULES 
-	$(INSTALL-DOC) README-MODULES $(doc-prefix)/$(doc-dir)
-	$(INSTALL-TOUCH) $(doc-prefix)/$(doc-dir)/AUTHORS 
-	$(INSTALL-DOC) AUTHORS $(doc-prefix)/$(doc-dir)
-	$(INSTALL-TOUCH) $(doc-prefix)/$(doc-dir)/NEWS
-	$(INSTALL-DOC) NEWS $(doc-prefix)/$(doc-dir)
-	$(INSTALL-TOUCH) $(doc-prefix)/$(doc-dir)/README 
-	$(INSTALL-DOC) README $(doc-prefix)/$(doc-dir)
+	$(INSTALL_TOUCH) $(doc-prefix)/$(doc-dir)/INSTALL 
+	$(INSTALL_DOC) INSTALL $(doc-prefix)/$(doc-dir)
+	$(INSTALL_TOUCH) $(doc-prefix)/$(doc-dir)/README-MODULES 
+	$(INSTALL_DOC) README-MODULES $(doc-prefix)/$(doc-dir)
+	$(INSTALL_TOUCH) $(doc-prefix)/$(doc-dir)/AUTHORS 
+	$(INSTALL_DOC) AUTHORS $(doc-prefix)/$(doc-dir)
+	$(INSTALL_TOUCH) $(doc-prefix)/$(doc-dir)/NEWS
+	$(INSTALL_DOC) NEWS $(doc-prefix)/$(doc-dir)
+	$(INSTALL_TOUCH) $(doc-prefix)/$(doc-dir)/README 
+	$(INSTALL_DOC) README $(doc-prefix)/$(doc-dir)
 
 
 install-modules-doc: $(doc-prefix)/$(doc-dir)
 	-@for r in $(modules_basenames) "" ; do \
 		if [ -n "$$r" ]; then \
 			if [ -f modules/"$$r"/README ]; then \
-				$(INSTALL-TOUCH)  $(doc-prefix)/$(doc-dir)/README ; \
-				$(INSTALL-DOC)  modules/"$$r"/README  \
+				$(INSTALL_TOUCH)  $(doc-prefix)/$(doc-dir)/README ; \
+				$(INSTALL_DOC)  modules/"$$r"/README  \
 									$(doc-prefix)/$(doc-dir)/README ; \
 				mv -f $(doc-prefix)/$(doc-dir)/README \
 						$(doc-prefix)/$(doc-dir)/README."$$r" ; \
@@ -532,18 +532,18 @@ install-modules-docbook: $(doc-prefix)/$(doc-dir)
 		if [ -n "$$r" ]; then \
 			if [ -d modules/"$$r"/doc ]; then \
 				if [ -f modules/"$$r"/doc/"$$r".txt ]; then \
-					$(INSTALL-TOUCH)  $(doc-prefix)/$(doc-dir)/"$$r".txt ; \
-					$(INSTALL-DOC)  modules/"$$r"/doc/"$$r".txt  \
+					$(INSTALL_TOUCH)  $(doc-prefix)/$(doc-dir)/"$$r".txt ; \
+					$(INSTALL_DOC)  modules/"$$r"/doc/"$$r".txt  \
 									$(doc-prefix)/$(doc-dir)/"$$r".txt ; \
 				fi ; \
 				if [ -f modules/"$$r"/doc/"$$r".html ]; then \
-					$(INSTALL-TOUCH)  $(doc-prefix)/$(doc-dir)/"$$r".html ; \
-					$(INSTALL-DOC)  modules/"$$r"/doc/"$$r".html  \
+					$(INSTALL_TOUCH)  $(doc-prefix)/$(doc-dir)/"$$r".html ; \
+					$(INSTALL_DOC)  modules/"$$r"/doc/"$$r".html  \
 									$(doc-prefix)/$(doc-dir)/"$$r".html ; \
 				fi ; \
 				if [ -f modules/"$$r"/doc/"$$r".pdf ]; then \
-					$(INSTALL-TOUCH)  $(doc-prefix)/$(doc-dir)/"$$r".pdf ; \
-					$(INSTALL-DOC)  modules/"$$r"/doc/"$$r".pdf  \
+					$(INSTALL_TOUCH)  $(doc-prefix)/$(doc-dir)/"$$r".pdf ; \
+					$(INSTALL_DOC)  modules/"$$r"/doc/"$$r".pdf  \
 									$(doc-prefix)/$(doc-dir)/"$$r".pdf ; \
 				fi ; \
 			fi ; \

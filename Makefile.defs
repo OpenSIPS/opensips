@@ -85,7 +85,6 @@ ifeq ($(ARCH),sparc)
 	ifeq ($(shell uname -m),sun4v)
 		ARCH := sparc64
 	endif
-
 endif
 
 SMP_STR = $(shell uname -v | grep -i "SMP")
@@ -212,13 +211,13 @@ INSTALL ?= install
 TAR ?= tar
 endif
 
-INSTALL-TOUCH = touch          # used to create the file first (good to 
+INSTALL_TOUCH = touch          # used to create the file first (good to 
                                #  make solaris install work)
-INSTALL-CFG = $(INSTALL) -m 644
-INSTALL-BIN = $(INSTALL) -m 755
-INSTALL-MODULES = $(INSTALL) -m 755
-INSTALL-DOC = $(INSTALL) -m 644
-INSTALL-MAN = $(INSTALL) -m 644
+INSTALL_CFG = $(INSTALL) -m 644
+INSTALL_BIN = $(INSTALL) -m 755
+INSTALL_MODULES = $(INSTALL) -m 755
+INSTALL_DOC = $(INSTALL) -m 644
+INSTALL_MAN = $(INSTALL) -m 644
 
 #set some vars from the environment (and not make builtins)
 CC   := $(shell echo "$${CC}")
