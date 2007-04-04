@@ -87,6 +87,10 @@ modules_basenames=$(shell echo $(modules)| \
 #modules_names=$(patsubst modules/%, %.so, $(modules))
 modules_full_path=$(join  $(modules), $(addprefix /, $(modules_names)))
 
+tls_configs=$(patsubst etc/%, %, $(wildcard etc/tls/*) \
+			$(wildcard etc/tls/rootCA/*) $(wildcard etc/tls/rootCA/certs/*) \
+			$(wildcard etc/tls/rootCA/private/*) $(wildcard etc/tls/user/*))
+
 MODULE_MYSQL_INCLUDED=$(shell echo $(modules)| grep mysql )
 ifeq (,$(MODULE_MYSQL_INCLUDED))
 	MYSQLON=no
@@ -369,16 +373,14 @@ install-cfg: $(cfg-prefix)/$(cfg-dir)
 			mkdir -p $(cfg-prefix)/$(cfg-dir)/tls/rootCA/certs ; \
 			mkdir -p $(cfg-prefix)/$(cfg-dir)/tls/rootCA/private ; \
 			mkdir -p $(cfg-prefix)/$(cfg-dir)/tls/user ; \
-			(cd etc ; \
-			for FILE in tls/* tls/rootCA/* tls/rootCA/certs/* \
-					tls/rootCA/private/* tls/user/* ; do \
-				if [ -f $$FILE ] ; then \
-					$(INSTALL_TOUCH) $$FILE \
+			for FILE in $(tls_configs) ; do \
+				if [ -f etc/$$FILE ] ; then \
+					$(INSTALL_TOUCH) etc/$$FILE \
 						$(cfg-prefix)/$(cfg-dir)/$$FILE ; \
-					$(INSTALL_CFG) $$FILE \
+					$(INSTALL_CFG) etc/$$FILE \
 						$(cfg-prefix)/$(cfg-dir)/$$FILE ; \
 				fi ;\
-			done ) ; \
+			done ; \
 		fi
 
 install-bin: $(bin-prefix)/$(bin-dir) utils
