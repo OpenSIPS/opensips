@@ -522,6 +522,7 @@ blst_elem: LPAREN  proto COMMA ipnet COMMA port COMMA STRING RPAREN {
 blst_elem_list: blst_elem_list COMMA blst_elem {}
 		| blst_elem {}
 		| blst_elem_list error { yyerror("bad black list element");}
+		;
 
 
 assign_stm:	DEBUG EQUAL NUMBER { debug=$3; }
