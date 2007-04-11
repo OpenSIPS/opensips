@@ -52,6 +52,8 @@
 #define PRES_SIP_PROFILE_STR "sip-profile"
 #define PRES_SIP_PROFILE_STR_LEN 11
 
+#define DIALOG_STR "dialog"
+#define DIALOG_STR_LEN 6
 
 static inline char* skip_token(char* _b, int _l)
 {
@@ -77,6 +79,7 @@ static inline int event_parser(char* _s, int _l, event_t* _e)
 	str tmp;
 	char* end;
 	char buf[128];
+	param_hooks_t phooks;
 
 	tmp.s = _s;
 	tmp.len = _l;
@@ -109,9 +112,25 @@ static inline int event_parser(char* _s, int _l, event_t* _e)
 	} else if ((_e->text.len == PRES_SIP_PROFILE_STR_LEN) && 
 		   !strncasecmp(PRES_SIP_PROFILE_STR, tmp.s, _e->text.len)) {
 		_e->parsed = EVENT_SIP_PROFILE;
-	} else {
+	} else if ((_e->text.len == DIALOG_STR_LEN) && 
+		   !strncasecmp(DIALOG_STR, tmp.s, _e->text.len)) {
+		_e->parsed = EVENT_DIALOG;
+	}else {
 		_e->parsed = EVENT_OTHER;
 	}
+	if( (*end)== ';')
+	{
+		str params_str;
+		params_str.s= end+1;
+		end= skip_token(params_str.s, tmp.len- _e->text.len- 1);
+		
+		params_str.len= end- params_str.s;
+
+		if (parse_params(&params_str, CLASS_ANY, &phooks, &_e->params)<0)
+			return -1;
+	}
+	else
+		_e->params= NULL;
 
 	return 0;
 }
@@ -152,7 +171,12 @@ int parse_event(struct hdr_field* _h)
  */
 void free_event(event_t** _e)
 {
-	if (*_e) pkg_free(*_e);
+	if (*_e)
+	{	
+		if((*_e)->params)
+			free_params((*_e)->params);
+		pkg_free(*_e);
+	}	
 	*_e = 0;
 }
 

@@ -32,16 +32,19 @@
 
 #include "../str.h"
 #include "hf.h"
+#include "parse_param.h"
 
 #define EVENT_OTHER          0
 #define EVENT_PRESENCE       1
 #define EVENT_PRESENCE_WINFO 2
 #define EVENT_SIP_PROFILE    3
 #define EVENT_XCAP_CHANGE    4
+#define EVENT_DIALOG         5
 
 typedef struct event {
 	str text;       /* Original string representation */
 	int parsed;     /* Parsed variant */
+	param_t* params;
 } event_t;
 
 
