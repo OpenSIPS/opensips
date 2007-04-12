@@ -50,7 +50,7 @@ skip_modules?=
 exclude_modules?= 		jabber cpl-c mysql pa postgres osp unixodbc \
 						avp_radius auth_radius group_radius uri_radius xmpp \
 						presence pua pua_bla pua_mi pua_usrloc pua_xmpp \
-						mi_xmlrpc perl snmpstats
+						mi_xmlrpc perl snmpstats perlvdb
 ifeq ($(TLS),)
 	exclude_modules+= tlsops
 endif
