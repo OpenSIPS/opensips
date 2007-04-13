@@ -331,3 +331,89 @@ int shm_duplicate_rr(rr_t** _new, rr_t* _r)
 {
 	return do_duplicate_rr(_new, _r, 1);
 }
+
+
+/**
+ * get first RR header and print comma separated bodies in oroute
+ * - order = 0 normal; order = 1 reverse
+ */
+int print_rr_body(struct hdr_field *iroute, str *oroute, int order)
+{
+	rr_t *p;
+	int n = 0;
+	int i = 0;
+	int route_len;
+#define MAX_RR_HDRS	64
+	static str route[MAX_RR_HDRS];
+	char *cp;
+
+	if(iroute==NULL)
+		return 0;
+	
+	route_len=0;
+	while (iroute!=NULL) 
+	{
+		
+		if (parse_rr(iroute) < 0) 
+		{
+			LOG(L_ERR,"print_rr_body: ERROR while parsing RR\n");
+			goto error;
+		}
+
+		p =(rr_t*)iroute->parsed;
+		while (p)
+		{
+			route[n].s = p->nameaddr.name.s;
+			route[n].len = p->len;
+			route_len+=p->len;
+			n++;
+			if(n==MAX_RR_HDRS)
+			{
+				LOG(L_ERR,"print_rr_body: ERROR - too many RR\n");
+				goto error;
+			}
+			p = p->next;
+		}
+		iroute = iroute->sibling;
+	}
+
+	route_len += --n; /* for commas */
+	oroute->s=(char*)pkg_malloc(route_len);
+	if(oroute->s==0)
+	{
+		LOG(L_ERR, "print_rr_body: ERROR no more pkg mem\n");
+		goto error;
+	}
+	cp = oroute->s;
+	if(order==0)
+	{
+		i = 0;
+		while (i<=n)
+		{
+			memcpy(cp, route[i].s, route[i].len);
+			cp += route[i].len;
+			if (++i<=n)
+				*(cp++) = ',';
+		}
+	} else {
+		i = n;
+		while (i>=0)
+		{
+			memcpy(cp, route[i].s, route[i].len);
+			cp += route[i].len;
+			if (--i>=0)
+				*(cp++) = ',';
+		}
+	}
+	oroute->len=route_len;
+
+	DBG("print_rr_body: out rr [%.*s]\n",
+			oroute->len, oroute->s);
+
+	return 0;
+
+error:
+	return -1;
+}
+
+
