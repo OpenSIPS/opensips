@@ -1051,6 +1051,44 @@ static int xl_get_pai(struct sip_msg *msg, xl_value_t *res, xl_param_t *param,
     return 0;
 }
 
+/* proto of received message: $pr or $proto*/
+static int xl_get_proto(struct sip_msg *msg, xl_value_t *res,
+		xl_param_t *param, int flags)
+{
+	if(msg==NULL || res==NULL)
+		return -1;
+
+	res->ri = msg->rcv.proto;
+	
+	switch(msg->rcv.proto)
+	{
+		case PROTO_UDP:
+			res->rs.s = "UDP";
+			res->rs.len = 3;
+		break;
+		case PROTO_TCP:
+			res->rs.s = "TCP";
+			res->rs.len = 3;
+		break;
+		case PROTO_TLS:
+			res->rs.s = "TLS";
+			res->rs.len = 3;
+		break;
+		case PROTO_SCTP:
+			res->rs.s = "SCTP";
+			res->rs.len = 4;
+		break;
+		default:
+			res->rs.s = "NONE";
+			res->rs.len = 4;
+	}
+
+	
+	res->flags = XL_VAL_STR|XL_VAL_INT;
+	return 0;
+}
+
+
 static int xl_get_dset(struct sip_msg *msg, xl_value_t *res, xl_param_t *param,
 		int flags)
 {
@@ -2386,12 +2424,16 @@ static struct _xl_table {
 		{ XL_PPI_DOMAIN, 0, xl_get_ppi_attr, {{0, 3}, 0, 0}, {0, 0}, 0}},
 	{{"pn", (sizeof("pn")-1)}, /* */
 		{ XL_PPI_DISPLAYNAME, 0, xl_get_ppi_attr, {{0, 4}, 0, 0}, {0, 0}, 0}},
+	{{"pp", (sizeof("pp")-1)}, /* */
+		{ XL_PID, 0, xl_get_pid, {{0, 0}, 0, 0}, {0, 0}, 0}},
+	{{"pr", (sizeof("pr")-1)}, /* */
+		{ XL_PROTO, 0, xl_get_proto, {{0, 0}, 0, 0}, {0, 0}, 0}},
+	{{"proto", (sizeof("proto")-1)}, /* */
+		{ XL_PROTO, 0, xl_get_proto, {{0, 0}, 0, 0}, {0, 0}, 0}},
 	{{"pu", (sizeof("pu")-1)}, /* */
 		{ XL_PPI, 0, xl_get_ppi_attr, {{0, 1}, 0, 0}, {0, 0}, 0}},
 	{{"pU", (sizeof("pU")-1)}, /* */
 		{ XL_PPI_USERNAME, 0, xl_get_ppi_attr, {{0, 2}, 0, 0}, {0, 0}, 0}},
-	{{"pp", (sizeof("pp")-1)}, /* */
-		{ XL_PID, 0, xl_get_pid, {{0, 0}, 0, 0}, {0, 0}, 0}},
 	{{"rb", (sizeof("rb")-1)}, /* */
 		{ XL_MSG_BODY, 0, xl_get_msg_body, {{0, 0}, 0, 0}, {0, 0}, 0}},
 	{{"rc", (sizeof("rc")-1)}, /* */
