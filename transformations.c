@@ -1071,6 +1071,9 @@ char* tr_parse_uri(char* s, trans_t *t)
 	} else if(name.len==6 && strncasecmp(name.s, "passwd", 6)==0) {
 		t->subtype = TR_URI_PASSWD;
 		return p;
+	} else if(name.len==4 && strncasecmp(name.s, "port", 4)==0) {
+		t->subtype = TR_URI_PORT;
+		return p;
 	} else if(name.len==6 && strncasecmp(name.s, "params", 6)==0) {
 		t->subtype = TR_URI_PARAMS;
 		return p;
