@@ -722,6 +722,8 @@ static inline int a2dns_node(struct rdata *head, struct dns_node **dn)
 		n->vals[l].ival = get_srv(r)->port;
 		n->vals[l].sval = p;
 		memcpy( p, get_srv(r)->name, get_srv(r)->name_len );
+		DBG("DEBUG:a2dns_node: storing %.*s:%d\n",
+			get_srv(r)->name_len,p,n->vals[l].ival);
 		p += get_srv(r)->name_len;
 		*(p++) = 0;
 	}
