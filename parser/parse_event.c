@@ -52,6 +52,9 @@
 #define PRES_SIP_PROFILE_STR "sip-profile"
 #define PRES_SIP_PROFILE_STR_LEN 11
 
+#define MWI_STR "message-summary"
+#define MWI_STR_LEN 15
+
 #define DIALOG_STR "dialog"
 #define DIALOG_STR_LEN 6
 
@@ -115,7 +118,10 @@ static inline int event_parser(char* _s, int _l, event_t* _e)
 	} else if ((_e->text.len == DIALOG_STR_LEN) && 
 		   !strncasecmp(DIALOG_STR, tmp.s, _e->text.len)) {
 		_e->parsed = EVENT_DIALOG;
-	}else {
+	} else if ((_e->text.len == MWI_STR_LEN) && 
+		   !strncasecmp(MWI_STR, tmp.s, _e->text.len)) {
+		_e->parsed = EVENT_MWI;
+	} else {
 		_e->parsed = EVENT_OTHER;
 	}
 	if( (*end)== ';')

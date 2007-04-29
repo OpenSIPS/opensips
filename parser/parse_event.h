@@ -40,6 +40,7 @@
 #define EVENT_SIP_PROFILE    3
 #define EVENT_XCAP_CHANGE    4
 #define EVENT_DIALOG         5
+#define EVENT_MWI            6
 
 typedef struct event {
 	str text;       /* Original string representation */

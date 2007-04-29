@@ -89,8 +89,9 @@ static type_node_t type_tree[] = {
 											{'n',TYPE_APPLICATION,0,-1},
 	};
 
+
 static type_node_t subtype_tree[] = {
-	{'p',SUBTYPE_UNKNOWN,2,13},
+        {'p',SUBTYPE_UNKNOWN,2,12},  /* 0 */
 		{'l',SUBTYPE_UNKNOWN,1,5},
 			{'a',SUBTYPE_UNKNOWN,1,-1},
 				{'i',SUBTYPE_UNKNOWN,1,-1},
@@ -98,38 +99,58 @@ static type_node_t subtype_tree[] = {
 		{'i',SUBTYPE_UNKNOWN,1,-1}, /* 5 */
 			{'d',SUBTYPE_UNKNOWN,1,-1},
 				{'f',SUBTYPE_UNKNOWN,1,-1},
-					{'+',TYPE_UNKNOWN,1,-1},
-						{'x',TYPE_UNKNOWN,1,-1},
-							{'m',TYPE_UNKNOWN,1,-1},
+					{'+',SUBTYPE_UNKNOWN,1,-1},
+						{'x',SUBTYPE_UNKNOWN,1,-1},
+							{'m',SUBTYPE_UNKNOWN,1,-1},
 								{'l',SUBTYPE_PIDFXML,0,-1},
-									{'l',SUBTYPE_PIDFXML,0,-1},
-	{'s',SUBTYPE_UNKNOWN,1,16}, /* 13 */
-		{'d',SUBTYPE_UNKNOWN,1,-1},
+	{'s',SUBTYPE_UNKNOWN,2,36}, /* 12 */
+		{'d',SUBTYPE_UNKNOWN,1,15},
 			{'p',SUBTYPE_SDP,0,-1},
-	{'c',SUBTYPE_UNKNOWN,1,25}, /* 16 */
+	        {'i',SUBTYPE_UNKNOWN,1,-1},  /* 15 */
+	                {'m',SUBTYPE_UNKNOWN,1,-1},
+	                    {'p',SUBTYPE_UNKNOWN,1,-1},
+	                        {'l',SUBTYPE_UNKNOWN,1,-1},
+	                            {'e',SUBTYPE_UNKNOWN,1,-1},
+	                                {'-',SUBTYPE_UNKNOWN,1,-1},
+	                                    {'m',SUBTYPE_UNKNOWN,1,-1},
+	                                        {'e',SUBTYPE_UNKNOWN,1,-1},
+	                                            {'s',SUBTYPE_UNKNOWN,1,-1},
+	                                                {'s',SUBTYPE_UNKNOWN,1,-1},
+	                                                    {'a',SUBTYPE_UNKNOWN,1,-1},
+	                                                        {'g',SUBTYPE_UNKNOWN,1,-1},
+	                                                            {'e',SUBTYPE_UNKNOWN,1,-1},
+	                                                                {'-',SUBTYPE_UNKNOWN,1,-1},
+	                                                                    {'s',SUBTYPE_UNKNOWN,1,-1},
+	                                                                        {'u',SUBTYPE_UNKNOWN,1,-1},
+	                                                                            {'m',SUBTYPE_UNKNOWN,1,-1},
+	                                                                                {'m',SUBTYPE_UNKNOWN,1,-1},
+	                                                                                    {'a',SUBTYPE_UNKNOWN,1,-1},
+	                                                                                        {'r',SUBTYPE_UNKNOWN,1,-1},
+	                                                                                            {'y',SUBTYPE_SMS,0,-1},
+	{'c',SUBTYPE_UNKNOWN,1,45}, /* 36 */
 		{'p',SUBTYPE_UNKNOWN,2,-1},
-			{'i',SUBTYPE_UNKNOWN,1,20},
+			{'i',SUBTYPE_UNKNOWN,1,40},
 				{'m',SUBTYPE_CPIM,0,-1},
-			{'l',SUBTYPE_UNKNOWN,1,-1},
-				{'+',TYPE_UNKNOWN,1,-1},
-					{'x',TYPE_UNKNOWN,1,-1},
-						{'m',TYPE_UNKNOWN,1,-1},
+	                {'l',SUBTYPE_UNKNOWN,1,-1}, /* 40 */
+				{'+',SUBTYPE_UNKNOWN,1,-1},
+					{'x',SUBTYPE_UNKNOWN,1,-1},
+						{'m',SUBTYPE_UNKNOWN,1,-1},
 							{'l',SUBTYPE_CPLXML,0,-1},
-	{'r',SUBTYPE_UNKNOWN,2,39}, /* 25 */
-		{'l',SUBTYPE_UNKNOWN,1,33},/* 26 */
+	{'r',SUBTYPE_UNKNOWN,2,59}, /* 45 */
+		{'l',SUBTYPE_UNKNOWN,1,53},
 			{'m',SUBTYPE_UNKNOWN,1,-1},
 				{'i',SUBTYPE_UNKNOWN,1,-1},
-					{'+',TYPE_UNKNOWN,1,-1},
-						{'x',TYPE_UNKNOWN,1,-1},
-							{'m',TYPE_UNKNOWN,1,-1},
+					{'+',SUBTYPE_UNKNOWN,1,-1},
+						{'x',SUBTYPE_UNKNOWN,1,-1},
+							{'m',SUBTYPE_UNKNOWN,1,-1},
 								{'l',SUBTYPE_RLMIXML,0,-1},
-		{'e',SUBTYPE_UNKNOWN,1,-1}, /* 33 */
+		{'e',SUBTYPE_UNKNOWN,1,-1}, /* 53 */
 			{'l',SUBTYPE_UNKNOWN,1,-1},
 				{'a',SUBTYPE_UNKNOWN,1,-1},
 					{'t',SUBTYPE_UNKNOWN,1,-1},
 						{'e',SUBTYPE_UNKNOWN,1,-1},
 							{'d',SUBTYPE_RELATED,0,-1},
-	{'l',SUBTYPE_UNKNOWN,1,48}, /* 39 */
+	{'l',SUBTYPE_UNKNOWN,1,68}, /* 59 */
 		{'p',SUBTYPE_UNKNOWN,1,-1},
 			{'i',SUBTYPE_UNKNOWN,1,-1},
 				{'d',SUBTYPE_UNKNOWN,1,-1},
@@ -138,23 +159,23 @@ static type_node_t subtype_tree[] = {
 							{'x',SUBTYPE_UNKNOWN,1,-1},
 								{'m',SUBTYPE_UNKNOWN,1,-1},
 									{'l',SUBTYPE_LPIDFXML,0,-1},
-	{'w',SUBTYPE_UNKNOWN,1,63}, /* 48 */
+	{'w',SUBTYPE_UNKNOWN,1,83}, /* 68 */
 		{'a',SUBTYPE_UNKNOWN,1,-1},
 			{'t',SUBTYPE_UNKNOWN,1,-1},
 				{'c',SUBTYPE_UNKNOWN,1,-1},
 					{'h',SUBTYPE_UNKNOWN,1,-1},
 						{'e',SUBTYPE_UNKNOWN,1,-1},
 							{'r',SUBTYPE_UNKNOWN,1,-1},
-								{'i',TYPE_UNKNOWN,1,-1},
-									{'n',TYPE_UNKNOWN,1,-1},
-										{'f',TYPE_UNKNOWN,1,-1},
-											{'o',TYPE_UNKNOWN,1,-1},
-												{'+',TYPE_UNKNOWN,1,-1},
-													{'x',TYPE_UNKNOWN,1,-1},
-														{'m',TYPE_UNKNOWN,1,-1},
+								{'i',SUBTYPE_UNKNOWN,1,-1},
+									{'n',SUBTYPE_UNKNOWN,1,-1},
+										{'f',SUBTYPE_UNKNOWN,1,-1},
+											{'o',SUBTYPE_UNKNOWN,1,-1},
+												{'+',SUBTYPE_UNKNOWN,1,-1},
+													{'x',SUBTYPE_UNKNOWN,1,-1},
+														{'m',SUBTYPE_UNKNOWN,1,-1},
 															{'l',SUBTYPE_WATCHERINFOXML,0,-1},
-	{'x',SUBTYPE_UNKNOWN,2,85}, /* 63 */
-		{'p',SUBTYPE_UNKNOWN,1,72}, /* 64 */
+	{'x',SUBTYPE_UNKNOWN,2,105}, /* 83 */
+		{'p',SUBTYPE_UNKNOWN,1,92},
 			{'i',SUBTYPE_UNKNOWN,1,-1},
 				{'d',SUBTYPE_UNKNOWN,1,-1},
 					{'f',SUBTYPE_UNKNOWN,1,-1},
@@ -162,7 +183,7 @@ static type_node_t subtype_tree[] = {
 							{'x',SUBTYPE_UNKNOWN,1,-1},
 								{'m',SUBTYPE_UNKNOWN,1,-1},
 									{'l',SUBTYPE_XPIDFXML,0,-1},
-		{'m',SUBTYPE_UNKNOWN,1,-1}, /* 72 */
+		{'m',SUBTYPE_UNKNOWN,1,-1}, /* 92 */
 			{'l',SUBTYPE_UNKNOWN,1,-1},
 				{'+',SUBTYPE_UNKNOWN,1,-1},
 					{'m',SUBTYPE_UNKNOWN,1,-1},
@@ -175,7 +196,7 @@ static type_node_t subtype_tree[] = {
 												{'i',SUBTYPE_UNKNOWN,1,-1}, 
 													{'d',SUBTYPE_UNKNOWN,1,-1},
 														{'f',SUBTYPE_XML_MSRTC_PIDF,0,-1},
-	{'e',SUBTYPE_UNKNOWN,1,-1}, /* 85 */
+	{'e',SUBTYPE_UNKNOWN,1,-1}, /* 105 */
 		{'x',SUBTYPE_UNKNOWN,1,-1},
 			{'t',SUBTYPE_UNKNOWN,1,-1},
 				{'e',SUBTYPE_UNKNOWN,1,-1},
