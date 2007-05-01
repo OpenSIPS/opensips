@@ -90,7 +90,8 @@ enum _xl_type {
 	XL_BFLAGS,           XL_HEXBFLAGS,         XL_SFLAGS,
 	XL_HEXSFLAGS,        XL_ERR_CLASS,         XL_ERR_LEVEL,
 	XL_ERR_INFO,         XL_ERR_RCODE,         XL_ERR_RREASON,
-	XL_SCRIPTVAR,        XL_PROTO,             XL_ITEM_EXTRA /* keep it last */
+	XL_SCRIPTVAR,        XL_PROTO,             XL_AUTH_USERNAME_WHOLE,
+	XL_ITEM_EXTRA /* keep it last */
 };
 typedef enum _xl_type xl_type_t;
 

@@ -1259,10 +1259,13 @@ static int xl_get_authattr(struct sip_msg *msg, xl_value_t *res,
 	{
 	    res->rs.s   = ((auth_body_t*)(hdr->parsed))->digest.realm.s;
 		res->rs.len = ((auth_body_t*)(hdr->parsed))->digest.realm.len;
-	} else {
+	} else if (param->val.len==1) {
 	    res->rs.s   = ((auth_body_t*)(hdr->parsed))->digest.username.user.s;
-		res->rs.len = ((auth_body_t*)(hdr->parsed))->digest.username.user.len;
-	}
+	    res->rs.len = ((auth_body_t*)(hdr->parsed))->digest.username.user.len;
+	} else {
+	    res->rs.s   = ((auth_body_t*)(hdr->parsed))->digest.username.whole.s;
+	    res->rs.len = ((auth_body_t*)(hdr->parsed))->digest.username.whole.len;
+	}	    
 	
 	res->flags = XL_VAL_STR;
     return 0;
@@ -2336,6 +2339,8 @@ static struct _xl_table {
 		{ XL_AUTH_REALM, 0, xl_get_authattr, {{0, 2}, 0, 0}, {0, 0}, 0}},
 	{{"au", (sizeof("au")-1)}, /* */
 		{ XL_AUTH_USERNAME, 0, xl_get_authattr, {{0, 1}, 0, 0}, {0, 0}, 0}},
+	{{"aU", (sizeof("aU")-1)}, /* */
+		{ XL_AUTH_USERNAME_WHOLE, 0, xl_get_authattr, {{0, 3}, 0, 0}, {0, 0}, 0}},
 	{{"Au", (sizeof("Au")-1)}, /* */
 		{ XL_ACC_USERNAME, 0, xl_get_acc_username, {{0, 1}, 0, 0}, {0, 0}, 0}},
 	{{"bf", (sizeof("bf")-1)}, /* */
