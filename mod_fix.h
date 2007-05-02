@@ -35,6 +35,7 @@ static inline int str_fixup(void** param, int param_no)
 	return 0;
 }
 
+
 /*  
  * Convert char* parameter to int parameter
  */
@@ -54,6 +55,31 @@ static inline int fixup_str2int( void** param, int param_no)
 				(char *)(*param));
 			return E_CFG;
 		}
+	}
+	return 0;
+}
+
+
+static inline int fixup_str2regexp(void** param, int param_no)
+{
+	regex_t* re;
+	DBG("DEBUG:fixup_str2regexp: fixing %s\n", (char*)(*param));
+
+	if (param_no==1) {
+		if ((re=pkg_malloc(sizeof(regex_t)))==0)
+			return E_OUT_OF_MEM;
+		if (regcomp(re, *param, REG_EXTENDED|REG_ICASE|REG_NEWLINE) ) {
+			pkg_free(re);
+			LOG(L_ERR,"ERROR:fixup_str2regexp: bad re %s\n", (char*)*param);
+			return E_BAD_RE;
+		}
+		/* free string */
+		pkg_free(*param);
+		/* replace it with the compiled re */
+		*param=re;
+	} else {
+		LOG(L_ERR,"ERROR:fixup_str2regexp: called with parameter != 1\n");
+		return E_BUG;
 	}
 	return 0;
 }
