@@ -48,6 +48,9 @@
 #include "dprint.h"
 #include "str.h"
 
+#include "mem/mem.h"
+#include "mem/shm_mem.h"
+
 #ifdef TIMING_INFO
 #include <time.h>
 
@@ -526,6 +529,40 @@ static inline int strno2int( str *val, unsigned int *mask )
 	} else {
 		return str2int( val, mask);
 	}
+}
+
+
+/*
+ * Make a copy of a str structure using shm_malloc
+ */
+static inline int shm_str_dup(str* dst, str* src)
+{
+   dst->s = shm_malloc(src->len);
+   if (!dst->s) {
+      LOG(L_ERR, "ERROR:shm_str_dup: no memory left\n");
+      return -1;
+   }
+
+   memcpy(dst->s, src->s, src->len);
+   dst->len = src->len;
+   return 0;
+}
+
+/*
+ * Make a copy of a str structure using pkg_malloc
+ */
+static inline int pkg_str_dup(str* dst, str* src)
+{
+	dst->s = pkg_malloc(src->len);
+	if (dst->s==NULL)
+	{
+		LOG(L_ERR, "ERROR:pkg_str_dup: no memory left\n");
+		return -1;
+	}
+	
+	memcpy(dst->s, src->s, src->len);
+	dst->len = src->len;
+	return 0;
 }
 
 
