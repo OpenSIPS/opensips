@@ -537,15 +537,15 @@ static inline int strno2int( str *val, unsigned int *mask )
  */
 static inline int shm_str_dup(str* dst, str* src)
 {
-   dst->s = shm_malloc(src->len);
-   if (!dst->s) {
-      LOG(L_ERR, "ERROR:shm_str_dup: no memory left\n");
-      return -1;
-   }
-
-   memcpy(dst->s, src->s, src->len);
-   dst->len = src->len;
-   return 0;
+	dst->s = shm_malloc(src->len);
+	if (!dst->s) {
+		LOG(L_ERR, "ERROR:shm_str_dup: no memory left\n");
+		return -1;
+	}
+	
+	memcpy(dst->s, src->s, src->len);
+	dst->len = src->len;
+	return 0;
 }
 
 /*
