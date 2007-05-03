@@ -66,8 +66,10 @@ static inline int fixup_str2regexp(void** param, int param_no)
 	DBG("DEBUG:fixup_str2regexp: fixing %s\n", (char*)(*param));
 
 	if (param_no==1) {
-		if ((re=pkg_malloc(sizeof(regex_t)))==0)
+		if ((re=pkg_malloc(sizeof(regex_t)))==0) {
+			LOG(L_ERR,"ERROR:fixup_str2regexp: no more pkg memory\n");
 			return E_OUT_OF_MEM;
+		}
 		if (regcomp(re, *param, REG_EXTENDED|REG_ICASE|REG_NEWLINE) ) {
 			pkg_free(re);
 			LOG(L_ERR,"ERROR:fixup_str2regexp: bad re %s\n", (char*)*param);
