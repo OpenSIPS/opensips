@@ -565,7 +565,67 @@ static inline int pkg_str_dup(str* dst, str* src)
 	return 0;
 }
 
+/*
+ * compare two str's
+ */
+static inline int str_strcmp(const str *stra, const str *strb)
+{
+	int i;
+	if(stra==NULL || strb==NULL || stra->s ==NULL || strb->s==NULL || stra->len<0 || strb->len<0)
+	{
+		LOG(L_ERR, "ERROR:str_strcmp: bad parameters\n");
+		return -2;
+	}
+	int alen = stra->len;
+	int blen = strb->len;
+	int minlen = (alen < blen ? alen : blen);
 
+	for (i = 0; i < minlen; i++) {
+		const char a = stra->s[i];
+		const char b = strb->s[i];
+		if (a < b)
+			return -1;
+		if (a > b)
+			return 1;
+	}
+	if (alen < blen)
+		return -1;
+	else if (alen > blen)
+		return 1;
+	else
+		return 0;
+}
+
+/*
+ * case-insensitive compare two str's
+ */
+static inline int str_strcasecmp(const str *stra, const str *strb)
+{
+	int i;
+	if(stra==NULL || strb==NULL || stra->s ==NULL || strb->s==NULL || stra->len<0 || strb->len<0)
+	{
+		LOG(L_ERR, "ERROR:str_strcasecmp: bad parameters\n");
+		return -2;
+	}
+	int alen = stra->len;
+	int blen = strb->len;
+	int minlen = (alen < blen ? alen : blen);
+
+	for (i = 0; i < minlen; i++) {
+		const char a = tolower(stra->s[i]);
+		const char b = tolower(strb->s[i]);
+		if (a < b)
+			return -1;
+		if (a > b)
+			return 1;
+	}
+	if (alen < blen) 
+		return -1;
+	else if (alen > blen)
+		return 1;
+	else
+		return 0;
+}
 
 int user2uid(int* uid, int* gid, char* user);
 
