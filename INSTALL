@@ -266,6 +266,11 @@ Solaris:
     gunzip <package_name>.gz ; pkgadd -d <package_name>
 *BSD:
     pkg_add package_name
+    Note that the OpenSER package is in the FreeBSD package tree included, 
+    but is not present in the OpenBSD and NetBSD repository. You'll probably
+    have more luck trying to build directly from the source with the tar.gz,
+    as the package files for this systems are somewhat out of date at the
+    moment.
 
 3) start the server
 RPM + gentoo:
@@ -377,7 +382,7 @@ proceed, you need to make sure MySQL is installed on your box.
    in your home directory.
    You can set there the values for openserctl variables like:
         SIP_DOMAIN - your SIP domain
-        DBENGINE - database type: MYSQL or PGSQL, by defaulte none is loaded
+        DBENGINE - database type: MYSQL or PGSQL, by default none is loaded
         DBHOST - database host
         DBNAME - database name
         DBRWUSER - database read/write user
