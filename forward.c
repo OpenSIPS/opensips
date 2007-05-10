@@ -460,6 +460,7 @@ int forward_reply(struct sip_msg* msg)
 	struct sr_module *mod;
 	int proto;
 	int id; /* used only by tcp*/
+	struct socket_info *send_sock;
 #ifdef USE_TCP
 	char* s;
 	int len;
@@ -528,7 +529,9 @@ int forward_reply(struct sip_msg* msg)
 	}
 #endif
 
-	if (msg_send(0, proto, to, id, new_buf, new_len)<0) {
+	send_sock = get_send_socket(msg, to, proto);
+
+	if (msg_send(send_sock, proto, to, id, new_buf, new_len)<0) {
 		update_stat( drp_rpls, 1);
 		goto error0;
 	}
