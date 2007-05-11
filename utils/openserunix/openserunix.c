@@ -72,13 +72,16 @@ int main(int argc, char** argv)
 	memset(&from, 0, sizeof(from));
 	from.sun_family = PF_LOCAL;
 	
-        sprintf(name, "/tmp/OpenSER.%d.XXXXXX", getpid());
-        if (mkstemp(name) == -1) {
-          return -2;
-        }
-        unlink(name); 
-
-	strncpy(from.sun_path, name, strlen(name) - 1);
+	sprintf(name, "/tmp/OpenSER.%d.XXXXXX", getpid());
+	if (mkstemp(name) == -1) {
+		fprintf(stderr, "Error in mkstemp with name=%s: %s\n", name, strerror(errno));
+		return -2;
+	}
+	if (unlink(name) == -1) {
+		fprintf(stderr, "Error in unlink of %s: %s\n", name, strerror(errno));
+		return -2;
+	}
+	strncpy(from.sun_path, name, strlen(name));
 
 	if (bind(sock, (struct sockaddr*)&from, SUN_LEN(&from)) == -1) {
 		fprintf(stderr, "Error in bind: %s\n", strerror(errno));
@@ -110,11 +113,13 @@ int main(int argc, char** argv)
 	}
 
 	close(sock);
-	unlink(name);
+	if (unlink(name) == -1)
+		fprintf(stderr, "Error in unlink of %s: %s\n", name, strerror(errno));
 	return 0;
 
  err:
 	close(sock);
-	unlink(name);
+	if (unlink(name) == -1)
+		fprintf(stderr, "Error in unlink of %s: %s\n", name, strerror(errno));
 	return -1;
 }
