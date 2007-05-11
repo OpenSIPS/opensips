@@ -3094,8 +3094,8 @@ int xl_printf(struct sip_msg* msg, xl_elem_p list, char *buf, int *len)
 			n += h;
 			cur += h;
 		} else {
-			goto overflow;
 			LOG(L_ERR, "xl_printf: no more space for color spec\n");
+			goto overflow;
 		}
 	}
 
