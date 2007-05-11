@@ -167,7 +167,6 @@ int register_utimer(utimer_function f, void* param, unsigned int interval)
 
 error:
 	return E_OUT_OF_MEM;
-	return 0;
 }
 
 
