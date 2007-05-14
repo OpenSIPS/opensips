@@ -1241,19 +1241,19 @@ static int xl_get_authattr(struct sip_msg *msg, xl_value_t *res,
 		return -1;
     
 	if ((msg->REQ_METHOD == METHOD_ACK) || (msg->REQ_METHOD == METHOD_CANCEL))
-		return xl_get_empty(msg, res, param, flags);
+		return xl_get_null(msg, res, param, flags);
 
 	if ((parse_headers(msg, HDR_PROXYAUTH_F|HDR_AUTHORIZATION_F, 0)==-1)
 			|| (msg->proxy_auth==0 && msg->authorization==0))
 	{
-		LOG(L_ERR, "xl_get_authattr: Error while parsing headers\n");
-		return -1;
+		DBG("xl_get_authattr: no [Proxy-]Authorization header\n");
+		return xl_get_null(msg, res, param, flags);
 	}
 
 	hdr = (msg->proxy_auth==0)?msg->authorization:msg->proxy_auth;
 	
 	if(parse_credentials(hdr)!=0)
-		return xl_get_empty(msg, res, param, flags);
+		return xl_get_null(msg, res, param, flags);
 	
 	if(param->val.len==2)
 	{
