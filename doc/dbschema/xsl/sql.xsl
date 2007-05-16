@@ -40,24 +40,24 @@
 	    -->
 	    <xsl:text> </xsl:text>
 	</xsl:document>
-
+<!--
 	<xsl:variable name="datafile" select="concat($dir, concat('/', concat($prefix, 'data.sql')))"/>
 	<xsl:document href="{$datafile}" method="text" indent="no" omit-xml-declaration="yes">
-	    <xsl:apply-templates mode="data" select="/database[1]"/>
+	    <xsl:apply-templates mode="data" select="/database[1]"/> -->
 	    <!-- This is a hack to ensure that the file gets created when
 	    nothing is written
 	    -->
-	    <xsl:text> </xsl:text>
-	</xsl:document>
+<!--	    <xsl:text> </xsl:text>
+	</xsl:document>-->
 
-	<xsl:variable name="dropfile" select="concat($dir, concat('/', concat($prefix, 'drop.sql')))"/>
+<!--	<xsl:variable name="dropfile" select="concat($dir, concat('/', concat($prefix, 'drop.sql')))"/>
 	<xsl:document href="{$dropfile}" method="text" indent="no" omit-xml-declaration="yes">
-	    <xsl:apply-templates mode="drop" select="/database[1]"/>
+	    <xsl:apply-templates mode="drop" select="/database[1]"/> -->
 	    <!-- This is a hack to ensure that the file gets created when
 	    nothing is written
 	    -->
-	    <xsl:text> </xsl:text>
-	</xsl:document>
+<!--	    <xsl:text> </xsl:text>
+	</xsl:document> -->
     </xsl:template>
     
 <!-- ################ DATABASE ################# -->
