@@ -859,9 +859,6 @@ inline static int comp_scriptvar(struct sip_msg *msg, int op, operand_t *left,
 	ln   = lvalue.ri;
 	type = 0;
 
-	if(lvalue.flags&XL_VAL_NULL)
-		return 0;
-
 	if(right->type == SCRIPTVAR_ST)
 	{
 		if(xl_get_spec_value(msg, right->v.spec, &rvalue, 0)!=0)
@@ -869,8 +866,11 @@ inline static int comp_scriptvar(struct sip_msg *msg, int op, operand_t *left,
 			LOG(L_CRIT, "comp_scriptvar: cannot get right var value\n");
 			goto error;
 		}
-		if(rvalue.flags&XL_VAL_NULL)
-			return 0;
+		if(rvalue.flags&XL_VAL_NULL || lvalue.flags&XL_VAL_NULL ) {
+			if (rvalue.flags&XL_VAL_NULL && lvalue.flags&XL_VAL_NULL )
+				return (op==EQUAL_OP)?1:0;
+			return (op==DIFF_OP)?1:0;
+		}
 		
 		if(op==MATCH_OP||op==NOTMATCH_OP)
 		{
@@ -899,39 +899,45 @@ inline static int comp_scriptvar(struct sip_msg *msg, int op, operand_t *left,
 					right->type);
 			goto error;
 		}
-	} else if(right->type == NUMBER_ST) {
-		if(!(lvalue.flags&XL_VAL_INT))
-		{
-			LOG(L_CRIT, "comp_scriptvar: invalid operation %d/%d/%d!!\n", op,
-					right->type, lvalue.flags);
-			goto error;
-		}
-		/* comparing int */
-		type =2;
-		rn = right->v.n;
-	} else if(right->type == STRING_ST) {
-		if(!(lvalue.flags&XL_VAL_STR))
-		{
-			LOG(L_CRIT, "comp_scriptvar: invalid operation %d/%d!!!\n", op,
-					right->type);
-			goto error;
-		}
-		/* comparing string */
-		type =1;
-		rstr = right->v.s;
 	} else {
-		if(op==MATCH_OP || op==NOTMATCH_OP)
-		{
-			if(!(lvalue.flags&XL_VAL_STR) || right->type != RE_ST)
+		/* null against a not-null constant */
+		if(lvalue.flags&XL_VAL_NULL)
+			return (op==DIFF_OP || op==NOTMATCH_OP || op==NOTMATCHD_OP)?1:0;
+
+		if(right->type == NUMBER_ST) {
+			if(!(lvalue.flags&XL_VAL_INT))
 			{
-				LOG(L_CRIT, "comp_scriptvar: invalid operation %d/%d\n", op,
+				LOG(L_CRIT,"comp_scriptvar: invalid operation %d/%d/%d!!\n", op,
+					right->type, lvalue.flags);
+				goto error;
+			}
+			/* comparing int */
+			type =2;
+			rn = right->v.n;
+		} else if(right->type == STRING_ST) {
+			if(!(lvalue.flags&XL_VAL_STR))
+			{
+				LOG(L_CRIT, "comp_scriptvar: invalid operation %d/%d!!!\n", op,
 					right->type);
 				goto error;
 			}
-			return comp_s2s(op, &lstr, (str*)right->v.expr);
+			/* comparing string */
+			type =1;
+			rstr = right->v.s;
+		} else {
+			if(op==MATCH_OP || op==NOTMATCH_OP)
+			{
+				if(!(lvalue.flags&XL_VAL_STR) || right->type != RE_ST)
+				{
+					LOG(L_CRIT, "comp_scriptvar: invalid operation %d/%d\n", op,
+						right->type);
+					goto error;
+				}
+				return comp_s2s(op, &lstr, (str*)right->v.expr);
+			}
+			/* comparing others */
+			type = 0;
 		}
-		/* comparing others */
-		type = 0;
 	}
 
 	if(type==1) { /* compare str */
