@@ -159,8 +159,10 @@ void del_mi_attr_list(struct mi_node *node)
 	if(!node || !(node->attributes))
 		return;
 
-	for(head = node->attributes, p = head->next ; p ; head = p, p = p->next){
+	for(head = node->attributes; head ;){
+		p = head->next;
 		pkg_free(head);
+		head = p;
 	}
 
 	node->attributes = NULL;
