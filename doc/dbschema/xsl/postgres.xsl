@@ -126,7 +126,7 @@
 	    <xsl:text> WITHOUT TIME ZONE</xsl:text>
 	</xsl:if>
 	<xsl:if test="autoincrement">
-	    <xsl:text> SERIAL</xsl:text>
+	    <xsl:text> SERIAL PRIMARY KEY</xsl:text>
 	</xsl:if>
     </xsl:template>
 
