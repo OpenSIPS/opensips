@@ -11,7 +11,7 @@
 #              created by andrei
 #  2003-02-24  make install no longer overwrites openser.cfg  - patch provided
 #               by Maxim Sobolev   <sobomax@FreeBSD.org> and 
-#                  Tomas Björklund <tomas@webservices.se>
+#                  Tomas Bjoerklund <tomas@webservices.se>
 #  2003-03-11  PREFIX & LOCALBASE must also be exported (andrei)
 #  2003-04-07  hacked to work with solaris install (andrei)
 #  2003-04-17  exclude modules overwritable from env. or cmd. line,
@@ -50,7 +50,8 @@ skip_modules?=
 exclude_modules?= jabber cpl-c mysql pa postgres osp unixodbc \
 	avp_radius auth_radius group_radius uri_radius xmpp \
 	presence presence_xml presence_mwi pua pua_bla pua_mi \
-	pua_usrloc pua_xmpp mi_xmlrpc perl snmpstats perlvdb
+	pua_usrloc pua_xmpp mi_xmlrpc perl snmpstats perlvdb \
+	dbtext
 ifeq ($(TLS),)
 	exclude_modules+= tlsops
 endif
@@ -102,6 +103,12 @@ ifeq (,$(MODULE_PGSQL_INCLUDED))
 	PGSQLON=no
 else
 	PGSQLON=yes
+endif
+MODULE_DBTEXT_INCLUDED=$(shell echo $(modules)| grep dbtext )
+ifeq (,$(MODULE_DBTEXT_INCLUDED))
+	DBTEXTON=no
+else
+	DBTEXTON=yes
 endif
 
 ALLDEP=Makefile Makefile.sources Makefile.defs Makefile.rules
@@ -472,6 +479,15 @@ install-modules-tools: $(bin-prefix)/$(bin-dir)
 			$(INSTALL_BIN) /tmp/$(NAME)_postgresql.sh \
 				$(bin-prefix)/$(bin-dir) ; \
 			rm -fr /tmp/$(NAME)_postgresql.sh ; \
+		fi
+		if [ "$(DBTEXTON)" = "yes" ]; then \
+			mkdir -p $(modules-prefix)/$(lib-dir)/openserctl ; \
+			sed -e "s#PATH:/usr/local/sbin#PATH:$(bin-target)#g" \
+				< scripts/textdb.sh > /tmp/$(NAME)_textdb.sh ; \
+			$(INSTALL_TOUCH) $(bin-prefix)/$(bin-dir)/$(NAME)_textdb.sh ; \
+			$(INSTALL_BIN) /tmp/$(NAME)_textdb.sh \
+				$(bin-prefix)/$(bin-dir) ; \
+			rm -fr /tmp/$(NAME)_textdb.sh ; \
 		fi
 
 
