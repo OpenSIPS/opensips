@@ -274,6 +274,7 @@ tar:
 		--exclude=*.patch \
 		--exclude=.\#* \
 		--exclude=*.swp \
+		--exclude=*~ \
 		${tar_extra_args} \
 		-cf - $(notdir $(CURDIR)) | \
 			(mkdir -p tmp/_tar1; mkdir -p tmp/_tar2 ; \
@@ -323,6 +324,12 @@ install: all mk-install-dirs install-cfg install-bin install-modules \
 dbinstall:
 	-@echo "Initializing $(NAME) database"
 	scripts/mysqldb.sh create
+	-@echo "Done"
+
+.PHONY: dbschema
+dbschema:
+	-@echo "Build database schemas"
+	$(MAKE) -C db/schema
 	-@echo "Done"
 
 mk-install-dirs: $(cfg-prefix)/$(cfg-dir) $(bin-prefix)/$(bin-dir) \
