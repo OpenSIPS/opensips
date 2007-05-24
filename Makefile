@@ -50,8 +50,7 @@ skip_modules?=
 exclude_modules?= jabber cpl-c mysql pa postgres osp unixodbc \
 	avp_radius auth_radius group_radius uri_radius xmpp \
 	presence presence_xml presence_mwi pua pua_bla pua_mi \
-	pua_usrloc pua_xmpp mi_xmlrpc perl snmpstats perlvdb \
-	dbtext
+	pua_usrloc pua_xmpp mi_xmlrpc perl snmpstats perlvdb
 ifeq ($(TLS),)
 	exclude_modules+= tlsops
 endif
@@ -103,12 +102,6 @@ ifeq (,$(MODULE_PGSQL_INCLUDED))
 	PGSQLON=no
 else
 	PGSQLON=yes
-endif
-MODULE_DBTEXT_INCLUDED=$(shell echo $(modules)| grep dbtext )
-ifeq (,$(MODULE_DBTEXT_INCLUDED))
-	DBTEXTON=no
-else
-	DBTEXTON=yes
 endif
 
 ALLDEP=Makefile Makefile.sources Makefile.defs Makefile.rules
@@ -487,15 +480,13 @@ install-modules-tools: $(bin-prefix)/$(bin-dir)
 				$(bin-prefix)/$(bin-dir) ; \
 			rm -fr /tmp/$(NAME)_postgresql.sh ; \
 		fi
-		if [ "$(DBTEXTON)" = "yes" ]; then \
-			mkdir -p $(modules-prefix)/$(lib-dir)/openserctl ; \
-			sed -e "s#PATH:/usr/local/sbin#PATH:$(bin-target)#g" \
-				< scripts/textdb.sh > /tmp/$(NAME)_textdb.sh ; \
-			$(INSTALL_TOUCH) $(bin-prefix)/$(bin-dir)/$(NAME)_textdb.sh ; \
-			$(INSTALL_BIN) /tmp/$(NAME)_textdb.sh \
-				$(bin-prefix)/$(bin-dir) ; \
-			rm -fr /tmp/$(NAME)_textdb.sh ; \
-		fi
+		mkdir -p $(modules-prefix)/$(lib-dir)/openserctl ; \
+		sed -e "s#PATH:/usr/local/sbin#PATH:$(bin-target)#g" \
+			< scripts/textdb.sh > /tmp/$(NAME)_textdb.sh ; \
+		$(INSTALL_TOUCH) $(bin-prefix)/$(bin-dir)/$(NAME)_textdb.sh ; \
+		$(INSTALL_BIN) /tmp/$(NAME)_textdb.sh \
+			$(bin-prefix)/$(bin-dir) ; \
+		rm -fr /tmp/$(NAME)_textdb.sh ; \
 
 
 install-doc: $(doc-prefix)/$(doc-dir) install-modules-doc
