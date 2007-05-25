@@ -46,7 +46,7 @@ dosvnrev:
 	@echo "$(SVNREVISION)" >.svnrevision
 
 .PHONY: docbook-clean
-docbook-clean: 
+docbook-clean:
 	-@for r in $(modules) $(static_modules_path) "" ; do \
 		if [ -d "$$r" ]; then \
 			if [ -d "$$r"/doc ]; then \
@@ -57,8 +57,12 @@ docbook-clean:
 		fi ; \
 	done
 
+.PHONY: dbschema-clean
+dbschema-clean:
+	-@if [ -d db/schema ]; then $(MAKE) -C db/schema clean; fi
+
 .PHONY: clean
-clean: docbook-clean
+clean: docbook-clean dbschema-clean
 	-@rm -f $(objs) $(NAME) $(objs:.o=.il) 2>/dev/null
 	-@for r in $(modules) $(static_modules_path) "" ; do \
 		if [ -d "$$r" ]; then \

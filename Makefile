@@ -127,7 +127,7 @@ export PREFIX LOCALBASE SYSBASE
 export NAME RELEASE OS ARCH 
 export cfg-prefix cfg-dir bin-prefix bin-dir modules-prefix modules-dir
 export doc-prefix doc-dir man-prefix man-dir ut-prefix ut-dir lib-dir
-export cfg-target modules-target
+export cfg-target modules-target data-dir data-prefix data-dir
 export INSTALL INSTALL_CFG INSTALL_BIN INSTALL_MODULES INSTALL_DOC INSTALL_MAN 
 export INSTALL_TOUCH
 
@@ -150,7 +150,7 @@ cfg.tab.c cfg.tab.h: cfg.y  $(ALLDEP)
 	$(YACC) $(YACC_FLAGS) $<
 
 .PHONY: all
-all: $(NAME) modules utils
+all: $(NAME) modules utils dbschema
 
 
 
@@ -159,9 +159,11 @@ modules:
 	@set -e; \
 	for r in $(modules) "" ; do \
 		if [ -n "$$r" ]; then \
-			echo  "" ; \
-			echo  "" ; \
-			$(MAKE) -C $$r ; \
+			if [ -d "$$r" ]; then \
+				echo  "" ; \
+				echo  "" ; \
+				$(MAKE) -C $$r ; \
+			fi ; \
 		fi ; \
 	done 
 
@@ -327,7 +329,8 @@ dbschema:
 
 mk-install-dirs: $(cfg-prefix)/$(cfg-dir) $(bin-prefix)/$(bin-dir) \
 			$(modules-prefix)/$(modules-dir) $(doc-prefix)/$(doc-dir) \
-			$(man-prefix)/$(man-dir)/man8 $(man-prefix)/$(man-dir)/man5
+			$(man-prefix)/$(man-dir)/man8 $(man-prefix)/$(man-dir)/man5 \
+			$(data-prefix)/$(data-dir)
 
 $(cfg-prefix)/$(cfg-dir): 
 		mkdir -p $(cfg-prefix)/$(cfg-dir)
@@ -338,7 +341,6 @@ $(bin-prefix)/$(bin-dir):
 $(modules-prefix)/$(modules-dir):
 		mkdir -p $(modules-prefix)/$(modules-dir)
 
-
 $(doc-prefix)/$(doc-dir):
 		mkdir -p $(doc-prefix)/$(doc-dir)
 
@@ -347,6 +349,10 @@ $(man-prefix)/$(man-dir)/man8:
 
 $(man-prefix)/$(man-dir)/man5:
 		mkdir -p $(man-prefix)/$(man-dir)/man5
+
+$(data-prefix)/$(data-dir):
+		mkdir -p $(data-prefix)/$(data-dir)
+
 		
 # note: on solaris 8 sed: ? or \(...\)* (a.s.o) do not work
 install-cfg: $(cfg-prefix)/$(cfg-dir)
@@ -430,6 +436,23 @@ install-bin: $(bin-prefix)/$(bin-dir) utils
 		rm -fr /tmp/openserctl.sqlbase
 		$(INSTALL_TOUCH)   $(bin-prefix)/$(bin-dir)/$(NAME)unix
 		$(INSTALL_BIN) utils/$(NAME)unix/$(NAME)unix $(bin-prefix)/$(bin-dir)
+		# install dbtext stuff
+		mkdir -p $(modules-prefix)/$(lib-dir)/openserctl ; \
+		sed -e "s#PATH:/usr/local/sbin#PATH:$(bin-target)#g" \
+			< scripts/textdb.sh > /tmp/$(NAME)_textdb.sh ; \
+		$(INSTALL_TOUCH) $(bin-prefix)/$(bin-dir)/$(NAME)_textdb.sh ; \
+		$(INSTALL_BIN) /tmp/$(NAME)_textdb.sh \
+			$(bin-prefix)/$(bin-dir) ; \
+		rm -fr /tmp/$(NAME)_textdb.sh ; \
+		mkdir -p $(data-prefix)/$(data-dir)/dbtext/openser_db ; \
+		for FILE in $(wildcard scripts/dbtext/openser_db/*) ; do \
+			if [ -f $$FILE ] ; then \
+				$(INSTALL_TOUCH) $$FILE \
+					$(data-prefix)/$(data-dir)/dbtext/openser_db/`basename "$$FILE"` ; \
+				$(INSTALL_BIN) $$FILE \
+					$(data-prefix)/$(data-dir)/dbtext/openser_db/`basename "$$FILE"` ; \
+			fi ;\
+		done ; \
 
 .PHONY: utils
 utils:
@@ -453,6 +476,7 @@ install-modules: modules install-modules-tools $(modules-prefix)/$(modules-dir)
 install-modules-all: install-modules install-modules-doc
 
 install-modules-tools: $(bin-prefix)/$(bin-dir)
+		# install MySQL stuff
 		if [ "$(MYSQLON)" = "yes" ]; then \
 			mkdir -p $(modules-prefix)/$(lib-dir)/openserctl ; \
 			sed -e "s#/usr/local#$(bin-target)#g" \
@@ -465,7 +489,17 @@ install-modules-tools: $(bin-prefix)/$(bin-dir)
 			$(INSTALL_TOUCH)   $(bin-prefix)/$(bin-dir)/$(NAME)_mysql.sh ; \
 			$(INSTALL_BIN) /tmp/$(NAME)_mysql.sh  $(bin-prefix)/$(bin-dir) ; \
 			rm -fr /tmp/$(NAME)_mysql.sh ; \
+			mkdir -p $(data-prefix)/$(data-dir)/mysql ; \
+			for FILE in $(wildcard scripts/mysql/*) ; do \
+				if [ -f $$FILE ] ; then \
+				$(INSTALL_TOUCH) $$FILE \
+					$(data-prefix)/$(data-dir)/mysql/`basename "$$FILE"` ; \
+				$(INSTALL_BIN) $$FILE \
+					$(data-prefix)/$(data-dir)/mysql/`basename "$$FILE"` ; \
+			fi ;\
+			done ; \
 		fi
+		# install PostgreSQL stuff
 		if [ "$(PGSQLON)" = "yes" ]; then \
 			mkdir -p $(modules-prefix)/$(lib-dir)/openserctl ; \
 			sed -e "s#/usr/local#$(bin-target)#g" \
@@ -479,14 +513,16 @@ install-modules-tools: $(bin-prefix)/$(bin-dir)
 			$(INSTALL_BIN) /tmp/$(NAME)_postgresql.sh \
 				$(bin-prefix)/$(bin-dir) ; \
 			rm -fr /tmp/$(NAME)_postgresql.sh ; \
+			mkdir -p $(data-prefix)/$(data-dir)/postgres ; \
+			for FILE in $(wildcard scripts/postgres/*) ; do \
+				if [ -f $$FILE ] ; then \
+				$(INSTALL_TOUCH) $$FILE \
+					$(data-prefix)/$(data-dir)/postgres/`basename "$$FILE"` ; \
+				$(INSTALL_BIN) $$FILE \
+					$(data-prefix)/$(data-dir)/postgres/`basename "$$FILE"` ; \
+			fi ;\
+			done ; \
 		fi
-		mkdir -p $(modules-prefix)/$(lib-dir)/openserctl ; \
-		sed -e "s#PATH:/usr/local/sbin#PATH:$(bin-target)#g" \
-			< scripts/textdb.sh > /tmp/$(NAME)_textdb.sh ; \
-		$(INSTALL_TOUCH) $(bin-prefix)/$(bin-dir)/$(NAME)_textdb.sh ; \
-		$(INSTALL_BIN) /tmp/$(NAME)_textdb.sh \
-			$(bin-prefix)/$(bin-dir) ; \
-		rm -fr /tmp/$(NAME)_textdb.sh ; \
 
 
 install-doc: $(doc-prefix)/$(doc-dir) install-modules-doc

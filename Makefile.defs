@@ -142,30 +142,36 @@ modules-dir = $(LIBDIR)/$(MAIN_NAME)/modules/
 ifeq ($(OS), linux)
 	doc-dir = share/doc/$(MAIN_NAME)/
 	man-dir = share/man/
+	data-dir = share/$(MAIN_NAME)/
 	LOCALBASE ?= $(SYSBASE)/local
 else
 ifeq ($(OS), freebsd)
 	doc-dir = share/doc/$(MAIN_NAME)/
 	man-dir = man/
+	data-dir = share/$(MAIN_NAME)/
 	LOCALBASE ?= $(SYSBASE)/local
 else
 ifeq ($(OS), openbsd)
 	doc-dir = share/doc/$(MAIN_NAME)/
 	man-dir = man/
+	data-dir = share/$(MAIN_NAME)/
 	LOCALBASE ?= $(SYSBASE)/local
 else
 ifeq ($(OS), netbsd)
 	doc-dir = share/doc/$(MAIN_NAME)
 	man-dir = man/
+	data-dir = share/$(MAIN_NAME)/
 	LOCALBASE ?= $(SYSBASE)/pkg
 else
 ifeq ($(OS), darwin)
 	doc-dir = share/doc/$(MAIN_NAME)/
 	man-dir = man/
+	data-dir = share/$(MAIN_NAME)/
 	LOCALBASE ?= $(SYSBASE)/local
 else
 	doc-dir = doc/$(MAIN_NAME)/
 	man-dir = man/
+	data-dir = $(MAIN_NAME)/
 	LOCALBASE ?= $(SYSBASE)/local
 endif
 endif
@@ -192,7 +198,7 @@ modules-prefix = $(basedir)$(prefix)
 doc-prefix = $(basedir)$(prefix)
 man-prefix = $(basedir)$(prefix)
 ut-prefix = $(basedir)$(prefix)
-
+data-prefix = $(basedir)$(prefix)
 
 # target dirs for various stuff
 cfg-target = $(prefix)/$(cfg-dir)
@@ -200,6 +206,7 @@ bin-target = $(prefix)/$(bin-dir)
 lib-target = $(prefix)/$(lib-dir)
 modules-target = $(prefix)/$(modules-dir)
 doc-target = $(prefix)/$(doc-dir)
+data-target = $(prefix)/$(data-dir)
 
 
 ifeq ($(OS), solaris)
