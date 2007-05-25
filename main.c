@@ -993,12 +993,6 @@ int main(int argc, char** argv)
 	if (init_pkg_mallocs()==-1)
 		goto error;
 
-#ifdef DBG_MSG_QA
-	fprintf(stderr, "WARNING: OpenSER startup: "
-		"DBG_MSG_QA enabled, OpenSER may exit abruptly\n");
-#endif
-
-
 	init_route_lists();
 	/* process command line (get port no, cfg. file path etc) */
 	opterr=0;

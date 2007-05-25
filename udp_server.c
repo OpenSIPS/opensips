@@ -73,13 +73,6 @@ static int dbg_msg_qa(char *buf, int len)
 	int space_cnt;
 	enum { QA_ANY, QA_SPACE, QA_EOL1 } state;
 
-
-	/* is there a zero character in there ? */	
-	if (memchr(buf, 0, len)) {
-		LOG(L_CRIT, "BUG: message with 0 in it\n");
-		return 0;
-	}
-
 	my_len=len;
 	scan=buf;
 	state=QA_ANY;
@@ -438,13 +431,6 @@ int udp_rcv_loop()
 			DBG("udp_rcv_loop: probing packet received from %s %d\n",
 					tmp, htons(ri.src_port));
 			continue;
-		}
-		if (buf[len-1]==0) {
-			tmp=ip_addr2a(&ri.src_ip);
-			LOG(L_WARN, "WARNING: udp_rcv_loop: "
-					"upstream bug - 0-terminated packet from %s %d\n",
-					tmp, htons(ri.src_port));
-			len--;
 		}
 #endif
 #ifdef DBG_MSG_QA
