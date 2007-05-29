@@ -127,7 +127,7 @@ export PREFIX LOCALBASE SYSBASE
 export NAME RELEASE OS ARCH 
 export cfg-prefix cfg-dir bin-prefix bin-dir modules-prefix modules-dir
 export doc-prefix doc-dir man-prefix man-dir ut-prefix ut-dir lib-dir
-export cfg-target modules-target data-dir data-prefix data-dir
+export cfg-target modules-target data-dir data-prefix data-target
 export INSTALL INSTALL_CFG INSTALL_BIN INSTALL_MODULES INSTALL_DOC INSTALL_MAN 
 export INSTALL_TOUCH
 
@@ -439,6 +439,7 @@ install-bin: $(bin-prefix)/$(bin-dir) utils
 		# install dbtext stuff
 		mkdir -p $(modules-prefix)/$(lib-dir)/openserctl ; \
 		sed -e "s#PATH:/usr/local/sbin#PATH:$(bin-target)#g" \
+			-e 's#DATA_DIR="/usr/local/share/openser"#DATA_DIR="$(data-target)"#g' \
 			< scripts/textdb.sh > /tmp/$(NAME)_textdb.sh ; \
 		$(INSTALL_TOUCH) $(bin-prefix)/$(bin-dir)/$(NAME)_textdb.sh ; \
 		$(INSTALL_BIN) /tmp/$(NAME)_textdb.sh \
@@ -485,6 +486,7 @@ install-modules-tools: $(bin-prefix)/$(bin-dir)
 				$(modules-prefix)/$(lib-dir)/openserctl/openserctl.mysql ; \
 			rm -fr /tmp/openserctl.mysql ; \
 			sed -e "s#PATH:/usr/local/sbin#PATH:$(bin-target)#g" \
+				-e 's#DATA_DIR="/usr/local/share/openser"#DATA_DIR="$(data-target)"#g' \
 				< scripts/mysqldb.sh > /tmp/$(NAME)_mysql.sh ; \
 			$(INSTALL_TOUCH)   $(bin-prefix)/$(bin-dir)/$(NAME)_mysql.sh ; \
 			$(INSTALL_BIN) /tmp/$(NAME)_mysql.sh  $(bin-prefix)/$(bin-dir) ; \
@@ -508,6 +510,7 @@ install-modules-tools: $(bin-prefix)/$(bin-dir)
 				$(modules-prefix)/$(lib-dir)/openserctl/openserctl.pgsql ; \
 			rm -fr /tmp/openserctl.pgsql ; \
 			sed -e "s#PATH:/usr/local/sbin#PATH:$(bin-target)#g" \
+				-e 's#DATA_DIR="/usr/local/share/openser"#DATA_DIR="$(data-target)"#g' \
 				< scripts/postgresqldb.sh > /tmp/$(NAME)_postgresql.sh ; \
 			$(INSTALL_TOUCH) $(bin-prefix)/$(bin-dir)/$(NAME)_postgresql.sh ; \
 			$(INSTALL_BIN) /tmp/$(NAME)_postgresql.sh \
