@@ -28,14 +28,18 @@
 
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
                 version='1.0'
+                xmlns:xi="http://www.w3.org/2001/XInclude"
 >
 
     <xsl:import href="sql.xsl"/>
 
+<!--
     <xsl:template match="database" mode="drop">
 	<xsl:apply-templates mode="drop"/>
     </xsl:template>
-    
+-->
+
+<!-- specify the table type -->
     <xsl:template name="table.close">
 	<xsl:text>)</xsl:text>
 	<xsl:if test="type[@db=$db]">
@@ -113,13 +117,16 @@
     <xsl:template name="column.trailing">
 	<xsl:variable name="signed">
 	    <xsl:call-template name="get-sign"/>
-	</xsl:variable>
-	
+	</xsl:variable>	
 	<xsl:if test="$signed = 0">
 	    <xsl:text> UNSIGNED</xsl:text>
 	</xsl:if>
 	<xsl:if test="autoincrement">
 	    <xsl:text> AUTO_INCREMENT</xsl:text>
+	</xsl:if>
+	<!-- PRIMARY KEY column defintion -->
+	<xsl:if test="primary">
+	    <xsl:text> PRIMARY KEY</xsl:text>
 	</xsl:if>
     </xsl:template>
 
@@ -135,6 +142,7 @@
 	<xsl:if test="unique">
 	    <xsl:text>UNIQUE </xsl:text>
 	</xsl:if>
+	<!-- PRIMARY KEY standalone definition -->
 	<xsl:if test="primary">
 	    <xsl:text>PRIMARY </xsl:text>
 	</xsl:if>
@@ -151,16 +159,22 @@
 	</xsl:if>
     </xsl:template>
 
+<!-- user management stuff, not needed at the moment -->
+<!--
     <xsl:template name="get-userid">
 	<xsl:param name="select" select="."/>
 	<xsl:param name="host" select="/.."/>
 	<xsl:text>'</xsl:text>
 	<xsl:choose>
+-->
 	    <!-- override test -->
+<!--
 	    <xsl:when test="count($select/username[@db=$db])='1'">
 		<xsl:value-of select="normalize-space($select/username[@db=$db])"/>
 	    </xsl:when>
+-->
 	    <!-- No override, use the standard name -->
+<!--
 	    <xsl:otherwise>
 		<xsl:value-of select="normalize-space($select/username)"/>
 	    </xsl:otherwise>
@@ -184,12 +198,15 @@
 	</xsl:choose>
 	<xsl:text>'</xsl:text>
     </xsl:template>
-
+-->
 <!-- ################ ROW ################  -->
+
+<!-- INSERT with IGNORE, not needed at the moment -->
 
     <!-- override common template for ROW. Create INSERT statements 
          with IGNORE keyword
       -->
+<!--
     <xsl:template match="row">
 	<xsl:if test="@vendor-controlled[1]">
 	    <xsl:text>DELETE FROM </xsl:text>	    
@@ -214,7 +231,7 @@
 	    <xsl:text>&#x0A;</xsl:text>	    
 	</xsl:if>
     </xsl:template>
-
+-->
 <!-- ################ /ROW ################  -->
 
 </xsl:stylesheet>

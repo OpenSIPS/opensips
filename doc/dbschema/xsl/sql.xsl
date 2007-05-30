@@ -40,6 +40,8 @@
 	    -->
 	    <xsl:text> </xsl:text>
 	</xsl:document>
+
+<!-- Creates data and drop SQL statements, not needed at the moment -->
 <!--
 	<xsl:variable name="datafile" select="concat($dir, concat('/', concat($prefix, 'data.sql')))"/>
 	<xsl:document href="{$datafile}" method="text" indent="no" omit-xml-declaration="yes">
