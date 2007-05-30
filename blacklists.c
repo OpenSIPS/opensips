@@ -191,12 +191,12 @@ struct bl_head *create_bl_head(int owner, int flags, struct bl_rule *head,
 	if (!no_shm && !(flags&BL_READONLY_LIST)) {
 		if ( (blst_heads[i].lock=lock_alloc())==NULL ) {
 			LOG(L_ERR, "ERROR:create_bl_head: failed to create lock!\n");
-			pkg_free(blst_heads[i].name.s);
+			shm_free(blst_heads[i].name.s);
 			return NULL;
 		}
 		if ( lock_init(blst_heads[i].lock)==NULL ) {
 			LOG(L_ERR, "ERROR:create_bl_head: failed to init lock!\n");
-			pkg_free(blst_heads[i].name.s);
+			shm_free(blst_heads[i].name.s);
 			lock_dealloc(blst_heads[i].lock);
 			return NULL;
 		}
@@ -433,11 +433,13 @@ static /*inline*/ void rm_dups(struct bl_head *head,
 			if (q->next==NULL) *last=p;
 			if (p) {
 				p->next = q->next;
-				pkg_free(q);
+				if (no_shm) pkg_free(q);
+				else shm_free(q);
 				q = p->next;
 			} else {
 				*first = q->next;
-				pkg_free(q);
+				if (no_shm) pkg_free(q);
+				else shm_free(q);
 				q = *first;
 			}
 		} else {
