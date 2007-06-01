@@ -525,7 +525,6 @@ install-modules-tools: $(bin-prefix)/$(bin-dir)
 				-e "s#/usr/local/etc/openser#$(cfg-target)#g" \
 				-e "s#/usr/local/share/openser#$(data-target)#g" \
 				< scripts/postgresqldb.sh > /tmp/$(NAME)_postgresql.sh ; \
-				cp scripts/postgresqldb.sh /tmp/$(NAME)_postgresql.sh ; \
 			$(INSTALL_TOUCH) $(bin-prefix)/$(bin-dir)/$(NAME)_postgresql.sh ; \
 			$(INSTALL_BIN) /tmp/$(NAME)_postgresql.sh \
 				$(bin-prefix)/$(bin-dir) ; \
