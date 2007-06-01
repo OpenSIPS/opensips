@@ -341,7 +341,7 @@ endif
 #		twice, trying to free a pointer alloc'ed with a different
 #		malloc etc.)
 # -DVQ_MALLOC
-#		additional option to PKG_MALLOC which utilizes a fater then
+#		additional option to PKG_MALLOC which utilizes a faster then
 #		qm version
 #		(not true anymore, q_malloc performs approx. the same)
 # -DF_MALLOC
@@ -349,7 +349,7 @@ endif
 # -DDBG_MALLOC
 #		issues additional debugging information if lock/unlock is called
 # -DFAST_LOCK
-#		uses fast arhitecture specific locking (see the arh. specific section)
+#		uses fast architecture specific locking (see the arch. specific section)
 # -DUSE_SYSV_SEM
 #		uses sys v sems for locking (slower & limited number)
 # -DUSE_PTHREAD_MUTEX
@@ -374,7 +374,7 @@ endif
 #		disable the tcp Nagle algorithm (lower delay)
 # -DUSE_TLS
 #		compiles in tls support, requires -DUSE_TCP. Please use
-#		make TLS=1 instead. (tls support is highly experimental for now)
+#		make TLS=1 instead. (tls support is experimental for now)
 # -DHAVE_RESOLV_RES
 #		support for changing some of the resolver parameters present
 #		 (_res structure in <resolv.h>)
