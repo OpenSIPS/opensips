@@ -93,15 +93,17 @@ void reset_bl_markers();
 int check_against_blacklist(struct ip_addr *ip, str *text, unsigned short port,
 			unsigned short proto);
 
-static inline int check_blacklists( unsigned short port, unsigned short proto,
+static inline int check_blacklists( unsigned short proto,
 	union sockaddr_union *to, char *body_s, int body_len)
 {
 	str body;
 	struct ip_addr ip;
+	unsigned short port;
 
 	body.s = body_s;
 	body.len = body_len;
 	su2ip_addr( &ip, to);
+	port = su_getport( to );
 	return check_against_blacklist( &ip, &body, port, proto);
 }
 
