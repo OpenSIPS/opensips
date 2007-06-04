@@ -45,7 +45,7 @@ int parse_allow(struct sip_msg *msg)
 {
 	unsigned int allow;
 	struct hdr_field  *hdr;
-	struct allow_body *ab;
+	struct allow_body *ab = 0;
 
 	/* maybe the header is already parsed! */
 	if (msg->allow && msg->allow->parsed)
@@ -71,7 +71,7 @@ int parse_allow(struct sip_msg *msg)
 
 		if (parse_methods(&(hdr->body), &(ab->allow))!=0) {
 			LOG(L_ERR, "ERROR:parse_allow: Bad allow body header\n"); 
-			return -1;
+			goto error;
 		}
 		ab->allow_all = 0;
 		hdr->parsed = (void*)ab;
@@ -80,5 +80,10 @@ int parse_allow(struct sip_msg *msg)
 
 	((struct allow_body*)msg->allow->parsed)->allow_all = allow;
 	return 0;
+
+error:
+	if(ab!=0)
+		pkg_free(ab);
+	return -1;
 }
 
