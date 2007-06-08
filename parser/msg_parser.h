@@ -215,8 +215,8 @@ struct sip_msg {
 	
 	struct receive_info rcv; /* source & dest ip, ports, proto a.s.o*/
 
-	char* buf;        /* scratch pad, holds a modified message,
-                       *  via, etc. point into it */
+	char* buf;        /* scratch pad, holds a unmodified message,
+                           *  via, etc. point into it */
 	unsigned int len; /* message len (orig) */
 
 	/* modifications */
