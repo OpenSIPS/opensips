@@ -150,10 +150,13 @@
 		    <xsl:when test="default/null">
 			<xsl:text>NULL</xsl:text>
 		    </xsl:when>
-		    <xsl:otherwise>
+		    <xsl:when test= "string(number(default))='NaN'"><!-- test for string value -->
 			<xsl:text>'</xsl:text>
 			<xsl:value-of select="default"/>
 			<xsl:text>'</xsl:text>
+		    </xsl:when>
+		    <xsl:otherwise>
+			<xsl:value-of select="default"/><!-- ommit the quotes for numbers -->
 		    </xsl:otherwise>
 		</xsl:choose>
 	    </xsl:when>
