@@ -433,14 +433,21 @@ install-bin: $(bin-prefix)/$(bin-dir) utils
 			< scripts/openserctl.sqlbase > /tmp/openserctl.sqlbase
 		$(INSTALL_CFG) /tmp/openserctl.sqlbase \
 			$(modules-prefix)/$(lib-dir)/openserctl/openserctl.sqlbase
-		# install db setup base script
 		rm -fr /tmp/openserctl.sqlbase
+		# install db setup base script
 		sed -e "s#/usr/local/sbin#$(bin-target)#g" \
 			-e "s#/usr/local/etc/openser#$(cfg-target)#g" \
 			< scripts/openserdbctl.base > /tmp/openserdbctl.base
 		$(INSTALL_CFG) /tmp/openserdbctl.base \
 			$(modules-prefix)/$(lib-dir)/openserctl/openserdbctl.base
 		rm -fr /tmp/openserdbctl.base
+		cat scripts/openserdbctl | \
+		sed -e "s#/usr/local/sbin#$(bin-target)#g" | \
+		sed -e "s#/usr/local/lib/openser#$(lib-target)#g" | \
+		sed -e "s#/usr/local/etc/openser#$(cfg-target)#g"  >/tmp/openserdbctl
+		$(INSTALL_TOUCH) $(bin-prefix)/$(bin-dir)/openserdbctl
+		$(INSTALL_BIN) /tmp/openserdbctl $(bin-prefix)/$(bin-dir)
+		rm -fr /tmp/openserdbctl
 		$(INSTALL_TOUCH)   $(bin-prefix)/$(bin-dir)/$(NAME)unix
 		$(INSTALL_BIN) utils/$(NAME)unix/$(NAME)unix $(bin-prefix)/$(bin-dir)
 		# install dbtext stuff
@@ -494,14 +501,11 @@ install-modules-tools: $(bin-prefix)/$(bin-dir)
 			$(INSTALL_CFG) /tmp/openserctl.mysql \
 				$(modules-prefix)/$(lib-dir)/openserctl/openserctl.mysql ; \
 			rm -fr /tmp/openserctl.mysql ; \
-			sed -e "s#PATH:/usr/local/sbin#PATH:$(bin-target)#g" \
-				-e "s#/usr/local/lib/openser#$(lib-target)#g" \
-				-e "s#/usr/local/etc/openser#$(cfg-target)#g" \
-				-e "s#/usr/local/share/openser#$(data-target)#g" \
-				< scripts/mysqldb.sh > /tmp/$(NAME)_mysql.sh ; \
-			$(INSTALL_TOUCH) $(bin-prefix)/$(bin-dir)/$(NAME)_mysql.sh ; \
-			$(INSTALL_BIN) /tmp/$(NAME)_mysql.sh  $(bin-prefix)/$(bin-dir) ; \
-			rm -fr /tmp/$(NAME)_mysql.sh ; \
+			sed -e "s#/usr/local/share/openser#$(data-target)#g" \
+			< scripts/openserdbctl.mysql > /tmp/openserdbctl.mysql ; \
+			$(INSTALL_TOUCH) $(bin-prefix)/$(bin-dir)/openserdbctl.mysql ; \
+			$(INSTALL_CFG) /tmp/openserdbctl.mysql $(modules-prefix)/$(lib-dir)/openserctl/ ; \
+			rm -fr /tmp/openserdbctl.mysql ; \
 			mkdir -p $(data-prefix)/$(data-dir)/mysql ; \
 			for FILE in $(wildcard scripts/mysql/*) ; do \
 				if [ -f $$FILE ] ; then \
@@ -520,15 +524,11 @@ install-modules-tools: $(bin-prefix)/$(bin-dir)
 			$(INSTALL_CFG) /tmp/openserctl.pgsql \
 				$(modules-prefix)/$(lib-dir)/openserctl/openserctl.pgsql ; \
 			rm -fr /tmp/openserctl.pgsql ; \
-			sed -e "s#PATH:/usr/local/sbin#PATH:$(bin-target)#g" \
-				-e "s#/usr/local/lib/openser#$(lib-target)#g" \
-				-e "s#/usr/local/etc/openser#$(cfg-target)#g" \
-				-e "s#/usr/local/share/openser#$(data-target)#g" \
-				< scripts/postgresqldb.sh > /tmp/$(NAME)_postgresql.sh ; \
-			$(INSTALL_TOUCH) $(bin-prefix)/$(bin-dir)/$(NAME)_postgresql.sh ; \
-			$(INSTALL_BIN) /tmp/$(NAME)_postgresql.sh \
-				$(bin-prefix)/$(bin-dir) ; \
-			rm -fr /tmp/$(NAME)_postgresql.sh ; \
+			sed -e "s#/usr/local/share/openser#$(data-target)#g" \
+				< scripts/openserdbctl.pgsql > /tmp/openserdbctl.pgsql ; \
+			$(INSTALL_TOUCH) $(bin-prefix)/$(bin-dir)/openserdbctl.pgsql ; \
+			$(INSTALL_CFG) /tmp/openserdbctl.pgsql $(modules-prefix)/$(lib-dir)/openserctl/ ; \
+			rm -fr /tmp/openserdbctl.pgsql ; \
 			mkdir -p $(data-prefix)/$(data-dir)/postgres ; \
 			for FILE in $(wildcard scripts/postgres/*) ; do \
 				if [ -f $$FILE ] ; then \
