@@ -339,15 +339,15 @@ proceed, you need to make sure MySQL is installed on your box.
       (if do not want to put 'mysql' into your USE variable you can type:
       USE="mysql" emerge openser)
 3) create SQL tables
-    If you use MySQL support, use openser_mysql.sh. For Postgres use
-    openser_postgres.sh.
+    You must specify your database type in the /etc/openserrc file, e.g.
+    MySQL. See section 7 for an explanation of further possible parameters.
     - if you have a previously installed OpenSER on your system, use
-         /usr/sbin/openser_mysql.sh migrate
+         /usr/sbin/openserdbctl migrate
       to convert your OpenSER database into new structures
     - otherwise, if this is your very first installation, use
-         /usr/sbin/openser_mysql.sh create
+         /usr/sbin/openserdbctl create
       to create OpenSER database structures
-      (you will be prompted for password of MySql "root" user)
+      (you will be prompted for password of MySQL "root" user)
 
 4) configure openser to use SQL
     uncomment all lines in configuration file openser.cfg which are related to 
@@ -377,12 +377,12 @@ proceed, you need to make sure MySQL is installed on your box.
    local SIP realm, e.g.,
        export SIP_DOMAIN="myserver.foobar.com"
    or you can configure via the resource file for openserctlrc. The default
-   file is insatlled in the etc/ directory of your installation (along with the
+   file is installed in the etc/ directory of your installation (along with the
    OpenSER config file). For per user configuration, create .openserctlrc
    in your home directory.
    You can set there the values for openserctl variables like:
         SIP_DOMAIN - your SIP domain
-        DBENGINE - database type: MYSQL or PGSQL, by default none is loaded
+        DBENGINE - database type: MYSQL, PGSQL or DBTEXT by default none is loaded
         DBHOST - database host
         DBNAME - database name
         DBRWUSER - database read/write user
