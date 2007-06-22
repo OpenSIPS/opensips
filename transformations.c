@@ -403,7 +403,7 @@ int tr_eval_uri(struct sip_msg *msg, tr_param_t *tp, int subtype,
 			_tr_uri_params = 0;
 		}
 		/* parse uri -- params only when requested */
-		if(parse_uri(val->rs.s, val->rs.len, &_tr_parsed_uri)!=0)
+		if(parse_uri(_tr_uri.s, _tr_uri.len, &_tr_parsed_uri)!=0)
 		{
 			pkg_free(_tr_uri.s);
 			LOG(L_ERR, "tr_eval_uri: invalid uri [%.*s]\n", val->rs.len,
