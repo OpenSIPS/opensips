@@ -56,16 +56,21 @@ docbook-clean:
 			fi ; \
 		fi ; \
 	done
-	rm -f doc/database/*.txt
-	rm -f doc/database/*.html
-	rm -f doc/database/*.pdf
 
 .PHONY: dbschema-clean
 dbschema-clean:
 	-@if [ -d db/schema ]; then $(MAKE) -C db/schema clean; fi
 
+.PHONY: dbschema-docbook-clean
+dbschema-docbook-clean:
+	-@if [ -d doc/database ] ; then \
+		rm -f doc/database/*.txt ; \
+		rm -f doc/database/*.html ; \
+		rm -f doc/database/*.pdf ; \
+	fi
+
 .PHONY: clean
-clean: docbook-clean dbschema-clean
+clean: docbook-clean dbschema-clean dbschema-docbook-clean
 	-@rm -f $(objs) $(NAME) $(objs:.o=.il) 2>/dev/null
 	-@for r in $(modules) $(static_modules_path) "" ; do \
 		if [ -d "$$r" ]; then \
