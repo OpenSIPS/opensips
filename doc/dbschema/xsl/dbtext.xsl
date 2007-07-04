@@ -40,13 +40,25 @@
 	</xsl:variable>
 	
 	<xsl:variable name="path" select="concat($dir, concat('/', concat($prefix, $name)))"/>
-	<xsl:document 
-	    href="{$path}"
-	    method="text"
-	    indent="no"
-	    omit-xml-declaration="yes">
+	<xsl:document href="{$path}" method="text" indent="no" omit-xml-declaration="yes">
 		<xsl:apply-imports/>
+		<!-- Insert version data -->
+		 <xsl:apply-templates select="version"/> 
+		<!-- this is not exactly what we want for dbtext, as the version data gets
+		     appended to the actual table file, and no to the 'version' table.
+		     But its not possible (at least with XSL 1.0, AFAIK) to append data to a
+		     file. So it's much more easier to do this in the Makefile -->
 	</xsl:document>
+    </xsl:template>
+
+    <!-- version data template -->
+    <xsl:template match="version">
+	<xsl:call-template name="get-name">
+	    <xsl:with-param name="select" select="parent::table"/>
+	</xsl:call-template>
+	<xsl:text>:</xsl:text>
+	<xsl:value-of select="text()"/>
+	<xsl:text>&#x0A;</xsl:text>
     </xsl:template>
 
     <!-- Create column definitions -->
