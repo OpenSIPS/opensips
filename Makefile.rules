@@ -56,6 +56,9 @@ docbook-clean:
 			fi ; \
 		fi ; \
 	done
+	rm -f doc/database/*.txt
+	rm -f doc/database/*.html
+	rm -f doc/database/*.pdf
 
 .PHONY: dbschema-clean
 dbschema-clean:
