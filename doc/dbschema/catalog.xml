@@ -38,7 +38,7 @@
     <public publicId="-//openser.org//DTD DBSchema V1.0//EN"
             uri="dtd/dbschema.dtd"/>
 
-    <rewriteURI uriStartString="http://openser.org/dbschema/dtd/1.0/"
+    <rewriteURI uriStartString="http://openser.org/pub/openser/dbschema/dtd/1.0/"
                 rewritePrefix="dtd/"/> 
 
     <rewriteURI uriStartString="http://openser.org/dbschema/xsl/current/"
