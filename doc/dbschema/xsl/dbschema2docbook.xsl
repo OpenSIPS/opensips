@@ -35,13 +35,15 @@
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
 
 <!-- doctype-system, doctyp-public found in http://www.xml.com/pub/a/2002/09/04/xslt.html -->
-<xsl:output method="xml" indent="yes" version="1.0"
+<!--<xsl:output method="xml" indent="yes" version="1.0"
 	doctype-system="http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd" 
-	doctype-public="-//OASIS//DTD DocBook XML V4.2//EN"/>
+	doctype-public="-//OASIS//DTD DocBook XML V4.2//EN"/>-->
 
 <xsl:template match="//database">
 <section><title><xsl:value-of select="name"/> database tables</title>
 	<!-- generate table descriptions -->
+	<xsl:choose>
+	<xsl:when test="table">
 	<para><variablelist>
 		<xsl:for-each select="table">
 			<xsl:call-template name="table_proc_desc" mode="table_desc"/>
@@ -53,8 +55,12 @@
 		<xsl:for-each select="table">
 			<xsl:call-template name="table_proc" mode="column_table"/>
 		</xsl:for-each>
-		<!--<xsl:apply-templates mode="column_table"/>-->
 	</para>
+	</xsl:when>
+	<xsl:otherwise>
+	<para/><!-- no table present, insert some dummy content to make docbook happy -->
+	</xsl:otherwise>
+	</xsl:choose>
 </section>
 </xsl:template>
 
@@ -122,9 +128,9 @@ than 5) doesn't allow "xmlns" attributes -->
 </xsl:template>
 
 <xsl:template name="table_proc_desc" match="table" mode="table_desc">
-	<xsl:variable name="tmp" select="name"/>
+	<xsl:variable name="tmp" select="translate(name, '_', '-')"/> <!-- '_' is not allowed in docbook -->
 	<varlistentry>
-		<term><link linkend='gen_db_{$tmp}'><xsl:value-of select="name"/></link></term>
+		<term><link linkend='gen-db-{$tmp}'><xsl:value-of select="name"/></link></term>
 		<listitem><xsl:call-template name="process_description"/></listitem>
 	</varlistentry>
 </xsl:template>
@@ -134,10 +140,10 @@ than 5) doesn't allow "xmlns" attributes -->
 	<!--<section><title><xsl:value-of select="name"/></title>
 	<para><xsl:value-of select="description"/></para>-->
 
-	<xsl:variable name="tmp" select="name"/>
-	<table id='gen_db_{$tmp}' frame='all'><title>Table "<xsl:value-of select="name"/>"</title>
+	<xsl:variable name="tmp" select="translate(name, '_', '-')"/> <!-- '_' is not allowed in docbook -->
+	<table id='gen-db-{$tmp}' frame='all'><title>Table "<xsl:value-of select="name"/>"</title>
 	<tgroup cols='4' align='left' colsep='1' rowsep='1'>
-	<colspec colname="c1"/><colspec colname="c2"/><colspec colname="c3"/><colspec colname="c4"/>
+	<!--<colspec colname="c1"/><colspec colname="c2"/><colspec colname="c3"/><colspec colname="c4"/>-->
 	<thead>
 		<row>
 			<entry>name</entry>
@@ -151,7 +157,15 @@ than 5) doesn't allow "xmlns" attributes -->
 		<row>
 			<entry><varname><xsl:value-of select="name"/></varname></entry>
 			<entry><varname><xsl:value-of select="type"/></varname></entry>
-			<entry><constant><xsl:value-of select="size"/></constant></entry>
+			<!-- some datatypes (e.g. time) don't have a size -->
+			<xsl:choose>
+			<xsl:when test="size">
+				<entry><constant><xsl:value-of select="size"/></constant></entry>
+			</xsl:when>
+			<xsl:otherwise>
+				<entry><constant>not specified</constant></entry>
+			</xsl:otherwise>
+			</xsl:choose>
 			<entry><xsl:call-template name="process_description"/></entry>
 		</row>
 	</xsl:for-each>

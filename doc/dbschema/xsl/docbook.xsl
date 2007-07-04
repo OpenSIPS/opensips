@@ -31,11 +31,15 @@
                 xmlns:db="http://iptel.org/dbschema/docbook"
 >
     <xsl:import href="common.xsl"/>
+    <xsl:import href="dbschema2docbook.xsl"/>
 
     <xsl:template match="/">
-	<xsl:variable name="filename" select="concat($prefix, concat('/', 'dbschema.xml'))"/>
-	<xsl:document href="{$filename}" method="xml" indent="yes"
-	    omit-xml-declaration="no">
+	<xsl:variable name="path" select="concat($dir, concat('/', concat($prefix, 'dbschema.xml')))"/>
+	<xsl:document href="{$path}" method="xml" indent="yes" omit-xml-declaration="yes" 
+	doctype-system="http://www.oasis-open.org/docbook/sgml/4.2/docbook.dtd"
+	doctype-public="-//OASIS//DTD DocBook V4.2//EN">
+	<xsl:element name="book">
+	<xsl:element name="article">
 	    <xsl:element name="section">
 		<xsl:element name="title">
 		    <xsl:call-template name="get-name">
@@ -44,6 +48,8 @@
 		</xsl:element>
 		<xsl:apply-templates select="/database[1]"/>
 	    </xsl:element>
+	</xsl:element>
+        </xsl:element>
 	</xsl:document>
     </xsl:template>
 
