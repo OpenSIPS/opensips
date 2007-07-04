@@ -572,20 +572,6 @@ assign_stm:	DEBUG EQUAL NUMBER { debug=$3; }
 		| MEMLOG EQUAL error { yyerror("int value expected"); }
 		| SIP_WARNING EQUAL NUMBER { sip_warning=$3; }
 		| SIP_WARNING EQUAL error { yyerror("boolean value expected"); }
-		| SOCK_MODE EQUAL NUMBER { sock_mode=$3; }
-		| SOCK_MODE EQUAL error { yyerror("int value expected"); }
-		| SOCK_USER EQUAL STRING { sock_user=$3; }
-		| SOCK_USER EQUAL ID     { sock_user=$3; }
-		| SOCK_USER EQUAL error { yyerror("string value expected"); }
-		| SOCK_GROUP EQUAL STRING { sock_group=$3; }
-		| SOCK_GROUP EQUAL ID     { sock_group=$3; }
-		| SOCK_GROUP EQUAL error { yyerror("string value expected"); }
-		| UNIX_SOCK EQUAL STRING { unixsock_name=$3; }
-		| UNIX_SOCK EQUAL error { yyerror("string value expected"); }
-		| UNIX_SOCK_CHILDREN EQUAL NUMBER { unixsock_children=$3; }
-		| UNIX_SOCK_CHILDREN EQUAL error { yyerror("int value expected\n"); }
-		| UNIX_TX_TIMEOUT EQUAL NUMBER { unixsock_tx_timeout=$3; }
-		| UNIX_TX_TIMEOUT EQUAL error { yyerror("int value expected\n"); }
 		| USER EQUAL STRING     { user=$3; }
 		| USER EQUAL ID         { user=$3; }
 		| USER EQUAL error      { yyerror("string value expected"); }

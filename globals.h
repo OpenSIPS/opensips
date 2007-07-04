@@ -118,11 +118,6 @@ extern int cfg_errors;
 
 extern unsigned long shm_mem_size;
 
-/* UNIX domain socket configuration */
-extern char *unixsock_name;   /* The name of the socket */
-extern int unixsock_children; /* The number of listening children */
-extern int unixsock_tx_timeout; /* Timeout (in ms) used when sending data */
-
 /* AVP configuration */
 extern char *avp_db_url;  /* db url used by user preferences (AVPs) */
 

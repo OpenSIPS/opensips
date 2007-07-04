@@ -249,12 +249,6 @@ CHILDREN children
 CHECK_VIA	check_via
 MEMLOG		"memlog"|"mem_log"
 SIP_WARNING sip_warning
-UNIX_SOCK unix_sock
-SOCK_MODE "sock_mode"
-SOCK_USER "sock_user"
-SOCK_GROUP "sock_group"
-UNIX_SOCK_CHILDREN unix_sock_children
-UNIX_TX_TIMEOUT unix_tx_timeout
 SERVER_SIGNATURE server_signature
 SERVER_HEADER server_header
 USER_AGENT_HEADER user_agent_header
@@ -511,12 +505,6 @@ WHITESPACE	[ \t\r\n]
 									return TLS_CLIENT_DOMAIN; }
 <INITIAL>{TLS_CLIENT_DOMAIN_AVP}	{ count(); yylval.strval=yytext;
 										return TLS_CLIENT_DOMAIN_AVP; }
-<INITIAL>{SOCK_MODE}	{ count(); yylval.strval=yytext; return SOCK_MODE; }
-<INITIAL>{SOCK_USER}	{ count(); yylval.strval=yytext; return SOCK_USER; }
-<INITIAL>{SOCK_GROUP}	{ count(); yylval.strval=yytext; return SOCK_GROUP; }
-<INITIAL>{UNIX_SOCK} { count(); yylval.strval=yytext; return UNIX_SOCK; }
-<INITIAL>{UNIX_SOCK_CHILDREN} { count(); yylval.strval=yytext; return UNIX_SOCK_CHILDREN; }
-<INITIAL>{UNIX_TX_TIMEOUT} { count(); yylval.strval=yytext; return UNIX_TX_TIMEOUT; }
 <INITIAL>{SERVER_SIGNATURE}	{ count(); yylval.strval=yytext; return SERVER_SIGNATURE; }
 <INITIAL>{SERVER_HEADER}	{ count(); yylval.strval=yytext; return SERVER_HEADER; }
 <INITIAL>{USER_AGENT_HEADER}	{ count(); yylval.strval=yytext; return USER_AGENT_HEADER; }

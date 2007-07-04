@@ -108,7 +108,6 @@
 #include "resolve.h"
 #include "parser/parse_hname2.h"
 #include "parser/digest/digest_parser.h"
-#include "unixsock_server.h"
 #include "name_alias.h"
 #include "hash_func.h"
 #include "pt.h"
@@ -173,8 +172,7 @@ Options:\n\
     -u uid       Change uid \n\
     -g gid       Change gid \n\
     -P file      Create a pid file\n\
-    -G file      Create a pgid file\n\
-    -x socket    Create a unix domain socket \n"
+    -G file      Create a pgid file\n"
 ;
 
 /* print compile-time constants */
@@ -266,11 +264,6 @@ char* user=0;
 char* group=0;
 int uid = 0;
 int gid = 0;
-char* sock_user=0;
-char* sock_group=0;
-int sock_uid= -1;
-int sock_gid= -1;
-int sock_mode= S_IRUSR| S_IWUSR| S_IRGRP| S_IWGRP; /* rw-rw---- */
 
 /* more config stuff */
 int disable_core_dump=0; /* by default enabled */
@@ -364,7 +357,6 @@ void cleanup(int show_status)
 	destroy_tls();
 #endif
 	destroy_timer();
-	close_unixsock_server();
 	destroy_stats_collector();
 	destroy_script_cb();
 	xl_free_extra_spec();
@@ -661,11 +653,6 @@ int main_loop()
 			LOG(L_WARN, "WARNING: using only the first listen address"
 						" (no fork)\n");
 		}
-		/* Initialize Unix domain socket server */
-		if (init_unixsock_socket()<0) {
-			LOG(L_ERR, "Error while creating unix domain sockets\n");
-			goto error;
-		}
 		if (do_suid()==-1) goto error; /* try to drop privileges */
 		/* process_no now initialized to zero -- increase from now on
 		   as new processes are forked (while skipping 0 reserved for main 
@@ -704,11 +691,6 @@ int main_loop()
 						pt[process_no].pid=pid; /*should be shared mem anyway*/
 						strncpy(pt[process_no].desc, "timer", MAX_PT_DESC );
 				}
-		}
-
-		if (init_unixsock_children()<0) {
-			LOG(L_ERR, "Error while initializing Unix domain socket server\n");
-			goto error;
 		}
 
 		/* main process, receive loop */
@@ -781,22 +763,9 @@ int main_loop()
 #endif /* USE_TLS */
 #endif /* USE_TCP */
 
-		/* Initialize Unix domain socket server */
-		if (init_unixsock_socket()<0) {
-			LOG(L_ERR, "ERROR: Could not create unix domain sockets\n");
-			goto error;
-		}
-
 			/* all processes should have access to all the sockets (for sending)
 			 * so we open all first*/
 		if (do_suid()==-1) goto error; /* try to drop privileges */
-
-		/* Spawn children listening on unix domain socket if and only if
-		 * the unix domain socket server has not been disabled (i == 0) */
-		if (init_unixsock_children()<0) {
-			LOG(L_ERR, "ERROR: Could not initialize unix domain socket server\n");
-			goto error;
-		}
 
 		/* udp processes */
 		for(si=udp_listen; si; si=si->next){
@@ -1133,9 +1102,6 @@ int main(int argc, char** argv)
 			case 'G':
 					pgid_file=optarg;
 					break;
-			case 'x':
-					unixsock_name=optarg;
-					break;
 			case '?':
 					if (isprint(optopt))
 						fprintf(stderr, "Unknown option `-%c´.\n", optopt);
@@ -1243,19 +1209,6 @@ try_again:
 	if (group){
 		if (group2gid(&gid, group)<0){
 				fprintf(stderr, "bad group name/gid number: -u %s\n", group);
-			goto error;
-		}
-	}
-	/* fix sock uid/gid */
-	if (sock_user){
-		if (user2uid(&sock_uid, 0, sock_user)<0){
-			fprintf(stderr, "bad socket user name/uid number %s\n", user);
-			goto error;
-		}
-	}
-	if (sock_group){
-		if (group2gid(&sock_gid, sock_group)<0){
-			fprintf(stderr, "bad group name/gid number: -u %s\n", group);
 			goto error;
 		}
 	}
