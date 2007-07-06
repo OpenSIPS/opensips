@@ -446,6 +446,9 @@ inline static int comp_strval(struct sip_msg *msg, int op, str* ival,
 	char backup2;
 	str res;
 	xl_value_t value;
+			
+	if(ival==NULL || ival->s==NULL)
+		goto error;
 	
 	res.s = 0; res.len = 0;
 	if(opd->type == SCRIPTVAR_ST)

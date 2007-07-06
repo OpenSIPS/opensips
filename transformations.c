@@ -71,7 +71,8 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 	char *p, *s;
 	str st;
 	xl_value_t v;
-	if(val==NULL)
+
+	if(val==NULL || val->flags&XL_VAL_NULL)
 		return -1;
 
 	switch(subtype)
