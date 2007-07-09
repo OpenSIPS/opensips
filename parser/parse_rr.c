@@ -336,24 +336,25 @@ int shm_duplicate_rr(rr_t** _new, rr_t* _r)
 /**
  * get first RR header and print comma separated bodies in oroute
  * - order = 0 normal; order = 1 reverse
+ * - nb_recs - input=skip number of rr; output=number of printed rrs
  */
-int print_rr_body(struct hdr_field *iroute, str *oroute, int order)
+int print_rr_body(struct hdr_field *iroute, str *oroute, int order,
+												unsigned int * nb_recs)
 {
 	rr_t *p;
-	int n = 0;
+	int n = 0, nr=0;
 	int i = 0;
 	int route_len;
 #define MAX_RR_HDRS	64
 	static str route[MAX_RR_HDRS];
-	char *cp;
+	char *cp, *start;
 
 	if(iroute==NULL)
 		return 0;
-	
-	route_len=0;
+
+	route_len= 0;
 	while (iroute!=NULL) 
 	{
-		
 		if (parse_rr(iroute) < 0) 
 		{
 			LOG(L_ERR,"print_rr_body: ERROR while parsing RR\n");
@@ -365,7 +366,9 @@ int print_rr_body(struct hdr_field *iroute, str *oroute, int order)
 		{
 			route[n].s = p->nameaddr.name.s;
 			route[n].len = p->len;
-			route_len+=p->len;
+			LOG(L_DBG, "DBG:parser:print_rr_body: current rr is %.*s\n",
+				route[n].len, route[n].s);
+
 			n++;
 			if(n==MAX_RR_HDRS)
 			{
@@ -377,38 +380,59 @@ int print_rr_body(struct hdr_field *iroute, str *oroute, int order)
 		iroute = iroute->sibling;
 	}
 
-	route_len += --n; /* for commas */
+	for(i=0;i<n;i++){
+		if(!nb_recs || (nb_recs && 
+		 ( (!order&& (i>=*nb_recs)) || (order && (i<=(n-*nb_recs)) )) ) )
+		{
+			route_len+= route[i].len;
+			nr++;
+		}
+	
+	}
+
+	if(nb_recs)
+		LOG(L_DBG, "print_rr_body: skipping %i route records\n", *nb_recs);
+	
+	route_len += --nr; /* for commas */
+
 	oroute->s=(char*)pkg_malloc(route_len);
+
+
 	if(oroute->s==0)
 	{
 		LOG(L_ERR, "print_rr_body: ERROR no more pkg mem\n");
 		goto error;
 	}
-	cp = oroute->s;
+	cp = start = oroute->s;
 	if(order==0)
 	{
-		i = 0;
+		i= (nb_recs == NULL) ? 0:*nb_recs;
+
 		while (i<=n)
 		{
 			memcpy(cp, route[i].s, route[i].len);
 			cp += route[i].len;
-			if (++i<=n)
+			if (++i<n)
 				*(cp++) = ',';
 		}
 	} else {
-		i = n;
+		
+		i = (nb_recs == NULL) ? n : (n-*nb_recs-1);
+			
 		while (i>=0)
 		{
 			memcpy(cp, route[i].s, route[i].len);
 			cp += route[i].len;
-			if (--i>=0)
+			if (--i>0)
 				*(cp++) = ',';
 		}
 	}
-	oroute->len=route_len;
+	oroute->len=cp - start;
 
-	DBG("print_rr_body: out rr [%.*s]\n",
-			oroute->len, oroute->s);
+	DBG("print_rr_body: out rr [%.*s]\n", oroute->len, oroute->s);
+	LOG(L_DBG, "DBG:parser: print_rr_body: we have %i records\n", n);
+	if(nb_recs != NULL)
+		*nb_recs = (unsigned int)n; 
 
 	return 0;
 

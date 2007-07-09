@@ -90,6 +90,7 @@ int shm_duplicate_rr(rr_t** _new, rr_t* _r);
 /*
  * print body for all RR headers in comma separated string
  */
-int print_rr_body(struct hdr_field *iroute, str *oroute, int order);
+int print_rr_body(struct hdr_field *iroute, str *oroute, int order,
+		unsigned int * nb_recs);
 
 #endif /* PARSE_RR_H */
