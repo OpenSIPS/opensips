@@ -470,6 +470,11 @@ install-bin: $(bin-prefix)/$(bin-dir) utils
 		$(INSTALL_CFG) /tmp/openserctl.sqlbase \
 			$(modules-prefix)/$(lib-dir)/openserctl/openserctl.sqlbase
 		rm -fr /tmp/openserctl.sqlbase
+		sed -e "s#/usr/local#$(bin-target)#g" \
+			< scripts/openserctl.dbtext > /tmp/openserctl.dbtext
+		$(INSTALL_CFG) /tmp/openserctl.dbtext \
+			$(modules-prefix)/$(lib-dir)/openserctl/openserctl.dbtext
+		rm -fr /tmp/openserctl.dbtext
 		# install db setup base script
 		sed -e "s#/usr/local/sbin#$(bin-target)#g" \
 			-e "s#/usr/local/etc/openser#$(cfg-target)#g" \
