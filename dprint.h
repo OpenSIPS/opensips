@@ -36,56 +36,32 @@
 #define L_INFO   3
 #define L_DBG    4
 
+#define DPRINT_LEV   L_ERR
+
+
 /* vars:*/
 
+#if CHANGEABLE_DEBUG_LEVEL
+extern int *debug;
+#else
 extern int debug;
+#endif
 extern int log_stderr;
 extern int log_facility;
 extern char* log_name;
 
-
-#define DPRINT_LEV	1
-/* priority at which we log */
-#define DPRINT_PRIO LOG_DEBUG
 
 
 void dprint (char* format, ...);
 
 int str2facility(char *s);
 
-
-#ifdef NO_DEBUG
-	#ifdef __SUNPRO_C
-		#define DPrint(...)
-	#else
-		#define DPrint(fmt, args...)
-	#endif
+#if CHANGEABLE_DEBUG_LEVEL
+	#define is_printable(_level)  ((*debug)>=(_level))
 #else
-	#ifdef __SUNPRO_C
-		#define DPrint( ...) \
-			do{ \
-				if (debug>=DPRINT_LEV){ \
-					if (log_stderr){ \
-						dprint (__VA_ARGS__); \
-					}else{ \
-						syslog(DPRINT_LEV|log_facility,  __VA_ARGS__); \
-					}\
-				} \
-			}while(0)
-	#else
-			#define DPrint(fmt,args...) \
-			do{ \
-				if (debug>=DPRINT_LEV){ \
-					if (log_stderr){ \
-						dprint (fmt, ## args); \
-					}else{ \
-						syslog(DPRINT_LEV|log_facility, fmt, ## args); \
-					}\
-				} \
-			}while(0)
-	#endif
-
+	#define is_printable(_level)  (debug>=(_level))
 #endif
+
 
 #ifndef NO_DEBUG
 	#undef NO_LOG
@@ -101,7 +77,7 @@ int str2facility(char *s);
 	#ifdef __SUNPRO_C
 		#define LOG(lev, ...) \
 			do { \
-				if (debug>=(lev)){ \
+				if (is_printable(lev)){ \
 					if (log_stderr) dprint (__VA_ARGS__); \
 					else { \
 						switch(lev){ \
@@ -133,7 +109,7 @@ int str2facility(char *s);
 	#else
 		#define LOG(lev, fmt, args...) \
 			do { \
-				if (debug>=(lev)){ \
+				if (is_printable(lev)){ \
 					if (log_stderr) dprint (fmt, ## args); \
 					else { \
 						switch(lev){ \

@@ -525,7 +525,13 @@ blst_elem_list: blst_elem_list COMMA blst_elem {}
 		;
 
 
-assign_stm:	DEBUG EQUAL NUMBER { debug=$3; }
+assign_stm: DEBUG EQUAL NUMBER { 
+#ifdef CHANGEABLE_DEBUG_LEVEL
+					*debug=$3;
+#else
+					debug=$3;
+#endif
+			}
 		| DEBUG EQUAL error  { yyerror("number  expected"); }
 		| FORK  EQUAL NUMBER { dont_fork= ! $3; }
 		| FORK  EQUAL error  { yyerror("boolean value expected"); }

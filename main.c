@@ -223,7 +223,12 @@ int tls_disable = 1; /* 1 if tls is disabled */
 struct process_table *pt=0;		/*array with children pids, 0= main proc,
 									alloc'ed in shared mem if possible*/
 int sig_flag = 0;              /* last signal received */
+#ifdef CHANGEABLE_DEBUG_LEVEL
+int debug_init = L_NOTICE;
+int *debug = &debug_init;
+#else
 int debug = L_NOTICE;
+#endif
 int dont_fork = 0;
 int log_stderr = 0;
 /* log facility (see syslog(3)) */
@@ -443,6 +448,10 @@ void handle_sigs()
 				break;
 		case SIGINT:
 		case SIGTERM:
+#ifdef CHANGEABLE_DEBUG_LEVEL
+			debug_init = *debug;
+			debug = &debug_init;
+#endif
 			/* we end the program in all these cases */
 			if (sig_flag==SIGINT)
 				DBG("INT received, program terminates\n");
@@ -480,6 +489,10 @@ void handle_sigs()
 			break;
 			
 		case SIGCHLD:
+#ifdef CHANGEABLE_DEBUG_LEVEL
+			debug_init = *debug;
+			debug = &debug_init;
+#endif
 			while ((chld=waitpid( -1, &chld_status, WNOHANG ))>0) {
 				if (WIFEXITED(chld_status)) 
 					LOG(L_INFO, "child process %d exited normally,"
@@ -520,8 +533,8 @@ void handle_sigs()
 			break;
 		
 		case SIGHUP: /* ignoring it*/
-					DBG("SIGHUP received, ignoring it\n");
-					break;
+			DBG("SIGHUP received, ignoring it\n");
+			break;
 		default:
 			LOG(L_CRIT, "WARNING: unhandled signal %d\n", sig_flag);
 	}
@@ -554,6 +567,10 @@ static void sig_usr(int signo)
 				break;
 			case SIGINT:
 			case SIGTERM:
+#ifdef CHANGEABLE_DEBUG_LEVEL
+					debug_init = *debug;
+					debug = &debug_init;
+#endif
 					LOG(L_INFO, "INFO: signal %d received\n", signo);
 					/* print memory stats for non-main too */
 					#ifdef PKG_MALLOC
@@ -587,33 +604,33 @@ int install_sigs()
 {
 	/* added by jku: add exit handler */
 	if (signal(SIGINT, sig_usr) == SIG_ERR ) {
-		DPrint("ERROR: no SIGINT signal handler can be installed\n");
+		LOG(L_ERR,"ERROR: no SIGINT signal handler can be installed\n");
 		goto error;
 	}
 	/* if we debug and write to a pipe, we want to exit nicely too */
 	if (signal(SIGPIPE, sig_usr) == SIG_ERR ) {
-		DPrint("ERROR: no SIGINT signal handler can be installed\n");
+		LOG(L_ERR,"ERROR: no SIGINT signal handler can be installed\n");
 		goto error;
 	}
 	
 	if (signal(SIGUSR1, sig_usr)  == SIG_ERR ) {
-		DPrint("ERROR: no SIGUSR1 signal handler can be installed\n");
+		LOG(L_ERR,"ERROR: no SIGUSR1 signal handler can be installed\n");
 		goto error;
 	}
 	if (signal(SIGCHLD , sig_usr)  == SIG_ERR ) {
-		DPrint("ERROR: no SIGCHLD signal handler can be installed\n");
+		LOG(L_ERR,"ERROR: no SIGCHLD signal handler can be installed\n");
 		goto error;
 	}
 	if (signal(SIGTERM , sig_usr)  == SIG_ERR ) {
-		DPrint("ERROR: no SIGTERM signal handler can be installed\n");
+		LOG(L_ERR,"ERROR: no SIGTERM signal handler can be installed\n");
 		goto error;
 	}
 	if (signal(SIGHUP , sig_usr)  == SIG_ERR ) {
-		DPrint("ERROR: no SIGHUP signal handler can be installed\n");
+		LOG(L_ERR,"ERROR: no SIGHUP signal handler can be installed\n");
 		goto error;
 	}
 	if (signal(SIGUSR2 , sig_usr)  == SIG_ERR ) {
-		DPrint("ERROR: no SIGUSR2 signal handler can be installed\n");
+		LOG(L_ERR,"ERROR: no SIGUSR2 signal handler can be installed\n");
 		goto error;
 	}
 	return 0;
@@ -957,7 +974,7 @@ int main(int argc, char** argv)
 	/*init*/
 	ret=-1;
 	my_argc=argc; my_argv=argv;
-	
+
 	/*init pkg mallocs (before parsing cfg or cmd line !)*/
 	if (init_pkg_mallocs()==-1)
 		goto error;
@@ -1030,7 +1047,11 @@ int main(int argc, char** argv)
 			case 'R':
 					received_dns|=DO_REV_DNS;
 			case 'd':
+#ifdef CHANGEABLE_DEBUG_LEVEL
+					(*debug)++;
+#else
 					debug++;
+#endif
 					break;
 			case 'D':
 					dont_fork=1;
@@ -1286,8 +1307,20 @@ try_again:
 	/*alloc pids*/
 #ifdef SHM_MEM
 	pt=shm_malloc(sizeof(struct process_table)*process_count());
+#ifdef CHANGEABLE_DEBUG_LEVEL
+	debug=shm_malloc(sizeof(int));
+	if (debug==0) {
+		fprintf(stderr, "ERROR: out  of memory\n");
+		goto error;
+	}
+	*debug = debug_init;
+#endif
 #else
 	pt=pkg_malloc(sizeof(struct process_table)*process_count());
+#ifdef CHANGEABLE_DEBUG_LEVEL
+	LOG(L_WARN,"WARNING: no shm mem support compiled -> changeable debug "
+		"level turned off\n");
+#endif
 #endif
 	if (pt==0){
 		fprintf(stderr, "ERROR: out  of memory\n");

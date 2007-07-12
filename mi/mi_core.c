@@ -20,7 +20,7 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  *
  *
- * History:
+ * history:
  * ---------
  *  2006-09-08  first version (bogdan)
  */
@@ -270,6 +270,47 @@ static struct mi_root *mi_kill(struct mi_root *cmd, void *param)
 }
 
 
+
+static struct mi_root *mi_debug(struct mi_root *cmd, void *param)
+{
+	struct mi_root *rpl_tree;
+	struct mi_node *node;
+	char *p;
+	int len;
+	int new_debug;
+
+#ifdef CHANGEABLE_DEBUG_LEVEL
+	node = cmd->node.kids;
+	if (node!=NULL) {
+		if (str2sint( &node->value, &new_debug) < 0)
+			return init_mi_tree( 400, MI_BAD_PARM_S, MI_BAD_PARM_LEN);
+	} else
+		new_debug = *debug;
+#else
+		new_debug = debug;
+#endif
+
+	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
+	if (rpl_tree==0)
+		return 0;
+
+	p = sint2str((long)new_debug, &len);
+	node = add_mi_node_child( &rpl_tree->node, MI_DUP_VALUE, "DEBUG", 5,
+		p, len);
+	if (node==0) {
+		free_mi_tree(rpl_tree);
+		return 0;
+	}
+
+#ifdef CHANGEABLE_DEBUG_LEVEL
+	*debug = new_debug;
+#endif
+
+	return rpl_tree;
+}
+
+
+
 static mi_export_t mi_core_cmds[] = {
 	{ "uptime",   mi_uptime,   MI_NO_INPUT_FLAG,  0,  init_mi_uptime },
 	{ "version",  mi_version,  MI_NO_INPUT_FLAG,  0,  0 },
@@ -278,6 +319,7 @@ static mi_export_t mi_core_cmds[] = {
 	{ "which",    mi_which,    MI_NO_INPUT_FLAG,  0,  0 },
 	{ "ps",       mi_ps,       MI_NO_INPUT_FLAG,  0,  0 },
 	{ "kill",     mi_kill,     MI_NO_INPUT_FLAG,  0,  0 },
+	{ "debug",    mi_debug,                   0,  0,  0 },
 	{ 0, 0, 0, 0, 0}
 };
 
