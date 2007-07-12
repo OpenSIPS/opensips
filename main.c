@@ -379,6 +379,13 @@ void cleanup(int show_status)
 			LOG(memlog, "Memory status (shm):\n");
 			shm_status();
 	}
+#ifdef CHANGEABLE_DEBUG_LEVEL
+	if (debug!=&debug_init) {
+		debug_init = *debug;
+		shm_free(debug);
+		debug = &debug_init;
+	}
+#endif
 	/* zero all shmem alloc vars that we still use */
 	shm_mem_destroy();
 #endif
@@ -448,10 +455,6 @@ void handle_sigs()
 				break;
 		case SIGINT:
 		case SIGTERM:
-#ifdef CHANGEABLE_DEBUG_LEVEL
-			debug_init = *debug;
-			debug = &debug_init;
-#endif
 			/* we end the program in all these cases */
 			if (sig_flag==SIGINT)
 				DBG("INT received, program terminates\n");
@@ -489,10 +492,6 @@ void handle_sigs()
 			break;
 			
 		case SIGCHLD:
-#ifdef CHANGEABLE_DEBUG_LEVEL
-			debug_init = *debug;
-			debug = &debug_init;
-#endif
 			while ((chld=waitpid( -1, &chld_status, WNOHANG ))>0) {
 				if (WIFEXITED(chld_status)) 
 					LOG(L_INFO, "child process %d exited normally,"
@@ -567,10 +566,6 @@ static void sig_usr(int signo)
 				break;
 			case SIGINT:
 			case SIGTERM:
-#ifdef CHANGEABLE_DEBUG_LEVEL
-					debug_init = *debug;
-					debug = &debug_init;
-#endif
 					LOG(L_INFO, "INFO: signal %d received\n", signo);
 					/* print memory stats for non-main too */
 					#ifdef PKG_MALLOC
