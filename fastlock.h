@@ -48,13 +48,7 @@
 #ifndef fastlock_h
 #define fastlock_h
 
-#ifdef HAVE_SCHED_YIELD
-#include <sched.h>
-#else
-#include <unistd.h>
-/** Fake sched_yield if no unistd.h include is available */
-	#define sched_yield()	sleep(0)
-#endif
+#include "sched_yield.h"
 
 
 #define SPIN_OPTIMIZE /* if defined optimize spining on the lock:
