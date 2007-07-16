@@ -43,7 +43,7 @@
     <xsl:template name="table.close">
 	<xsl:text>)</xsl:text>
 	<xsl:if test="type[@db=$db]">
-	    <xsl:text> Type=</xsl:text>
+	    <xsl:text> ENGINE=</xsl:text>
 	    <xsl:value-of select="normalize-space(type[@db=$db])"/>
 	</xsl:if>
 	<xsl:text>;&#x0A;&#x0A;</xsl:text>	
