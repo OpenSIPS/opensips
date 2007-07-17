@@ -35,21 +35,22 @@
 
     <xsl:template match="/">
 	<xsl:variable name="path" select="concat($dir, concat('/', concat($prefix, 'dbschema.xml')))"/>
-	<xsl:document href="{$path}" method="xml" indent="yes" omit-xml-declaration="yes" 
-	doctype-system="http://www.oasis-open.org/docbook/sgml/4.2/docbook.dtd"
-	doctype-public="-//OASIS//DTD DocBook V4.2//EN">
-	<xsl:element name="book">
-	<xsl:element name="article">
-	    <xsl:element name="section">
+	<xsl:document href="{$path}" method="xml" indent="yes" omit-xml-declaration="yes">
+	<!-- only needed for stand alone documents for each table -->
+	<!--doctype-system="http://www.oasis-open.org/docbook/sgml/4.4/docbook.dtd"
+	doctype-public="-//OASIS//DTD DocBook V4.4//EN">-->
+	<!--<xsl:element name="book">-->
+	<xsl:element name="chapter">
+	    <!--<xsl:element name="section">-->
 		<xsl:element name="title">
 		    <xsl:call-template name="get-name">
 			<xsl:with-param name="select" select="database[1]"/>
 		    </xsl:call-template>
 		</xsl:element>
 		<xsl:apply-templates select="/database[1]"/>
-	    </xsl:element>
+	    <!--</xsl:element>-->
 	</xsl:element>
-        </xsl:element>
+        <!--</xsl:element>-->
 	</xsl:document>
     </xsl:template>
 

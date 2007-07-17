@@ -235,7 +235,7 @@ modules-docbook: modules-docbook-txt modules-docbook-html modules-docbook-pdf
 .PHONY: dbschema-docbook-txt
 dbschema-docbook-txt: dbschema
 	@set -e; \
-	for r in $(wildcard doc/database/*.xml) "" ; do \
+	for r in $(wildcard doc/database/*.sgml) "" ; do \
 		if [ -f "$$r" ]; then \
 			echo  "" ; \
 			echo  "docbook2txt $$r" ; \
@@ -246,7 +246,7 @@ dbschema-docbook-txt: dbschema
 .PHONY: dbschema-docbook-html
 dbschema-docbook-html: dbschema
 	@set -e; \
-	for r in $(wildcard doc/database/*.xml) "" ; do \
+	for r in $(wildcard doc/database/*.sgml) "" ; do \
 		if [ -f "$$r" ]; then \
 			echo  "" ; \
 			echo  "docbook2html $$r" ; \
@@ -257,7 +257,7 @@ dbschema-docbook-html: dbschema
 .PHONY: dbschema-docbook-pdf
 dbschema-docbook-pdf: dbschema
 	@set -e; \
-	for r in $(wildcard doc/database/*.xml) "" ; do \
+	for r in $(wildcard doc/database/*.sgml) "" ; do \
 		if [ -f "$$r" ]; then \
 			echo  "" ; \
 			echo  "docbook2pdf $$r" ; \

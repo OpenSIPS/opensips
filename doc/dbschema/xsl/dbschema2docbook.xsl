@@ -40,7 +40,7 @@
 	doctype-public="-//OASIS//DTD DocBook XML V4.2//EN"/>-->
 
 <xsl:template match="//database">
-<section><title><xsl:value-of select="name"/> database tables</title>
+<!--<section><title><xsl:value-of select="name"/> database tables</title>-->
 	<!-- generate table descriptions -->
 	<xsl:choose>
 	<xsl:when test="table">
@@ -61,7 +61,7 @@
 	<para/><!-- no table present, insert some dummy content to make docbook happy -->
 	</xsl:otherwise>
 	</xsl:choose>
-</section>
+<!--</section>-->
 </xsl:template>
 
 <!-- Needed for copying whole nodes from db schema description. We
