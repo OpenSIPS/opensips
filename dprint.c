@@ -51,11 +51,18 @@ static int int_fac[]={LOG_AUTH ,  LOG_CRON , LOG_DAEMON ,
 					};
 
 
+
+int dp_my_pid()
+{
+	return my_pid();
+}
+
+
 void dprint(char * format, ...)
 {
 	va_list ap;
 
-	fprintf(stderr, "%2d(%d) ", process_no, my_pid());
+	//fprintf(stderr, "%2d(%d) ", process_no, my_pid());
 	va_start(ap, format);
 	vfprintf(stderr,format,ap);
 	fflush(stderr);

@@ -26,7 +26,7 @@
 #define dprint_h
 
 #include <syslog.h>
-
+#include <time.h>
 
 #define L_ALERT -3
 #define L_CRIT  -2
@@ -36,15 +36,20 @@
 #define L_INFO   3
 #define L_DBG    4
 
-#define LOG_ALERT_LABEL  "ALERT:"
-#define LOG_CRIT_LABEL   "CRITICAL:"
-#define LOG_ERR_LABEL    "ERROR:"
-#define LOG_WARN_LABEL   "WARNING:"
-#define LOG_NOTICE_LABEL "NOTICE:"
-#define LOG_INFO_LABEL   "INFO:"
-#define LOG_DBG_LABEL    "DBG:"
+
+#define DP_PREFIX  "%s [%d] "
+
+#define DP_ALERT_PREFIX  DP_PREFIX "ALERT:"
+#define DP_CRIT_PREFIX   DP_PREFIX "CRITICAL:"
+#define DP_ERR_PREFIX    DP_PREFIX "ERROR:"
+#define DP_WARN_PREFIX   DP_PREFIX "WARNING:"
+#define DP_NOTICE_PREFIX DP_PREFIX "NOTICE:"
+#define DP_INFO_PREFIX   DP_PREFIX "INFO:"
+#define DP_DBG_PREFIX    DP_PREFIX "DBG:"
 
 #define DPRINT_LEV   L_ERR
+
+#define LOG_PREFIX  MOD_NAME ":"
 
 #ifndef MOD_NAME
 	#define MOD_NAME "core"
@@ -53,8 +58,6 @@
 #ifndef NO_DEBUG
 	#undef NO_LOG
 #endif
-
-#define LOG_PREFIX  MOD_NAME ":"
 
 /* vars:*/
 
@@ -68,17 +71,31 @@ extern int log_facility;
 extern char* log_name;
 
 
+int dp_my_pid();
 
 void dprint (char* format, ...);
 
 int str2facility(char *s);
+
+inline static char* dp_time()
+{
+	time_t ltime;
+	char *p;
+
+	time(&ltime);
+	p = ctime(&ltime);
+	p[20] = 0; /* remove year*/
+
+	return p+4;  /* remove name of day*/
+}
+
+
 
 #if CHANGEABLE_DEBUG_LEVEL
 	#define is_printable(_level)  ((*debug)>=(_level))
 #else
 	#define is_printable(_level)  (debug>=(_level))
 #endif
-
 
 
 #ifdef NO_LOG
@@ -135,11 +152,15 @@ int str2facility(char *s);
 				} \
 			}while(0)
 
+		#define MY_DPRINT( _prefix, _fmt, ...) \
+				dprint( _prefix LOG_PREFIX _fmt, dp_time(), \
+					dp_my_pid(), __VA_ARGS__ ) \
+
 		#define LM_ALERT( fmt, ...) \
 			do { \
 				if (is_printable(L_ALERT)){ \
 					if (log_stderr)\
-						dprint( LOG_ALERT_LABEL LOG_PREFIX fmt, __VA_ARGS__);\
+						MY_DPRINT( DP_ALERT_PREFIX, fmt, __VA_ARGS__);\
 					else \
 						syslog( LOG_ALERT|log_facility, \
 							LOG_PREFIX fmt, __VA_ARGS__);\
@@ -150,7 +171,7 @@ int str2facility(char *s);
 			do { \
 				if (is_printable(L_CRIT)){ \
 					if (log_stderr)\
-						dprint( LOG_CRIT_LABEL LOG_PREFIX fmt, __VA_ARGS__);\
+						MY_DPRINT( DP_CRIT_PREFIX, fmt, __VA_ARGS__);\
 					else \
 						syslog( LOG_CRIT|log_facility, \
 							LOG_PREFIX fmt, __VA_ARGS__);\
@@ -161,7 +182,7 @@ int str2facility(char *s);
 			do { \
 				if (is_printable(L_ERR)){ \
 					if (log_stderr)\
-						dprint( LOG_ERR_LABEL LOG_PREFIX fmt, __VA_ARGS__);\
+						MY_DPRINT( DP_ERR_PREFIX, fmt, __VA_ARGS__);\
 					else \
 						syslog( LOG_ERR|log_facility, \
 							LOG_PREFIX fmt, __VA_ARGS__);\
@@ -172,7 +193,7 @@ int str2facility(char *s);
 			do { \
 				if (is_printable(L_WARN)){ \
 					if (log_stderr)\
-						dprint( LOG_WARN_LABEL LOG_PREFIX fmt, __VA_ARGS__);\
+						MY_DPRINT( DP_WARN_PREFIX, fmt, __VA_ARGS__);\
 					else \
 						syslog( LOG_WARNING|log_facility, \
 							LOG_PREFIX fmt, __VA_ARGS__);\
@@ -183,7 +204,7 @@ int str2facility(char *s);
 			do { \
 				if (is_printable(L_NOTICE)){ \
 					if (log_stderr)\
-						dprint( LOG_NOTICE_LABEL LOG_PREFIX fmt, __VA_ARGS__);\
+						MY_DPRINT( DP_NOTICE_PREFIX, fmt, __VA_ARGS__);\
 					else \
 						syslog( LOG_NOTICE|log_facility, \
 							LOG_PREFIX fmt, __VA_ARGS__);\
@@ -194,7 +215,7 @@ int str2facility(char *s);
 			do { \
 				if (is_printable(L_INFO)){ \
 					if (log_stderr)\
-						dprint( LOG_INFO_LABEL LOG_PREFIX fmt, __VA_ARGS__);\
+						MY_DPRINT( DP_INFO_PREFIX, fmt, __VA_ARGS__);\
 					else \
 						syslog( LOG_INFO|log_facility, \
 							LOG_PREFIX fmt, __VA_ARGS__);\
@@ -208,7 +229,7 @@ int str2facility(char *s);
 				do { \
 					if (is_printable(L_DBG)){ \
 						if (log_stderr)\
-							dprint(LOG_DBG_LABEL LOG_PREFIX fmt, __VA_ARGS__);\
+							MY_DPRINT( DP_DBG_PREFIX, fmt, __VA_ARGS__);\
 						else \
 							syslog( LOG_DEBUG|log_facility, \
 								LOG_PREFIX fmt, __VA_ARGS__);\
@@ -250,11 +271,15 @@ int str2facility(char *s);
 				} \
 			}while(0)
 
+		#define MY_DPRINT( _prefix, _fmt, args...) \
+				dprint( _prefix LOG_PREFIX _fmt, dp_time(), \
+					dp_my_pid(), ## args) \
+
 		#define LM_ALERT( fmt, args...) \
 			do { \
 				if (is_printable(L_ALERT)){ \
 					if (log_stderr)\
-						dprint( LOG_ALERT_LABEL LOG_PREFIX fmt, ## args);\
+						MY_DPRINT( DP_ALERT_PREFIX, fmt, ##args);\
 					else \
 						syslog( LOG_ALERT|log_facility, \
 							LOG_PREFIX fmt, ##args);\
@@ -265,7 +290,7 @@ int str2facility(char *s);
 			do { \
 				if (is_printable(L_CRIT)){ \
 					if (log_stderr)\
-						dprint( LOG_CRIT_LABEL LOG_PREFIX fmt, ## args);\
+						MY_DPRINT( DP_CRIT_PREFIX, fmt, ##args);\
 					else \
 						syslog( LOG_CRIT|log_facility, \
 							LOG_PREFIX fmt, ##args);\
@@ -276,7 +301,7 @@ int str2facility(char *s);
 			do { \
 				if (is_printable(L_ERR)){ \
 					if (log_stderr)\
-						dprint( LOG_ERR_LABEL LOG_PREFIX fmt, ## args);\
+						MY_DPRINT( DP_ERR_PREFIX, fmt, ##args);\
 					else \
 						syslog( LOG_ERR|log_facility, \
 							LOG_PREFIX fmt, ##args);\
@@ -287,7 +312,7 @@ int str2facility(char *s);
 			do { \
 				if (is_printable(L_WARN)){ \
 					if (log_stderr)\
-						dprint( LOG_WARN_LABEL LOG_PREFIX fmt, ## args);\
+						MY_DPRINT( DP_WARN_PREFIX, fmt, ##args);\
 					else \
 						syslog( LOG_WARNING|log_facility, \
 							LOG_PREFIX fmt, ##args);\
@@ -298,7 +323,7 @@ int str2facility(char *s);
 			do { \
 				if (is_printable(L_NOTICE)){ \
 					if (log_stderr)\
-						dprint( LOG_NOTICE_LABEL LOG_PREFIX fmt, ## args);\
+						MY_DPRINT( DP_NOTICE_PREFIX, fmt, ##args);\
 					else \
 						syslog( LOG_NOTICE|log_facility, \
 							LOG_PREFIX fmt, ##args);\
@@ -309,7 +334,7 @@ int str2facility(char *s);
 			do { \
 				if (is_printable(L_INFO)){ \
 					if (log_stderr)\
-						dprint( LOG_INFO_LABEL LOG_PREFIX fmt, ## args);\
+						MY_DPRINT( DP_INFO_PREFIX, fmt, ##args);\
 					else \
 						syslog( LOG_INFO|log_facility, \
 							LOG_PREFIX fmt, ##args);\
@@ -323,7 +348,7 @@ int str2facility(char *s);
 				do { \
 					if (is_printable(L_DBG)){ \
 						if (log_stderr)\
-							dprint( LOG_DBG_LABEL LOG_PREFIX fmt, ## args);\
+							MY_DPRINT( DP_DBG_PREFIX, fmt, ##args);\
 						else \
 							syslog( LOG_DEBUG|log_facility, \
 								LOG_PREFIX fmt, ##args);\
