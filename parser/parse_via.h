@@ -87,6 +87,7 @@ struct via_body {
 	struct via_param* rport;
 	struct via_param* i;
 	struct via_param* alias; /* alias see draft-ietf-sip-connect-reuse-00 */
+	struct via_param* maddr;
 	struct via_body* next; /* pointer to next via body string if
 				  compact via or null */
 };

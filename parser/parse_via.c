@@ -1872,6 +1872,9 @@ parse_again:
 							case PARAM_ALIAS:
 								vb->alias=param;
 								break;
+							case PARAM_MADDR:
+								vb->maddr=param;
+								break;
 						}
 						
 						if (state==END_OF_HEADER){
