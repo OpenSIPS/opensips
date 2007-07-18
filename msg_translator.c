@@ -218,10 +218,19 @@ static int check_via_address(struct ip_addr* ip, str *name,
 int received_test( struct sip_msg *msg )
 {
 	int rcvd;
+	
+	if(msg->via1->received !=NULL)
+		return 1;
 
-	rcvd = msg->via1->received || check_via_address(&msg->rcv.src_ip,
+	if(msg->via1->maddr){
+		rcvd = check_via_address(&msg->rcv.src_ip, &msg->via1->maddr->value, 
+			msg->via1->port, msg->via1->proto, received_dns);
+	} else {
+		rcvd = check_via_address(&msg->rcv.src_ip,
 			&msg->via1->host, msg->via1->port, msg->via1->proto, received_dns);
-	return rcvd;
+	}
+
+    return rcvd; 
 }
 
 
