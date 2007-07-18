@@ -412,7 +412,10 @@ int update_sock_struct_from_via( union sockaddr_union* to,
 		if ((msg->msg_flags&FL_FORCE_RPORT)||(via->rport))
 			port=msg->rcv.src_port;
 		else port=via->port;
-		name=&(via->host); /* received=ip in 1st via is ignored (it's
+		if(via->maddr)
+			name= &(via->maddr->value);
+		else
+			name=&(via->host); /* received=ip in 1st via is ignored (it's
 							  not added by us so it's bad) */
 	}else{
 		/* "normal" reply, we use rport's & received value if present */
@@ -425,7 +428,11 @@ int update_sock_struct_from_via( union sockaddr_union* to,
 				port=0;
 			}
 		}
-		if (via->received){
+
+		if (via->maddr){
+			name= &(via->maddr->value);
+			if (port==0) port=via->port?via->port:SIP_PORT; 
+		} else if (via->received){
 			DBG("DEBUG:update_sock_struct_from_via: using 'received'\n");
 			name=&(via->received->value);
 			/* making sure that we won't do SRV lookup on "received" */
