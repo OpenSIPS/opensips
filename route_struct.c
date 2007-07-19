@@ -419,6 +419,9 @@ void print_action(struct action* t)
 		case LEN_GT_T:
 				DBG("len_gt(");
 				break;
+		case SET_DEBUG_T:
+				DBG("setdebug(");
+				break;
 		case SETFLAG_T:
 				DBG("setflag(");
 				break;

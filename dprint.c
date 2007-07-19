@@ -52,6 +52,18 @@ static int int_fac[]={LOG_AUTH ,  LOG_CRON , LOG_DAEMON ,
 
 
 
+int str2facility(char *s)
+{
+	int i;
+
+	for( i=0; str_fac[i] ; i++) {
+		if (!strcasecmp(s,str_fac[i]))
+			return int_fac[i];
+	}
+	return -1;
+}
+
+
 int dp_my_pid()
 {
 	return my_pid();
@@ -70,13 +82,38 @@ void dprint(char * format, ...)
 }
 
 
-int str2facility(char *s)
-{
-	int i;
+#ifndef CHANGEABLE_DEBUG_LEVEL
+static int old_proc_level;
+#else
+static int *old_proc_level=NULL;
+#endif
 
-	for( i=0; str_fac[i] ; i++) {
-		if (!strcasecmp(s,str_fac[i]))
-			return int_fac[i];
+void set_proc_debug_level(int level)
+{
+#ifndef CHANGEABLE_DEBUG_LEVEL
+	static int proc_level_saved=0;
+
+	if (!proc_level_saved) {
+		old_proc_level = debug;
+		proc_level_saved = 1;
 	}
-	return -1;
+	debug = level;
+#else
+	static int proc_level;
+
+	proc_level = level;
+	if (old_proc_level==NULL) {
+		old_proc_level = debug;
+		debug = &proc_level;
+	}
+#endif
+}
+
+
+void reset_proc_debug_level()
+{
+	debug = old_proc_level;
+#ifdef CHANGEABLE_DEBUG_LEVEL
+	old_proc_level = NULL;
+#endif
 }

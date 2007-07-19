@@ -123,6 +123,7 @@ ROUTE_ERROR error_route
 FORCE_RPORT		"force_rport"|"add_rport"
 FORCE_LOCAL_RPORT		"force_local_rport"|"add_local_rport"
 FORCE_TCP_ALIAS		"force_tcp_alias"|"add_tcp_alias"
+SETDEBUG	"setdebug"
 SETFLAG		setflag
 RESETFLAG	resetflag
 ISFLAGSET	isflagset
@@ -359,6 +360,7 @@ WHITESPACE	[ \t\r\n]
 <INITIAL>{SEND}	{ count(); yylval.strval=yytext; return SEND; }
 <INITIAL>{LOG}	{ count(); yylval.strval=yytext; return LOG_TOK; }
 <INITIAL>{ERROR}	{ count(); yylval.strval=yytext; return ERROR; }
+<INITIAL>{SETDEBUG}	{ count(); yylval.strval=yytext; return SETDEBUG; }
 <INITIAL>{SETFLAG}	{ count(); yylval.strval=yytext; return SETFLAG; }
 <INITIAL>{RESETFLAG}	{ count(); yylval.strval=yytext; return RESETFLAG; }
 <INITIAL>{ISFLAGSET}	{ count(); yylval.strval=yytext; return ISFLAGSET; }

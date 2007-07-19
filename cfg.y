@@ -235,6 +235,7 @@ extern int line;
 %token NEXT_BRANCHES
 %token USE_BLACKLIST
 %token MAX_LEN
+%token SETDEBUG
 %token SETFLAG
 %token RESETFLAG
 %token ISFLAGSET
@@ -457,7 +458,8 @@ listen_id:	ip			{	tmp=ip_addr2a($1);
 									strncpy($$, $1, strlen($1)+1);
 							}
 						}
-		 |	host		{	$$=pkg_malloc(strlen($1)+1);
+		 |	host		{	tmp = $1;
+		 					$$=pkg_malloc(strlen(tmp)+1);
 		 					if ($$==0){
 									LOG(L_CRIT, "ERROR: cfg. parser: out of "
 											"memory.\n");
@@ -1887,7 +1889,11 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 		| LOG_TOK error { $$=0; yyerror("missing '(' or ')' ?"); }
 		| LOG_TOK LPAREN error RPAREN { $$=0; yyerror("bad log"
 									"argument"); }
-		| SETFLAG LPAREN NUMBER RPAREN {mk_action2( $$, SETFLAG_T, NUMBER_ST, 0,
+		| SETDEBUG LPAREN NUMBER RPAREN {mk_action2($$, SET_DEBUG_T, NUMBER_ST,
+									0, (void *)$3, 0 ); }
+		| SETDEBUG LPAREN RPAREN {mk_action2( $$, SET_DEBUG_T, 0, 0, 0, 0 ); }
+		| SETDEBUG error { $$=0; yyerror("missing '(' or ')'?"); }
+		| SETFLAG LPAREN NUMBER RPAREN {mk_action2($$, SETFLAG_T, NUMBER_ST, 0,
 													(void *)$3, 0 ); }
 		| SETFLAG error { $$=0; yyerror("missing '(' or ')'?"); }
 		| RESETFLAG LPAREN NUMBER RPAREN {mk_action2( $$, RESETFLAG_T,

@@ -77,6 +77,10 @@ void dprint (char* format, ...);
 
 int str2facility(char *s);
 
+void set_proc_debug_level(int level);
+
+void reset_proc_debug_level();
+
 inline static char* dp_time()
 {
 	time_t ltime;
@@ -99,6 +103,7 @@ inline static char* dp_time()
 
 
 #ifdef NO_LOG
+
 	#ifdef __SUNPRO_C
 		#define LOG(lev, ...)
 		#define LM_ALERT(lev, ...)
@@ -118,8 +123,15 @@ inline static char* dp_time()
 		#define LM_INFO(lev, fmt, args...)
 		#define LM_DBG(lev, fmt, args...)
 	#endif
-#else
+
+#else /* NO_LOG */
+
 	#ifdef __SUNPRO_C
+
+		#define MY_DPRINT( _prefix, _fmt, ...) \
+				dprint( _prefix LOG_PREFIX _fmt, dp_time(), \
+					dp_my_pid(), __VA_ARGS__ ) \
+
 		#define LOG(lev, ...) \
 			do { \
 				if (is_printable(lev)){ \
@@ -151,10 +163,6 @@ inline static char* dp_time()
 					} \
 				} \
 			}while(0)
-
-		#define MY_DPRINT( _prefix, _fmt, ...) \
-				dprint( _prefix LOG_PREFIX _fmt, dp_time(), \
-					dp_my_pid(), __VA_ARGS__ ) \
 
 		#define LM_ALERT( fmt, ...) \
 			do { \
@@ -237,7 +245,11 @@ inline static char* dp_time()
 				}while(0)
 		#endif /*NO_DEBUG*/
 
-	#else
+	#else /*SUN_PRO_C*/
+
+		#define MY_DPRINT( _prefix, _fmt, args...) \
+				dprint( _prefix LOG_PREFIX _fmt, dp_time(), \
+					dp_my_pid(), ## args) \
 
 		#define LOG(lev, fmt, args...) \
 			do { \
@@ -270,10 +282,6 @@ inline static char* dp_time()
 					} \
 				} \
 			}while(0)
-
-		#define MY_DPRINT( _prefix, _fmt, args...) \
-				dprint( _prefix LOG_PREFIX _fmt, dp_time(), \
-					dp_my_pid(), ## args) \
 
 		#define LM_ALERT( fmt, args...) \
 			do { \

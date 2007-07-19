@@ -503,6 +503,13 @@ int do_action(struct action* a, struct sip_msg* msg)
 			}
 			ret = (msg->len >= (unsigned int)a->elem[0].u.number) ? 1 : -1;
 			break;
+		case SET_DEBUG_T:
+			if (a->elem[0].type==NUMBER_ST)
+				set_proc_debug_level(a->elem[0].u.number);
+			else
+				reset_proc_debug_level();
+			ret = 1;
+			break;
 		case SETFLAG_T:
 			ret = setflag( msg, a->elem[0].u.number );
 			break;
