@@ -208,8 +208,7 @@ int xl_fill_extra_spec(xl_spec_p sp)
 				break;
 			if(found==0)
 			{
-				LOG(L_ERR,
-					"xl_fill_extra_spec: found extra item [%.*s]\n",
+				DBG("xl_fill_extra_spec: found extra item [%.*s]\n",
 					name.len, name.s);
 				memcpy(sp, &xe0->spec, sizeof(xl_spec_t));
 				sp->flags |= XL_EXTRA_FOUND;
