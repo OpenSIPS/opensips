@@ -27,6 +27,7 @@
 
 #include <syslog.h>
 #include <time.h>
+#include <features.h>
 
 #define L_ALERT -3
 #define L_CRIT  -2
@@ -52,8 +53,6 @@
 #ifndef MOD_NAME
 	#define MOD_NAME "core"
 #endif
-
-#define LOG_PREFIX  MOD_NAME ": "
 
 #ifndef NO_DEBUG
 	#undef NO_LOG
@@ -88,7 +87,7 @@ inline static char* dp_time()
 
 	time(&ltime);
 	p = ctime(&ltime);
-	p[20] = 0; /* remove year*/
+	p[19] = 0; /* remove year*/
 
 	return p+4;  /* remove name of day*/
 }
@@ -99,6 +98,17 @@ inline static char* dp_time()
 	#define is_printable(_level)  ((*debug)>=(_level))
 #else
 	#define is_printable(_level)  (debug>=(_level))
+#endif
+
+
+#if defined __cplusplus ? __GNUC_PREREQ (2, 6) : __GNUC_PREREQ (2, 4)
+	#define __DP_FUNC   __PRETTY_FUNCTION__
+#else
+	#if defined __STDC_VERSION__ && __STDC_VERSION__ >= 199901L
+		#define __DP_FUNC  __func__
+	#else
+		#define __DO_FUNC  ((__const char *) 0)
+	#endif
 #endif
 
 
@@ -128,8 +138,14 @@ inline static char* dp_time()
 
 	#ifdef __SUNPRO_C
 
+		#define LOG_PREFIX  MOD_NAME ": "
+
 		#define MY_DPRINT( ...) \
 				dprint( __VA_ARGS__ ) \
+
+		#define MY_SYSLOG( _log_level, ...) \
+				syslog( (_log_level)|log_facility, \
+							LOG_PREFIX __VA_ARGS__);\
 
 		#define LOG(lev, ...) \
 			do { \
@@ -169,8 +185,7 @@ inline static char* dp_time()
 					if (log_stderr)\
 						MY_DPRINT( DP_ALERT_PREFIX __VA_ARGS__);\
 					else \
-						syslog( LOG_ALERT|log_facility, \
-							LOG_PREFIX __VA_ARGS__);\
+						MY_SYSLOG( LOG_ALERT, __VA_ARGS__);\
 				} \
 			}while(0)
 
@@ -180,8 +195,7 @@ inline static char* dp_time()
 					if (log_stderr)\
 						MY_DPRINT( DP_CRIT_PREFIX __VA_ARGS__);\
 					else \
-						syslog( LOG_CRIT|log_facility, \
-							LOG_PREFIX __VA_ARGS__);\
+						MY_SYSLOG( LOG_CRIT, __VA_ARGS__);\
 				} \
 			}while(0)
 
@@ -191,8 +205,7 @@ inline static char* dp_time()
 					if (log_stderr)\
 						MY_DPRINT( DP_ERR_PREFIX __VA_ARGS__);\
 					else \
-						syslog( LOG_ERR|log_facility, \
-							LOG_PREFIX __VA_ARGS__);\
+						MY_SYSLOG( LOG_ERR, __VA_ARGS__);\
 				} \
 			}while(0)
 
@@ -202,8 +215,7 @@ inline static char* dp_time()
 					if (log_stderr)\
 						MY_DPRINT( DP_WARN_PREFIX __VA_ARGS__);\
 					else \
-						syslog( LOG_WARNING|log_facility, \
-							LOG_PREFIX __VA_ARGS__);\
+						MY_SYSLOG( LOG_WARNING, __VA_ARGS__);\
 				} \
 			}while(0)
 
@@ -213,8 +225,7 @@ inline static char* dp_time()
 					if (log_stderr)\
 						MY_DPRINT( DP_NOTICE_PREFIX __VA_ARGS__);\
 					else \
-						syslog( LOG_NOTICE|log_facility, \
-							LOG_PREFIX __VA_ARGS__);\
+						MY_SYSLOG( LOG_NOTICE, __VA_ARGS__);\
 				} \
 			}while(0)
 
@@ -224,8 +235,7 @@ inline static char* dp_time()
 					if (log_stderr)\
 						MY_DPRINT( DP_INFO_PREFIX __VA_ARGS__);\
 					else \
-						syslog( LOG_INFO|log_facility, \
-							LOG_PREFIX _VA_ARGS__);\
+						MY_SYSLOG( LOG_INFO, __VA_ARGS__);\
 				} \
 			}while(0)
 
@@ -238,17 +248,22 @@ inline static char* dp_time()
 						if (log_stderr)\
 							MY_DPRINT( DP_DBG_PREFIX __VA_ARGS__);\
 						else \
-							syslog( LOG_DEBUG|log_facility, \
-								LOG_PREFIX __VA_ARGS__);\
+							MY_SYSLOG( LOG_DEBUG, __VA_ARGS__);\
 					} \
 				}while(0)
 		#endif /*NO_DEBUG*/
 
 	#else /*SUN_PRO_C*/
 
+		#define LOG_PREFIX  MOD_NAME ":%s: "
+
 		#define MY_DPRINT( _prefix, _fmt, args...) \
 				dprint( _prefix LOG_PREFIX _fmt, dp_time(), \
-					dp_my_pid(), ## args) \
+					dp_my_pid(), __DP_FUNC, ## args) \
+
+		#define MY_SYSLOG( _log_level, _fmt, args...) \
+				syslog( (_log_level)|log_facility, \
+							LOG_PREFIX _fmt, __DP_FUNC, ##args);\
 
 		#define LOG(lev, fmt, args...) \
 			do { \
@@ -288,8 +303,7 @@ inline static char* dp_time()
 					if (log_stderr)\
 						MY_DPRINT( DP_ALERT_PREFIX, fmt, ##args);\
 					else \
-						syslog( LOG_ALERT|log_facility, \
-							LOG_PREFIX fmt, ##args);\
+						MY_SYSLOG( LOG_ALERT, fmt, ##args);\
 				} \
 			}while(0)
 
@@ -299,8 +313,7 @@ inline static char* dp_time()
 					if (log_stderr)\
 						MY_DPRINT( DP_CRIT_PREFIX, fmt, ##args);\
 					else \
-						syslog( LOG_CRIT|log_facility, \
-							LOG_PREFIX fmt, ##args);\
+						MY_SYSLOG( LOG_CRIT, fmt, ##args);\
 				} \
 			}while(0)
 
@@ -310,8 +323,7 @@ inline static char* dp_time()
 					if (log_stderr)\
 						MY_DPRINT( DP_ERR_PREFIX, fmt, ##args);\
 					else \
-						syslog( LOG_ERR|log_facility, \
-							LOG_PREFIX fmt, ##args);\
+						MY_SYSLOG( LOG_ERR, fmt, ##args);\
 				} \
 			}while(0)
 
@@ -321,8 +333,7 @@ inline static char* dp_time()
 					if (log_stderr)\
 						MY_DPRINT( DP_WARN_PREFIX, fmt, ##args);\
 					else \
-						syslog( LOG_WARNING|log_facility, \
-							LOG_PREFIX fmt, ##args);\
+						MY_SYSLOG( LOG_WARNING, fmt, ##args);\
 				} \
 			}while(0)
 
@@ -332,8 +343,7 @@ inline static char* dp_time()
 					if (log_stderr)\
 						MY_DPRINT( DP_NOTICE_PREFIX, fmt, ##args);\
 					else \
-						syslog( LOG_NOTICE|log_facility, \
-							LOG_PREFIX fmt, ##args);\
+						MY_SYSLOG( LOG_NOTICE, fmt, ##args);\
 				} \
 			}while(0)
 
@@ -343,8 +353,7 @@ inline static char* dp_time()
 					if (log_stderr)\
 						MY_DPRINT( DP_INFO_PREFIX, fmt, ##args);\
 					else \
-						syslog( LOG_INFO|log_facility, \
-							LOG_PREFIX fmt, ##args);\
+						MY_SYSLOG( LOG_INFO, fmt, ##args);\
 				} \
 			}while(0)
 
@@ -357,8 +366,7 @@ inline static char* dp_time()
 						if (log_stderr)\
 							MY_DPRINT( DP_DBG_PREFIX, fmt, ##args);\
 						else \
-							syslog( LOG_DEBUG|log_facility, \
-								LOG_PREFIX fmt, ##args);\
+							MY_SYSLOG( LOG_DEBUG, fmt, ##args);\
 					} \
 				}while(0)
 		#endif /*NO_DEBUG*/
