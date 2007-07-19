@@ -95,14 +95,14 @@ static inline int run_actions(struct action* a, struct sip_msg* msg)
 
 	rec_lev++;
 	if (rec_lev>ROUTE_MAX_REC_LEV){
-		LM_ERR("run_action: too many recursive routing "
-				"table lookups (%d) giving up!\n", rec_lev);
+		LM_ERR("too many recursive routing table lookups (%d) giving up!\n",
+			rec_lev);
 		ret=E_UNSPEC;
 		goto error;
 	}
 
 	if (a==0){
-		LM_WARN("run_actions: null action list (rec_level=%d)\n", 
+		LM_WARN("null action list (rec_level=%d)\n", 
 			rec_lev);
 		ret=1;
 		goto error;
@@ -136,7 +136,7 @@ int run_action_list(struct action* a, struct sip_msg* msg)
 				&& !is_route_type(ONREPLY_ROUTE)
 				&& _oser_err_info.eclass!=0)
 		{
-			LM_DBG("run_action_list: jumping to error route\n");
+			LM_DBG("jumping to error route\n");
 			set_route_type( ERROR_ROUTE );
 			run_actions(error_rlist, msg);
 			/* if don't exit, then reset error info */
@@ -197,7 +197,7 @@ int do_assign(struct sip_msg* msg, struct action* a)
 	{
 		ret = eval_expr((struct expr*)a->elem[1].u.data, msg, &val);
 		if(!((val.flags&XL_VAL_STR)||(val.flags&XL_VAL_INT))) {
-			LM_ERR("do_assign: no value in right expression\n");
+			LM_ERR("no value in right expression\n");
 			goto error;
 		}
 	}
@@ -217,7 +217,7 @@ int do_assign(struct sip_msg* msg, struct action* a)
 				case XL_AVP:
 					if(xl_get_avp_name(msg, dspec, &avp_name, &name_type)!=0)
 					{
-						LM_ALERT("do_assign: BUG in getting dst AVP name\n");
+						LM_ALERT("BUG in getting dst AVP name\n");
 						goto error;
 					}
 					if(a->elem[1].type == NULLV_ST)
@@ -237,7 +237,7 @@ int do_assign(struct sip_msg* msg, struct action* a)
 
 					if (add_avp(flags, avp_name, avp_val)<0)
 					{
-						LM_ERR("do_assign: error - cannot add AVP\n");
+						LM_ERR("error - cannot add AVP\n");
 						goto error;
 					}
 
@@ -245,7 +245,7 @@ int do_assign(struct sip_msg* msg, struct action* a)
 				case XL_SCRIPTVAR:
 					if(dspec->p.data==0)
 					{
-						LM_ERR("do_assign: error - cannot find svar\n");
+						LM_ERR("error - cannot find svar\n");
 						goto error;
 					}
 					if(a->elem[1].type == NULLV_ST)
@@ -265,7 +265,7 @@ int do_assign(struct sip_msg* msg, struct action* a)
 					if(set_var_value((script_var_t*)dspec->p.data,
 								&avp_val, flags)==NULL)
 					{
-						LM_ERR("do_assign: error - cannot set svar [%.*s]\n",
+						LM_ERR("error - cannot set svar [%.*s]\n",
 							dspec->p.val.len, dspec->p.val.s);
 						goto error;
 					}
@@ -279,7 +279,7 @@ int do_assign(struct sip_msg* msg, struct action* a)
 						act.elem[0].u.string = "";
 						if (do_action(&act, msg)<0)
 						{
-							LM_ERR("do_assign: error - do action failed %d\n",
+							LM_ERR("error - do action failed %d\n",
 								act.type);
 							goto error;
 						}
@@ -289,7 +289,7 @@ int do_assign(struct sip_msg* msg, struct action* a)
 				case XL_RURI:
 					if(!(val.flags&XL_VAL_STR))
 					{
-						LM_ERR("do_assign: error - str value requred to"
+						LM_ERR("error - str value requred to"
 								" set R-URI parts\n");
 						goto error;
 					}
@@ -306,7 +306,7 @@ int do_assign(struct sip_msg* msg, struct action* a)
 						act.type = SET_URI_T;
 					if (do_action(&act, msg)<0)
 					{
-						LM_ERR("do_assign: error - do action failed %d\n",
+						LM_ERR("error - do action failed %d\n",
 								act.type);
 						val.rs.s[val.rs.len] = backup;
 						goto error;
@@ -320,7 +320,7 @@ int do_assign(struct sip_msg* msg, struct action* a)
 						act.type = RESET_DSTURI_T;
 						if (do_action(&act, msg)<0)
 						{
-							LM_ERR("do_assign: error - do action failed %d\n",
+							LM_ERR("error - do action failed %d\n",
 								act.type);
 							goto error;
 						}
@@ -328,7 +328,7 @@ int do_assign(struct sip_msg* msg, struct action* a)
 					}
 					if(!(val.flags&XL_VAL_STR))
 					{
-						LM_ERR("do_assign: error - str value requred to"
+						LM_ERR("error - str value requred to"
 							" set dst uri\n");
 						goto error;
 					}
@@ -336,14 +336,14 @@ int do_assign(struct sip_msg* msg, struct action* a)
 						goto error;
 				break;
 				default:
-					LM_ERR("do_assign: error - unknown dst var\n");
+					LM_ERR("error - unknown dst var\n");
 					return E_BUG;
 			}
 
 			xl_value_destroy(&val);
 			return 1;
 		default:
-			LM_ALERT("do_assign: BUG -> unknown type %d\n", a->type);
+			LM_ALERT("BUG -> unknown type %d\n", a->type);
 	}
 
 	xl_value_destroy(&val);
@@ -407,15 +407,14 @@ int do_action(struct action* a, struct sip_msg* msg)
 					u = &msg->parsed_uri;
 				}
 				if (ret<0) {
-					LM_ERR("do_action: forward: bad_uri dropping packet\n");
+					LM_ERR("forward: bad_uri dropping packet\n");
 					break;
 				}
 				/* create a temporary proxy*/
 				p=mk_proxy(&u->host, u->port_no, u->proto,
 					(u->type==SIPS_URI_T)?1:0 );
 				if (p==0){
-					LM_ERR("do_action: bad host name in uri, "
-						"dropping packet\n");
+					LM_ERR("bad host name in uri, dropping packet\n");
 					ret=E_BAD_ADDRESS;
 					goto error_fwd_uri;
 				}
@@ -427,22 +426,21 @@ int do_action(struct action* a, struct sip_msg* msg)
 				ret=forward_request(msg,(struct proxy_l*)a->elem[0].u.data);
 				if (ret>=0) ret=1;
 			}else{
-				LM_ALERT("do_action: BUG in forward() types %d, %d\n",
+				LM_ALERT("BUG in forward() types %d, %d\n",
 						a->elem[0].type, a->elem[1].type);
 				ret=E_BUG;
 			}
 			break;
 		case SEND_T:
 			if (a->elem[0].type!= PROXY_ST){
-				LM_ALERT("do_action: BUG in send() type %d\n",
-						a->elem[0].type);
+				LM_ALERT("BUG in send() type %d\n", a->elem[0].type);
 				ret=E_BUG;
 				break;
 			}
 			to=(union sockaddr_union*)
 					pkg_malloc(sizeof(union sockaddr_union));
 			if (to==0){
-				LM_ERR("do_action: memory allocation failure\n");
+				LM_ERR("memory allocation failure\n");
 				ret=E_OUT_OF_MEM;
 				break;
 			}
@@ -463,7 +461,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 			break;
 		case LOG_T:
 			if ((a->elem[0].type!=NUMBER_ST)|(a->elem[1].type!=STRING_ST)){
-				LM_ALERT("do_action: BUG in log() types %d, %d\n",
+				LM_ALERT("BUG in log() types %d, %d\n",
 						a->elem[0].type, a->elem[1].type);
 				ret=E_BUG;
 				break;
@@ -474,7 +472,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 		case APPEND_BRANCH_T:
 			/* WARNING: even if type is STRING_ST, it expects a str !!!*/
 			if ((a->elem[0].type!=STRING_ST)) {
-				LM_ALERT("do_action: BUG in append_branch %d\n",
+				LM_ALERT("BUG in append_branch %d\n",
 					a->elem[0].type );
 				ret=E_BUG;
 				break;
@@ -496,7 +494,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 			break;
 		case LEN_GT_T:
 			if (a->elem[0].type!=NUMBER_ST) {
-				LM_ALERT("do_action: BUG in len_gt type %d\n",
+				LM_ALERT("BUG in len_gt type %d\n",
 					a->elem[0].type );
 				ret=E_BUG;
 				break;
@@ -539,25 +537,25 @@ int do_action(struct action* a, struct sip_msg* msg)
 			break;
 		case ERROR_T:
 			if ((a->elem[0].type!=STRING_ST)|(a->elem[1].type!=STRING_ST)){
-				LM_ALERT("do_action: BUG in error() types %d, %d\n",
+				LM_ALERT("BUG in error() types %d, %d\n",
 						a->elem[0].type, a->elem[1].type);
 				ret=E_BUG;
 				break;
 			}
-			LM_WARN("do_action: error(\"%s\", \"%s\") "
+			LM_WARN("error(\"%s\", \"%s\") "
 					"not implemented yet\n", a->elem[0].u.string,
 					a->elem[1].u.string);
 			ret=1;
 			break;
 		case ROUTE_T:
 			if (a->elem[0].type!=NUMBER_ST){
-				LM_ALERT("do_action: BUG in route() type %d\n",
+				LM_ALERT("BUG in route() type %d\n",
 						a->elem[0].type);
 				ret=E_BUG;
 				break;
 			}
 			if ((a->elem[0].u.number>RT_NO)||(a->elem[0].u.number<0)){
-				LM_ALERT("do_action: BUG - invalid routing table number in"
+				LM_ALERT("BUG - invalid routing table number in"
 							"route(%lu)\n", a->elem[0].u.number);
 				ret=E_CFG;
 				break;
@@ -586,12 +584,12 @@ int do_action(struct action* a, struct sip_msg* msg)
 				user=0;
 				if (a->type==STRIP_T || a->type==STRIP_TAIL_T) {
 					if (a->elem[0].type!=NUMBER_ST) {
-						LM_ALERT("do_action: BUG in set*() type %d\n",
+						LM_ALERT("BUG in set*() type %d\n",
 							a->elem[0].type);
 						break;
 					}
 				} else if (a->elem[0].type!=STRING_ST){
-					LM_ALERT("do_action: BUG in set*() type %d\n",
+					LM_ALERT("BUG in set*() type %d\n",
 							a->elem[0].type);
 					ret=E_BUG;
 					break;
@@ -605,7 +603,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 					len=strlen(a->elem[0].u.string);
 					msg->new_uri.s=pkg_malloc(len+1);
 					if (msg->new_uri.s==0){
-						LM_ERR("do_action: memory allocation failure\n");
+						LM_ERR("memory allocation failure\n");
 						ret=E_OUT_OF_MEM;
 						break;
 					}
@@ -624,14 +622,14 @@ int do_action(struct action* a, struct sip_msg* msg)
 					len=msg->first_line.u.request.uri.len;
 				}
 				if (parse_uri(tmp, len, &uri)<0){
-					LM_ERR("do_action: bad uri <%s>, dropping packet\n", tmp);
+					LM_ERR("bad uri <%s>, dropping packet\n", tmp);
 					ret=E_UNSPEC;
 					break;
 				}
 				
 				new_uri=pkg_malloc(MAX_URI_SIZE);
 				if (new_uri==0){
-					LM_ERR("do_action: memory allocation failure\n");
+					LM_ERR("memory allocation failure\n");
 					ret=E_OUT_OF_MEM;
 					break;
 				}
@@ -655,7 +653,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 					len=strlen(tmp);
 				} else if (a->type==STRIP_T) {
 					if (a->elem[0].u.number>uri.user.len) {
-						LM_WARN("do_action: too long strip asked; "
+						LM_WARN("too long strip asked; "
 								" deleting username: %lu of <%.*s>\n",
 								a->elem[0].u.number, uri.user.len, uri.user.s);
 						len=0;
@@ -667,7 +665,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 					}
 				} else if (a->type==STRIP_TAIL_T) {
 					if (a->elem[0].u.number>uri.user.len) {
-						LM_WARN("do_action: too long strip_tail asked;"
+						LM_WARN("too long strip_tail asked;"
 								" deleting username: %lu of <%.*s>\n",
 								a->elem[0].u.number, uri.user.len, uri.user.s);
 						len=0;
@@ -753,7 +751,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 		case SET_DSTURI_T:
 			/* WARNING: even if type is STRING_ST, it expects a str !!!*/
 			if (a->elem[0].type!=STRING_ST){
-				LM_ALERT("do_action: BUG in setdsturi() type %d\n",
+				LM_ALERT("BUG in setdsturi() type %d\n",
 							a->elem[0].type);
 				ret=E_BUG;
 				break;
@@ -789,7 +787,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 							return_code = 0;
 							break;
 						}else{
-							LM_WARN("do_action: error in expression\n");
+							LM_WARN("error in expression\n");
 						}
 					}
 					
@@ -811,7 +809,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 			break;
 		case SWITCH_T:
 			if (a->elem[0].type!=SCRIPTVAR_ST){
-				LM_ALERT("do_action: BUG in switch() type %d\n",
+				LM_ALERT("BUG in switch() type %d\n",
 						a->elem[0].type);
 				ret=E_BUG;
 				break;
@@ -819,13 +817,13 @@ int do_action(struct action* a, struct sip_msg* msg)
 			spec = (xl_spec_t*)a->elem[0].u.data;
 			if(xl_get_spec_value(msg, spec, &val, 0)!=0)
 			{
-				LM_ALERT("do_action: BUG - no value in switch()\n");
+				LM_ALERT("BUG - no value in switch()\n");
 				ret=E_BUG;
 				break;
 			}
 			/* get the value of pvar */
 			if(a->elem[1].type!=ACTIONS_ST) {
-				LM_ALERT("do_action: BUG in switch() actions\n");
+				LM_ALERT("BUG in switch() actions\n");
 				ret=E_BUG;
 				break;
 			}
@@ -869,7 +867,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 			}
 			if((cmatch==0) && (adefault!=NULL))
 			{
-				LM_DBG("do_action: switch: running default statement\n");
+				LM_DBG("switch: running default statement\n");
 				if(adefault->elem[0].u.data)
 					return_code=run_action_list(
 						(struct action*)adefault->elem[0].u.data, msg);
@@ -881,7 +879,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 				ret=((cmd_export_t*)(a->elem[0].u.data))->function(msg,
 						(char*)a->elem[1].u.data, (char*)a->elem[2].u.data);
 			}else{
-				LM_ALERT("do_action: BUG in module call\n");
+				LM_ALERT("BUG in module call\n");
 			}
 			break;
 		case FORCE_RPORT_T:
@@ -894,7 +892,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 			break;
 		case SET_ADV_ADDR_T:
 			if (a->elem[0].type!=STR_ST){
-				LM_ALERT("do_action: BUG in set_advertised_address() "
+				LM_ALERT("BUG in set_advertised_address() "
 						"type %d\n", a->elem[0].type);
 				ret=E_BUG;
 				break;
@@ -904,7 +902,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 			break;
 		case SET_ADV_PORT_T:
 			if (a->elem[0].type!=STR_ST){
-				LM_ALERT("do_action: BUG in set_advertised_port() "
+				LM_ALERT("BUG in set_advertised_port() "
 						"type %d\n", a->elem[0].type);
 				ret=E_BUG;
 				break;
@@ -924,7 +922,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 				else if (a->elem[0].type==NUMBER_ST)
 					port=(int)a->elem[0].u.number;
 				else{
-					LM_ALERT("do_action: BUG in force_tcp_alias"
+					LM_ALERT("BUG in force_tcp_alias"
 							" port type %d\n", a->elem[0].type);
 					ret=E_BUG;
 					break;
@@ -932,7 +930,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 						
 				if (tcpconn_add_alias(msg->rcv.proto_reserved1, port,
 									msg->rcv.proto)!=0){
-					LM_ERR("do_action: tcp alias failed\n");
+					LM_ERR("tcp alias failed\n");
 					ret=E_UNSPEC;
 					break;
 				}
@@ -942,7 +940,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 			break;
 		case FORCE_SEND_SOCKET_T:
 			if (a->elem[0].type!=SOCKETINFO_ST){
-				LM_ALERT("do_action: BUG in force_send_socket argument"
+				LM_ALERT("BUG in force_send_socket argument"
 						" type: %d\n", a->elem[0].type);
 				ret=E_BUG;
 				break;
@@ -952,13 +950,13 @@ int do_action(struct action* a, struct sip_msg* msg)
 			break;
 		case SERIALIZE_BRANCHES_T:
 			if (a->elem[0].type!=NUMBER_ST){
-				LM_ALERT("do_action: BUG in serialize_branches argument"
+				LM_ALERT("BUG in serialize_branches argument"
 						" type: %d\n", a->elem[0].type);
 				ret=E_BUG;
 				break;
 			}
 			if (serialize_branches(msg,(int)a->elem[0].u.number)!=0) {
-				LM_ERR("do_action: serialize_branches failed\n");
+				LM_ERR("serialize_branches failed\n");
 				ret=E_UNSPEC;
 				break;
 			}
@@ -966,7 +964,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 			break;
 		case NEXT_BRANCHES_T:
 			if (next_branches(msg)!=0) {
-				LM_ERR("do_action: next_branches failed\n");
+				LM_ERR("next_branches failed\n");
 				ret=E_UNSPEC;
 				break;
 			}
@@ -998,7 +996,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 			break;
 #endif
 		default:
-			LM_ALERT("do_action: BUG - unknown type %d\n", a->type);
+			LM_ALERT("BUG - unknown type %d\n", a->type);
 	}
 
 	if((unsigned char)a->type!=IF_T && (unsigned char)a->type!=ROUTE_T)
@@ -1007,7 +1005,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 	return ret;
 	
 error_uri:
-	LM_ERR("do_action: set*: uri too long\n");
+	LM_ERR("set*: uri too long\n");
 	if (new_uri) pkg_free(new_uri);
 	return E_UNSPEC;
 error_fwd_uri:
