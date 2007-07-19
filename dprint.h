@@ -49,11 +49,11 @@
 
 #define DPRINT_LEV   L_ERR
 
-#define LOG_PREFIX  MOD_NAME ":"
-
 #ifndef MOD_NAME
 	#define MOD_NAME "core"
 #endif
+
+#define LOG_PREFIX  MOD_NAME ": "
 
 #ifndef NO_DEBUG
 	#undef NO_LOG
@@ -106,31 +106,30 @@ inline static char* dp_time()
 
 	#ifdef __SUNPRO_C
 		#define LOG(lev, ...)
-		#define LM_ALERT(lev, ...)
-		#define LM_CRIT(lev, ...)
-		#define LM_ERR(lev, ...)
-		#define LM_WARN(lev, ...)
-		#define LM_NOTICE(lev, ...)
-		#define LM_INFO(lev, ...)
-		#define LM_DBG(lev, ...)
+		#define LM_ALERT( ...)
+		#define LM_CRIT( ...)
+		#define LM_ERR( ...)
+		#define LM_WARN( ...)
+		#define LM_NOTICE( ...)
+		#define LM_INFO( ...)
+		#define LM_DBG( ...)
 	#else
 		#define LOG(lev, fmt, args...)
-		#define LM_ALERT(lev, fmt, args...)
-		#define LM_CRIT(lev, fmt, args...)
-		#define LM_ERR(lev, fmt, args...)
-		#define LM_WARN(lev, fmt, args...)
-		#define LM_NOTICE(lev, fmt, args...)
-		#define LM_INFO(lev, fmt, args...)
-		#define LM_DBG(lev, fmt, args...)
+		#define LM_ALERT(fmt, args...)
+		#define LM_CRIT(fmt, args...)
+		#define LM_ERR(fmt, args...)
+		#define LM_WARN(fmt, args...)
+		#define LM_NOTICE(fmt, args...)
+		#define LM_INFO(fmt, args...)
+		#define LM_DBG(fmt, args...)
 	#endif
 
 #else /* NO_LOG */
 
 	#ifdef __SUNPRO_C
 
-		#define MY_DPRINT( _prefix, _fmt, ...) \
-				dprint( _prefix LOG_PREFIX _fmt, dp_time(), \
-					dp_my_pid(), __VA_ARGS__ ) \
+		#define MY_DPRINT( ...) \
+				dprint( __VA_ARGS__ ) \
 
 		#define LOG(lev, ...) \
 			do { \
@@ -164,83 +163,83 @@ inline static char* dp_time()
 				} \
 			}while(0)
 
-		#define LM_ALERT( fmt, ...) \
+		#define LM_ALERT( ...) \
 			do { \
 				if (is_printable(L_ALERT)){ \
 					if (log_stderr)\
-						MY_DPRINT( DP_ALERT_PREFIX, fmt, __VA_ARGS__);\
+						MY_DPRINT( DP_ALERT_PREFIX __VA_ARGS__);\
 					else \
 						syslog( LOG_ALERT|log_facility, \
-							LOG_PREFIX fmt, __VA_ARGS__);\
+							LOG_PREFIX __VA_ARGS__);\
 				} \
 			}while(0)
 
-		#define LM_CRIT( fmt, ...) \
+		#define LM_CRIT( ...) \
 			do { \
 				if (is_printable(L_CRIT)){ \
 					if (log_stderr)\
-						MY_DPRINT( DP_CRIT_PREFIX, fmt, __VA_ARGS__);\
+						MY_DPRINT( DP_CRIT_PREFIX __VA_ARGS__);\
 					else \
 						syslog( LOG_CRIT|log_facility, \
-							LOG_PREFIX fmt, __VA_ARGS__);\
+							LOG_PREFIX __VA_ARGS__);\
 				} \
 			}while(0)
 
-		#define LM_ERR( fmt, ...) \
+		#define LM_ERR( ...) \
 			do { \
 				if (is_printable(L_ERR)){ \
 					if (log_stderr)\
-						MY_DPRINT( DP_ERR_PREFIX, fmt, __VA_ARGS__);\
+						MY_DPRINT( DP_ERR_PREFIX __VA_ARGS__);\
 					else \
 						syslog( LOG_ERR|log_facility, \
-							LOG_PREFIX fmt, __VA_ARGS__);\
+							LOG_PREFIX __VA_ARGS__);\
 				} \
 			}while(0)
 
-		#define LM_WARN( fmt, ...) \
+		#define LM_WARN( ...) \
 			do { \
 				if (is_printable(L_WARN)){ \
 					if (log_stderr)\
-						MY_DPRINT( DP_WARN_PREFIX, fmt, __VA_ARGS__);\
+						MY_DPRINT( DP_WARN_PREFIX __VA_ARGS__);\
 					else \
 						syslog( LOG_WARNING|log_facility, \
-							LOG_PREFIX fmt, __VA_ARGS__);\
+							LOG_PREFIX __VA_ARGS__);\
 				} \
 			}while(0)
 
-		#define LM_NOTICE( fmt, ...) \
+		#define LM_NOTICE( ...) \
 			do { \
 				if (is_printable(L_NOTICE)){ \
 					if (log_stderr)\
-						MY_DPRINT( DP_NOTICE_PREFIX, fmt, __VA_ARGS__);\
+						MY_DPRINT( DP_NOTICE_PREFIX __VA_ARGS__);\
 					else \
 						syslog( LOG_NOTICE|log_facility, \
-							LOG_PREFIX fmt, __VA_ARGS__);\
+							LOG_PREFIX __VA_ARGS__);\
 				} \
 			}while(0)
 
-		#define LM_INFO( fmt, ...) \
+		#define LM_INFO( ...) \
 			do { \
 				if (is_printable(L_INFO)){ \
 					if (log_stderr)\
-						MY_DPRINT( DP_INFO_PREFIX, fmt, __VA_ARGS__);\
+						MY_DPRINT( DP_INFO_PREFIX __VA_ARGS__);\
 					else \
 						syslog( LOG_INFO|log_facility, \
-							LOG_PREFIX fmt, __VA_ARGS__);\
+							LOG_PREFIX _VA_ARGS__);\
 				} \
 			}while(0)
 
-#ifdef NO_DEBUG
-			#define LM_DBG( fmt, ...)
+		#ifdef NO_DEBUG
+			#define LM_DBG( ...)
 		#else
-			#define LM_DBG( fmt, ...) \
+			#define LM_DBG( ...) \
 				do { \
 					if (is_printable(L_DBG)){ \
 						if (log_stderr)\
-							MY_DPRINT( DP_DBG_PREFIX, fmt, __VA_ARGS__);\
+							MY_DPRINT( DP_DBG_PREFIX __VA_ARGS__);\
 						else \
 							syslog( LOG_DEBUG|log_facility, \
-								LOG_PREFIX fmt, __VA_ARGS__);\
+								LOG_PREFIX __VA_ARGS__);\
 					} \
 				}while(0)
 		#endif /*NO_DEBUG*/
@@ -349,7 +348,7 @@ inline static char* dp_time()
 				} \
 			}while(0)
 
-#ifdef NO_DEBUG
+		#ifdef NO_DEBUG
 			#define LM_DBG( fmt, args...)
 		#else
 			#define LM_DBG( fmt, args...) \
