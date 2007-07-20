@@ -15,12 +15,14 @@
 <!ENTITY openserhelp "http://openser.org/cgi-bin/mailman/listinfo/team">
 <!ENTITY openserusers "http://openser.org/cgi-bin/mailman/listinfo/users">
 <!ENTITY openserdev "http://openser.org/cgi-bin/mailman/listinfo/devel">
+<!ENTITY openserdbdocs "http://openser.org/docs/">
 
 <!ENTITY openserhomelink "<ulink url='&serhome;'>&serhome</ulink>">
 <!ENTITY openserbugslink "<ulink url='&serbugs;'>&serbugs</ulink>">
 <!ENTITY openserhelplink "<ulink url='&serhelp;'>&serhelp</ulink>">
 <!ENTITY openseruserslink "<ulink url='&serusers;'>&serusers</ulink>">
 <!ENTITY openserdevlink "<ulink url='&serdev;'>&serdev</ulink>">
+<!ENTITY openserdbocs "<ulink url='&openserdbdocs;'>&openserdbdocs</ulink>">
 
 <!ENTITY openserhelpmail "<email>team@openser.org</email>">
 <!ENTITY openserusersmail "<email>users@openser.org</email>">
