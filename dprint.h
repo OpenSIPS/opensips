@@ -27,7 +27,6 @@
 
 #include <syslog.h>
 #include <time.h>
-#include <features.h>
 
 #define L_ALERT -3
 #define L_CRIT  -2
@@ -100,15 +99,12 @@ inline static char* dp_time()
 	#define is_printable(_level)  (debug>=(_level))
 #endif
 
-
-#if defined __cplusplus ? __GNUC_PREREQ (2, 6) : __GNUC_PREREQ (2, 4)
-	#define __DP_FUNC   __PRETTY_FUNCTION__
+#if defined __GNUC__
+	#define __DP_FUNC  __FUNCTION__
+#elif defined __STDC_VERSION__ && __STDC_VERSION__ >= 199901L
+	#define __DP_FUNC  __func__
 #else
-	#if defined __STDC_VERSION__ && __STDC_VERSION__ >= 199901L
-		#define __DP_FUNC  __func__
-	#else
-		#define __DO_FUNC  ((__const char *) 0)
-	#endif
+	#define __DP_FUNC  ((__const char *) 0)
 #endif
 
 
