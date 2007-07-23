@@ -436,7 +436,7 @@ statement:	assign_stm
 	;
 
 listen_id:	ip			{	tmp=ip_addr2a($1);
-		 					if(tmp==0){
+							if(tmp==0){
 								LOG(L_CRIT, "ERROR: cfg. parser: bad ip "
 										"address.\n");
 								$$=0;
@@ -450,21 +450,25 @@ listen_id:	ip			{	tmp=ip_addr2a($1);
 								}
 							}
 						}
-		 |	STRING			{	$$=pkg_malloc(strlen($1)+1);
-		 					if ($$==0){
+		|	STRING			{	$$=pkg_malloc(strlen($1)+1);
+							if ($$==0){
 									LOG(L_CRIT, "ERROR: cfg. parser: out of "
 											"memory.\n");
 							}else{
 									strncpy($$, $1, strlen($1)+1);
 							}
 						}
-		 |	host		{	tmp = $1;
-		 					$$=pkg_malloc(strlen(tmp)+1);
-		 					if ($$==0){
-									LOG(L_CRIT, "ERROR: cfg. parser: out of "
-											"memory.\n");
-							}else{
+		|	host		{	if ($1==0) {
+								$$ = 0;
+							} else {
+								tmp = $1;
+								$$=pkg_malloc(strlen(tmp)+1);
+								if ($$==0){
+									LOG(L_CRIT, "ERROR: cfg. parser: "
+										"out of memory.\n");
+								}else{
 									strncpy($$, $1, strlen($1)+1);
+								}
 							}
 						}
 	;
@@ -873,7 +877,7 @@ assign_stm: DEBUG EQUAL NUMBER {
 								}
 							}
 							 }
-		| LISTEN EQUAL  error { yyerror("ip address or hostname"
+		| LISTEN EQUAL  error { yyerror("ip address or hostname "
 						"expected"); }
 		| ALIAS EQUAL  id_lst { 
 							for(lst_tmp=$3; lst_tmp; lst_tmp=lst_tmp->next)
@@ -884,8 +888,10 @@ assign_stm: DEBUG EQUAL NUMBER {
 		| AUTO_ALIASES EQUAL NUMBER { auto_aliases=$3; }
 		| AUTO_ALIASES EQUAL error  { yyerror("number  expected"); }
 		| ADVERTISED_ADDRESS EQUAL listen_id {
-								default_global_address.s=$3;
-								default_global_address.len=strlen($3);
+								if ($3) {
+									default_global_address.s=$3;
+									default_global_address.len=strlen($3);
+								}
 								}
 		|ADVERTISED_ADDRESS EQUAL error {yyerror("ip address or hostname "
 												"expected"); }
@@ -1578,7 +1584,7 @@ host_sep:	DOT {$$=".";}
 host:	ID				{ $$=$1; }
 	| host host_sep ID	{ $$=(char*)pkg_malloc(strlen($1)+1+strlen($3)+1);
 						  if ($$==0){
-						  	LOG(L_CRIT, "ERROR: cfg. parser: memory allocation"
+							LOG(L_CRIT, "ERROR: cfg. parser: memory allocation"
 										" failure while parsing host\n");
 						  }else{
 							memcpy($$, $1, strlen($1));
@@ -1594,7 +1600,7 @@ host:	ID				{ $$=$1; }
 assignop:
 	EQUAL { $$ = EQ_T; }
 	| PLUSEQ { $$ = PLUSEQ_T; }
-	| MINUSEQ { $$ = MINUSEQ_T; }
+	| MINUSEQ { $$ = MINUSEQ_T;}
 	| SLASHEQ { $$ = DIVEQ_T; }
 	| MULTEQ { $$ = MULTEQ_T; }
 	| MODULOEQ { $$ = MODULOEQ_T; }
@@ -2094,13 +2100,13 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 		| SET_ADV_ADDRESS LPAREN listen_id RPAREN {
 								$$=0;
 								if ((str_tmp=pkg_malloc(sizeof(str)))==0){
-										LOG(L_CRIT, "ERROR: cfg. parser:"
-													" out of memory.\n");
-								}else{
+									LOG(L_CRIT, "ERROR: cfg. parser:"
+										" out of memory.\n");
+								}else if ($3!=0){
 										str_tmp->s=$3;
 										str_tmp->len=strlen($3);
 										mk_action2( $$, SET_ADV_ADDR_T, STR_ST,
-										             0, str_tmp, 0);
+											0, str_tmp, 0);
 								}
 												  }
 		| SET_ADV_ADDRESS LPAREN error RPAREN { $$=0; yyerror("bad argument, "
