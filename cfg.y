@@ -461,8 +461,7 @@ listen_id:	ip			{	tmp=ip_addr2a($1);
 		|	host		{	if ($1==0) {
 								$$ = 0;
 							} else {
-								tmp = $1;
-								$$=pkg_malloc(strlen(tmp)+1);
+								$$=pkg_malloc(strlen($1)+1);
 								if ($$==0){
 									LOG(L_CRIT, "ERROR: cfg. parser: "
 										"out of memory.\n");
