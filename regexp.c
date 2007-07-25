@@ -29,7 +29,7 @@
 #include <regex.h>
 #include <ctype.h>
 #include "regexp.h"
-#include "../../dprint.h"
+#include "dprint.h"
 
 /* Replace in replacement tokens \d with substrings of string pointed by
  * pmatch.
@@ -106,7 +106,7 @@ int reg_replace(char *pattern, char *replacement, char *string, str *result)
 {
 	regmatch_t pmatch[MAX_MATCH];
 
-	DBG("reg_replace(): pattern: '%s', replacement: '%s', string: '%s'\n",
+	LM_DBG("pattern: '%s', replacement: '%s', string: '%s'\n",
 	    pattern, replacement, string);
 
 	if (reg_match(pattern, string, &(pmatch[0]))) {
