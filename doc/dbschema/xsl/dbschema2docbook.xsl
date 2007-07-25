@@ -122,7 +122,16 @@ than 5) doesn't allow "xmlns" attributes -->
 		</xsl:when>
 		<xsl:otherwise>
 			<!-- use text within description element (may be empty) -->
-			<para><xsl:value-of select="description/text()"/></para>
+			<para>
+			<xsl:choose>
+			<xsl:when test="description/text()">
+				<xsl:value-of select="description/text()"/>
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:text> </xsl:text>
+			</xsl:otherwise>
+			</xsl:choose>
+			</para>
 		</xsl:otherwise>
 	</xsl:choose>
 </xsl:template>
@@ -137,18 +146,24 @@ than 5) doesn't allow "xmlns" attributes -->
 
 <xsl:template name="table_proc" match="table" mode="column_table">
 
+	<!-- create table for columns --> 
+
 	<!--<section><title><xsl:value-of select="name"/></title>
 	<para><xsl:value-of select="description"/></para>-->
 
 	<xsl:variable name="tmp" select="translate(name, '_', '-')"/> <!-- '_' is not allowed in docbook -->
 	<table id='gen-db-{$tmp}' frame='all'><title>Table "<xsl:value-of select="name"/>"</title>
-	<tgroup cols='4' align='left' colsep='1' rowsep='1'>
+	<tgroup cols='8' align='left' colsep='1' rowsep='1'>
 	<!--<colspec colname="c1"/><colspec colname="c2"/><colspec colname="c3"/><colspec colname="c4"/>-->
 	<thead>
 		<row>
 			<entry>name</entry>
 			<entry>type</entry>
 			<entry>size</entry>
+			<entry>default</entry>
+			<entry>null</entry>
+			<entry>key</entry>
+			<entry>extra attributes</entry>
 			<entry>description</entry>
 		</row>
 	</thead>
@@ -157,19 +172,126 @@ than 5) doesn't allow "xmlns" attributes -->
 		<row>
 			<entry><varname><xsl:value-of select="name"/></varname></entry>
 			<entry><varname><xsl:value-of select="type"/></varname></entry>
+
 			<!-- some datatypes (e.g. time) don't have a size -->
+			<entry><constant>
 			<xsl:choose>
 			<xsl:when test="size">
-				<entry><constant><xsl:value-of select="size"/></constant></entry>
+				<xsl:value-of select="size"/>
 			</xsl:when>
 			<xsl:otherwise>
-				<entry><constant>not specified</constant></entry>
+				<xsl:text>not specified</xsl:text>
 			</xsl:otherwise>
 			</xsl:choose>
+			</constant></entry>
+			
+			<entry>
+			<xsl:choose>
+			<xsl:when test="default">
+				<xsl:choose>
+					<xsl:when test="default/null">
+						<xsl:text>NULL</xsl:text>
+					</xsl:when>
+					<xsl:otherwise>
+						<xsl:text>'</xsl:text>
+						<xsl:value-of select="default"/>
+						<xsl:text>'</xsl:text>
+					</xsl:otherwise>
+				</xsl:choose>
+			</xsl:when>
+
+			<xsl:otherwise><xsl:text>default</xsl:text></xsl:otherwise>
+			</xsl:choose>
+			</entry>
+
+			<entry>
+			<xsl:choose>
+			<xsl:when test="null">
+				<xsl:text>yes</xsl:text>
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:text>no</xsl:text>
+			</xsl:otherwise>
+			</xsl:choose>
+			</entry>
+
+			<entry>
+			<xsl:choose>
+			<xsl:when test="primary">
+				<xsl:text>primary</xsl:text>
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:text> </xsl:text>
+			</xsl:otherwise>
+			</xsl:choose>
+			</entry>
+
+			<entry>
+			<xsl:choose>
+			<xsl:when test="autoincrement">
+				<xsl:text>autoincrement</xsl:text>
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:text> </xsl:text>
+			</xsl:otherwise>
+			</xsl:choose>
+			</entry>
+
 			<entry><xsl:call-template name="process_description"/></entry>
 		</row>
 	</xsl:for-each>
 	</tbody></tgroup></table>
+	
+	<!-- create table for indexes -->
+	<xsl:if test="index">
+		<table id='gen-db-{$tmp}-index' frame='all'><title>Table "<xsl:value-of select="name"/>" indexes</title>
+		<tgroup cols='4' align='left' colsep='1' rowsep='1'>
+		<thead>
+			<row>
+				<entry>name</entry>
+				<entry>type</entry>
+				<entry>links</entry>
+				<entry>description</entry>
+			</row>
+		</thead>
+		<tbody>
+		<xsl:for-each select="index">
+			<row>
+				<entry><varname><xsl:value-of select="name"/></varname></entry>
+				<entry>
+				<xsl:choose>
+				<xsl:when test="unique">
+					<xsl:text>unique</xsl:text>
+				</xsl:when>
+				<xsl:when test="primary">
+					<xsl:text>primary</xsl:text>
+				</xsl:when>
+				<xsl:otherwise>
+					<xsl:text>default</xsl:text>
+				</xsl:otherwise>
+				</xsl:choose>
+				</entry>
+				
+				<entry>
+				<xsl:choose>
+				<xsl:when test="colref">
+					<xsl:for-each select="colref">
+					<xsl:value-of name="select" select="@linkend"/>
+					<xsl:if test="not(position()=last())">
+						<xsl:text>, </xsl:text>
+					</xsl:if>
+					</xsl:for-each>
+				</xsl:when>
+				<xsl:otherwise>
+					<xsl:text> </xsl:text>
+				</xsl:otherwise>
+				</xsl:choose>
+				</entry>
+				<entry><xsl:call-template name="process_description"/></entry>
+			</row>
+		</xsl:for-each>
+		</tbody></tgroup></table>
+	</xsl:if>
 </xsl:template>
 
 </xsl:stylesheet>
