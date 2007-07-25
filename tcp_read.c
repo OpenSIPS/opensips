@@ -126,7 +126,8 @@ again:
  * returns < 0 if error or 0 if EOF */
 int tcp_read_headers(struct tcp_connection *c)
 {
-	int bytes, remaining;
+	unsigned int remaining;
+	int bytes;
 	char *p;
 	struct tcp_req* r;
 	

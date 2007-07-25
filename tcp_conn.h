@@ -85,10 +85,11 @@ struct tcp_req{
 	char* pos; /* current position in buf */
 	char* parsed; /* last parsed position */
 	char* body; /* body position */
-	int content_len;
-	int has_content_len; /* 1 if content_length was parsed ok*/
-	int complete; /* 1 if one req has been fully read, 0 otherwise*/
-	int bytes_to_go; /* how many bytes we have still to read from the body*/
+	unsigned int   content_len;
+	unsigned short has_content_len; /* 1 if content_length was parsed ok*/
+	unsigned short complete; /* 1 if one req has been fully read, 0 otherwise*/
+	unsigned int   bytes_to_go; /* how many bytes we have still to read from 
+								the body*/
 	enum tcp_req_errors error;
 	enum tcp_req_states state;
 };
