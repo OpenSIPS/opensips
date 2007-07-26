@@ -239,6 +239,7 @@ int config_check = 0;
 /* check if reply first via host==us */
 int check_via =  0;        
 /* debugging level for memory stats */
+/* FIXME this uses still the old logging system */
 int memlog = L_DBG;
 /* should replies include extensive warnings? by default yes,
    good for trouble-shooting
@@ -434,7 +435,7 @@ static void sig_alarm_kill(int signo)
 static void sig_alarm_abort(int signo)
 {
 	/* LOG is not signal safe, but who cares, we are abort-ing anyway :-) */
-	LOG(L_CRIT, "BUG: shutdown timeout triggered, dying...");
+	LM_CRIT("BUG: shutdown timeout triggered, dying...");
 	abort();
 }
 
@@ -451,20 +452,20 @@ void handle_sigs()
 				/* SIGPIPE might be rarely received on use of
 				   exec module; simply ignore it
 				 */
-				LOG(L_WARN, "WARNING: SIGPIPE received and ignored\n");
+				LM_WARN("WARNING: SIGPIPE received and ignored\n");
 				break;
 		case SIGINT:
 		case SIGTERM:
 			/* we end the program in all these cases */
 			if (sig_flag==SIGINT)
-				DBG("INT received, program terminates\n");
+				LM_DBG("INT received, program terminates\n");
 			else
-				DBG("SIGTERM received, program terminates\n");
+				LM_DBG("SIGTERM received, program terminates\n");
 				
 			/* first of all, kill the children also */
 			kill_all_children(SIGTERM);
 			if (signal(SIGALRM, sig_alarm_kill) == SIG_ERR ) {
-				LOG(L_ERR, "ERROR: could not install SIGALARM handler\n");
+				LM_ERR("ERROR: could not install SIGALARM handler\n");
 				/* continue, the process will die anyway if no
 				 * alarm is installed which is exactly what we want */
 			}
@@ -494,30 +495,30 @@ void handle_sigs()
 		case SIGCHLD:
 			while ((chld=waitpid( -1, &chld_status, WNOHANG ))>0) {
 				if (WIFEXITED(chld_status)) 
-					LOG(L_INFO, "child process %d exited normally,"
+					LM_INFO("child process %d exited normally,"
 							" status=%d\n", chld, 
 							WEXITSTATUS(chld_status));
 				else if (WIFSIGNALED(chld_status)) {
-					LOG(L_INFO, "child process %d exited by a signal"
+					LM_INFO("child process %d exited by a signal"
 							" %d\n", chld, WTERMSIG(chld_status));
 #ifdef WCOREDUMP
-					LOG(L_INFO, "core was %sgenerated\n",
+					LM_INFO("core was %sgenerated\n",
 							 WCOREDUMP(chld_status) ?  "" : "not " );
 #endif
 				}else if (WIFSTOPPED(chld_status)) 
-					LOG(L_INFO, "child process %d stopped by a"
+					LM_INFO("child process %d stopped by a"
 								" signal %d\n", chld,
 								 WSTOPSIG(chld_status));
 			}
 			if (dont_fork) {
-				LOG(L_INFO, "INFO: dont_fork turned on, living on\n");
+				LM_INFO("INFO: dont_fork turned on, living on\n");
 				break;
 			}
-			LOG(L_INFO, "INFO: terminating due to SIGCHLD\n");
+			LM_INFO("INFO: terminating due to SIGCHLD\n");
 			/* exit */
 			kill_all_children(SIGTERM);
 			if (signal(SIGALRM, sig_alarm_kill) == SIG_ERR ) {
-				LOG(L_ERR, "ERROR: could not install SIGALARM handler\n");
+				LM_ERR("ERROR: could not install SIGALARM handler\n");
 				/* continue, the process will die anyway if no
 				 * alarm is installed which is exactly what we want */
 			}
@@ -527,15 +528,15 @@ void handle_sigs()
 			cleanup(1); /* cleanup & show status*/
 			alarm(0);
 			signal(SIGALRM, SIG_IGN);
-			DBG("terminating due to SIGCHLD\n");
+			LM_DBG("terminating due to SIGCHLD\n");
 			exit(0);
 			break;
 		
 		case SIGHUP: /* ignoring it*/
-			DBG("SIGHUP received, ignoring it\n");
+			LM_DBG("SIGHUP received, ignoring it\n");
 			break;
 		default:
-			LOG(L_CRIT, "WARNING: unhandled signal %d\n", sig_flag);
+			LM_CRIT("WARNING: unhandled signal %d\n", sig_flag);
 	}
 	sig_flag=0;
 }
@@ -562,11 +563,11 @@ static void sig_usr(int signo)
 		/* process the important signals */
 		switch(signo){
 			case SIGPIPE:
-					LOG(L_INFO, "INFO: signal %d received\n", signo);
+					LM_INFO("INFO: signal %d received\n", signo);
 				break;
 			case SIGINT:
 			case SIGTERM:
-					LOG(L_INFO, "INFO: signal %d received\n", signo);
+					LM_INFO("INFO: signal %d received\n", signo);
 					/* print memory stats for non-main too */
 					#ifdef PKG_MALLOC
 					LOG(memlog, "Memory status (pkg):\n");
@@ -586,7 +587,7 @@ static void sig_usr(int signo)
 			case SIGHUP:
 					break;
 			case SIGCHLD:
-					DBG("SIGCHLD received: "
+					LM_DBG("SIGCHLD received: "
 						"we do not worry about grand-children\n");
 		}
 	}
@@ -599,33 +600,33 @@ int install_sigs()
 {
 	/* added by jku: add exit handler */
 	if (signal(SIGINT, sig_usr) == SIG_ERR ) {
-		LOG(L_ERR,"ERROR: no SIGINT signal handler can be installed\n");
+		LM_ERR("ERROR: no SIGINT signal handler can be installed\n");
 		goto error;
 	}
 	/* if we debug and write to a pipe, we want to exit nicely too */
 	if (signal(SIGPIPE, sig_usr) == SIG_ERR ) {
-		LOG(L_ERR,"ERROR: no SIGINT signal handler can be installed\n");
+		LM_ERR("ERROR: no SIGINT signal handler can be installed\n");
 		goto error;
 	}
 	
 	if (signal(SIGUSR1, sig_usr)  == SIG_ERR ) {
-		LOG(L_ERR,"ERROR: no SIGUSR1 signal handler can be installed\n");
+		LM_ERR("ERROR: no SIGUSR1 signal handler can be installed\n");
 		goto error;
 	}
 	if (signal(SIGCHLD , sig_usr)  == SIG_ERR ) {
-		LOG(L_ERR,"ERROR: no SIGCHLD signal handler can be installed\n");
+		LM_ERR("ERROR: no SIGCHLD signal handler can be installed\n");
 		goto error;
 	}
 	if (signal(SIGTERM , sig_usr)  == SIG_ERR ) {
-		LOG(L_ERR,"ERROR: no SIGTERM signal handler can be installed\n");
+		LM_ERR("ERROR: no SIGTERM signal handler can be installed\n");
 		goto error;
 	}
 	if (signal(SIGHUP , sig_usr)  == SIG_ERR ) {
-		LOG(L_ERR,"ERROR: no SIGHUP signal handler can be installed\n");
+		LM_ERR("ERROR: no SIGHUP signal handler can be installed\n");
 		goto error;
 	}
 	if (signal(SIGUSR2 , sig_usr)  == SIG_ERR ) {
-		LOG(L_ERR,"ERROR: no SIGUSR2 signal handler can be installed\n");
+		LM_ERR("ERROR: no SIGUSR2 signal handler can be installed\n");
 		goto error;
 	}
 	return 0;
@@ -652,7 +653,7 @@ int main_loop()
 
 	if (dont_fork){
 		if (udp_listen==0){
-			LOG(L_ERR, "ERROR: no fork mode requires at least one"
+			LM_ERR("ERROR: no fork mode requires at least one"
 					" udp listen address, exiting...\n");
 			goto error;
 		}
@@ -662,7 +663,7 @@ int main_loop()
 		sendipv4=bind_address;
 		sendipv6=bind_address; /*FIXME*/
 		if (udp_listen->next){
-			LOG(L_WARN, "WARNING: using only the first listen address"
+			LM_WARN("WARNING: using only the first listen address"
 						" (no fork)\n");
 		}
 		if (do_suid()==-1) goto error; /* try to drop privileges */
@@ -683,7 +684,7 @@ int main_loop()
 		{
 				process_no++;
 				if ((pid=fork())<0){
-					LOG(L_CRIT,  "ERROR: main_loop: Cannot fork\n");
+					LM_CRIT("ERROR: main_loop: Cannot fork\n");
 					goto error;
 				}
 				
@@ -695,7 +696,7 @@ int main_loop()
 					/* timer!*/
 					/* process_bit = 0; */
 					if (init_child(PROC_TIMER) < 0) {
-						LOG(L_ERR, "timer: init_child failed\n");
+						LM_ERR("timer: init_child failed\n");
 						goto error;
 					}
 					run_timer();
@@ -716,7 +717,7 @@ int main_loop()
 		 * do not fork - and it will be called with rank 1 because
 		 * in fact we behave like a child, not like main process */
 		if (init_child(1) < 0) {
-			LOG(L_ERR, "main_dontfork: init_child failed\n");
+			LM_ERR("main_dontfork: init_child failed\n");
 			goto error;
 		}
 
@@ -787,14 +788,14 @@ int main_loop()
 #ifdef USE_TCP
 				if(!tcp_disable){
 		 			if (socketpair(AF_UNIX, SOCK_STREAM, 0, sockfd)<0){
-						LOG(L_ERR, "ERROR: main_loop: socketpair failed: %s\n",
+						LM_ERR("ERROR: main_loop: socketpair failed: %s\n",
 							strerror(errno));
 						goto error;
 					}
 				}
 #endif
 				if ((pid=fork())<0){
-					LOG(L_CRIT,  "main_loop: Cannot fork\n");
+					LM_CRIT("main_loop: Cannot fork\n");
 					goto error;
 				}else if (pid==0){
 					     /* child */
@@ -809,7 +810,7 @@ int main_loop()
 					pt[process_no].pid=getpid();
 					bind_address=si; /* shortcut */
 					if (init_child(chd_rank) < 0) {
-						LOG(L_ERR, "init_child failed\n");
+						LM_ERR("init_child failed\n");
 						goto error;
 					}
 					return udp_rcv_loop();
@@ -846,7 +847,7 @@ int main_loop()
 #ifdef USE_TCP
 		if (!tcp_disable){
  			if (socketpair(AF_UNIX, SOCK_STREAM, 0, sockfd)<0){
-				LOG(L_ERR, "ERROR: main_loop: socketpair failed: %s\n",
+				LM_ERR("ERROR: main_loop: socketpair failed: %s\n",
 					strerror(errno));
 				goto error;
 			}
@@ -855,7 +856,7 @@ int main_loop()
 		/* fork again for the timer process*/
 		process_no++;
 		if ((pid=fork())<0){
-			LOG(L_CRIT, "main_loop: cannot fork timer process\n");
+			LM_CRIT("main_loop: cannot fork timer process\n");
 			goto error;
 		}else if (pid==0){
 			/* child */
@@ -870,7 +871,7 @@ int main_loop()
 			 * parent gets a chance to set it*/
 			pt[process_no].pid=getpid();
 			if (init_child(PROC_TIMER) < 0) {
-				LOG(L_ERR, "timer: init_child failed\n");
+				LM_ERR("timer: init_child failed\n");
 				goto error;
 			}
 			
@@ -894,7 +895,7 @@ int main_loop()
 				/* start tcp+tls master proc */
 			process_no++;
 			if ((pid=fork())<0){
-				LOG(L_CRIT, "main_loop: cannot fork tcp main process\n");
+				LM_CRIT("main_loop: cannot fork tcp main process\n");
 				goto error;
 			}else if (pid==0){
 				/* child */
@@ -903,7 +904,7 @@ int main_loop()
 				 * parent gets a chance to set it*/
 				pt[process_no].pid=getpid();
 				if (init_child(PROC_TCP_MAIN) < 0) {
-					LOG(L_ERR, "tcp_main: error in init_child\n");
+					LM_ERR("tcp_main: error in init_child\n");
 					goto error;
 				}
 				tcp_main_loop();
@@ -931,7 +932,7 @@ int main_loop()
 	is_main=1;
 	
 	if (init_child(PROC_MAIN) < 0) {
-		LOG(L_ERR, "main: error in init_child\n");
+		LM_ERR("main: error in init_child\n");
 		goto error;
 	}
 	for(;;){
@@ -999,7 +1000,7 @@ int main(int argc, char** argv)
 										optarg);
 						goto error;
 					};
-					LOG(L_INFO, "openser:main: shared memory: %ld bytes\n",
+					LM_NOTICE("openser:main: shared memory: %ld bytes\n",
 									shm_mem_size );
 					break;
 
@@ -1120,15 +1121,15 @@ int main(int argc, char** argv)
 					break;
 			case '?':
 					if (isprint(optopt))
-						fprintf(stderr, "Unknown option `-%c´.\n", optopt);
+						fprintf(stderr, "Unknown option `-%c`.\n", optopt);
 					else
 						fprintf(stderr, 
-								"Unknown option character `\\x%x´.\n",
+								"Unknown option character `\\x%x`.\n",
 								optopt);
 					goto error;
 			case ':':
 					fprintf(stderr, 
-								"Option `-%c´ requires an argument.\n",
+								"Option `-%c` requires an argument.\n",
 								optopt);
 					goto error;
 			default:
@@ -1147,25 +1148,28 @@ int main(int argc, char** argv)
 		goto error;
 	}
 
-	/* seed the prng */
-	/* try to use /dev/urandom if possible */
+	/* seed the prng, try to use /dev/urandom if possible */
+	/* no debugging information is logged, because the standard
+	   log level prior the config file parsing is L_NOTICE */
 	seed=0;
 	if ((rfd=open("/dev/urandom", O_RDONLY))!=-1){
 try_again:
 		if (read(rfd, (void*)&seed, sizeof(seed))==-1){
 			if (errno==EINTR) goto try_again; /* interrupted by signal */
-			LOG(L_WARN, "WARNING: could not read from /dev/urandom (%d)\n",
+			LM_WARN("WARNING: could not read from /dev/urandom (%d)\n",
 						errno);
 		}
-		DBG("read %u from /dev/urandom\n", seed);
+		LM_NOTICE("initialize the pseudo random generator from /dev/urandom");
+		LM_DBG("read %u from /dev/urandom\n", seed);
 			close(rfd);
 	}else{
-		LOG(L_WARN, "WARNING: could not open /dev/urandom (%d)\n", errno);
+		LM_WARN("WARNING: could not open /dev/urandom (%d)\n", errno);
+		LM_WARN("using a unsafe seed for the pseudo random number generator");
 	}
 	seed+=getpid()+time(0);
-	DBG("seeding PRNG with %u\n", seed);
+	LM_DBG("seeding PRNG with %u\n", seed);
 	srand(seed);
-	DBG("test random number %u\n", rand());
+	LM_DBG("test random number %u\n", rand());
 
 	/*register builtin  modules*/
 	register_builtin_modules();
@@ -1174,16 +1178,18 @@ try_again:
 	/* initialize default TLS domains,
 	   must be done before reading the config */
 	if (pre_init_tls()<0){
-		LOG(L_CRIT, "ERROR:main:could not pre_init_tls, exiting...\n");
+		LM_CRIT("ERROR:main:could not pre_init_tls, exiting...\n");
 		goto error;
 	}
 #endif /* USE_TLS */
 
 	if (preinit_black_lists()!=0) {
-		LOG(L_CRIT, "ERROR:main: failed to alloc black list's anchor\n");
+		LM_CRIT("ERROR:main: failed to alloc black list's anchor\n");
 		goto error;
 	}
 
+	/* parse the config file, prior to this only default values
+	   e.g. for debugging settings will be used */
 	yyin=cfg_stream;
 	if ((yyparse()!=0)||(cfg_errors)){
 		fprintf(stderr, "ERROR: bad config file (%d errors)\n", cfg_errors);
@@ -1267,7 +1273,7 @@ try_again:
 		goto error;
 	/*init timer, before parsing the cfg!*/
 	if (init_timer()<0){
-		LOG(L_CRIT, "could not initialize timer, exiting...\n");
+		LM_CRIT("could not initialize timer, exiting...\n");
 		goto error;
 	}
 	
@@ -1275,7 +1281,7 @@ try_again:
 	if (!tcp_disable){
 		/*init tcp*/
 		if (init_tcp()<0){
-			LOG(L_CRIT, "could not initialize tcp, exiting...\n");
+			LM_CRIT("could not initialize tcp, exiting...\n");
 			goto error;
 		}
 	}
@@ -1283,7 +1289,7 @@ try_again:
 	if (!tls_disable){
 		/* init tls*/
 		if (init_tls()<0){
-			LOG(L_CRIT, "could not initialize tls, exiting...\n");
+			LM_CRIT("could not initialize tls, exiting...\n");
 			goto error;
 		}
 	}
@@ -1313,7 +1319,7 @@ try_again:
 #else
 	pt=pkg_malloc(sizeof(struct process_table)*process_count());
 #ifdef CHANGEABLE_DEBUG_LEVEL
-	LOG(L_WARN,"WARNING: no shm mem support compiled -> changeable debug "
+	LM_WARN("WARNING: no shm mem support compiled -> changeable debug "
 		"level turned off\n");
 #endif
 #endif
@@ -1339,22 +1345,22 @@ try_again:
 	}
 	/* Init statistics */
 	if (init_stats_collector()<0) {
-		LOG(L_ERR, "Error while initializing statistics\n");
+		LM_ERR("Error while initializing statistics\n");
 		goto error;
 	}
 	/* Init MI */
 	if (init_mi_core()<0) {
-		LOG(L_ERR, "Error while initializing MI core\n");
+		LM_ERR("Error while initializing MI core\n");
 		goto error;
 	}
 	/* init black list engine */
 	if (init_black_lists()!=0) {
-		LOG(L_CRIT, "ERROR:main: failed to init black lists\n");
+		LM_CRIT("ERROR:main: failed to init black lists\n");
 		goto error;
 	}
 	/* init resolver's blacklist */
 	if (resolv_blacklist_init()!=0) {
-		LOG(L_CRIT, "ERROR:main: failed to create DNS blacklist\n");
+		LM_CRIT("ERROR:main: failed to create DNS blacklist\n");
 		goto error;
 	}
 
