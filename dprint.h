@@ -37,7 +37,11 @@
 #define L_DBG    4
 
 
-#define DP_PREFIX  "%s [%d] "
+#ifdef __SUNPRO_C
+	#define DP_PREFIX
+#else
+	#define DP_PREFIX  "%s [%d] "
+#endif
 
 #define DP_ALERT_PREFIX  DP_PREFIX "ALERT:"
 #define DP_CRIT_PREFIX   DP_PREFIX "CRITICAL:"
@@ -137,7 +141,7 @@ inline static char* dp_time()
 		#define LOG_PREFIX  MOD_NAME ": "
 
 		#define MY_DPRINT( ...) \
-				dprint( __VA_ARGS__ ) \
+				dprint( LOG_PREFIX __VA_ARGS__ ) \
 
 		#define MY_SYSLOG( _log_level, ...) \
 				syslog( (_log_level)|log_facility, \
