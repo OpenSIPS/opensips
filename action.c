@@ -984,17 +984,6 @@ int do_action(struct action* a, struct sip_msg* msg)
 		case USE_BLACKLIST_T:
 			mark_for_search((struct bl_head*)a->elem[0].u.data);
 			break;
-#ifdef TIMING_INFO
-		case SET_TIME_STAMP_T:
-				set_time_stamp(a->elem[0].u.string);
-			break;
-		case RESET_TIME_STAMP_T:
-				reset_time_stamp();
-			break;
-		case DIFF_TIME_STAMP_T:
-				diff_time_stamp(a->elem[0].u.number, a->elem[1].u.string);
-			break;
-#endif
 		default:
 			LM_ALERT("BUG - unknown type %d\n", a->type);
 	}
