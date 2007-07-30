@@ -81,3 +81,9 @@ error:
 	return -1;
 }
 
+/* utility function to give each children a unique seed */
+void seed_child(unsigned int seed)
+{
+	//LM_NOTICE("children seeded with %u", seed);
+	srand(seed);
+}

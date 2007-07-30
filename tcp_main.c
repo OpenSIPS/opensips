@@ -101,6 +101,7 @@
 #include "tcp_server.h"
 #include "tcp_init.h"
 #include "tsend.h"
+#include "ut.h"
 #ifdef USE_TLS
 #include "tls/tls_server.h"
 #endif 
@@ -1684,6 +1685,7 @@ int tcp_init_children(int *chd_rank)
 	int reader_fd[2]; /* for comm. with the tcp children read  */
 	pid_t pid;
 	struct socket_info *si;
+	unsigned int seed;
 	
 	/* estimate max fd. no:
 	 * 1 tcp send unix socket/all_proc, 
@@ -1716,6 +1718,7 @@ int tcp_init_children(int *chd_rank)
 		
 		process_no++;
 		(*chd_rank)++;
+		seed = rand();
 		pid=fork();
 		if (pid<0){
 			LOG(L_ERR, "ERROR: tcp_main: fork failed: %s\n",
@@ -1737,6 +1740,8 @@ int tcp_init_children(int *chd_rank)
 		}else{
 			/* child */
 			close(sockfd[0]);
+			/* each children need a unique seed */
+			seed_child(seed);
 			unix_tcp_sock=sockfd[1];
 			bind_address=0; /* force a SEGFAULT if someone uses a non-init.
 							   bind address on tcp */

@@ -127,11 +127,11 @@ static inline unsigned short str2s(const char* s, unsigned int len,
 	return ret;
 
 error_digits:
-	DBG("str2s: ERROR: too many letters in [%.*s]\n", (int)len, init);
+	LM_DBG("too many letters in [%.*s]\n", (int)len, init);
 	if (err) *err=1;
 	return 0;
 error_char:
-	DBG("str2s: ERROR: unexpected char %c in %.*s\n", *str, (int)len, init);
+	LM_DBG("unexpected char %c in %.*s\n", *str, (int)len, init);
 	if (err) *err=1;
 	return 0;
 }
@@ -169,7 +169,7 @@ static inline char* int2bstr(unsigned long l, char *s, int* len)
 		l/=10;
 	}while(l && (i>=0));
 	if (l && (i<0)){
-		LOG(L_CRIT, "BUG: int2str: overflow\n");
+		LM_CRIT("overflow error\n");
 	}
 	if (len) *len=(INT2STR_MAX_LEN-2)-i;
 	return &s[i+1];
@@ -339,7 +339,7 @@ inline static int hex2int(char hex_digit)
 	if (hex_digit>='A' && hex_digit<='F')
 		return hex_digit-'A'+10;
 	/* no valid hex digit ... */
-	LOG(L_ERR, "ERROR: hex2int: '%c' is no hex char\n", hex_digit );
+	LM_ERR("'%c' is no hex char\n", hex_digit );
 	return -1;
 }
 
@@ -362,7 +362,7 @@ inline static int un_escape(str *user, str *new_user )
 	int hi, lo;
 
 	if( new_user==0 || new_user->s==0) {
-		LOG(L_CRIT, "BUG: un_escape: called with invalid param\n");
+		LM_CRIT("called with invalid param\n");
 		return -1;
 	}
 
@@ -372,30 +372,28 @@ inline static int un_escape(str *user, str *new_user )
 	for (i = 0; i < user->len; i++) {
 		if (user->s[i] == '%') {
 			if (i + 2 >= user->len) {
-				LOG(L_ERR, "ERROR: un_escape: escape sequence too short in"
+				LM_ERR("escape sequence too short in"
 					" '%.*s' @ %d\n",
 					user->len, user->s, i );
 				goto error;
 			}
 			hi=hex2int(user->s[i + 1]);
 			if (hi<0) {
-				LOG(L_ERR,
-					"ERROR: un_escape: non-hex high digit in an escape"
+				LM_ERR(" non-hex high digit in an escape"
 					" sequence in '%.*s' @ %d\n",
 					user->len, user->s, i+1 );
 				goto error;
 			}
 			lo=hex2int(user->s[i + 2]);
 			if (lo<0) {
-				LOG(L_ERR, "ERROR: non-hex low digit in an escape sequence in "
+				LM_ERR("non-hex low digit in an escape sequence in "
 					"'%.*s' @ %d\n",
 					user->len, user->s, i+2 );
 				goto error;
 			}
 			value=(hi<<4)+lo;
 			if (value < 32 || value > 126) {
-				LOG(L_ERR,
-					"ERROR: non-ASCII escaped character in '%.*s' @ %d\n",
+				LM_ERR("non-ASCII escaped character in '%.*s' @ %d\n",
 					user->len, user->s, i );
 				goto error;
 			}
@@ -497,7 +495,7 @@ static inline int shm_str_dup(str* dst, str* src)
 {
 	dst->s = shm_malloc(src->len);
 	if (!dst->s) {
-		LOG(L_ERR, "ERROR:shm_str_dup: no memory left\n");
+		LM_ERR("no shared memory left\n");
 		return -1;
 	}
 	
@@ -514,7 +512,7 @@ static inline int pkg_str_dup(str* dst, str* src)
 	dst->s = pkg_malloc(src->len);
 	if (dst->s==NULL)
 	{
-		LOG(L_ERR, "ERROR:pkg_str_dup: no memory left\n");
+		LM_ERR("no private memory left\n");
 		return -1;
 	}
 	
@@ -531,7 +529,7 @@ static inline int str_strcmp(const str *stra, const str *strb)
 	int i;
 	if(stra==NULL || strb==NULL || stra->s ==NULL || strb->s==NULL || stra->len<0 || strb->len<0)
 	{
-		LOG(L_ERR, "ERROR:str_strcmp: bad parameters\n");
+		LM_ERR("bad parameters\n");
 		return -2;
 	}
 	int alen = stra->len;
@@ -562,7 +560,7 @@ static inline int str_strcasecmp(const str *stra, const str *strb)
 	int i;
 	if(stra==NULL || strb==NULL || stra->s ==NULL || strb->s==NULL || stra->len<0 || strb->len<0)
 	{
-		LOG(L_ERR, "ERROR:str_strcasecmp: bad parameters\n");
+		LM_ERR("bad parameters\n");
 		return -2;
 	}
 	int alen = stra->len;
@@ -588,5 +586,8 @@ static inline int str_strcasecmp(const str *stra, const str *strb)
 int user2uid(int* uid, int* gid, char* user);
 
 int group2gid(int* gid, char* group);
+
+/* utility function to give each children a unique seed */
+void seed_child(unsigned int seed);
 
 #endif

@@ -647,6 +647,9 @@ int main_loop()
 	int sockfd[2];
 #endif
 
+	// seeds for the PRNGs
+	unsigned int seed;
+	
 	/* one "main" process and n children handling i/o */
 	is_main=0;
 	chd_rank=0;
@@ -682,6 +685,7 @@ int main_loop()
 #endif
 		{
 				process_no++;
+				seed = rand();
 				if ((pid=fork())<0){
 					LM_CRIT("cannot fork timer process\n");
 					goto error;
@@ -692,6 +696,8 @@ int main_loop()
 					/* record pid twice to avoid the child using it, before
 					 * parent gets a chance to set it*/
 					pt[process_no].pid=getpid();
+					/* each children need a unique seed */
+					seed_child(seed);
 					/* timer!*/
 					/* process_bit = 0; */
 					if (init_child(PROC_TIMER) < 0) {
@@ -793,11 +799,14 @@ int main_loop()
 					}
 				}
 #endif
+				seed = rand();
 				if ((pid=fork())<0){
 					LM_CRIT("cannot fork UDP listener\n");
 					goto error;
 				}else if (pid==0){
-					     /* child */
+					/* child */
+					/* each children need a unique seed */
+					seed_child(seed);
 #ifdef USE_TCP
 					if (!tcp_disable){
 						close(sockfd[0]);
@@ -854,12 +863,15 @@ int main_loop()
 #endif
 		/* fork again for the timer process*/
 		process_no++;
+		seed = rand();
 		if ((pid=fork())<0){
 			LM_CRIT("cannot fork timer process\n");
 			goto error;
 		}else if (pid==0){
 			/* child */
 			/* is_main=0; */
+			/* each children need a unique seed */
+			seed_child(seed);
 #ifdef USE_TCP
 			if (!tcp_disable){
 				close(sockfd[0]);
@@ -893,10 +905,13 @@ int main_loop()
 			if (tcp_init_children(&chd_rank)<0) goto error;
 				/* start tcp+tls master proc */
 			process_no++;
+			seed = rand();
 			if ((pid=fork())<0){
 				LM_CRIT("cannot fork tcp main process\n");
 				goto error;
 			}else if (pid==0){
+				/* each children need a unique seed */
+				seed_child(seed);
 				/* child */
 				/* is_main=0; */
 				/* record pid twice to avoid the child using it, before
