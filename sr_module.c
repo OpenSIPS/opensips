@@ -189,18 +189,18 @@ static inline int version_control(void *handle, char *path)
 		return 0;
 	}
 	
-	if (strcmp(SER_FULL_VERSION, *m_ver)==0){
-		if (strcmp(SER_COMPILE_FLAGS, *m_flags)==0)
+	if (strcmp(OPENSER_FULL_VERSION, *m_ver)==0){
+		if (strcmp(OPENSER_COMPILE_FLAGS, *m_flags)==0)
 			return 1;
 		else {
 			LOG(L_ERR, "ERROR: module compile flags mismatch for %s "
 						" \ncore: %s \nmodule: %s\n",
-						path, SER_COMPILE_FLAGS, *m_flags);
+						path, OPENSER_COMPILE_FLAGS, *m_flags);
 			return 0;
 		}
 	}
 	LOG(L_ERR, "ERROR: module version mismatch for %s; "
-		"core: %s; module: %s\n", path, SER_FULL_VERSION, *m_ver );
+		"core: %s; module: %s\n", path, OPENSER_FULL_VERSION, *m_ver );
 	return 0;
 }
 
@@ -429,7 +429,6 @@ int init_child(int rank)
 	case PROC_MAIN:     type = "PROC_MAIN";     break;
 	case PROC_TIMER:    type = "PROC_TIMER";    break;
 	case PROC_TCP_MAIN: type = "PROC_TCP_MAIN"; break;
-	case PROC_UNIXSOCK: type = "PROC_UNIXSOCK"; break;
 	}
 
 	if (!type) {

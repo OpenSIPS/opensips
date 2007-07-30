@@ -66,11 +66,12 @@ typedef unsigned int modparam_t;
 
 typedef int (*param_func_t)( modparam_t type, void* val);
 
+typedef void (*mod_proc)(int no);
+
 /* Macros - used as rank in child_init function */
-#define PROC_MAIN      0  /* Main ser process */
+#define PROC_MAIN      0  /* Main openser process */
 #define PROC_TIMER    -1  /* Timer attendant process */
 #define PROC_TCP_MAIN -4  /* TCP main process */
-#define PROC_UNIXSOCK -5  /* Unix domain socket server processes */
 
 #define DEFAULT_DLFLAGS	0 /* value that signals to module loader to
 							use default dlopen flags in openser */
@@ -82,8 +83,9 @@ typedef int (*param_func_t)( modparam_t type, void* val);
 #define OPENSER_DLFLAGS	RTLD_NOW
 
 #define MODULE_VERSION \
-	char *module_version=SER_FULL_VERSION; \
-	char *module_flags=SER_COMPILE_FLAGS;
+	char *module_version=OPENSER_FULL_VERSION; \
+	char *module_flags=OPENSER_COMPILE_FLAGS;
+
 
 struct cmd_export_ {
 	char* name;             /* null terminated command name */
@@ -102,8 +104,16 @@ struct param_export_ {
 };
 
 
+struct proc_export_ {
+	char *name;
+	unsigned int no;
+	mod_proc function;
+};
+
+
 typedef struct cmd_export_ cmd_export_t;
 typedef struct param_export_ param_export_t;
+typedef struct proc_export_ proc_export_t;
 
 struct module_exports{
 	char* name;                     /* null terminated module name */

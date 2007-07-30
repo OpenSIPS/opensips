@@ -129,8 +129,8 @@
 #include "mi/mi_core.h"
 
 static char id[]="@(#) $Id$";
-static char* version=SER_FULL_VERSION;
-static char* flags=SER_COMPILE_FLAGS;
+static char* version=OPENSER_FULL_VERSION;
+static char* flags=OPENSER_COMPILE_FLAGS;
 char compiled[]= __TIME__ " " __DATE__ ;
 
 
