@@ -62,7 +62,7 @@ MAIN_NAME=openser
 VERSION = 1
 PATCHLEVEL = 3
 SUBLEVEL = 0
-EXTRAVERSION = -dev8
+EXTRAVERSION = -dev9
 
 RELEASE=$(VERSION).$(PATCHLEVEL).$(SUBLEVEL)$(EXTRAVERSION)
 OS = $(shell uname -s | sed -e s/SunOS/solaris/ | tr "[A-Z]" "[a-z]")
@@ -1009,12 +1009,6 @@ DEFAULT_YACC=bison
 
 # on solaris add -lxnet (e.g. LIBS= -lxnet)
 LIBS= -ldl -lresolv
-
-ifeq ($(tinfo),yes)
-    DEFS+= -DTIMING_INFO
-	LIBS+= -lrt
-endif
-
 
 #os specific stuff
 ifeq ($(OS), linux)
