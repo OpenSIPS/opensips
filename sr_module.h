@@ -133,6 +133,9 @@ struct module_exports{
 	item_export_t* items;           /* null terminated array of the exported
 	                                   module items (pseudo-variables) */
 
+	proc_export_t* procs;           /* null terminated array of the additional
+	                                   processes reqired by the module */
+
 	init_function init_f;           /* Initialization function */
 	response_function response_f;   /* function used for responses,
 	                                   returns yes or no; can be null */
