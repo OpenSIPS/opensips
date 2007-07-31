@@ -124,7 +124,7 @@ struct mi_attr *addf_mi_attr(struct mi_node *node, int flags,
 {
 	va_list ap;
 	char *p;
-	int  len;
+	int  len = 0;
 
 	va_start(ap, fmt_val);
 	p = mi_print_fmt( fmt_val, ap, &len);
