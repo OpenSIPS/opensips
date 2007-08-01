@@ -48,6 +48,9 @@ struct socket_info* tcp_listen;
 #ifdef USE_TLS
 struct socket_info* tls_listen;
 #endif
+#ifdef USE_SCTP
+struct socket_info* sctp_listen;
+#endif
 
 
 int add_listen_iface(char* name, unsigned short port, unsigned short proto,
@@ -79,6 +82,11 @@ static inline struct socket_info** get_sock_info_list(unsigned short proto)
 			return &tls_listen;
 			break;
 #endif
+#ifdef USE_SCTP
+		case PROTO_SCTP:
+			return &sctp_listen;
+			break;
+#endif
 		default:
 			LOG(L_CRIT, "BUG: get_sock_info_list: invalid proto %d\n", proto);
 	}
@@ -94,22 +102,50 @@ static inline int next_proto(unsigned short proto)
 	switch(proto){
 		case PROTO_NONE:
 			return PROTO_UDP;
-		case PROTO_UDP:
+		case PROTO_UDP: /* UDP -> [TCP | SCTP] */
 #ifdef	USE_TCP
-			return (tcp_disable)?0:PROTO_TCP;
+			if(!tcp_disable)
+				return PROTO_TCP;
+#ifdef USE_SCTP
+			return (sctp_disable)?0:PROTO_SCTP;
 #else
 			return 0;
 #endif
-#ifdef USE_TCP
-		case PROTO_TCP:
-#ifdef USE_TLS
-			return (tls_disable)?0:PROTO_TLS;
+#else
+#ifdef USE_SCTP
+			return (sctp_disable)?0:PROTO_SCTP;
 #else
 			return 0;
+#endif
+#endif
+#ifdef USE_TCP
+		case PROTO_TCP: /* TCP -> [TLS | SCTP] */
+#ifdef USE_TLS
+			if (!tls_disable)
+				return PROTO_TLS;
+#ifdef USE_SCTP
+			return (sctp_disable)?0:PROTO_SCTP;
+#else
+			return 0;
+#endif
+#else
+#ifdef USE_SCTP
+			return (sctp_disable)?0:PROTO_SCTP;
+#else
+			return 0;
+#endif
 #endif
 #endif
 #ifdef USE_TLS
 		case PROTO_TLS:
+#ifdef USE_SCTP
+			return (sctp_disable)?0:PROTO_SCTP;
+#else
+			return 0;
+#endif
+#endif
+#ifdef USE_SCTP
+		case PROTO_SCTP:
 			return 0;
 #endif
 		default:
@@ -132,6 +168,9 @@ inline static struct socket_info* get_first_socket()
 	else if (tls_listen) return tls_listen;
 #endif
 #endif
+#ifdef USE_SCTP
+	else if (sctp_listen) return sctp_listen;
+#endif
 	return 0;
 }
 
@@ -144,26 +183,39 @@ inline static int parse_proto(unsigned char* s, long len, int* proto)
 								(((unsigned int)(b))<<8)+  \
 								((unsigned int)(c)) ) | 0x20202020)
 	unsigned int i;
-	if (len!=3) return -1;
+	
+	/* must support 3-char arrays for udp, tcp, tls,
+	 * must support 4-char arrays for sctp */
+	*proto=PROTO_NONE;
+	if (len!=3 && len!=4) return -1;
+
 	i=PROTO2UINT(s[0], s[1], s[2]);
 	switch(i){
 		case PROTO2UINT('u', 'd', 'p'):
-			*proto=PROTO_UDP;
+			if(len==3) { *proto=PROTO_UDP; return 0; }
 			break;
 #ifdef USE_TCP
 		case PROTO2UINT('t', 'c', 'p'):
-			*proto=PROTO_TCP;
+			if(len==3) { *proto=PROTO_TCP; return 0; }
 			break;
 #ifdef USE_TLS
 		case PROTO2UINT('t', 'l', 's'):
-			*proto=PROTO_TLS;
+			if(len==3) { *proto=PROTO_TLS; return 0; }
 			break;
 #endif
 #endif
+#ifdef USE_SCTP
+		case PROTO2UINT('s', 'c', 't'):
+			if(len==4 && (s[3]=='p' || s[3]=='P')) {
+				*proto=PROTO_SCTP; return 0;
+			}
+			break;
+#endif
+
 		default:
 			return -1;
 	}
-	return 0;
+	return -1;
 }
 
 

@@ -152,6 +152,10 @@ static char* get_proto_name(unsigned short proto)
 		case PROTO_TLS:
 			return "tls";
 #endif
+#ifdef USE_SCTP
+		case PROTO_SCTP:
+			return "sctp";
+#endif
 		default:
 			return "unknown";
 	}
@@ -670,6 +674,9 @@ static int fix_socket_list(struct socket_info **list)
 #ifdef USE_TLS
 		    || (si->proto == PROTO_TLS)
 #endif /* USE_TLS */
+#ifdef USE_SCTP
+			|| (si->proto == PROTO_SCTP)
+#endif
 		    )){
 			LOG(L_WARN, "WARNING: removing entry %s:%s [%s]:%s\n",
 			    get_proto_name(si->proto), si->name.s, 
@@ -704,6 +711,9 @@ int fix_all_socket_lists()
 			&& (tls_listen==0)
 #endif
 #endif
+#ifdef USE_SCTP
+			&& (sctp_listen==0)
+#endif
 		){
 		/* get all listening ipv4 interfaces */
 		if (add_interfaces(0, AF_INET, 0,  PROTO_UDP, &udp_listen)==0){
@@ -719,6 +729,12 @@ int fix_all_socket_lists()
 					goto error;
 				}
 #endif
+			}
+#endif
+#ifdef USE_SCTP
+			if (!sctp_disable){
+				if (add_interfaces(0, AF_INET, 0, PROTO_SCTP, &sctp_listen)!=0)
+					goto error;
 			}
 #endif
 		}else{
@@ -755,6 +771,13 @@ int fix_all_socket_lists()
 	}
 #endif
 #endif
+#ifdef USE_SCTP
+	if (!sctp_disable && (fix_socket_list(&sctp_listen)!=0)){
+		LM_ERR("fix_socket_list sctp failed\n");
+		goto error;
+	}
+#endif
+
 	if ((udp_listen==0)
 #ifdef USE_TCP
 			&& (tcp_listen==0)
@@ -762,7 +785,10 @@ int fix_all_socket_lists()
 			&& (tls_listen==0)
 #endif
 #endif
-		){
+#ifdef USE_SCTP
+			&& (sctp_listen==0)
+#endif
+	){
 		LOG(L_ERR, "ERROR: fix_all_socket_lists: no listening sockets\n");
 		goto error;
 	}

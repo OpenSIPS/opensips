@@ -205,6 +205,20 @@ struct socket_info* get_send_socket(struct sip_msg *msg,
 			}
 			break;
 #endif /* USE_TLS */
+#ifdef USE_SCTP
+		case PROTO_SCTP:
+			switch(to->s.sa_family){
+				case AF_INET:	send_sock=sendipv4_sctp;
+								break;
+#ifdef USE_IPV6
+				case AF_INET6:	send_sock=sendipv6_sctp;
+								break;
+#endif
+				default:	LOG(L_ERR, "BUG:get_send_socket: don't know how"
+									" to forward to af %d\n", to->s.sa_family);
+			}
+			break;
+#endif /* USE_SCTP */
 		case PROTO_UDP:
 			if ((bind_address==0)||(to->s.sa_family!=bind_address->address.af)||
 				  (bind_address->proto!=PROTO_UDP)){

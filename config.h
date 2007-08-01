@@ -108,6 +108,9 @@
 #define SRV_TCP_PREFIX "_sip._tcp."
 #define SRV_TCP_PREFIX_LEN (sizeof(SRV_TCP_PREFIX) - 1)
 
+#define SRV_SCTP_PREFIX "_sip._sctp."
+#define SRV_SCTP_PREFIX_LEN (sizeof(SRV_SCTP_PREFIX) - 1)
+
 #define SRV_TLS_PREFIX "_sips._tcp."
 #define SRV_TLS_PREFIX_LEN (sizeof(SRV_TLS_PREFIX) - 1)
 

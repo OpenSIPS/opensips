@@ -82,6 +82,7 @@ enum {
 	UDP1, UDP2, FIN_UDP,
 	TCP_TLS1, TCP2, FIN_TCP,
 	          TLS2, FIN_TLS,
+	SCTP1, SCTP2, SCTP3, FIN_SCTP,
 	L_PROTO, F_PROTO
 };
 
@@ -124,6 +125,7 @@ static /*inline*/ char* parse_via_param(char* p, char* end,
 	unsigned char saved_state;
 
 	state=*pstate;
+
 	saved_state=*psaved_state;
 	param->type=PARAM_ERROR;
 
@@ -1034,6 +1036,12 @@ parse_again:
 						vb->proto=PROTO_TLS;
 						state=F_HOST; /* start looking for host*/
 						goto main_via;
+					case FIN_SCTP:
+						/* finished proto parsing */
+						vb->transport.len=tmp-vb->transport.s;
+						vb->proto=PROTO_SCTP;
+						state=F_HOST; /* start looking for host*/
+						goto main_via;
 					case FIN_SIP:
 						vb->name.len=tmp-vb->name.s;
 						state=L_VER;
@@ -1187,6 +1195,10 @@ parse_again:
 					case TLS2:
 						state=FIN_TLS;
 						break;
+					case F_PROTO:
+						state=SCTP1;
+						vb->transport.s=tmp;
+						break;
 					default:
 						LOG(L_ERR, "ERROR: parse_via: bad char <%c> on"
 								" state %d\n", *tmp, state);
@@ -1217,6 +1229,9 @@ parse_again:
 						break;
 					case TCP2:
 						state=FIN_TCP;
+						break;
+					case SCTP3:
+						state=FIN_SCTP;
 						break;
 					default:
 						LOG(L_ERR, "ERROR: parse_via: bad char <%c> on"
@@ -1256,6 +1271,9 @@ parse_again:
 						state=TCP_TLS1;
 						vb->transport.s=tmp;
 						break;
+					case SCTP2:
+						state=SCTP3;
+						break;
 					default:
 						LOG(L_ERR, "ERROR: parse_via: bad char <%c> on"
 								" state %d\n", *tmp, state);
@@ -1267,6 +1285,9 @@ parse_again:
 				switch(state){
 					case TCP_TLS1:
 						state=TCP2;
+						break;
+					case SCTP1:
+						state=SCTP2;
 						break;
 					default:
 						LOG(L_ERR, "ERROR: parse_via: bad char <%c> on"

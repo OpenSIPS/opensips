@@ -125,6 +125,11 @@
 #include "tls/tls_init.h"
 #endif
 #endif
+
+#ifdef USE_SCTP
+#include "sctp_server.h"
+#endif
+
 #include "version.h"
 #include "mi/mi_core.h"
 
@@ -220,6 +225,9 @@ int tcp_disable = 0; /* 1 if tcp is disabled */
 #ifdef USE_TLS
 int tls_disable = 1; /* 1 if tls is disabled */
 #endif
+#ifdef USE_SCTP
+int sctp_disable = 0; /* 1 if sctp is disabled */
+#endif
 struct process_table *pt=0;		/*array with children pids, 0= main proc,
 									alloc'ed in shared mem if possible*/
 int sig_flag = 0;              /* last signal received */
@@ -293,6 +301,10 @@ struct socket_info* tcp_listen=0;
 #ifdef USE_TLS
 struct socket_info* tls_listen=0;
 #endif
+#ifdef USE_SCTP
+struct socket_info* sctp_listen=0;
+#endif
+
 struct socket_info* bind_address=0; /* pointer to the crt. proc.
 									 listening address*/
 struct socket_info* sendipv4; /* ipv4 socket to use when msg. comes from ipv6*/
@@ -305,6 +317,11 @@ struct socket_info* sendipv6_tcp;
 struct socket_info* sendipv4_tls;
 struct socket_info* sendipv6_tls;
 #endif
+#ifdef USE_SCTP
+struct socket_info* sendipv4_sctp;
+struct socket_info* sendipv6_sctp;
+#endif
+
 
 /* if aliases should be automatically discovered and added 
  * during fixing listening sockets */
@@ -780,9 +797,26 @@ int main_loop()
 		}
 #endif /* USE_TLS */
 #endif /* USE_TCP */
+#ifdef USE_SCTP
+		if (!sctp_disable){
+			for(si=sctp_listen; si; si=si->next){
+				/* same thing for sctp */
+				if (sctp_server_init(si)==-1)  goto error;
+				/* get first ipv4/ipv6 socket*/
+				if ((si->address.af==AF_INET)&&
+						((sendipv4_sctp==0)||(sendipv4_sctp->flags&SI_IS_LO)))
+					sendipv4_sctp=si;
+			#ifdef USE_IPV6
+				if((sendipv6_sctp==0)&&(si->address.af==AF_INET6))
+					sendipv6_sctp=si;
+			#endif
+			}
+		}
+#endif /* USE_SCTP */
 
-			/* all processes should have access to all the sockets (for sending)
-			 * so we open all first*/
+
+		/* all processes should have access to all the sockets (for sending)
+		 * so we open all first*/
 		if (do_suid()==-1) goto error; /* try to drop privileges */
 
 		/* udp processes */
@@ -844,6 +878,62 @@ int main_loop()
 
 	/* this is the main process -> it shouldn't send anything */
 	bind_address=0;
+
+#ifdef USE_SCTP
+	if(!sctp_disable){
+		for(si=sctp_listen; si; si=si->next){
+			for(i=0;i<children_no;i++){
+				process_no++;
+				chd_rank++;
+#ifdef USE_TCP
+				if(!tcp_disable){
+		 			if (socketpair(AF_UNIX, SOCK_STREAM, 0, sockfd)<0){
+						LM_ERR("socketpair failed: %s\n",
+							strerror(errno));
+						goto error;
+					}
+				}
+#endif 
+				if ((pid=fork())<0){
+					LM_CRIT("main_loop: Cannot fork\n");
+					goto error;
+				}else if (pid==0){
+					     /* child */
+#ifdef USE_TCP
+					if (!tcp_disable){
+						close(sockfd[0]);
+						unix_tcp_sock=sockfd[1];
+					}
+#endif
+					/* record pid twice to avoid the child using it, before
+					 * parent gets a chance to set it*/
+					pt[process_no].pid=getpid();
+					bind_address=si; /* shortcut */
+					if (init_child(chd_rank) < 0) {
+						LM_ERR("init_child failed\n");
+						goto error;
+					}
+				return sctp_server_rcv_loop();
+				}else{
+						pt[process_no].pid=pid; /*should be in shared mem.*/
+						snprintf(pt[process_no].desc, MAX_PT_DESC,
+							"receiver child=%d sock= %s:%s", i, 	
+							si->name.s, si->port_no_str.s );
+#ifdef USE_TCP
+						if (!tcp_disable){
+							close(sockfd[1]);
+							pt[process_no].unix_sock=sockfd[0];
+							pt[process_no].idx=-1; /* this is not a "tcp"
+													  process*/
+						}
+#endif
+				}
+			}
+			/*parent*/
+		}
+	}
+	bind_address=0;
+#endif /* USE_SCTP */
 
 #ifdef USE_TCP
 	/* if we are using tcp we always need the timer */
@@ -992,7 +1082,7 @@ int main(int argc, char** argv)
 	init_route_lists();
 	/* process command line (get port no, cfg. file path etc) */
 	opterr=0;
-	options="f:cCm:b:l:n:N:rRvdDETVhw:t:u:g:P:G:i:x:W:";
+	options="f:cCm:b:l:n:N:rRvdDETSVhw:t:u:g:P:G:i:x:W:";
 	
 	while((c=getopt(argc,argv,options))!=-1){
 		switch(c){
@@ -1076,6 +1166,13 @@ int main(int argc, char** argv)
 					fprintf(stderr,"WARNING: tcp support not compiled in\n");
 #endif
 					break;
+			case 'S':
+#ifdef USE_SCTP
+					sctp_disable=1;
+#else
+					fprintf(stderr,"WARNING: sctp support not compiled in\n");
+#endif
+			break;
 			case 'N':
 #ifdef USE_TCP
 					tcp_children_no=strtol(optarg, &tmp, 10);

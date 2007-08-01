@@ -131,8 +131,7 @@ static struct bl_rule *bl_tail = 0;
 
 action_elem_t elems[MAX_ACTION_ELEMS];
 
-#if !defined(USE_TLS) || !defined(USE_TCP) \
-		||  !defined(USE_MCAST)
+#if !defined(USE_TLS) || !defined(USE_TCP) ||  !defined(USE_MCAST)
 static void warn(char* s);
 #endif
 static struct socket_id* mk_listen_id(char*, int, int);
@@ -257,6 +256,7 @@ extern int line;
 %token UDP
 %token TCP
 %token TLS
+%token SCTP
 %token NULLV
 
 /* config vars. */
@@ -477,6 +477,13 @@ proto:	  UDP	{ $$=PROTO_UDP; }
 			#else
 				$$=PROTO_TCP;
 				warn("tls support not compiled in");
+			#endif
+			}
+		| SCTP  { 
+			#ifdef USE_SCTP
+				$$=PROTO_SCTP;
+			#else
+				yyerror("sctp support not compiled in\n");YYABORT;
 			#endif
 			}
 		| ANY	{ $$=0; }

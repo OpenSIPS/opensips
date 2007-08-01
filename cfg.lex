@@ -105,9 +105,6 @@
 
 /* action keywords */
 FORWARD	forward
-FORWARD_TCP	forward_tcp
-FORWARD_UDP	forward_udp
-FORWARD_TLS	forward_tls
 DROP	"drop"
 EXIT	"exit"
 RETURN	"return"
@@ -300,6 +297,7 @@ NO			"no"|"false"|"off"|"disable"
 UDP			"udp"|"UDP"
 TCP			"tcp"|"TCP"
 TLS			"tls"|"TLS"
+SCTP		"sctp"|"SCTP"
 INET		"inet"|"INET"
 INET6		"inet6"|"INET6"
 SSLv23			"sslv23"|"SSLv23"|"SSLV23"
@@ -572,6 +570,7 @@ WHITESPACE	[ \t\r\n]
 <INITIAL>{TCP}			{ count(); return TCP; }
 <INITIAL>{UDP}			{ count(); return UDP; }
 <INITIAL>{TLS}			{ count(); return TLS; }
+<INITIAL>{SCTP}			{ count(); return SCTP; }
 <INITIAL>{INET}			{ count(); yylval.intval=AF_INET; return NUMBER; }
 <INITIAL>{INET6}		{ count();
 						#ifdef USE_IPV6

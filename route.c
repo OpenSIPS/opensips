@@ -188,7 +188,7 @@ static int fix_actions(struct action* a)
 	struct ip_addr ip;
 	struct socket_info* si;
 	str host;
-	int proto, port;
+	int proto=PROTO_NONE, port;
 	struct proxy_l *p;
 	struct bl_head *blh;
 

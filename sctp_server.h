@@ -1,5 +1,5 @@
 /*
- * $Id$
+ * $Id: sctp_server.h 1827 2007-03-12 15:22:53Z bogdan_iancu $
  *
  * Copyright (C) 2001-2003 FhG Fokus
  *
@@ -18,21 +18,27 @@
  * You should have received a copy of the GNU General Public License 
  * along with this program; if not, write to the Free Software 
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
+ * History
+ * --------
+ *  2007-06-22	sctp_server.h created, using udp_server.h as template -gmarmon
  */
 
+#ifdef USE_SCTP
 
-#ifndef udp_server_h
-#define udp_server_h
+#ifndef sctp_server_h
+#define sctp_server_h
 
+#include <netinet/sctp.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include "ip_addr.h"
 
-
-int udp_init(struct socket_info* si);
-int udp_send(struct socket_info* source,char *buf, unsigned len,
+int sctp_server_init(struct socket_info* si);
+int sctp_server_send(struct socket_info* source,char *buf, unsigned len,
 				union sockaddr_union*  to);
-int udp_rcv_loop();
+int sctp_server_rcv_loop();
 
 
+#endif
 #endif

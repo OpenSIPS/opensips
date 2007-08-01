@@ -62,7 +62,7 @@ MAIN_NAME=openser
 VERSION = 1
 PATCHLEVEL = 3
 SUBLEVEL = 0
-EXTRAVERSION = -dev9
+EXTRAVERSION = -dev10
 
 RELEASE=$(VERSION).$(PATCHLEVEL).$(SUBLEVEL)$(EXTRAVERSION)
 OS = $(shell uname -s | sed -e s/SunOS/solaris/ | tr "[A-Z]" "[a-z]")
@@ -428,6 +428,10 @@ endif
 
 ifneq ($(TLS),)
 	DEFS+= -DUSE_TLS
+endif
+
+ifneq ($(SCTP),)
+	DEFS+= -DUSE_SCTP
 endif
 
 ifeq ($(mode),)
@@ -1211,6 +1215,11 @@ endif
 ifneq ($(TLS),)
 DEFS+= -I$(LOCALBASE)/ssl/include
 LIBS+= -L$(LOCALBASE)/lib -L$(LOCALBASE)/ssl/lib -lssl  -lcrypto
+endif
+
+#add libsctp if needed
+ifneq ($(SCTP),)
+LIBS+= -lsctp
 endif
 
 ifneq ($(found_lock_method), yes)

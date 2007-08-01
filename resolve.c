@@ -642,6 +642,13 @@ static inline int get_naptr_proto(struct naptr_rdata *n)
 			return PROTO_TCP;
 			break;
 #endif
+#ifdef USE_SCTP
+		case 'S':
+		case 's':
+			return PROTO_SCTP;
+			break;
+#endif
+
 	}
 	LOG(L_CRIT,"BUG:get_naptr_proto: failed to detect proto\n");
 	return PROTO_NONE;
@@ -816,6 +823,9 @@ static inline void filter_and_sort_naptr( struct rdata** head_p,
 		if ( p!='U' && p!='u'
 #ifdef USE_TCP
 		&& (tcp_disable || (p!='T' && p!='t'))
+#endif
+#ifdef USE_SCTP
+		&& (sctp_disable || (p!='S' && p!='s'))
 #endif
 		)
 			goto skip;
@@ -1140,6 +1150,14 @@ do_srv:
 			memcpy(tmp, SRV_TLS_PREFIX, SRV_TLS_PREFIX_LEN);
 			memcpy(tmp+SRV_TLS_PREFIX_LEN, name->s, name->len);
 			tmp[SRV_TLS_PREFIX_LEN + name->len] = '\0';
+			break;
+#endif
+#ifdef USE_SCTP
+		case PROTO_SCTP:
+			if (sctp_disable) goto err_proto;
+			memcpy(tmp, SRV_SCTP_PREFIX, SRV_SCTP_PREFIX_LEN);
+			memcpy(tmp+SRV_SCTP_PREFIX_LEN, name->s, name->len);
+			tmp[SRV_SCTP_PREFIX_LEN + name->len] = '\0';
 			break;
 #endif
 		default:

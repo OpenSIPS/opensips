@@ -2006,6 +2006,7 @@ char* via_builder( unsigned int *len,
 	unsigned int  via_len, extra_len;
 	char               *line_buf;
 	int max_len;
+	int local_via_len=MY_VIA_LEN;
 	str* address_str; /* address displayed in via */
 	str* port_str; /* port no displayed in via */
 	
@@ -2019,7 +2020,7 @@ char* via_builder( unsigned int *len,
 	else
 		port_str=&(send_sock->port_no_str);
 
-	max_len=MY_VIA_LEN+address_str->len /* space in MY_VIA */
+	max_len=local_via_len+address_str->len /* space in MY_VIA */
 		+2 /* just in case it is a v6 address ... [ ] */
 		+1 /*':'*/+port_str->len
 		+(branch?(MY_BRANCH_LEN+branch->len):0)
@@ -2034,37 +2035,40 @@ char* via_builder( unsigned int *len,
 
 	extra_len=0;
 
-	via_len=MY_VIA_LEN+address_str->len; /*space included in MY_VIA*/
-
-	memcpy(line_buf, MY_VIA, MY_VIA_LEN); 
+	memcpy(line_buf, MY_VIA, local_via_len); 
 	if (proto==PROTO_UDP){
 		/* do nothing */
 	}else if (proto==PROTO_TCP){
-		memcpy(line_buf+MY_VIA_LEN-4, "TCP ", 4);
+		memcpy(line_buf+local_via_len-4, "TCP ", 4);
 	}else if (proto==PROTO_TLS){
-		memcpy(line_buf+MY_VIA_LEN-4, "TLS ", 4);
+		memcpy(line_buf+local_via_len-4, "TLS ", 4);
+	}else if(proto==PROTO_SCTP){
+		memcpy(line_buf+local_via_len-4, "SCTP ", 5);
+		local_via_len++;
 	}else{
 		LOG(L_CRIT, "BUG: via_builder: unknown proto %d\n", proto);
 		return 0;
 	}
+	
+	via_len=local_via_len+address_str->len; /*space included in MY_VIA*/
+	
 #	ifdef USE_IPV6
 	/* add [] only if ipv6 and outbound socket address is used;
 	 * if using pre-set no check is made */
 	if ((send_sock->address.af==AF_INET6) &&
 		(address_str==&(send_sock->address_str))) {
-		line_buf[MY_VIA_LEN]='[';
-		line_buf[MY_VIA_LEN+1+address_str->len]=']';
+		line_buf[local_via_len]='[';
+		line_buf[local_via_len+1+address_str->len]=']';
 		extra_len=1;
 		via_len+=2; /* [ ]*/
 	}
 #	endif
-	memcpy(line_buf+MY_VIA_LEN+extra_len, address_str->s, address_str->len);
+	memcpy(line_buf+local_via_len+extra_len, address_str->s, address_str->len);
 	if ((send_sock->port_no!=SIP_PORT) || (port_str!=&send_sock->port_no_str)){
 		line_buf[via_len]=':'; via_len++;
 		memcpy(line_buf+via_len, port_str->s, port_str->len);
 		via_len+=port_str->len;
 	}
-
 	/* branch parameter */
 	if (branch){
 		memcpy(line_buf+via_len, MY_BRANCH, MY_BRANCH_LEN );
