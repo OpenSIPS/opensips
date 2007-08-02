@@ -54,6 +54,7 @@ Requirements:
 - GNU install or BSD install (on Solaris "ginstall") if you want "make
   install", "make bin", "make sunpkg" to work
 - openssl if you want to compile the TLS support
+- libsctp if you want to compile the SCTP support
 - libmysqlclient & libz (zlib) -libs and devel headers- if you want mysql DB
    support (the mysql module)
 - libpq / postgresql -libs and devel headers- if you want postgres DB
@@ -88,7 +89,8 @@ OS Notes:
 
 (NOTE: if make doesn't work try gmake  instead)
 
-- compile with default options (TLS support is by default configured):
+- compile with default options (TLS support is enabled by "TLS=1"; SCTP
+support is enabled by "SCTP=1"):
 
 make   #builds only openser core, equivalent to make openser
 make modules
