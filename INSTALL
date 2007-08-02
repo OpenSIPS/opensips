@@ -75,6 +75,7 @@ Requirements:
    perl scripting from you config file (perl module)
 - libsnmp9 - libs and devel headers - if you want SNMP client functionality 
    (SNMP AgentX subagent) for openser
+- libldap libs and devel headers v2.1 or greater - if you want LDAP support
 
 
 OS Notes:
