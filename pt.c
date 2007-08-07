@@ -1,4 +1,5 @@
-/* $Id: sr_module.h 2578 2007-08-07 15:17:07Z bogdan_iancu $
+/*
+ * $Id$
  *
  * Copyright (C) 2007 Voice Sistem SRL
  * 
