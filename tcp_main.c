@@ -1685,7 +1685,6 @@ int tcp_init_children(int *chd_rank)
 	int reader_fd[2]; /* for comm. with the tcp children read  */
 	pid_t pid;
 	struct socket_info *si;
-	unsigned int seed;
 	
 	/* estimate max fd. no:
 	 * 1 tcp send unix socket/all_proc, 
@@ -1697,7 +1696,7 @@ int tcp_init_children(int *chd_rank)
 		for (si=tls_listen; si; si=si->next, r++);
 #endif
 	
-	tcp_max_fd_no=process_count()*2 +r-1 /* timer */ +3; /* stdin/out/err*/
+	tcp_max_fd_no=counted_processes*2 +r-1 /* timer */ +3; /* stdin/out/err*/
 	tcp_max_fd_no+=tcp_max_connections;
 	
 	/* create the tcp sock_info structures */
@@ -1716,13 +1715,10 @@ int tcp_init_children(int *chd_rank)
 			goto error;
 		}
 		
-		process_no++;
 		(*chd_rank)++;
-		seed = rand();
-		pid=fork();
+		pid=openser_fork("SIP receiver TCP");
 		if (pid<0){
-			LOG(L_ERR, "ERROR: tcp_main: fork failed: %s\n",
-					strerror(errno));
+			LOG(L_ERR, "ERROR: tcp_main: fork failed\n");
 			goto error;
 		}else if (pid>0){
 			/* parent */
@@ -1733,21 +1729,15 @@ int tcp_init_children(int *chd_rank)
 			tcp_children[r].busy=0;
 			tcp_children[r].n_reqs=0;
 			tcp_children[r].unix_sock=reader_fd[0];
-			pt[process_no].pid=pid;
 			pt[process_no].unix_sock=sockfd[0];
 			pt[process_no].idx=r;
 			strncpy(pt[process_no].desc, "tcp receiver", MAX_PT_DESC);
 		}else{
 			/* child */
 			close(sockfd[0]);
-			/* each children need a unique seed */
-			seed_child(seed);
 			unix_tcp_sock=sockfd[1];
 			bind_address=0; /* force a SEGFAULT if someone uses a non-init.
 							   bind address on tcp */
-			/* record pid twice to avoid the child using it, before
-			 * parent gets a chance to set it*/
-			pt[process_no].pid=getpid();
 			if (init_child(*chd_rank) < 0) {
 				LOG(L_ERR, "init_children failed\n");
 				goto error;

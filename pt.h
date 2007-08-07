@@ -48,30 +48,15 @@ struct process_table {
 	char desc[MAX_PT_DESC];
 };
 
+typedef void(*forked_proc_func)(int i);
+
 extern struct process_table *pt;
 extern int process_no;
+extern unsigned int counted_processes;
 
-/* get number of process started by main with
-   given configuration
-*/
-inline static int process_count()
-{
-	int udp_listeners;
-	struct socket_info* si;
-	
-	for (si=udp_listen, udp_listeners=0; si; si=si->next, udp_listeners++);
-    return 
-		/* receivers and attendant */
-		(dont_fork ? 1 : children_no*udp_listeners + 1)
-		/* timer process */
-		+ 1 /* always, we need it in most cases, and we can't tell here
-			   & now if we don't need it */
-#ifdef USE_TCP
-		+((!tcp_disable)?( 1/* tcp main */ + tcp_children_no ):0) 
-#endif
-		;
-}
-
+int   init_multi_proc_support();
+void  set_proc_attrs( char *fmt, ...);
+pid_t openser_fork(char *proc_desc);
 
 /* return processes pid */
 inline static int my_pid()

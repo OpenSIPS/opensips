@@ -106,8 +106,8 @@ struct param_export_ {
 
 struct proc_export_ {
 	char *name;
-	unsigned int no;
 	mod_proc function;
+	unsigned int no;
 };
 
 
@@ -186,5 +186,12 @@ void* find_param_export(char* mod, char* name, modparam_t type);
 
 /* Returns 1 if the module with name 'name' is loaded, and zero otherwise. */
 int module_loaded(char *name);
+
+/* Counts the additional the number of processes requested by modules */
+int count_module_procs();
+
+/* Forks and starts the additional processes required by modules */
+int start_module_procs();
+
 
 #endif

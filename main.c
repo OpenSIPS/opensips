@@ -114,6 +114,7 @@
 #include "script_cb.h"
 #include "blacklists.h"
 
+#include "pt.h"
 #include "ut.h"
 #include "serialize.h"
 #include "statistics.h"
@@ -228,8 +229,6 @@ int tls_disable = 1; /* 1 if tls is disabled */
 #ifdef USE_SCTP
 int sctp_disable = 0; /* 1 if sctp is disabled */
 #endif
-struct process_table *pt=0;		/*array with children pids, 0= main proc,
-									alloc'ed in shared mem if possible*/
 int sig_flag = 0;              /* last signal received */
 #ifdef CHANGEABLE_DEBUG_LEVEL
 int debug_init = L_NOTICE;
@@ -334,11 +333,8 @@ unsigned short tls_port_no=0; /* default port */
 
 struct host_alias* aliases=0; /* name aliases list */
 
-/* ipc related globals */
+/* process number - 0 is the main process */
 int process_no = 0;
-/* process_bm_t process_bit = 0; */
-#ifdef ROUTE_SRV
-#endif
 
 /* cfg parsing */
 int cfg_errors=0;
@@ -358,7 +354,7 @@ extern FILE* yyin;
 extern int yyparse();
 
 
-int is_main=1; /* flag = is this the  "main" process? */
+int is_main = 0; /* flag = is this the  "main" process? */
 
 char* pid_file = 0; /* filename as asked by user */
 char* pgid_file = 0;
@@ -419,17 +415,13 @@ void cleanup(int show_status)
  * it's not in interactive mode and we don't want this. The non-daemonized 
  * case can occur when an error is encountered before daemonize is called 
  * (e.g. when parsing the config file) or when openser is started in 
- * "dont-fork" mode. Sending the signal to all the processes in pt[] will not 
- * work for processes forked from modules (which have no correspondent entry in
- * pt), but this can happen only in dont_fork mode (which is only for
- * debugging). So in the worst case + "dont-fork" we might leave some
- * zombies. -- andrei */
+ * "dont-fork" mode. */
 static void kill_all_children(int signum)
 {
 	int r;
 	if (own_pgid) kill(0, signum);
 	else if (pt)
-		for (r=1; r<process_count(); r++)
+		for (r=1; r<counted_processes; r++)
 			if (pt[r].pid) kill(pt[r].pid, signum);
 }
 
@@ -652,9 +644,8 @@ error:
 }
 
 
-
 /* main loop */
-int main_loop()
+static int main_loop()
 {
 	static int chd_rank;
 	int  i;
@@ -664,11 +655,6 @@ int main_loop()
 	int sockfd[2];
 #endif
 
-	// seeds for the PRNGs
-	unsigned int seed;
-	
-	/* one "main" process and n children handling i/o */
-	is_main=0;
 	chd_rank=0;
 
 	if (dont_fork){
@@ -691,49 +677,29 @@ int main_loop()
 		*/
 
 		/* we need another process to act as the timer*/
-#ifdef USE_TCP
-		/* if we are using tcp we always need a timer process,
-		 * we cannot count on select timeout to measure time
-		 * (it works only on linux)
-		 */
-		if ((!tcp_disable)||(has_timers()))
-#else
-		if (has_timers())
-#endif
-		{
-				process_no++;
-				seed = rand();
-				if ((pid=fork())<0){
-					LM_CRIT("cannot fork timer process\n");
+		if (has_timers()) {
+			if ( (pid=openser_fork("timer"))<0 ) {
+				LM_CRIT("cannot fork timer process\n");
+				goto error;
+			} else if (pid==0) {
+				/* new process */
+				if (init_child(PROC_TIMER) < 0) {
+					LM_ERR("init_child failed for timer proc\n");
 					goto error;
 				}
-				
-				if (pid==0){
-					/* child */
-					/* record pid twice to avoid the child using it, before
-					 * parent gets a chance to set it*/
-					pt[process_no].pid=getpid();
-					/* each children need a unique seed */
-					seed_child(seed);
-					/* timer!*/
-					/* process_bit = 0; */
-					if (init_child(PROC_TIMER) < 0) {
-						LM_ERR("init_child failed for timer proc\n");
-						goto error;
-					}
-					run_timer();
-				}else{
-						pt[process_no].pid=pid; /*should be shared mem anyway*/
-						strncpy(pt[process_no].desc, "timer", MAX_PT_DESC );
-				}
+				run_timer();
+				exit(-1);
+			}
+		}
+
+		if (start_module_procs()!=0) {
+			LM_ERR("failed to fork module processes\n");
+			goto error;
 		}
 
 		/* main process, receive loop */
-		process_no=0; /*main process number*/
-		pt[process_no].pid=getpid();
-		snprintf(pt[process_no].desc, MAX_PT_DESC, 
-			"stand-alone receiver @ %s:%s", 
-			 bind_address->name.s, bind_address->port_no_str.s );
+		set_proc_attrs("stand-alone SIP receiver %.*s", 
+			 bind_address->sock_str.len, bind_address->sock_str.s );
 
 		/* We will call child_init even if we
 		 * do not fork - and it will be called with rank 1 because
@@ -743,14 +709,10 @@ int main_loop()
 			goto error;
 		}
 
-		is_main=1; /* hack 42: call init_child with is_main=0 in case
-					 some modules wants to fork a child */
-		
+		is_main=1;
 		return udp_rcv_loop();
-	}else{
-		/* process_no now initialized to zero -- increase from now on
-		   as new processes are forked (while skipping 0 reserved for main )
-		*/
+
+	} else {  /* don't fork */
 
 		for(si=udp_listen;si;si=si->next){
 			/* create the listening socket (for each address)*/
@@ -760,12 +722,12 @@ int main_loop()
 			if ((si->address.af==AF_INET)&&
 					((sendipv4==0)||(sendipv4->flags&SI_IS_LO)))
 				sendipv4=si;
-	#ifdef USE_IPV6
+			#ifdef USE_IPV6
 			if((sendipv6==0)&&(si->address.af==AF_INET6))
 				sendipv6=si;
-	#endif
+			#endif
 		}
-#ifdef USE_TCP
+		#ifdef USE_TCP
 		if (!tcp_disable){
 			for(si=tcp_listen; si; si=si->next){
 				/* same thing for tcp */
@@ -774,13 +736,13 @@ int main_loop()
 				if ((si->address.af==AF_INET)&&
 						((sendipv4_tcp==0)||(sendipv4_tcp->flags&SI_IS_LO)))
 					sendipv4_tcp=si;
-		#ifdef USE_IPV6
+				#ifdef USE_IPV6
 				if((sendipv6_tcp==0)&&(si->address.af==AF_INET6))
 					sendipv6_tcp=si;
-		#endif
+				#endif
 			}
 		}
-#ifdef USE_TLS
+		#ifdef USE_TLS
 		if (!tls_disable){
 			for(si=tls_listen; si; si=si->next){
 				/* same as for tcp*/
@@ -789,15 +751,15 @@ int main_loop()
 				if ((si->address.af==AF_INET)&&
 						((sendipv4_tls==0)||(sendipv4_tls->flags&SI_IS_LO)))
 					sendipv4_tls=si;
-		#ifdef USE_IPV6
+				#ifdef USE_IPV6
 				if((sendipv6_tls==0)&&(si->address.af==AF_INET6))
 					sendipv6_tls=si;
-		#endif
+				#endif
 			}
 		}
-#endif /* USE_TLS */
-#endif /* USE_TCP */
-#ifdef USE_SCTP
+		#endif /* USE_TLS */
+		#endif /* USE_TCP */
+		#ifdef USE_SCTP
 		if (!sctp_disable){
 			for(si=sctp_listen; si; si=si->next){
 				/* same thing for sctp */
@@ -812,8 +774,7 @@ int main_loop()
 			#endif
 			}
 		}
-#endif /* USE_SCTP */
-
+		#endif /* USE_SCTP */
 
 		/* all processes should have access to all the sockets (for sending)
 		 * so we open all first*/
@@ -822,9 +783,8 @@ int main_loop()
 		/* udp processes */
 		for(si=udp_listen; si; si=si->next){
 			for(i=0;i<children_no;i++){
-				process_no++;
 				chd_rank++;
-#ifdef USE_TCP
+				#ifdef USE_TCP
 				if(!tcp_disable){
 		 			if (socketpair(AF_UNIX, SOCK_STREAM, 0, sockfd)<0){
 						LM_ERR("socketpair failed: %s\n",
@@ -832,117 +792,99 @@ int main_loop()
 						goto error;
 					}
 				}
-#endif
-				seed = rand();
-				if ((pid=fork())<0){
-					LM_CRIT("cannot fork UDP listener\n");
+				#endif
+				if ( (pid=openser_fork( "UDP receiver"))<0 ) {
+					LM_CRIT("cannot fork UDP process\n");
 					goto error;
-				}else if (pid==0){
-					/* child */
-					/* each children need a unique seed */
-					seed_child(seed);
-#ifdef USE_TCP
+				} else if (pid==0){
+					/* new UDP process */
+					/* set a more detailed description */
+					set_proc_attrs("SIP receiver %.*s ",
+						si->sock_str.len, si->sock_str.s);
+					#ifdef USE_TCP
 					if (!tcp_disable){
 						close(sockfd[0]);
 						unix_tcp_sock=sockfd[1];
 					}
-#endif
-					/* record pid twice to avoid the child using it, before
-					 * parent gets a chance to set it*/
-					pt[process_no].pid=getpid();
+					#endif
 					bind_address=si; /* shortcut */
 					if (init_child(chd_rank) < 0) {
 						LM_ERR("init_child failed for UDP listener\n");
 						goto error;
 					}
-					return udp_rcv_loop();
-				}else{
-						pt[process_no].pid=pid; /*should be in shared mem.*/
-						snprintf(pt[process_no].desc, MAX_PT_DESC,
-							"receiver child=%d sock= %s:%s", i, 	
-							si->name.s, si->port_no_str.s );
-#ifdef USE_TCP
-						if (!tcp_disable){
-							close(sockfd[1]);
-							pt[process_no].unix_sock=sockfd[0];
-							pt[process_no].idx=-1; /* this is not a "tcp"
-													  process*/
-						}
-#endif
+					udp_rcv_loop();
+					exit(-1);
 				}
+				#ifdef USE_TCP
+				if (!tcp_disable){
+					close(sockfd[1]);
+					pt[process_no].unix_sock=sockfd[0];
+				}
+				#endif
 			}
 			/*parent*/
 			/*close(udp_sock)*/; /*if it's closed=>sendto invalid fd errors?*/
 		}
 	}
 
-	/* this is the main process -> it shouldn't send anything */
-	bind_address=0;
-
-#ifdef USE_SCTP
+	#ifdef USE_SCTP
 	if(!sctp_disable){
 		for(si=sctp_listen; si; si=si->next){
 			for(i=0;i<children_no;i++){
-				process_no++;
 				chd_rank++;
-#ifdef USE_TCP
+				#ifdef USE_TCP
 				if(!tcp_disable){
-		 			if (socketpair(AF_UNIX, SOCK_STREAM, 0, sockfd)<0){
+					if (socketpair(AF_UNIX, SOCK_STREAM, 0, sockfd)<0){
 						LM_ERR("socketpair failed: %s\n",
 							strerror(errno));
 						goto error;
 					}
 				}
-#endif 
-				if ((pid=fork())<0){
-					LM_CRIT("main_loop: Cannot fork\n");
+				#endif
+				if ( (pid=openser_fork( "SCTP receiver"))<0 ) {
+					LM_CRIT("cannot fork SCTP process\n");
 					goto error;
-				}else if (pid==0){
-					     /* child */
-#ifdef USE_TCP
+				} else if (pid==0){
+					/* new SCTP process */
+					/* set a more detailed description */
+					set_proc_attrs("SIP receiver %.*s ",
+						si->sock_str.len, si->sock_str.s);
+					#ifdef USE_TCP
 					if (!tcp_disable){
 						close(sockfd[0]);
 						unix_tcp_sock=sockfd[1];
 					}
-#endif
-					/* record pid twice to avoid the child using it, before
-					 * parent gets a chance to set it*/
-					pt[process_no].pid=getpid();
+					#endif
 					bind_address=si; /* shortcut */
 					if (init_child(chd_rank) < 0) {
 						LM_ERR("init_child failed\n");
 						goto error;
 					}
-				return sctp_server_rcv_loop();
-				}else{
-						pt[process_no].pid=pid; /*should be in shared mem.*/
-						snprintf(pt[process_no].desc, MAX_PT_DESC,
-							"receiver child=%d sock= %s:%s", i, 	
-							si->name.s, si->port_no_str.s );
-#ifdef USE_TCP
-						if (!tcp_disable){
-							close(sockfd[1]);
-							pt[process_no].unix_sock=sockfd[0];
-							pt[process_no].idx=-1; /* this is not a "tcp"
-													  process*/
-						}
-#endif
+					sctp_server_rcv_loop();
+					exit(-1);
 				}
+				#ifdef USE_TCP
+				if (!tcp_disable){
+					close(sockfd[1]);
+					pt[process_no].unix_sock=sockfd[0];
+				}
+				#endif
 			}
-			/*parent*/
 		}
 	}
-	bind_address=0;
-#endif /* USE_SCTP */
+	#endif /* USE_SCTP */
 
-#ifdef USE_TCP
+	/* this is the main process -> it shouldn't send anything */
+	bind_address=0;
+
+	#ifdef USE_TCP
 	/* if we are using tcp we always need the timer */
 	if ((!tcp_disable)||(has_timers()))
-#else
+	#else
 	if (has_timers())
-#endif
+	#endif
 	{
-#ifdef USE_TCP
+		#ifdef USE_TCP
 		if (!tcp_disable){
  			if (socketpair(AF_UNIX, SOCK_STREAM, 0, sockfd)<0){
 				LM_ERR("socketpair failed: %s\n",
@@ -950,103 +892,70 @@ int main_loop()
 				goto error;
 			}
 		}
-#endif
-		/* fork again for the timer process*/
-		process_no++;
-		seed = rand();
-		if ((pid=fork())<0){
-			LM_CRIT("cannot fork timer process\n");
+		#endif
+		/* fork for the timer process*/
+		if ( (pid=openser_fork( "timer"))<0 ) {
+			LM_CRIT("cannot fork UDP process\n");
 			goto error;
 		}else if (pid==0){
-			/* child */
-			/* is_main=0; */
-			/* each children need a unique seed */
-			seed_child(seed);
-#ifdef USE_TCP
+			/* new process */
+			#ifdef USE_TCP
 			if (!tcp_disable){
 				close(sockfd[0]);
 				unix_tcp_sock=sockfd[1];
 			}
-#endif
-			/* record pid twice to avoid the child using it, before
-			 * parent gets a chance to set it*/
-			pt[process_no].pid=getpid();
+			#endif
 			if (init_child(PROC_TIMER) < 0) {
 				LM_ERR("init_child failed for timer proc\n");
 				goto error;
 			}
-			
 			run_timer();
-		}else{
-			pt[process_no].pid=pid;
-			strncpy(pt[process_no].desc, "timer", MAX_PT_DESC );
-#ifdef USE_TCP
-			if(!tcp_disable){
-						close(sockfd[1]);
-						pt[process_no].unix_sock=sockfd[0];
-						pt[process_no].idx=-1; /* this is not a "tcp" process*/
-			}
-#endif
+			exit(-1);
 		}
+		#ifdef USE_TCP
+		if(!tcp_disable){
+			close(sockfd[1]);
+			pt[process_no].unix_sock=sockfd[0];
+		}
+		#endif
 	}
-#ifdef USE_TCP
-		if (!tcp_disable){
-				/* start tcp  & tls receivers */
-			if (tcp_init_children(&chd_rank)<0) goto error;
-				/* start tcp+tls master proc */
-			process_no++;
-			seed = rand();
-			if ((pid=fork())<0){
-				LM_CRIT("cannot fork tcp main process\n");
+
+	#ifdef USE_TCP
+	if (!tcp_disable){
+		/* start tcp  & tls receivers */
+		if (tcp_init_children(&chd_rank)<0) goto error;
+		/* start tcp+tls master proc */
+		if ( (pid=openser_fork( "TCP main"))<0 ) {
+			LM_CRIT("cannot fork tcp main process\n");
+			goto error;
+		}else if (pid==0){
+			/* child */
+			if (init_child(PROC_TCP_MAIN) < 0) {
+				LM_ERR("error in init_child for tcp main\n");
 				goto error;
-			}else if (pid==0){
-				/* each children need a unique seed */
-				seed_child(seed);
-				/* child */
-				/* is_main=0; */
-				/* record pid twice to avoid the child using it, before
-				 * parent gets a chance to set it*/
-				pt[process_no].pid=getpid();
-				if (init_child(PROC_TCP_MAIN) < 0) {
-					LM_ERR("error in init_child for tcp main\n");
-					goto error;
-				}
-				tcp_main_loop();
-			}else{
-				pt[process_no].pid=pid;
-				strncpy(pt[process_no].desc, "tcp main process", MAX_PT_DESC );
-				pt[process_no].unix_sock=-1;
-				pt[process_no].idx=-1; /* this is not a "tcp" process*/
-				unix_tcp_sock=-1;
 			}
+			tcp_main_loop();
+			exit(-1);
 		}
-#endif
-	/* main */
-	pt[0].pid=getpid();
-	strncpy(pt[0].desc, "attendant", MAX_PT_DESC );
-#ifdef USE_TCP
-	if(!tcp_disable){
-		pt[process_no].unix_sock=-1;
-		pt[process_no].idx=-1; /* this is not a "tcp" process*/
-		unix_tcp_sock=-1;
 	}
-#endif
-	process_no=0; 
-	/* process_bit = 0; */
-	is_main=1;
-	
-	if (init_child(PROC_MAIN) < 0) {
-		LM_ERR("error in init_child for MAIN proc\n");
+	#endif
+
+	if (start_module_procs()!=0) {
+		LM_ERR("failed to fork module processes\n");
 		goto error;
 	}
+
+	/* main process left */
+	is_main=1;
+	set_proc_attrs("attendant");
+
 	for(;;){
 			pause();
 			handle_sigs();
 	}
-	
-	
+
 	/*return 0; */
- error:
+error:
 	is_main=1;  /* if we are here, we are the "main process",
 				  any forked children should exit with exit(-1) and not
 				  ever use return */
@@ -1413,31 +1322,26 @@ try_again:
 		fprintf(stderr, "ERROR: could not install the signal handlers\n");
 		goto error;
 	}
-	
-	
-	/*alloc pids*/
-#ifdef SHM_MEM
-	pt=shm_malloc(sizeof(struct process_table)*process_count());
+
+	/* init multi processes support */
+	if (init_multi_proc_support()!=0) {
+		LM_ERR("failed to init multi-proc support\n");
+		goto error;
+	}
+
 #ifdef CHANGEABLE_DEBUG_LEVEL
+#ifdef SHM_MEM
 	debug=shm_malloc(sizeof(int));
 	if (debug==0) {
 		fprintf(stderr, "ERROR: out  of memory\n");
 		goto error;
 	}
 	*debug = debug_init;
-#endif
 #else
-	pt=pkg_malloc(sizeof(struct process_table)*process_count());
-#ifdef CHANGEABLE_DEBUG_LEVEL
 	LM_WARN("no shm mem support compiled -> changeable debug "
 		"level turned off\n");
 #endif
 #endif
-	if (pt==0){
-		fprintf(stderr, "ERROR: out  of memory\n");
-		goto error;
-	}
-	memset(pt, 0, sizeof(struct process_table)*process_count());
 
 	if (disable_core_dump) set_core_dump(0, 0);
 	else set_core_dump(1, shm_mem_size+PKG_MEM_POOL_SIZE+4*1024*1024);

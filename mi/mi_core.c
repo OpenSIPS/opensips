@@ -232,7 +232,7 @@ static struct mi_root *mi_ps(struct mi_root *cmd, void *param)
 		return 0;
 	rpl = &rpl_tree->node;
 
-	for ( i=0 ; i<process_count() ; i++ ) {
+	for ( i=0 ; i<counted_processes ; i++ ) {
 		node = add_mi_node_child(rpl, 0, "Process", 7, 0, 0 );
 		if (node==0)
 			goto error;

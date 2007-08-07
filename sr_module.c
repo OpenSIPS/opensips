@@ -37,6 +37,7 @@
 #include "dprint.h"
 #include "error.h"
 #include "mem/mem.h"
+#include "pt.h"
 
 #include <strings.h>
 #include <stdlib.h>
@@ -503,8 +504,8 @@ int init_modules(void)
 }
 
 /* Returns 1 if the module with name 'name' is loaded, and zero otherwise. */
-int module_loaded(char *name) {
-
+int module_loaded(char *name)
+{
 	struct sr_module *currentMod;
 
 	for (currentMod=modules; currentMod; currentMod=currentMod->next) {
@@ -517,3 +518,53 @@ int module_loaded(char *name) {
 	return 0;
 }
 
+
+/* Counts the additional the number of processes requested by modules */
+int count_module_procs()
+{
+	struct sr_module *m;
+	unsigned int cnt;
+	unsigned int n;
+
+	for( m=modules,cnt=0 ; m ; m=m->next) {
+		if (m->exports->procs) {
+			for( n=0 ; m->exports->procs[n].name ; n++)
+				cnt += m->exports->procs[n].no;
+		}
+	}
+	LM_DBG("modules require %d extra processes\n",cnt);
+	return cnt;
+}
+
+
+int start_module_procs()
+{
+	struct sr_module *m;
+	unsigned int n;
+	unsigned int l;
+	pid_t x;
+
+	for( m=modules ; m ; m=m->next) {
+		if (m->exports->procs==NULL)
+			continue;
+		for( n=0 ; m->exports->procs[n].name ; n++) {
+			for ( l=0; l<m->exports->procs[n].no ; l++) {
+				LM_DBG("forking process \"%s\"/%d for module %s\n",
+					m->exports->procs[n].name, l, m->exports->name);
+				x = openser_fork(m->exports->procs[n].name);
+				if (x<0) {
+					LM_ERR("failed to fork process \"%s\"/%d for module %s\n",
+						m->exports->procs[n].name, l, m->exports->name);
+					return -1;
+				} else if (x==0) {
+					/* new process -> run the function */
+					m->exports->procs[n].function(l);
+					/* we shouldn't get here */
+					exit(0);
+				}
+			}
+		}
+	}
+
+	return 0;
+}
