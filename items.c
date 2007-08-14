@@ -1141,8 +1141,8 @@ static int xl_get_dsturi(struct sip_msg *msg, xl_value_t *res,
 		return -1;
     
     if (msg->dst_uri.s == NULL) {
-	DBG("xl_get_dsturi: no destination URI\n");
-	return xl_get_null(msg, res, param, flags);
+		DBG("xl_get_dsturi: no destination URI\n");
+		return xl_get_null(msg, res, param, flags);
     }
 
     res->rs.s = msg->dst_uri.s;

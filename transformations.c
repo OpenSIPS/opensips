@@ -383,13 +383,13 @@ int tr_eval_uri(struct sip_msg *msg, tr_param_t *tp, int subtype,
 			if(_tr_uri.s==NULL)
 			{
 				LOG(L_ERR, "tr_eval_uri: no more memory\n");
-				memset(&_tr_uri, 0, sizeof(str));
-				memset(&_tr_parsed_uri, 0, sizeof(struct sip_uri));
 				if(_tr_uri_params != NULL)
 				{
 					free_params(_tr_uri_params);
 					_tr_uri_params = 0;
 				}
+				memset(&_tr_uri, 0, sizeof(str));
+				memset(&_tr_parsed_uri, 0, sizeof(struct sip_uri));
 				return -1;
 			}
 		}
@@ -406,16 +406,16 @@ int tr_eval_uri(struct sip_msg *msg, tr_param_t *tp, int subtype,
 		/* parse uri -- params only when requested */
 		if(parse_uri(_tr_uri.s, _tr_uri.len, &_tr_parsed_uri)!=0)
 		{
-			pkg_free(_tr_uri.s);
 			LOG(L_ERR, "tr_eval_uri: invalid uri [%.*s]\n", val->rs.len,
 					val->rs.s);
-			memset(&_tr_uri, 0, sizeof(str));
-			memset(&_tr_parsed_uri, 0, sizeof(struct sip_uri));
 			if(_tr_uri_params != NULL)
 			{
 				free_params(_tr_uri_params);
 				_tr_uri_params = 0;
 			}
+			pkg_free(_tr_uri.s);
+			memset(&_tr_uri, 0, sizeof(str));
+			memset(&_tr_parsed_uri, 0, sizeof(struct sip_uri));
 			return -1;
 		}
 	}
@@ -456,9 +456,11 @@ int tr_eval_uri(struct sip_msg *msg, tr_param_t *tp, int subtype,
 			}
 
 			if(_tr_uri_params == NULL)
-				if (parse_params(&_tr_parsed_uri.params, CLASS_ANY, &phooks,
-							&_tr_uri_params)<0)
+			{
+				sv = _tr_parsed_uri.params;
+				if (parse_params(&sv, CLASS_ANY, &phooks, &_tr_uri_params)<0)
 					return -1;
+			}
 			if(tp->type==TR_PARAM_STRING)
 			{
 				sv = tp->v.s;
@@ -569,8 +571,8 @@ int tr_eval_paramlist(struct sip_msg *msg, tr_param_t *tp, int subtype,
 		}
 		
 		/* parse params */
-		if (parse_params(&_tr_params_str, CLASS_ANY, &phooks,
-				&_tr_params_list)<0)
+		sv = _tr_params_str;
+		if (parse_params(&sv, CLASS_ANY, &phooks, &_tr_params_list)<0)
 			return -1;
 	}
 	
