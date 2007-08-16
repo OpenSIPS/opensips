@@ -66,5 +66,6 @@ void free_event(event_t** _e);
  */
 void print_event(event_t* _e);
 
+int event_parser(char* _s, int _l, event_t* _e);
 
 #endif /* PARSE_EVENT_H */

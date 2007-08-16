@@ -77,7 +77,7 @@ static inline char* skip_token(char* _b, int _l)
 }
 
 
-static inline int event_parser(char* _s, int _l, event_t* _e)
+int event_parser(char* _s, int _l, event_t* _e)
 {
 	str tmp;
 	char* end;
