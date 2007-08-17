@@ -78,13 +78,14 @@ int parse_repl(struct replace_with * rw, char ** begin,
 	}
 
 	/* parse replacement */
-	repl= p = *begin;
-	token_nb=0;
-	max_pmatch=0;
-	escape=0;
+	p = *begin;
 	c = *p;
 	if(with_sep)
 		p++;
+	repl= p;
+	token_nb=0;
+	max_pmatch=0;
+	escape=0;
 	for(;p<end; p++){
 		if (escape){
 			escape=0;
@@ -253,7 +254,7 @@ struct subst_expr* subst_parser(str* subst)
 found_re:
 	re_end=p;
 	//p++;
-	repl=p;
+	repl=p+1;
 	if((rw_no = parse_repl(rw, &p, end, &max_pmatch, WITH_SEP))< 0)
 		goto error;
 	
