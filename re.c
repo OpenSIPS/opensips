@@ -26,6 +26,7 @@
  * --------
  *   2003-08-04  created by andrei
  *   2004-11-12  minor api extension, added *count (andrei)
+ *   2007-07-27  split function for parsing of replacing string (ancuta)
  */
 
 
@@ -59,23 +60,158 @@ void replace_lst_free(struct replace_lst* l)
 	}
 }
 
+#define MAX_REPLACE_WITH 100
+/*parse_repl(rw, &p, end, &max_pmatch)*/
+int parse_repl(struct replace_with * rw, char ** begin, 
+				char * end, int *max_token_nb, int with_sep){
+
+	char* p0;
+	char * repl;
+	int token_nb;
+	int escape;
+	int max_pmatch;
+	char *p, c;
+
+	if(end< ((*begin)+2) ){
+		LM_ERR("string too short\n");
+		return -1;
+	}
+
+	/* parse replacement */
+	repl= p = *begin;
+	token_nb=0;
+	max_pmatch=0;
+	escape=0;
+	c = *p;
+	if(with_sep)
+		p++;
+	for(;p<end; p++){
+		if (escape){
+			escape=0;
+			switch (*p){
+				/* special char escapes */
+				case '\\':
+					rw[token_nb].size=2;
+					rw[token_nb].offset=(p-1)-repl;
+					rw[token_nb].type=REPLACE_CHAR;
+					rw[token_nb].u.c='\\';
+					break;
+				case 'n':
+					rw[token_nb].size=2;
+					rw[token_nb].offset=(p-1)-repl;
+					rw[token_nb].type=REPLACE_CHAR;
+					rw[token_nb].u.c='\n';
+					break;
+				case 'r':
+					rw[token_nb].size=2;
+					rw[token_nb].offset=(p-1)-repl;
+					rw[token_nb].type=REPLACE_CHAR;
+					rw[token_nb].u.c='\r';
+					break;
+				case 't':
+					rw[token_nb].size=2;
+					rw[token_nb].offset=(p-1)-repl;
+					rw[token_nb].type=REPLACE_CHAR;
+					rw[token_nb].u.c='\t';
+					break;
+				case ITEM_MARKER:
+					rw[token_nb].size=2;
+					rw[token_nb].offset=(p-1)-repl;
+					rw[token_nb].type=REPLACE_CHAR;
+					rw[token_nb].u.c=ITEM_MARKER;
+					break;
+				/* special sip msg parts escapes */
+				case 'u':
+					rw[token_nb].size=2;
+					rw[token_nb].offset=(p-1)-repl;
+					rw[token_nb].type=REPLACE_URI;
+					break;
+				/* re matches */
+				case '0': /* allow 0, too, reference to the whole match */
+				case '1':
+				case '2':
+				case '3':
+				case '4':
+				case '5':
+				case '6':
+				case '7':
+				case '8':
+				case '9':
+					rw[token_nb].size=2;
+					rw[token_nb].offset=(p-1)-repl;
+					rw[token_nb].type=REPLACE_NMATCH;
+					rw[token_nb].u.nmatch=(*p)-'0';
+								/* 0 is the whole matched str*/
+					if (max_pmatch<rw[token_nb].u.nmatch) 
+						max_pmatch=rw[token_nb].u.nmatch;
+					break;
+				default: /* just print current char */
+					if (*p!=c){
+						LM_WARN("\\%c unknown escape in %s\n", *p, *begin);
+					}
+					rw[token_nb].size=2;
+					rw[token_nb].offset=(p-1)-repl;
+					rw[token_nb].type=REPLACE_CHAR;
+					rw[token_nb].u.c=*p;
+					break;
+			}
+
+			token_nb++;
+
+			if (token_nb>=MAX_REPLACE_WITH){
+				LM_ERR("too many escapes in the replace part %s\n", *begin);
+				goto error;
+			}
+		}else if (*p=='\\') {
+			escape=1;
+		}else if (*p==ITEM_MARKER) {
+
+			p0 = xl_parse_spec(p, &rw[token_nb].u.spec,
+					XL_DISABLE_COLORS|XL_THROW_ERROR );
+			if(p0==NULL)
+			{
+				LM_ERR("bad specifier in replace part %s\n", *begin);
+				goto error;
+			}
+			rw[token_nb].size=p0-p;
+			rw[token_nb].offset=p-repl;
+			rw[token_nb].type=REPLACE_SPEC;
+			token_nb++;
+			p=p0-1;
+		}else  if (*p==c && with_sep){
+				goto found_repl;
+		}
+	}
+	if(with_sep){
+	
+		LM_ERR("missing separator: %s\n", *begin);
+		goto error;
+	}
+
+found_repl:
+
+	*max_token_nb = max_pmatch;
+	*begin = p;
+	return token_nb;
+
+error:
+	return -1;
+}
 
 
 /* parse a /regular expression/replacement/flags into a subst_expr structure */
 struct subst_expr* subst_parser(str* subst)
 {
-#define MAX_REPLACE_WITH 100
 	char c;
 	char* end;
 	char* p;
-	char* p0;
 	char* re;
 	char* re_end;
 	char* repl;
 	char* repl_end;
 	struct replace_with rw[MAX_REPLACE_WITH];
 	int rw_no;
-	int escape;
+	//int escape;
 	int cflags; /* regcomp flags */
 	int replace_all;
 	struct subst_expr* se;
@@ -95,6 +231,8 @@ struct subst_expr* subst_parser(str* subst)
 	}
 	
 	p=subst->s;
+	end=subst->s+subst->len;
+
 	c=*p;
 	if (c=='\\'){
 		LOG(L_ERR, "ERROR: subst_parser: invalid separator char <%c>"
@@ -102,7 +240,7 @@ struct subst_expr* subst_parser(str* subst)
 		goto error;
 	}
 	p++;
-	end=subst->s+subst->len;
+	
 	/* find re */
 	re=p;
 	for (;p<end;p++){
@@ -114,109 +252,12 @@ struct subst_expr* subst_parser(str* subst)
 	goto error;
 found_re:
 	re_end=p;
-	p++;
-	/* parse replacement */
+	//p++;
 	repl=p;
-	rw_no=0;
-	max_pmatch=0;
-	escape=0;
-	for(;p<end; p++){
-		if (escape){
-			escape=0;
-			switch (*p){
-				/* special char escapes */
-				case '\\':
-					rw[rw_no].size=2;
-					rw[rw_no].offset=(p-1)-repl;
-					rw[rw_no].type=REPLACE_CHAR;
-					rw[rw_no].u.c='\\';
-					break;
-				case 'n':
-					rw[rw_no].size=2;
-					rw[rw_no].offset=(p-1)-repl;
-					rw[rw_no].type=REPLACE_CHAR;
-					rw[rw_no].u.c='\n';
-					break;
-				case 'r':
-					rw[rw_no].size=2;
-					rw[rw_no].offset=(p-1)-repl;
-					rw[rw_no].type=REPLACE_CHAR;
-					rw[rw_no].u.c='\r';
-					break;
-				case 't':
-					rw[rw_no].size=2;
-					rw[rw_no].offset=(p-1)-repl;
-					rw[rw_no].type=REPLACE_CHAR;
-					rw[rw_no].u.c='\t';
-					break;
-				case ITEM_MARKER:
-					rw[rw_no].size=2;
-					rw[rw_no].offset=(p-1)-repl;
-					rw[rw_no].type=REPLACE_CHAR;
-					rw[rw_no].u.c=ITEM_MARKER;
-					break;
-				/* special sip msg parts escapes */
-				case 'u':
-					rw[rw_no].size=2;
-					rw[rw_no].offset=(p-1)-repl;
-					rw[rw_no].type=REPLACE_URI;
-					break;
-				/* re matches */
-				case '0': /* allow 0, too, reference to the whole match */
-				case '1':
-				case '2':
-				case '3':
-				case '4':
-				case '5':
-				case '6':
-				case '7':
-				case '8':
-				case '9':
-					rw[rw_no].size=2;
-					rw[rw_no].offset=(p-1)-repl;
-					rw[rw_no].type=REPLACE_NMATCH;
-					rw[rw_no].u.nmatch=(*p)-'0';/* 0 is the whole matched str*/
-					if (max_pmatch<rw[rw_no].u.nmatch) 
-						max_pmatch=rw[rw_no].u.nmatch;
-					break;
-				default: /* just print current char */
-					if (*p!=c){
-						LOG(L_WARN, "subst_parser: WARNING: \\%c unknown"
-								" escape in %.*s\n", *p, subst->len, subst->s);
-					}
-					rw[rw_no].size=2;
-					rw[rw_no].offset=(p-1)-repl;
-					rw[rw_no].type=REPLACE_CHAR;
-					rw[rw_no].u.c=*p;
-					break;
-			}
-			rw_no++;
-			if (rw_no>=MAX_REPLACE_WITH){
-				LOG(L_ERR, "ERROR: subst_parser: too many escapes in the"
-							" replace part %.*s\n", subst->len, subst->s);
-				goto error;
-			}
-		}else if (*p=='\\') escape=1;
-		else if (*p==ITEM_MARKER) {
-			p0 = xl_parse_spec(p, &rw[rw_no].u.spec,
-					XL_DISABLE_COLORS|XL_THROW_ERROR );
-			if(p0==NULL)
-			{
-				LOG(L_ERR, "ERROR: subst_parser: bad specifier in"
-							" replace part %.*s\n", subst->len, subst->s);
-				goto error;
-			}
-			rw[rw_no].size=p0-p;
-			rw[rw_no].offset=p-repl;
-			rw[rw_no].type=REPLACE_SPEC;
-			rw_no++;
-			p=p0-1;
-		}else  if (*p==c) goto found_repl;
-	}
-	LOG(L_ERR, "ERROR: subst_parser: missing separator: %.*s\n", subst->len, 
-			subst->s);
-	goto error;
-found_repl:
+	if((rw_no = parse_repl(rw, &p, end, &max_pmatch, WITH_SEP))< 0)
+		goto error;
+	
+
 	repl_end=p;
 	p++;
 	/* parse flags */
@@ -262,11 +303,13 @@ found_repl:
 		goto error;
 	}
 	memset((void*)se, 0, sizeof(struct subst_expr));
+
 	se->replacement.len=repl_end-repl;
 	if ((se->replacement.s=pkg_malloc(se->replacement.len))==0){
 		LOG(L_ERR, "ERROR: subst_parser: out of memory (replacement)\n");
 		goto error;
 	}
+
 	/* start copying */
 	memcpy(se->replacement.s, repl, se->replacement.len);
 	se->re=regex;

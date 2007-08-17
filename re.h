@@ -37,6 +37,9 @@
 #include <sys/types.h> /* for regex */
 #include <regex.h>
 
+#define WITH_SEP	1
+#define WITHOUT_SEP	0
+
 enum replace_special { REPLACE_NMATCH, REPLACE_CHAR, REPLACE_URI,
 	REPLACE_SPEC };
 
@@ -71,6 +74,8 @@ struct replace_lst{
 
 void subst_expr_free(struct subst_expr* se);
 void replace_lst_free(struct replace_lst* l);
+int parse_repl(struct replace_with * rw, char ** begin, 
+				char * end, int *max_token_nb, int flag);
 struct subst_expr*  subst_parser(str* subst);
 struct replace_lst* subst_run( struct subst_expr* se, const char* input, 
 		                       struct sip_msg* msg, int *count);
