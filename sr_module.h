@@ -68,6 +68,8 @@ typedef int (*param_func_t)( modparam_t type, void* val);
 
 typedef void (*mod_proc)(int no);
 
+typedef int (*mod_proc_wrapper)();
+
 /* Macros - used as rank in child_init function */
 #define PROC_MAIN      0  /* Main openser process */
 #define PROC_TIMER    -1  /* Timer attendant process */
@@ -106,6 +108,8 @@ struct param_export_ {
 
 struct proc_export_ {
 	char *name;
+	mod_proc_wrapper pre_fork_function;
+	mod_proc_wrapper post_fork_function;
 	mod_proc function;
 	unsigned int no;
 };

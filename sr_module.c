@@ -529,7 +529,8 @@ int count_module_procs()
 	for( m=modules,cnt=0 ; m ; m=m->next) {
 		if (m->exports->procs) {
 			for( n=0 ; m->exports->procs[n].name ; n++)
-				cnt += m->exports->procs[n].no;
+				if (m->exports->procs[n].function)
+					cnt += m->exports->procs[n].no;
 		}
 	}
 	LM_DBG("modules require %d extra processes\n",cnt);
@@ -548,6 +549,17 @@ int start_module_procs()
 		if (m->exports->procs==NULL)
 			continue;
 		for( n=0 ; m->exports->procs[n].name ; n++) {
+			if ( !m->exports->procs[n].no || !m->exports->procs[n].function )
+				continue;
+			/* run pre-fork function */
+			if (m->exports->procs[n].pre_fork_function)
+				if (m->exports->procs[n].pre_fork_function()!=0) {
+					LM_ERR("pre-fork function failed for process \"%s\" "
+						"in module %s\n",
+						m->exports->procs[n].name, m->exports->name);
+					return -1;
+				}
+			/* fork the processes */
 			for ( l=0; l<m->exports->procs[n].no ; l++) {
 				LM_DBG("forking process \"%s\"/%d for module %s\n",
 					m->exports->procs[n].name, l, m->exports->name);
@@ -563,6 +575,14 @@ int start_module_procs()
 					exit(0);
 				}
 			}
+			/* run post-fork function */
+			if (m->exports->procs[n].post_fork_function)
+				if (m->exports->procs[n].post_fork_function()!=0) {
+					LM_ERR("post-fork function failed for process \"%s\" "
+						"in module %s\n",
+						m->exports->procs[n].name, m->exports->name);
+					return -1;
+				}
 		}
 	}
 
