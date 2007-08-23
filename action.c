@@ -205,6 +205,7 @@ int do_assign(struct sip_msg* msg, struct action* a)
 	dspec = (xl_spec_p)a->elem[0].u.data;
 	switch ((unsigned char)a->type){
 		case EQ_T:
+		case COLONEQ_T:
 		case PLUSEQ_T:
 		case MINUSEQ_T:
 		case DIVEQ_T:
@@ -222,9 +223,14 @@ int do_assign(struct sip_msg* msg, struct action* a)
 					}
 					if(a->elem[1].type == NULLV_ST)
 					{
-						destroy_avps(name_type, avp_name, 0);
+						if((unsigned char)a->type == COLONEQ_T)
+							destroy_avps(name_type, avp_name, 1);
+						else
+							destroy_avps(name_type, avp_name, 0);
 						return 1;
 					}
+					if((unsigned char)a->type == COLONEQ_T)
+						destroy_avps(name_type, avp_name, 1);
 
 					flags = name_type;
 					if(val.flags&XL_TYPE_INT)
@@ -236,6 +242,7 @@ int do_assign(struct sip_msg* msg, struct action* a)
 					}
 
 					if (add_avp(flags, avp_name, avp_val)<0)
+					
 					{
 						LM_ERR("error - cannot add AVP\n");
 						goto error;
@@ -971,6 +978,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 			ret=1; /* continue processing */
 			break;
 		case EQ_T:
+		case COLONEQ_T:
 		case PLUSEQ_T:
 		case MINUSEQ_T:
 		case DIVEQ_T:

@@ -352,6 +352,7 @@ extern int line;
 %nonassoc DIFF
 %nonassoc MATCH
 %nonassoc NOTMATCH
+%nonassoc COLONEQ
 %nonassoc PLUSEQ
 %nonassoc MINUSEQ
 %nonassoc SLASHEQ
@@ -1602,6 +1603,7 @@ host:	ID				{ $$=$1; }
 
 assignop:
 	EQUAL { $$ = EQ_T; }
+	| COLONEQ { $$ = COLONEQ_T; }
 	| PLUSEQ { $$ = PLUSEQ_T; }
 	| MINUSEQ { $$ = MINUSEQ_T;}
 	| SLASHEQ { $$ = DIVEQ_T; }
@@ -1686,6 +1688,23 @@ assign_cmd: script_var assignop assignexp {
 					"transformations not accepted in right side of assignment");
 
 			mk_action2( $$, EQ_T,
+					SCRIPTVAR_ST,
+					NULLV_ST,
+					$1,
+					0);
+		}
+	|  script_var COLONEQ NULLV {
+			switch($1->type) {
+				case XL_AVP:
+				break;
+				default:
+					yyerror("invalid left operand in NULL assignment");
+			}
+			if($1->trans!=0)
+				yyerror(
+					"transformations not accepted in right side of assignment");
+
+			mk_action2( $$, COLONEQ_T,
 					SCRIPTVAR_ST,
 					NULLV_ST,
 					$1,

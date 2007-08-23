@@ -383,6 +383,7 @@ static int fix_actions(struct action* a)
 				}
 				break;
 			case EQ_T:
+			case COLONEQ_T:
 			case PLUSEQ_T:
 			case MINUSEQ_T:
 			case DIVEQ_T:
