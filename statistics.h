@@ -123,6 +123,7 @@ extern gen_lock_t *stat_lock;
 	#define register_stat( _mod, _name, _pvar, _flags) 0
 	#define get_stat( _name )  0
 	#define get_stat_val( _var ) 0
+	#define get_stat_var_from_num_code( _n_code, _in_code) NULL
 #endif
 
 
