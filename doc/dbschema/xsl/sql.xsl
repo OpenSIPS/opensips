@@ -35,8 +35,6 @@
 	<xsl:variable name="createfile" select="concat($dir, concat('/', concat($prefix, 'create.sql')))"/>
 	<xsl:document href="{$createfile}" method="text" indent="no" omit-xml-declaration="yes">
 	    <xsl:apply-templates select="/database[1]"/>
-	    <!-- This is a hack to ensure that the file gets created when nothing is written -->
-	    <xsl:text> </xsl:text>
 	</xsl:document>
 
 <!-- Creates data and drop SQL statements, not needed at the moment -->
