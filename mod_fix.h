@@ -23,7 +23,7 @@ static inline int str_fixup(void** param, int param_no)
 	if (param_no == 1 || param_no == 2 ) {
 		s = (str*)pkg_malloc(sizeof(str));
 		if (!s) {
-			LOG(L_ERR, "str_fixup(): No memory left\n");
+			LM_ERR("no more pkg memory\n");
 			return E_UNSPEC;
 		}
 		
@@ -51,8 +51,7 @@ static inline int fixup_str2int( void** param, int param_no)
 			*param=(void *)go_to;
 			return 0;
 		} else {
-			LOG(L_ERR, "ERROR:fixup_str2int: bad number <%s>\n",
-				(char *)(*param));
+			LM_ERR("bad number <%s>\n", (char *)(*param));
 			return E_CFG;
 		}
 	}
@@ -63,25 +62,22 @@ static inline int fixup_str2int( void** param, int param_no)
 static inline int fixup_str2regexp(void** param, int param_no)
 {
 	regex_t* re;
-	DBG("DEBUG:fixup_str2regexp: fixing %s\n", (char*)(*param));
+	LM_DBG("fixing %s\n", (char*)(*param));
 
 	if (param_no==1) {
 		if ((re=pkg_malloc(sizeof(regex_t)))==0) {
-			LOG(L_ERR,"ERROR:fixup_str2regexp: no more pkg memory\n");
+			LM_ERR("no more pkg memory\n");
 			return E_OUT_OF_MEM;
 		}
 		if (regcomp(re, *param, REG_EXTENDED|REG_ICASE|REG_NEWLINE) ) {
 			pkg_free(re);
-			LOG(L_ERR,"ERROR:fixup_str2regexp: bad re %s\n", (char*)*param);
+			LM_ERR("bad re %s\n", (char*)*param);
 			return E_BAD_RE;
 		}
 		/* free string */
 		pkg_free(*param);
 		/* replace it with the compiled re */
 		*param=re;
-	} else {
-		LOG(L_ERR,"ERROR:fixup_str2regexp: called with parameter != 1\n");
-		return E_BUG;
 	}
 	return 0;
 }
