@@ -949,6 +949,11 @@ static int main_loop()
 	is_main=1;
 	set_proc_attrs("attendant");
 
+	if (init_child(PROC_MAIN) < 0) {
+		LM_ERR("error in init_child for PROC_MAIN\n");
+		goto error;
+	}
+
 	for(;;){
 			pause();
 			handle_sigs();
