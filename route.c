@@ -86,7 +86,7 @@ extern int return_code;
 /*
  *
  */
-void init_route_lists()
+void init_route_lists(void)
 {
 	memset(rlist, 0, sizeof(rlist));
 	memset(onreply_rlist, 0, sizeof(onreply_rlist));
@@ -1442,7 +1442,7 @@ error:
 
 /* fixes all action tables */
 /* returns 0 if ok , <0 on error */
-int fix_rls()
+int fix_rls(void)
 {
 	int i,ret;
 	for(i=0;i<RT_NO;i++){
@@ -1554,7 +1554,7 @@ error:
 /* check all routing tables for compatiblity between
  * route types and called module functions;
  * returns 0 if ok , <0 on error */
-int check_rls()
+int check_rls(void)
 {
 	int i,ret;
 
@@ -1608,7 +1608,7 @@ int check_rls()
 
 
 /* debug function, prints main routing table */
-void print_rl()
+void print_rl(void)
 {
 	int j;
 

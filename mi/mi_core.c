@@ -46,7 +46,7 @@
 static time_t up_since;
 static char *up_since_ctime;
 
-static int init_mi_uptime()
+static int init_mi_uptime(void)
 {
 	time(&up_since);
 	up_since_ctime = (char*)pkg_malloc(MAX_CTIME_LEN+1);
@@ -325,7 +325,7 @@ static mi_export_t mi_core_cmds[] = {
 
 
 
-int init_mi_core()
+int init_mi_core(void)
 {
 	if (register_mi_mod( "core", mi_core_cmds)<0) {
 		LOG(L_ERR, "ERROR:mi: unable to register core MI cmds\n");

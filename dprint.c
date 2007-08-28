@@ -64,7 +64,7 @@ int str2facility(char *s)
 }
 
 
-int dp_my_pid()
+int dp_my_pid(void)
 {
 	return my_pid();
 }
@@ -110,7 +110,7 @@ void set_proc_debug_level(int level)
 }
 
 
-void reset_proc_debug_level()
+void reset_proc_debug_level(void)
 {
 	debug = old_proc_level;
 #ifdef CHANGEABLE_DEBUG_LEVEL

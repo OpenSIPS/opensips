@@ -151,7 +151,7 @@ script_var_t* get_var_by_name(str *name)
 	return 0;
 }
 
-void reset_vars()
+void reset_vars(void)
 {
 	script_var_t *it;
 	for(it=script_vars; it; it=it->next)
@@ -165,7 +165,7 @@ void reset_vars()
 	}
 }
 
-void destroy_vars()
+void destroy_vars(void)
 {
 	script_var_t *it;
 	script_var_t *it0;

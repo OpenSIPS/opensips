@@ -94,7 +94,7 @@ stat_var *get_stat_var_from_num_code(unsigned int numerical_code, int out_codes)
 
 
 
-int init_stats_collector()
+int init_stats_collector(void)
 {
 	/* init the collector */
 	collector = (stats_collector*)shm_malloc(sizeof(stats_collector));
@@ -140,7 +140,7 @@ error:
 }
 
 
-void destroy_stats_collector()
+void destroy_stats_collector(void)
 {
 	stat_var *stat;
 	stat_var *tmp_stat;

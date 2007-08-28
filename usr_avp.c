@@ -217,7 +217,7 @@ inline void get_avp_val(struct usr_avp *avp, int_str *val)
 }
 
 
-struct usr_avp** get_avp_list( )
+struct usr_avp** get_avp_list(void)
 {
 	assert( crt_avps!=0 );
 	return crt_avps;
@@ -393,7 +393,7 @@ inline void destroy_avp_list( struct usr_avp **list )
 }
 
 
-void reset_avps( )
+void reset_avps(void)
 {
 	assert( crt_avps!=0 );
 	

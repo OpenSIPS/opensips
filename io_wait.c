@@ -403,7 +403,7 @@ char* check_poll_method(enum poll_types poll_method)
 
 
 
-enum poll_types choose_poll_method()
+enum poll_types choose_poll_method(void)
 {
 	enum poll_types poll_method;
 	unsigned int os_ver;

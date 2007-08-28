@@ -816,7 +816,7 @@ void force_tcp_conn_lifetime(struct receive_info *rcv, unsigned int timeout)
 
 
 /* releases expired connections and cleans up bad ones (state<0) */
-static inline void tcp_receive_timeout()
+static inline void tcp_receive_timeout(void)
 {
 	struct tcp_connection* con;
 	struct tcp_connection* next;

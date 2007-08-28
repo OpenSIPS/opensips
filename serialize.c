@@ -54,7 +54,7 @@ static int_str serial_avp;
 
 
 
-int init_serialization()
+int init_serialization(void)
 {
 	str alias = { SERIAL_AVP_ALIAS, sizeof(SERIAL_AVP_ALIAS)-1 };
 

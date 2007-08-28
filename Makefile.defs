@@ -62,7 +62,7 @@ MAIN_NAME=openser
 VERSION = 1
 PATCHLEVEL = 3
 SUBLEVEL = 0
-EXTRAVERSION = -dev13
+EXTRAVERSION = -dev14
 
 RELEASE=$(VERSION).$(PATCHLEVEL).$(SUBLEVEL)$(EXTRAVERSION)
 OS = $(shell uname -s | sed -e s/SunOS/solaris/ | tr "[A-Z]" "[a-z]")
@@ -565,7 +565,9 @@ ifeq			($(CC_CLASS), 4.x)
 					CFLAGS+=-minline-all-stringops \
 							-falign-loops \
 							-ftree-vectorize \
-							-mtune=$(CPU_TYPE) 
+							-mtune=$(CPU_TYPE) \
+					-Wold-style-definition
+
 else
 			#if gcc 3.0+
 ifeq			($(CC_CLASS), 3.x)

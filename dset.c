@@ -103,7 +103,7 @@ static inline unsigned int* get_ptr_bflags(unsigned int b_idx)
 /*
  * Get the per branch flags for RURI
  */
-unsigned int getb0flags()
+unsigned int getb0flags(void)
 {
 	return ruri_bflags;
 }

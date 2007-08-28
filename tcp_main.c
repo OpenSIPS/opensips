@@ -1440,7 +1440,7 @@ static inline void tcpconn_timeout(int force)
 
 
 /* tcp main loop */
-void tcp_main_loop()
+void tcp_main_loop(void)
 {
 
 	struct socket_info* si;
@@ -1574,7 +1574,7 @@ error:
 
 
 /* cleanup before exit */
-void destroy_tcp()
+void destroy_tcp(void)
 {
 		if (tcpconn_id_hash){
 			tcpconn_timeout(1); /* force close/expire for all active tcpconns*/
@@ -1598,7 +1598,7 @@ void destroy_tcp()
 
 
 
-int init_tcp()
+int init_tcp(void)
 {
 	char* poll_err;
 	

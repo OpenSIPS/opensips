@@ -212,7 +212,7 @@ error:
 
 
 
-int do_suid()
+int do_suid(void)
 {
 	if (gid){
 		if(setgid(gid)<0){

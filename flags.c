@@ -103,7 +103,7 @@ int issflagset( unsigned int mask )
 	return ( sflags & mask) ? 1 : -1;
 }
 
-unsigned int getsflags()
+unsigned int getsflags(void)
 {
 	return sflags;
 }

@@ -46,7 +46,7 @@ struct process_table *pt=0;
 unsigned int counted_processes = 0;
 
 
-int init_multi_proc_support()
+int init_multi_proc_support(void)
 {
 	unsigned short proc_no;
 	struct socket_info* si;

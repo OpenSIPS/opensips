@@ -370,7 +370,7 @@ error:
 
 
 
-int udp_rcv_loop()
+int udp_rcv_loop(void)
 {
 	int len;
 #ifdef DYN_BUF

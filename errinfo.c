@@ -32,12 +32,12 @@ err_info_t _oser_err_info;
 /**
  *
  */
-err_info_t* get_err_info() { return &_oser_err_info; }
+err_info_t* get_err_info(void) { return &_oser_err_info; }
 
 /**
  *
  */
-void init_err_info()
+void init_err_info(void)
 {
 	memset(&_oser_err_info, 0, sizeof(err_info_t));
 }

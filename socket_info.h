@@ -159,7 +159,7 @@ static inline int next_proto(unsigned short proto)
 /* gets first non-null socket_info structure
  * (useful if for. e.g we are not listening on any udp sockets )
  */
-inline static struct socket_info* get_first_socket()
+inline static struct socket_info* get_first_socket(void)
 {
 	if (udp_listen) return udp_listen;
 #ifdef USE_TCP

@@ -788,7 +788,7 @@ error:
 
 
 
-static void count()
+static void count(void)
 {
 	int i;
 	
@@ -806,5 +806,5 @@ static void count()
 	}
 }
 
-int yywrap() { return 1; }
+int yywrap(void) { return 1; }
 

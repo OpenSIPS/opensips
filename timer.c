@@ -53,14 +53,14 @@ static utime_t      *ujiffies=0;
 static unsigned int  timer_id=0;
 
 
-int has_timers()
+int has_timers(void)
 {
 	return timer_list || utimer_list;
 }
 
 
 /* ret 0 on success, <0 on error*/
-int init_timer()
+int init_timer(void)
 {
 #ifdef SHM_MEM
 	jiffies  = shm_malloc(sizeof(unsigned int));
@@ -94,7 +94,7 @@ int init_timer()
 
 
 
-void destroy_timer()
+void destroy_timer(void)
 {
 	struct sr_timer* t, *foo;
 
@@ -170,7 +170,7 @@ error:
 }
 
 
-unsigned int get_ticks()
+unsigned int get_ticks(void)
 {
 	if (jiffies==0){
 		LOG(L_CRIT, "BUG: get_ticks: jiffies not initialized\n");
@@ -185,7 +185,7 @@ unsigned int get_ticks()
 }
 
 
-utime_t get_uticks()
+utime_t get_uticks(void)
 {
 	if (ujiffies==0){
 		LOG(L_CRIT, "BUG: uget_ticks: jiffies not initialized\n");
@@ -201,7 +201,7 @@ utime_t get_uticks()
 
 
 
-static inline void timer_ticker()
+static inline void timer_ticker(void)
 {
 	struct sr_timer* t;
 	unsigned int prev_jiffies;
@@ -229,7 +229,7 @@ static inline void timer_ticker()
 
 
 
-static inline void utimer_ticker()
+static inline void utimer_ticker(void)
 {
 	struct sr_timer* t;
 
@@ -247,7 +247,7 @@ static inline void utimer_ticker()
 
 
 
-void run_timer()
+void run_timer(void)
 {
 	unsigned int multiple;
 	unsigned int cnt;

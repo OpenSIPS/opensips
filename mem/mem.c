@@ -57,7 +57,7 @@
 #endif
 
 
-int init_pkg_mallocs()
+int init_pkg_mallocs(void)
 {
 #ifdef PKG_MALLOC
 	/*init mem*/
@@ -80,7 +80,7 @@ int init_pkg_mallocs()
 
 
 
-int init_shm_mallocs()
+int init_shm_mallocs(void)
 {
 #ifdef SHM_MEM
 	if (shm_mem_init()<0) {

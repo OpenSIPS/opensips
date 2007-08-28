@@ -83,7 +83,7 @@ static struct bl_head *failover_bl=0;
  * will be used. See also resolv.conf(5).
  * returns: 0 on success, -1 on error
  */
-int resolv_init()
+int resolv_init(void)
 {
 	res_init();
 #ifdef HAVE_RESOLV_RES
@@ -105,7 +105,7 @@ int resolv_init()
 
 
 
-int resolv_blacklist_init()
+int resolv_blacklist_init(void)
 {
 	str name = str_init(DNS_REVOLVER_BL_NAME);
 

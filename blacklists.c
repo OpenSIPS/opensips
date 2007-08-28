@@ -63,7 +63,7 @@ static mi_export_t mi_bl_cmds[] = {
 
 
 
-int preinit_black_lists()
+int preinit_black_lists(void)
 {
 	blst_heads = (struct bl_head*)pkg_malloc(max_heads*sizeof(struct bl_head));
 	if (blst_heads==NULL) {
@@ -80,7 +80,7 @@ int preinit_black_lists()
 
 
 
-int init_black_lists()
+int init_black_lists(void)
 {
 	struct bl_head *old_blst_heads;
 	struct bl_rule *head;
@@ -217,7 +217,7 @@ struct bl_head *create_bl_head(int owner, int flags, struct bl_rule *head,
 
 
 
-void destroy_black_lists()
+void destroy_black_lists(void)
 {
 	unsigned int i;
 	struct bl_rule *p, *q;
@@ -603,7 +603,7 @@ int mark_for_search(struct bl_head *list)
 
 
 
-void reset_bl_markers()
+void reset_bl_markers(void)
 {
 	bl_marker = bl_default_marker;
 }

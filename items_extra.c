@@ -228,7 +228,7 @@ int xl_fill_extra_spec(xl_spec_p sp)
 /**
  *
  */
-int xl_init_extra_spec()
+int xl_init_extra_spec(void)
 {
 	_xl_extra_list = (xl_extra_p*)pkg_malloc(sizeof(xl_extra_p));
 	if(_xl_extra_list==0)
@@ -243,7 +243,7 @@ int xl_init_extra_spec()
 /**
  *
  */
-int xl_free_extra_spec()
+int xl_free_extra_spec(void)
 {
 	xl_extra_p xe;
 	xl_extra_p xe1;

@@ -182,7 +182,7 @@ Options:\n\
 ;
 
 /* print compile-time constants */
-void print_ct_constants()
+void print_ct_constants(void)
 {
 #ifdef ADAPTIVE_WAIT
 	printf("ADAPTIVE_WAIT_LOOPS=%d, ", ADAPTIVE_WAIT_LOOPS);
@@ -450,7 +450,7 @@ static void sig_alarm_abort(int signo)
 
 
 #define OPENSER_SHUTDOWN_TIME	60
-void handle_sigs()
+void handle_sigs(void)
 {
 	pid_t	chld;
 	int	chld_status;
@@ -605,7 +605,7 @@ static void sig_usr(int signo)
 
 
 /* install the signal handlers, returns 0 on success, -1 on error */
-int install_sigs()
+int install_sigs(void)
 {
 	/* added by jku: add exit handler */
 	if (signal(SIGINT, sig_usr) == SIG_ERR ) {
@@ -645,7 +645,7 @@ error:
 
 
 /* main loop */
-static int main_loop()
+static int main_loop(void)
 {
 	static int chd_rank;
 	int  i;

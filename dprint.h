@@ -73,7 +73,7 @@ extern int log_facility;
 extern char* log_name;
 
 
-int dp_my_pid();
+int dp_my_pid(void);
 
 void dprint (char* format, ...);
 
@@ -81,9 +81,9 @@ int str2facility(char *s);
 
 void set_proc_debug_level(int level);
 
-void reset_proc_debug_level();
+void reset_proc_debug_level(void);
 
-inline static char* dp_time()
+inline static char* dp_time(void)
 {
 	time_t ltime;
 	char *p;

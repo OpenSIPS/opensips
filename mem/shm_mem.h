@@ -254,22 +254,22 @@ do{\
 #ifdef STATISTICS
 extern stat_export_t shm_stats[];
 
-inline static unsigned long shm_get_size() {
+inline static unsigned long shm_get_size(void) {
 	return MY_GET_SIZE(shm_block);
 }
-inline static unsigned long shm_get_used() {
+inline static unsigned long shm_get_used(void) {
 	return MY_GET_USED(shm_block);
 }
-inline static unsigned long shm_get_rused() {
+inline static unsigned long shm_get_rused(void) {
 	return MY_GET_RUSED(shm_block);
 }
-inline static unsigned long shm_get_mused() {
+inline static unsigned long shm_get_mused(void) {
 	return MY_GET_MUSED(shm_block);
 }
-inline static unsigned long shm_get_free() {
+inline static unsigned long shm_get_free(void) {
 	return MY_GET_FREE(shm_block);
 }
-inline static unsigned long shm_get_frags() {
+inline static unsigned long shm_get_frags(void) {
 	return MY_GET_FRAGS(shm_block);
 }
 #endif /*STATISTICS*/

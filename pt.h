@@ -59,7 +59,7 @@ void  set_proc_attrs( char *fmt, ...);
 pid_t openser_fork(char *proc_desc);
 
 /* return processes pid */
-inline static int my_pid()
+inline static int my_pid(void)
 {
 	return pt ? pt[process_no].pid : getpid();
 }

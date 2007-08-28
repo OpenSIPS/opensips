@@ -47,35 +47,35 @@
 struct sr_module* modules=0;
 
 #ifdef STATIC_EXEC
-	extern struct module_exports* exec_exports();
+	extern struct module_exports* exec_exports(void);
 #endif
 #ifdef STATIC_TM
-	extern struct module_exports* tm_exports();
+	extern struct module_exports* tm_exports(void);
 #endif
 
 #ifdef STATIC_MAXFWD
-	extern struct module_exports* maxfwd_exports();
+	extern struct module_exports* maxfwd_exports(void);
 #endif
 
 #ifdef STATIC_AUTH
-        extern struct module_exports* auth_exports();
+        extern struct module_exports* auth_exports(void);
 #endif
 
 #ifdef STATIC_RR
-        extern struct module_exports* rr_exports();
+        extern struct module_exports* rr_exports(void);
 #endif
 
 #ifdef STATIC_USRLOC
-        extern struct module_exports* usrloc_exports();
+        extern struct module_exports* usrloc_exports(void);
 #endif
 
 #ifdef STATIC_SL
-        extern struct module_exports* sl_exports();
+        extern struct module_exports* sl_exports(void);
 #endif
 
 
 /* initializes statically built (compiled in) modules*/
-int register_builtin_modules()
+int register_builtin_modules(void)
 {
 	int ret;
 
@@ -367,7 +367,7 @@ void* find_param_export(char* mod, char* name, modparam_t type)
 
 
 
-void destroy_modules()
+void destroy_modules(void)
 {
 	struct sr_module* t, *foo;
 
@@ -520,7 +520,7 @@ int module_loaded(char *name)
 
 
 /* Counts the additional the number of processes requested by modules */
-int count_module_procs()
+int count_module_procs(void)
 {
 	struct sr_module *m;
 	unsigned int cnt;
@@ -538,7 +538,7 @@ int count_module_procs()
 }
 
 
-int start_module_procs()
+int start_module_procs(void)
 {
 	struct sr_module *m;
 	unsigned int n;

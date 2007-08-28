@@ -80,7 +80,7 @@ int register_mi_mod( char *mod_name, mi_export_t *mis)
 }
 
 
-int init_mi_child()
+int init_mi_child(void)
 {
 	int i;
 

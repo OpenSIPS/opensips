@@ -700,7 +700,7 @@ error:
 
 /* fix all 3 socket lists
  * return 0 on success, -1 on error */
-int fix_all_socket_lists()
+int fix_all_socket_lists(void)
 {
 	struct utsname myname;
 	
@@ -799,7 +799,7 @@ error:
 
 
 
-void print_all_socket_lists()
+void print_all_socket_lists(void)
 {
 	struct socket_info *si;
 	struct socket_info** list;
@@ -818,7 +818,7 @@ void print_all_socket_lists()
 }
 
 
-void print_aliases()
+void print_aliases(void)
 {
 	struct host_alias* a;
 

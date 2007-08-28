@@ -120,7 +120,7 @@ static inline void destroy_cb_list(struct script_cb **list)
 }
 
 
-void destroy_script_cb()
+void destroy_script_cb(void)
 {
 	destroy_cb_list( &pre_req_cb  );
 	destroy_cb_list( &post_req_cb );
