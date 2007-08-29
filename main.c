@@ -237,7 +237,8 @@ int *debug = &debug_init;
 int debug = L_NOTICE;
 #endif
 int dont_fork = 0;
-int log_stderr = 0;
+/* start by logging to stderr */
+int log_stderr = 1;
 /* log facility (see syslog(3)) */
 int log_facility = LOG_DAEMON;
 /* the id to be printed in syslog */
@@ -943,7 +944,8 @@ error:
 
 int main(int argc, char** argv)
 {
-
+	/* configure by default logging to syslog */
+	int cfg_log_stderr = 0;
 	FILE* cfg_stream;
 	int c,r;
 	char *tmp;
@@ -967,7 +969,8 @@ int main(int argc, char** argv)
 	/* process command line (get port no, cfg. file path etc) */
 	opterr=0;
 	options="f:cCm:b:l:n:N:rRvdDETSVhw:t:u:g:P:G:i:x:W:";
-	
+
+
 	while((c=getopt(argc,argv,options))!=-1){
 		switch(c){
 			case 'f':
@@ -979,46 +982,41 @@ int main(int argc, char** argv)
 					if (config_check==3)
 						break;
 					config_check |= 1;
-					log_stderr=1; /* force stderr logging */
+					cfg_log_stderr=1; /* force stderr logging */
 					break;
 			case 'm':
 					shm_mem_size=strtol(optarg, &tmp, 10) * 1024 * 1024;
 					if (tmp &&(*tmp)){
-						fprintf(stderr, "bad shmem size number: -m %s\n",
-										optarg);
+						LM_ERR("bad shmem size number: -m %s\n", optarg);
 						goto error;
 					};
 					LM_NOTICE("shared memory: %ld bytes\n",
 									shm_mem_size );
 					break;
-
 			case 'b':
 					maxbuffer=strtol(optarg, &tmp, 10);
 					if (tmp &&(*tmp)){
-						fprintf(stderr, "bad max buffer size number: -p %s\n",
-											optarg);
+						LM_ERR("bad max buffer size number: -p %s\n", optarg);
 						goto error;
 					}
 					break;
 			case 'l':
 					if (parse_phostport(optarg, strlen(optarg), &tmp, &tmp_len,
 											&port, &proto)<0){
-						fprintf(stderr, "bad -l address specifier: %s\n",
-										optarg);
+						LM_ERR("bad -l address specifier: %s\n", optarg);
 						goto error;
 					}
 					tmp[tmp_len]=0; /* null terminate the host */
 					/* add a new addr. to our address list */
 					if (add_listen_iface(tmp, port, proto, 0)!=0){
-						fprintf(stderr, "failed to add new listen address\n");
+						LM_ERR("failed to add new listen address\n");
 						goto error;
 					}
 					break;
 			case 'n':
 					children_no=strtol(optarg, &tmp, 10);
 					if ((tmp==0) ||(*tmp)){
-						fprintf(stderr, "bad process number: -n %s\n",
-									optarg);
+						LM_ERR("bad process number: -n %s\n", optarg);
 						goto error;
 					}
 					break;
@@ -1041,44 +1039,43 @@ int main(int argc, char** argv)
 					dont_fork=1;
 					break;
 			case 'E':
-					log_stderr=1;
+					cfg_log_stderr=1;
 					break;
 			case 'T':
 #ifdef USE_TCP
 					tcp_disable=1;
 #else
-					fprintf(stderr,"WARNING: tcp support not compiled in\n");
+					LM_WARN("tcp support not compiled in\n");
 #endif
 					break;
 			case 'S':
 #ifdef USE_SCTP
 					sctp_disable=1;
 #else
-					fprintf(stderr,"WARNING: sctp support not compiled in\n");
+					LM_WARN("sctp support not compiled in\n");
 #endif
 			break;
 			case 'N':
 #ifdef USE_TCP
 					tcp_children_no=strtol(optarg, &tmp, 10);
 					if ((tmp==0) ||(*tmp)){
-						fprintf(stderr, "bad process number: -N %s\n",
-									optarg);
+						LM_ERR("bad process number: -N %s\n", optarg);
 						goto error;
 					}
 #else
-					fprintf(stderr,"WARNING: tcp support not compiled in\n");
+					LM_WARN("tcp support not compiled in\n");
 #endif
 					break;
 			case 'W':
 #ifdef USE_TCP
 					tcp_poll_method=get_poll_type(optarg);
 					if (tcp_poll_method==POLL_NONE){
-						fprintf(stderr, "bad poll method name: -W %s\ntry "
-								"one of %s.\n", optarg, poll_support);
+						LM_ERR("bad poll method name: -W %s\ntry "
+							"one of %s.\n", optarg, poll_support);
 						goto error;
 					}
 #else
-					fprintf(stderr,"WARNING: tcp support not compiled in\n");
+					LM_WARN("tcp support not compiled in\n");
 #endif
 					break;
 			case 'V':
@@ -1116,29 +1113,27 @@ int main(int argc, char** argv)
 					break;
 			case '?':
 					if (isprint(optopt))
-						fprintf(stderr, "Unknown option `-%c`.\n", optopt);
+						LM_ERR("Unknown option `-%c`.\n", optopt);
 					else
-						fprintf(stderr, 
-								"Unknown option character `\\x%x`.\n",
-								optopt);
+						LM_ERR("Unknown option character `\\x%x`.\n", optopt);
 					goto error;
 			case ':':
-					fprintf(stderr, 
-								"Option `-%c` requires an argument.\n",
-								optopt);
+					LM_ERR("Option `-%c` requires an argument.\n", optopt);
 					goto error;
 			default:
 					abort();
 		}
 	}
-	
+
+	log_stderr = cfg_log_stderr;
+
 	/* fill missing arguments with the default values*/
 	if (cfg_file==0) cfg_file=CFG_FILE;
 
 	/* load config file or die */
 	cfg_stream=fopen (cfg_file, "r");
 	if (cfg_stream==0){
-		fprintf(stderr, "ERROR: loading config file(%s): %s\n", cfg_file,
+		LM_ERR("loading config file(%s): %s\n", cfg_file,
 				strerror(errno));
 		goto error;
 	}
@@ -1153,7 +1148,8 @@ try_again:
 			if (errno==EINTR) goto try_again; /* interrupted by signal */
 			LM_WARN("could not read from /dev/urandom (%d)\n", errno);
 		}
-		LM_NOTICE("initialize the pseudo random generator from /dev/urandom");
+		LM_NOTICE("initialize the pseudo random generator from "
+			"/dev/urandom\n");
 		LM_DBG("read %u from /dev/urandom\n", seed);
 			close(rfd);
 	}else{
@@ -1186,12 +1182,12 @@ try_again:
 	   e.g. for debugging settings will be used */
 	yyin=cfg_stream;
 	if ((yyparse()!=0)||(cfg_errors)){
-		fprintf(stderr, "ERROR: bad config file (%d errors)\n", cfg_errors);
+		LM_ERR("bad config file (%d errors)\n", cfg_errors);
 		goto error;
 	}
 
 	if (config_check>1 && check_rls()!=0) {
-		fprintf(stderr, "ERROR: bad function call in config file\n");
+		LM_ERR("bad function call in config file\n");
 		goto error;
 	}
 	print_rl();
@@ -1218,18 +1214,18 @@ try_again:
 	/* get uid/gid */
 	if (user){
 		if (user2uid(&uid, &gid, user)<0){
-			fprintf(stderr, "bad user name/uid number: -u %s\n", user);
+			LM_ERR("bad user name/uid number: -u %s\n", user);
 			goto error;
 		}
 	}
 	if (group){
 		if (group2gid(&gid, group)<0){
-				fprintf(stderr, "bad group name/gid number: -u %s\n", group);
+			LM_ERR("bad group name/gid number: -u %s\n", group);
 			goto error;
 		}
 	}
 	if (fix_all_socket_lists()!=0){
-		fprintf(stderr,  "failed to initialize list addresses\n");
+		LM_ERR("failed to initialize list addresses\n");
 		goto error;
 	}
 	/* print all the listen addresses */
@@ -1241,14 +1237,14 @@ try_again:
 	printf("\n");
 	
 	if (dont_fork){
-		fprintf(stderr, "WARNING: no fork mode %s\n", 
+		LM_WARN("no fork mode %s\n", 
 				(udp_listen)?(
 				(udp_listen->next)?" and more than one listen address found"
 				"(will use only the the first one)":""
 				):"and no udp listen address found" );
 	}
 	if (config_check){
-		fprintf(stderr, "config file ok, exiting...\n");
+		LM_NOTICE("config file ok, exiting...\n");
 		ret = 0;
 		goto error;
 	}
@@ -1292,12 +1288,13 @@ try_again:
 
 	/* init_daemon? */
 	if (!dont_fork){
-		if ( daemonize((log_name==0)?argv[0]:log_name) <0 ) goto error;
+		if ( daemonize((log_name==0)?argv[0]:log_name) <0 )
+			goto error;
 	}
 
 	/* install signal handlers */
 	if (install_sigs() != 0){
-		fprintf(stderr, "ERROR: could not install the signal handlers\n");
+		LM_ERR("could not install the signal handlers\n");
 		goto error;
 	}
 
@@ -1305,7 +1302,7 @@ try_again:
 #ifdef SHM_MEM
 	debug=shm_malloc(sizeof(int));
 	if (debug==0) {
-		fprintf(stderr, "ERROR: out  of memory\n");
+		LM_ERR("ERROR: out  of memory\n");
 		goto error;
 	}
 	*debug = debug_init;
@@ -1319,7 +1316,7 @@ try_again:
 	else set_core_dump(1, shm_mem_size+PKG_MEM_POOL_SIZE+4*1024*1024);
 	if (open_files_limit>0){
 		if(increase_open_fds(open_files_limit)<0){ 
-			fprintf(stderr, "ERROR: error could not increase file limits\n");
+			LM_ERR("ERROR: error could not increase file limits\n");
 			goto error;
 		}
 	}
@@ -1352,7 +1349,7 @@ try_again:
 
 	/* init modules */
 	if (init_modules() != 0) {
-		fprintf(stderr, "ERROR: error while initializing modules\n");
+		LM_ERR("error while initializing modules\n");
 		goto error;
 	}
 
@@ -1364,8 +1361,7 @@ try_again:
 
 	/* fix routing lists */
 	if ( (r=fix_rls())!=0){
-		fprintf(stderr, "ERROR: error %d while trying to fix configuration\n",
-						r);
+		LM_ERR("failed to fix configuration with err code %d\n", r);
 		goto error;
 	};
 

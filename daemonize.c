@@ -79,18 +79,18 @@ int daemonize(char*  name)
 	setbuf(stdout, 0);
 	setbuf(stderr, 0);
 	if (chroot_dir&&(chroot(chroot_dir)<0)){
-		LOG(L_CRIT, "Cannot chroot to %s: %s\n", chroot_dir, strerror(errno));
+		LM_CRIT("Cannot chroot to %s: %s\n", chroot_dir, strerror(errno));
 		goto error;
 	}
 	
 	if (chdir(working_dir)<0){
-		LOG(L_CRIT,"cannot chdir to %s: %s\n", working_dir, strerror(errno));
+		LM_CRIT("Cannot chdir to %s: %s\n", working_dir, strerror(errno));
 		goto error;
 	}
 
 	/* fork to become!= group leader*/
 	if ((pid=fork())<0){
-		LOG(L_CRIT, "Cannot fork:%s\n", strerror(errno));
+		LM_CRIT("Cannot fork:%s\n", strerror(errno));
 		goto error;
 	}else if (pid!=0){
 		/* parent process => exit*/
@@ -98,13 +98,13 @@ int daemonize(char*  name)
 	}
 	/* become session leader to drop the ctrl. terminal */
 	if (setsid()<0){
-		LOG(L_WARN, "setsid failed: %s\n",strerror(errno));
+		LM_WARN("setsid failed: %s\n",strerror(errno));
 	}else{
 		own_pgid=1;/* we have our own process group */
 	}
 	/* fork again to drop group  leadership */
 	if ((pid=fork())<0){
-		LOG(L_CRIT, "Cannot  fork:%s\n", strerror(errno));
+		LM_CRIT("Cannot  fork:%s\n", strerror(errno));
 		goto error;
 	}else if (pid!=0){
 		/*parent process => exit */
@@ -114,7 +114,7 @@ int daemonize(char*  name)
 #ifdef __OS_linux
 	/* setsid may disables core dumping on linux, reenable it */
 	if ( !disable_core_dump && prctl(PR_SET_DUMPABLE, 1)) {
-		LOG(L_ERR, "Cannot enable core dumping after setuid\n");
+		LM_ERR("Cannot enable core dumping after setuid\n");
 	}
 #endif
 
@@ -125,21 +125,21 @@ int daemonize(char*  name)
 			fscanf(pid_stream, "%d", &p);
 			fclose(pid_stream);
 			if (p==-1){
-				LOG(L_CRIT, "pid file %s exists, but doesn't contain a valid"
+				LM_CRIT("pid file %s exists, but doesn't contain a valid"
 					" pid number\n", pid_file);
 				goto error;
 			}
 			if (kill((pid_t)p, 0)==0 || errno==EPERM){
-				LOG(L_CRIT, "running process found in the pid file %s\n",
+				LM_CRIT("running process found in the pid file %s\n",
 					pid_file);
 				goto error;
 			}else{
-				LOG(L_WARN, "pid file contains old pid, replacing pid\n");
+				LM_WARN("pid file contains old pid, replacing pid\n");
 			}
 		}
 		pid=getpid();
 		if ((pid_stream=fopen(pid_file, "w"))==NULL){
-			LOG(L_WARN, "unable to create pid file %s: %s\n", 
+			LM_ERR("unable to create pid file %s: %s\n", 
 				pid_file, strerror(errno));
 			goto error;
 		}else{
@@ -153,15 +153,15 @@ int daemonize(char*  name)
 			fscanf(pid_stream, "%d", &p);
 			fclose(pid_stream);
 			if (p==-1){
-				LOG(L_CRIT, "pgid file %s exists, but doesn't contain a valid"
-				    " pgid number\n", pgid_file);
+				LM_CRIT("pgid file %s exists, but doesn't contain a valid"
+					" pgid number\n", pgid_file);
 				goto error;
 			}
 		}
 		if (own_pgid){
 			pid=getpgid(0);
 			if ((pid_stream=fopen(pgid_file, "w"))==NULL){
-				LOG(L_WARN, "unable to create pgid file %s: %s\n",
+				LM_ERR("unable to create pgid file %s: %s\n",
 					pgid_file, strerror(errno));
 				goto error;
 			}else{
@@ -169,38 +169,38 @@ int daemonize(char*  name)
 				fclose(pid_stream);
 			}
 		}else{
-			LOG(L_WARN, "we don't have our own process so we won't save"
+			LM_WARN("we don't have our own process so we won't save"
 					" our pgid\n");
 			unlink(pgid_file); /* just to be sure nobody will miss-use the old
 								  value*/
 		}
 	}
-	
+
 	/* try to replace stdin, stdout & stderr with /dev/null */
 	if (freopen("/dev/null", "r", stdin)==0){
-		LOG(L_ERR, "unable to replace stdin with /dev/null: %s\n",
-				strerror(errno));
+		LM_WARN("unable to replace stdin with /dev/null: %s\n",
+			strerror(errno));
 		/* continue, leave it open */
 	};
 	if (freopen("/dev/null", "w", stdout)==0){
-		LOG(L_ERR, "unable to replace stdout with /dev/null: %s\n",
-				strerror(errno));
+		LM_WARN("unable to replace stdout with /dev/null: %s\n",
+			strerror(errno));
 		/* continue, leave it open */
 	};
-	/* close stderr only if log_stderr=0 */
-	if ((!log_stderr) &&(freopen("/dev/null", "w", stderr)==0)){
-		LOG(L_ERR, "unable to replace stderr with /dev/null: %s\n",
-				strerror(errno));
+	/* close stderr only if not to be used */
+	if ( (!log_stderr) && (freopen("/dev/null", "w", stderr)==0)){
+		LM_WARN("unable to replace stderr with /dev/null: %s\n",
+			strerror(errno));
 		/* continue, leave it open */
 	};
-	
+
 	/* close any open file descriptors */
 	closelog();
 	for (r=3;r<MAX_FD; r++){
 			close(r);
 	}
-	
-	if (log_stderr==0)
+
+	if (!log_stderr)
 		openlog(name, LOG_PID|LOG_CONS, log_facility);
 		/* LOG_CONS, LOG_PERRROR ? */
 
@@ -216,14 +216,14 @@ int do_suid(void)
 {
 	if (gid){
 		if(setgid(gid)<0){
-			LOG(L_CRIT, "cannot change gid to %d: %s\n", gid, strerror(errno));
+			LM_CRIT("cannot change gid to %d: %s\n", gid, strerror(errno));
 			goto error;
 		}
 	}
 	
 	if(uid){
 		if(setuid(uid)<0){
-			LOG(L_CRIT, "cannot change uid to %d: %s\n", uid, strerror(errno));
+			LM_CRIT("cannot change uid to %d: %s\n", uid, strerror(errno));
 			goto error;
 		}
 	}
@@ -231,7 +231,7 @@ int do_suid(void)
 #ifdef __OS_linux
 	/* setuid disables core dumping on linux, reenable it */
 	if ( !disable_core_dump && prctl(PR_SET_DUMPABLE, 1)) {
-		LOG(L_ERR, "Cannot enable core dumping after setuid\n");
+		LM_ERR("Cannot enable core dumping after setuid\n");
 	}
 #endif
 
@@ -249,12 +249,12 @@ int increase_open_fds(unsigned int target)
 	struct rlimit orig;
 	
 	if (getrlimit(RLIMIT_NOFILE, &lim)<0){
-		LOG(L_CRIT, "cannot get the maximum number of file descriptors: %s\n",
+		LM_CRIT("cannot get the maximum number of file descriptors: %s\n",
 				strerror(errno));
 		goto error;
 	}
 	orig=lim;
-	DBG("current open file limits: %lu/%lu\n",
+	LM_DBG("current open file limits: %lu/%lu\n",
 			(unsigned long)lim.rlim_cur, (unsigned long)lim.rlim_max);
 	if ((lim.rlim_cur==RLIM_INFINITY) || (target<=lim.rlim_cur))
 		/* nothing to do */
@@ -263,16 +263,16 @@ int increase_open_fds(unsigned int target)
 		lim.rlim_cur=target; /* increase soft limit to target */
 	}else{
 		/* more than the hard limit */
-		LOG(L_INFO, "trying to increase the open file limit"
+		LM_INFO("trying to increase the open file limit"
 				" past the hard limit (%ld -> %d)\n", 
 				(unsigned long)lim.rlim_max, target);
 		lim.rlim_max=target;
 		lim.rlim_cur=target;
 	}
-	DBG("increasing open file limits to: %lu/%lu\n",
+	LM_DBG("increasing open file limits to: %lu/%lu\n",
 			(unsigned long)lim.rlim_cur, (unsigned long)lim.rlim_max);
 	if (setrlimit(RLIMIT_NOFILE, &lim)<0){
-		LOG(L_CRIT, "cannot increase the open file limit to"
+		LM_CRIT("cannot increase the open file limit to"
 				" %lu/%lu: %s\n",
 				(unsigned long)lim.rlim_cur, (unsigned long)lim.rlim_max,
 				strerror(errno));
@@ -282,8 +282,8 @@ int increase_open_fds(unsigned int target)
 			lim.rlim_max=orig.rlim_max;
 			lim.rlim_cur=orig.rlim_max;
 			if (setrlimit(RLIMIT_NOFILE, &lim)==0){
-				LOG(L_CRIT, " maximum number of file descriptors increased to"
-						" %u\n",(unsigned)orig.rlim_max);
+				LM_CRIT("maximum number of file descriptors increased to"
+					" %u\n",(unsigned)orig.rlim_max);
 			}
 		}
 		goto error;
@@ -304,7 +304,7 @@ int set_core_dump(int enable, unsigned int size)
 	
 	if (enable){
 		if (getrlimit(RLIMIT_CORE, &lim)<0){
-			LOG(L_CRIT, "cannot get the maximum core size: %s\n",
+			LM_CRIT("cannot get the maximum core size: %s\n",
 					strerror(errno));
 			goto error;
 		}
@@ -323,11 +323,11 @@ int set_core_dump(int enable, unsigned int size)
 			newlim.rlim_max=lim.rlim_max;
 			newlim.rlim_cur=newlim.rlim_max;
 			if (setrlimit(RLIMIT_CORE, &newlim)<0){
-				LOG(L_CRIT, "could increase core limits at all: %s\n",
-						strerror (errno));
+				LM_CRIT("could increase core limits at all: %s\n",
+					strerror (errno));
 			}else{
 				LOG(L_CRIT, "core limits increased only to %lu\n",
-						(unsigned long)lim.rlim_max);
+					(unsigned long)lim.rlim_max);
 			}
 			goto error; /* it's an error we haven't got the size we wanted*/
 		}
@@ -337,13 +337,13 @@ int set_core_dump(int enable, unsigned int size)
 		newlim.rlim_cur=0;
 		newlim.rlim_max=0;
 		if (setrlimit(RLIMIT_CORE, &newlim)<0){
-			LOG(L_CRIT, "failed to disable core dumps: %s\n",
-					strerror(errno));
+			LM_CRIT("failed to disable core dumps: %s\n",
+				strerror(errno));
 			goto error;
 		}
 	}
 done:
-	DBG("core dump limits set to %lu\n", (unsigned long)newlim.rlim_cur);
+	LM_DBG("core dump limits set to %lu\n", (unsigned long)newlim.rlim_cur);
 	return 0;
 error:
 	return -1;
