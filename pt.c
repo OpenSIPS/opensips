@@ -35,6 +35,7 @@
 #include "socket_info.h"
 #include "sr_module.h"
 #include "dprint.h"
+#include "timer.h"
 #include "pt.h"
 
 
@@ -72,8 +73,8 @@ int init_multi_proc_support(void)
 		/* attendent */
 		proc_no++;
 	}
-	/* timer process */
-	proc_no++;
+	/* timer processes */
+	proc_no += count_timer_procs();
 
 	/* count the processes requested by modules */
 	proc_no += count_module_procs();

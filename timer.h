@@ -54,14 +54,14 @@ struct sr_timer{
 };
 
 
+int init_timer(void);
 
-int init_timer();
+void destroy_timer(void);
 
-void destroy_timer();
+/* Counts the timer processes that needs to be created */
+int count_timer_procs(void);
 
-int has_timers();
-
-void run_timer();
+int start_timer_processes(void);
 
 /*register a periodic timer;
  * ret: <0 on error*/
@@ -69,8 +69,10 @@ int register_timer(timer_function f, void* param, unsigned int interval);
 
 int register_utimer(utimer_function f, void* param, unsigned int interval);
 
-unsigned int get_ticks();
+int register_timer_process(timer_function f,void* param,unsigned int interval);
 
-utime_t get_uticks();
+unsigned int get_ticks(void);
+
+utime_t get_uticks(void);
 
 #endif

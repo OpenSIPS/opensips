@@ -671,25 +671,15 @@ static int main_loop(void)
 		if (udp_listen->next){
 			LM_WARN("using only the first listen address (no fork)\n");
 		}
-		if (do_suid()==-1) goto error; /* try to drop privileges */
-		/* process_no now initialized to zero -- increase from now on
-		   as new processes are forked (while skipping 0 reserved for main 
-		*/
+
+		/* try to drop privileges */
+		if (do_suid()==-1)
+			goto error;
 
 		/* we need another process to act as the timer*/
-		if (has_timers()) {
-			if ( (pid=openser_fork("timer"))<0 ) {
-				LM_CRIT("cannot fork timer process\n");
-				goto error;
-			} else if (pid==0) {
-				/* new process */
-				if (init_child(PROC_TIMER) < 0) {
-					LM_ERR("init_child failed for timer proc\n");
-					goto error;
-				}
-				run_timer();
-				exit(-1);
-			}
+		if (start_timer_processes()!=0) {
+			LM_CRIT("cannot start timer process(es)\n");
+			goto error;
 		}
 
 		if (start_module_procs()!=0) {
@@ -877,48 +867,28 @@ static int main_loop(void)
 	/* this is the main process -> it shouldn't send anything */
 	bind_address=0;
 
+	// FIXME - is TCP really using the timer process
 	#ifdef USE_TCP
-	/* if we are using tcp we always need the timer */
-	if ((!tcp_disable)||(has_timers()))
-	#else
-	if (has_timers())
-	#endif
-	{
-		#ifdef USE_TCP
-		if (!tcp_disable){
- 			if (socketpair(AF_UNIX, SOCK_STREAM, 0, sockfd)<0){
-				LM_ERR("socketpair failed: %s\n",
-					strerror(errno));
-				goto error;
-			}
-		}
-		#endif
-		/* fork for the timer process*/
-		if ( (pid=openser_fork( "timer"))<0 ) {
-			LM_CRIT("cannot fork UDP process\n");
+	if (!tcp_disable){
+ 		if (socketpair(AF_UNIX, SOCK_STREAM, 0, sockfd)<0){
+			LM_ERR("socketpair failed: %s\n",
+				strerror(errno));
 			goto error;
-		}else if (pid==0){
-			/* new process */
-			#ifdef USE_TCP
-			if (!tcp_disable){
-				close(sockfd[0]);
-				unix_tcp_sock=sockfd[1];
-			}
-			#endif
-			if (init_child(PROC_TIMER) < 0) {
-				LM_ERR("init_child failed for timer proc\n");
-				goto error;
-			}
-			run_timer();
-			exit(-1);
 		}
-		#ifdef USE_TCP
-		if(!tcp_disable){
-			close(sockfd[1]);
-			pt[process_no].unix_sock=sockfd[0];
-		}
-		#endif
 	}
+	#endif
+	/* fork for the timer process*/
+	if (start_timer_processes()!=0) {
+		LM_CRIT("cannot start timer process(es)\n");
+		goto error;
+	}
+	#ifdef USE_TCP
+	// FIXME!!!!!
+	if(!tcp_disable){
+		close(sockfd[1]);
+		pt[process_no].unix_sock=sockfd[0];
+	}
+	#endif
 
 	#ifdef USE_TCP
 	if (!tcp_disable){
@@ -1319,18 +1289,15 @@ try_again:
 	}
 #endif /* USE_TLS */
 #endif /* USE_TCP */
+
 	/* init_daemon? */
 	if (!dont_fork){
 		if ( daemonize((log_name==0)?argv[0]:log_name) <0 ) goto error;
 	}
+
+	/* install signal handlers */
 	if (install_sigs() != 0){
 		fprintf(stderr, "ERROR: could not install the signal handlers\n");
-		goto error;
-	}
-
-	/* init multi processes support */
-	if (init_multi_proc_support()!=0) {
-		LM_ERR("failed to init multi-proc support\n");
 		goto error;
 	}
 
@@ -1388,6 +1355,13 @@ try_again:
 		fprintf(stderr, "ERROR: error while initializing modules\n");
 		goto error;
 	}
+
+	/* init multi processes support */
+	if (init_multi_proc_support()!=0) {
+		LM_ERR("failed to init multi-proc support\n");
+		goto error;
+	}
+
 	/* fix routing lists */
 	if ( (r=fix_rls())!=0){
 		fprintf(stderr, "ERROR: error %d while trying to fix configuration\n",

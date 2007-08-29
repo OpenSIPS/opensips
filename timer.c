@@ -36,7 +36,9 @@
 #include "timer.h"
 #include "dprint.h"
 #include "error.h"
+#include "pt.h"
 #include "config.h"
+#include "sr_module.h"
 #include "mem/mem.h"
 #ifdef SHM_MEM
 #include "mem/shm_mem.h"
@@ -44,19 +46,43 @@
 
 #include <stdlib.h>
 
+struct sr_timer_process {
+	struct sr_timer *timer_list;
+	struct sr_timer *utimer_list;
+	struct sr_timer_process *next;
+};
 
-static struct sr_timer *timer_list=0;
-static struct sr_timer *utimer_list=0;
+
+static struct sr_timer_process *timer_proc_list = 0;
 
 static unsigned int *jiffies=0;
 static utime_t      *ujiffies=0;
 static unsigned int  timer_id=0;
 
 
-int has_timers(void)
+
+static struct sr_timer_process* new_timer_process_list(void)
 {
-	return timer_list || utimer_list;
+	struct sr_timer_process *tpl;
+	struct sr_timer_process *tpl_it;
+
+	tpl = pkg_malloc( sizeof(struct sr_timer_process) );
+	if (tpl==NULL) {
+		LM_ERR("no more pkg memory\n");
+		return 0;
+	}
+	memset( tpl, 0, sizeof(struct sr_timer_process));
+
+	if (timer_proc_list==NULL) {
+		timer_proc_list = tpl;
+	} else {
+		for(tpl_it=timer_proc_list ; tpl_it->next ; tpl_it=tpl_it->next);
+		tpl_it->next = tpl;
+	}
+
+	return tpl;
 }
+
 
 
 /* ret 0 on success, <0 on error*/
@@ -67,28 +93,34 @@ int init_timer(void)
 	ujiffies = shm_malloc(sizeof(utime_t));
 #else
 	/* in this case get_ticks won't work! */
-	LOG(L_INFO, "WARNING: no shared memory support compiled in"
-				" get_ticks won't work\n");
+	LM_WARN("no shared memory support compiled-> get_ticks won't work\n");
 	jiffies = pkg_malloc(sizeof(int));
 	ujiffies = pkg_malloc(sizeof(utime_t));
 #endif
 	if (jiffies==0 || ujiffies==0){
-		LOG(L_CRIT, "ERROR: init_timer: could not init jiffies\n");
+		LM_CRIT("could not init jiffies\n");
 		return E_OUT_OF_MEM;
 	}
 
 	if (UTIMER_TICK>TIMER_TICK*1000000) {
-		LOG(L_ERR,"ERROR: init_timer: UTIMER > TIMER!!\n");
+		LM_CRIT("UTIMER > TIMER!!\n");
 		return E_CFG;
 	}
 
 	if ( ((TIMER_TICK*1000000) % UTIMER_TICK)!=0 ) {
-		LOG(L_ERR,"ERROR: init_timer: TIMER must be multiple of UTIMER!!\n");
+		LM_CRIT("TIMER must be multiple of UTIMER!!\n");
 		return E_CFG;
 	}
 
 	*jiffies=0;
 	*ujiffies=0;
+
+	/* create the default time process list */
+	if (new_timer_process_list()==NULL) {
+		LM_ERR("failed to create default timer process list\n");
+		return E_OUT_OF_MEM;
+	}
+
 	return 0;
 }
 
@@ -96,8 +128,6 @@ int init_timer(void)
 
 void destroy_timer(void)
 {
-	struct sr_timer* t, *foo;
-
 	if (jiffies){
 #ifdef SHM_MEM
 		shm_free(jiffies); jiffies=0;
@@ -107,13 +137,26 @@ void destroy_timer(void)
 		pkg_free(ujiffies); ujiffies=0;
 #endif
 	}
+}
 
-	t=timer_list;
-	while(t) {
-		foo=t->next;
-		pkg_free(t);
-		t=foo;
+
+
+static inline struct sr_timer* new_sr_timer(timer_function f, 
+										void* param, unsigned int interval)
+{
+	struct sr_timer* t;
+
+	t=pkg_malloc(sizeof(struct sr_timer));
+	if (t==0){
+		LM_ERR("out of pkg memory\n");
+		return NULL;
 	}
+	t->id=timer_id++;
+	t->u.timer_f=f;
+	t->t_param=param;
+	t->interval=interval;
+	t->expires=*jiffies+interval;
+	return t;
 }
 
 
@@ -126,58 +169,61 @@ int register_timer(timer_function f, void* param, unsigned int interval)
 {
 	struct sr_timer* t;
 
-	t=pkg_malloc(sizeof(struct sr_timer));
-	if (t==0){
-		LOG(L_ERR, "ERROR: register_timer: out of memory\n");
-		goto error;
-	}
-	t->id=timer_id++;
-	t->u.timer_f=f;
-	t->t_param=param;
-	t->interval=interval;
-	t->expires=*jiffies+interval;
-	/* insert it into the list*/
-	t->next=timer_list;
-	timer_list=t;
+	t = new_sr_timer( f, param, interval);
+	if (t==NULL)
+		return E_OUT_OF_MEM;
+	/* insert it into the default timer process list*/
+	t->next = timer_proc_list->timer_list;
+	timer_proc_list->timer_list = t;
 	return t->id;
-
-error:
-	return E_OUT_OF_MEM;
 }
+
 
 
 int register_utimer(utimer_function f, void* param, unsigned int interval)
 {
 	struct sr_timer* t;
 
-	t=pkg_malloc(sizeof(struct sr_timer));
-	if (t==0){
-		LOG(L_ERR, "ERROR: register_utimer: out of memory\n");
-		goto error;
-	}
-	t->id=timer_id++;
-	t->u.utimer_f=f;
-	t->t_param=param;
-	t->interval=interval;
-	t->expires=*ujiffies+interval;
+	t = new_sr_timer((timer_function*)f, param, interval);
+	if (t==NULL)
+		return E_OUT_OF_MEM;
 	/* insert it into the list*/
-	t->next=utimer_list;
-	utimer_list=t;
+	t->next = timer_proc_list->utimer_list;
+	timer_proc_list->utimer_list = t;
 	return t->id;
-
-error:
-	return E_OUT_OF_MEM;
 }
+
+
+
+int register_timer_process(timer_function f,void* param,unsigned int interval)
+{
+	struct sr_timer* t;
+	struct sr_timer_process* tpl;
+
+	/* create new process list */
+	tpl = new_timer_process_list();
+	if (tpl==NULL)
+		return E_OUT_OF_MEM;
+
+	t = new_sr_timer(f, param, interval);
+	if (t==NULL)
+		return E_OUT_OF_MEM;
+	/* insert it into the list*/
+	t->next = tpl->timer_list;
+	tpl->timer_list = t;
+	return t->id;
+}
+
 
 
 unsigned int get_ticks(void)
 {
 	if (jiffies==0){
-		LOG(L_CRIT, "BUG: get_ticks: jiffies not initialized\n");
+		LM_CRIT("bug -> jiffies not initialized\n");
 		return 0;
 	}
 #ifndef SHM_MEM
-	LOG(L_CRIT, "WARNING: get_ticks: no shared memory support compiled in"
+	LM_WARN("no shared memory support compiled in"
 			", returning 0 (probably wrong)");
 	return 0;
 #endif
@@ -185,14 +231,15 @@ unsigned int get_ticks(void)
 }
 
 
+
 utime_t get_uticks(void)
 {
 	if (ujiffies==0){
-		LOG(L_CRIT, "BUG: uget_ticks: jiffies not initialized\n");
+		LM_CRIT("bug -> ujiffies not initialized\n");
 		return 0;
 	}
 #ifndef SHM_MEM
-	LOG(L_CRIT, "WARNING: uget_ticks: no shared memory support compiled in"
+	LM_WARN("no shared memory support compiled in"
 			", returning 0 (probably wrong)");
 	return 0;
 #endif
@@ -201,7 +248,7 @@ utime_t get_uticks(void)
 
 
 
-static inline void timer_ticker(void)
+static inline void timer_ticker(struct sr_timer *timer_list)
 {
 	struct sr_timer* t;
 	unsigned int prev_jiffies;
@@ -229,7 +276,7 @@ static inline void timer_ticker(void)
 
 
 
-static inline void utimer_ticker(void)
+static inline void utimer_ticker(struct sr_timer *utimer_list)
 {
 	struct sr_timer* t;
 
@@ -247,14 +294,14 @@ static inline void utimer_ticker(void)
 
 
 
-void run_timer(void)
+static void run_timer_process(struct sr_timer_process *tpl)
 {
 	unsigned int multiple;
 	unsigned int cnt;
 	struct timeval o_tv;
 	struct timeval tv;
 
-	if ( (utimer_list==NULL) || ((TIMER_TICK*1000000) == UTIMER_TICK) ) {
+	if ( (tpl->utimer_list==NULL) || ((TIMER_TICK*1000000) == UTIMER_TICK) ) {
 		o_tv.tv_sec = TIMER_TICK;
 		o_tv.tv_usec = 0;
 		multiple = 1;
@@ -264,22 +311,22 @@ void run_timer(void)
 		multiple = (( TIMER_TICK * 1000000 ) / UTIMER_TICK ) / 1000000;
 	}
 
-	DBG("DBUG:run_timer: tv = %ld, %ld , m=%d\n",
+	LM_DBG("tv = %ld, %ld , m=%d\n",
 		o_tv.tv_sec,o_tv.tv_usec,multiple);
 
-	if (utimer_list==NULL) {
+	if (tpl->utimer_list==NULL) {
 		for( ; ; ) {
 			tv = o_tv;
 			select( 0, 0, 0, 0, &tv);
-			timer_ticker();
+			timer_ticker(tpl->timer_list);
 		}
 
 	} else
-	if (timer_list==NULL) {
+	if (tpl->timer_list==NULL) {
 		for( ; ; ) {
 			tv = o_tv;
 			select( 0, 0, 0, 0, &tv);
-			utimer_ticker();
+			utimer_ticker(tpl->utimer_list);
 		}
 
 	} else
@@ -287,19 +334,68 @@ void run_timer(void)
 		for( ; ; ) {
 			tv = o_tv;
 			select( 0, 0, 0, 0, &tv);
-			timer_ticker();
-			utimer_ticker();
+			timer_ticker(tpl->timer_list);
+			utimer_ticker(tpl->utimer_list);
 		}
 
 	} else {
 		for( cnt=1 ; ; cnt++ ) {
 			tv = o_tv;
 			select( 0, 0, 0, 0, &tv);
-			utimer_ticker();
+			utimer_ticker(tpl->utimer_list);
 			if (cnt==multiple) {
-				timer_ticker();
+				timer_ticker(tpl->timer_list);
 				cnt = 0;
 			}
 		}
 	}
 }
+
+
+
+int start_timer_processes(void)
+{
+	struct sr_timer_process *tpl;
+	pid_t pid;
+
+	for( tpl=timer_proc_list; tpl ; tpl=tpl->next ) {
+		if (tpl->timer_list==NULL && tpl->utimer_list==NULL)
+			continue;
+		/* fork a new process */
+		if ( (pid=openser_fork("timer"))<0 ) {
+			LM_CRIT("cannot fork timer process\n");
+			goto error;
+		} else if (pid==0) {
+			/* new process */
+			/* run init, but only for the first one (default) */
+			if ( tpl==timer_proc_list && init_child(PROC_TIMER) < 0) {
+				LM_ERR("init_child failed for timer proc\n");
+				goto error;
+			}
+			run_timer_process( tpl );
+			exit(-1);
+		}
+	}
+
+	return 0;
+error:
+	return -1;
+}
+
+
+/* Counts the timer processes that needs to be created */
+int count_timer_procs(void)
+{
+	struct sr_timer_process *tpl;
+	int n;
+
+	n = 0;
+	for( tpl=timer_proc_list; tpl ; tpl=tpl->next ) {
+		if (tpl->timer_list==NULL && tpl->utimer_list==NULL)
+			continue;
+		n++;
+	}
+
+	return n;
+}
+
