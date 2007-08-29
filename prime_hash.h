@@ -21,10 +21,10 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
-#ifndef HASH__SP_HASH_H
-#define HASH__SP_HASH_H 1
+#ifndef PRIME_HASH_H
+#define PRIME_HASH_H 1
 
-#include "../../parser/msg_parser.h"
+#include "parser/msg_parser.h"
 
 enum hash_source {
 	shs_call_id = 1,
@@ -37,5 +37,18 @@ enum hash_source {
 
 typedef int (*hash_func_t)(struct sip_msg * msg,
 	enum hash_source source, int denominator);
+
+
+/****************** Declaration of extern interface functions **************/
+
+/*
+static int real_hash_func (struct sip_msg*, int);
+static int calculate_hash (struct sip_msg*, char*, char*);
+*/
+
+int hash_func (struct sip_msg * msg,
+                         enum hash_source source, int denominator);
+int prime_hash_func (struct sip_msg * msg,
+                               enum hash_source source, int denominator);
 
 #endif

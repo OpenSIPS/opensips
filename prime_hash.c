@@ -21,67 +21,22 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
-#include "../../sr_module.h"
-#include "../../parser/msg_parser.h"
-#include "../../parser/parse_uri.h"
-#include "../../parser/parse_to.h"
-#include "../../parser/parse_from.h"
-#include "../../crc.h"
+#include "sr_module.h"
+#include "parser/parse_uri.h"
+#include "parser/parse_to.h"
+#include "parser/parse_from.h"
+#include "crc.h"
 
 #include <ctype.h>
 #include <math.h>
 
-#include "hash.h"
+#include "prime_hash.h"
 
-MODULE_VERSION
-
-int prime_number = 51797;
-
-/************* Declaration of Interface Functions **************************/
-
-static int real_hash_func (struct sip_msg*, int);
-static int hash_func (struct sip_msg * msg,
-                         enum hash_source source, int denominator);
-static int prime_hash_func (struct sip_msg * msg,
-                               enum hash_source source, int denominator);
-static int calculate_hash (struct sip_msg*, char*, char*);
-
-/************* Exports *****************************************************/
-
-static cmd_export_t cmds[]= {
-	{"real_hash", (cmd_function) real_hash_func, 0, 0, 0 },
-	{"hash", (cmd_function) hash_func, 0, 0, 0 },
-	{"prime_hash", (cmd_function) prime_hash_func, 0, 0, 0 },
-	{"calculate_hash", calculate_hash, 0, 0,
-	REQUEST_ROUTE | FAILURE_ROUTE},
-	{0, 0, 0, 0, 0}
-};
-
-static param_export_t params[]={
-	{"prime_number", INT_PARAM, &prime_number},
-	{0,0,0}
-};
-
-struct module_exports exports = {
-	"hash",
-	DEFAULT_DLFLAGS, /* dlopen flags */
-	cmds,
-	params,
-	0,          /* exported statistics */
-	0,          /* exported MI functions */
-	0,          /* exported pseudo-variables */
-	0,          /* extra processes */
-	0,          /* module initialization function */
-	0,
-	0,
-	0           /* per-child init function */
-};
-
+#define PRIME_NUMBER 51797;
 
 /************* Declaration of Static Helpers *******************************/
 
-static int real_calculate_hash(struct sip_msg *msg,
-                               enum hash_source source);
+static int real_calculate_hash(struct sip_msg *msg, enum hash_source source);
 static int determine_source(struct sip_msg *msg, enum hash_source source,
                             str *source_string);
 static int validate_msg(struct sip_msg * msg);
@@ -91,6 +46,7 @@ static int determine_fromto_user (struct to_body *fromto, str *source_string);
 static int first_token (str *source_string);
 static int calc_prime_hash(str * source_string, int denominator);
 
+
 /************* Globals *****************************************************/
 
 /* We use globals to only calculate the hash if it is really necessary.
@@ -99,13 +55,16 @@ static struct sip_msg *cur_msg;
 static enum hash_source cur_source;
 static uint32_t cur_hash;
 
+
 /************* Interface Functions *****************************************/
 
+/* 
 static int real_hash_func(struct sip_msg *msg, int denominator) {
 	return hash_func (msg, shs_call_id, denominator);
 }
+*/
 
-static int hash_func (struct sip_msg * msg,
+int hash_func (struct sip_msg * msg,
                          enum hash_source source, int denominator) {
 	int ret;
 	if (real_calculate_hash (msg, source) == -1) {
@@ -116,7 +75,7 @@ static int hash_func (struct sip_msg * msg,
 	return ret;
 }
 
-static int prime_hash_func(struct sip_msg * msg,
+int prime_hash_func(struct sip_msg * msg,
                               enum hash_source source, int denominator) {
 	str source_string;
 	if(source != shs_from_user && source != shs_to_user) {
@@ -130,9 +89,11 @@ static int prime_hash_func(struct sip_msg * msg,
 	return calc_prime_hash(&source_string, denominator);
 }
 
+/* 
 static int calculate_hash (struct sip_msg *msg, char *bla, char *blubb) {
 	return real_calculate_hash (msg, shs_call_id) == -1 ? -1 : 1;
 }
+*/
 
 /************* Static Helpers **********************************************/
 
@@ -175,7 +136,7 @@ static int calc_prime_hash(str * source_string, int denominator) {
 	LOG(L_DBG, "calc_prime_number: source_string is %.*s, source_number_s "
 	    "is: %s, number is %llu\n", source_string->len, source_string->s,
 	    source_number_s + (limit + 1), number);
-	ret = number % prime_number;
+	ret = number % PRIME_NUMBER;
 	ret = ret % denominator + 1;
 	LOG(L_DBG, "calculated hash is: %i\n", ret);
 	return ret;
@@ -274,4 +235,3 @@ static int first_token (str *source_string) {
 	}
 	return 0;
 }
-
