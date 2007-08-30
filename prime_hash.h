@@ -20,12 +20,26 @@
  * along with this program; if not, write to the Free Software 
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
+ *
+ * Functions for determinung a pseudo random number over a message's
+ * header field, based on a prime number algorithm.
  */
 #ifndef PRIME_HASH_H
 #define PRIME_HASH_H 1
 
 #include "parser/msg_parser.h"
 
+
+/* 
+Determines from which part of a message the hash shall be calculated.
+Possible values are:
+
+shs_call_id     the content of the Call-ID header field
+shs_from_uri    the entire URI in the From header field
+shs_from_user   the username part of the URI in the From header field
+shs_to_uri      the entire URI in the To header field
+shs_to_user     the username part of the URI in the To header field
+*/
 enum hash_source {
 	shs_call_id = 1,
 	shs_from_uri,
@@ -46,8 +60,17 @@ static int real_hash_func (struct sip_msg*, int);
 static int calculate_hash (struct sip_msg*, char*, char*);
 */
 
+/* 
+ * Returns an integer number between 0 and denominator - 1 based on
+ * the hash source from the msg. The hash algorith is CRC32.
+*/
 int hash_func (struct sip_msg * msg,
                          enum hash_source source, int denominator);
+
+/* 
+ * Returns an integer number between 0 and denominator - 1 based on
+ * the hash source from the msg. Use the prime number algorithm.
+*/
 int prime_hash_func (struct sip_msg * msg,
                                enum hash_source source, int denominator);
 
