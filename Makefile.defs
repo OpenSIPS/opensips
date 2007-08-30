@@ -566,7 +566,7 @@ ifeq			($(CC_CLASS), 4.x)
 							-falign-loops \
 							-ftree-vectorize \
 							-mtune=$(CPU_TYPE) \
-					-Wold-style-definition
+					-Wold-style-definition -Wmissing-field-initializers #-Wredundant-decls
 
 else
 			#if gcc 3.0+
@@ -625,7 +625,8 @@ ifeq			($(CC_CLASS), 4.x)
 					CFLAGS+=-minline-all-stringops \
 							-falign-loops \
 							-ftree-vectorize \
-							-mtune=$(CPU_TYPE) 
+							-mtune=$(CPU_TYPE) \
+					-Wold-style-definition -Wmissing-field-initializers #-Wredundant-decls
 else
 			#if gcc 3.0+
 ifeq			($(CC_CLASS), 3.x)

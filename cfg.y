@@ -2220,7 +2220,6 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 
 %%
 
-extern int line;
 extern int column;
 extern int startcolumn;
 #if !defined(USE_TLS) || !defined(USE_TCP) \
