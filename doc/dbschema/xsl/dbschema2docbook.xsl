@@ -276,7 +276,9 @@ than 5) doesn't allow "xmlns" attributes -->
 				<xsl:choose>
 				<xsl:when test="colref">
 					<xsl:for-each select="colref">
-					<xsl:value-of name="select" select="@linkend"/>
+					<xsl:call-template name="get-column-name">
+						<xsl:with-param name="select" select="@linkend"/>
+					</xsl:call-template>
 					<xsl:if test="not(position()=last())">
 						<xsl:text>, </xsl:text>
 					</xsl:if>
