@@ -71,7 +71,7 @@ int hash_func (struct sip_msg * msg,
 		return -1;
 	}
 	ret = cur_hash % denominator;
-	DBG ("hash: %u %% %i = %i\n", cur_hash, denominator, ret);
+	LM_DBG("hash: %u %% %i = %i\n", cur_hash, denominator, ret);
 	return ret;
 }
 
@@ -79,11 +79,11 @@ int prime_hash_func(struct sip_msg * msg,
                               enum hash_source source, int denominator) {
 	str source_string;
 	if(source != shs_from_user && source != shs_to_user) {
-		LOG(L_ERR, "prime_hash_func: chosen hash source not usable (may contain letters)\n");
+		LM_ERR("chosen hash source not usable (may contain letters)\n");
 		return -1;
 	}
 	if (determine_source (msg, source, &source_string) == -1) {
-		LOG(L_ERR, "prime_hash_func: could not determine source_string\n");
+		LM_ERR("could not determine source_string\n");
 		return -1;
 	}
 	return calc_prime_hash(&source_string, denominator);
@@ -133,12 +133,12 @@ static int calc_prime_hash(str * source_string, int denominator) {
 	for(i=INT_DIGIT_LIMIT - 1, j=0; i>limit; i--, j++) {
 		number += (source_number_s[i] - '0') * powl(10, j);
 	}
-	LOG(L_DBG, "calc_prime_number: source_string is %.*s, source_number_s "
+	LM_DBG("source_string is %.*s, source_number_s "
 	    "is: %s, number is %llu\n", source_string->len, source_string->s,
 	    source_number_s + (limit + 1), number);
 	ret = number % PRIME_NUMBER;
 	ret = ret % denominator + 1;
-	LOG(L_DBG, "calculated hash is: %i\n", ret);
+	LM_DBG("calculated hash is: %i\n", ret);
 	return ret;
 }
 
@@ -163,7 +163,7 @@ static int determine_source (struct sip_msg *msg, enum hash_source source,
 			case shs_to_user:
 			return determine_fromto_user (get_to(msg), source_string);
 			default:
-			LOG (L_ERR, "BUG: hash: unknown hash source %i.\n",
+			LM_ERR("unknown hash source %i.\n",
 			     (int) source);
 			return -1;
 	}
@@ -171,17 +171,23 @@ static int determine_source (struct sip_msg *msg, enum hash_source source,
 
 static int validate_msg(struct sip_msg * msg) {
 	if(!msg->callid && ((parse_headers(msg, HDR_CALLID_T, 0) == -1) || !msg->callid)) {
-		LOG(L_ERR, "hash: validate_msg: Message has no Call-ID header\n");
+		LM_ERR("Message has no Call-ID header\n");
 		return -1;
 	}
 	if(!msg->to && ((parse_headers(msg, HDR_TO_T, 0) == -1) || !msg->to)) {
-		LOG(L_ERR, "hash: validate_msg: Message has no To header\n");
+		LM_ERR("Message has no To header\n");
 		return -1;
 	}
 	if(!msg->from && ((parse_headers(msg, HDR_FROM_T, 0) == -1) || !msg->from)) {
-		LOG(L_ERR, "hash: validate_msg: Message has no From header\n");
+		LM_ERR("Message has no From header\n");
 		return -1;
 	}
+	//TODO it would make more sense to do the parsing just if its needed
+	//     but parse_from_header is smart enough, so its probably not a huge problem
+        if (parse_from_header(msg) < 0) {
+                LM_ERR("Error while parsing From header field\n");
+                return -1;
+        }
 	return 0;
 }
 
@@ -194,6 +200,7 @@ static int determine_call_id (struct sip_msg *msg, str *source_string) {
 
 static int determine_fromto_uri (struct to_body *fromto, str *source_string) {
 	if (fromto == NULL) {
+		LM_ERR("fromto is NULL!\n");
 		return -1;
 	}
 	source_string->s = fromto->uri.s;
@@ -205,10 +212,11 @@ static int determine_fromto_user (struct to_body *fromto, str *source_string) {
 	struct sip_uri uri;
 
 	if (fromto == NULL) {
+		LM_ERR("fromto is NULL!\n");
 		return -1;
 	}
 	if (parse_uri (fromto->uri.s, fromto->uri.len, &uri) < 0) {
-		LOG (L_ERR, "hash: Failed to parse From or To URI.\n");
+		LM_ERR("Failed to parse From or To URI.\n");
 		return -1;
 	}
 	source_string->s = uri.user.s;
