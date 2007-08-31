@@ -197,7 +197,7 @@ int do_assign(struct sip_msg* msg, struct action* a)
 	{
 		ret = eval_expr((struct expr*)a->elem[1].u.data, msg, &val);
 		if(!((val.flags&XL_VAL_STR)||(val.flags&XL_VAL_INT))) {
-			LM_ERR("no value in right expression\n");
+			LM_ERR("no value in right expression (line: %d)\n", a->line);
 			goto error;
 		}
 	}
@@ -218,7 +218,8 @@ int do_assign(struct sip_msg* msg, struct action* a)
 				case XL_AVP:
 					if(xl_get_avp_name(msg, dspec, &avp_name, &name_type)!=0)
 					{
-						LM_ALERT("BUG in getting dst AVP name\n");
+						LM_ALERT("BUG in getting dst AVP name (line: %d)\n",
+								a->line);
 						goto error;
 					}
 					if(a->elem[1].type == NULLV_ST)
@@ -244,7 +245,7 @@ int do_assign(struct sip_msg* msg, struct action* a)
 					if (add_avp(flags, avp_name, avp_val)<0)
 					
 					{
-						LM_ERR("error - cannot add AVP\n");
+						LM_ERR("error - cannot add AVP (line: %d)\n", a->line);
 						goto error;
 					}
 
@@ -252,7 +253,7 @@ int do_assign(struct sip_msg* msg, struct action* a)
 				case XL_SCRIPTVAR:
 					if(dspec->p.data==0)
 					{
-						LM_ERR("error - cannot find svar\n");
+						LM_ERR("error - cannot find svar (line: %d)\n", a->line);
 						goto error;
 					}
 					if(a->elem[1].type == NULLV_ST)
@@ -272,8 +273,8 @@ int do_assign(struct sip_msg* msg, struct action* a)
 					if(set_var_value((script_var_t*)dspec->p.data,
 								&avp_val, flags)==NULL)
 					{
-						LM_ERR("error - cannot set svar [%.*s]\n",
-							dspec->p.val.len, dspec->p.val.s);
+						LM_ERR("error - cannot set svar [%.*s] (line: %d)\n",
+							dspec->p.val.len, dspec->p.val.s, a->line);
 						goto error;
 					}
 				break;
@@ -286,8 +287,8 @@ int do_assign(struct sip_msg* msg, struct action* a)
 						act.elem[0].u.string = "";
 						if (do_action(&act, msg)<0)
 						{
-							LM_ERR("error - do action failed %d\n",
-								act.type);
+							LM_ERR("error - do action failed %d (line: %d)\n",
+								act.type, a->line);
 							goto error;
 						}
 						return 1;
@@ -296,8 +297,8 @@ int do_assign(struct sip_msg* msg, struct action* a)
 				case XL_RURI:
 					if(!(val.flags&XL_VAL_STR))
 					{
-						LM_ERR("error - str value requred to"
-								" set R-URI parts\n");
+						LM_ERR("error - str value required to"
+								" set R-URI parts (line: %d)\n", a->line);
 						goto error;
 					}
 					memset(&act, 0, sizeof(act));
@@ -313,8 +314,8 @@ int do_assign(struct sip_msg* msg, struct action* a)
 						act.type = SET_URI_T;
 					if (do_action(&act, msg)<0)
 					{
-						LM_ERR("error - do action failed %d\n",
-								act.type);
+						LM_ERR("error - do action failed %d (line: %d)\n",
+								act.type, a->line);
 						val.rs.s[val.rs.len] = backup;
 						goto error;
 					}
@@ -327,8 +328,8 @@ int do_assign(struct sip_msg* msg, struct action* a)
 						act.type = RESET_DSTURI_T;
 						if (do_action(&act, msg)<0)
 						{
-							LM_ERR("error - do action failed %d\n",
-								act.type);
+							LM_ERR("error - do action failed %d (line: %d)\n",
+								act.type, a->line);
 							goto error;
 						}
 						return 1;
@@ -336,21 +337,21 @@ int do_assign(struct sip_msg* msg, struct action* a)
 					if(!(val.flags&XL_VAL_STR))
 					{
 						LM_ERR("error - str value requred to"
-							" set dst uri\n");
+							" set dst uri (line: %d)\n", a->line);
 						goto error;
 					}
 					if(set_dst_uri(msg, &val.rs)!=0)
 						goto error;
 				break;
 				default:
-					LM_ERR("error - unknown dst var\n");
+					LM_ERR("error - unknown dst var (line: %d)\n", a->line);
 					return E_BUG;
 			}
 
 			xl_value_destroy(&val);
 			return 1;
 		default:
-			LM_ALERT("BUG -> unknown type %d\n", a->type);
+			LM_ALERT("BUG -> unknown type %d (line: %d)\n", a->type, a->line);
 	}
 
 	xl_value_destroy(&val);
