@@ -250,7 +250,7 @@ found_re:
 	re_end=p;
 	if(end< (p+2) ){
 		LM_ERR("string too short\n");
-		return -1;
+		goto error;
 	}
 	repl=p+1;
 	if((rw_no = parse_repl(rw, &p, end, &max_pmatch, WITH_SEP))< 0)
