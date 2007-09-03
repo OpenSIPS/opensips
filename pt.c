@@ -87,6 +87,9 @@ int init_multi_proc_support(void)
 	}
 	memset(pt, 0, sizeof(struct process_table)*proc_no);
 
+	/* set the pid for the starter process */
+	set_proc_attrs("starter");
+
 	counted_processes = proc_no;
 
 	return 0;
@@ -144,7 +147,9 @@ pid_t openser_fork(char *proc_desc)
 	if (pid==0){
 		/* child process */
 		is_main = 0; /* should already be 0, but to be sure */
+		/* set uid and pid */
 		process_no = process_counter;
+		pt[process_no].pid = getpid();
 		process_counter = CHILD_COUNTER_STOP;
 		/* each children need a unique seed */
 		seed_child(seed);
@@ -153,7 +158,7 @@ pid_t openser_fork(char *proc_desc)
 		return 0;
 	}else{
 		/* parent process */
-		pt[process_no].pid = pid;
+		pt[process_counter].pid = pid;
 		process_counter++;
 		return pid;
 	}
