@@ -72,11 +72,6 @@ int parse_repl(struct replace_with * rw, char ** begin,
 	int max_pmatch;
 	char *p, c;
 
-	if(end< ((*begin)+2) ){
-		LM_ERR("string too short\n");
-		return -1;
-	}
-
 	/* parse replacement */
 	p = *begin;
 	c = *p;
@@ -253,7 +248,10 @@ struct subst_expr* subst_parser(str* subst)
 	goto error;
 found_re:
 	re_end=p;
-	//p++;
+	if(end< (p+2) ){
+		LM_ERR("string too short\n");
+		return -1;
+	}
 	repl=p+1;
 	if((rw_no = parse_repl(rw, &p, end, &max_pmatch, WITH_SEP))< 0)
 		goto error;
