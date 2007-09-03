@@ -53,6 +53,9 @@ struct sr_timer{
 	struct sr_timer* next;
 };
 
+#define TIMER_PROC_INIT_FLAG  (1<<0)
+
+
 
 int init_timer(void);
 
@@ -69,7 +72,8 @@ int register_timer(timer_function f, void* param, unsigned int interval);
 
 int register_utimer(utimer_function f, void* param, unsigned int interval);
 
-int register_timer_process(timer_function f,void* param,unsigned int interval);
+int register_timer_process(timer_function f,void* param,unsigned int interval,
+		unsigned int flags);
 
 unsigned int get_ticks(void);
 

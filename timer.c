@@ -47,6 +47,7 @@
 #include <stdlib.h>
 
 struct sr_timer_process {
+	unsigned int flags;
 	struct sr_timer *timer_list;
 	struct sr_timer *utimer_list;
 	struct sr_timer_process *next;
@@ -61,7 +62,7 @@ static unsigned int  timer_id=0;
 
 
 
-static struct sr_timer_process* new_timer_process_list(void)
+static struct sr_timer_process* new_timer_process_list(unsigned int flags)
 {
 	struct sr_timer_process *tpl;
 	struct sr_timer_process *tpl_it;
@@ -72,6 +73,7 @@ static struct sr_timer_process* new_timer_process_list(void)
 		return 0;
 	}
 	memset( tpl, 0, sizeof(struct sr_timer_process));
+	tpl->flags = flags;
 
 	if (timer_proc_list==NULL) {
 		timer_proc_list = tpl;
@@ -116,7 +118,7 @@ int init_timer(void)
 	*ujiffies=0;
 
 	/* create the default time process list */
-	if (new_timer_process_list()==NULL) {
+	if (new_timer_process_list(TIMER_PROC_INIT_FLAG)==NULL) {
 		LM_ERR("failed to create default timer process list\n");
 		return E_OUT_OF_MEM;
 	}
@@ -195,13 +197,14 @@ int register_utimer(utimer_function f, void* param, unsigned int interval)
 
 
 
-int register_timer_process(timer_function f,void* param,unsigned int interval)
+int register_timer_process(timer_function f,void* param,unsigned int interval,
+															unsigned int flags)
 {
 	struct sr_timer* t;
 	struct sr_timer_process* tpl;
 
 	/* create new process list */
-	tpl = new_timer_process_list();
+	tpl = new_timer_process_list(flags);
 	if (tpl==NULL)
 		return E_OUT_OF_MEM;
 
@@ -359,19 +362,23 @@ int start_timer_processes(void)
 	pid_t pid;
 
 	for( tpl=timer_proc_list; tpl ; tpl=tpl->next ) {
+		LM_DBG("######################### new timer proc?\n");
 		if (tpl->timer_list==NULL && tpl->utimer_list==NULL)
 			continue;
+		LM_DBG("######################### fork new timer proc\n");
 		/* fork a new process */
 		if ( (pid=openser_fork("timer"))<0 ) {
 			LM_CRIT("cannot fork timer process\n");
 			goto error;
 		} else if (pid==0) {
 			/* new process */
-			/* run init, but only for the first one (default) */
-			if ( tpl==timer_proc_list && init_child(PROC_TIMER) < 0) {
+			LM_DBG("######################### init child %X\n",tpl->flags);
+			/* run init if required */
+			if ( tpl->flags&TIMER_PROC_INIT_FLAG && init_child(PROC_TIMER)<0 ){
 				LM_ERR("init_child failed for timer proc\n");
 				goto error;
 			}
+			LM_DBG("######################### start timer\n");
 			run_timer_process( tpl );
 			exit(-1);
 		}
