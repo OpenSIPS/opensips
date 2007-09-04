@@ -370,6 +370,8 @@ static int xl_get_xuri_attr(struct sip_msg *msg, xl_value_t *res,
 		res->rs.len = parsed_uri->user.len;
 		res->flags = XL_VAL_STR;
 	} else if(param->val.len==2) /* domain */ {
+		if(parsed_uri->host.s==NULL || parsed_uri->host.len<=0)
+			return xl_get_null(msg, res, param, flags);
 		res->rs.s   = parsed_uri->host.s;
 		res->rs.len = parsed_uri->host.len;
 		res->flags  = XL_VAL_STR;
@@ -536,10 +538,10 @@ static int xl_get_from_attr(struct sip_msg *msg, xl_value_t *res,
 	}
 	
 	if(param->val.len==4) /* tag */ {
-	        if(get_from(msg)->tag_value.s==NULL||get_from(msg)->tag_value.len<=0) {
+	    if(get_from(msg)->tag_value.s==NULL||get_from(msg)->tag_value.len<=0) {
 		        DBG("xl_get_from_attr: no From tag\n");
 			return xl_get_null(msg, res, param, flags);
-	        }
+	    }
 		res->rs.s = get_from(msg)->tag_value.s;
 		res->rs.len = get_from(msg)->tag_value.len; 
 		res->flags = XL_VAL_STR;
@@ -563,14 +565,18 @@ static int xl_get_from_attr(struct sip_msg *msg, xl_value_t *res,
 		return xl_get_null(msg, res, param, flags);
 	}
 	if(param->val.len==2) /* username */ {
-	        if(uri->user.s==NULL || uri->user.len<=0) {
-		        DBG("xl_get_from_attr: no From username\n");
+	    if(uri->user.s==NULL || uri->user.len<=0) {
+		    DBG("xl_get_from_attr: no From username\n");
 			return xl_get_null(msg, res, param, flags);
 		}
 		res->rs.s   = uri->user.s;
 		res->rs.len = uri->user.len; 
 		res->flags = XL_VAL_STR;
 	} else if(param->val.len==3) /* domain */ {
+	    if(uri->host.s==NULL || uri->host.len<=0) {
+		    DBG("xl_get_from_attr: no From domain\n");
+			return xl_get_null(msg, res, param, flags);
+		}
 		res->rs.s   = uri->host.s;
 		res->rs.len = uri->host.len; 
 		res->flags = XL_VAL_STR;
@@ -637,14 +643,18 @@ static int xl_get_to_attr(struct sip_msg *msg, xl_value_t *res,
 		return xl_get_null(msg, res, param, flags);
 	}
 	if(param->val.len==2) /* username */ {
-	        if(uri->user.s==NULL || uri->user.len<=0) {
-		        DBG("xl_get_to_attr: no To username\n");
+	    if(uri->user.s==NULL || uri->user.len<=0) {
+		    DBG("xl_get_to_attr: no To username\n");
 			return xl_get_null(msg, res, param, flags);
 		}
 		res->rs.s   = uri->user.s;
 		res->rs.len = uri->user.len; 
 		res->flags = XL_VAL_STR;
 	} else if(param->val.len==3) /* domain */ {
+	    if(uri->host.s==NULL || uri->host.len<=0) {
+		    DBG("xl_get_to_attr: no To domain\n");
+			return xl_get_null(msg, res, param, flags);
+		}
 		res->rs.s   = uri->host.s;
 		res->rs.len = uri->host.len; 
 		res->flags = XL_VAL_STR;
@@ -1044,6 +1054,10 @@ static int xl_get_ppi_attr(struct sip_msg *msg, xl_value_t *res,
 	res->rs.len = uri->user.len; 
 	res->flags = XL_VAL_STR;
     } else if(param->val.len==3) { /* domain */
+	if(uri->host.s==NULL || uri->host.len<=0) {
+	    DBG("xl_get_ppi_attr: no P-Preferred-Identity domain\n");
+	    return xl_get_null(msg, res, param, flags);
+	}
 	res->rs.s   = uri->host.s;
 	res->rs.len = uri->host.len; 
 	res->flags = XL_VAL_STR;
@@ -1173,6 +1187,8 @@ static int xl_get_dsturi_attr(struct sip_msg *msg, xl_value_t *res,
 	
 	if(param->val.len==1) /* domain */
 	{
+		if(uri.host.s==NULL || uri.host.len<=0)
+			return xl_get_null(msg, res, param, flags);
 		res->rs.s = uri.host.s;
 		res->rs.len = uri.host.len;
 		res->flags = XL_VAL_STR;
@@ -1372,7 +1388,7 @@ static int xl_get_acc_username(struct sip_msg *msg, xl_value_t *res,
 		}
 	} else {
 		/* from from uri */
-	        if(parse_from_header(msg)<0)
+	    if(parse_from_header(msg)<0)
 		{
 		    LOG(L_ERR, "xl_get_acc_username: cannot parse FROM header\n");
 		    return xl_get_null(msg, res, param, flags);
