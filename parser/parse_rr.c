@@ -353,6 +353,8 @@ int print_rr_body(struct hdr_field *iroute, str *oroute, int order,
 		return 0;
 
 	route_len= 0;
+	memset(route, 0, MAX_RR_HDRS*sizeof(str));
+
 	while (iroute!=NULL) 
 	{
 		if (parse_rr(iroute) < 0) 
@@ -408,7 +410,7 @@ int print_rr_body(struct hdr_field *iroute, str *oroute, int order,
 	{
 		i= (nb_recs == NULL) ? 0:*nb_recs;
 
-		while (i<=n)
+		while (i<n)
 		{
 			memcpy(cp, route[i].s, route[i].len);
 			cp += route[i].len;
@@ -417,7 +419,7 @@ int print_rr_body(struct hdr_field *iroute, str *oroute, int order,
 		}
 	} else {
 		
-		i = (nb_recs == NULL) ? n : (n-*nb_recs-1);
+		i = (nb_recs == NULL) ? n-1 : (n-*nb_recs-1);
 			
 		while (i>=0)
 		{
