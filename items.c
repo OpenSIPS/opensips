@@ -1666,7 +1666,7 @@ static int xl_get_script_var(struct sip_msg *msg, xl_value_t *res,
 		res->rs = sv->v.value.s;
 		res->flags = XL_VAL_STR;
 	} else {
-		ch = int2str(sv->v.value.n, &l);
+		ch = sint2str(sv->v.value.n, &l);
 
 		res->rs.s = ch;
 		res->rs.len = l;

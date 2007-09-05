@@ -429,10 +429,10 @@ int do_action(struct action* a, struct sip_msg* msg)
 				ret=forward_request(msg, p);
 				free_proxy(p); /* frees only p content, not p itself */
 				pkg_free(p);
-				if (ret>=0) ret=1;
+				if (ret==0) ret=1;
 			}else if ((a->elem[0].type==PROXY_ST)) {
 				ret=forward_request(msg,(struct proxy_l*)a->elem[0].u.data);
-				if (ret>=0) ret=1;
+				if (ret==0) ret=1;
 			}else{
 				LM_ALERT("BUG in forward() types %d, %d\n",
 						a->elem[0].type, a->elem[1].type);
@@ -464,7 +464,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 					p->addr_idx++;
 			}
 			pkg_free(to);
-			if (ret>=0)
+			if (ret==0)
 				ret=1;
 			break;
 		case LOG_T:
@@ -569,7 +569,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 				break;
 			}
 			return_code=run_actions(rlist[a->elem[0].u.number], msg);
-			ret=(return_code<0)?return_code:1;
+			ret=return_code;
 			break;
 		case REVERT_URI_T:
 			if (msg->new_uri.s) {
@@ -880,7 +880,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 					return_code=run_action_list(
 						(struct action*)adefault->elem[0].u.data, msg);
 			}
-			ret=(return_code<0)?return_code:1;
+			ret=return_code;
 			break;
 		case MODULE_T:
 			if ( (a->elem[0].type==CMD_ST) && a->elem[0].u.data ) {
