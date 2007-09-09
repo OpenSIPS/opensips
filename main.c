@@ -118,7 +118,7 @@
 #include "ut.h"
 #include "serialize.h"
 #include "statistics.h"
-#include "items.h"
+#include "pvar.h"
 #ifdef USE_TCP
 #include "poll_types.h"
 #include "tcp_init.h"
@@ -379,7 +379,7 @@ void cleanup(int show_status)
 	destroy_timer();
 	destroy_stats_collector();
 	destroy_script_cb();
-	xl_free_extra_spec();
+	pv_free_extra_list();
 	destroy_black_lists();
 #ifdef PKG_MALLOC
 	if (show_status){

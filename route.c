@@ -461,7 +461,7 @@ inline static int comp_strval(struct sip_msg *msg, int op, str* ival,
 	char backup;
 	char backup2;
 	str res;
-	xl_value_t value;
+	pv_value_t value;
 			
 	if(ival==NULL || ival->s==NULL)
 		goto error;
@@ -469,12 +469,12 @@ inline static int comp_strval(struct sip_msg *msg, int op, str* ival,
 	res.s = 0; res.len = 0;
 	if(opd->type == SCRIPTVAR_ST)
 	{
-		if(xl_get_spec_value(msg, opd->v.spec, &value, 0)!=0)
+		if(pv_get_spec_value(msg, opd->v.spec, &value)!=0)
 		{
 			LOG(L_CRIT, "comp_strval: cannot get var value\n");
 			goto error;
 		}
-		if(value.flags&XL_VAL_STR)
+		if(value.flags&PV_VAL_STR)
 		{
 			res = value.rs;
 		} else {
@@ -848,14 +848,14 @@ inline static int comp_scriptvar(struct sip_msg *msg, int op, operand_t *left,
 	str rstr;
 	int ln;
 	int rn;
-	xl_value_t lvalue;
-	xl_value_t rvalue;
+	pv_value_t lvalue;
+	pv_value_t rvalue;
 	int type;
 	
 	lstr.s = 0; lstr.len = 0;
 	rstr.s = 0; rstr.len = 0;
 	ln = 0; rn =0;
-	if(xl_get_spec_value(msg, left->v.spec, &lvalue, 0)!=0)
+	if(pv_get_spec_value(msg, left->v.spec, &lvalue)!=0)
 	{
 		LOG(L_CRIT, "comp_scriptvar: cannot get left var value\n");
 		goto error;
@@ -864,11 +864,11 @@ inline static int comp_scriptvar(struct sip_msg *msg, int op, operand_t *left,
 	{
 		if(op==EQUAL_OP)
 		{
-			if(lvalue.flags&XL_VAL_NULL)
+			if(lvalue.flags&PV_VAL_NULL)
 				return 1;
 			return 0;
 		} else {
-			if(lvalue.flags&XL_VAL_NULL)
+			if(lvalue.flags&PV_VAL_NULL)
 				return 0;
 			return 1;
 		}
@@ -880,20 +880,20 @@ inline static int comp_scriptvar(struct sip_msg *msg, int op, operand_t *left,
 
 	if(right->type == SCRIPTVAR_ST)
 	{
-		if(xl_get_spec_value(msg, right->v.spec, &rvalue, 0)!=0)
+		if(pv_get_spec_value(msg, right->v.spec, &rvalue)!=0)
 		{
 			LOG(L_CRIT, "comp_scriptvar: cannot get right var value\n");
 			goto error;
 		}
-		if(rvalue.flags&XL_VAL_NULL || lvalue.flags&XL_VAL_NULL ) {
-			if (rvalue.flags&XL_VAL_NULL && lvalue.flags&XL_VAL_NULL )
+		if(rvalue.flags&PV_VAL_NULL || lvalue.flags&PV_VAL_NULL ) {
+			if (rvalue.flags&PV_VAL_NULL && lvalue.flags&PV_VAL_NULL )
 				return (op==EQUAL_OP)?1:0;
 			return (op==DIFF_OP)?1:0;
 		}
 		
 		if(op==MATCH_OP||op==NOTMATCH_OP)
 		{
-			if(!((rvalue.flags&XL_VAL_STR) && (lvalue.flags&XL_VAL_STR)))
+			if(!((rvalue.flags&PV_VAL_STR) && (lvalue.flags&PV_VAL_STR)))
 			{
 				LOG(L_CRIT, "comp_scriptvar: invalid operation %d/%d\n", op,
 					right->type);
@@ -905,11 +905,11 @@ inline static int comp_scriptvar(struct sip_msg *msg, int op, operand_t *left,
 				return comp_s2s(NOTMATCHD_OP, &lstr, &rvalue.rs);
 		}
 
-		if((rvalue.flags&XL_VAL_INT) && (lvalue.flags&XL_VAL_INT)) {
+		if((rvalue.flags&PV_VAL_INT) && (lvalue.flags&PV_VAL_INT)) {
 			/* comparing int */
 			rn = rvalue.ri;
 			type =2;
-		} else if((rvalue.flags&XL_VAL_STR) && (lvalue.flags&XL_VAL_STR)) {
+		} else if((rvalue.flags&PV_VAL_STR) && (lvalue.flags&PV_VAL_STR)) {
 			/* comparing string */
 			rstr = rvalue.rs;
 			type =1;
@@ -920,11 +920,11 @@ inline static int comp_scriptvar(struct sip_msg *msg, int op, operand_t *left,
 		}
 	} else {
 		/* null against a not-null constant */
-		if(lvalue.flags&XL_VAL_NULL)
+		if(lvalue.flags&PV_VAL_NULL)
 			return (op==DIFF_OP || op==NOTMATCH_OP || op==NOTMATCHD_OP)?1:0;
 
 		if(right->type == NUMBER_ST) {
-			if(!(lvalue.flags&XL_VAL_INT))
+			if(!(lvalue.flags&PV_VAL_INT))
 			{
 				LOG(L_CRIT,"comp_scriptvar: invalid operation %d/%d/%d!!\n", op,
 					right->type, lvalue.flags);
@@ -934,7 +934,7 @@ inline static int comp_scriptvar(struct sip_msg *msg, int op, operand_t *left,
 			type =2;
 			rn = right->v.n;
 		} else if(right->type == STRING_ST) {
-			if(!(lvalue.flags&XL_VAL_STR))
+			if(!(lvalue.flags&PV_VAL_STR))
 			{
 				LOG(L_CRIT, "comp_scriptvar: invalid operation %d/%d!!!\n", op,
 					right->type);
@@ -946,7 +946,7 @@ inline static int comp_scriptvar(struct sip_msg *msg, int op, operand_t *left,
 		} else {
 			if(op==MATCH_OP || op==NOTMATCH_OP)
 			{
-				if(!(lvalue.flags&XL_VAL_STR) || right->type != RE_ST)
+				if(!(lvalue.flags&PV_VAL_STR) || right->type != RE_ST)
 				{
 					LOG(L_CRIT, "comp_scriptvar: invalid operation %d/%d\n", op,
 						right->type);
@@ -976,7 +976,7 @@ error:
 
 
 /* returns: 0/1 (false/true) or -1 on error, -127 EXPR_DROP */
-static int eval_elem(struct expr* e, struct sip_msg* msg, xl_value_t *val)
+static int eval_elem(struct expr* e, struct sip_msg* msg, pv_value_t *val)
 {
 
 	struct sip_uri uri;
@@ -984,8 +984,8 @@ static int eval_elem(struct expr* e, struct sip_msg* msg, xl_value_t *val)
 	int retl;
 	int retr;
 	int ival;
-	xl_value_t lval;
-	xl_value_t rval;
+	pv_value_t lval;
+	pv_value_t rval;
 	char *p;
 	
 	ret=E_BUG;
@@ -994,7 +994,7 @@ static int eval_elem(struct expr* e, struct sip_msg* msg, xl_value_t *val)
 		goto error;
 	}
 	
-	if(val) memset(val, 0, sizeof(xl_value_t));
+	if(val) memset(val, 0, sizeof(pv_value_t));
 
 	switch(e->left.type){
 		case METHOD_O:
@@ -1077,7 +1077,7 @@ static int eval_elem(struct expr* e, struct sip_msg* msg, xl_value_t *val)
 				ret=run_action_list( (struct action*)e->right.v.data, msg);
 				if(val)
 				{
-					val->flags = XL_TYPE_INT|XL_VAL_INT;
+					val->flags = PV_TYPE_INT|PV_VAL_INT;
 					val->ri = ret;
 				}
 				if (ret<=0) ret=(ret==0)?EXPR_DROP:0;
@@ -1085,48 +1085,48 @@ static int eval_elem(struct expr* e, struct sip_msg* msg, xl_value_t *val)
 				return ret;
 		case EXPR_O:
 				retl = retr = 0;
-				memset(&lval, 0, sizeof(xl_value_t));
-				memset(&rval, 0, sizeof(xl_value_t));
+				memset(&lval, 0, sizeof(pv_value_t));
+				memset(&rval, 0, sizeof(pv_value_t));
 				if(e->left.v.data)
 					retl=eval_expr((struct expr*)e->left.v.data,msg,&lval);
-				if(lval.flags == XL_VAL_NONE)
+				if(lval.flags == PV_VAL_NONE)
 				{
-					xl_value_destroy(&lval);
-					xl_value_destroy(&rval);
+					pv_value_destroy(&lval);
+					pv_value_destroy(&rval);
 					return 0;
 				}
 				if(e->op == BNOT_OP)
 				{
-					if(lval.flags&XL_VAL_INT)
+					if(lval.flags&PV_VAL_INT)
 					{
 						if(val!=NULL)
 						{
-							val->flags = XL_TYPE_INT|XL_VAL_INT;
+							val->flags = PV_TYPE_INT|PV_VAL_INT;
 							val->ri = ~lval.ri;
 						}
-						xl_value_destroy(&lval);
-						xl_value_destroy(&rval);
+						pv_value_destroy(&lval);
+						pv_value_destroy(&rval);
 						return (val->ri)?1:0;
 					}
 					LOG(L_ERR, "eval_elem: binary NOT on non-numeric value\n");
-					xl_value_destroy(&lval);
-					xl_value_destroy(&rval);
+					pv_value_destroy(&lval);
+					pv_value_destroy(&rval);
 					return 0;
 				}
 				if(e->right.v.data)
 					retr=eval_expr((struct expr*)e->right.v.data,msg,&rval);
 			
-				if(lval.flags&XL_TYPE_INT)
+				if(lval.flags&PV_TYPE_INT)
 				{
-					if(!(rval.flags&XL_VAL_INT))
+					if(!(rval.flags&PV_VAL_INT))
 					{
 						LOG(L_ERR, "eval_elem: invalid numeric operands\n");
-						xl_value_destroy(&lval);
-						xl_value_destroy(&rval);
+						pv_value_destroy(&lval);
+						pv_value_destroy(&rval);
 						return 0;
 					}
 					if(val!=NULL)
-						val->flags = XL_TYPE_INT|XL_VAL_INT;
+						val->flags = PV_TYPE_INT|PV_VAL_INT;
 
 					ival = 0;
 					switch(e->op) {
@@ -1141,8 +1141,8 @@ static int eval_elem(struct expr* e, struct sip_msg* msg, xl_value_t *val)
 							{
 								LOG(L_ERR,
 									"eval_elem: divide by 0\n");
-								xl_value_destroy(&lval);
-								xl_value_destroy(&rval);
+								pv_value_destroy(&lval);
+								pv_value_destroy(&rval);
 								return 0;
 							} else 
 								ival = lval.ri / rval.ri;
@@ -1155,8 +1155,8 @@ static int eval_elem(struct expr* e, struct sip_msg* msg, xl_value_t *val)
 							{
 								LOG(L_ERR,
 									"eval_elem: divide by 0\n");
-								xl_value_destroy(&lval);
-								xl_value_destroy(&rval);
+								pv_value_destroy(&lval);
+								pv_value_destroy(&rval);
 								return 0;
 							} else 
 								ival = lval.ri % rval.ri;
@@ -1174,21 +1174,21 @@ static int eval_elem(struct expr* e, struct sip_msg* msg, xl_value_t *val)
 							LOG(L_ERR,
 									"eval_elem: invalid int op %d\n", e->op);
 								val->ri = 0;
-							xl_value_destroy(&lval);
-							xl_value_destroy(&rval);
+							pv_value_destroy(&lval);
+							pv_value_destroy(&rval);
 							return 0;
 					}
-					xl_value_destroy(&lval);
-					xl_value_destroy(&rval);
+					pv_value_destroy(&lval);
+					pv_value_destroy(&rval);
 					if(val!=NULL) val->ri = ival;
 					return (ival)?1:0;
 				} else {
-					if(!(rval.flags&XL_VAL_STR))
+					if(!(rval.flags&PV_VAL_STR))
 					{
 						LOG(L_ERR,
 								"eval_elem: invalid string operands\n");
-						xl_value_destroy(&lval);
-						xl_value_destroy(&rval);
+						pv_value_destroy(&lval);
+						pv_value_destroy(&rval);
 						return 0;
 					}
 					if(e->op != PLUS_OP)
@@ -1196,15 +1196,15 @@ static int eval_elem(struct expr* e, struct sip_msg* msg, xl_value_t *val)
 						LOG(L_ERR,
 								"eval_elem: invalid string operator %d\n",
 								e->op);
-						xl_value_destroy(&lval);
-						xl_value_destroy(&rval);
+						pv_value_destroy(&lval);
+						pv_value_destroy(&rval);
 						return 0;
 					}
 					if(val==NULL)
 					{
 						ret = (lval.rs.len>0 || rval.rs.len>0);
-						xl_value_destroy(&lval);
-						xl_value_destroy(&rval);
+						pv_value_destroy(&lval);
+						pv_value_destroy(&rval);
 						return ret;
 					}
 					val->rs.s=(char*)pkg_malloc((lval.rs.len+rval.rs.len+1)
@@ -1212,17 +1212,17 @@ static int eval_elem(struct expr* e, struct sip_msg* msg, xl_value_t *val)
 					if(val->rs.s==0)
 					{
 						LOG(L_ERR, "eval_elem: no more memory\n");
-						xl_value_destroy(&lval);
-						xl_value_destroy(&rval);
+						pv_value_destroy(&lval);
+						pv_value_destroy(&rval);
 						return 0;
 					}
-					val->flags = XL_VAL_PKG|XL_VAL_STR;
+					val->flags = PV_VAL_PKG|PV_VAL_STR;
 					memcpy(val->rs.s, lval.rs.s, lval.rs.len);
 					memcpy(val->rs.s+lval.rs.len, rval.rs.s, rval.rs.len);
 					val->rs.len = lval.rs.len + rval.rs.len;
 					val->rs.s[val->rs.len] = '\0';
-					xl_value_destroy(&lval);
-					xl_value_destroy(&rval);
+					pv_value_destroy(&lval);
+					pv_value_destroy(&rval);
 					return 1;
 				}
 				break;
@@ -1254,14 +1254,14 @@ static int eval_elem(struct expr* e, struct sip_msg* msg, xl_value_t *val)
 				break;
 		case STRINGV_O:
 				if(val) {
-					val->flags = XL_VAL_STR;
+					val->flags = PV_VAL_STR;
 					val->rs = e->left.v.s;
 				}
 				/* optimization for no dup ?!?! */
 				return (e->left.v.s.len>0)?1:0;
 		case NUMBERV_O:
 				if(val) {
-					val->flags = XL_TYPE_INT|XL_VAL_INT;
+					val->flags = PV_TYPE_INT|PV_VAL_INT;
 					val->ri = e->left.v.n;
 				}
 				ret=!(!e->left.v.n); /* !! to transform it in {0,1} */
@@ -1269,40 +1269,40 @@ static int eval_elem(struct expr* e, struct sip_msg* msg, xl_value_t *val)
 		case SCRIPTVAR_O:
 				if(e->op==NO_OP)
 				{
-					memset(&rval, 0, sizeof(xl_value_t));
-					if(xl_get_spec_value(msg, e->right.v.spec, &rval, 0)==0)
+					memset(&rval, 0, sizeof(pv_value_t));
+					if(pv_get_spec_value(msg, e->right.v.spec, &rval)==0)
 					{
-						if(rval.flags==XL_VAL_NONE || (rval.flags&XL_VAL_NULL)
-								|| (rval.flags&XL_VAL_EMPTY)
-								|| ((rval.flags&XL_TYPE_INT)&&rval.ri==0))
+						if(rval.flags==PV_VAL_NONE || (rval.flags&PV_VAL_NULL)
+								|| (rval.flags&PV_VAL_EMPTY)
+								|| ((rval.flags&PV_TYPE_INT)&&rval.ri==0))
 						{
-							xl_value_destroy(&rval);
+							pv_value_destroy(&rval);
 							return 0;
 						}
-						if(rval.flags&XL_TYPE_INT)
+						if(rval.flags&PV_TYPE_INT)
 						{
-							xl_value_destroy(&rval);
+							pv_value_destroy(&rval);
 							return 1;
 						}
 						if(rval.rs.len!=0)
 						{
-							xl_value_destroy(&rval);
+							pv_value_destroy(&rval);
 							return 1;
 						}
-						xl_value_destroy(&rval);
+						pv_value_destroy(&rval);
 					}
 					return 0;
 				}
 				if(e->op==VALUE_OP)
 				{
-					if(xl_get_spec_value(msg, e->left.v.spec, &lval, 0)==0)
+					if(pv_get_spec_value(msg, e->left.v.spec, &lval)==0)
 					{
 						if(val!=NULL)
-							memcpy(val, &lval, sizeof(xl_value_t));
-						if(lval.flags&XL_VAL_STR)
+							memcpy(val, &lval, sizeof(pv_value_t));
+						if(lval.flags&PV_VAL_STR)
 						{
-							if(!((lval.flags&XL_VAL_PKG) 
-									|| (lval.flags&XL_VAL_SHM)))
+							if(!((lval.flags&PV_VAL_PKG) 
+									|| (lval.flags&PV_VAL_SHM)))
 							{
 								if(val!=NULL)
 								{
@@ -1313,22 +1313,22 @@ static int eval_elem(struct expr* e, struct sip_msg* msg, xl_value_t *val)
 									{
 										LOG(L_ERR,
 												"eval_elem: no more memory\n");
-										memset(val, 0, sizeof(xl_value_t));
+										memset(val, 0, sizeof(pv_value_t));
 										return 0;
 									}
 									memcpy(p, val->rs.s, val->rs.len);
 									p[val->rs.len] = 0;
 									val->rs.s = p;
-									val->flags|= XL_VAL_PKG;
+									val->flags|= PV_VAL_PKG;
 								}
 							}
 							return 1;
 						}
-						if(lval.flags==XL_VAL_NONE 
-								|| (lval.flags & XL_VAL_NULL)
-								|| (lval.flags & XL_VAL_EMPTY))
+						if(lval.flags==PV_VAL_NONE 
+								|| (lval.flags & PV_VAL_NULL)
+								|| (lval.flags & PV_VAL_EMPTY))
 							return 0;
-						if(lval.flags&XL_TYPE_INT)
+						if(lval.flags&PV_TYPE_INT)
 							return (lval.ri!=0);
 						else
 							return (lval.rs.len>0);
@@ -1344,14 +1344,14 @@ static int eval_elem(struct expr* e, struct sip_msg* msg, xl_value_t *val)
 	}
 	if(val)
 	{
-		val->flags = XL_TYPE_INT|XL_VAL_INT;
+		val->flags = PV_TYPE_INT|PV_VAL_INT;
 		val->ri = ret;
 	}
 	return ret;
 error:
 	if(val)
 	{
-		val->flags = XL_TYPE_INT|XL_VAL_INT;
+		val->flags = PV_TYPE_INT|PV_VAL_INT;
 		val->ri = -1;
 	}
 	return -1;
@@ -1360,7 +1360,7 @@ error:
 
 
 /* ret= 0/1 (true/false) ,  -1 on error or EXPR_DROP (-127)  */
-int eval_expr(struct expr* e, struct sip_msg* msg, xl_value_t *val)
+int eval_expr(struct expr* e, struct sip_msg* msg, pv_value_t *val)
 {
 	static int rec_lev=0;
 	int ret;

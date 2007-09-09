@@ -32,7 +32,7 @@
 #define _re_h
 
 #include "str.h"
-#include "items.h"
+#include "pvar.h"
 #include "parser/msg_parser.h"
 #include <sys/types.h> /* for regex */
 #include <regex.h>
@@ -50,7 +50,7 @@ struct replace_with{
 	union{
 		int nmatch;
 		char c;
-		xl_spec_t spec;
+		pv_spec_t spec;
 	}u;
 };
 

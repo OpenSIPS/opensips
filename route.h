@@ -28,7 +28,7 @@
 #include <regex.h>
 #include <netdb.h>
 
-#include "items.h"
+#include "pvar.h"
 #include "config.h"
 #include "error.h"
 #include "route_struct.h"
@@ -73,7 +73,7 @@ void print_rl();
 int fix_rls();
 int check_rls();
 
-int eval_expr(struct expr* e, struct sip_msg* msg, xl_value_t *val);
+int eval_expr(struct expr* e, struct sip_msg* msg, pv_value_t *val);
 
 
 #endif

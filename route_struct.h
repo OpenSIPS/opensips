@@ -87,7 +87,7 @@ enum { NOSUBTYPE=0, STRING_ST, NET_ST, NUMBER_ST, IP_ST, RE_ST, PROXY_ST,
 		BLACKLIST_ST};
 
 struct expr;
-#include "items.h"
+#include "pvar.h"
 
 typedef struct operand {
 	int type;
@@ -95,7 +95,7 @@ typedef struct operand {
 		struct expr* expr;
 		str s;
 		int n;
-		xl_spec_t* spec;
+		pv_spec_t* spec;
 		void* data;
 	} v;	
 } operand_t, *operand_p;
@@ -115,7 +115,7 @@ typedef struct action_elem_ {
 		char* string;
 		void* data;
 		str s;
-		xl_spec_t* item;
+		pv_spec_t* item;
 	} u;
 } action_elem_t, *action_elem_p;
 

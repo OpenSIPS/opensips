@@ -25,7 +25,7 @@
 #define _TRANSFORMATIONS_H_
 
 #include "usr_avp.h"
-#include "items.h"
+#include "pvar.h"
 
 #define TR_LBRACKET_STR	"{"
 #define TR_LBRACKET		'{'
@@ -62,7 +62,7 @@ typedef struct tr_param_ {
 	struct tr_param_ *next;
 } tr_param_t, *tr_param_p;
 
-typedef int (*tr_func_t) (struct sip_msg *, tr_param_t*, int, xl_value_t*);
+typedef int (*tr_func_t) (struct sip_msg *, tr_param_t*, int, pv_value_t*);
 
 typedef struct trans_ {
 	str name;
@@ -73,11 +73,11 @@ typedef struct trans_ {
 	struct trans_ *next;
 } trans_t, *trans_p;
 
-int run_transformations(struct sip_msg *msg, trans_t *tr, xl_value_t *val);
-char* parse_transformation(char *s, trans_t **tr);
-char* tr_parse_string(char* s, trans_t *t);
-char* tr_parse_uri(char* s, trans_t *t);
-char* tr_parse_paramlist(char* s, trans_t *t);
+int run_transformations(struct sip_msg *msg, trans_t *tr, pv_value_t *val);
+char* parse_transformation(str *in, trans_t **tr);
+char* tr_parse_string(str* in, trans_t *t);
+char* tr_parse_uri(str* in, trans_t *t);
+char* tr_parse_paramlist(str* in, trans_t *t);
 void destroy_transformation(trans_t *t);
 void free_transformation(trans_t *t);
 void free_tr_param(tr_param_t *tp);

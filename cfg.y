@@ -96,7 +96,7 @@
 #include "name_alias.h"
 #include "ut.h"
 #include "dset.h"
-#include "items.h"
+#include "pvar.h"
 #include "blacklists.h"
 
 
@@ -124,8 +124,9 @@ static struct socket_id* lst_tmp;
 static int rt;  /* Type of route block for find_export */
 static str* str_tmp;
 static str s_tmp;
+static str tstr;
 static struct ip_addr* ip_tmp;
-static xl_spec_t *spec;
+static pv_spec_t *spec;
 static struct bl_rule *bl_head = 0;
 static struct bl_rule *bl_tail = 0;
 
@@ -182,7 +183,7 @@ extern int line;
 	struct net* ipnet;
 	struct ip_addr* ipaddr;
 	struct socket_id* sockid;
-	struct _xl_spec *specval;
+	struct _pv_spec *specval;
 }
 
 /* terminals */
@@ -1418,9 +1419,11 @@ uri_type:	URI			{$$=URI_O;}
 
 script_var:	SCRIPTVAR	{ 
 				/* printf("\n+++ scriptvar <%s>\n", $1); */
-				spec = (xl_spec_t*)pkg_malloc(sizeof(xl_spec_t));
-				memset(spec, 0, sizeof(xl_spec_t));
-				if(xl_parse_spec($1, spec, 0)==NULL)
+				spec = (pv_spec_t*)pkg_malloc(sizeof(pv_spec_t));
+				memset(spec, 0, sizeof(pv_spec_t));
+				tstr.s = $1;
+				tstr.len = strlen(tstr.s);
+				if(pv_parse_spec(&tstr, spec)==NULL)
 				{
 					yyerror("unknown script variable");
 				}
@@ -1653,12 +1656,12 @@ assignexp :
 
 assign_cmd: script_var assignop assignexp {	
 			switch($1->type) {
-				case XL_AVP:
-				case XL_SCRIPTVAR:
-				case XL_RURI:
-				case XL_RURI_USERNAME:
-				case XL_RURI_DOMAIN:
-				case XL_DSTURI:
+				case PVT_AVP:
+				case PVT_SCRIPTVAR:
+				case PVT_RURI:
+				case PVT_RURI_USERNAME:
+				case PVT_RURI_DOMAIN:
+				case PVT_DSTURI:
 				break;
 				default:
 					yyerror("invalid left operand in assignment");
@@ -1675,10 +1678,10 @@ assign_cmd: script_var assignop assignexp {
 		}
 	|  script_var EQUAL NULLV {
 			switch($1->type) {
-				case XL_AVP:
-				case XL_SCRIPTVAR:
-				case XL_DSTURI:
-				case XL_RURI_USERNAME:
+				case PVT_AVP:
+				case PVT_SCRIPTVAR:
+				case PVT_DSTURI:
+				case PVT_RURI_USERNAME:
 				break;
 				default:
 					yyerror("invalid left operand in NULL assignment");
@@ -1695,7 +1698,7 @@ assign_cmd: script_var assignop assignexp {
 		}
 	|  script_var COLONEQ NULLV {
 			switch($1->type) {
-				case XL_AVP:
+				case PVT_AVP:
 				break;
 				default:
 					yyerror("invalid left operand in NULL assignment");

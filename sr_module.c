@@ -145,7 +145,7 @@ int register_module(struct module_exports* e, char* path, void* handle)
 	/* register module pseudo-variables */
 	if (e->items) {
 		LM_DBG("register_pv: %s\n", e->name);
-		if (register_items_mod(e->name, e->items)!=0) {
+		if (register_pvars_mod(e->name, e->items)!=0) {
 			LM_ERR("failed to register pseudo-variables for module %s\n",
 				e->name);
 			pkg_free(mod);

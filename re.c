@@ -67,6 +67,7 @@ int parse_repl(struct replace_with * rw, char ** begin,
 
 	char* p0;
 	char * repl;
+	str s;
 	int token_nb;
 	int escape;
 	int max_pmatch;
@@ -110,11 +111,11 @@ int parse_repl(struct replace_with * rw, char ** begin,
 					rw[token_nb].type=REPLACE_CHAR;
 					rw[token_nb].u.c='\t';
 					break;
-				case ITEM_MARKER:
+				case PV_MARKER:
 					rw[token_nb].size=2;
 					rw[token_nb].offset=(p-1)-repl;
 					rw[token_nb].type=REPLACE_CHAR;
-					rw[token_nb].u.c=ITEM_MARKER;
+					rw[token_nb].u.c=PV_MARKER;
 					break;
 				/* special sip msg parts escapes */
 				case 'u':
@@ -160,10 +161,10 @@ int parse_repl(struct replace_with * rw, char ** begin,
 			}
 		}else if (*p=='\\') {
 			escape=1;
-		}else if (*p==ITEM_MARKER) {
-
-			p0 = xl_parse_spec(p, &rw[token_nb].u.spec,
-					XL_DISABLE_COLORS|XL_THROW_ERROR );
+		}else if (*p==PV_MARKER) {
+			s.s = p;
+			s.len = end - s.s;
+			p0 = pv_parse_spec(&s, &rw[token_nb].u.spec);
 			if(p0==NULL)
 			{
 				LM_ERR("bad specifier in replace part %s\n", *begin);
@@ -378,7 +379,7 @@ static int replace_build(const char* match, int nmatch, regmatch_t* pmatch,
 {
 	int r;
 	str* uri;
-	xl_value_t sv;
+	pv_value_t sv;
 	char* p;
 	char* dest;
 	char* end;
@@ -455,7 +456,7 @@ static int replace_build(const char* match, int nmatch, regmatch_t* pmatch,
 				dest+=uri->len;
 				break;
 			case REPLACE_SPEC:
-				if(xl_get_spec_value(msg, &se->replace[r].u.spec, &sv, 0)!=0)
+				if(pv_get_spec_value(msg, &se->replace[r].u.spec, &sv)!=0)
 				{
 					LOG(L_CRIT, "BUG: replace_build: item substitution"
 								" returned error\n");
