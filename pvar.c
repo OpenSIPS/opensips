@@ -1898,11 +1898,11 @@ int pv_parse_hdr_name(pv_spec_p sp, str *in)
 	memcpy(pv_local_buf, in->s, in->len);
 	pv_local_buf[in->len] = ':';
 	s.s = pv_local_buf;
-	s.len = in->len;
+	s.len = in->len+1;
 
 	if (parse_hname2(s.s, s.s + ((s.len<4)?4:s.len), &hdr)==0)
 	{
-		LM_ERR("pv_parse_name: error parsing header name\n");
+		LM_ERR("error parsing header name [%.*s]\n", s.len, s.s);
 		goto error;
 	}
 	sp->pvp.pvn.type = PV_NAME_INTSTR;
@@ -1950,7 +1950,7 @@ int pv_parse_avp_name(pv_spec_p sp, str *in)
 		sp->pvp.pvn.u.dname = (void*)nsp;
 		return 0;
 	}
-	LM_DBG("static name [%.*s]\n", in->len, in->s);
+	/*LM_DBG("static name [%.*s]\n", in->len, in->s);*/
 	if(parse_avp_spec(in, &sp->pvp.pvn.u.isname.type,
 				&sp->pvp.pvn.u.isname.name)!=0)
 	{
@@ -2318,8 +2318,8 @@ pv_export_t* pv_lookup_spec_name(str *pvname, pv_spec_p e)
 		if(_pv_names_table[i].name.len==pvname->len
 			&& memcmp(_pv_names_table[i].name.s, pvname->s, pvname->len)==0)
 		{
-			LM_DBG("found [%.*s] [%d]\n", pvname->len, pvname->s,
-					_pv_names_table[i].type);
+			/*LM_DBG("found [%.*s] [%d]\n", pvname->len, pvname->s,
+					_pv_names_table[i].type);*/
 			/* copy data from table to spec */
 			e->type = _pv_names_table[i].type;
 			e->getf = _pv_names_table[i].getf;
@@ -2379,7 +2379,7 @@ char* pv_parse_spec(str *in, pv_spec_p e)
 		return NULL;
 	}
 	
-	LM_DBG("input [%.*s]\n", in->len, in->s);
+	/*LM_DBG("input [%.*s]\n", in->len, in->s);*/
 	tr = 0;
 	pvstate = 0;
 	memset(e, 0, sizeof(pv_spec_t));
@@ -2639,7 +2639,7 @@ int pv_parse_format(str *in, pv_elem_p *el)
 	if(in==NULL || in->s==NULL || el==NULL)
 		return -1;
 
-	LM_DBG("parsing [%.*s]\n", in->len, in->s);
+	/*LM_DBG("parsing [%.*s]\n", in->len, in->s);*/
 	
 	p = in->s;
 	*el = NULL;
@@ -2675,7 +2675,7 @@ int pv_parse_format(str *in, pv_elem_p *el)
 			break;
 		p = p0;
 	}
-	LM_DBG("format parsed OK: [%d] items\n", n);
+	/*LM_DBG("format parsed OK: [%d] items\n", n);*/
 
 	return 0;
 
