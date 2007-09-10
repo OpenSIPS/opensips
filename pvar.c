@@ -2434,6 +2434,8 @@ char* pv_parse_spec(str *in, pv_spec_p e)
 			pvstate = 5;
 		} else {
 			/* still in input str, but end of PV */
+			/* p is increased at the end, so decrement here */
+			p--;
 			goto done_inm;
 		}
 	}
