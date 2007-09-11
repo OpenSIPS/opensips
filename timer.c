@@ -362,23 +362,19 @@ int start_timer_processes(void)
 	pid_t pid;
 
 	for( tpl=timer_proc_list; tpl ; tpl=tpl->next ) {
-		LM_DBG("######################### new timer proc?\n");
 		if (tpl->timer_list==NULL && tpl->utimer_list==NULL)
 			continue;
-		LM_DBG("######################### fork new timer proc\n");
 		/* fork a new process */
 		if ( (pid=openser_fork("timer"))<0 ) {
 			LM_CRIT("cannot fork timer process\n");
 			goto error;
 		} else if (pid==0) {
 			/* new process */
-			LM_DBG("######################### init child %X\n",tpl->flags);
 			/* run init if required */
 			if ( tpl->flags&TIMER_PROC_INIT_FLAG && init_child(PROC_TIMER)<0 ){
 				LM_ERR("init_child failed for timer proc\n");
 				goto error;
 			}
-			LM_DBG("######################### start timer\n");
 			run_timer_process( tpl );
 			exit(-1);
 		}
