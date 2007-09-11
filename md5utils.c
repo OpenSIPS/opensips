@@ -34,8 +34,6 @@ jku: added support to deal with vectors
 #include "ut.h"
 
 
-/*static void MDString PROTO_LIST ((char *));*/
-
 #define MD_CTX MD5_CTX
 #define MDInit MD5Init
 #define MDUpdate MD5Update
@@ -53,36 +51,13 @@ void MDStringArray (char *dst, str src[], int size)
 	int len;
 	char *s;
 
-/*
-#	ifdef EXTRA_DEBUG
-	int j;
-	int sum;
-#endif
-*/
-
 	MDInit (&context);
 	for (i=0; i<size; i++) {
 		trim_len( len, s, src[i] );
-/*
-#		ifdef EXTRA_DEBUG
-		fprintf(stderr, "EXTRA_DEBUG: %d. (%d) {", i+1, len);
-		sum=0;
-		for (j=0; j<len; j++) {
-			fprintf( stderr, "%c ", *(s+j));
-			sum+=*(s+j);
-		}
-		for (j=0; j<len; j++) {
-			fprintf( stderr, "%d ", *(s+j));
-			sum+=*(s+j);
-		}
-		fprintf(stderr, " [%d]\n", sum );	
-#		endif
-*/
-  		MDUpdate (&context, s, len);
-  }
-  MDFinal (digest, &context);
+		MDUpdate (&context, s, len);
+	}
+	MDFinal (digest, &context);
 
-  string2hex(digest, 16, dst );
-  DBG("DEBUG: MD5 calculated: %.*s\n", MD5_LEN, dst );
-
+	string2hex(digest, 16, dst );
+	LM_DBG("MD5 calculated: %.*s\n", MD5_LEN, dst );
 }
