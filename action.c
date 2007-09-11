@@ -183,26 +183,26 @@ int do_assign(struct sip_msg* msg, struct action* a)
 {
 	int ret;
 	pv_value_t val;
-	int_str avp_name;
-	int_str avp_val;
-	int flags;
-	unsigned short name_type;
 	pv_spec_p dspec;
-	struct action  act;
-	char backup;
 
 	ret = -1;
+	dspec = (pv_spec_p)a->elem[0].u.data;
+	if(!pv_is_w(dspec))
+	{
+		LM_ERR("read only PV in left expression\n");
+		goto error;
+	}
+
 	memset(&val, 0, sizeof(pv_value_t));
 	if(a->elem[1].type != NULLV_ST)
 	{
 		ret = eval_expr((struct expr*)a->elem[1].u.data, msg, &val);
 		if(!((val.flags&PV_VAL_STR)||(val.flags&PV_VAL_INT))) {
-			LM_ERR("no value in right expression (line: %d)\n", a->line);
+			LM_ERR("no value in right expression\n");
 			goto error;
 		}
 	}
 
-	dspec = (pv_spec_p)a->elem[0].u.data;
 	switch ((unsigned char)a->type){
 		case EQ_T:
 		case COLONEQ_T:
@@ -214,155 +214,32 @@ int do_assign(struct sip_msg* msg, struct action* a)
 		case BANDEQ_T:
 		case BOREQ_T:
 		case BXOREQ_T:
-			switch(dspec->type) {
-				case PVT_AVP:
-					if(pv_get_avp_name(msg, &(dspec->pvp), &avp_name,
-								&name_type)!=0)
-					{
-						LM_ALERT("BUG in getting dst AVP name (line: %d)\n",
-								a->line);
-						goto error;
-					}
-					if(a->elem[1].type == NULLV_ST)
-					{
-						if((unsigned char)a->type == COLONEQ_T)
-							destroy_avps(name_type, avp_name, 1);
-						else
-							destroy_avps(name_type, avp_name, 0);
-						return 1;
-					}
-					if((unsigned char)a->type == COLONEQ_T)
-						destroy_avps(name_type, avp_name, 1);
-
-					flags = name_type;
-					if(val.flags&PV_TYPE_INT)
-					{
-						avp_val.n = val.ri;
-					} else {
-						avp_val.s = val.rs;
-						flags |= AVP_VAL_STR;
-					}
-
-					if (add_avp(flags, avp_name, avp_val)<0)
-					
-					{
-						LM_ERR("error - cannot add AVP (line: %d)\n", a->line);
-						goto error;
-					}
-
-				break;
-				case PVT_SCRIPTVAR:
-					if(dspec->pvp.pvn.u.dname==0)
-					{
-						LM_ERR("error - cannot find svar (line: %d)\n",
-								a->line);
-						goto error;
-					}
-					if(a->elem[1].type == NULLV_ST)
-					{
-						avp_val.n = 0;
-						set_var_value((script_var_t*)dspec->pvp.pvn.u.dname,
-								&avp_val,0);
-						return 1;
-					}
-					flags = 0;
-					if(val.flags&PV_TYPE_INT)
-					{
-						avp_val.n = val.ri;
-					} else {
-						avp_val.s = val.rs;
-						flags |= VAR_VAL_STR;
-					}
-					if(set_var_value((script_var_t*)dspec->pvp.pvn.u.dname,
-								&avp_val, flags)==NULL)
-					{
-						LM_ERR("error - cannot set svar [%.*s] (line: %d)\n",
-							((script_var_t*)dspec->pvp.pvn.u.dname)->name.len,
-							((script_var_t*)dspec->pvp.pvn.u.dname)->name.s,
-							a->line);
-						goto error;
-					}
-				break;
-				case PVT_RURI_USERNAME:
-					if(a->elem[1].type == NULLV_ST)
-					{
-						memset(&act, 0, sizeof(act));
-						act.type = SET_USER_T;
-						act.elem[0].type = STRING_ST;
-						act.elem[0].u.string = "";
-						if (do_action(&act, msg)<0)
-						{
-							LM_ERR("error - do action failed %d (line: %d)\n",
-								act.type, a->line);
-							goto error;
-						}
-						return 1;
-					}
-				case PVT_RURI_DOMAIN:
-				case PVT_RURI:
-					if(!(val.flags&PV_VAL_STR))
-					{
-						LM_ERR("error - str value required to"
-								" set R-URI parts (line: %d)\n", a->line);
-						goto error;
-					}
-					memset(&act, 0, sizeof(act));
-					act.elem[0].type = STRING_ST;
-					act.elem[0].u.string = val.rs.s;
-					backup = val.rs.s[val.rs.len];
-					val.rs.s[val.rs.len] = '\0';
-					if(dspec->type==PVT_RURI_USERNAME)
-						act.type = SET_USER_T;
-					else if(dspec->type==PVT_RURI_DOMAIN)
-						act.type = SET_HOST_T;
-					else
-						act.type = SET_URI_T;
-					if (do_action(&act, msg)<0)
-					{
-						LM_ERR("error - do action failed %d (line: %d)\n",
-								act.type, a->line);
-						val.rs.s[val.rs.len] = backup;
-						goto error;
-					}
-					val.rs.s[val.rs.len] = backup;
-				break;
-				case PVT_DSTURI:
-					if(a->elem[1].type == NULLV_ST)
-					{
-						memset(&act, 0, sizeof(act));
-						act.type = RESET_DSTURI_T;
-						if (do_action(&act, msg)<0)
-						{
-							LM_ERR("error - do action failed %d (line: %d)\n",
-								act.type, a->line);
-							goto error;
-						}
-						return 1;
-					}
-					if(!(val.flags&PV_VAL_STR))
-					{
-						LM_ERR("error - str value requred to"
-							" set dst uri (line: %d)\n", a->line);
-						goto error;
-					}
-					if(set_dst_uri(msg, &val.rs)!=0)
-						goto error;
-				break;
-				default:
-					LM_ERR("error - unknown dst var (line: %d)\n", a->line);
-					return E_BUG;
+			if(a->elem[1].type == NULLV_ST)
+			{
+				if(dspec->setf(msg, &dspec->pvp, (int)a->type, 0)<0)
+				{
+					LM_ERR("setting PV failed\n");
+					goto error;
+				}
+			} else {
+				if(dspec->setf(msg, &dspec->pvp, (int)a->type, &val)<0)
+				{
+					LM_ERR("setting PV failed\n");
+					goto error;
+				}
 			}
-
-			pv_value_destroy(&val);
-			return 1;
+			ret = 1;
+		break;
 		default:
-			LM_ALERT("BUG -> unknown type %d (line: %d)\n", a->type, a->line);
+			LM_ALERT("BUG -> unknown op type %d\n", a->type);
+			goto error;
 	}
 
 	pv_value_destroy(&val);
 	return ret;
 
 error:
+	LM_ERR("error at line: %d\n", a->line);
 	pv_value_destroy(&val);
 	return -1;
 }

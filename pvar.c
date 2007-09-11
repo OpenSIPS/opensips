@@ -41,6 +41,8 @@
 #include "ut.h" 
 #include "trim.h" 
 #include "dset.h"
+#include "action.h"
+#include "route_struct.h"
 #include "usr_avp.h"
 #include "errinfo.h"
 #include "transformations.h"
@@ -1843,6 +1845,332 @@ static int pv_get_scriptvar(struct sip_msg *msg,  pv_param_t *param,
 	return 0;
 }
 
+/********* end PV get functions *********/
+
+/********* start PV set functions *********/
+int pv_set_avp(struct sip_msg* msg, pv_param_t *param,
+		int op, pv_value_t *val)
+{
+	int_str avp_name;
+	int_str avp_val;
+	int flags;
+	unsigned short name_type;
+	
+	if(param==NULL)
+	{
+		LM_ERR("bad parameters\n");
+		return -1;
+	}
+
+	if(pv_get_avp_name(msg, param, &avp_name, &name_type)!=0)
+	{
+		LM_ALERT("BUG in getting dst AVP name\n");
+		goto error;
+	}
+	if(val == NULL)
+	{
+		if(op == COLONEQ_T)
+			destroy_avps(name_type, avp_name, 1);
+		else
+			destroy_avps(name_type, avp_name, 0);
+		return 0;
+	}
+	if(op == COLONEQ_T)
+		destroy_avps(name_type, avp_name, 1);
+	flags = name_type;
+	if(val->flags&PV_TYPE_INT)
+	{
+		avp_val.n = val->ri;
+	} else {
+		avp_val.s = val->rs;
+		flags |= AVP_VAL_STR;
+	}
+	if (add_avp(flags, avp_name, avp_val)<0)
+	{
+		LM_ERR("error - cannot add AVP\n");
+		goto error;
+	}
+	return 0;
+error:
+	return -1;
+}
+
+int pv_set_scriptvar(struct sip_msg* msg, pv_param_t *param,
+		int op, pv_value_t *val)
+{
+	int_str avp_val;
+	int flags;
+
+	if(param==NULL)
+	{
+		LM_ERR("bad parameters\n");
+		return -1;
+	}
+
+	if(param->pvn.u.dname==0)
+	{
+		LM_ERR("error - cannot find svar\n");
+		goto error;
+	}
+	if(val == NULL)
+	{
+		avp_val.n = 0;
+		set_var_value((script_var_t*)param->pvn.u.dname, &avp_val, 0);
+		return 0;
+	}
+	flags = 0;
+	if(val->flags&PV_TYPE_INT)
+	{
+		avp_val.n = val->ri;
+	} else {
+		avp_val.s = val->rs;
+		flags |= VAR_VAL_STR;
+	}
+	if(set_var_value((script_var_t*)param->pvn.u.dname, &avp_val, flags)==NULL)
+	{
+		LM_ERR("error - cannot set svar [%.*s] \n",
+				((script_var_t*)param->pvn.u.dname)->name.len,
+				((script_var_t*)param->pvn.u.dname)->name.s);
+		goto error;
+	}
+	return 0;
+error:
+	return -1;
+}
+
+int pv_set_dsturi(struct sip_msg* msg, pv_param_t *param,
+		int op, pv_value_t *val)
+{
+	struct action  act;
+
+	if(msg==NULL || param==NULL)
+	{
+		LM_ERR("bad parameters\n");
+		return -1;
+	}
+					
+	if(val == NULL)
+	{
+		memset(&act, 0, sizeof(act));
+		act.type = RESET_DSTURI_T;
+		if (do_action(&act, msg)<0)
+		{
+			LM_ERR("error - do action failed)\n");
+			goto error;
+		}
+		return 1;
+	}
+	if(!(val->flags&PV_VAL_STR))
+	{
+		LM_ERR("error - str value requred to set dst uri\n");
+		goto error;
+	}
+	
+	if(set_dst_uri(msg, &val->rs)!=0)
+		goto error;
+
+	return 0;
+error:
+	return -1;
+}
+
+int pv_set_ruri(struct sip_msg* msg, pv_param_t *param,
+		int op, pv_value_t *val)
+{
+	struct action  act;
+	char backup;
+
+	if(msg==NULL || param==NULL || val==NULL)
+	{
+		LM_ERR("bad parameters\n");
+		return -1;
+	}
+
+	if(!(val->flags&PV_VAL_STR))
+	{
+		LM_ERR("str value required to set R-URI\n");
+		goto error;
+	}
+	
+	memset(&act, 0, sizeof(act));
+	act.elem[0].type = STRING_ST;
+	act.elem[0].u.string = val->rs.s;
+	backup = val->rs.s[val->rs.len];
+	val->rs.s[val->rs.len] = '\0';
+	act.type = SET_URI_T;
+	if (do_action(&act, msg)<0)
+	{
+		LM_ERR("do action failed\n");
+		val->rs.s[val->rs.len] = backup;
+		goto error;
+	}
+	val->rs.s[val->rs.len] = backup;
+
+	return 0;
+error:
+	return -1;
+}
+
+int pv_set_ruri_user(struct sip_msg* msg, pv_param_t *param,
+		int op, pv_value_t *val)
+{
+	struct action  act;
+	char backup;
+
+	if(msg==NULL || param==NULL)
+	{
+		LM_ERR("bad parameters\n");
+		return -1;
+	}
+					
+	if(val == NULL)
+	{
+		memset(&act, 0, sizeof(act));
+		act.type = SET_USER_T;
+		act.elem[0].type = STRING_ST;
+		act.elem[0].u.string = "";
+		if (do_action(&act, msg)<0)
+		{
+			LM_ERR("do action failed)\n");
+			goto error;
+		}
+		return 0;
+	}
+
+	if(!(val->flags&PV_VAL_STR))
+	{
+		LM_ERR("str value required to set R-URI user\n");
+		goto error;
+	}
+	
+	memset(&act, 0, sizeof(act));
+	act.elem[0].type = STRING_ST;
+	act.elem[0].u.string = val->rs.s;
+	backup = val->rs.s[val->rs.len];
+	val->rs.s[val->rs.len] = '\0';
+	act.type = SET_USER_T;
+	if (do_action(&act, msg)<0)
+	{
+		LM_ERR("do action failed\n");
+		val->rs.s[val->rs.len] = backup;
+		goto error;
+	}
+	val->rs.s[val->rs.len] = backup;
+
+	return 0;
+error:
+	return -1;
+}
+
+int pv_set_ruri_host(struct sip_msg* msg, pv_param_t *param,
+		int op, pv_value_t *val)
+{
+	struct action  act;
+	char backup;
+
+	if(msg==NULL || param==NULL || val==NULL)
+	{
+		LM_ERR("bad parameters\n");
+		return -1;
+	}
+
+	if(!(val->flags&PV_VAL_STR))
+	{
+		LM_ERR("str value required to set R-URI hostname\n");
+		goto error;
+	}
+	
+	memset(&act, 0, sizeof(act));
+	act.elem[0].type = STRING_ST;
+	act.elem[0].u.string = val->rs.s;
+	backup = val->rs.s[val->rs.len];
+	val->rs.s[val->rs.len] = '\0';
+	act.type = SET_HOST_T;
+	if (do_action(&act, msg)<0)
+	{
+		LM_ERR("do action failed\n");
+		val->rs.s[val->rs.len] = backup;
+		goto error;
+	}
+	val->rs.s[val->rs.len] = backup;
+
+	return 0;
+error:
+	return -1;
+}
+
+int pv_set_branch(struct sip_msg* msg, pv_param_t *param,
+		int op, pv_value_t *val)
+{
+	if(msg==NULL || param==NULL || val==NULL)
+	{
+		LM_ERR("bad parameters\n");
+		return -1;
+	}
+
+	if(!(val->flags&PV_VAL_STR) || val->rs.len<=0)
+	{
+		LM_ERR("str value required to set the branch\n");
+		goto error;
+	}
+	
+	if (append_branch( msg, &val->rs, 0, 0, Q_UNSPECIFIED, 0,
+			msg->force_send_socket)!=1 )
+	{
+		LM_ERR("append_branch action failed\n");
+		goto error;
+	}
+
+	return 0;
+error:
+	return -1;
+}
+
+int pv_set_force_sock(struct sip_msg* msg, pv_param_t *param,
+		int op, pv_value_t *val)
+{
+	struct sip_uri puri;
+	struct socket_info *si;
+	
+	if(msg==NULL || param==NULL)
+	{
+		LM_ERR("bad parameters\n");
+		return -1;
+	}
+
+	if(val==NULL)
+	{
+		msg->force_send_socket = NULL;
+		return 0;
+	}
+
+	if(!(val->flags&PV_VAL_STR) || val->rs.len<=0)
+	{
+		LM_ERR("str value required to set the force send sock\n");
+		goto error;
+	}
+	
+	if (parse_uri(val->rs.s, val->rs.len, &puri)<0)
+	{
+		LM_ERR("invalid uri\n");
+		goto error;
+	}
+	si = grep_sock_info(&puri.host, puri.port_no, puri.proto);
+	if (si!=NULL)
+	{
+		msg->force_send_socket = si;
+	} else {
+		LM_WARN("no socket found to match [%.*s]\n",
+				val->rs.len, val->rs.s);
+	}
+
+	return 0;
+error:
+	return -1;
+}
+
+/********* end PV set functions *********/
+
 int pv_parse_scriptvar_name(pv_spec_p sp, str *in)
 {
 	if(in==NULL || in->s==NULL || sp==NULL)
@@ -2029,12 +2357,12 @@ int pv_init_iname(pv_spec_p sp, int param)
  * the table with core pseudo-variables
  */
 static pv_export_t _pv_names_table[] = {
-	{{"avp", (sizeof("avp")-1)}, PVT_AVP, pv_get_avp, 0, pv_parse_avp_name,
-		pv_parse_index, 0, 0},
+	{{"avp", (sizeof("avp")-1)}, PVT_AVP, pv_get_avp, pv_set_avp,
+		pv_parse_avp_name, pv_parse_index, 0, 0},
 	{{"hdr", (sizeof("hdr")-1)}, PVT_HDR, pv_get_hdr, 0, pv_parse_hdr_name,
 		pv_parse_index, 0, 0},
-	{{"var", (sizeof("var")-1)}, PVT_SCRIPTVAR, pv_get_scriptvar, 0,
-		pv_parse_scriptvar_name, 0, 0, 0},
+	{{"var", (sizeof("var")-1)}, PVT_SCRIPTVAR, pv_get_scriptvar,
+		pv_set_scriptvar, pv_parse_scriptvar_name, 0, 0, 0},
 
 	{{"ai", (sizeof("ai")-1)}, /* */
 		PVT_PAI_URI, pv_get_pai, 0,
@@ -2058,7 +2386,7 @@ static pv_export_t _pv_names_table[] = {
 		PVT_HEXBFLAGS, pv_get_hexbflags, 0,
 		0, 0, 0, 0},
 	{{"br", (sizeof("br")-1)}, /* */
-		PVT_BRANCH, pv_get_branch, 0,
+		PVT_BRANCH, pv_get_branch, pv_set_branch,
 		0, 0, 0, 0},
 	{{"bR", (sizeof("bR")-1)}, /* */
 		PVT_BRANCHES, pv_get_branches, 0,
@@ -2094,10 +2422,10 @@ static pv_export_t _pv_names_table[] = {
 		PVT_DSET, pv_get_dset, 0,
 		0, 0, 0, 0},
 	{{"du", (sizeof("du")-1)}, /* */
-		PVT_DSTURI, pv_get_dsturi, 0,
+		PVT_DSTURI, pv_get_dsturi, pv_set_dsturi,
 		0, 0, 0, 0},
 	{{"duri", (sizeof("duri")-1)}, /* */
-		PVT_DSTURI, pv_get_dsturi, 0,
+		PVT_DSTURI, pv_get_dsturi, pv_set_dsturi,
 		0, 0, 0, 0},
 	{{"err.class", (sizeof("err.class")-1)}, /* */
 		PVT_ERR_CLASS, pv_get_errinfo_attr, 0,
@@ -2124,7 +2452,7 @@ static pv_export_t _pv_names_table[] = {
 		PVT_FROM_DISPLAYNAME, pv_get_from_attr, 0,
 		0, 0, pv_init_iname, 5},
 	{{"fs", (sizeof("fs")-1)}, /* */
-		PVT_FORCE_SOCK, pv_get_force_sock, 0,
+		PVT_FORCE_SOCK, pv_get_force_sock, pv_set_force_sock,
 		0, 0, 0, 0},
 	{{"ft", (sizeof("ft")-1)}, /* */
 		PVT_FROM_TAG, pv_get_from_attr, 0,
@@ -2205,10 +2533,10 @@ static pv_export_t _pv_names_table[] = {
 		PVT_RETURN_CODE, pv_get_return_code, 0,
 		0, 0, 0, 0},
 	{{"rd", (sizeof("rd")-1)}, /* */
-		PVT_RURI_DOMAIN, pv_get_ruri_attr, 0,
+		PVT_RURI_DOMAIN, pv_get_ruri_attr, pv_set_ruri_host,
 		0, 0, pv_init_iname, 2},
 	{{"ruri.domain", (sizeof("ruri.domain")-1)}, /* */
-		PVT_RURI_DOMAIN, pv_get_ruri_attr, 0,
+		PVT_RURI_DOMAIN, pv_get_ruri_attr, pv_set_ruri_host,
 		0, 0, pv_init_iname, 2},
 	{{"re", (sizeof("re")-1)}, /* */
 		PVT_RPID_URI, pv_get_rpid, 0,
@@ -2232,16 +2560,16 @@ static pv_export_t _pv_names_table[] = {
 		PVT_REFER_TO, pv_get_refer_to, 0,
 		0, 0, 0, 0},
 	{{"ru", (sizeof("ru")-1)}, /* */
-		PVT_RURI, pv_get_ruri, 0,
+		PVT_RURI, pv_get_ruri, pv_set_ruri,
 		0, 0, 0, 0},
 	{{"ruri", (sizeof("ruri")-1)}, /* */
-		PVT_RURI, pv_get_ruri, 0,
+		PVT_RURI, pv_get_ruri, pv_set_ruri,
 		0, 0, 0, 0},
 	{{"rU", (sizeof("rU")-1)}, /* */
-		PVT_RURI_USERNAME, pv_get_ruri_attr, 0,
+		PVT_RURI_USERNAME, pv_get_ruri_attr, pv_set_ruri_user,
 		0, 0, pv_init_iname, 1},
 	{{"ruri.user", (sizeof("ruri.user")-1)}, /* */
-		PVT_RURI_USERNAME, pv_get_ruri_attr, 0,
+		PVT_RURI_USERNAME, pv_get_ruri_attr, pv_set_ruri_user,
 		0, 0, pv_init_iname, 1},
 	{{"Ri", (sizeof("Ri")-1)}, /* */
 		PVT_RCVIP, pv_get_rcvip, 0,
@@ -3220,4 +3548,5 @@ int pv_free_extra_list(void)
 	
 	return 0;
 }
+
 

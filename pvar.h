@@ -67,6 +67,7 @@
 							&& !((pv)->pvp.pvn.u.isname.type&AVP_NAME_STR))
 #define pv_has_sname(pv) ((pv)->pvp.pvn.type==PV_NAME_INTSTR \
 							&& (pv)->pvp.pvn.u.isname.type&AVP_NAME_STR)
+#define pv_is_w(pv)	((pv)->setf!=NULL)
 
 enum _pv_type { 
 	PVT_NONE=0,           PVT_EMPTY,             PVT_NULL, 
@@ -105,48 +106,47 @@ typedef int pv_flags_t;
 
 typedef struct _pv_value
 {
-	str rs;
-	int ri;
-	int flags;
+	str rs;    /* string value */
+	int ri;    /* integer value */
+	int flags; /* flags about the type of value */
 } pv_value_t, *pv_value_p;
 
 typedef struct _pv_name
 {
-	int type;
+	int type;             /* type of name */
 	union {
 		struct {
-			int type;
-			int_str name;
+			int type;     /* type of int_str name - compatibility with AVPs */
+			int_str name; /* the value of the name */
 		} isname;
-		void *dname;
+		void *dname;      /* PV value - dynamic name */
 	} u;
 } pv_name_t, *pv_name_p;
 
 typedef struct _pv_index
 {
-	int type;
+	int type; /* type of PV index */
 	union {
-		int ival;
-		void *dval;
+		int ival;   /* integer value */
+		void *dval; /* PV value - dynamic index */
 	} u;
 } pv_index_t, *pv_index_p;
 
 typedef struct _pv_param
 {
-	pv_name_t    pvn;
-	pv_index_t   pvi;
+	pv_name_t    pvn; /* PV name */
+	pv_index_t   pvi; /* PV index */
 } pv_param_t, *pv_param_p;
 
 typedef int (*pv_getf_t) (struct sip_msg*,  pv_param_t*, pv_value_t*);
-typedef int (*pv_setf_t) (struct sip_msg*,  pv_param_t*, pv_value_t*);
+typedef int (*pv_setf_t) (struct sip_msg*,  pv_param_t*, int, pv_value_t*);
 
 typedef struct _pv_spec {
-	pv_type_t    type;
-	//pv_flags_t   flags;
-	pv_getf_t    getf;
-	pv_setf_t    setf;
-	pv_param_t   pvp;
-	void         *trans;
+	pv_type_t    type;   /* type of PV */
+	pv_getf_t    getf;   /* get PV value function */
+	pv_setf_t    setf;   /* set PV value function */
+	pv_param_t   pvp;    /* parameter to be given to get/set functions */
+	void         *trans; /* transformations */
 } pv_spec_t, *pv_spec_p;
 
 typedef int (*pv_parse_name_f)(pv_spec_p sp, str *in);

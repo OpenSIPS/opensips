@@ -1655,17 +1655,8 @@ assignexp :
 	;
 
 assign_cmd: script_var assignop assignexp {	
-			switch($1->type) {
-				case PVT_AVP:
-				case PVT_SCRIPTVAR:
-				case PVT_RURI:
-				case PVT_RURI_USERNAME:
-				case PVT_RURI_DOMAIN:
-				case PVT_DSTURI:
-				break;
-				default:
-					yyerror("invalid left operand in assignment");
-			}
+			if(!pv_is_w($1))
+				yyerror("invalid left operand in assignment");
 			if($1->trans!=0)
 				yyerror(
 					"transformations not accepted in right side of assignment");
@@ -1677,15 +1668,8 @@ assign_cmd: script_var assignop assignexp {
 					$3);
 		}
 	|  script_var EQUAL NULLV {
-			switch($1->type) {
-				case PVT_AVP:
-				case PVT_SCRIPTVAR:
-				case PVT_DSTURI:
-				case PVT_RURI_USERNAME:
-				break;
-				default:
-					yyerror("invalid left operand in NULL assignment");
-			}
+			if(!pv_is_w($1))
+				yyerror("invalid left operand in assignment");
 			if($1->trans!=0)
 				yyerror(
 					"transformations not accepted in right side of assignment");
@@ -1697,6 +1681,9 @@ assign_cmd: script_var assignop assignexp {
 					0);
 		}
 	|  script_var COLONEQ NULLV {
+			if(!pv_is_w($1))
+				yyerror("invalid left operand in assignment");
+			/* not all can get NULL with := */
 			switch($1->type) {
 				case PVT_AVP:
 				break;
