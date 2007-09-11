@@ -652,9 +652,6 @@ static int main_loop(void)
 	int  i;
 	pid_t pid;
 	struct socket_info* si;
-#ifdef USE_TCP
-	int sockfd[2];
-#endif
 
 	chd_rank=0;
 
@@ -775,15 +772,6 @@ static int main_loop(void)
 		for(si=udp_listen; si; si=si->next){
 			for(i=0;i<children_no;i++){
 				chd_rank++;
-				#ifdef USE_TCP
-				if(!tcp_disable){
-		 			if (socketpair(AF_UNIX, SOCK_STREAM, 0, sockfd)<0){
-						LM_ERR("socketpair failed: %s\n",
-							strerror(errno));
-						goto error;
-					}
-				}
-				#endif
 				if ( (pid=openser_fork( "UDP receiver"))<0 ) {
 					LM_CRIT("cannot fork UDP process\n");
 					goto error;
@@ -792,12 +780,6 @@ static int main_loop(void)
 					/* set a more detailed description */
 					set_proc_attrs("SIP receiver %.*s ",
 						si->sock_str.len, si->sock_str.s);
-					#ifdef USE_TCP
-					if (!tcp_disable){
-						close(sockfd[0]);
-						unix_tcp_sock=sockfd[1];
-					}
-					#endif
 					bind_address=si; /* shortcut */
 					if (init_child(chd_rank) < 0) {
 						LM_ERR("init_child failed for UDP listener\n");
@@ -806,12 +788,6 @@ static int main_loop(void)
 					udp_rcv_loop();
 					exit(-1);
 				}
-				#ifdef USE_TCP
-				if (!tcp_disable){
-					close(sockfd[1]);
-					pt[process_no].unix_sock=sockfd[0];
-				}
-				#endif
 			}
 			/*parent*/
 			/*close(udp_sock)*/; /*if it's closed=>sendto invalid fd errors?*/
@@ -823,15 +799,6 @@ static int main_loop(void)
 		for(si=sctp_listen; si; si=si->next){
 			for(i=0;i<children_no;i++){
 				chd_rank++;
-				#ifdef USE_TCP
-				if(!tcp_disable){
-					if (socketpair(AF_UNIX, SOCK_STREAM, 0, sockfd)<0){
-						LM_ERR("socketpair failed: %s\n",
-							strerror(errno));
-						goto error;
-					}
-				}
-				#endif
 				if ( (pid=openser_fork( "SCTP receiver"))<0 ) {
 					LM_CRIT("cannot fork SCTP process\n");
 					goto error;
@@ -840,12 +807,6 @@ static int main_loop(void)
 					/* set a more detailed description */
 					set_proc_attrs("SIP receiver %.*s ",
 						si->sock_str.len, si->sock_str.s);
-					#ifdef USE_TCP
-					if (!tcp_disable){
-						close(sockfd[0]);
-						unix_tcp_sock=sockfd[1];
-					}
-					#endif
 					bind_address=si; /* shortcut */
 					if (init_child(chd_rank) < 0) {
 						LM_ERR("init_child failed\n");
@@ -854,12 +815,6 @@ static int main_loop(void)
 					sctp_server_rcv_loop();
 					exit(-1);
 				}
-				#ifdef USE_TCP
-				if (!tcp_disable){
-					close(sockfd[1]);
-					pt[process_no].unix_sock=sockfd[0];
-				}
-				#endif
 			}
 		}
 	}
@@ -868,28 +823,11 @@ static int main_loop(void)
 	/* this is the main process -> it shouldn't send anything */
 	bind_address=0;
 
-	// FIXME - is TCP really using the timer process
-	#ifdef USE_TCP
-	if (!tcp_disable){
- 		if (socketpair(AF_UNIX, SOCK_STREAM, 0, sockfd)<0){
-			LM_ERR("socketpair failed: %s\n",
-				strerror(errno));
-			goto error;
-		}
-	}
-	#endif
 	/* fork for the timer process*/
 	if (start_timer_processes()!=0) {
 		LM_CRIT("cannot start timer process(es)\n");
 		goto error;
 	}
-	#ifdef USE_TCP
-	// FIXME!!!!!
-	if(!tcp_disable){
-		close(sockfd[1]);
-		pt[process_no].unix_sock=sockfd[0];
-	}
-	#endif
 
 	#ifdef USE_TCP
 	if (!tcp_disable){
@@ -901,6 +839,11 @@ static int main_loop(void)
 			goto error;
 		}else if (pid==0){
 			/* child */
+			/* close the TCP inter-process sockets */
+			close(unix_tcp_sock);
+			unix_tcp_sock = -1;
+			pt[process_no].unix_sock = -1;
+			/* init modules */
 			if (init_child(PROC_TCP_MAIN) < 0) {
 				LM_ERR("error in init_child for tcp main\n");
 				goto error;

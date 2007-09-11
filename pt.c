@@ -51,6 +51,9 @@ int init_multi_proc_support(void)
 {
 	unsigned short proc_no;
 	struct socket_info* si;
+	#ifdef USE_TCP
+	unsigned int i;
+	#endif
 
 	proc_no = 0;
 
@@ -87,6 +90,13 @@ int init_multi_proc_support(void)
 	}
 	memset(pt, 0, sizeof(struct process_table)*proc_no);
 
+	#ifdef USE_TCP
+	for( i=0 ; i<proc_no ; i++ ) {
+		pt[i].unix_sock = -1;
+		pt[i].idx = -1;
+	}
+	#endif
+
 	/* set the pid for the starter process */
 	set_proc_attrs("starter");
 
@@ -107,16 +117,6 @@ void set_proc_attrs( char *fmt, ...)
 
 	/* pid */
 	pt[process_no].pid=getpid();
-
-	/* disable all TCP attrs by default */
-	#ifdef USE_TCP
-	if(!tcp_disable){
-		pt[process_no].unix_sock=-1;
-		pt[process_no].idx=-1; /* this is not a "tcp" process*/
-		unix_tcp_sock=-1;
-	}
-	#endif
-
 }
 
 
@@ -129,6 +129,9 @@ pid_t openser_fork(char *proc_desc)
 	static int process_counter = 1;
 	pid_t pid;
 	unsigned int seed;
+	#ifdef USE_TCP
+	int sockfd[2];
+	#endif
 
 	if (process_counter==CHILD_COUNTER_STOP) {
 		LM_CRIT("buggy call from non-main process!!!");
@@ -138,6 +141,15 @@ pid_t openser_fork(char *proc_desc)
 	seed = rand();
 
 	LM_DBG("forking new process \"%s\"\n",proc_desc);
+
+	#ifdef USE_TCP
+	if(!tcp_disable){
+		if (socketpair(AF_UNIX, SOCK_STREAM, 0, sockfd)<0){
+			LM_ERR("socketpair failed: %s\n", strerror(errno));
+			return -1;
+		}
+	}
+	#endif
 
 	if ( (pid=fork())<0 ){
 		LM_CRIT("cannot fork \"%s\" process\n",proc_desc);
@@ -155,11 +167,25 @@ pid_t openser_fork(char *proc_desc)
 		seed_child(seed);
 		/* set attributes */
 		set_proc_attrs(proc_desc);
+		/* set TCP communication */
+		#ifdef USE_TCP
+		if (!tcp_disable){
+			close(sockfd[0]);
+			unix_tcp_sock=sockfd[1];
+			pt[process_no].unix_sock=sockfd[0];
+		}
+		#endif
 		return 0;
 	}else{
 		/* parent process */
 		pt[process_counter].pid = pid;
 		process_counter++;
+		#ifdef USE_TCP
+		if (!tcp_disable)
+			close(sockfd[1]);
+		#endif
 		return pid;
 	}
 }
+
+
