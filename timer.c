@@ -297,8 +297,10 @@ static inline void utimer_ticker(struct sr_timer *utimer_list)
 
 
 
-static void run_timer_process(struct sr_timer_process *tpl)
+static void run_timer_process(struct sr_timer_process *tpl, int do_jiffies)
 {
+	unsigned int local_jiffies=0;
+	utime_t      local_ujiffies=0;
 	unsigned int multiple;
 	unsigned int cnt;
 	struct timeval o_tv;
@@ -316,6 +318,11 @@ static void run_timer_process(struct sr_timer_process *tpl)
 
 	LM_DBG("tv = %ld, %ld , m=%d\n",
 		o_tv.tv_sec,o_tv.tv_usec,multiple);
+
+	if (!do_jiffies) {
+		jiffies = &local_jiffies;
+		ujiffies = &local_ujiffies;
+	}
 
 	if (tpl->utimer_list==NULL) {
 		for( ; ; ) {
@@ -360,8 +367,9 @@ int start_timer_processes(void)
 {
 	struct sr_timer_process *tpl;
 	pid_t pid;
+	unsigned int first;
 
-	for( tpl=timer_proc_list; tpl ; tpl=tpl->next ) {
+	for( tpl=timer_proc_list, first=1 ; tpl ; tpl=tpl->next,first=0 ) {
 		if (tpl->timer_list==NULL && tpl->utimer_list==NULL)
 			continue;
 		/* fork a new process */
@@ -375,7 +383,7 @@ int start_timer_processes(void)
 				LM_ERR("init_child failed for timer proc\n");
 				goto error;
 			}
-			run_timer_process( tpl );
+			run_timer_process( tpl, first);
 			exit(-1);
 		}
 	}
