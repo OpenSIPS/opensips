@@ -42,6 +42,7 @@
 #include "trim.h" 
 #include "dset.h"
 #include "action.h"
+#include "socket_info.h"
 #include "route_struct.h"
 #include "usr_avp.h"
 #include "errinfo.h"
