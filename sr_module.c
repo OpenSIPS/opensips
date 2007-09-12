@@ -283,8 +283,9 @@ cmd_function find_export(char* name, int param_no, int flags)
 
 
 /* searches the module list and returns pointer to the "name" cmd_export_t
- * structure or 0 if not found 
- * flags parameter is OR value of all flags that must match
+ * structure or 0 if not found
+ * In order to find the module the name, flags parameter number and type and
+ * the value of all flags in the config must match to the module export
  */
 cmd_export_t* find_cmd_export_t(char* name, int param_no, int flags)
 {
