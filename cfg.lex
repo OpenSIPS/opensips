@@ -150,6 +150,7 @@ SWITCH			"switch"
 CASE			"case"
 DEFAULT			"default"
 SBREAK			"break"|"esac"
+WHILE			"while"
 SET_ADV_ADDRESS	"set_advertised_address"
 SET_ADV_PORT	"set_advertised_port"
 FORCE_SEND_SOCKET	"force_send_socket"
@@ -287,6 +288,7 @@ TOS					"tos"
 DISABLE_DNS_FAILOVER  "disable_dns_failover"
 DISABLE_DNS_BLACKLIST "disable_dns_blacklist"
 DST_BLACKLIST		"dst_blacklist"
+MAX_WHILE_LOOPS "max_while_loops"
 
 MPATH	mpath
 LOADMODULE	loadmodule
@@ -399,6 +401,7 @@ WHITESPACE	[ \t\r\n]
 <INITIAL>{CASE}		{ count(); yylval.strval=yytext; return CASE; }
 <INITIAL>{DEFAULT}	{ count(); yylval.strval=yytext; return DEFAULT; }
 <INITIAL>{SBREAK}	{ count(); yylval.strval=yytext; return SBREAK; }
+<INITIAL>{WHILE}	{ count(); yylval.strval=yytext; return WHILE; }
 
 <INITIAL>{SET_ADV_ADDRESS}	{ count(); yylval.strval=yytext;
 										return SET_ADV_ADDRESS; }
@@ -449,6 +452,8 @@ WHITESPACE	[ \t\r\n]
 <INITIAL>{DNS_USE_SEARCH}	{ count(); yylval.strval=yytext;
 								return DNS_USE_SEARCH; }
 <INITIAL>{PORT}	{ count(); yylval.strval=yytext; return PORT; }
+<INITIAL>{MAX_WHILE_LOOPS}	{ count(); yylval.strval=yytext;
+								return MAX_WHILE_LOOPS; }
 <INITIAL>{MAXBUFFER}	{ count(); yylval.strval=yytext; return MAXBUFFER; }
 <INITIAL>{CHILDREN}	{ count(); yylval.strval=yytext; return CHILDREN; }
 <INITIAL>{CHECK_VIA}	{ count(); yylval.strval=yytext; return CHECK_VIA; }

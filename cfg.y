@@ -225,6 +225,7 @@ extern int line;
 %token CASE
 %token DEFAULT
 %token SBREAK
+%token WHILE
 %token SET_ADV_ADDRESS
 %token SET_ADV_PORT
 %token FORCE_SEND_SOCKET
@@ -277,6 +278,7 @@ extern int line;
 %token DNS_RETR_NO
 %token DNS_SERVERS_NO
 %token DNS_USE_SEARCH
+%token MAX_WHILE_LOOPS
 %token PORT
 %token CHILDREN
 %token CHECK_VIA
@@ -394,7 +396,7 @@ extern int line;
 
 /*non-terminals */
 %type <expr> exp exp_elem exp_cond assignexp /*, condition*/
-%type <action> action actions cmd if_cmd stm exp_stm assign_cmd
+%type <action> action actions cmd if_cmd stm exp_stm assign_cmd while_cmd
 %type <action> switch_cmd switch_stm case_stms case_stm default_stm
 %type <ipaddr> ipv4 ipv6 ipv6addr ip
 %type <ipnet> ipnet
@@ -578,9 +580,11 @@ assign_stm: DEBUG EQUAL NUMBER {
 		| DNS_USE_SEARCH EQUAL NUMBER   { dns_search_list=$3; }
 		| DNS_USE_SEARCH error { yyerror("boolean value expected"); }
 		| PORT EQUAL NUMBER   { port_no=$3; }
+		| PORT EQUAL error    { yyerror("number expected"); } 
+		| MAX_WHILE_LOOPS EQUAL NUMBER { max_while_loops=$3; }
+		| MAX_WHILE_LOOPS EQUAL error { yyerror("number expected"); } 
 		| MAXBUFFER EQUAL NUMBER { maxbuffer=$3; }
 		| MAXBUFFER EQUAL error { yyerror("number expected"); }
-		| PORT EQUAL error    { yyerror("number expected"); } 
 		| CHILDREN EQUAL NUMBER { children_no=$3; }
 		| CHILDREN EQUAL error { yyerror("number expected"); } 
 		| CHECK_VIA EQUAL NUMBER { check_via=$3; }
@@ -1721,6 +1725,7 @@ actions:	actions action	{$$=append_action($1, $2); }
 
 action:		cmd SEMICOLON {$$=$1;}
 		| if_cmd {$$=$1;}
+		| while_cmd { $$=$1;}
 		| switch_cmd {$$=$1;}
 		| assign_cmd SEMICOLON {$$=$1;}
 		| SEMICOLON /* null action */ {$$=0;}
@@ -1744,6 +1749,13 @@ if_cmd:		IF exp stm				{ mk_action3( $$, IF_T,
 													 $5);
 									}
 
+	;
+while_cmd:		WHILE exp stm				{ mk_action2( $$, WHILE_T,
+													 EXPR_ST,
+													 ACTIONS_ST,
+													 $2,
+													 $3);
+									}
 	;
 
 switch_cmd:		SWITCH LPAREN script_var RPAREN LBRACE switch_stm	RBRACE	{

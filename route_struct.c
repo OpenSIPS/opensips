@@ -470,6 +470,9 @@ void print_action(struct action* t)
 		case IF_T:
 				DBG("if (");
 				break;
+		case WHILE_T:
+				DBG("while (");
+				break;
 		case MODULE_T:
 				DBG(" external_module_call(");
 				break;

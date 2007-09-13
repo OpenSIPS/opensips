@@ -80,6 +80,7 @@
 
 int action_flags = 0;
 int return_code  = 0;
+int max_while_loops = 100;
 
 static int rec_lev=0;
 
@@ -694,6 +695,51 @@ int do_action(struct action* a, struct sip_msg* msg)
 								(struct action*)a->elem[2].u.data,msg);
 							return_code = ret;
 						} else return_code = v;
+					}
+				}
+			break;
+		case WHILE_T:
+				/* if null expr => ignore if? */
+				if ((a->elem[0].type==EXPR_ST)&&a->elem[0].u.data){
+					len = 0;
+					while(1)
+					{
+						if(len++ >= max_while_loops)
+						{
+							LM_INFO("max while loops are encountered\n");
+							break;
+						}
+						v=eval_expr((struct expr*)a->elem[0].u.data, msg, 0);
+						/* set return code to expr value */
+						if (v<0 || (action_flags&ACT_FL_RETURN)
+								|| (action_flags&ACT_FL_EXIT) ){
+							if (v==EXPR_DROP || (action_flags&ACT_FL_RETURN)
+									|| (action_flags&ACT_FL_EXIT) ){
+								ret=0;
+								return_code = 0;
+								break;
+							}else{
+								LM_WARN("error in expression\n");
+							}
+						}
+					
+						ret=1;  /*default is continue */
+						if (v>0) {
+							if ((a->elem[1].type==ACTIONS_ST)
+									&&a->elem[1].u.data){
+								ret=run_action_list(
+										(struct action*)a->elem[1].u.data,msg );
+								return_code = ret;
+							} else {
+								/* we should not get here */
+								return_code = v;
+								break;
+							}
+						} else {
+							/* condition was false */
+							return_code = v;
+							break;
+						}
 					}
 				}
 			break;

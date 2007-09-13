@@ -158,4 +158,6 @@ extern int dns_retr_no;
 extern int dns_servers_no;
 extern int dns_search_list;
 
+extern int max_while_loops;
+
 #endif

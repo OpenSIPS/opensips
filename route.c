@@ -256,6 +256,28 @@ static int fix_actions(struct action* a)
 						return ret;
 				}
 				break;
+			case WHILE_T:
+				if (t->elem[0].type!=EXPR_ST){
+					LOG(L_CRIT, "BUG: fix_actions: invalid subtype"
+								"%d for while (should be expr)\n",
+								t->elem[0].type);
+					return E_BUG;
+				}else if( (t->elem[1].type!=ACTIONS_ST)
+						&&(t->elem[1].type!=NOSUBTYPE) ){
+					LOG(L_CRIT, "BUG: fix_actions: invalid subtype"
+								"%d for while() {...} (should be action)\n",
+								t->elem[1].type);
+					return E_BUG;
+				}
+				if (t->elem[0].u.data){
+					if ((ret=fix_expr((struct expr*)t->elem[0].u.data))<0)
+						return ret;
+				}
+				if ( (t->elem[1].type==ACTIONS_ST)&&(t->elem[1].u.data) ){
+					if ((ret=fix_actions((struct action*)t->elem[1].u.data))<0)
+						return ret;
+				}
+				break;
 			case SWITCH_T:
 				if ( (t->elem[1].type==ACTIONS_ST)&&(t->elem[1].u.data) ){
 					if ((ret=fix_actions((struct action*)t->elem[1].u.data))<0)
@@ -1516,6 +1538,10 @@ static int check_actions(struct action *a, int r_type)
 				if (check_actions((struct action*)a->elem[1].u.data, r_type)!=0)
 					goto error;
 				if (check_actions((struct action*)a->elem[2].u.data, r_type)!=0)
+					goto error;
+				break;
+			case WHILE_T:
+				if (check_actions((struct action*)a->elem[1].u.data, r_type)!=0)
 					goto error;
 				break;
 			case SWITCH_T:
