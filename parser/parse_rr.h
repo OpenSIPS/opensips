@@ -83,7 +83,7 @@ int duplicate_rr(rr_t** _new, rr_t* _r);
 
 
 /*
- * Duplicate a single rr_t structure using pkg_malloc
+ * Duplicate a single rr_t structure using shm_malloc
  */
 int shm_duplicate_rr(rr_t** _new, rr_t* _r);
 
@@ -92,5 +92,11 @@ int shm_duplicate_rr(rr_t** _new, rr_t* _r);
  */
 int print_rr_body(struct hdr_field *iroute, str *oroute, int order,
 		unsigned int * nb_recs);
+
+/*
+ * Function returns the first uri 
+ * from Path without any duplication.
+ */
+int get_path_dst_uri(str *_p, str *_dst);
 
 #endif /* PARSE_RR_H */
