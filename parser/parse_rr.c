@@ -446,7 +446,7 @@ error:
 
 /*
  * Path must be available. Function returns the first uri 
- * from Path without any dupication.
+ * from Path without any duplication.
  */
 int get_path_dst_uri(str *_p, str *_dst)
 {
