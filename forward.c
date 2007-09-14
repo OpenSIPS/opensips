@@ -91,35 +91,32 @@ struct socket_info* get_out_socket(union sockaddr_union* to, int proto)
 	struct ip_addr ip;
 
 	if (proto!=PROTO_UDP) {
-		LOG(L_CRIT, "BUG:get_out_socket: can only be called for UDP\n");
+		LM_CRIT("can only be called for UDP\n");
 		return 0;
 	}
 	
 	temp_sock=socket(to->s.sa_family, SOCK_DGRAM, 0 );
 	if (temp_sock==-1) {
-		LOG(L_ERR, "ERROR:get_out_socket: socket() failed: %s\n",
-				strerror(errno));
+		LM_ERR("socket() failed: %s\n", strerror(errno));
 		return 0;
 	}
 	if (connect(temp_sock, &to->s, sockaddru_len(*to))==-1) {
-		LOG(L_ERR, "ERROR:get_out_socket: connect failed: %s\n",
-				strerror(errno));
+		LM_ERR("connect failed: %s\n", strerror(errno));
 		goto error;
 	}
 	len=sizeof(from);
 	if (getsockname(temp_sock, &from.s, &len)==-1) {
-		LOG(L_ERR, "ERROR:get_out_socket: getsockname failed: %s\n",
-				strerror(errno));
+		LM_ERR("getsockname failed: %s\n", strerror(errno));
 		goto error;
 	}
 	su2ip_addr(&ip, &from);
 	si=find_si(&ip, 0, proto);
 	if (si==0) goto error;
 	close(temp_sock);
-	DBG("DEBUG:get_out_socket: socket determined: %p\n", si );
+	LM_DBG("socket determined: %p\n", si );
 	return si;
 error:
-	LOG(L_ERR, "ERROR:get_out_socket: no socket found\n");
+	LM_ERR("no socket found\n");
 	close(temp_sock);
 	return 0;
 }
@@ -139,8 +136,7 @@ struct socket_info* get_send_socket(struct sip_msg *msg,
 	/* check if send interface is not forced */
 	if (msg && msg->force_send_socket){
 		if (msg->force_send_socket->proto!=proto){
-			DBG("DEBUG:get_send_socket: force_send_socket of different proto"
-					" (%d)!\n", proto);
+			LM_DBG("force_send_socket of different proto (%d)!\n", proto);
 			msg->force_send_socket=find_si(&(msg->force_send_socket->address),
 											msg->force_send_socket->port_no,
 											proto);
@@ -149,11 +145,9 @@ struct socket_info* get_send_socket(struct sip_msg *msg,
 			return msg->force_send_socket;
 		else{
 			if (msg->force_send_socket && msg->force_send_socket->socket==-1)
-				LOG(L_WARN, "WARNING:get_send_socket: not listening"
-						 " on the requested socket, no fork mode?\n");
+				LM_WARN("not listening on the requested socket, no fork mode?\n");
 			else
-				LOG(L_WARN, "WARNING:get_send_socket: "
-						"protocol/port mismatch\n");
+				LM_WARN("protocol/port mismatch\n");
 		}
 	};
 
@@ -162,8 +156,7 @@ struct socket_info* get_send_socket(struct sip_msg *msg,
 		if ((send_sock==0) || (send_sock->socket!=-1))
 			return send_sock; /* found or error*/
 		else if (send_sock->socket==-1){
-			LOG(L_WARN, "WARNING: get_send_socket: not listening on the"
-					" requested socket, no fork mode?\n");
+			LM_WARN("not listening on the requested socket, no fork mode?\n");
 			/* continue: try to use some socket */
 		}
 	}
@@ -185,8 +178,8 @@ struct socket_info* get_send_socket(struct sip_msg *msg,
 				case AF_INET6:	send_sock=sendipv6_tcp;
 								break;
 #endif
-				default:	LOG(L_ERR, "BUG:get_send_socket: don't know how"
-									" to forward to af %d\n", to->s.sa_family);
+				default:	LM_ERR("don't know how to forward to af %d\n", 
+								to->s.sa_family);
 			}
 			break;
 #endif
@@ -200,7 +193,7 @@ struct socket_info* get_send_socket(struct sip_msg *msg,
 				case AF_INET6:	send_sock=sendipv6_tls;
 								break;
 #endif
-				default:	LOG(L_ERR, "BUG:get_send_socket: don't know how"
+				default:	LM_ERR("don't know how"
 									" to forward to af %d\n", to->s.sa_family);
 			}
 			break;
@@ -214,8 +207,8 @@ struct socket_info* get_send_socket(struct sip_msg *msg,
 				case AF_INET6:	send_sock=sendipv6_sctp;
 								break;
 #endif
-				default:	LOG(L_ERR, "BUG:get_send_socket: don't know how"
-									" to forward to af %d\n", to->s.sa_family);
+				default:	LM_ERR("don't know how to forward to af %d\n", 
+								to->s.sa_family);
 			}
 			break;
 #endif /* USE_SCTP */
@@ -229,14 +222,13 @@ struct socket_info* get_send_socket(struct sip_msg *msg,
 					case AF_INET6:	send_sock=sendipv6;
 									break;
 #endif
-					default:	LOG(L_ERR, "BUG:get_send_socket: don't know"
-										" how to forward to af %d\n",
+					default:	LM_ERR("don't know how to forward to af %d\n",
 										to->s.sa_family);
 				}
 			}else send_sock=bind_address;
 			break;
 		default:
-			LOG(L_CRIT, "BUG:get_send_socket: unknown proto %d\n", proto);
+			LM_CRIT("unknown proto %d\n", proto);
 	}
 	return send_sock;
 }
@@ -255,7 +247,7 @@ int check_self(str* host, unsigned short port, unsigned short proto)
 	if (grep_sock_info(host, port, proto)) goto found;
 	/* try to look into the aliases*/
 	if (grep_aliases(host->s, host->len, port, proto)==0){
-		DBG("DEBUG:check_self: host != me\n");
+		LM_DBG("host != me\n");
 		return 0;
 	}
 found:
@@ -295,7 +287,7 @@ static inline str* get_sl_branch(struct sip_msg* msg)
 
 		if (!via_parsed) {
 			if ( parse_headers(msg,HDR_EOH_F,0)<0 ) {
-				LOG(L_ERR,"ERROR:get_sl_branch: failed to parse all hdrs\n");
+				LM_ERR("failed to parse all hdrs\n");
 				return 0;
 			}
 			via_parsed = 1;
@@ -335,7 +327,7 @@ int forward_request( struct sip_msg* msg, struct proxy_l * p)
 	if ( msg->add_to_branch_len==0 ) {
 		branch = get_sl_branch(msg);
 		if (branch==0) {
-			LOG(L_ERR,"ERROR:forward_request: unable to compute branch\n");
+			LM_ERR("unable to compute branch\n");
 			goto error;
 		}
 		msg->add_to_branch_len = branch->len;
@@ -348,9 +340,8 @@ int forward_request( struct sip_msg* msg, struct proxy_l * p)
 	do {
 		send_sock=get_send_socket( msg, &to, p->proto);
 		if (send_sock==0){
-			LOG(L_ERR, "ERROR:forward_request: cannot forward to af %d, "
-				"proto %d no corresponding listening socket\n",
-				to.s.sa_family, p->proto);
+			LM_ERR("cannot forward to af %d, proto %d no corresponding"
+				"listening socket\n", to.s.sa_family, p->proto);
 			ser_error=E_NO_SOCKET;
 			continue;
 		}
@@ -362,7 +353,7 @@ int forward_request( struct sip_msg* msg, struct proxy_l * p)
 
 			buf = build_req_buf_from_sip_req( msg, &len, send_sock, p->proto);
 			if (!buf){
-				LOG(L_ERR, "ERROR:forward_request: building req buf failed\n");
+				LM_ERR("building req buf failed\n");
 				goto error;
 			}
 
@@ -370,14 +361,14 @@ int forward_request( struct sip_msg* msg, struct proxy_l * p)
 		}
 
 		if (check_blacklists( p->proto, &to, buf, len)) {
-			DBG("DEBUG:forward_request: blocked by blacklists\n");
+			LM_DBG("blocked by blacklists\n");
 			ser_error=E_IP_BLOCKED;
 			continue;
 		}
 
 		/* send it! */
-		DBG("DEBUG:forward_request: sending:\n%.*s.\n", (int)len, buf);
-		DBG("DEBUG:forward_request: orig. len=%d, new_len=%d, proto=%d\n",
+		LM_DBG("sending:\n%.*s.\n", (int)len, buf);
+		LM_DBG("orig. len=%d, new_len=%d, proto=%d\n",
 			msg->len, len, p->proto );
 
 		if (msg_send(send_sock, p->proto, &to, 0, buf, len)<0){
@@ -434,11 +425,11 @@ int update_sock_struct_from_via( union sockaddr_union* to,
 	}else{
 		/* "normal" reply, we use rport's & received value if present */
 		if (via->rport && via->rport->value.s){
-			DBG("DEBUG:update_sock_struct_from_via: using 'rport'\n");
+			LM_DBG("using 'rport'\n");
 			port=str2s(via->rport->value.s, via->rport->value.len, &err);
 			if (err){
-				LOG(L_NOTICE, "ERROR:update_sock_struct_from_via: bad rport "
-					"value(%.*s)\n",via->rport->value.len,via->rport->value.s);
+				LM_NOTICE("bad rport value(%.*s)\n",
+					via->rport->value.len,via->rport->value.s);
 				port=0;
 			}
 		}
@@ -447,22 +438,21 @@ int update_sock_struct_from_via( union sockaddr_union* to,
 			name= &(via->maddr->value);
 			if (port==0) port=via->port?via->port:SIP_PORT; 
 		} else if (via->received){
-			DBG("DEBUG:update_sock_struct_from_via: using 'received'\n");
+			LM_DBG("using 'received'\n");
 			name=&(via->received->value);
 			/* making sure that we won't do SRV lookup on "received" */
 			if (port==0) port=via->port?via->port:SIP_PORT; 
 		}else{
-			DBG("DEBUG:update_sock_struct_from_via: using via host\n");
+			LM_DBG("using via host\n");
 			name=&(via->host);
 			if (port==0) port=via->port;
 		}
 	}
-	DBG("DEBUG:update_sock_struct_from_via: trying SRV lookup\n");
+	LM_DBG("trying SRV lookup\n");
 	he=sip_resolvehost(name, &port, &via->proto, 0, 0);
 
 	if (he==0){
-		LOG(L_NOTICE, "DEBUG:forward_reply:resolve_host(%.*s) failure\n",
-				name->len, name->s);
+		LM_NOTICE("resolve_host(%.*s) failure\n", name->len, name->s);
 		return -1;
 	}
 		
@@ -495,9 +485,8 @@ int forward_reply(struct sip_msg* msg)
 		if (check_self(&msg->via1->host,
 					msg->via1->port?msg->via1->port:SIP_PORT,
 					msg->via1->proto)!=1){
-			LOG(L_NOTICE, "ERROR:forward_reply: host in first via!=me :"
-					" %.*s:%d\n", msg->via1->host.len, msg->via1->host.s,
-									msg->via1->port);
+			LM_ERR("host in first via!=me : %.*s:%d\n", 
+				msg->via1->host.len, msg->via1->host.s,	msg->via1->port);
 			/* send error msg back? */
 			goto error;
 		}
@@ -505,7 +494,7 @@ int forward_reply(struct sip_msg* msg)
 	/* quick hack, slower for multiple modules*/
 	for (mod=modules;mod;mod=mod->next){
 		if ((mod->exports) && (mod->exports->response_f)){
-			DBG("DEBUG:forward_reply: found module %s, passing reply to it\n",
+			LM_DBG("found module %s, passing reply to it\n",
 					mod->exports->name);
 			if (mod->exports->response_f(msg)==0) goto skip;
 		}
@@ -516,19 +505,19 @@ int forward_reply(struct sip_msg* msg)
 		|| (msg->via2==0) || (msg->via2->error!=PARSE_OK))
 	{
 		/* no second via => error */
-		LOG(L_ERR, "ERROR:forward_reply: no 2nd via found in reply\n");
+		LM_ERR("no 2nd via found in reply\n");
 		goto error;
 	}
 
 	to=(union sockaddr_union*)pkg_malloc(sizeof(union sockaddr_union));
 	if (to==0){
-		LOG(L_ERR, "ERROR:forward_reply: out of pkg memory\n");
+		LM_ERR("out of pkg memory\n");
 		goto error;
 	}
 
 	new_buf = build_res_buf_from_sip_res( msg, &new_len);
 	if (!new_buf){
-		LOG(L_ERR, "ERROR:forward_reply: building rpl from req failed\n");
+		LM_ERR("failed to build rpl from req failed\n");
 		goto error;
 	}
 
@@ -558,9 +547,8 @@ int forward_reply(struct sip_msg* msg)
 	}
 	update_stat( fwd_rpls, 1);
 
-	DBG("DEBUG:forward_reply: reply forwarded to %.*s:%d\n", 
-			msg->via2->host.len, msg->via2->host.s,
-			(unsigned short) msg->via2->port);
+	LM_DBG("reply forwarded to %.*s:%d\n", msg->via2->host.len, 
+		msg->via2->host.s, (unsigned short) msg->via2->port);
 
 	pkg_free(new_buf);
 	pkg_free(to);

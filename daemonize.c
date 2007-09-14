@@ -326,7 +326,7 @@ int set_core_dump(int enable, unsigned int size)
 				LM_CRIT("could increase core limits at all: %s\n",
 					strerror (errno));
 			}else{
-				LOG(L_CRIT, "core limits increased only to %lu\n",
+				LM_CRIT("core limits increased only to %lu\n",
 					(unsigned long)lim.rlim_max);
 			}
 			goto error; /* it's an error we haven't got the size we wanted*/

@@ -50,13 +50,17 @@ int run_transformations(struct sip_msg *msg, trans_t *tr, pv_value_t *val)
 	trans_t *it;
 	int ret = 0;
 
-	if(tr==NULL || val==NULL)
+	if(tr==NULL || val==NULL){
+		
+		LM_DBG("null pointer\n");
 		return -1;
+	}
 	
 	it = tr;
 	while(it)
 	{
 		ret = (*it->trf)(msg, it->params, it->subtype, val);
+		LM_DBG("return val is %i\n", ret);
 		if(ret!=0)
 			return ret;
 		it = it->next;

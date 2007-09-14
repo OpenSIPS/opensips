@@ -211,7 +211,7 @@ void get_reply_status( str *status, struct sip_msg *reply, int code )
 	status->s=0;
 
 	if (reply==0) {
-		LOG(L_CRIT, "BUG: get_reply_status called with 0 msg\n");
+		LM_CRIT("called with 0 msg\n");
 		return;
 	}
 
@@ -224,7 +224,7 @@ void get_reply_status( str *status, struct sip_msg *reply, int code )
 	status->len=phrase.len+3/*code*/+1/*space*/; 
 	status->s=pkg_malloc(status->len+1/*ZT */);
 	if (!status->s) {
-		LOG(L_ERR, "ERROR: get_reply_status: no mem\n");
+		LM_ERR("no pkg mem\n");
 		return;
 	}
 	status->s[3]=' ';

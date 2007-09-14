@@ -47,7 +47,7 @@ void init_err_info(void)
  */
 void set_err_info(int ec, int el, char *info)
 {
-	DBG("set_err_info: ec: %d, el: %d, ei: '%s'\n", ec, el,
+	LM_DBG("ec: %d, el: %d, ei: '%s'\n", ec, el,
 			(info)?info:"");
 	_oser_err_info.eclass = ec;
 	_oser_err_info.level = el;

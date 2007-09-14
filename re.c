@@ -222,8 +222,7 @@ struct subst_expr* subst_parser(str* subst)
 	cflags=REG_EXTENDED  | REG_NEWLINE; /* don't match newline */
 	replace_all=0;
 	if (subst->len<3){
-		LOG(L_ERR, "ERROR: subst_parser: expression is too short: %.*s\n",
-				subst->len, subst->s);
+		LM_ERR("expression is too short: %.*s\n", subst->len, subst->s);
 		goto error;
 	}
 	
@@ -232,8 +231,8 @@ struct subst_expr* subst_parser(str* subst)
 
 	c=*p;
 	if (c=='\\'){
-		LOG(L_ERR, "ERROR: subst_parser: invalid separator char <%c>"
-				" in %.*s\n", c, subst->len, subst->s);
+		LM_ERR("invalid separator char <%c> in %.*s\n", c, 
+				subst->len, subst->s);
 		goto error;
 	}
 	p++;
@@ -244,8 +243,7 @@ struct subst_expr* subst_parser(str* subst)
 		/* if unescaped sep. char */
 		if ((*p==c) && (*(p-1)!='\\')) goto found_re;
 	}
-	LOG(L_ERR, "ERROR: subst_parser: no separator found: %.*s\n", subst->len, 
-			subst->s);
+	LM_ERR("no separator found: %.*s\n", subst->len, subst->s);
 	goto error;
 found_re:
 	re_end=p;
@@ -273,15 +271,14 @@ found_re:
 				replace_all=1;
 				break;
 			default:
-				LOG(L_ERR, "ERROR: subst_parser: unknown flag %c in %.*s\n",
-						*p, subst->len, subst->s);
+				LM_ERR("unknown flag %c in %.*s\n",	*p, subst->len, subst->s);
 				goto error;
 		}
 	}
 
 	/* compile the re */
 	if ((regex=pkg_malloc(sizeof(regex_t)))==0){
-		LOG(L_ERR, "ERROR: subst_parser: out of memory (re)\n");
+		LM_ERR("out of pkg memory (re)\n");
 		goto error;
 	}
 	c=*re_end; /* regcomp expects null terminated strings -- save */
@@ -289,8 +286,8 @@ found_re:
 	if (regcomp(regex, re, cflags)!=0){
 		pkg_free(regex);
 		*re_end=c; /* restore */
-		LOG(L_ERR, "ERROR: subst_parser: bad regular expression %.*s in "
-				"%.*s\n", (int)(re_end-re), re, subst->len, subst->s);
+		LM_ERR("bad regular expression %.*s in %.*s\n", 
+				(int)(re_end-re), re, subst->len, subst->s);
 		goto error;
 	}
 	*re_end=c; /* restore */
@@ -299,14 +296,14 @@ found_re:
 					((rw_no)?(rw_no-1)*sizeof(struct replace_with):0));
 		/* 1 replace_with structure is  already included in subst_expr */
 	if (se==0){
-		LOG(L_ERR, "ERROR: subst_parser: out of memory (subst_expr)\n");
+		LM_ERR("out of pkg memory (subst_expr)\n");
 		goto error;
 	}
 	memset((void*)se, 0, sizeof(struct subst_expr));
 
 	se->replacement.len=repl_end-repl;
 	if ((se->replacement.s=pkg_malloc(se->replacement.len))==0){
-		LOG(L_ERR, "ERROR: subst_parser: out of memory (replacement)\n");
+		LM_ERR("out of pkg memory (replacement)\n");
 		goto error;
 	}
 
@@ -317,7 +314,7 @@ found_re:
 	se->n_escapes=rw_no;
 	se->max_pmatch=max_pmatch;
 	for (r=0; r<rw_no; r++) se->replace[r]=rw[r];
-	DBG("subst_parser: ok, se is %p\n", se);
+	LM_DBG("ok, se is %p\n", se);
 	return se;
 	
 error:
@@ -353,8 +350,7 @@ static int replace_len(const char* match, int nmatch, regmatch_t* pmatch,
 			case REPLACE_URI:
 				len-=se->replace[r].size;
 				if (msg->first_line.type!=SIP_REQUEST){
-					LOG(L_CRIT, "BUG: replace_len: uri substitution on"
-								" a reply\n");
+					LM_CRIT("uri substitution on a reply\n");
 					break; /* ignore, we can continue */
 				}
 				uri= (msg->new_uri.s)?(&msg->new_uri):
@@ -362,8 +358,7 @@ static int replace_len(const char* match, int nmatch, regmatch_t* pmatch,
 				len+=uri->len;
 				break;
 			default:
-				LOG(L_CRIT, "BUG: replace_len: unknown type %d\n", 
-						se->replace[r].type);
+				LM_CRIT("unknown type %d\n", se->replace[r].type);
 				/* ignore it */
 		}
 	}
@@ -396,7 +391,7 @@ static int replace_build(const char* match, int nmatch, regmatch_t* pmatch,
 	}
 	rpl->s=pkg_malloc(rpl->len);
 	if (rpl->s==0){
-		LOG(L_ERR, "ERROR: replace_build: out of mem (rpl)\n");
+		LM_ERR("out of pkg mem (rpl)\n");
 		goto error;
 	}
 #endif
@@ -408,7 +403,7 @@ static int replace_build(const char* match, int nmatch, regmatch_t* pmatch,
 		/* copy the unescaped parts */
 		size=se->replacement.s+se->replace[r].offset-p;
 		if(dest-rbuf+size>=REPLACE_BUFFER_SIZE-1){
-			LOG(L_ERR, "ERROR: replace_build: out of mem (rpl)\n");
+			LM_ERR("overflow\n");
 			goto error;
 		}
 		memcpy(dest, p, size);
@@ -422,8 +417,7 @@ static int replace_build(const char* match, int nmatch, regmatch_t* pmatch,
 						size=pmatch[se->replace[r].u.nmatch].rm_eo-
 								pmatch[se->replace[r].u.nmatch].rm_so;
 						if(dest-rbuf+size>=REPLACE_BUFFER_SIZE-1){
-							LOG(L_ERR,
-								"ERROR: replace_build: out of mem (rpl)\n");
+							LM_ERR("overflow\n");
 							goto error;
 						}
 						memcpy(dest, 
@@ -434,7 +428,7 @@ static int replace_build(const char* match, int nmatch, regmatch_t* pmatch,
 				break;
 			case REPLACE_CHAR:
 				if(dest-rbuf+1>=REPLACE_BUFFER_SIZE-1){
-					LOG(L_ERR, "ERROR: replace_build: out of mem (rpl)\n");
+					LM_ERR("overflow\n");
 					goto error;
 				}
 				*dest=se->replace[r].u.c;
@@ -442,14 +436,13 @@ static int replace_build(const char* match, int nmatch, regmatch_t* pmatch,
 				break;
 			case REPLACE_URI:
 				if (msg->first_line.type!=SIP_REQUEST){
-					LOG(L_CRIT, "BUG: replace_build: uri substitution on"
-								" a reply\n");
+					LM_CRIT("uri substitution on a reply\n");
 					break; /* ignore, we can continue */
 				}
 				uri= (msg->new_uri.s)?(&msg->new_uri):
 					(&msg->first_line.u.request.uri);
 				if(dest-rbuf+uri->len>=REPLACE_BUFFER_SIZE-1){
-					LOG(L_ERR, "ERROR: replace_build: out of mem (rpl)\n");
+					LM_ERR("overflow\n");
 					goto error;
 				}
 				memcpy(dest, uri->s, uri->len);
@@ -458,20 +451,18 @@ static int replace_build(const char* match, int nmatch, regmatch_t* pmatch,
 			case REPLACE_SPEC:
 				if(pv_get_spec_value(msg, &se->replace[r].u.spec, &sv)!=0)
 				{
-					LOG(L_CRIT, "BUG: replace_build: item substitution"
-								" returned error\n");
+					LM_CRIT("item substitution returned error\n");
 					break; /* ignore, we can continue */
 				}
 				if(dest-rbuf+sv.rs.len>=REPLACE_BUFFER_SIZE-1){
-					LOG(L_ERR, "ERROR: replace_build: out of mem (rpl)\n");
+					LM_ERR("overflow\n");
 					goto error;
 				}
 				memcpy(dest, sv.rs.s, sv.rs.len);
 				dest+=sv.rs.len;
 				break;
 			default:
-				LOG(L_CRIT, "BUG: replace_build: unknown type %d\n", 
-						se->replace[r].type);
+				LM_CRIT("unknown type %d\n", se->replace[r].type);
 				/* ignore it */
 		}
 	}
@@ -480,7 +471,7 @@ static int replace_build(const char* match, int nmatch, regmatch_t* pmatch,
 	rpl->len = (dest-rbuf)+(end-p);
 	rpl->s=pkg_malloc(rpl->len);
 	if (rpl->s==0){
-		LOG(L_ERR, "ERROR: replace_build: out of mem (rpl)\n");
+		LM_ERR("out of pkg mem (rpl)\n");
 		goto error;
 	}
 	memcpy(rpl->s, rbuf, rpl->len);
@@ -519,36 +510,35 @@ struct replace_lst* subst_run(struct subst_expr* se, const char* input,
 	/* no of () referenced + 1 for the whole string: pmatch[0] */
 	pmatch=pkg_malloc(nmatch*sizeof(regmatch_t));
 	if (pmatch==0){
-		LOG(L_ERR, "ERROR: subst_run_ out of mem. (pmatch)\n");
+		LM_ERR("out of pkg mem. (pmatch)\n");
 		goto error;
 	}
 	eflags=0;
 	do{
 		r=regexec(se->re, p, nmatch, pmatch, eflags);
-		DBG("subst_run: running. r=%d\n", r);
+		LM_DBG("running. r=%d\n", r);
 		/* subst */
 		if (r==0){ /* != REG_NOMATCH */
 			/* change eflags, not to match any more at string start */
 			eflags|=REG_NOTBOL;
 			/* some checks */
 			if (pmatch[0].rm_so==-1){
-				LOG(L_ERR, "ERROR: subst_run: unknown offset?\n");
+				LM_ERR("unknown offset?\n");
 				goto error;
 			}
 			if (pmatch[0].rm_so==pmatch[0].rm_eo){
-				LOG(L_ERR, "ERROR: subst_run: matched string is empty..."
-					"invalid regexp?\n");
+				LM_ERR("matched string is empty... invalid regexp?\n");
 				goto error;
 			}
 			*crt=pkg_malloc(sizeof(struct replace_lst));
 			if (*crt==0){
-				LOG(L_ERR, "ERROR: subst_run: out of mem (crt)\n");
+				LM_ERR("out of pkg mem (crt)\n");
 				goto error;
 			}
 			memset(*crt, 0, sizeof(struct replace_lst));
 			(*crt)->offset=pmatch[0].rm_so+(int)(p-input);
 			(*crt)->size=pmatch[0].rm_eo-pmatch[0].rm_so;
-			DBG("subst_run: matched (%d, %d): [%.*s]\n",
+			LM_DBG("matched (%d, %d): [%.*s]\n",
 					(*crt)->offset, (*crt)->size, 
 					(*crt)->size, input+(*crt)->offset);
 			/* create subst. string */
@@ -596,19 +586,19 @@ str* subst_str(const char *input, struct sip_msg* msg, struct subst_expr* se,
 	end=input+len;
 	lst=subst_run(se, input, msg, count);
 	if (lst==0){
-		DBG("subst_str: no match\n");
+		LM_DBG("no match\n");
 		return 0;
 	}
 	for (l=lst; l; l=l->next)
 		len+=(int)(l->rpl.len)-l->size;
 	res=pkg_malloc(sizeof(str));
 	if (res==0){
-		LOG(L_ERR, "ERROR: subst_str: mem. allocation error\n");
+		LM_ERR("out of pkg memory\n");
 		goto error;
 	}
 	res->s=pkg_malloc(len+1); /* space for null termination */
 	if (res->s==0){
-		LOG(L_ERR, "ERROR: subst_str: mem. allocation error (res->s)\n");
+		LM_ERR("out of pkg memory (res->s)\n");
 		goto error;
 	}
 	res->s[len]=0;

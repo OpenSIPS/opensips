@@ -48,7 +48,7 @@ static inline int do_parse_rr_body(char *buf, int len, rr_t **head)
 	/* Make a temporary copy of the string pointer */
 	if(buf==0 || len<=0)
 	{
-		DBG("parse_rr_body(): No body for record-route\n");
+		LM_DBG("No body for record-route\n");
 		*head = 0;
 		return -2;
 	}
@@ -69,7 +69,7 @@ static inline int do_parse_rr_body(char *buf, int len, rr_t **head)
 		
 		     /* Parse name-addr part of the header */
 		if (parse_nameaddr(&s, &r->nameaddr) < 0) {
-			LOG(L_ERR, "parse_rr(): Error while parsing name-addr\n");
+			LM_ERR("failed to parse name-addr\n");
 			goto error;
 		}
 		r->len = r->nameaddr.len;

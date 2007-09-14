@@ -100,7 +100,7 @@ struct val {
 			continue;					\
 		da = rc_dict_findattr(rh, at[i].n);			\
 		if (da == NULL) {					\
-			LOG(L_ERR, "ERROR: %s: can't get code for the "	\
+			LM_ERR("%s: can't get code for the "	\
 				   "%s attribute\n", fn, at[i].n);	\
 			return e1;					\
 		}							\
@@ -111,7 +111,7 @@ struct val {
 			continue;					\
 		dv = rc_dict_findval(rh, vl[i].n);			\
 		if (dv == NULL) {					\
-			LOG(L_ERR, "ERROR: %s: can't get code for the "	\
+			LM_ERR("%s: can't get code for the "	\
 				   "%s attribute value\n", fn, vl[i].n);\
 			return e2;					\
 		}							\

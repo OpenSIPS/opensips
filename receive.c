@@ -80,7 +80,7 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info)
 
 	msg=pkg_malloc(sizeof(struct sip_msg));
 	if (msg==0) {
-		LOG(L_ERR, "ERROR: receive_msg: no mem for sip_msg\n");
+		LM_ERR("no pkg mem left for sip_msg\n");
 		goto error00;
 	}
 	msg_no++;
@@ -100,10 +100,10 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info)
 	msg->set_global_port=default_global_port;
 	
 	if (parse_msg(buf,len, msg)!=0){
-		LOG(L_ERR, "ERROR: receive_msg: parse_msg failed\n");
+		LM_ERR("parse_msg failed\n");
 		goto error02;
 	}
-	DBG("After parse_msg...\n");
+	LM_DBG("After parse_msg...\n");
 
 
 	/* ... clear branches from previous message */
@@ -114,7 +114,7 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info)
 		/* sanity checks */
 		if ((msg->via1==0) || (msg->via1->error!=PARSE_OK)){
 			/* no via, send back error ? */
-			LOG(L_ERR, "ERROR: receive_msg: no via found in request\n");
+			LM_ERR("no via found in request\n");
 			update_stat( err_reqs, 1);
 			goto error02;
 		}
@@ -130,13 +130,13 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info)
 			){
 			if (tcpconn_add_alias(rcv_info->proto_reserved1, msg->via1->port,
 									rcv_info->proto)!=0){
-				LOG(L_ERR, " ERROR: receive_msg: tcp alias failed\n");
+				LM_ERR("tcp alias failed\n");
 				/* continue */
 			}
 		}
 #endif
 
-		DBG("preparing to run routing scripts...\n");
+		LM_DBG("preparing to run routing scripts...\n");
 		/* set request route type --bogdan*/
 		set_route_type( REQUEST_ROUTE );
 
@@ -162,7 +162,7 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info)
 		/* sanity checks */
 		if ((msg->via1==0) || (msg->via1->error!=PARSE_OK)){
 			/* no via, send back error ? */
-			LOG(L_ERR, "ERROR: receive_msg: no via found in reply\n");
+			LM_ERR("no via found in reply\n");
 			update_stat( err_rpls, 1);
 			goto error02;
 		}
@@ -186,8 +186,7 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info)
 		if ( onreply_rlist[DEFAULT_RT]!=0 &&
 		(run_top_route(onreply_rlist[DEFAULT_RT],msg)&ACT_FL_DROP)
 		&& msg->REPLY_STATUS<200 ) {
-			DBG("DEBUG:received: dropping provisional reply %d\n",
-				msg->REPLY_STATUS);
+			LM_DBG("dropping provisional reply %d\n", msg->REPLY_STATUS);
 			update_stat( drp_rpls, 1);
 			goto end; /* drop the message */
 		} else {
@@ -203,7 +202,7 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info)
 end:
 	/* free possible loaded avps -bogdan */
 	reset_avps();
-	DBG("receive_msg: cleaning up\n");
+	LM_DBG("cleaning up\n");
 	free_sip_msg(msg);
 	pkg_free(msg);
 	return 0;

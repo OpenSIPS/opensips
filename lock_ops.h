@@ -184,11 +184,10 @@ inline static void lock_get(gen_lock_t* lock)
 tryagain:
 	if (semop(*lock, &sop, 1)==-1){
 		if (errno==EINTR){
-			DBG("lock_get: signal received while waiting for on a mutex\n");
+			LM_DBG("signal received while waiting for on a mutex\n");
 			goto tryagain;
 		}else{
-			LOG(L_CRIT, "ERROR: lock_get sysv: %s (%d)\n", strerror(errno),
-						errno);
+			LM_CRIT("%s (%d)\n", strerror(errno), errno);
 		}
 	}
 }
@@ -204,11 +203,10 @@ tryagain:
 	if (semop(*lock, &sop, 1)==-1){
 		if (errno==EINTR){
 			/* very improbable*/
-			DBG("lock_release: signal received while releasing a mutex\n");
+			LM_DBG("signal received while releasing a mutex\n");
 			goto tryagain;
 		}else{
-			LOG(L_CRIT, "ERROR: lock_release sysv: %s (%d)\n",
-					strerror(errno), errno);
+			LM_CRIT("%s (%d)\n", strerror(errno), errno);
 		}
 	}
 }
@@ -267,16 +265,15 @@ inline static gen_lock_set_t* lock_set_init(gen_lock_set_t* s)
 	if (uid && uid!=euid)
 		seteuid(euid); /* restore euid */
 	if (s->semid==-1){
-		LOG(L_CRIT, "ERROR: lock_set_init (SYSV): semget (..., %d, 0700)"
-				" failed: %s\n",
+		LM_CRIT("semget (..., %d, 0700) failed: %s\n",
 				s->size, strerror(errno));
 		return 0;
 	}
 	su.val=1;
 	for (r=0; r<s->size; r++){
 		if (semctl(s->semid, r, SETVAL, su)==-1){
-			LOG(L_CRIT, "ERROR: lock_set_init (SYSV): semctl failed on sem %d"
-					": %s\n", r, strerror(errno));
+			LM_CRIT("semctl failed on sem %d: %s\n", 
+				r, strerror(errno));
 			su.val = 0;
 			semctl(s->semid, 0, IPC_RMID, su);
 			return 0;
@@ -302,11 +299,10 @@ inline static void lock_set_get(gen_lock_set_t* s, int n)
 tryagain:
 	if (semop(s->semid, &sop, 1)==-1){
 		if (errno==EINTR){
-			DBG("lock_set_get: signal received while waiting on a mutex\n");
+			LM_DBG("signal received while waiting on a mutex\n");
 			goto tryagain;
 		}else{
-			LOG(L_CRIT, "ERROR: lock_set_get sysv: %s (%d)\n",
-					strerror(errno), errno);
+			LM_CRIT("%s (%d)\n", strerror(errno), errno);
 		}
 	}
 }
@@ -321,11 +317,10 @@ tryagain:
 	if (semop(s->semid, &sop, 1)==-1){
 		if (errno==EINTR){
 			/* very improbable */
-			DBG("lock_set_release: signal received while releasing mutex\n");
+			LM_DBG("signal received while releasing mutex\n");
 			goto tryagain;
 		}else{
-			LOG(L_CRIT, "ERROR: lock_set_release sysv: %s (%d)\n",
-					strerror(errno), errno);
+			LM_CRIT("%s (%d)\n", strerror(errno), errno);
 		}
 	}
 }

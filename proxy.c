@@ -183,7 +183,7 @@ int hostent_cpy(struct hostent *dst, struct hostent* src)
 	return 0;
 
 error:
-	LOG(L_CRIT, "ERROR: hostent_cpy: memory allocation failure\n");
+	LM_CRIT("pkg memory allocation failure\n");
 	return ret;
 }
 
@@ -240,7 +240,7 @@ struct proxy_l* mk_proxy(str* name, unsigned short port, unsigned short proto,
 	p=(struct proxy_l*) pkg_malloc(sizeof(struct proxy_l));
 	if (p==0){
 		ser_error=E_OUT_OF_MEM;
-		LOG(L_CRIT, "ERROR: mk_proxy: memory allocation failure\n");
+		LM_CRIT("pkg memory allocation failure\n");
 		goto error;
 	}
 	memset(p,0,sizeof(struct proxy_l));
@@ -248,13 +248,12 @@ struct proxy_l* mk_proxy(str* name, unsigned short port, unsigned short proto,
 	p->port=port;
 	p->proto=proto;
 
-	DBG("DEBUG: mk_proxy: doing DNS lookup...\n");
+	LM_DBG("doing DNS lookup...\n");
 	he = sip_resolvehost(name, &(p->port), &p->proto, is_sips,
 		disable_dns_failover?0:&p->dn );
 	if (he==0){
 		ser_error=E_BAD_ADDRESS;
-		LOG(L_CRIT, "ERROR: mk_proxy: could not resolve hostname:"
-					" \"%.*s\"\n", name->len, name->s);
+		LM_CRIT("could not resolve hostname: \"%.*s\"\n", name->len, name->s);
 		pkg_free(p);
 		goto error;
 	}
@@ -278,7 +277,7 @@ struct proxy_l* mk_proxy_from_ip(struct ip_addr* ip, unsigned short port,
 
 	p=(struct proxy_l*) pkg_malloc(sizeof(struct proxy_l));
 	if (p==0){
-		LOG(L_CRIT, "ERROR: mk_proxy_from_ip: memory allocation failure\n");
+		LM_CRIT("pkg memory allocation failure\n");
 		goto error;
 	}
 	memset(p,0,sizeof(struct proxy_l));

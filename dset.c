@@ -223,7 +223,7 @@ int append_branch(struct sip_msg* msg, str* uri, str* dst_uri, str* path,
 	 * of branches, don't try new ones 
 	 */
 	if (nr_branches == MAX_BRANCHES - 1) {
-		LOG(L_ERR, "ERROR: append_branch: max nr of branches exceeded\n");
+		LM_ERR("max nr of branches exceeded\n");
 		ser_error = E_TOO_MANY_BRANCHES;
 		return -1;
 	}
@@ -239,15 +239,14 @@ int append_branch(struct sip_msg* msg, str* uri, str* dst_uri, str* path,
 	}
 
 	if (luri.len > MAX_URI_SIZE - 1) {
-		LOG(L_ERR, "ERROR: append_branch: too long uri: %.*s\n",
-			luri.len, luri.s);
+		LM_ERR("too long uri: %.*s\n", luri.len, luri.s);
 		return -1;
 	}
 
 	/* copy the dst_uri */
 	if (dst_uri && dst_uri->len && dst_uri->s) {
 		if (dst_uri->len > MAX_URI_SIZE - 1) {
-			LOG(L_ERR, "ERROR: append_branch: too long dst_uri: %.*s\n",
+			LM_ERR("too long dst_uri: %.*s\n",
 				dst_uri->len, dst_uri->s);
 			return -1;
 		}
@@ -262,8 +261,7 @@ int append_branch(struct sip_msg* msg, str* uri, str* dst_uri, str* path,
 	/* copy the path string */
 	if (path && path->len && path->s) {
 		if (path->len > MAX_PATH_SIZE - 1) {
-			LOG(L_ERR, "ERROR: append_branch: too long path: %.*s\n",
-				path->len, path->s);
+			LM_ERR("too long path: %.*s\n", path->len, path->s);
 			return -1;
 		}
 		memcpy(branches[nr_branches].path, path->s, path->len);
@@ -282,7 +280,6 @@ int append_branch(struct sip_msg* msg, str* uri, str* dst_uri, str* path,
 
 	branches[nr_branches].force_send_socket = force_socket;
 	branches[nr_branches].flags = flags;
-	DBG("******* setting for branch %d flags %X\n",nr_branches,flags);
 
 	nr_branches++;
 	return 1;
@@ -326,7 +323,7 @@ char* print_dset(struct sip_msg* msg, int* len)
 	*len += CONTACT_LEN + CRLF_LEN + (cnt - 1) * CONTACT_DELIM_LEN;
 
 	if (*len + 1 > MAX_REDIRECTION_LEN) {
-		LOG(L_ERR, "ERROR: redirection buffer length exceed\n");
+		LM_ERR("redirection buffer length exceed\n");
 		return 0;
 	}
 
@@ -427,7 +424,7 @@ int rewrite_uri(struct sip_msg* _m, str* _s)
 
 	buf = (char*)pkg_malloc(_s->len + 1);
 	if (!buf) {
-		LOG(L_ERR, "ERROR: rewrite_uri: No memory left\n");
+		LM_ERR("No pkg memory left\n");
 		return -1;
 	}
 
@@ -442,7 +439,7 @@ int rewrite_uri(struct sip_msg* _m, str* _s)
 	_m->new_uri.s = buf;
 	_m->new_uri.len = _s->len;
 
-	DBG("rewrite_uri: Rewriting Request-URI with '%.*s'\n", _s->len, buf);
+	LM_DBG("rewriting Request-URI with '%.*s'\n", _s->len, buf);
 	return 1;
 }
 
@@ -454,7 +451,7 @@ int branch_uri2dset( str *new_uri )
 	unsigned int b;
 
 	if (new_uri->len+1 > MAX_URI_SIZE) {
-		LOG(L_ERR,"ERROR:uri2dset: new uri too long (%d)\n",new_uri->len);
+		LM_ERR("new uri too long (%d)\n",new_uri->len);
 		return -1;
 	}
 

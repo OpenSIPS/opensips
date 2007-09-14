@@ -67,7 +67,7 @@ int preinit_black_lists(void)
 {
 	blst_heads = (struct bl_head*)pkg_malloc(max_heads*sizeof(struct bl_head));
 	if (blst_heads==NULL) {
-		LOG(L_ERR, "ERROR:preinit_black_lists: no more pkg memory!\n");
+		LM_ERR("no more pkg memory!\n");
 		return -1;
 	}
 	memset( blst_heads, 0, max_heads*sizeof(struct bl_head));
@@ -90,7 +90,7 @@ int init_black_lists(void)
 	unsigned int i;
 
 	if (!no_shm) {
-		LOG(L_CRIT,"BUG:init_black_lists: called twice\n");
+		LM_CRIT("called twice\n");
 		return -1;
 	}
 	no_shm = 0;
@@ -98,7 +98,7 @@ int init_black_lists(void)
 	old_blst_heads = blst_heads;
 	blst_heads = (struct bl_head*)shm_malloc(max_heads*sizeof(struct bl_head));
 	if (blst_heads==NULL) {
-		LOG(L_ERR, "ERROR:init_black_lists: no more shm memory!\n");
+		LM_ERR("no more shm memory!\n");
 		return -1;
 	}
 	memset( blst_heads, 0, max_heads * sizeof(struct bl_head));
@@ -117,7 +117,7 @@ int init_black_lists(void)
 		for( it1=it ; it ; it=it1 ) {
 			if (add_rule_to_list( &head, &tail, &it->ip_net,
 			&it->body, it->port, it->proto, it->flags)!=0) {
-				LOG(L_ERR, "ERROR:init_black_lists: failed to clone rule!\n");
+				LM_ERR("failed to clone rule!\n");
 				return -1;
 			}
 
@@ -127,7 +127,7 @@ int init_black_lists(void)
 
 		if (create_bl_head( old_blst_heads[i].owner, old_blst_heads[i].flags,
 		head, tail, &old_blst_heads[i].name )==NULL ) {
-				LOG(L_ERR, "ERROR:init_black_lists: failed to clone head!\n");
+				LM_ERR("failed to clone head!\n");
 				return -1;
 		}
 
@@ -138,13 +138,13 @@ int init_black_lists(void)
 
 	/* register timer routine  */
 	if (register_timer( delete_expired_routine, 0, 1)<0) {
-		LOG(L_ERR,"ERROR:init_black_lists: failed to register timer\n");
+		LM_ERR("failed to register timer\n");
 		return -1;
 	}
 
 	/* register MI commands */
 	if (register_mi_mod( "blacklists", mi_bl_cmds)<0) {
-		LOG(L_ERR, "ERROR:init_black_lists: unable to register MI cmds\n");
+		LM_ERR("unable to register MI cmds\n");
 		return -1;
 	}
 
@@ -160,17 +160,17 @@ struct bl_head *create_bl_head(int owner, int flags, struct bl_rule *head,
 
 	i = used_heads;
 	if (i==max_heads) {
-		LOG(L_ERR,"ERROR:create_bl_head: too many lists\n");
+		LM_ERR("too many lists\n");
 		return NULL;
 	}
 
 	if (get_bl_head_by_name(name)!=NULL) {
-		LOG(L_CRIT,"BUG:create_bl_head: duplicated name!\n");
+		LM_CRIT("duplicated name!\n");
 		return NULL;
 	}
 
 	if ( flags&BL_READONLY_LIST && flags&BL_DO_EXPIRE){
-		LOG(L_CRIT,"BUG:create_bl_head: RO lists cannot accept EXPIRES!\n");
+		LM_CRIT("RO lists cannot accept EXPIRES!\n");
 		return NULL;
 	}
 
@@ -180,7 +180,7 @@ struct bl_head *create_bl_head(int owner, int flags, struct bl_rule *head,
 	else
 		blst_heads[i].name.s = (char*)shm_malloc(name->len + 1);
 	if (blst_heads[i].name.s==NULL) {
-		LOG(L_ERR, "ERROR:create_bl_head: no more pkg memory!\n");
+		LM_ERR("no more pkg memory!\n");
 		return NULL;
 	}
 	memcpy( blst_heads[i].name.s, name->s, name->len);
@@ -190,12 +190,12 @@ struct bl_head *create_bl_head(int owner, int flags, struct bl_rule *head,
 	/* build lock? */
 	if (!no_shm && !(flags&BL_READONLY_LIST)) {
 		if ( (blst_heads[i].lock=lock_alloc())==NULL ) {
-			LOG(L_ERR, "ERROR:create_bl_head: failed to create lock!\n");
+			LM_ERR("failed to create lock!\n");
 			shm_free(blst_heads[i].name.s);
 			return NULL;
 		}
 		if ( lock_init(blst_heads[i].lock)==NULL ) {
-			LOG(L_ERR, "ERROR:create_bl_head: failed to init lock!\n");
+			LM_ERR("failed to init lock!\n");
 			shm_free(blst_heads[i].name.s);
 			lock_dealloc(blst_heads[i].lock);
 			return NULL;
@@ -346,8 +346,7 @@ int add_rule_to_list(struct bl_rule **first, struct bl_rule **last,
 	struct bl_rule *q;
 
 	if (!first || !last || !ip_net){
-		LOG(L_ERR, "ERROR:add_elem_to_permanent_list: wrong input "
-			"parameter format\n");
+		LM_ERR("wrong input parameter format\n");
 		return -1;
 	}
 
@@ -376,8 +375,7 @@ int add_rule_to_list(struct bl_rule **first, struct bl_rule **last,
 		p = (struct bl_rule*)shm_malloc
 			(sizeof(struct bl_rule) + (body?(body->len + 1):0));
 	if(!p){
-		LOG(L_ERR, "ERROR:add_elem_to_permanent_list: no more %s memory!\n",
-			no_shm?"pkg":"shm");
+		LM_ERR("no more %s memory!\n", no_shm?"pkg":"shm");
 		return -1;
 	}
 
@@ -501,17 +499,17 @@ int add_list_to_head( struct bl_head *head,
 
 	/* may I add to this list? */
 	if (head->flags&BL_READONLY_LIST) {
-		LOG(L_CRIT,"BUG:add_list_to_head: list is readonly!!!\n");
+		LM_CRIT("list is readonly!!!\n");
 		return -1;
 	}
 
-	DBG("DBG:add_list_to_head: adding to bl %.*s %p,%p\n",
+	LM_DBG("adding to bl %.*s %p,%p\n",
 		head->name.len, head->name.s, first,last);
 
 	/* for expiring lists, sets the timeout */
 	if (head->flags&BL_DO_EXPIRE) {
 		if (expire_limit==0) {
-			LOG(L_CRIT,"BUG:add_list_to_head: expire is zero!!!\n");
+			LM_CRIT("expire is zero!!!\n");
 			return -1;
 		}
 		expire_end = get_ticks() + expire_limit;
@@ -619,7 +617,7 @@ static inline int check_against_rule_list(struct ip_addr *ip, str *text,
 	int t_val;
 	int ret = 0;
 
-	DBG("DBG:check_against_rule_list: using list %.*s \n",
+	LM_DBG("using list %.*s \n",
 		blst_heads[i].name.len, blst_heads[i].name.s);
 
 	if( !blst_heads[i].flags&BL_READONLY_LIST ) {
@@ -641,7 +639,7 @@ static inline int check_against_rule_list(struct ip_addr *ip, str *text,
 			(p->body.s==NULL || !fnmatch(p->body.s, text->s, 0));
 		if(!!(p->flags & BLR_APPLY_CONTRARY) ^ !!(t_val)){
 			ret = 1;
-			DBG("DBG:check_against_rule_list: matched list %.*s \n",
+			LM_DBG("matched list %.*s \n",
 				blst_heads[i].name.len,blst_heads[i].name.s);
 			break;
 		}

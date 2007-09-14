@@ -217,8 +217,7 @@ static inline void sockaddr2ip_addr(struct ip_addr* ip, struct sockaddr* sa)
 			break;
 #endif
 	default:
-			LOG(L_CRIT, "sockaddr2ip_addr: BUG: unknown address family %d\n",
-					sa->sa_family);
+			LM_CRIT("unknown address family %d\n", sa->sa_family);
 	}
 }
 
@@ -245,7 +244,7 @@ static inline int su_cmp(union sockaddr_union* s1, union sockaddr_union* s2)
 					(memcmp(&s1->sin6.sin6_addr, &s2->sin6.sin6_addr, 16)==0);
 #endif
 		default:
-			LOG(L_CRIT,"su_cmp: BUG: unknown address family %d\n",
+			LM_CRIT("unknown address family %d\n",
 						s1->s.sa_family);
 			return 0;
 	}
@@ -267,8 +266,7 @@ static inline unsigned short su_getport(union sockaddr_union* su)
 			return ntohs(su->sin6.sin6_port);
 #endif
 		default:
-			LOG(L_CRIT,"su_get_port: BUG: unknown address family %d\n",
-						su->s.sa_family);
+			LM_CRIT("unknown address family %d\n", su->s.sa_family);
 			return 0;
 	}
 }
@@ -288,8 +286,7 @@ static inline void su_setport(union sockaddr_union* su, unsigned short port)
 			 break;
 #endif
 		default:
-			LOG(L_CRIT,"su_set_port: BUG: unknown address family %d\n",
-						su->s.sa_family);
+			LM_CRIT("unknown address family %d\n", su->s.sa_family);
 	}
 }
 
@@ -312,8 +309,7 @@ static inline void su2ip_addr(struct ip_addr* ip, union sockaddr_union* su)
 					break;
 #endif
 	default:
-					LOG(L_CRIT,"su2ip_addr: BUG: unknown address family %d\n",
-							su->s.sa_family);
+					LM_CRIT("unknown address family %d\n", su->s.sa_family);
 	}
 }
 
@@ -348,7 +344,7 @@ static inline int init_su( union sockaddr_union* su,
 		su->sin.sin_port=htons(port);
 		break;
 	default:
-		LOG(L_CRIT, "init_ss: BUG: unknown address family %d\n", ip->af);
+		LM_CRIT("unknown address family %d\n", ip->af);
 		return -1;
 	}
 	return 0;
@@ -385,8 +381,7 @@ static inline int hostent2su( union sockaddr_union* su,
 		su->sin.sin_port=htons(port);
 		break;
 	default:
-		LOG(L_CRIT, "hostent2su: BUG: unknown address family %d\n", 
-				he->h_addrtype);
+		LM_CRIT("unknown address family %d\n", he->h_addrtype);
 		return -1;
 	}
 	return 0;
@@ -514,8 +509,7 @@ static inline char* ip_addr2a(struct ip_addr* ip)
 			break;
 		
 		default:
-			LOG(L_CRIT, "BUG: ip_addr2a: unknown address family %d\n",
-					ip->af);
+			LM_CRIT("unknown address family %d\n", ip->af);
 			return 0;
 	}
 	

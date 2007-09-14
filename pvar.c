@@ -256,7 +256,7 @@ static int pv_get_method(struct sip_msg *msg, pv_param_t *param,
 		if(msg->cseq==NULL && ((parse_headers(msg, HDR_CSEQ_F, 0)==-1) || 
 				(msg->cseq==NULL)))
 		{
-			DBG("pv_get_method: no CSEQ header\n");
+			LM_DBG("no CSEQ header\n");
 			return pv_get_null(msg, param, res);
 		}
 		res->rs.s = get_cseq(msg)->method.s;
@@ -316,7 +316,7 @@ static int pv_get_ruri(struct sip_msg *msg, pv_param_t *param,
 
 	if(msg->parsed_uri_ok==0 /* R-URI not parsed*/ && parse_sip_msg_uri(msg)<0)
 	{
-		LOG(L_ERR, "pv_get_ruri: ERROR while parsing the R-URI\n");
+		LM_ERR("failed to parse the R-URI\n");
 		return pv_get_null(msg, param, res);
 	}
 	
@@ -345,7 +345,7 @@ static int pv_get_ouri(struct sip_msg *msg, pv_param_t *param,
 	if(msg->parsed_orig_ruri_ok==0
 			/* orig R-URI not parsed*/ && parse_orig_ruri(msg)<0)
 	{
-		LOG(L_ERR, "pv_get_ouri: ERROR while parsing the R-URI\n");
+		LM_ERR("failed to parse the R-URI\n");
 		return pv_get_null(msg, param, res);
 	}
 	
@@ -387,7 +387,7 @@ static int pv_get_xuri_attr(struct sip_msg *msg, struct sip_uri *parsed_uri,
 		res->ri     = (int)parsed_uri->proto;
 		res->flags  = PV_VAL_STR|PV_VAL_INT;
 	} else {
-		LOG(L_ERR, "pv_get_xuri_attr: unknown specifier\n");
+		LM_ERR("unknown specifier\n");
 		return pv_get_null(msg, param, res);
 	}
 	
@@ -405,8 +405,7 @@ static int pv_get_ruri_attr(struct sip_msg *msg, pv_param_t *param,
 
 	if(msg->parsed_uri_ok==0 /* R-URI not parsed*/ && parse_sip_msg_uri(msg)<0)
 	{
-		LOG(L_ERR,
-			"pv_get_ruri_attr: ERROR while parsing the R-URI\n");
+		LM_ERR("failed to parse the R-URI\n");
 		return pv_get_null(msg, param, res);
 	}
 	return pv_get_xuri_attr(msg, &(msg->parsed_uri), param, res);
@@ -424,7 +423,7 @@ static int pv_get_ouri_attr(struct sip_msg *msg, pv_param_t *param,
 	if(msg->parsed_orig_ruri_ok==0
 			/* orig R-URI not parsed*/ && parse_orig_ruri(msg)<0)
 	{
-		LOG(L_ERR, "pv_get_ouri: ERROR while parsing the R-URI\n");
+		LM_ERR("failed to parse the R-URI\n");
 		return pv_get_null(msg, param, res);
 	}
 	return pv_get_xuri_attr(msg, &(msg->parsed_orig_ruri), param, res);
@@ -439,13 +438,13 @@ static int pv_get_contact(struct sip_msg *msg, pv_param_t *param,
 
 	if(msg->contact==NULL && parse_headers(msg, HDR_CONTACT_F, 0)==-1) 
 	{
-		DBG("pv_get_contact: no contact header\n");
+		LM_DBG("no contact header\n");
 		return pv_get_null(msg, param, res);
 	}
 	
 	if(!msg->contact || !msg->contact->body.s || msg->contact->body.len<=0)
     {
-		DBG("pv_get_contact: no contact header!\n");
+		LM_DBG("no contact header!\n");
 		return pv_get_null(msg, param, res);
 	}
 	
@@ -500,7 +499,7 @@ static int pv_get_errinfo_attr(struct sip_msg *msg, pv_param_t *param,
 		res->rs.len = _oser_err_info.rreason.len;
 		res->flags = PV_VAL_STR;
 	} else {
-		DBG("pv_get_errinfo_attr: invalid attribute!\n");
+		LM_DBG("invalid attribute!\n");
 		return pv_get_null(msg, param, res);
 	}
 	return 0;
@@ -515,12 +514,12 @@ static int pv_get_from_attr(struct sip_msg *msg, pv_param_t *param,
 
 	if(parse_from_header(msg)<0)
 	{
-		LOG(L_ERR, "pv_get_from_attr: cannot parse From header\n");
+		LM_ERR("cannot parse From header\n");
 		return pv_get_null(msg, param, res);
 	}
 	
 	if(msg->from==NULL || get_from(msg)==NULL) {
-		DBG("pv_get_from_attr: no From header\n");
+		LM_DBG("no From header\n");
 		return pv_get_null(msg, param, res);
 	}
 
@@ -534,7 +533,7 @@ static int pv_get_from_attr(struct sip_msg *msg, pv_param_t *param,
 	
 	if(param->pvn.u.isname.name.n==4) /* tag */ {
 	    if(get_from(msg)->tag_value.s==NULL||get_from(msg)->tag_value.len<=0) {
-		        DBG("pv_get_from_attr: no From tag\n");
+		        LM_DBG("no From tag\n");
 			return pv_get_null(msg, param, res);
 	    }
 		res->rs.s = get_from(msg)->tag_value.s;
@@ -546,7 +545,7 @@ static int pv_get_from_attr(struct sip_msg *msg, pv_param_t *param,
 	if(param->pvn.u.isname.name.n==5) /* display name */ {
 	        if(get_from(msg)->display.s==NULL ||
 		   get_from(msg)->display.len<=0) {
-		        DBG("pv_get_from_attr: no From display name\n");
+		        LM_DBG("no From display name\n");
 			return pv_get_null(msg, param, res);
 		}
 		res->rs.s = get_from(msg)->display.s;
@@ -556,12 +555,12 @@ static int pv_get_from_attr(struct sip_msg *msg, pv_param_t *param,
 	}
 
 	if((uri=parse_from_uri(msg))==NULL) {
-		LOG(L_ERR, "pv_get_from_attr: cannot parse From URI\n");
+		LM_ERR("cannot parse From URI\n");
 		return pv_get_null(msg, param, res);
 	}
 	if(param->pvn.u.isname.name.n==2) /* username */ {
 	    if(uri->user.s==NULL || uri->user.len<=0) {
-		    DBG("pv_get_from_attr: no From username\n");
+		    LM_DBG("no From username\n");
 			return pv_get_null(msg, param, res);
 		}
 		res->rs.s   = uri->user.s;
@@ -569,14 +568,14 @@ static int pv_get_from_attr(struct sip_msg *msg, pv_param_t *param,
 		res->flags = PV_VAL_STR;
 	} else if(param->pvn.u.isname.name.n==3) /* domain */ {
 	    if(uri->host.s==NULL || uri->host.len<=0) {
-		    DBG("pv_get_from_attr: no From domain\n");
+		    LM_DBG("no From domain\n");
 			return pv_get_null(msg, param, res);
 		}
 		res->rs.s   = uri->host.s;
 		res->rs.len = uri->host.len; 
 		res->flags = PV_VAL_STR;
 	} else {
-		LOG(L_ERR, "pv_get_from_attr: unknown specifier\n");
+		LM_ERR("unknown specifier\n");
 		return pv_get_null(msg, param, res);
 	}
 	return 0;
@@ -592,11 +591,11 @@ static int pv_get_to_attr(struct sip_msg *msg, pv_param_t *param,
 
 	if(msg->to==NULL && parse_headers(msg, HDR_TO_F, 0)==-1)
 	{
-		LOG(L_ERR, "pv_get_to_attr: cannot parse To header\n");
+		LM_ERR("cannot parse To header\n");
 		return pv_get_null(msg, param, res);
 	}
 	if(msg->to==NULL || get_to(msg)==NULL) {
-		DBG("pv_get_to_attr: no To header\n");
+		LM_DBG("no To header\n");
 		return pv_get_null(msg, param, res);
 	}
 
@@ -612,7 +611,7 @@ static int pv_get_to_attr(struct sip_msg *msg, pv_param_t *param,
 	{
 		if (get_to(msg)->tag_value.s==NULL ||
 		    get_to(msg)->tag_value.len<=0) {
-		        DBG("pv_get_to_attr: no To tag\n");
+		        LM_DBG("no To tag\n");
 		        return pv_get_null(msg, param, res);
 		}
 		res->rs.s = get_to(msg)->tag_value.s;
@@ -624,7 +623,7 @@ static int pv_get_to_attr(struct sip_msg *msg, pv_param_t *param,
 	if(param->pvn.u.isname.name.n==5) /* display name */ {
 		if(get_to(msg)->display.s==NULL || 
 		   get_to(msg)->display.len<=0) {
-		        DBG("pv_get_to_attr: no To display name\n");
+		        LM_DBG("no To display name\n");
 		        return pv_get_null(msg, param, res);
 		}
 		res->rs.s = get_to(msg)->display.s;
@@ -634,12 +633,12 @@ static int pv_get_to_attr(struct sip_msg *msg, pv_param_t *param,
 	}
 
 	if((uri=parse_to_uri(msg))==NULL) {
-		LOG(L_ERR, "pv_get_to_attr: cannot parse To URI\n");
+		LM_ERR("cannot parse To URI\n");
 		return pv_get_null(msg, param, res);
 	}
 	if(param->pvn.u.isname.name.n==2) /* username */ {
 	    if(uri->user.s==NULL || uri->user.len<=0) {
-		    DBG("pv_get_to_attr: no To username\n");
+		    LM_DBG("no To username\n");
 			return pv_get_null(msg, param, res);
 		}
 		res->rs.s   = uri->user.s;
@@ -647,14 +646,14 @@ static int pv_get_to_attr(struct sip_msg *msg, pv_param_t *param,
 		res->flags = PV_VAL_STR;
 	} else if(param->pvn.u.isname.name.n==3) /* domain */ {
 	    if(uri->host.s==NULL || uri->host.len<=0) {
-		    DBG("pv_get_to_attr: no To domain\n");
+		    LM_DBG("no To domain\n");
 			return pv_get_null(msg, param, res);
 		}
 		res->rs.s   = uri->host.s;
 		res->rs.len = uri->host.len; 
 		res->flags = PV_VAL_STR;
 	} else {
-		LOG(L_ERR, "pv_get_to_attr: unknown specifier\n");
+		LM_ERR("unknown specifier\n");
 		return pv_get_null(msg, param, res);
 	}
 	return 0;
@@ -669,7 +668,7 @@ static int pv_get_cseq(struct sip_msg *msg, pv_param_t *param,
 	if(msg->cseq==NULL && ((parse_headers(msg, HDR_CSEQ_F, 0)==-1) || 
 				(msg->cseq==NULL)) )
 	{
-		LOG(L_ERR, "pv_get_cseq: ERROR cannot parse CSEQ header\n");
+		LM_ERR("cannot parse CSEQ header\n");
 		return pv_get_null(msg, param, res);
 	}
 
@@ -817,7 +816,7 @@ static int pv_get_callid(struct sip_msg *msg, pv_param_t *param,
 	if(msg->callid==NULL && ((parse_headers(msg, HDR_CALLID_F, 0)==-1) ||
 				(msg->callid==NULL)) )
 	{
-		LOG(L_ERR, "pv_get_callid: cannot parse Call-Id header\n");
+		LM_ERR("cannot parse Call-Id header\n");
 		return pv_get_null(msg, param, res);
 	}
 
@@ -917,7 +916,7 @@ static int pv_get_useragent(struct sip_msg *msg, pv_param_t *param,
 	if(msg->user_agent==NULL && ((parse_headers(msg, HDR_USERAGENT_F, 0)==-1)
 			 || (msg->user_agent==NULL)))
 	{
-		DBG("pv_get_useragent: no User-Agent header\n");
+		LM_DBG("no User-Agent header\n");
 		return pv_get_null(msg, param, res);
 	}
 	
@@ -937,7 +936,7 @@ static int pv_get_refer_to(struct sip_msg *msg, pv_param_t *param,
 
 	if(parse_refer_to_header(msg)==-1)
 	{
-		DBG("pv_get_refer_to: no Refer-To header\n");
+		LM_DBG("no Refer-To header\n");
 		return pv_get_null(msg, param, res);
 	}
 	
@@ -959,12 +958,12 @@ static int pv_get_diversion(struct sip_msg *msg, pv_param_t *param,
 
 	if(parse_diversion_header(msg)==-1)
 	{
-		DBG("pv_get_diversion: no Diversion header\n");
+		LM_DBG("no Diversion header\n");
 		return pv_get_null(msg, param, res);
 	}
 	
 	if(msg->diversion==NULL || get_diversion(msg)==NULL) {
-		DBG("pv_get_diversion: no Diversion header\n");
+		LM_DBG("no Diversion header\n");
 		return pv_get_null(msg, param, res);
 	}
 
@@ -983,7 +982,7 @@ static int pv_get_rpid(struct sip_msg *msg, pv_param_t *param,
 
 	if(parse_rpid_header(msg)==-1)
 	{
-		DBG("pv_get_rpid: no RPID header\n");
+		LM_DBG("no RPID header\n");
 		return pv_get_null(msg, param, res);
 	}
 	
@@ -1006,12 +1005,12 @@ static int pv_get_ppi_attr(struct sip_msg *msg, pv_param_t *param,
 	return -1;
 
     if(parse_ppi_header(msg) < 0) {
-	DBG("pv_get_ppi_attr: no P-Preferred-Identity header\n");
+	LM_DBG("no P-Preferred-Identity header\n");
 	return pv_get_null(msg, param, res);
     }
 	
     if(msg->ppi == NULL || get_ppi(msg) == NULL) {
-	       DBG("pv_get_ppi_attr: no P-Preferred-Identity header\n");
+	       LM_DBG("no P-Preferred-Identity header\n");
 		return pv_get_null(msg, param, res);
     }
     
@@ -1025,7 +1024,7 @@ static int pv_get_ppi_attr(struct sip_msg *msg, pv_param_t *param,
     if(param->pvn.u.isname.name.n==4) { /* display name */
 	if(get_ppi(msg)->display.s == NULL ||
 	   get_ppi(msg)->display.len <= 0) {
-	    DBG("pv_get_ppi_attr: no P-Preferred-Identity display name\n");
+	    LM_DBG("no P-Preferred-Identity display name\n");
 	    return pv_get_null(msg, param, res);
 	}
 	res->rs.s = get_ppi(msg)->display.s;
@@ -1035,14 +1034,13 @@ static int pv_get_ppi_attr(struct sip_msg *msg, pv_param_t *param,
     }
 
     if((uri=parse_ppi_uri(msg))==NULL) {
-	LOG(L_ERR, "pv_get_ppi_attr: cannot parse "
-	    "P-Preferred-Identity URI\n");
+	LM_ERR("cannot parse P-Preferred-Identity URI\n");
 	return pv_get_null(msg, param, res);
     }
 
     if(param->pvn.u.isname.name.n==2) { /* username */
 	if(uri->user.s==NULL || uri->user.len<=0) {
-	    DBG("pv_get_ppi_attr: no P-Preferred-Identity username\n");
+	    LM_DBG("no P-Preferred-Identity username\n");
 	    return pv_get_null(msg, param, res);
 	}
 	res->rs.s   = uri->user.s;
@@ -1050,14 +1048,14 @@ static int pv_get_ppi_attr(struct sip_msg *msg, pv_param_t *param,
 	res->flags = PV_VAL_STR;
     } else if(param->pvn.u.isname.name.n==3) { /* domain */
 	if(uri->host.s==NULL || uri->host.len<=0) {
-	    DBG("pv_get_ppi_attr: no P-Preferred-Identity domain\n");
+	    LM_DBG("no P-Preferred-Identity domain\n");
 	    return pv_get_null(msg, param, res);
 	}
 	res->rs.s   = uri->host.s;
 	res->rs.len = uri->host.len; 
 	res->flags = PV_VAL_STR;
     } else {
-	LOG(L_ERR, "pv_get_ppi_attr: unknown specifier\n");
+	LM_ERR("unknown specifier\n");
 	return pv_get_null(msg, param, res);
     }
 
@@ -1072,12 +1070,12 @@ static int pv_get_pai(struct sip_msg *msg, pv_param_t *param,
     
     if(parse_pai_header(msg)==-1)
     {
-	DBG("pv_get_pai: no P-Asserted-Identity header\n");
+	LM_DBG("no P-Asserted-Identity header\n");
 	return pv_get_null(msg, param, res);
     }
 	
     if(msg->pai==NULL || get_pai(msg)==NULL) {
-	DBG("pv_get_pai: no P-Asserted-Identity header\n");
+	LM_DBG("no P-Asserted-Identity header\n");
 	return pv_get_null(msg, param, res);
     }
     
@@ -1150,7 +1148,7 @@ static int pv_get_dsturi(struct sip_msg *msg, pv_param_t *param,
 		return -1;
     
     if (msg->dst_uri.s == NULL) {
-		DBG("pv_get_dsturi: no destination URI\n");
+		LM_DBG("no destination URI\n");
 		return pv_get_null(msg, param, res);
     }
 
@@ -1170,13 +1168,13 @@ static int pv_get_dsturi_attr(struct sip_msg *msg, pv_param_t *param,
 		return -1;
     
         if (msg->dst_uri.s == NULL) {
-		DBG("pv_get_dsturi_attr: no destination URI\n");
+		LM_DBG("no destination URI\n");
 		return pv_get_null(msg, param, res);
 	}
 
 	if(parse_uri(msg->dst_uri.s, msg->dst_uri.len, &uri)!=0)
 	{
-		LOG(L_ERR, "pv_get_dsturi_attr: ERROR cannot parse dst uri\n");
+		LM_ERR("failed to parse dst uri\n");
 		return pv_get_null(msg, param, res);
 	}
 	
@@ -1203,7 +1201,7 @@ static int pv_get_dsturi_attr(struct sip_msg *msg, pv_param_t *param,
 		res->ri     = (int)uri.proto;
 		res->flags  = PV_VAL_STR|PV_VAL_INT;
 	} else {
-		LOG(L_ERR, "pv_get_dsturi_attr: invalid specifier\n");
+		LM_ERR("invalid specifier\n");
 		return pv_get_null(msg, param, res);
 	}
 
@@ -1220,7 +1218,7 @@ static int pv_get_content_type(struct sip_msg *msg, pv_param_t *param,
 			&& ((parse_headers(msg, HDR_CONTENTTYPE_F, 0)==-1)
 			 || (msg->content_type==NULL)))
 	{
-		DBG("pv_get_content_type: no Content-Type header\n");
+		LM_DBG("no Content-Type header\n");
 		return pv_get_null(msg, param, res);
 	}
 	
@@ -1241,7 +1239,7 @@ static int pv_get_content_length(struct sip_msg *msg, pv_param_t *param,
 			&& ((parse_headers(msg, HDR_CONTENTLENGTH_F, 0)==-1)
 			 || (msg->content_length==NULL)))
 	{
-		DBG("pv_get_content_length: no Content-Length header\n");
+		LM_DBG("no Content-Length header\n");
 		return pv_get_null(msg, param, res);
 	}
 	
@@ -1264,12 +1262,12 @@ static int pv_get_msg_body(struct sip_msg *msg, pv_param_t *param,
     res->rs.s = get_body( msg );
 
     if ((res->rs.s) == NULL) {
-		DBG("pv_get_msg_body: no message body\n");
+		LM_DBG("no message body\n");
 		return pv_get_null(msg, param, res);
     }    
     if (!msg->content_length) 
     {
-	LOG(L_ERR,"pv_get_msg_body: ERROR no Content-Length header found\n");
+	LM_ERR("no Content-Length header found\n");
 	return pv_get_null(msg, param, res);
     }
     res->rs.len = get_content_length(msg);
@@ -1288,21 +1286,21 @@ static int pv_get_authattr(struct sip_msg *msg, pv_param_t *param,
     
 	if ((msg->REQ_METHOD == METHOD_ACK) || 
 	    (msg->REQ_METHOD == METHOD_CANCEL)) {
-		DBG("pv_get_authattr: no [Proxy-]Authorization header\n");
+		LM_DBG("no [Proxy-]Authorization header\n");
 		return pv_get_null(msg, param, res);
 	}
 
 	if ((parse_headers(msg, HDR_PROXYAUTH_F|HDR_AUTHORIZATION_F, 0)==-1)
 			|| (msg->proxy_auth==0 && msg->authorization==0))
 	{
-		DBG("pv_get_authattr: no [Proxy-]Authorization header\n");
+		LM_DBG("no [Proxy-]Authorization header\n");
 		return pv_get_null(msg, param, res);
 	}
 
 	hdr = (msg->proxy_auth==0)?msg->authorization:msg->proxy_auth;
 	
 	if(parse_credentials(hdr)!=0) {
-	        LOG(L_ERR,"pv_get_authattr: error in parsing credentials\n");
+	        LM_ERR("failed to parse credentials\n");
 		return pv_get_null(msg, param, res);
 	}
 	if(param->pvn.u.isname.name.n==2)
@@ -1370,7 +1368,7 @@ static int pv_get_acc_username(struct sip_msg *msg, pv_param_t *param,
 		if (realm) {
 			res->rs.len = user->len+1+realm->len;
 			if (res->rs.len > MAX_URI_SIZE) {
-				LOG(L_ERR, "pv_get_acc_username: URI too long\n");
+				LM_ERR("uri too long\n");
 				return pv_get_null(msg, param, res);
 			}
 			res->rs.s = buf;
@@ -1385,18 +1383,17 @@ static int pv_get_acc_username(struct sip_msg *msg, pv_param_t *param,
 		/* from from uri */
 	    if(parse_from_header(msg)<0)
 		{
-		    LOG(L_ERR, "pv_get_acc_username: cannot parse FROM header\n");
+		    LM_ERR("cannot parse FROM header\n");
 		    return pv_get_null(msg, param, res);
 		}
 		if (msg->from && (from=get_from(msg)) && from->uri.len) {
 			if (parse_uri(from->uri.s, from->uri.len, &puri) < 0 ) {
-				LOG(L_ERR, "pv_get_acc_username: Bad From URI\n");
+				LM_ERR("bad From URI\n");
 				return pv_get_null(msg, param, res);
 			}
 			res->rs.len = puri.user.len + 1 + puri.host.len;
 			if (res->rs.len > MAX_URI_SIZE) {
-				LOG(L_ERR, "pv_get_acc_username: "
-				    "From URI too long\n");
+				LM_ERR("from URI too long\n");
 				return pv_get_null(msg, param, res);
 			}
 			res->rs.s = buf;
@@ -1475,7 +1472,7 @@ static int pv_get_branches(struct sip_msg *msg, pv_param_t *param,
 
 	if (len + 1 > PV_LOCAL_BUF_SIZE)
 	{
-		LOG(L_ERR, "ERROR:pv_get_branches: local buffer length exceeded\n");
+		LM_ERR("local buffer length exceeded\n");
 		return pv_get_null(msg, param, res);
 	}
 

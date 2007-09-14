@@ -40,18 +40,18 @@ int set_mod_param(char* _mod, char* _name, modparam_t _type, void* _val)
 	void* ptr;
 	
 	if (!_mod) {
-		LOG(L_ERR, "set_mod_param(): Invalid _mod parameter value\n");
+		LM_ERR("invalid _mod parameter value\n");
 		return -1;
 	}
 
 	if (!_name) {
-		LOG(L_ERR, "set_mod_param(): Invalid _name parameter value\n");
+		LM_ERR("invalid _name parameter value\n");
 		return -2;
 	}
 
 	ptr = find_param_export(_mod, _name, _type);
 	if (!ptr) {
-		LOG(L_ERR, "set_mod_param(): Parameter not found\n");
+		LM_ERR("Parameter not found\n");
 		return -3;
 	}
 
@@ -81,7 +81,7 @@ int set_mod_param_regex(char* regex, char* name, modparam_t type, void* val)
 	len = strlen(regex);
 	reg = pkg_malloc(len + 2 + 2 + 1);
 	if (reg == 0) {
-		LOG(L_ERR, "set_mod_param_regex(): No memory left\n");
+		LM_ERR("no pkg memory left\n");
 		return -1;
 	}
 	reg[0] = '^';
@@ -92,7 +92,7 @@ int set_mod_param_regex(char* regex, char* name, modparam_t type, void* val)
 	reg[len + 4] = '\0';
 	
 	if (regcomp(&preg, reg, REG_EXTENDED | REG_NOSUB | REG_ICASE)) {
-		LOG(L_ERR, "set_mod_param_regex(): Error while compiling regular expression\n");
+		LM_ERR("failed to compile regular expression\n");
 		pkg_free(reg);
 		return -2;
 	}
@@ -101,13 +101,12 @@ int set_mod_param_regex(char* regex, char* name, modparam_t type, void* val)
 
 	for(t = modules; t; t = t->next) {
 		if (regexec(&preg, t->exports->name, 0, 0, 0) == 0) {
-			DBG("set_mod_param_regex: %s matches module %s\n",
-					regex, t->exports->name);
+			LM_DBG("%s matches module %s\n",regex, t->exports->name);
 			mod_found = 1;
 			for(param=t->exports->params;param && param->name ; param++) {
 				if ((strcmp(name, param->name) == 0) &&
 				( PARAM_TYPE_MASK(param->type) == type)) {
-					DBG("set_mod_param_regex: found <%s> in module %s [%s]\n",
+					LM_DBG("found <%s> in module %s [%s]\n",
 						name, t->exports->name, t->path);
 
 					if (param->type&USE_FUNC_PARAM) {
@@ -131,7 +130,7 @@ int set_mod_param_regex(char* regex, char* name, modparam_t type, void* val)
 				}
 			}
 			if (!param || !param->name) {
-				LOG(L_ERR, "set_mod_param_regex: parameter <%s> not found in module <%s>\n",
+				LM_ERR("parameter <%s> not found in module <%s>\n",
 				    name, t->exports->name);
 				regfree(&preg);
 				pkg_free(reg);
@@ -142,7 +141,7 @@ int set_mod_param_regex(char* regex, char* name, modparam_t type, void* val)
 
 	regfree(&preg);
 	if (!mod_found) {
-		LOG(L_ERR, "set_mod_param_regex: No module matching %s found\n|", regex);
+		LM_ERR("no module matching %s found\n|", regex);
 		pkg_free(reg);
 		return -4;
 	}

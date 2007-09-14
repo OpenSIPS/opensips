@@ -97,8 +97,7 @@ int resolv_init(void)
 		_res.options&=~(RES_DEFNAMES|RES_DNSRCH);
 #else
 #warning "no resolv timeout support"
-	LOG(L_WARN, "WARNING: resolv_init: no resolv options support - resolv"
-		" options will be ignored\n");
+	LM_WARN("no resolv options support - resolv options will be ignored\n");
 #endif
 	return 0;
 }
@@ -113,8 +112,7 @@ int resolv_blacklist_init(void)
 		failover_bl = create_bl_head( DNS_REVOLVER_BL_ID,
 			BL_DO_EXPIRE|BL_BY_DEFAULT, 0, 0, &name);
 		if (failover_bl==NULL) {
-			LOG(L_ERR,"ERROR:resolv_blacklist_init: failed to create "
-				"blacklist\n");
+			LM_ERR("failed to create blacklist\n");
 			return -1;
 		}
 	}
@@ -178,7 +176,7 @@ struct srv_rdata* dns_srv_parser( unsigned char* msg, unsigned char* end,
 	if ((rdata+6)>=end) goto error;
 	srv=(struct srv_rdata*)local_malloc(sizeof(struct srv_rdata));
 	if (srv==0){
-		LOG(L_ERR, "ERROR: dns_srv_parser: out of memory\n");
+		LM_ERR("out of pkg memory\n");
 		goto error;
 	}
 	
@@ -234,7 +232,7 @@ struct naptr_rdata* dns_naptr_parser( unsigned char* msg, unsigned char* end,
 	if ((rdata + 7) >= end) goto error;
 	naptr=(struct naptr_rdata*)local_malloc(sizeof(struct naptr_rdata));
 	if (naptr == 0){
-		LOG(L_ERR, "ERROR: dns_naptr_parser: out of memory\n");
+		LM_ERR("out of pkg memory\n");
 		goto error;
 	}
 	
@@ -277,7 +275,7 @@ struct cname_rdata* dns_cname_parser( unsigned char* msg, unsigned char* end,
 	cname=0;
 	cname=(struct cname_rdata*)local_malloc(sizeof(struct cname_rdata));
 	if(cname==0){
-		LOG(L_ERR, "ERROR: dns_cname_parser: out of memory\n");
+		LM_ERR("out of pkg memory\n");
 		goto error;
 	}
 	if ((len=dn_expand(msg, end, rdata, cname->name, MAX_DNS_NAME-1))==-1)
@@ -300,7 +298,7 @@ struct a_rdata* dns_a_parser(unsigned char* rdata, unsigned char* end)
 	if (rdata+4>=end) goto error;
 	a=(struct a_rdata*)local_malloc(sizeof(struct a_rdata));
 	if (a==0){
-		LOG(L_ERR, "ERROR: dns_a_parser: out of memory\n");
+		LM_ERR("out of pkg memory\n");
 		goto error;
 	}
 	memcpy(a->ip, rdata, 4);
@@ -320,7 +318,7 @@ struct aaaa_rdata* dns_aaaa_parser(unsigned char* rdata, unsigned char* end)
 	if (rdata+16>=end) goto error;
 	aaaa=(struct aaaa_rdata*)local_malloc(sizeof(struct aaaa_rdata));
 	if (aaaa==0){
-		LOG(L_ERR, "ERROR: dns_aaaa_parser: out of memory\n");
+		LM_ERR("out of pkg memory\n");
 		goto error;
 	}
 	memcpy(aaaa->ip6, rdata, 16);
@@ -346,7 +344,7 @@ struct txt_rdata* dns_txt_parser( unsigned char* msg, unsigned char* end,
 	txt=0;
 	txt=(struct txt_rdata*)local_malloc(sizeof(struct txt_rdata));
 	if(txt==0){
-		LOG(L_ERR, "ERROR: dns_txt_parser: out of memory\n");
+		LM_ERR("out of pkg memory\n");
 		goto error;
 	}
 
@@ -384,7 +382,7 @@ struct ebl_rdata* dns_ebl_parser( unsigned char* msg, unsigned char* end,
 	ebl=0;
 	ebl=(struct ebl_rdata*)local_malloc(sizeof(struct ebl_rdata));
 	if(ebl==0){
-		LOG(L_ERR, "ERROR: dns_ebl_parser: out of memory\n");
+		LM_ERR("out of pkg memory\n");
 		goto error;
 	}
 
@@ -458,7 +456,7 @@ struct rdata* get_record(char* name, int type)
 	
 	size=res_search(name, C_IN, type, buff.buff, sizeof(buff));
 	if (size<0) {
-		DBG("get_record: lookup(%s, %d) failed\n", name, type);
+		LM_DBG("lookup(%s, %d) failed\n", name, type);
 		goto not_found;
 	}
 	else if ((unsigned int)size > sizeof(buff)) size=sizeof(buff);
@@ -473,7 +471,7 @@ struct rdata* get_record(char* name, int type)
 	for (r=0; r<qno; r++){
 		/* skip the name of the question */
 		if ((p=dns_skipname(p, end))==0) {
-			LOG(L_ERR, "ERROR: get_record: skipname==0\n");
+			LM_ERR("skipname==0\n");
 			goto error;
 		}
 		p+=2+2; /* skip QCODE & QCLASS */
@@ -482,7 +480,7 @@ struct rdata* get_record(char* name, int type)
 		p+=1+2+2; /* skip the ending  '\0, QCODE and QCLASS */
 	#endif
 		if (p>=end) {
-			LOG(L_ERR, "ERROR: get_record: p>=end\n");
+			LM_ERR("p>=end\n");
 			goto error;
 		}
 	};
@@ -492,7 +490,7 @@ struct rdata* get_record(char* name, int type)
 	for (r=0; (r<answers_no) && (p<end); r++){
 		/*  ignore it the default domain name */
 		if ((p=dns_skipname(p, end))==0) {
-			LOG(L_ERR, "ERROR: get_record: skip_name=0 (#2)\n");
+			LM_ERR("skip_name=0 (#2)\n");
 			goto error;
 		}
 		/*
@@ -520,8 +518,7 @@ struct rdata* get_record(char* name, int type)
 		/* check for type */
 		/*
 		if (rtype!=type){
-			LOG(L_ERR, "WARNING: get_record: wrong type in answer (%d!=%d)\n",
-					rtype, type);
+			LM_WAR("wrong type in answer (%d!=%d)\n", rtype, type);
 			p+=rdlength;
 			continue;
 		}
@@ -530,7 +527,7 @@ struct rdata* get_record(char* name, int type)
 		
 		rd=(struct rdata*) local_malloc(sizeof(struct rdata));
 		if (rd==0){
-			LOG(L_ERR, "ERROR: get_record: out of memory\n");
+			LM_ERR("out of pkg memory\n");
 			goto error;
 		}
 		rd->type=rtype;
@@ -597,7 +594,7 @@ struct rdata* get_record(char* name, int type)
 				last=&(rd->next);
 				break;
 			default:
-				LOG(L_ERR, "WARNING: get_record: unknown type %d\n", rtype);
+				LM_ERR("unknown type %d\n", rtype);
 				rd->rdata=0;
 				*last=rd;
 				last=&(rd->next);
@@ -608,16 +605,16 @@ struct rdata* get_record(char* name, int type)
 	}
 	return head;
 error_boundary:
-		LOG(L_ERR, "ERROR: get_record: end of query buff reached\n");
+		LM_ERR("end of query buff reached\n");
 		if(head)
 			free_rdata_list(head);
 		return 0;
 error_parse:
-		LOG(L_ERR, "ERROR: get_record: rdata parse error \n");
+		LM_ERR("rdata parse error \n");
 		if (rd) local_free(rd); /* rd->rdata=0 & rd is not linked yet into
 								   the list */
 error:
-		LOG(L_ERR, "ERROR: get_record \n");
+		LM_ERR("get_record \n");
 		if (head) free_rdata_list(head);
 not_found:
 	return 0;
@@ -650,7 +647,7 @@ static inline int get_naptr_proto(struct naptr_rdata *n)
 #endif
 
 	}
-	LOG(L_CRIT,"BUG:get_naptr_proto: failed to detect proto\n");
+	LM_CRIT("failed to detect proto\n");
 	return PROTO_NONE;
 }
 
@@ -671,7 +668,7 @@ static inline int srv2dns_node(struct rdata *head, struct dns_node **dn)
 
 	n = (struct dns_node*)shm_malloc(mem);
 	if (n==NULL) {
-		LOG(L_ERR,"ERROR:srv2dns_node: no more shm mem (%d)\n", mem);
+		LM_ERR("no more shm mem (%d)\n", mem);
 		return -1;
 	}
 
@@ -712,7 +709,7 @@ static inline int a2dns_node(struct rdata *head, struct dns_node **dn)
 
 	n = (struct dns_node*)shm_malloc(mem);
 	if (n==NULL) {
-		LOG(L_ERR,"ERROR:a2dns_node: no more shm mem (%d)\n", mem);
+		LM_ERR("no more shm mem (%d)\n", mem);
 		return -1;
 	}
 
@@ -729,8 +726,7 @@ static inline int a2dns_node(struct rdata *head, struct dns_node **dn)
 		n->vals[l].ival = get_srv(r)->port;
 		n->vals[l].sval = p;
 		memcpy( p, get_srv(r)->name, get_srv(r)->name_len );
-		DBG("DEBUG:a2dns_node: storing %.*s:%d\n",
-			get_srv(r)->name_len,p,n->vals[l].ival);
+		LM_DBG("storing %.*s:%d\n", get_srv(r)->name_len,p,n->vals[l].ival);
 		p += get_srv(r)->name_len;
 		*(p++) = 0;
 	}
@@ -754,14 +750,13 @@ static inline struct hostent* do_srv_lookup(char *name,
 			continue; /*should never happen*/
 		srv = (struct srv_rdata*) rd->rdata;
 		if (srv==0) {
-			LOG(L_CRIT, "BUG:do_srv_lookup: null rdata\n");
+			LM_CRIT("null rdata\n");
 			free_rdata_list(head);
 			return 0;
 		}
 		he = resolvehost(srv->name, 1);
 		if ( he!=0 ) {
-			DBG("DEBUG:do_srv_lookup: SRV(%s) = %s:%d\n",
-				name, srv->name, srv->port);
+			LM_DBG("SRV(%s) = %s:%d\n",	name, srv->name, srv->port);
 			*port=srv->port;
 			if (dn && rd->next && a2dns_node( rd->next, dn)==-1)
 					*dn = 0;
@@ -801,7 +796,7 @@ static inline void filter_and_sort_naptr( struct rdata** head_p,
 
 		naptr = (struct naptr_rdata*)l->rdata;
 		if (naptr == 0) {
-			LOG(L_CRIT, "BUG:filter_and_sort_naptr: null rdata\n");
+			LM_CRIT("null rdata\n");
 			goto skip0;
 		}
 
@@ -833,7 +828,7 @@ static inline void filter_and_sort_naptr( struct rdata** head_p,
 		if ( naptr->services_len==8 && (p=='U' || p=='u'))
 			goto skip;
 
-		DBG("DEBUG:filter_and_sort_naptr: found valid %.*s -> %s\n",
+		LM_DBG("found valid %.*s -> %s\n",
 			(int)naptr->services_len,naptr->services, naptr->repl);
 
 		/* this is a supported service -> add it according to order to the 
@@ -860,7 +855,7 @@ static inline void filter_and_sort_naptr( struct rdata** head_p,
 
 		continue;
 skip:
-		DBG("DEBUG:filter_and_sort_naptr: skipping %.*s -> %s\n",
+		LM_DBG("skipping %.*s -> %s\n",
 			(int)naptr->services_len, naptr->services, naptr->repl);
 skip0:
 		l->next = out;
@@ -886,8 +881,7 @@ struct hostent* sip_resolvehost(str* name, unsigned short* port, int *proto,
 	&& (tls_disable)
 #endif
 	) {
-		LOG(L_ERR, "ERROR:sip_resolvehost2: cannot resolve SIPS as no TLS "
-				"support is configured\n");
+		LM_ERR("cannot resolve SIPS as no TLS support is configured\n");
 		return 0;
 	}
 
@@ -908,7 +902,7 @@ struct hostent* sip_resolvehost(str* name, unsigned short* port, int *proto,
 	/* do we have a port? */
 	if ( !port || (*port)!=0 ) {
 		/* have port -> no NAPTR, no SRV lookup, just A record lookup */
-		DBG("DEBUG:sip_resolvehost2: has port -> do A record lookup!\n");
+		LM_DBG("has port -> do A record lookup!\n");
 		/* set default PROTO if not set */
 		if (proto && *proto==PROTO_NONE)
 			*proto = (is_sips)?PROTO_TLS:PROTO_UDP;
@@ -918,19 +912,18 @@ struct hostent* sip_resolvehost(str* name, unsigned short* port, int *proto,
 	/* no port... what about proto? */
 	if ( !proto || (*proto)!=PROTO_NONE ) {
 		/* have proto, but no port -> do SRV lookup */
-		DBG("DEBUG:sip_resolvehost2: no port, has proto -> do SRV lookup!\n");
+		LM_DBG("no port, has proto -> do SRV lookup!\n");
 		if (is_sips && (*proto)!=PROTO_TLS) {
-			LOG(L_ERR, "ERROR:sip_resolvehost2: forced proto %d not matching "
-				"sips uri\n", *proto);
+			LM_ERR("forced proto %d not matching sips uri\n", *proto);
 			return 0;
 		}
 		goto do_srv;
 	}
 
-	DBG("DEBUG:sip_resolvehost2: no port, no proto -> do NAPTR lookup!\n");
+	LM_DBG("no port, no proto -> do NAPTR lookup!\n");
 	/* no proto, no port -> do NAPTR lookup */
 	if (name->len >= MAX_DNS_NAME) {
-		LOG(L_ERR, "ERROR:sip_resolvehost2: domain name too long\n");
+		LM_ERR("domain name too long\n");
 		return 0;
 	}
 	memcpy(tmp, name->s, name->len);
@@ -947,7 +940,7 @@ struct hostent* sip_resolvehost(str* name, unsigned short* port, int *proto,
 			he = do_srv_lookup( get_naptr(rd)->repl, port );
 			if ( he ) {
 				*proto = get_naptr_proto( get_naptr(rd) );
-				DBG("DEBUG:sip_resolvehost2: found!\n");
+				LM_DBG("found!\n");
 				free_rdata_list(head);
 				return he;
 			}
@@ -955,13 +948,13 @@ struct hostent* sip_resolvehost(str* name, unsigned short* port, int *proto,
 		if (head)
 			free_rdata_list(head);
 	}
-	DBG("DEBUG:sip_resolvehost2: no valid NAPTR record found for %.*s," 
+	LM_DBG("no valid NAPTR record found for %.*s," 
 		" trying direct SRV lookup...\n", name->len, name->s);
 	*proto = (is_sips)?PROTO_TLS:PROTO_UDP;
 
 do_srv:
 	if ((name->len+SRV_MAX_PREFIX_LEN+1)>MAX_DNS_NAME) {
-		LOG(L_WARN, "WARNING:sip_resolvehost2: domain name too long (%d),"
+		LM_WARN("domain name too long (%d),"
 			" unable to perform SRV lookup\n", name->len);
 		/* set defaults */
 		*port = (is_sips)?SIPS_PORT:SIP_PORT;
@@ -998,7 +991,7 @@ do_srv:
 	if (he)
 		return he;
 	
-	DBG("DEBUG:sip_resolvehost2: no valid SRV record found for %s," 
+	LM_DBG("no valid SRV record found for %s," 
 		" trying A record lookup...\n", tmp);
 	/* set default port */
 	*port = (is_sips||((*proto)==PROTO_TLS))?SIPS_PORT:SIP_PORT;
@@ -1006,7 +999,7 @@ do_srv:
 do_a:
 	/* do A record lookup */
 	if (name->len >= MAX_DNS_NAME) {
-		LOG(L_ERR, "ERROR:sip_resolvehost2: domain name too long\n");
+		LM_ERR("domain name too long\n");
 		return 0;
 	}
 	memcpy(tmp, name->s, name->len);
@@ -1014,8 +1007,7 @@ do_a:
 	he = resolvehost(tmp,1);
 	return he;
 err_proto:
-	LOG(L_ERR, "ERROR:sip_resolvehost: unsupported proto %d\n",
-		*proto);
+	LM_ERR("unsupported proto %d\n", *proto);
 	return 0;
 }
 #endif
@@ -1036,8 +1028,7 @@ struct hostent* sip_resolvehost( str* name, unsigned short* port,
 	&& (tls_disable)
 #endif
 	) {
-		LOG(L_ERR, "ERROR:sip_resolvehost2: cannot resolve SIPS as no TLS "
-				"support is configured\n");
+		LM_ERR("cannot resolve SIPS as no TLS support is configured\n");
 		return 0;
 	}
 
@@ -1061,7 +1052,7 @@ struct hostent* sip_resolvehost( str* name, unsigned short* port,
 	/* do we have a port? */
 	if ( !port || (*port)!=0 ) {
 		/* have port -> no NAPTR, no SRV lookup, just A record lookup */
-		DBG("DEBUG:sip_resolvehost2: has port -> do A record lookup!\n");
+		LM_DBG("has port -> do A record lookup!\n");
 		/* set default PROTO if not set */
 		if (proto && *proto==PROTO_NONE)
 			*proto = (is_sips)?PROTO_TLS:PROTO_UDP;
@@ -1071,19 +1062,18 @@ struct hostent* sip_resolvehost( str* name, unsigned short* port,
 	/* no port... what about proto? */
 	if ( !proto || (*proto)!=PROTO_NONE ) {
 		/* have proto, but no port -> do SRV lookup */
-		DBG("DEBUG:sip_resolvehost2: no port, has proto -> do SRV lookup!\n");
+		LM_DBG("no port, has proto -> do SRV lookup!\n");
 		if (is_sips && (*proto)!=PROTO_TLS) {
-			LOG(L_ERR, "ERROR:sip_resolvehost2: forced proto %d not matching "
-				"sips uri\n", *proto);
+			LM_ERR("forced proto %d not matching sips uri\n", *proto);
 			return 0;
 		}
 		goto do_srv;
 	}
 
-	DBG("DEBUG:sip_resolvehost2: no port, no proto -> do NAPTR lookup!\n");
+	LM_DBG("no port, no proto -> do NAPTR lookup!\n");
 	/* no proto, no port -> do NAPTR lookup */
 	if (name->len >= MAX_DNS_NAME) {
-		LOG(L_ERR, "ERROR:sip_resolvehost2: domain name too long\n");
+		LM_ERR("domain name too long\n");
 		return 0;
 	}
 	memcpy(tmp, name->s, name->len);
@@ -1100,7 +1090,7 @@ struct hostent* sip_resolvehost( str* name, unsigned short* port,
 			*proto = get_naptr_proto( get_naptr(rd) );
 			he = do_srv_lookup( get_naptr(rd)->repl, port, dn);
 			if ( he ) {
-				DBG("DEBUG:sip_resolvehost2: found!\n");
+				LM_DBG("found!\n");
 				if (dn) {
 					/* save the state of the resolver for failure cases */
 					if (*dn==NULL)
@@ -1117,13 +1107,13 @@ struct hostent* sip_resolvehost( str* name, unsigned short* port,
 		if (head)
 			free_rdata_list(head);
 	}
-	DBG("DEBUG:sip_resolvehost2: no valid NAPTR record found for %.*s," 
+	LM_DBG("no valid NAPTR record found for %.*s," 
 		" trying direct SRV lookup...\n", name->len, name->s);
 	*proto = (is_sips)?PROTO_TLS:PROTO_UDP;
 
 do_srv:
 	if ((name->len+SRV_MAX_PREFIX_LEN+1)>MAX_DNS_NAME) {
-		LOG(L_WARN, "WARNING:sip_resolvehost2: domain name too long (%d),"
+		LM_WARN("domain name too long (%d),"
 			" unable to perform SRV lookup\n", name->len);
 		/* set defaults */
 		*port = (is_sips)?SIPS_PORT:SIP_PORT;
@@ -1168,7 +1158,7 @@ do_srv:
 	if (he)
 		return he;
 	
-	DBG("DEBUG:sip_resolvehost2: no valid SRV record found for %s," 
+	LM_DBG("DEBUG:sip_resolvehost2: no valid SRV record found for %s," 
 		" trying A record lookup...\n", tmp);
 	/* set default port */
 	*port = (is_sips||((*proto)==PROTO_TLS))?SIPS_PORT:SIP_PORT;
@@ -1176,7 +1166,7 @@ do_srv:
 do_a:
 	/* do A record lookup */
 	if (name->len >= MAX_DNS_NAME) {
-		LOG(L_ERR, "ERROR:sip_resolvehost2: domain name too long\n");
+		LM_ERR("domain name too long\n");
 		return 0;
 	}
 	memcpy(tmp, name->s, name->len);
@@ -1184,8 +1174,7 @@ do_a:
 	he = resolvehost(tmp,1);
 	return he;
 err_proto:
-	LOG(L_ERR, "ERROR:sip_resolvehost: unsupported proto %d\n",
-		*proto);
+	LM_ERR("unsupported proto %d\n", *proto);
 	return 0;
 }
 
@@ -1263,8 +1252,7 @@ static inline struct hostent* get_next_he(struct dns_node **node,
 				return he;
 				break;
 			default:
-				LOG(L_CRIT,"BUG:dns_get_next_ip: unknown %d node type\n",
-					n->type);
+				LM_CRIT("unknown %d node type\n", n->type);
 				return 0;
 		}
 	} while(1);
@@ -1300,7 +1288,7 @@ int get_next_su(struct proxy_l *p, union sockaddr_union* su, int add_to_bl)
 		list = 0;
 		n = add_rule_to_list( &list, &list, &ip_net, 0, p->port, p->proto, 0);
 		if (n!=0) {
-			LOG(L_ERR,"ERROR:get_next_su: failed to build bl rule\n");
+			LM_ERR("failed to build bl rule\n");
 		} else {
 			add_list_to_head( failover_bl, list, list, 0, DNS_BL_EXPIRE);
 		}
@@ -1345,7 +1333,7 @@ static inline struct dns_node *dns_node_copy(struct dns_node *s)
 
 	d = (struct dns_node*)shm_malloc(s->size);
 	if (d==NULL) {
-		LOG(L_ERR,"ERROR:dns_node_copy: no more shm mem\n");
+		LM_ERR("no more shm mem\n");
 		return 0;
 	}
 	memcpy( d, s, s->size);

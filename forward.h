@@ -86,26 +86,25 @@ static inline int msg_send( struct socket_info* send_sock, int proto,
 	if (send_sock==0)
 		send_sock=get_send_socket(0, to, proto);
 	if (send_sock==0){
-		LOG(L_ERR, "msg_send: ERROR: no sending socket found for proto %d\n",
-				proto);
+		LM_ERR("no sending socket found for proto %d\n", proto);
 		goto error;
 	}
 
 	if (proto==PROTO_UDP){
 		if (udp_send(send_sock, buf, len, to)==-1){
-			LOG(L_ERR, "msg_send: ERROR: udp_send failed\n");
+			LM_ERR("udp_send failed\n");
 			goto error;
 		}
 	}
 #ifdef USE_TCP
 	else if (proto==PROTO_TCP){
 		if (tcp_disable){
-			LOG(L_WARN, "msg_send: WARNING: attempt to send on tcp and tcp"
+			LM_WARN("attempt to send on tcp and tcp"
 					" support is disabled\n");
 			goto error;
 		}else{
 			if (tcp_send(send_sock, proto, buf, len, to, id)<0){
-				LOG(L_ERR, "msg_send: ERROR: tcp_send failed\n");
+				LM_ERR("tcp_send failed\n");
 				goto error;
 			}
 		}
@@ -113,12 +112,12 @@ static inline int msg_send( struct socket_info* send_sock, int proto,
 #ifdef USE_TLS
 	else if (proto==PROTO_TLS){
 		if (tls_disable){
-			LOG(L_WARN, "msg_send: WARNING: attempt to send on tls and tls"
+			LM_WARN("attempt to send on tls and tls"
 					" support is disabled\n");
 			goto error;
 		}else{
 			if (tcp_send(send_sock, proto, buf, len, to, id)<0){
-				LOG(L_ERR, "msg_send: ERROR: tcp_send failed\n");
+				LM_ERR("tcp_send failed\n");
 				goto error;
 			}
 		}
@@ -128,19 +127,19 @@ static inline int msg_send( struct socket_info* send_sock, int proto,
 #ifdef USE_SCTP
 	else if (proto==PROTO_SCTP){
 		if (sctp_disable){
-			LOG(L_WARN, "msg_send: WARNING: attempt to send on sctp and sctp"
+			LM_WARN("attempt to send on sctp and sctp"
 					" support is disabled\n");
 			goto error;
 		}else{
 			if (sctp_server_send(send_sock, buf, len, to)<0){
-				LOG(L_ERR, "msg_send: ERROR: sctp_send failed\n");
+				LM_ERR("sctp_send failed\n");
 				goto error;
 			}
 		}
 	}
 #endif /* USE_SCTP */
 	else{
-			LOG(L_CRIT, "BUG: msg_send: unknown proto %d\n", proto);
+			LM_CRIT("unknown proto %d\n", proto);
 			goto error;
 	}
 	return 0;

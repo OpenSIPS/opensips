@@ -50,7 +50,7 @@ int isflagset( struct sip_msg* msg, flag_t flag ) {
 
 int flag_in_range( flag_t flag ) {
 	if ( flag > MAX_FLAG ) {
-		LOG(L_ERR, "ERROR: message flag (%d) must be in range %d..%d\n",
+		LM_ERR("message flag (%d) must be in range %d..%d\n",
 			flag, 1, MAX_FLAG );
 		return 0;
 	}
@@ -62,7 +62,7 @@ int flag_idx2mask(int *flag)
 	if (*flag<0) {
 		*flag = 0;
 	} else if (*flag>(int)MAX_FLAG) {
-		LOG(L_ERR,"ERROR:flag_idx2mask: flag %d out of range\n",*flag);
+		LM_ERR("flag %d out of range\n",*flag);
 		return -1;
 	} else {
 		*flag = 1<<(*flag);
@@ -79,7 +79,7 @@ static unsigned int sflags = 0;
 unsigned int fixup_flag(unsigned int idx)
 {
 	if (idx>MAX_FLAG) {
-		LOG(L_ERR, "ERROR:fixup_flag: flag (%d) out of range %d..%d\n",
+		LM_ERR("flag (%d) out of range %d..%d\n",
 			idx, 0, MAX_FLAG );
 		return 0;
 	}

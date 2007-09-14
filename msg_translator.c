@@ -162,8 +162,7 @@ static int check_via_address(struct ip_addr* ip, str *name,
 	/* maybe we are lucky and name it's an ip */
 	s=ip_addr2a(ip);
 	if (s){
-		DBG("check_via_address(%s, %.*s, %d)\n", 
-			s, name->len, name->s, resolver);
+		LM_DBG("params %s, %.*s, %d\n", s, name->len, name->s, resolver);
 		len=strlen(s);
 
 	#ifdef USE_IPV6
@@ -183,13 +182,13 @@ static int check_via_address(struct ip_addr* ip, str *name,
 			if (strncmp(name->s, s, name->len)==0) 
 				return 0;
 	}else{
-		LOG(L_CRIT, "check_via_address: BUG: could not convert ip address\n");
+		LM_CRIT("could not convert ip address\n");
 		return -1;
 	}
 
 	if (port==0) port=SIP_PORT;
 	if (resolver&DO_DNS){
-		DBG("check_via_address: doing dns lookup\n");
+		LM_DBG("doing dns lookup\n");
 		/* try all names ips */
 		he=sip_resolvehost(name, &port, &proto, 0, 0);
 		if (he && (int)ip->af==he->h_addrtype){
@@ -200,7 +199,7 @@ static int check_via_address(struct ip_addr* ip, str *name,
 		}
 	}
 	if (resolver&DO_REV_DNS){
-		DBG("check_via_address: doing rev. dns lookup\n");
+		LM_DBG("doing rev. dns lookup\n");
 		/* try reverse dns */
 		he=rev_resolvehost(ip);
 		if (he && (strncmp(he->h_name, name->s, name->len)==0))
@@ -304,7 +303,7 @@ static char * warning_builder( struct sip_msg *msg, unsigned int *returned_len)
 	*returned_len=clen;
 	return buf;
 error_overflow:
-	LOG(L_ERR, "ERROR: warning_builder: buffer size exceeded\n");
+	LM_ERR("buffer size exceeded\n");
 	*returned_len=0;
 	return 0;
 }
@@ -325,7 +324,7 @@ char* received_builder(struct sip_msg *msg, unsigned int *received_len)
 	buf=pkg_malloc(sizeof(char)*MAX_RECEIVED_SIZE);
 	if (buf==0){
 		ser_error=E_OUT_OF_MEM;
-		LOG(L_ERR, "ERROR: received_builder: out of memory\n");
+		LM_ERR("out of pkg memory\n");
 		return 0;
 	}
 	memcpy(buf, RECEIVED, RECEIVED_LEN);
@@ -356,7 +355,7 @@ char* rport_builder(struct sip_msg *msg, unsigned int *rport_len)
 	buf=pkg_malloc(sizeof(char)*(len+1));/* space for null term */
 	if (buf==0){
 		ser_error=E_OUT_OF_MEM;
-		LOG(L_ERR, "ERROR: rport_builder: out of memory\n");
+		LM_ERR("out of pkg memory\n");
 		return 0;
 	}
 	memcpy(buf, RPORT, RPORT_LEN);
@@ -380,7 +379,7 @@ char* id_builder(struct sip_msg* msg, unsigned int *id_len)
 	size=sizeof(int)*2;
 	p=&revhex[0];
 	if (int2reverse_hex(&p, &size, msg->rcv.proto_reserved1)==-1){
-		LOG(L_CRIT, "BUG: id_builder: not enough space for id\n");
+		LM_CRIT("not enough space for id\n");
 		return 0;
 	}
 	value_len=p-&revhex[0];
@@ -388,7 +387,7 @@ char* id_builder(struct sip_msg* msg, unsigned int *id_len)
 	buf=pkg_malloc(sizeof(char)*(len+1));/* place for ending \0 */
 	if (buf==0){
 		ser_error=E_OUT_OF_MEM;
-		LOG(L_ERR, "ERROR: rport_builder: out of memory\n");
+		LM_ERR("out of pkg memory\n");
 		return 0;
 	}
 	memcpy(buf, ID_PARAM, ID_PARAM_LEN);
@@ -413,19 +412,18 @@ char* clen_builder(struct sip_msg* msg, int *clen_len, int diff)
 	body=get_body(msg);
 	if (body==0){
 		ser_error=E_BAD_REQ;
-		LOG(L_ERR, "ERROR: clen_builder: no message body found"
-					" (missing crlf?)");
+		LM_ERR("no message body found (missing crlf?)");
 		return 0;
 	}
 	value=msg->len-(int)(body-msg->buf)+diff;
 	value_s=int2str(value, &value_len);
-	DBG("clen_builder: content-length: %d (%s)\n", value, value_s);
+	LM_DBG("content-length: %d (%s)\n", value, value_s);
 		
 	len=CONTENT_LENGTH_LEN+value_len+CRLF_LEN;
 	buf=pkg_malloc(sizeof(char)*(len+1));
 	if (buf==0){
 		ser_error=E_OUT_OF_MEM;
-		LOG(L_ERR, "ERROR: clen_builder: out of memory\n");
+		LM_ERR("out of pkg memory\n");
 		return 0;
 	}
 	memcpy(buf, CONTENT_LENGTH, CONTENT_LENGTH_LEN);
@@ -451,7 +449,7 @@ static inline int lump_check_opt(	enum lump_conditions cond,
 
 #define get_ip_port_proto \
 			if (snd_s==0){ \
-				LOG(L_CRIT, "ERROR: lump_check_opt: null send socket\n"); \
+				LM_CRIT("null send socket\n"); \
 				return 1; /* we presume they are different :-) */ \
 			} \
 			if (msg->rcv.bind_address){ \
@@ -495,8 +493,7 @@ static inline int lump_check_opt(	enum lump_conditions cond,
 		case COND_IF_RAND:
 			return (rand()>=RAND_MAX/2);
 		default:
-			LOG(L_CRIT, "BUG: lump_check_opt: unknown lump condition %d\n",
-					cond);
+			LM_CRIT("unknown lump condition %d\n", cond);
 	}
 	return 0; /* false */
 }
@@ -524,7 +521,7 @@ static inline int lumps_len(struct sip_msg* msg, struct lump* lumps,
 						new_len+=2; \
 				}else{ \
 					/* FIXME */ \
-					LOG(L_CRIT, "FIXME: null bind_address\n"); \
+					LM_CRIT("fixme:null bind_address\n"); \
 				}; \
 				break; \
 			case SUBST_RCV_PORT: \
@@ -532,7 +529,7 @@ static inline int lumps_len(struct sip_msg* msg, struct lump* lumps,
 					new_len+=msg->rcv.bind_address->port_no_str.len; \
 				}else{ \
 					/* FIXME */ \
-					LOG(L_CRIT, "FIXME: null bind_address\n"); \
+					LM_CRIT("fixme: null bind_address\n"); \
 				}; \
 				break; \
 			case SUBST_RCV_PROTO: \
@@ -548,12 +545,12 @@ static inline int lumps_len(struct sip_msg* msg, struct lump* lumps,
 								new_len+=4; \
 								break; \
 						default: \
-						LOG(L_CRIT, "BUG: lumps_len: unknown proto %d\n", \
+						LM_CRIT("unknown proto %d\n", \
 								msg->rcv.bind_address->proto); \
 					}\
 				}else{ \
 					/* FIXME */ \
-					LOG(L_CRIT, "FIXME: null bind_address\n"); \
+					LM_CRIT("fixme: null bind_address\n"); \
 				}; \
 				break; \
 			case SUBST_RCV_ALL: \
@@ -578,12 +575,12 @@ static inline int lumps_len(struct sip_msg* msg, struct lump* lumps,
 								new_len+=TRANSPORT_PARAM_LEN+4; \
 								break; \
 						default: \
-						LOG(L_CRIT, "BUG: lumps_len: unknown proto %d\n", \
+						LM_CRIT("unknown proto %d\n", \
 								msg->rcv.bind_address->proto); \
 					}\
 				}else{ \
 					/* FIXME */ \
-					LOG(L_CRIT, "FIXME: null bind_address\n"); \
+					LM_CRIT("fixme: null bind_address\n"); \
 				}; \
 				break; \
 			case SUBST_SND_IP: \
@@ -593,7 +590,7 @@ static inline int lumps_len(struct sip_msg* msg, struct lump* lumps,
 							send_address_str==&(send_sock->address_str)) \
 						new_len+=2; \
 				}else{ \
-					LOG(L_CRIT, "FIXME: lumps_len called with" \
+					LM_CRIT("fixme: lumps_len called with" \
 							" null send_sock\n"); \
 				}; \
 				break; \
@@ -601,7 +598,7 @@ static inline int lumps_len(struct sip_msg* msg, struct lump* lumps,
 				if (send_sock){ \
 					new_len+=send_port_str->len; \
 				}else{ \
-					LOG(L_CRIT, "FIXME: lumps_len called with" \
+					LM_CRIT("lumps_len called with" \
 							" null send_sock\n"); \
 				}; \
 				break; \
@@ -618,11 +615,11 @@ static inline int lumps_len(struct sip_msg* msg, struct lump* lumps,
 								new_len+=4; \
 								break; \
 						default: \
-						LOG(L_CRIT, "BUG: lumps_len: unknown proto %d\n", \
+						LM_CRIT("unknown proto %d\n", \
 								send_sock->proto); \
 					}\
 				}else{ \
-					LOG(L_CRIT, "FIXME: lumps_len called with" \
+					LM_CRIT("lumps_len called with" \
 							" null send_sock\n"); \
 				}; \
 				break; \
@@ -650,19 +647,19 @@ static inline int lumps_len(struct sip_msg* msg, struct lump* lumps,
 								new_len+=TRANSPORT_PARAM_LEN+4; \
 								break; \
 						default: \
-						LOG(L_CRIT, "BUG: lumps_len: unknown proto %d\n", \
+						LM_CRIT("unknown proto %d\n", \
 								send_sock->proto); \
 					}\
 				}else{ \
 					/* FIXME */ \
-					LOG(L_CRIT, "FIXME: lumps_len called with" \
+					LM_CRIT("lumps_len called with" \
 							" null send_sock\n"); \
 				}; \
 				break; \
 			case SUBST_NOP: /* do nothing */ \
 				break; \
 			default: \
-				LOG(L_CRIT, "BUG: unknown subst type %d\n", \
+				LM_CRIT("unknown subst type %d\n", \
 						(subst_l)->u.subst); \
 		}
 	
@@ -699,8 +696,7 @@ static inline int lumps_len(struct sip_msg* msg, struct lump* lumps,
 					break;
 				default:
 					/* only ADD allowed for before/after */
-						LOG(L_CRIT, "BUG: lumps_len: invalid op "
-							"for data lump (%x)\n", r->op);
+						LM_CRIT("invalid op for data lump (%x)\n", r->op);
 			}
 		}
 skip_before:
@@ -736,8 +732,7 @@ skip_before:
 				/* do nothing */
 				break;
 			default:
-				LOG(L_CRIT,"BUG:lumps_len: invalid"
-							" op for data lump (%x)\n", r->op);
+				LM_CRIT("op for data lump (%x)\n", r->op);
 		}
 		for (r=t->after;r;r=r->after){
 			switch(r->op){
@@ -755,8 +750,7 @@ skip_before:
 					break;
 				default:
 					/* only ADD allowed for before/after */
-					LOG(L_CRIT, "BUG:lumps_len: invalid"
-								" op for data lump (%x)\n", r->op);
+					LM_CRIT("invalid op for data lump (%x)\n", r->op);
 			}
 		}
 skip_after:
@@ -801,7 +795,7 @@ static inline void process_lumps(	struct sip_msg* msg,
 				}\
 			}else{  \
 				/*FIXME*/ \
-				LOG(L_CRIT, "FIXME: process_lumps: null bind_address\n"); \
+				LM_CRIT("null bind_address\n"); \
 			}; \
 			break; \
 		case SUBST_RCV_PORT: \
@@ -811,7 +805,7 @@ static inline void process_lumps(	struct sip_msg* msg,
 				offset+=msg->rcv.bind_address->port_no_str.len; \
 			}else{  \
 				/*FIXME*/ \
-				LOG(L_CRIT, "FIXME: process_lumps: null bind_address\n"); \
+				LM_CRIT("null bind_address\n"); \
 			}; \
 			break; \
 		case SUBST_RCV_ALL: \
@@ -860,12 +854,12 @@ static inline void process_lumps(	struct sip_msg* msg,
 						offset+=4; \
 						break; \
 					default: \
-						LOG(L_CRIT, "BUG: process_lumps: unknown proto %d\n", \
+						LM_CRIT("unknown proto %d\n", \
 								msg->rcv.bind_address->proto); \
 				} \
 			}else{  \
 				/*FIXME*/ \
-				LOG(L_CRIT, "FIXME: process_lumps: null bind_address\n"); \
+				LM_CRIT("null bind_address\n"); \
 			}; \
 			break; \
 		case SUBST_SND_IP: \
@@ -883,8 +877,7 @@ static inline void process_lumps(	struct sip_msg* msg,
 				}\
 			}else{  \
 				/*FIXME*/ \
-				LOG(L_CRIT, "FIXME: process_lumps: called with" \
-							" null send_sock\n"); \
+				LM_CRIT("called with null send_sock\n"); \
 			}; \
 			break; \
 		case SUBST_SND_PORT: \
@@ -894,8 +887,7 @@ static inline void process_lumps(	struct sip_msg* msg,
 				offset+=send_port_str->len; \
 			}else{  \
 				/*FIXME*/ \
-				LOG(L_CRIT, "FIXME: process_lumps: called with" \
-						" null send_sock\n"); \
+				LM_CRIT("called with null send_sock\n"); \
 			}; \
 			break; \
 		case SUBST_SND_ALL: \
@@ -946,12 +938,12 @@ static inline void process_lumps(	struct sip_msg* msg,
 						offset+=4; \
 						break; \
 					default: \
-						LOG(L_CRIT, "BUG: process_lumps: unknown proto %d\n", \
+						LM_CRIT("unknown proto %d\n", \
 								send_sock->proto); \
 				} \
 			}else{  \
 				/*FIXME*/ \
-				LOG(L_CRIT, "FIXME: process_lumps: null bind_address\n"); \
+				LM_CRIT("null bind_address\n"); \
 			}; \
 			break; \
 		case SUBST_RCV_PROTO: \
@@ -975,13 +967,12 @@ static inline void process_lumps(	struct sip_msg* msg,
 						offset+=4; \
 						break; \
 					default: \
-						LOG(L_CRIT, "BUG: process_lumps: unknown proto %d\n", \
+						LM_CRIT("unknown proto %d\n", \
 								msg->rcv.bind_address->proto); \
 				} \
 			}else{  \
 				/*FIXME*/ \
-				LOG(L_CRIT, "FIXME: process_lumps: called with null" \
-							" send_sock \n"); \
+				LM_CRIT("called with null send_sock \n"); \
 			}; \
 			break; \
 		case  SUBST_SND_PROTO: \
@@ -1005,17 +996,16 @@ static inline void process_lumps(	struct sip_msg* msg,
 						offset+=4; \
 						break; \
 					default: \
-						LOG(L_CRIT, "BUG: process_lumps: unknown proto %d\n", \
+						LM_CRIT("unknown proto %d\n", \
 								send_sock->proto); \
 				} \
 			}else{  \
 				/*FIXME*/ \
-				LOG(L_CRIT, "FIXME: process_lumps: called with null" \
-							" send_sock \n"); \
+				LM_CRIT("called with null send_sock \n"); \
 			}; \
 			break; \
 		default: \
-					LOG(L_CRIT, "BUG: process_lumps: unknown subst type %d\n", \
+					LM_CRIT("unknown subst type %d\n", \
 							(subst_l)->u.subst); \
 	} \
  \
@@ -1065,8 +1055,7 @@ static inline void process_lumps(	struct sip_msg* msg,
 							break;
 						default:
 							/* only ADD allowed for before/after */
-							LOG(L_CRIT, "BUG:process_lumps: "
-									"invalid op for data lump (%x)\n", r->op);
+							LM_CRIT("invalid op for data lump (%x)\n", r->op);
 					}
 				}
 skip_before:
@@ -1084,8 +1073,7 @@ skip_before:
 						break;
 					default: 
 						/* should not ever get here */
-						LOG(L_CRIT, "BUG: process_lumps: unhandled data lump "
-								" op %d\n", t->op);
+						LM_CRIT("unhandled data lump op %d\n", t->op);
 				}
 				/* process after */
 				for(r=t->after;r;r=r->after){
@@ -1106,8 +1094,7 @@ skip_before:
 							break;
 						default:
 							/* only ADD allowed for before/after */
-							LOG(L_CRIT, "BUG:process_lumps: "
-									"invalid op for data lump (%x)\n", r->op);
+							LM_CRIT("invalid op for data lump (%x)\n", r->op);
 					}
 				}
 skip_after:
@@ -1116,7 +1103,7 @@ skip_after:
 			case LUMP_DEL:
 				/* copy till offset */
 				if (s_offset>t->u.offset){
-					DBG("Warning: (%d) overlapped lumps offsets,"
+					LM_WARN("(%d) overlapped lumps offsets,"
 						" ignoring(%x, %x)\n", t->op, s_offset,t->u.offset);
 					/* this should've been fixed above (when computing len) */
 					/* just ignore it*/
@@ -1147,8 +1134,7 @@ skip_after:
 							break;
 						default:
 							/* only ADD allowed for before/after */
-							LOG(L_CRIT, "BUG:process_lumps: "
-									"invalid op for data lump (%x)\n",r->op);
+							LM_CRIT("invalid op for data lump (%x)\n",r->op);
 					}
 				}
 skip_nop_before:
@@ -1176,15 +1162,13 @@ skip_nop_before:
 							break;
 						default:
 							/* only ADD allowed for before/after */
-							LOG(L_CRIT, "BUG:process_lumps: "
-									"invalid op for data lump (%x)\n", r->op);
+							LM_CRIT("invalid op for data lump (%x)\n", r->op);
 					}
 				}
 skip_nop_after:
 				break;
 			default:
-					LOG(L_CRIT, "BUG: process_lumps: "
-							"unknown op (%x)\n", t->op);
+					LM_CRIT("unknown op (%x)\n", t->op);
 		}
 	}
 	*new_buf_offs=offset;
@@ -1217,7 +1201,7 @@ static inline int adjust_clen(struct sip_msg* msg, int body_delta, int proto)
 #endif
 	    ) {
 		if (parse_headers(msg, HDR_CONTENTLENGTH_F, 0)==-1){
-			LOG(L_ERR, "adjust_clen: error parsing content-length\n");
+			LM_ERR("parsing content-length\n");
 			goto error;
 		}
 		if (msg->content_length==0){
@@ -1228,7 +1212,7 @@ static inline int adjust_clen(struct sip_msg* msg, int body_delta, int proto)
 			anchor=anchor_lump(msg, msg->unparsed-msg->buf, 0,
 												HDR_CONTENTLENGTH_T);
 			if (anchor==0){
-				LOG(L_ERR, "adjust_clen: cannot set clen anchor\n");
+				LM_ERR("cannot set clen anchor\n");
 				goto error;
 			}
 		}
@@ -1238,7 +1222,7 @@ static inline int adjust_clen(struct sip_msg* msg, int body_delta, int proto)
 	
 	if ((anchor==0) && body_delta){
 		if (parse_headers(msg, HDR_CONTENTLENGTH_F, 0) == -1) {
-			LOG(L_ERR, "adjust_clen: Error parsing Content-Length\n");
+			LM_ERR("parsing Content-Length\n");
 			goto error;
 		}
 		
@@ -1256,19 +1240,18 @@ static inline int adjust_clen(struct sip_msg* msg, int body_delta, int proto)
 				anchor=anchor_lump(msg, msg->unparsed-msg->buf, 0,
 													HDR_CONTENTLENGTH_T);
 				if (anchor==0){
-					LOG(L_ERR, "adjust_clen: cannot set clen anchor\n");
+					LM_ERR("cannot set clen anchor\n");
 					goto error;
 				}
 			}else{
-				DBG("add_clen: UDP packet with no clen => not adding one \n");
+				LM_DBG("the UDP packet has no clen => not adding one \n");
 			}
 		}else{
 			/* Content-Length has been found, remove it */
 			anchor = del_lump(	msg, msg->content_length->name.s - msg->buf,
 								msg->content_length->len, HDR_CONTENTLENGTH_T);
 			if (anchor==0) {
-				LOG(L_ERR, "adjust_clen: Can't remove original"
-							" Content-Length\n");
+				LM_ERR("can't remove original Content-Length\n");
 				goto error;
 			}
 		}
@@ -1328,13 +1311,13 @@ static inline int insert_path_as_route(struct sip_msg* msg, str* path)
 	}
 
 	if (anchor == 0) {
-		LOG(L_ERR, "ERROR: insert_path_as_route(): Failed to get anchor\n");
+		LM_ERR("failed to get anchor\n");
 		return -1;
 	}
 
 	route = pkg_malloc(ROUTE_LEN + path->len + CRLF_LEN);
 	if (!route) {
-		LOG(L_ERR, "ERROR: insert_path_as_route(): Out of memory\n");
+		LM_ERR("out of pkg memory\n");
 		return -1;
 	}
 	memcpy(route, ROUTE_STR, ROUTE_LEN);
@@ -1342,7 +1325,7 @@ static inline int insert_path_as_route(struct sip_msg* msg, str* path)
 	memcpy(route + ROUTE_LEN + path->len, CRLF, CRLF_LEN);
 
 	if (insert_new_lump_before(anchor, route, ROUTE_LEN + path->len + CRLF_LEN, 0) == 0) {
-		LOG(L_ERR, "ERROR: insert_path_as_route(): Failed to insert lump\n");
+		LM_ERR("failed to insert lump\n");
 		return -1;
 	}
 
@@ -1393,12 +1376,11 @@ char * build_req_buf_from_sip_req( struct sip_msg* msg,
 #endif
 	){
 		if  ((id_buf=id_builder(msg, &id_len))==0){
-			LOG(L_ERR, "ERROR: build_req_buf_from_sip_req:"
-							" id_builder failed\n");
+			LM_ERR("id_builder failed\n");
 			goto error; /* we don't need to free anything,
 			                 nothing alloc'ed yet*/
 		}
-		DBG("build_req_from_req: id added: <%.*s>, rcv proto=%d\n",
+		LM_DBG("id added: <%.*s>, rcv proto=%d\n",
 				(int)id_len, id_buf, msg->rcv.proto);
 		extra_params.s=id_buf;
 		extra_params.len=id_len;
@@ -1407,8 +1389,7 @@ char * build_req_buf_from_sip_req( struct sip_msg* msg,
 
 	if (msg->path_vec.len) {
 		if (insert_path_as_route(msg, &msg->path_vec) < 0) {
-			LOG(L_ERR,"ERROR: build_req_buf_from_sip_req: "
-				"adding path lumps failed\n");
+			LM_ERR("adding path lumps failed\n");
 			goto error;
 		}
 	}
@@ -1422,8 +1403,7 @@ char * build_req_buf_from_sip_req( struct sip_msg* msg,
 										will be null terminated */
 		extra_params.s = (char*)pkg_malloc(extra_params.len+1);
 		if(extra_params.s==0) {
-			LOG(L_ERR, "ERROR: build_req_buf_from_sip_req:"
-							" extra params building failed\n");
+			LM_ERR("extra params building failed\n");
 			if (id_buf) pkg_free(id_buf);
 			goto error;
 		}
@@ -1434,8 +1414,7 @@ char * build_req_buf_from_sip_req( struct sip_msg* msg,
 		}
 		memcpy(extra_params.s+id_len, RPORT, RPORT_LEN-1);
 		extra_params.s[extra_params.len]='\0';
-		DBG("build_req_from_req: extra param added: <%.*s>\n",
-				extra_params.len, extra_params.s);
+		LM_DBG("extra param added: <%.*s>\n",extra_params.len, extra_params.s);
 	}
 	
 	/* Calculate message body difference and adjust
@@ -1443,8 +1422,7 @@ char * build_req_buf_from_sip_req( struct sip_msg* msg,
 	 */
 	body_delta = lumps_len(msg, msg->body_lumps, send_sock);
 	if (adjust_clen(msg, body_delta, proto) < 0) {
-		LOG(L_ERR, "ERROR: build_req_buf_from_sip_req: Error while adjusting"
-				" Content-Length\n");
+		LM_ERR("failed to adjust Content-Length\n");
 		goto error00;
 	}
 
@@ -1454,14 +1432,13 @@ char * build_req_buf_from_sip_req( struct sip_msg* msg,
 	line_buf = via_builder( &via_len, send_sock, &branch,
 							extra_params.len?&extra_params:0, proto, &hp);
 	if (!line_buf){
-		LOG(L_ERR,"ERROR: build_req_buf_from_sip_req: no via received!\n");
+		LM_ERR("no via received!\n");
 		goto error00;
 	}
 	/* check if received needs to be added */
 	if ( received_test(msg) ) { 
 		if ((received_buf=received_builder(msg,&received_len))==0){
-			LOG(L_ERR, "ERROR: build_req_buf_from_sip_req:"
-							" received_builder failed\n");
+			LM_ERR("received_builder failed\n");
 			goto error01;  /* free also line_buf */
 		}
 	}
@@ -1474,8 +1451,7 @@ char * build_req_buf_from_sip_req( struct sip_msg* msg,
 	if ((msg->msg_flags&FL_FORCE_RPORT)||
 			(msg->via1->rport /*&& msg->via1->rport->value.s==0*/)){
 		if ((rport_buf=rport_builder(msg, &rport_len))==0){
-			LOG(L_ERR, "ERROR: build_req_buf_from_sip_req:"
-							" rport_builder failed\n");
+			LM_ERR("rport_builder failed\n");
 			goto error01; /* free everything */
 		}
 	}
@@ -1534,7 +1510,7 @@ char * build_req_buf_from_sip_req( struct sip_msg* msg,
 	/* compute new msg len and fix overlapping zones*/
 	new_len=len+body_delta+lumps_len(msg, msg->add_rm, send_sock);
 #ifdef XL_DEBUG
-	LOG(L_ERR, "DEBUG: new_len(%d)=len(%d)+lumps_len\n", new_len, len);
+	LM_DBG("new_len(%d)=len(%d)+lumps_len\n", new_len, len);
 #endif
 
 	if (msg->new_uri.s){
@@ -1544,7 +1520,7 @@ char * build_req_buf_from_sip_req( struct sip_msg* msg,
 	new_buf=(char*)pkg_malloc(new_len+1);
 	if (new_buf==0){
 		ser_error=E_OUT_OF_MEM;
-		LOG(L_ERR, "ERROR: build_req_buf_from_sip_req: out of memory\n");
+		LM_ERR("out of pkg memory\n");
 		goto error00;
 	}
 
@@ -1615,26 +1591,24 @@ char * build_res_buf_from_sip_res( struct sip_msg* msg,
 	body_delta = lumps_len(msg, msg->body_lumps, 0);
 	if (adjust_clen(msg, body_delta, (msg->via2? msg->via2->proto:PROTO_UDP))
 			< 0) {
-		LOG(L_ERR, "ERROR: build_req_buf_from_sip_req: Error while adjusting"
-				" Content-Length\n");
+		LM_ERR("failed to adjust Content-Length\n");
 		goto error;
 	}
 
 	/* remove the first via*/
 	if (del_lump( msg, via_offset, via_len, HDR_VIA_T)==0){
-		LOG(L_ERR, "build_res_buf_from_sip_res: error trying to remove first"
-					"via\n");
+		LM_ERR("failed to remove first via\n");
 		goto error;
 	}
 
 	new_len=len+body_delta+lumps_len(msg, msg->add_rm, 0); /*FIXME: we don't
 														know the send sock */
 	
-	DBG(" old size: %d, new size: %d\n", len, new_len);
+	LM_DBG(" old size: %d, new size: %d\n", len, new_len);
 	new_buf=(char*)pkg_malloc(new_len+1); /* +1 is for debugging 
 											 (\0 to print it )*/
 	if (new_buf==0){
-		LOG(L_ERR, "ERROR: build_res_buf_from_sip_res: out of mem\n");
+		LM_ERR("out of pkg mem\n");
 		goto error;
 	}
 	new_buf[new_len]=0; /* debug: print the message */
@@ -1647,7 +1621,7 @@ char * build_res_buf_from_sip_res( struct sip_msg* msg,
 		buf+s_offset, 
 		len-s_offset);
 	 /* send it! */
-	DBG("build_res_from_sip_res: copied size: orig:%d, new: %d, rest: %d"
+	LM_DBG("copied size: orig:%d, new: %d, rest: %d"
 			" msg=\n%s\n", s_offset, offset, len-s_offset, new_buf);
 
 	*returned_len=new_len;
@@ -1691,8 +1665,7 @@ char * build_res_buf_from_sip_req( unsigned int code, str *text ,str *new_tag,
 	end of header (non-block Vias are a really poor property
 	of SIP :( ) */
 	if (parse_headers( msg, HDR_EOH_F, 0 )==-1) {
-		LOG(L_ERR, "ERROR: build_res_buf_from_sip_req: "
-			"alas, parse_headers failed\n");
+		LM_ERR("parse_headers failed\n");
 		goto error00;
 	}
 
@@ -1702,8 +1675,7 @@ char * build_res_buf_from_sip_req( unsigned int code, str *text ,str *new_tag,
 	/* check if received needs to be added */
 	if (received_test(msg)) {
 		if ((received_buf=received_builder(msg,&received_len))==0) {
-			LOG(L_ERR, "ERROR: build_res_buf_from_sip_req: "
-				"alas, received_builder failed\n");
+			LM_ERR("received_builder failed\n");
 			goto error00;
 		}
 	}
@@ -1711,8 +1683,7 @@ char * build_res_buf_from_sip_req( unsigned int code, str *text ,str *new_tag,
 	if ( (msg->msg_flags&FL_FORCE_RPORT)||
 		(msg->via1->rport /*&& msg->via1->rport->value.s==0*/)){
 		if ((rport_buf=rport_builder(msg, &rport_len))==0){
-			LOG(L_ERR, "ERROR: build_res_buf_from_sip_req:"
-							" rport_builder failed\n");
+			LM_ERR("rport_builder failed\n");
 			goto error01; /* free everything */
 		}
 		if (msg->via1->rport) 
@@ -1768,7 +1739,7 @@ char * build_res_buf_from_sip_req( unsigned int code, str *text ,str *new_tag,
 	if (sip_warning) {
 		warning_buf = warning_builder(msg,&warning_len);
 		if (warning_buf) len += warning_len + CRLF_LEN;
-		else LOG(L_WARN, "WARNING: warning skipped -- too big\n");
+		else LM_WARN("warning skipped -- too big\n");
 	}
 	/* content length hdr */
 	if (body) {
@@ -1784,8 +1755,7 @@ char * build_res_buf_from_sip_req( unsigned int code, str *text ,str *new_tag,
 	buf = (char*) pkg_malloc( len+1 );
 	if (!buf)
 	{
-		LOG(L_ERR, "ERROR: build_res_buf_from_sip_req: out of memory "
-			" ; needs %d\n",len);
+		LM_ERR("out of pkg memory  ; needs %d\n",len);
 		goto error01;
 	}
 
@@ -1924,8 +1894,7 @@ char * build_res_buf_from_sip_req( unsigned int code, str *text ,str *new_tag,
 	}
 
 	if (len!=(unsigned long)(p-buf))
-		LOG(L_CRIT,"BUG:build_res_from_sip_req: diff len=%d p-buf=%d\n",
-					len, (int)(p-buf));
+		LM_CRIT("diff len=%d p-buf=%d\n", len, (int)(p-buf));
 
 	*(p) = 0;
 	*returned_len = len;
@@ -2029,7 +1998,7 @@ char* via_builder( unsigned int *len,
 	line_buf=pkg_malloc( max_len );
 	if (line_buf==0){
 		ser_error=E_OUT_OF_MEM;
-		LOG(L_ERR, "ERROR: via_builder: out of memory\n");
+		LM_ERR("out of pkg memory\n");
 		return 0;
 	}
 
@@ -2046,7 +2015,7 @@ char* via_builder( unsigned int *len,
 		memcpy(line_buf+local_via_len-4, "SCTP ", 5);
 		local_via_len++;
 	}else{
-		LOG(L_CRIT, "BUG: via_builder: unknown proto %d\n", proto);
+		LM_CRIT("unknown proto %d\n", proto);
 		return 0;
 	}
 	
