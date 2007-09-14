@@ -227,7 +227,7 @@ again:
 			goto error;
 		}
 		if (cmsg->cmsg_level!= SOL_SOCKET){
-			L_ERR, "ERROR: receive_fd: msg level != SOL_SOCKET\n");
+			LM_ERR("msg level != SOL_SOCKET\n");
 			ret=-1;
 			goto error;
 		}

@@ -597,7 +597,7 @@ again_devpoll:
 				break;
 #endif
 		default:
-			LM_CRIT("no support for poll method %s (%d)\n", p
+			LM_CRIT("no support for poll method %s (%d)\n",
 				poll_method_str[h->poll_method], h->poll_method);
 			goto error;
 	}
