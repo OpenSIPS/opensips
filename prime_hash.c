@@ -28,7 +28,6 @@
 #include "crc.h"
 
 #include <ctype.h>
-#include <math.h>
 
 #include "prime_hash.h"
 
@@ -114,6 +113,7 @@ static int real_calculate_hash (struct sip_msg *msg, enum hash_source source) {
 static int calc_prime_hash(str * source_string, int denominator) {
 #define INT_DIGIT_LIMIT 18
 	uint64_t number = 0;
+	uint64_t p10;
 	int i, j, limit = 0;
 	int ret;
 	char source_number_s[INT_DIGIT_LIMIT + 1];
@@ -130,9 +130,10 @@ static int calc_prime_hash(str * source_string, int denominator) {
 	}
 	limit = i;
 
-	for(i=INT_DIGIT_LIMIT - 1, j=0; i>limit; i--, j++) {
-		number += (source_number_s[i] - '0') * powl(10, j);
+	for(i=INT_DIGIT_LIMIT - 1, p10=1; i>limit; i--, p10=p10*10) {
+		number += (source_number_s[i] - '0') * p10;
 	}
+
 	LM_DBG("source_string is %.*s, source_number_s "
 	    "is: %s, number is %llu\n", source_string->len, source_string->s,
 	    source_number_s + (limit + 1), number);
