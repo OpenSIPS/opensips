@@ -53,7 +53,7 @@ static inline char* mi_print_fmt(char *fmt, va_list ap, int *len)
 
 	n = vsnprintf( mi_fmt_buf, mi_fmt_buf_len, fmt, ap);
 	if (n<0 || n>=mi_fmt_buf_len) {
-		LM_ERR("formatting failed wit, %s\n",n,strerror(errno));
+		LM_ERR("formatting failed with n=%d, %s\n",n,strerror(errno));
 		return 0;
 	}
 
