@@ -181,8 +181,7 @@ static inline unsigned tcp_addr_hash(struct ip_addr* ip, unsigned short port)
 			return (ip->u.addr32[0]^ip->u.addr32[1]^ip->u.addr32[2]^
 					ip->u.addr32[3]^port) & (TCP_ALIAS_HASH_SIZE-1);
 	else{
-		LOG(L_CRIT, "tcp_addr_hash: BUG: bad len %d for an ip address\n",
-				ip->len);
+		LM_CRIT("bad len %d for an ip address\n", ip->len);
 		return 0;
 	}
 }

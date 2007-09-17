@@ -288,7 +288,7 @@ static int fix_actions(struct action* a)
 				break;
 			case MODULE_T:
 				cmd = (cmd_export_t*)t->elem[0].u.data;
-				DBG("fixing %s, line %d\n", cmd->name, t->line);
+				LM_DBG("fixing %s, line %d\n", cmd->name, t->line);
 				if (cmd->fixup){
 					if (cmd->param_no>0){
 						ret=cmd->fixup(&t->elem[1].u.data, 1);
@@ -650,8 +650,7 @@ inline static int comp_ip(struct sip_msg *msg, int op, struct ip_addr* ip,
 					if (opd->type==STRING_ST){
 						he=resolvehost((char*)opd->v.data,0);
 						if (he==0){
-							DBG("comp_ip: could not resolve %s\n",
-									(char*)opd->v.data);
+							LM_DBG("could not resolve %s\n",(char*)opd->v.data);
 						}else if (he->h_addrtype==(int)ip->af){
 							for(h=he->h_addr_list;(ret!=1)&& (*h); h++){
 								ret=(memcmp(ip->u.addr, *h, ip->len)==0);
@@ -834,7 +833,7 @@ inline static int comp_n2n(int op, int n1, int n2)
 				return 1;
 			return 0;
 		default:
-			LOG(L_CRIT, "BUG: comp_n2n: unknown op %d\n", op);
+			LM_CRIT("unknown op %d\n", op);
 	}
 	return -1;
 }
@@ -856,7 +855,7 @@ inline static int comp_scriptvar(struct sip_msg *msg, int op, operand_t *left,
 	ln = 0; rn =0;
 	if(pv_get_spec_value(msg, left->v.spec, &lvalue)!=0)
 	{
-		LOG(L_CRIT, "comp_scriptvar: cannot get left var value\n");
+		LM_CRIT("cannot get left var value\n");
 		goto error;
 	}
 	if(right->type==NULLV_ST)
@@ -881,7 +880,7 @@ inline static int comp_scriptvar(struct sip_msg *msg, int op, operand_t *left,
 	{
 		if(pv_get_spec_value(msg, right->v.spec, &rvalue)!=0)
 		{
-			LOG(L_CRIT, "comp_scriptvar: cannot get right var value\n");
+			LM_CRIT("cannot get right var value\n");
 			goto error;
 		}
 		if(rvalue.flags&PV_VAL_NULL || lvalue.flags&PV_VAL_NULL ) {
@@ -894,8 +893,7 @@ inline static int comp_scriptvar(struct sip_msg *msg, int op, operand_t *left,
 		{
 			if(!((rvalue.flags&PV_VAL_STR) && (lvalue.flags&PV_VAL_STR)))
 			{
-				LOG(L_CRIT, "comp_scriptvar: invalid operation %d/%d\n", op,
-					right->type);
+				LM_CRIT("invalid operation %d/%d\n", op, right->type);
 				goto error;
 			}
 			if(op==MATCH_OP)
@@ -913,7 +911,7 @@ inline static int comp_scriptvar(struct sip_msg *msg, int op, operand_t *left,
 			rstr = rvalue.rs;
 			type =1;
 		} else {
-			LOG(L_CRIT, "comp_scriptvar: invalid operation %d/%d!\n", op,
+			LM_CRIT("invalid operation %d/%d!\n", op,
 					right->type);
 			goto error;
 		}
@@ -925,8 +923,8 @@ inline static int comp_scriptvar(struct sip_msg *msg, int op, operand_t *left,
 		if(right->type == NUMBER_ST) {
 			if(!(lvalue.flags&PV_VAL_INT))
 			{
-				LOG(L_CRIT,"comp_scriptvar: invalid operation %d/%d/%d!!\n", op,
-					right->type, lvalue.flags);
+				LM_CRIT("invalid operation %d/%d/%d!!\n", op, 
+						right->type, lvalue.flags);
 				goto error;
 			}
 			/* comparing int */
@@ -935,8 +933,7 @@ inline static int comp_scriptvar(struct sip_msg *msg, int op, operand_t *left,
 		} else if(right->type == STRING_ST) {
 			if(!(lvalue.flags&PV_VAL_STR))
 			{
-				LOG(L_CRIT, "comp_scriptvar: invalid operation %d/%d!!!\n", op,
-					right->type);
+				LM_CRIT("invalid operation %d/%d!!!\n", op,	right->type);
 				goto error;
 			}
 			/* comparing string */
@@ -947,8 +944,7 @@ inline static int comp_scriptvar(struct sip_msg *msg, int op, operand_t *left,
 			{
 				if(!(lvalue.flags&PV_VAL_STR) || right->type != RE_ST)
 				{
-					LOG(L_CRIT, "comp_scriptvar: invalid operation %d/%d\n", op,
-						right->type);
+					LM_CRIT("invalid operation %d/%d\n", op, right->type);
 					goto error;
 				}
 				return comp_s2s(op, &lstr, (str*)right->v.expr);
@@ -959,14 +955,13 @@ inline static int comp_scriptvar(struct sip_msg *msg, int op, operand_t *left,
 	}
 
 	if(type==1) { /* compare str */
-		DBG("comp_scriptvar: str %d : %.*s\n", op, lstr.len, ZSW(lstr.s)); 
+		LM_DBG("str %d : %.*s\n", op, lstr.len, ZSW(lstr.s)); 
 		return comp_s2s(op, &lstr, &rstr);
 	} else if(type==2) {
-		DBG("comp_scriptvar: int %d : %d / %d\n", op, ln, rn); 
+		LM_DBG("int %d : %d / %d\n", op, ln, rn); 
 		return comp_n2n(op, ln, rn);
 	} else {
-		LOG(L_CRIT, "comp_scriptvar: invalid operation %d/%d\n", op,
-			right->type);
+		LM_CRIT("invalid operation %d/%d\n", op, right->type);
 	}
 	
 error:
@@ -989,7 +984,7 @@ static int eval_elem(struct expr* e, struct sip_msg* msg, pv_value_t *val)
 	
 	ret=E_BUG;
 	if (e->type!=ELEM_T){
-		LOG(L_CRIT," BUG: eval_elem: invalid type\n");
+		LM_CRIT("invalid type\n");
 		goto error;
 	}
 	
@@ -1025,14 +1020,13 @@ static int eval_elem(struct expr* e, struct sip_msg* msg, pv_value_t *val)
 				break;
 		case FROM_URI_O:
 				if (parse_from_header(msg)<0){
-					LOG(L_ERR, "ERROR: eval_elem: bad or missing"
-								" From: header\n");
+					LM_ERR("bad or missing From: header\n");
 					goto error;
 				}
 				if (e->right.type==MYSELF_ST){
 					if (parse_uri(get_from(msg)->uri.s, get_from(msg)->uri.len,
 									&uri) < 0){
-						LOG(L_ERR, "ERROR: eval_elem: bad uri in From:\n");
+						LM_ERR("bad uri in From:\n");
 						goto error;
 					}
 					ret=check_self_op(e->op, &uri.host,
@@ -1045,15 +1039,14 @@ static int eval_elem(struct expr* e, struct sip_msg* msg, pv_value_t *val)
 		case TO_URI_O:
 				if ((msg->to==0) && ((parse_headers(msg, HDR_TO_F, 0)==-1) ||
 							(msg->to==0))){
-					LOG(L_ERR, "ERROR: eval_elem: bad or missing"
-								" To: header\n");
+					LM_ERR("bad or missing To: header\n");
 					goto error;
 				}
 				/* to content is parsed automatically */
 				if (e->right.type==MYSELF_ST){
 					if (parse_uri(get_to(msg)->uri.s, get_to(msg)->uri.len,
 									&uri) < 0){
-						LOG(L_ERR, "ERROR: eval_elem: bad uri in To:\n");
+						LM_ERR("bad uri in To:\n");
 						goto error;
 					}
 					ret=check_self_op(e->op, &uri.host,
@@ -1107,7 +1100,7 @@ static int eval_elem(struct expr* e, struct sip_msg* msg, pv_value_t *val)
 						pv_value_destroy(&rval);
 						return (val->ri)?1:0;
 					}
-					LOG(L_ERR, "eval_elem: binary NOT on non-numeric value\n");
+					LM_ERR("binary NOT on non-numeric value\n");
 					pv_value_destroy(&lval);
 					pv_value_destroy(&rval);
 					return 0;
@@ -1119,7 +1112,7 @@ static int eval_elem(struct expr* e, struct sip_msg* msg, pv_value_t *val)
 				{
 					if(!(rval.flags&PV_VAL_INT))
 					{
-						LOG(L_ERR, "eval_elem: invalid numeric operands\n");
+						LM_ERR("invalid numeric operands\n");
 						pv_value_destroy(&lval);
 						pv_value_destroy(&rval);
 						return 0;
@@ -1138,8 +1131,7 @@ static int eval_elem(struct expr* e, struct sip_msg* msg, pv_value_t *val)
 						case DIV_OP:
 							if(rval.ri==0)
 							{
-								LOG(L_ERR,
-									"eval_elem: divide by 0\n");
+								LM_ERR("divide by 0\n");
 								pv_value_destroy(&lval);
 								pv_value_destroy(&rval);
 								return 0;
@@ -1152,8 +1144,7 @@ static int eval_elem(struct expr* e, struct sip_msg* msg, pv_value_t *val)
 						case MODULO_OP:
 							if(rval.ri==0)
 							{
-								LOG(L_ERR,
-									"eval_elem: divide by 0\n");
+								LM_ERR("divide by 0\n");
 								pv_value_destroy(&lval);
 								pv_value_destroy(&rval);
 								return 0;
@@ -1170,8 +1161,7 @@ static int eval_elem(struct expr* e, struct sip_msg* msg, pv_value_t *val)
 							ival = lval.ri ^ rval.ri;
 							break;
 						default:
-							LOG(L_ERR,
-									"eval_elem: invalid int op %d\n", e->op);
+							LM_ERR("invalid int op %d\n", e->op);
 								val->ri = 0;
 							pv_value_destroy(&lval);
 							pv_value_destroy(&rval);
@@ -1184,17 +1174,14 @@ static int eval_elem(struct expr* e, struct sip_msg* msg, pv_value_t *val)
 				} else {
 					if(!(rval.flags&PV_VAL_STR))
 					{
-						LOG(L_ERR,
-								"eval_elem: invalid string operands\n");
+						LM_ERR("invalid string operands\n");
 						pv_value_destroy(&lval);
 						pv_value_destroy(&rval);
 						return 0;
 					}
 					if(e->op != PLUS_OP)
 					{
-						LOG(L_ERR,
-								"eval_elem: invalid string operator %d\n",
-								e->op);
+						LM_ERR("invalid string operator %d\n", e->op);
 						pv_value_destroy(&lval);
 						pv_value_destroy(&rval);
 						return 0;
@@ -1210,7 +1197,7 @@ static int eval_elem(struct expr* e, struct sip_msg* msg, pv_value_t *val)
 							*sizeof(char));
 					if(val->rs.s==0)
 					{
-						LOG(L_ERR, "eval_elem: no more memory\n");
+						LM_ERR("no more memory\n");
 						pv_value_destroy(&lval);
 						pv_value_destroy(&rval);
 						return 0;
@@ -1310,8 +1297,7 @@ static int eval_elem(struct expr* e, struct sip_msg* msg, pv_value_t *val)
 											*sizeof(char));
 									if(p==0)
 									{
-										LOG(L_ERR,
-												"eval_elem: no more memory\n");
+										LM_ERR("no more pkg memory\n");
 										memset(val, 0, sizeof(pv_value_t));
 										return 0;
 									}
@@ -1338,8 +1324,7 @@ static int eval_elem(struct expr* e, struct sip_msg* msg, pv_value_t *val)
 				ret=comp_scriptvar(msg, e->op, &e->left, &e->right);
 				break;
 		default:
-				LOG(L_CRIT, "BUG: eval_elem: invalid operand %d\n",
-							e->left.type);
+				LM_CRIT("invalid operand %d\n", e->left.type);
 	}
 	if(val)
 	{
@@ -1366,8 +1351,7 @@ int eval_expr(struct expr* e, struct sip_msg* msg, pv_value_t *val)
 	
 	rec_lev++;
 	if (rec_lev>MAX_REC_LEV){
-		LOG(L_CRIT, "ERROR: eval_expr: too many expressions (%d)\n",
-				rec_lev);
+		LM_CRIT("too many expressions (%d)\n", rec_lev);
 		ret=-1;
 		goto skip;
 	}
@@ -1397,11 +1381,11 @@ int eval_expr(struct expr* e, struct sip_msg* msg, pv_value_t *val)
 				ret=eval_expr(e->left.v.expr, msg, val);
 				break;
 			default:
-				LOG(L_CRIT, "BUG: eval_expr: unknown op %d\n", e->op);
+				LM_CRIT("unknown op %d\n", e->op);
 				ret=-1;
 		}
 	}else{
-		LOG(L_CRIT, "BUG: eval_expr: unknown type %d\n", e->type);
+		LM_CRIT("unknown type %d\n", e->type);
 		ret=-1;
 	}
 
@@ -1428,7 +1412,7 @@ int add_actions(struct action* a, struct action** head)
 {
 	int ret;
 
-	LOG(L_DBG, "add_actions: fixing actions...\n");
+	LM_DBG("fixing actions...\n");
 	if ((ret=fix_actions(a))!=0) goto error;
 	push(a,head);
 	return 0;
@@ -1502,8 +1486,7 @@ static int check_actions(struct action *a, int r_type)
 				if (n!=rcheck_stack_p)
 					break;
 				if (++rcheck_stack_p==RT_NO) {
-					LOG(L_CRIT,"BUG:check_actions: stack overflow (%d)\n",
-						rcheck_stack_p);
+					LM_CRIT("stack overflow (%d)\n", rcheck_stack_p);
 					goto error;
 				}
 				rcheck_stack[rcheck_stack_p] = a->elem[0].u.number;
@@ -1534,12 +1517,11 @@ static int check_actions(struct action *a, int r_type)
 				fct = (cmd_export_t*)(a->elem[0].u.data);
 				if ( (fct->flags&r_type)!=r_type ) {
 					rcheck_status = -1;
-					LOG(L_ERR,"ERROR:check_actions: script function "
+					LM_ERR("script function "
 						"\"%s\" (types=%d) does not support route type "
 						"(%d)\n",fct->name, fct->flags, r_type);
 					for( n=rcheck_stack_p-1; n>=0 ; n-- ) {
-						LOG(L_ERR,"ERROR:check_actions: route "
-							"stack[%d]=%d\n",n,rcheck_stack[n]);
+						LM_ERR("route stack[%d]=%d\n",n,rcheck_stack[n]);
 					}
 				}
 				break;
@@ -1565,16 +1547,14 @@ int check_rls(void)
 
 	if(rlist[0]){
 		if ((ret=check_actions(rlist[0],REQUEST_ROUTE))!=0){
-			LOG(L_ERR,"ERROR:check_rls: check failed for main "
-				"request route\n");
+			LM_ERR("check failed for main request route\n");
 			return ret;
 		}
 	}
 	for(i=0;i<ONREPLY_RT_NO;i++){
 		if(onreply_rlist[i]){
 			if ((ret=check_actions(onreply_rlist[i],ONREPLY_ROUTE))!=0){
-				LOG(L_ERR,"ERROR:check_rls: check failed for "
-					"onreply_route[%d]\n",i);
+				LM_ERR("check failed for onreply_route[%d]\n",i);
 				return ret;
 			}
 		}
@@ -1582,8 +1562,7 @@ int check_rls(void)
 	for(i=0;i<FAILURE_RT_NO;i++){
 		if(failure_rlist[i]){
 			if ((ret=check_actions(failure_rlist[i],FAILURE_ROUTE))!=0){
-				LOG(L_ERR,"ERROR:check_rls: check failed for "
-					"failure_route[%d]\n",i);
+				LM_ERR("check failed for failure_route[%d]\n",i);
 				return ret;
 			}
 		}
@@ -1591,16 +1570,14 @@ int check_rls(void)
 	for(i=0;i<BRANCH_RT_NO;i++){
 		if(branch_rlist[i]){
 			if ((ret=check_actions(branch_rlist[i],BRANCH_ROUTE))!=0){
-				LOG(L_ERR,"ERROR:check_rls: check failed for "
-					"branch_route[%d]\n",i);
+				LM_ERR("check failed for branch_route[%d]\n",i);
 				return ret;
 			}
 		}
 	}
 	if(error_rlist){
 		if ((ret=check_actions(error_rlist,ERROR_ROUTE))!=0){
-			LOG(L_ERR,"ERROR:check_rls: check failed for "
-				"error_route\n");
+			LM_ERR("check failed for error_route\n");
 			return ret;
 		}
 	}
@@ -1617,36 +1594,36 @@ void print_rl(void)
 
 	for(j=0; j<RT_NO; j++){
 		if (rlist[j]==0){
-			if (j==0) DBG("WARNING: the main routing table is empty\n");
+			if (j==0) LM_DBG("WARNING: the main routing table is empty\n");
 			continue;
 		}
-		DBG("routing table %d:\n",j);
+		LM_DBG("routing table %d:\n",j);
 		print_actions(rlist[j]);
-		DBG("\n");
+		LM_DBG("\n");
 	}
 	for(j=0; j<ONREPLY_RT_NO; j++){
 		if (onreply_rlist[j]==0){
 			continue;
 		}
-		DBG("onreply routing table %d:\n",j);
+		LM_DBG("onreply routing table %d:\n",j);
 		print_actions(onreply_rlist[j]);
-		DBG("\n");
+		LM_DBG("\n");
 	}
 	for(j=0; j<FAILURE_RT_NO; j++){
 		if (failure_rlist[j]==0){
 			continue;
 		}
-		DBG("failure routing table %d:\n",j);
+		LM_DBG("failure routing table %d:\n",j);
 		print_actions(failure_rlist[j]);
-		DBG("\n");
+		LM_DBG("\n");
 	}
 	for(j=0; j<BRANCH_RT_NO; j++){
 		if (branch_rlist[j]==0){
 			continue;
 		}
-		DBG("T-branch routing table %d:\n",j);
+		LM_DBG("T-branch routing table %d:\n",j);
 		print_actions(branch_rlist[j]);
-		DBG("\n");
+		LM_DBG("\n");
 	}
 }
 

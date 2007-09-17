@@ -96,7 +96,7 @@ int sctp_server_init(struct socket_info* sock_info)
 	optval=tos;
 	if (setsockopt(sock_info->socket, IPPROTO_IP, IP_TOS, (void*)&optval, 
 			sizeof(optval)) ==-1){
-		LOG(L_WARN, "WARNING: sctp_init: setsockopt tos: %s\n", strerror(errno));
+		LM_WARN("setsockopt tos: %s\n", strerror(errno));
 	}
     */
 
@@ -162,7 +162,7 @@ int sctp_server_rcv_loop()
 
 	from=(union sockaddr_union*) pkg_malloc(sizeof(union sockaddr_union));
 	if (&from==0){
-		LOG(L_ERR, "ERROR: sctp_server_rcv_loop: out of memory\n");
+		LM_ERR("out of pkg memory\n");
 		goto error;
 	}
 	memset(&sinfo, 0 , sizeof(sinfo));
@@ -175,8 +175,7 @@ int sctp_server_rcv_loop()
 #ifdef DYN_BUF
 		buf=pkg_malloc(BUF_SIZE+1);
 		if (buf==0){
-			LOG(L_ERR, "ERROR: sctp_server_rcv_loop: could not allocate receive"
-					 " buffer\n");
+			LM_ERR(" could not allocate receive buffer in pkg memory\n");
 			goto error;
 		}
 #endif
@@ -185,11 +184,10 @@ int sctp_server_rcv_loop()
 		
 		if (len==-1){
 			if (errno==EAGAIN){
-				DBG("sctp_server_rcv_loop: packet with bad checksum received\n");
+				LM_DBG("packet with bad checksum received\n");
 				continue;
 			}
-			LOG(L_ERR, "ERROR: sctp_server_rcv_loop: sctp_recvmsg:[%d] %s\n",
-						errno, strerror(errno));
+			LM_ERR("sctp_recvmsg:[%d] %s\n", errno, strerror(errno));
 			if ((errno==EINTR)||(errno==EWOULDBLOCK)|| (errno==ECONNREFUSED))
 				continue; /* goto skip;*/
 			else goto error;
@@ -204,15 +202,14 @@ int sctp_server_rcv_loop()
 #ifndef NO_ZERO_CHECKS
 		if (buf[len-1]==0) {
 			tmp=ip_addr2a(&ri.src_ip);
-			LOG(L_WARN, "WARNING: sctp_server_rcv_loop: "
-					"upstream bug - 0-terminated packet from %s %d\n",
+			LM_WARN("upstream bug - 0-terminated packet from %s %d\n",
 					tmp, htons(ri.src_port));
 			len--;
 		}
 #endif
 		if (ri.src_port==0){
 			tmp=ip_addr2a(&ri.src_ip);
-			LOG(L_INFO, "sctp_server_rcv_loop: dropping 0 port packet from %s\n", tmp);
+			LM_INFO("dropping 0 port packet from %s\n", tmp);
 			continue;
 		}
 		
@@ -247,15 +244,15 @@ int sctp_server_send(struct socket_info *source, char *buf, unsigned len,
 again:
 	n=sctp_sendmsg(source->socket, buf, len, &to->s, tolen, 0, 0, 0, 0, 0);
 #ifdef XL_DEBUG
-	LOG(L_INFO, "INFO: send status: %d\n", n);
+	LM_INFO("send status: %d\n", n);
 #endif
 	if (n==-1){
-		LOG(L_ERR, "ERROR: sctp_server_send: sctp_sendmsg(sock,%p,%d,%p,%d,0,0,0,0,0): %s(%d)\n",
-				buf,len,&to->s,tolen,
-				strerror(errno),errno);
+		LM_ERR("sctp_sendmsg(sock,%p,%d,%p,%d,0,0,0,0,0): %s(%d)\n",
+				buf,len,&to->s,tolen, strerror(errno),errno);
+
 		if (errno==EINTR) goto again;
 		if (errno==EINVAL) {
-			LOG(L_CRIT,"CRITICAL: invalid sendtoparameters\n"
+			LM_CRIT("invalid sendtoparameters\n"
 			"one possible reason is the server is bound to localhost and\n"
 			"attempts to send to the net\n");
 		}

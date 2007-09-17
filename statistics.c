@@ -99,7 +99,7 @@ int init_stats_collector(void)
 	/* init the collector */
 	collector = (stats_collector*)shm_malloc(sizeof(stats_collector));
 	if (collector==0) {
-		LOG(L_ERR,"ERROR:init_stats_collector: no more shm mem\n");
+		LM_ERR("no more shm mem\n");
 		goto error;
 	}
 	memset( collector, 0 , sizeof(stats_collector));
@@ -108,31 +108,28 @@ int init_stats_collector(void)
 	/* init BIG (really BIG) lock */
 	stat_lock = lock_alloc();
 	if (stat_lock==0 || lock_init( stat_lock )==0 ) {
-		LOG(L_ERR,"ERROR:init_stats_collector: failed to init the really "
-			"BIG lock\n");
+		LM_ERR("failed to init the really BIG lock\n");
 		goto error;
 	}
 #endif
 
 	/* register MI commands */
 	if (register_mi_mod( "statistics", mi_stat_cmds)<0) {
-		LOG(L_ERR, "ERROR:init_stats_collector: unable to register MI cmds\n");
+		LM_ERR("unable to register MI cmds\n");
 		goto error;
 	}
 
 	/* register core statistics */
 	if (register_module_stats( "core", core_stats)!=0 ) {
-		LOG(L_ERR,"ERROR:init_stats_collector: failed to register core "
-			"statistics\n");
+		LM_ERR("failed to register core statistics\n");
 		goto error;
 	}
 	/* register sh_mem statistics */
 	if (register_module_stats( "shmem", shm_stats)!=0 ) {
-		LOG(L_ERR,"ERROR:init_stats_collector: failed to register sh_mem "
-			"statistics\n");
+		LM_ERR("failed to register sh_mem statistics\n");
 		goto error;
 	}
-	LOG(L_INFO,"INFO: statistics manager successfully initialized\n");
+	LM_INFO("statistics manager successfully initialized\n");
 
 	return 0;
 error:
@@ -207,7 +204,7 @@ static inline module_stats* add_stat_module( char *module)
 	amods = (module_stats*)shm_realloc( collector->amodules,
 			(collector->mod_no+1)*sizeof(module_stats) );
 	if (amods==0) {
-		LOG(L_ERR,"ERROR:add_stat_module: no more shm memory\n");
+		LM_ERR("no more shm memory\n");
 		return 0;
 	}
 
@@ -233,14 +230,14 @@ int register_stat( char *module, char *name, stat_var **pvar, int flags)
 	int hash;
 
 	if (module==0 || name==0 || pvar==0) {
-		LOG(L_ERR,"ERROR:register_stat: invalid parameters module=%p, "
-			"name=%p, pvar=%p \n", module, name, pvar);
+		LM_ERR("invalid parameters module=%p, name=%p, pvar=%p \n", 
+				module, name, pvar);
 		goto error;
 	}
 
 	stat = (stat_var*)shm_malloc(sizeof(stat_var));
 	if (stat==0) {
-		LOG(L_ERR,"ERROR:register_stat: no more shm memory\n");
+		LM_ERR("no more shm memory\n");
 		goto error;
 	}
 	memset( stat, 0, sizeof(stat_var));
@@ -248,7 +245,7 @@ int register_stat( char *module, char *name, stat_var **pvar, int flags)
 	if ( (flags&STAT_IS_FUNC)==0 ) {
 		stat->u.val = (stat_val*)shm_malloc(sizeof(stat_val));
 		if (stat->u.val==0) {
-			LOG(L_ERR,"ERROR:register_stat: no more shm memory\n");
+			LM_ERR("no more shm memory\n");
 			goto error1;
 		}
 #ifdef NO_ATOMIC_OPS
@@ -268,7 +265,7 @@ int register_stat( char *module, char *name, stat_var **pvar, int flags)
 	if (mods==0) {
 		mods = add_stat_module(module);
 		if (mods==0) {
-			LOG(L_ERR,"ERROR:register_stat: failed to add new module\n");
+			LM_ERR("failed to add new module\n");
 			goto error2;
 		}
 	}
@@ -330,8 +327,7 @@ int register_module_stats(char *module, stat_export_t *stats)
 		ret = register_stat( module, stats->name, stats->stat_pointer,
 			stats->flags);
 		if (ret!=0) {
-			LOG(L_CRIT,"CRIT:register_module_stats: failed to add "
-				"statistic\n");
+			LM_CRIT("failed to add statistic\n");
 			return -1;
 		}
 	}

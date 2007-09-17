@@ -51,7 +51,7 @@ static int init_mi_uptime(void)
 	time(&up_since);
 	up_since_ctime = (char*)pkg_malloc(MAX_CTIME_LEN+1);
 	if (up_since_ctime==0) {
-		LOG(L_ERR,"ERROR:mi:init_mi_uptime: no more pkg mem\n");
+		LM_ERR("no more pkg mem\n");
 		return -1;
 	}
 	sprintf( up_since_ctime, "%s" , ctime(&up_since));
@@ -89,7 +89,7 @@ static struct mi_root *mi_uptime(struct mi_root *cmd, void *param)
 
 	return rpl_tree;
 error:
-	LOG(L_ERR,"ERROR:mi_uptime: failed to add node\n");
+	LM_ERR("failed to add node\n");
 	free_mi_tree(rpl_tree);
 	return 0;
 }
@@ -110,7 +110,7 @@ static struct mi_root *mi_version(struct mi_root *cmd, void *param)
 	node = add_mi_node_child( rpl, 0, "Server", 6, SERVER_HDR+8,
 		SERVER_HDR_LEN-8);
 	if (node==0) {
-		LOG(L_ERR,"ERROR:mi_version: failed to add node\n");
+		LM_ERR("failed to add node\n");
 		free_mi_tree(rpl_tree);
 		return 0;
 	}
@@ -132,7 +132,7 @@ static struct mi_root *mi_pwd(struct mi_root *cmd, void *param)
 		max_len = pathmax();
 		cwd_buf = pkg_malloc(max_len);
 		if (cwd_buf==NULL) {
-			LOG(L_ERR, "ERROR:mi_pwd: no more pkg mem\n");
+			LM_ERR("no more pkg mem\n");
 			return 0;
 		}
 	}
@@ -143,13 +143,13 @@ static struct mi_root *mi_pwd(struct mi_root *cmd, void *param)
 	rpl = &rpl_tree->node;
 
 	if (getcwd(cwd_buf, max_len)==0) {
-		LOG(L_ERR,"ERROR:mi_pwd: getcwd failed = %s\n",strerror(errno));
+		LM_ERR("getcwd failed = %s\n",strerror(errno));
 		goto error;
 	}
 
 	node = add_mi_node_child( rpl, 0, "WD", 2, cwd_buf,strlen(cwd_buf));
 	if (node==0) {
-		LOG(L_ERR,"ERROR:mi_pwd: failed to add node\n");
+		LM_ERR("failed to add node\n");
 		goto error;
 	}
 
@@ -176,7 +176,7 @@ static struct mi_root *mi_arg(struct mi_root *cmd, void *param)
 	for ( n=0; n<my_argc ; n++ ) {
 		node = add_mi_node_child(rpl, 0, 0, 0, my_argv[n], strlen(my_argv[n]));
 		if (node==0) {
-			LOG(L_ERR,"ERROR:mi_arg: failed to add node\n");
+			LM_ERR("failed to add node\n");
 			free_mi_tree(rpl_tree);
 			return 0;
 		}
@@ -206,7 +206,7 @@ static struct mi_root *mi_which(struct mi_root *cmd, void *param)
 		node = add_mi_node_child( rpl, 0, 0, 0, cmds[i].name.s,
 			cmds[i].name.len);
 		if (node==0) {
-			LOG(L_ERR,"ERROR:mi_which: failed to add node\n");
+			LM_ERR("failed to add node\n");
 			free_mi_tree(rpl_tree);
 			return 0;
 		}
@@ -255,7 +255,7 @@ static struct mi_root *mi_ps(struct mi_root *cmd, void *param)
 
 	return rpl_tree;
 error:
-	LOG(L_ERR,"ERROR:mi_ps: failed to add node\n");
+	LM_ERR("failed to add node\n");
 	free_mi_tree(rpl_tree);
 	return 0;
 }
@@ -328,7 +328,7 @@ static mi_export_t mi_core_cmds[] = {
 int init_mi_core(void)
 {
 	if (register_mi_mod( "core", mi_core_cmds)<0) {
-		LOG(L_ERR, "ERROR:mi: unable to register core MI cmds\n");
+		LM_ERR("unable to register core MI cmds\n");
 		return -1;
 	}
 

@@ -58,7 +58,7 @@ struct expr* mk_exp(int op, struct expr* left, struct expr* right)
 	e->right.v.expr=right;
 	return e;
 error:
-	LOG(L_CRIT, "ERROR: mk_exp: memory allocation failure\n");
+	LM_CRIT("pkg memory allocation failure\n");
 	return 0;
 }
 
@@ -83,7 +83,7 @@ struct expr* mk_elem(int op, int leftt, void *leftd, int rightt, void *rightd)
 		e->right.v.s.len = strlen(e->right.v.s.s);
 	return e;
 error:
-	LOG(L_CRIT, "ERROR: mk_elem: memory allocation failure\n");
+	LM_CRIT("pkg memory allocation failure\n");
 	return 0;
 }
 
@@ -96,8 +96,7 @@ struct action* mk_action(int type, int n, action_elem_t *elem, int line)
 	
 	if(n>MAX_ACTION_ELEMS)
 	{
-		LOG(L_ERR, "mk_action: too many action elements at line %d for %d",
-				line, type);
+		LM_ERR("too many action elements at line %d for %d", line, type);
 		return 0;
 	}
 
@@ -119,7 +118,7 @@ struct action* mk_action(int type, int n, action_elem_t *elem, int line)
 	return a;
 	
 error:
-	LOG(L_CRIT, "ERROR: mk_action: memory allocation failure\n");
+	LM_CRIT("pkg memory allocation failure\n");
 	return 0;
 
 }
@@ -141,45 +140,45 @@ struct action* append_action(struct action* a, struct action* b)
 void print_expr(struct expr* exp)
 {
 	if (exp==0){
-		LOG(L_CRIT, "ERROR: print_expr: null expression!\n");
+		LM_CRIT("null expression!\n");
 		return;
 	}
 	if (exp->type==ELEM_T){
 		switch(exp->left.type){
 			case METHOD_O:
-				DBG("method");
+				LM_DBG("method");
 				break;
 			case URI_O:
-				DBG("uri");
+				LM_DBG("uri");
 				break;
 			case FROM_URI_O:
-				DBG("from_uri");
+				LM_DBG("from_uri");
 				break;
 			case TO_URI_O:
-				DBG("to_uri");
+				LM_DBG("to_uri");
 				break;
 			case SRCIP_O:
-				DBG("srcip");
+				LM_DBG("srcip");
 				break;
 			case SRCPORT_O:
-				DBG("srcport");
+				LM_DBG("srcport");
 				break;
 			case DSTIP_O:
-				DBG("dstip");
+				LM_DBG("dstip");
 				break;
 			case DSTPORT_O:
-				DBG("dstport");
+				LM_DBG("dstport");
 				break;
 			case SCRIPTVAR_O:
-				DBG("scriptvar[%d]",
+				LM_DBG("scriptvar[%d]",
 					(exp->left.v.spec)?exp->left.v.spec->type:0);
 				break;
 			case NUMBER_O:
 			case NUMBERV_O:
-				DBG("%d",exp->left.v.n);
+				LM_DBG("%d",exp->left.v.n);
 				break;
 			case STRINGV_O:
-				DBG("\"%s\"", ZSW((char*)exp->left.v.data));
+				LM_DBG("\"%s\"", ZSW((char*)exp->left.v.data));
 				break;
 			case ACTION_O:
 				break;
@@ -187,74 +186,74 @@ void print_expr(struct expr* exp)
 				print_expr((struct expr*)exp->left.v.data);
 				break;
 			default:
-				DBG("UNKNOWN[%d]", exp->left.type);
+				LM_DBG("UNKNOWN[%d]", exp->left.type);
 		}
 		switch(exp->op){
 			case EQUAL_OP:
-				DBG("==");
+				LM_DBG("==");
 				break;
 			case MATCHD_OP:
 			case MATCH_OP:
-				DBG("=~");
+				LM_DBG("=~");
 				break;
 			case NOTMATCHD_OP:
 			case NOTMATCH_OP:
-				DBG("!~");
+				LM_DBG("!~");
 				break;
 			case GT_OP:
-				DBG(">");
+				LM_DBG(">");
 				break;
 			case GTE_OP:
-				DBG(">=");
+				LM_DBG(">=");
 				break;
 			case LT_OP:
-				DBG("<");
+				LM_DBG("<");
 				break;
 			case LTE_OP:
-				DBG("<=");
+				LM_DBG("<=");
 				break;
 			case DIFF_OP:
-				DBG("!=");
+				LM_DBG("!=");
 				break;
 			case PLUS_OP:
-				DBG("+");
+				LM_DBG("+");
 				break;
 			case MINUS_OP:
-				DBG("-");
+				LM_DBG("-");
 				break;
 			case DIV_OP:
-				DBG("/");
+				LM_DBG("/");
 				break;
 			case MULT_OP:
-				DBG("*");
+				LM_DBG("*");
 				break;
 			case MODULO_OP:
-				DBG(" mod ");
+				LM_DBG(" mod ");
 				break;
 			case BAND_OP:
-				DBG("&");
+				LM_DBG("&");
 				break;
 			case BOR_OP:
-				DBG("|");
+				LM_DBG("|");
 				break;
 			case BXOR_OP:
-				DBG("^");
+				LM_DBG("^");
 				break;
 			case BNOT_OP:
-				DBG("~");
+				LM_DBG("~");
 				break;
 			case VALUE_OP:
 			case NO_OP:
 				break;
 			default:
-				DBG("<UNKNOWN[%d]>", exp->op);
+				LM_DBG("<UNKNOWN[%d]>", exp->op);
 		}
 		switch(exp->right.type){
 			case NOSUBTYPE: 
-					/* DBG("N/A"); */
+					/* LM_DBG("N/A"); */
 					break;
 			case STRING_ST:
-					DBG("\"%s\"", ZSW((char*)exp->right.v.data));
+					LM_DBG("\"%s\"", ZSW((char*)exp->right.v.data));
 					break;
 			case NET_ST:
 					print_net((struct net*)exp->right.v.data);
@@ -266,116 +265,116 @@ void print_expr(struct expr* exp)
 					print_actions((struct action*)exp->right.v.data);
 					break;
 			case NUMBER_ST:
-					DBG("%d",exp->right.v.n);
+					LM_DBG("%d",exp->right.v.n);
 					break;
 			case MYSELF_ST:
-					DBG("_myself_");
+					LM_DBG("_myself_");
 					break;
 			case SCRIPTVAR_ST:
-					DBG("scriptvar[%d]", exp->right.v.spec->type);
+					LM_DBG("scriptvar[%d]", exp->right.v.spec->type);
 					break;
 			case NULLV_ST:
-					DBG("null");
+					LM_DBG("null");
 					break;
 			case EXPR_ST:
 					print_expr((struct expr*)exp->right.v.data);
 					break;
 			default:
-					DBG("type<%d>", exp->right.type);
+					LM_DBG("type<%d>", exp->right.type);
 		}
 	}else if (exp->type==EXP_T){
 		switch(exp->op){
 			case AND_OP:
-					DBG("AND( ");
+					LM_DBG("AND( ");
 					print_expr(exp->left.v.expr);
-					DBG(", ");
+					LM_DBG(", ");
 					print_expr(exp->right.v.expr);
-					DBG(" )");
+					LM_DBG(" )");
 					break;
 			case OR_OP:
-					DBG("OR( ");
+					LM_DBG("OR( ");
 					print_expr(exp->left.v.expr);
-					DBG(", ");
+					LM_DBG(", ");
 					print_expr(exp->right.v.expr);
-					DBG(" )");
+					LM_DBG(" )");
 					break;
 			case NOT_OP:	
-					DBG("NOT( ");
+					LM_DBG("NOT( ");
 					print_expr(exp->left.v.expr);
-					DBG(" )");
+					LM_DBG(" )");
 					break;
 			case EVAL_OP:
-					DBG("EVAL( ");
+					LM_DBG("EVAL( ");
 					print_expr(exp->left.v.expr);
-					DBG(" )");
+					LM_DBG(" )");
 					break;
 			case PLUS_OP:
-					DBG("PLUS( ");
+					LM_DBG("PLUS( ");
 					print_expr(exp->left.v.expr);
-					DBG(", ");
+					LM_DBG(", ");
 					print_expr(exp->right.v.expr);
-					DBG(" )");
+					LM_DBG(" )");
 					break;
 			case MINUS_OP:
-					DBG("MINUS( ");
+					LM_DBG("MINUS( ");
 					print_expr(exp->left.v.expr);
-					DBG(", ");
+					LM_DBG(", ");
 					print_expr(exp->right.v.expr);
-					DBG(" )");
+					LM_DBG(" )");
 					break;
 			case DIV_OP:
-					DBG("DIV( ");
+					LM_DBG("DIV( ");
 					print_expr(exp->left.v.expr);
-					DBG(", ");
+					LM_DBG(", ");
 					print_expr(exp->right.v.expr);
-					DBG(" )");
+					LM_DBG(" )");
 					break;
 			case MULT_OP:
-					DBG("MULT( ");
+					LM_DBG("MULT( ");
 					print_expr(exp->left.v.expr);
-					DBG(", ");
+					LM_DBG(", ");
 					print_expr(exp->right.v.expr);
-					DBG(" )");
+					LM_DBG(" )");
 					break;
 			case MODULO_OP:
-					DBG("MODULO( ");
+					LM_DBG("MODULO( ");
 					print_expr(exp->left.v.expr);
-					DBG(", ");
+					LM_DBG(", ");
 					print_expr(exp->right.v.expr);
-					DBG(" )");
+					LM_DBG(" )");
 					break;
 			case BAND_OP:
-					DBG("BAND( ");
+					LM_DBG("BAND( ");
 					print_expr(exp->left.v.expr);
-					DBG(", ");
+					LM_DBG(", ");
 					print_expr(exp->right.v.expr);
-					DBG(" )");
+					LM_DBG(" )");
 					break;
 			case BOR_OP:
-					DBG("BOR( ");
+					LM_DBG("BOR( ");
 					print_expr(exp->left.v.expr);
-					DBG(", ");
+					LM_DBG(", ");
 					print_expr(exp->right.v.expr);
-					DBG(" )");
+					LM_DBG(" )");
 					break;
 			case BXOR_OP:
-					DBG("BXOR( ");
+					LM_DBG("BXOR( ");
 					print_expr(exp->left.v.expr);
-					DBG(", ");
+					LM_DBG(", ");
 					print_expr(exp->right.v.expr);
-					DBG(" )");
+					LM_DBG(" )");
 					break;
 			case BNOT_OP:
-					DBG("BNOT( ");
+					LM_DBG("BNOT( ");
 					print_expr(exp->left.v.expr);
-					DBG(" )");
+					LM_DBG(" )");
 					break;
 			default:
-					DBG("UNKNOWN_EXP[%d] ", exp->op);
+					LM_DBG("UNKNOWN_EXP[%d] ", exp->op);
 		}
 					
 	}else{
-		DBG("ERROR:print_expr: unknown type\n");
+		LM_ERR("unknown type\n");
 	}
 }
 
@@ -384,146 +383,146 @@ void print_action(struct action* t)
 {
 	switch(t->type){
 		case FORWARD_T:
-				DBG("forward(");
+				LM_DBG("forward(");
 				break;
 		case SEND_T:
-				DBG("send(");
+				LM_DBG("send(");
 				break;
 		case DROP_T:
-				DBG("drop(");
+				LM_DBG("drop(");
 				break;
 		case LOG_T:
-				DBG("log(");
+				LM_DBG("log(");
 				break;
 		case ERROR_T:
-				DBG("error(");
+				LM_DBG("error(");
 				break;
 		case ROUTE_T:
-				DBG("route(");
+				LM_DBG("route(");
 				break;
 		case EXEC_T:
-				DBG("exec(");
+				LM_DBG("exec(");
 				break;
 		case REVERT_URI_T:
-				DBG("revert_uri(");
+				LM_DBG("revert_uri(");
 				break;
 		case STRIP_T:
-				DBG("strip(");
+				LM_DBG("strip(");
 				break;
 		case APPEND_BRANCH_T:
-				DBG("append_branch(");
+				LM_DBG("append_branch(");
 				break;
 		case PREFIX_T:
-				DBG("prefix(");
+				LM_DBG("prefix(");
 				break;
 		case LEN_GT_T:
-				DBG("len_gt(");
+				LM_DBG("len_gt(");
 				break;
 		case SET_DEBUG_T:
-				DBG("setdebug(");
+				LM_DBG("setdebug(");
 				break;
 		case SETFLAG_T:
-				DBG("setflag(");
+				LM_DBG("setflag(");
 				break;
 		case RESETFLAG_T:
-				DBG("resetflag(");
+				LM_DBG("resetflag(");
 				break;
 		case ISFLAGSET_T:
-				DBG("isflagset(");
+				LM_DBG("isflagset(");
 				break;
 		case SETBFLAG_T:
-				DBG("setbflag(");
+				LM_DBG("setbflag(");
 				break;
 		case RESETBFLAG_T:
-				DBG("resetbflag(");
+				LM_DBG("resetbflag(");
 				break;
 		case ISBFLAGSET_T:
-				DBG("isbflagset(");
+				LM_DBG("isbflagset(");
 				break;
 		case SETSFLAG_T:
-				DBG("setsflag(");
+				LM_DBG("setsflag(");
 				break;
 		case RESETSFLAG_T:
-				DBG("resetsflag(");
+				LM_DBG("resetsflag(");
 				break;
 		case ISSFLAGSET_T:
-				DBG("issflagset(");
+				LM_DBG("issflagset(");
 				break;
 		case SET_HOST_T:
-				DBG("sethost(");
+				LM_DBG("sethost(");
 				break;
 		case SET_HOSTPORT_T:
-				DBG("sethostport(");
+				LM_DBG("sethostport(");
 				break;
 		case SET_USER_T:
-				DBG("setuser(");
+				LM_DBG("setuser(");
 				break;
 		case SET_USERPASS_T:
-				DBG("setuserpass(");
+				LM_DBG("setuserpass(");
 				break;
 		case SET_PORT_T:
-				DBG("setport(");
+				LM_DBG("setport(");
 				break;
 		case SET_URI_T:
-				DBG("seturi(");
+				LM_DBG("seturi(");
 				break;
 		case IF_T:
-				DBG("if (");
+				LM_DBG("if (");
 				break;
 		case WHILE_T:
-				DBG("while (");
+				LM_DBG("while (");
 				break;
 		case MODULE_T:
-				DBG(" external_module_call(");
+				LM_DBG(" external_module_call(");
 				break;
 		case FORCE_RPORT_T:
-				DBG("force_rport(");
+				LM_DBG("force_rport(");
 				break;
 		case SET_ADV_ADDR_T:
-				DBG("set_advertised_address(");
+				LM_DBG("set_advertised_address(");
 				break;
 		case SET_ADV_PORT_T:
-				DBG("set_advertised_port(");
+				LM_DBG("set_advertised_port(");
 				break;
 		case FORCE_TCP_ALIAS_T:
-				DBG("force_tcp_alias(");
+				LM_DBG("force_tcp_alias(");
 				break;
 		case FORCE_SEND_SOCKET_T:
-				DBG("force_send_socket");
+				LM_DBG("force_send_socket");
 				break;
 		case RETURN_T:
-				DBG("return(");
+				LM_DBG("return(");
 				break;
 		case EXIT_T:
-				DBG("exit(");
+				LM_DBG("exit(");
 				break;
 		case SWITCH_T:
-				DBG("switch(");
+				LM_DBG("switch(");
 				break;
 		case CASE_T:
-				DBG("case(");
+				LM_DBG("case(");
 				break;
 		case DEFAULT_T:
-				DBG("default(");
+				LM_DBG("default(");
 				break;
 		case SBREAK_T:
-				DBG("sbreak(");
+				LM_DBG("sbreak(");
 				break;
 		case EQ_T:
-				DBG("assign(");
+				LM_DBG("assign(");
 				break;
 		default:
-				DBG("UNKNOWN(");
+				LM_DBG("UNKNOWN(");
 	}
 	switch(t->elem[0].type){
 		case STRING_ST:
-				DBG("\"%s\"", ZSW(t->elem[0].u.string));
+				LM_DBG("\"%s\"", ZSW(t->elem[0].u.string));
 				break;
 		case NUMBER_ST:
-				DBG("%lu",t->elem[0].u.number);
+				LM_DBG("%lu",t->elem[0].u.number);
 				break;
 		case SCRIPTVAR_ST:
-				DBG("scriptvar[%d]",t->elem[0].u.item->type);
+				LM_DBG("scriptvar[%d]",t->elem[0].u.item->type);
 				break;
 		case IP_ST:
 				print_ip("", (struct ip_addr*)t->elem[0].u.data, "");
@@ -535,27 +534,27 @@ void print_action(struct action* t)
 				print_actions((struct action*)t->elem[0].u.data);
 				break;
 		case CMD_ST:
-				DBG("f<%s>",((cmd_export_t*)t->elem[0].u.data)->name);
+				LM_DBG("f<%s>",((cmd_export_t*)t->elem[0].u.data)->name);
 				break;
 		case SOCKID_ST:
-				DBG("%d:%s:%d",
+				LM_DBG("%d:%s:%d",
 						((struct socket_id*)t->elem[0].u.data)->proto,
 						ZSW(((struct socket_id*)t->elem[0].u.data)->name),
 						((struct socket_id*)t->elem[0].u.data)->port
 						);
 				break;
 		default:
-				DBG("type<%d>", t->elem[0].type);
+				LM_DBG("type<%d>", t->elem[0].type);
 	}
-	if (t->type==IF_T) DBG(") {");
+	if (t->type==IF_T) LM_DBG(") {");
 	switch(t->elem[1].type){
 		case NOSUBTYPE:
 				break;
 		case STRING_ST:
-				DBG(", \"%s\"", ZSW(t->elem[1].u.string));
+				LM_DBG(", \"%s\"", ZSW(t->elem[1].u.string));
 				break;
 		case NUMBER_ST:
-				DBG(", %lu",t->elem[1].u.number);
+				LM_DBG(", %lu",t->elem[1].u.number);
 				break;
 		case EXPR_ST:
 				print_expr((struct expr*)t->elem[1].u.data);
@@ -564,24 +563,24 @@ void print_action(struct action* t)
 				print_actions((struct action*)t->elem[1].u.data);
 				break;
 		case SOCKID_ST:
-				DBG("%d:%s:%d",
+				LM_DBG("%d:%s:%d",
 						((struct socket_id*)t->elem[1].u.data)->proto,
 						ZSW(((struct socket_id*)t->elem[1].u.data)->name),
 						((struct socket_id*)t->elem[1].u.data)->port
 						);
 				break;
 		default:
-				DBG(", type<%d>", t->elem[1].type);
+				LM_DBG(", type<%d>", t->elem[1].type);
 	}
-	if (t->type==IF_T && t->elem[2].type!=NOSUBTYPE) DBG(" } else { ");
+	if (t->type==IF_T && t->elem[2].type!=NOSUBTYPE) LM_DBG(" } else { ");
 	switch(t->elem[2].type){
 		case NOSUBTYPE:
 				break;
 		case STRING_ST:
-				DBG(", \"%s\"", ZSW(t->elem[2].u.string));
+				LM_DBG(", \"%s\"", ZSW(t->elem[2].u.string));
 				break;
 		case NUMBER_ST:
-				DBG(", %lu",t->elem[2].u.number);
+				LM_DBG(", %lu",t->elem[2].u.number);
 				break;
 		case EXPR_ST:
 				print_expr((struct expr*)t->elem[2].u.data);
@@ -590,17 +589,17 @@ void print_action(struct action* t)
 				print_actions((struct action*)t->elem[2].u.data);
 				break;
 		case SOCKID_ST:
-				DBG("%d:%s:%d",
+				LM_DBG("%d:%s:%d",
 					((struct socket_id*)t->elem[2].u.data)->proto,
 					ZSW(((struct socket_id*)t->elem[2].u.data)->name),
 					((struct socket_id*)t->elem[2].u.data)->port
 					);
 			break;
 		default:
-			DBG(", type<%d>", t->elem[2].type);
+			LM_DBG(", type<%d>", t->elem[2].type);
 	}
-	if (t->type==IF_T) DBG("}; ");
-	else	DBG("); ");
+	if (t->type==IF_T) LM_DBG("}; ");
+	else	LM_DBG("); ");
 
 }
 			

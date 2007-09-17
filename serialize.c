@@ -82,7 +82,7 @@ int serialize_branches(struct sip_msg *msg, int clean_before )
 
 	/* Check if anything needs to be done */
 	if (nr_branches == 0) {
-		DBG("DEBUG:serialize_branches: nothing to do - no branches!\n");
+		LM_DBG("nothing to do - no branches!\n");
 		return 0;
 	}
 
@@ -94,7 +94,7 @@ int serialize_branches(struct sip_msg *msg, int clean_before )
 			break;
 	}
 	if (branch.s==0) {
-		DBG("DEBUG:serialize_branches: nothing to do - all same q!\n");
+		LM_DBG("nothing to do - all same q!\n");
 		return 0;
 	}
 
@@ -151,11 +151,11 @@ int serialize_branches(struct sip_msg *msg, int clean_before )
 		val.s = contacts[i].uri;
 		if (add_avp( AVP_VAL_STR|contacts[i].q_flag, serial_avp,
 		val)!=0 ) {
-			LOG(L_ERR,"ERROR:serialize_branches: failed to add avp\n");
+			LM_ERR("failed to add avp\n");
 			goto error;
 		}
-		DBG("DEBUG:serialize_branches: loaded <%s>, q=%d q_flag <%d>\n",
-			val.s.s, contacts[i].q, contacts[i].q_flag);
+		LM_DBG("loaded <%s>, q=%d q_flag <%d>\n", val.s.s, contacts[i].q,
+				contacts[i].q_flag);
 	}
 
 	/* Clear all branches */
@@ -185,15 +185,14 @@ int next_branches( struct sip_msg *msg)
 
 	if ( route_type!=REQUEST_ROUTE && route_type!=FAILURE_ROUTE ) {
 		/* unsupported route type */
-		LOG(L_ERR,"ERROR:next_branch: called from unsupported route type %d\n",
-			route_type);
+		LM_ERR("called from unsupported route type %d\n", route_type);
 		goto error;
 	}
 
 	/* Find first avp  */
 	avp = search_first_avp( 0, serial_avp, &val, 0);
 	if (!avp) {
-		DBG("DEBUG:next_branches: no AVPs -- we are done!\n");
+		LM_DBG("no AVPs -- we are done!\n");
 		goto error;
 	}
 
@@ -205,7 +204,7 @@ int next_branches( struct sip_msg *msg)
 		rval = do_action(&act, msg);
 		if (rval != 1)
 			goto error1;
-		DBG("DEBUG:next_branches: R-URI is <%s>\n", val.s.s);
+		LM_DBG("R-URI is <%s>\n", val.s.s);
 		if (avp->flags & Q_FLAG) {
 			destroy_avp(avp);
 			return 0;
@@ -224,11 +223,10 @@ int next_branches( struct sip_msg *msg)
 		act.elem[1].u.number = 0;
 		rval = do_action(&act, msg);
 		if (rval != 1) {
-			LOG(L_ERR, "ERRORL:next_branches: do_action failed "
-				"with return value <%d>\n", rval);
+			LM_ERR("do_action failed with return value <%d>\n", rval);
 			goto error1;
 			}
-		DBG("DEBUG:next_branches: branch is <%s>\n", val.s.s);
+		LM_DBG("branch is <%s>\n", val.s.s);
 
 		/* continuu ? */
 		if (avp->flags & Q_FLAG) {

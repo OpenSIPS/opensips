@@ -108,18 +108,17 @@ void* _shm_resize( void* p , unsigned int s)
 	struct vqm_frag *f;
 #endif
 	if (p==0) {
-		DBG("WARNING:vqm_resize: resize(0) called\n");
+		LM_DBG("resize(0) called\n");
 		return shm_malloc( s );
 	}
 #	ifdef DBG_QM_MALLOC
 #	ifdef VQ_MALLOC
 	f=(struct  vqm_frag*) ((char*)p-sizeof(struct vqm_frag));
-	DBG("_shm_resize(%p, %d), called from %s: %s(%d)\n",  
-		p, s, file, func, line);
+	LM_DBG("params (%p, %d), called from %s: %s(%d)\n",  
+			p, s, file, func, line);
 	VQM_DEBUG_FRAG(shm_block, f);
 	if (p>(void *)shm_block->core_end || p<(void*)shm_block->init_core){
-		LOG(L_CRIT, "BUG: vqm_free: bad pointer %p (out of memory block!) - "
-				"aborting\n", p);
+		LM_CRIT("bad pointer %p (out of memory block!) - aborting\n", p);
 		abort();
 	}
 #endif
@@ -145,7 +144,7 @@ int shm_getmem(void)
 #else
 	if ((shm_shmid!=-1)||(shm_mempool!=(void*)-1)){
 #endif
-		LOG(L_CRIT, "BUG: shm_mem_init: shm already initialized\n");
+		LM_CRIT("shm already initialized\n");
 		return -1;
 	}
 	
@@ -156,8 +155,7 @@ int shm_getmem(void)
 #else
 	fd=open("/dev/zero", O_RDWR);
 	if (fd==-1){
-		LOG(L_CRIT, "ERROR: shm_mem_init: could not open /dev/zero: %s\n",
-				strerror(errno));
+		LM_CRIT("could not open /dev/zero: %s\n", strerror(errno));
 		return -1;
 	}
 	shm_mempool=mmap(0, shm_mem_size, PROT_READ|PROT_WRITE, MAP_SHARED, fd ,0);
@@ -168,15 +166,15 @@ int shm_getmem(void)
 	
 	shm_shmid=shmget(IPC_PRIVATE, /* SHM_MEM_SIZE */ shm_mem_size , 0700);
 	if (shm_shmid==-1){
-		LOG(L_CRIT, "ERROR: shm_mem_init: could not allocate shared memory"
-				" segment: %s\n", strerror(errno));
+		LM_CRIT("could not allocate shared memory segment: %s\n",
+				strerror(errno));
 		return -1;
 	}
 	shm_mempool=shmat(shm_shmid, 0, 0);
 #endif
 	if (shm_mempool==(void*)-1){
-		LOG(L_CRIT, "ERROR: shm_mem_init: could not attach shared memory"
-				" segment: %s\n", strerror(errno));
+		LM_CRIT("could not attach shared memory segment: %s\n",
+				strerror(errno));
 		/* destroy segment*/
 		shm_mem_destroy();
 		return -1;
@@ -191,25 +189,24 @@ int shm_mem_init_mallocs(void* mempool, unsigned long pool_size)
 	/* init it for malloc*/
 	shm_block=shm_malloc_init(mempool, pool_size);
 	if (shm_block==0){
-		LOG(L_CRIT, "ERROR: shm_mem_init: could not initialize shared"
-				" malloc\n");
+		LM_CRIT("could not initialize shared malloc\n");
 		shm_mem_destroy();
 		return -1;
 	}
 	mem_lock=shm_malloc_unsafe(sizeof(gen_lock_t)); /* skip lock_alloc, 
 													   race cond*/
 	if (mem_lock==0){
-		LOG(L_CRIT, "ERROR: shm_mem_init: could not allocate lock\n");
+		LM_CRIT("could not allocate lock\n");
 		shm_mem_destroy();
 		return -1;
 	}
 	if (lock_init(mem_lock)==0){
-		LOG(L_CRIT, "ERROR: shm_mem_init: could not initialize lock\n");
+		LM_CRIT("could not initialize lock\n");
 		shm_mem_destroy();
 		return -1;
 	}
 	
-	DBG("shm_mem_init: success\n");
+	LM_DBG("success\n");
 	
 	return 0;
 }
@@ -231,9 +228,9 @@ void shm_mem_destroy(void)
 	struct shmid_ds shm_info;
 #endif
 	
-	DBG("shm_mem_destroy\n");
+	LM_DBG("\n");
 	if (mem_lock){
-		DBG("destroying the shared memory lock\n");
+		LM_DBG("destroying the shared memory lock\n");
 		lock_destroy(mem_lock); /* we don't need to dealloc it*/
 	}
 	if (shm_mempool && (shm_mempool!=(void*)-1)) {

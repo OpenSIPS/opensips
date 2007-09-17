@@ -71,7 +71,7 @@ struct mi_attr *add_mi_attr(struct mi_node *node, int flags,
 
 	new = (struct mi_attr *)pkg_malloc(size_mem);
 	if (!new) {
-		LOG(L_ERR,"ERROR:mi:add_mi_attr: no more pkg mem (%d)\n",size_mem);
+		LM_ERR("no more pkg mem (%d)\n",size_mem);
 		return NULL;
 	}
 	memset(new,0,size_mem);

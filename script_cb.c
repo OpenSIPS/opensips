@@ -51,7 +51,7 @@ static inline int add_callback( struct script_cb **list,
 
 	new_cb=pkg_malloc(sizeof(struct script_cb));
 	if (new_cb==0) {
-		LOG(L_ERR, "ERROR:add_script_callback: out of memory\n");
+		LM_ERR("out of pkg memory\n");
 		return -1;
 	}
 	new_cb->cbf = f;
@@ -68,14 +68,12 @@ int register_script_cb( cb_function f, int type, void *param )
 {
 	/* type checkings */
 	if ( (type&(REQ_TYPE_CB|RPL_TYPE_CB))==0 ) {
-		LOG(L_CRIT,"BUG:register_script_cb: REQUEST or REPLY "
-			"type not specified\n");
+		LM_CRIT("request or reply type not specified\n");
 		goto error;
 	}
 	if ( (type&(PRE_SCRIPT_CB|POST_SCRIPT_CB))==0 ||
 	(type&PRE_SCRIPT_CB && type&POST_SCRIPT_CB) ) {
-		LOG(L_CRIT,"BUG:register_script_cb: callback POST or PRE type must "
-			"be exactly one\n");
+		LM_CRIT("callback POST or PRE type must be exactly one\n");
 		goto error;
 	}
 
@@ -102,7 +100,7 @@ int register_script_cb( cb_function f, int type, void *param )
 
 	return 0;
 add_error:
-	LOG(L_ERR,"ERROR:register_script_cb: failed to add callback\n");
+	LM_ERR("failed to add callback\n");
 error:
 	return -1;
 }

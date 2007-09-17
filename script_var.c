@@ -49,7 +49,7 @@ script_var_t* add_var(str *name)
 	it = (script_var_t*)pkg_malloc(sizeof(script_var_t));
 	if(it==0)
 	{
-		LOG(L_ERR, "add_var: error - out of pkg mem\n");
+		LM_ERR("out of pkg mem\n");
 		return 0;
 	}
 	memset(it, 0, sizeof(script_var_t));
@@ -57,7 +57,7 @@ script_var_t* add_var(str *name)
 
 	if(it->name.s==0)
 	{
-		LOG(L_ERR, "add_var: error - out of pkg mem!\n");
+		LM_ERR("out of pkg mem!\n");
 		return 0;
 	}
 	it->name.len = name->len;
@@ -99,7 +99,7 @@ script_var_t* set_var_value(script_var_t* var, int_str *value, int flags)
 					(char*)pkg_malloc((value->s.len+1)*sizeof(char));
 				if(var->v.value.s.s==0)
 				{
-					LOG(L_ERR, "set_var_value: error - out of pkg mem\n");
+					LM_ERR("out of pkg mem\n");
 					goto error;
 				}
 			}
@@ -109,7 +109,7 @@ script_var_t* set_var_value(script_var_t* var, int_str *value, int flags)
 					(char*)pkg_malloc((value->s.len+1)*sizeof(char));
 			if(var->v.value.s.s==0)
 			{
-				LOG(L_ERR, "set_var_value: error - out of pkg mem!\n");
+				LM_ERR("out of pkg mem!\n");
 				goto error;
 			}
 			var->v.flags |= VAR_VAL_STR;

@@ -86,7 +86,7 @@ int tcp_read(struct tcp_connection *c)
 	bytes_free=TCP_BUF_SIZE- (int)(r->pos - r->buf);
 	
 	if (bytes_free==0){
-		LOG(L_ERR, "ERROR: tcp_read: buffer overrun, dropping\n");
+		LM_ERR("buffer overrun, dropping\n");
 		r->error=TCP_REQ_OVERRUN;
 		return -1;
 	}
@@ -98,16 +98,16 @@ again:
 			return 0; /* nothing has been read */
 		}else if (errno == EINTR) goto again;
 		else{
-			LOG(L_ERR, "ERROR: tcp_read: error reading: %s\n",strerror(errno));
+			LM_ERR("error reading: %s\n",strerror(errno));
 			r->error=TCP_READ_ERROR;
 			return -1;
 		}
 	}else if (bytes_read==0){
 		c->state=S_CONN_EOF;
-		DBG("tcp_read: EOF on %p, FD %d\n", c, fd);
+		LM_DBG("EOF on %p, FD %d\n", c, fd);
 	}
 #ifdef EXTRA_DEBUG
-	DBG("tcp_read: read %d bytes:\n%.*s\n", bytes_read, bytes_read, r->pos);
+	LM_DBG("read %d bytes:\n%.*s\n", bytes_read, bytes_read, r->pos);
 #endif
 	r->pos+=bytes_read;
 	return bytes_read;
@@ -230,8 +230,7 @@ int tcp_read_headers(struct tcp_connection *c)
 								goto skip;
 							}
 						}else{
-							DBG("tcp_read_headers: ERROR: no clen, p=%X\n",
-									*p);
+							LM_DBG("no clen, p=%X\n", *p);
 							r->error=TCP_REQ_BAD_LEN;
 						}
 						break;
@@ -254,8 +253,7 @@ int tcp_read_headers(struct tcp_connection *c)
 							goto skip;
 						}
 					}else{
-						DBG("tcp_read_headers: ERROR: no clen, p=%X\n",
-									*p);
+						LM_DBG("no clen, p=%X\n", *p);
 						r->error=TCP_REQ_BAD_LEN;
 					}
 				}else r->state=H_SKIP;
@@ -371,8 +369,7 @@ int tcp_read_headers(struct tcp_connection *c)
 						r->has_content_len=1;
 						break;
 					default:
-						LOG(L_ERR, "ERROR: tcp_read_headers: bad "
-								"Content-Length header value, unexpected "
+						LM_ERR("bad Content-Length header value, unexpected "
 								"char %c in state %d\n", *p, r->state);
 						r->state=H_SKIP; /* try to find another?*/
 				}
@@ -380,8 +377,7 @@ int tcp_read_headers(struct tcp_connection *c)
 				break;
 			
 			default:
-				LOG(L_CRIT, "BUG: tcp_read_headers: unexpected state %d\n",
-						r->state);
+				LM_CRIT("unexpected state %d\n", r->state);
 				abort();
 		}
 	}
@@ -422,15 +418,15 @@ again:
 			bytes=tcp_read_headers(con);
 #ifdef EXTRA_DEBUG
 						/* if timeout state=0; goto end__req; */
-			DBG("read= %d bytes, parsed=%d, state=%d, error=%d\n",
+			LM_DBG("read= %d bytes, parsed=%d, state=%d, error=%d\n",
 					bytes, (int)(req->parsed-req->start), req->state,
 					req->error );
-			DBG("tcp_read_req: last char=0x%02X, parsed msg=\n%.*s\n",
+			LM_DBG("last char=0x%02X, parsed msg=\n%.*s\n",
 					*(req->parsed-1), (int)(req->parsed-req->start),
 					req->start);
 #endif
 			if (bytes==-1){
-				LOG(L_ERR, "ERROR: tcp_read_req: error reading \n");
+				LM_ERR("failed to read \n");
 				resp=CONN_ERROR;
 				goto end_req;
 			}
@@ -441,46 +437,44 @@ again:
 			 * request after it, so postpone release_with_eof
 			 */
 			if ((con->state==S_CONN_EOF) && (req->complete==0)) {
-				DBG( "tcp_read_req: EOF\n");
+				LM_DBG("EOF\n");
 				resp=CONN_EOF;
 				goto end_req;
 			}
 		
 		}
 		if (req->error!=TCP_REQ_OK){
-			LOG(L_ERR,"ERROR: tcp_read_req: bad request, state=%d, error=%d "
+			LM_ERR("bad request, state=%d, error=%d "
 					  "buf:\n%.*s\nparsed:\n%.*s\n", req->state, req->error,
 					  (int)(req->pos-req->buf), req->buf,
 					  (int)(req->parsed-req->start), req->start);
-			DBG("- received from: port %d\n", con->rcv.src_port);
+			LM_DBG("- received from: port %d\n", con->rcv.src_port);
 			print_ip("- received from: ip ",&con->rcv.src_ip, "\n");
 			resp=CONN_ERROR;
 			goto end_req;
 		}
 		if (req->complete){
 #ifdef EXTRA_DEBUG
-			DBG("tcp_read_req: end of header part\n");
-			DBG("- received from: port %d\n", con->rcv.src_port);
+			LM_DBG("end of header part\n");
+			LM_DBG("- received from: port %d\n", con->rcv.src_port);
 			print_ip("- received from: ip ", &con->rcv.src_ip, "\n");
-			DBG("tcp_read_req: headers:\n%.*s.\n",
-					(int)(req->body-req->start), req->start);
+			LM_DBG("headers:\n%.*s.\n",(int)(req->body-req->start), req->start);
 #endif
 			if (req->has_content_len){
-				DBG("tcp_read_req: content-length= %d\n", req->content_len);
+				LM_DBG("content-length= %d\n", req->content_len);
 #ifdef EXTRA_DEBUG
-				DBG("tcp_read_req: body:\n%.*s\n", req->content_len,req->body);
+				LM_DBG("body:\n%.*s\n", req->content_len,req->body);
 #endif
 			}else{
 				req->error=TCP_REQ_BAD_LEN;
-				LOG(L_ERR, "ERROR: tcp_read_req: content length not present or"
-						" unparsable\n");
+				LM_ERR("content length not present or unparsable\n");
 				resp=CONN_ERROR;
 				goto end_req;
 			}
 			/* if we are here everything is nice and ok*/
 			resp=CONN_RELEASE;
 #ifdef EXTRA_DEBUG
-			DBG("calling receive_msg(%p, %d, )\n",
+			LM_DBG("calling receive_msg(%p, %d, )\n",
 					req->start, (int)(req->parsed-req->start));
 #endif
 			/* rcv.bind_address should always be !=0 */
@@ -509,8 +503,7 @@ again:
 			size=req->pos-req->parsed;
 			if (size) memmove(req->buf, req->parsed, size);
 #ifdef EXTRA_DEBUG
-			DBG("tcp_read_req: preparing for new request, kept %ld bytes\n",
-					size);
+			LM_DBG("preparing for new request, kept %ld bytes\n", size);
 #endif
 			req->pos=req->buf+size;
 			req->parsed=req->buf;
@@ -523,7 +516,7 @@ again:
 			/* if we still have some unparsed bytes, try to  parse them too*/
 			if (size) goto again;
 			else if (con->state==S_CONN_EOF){
-				DBG( "tcp_read_req: EOF after reading complete request\n");
+				LM_DBG("EOF after reading complete request\n");
 				resp=CONN_EOF;
 			}
 			
@@ -541,16 +534,16 @@ void release_tcpconn(struct tcp_connection* c, long state, int unix_sock)
 {
 	long response[2];
 	
-		DBG( "releasing con %p, state %ld, fd=%d, id=%d\n",
+		LM_DBG(" releasing con %p, state %ld, fd=%d, id=%d\n",
 				c, state, c->fd, c->id);
-		DBG(" extra_data %p\n", c->extra_data);
+		LM_DBG(" extra_data %p\n", c->extra_data);
 		/* release req & signal the parent */
 		if (c->fd!=-1) close(c->fd);
 		/* errno==EINTR, EWOULDBLOCK a.s.o todo */
 		response[0]=(long)c;
 		response[1]=state;
 		if (send_all(unix_sock, response, sizeof(response))<=0)
-			LOG(L_ERR, "ERROR: release_tcpconn: send_all failed\n");
+			LM_ERR("send_all failed\n");
 }
 
 
@@ -587,13 +580,13 @@ void tcp_receive_loop(int unix_sock)
 #ifdef EXTRA_DEBUG
 			for (n=0; n<maxfd; n++){
 				if (FD_ISSET(n, &sel_set)) 
-					DBG("tcp receive: FD %d is set\n", n);
+					LM_DBG("fd %d is set\n", n);
 			}
 #endif
 			if (nfds<0){
 				if (errno==EINTR) continue; /* just a signal */
 				/* errors */
-				LOG(L_ERR, "ERROR: tcp_receive_loop: select:(%d) %s\n", errno,
+				LM_ERR("select:(%d) %s\n", errno,
 					strerror(errno));
 				continue;
 			}
@@ -606,24 +599,22 @@ void tcp_receive_loop(int unix_sock)
 							errno == EINTR){
 						goto skip;
 					}else{
-						LOG(L_CRIT,"BUG: tcp_receive_loop: read_fd: %s\n",
-							strerror(errno));
+						LM_CRIT("read_fd: %s\n",strerror(errno));
 						abort(); /* big error*/
 					}
 				}
-				DBG("received n=%d con=%p, fd=%d\n", n, con, s);
+				LM_DBG("received n=%d con=%p, fd=%d\n", n, con, s);
 				if (n==0){
-					LOG(L_ERR, "WARNING: tcp_receive_loop: 0 bytes read\n");
+					LM_WARN("0 bytes read\n");
 					goto skip;
 				}
 				if (con==0){
-					LOG(L_CRIT, "BUG: tcp_receive_loop: null pointer\n");
+					LM_CRIT("null pointer\n");
 					goto skip;
 				}
 				con->fd=s;
 				if (s==-1) {
-					LOG(L_ERR, "ERROR: tcp_receive_loop: read_fd:"
-									"no fd read\n");
+					LM_ERR("read_fd: no fd read\n");
 					resp=CONN_ERROR;
 					con->state=S_CONN_BAD;
 					release_tcpconn(con, resp, unix_sock);
@@ -633,7 +624,7 @@ void tcp_receive_loop(int unix_sock)
 				FD_SET(s, &master_set);
 				if (maxfd<s) maxfd=s;
 				if (con==list){
-					LOG(L_CRIT, "BUG: tcp_receive_loop: duplicate"
+					LM_CRIT("duplicate"
 							" connection received: %p, id %d, fd %d, refcnt %d"
 							" state %d (n=%d)\n", con, con->id, con->fd,
 							con->refcnt, con->state, n);
@@ -648,7 +639,7 @@ skip:
 			for (con=list; con ; con=c_next){
 				c_next=con->c_next; /* safe for removing*/
 #ifdef EXTRA_DEBUG
-				DBG("tcp receive: list fd=%d, id=%d, timeout=%d, refcnt=%d\n",
+				LM_DBG("list fd=%d, id=%d, timeout=%d, refcnt=%d\n",
 						con->fd, con->id, con->timeout, con->refcnt);
 #endif
 				if (con->state<0){
@@ -662,7 +653,7 @@ skip:
 				}
 				if (nfds && FD_ISSET(con->fd, &sel_set)){
 #ifdef EXTRA_DEBUG
-					DBG("tcp receive: match, fd:isset\n");
+					LM_DBG("match, fd:isset\n");
 #endif
 					nfds--;
 					resp=tcp_read_req(con);
@@ -680,7 +671,7 @@ skip:
 					/* timeout */
 					if (con->timeout<=ticks){
 						/* expired, return to "tcp main" */
-						DBG("tcp_receive_loop: %p expired (%d, %d)\n",
+						LM_DBG("%p expired (%d, %d)\n",
 								con, con->timeout, ticks);
 						resp=CONN_RELEASE;
 						FD_CLR(con->fd, &master_set);
@@ -721,34 +712,32 @@ inline static int handle_io(struct fd_map* fm, int idx)
 		case F_TCPMAIN:
 again:
 			ret=n=receive_fd(fm->fd, &con, sizeof(con), &s, 0);
-			DBG("received n=%d con=%p, fd=%d\n", n, con, s);
+			LM_DBG("received n=%d con=%p, fd=%d\n", n, con, s);
 			if (n<0){
 				if (errno == EWOULDBLOCK || errno == EAGAIN){
 					ret=0;
 					break;
 				}else if (errno == EINTR) goto again;
 				else{
-					LOG(L_CRIT,"BUG: tcp_receive: handle_io: read_fd: %s \n",
-							strerror(errno));
+					LM_CRIT("read_fd: %s \n", strerror(errno));
 						abort(); /* big error*/
 				}
 			}
 			if (n==0){
-				LOG(L_ERR, "WARNING: tcp_receive: handle_io: 0 bytes read\n");
+				LM_WARN("0 bytes read\n");
 				break;
 			}
 			if (con==0){
-					LOG(L_CRIT, "BUG: tcp_receive: handle_io null pointer\n");
+					LM_CRIT("null pointer\n");
 					break;
 			}
 			con->fd=s;
 			if (s==-1) {
-				LOG(L_ERR, "ERROR: tcp_receive: handle_io: read_fd:"
-									"no fd read\n");
+				LM_ERR("read_fd:no fd read\n");
 				goto con_error;
 			}
 			if (con==tcp_conn_lst){
-				LOG(L_CRIT, "BUG: tcp_receive: handle_io: duplicate"
+				LM_CRIT("duplicate"
 							" connection received: %p, id %d, fd %d, refcnt %d"
 							" state %d (n=%d)\n", con, con->id, con->fd,
 							con->refcnt, con->state, n);
@@ -762,8 +751,7 @@ again:
 			tcpconn_listadd(tcp_conn_lst, con, c_next, c_prev);
 			con->timeout=get_ticks()+TCP_CHILD_TIMEOUT;
 			if (io_watch_add(&io_w, s, F_TCPCONN, con)<0){
-				LOG(L_CRIT, "ERROR: tcp_receive: handle_io: failed to add"
-						" new socket to the fd list\n");
+				LM_CRIT("failed to add new socket to the fd list\n");
 				tcpconn_listrm(tcp_conn_lst, con, c_next, c_prev);
 				goto con_error;
 			}
@@ -783,12 +771,12 @@ again:
 			}
 			break;
 		case F_NONE:
-			LOG(L_CRIT, "BUG: handle_io: empty fd map %p (%d): "
+			LM_CRIT("empty fd map %p (%d): "
 						"{%d, %d, %p}\n", fm, (int)(fm-io_w.fd_hash),
 						fm->fd, fm->type, fm->data);
 			goto error;
 		default:
-			LOG(L_CRIT, "BUG: handle_io: uknown fd type %d\n", fm->type); 
+			LM_CRIT("uknown fd type %d\n", fm->type); 
 			goto error;
 	}
 	
@@ -839,7 +827,7 @@ static inline void tcp_receive_timeout(void)
 			if (c_tcp_con_id==con->id) {
 				con->lifetime = c_tcp_con_lifetime;
 			}
-			DBG("tcp_receive_timeout: %p expired (%d, %d) lt=%d\n",
+			LM_DBG("%p expired (%d, %d) lt=%d\n",
 					con, con->timeout, ticks,con->lifetime);
 			/* fd will be closed in release_tcpconn */
 			io_watch_del(&io_w, con->fd, -1, IO_FD_CLOSING);
@@ -860,8 +848,7 @@ void tcp_receive_loop(int unix_sock)
 		goto error;
 	/* add the unix socket */
 	if (io_watch_add(&io_w, tcpmain_sock, F_TCPMAIN, 0)<0){
-		LOG(L_CRIT, "ERROR: tcp_receive_loop: init: failed to add socket "
-							" to the fd list\n");
+		LM_CRIT("failed to add socket to the fd list\n");
 		goto error;
 	}
 	/* main loop */
@@ -919,14 +906,13 @@ void tcp_receive_loop(int unix_sock)
 			break;
 #endif
 		default:
-			LOG(L_CRIT, "BUG: tcp_receive_loop: no support for poll method "
-					" %s (%d)\n", 
+			LM_CRIT("no support for poll method %s (%d)\n", 
 					poll_method_name(io_w.poll_method), io_w.poll_method);
 			goto error;
 	}
 error:
 	destroy_io_wait(&io_w);
-	LOG(L_CRIT, "ERROR: tcp_receive_loop: exiting...");
+	LM_CRIT("exiting...");
 	exit(-1);
 }
 

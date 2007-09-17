@@ -51,19 +51,19 @@ poll_loop: \
 		n=poll(&pf, 1, timeout); \
 		if (n<0){ \
 			if (errno==EINTR) continue; /* signal, ignore */ \
-			LOG(L_ERR, "ERROR: " f_name ": poll failed: %s [%d]\n", \
+			LM_ERR(f_name ": poll failed: %s [%d]\n", \
 					strerror(errno), errno); \
 			goto error; \
 		}else if (n==0){ \
 			/* timeout */ \
-			LOG(L_ERR, "ERROR: " f_name ": send timeout (%d)\n", timeout); \
+			LM_ERR(f_name ": send timeout (%d)\n", timeout); \
 			goto error; \
 		} \
 		if (pf.revents&POLLOUT){ \
 			/* we can write again */ \
 			goto again; \
 		}else if (pf.revents&(POLLERR|POLLHUP|POLLNVAL)){ \
-			LOG(L_ERR, "ERROR: " f_name ": bad poll flags %x\n", \
+			LM_ERR(f_name ": bad poll flags %x\n", \
 					pf.revents); \
 			goto error; \
 		} \
@@ -77,7 +77,7 @@ poll_loop: \
 	if (n<0){ \
 		if (errno==EINTR) goto again; \
 		else if (errno!=EAGAIN && errno!=EWOULDBLOCK){ \
-			LOG(L_ERR, "ERROR: " f_name ": failed to send: (%d) %s\n", \
+			LM_ERR(f_name ": failed to send: (%d) %s\n", \
 					errno, strerror(errno)); \
 			goto error; \
 		}else goto poll_loop; \

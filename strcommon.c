@@ -153,8 +153,7 @@ int unescape_user(str *sin, str *sout)
 				    c = (*p - 'A' + 10) << 4;
 			    break;
 				default:
-				    LOG(L_ERR, "unescape_user:Invalid hex digit <%u>\n",
-							(unsigned int)*p);
+				    LM_ERR("invalid hex digit <%u>\n", (unsigned int)*p);
 				    return -1;
 			}
 			p++;
@@ -189,14 +188,12 @@ int unescape_user(str *sin, str *sout)
 				    c = c + (*p - 'A' + 10);
 			    break;
 				default:
-				    LOG(L_ERR, "unescape_user: invalid hex digit <%u>\n",
-							(unsigned int)*p);
+				    LM_ERR("invalid hex digit <%u>\n", (unsigned int)*p);
 				    return -1;
 			}
 			if ((c < 32) || (c > 126))
 			{
-			    LOG(L_ERR, "unescape_user: invalid escaped character <%u>\n",
-				   (unsigned int)c);
+			    LM_ERR("invalid escaped character <%u>\n", (unsigned int)c);
 			    return -1;
 			}
 			*at++ = c;
@@ -209,7 +206,7 @@ int unescape_user(str *sin, str *sout)
 	*at = 0;
 	sout->len = at - sout->s;
 	
-	DBG("unescape_user: unescaped string is <%s>\n", sout->s);
+	LM_DBG("unescaped string is <%s>\n", sout->s);
 	return 0;
 }
 
@@ -238,8 +235,7 @@ int escape_user(str *sin, str *sout)
 	{
 	    if (*p < 32 || *p > 126)
 		{
-			LOG(L_ERR, "escape_user:invalid escaped character <%u>\n",
-					(unsigned int)*p);
+			LM_ERR("invalid escaped character <%u>\n", (unsigned int)*p);
 			return -1;
 	    }
 	    if (isdigit((int)*p) || ((*p >= 'A') && (*p <= 'Z')) ||
@@ -288,7 +284,7 @@ int escape_user(str *sin, str *sout)
 	}
 	*at = 0;
 	sout->len = at - sout->s;
-	DBG("escape_user: escaped string is <%s>\n", sout->s);
+	LM_DBG("escaped string is <%s>\n", sout->s);
 	return 0;
 }
 

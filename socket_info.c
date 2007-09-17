@@ -118,7 +118,7 @@ static inline struct socket_info* new_sock_info(	char* name,
 	si->flags=flags;
 	return si;
 error:
-	LOG(L_ERR, "ERROR: new_sock_info: memory allocation error\n");
+	LM_ERR("pkg memory allocation error\n");
 	if (si) pkg_free(si);
 	return 0;
 }
@@ -199,12 +199,11 @@ struct socket_info* grep_sock_info(str* host, unsigned short port,
 			list=get_sock_info_list(c_proto);
 	
 		if (list==0){
-			LOG(L_WARN, "WARNING: grep_sock_info: "
-						"unknown proto %d\n", c_proto);
+			LM_WARN("unknown proto %d\n", c_proto);
 			goto not_found; /* false */
 		}
 		for (si=*list; si; si=si->next){
-			DBG("grep_sock_info - checking if host==us: %d==%d && "
+			LM_DBG("checking if host==us: %d==%d && "
 					" [%.*s] == [%.*s]\n", 
 						h_len,
 						si->name.len,
@@ -212,7 +211,7 @@ struct socket_info* grep_sock_info(str* host, unsigned short port,
 						si->name.len, si->name.s
 				);
 			if (port) {
-				DBG("grep_sock_info - checking if port %d matches port %d\n", 
+				LM_DBG("checking if port %d matches port %d\n", 
 						si->port_no, port);
 				if (si->port_no!=port) {
 					continue;
@@ -279,8 +278,7 @@ struct socket_info* find_si(struct ip_addr* ip, unsigned short port,
 			list=get_sock_info_list(c_proto);
 	
 		if (list==0){
-			LOG(L_WARN, "WARNING: grep_sock_info: "
-						"unknown proto %d\n", c_proto);
+			LM_WARN("unknown proto %d\n", c_proto);
 			goto not_found; /* false */
 		}
 		for (si=*list; si; si=si->next){
@@ -310,7 +308,7 @@ int new_sock2list(char* name, unsigned short port, unsigned short proto,
 	
 	si=new_sock_info(name, port, proto, flags);
 	if (si==0){
-		LOG(L_ERR, "ERROR: add_listen_iface: new_sock_info failed\n");
+		LM_ERR("new_sock_info failed\n");
 		goto error;
 	}
 	sock_listadd(list, si);
@@ -333,7 +331,7 @@ int add_listen_iface(char* name, unsigned short port, unsigned short proto,
 	do{
 		list=get_sock_info_list(c_proto);
 		if (list==0){
-			LOG(L_ERR, "ERROR: add_listen_iface: get_sock_info_list failed\n");
+			LM_ERR("get_sock_info_list failed\n");
 			goto error;
 		}
 		if (port==0){ /* use default port */
@@ -350,7 +348,7 @@ int add_listen_iface(char* name, unsigned short port, unsigned short proto,
 		}
 #endif
 		if (new_sock2list(name, port, c_proto, flags, list)<0){
-			LOG(L_ERR, "ERROR: add_listen_iface: new_sock2list failed\n");
+			LM_ERR("new_sock2list failed\n");
 			goto error;
 		}
 	}while( (proto==0) && (c_proto=next_proto(c_proto)));
@@ -398,13 +396,12 @@ int add_interfaces(char* if_name, int family, unsigned short port,
 		ifc.ifc_len=size*sizeof(struct ifreq);
 		ifc.ifc_req=(struct ifreq*) pkg_malloc(size*sizeof(struct ifreq));
 		if (ifc.ifc_req==0){
-			LOG(L_ERR, "ERROR: add_interfaces: memory allocation failure\n");
+			LM_ERR("memory allocation failure\n");
 			goto error;
 		}
 		if (ioctl(s, SIOCGIFCONF, &ifc)==-1){
 			if(errno==EBADF) return 0; /* invalid descriptor => no such ifs*/
-			LOG(L_ERR, "ERROR: add_interfaces: ioctl failed: %s\n",
-					strerror(errno));
+			LM_ERR("ioctl failed: %s\n", strerror(errno));
 			goto error;
 		}
 		if  ((lastlen) && (ifc.ifc_len==lastlen)) break; /*success,
@@ -466,7 +463,7 @@ int add_interfaces(char* if_name, int family, unsigned short port,
 				flags|=SI_IS_LO;
 			/* add it to one of the lists */
 			if (new_sock2list(tmp, port, proto, flags, list)!=0){
-				LOG(L_ERR, "ERROR: add_interfaces: new_sock2list failed\n");
+				LM_ERR("new_sock2list failed\n");
 				goto error;
 			}
 			ret=0;
@@ -516,7 +513,7 @@ static int fix_socket_list(struct socket_info **list)
 	}
 	/* get ips & fill the port numbers*/
 #ifdef EXTRA_DEBUG
-	DBG("Listening on \n");
+	LM_DBG("listening on \n");
 #endif
 	for (si=*list;si;si=si->next){
 		/* fix port number, port_no should be !=0 here */
@@ -529,13 +526,12 @@ static int fix_socket_list(struct socket_info **list)
 		}
 		tmp=int2str(si->port_no, &len);
 		if (len>=MAX_PORT_LEN){
-			LOG(L_ERR, "ERROR: fix_socket_list: bad port number: %d\n", 
-						si->port_no);
+			LM_ERR("bad port number: %d\n", si->port_no);
 			goto error;
 		}
 		si->port_no_str.s=(char*)pkg_malloc(len+1);
 		if (si->port_no_str.s==0){
-			LOG(L_ERR, "ERROR: fix_socket_list: out of memory.\n");
+			LM_ERR("out of pkg memory.\n");
 			goto error;
 		}
 		strncpy(si->port_no_str.s, tmp, len+1);
@@ -543,21 +539,20 @@ static int fix_socket_list(struct socket_info **list)
 		/* get "official hostnames", all the aliases etc. */
 		he=resolvehost(si->name.s,0);
 		if (he==0){
-			LOG(L_ERR, "ERROR: fix_socket_list: could not resolve %s\n",
-					si->name.s);
+			LM_ERR("could not resolve %s\n", si->name.s);
 			goto error;
 		}
 		/* check if we got the official name */
 		if (strcasecmp(he->h_name, si->name.s)!=0){
 			if (auto_aliases && add_alias(si->name.s, si->name.len,
 							si->port_no, si->proto)<0){
-				LOG(L_ERR, "ERROR: fix_socket_list: add_alias failed\n");
+				LM_ERR("add_alias failed\n");
 			}
 			/* change the official name */
 			pkg_free(si->name.s);
 			si->name.s=(char*)pkg_malloc(strlen(he->h_name)+1);
 			if (si->name.s==0){
-				LOG(L_ERR,  "ERROR: fix_socket_list: out of memory.\n");
+				LM_ERR("out of pkg memory.\n");
 				goto error;
 			}
 			si->name.len=strlen(he->h_name);
@@ -567,7 +562,7 @@ static int fix_socket_list(struct socket_info **list)
 		if (auto_aliases) {
 			for(h=he->h_aliases; h && *h; h++)
 				if (add_alias(*h, strlen(*h), si->port_no, si->proto)<0){
-					LOG(L_ERR, "ERROR: fix_socket_list: add_alias failed\n");
+					LM_ERR("add_alias failed\n");
 				}
 		}
 		hostent2ip_addr(&si->address, he, 0); /*convert to ip_addr 
@@ -575,7 +570,7 @@ static int fix_socket_list(struct socket_info **list)
 		if ((tmp=ip_addr2a(&si->address))==0) goto error;
 		si->address_str.s=(char*)pkg_malloc(strlen(tmp)+1);
 		if (si->address_str.s==0){
-			LOG(L_ERR, "ERROR: fix_socket_list: out of memory.\n");
+			LM_ERR("out of pkg memory.\n");
 			goto error;
 		}
 		strncpy(si->address_str.s, tmp, strlen(tmp)+1);
@@ -589,20 +584,16 @@ static int fix_socket_list(struct socket_info **list)
 				/* do rev. DNS on it (for aliases)*/
 				he=rev_resolvehost(&si->address);
 				if (he==0){
-					LOG(L_WARN, "WARNING: fix_socket_list:"
-							" could not rev. resolve %s\n",
-							si->name.s);
+					LM_WARN("could not rev. resolve %s\n", si->name.s);
 				}else{
 					/* add the aliases*/
 					if (add_alias(he->h_name, strlen(he->h_name),
 									si->port_no, si->proto)<0){
-						LOG(L_ERR, "ERROR: fix_socket_list:"
-									"add_alias failed\n");
+						LM_ERR("add_alias failed\n");
 					}
 					for(h=he->h_aliases; h && *h; h++)
 						if (add_alias(*h,strlen(*h),si->port_no,si->proto)<0){
-							LOG(L_ERR, "ERROR: fix_socket_list:"
-									" add_alias failed\n");
+							LM_ERR(" add_alias failed\n");
 						}
 				}
 		}
@@ -610,13 +601,12 @@ static int fix_socket_list(struct socket_info **list)
 		/* build and set string encoding */
 		tmp = socket2str( si, 0, &si->sock_str.len);
 		if (tmp==0) {
-			LOG(L_ERR,"ERROR: fix_socket_list: failed to convert "
-				"socket to string");
+			LM_ERR("failed to convert socket to string");
 			goto error;
 		}
 		si->sock_str.s=(char*)pkg_malloc(si->sock_str.len);
 		if (si->sock_str.s==0) {
-			LOG(L_ERR, "ERROR: fix_socket_list: out of memory.\n");
+			LM_ERR("out of pkg memory.\n");
 			goto error;
 		}
 		memcpy(si->sock_str.s, tmp, si->sock_str.len);
@@ -678,7 +668,7 @@ static int fix_socket_list(struct socket_info **list)
 			|| (si->proto == PROTO_SCTP)
 #endif
 		    )){
-			LOG(L_WARN, "WARNING: removing entry %s:%s [%s]:%s\n",
+			LM_WARN("removing entry %s:%s [%s]:%s\n",
 			    get_proto_name(si->proto), si->name.s, 
 			    si->address_str.s, si->port_no_str.s);
 			l = si;
@@ -741,32 +731,27 @@ int fix_all_socket_lists(void)
 			/* if error fall back to get hostname */
 			/* get our address, only the first one */
 			if (uname (&myname) <0){
-				LOG(L_ERR, "ERROR: fix_all_socket_lists: cannot determine"
-						" hostname, try -l address\n");
+				LM_ERR("cannot determine hostname, try -l address\n");
 				goto error;
 			}
 			if (add_listen_iface(myname.nodename, 0, 0, 0)!=0){
-				LOG(L_ERR, "ERROR: fix_all_socket_lists: add_listen_iface "
-						"failed \n");
+				LM_ERR("add_listen_iface failed \n");
 				goto error;
 			}
 		}
 	}
 	if (fix_socket_list(&udp_listen)!=0){
-		LOG(L_ERR, "ERROR: fix_all_socket_lists: fix_socket_list"
-				" udp failed\n");
+		LM_ERR("fix_socket_list udp failed\n");
 		goto error;
 	}
 #ifdef USE_TCP
 	if (!tcp_disable && (fix_socket_list(&tcp_listen)!=0)){
-		LOG(L_ERR, "ERROR: fix_all_socket_lists: fix_socket_list"
-				" tcp failed\n");
+		LM_ERR("fix_socket_list tcp failed\n");
 		goto error;
 	}
 #ifdef USE_TLS
 	if (!tls_disable && (fix_socket_list(&tls_listen)!=0)){
-		LOG(L_ERR, "ERROR: fix_all_socket_lists: fix_socket_list"
-				" tls failed\n");
+		LM_ERR("fix_socket_list tls failed\n");
 		goto error;
 	}
 #endif
@@ -789,7 +774,7 @@ int fix_all_socket_lists(void)
 			&& (sctp_listen==0)
 #endif
 	){
-		LOG(L_ERR, "ERROR: fix_all_socket_lists: no listening sockets\n");
+		LM_ERR("no listening sockets\n");
 		goto error;
 	}
 	return 0;

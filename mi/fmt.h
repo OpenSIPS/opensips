@@ -46,15 +46,14 @@ static inline char* mi_print_fmt(char *fmt, va_list ap, int *len)
 
 	if (mi_fmt_buf==NULL) {
 		if (mi_fmt_init(DEFAULT_MI_FMT_BUF_SIZE)!=0) {
-			LOG(L_ERR,"ERROR:mi:mi_print_fmt: failed to init\n");
+			LM_ERR("failed to init\n");
 			return 0;
 		}
 	}
 
 	n = vsnprintf( mi_fmt_buf, mi_fmt_buf_len, fmt, ap);
 	if (n<0 || n>=mi_fmt_buf_len) {
-		LOG(L_ERR,"ERROR:mi:mi_fmt_print: formatting failed with "
-			"n=%d, %s\n",n,strerror(errno));
+		LM_ERR("formatting failed wit, %s\n",n,strerror(errno));
 		return 0;
 	}
 

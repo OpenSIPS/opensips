@@ -88,7 +88,7 @@ static inline struct socket_info** get_sock_info_list(unsigned short proto)
 			break;
 #endif
 		default:
-			LOG(L_CRIT, "BUG: get_sock_info_list: invalid proto %d\n", proto);
+			LM_CRIT("invalid proto %d\n", proto);
 	}
 	return 0;
 }
@@ -149,7 +149,7 @@ static inline int next_proto(unsigned short proto)
 			return 0;
 #endif
 		default:
-			LOG(L_ERR, "ERROR: next_proto: unknown proto %d\n", proto);
+			LM_ERR("unknown proto %d\n", proto);
 	}
 	return 0;
 }
@@ -298,16 +298,16 @@ inline static int parse_phostport(char* s, int slen, char** host, int* hlen,
 	}
 	return 0;
 error_brackets:
-	LOG(L_ERR, "ERROR: parse_phostport: too many brackets in %s\n", s);
+	LM_ERR("too many brackets in %s\n", s);
 	return -1;
 error_colons:
-	LOG(L_ERR, "ERROR: parse_phostport: too many colons in %s\n", s);
+	LM_ERR(" too many colons in %s\n", s);
 	return -1;
 error_proto:
-	LOG(L_ERR, "ERROR: parse_phostport: bad protocol in %s\n", s);
+	LM_ERR("bad protocol in %s\n", s);
 	return -1;
 error_port:
-	LOG(L_ERR, "ERROR: parse_phostport: bad port number in %s\n", s);
+	LM_ERR("bad port number in %s\n", s);
 	return -1;
 }
 
@@ -324,7 +324,7 @@ static inline char* socket2str(struct socket_info *sock, char *s, int* len)
 	if (s) {
 		/* buffer provided -> check lenght */
 		if ( sock_str_len(sock) > *len ) {
-			LOG(L_ERR,"ERROR:socket2str: buffer too short\n");
+			LM_ERR("buffer too short\n");
 			return 0;
 		}
 		p = p1 = s;
@@ -355,7 +355,7 @@ static inline char* socket2str(struct socket_info *sock, char *s, int* len)
 			*(p++) = 'p';
 			break;
 		default:
-			LOG(L_CRIT,"BUG:socket2str: unsupported proto %d\n", sock->proto);
+			LM_CRIT("unsupported proto %d\n", sock->proto);
 			return 0;
 	}
 	*(p++) = ':';
@@ -365,7 +365,7 @@ static inline char* socket2str(struct socket_info *sock, char *s, int* len)
 	memcpy( p, sock->port_no_str.s, sock->port_no_str.len);
 	p += sock->port_no_str.len;
 	*len = (int)(long)(p-p1);
-	DBG("DEBUG:socket2str: <%.*s>\n",*len,p1);
+	LM_DBG("<%.*s>\n",*len,p1);
 	return p1;
 }
 

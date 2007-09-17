@@ -69,7 +69,7 @@ int init_pkg_mallocs(void)
 		mem_block=qm_malloc_init(mem_pool, PKG_MEM_POOL_SIZE);
 	#endif
 	if (mem_block==0){
-		LOG(L_CRIT, "could not initialize memory pool\n");
+		LM_CRIT("could not initialize memory pool\n");
 		fprintf(stderr, "Too much pkg memory demanded: %d\n",
 			PKG_MEM_POOL_SIZE );
 		return -1;
@@ -84,7 +84,7 @@ int init_shm_mallocs(void)
 {
 #ifdef SHM_MEM
 	if (shm_mem_init()<0) {
-		LOG(L_CRIT, "could not initialize shared memory pool, exiting...\n");
+		LM_CRIT("could not initialize shared memory pool, exiting...\n");
 		 fprintf(stderr, "Too much shared memory demanded: %ld\n",
 			shm_mem_size );
 		return -1;

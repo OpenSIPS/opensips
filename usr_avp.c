@@ -94,7 +94,7 @@ int add_avp(unsigned short flags, int_str name, int_str val)
 	assert( crt_avps!=0 );
 
 	if ( name.n==0 ) {
-		LOG(L_ERR,"ERROR:avp:add_avp: 0 ID or NULL NAME AVP!");
+		LM_ERR("0 ID or NULL NAME AVP!");
 		goto error;
 	}
 
@@ -102,7 +102,7 @@ int add_avp(unsigned short flags, int_str name, int_str val)
 	len = sizeof(struct usr_avp);
 	if (flags&AVP_NAME_STR) {
 		if ( name.s.s==0 || name.s.len==0) {
-			LOG(L_ERR,"ERROR:avp:add_avp: EMPTY NAME AVP!");
+			LM_ERR("empty avp name!");
 			goto error;
 		}
 		if (flags&AVP_VAL_STR)
@@ -115,7 +115,7 @@ int add_avp(unsigned short flags, int_str name, int_str val)
 
 	avp = (struct usr_avp*)shm_malloc( len );
 	if (avp==0) {
-		LOG(L_ERR,"ERROR:avp:add_avp: no more shm mem\n");
+		LM_ERR("no more shm mem\n");
 		goto error;
 	}
 
@@ -185,7 +185,7 @@ inline str* get_avp_name(struct usr_avp *avp)
 			return &((struct str_str_data*)(void*)&avp->data)->name;
 	}
 
-	LOG(L_ERR,"BUG:avp:get_avp_name: unknown avp type (name&val) %d\n",
+	LM_ERR("unknown avp type (name&val) %d\n",
 		avp->flags&(AVP_NAME_STR|AVP_VAL_STR));
 	return 0;
 }
@@ -282,14 +282,14 @@ struct usr_avp *search_first_avp( unsigned short flags,
 	}
 
 	if ( name.n==0) {
-		LOG(L_ERR,"ERROR:avp:search_first_avp: 0 ID or NULL NAME AVP!\n");
+		LM_ERR("0 ID or NULL NAME AVP!\n");
 		return 0;
 	}
 
 	/* search for the AVP by ID (&name) */
 	if (flags&AVP_NAME_STR) {
 		if ( name.s.s==0 || name.s.len==0) {
-			LOG(L_ERR,"ERROR:avp:search_first_avp: EMPTY NAME AVP!\n");
+			LM_ERR("empty avp name!\n");
 			return 0;
 		}
 		avp = internal_search_name_avp(head,compute_ID(&name.s),&name.s,
@@ -382,7 +382,7 @@ inline void destroy_avp_list( struct usr_avp **list )
 {
 	struct usr_avp *avp, *foo;
 
-	DBG("DEBUG:destroy_avp_list: destroying list %p\n", *list);
+	LM_DBG("destroying list %p\n", *list);
 	avp = *list;
 	while( avp ) {
 		foo = avp;
@@ -455,24 +455,24 @@ int add_avp_galias(str *alias, int type, int_str avp_name)
 	if ((type&AVP_NAME_STR && (!avp_name.s.s ||
 								!avp_name.s.len)) ||!alias || !alias->s ||
 		!alias->len ){
-		LOG(L_ERR, "ERROR:add_avp_galias: null params received\n");
+		LM_ERR("null params received\n");
 		goto error;
 	}
 
 	if (check_avp_galias(alias,type,avp_name)!=0) {
-		LOG(L_ERR, "ERROR:add_avp_galias: duplicate alias/avp entry\n");
+		LM_ERR("duplicate alias/avp entry\n");
 		goto error;
 	}
 
 	ga = (struct avp_galias*)pkg_malloc( sizeof(struct avp_galias) );
 	if (ga==0) {
-		LOG(L_ERR, "ERROR:add_avp_galias: no more pkg memory\n");
+		LM_ERR("no more pkg memory\n");
 		goto error;
 	}
 
 	ga->alias.s = (char*)pkg_malloc( alias->len+1 );
 	if (ga->alias.s==0) {
-		LOG(L_ERR, "ERROR:add_avp_galias: no more pkg memory\n");
+		LM_ERR("no more pkg memory\n");
 		goto error1;
 	}
 	memcpy( ga->alias.s, alias->s, alias->len);
@@ -483,17 +483,17 @@ int add_avp_galias(str *alias, int type, int_str avp_name)
 	if (type&AVP_NAME_STR) {
 		ga->avp.name.s.s = (char*)pkg_malloc(avp_name.s.len+1);
 		if (ga->avp.name.s.s==0) {
-			LOG(L_ERR, "ERROR:add_avp_galias: no more pkg memory\n");
+			LM_ERR("no more pkg memory\n");
 			goto error2;
 		}
 		ga->avp.name.s.len = avp_name.s.len;
 		memcpy(ga->avp.name.s.s, avp_name.s.s, avp_name.s.len);
 		ga->avp.name.s.s[avp_name.s.len] = 0;
-		DBG("DEBUG:add_avp_galias: registering <%s> for avp name <%s>\n",
+		LM_DBG("registering <%s> for avp name <%s>\n",
 			ga->alias.s, ga->avp.name.s.s);
 	} else {
 		ga->avp.name.n = avp_name.n;
-		DBG("DEBUG:add_avp_galias: registering <%s> for avp id <%d>\n",
+		LM_DBG("registering <%s> for avp id <%d>\n",
 			ga->alias.s, ga->avp.name.n);
 	}
 
@@ -543,8 +543,7 @@ int parse_avp_name( str *name, int *type, int_str *avp_name)
 	c = name->s[0];
 	if((c!='i' && c!='I' && c!='s' && c!='S') || p==NULL)
 	{
-		LOG(L_ERR,
-		"parse_avp_name: error - use type (s: or i:) in front of avp name\n");
+		LM_ERR("- use type (s: or i:) in front of avp name\n");
 		goto error;
 	}
 	/* flags */
@@ -555,7 +554,7 @@ int parse_avp_name( str *name, int *type, int_str *avp_name)
 		s.len = p - s.s;
 		if(str2int(&s, &flags)!=0)
 		{
-			LOG(L_ERR, "parse_avp_name: error - bad avp flags\n");
+			LM_ERR("bad avp flags\n");
 			goto error;
 		}
 	}
@@ -569,15 +568,13 @@ int parse_avp_name( str *name, int *type, int_str *avp_name)
 		case 'i': case 'I':
 			*type = 0;
 			if (str2int( name, &id)!=0) {
-				LOG(L_ERR, "ERROR:parse_avp_name: invalid ID "
-					"<%.*s> - not a number\n", name->len, name->s);
+				LM_ERR("invalid ID <%.*s> not a number\n", name->len, name->s);
 				goto error;
 			}
 			avp_name->n = (int)id;
 			break;
 		default:
-			LOG(L_ERR, "ERROR:parse_avp_name: unsupported type "
-				"[%c]\n", c);
+			LM_ERR("unsupported type [%c]\n", c);
 			goto error;
 	}
 
@@ -652,21 +649,20 @@ int add_avp_galias_str(char *alias_definition)
 		}
 
 		if (parse_avp_name( &name, &type, &avp_name)!=0) {
-			LOG(L_ERR, "ERROR:add_avp_galias_str: <%.*s> not a valid AVP "
-				"name\n", name.len, name.s);
+			LM_ERR("<%.*s> not a valid AVP name\n", name.len, name.s);
 			goto error;
 		}
 
 		if (add_avp_galias( &alias, type, avp_name)!=0) {
-			LOG(L_ERR, "ERROR:add_avp_galias_str: add global alias failed\n");
+			LM_ERR("add global alias failed\n");
 			goto error;
 		}
 	} /*end while*/
 
 	return 0;
 parse_error:
-	LOG(L_ERR, "ERROR:add_avp_galias_str: parse error in <%s> around "
-		"pos %ld\n", alias_definition, (long)(s-alias_definition));
+	LM_ERR("parse error in <%s> around pos %ld\n", 
+			alias_definition, (long)(s-alias_definition));
 error:
 	return -1;
 }

@@ -48,7 +48,7 @@ struct mi_root *init_mi_tree(unsigned int code, char *reason, int reason_len)
 	else
 		root = (struct mi_root *)pkg_malloc(sizeof(struct mi_root));
 	if (!root) {
-		LOG(L_ERR,"ERROR:mi:init_mi_tree: no more pkg mem\n");
+		LM_ERR("no more pkg mem\n");
 		return NULL;
 	}
 
@@ -133,7 +133,7 @@ static inline struct mi_node *create_mi_node(char *name, int name_len,
 	else
 		new = (struct mi_node *)pkg_malloc(size_mem);
 	if(!new) {
-		LOG(L_ERR,"ERROR:mi:init_mi_tree: no more pkg mem\n");
+		LM_ERR("no more pkg mem\n");
 		return NULL;
 	}
 	memset(new,0,size_mem);

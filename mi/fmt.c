@@ -37,7 +37,7 @@ int mi_fmt_init( unsigned int size )
 {
 	mi_fmt_buf = (char*)pkg_malloc(size);
 	if (mi_fmt_buf==NULL) {
-		LOG(L_ERR,"ERROR:mi:mi_fmt_init: no more pkg mem\n");
+		LM_ERR("no more pkg mem\n");
 		return -1;
 	}
 	mi_fmt_buf_len = size;

@@ -72,8 +72,8 @@ int register_mi_mod( char *mod_name, mi_export_t *mis)
 		ret = register_mi_cmd( mis[i].cmd, mis[i].name, mis[i].param,
 			mis[i].init_f, mis[i].flags);
 		if (ret!=0) {
-			LOG(L_ERR,"ERROR:mi:register_mi_mod: failed to register cmd <%s>"
-				"for module %s\n",mis[i].name,mod_name);
+			LM_ERR("failed to register cmd <%s> for module %s\n",
+					mis[i].name,mod_name);
 		}
 	}
 	return 0;
@@ -86,8 +86,8 @@ int init_mi_child(void)
 
 	for ( i=0 ; i<mi_cmds_no ; i++ ) {
 		if ( mi_cmds[i].init_f && mi_cmds[i].init_f()!=0 ) {
-			LOG(L_ERR,"ERROR:mi:init_mi_child: failed to init <%.*s>\n",
-				mi_cmds[i].name.len,mi_cmds[i].name.s);
+			LM_ERR("failed to init <%.*s>\n",
+					mi_cmds[i].name.len,mi_cmds[i].name.s);
 		}
 	}
 	return 0;
@@ -103,13 +103,12 @@ int register_mi_cmd( mi_cmd_f f, char *name, void *param,
 	int len;
 
 	if (f==0 || name==0) {
-		LOG(L_ERR,"ERROR:mi:register_mi_cmd: invalid params f=%p, "
-			"name=%s\n", f, name);
+		LM_ERR("invalid params f=%p, name=%s\n", f, name);
 		return -1;
 	}
 
 	if (flags&MI_NO_INPUT_FLAG && flags&MI_ASYNC_RPL_FLAG) {
-		LOG(L_ERR,"ERROR:mi:register_mi_cmd: invalids flags for <%s> - "
+		LM_ERR("invalids flags for <%s> - "
 			"async functions must take input\n",name);
 	}
 
@@ -117,15 +116,14 @@ int register_mi_cmd( mi_cmd_f f, char *name, void *param,
 	id = get_mi_id(name,len);
 
 	if (lookup_mi_cmd_id( id, name, len)) {
-		LOG(L_ERR,"ERROR:mi:register_mi_cmd: command <%.*s> already "
-			"registered\n", len, name);
+		LM_ERR("command <%.*s> already registered\n", len, name);
 		return -1;
 	}
 
 	cmds = (struct mi_cmd*)pkg_realloc( mi_cmds,
 			(mi_cmds_no+1)*sizeof(struct mi_cmd) );
 	if (cmds==0) {
-		LOG(L_ERR,"ERROR:mi:register_mi_cmd: no more pkg memory\n");
+		LM_ERR("no more pkg memory\n");
 		return -1;
 	}
 

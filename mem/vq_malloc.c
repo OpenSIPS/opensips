@@ -107,8 +107,7 @@ void my_assert( int assertation, int line, char *file, char *function )
 {
 	if (assertation) return;
 
-	LOG(L_CRIT,"CRIT: assertation failed in %s (%s:%d)\n",
-		function, file, line);
+	LM_CRIT("assertation failed in %s (%s:%d)\n", function, file, line);
 	abort();
 }
 
@@ -118,13 +117,12 @@ void vqm_debug_frag(struct vqm_block* qm, struct vqm_frag* f)
 
 
 	if (f->check!=ST_CHECK_PATTERN){
-		LOG(L_CRIT, "BUG: vqm_*: fragm. %p beginning overwritten(%x)!\n",
-				f, f->check);
+		LM_CRIT("vqm_*: fragm. %p beginning overwritten(%x)!\n", f, f->check);
 		vqm_status(qm);
 		abort();
 	};
 	if (memcmp(f->end_check, END_CHECK_PATTERN, END_CHECK_PATTERN_LEN)!=0) {
-		LOG(L_CRIT, "BUG: vqm_*: fragm. %p end overwritten(%.*s)!\n",
+		LM_CRIT("vqm_*: fragm. %p end overwritten(%.*s)!\n",
 				f, END_CHECK_PATTERN_LEN, f->end_check );
 		vqm_status(qm);
 		abort();
@@ -203,8 +201,8 @@ struct vqm_block* vqm_malloc_init(char* address, unsigned int size)
 	for (s=0, b=0; s<MAX_FIXED_BLOCK ; s++) {
 		while (s>s2b_step[b]) b++;
 		if (b>MAX_BUCKET) {
-			LOG(L_CRIT, "CRIT: vqm_malloc_init: attempt to install too"
-					" many buckets, s2b_step > MAX_BUCKET\n");
+			LM_CRIT("attempt to install too many buckets, s2b_step >"
+					"MAX_BUCKET\n");
 			return 0;
 		}
 		qm->s2b[s] = b;
@@ -287,7 +285,7 @@ void* vqm_malloc(struct vqm_block* qm, unsigned int size)
 	
 #ifdef DBG_QM_MALLOC
 	unsigned int demanded_size;
-	DBG("vqm_malloc(%p, %d) called from %s: %s(%d)\n", qm, size, file,
+	LM_DBG("params (%p, %d) called from %s: %s(%d)\n", qm, size, file,
 	 func, line);
 	demanded_size = size;
 #endif
@@ -297,7 +295,7 @@ void* vqm_malloc(struct vqm_block* qm, unsigned int size)
 
 	if (IS_BIGBUCKET(qm, bucket)) {	/* the kilo-bucket uses first-fit */
 #ifdef DBG_QM_MALLOC
-		DBG("vqm_malloc: processing a big fragment\n");
+		LM_DBG("processing a big fragment\n");
 #endif
 		for (f=qm->next_free[bucket] ; f; f=f->u.nxt_free ) 
 			if (f->size>=size) { /* first-fit */
@@ -316,10 +314,10 @@ void* vqm_malloc(struct vqm_block* qm, unsigned int size)
 		new_chunk=MORE_CORE( qm, bucket, size );
 		if (!new_chunk) {
 #ifdef DBG_QM_MALLOC
-			LOG(L_DBG, "vqm_malloc(%p, %d) called from %s: %s(%d)\n", 
+			LM_DBG("params (%p, %d) called from %s: %s(%d)\n", 
 				qm, size, file, func, line);
 #else
-			LOG(L_DBG, "vqm_malloc(%p, %d) called from %s: %s(%d)\n", 
+			LM_DBG("params (%p, %d) called from %s: %s(%d)\n", 
 				qm, size);
 #endif
 			return 0;
@@ -333,7 +331,7 @@ void* vqm_malloc(struct vqm_block* qm, unsigned int size)
 	new_chunk->line=line;
 	new_chunk->demanded_size=demanded_size;
 	qm->usage[ bucket ]++;
-	DBG("vqm_malloc( %p, %d ) returns address %p in bucket %d, real-size %d\n",
+	LM_DBG("params ( %p, %d ) returns address %p in bucket %d, real-size %d\n",
 		qm, demanded_size, (char*)new_chunk+sizeof(struct vqm_frag), 
 		bucket, size );
 
@@ -356,16 +354,15 @@ void vqm_free(struct vqm_block* qm, void* p)
 	unsigned char b;
 
 #ifdef DBG_QM_MALLOC
-	DBG("vqm_free(%p, %p), called from %s: %s(%d)\n", 
+	LM_DBG("params (%p, %p), called from %s: %s(%d)\n", 
 		qm, p, file, func, line);
 	if (p>(void *)qm->core_end || p<(void*)qm->init_core){
-		LOG(L_CRIT, "BUG: vqm_free: bad pointer %p (out of memory block!) - "
-				"aborting\n", p);
+		LM_CRIT("bad pointer %p (out of memory block!) - aborting\n", p);
 		abort();
 	}
 #endif
 	if (p==0) {
-		DBG("WARNING:vqm_free: free(0) called\n");
+		LM_WARN("free(0) called\n");
 		return;
 	}
 	f=(struct  vqm_frag*) ((char*)p-sizeof(struct vqm_frag));
@@ -373,18 +370,17 @@ void vqm_free(struct vqm_block* qm, void* p)
 #ifdef DBG_QM_MALLOC
 	VQM_DEBUG_FRAG(qm, f);
 	if ( ! FRAG_ISUSED(f) ) {
-		LOG(L_CRIT, "BUG: vqm_free: freeing already freed pointer,"
-				" first freed: %s: %s(%d) - aborting\n",
-				f->file, f->func, f->line);
+		LM_CRIT("freeing already freed pointer, first freed: %s: %s(%d) "
+				"- aborting\n",	f->file, f->func, f->line);
 		abort();
 	}
 	if ( b>MAX_BUCKET ) {
-		LOG(L_CRIT, "BUG: vqm_free: fragment with too high bucket nr: "
+		LM_CRIT("fragment with too high bucket nr: "
 				"%d, allocated: %s: %s(%d) - aborting\n",
 				b, f->file, f->func, f->line); 
 		abort();
 	}
-	DBG("vqm_free: freeing %d bucket block alloc'ed from %s: %s(%d)\n", 
+	LM_DBG("freeing %d bucket block alloc'ed from %s: %s(%d)\n", 
 		f->u.inuse.bucket, f->file, f->func, f->line);
 	f->file=file; f->func=func; f->line=line;
 	qm->usage[ f->u.inuse.bucket ]--;
@@ -394,7 +390,7 @@ void vqm_free(struct vqm_block* qm, void* p)
 		if  ((char *)next +sizeof( struct vqm_frag) < qm->core_end) {
 			VQM_DEBUG_FRAG(qm, next);
 			if (! FRAG_ISUSED(next)) { /* coalesce with next fragment */
-				DBG("vqm_free: coalesced with next\n");
+				LM_DBG("coalesced with next\n");
 				vqm_detach_free(qm, next);
 				f->size+=next->size;
 				FRAG_END(f)->size=f->size;
@@ -405,7 +401,7 @@ void vqm_free(struct vqm_block* qm, void* p)
 			prev=FRAG_PREV(f);
 			VQM_DEBUG_FRAG(qm, prev);
 			if (!FRAG_ISUSED(prev)) { /* coalesce with prev fragment */
-				DBG("vqm_free: coalesced with prev\n");
+				LM_DBG("coalesced with prev\n");
 				vqm_detach_free(qm, prev );
 				prev->size+=f->size;
 				f=prev;
@@ -413,7 +409,7 @@ void vqm_free(struct vqm_block* qm, void* p)
 			}
 		}
 		if ((char *)f==qm->big_chunks) { /* release unused core */
-			DBG("vqm_free: big chunk released\n");
+			LM_DBG("big chunk released\n");
 			qm->free_core+=f->size;
 			qm->big_chunks+=f->size;
 			return;
@@ -459,10 +455,10 @@ void vqm_status(struct vqm_block* qm)
 		f=FRAG_NEXT(f) ,i++) if ( FRAG_ISUSED(f) ) dump_frag( f, i );
 
 #ifdef DBG_QM_MALLOC
-	DBG("dumping bucket statistics:\n");
+	LM_DBG("dumping bucket statistics:\n");
 	for (i=0; i<=BIG_BUCKET(qm); i++) {
 		for(on_list=0, f=qm->next_free[i]; f; f=f->u.nxt_free ) on_list++;
-		LOG(L_DBG, "    %3d. bucket: in use: %ld, on free list: %d\n", 
+		LM_DBG("    %3d. bucket: in use: %ld, on free list: %d\n", 
 			i, qm->usage[i], on_list );
 	}
 #endif
