@@ -438,14 +438,12 @@ statement:	assign_stm
 
 listen_id:	ip			{	tmp=ip_addr2a($1);
 							if(tmp==0){
-								LOG(L_CRIT, "ERROR: cfg. parser: bad ip "
-										"address.\n");
+								LM_CRIT("cfg. parser: bad ip address.\n");
 								$$=0;
 							}else{
 								$$=pkg_malloc(strlen(tmp)+1);
 								if ($$==0){
-									LOG(L_CRIT, "ERROR: cfg. parser: out of "
-											"memory.\n");
+									LM_CRIT("cfg. parser: out of memory.\n");
 								}else{
 									strncpy($$, tmp, strlen(tmp)+1);
 								}
@@ -453,8 +451,7 @@ listen_id:	ip			{	tmp=ip_addr2a($1);
 						}
 		|	STRING			{	$$=pkg_malloc(strlen($1)+1);
 							if ($$==0){
-									LOG(L_CRIT, "ERROR: cfg. parser: out of "
-											"memory.\n");
+									LM_CRIT("cfg. parser: out of memory.\n");
 							}else{
 									strncpy($$, $1, strlen($1)+1);
 							}
@@ -464,8 +461,7 @@ listen_id:	ip			{	tmp=ip_addr2a($1);
 							} else {
 								$$=pkg_malloc(strlen($1)+1);
 								if ($$==0){
-									LOG(L_CRIT, "ERROR: cfg. parser: "
-										"out of memory.\n");
+									LM_CRIT("cfg. parser: out of memory.\n");
 								}else{
 									strncpy($$, $1, strlen($1)+1);
 								}
@@ -659,7 +655,7 @@ assign_stm: DEBUG EQUAL NUMBER {
 									#ifdef USE_TCP
 										tcp_poll_method=get_poll_type($3);
 										if (tcp_poll_method==POLL_NONE){
-											LOG(L_CRIT, "bad poll method name:"
+											LM_CRIT("bad poll method name:"
 												" %s\n, try one of %s.\n",
 												$3, poll_support);
 											yyerror("bad tcp_poll_method "
@@ -673,7 +669,7 @@ assign_stm: DEBUG EQUAL NUMBER {
 									#ifdef USE_TCP
 										tcp_poll_method=get_poll_type($3);
 										if (tcp_poll_method==POLL_NONE){
-											LOG(L_CRIT, "bad poll method name:"
+											LM_CRIT("bad poll method name:"
 												" %s\n, try one of %s.\n",
 												$3, poll_support);
 											yyerror("bad tcp_poll_method "
@@ -880,7 +876,7 @@ assign_stm: DEBUG EQUAL NUMBER {
 														lst_tmp->proto,
 														0
 													)!=0){
-									LOG(L_CRIT,  "ERROR: cfg. parser: failed"
+									LM_CRIT("cfg. parser: failed"
 											" to add listen address\n");
 									break;
 								}
@@ -908,8 +904,7 @@ assign_stm: DEBUG EQUAL NUMBER {
 								tmp=int2str($3, &i_tmp);
 								if ((default_global_port.s=pkg_malloc(i_tmp))
 										==0){
-										LOG(L_CRIT, "ERROR: cfg. parser:"
-													" out of memory.\n");
+										LM_CRIT("cfg. parser: out of memory.\n");
 										default_global_port.len=0;
 								}else{
 									default_global_port.len=i_tmp;
@@ -1044,7 +1039,7 @@ ipv4:	NUMBER DOT NUMBER DOT NUMBER DOT NUMBER {
 											$$=pkg_malloc(
 													sizeof(struct ip_addr));
 											if ($$==0){
-												LOG(L_CRIT, "ERROR: cfg. "
+												LM_CRIT("cfg. "
 													"parser: out of memory.\n"
 													);
 											}else{
@@ -1077,7 +1072,7 @@ ipv4:	NUMBER DOT NUMBER DOT NUMBER DOT NUMBER {
 ipv6addr:	IPV6ADDR {
 					$$=pkg_malloc(sizeof(struct ip_addr));
 					if ($$==0){
-						LOG(L_CRIT, "ERROR: cfg. parser: out of memory.\n");
+						LM_CRIT("ERROR: cfg. parser: out of memory.\n");
 					}else{
 						memset($$, 0, sizeof(struct ip_addr));
 						$$->af=AF_INET6;
@@ -1595,7 +1590,7 @@ host_sep:	DOT {$$=".";}
 host:	ID				{ $$=$1; }
 	| host host_sep ID	{ $$=(char*)pkg_malloc(strlen($1)+1+strlen($3)+1);
 						  if ($$==0){
-							LOG(L_CRIT, "ERROR: cfg. parser: memory allocation"
+							LM_CRIT("cfg. parser: memory allocation"
 										" failure while parsing host\n");
 						  }else{
 							memcpy($$, $1, strlen($1));
@@ -2092,8 +2087,7 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 		| SET_ADV_ADDRESS LPAREN listen_id RPAREN {
 								$$=0;
 								if ((str_tmp=pkg_malloc(sizeof(str)))==0){
-									LOG(L_CRIT, "ERROR: cfg. parser:"
-										" out of memory.\n");
+									LM_CRIT("cfg. parser: out of memory.\n");
 								}else if ($3!=0){
 										str_tmp->s=$3;
 										str_tmp->len=strlen($3);
@@ -2108,12 +2102,10 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 								$$=0;
 								tmp=int2str($3, &i_tmp);
 								if ((str_tmp=pkg_malloc(sizeof(str)))==0){
-										LOG(L_CRIT, "ERROR: cfg. parser:"
-													" out of memory.\n");
+										LM_CRIT("cfg. parser: out of memory.\n");
 								}else{
 									if ((str_tmp->s=pkg_malloc(i_tmp))==0){
-										LOG(L_CRIT, "ERROR: cfg. parser:"
-													" out of memory.\n");
+										LM_CRIT("cfg. parser: out of memory.\n");
 									}else{
 										memcpy(str_tmp->s, tmp, i_tmp);
 										str_tmp->len=i_tmp;
@@ -2228,7 +2220,7 @@ extern int startcolumn;
 		||  !defined(USE_MCAST)
 static void warn(char* s)
 {
-	LOG(L_WARN, "cfg. warning: (%d,%d-%d): %s\n", line, startcolumn, 
+	LM_WARN("cfg. warning: (%d,%d-%d): %s\n", line, startcolumn, 
 			column, s);
 	cfg_errors++;
 }
@@ -2236,7 +2228,7 @@ static void warn(char* s)
 
 static void yyerror(char* s)
 {
-	LOG(L_CRIT, "parse error (%d,%d-%d): %s\n", line, startcolumn, 
+	LM_CRIT("parse error (%d,%d-%d): %s\n", line, startcolumn, 
 			column, s);
 	cfg_errors++;
 }
@@ -2247,7 +2239,7 @@ static struct socket_id* mk_listen_id(char* host, int proto, int port)
 	struct socket_id* l;
 	l=pkg_malloc(sizeof(struct socket_id));
 	if (l==0){
-		LOG(L_CRIT,"ERROR: cfg. parser: out of memory.\n");
+		LM_CRIT("cfg. parser: out of memory.\n");
 	}else{
 		l->name=host;
 		l->port=port;

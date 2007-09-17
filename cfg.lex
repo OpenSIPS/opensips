@@ -729,7 +729,7 @@ WHITESPACE	[ \t\r\n]
 <<EOF>>							{
 									switch(state){
 										case STRING_S: 
-											LOG(L_CRIT, "ERROR: cfg. parser: unexpected EOF in"
+											LM_CRIT("cfg. parser: unexpected EOF in"
 														" unclosed string\n");
 											if (s_buf.s){
 												pkg_free(s_buf.s);
@@ -738,11 +738,11 @@ WHITESPACE	[ \t\r\n]
 											}
 											break;
 										case COMMENT_S:
-											LOG(L_CRIT, "ERROR: cfg. parser: unexpected EOF:"
+											LM_CRIT("cfg. parser: unexpected EOF:"
 														" %d comments open\n", comment_nest);
 											break;
 										case COMMENT_LN_S:
-											LOG(L_CRIT, "ERROR: unexpected EOF:"
+											LM_CRIT("unexpected EOF:"
 														"comment line open\n");
 											break;
 									}
@@ -787,7 +787,7 @@ static char* addstr(struct str_buf* dst_b, char* src, int len)
 	
 	return dst_b->s;
 error:
-	LOG(L_CRIT, "ERROR:lex:addstr: memory allocation error\n");
+	LM_CRIT("lex:addstr: memory allocation error\n");
 	return 0;
 }
 
