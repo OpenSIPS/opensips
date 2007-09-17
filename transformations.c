@@ -209,7 +209,7 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 		case TR_S_SUBSTR:
 			if(tp==NULL || tp->next==NULL)
 			{
-				LOG(L_ERR, "tr_eval_string: substr invalid parameters\n");
+				LM_ERR("substr invalid parameters\n");
 				return -1;
 			}
 			if(!(val->flags&PV_VAL_STR))
@@ -221,7 +221,7 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 				if(pv_get_spec_value(msg, (pv_spec_p)tp->v.data, &v)!=0
 						|| (!(v.flags&PV_VAL_INT)))
 				{
-					LOG(L_ERR, "tr_eval_string: substr cannot get p1\n");
+					LM_ERR("substr cannot get p1\n");
 					return -1;
 				}
 				i = v.ri;
@@ -233,7 +233,7 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 				if(pv_get_spec_value(msg, (pv_spec_p)tp->next->v.data, &v)!=0
 						|| (!(v.flags&PV_VAL_INT)))
 				{
-					LOG(L_ERR, "tr_eval_string: substr cannot get p2\n");
+					LM_ERR("substr cannot get p2\n");
 					return -1;
 				}
 				j = v.ri;
@@ -241,7 +241,7 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 			DBG("tr_eval_string: i=%d j=%d\n", i, j);
 			if(j<0)
 			{
-				LOG(L_ERR, "tr_eval_string: substr negative offset\n");
+				LM_ERR("substr negative offset\n");
 				return -1;
 			}
 			val->flags = PV_VAL_STR;
@@ -250,7 +250,7 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 			{
 				if(i>=val->rs.len)
 				{
-					LOG(L_ERR, "tr_eval_string: substr out of range\n");
+					LM_ERR("substr out of range\n");
 					return -1;
 				}
 				if(i+j>=val->rs.len) j=0;
@@ -267,7 +267,7 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 			i = -i;
 			if(i>val->rs.len)
 			{
-				LOG(L_ERR, "tr_eval_string: substr out of range\n");
+				LM_ERR("substr out of range\n");
 				return -1;
 			}
 			if(i<j) j=0;
@@ -284,7 +284,7 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 		case TR_S_SELECT:
 			if(tp==NULL || tp->next==NULL)
 			{
-				LOG(L_ERR, "tr_eval_string: select invalid parameters\n");
+				LM_ERR("select invalid parameters\n");
 				return -1;
 			}
 			if(!(val->flags&PV_VAL_STR))
@@ -296,7 +296,7 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 				if(pv_get_spec_value(msg, (pv_spec_p)tp->v.data, &v)!=0
 						|| (!(v.flags&PV_VAL_INT)))
 				{
-					LOG(L_ERR, "tr_eval_string: select cannot get p1\n");
+					LM_ERR("select cannot get p1\n");
 					return -1;
 				}
 				i = v.ri;
@@ -354,7 +354,7 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 			break;
 
 		default:
-			LOG(L_ERR, "tr_eval_string: unknown subtype %d\n",
+			LM_ERR("unknown subtype %d\n",
 					subtype);
 			return -1;
 	}
@@ -386,7 +386,7 @@ int tr_eval_uri(struct sip_msg *msg, tr_param_t *tp, int subtype,
 			_tr_uri.s = (char*)pkg_malloc((val->rs.len+1)*sizeof(char));
 			if(_tr_uri.s==NULL)
 			{
-				LOG(L_ERR, "tr_eval_uri: no more memory\n");
+				LM_ERR("no more private memory\n");
 				if(_tr_uri_params != NULL)
 				{
 					free_params(_tr_uri_params);
@@ -410,7 +410,7 @@ int tr_eval_uri(struct sip_msg *msg, tr_param_t *tp, int subtype,
 		/* parse uri -- params only when requested */
 		if(parse_uri(_tr_uri.s, _tr_uri.len, &_tr_parsed_uri)!=0)
 		{
-			LOG(L_ERR, "tr_eval_uri: invalid uri [%.*s]\n", val->rs.len,
+			LM_ERR("invalid uri [%.*s]\n", val->rs.len,
 					val->rs.s);
 			if(_tr_uri_params != NULL)
 			{
@@ -448,7 +448,7 @@ int tr_eval_uri(struct sip_msg *msg, tr_param_t *tp, int subtype,
 		case TR_URI_PARAM:
 			if(tp==NULL)
 			{
-				LOG(L_ERR, "tr_eval_uri: param invalid parameters\n");
+				LM_ERR("param invalid parameters\n");
 				return -1;
 			}
 			if(_tr_parsed_uri.params.len<=0)
@@ -472,7 +472,7 @@ int tr_eval_uri(struct sip_msg *msg, tr_param_t *tp, int subtype,
 				if(pv_get_spec_value(msg, (pv_spec_p)tp->v.data, &v)!=0
 						|| (!(v.flags&PV_VAL_STR)) || v.rs.len<=0)
 				{
-					LOG(L_ERR, "tr_eval_uri: param cannot get p1\n");
+					LM_ERR("param cannot get p1\n");
 					return -1;
 				}
 				sv = v.rs;
@@ -521,7 +521,7 @@ int tr_eval_uri(struct sip_msg *msg, tr_param_t *tp, int subtype,
 				_tr_parsed_uri.r2_val:_tr_empty;
 			break;
 		default:
-			LOG(L_ERR, "tr_eval_uri: unknown subtype %d\n",
+			LM_ERR("unknown subtype %d\n",
 					subtype);
 			return -1;
 	}
@@ -553,7 +553,7 @@ int tr_eval_paramlist(struct sip_msg *msg, tr_param_t *tp, int subtype,
 			_tr_params_str.s = (char*)pkg_malloc((val->rs.len+1)*sizeof(char));
 			if(_tr_params_str.s==NULL)
 			{
-				LOG(L_ERR, "tr_eval_paramlist: no more memory\n");
+				LM_ERR("no more private memory\n");
 				memset(&_tr_params_str, 0, sizeof(str));
 				if(_tr_params_list != NULL)
 				{
@@ -591,7 +591,7 @@ int tr_eval_paramlist(struct sip_msg *msg, tr_param_t *tp, int subtype,
 		case TR_PL_VALUE:
 			if(tp==NULL)
 			{
-				LOG(L_ERR, "tr_eval_paramlist: value invalid parameters\n");
+				LM_ERR("value invalid parameters\n");
 				return -1;
 			}
 
@@ -602,7 +602,7 @@ int tr_eval_paramlist(struct sip_msg *msg, tr_param_t *tp, int subtype,
 				if(pv_get_spec_value(msg, (pv_spec_p)tp->v.data, &v)!=0
 						|| (!(v.flags&PV_VAL_STR)) || v.rs.len<=0)
 				{
-					LOG(L_ERR, "tr_eval_paramlist: value cannot get p1\n");
+					LM_ERR("value cannot get p1\n");
 					return -1;
 				}
 				sv = v.rs;
@@ -622,7 +622,7 @@ int tr_eval_paramlist(struct sip_msg *msg, tr_param_t *tp, int subtype,
 		case TR_PL_NAME:
 			if(tp==NULL)
 			{
-				LOG(L_ERR, "tr_eval_paramlist: name invalid parameters\n");
+				LM_ERR("name invalid parameters\n");
 				return -1;
 			}
 
@@ -633,7 +633,7 @@ int tr_eval_paramlist(struct sip_msg *msg, tr_param_t *tp, int subtype,
 				if(pv_get_spec_value(msg, (pv_spec_p)tp->v.data, &v)!=0
 						|| (!(v.flags&PV_VAL_INT)))
 				{
-					LOG(L_ERR, "tr_eval_paramlist: name cannot get p1\n");
+					LM_ERR("name cannot get p1\n");
 					return -1;
 				}
 				n = v.ri;
@@ -674,7 +674,7 @@ int tr_eval_paramlist(struct sip_msg *msg, tr_param_t *tp, int subtype,
 			val->rs = _tr_empty;
 			break;
 		default:
-			LOG(L_ERR, "tr_eval_paramlist: unknown subtype %d\n",
+			LM_ERR("unknown subtype %d\n",
 					subtype);
 			return -1;
 	}
@@ -707,7 +707,7 @@ char* parse_transformation(str *in, trans_t **tr)
 		t = (trans_t*)pkg_malloc(sizeof(trans_t));
 		if(t == NULL)
 		{
-			LOG(L_ERR, "parse_transformation: no more memory\n");
+			LM_ERR("no more private memory\n");
 			return NULL;
 		}
 		memset(t, 0, sizeof(trans_t));
@@ -789,15 +789,14 @@ error:
 		_spec = (pv_spec_t*)pkg_malloc(sizeof(pv_spec_t)); \
 		if(_spec==NULL) \
 		{ \
-			LOG(L_ERR, "tr_parse_nparam: no more memory!\n"); \
+			LM_ERR("no more private memory!\n"); \
 			goto error; \
 		} \
 		_s.s = _p; _s.len = _in->s + _in->len - _p; \
 		_p0 = pv_parse_spec(&_s, _spec); \
 		if(_p0==NULL) \
 		{ \
-			LOG(L_ERR, \
-			"tr_parse_nparam: invalid spec in substr transformation: %.*s!\n", \
+			LM_ERR("invalid spec in substr transformation: %.*s!\n", \
 				_in->len, _in->s); \
 			goto error; \
 		} \
@@ -805,7 +804,7 @@ error:
 		_tp = (tr_param_t*)pkg_malloc(sizeof(tr_param_t)); \
 		if(_tp==NULL) \
 		{ \
-			LOG(L_ERR, "tr_nparam_string: no more memory!\n"); \
+			LM_ERR("no more private memory!\n"); \
 			goto error; \
 		} \
 		memset(_tp, 0, sizeof(tr_param_t)); \
@@ -830,15 +829,14 @@ error:
 			_tp = (tr_param_t*)pkg_malloc(sizeof(tr_param_t)); \
 			if(_tp==NULL) \
 			{ \
-				LOG(L_ERR, "tr_parse_nparam: no more memory!\n"); \
+				LM_ERR("no more private memory!\n"); \
 				goto error; \
 			} \
 			memset(_tp, 0, sizeof(tr_param_t)); \
 			_tp->type = TR_PARAM_NUMBER; \
 			_tp->v.n = sign*n; \
 		} else { \
-			LOG(L_ERR, \
-				"tr_parse_nparam: invalid param in transformation: %.*s!!\n", \
+			LM_ERR("tinvalid param in transformation: %.*s!!\n", \
 				_in->len, _in->s); \
 			goto error; \
 		} \
@@ -851,15 +849,14 @@ error:
 		_spec = (pv_spec_t*)pkg_malloc(sizeof(pv_spec_t)); \
 		if(_spec==NULL) \
 		{ \
-			LOG(L_ERR, "tr_parse_sparam: no more memory!\n"); \
+			LM_ERR("no more private memory!\n"); \
 			goto error; \
 		} \
 		_s.s = _p; _s.len = _in->s + _in->len - _p; \
 		_p0 = pv_parse_spec(&_s, _spec); \
 		if(_p0==NULL) \
 		{ \
-			LOG(L_ERR, \
-			"tr_parse_sparam: invalid spec in substr transformation: %.*s!\n", \
+			LM_ERR("invalid spec in substr transformation: %.*s!\n", \
 				_in->len, _in->s); \
 			goto error; \
 		} \
@@ -867,7 +864,7 @@ error:
 		_tp = (tr_param_t*)pkg_malloc(sizeof(tr_param_t)); \
 		if(_tp==NULL) \
 		{ \
-			LOG(L_ERR, "tr_sparam_string: no more memory!\n"); \
+			LM_ERR("no more private memory!\n"); \
 			goto error; \
 		} \
 		memset(_tp, 0, sizeof(tr_param_t)); \
@@ -882,15 +879,14 @@ error:
 				_p++; \
 		if(*_p=='\0') \
 		{ \
-			LOG(L_ERR, \
-				"tr_parse_sparam: invalid param in transformation: %.*s!!\n", \
+			LM_ERR("invalid param in transformation: %.*s!!\n", \
 				_in->len, _in->s); \
 			goto error; \
 		} \
 		_tp = (tr_param_t*)pkg_malloc(sizeof(tr_param_t)); \
 		if(_tp==NULL) \
 		{ \
-			LOG(L_ERR, "tr_parse_sparam: no more memory!\n"); \
+			LM_ERR("no more private memory!\n"); \
 			goto error; \
 		} \
 		memset(_tp, 0, sizeof(tr_param_t)); \
@@ -921,7 +917,7 @@ char* tr_parse_string(str* in, trans_t *t)
 	while(is_in_str(p, in) && *p!=TR_PARAM_MARKER && *p!=TR_RBRACKET) p++;
 	if(*p=='\0')
 	{
-		LOG(L_ERR, "tr_parse_string: invalid transformation: %.*s\n",
+		LM_ERR("invalid transformation: %.*s\n",
 				in->len, in->s);
 		goto error;
 	}
@@ -1013,7 +1009,7 @@ char* tr_parse_string(str* in, trans_t *t)
 		tp = (tr_param_t*)pkg_malloc(sizeof(tr_param_t));
 		if(tp==NULL)
 		{
-			LOG(L_ERR, "tr_parse_string: no more memory!\n");
+			LM_ERR("no more private memory!\n");
 			goto error;
 		}
 		memset(tp, 0, sizeof(tr_param_t));
