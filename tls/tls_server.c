@@ -419,7 +419,7 @@ tls_shutdown(struct tcp_connection *c)
 		}
 	}
 	
-	LM_ERR("bug"\n);
+	LM_ERR("bug\n");
 	return -1;
 }
 
@@ -464,7 +464,7 @@ tls_write(struct tcp_connection *c, int fd, const void *buf, size_t len)
 		}
 	}
 
-	LM_ERR("bug"\n);
+	LM_ERR("bug\n");
 	return -1;
 }
 
@@ -512,7 +512,7 @@ _tls_read(struct tcp_connection *c, void *buf, size_t len)
 		}
 	}
 
-	LM_ERR("bug"\n);
+	LM_ERR("bug\n");
 	return -1;
 }
 
