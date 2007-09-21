@@ -369,7 +369,7 @@ tls_connect(struct tcp_connection *c)
 		}
 	}
 
-	LM_ERR("bug"\n);
+	LM_ERR("bug\n");
 	return -1;
 }
 
