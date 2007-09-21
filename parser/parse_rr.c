@@ -281,7 +281,7 @@ static inline int do_duplicate_rr(rr_t** _new, rr_t* _r, int _shm)
 		else res = pkg_malloc(sizeof(rr_t) + len);
 		if (!res) {
 			LOG(L_ERR, "duplicate_rr(): No memory left\n");
-			return -2;
+			goto error;
 		}
 		memcpy(res, it, sizeof(rr_t));
 
@@ -298,7 +298,7 @@ static inline int do_duplicate_rr(rr_t** _new, rr_t* _r, int _shm)
 			LOG(L_ERR, "duplicate_rr(): Error while duplicating parameters\n");
 			if (_shm) shm_free(res);
 			else pkg_free(res);
-			return -3;
+			goto error;
 		}
 
 		xlate_pointers(it, res);
@@ -312,6 +312,11 @@ static inline int do_duplicate_rr(rr_t** _new, rr_t* _r, int _shm)
 		it = it->next;
 	}
 	return 0;
+error:
+	if (_shm) shm_free_rr(_new);
+	else free_rr(_new);
+	*_new = NULL;
+	return -1;
 }
 
 
