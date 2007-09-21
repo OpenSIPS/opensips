@@ -90,7 +90,7 @@ int event_parser(char* _s, int _l, event_t* _e)
 	trim_leading(&tmp);
 
 	if (tmp.len == 0) {
-		LOG(L_ERR, "event_parser(): Empty body\n");
+		LM_ERR("empty body\n");
 		return -1;
 	}
 
@@ -155,14 +155,14 @@ int parse_event(struct hdr_field* _h)
 
 	e = (event_t*)pkg_malloc(sizeof(event_t));
 	if (e == 0) {
-		LOG(L_ERR, "parse_event(): No memory left\n");
+		LM_ERR("no pkg memory left\n");
 		return -1;
 	}
 
 	memset(e, 0, sizeof(event_t));
 
 	if (event_parser(_h->body.s, _h->body.len, e) < 0) {
-		LOG(L_ERR, "parse_event(): Error in event_parser\n");
+		LM_ERR("event_parser failed\n");
 		pkg_free(e);
 		return -2;
 	}

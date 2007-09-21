@@ -297,8 +297,7 @@ inline static int char_msg_val( struct sip_msg *msg, char *cv )
 	str src[8];
 
 	if (!check_transaction_quadruple(msg)) {
-		LOG(L_ERR, "ERROR: can't calculate char_value due "
-			"to a parsing error\n");
+		LM_ERR("can't calculate char_value due to a parsing error\n");
 		memset( cv, '0', MD5_LEN );
 		return 0;
 	}

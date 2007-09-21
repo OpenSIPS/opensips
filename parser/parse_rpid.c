@@ -53,7 +53,7 @@ int parse_rpid_header( struct sip_msg *msg )
  	/* first, get some memory */
  	rpid_b = pkg_malloc(sizeof(struct to_body));
  	if (rpid_b == 0) {
- 		LOG(L_ERR, "ERROR:parse_rpid_header: out of pkg_memory\n");
+ 		LM_ERR("out of pkg_memory\n");
  		goto error;
  	}
  
@@ -61,7 +61,7 @@ int parse_rpid_header( struct sip_msg *msg )
  	memset(rpid_b, 0, sizeof(struct to_body));
  	parse_to(msg->rpid->body.s,msg->rpid->body.s+msg->rpid->body.len+1,rpid_b);
  	if (rpid_b->error == PARSE_ERROR) {
- 		LOG(L_ERR, "ERROR:parse_rpid_header: bad rpid header\n");
+ 		LM_ERR("bad rpid header\n");
  		pkg_free(rpid_b);
  		goto error;
  	}

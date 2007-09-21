@@ -124,7 +124,7 @@ int parse_supported( struct sip_msg *msg)
 
 		sb = (struct supported_body*)pkg_malloc(sizeof(struct supported_body));
 		if (sb == 0) {
-			LOG(L_ERR, "ERROR:parse_supported: Out of pkg_memory\n");
+			LM_ERR("out of pkg_memory\n");
 			return -1;
 		}
 

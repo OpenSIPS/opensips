@@ -55,7 +55,7 @@ enum {
 
 #define add_param( _param , _body ) \
 	do{\
-		DBG("DEBUG: add_param: %.*s=%.*s\n",param->name.len,ZSW(param->name.s),\
+		LM_DBG("%.*s=%.*s\n",param->name.len,ZSW(param->name.s),\
 			param->value.len,ZSW(param->value.s));\
 		if (!(_body)->param_lst)  (_body)->param_lst=(_param);\
 		else (_body)->last_param->next=(_param);\
@@ -275,8 +275,7 @@ static inline char* parse_to_param(char *buffer, char *end,
 						param = (struct to_param*)
 							pkg_malloc(sizeof(struct to_param));
 						if (!param){
-							LOG( L_ERR , "ERROR: parse_to_param"
-							" - out of memory\n" );
+							LM_ERR("out of pkg memory\n" );
 							goto error;
 						}
 						memset(param,0,sizeof(struct to_param));
@@ -437,8 +436,7 @@ static inline char* parse_to_param(char *buffer, char *end,
 						/*previous=crlf and now !=' '*/
 						goto endofheader;
 					default:
-						LOG(L_ERR, "ERROR: parse_to_param: "
-							"spitting out [%c] in status %d\n",*tmp,status );
+						LM_ERR("spitting out [%c] in status %d\n",*tmp,status );
 						goto error;
 				}
 		}/*switch*/
@@ -458,8 +456,7 @@ endofheader:
 	return tmp;
 
 parse_error:
-	LOG( L_ERR , "ERROR: parse_to_param : "
-		"unexpected char [%c] in status %d: <<%.*s>> .\n",
+	LM_ERR("unexpected char [%c] in status %d: <<%.*s>> .\n",
 		*tmp,status, (int)(tmp-buffer), ZSW(buffer));
 error:
 	if (param) pkg_free(param);
@@ -705,7 +702,7 @@ char* parse_to(char* buffer, char *end, struct to_body *to_b)
 						/*previous=crlf and now !=' '*/
 						goto endofheader;
 					default:
-						DBG("DEBUG:parse_to: spitting out [%c] in status %d\n",
+						LM_DBG("spitting out [%c] in status %d\n",
 						*tmp,status );
 						goto error;
 				}
@@ -715,7 +712,7 @@ char* parse_to(char* buffer, char *end, struct to_body *to_b)
 endofheader:
 	if (to_b->display.len==0) to_b->display.s=0;
 	status=saved_status;
-	DBG("DEBUG:parse_to:end of header reached, state=%d\n", status);
+	LM_DBG("end of header reached, state=%d\n", status);
 	/* check if error*/
 	switch(status){
 		case MAYBE_URI_END:
@@ -725,19 +722,17 @@ endofheader:
 		case E_PARA_VALUE:
 			break;
 		default:
-			LOG(L_ERR, "ERROR: parse_to: invalid To -  unexpected "
-					"end of header in state %d\n", status);
+			LM_ERR("unexpected end of header in state %d\n", status);
 			goto error;
 	}
 
-	DBG("DBUG:parse_to: display={%.*s}, ruri={%.*s}\n",
+	LM_DBG("display={%.*s}, ruri={%.*s}\n",
 		to_b->display.len, ZSW(to_b->display.s),
 		to_b->uri.len, ZSW(to_b->uri.s));
 	return tmp;
 
 parse_error:
-	LOG( L_ERR , "ERROR: parse_to : unexpected char [%c] "
-		"in status %d: <<%.*s>> .\n",
+	LM_ERR("unexpected char [%c] in status %d: <<%.*s>> .\n",
 		*tmp,status, (int)(tmp-buffer), buffer);
 error:
 	to_b->error=PARSE_ERROR;
@@ -762,7 +757,7 @@ struct sip_uri *parse_to_uri(struct sip_msg *msg)
 
 	if (parse_uri(tb->uri.s, tb->uri.len , &tb->parsed_uri)<0)
 	{
-		LOG(L_ERR,"parse_to_uri: failed to parse To uri\n");
+		LM_ERR("failed to parse To uri\n");
 		memset(&tb->parsed_uri, 0, sizeof(struct sip_uri));
 		set_err_info(OSER_EC_PARSER, OSER_EL_MEDIUM, "error parsing To uri");
 		set_err_reply(400, "bad To uri");

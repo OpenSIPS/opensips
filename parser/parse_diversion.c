@@ -53,7 +53,7 @@ int parse_diversion_header(struct sip_msg *msg)
  	/* first, get some memory */
  	diversion_b = pkg_malloc(sizeof(struct to_body));
  	if (diversion_b == 0) {
- 		LOG(L_ERR, "ERROR:parse_diversion_header: out of pkg_memory\n");
+ 		LM_ERR("out of pkg_memory\n");
  		goto error;
  	}
  
@@ -61,7 +61,7 @@ int parse_diversion_header(struct sip_msg *msg)
  	memset(diversion_b, 0, sizeof(struct to_body));
  	parse_to(msg->diversion->body.s, msg->diversion->body.s + msg->diversion->body.len + 1, diversion_b);
  	if (diversion_b->error == PARSE_ERROR) {
- 		LOG(L_ERR, "ERROR:parse_diversion_header: bad diversion header\n");
+ 		LM_ERR("bad diversion header\n");
  		pkg_free(diversion_b);
  		goto error;
  	}

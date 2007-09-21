@@ -58,7 +58,7 @@ int parse_ppi_header( struct sip_msg *msg )
     /* first, get some memory */
     ppi_b = pkg_malloc(sizeof(struct to_body));
     if (ppi_b == 0) {
-	LOG(L_ERR, "ERROR:parse_ppi_header: out of pkg_memory\n");
+	LM_ERR("out of pkg_memory\n");
 	goto error;
     }
  
@@ -68,7 +68,7 @@ int parse_ppi_header( struct sip_msg *msg )
 	     msg->ppi->body.s + msg->ppi->body.len+1,
 	     ppi_b);
     if (ppi_b->error == PARSE_ERROR) {
-	LOG(L_ERR, "ERROR:parse_ppi_header: bad P-Preferred-Identity header\n");
+	LM_ERR("bad P-Preferred-Identity header\n");
 	pkg_free(ppi_b);
 	goto error;
     }
@@ -92,7 +92,7 @@ struct sip_uri *parse_ppi_uri(struct sip_msg *msg)
 
 	if(parse_ppi_header(msg)<0)
 	{
-		LOG(L_ERR, "parse_ppi_uri: ERROR cannot parse P-P-I header\n");
+		LM_ERR("cannot parse P-P-I header\n");
 		return NULL;
 	}
 	
@@ -106,7 +106,7 @@ struct sip_uri *parse_ppi_uri(struct sip_msg *msg)
 
 	if (parse_uri(tb->uri.s, tb->uri.len , &tb->parsed_uri)<0)
 	{
-		LOG(L_ERR,"parse_ppi_uri: failed to parse P-P-I URI\n");
+		LM_ERR("failed to parse P-P-I URI\n");
 		memset(&tb->parsed_uri, 0, sizeof(struct sip_uri));
 		set_err_info(OSER_EC_PARSER, OSER_EL_MEDIUM, "error parsing P-P-I URI");
 		set_err_reply(400, "bad P-Preferred-Identity uri");

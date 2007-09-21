@@ -48,7 +48,7 @@ static inline int expires_parser(char* _s, int _l, exp_body_t* _e)
 	trim_leading(&tmp);
 
 	if (tmp.len == 0) {
-		LOG(L_ERR, "expires_parser(): Empty body\n");
+		LM_ERR("empty body\n");
 		_e->valid = 0;
 		return -1;
 	}
@@ -74,7 +74,7 @@ static inline int expires_parser(char* _s, int _l, exp_body_t* _e)
 				      * RFC2543 entities that can put absolute time here
 				      */
 				     /*
-				LOG(L_ERR, "expires_parser(): Invalid character\n");
+				LM_ERR("invalid character\n");
 				return -2;
 				     */
 				_e->valid = 0;
@@ -102,14 +102,14 @@ int parse_expires(struct hdr_field* _h)
 
 	e = (exp_body_t*)pkg_malloc(sizeof(exp_body_t));
 	if (e == 0) {
-		LOG(L_ERR, "parse_expires(): No memory left\n");
+		LM_ERR("no pkg memory left\n");
 		return -1;
 	}
 	
 	memset(e, 0, sizeof(exp_body_t));
 
 	if (expires_parser(_h->body.s, _h->body.len, e) < 0) {
-		LOG(L_ERR, "parse_expires(): Error while parsing\n");
+		LM_ERR("failed to parse\n");
 		pkg_free(e);
 		return -2;
 	}

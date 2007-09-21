@@ -48,7 +48,7 @@ static inline int do_parse_rr_body(char *buf, int len, rr_t **head)
 	/* Make a temporary copy of the string pointer */
 	if(buf==0 || len<=0)
 	{
-		LM_DBG("No body for record-route\n");
+		LM_DBG("no body for record-route\n");
 		*head = 0;
 		return -2;
 	}
@@ -62,7 +62,7 @@ static inline int do_parse_rr_body(char *buf, int len, rr_t **head)
 		     /* Allocate and clear rr structure */
 		r = (rr_t*)pkg_malloc(sizeof(rr_t));
 		if (!r) {
-			LOG(L_ERR, "parse_rr(): No memory left\n");
+			LM_ERR("no pkg memory left\n");
 			goto error;
 		}
 		memset(r, 0, sizeof(rr_t));
@@ -88,13 +88,13 @@ static inline int do_parse_rr_body(char *buf, int len, rr_t **head)
 			trim_leading(&s);
 			
 			if (s.len == 0) {
-				LOG(L_ERR, "parse_rr(): Error while parsing params\n");
+				LM_ERR("failed to parse params\n");
 				goto error;
 			}
 
 			     /* Parse all parameters */
 			if (parse_params(&s, CLASS_ANY, &hooks, &r->params) < 0) {
-				LOG(L_ERR, "parse_rr(): Error while parsing params\n");
+				LM_ERR("failed to parse params\n");
 				goto error;
 			}
 			r->len = r->params->name.s + r->params->len - r->nameaddr.name.s;
@@ -107,7 +107,7 @@ static inline int do_parse_rr_body(char *buf, int len, rr_t **head)
 		}
 
 		if (s.s[0] != ',') {
-			LOG(L_ERR, "parse_rr(): Invalid character '%c', comma expected\n", s.s[0]);
+			LM_ERR("invalid character '%c', comma expected\n", s.s[0]);
 			goto error;
 		}
 		
@@ -117,7 +117,7 @@ static inline int do_parse_rr_body(char *buf, int len, rr_t **head)
 		trim_leading(&s);
 
 		if (s.len == 0) {
-			LOG(L_ERR, "parse_rr(): Text after comma missing\n");
+			LM_ERR("text after comma missing\n");
 			goto error;
 		}
 
@@ -154,7 +154,7 @@ int parse_rr(struct hdr_field* _h)
 	rr_t* r = NULL;
 
 	if (!_h) {
-		LOG(L_ERR, "parse_rr(): Invalid parameter value\n");
+		LM_ERR("invalid parameter value\n");
 		return -1;
 	}
 
@@ -263,7 +263,7 @@ static inline int do_duplicate_rr(rr_t** _new, rr_t* _r, int _shm)
 	rr_t* res, *prev, *it;
 
 	if (!_new || !_r) {
-		LOG(L_ERR, "duplicate_rr(): Invalid parameter value\n");
+		LM_ERR("invalid parameter value\n");
 		return -1;
 	}
 	prev  = NULL;
@@ -280,7 +280,7 @@ static inline int do_duplicate_rr(rr_t** _new, rr_t* _r, int _shm)
 		if (_shm) res = shm_malloc(sizeof(rr_t) + len);
 		else res = pkg_malloc(sizeof(rr_t) + len);
 		if (!res) {
-			LOG(L_ERR, "duplicate_rr(): No memory left\n");
+			LM_ERR("no shm memory left\n");
 			goto error;
 		}
 		memcpy(res, it, sizeof(rr_t));
@@ -295,7 +295,7 @@ static inline int do_duplicate_rr(rr_t** _new, rr_t* _r, int _shm)
 		}
 
 		if (ret < 0) {
-			LOG(L_ERR, "duplicate_rr(): Error while duplicating parameters\n");
+			LM_ERR("failed to duplicate parameters\n");
 			if (_shm) shm_free(res);
 			else pkg_free(res);
 			goto error;
@@ -364,7 +364,7 @@ int print_rr_body(struct hdr_field *iroute, str *oroute, int order,
 	{
 		if (parse_rr(iroute) < 0) 
 		{
-			LOG(L_ERR,"print_rr_body: ERROR while parsing RR\n");
+			LM_ERR("failed to parse RR\n");
 			goto error;
 		}
 
@@ -373,13 +373,12 @@ int print_rr_body(struct hdr_field *iroute, str *oroute, int order,
 		{
 			route[n].s = p->nameaddr.name.s;
 			route[n].len = p->len;
-			LOG(L_DBG, "DBG:parser:print_rr_body: current rr is %.*s\n",
-				route[n].len, route[n].s);
+			LM_DBG("current rr is %.*s\n", route[n].len, route[n].s);
 
 			n++;
 			if(n==MAX_RR_HDRS)
 			{
-				LOG(L_ERR,"print_rr_body: ERROR - too many RR\n");
+				LM_ERR("too many RR\n");
 				goto error;
 			}
 			p = p->next;
@@ -398,7 +397,7 @@ int print_rr_body(struct hdr_field *iroute, str *oroute, int order,
 	}
 
 	if(nb_recs)
-		LOG(L_DBG, "print_rr_body: skipping %i route records\n", *nb_recs);
+		LM_DBG("skipping %i route records\n", *nb_recs);
 	
 	route_len += --nr; /* for commas */
 
@@ -407,7 +406,7 @@ int print_rr_body(struct hdr_field *iroute, str *oroute, int order,
 
 	if(oroute->s==0)
 	{
-		LOG(L_ERR, "print_rr_body: ERROR no more pkg mem\n");
+		LM_ERR("no more pkg mem\n");
 		goto error;
 	}
 	cp = start = oroute->s;
@@ -436,8 +435,8 @@ int print_rr_body(struct hdr_field *iroute, str *oroute, int order,
 	}
 	oroute->len=cp - start;
 
-	DBG("print_rr_body: out rr [%.*s]\n", oroute->len, oroute->s);
-	LOG(L_DBG, "DBG:parser: print_rr_body: we have %i records\n", n);
+	LM_DBG("out rr [%.*s]\n", oroute->len, oroute->s);
+	LM_DBG("we have %i records\n", n);
 	if(nb_recs != NULL)
 		*nb_recs = (unsigned int)n; 
 
@@ -457,17 +456,14 @@ int get_path_dst_uri(str *_p, str *_dst)
 {
 	rr_t *route = 0;
 
-	DBG("DEBUG: get_path_dst_uri(): Path for branch: '%.*s'\n",
-		_p->len, _p->s);
+	LM_DBG("path for branch: '%.*s'\n",	_p->len, _p->s);
 
 	if(parse_rr_body(_p->s, _p->len, &route) < 0) {
-		LOG(L_ERR, "ERROR: get_path_dst_uri(): Failed to parse "
-			"Path body\n");
+		LM_ERR("failed to parse Path body\n");
 		return -1;
 	}
 	if(!route) {
-		LOG(L_ERR, "ERROR: get_path_dst_uri(): Failed to parse Path body,"
-			" no head found\n");
+		LM_ERR("failed to parse Path body no head found\n");
 		return -1;
 	}
 

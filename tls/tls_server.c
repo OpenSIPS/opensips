@@ -72,11 +72,11 @@ tls_update_fd(struct tcp_connection *c, int fd)
 	ssl = (SSL *) c->extra_data;
 
 	if (!SSL_set_fd(ssl, fd)) {
-		LOG(L_ERR, "tls_update_fd: Error while assigning socket to ssl\n");
+		LM_ERR("failed to assign socket to ssl\n");
 		return -1;
 	}
 
-	DBG("tls_update_fd: New fd is %d\n", fd);
+	LM_DBG("New fd is %d\n", fd);
 	return 0;
 }
 
@@ -90,7 +90,7 @@ tls_print_errstack(void)
 	int             code;
 
 	while ((code = ERR_get_error())) {
-		LOG(L_ERR, "tls_error: %s\n", ERR_error_string(code, 0));
+		LM_ERR("%s\n", ERR_error_string(code, 0));
 	}
 }
 
@@ -102,8 +102,8 @@ static void tls_dump_cert_info(char* s,	X509* cert)
 	subj   = X509_NAME_oneline(X509_get_subject_name(cert), 0, 0);
 	issuer = X509_NAME_oneline(X509_get_issuer_name(cert), 0, 0);
 
-	DBG("%s subject:%s\n", s ? s : "", subj);
-	DBG("%s issuer: %s\n", s ? s : "", issuer);
+	LM_DBG("%s subject:%s\n", s ? s : "", subj);
+	LM_DBG("%s issuer: %s\n", s ? s : "", issuer);
 	OPENSSL_free(subj);
 	OPENSSL_free(issuer);
 }
@@ -113,100 +113,100 @@ static void tls_dump_verification_failure(long verification_result)
 {
 	switch(verification_result) {
 	case X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT:
-		DBG("verification failure: unable to get issuer certificate\n");
+		LM_DBG("unable to get issuer certificate\n");
 		break;
 	case X509_V_ERR_UNABLE_TO_GET_CRL:
-		DBG("verification failure: unable to get certificate CRL\n");
+		LM_DBG("unable to get certificate CRL\n");
 		break;
 	case X509_V_ERR_UNABLE_TO_DECRYPT_CERT_SIGNATURE:
-		DBG("verification failure: unable to decrypt certificate's signature\n");
+		LM_DBG("unable to decrypt certificate's signature\n");
 		break;
 	case X509_V_ERR_UNABLE_TO_DECRYPT_CRL_SIGNATURE:
-		DBG("verification failure: unable to decrypt CRL's signature\n");
+		LM_DBG("unable to decrypt CRL's signature\n");
 		break;
 	case X509_V_ERR_UNABLE_TO_DECODE_ISSUER_PUBLIC_KEY:
-		DBG("verification failure: unable to decode issuer public key\n");
+		LM_DBG("unable to decode issuer public key\n");
 		break;
 	case X509_V_ERR_CERT_SIGNATURE_FAILURE:
-		DBG("verification failure: certificate signature failure\n");
+		LM_DBG("certificate signature failure\n");
 		break;
 	case X509_V_ERR_CRL_SIGNATURE_FAILURE:
-		DBG("verification failure: CRL signature failure\n");
+		LM_DBG("CRL signature failure\n");
 		break;
 	case X509_V_ERR_CERT_NOT_YET_VALID:
-		DBG("verification failure: certificate is not yet valid\n");
+		LM_DBG("certificate is not yet valid\n");
 		break;
 	case X509_V_ERR_CERT_HAS_EXPIRED:
-		DBG("verification failure: certificate has expired\n");
+		LM_DBG("certificate has expired\n");
 		break;
 	case X509_V_ERR_CRL_NOT_YET_VALID:
-		DBG("verification failure: CRL is not yet valid\n");
+		LM_DBG("CRL is not yet valid\n");
 		break;
 	case X509_V_ERR_CRL_HAS_EXPIRED:
-		DBG("verification failure: CRL has expired\n");
+		LM_DBG("CRL has expired\n");
 		break;
 	case X509_V_ERR_ERROR_IN_CERT_NOT_BEFORE_FIELD:
-		DBG("verification failure: format error in certificate's notBefore field\n");
+		LM_DBG("format error in certificate's notBefore field\n");
 		break;
 	case X509_V_ERR_ERROR_IN_CERT_NOT_AFTER_FIELD:
-		DBG("verification failure: format error in certificate's notAfter field\n");
+		LM_DBG("format error in certificate's notAfter field\n");
 		break;
 	case X509_V_ERR_ERROR_IN_CRL_LAST_UPDATE_FIELD:
-		DBG("verification failure: format error in CRL's lastUpdate field\n");
+		LM_DBG("format error in CRL's lastUpdate field\n");
 		break;
 	case X509_V_ERR_ERROR_IN_CRL_NEXT_UPDATE_FIELD:
-		DBG("verification failure: format error in CRL's nextUpdate field\n");
+		LM_DBG("format error in CRL's nextUpdate field\n");
 		break;
 	case X509_V_ERR_OUT_OF_MEM:
-		DBG("verification failure: out of memory\n");
+		LM_DBG("out of memory\n");
 		break;
 	case X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT:
-		DBG("verification failure: self signed certificate\n");
+		LM_DBG("self signed certificate\n");
 		break;
 	case X509_V_ERR_SELF_SIGNED_CERT_IN_CHAIN:
-		DBG("verification failure: self signed certificate in certificate chain\n");
+		LM_DBG("self signed certificate in certificate chain\n");
 		break;
 	case X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY:
-		DBG("verification failure: unable to get local issuer certificate\n");
+		LM_DBG("unable to get local issuer certificate\n");
 		break;
 	case X509_V_ERR_UNABLE_TO_VERIFY_LEAF_SIGNATURE:
-		DBG("verification failure: unable to verify the first certificate\n");
+		LM_DBG("unable to verify the first certificate\n");
 		break;
 	case X509_V_ERR_CERT_CHAIN_TOO_LONG:
-		DBG("verification failure: certificate chain too long\n");
+		LM_DBG("certificate chain too long\n");
 		break;
 	case X509_V_ERR_CERT_REVOKED:
-		DBG("verification failure: certificate revoked\n");
+		LM_DBG("certificate revoked\n");
 		break;
 	case X509_V_ERR_INVALID_CA:
-		DBG("verification failure: invalid CA certificate\n");
+		LM_DBG("invalid CA certificate\n");
 		break;
 	case X509_V_ERR_PATH_LENGTH_EXCEEDED:
-		DBG("verification failure: path length constraint exceeded\n");
+		LM_DBG("path length constraint exceeded\n");
 		break;
 	case X509_V_ERR_INVALID_PURPOSE:
-		DBG("verification failure: unsupported certificate purpose\n");
+		LM_DBG("unsupported certificate purpose\n");
 		break;
 	case X509_V_ERR_CERT_UNTRUSTED:
-		DBG("verification failure: certificate not trusted\n");
+		LM_DBG("certificate not trusted\n");
 		break;
 	case X509_V_ERR_CERT_REJECTED:
-		DBG("verification failure: certificate rejected\n");
+		LM_DBG("certificate rejected\n");
 		break;
 	case X509_V_ERR_SUBJECT_ISSUER_MISMATCH:
-		DBG("verification failure: subject issuer mismatch\n");
+		LM_DBG("subject issuer mismatch\n");
 		break;
 	case X509_V_ERR_AKID_SKID_MISMATCH:
-		DBG("verification failure: authority and subject key identifier mismatch\n");
+		LM_DBG("authority and subject key identifier mismatch\n");
 		break;
 	case X509_V_ERR_AKID_ISSUER_SERIAL_MISMATCH:
-		DBG("verification failure: authority and issuer serial number mismatch\n");
+		LM_DBG("authority and issuer serial number mismatch\n");
 		break;
 	case X509_V_ERR_KEYUSAGE_NO_CERTSIGN:
-		DBG("verification failure: key usage does not include certificate signing\n");
+		LM_DBG("key usage does not include certificate signing\n");
 		break;
 	case X509_V_ERR_APPLICATION_VERIFICATION:
-		DBG("verification failure: application verification failure\n");
+		LM_DBG("application verification failure\n");
 		break;
 	}
 }
@@ -222,8 +222,7 @@ tls_accept(struct tcp_connection *c)
 	X509* cert;
 
 	if (c->state != S_CONN_ACCEPT) {
-		LOG(L_ERR,
-			"tcp_accept: Invalid connection state (bug in TLS code)\n");
+		LM_ERR("invalid connection state (bug in TLS code)\n");
 		return -1;
 	}
 
@@ -240,43 +239,41 @@ tls_accept(struct tcp_connection *c)
 	}
 #endif
 	if (ret > 0) {
-		DBG("tls_accept: TLS handshake successful\n");
+		LM_DBG("TLS handshake successful\n");
 		c->state = S_CONN_OK;
 
-		DBG("tls_accept: new connection from %s:%d using %s %s %d\n",
+		LM_DBG("new connection from %s:%d using %s %s %d\n",
 			ip_addr2a(&c->rcv.src_ip), c->rcv.src_port,
 			SSL_get_cipher_version(ssl), SSL_get_cipher_name(ssl),
 			SSL_get_cipher_bits(ssl, 0)
 			);
-		DBG("tls_accept: local socket: %s:%d\n",
+		LM_DBG("local socket: %s:%d\n",
 			ip_addr2a(&c->rcv.dst_ip), c->rcv.dst_port
 			);
 		cert = SSL_get_peer_certificate(ssl);
 		if (cert != 0) {
 			tls_dump_cert_info("tls_accept: client certificate", cert);
 			if (SSL_get_verify_result(ssl) != X509_V_OK) {
-				LOG(L_WARN, "WARNING: tls_accept: client certificate "
-					"verification failed!!!\n");
+				LM_WARN("client certificate verification failed!!!\n");
 				tls_dump_verification_failure(SSL_get_verify_result(ssl));
 			}
 			X509_free(cert);
 		} else {
-			LOG(L_INFO, "tls_accept: client did not present a certificate\n");
+			LM_INFO("client did not present a certificate\n");
 		}
 		cert = SSL_get_certificate(ssl);
 		if (cert != 0) {
 			tls_dump_cert_info("tls_accept: local (server) certificate", cert);
 		} else {
 			/* this should not happen, servers always present a cert */
-			LOG(L_ERR, "tls_accept: ERRROR: local TLS server domain has no "
-				"certificate\n");
+			LM_ERR("local TLS server domain has no certificate\n");
 		}
 		return 0;
 	} else {
 		err = SSL_get_error(ssl, ret);
 		switch (err) {
 			case SSL_ERROR_ZERO_RETURN:
-				DBG("tls_accept: SSH handshake failed cleanly\n");
+				LM_DBG("SSH handshake failed cleanly\n");
 				c->state = S_CONN_BAD;
 				return -1;
 		
@@ -288,14 +285,14 @@ tls_accept(struct tcp_connection *c)
 				return 0;
 		
 			default:
-				LOG(L_ERR, "tls_accept: Error in SSL:\n");
+				LM_ERR("some error in SSL:\n");
 				c->state = S_CONN_BAD;
 				tls_print_errstack();
 				return -1;
 		}
 	}
 
-	LOG(L_ERR, "tls_accept: Bug in tls_accept\n");
+	LM_ERR("bug\n");
 	return -1;
 }
 
@@ -311,8 +308,7 @@ tls_connect(struct tcp_connection *c)
 	X509* cert;
 
 	if (c->state != S_CONN_CONNECT) {
-		LOG(L_ERR,
-			"tls_connect: Invalid connection state (bug in TLS code)\n");
+		LM_ERR("invalid connection state (bug in TLS code)\n");
 		return -1;
 	}
 
@@ -320,44 +316,41 @@ tls_connect(struct tcp_connection *c)
 
 	ret = SSL_connect(ssl);
 	if (ret > 0) {
-		DBG("tls_connect: SSL/TLS connect successuful\n");
+		LM_DBG("SSL/TLS connect successuful\n");
 		c->state = S_CONN_OK;
-		DBG("tls_connect: new connection to %s:%d using %s %s %d\n",
+		LM_DBG("new connection to %s:%d using %s %s %d\n",
 			ip_addr2a(&c->rcv.src_ip), c->rcv.src_port,
 			SSL_get_cipher_version(ssl), SSL_get_cipher_name(ssl),
 			SSL_get_cipher_bits(ssl, 0)
 			);
-		DBG("tls_connect: sending socket: %s:%d \n",
+		LM_DBG("sending socket: %s:%d \n",
 			ip_addr2a(&c->rcv.dst_ip), c->rcv.dst_port
 			);
 		cert = SSL_get_peer_certificate(ssl);
 		if (cert != 0) {
 			tls_dump_cert_info("tls_connect: server certificate", cert);
 			if (SSL_get_verify_result(ssl) != X509_V_OK) {
-				LOG(L_WARN, "WARNING: tls_connect: server certificate "
-					"verification failed!!!\n");
+				LM_WARN("server certificate verification failed!!!\n");
 				tls_dump_verification_failure(SSL_get_verify_result(ssl));
 			}
 			X509_free(cert);
 		} else {
 			/* this should not happen, servers always present a cert */
-			LOG(L_ERR, "tls_connect: ERRROR: server did not present a "
-				"certificate\n");
+			LM_ERR("server did not present a certificate\n");
 		}
 		cert = SSL_get_certificate(ssl);
 		if (cert != 0) {
 			tls_dump_cert_info("tls_connect: local (client) certificate",
 				cert);
 		} else {
-			LOG(L_INFO, "tls_connect: local TLS client domain does not have "
-				"a certificate\n");
+			LM_INFO("local TLS client domain does not have a certificate\n");
 		}
 		return 0;
 	} else {
 		err = SSL_get_error(ssl, ret);
 		switch (err) {
 			case SSL_ERROR_ZERO_RETURN:
-				DBG("tls_connect: SSL_connect failed cleanly\n");
+				LM_DBG("SSL_connect failed cleanly\n");
 				c->state = S_CONN_BAD;
 				return -1;
 		
@@ -369,14 +362,14 @@ tls_connect(struct tcp_connection *c)
 				return 0;
 		
 			default:
-				LOG(L_ERR, "tls_connect: Error in SSL:\n");
+				LM_ERR("something wrong in SSL:\n");
 				c->state = S_CONN_BAD;
 				tls_print_errstack();
 				return -1;
 		}
 	}
 
-	LOG(L_ERR, "tls_connect: Bug in tls_connect\n");
+	LM_ERR("bug"\n);
 	return -1;
 }
 
@@ -395,17 +388,16 @@ tls_shutdown(struct tcp_connection *c)
 	*/
 	ssl = (SSL *) c->extra_data;
 	if (ssl == 0) {
-		LOG(L_ERR, "tls_shutdown: No ssl data\n");
+		LM_ERR("no ssl data\n");
 		return -1;
 	}
 
 	ret = SSL_shutdown(ssl);
 	if (ret == 1) {
-		DBG("tls_shutdown: Shutdown successful\n");
+		LM_DBG("shutdown successful\n");
 		return 0;
 	} else if (ret == 0) {
-		DBG("tls_shutdown: First phase of 2-way handshake completed "
-			"succesfuly\n");
+		LM_DBG("first phase of 2-way handshake completed succesfuly\n");
 		return 0;
 	} else {
 		err = SSL_get_error(ssl, ret);
@@ -420,14 +412,14 @@ tls_shutdown(struct tcp_connection *c)
 				return 0;
 		
 			default:
-				LOG(L_ERR, "tls_shutdown: Error in SSL:\n");
+				LM_ERR("something wrong in SSL:\n");
 				c->state = S_CONN_BAD;
 				tls_print_errstack();
 				return -1;
 		}
 	}
 	
-	LOG(L_ERR, "tls_shutdown: Bug in tls_shutdown\n");
+	LM_ERR("bug"\n);
 	return -1;
 }
 
@@ -450,13 +442,13 @@ tls_write(struct tcp_connection *c, int fd, const void *buf, size_t len)
 
 	ret = SSL_write(ssl, buf, len);
 	if (ret > 0) {
-		DBG("tls_write: Write was successful (%d bytes)\n", ret);
+		LM_DBG("write was successful (%d bytes)\n", ret);
 		return ret;
 	} else {
 		err = SSL_get_error(ssl, ret);
 		switch (err) {
 		case SSL_ERROR_ZERO_RETURN:
-			DBG("tls_write: Connection closed cleanly\n");
+			LM_DBG("connection closed cleanly\n");
 			c->state = S_CONN_EOF;
 			return -1;
 	
@@ -465,14 +457,14 @@ tls_write(struct tcp_connection *c, int fd, const void *buf, size_t len)
 			return 0;
 	
 		default:
-			LOG(L_ERR, "tls_write: Error in SSL:\n");
+			LM_ERR("something wrong in SSL:\n");
 			c->state = S_CONN_BAD;
 			tls_print_errstack();
 			return -1;
 		}
 	}
 
-	LOG(L_ERR, "tls_write: Bug in tls_write\n");
+	LM_ERR("bug"\n);
 	return -1;
 }
 
@@ -495,13 +487,13 @@ _tls_read(struct tcp_connection *c, void *buf, size_t len)
 
 	ret = SSL_read(ssl, buf, len);
 	if (ret > 0) {
-		DBG("_tls_read: %d bytes read\n", ret);
+		LM_DBG("%d bytes read\n", ret);
 		return ret;
 	} else {
 		err = SSL_get_error(ssl, ret);
 		switch (err) {
 		case SSL_ERROR_ZERO_RETURN:
-			DBG("_tls_read: Connection closed cleanly\n");
+			LM_DBG("connection closed cleanly\n");
 			/*
 			* mark end of file 
 			*/
@@ -513,14 +505,14 @@ _tls_read(struct tcp_connection *c, void *buf, size_t len)
 			return 0;
 	
 		default:
-			LOG(L_ERR, "_tls_read: Error in SSL:\n");
+			LM_ERR("something wrong in SSL:\n");
 			c->state = S_CONN_BAD;
 			tls_print_errstack();
 			return -1;
 		}
 	}
 
-	LOG(L_ERR, "_tls_read: Bug in _tls_read\n");
+	LM_ERR("bug"\n);
 	return -1;
 }
 
@@ -550,7 +542,7 @@ tls_tcpconn_init(struct tcp_connection *c, int sock)
 	/*
 	* new connection within a single process, no lock necessary 
 	*/
-	DBG("tls_tcpconn_init: Entered: Creating a whole new ssl connection\n");
+	LM_DBG("entered: Creating a whole new ssl connection\n");
 	
 	/*
 	* do everything tcpconn_new wouldn't do when TLS 
@@ -561,15 +553,15 @@ tls_tcpconn_init(struct tcp_connection *c, int sock)
 	c->timeout = get_ticks() + DEFAULT_TCP_CONNECTION_LIFETIME;
 
 	if (c->state == S_CONN_ACCEPT) {
-		DBG("tls_tcpconn_init: Looking up socket based TLS server "
+		LM_DBG("looking up socket based TLS server "
 			"domain [%s:%d]\n", ip_addr2a(&c->rcv.dst_ip), c->rcv.dst_port);
 		dom = tls_find_server_domain(&c->rcv.dst_ip, c->rcv.dst_port);
 		if (dom) {
-			DBG("tls_tcpconn_init: Found socket based TLS server domain "
+			LM_DBG("found socket based TLS server domain "
 				"[%s:%d]\n", ip_addr2a(&dom->addr), dom->port);
 				c->extra_data = SSL_new(dom->ctx);
 		} else {
-			LOG(L_ERR,"tls_tcpconn_init: ERROR: no TLS server domain found\n");
+			LM_ERR("no TLS server domain found\n");
 			return -1;
 		}
 	} else if (c->state == S_CONN_CONNECT) {
@@ -578,53 +570,48 @@ tls_tcpconn_init(struct tcp_connection *c, int sock)
 			avp = search_first_avp(avp_tlscdom_name_type, avp_tlscdom_name,
 				&val, 0);
 		} else {
-			DBG("tls_tcpconn_init: name based TLS client domains are"
-				" disabled\n");
+			LM_DBG("name based TLS client domains are disabled\n");
 		}
 		if (!avp) {
-			DBG("tls_tcpconn_init: no TLS client doman AVP set, looking "
+			LM_DBG("no TLS client doman AVP set, looking "
 				"for socket based TLS client domain\n");
 			dom = tls_find_client_domain(&c->rcv.src_ip, c->rcv.src_port);
 			if (dom) {
-				DBG("tls_tcpconn_init: Found socket based TLS client domain "
+				LM_DBG("found socket based TLS client domain "
 					"[%s:%d]\n", ip_addr2a(&dom->addr), dom->port);
 					c->extra_data = SSL_new(dom->ctx);
 			} else {
-				LOG(L_ERR,"tls_tcpconn_init: ERROR: no TLS client "
-					"domain found\n");
+				LM_ERR("no TLS client domain found\n");
 				return -1;
 			}
 		} else {
-			DBG("tls_tcpconn_init: TLS client domain AVP found = '%.*s'\n",
+			LM_DBG("TLS client domain AVP found = '%.*s'\n",
 				val.s.len, ZSW(val.s.s));
 			dom = tls_find_client_domain_name(val.s);
 			if (dom) {
-				DBG("tls_tcpconn_init: Found name based TLS client domain "
+				LM_DBG("found name based TLS client domain "
 					"'%.*s'\n", val.s.len, ZSW(val.s.s));
 				c->extra_data = SSL_new(dom->ctx);
 			} else {
-				DBG("tls_tcpconn_init: No name based TLS client domain found, "
+				LM_DBG("no name based TLS client domain found, "
 					"trying socket based TLS client domains\n");
 				dom = tls_find_client_domain(&c->rcv.src_ip, c->rcv.src_port);
 				if (dom) {
-					DBG("tls_tcpconn_init: Found socket based TLS client "
-						"domain [%s:%d]\n",
+					LM_DBG("found socket based TLS client domain [%s:%d]\n",
 					ip_addr2a(&dom->addr), dom->port);
 					c->extra_data = SSL_new(dom->ctx);
 				} else {
-					LOG(L_ERR,"tls_tcpconn_init: ERROR: no TLS client "
-						"domain found\n");
+					LM_ERR("no TLS client domain found\n");
 					return -1;
 				}
 			}
 		}
 	} else {
-		LOG(L_ERR,"ERROR:tls_tcpconn_init: Invalid connection "
-			"state (bug in TCP code)\n");
+		LM_ERR("invalid connection state (bug in TCP code)\n");
 		return -1;
 	}
 	if (!c->extra_data) {
-		LOG(L_ERR,"ERROR:tls_tcpconn_init: failed to create SSL structure\n");
+		LM_ERR("failed to create SSL structure\n");
 		return -1;
 	}
 
@@ -636,10 +623,10 @@ tls_tcpconn_init(struct tcp_connection *c, int sock)
 #endif
 
 	if (c->state == S_CONN_ACCEPT) {
-		DBG("tls_tcpconn_init: Setting in ACCEPT mode (server)\n");
+		LM_DBG("Setting in ACCEPT mode (server)\n");
 		SSL_set_accept_state((SSL *) c->extra_data);
 	} else if (c->state == S_CONN_CONNECT) {
-		DBG("tls_tcpconn_init: Setting in CONNECT mode (client)\n");
+		LM_DBG("Setting in CONNECT mode (client)\n");
 		SSL_set_connect_state((SSL *) c->extra_data);
 	}
 	return 0;
@@ -655,7 +642,7 @@ tls_tcpconn_clean(struct tcp_connection *c)
 	/*
 	* runs within global tcp lock 
 	*/
-	DBG("tls_tcpconn_clean: Entered\n");
+	LM_DBG("entered\n");
 
 	if (c->extra_data) {
 		SSL_free((SSL *) c->extra_data);
@@ -673,7 +660,7 @@ tls_close(struct tcp_connection *c, int fd)
 	/*
 	* runs within global tcp lock 
 	*/
-	DBG("tls_close: Closing SSL connection\n");	
+	LM_DBG("closing SSL connection\n");	
 	tls_update_fd(c, fd);
 	tls_shutdown(c);
 }
@@ -698,7 +685,7 @@ tls_blocking_write(struct tcp_connection *c, int fd, const char *buf,
 	pf.events = POLLOUT | POLLIN;	/* we need both because of ssl
 					 * library */
 
-	/* DBG("tls_blocking_write: Entered\n"); //noisy */
+	/* LM_DBG("entered\n"); //noisy */
 
 	written = 0;
 
@@ -727,12 +714,12 @@ again:
 			break;
 	
 		default:
-			LOG(L_ERR, "tls_blocking_write: Broken connection\n");
+			LM_ERR("broken connection\n");
 			goto error;
 	}
 
 	if (n < 0) {
-		LOG(L_ERR, "tls_blocking_write: failed to send data\n");
+		LM_ERR("failed to send data\n");
 		goto error;
 	}
 
@@ -761,8 +748,7 @@ poll_loop:
 			if (errno == EINTR)
 				continue;	/* signal, ignore */
 			else if (errno != EAGAIN && errno != EWOULDBLOCK) {
-				LOG(L_ERR, "tls_blocking_write: poll failed: %s [%d]\n",
-						strerror(errno), errno);
+				LM_ERR("poll failed: %s [%d]\n",strerror(errno), errno);
 				goto error;
 			} else
 				goto poll_loop;
@@ -770,7 +756,7 @@ poll_loop:
 			/*
 			* timeout 
 			*/
-			LOG(L_ERR, "tls_blocking_write: send timeout (%d)\n", timeout);
+			LM_ERR("send timeout (%d)\n", timeout);
 			goto error;
 		}
 		if (pf.revents & POLLOUT || pf.revents & POLLIN) {
@@ -779,8 +765,7 @@ poll_loop:
 			*/
 			goto again;
 		} else if (pf.revents & (POLLERR | POLLHUP | POLLNVAL)) {
-			LOG(L_ERR, "tls_blocking_write: bad poll flags %x\n",
-					pf.revents);
+			LM_ERR("bad poll flags %x\n",pf.revents);
 			goto error;
 		}
 		/*
@@ -821,7 +806,7 @@ tls_read(struct tcp_connection * c)
 	bytes_free = TCP_BUF_SIZE - (int) (r->pos - r->buf);
 
 	if (bytes_free == 0) {
-		LOG(L_ERR, "tls_read: buffer overrun, dropping\n");
+		LM_ERR("buffer overrun, dropping\n");
 		r->error = TCP_REQ_OVERRUN;
 		return -1;
 	}

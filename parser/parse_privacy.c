@@ -42,7 +42,7 @@ unsigned int parse_priv_value(char* start, unsigned int max_len,
     unsigned int len;
 
     if (!start || !value) {
-	LOG(L_ERR, "parse_priv_value: Invalid parameter value\n");
+	LM_ERR("invalid parameter value\n");
 	return 0;
     }
 
@@ -163,7 +163,7 @@ int parse_privacy(struct sip_msg *msg)
     trim_leading(&next);
 
     if (next.len == 0) {
-	LOG(L_ERR, "ERROR: parse_privacy: No values\n");
+	LM_ERR("no values\n");
 	return -1;
     }
 
@@ -178,7 +178,7 @@ int parse_privacy(struct sip_msg *msg)
 	    p = p + val_len;
 	    len = len - val_len;
 	} else {
-	    LOG(L_ERR, "ERROR: parse_privacy: Invalid privacy value\n");
+	    LM_ERR("invalid privacy value\n");
 	    return -1;
 	}
 
@@ -194,19 +194,17 @@ int parse_privacy(struct sip_msg *msg)
 				 || *p == '\r' || *p == '\n'))
 		p++;
 	    if(p >= beyond) {
-		LOG(L_ERR, "ERROR: parse_privacy: No privacy value "
-		    "after comma\n");
+		LM_ERR("no privacy value after comma\n");
 		return -1;
 	    }		
 	} else {
-	    LOG(L_ERR, "ERROR: parse_privacy: Comma expected\n");
+	    LM_ERR("Comma expected\n");
 	    return -1;
 	}
     }
 
     if ((values & PRIVACY_NONE) && (values ^ PRIVACY_NONE)) {
-	LOG(L_ERR, "ERROR: parse_privacy: no other privacy values allowed "
-	    "with 'none'\n");
+	LM_ERR("no other privacy values allowed with 'none'\n");
 	return -1;
     }
 

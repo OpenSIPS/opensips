@@ -988,13 +988,13 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 			uri->host.len=0;
 			break;
 		case ERROR_URI_T:
-			LOG(L_ERR, "ERROR: parse_uri unexpected error (BUG?)\n"); 
+			LM_ERR("unexpected error (BUG?)\n"); 
 			goto error_bad_uri;
 			break; /* do nothing, avoids a compilation warning */
 	}
 #ifdef EXTRA_DEBUG
 	/* do stuff */
-	DBG("parsed uri:\n type=%d user=<%.*s>(%d)\n passwd=<%.*s>(%d)\n"
+	LM_DBG("parsed uri:\n type=%d user=<%.*s>(%d)\n passwd=<%.*s>(%d)\n"
 			" host=<%.*s>(%d)\n port=<%.*s>(%d): %d\n params=<%.*s>(%d)\n"
 			" headers=<%.*s>(%d)\n",
 			uri->type,
@@ -1005,62 +1005,59 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 			uri->params.len, ZSW(uri->params.s), uri->params.len,
 			uri->headers.len, ZSW(uri->headers.s), uri->headers.len
 		);
-	DBG(" uri params:\n   transport=<%.*s>, val=<%.*s>, proto=%d\n",
+	LM_DBG(" uri params:\n   transport=<%.*s>, val=<%.*s>, proto=%d\n",
 			uri->transport.len, ZSW(uri->transport.s), uri->transport_val.len,
 			ZSW(uri->transport_val.s), uri->proto);
-	DBG("   user-param=<%.*s>, val=<%.*s>\n",
+	LM_DBG("   user-param=<%.*s>, val=<%.*s>\n",
 			uri->user_param.len, ZSW(uri->user_param.s), 
 			uri->user_param_val.len, ZSW(uri->user_param_val.s));
-	DBG("   method=<%.*s>, val=<%.*s>\n",
+	LM_DBG("   method=<%.*s>, val=<%.*s>\n",
 			uri->method.len, ZSW(uri->method.s), 
 			uri->method_val.len, ZSW(uri->method_val.s));
-	DBG("   ttl=<%.*s>, val=<%.*s>\n",
+	LM_DBG("   ttl=<%.*s>, val=<%.*s>\n",
 			uri->ttl.len, ZSW(uri->ttl.s), 
 			uri->ttl_val.len, ZSW(uri->ttl_val.s));
-	DBG("   maddr=<%.*s>, val=<%.*s>\n",
+	LM_DBG("   maddr=<%.*s>, val=<%.*s>\n",
 			uri->maddr.len, ZSW(uri->maddr.s), 
 			uri->maddr_val.len, ZSW(uri->maddr_val.s));
-	DBG("   lr=<%.*s>\n", uri->lr.len, ZSW(uri->lr.s)); 
+	LM_DBG("   lr=<%.*s>\n", uri->lr.len, ZSW(uri->lr.s)); 
 #endif
 	return 0;
 	
 error_too_short:
-	LOG(L_ERR, "ERROR: parse_uri: uri too short: <%.*s> (%d)\n",
+	LM_ERR("uri too short: <%.*s> (%d)\n",
 			len, ZSW(buf), len);
 	goto error_exit;
 error_bad_char:
-	LOG(L_ERR, "ERROR: parse_uri: bad char '%c' in state %d"
+	LM_ERR("bad char '%c' in state %d"
 			" parsed: <%.*s> (%d) / <%.*s> (%d)\n",
 			*p, state, (int)(p-buf), ZSW(buf), (int)(p-buf),
 			len, ZSW(buf), len);
 	goto error_exit;
 error_bad_host:
-	LOG(L_ERR, "ERROR: parse_uri: bad host in uri (error at char %c in"
+	LM_ERR("bad host in uri (error at char %c in"
 			" state %d) parsed: <%.*s>(%d) /<%.*s> (%d)\n",
 			*p, state, (int)(p-buf), ZSW(buf), (int)(p-buf),
 			len, ZSW(buf), len);
 	goto error_exit;
 error_bad_port:
-	LOG(L_ERR, "ERROR: parse_uri: bad port in uri (error at char %c in"
+	LM_ERR("bad port in uri (error at char %c in"
 			" state %d) parsed: <%.*s>(%d) /<%.*s> (%d)\n",
 			*p, state, (int)(p-buf), ZSW(buf), (int)(p-buf),
 			len, ZSW(buf), len);
 	goto error_exit;
 error_bad_uri:
-	LOG(L_ERR, "ERROR: parse_uri: bad uri,  state %d"
-			" parsed: <%.*s> (%d) / <%.*s> (%d)\n",
+	LM_ERR("bad uri,  state %d parsed: <%.*s> (%d) / <%.*s> (%d)\n",
 			 state, (int)(p-buf), ZSW(buf), (int)(p-buf), len,
 			 ZSW(buf), len);
 	goto error_exit;
 error_headers:
-	LOG(L_ERR, "ERROR: parse_uri: bad uri headers: <%.*s>(%d)"
-			" / <%.*s>(%d)\n",
+	LM_ERR("bad uri headers: <%.*s>(%d) / <%.*s>(%d)\n",
 			uri->headers.len, ZSW(uri->headers.s), uri->headers.len,
 			len, ZSW(buf), len);
 	goto error_exit;
 error_bug:
-	LOG(L_CRIT, "BUG: parse_uri: bad  state %d"
-			" parsed: <%.*s> (%d) / <%.*s> (%d)\n",
+	LM_CRIT("bad  state %d parsed: <%.*s> (%d) / <%.*s> (%d)\n",
 			 state, (int)(p-buf), ZSW(buf), (int)(p-buf), len, ZSW(buf), len);
 error_exit:
 	ser_error=E_BAD_URI;
@@ -1084,8 +1081,7 @@ int parse_sip_msg_uri(struct sip_msg* msg)
 		tmp_len=msg->first_line.u.request.uri.len;
 	}
 	if (parse_uri(tmp, tmp_len, &msg->parsed_uri)<0){
-		LOG(L_ERR, "ERROR: parse_sip_msg_uri: bad uri <%.*s>\n",
-					tmp_len, tmp);
+		LM_ERR("bad uri <%.*s>\n", tmp_len, tmp);
 		msg->parsed_uri_ok=0;
 		set_err_info(OSER_EC_PARSER, OSER_EL_MEDIUM, "error parsing r-uri");
 		set_err_reply(400, "bad r-uri");
@@ -1106,8 +1102,7 @@ int parse_orig_ruri(struct sip_msg* msg)
 	uri = &REQ_LINE(msg).uri;
 
 	if (parse_uri(uri->s, uri->len, &msg->parsed_orig_ruri)<0) {
-		LOG(L_ERR, "ERROR:parse_orig_ruri: bad uri <%.*s>\n",
-			uri->len, ZSW(uri->s));
+		LM_ERR("bad uri <%.*s>\n", uri->len, ZSW(uri->s));
 		msg->parsed_orig_ruri_ok = 0;
 		set_err_info(OSER_EC_PARSER, OSER_EL_MEDIUM,
 				"error parsing incoming uri");

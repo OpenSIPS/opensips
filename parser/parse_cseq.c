@@ -53,13 +53,12 @@ char* parse_cseq(char *buf, char* end, struct cseq_body* cb)
 	m_end=eat_token_end(m, end);
 
 	if (m_end>=end) {
-			LOG(L_ERR, "ERROR: parse_cseq: "
-						"method terminated unexpectedly\n");
+			LM_ERR("method terminated unexpectedly\n");
 			goto error;
 	}
 	if (m_end==m){
 		/* null method*/
-		LOG(L_ERR,  "ERROR:parse_cseq: no method found\n");
+		LM_ERR("no method found\n");
 		goto error;
 	}
 	cb->method.s=m;
@@ -69,7 +68,7 @@ char* parse_cseq(char *buf, char* end, struct cseq_body* cb)
 	/* cache the method id */
 	if(parse_method(cb->method.s, t, (unsigned int*)&cb->method_id)==0)
 	{
-		LOG(L_ERR, "ERROR: parse_cseq: cannot parse the method\n");
+		LM_ERR("cannot parse the method\n");
 		goto error;
 	}
 	
@@ -79,7 +78,7 @@ char* parse_cseq(char *buf, char* end, struct cseq_body* cb)
 	t=eat_lws_end(t, end);
 	/*check if the header ends here*/
 	if (t>=end) {
-		LOG(L_ERR, "ERROR: parse_cseq: strange EoHF\n");
+		LM_ERR("strange EoHF\n");
 		goto error;
 	}
 	if (*t=='\r' && t+1<end && *(t+1)=='\n') {
@@ -90,10 +89,10 @@ char* parse_cseq(char *buf, char* end, struct cseq_body* cb)
 			cb->error=PARSE_OK;
 			return t+1;
 	}
-	LOG(L_ERR, "ERROR: CSeq EoL expected\n");
+	LM_ERR("expecting CSeq EoL\n");
 
 error:
-	LOG(L_ERR, "ERROR: parse_cseq: bad cseq\n");
+	LM_ERR("bad cseq\n");
 	return t;
 }
 

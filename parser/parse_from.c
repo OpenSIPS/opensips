@@ -50,7 +50,7 @@ int parse_from_header( struct sip_msg *msg)
 	struct to_body* from_b;
 
 	if ( !msg->from && ( parse_headers(msg,HDR_FROM_F,0)==-1 || !msg->from)) {
-		LOG(L_ERR,"ERROR:parse_from_header: bad msg or missing FROM header\n");
+		LM_ERR("bad msg or missing FROM header\n");
 		goto error;
 	}
 
@@ -62,7 +62,7 @@ int parse_from_header( struct sip_msg *msg)
 	/* first, get some memory */
 	from_b = pkg_malloc(sizeof(struct to_body));
 	if (from_b == 0) {
-		LOG(L_ERR, "ERROR:parse_from_header: out of pkg_memory\n");
+		LM_ERR("out of pkg_memory\n");
 		goto error;
 	}
 
@@ -70,7 +70,7 @@ int parse_from_header( struct sip_msg *msg)
 	memset(from_b, 0, sizeof(struct to_body));
 	parse_to(msg->from->body.s,msg->from->body.s+msg->from->body.len+1,from_b);
 	if (from_b->error == PARSE_ERROR) {
-		LOG(L_ERR, "ERROR:parse_from_header: bad from header\n");
+		LM_ERR("bad from header\n");
 		pkg_free(from_b);
 		set_err_info(OSER_EC_PARSER, OSER_EL_MEDIUM, "error parsing From");
 		set_err_reply(400, "bad From header");
@@ -78,7 +78,7 @@ int parse_from_header( struct sip_msg *msg)
 	}
 	/* REGISTER doesn't have a from tag :( -bogdan
 	if (from_b->tag_value.len==0 || from_b->tag_value.s==0) {
-		LOG(L_ERR, "ERROR:parse_from_header: missing TAG value\n");
+		LM_ERR("missing TAG value\n");
 		free_to(from_b);
 		goto error;
 	}
@@ -102,7 +102,7 @@ struct sip_uri *parse_from_uri(struct sip_msg *msg)
 
 	if(parse_from_header(msg)<0)
 	{
-		LOG(L_ERR, "parse_from_uri: ERROR cannot parse FROM header\n");
+		LM_ERR("cannot parse FROM header\n");
 		return NULL;
 	}
 	
@@ -116,7 +116,7 @@ struct sip_uri *parse_from_uri(struct sip_msg *msg)
 
 	if (parse_uri(tb->uri.s, tb->uri.len , &tb->parsed_uri)<0)
 	{
-		LOG(L_ERR,"parse_from_uri: failed to parse From uri\n");
+		LM_ERR("failed to parse From uri\n");
 		memset(&tb->parsed_uri, 0, sizeof(struct sip_uri));
 		set_err_info(OSER_EC_PARSER, OSER_EL_MEDIUM, "error parsing From uri");
 		set_err_reply(400, "bad From uri");

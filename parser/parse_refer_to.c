@@ -53,7 +53,7 @@ int parse_refer_to_header( struct sip_msg *msg )
  	/* first, get some memory */
  	refer_to_b = pkg_malloc(sizeof(struct to_body));
  	if (refer_to_b == 0) {
- 		LOG(L_ERR, "ERROR:parse_refer_to_header: out of pkg_memory\n");
+ 		LM_ERR("out of pkg_memory\n");
  		goto error;
  	}
  
@@ -63,7 +63,7 @@ int parse_refer_to_header( struct sip_msg *msg )
 		 msg->refer_to->body.s + msg->refer_to->body.len+1,
 		 refer_to_b);
  	if (refer_to_b->error == PARSE_ERROR) {
- 		LOG(L_ERR, "ERROR:parse_refer_to_header: bad Refer-To header\n");
+ 		LM_ERR("bad Refer-To header\n");
  		pkg_free(refer_to_b);
  		goto error;
  	}

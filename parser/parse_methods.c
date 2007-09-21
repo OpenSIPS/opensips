@@ -61,7 +61,7 @@ char* parse_method(char* start, char* end, unsigned int* method)
 	int max=0;
 		
 	 if (!start || !method) {
-		 LOG(L_ERR, "parse_method: Invalid parameter value\n");
+		 LM_ERR("invalid parameter value\n");
 		 return NULL;
 	 }
 
@@ -344,7 +344,7 @@ int parse_methods(str* _body, unsigned int* _methods)
 	unsigned int method;
 
 	if (!_body || !_methods) {
-		LOG(L_ERR, "parse_methods: Invalid parameter value\n");
+		LM_ERR("invalid parameter value\n");
 		return -1;
 	}
 
@@ -366,7 +366,7 @@ int parse_methods(str* _body, unsigned int* _methods)
 			*_methods |= method;
 			p = p0;
 		} else {
-			LOG(L_ERR, "ERROR: parse_methods: Invalid method\n");
+			LM_ERR("invalid method\n");
 			return -1;
 		}
 		
@@ -386,7 +386,7 @@ int parse_methods(str* _body, unsigned int* _methods)
 			if(p>=next.s+next.len)
 				return 0;
 		} else {
-			LOG(L_ERR, "ERROR: parse_methods: Comma expected\n");
+			LM_ERR("comma expected\n");
 			return -1;
 		}
 	}

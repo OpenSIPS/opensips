@@ -68,16 +68,14 @@ int verify_callback(int pre_verify_ok, X509_STORE_CTX *ctx) {
 	int err, depth;
 
 	depth = X509_STORE_CTX_get_error_depth(ctx);
-	LOG( 2, "tls_init: verify_callback: depth = %d\n",depth);
+	LM_NOTICE("depth = %d\n",depth);
 	if ( depth > VERIFY_DEPTH_S ) {
-		LOG( 2, "tls_init: verify_callback: cert chain too long "
-			"( depth > VERIFY_DEPTH_S)\n");
+		LM_NOTICE("cert chain too long ( depth > VERIFY_DEPTH_S)\n");
 		pre_verify_ok=0;
 	}
 	
 	if( pre_verify_ok ) {
-		LOG( 2, "tls_init: verify_callback: preverify is good: "
-			"verify return: %d\n", pre_verify_ok);
+		LM_NOTICE("preverify is good: verify return: %d\n", pre_verify_ok);
 		return pre_verify_ok;
 	}
 	
@@ -85,68 +83,68 @@ int verify_callback(int pre_verify_ok, X509_STORE_CTX *ctx) {
 	err = X509_STORE_CTX_get_error(ctx);	
 	X509_NAME_oneline(X509_get_subject_name(err_cert),buf,sizeof buf);
 	
-	LOG( 2, "tls_init: verify_callback: subject = %s\n", buf);
-	LOG( 2, "tls_init: verify_callback: verify error:num=%d:%s\n",
+	LM_NOTICE("subject = %s\n", buf);
+	LM_NOTICE("verify error:num=%d:%s\n",
 		err, X509_verify_cert_error_string(err));
-	LOG( 2, "tls_init: verify_callback: error code is %d\n", ctx->error);
+	LM_NOTICE("error code is %d\n", ctx->error);
 	
 	switch (ctx->error) {
 		case X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT:
 			X509_NAME_oneline(X509_get_issuer_name(ctx->current_cert),
 				buf,sizeof buf);
-			LOG( 2, "tls_init: verify_callback: issuer= %s\n",buf);
+			LM_NOTICE("issuer= %s\n",buf);
 			break;
 		case X509_V_ERR_ERROR_IN_CERT_NOT_BEFORE_FIELD:
 		case X509_V_ERR_CERT_NOT_YET_VALID:
-			LOG( 2, "tls_init: verify_callback: notBefore\n");
+			LM_NOTICE("notBefore\n");
 			break;
 		case X509_V_ERR_ERROR_IN_CERT_NOT_AFTER_FIELD:
 		case X509_V_ERR_CERT_HAS_EXPIRED:
-			LOG( 2, "tls_init: verify_callback: notAfter\n");
+			LM_NOTICE("notAfter\n");
 			break;
 		case X509_V_ERR_CERT_SIGNATURE_FAILURE:
 		case X509_V_ERR_UNABLE_TO_DECRYPT_CERT_SIGNATURE:
-			LOG( 2, "tls_init: verify_callback: unable to decrypt cert "
+			LM_NOTICE("unable to decrypt cert "
 				"signature\n");
 			break;
 		case X509_V_ERR_UNABLE_TO_DECODE_ISSUER_PUBLIC_KEY:
-			LOG( 2, "tls_init: verify_callback: unable to decode issuer "
+			LM_NOTICE("unable to decode issuer "
 				"public key\n");
 			break;
 		case X509_V_ERR_OUT_OF_MEM:
-			LOG( 2, "tls_init: verify_callback: Out of memory \n");
+			LM_NOTICE("out of memory \n");
 			break;
 		case X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT:
 		case X509_V_ERR_SELF_SIGNED_CERT_IN_CHAIN:
-			LOG( 2, "tls_init: verify_callback: Self signed certificate "
+			LM_NOTICE("Self signed certificate "
 				"issue\n");
 			break;
 		case X509_V_ERR_CERT_CHAIN_TOO_LONG:
-			LOG( 2, "tls_init: verify_callback: certificate chain too long\n");
+			LM_NOTICE("certificate chain too long\n");
 			break;
 		case X509_V_ERR_INVALID_CA:
-			LOG( 2, "tls_init: verify_callback: invalid CA\n");
+			LM_NOTICE("invalid CA\n");
 			break;
 		case X509_V_ERR_PATH_LENGTH_EXCEEDED:
-			LOG( 2, "tls_init: verify_callback: path length exceeded\n");
+			LM_NOTICE("path length exceeded\n");
 			break;
 		case X509_V_ERR_INVALID_PURPOSE:
-			LOG( 2, "tls_init: verify_callback: invalid purpose\n");
+			LM_NOTICE("invalid purpose\n");
 			break;
 		case X509_V_ERR_CERT_UNTRUSTED:
-			LOG( 2, "tls_init: verify_callback: certificate untrusted\n");
+			LM_NOTICE("certificate untrusted\n");
 			break;
 		case X509_V_ERR_CERT_REJECTED:
-			LOG( 2, "tls_init: verify_callback: certificate rejected\n");
+			LM_NOTICE("certificate rejected\n");
 			break;
 		
 		default:
-			LOG( 2, "tls_init: verify_callback: something wrong with the cert"
+			LM_NOTICE("something wrong with the cert"
 				" ... error code is %d (check x509_vfy.h)\n", ctx->error);
 			break;
 	}
 	
-	LOG( 2, "tls_init: verify_callback: verify return:%d\n", pre_verify_ok);
+	LM_NOTICE("verify return:%d\n", pre_verify_ok);
 	return(pre_verify_ok);
 }
 
@@ -169,14 +167,14 @@ passwd_cb(char *buf, int size, int rwflag, void *filename)
 	return strlen(buf);
 
 err:
-	LOG(L_ERR, "tls: tls_init: passwd_cb: Error in passwd_cb\n");
+	LM_ERR("passwd_cb failed\n");
 	if (ui)
 		UI_free(ui);
 	return 0;
 	
 #else
 	if( des_read_pw_string(buf, size-1, "Enter Private Key password:", 0) ) {
-		LOG(L_ERR, "tls: tls_init: passwd_cb: Error in passwd_cb\n");
+		LM_ERR("passwd_cb failed\n");
 		return 0;
 	}
 	return strlen( buf );
@@ -212,13 +210,13 @@ ser_free(void *ptr)
 int
 tls_init(struct socket_info *si)
 {
-	DBG("tls_init: Entered\n");
+	LM_DBG("entered\n");
 	
 	/*
 	 * reuse tcp initialization 
 	 */
 	if (tcp_init(si) < 0) {
-		LOG(L_ERR, "tls_init: Error while initializing TCP part\n");
+		LM_ERR("failed to initialize TCP part\n");
 		goto error;
 	}
 
@@ -243,15 +241,14 @@ tls_init(struct socket_info *si)
 static int
 load_certificate(SSL_CTX * ctx, char *filename)
 {
-	DBG("load_certificate: Entered\n");
+	LM_DBG("entered\n");
 	if (!SSL_CTX_use_certificate_chain_file(ctx, filename)) {
-		LOG(L_ERR,
-			"load_certificate: Unable to load certificate file '%s'\n",
+		LM_ERR("unable to load certificate file '%s'\n",
 			filename);
 		return -1;
 	}
 
-	DBG("load_certificate: '%s' successfuly loaded\n", filename);
+	LM_DBG("'%s' successfuly loaded\n", filename);
 	return 0;
 }
 
@@ -264,7 +261,7 @@ static int
 load_private_key(SSL_CTX * ctx, char *filename)
 {
 	int idx, ret_pwd;
-	DBG("load_private_key: Entered\n");
+	LM_DBG("entered\n");
 	
 	SSL_CTX_set_default_passwd_cb(ctx, passwd_cb);
 	SSL_CTX_set_default_passwd_cb_userdata(ctx, filename);
@@ -274,8 +271,7 @@ load_private_key(SSL_CTX * ctx, char *filename)
 		if ( ret_pwd ) {
 			break;
 		} else {
-			LOG( L_ERR,
-				"load_private_key: Unable to load private key file '%s'. \n"
+			LM_ERR("unable to load private key file '%s'. \n"
 				"Retry (%d left) (check password case)\n",
 				filename, (NUM_RETRIES - idx -1) );
 			continue;
@@ -283,20 +279,18 @@ load_private_key(SSL_CTX * ctx, char *filename)
 	}
 	
 	if( ! ret_pwd ) {
-		LOG(L_ERR,
-			"load_private_key: Unable to load private key file '%s'\n",
+		LM_ERR("unable to load private key file '%s'\n",
 			filename);
 		return -1;
 	}
 	
 	if (!SSL_CTX_check_private_key(ctx)) {
-		LOG(L_ERR,
-			"load_private_key: Key '%s' does not match the public key of the certificate\n",
+		LM_ERR("key '%s' does not match the public key of the certificate\n",
 			filename);
 		return -1;
 	}
 	
-	DBG("load_private_key: Key '%s' successfuly loaded\n", filename);
+	LM_DBG("key '%s' successfuly loaded\n", filename);
 	return 0;
 }
 
@@ -308,13 +302,13 @@ load_private_key(SSL_CTX * ctx, char *filename)
 static int
 load_ca(SSL_CTX * ctx, char *filename)
 {
-	DBG("load_ca: Entered\n");
+	LM_DBG("Entered\n");
 	if (!SSL_CTX_load_verify_locations(ctx, filename, 0)) {
-		LOG(L_ERR, "load_ca: Unable to load ca '%s'\n", filename);
+		LM_ERR("unable to load ca '%s'\n", filename);
 		return -1;
 	}
 	
-	DBG("load_ca: CA '%s' successfuly loaded\n", filename);
+	LM_DBG("CA '%s' successfuly loaded\n", filename);
 	return 0;
 }
 
@@ -325,7 +319,7 @@ load_ca(SSL_CTX * ctx, char *filename)
 static void
 init_ssl_methods(void)
 {
-	DBG("init_methods: Entered\n");
+	LM_DBG("entered\n");
 	ssl_methods[TLS_USE_SSLv2_cli - 1] = SSLv2_client_method();
 	ssl_methods[TLS_USE_SSLv2_srv - 1] = SSLv2_server_method();
 	ssl_methods[TLS_USE_SSLv2 - 1] = SSLv2_method();
@@ -353,15 +347,14 @@ init_ssl_ctx_behavior( struct tls_domain *d ) {
 	int verify_mode;
 	if( d->ciphers_list != 0 ) {
 		if( SSL_CTX_set_cipher_list(d->ctx, d->ciphers_list) == 0 ) {
-			LOG( L_ERR, "init_ssl_ctx_behavior: failure to set SSL context "
+			LM_ERR("failure to set SSL context "
 				"cipher list '%s'\n", d->ciphers_list);
 			return -1;
 		} else {
-			LOG( L_NOTICE, "init_ssl_ctx_behavior: cipher list set to %s\n",
-				d->ciphers_list);
+			LM_NOTICE("cipher list set to %s\n", d->ciphers_list);
 		}
 	} else {
-		DBG( "init_ssl_ctx_behavior: cipher list null ... setting default\n");
+		LM_DBG( "cipher list null ... setting default\n");
 	}
 
 	/* Set a bunch of options: 
@@ -414,16 +407,15 @@ init_ssl_ctx_behavior( struct tls_domain *d ) {
 		if( d->verify_cert ) {
 			verify_mode = SSL_VERIFY_PEER;
 			if( d->require_client_cert ) {
-				LOG( L_WARN, "TLS: Client verification activated. Client "
+				LM_WARN("client verification activated. Client "
 					"certificates are mandatory.\n");
 				verify_mode |= SSL_VERIFY_FAIL_IF_NO_PEER_CERT;
 			} else
-				LOG( L_WARN, "TLS: Client verification activated. Client "
+				LM_WARN("client verification activated. Client "
 					"certificates are NOT mandatory.\n");
 		} else {
 			verify_mode = SSL_VERIFY_NONE;
-			LOG( L_WARN, "TLS: Client verification NOT activated. Weaker "
-				"security.\n");
+			LM_WARN("client verification NOT activated. Weaker security.\n");
 		}
 	} else {
 		/* Client mode:
@@ -448,11 +440,10 @@ init_ssl_ctx_behavior( struct tls_domain *d ) {
 
 		if( d->verify_cert ) {
 			verify_mode = SSL_VERIFY_PEER;
-			LOG( L_WARN, "TLS: Server verification activated.\n");
+			LM_WARN("server verification activated.\n");
 		} else {
 			verify_mode = SSL_VERIFY_NONE;
-			LOG( L_WARN, "TLS: Server verification NOT activated. Weaker "
-				"security.\n");
+			LM_WARN("server verification NOT activated. Weaker security.\n");
 		}
 	}
 	
@@ -480,8 +471,7 @@ static int check_for_krb()
 		SSL_CIPHER *yy = (SSL_CIPHER*)M_sk_value(xx->cipher_list,j);
 		if ( yy->id>=SSL3_CK_KRB5_DES_64_CBC_SHA &&
 		 yy->id<=SSL3_CK_KRB5_RC4_40_MD5 ) {
-			LOG(L_INFO,"INFO:tls:check_for_krb: KRB5 cipher %s found\n",
-				yy->name);
+			LM_INFO("KRB5 cipher %s found\n", yy->name);
 			SSL_CTX_free(xx);
 			return 1;
 		}
@@ -503,11 +493,10 @@ init_tls(void)
 	STACK_OF(SSL_COMP)* comp_methods;
 #endif
 
-	DBG("init_tls: Entered\n");
+	LM_DBG("entered\n");
 
 #if OPENSSL_VERSION_NUMBER < 0x00907000L
-	LOG(L_ERR, "WARNING! You are using an old version of OpenSSL (< 0.9.7). "
-		"Upgrade!\n");
+	LM_WARN("using an old version of OpenSSL (< 0.9.7). Upgrade!\n");
 #endif
 
 	/*
@@ -515,17 +504,16 @@ init_tls(void)
 	* CRYPTO_malloc will set allow_customize in openssl to 0 
 	*/
 	if (!CRYPTO_set_mem_functions(ser_malloc, ser_realloc, ser_free)) {
-		LOG(L_ERR,
-			"init_tls: Unable to set the memory allocation functions\n");
+		LM_ERR("unable to set the memory allocation functions\n");
 		return -1;
 	}
 
 #if (OPENSSL_VERSION_NUMBER >= 0x00908000L) && !defined(OPENSSL_NO_COMP)
 	/* disabling compression */
-	LOG(L_ERR, "WARNING:init_tls: disabling compression due ZLIB problems\n");
+	LM_WARN("disabling compression due ZLIB problems\n");
 	comp_methods = SSL_COMP_get_compression_methods();
 	if (comp_methods==0) {
-		LOG(L_ERR, "ERRRO:init_tls: null openssl compression methods\n");
+		LM_ERR("null openssl compression methods\n");
 		return -1;
 	}
 	sk_SSL_COMP_zero(comp_methods);
@@ -537,7 +525,7 @@ init_tls(void)
 
 	i = check_for_krb();
 	if (i==-1) {
-		LOG(L_ERR, "ERROR:init_tls: kerberos check failed\n");
+		LM_ERR("kerberos check failed\n");
 		return -1;
 	}
 
@@ -548,7 +536,7 @@ init_tls(void)
 	0
 #endif
 	)!=0 ) {
-		LOG(L_ERR, "ERROR:init_tls: compiled agaist an openssl with %s"
+		LM_ERR("compiled agaist an openssl with %s"
 			"kerberos, but run with one with %skerberos\n",
 			(i==1)?"":"no ",(i!=1)?"no ":"");
 		return -1;
@@ -589,10 +577,10 @@ init_tls_domains(struct tls_domain *d)
 	dom = d;
 	while (d) {
 		if (d->name.len) {
-			LOG(L_INFO, "init_tls_domains: Processing TLS domain '%.*s'\n",
+			LM_INFO("Processing TLS domain '%.*s'\n",
 				d->name.len, ZSW(d->name.s));
 		} else {
-			LOG(L_INFO, "init_tls_domains: Processing TLS domain [%s:%d]\n",
+			LM_INFO("Processing TLS domain [%s:%d]\n",
 				ip_addr2a(&d->addr), d->port);
 		}
 
@@ -600,7 +588,7 @@ init_tls_domains(struct tls_domain *d)
 		* set method 
 		*/
 		if (d->method == TLS_METHOD_UNSPEC) {
-			DBG("init_tls_domains: No method for tls[%s:%d], using default\n",
+			LM_DBG("no method for tls[%s:%d], using default\n",
 				ip_addr2a(&d->addr), d->port);
 			d->method = tls_method;
 		}
@@ -610,7 +598,7 @@ init_tls_domains(struct tls_domain *d)
 		*/
 		d->ctx = SSL_CTX_new(ssl_methods[d->method - 1]);
 		if (d->ctx == NULL) {
-			LOG(L_ERR, "init_tls_domains: Cannot create ssl context for "
+			LM_ERR("cannot create ssl context for "
 				"tls[%s:%d]\n", ip_addr2a(&d->addr), d->port);
 			return -1;
 		}
@@ -621,9 +609,8 @@ init_tls_domains(struct tls_domain *d)
 		* load certificate 
 		*/
 		if (!d->cert_file) {
-			LOG(L_NOTICE, "init_tls_domains: No certificate for tls[%s:%d] "
-				"defined, using default '%s'\n", ip_addr2a(&d->addr), d->port,
-				tls_cert_file);
+			LM_NOTICE("no certificate for tls[%s:%d] defined, using default"
+					"'%s'\n", ip_addr2a(&d->addr), d->port,	tls_cert_file);
 			d->cert_file = tls_cert_file;
 		}
 		if (load_certificate(d->ctx, d->cert_file) < 0)
@@ -633,7 +620,7 @@ init_tls_domains(struct tls_domain *d)
 		* load ca 
 		*/
 		if (!d->ca_file) {
-			LOG(L_NOTICE, "init_tls_domains: No CA for tls[%s:%d] defined, "
+			LM_NOTICE("no CA for tls[%s:%d] defined, "
 				"using default '%s'\n", ip_addr2a(&d->addr), d->port,
 				tls_ca_file);
 			d->ca_file = tls_ca_file;
@@ -649,9 +636,8 @@ init_tls_domains(struct tls_domain *d)
 	d = dom;
 	while (d) {
 		if (!d->pkey_file) {
-			LOG(L_NOTICE, "init_tls_domain: No private key for tls[%s:%d] "
-				"defined, using default '%s'\n", ip_addr2a(&d->addr),
-				d->port, tls_pkey_file);
+			LM_NOTICE("no private key for tls[%s:%d] defined, using default"
+					"'%s'\n", ip_addr2a(&d->addr), d->port, tls_pkey_file);
 			d->pkey_file = tls_pkey_file;
 		}
 		if (load_private_key(d->ctx, d->pkey_file) < 0)
@@ -668,7 +654,7 @@ void
 destroy_tls(void)
 {
 	struct tls_domain *d;
-	DBG("destroy_tls: Entered\n");
+	LM_DBG("entered\n");
 	
 	d = tls_server_domains;
 	while (d) {
@@ -703,20 +689,18 @@ destroy_tls(void)
  */
 int pre_init_tls(void)
 {
-	DBG("pre_init_tls: Entered\n");
+	LM_DBG("entered\n");
 
 	tls_default_client_domain = tls_new_domain(TLS_DOMAIN_DEF|TLS_DOMAIN_CLI);
 	if (tls_default_client_domain==0) {
-		LOG(L_ERR, "ERROR:tls:pre_init_tls: failed to initialize "
-			"tls_default_client_domain\n");
+		LM_ERR("failed to initialize tls_default_client_domain\n");
 		return -1;
 	}
 	tls_default_client_domain->addr.af = AF_INET;
 
 	tls_default_server_domain = tls_new_domain(TLS_DOMAIN_DEF|TLS_DOMAIN_SRV);
 	if (tls_default_server_domain==0) {
-		LOG(L_ERR, "ERROR:tls:pre_init_tls: failed to initialize "
-			"tls_default_server_domain\n");
+		LM_ERR("failed to initialize tls_default_server_domain\n");
 		return -1;
 	}
 	tls_default_server_domain->addr.af = AF_INET;

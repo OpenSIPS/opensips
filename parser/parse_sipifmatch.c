@@ -58,7 +58,7 @@ etag_parser(char *_s, int _l, str *_e)
         trim_leading(_e);
 
         if (_e->len == 0) {
-                LOG(L_ERR, "etag_parser(): Empty body\n");
+                LM_ERR("empty body\n");
                 return -1;
         }
 
@@ -74,7 +74,7 @@ parse_sipifmatch(struct hdr_field* _h)
 {
 	str *e;
 
-	DBG("parse_sipifmatch() called\n");
+	LM_DBG("called\n");
 
         if (_h->parsed != 0) {
                 return 0;
@@ -82,14 +82,14 @@ parse_sipifmatch(struct hdr_field* _h)
 
         e = (str*)pkg_malloc(sizeof(str));
         if (e == 0) {
-                LOG(L_ERR, "parse_ifsipmatch(): No memory left\n");
+                LM_ERR("no pkg memory left\n");
                 return -1;
         }
 
         memset(e, 0, sizeof(str));
 
         if (etag_parser(_h->body.s, _h->body.len, e) < 0) {
-                LOG(L_ERR, "parse_sipifmatch(): Error in tag_parser\n");
+                LM_ERR("error in tag_parser\n");
                 pkg_free(e);
                 return -2;
         }

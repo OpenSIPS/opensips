@@ -65,12 +65,12 @@ int parse_allow(struct sip_msg *msg)
 
 		ab = (struct allow_body*)pkg_malloc(sizeof(struct allow_body));
 		if (ab == 0) {
-			LOG(L_ERR, "ERROR:parse_allow: Out of pkg_memory\n");
+			LM_ERR("out of pkg_memory\n");
 			return -1;
 		}
 
 		if (parse_methods(&(hdr->body), &(ab->allow))!=0) {
-			LOG(L_ERR, "ERROR:parse_allow: Bad allow body header\n"); 
+			LM_ERR("bad allow body header\n"); 
 			goto error;
 		}
 		ab->allow_all = 0;

@@ -82,7 +82,7 @@ parse_session_expires_body( struct hdr_field *hf )
 	unsigned tok;
 
 	if ( !p || len <= 0 ) {
-		LOG( L_ERR, "parse_session_expires_body: no body for header field\n" );
+		LM_ERR(" no body for header field\n" );
 		return parse_sst_header_not_found;
 	}
 
@@ -95,7 +95,7 @@ parse_session_expires_body( struct hdr_field *hf )
 		se.interval = se.interval*10/*radix*/ + (*q - '0');
 
 	if ( q == p ) /*nothing parsed */ {
-		LOG( L_ERR, "parse_session_expires_body: no expiry interval\n" );
+		LM_ERR(" no expiry interval\n" );
 		return parse_sst_no_value;
 	}
 	p = q;
@@ -124,10 +124,7 @@ parse_session_expires_body( struct hdr_field *hf )
 								p += 13; pos += 13;
 							}
 							else /* unrecognized refresher-param */ {
-								LOG( L_ERR,
-									 "parse_session_expires_body: "
-									 "unrecognized refresher\n"
-									 );
+								LM_ERR(" unrecognized refresher\n" );
 								return parse_sst_parse_error;
 							}
 						}
@@ -152,17 +149,14 @@ parse_session_expires_body( struct hdr_field *hf )
 			}
 		}
 		else /* not ';' */ {
-			LOG( L_ERR,
-				 "parse_session_expires_body: "
-				 "no semicolon separating se-params\n"
-				 );
+			LM_ERR("no semicolon separating se-params\n");
 			return parse_sst_parse_error;
 		} /* if ';' */
 	} /* while */
 
 	hf->parsed = malloc_session_expires();
 	if ( !hf->parsed ) {
-		LOG( L_ERR, "parse_session_expires_body: out of memory\n" );
+		LM_ERR(" out of pkg memory\n" );
 		return parse_sst_out_of_mem;
 	}
 	*((struct session_expires *)hf->parsed) = se;

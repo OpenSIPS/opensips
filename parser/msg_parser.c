@@ -79,21 +79,21 @@ char* get_hdr_field(char* buf, char* end, struct hdr_field* hdr)
 
 	if ((*buf)=='\n' || (*buf)=='\r'){
 		/* double crlf or lflf or crcr */
-		DBG("found end of header\n");
+		LM_DBG("found end of header\n");
 		hdr->type=HDR_EOH_T;
 		return buf;
 	}
 
 	tmp=parse_hname(buf, end, hdr);
 	if (hdr->type==HDR_ERROR_T){
-		LOG(L_ERR, "ERROR: get_hdr_field: bad header\n");
+		LM_ERR("bad header\n");
 		goto error;
 	}
 
 	/* eliminate leading whitespace */
 	tmp=eat_lws_end(tmp, end); 
 	if (tmp>=end) {
-		LOG(L_ERR, "ERROR: get_hdr_field: HF empty\n");
+		LM_ERR("hf empty\n");
 		goto error;
 	}
 
@@ -108,14 +108,14 @@ char* get_hdr_field(char* buf, char* end, struct hdr_field* hdr)
 			via_cnt++;
 			vb=pkg_malloc(sizeof(struct via_body));
 			if (vb==0){
-				LOG(L_ERR, "get_hdr_field: out of memory\n");
+				LM_ERR("out of pkg memory\n");
 				goto error;
 			}
 			memset(vb,0,sizeof(struct via_body));
 			hdr->body.s=tmp;
 			tmp=parse_via(tmp, end, vb);
 			if (vb->error==PARSE_ERROR){
-				LOG(L_ERR, "ERROR: get_hdr_field: bad via\n");
+				LM_ERR("bad via\n");
 				set_err_info(OSER_EC_PARSER, OSER_EL_MEDIUM,
 						"error parsing Via");
 				set_err_reply(400, "bad Via header");
@@ -131,14 +131,14 @@ char* get_hdr_field(char* buf, char* end, struct hdr_field* hdr)
 		case HDR_CSEQ_T:
 			cseq_b=pkg_malloc(sizeof(struct cseq_body));
 			if (cseq_b==0){
-				LOG(L_ERR, "get_hdr_field: out of memory\n");
+				LM_ERR("out of pkg memory\n");
 				goto error;
 			}
 			memset(cseq_b, 0, sizeof(struct cseq_body));
 			hdr->body.s=tmp;
 			tmp=parse_cseq(tmp, end, cseq_b);
 			if (cseq_b->error==PARSE_ERROR){
-				LOG(L_ERR, "ERROR: get_hdr_field: bad cseq\n");
+				LM_ERR("bad cseq\n");
 				set_err_info(OSER_EC_PARSER, OSER_EL_MEDIUM,
 						"error parsing CSeq`");
 				set_err_reply(400, "bad CSeq header");
@@ -147,7 +147,7 @@ char* get_hdr_field(char* buf, char* end, struct hdr_field* hdr)
 			}
 			hdr->parsed=cseq_b;
 			hdr->body.len=tmp-hdr->body.s;
-			DBG("get_hdr_field: cseq <%.*s>: <%.*s> <%.*s>\n",
+			LM_DBG("cseq <%.*s>: <%.*s> <%.*s>\n",
 					hdr->name.len, ZSW(hdr->name.s), 
 					cseq_b->number.len, ZSW(cseq_b->number.s), 
 					cseq_b->method.len, cseq_b->method.s);
@@ -155,14 +155,14 @@ char* get_hdr_field(char* buf, char* end, struct hdr_field* hdr)
 		case HDR_TO_T:
 			to_b=pkg_malloc(sizeof(struct to_body));
 			if (to_b==0){
-				LOG(L_ERR, "get_hdr_field: out of memory\n");
+				LM_ERR("out of pkg memory\n");
 				goto error;
 			}
 			memset(to_b, 0, sizeof(struct to_body));
 			hdr->body.s=tmp;
 			tmp=parse_to(tmp, end,to_b);
 			if (to_b->error==PARSE_ERROR){
-				LOG(L_ERR, "ERROR: get_hdr_field: bad to header\n");
+				LM_ERR("bad to header\n");
 				set_err_info(OSER_EC_PARSER, OSER_EL_MEDIUM,
 						"error parsing To header");
 				set_err_reply(400, "bad To header");
@@ -171,17 +171,16 @@ char* get_hdr_field(char* buf, char* end, struct hdr_field* hdr)
 			}
 			hdr->parsed=to_b;
 			hdr->body.len=tmp-hdr->body.s;
-			DBG("DEBUG: get_hdr_field: <%.*s> [%d]; uri=[%.*s] \n",
+			LM_DBG("<%.*s> [%d]; uri=[%.*s] \n",
 				hdr->name.len, ZSW(hdr->name.s), 
 				hdr->body.len, to_b->uri.len,ZSW(to_b->uri.s));
-			DBG("DEBUG: to body [%.*s]\n",to_b->body.len,
-				ZSW(to_b->body.s));
+			LM_DBG("to body [%.*s]\n",to_b->body.len, ZSW(to_b->body.s));
 			break;
 		case HDR_CONTENTLENGTH_T:
 			hdr->body.s=tmp;
 			tmp=parse_content_length(tmp,end, &integer);
 			if (tmp==0){
-				LOG(L_ERR, "ERROR:get_hdr_field: bad content_length header\n");
+				LM_ERR("bad content_length header\n");
 				set_err_info(OSER_EC_PARSER, OSER_EL_MEDIUM,
 						"error parsing Content-Length");
 				set_err_reply(400, "bad Content-Length header");
@@ -189,8 +188,7 @@ char* get_hdr_field(char* buf, char* end, struct hdr_field* hdr)
 			}
 			hdr->parsed=(void*)(long)integer;
 			hdr->body.len=tmp-hdr->body.s;
-			DBG("DEBUG: get_hdr_body : content_length=%d\n",
-					(int)(long)hdr->parsed);
+			LM_DBG("content_length=%d\n", (int)(long)hdr->parsed);
 			break;
 		case HDR_SUPPORTED_T:
 		case HDR_CONTENTTYPE_T:
@@ -234,9 +232,7 @@ char* get_hdr_field(char* buf, char* end, struct hdr_field* hdr)
 				if (match){
 					match++;
 				}else {
-					LOG(L_ERR,
-							"ERROR: get_hdr_field: bad body for <%s>(%d)\n",
-							hdr->name.s, hdr->type);
+					LM_ERR("bad body for <%s>(%d)\n", hdr->name.s, hdr->type);
 					/* abort(); */
 					set_err_info(OSER_EC_PARSER, OSER_EL_MEDIUM,
 						"error parsing headers");
@@ -250,8 +246,7 @@ char* get_hdr_field(char* buf, char* end, struct hdr_field* hdr)
 			hdr->body.len=match-hdr->body.s;
 			break;
 		default:
-			LOG(L_CRIT, "BUG: get_hdr_field: unknown header type %d\n",
-					hdr->type);
+			LM_CRIT("unknown header type %d\n", hdr->type);
 			goto error;
 	}
 	/* jku: if \r covered by current length, shrink it */
@@ -259,7 +254,7 @@ char* get_hdr_field(char* buf, char* end, struct hdr_field* hdr)
 	hdr->len=tmp-hdr->name.s;
 	return tmp;
 error:
-	DBG("get_hdr_field: error exit\n");
+	LM_DBG("error exit\n");
 	update_stat( bad_msg_hdr, 1);
 	hdr->type=HDR_ERROR_T;
 	hdr->len=tmp-hdr->name.s;
@@ -307,12 +302,12 @@ int parse_headers(struct sip_msg* msg, hdr_flags_t flags, int next)
 	}else
 		orig_flag=0; 
 	
-	DBG("parse_headers: flags=%llx\n", (unsigned long long)flags);
+	LM_DBG("flags=%llx\n", (unsigned long long)flags);
 	while( tmp<end && (flags & msg->parsed_flag) != flags){
 		hf=pkg_malloc(sizeof(struct hdr_field));
 		if (hf==0){
 			ser_error=E_OUT_OF_MEM;
-			LOG(L_ERR, "ERROR:parse_headers: memory allocation error\n");
+			LM_ERR("pkg memory allocation failed\n");
 			goto error;
 		}
 		memset(hf,0, sizeof(struct hdr_field));
@@ -320,7 +315,7 @@ int parse_headers(struct sip_msg* msg, hdr_flags_t flags, int next)
 		rest=get_hdr_field(tmp, msg->buf+msg->len, hf);
 		switch (hf->type){
 			case HDR_ERROR_T:
-				LOG(L_INFO,"ERROR: bad header field\n");
+				LM_INFO("bad header field\n");
 				goto  error;
 			case HDR_EOH_T:
 				msg->eoh=tmp; /* or rest?*/
@@ -472,10 +467,9 @@ int parse_headers(struct sip_msg* msg, hdr_flags_t flags, int next)
 			case HDR_VIA_T:
 				link_sibling_hdr(h_via1,hf);
 				msg->parsed_flag|=HDR_VIA_F;
-				DBG("parse_headers: Via found, flags=%llx\n",
-						(unsigned long long)flags);
+				LM_DBG("via found, flags=%llx\n", (unsigned long long)flags);
 				if (msg->via1==0) {
-					DBG("parse_headers: this is the first via\n");
+					LM_DBG("this is the first via\n");
 					msg->h_via1=hf;
 					msg->via1=hf->parsed;
 					if (msg->via1->next){
@@ -490,8 +484,7 @@ int parse_headers(struct sip_msg* msg, hdr_flags_t flags, int next)
 				}
 				break;
 			default:
-				LOG(L_CRIT, "BUG: parse_headers: unknown header type %d\n",
-							hf->type);
+				LM_CRIT("unknown header type %d\n",	hf->type);
 				goto error;
 		}
 		/* add the header to the list*/
@@ -503,7 +496,7 @@ int parse_headers(struct sip_msg* msg, hdr_flags_t flags, int next)
 			msg->last_header=hf;
 		}
 #ifdef EXTRA_DEBUG
-		DBG("header field type %d, name=<%.*s>, body=<%.*s>\n",
+		LM_DBG("header field type %d, name=<%.*s>, body=<%.*s>\n",
 			hf->type, 
 			hf->name.len, ZSW(hf->name.s), 
 			hf->body.len, ZSW(hf->body.s));
@@ -550,33 +543,33 @@ int parse_msg(char* buf, unsigned int len, struct sip_msg* msg)
 	tmp=rest;
 	switch(fl->type){
 		case SIP_INVALID:
-			DBG("parse_msg: invalid message\n");
+			LM_DBG("invalid message\n");
 			goto error;
 			break;
 		case SIP_REQUEST:
-			DBG("SIP Request:\n");
-			DBG(" method:  <%.*s>\n",fl->u.request.method.len,
+			LM_DBG("SIP Request:\n");
+			LM_DBG(" method:  <%.*s>\n",fl->u.request.method.len,
 				ZSW(fl->u.request.method.s));
-			DBG(" uri:     <%.*s>\n",fl->u.request.uri.len,
+			LM_DBG(" uri:     <%.*s>\n",fl->u.request.uri.len,
 				ZSW(fl->u.request.uri.s));
-			DBG(" version: <%.*s>\n",fl->u.request.version.len,
+			LM_DBG(" version: <%.*s>\n",fl->u.request.version.len,
 				ZSW(fl->u.request.version.s));
 			flags=HDR_VIA_F;
 			break;
 		case SIP_REPLY:
-			DBG("SIP Reply  (status):\n");
-			DBG(" version: <%.*s>\n",fl->u.reply.version.len,
+			LM_DBG("SIP Reply  (status):\n");
+			LM_DBG(" version: <%.*s>\n",fl->u.reply.version.len,
 					ZSW(fl->u.reply.version.s));
-			DBG(" status:  <%.*s>\n", fl->u.reply.status.len,
+			LM_DBG(" status:  <%.*s>\n", fl->u.reply.status.len,
 					ZSW(fl->u.reply.status.s));
-			DBG(" reason:  <%.*s>\n", fl->u.reply.reason.len,
+			LM_DBG(" reason:  <%.*s>\n", fl->u.reply.reason.len,
 					ZSW(fl->u.reply.reason.s));
 			/* flags=HDR_VIA | HDR_VIA2; */
 			/* we don't try to parse VIA2 for local messages; -Jiri */
 			flags=HDR_VIA_F;
 			break;
 		default:
-			DBG("unknown type %d\n",fl->type);
+			LM_DBG("unknown type %d\n",fl->type);
 			goto error;
 	}
 	msg->unparsed=tmp;
@@ -588,7 +581,7 @@ int parse_msg(char* buf, unsigned int len, struct sip_msg* msg)
 #ifdef EXTRA_DEBUG
 	/* dump parsed data */
 	if (msg->via1){
-		DBG(" first  via: <%.*s/%.*s/%.*s> <%.*s:%.*s(%d)>",
+		LM_DBG(" first  via: <%.*s/%.*s/%.*s> <%.*s:%.*s(%d)>",
 			msg->via1->name.len, 
 			ZSW(msg->via1->name.s), 
 			msg->via1->version.len,
@@ -600,15 +593,15 @@ int parse_msg(char* buf, unsigned int len, struct sip_msg* msg)
 			msg->via1->port_str.len, 
 			ZSW(msg->via1->port_str.s), 
 			msg->via1->port);
-		if (msg->via1->params.s)  DBG(";<%.*s>", 
+		if (msg->via1->params.s)  LM_DBG(";<%.*s>", 
 				msg->via1->params.len, ZSW(msg->via1->params.s));
 		if (msg->via1->comment.s) 
-				DBG(" <%.*s>", 
+				LM_DBG(" <%.*s>", 
 					msg->via1->comment.len, ZSW(msg->via1->comment.s));
-		DBG ("\n");
+		LM_DBG ("\n");
 	}
 	if (msg->via2){
-		DBG(" first  via: <%.*s/%.*s/%.*s> <%.*s:%.*s(%d)>",
+		LM_DBG(" first  via: <%.*s/%.*s/%.*s> <%.*s:%.*s(%d)>",
 			msg->via2->name.len, 
 			ZSW(msg->via2->name.s), 
 			msg->via2->version.len,
@@ -620,25 +613,24 @@ int parse_msg(char* buf, unsigned int len, struct sip_msg* msg)
 			msg->via2->port_str.len, 
 			ZSW(msg->via2->port_str.s), 
 			msg->via2->port);
-		if (msg->via2->params.s)  DBG(";<%.*s>", 
+		if (msg->via2->params.s)  LM_DBG(";<%.*s>", 
 				msg->via2->params.len, ZSW(msg->via2->params.s));
-		if (msg->via2->comment.s) DBG(" <%.*s>", 
+		if (msg->via2->comment.s) LM_DBG(" <%.*s>", 
 				msg->via2->comment.len, ZSW(msg->via2->comment.s));
-		DBG ("\n");
+		LM_DBG ("\n");
 	}
 #endif
 	
 
 #ifdef EXTRA_DEBUG
-	DBG("exiting parse_msg\n");
+	LM_DBG("exiting\n");
 #endif
 
 	return 0;
 	
 error:
 	/* more debugging, msg->orig is/should be null terminated*/
-	LOG(L_ERR, "ERROR: parse_msg: message=<%.*s>\n", 
-			(int)msg->len, ZSW(msg->buf));
+	LM_ERR("message=<%.*s>\n", (int)msg->len, ZSW(msg->buf));
 	return -1;
 }
 
@@ -697,7 +689,7 @@ int set_dst_uri(struct sip_msg* msg, str* uri)
 	char* ptr;
 
 	if (!msg || !uri) {
-		LOG(L_ERR, "set_dst_uri: Invalid parameter value\n");
+		LM_ERR("invalid parameter value\n");
 		return -1;
 	}
 
@@ -707,7 +699,7 @@ int set_dst_uri(struct sip_msg* msg, str* uri)
 	} else {
 		ptr = (char*)pkg_malloc(uri->len);
 		if (!ptr) {
-			LOG(L_ERR, "set_dst_uri: Not enough memory\n");
+			LM_ERR("not enough pkg memory\n");
 			return -1;
 		}
 
@@ -727,7 +719,7 @@ int set_path_vector(struct sip_msg* msg, str* path)
 	char* ptr;
 
 	if (!msg || !path) {
-		LOG(L_ERR, "set_path_vector: Invalid parameter value\n");
+		LM_ERR("invalid parameter value\n");
 		return -1;
 	}
 
@@ -737,7 +729,7 @@ int set_path_vector(struct sip_msg* msg, str* path)
 	} else {
 		ptr = (char*)pkg_malloc(path->len);
 		if (!ptr) {
-			LOG(L_ERR, "set_path_vector: Not enough memory\n");
+			LM_ERR("not enough pkg memory\n");
 			return -1;
 		}
 

@@ -112,9 +112,8 @@ int parse_disposition( str *s, struct disposition *disp)
 						state=F_CRLF;
 						break;
 					default:
-						LOG(L_ERR,"ERROR:parse_disposition: unexpected "
-							"char [%c] in status %d: <<%.*s>> .\n",
-							*tmp,state, (int)(tmp-s->s), s->s);
+						LM_ERR("unexpected char [%c] in status %d: <<%.*s>>"
+								".\n", *tmp,state, (int)(tmp-s->s), s->s);
 						goto error;
 				}
 				break;
@@ -141,15 +140,13 @@ int parse_disposition( str *s, struct disposition *disp)
 						state=F_CR;
 						break;
 					default:
-						LOG(L_ERR,"ERROR:parse_disposition: unexpected "
-							"char [%c] in status %d: <<%.*s>> .\n",
-							*tmp,state, (int)(tmp-s->s), ZSW(s->s));
+						LM_ERR("unexpected char [%c] in status %d: <<%.*s>>"
+							".\n", *tmp,state, (int)(tmp-s->s), ZSW(s->s));
 						goto error;
 				}
 				break;
 			case 0:
-				LOG(L_ERR,"ERROR:parse_disposition: unexpected "
-					"char [%c] in status %d: <<%.*s>> .\n",
+				LM_ERR("unexpected char [%c] in status %d: <<%.*s>> .\n",
 					*tmp,state, (int)(tmp-s->s), ZSW(s->s));
 				goto error;
 				break;
@@ -178,9 +175,8 @@ int parse_disposition( str *s, struct disposition *disp)
 						state = FIND_PARAM;
 						break;
 					default:
-						LOG(L_ERR,"ERROR:parse_disposition: unexpected "
-							"char [%c] in status %d: <<%.*s>> .\n",
-							*tmp,state, (int)(tmp-s->s), ZSW(s->s));
+						LM_ERR("unexpected char [%c] in status %d: <<%.*s>> "
+							".\n", *tmp,state, (int)(tmp-s->s), ZSW(s->s));
 						goto error;
 				}
 				break;
@@ -200,9 +196,8 @@ int parse_disposition( str *s, struct disposition *disp)
 						state = FIND_VAL;
 						break;
 					default:
-						LOG(L_ERR,"ERROR:parse_disposition: unexpected "
-							"char [%c] in status %d: <<%.*s>> .\n",
-							*tmp,state, (int)(tmp-s->s), ZSW(s->s));
+						LM_ERR("unexpected char [%c] in status %d: <<%.*s>>"
+							".\n", *tmp,state, (int)(tmp-s->s), ZSW(s->s));
 						goto error;
 				}
 				break;
@@ -220,9 +215,8 @@ int parse_disposition( str *s, struct disposition *disp)
 						state = END_VAL;
 						break;
 					default:
-						LOG(L_ERR,"ERROR:parse_disposition: unexpected "
-							"char [%c] in status %d: <<%.*s>> .\n",
-							*tmp,state, (int)(tmp-s->s), ZSW(s->s));
+						LM_ERR("unexpected char [%c] in status %d: <<%.*s>>"
+							".\n", *tmp,state, (int)(tmp-s->s), ZSW(s->s));
 						goto error;
 				}
 				break;
@@ -239,9 +233,8 @@ int parse_disposition( str *s, struct disposition *disp)
 						state = SKIP_QUOTED_VAL;
 						break;
 					default:
-						LOG(L_ERR,"ERROR:parse_disposition: unexpected "
-							"char [%c] in status %d: <<%.*s>> .\n",
-							*tmp,state, (int)(tmp-s->s), ZSW(s->s));
+						LM_ERR("unexpected char [%c] in status %d: <<%.*s>>"
+							".\n", *tmp,state, (int)(tmp-s->s), ZSW(s->s));
 						goto error;
 				}
 				break;
@@ -268,9 +261,8 @@ int parse_disposition( str *s, struct disposition *disp)
 					case QUOTED_VAL:
 						break;
 					default:
-						LOG(L_ERR,"ERROR:parse_disposition: unexpected "
-							"char [%c] in status %d: <<%.*s>> .\n",
-							*tmp,state, (int)(tmp-s->s), ZSW(s->s));
+						LM_ERR("unexpected char [%c] in status %d: <<%.*s>>"
+							".\n", *tmp,state, (int)(tmp-s->s), ZSW(s->s));
 						goto error;
 				}
 				break;
@@ -288,8 +280,7 @@ int parse_disposition( str *s, struct disposition *disp)
 						new_p=(struct disposition_param*)pkg_malloc
 							(sizeof(struct disposition_param));
 						if (new_p==0) {
-							LOG(L_ERR,"ERROR:parse_disposition: no more "
-								"pkg mem\n");
+							LM_ERR("no more pkg mem\n");
 							goto error;
 						}
 						memset(new_p,0,sizeof(struct disposition_param));
@@ -329,8 +320,7 @@ int parse_disposition( str *s, struct disposition *disp)
 			disp_p->body.len = tmp - disp_p->body.s;
 			break;
 		default:
-			LOG(L_ERR,"ERROR:parse_disposition: wrong final state (%d)\n",
-				state);
+			LM_ERR("wrong final state (%d)\n", state);
 			goto error;
 	}
 	return 0;
@@ -373,7 +363,7 @@ int parse_content_disposition( struct sip_msg *msg )
 		if (parse_headers(msg, HDR_CONTENTDISPOSITION_F, 0)==-1)
 			goto error;
 		if (msg->content_disposition==0) {
-			DBG("DEBUG:parse_content_disposition: hdr not found\n");
+			LM_DBG("hdr not found\n");
 			return 1;
 		}
 	}
@@ -387,7 +377,7 @@ int parse_content_disposition( struct sip_msg *msg )
 	/* parse the body */
 	disp = (struct disposition*)pkg_malloc(sizeof(struct disposition));
 	if (disp==0) {
-		LOG(L_ERR,"ERROR:parse_content_disposition: no more pkg memory\n");
+		LM_ERR("no more pkg memory\n");
 		goto error;
 	}
 	memset(disp,0,sizeof(struct disposition));
@@ -412,10 +402,10 @@ void print_disposition( struct disposition *disp)
 {
 	struct disposition_param *param;
 
-	DBG("*** Disposition type=<%.*s>[%d]\n",
+	LM_DBG("disposition type=<%.*s>[%d]\n",
 		disp->type.len,disp->type.s,disp->type.len);
 	for( param=disp->params; param; param=param->next) {
-		DBG("*** Disposition param: <%.*s>[%d]=<%.*s>[%d] is_quoted=%d\n",
+		LM_DBG("disposition param: <%.*s>[%d]=<%.*s>[%d] is_quoted=%d\n",
 			param->name.len,param->name.s, param->name.len,
 			param->body.len,param->body.s, param->body.len,
 			param->is_quoted);

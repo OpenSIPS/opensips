@@ -56,7 +56,7 @@ int parse_pai_header( struct sip_msg *msg )
     /* first, get some memory */
     pai_b = pkg_malloc(sizeof(struct to_body));
     if (pai_b == 0) {
-	LOG(L_ERR, "ERROR:parse_pai_header: out of pkg_memory\n");
+	LM_ERR("out of pkg_memory\n");
 	goto error;
     }
  
@@ -66,7 +66,7 @@ int parse_pai_header( struct sip_msg *msg )
 	     msg->pai->body.s + msg->pai->body.len+1,
 	     pai_b);
     if (pai_b->error == PARSE_ERROR) {
-	LOG(L_ERR, "ERROR:parse_pai_header: bad P-Asserted-Identity header\n");
+	LM_ERR("bad P-Asserted-Identity header\n");
 	pkg_free(pai_b);
 	goto error;
     }

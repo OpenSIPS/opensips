@@ -139,8 +139,7 @@ char* parse_fline(char* buffer, char* end, struct msg_start* fl)
 					case VER4:
 					case VER5:
 					case VER6:
-						LOG(L_ERR, "ERROR: parse_first_line: invalid version "
-								" in request\n");
+						LM_ERR("invalid version in request\n");
 						goto error;
 					case P_METHOD:
 					default:
@@ -167,12 +166,11 @@ char* parse_fline(char* buffer, char* end, struct msg_start* fl)
 						break;
 					case P_STATUS:
 					case L_STATUS:
-						LOG(L_ERR, "ERROR: parse_first_line: non-number "
-								"character <%c> in request status\n", *tmp);
+						LM_ERR("non-number character <%c> in request"
+								"status\n", *tmp);
 						goto error;
 					case L_LF:
-						LOG(L_ERR, "ERROR: parse_first_line: invalid "
-								"character <%c> in request\n", *tmp);
+						LM_ERR("invalid character <%c> in request\n", *tmp);
 						goto error;
 					case L_URI:
 						fl->u.request.uri.s=tmp;
@@ -189,8 +187,7 @@ char* parse_fline(char* buffer, char* end, struct msg_start* fl)
 					case VER5:
 					case VER6:
 					case FIN_VER:
-						LOG(L_ERR, "ERROR: parse_first_line: invalid version "
-								" in request\n");
+						LM_ERR("invalid version in request\n");
 						goto error;
 					default:
 						state=P_METHOD;
@@ -220,11 +217,11 @@ char* parse_fline(char* buffer, char* end, struct msg_start* fl)
 						break;
 					case P_STATUS:
 					case L_STATUS:
-						LOG(L_ERR, "ERROR: parse_first_line: non-number "
+						LM_ERR("non-number "
 								"character <%c> in request status\n", *tmp);
 						goto error;
 					case L_LF:
-						LOG(L_ERR, "ERROR: parse_first_line: invalid "
+						LM_ERR("invalid "
 								"character <%c> in request\n", *tmp);
 						goto error;
 					case L_URI:
@@ -241,8 +238,7 @@ char* parse_fline(char* buffer, char* end, struct msg_start* fl)
 					case VER5:
 					case VER6:
 					case FIN_VER:
-						LOG(L_ERR, "ERROR: parse_first_line: invalid version "
-								" in request\n");
+						LM_ERR("invalid version in request\n");
 						goto error;
 					default:
 						state=P_METHOD;
@@ -269,11 +265,11 @@ char* parse_fline(char* buffer, char* end, struct msg_start* fl)
 						break;
 					case P_STATUS:
 					case L_STATUS:
-						LOG(L_ERR, "ERROR: parse_first_line: non-number "
+						LM_ERR("non-number "
 								"character <%c> in request status\n", *tmp);
 						goto error;
 					case L_LF:
-						LOG(L_ERR, "ERROR: parse_first_line: invalid "
+						LM_ERR("invalid "
 								"character <%c> in request\n", *tmp);
 						goto error;
 					case L_URI:
@@ -290,8 +286,7 @@ char* parse_fline(char* buffer, char* end, struct msg_start* fl)
 					case VER5:
 					case VER6:
 					case FIN_VER:
-						LOG(L_ERR, "ERROR: parse_first_line: invalid version "
-								" in request\n");
+						LM_ERR("invalid version in request\n");
 						goto error;
 					default:
 						state=P_METHOD;
@@ -318,11 +313,11 @@ char* parse_fline(char* buffer, char* end, struct msg_start* fl)
 						break;
 					case P_STATUS:
 					case L_STATUS:
-						LOG(L_ERR, "ERROR: parse_first_line: non-number "
+						LM_ERR("non-number "
 								"character <%c> in request status\n", *tmp);
 						goto error;
 					case L_LF:
-						LOG(L_ERR, "ERROR: parse_first_line: invalid "
+						LM_ERR("invalid "
 								"character <%c> in request\n", *tmp);
 						goto error;
 					case L_URI:
@@ -339,8 +334,7 @@ char* parse_fline(char* buffer, char* end, struct msg_start* fl)
 					case VER5:
 					case VER6:
 					case FIN_VER:
-						LOG(L_ERR, "ERROR: parse_first_line: invalid version "
-								" in request\n");
+						LM_ERR("invalid version in request\n");
 						goto error;
 					default:
 						state=P_METHOD;
@@ -372,7 +366,7 @@ char* parse_fline(char* buffer, char* end, struct msg_start* fl)
 						fl->u.reply.status.s=tmp;
 						break;
 					case L_LF:
-						LOG(L_ERR, "ERROR: parse_first_line: invalid "
+						LM_ERR("invalid "
 								"character <%c> in request\n", *tmp);
 						goto error;
 					case L_URI:
@@ -389,8 +383,7 @@ char* parse_fline(char* buffer, char* end, struct msg_start* fl)
 					case VER5:
 					case VER6:
 					case FIN_VER:
-						LOG(L_ERR, "ERROR: parse_first_line: invalid version "
-								" in request\n");
+						LM_ERR("invalid version in request\n");
 						goto error;
 					default:
 						state=P_METHOD;
@@ -416,11 +409,11 @@ char* parse_fline(char* buffer, char* end, struct msg_start* fl)
 						break;
 					case P_STATUS:
 					case L_STATUS:
-						LOG(L_ERR, "ERROR: parse_first_line: non-number "
+						LM_ERR("non-number "
 								"character <%c> in request status\n", *tmp);
 						goto error;
 					case L_LF:
-						LOG(L_ERR, "ERROR: parse_first_line: invalid "
+						LM_ERR("invalid "
 								"character <%c> in request\n", *tmp);
 						goto error;
 					case L_URI:
@@ -437,8 +430,7 @@ char* parse_fline(char* buffer, char* end, struct msg_start* fl)
 					case VER4:
 					case VER6:
 					case FIN_VER:
-						LOG(L_ERR, "ERROR: parse_first_line: invalid version "
-								" in request\n");
+						LM_ERR("invalid version in request\n");
 						goto error;
 					default:
 						state=P_METHOD;
@@ -470,7 +462,7 @@ char* parse_fline(char* buffer, char* end, struct msg_start* fl)
 						fl->u.reply.status.s=tmp;
 						break;
 					case L_LF:
-						LOG(L_ERR, "ERROR: parse_first_line: invalid "
+						LM_ERR("invalid "
 								"character <%c> in request\n", *tmp);
 						goto error;
 					case L_URI:
@@ -487,7 +479,7 @@ char* parse_fline(char* buffer, char* end, struct msg_start* fl)
 					case VER4:
 					case VER5:
 					case FIN_VER:
-						LOG(L_ERR, "ERROR: parse_first_line: invalid version "
+						LM_ERR("invalid version "
 								" in request\n");
 						goto error;
 					default:
@@ -518,11 +510,11 @@ char* parse_fline(char* buffer, char* end, struct msg_start* fl)
 						break;
 					case P_STATUS:
 					case L_STATUS:
-						LOG(L_ERR, "ERROR: parse_first_line: non-number "
+						LM_ERR("non-number "
 								"character <%c> in request status\n", *tmp);
 						goto error;
 					case L_LF:
-						LOG(L_ERR, "ERROR: parse_first_line: invalid "
+						LM_ERR("invalid "
 								"character <%c> in request\n", *tmp);
 						goto error;
 					case L_URI:
@@ -537,8 +529,7 @@ char* parse_fline(char* buffer, char* end, struct msg_start* fl)
 					case VER5:
 					case VER6:
 					case FIN_VER:
-						LOG(L_ERR, "ERROR: parse_first_line: invalid version "
-								" in request\n");
+						LM_ERR("invalid version in request\n");
 						goto error;
 					default:
 						state=P_METHOD;
@@ -565,11 +556,11 @@ char* parse_fline(char* buffer, char* end, struct msg_start* fl)
 						break;
 					case P_STATUS:
 					case L_STATUS:
-						LOG(L_ERR, "ERROR: parse_first_line: non-number "
+						LM_ERR("non-number "
 								"character <%c> in request status\n", *tmp);
 						goto error;
 					case L_LF:
-						LOG(L_ERR, "ERROR: parse_first_line: invalid "
+						LM_ERR("invalid "
 								"character <%c> in request\n", *tmp);
 						goto error;
 					case L_URI:
@@ -584,8 +575,7 @@ char* parse_fline(char* buffer, char* end, struct msg_start* fl)
 					case VER5:
 					case VER6:
 					case FIN_VER:
-						LOG(L_ERR, "ERROR: parse_first_line: invalid version "
-								" in request\n");
+						LM_ERR("invalid version in request\n");
 						goto error;
 					default:
 						state=P_METHOD;
@@ -612,11 +602,11 @@ char* parse_fline(char* buffer, char* end, struct msg_start* fl)
 						break;
 					case P_STATUS:
 					case L_STATUS:
-						LOG(L_ERR, "ERROR: parse_first_line: non-number "
+						LM_ERR("non-number "
 								"character <%c> in request status\n", *tmp);
 						goto error;
 					case L_LF:
-						LOG(L_ERR, "ERROR: parse_first_line: invalid "
+						LM_ERR("invalid "
 								"character <%c> in request\n", *tmp);
 						goto error;
 					case L_URI:
@@ -631,8 +621,7 @@ char* parse_fline(char* buffer, char* end, struct msg_start* fl)
 					case VER5:
 					case VER6:
 					case FIN_VER:
-						LOG(L_ERR, "ERROR: parse_first_line: invalid version "
-								" in request\n");
+						LM_ERR("invalid version in request\n");
 						goto error;
 					default:
 						state=P_METHOD;
@@ -665,11 +654,11 @@ char* parse_fline(char* buffer, char* end, struct msg_start* fl)
 						break;
 					case P_STATUS:
 					case L_STATUS:
-						LOG(L_ERR, "ERROR: parse_first_line: non-number "
+						LM_ERR("non-number "
 								"character <%c> in request status\n", *tmp);
 						goto error;
 					case L_LF:
-						LOG(L_ERR, "ERROR: parse_first_line: invalid "
+						LM_ERR("invalid "
 								"character <%c> in request\n", *tmp);
 						goto error;
 					case L_URI:
@@ -684,8 +673,7 @@ char* parse_fline(char* buffer, char* end, struct msg_start* fl)
 					case VER5:
 					case VER6:
 					case FIN_VER:
-						LOG(L_ERR, "ERROR: parse_first_line: invalid version "
-								" in request\n");
+						LM_ERR("invalid version in request\n");
 						goto error;
 					default:
 						state=P_METHOD;
@@ -715,11 +703,11 @@ char* parse_fline(char* buffer, char* end, struct msg_start* fl)
 						break;
 					case P_STATUS:
 					case L_STATUS:
-						LOG(L_ERR, "ERROR: parse_first_line: non-number "
+						LM_ERR("non-number "
 								"character <%c> in request status\n", *tmp);
 						goto error;
 					case L_LF:
-						LOG(L_ERR, "ERROR: parse_first_line: invalid "
+						LM_ERR("invalid "
 								"character <%c> in request\n", *tmp);
 						goto error;
 					case L_URI:
@@ -734,8 +722,7 @@ char* parse_fline(char* buffer, char* end, struct msg_start* fl)
 					case VER5:
 					case VER6:
 					case FIN_VER:
-						LOG(L_ERR, "ERROR: parse_first_line: invalid version "
-								" in request\n");
+						LM_ERR("invalid version in request\n");
 						goto error;
 					default:
 						state=P_METHOD;
@@ -765,11 +752,11 @@ char* parse_fline(char* buffer, char* end, struct msg_start* fl)
 						break;
 					case P_STATUS:
 					case L_STATUS:
-						LOG(L_ERR, "ERROR: parse_first_line: non-number "
+						LM_ERR("non-number "
 								"character <%c> in request status\n", *tmp);
 						goto error;
 					case L_LF:
-						LOG(L_ERR, "ERROR: parse_first_line: invalid "
+						LM_ERR("invalid "
 								"character <%c> in request\n", *tmp);
 						goto error;
 					case L_URI:
@@ -784,8 +771,7 @@ char* parse_fline(char* buffer, char* end, struct msg_start* fl)
 					case VER5:
 					case VER6:
 					case FIN_VER:
-						LOG(L_ERR, "ERROR: parse_first_line: invalid version "
-								" in request\n");
+						LM_ERR("invalid version in request\n");
 						goto error;
 					default:
 						state=P_METHOD;
@@ -812,11 +798,11 @@ char* parse_fline(char* buffer, char* end, struct msg_start* fl)
 						break;
 					case P_STATUS:
 					case L_STATUS:
-						LOG(L_ERR, "ERROR: parse_first_line: non-number "
+						LM_ERR("non-number "
 								"character <%c> in request status\n", *tmp);
 						goto error;
 					case L_LF:
-						LOG(L_ERR, "ERROR: parse_first_line: invalid "
+						LM_ERR("invalid "
 								"character <%c> in request\n", *tmp);
 						goto error;
 					case L_URI:
@@ -831,8 +817,7 @@ char* parse_fline(char* buffer, char* end, struct msg_start* fl)
 					case VER5:
 					case VER6:
 					case FIN_VER:
-						LOG(L_ERR, "ERROR: parse_first_line: invalid version "
-								" in request\n");
+						LM_ERR("invalid version in request\n");
 						goto error;
 					default:
 						state=P_METHOD;
@@ -859,11 +844,11 @@ char* parse_fline(char* buffer, char* end, struct msg_start* fl)
 						break;
 					case P_STATUS:
 					case L_STATUS:
-						LOG(L_ERR, "ERROR: parse_first_line: non-number "
+						LM_ERR("non-number "
 								"character <%c> in request status\n", *tmp);
 						goto error;
 					case L_LF:
-						LOG(L_ERR, "ERROR: parse_first_line: invalid "
+						LM_ERR("invalid "
 								"character <%c> in request\n", *tmp);
 						goto error;
 					case L_URI:
@@ -878,8 +863,7 @@ char* parse_fline(char* buffer, char* end, struct msg_start* fl)
 					case VER5:
 					case VER6:
 					case FIN_VER:
-						LOG(L_ERR, "ERROR: parse_first_line: invalid version "
-								" in request\n");
+						LM_ERR("invalid version in request\n");
 						goto error;
 					default:
 						state=P_METHOD;
@@ -903,11 +887,11 @@ char* parse_fline(char* buffer, char* end, struct msg_start* fl)
 						break;
 					case P_STATUS:
 					case L_STATUS:
-						LOG(L_ERR, "ERROR: parse_first_line: non-number "
+						LM_ERR("non-number "
 								"character <%c> in request status\n", *tmp);
 						goto error;
 					case L_LF:
-						LOG(L_ERR, "ERROR: parse_first_line: invalid "
+						LM_ERR("invalid "
 								"character <%c> in request\n", *tmp);
 						goto error;
 					case L_URI:
@@ -922,8 +906,7 @@ char* parse_fline(char* buffer, char* end, struct msg_start* fl)
 					case VER5:
 					case VER6:
 					case FIN_VER:
-						LOG(L_ERR, "ERROR: parse_first_line: invalid version "
-								" in request\n");
+						LM_ERR("invalid version in request\n");
 						goto error;
 					default:
 						state=P_METHOD;
@@ -950,11 +933,11 @@ char* parse_fline(char* buffer, char* end, struct msg_start* fl)
 						break;
 					case P_STATUS:
 					case L_STATUS:
-						LOG(L_ERR, "ERROR: parse_first_line: non-number "
+						LM_ERR("non-number "
 								"character <%c> in request status\n", *tmp);
 						goto error;
 					case L_LF:
-						LOG(L_ERR, "ERROR: parse_first_line: invalid "
+						LM_ERR("invalid "
 								"character <%c> in request\n", *tmp);
 						goto error;
 					case L_URI:
@@ -969,8 +952,7 @@ char* parse_fline(char* buffer, char* end, struct msg_start* fl)
 					case VER5:
 					case VER6:
 					case FIN_VER:
-						LOG(L_ERR, "ERROR: parse_first_line: invalid version "
-								" in request\n");
+						LM_ERR("invalid version in request\n");
 						goto error;
 					default:
 						state=P_METHOD;
@@ -996,8 +978,7 @@ char* parse_fline(char* buffer, char* end, struct msg_start* fl)
 						state=F_CR;
 						break;
 					default:
-						LOG(L_ERR, "ERROR: parse_first_line: invalid" 
-								"message\n");
+						LM_ERR("invalid message\n");
 						goto error;
 				}
 				break;
@@ -1020,8 +1001,7 @@ char* parse_fline(char* buffer, char* end, struct msg_start* fl)
 						state=F_LF;
 						goto skip;
 					default:
-						LOG(L_ERR, "ERROR: parse_first_line: invalid"
-								" message\n");
+						LM_ERR("invalid message\n");
 						goto error;
 				}
 				break;
@@ -1056,8 +1036,7 @@ char* parse_fline(char* buffer, char* end, struct msg_start* fl)
 						fl->u.reply.status.s=tmp;
 						break;
 					case L_LF:
-						LOG(L_ERR, "ERROR: parse_first_line: invalid "
-								"character <%c> in request\n", *tmp);
+						LM_ERR("invalid character <%c> in request\n", *tmp);
 						goto error;
 					case L_URI:
 						fl->u.request.uri.s=tmp;
@@ -1071,8 +1050,7 @@ char* parse_fline(char* buffer, char* end, struct msg_start* fl)
 					case VER5:
 					case VER6:
 					case FIN_VER:
-						LOG(L_ERR, "ERROR: parse_first_line: invalid version "
-								" in request\n");
+						LM_ERR("invalid version in request\n");
 						goto error;
 					default:
 						state=P_METHOD;
@@ -1094,12 +1072,11 @@ char* parse_fline(char* buffer, char* end, struct msg_start* fl)
 						break;
 					case P_STATUS:
 					case L_STATUS:
-						LOG(L_ERR, "ERROR: parse_first_line: non-number "
+						LM_ERR("non-number "
 								"character <%c> in request status\n", *tmp);
 						goto error;
 					case L_LF:
-						LOG(L_ERR, "ERROR: parse_first_line: invalid "
-								"character <%c> in request\n", *tmp);
+						LM_ERR("invalid character <%c> in request\n", *tmp);
 						goto error;
 					case L_URI:
 						fl->u.request.uri.s=tmp;
@@ -1113,8 +1090,7 @@ char* parse_fline(char* buffer, char* end, struct msg_start* fl)
 					case VER5:
 					case VER6:
 					case FIN_VER:
-						LOG(L_ERR, "ERROR: parse_first_line: invalid version "
-								" in request\n");
+						LM_ERR("invalid version in request\n");
 						goto error;
 					default:
 						state=P_METHOD;
@@ -1130,7 +1106,7 @@ skip:
 	return tmp;
 	
 error:
-	LOG(L_ERR, "ERROR: while parsing first line (state=%d)\n", state);
+	LM_ERR("while parsing first line (state=%d)\n", state);
 	fl->type=SIP_INVALID;
 	return tmp;
 }
@@ -1170,7 +1146,7 @@ char* parse_first_line(char* buffer, unsigned int len, struct msg_start * fl)
 	   token 
         */
 	if (len <=16 ) {
-		LOG(L_INFO, "ERROR: parse_first_line: message too short: %d\n", len);
+		LM_INFO("message too short: %d\n", len);
 		goto error1;
 	}
 
@@ -1199,11 +1175,11 @@ char* parse_first_line(char* buffer, unsigned int len, struct msg_start * fl)
         	*/
 		tmp=eat_token_end(buffer,buffer+len);
 		if ((tmp==buffer)||(tmp>=end)){
-			LOG(L_INFO, "ERROR:parse_first_line: empty  or bad first line\n");
+			LM_INFO("empty  or bad first line\n");
 			goto error1;
 		}
 		if (*tmp!=' ') {
-			LOG(L_INFO, "ERROR:parse_first_line: method not followed by SP\n");
+			LM_INFO("method not followed by SP\n");
 			goto error1;
 		}
 		fl->type=SIP_REQUEST;
@@ -1212,7 +1188,7 @@ char* parse_first_line(char* buffer, unsigned int len, struct msg_start * fl)
 		if(parse_method(buffer, tmp,
 				(unsigned int*)&fl->u.request.method_value)==0)
 		{
-			LOG(L_INFO, "ERROR:parse_first_line: error parsing the method\n");
+			LM_INFO("failed to parse the method\n");
 			goto error1;
 		}
 		fl->u.request.method.len=tmp-buffer;
@@ -1245,7 +1221,7 @@ char* parse_first_line(char* buffer, unsigned int len, struct msg_start * fl)
 	/* jku: parse status code */
 	if (fl->type==SIP_REPLY) {
 		if (fl->u.request.uri.len!=3) {
-			LOG(L_INFO, "ERROR:parse_first_line: len(status code)!=3: %.*s\n",
+			LM_INFO("len(status code)!=3: %.*s\n",
 				fl->u.request.uri.len, ZSW(second) );
 			goto error;
 		}
@@ -1255,7 +1231,7 @@ char* parse_first_line(char* buffer, unsigned int len, struct msg_start * fl)
 		    s3>='0' && s3<='9' ) {
 			fl->u.reply.statuscode=(s1-'0')*100+10*(s2-'0')+(s3-'0');
 		} else {
-			LOG(L_INFO, "ERROR:parse_first_line: status_code non-numerical: %.*s\n",
+			LM_INFO("status_code non-numerical: %.*s\n",
 				fl->u.request.uri.len, ZSW(second) );
 			goto error;
 		}
@@ -1293,21 +1269,21 @@ char* parse_first_line(char* buffer, unsigned int len, struct msg_start * fl)
 	return nl;
 
 error:
-	LOG(L_INFO, "ERROR:parse_first_line: bad %s first line\n",
+	LM_ERR("bad %s first line\n",
 		(fl->type==SIP_REPLY)?"reply(status)":"request");
 
-	LOG(L_INFO, "ERROR: at line 0 char %d: \n", offset );
+	LM_ERR("at line 0 char %d: \n", offset );
 	prn=pkg_malloc( offset );
 	if (prn) {
 		for (t=0; t<offset; t++)
 			if (*(buffer+t)) *(prn+t)=*(buffer+t);
 			else *(prn+t)='°';
-		LOG(L_INFO, "ERROR: parsed so far: %.*s\n", offset, ZSW(prn) );
+		LM_ERR("parsed so far: %.*s\n", offset, ZSW(prn) );
 		pkg_free( prn );
 	};
 error1:
 	fl->type=SIP_INVALID;
-	LOG(L_INFO, "ERROR:parse_first_line: bad message\n");
+	LM_INFO("bad message\n");
 	/* skip  line */
 	nl=eat_line(buffer,len);
 	return nl;

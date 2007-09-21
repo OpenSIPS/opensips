@@ -46,7 +46,7 @@ static inline void parse_contact_class(param_hooks_t* _h, param_t* _p)
 {
 
 	if (!_p->name.s) {
-		LOG(L_ERR, "ERROR: parse_contact_class: empty value\n");
+		LM_ERR("empty value\n");
 		return;
 	}
 	switch(_p->name.s[0]) {
@@ -96,7 +96,7 @@ static inline void parse_uri_class(param_hooks_t* _h, param_t* _p)
 {
 
 	if (!_p->name.s) {
-		LOG(L_ERR, "ERROR: parse_uri_class: empty value\n");
+		LM_ERR("empty value\n");
 		return;
 	}
 	switch(_p->name.s[0]) {
@@ -273,7 +273,7 @@ static inline void parse_param_name(str* _s, pclass_t _c, param_hooks_t* _h, par
 {
 
 	if (!_s->s) {
-		DBG("DEBUG: parse_param_name: empty parameter\n");
+		LM_DBG("empty parameter\n");
 		return;
 	}
 
@@ -316,12 +316,12 @@ static inline int parse_param_body(str* _s, param_t* _c)
 {
 	if (_s->s[0] == '\"') {
 		if (parse_quoted_param(_s, &(_c->body)) < 0) {
-			LOG(L_ERR, "parse_param_body(): Error while parsing quoted string\n");
+			LM_ERR("failed to parse quoted string\n");
 			return -2;
 		}
 	} else {
 		if (parse_token_param(_s, &(_c->body)) < 0) {
-			LOG(L_ERR, "parse_param_body(): Error while parsing token\n");
+			LM_ERR("failed to parse token\n");
 			return -3;
 		}
 	}
@@ -345,7 +345,7 @@ int parse_params(str* _s, pclass_t _c, param_hooks_t* _h, param_t** _p)
 	param_t* t;
 
 	if (!_s || !_h || !_p) {
-		LOG(L_ERR, "parse_params(): Invalid parameter value\n");
+		LM_ERR("invalid parameter value\n");
 		return -1;
 	}
 
@@ -353,14 +353,14 @@ int parse_params(str* _s, pclass_t _c, param_hooks_t* _h, param_t** _p)
 	*_p = 0;
 
 	if (!_s->s) { /* no parameters at all -- we're done */
-		DBG("DEBUG: parse_params: empty uri params, skipping\n");
+		LM_DBG("empty uri params, skipping\n");
 		return 0;
 	}
 			
 	while(1) {
 		t = (param_t*)pkg_malloc(sizeof(param_t));
 		if (t == 0) {
-			LOG(L_ERR, "parse_params(): No memory left\n");
+			LM_ERR("no pkg memory left\n");
 			goto error;
 		}
 		memset(t, 0, sizeof(param_t));
@@ -379,12 +379,12 @@ int parse_params(str* _s, pclass_t _c, param_hooks_t* _h, param_t** _p)
 			trim_leading(_s);
 
 			if (_s->len == 0) {
-				LOG(L_ERR, "parse_params(): Body missing\n");
+				LM_ERR("body missing\n");
 				goto error;
 			}
 
 			if (parse_param_body(_s, t) < 0) {
-				LOG(L_ERR, "parse_params(): Error while parsing param body\n");
+				LM_ERR("failed to parse param body\n");
 				goto error;
 			}
 
@@ -402,7 +402,7 @@ int parse_params(str* _s, pclass_t _c, param_hooks_t* _h, param_t** _p)
 		if (_s->s[0] == '>') goto ok; /* To be able to parse URI parameters */
 
 		if (_s->s[0] != ';') {
-			LOG(L_ERR, "parse_params(): Invalid character, ; expected\n");
+			LM_ERR("invalid character, ; expected\n");
 			goto error;
 		}
 
@@ -411,7 +411,7 @@ int parse_params(str* _s, pclass_t _c, param_hooks_t* _h, param_t** _p)
 		trim_leading(_s);
 		
 		if (_s->len == 0) {
-			LOG(L_ERR, "parse_params(): Param name missing after ;\n");
+			LM_ERR("param name missing after ;\n");
 			goto error;
 		}
 
@@ -521,7 +521,7 @@ static inline int do_duplicate_params(param_t** _n, param_t* _p, int _shm)
 	param_t* last, *ptr, *t;
 
 	if (!_n) {
-		LOG(L_ERR, "duplicate_params(): Invalid parameter value\n");
+		LM_ERR("invalid parameter value\n");
 		return -1;
 	}
 	
@@ -535,7 +535,7 @@ static inline int do_duplicate_params(param_t** _n, param_t* _p, int _shm)
 			t = (param_t*)pkg_malloc(sizeof(param_t));
 		}
 		if (!t) {
-			LOG(L_ERR, "duplicate_params(): Invalid parameter value\n");
+			LM_ERR("no more pkg memory\n");
 			goto err;
 		}
 		memcpy(t, ptr, sizeof(param_t));
