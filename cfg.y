@@ -127,6 +127,7 @@ static str s_tmp;
 static str tstr;
 static struct ip_addr* ip_tmp;
 static pv_spec_t *spec;
+static pv_elem_t *pvmodel;
 static struct bl_rule *bl_head = 0;
 static struct bl_rule *bl_tail = 0;
 
@@ -208,6 +209,7 @@ extern int line;
 %token STRIP
 %token STRIP_TAIL
 %token APPEND_BRANCH
+%token PV_PRINTF
 %token SET_USER
 %token SET_USERPASS
 %token SET_PORT
@@ -2013,6 +2015,44 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 						STRING_ST, NUMBER_ST, 0, (void *)Q_UNSPECIFIED) ; }
 		| APPEND_BRANCH { mk_action2( $$, APPEND_BRANCH_T,
 						STRING_ST, NUMBER_ST, 0, (void *)Q_UNSPECIFIED ) ; }
+
+		| PV_PRINTF LPAREN STRING COMMA STRING RPAREN {
+				spec = (pv_spec_t*)pkg_malloc(sizeof(pv_spec_t));
+				memset(spec, 0, sizeof(pv_spec_t));
+				tstr.s = $3;
+				tstr.len = strlen(tstr.s);
+				if(pv_parse_spec(&tstr, spec)==NULL)
+				{
+					yyerror("unknown script variable in first parameter");
+				}
+				if(!pv_is_w(spec))
+					yyerror("read-only script variable in first parameter");
+
+				pvmodel = 0;
+				tstr.s = $5;
+				tstr.len = strlen(tstr.s);
+				if(pv_parse_format(&tstr, &pvmodel)<0)
+				{
+					yyerror("error in second parameter");
+				}
+
+				mk_action2( $$, PV_PRINTF_T,
+						SCRIPTVAR_ST, SCRIPTVAR_ELEM_ST, spec, pvmodel) ;
+			}
+		| PV_PRINTF LPAREN script_var COMMA STRING RPAREN {
+				if(!pv_is_w($3))
+					yyerror("read-only script variable in first parameter");
+				pvmodel = 0;
+				tstr.s = $5;
+				tstr.len = strlen(tstr.s);
+				if(pv_parse_format(&tstr, &pvmodel)<0)
+				{
+					yyerror("error in second parameter");
+				}
+
+				mk_action2( $$, PV_PRINTF_T,
+						SCRIPTVAR_ST, SCRIPTVAR_ELEM_ST, $3, pvmodel) ;
+			}
 
 		| SET_HOSTPORT LPAREN STRING RPAREN { mk_action2( $$, SET_HOSTPORT_T, 
 														STRING_ST, 0, $3, 0); }

@@ -265,6 +265,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 	struct action *aitem;
 	struct action *adefault;
 	pv_spec_t *spec;
+	pv_elem_p model;
 	pv_value_t val;
 
 	/* reset the value of error to E_UNSPEC so avoid unknowledgable
@@ -921,13 +922,44 @@ int do_action(struct action* a, struct sip_msg* msg)
 		case USE_BLACKLIST_T:
 			mark_for_search((struct bl_head*)a->elem[0].u.data);
 			break;
+		case PV_PRINTF_T:
+			ret = -1;
+			spec = (pv_spec_p)a->elem[0].u.data;
+			if(!pv_is_w(spec))
+			{
+				LM_ERR("read only PV in first parameter of pv_printf\n");
+				goto error;
+			}
+
+			model = (pv_elem_p)a->elem[1].u.data;
+
+			memset(&val, 0, sizeof(pv_value_t));
+			if(pv_printf_s(msg, model, &val.rs)!=0)
+			{
+				LM_ERR("cannot eval second parameter\n");
+				goto error;
+			}
+			val.flags = PV_VAL_STR;
+			if(spec->setf(msg, &spec->pvp, EQ_T, &val)<0)
+			{
+				LM_ERR("setting PV failed\n");
+				goto error;
+			}
+			
+			ret = 1;
+		break;
 		default:
 			LM_ALERT("BUG - unknown type %d\n", a->type);
+			goto error;
 	}
 
 	if((unsigned char)a->type!=IF_T && (unsigned char)a->type!=ROUTE_T)
 		return_code = ret;
 /*skip:*/
+	return ret;
+
+error:
+	LM_ERR("error at line: %d\n", a->line);
 	return ret;
 	
 error_uri:

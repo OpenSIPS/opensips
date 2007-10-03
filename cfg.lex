@@ -144,6 +144,7 @@ PREFIX			"prefix"
 STRIP			"strip"
 STRIP_TAIL		"strip_tail"
 APPEND_BRANCH	"append_branch"
+PV_PRINTF		"pv_printf"|"avp_printf"
 IF				"if"
 ELSE			"else"
 SWITCH			"switch"
@@ -390,6 +391,8 @@ WHITESPACE	[ \t\r\n]
 <INITIAL>{STRIP_TAIL}	{ count(); yylval.strval=yytext; return STRIP_TAIL; }
 <INITIAL>{APPEND_BRANCH}	{ count(); yylval.strval=yytext; 
 								return APPEND_BRANCH; }
+<INITIAL>{PV_PRINTF}	{ count(); yylval.strval=yytext; 
+								return PV_PRINTF; }
 <INITIAL>{FORCE_RPORT}	{ count(); yylval.strval=yytext; return FORCE_RPORT; }
 <INITIAL>{FORCE_LOCAL_RPORT}	{ count(); yylval.strval=yytext; return FORCE_LOCAL_RPORT; }
 <INITIAL>{FORCE_TCP_ALIAS}	{ count(); yylval.strval=yytext;
