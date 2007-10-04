@@ -1303,16 +1303,26 @@ static int pv_get_authattr(struct sip_msg *msg, pv_param_t *param,
 	        LM_ERR("failed to parse credentials\n");
 		return pv_get_null(msg, param, res);
 	}
-	if(param->pvn.u.isname.name.n==2)
+	switch(param->pvn.u.isname.name.n)
 	{
-	    res->rs.s   = ((auth_body_t*)(hdr->parsed))->digest.realm.s;
-		res->rs.len = ((auth_body_t*)(hdr->parsed))->digest.realm.len;
-	} else if (param->pvn.u.isname.name.n==1) {
-	    res->rs.s   = ((auth_body_t*)(hdr->parsed))->digest.username.user.s;
-	    res->rs.len = ((auth_body_t*)(hdr->parsed))->digest.username.user.len;
-	} else {
-	    res->rs.s   = ((auth_body_t*)(hdr->parsed))->digest.username.whole.s;
-	    res->rs.len = ((auth_body_t*)(hdr->parsed))->digest.username.whole.len;
+		case 3:
+			if(((auth_body_t*)(hdr->parsed))->digest.uri.len==0)
+				return pv_get_null(msg, param, res);
+			res->rs.s  =((auth_body_t*)(hdr->parsed))->digest.uri.s;
+			res->rs.len=((auth_body_t*)(hdr->parsed))->digest.uri.len;
+		break;
+		case 2:
+			res->rs.s  =((auth_body_t*)(hdr->parsed))->digest.realm.s;
+			res->rs.len=((auth_body_t*)(hdr->parsed))->digest.realm.len;
+		break;
+		case 1:
+		    res->rs.s  =((auth_body_t*)(hdr->parsed))->digest.username.user.s;
+		    res->rs.len=((auth_body_t*)(hdr->parsed))->digest.username.user.len;
+		break;
+		default:
+		    res->rs.s  =((auth_body_t*)(hdr->parsed))->digest.username.whole.s;
+			res->rs.len=
+				((auth_body_t*)(hdr->parsed))->digest.username.whole.len;
 	}	    
 	
 	res->flags = PV_VAL_STR;
@@ -2365,6 +2375,9 @@ static pv_export_t _pv_names_table[] = {
 	{{"ai", (sizeof("ai")-1)}, /* */
 		PVT_PAI_URI, pv_get_pai, 0,
 		0, 0, 0, 0},
+	{{"adu", (sizeof("adu")-1)}, /* auth digest uri */
+		PVT_AUTH_DURI, pv_get_authattr, 0,
+		0, 0, pv_init_iname, 3},
 	{{"ar", (sizeof("ar")-1)}, /* auth realm */
 		PVT_AUTH_REALM, pv_get_authattr, 0,
 		0, 0, pv_init_iname, 2},
