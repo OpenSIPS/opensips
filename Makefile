@@ -29,7 +29,7 @@
 #              added skip_cfg_install (andrei)
 #  2004-09-02  install-man will automatically "fix" the path of the files
 #               referred in the man pages
-#  2007-09-28  added berkeleydb (wiquan)
+#  2007-09-28  added db_berkeley (wiquan)
 #
 
 #TLS=1
@@ -584,19 +584,19 @@ install-modules-tools: $(bin-prefix)/$(bin-dir)
 			fi ;\
 			done ; \
 		fi
-		# install BerkekelyDB stuff
+		# install Berkeley database stuff
 		if [ "$(BERKELEYDBON)" = "yes" ]; then \
 			mkdir -p $(modules-prefix)/$(lib-dir)/openserctl ; \
 			sed -e "s#/usr/local/sbin#$(bin-target)#g" \
-				< scripts/openserctl.berkeleydb > /tmp/openserctl.berkeleydb ; \
-			$(INSTALL_CFG) /tmp/openserctl.berkeleydb \
-				$(modules-prefix)/$(lib-dir)/openserctl/openserctl.berkeleydb ; \
-			rm -fr /tmp/openserctl.berkeleydb ; \
+				< scripts/openserctl.db_berkeley > /tmp/openserctl.db_berkeley ; \
+			$(INSTALL_CFG) /tmp/openserctl.db_berkeley \
+				$(modules-prefix)/$(lib-dir)/openserctl/openserctl.db_berkeley ; \
+			rm -fr /tmp/openserctl.db_berkeley ; \
 			sed -e "s#/usr/local/share/openser#$(data-target)#g" \
-				< scripts/openserdbctl.berkeleydb > /tmp/openserdbctl.berkeleydb ; \
-			$(INSTALL_TOUCH) $(modules-prefix)/$(lib-dir)/openserctl/openserdbctl.berkeleydb ; \
-			$(INSTALL_CFG) /tmp/openserdbctl.berkeleydb $(modules-prefix)/$(lib-dir)/openserctl/ ; \
-			rm -fr /tmp/openserdbctl.berkeleydb ; \
+				< scripts/openserdbctl.db_berkeley > /tmp/openserdbctl.db_berkeley ; \
+			$(INSTALL_TOUCH) $(modules-prefix)/$(lib-dir)/openserctl/openserdbctl.db_berkeley ; \
+			$(INSTALL_CFG) /tmp/openserdbctl.db_berkeley $(modules-prefix)/$(lib-dir)/openserctl/ ; \
+			rm -fr /tmp/openserdbctl.db_berkeley ; \
 			mkdir -p $(data-prefix)/$(data-dir)/db_berkeley ; \
 			for FILE in $(wildcard scripts/db_berkeley/*) ; do \
 				if [ -f $$FILE ] ; then \
@@ -606,7 +606,7 @@ install-modules-tools: $(bin-prefix)/$(bin-dir)
 					$(data-prefix)/$(data-dir)/db_berkeley/`basename "$$FILE"` ; \
 			fi ;\
 			done ; \
-	 		$(INSTALL_BIN) utils/db_berkeley/bdb_recover $(bin-prefix)/$(bin-dir)
+	 		$(INSTALL_BIN) utils/db_berkeley/bdb_recover $(bin-prefix)/$(bin-dir) ; \
 		fi
 
 
