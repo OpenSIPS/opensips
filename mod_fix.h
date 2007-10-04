@@ -35,9 +35,25 @@ static inline int str_fixup(void** param, int param_no)
 	return 0;
 }
 
+/*  
+ * free tje str* parameter   
+ */
+static inline int free_str_fixup(void** param, int param_no)
+{
+	if (param_no == 1 || param_no == 2 ) {
+		if(*param) {
+			pkg_free(*param);
+			*param = 0;
+		}
+	}
+	
+	return 0;
+}
+
 
 /*  
- * Convert char* parameter to int parameter
+ * Convert char* parameter to int
+ * - the input parameter must be pkg_allocated and will be freed by function
  */
 static inline int fixup_str2int( void** param, int param_no)
 {
@@ -59,6 +75,10 @@ static inline int fixup_str2int( void** param, int param_no)
 }
 
 
+/*  
+ * Convert char* parameter to regexp
+ * - the input parameter must be pkg_allocated and will be freed by function
+ */
 static inline int fixup_str2regexp(void** param, int param_no)
 {
 	regex_t* re;
@@ -78,6 +98,19 @@ static inline int fixup_str2regexp(void** param, int param_no)
 		pkg_free(*param);
 		/* replace it with the compiled re */
 		*param=re;
+	}
+	return 0;
+}
+
+static inline int free_fixup_str2regexp(void** param, int param_no)
+{
+	if (param_no==1) {
+		if(*param)
+		{
+			regfree((regex_t*)(*param));
+			pkg_free(*param);
+			*param = 0;
+		}
 	}
 	return 0;
 }

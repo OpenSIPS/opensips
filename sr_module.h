@@ -51,6 +51,7 @@
 typedef  struct module_exports* (*module_register)();
 typedef  int (*cmd_function)(struct sip_msg*, char*, char*);
 typedef  int (*fixup_function)(void** param, int param_no);
+typedef  int (*free_fixup_function)(void** param, int param_no);
 typedef  int (*response_function)(struct sip_msg*);
 typedef void (*destroy_function)();
 typedef int (*init_function)(void);
@@ -95,6 +96,9 @@ struct cmd_export_ {
 	int param_no;           /* number of parameters used by the function */
 	fixup_function fixup;   /* pointer to the function called to "fix" the
 							   parameters */
+	free_fixup_function
+				free_fixup; /* pointer to the function called to free the
+							   "fixed" parameters */
 	int flags;              /* Function flags */
 };
 
