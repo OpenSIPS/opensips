@@ -29,6 +29,7 @@
 #              added skip_cfg_install (andrei)
 #  2004-09-02  install-man will automatically "fix" the path of the files
 #               referred in the man pages
+#  2007-09-28  added berkeleydb (wiquan)
 #
 
 #TLS=1
@@ -104,6 +105,12 @@ ifeq (,$(MODULE_PGSQL_INCLUDED))
 else
 	PGSQLON=yes
 endif
+MODULE_BERKELEYDB_INCLUDED=$(shell echo $(modules)| grep db_berkeley )
+ifeq (,$(MODULE_BERKELEYDB_INCLUDED))
+	BERKELEYDBON=no
+else
+	BERKELEYDBON=yes
+endif
 
 ALLDEP=Makefile Makefile.sources Makefile.defs Makefile.rules
 
@@ -152,7 +159,6 @@ cfg.tab.c cfg.tab.h: cfg.y  $(ALLDEP)
 
 .PHONY: all
 all: $(NAME) modules utils
-
 
 
 .PHONY: modules
@@ -512,6 +518,7 @@ install-bin: $(bin-prefix)/$(bin-dir) utils
 .PHONY: utils
 utils:
 		cd utils/$(NAME)unix; $(MAKE) all
+		cd utils/db_berkeley; $(MAKE) all
 
 install-modules: modules install-modules-tools $(modules-prefix)/$(modules-dir)
 	@for r in $(modules_full_path) "" ; do \
@@ -576,6 +583,30 @@ install-modules-tools: $(bin-prefix)/$(bin-dir)
 					$(data-prefix)/$(data-dir)/postgres/`basename "$$FILE"` ; \
 			fi ;\
 			done ; \
+		fi
+		# install BerkekelyDB stuff
+		if [ "$(BERKELEYDBON)" = "yes" ]; then \
+			mkdir -p $(modules-prefix)/$(lib-dir)/openserctl ; \
+			sed -e "s#/usr/local/sbin#$(bin-target)#g" \
+				< scripts/openserctl.berkeleydb > /tmp/openserctl.berkeleydb ; \
+			$(INSTALL_CFG) /tmp/openserctl.berkeleydb \
+				$(modules-prefix)/$(lib-dir)/openserctl/openserctl.berkeleydb ; \
+			rm -fr /tmp/openserctl.berkeleydb ; \
+			sed -e "s#/usr/local/share/openser#$(data-target)#g" \
+				< scripts/openserdbctl.berkeleydb > /tmp/openserdbctl.berkeleydb ; \
+			$(INSTALL_TOUCH) $(modules-prefix)/$(lib-dir)/openserctl/openserdbctl.berkeleydb ; \
+			$(INSTALL_CFG) /tmp/openserdbctl.berkeleydb $(modules-prefix)/$(lib-dir)/openserctl/ ; \
+			rm -fr /tmp/openserdbctl.berkeleydb ; \
+			mkdir -p $(data-prefix)/$(data-dir)/db_berkeley ; \
+			for FILE in $(wildcard scripts/db_berkeley/*) ; do \
+				if [ -f $$FILE ] ; then \
+				$(INSTALL_TOUCH) $$FILE \
+					$(data-prefix)/$(data-dir)/db_berkeley/`basename "$$FILE"` ; \
+				$(INSTALL_CFG) $$FILE \
+					$(data-prefix)/$(data-dir)/db_berkeley/`basename "$$FILE"` ; \
+			fi ;\
+			done ; \
+	 		$(INSTALL_BIN) utils/db_berkeley/bdb_recover $(bin-prefix)/$(bin-dir)
 		fi
 
 
