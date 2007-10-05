@@ -1,8 +1,6 @@
 /* 
  * $Id$ 
  *
- * MySQL module result related functions
- *
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of openser, a free SIP server.
@@ -22,25 +20,17 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef RES_H
-#define RES_H
 
-#include "../../db/db_res.h"
-#include "../../db/db_con.h"
+#ifndef DB_COL_H
+#define DB_COL_H
 
 
-/*
- * Fill the structure with data from database
- */
-int db_mysql_convert_result(db_con_t* _h, db_res_t* _r);
+#include "db_res.h"
 
 
 /*
- * Release memory used by a result structure
+ * Release memory used by columns
  */
-int db_mysql_free_dbresult(db_res_t* _r);
+int db_free_columns(db_res_t* _r);
 
-
-int db_mysql_get_columns(db_con_t* _h, db_res_t* _r);
-
-#endif /* RES_H */
+#endif /* DB_COL_H */
