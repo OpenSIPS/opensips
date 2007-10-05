@@ -518,7 +518,9 @@ install-bin: $(bin-prefix)/$(bin-dir) utils
 .PHONY: utils
 utils:
 		cd utils/$(NAME)unix; $(MAKE) all
-		cd utils/db_berkeley; $(MAKE) all
+		if [ "$(BERKELEYDBON)" = "yes" ]; then \
+			cd utils/db_berkeley; $(MAKE) all ; \
+		fi ; \
 
 install-modules: modules install-modules-tools $(modules-prefix)/$(modules-dir)
 	@for r in $(modules_full_path) "" ; do \
@@ -587,11 +589,12 @@ install-modules-tools: $(bin-prefix)/$(bin-dir)
 		# install Berkeley database stuff
 		if [ "$(BERKELEYDBON)" = "yes" ]; then \
 			mkdir -p $(modules-prefix)/$(lib-dir)/openserctl ; \
-			sed -e "s#/usr/local/sbin#$(bin-target)#g" \
-				< scripts/openserctl.db_berkeley > /tmp/openserctl.db_berkeley ; \
-			$(INSTALL_CFG) /tmp/openserctl.db_berkeley \
-				$(modules-prefix)/$(lib-dir)/openserctl/openserctl.db_berkeley ; \
-			rm -fr /tmp/openserctl.db_berkeley ; \
+# not available at the moment
+# 			sed -e "s#/usr/local/sbin#$(bin-target)#g" \
+# 				< scripts/openserctl.db_berkeley > /tmp/openserctl.db_berkeley ; \
+# 			$(INSTALL_CFG) /tmp/openserctl.db_berkeley \
+# 				$(modules-prefix)/$(lib-dir)/openserctl/openserctl.db_berkeley ; \
+# 			rm -fr /tmp/openserctl.db_berkeley ; \
 			sed -e "s#/usr/local/share/openser#$(data-target)#g" \
 				< scripts/openserdbctl.db_berkeley > /tmp/openserdbctl.db_berkeley ; \
 			$(INSTALL_TOUCH) $(modules-prefix)/$(lib-dir)/openserctl/openserdbctl.db_berkeley ; \
