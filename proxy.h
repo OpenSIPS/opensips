@@ -58,10 +58,13 @@ struct proxy_l* add_proxy( str* name, unsigned short port,
 
 struct proxy_l* mk_proxy( str* name, unsigned short port, unsigned short proto,
 		int is_sips);
+struct proxy_l* mk_shm_proxy(str* name, unsigned short port, unsigned short proto,
+		int is_sips);
 struct proxy_l* mk_proxy_from_ip(struct ip_addr* ip, unsigned short port,
 		unsigned short proto);
-void free_proxy(struct proxy_l* p);
 
+void free_proxy(struct proxy_l* p);
+void free_shm_proxy(struct proxy_l* p);
 
 void free_hostent(struct hostent *dst);
 

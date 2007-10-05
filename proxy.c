@@ -315,4 +315,49 @@ void free_proxy(struct proxy_l* p)
 }
 
 
+void free_shm_proxy(struct proxy_l* p)
+{
+	if (p) {
+		free_shm_hostent(&p->host);
+		free_dns_res(p);
+	}
+}
 
+/* same as add_proxy, but it doesn't add the proxy to the list
+ * uses also SRV if possible & port==0 (quick hack) 
+   works in shared memory */
+struct proxy_l* mk_shm_proxy(str* name, unsigned short port, unsigned short proto,
+		int is_sips)
+{
+	struct proxy_l* p;
+	struct hostent* he;
+
+	p=(struct proxy_l*) shm_malloc(sizeof(struct proxy_l));
+	if (p==0){
+		ser_error=E_OUT_OF_MEM;
+		LM_CRIT("shm memory allocation failure\n");
+		goto error;
+	}
+	memset(p,0,sizeof(struct proxy_l));
+	p->name=*name;
+	p->port=port;
+	p->proto=proto;
+
+	LM_DBG("doing DNS lookup...\n");
+	he = sip_resolvehost(name, &(p->port), &p->proto, is_sips,
+		disable_dns_failover?0:&p->dn );
+	if (he==0){
+		ser_error=E_BAD_ADDRESS;
+		LM_CRIT("could not resolve hostname: \"%.*s\"\n", name->len, name->s);
+		shm_free(p);
+		goto error;
+	}
+	if (hostent_shm_cpy(&(p->host), he)!=0){
+		free_dns_res( p );
+		shm_free(p);
+		goto error;
+	}
+	return p;
+error:
+	return 0;
+}
