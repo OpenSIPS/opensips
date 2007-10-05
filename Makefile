@@ -560,7 +560,7 @@ install-modules-tools: $(bin-prefix)/$(bin-dir)
 					$(data-prefix)/$(data-dir)/mysql/`basename "$$FILE"` ; \
 				$(INSTALL_CFG) $$FILE \
 					$(data-prefix)/$(data-dir)/mysql/`basename "$$FILE"` ; \
-			fi ;\
+				fi ;\
 			done ; \
 		fi
 		# install PostgreSQL stuff
@@ -583,33 +583,27 @@ install-modules-tools: $(bin-prefix)/$(bin-dir)
 					$(data-prefix)/$(data-dir)/postgres/`basename "$$FILE"` ; \
 				$(INSTALL_CFG) $$FILE \
 					$(data-prefix)/$(data-dir)/postgres/`basename "$$FILE"` ; \
-			fi ;\
+				fi ;\
 			done ; \
 		fi
 		# install Berkeley database stuff
 		if [ "$(BERKELEYDBON)" = "yes" ]; then \
 			mkdir -p $(modules-prefix)/$(lib-dir)/openserctl ; \
-# not available at the moment
-# 			sed -e "s#/usr/local/sbin#$(bin-target)#g" \
-# 				< scripts/openserctl.db_berkeley > /tmp/openserctl.db_berkeley ; \
-# 			$(INSTALL_CFG) /tmp/openserctl.db_berkeley \
-# 				$(modules-prefix)/$(lib-dir)/openserctl/openserctl.db_berkeley ; \
-# 			rm -fr /tmp/openserctl.db_berkeley ; \
 			sed -e "s#/usr/local/share/openser#$(data-target)#g" \
 				< scripts/openserdbctl.db_berkeley > /tmp/openserdbctl.db_berkeley ; \
 			$(INSTALL_TOUCH) $(modules-prefix)/$(lib-dir)/openserctl/openserdbctl.db_berkeley ; \
 			$(INSTALL_CFG) /tmp/openserdbctl.db_berkeley $(modules-prefix)/$(lib-dir)/openserctl/ ; \
 			rm -fr /tmp/openserdbctl.db_berkeley ; \
-			mkdir -p $(data-prefix)/$(data-dir)/db_berkeley ; \
-			for FILE in $(wildcard scripts/db_berkeley/*) ; do \
+			mkdir -p $(data-prefix)/$(data-dir)/db_berkeley/openser ; \
+			for FILE in $(wildcard scripts/db_berkeley/openser/*) ; do \
 				if [ -f $$FILE ] ; then \
 				$(INSTALL_TOUCH) $$FILE \
-					$(data-prefix)/$(data-dir)/db_berkeley/`basename "$$FILE"` ; \
+					$(data-prefix)/$(data-dir)/db_berkeley/openser/`basename "$$FILE"` ; \
 				$(INSTALL_CFG) $$FILE \
-					$(data-prefix)/$(data-dir)/db_berkeley/`basename "$$FILE"` ; \
-			fi ;\
+					$(data-prefix)/$(data-dir)/db_berkeley/openser/`basename "$$FILE"` ; \
+				fi ;\
 			done ; \
-	 		$(INSTALL_BIN) utils/db_berkeley/bdb_recover $(bin-prefix)/$(bin-dir) ; \
+			$(INSTALL_BIN) utils/db_berkeley/bdb_recover $(bin-prefix)/$(bin-dir) ; \
 		fi
 
 
