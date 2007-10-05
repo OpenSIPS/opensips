@@ -78,20 +78,20 @@
 		<xsl:value-of select="normalize-space(type[@db=$db])"/>
 	    </xsl:when>
 	    <xsl:when test="$type='char' or 
-		            $type='short' or 
-                            $type='int' or
-	                    $type='long' or 
-                            $type='datetime'">
+						$type='short' or 
+						$type='int' or
+						$type='long' or 
+						$type='datetime'">
 		<xsl:text>int</xsl:text>
 	    </xsl:when>
 	    <xsl:when test="$type='float' or 
-		            $type='double'">
+						$type='double'">
 		<xsl:text>double</xsl:text>
 	    </xsl:when>
 	    <xsl:when test="$type='string' or
-                            $type='text' or
-                            $type='binary'">
-		<xsl:text>str</xsl:text>
+						$type='text' or
+						$type='binary'">
+		<xsl:text>string</xsl:text>
 	    </xsl:when>
 	    <xsl:otherwise>
 		<xsl:call-template name="type-error"/>
