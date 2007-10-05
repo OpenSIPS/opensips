@@ -203,19 +203,7 @@
 	    </xsl:otherwise>
 	</xsl:choose>
     </xsl:template>
-    <!-- ################ /COLUMN ################# -->
 
-    <!-- ################ INDEX ################# -->
-
-    <xsl:template match="index">
-	<xsl:apply-templates match="colref"/>
-    </xsl:template>
-    
-    <!-- ################ /INDEX ################# -->
-
-    <!-- ################ COLREF ################# -->
-
-    <xsl:template match="colref"/>
 
     <xsl:template name="get-column">
 	<xsl:param name="id" select="/.."/>	
@@ -236,7 +224,7 @@
 	</xsl:choose>
     </xsl:template>
 
-    <!-- ################ /COLREF ################# -->
+    <!-- ################ /COLUMN ################# -->
 
     <!-- ################ ROW ################# -->
 

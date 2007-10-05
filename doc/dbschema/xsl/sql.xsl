@@ -277,7 +277,7 @@
 		<xsl:with-param name="select" select="$col-id"/>
 	    </xsl:call-template>
 
-	    <xsl:text>=</xsl:text>	    
+	    <xsl:text>=</xsl:text>
 
 	    <!-- value of column -->
 	    <xsl:variable name="value" select="$row/value[@col=$col-id]"/>
