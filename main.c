@@ -1133,7 +1133,9 @@ try_again:
 		LM_ERR("bad function call in config file\n");
 		goto error;
 	}
+#ifdef EXTRA_DEBUG
 	print_rl();
+#endif
 
 	/* init the resolver, before fixing the config */
 	resolv_init();

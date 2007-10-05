@@ -1006,13 +1006,13 @@ module_stm:	LOADMODULE STRING	{	if(*$2!='/' && mpath!=NULL
 										&& strlen($2)+mpath_len<255)
 									{
 										strcpy(mpath_buf+mpath_len, $2);
-										DBG("loading module %s\n", mpath_buf);
+										LM_DBG("loading module %s\n",mpath_buf);
 										if (sr_load_module(mpath_buf)!=0){
 											yyerror("failed to load module");
 										}
 										mpath_buf[mpath_len]='\0';
 									} else {
-										DBG("loading module %s\n", $2);
+										LM_DBG("loading module %s\n", $2);
 										if (sr_load_module($2)!=0){
 											yyerror("failed to load module");
 										}
