@@ -913,6 +913,8 @@ int main(int argc, char** argv)
 	opterr=0;
 	options="f:cCm:b:l:n:N:rRvdDETSVhw:t:u:g:P:G:i:x:W:";
 
+	/* print OpenSER version to log for history tracking */
+	LM_NOTICE("version: %s\n", version);
 
 	while((c=getopt(argc,argv,options))!=-1){
 		switch(c){
