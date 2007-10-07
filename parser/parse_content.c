@@ -196,7 +196,7 @@ static type_node_t subtype_tree[] = {
 												{'i',SUBTYPE_UNKNOWN,1,-1}, 
 													{'d',SUBTYPE_UNKNOWN,1,-1},
 														{'f',SUBTYPE_XML_MSRTC_PIDF,0,-1},
-	{'e',SUBTYPE_UNKNOWN,1,-1}, /* 105 */
+	{'e',SUBTYPE_UNKNOWN,1,118}, /* 105 */
 		{'x',SUBTYPE_UNKNOWN,1,-1},
 			{'t',SUBTYPE_UNKNOWN,1,-1},
 				{'e',SUBTYPE_UNKNOWN,1,-1},
@@ -209,8 +209,13 @@ static type_node_t subtype_tree[] = {
 											{'o',SUBTYPE_UNKNOWN,1,-1},
 												{'d',SUBTYPE_UNKNOWN,1,-1},
 													{'y',SUBTYPE_EXTERNAL_BODY,0,-1},
+	{'m',SUBTYPE_UNKNOWN,1,-1}, /* 118 */
+	         {'i',SUBTYPE_UNKNOWN,1,-1},
+			{'x',SUBTYPE_UNKNOWN,1,-1},
+				{'e',SUBTYPE_UNKNOWN,1,-1},
+					{'d',SUBTYPE_MIXED,0,-1},
 
-	};
+        };
 
 
 
