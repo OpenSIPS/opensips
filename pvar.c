@@ -1761,6 +1761,7 @@ static int pv_get_hdr(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res)
 	}
 
 	/* we have a numeric index */
+	hf0 = 0;
 	if(idx<0)
 	{
 		n = 1;
