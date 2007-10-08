@@ -913,9 +913,6 @@ int main(int argc, char** argv)
 	opterr=0;
 	options="f:cCm:b:l:n:N:rRvdDETSVhw:t:u:g:P:G:i:x:W:";
 
-	/* print OpenSER version to log for history tracking */
-	LM_NOTICE("version: %s\n", version);
-
 	while((c=getopt(argc,argv,options))!=-1){
 		switch(c){
 			case 'f':
@@ -1249,7 +1246,7 @@ try_again:
 #ifdef SHM_MEM
 	debug=shm_malloc(sizeof(int));
 	if (debug==0) {
-		LM_ERR("ERROR: out  of memory\n");
+		LM_ERR("ERROR: out of memory\n");
 		goto error;
 	}
 	*debug = debug_init;
@@ -1267,6 +1264,9 @@ try_again:
 			goto error;
 		}
 	}
+
+        /* print OpenSER version to log for history tracking */
+        LM_NOTICE("version: %s\n", version);
 
 	/* init serial forking engine */
 	if (init_serialization()!=0) {
