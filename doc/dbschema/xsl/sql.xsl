@@ -225,7 +225,9 @@
 <!-- ################ ROW ################  -->
 
     <xsl:template match="row">
-	<xsl:if test="@vendor-controlled[1]">
+
+<!-- not used at the moment -->
+<!--	<xsl:if test="@vendor-controlled[1]">
 	    <xsl:text>DELETE FROM </xsl:text>	    
 	    <xsl:call-template name="get-name">
 		<xsl:with-param name="select" select="parent::table"/>
@@ -233,7 +235,7 @@
 	    <xsl:text> WHERE </xsl:text>	    
 	    <xsl:call-template name="row-identification"/>
 	    <xsl:text>;&#x0A;</xsl:text>	    
-	</xsl:if>
+	</xsl:if>-->
 
 	<xsl:text>INSERT INTO </xsl:text>
 	<xsl:call-template name="get-name">
