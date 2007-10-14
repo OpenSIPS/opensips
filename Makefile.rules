@@ -88,6 +88,7 @@ proper realclean distclean: clean
 		fi ; \
 	done 
 	-@if [ -d utils/openserunix ]; then $(MAKE) -C utils/openserunix proper; fi
+	-@if [ -d utils/db_berkeley ]; then $(MAKE) -C utils/db_berkeley proper; fi
 
 .PHONY: mantainer-clean
 mantainer-clean: distclean
