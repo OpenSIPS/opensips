@@ -63,6 +63,7 @@ dbschema-docbook-clean:
 		rm -f doc/database/*.txt ; \
 		rm -f doc/database/*.html ; \
 		rm -f doc/database/*.pdf ; \
+		$(MAKE) -C db/schema docbook_clean; \
 	fi
 
 .PHONY: clean
