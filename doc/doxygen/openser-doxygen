@@ -448,7 +448,7 @@ WARN_LOGFILE           =
 INPUT                  = ./ \
 			 db \
 			 mem \
-             mi \
+			 mi \
 			 modules/acc \
 			 modules/alias_db \
 			 modules/auth \
@@ -457,7 +457,11 @@ INPUT                  = ./ \
 			 modules/auth_radius \
 			 modules/avpops \
 			 modules/avp_radius \
+			 modules/benchmark \
+			 modules/cfgutils \
 			 modules/cpl-c \
+			 modules/carrierroute \
+			 modules/db_berkeley \
 			 modules/dbtext \
 			 modules/dialog \
 			 modules/dispatcher \
@@ -470,23 +474,26 @@ INPUT                  = ./ \
 			 modules/gflags \
 			 modules/group \
 			 modules/group_radius \
+			 modules/h350 \
 			 modules/imc \
 			 modules/jabber \
 			 modules/lcr \
+			 modules/ldap \
 			 modules/mangler \
 			 modules/maxfwd \
 			 modules/mediaproxy \
 			 modules/mi_fifo \
 			 modules/mi_xmlrpc \
+			 modules/mi_datagram \
 			 modules/msilo \
 			 modules/mysql \
 			 modules/nathelper \
 			 modules/options \
 			 modules/osp \
-			 modules/pa \
 			 modules/path \
 			 modules/pdt \
 			 modules/perl \
+			 modules/perlvdb \
 			 modules/permissions \
 			 modules/pike \
 			 modules/postgres \
