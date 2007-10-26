@@ -1690,6 +1690,13 @@ static int pv_get_hdr(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res)
 			tv.ri = param->pvn.u.isname.name.n;
 		}
 	}
+	/* we need to be sure we have parsed all headers */
+	if(parse_headers(msg, HDR_EOH_F, 0)<0)
+	{
+		LM_ERR("error parsing headers\n");
+		return pv_get_null(msg, param, res);
+	}
+
 	for (hf=msg->headers; hf; hf=hf->next)
 	{
 		if(tv.flags == 0)
