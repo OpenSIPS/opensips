@@ -28,7 +28,7 @@
 
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
 	version='1.0'>
-    
+
     <xsl:key name="column_id" match="column" use="@id|xml:id"/>
 
     <xsl:param name="prefix" select="_"/>
@@ -36,7 +36,7 @@
     <xsl:param name="db" select="_"/>
 
     <xsl:variable name="sign-prefix">unsigned </xsl:variable>
-    
+
     <!-- Do not output text -->
     <xsl:template match="text()|@*"/>
     <xsl:template match="text()|@*" mode="drop"/>

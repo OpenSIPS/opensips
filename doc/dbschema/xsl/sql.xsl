@@ -37,30 +37,15 @@
 	    <xsl:apply-templates select="/database[1]"/>
 	</xsl:document>
 
-<!-- Creates data and drop SQL statements, not needed at the moment -->
-<!--
-	<xsl:variable name="datafile" select="concat($dir, concat('/', concat($prefix, 'data.sql')))"/>
-	<xsl:document href="{$datafile}" method="text" indent="no" omit-xml-declaration="yes">
-	    <xsl:apply-templates mode="data" select="/database[1]"/> -->
-	    <!-- This is a hack to ensure that the file gets created when nothing is written  -->
-<!--	    <xsl:text> </xsl:text>
-	</xsl:document>-->
-
-<!--	<xsl:variable name="dropfile" select="concat($dir, concat('/', concat($prefix, 'drop.sql')))"/>
-	<xsl:document href="{$dropfile}" method="text" indent="no" omit-xml-declaration="yes">
-	    <xsl:apply-templates mode="drop" select="/database[1]"/> -->
-	    <!-- This is a hack to ensure that the file gets created when nothing is written  -->
-<!--	    <xsl:text> </xsl:text>
-	</xsl:document> -->
     </xsl:template>
-    
+
 <!-- ################ DATABASE ################# -->
 
 <!-- ################ /DATABASE ################# -->
 
-    
+
 <!-- ################ TABLE  ################# -->
-    
+
     <xsl:template match="table">
 	<xsl:variable name="table.name">
 	    <xsl:call-template name="get-name"/>
@@ -226,17 +211,6 @@
 
     <xsl:template match="row">
 
-<!-- not used at the moment -->
-<!--	<xsl:if test="@vendor-controlled[1]">
-	    <xsl:text>DELETE FROM </xsl:text>	    
-	    <xsl:call-template name="get-name">
-		<xsl:with-param name="select" select="parent::table"/>
-	    </xsl:call-template>
-	    <xsl:text> WHERE </xsl:text>	    
-	    <xsl:call-template name="row-identification"/>
-	    <xsl:text>;&#x0A;</xsl:text>	    
-	</xsl:if>-->
-
 	<xsl:text>INSERT INTO </xsl:text>
 	<xsl:call-template name="get-name">
 	    <xsl:with-param name="select" select="parent::table"/>
@@ -307,7 +281,7 @@
 
 	    </xsl:otherwise>
 	</xsl:choose>
-    	
+
     </xsl:template>
 
 <!-- ################ /ROW ################  -->
