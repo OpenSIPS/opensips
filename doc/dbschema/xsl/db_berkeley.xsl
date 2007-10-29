@@ -48,15 +48,14 @@
 		<xsl:text>METADATA_KEY&#x0A;</xsl:text>
 		
 		<!-- primary indexes -->
-		<xsl:for-each select="column">
+		<!--<xsl:for-each select="column">
 			<xsl:if test="primary">
-				<!-- xsl count from 1 -->
 				<xsl:value-of select="position() - 1"/>
 				<xsl:if test="not(position()=last())">
 			   	<xsl:text> </xsl:text>
 				</xsl:if>
 			</xsl:if>
-		</xsl:for-each>
+		</xsl:for-each>-->
 
 		<xsl:for-each select="index">
 	        <xsl:call-template name="create_index"/>
@@ -170,10 +169,10 @@
 	<xsl:variable name="row" select="."/>
 
 	<!-- Walk through all the columns of the table and lookup
-	     corresponding values based on id-col match from the
-             current row, use the default value of the column if
-	     there is no value with matching col attribute in the
-             current row
+		corresponding values based on id-col match from the
+		current row, use the default value of the column if
+		there is no value with matching col attribute in the
+		current row
 	-->
 	<xsl:for-each select="parent::table/column">
 	    <xsl:variable name="id" select="@id"/>
@@ -230,25 +229,28 @@
 
   <!-- create the non primary indexes -->
 	<xsl:template name="create_index">
-	<xsl:variable name="link">
-		<xsl:call-template name="get-column-name">
-	   	<xsl:with-param name="select" select="colref/@linkend"/>
+	<!-- save the parent table name -->
+	<xsl:variable name="table.name">
+		<xsl:call-template name="get-name">
+		<xsl:with-param name="select" select="parent::table"/>
 		</xsl:call-template>
 	</xsl:variable>
-	<xsl:variable name="table.name">
-	    <xsl:call-template name="get-name">
-		<xsl:with-param name="select" select="parent::table"/>
-	    </xsl:call-template>
-	</xsl:variable>
-
-	<xsl:for-each select="//table[name = $table.name]/column">
-		<xsl:if test="@id = $link">
-		<!-- xsl count from 1 -->
-			<xsl:value-of select="position() - 1"/>
-			<xsl:if test="not(position()=last())">
-			   	<xsl:text> </xsl:text>
+	<!-- loop over all colrefs -->
+	<xsl:for-each select="colref">
+		<xsl:variable name="link">
+			<xsl:call-template name="get-column-name">
+			<xsl:with-param name="select" select="@linkend"/>
+			</xsl:call-template>
+		</xsl:variable>
+<!-- 		<xsl:value-of select="concat($link, '|')"/> -->
+		<!-- and search the right position of the link -->
+		<xsl:for-each select="//table[name = $table.name]/column">
+			<xsl:if test="@id = $link">
+			<!-- xsl count from 1 -->
+				<xsl:value-of select="position() - 1"/>
+				<xsl:text> </xsl:text>
 			</xsl:if>
-		</xsl:if>
+		</xsl:for-each>
 	</xsl:for-each>
 
 	</xsl:template>
