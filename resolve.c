@@ -1090,7 +1090,7 @@ struct hostent* sip_resolvehost( str* name, unsigned short* port,
 			*proto = get_naptr_proto( get_naptr(rd) );
 			he = do_srv_lookup( get_naptr(rd)->repl, port, dn);
 			if ( he ) {
-				LM_DBG("found!\n");
+				LM_DBG("valid SRV found!\n");
 				if (dn) {
 					/* save the state of the resolver for failure cases */
 					if (*dn==NULL)
@@ -1158,8 +1158,8 @@ do_srv:
 	if (he)
 		return he;
 	
-	LM_DBG("DEBUG:sip_resolvehost2: no valid SRV record found for %s," 
-		" trying A record lookup...\n", tmp);
+	LM_DBG("no valid SRV record found for %s,trying A record lookup...\n",
+		tmp);
 	/* set default port */
 	*port = (is_sips||((*proto)==PROTO_TLS))?SIPS_PORT:SIP_PORT;
 
@@ -1209,7 +1209,7 @@ static inline struct hostent* get_next_he(struct dns_node **node,
 							break;
 						}
 						n->idx++;
-					} while(n->idx<=n->no);
+					} while(n->idx<n->no);
 					if (he==NULL || (he && n->idx+1==n->no) ) {
 						/* colapse the SRV node */
 						shm_free(n);
