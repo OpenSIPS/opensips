@@ -60,6 +60,15 @@
  *  2006-04-26  2-stage TLS init: before and after config file parsing (klaus)
  */
 
+/**
+ * \file main.c
+ * \brief Command line parsing, initializiation and server startup.
+ *
+ * Contains methods for parsing the command line, the initialization of
+ * the execution environment (signals, config file parsing) and forking
+ * the TCP, UDP, timer and fifo children.
+ */
+
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -181,7 +190,9 @@ Options:\n\
     -G file      Create a pgid file\n"
 ;
 
-/* print compile-time constants */
+/**
+ * Print compile-time constants 
+ */
 void print_ct_constants(void)
 {
 #ifdef ADAPTIVE_WAIT
@@ -361,7 +372,10 @@ char* pid_file = 0; /* filename as asked by user */
 char* pgid_file = 0;
 
 
-/* call it before exiting; if show_status==1, mem status is displayed */
+/**
+ * Clean up on exit. This should be called before exiting.
+ * \param show_status set to one to display the mem status 
+ */
 void cleanup(int show_status)
 {
 	/*clean-up*/
@@ -409,14 +423,17 @@ void cleanup(int show_status)
 }
 
 
-/* tries to send a signal to all our processes
- * if daemonized  is ok to send the signal to all the process group,
+/** 
+ * Tries to send a signal to all our processes
+ * If daemonized  is ok to send the signal to all the process group,
  * however if not daemonized we might end up sending the signal also
  * to the shell which launched us => most signals will kill it if 
  * it's not in interactive mode and we don't want this. The non-daemonized 
  * case can occur when an error is encountered before daemonize is called 
  * (e.g. when parsing the config file) or when openser is started in 
- * "dont-fork" mode. */
+ * "dont-fork" mode.
+ * \param signum signal for killing the children
+ */
 static void kill_all_children(int signum)
 {
 	int r;
@@ -428,8 +445,12 @@ static void kill_all_children(int signum)
 
 
 
-/* if this handler is called, a critical timeout has occured while
- * waiting for the children to finish => we should kill everything and exit */
+/**
+ * Timeout handler during wait for children exit. 
+ * If this handler is called, a critical timeout has occured while
+ * waiting for the children to finish => we should kill everything and exit
+ * \param signo signal for killing the children
+ */
 static void sig_alarm_kill(int signo)
 {
 	kill_all_children(SIGKILL); /* this will kill the whole group
@@ -440,8 +461,13 @@ static void sig_alarm_kill(int signo)
 }
 
 
-/* like sig_alarm_kill, but the timeout has occured when cleaning up
- * => try to leave a core for future diagnostics */
+/**
+ * Timeout handler during wait for children exit. 
+ * like sig_alarm_kill, but the timeout has occured when cleaning up,
+ * try to leave a core for future diagnostics
+ * \param signo signal for killing the children
+ * \see sig_alarm_kill
+ */
 static void sig_alarm_abort(int signo)
 {
 	/* LOG is not signal safe, but who cares, we are abort-ing anyway :-) */
@@ -451,6 +477,9 @@ static void sig_alarm_abort(int signo)
 
 
 #define OPENSER_SHUTDOWN_TIME	60
+/**
+ * Signal handler for the server.
+ */
 void handle_sigs(void)
 {
 	pid_t	chld;
@@ -553,12 +582,12 @@ void handle_sigs(void)
 
 
 
-/* added by jku; allows for regular exit on a specific signal;
-   good for profiling which only works if exited regularly and
-   not by default signal handlers
-    - modified by andrei: moved most of the stuff to handle_sigs, 
-       made it safer for the "fork" case
-*/
+/**
+ * Exit regulary on a specific signal.
+ * This is good for profiling which only works if exited regularly
+ * and not by default signal handlers
+ * \param signo The signal that should be handled
+ */
 static void sig_usr(int signo)
 {
 	if (is_main){
@@ -605,7 +634,10 @@ static void sig_usr(int signo)
 
 
 
-/* install the signal handlers, returns 0 on success, -1 on error */
+/**
+ * Install the signal handlers.
+ * \return 0 on success, -1 on error 
+ */
 int install_sigs(void)
 {
 	/* added by jku: add exit handler */
@@ -645,7 +677,11 @@ error:
 }
 
 
-/* main loop */
+/**
+ * Main loop, forks the children, bind to addresses,
+ * handle signals.
+ * \return don't return on sucess, -1 on error
+ */
 static int main_loop(void)
 {
 	static int chd_rank;
@@ -884,7 +920,13 @@ error:
 
 
 
-
+/**
+ * Main routine, start of the program execution.
+ * \param argc the number of arguments
+ * \param argv pointer to the arguments array
+ * \return don't return on sucess, -1 on error
+ * \see main_loop
+ */
 int main(int argc, char** argv)
 {
 	/* configure by default logging to syslog */
@@ -1322,4 +1364,3 @@ error:
 	cleanup(0);
 	return ret;
 }
-
