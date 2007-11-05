@@ -47,20 +47,23 @@
 		<!-- Process all indexes -->
 		<xsl:text>METADATA_KEY&#x0A;</xsl:text>
 		
-		<!-- primary indexes -->
-		<!--<xsl:for-each select="column">
-			<xsl:if test="primary">
+		<!-- natural indexes -->
+		<xsl:for-each select="column">
+			<xsl:if test="naturalkey">
 				<xsl:value-of select="position() - 1"/>
 				<xsl:if test="not(position()=last())">
 			   	<xsl:text> </xsl:text>
 				</xsl:if>
 			</xsl:if>
-		</xsl:for-each>-->
+		</xsl:for-each>
+		<xsl:text>&#x0A;</xsl:text>
 
+	<!--
 		<xsl:for-each select="index">
 	        <xsl:call-template name="create_index"/>
 		</xsl:for-each>
 		<xsl:text>&#x0A;</xsl:text>
+	-->
 
 		<xsl:text>METADATA_READONLY&#x0A;</xsl:text>
 		<xsl:text>0&#x0A;</xsl:text>
@@ -242,7 +245,6 @@
 			<xsl:with-param name="select" select="@linkend"/>
 			</xsl:call-template>
 		</xsl:variable>
-<!-- 		<xsl:value-of select="concat($link, '|')"/> -->
 		<!-- and search the right position of the link -->
 		<xsl:for-each select="//table[name = $table.name]/column">
 			<xsl:if test="@id = $link">
