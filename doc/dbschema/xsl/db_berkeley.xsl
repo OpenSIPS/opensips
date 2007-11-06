@@ -49,7 +49,7 @@
 		
 		<!-- natural indexes -->
 		<xsl:for-each select="column">
-			<xsl:if test="naturalkey">
+			<xsl:if test="natural">
 				<xsl:value-of select="position() - 1"/>
 				<xsl:if test="not(position()=last())">
 			   	<xsl:text> </xsl:text>

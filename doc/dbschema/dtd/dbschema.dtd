@@ -40,7 +40,7 @@
 
 <!ELEMENT version (#PCDATA) >
 
-<!ELEMENT column (name, description?, type, size?, default?, null?, naturalkey?) >
+<!ELEMENT column (name, description?, type, size?, default?, null?, natural?) >
 <!ATTLIST column
     id ID #IMPLIED
 >
