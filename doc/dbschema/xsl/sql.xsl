@@ -69,11 +69,6 @@
 	<xsl:call-template name="table.close"/>
     </xsl:template>
 
-    <xsl:template match="table" mode="data">
-	<!-- Process initial data --> 
-	<xsl:apply-templates select="row"/>
-    </xsl:template>
-
     <xsl:template name="table.close">
 	<xsl:text>);&#x0A;&#x0A;</xsl:text>
     </xsl:template>
@@ -206,113 +201,5 @@
     </xsl:template>
 
 <!-- ################ /COLREF ################  -->
-
-<!-- ################ ROW ################  -->
-
-    <xsl:template match="row">
-
-	<xsl:text>INSERT INTO </xsl:text>
-	<xsl:call-template name="get-name">
-	    <xsl:with-param name="select" select="parent::table"/>
-	</xsl:call-template>
-	<xsl:text> (</xsl:text>
-	<xsl:apply-templates select="value" mode="colname"/>
-	<xsl:text>) VALUES (</xsl:text>
-	<xsl:apply-imports/>
-	<xsl:text>);&#x0A;</xsl:text>
-	<xsl:if test="position()=last()">
-	    <xsl:text>&#x0A;</xsl:text>	    
-	</xsl:if>
-    </xsl:template>
-
-    <xsl:template name="row-identification">
-	<xsl:variable name="row-ident" select="parent::table/row-identificator"/>
-	<xsl:variable name="row" select="."/>
-	<xsl:variable name="columns" select="$row-ident/colref"/>
-
-
-	<xsl:choose>
-	    <xsl:when test="count($row-ident) = 0">
-		<xsl:message terminate="yes">
-		    <xsl:text>ERROR: row-identificator does not exists.</xsl:text>
-		</xsl:message>
-	    </xsl:when>
-	    <xsl:when test="count($columns) = 0">
-		<xsl:message terminate="yes">
-		    <xsl:text>ERROR: row-identificator does not have any column.</xsl:text>
-		</xsl:message>
-	    </xsl:when>
-	    <xsl:otherwise>
-
-
-	<xsl:for-each select="$columns">
-	    <xsl:variable name="col-id" select="@linkend"/>
-	    
-	    <!-- column name -->
-	    <xsl:call-template name="get-column-name">
-		<xsl:with-param name="select" select="$col-id"/>
-	    </xsl:call-template>
-
-	    <xsl:text>=</xsl:text>
-
-	    <!-- value of column -->
-	    <xsl:variable name="value" select="$row/value[@col=$col-id]"/>
-	    <xsl:choose>
-		<xsl:when test="count($value) = 0">
-		    <xsl:message terminate="yes">
-			<xsl:text>ERROR: Value of column with id '</xsl:text>
-			<xsl:value-of select="$col-id"/>
-			<xsl:text>' does not exist.</xsl:text>
-		    </xsl:message>
-		</xsl:when>
-		<xsl:otherwise>
-		    <xsl:text>'</xsl:text>
-		    <xsl:value-of select="$value"/>
-		    <xsl:text>'</xsl:text>
-		</xsl:otherwise>
-	    </xsl:choose>
-
-
-	    <xsl:if test="not(position()=last())">
-		<xsl:text> AND </xsl:text>
-	    </xsl:if>
-	</xsl:for-each>
-
-
-	    </xsl:otherwise>
-	</xsl:choose>
-
-    </xsl:template>
-
-<!-- ################ /ROW ################  -->
-
-<!-- ################ VALUE ################  -->
-
-    <xsl:template match="value">
-	<xsl:choose>
-	    <xsl:when test="null">
-		<xsl:text>NULL</xsl:text>
-	    </xsl:when>
-	    <xsl:otherwise>
-		<xsl:text>'</xsl:text>
-		<xsl:value-of select="text()"/>
-		<xsl:text>'</xsl:text>
-	    </xsl:otherwise>
-	</xsl:choose>
-	<xsl:if test="not(position()=last())">
-	    <xsl:text>, </xsl:text>
-	</xsl:if>
-    </xsl:template>
-
-    <xsl:template match="value" mode="colname">
-	<xsl:call-template name="get-column-name">
-	    <xsl:with-param name="select" select="@col"/>
-	</xsl:call-template>
-	<xsl:if test="not(position()=last())">
-	    <xsl:text>, </xsl:text>
-	</xsl:if>
-    </xsl:template>
-
-<!-- ################ /VALUE ################  -->
 
 </xsl:stylesheet>

@@ -40,20 +40,17 @@
 
 <!ELEMENT version (#PCDATA) >
 
-<!ELEMENT column (name, description?, type, size?, default?, null?, natural?) >
+<!ELEMENT column (name, description?, type, size?, default?, null?, primary?, natural?, autoincrement?) >
 <!ATTLIST column
     id ID #IMPLIED
 >
 
-<!ELEMENT index (name?, unique?, colref+) >
+<!ELEMENT index (name?, unique?, primary?, colref+) >
 <!ATTLIST index
     id ID #IMPLIED
 >
 
 <!ELEMENT type (#PCDATA) >
-<!ATTLIST type
-    auto_increment (yes|no) #IMPLIED
->
 
 <!ELEMENT size (#PCDATA) >
 
@@ -63,19 +60,13 @@
 
 <!ELEMENT unique EMPTY >
 
+<!ELEMENT primary EMPTY >
+
+<!ELEMENT natural EMPTY >
+
+<!ELEMENT autoincrement EMPTY >
+
 <!ELEMENT colref EMPTY>
 <!ATTLIST colref
     linkend IDREF #REQUIRED
->
-
-<!ELEMENT row-identificator (colref+) >
-
-<!ELEMENT row (value*) >
-<!ATTLIST row
-    vendor-controlled (0|1) #IMPLIED
->
-
-<!ELEMENT value (#PCDATA | null)* >
-<!ATTLIST value
-    col IDREF #REQUIRED
 >

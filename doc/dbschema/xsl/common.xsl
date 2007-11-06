@@ -106,14 +106,12 @@
 	<!-- Process all indexes -->
 	<xsl:apply-templates select="index"/>
 
-	<!-- Process initial data --> 
-	<xsl:apply-templates select="row"/>
     </xsl:template>
 
     <!-- ################ /TABLE ################# -->
 
     <!-- ################ COLUMN ################# -->
-    
+
     <xsl:template match="column"/>
 
     <xsl:template name="get-type-string">
@@ -146,7 +144,7 @@
 	    </xsl:otherwise>
 	</xsl:choose>
     </xsl:template>
-    
+
     <xsl:template name="get-sign">
 	<xsl:param name="select" select="."/>
 	<xsl:variable name="type">
@@ -226,23 +224,4 @@
 
     <!-- ################ /COLUMN ################# -->
 
-    <!-- ################ ROW ################# -->
-
-    <xsl:template match="row">
-	<xsl:apply-templates select="value"/>
-    </xsl:template>
-
-    <!-- ################ /ROW ################# -->
-
-    <!-- ################ VALUE ################# -->
-
-    <xsl:template match="value"/>
-
-    <!-- ################ /VALUE ################# -->
-
-    <!-- ################ USER ################# -->
-
-    <xsl:template match="user"/>
-
-    <!-- ################ /USER ################# -->
 </xsl:stylesheet>
