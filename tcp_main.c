@@ -1698,9 +1698,10 @@ int tcp_init_children(int *chd_rank)
 							   bind address on tcp */
 			if (init_child(*chd_rank) < 0) {
 				LM_ERR("init_children failed\n");
-				goto error;
+				exit(-1);
 			}
 			tcp_receive_loop(reader_fd[1]);
+			exit(-1);
 		}
 	}
 	return 0;

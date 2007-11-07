@@ -819,7 +819,7 @@ static int main_loop(void)
 					bind_address=si; /* shortcut */
 					if (init_child(chd_rank) < 0) {
 						LM_ERR("init_child failed for UDP listener\n");
-						goto error;
+						exit(-1);
 					}
 					udp_rcv_loop();
 					exit(-1);
@@ -846,7 +846,7 @@ static int main_loop(void)
 					bind_address=si; /* shortcut */
 					if (init_child(chd_rank) < 0) {
 						LM_ERR("init_child failed\n");
-						goto error;
+						exit(-1);
 					}
 					sctp_server_rcv_loop();
 					exit(-1);
@@ -882,7 +882,7 @@ static int main_loop(void)
 			/* init modules */
 			if (init_child(PROC_TCP_MAIN) < 0) {
 				LM_ERR("error in init_child for tcp main\n");
-				goto error;
+				exit(-1);
 			}
 			tcp_main_loop();
 			exit(-1);

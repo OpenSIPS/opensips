@@ -381,7 +381,7 @@ int start_timer_processes(void)
 			/* run init if required */
 			if ( tpl->flags&TIMER_PROC_INIT_FLAG && init_child(PROC_TIMER)<0 ){
 				LM_ERR("init_child failed for timer proc\n");
-				goto error;
+				exit(-1);
 			}
 			run_timer_process( tpl, first);
 			exit(-1);
