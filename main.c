@@ -366,7 +366,7 @@ extern FILE* yyin;
 extern int yyparse();
 
 
-int is_main = 0; /* flag = is this the  "main" process? */
+int is_main = 1; /* flag = is this the  "main" process? */
 
 char* pid_file = 0; /* filename as asked by user */
 char* pgid_file = 0;
@@ -905,8 +905,8 @@ static int main_loop(void)
 	}
 
 	for(;;){
-			pause();
 			handle_sigs();
+			pause();
 	}
 
 	/*return 0; */
