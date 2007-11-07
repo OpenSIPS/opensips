@@ -158,7 +158,7 @@ pid_t openser_fork(char *proc_desc)
 
 	if (pid==0){
 		/* child process */
-		is_main = 0; /* should already be 0, but to be sure */
+		is_main = 0; /* a child is not main process */
 		/* set uid and pid */
 		process_no = process_counter;
 		pt[process_no].pid = getpid();
