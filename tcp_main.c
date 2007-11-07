@@ -1443,9 +1443,9 @@ void tcp_main_loop(void)
 		}
 	}
 #endif
-	/* add all the unix sockets used for communcation with other ser processes
-	 *  (get fd, new connection a.s.o) */
-	for (r=1; r<process_no; r++){
+	/* add all the unix sockets used for communcation with other openser 
+	 * processes (get fd, new connection a.s.o) */
+	for (r=1; r<counted_processes; r++){
 		if (pt[r].unix_sock>0) /* we can't have 0, we never close it!*/
 			if (io_watch_add(&io_h, pt[r].unix_sock, F_PROC, &pt[r])<0){
 					LM_CRIT("failed to add process %d unix socket to the "
@@ -1680,7 +1680,6 @@ int tcp_init_children(int *chd_rank)
 			goto error;
 		}else if (pid>0){
 			/* parent */
-			//close(sockfd[1]);
 			close(reader_fd[1]);
 			tcp_children[r].pid=pid;
 			tcp_children[r].proc_no=process_no;
@@ -1690,10 +1689,7 @@ int tcp_init_children(int *chd_rank)
 		}else{
 			/* child */
 			set_proc_attrs("TCP receiver");
-			//pt[process_no].unix_sock=sockfd[0];
 			pt[process_no].idx=r;
-			//close(sockfd[0]);
-			//unix_tcp_sock=sockfd[1];
 			bind_address=0; /* force a SEGFAULT if someone uses a non-init.
 							   bind address on tcp */
 			if (init_child(*chd_rank) < 0) {
