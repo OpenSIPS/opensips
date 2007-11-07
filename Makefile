@@ -51,8 +51,8 @@ skip_modules?=
 exclude_modules?= jabber cpl-c mysql pa postgres osp unixodbc \
 	avp_radius auth_radius group_radius uri_radius xmpp \
 	presence presence_xml presence_mwi pua pua_bla pua_mi \
-	pua_usrloc pua_xmpp rls mi_xmlrpc perl snmpstats perlvdb \
-	ldap carrierroute h350 xcap_client db_berkeley
+	pua_usrloc pua_xmpp rls mi_xmlrpc perl perlvdb \
+	ldap seas carrierroute h350 xcap_client benchmark
 ifeq ($(TLS),)
 	exclude_modules+= tlsops
 endif
@@ -329,6 +329,13 @@ tar:
 bin:
 	mkdir -p tmp/$(NAME)/usr/local
 	$(MAKE) install basedir=tmp/$(NAME) prefix=/usr/local 
+	$(TAR) -C tmp/$(NAME)/ -zcf ../$(NAME)-$(RELEASE)_$(OS)_$(ARCH).tar.gz .
+	rm -rf tmp/$(NAME)
+	
+.PHONY: bin-sn
+bin-sn:
+	mkdir -p tmp/$(NAME)/usr/local
+	$(MAKE) install basedir=tmp/$(NAME) prefix=/usr/local/$(NAME)/$(VERSION).$(PATCHLEVEL)
 	$(TAR) -C tmp/$(NAME)/ -zcf ../$(NAME)-$(RELEASE)_$(OS)_$(ARCH).tar.gz .
 	rm -rf tmp/$(NAME)
 
