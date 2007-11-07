@@ -722,7 +722,7 @@ char* parse_transformation(str *in, trans_t **tr)
 		while(is_in_str(p, in) && *p!=TR_CLASS_MARKER) p++;
 		if(*p!=TR_CLASS_MARKER || tclass.s == p)
 		{
-			LM_ERR("invalid transformation: %.*s!\n", in->len, in->s);
+			LM_ERR("invalid transformation: %.*s (%c)!\n", in->len, in->s, *p);
 			goto error;
 		}
 		tclass.len = p - tclass.s;
@@ -761,11 +761,13 @@ char* parse_transformation(str *in, trans_t **tr)
 
 		if(*p != TR_RBRACKET)
 		{
-			LM_ERR("invalid transformation: %.*s!!\n", in->len, in->s);
+			LM_ERR("invalid transformation: %.*s | %c !!\n", in->len, in->s, *p);
 			goto error;
 		}
 
 		p++;
+		if(!is_in_str(p, in))
+			break;
 	} while(1);
 
 	return p;
@@ -1052,7 +1054,6 @@ char* tr_parse_uri(str* in, trans_t *t)
 
 	if(in==NULL || in->s==NULL || t==NULL)
 		return NULL;
-
 	p = in->s;
 	name.s = in->s;
 

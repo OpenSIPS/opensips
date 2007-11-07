@@ -2929,7 +2929,17 @@ done_idx:
 			if(*p==TR_RBRACKET)
 			{
 				if(n==0)
-					break;
+				{
+					/* yet another transformation */
+					p++;
+					while(is_in_str(p, in) && (*p==' ' || *p=='\t')) p++;
+
+					if(!is_in_str(p, in) || *p != TR_LBRACKET)
+					{
+						p--;
+						break;
+					}
+				}
 				n--;
 			}
 			if(*p == TR_LBRACKET)
@@ -2956,7 +2966,7 @@ done_idx:
 		}
 		if(*p!=PV_RNBRACKET)
 		{
-			LM_ERR("bad pvar name \"%.*s\"!\n", in->len, in->s);
+			LM_ERR("bad pvar name \"%.*s\" (%c)!\n", in->len, in->s, *p);
 			goto error;
 		}
 		e->trans = (void*)tr;
@@ -2969,8 +2979,11 @@ done_all:
 	return p;
 
 error:
-	LM_ERR("wrong char [%c/%d] in [%.*s] at [%d (%d)]\n", *p, (int)*p,
+	if(p!=NULL)
+		LM_ERR("wrong char [%c/%d] in [%.*s] at [%d (%d)]\n", *p, (int)*p,
 			in->len, in->s, (int)(p-in->s), pvstate);
+	else
+		LM_ERR("invalid parsing in [%.*s] at (%d)\n", in->len, in->s, pvstate);
 	return NULL;
 
 } /* end: pv_parse_spec */
