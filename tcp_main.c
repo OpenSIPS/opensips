@@ -1448,8 +1448,8 @@ void tcp_main_loop(void)
 	for (r=1; r<counted_processes; r++){
 		if (pt[r].unix_sock>0) /* we can't have 0, we never close it!*/
 			if (io_watch_add(&io_h, pt[r].unix_sock, F_PROC, &pt[r])<0){
-					LM_CRIT("failed to add process %d unix socket to the "
-							"fd list\n", r);
+					LM_CRIT("failed to add process %d (%s) unix socket "
+						"to the fd list\n", r, pt[r].desc);
 					goto error;
 			}
 	}
