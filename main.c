@@ -865,6 +865,11 @@ static int main_loop(void)
 		goto error;
 	}
 
+	if (start_module_procs()!=0) {
+		LM_ERR("failed to fork module processes\n");
+		goto error;
+	}
+
 	#ifdef USE_TCP
 	if (!tcp_disable){
 		/* start tcp  & tls receivers */
@@ -889,11 +894,6 @@ static int main_loop(void)
 		}
 	}
 	#endif
-
-	if (start_module_procs()!=0) {
-		LM_ERR("failed to fork module processes\n");
-		goto error;
-	}
 
 	/* main process left */
 	is_main=1;
