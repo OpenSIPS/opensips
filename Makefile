@@ -683,3 +683,9 @@ install-modules-docbook: $(doc-prefix)/$(doc-dir)
 			fi ; \
 		fi ; \
 	done
+
+.PHONY: test
+test:
+	-@echo "Start tests"
+	$(MAKE) -C test/
+	-@echo "Test finished"
