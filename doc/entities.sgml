@@ -47,6 +47,10 @@
 <!ENTITY serusersmail "<email>users@openser.org</email>">
 <!ENTITY serdevmail "<email>devel@openser.org</email>">
 
+<!ENTITY defaultdb "mysql://openser:openserrw@localhost/openser">
+<!ENTITY defaultrodb "mysql://openserro:openserro@localhost/openser">
+<!ENTITY exampledb "dbdriver://username:password@dbhost/dbname">
+
 <!-- Often used acronyms -->
 
 <!ENTITY sip "<acronym>SIP</acronym>">
