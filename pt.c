@@ -179,11 +179,15 @@ pid_t openser_fork(char *proc_desc)
 	}else{
 		/* parent process */
 		pt[process_counter].pid = pid;
-		process_counter++;
 		#ifdef USE_TCP
-		if (!tcp_disable)
+		if (!tcp_disable) {
 			close(sockfd[1]);
+			/* set the fd also in parent to be eliminate any
+			 * races between the parent and child */
+			pt[process_counter].unix_sock=sockfd[0];
+		}
 		#endif
+		process_counter++;
 		return pid;
 	}
 }
