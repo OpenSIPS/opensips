@@ -120,6 +120,9 @@ endif
 # extra CC command line options (e.g  -march=athlon-mp)
 CC_EXTRA_OPTS ?=
 
+# cross compiling?
+CROSS_COMPILE ?=
+
 # system base
 SYSBASE ?= /usr
 
