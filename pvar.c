@@ -2693,6 +2693,10 @@ pv_export_t* pv_lookup_spec_name(str *pvname, pv_spec_p e)
 			if(found==0)
 			{
 				LM_DBG("found in extra list [%.*s]\n", pvname->len, pvname->s);
+				/* copy data from export to spec */
+				e->type = pvi->pve.type;
+				e->getf = pvi->pve.getf;
+				e->setf = pvi->pve.setf;
 				return &(pvi->pve);
 			}
 		}
