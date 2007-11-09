@@ -298,7 +298,6 @@ dist: tar
 
 tar: 
 	$(TAR) -C .. \
-		--exclude=$(notdir $(CURDIR))/test* \
 		--exclude=$(notdir $(CURDIR))/tmp* \
 		--exclude=$(notdir $(CURDIR))/debian* \
 		--exclude=.svn* \
