@@ -357,12 +357,6 @@ sunpkg:
 install: all mk-install-dirs install-cfg install-bin install-modules \
 	install-doc install-man
 
-.PHONY: dbinstall
-dbinstall:
-	-@echo "Initializing $(NAME) database"
-	scripts/mysqldb.sh create
-	-@echo "Done"
-
 .PHONY: dbschema
 dbschema:
 	-@echo "Build database schemas"
