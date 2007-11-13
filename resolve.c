@@ -62,7 +62,7 @@ int dns_retr_time=-1;
 int dns_retr_no=-1;
 int dns_servers_no=-1;
 int dns_search_list=-1;
-int disable_dns_blacklist=0;
+int disable_dns_blacklist=1;
 
 static struct bl_head *failover_bl=0;
 #define DNS_REVOLVER_BL_ID    17
