@@ -56,7 +56,7 @@ struct dns_val {
 #define local_malloc pkg_malloc
 #define local_free   pkg_free
 
-int dns_try_ipv6=1; /* default on */
+int dns_try_ipv6=0; /* default off */
 /* declared in globals.h */
 int dns_retr_time=-1;
 int dns_retr_no=-1;
