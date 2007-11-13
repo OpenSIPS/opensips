@@ -547,7 +547,7 @@ struct replace_lst* subst_run(struct subst_expr* se, const char* input,
 			crt=&((*crt)->next);
 			p+=pmatch[0].rm_eo;
 			/* is it still a string start? */
-			if ( p==input || *(p-1)=='\n' || *(p-1)=='\r')
+			if (*(p-1)=='\n' || *(p-1)=='\r')
 				eflags&=~REG_NOTBOL;
 			else
 				eflags|=REG_NOTBOL;
