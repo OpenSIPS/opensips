@@ -45,7 +45,7 @@ static inline int contact_parser(char* _s, int _l, contact_body_t* _c)
 	trim_leading(&tmp);
 
 	if (tmp.len == 0) {
-		LOG(L_ERR, "contact_parser(): Empty body\n");
+		LM_ERR("empty body\n");
 		return -1;
 	}
 
@@ -53,7 +53,7 @@ static inline int contact_parser(char* _s, int _l, contact_body_t* _c)
 		_c->star = 1;
 	} else {
 		if (parse_contacts(&tmp, &(_c->contacts)) < 0) {
-			LOG(L_ERR, "contact_parser(): Error while parsing contacts\n");
+			LM_ERR("failed to parse contacts\n");
 			return -2;
 		}
 	}
@@ -75,14 +75,14 @@ int parse_contact(struct hdr_field* _h)
 
 	b = (contact_body_t*)pkg_malloc(sizeof(contact_body_t));
 	if (b == 0) {
-		LOG(L_ERR, "parse_contact(): No memory left\n");
+		LM_ERR("no pkg memory left\n");
 		return -1;
 	}
 
 	memset(b, 0, sizeof(contact_body_t));
 
 	if (contact_parser(_h->body.s, _h->body.len, b) < 0) {
-		LOG(L_ERR, "parse_contact(): Error while parsing\n");
+		LM_ERR("failed to parse contact\n");
 		pkg_free(b);
 		return -2;
 	}
@@ -129,7 +129,7 @@ int contact_iterator(contact_t** c, struct sip_msg* msg, contact_t* prev)
 	contact_body_t* cb;
 
 	if (!msg) {
-		LOG(L_ERR, "contact_iterator: Invalid parameter value\n");
+		LM_ERR("invalid parameter value\n");
 		return -1;
 	}
 
@@ -141,7 +141,7 @@ int contact_iterator(contact_t** c, struct sip_msg* msg, contact_t* prev)
 		hdr = msg->contact;
 		if (!hdr) {
 			if (parse_headers(msg, HDR_CONTACT_F, 0) == -1) {
-				LOG(L_ERR, "contact_iterator: Error while parsing headers\n");
+				LM_ERR("failed to parse headers\n");
 				return -1;
 			}
 
@@ -150,7 +150,7 @@ int contact_iterator(contact_t** c, struct sip_msg* msg, contact_t* prev)
 
 		if (hdr) {
 			if (parse_contact(hdr) < 0) {
-				LOG(L_ERR, "contact_iterator: Error while parsing Contact\n");
+				LM_ERR("failed to parse Contact\n");
 				return -1;
 			}
 		} else {
@@ -188,7 +188,7 @@ int contact_iterator(contact_t** c, struct sip_msg* msg, contact_t* prev)
 			      * part of the message header
 			      */
 			if (parse_headers(msg, HDR_CONTACT_F, 1) == -1) {
-				LOG(L_ERR, "contact_iterator: Error while parsing message header\n");
+				LM_ERR("failed to parse message header\n");
 				return -1;
 			}
 			
@@ -207,7 +207,7 @@ int contact_iterator(contact_t** c, struct sip_msg* msg, contact_t* prev)
 		}
 		
 		if (parse_contact(hdr) < 0) {
-			LOG(L_ERR, "contact_iterator: Error while parsing Contact HF body\n");
+			LM_ERR("failed to parse Contact HF body\n");
 			return -1;
 		}
 		

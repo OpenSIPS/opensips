@@ -71,7 +71,7 @@ static inline int skip_uri(str* _s)
 			switch(st) {
 			case ST1: st = ST3; break;
 			case ST3: 
-				LOG(L_ERR, "skip_uri(): Second < found\n");
+				LM_ERR("second < found\n");
 				return -1;
 			case ST5: st = ST2; break;
 			case ST6: st = ST4; break;
@@ -81,7 +81,7 @@ static inline int skip_uri(str* _s)
 		case '>':
 			switch(st) {
 			case ST1: 
-				LOG(L_ERR, "skip_uri(): > is first\n");
+				LM_ERR("> is first\n");
 				return -2;
 
 			case ST3: st = ST1; break;
@@ -108,7 +108,7 @@ static inline int skip_uri(str* _s)
 	}
 
 	if (st != ST1) {
-		LOG(L_ERR, "skip_uri(): < or \" not closed\n");
+		LM_ERR("< or \" not closed\n");
 		return -3;
 	}
 
@@ -129,7 +129,7 @@ static inline int skip_name(str* _s)
 	
 
 	if (!_s) {
-		LOG(L_ERR, "skip_name(): Invalid parameter value\n");
+		LM_ERR("invalid parameter value\n");
 		return -1;
 	}
 
@@ -167,9 +167,9 @@ static inline int skip_name(str* _s)
 	}
 
 	if (quoted) {
-		LOG(L_ERR, "skip_name(): Closing quote missing in name part of Contact\n");
+		LM_ERR("closing quote missing in name part of Contact\n");
 	} else {
-		LOG(L_ERR, "skip_name(): Error in contact, scheme separator not found\n");
+		LM_ERR("error in contact, scheme separator not found\n");
 	}
 
 	return -1;
@@ -188,7 +188,7 @@ int parse_contacts(str* _s, contact_t** _c)
 		     /* Allocate and clear contact structure */
 		c = (contact_t*)pkg_malloc(sizeof(contact_t));
 		if (c == 0) {
-			LOG(L_ERR, "parse_contacts(): No memory left\n");
+			LM_ERR("no pkg memory left\n");
 			goto error;
 		}
 		memset(c, 0, sizeof(contact_t));
@@ -196,7 +196,7 @@ int parse_contacts(str* _s, contact_t** _c)
 		c->name.s = _s->s;
 
 		if (skip_name(_s) < 0) {
-			LOG(L_ERR, "parse_contacts(): Error while skipping name part\n");
+			LM_ERR("failed to skip name part\n");
 			goto error;
 		}
 
@@ -206,7 +206,7 @@ int parse_contacts(str* _s, contact_t** _c)
 		
 		     /* Find the end of the URI */
 		if (skip_uri(_s) < 0) {
-			LOG(L_ERR, "parse_contacts(): Error while skipping URI\n");
+			LM_ERR("failed to skip URI\n");
 			goto error;
 		}
 		
@@ -229,12 +229,12 @@ int parse_contacts(str* _s, contact_t** _c)
 			trim_leading(_s);
 			
 			if (_s->len == 0) {
-				LOG(L_ERR, "parse_contacts(): Error while parsing params\n");
+				LM_ERR("failed to parse params\n");
 				goto error;
 			}
 
 			if (parse_params(_s, CLASS_CONTACT, &hooks, &c->params) < 0) {
-				LOG(L_ERR, "parse_contacts(): Error while parsing parameters\n");
+				LM_ERR("failed to parse contact parameters\n");
 				goto error;
 			}
 
@@ -253,7 +253,7 @@ int parse_contacts(str* _s, contact_t** _c)
 		trim_leading(_s);
 
 		if (_s->len == 0) {
-			LOG(L_ERR, "parse_contacts(): Text after comma missing\n");
+			LM_ERR("text after comma missing\n");
 			goto error;
 		}
 
