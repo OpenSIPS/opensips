@@ -87,6 +87,7 @@ static inline char* skip_ws(char* p, unsigned int size)
 #include "case_p_pr.h"     /* P-Preferred-Identity */
 #include "case_p_as.h"     /* P-Asserted-Identity */
 #include "case_priv.h"     /* Privacy */
+#include "case_retr.h"     /* Retry-After */
 
 
 #define READ(val) \
@@ -94,7 +95,7 @@ static inline char* skip_ws(char* p, unsigned int size)
 
 
 #define FIRST_QUATERNIONS       \
-        case _via1_: via1_CASE; \
+	case _via1_: via1_CASE; \
 	case _from_: from_CASE; \
 	case _to12_: to12_CASE; \
 	case _cseq_: cseq_CASE; \
@@ -125,6 +126,7 @@ static inline char* skip_ws(char* p, unsigned int size)
 	case _p_pr_: p_pr_CASE; \
 	case _p_as_: p_as_CASE; \
 	case _priv_: priv_CASE; \
+	case _retr_: retr_CASE; \
 
 
 #define PARSE_COMPACT(id)          \
@@ -189,9 +191,9 @@ char* parse_hname2(char* begin, char* end, struct hdr_field* hdr)
 		goto other;
         }
 
-	     /* Double colon hasn't been found yet */
+	/* Double colon hasn't been found yet */
  dc_end:
-       	p = skip_ws(p, end - p);
+	p = skip_ws(p, end - p);
 	if (*p != ':') {   
 	        goto other;
 	} else {
@@ -199,7 +201,7 @@ char* parse_hname2(char* begin, char* end, struct hdr_field* hdr)
 		return (p + 1);
 	}
 
-	     /* Unknown header type */
+	/* Unknown header type */
  other:    
 	p = q_memchr(p, ':', end - p);
 	if (!p) {        /* No double colon found, error.. */

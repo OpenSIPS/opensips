@@ -1585,9 +1585,9 @@ char * build_res_buf_from_sip_res( struct sip_msg* msg,
 		via_offset=msg->h_via1->name.s-buf;
 	}
 
-	     /* Calculate message body difference and adjust
-	      * Content-Length
-	      */
+	/* Calculate message body difference and adjust
+	 * Content-Length
+	 */
 	body_delta = lumps_len(msg, msg->body_lumps, 0);
 	if (adjust_clen(msg, body_delta, (msg->via2? msg->via2->proto:PROTO_UDP))
 			< 0) {
@@ -1620,7 +1620,10 @@ char * build_res_buf_from_sip_res( struct sip_msg* msg,
 	memcpy(new_buf+offset,
 		buf+s_offset, 
 		len-s_offset);
-	 /* send it! */
+	/* as it is a relaied reply, if 503, make it 500 (just reply code) */
+	if ( msg->first_line.u.reply.statuscode==503 )
+		new_buf[(int)(msg->first_line.u.reply.status.s-msg->buf)+2] = '0'; 
+	/* send it! */
 	LM_DBG("copied size: orig:%d, new: %d, rest: %d"
 			" msg=\n%s\n", s_offset, offset, len-s_offset, new_buf);
 
