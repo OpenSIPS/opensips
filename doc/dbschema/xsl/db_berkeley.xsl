@@ -71,6 +71,45 @@
 		<xsl:text>METADATA_LOGFLAGS&#x0A;</xsl:text>
 		<xsl:text>0&#x0A;</xsl:text>
 
+		<!-- default values -->
+		<xsl:text>METADATA_DEFAULTS&#x0A;</xsl:text>
+		<xsl:for-each select="column">
+		<xsl:choose>
+		    <xsl:when test="default[@db=$db]">
+			<xsl:choose>
+			    <xsl:when test="default[@db=$db]/null">
+				<xsl:text>NULL</xsl:text>
+		    	</xsl:when>
+		    	<xsl:otherwise>
+				<xsl:value-of select="default[@db=$db]"/>
+		    	</xsl:otherwise>
+			</xsl:choose>
+	    	</xsl:when>
+	    	<xsl:when test="default">
+			<xsl:choose>
+			    <xsl:when test="default/null">
+				<xsl:text>NULL</xsl:text>
+		    	</xsl:when>
+		    	<xsl:when test= "string(number(default))='NaN'"><!-- test for string value -->
+				<xsl:text>'</xsl:text>
+				<xsl:value-of select="default"/>
+				<xsl:text>'</xsl:text>
+		    	</xsl:when>
+		    	<xsl:otherwise>
+				<xsl:value-of select="default"/><!-- ommit the quotes for numbers -->
+		    	</xsl:otherwise>
+			</xsl:choose>
+	    	</xsl:when>
+			<xsl:otherwise>
+				<xsl:text>NIL</xsl:text><!-- no value specified -->
+			</xsl:otherwise>
+		</xsl:choose>
+		<xsl:if test="not(position()=last())">
+			<xsl:text>|</xsl:text>
+		</xsl:if>
+		</xsl:for-each>
+		<xsl:text>&#x0A;</xsl:text>
+
 		<!-- Insert version data -->
 		 <xsl:apply-templates select="version"/> 
 		<!-- this is not exactly what we want for db_berkeley, as the version data gets
