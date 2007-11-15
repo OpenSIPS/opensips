@@ -39,7 +39,7 @@ static inline int new_credentials(struct hdr_field* _h)
 
 	b = (auth_body_t*)pkg_malloc(sizeof(auth_body_t));
 	if (b == 0) {
-		LOG(L_ERR, "parse_credentials(): No memory left\n");
+		LM_ERR("no pkg memory left\n");
 		return -1;
 	}
 		
@@ -69,7 +69,7 @@ int parse_credentials(struct hdr_field* _h)
 	}
 
 	if (new_credentials(_h) < 0) {
-		LOG(L_ERR, "parse_credentials(): Can't create new credentials\n");
+		LM_ERR("failed to create new credentials\n");
 		return -1;
 	}
 
@@ -202,13 +202,13 @@ int mark_authorized_cred(struct sip_msg* _m, struct hdr_field* _h)
 	case HDR_AUTHORIZATION_T: f = _m->authorization; break;
 	case HDR_PROXYAUTH_T:     f = _m->proxy_auth;    break;
 	default:
-		LOG(L_ERR, "mark_authorized_cred(): Invalid header field type\n");
+		LM_ERR("invalid header field type\n");
 		return -1;
 	}
 
 	if (!(f->parsed)) {
 		if (new_credentials(f) < 0) {
-			LOG(L_ERR, "mark_authorized_cred(): Error in new_credentials\n");
+			LM_ERR("new_credentials failed\n");
 			return -1;
 		}
 	}
