@@ -308,13 +308,17 @@ unknown:
 	{
 		while(len < max)
 		{
-			if(!method_char(start[len]))
-				return NULL;
-			
 			if((start[len]=='\0' || start[len]==',' || start[len]==' '
 						|| start[len]=='\t' || start[len]=='\r'
 						|| start[len]=='\n'))
 				return (start+len);
+			
+			if(!method_char(start[len]))
+			{
+				LM_ERR("invalid character %c\n", start[len]);
+				return NULL;
+			}
+			
 			len++;
 		}
 		return end;
@@ -324,7 +328,10 @@ unknown:
 			&& start[len]!='\t' && start[len]!='\r' && start[len]!='\n')
 	{
 		if(!method_char(start[len]))
+		{
+			LM_ERR("invalid character %c!\n", start[len]);
 			return NULL;
+		}
 		len++;
 	}
 
@@ -355,7 +362,7 @@ int parse_methods(str* _body, unsigned int* _methods)
 
 	*_methods = 0;
 	if (next.len == 0) {
-		return 0;
+		goto done;
 	}
 
 	method = 0;
@@ -366,7 +373,7 @@ int parse_methods(str* _body, unsigned int* _methods)
 			*_methods |= method;
 			p = p0;
 		} else {
-			LM_ERR("invalid method\n");
+			LM_ERR("invalid method [%.*s]\n", next.len, next.s);
 			return -1;
 		}
 		
@@ -374,7 +381,7 @@ int parse_methods(str* _body, unsigned int* _methods)
 					|| *p=='\r' || *p=='\n'))
 			p++;
 		if(p>=next.s+next.len || *p == '\0')
-			return 0;
+			goto done;
 		
 		
 		if (*p == ',')
@@ -384,12 +391,14 @@ int parse_methods(str* _body, unsigned int* _methods)
 					|| *p=='\r' || *p=='\n'))
 				p++;
 			if(p>=next.s+next.len)
-				return 0;
+				goto done;
 		} else {
 			LM_ERR("comma expected\n");
 			return -1;
 		}
 	}
 
+done:
+	LM_DBG("methods 0x%X\n", *_methods);
 	return 0;
 }
