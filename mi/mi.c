@@ -88,6 +88,7 @@ int init_mi_child(void)
 		if ( mi_cmds[i].init_f && mi_cmds[i].init_f()!=0 ) {
 			LM_ERR("failed to init <%.*s>\n",
 					mi_cmds[i].name.len,mi_cmds[i].name.s);
+			return -1;
 		}
 	}
 	return 0;
