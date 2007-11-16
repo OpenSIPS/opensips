@@ -549,10 +549,6 @@ void handle_sigs(void)
 								" signal %d\n", chld,
 								 WSTOPSIG(chld_status));
 			}
-			if (dont_fork) {
-				LM_INFO("dont_fork turned on, living on\n");
-				break;
-			}
 			LM_INFO("terminating due to SIGCHLD\n");
 			/* exit */
 			kill_all_children(SIGTERM);
