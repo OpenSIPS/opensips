@@ -71,6 +71,7 @@ extern int debug;
 extern int log_stderr;
 extern int log_facility;
 extern char* log_name;
+extern char ctime_buf[];
 
 
 int dp_my_pid(void);
@@ -86,13 +87,12 @@ void reset_proc_debug_level(void);
 inline static char* dp_time(void)
 {
 	time_t ltime;
-	char *p;
 
 	time(&ltime);
-	p = ctime(&ltime);
-	p[19] = 0; /* remove year*/
+	ctime_r( &ltime, ctime_buf);
+	ctime_buf[19] = 0; /* remove year*/
 
-	return p+4;  /* remove name of day*/
+	return ctime_buf+4;  /* remove name of day*/
 }
 
 

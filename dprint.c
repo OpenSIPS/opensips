@@ -50,6 +50,7 @@ static int int_fac[]={LOG_AUTH ,  LOG_CRON , LOG_DAEMON ,
 #endif
 					};
 
+char ctime_buf[256];
 
 
 int str2facility(char *s)
