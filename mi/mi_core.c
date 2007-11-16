@@ -41,20 +41,22 @@
 #include "mi.h"
 
 
-#define MAX_CTIME_LEN 24
-
 static time_t up_since;
-static char *up_since_ctime;
+static str    up_since_ctime;
 
 static int init_mi_uptime(void)
 {
+	char *p;
+
 	time(&up_since);
-	up_since_ctime = (char*)pkg_malloc(MAX_CTIME_LEN+1);
-	if (up_since_ctime==0) {
+	p = ctime(&up_since);
+	up_since_ctime.len = strlen(p)-1;
+	up_since_ctime.s = (char*)pkg_malloc(up_since_ctime.len);
+	if (up_since_ctime.s==0) {
 		LM_ERR("no more pkg mem\n");
 		return -1;
 	}
-	sprintf( up_since_ctime, "%s" , ctime(&up_since));
+	memcpy(up_since_ctime.s, p , up_since_ctime.len);
 	return 0;
 }
 
@@ -65,6 +67,7 @@ static struct mi_root *mi_uptime(struct mi_root *cmd, void *param)
 	struct mi_node *rpl;
 	struct mi_node *node;
 	time_t now;
+	char   *p;
 
 	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
 	if (rpl_tree==0)
@@ -72,13 +75,14 @@ static struct mi_root *mi_uptime(struct mi_root *cmd, void *param)
 	rpl = &rpl_tree->node;
 
 	time(&now);
-	node = add_mi_node_child( rpl, MI_DUP_VALUE, "Now", 3, ctime(&now),
-		MAX_CTIME_LEN);
+	p = ctime(&now);
+	node = add_mi_node_child( rpl, MI_DUP_VALUE, "Now", 3, p,
+		strlen(p)-1);
 	if (node==0)
 		goto error;
 
-	node = add_mi_node_child( rpl, 0, "Up since", 8, up_since_ctime,
-		MAX_CTIME_LEN);
+	node = add_mi_node_child( rpl, 0, "Up since", 8, up_since_ctime.s,
+		up_since_ctime.len);
 	if (node==0)
 		goto error;
 
