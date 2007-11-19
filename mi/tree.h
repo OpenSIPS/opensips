@@ -50,6 +50,11 @@ struct mi_handler;
 #define MI_BAD_PARM_S        "Bad parameter"
 #define MI_BAD_PARM_LEN      (sizeof(MI_BAD_PARM_S)-1)
 
+#define MI_SSTR(_s)           _s,(sizeof(_s)-1)
+#define MI_OK                 MI_OK_S
+#define MI_INTERNAL_ERR       MI_INTERNAL_ERR_S
+#define MI_MISSING_PARM       MI_MISSING_PARM_S
+#define MI_BAD_PARM           MI_BAD_PARM_S
 
 struct mi_node {
 	str value;

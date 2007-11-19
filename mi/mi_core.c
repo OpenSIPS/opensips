@@ -69,25 +69,25 @@ static struct mi_root *mi_uptime(struct mi_root *cmd, void *param)
 	time_t now;
 	char   *p;
 
-	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
+	rpl_tree = init_mi_tree( 200, MI_SSTR(MI_OK));
 	if (rpl_tree==0)
 		return 0;
 	rpl = &rpl_tree->node;
 
 	time(&now);
 	p = ctime(&now);
-	node = add_mi_node_child( rpl, MI_DUP_VALUE, "Now", 3, p,
-		strlen(p)-1);
+	node = add_mi_node_child( rpl, MI_DUP_VALUE, MI_SSTR("Now"),
+		p, strlen(p)-1);
 	if (node==0)
 		goto error;
 
-	node = add_mi_node_child( rpl, 0, "Up since", 8, up_since_ctime.s,
-		up_since_ctime.len);
+	node = add_mi_node_child( rpl, 0, MI_SSTR("Up since"),
+		up_since_ctime.s, up_since_ctime.len);
 	if (node==0)
 		goto error;
 
-	node = addf_mi_node_child( rpl, 0, "Up time", 7, "%lu [sec]",
-		(unsigned long)difftime(now, up_since) );
+	node = addf_mi_node_child( rpl, 0, MI_SSTR("Up time"),
+		"%lu [sec]", (unsigned long)difftime(now, up_since) );
 	if (node==0)
 		goto error;
 
@@ -106,12 +106,12 @@ static struct mi_root *mi_version(struct mi_root *cmd, void *param)
 	struct mi_node *rpl;
 	struct mi_node *node;
 
-	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
+	rpl_tree = init_mi_tree( 200, MI_SSTR(MI_OK));
 	if (rpl_tree==0)
 		return 0;
 	rpl = &rpl_tree->node;
 
-	node = add_mi_node_child( rpl, 0, "Server", 6, SERVER_HDR+8,
+	node = add_mi_node_child( rpl, 0, MI_SSTR("Server"), SERVER_HDR+8,
 		SERVER_HDR_LEN-8);
 	if (node==0) {
 		LM_ERR("failed to add node\n");
@@ -141,7 +141,7 @@ static struct mi_root *mi_pwd(struct mi_root *cmd, void *param)
 		}
 	}
 
-	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
+	rpl_tree = init_mi_tree( 200, MI_SSTR(MI_OK));
 	if (rpl_tree==0)
 		return 0;
 	rpl = &rpl_tree->node;
@@ -151,7 +151,7 @@ static struct mi_root *mi_pwd(struct mi_root *cmd, void *param)
 		goto error;
 	}
 
-	node = add_mi_node_child( rpl, 0, "WD", 2, cwd_buf,strlen(cwd_buf));
+	node = add_mi_node_child( rpl, 0, MI_SSTR("WD"), cwd_buf,strlen(cwd_buf));
 	if (node==0) {
 		LM_ERR("failed to add node\n");
 		goto error;
@@ -172,7 +172,7 @@ static struct mi_root *mi_arg(struct mi_root *cmd, void *param)
 	struct mi_node *node;
 	int n;
 
-	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
+	rpl_tree = init_mi_tree( 200, MI_SSTR(MI_OK));
 	if (rpl_tree==0)
 		return 0;
 	rpl = &rpl_tree->node;
@@ -200,7 +200,7 @@ static struct mi_root *mi_which(struct mi_root *cmd, void *param)
 	int size;
 	int i;
 
-	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
+	rpl_tree = init_mi_tree( 200, MI_SSTR(MI_OK));
 	if (rpl_tree==0)
 		return 0;
 	rpl = &rpl_tree->node;
@@ -231,27 +231,27 @@ static struct mi_root *mi_ps(struct mi_root *cmd, void *param)
 	int len;
 	int i;
 
-	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
+	rpl_tree = init_mi_tree( 200, MI_SSTR(MI_OK));
 	if (rpl_tree==0)
 		return 0;
 	rpl = &rpl_tree->node;
 
 	for ( i=0 ; i<counted_processes ; i++ ) {
-		node = add_mi_node_child(rpl, 0, "Process", 7, 0, 0 );
+		node = add_mi_node_child(rpl, 0, MI_SSTR("Process"), 0, 0 );
 		if (node==0)
 			goto error;
 
 		p = int2str((unsigned long)i, &len);
-		attr = add_mi_attr( node, MI_DUP_VALUE, "ID", 2, p, len);
+		attr = add_mi_attr( node, MI_DUP_VALUE, MI_SSTR("ID"), p, len);
 		if (attr==0)
 			goto error;
 
 		p = int2str((unsigned long)pt[i].pid, &len);
-		attr = add_mi_attr( node, MI_DUP_VALUE, "PID", 3, p, len);
+		attr = add_mi_attr( node, MI_DUP_VALUE, MI_SSTR("PID"), p, len);
 		if (attr==0)
 			goto error;
 
-		attr = add_mi_attr( node, 0, "Type", 4,
+		attr = add_mi_attr( node, 0, MI_SSTR("Type"),
 			pt[i].desc, strlen(pt[i].desc));
 		if (attr==0)
 			goto error;
@@ -287,20 +287,20 @@ static struct mi_root *mi_debug(struct mi_root *cmd, void *param)
 	node = cmd->node.kids;
 	if (node!=NULL) {
 		if (str2sint( &node->value, &new_debug) < 0)
-			return init_mi_tree( 400, MI_BAD_PARM_S, MI_BAD_PARM_LEN);
+			return init_mi_tree( 400, MI_SSTR(MI_BAD_PARM));
 	} else
 		new_debug = *debug;
 #else
 		new_debug = debug;
 #endif
 
-	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
+	rpl_tree = init_mi_tree( 200, MI_SSTR(MI_OK));
 	if (rpl_tree==0)
 		return 0;
 
 	p = sint2str((long)new_debug, &len);
-	node = add_mi_node_child( &rpl_tree->node, MI_DUP_VALUE, "DEBUG", 5,
-		p, len);
+	node = add_mi_node_child( &rpl_tree->node, MI_DUP_VALUE,
+		MI_SSTR("DEBUG"),p, len);
 	if (node==0) {
 		free_mi_tree(rpl_tree);
 		return 0;
