@@ -1168,7 +1168,7 @@ try_again:
 
 	if (config_check>1 && check_rls()!=0) {
 		LM_ERR("bad function call in config file\n");
-		goto error;
+		return ret;
 	}
 #ifdef EXTRA_DEBUG
 	print_rl();
@@ -1227,8 +1227,7 @@ try_again:
 	}
 	if (config_check){
 		LM_NOTICE("config file ok, exiting...\n");
-		ret = 0;
-		goto error;
+		return 0;
 	}
 
 
@@ -1303,8 +1302,8 @@ try_again:
 		}
 	}
 
-        /* print OpenSER version to log for history tracking */
-        LM_NOTICE("version: %s\n", version);
+	/* print OpenSER version to log for history tracking */
+	LM_NOTICE("version: %s\n", version);
 
 	/* init serial forking engine */
 	if (init_serialization()!=0) {
