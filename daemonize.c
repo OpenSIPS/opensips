@@ -125,10 +125,9 @@ int daemonize(char*  name)
 			fscanf(pid_stream, "%d", &p);
 			fclose(pid_stream);
 			if (p==-1){
-				LM_CRIT("pid file %s exists, but doesn't contain a valid"
-					" pid number\n", pid_file);
-				goto error;
-			}
+				LM_WARN("pid file %s exists, but doesn't contain a valid"
+					" pid number, replacing...\n", pid_file);
+			} else 
 			if (kill((pid_t)p, 0)==0 || errno==EPERM){
 				LM_CRIT("running process found in the pid file %s\n",
 					pid_file);
@@ -143,7 +142,12 @@ int daemonize(char*  name)
 				pid_file, strerror(errno));
 			goto error;
 		}else{
-			fprintf(pid_stream, "%i\n", (int)pid);
+			r = fprintf(pid_stream, "%i\n", (int)pid);
+			if (r<=0)  {
+				LM_ERR("unable to write pid to file %s: %s\n", 
+					pid_file, strerror(errno));
+				goto error;
+			}
 			fclose(pid_stream);
 		}
 	}
@@ -153,9 +157,8 @@ int daemonize(char*  name)
 			fscanf(pid_stream, "%d", &p);
 			fclose(pid_stream);
 			if (p==-1){
-				LM_CRIT("pgid file %s exists, but doesn't contain a valid"
-					" pgid number\n", pgid_file);
-				goto error;
+				LM_WARN("pgid file %s exists, but doesn't contain a valid"
+					" pgid number, replacing...\n", pgid_file);
 			}
 		}
 		if (own_pgid){
@@ -165,7 +168,12 @@ int daemonize(char*  name)
 					pgid_file, strerror(errno));
 				goto error;
 			}else{
-				fprintf(pid_stream, "%i\n", (int)pid);
+				r = fprintf(pid_stream, "%i\n", (int)pid);
+				if (r<=0)  {
+					LM_ERR("unable to write pgid to file %s: %s\n", 
+						pid_file, strerror(errno));
+					goto error;
+				}
 				fclose(pid_stream);
 			}
 		}else{
