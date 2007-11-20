@@ -1386,7 +1386,7 @@ static inline void tcpconn_timeout(int force)
 					tls_close(c, fd);
 #endif
 				_tcpconn_rm(c);
-				if ((fd>0)&&(c->refcnt==0)) {
+				if ((!force)&&(fd>0)&&(c->refcnt==0)) {
 					if (!(c->flags & F_CONN_REMOVED)){
 						io_watch_del(&io_h, fd, -1, IO_FD_CLOSING);
 						c->flags|=F_CONN_REMOVED;
