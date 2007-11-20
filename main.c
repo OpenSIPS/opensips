@@ -1128,7 +1128,7 @@ try_again:
 			if (errno==EINTR) goto try_again; /* interrupted by signal */
 			LM_WARN("could not read from /dev/urandom (%d)\n", errno);
 		}
-		LM_NOTICE("initialize the pseudo random generator from "
+		LM_DBG("initialize the pseudo random generator from "
 			"/dev/urandom\n");
 		LM_DBG("read %u from /dev/urandom\n", seed);
 			close(rfd);

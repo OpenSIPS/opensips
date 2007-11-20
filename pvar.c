@@ -2252,7 +2252,7 @@ int pv_parse_hdr_name(pv_spec_p sp, str *in)
 	sp->pvp.pvn.type = PV_NAME_INTSTR;
 	if (hdr.type!=HDR_OTHER_T && hdr.type!=HDR_ERROR_T)
 	{
-		LM_INFO("using hdr type (%d) instead of <%.*s>\n",
+		LM_DBG("using hdr type (%d) instead of <%.*s>\n",
 			hdr.type, in->len, in->s);
 		sp->pvp.pvn.u.isname.type = 0;
 		sp->pvp.pvn.u.isname.name.n = hdr.type;
