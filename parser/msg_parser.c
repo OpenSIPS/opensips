@@ -483,7 +483,7 @@ int parse_headers(struct sip_msg* msg, hdr_flags_t flags, int next)
 					msg->h_via2=hf;
 					msg->via2=hf->parsed;
 					msg->parsed_flag|=HDR_VIA2_F;
-					DBG("parse_headers: this is the second via\n");
+					LM_DBG("parse_headers: this is the second via\n");
 				}
 				break;
 			default:
