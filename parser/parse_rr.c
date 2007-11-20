@@ -429,7 +429,7 @@ int print_rr_body(struct hdr_field *iroute, str *oroute, int order,
 		{
 			memcpy(cp, route[i].s, route[i].len);
 			cp += route[i].len;
-			if (--i>0)
+			if (i-->0)
 				*(cp++) = ',';
 		}
 	}
