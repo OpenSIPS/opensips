@@ -154,6 +154,11 @@
 	<xsl:variable name="index.name">
 	    <xsl:call-template name="get-name"/>
 	</xsl:variable>
+	<xsl:variable name="table.name">
+	    <xsl:call-template name="get-name">
+		<xsl:with-param name="select" select="parent::table"/>
+	    </xsl:call-template>
+	</xsl:variable>
 
 	<xsl:if test="position()=1">
 	    <xsl:text>,&#x0A;</xsl:text>
@@ -161,7 +166,7 @@
 	<xsl:text>    </xsl:text>
 	<xsl:if test="not($index.name='')">
 	    <xsl:text>CONSTRAINT </xsl:text>
-	    <xsl:value-of select="concat($index.name, ' ')"/>
+	    <xsl:value-of select="concat($table.name, '_', $index.name, ' ')"/>
 	</xsl:if>
 	<xsl:if test="unique">
 	    <xsl:text>UNIQUE (</xsl:text>
@@ -202,7 +207,7 @@
 	    <xsl:text>UNIQUE </xsl:text>
 	</xsl:if>
 	<xsl:text>INDEX </xsl:text>
-	<xsl:value-of select="$index.name"/>
+	<xsl:value-of select="concat($table.name, '_', $index.name)"/>
 	<xsl:text> ON </xsl:text>
 	<xsl:value-of select="$table.name"/>
 	<xsl:text> (</xsl:text>
