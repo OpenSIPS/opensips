@@ -180,8 +180,7 @@
 	</xsl:if>
 	<!-- PRIMARY KEY standalone definition -->
 	<xsl:if test="primary">
-	    <xsl:text>PRIMARY KEY </xsl:text>
-	    <xsl:value-of select="$index.name"/>
+	    <xsl:text>PRIMARY KEY</xsl:text>
 	    <xsl:text> (</xsl:text>
 	    <xsl:apply-templates select="colref"/>
 	    <xsl:text>)</xsl:text>
