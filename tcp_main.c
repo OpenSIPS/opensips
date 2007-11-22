@@ -1620,11 +1620,11 @@ int init_tcp(void)
 			LM_ERR("%s, using %s instead\n",
 					poll_err, poll_method_name(tcp_poll_method));
 		}else{
-			LM_INFO("using %s as the io watch method"
+			LM_INFO("using %s as the TCP io watch method"
 					" (auto detected)\n", poll_method_name(tcp_poll_method));
 		}
 	}else{
-			LM_INFO("using %s io watch method (config)\n",
+			LM_INFO("using %s as the TCP io watch method (config)\n",
 					poll_method_name(tcp_poll_method));
 	}
 	

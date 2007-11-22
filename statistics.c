@@ -129,7 +129,7 @@ int init_stats_collector(void)
 		LM_ERR("failed to register sh_mem statistics\n");
 		goto error;
 	}
-	LM_INFO("statistics manager successfully initialized\n");
+	LM_DBG("statistics manager successfully initialized\n");
 
 	return 0;
 error:

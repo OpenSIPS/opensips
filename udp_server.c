@@ -127,7 +127,7 @@ int probe_max_receive_buffer( int udp_sock )
 	unsigned int voptvallen;
 	int phase=0;
 
-	/* jku: try to increase buffer size as much as we can */
+	/* try to increase buffer size as much as we can */
 	ioptvallen=sizeof(ioptval);
 	if (getsockopt( udp_sock, SOL_SOCKET, SO_RCVBUF, (void*) &ioptval,
 		    &ioptvallen) == -1 )
@@ -140,7 +140,7 @@ int probe_max_receive_buffer( int udp_sock )
 		LM_DBG(" getsockopt: SO_RCVBUF initially set to 0; resetting to %d\n",
 			BUFFER_INCREMENT );
 		ioptval=BUFFER_INCREMENT;
-	} else LM_INFO("getsockopt SO_RCVBUF is initially %d\n", ioptval );
+	} else LM_DBG("getsockopt SO_RCVBUF is initially %d\n", ioptval );
 	for (optval=ioptval; ;  ) {
 		/* increase size; double in initial phase, add linearly later */
 		if (phase==0) optval <<= 1; else optval+=BUFFER_INCREMENT;
@@ -191,11 +191,9 @@ int probe_max_receive_buffer( int udp_sock )
 		LM_ERR("getsockopt: %s\n", strerror(errno));
 		return -1;
 	}
-	LM_INFO("option SO_RCVBUF is finally %d\n", foptval );
+	LM_INFO("using a UDP receive buffer of %d kb\n", (foptval/1024));
 
 	return 0;
-
-	/* EoJKU */
 }
 
 

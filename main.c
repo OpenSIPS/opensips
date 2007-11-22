@@ -970,8 +970,7 @@ int main(int argc, char** argv)
 						LM_ERR("bad shmem size number: -m %s\n", optarg);
 						goto error;
 					};
-					LM_NOTICE("shared memory: %ld bytes\n",
-									shm_mem_size );
+
 					break;
 			case 'b':
 					maxbuffer=strtol(optarg, &tmp, 10);
@@ -1304,6 +1303,12 @@ try_again:
 
 	/* print OpenSER version to log for history tracking */
 	LM_NOTICE("version: %s\n", version);
+	
+	/* print some data about the configuration */
+#ifdef SHM_MEM
+	LM_INFO("using %ld Mb shared memory\n", ((shm_mem_size/1024)/1024));
+#endif
+	LM_INFO("using %i Mb private memory per process\n", ((PKG_MEM_POOL_SIZE/1024)/1024));
 
 	/* init serial forking engine */
 	if (init_serialization()!=0) {
