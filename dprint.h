@@ -43,13 +43,21 @@
 	#define DP_PREFIX  "%s [%d] "
 #endif
 
-#define DP_ALERT_PREFIX  DP_PREFIX "ALERT:"
-#define DP_CRIT_PREFIX   DP_PREFIX "CRITICAL:"
-#define DP_ERR_PREFIX    DP_PREFIX "ERROR:"
-#define DP_WARN_PREFIX   DP_PREFIX "WARNING:"
-#define DP_NOTICE_PREFIX DP_PREFIX "NOTICE:"
-#define DP_INFO_PREFIX   DP_PREFIX "INFO:"
-#define DP_DBG_PREFIX    DP_PREFIX "DBG:"
+#define DP_ALERT_TEXT    "ALERT:"
+#define DP_CRIT_TEXT     "CRITICAL:"
+#define DP_ERR_TEXT      "ERROR:"
+#define DP_WARN_TEXT     "WARNING:"
+#define DP_NOTICE_TEXT   "NOTICE:"
+#define DP_INFO_TEXT     "INFO:"
+#define DP_DBG_TEXT      "DBG:"
+
+#define DP_ALERT_PREFIX  DP_PREFIX DP_ALERT_TEXT
+#define DP_CRIT_PREFIX   DP_PREFIX DP_CRIT_TEXT
+#define DP_ERR_PREFIX    DP_PREFIX DP_ERR_TEXT
+#define DP_WARN_PREFIX   DP_PREFIX DP_WARN_TEXT
+#define DP_NOTICE_PREFIX DP_PREFIX DP_NOTICE_TEXT
+#define DP_INFO_PREFIX   DP_PREFIX DP_INFO_TEXT
+#define DP_DBG_PREFIX    DP_PREFIX DP_DBG_TEXT
 
 #define DPRINT_LEV   L_ERR
 
@@ -185,7 +193,7 @@ inline static char* dp_time(void)
 					if (log_stderr)\
 						MY_DPRINT( DP_ALERT_PREFIX __VA_ARGS__);\
 					else \
-						MY_SYSLOG( LOG_ALERT, __VA_ARGS__);\
+						MY_SYSLOG( LOG_ALERT, DP_ALERT_TEXT __VA_ARGS__);\
 				} \
 			}while(0)
 
@@ -195,7 +203,7 @@ inline static char* dp_time(void)
 					if (log_stderr)\
 						MY_DPRINT( DP_CRIT_PREFIX __VA_ARGS__);\
 					else \
-						MY_SYSLOG( LOG_CRIT, __VA_ARGS__);\
+						MY_SYSLOG( LOG_CRIT, DP_CRIT_TEXT __VA_ARGS__);\
 				} \
 			}while(0)
 
@@ -205,7 +213,7 @@ inline static char* dp_time(void)
 					if (log_stderr)\
 						MY_DPRINT( DP_ERR_PREFIX __VA_ARGS__);\
 					else \
-						MY_SYSLOG( LOG_ERR, __VA_ARGS__);\
+						MY_SYSLOG( LOG_ERR, DP_ERR_TEXT __VA_ARGS__);\
 				} \
 			}while(0)
 
@@ -215,7 +223,7 @@ inline static char* dp_time(void)
 					if (log_stderr)\
 						MY_DPRINT( DP_WARN_PREFIX __VA_ARGS__);\
 					else \
-						MY_SYSLOG( LOG_WARNING, __VA_ARGS__);\
+						MY_SYSLOG( LOG_WARNING, DP_WARN_TEXT __VA_ARGS__);\
 				} \
 			}while(0)
 
@@ -225,7 +233,7 @@ inline static char* dp_time(void)
 					if (log_stderr)\
 						MY_DPRINT( DP_NOTICE_PREFIX __VA_ARGS__);\
 					else \
-						MY_SYSLOG( LOG_NOTICE, __VA_ARGS__);\
+						MY_SYSLOG( LOG_NOTICE, DP_NOTICE_TEXT __VA_ARGS__);\
 				} \
 			}while(0)
 
@@ -235,7 +243,7 @@ inline static char* dp_time(void)
 					if (log_stderr)\
 						MY_DPRINT( DP_INFO_PREFIX __VA_ARGS__);\
 					else \
-						MY_SYSLOG( LOG_INFO, __VA_ARGS__);\
+						MY_SYSLOG( LOG_INFO, DP_INFO_TEXT __VA_ARGS__);\
 				} \
 			}while(0)
 
@@ -248,7 +256,7 @@ inline static char* dp_time(void)
 						if (log_stderr)\
 							MY_DPRINT( DP_DBG_PREFIX __VA_ARGS__);\
 						else \
-							MY_SYSLOG( LOG_DEBUG, __VA_ARGS__);\
+							MY_SYSLOG( LOG_DEBUG, DP_DBG_TEXT __VA_ARGS__);\
 					} \
 				}while(0)
 		#endif /*NO_DEBUG*/
@@ -261,9 +269,9 @@ inline static char* dp_time(void)
 				dprint( _prefix LOG_PREFIX _fmt, dp_time(), \
 					dp_my_pid(), __DP_FUNC, ## args) \
 
-		#define MY_SYSLOG( _log_level, _fmt, args...) \
+		#define MY_SYSLOG( _log_level, _prefix, _fmt, args...) \
 				syslog( (_log_level)|log_facility, \
-							LOG_PREFIX _fmt, __DP_FUNC, ##args);\
+							_prefix LOG_PREFIX _fmt, __DP_FUNC, ##args);\
 
 		#define LOG(lev, fmt, args...) \
 			do { \
@@ -303,7 +311,7 @@ inline static char* dp_time(void)
 					if (log_stderr)\
 						MY_DPRINT( DP_ALERT_PREFIX, fmt, ##args);\
 					else \
-						MY_SYSLOG( LOG_ALERT, fmt, ##args);\
+						MY_SYSLOG( LOG_ALERT, DP_ALERT_TEXT, fmt, ##args);\
 				} \
 			}while(0)
 
@@ -313,7 +321,7 @@ inline static char* dp_time(void)
 					if (log_stderr)\
 						MY_DPRINT( DP_CRIT_PREFIX, fmt, ##args);\
 					else \
-						MY_SYSLOG( LOG_CRIT, fmt, ##args);\
+						MY_SYSLOG( LOG_CRIT, DP_CRIT_TEXT, fmt, ##args);\
 				} \
 			}while(0)
 
@@ -323,7 +331,7 @@ inline static char* dp_time(void)
 					if (log_stderr)\
 						MY_DPRINT( DP_ERR_PREFIX, fmt, ##args);\
 					else \
-						MY_SYSLOG( LOG_ERR, fmt, ##args);\
+						MY_SYSLOG( LOG_ERR, DP_ERR_TEXT, fmt, ##args);\
 				} \
 			}while(0)
 
@@ -333,7 +341,7 @@ inline static char* dp_time(void)
 					if (log_stderr)\
 						MY_DPRINT( DP_WARN_PREFIX, fmt, ##args);\
 					else \
-						MY_SYSLOG( LOG_WARNING, fmt, ##args);\
+						MY_SYSLOG( LOG_WARNING, DP_WARN_TEXT, fmt, ##args);\
 				} \
 			}while(0)
 
@@ -343,7 +351,7 @@ inline static char* dp_time(void)
 					if (log_stderr)\
 						MY_DPRINT( DP_NOTICE_PREFIX, fmt, ##args);\
 					else \
-						MY_SYSLOG( LOG_NOTICE, fmt, ##args);\
+						MY_SYSLOG( LOG_NOTICE, DP_NOTICE_TEXT, fmt, ##args);\
 				} \
 			}while(0)
 
@@ -353,7 +361,7 @@ inline static char* dp_time(void)
 					if (log_stderr)\
 						MY_DPRINT( DP_INFO_PREFIX, fmt, ##args);\
 					else \
-						MY_SYSLOG( LOG_INFO, fmt, ##args);\
+						MY_SYSLOG( LOG_INFO, DP_INFO_TEXT, fmt, ##args);\
 				} \
 			}while(0)
 
@@ -366,7 +374,7 @@ inline static char* dp_time(void)
 						if (log_stderr)\
 							MY_DPRINT( DP_DBG_PREFIX, fmt, ##args);\
 						else \
-							MY_SYSLOG( LOG_DEBUG, fmt, ##args);\
+							MY_SYSLOG( LOG_DEBUG, DP_DBG_TEXT, fmt, ##args);\
 					} \
 				}while(0)
 		#endif /*NO_DEBUG*/
