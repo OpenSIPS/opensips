@@ -11,7 +11,7 @@
 # defines: sources, objs, depends
 #
 
-sources=$(filter-out $(auto_gen), $(wildcard *.c) $(wildcard mem/*.c) \
+sources=$(filter-out $(auto_gen) $(exclude_files), $(wildcard *.c) $(wildcard mem/*.c) \
 		$(wildcard parser/*.c) $(wildcard parser/digest/*.c) \
 		$(wildcard parser/contact/*.c) $(wildcard db/*.c) \
 		$(wildcard mi/*.c) ) $(auto_gen)
