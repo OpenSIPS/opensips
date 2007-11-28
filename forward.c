@@ -546,7 +546,12 @@ int forward_reply(struct sip_msg* msg)
 		goto error0;
 	}
 	update_stat( fwd_rpls, 1);
-
+	/*
+	 * If no port is specified in the second via, then this
+	 * message output a wrong port number - zero. Despite that
+	 * the correct port is choosen in update_sock_struct_from_via,
+	 * as its visible with su_getport(to); .
+	 */
 	LM_DBG("reply forwarded to %.*s:%d\n", msg->via2->host.len, 
 		msg->via2->host.s, (unsigned short) msg->via2->port);
 
