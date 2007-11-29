@@ -885,13 +885,15 @@ assign_stm: DEBUG EQUAL NUMBER {
 							}
 							 }
 		| LISTEN EQUAL  error { yyerror("ip address or hostname "
-						"expected"); }
+						"expected (use quotes if the hostname includes"
+						" config keywords)"); }
 		| ALIAS EQUAL  id_lst { 
 							for(lst_tmp=$3; lst_tmp; lst_tmp=lst_tmp->next)
 								add_alias(lst_tmp->name, strlen(lst_tmp->name),
 											lst_tmp->port, lst_tmp->proto);
 							  }
-		| ALIAS  EQUAL error  { yyerror(" hostname expected"); }
+		| ALIAS  EQUAL error  { yyerror("hostname expected (use quotes"
+							" if the hostname includes config keywords)"); }
 		| AUTO_ALIASES EQUAL NUMBER { auto_aliases=$3; }
 		| AUTO_ALIASES EQUAL error  { yyerror("number  expected"); }
 		| ADVERTISED_ADDRESS EQUAL listen_id {
@@ -1602,7 +1604,7 @@ host:	ID				{ $$=$1; }
 						  }
 						  pkg_free($1); pkg_free($3);
 						}
-	| host DOT error { $$=0; pkg_free($1); yyerror("invalid hostname"); }
+	| host DOT error { $$=0; pkg_free($1); yyerror("invalid hostname (use quotes if hostname has config keywords)"); }
 	;
 
 assignop:
