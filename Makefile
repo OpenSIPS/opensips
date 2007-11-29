@@ -405,8 +405,13 @@ install-cfg: $(cfg-prefix)/$(cfg-dir)
 				$(cfg-prefix)/$(cfg-dir)$(NAME).cfg; \
 		fi
 		# radius dictionary
-		$(INSTALL_TOUCH) $(cfg-prefix)/$(cfg-dir)/dictionary.radius
-		$(INSTALL_CFG) etc/dictionary.radius $(cfg-prefix)/$(cfg-dir)
+		$(INSTALL_TOUCH) $(cfg-prefix)/$(cfg-dir)/dictionary.radius.sample
+		$(INSTALL_CFG) etc/dictionary.radius \
+			$(cfg-prefix)/$(cfg-dir)/dictionary.radius.sample
+		if [ ! -f $(cfg-prefix)/$(cfg-dir)/dictionary.radius ]; then \
+			mv -f $(cfg-prefix)/$(cfg-dir)/dictionary.radius.sample \
+				$(cfg-prefix)/$(cfg-dir)/dictionary.radius; \
+		fi
 		# openserctl config
 		$(INSTALL_TOUCH)   $(cfg-prefix)/$(cfg-dir)/openserctlrc.sample
 		$(INSTALL_CFG) scripts/openserctlrc \
