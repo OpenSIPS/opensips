@@ -46,7 +46,8 @@
 #              root for cross compiling (bogdan)
 #  2007-02-12  CPU replaced with CPU_TYPE to avoid overlapping with system 
 #              env. variables on some OS. (bogdan)
-
+#  2007-11-29  Add support for GNU/kFreeBSD. Substitute / for _ in $(OS).
+#
 
 # check if already included/exported
 
@@ -65,7 +66,7 @@ SUBLEVEL = 0
 EXTRAVERSION = -pre1
 
 RELEASE=$(VERSION).$(PATCHLEVEL).$(SUBLEVEL)$(EXTRAVERSION)
-OS = $(shell uname -s | sed -e s/SunOS/solaris/ | tr "[A-Z]" "[a-z]")
+OS = $(shell uname -s | sed -e s/SunOS/solaris/ | tr "[A-Z/]" "[a-z_]")
 
 ifeq ($(OS),solaris)
 	GETARCH=uname -p
@@ -171,11 +172,17 @@ ifeq ($(OS), darwin)
 	man-dir = man/
 	data-dir = share/$(MAIN_NAME)/
 	LOCALBASE ?= $(SYSBASE)/local
+ifeq ($(OS), gnu_kfreebsd)
+	doc-dir = share/doc/$(MAIN_NAME)/
+	man-dir = share/man/
+	data-dir = share/$(MAIN_NAME)/
+	LOCALBASE = ?= $(SYSBASE)/local
 else
 	doc-dir = doc/$(MAIN_NAME)/
 	man-dir = man/
 	data-dir = $(MAIN_NAME)/
 	LOCALBASE ?= $(SYSBASE)/local
+endif
 endif
 endif
 endif
@@ -1041,6 +1048,25 @@ ifeq ($(OS), linux)
 	ifeq ($(shell [ $(OSREL_N) -ge 2002000 ] && echo has_sigio), has_sigio)
 		ifeq ($(NO_SIGIO),)
 			DEFS+=-DHAVE_SIGIO_RT
+		endif
+	endif
+	ifeq ($(NO_SELECT),)
+		DEFS+=-DHAVE_SELECT
+	endif
+endif
+
+ifeq ($(OS), gnu_kfreebsd)
+	DEFS+=-DHAVE_GETHOSTBYNAME2 -DHAVE_UNION_SEMUN -DHAVE_SCHED_YIELD \
+			-DHAVE_MSG_NOSIGNAL -DHAVE_MSGHDR_MSG_CONTROL -DHAVE_ALLOCA_H \
+			-DHAVE_TIMEGM
+	ifneq ($(found_lock_method), yes)
+		DEFS+= -DUSE_SYSV_SEM  # try posix sems
+		found_lock_method=yes
+	endif
+	# check for ver >= 4.1
+	ifeq ($(shell [ $(OSREL_N) -gt 4001 ] && echo has_kqueue), has_kqueue)
+		ifeq ($(NO_KQUEUE),)
+			DEFS+=-DHAVE_KQUEUE
 		endif
 	endif
 	ifeq ($(NO_SELECT),)
