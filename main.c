@@ -150,7 +150,7 @@ char compiled[]= __TIME__ " " __DATE__ ;
 
 
 static char help_msg[]= "\
-Usage: " NAME " -l address [-p port] [-l address [-p port]...] [options]\n\
+Usage: " NAME " -l address [-l address ...] [options]\n\
 Options:\n\
     -f file      Configuration file (default " CFG_FILE ")\n\
     -c           Check configuration file for errors\n\
@@ -975,7 +975,7 @@ int main(int argc, char** argv)
 			case 'b':
 					maxbuffer=strtol(optarg, &tmp, 10);
 					if (tmp &&(*tmp)){
-						LM_ERR("bad max buffer size number: -p %s\n", optarg);
+						LM_ERR("bad max buffer size number: -b %s\n", optarg);
 						goto error;
 					}
 					break;
