@@ -4,6 +4,777 @@
 
 ===================== Changes since release 1.2.0 ============================
 
+2007-12-04 14:13  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3255] etc/openser.cfg, modules/auth/README,
+	  modules/auth/doc/auth_user.sgml:
+	  - disable the qop parameter after discussion on the list again,
+	  because it don't improve the security actually
+	  - add a note to the auth module readme about the module behaviour
+
+2007-12-04 09:39  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3254] scripts/openserctl:
+	  - IFS is not needed at all, the exact syntax of the CMD is sufficient
+
+2007-12-03 20:23  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r3253] modules/rr/record.c:
+	  - the lump achors for inserting the RR header are marked as type
+	  RECORDROUTE inorder to be identifiable later (we need to count how
+	  many RR hdrs we added).
+	  Part of fixup for bug #1834870
+
+2007-12-03 20:20  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r3252] Makefile.sources:
+	  - a more compact version of a previous change
+
+2007-12-03 17:50  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3251] scripts/openserdbctl.pgsql:
+	  - replace the hard coded database table names for GRANT with the
+	  defines from
+	  openserdbctl.base
+
+2007-12-03 17:41  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3250] modules/sms/libsms_getsms.c:
+	  - fix typo in error msg
+
+2007-12-03 17:39  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3249] test/6.sh:
+	  - silence test 6
+
+2007-12-03 17:38  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3248] scripts/openserctl:
+	  - fix the 'openserctl ping' command after finding the correct bash
+	  syntax,
+	  i 'really' like bash ;-)
+	  - closes #1834421
+
+2007-12-03 16:35  Christian Schlatter, <cs at unc dot edu>
+
+	* [r3247] modules/h350/doc/h350_user.sgml:
+	  Added function usage scope
+
+2007-12-03 16:35  Christian Schlatter, <cs at unc dot edu>
+
+	* [r3246] modules/ldap/doc/ldap_user.sgml:
+	  Added function usage scope
+
+2007-12-03 15:53  Bastian Friedrich, <bastian dot friedrich at collax dot com>
+
+	* [r3244] modules/perl/README, modules/perl/doc/perl_pod.sgml,
+	  modules/perl/lib/perl/OpenSER/Utils/PhoneNumbers.pm:
+	  POD documentation in OpenSER::Utils::PhoneNumbers was broken
+
+2007-12-03 15:39  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3243] main.c:
+	  - console help, '-p' is more used anymore for port setting, fix msg
+	  for '-b'
+
+2007-12-03 14:46  Dan Pascu, <dan at ag-projects dot com>
+
+	* [r3242] modules/tm/README, modules/tm/doc/tm_user.sgml:
+	  Fixed some typos and rephrased a sentence to fix grammar
+
+2007-12-03 12:47  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r3240] modules/tm/README, modules/tm/doc/tm_user.sgml:
+	  - documentation of t_check_trans() updated
+
+2007-12-01 16:17  Dan Pascu, <dan at ag-projects dot com>
+
+	* [r3239] ip_addr.h:
+	  Avoid a read overflow if name is not null terminated and make sure
+	  hostname gets a null terminating byte even if the original name didn't
+	  have one
+
+2007-12-01 11:27  Dan Pascu, <dan at ag-projects dot com>
+
+	* [r3238] modules/tm/t_hooks.h:
+	  Fixed another typo
+
+2007-11-30 16:51  Dan Pascu, <dan at ag-projects dot com>
+
+	* [r3236] modules/tm/t_hooks.h:
+	  Fixed typo
+
+2007-11-29 17:26  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3234] test/17.sh, test/8.sh:
+	  - remove unneeded mysql stuff from test 8
+	  - test 17 creates now a fresh db
+
+2007-11-29 17:23  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3233] scripts/openserdbctl.db_berkeley:
+	  - fix path for database
+	  - create extra and presence tables too
+	  - delete a db in 'drop' completly
+
+2007-11-29 16:14  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3232] etc/openser.cfg:
+	  - enable qop mode for auth challenge function, as recommended in
+	  documentation
+
+2007-11-29 11:57  Daniel-Constantin Mierla, <daniel at voice-system dot ro>
+
+	* [r3231] Makefile:
+	  - dictionary.radius is not overwritten at re-install,
+	  dictionary.radius.sample is created instead (reported by Norm
+	  Brandinger, #1765763)
+
+2007-11-29 11:30  Julien Blache, <jblache at debian dot org>
+
+	* [r3230] Makefile.defs:
+	  Add support for GNU/kFreeBSD to the build system.
+	  System name is GNU/kFreeBSD, substitute / for _ in $(OS).
+
+2007-11-29 11:29  Daniel-Constantin Mierla, <daniel at voice-system dot ro>
+
+	* [r3229] cfg.y:
+	  - hint in case of error related to #1799563
+
+2007-11-29 10:38  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r3228] modules/cpl-c/cpl_run.c:
+	  - fixed setting the NAT flag in brach flags
+	  Closes bug #1838564
+
+2007-11-28 20:34  Will Quan, <wiquan at employees dot org>
+
+	* [r3227] modules/db_berkeley/bdb_lib.c, scripts/openserdbctl.base,
+	  scripts/openserdbctl.db_berkeley, scripts/openserdbctl.dbtext:
+	  Moved definition of STANDARD_TABLES, EXTRA_TABLES, PRESENCE_TABLES to
+	  openserdbctl.base.
+	  Add tables 'dispatcher' and 'dialog' to list of STANDARD_TABLES (Patch
+	  provided from Ovidiu Sas).
+	  Modified bdb_lib::bdblib_create_table to return error if the table
+	  does not exist.
+	  These are all fixes for Bug# 1836601: db_berkeley don't work
+
+2007-11-28 19:50  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r3226] modules/mi_xmlrpc/Makefile, modules/mi_xmlrpc/abyss_conf.c,
+	  modules/mi_xmlrpc/abyss_conn.c, modules/mi_xmlrpc/abyss_conn.h,
+	  modules/mi_xmlrpc/abyss_data.c, modules/mi_xmlrpc/abyss_data.h,
+	  modules/mi_xmlrpc/abyss_date.c, modules/mi_xmlrpc/abyss_date.h,
+	  modules/mi_xmlrpc/abyss_file.c, modules/mi_xmlrpc/abyss_file.h,
+	  modules/mi_xmlrpc/abyss_http.c, modules/mi_xmlrpc/abyss_http.h,
+	  modules/mi_xmlrpc/abyss_info.h, modules/mi_xmlrpc/abyss_mallocvar.h,
+	  modules/mi_xmlrpc/abyss_response.c, modules/mi_xmlrpc/abyss_server.c,
+	  modules/mi_xmlrpc/abyss_server.h, modules/mi_xmlrpc/abyss_session.c,
+	  modules/mi_xmlrpc/abyss_session.h, modules/mi_xmlrpc/abyss_socket.c,
+	  modules/mi_xmlrpc/abyss_socket.h,
+	  modules/mi_xmlrpc/abyss_socket_unix.c,
+	  modules/mi_xmlrpc/abyss_socket_unix.h,
+	  modules/mi_xmlrpc/abyss_thread.h,
+	  modules/mi_xmlrpc/abyss_thread_fork.c,
+	  modules/mi_xmlrpc/abyss_token.c, modules/mi_xmlrpc/abyss_token.h,
+	  modules/mi_xmlrpc/abyss_trace.c, modules/mi_xmlrpc/abyss_trace.h,
+	  modules/mi_xmlrpc/abyss_xmlrpc_int.h,
+	  modules/mi_xmlrpc/abyss_xmlrpc_server.c,
+	  modules/mi_xmlrpc/mi_xmlrpc.c:
+	  fixup to the libxmlrpc pthread support problem - replace the compiled
+	  abyss server provided by the libxmlrpc with our own compiling:
+	  - import the source files for the abyss server (used by the libxmlrpc)
+	  in order to force compiling of fork support (and not pthread)
+	  - change makefile to compile these additional files for libxmlrpc ver
+	  > 1.0.0 ; also, in this case, the module will not link with the abyss
+	  libs provided by the libxmlrpc
+	  - if 0.9.10 version is detected, the imported sources will not be
+	  compiled and the libxmlrpc code will be used.
+	  Closes bug 1835638.
+	  Many thanks to Dan Pascu for the help in troubleshooting and fixing
+	  this nasty problem.
+
+2007-11-28 19:36  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r3225] Makefile.sources:
+	  - module's Makefile may force a lsit of files not to be compiled. This
+	  extension is needed by a following fixup.
+
+2007-11-28 17:15  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3224] forward.c:
+	  - add a comment to document the sometimes wrong port output in the
+	  debug message in forward_reply.
+
+2007-11-28 13:06  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3223] modules/maxfwd/maxfwd.c, modules/pdt/pdt.c:
+	  - decrease log level of maxfwd and pdt module initialization messages
+
+2007-11-28 11:34  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3222] modules/auth_db/authdb_mod.c,
+	  modules/auth_radius/authrad_mod.c, modules/osp/osp_mod.c:
+	  - improve error messages, give some hints about the needed modules
+
+2007-11-27 18:20  Dan Pascu, <dan at ag-projects dot com>
+
+	* [r3221] modules/presence/hash.c:
+	  Removed unnecessary test
+
+2007-11-27 18:16  Dan Pascu, <dan at ag-projects dot com>
+
+	* [r3220] modules/presence/hash.c:
+	  Fixed 2 cases where a lock may not be released on cleanup
+
+2007-11-27 18:14  Dan Pascu, <dan at ag-projects dot com>
+
+	* [r3219] modules/presence/hash.c:
+	  Fixed index when doing cleanup
+
+2007-11-27 17:39  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3218] test/12.sh:
+	  - don't echo return status, be more tolerant
+
+2007-11-27 17:30  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3217] test/12.cfg, test/12.sh:
+	  - add some linefeeds to test 12
+	  - improve test to check the output
+
+2007-11-27 10:10  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3216] scripts/openserdbctl.db_berkeley:
+	  - add id svn property to file
+
+2007-11-26 19:16  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3214] modules/dialog/README, modules/dialog/dialog.c,
+	  modules/dialog/doc/dialog_user.sgml:
+	  - dialog uses now the default db rw URL, if a db_mode != 0 is
+	  specified
+	  - this behaviour is consistent to other modules
+	  - adjust the documentation to this change
+	  - fix error in documentation, db_mode is not a string parameter
+
+2007-11-26 19:04  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3213] packaging/debian-etch/control, packaging/debian/control:
+	  - db_berkeley module should depend on berkeleydb tools, these are
+	  needed
+	  from openserdbctl to setup a database and other tasks
+
+2007-11-26 19:03  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3212] db/schema/dialog.xml, scripts/db_berkeley/openser/version,
+	  scripts/dbtext/openser/version, scripts/mysql/dialog-create.sql,
+	  scripts/postgres/dialog-create.sql:
+	  - increase dialog db version
+	  - closes #1838888
+
+2007-11-26 18:57  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3211] test/2.cfg:
+	  - fix for database tests, dialog module should use database
+
+2007-11-26 16:23  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r3210] dprint.h:
+	  - fixed missing log level printing when syslog is used.
+
+2007-11-26 14:24  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3209] scripts/openserctlrc, scripts/openserdbctl.pgsql:
+	  - add a note about the GRANT problem for postgres if not all tables
+	  are installed
+	  - simplify the GRANT statement for dbrw user for postgres in setup
+	  script
+
+2007-11-26 13:40  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3208] etc/openser.cfg:
+	  - remove now unneeded hints about the blacklist and ipv6 deactivation
+	  - use the error msg from RFC for msg len check
+	  - add one xlog example with pseudo-variables
+
+2007-11-26 13:22  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3207] modules/db_berkeley/bdb_lib.c:
+	  - improve error msg on startup like in commit r3205 for dbtext
+
+2007-11-26 13:18  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3206] test/15.sh, test/17.sh:
+	  - dbtext and db_berkeley must be loaded before modules that want to
+	  use them
+
+2007-11-26 13:00  Daniel-Constantin Mierla, <daniel at voice-system dot ro>
+
+	* [r3205] modules/dbtext/dbt_lib.c:
+	  - more verbose error message when the dbtext is not initialized
+	  properly, usually because it was loaded after the module that tries to
+	  use it (related to #1836441 reported by Henning Westerholt)
+
+2007-11-23 16:13  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3204] scripts/openserdbctl.pgsql:
+	  - add domainpolicy and carrierroute tables to GRANT rights
+
+2007-11-23 15:01  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3203] modules/dispatcher/dispatch.c:
+	  - fix for dispatcher: treat an empty db not as an error on startup
+	  in the cfg mode it has already the same behaviour
+
+2007-11-23 14:23  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3202] modules/auth/README, modules/auth/doc/auth_user.sgml,
+	  modules/auth_db/README, modules/auth_db/authorize.c,
+	  modules/auth_db/doc/auth_db_user.sgml:
+	  - small comment addition in auth_db
+	  - fix mixup in auth and auth_db documentation for calculate_ha1
+	  parameter auth don't use a database at all, 
+	  auth_db don't use the password_spec PV
+
+2007-11-22 18:20  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3201] test/17.sh:
+	  - add a test for db_berkeley module
+
+2007-11-22 18:09  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3200] modules/db_berkeley/db_berkeley.c, modules/dbtext/dbt_base.c:
+	  - output the database location on startup
+
+2007-11-22 17:49  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3199] modules/carrierroute/README,
+	  modules/carrierroute/doc/carrierroute_user.sgml, modules/lcr/README,
+	  modules/lcr/doc/lcr_user.sgml:
+	  - documentation update, use entities for db_url and example url
+
+2007-11-22 17:39  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3198] test/16.sh, test/2.sh:
+	  - add a check for mysql driver to test 2
+	  - add a test for postgres db
+
+2007-11-22 17:10  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3197] doc/dbschema/xsl/postgres.xsl,
+	  scripts/postgres/serweb-create.sql:
+	  - no need to output the PRIMARY KEY name two times, causes error for
+	  serweb tables
+
+2007-11-22 16:47  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3196] modules/unixodbc/my_con.c:
+	  - port fixes from 1.2 branch, r3195, (DSN and invalid pointer fix)
+	  - check return status for db initialization functions, return errors
+	  on failure
+	  - free the handle memory for driver on errors
+
+2007-11-22 15:30  Dan Pascu, <dan at ag-projects dot com>
+
+	* [r3194] doc/dbschema/xsl/postgres.xsl,
+	  scripts/postgres/acc-create.sql, scripts/postgres/alias_db-create.sql,
+	  scripts/postgres/auth_db-create.sql,
+	  scripts/postgres/avpops-create.sql, scripts/postgres/cpl-create.sql,
+	  scripts/postgres/dialog-create.sql,
+	  scripts/postgres/domain-create.sql,
+	  scripts/postgres/domainpolicy-create.sql,
+	  scripts/postgres/group-create.sql, scripts/postgres/imc-create.sql,
+	  scripts/postgres/lcr-create.sql, scripts/postgres/msilo-create.sql,
+	  scripts/postgres/pdt-create.sql,
+	  scripts/postgres/permissions-create.sql,
+	  scripts/postgres/presence-create.sql,
+	  scripts/postgres/registrar-create.sql,
+	  scripts/postgres/rls-create.sql, scripts/postgres/serweb-create.sql,
+	  scripts/postgres/siptrace-create.sql,
+	  scripts/postgres/speeddial-create.sql,
+	  scripts/postgres/uri_db-create.sql,
+	  scripts/postgres/usrloc-create.sql:
+	  Prefix index names with the table name for postgres databases, as
+	  postgres wants database wide unique index names
+
+2007-11-22 12:55  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3193] modules/usrloc/udomain.c:
+	  - improve logging, if we're failing, then output the db table (and
+	  aor)
+
+2007-11-22 12:51  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3192] modules/cfgutils/cfgutils.c:
+	  - fix, use rand() for the pseudo-variable too
+
+2007-11-22 12:49  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3191] modules/dbtext/README, modules/dbtext/doc/dbtext_user.sgml:
+	  - documentation fix: s/ser/openser/, include dbtext driver in db_url
+	  parameter
+
+2007-11-22 12:35  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3190] test/15.sh, test/2.cfg, test/2.sh:
+	  - don't load dbtext mod in test 2, change cfg to not include mysql, do
+	  this in test
+	  - add a new test that checks openser db related module startup with
+	  dbtext
+
+2007-11-22 10:43  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3189] main.c, statistics.c, tcp_main.c, udp_server.c:
+	  - silence more log messages on startup, as suggested from Dan
+	  - use INFO instead of NOTICE for shared memory msg
+	  - output also the private memory setting
+	  - use DBG for statistics manager startup msg
+	  - make udp and tcp init msgs more user understandable
+
+2007-11-21 19:44  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r3187] modules/cpl-c/cpl_sig.c:
+	  - fixed improper call of SET_DSTURI action from cpl-c
+	  Reported by Inaki Baz Castillo < ibc at aliax dot net>
+
+2007-11-21 17:40  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r3184] modules/cpl-c/cpl_parser.c, modules/cpl-c/cpl_time.c:
+	  - fixed bogus detection and setting (at encoding time) of the bymonth
+	  / bymonthday attributes
+	  Reported by Aki Rehn < aki dot rehn at setera dot fi >
+
+2007-11-21 12:26  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r3183] modules/nathelper/nathelper.c:
+	  - fixed bogus initialization of RTPPROXY socks in timer processes.
+	  Reported by Inaki Baz Castillo < ibc at in dot ilimit dot es >
+
+2007-11-20 18:41  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r3182] modules/nathelper/nathelper.c:
+	  - more fixing on the lookup flag for force_rtp_proxy().
+	  Related to bug ID 1815162
+
+2007-11-20 14:47  Anca Vamanu, <anca at voice-system dot ro>
+
+	* [r3181] modules/presence/presentity.c:
+	  - fixed a memory leak bug (reported by Dan Pascu)
+
+2007-11-20 13:48  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r3180] parser/msg_parser.c:
+	  - forgotten DBG converted to LM_DBG
+
+2007-11-20 13:18  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r3178] tcp_main.c:
+	  - avoid removel of the TCP connections from the io list by the
+	  attendend process. Only TPC main and receivers should do that.
+	  Reported by Juha Heinanen <jh at tutpro dot com>
+
+2007-11-20 10:47  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r3176] modules/acc/acc.c:
+	  - fixed bogus index in the RADIUS attr array
+	  Reported by Dan Pascu
+
+2007-11-20 08:55  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r3175] parser/parse_rr.c:
+	  - fixed bogus test leading to a missing ',' in printed route set.
+	  Closes bug #1834860
+	  Found by:
+	  Tavis Paquette (tavis at galaxytelecom dot net)
+	  Peter Baer (pbaer at galaxytelecom dot net)
+
+2007-11-20 08:46  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r3174] main.c, pvar.c:
+	  - some logs moved from NOTICE to DBG
+
+2007-11-19 18:00  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r3172] main.c:
+	  - fixed destroy sequence - if script check is done, do not make a
+	  general clenup as none of the services to be cleaned are even
+	  initialized.
+	  Closes 1827363.
+
+2007-11-19 14:15  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3170] modules/carrierroute/README,
+	  modules/carrierroute/doc/carrierroute_user.sgml:
+	  - add missing documentation about cr_prime_balance_by_from function
+
+2007-11-19 11:17  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r3169] daemonize.c:
+	  - if pif file contains bogus pid, ignore it and replace it with the
+	  new pid
+	  - check if the writing of the pid/pgid in file is successful
+	  Closes bug 1682036.
+
+2007-11-19 10:37  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r3168] modules/permissions/mi.c:
+	  - use the newly added macro for setting the lens of the static MI
+	  strings.
+
+2007-11-19 10:36  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r3167] mi/mi_core.c, mi/tree.h:
+	  - to avoid buffer overflow or garbage printing due bogus statis lens,
+	  a new macro is added to auto-compute the len of the static string at
+	  compile time (no penalty at runtime).
+	  Pontential problem reported by Dan Pascu.
+
+2007-11-16 18:12  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3166] scripts/openserctl.base:
+	  - replace the gnu awk specific line match with (hopefully) more
+	  portable code, tested with gawk and mawk
+
+2007-11-16 17:59  Dan Pascu, <dan at ag-projects dot com>
+
+	* [r3165] modules/permissions/mi.c:
+	  Use a message that better describe the situation
+
+2007-11-16 16:48  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r3164] main.c:
+	  - remove the ignorance of SIG CHILD in no fork mode - can be
+	  misleading as a subprocess may crash without terminating openser
+
+2007-11-16 16:03  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r3163] modules/permissions/mi.c:
+	  - fixed trusted_reload MI command - disable it if cache is not used.
+	  Reported by Dan Pascu.
+
+2007-11-16 15:52  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r3162] modules/gflags/gflags.c:
+	  - removed some old temporary debug log
+
+2007-11-16 15:48  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r3161] mi/mi_core.c:
+	  - fixed the uptime MI command - usage of a predefined len for the
+	  string returned by ctime() was leading to buffer overflow.
+
+2007-11-16 15:46  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r3160] dprint.c, dprint.h:
+	  - fixed ctime() internal buffer overwrite ; as the LM_* functions are
+	  using ctime(), it was resulting in conflict with the rest of the code
+	  where this function was also used -> LM_* functions use ctime_r() with
+	  a private buffer to avoid any conflicts.
+
+2007-11-16 15:01  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r3159] mi/mi.c:
+	  - force sthutdown if one of the MI childern fails to init.
+
+2007-11-16 14:57  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3158] test/11.cfg, test/12.cfg, test/12.sh, test/13.sh, test/14.cfg,
+	  test/14.sh, test/6.sh, test/7.sh, test/carrierroute.cfg:
+	  - some cleanup in existing tests
+	  - add more tests:
+	  12 - script with PVs, transformations and xlog
+	  13 - carrierroute with db
+	  14 - carrierroute with config file
+
+2007-11-16 14:46  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3157] modules/carrierroute/carrierroute.c,
+	  modules/carrierroute/route_fifo.c:
+	  - carrierroute use the default read only db url, like other modules
+	  - replace tab in fifo command output, better for tests
+
+2007-11-16 12:45  Dan Pascu, <dan at ag-projects dot com>
+
+	* [r3156] modules/permissions/mi.c:
+	  Fixed length of string constants. This should be better done by
+	  #define-ing some constants and using sizeof(constant)-1 on them.
+
+2007-11-16 11:31  Anca Vamanu, <anca at voice-system dot ro>
+
+	* [r3155] modules/presence/event_list.c, modules/presence/event_list.h,
+	  modules/presence/presentity.c, modules/presence/publish.c,
+	  modules/presence/subscribe.c:
+	  - fixed memory leak problems (thanks to Dan Pascu)
+
+2007-11-16 10:31  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3154] modules/carrierroute/README,
+	  modules/carrierroute/carrierroute.c,
+	  modules/carrierroute/carrierroute.h,
+	  modules/carrierroute/doc/carrierroute_user.sgml,
+	  modules/carrierroute/route_func.c, modules/carrierroute/route_func.h:
+	  - rework non functional AVP fixup for cr_user_rewrite_uri function
+	  - now it uses the new PV infrastructure like tree_rewrite_uri
+	  - remove now unused AVP matching code
+	  - adapt documentation to this change
+	  - fix error in documentation, for the prime balance function are only
+	  numerical hash sources valid
+	  - fix error in config example for failure_routes, thanks to Essobi
+	  from IRC
+     - improve documentation, be more explicit about the requirements to
+	  the R-URI for the rewrite functions, add a note to the example cfg too
+
+2007-11-16 09:16  Anca Vamanu, <anca at voice-system dot ro>
+
+	* [r3153] modules/rls/rls.c:
+	  - fixed uninitialized variable
+
+2007-11-16 09:10  Dan Pascu, <dan at ag-projects dot com>
+
+	* [r3152] modules/presence/subscribe.c:
+	  Initialize boolean flag
+
+2007-11-15 22:04  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r3151] modules/auth_diameter/avp.c, modules/auth_diameter/tcp_comm.c,
+	  modules/cpl-c/cpl_loader.c, modules/cpl-c/cpl_nonsig.h,
+	  modules/cpl-c/cpl_proxy.h, modules/cpl-c/cpl_run.c,
+	  modules/cpl-c/cpl_sig.c, modules/cpl-c/cpl_switches.h,
+	  modules/cpl-c/loc_set.h, modules/nathelper/nathelper.c,
+	  modules/postgres/dbase.c, modules/postgres/pg_con.h,
+	  modules/rr/README, modules/rr/doc/rr_devel.sgml:
+	  - more migration of logs to LM_* functions
+
+2007-11-15 20:52  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r3150] parser/contact/contact.c, parser/contact/parse_contact.c:
+	  - more convertion to LM_* logging
+
+2007-11-15 20:41  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r3149] parser/digest/digest.c:
+	  - migrated to LM_* logging
+
+2007-11-15 20:31  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r3148] modules/tm/sip_msg.c, modules/tm/t_reply.c, msg_translator.c,
+	  parser/case_retr.h, parser/hf.c, parser/hf.h, parser/keys.h,
+	  parser/msg_parser.c, parser/parse_hname2.c:
+	  Fixed 503 reply handling:
+	  - 503 has minimum priority in branch selection (TM)
+	  - blacklist a 503 only if it contains Retry-After header (required the
+	  addition of hdr parser)
+	  - when sending out, convert 503 to 500 to prevent chain blocking
+	  For more on the topic, please see discussion attached to the bug
+	  #1822692.
+	  Closes bug 1822692
+
+2007-11-15 20:26  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r3147] modules/tm/tm.c:
+	  - better error message
+
+2007-11-15 18:16  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3146] modules/carrierroute/carrier_tree.c:
+	  - str_init don't work reliable on a char pointer, this could lead to
+	  no functional routing in config file mode
+
+2007-11-15 15:43  Julien Blache, <jblache at debian dot org>
+
+	* [r3145] packaging/debian/control, packaging/debian/rules:
+	  Resync with Debian unstable.
+
+2007-11-15 15:16  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3144] modules/carrierroute/README,
+	  modules/carrierroute/doc/carrierroute_user.sgml:
+	  - add example about the necessary extensions for user table
+
+2007-11-15 14:09  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3142] db/schema/Makefile, doc/dbschema/xsl/db_berkeley.xsl,
+	  scripts/db_berkeley/openser/acc,
+	  scripts/db_berkeley/openser/active_sessions,
+	  scripts/db_berkeley/openser/active_watchers,
+	  scripts/db_berkeley/openser/address,
+	  scripts/db_berkeley/openser/admin_privileges,
+	  scripts/db_berkeley/openser/aliases,
+	  scripts/db_berkeley/openser/carrierroute,
+	  scripts/db_berkeley/openser/cpl,
+	  scripts/db_berkeley/openser/dbaliases,
+	  scripts/db_berkeley/openser/dialog,
+	  scripts/db_berkeley/openser/dispatcher,
+	  scripts/db_berkeley/openser/domain,
+	  scripts/db_berkeley/openser/domainpolicy,
+	  scripts/db_berkeley/openser/grp, scripts/db_berkeley/openser/gw,
+	  scripts/db_berkeley/openser/gw_grp,
+	  scripts/db_berkeley/openser/imc_members,
+	  scripts/db_berkeley/openser/imc_rooms,
+	  scripts/db_berkeley/openser/lcr, scripts/db_berkeley/openser/location,
+	  scripts/db_berkeley/openser/missed_calls,
+	  scripts/db_berkeley/openser/pdt, scripts/db_berkeley/openser/pending,
+	  scripts/db_berkeley/openser/phonebook,
+	  scripts/db_berkeley/openser/presentity,
+	  scripts/db_berkeley/openser/pua, scripts/db_berkeley/openser/re_grp,
+	  scripts/db_berkeley/openser/rls_presentity,
+	  scripts/db_berkeley/openser/rls_watchers,
+	  scripts/db_berkeley/openser/route_tree,
+	  scripts/db_berkeley/openser/server_monitoring,
+	  scripts/db_berkeley/openser/server_monitoring_agg,
+	  scripts/db_berkeley/openser/silo,
+	  scripts/db_berkeley/openser/sip_trace,
+	  scripts/db_berkeley/openser/speed_dial,
+	  scripts/db_berkeley/openser/subscriber,
+	  scripts/db_berkeley/openser/trusted, scripts/db_berkeley/openser/uri,
+	  scripts/db_berkeley/openser/usr_preferences,
+	  scripts/db_berkeley/openser/usr_preferences_types,
+	  scripts/db_berkeley/openser/version,
+	  scripts/db_berkeley/openser/watchers,
+	  scripts/db_berkeley/openser/xcap:
+	  - add support for default values to db_berkeley database source
+
+2007-11-15 13:23  Daniel-Constantin Mierla, <daniel at voice-system dot ro>
+
+	* [r3141] parser/parse_methods.c:
+	  - fix parse_methods() issue with unknown methods
+	  - the order of testing the valid character within the method was done
+	  too early
+	  - closes #1831969, reported by Ovidiu Sas
+
+2007-11-15 11:00  Klaus Darilion, <klaus dot mailinglists at pernau dot at>
+
+	* [r3140] modules/maxfwd/README, modules/maxfwd/doc/maxfwd_user.sgml:
+	  - added doc
+
+2007-11-15 09:30  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3139] modules/carrierroute/README,
+	  modules/carrierroute/doc/carrierroute_user.sgml:
+	  - extend documentation
+
+2007-11-14 16:38  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3137] modules/carrierroute/carrier_tree.c,
+	  modules/carrierroute/route_rule.c:
+	  - fix possible errors (similar to the str comparison fixed in r3126)
+	  for carrier tree fixup and host matching, use the function from ut.h
+
+2007-11-14 12:31  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3136] doc/authors.xml:
+	  - add authors.xml file for usage with svn2cl tool
+
+2007-11-14 12:30  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3135] ChangeLog:
+	  - update Changelog for 1.3.0 release
+	  due the huge number of changes the new entries were created with the
+	  svn2cl tool, with the command line:
+	  svn2cl -i -r HEAD:1826 --authors=doc/authors.xml --break-before-msg
+	  --linelen=80
+
 2007-11-14 11:33  Anca Vamanu, <anca at voice-system dot ro>
 
 	* [r3134] modules/pua/send_subscribe.c:
