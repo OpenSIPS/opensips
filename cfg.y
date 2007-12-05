@@ -2262,7 +2262,7 @@ extern int startcolumn;
 		||  !defined(USE_MCAST)
 static void warn(char* s)
 {
-	LM_WARN("cfg. warning: (%d,%d-%d): %s\n", line, startcolumn, 
+	LM_WARN("warning in config file, line %d, column %d-%d: %s\n", line, startcolumn, 
 			column, s);
 	cfg_errors++;
 }
@@ -2270,7 +2270,7 @@ static void warn(char* s)
 
 static void yyerror(char* s)
 {
-	LM_CRIT("parse error (%d,%d-%d): %s\n", line, startcolumn, 
+	LM_CRIT("parse error in config file, line %d, column %d-%d: %s\n", line, startcolumn, 
 			column, s);
 	cfg_errors++;
 }
