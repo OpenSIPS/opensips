@@ -39,6 +39,7 @@ shs_from_uri    the entire URI in the From header field
 shs_from_user   the username part of the URI in the From header field
 shs_to_uri      the entire URI in the To header field
 shs_to_user     the username part of the URI in the To header field
+shs_error       no hash specified
 */
 enum hash_source {
 	shs_call_id = 1,
@@ -54,11 +55,6 @@ typedef int (*hash_func_t)(struct sip_msg * msg,
 
 
 /****************** Declaration of extern interface functions **************/
-
-/*
-static int real_hash_func (struct sip_msg*, int);
-static int calculate_hash (struct sip_msg*, char*, char*);
-*/
 
 /* 
  * Returns an integer number between 0 and denominator - 1 based on

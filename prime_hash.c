@@ -31,11 +31,10 @@
 
 #include "prime_hash.h"
 
-#define PRIME_NUMBER 51797;
 
 /************* Declaration of Static Helpers *******************************/
 
-static int real_calculate_hash(struct sip_msg *msg, enum hash_source source);
+static int real_calculate_hash(struct sip_msg *msg, enum hash_source source, unsigned int *hash);
 static int determine_source(struct sip_msg *msg, enum hash_source source,
                             str *source_string);
 static int validate_msg(struct sip_msg * msg);
@@ -46,27 +45,13 @@ static int first_token (str *source_string);
 static int calc_prime_hash(str * source_string, int denominator);
 
 
-/************* Globals *****************************************************/
-
-/* We use globals to only calculate the hash if it is really necessary.
- */
-static struct sip_msg *cur_msg;
-static enum hash_source cur_source;
-static uint32_t cur_hash;
-
-
 /************* Interface Functions *****************************************/
-
-/* 
-static int real_hash_func(struct sip_msg *msg, int denominator) {
-	return hash_func (msg, shs_call_id, denominator);
-}
-*/
 
 int hash_func (struct sip_msg * msg,
                          enum hash_source source, int denominator) {
 	int ret;
-	if (real_calculate_hash (msg, source) == -1) {
+	unsigned int cur_hash;
+	if (real_calculate_hash (msg, source, &cur_hash) == -1) {
 		return -1;
 	}
 	ret = cur_hash % denominator;
@@ -88,30 +73,21 @@ int prime_hash_func(struct sip_msg * msg,
 	return calc_prime_hash(&source_string, denominator);
 }
 
-/* 
-static int calculate_hash (struct sip_msg *msg, char *bla, char *blubb) {
-	return real_calculate_hash (msg, shs_call_id) == -1 ? -1 : 1;
-}
-*/
-
 /************* Static Helpers **********************************************/
 
-static int real_calculate_hash (struct sip_msg *msg, enum hash_source source) {
+static int real_calculate_hash (struct sip_msg *msg, enum hash_source source, unsigned int *hash) {
 	str source_string;
-	uint32_t hash;
 
 	if(determine_source (msg, source, &source_string) == -1) {
 		return -1;
 	}
-	crc32_uint (&source_string, &hash);
-	cur_msg = msg;
-	cur_source = source;
-	cur_hash = hash;
+	crc32_uint(&source_string, hash);
 	return 0;
 }
 
 static int calc_prime_hash(str * source_string, int denominator) {
-#define INT_DIGIT_LIMIT 18
+	static const int INT_DIGIT_LIMIT = 18;
+	static const int PRIME_NUMBER = 51797;
 	uint64_t number = 0;
 	uint64_t p10;
 	int i, j, limit = 0;
