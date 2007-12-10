@@ -77,15 +77,17 @@ void print_rr(FILE* _o, rr_t* _r);
 
 
 /*
- * Duplicate a single rr_t structure using pkg_malloc
+ * Duplicate a single (first) or the whole list of rr_t structure
+ * using pkg_malloc
  */
-int duplicate_rr(rr_t** _new, rr_t* _r);
+int duplicate_rr(rr_t** _new, rr_t* _r, int _first);
 
 
 /*
- * Duplicate a single rr_t structure using shm_malloc
+ * Duplicate a single (first) or the whole list of rr_t structure
+ * using shm_malloc
  */
-int shm_duplicate_rr(rr_t** _new, rr_t* _r);
+int shm_duplicate_rr(rr_t** _new, rr_t* _r, int _first);
 
 /*
  * print body for all RR headers in comma separated string

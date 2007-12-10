@@ -257,7 +257,7 @@ static inline void xlate_pointers(rr_t* _orig, rr_t* _r)
 /*
  * Duplicate a single rr_t structure using pkg_malloc or shm_malloc
  */
-static inline int do_duplicate_rr(rr_t** _new, rr_t* _r, int _shm)
+static inline int do_duplicate_rr(rr_t** _new, rr_t* _r, int _shm, int _first)
 {
 	int len, ret;
 	rr_t* res, *prev, *it;
@@ -306,6 +306,10 @@ static inline int do_duplicate_rr(rr_t** _new, rr_t* _r, int _shm)
 		res->next=NULL;
 		if(*_new==NULL)
 			*_new = res;
+
+		if (_first)
+			return 0;
+
 		if(prev)
 			prev->next = res;
 		prev = res;
@@ -321,20 +325,22 @@ error:
 
 
 /*
- * Duplicate a single rr_t structure using pkg_malloc
+ * Duplicate a single rr_t structure or the whole list (based on
+ * "first" param) using pkg_malloc
  */
-int duplicate_rr(rr_t** _new, rr_t* _r)
+int duplicate_rr(rr_t** _new, rr_t* _r, int first)
 {
-	return do_duplicate_rr(_new, _r, 0);
+	return do_duplicate_rr(_new, _r, 0, first);
 }
 
 
 /*
- * Duplicate a single rr_t structure using shm_malloc
+ * Duplicate a single rr_t structure or the whole list (based on
+ * "first" param) using shm_malloc
  */
-int shm_duplicate_rr(rr_t** _new, rr_t* _r)
+int shm_duplicate_rr(rr_t** _new, rr_t* _r, int first)
 {
-	return do_duplicate_rr(_new, _r, 1);
+	return do_duplicate_rr(_new, _r, 1, first);
 }
 
 
