@@ -330,7 +330,7 @@ int duplicate_rr(rr_t** _new, rr_t* _r)
 
 
 /*
- * Duplicate a single rr_t structure using pkg_malloc
+ * Duplicate a single rr_t structure using shm_malloc
  */
 int shm_duplicate_rr(rr_t** _new, rr_t* _r)
 {
