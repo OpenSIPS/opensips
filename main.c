@@ -482,8 +482,10 @@ static void sig_alarm_abort(int signo)
  */
 void handle_sigs(void)
 {
-	pid_t	chld;
-	int	chld_status;
+	pid_t  chld;
+	int    chld_status;
+	int    i;
+	int    do_exit;
 
 	switch(sig_flag){
 		case 0: break; /* do nothing*/
@@ -532,7 +534,17 @@ void handle_sigs(void)
 			break;
 			
 		case SIGCHLD:
+			do_exit = 0;
 			while ((chld=waitpid( -1, &chld_status, WNOHANG ))>0) {
+				/* is it a process we know about? */
+				for( i=0 ; i<counted_processes ; i++ )
+					if (pt[i].pid==chld) break;
+				if (i==counted_processes) {
+					LM_DBG("unkown child process %d ended. Ignoring\n",chld);
+					continue;
+				}
+				do_exit = 1;
+				/* process the signal */
 				if (WIFEXITED(chld_status)) 
 					LM_INFO("child process %d exited normally,"
 							" status=%d\n", chld, 
@@ -549,6 +561,8 @@ void handle_sigs(void)
 								" signal %d\n", chld,
 								 WSTOPSIG(chld_status));
 			}
+			if (!do_exit)
+				break;
 			LM_INFO("terminating due to SIGCHLD\n");
 			/* exit */
 			kill_all_children(SIGTERM);
