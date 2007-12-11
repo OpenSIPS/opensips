@@ -36,6 +36,16 @@
  *               unlock part (andrei)
  */
 
+/**
+ * \file fastlock.h
+ * \brief Assembler routines for fast architecture dependend locking.
+ *
+ * Contains the assembler routines for the fast architecture dependend
+ * locking primitives used by the server. This routines are needed e.g.
+ * to protect shared data structures that are accessed from muliple processes.
+ * @todo replace this with the assembler routines provided by the linux kernel
+ */
+
 
 #ifndef fastlock_h
 #define fastlock_h
@@ -44,20 +54,24 @@
 #include <sched.h>
 #else
 #include <unistd.h>
-	/* fake sched_yield */
+/** Fake sched_yield if no unistd.h include is available */
 	#define sched_yield()	sleep(0)
 #endif
 
-
+/** The actual lock */
 typedef  volatile int fl_lock_t;
 
-
-
+/** Initialize a lock, zero is unlocked. */
 #define init_lock( l ) (l)=0
 
 
 
-/*test and set lock, ret 1 if lock held by someone else, 0 otherwise*/
+/**
+ * Test and set a lock. Used by the get_lock function.
+ * \param lock the lock that should be set
+ * \return 1 if the lock is held by someone else, 0 otherwise
+ * \see get_lock
+ */
 inline static int tsl(fl_lock_t* lock)
 {
 	int val;
@@ -152,7 +166,11 @@ inline static int tsl(fl_lock_t* lock)
 }
 
 
-
+/**
+ * Set a lock.
+ * \param lock the lock that should be set
+ * \see tsl
+ */
 inline static void get_lock(fl_lock_t* lock)
 {
 #ifdef ADAPTIVE_WAIT
@@ -171,7 +189,10 @@ inline static void get_lock(fl_lock_t* lock)
 }
 
 
-
+/**
+ * Release a lock
+ * \param lock the lock that should be released
+ */
 inline static void release_lock(fl_lock_t* lock)
 {
 #if defined(__CPU_i386) || defined(__CPU_x86_64)
@@ -202,7 +223,7 @@ inline static void release_lock(fl_lock_t* lock)
 	asm volatile(
 			/* "sync\n\t"  lwsync is faster and will work
 			 *             here too
-			 *             [IBM Prgramming Environments Manual, D.4.2.2]
+			 *             [IBM Programming Environments Manual, D.4.2.2]
 			 */
 			"lwsync\n\t"
 			"stw %0, 0(%1)\n\t"
