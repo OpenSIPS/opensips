@@ -52,6 +52,8 @@
 #define E_Q_TOO_BIG         -17
 /* Decimal part missing */
 #define E_Q_DEC_MISSING     -18
+/* Decimal part missing */
+#define E_NO_DESTINATION    -19
 
 /* openser specific error codes */
 /* destination filtered */
