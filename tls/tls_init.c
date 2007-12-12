@@ -458,7 +458,7 @@ init_ssl_ctx_behavior( struct tls_domain *d ) {
 }
 
 
-static int check_for_krb()
+static int check_for_krb(void)
 {
 	SSL_CTX *xx;
 	int j;
