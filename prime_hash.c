@@ -112,7 +112,7 @@ static int calc_prime_hash(str * source_string, int denominator) {
 
 	LM_DBG("source_string is %.*s, source_number_s "
 	    "is: %s, number is %llu\n", source_string->len, source_string->s,
-	    source_number_s + (limit + 1), number);
+	    source_number_s + (limit + 1), (long long unsigned int)number);
 	ret = number % PRIME_NUMBER;
 	ret = ret % denominator + 1;
 	LM_DBG("calculated hash is: %i\n", ret);
