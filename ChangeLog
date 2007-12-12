@@ -1,8 +1,417 @@
 # $Id$
 
-===================== 2007-12-XX OpenSER v1.3.0 released ======================
+===================== 2007-12-13 OpenSER v1.3.0 released ======================
 
 ===================== Changes since release 1.2.0 ============================
+2007-12-12 13:55  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r3325] scripts/openserdbctl, scripts/openserdbctl.mysql:
+	  - added scripting for migrating mysql data from 1.2 to 1.3
+	  NOTE that the tables containing temporary data (runtime data flushed
+	  to DB), like usrloc and presence are not migrated.
+
+2007-12-12 13:41  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3324] test/README:
+	  - add a warning that the tests in the current state should only run
+	  from devs
+
+2007-12-12 12:47  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r3323] modules/carrierroute/route_config.c:
+	  - revert the last change LOG -> LM
+
+2007-12-12 12:42  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3322] scripts/openserdbctl.db_berkeley:
+	  - add a small hack to autodetect the db_load and db_dump commands on
+	  debian
+
+2007-12-12 12:30  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3321] modules/dbtext/dbtext.h:
+	  - fix double variable declaration
+
+2007-12-12 12:01  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3320] modules/tm/tm.c:
+	  - fix warning
+
+2007-12-12 11:46  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r3319] scripts/openserdbctl:
+	  preparing the mysql DB migration script:
+	  - unified the DBNAME with DB_PATH to simplify the code
+	  - better selection based on used DB type
+	  - migrate is available only for misql
+
+2007-12-12 10:17  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r3318] modules/seas/encode_msg.c, modules/seas/seas.h,
+	  modules/seas/xaddress.h:
+	  - removed some old commented out usages of LOG()
+	  - fixed code ambiguity ( added some brakets)
+
+2007-12-12 09:26  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r3317] modules/ldap/README:
+	  - README re-generated from SGML docs
+
+2007-12-12 09:25  Daniel-Constantin Mierla, <daniel at voice-system dot ro>
+
+	* [r3316] pvar.c:
+	  - propagate scripts flags for avps (reported by Helmut Kuper)
+
+2007-12-12 09:23  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r3315] modules/benchmark/README,
+	  modules/benchmark/doc/benchmark_devel.sgml:
+	  - updated some code example (LOG replaced with LM_*)
+
+2007-12-12 09:22  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r3314] modules/carrierroute/route_config.c:
+	  -forgotten LOG() replaced with LM_ERR()
+
+2007-12-11 17:59  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3313] fastlock.h:
+	  - fix typo, add doxygen documentation
+
+2007-12-11 16:47  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3311] modules/presence_xml/README,
+	  modules/presence_xml/doc/presence_xml_user.sgml:
+	  - fix error in documentation, wrong section for module parameter
+
+2007-12-11 15:38  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3309] test/1.sh, test/10.sh, test/11.sh, test/12.sh, test/13.sh,
+	  test/14.sh, test/15.sh, test/16.sh, test/17.sh, test/18.sh,
+	  test/19.sh, test/2.sh, test/20.sh, test/21.sh, test/3.sh, test/4.sh,
+	  test/5.sh, test/6.sh, test/7.sh, test/8.sh, test/9.sh:
+	  - adds proper copyright notice
+
+2007-12-11 15:21  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3308] test/18.sh, test/19.cfg, test/19.sh, test/20.cfg, test/20.sh,
+	  test/21.cfg, test/21.sh, test/auth_test.xml:
+	  - more tests
+	  - user lookup for proxy functionality
+	  - authentification with auth and auth_db
+	  - basic accounting functionality
+	  - openser command line arguments
+	  - Credits go to Frederick Bullik, Frederick dot Bullik at 1und1 dot de
+
+2007-12-11 14:12  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r3307] modules/tm/README, modules/tm/doc/tm_user.sgml:
+	  - documentation for the replay code of t_relay()
+
+2007-12-11 13:51  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r3306] error.h, modules/tm/t_fwd.c, modules/tm/tm.c:
+	  - fixed the returning code of t_relay() script function. We need more
+	  values for error situation in order to describe the error (and take
+	  the appropriate actions from script).
+	  - new error code E_NO_DESTINATION was added to report when there are
+	  no available branch to forward to.
+	  - t_relay returns now:
+	  -1 : generic internal error
+	  -2 : bad message (parsing errors)
+	  -3 : no destination available (no branches were added or request
+	  already cancelled)
+	  -4 : bad destination (unresolvable address)
+	  -5 : destination filtered (black listed)
+	  -6 : generic send failed
+	  Closes bug #1764906.
+
+2007-12-11 12:55  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r3304] main.c:
+	  - in "no fork" mode ignore the death of process we haven't recorded.
+	  These are processe dyanmically forked by module's functions, via
+	  script (like exec).
+
+2007-12-11 12:23  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r3303] modules/cpl-c/loc_set.h:
+	  - fixed ordering of uris from location set based on q value
+	  Closes bug #1848254
+
+2007-12-10 17:26  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3302] CREDITS:
+	  - update credits for release
+
+2007-12-10 17:24  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r3301] modules/pua/send_publish.c:
+	  - fixed double free in case of error.
+	  Closes bug #1847821
+
+2007-12-10 17:11  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r3299] examples/web_im/click_to_dial.php,
+	  examples/web_im/send_im.php:
+	  - send Message and click-to-dial scripts updated to current IM fifo
+	  syntax
+	  Credits go to Dragos Oancea < dragos at voice - system dot ro >
+	  Closes bug #1794547
+
+2007-12-10 17:01  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r3298] modules/tm/t_msgbuilder.c:
+	  - fixed bogus route set in local generated ACK and CANCEL requests
+	  when the inbound request contained a Route header (in sequential
+	  requests).
+	  Closes bug #1752578
+
+2007-12-10 14:14  Dan Pascu, <dan at ag-projects dot com>
+
+	* [r3297] modules/sst/sst_handlers.c:
+	  Set data pointer to NULL after freeing the data instead of writing a 0
+	  byte to the freed location
+
+2007-12-10 12:30  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r3296] modules/tm/dlg.c, modules/tm/t_msgbuilder.c,
+	  parser/parse_rr.c, parser/parse_rr.h:
+	  - fixed the bahaviour of do_duplicate_rr() - use an extra param to
+	  control if only the first element or the entire chain of rr's (of a
+	  body) should br duplicated.
+	  Fixed memory leak due double duplication in TM (old ldg code).
+	  Reported by Tiberius Duluman < tiberius dot duluman at iquestint dot
+	  com >
+
+2007-12-10 12:23  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3295] test/6.sh, test/Makefile:
+	  - output also the number of the actual test
+	  - test 6 checks uses now also '-C'
+
+2007-12-10 11:34  Daniel-Constantin Mierla, <daniel at voice-system dot ro>
+
+	* [r3294] modules/avpops/avpops_impl.c, modules/avpops/avpops_parse.c:
+	  - fixed bug when loading all avps from db and was required to set
+	  flags (reported and hints by Helmut Kuper; introduced in 1.3 by PV
+	  redesign)
+
+2007-12-10 11:00  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r3293] parser/parse_rr.c:
+	  fixed typo
+
+2007-12-10 10:01  Daniel-Constantin Mierla, <daniel at voice-system dot ro>
+
+	* [r3292] modules/siptrace/siptrace.c:
+	  - update traced_replies statistic (reported by Dan Pascu, closes
+	  #1845163)
+
+2007-12-07 17:00  Dan Pascu, <dan at ag-projects dot com>
+
+	* [r3291] modules/tm/README, modules/tm/doc/tm_user.sgml:
+	  Fixed yet another typo
+
+2007-12-07 16:16  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3290] prime_hash.c, prime_hash.h:
+	  - some small changes, nevertheless extensive tests have been done for
+	  carrierroute, the only user of this code
+	  - fix static global variables, local ones are better
+	  usage of static variables makes no sense in the first place, forgot to
+	  convert this during the conversion from the 'sp-hash' module
+	  - remove two not needed functions exports from header file
+	  - replace two global #defines with static const variables
+
+2007-12-07 13:34  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3289] modules/tm/README, modules/tm/doc/tm_user.sgml:
+	  - fix type in documentation
+
+2007-12-07 11:16  Julien Blache, <jblache at debian dot org>
+
+	* [r3288] modules/acc/diam_avp.c:
+	  Fix discrepancy between declaration and definition of AAACreateAVP().
+
+2007-12-06 21:47  Dan Pascu, <dan at ag-projects dot com>
+
+	* [r3287] modules/dialog/README, modules/dialog/doc/dialog_user.sgml:
+	  Fixed default dlg_match_mode value in docs
+
+2007-12-06 21:46  Dan Pascu, <dan at ag-projects dot com>
+
+	* [r3286] modules/dialog/README, modules/dialog/doc/dialog_user.sgml:
+	  Fixed typos in dialog docs
+
+2007-12-06 18:58  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r3285] etc/openser.init:
+	  - remove obsolete file - it is debian specific (the deb already
+	  provides one) and it monit dependent (not standard).
+
+2007-12-06 18:56  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r3284] etc/openser.cfg:
+	  -fixed extra uncommented code related to presence.
+
+2007-12-06 18:46  Juha Heinanen, <jh at tutpro dot com>
+
+	* [r3283] modules/pua_mi/mi_func.c:
+	  * Changed LM_ERR to LM_DBG (typo in LM conversion).
+
+2007-12-06 18:36  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r3282] modules/dialog/dlg_req_within.c:
+	  -fixed bug in terminating the dialog when BYEs are locally generated -
+	  do not care about the reply codes for BYE; whatever reply is received,
+	  terminate the dialog
+
+2007-12-06 18:30  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r3280] modules/nathelper/sip_pinger.h:
+	  - fixed the test for detected the replies to the NAT ping requests -
+	  before testing if the second via is present, we need to force its
+	  parsing.
+	  Reported by Dan Pascu
+
+2007-12-06 18:09  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r3277] modules/usrloc/udomain.c:
+	  - statistics exported by usrloc requires not locking and they are not
+	  protected anymore by the global lock of usrloc (since 1.2, usrloc hash
+	  table has multiple locks).
+	  - this bug would affect only non i386 platforms (on i386 atomic ops
+	  are used).
+	  Reported by Dan Pascu
+
+2007-12-06 17:03  Anca Vamanu, <anca at voice-system dot ro>
+
+	* [r3276] etc/openser.cfg:
+	  - updated default configuration file
+	  - added more features: presence, db_alias, accounting, call diversion,
+	  multidomain support, better routing.
+	  - closes BUG #1609988
+
+2007-12-06 15:25  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3275] packaging/debian-etch/control, packaging/debian-etch/rules,
+	  packaging/debian-sarge/rules, packaging/debian/control,
+	  packaging/debian/rules:
+	  - don't generate the db schemas in the debian build, causes diffs
+	  - remove then unneeded xsltproc build dependency
+
+2007-12-06 14:58  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r3274] modules/dialog/dlg_db_handler.c:
+	  - fixed potential crash - do not trust the DB scheme and check if the
+	  loaded values ar null or not.
+	  Related to bug #1838923
+
+2007-12-06 14:09  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3273] modules/auth/README, modules/auth/doc/auth_user.sgml:
+	  - fix error in auth documentation about the secret parameter
+
+2007-12-06 13:51  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3272] modules/benchmark/README,
+	  modules/benchmark/doc/benchmark_user.sgml:
+	  - fix documentation, the module parameters are int and not string
+
+2007-12-06 12:44  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r3270] modules/acc/acc_mod.c, modules/rr/api.c, modules/rr/api.h,
+	  modules/uac/uac.c:
+	  - modules using the is_direction() function from RR must check if the
+	  RR append_fromtag paramter is enabled.
+	  Closes bug #1845325
+
+2007-12-06 12:10  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r3269] modules/dialog/dlg_handlers.c:
+	  - fixed the way the callee route set is computed - we need to take
+	  into account how many RR header were locally added.
+	  Closes bug #1834870
+
+2007-12-06 09:57  Daniel-Constantin Mierla, <daniel at voice-system dot ro>
+
+	* [r3268] modules/dbtext/README, modules/dbtext/doc/dbtext_user.sgml:
+	  - added notes about non-caching mode behaviour and time_t-integer
+	  relation
+
+2007-12-06 07:44  Daniel-Constantin Mierla, <daniel at voice-system dot ro>
+
+	* [r3267] modules/dbtext/dbt_tb.c:
+	  - fixed bug when updating string columns and the value is given as str
+	  (related to #1838923 reported by Ovidiu Sas, patch by Salah Uddin
+	  Ahmed)
+
+2007-12-05 18:16  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r3265] modules/dialog/dlg_db_handler.c:
+	  - fixed setting the dialog timeout value at startup when the expire
+	  time is already passed.
+	  - fixed expire time de-sync (during runtime) with the sys time
+	  Closes bug #1841788
+
+2007-12-05 18:14  Dan Pascu, <dan at ag-projects dot com>
+
+	* [r3264] pvar.c:
+	  Fixed typos
+
+2007-12-05 15:29  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3263] modules/tm/t_lookup.c, modules/tm/tm.c:
+	  - make some log messages a little bit more understandable
+
+2007-12-05 15:13  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3262] modules/carrierroute/README,
+	  modules/carrierroute/doc/carrierroute_user.sgml:
+	  - add a note about a limitation of cr_reload_routes when new domains
+	  are added
+
+2007-12-05 09:49  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3261] modules/tm/t_funcs.c, modules/tm/t_hooks.c:
+	  - improve errors/ debug messages
+
+2007-12-05 09:24  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r3260] modules/tm/h_table.h, modules/tm/t_fwd.c:
+	  - TM modules stores in transactions the number of RR headers that were
+	  added.
+	  - the information is stored per branch as the number of RR headers may
+	  be different from branch to branch (for example due the protocol
+	  change)
+	  - part of the fixup for bugs #1834870 and #1752578
+
+2007-12-05 09:14  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r3259] lump_struct.h, msg_translator.c:
+	  - conditional lumps uses a lump flag to store the result of the
+	  condition evaluation - we need this in order to determin later if some
+	  conditional lumps were or not applied (to be more precise, we need
+	  this in order to count how many RR headers were locally added).
+	  - part of the fixup for bug #1834870 and #1752578
+
+2007-12-05 09:12  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3258] cfg.y:
+	  - make errors and warnings from config file parsing more
+	  understandable
+
+2007-12-05 08:58  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r3257] modules/rr/record.c:
+	  - mark also the lumps added via "record_route_preset"
+	  - related to the previous commit
+
+2007-12-04 15:48  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3256] ChangeLog:
+	  - another round of chances for Changelog
 
 2007-12-04 14:13  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
 
