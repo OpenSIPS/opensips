@@ -3094,12 +3094,14 @@ int pv_get_avp_name(struct sip_msg* msg, pv_param_p ip, int_str *avp_name,
 
 	if(ip->pvn.type==PV_NAME_INTSTR)
 	{
+		*name_type = ip->pvn.u.isname.type;
 		if(ip->pvn.u.isname.type&AVP_NAME_STR)
 		{
 			avp_name->s = ip->pvn.u.isname.name.s;
-			*name_type = AVP_NAME_STR;
+			*name_type |= AVP_NAME_STR;
 		} else {
 			avp_name->n = ip->pvn.u.isname.name.n;
+			*name_type &= AVP_SCRIPT_MASK;
 		}
 		return 0;
 	}
