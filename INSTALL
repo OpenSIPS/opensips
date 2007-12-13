@@ -43,8 +43,9 @@ There are various configuration options defined in the Makefile.
 Requirements:
 
 
-- gcc or icc : gcc >= 2.9x; 3.[12] recommended (it will work with older version
-   but it might require some options tweaking for best performance)
+- gcc / suncc / icc : gcc >= 2.9x; 4.[012] recommended (it will work with 
+   older version but it might require some options tweaking for best 
+   performance)
 - bison or yacc (Berkley yacc)
 - flex
 - GNU make (on Linux this is the standard "make", on FreeBSD and Solaris is
@@ -103,9 +104,9 @@ or make all #builds everything
 
 make mode=debug all
 
--compile only the print module
+-compile only the textops module
 
-make modules=modules/print modules
+make modules=modules/textops modules
 
 -compile all the "default" modules except textops and mysql
 
@@ -214,9 +215,9 @@ That applies to other make parameters as well (for example parameters
 
 A) Getting Help
 
-This guide gives you instructions on how to set up the Open SIP Express 
-Router (openser) on your box quickly. In case the default configuration
-does not fly, check documentation at openser site
+This guide gives you instructions on how to quickly set up OpenSER 
+on your box. In case the default configuration does not fly, check 
+documentation at openser site
   http://www.openser.org/
 to learn how to configure OpenSER for your site.
 
@@ -348,6 +349,7 @@ proceed, you need to make sure MySQL is installed on your box.
     - if you have a previously installed OpenSER on your system, use
          /usr/sbin/openserdbctl migrate
       to convert your OpenSER database into new structures
+      NOTE: "migrate" is available only for mysql DBs
     - otherwise, if this is your very first installation, use
          /usr/sbin/openserdbctl create
       to create OpenSER database structures
