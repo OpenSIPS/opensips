@@ -686,4 +686,4 @@ install-modules-docbook: $(doc-prefix)/$(doc-dir)
 test:
 	-@echo "Start tests"
 	$(MAKE) -C test/
-	-@echo "Test finished"
+	-@echo "Tests finished"
