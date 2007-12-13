@@ -1245,7 +1245,7 @@ endif
 
 #add libssl if needed
 ifneq ($(TLS),)
-DEFS+= -I$(LOCALBASE)/ssl/include
+DEFS+= -I$(LOCALBASE)/ssl/include -I$(LOCALBASE)/include
 LIBS+= -L$(LOCALBASE)/lib -L$(LOCALBASE)/ssl/lib -lssl  -lcrypto
 endif
 
