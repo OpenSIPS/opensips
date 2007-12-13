@@ -48,7 +48,7 @@ skip_cfg_install?=
 skip_modules?=
 
 # if not set on the cmd. line or the env, exclude this modules:
-exclude_modules?= jabber cpl-c mysql pa postgres osp unixodbc \
+exclude_modules?= jabber cpl-c mysql postgres osp unixodbc \
 	avp_radius auth_radius group_radius uri_radius xmpp \
 	presence presence_xml presence_mwi pua pua_bla pua_mi \
 	pua_usrloc pua_xmpp rls mi_xmlrpc perl snmpstats perlvdb \
