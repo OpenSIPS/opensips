@@ -341,8 +341,9 @@ endif
 # -DPKG_MALLOC
 #		uses a faster malloc (exclusive w/ USE_SHM_MEM)
 # -DUSE_SHM_MEM
-#		all pkg_malloc => shm_malloc (most mallocs use a common sh.
-#		mem. segment); don't define PKG_MALLOC if you want this!
+#		all pkg_malloc are mapped to shm_malloc (most mallocs use
+#		a common shared mem. segment); don't define PKG_MALLOC
+#		if you want this!
 # -DDBG_QM_MALLOC
 #		qm_malloc debug code, will cause pkg_malloc and shm_malloc
 #		to keep and display lot of debuging information: file name,
@@ -351,9 +352,9 @@ endif
 #		twice, trying to free a pointer alloc'ed with a different
 #		malloc etc.)
 # -DVQ_MALLOC
-#		additional option to PKG_MALLOC which utilizes a faster then
-#		qm version
-#		(not true anymore, q_malloc performs approx. the same)
+#		additional option of PKG_MALLOC which utilizes faster then the
+#		QM version
+#		(this is not true anymore, q_malloc performs approx. the same)
 # -DF_MALLOC
 #		an even faster malloc, not recommended for debugging
 # -DDBG_MALLOC
@@ -361,12 +362,13 @@ endif
 # -DFAST_LOCK
 #		uses fast architecture specific locking (see the arch. specific section)
 # -DUSE_SYSV_SEM
-#		uses sys v sems for locking (slower & limited number)
+#		uses SYSV sems for locking (this is slower and supports only a
+#		limited number of locks)
 # -DUSE_PTHREAD_MUTEX
-#		uses pthread mutexes, faster than sys v or posix sems, but do not 
-#		work on all systems inter-processes (e.g. linux)
+#		uses pthread mutexes, faster than SYSV or posix semaphores, but it do
+#		not work on all systems inter-processes (e.g. linux)
 # -DUSE_POSIX_SEM
-#		uses posix semaphores for locking (faster than sys v)
+#		uses posix semaphores for locking (faster than SYSV)
 # -DBUSY_WAIT
 #		uses busy waiting on the lock (FAST_LOCK)
 # -DADAPTIVE_WAIT
@@ -408,8 +410,8 @@ DEFS+= $(extra_defs) \
 	 -DHAVE_RESOLV_RES \
 	 -DSTATISTICS \
 	 -DCHANGEABLE_DEBUG_LEVEL \
-	 -DDBG_QM_MALLOC \
-	 #-DF_MALLOC \
+	 -DF_MALLOC \
+	 #-DDBG_QM_MALLOC \
 	 #-DDBG_F_MALLOC \
 	 #-DNO_DEBUG \
 	 #-DNO_LOG \
