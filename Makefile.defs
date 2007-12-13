@@ -564,8 +564,11 @@ LDFLAGS+=
 ifeq (,$(CFLAGS))
 # setting CFLAGS
 ifeq ($(mode), release)
-	#if i386
+#if i386
 ifeq	($(ARCH), i386)
+	# These CPU optimization assumes that you run a Intel processor.
+	# If you use a AMD CPU, you could ajust the settings here for better performance.
+	# For gcc 4.x use CPU_TYPE ?= athlon-xp
 		# if gcc 
 ifeq		($(CC_NAME), gcc)
 				#common stuff
@@ -573,7 +576,7 @@ ifeq		($(CC_NAME), gcc)
 					-Wall  
 			#if gcc 4.0+
 ifeq			($(CC_CLASS), 4.x)
-					CPU_TYPE ?= athlon64
+					CPU_TYPE ?= prescott
 					CFLAGS+=-minline-all-stringops \
 							-falign-loops \
 							-ftree-vectorize \
@@ -582,11 +585,11 @@ ifeq			($(CC_CLASS), 4.x)
 
 else
 			#if gcc 3.0+
-ifeq			($(CC_CLASS), 3.x)
-					CPU_TYPE ?= athlon
+ifeq			($(CC_CLASS), 3.0)
+					CPU_TYPE ?= prescott
 					CFLAGS+=-minline-all-stringops \
 							-falign-loops \
-							-march=$(CPU_TYPE) 
+							-mtune=$(CPU_TYPE)
 else
 ifeq			($(CC_CLASS), 2.9x) #older gcc version (2.9[1-5])
 $(warning 			Old gcc detected ($(CC_SHORTVER)), use  gcc >= 3.1 \
@@ -626,6 +629,9 @@ endif	#ARCH, i386
 
 #x86_64
 ifeq	($(ARCH), x86_64)
+	# These CPU optimization assumes that you run a Intel 64 processor.
+	# If you use a AMD 64 CPU, you could ajust the settings here for better performance.
+	# For gcc 4.x use CPU_TYPE ?= athlon64
 		# if gcc 
 ifeq		($(CC_NAME), gcc)
 				#common stuff
@@ -633,7 +639,7 @@ ifeq		($(CC_NAME), gcc)
 					-Wall 
 			#if gcc 4.0+
 ifeq			($(CC_CLASS), 4.x)
-					CPU_TYPE ?= opteron
+					CPU_TYPE ?= nocona
 					CFLAGS+=-minline-all-stringops \
 							-falign-loops \
 							-ftree-vectorize \
@@ -642,9 +648,10 @@ ifeq			($(CC_CLASS), 4.x)
 else
 			#if gcc 3.0+
 ifeq			($(CC_CLASS), 3.x)
-					CPU_TYPE ?= athlon64
+					CPU_TYPE ?= nocona
 					CFLAGS+=-minline-all-stringops \
-							-falign-loops 
+							-falign-loops \
+							-mtune=$(CPU_TYPE)
 else
 ifeq			($(CC_CLASS), 2.9x) #older gcc version (2.9[1-5])
 $(warning 			Old gcc detected ($(CC_SHORTVER)), use  gcc >= 3.1 \
