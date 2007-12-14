@@ -34,7 +34,6 @@
 
 /************* Declaration of Static Helpers *******************************/
 
-static int real_calculate_hash(struct sip_msg *msg, enum hash_source source, unsigned int *hash);
 static int determine_source(struct sip_msg *msg, enum hash_source source,
                             str *source_string);
 static int validate_msg(struct sip_msg * msg);
@@ -42,7 +41,6 @@ static int determine_call_id (struct sip_msg *msg, str *source_string);
 static int determine_fromto_uri (struct to_body *fromto, str *source_string);
 static int determine_fromto_user (struct to_body *fromto, str *source_string);
 static int first_token (str *source_string);
-static int calc_prime_hash(str * source_string, int denominator);
 
 
 /************* Interface Functions *****************************************/
@@ -50,12 +48,16 @@ static int calc_prime_hash(str * source_string, int denominator);
 int hash_func (struct sip_msg * msg,
                          enum hash_source source, int denominator) {
 	int ret;
-	unsigned int cur_hash;
-	if (real_calculate_hash (msg, source, &cur_hash) == -1) {
+	unsigned int hash;
+	str source_string;
+
+	if(determine_source (msg, source, &source_string) == -1) {
 		return -1;
 	}
-	ret = cur_hash % denominator;
-	LM_DBG("hash: %u %% %i = %i\n", cur_hash, denominator, ret);
+	crc32_uint(&source_string, &hash);
+
+	ret = hash % denominator;
+	LM_DBG("hash: %u %% %i = %i\n", hash, denominator, ret);
 	return ret;
 }
 
@@ -70,22 +72,7 @@ int prime_hash_func(struct sip_msg * msg,
 		LM_ERR("could not determine source_string\n");
 		return -1;
 	}
-	return calc_prime_hash(&source_string, denominator);
-}
 
-/************* Static Helpers **********************************************/
-
-static int real_calculate_hash (struct sip_msg *msg, enum hash_source source, unsigned int *hash) {
-	str source_string;
-
-	if(determine_source (msg, source, &source_string) == -1) {
-		return -1;
-	}
-	crc32_uint(&source_string, hash);
-	return 0;
-}
-
-static int calc_prime_hash(str * source_string, int denominator) {
 	static const int INT_DIGIT_LIMIT = 18;
 	static const int PRIME_NUMBER = 51797;
 	uint64_t number = 0;
@@ -94,12 +81,13 @@ static int calc_prime_hash(str * source_string, int denominator) {
 	int ret;
 	char source_number_s[INT_DIGIT_LIMIT + 1];
 
-	i=INT_DIGIT_LIMIT - 1;
-	j=source_string->len - 1;
+	i = INT_DIGIT_LIMIT - 1;
+	j = source_string.len - 1;
 	source_number_s[INT_DIGIT_LIMIT] ='\0';
+
 	while(i >= 0 && j >= 0) {
-		if(isdigit(source_string->s[j])) {
-			source_number_s[i] = source_string->s[j];
+		if(isdigit(source_string.s[j])) {
+			source_number_s[i] = source_string.s[j];
 			i--;
 		}
 		j--;
@@ -111,7 +99,7 @@ static int calc_prime_hash(str * source_string, int denominator) {
 	}
 
 	LM_DBG("source_string is %.*s, source_number_s "
-	    "is: %s, number is %llu\n", source_string->len, source_string->s,
+	    "is: %s, number is %llu\n", source_string.len, source_string.s,
 	    source_number_s + (limit + 1), (long long unsigned int)number);
 	ret = number % PRIME_NUMBER;
 	ret = ret % denominator + 1;
