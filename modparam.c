@@ -35,40 +35,6 @@
 #include <string.h>
 
 
-int set_mod_param(char* _mod, char* _name, modparam_t _type, void* _val)
-{
-	void* ptr;
-	
-	if (!_mod) {
-		LM_ERR("invalid _mod parameter value\n");
-		return -1;
-	}
-
-	if (!_name) {
-		LM_ERR("invalid _name parameter value\n");
-		return -2;
-	}
-
-	ptr = find_param_export(_mod, _name, _type);
-	if (!ptr) {
-		LM_ERR("Parameter not found\n");
-		return -3;
-	}
-
-	switch(_type) {
-	case STR_PARAM:
-		*((char**)ptr) = strdup((char*)_val);
-		break;
-
-	case INT_PARAM:
-		*((int*)ptr) = (int)(long)_val;
-		break;
-	}
-
-	return 0;
-}
-
-
 int set_mod_param_regex(char* regex, char* name, modparam_t type, void* val)
 {
 	struct sr_module* t;
