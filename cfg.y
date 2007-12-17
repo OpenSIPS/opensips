@@ -268,6 +268,7 @@ extern int line;
 %token FORK
 %token LOGSTDERROR
 %token LOGFACILITY
+%token LOGFACILITYACC
 %token LOGNAME
 %token AVP_ALIASES
 %token LISTEN
@@ -555,6 +556,13 @@ assign_stm: DEBUG EQUAL NUMBER {
 						log_facility=i_tmp;
 									}
 		| LOGFACILITY EQUAL error { yyerror("ID expected"); }
+		| LOGFACILITYACC EQUAL ID {
+					if ( (i_tmp=str2facility($3))==-1)
+					yyerror("bad facility (see syslog(3) man page)");
+					if (!config_check)
+						log_facility_acc=i_tmp;
+									}
+		| LOGFACILITYACC EQUAL error { yyerror("ID expected"); }
 		| LOGNAME EQUAL STRING { log_name=$3; }
 		| LOGNAME EQUAL error { yyerror("string value expected"); }
 		| AVP_ALIASES EQUAL STRING { 
