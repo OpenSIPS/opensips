@@ -256,7 +256,7 @@ void crc32_uint (str *source_string, unsigned int *hash_ret) {
 		hash = crc_32_tab[((unsigned char)hash) ^ data[3]] ^ (hash >> 8);
 	}
 	for (len = source_string->len % 4; len--; data++) {
-		hash = crc_32_tab[((char)hash) ^ *data] ^ (hash >> 8);
+		hash = crc_32_tab[((unsigned char)hash) ^ *data] ^ (hash >> 8);
 	}
 	*hash_ret = hash;
 }
