@@ -228,7 +228,6 @@ DEBUG	debug
 FORK	fork
 LOGSTDERROR	log_stderror
 LOGFACILITY	log_facility
-LOGFACILITYACC	log_facility_acc
 LOGNAME		log_name
 AVP_ALIASES	avp_aliases
 LISTEN		listen
@@ -438,7 +437,6 @@ WHITESPACE	[ \t\r\n]
 <INITIAL>{FORK}		{ count(); yylval.strval=yytext; return FORK; }
 <INITIAL>{LOGSTDERROR}	{ yylval.strval=yytext; return LOGSTDERROR; }
 <INITIAL>{LOGFACILITY}	{ yylval.strval=yytext; return LOGFACILITY; }
-<INITIAL>{LOGFACILITYACC} { yylval.strval=yytext; return LOGFACILITYACC; }
 <INITIAL>{LOGNAME}	{ yylval.strval=yytext; return LOGNAME; }
 <INITIAL>{AVP_ALIASES}	{ yylval.strval=yytext; return AVP_ALIASES; }
 <INITIAL>{LISTEN}	{ count(); yylval.strval=yytext; return LISTEN; }

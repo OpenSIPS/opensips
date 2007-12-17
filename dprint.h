@@ -78,7 +78,6 @@ extern int debug;
 #endif
 extern int log_stderr;
 extern int log_facility;
-extern int log_facility_acc;
 extern char* log_name;
 extern char ctime_buf[];
 
@@ -134,7 +133,6 @@ inline static char* dp_time(void)
 		#define LM_DBG( ...)
 	#else
 		#define LOG(lev, fmt, args...)
-		#define LOGACC(lev, fmt, args...)
 		#define LM_ALERT(fmt, args...)
 		#define LM_CRIT(fmt, args...)
 		#define LM_ERR(fmt, args...)
@@ -188,37 +186,7 @@ inline static char* dp_time(void)
 					} \
 				} \
 			}while(0)
-		#define LOGACC(lev, ...) \
-			do { \
-				if (is_printable(lev)){ \
-					if (log_stderr) dprint (__VA_ARGS__); \
-					else { \
-						switch(lev){ \
-							case L_CRIT: \
-								syslog(LOG_CRIT|log_facility_acc, __VA_ARGS__); \
-								break; \
-							case L_ALERT: \
-								syslog(LOG_ALERT|log_facility_acc, __VA_ARGS__); \
-								break; \
-							case L_ERR: \
-								syslog(LOG_ERR|log_facility_acc, __VA_ARGS__); \
-								break; \
-							case L_WARN: \
-								syslog(LOG_WARNING|log_facility_acc, __VA_ARGS__);\
-								break; \
-							case L_NOTICE: \
-								syslog(LOG_NOTICE|log_facility_acc, __VA_ARGS__); \
-								break; \
-							case L_INFO: \
-								syslog(LOG_INFO|log_facility_acc, __VA_ARGS__); \
-								break; \
-							case L_DBG: \
-								syslog(LOG_DEBUG|log_facility_acc, __VA_ARGS__); \
-								break; \
-						} \
-					} \
-				} \
-			}while(0)
+
 		#define LM_ALERT( ...) \
 			do { \
 				if (is_printable(L_ALERT)){ \
@@ -336,37 +304,7 @@ inline static char* dp_time(void)
 					} \
 				} \
 			}while(0)
-		#define LOGACC(lev, fmt, args...) \
-			do { \
-				if (is_printable(lev)){ \
-					if (log_stderr) dprint ( fmt, ## args); \
-					else { \
-						switch(lev){ \
-							case L_CRIT: \
-								syslog(LOG_CRIT|log_facility_acc, fmt, ##args); \
-								break; \
-							case L_ALERT: \
-								syslog(LOG_ALERT|log_facility_acc, fmt, ##args); \
-								break; \
-							case L_ERR: \
-								syslog(LOG_ERR|log_facility_acc, fmt, ##args); \
-								break; \
-							case L_WARN: \
-								syslog(LOG_WARNING|log_facility_acc, fmt, ##args);\
-								break; \
-							case L_NOTICE: \
-								syslog(LOG_NOTICE|log_facility_acc, fmt, ##args); \
-								break; \
-							case L_INFO: \
-								syslog(LOG_INFO|log_facility_acc, fmt, ##args); \
-								break; \
-							case L_DBG: \
-								syslog(LOG_DEBUG|log_facility_acc, fmt, ##args); \
-								break; \
-						} \
-					} \
-				} \
-			}while(0)
+
 		#define LM_ALERT( fmt, args...) \
 			do { \
 				if (is_printable(L_ALERT)){ \
