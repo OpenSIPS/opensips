@@ -585,11 +585,11 @@ ifeq			($(CC_CLASS), 4.x)
 
 else
 			#if gcc 3.0+
-ifeq			($(CC_CLASS), 3.0)
+ifeq			($(CC_CLASS), 3.x)
 					CPU_TYPE ?= prescott
 					CFLAGS+=-minline-all-stringops \
 							-falign-loops \
-							-mtune=$(CPU_TYPE)
+							-march=$(CPU_TYPE)
 else
 ifeq			($(CC_CLASS), 2.9x) #older gcc version (2.9[1-5])
 $(warning 			Old gcc detected ($(CC_SHORTVER)), use  gcc >= 3.1 \
@@ -778,7 +778,7 @@ $(warning			You are using an old and unsupported gcc \
 	
 endif			# CC_CLASS, 2.9x
 endif			# CC_CLASS, 3.x
-endif			# CC_CLASS, 4.0
+endif			# CC_CLASS, 4.x
 	
 else		# CC_NAME, gcc
 				#other compilers
