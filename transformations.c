@@ -189,7 +189,8 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 				return -1;
 			st.s = _tr_buffer;
 			st.len = TR_BUFFER_SIZE;
-			escape_user(&val->rs, &st);
+			if (escape_user(&val->rs, &st))
+				return -1;
 			memset(val, 0, sizeof(pv_value_t));
 			val->flags = PV_VAL_STR;
 			val->rs = st;
@@ -201,7 +202,8 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 				return -1;
 			st.s = _tr_buffer;
 			st.len = TR_BUFFER_SIZE;
-			unescape_user(&val->rs, &st);
+			if (unescape_user(&val->rs, &st))
+				return -1;
 			memset(val, 0, sizeof(pv_value_t));
 			val->flags = PV_VAL_STR;
 			val->rs = st;
