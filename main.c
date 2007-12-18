@@ -100,6 +100,7 @@
 #include <sys/sockio.h>
 #endif
 
+#include "help_msg.h"
 #include "config.h"
 #include "dprint.h"
 #include "daemonize.h"
@@ -148,61 +149,14 @@ static char* version=OPENSER_FULL_VERSION;
 static char* flags=OPENSER_COMPILE_FLAGS;
 char compiled[]= __TIME__ " " __DATE__ ;
 
-
-static char help_msg[]= "\
-Usage: " NAME " -l address [-l address ...] [options]\n\
-Options:\n\
-    -f file      Configuration file (default " CFG_FILE ")\n\
-    -c           Check configuration file for errors\n\
-    -C           Similar to '-c' but in addition checks the flags of exported\n\
-                  functions from included route blocks\n\
-    -l address   Listen on the specified address/interface (multiple -l\n\
-                  mean listening on more addresses).  The address format is\n\
-                  [proto:]addr[:port], where proto=udp|tcp and \n\
-                  addr= host|ip_address|interface_name. E.g: -l locahost, \n\
-                  -l udp:127.0.0.1:5080, -l eth0:5062 The default behavior\n\
-                  is to listen on all the interfaces.\n\
-    -n processes Number of child processes to fork per interface\n\
-                  (default: 8)\n\
-    -r           Use dns to check if is necessary to add a \"received=\"\n\
-                  field to a via\n\
-    -R           Same as `-r` but use reverse dns;\n\
-                  (to use both use `-rR`)\n\
-    -v           Turn on \"via:\" host checking when forwarding replies\n\
-    -d           Debugging mode (multiple -d increase the level)\n\
-    -D           Do not fork into daemon mode\n\
-    -E           Log to stderr\n"
-#ifdef USE_TCP
-"    -T           Disable tcp\n\
-    -N processes Number of tcp child processes (default: equal to `-n`)\n\
-    -W method    poll method\n"
-#endif
-"    -V           Version number\n\
-    -h           This help message\n\
-    -b nr        Maximum receive buffer size which will not be exceeded by\n\
-                  auto-probing procedure even if  OS allows\n\
-    -m nr        Size of shared memory allocated in Megabytes\n\
-    -w dir       Change the working directory to \"dir\" (default \"/\")\n\
-    -t dir       Chroot to \"dir\"\n\
-    -u uid       Change uid \n\
-    -g gid       Change gid \n\
-    -P file      Create a pid file\n\
-    -G file      Create a pgid file\n"
-;
-
 /**
- * Print compile-time constants 
+ * Print compile-time constants
  */
 void print_ct_constants(void)
 {
 #ifdef ADAPTIVE_WAIT
 	printf("ADAPTIVE_WAIT_LOOPS=%d, ", ADAPTIVE_WAIT_LOOPS);
 #endif
-/*
-#ifdef SHM_MEM
-	printf("SHM_MEM_SIZE=%d, ", SHM_MEM_SIZE);
-#endif
-*/
 	printf("MAX_RECV_BUFFER_SIZE %d, MAX_LISTEN %d,"
 			" MAX_URI_SIZE %d, BUF_SIZE %d\n",
 		MAX_RECV_BUFFER_SIZE, MAX_LISTEN, MAX_URI_SIZE, 
@@ -218,7 +172,6 @@ void print_ct_constants(void)
 #endif
 	);
 }
-
 
 /* global vars */
 
@@ -256,17 +209,14 @@ int log_facility = LOG_DAEMON;
 char *log_name = 0;
 int config_check = 0;
 /* check if reply first via host==us */
-int check_via =  0;        
+int check_via =  0;
 /* debugging level for memory stats */
-/* FIXME this uses still the old logging system */
 int memlog = L_DBG;
 /* should replies include extensive warnings? by default yes,
    good for trouble-shooting
 */
 int sip_warning = 0;
-/* should localy-generated messages include server's signature?
-   be default yes, good for trouble-shooting
-*/
+/* should localy-generated messages include server's signature? */
 int server_signature=1;
 /* Server header to be used when proxy generates request as UAS.
    Default is to use SERVER_HDR CRLF (assigned later).
@@ -282,7 +232,7 @@ str user_agent_header = {USER_AGENT,sizeof(USER_AGENT)-1};
 int mhomed=0;
 /* use dns and/or rdns or to see if we need to add 
    a ;received=x.x.x.x to via: */
-int received_dns = 0;      
+int received_dns = 0;
 char* working_dir = 0;
 char* chroot_dir = 0;
 char* user=0;
