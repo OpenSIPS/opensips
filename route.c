@@ -188,6 +188,7 @@ static int fix_actions(struct action* a)
 	int proto=PROTO_NONE, port;
 	struct proxy_l *p;
 	struct bl_head *blh;
+	int i;
 
 	if (a==0){
 		LM_CRIT("null pointer\n");
@@ -290,19 +291,16 @@ static int fix_actions(struct action* a)
 				cmd = (cmd_export_t*)t->elem[0].u.data;
 				LM_DBG("fixing %s, line %d\n", cmd->name, t->line);
 				if (cmd->fixup){
-					if (cmd->param_no>0){
-						ret=cmd->fixup(&t->elem[1].u.data, 1);
-						t->elem[1].type=MODFIXUP_ST;
-						if (ret<0) goto error;
-					}
-					if (cmd->param_no>1){
-						ret=cmd->fixup(&t->elem[2].u.data, 2);
-						t->elem[2].type=MODFIXUP_ST;
-						if (ret<0) goto error;
-					}
 					if (cmd->param_no==0){
 						ret=cmd->fixup( 0, 0);
 						if (ret<0) goto error;
+					}
+					else {
+						for (i=1; i<=cmd->param_no; i++) {
+							ret=cmd->fixup(&t->elem[i].u.data, i);
+							t->elem[i].type=MODFIXUP_ST;
+							if (ret<0) goto error;
+						}
 					}
 				}
 				break;

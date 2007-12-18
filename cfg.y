@@ -400,6 +400,7 @@ extern int line;
 %type <expr> exp exp_elem exp_cond assignexp /*, condition*/
 %type <action> action actions cmd if_cmd stm exp_stm assign_cmd while_cmd
 %type <action> switch_cmd switch_stm case_stms case_stm default_stm
+%type <intval> module_func_param
 %type <ipaddr> ipv4 ipv6 ipv6addr ip
 %type <ipnet> ipnet
 %type <specval> script_var
@@ -1858,6 +1859,23 @@ default_stm: DEFAULT COLON actions { mk_action2( $$, DEFAULT_T,
 									}
 	;
 
+module_func_param: STRING {
+										elems[1].type = STRING_ST;
+										elems[1].u.data = $1;
+										$$=1;
+										}
+		| module_func_param COMMA STRING {
+										if ($1+1>=MAX_ACTION_ELEMS) {
+											yyerror("too many arguments in function\n");
+											$$=0;
+										}
+										elems[$1+1].type = STRING_ST;
+										elems[$1+1].u.data = $3;
+										$$=$1+1;
+										}
+	;
+
+
 cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 											STRING_ST,
 											0,
@@ -2190,7 +2208,8 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 								" string expected");
 								}
 		| USE_BLACKLIST error {$$=0; yyerror("missing '(' or ')' ?"); }
-		| ID LPAREN RPAREN		{ cmd_tmp=(void*)find_cmd_export_t($1, 0, rt);
+		| ID LPAREN RPAREN		{
+						 			cmd_tmp=(void*)find_cmd_export_t($1, 0, rt);
 									if (cmd_tmp==0){
 										if (find_cmd_export_t($1, 0, 0)) {
 											yyerror("Command cannot be "
@@ -2201,55 +2220,34 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 										}
 										$$=0;
 									}else{
-										mk_action2( $$, MODULE_T,
-													CMD_ST,
-													0,
-													cmd_tmp,
-													0
-												);
+										elems[0].type = CMD_ST;
+										elems[0].u.data = cmd_tmp;
+										for (i_tmp=1; i_tmp<MAX_ACTION_ELEMS; i_tmp++) {
+											elems[i_tmp].u.data = NULL;
+										}
+										$$ = mk_action(MODULE_T, 1, elems, line);
 									}
 								}
-		| ID LPAREN STRING RPAREN { cmd_tmp=(void*)find_cmd_export_t($1,1,rt);
+		| ID LPAREN module_func_param RPAREN		{
+						 			cmd_tmp=(void*)find_cmd_export_t($1, $3, rt);
 									if (cmd_tmp==0){
-										if (find_cmd_export_t($1, 1, 0)) {
-											yyerror("Command cannot be used "
-												"in the block\n");
+										if (find_cmd_export_t($1, $3, 0)) {
+											yyerror("Command cannot be "
+												"used in the block\n");
 										} else {
-											yyerror("unknown command, missing"
-												" loadmodule?\n");
+											yyerror("unknown command, "
+												"missing loadmodule?\n");
 										}
 										$$=0;
 									}else{
-										mk_action2( $$, MODULE_T,
-														CMD_ST,
-														STRING_ST,
-														cmd_tmp,
-														$3
-													);
-									}
-								  }
-		| ID LPAREN STRING  COMMA STRING RPAREN 
-								  { cmd_tmp=(void*)find_cmd_export_t($1,2,rt);
-									if (cmd_tmp==0){
-										if (find_cmd_export_t($1, 2, 0)) {
-											yyerror("Command cannot be used "
-												"in the block\n");
-										} else {
-											yyerror("unknown command, missing"
-												" loadmodule?\n");
+										elems[0].type = CMD_ST;
+										elems[0].u.data = cmd_tmp;
+										for (i_tmp=1+$3; i_tmp<MAX_ACTION_ELEMS; i_tmp++) {
+											elems[i_tmp].u.data = NULL;
 										}
-										$$=0;
-									}else{
-										mk_action3( $$, MODULE_T,
-														CMD_ST,
-														STRING_ST,
-														STRING_ST,
-														cmd_tmp,
-														$3,
-														$5
-													);
+										$$ = mk_action(MODULE_T, $3+1, elems, line);
 									}
-								  }
+								}
 		| ID LPAREN error RPAREN { $$=0; yyerror("bad arguments"); }
 	;
 

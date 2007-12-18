@@ -120,10 +120,12 @@ typedef struct action_elem_ {
 	} u;
 } action_elem_t, *action_elem_p;
 
-#define MAX_ACTION_ELEMS	5
+/* increase MAX_ACTION_ELEMS to support more module function parameters
+   if you change this define, you need also to change the assignment in
+   the action.c file */
+#define MAX_ACTION_ELEMS	7
 struct action{
 	int type;  /* forward, drop, log, send ...*/
-	int n;
 	action_elem_t elem[MAX_ACTION_ELEMS];
 	int line;
 	struct action* next;

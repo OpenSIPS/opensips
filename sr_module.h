@@ -49,7 +49,7 @@
 #include "route.h"
 
 typedef  struct module_exports* (*module_register)();
-typedef  int (*cmd_function)(struct sip_msg*, char*, char*);
+typedef  int (*cmd_function)(struct sip_msg*, ...);
 typedef  int (*fixup_function)(void** param, int param_no);
 typedef  int (*free_fixup_function)(void** param, int param_no);
 typedef  int (*response_function)(struct sip_msg*);

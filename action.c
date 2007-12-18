@@ -814,7 +814,9 @@ int do_action(struct action* a, struct sip_msg* msg)
 		case MODULE_T:
 			if ( (a->elem[0].type==CMD_ST) && a->elem[0].u.data ) {
 				ret=((cmd_export_t*)(a->elem[0].u.data))->function(msg,
-						(char*)a->elem[1].u.data, (char*)a->elem[2].u.data);
+						 (char*)a->elem[1].u.data, (char*)a->elem[2].u.data,
+						 (char*)a->elem[3].u.data, (char*)a->elem[4].u.data,
+						 (char*)a->elem[5].u.data, (char*)a->elem[6].u.data);
 			}else{
 				LM_ALERT("BUG in module call\n");
 			}
