@@ -206,6 +206,32 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 			val->flags = PV_VAL_STR;
 			val->rs = st;
 			break;
+		case TR_S_ESCAPEPARAM:
+			if(!(val->flags&PV_VAL_STR))
+				val->rs.s = int2str(val->ri, &val->rs.len);
+			if(val->rs.len>TR_BUFFER_SIZE/2-1)
+				return -1;
+			st.s = _tr_buffer;
+			st.len = TR_BUFFER_SIZE;
+			if (escape_param(&val->rs, &st) < 0)
+				return -1;
+			memset(val, 0, sizeof(pv_value_t));
+			val->flags = PV_VAL_STR;
+			val->rs = st;
+			break;
+		case TR_S_UNESCAPEPARAM:
+			if(!(val->flags&PV_VAL_STR))
+				val->rs.s = int2str(val->ri, &val->rs.len);
+			if(val->rs.len>TR_BUFFER_SIZE-1)
+				return -1;
+			st.s = _tr_buffer;
+			st.len = TR_BUFFER_SIZE;
+			if (unescape_param(&val->rs, &st) < 0)
+				return -1;
+			memset(val, 0, sizeof(pv_value_t));
+			val->flags = PV_VAL_STR;
+			val->rs = st;
+			break;
 		case TR_S_SUBSTR:
 			if(tp==NULL || tp->next==NULL)
 			{
@@ -953,6 +979,12 @@ char* tr_parse_string(str* in, trans_t *t)
 		return p;
 	} else if(name.len==13 && strncasecmp(name.s, "unescape.user", 13)==0) {
 		t->subtype = TR_S_UNESCAPEUSER;
+		return p;
+	} else if(name.len==12 && strncasecmp(name.s, "escape.param", 12)==0) {
+		t->subtype = TR_S_ESCAPEPARAM;
+		return p;
+	} else if(name.len==14 && strncasecmp(name.s, "unescape.param", 14)==0) {
+		t->subtype = TR_S_UNESCAPEPARAM;
 		return p;
 	} else if(name.len==6 && strncasecmp(name.s, "substr", 6)==0) {
 		t->subtype = TR_S_SUBSTR;

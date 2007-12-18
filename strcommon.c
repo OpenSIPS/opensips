@@ -288,3 +288,66 @@ int escape_user(str *sin, str *sout)
 	return 0;
 }
 
+
+int unescape_param(str *sin, str *sout)
+{
+    return unescape_user(sin, sout);
+}
+
+
+// escape all printable characters that are not valid in
+// a param part of request uri: = | ; | , |   | " | ? | &
+//
+
+int escape_param(str *sin, str *sout)
+{
+    char *at, *p;
+    unsigned char x;
+
+    if (sin==NULL || sout==NULL || sin->s==NULL || sout->s==NULL ||
+        sin->len<=0 || sout->len < 3*sin->len+1)
+        return -1;
+
+    at = sout->s;
+    p  = sin->s;
+    while (p < sin->s+sin->len) {
+        if (*p < 32 || *p > 126) {
+            LM_ERR("invalid escaped character <%u>\n", (unsigned int)*p);
+            return -1;
+        }
+        switch (*p) {
+        case ' ':
+        case '?':
+        case '&':
+        case '=':
+        case ',':
+        case ';':
+        case '"':
+            *at++ = '%';
+            x = (*p) >> 4;
+            if (x < 10)
+            {
+                *at++ = x + '0';
+            } else {
+                *at++ = x - 10 + 'a';
+            }
+            x = (*p) & 0x0f;
+            if (x < 10) {
+                *at = x + '0';
+            } else {
+                *at = x - 10 + 'a';
+            }
+            break;
+        default:
+            *at = *p;
+        }
+        at++;
+        p++;
+    }
+    *at = 0;
+    sout->len = at - sout->s;
+    LM_DBG("escaped string is <%s>\n", sout->s);
+
+    return 0;
+}
+

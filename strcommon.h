@@ -42,5 +42,9 @@ int escape_user(str *sin, str *sout);
 
 int unescape_user(str *sin, str *sout);
 
+int escape_param(str *sin, str *sout);
+
+int unescape_param(str *sin, str *sout);
+
 #endif
 
