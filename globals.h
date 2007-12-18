@@ -36,19 +36,13 @@
 #define DO_DNS     1
 #define DO_REV_DNS 2
 
-
-
 extern char * cfg_file;
 extern int config_check;
 extern char *stat_file;
 extern unsigned short port_no;
 
-extern int uid;
-extern int gid;
 extern char* pid_file;
 extern char* pgid_file;
-extern int own_pgid; /* whether or not we have our own pgid (and it's ok
->--->--->--->--->--->--->--->--->--->--->--- to use kill(0, sig) */
 
 extern struct socket_info* bind_address; /* pointer to the crt. proc.
 											listening address */
@@ -125,9 +119,6 @@ extern int disable_dns_blacklist;
 extern int cfg_errors;
 
 extern unsigned long shm_mem_size;
-
-/* AVP configuration */
-extern char *avp_db_url;  /* db url used by user preferences (AVPs) */
 
 extern int reply_to_via;
 

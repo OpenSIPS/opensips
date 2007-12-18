@@ -667,7 +667,7 @@ static int main_loop(void)
 		}
 
 		/* try to drop privileges */
-		if (do_suid()==-1)
+		if (do_suid(uid, gid)==-1)
 			goto error;
 
 		/* we need another process to act as the timer*/
@@ -762,7 +762,7 @@ static int main_loop(void)
 
 		/* all processes should have access to all the sockets (for sending)
 		 * so we open all first*/
-		if (do_suid()==-1) goto error; /* try to drop privileges */
+		if (do_suid(uid, gid)==-1) goto error; /* try to drop privileges */
 
 		/* udp processes */
 		for(si=udp_listen; si; si=si->next){
@@ -1232,7 +1232,7 @@ try_again:
 
 	/* init_daemon? */
 	if (!dont_fork){
-		if ( daemonize((log_name==0)?argv[0]:log_name) <0 )
+		if ( daemonize((log_name==0)?argv[0]:log_name, &own_pgid) <0 )
 			goto error;
 	}
 

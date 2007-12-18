@@ -63,7 +63,7 @@
 
 
 /* daemon init, return 0 on success, -1 on error */
-int daemonize(char*  name)
+int daemonize(char*  name, int * own_pgid)
 {
 	FILE *pid_stream;
 	pid_t pid;
@@ -100,7 +100,7 @@ int daemonize(char*  name)
 	if (setsid()<0){
 		LM_WARN("setsid failed: %s\n",strerror(errno));
 	}else{
-		own_pgid=1;/* we have our own process group */
+		*own_pgid=1;/* we have our own process group */
 	}
 	/* fork again to drop group  leadership */
 	if ((pid=fork())<0){
@@ -220,7 +220,7 @@ error:
 
 
 
-int do_suid(void)
+int do_suid(const int uid, const int gid)
 {
 	if (gid){
 		if(setgid(gid)<0){
