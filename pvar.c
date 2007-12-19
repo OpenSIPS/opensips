@@ -953,25 +953,60 @@ static int pv_get_refer_to(struct sip_msg *msg, pv_param_t *param,
 static int pv_get_diversion(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {
-	if(msg==NULL || res==NULL)
+       str *val;
+       str name;
+
+       if(msg == NULL || res == NULL)
 		return -1;
 
-	if(parse_diversion_header(msg)==-1)
+	if(parse_diversion_header(msg) == -1)
 	{
 		LM_DBG("no Diversion header\n");
 		return pv_get_null(msg, param, res);
 	}
 	
-	if(msg->diversion==NULL || get_diversion(msg)==NULL) {
+	if(msg->diversion == NULL || get_diversion(msg) == NULL) {
 		LM_DBG("no Diversion header\n");
 		return pv_get_null(msg, param, res);
 	}
 
-	res->rs.s = get_diversion(msg)->uri.s;
-	res->rs.len = get_diversion(msg)->uri.len; 
-	
-	res->flags = PV_VAL_STR;
-	return 0;
+	if(param->pvn.u.isname.name.n == 1)  { /* uri */
+	    res->rs.s = get_diversion(msg)->uri.s;
+	    res->rs.len = get_diversion(msg)->uri.len; 
+	    res->flags = PV_VAL_STR;
+	    return 0;
+	}
+
+	if(param->pvn.u.isname.name.n == 2)  { /* reason param */
+	    name.s = "reason";
+	    name.len = 6;
+	    val = diversion_param(msg, name);
+	    if (val) {
+		res->rs.s = val->s;
+		res->rs.len = val->len;
+		res->flags = PV_VAL_STR;
+		return 0;
+	    } else {
+		return pv_get_null(msg, param, res);
+	    }
+	}
+
+	if(param->pvn.u.isname.name.n == 3)  { /* privacy param */
+	    name.s = "privacy";
+	    name.len = 7;
+	    val = diversion_param(msg, name);
+	    if (val) {
+		res->rs.s = val->s;
+		res->rs.len = val->len;
+		res->flags = PV_VAL_STR;
+		return 0;
+	    } else {
+		return pv_get_null(msg, param, res);
+	    }
+	}
+
+	LM_ERR("unknown diversion specifier\n");
+	return pv_get_null(msg, param, res);
 }
 
 static int pv_get_rpid(struct sip_msg *msg, pv_param_t *param,
@@ -2430,7 +2465,13 @@ static pv_export_t _pv_names_table[] = {
 		0, 0, pv_init_iname, 1},
 	{{"di", (sizeof("di")-1)}, /* */
 		PVT_DIVERSION_URI, pv_get_diversion, 0,
-		0, 0, 0, 0},
+		0, 0, pv_init_iname, 1},
+	{{"dir", (sizeof("dir")-1)}, /* */
+		PVT_DIV_REASON, pv_get_diversion, 0,
+		0, 0, pv_init_iname, 2},
+	{{"dip", (sizeof("dis")-1)}, /* */
+		PVT_DIV_PRIVACY, pv_get_diversion, 0,
+		0, 0, pv_init_iname, 3},
 	{{"dp", (sizeof("dp")-1)}, /* */
 		PVT_DSTURI_PORT, pv_get_dsturi_attr, 0,
 		0, 0, pv_init_iname, 2},

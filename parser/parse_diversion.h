@@ -34,5 +34,11 @@
  * Diversion header field parser
  */
 int parse_diversion_header(struct sip_msg *msg);
+
+
+/*
+ * Get value of given diversion parameter
+ */
+str *diversion_param(struct sip_msg *msg, str name);
  
 #endif /* PARSE_DIVERSION_H */
