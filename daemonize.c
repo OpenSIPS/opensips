@@ -56,12 +56,6 @@
 #include "globals.h"
 #include "dprint.h"
 
-
-#define MAX_FD 32 /* maximum number of inherited open file descriptors,
-		    (normally it shouldn't  be bigger  than 3) */
-
-
-
 /* daemon init, return 0 on success, -1 on error */
 int daemonize(char*  name, int * own_pgid)
 {
@@ -204,7 +198,9 @@ int daemonize(char*  name, int * own_pgid)
 
 	/* close any open file descriptors */
 	closelog();
-	for (r=3;r<MAX_FD; r++){
+
+	/* 32 is the maximum number of inherited open file descriptors */
+	for (r=3; r < 32; r++){
 			close(r);
 	}
 

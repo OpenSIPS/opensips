@@ -159,12 +159,12 @@ void print_ct_constants(void)
 #endif
 	printf("MAX_RECV_BUFFER_SIZE %d, MAX_LISTEN %d,"
 			" MAX_URI_SIZE %d, BUF_SIZE %d\n",
-		MAX_RECV_BUFFER_SIZE, MAX_LISTEN, MAX_URI_SIZE, 
+		MAX_RECV_BUFFER_SIZE, MAX_LISTEN, MAX_URI_SIZE,
 		BUF_SIZE );
 #ifdef USE_TCP
 	printf("poll method support: %s.\n", poll_support);
 #endif
-	printf("svnrevision: %s\n", 
+	printf("svnrevision: %s\n",
 #ifdef SVNREVISION
 	SVNREVISION
 #else
@@ -308,10 +308,6 @@ unsigned long shm_mem_size=SHM_MEM_SIZE * 1024 * 1024;
 int my_argc;
 char **my_argv;
 
-#define MAX_FD 32 /* maximum number of inherited open file descriptors,
-		    (normally it shouldn't  be bigger  than 3) */
-
-
 extern FILE* yyin;
 extern int yyparse();
 
@@ -426,7 +422,6 @@ static void sig_alarm_abort(int signo)
 }
 
 
-#define OPENSER_SHUTDOWN_TIME	60
 /**
  * Signal handler for the server.
  */
@@ -436,6 +431,7 @@ void handle_sigs(void)
 	int    chld_status;
 	int    i;
 	int    do_exit;
+	const unsigned int shutdown_time = 60; /* one minute close timeout */
 
 	switch(sig_flag){
 		case 0: break; /* do nothing*/
@@ -460,8 +456,7 @@ void handle_sigs(void)
 				/* continue, the process will die anyway if no
 				 * alarm is installed which is exactly what we want */
 			}
-			alarm(OPENSER_SHUTDOWN_TIME); /* 1 minute close timeout */
-
+			alarm(shutdown_time);
 			while(wait(0) > 0); /* Wait for all the children to terminate */
 			signal(SIGALRM, sig_alarm_abort);
 
@@ -521,7 +516,7 @@ void handle_sigs(void)
 				/* continue, the process will die anyway if no
 				 * alarm is installed which is exactly what we want */
 			}
-			alarm(OPENSER_SHUTDOWN_TIME); /* 1 minute close timeout */
+			alarm(shutdown_time);
 			while(wait(0) > 0); /* wait for all the children to terminate*/
 			signal(SIGALRM, sig_alarm_abort);
 			cleanup(1); /* cleanup & show status*/
