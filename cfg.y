@@ -2222,9 +2222,6 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 									}else{
 										elems[0].type = CMD_ST;
 										elems[0].u.data = cmd_tmp;
-										for (i_tmp=1; i_tmp<MAX_ACTION_ELEMS; i_tmp++) {
-											elems[i_tmp].u.data = NULL;
-										}
 										$$ = mk_action(MODULE_T, 1, elems, line);
 									}
 								}
@@ -2242,9 +2239,6 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 									}else{
 										elems[0].type = CMD_ST;
 										elems[0].u.data = cmd_tmp;
-										for (i_tmp=1+$3; i_tmp<MAX_ACTION_ELEMS; i_tmp++) {
-											elems[i_tmp].u.data = NULL;
-										}
 										$$ = mk_action(MODULE_T, $3+1, elems, line);
 									}
 								}
