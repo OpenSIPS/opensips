@@ -2180,8 +2180,9 @@ error:
 int pv_set_force_sock(struct sip_msg* msg, pv_param_t *param,
 		int op, pv_value_t *val)
 {
-	struct sip_uri puri;
 	struct socket_info *si;
+	int port, proto;
+	str host;
 	
 	if(msg==NULL || param==NULL)
 	{
@@ -2201,12 +2202,12 @@ int pv_set_force_sock(struct sip_msg* msg, pv_param_t *param,
 		goto error;
 	}
 	
-	if (parse_uri(val->rs.s, val->rs.len, &puri)<0)
+	if (parse_phostport(val->rs.s, val->rs.len, &host.s, &host.len, &port, &proto) < 0)
 	{
-		LM_ERR("invalid uri\n");
+		LM_ERR("invalid socket specification\n");
 		goto error;
 	}
-	si = grep_sock_info(&puri.host, puri.port_no, puri.proto);
+	si = grep_sock_info(&host, (unsigned short)port, (unsigned short)proto);
 	if (si!=NULL)
 	{
 		msg->force_send_socket = si;
