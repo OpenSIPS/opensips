@@ -28,6 +28,7 @@
 #include "str.h"
 #include "ut.h"
 #include "error.h"
+#include "pvar.h"
 #include "mod_fix.h"
 
 
@@ -54,7 +55,7 @@ int str_fixup(void** param, int param_no)
 }
 
 /*  
- * free tje str* parameter   
+ * free the str* parameter   
  */
 int free_str_fixup(void** param, int param_no)
 {
@@ -133,3 +134,47 @@ int free_fixup_str2regexp(void** param, int param_no)
 	return 0;
 }
 
+
+/*
+ * Convert pvar string into parsed speudo variable specification
+ */
+int pvar_fixup(void **param, int param_no)
+{
+    pv_spec_t *sp;
+    str s;
+
+    if ((param_no == 1) && *param) {
+	sp = (pv_spec_t*)pkg_malloc(sizeof(pv_spec_t));
+	if (sp == 0) {
+	    LM_ERR("no pkg memory left for parameter\n");
+	    return E_UNSPEC;
+	}
+	s.s = (char*)*param; s.len = strlen(s.s);
+	if (pv_parse_spec(&s, sp) == 0) {
+	    LM_ERR("parsing of pseudo variable %s failed!\n", (char*)*param);
+	    pkg_free(sp);
+	    return E_UNSPEC;
+	}
+	if (sp->type == PVT_NULL) {
+	    LM_ERR("bad pseudo variable\n");
+	    pkg_free(sp);
+	    return E_UNSPEC;
+	}
+	*param = (void*)sp;
+    }
+
+    return 0;
+}
+
+/*  
+ * free pvap spec
+ */
+int free_pvar_fixup(void** param, int param_no)
+{
+    if ((param_no == 1) && *param) {
+	pkg_free(*param);
+	*param = 0;
+    }
+
+    return 0;
+}

@@ -34,4 +34,8 @@ int fixup_str2regexp(void** param, int param_no);
 
 int free_fixup_str2regexp(void** param, int param_no);
 
+int pvar_fixup(void **param, int param_no);
+
+int free_pvar_fixup(void** param, int param_no);
+
 #endif
