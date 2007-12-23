@@ -2430,7 +2430,7 @@ static pv_export_t _pv_names_table[] = {
 		0, 0, pv_init_iname, 1},
 	{{"aU", (sizeof("aU")-1)}, /* */
 		PVT_AUTH_USERNAME_WHOLE, pv_get_authattr, 0,
-		0, 0, pv_init_iname, 3},
+		0, 0, pv_init_iname, 4},
 	{{"Au", (sizeof("Au")-1)}, /* */
 		PVT_ACC_USERNAME, pv_get_acc_username, 0,
 		0, 0, pv_init_iname, 1},
