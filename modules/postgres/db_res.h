@@ -1,7 +1,8 @@
-/* 
- * $Id$ 
+/*
+ * $Id$
  *
- * Copyright (C) 2001-2003 FhG Fokus
+ * Copyright (C) 2007 1&1 Internet AG
+ *
  *
  * This file is part of openser, a free SIP server.
  *
@@ -18,19 +19,27 @@
  * You should have received a copy of the GNU General Public License 
  * along with this program; if not, write to the Free Software 
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
  */
 
+#ifndef DB_PG_RES_H
+#define DB_PG_RES_H
 
-#ifndef DB_COL_H
-#define DB_COL_H
+int db_postgres_convert_result(const db_con_t* _h, db_res_t* _r);
 
+int db_postgres_convert_row(const db_con_t* _h, db_res_t* _res, db_row_t* _r,
+	char **row_buf);
 
-#include "db_res.h"
+int db_postgres_get_columns(const db_con_t* _h, db_res_t* _r);
 
+int db_postgres_convert_rows(const db_con_t* _h, db_res_t* _r, int row_start, int row_count);
 
-/*
- * Release memory used by columns
- */
-int db_free_columns(db_res_t* _r);
+int db_postgres_free_rows(db_res_t* _r);
 
-#endif /* DB_COL_H */
+int db_postgres_free_row(db_row_t* _r);
+
+int db_postgres_free_columns(db_res_t* _r);
+
+int db_postgres_free_result(db_res_t* _r);
+
+#endif
