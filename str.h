@@ -20,14 +20,36 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+/**
+ * \file str.h
+ * \brief Common data type for text variables.
+ */
 
 #ifndef str_h
 #define str_h
 
 
+/**
+  * \brief Common data type for text variables.
+  *
+  * This data type encapsulate a standard C char array. Its recommended to use
+  * this type if you need variables holding text. Its caches the length of the
+  * C string to avoid repetive calls to strlen, thus improving performance.
+  * Its also safer to explicitly give the length to string operations of the core
+  * or C libraries to prevent problems because of buffer overflows and missing
+  * null-termination.
+  * Important: The char array inside this type is not null-terminated. So if you
+  * need to work with external functions that rely on this termination you must
+  * add a zero at the end by yourself. Keep in mind that the length of the char
+  * array is normally not large enough to store this additional null-termination.
+  * So you must copy the char array to a new buffer that is (len + 1) big,
+  * otherwise memory corruption and undefinied behavour will occur.
+  * Most libraries provides also functions that can work with a explicit given
+  * length, thus avoiding the need for this copy operation.
+  */
 struct _str{
-	char* s; /*string*/
-	int len; /*string len*/
+	char* s; /**< string as char array */
+	int len; /**< string length, not including null-termination */
 };
 
 typedef struct _str str;
