@@ -18,6 +18,24 @@
  * You should have received a copy of the GNU General Public License 
  * along with this program; if not, write to the Free Software 
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
+ *
+ * Description of the logging functions:
+ *
+ *  A) macros to log on a predefine log level and with standard prefix
+ *     for with additional info: [time] 
+ *     No dynamic FMT is accepted (due macro processing).
+ *       LM_ALERT( fmt, ....)
+ *       LM_CRIT( fmt, ....)
+ *       LM_ERR( fmt, ...)
+ *       LM_WARN( fmt, ...)
+ *       LM_NOTICE( fmt, ...)
+ *       LM_INFO( fmt, ...)
+ *       LM_DBG( fmt, ...)
+ *  B) macros for generic logging ; no additional information is added;
+ *     Works with dynamic FMT.
+ *       LM_GEN1( log_level, fmt, ....)
+ *       LM_GEN2( log_facility, log_level, fmt, ...)
  */
 
 
@@ -123,7 +141,8 @@ inline static char* dp_time(void)
 #ifdef NO_LOG
 
 	#ifdef __SUNPRO_C
-		#define LOG(lev, ...)
+		#define LM_GEN2(facility, lev, ...)
+		#define LM_GEN1(lev, ...)
 		#define LM_ALERT( ...)
 		#define LM_CRIT( ...)
 		#define LM_ERR( ...)
@@ -132,7 +151,8 @@ inline static char* dp_time(void)
 		#define LM_INFO( ...)
 		#define LM_DBG( ...)
 	#else
-		#define LOG(lev, fmt, args...)
+		#define LM_GEN2(facility, lev, fmt, args...)
+		#define LM_GEN1(lev, fmt, args...)
 		#define LM_ALERT(fmt, args...)
 		#define LM_CRIT(fmt, args...)
 		#define LM_ERR(fmt, args...)
@@ -155,32 +175,35 @@ inline static char* dp_time(void)
 				syslog( (_log_level)|log_facility, \
 							LOG_PREFIX __VA_ARGS__);\
 
-		#define LOG(lev, ...) \
+		#define LM_GEN1(lev, ...) \
+			LM_GEN2( log_facility, _lev, __VA_ARGS__)
+
+		#define LM_GEN2( _facility, _lev, ...) \
 			do { \
-				if (is_printable(lev)){ \
+				if (is_printable(_lev)){ \
 					if (log_stderr) dprint (__VA_ARGS__); \
 					else { \
-						switch(lev){ \
+						switch(_lev){ \
 							case L_CRIT: \
-								syslog(LOG_CRIT|log_facility, __VA_ARGS__); \
+								syslog(LOG_CRIT|_facility, __VA_ARGS__); \
 								break; \
 							case L_ALERT: \
-								syslog(LOG_ALERT|log_facility, __VA_ARGS__); \
+								syslog(LOG_ALERT|_facility, __VA_ARGS__); \
 								break; \
 							case L_ERR: \
-								syslog(LOG_ERR|log_facility, __VA_ARGS__); \
+								syslog(LOG_ERR|_facility, __VA_ARGS__); \
 								break; \
 							case L_WARN: \
-								syslog(LOG_WARNING|log_facility, __VA_ARGS__);\
+								syslog(LOG_WARNING|_facility, __VA_ARGS__);\
 								break; \
 							case L_NOTICE: \
-								syslog(LOG_NOTICE|log_facility, __VA_ARGS__); \
+								syslog(LOG_NOTICE|_facility, __VA_ARGS__); \
 								break; \
 							case L_INFO: \
-								syslog(LOG_INFO|log_facility, __VA_ARGS__); \
+								syslog(LOG_INFO|_facility, __VA_ARGS__); \
 								break; \
 							case L_DBG: \
-								syslog(LOG_DEBUG|log_facility, __VA_ARGS__); \
+								syslog(LOG_DEBUG|_facility, __VA_ARGS__); \
 								break; \
 						} \
 					} \
@@ -273,32 +296,35 @@ inline static char* dp_time(void)
 				syslog( (_log_level)|log_facility, \
 							_prefix LOG_PREFIX _fmt, __DP_FUNC, ##args);\
 
-		#define LOG(lev, fmt, args...) \
+		#define LM_GEN1(_lev, args...) \
+			LM_GEN2( log_facility, _lev, ##args)
+
+		#define LM_GEN2( _facility, _lev, fmt, args...) \
 			do { \
-				if (is_printable(lev)){ \
+				if (is_printable(_lev)){ \
 					if (log_stderr) dprint ( fmt, ## args); \
 					else { \
-						switch(lev){ \
+						switch(_lev){ \
 							case L_CRIT: \
-								syslog(LOG_CRIT|log_facility, fmt, ##args); \
+								syslog(LOG_CRIT|_facility, fmt, ##args); \
 								break; \
 							case L_ALERT: \
-								syslog(LOG_ALERT|log_facility, fmt, ##args); \
+								syslog(LOG_ALERT|_facility, fmt, ##args); \
 								break; \
 							case L_ERR: \
-								syslog(LOG_ERR|log_facility, fmt, ##args); \
+								syslog(LOG_ERR|_facility, fmt, ##args); \
 								break; \
 							case L_WARN: \
-								syslog(LOG_WARNING|log_facility, fmt, ##args);\
+								syslog(LOG_WARNING|_facility, fmt, ##args);\
 								break; \
 							case L_NOTICE: \
-								syslog(LOG_NOTICE|log_facility, fmt, ##args); \
+								syslog(LOG_NOTICE|_facility, fmt, ##args); \
 								break; \
 							case L_INFO: \
-								syslog(LOG_INFO|log_facility, fmt, ##args); \
+								syslog(LOG_INFO|_facility, fmt, ##args); \
 								break; \
 							case L_DBG: \
-								syslog(LOG_DEBUG|log_facility, fmt, ##args); \
+								syslog(LOG_DEBUG|_facility, fmt, ##args); \
 								break; \
 						} \
 					} \
@@ -381,21 +407,5 @@ inline static char* dp_time(void)
 	#endif /*SUN_PRO_C*/
 #endif
 
-
-
-
-#ifdef NO_DEBUG
-	#ifdef __SUNPRO_C
-		#define DBG(...)
-	#else
-		#define DBG(fmt, args...)
-	#endif
-#else
-	#ifdef __SUNPRO_C
-		#define DBG(...) LOG(L_DBG, __VA_ARGS__)
-	#else
-		#define DBG(fmt, args...) LOG(L_DBG, fmt, ## args)
-	#endif
-#endif
 
 #endif /* ifndef dprint_h */

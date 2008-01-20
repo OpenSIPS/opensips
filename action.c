@@ -358,7 +358,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 				ret=E_BUG;
 				break;
 			}
-			LOG(a->elem[0].u.number, a->elem[1].u.string);
+			LM_GEN1(a->elem[0].u.number, a->elem[1].u.string);
 			ret=1;
 			break;
 		case APPEND_BRANCH_T:

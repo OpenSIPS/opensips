@@ -266,7 +266,7 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 				}
 				j = v.ri;
 			}
-			DBG("tr_eval_string: i=%d j=%d\n", i, j);
+			LM_DBG("i=%d j=%d\n", i, j);
 			if(j<0)
 			{
 				LM_ERR("substr negative offset\n");

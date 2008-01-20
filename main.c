@@ -343,7 +343,7 @@ void cleanup(int show_status)
 	destroy_black_lists();
 #ifdef PKG_MALLOC
 	if (show_status){
-		LOG(memlog, "Memory status (pkg):\n");
+		LM_GEN1(memlog, "Memory status (pkg):\n");
 		pkg_status();
 	}
 #endif
@@ -351,7 +351,7 @@ void cleanup(int show_status)
 	if (pt) shm_free(pt);
 	pt=0;
 	if (show_status){
-			LOG(memlog, "Memory status (shm):\n");
+			LM_GEN1(memlog, "Memory status (shm):\n");
 			shm_status();
 	}
 #ifdef CHANGEABLE_DEBUG_LEVEL
@@ -469,11 +469,11 @@ void handle_sigs(void)
 			
 		case SIGUSR1:
 #ifdef PKG_MALLOC
-			LOG(memlog, "Memory status (pkg):\n");
+			LM_GEN1(memlog, "Memory status (pkg):\n");
 			pkg_status();
 #endif
 #ifdef SHM_MEM
-			LOG(memlog, "Memory status (shm):\n");
+			LM_GEN1(memlog, "Memory status (shm):\n");
 			shm_status();
 #endif
 			break;
@@ -564,7 +564,7 @@ static void sig_usr(int signo)
 					LM_INFO("signal %d received\n", signo);
 					/* print memory stats for non-main too */
 					#ifdef PKG_MALLOC
-					LOG(memlog, "Memory status (pkg):\n");
+					LM_GEN1(memlog, "Memory status (pkg):\n");
 					pkg_status();
 					#endif
 					exit(0);
@@ -572,7 +572,7 @@ static void sig_usr(int signo)
 			case SIGUSR1:
 					/* statistics -> show only pkg mem */
 					#ifdef PKG_MALLOC
-					LOG(memlog, "Memory status (pkg):\n");
+					LM_GEN1(memlog, "Memory status (pkg):\n");
 					pkg_status();
 					#endif
 					break;

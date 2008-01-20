@@ -425,13 +425,13 @@ void vqm_free(struct vqm_block* qm, void* p)
 
 void dump_frag( struct vqm_frag* f, int i )
 {
-	LOG(memlog, "    %3d. address=%p  real size=%d bucket=%d\n", i, 
+	LM_GEN1(memlog, "    %3d. address=%p  real size=%d bucket=%d\n", i, 
 		(char*)f+sizeof(struct vqm_frag), f->size, f->u.inuse.bucket);
 #ifdef DBG_QM_MALLOC
-	LOG(memlog, "            demanded size=%d\n", f->demanded_size );
-	LOG(memlog, "            alloc'd from %s: %s(%d)\n",
+	LM_GEN1(memlog, "            demanded size=%d\n", f->demanded_size );
+	LM_GEN1(memlog, "            alloc'd from %s: %s(%d)\n",
 		f->file, f->func, f->line);
-	LOG(memlog, "        start check=%x, end check= %.*s\n",
+	LM_GEN1(memlog, "        start check=%x, end check= %.*s\n",
 			f->check, END_CHECK_PATTERN_LEN, f->end_check );
 #endif
 }
@@ -441,16 +441,16 @@ void vqm_status(struct vqm_block* qm)
 	struct vqm_frag* f;
 	unsigned int i,on_list;
 
-	LOG(memlog, "vqm_status (%p):\n", qm);
+	LM_GEN1(memlog, "vqm_status (%p):\n", qm);
 	if (!qm) return;
-	LOG(memlog, " heap size= %d, available: %d\n", 
+	LM_GEN1(memlog, " heap size= %d, available: %d\n", 
 		qm->core_end-qm->init_core, qm->free_core );
-	
-	LOG(memlog, "dumping unfreed fragments:\n");
+
+	LM_GEN1(memlog, "dumping unfreed fragments:\n");
 	for (f=(struct vqm_frag*)qm->init_core, i=0;(char*)f<(char*)qm->core;
 		f=FRAG_NEXT(f) ,i++) if ( FRAG_ISUSED(f) ) dump_frag(f, i);
 
-	LOG(memlog, "dumping unfreed big fragments:\n");
+	LM_GEN1(memlog, "dumping unfreed big fragments:\n");
     for (f=(struct vqm_frag*)qm->big_chunks,i=0;(char*)f<(char*)qm->core_end;
 		f=FRAG_NEXT(f) ,i++) if ( FRAG_ISUSED(f) ) dump_frag( f, i );
 
@@ -462,7 +462,7 @@ void vqm_status(struct vqm_block* qm)
 			i, qm->usage[i], on_list );
 	}
 #endif
-	LOG(memlog, "-----------------------------\n");
+	LM_GEN1(memlog, "-----------------------------\n");
 }
 
 

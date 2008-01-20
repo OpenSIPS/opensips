@@ -196,7 +196,7 @@ static inline struct ip_addr* str2ip(str* st)
 	
 	return &ip;
 error_dots:
-	DBG("str2ip: ERROR: too %s dots in [%.*s]\n", (i>3)?"many":"few", 
+	LM_DBG("too %s dots in [%.*s]\n", (i>3)?"many":"few", 
 			st->len, st->s);
 	return 0;
  error_char:
@@ -287,15 +287,15 @@ static inline struct ip_addr* str2ip6(str* st)
 	return &ip;
 
 error_too_many_colons:
-	DBG("str2ip6: ERROR: too many colons in [%.*s]\n", st->len, st->s);
+	LM_DBG("too many colons in [%.*s]\n", st->len, st->s);
 	return 0;
 
 error_too_few_colons:
-	DBG("str2ip6: ERROR: too few colons in [%.*s]\n", st->len, st->s);
+	LM_DBG("too few colons in [%.*s]\n", st->len, st->s);
 	return 0;
 
 error_colons:
-	DBG("str2ip6: ERROR: too many double colons in [%.*s]\n", st->len, st->s);
+	LM_DBG("too many double colons in [%.*s]\n", st->len, st->s);
 	return 0;
 
 error_char:
