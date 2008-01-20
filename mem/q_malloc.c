@@ -359,8 +359,8 @@ void* qm_malloc(struct qm_block* qm, unsigned long size)
 	unsigned int list_cntr;
 
 	list_cntr = 0;
-	LM_DBG("params (%p, %lu), called from %s: %s(%d)\n", qm, size, file, func,
-			line);
+	LM_GEN1( memlog, "params (%p, %lu), called from %s: %s(%d)\n",
+		qm, size, file, func, line);
 #endif
 	/*size must be a multiple of 8*/
 	size=ROUNDUP(size);
@@ -398,8 +398,8 @@ void* qm_malloc(struct qm_block* qm, unsigned long size)
 		f->check=ST_CHECK_PATTERN;
 		/*  FRAG_END(f)->check1=END_CHECK_PATTERN1;
 			FRAG_END(f)->check2=END_CHECK_PATTERN2;*/
-		LM_DBG("params (%p, %lu), returns address %p frag. %p (size=%lu) on %d"
-				" -th hit\n",
+		LM_GEN1( memlog, "params (%p, %lu), returns address %p frag. %p "
+			"(size=%lu) on %d -th hit\n",
 			 qm, size, (char*)f+sizeof(struct qm_frag), f, f->size, list_cntr );
 #endif
 		return (char*)f+sizeof(struct qm_frag);
@@ -422,7 +422,8 @@ void qm_free(struct qm_block* qm, void* p)
 	unsigned long size;
 
 #ifdef DBG_QM_MALLOC
-	LM_DBG("params(%p, %p), called from %s: %s(%d)\n", qm, p, file, func, line);
+	LM_GEN1( memlog, "params(%p, %p), called from %s: %s(%d)\n",
+		qm, p, file, func, line);
 	if (p>(void*)qm->last_frag_end || p<(void*)qm->first_frag){
 		LM_CRIT("bad pointer %p (out of memory block!) - aborting\n", p);
 		abort();
@@ -442,7 +443,7 @@ void qm_free(struct qm_block* qm, void* p)
 				f->file, f->func, f->line);
 		abort();
 	}
-	LM_DBG("freeing frag. %p alloc'ed from %s: %s(%ld)\n",
+	LM_GEN1( memlog, "freeing frag. %p alloc'ed from %s: %s(%ld)\n",
 			f, f->file, f->func, f->line);
 #endif
 	size=f->size;
@@ -507,8 +508,8 @@ void* qm_realloc(struct qm_block* qm, void* p, unsigned long size)
 	
 	
 #ifdef DBG_QM_MALLOC
-	LM_DBG("params (%p, %p, %lu), called from %s: %s(%d)\n", qm, p, size,
-			file, func, line);
+	LM_GEN1( memlog "params (%p, %p, %lu), called from %s: %s(%d)\n",
+		qm, p, size, file, func, line);
 	if ((p)&&(p>(void*)qm->last_frag_end || p<(void*)qm->first_frag)){
 		LM_CRIT("bad pointer %p (out of memory block!) - aborting\n", p);
 		abort();
@@ -533,7 +534,7 @@ void* qm_realloc(struct qm_block* qm, void* p, unsigned long size)
 	f=(struct qm_frag*) ((char*)p-sizeof(struct qm_frag));
 #ifdef DBG_QM_MALLOC
 	qm_debug_frag(qm, f);
-	LM_DBG("realloc'ing frag %p alloc'ed from %s: %s(%ld)\n",
+	LM_GEN1( memlog, "realloc'ing frag %p alloc'ed from %s: %s(%ld)\n",
 			f, f->file, f->func, f->line);
 	if (f->u.is_free){
 		LM_CRIT("trying to realloc an already freed "
@@ -547,9 +548,9 @@ void* qm_realloc(struct qm_block* qm, void* p, unsigned long size)
 		orig_size=f->size;
 		/* shrink */
 #ifdef DBG_QM_MALLOC
-		LM_DBG("shrinking from %lu to %lu\n", f->size, size);
+		LM_GEN1(memlog,"shrinking from %lu to %lu\n", f->size, size);
 		if(split_frag(qm, f, size, file, "fragm. from qm_realloc", line)!=0){
-		LM_DBG("shrinked successful\n");
+		LM_GEN1(memlog,"shrinked successful\n");
 #else
 		if(split_frag(qm, f, size)!=0){
 #endif
@@ -561,7 +562,7 @@ void* qm_realloc(struct qm_block* qm, void* p, unsigned long size)
 	}else if (f->size < size){
 		/* grow */
 #ifdef DBG_QM_MALLOC
-		LM_DBG("growing from %lu to %lu\n", f->size, size);
+		LM_GEN1( memlog, "growing from %lu to %lu\n", f->size, size);
 #endif
 			orig_size=f->size;
 			diff=size-f->size;
@@ -607,11 +608,11 @@ void* qm_realloc(struct qm_block* qm, void* p, unsigned long size)
 	}else{
 		/* do nothing */
 #ifdef DBG_QM_MALLOC
-		LM_DBG("doing nothing, same size: %lu - %lu\n", f->size, size);
+		LM_GEN1(memlog,"doing nothing, same size: %lu - %lu\n", f->size, size);
 #endif
 	}
 #ifdef DBG_QM_MALLOC
-	LM_DBG("returning %p\n", p);
+	LM_GEN1(memlog,"returning %p\n", p);
 #endif
 	return p;
 }

@@ -285,17 +285,17 @@ void* vqm_malloc(struct vqm_block* qm, unsigned int size)
 	
 #ifdef DBG_QM_MALLOC
 	unsigned int demanded_size;
-	LM_DBG("params (%p, %d) called from %s: %s(%d)\n", qm, size, file,
-	 func, line);
+	LM_GEN1( memlog, "params (%p, %d) called from %s: %s(%d)\n",
+		qm, size, file, func, line);
 	demanded_size = size;
 #endif
 	new_chunk=0;
-    	/* what's the bucket? what's the total size incl. overhead? */
+	/* what's the bucket? what's the total size incl. overhead? */
 	bucket = size2bucket( qm, &size );
 
 	if (IS_BIGBUCKET(qm, bucket)) {	/* the kilo-bucket uses first-fit */
 #ifdef DBG_QM_MALLOC
-		LM_DBG("processing a big fragment\n");
+		LM_GEN1( memlog, "processing a big fragment\n");
 #endif
 		for (f=qm->next_free[bucket] ; f; f=f->u.nxt_free ) 
 			if (f->size>=size) { /* first-fit */
@@ -314,7 +314,7 @@ void* vqm_malloc(struct vqm_block* qm, unsigned int size)
 		new_chunk=MORE_CORE( qm, bucket, size );
 		if (!new_chunk) {
 #ifdef DBG_QM_MALLOC
-			LM_DBG("params (%p, %d) called from %s: %s(%d)\n", 
+			LM_GEN1(memlog, "params (%p, %d) called from %s: %s(%d)\n", 
 				qm, size, file, func, line);
 #else
 			LM_DBG("params (%p, %d) called from %s: %s(%d)\n", 
@@ -331,7 +331,8 @@ void* vqm_malloc(struct vqm_block* qm, unsigned int size)
 	new_chunk->line=line;
 	new_chunk->demanded_size=demanded_size;
 	qm->usage[ bucket ]++;
-	LM_DBG("params ( %p, %d ) returns address %p in bucket %d, real-size %d\n",
+	LM_GEN1( memlog,"params ( %p, %d ) returns address %p in bucket %d, "
+		"real-size %d\n",
 		qm, demanded_size, (char*)new_chunk+sizeof(struct vqm_frag), 
 		bucket, size );
 
@@ -354,7 +355,7 @@ void vqm_free(struct vqm_block* qm, void* p)
 	unsigned char b;
 
 #ifdef DBG_QM_MALLOC
-	LM_DBG("params (%p, %p), called from %s: %s(%d)\n", 
+	LM_GEN1(memlog,"params (%p, %p), called from %s: %s(%d)\n", 
 		qm, p, file, func, line);
 	if (p>(void *)qm->core_end || p<(void*)qm->init_core){
 		LM_CRIT("bad pointer %p (out of memory block!) - aborting\n", p);
@@ -380,7 +381,7 @@ void vqm_free(struct vqm_block* qm, void* p)
 				b, f->file, f->func, f->line); 
 		abort();
 	}
-	LM_DBG("freeing %d bucket block alloc'ed from %s: %s(%d)\n", 
+	LM_GEN1(memlog,"freeing %d bucket block alloc'ed from %s: %s(%d)\n", 
 		f->u.inuse.bucket, f->file, f->func, f->line);
 	f->file=file; f->func=func; f->line=line;
 	qm->usage[ f->u.inuse.bucket ]--;
@@ -451,14 +452,14 @@ void vqm_status(struct vqm_block* qm)
 		f=FRAG_NEXT(f) ,i++) if ( FRAG_ISUSED(f) ) dump_frag(f, i);
 
 	LM_GEN1(memlog, "dumping unfreed big fragments:\n");
-    for (f=(struct vqm_frag*)qm->big_chunks,i=0;(char*)f<(char*)qm->core_end;
+	for (f=(struct vqm_frag*)qm->big_chunks,i=0;(char*)f<(char*)qm->core_end;
 		f=FRAG_NEXT(f) ,i++) if ( FRAG_ISUSED(f) ) dump_frag( f, i );
 
 #ifdef DBG_QM_MALLOC
-	LM_DBG("dumping bucket statistics:\n");
+	LM_GEN1(memlog,"dumping bucket statistics:\n");
 	for (i=0; i<=BIG_BUCKET(qm); i++) {
 		for(on_list=0, f=qm->next_free[i]; f; f=f->u.nxt_free ) on_list++;
-		LM_DBG("    %3d. bucket: in use: %ld, on free list: %d\n", 
+		LM_GEN1(memlog,"    %3d. bucket: in use: %ld, on free list: %d\n", 
 			i, qm->usage[i], on_list );
 	}
 #endif
