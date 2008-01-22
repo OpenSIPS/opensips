@@ -39,7 +39,7 @@
 
 #define ch_h_inc h+=v^(v>>3)
 #define ch_icase(_c) (((_c)>='A'&&(_c)<='Z')?((_c)|0x20):(_c))
-static inline unsigned int core_hash( str *s1, str *s2, unsigned int size )
+static inline unsigned int core_hash(const str *s1, const str *s2, const unsigned int size)
 {
 	char *p, *end;
 	register unsigned v;
