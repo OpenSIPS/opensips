@@ -2,7 +2,7 @@
  * $Id$
  *
  * Copyright (C) 2001-2003 FhG Fokus
- * Copyright (C) 2005-2006 Voice Sistem S.R.L.
+ * Copyright (C) 2005-2006 Voice Sistem S.R.L
  *
  * This file is part of openser, a free SIP server.
  *
@@ -908,7 +908,7 @@ int main(int argc, char** argv)
 	init_route_lists();
 	/* process command line (get port no, cfg. file path etc) */
 	opterr=0;
-	options="f:cCm:b:l:n:N:rRvdDETSVhw:t:u:g:P:G:i:x:W:";
+	options="f:cCm:b:l:n:N:rRvdDETSVhw:t:u:g:P:G:W:";
 
 	while((c=getopt(argc,argv,options))!=-1){
 		switch(c){
