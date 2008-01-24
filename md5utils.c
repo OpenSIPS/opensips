@@ -1,32 +1,29 @@
-/* MDDRIVER.C - test driver for MD2, MD4 and MD5
- *
- */
-
-
-
-/* Copyright (C) 1990-2, RSA Data Security, Inc. Created 1990. All
-rights reserved.
-
-RSA Data Security, Inc. makes no representations concerning either
-the merchantability of this software or the suitability of this
-software for any particular purpose. It is provided "as is"
-without express or implied warranty of any kind.
-
-These notices must be retained in any copies of any part of this
-documentation and/or software.
- */
-
 /*
-
-jku: added support to deal with vectors
-
-*/
-
-#define MD 5
+ * $Id$
+ *
+ * Copyright (C) 2007 1&1 Internet AG
+ * Copyright (C) 2001-2003 FhG Fokus
+ *
+ * This file is part of openser, a free SIP server.
+ *
+ * openser is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version
+ *
+ * openser is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License 
+ * along with this program; if not, write to the Free Software 
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ */
 
 #include <stdio.h>
-#include <time.h>
-#include <string.h>
+#include <sys/stat.h>
+
 #include "md5global.h"
 #include "md5.h"
 #include "md5utils.h"
@@ -34,30 +31,79 @@ jku: added support to deal with vectors
 #include "ut.h"
 
 
-#define MD_CTX MD5_CTX
-#define MDInit MD5Init
-#define MDUpdate MD5Update
-#define MDFinal MD5Final
-
-
-/* Digests a string array and store the result in dst; assumes
-  32 bytes in dst
- */
-void MDStringArray (char *dst, str src[], int size)
+/**
+  * Calculate a MD5 digests over a string array and stores
+  * the result in the destination char array.
+  * This function assumes 32 bytes in the destination buffer.
+  * \param dest destination
+  * \param src str input array
+  * \param size elements in the input array
+  */
+void MDStringArray(char *dest, str src[], unsigned int size)
 {
-	MD_CTX context;
+	MD5_CTX context;
 	unsigned char digest[16];
- 	int i;
-	int len;
-	char *s;
+	int i, len;
+	char *tmp;
 
-	MDInit (&context);
-	for (i=0; i<size; i++) {
-		trim_len( len, s, src[i] );
-		MDUpdate (&context, s, len);
+	MD5Init (&context);
+	for (i=0; i < size; i++) {
+		trim_len(len, tmp, src[i]);
+		MD5Update(&context, tmp, len);
 	}
-	MDFinal (digest, &context);
+	MD5Final(digest, &context);
 
-	string2hex(digest, 16, dst );
-	LM_DBG("MD5 calculated: %.*s\n", MD5_LEN, dst );
+	string2hex(digest, 16, dest);
+	LM_DBG("MD5 calculated: %.*s\n", MD5_LEN, dest);
+}
+
+/**
+  * Calculate a MD5 digest over a file.
+  * This function assumes 32 bytes in the destination buffer.
+  * \param dest destination
+  * \param name file for that the digest should be calculated
+  * \return zero on success, negative on errors
+  */
+int MD5File(char *dest, const char *file_name)
+{
+	if (!dest || !file_name) {
+		LM_ERR("invalid parameter value");
+		return -1;
+	}
+
+	MD5_CTX context;
+	FILE *input;
+	unsigned char buffer[32768];
+	unsigned char hash[16];
+	unsigned int counter, size;
+	
+	struct stat stats;
+    if (stat(file_name, &stats) != 0) {
+		LM_ERR("could not stat file %s", file_name);
+		return -1;
+	}
+	size = stats.st_size;
+
+	MD5Init(&context);
+	if((input = fopen(file_name, "rb")) == NULL) {
+		LM_ERR("could not open file %s", file_name);
+		return -1;
+	}
+
+	while(size) {
+		counter = (size > sizeof(buffer)) ? sizeof(buffer) : size;
+		if ((counter = fread(buffer, 1, counter, input)) <= 0) {
+			fclose(input);
+			return -1;
+		}
+		MD5Update(&context, buffer, counter);
+		size -= counter;
+	}
+	fclose(input);
+	MD5Final(hash, &context);
+
+	string2hex(hash, 16, dest);
+	LM_DBG("MD5 calculated: %.*s for file %s\n", MD5_LEN, dest, file_name);
+
+	return 0;
 }

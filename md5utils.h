@@ -1,6 +1,7 @@
 /* 
  * $Id$
  *
+ * Copyright (C) 2007 1&1 Internet AG
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of openser, a free SIP server.
@@ -28,6 +29,8 @@
 
 #define MD5_LEN	32
 
-void MDStringArray (char *dst, str src[], int size);
+void MDStringArray (char *dst, str src[], unsigned int size);
+
+int MD5File(char *dest, const char *name);
 
 #endif /* _MD5UTILS_H */
