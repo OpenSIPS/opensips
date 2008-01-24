@@ -39,7 +39,7 @@
   * \param src str input array
   * \param size elements in the input array
   */
-void MDStringArray(char *dest, str src[], unsigned int size)
+void MD5StringArray(char *dest, str src[], unsigned int size)
 {
 	MD5_CTX context;
 	unsigned char digest[16];

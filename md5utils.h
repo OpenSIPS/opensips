@@ -29,7 +29,7 @@
 
 #define MD5_LEN	32
 
-void MDStringArray (char *dst, str src[], unsigned int size);
+void MD5StringArray (char *dst, str src[], unsigned int size);
 
 int MD5File(char *dest, const char *name);
 
