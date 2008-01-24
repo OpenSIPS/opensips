@@ -21,10 +21,14 @@
  *
  * History:
  * -------
- * 2003-03-26 Frees also hdr->parsed for Route & Record-Route (janakj)
- * 2003-04-26 ZSW (jiri)
- * 2003-08-05 free the parsed part of Accept header (bogdan)
  * 2006-02-17 Session-Expires, Min-SE (dhsueh@somanetworks.com)
+ */
+
+/**
+ * \file parser/hf.c
+ * \brief Helper functions for SIP headers.
+ *
+ * Memory management and debugging functions for SIP headers.
  */
 
 
@@ -47,7 +51,7 @@
 #include "parse_sst.h"
 
 
-/* 
+/*
  * Frees a hdr_field structure,
  * WARNING: it frees only parsed (and not name.s, body.s)
  */

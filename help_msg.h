@@ -46,6 +46,10 @@
  * The implementation of the server start process can be found in the
  * main.c file.
  *
+ * \section datastruct_sec Important data structures
+ * hdr_field - represents a SIP header \n
+ * \ref _str "str" - contains text variables \n
+ *
  * \todo incomplete
  */
 
