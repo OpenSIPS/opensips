@@ -838,6 +838,7 @@ static int main_loop(void)
 			/* close the TCP inter-process sockets */
 			close(unix_tcp_sock);
 			unix_tcp_sock = -1;
+			close(pt[process_no].unix_sock);
 			pt[process_no].unix_sock = -1;
 			/* init modules */
 			if (init_child(PROC_TCP_MAIN) < 0) {
