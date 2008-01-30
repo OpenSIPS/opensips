@@ -2261,6 +2261,7 @@ int pv_parse_hdr_name(pv_spec_p sp, str *in)
 		if(p==NULL)
 		{
 			LM_ERR("invalid name [%.*s]\n", in->len, in->s);
+			pv_spec_free(nsp);
 			return -1;
 		}
 		//LM_ERR("dynamic name [%.*s]\n", in->len, in->s);
@@ -2322,6 +2323,7 @@ int pv_parse_avp_name(pv_spec_p sp, str *in)
 		if(s==NULL)
 		{
 			LM_ERR("invalid name [%.*s]\n", in->len, in->s);
+			pv_spec_free(nsp);
 			return -1;
 		}
 		//LM_ERR("dynamic name [%.*s]\n", in->len, in->s);
@@ -2363,6 +2365,7 @@ int pv_parse_index(pv_spec_p sp, str *in)
 		if(s==NULL)
 		{
 			LM_ERR("invalid index [%.*s]\n", in->len, in->s);
+			pv_spec_free(nsp);
 			return -1;
 		}
 		sp->pvp.pvi.type = PV_IDX_PVAR;
