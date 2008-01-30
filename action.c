@@ -679,7 +679,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 							return_code = 0;
 							break;
 						}else{
-							LM_WARN("error in expression\n");
+							LM_WARN("error in expression (l=%d)\n", a->line);
 						}
 					}
 					
@@ -720,7 +720,8 @@ int do_action(struct action* a, struct sip_msg* msg)
 								return_code = 0;
 								break;
 							}else{
-								LM_WARN("error in expression\n");
+								LM_WARN("error in expression (l=%d)\n",
+										a->line);
 							}
 						}
 					
