@@ -67,7 +67,7 @@ void MD5StringArray(char *dest, str src[], unsigned int size)
 int MD5File(char *dest, const char *file_name)
 {
 	if (!dest || !file_name) {
-		LM_ERR("invalid parameter value");
+		LM_ERR("invalid parameter value\n");
 		return -1;
 	}
 
@@ -79,14 +79,14 @@ int MD5File(char *dest, const char *file_name)
 	
 	struct stat stats;
     if (stat(file_name, &stats) != 0) {
-		LM_ERR("could not stat file %s", file_name);
+		LM_ERR("could not stat file %s\n", file_name);
 		return -1;
 	}
 	size = stats.st_size;
 
 	MD5Init(&context);
 	if((input = fopen(file_name, "rb")) == NULL) {
-		LM_ERR("could not open file %s", file_name);
+		LM_ERR("could not open file %s\n", file_name);
 		return -1;
 	}
 
