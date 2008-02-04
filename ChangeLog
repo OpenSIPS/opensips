@@ -4,6 +4,1347 @@
 
 ===================== Changes since release 1.3.0 =============================
 
+2008-02-04 10:24  Elena-Ramona Modroiu, <ramona at voice-system dot ro>
+
+	* [r3617] modules/cfgutils/README, modules/cfgutils/cfgutils.c,
+	  modules/cfgutils/doc/cfgutils.sgml,
+	  modules/cfgutils/doc/cfgutils_user.sgml, modules/cfgutils/shvar.c,
+	  modules/cfgutils/shvar.h:
+	  - new class of PV: shared variables => $shv(name)
+	  - single value (string or integer) PV
+	  - the variables are stored in shared memory -- shared between all
+	  openser processes
+	  - ability to initialize the shv value via 'shvset' module parameter
+	  - MI functions to set/get the value of shv
+	  - see README for more
+
+2008-02-04 10:03  Elena-Ramona Modroiu, <ramona at voice-system dot ro>
+
+	* [r3616] pvar.h, script_var.c, script_var.h:
+	  - exported structures and functions to be usable from other objects
+
+2008-02-04 09:37  Elena-Ramona Modroiu, <ramona at voice-system dot ro>
+
+	* [r3615] md5utils.c:
+	  - print \n in log messages
+
+2008-02-04 06:31  sobomax
+
+	* [r3614] modules/auth_radius/authrad_mod.c,
+	  modules/auth_radius/authrad_mod.h,
+	  modules/auth_radius/doc/auth_radius_user.sgml,
+	  modules/auth_radius/sterman.c:
+	  Introduce the new use_ruri_flag parameter.
+	  When this parameter is set to the value other than "-1" and the
+	  request being authenticated has flag with matching number set
+	  via setflag() function, use Request URI instead of uri parameter
+	  value from the Authorization / Proxy-Authorization header field
+	  to perform RADIUS authentication. This is intended to provide
+	  workaround for misbehaving NAT / routers / ALGs that alter request
+	  in the transit, breaking authentication. At the time of this
+	  writing, certain versions of Linksys WRT54GL are known to do that.
+	  Sponsored by: Sippy Software, Inc., http://www.sippysoft.com
+
+2008-02-01 18:32  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r3613] modules/siptrace/README,
+	  modules/siptrace/doc/siptrace_user.sgml, modules/siptrace/siptrace.c:
+	  - adde to the MI command "sip_trace" query capabilities. If no
+	  parameter is provided, instead of setting the trace state, it gets the
+	  state of tracing (as off or on).
+
+2008-02-01 16:23  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3609] modules/mysql/my_con.c, modules/postgres/pg_con.c,
+	  modules/unixodbc/my_con.c:
+	  - don't print the username and password in mysql and unixodbc drivers
+	  to the log files, adjust to the (correct) behaviour of postgres
+
+2008-02-01 16:17  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3608] db/doc:
+	  - remove old api-txt, this was some weeks ago converted to doxygen
+
+2008-02-01 13:31  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3607] modules/acc/README, modules/acc/doc/acc_user.sgml:
+	  - fix some spelling errors
+
+2008-02-01 12:06  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3606] modules/mysql/README, modules/mysql/db_mod.c,
+	  modules/mysql/db_mod.h, modules/mysql/dbase.c,
+	  modules/mysql/doc/mysql_user.sgml, modules/mysql/my_con.c:
+	  new feature for mysql driver
+	  - set connect, read and write timeout in driver, to prevent blocking
+	  on errors
+	  - works only with recent mysql driver versions
+
+2008-02-01 11:04  Elena-Ramona Modroiu, <ramona at voice-system dot ro>
+
+	* [r3604] modules/acc/README, modules/acc/doc/acc.sgml,
+	  modules/acc/doc/acc_user.sgml, modules/auth_diameter/README,
+	  modules/auth_diameter/doc/auth_diameter.sgml,
+	  modules/auth_diameter/doc/auth_diameter_user.sgml:
+	  - added notes about DIAMETER implementation
+
+2008-02-01 10:06  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3603] db/schema/Makefile:
+	  - db schema generation should fail early on parser errors
+
+2008-01-30 19:19  Daniel-Constantin Mierla, <daniel at voice-system dot ro>
+
+	* [r3602] pvar.c:
+	  - free allocated PV spec in case of error (reported in #1855861)
+
+2008-01-30 15:26  Daniel-Constantin Mierla, <daniel at voice-system dot ro>
+
+	* [r3599] Makefile.defs, action.c:
+	  - print line in the config file when an error occurs while comparing
+	  PV (related to #1856098)
+	  - dev version increased
+
+2008-01-30 13:19  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3598] test/20.cfg:
+	  - add some parameter for acc testing
+
+2008-01-30 13:18  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3597] db/db_res.c, db/db_res.h:
+	  - this belongs to the previous commit.. ;-)
+	  - move db_free_result function from DB drivers to core DB API
+
+2008-01-30 13:17  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3596] modules/mysql/dbase.c, modules/mysql/res.c,
+	  modules/mysql/res.h, modules/unixodbc/dbase.c, modules/unixodbc/res.c,
+	  modules/unixodbc/res.h:
+	  - cleanups in mysql and unixodbc, preparations for further work
+	  - prefix functions in unixodbc
+	  - move db_free_result function into DB API core
+	  - remove the indentical implementation in both modules
+
+2008-01-30 12:58  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3595] modules/acc/README, modules/acc/acc.c, modules/acc/acc_mod.c,
+	  modules/acc/doc/acc_user.sgml:
+	  - extend acc module:
+	  - its now possible to log accouting related output to a different log
+	  facility
+	  - configurable with a new module parameter 'log_facility'
+
+2008-01-29 10:41  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r3594] modules/dialog/dlg_handlers.c:
+	  - replaced ugly "goto" usage.
+
+2008-01-29 10:33  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r3593] modules/dialog/dlg_cb.h, modules/dialog/dlg_handlers.c,
+	  modules/dialog/dlg_hash.c, modules/dialog/dlg_hash.h:
+	  -added new callback DLGCB_WITHIN_RESPONSE for accessing the replies of
+	  the within the dialog requests.
+	  Closes feature request 1747294 .
+
+2008-01-28 17:59  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3591] modules/carrierroute/route_func.c:
+	  - extend logging, add comment, minor optimization
+
+2008-01-28 17:31  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r3589] main.c, tcp_main.c:
+	  - fixed race between the TCP main process and main process during
+	  initialization; this was leading to some bogus fd for the TCP main
+	  process.
+	  Closes bug #1879555.
+
+2008-01-26 19:57  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r3587] modules/usrloc/dlist.c:
+	  - fixed harmless typo
+
+2008-01-25 13:14  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3585] modules/acc/acc_logic.c:
+	  - fix wrong initialization of table name for db extra accounting
+	  - reported from Norman Brandinger
+
+2008-01-25 11:40  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3584] modules/postgres/db_res.c:
+	  - cleanups in postgres driver:
+	  summarize comments, remove commented out code, remove most of the
+	  verbatim copies from the postgres documentation, small formatting
+	  changes
+
+2008-01-25 10:30  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3583] db/db_query.c:
+	  - fix (small) potential buffer overflow conditions in query
+	  preperation
+	  - this could happen if the size of the query string offset is equal to
+	  the SQL_BUF_LEN define length
+
+2008-01-25 09:43  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r3582] modules/usrloc/dlist.c:
+	  - fixed buffer overflow in get_all_mem_ucontacts() - "path" len wa not
+	  counted.
+	  Closes bug 1873335.
+	  Reported by Matt Reilly
+
+2008-01-25 09:42  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r3581] modules/mi_xmlrpc/abyss_server.c,
+	  modules/mi_xmlrpc/abyss_xmlrpc_server.c:
+	  - fixed warnings for uninitalized vars
+
+2008-01-24 16:19  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3579] scripts/openserdbctl.pgsql:
+	  - add proper quoting to the database name to allow names with '-'
+	  inside
+	  - closes #1868687
+
+2008-01-24 16:02  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3578] help_msg.h, parser/hf.c, parser/hf.h:
+	  - add doxygen comments to hf.c and hf.h
+	  - link to this and to _str from the index page
+
+2008-01-24 15:50  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3577] modules/carrierroute/route.h,
+	  modules/carrierroute/route_fifo.c:
+	  - fix some doxygen documentation errors
+
+2008-01-24 15:23  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3575] modules/carrierroute/route_func.c:
+	  - change log messages in rewrite_uri_recursor to INFO
+	  - because this function is recursive called in some cases, these
+	  messages indicating not necessarily an error
+
+2008-01-24 15:02  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3573] modules/carrierroute/carrier_tree.c,
+	  modules/carrierroute/carrierroute.c,
+	  modules/carrierroute/route_func.c, modules/carrierroute/route_rule.c,
+	  modules/carrierroute/route_tree.c:
+	  - make carrierroute less verbose during routing and startup
+	  - fix loglevel of informational message
+	  - fix loglevel of warning message
+	  - closes #1876647
+
+2008-01-24 14:21  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3572] modules/avpops/avpops_db.c:
+	  - small optimisation, remove the unneeded static default_set variable
+
+2008-01-24 14:16  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3571] modules/avpops/avpops_db.c:
+	  - fix if case, don't core dump if no table pointer is given
+	  - reported from Norman Brandinger
+
+2008-01-24 13:47  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3570] scripts/db_berkeley/openser/route_tree:
+	  - sync with lastest db schema after route_tree change
+
+2008-01-24 13:32  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3569] md5utils.c, md5utils.h, modules/tm/uac.c, parser/msg_parser.h,
+	  tags.h:
+	  - rename md5 hashing function
+
+2008-01-24 13:31  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3568] db/db_id.h:
+	  - fix doxygen file header
+
+2008-01-24 13:22  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3567] md5utils.c, md5utils.h, modules/cfgutils/README,
+	  modules/cfgutils/cfgutils.c, modules/cfgutils/doc/cfgutils_user.sgml:
+	  add two new function for the cfgutils module:
+	  - MD5 hash the openser configuration file on startup
+	  - openserctl fifo get_config_hash returns the stored hash
+	  - openserctl fifo check_config hash compares the actual to the stored
+	  hash
+	  - the hash file name can be configured with a module parameter
+	  - add a new function to the md5utils.c file to support this
+	  - add doxygen documentation to this functions in md5utils.c
+	  - remove some unneeded defines and includes in this file
+	  - after all this changes in md5utils is its now save to assume this is
+	  GPL licened, change the copyright header accordingly
+
+2008-01-24 13:00  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3566] db/schema/route_tree.xml, scripts/dbtext/openser/route_tree,
+	  scripts/mysql/carrierroute-create.sql,
+	  scripts/postgres/carrierroute-create.sql:
+	  - autoincrement route_tree id columns, remove default of '0'
+
+2008-01-23 17:14  Daniel-Constantin Mierla, <daniel at voice-system dot ro>
+
+	* [r3564] main.c:
+	  - removed options for fifo file and unixsocket file (reported by
+	  Salahuddin Ahmed, closing #1878330)
+
+2008-01-22 13:55  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3563] db/db.c, db/db.h, db/db_con.h, db/db_id.c, db/db_id.h,
+	  db/db_key.h, db/db_query.c, db/db_query.h, db/db_ut.c, db/db_val.h,
+	  hash_func.h, modules/acc/acc.c, modules/acc/acc.h,
+	  modules/acc/acc_logic.c, modules/acc/acc_mod.c, modules/acc/acc_mod.h,
+	  modules/alias_db/alias_db.c, modules/alias_db/alias_db.h,
+	  modules/alias_db/alookup.c, modules/auth_db/authdb_mod.c,
+	  modules/auth_db/authorize.c, modules/auth_db/authorize.h,
+	  modules/avpops/avpops.c, modules/avpops/avpops_db.c,
+	  modules/avpops/avpops_db.h, modules/avpops/avpops_impl.c,
+	  modules/avpops/avpops_impl.h, modules/avpops/avpops_parse.c,
+	  modules/carrierroute/carrierroute.c,
+	  modules/carrierroute/carrierroute.h, modules/carrierroute/route_db.c,
+	  modules/cpl-c/cpl.c, modules/cpl-c/cpl_db.c, modules/cpl-c/cpl_db.h,
+	  modules/cpl-c/cpl_loader.c, modules/db_berkeley/bdb_res.c,
+	  modules/db_berkeley/db_berkeley.c, modules/db_berkeley/db_berkeley.h,
+	  modules/dbtext/dbt_api.c, modules/dbtext/dbt_api.h,
+	  modules/dbtext/dbt_base.c, modules/dbtext/dbt_file.c,
+	  modules/dbtext/dbt_lib.c, modules/dbtext/dbt_lib.h,
+	  modules/dbtext/dbt_res.c, modules/dbtext/dbt_tb.c,
+	  modules/dbtext/dbtext.h, modules/dialog/dialog.c,
+	  modules/dialog/dlg_db_handler.c, modules/dialog/dlg_db_handler.h,
+	  modules/dispatcher/dispatch.c, modules/dispatcher/dispatch.h,
+	  modules/dispatcher/dispatcher.c, modules/domain/domain.c,
+	  modules/domain/domain.h, modules/domain/domain_mod.c,
+	  modules/domainpolicy/domainpolicy.c,
+	  modules/domainpolicy/domainpolicy.h,
+	  modules/domainpolicy/domainpolicy_mod.c,
+	  modules/flatstore/flatstore.c, modules/flatstore/flatstore.h,
+	  modules/group/group.c, modules/group/group.h,
+	  modules/group/group_mod.c, modules/group/re_group.c,
+	  modules/imc/imc.c, modules/imc/imc.h, modules/imc/imc_cmd.c,
+	  modules/jabber/jabber.c, modules/jabber/xjab_worker.c,
+	  modules/lcr/lcr_mod.c, modules/msilo/msilo.c, modules/mysql/dbase.c,
+	  modules/mysql/dbase.h, modules/mysql/res.c, modules/pdt/pdt.c,
+	  modules/perlvdb/perlvdb_conv.c, modules/perlvdb/perlvdbfunc.c,
+	  modules/perlvdb/perlvdbfunc.h, modules/permissions/address.c,
+	  modules/permissions/hash.c, modules/permissions/hash.h,
+	  modules/permissions/permissions.c, modules/permissions/permissions.h,
+	  modules/permissions/trusted.c, modules/postgres/db_res.c,
+	  modules/postgres/dbase.c, modules/postgres/dbase.h,
+	  modules/presence/notify.c, modules/presence/notify.h,
+	  modules/presence/presence.c, modules/presence/presence.h,
+	  modules/presence/presentity.c, modules/presence/publish.c,
+	  modules/presence/subscribe.c, modules/presence_xml/presence_xml.c,
+	  modules/presence_xml/presence_xml.h, modules/presence_xml/xcap_auth.c,
+	  modules/pua/pua.c, modules/rls/notify.c,
+	  modules/rls/resource_notify.c, modules/rls/rls.c, modules/rls/rls.h,
+	  modules/rls/subscribe.c, modules/siptrace/siptrace.c,
+	  modules/speeddial/sdlookup.c, modules/speeddial/speeddial.c,
+	  modules/speeddial/speeddial.h, modules/unixodbc/dbase.c,
+	  modules/unixodbc/dbase.h, modules/unixodbc/res.c,
+	  modules/uri_db/checks.c, modules/uri_db/checks.h,
+	  modules/uri_db/uridb_mod.c, modules/usrloc/dlist.c,
+	  modules/usrloc/ucontact.c, modules/usrloc/udomain.c,
+	  modules/usrloc/ul_mod.c, modules/usrloc/urecord.c,
+	  modules/xcap_client/xcap_client.c, modules/xcap_client/xcap_client.h,
+	  modules/xcap_client/xcap_functions.c:
+	  - port database interface (almost) complete from 'const char*' to
+	  'str' for more safety (e.g. not null terminated strings) and
+	  performance (save strlen calls in core and library code)
+	  - adapt existing modules to use the new interface
+	  - change bind_dbmod and use_table function to the naming scheme of the
+	  other functions of the API
+	  - port existing module to use 'str' values for database related
+	  parameters
+	  - if modules uses already 'str' functions internally, remove the
+	  unnecessary temporary variables
+	  - make functions and parameter that needs only locally be used static
+	  - introduce new column variables needed for the keys for modules that
+	  don't have them already, this could be used to make them configurable
+	  later on
+	  - add 'const' to more db related functions
+	  - fix postgres driver, async queries must be finished, otherwise the
+	  next one will not complete
+	  - smaller whitespace and formatting changes and cleanups all over the
+	  place
+	  - reviewed and tested with testcases, but probably not error free
+	  because  of the change size
+	  - basic DB operations should work, but no extensive load testing has
+	  yet be done, as some work still remains:
+	  - remove dead code and superflous comments in postgres driver
+	  - clean up memory management, at the moment there exists two flavors:
+	  don't  copy that much (mysql, unixodbc), don't trust the driver, copy
+	  everything (postgres, db_berkeley)
+	  - after this is unified, then only one implementation for the memory
+	  management of the db API could be used for all modules
+	  - Foundations of this change have been created from Frederick Bullik,
+	  Frederick.Bullik at 1und1 dot de
+	  - Please review and test.
+
+2008-01-22 12:07  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3562] test/19.cfg, test/19.sh, test/20.cfg, test/21.cfg, test/22.sh:
+	  - add new test, authentification with postgres
+	  - enable logging to syslog for some tests, better info messages
+
+2008-01-22 09:39  Juha Heinanen, <jh at tutpro dot com>
+
+	* [r3561] branches/1.1/modules/lcr/lcr_mod.c,
+	  branches/1.2/modules/lcr/lcr_mod.c,
+	  branches/1.3/modules/lcr/lcr_mod.c, modules/lcr/lcr_mod.c:
+	  * load_gws make sense to be called only from request route, because gw
+	  selection is currently based on Request URI rather than an AVP.
+
+2008-01-21 22:08  Juha Heinanen, <jh at tutpro dot com>
+
+	* [r3560] branches/1.1/modules/domain/hash.c,
+	  branches/1.2/modules/domain/hash.c,
+	  branches/1.3/modules/domain/hash.c, modules/domain/hash.c:
+	  * Fixed memory leak reported by Salahuddin Ahmed.
+
+2008-01-21 17:09  Ovidiu Sas, <osas at voipembedded dot com>
+
+	* [r3559] scripts/openserctl, scripts/openserctl.base,
+	  scripts/openserctl.dbtext:
+	  openserctl: add support for trusted
+
+2008-01-20 19:40  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r3557] modules/perl/openserxs.xs, modules/perl/perl.c:
+	  - replaced old DBG usage
+	  - fixed module interface casts
+
+2008-01-20 19:22  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r3556] modules/pua/send_publish.c, modules/pua/send_subscribe.c:
+	  - fixed double declaration of external variables
+
+2008-01-20 19:15  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r3555] modules/mediaproxy/functions.h, modules/nathelper/nathelper.c:
+	  -fix testing of return code for get_all_ucontacts() - note that the
+	  function may return negative values of DB only mode is used in usrloc
+	  Based on a report from Christian Schlatter < cs at unc dot edu >
+
+2008-01-20 18:59  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r3554] modules/h350/h350_mod.c, modules/ldap/ldap_mod.c,
+	  modules/rls/rls.c, modules/seas/seas.c,
+	  modules/uri_radius/urirad_mod.c:
+	  - fixed compile warnings related to latest changes in the module
+	  interface
+
+2008-01-20 18:29  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r3553] mem/q_malloc.c, mem/vq_malloc.c:
+	  - all debug prints from the mem manager are printed with memlog level
+	  if DBG_QM_MALLOC is enabled.
+
+2008-01-20 17:46  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r3552] action.c, dprint.h, main.c, mem/f_malloc.c, mem/q_malloc.c,
+	  mem/vq_malloc.c, modules/acc/acc.c, modules/avpops/avpops_impl.c,
+	  modules/benchmark/benchmark.c, modules/carrierroute/route_config.c,
+	  modules/cpl-c/cpl_nonsig.c, modules/group_radius/grouprad_mod.c,
+	  modules/pdt/pdt.c, modules/pua_xmpp/xmpp2simple.c,
+	  modules/seas/seas_action.c, modules/tlsops/tls_select.c,
+	  modules/uac/from.c, modules/xlog/xlog.c, resolve.h, transformations.c:
+	  - added some generic logging functions; no additional information is
+	  added; works with dynamic FMT.
+	  LM_GEN1( log_level, fmt, ....)
+	  LM_GEN2( log_facility, log_level, fmt, ...)
+	  - replaced all old logging functions with LM_*
+
+2008-01-18 12:09  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3549] modules/carrierroute/route_func.c:
+	  bugfix for special case in routing:
+	  Sometimes the result from the hash function is zero (every 1/1000
+	  message).
+	  If the first rule is off (has a probablility of zero) then it has also
+	  a 'dice_to' value of zero and the message could not be routed at all
+	  if we use '<' here.
+
+2008-01-18 10:42  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3548] scripts/openserctlrc, scripts/openserdbctl.base:
+	  - deactivate asking for the SERWEB tables per default, as this causes
+	  much confusion among new users. Many users choose yes, because they
+	  don't know what purpose this tables have, and don't know that they must
+	  then also activate the HAS_SERWEB variable to keep the openserdbctl tool
+	  working.
+	  - Improve documentation in the openserctlrc file
+
+2008-01-17 20:47  Jan Ondrej, <ondrejj at salstar dot sk>
+
+	* [r3547] packaging/fedora/openser.init:
+	  Backported "reload" parameter from fedora's package.
+
+2008-01-17 10:31  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3546] str.h:
+	  - doxygen documentation for 'str' data type
+
+2008-01-16 16:50  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3545] scripts/db_berkeley/openser/gw, scripts/mysql/lcr-create.sql,
+	  scripts/postgres/lcr-create.sql:
+	  - sync generated scripts with XML database sources
+
+2008-01-16 16:42  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3544] modules/mysql/dbase.c, modules/mysql/my_con.c:
+	  - change log level of mysql_ping errors to WARN, as this are actual
+	  driver errors
+	  - add doxygen documentation to submit_query function to explain the
+	  meaning of mysql_ping and the auto_reconnect (hopefully) better
+	  - small formatting changes, add doxygen documentation for file dbase.c
+	  - only enable auto_reconnect if this parameter is actual set from the
+	  module config
+	  - remove some now unneeded headers from my_con.c
+
+2008-01-16 15:35  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3543] modules/carrierroute/route_rule.c:
+	  - small fix: sort rules with prob > 0 by hash index to get stable
+	  order
+
+2008-01-16 14:58  Daniel-Constantin Mierla, <daniel at voice-system dot ro>
+
+	* [r3541] etc/openser.cfg:
+	  - turn debugging off
+
+2008-01-16 14:23  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3539] scripts/openserctl, scripts/openserdbctl:
+	  - move message to variable definition
+
+2008-01-16 13:47  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3537] modules/xcap_client/README,
+	  modules/xcap_client/doc/xcap_client_user.sgml:
+	  - this problem applies to the server, and not to the client ;-)
+	  - revert wrong commit from previous revision
+
+2008-01-16 13:44  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3536] modules/xcap_client/README,
+	  modules/xcap_client/doc/xcap_client_user.sgml:
+	  - add a sentence about the need for internet connection
+
+2008-01-16 11:02  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r3534] modules/dialog/dlg_req_within.c:
+	  - fixed proper usage of CSEQ when generating BYE (callee cseq was used
+	  in both directions)
+	  - fixed double incrementation of cseq in BYE
+	  Credits go to Carsten Bock.
+	  Closes bug 1855793
+
+2008-01-16 10:06  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r3531] modules/cpl-c/CPL_tree.h:
+	  - more fixing related to the previous commit (solved some
+	  re-definition)
+
+2008-01-16 10:02  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r3530] modules/cpl-c/CPL_tree.h:
+	  -fixed bogus name for a define (even if not used).
+	  Credits go to Inaki Baz.
+	  Closes bug #1869154
+
+2008-01-16 09:46  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r3527] modules/dialog/dlg_hash.h:
+	  - removed unused field in structure
+
+2008-01-16 09:30  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3526] doc/authors.xml:
+	  - add 'osas' to authors.xml file for svn2cl tool
+
+2008-01-15 21:12  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r3524] modules/mysql/Makefile:
+	  - fixed include files. Both the compile include path and the C include
+	  directive contain "mysql" directory. Instead of removing the "mysql/"
+	  from include directive (which will add some ambiguity in file
+	  refferencing), better remove the suffix "/mysql" in the compile
+	  include path
+	  Reported by Jesus Rodriguez < jesusr at voztele dot com >
+	  Tested on linux and freebsd
+
+2008-01-15 13:45  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3522] modules/carrierroute/route_fifo.c:
+	  - fix missing strsep and getopt.h include for solaris, closes #1862364
+	  - Patch provided by Bob Atkins
+
+2008-01-11 17:22  Dan Pascu, <dan at ag-projects dot com>
+
+	* [r3521] modules/lcr/lcr_mod.c:
+	  Fixed typo
+
+2008-01-10 12:45  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3519] scripts/openserctl, scripts/openserctl.base,
+	  scripts/openserctl.mysql, scripts/openserctl.pgsql,
+	  scripts/openserdbctl, scripts/openserdbctl.base,
+	  scripts/openserdbctl.dbtext, scripts/openserdbctl.mysql,
+	  scripts/openserdbctl.pgsql:
+	  Improvements, bugfixes and cleanups in openserctl and openserdbctl
+	  - introduce TEST variable to make save testing with a local config
+	  possible, per default disabled as this could be used from attackers
+	  to overwrite config settings
+	  - fix version string
+	  - improve help messages for lcr and cr modules
+	  - remove obselete $TABLE_TYPE from pg file
+	  - make dbctl config source consistent to ctl behaviour
+	  - remove double ETCDIR variable definition
+	  - add a variable for SERWEB tables to dbctl.base, needed by pg GRANT
+	  - fix postgresql GRANT syntax for all tables
+	  - improve some comments, small spelling fixes, remove obselete
+	  changelogs
+
+2008-01-09 17:45  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3517] modules/carrierroute/README,
+	  modules/carrierroute/doc/carrierroute_user.sgml:
+	  - fix typo in carrierroute documentation
+	  Reported from TCB, tawandac at gmail dot com
+
+2008-01-09 09:35  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3515] scripts/openserctl, scripts/openserdbctl:
+	  - merr is defined on openserctl.base, so its not available here
+	  - Bug reported from Mihail Gluhowchenko, kukumander at gmail dot com
+
+2008-01-09 08:05  Klaus Darilion, <klaus dot mailinglists at pernau dot at>
+
+	* [r3513] etc/openser.cfg:
+	  - fix ACK handling
+
+2008-01-08 12:44  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3512] modules/perlvdb/perlvdbfunc.c:
+	  - spelling fix in log msg
+
+2008-01-08 10:20  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3511] scripts/openserctl, scripts/openserctl.base,
+	  scripts/openserctl.ctlbase:
+	  openserctl:
+	  - fix spelling errors in usrloc help msg
+	  - improve help message for lcr
+	  - add basic carrierroute support, patch provided by Ovidiu Sas
+	  (#1863254)
+	  - improve carrierroute help message, add reload function, add reload
+	  msg
+
+2008-01-07 20:24  Dan Pascu, <dan at ag-projects dot com>
+
+	* [r3509] modules/lcr/lcr_mod.c:
+	  Fixed a core dump caused by illegal memory access if the rpid AVP
+	  holds an integer value
+
+2008-01-07 15:56  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3507] modules/carrierroute/README,
+	  modules/carrierroute/doc/carrierroute_user.sgml:
+	  - improve documentation (failure route, no SQL DBs)
+
+2008-01-07 14:26  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3506] db/db.c, db/db.h, db/db_cap.h, db/db_col.c, db/db_col.h,
+	  db/db_con.h, db/db_id.c, db/db_id.h, db/db_key.h, db/db_op.h,
+	  db/db_pool.c, db/db_pool.h, db/db_query.c, db/db_query.h, db/db_res.c,
+	  db/db_res.h, db/db_row.c, db/db_row.h, db/db_ut.c, db/db_ut.h,
+	  db/db_val.h, modules/db_berkeley/db_berkeley.c,
+	  modules/dbtext/dbt_api.c, modules/mysql/db_con.c,
+	  modules/mysql/dbase.c, modules/mysql/dbase.h, modules/mysql/my_con.c,
+	  modules/mysql/my_con.h, modules/mysql/res.c, modules/mysql/res.h,
+	  modules/mysql/row.c, modules/mysql/row.h, modules/mysql/val.c,
+	  modules/mysql/val.h, modules/postgres/db_mod.c,
+	  modules/postgres/db_res.c, modules/postgres/db_res.h,
+	  modules/postgres/db_val.c, modules/postgres/db_val.h,
+	  modules/postgres/dbase.c, modules/postgres/dbase.h,
+	  modules/postgres/defs.h, modules/postgres/pg_con.c,
+	  modules/postgres/pg_con.h, modules/unixodbc/db_con.c,
+	  modules/unixodbc/db_mod.c, modules/unixodbc/dbase.c,
+	  modules/unixodbc/dbase.h, modules/unixodbc/my_con.c,
+	  modules/unixodbc/my_con.h, modules/unixodbc/res.c,
+	  modules/unixodbc/res.h, modules/unixodbc/row.c,
+	  modules/unixodbc/row.h, modules/unixodbc/val.c,
+	  modules/unixodbc/val.h:
+	  further cleanups in core database API
+	  - move use_table and close function for SQL DBs to core
+	  - move query, raw_query, insert, update, delete functions for SQL DBs
+	  to core
+	  - all this functions were almost identical implemented in the three
+	  DB, this functions uses now a function pointer based interface to do the
+	  work
+	  - the use_table functions from dbtext and db_berkeley uses also now
+	  the core API
+	  - move result management function from db_col to db_res to the other
+	  result management functions, they are not useful alone
+	  - change postgres module to match more the structure of mysql and
+	  unixodbc, remove the 'PARANOID' #define, the other modules don't have
+	  this and prefix all functions with db_postgres, make this more consistent
+	  to mysql module
+	  - prefix all functions in unixodbc module with db_unixodbc, make this
+	  consistent to the other modules, cleanup the namespace
+	  - prefix val2str function in mysql with db_mysql too
+	  - move the SQL_BUF_LENGTH to core API, all modules need this
+	  - remove the static SQL char buffer from postgres and unixodbc, uses
+	  the one provided from the core API
+	  - move documentation from db/doc to API files in doxygen format
+	  - improve and extend documentation for the whole API
+	  - make database API const correct, to guard against implementation
+	  errors and allow better compiler optimizations
+	  - change interface free_connection function in SQL DBs to connection
+	  structure to allow the usage of core API do_close
+	  - fix indention for postgres driver and make logging messages
+	  consistent
+	  - remove now unneeded system header includes for SQL DBs
+	  - remove transaction related code from postgres driver, this is not
+	  used at all and according to Klaus also brings no performance benefit if
+	  used.
+	  - probably some other smaller cleanups
+	  Tested with the testcases, so basic functionality should work.. Please
+	  test! :-)
+
+2008-01-07 11:53  Klaus Darilion, <klaus dot mailinglists at pernau dot at>
+
+	* [r3505] scripts/openserdbctl.base:
+	  - add note about HAS_SERWEB
+
+2008-01-06 11:38  Anca Vamanu, <anca at voice-system dot ro>
+
+	* [r3502] modules/presence/subscribe.c:
+	  - fixed using uninitialized sip_msg field (used solution provided by
+	  Philippe Favier)
+	  - closes BUG 1863541
+
+2008-01-06 09:50  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r3501] modules/jabber/jabber.c, modules/jabber/xjab_presence.h,
+	  modules/presence/notify.c, modules/presence/presence.c,
+	  modules/presence/presentity.c, modules/presence/publish.c,
+	  modules/presence/subscribe.c, modules/presence_xml/add_events.c,
+	  modules/presence_xml/presence_xml.h, modules/pua/pua.c,
+	  modules/pua_bla/pua_bla.h, modules/pua_bla/registrar_cb.c,
+	  modules/pua_usrloc/pua_usrloc.c, modules/pua_usrloc/pua_usrloc.h,
+	  modules/pua_xmpp/pua_xmpp.c, modules/pua_xmpp/pua_xmpp.h,
+	  modules/rls/notify.c, modules/xmpp/xmpp.h:
+	  - fixed warning for casts and re-declaration of functions and vars
+
+2008-01-03 19:18  Juha Heinanen, <jh at tutpro dot com>
+
+	* [r3500] modules/domain/README, modules/domain/api.c,
+	  modules/domain/api.h, modules/domain/doc/domain.sgml,
+	  modules/domain/doc/domain_devel.sgml, modules/domain/domain.h,
+	  modules/domain/domain_mod.c:
+	  * Added is_domain_local API function (not tested yet).
+
+2008-01-03 14:31  Klaus Darilion, <klaus dot mailinglists at pernau dot at>
+
+	* [r3498] etc/openser.cfg:
+	  - fix in-dialog SUBSCRIBE routing
+
+2008-01-03 11:15  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3497] scripts/openserctl.base:
+	  - fix GW table in openserctl, s/prefix/tag
+
+2008-01-01 19:10  Juha Heinanen, <jh at tutpro dot com>
+
+	* [r3496] branches/1.2/modules/domain/domain.c,
+	  branches/1.3/modules/domain/domain.c, modules/domain/domain.c:
+	  * Fixed bug that was introduced in is_uri_host_local function by
+	  http://openser.svn.sourceforge.net/viewvc/openser?view=rev&revision=1153
+	  As result of the bug, is_uri_host_local function did not work if
+	  it was called from failure route.
+
+2008-01-01 15:41  Jan Ondrej, <ondrejj at salstar dot sk>
+
+	* [r3495] packaging/fedora/openser.init, packaging/fedora/openser.spec:
+	  Updated fedora spec file and added LSB INIT INFO to init script.
+
+2007-12-28 10:55  Juha Heinanen, <jh at tutpro dot com>
+
+	* [r3494] db/schema/gw.xml, db/schema/lcr.xml,
+	  scripts/db_berkeley/openser/gw, scripts/db_berkeley/openser/version,
+	  scripts/dbtext/openser/gw, scripts/dbtext/openser/version,
+	  scripts/mysql/lcr-create.sql, scripts/postgres/lcr-create.sql:
+	  * Updated schema and scripts due to gw table change.
+	  * Improved descriptions.
+
+2007-12-28 10:45  Juha Heinanen, <jh at tutpro dot com>
+
+	* [r3493] modules/lcr/README, modules/lcr/doc/lcr_user.sgml,
+	  modules/lcr/lcr_mod.c:
+	  * Tried to improve documentation.
+	  * Renamed gw/prefix column to gw/tag column in order to avoid
+	  confusion with lcr/prefix column.
+	  * Only values 0 and 1 are allowed for prefix_mode_param.
+
+2007-12-28 07:15  Di-Shi Sun, <di-shi at transnexus dot com>
+
+	* [r3492] modules/osp/destination.c, modules/osp/tm.c,
+	  modules/osp/usage.c:
+	  Minor format changes.
+
+2007-12-28 02:51  Di-Shi Sun, <di-shi at transnexus dot com>
+
+	* [r3490] modules/osp/etc/sample-osp-openser.cfg,
+	  modules/osp/orig_transaction.c, modules/osp/osp_mod.c,
+	  modules/osp/osptoolkit.c, modules/osp/sipheader.c,
+	  modules/osp/term_transaction.c, modules/osp/usage.c:
+	  1. Added support to new AuthRsp codes.
+	  2. Modified response messages and log messages.
+
+2007-12-23 16:22  Juha Heinanen, <jh at tutpro dot com>
+
+	* [r3487] pvar.c:
+	  * Pseudo variable $aU was accessed by wrong pv_get_authattr index.
+
+2007-12-23 15:05  Juha Heinanen, <jh at tutpro dot com>
+
+	* [r3486] modules/lcr/README, modules/lcr/doc/lcr_user.sgml:
+	  * Small improvement in documentation.
+
+2007-12-23 15:03  Juha Heinanen, <jh at tutpro dot com>
+
+	* [r3485] modules/lcr/README, modules/lcr/doc/lcr_user.sgml,
+	  modules/lcr/lcr_mod.c:
+	  * Added optional caller's URI pseudo variable argument to load_gws()
+	  function.
+	  * Replaced load_gws() function with optional group-id argument with
+	  load_gws_from_grp() function.
+
+2007-12-23 12:31  Juha Heinanen, <jh at tutpro dot com>
+
+	* [r3484] modules/uri/checks.c:
+	  * Added check on empty pseudo variable value.
+
+2007-12-23 11:22  Juha Heinanen, <jh at tutpro dot com>
+
+	* [r3483] mod_fix.c, mod_fix.h, modules/domain/domain_mod.c,
+	  modules/lcr/lcr_mod.c, modules/uri/uri_mod.c:
+	  * Introduced pvar_fixup and free_pvar_fixup mod_fix functions and used
+	  them in lcr, domain, and uri modules.
+
+2007-12-22 16:40  Juha Heinanen, <jh at tutpro dot com>
+
+	* [r3482] modules/auth_radius/authrad_mod.c,
+	  modules/avp_radius/avp_radius.c, modules/presence/presence.c,
+	  modules/pua_bla/pua_bla.c, modules/pua_usrloc/pua_usrloc.c,
+	  modules/pua_xmpp/pua_xmpp.c, modules/tlsops/tlsops.c:
+	  * Added some (cmd_function) casts in order to get rid of warnings.
+
+2007-12-21 15:55  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3481] db/db.c, db/db.h, modules/mysql/dbase.c,
+	  modules/postgres/dbase.c, modules/postgres/pg_con.h,
+	  modules/unixodbc/dbase.c:
+	  - cleanup in database API
+	  - introduce a helper method for db_init, that does the actual work
+	  - database modules needs now only a small wrapper function
+	  - functionality checked for mysql and postgres with the available
+	  tests
+
+2007-12-21 15:30  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3480] test/6.sh:
+	  - fix error in test 6
+
+2007-12-21 15:01  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3479] modules/postgres/dbase.c, modules/postgres/pg_con.c,
+	  modules/postgres/pg_con.h:
+	  - cleanup in postgresql module, remove unneeded conn struct members
+
+2007-12-21 14:52  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3478] test/2.cfg:
+	  - fix accidental commit
+
+2007-12-21 14:19  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3477] test/1.sh, test/11.sh, test/12.sh, test/13.sh, test/14.sh,
+	  test/15.sh, test/16.sh, test/17.sh, test/19.sh, test/2.cfg, test/2.sh,
+	  test/20.sh, test/21.sh, test/4.sh, test/5.sh, test/6.sh, test/7.sh:
+	  - add working dir to tests, to get core dumps
+
+2007-12-21 14:05  Dan Pascu, <dan at ag-projects dot com>
+
+	* [r3475] modules/dialog/dlg_load.h:
+	  Do not log an error if the dialog API cannot be loaded. It's up to the
+	  calling module to decide if the situation is an error or not and log a
+	  message of an appropriate type.
+	  A module that has a weak dependency on the dialog module, may only log
+	  a notice that it is running with reduced functionality and continue,
+	  while a module with a strong dependency will log an error and exit.
+
+2007-12-21 04:11  Di-Shi Sun, <di-shi at transnexus dot com>
+
+	* [r3474] modules/osp/destination.c, modules/osp/destination.h,
+	  modules/osp/globals.c, modules/osp/orig_transaction.c,
+	  modules/osp/osp_mod.c, modules/osp/osptoolkit.c,
+	  modules/osp/provider.c, modules/osp/sipheader.c,
+	  modules/osp/sipheader.h, modules/osp/term_transaction.c,
+	  modules/osp/tm.c, modules/osp/usage.c, modules/osp/usage.h:
+	  1. Fixed reporting wrong translated called numbers issue.
+	  2. Replaced strcpy by strncpy.
+
+2007-12-20 20:22  Juha Heinanen, <jh at tutpro dot com>
+
+	* [r3472] modules/lcr/README, modules/lcr/doc/lcr_user.sgml,
+	  modules/lcr/lcr_mod.c:
+	  * Added prefix_mode module parameter to lcr module. If set to other
+	  value than 0, lcr table prefix is interpreted as a regular
+	  expression. Contributed by Ovidiu Sas.
+
+2007-12-20 17:29  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3470] test/19.sh, test/20.sh, test/21.sh:
+	  - don't disable retransmits for tests, better fail after some time
+
+2007-12-20 13:06  Dan Pascu, <dan at ag-projects dot com>
+
+	* [r3468] pvar.c:
+	  Force send socket pvar expect a socket specification not an uri
+
+2007-12-20 12:07  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3465] ChangeLog:
+	  - remove old changelog content, the file was getting really big
+
+2007-12-20 12:00  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3464] README-MODULES:
+	  - add a note about the status of the file and a link to the webpage
+
+2007-12-20 11:35  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3458] modules/cpl-c/cpl.c, modules/cpl-c/cpl_loader.c,
+	  modules/cpl-c/cpl_sig.c:
+	  - fix compilation
+	  - fix cmd_function cast warning
+	  - fix redundant declaration warning
+
+2007-12-20 11:25  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3456] modules/uac_redirect/rd_funcs.c:
+	  - use NULL instead of variables makes more sense
+
+2007-12-19 15:17  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3443] modules/uac_redirect/rd_funcs.c, sr_module.h:
+	  - change module function interface to a static one, as discussed on
+	  the list
+	  - fix compilation for uac_redirect module
+
+2007-12-19 13:00  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3442] daemonize.c, main.c, modules/cpl-c/cpl_nonsig.c:
+	  - cleanups, remove some #defines, replace one with local variable
+
+2007-12-19 12:23  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3441] modules/acc/acc_mod.c, modules/alias_db/alias_db.c,
+	  modules/auth/auth_mod.c, modules/auth_db/authdb_mod.c,
+	  modules/auth_diameter/auth_diameter.c, modules/avpops/avpops.c,
+	  modules/benchmark/benchmark.c, modules/carrierroute/carrierroute.c,
+	  modules/cfgutils/cfgutils.c, modules/dispatcher/dispatcher.c,
+	  modules/diversion/diversion.c, modules/domain/domain_mod.c,
+	  modules/domainpolicy/domainpolicy_mod.c, modules/enum/enum_mod.c,
+	  modules/exec/exec_mod.c, modules/gflags/gflags.c,
+	  modules/group/group_mod.c, modules/imc/imc.c, modules/lcr/lcr_mod.c,
+	  modules/mangler/mangler.c, modules/maxfwd/maxfwd.c,
+	  modules/mediaproxy/mediaproxy.c, modules/msilo/msilo.c,
+	  modules/nathelper/nathelper.c, modules/path/path_mod.c,
+	  modules/pdt/pdt.c, modules/permissions/permissions.c,
+	  modules/pike/pike.c, modules/registrar/reg_mod.c, modules/rr/rr_mod.c,
+	  modules/siptrace/siptrace.c, modules/sl/sl.c, modules/sms/sms.c,
+	  modules/speeddial/speeddial.c, modules/sst/sst.c,
+	  modules/statistics/statistics.c, modules/tm/tm.c, modules/uac/uac.c,
+	  modules/uac_redirect/redirect.c, modules/uri/uri_mod.c,
+	  modules/uri_db/uridb_mod.c:
+	  - add missing cast for cmd_function after module interface extension
+
+2007-12-19 11:56  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3440] db/db.h:
+	  - move db_func_t to the correct place again, fix compile error
+
+2007-12-19 11:49  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3439] db/db.h, db/doc/db-api.txt, help_msg.h:
+	  - move documentation from txt file to db.h file in doxygen format
+	  - extend documentation
+	  - add a simple start page for the doxygen docs, this needs to be
+	  extended..
+
+2007-12-19 11:48  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3438] doc/doxygen/openser-doxygen:
+	  - update config to new doxygen version
+
+2007-12-19 11:45  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3437] doc/doxygen/openser-doxygen,
+	  doc/doxygen/openser-doxygen-header:
+	  - remove header, date is included in the autogenerated footer
+	  - update doxygen config
+
+2007-12-19 11:40  Dan Pascu, <dan at ag-projects dot com>
+
+	* [r3435] strcommon.c:
+	  Allow an empty buffer on input for certain transformations and return
+	  an
+	  empty buffer on output (as expected) instead of returning an error.
+	  This will fix an issue where cascading transformations didn't work.
+
+2007-12-19 11:13  Juha Heinanen, <jh at tutpro dot com>
+
+	* [r3434] parser/parse_diversion.c, parser/parse_diversion.h, pvar.c,
+	  pvar.h:
+	  * Added two new pseudo vars: $pip = value of Diversion header
+	  "privacy" parameter $pir = value of Diversion header "reason" parameter
+
+2007-12-19 10:41  Dan Pascu, <dan at ag-projects dot com>
+
+	* [r3433] modules/tm/sip_msg.c:
+	  Set sibling link for new header to NULL
+
+2007-12-19 10:09  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3432] cfg.y:
+	  - remove NULL initialization with for loop, this is already done with
+	  the memset in mk_action
+
+2007-12-19 10:00  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3431] modules/carrierroute/load_data.c:
+	  - add a warning if config file is world writeable
+	  - fix permission check after removal of gid and pid variables in
+	  global.h
+
+2007-12-18 17:36  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3430] modules/textops/textops.c, modules/xlog/xlog.c:
+	  - add some cast to match the new module interface
+
+2007-12-18 17:35  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3429] action.c, cfg.y, route.c, route_struct.h, sr_module.h:
+	  - More flexible module function interface
+	  - Its now possible to use up to 6 parameter in the config script for
+	  module functions
+	  - This is configurable with a #define
+	  - Every module function exports that lacks a cast to (cmd_function)
+	  produces a warning now, this needs to be fixed
+	  - Credits for implementation and tests goes to Hardy Kahl, hardy dot
+	  kahl at 1und1 dot de
+
+2007-12-18 15:49  Dan Pascu, <dan at ag-projects dot com>
+
+	* [r3427] transformations.c:
+	  Fixed issue with cascading transformations where the second
+	  transformation is s.escape.user or s.unescape.user. Because they didn't
+	  check for errors from the escape/unescape functions they returned a bogus
+	  output buffer.
+
+2007-12-18 15:38  Dan Pascu, <dan at ag-projects dot com>
+
+	* [r3426] strcommon.c, strcommon.h, transformations.c,
+	  transformations.h:
+	  Added transformation to escape/unescape an uri param
+
+2007-12-18 14:21  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3425] daemonize.c, daemonize.h, globals.h, main.c:
+	  - cleanup in core, remove some global variables
+
+2007-12-18 13:55  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3424] help_msg.h, main.c:
+	  - small cleanups in main.c
+	  fix some comments
+	  move the help_msg out of the file
+	  remove some outcommented stuff
+
+2007-12-18 12:12  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3423] test/7.cfg:
+	  - fix test after lcr change
+
+2007-12-18 12:10  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3422] test/2.cfg:
+	  - fix test after lcr change
+
+2007-12-17 21:31  Christian Schlatter, <cs at unc dot edu>
+
+	* [r3417] modules/ldap/ldap_mod.c:
+	  changed log level from ERROR to INFO for openldap version string
+
+2007-12-17 18:17  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3416] cfg.lex, cfg.y, dprint.h, main.c, modules/acc/README,
+	  modules/acc/acc.c, modules/acc/doc/acc_user.sgml:
+	  - revert acc extension for now, will be later added again after some
+	  extension from Bogdan to the logging system, makes this functionality
+	  much more easier to achieve
+
+2007-12-17 14:26  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3415] cfg.lex, cfg.y, dprint.h, main.c, modules/acc/README,
+	  modules/acc/acc.c, modules/acc/doc/acc_user.sgml:
+	  - new feature for accounting to syslog
+	  - its now possible to log the accouting related logging to a different
+	  target as the other OpenSER output
+	  - introduces a new core parameter log_facility_acc to set the acc log
+	  target
+	  - adds some documentation about this function
+	  - per default the standard syslog target is used
+
+2007-12-17 11:44  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r3413] modules/uac/uac.c:
+	  - fixed return code checking when parsing the AVP definitions.
+	  Closes bug #1851956
+
+2007-12-17 11:28  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r3411] Makefile.defs:
+	  fixed some compiler detection and options.
+	  - bogus 3.0 CC class fixed to 3.x
+	  - not all 3.x versions support mtune -> reverted back to march
+
+2007-12-17 11:13  Anca Vamanu, <anca at voice-system dot ro>
+
+	* [r3410] modules/xmpp/README, modules/xmpp/doc/xmpp_user.sgml,
+	  modules/xmpp/xmpp.c:
+	  - added the possibility to configure an outbound proxy for the
+	  messages sent by xmpp module ( closes PATHCH #1824752 submitted by
+	  Kobi Eshun)
+
+2007-12-17 11:06  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r3408] modules/mi_datagram/datagram_fnc.c:
+	  fixed compiling on Solaris where AF_LOCAL is not defined (but AF_UNIX)
+	  Reported by Sergio Gutierrez < saguti at gmail dot com >
+	  Closes patch #1851474
+
+2007-12-17 10:44  Anca Vamanu, <anca at voice-system dot ro>
+
+	* [r3405] modules/presence/presence.c, modules/presence/subscribe.c:
+	  - fixed some error messages(applied patch from Stanislaw
+	  Pitucha[thread PATCH 1831763])
+
+2007-12-17 10:39  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3404] crc.c:
+	  - change the cast for the last loop too, as suggested by Dan Pascu
+
+2007-12-17 06:21  Juha Heinanen, <jh at tutpro dot com>
+
+	* [r3403] scripts/openserctl, scripts/openserctl.8,
+	  scripts/openserctl.base, scripts/openserctl.dbtext:
+	  * Removed lcr gateway group table related stuff from scripts
+	  (hopefully all of it).
+
+2007-12-15 11:04  Juha Heinanen, <jh at tutpro dot com>
+
+	* [r3402] db/schema/entities.xml, db/schema/gw.xml,
+	  scripts/db_berkeley/openser/gw, scripts/db_berkeley/openser/version,
+	  scripts/dbtext/openser/gw, scripts/dbtext/openser/version,
+	  scripts/mysql/lcr-create.sql, scripts/postgres/lcr-create.sql:
+	  * Schema changes due to gw/dm to gw/flags change.
+
+2007-12-15 10:55  Juha Heinanen, <jh at tutpro dot com>
+
+	* [r3401] modules/lcr/README, modules/lcr/doc/lcr.sgml,
+	  modules/lcr/doc/lcr_user.sgml, modules/lcr/lcr_mod.c:
+	  * Replaced dm column/flag with flags column/AVP.
+
+2007-12-14 17:12  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3400] scripts/openserdbctl.base:
+	  - fix dbtext and db_berkeley tables after removal of gw_grp table
+
+2007-12-14 17:01  Juha Heinanen, <jh at tutpro dot com>
+
+	* [r3399] modules/lcr/README:
+	  * Forgot to generate new README.
+
+2007-12-14 17:00  Juha Heinanen, <jh at tutpro dot com>
+
+	* [r3398] modules/lcr/doc/lcr_user.sgml, modules/lcr/lcr_mod.c:
+	  * from_gw function can now take an optional pseudo variable argument
+	  that, if present, holds the ip address to be checked.
+	  * from_gw function with group id argument has been renamed to
+	  from_gw_grp function.
+
+2007-12-14 16:47  Juha Heinanen, <jh at tutpro dot com>
+
+	* [r3397] modules/permissions/README, modules/permissions/address.c,
+	  modules/permissions/address.h,
+	  modules/permissions/doc/permissions_user.sgml,
+	  modules/permissions/hash.c, modules/permissions/hash.h,
+	  modules/permissions/permissions.c:
+	  * Introduced allow_source_address_group() function which checks if
+	  source address/port is found in cached address or subnet table in
+	  any group. If yes, returns that group.
+
+2007-12-14 16:21  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3396] prime_hash.c:
+	  - small optimization, merge static helpers into the calling functions
+
+2007-12-14 16:21  Juha Heinanen, <jh at tutpro dot com>
+
+	* [r3395] db/schema/gw_grp.xml, db/schema/openser-lcr.xml,
+	  scripts/db_berkeley/openser/gw_grp, scripts/dbtext/openser/gw_grp,
+	  scripts/mysql/lcr-create.sql, scripts/postgres/lcr-create.sql:
+	  * Removed lcr/gw_grp table because it is not used by OpenSER. If
+	  someone needs it, it can be added as an extension.
+
+2007-12-14 16:03  Juha Heinanen, <jh at tutpro dot com>
+
+	* [r3394] modules/auth_radius/sterman.c:
+	  * If REJECT_RC reply has been defined, use it instead of printing an
+	  error message, when authentication fails due to wrong credentials.
+
+2007-12-14 15:54  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3392] crc.c:
+	  - bugfix in crc.c, use the right type for array index
+	  negative indexes will point to random memory..
+
+2007-12-14 14:35  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3391] Makefile.defs, modules/registrar/common.c,
+	  modules/registrar/reg_mod.c, modules/registrar/reg_mod.h:
+	  - enable -Wredundant-decls in Makefile
+	  - fix warnings in registrar
+
+2007-12-14 13:47  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3390] modules/cfgutils/cfgutils.c:
+	  - fix double include of ut.h
+
+2007-12-14 13:06  Anca Vamanu, <anca at voice-system dot ro>
+
+	* [r3388] modules/imc/README, modules/imc/doc/imc_user.sgml,
+	  modules/imc/imc.c, modules/imc/imc.h, modules/imc/imc_cmd.c:
+	  - added possibility to configure an outbound proxy to be used when
+	  sending Messages to chat room members
+
+2007-12-14 12:38  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3386] modules/carrierroute/route_fifo.c:
+	  - add error messages, ad FIFO_ERR is not evaluated for errors during
+	  update_route_data
+
+2007-12-14 12:15  Di-Shi Sun, <di-shi at transnexus dot com>
+
+	* [r3385] modules/osp/destination.c,
+	  modules/osp/etc/sample-osp-openser.cfg, modules/osp/globals.c,
+	  modules/osp/orig_transaction.c, modules/osp/osp_mod.c,
+	  modules/osp/osp_mod.h, modules/osp/sipheader.c,
+	  modules/osp/term_transaction.c, modules/osp/usage.c:
+	  1. Changed OSP cookie tags to handle the destinations corrupting
+	  Record-Route/Route headers.
+	  2. Added source network ID support.
+
+2007-12-14 12:10  Jesus Rodriguez, <jesusr at voztele dot com>
+
+	* [r3384] db/schema/aliases.xml, main.c, modules/acc/diam_tcp.c,
+	  modules/auth_diameter/tcp_comm.c, modules/pike/doc/pike_user.sgml,
+	  modules/registrar/doc/registrar_user.sgml, modules/rr/record.c,
+	  modules/sms/doc/sms_user.sgml,
+	  modules/snmpstats/mibs/OPENSER-SIP-SERVER-MIB,
+	  modules/snmpstats/openserObjects.c,
+	  modules/snmpstats/openserSIPContactTable.c,
+	  modules/snmpstats/openserSIPContactTable.h,
+	  modules/snmpstats/openserSIPRegUserLookupTable.c,
+	  modules/snmpstats/openserSIPStatusCodesTable.c, modules/tm/lock.c,
+	  modules/tm/tm.c, modules/tm/uac.c, modules/uac/doc/uac_user.sgml,
+	  parser/parse_content.h:
+	  - Fix typos
+
+2007-12-14 11:43  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3381] packaging/debian-etch/changelog,
+	  packaging/debian-sarge/changelog, packaging/debian/changelog:
+	  - update changelog for autobuilder on devel.openser.org
+
+2007-12-14 11:34  Jesus Rodriguez, <jesusr at voztele dot com>
+
+	* [r3380] modules/cpl-c/doc/cpl-c_user.sgml:
+	  - Fix typos (the the)
+
+2007-12-14 11:23  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3378] modparam.c, modparam.h:
+	  - remove not needed set_mod_param function, obseleted by
+	  set_mod_param_regexp
+
+2007-12-14 11:09  Jesus Rodriguez, <jesusr at voztele dot com>
+
+	* [r3377] packaging/freebsd/Makefile, packaging/freebsd/distinfo,
+	  packaging/freebsd/files/patch-Makefile,
+	  packaging/freebsd/files/patch-Makefile-mysql,
+	  packaging/freebsd/files/patch-Makefile.defs:
+	  - Update to 1.3.0 version.
+
+2007-12-14 10:25  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3375] etc/openser.cfg, test/5.cfg, test/5.sh:
+	  - fix error in default config that prevents the server start
+	  - test 5 uses now the new config..
+
+2007-12-13 23:52  Dan Pascu, <dan at ag-projects dot com>
+
+	* [r3372] modules/tm/sip_msg.c:
+	  Removed test that was always false in the given context
+
+2007-12-13 23:41  Dan Pascu, <dan at ag-projects dot com>
+
+	* [r3371] modules/tm/sip_msg.c:
+	  Removed redundant conditions in tests
+
+2007-12-13 23:31  Dan Pascu, <dan at ag-projects dot com>
+
+	* [r3370] modules/tm/sip_msg.c:
+	  Link sibling headers in the TM cloned message as well
+
+2007-12-13 22:33  Dan Pascu, <dan at ag-projects dot com>
+
+	* [r3369] modules/tm/sip_msg.c:
+	  Refactored macro to avoid unnecessary an extra negation in tests
+
+2007-12-13 14:02  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r3366] README-MODULES:
+	  - restore delete file, needed from packaging
+
+2007-12-13 13:41  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r3364] Makefile.defs:
+	  - increase the version to 1.4
+
+===================== 2008-12-13 OpenSER v1.3.0 released ======================
 
 ===================== 2007-03-12 OpenSER v1.2.0 released ======================
 
