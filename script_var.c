@@ -165,12 +165,12 @@ void reset_vars(void)
 	}
 }
 
-void destroy_vars(void)
+void destroy_vars_list(script_var_t *svl)
 {
 	script_var_t *it;
 	script_var_t *it0;
 
-	it = script_vars;
+	it = svl;
 	while(it)
 	{
 		it0 = it;
@@ -181,6 +181,10 @@ void destroy_vars(void)
 		pkg_free(it0);
 	}
 
-	script_vars = 0;
+	svl = 0;
 }
 
+void destroy_vars(void)
+{
+	return destroy_vars_list(script_vars);
+}

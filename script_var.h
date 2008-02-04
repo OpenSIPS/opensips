@@ -45,6 +45,7 @@ script_var_t* get_var_by_name(str *name);
 
 void reset_vars();
 void destroy_vars();
+void destroy_vars_list(script_var_t *svl);
 
 #endif
 

@@ -206,6 +206,11 @@ typedef struct _pvname_list {
 	struct _pvname_list *next;
 } pvname_list_t, *pvname_list_p;
 
+typedef struct pv_spec_list {
+	pv_spec_p spec;
+	struct pv_spec_list *next;
+} pv_spec_list_t, *pv_spec_list_p;
+
 pvname_list_t* parse_pvname_list(str *in, unsigned int type);
 
 int register_pvars_mod(char *mod_name, pv_export_t *items);
