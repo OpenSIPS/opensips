@@ -2775,7 +2775,7 @@ char* pv_parse_spec(str *in, pv_spec_p e)
 		return NULL;
 	}
 	
-	/*LM_DBG("input [%.*s]\n", in->len, in->s);*/
+	/* LM_DBG("***** input [%.*s] (%d)\n", in->len, in->s, in->len); */
 	tr = 0;
 	pvstate = 0;
 	memset(e, 0, sizeof(pv_spec_t));
@@ -2824,6 +2824,7 @@ char* pv_parse_spec(str *in, pv_spec_p e)
 		}
 	} else { 
 		if(!is_in_str(p, in)) {
+			p--;
 			goto done_inm;
 		} else if(*p==PV_LNBRACKET) {
 			p++;
