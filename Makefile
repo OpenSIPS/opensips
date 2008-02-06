@@ -48,7 +48,7 @@ skip_cfg_install?=
 skip_modules?=
 
 # if not set on the cmd. line or the env, exclude this modules:
-exclude_modules?= jabber cpl-c mysql postgres osp unixodbc \
+exclude_modules?= jabber cpl-c db_mysql db_postgres osp db_unixodbc \
 	avp_radius auth_radius group_radius uri_radius xmpp \
 	presence presence_xml presence_mwi pua pua_bla pua_mi \
 	pua_usrloc pua_xmpp rls mi_xmlrpc perl snmpstats perlvdb \
@@ -93,13 +93,13 @@ tls_configs=$(patsubst etc/%, %, $(wildcard etc/tls/*) \
 			$(wildcard etc/tls/rootCA/*) $(wildcard etc/tls/rootCA/certs/*) \
 			$(wildcard etc/tls/rootCA/private/*) $(wildcard etc/tls/user/*))
 
-MODULE_MYSQL_INCLUDED=$(shell echo $(modules)| grep mysql )
+MODULE_MYSQL_INCLUDED=$(shell echo $(modules)| grep db_mysql )
 ifeq (,$(MODULE_MYSQL_INCLUDED))
 	MYSQLON=no
 else
 	MYSQLON=yes
 endif
-MODULE_PGSQL_INCLUDED=$(shell echo $(modules)| grep postgres )
+MODULE_PGSQL_INCLUDED=$(shell echo $(modules)| grep db_postgres )
 ifeq (,$(MODULE_PGSQL_INCLUDED))
 	PGSQLON=no
 else

@@ -57,11 +57,11 @@ Requirements:
 - openssl if you want to compile the TLS support
 - libsctp if you want to compile the SCTP support
 - libmysqlclient & libz (zlib) -libs and devel headers- if you want mysql DB
-   support (the mysql module)
+   support (the db_mysql module)
 - libpq / postgresql -libs and devel headers- if you want postgres DB
-   support (the postgres module)
+   support (the db_postgres module)
 - unixodbc -libs and devel headers- if you want unixodbc DB
-   support (the unixodbc module)
+   support (the db_unixodbc module)
 - libexpat if you want the jabber gateway support (the jabber module) or the
    XMPP gateway support
 - libxml2 if you want to use the cpl-c (Call Processing Language) or
@@ -108,9 +108,9 @@ make mode=debug all
 
 make modules=modules/textops modules
 
--compile all the "default" modules except textops and mysql
+-compile all the "default" modules except textops and db_mysql
 
-make skip_modules="textops mysql" modules
+make skip_modules="textops db_mysql" modules
 
 -compile all default modules and include uri_radius (not compiled by default):
 
@@ -358,7 +358,7 @@ proceed, you need to make sure MySQL is installed on your box.
 4) configure openser to use SQL
     uncomment all lines in configuration file openser.cfg which are related to 
     authentication:
-    - loadmodule "/usr/lib/openser/modules/mysql.so"
+    - loadmodule "/usr/lib/openser/modules/db_mysql.so"
     - loadmodule "/usr/lib/openser/modules/auth.so"
     - loadmodule "/usr/lib/openser/modules/auth_db.so"
     - modparam("usrloc", "db_mode", 2)
