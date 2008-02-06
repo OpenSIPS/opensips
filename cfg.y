@@ -2256,7 +2256,6 @@ static void warn(char* s)
 {
 	LM_WARN("warning in config file, line %d, column %d-%d: %s\n", line, startcolumn, 
 			column, s);
-	cfg_errors++;
 }
 #endif
 
