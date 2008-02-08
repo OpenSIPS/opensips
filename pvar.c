@@ -88,16 +88,98 @@ int _pv_pid = 0;
 static char pv_local_buf[PV_LOCAL_BUF_SIZE+1];
 
 
+/********** helper functions ********/
+/**
+ * convert unsigned int to pv_value_t
+ */
+int pv_get_uintval(struct sip_msg *msg, pv_param_t *param,
+		pv_value_t *res, unsigned int uival)
+{
+	int l = 0;
+	char *ch = NULL;
+
+	if(res==NULL)
+		return -1;
+
+	ch = int2str(uival, &l);
+	res->rs.s = ch;
+	res->rs.len = l;
+
+	res->ri = (int)uival;
+	res->flags = PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT;
+	return 0;
+}
+
+/**
+ * convert signed int to pv_value_t
+ */
+int pv_get_sintval(struct sip_msg *msg, pv_param_t *param,
+		pv_value_t *res, int sival)
+{
+	int l = 0;
+	char *ch = NULL;
+
+	if(res==NULL)
+		return -1;
+
+	ch = int2str(sival, &l);
+	res->rs.s = ch;
+	res->rs.len = l;
+
+	res->ri = sival;
+	res->flags = PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT;
+	return 0;
+}
+
+/**
+ * convert str to pv_value_t
+ */
+int pv_get_strval(struct sip_msg *msg, pv_param_t *param,
+		pv_value_t *res, str *sval)
+{
+	if(res==NULL)
+		return -1;
+
+	res->rs = *sval;
+	res->flags = PV_VAL_STR;
+	return 0;
+}
+
+/**
+ * convert str-int to pv_value_t (type is str)
+ */
+int pv_get_strintval(struct sip_msg *msg, pv_param_t *param,
+		pv_value_t *res, str *sval, int ival)
+{
+	if(res==NULL)
+		return -1;
+
+	res->rs = *sval;
+	res->ri = ival;
+	res->flags = PV_VAL_STR|PV_VAL_INT;
+	return 0;
+}
+
+/**
+ * convert int-str to pv_value_t (type is int)
+ */
+int pv_get_intstrval(struct sip_msg *msg, pv_param_t *param,
+		pv_value_t *res, int ival, str *sval)
+{
+	if(res==NULL)
+		return -1;
+
+	res->rs = *sval;
+	res->ri = ival;
+	res->flags = PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT;
+	return 0;
+}
+
+/************************************************************/
 static int pv_get_marker(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {
-	if(msg==NULL || res==NULL)
-		return -1;
-	
-	res->rs = str_marker;
-	res->ri = (int)str_marker.s[0];
-	res->flags = PV_VAL_STR|PV_VAL_INT;
-	return 0;
+	return pv_get_strintval(msg, param, res, &str_marker, (int)str_marker.s[0]);
 }
 
 int pv_get_null(struct sip_msg *msg, pv_param_t *param, pv_value_t *res)
@@ -112,24 +194,12 @@ int pv_get_null(struct sip_msg *msg, pv_param_t *param, pv_value_t *res)
 }
 static int pv_get_udp(struct sip_msg *msg, pv_param_t *param, pv_value_t *res)
 {
-	if(msg==NULL || res==NULL)
-		return -1;
-	
-	res->rs = str_udp;
-	res->ri = PROTO_UDP;
-	res->flags = PV_VAL_STR|PV_VAL_INT;
-	return 0;
+	return pv_get_strintval(msg, param, res, &str_udp, (int)PROTO_UDP);
 }
 
 static int pv_get_5060(struct sip_msg *msg, pv_param_t *param, pv_value_t *res)
 {
-	if(msg==NULL || res==NULL)
-		return -1;
-	
-	res->rs = str_5060;
-	res->ri = 5060;
-	res->flags = PV_VAL_STR|PV_VAL_INT;
-	return 0;
+	return pv_get_strintval(msg, param, res, &str_5060, 5060);
 }
 
 
@@ -137,22 +207,9 @@ static int pv_get_5060(struct sip_msg *msg, pv_param_t *param, pv_value_t *res)
 static int pv_get_pid(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {
-	int l = 0;
-	char *ch = NULL;
-
-	if(msg==NULL || res==NULL)
-		return -1;
-
 	if(_pv_pid == 0)
 		_pv_pid = (int)getpid();
-	ch = int2str(_pv_pid, &l);
-
-	res->rs.s = ch;
-	res->rs.len = l;
-
-	res->ri = _pv_pid;
-	res->flags = PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT;
-	return 0;
+	return pv_get_sintval(msg, param, res, _pv_pid);
 }
 
 
@@ -160,29 +217,13 @@ extern int return_code;
 static int pv_get_return_code(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {
-	int l = 0;
-	char *s = NULL;
-
-	if(msg==NULL || res==NULL)
-		return -1;
-
-	s = sint2str(return_code, &l);
-
-	res->rs.s = s;
-	res->rs.len = l;
-
-	res->ri = return_code;
-	res->flags = PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT;
-	return 0;
+	return pv_get_sintval(msg, param, res, return_code);
 }
 
 static int pv_get_times(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {
-	int l = 0;
-	char *ch = NULL;
-		
-	if(msg==NULL || res==NULL)
+	if(msg==NULL)
 		return -1;
 
 	if(_pv_msg_id != msg->id || _pv_msg_tm==0)
@@ -190,22 +231,15 @@ static int pv_get_times(struct sip_msg *msg, pv_param_t *param,
 		_pv_msg_tm = time(NULL);
 		_pv_msg_id = msg->id;
 	}
-	ch = int2str(_pv_msg_tm, &l);
-	
-	res->rs.s = ch;
-	res->rs.len = l;
-
-	res->ri = (int)_pv_msg_tm;
-	res->flags = PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT;
-	return 0;
+	return pv_get_uintval(msg, param, res, (unsigned int)_pv_msg_tm);
 }
 
 static int pv_get_timef(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {
-	char *ch = NULL;
+	str s;
 	
-	if(msg==NULL || res==NULL)
+	if(msg==NULL)
 		return -1;
 	if(_pv_msg_id != msg->id || _pv_msg_tm==0)
 	{
@@ -213,96 +247,68 @@ static int pv_get_timef(struct sip_msg *msg, pv_param_t *param,
 		_pv_msg_id = msg->id;
 	}
 	
-	ch = ctime(&_pv_msg_tm);
-	
-	res->rs.s = ch;
-	res->rs.len = strlen(ch)-1;
-
-	res->ri = (int)_pv_msg_tm;
-	res->flags = PV_VAL_STR|PV_VAL_INT;
-	return 0;
+	s.s = ctime(&_pv_msg_tm);
+	s.len = strlen(s.s)-1;
+	return pv_get_strintval(msg, param, res, &s, (int)_pv_msg_tm);
 }
 
 static int pv_get_msgid(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {
-	int l = 0;
-	char *ch = NULL;
-
-	if(msg==NULL || res==NULL)
+	if(msg==NULL)
 		return -1;
-
-	ch = int2str(msg->id, &l);
-	res->rs.s = ch;
-	res->rs.len = l;
-
-	res->ri = (int)msg->id;
-	res->flags = PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT;
-	return 0;
+	return pv_get_uintval(msg, param, res, msg->id);
 }
 
 static int pv_get_method(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {
-	if(msg==NULL || res==NULL)
+	if(msg==NULL)
 		return -1;
 
 	if(msg->first_line.type == SIP_REQUEST)
 	{
-		res->rs.s = msg->first_line.u.request.method.s;
-		res->rs.len = msg->first_line.u.request.method.len;
-		res->ri = (int)msg->first_line.u.request.method_value;
-	} else {
-		if(msg->cseq==NULL && ((parse_headers(msg, HDR_CSEQ_F, 0)==-1) || 
-				(msg->cseq==NULL)))
-		{
-			LM_DBG("no CSEQ header\n");
-			return pv_get_null(msg, param, res);
-		}
-		res->rs.s = get_cseq(msg)->method.s;
-		res->rs.len = get_cseq(msg)->method.len;
-		res->ri = get_cseq(msg)->method_id;
+		return pv_get_strintval(msg, param, res,
+				&msg->first_line.u.request.method,
+				(int)msg->first_line.u.request.method_value);
 	}
 	
-	res->flags = PV_VAL_STR|PV_VAL_INT;
-	return 0;
+	if(msg->cseq==NULL && ((parse_headers(msg, HDR_CSEQ_F, 0)==-1) || 
+				(msg->cseq==NULL)))
+	{
+		LM_ERR("no CSEQ header\n");
+		return pv_get_null(msg, param, res);
+	}
+	
+	return pv_get_strintval(msg, param, res,
+			&get_cseq(msg)->method,
+			get_cseq(msg)->method_id);
 }
 
 static int pv_get_status(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {
-	if(msg==NULL || res==NULL)
+	if(msg==NULL)
 		return -1;
 
 	if(msg->first_line.type == SIP_REPLY)
-	{
-		res->rs.s = msg->first_line.u.reply.status.s;
-		res->rs.len = msg->first_line.u.reply.status.len;		
-	}
-	else
 		return pv_get_null(msg, param, res);
-	
-	res->ri = (int)msg->first_line.u.reply.statuscode;
-	res->flags = PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT;
-	return 0;
+
+	return pv_get_intstrval(msg, param, res,
+			(int)msg->first_line.u.reply.statuscode,
+			&msg->first_line.u.reply.status);
 }
 
 static int pv_get_reason(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {
-	if(msg==NULL || res==NULL)
+	if(msg==NULL)
 		return -1;
 
-	if(msg->first_line.type == SIP_REPLY)
-	{
-		res->rs.s = msg->first_line.u.reply.reason.s;
-		res->rs.len = msg->first_line.u.reply.reason.len;		
-	}
-	else
+	if(msg->first_line.type != SIP_REPLY)
 		return pv_get_null(msg, param, res);
 	
-	res->flags = PV_VAL_STR;
-	return 0;
+	return pv_get_strval(msg, param, res, &msg->first_line.u.reply.reason);
 }
 
 static int pv_get_ruri(struct sip_msg *msg, pv_param_t *param,
@@ -321,16 +327,8 @@ static int pv_get_ruri(struct sip_msg *msg, pv_param_t *param,
 	}
 	
 	if (msg->new_uri.s!=NULL)
-	{
-		res->rs.s   = msg->new_uri.s;
-		res->rs.len = msg->new_uri.len;
-	} else {
-		res->rs.s   = msg->first_line.u.request.uri.s;
-		res->rs.len = msg->first_line.u.request.uri.len;
-	}
-	
-	res->flags = PV_VAL_STR;
-	return 0;
+		return pv_get_strval(msg, param, res, &msg->new_uri);
+	return pv_get_strval(msg, param, res, &msg->first_line.u.request.uri);
 }
 
 static int pv_get_ouri(struct sip_msg *msg, pv_param_t *param,
@@ -695,27 +693,19 @@ static int pv_get_msg_buf(struct sip_msg *msg, pv_param_t *param,
 static int pv_get_msg_len(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {
-	if(msg==NULL || res==NULL)
+	if(msg==NULL)
 		return -1;
-
-	res->rs.s = int2str(msg->len, &res->rs.len);
-
-	res->ri = (int)msg->len;
-	res->flags = PV_VAL_STR|PV_VAL_INT;
-	return 0;
+	
+	return pv_get_uintval(msg, param, res, msg->len);
 }
 
 static int pv_get_flags(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {
-	if(msg==NULL || res==NULL)
+	if(msg==NULL)
 		return -1;
 
-	res->rs.s = int2str(msg->flags, &res->rs.len);
-
-	res->ri = (int)msg->flags;
-	res->flags = PV_VAL_STR|PV_VAL_INT;
-	return 0;
+	return pv_get_uintval(msg, param, res, msg->flags);
 }
 
 static inline char* int_to_8hex(int val)
@@ -756,14 +746,7 @@ static int pv_get_hexflags(struct sip_msg *msg, pv_param_t *param,
 static int pv_get_bflags(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {
-	if(res==NULL)
-		return -1;
-
-	res->ri = (int)getb0flags();
-	res->rs.s = int2str( res->ri, &res->rs.len);
-
-	res->flags = PV_VAL_STR|PV_VAL_INT;
-	return 0;
+	return pv_get_uintval(msg, param, res, getb0flags());
 }
 
 static int pv_get_hexbflags(struct sip_msg *msg, pv_param_t *param,
@@ -783,14 +766,7 @@ static int pv_get_hexbflags(struct sip_msg *msg, pv_param_t *param,
 static int pv_get_sflags(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {
-	if(res==NULL)
-		return -1;
-
-	res->ri = (int)getsflags();
-	res->rs.s = int2str( res->ri, &res->rs.len);
-
-	res->flags = PV_VAL_STR|PV_VAL_INT;
-	return 0;
+	return pv_get_uintval(msg, param, res, getsflags());
 }
 
 static int pv_get_hexsflags(struct sip_msg *msg, pv_param_t *param,
@@ -844,19 +820,9 @@ static int pv_get_srcip(struct sip_msg *msg, pv_param_t *param,
 static int pv_get_srcport(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {
-	int l = 0;
-	char *ch = NULL;
-
-	if(msg==NULL || res==NULL)
+	if(msg==NULL)
 		return -1;
-
-	ch = int2str(msg->rcv.src_port, &l);
-	res->rs.s = ch;
-	res->rs.len = l;
-   
-	res->ri = (int)msg->rcv.src_port;
-	res->flags = PV_VAL_STR|PV_VAL_INT;
-	return 0;
+	return pv_get_uintval(msg, param, res, msg->rcv.src_port);
 }
 
 static int pv_get_rcvip(struct sip_msg *msg, pv_param_t *param,
@@ -890,7 +856,7 @@ static int pv_get_rcvport(struct sip_msg *msg, pv_param_t *param,
 	res->rs.len = msg->rcv.bind_address->port_no_str.len;
 	
 	res->ri = (int)msg->rcv.bind_address->port_no;
-	res->flags = PV_VAL_STR|PV_VAL_INT;
+	res->flags = PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT;
 	return 0;
 }
 
@@ -953,10 +919,10 @@ static int pv_get_refer_to(struct sip_msg *msg, pv_param_t *param,
 static int pv_get_diversion(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {
-       str *val;
-       str name;
+	str *val;
+	str name;
 
-       if(msg == NULL || res == NULL)
+	if(msg == NULL || res == NULL)
 		return -1;
 
 	if(parse_diversion_header(msg) == -1)
@@ -1167,7 +1133,8 @@ static int pv_get_dset(struct sip_msg *msg, pv_param_t *param,
     
     res->rs.s = print_dset(msg, &res->rs.len);
 
-    if ((res->rs.s) == NULL) return pv_get_null(msg, param, res);
+    if (res->rs.s == NULL)
+		return pv_get_null(msg, param, res);
     
     res->rs.len -= CRLF_LEN;
 
