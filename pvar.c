@@ -184,7 +184,7 @@ static int pv_get_marker(struct sip_msg *msg, pv_param_t *param,
 
 int pv_get_null(struct sip_msg *msg, pv_param_t *param, pv_value_t *res)
 {
-	if(msg==NULL || res==NULL)
+	if(res==NULL)
 		return -1;
 	
 	res->rs = str_empty;
@@ -346,12 +346,7 @@ static int pv_get_ouri(struct sip_msg *msg, pv_param_t *param,
 		LM_ERR("failed to parse the R-URI\n");
 		return pv_get_null(msg, param, res);
 	}
-	
-	res->rs.s   = msg->first_line.u.request.uri.s;
-	res->rs.len = msg->first_line.u.request.uri.len;
-	
-	res->flags = PV_VAL_STR;
-	return 0;
+	return pv_get_strval(msg, param, res, &msg->first_line.u.request.uri);
 }
 
 static int pv_get_xuri_attr(struct sip_msg *msg, struct sip_uri *parsed_uri,
@@ -361,41 +356,30 @@ static int pv_get_xuri_attr(struct sip_msg *msg, struct sip_uri *parsed_uri,
 	{
 		if(parsed_uri->user.s==NULL || parsed_uri->user.len<=0)
 			return pv_get_null(msg, param, res);
-		res->rs.s   = parsed_uri->user.s;
-		res->rs.len = parsed_uri->user.len;
-		res->flags = PV_VAL_STR;
+		return pv_get_strval(msg, param, res, &parsed_uri->user);
 	} else if(param->pvn.u.isname.name.n==2) /* domain */ {
 		if(parsed_uri->host.s==NULL || parsed_uri->host.len<=0)
 			return pv_get_null(msg, param, res);
-		res->rs.s   = parsed_uri->host.s;
-		res->rs.len = parsed_uri->host.len;
-		res->flags  = PV_VAL_STR;
+		return pv_get_strval(msg, param, res, &parsed_uri->host);
 	} else if(param->pvn.u.isname.name.n==3) /* port */ {
 		if(parsed_uri->port.s==NULL)
 			return pv_get_5060(msg, param, res);
-		res->rs.s   = parsed_uri->port.s;
-		res->rs.len = parsed_uri->port.len;
-		res->ri     = (int)parsed_uri->port_no;
-		res->flags  = PV_VAL_STR|PV_VAL_INT;
+		return pv_get_strintval(msg, param, res, &parsed_uri->port,
+				(int)parsed_uri->port_no);
 	} else if(param->pvn.u.isname.name.n==4) /* protocol */ {
 		if(parsed_uri->transport_val.s==NULL)
 			return pv_get_udp(msg, param, res);
-		res->rs.s   = parsed_uri->transport_val.s;
-		res->rs.len = parsed_uri->transport_val.len;
-		res->ri     = (int)parsed_uri->proto;
-		res->flags  = PV_VAL_STR|PV_VAL_INT;
-	} else {
-		LM_ERR("unknown specifier\n");
-		return pv_get_null(msg, param, res);
+		return pv_get_strintval(msg, param, res, &parsed_uri->transport,
+				(int)parsed_uri->proto);
 	}
-	
-	return 0;
+	LM_ERR("unknown specifier\n");
+	return pv_get_null(msg, param, res);
 }
 
 static int pv_get_ruri_attr(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {
-	if(msg==NULL || res==NULL)
+	if(msg==NULL)
 		return -1;
 
 	if(msg->first_line.type == SIP_REPLY)	/* REPLY doesnt have a ruri */
@@ -412,7 +396,7 @@ static int pv_get_ruri_attr(struct sip_msg *msg, pv_param_t *param,
 static int pv_get_ouri_attr(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {
-	if(msg==NULL || res==NULL)
+	if(msg==NULL)
 		return -1;
 
 	if(msg->first_line.type == SIP_REPLY)	/* REPLY doesnt have a ruri */
@@ -431,7 +415,7 @@ static int pv_get_ouri_attr(struct sip_msg *msg, pv_param_t *param,
 static int pv_get_contact(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {
-	if(msg==NULL || res==NULL)
+	if(msg==NULL)
 		return -1;
 
 	if(msg->contact==NULL && parse_headers(msg, HDR_CONTACT_F, 0)==-1) 
@@ -446,56 +430,32 @@ static int pv_get_contact(struct sip_msg *msg, pv_param_t *param,
 		return pv_get_null(msg, param, res);
 	}
 	
-	res->rs.s = msg->contact->body.s;
-	res->rs.len = msg->contact->body.len;
-
 //	res->s = ((struct to_body*)msg->contact->parsed)->uri.s;
 //	res->len = ((struct to_body*)msg->contact->parsed)->uri.len;
-
-	res->flags = PV_VAL_STR;
-	return 0;
+	return pv_get_strval(msg, param, res, &msg->contact->body);
 }
 
 extern err_info_t _oser_err_info;
 static int pv_get_errinfo_attr(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {
-	int l = 0;
-	char *ch = NULL;
-
-	if(msg==NULL || res==NULL)
+	if(msg==NULL)
 		return -1;
 
 	if(param->pvn.u.isname.name.n==0) /* class */ {
-		ch = int2str(_oser_err_info.eclass, &l);
-		res->rs.s = ch;
-		res->rs.len = l;
-		res->ri = (int)_oser_err_info.eclass;
-		res->flags = PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT;
+		return pv_get_sintval(msg, param, res, _oser_err_info.eclass);
 	} else if(param->pvn.u.isname.name.n==1) /* level */ {
-		ch = int2str(_oser_err_info.level, &l);
-		res->rs.s = ch;
-		res->rs.len = l;
-		res->ri = (int)_oser_err_info.level;
-		res->flags = PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT;
+		return pv_get_sintval(msg, param, res, _oser_err_info.level);
 	} else if(param->pvn.u.isname.name.n==2) /* info */ {
 		if(_oser_err_info.info.s==NULL)
 			pv_get_null(msg, param, res);
-		res->rs.s = _oser_err_info.info.s;
-		res->rs.len = _oser_err_info.info.len;
-		res->flags = PV_VAL_STR;
+		return pv_get_strval(msg, param, res, &_oser_err_info.info);
 	} else if(param->pvn.u.isname.name.n==3) /* rcode */ {
-		ch = int2str(_oser_err_info.rcode, &l);
-		res->rs.s = ch;
-		res->rs.len = l;
-		res->ri = (int)_oser_err_info.rcode;
-		res->flags = PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT;
+		return pv_get_sintval(msg, param, res, _oser_err_info.rcode);
 	} else if(param->pvn.u.isname.name.n==4) /* rreason */ {
 		if(_oser_err_info.rreason.s==NULL)
 			pv_get_null(msg, param, res);
-		res->rs.s   = _oser_err_info.rreason.s;
-		res->rs.len = _oser_err_info.rreason.len;
-		res->flags = PV_VAL_STR;
+		return pv_get_strval(msg, param, res, &_oser_err_info.rreason);
 	} else {
 		LM_DBG("invalid attribute!\n");
 		return pv_get_null(msg, param, res);
