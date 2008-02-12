@@ -494,7 +494,7 @@ INPUT                  = ./ \
                          modules/cpl-c \
                          modules/carrierroute \
                          modules/db_berkeley \
-                         modules/dbtext \
+                         modules/db_text \
                          modules/dialog \
                          modules/dispatcher \
                          modules/diversion \
@@ -502,7 +502,7 @@ INPUT                  = ./ \
                          modules/domainpolicy \
                          modules/enum \
                          modules/exec \
-                         modules/flatstore \
+                         modules/db_flatstore \
                          modules/gflags \
                          modules/group \
                          modules/group_radius \
@@ -518,7 +518,7 @@ INPUT                  = ./ \
                          modules/mi_xmlrpc \
                          modules/mi_datagram \
                          modules/msilo \
-                         modules/mysql \
+                         modules/db_mysql \
                          modules/nathelper \
                          modules/options \
                          modules/osp \
@@ -528,7 +528,7 @@ INPUT                  = ./ \
                          modules/perlvdb \
                          modules/permissions \
                          modules/pike \
-                         modules/postgres \
+                         modules/db_postgres \
                          modules/presence \
                          modules/pua \
                          modules/pua_mi \
@@ -548,7 +548,7 @@ INPUT                  = ./ \
                          modules/tm \
                          modules/uac \
                          modules/uac_redirect \
-                         modules/unixodbc \
+                         modules/db_unixodbc \
                          modules/uri \
                          modules/uri_db \
                          modules/uri_radius \
