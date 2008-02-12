@@ -21,12 +21,24 @@
  */
 
 
-#ifndef _mod_fix_h
-#define _mod_fix_h
+#ifndef _mod_fix_h_
+#define _mod_fix_h_
 
-int str_fixup(void** param, int param_no);
+int fixup_str_null(void** param, int param_no);
+int fixup_str_str(void** param, int param_no);
 
-int free_str_fixup(void** param, int param_no);
+int fixup_free_str_null(void** param, int param_no);
+int fixup_free_str_str(void** param, int param_no);
+
+int fixup_uint_null(void** param, int param_no);
+int fixup_uint_uint(void** param, int param_no);
+
+#if 0
+int fixup_sint_null(void** param, int param_no);
+int fixup_sint_sint(void** param, int param_no);
+int fixup_sint_uint(void** param, int param_no);
+int fixup_uint_sint(void** param, int param_no);
+#endif
 
 int fixup_str2int(void** param, int param_no);
 

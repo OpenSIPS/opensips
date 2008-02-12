@@ -31,44 +31,259 @@
 #include "pvar.h"
 #include "mod_fix.h"
 
+/**
+ * NAMIG FORMAT
+ * === fixup functions ===
+ * + fixup_type1_type2(...)
+ * - type1 - is the type the fist parameter gets converted to
+ * - type2 - is the type the second parameter gets converted to
+ * + if the parameter is missing, then use 'null'
+ *
+ * === fixup free functions ===
+ * + free_fixup_type1_type2(...)
+ * - type1 and type2 are same as for fixup function
+ *
+ * === helper functions ===
+ * + functions to be used internaly for fixup/free functions
+ * + fixup_type(...)
+ * + fixup_free_type(...)
+ * - type - is the type of the parameter that gets converted to/freed
+ */
 
-/*  
+
+/**
+ * - helper function
  * Convert char* parameter to str* parameter   
  */
-int str_fixup(void** param, int param_no)
+int fixup_str(void** param)
 {
 	str* s;
 	
-	if (param_no == 1 || param_no == 2 ) {
-		s = (str*)pkg_malloc(sizeof(str));
-		if (!s) {
-			LM_ERR("no more pkg memory\n");
-			return E_UNSPEC;
-		}
-		
-		s->s = (char*)*param;
-		s->len = strlen(s->s);
-		*param = (void*)s;
+	s = (str*)pkg_malloc(sizeof(str));
+	if (!s) {
+		LM_ERR("no more pkg memory\n");
+		return E_UNSPEC;
 	}
+		
+	s->s = (char*)*param;
+	s->len = strlen(s->s);
+	*param = (void*)s;
 	
 	return 0;
 }
 
-/*  
+/**
+ * - helper fuinction
  * free the str* parameter   
  */
-int free_str_fixup(void** param, int param_no)
+int fixup_free_str(void** param)
 {
-	if (param_no == 1 || param_no == 2 ) {
-		if(*param) {
-			pkg_free(*param);
-			*param = 0;
-		}
+	if(*param) {
+		pkg_free(*param);
+		*param = 0;
 	}
-	
 	return 0;
 }
 
+/**
+ * fixup for functions that get one parameter
+ * - first paramter is converted to str*
+ */
+int fixup_str_null(void** param, int param_no)
+{
+	if(param_no != 1)
+	{
+		LM_ERR("invalid parameter number %d\n", param_no);
+		return E_UNSPEC;
+	}
+	return fixup_str(param);
+}
+
+/**
+ * fixup for functions that get two parameters
+ * - first paramter is converted to str*
+ * - second paramter is converted to str*
+ */
+int fixup_str_str(void** param, int param_no)
+{
+	if (param_no != 1 && param_no != 2 )
+	{
+		LM_ERR("invalid parameter number %d\n", param_no);
+		return E_UNSPEC;
+	}
+	return fixup_str(param);
+}
+
+/**
+ * fixup free for functions that get one parameter
+ * - first paramter was converted to str*
+ */
+int fixup_free_str_null(void** param, int param_no)
+{
+	if(param_no != 1)
+	{
+		LM_ERR("invalid parameter number %d\n", param_no);
+		return E_UNSPEC;
+	}
+	return fixup_free_str(param);
+}
+
+/**
+ * fixup free for functions that get two parameters
+ * - first paramter was converted to str*
+ * - second paramter was converted to str*
+ */
+int fixup_free_str_str(void** param, int param_no)
+{
+	if (param_no != 1 && param_no != 2 )
+	{
+		LM_ERR("invalid parameter number %d\n", param_no);
+		return E_UNSPEC;
+	}
+	return fixup_free_str(param);
+}
+
+/**
+ * - helper function
+ * Convert char* parameter to unsigned int
+ * - the input parameter must be pkg-allocated and will be freed by function
+ *   (it is how it comes from the config parser)
+ */
+int fixup_uint(void** param)
+{
+	unsigned int ui;
+	str s;
+
+	s.s = (char*)*param;
+	s.len = strlen(s.s);
+	if(str2int(&s, &ui)==0)
+	{
+		pkg_free(*param);
+		*param=(void *)ui;
+		return 0;
+	}
+	LM_ERR("bad number <%s>\n", (char *)(*param));
+	return E_CFG;
+}
+
+/**
+ * fixup for functions that get one parameter
+ * - first paramter is converted to unsigned int
+ */
+int fixup_uint_null(void** param, int param_no)
+{
+	if(param_no != 1)
+	{
+		LM_ERR("invalid parameter number %d\n", param_no);
+		return E_UNSPEC;
+	}
+	return fixup_uint(param);
+}
+
+/**
+ * fixup for functions that get two parameters
+ * - first paramter is converted to unsigned int
+ * - second paramter is converted to unsigned int
+ */
+int fixup_uint_uint(void** param, int param_no)
+{
+	if (param_no != 1 && param_no != 2 )
+	{
+		LM_ERR("invalid parameter number %d\n", param_no);
+		return E_UNSPEC;
+	}
+	return fixup_uint(param);
+}
+
+#if 0
+/**
+ * - helper function
+ * Convert char* parameter to signed int
+ * - the input parameter must be pkg-allocated and will be freed by function
+ *   (it is how it comes from the config parser)
+ */
+int fixup_sint( void** param)
+{
+	int si;
+	str s;
+
+	s.s = (char*)*param;
+	s.len = strlen(s.s);
+	if(str2sint(&s, &si)==0)
+	{
+		pkg_free(*param);
+		*param=(void *)si;
+		return 0;
+	}
+	LM_ERR("bad number <%s>\n", (char *)(*param));
+	return E_CFG;
+}
+
+/**
+ * fixup for functions that get one parameter
+ * - first paramter is converted to signed int
+ */
+int fixup_sint_null(void** param, int param_no)
+{
+	if(param_no != 1)
+	{
+		LM_ERR("invalid parameter number %d\n", param_no);
+		return E_UNSPEC;
+	}
+	return fixup_sint(param);
+}
+
+/**
+ * fixup for functions that get two parameters
+ * - first paramter is converted to signed int
+ * - second paramter is converted to signed int
+ */
+int fixup_sint_sint(void** param, int param_no)
+{
+	if (param_no != 1 && param_no != 2 )
+	{
+		LM_ERR("invalid parameter number %d\n", param_no);
+		return E_UNSPEC;
+	}
+	return fixup_sint(param);
+}
+
+/**
+ * fixup for functions that get two parameters
+ * - first paramter is converted to signed int
+ * - second paramter is converted to unsigned int
+ */
+int fixup_sint_uint(void** param, int param_no)
+{
+	if (param_no != 1 && param_no != 2 )
+	{
+		LM_ERR("invalid parameter number %d\n", param_no);
+		return E_UNSPEC;
+	}
+	if (param_no == 1)
+		return fixup_sint(param);
+	return fixup_uint(param);
+}
+
+/**
+ * fixup for functions that get two parameters
+ * - first paramter is converted to unsigned int
+ * - second paramter is converted to signed int
+ */
+int fixup_uint_sint(void** param, int param_no)
+{
+	if (param_no != 1 && param_no != 2 )
+	{
+		LM_ERR("invalid parameter number %d\n", param_no);
+		return E_UNSPEC;
+	}
+	if (param_no == 1)
+		return fixup_uint(param);
+	return fixup_sint(param);
+}
+#endif
+
+/******************* OLD FUNCTIONS *************************/
 
 /*  
  * Convert char* parameter to int
