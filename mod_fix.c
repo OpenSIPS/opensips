@@ -32,7 +32,7 @@
 #include "mod_fix.h"
 
 /**
- * NAMIG FORMAT
+ * NAMING FORMAT
  * === fixup functions ===
  * + fixup_type1_type2(...)
  * - type1 - is the type the fist parameter gets converted to
