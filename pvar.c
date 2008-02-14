@@ -774,7 +774,7 @@ static int pv_get_useragent(struct sip_msg *msg, pv_param_t *param,
 static int pv_get_refer_to(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {
-	if(msg==NULL || res==NULL)
+	if(msg==NULL)
 		return -1;
 
 	if(parse_refer_to_header(msg)==-1)
@@ -786,11 +786,7 @@ static int pv_get_refer_to(struct sip_msg *msg, pv_param_t *param,
 	if(msg->refer_to==NULL || get_refer_to(msg)==NULL)
 		return pv_get_null(msg, param, res);
 
-	res->rs.s = get_refer_to(msg)->uri.s;
-	res->rs.len = get_refer_to(msg)->uri.len; 
-	
-	res->flags = PV_VAL_STR;
-	return 0;
+	return pv_get_strval(msg, param, res, &(get_refer_to(msg)->uri));
 }
 
 static int pv_get_diversion(struct sip_msg *msg, pv_param_t *param,
@@ -855,7 +851,7 @@ static int pv_get_diversion(struct sip_msg *msg, pv_param_t *param,
 static int pv_get_rpid(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {
-	if(msg==NULL || res==NULL)
+	if(msg==NULL)
 		return -1;
 
 	if(parse_rpid_header(msg)==-1)
@@ -867,11 +863,7 @@ static int pv_get_rpid(struct sip_msg *msg, pv_param_t *param,
 	if(msg->rpid==NULL || get_rpid(msg)==NULL)
 		return pv_get_null(msg, param, res);
 
-	res->rs.s = get_rpid(msg)->uri.s;
-	res->rs.len = get_rpid(msg)->uri.len; 
-	
-	res->flags = PV_VAL_STR;
-	return 0;
+	return pv_get_strval(msg, param, res, &(get_rpid(msg)->uri));
 }
 
 static int pv_get_ppi_attr(struct sip_msg *msg, pv_param_t *param,
@@ -943,62 +935,55 @@ static int pv_get_ppi_attr(struct sip_msg *msg, pv_param_t *param,
 static int pv_get_pai(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {
-    if(msg==NULL || res==NULL)
-	return -1;
+    if(msg==NULL)
+		return -1;
     
     if(parse_pai_header(msg)==-1)
     {
-	LM_DBG("no P-Asserted-Identity header\n");
-	return pv_get_null(msg, param, res);
+		LM_DBG("no P-Asserted-Identity header\n");
+		return pv_get_null(msg, param, res);
     }
 	
     if(msg->pai==NULL || get_pai(msg)==NULL) {
-	LM_DBG("no P-Asserted-Identity header\n");
-	return pv_get_null(msg, param, res);
+		LM_DBG("no P-Asserted-Identity header\n");
+		return pv_get_null(msg, param, res);
     }
     
-    res->rs.s = get_pai(msg)->uri.s;
-    res->rs.len = get_pai(msg)->uri.len; 
-    
-    res->flags = PV_VAL_STR;
-    return 0;
+	return pv_get_strval(msg, param, res, &(get_pai(msg)->uri));
 }
 
 /* proto of received message: $pr or $proto*/
 static int pv_get_proto(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {
-	if(msg==NULL || res==NULL)
+	str s;
+	if(msg==NULL)
 		return -1;
 
-	res->ri = msg->rcv.proto;
-	
 	switch(msg->rcv.proto)
 	{
 		case PROTO_UDP:
-			res->rs.s = "UDP";
-			res->rs.len = 3;
+			s.s = "UDP";
+			s.len = 3;
 		break;
 		case PROTO_TCP:
-			res->rs.s = "TCP";
-			res->rs.len = 3;
+			s.s = "TCP";
+			s.len = 3;
 		break;
 		case PROTO_TLS:
-			res->rs.s = "TLS";
-			res->rs.len = 3;
+			s.s = "TLS";
+			s.len = 3;
 		break;
 		case PROTO_SCTP:
-			res->rs.s = "SCTP";
-			res->rs.len = 4;
+			s.s = "SCTP";
+			s.len = 4;
 		break;
 		default:
-			res->rs.s = "NONE";
-			res->rs.len = 4;
+			s.s = "NONE";
+			s.len = 4;
 	}
 
-	
-	res->flags = PV_VAL_STR|PV_VAL_INT;
-	return 0;
+	return pv_get_strintval(msg, param, res, &s, (int)msg->rcv.proto);
 }
 
 
