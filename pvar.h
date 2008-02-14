@@ -199,8 +199,6 @@ int pv_parse_format(str *in, pv_elem_p *el);
 int pv_init_iname(pv_spec_p sp, int param);
 int pv_printf_s(struct sip_msg* msg, pv_elem_p list, str *s);
 
-int pv_get_null(struct sip_msg *msg, pv_param_t *param, pv_value_t *res);
-
 typedef struct _pvname_list {
 	pv_spec_t sname;
 	struct _pvname_list *next;
@@ -216,5 +214,18 @@ pvname_list_t* parse_pvname_list(str *in, unsigned int type);
 int register_pvars_mod(char *mod_name, pv_export_t *items);
 int pv_free_extra_list(void);
 
+/* PV helper functions */
+int pv_get_null(struct sip_msg *msg, pv_param_t *param, pv_value_t *res);
+
+int pv_get_uintval(struct sip_msg *msg, pv_param_t *param,
+		pv_value_t *res, unsigned int uival);
+int pv_get_sintval(struct sip_msg *msg, pv_param_t *param,
+		pv_value_t *res, int sival);
+int pv_get_strval(struct sip_msg *msg, pv_param_t *param,
+		pv_value_t *res, str *sval);
+int pv_get_strintval(struct sip_msg *msg, pv_param_t *param,
+		pv_value_t *res, str *sval, int ival);
+int pv_get_intstrval(struct sip_msg *msg, pv_param_t *param,
+		pv_value_t *res, int ival, str *sval);
 #endif
 
