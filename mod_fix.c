@@ -286,30 +286,6 @@ int fixup_uint_sint(void** param, int param_no)
 /******************* OLD FUNCTIONS *************************/
 
 /*  
- * Convert char* parameter to int
- * - the input parameter must be pkg_allocated and will be freed by function
- */
-int fixup_str2int( void** param, int param_no)
-{
-	unsigned long go_to;
-	int err;
-
-	if (param_no==1) {
-		go_to=str2s(*param, strlen(*param), &err );
-		if (err==0) {
-			pkg_free(*param);
-			*param=(void *)go_to;
-			return 0;
-		} else {
-			LM_ERR("bad number <%s>\n", (char *)(*param));
-			return E_CFG;
-		}
-	}
-	return 0;
-}
-
-
-/*  
  * Convert char* parameter to regexp
  * - the input parameter must be pkg_allocated and will be freed by function
  */

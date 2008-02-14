@@ -40,8 +40,6 @@ int fixup_sint_uint(void** param, int param_no);
 int fixup_uint_sint(void** param, int param_no);
 #endif
 
-int fixup_str2int(void** param, int param_no);
-
 int fixup_str2regexp(void** param, int param_no);
 
 int free_fixup_str2regexp(void** param, int param_no);
