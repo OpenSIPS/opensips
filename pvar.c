@@ -795,7 +795,7 @@ static int pv_get_diversion(struct sip_msg *msg, pv_param_t *param,
 	str *val;
 	str name;
 
-	if(msg == NULL || res == NULL)
+	if(msg == NULL)
 		return -1;
 
 	if(parse_diversion_header(msg) == -1)
@@ -804,16 +804,14 @@ static int pv_get_diversion(struct sip_msg *msg, pv_param_t *param,
 		return pv_get_null(msg, param, res);
 	}
 	
-	if(msg->diversion == NULL || get_diversion(msg) == NULL) {
+	if(msg->diversion == NULL || get_diversion(msg) == NULL)
+	{
 		LM_DBG("no Diversion header\n");
 		return pv_get_null(msg, param, res);
 	}
 
 	if(param->pvn.u.isname.name.n == 1)  { /* uri */
-	    res->rs.s = get_diversion(msg)->uri.s;
-	    res->rs.len = get_diversion(msg)->uri.len; 
-	    res->flags = PV_VAL_STR;
-	    return 0;
+		return pv_get_strval(msg, param, res, &(get_diversion(msg)->uri));
 	}
 
 	if(param->pvn.u.isname.name.n == 2)  { /* reason param */
@@ -821,12 +819,9 @@ static int pv_get_diversion(struct sip_msg *msg, pv_param_t *param,
 	    name.len = 6;
 	    val = diversion_param(msg, name);
 	    if (val) {
-		res->rs.s = val->s;
-		res->rs.len = val->len;
-		res->flags = PV_VAL_STR;
-		return 0;
+			return pv_get_strval(msg, param, res, val);
 	    } else {
-		return pv_get_null(msg, param, res);
+			return pv_get_null(msg, param, res);
 	    }
 	}
 
@@ -835,12 +830,9 @@ static int pv_get_diversion(struct sip_msg *msg, pv_param_t *param,
 	    name.len = 7;
 	    val = diversion_param(msg, name);
 	    if (val) {
-		res->rs.s = val->s;
-		res->rs.len = val->len;
-		res->flags = PV_VAL_STR;
-		return 0;
+			return pv_get_strval(msg, param, res, val);
 	    } else {
-		return pv_get_null(msg, param, res);
+			return pv_get_null(msg, param, res);
 	    }
 	}
 
@@ -871,7 +863,7 @@ static int pv_get_ppi_attr(struct sip_msg *msg, pv_param_t *param,
 {
     struct sip_uri *uri;
     
-    if(msg==NULL || res==NULL)
+    if(msg==NULL)
 	return -1;
 
     if(parse_ppi_header(msg) < 0) {
@@ -885,51 +877,39 @@ static int pv_get_ppi_attr(struct sip_msg *msg, pv_param_t *param,
     }
     
     if(param->pvn.u.isname.name.n == 1) { /* uri */
-		res->rs.s = get_ppi(msg)->uri.s;
-		res->rs.len = get_ppi(msg)->uri.len; 
-		res->flags = PV_VAL_STR;
-		return 0;
+		return pv_get_strval(msg, param, res, &(get_ppi(msg)->uri));
     }
 	
     if(param->pvn.u.isname.name.n==4) { /* display name */
-	if(get_ppi(msg)->display.s == NULL ||
-	   get_ppi(msg)->display.len <= 0) {
-	    LM_DBG("no P-Preferred-Identity display name\n");
-	    return pv_get_null(msg, param, res);
-	}
-	res->rs.s = get_ppi(msg)->display.s;
-	res->rs.len = get_ppi(msg)->display.len; 
-	res->flags = PV_VAL_STR;
-	return 0;
+		if(get_ppi(msg)->display.s == NULL ||
+				get_ppi(msg)->display.len <= 0) {
+		    LM_DBG("no P-Preferred-Identity display name\n");
+			return pv_get_null(msg, param, res);
+		}
+		return pv_get_strval(msg, param, res, &(get_ppi(msg)->display));
     }
 
     if((uri=parse_ppi_uri(msg))==NULL) {
-	LM_ERR("cannot parse P-Preferred-Identity URI\n");
-	return pv_get_null(msg, param, res);
+		LM_ERR("cannot parse P-Preferred-Identity URI\n");
+		return pv_get_null(msg, param, res);
     }
 
     if(param->pvn.u.isname.name.n==2) { /* username */
-	if(uri->user.s==NULL || uri->user.len<=0) {
-	    LM_DBG("no P-Preferred-Identity username\n");
-	    return pv_get_null(msg, param, res);
-	}
-	res->rs.s   = uri->user.s;
-	res->rs.len = uri->user.len; 
-	res->flags = PV_VAL_STR;
+		if(uri->user.s==NULL || uri->user.len<=0) {
+		    LM_DBG("no P-Preferred-Identity username\n");
+		    return pv_get_null(msg, param, res);
+		}
+		return pv_get_strval(msg, param, res, &uri->user);
     } else if(param->pvn.u.isname.name.n==3) { /* domain */
-	if(uri->host.s==NULL || uri->host.len<=0) {
-	    LM_DBG("no P-Preferred-Identity domain\n");
-	    return pv_get_null(msg, param, res);
-	}
-	res->rs.s   = uri->host.s;
-	res->rs.len = uri->host.len; 
-	res->flags = PV_VAL_STR;
-    } else {
-	LM_ERR("unknown specifier\n");
-	return pv_get_null(msg, param, res);
+		if(uri->host.s==NULL || uri->host.len<=0) {
+			LM_DBG("no P-Preferred-Identity domain\n");
+			return pv_get_null(msg, param, res);
+		}
+		return pv_get_strval(msg, param, res, &uri->host);
     }
 
-    return 0;
+	LM_ERR("unknown specifier\n");
+	return pv_get_null(msg, param, res);
 }
 
 static int pv_get_pai(struct sip_msg *msg, pv_param_t *param,
@@ -990,25 +970,22 @@ static int pv_get_proto(struct sip_msg *msg, pv_param_t *param,
 static int pv_get_dset(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {
-    if(msg==NULL || res==NULL)
-	return -1;
+	str s;
+    if(msg==NULL)
+		return -1;
     
-    res->rs.s = print_dset(msg, &res->rs.len);
-
-    if (res->rs.s == NULL)
+    s.s = print_dset(msg, &s.len);
+    if (s.s == NULL)
 		return pv_get_null(msg, param, res);
-    
-    res->rs.len -= CRLF_LEN;
-
-	res->flags = PV_VAL_STR;
-    return 0;
+    s.len -= CRLF_LEN;
+	return pv_get_strval(msg, param, res, &s);
 }
 
 
 static int pv_get_dsturi(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {
-    if(msg==NULL || res==NULL)
+    if(msg==NULL)
 		return -1;
     
     if (msg->dst_uri.s == NULL) {
@@ -1016,11 +993,7 @@ static int pv_get_dsturi(struct sip_msg *msg, pv_param_t *param,
 		return pv_get_null(msg, param, res);
     }
 
-    res->rs.s = msg->dst_uri.s;
-    res->rs.len = msg->dst_uri.len;
-
-    res->flags = PV_VAL_STR;
-    return 0;
+	return pv_get_strval(msg, param, res, &msg->dst_uri);
 }
 
 static int pv_get_dsturi_attr(struct sip_msg *msg, pv_param_t *param,
@@ -1028,10 +1001,10 @@ static int pv_get_dsturi_attr(struct sip_msg *msg, pv_param_t *param,
 {
 	struct sip_uri uri;
 
-        if(msg==NULL || res==NULL)
+	if(msg==NULL)
 		return -1;
     
-        if (msg->dst_uri.s == NULL) {
+	if (msg->dst_uri.s == NULL) {
 		LM_DBG("no destination URI\n");
 		return pv_get_null(msg, param, res);
 	}
@@ -1046,30 +1019,20 @@ static int pv_get_dsturi_attr(struct sip_msg *msg, pv_param_t *param,
 	{
 		if(uri.host.s==NULL || uri.host.len<=0)
 			return pv_get_null(msg, param, res);
-		res->rs.s = uri.host.s;
-		res->rs.len = uri.host.len;
-		res->flags = PV_VAL_STR;
+		return pv_get_strval(msg, param, res, &uri.host);
 	} else if(param->pvn.u.isname.name.n==2) /* port */ {
 		if(uri.port.s==NULL)
 			return pv_get_5060(msg, param, res);
-		res->rs.s   = uri.port.s;
-		res->rs.len = uri.port.len;
-		res->ri     = (int)uri.port_no;
-		res->flags  = PV_VAL_STR|PV_VAL_INT;
-		return 0;
+		return pv_get_strintval(msg, param, res, &uri.port, (int)uri.port_no);
 	} else if(param->pvn.u.isname.name.n==3) /* proto */ {
 		if(uri.transport_val.s==NULL)
 			return pv_get_udp(msg, param, res);
-		res->rs.s   = uri.transport_val.s;
-		res->rs.len = uri.transport_val.len;
-		res->ri     = (int)uri.proto;
-		res->flags  = PV_VAL_STR|PV_VAL_INT;
-	} else {
-		LM_ERR("invalid specifier\n");
-		return pv_get_null(msg, param, res);
+		return pv_get_strintval(msg, param, res, &uri.transport_val,
+				(int)uri.proto);
 	}
 
-    return 0;
+	LM_ERR("invalid specifier\n");
+	return pv_get_null(msg, param, res);
 }
 
 static int pv_get_content_type(struct sip_msg *msg, pv_param_t *param,
