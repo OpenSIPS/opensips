@@ -38,6 +38,7 @@
  * - type1 - is the type the fist parameter gets converted to
  * - type2 - is the type the second parameter gets converted to
  * + if the parameter is missing, then use 'null'
+ * + if the parameter is not converted, then use 'none'
  *
  * === fixup free functions ===
  * + free_fixup_type1_type2(...)
@@ -283,47 +284,106 @@ int fixup_uint_sint(void** param, int param_no)
 }
 #endif
 
-/******************* OLD FUNCTIONS *************************/
-
-/*  
- * Convert char* parameter to regexp
- * - the input parameter must be pkg_allocated and will be freed by function
+/**
+ * - helper function
+ * Convert char* parameter to regular expression structure
+ * - the input parameter must be pkg-allocated and will be freed by function
+ *   (it is how it comes from the config parser)
  */
-int fixup_str2regexp(void** param, int param_no)
+int fixup_regexp(void** param)
 {
 	regex_t* re;
-	LM_DBG("fixing %s\n", (char*)(*param));
 
-	if (param_no==1) {
-		if ((re=pkg_malloc(sizeof(regex_t)))==0) {
-			LM_ERR("no more pkg memory\n");
-			return E_OUT_OF_MEM;
-		}
-		if (regcomp(re, *param, REG_EXTENDED|REG_ICASE|REG_NEWLINE) ) {
-			pkg_free(re);
-			LM_ERR("bad re %s\n", (char*)*param);
-			return E_BAD_RE;
-		}
-		/* free string */
-		pkg_free(*param);
-		/* replace it with the compiled re */
-		*param=re;
+	if ((re=pkg_malloc(sizeof(regex_t)))==0) {
+		LM_ERR("no more pkg memory\n");
+		return E_OUT_OF_MEM;
 	}
+	if (regcomp(re, *param, REG_EXTENDED|REG_ICASE|REG_NEWLINE) ) {
+		pkg_free(re);
+		LM_ERR("bad re %s\n", (char*)*param);
+		return E_BAD_RE;
+	}
+	/* free string */
+	pkg_free(*param);
+	/* replace it with the compiled re */
+	*param=re;
 	return 0;
 }
-
-int free_fixup_str2regexp(void** param, int param_no)
+/**
+ * - helper function
+ *  free the regular expression parameter
+ */
+int fixup_free_regexp(void** param)
 {
-	if (param_no==1) {
-		if(*param)
-		{
-			regfree((regex_t*)(*param));
-			pkg_free(*param);
-			*param = 0;
-		}
+	if(*param)
+	{
+		regfree((regex_t*)(*param));
+		pkg_free(*param);
+		*param = 0;
 	}
 	return 0;
 }
+
+int fixup_regexp_null(void** param, int param_no)
+{
+	if(param_no != 1)
+	{
+		LM_ERR("invalid parameter number %d\n", param_no);
+		return E_UNSPEC;
+	}
+	return fixup_regexp(param);
+}
+
+/**
+ * fixup free for functions that get one parameter
+ * - first paramter was converted to regular expression
+ */
+int fixup_free_regexp_null(void** param, int param_no)
+{
+	if(param_no != 1)
+	{
+		LM_ERR("invalid parameter number %d\n", param_no);
+		return E_UNSPEC;
+	}
+	return fixup_free_regexp(param);
+}
+
+/**
+ * fixup for functions that get two parameters
+ * - first paramter is converted to regular expression structure
+ * - second paramter is not converted
+ */
+int fixup_regexp_none(void** param, int param_no)
+{
+	if (param_no != 1 && param_no != 2 )
+	{
+		LM_ERR("invalid parameter number %d\n", param_no);
+		return E_UNSPEC;
+	}
+	if (param_no == 1)
+		return fixup_regexp(param);
+	return 0;
+}
+
+/**
+ * fixup free for functions that get two parameters
+ * - first paramter was converted to regular expression
+ * - second paramter was notconverted
+ */
+int fixup_free_regexp_none(void** param, int param_no)
+{
+	if (param_no != 1 && param_no != 2 )
+	{
+		LM_ERR("invalid parameter number %d\n", param_no);
+		return E_UNSPEC;
+	}
+	if (param_no == 1)
+		return fixup_free_regexp(param);
+	return 0;
+}
+
+
+/******************* OLD FUNCTIONS *************************/
 
 
 /*
