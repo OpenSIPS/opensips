@@ -1132,6 +1132,10 @@ static int pv_get_authattr(struct sip_msg *msg, pv_param_t *param,
 	}
 	switch(param->pvn.u.isname.name.n)
 	{
+		case 4:
+		    res->rs.s  =((auth_body_t*)(hdr->parsed))->digest.username.domain.s;
+		    res->rs.len=((auth_body_t*)(hdr->parsed))->digest.username.domain.len;
+		break;
 		case 3:
 			if(((auth_body_t*)(hdr->parsed))->digest.uri.len==0)
 				return pv_get_null(msg, param, res);
@@ -2223,9 +2227,12 @@ static pv_export_t _pv_names_table[] = {
 	{{"au", (sizeof("au")-1)}, /* */
 		PVT_AUTH_USERNAME, pv_get_authattr, 0,
 		0, 0, pv_init_iname, 1},
+	{{"ad", (sizeof("ad")-1)}, /* */
+		PVT_AUTH_DOMAIN, pv_get_authattr, 0,
+		0, 0, pv_init_iname, 4},
 	{{"aU", (sizeof("aU")-1)}, /* */
 		PVT_AUTH_USERNAME_WHOLE, pv_get_authattr, 0,
-		0, 0, pv_init_iname, 4},
+		0, 0, pv_init_iname, 5},
 	{{"Au", (sizeof("Au")-1)}, /* */
 		PVT_ACC_USERNAME, pv_get_acc_username, 0,
 		0, 0, pv_init_iname, 1},
