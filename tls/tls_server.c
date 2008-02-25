@@ -505,7 +505,7 @@ _tls_read(struct tcp_connection *c, void *buf, size_t len)
 			return 0;
 	
 		default:
-			LM_ERR("something wrong in SSL:\n");
+			LM_ERR("something wrong in SSL: %d\n",err);
 			c->state = S_CONN_BAD;
 			tls_print_errstack();
 			return -1;
