@@ -409,7 +409,7 @@ int add_rule_to_list(struct bl_rule **first, struct bl_rule **last,
 
 
 
-static /*inline*/ void rm_dups(struct bl_head *head,
+static inline void rm_dups(struct bl_head *head,
 						struct bl_rule **first, struct bl_rule **last)
 {
 	struct bl_rule *p, *q;
@@ -587,14 +587,23 @@ struct bl_head *get_bl_head_by_name(str *name)
 
 
 
-int mark_for_search(struct bl_head *list)
+int mark_for_search(struct bl_head *list, int unsigned set)
 {
 	unsigned int n;
+
+	/* is it an "all" operation ? */
+	if (list==0) {
+		bl_marker = set ? (unsigned int)-1 : 0 ;
+		return 1;
+	}
 
 	if( list<blst_heads || (n=(list - blst_heads)) >= used_heads )
 		return 0;
 
-	bl_marker |= (1<<n);
+	if (set)
+		bl_marker |= (1<<n);
+	else
+		bl_marker &= ~(1<<n);
 
 	return 1;
 }

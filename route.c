@@ -404,19 +404,24 @@ static int fix_actions(struct action* a)
 				}
 				break;
 			case USE_BLACKLIST_T:
+			case UNUSE_BLACKLIST_T:
 				if (t->elem[0].type!=STRING_ST) {
-					LM_CRIT("bad USE_BLACKLIST type %d\n", t->elem[0].type);
+					LM_CRIT("bad [UN]USE_BLACKLIST type %d\n",t->elem[0].type);
 					ret=E_BUG;
 					goto error;
 				}
 				host.s = t->elem[0].u.string;
 				host.len = strlen(host.s);
-				blh = get_bl_head_by_name(&host);
-				if (blh==NULL) {
-					LM_ERR("USE_BLACKLIST - list "
-						"%s not configured\n", t->elem[0].u.string);
-					ret=E_CFG;
-					goto error;
+				if ( strcasecmp(host.s,"all")==0 ) {
+					blh = NULL;
+				} else {
+					blh = get_bl_head_by_name(&host);
+					if (blh==NULL) {
+						LM_ERR("[UN]USE_BLACKLIST - list "
+							"%s not configured\n", t->elem[0].u.string);
+						ret=E_CFG;
+						goto error;
+					}
 				}
 				t->elem[0].type = BLACKLIST_ST;
 				t->elem[0].u.data = blh;

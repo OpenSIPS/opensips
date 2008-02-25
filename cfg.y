@@ -234,6 +234,7 @@ extern int line;
 %token SERIALIZE_BRANCHES
 %token NEXT_BRANCHES
 %token USE_BLACKLIST
+%token UNUSE_BLACKLIST
 %token MAX_LEN
 %token SETDEBUG
 %token SETFLAG
@@ -2208,6 +2209,14 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 								" string expected");
 								}
 		| USE_BLACKLIST error {$$=0; yyerror("missing '(' or ')' ?"); }
+		| UNUSE_BLACKLIST LPAREN STRING RPAREN {
+								mk_action2( $$, UNUSE_BLACKLIST_T,
+									STRING_ST, 0, $3, 0);
+								}
+		| UNUSE_BLACKLIST LPAREN error RPAREN {$$=0; yyerror("bad argument,"
+								" string expected");
+								}
+		| UNUSE_BLACKLIST error {$$=0; yyerror("missing '(' or ')' ?"); }
 		| ID LPAREN RPAREN		{
 						 			cmd_tmp=(void*)find_cmd_export_t($1, 0, rt);
 									if (cmd_tmp==0){

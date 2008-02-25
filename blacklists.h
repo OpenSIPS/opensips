@@ -86,7 +86,7 @@ int add_list_to_head(struct bl_head *elem,
 
 struct bl_head *get_bl_head_by_name(str *name);
 
-int mark_for_search(struct bl_head *list);
+int mark_for_search(struct bl_head *list, unsigned int set);
 
 void reset_bl_markers();
 

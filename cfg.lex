@@ -158,6 +158,7 @@ FORCE_SEND_SOCKET	"force_send_socket"
 SERIALIZE_BRANCHES	"serialize_branches"
 NEXT_BRANCHES	"next_branches"
 USE_BLACKLIST	"use_blacklist"
+UNUSE_BLACKLIST	"unuse_blacklist"
 
 /*ACTION LVALUES*/
 URIHOST			"uri:host"
@@ -418,6 +419,8 @@ WHITESPACE	[ \t\r\n]
 									return NEXT_BRANCHES; }
 <INITIAL>{USE_BLACKLIST}	{	count(); yylval.strval=yytext;
 									return USE_BLACKLIST; }
+<INITIAL>{UNUSE_BLACKLIST}	{	count(); yylval.strval=yytext;
+									return UNUSE_BLACKLIST; }
 
 <INITIAL>{MAX_LEN}	{ count(); yylval.strval=yytext; return MAX_LEN; }
 

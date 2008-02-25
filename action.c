@@ -923,7 +923,10 @@ int do_action(struct action* a, struct sip_msg* msg)
 			ret = do_assign(msg, a);
 			break;
 		case USE_BLACKLIST_T:
-			mark_for_search((struct bl_head*)a->elem[0].u.data);
+			mark_for_search((struct bl_head*)a->elem[0].u.data, 1);
+			break;
+		case UNUSE_BLACKLIST_T:
+			mark_for_search((struct bl_head*)a->elem[0].u.data, 0);
 			break;
 		case PV_PRINTF_T:
 			ret = -1;
