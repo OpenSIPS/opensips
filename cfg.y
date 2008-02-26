@@ -1913,6 +1913,12 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 																(void*)$3,
 																0);
 												}
+		| RETURN LPAREN script_var RPAREN	{mk_action2( $$, RETURN_T,
+																SCRIPTVAR_ST, 
+																0,
+																(void*)$3,
+																0);
+												}
 		| RETURN LPAREN RPAREN	{mk_action2( $$, RETURN_T,
 																NUMBER_ST, 
 																0,

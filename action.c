@@ -284,7 +284,23 @@ int do_action(struct action* a, struct sip_msg* msg)
 				action_flags |= ACT_FL_EXIT;
 			break;
 		case RETURN_T:
-				ret=a->elem[0].u.number;
+				if (a->elem[0].type == SCRIPTVAR_ST)
+				{
+					spec = (pv_spec_t*)a->elem[0].u.data;
+					if(pv_get_spec_value(msg, spec, &val)!=0
+						|| (val.flags&PV_VAL_NULL))
+					{
+						ret=-1;
+					} else {
+						if(!(val.flags&PV_VAL_INT))
+							ret = 1;
+						else
+							ret = val.ri;
+					}
+					pv_value_destroy(&val);
+				} else {
+					ret=a->elem[0].u.number;
+				}
 				action_flags |= ACT_FL_RETURN;
 			break;
 		case FORWARD_T:
