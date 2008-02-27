@@ -386,18 +386,18 @@ int fixup_free_regexp_none(void** param, int param_no)
 /******************* OLD FUNCTIONS *************************/
 
 
-/*
- * Convert pvar string into parsed speudo variable specification
+/**
+ * - helper function
+ * Convert char* parameter to PV spec structure
  */
-int pvar_fixup(void **param, int param_no)
+int fixup_pvar(void **param)
 {
     pv_spec_t *sp;
     str s;
 
-    if ((param_no == 1) && *param) {
 	sp = (pv_spec_t*)pkg_malloc(sizeof(pv_spec_t));
 	if (sp == 0) {
-	    LM_ERR("no pkg memory left for parameter\n");
+	    LM_ERR("no pkg memory left\n");
 	    return E_UNSPEC;
 	}
 	s.s = (char*)*param; s.len = strlen(s.s);
@@ -412,20 +412,40 @@ int pvar_fixup(void **param, int param_no)
 	    return E_UNSPEC;
 	}
 	*param = (void*)sp;
-    }
 
     return 0;
 }
 
-/*  
- * free pvap spec
+/**
+ * - helper function
+ *  free the PV parameter
  */
-int free_pvar_fixup(void** param, int param_no)
+int fixup_free_pvar(void** param)
 {
-    if ((param_no == 1) && *param) {
-	pkg_free(*param);
-	*param = 0;
+    if (*param) {
+		pv_spec_free((pv_spec_t*)*param);
     }
 
     return 0;
 }
+
+int fixup_pvar_null(void** param, int param_no)
+{
+	if(param_no != 1)
+	{
+		LM_ERR("invalid parameter number %d\n", param_no);
+		return E_UNSPEC;
+	}
+	return fixup_pvar(param);
+}
+
+int fixup_free_pvar_null(void** param, int param_no)
+{
+	if(param_no != 1)
+	{
+		LM_ERR("invalid parameter number %d\n", param_no);
+		return E_UNSPEC;
+	}
+	return fixup_free_pvar(param);
+}
+
