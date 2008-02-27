@@ -1038,7 +1038,7 @@ static int pv_get_dsturi_attr(struct sip_msg *msg, pv_param_t *param,
 static int pv_get_content_type(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {
-	if(msg==NULL || res==NULL) 
+	if(msg==NULL) 
 		return -1;
 
 	if(msg->content_type==NULL
@@ -1049,18 +1049,13 @@ static int pv_get_content_type(struct sip_msg *msg, pv_param_t *param,
 		return pv_get_null(msg, param, res);
 	}
 	
-	res->rs.s = msg->content_type->body.s;
-	res->rs.len = msg->content_type->body.len;
-	trim(&res->rs);
-	
-	res->flags = PV_VAL_STR;
-	return 0;
+	return pv_get_strval(msg, param, res, &msg->content_type->body);
 }
 
 static int pv_get_content_length(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {
-	if(msg==NULL || res==NULL) 
+	if(msg==NULL) 
 		return -1;
 	if(msg->content_length==NULL
 			&& ((parse_headers(msg, HDR_CONTENTLENGTH_F, 0)==-1)
@@ -1070,37 +1065,33 @@ static int pv_get_content_length(struct sip_msg *msg, pv_param_t *param,
 		return pv_get_null(msg, param, res);
 	}
 	
-	res->rs.s = msg->content_length->body.s;
-	res->rs.len = msg->content_length->body.len;
-	trim(&res->rs);
-
-	res->ri = (int)(long)msg->content_length->parsed;
-	res->flags = PV_VAL_STR | PV_VAL_INT;
-
-	return 0;
+	return pv_get_intstrval(msg, param, res,
+			(int)(long)msg->content_length->parsed,
+			&msg->content_length->body);
 }
 
 static int pv_get_msg_body(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {
-    if(msg==NULL || res==NULL)
-	return -1;
+	str s;
+    if(msg==NULL)
+		return -1;
     
-    res->rs.s = get_body( msg );
+	s.s = get_body( msg );
 
-    if ((res->rs.s) == NULL) {
+	if (s.s == NULL)
+	{
 		LM_DBG("no message body\n");
 		return pv_get_null(msg, param, res);
     }    
-    if (!msg->content_length) 
-    {
-	LM_ERR("no Content-Length header found\n");
-	return pv_get_null(msg, param, res);
-    }
-    res->rs.len = get_content_length(msg);
 
-    res->flags = PV_VAL_STR;
-    return 0;
+	if (!msg->content_length) 
+	{
+		LM_ERR("no Content-Length header found\n");
+		return pv_get_null(msg, param, res);
+	}
+    s.len = get_content_length(msg);
+	return pv_get_strval(msg, param, res, &s);
 }
 
 static int pv_get_authattr(struct sip_msg *msg, pv_param_t *param,
@@ -1108,11 +1099,11 @@ static int pv_get_authattr(struct sip_msg *msg, pv_param_t *param,
 {
 	struct hdr_field *hdr;
 	
-    if(msg==NULL || res==NULL)
+    if(msg==NULL)
 		return -1;
     
 	if ((msg->REQ_METHOD == METHOD_ACK) || 
-	    (msg->REQ_METHOD == METHOD_CANCEL)) {
+			(msg->REQ_METHOD == METHOD_CANCEL)) {
 		LM_DBG("no [Proxy-]Authorization header\n");
 		return pv_get_null(msg, param, res);
 	}
@@ -1133,31 +1124,26 @@ static int pv_get_authattr(struct sip_msg *msg, pv_param_t *param,
 	switch(param->pvn.u.isname.name.n)
 	{
 		case 4:
-		    res->rs.s  =((auth_body_t*)(hdr->parsed))->digest.username.domain.s;
-		    res->rs.len=((auth_body_t*)(hdr->parsed))->digest.username.domain.len;
-		break;
+			return pv_get_strval(msg, param, res,
+					&((auth_body_t*)(hdr->parsed))->digest.username.domain);
 		case 3:
 			if(((auth_body_t*)(hdr->parsed))->digest.uri.len==0)
 				return pv_get_null(msg, param, res);
-			res->rs.s  =((auth_body_t*)(hdr->parsed))->digest.uri.s;
-			res->rs.len=((auth_body_t*)(hdr->parsed))->digest.uri.len;
+			return pv_get_strval(msg, param, res,
+					&((auth_body_t*)(hdr->parsed))->digest.uri);
 		break;
 		case 2:
-			res->rs.s  =((auth_body_t*)(hdr->parsed))->digest.realm.s;
-			res->rs.len=((auth_body_t*)(hdr->parsed))->digest.realm.len;
+			return pv_get_strval(msg, param, res,
+					&((auth_body_t*)(hdr->parsed))->digest.realm);
 		break;
 		case 1:
-		    res->rs.s  =((auth_body_t*)(hdr->parsed))->digest.username.user.s;
-		    res->rs.len=((auth_body_t*)(hdr->parsed))->digest.username.user.len;
+			return pv_get_strval(msg, param, res,
+					&((auth_body_t*)(hdr->parsed))->digest.username.user);
 		break;
 		default:
-		    res->rs.s  =((auth_body_t*)(hdr->parsed))->digest.username.whole.s;
-			res->rs.len=
-				((auth_body_t*)(hdr->parsed))->digest.username.whole.len;
+			return pv_get_strval(msg, param, res,
+					&((auth_body_t*)(hdr->parsed))->digest.username.whole);
 	}	    
-	
-	res->flags = PV_VAL_STR;
-    return 0;
 }
 
 static inline str *cred_user(struct sip_msg *rq)
@@ -1201,54 +1187,52 @@ static int pv_get_acc_username(struct sip_msg *msg, pv_param_t *param,
 	str* realm;
 	struct sip_uri puri;
 	struct to_body* from;
+	str s;
 
 	/* try to take it from credentials */
 	user = cred_user(msg);
 	if (user) {
 		realm = cred_realm(msg);
 		if (realm) {
-			res->rs.len = user->len+1+realm->len;
-			if (res->rs.len > MAX_URI_SIZE) {
+			s.len = user->len+1+realm->len;
+			if (s.len > MAX_URI_SIZE) {
 				LM_ERR("uri too long\n");
 				return pv_get_null(msg, param, res);
 			}
-			res->rs.s = buf;
-			memcpy(res->rs.s, user->s, user->len);
-			(res->rs.s)[user->len] = '@';
-			memcpy(res->rs.s+user->len+1, realm->s, realm->len);
-		} else {
-			res->rs.len = user->len;
-			res->rs.s = user->s;
+			s.s = buf;
+			memcpy(s.s, user->s, user->len);
+			(s.s)[user->len] = '@';
+			memcpy(s.s+user->len+1, realm->s, realm->len);
+			return pv_get_strval(msg, param, res, &s);
 		}
-	} else {
-		/* from from uri */
-	    if(parse_from_header(msg)<0)
-		{
-		    LM_ERR("cannot parse FROM header\n");
-		    return pv_get_null(msg, param, res);
-		}
-		if (msg->from && (from=get_from(msg)) && from->uri.len) {
-			if (parse_uri(from->uri.s, from->uri.len, &puri) < 0 ) {
-				LM_ERR("bad From URI\n");
-				return pv_get_null(msg, param, res);
-			}
-			res->rs.len = puri.user.len + 1 + puri.host.len;
-			if (res->rs.len > MAX_URI_SIZE) {
-				LM_ERR("from URI too long\n");
-				return pv_get_null(msg, param, res);
-			}
-			res->rs.s = buf;
-			memcpy(res->rs.s, puri.user.s, puri.user.len);
-			(res->rs.s)[puri.user.len] = '@';
-			memcpy(res->rs.s + puri.user.len + 1, puri.host.s,
-			       puri.host.len);
-		} else {
-			res->rs.len = 0;
-			res->rs.s = 0;
-		}
+		return pv_get_strval(msg, param, res, user);
 	}
-	res->flags = PV_VAL_STR;
-	return 0;
+		
+	/* from from uri */
+	if(parse_from_header(msg)<0)
+	{
+		LM_ERR("cannot parse FROM header\n");
+		return pv_get_null(msg, param, res);
+	}
+	if (msg->from && (from=get_from(msg)) && from->uri.len) {
+		if (parse_uri(from->uri.s, from->uri.len, &puri) < 0 ) {
+			LM_ERR("bad From URI\n");
+			return pv_get_null(msg, param, res);
+		}
+		s.len = puri.user.len + 1 + puri.host.len;
+		if (s.len > MAX_URI_SIZE) {
+			LM_ERR("from URI too long\n");
+			return pv_get_null(msg, param, res);
+		}
+		s.s = buf;
+		memcpy(s.s, puri.user.s, puri.user.len);
+		(s.s)[puri.user.len] = '@';
+		memcpy(s.s + puri.user.len + 1, puri.host.s, puri.host.len);
+	} else {
+		s.len = 0;
+		s.s = 0;
+	}
+	return pv_get_strval(msg, param, res, &s);
 }
 
 static int pv_get_branch(struct sip_msg *msg, pv_param_t *param,
@@ -1269,11 +1253,7 @@ static int pv_get_branch(struct sip_msg *msg, pv_param_t *param,
 		return pv_get_null(msg, param, res);
 	}
 	
-	res->rs.s = branch.s;
-	res->rs.len = branch.len;
-
-	res->flags = PV_VAL_STR;
-	return 0;
+	return pv_get_strval(msg, param, res, &branch);
 }
 
 #define Q_PARAM ">;q="
@@ -1283,8 +1263,9 @@ static int pv_get_branches(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {
 	str uri;
+	str s;
 	qvalue_t q;
-	int len, cnt, i;
+	int cnt, i;
 	unsigned int qlen;
 	char *p, *qbuf;
 
@@ -1294,24 +1275,24 @@ static int pv_get_branches(struct sip_msg *msg, pv_param_t *param,
 	if(msg->first_line.type == SIP_REPLY)
 		return pv_get_null(msg, param, res);
   
-	cnt = len = 0;
+	cnt = s.len = 0;
 
 	while ((uri.s = get_branch(cnt, &uri.len, &q, 0, 0, 0, 0)))
 	{
 		cnt++;
-		len += uri.len;
+		s.len += uri.len;
 		if (q != Q_UNSPECIFIED)
 		{
-			len += 1 + Q_PARAM_LEN + len_q(q);
+			s.len += 1 + Q_PARAM_LEN + len_q(q);
 		}
 	}
 
 	if (cnt == 0)
 		return pv_get_null(msg, param, res);   
 
-	len += (cnt - 1) * PV_FIELD_DELIM_LEN;
+	s.len += (cnt - 1) * PV_FIELD_DELIM_LEN;
 
-	if (len + 1 > PV_LOCAL_BUF_SIZE)
+	if (s.len + 1 > PV_LOCAL_BUF_SIZE)
 	{
 		LM_ERR("local buffer length exceeded\n");
 		return pv_get_null(msg, param, res);
@@ -1347,11 +1328,8 @@ static int pv_get_branches(struct sip_msg *msg, pv_param_t *param,
 		i++;
 	}
 
-	res->rs.s = &(pv_local_buf[0]);
-	res->rs.len = len;
-
-	res->flags = PV_VAL_STR;
-	return 0;
+	s.s = &(pv_local_buf[0]);
+	return pv_get_strval(msg, param, res, &s);
 }
 
 
