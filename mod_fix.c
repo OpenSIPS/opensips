@@ -309,6 +309,7 @@ int fixup_regexp(void** param)
 	*param=re;
 	return 0;
 }
+
 /**
  * - helper function
  *  free the regular expression parameter
@@ -324,6 +325,10 @@ int fixup_free_regexp(void** param)
 	return 0;
 }
 
+/**
+ * fixup for functions that get one parameter
+ * - first paramter is converted to regular expression structure
+ */
 int fixup_regexp_null(void** param, int param_no)
 {
 	if(param_no != 1)
@@ -383,9 +388,6 @@ int fixup_free_regexp_none(void** param, int param_no)
 }
 
 
-/******************* OLD FUNCTIONS *************************/
-
-
 /**
  * - helper function
  * Convert char* parameter to PV spec structure
@@ -429,6 +431,10 @@ int fixup_free_pvar(void** param)
     return 0;
 }
 
+/**
+ * fixup for functions that get one parameter
+ * - first paramter is converted to PV spec
+ */
 int fixup_pvar_null(void** param, int param_no)
 {
 	if(param_no != 1)
@@ -439,6 +445,10 @@ int fixup_pvar_null(void** param, int param_no)
 	return fixup_pvar(param);
 }
 
+/**
+ * fixup free for functions that get one parameter
+ * - first paramter was converted to PV spec
+ */
 int fixup_free_pvar_null(void** param, int param_no)
 {
 	if(param_no != 1)
