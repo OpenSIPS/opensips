@@ -511,14 +511,14 @@ install-bin: $(bin-prefix)/$(bin-dir) utils
 				$(INSTALL_CFG) $$FILE \
 					$(data-prefix)/$(data-dir)/dbtext/openser/`basename "$$FILE"` ; \
 			fi ;\
-		done ; \
+		done ;
 
 .PHONY: utils
 utils:
 		cd utils/$(NAME)unix; $(MAKE) all
 		if [ "$(BERKELEYDBON)" = "yes" ]; then \
 			cd utils/db_berkeley; $(MAKE) all ; \
-		fi ; \
+		fi ;
 
 install-modules: modules install-modules-tools $(modules-prefix)/$(modules-dir)
 	@for r in $(modules_full_path) "" ; do \
