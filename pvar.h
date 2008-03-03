@@ -215,6 +215,8 @@ int register_pvars_mod(char *mod_name, pv_export_t *items);
 int pv_free_extra_list(void);
 
 /* PV helper functions */
+int pv_parse_index(pv_spec_p sp, str *in);
+
 int pv_get_null(struct sip_msg *msg, pv_param_t *param, pv_value_t *res);
 
 int pv_get_uintval(struct sip_msg *msg, pv_param_t *param,
