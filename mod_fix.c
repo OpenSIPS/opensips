@@ -459,3 +459,91 @@ int fixup_free_pvar_null(void** param, int param_no)
 	return fixup_free_pvar(param);
 }
 
+/**
+ * - helper function
+ * Convert char* parameter to gparam_t (int or PV)
+ */
+int fixup_igp(void** param)
+{
+	str s;
+	gparam_p gp = NULL;
+	
+	gp = (gparam_p)pkg_malloc(sizeof(gparam_t));
+	if(gp == NULL)
+	{
+		LM_ERR("no more memory\n");
+		return E_UNSPEC;
+	}
+	memset(gp, 0, sizeof(gparam_t));
+	s.s = (char*)*param; s.len = strlen(s.s);
+	if(s.s[0]==PV_MARKER)
+	{
+		gp->type = GPARAM_TYPE_PV;
+		gp->v.pvs = (pv_spec_t*)pkg_malloc(sizeof(pv_spec_t));
+		if (gp->v.pvs == NULL)
+		{
+			LM_ERR("no pkg memory left for pv_spec_t\n");
+		    pkg_free(gp);
+		    return E_UNSPEC;
+		}
+
+		if(pv_parse_spec(&s, gp->v.pvs)==NULL)
+		{
+			LM_ERR("Unsupported User Field identifier\n");
+		    pkg_free(gp->v.pvs);
+		    pkg_free(gp);
+			return E_UNSPEC;
+		}
+	} else {
+		gp->type = GPARAM_TYPE_INT;
+		if(str2sint(&s, &gp->v.ival) != 0)
+		{
+			LM_ERR("Bad number <%s>\n", (char*)(*param));
+			return E_UNSPEC;
+		}
+	}
+	*param = (void*)gp;
+
+	return 0;
+}
+
+/**
+ * fixup for functions that get two parameters
+ * - first paramter is converted to gparam_t (int or PV)
+ * - second paramter is converted to gparam_t (int or PV)
+ */
+int fixup_igp_igp(void** param, int param_no)
+{
+	if (param_no != 1 && param_no != 2 )
+	{
+		LM_ERR("invalid parameter number %d\n", param_no);
+		return E_UNSPEC;
+	}
+	return fixup_igp(param);
+
+}
+
+/**
+ * - helper function
+ * Return integer value from a gparam_t
+ */
+int fixup_get_ivalue(struct sip_msg* msg, gparam_p gp, int *val)
+{
+	pv_value_t value;
+
+	if(gp->type==GPARAM_TYPE_INT)
+	{
+		*val = gp->v.ival;
+		return 0;
+	}
+	
+	if(pv_get_spec_value(msg, gp->v.pvs, &value)!=0 
+			|| value.flags&PV_VAL_NULL || !(value.flags&PV_VAL_INT))
+	{
+		LM_ERR("no valid PV value found (error in scripts)\n");
+		return -1;
+	}
+	*val = value.ri;
+	return 0;
+}
+

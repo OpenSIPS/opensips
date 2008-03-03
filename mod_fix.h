@@ -24,6 +24,20 @@
 #ifndef _mod_fix_h_
 #define _mod_fix_h_
 
+#include "pvar.h"
+
+#define GPARAM_TYPE_INT	0
+#define GPARAM_TYPE_PV	2
+
+typedef struct _gparam
+{
+	int type;
+	union {
+		int ival;
+		pv_spec_t *pvs;
+	} v;
+} gparam_t, *gparam_p;
+
 int fixup_str_null(void** param, int param_no);
 int fixup_str_str(void** param, int param_no);
 
@@ -47,5 +61,8 @@ int fixup_free_regexp_none(void** param, int param_no);
 
 int fixup_pvar_null(void **param, int param_no);
 int fixup_free_pvar_null(void** param, int param_no);
+
+int fixup_igp_igp(void** param, int param_no);
+int fixup_get_ivalue(struct sip_msg* msg, gparam_p gp, int *val);
 
 #endif
