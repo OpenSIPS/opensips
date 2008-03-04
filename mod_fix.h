@@ -70,4 +70,8 @@ int fixup_igp_igp(void** param, int param_no);
 int fixup_igp_null(void** param, int param_no);
 int fixup_get_ivalue(struct sip_msg* msg, gparam_p gp, int *val);
 
+int fixup_spve_spve(void** param, int param_no);
+int fixup_spve_null(void** param, int param_no);
+int fixup_get_svalue(struct sip_msg* msg, gparam_p gp, str *val);
+
 #endif

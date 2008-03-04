@@ -560,3 +560,106 @@ int fixup_get_ivalue(struct sip_msg* msg, gparam_p gp, int *val)
 	return 0;
 }
 
+/**
+ * - helper function
+ * Convert char* parameter to gparam_t (str or pv_elem_t)
+ */
+int fixup_spve(void** param)
+{
+	str s;
+	gparam_p gp = NULL;
+	
+	gp = (gparam_p)pkg_malloc(sizeof(gparam_t));
+	if(gp == NULL)
+	{
+		LM_ERR("no more memory\n");
+		return E_UNSPEC;
+	}
+	memset(gp, 0, sizeof(gparam_t));
+
+	s.s = (char*)(*param); s.len = strlen(s.s);
+	if(pv_parse_format(&s, &gp->v.pve)<0)
+	{
+		LM_ERR("wrong format[%s]\n", s.s);
+		return E_UNSPEC;
+	}
+	if(gp->v.pve->spec.getf==NULL)
+	{
+		gp->type = GPARAM_TYPE_STR;
+		pv_elem_free_all(gp->v.pve);
+		gp->v.sval = s;
+	} else {
+		gp->type = GPARAM_TYPE_PVE;
+	}			
+	*param = (void*)gp;
+	return 0;
+}
+
+/**
+ * fixup for functions that get one parameter
+ * - first paramter is converted to gparam_t (str or pv_elem_t)
+ */
+int fixup_spve_null(void** param, int param_no)
+{
+	if (param_no != 1)
+	{
+		LM_ERR("invalid parameter number %d\n", param_no);
+		return E_UNSPEC;
+	}
+	return fixup_spve(param);
+}
+
+/**
+ * fixup for functions that get two parameters
+ * - first paramter is converted to gparam_t (str or pv_elem_t)
+ * - second paramter is converted to gparam_t (str or pv_elem_t)
+ */
+int fixup_spve_spve(void** param, int param_no)
+{
+	if (param_no != 1 && param_no != 2 )
+	{
+		LM_ERR("invalid parameter number %d\n", param_no);
+		return E_UNSPEC;
+	}
+	return fixup_spve(param);
+}
+
+/**
+ * - helper function
+ * Return string value from a gparam_t
+ */
+int fixup_get_svalue(struct sip_msg* msg, gparam_p gp, str *val)
+{
+	pv_value_t value;
+
+	if(gp->type==GPARAM_TYPE_STR)
+	{
+		*val = gp->v.sval;
+		return 0;
+	}
+	
+	if(gp->type==GPARAM_TYPE_PVS)
+	{
+		if(pv_get_spec_value(msg, gp->v.pvs, &value)!=0 
+				|| value.flags&PV_VAL_NULL || !(value.flags&PV_VAL_STR))
+		{
+			LM_ERR("no valid PV value found (error in scripts)\n");
+			return -1;
+		}
+		*val = value.rs;
+		return 0;
+	}
+
+	if(gp->type==GPARAM_TYPE_PVE)
+	{
+		if(pv_printf_s( msg, gp->v.pve, val)!=0)
+		{
+			LM_ERR("cannot print the PV-formated string\n");
+			return -1;
+		}
+		return 0;
+	}
+
+	return -1;
+}
+
