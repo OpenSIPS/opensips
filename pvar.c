@@ -202,6 +202,22 @@ static int pv_get_5060(struct sip_msg *msg, pv_param_t *param, pv_value_t *res)
 	return pv_get_strintval(msg, param, res, &str_5060, 5060);
 }
 
+int pv_update_time(struct sip_msg *msg, time_t *t)
+{
+	if(_pv_msg_id != msg->id || _pv_msg_tm==0)
+	{
+		_pv_msg_tm = time(NULL);
+		_pv_msg_id = msg->id;
+		
+		if(t!=NULL)
+			*t=_pv_msg_tm;
+
+		return 1;
+	}
+	if(t!=NULL)
+		*t=_pv_msg_tm;
+	return 0;
+}
 
 /************************************************************/
 static int pv_get_pid(struct sip_msg *msg, pv_param_t *param,
@@ -226,11 +242,8 @@ static int pv_get_times(struct sip_msg *msg, pv_param_t *param,
 	if(msg==NULL)
 		return -1;
 
-	if(_pv_msg_id != msg->id || _pv_msg_tm==0)
-	{
-		_pv_msg_tm = time(NULL);
-		_pv_msg_id = msg->id;
-	}
+	pv_update_time(msg, NULL);
+
 	return pv_get_uintval(msg, param, res, (unsigned int)_pv_msg_tm);
 }
 
@@ -241,11 +254,8 @@ static int pv_get_timef(struct sip_msg *msg, pv_param_t *param,
 	
 	if(msg==NULL)
 		return -1;
-	if(_pv_msg_id != msg->id || _pv_msg_tm==0)
-	{
-		_pv_msg_tm = time(NULL);
-		_pv_msg_id = msg->id;
-	}
+
+	pv_update_time(msg, NULL);
 	
 	s.s = ctime(&_pv_msg_tm);
 	s.len = strlen(s.s)-1;
