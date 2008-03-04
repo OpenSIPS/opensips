@@ -26,15 +26,19 @@
 
 #include "pvar.h"
 
-#define GPARAM_TYPE_INT	0
-#define GPARAM_TYPE_PV	2
+#define GPARAM_TYPE_INT		0
+#define GPARAM_TYPE_STR		1
+#define GPARAM_TYPE_PVS		2
+#define GPARAM_TYPE_PVE		3
 
 typedef struct _gparam
 {
 	int type;
 	union {
 		int ival;
+		str sval;
 		pv_spec_t *pvs;
+		pv_elem_t *pve;
 	} v;
 } gparam_t, *gparam_p;
 
@@ -63,6 +67,7 @@ int fixup_pvar_null(void **param, int param_no);
 int fixup_free_pvar_null(void** param, int param_no);
 
 int fixup_igp_igp(void** param, int param_no);
+int fixup_igp_null(void** param, int param_no);
 int fixup_get_ivalue(struct sip_msg* msg, gparam_p gp, int *val);
 
 #endif

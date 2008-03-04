@@ -478,7 +478,7 @@ int fixup_igp(void** param)
 	s.s = (char*)*param; s.len = strlen(s.s);
 	if(s.s[0]==PV_MARKER)
 	{
-		gp->type = GPARAM_TYPE_PV;
+		gp->type = GPARAM_TYPE_PVS;
 		gp->v.pvs = (pv_spec_t*)pkg_malloc(sizeof(pv_spec_t));
 		if (gp->v.pvs == NULL)
 		{
@@ -508,6 +508,20 @@ int fixup_igp(void** param)
 }
 
 /**
+ * fixup for functions that get one parameter
+ * - first paramter is converted to gparam_t (int or PV)
+ */
+int fixup_igp_null(void** param, int param_no)
+{
+	if (param_no != 1)
+	{
+		LM_ERR("invalid parameter number %d\n", param_no);
+		return E_UNSPEC;
+	}
+	return fixup_igp(param);
+}
+
+/**
  * fixup for functions that get two parameters
  * - first paramter is converted to gparam_t (int or PV)
  * - second paramter is converted to gparam_t (int or PV)
@@ -520,7 +534,6 @@ int fixup_igp_igp(void** param, int param_no)
 		return E_UNSPEC;
 	}
 	return fixup_igp(param);
-
 }
 
 /**
