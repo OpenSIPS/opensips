@@ -33,12 +33,13 @@
  *  2003-11-02  added diversion header field to sip_msg (jh)
  *  2004-11-08  added force_send_socket (andrei)
  *  2005-02-25  uri types added (sip, sips & tel)  (andrei)
- *  2006-02-17 Session-Expires, Min-SE (dhsueh@somanetworks.com)
+ *  2006-02-17  Session-Expires, Min-SE (dhsueh@somanetworks.com)
+ *  2007-09-09  added sdp structure (osas)
  */
 
 
-#ifndef msg_parser_h
-#define msg_parser_h
+#ifndef MSG_PARSER_H
+#define MSG_PARSER_H
 
 #include "../str.h"
 #include "../lump_struct.h"
@@ -51,6 +52,7 @@
 #include "parse_via.h"
 #include "parse_fline.h"
 #include "hf.h"
+#include "sdp/sdp.h"
 
 
 /* convenience short-cut macros */
@@ -209,6 +211,8 @@ struct sip_msg {
         struct hdr_field* ppi;
         struct hdr_field* pai;
         struct hdr_field* privacy;
+
+	struct sdp_info* sdp;
 
 	char* eoh;        /* pointer to the end of header (if found) or null */
 	char* unparsed;   /* here we stopped parsing*/

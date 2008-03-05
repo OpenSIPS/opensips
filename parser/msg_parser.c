@@ -34,6 +34,7 @@
  *  2006-03-02 header of same type are linked as sibling (bogdan)
  *  2006-11-28 Added statistic support for bad message headers.
  *             (Jeffrey Magder - SOMA Networks)
+ *  2008-09-09 Added sdp parsing support (osas)
  */
 
 
@@ -658,6 +659,7 @@ void free_sip_msg(struct sip_msg* msg)
 	if (msg->dst_uri.s) { pkg_free(msg->dst_uri.s); msg->dst_uri.len=0; }
 	if (msg->path_vec.s) { pkg_free(msg->path_vec.s); msg->path_vec.len=0; }
 	if (msg->headers)     free_hdr_field_lst(msg->headers);
+	if (msg->sdp)         free_sdp(&(msg->sdp));
 	if (msg->add_rm)      free_lump_list(msg->add_rm);
 	if (msg->body_lumps)  free_lump_list(msg->body_lumps);
 	if (msg->reply_lump)   free_reply_lump(msg->reply_lump);
