@@ -547,11 +547,11 @@ static int parse_sdp_session(str *sdp_body, int session_num, str *cnt_disp, sdp_
 
 static int parse_mixed_content(str *mixed_body, str delimiter, sdp_info_t* _sdp)
 {
-	int res, multipart=0, no_eoh_found, start_parsing;
+	int res, no_eoh_found, start_parsing;
 	char *bodylimit, *rest;
 	char *d1p, *d2p;
 	char *ret, *end;
-	int mime;
+	unsigned int mime;
 	str sdp_body, cnt_disp;
 	int session_num;
 	struct hdr_field hf;
@@ -643,11 +643,8 @@ static int parse_mixed_content(str *mixed_body, str delimiter, sdp_info_t* _sdp)
  */
 int parse_sdp(struct sip_msg* _m)
 {
-	int res, multipart=0;
-	str body, sdp_body, mp_delimiter;
-	char *bodylimit, *rest;
-	char *d1p, *d2p;
-	char *ret, *end;
+	int res;
+	str body, mp_delimiter;
 	int mime;
 
 	if (_m->sdp) {
@@ -847,7 +844,6 @@ void free_cloned_sdp_stream(sdp_stream_cell_t *_stream)
 void free_cloned_sdp_session(sdp_session_cell_t *_session)
 {
 	sdp_session_cell_t *session, *l_session;
-	sdp_stream_cell_t *stream, *l_stream;
 
 	session = _session;
 	while (session) {
@@ -1083,8 +1079,6 @@ sdp_info_t * clone_sdp_info(struct sip_msg* _m)
 {
 	sdp_info_t *clone_sdp_info, *sdp_info=_m->sdp;
 	sdp_session_cell_t *clone_session, *prev_clone_session, *session;
-	sdp_stream_cell_t *stream_cell;
-	char* p;
 	int i, len;
 
 	if (sdp_info==NULL) {
