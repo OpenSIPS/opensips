@@ -446,10 +446,6 @@ char* get_sdp_hdr_field(char* buf, char* end, struct hdr_field* hdr)
 
 	char* tmp;
 	char *match;
-	struct via_body *vb;
-	struct cseq_body* cseq_b;
-	struct to_body* to_b;
-	int integer;
 
 	if ((*buf)=='\n' || (*buf)=='\r'){
 		/* double crlf or lflf or crcr */
