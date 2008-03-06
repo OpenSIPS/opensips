@@ -149,10 +149,10 @@ static int validate_msg(struct sip_msg * msg) {
 	}
 	//TODO it would make more sense to do the parsing just if its needed
 	//     but parse_from_header is smart enough, so its probably not a huge problem
-        if (parse_from_header(msg) < 0) {
-                LM_ERR("Error while parsing From header field\n");
-                return -1;
-        }
+	if (parse_from_header(msg) < 0) {
+		LM_ERR("Error while parsing From header field\n");
+		return -1;
+	}
 	return 0;
 }
 
