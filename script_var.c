@@ -186,5 +186,5 @@ void destroy_vars_list(script_var_t *svl)
 
 void destroy_vars(void)
 {
-	return destroy_vars_list(script_vars);
+	destroy_vars_list(script_vars);
 }

@@ -175,7 +175,7 @@ inline static char* dp_time(void)
 				syslog( (_log_level)|log_facility, \
 							LOG_PREFIX __VA_ARGS__);\
 
-		#define LM_GEN1(lev, ...) \
+		#define LM_GEN1(_lev, ...) \
 			LM_GEN2( log_facility, _lev, __VA_ARGS__)
 
 		#define LM_GEN2( _facility, _lev, ...) \

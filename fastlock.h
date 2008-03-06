@@ -88,7 +88,7 @@ inline static int tsl(fl_lock_t* lock)
 #else
 	val=1;
 	asm volatile( 
-		" xchg %b1, %0" : "=q" (val), "=m" (*lock) : "0" (val) : "memory"
+		" xchg %1, %0" : "=q" (val), "=m" (*lock) : "0" (val) : "memory"
 	);
 #endif /*NOSMP*/
 #elif defined(__CPU_sparc64) || defined(__CPU_sparc)
