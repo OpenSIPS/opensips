@@ -179,7 +179,7 @@ int run_top_route(struct action* a, struct sip_msg* msg)
 }
 
 
-/* execute assignement operation */
+/* execute assignment operation */
 int do_assign(struct sip_msg* msg, struct action* a)
 {
 	int ret;
