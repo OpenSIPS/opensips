@@ -508,7 +508,7 @@ void* qm_realloc(struct qm_block* qm, void* p, unsigned long size)
 	
 	
 #ifdef DBG_QM_MALLOC
-	LM_GEN1( memlog "params (%p, %p, %lu), called from %s: %s(%d)\n",
+	LM_GEN1( memlog, "params (%p, %p, %lu), called from %s: %s(%d)\n",
 		qm, p, size, file, func, line);
 	if ((p)&&(p>(void*)qm->last_frag_end || p<(void*)qm->first_frag)){
 		LM_CRIT("bad pointer %p (out of memory block!) - aborting\n", p);
@@ -679,7 +679,7 @@ void qm_status(struct qm_block* qm)
 		}
 
 	}
-	LM_GEN1(LM_GEN1, "-----------------------------\n");
+	LM_GEN1(memlog, "-----------------------------\n");
 }
 
 
