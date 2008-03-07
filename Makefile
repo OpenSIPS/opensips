@@ -177,14 +177,25 @@ modules:
 .PHONY: modules-readme
 modules-readme:
 	@set -e; \
+	if [ "$(DBXML2HTML)" = "" ]; then \
+		echo "error: xsltproc not found"; exit ; \
+	fi ; \
+	if [ "$(DBHTML2TXT)" = "" ]; then \
+		echo "error: lynx not found"; exit ; \
+	fi ; \
 	for r in  $(modules_basenames) "" ; do \
 		if [ -d "modules/$$r/doc" ]; then \
 			cd "modules/$$r/doc" ; \
-			if [ -f "$$r".sgml ]; then \
+			if [ -f "$$r".xml ]; then \
 				echo  "" ; \
-				echo  "docbook2txt $$r.sgml" ; \
-				docbook2txt "$$r".sgml ; \
-				mv "$$r".txt ../README ; \
+				echo  "docbook xml to html: $$r.xml" ; \
+				$(DBXML2HTML) -o $$r.html $(DBXML2HTMLPARAMS) $(DBHTMLXSL) \
+							$$r.xml ; \
+				echo  "docbook html to txt: $$r.html" ; \
+				$(DBHTML2TXT) $(DBHTML2TXTPARAMS) $$r.html >$$r.txt ; \
+				echo  "docbook txt to readme: $$r.txt" ; \
+				mv $$r.txt ../README ; \
+				echo  "" ; \
 			fi ; \
 			cd ../../.. ; \
 		fi ; \
@@ -193,13 +204,23 @@ modules-readme:
 .PHONY: modules-docbook-txt
 modules-docbook-txt:
 	@set -e; \
+	if [ "$(DBXML2HTML)" = "" ]; then \
+		echo "error: xsltproc not found"; exit ; \
+	fi ; \
+	if [ "$(DBHTML2TXT)" = "" ]; then \
+		echo "error: lynx not found"; exit ; \
+	fi ; \
 	for r in  $(modules_basenames) "" ; do \
 		if [ -d "modules/$$r/doc" ]; then \
 			cd "modules/$$r/doc" ; \
-			if [ -f "$$r".sgml ]; then \
+			if [ -f "$$r".xml ]; then \
 				echo  "" ; \
-				echo  "docbook2txt $$r.sgml" ; \
-				docbook2txt "$$r".sgml ; \
+				echo  "docbook xml to html: $$r.xml" ; \
+				$(DBXML2HTML) -o $$r.html $(DBXML2HTMLPARAMS) $(DBHTMLXSL) \
+							$$r.xml ; \
+				echo  "docbook html to txt: $$r.html" ; \
+				$(DBHTML2TXT) $(DBHTML2TXTPARAMS) $$r.html >$$r.txt ; \
+				echo  "" ; \
 			fi ; \
 			cd ../../.. ; \
 		fi ; \
@@ -208,13 +229,20 @@ modules-docbook-txt:
 .PHONY: modules-docbook-html
 modules-docbook-html:
 	@set -e; \
+	if [ "$(DBXML2HTML)" = "" ]; then \
+		echo "error: xsltproc not found"; exit ; \
+	fi ; \
 	for r in  $(modules_basenames) "" ; do \
 		if [ -d "modules/$$r/doc" ]; then \
 			cd "modules/$$r/doc" ; \
-			if [ -f "$$r".sgml ]; then \
+			if [ -f "$$r".xml ]; then \
 				echo  "" ; \
-				echo  "docbook2html -u $$r.sgml" ; \
-				docbook2html -u "$$r".sgml ; \
+				echo  "docbook xml to html: $$r.xml" ; \
+				$(DBXML2HTML) -o $$r.html $(DBXML2HTMLPARAMS) $(DBHTMLXSL) \
+							$$r.xml ; \
+				echo  "docbook html to txt: $$r.html" ; \
+				$(DBHTML2TXT) $(DBHTML2TXTPARAMS) $$r.html >$$r.txt ; \
+				echo  "" ; \
 			fi ; \
 			cd ../../.. ; \
 		fi ; \

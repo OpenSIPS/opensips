@@ -63,7 +63,7 @@ MAIN_NAME=openser
 VERSION = 1
 PATCHLEVEL = 4
 SUBLEVEL = 0
-EXTRAVERSION = dev6
+EXTRAVERSION = dev7
 
 RELEASE=$(VERSION).$(PATCHLEVEL).$(SUBLEVEL)$(EXTRAVERSION)
 OS = $(shell uname -s | sed -e s/SunOS/solaris/ | tr "[A-Z/]" "[a-z_]")
@@ -263,6 +263,29 @@ ifneq ($(SVNREVISION),)
 NEWSVNREVISION = $(shell if [ "$(SVNREVISION)" != "$(OLDSVNREVISION)" ] ; then \
 						echo "dosvnrev" ; \
 					fi )
+endif
+
+ifeq ($(DBXML2HTML),)
+DBXML2HTML = $(shell which xsltproc)
+endif
+
+ifneq ($(DBXML2HTML),)
+ifeq ($(DBHTMLCSS),)
+DBHTMLCSS = ../../../doc/module-docbook.css
+endif
+DBHTMLXSL = /usr/share/xml/docbook/stylesheet/nwalsh/html/docbook.xsl
+DBXML2HTMLPARAMS = --stringparam section.autolabel 1
+DBXML2HTMLPARAMS += --stringparam section.label.includes.component.label 1
+DBXML2HTMLPARAMS += --stringparam generate.toc "book toc,title,figure,table,example" 
+DBXML2HTMLPARAMS += --stringparam html.stylesheet $(DBHTMLCSS)
+endif
+
+ifeq ($(DBHTML2TXT),)
+DBHTML2TXT = $(shell which lynx)
+endif
+
+ifneq ($(DBHTML2TXT),)
+DBHTML2TXTPARAMS = -force_html -dump -nolist -width=72
 endif
 
 # find compiler name & version
