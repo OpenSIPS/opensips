@@ -254,10 +254,10 @@ modules-docbook-pdf:
 	for r in  $(modules_basenames) "" ; do \
 		if [ -d "modules/$$r/doc" ]; then \
 			cd "modules/$$r/doc" ; \
-			if [ -f "$$r".sgml ]; then \
+			if [ -f "$$r".xml ]; then \
 				echo  "" ; \
-				echo  "docbook2pdf $$r.sgml" ; \
-				docbook2pdf "$$r".sgml ; \
+				echo  "docbook2pdf $$r.xml" ; \
+				docbook2pdf "$$r".xml ; \
 			fi ; \
 			cd ../../.. ; \
 		fi ; \
