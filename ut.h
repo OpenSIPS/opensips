@@ -21,17 +21,6 @@
  * along with this program; if not, write to the Free Software 
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * History
- * ------
- * 2003-01-18 un_escape function introduced for convenience of code needing
- *            the complex&slow feature of unescaping
- * 2003-01-28 scratchpad removed (jiri)
- * 2003-01-29 pathmax added (jiri)
- * 2003-02-13 strlower added (janakj)
- * 2003-02-28 scratchpad compatibility abandoned (jiri)
- * 2003-03-30 str2int and str2float added (janakj)
- * 2003-04-26 ZSW (jiri)
- * 2004-03-08 updated int2str (64 bits, INT2STR_MAX_LEN used) (andrei)
  */
 
 
@@ -135,7 +124,6 @@ error_char:
 	if (err) *err=1;
 	return 0;
 }
-
 
 
 static inline int btostr( char *p,  unsigned char val)
@@ -491,7 +479,7 @@ static inline int strno2int( str *val, unsigned int *mask )
 /*
  * Make a copy of a str structure using shm_malloc
  */
-static inline int shm_str_dup(str* dst, str* src)
+static inline int shm_str_dup(str* dst, const str* src)
 {
 	dst->s = shm_malloc(src->len);
 	if (!dst->s) {
@@ -507,7 +495,7 @@ static inline int shm_str_dup(str* dst, str* src)
 /*
  * Make a copy of a str structure using pkg_malloc
  */
-static inline int pkg_str_dup(str* dst, str* src)
+static inline int pkg_str_dup(str* dst, const str* src)
 {
 	dst->s = pkg_malloc(src->len);
 	if (dst->s==NULL)
