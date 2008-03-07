@@ -17,12 +17,12 @@
 <!ENTITY openserdev "http://openser.org/cgi-bin/mailman/listinfo/devel">
 <!ENTITY openserdbdocs "http://www.openser.org/docs/db-tables/openser-db-devel.html">
 
-<!ENTITY openserhomelink "<ulink url='&serhome;'>&serhome</ulink>">
-<!ENTITY openserbugslink "<ulink url='&serbugs;'>&serbugs</ulink>">
-<!ENTITY openserhelplink "<ulink url='&serhelp;'>&serhelp</ulink>">
-<!ENTITY openseruserslink "<ulink url='&serusers;'>&serusers</ulink>">
-<!ENTITY openserdevlink "<ulink url='&serdev;'>&serdev</ulink>">
-<!ENTITY openserdbdocslink "<ulink url='&openserdbdocs;'>&openserdbdocs</ulink>">
+<!ENTITY openserhomelink "<ulink url='&serhome;'>&serhome;</ulink>">
+<!ENTITY openserbugslink "<ulink url='&serbugs;'>&serbugs;</ulink>">
+<!ENTITY openserhelplink "<ulink url='&serhelp;'>&serhelp;</ulink>">
+<!ENTITY openseruserslink "<ulink url='&serusers;'>&serusers;</ulink>">
+<!ENTITY openserdevlink "<ulink url='&serdev;'>&serdev;</ulink>">
+<!ENTITY openserdbdocslink "<ulink url='&openserdbdocs;'>&openserdbdocs;</ulink>">
 
 <!ENTITY openserhelpmail "<email>team@openser.org</email>">
 <!ENTITY openserusersmail "<email>users@openser.org</email>">
@@ -37,11 +37,11 @@
 <!ENTITY serusers "http://openser.org/cgi-bin/mailman/listinfo/users">
 <!ENTITY serdev "http://openser.org/cgi-bin/mailman/listinfo/devel">
 
-<!ENTITY serhomelink "<ulink url='&serhome;'>&serhome</ulink>">
-<!ENTITY serbugslink "<ulink url='&serbugs;'>&serbugs</ulink>">
-<!ENTITY serhelplink "<ulink url='&serhelp;'>&serhelp</ulink>">
-<!ENTITY seruserslink "<ulink url='&serusers;'>&serusers</ulink>">
-<!ENTITY serdevlink "<ulink url='&serdev;'>&serdev</ulink>">
+<!ENTITY serhomelink "<ulink url='&serhome;'>&serhome;</ulink>">
+<!ENTITY serbugslink "<ulink url='&serbugs;'>&serbugs;</ulink>">
+<!ENTITY serhelplink "<ulink url='&serhelp;'>&serhelp;</ulink>">
+<!ENTITY seruserslink "<ulink url='&serusers;'>&serusers;</ulink>">
+<!ENTITY serdevlink "<ulink url='&serdev;'>&serdev;</ulink>">
 
 <!ENTITY serhelpmail "<email>team@openser.org</email>">
 <!ENTITY serusersmail "<email>users@openser.org</email>">
