@@ -288,6 +288,10 @@ ifneq ($(DBHTML2TXT),)
 DBHTML2TXTPARAMS = -force_html -dump -nolist -width=72
 endif
 
+ifeq ($(DBXML2PDF),)
+DBXML2PDF = $(shell which docbook2pdf)
+endif
+
 # find compiler name & version
 ifeq ($(CC),)
 	CC=gcc

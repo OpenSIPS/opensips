@@ -251,13 +251,16 @@ modules-docbook-html:
 .PHONY: modules-docbook-pdf
 modules-docbook-pdf:
 	@set -e; \
+	if [ "$(DBXML2PDF)" = "" ]; then \
+		echo "error: docbook2pdf not found"; exit ; \
+	fi ; \
 	for r in  $(modules_basenames) "" ; do \
 		if [ -d "modules/$$r/doc" ]; then \
 			cd "modules/$$r/doc" ; \
 			if [ -f "$$r".xml ]; then \
 				echo  "" ; \
-				echo  "docbook2pdf $$r.xml" ; \
-				docbook2pdf "$$r".xml ; \
+				echo  "docbook xml to pdf: $$r.xml" ; \
+				$(DBXML2PDF) "$$r".xml ; \
 			fi ; \
 			cd ../../.. ; \
 		fi ; \
