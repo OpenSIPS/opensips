@@ -194,6 +194,7 @@ modules-readme:
 				echo  "docbook html to txt: $$r.html" ; \
 				$(DBHTML2TXT) $(DBHTML2TXTPARAMS) $$r.html >$$r.txt ; \
 				echo  "docbook txt to readme: $$r.txt" ; \
+				rm $$r.html ; \
 				mv $$r.txt ../README ; \
 				echo  "" ; \
 			fi ; \
@@ -220,6 +221,7 @@ modules-docbook-txt:
 							$$r.xml ; \
 				echo  "docbook html to txt: $$r.html" ; \
 				$(DBHTML2TXT) $(DBHTML2TXTPARAMS) $$r.html >$$r.txt ; \
+				rm $$r.html ; \
 				echo  "" ; \
 			fi ; \
 			cd ../../.. ; \
