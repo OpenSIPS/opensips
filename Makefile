@@ -240,8 +240,6 @@ modules-docbook-html:
 				echo  "docbook xml to html: $$r.xml" ; \
 				$(DBXML2HTML) -o $$r.html $(DBXML2HTMLPARAMS) $(DBHTMLXSL) \
 							$$r.xml ; \
-				echo  "docbook html to txt: $$r.html" ; \
-				$(DBHTML2TXT) $(DBHTML2TXTPARAMS) $$r.html >$$r.txt ; \
 				echo  "" ; \
 			fi ; \
 			cd ../../.. ; \
