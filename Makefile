@@ -449,9 +449,9 @@ install-cfg: $(cfg-prefix)/$(cfg-dir)
 		fi
 		# radius dictionary
 		if [ "$(RADIUSDEPON)" = "yes" ]; then \
-			$(INSTALL_TOUCH) $(cfg-prefix)/$(cfg-dir)/dictionary.radius.sample
+			$(INSTALL_TOUCH) $(cfg-prefix)/$(cfg-dir)/dictionary.radius.sample \
 			$(INSTALL_CFG) etc/dictionary.radius \
-				$(cfg-prefix)/$(cfg-dir)/dictionary.radius.sample
+				$(cfg-prefix)/$(cfg-dir)/dictionary.radius.sample \
 			if [ ! -f $(cfg-prefix)/$(cfg-dir)/dictionary.radius ]; then \
 				mv -f $(cfg-prefix)/$(cfg-dir)/dictionary.radius.sample \
 					$(cfg-prefix)/$(cfg-dir)/dictionary.radius; \
