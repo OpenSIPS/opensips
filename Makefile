@@ -111,6 +111,18 @@ ifeq (,$(MODULE_BERKELEYDB_INCLUDED))
 else
 	BERKELEYDBON=yes
 endif
+MODULE_DBTEXT_INCLUDED=$(shell echo $(modules)| grep db_text )
+ifeq (,$(MODULE_DBTEXT_INCLUDED))
+	DBTEXTON=no
+else
+	DBTEXTON=yes
+endif
+MODULE_RADIUSDEP_INCLUDED=$(shell echo $(modules)| grep _radius )
+ifeq (,$(MODULE_RADIUSDEP_INCLUDED))
+	RADIUSDEPON=no
+else
+	RADIUSDEPON=yes
+endif
 
 ALLDEP=Makefile Makefile.sources Makefile.defs Makefile.rules
 
@@ -436,12 +448,14 @@ install-cfg: $(cfg-prefix)/$(cfg-dir)
 				$(cfg-prefix)/$(cfg-dir)$(NAME).cfg; \
 		fi
 		# radius dictionary
-		$(INSTALL_TOUCH) $(cfg-prefix)/$(cfg-dir)/dictionary.radius.sample
-		$(INSTALL_CFG) etc/dictionary.radius \
-			$(cfg-prefix)/$(cfg-dir)/dictionary.radius.sample
-		if [ ! -f $(cfg-prefix)/$(cfg-dir)/dictionary.radius ]; then \
-			mv -f $(cfg-prefix)/$(cfg-dir)/dictionary.radius.sample \
-				$(cfg-prefix)/$(cfg-dir)/dictionary.radius; \
+		if [ "$(RADIUSDEPON)" = "yes" ]; then \
+			$(INSTALL_TOUCH) $(cfg-prefix)/$(cfg-dir)/dictionary.radius.sample
+			$(INSTALL_CFG) etc/dictionary.radius \
+				$(cfg-prefix)/$(cfg-dir)/dictionary.radius.sample
+			if [ ! -f $(cfg-prefix)/$(cfg-dir)/dictionary.radius ]; then \
+				mv -f $(cfg-prefix)/$(cfg-dir)/dictionary.radius.sample \
+					$(cfg-prefix)/$(cfg-dir)/dictionary.radius; \
+			fi; \
 		fi
 		# openserctl config
 		$(INSTALL_TOUCH)   $(cfg-prefix)/$(cfg-dir)/openserctlrc.sample
@@ -527,22 +541,6 @@ install-bin: $(bin-prefix)/$(bin-dir) utils
 		rm -fr /tmp/openserdbctl
 		$(INSTALL_TOUCH)   $(bin-prefix)/$(bin-dir)/$(NAME)unix
 		$(INSTALL_BIN) utils/$(NAME)unix/$(NAME)unix $(bin-prefix)/$(bin-dir)
-		# install dbtext stuff
-		mkdir -p $(modules-prefix)/$(lib-dir)/openserctl ; \
-		sed -e "s#/usr/local/share/openser#$(data-target)#g" \
-			< scripts/openserdbctl.dbtext > /tmp/openserdbctl.dbtext ; \
-			$(INSTALL_TOUCH) $(modules-prefix)/$(lib-dir)/openserctl/openserdbctl.dbtext ; \
-			$(INSTALL_CFG) /tmp/openserdbctl.dbtext $(modules-prefix)/$(lib-dir)/openserctl/ ; \
-			rm -fr /tmp/openserdbctl.dbtext ; \
-		mkdir -p $(data-prefix)/$(data-dir)/dbtext/openser ; \
-		for FILE in $(wildcard scripts/dbtext/openser/*) ; do \
-			if [ -f $$FILE ] ; then \
-				$(INSTALL_TOUCH) $$FILE \
-					$(data-prefix)/$(data-dir)/dbtext/openser/`basename "$$FILE"` ; \
-				$(INSTALL_CFG) $$FILE \
-					$(data-prefix)/$(data-dir)/dbtext/openser/`basename "$$FILE"` ; \
-			fi ;\
-		done ;
 
 .PHONY: utils
 utils:
@@ -633,6 +631,24 @@ install-modules-tools: $(bin-prefix)/$(bin-dir)
 				fi ;\
 			done ; \
 			$(INSTALL_BIN) utils/db_berkeley/bdb_recover $(bin-prefix)/$(bin-dir) ; \
+		fi
+		# install dbtext stuff
+		if [ "$(DBTEXTON)" = "yes" ]; then \
+			mkdir -p $(modules-prefix)/$(lib-dir)/openserctl ; \
+			sed -e "s#/usr/local/share/openser#$(data-target)#g" \
+				< scripts/openserdbctl.dbtext > /tmp/openserdbctl.dbtext ; \
+			$(INSTALL_TOUCH) $(modules-prefix)/$(lib-dir)/openserctl/openserdbctl.dbtext ; \
+			$(INSTALL_CFG) /tmp/openserdbctl.dbtext $(modules-prefix)/$(lib-dir)/openserctl/ ; \
+			rm -fr /tmp/openserdbctl.dbtext ; \
+			mkdir -p $(data-prefix)/$(data-dir)/dbtext/openser ; \
+			for FILE in $(wildcard scripts/dbtext/openser/*) ; do \
+				if [ -f $$FILE ] ; then \
+					$(INSTALL_TOUCH) $$FILE \
+						$(data-prefix)/$(data-dir)/dbtext/openser/`basename "$$FILE"` ; \
+					$(INSTALL_CFG) $$FILE \
+						$(data-prefix)/$(data-dir)/dbtext/openser/`basename "$$FILE"` ; \
+				fi ;\
+			done ;\
 		fi
 
 
