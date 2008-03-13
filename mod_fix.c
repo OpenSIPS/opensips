@@ -160,7 +160,7 @@ int fixup_uint(void** param)
 	if(str2int(&s, &ui)==0)
 	{
 		pkg_free(*param);
-		*param=(void *)ui;
+		*param=(void *)(unsigned long)ui;
 		return 0;
 	}
 	LM_ERR("bad number <%s>\n", (char *)(*param));

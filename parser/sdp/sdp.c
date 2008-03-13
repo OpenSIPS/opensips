@@ -574,7 +574,7 @@ static int parse_mixed_content(str *mixed_body, str delimiter, sdp_info_t* _sdp)
 		memset(&hf,0, sizeof(struct hdr_field));
 		rest = eat_line(d1p + delimiter.len + 2, d2p - d1p - delimiter.len - 2);
 		if ( rest > d2p ) {
-			LM_ERR("Unparsable <%.*s>\n", d2p-d1p, d1p);
+			LM_ERR("Unparsable <%.*s>\n", (int)(d2p-d1p), d1p);
 			return -1;
 		}
 		no_eoh_found = 1;
