@@ -28,9 +28,6 @@
 <!ENTITY openserusersmail "<email>users@openser.org</email>">
 <!ENTITY openserdevmail "<email>devel@openser.org</email>">
 
-<!ENTITY ser "OpenSER">
-<!ENTITY sername "Open SIP Express Router">
-
 <!ENTITY serhome "http://openser.org/">
 <!ENTITY serbugs "http://sourceforge.net/tracker/?group_id=139143">
 <!ENTITY serhelp "http://openser.org/cgi-bin/mailman/listinfo/team">
