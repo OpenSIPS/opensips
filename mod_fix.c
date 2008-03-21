@@ -88,7 +88,7 @@ int fixup_free_str(void** param)
 
 /**
  * fixup for functions that get one parameter
- * - first paramter is converted to str*
+ * - first parameter is converted to str*
  */
 int fixup_str_null(void** param, int param_no)
 {
@@ -102,8 +102,8 @@ int fixup_str_null(void** param, int param_no)
 
 /**
  * fixup for functions that get two parameters
- * - first paramter is converted to str*
- * - second paramter is converted to str*
+ * - first parameter is converted to str*
+ * - second parameter is converted to str*
  */
 int fixup_str_str(void** param, int param_no)
 {
@@ -117,7 +117,7 @@ int fixup_str_str(void** param, int param_no)
 
 /**
  * fixup free for functions that get one parameter
- * - first paramter was converted to str*
+ * - first parameter was converted to str*
  */
 int fixup_free_str_null(void** param, int param_no)
 {
@@ -131,8 +131,8 @@ int fixup_free_str_null(void** param, int param_no)
 
 /**
  * fixup free for functions that get two parameters
- * - first paramter was converted to str*
- * - second paramter was converted to str*
+ * - first parameter was converted to str*
+ * - second parameter was converted to str*
  */
 int fixup_free_str_str(void** param, int param_no)
 {
@@ -169,7 +169,7 @@ int fixup_uint(void** param)
 
 /**
  * fixup for functions that get one parameter
- * - first paramter is converted to unsigned int
+ * - first parameter is converted to unsigned int
  */
 int fixup_uint_null(void** param, int param_no)
 {
@@ -183,8 +183,8 @@ int fixup_uint_null(void** param, int param_no)
 
 /**
  * fixup for functions that get two parameters
- * - first paramter is converted to unsigned int
- * - second paramter is converted to unsigned int
+ * - first parameter is converted to unsigned int
+ * - second parameter is converted to unsigned int
  */
 int fixup_uint_uint(void** param, int param_no)
 {
@@ -222,7 +222,7 @@ int fixup_sint( void** param)
 
 /**
  * fixup for functions that get one parameter
- * - first paramter is converted to signed int
+ * - first parameter is converted to signed int
  */
 int fixup_sint_null(void** param, int param_no)
 {
@@ -236,8 +236,8 @@ int fixup_sint_null(void** param, int param_no)
 
 /**
  * fixup for functions that get two parameters
- * - first paramter is converted to signed int
- * - second paramter is converted to signed int
+ * - first parameter is converted to signed int
+ * - second parameter is converted to signed int
  */
 int fixup_sint_sint(void** param, int param_no)
 {
@@ -251,8 +251,8 @@ int fixup_sint_sint(void** param, int param_no)
 
 /**
  * fixup for functions that get two parameters
- * - first paramter is converted to signed int
- * - second paramter is converted to unsigned int
+ * - first parameter is converted to signed int
+ * - second parameter is converted to unsigned int
  */
 int fixup_sint_uint(void** param, int param_no)
 {
@@ -268,8 +268,8 @@ int fixup_sint_uint(void** param, int param_no)
 
 /**
  * fixup for functions that get two parameters
- * - first paramter is converted to unsigned int
- * - second paramter is converted to signed int
+ * - first parameter is converted to unsigned int
+ * - second parameter is converted to signed int
  */
 int fixup_uint_sint(void** param, int param_no)
 {
@@ -327,7 +327,7 @@ int fixup_free_regexp(void** param)
 
 /**
  * fixup for functions that get one parameter
- * - first paramter is converted to regular expression structure
+ * - first parameter is converted to regular expression structure
  */
 int fixup_regexp_null(void** param, int param_no)
 {
@@ -341,7 +341,7 @@ int fixup_regexp_null(void** param, int param_no)
 
 /**
  * fixup free for functions that get one parameter
- * - first paramter was converted to regular expression
+ * - first parameter was converted to regular expression
  */
 int fixup_free_regexp_null(void** param, int param_no)
 {
@@ -355,8 +355,8 @@ int fixup_free_regexp_null(void** param, int param_no)
 
 /**
  * fixup for functions that get two parameters
- * - first paramter is converted to regular expression structure
- * - second paramter is not converted
+ * - first parameter is converted to regular expression structure
+ * - second parameter is not converted
  */
 int fixup_regexp_none(void** param, int param_no)
 {
@@ -372,8 +372,8 @@ int fixup_regexp_none(void** param, int param_no)
 
 /**
  * fixup free for functions that get two parameters
- * - first paramter was converted to regular expression
- * - second paramter was notconverted
+ * - first parameter was converted to regular expression
+ * - second parameter was notconverted
  */
 int fixup_free_regexp_none(void** param, int param_no)
 {
@@ -433,7 +433,7 @@ int fixup_free_pvar(void** param)
 
 /**
  * fixup for functions that get one parameter
- * - first paramter is converted to PV spec
+ * - first parameter is converted to PV spec
  */
 int fixup_pvar_null(void** param, int param_no)
 {
@@ -447,7 +447,7 @@ int fixup_pvar_null(void** param, int param_no)
 
 /**
  * fixup free for functions that get one parameter
- * - first paramter was converted to PV spec
+ * - first parameter was converted to PV spec
  */
 int fixup_free_pvar_null(void** param, int param_no)
 {
@@ -509,7 +509,7 @@ int fixup_igp(void** param)
 
 /**
  * fixup for functions that get one parameter
- * - first paramter is converted to gparam_t (int or PV)
+ * - first parameter is converted to gparam_t (int or PV)
  */
 int fixup_igp_null(void** param, int param_no)
 {
@@ -523,8 +523,8 @@ int fixup_igp_null(void** param, int param_no)
 
 /**
  * fixup for functions that get two parameters
- * - first paramter is converted to gparam_t (int or PV)
- * - second paramter is converted to gparam_t (int or PV)
+ * - first parameter is converted to gparam_t (int or PV)
+ * - second parameter is converted to gparam_t (int or PV)
  */
 int fixup_igp_igp(void** param, int param_no)
 {
@@ -597,7 +597,7 @@ int fixup_spve(void** param)
 
 /**
  * fixup for functions that get one parameter
- * - first paramter is converted to gparam_t (str or pv_elem_t)
+ * - first parameter is converted to gparam_t (str or pv_elem_t)
  */
 int fixup_spve_null(void** param, int param_no)
 {
@@ -611,8 +611,8 @@ int fixup_spve_null(void** param, int param_no)
 
 /**
  * fixup for functions that get two parameters
- * - first paramter is converted to gparam_t (str or pv_elem_t)
- * - second paramter is converted to gparam_t (str or pv_elem_t)
+ * - first parameter is converted to gparam_t (str or pv_elem_t)
+ * - second parameter is converted to gparam_t (str or pv_elem_t)
  */
 int fixup_spve_spve(void** param, int param_no)
 {
@@ -626,8 +626,8 @@ int fixup_spve_spve(void** param, int param_no)
 
 /**
  * fixup for functions that get two parameters
- * - first paramter is converted to gparam_t (str or pv_elem_t)
- * - second paramter is converted to uint
+ * - first parameter is converted to gparam_t (str or pv_elem_t)
+ * - second parameter is converted to uint
  */
 int fixup_spve_uint(void** param, int param_no)
 {
