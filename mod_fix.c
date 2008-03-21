@@ -625,6 +625,24 @@ int fixup_spve_spve(void** param, int param_no)
 }
 
 /**
+ * fixup for functions that get two parameters
+ * - first paramter is converted to gparam_t (str or pv_elem_t)
+ * - second paramter is converted to uint
+ */
+int fixup_spve_uint(void** param, int param_no)
+{
+	if (param_no != 1 && param_no != 2 )
+	{
+		LM_ERR("invalid parameter number %d\n", param_no);
+		return E_UNSPEC;
+	}
+	if (param_no == 1)
+		return fixup_spve(param);
+		
+	return fixup_uint(param);
+}
+
+/**
  * - helper function
  * Return string value from a gparam_t
  */
