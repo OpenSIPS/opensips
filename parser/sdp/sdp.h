@@ -118,29 +118,6 @@ sdp_payload_attr_t* get_sdp_payload4index(sdp_stream_cell_t *stream, int index);
  */
 void free_sdp(sdp_info_t** _sdp);
 
-/**
- * Clone the given sdp_session_cell structure.
- */
-sdp_session_cell_t * clone_sdp_session_cell(sdp_session_cell_t *session);
-/**
- * Free all memory associated with the cloned sdp_session structure.
- *
- * Note: this will free up the parsed sdp structure (form SHM_MEM).
- */
-void free_cloned_sdp_session(sdp_session_cell_t *_session);
-
-/**
- * Clone the given sdp_info structure.
- *
- * Note: all cloned structer will be in SHM_MEM.
- */
-sdp_info_t* clone_sdp_info(struct sip_msg* _m);
-/**
- * Free all memory associated with the cloned sdp_info structure.
- *
- * Note: this will free up the parsed sdp structure (form SHM_MEM).
- */
-void free_cloned_sdp(sdp_info_t* sdp);
 
 /**
  * Print the content of the given sdp_info structure.
@@ -154,5 +131,6 @@ void print_sdp(sdp_info_t* sdp);
  * Note: only for debug purposes.
  */
 void print_sdp_session(sdp_session_cell_t* sdp_session);
+
 
 #endif /* SDP_H */
