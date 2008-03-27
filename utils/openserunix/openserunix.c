@@ -25,6 +25,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/un.h>
@@ -55,8 +56,9 @@ int main(int argc, char** argv)
 	int sock, len;
 	socklen_t from_len;
 	struct sockaddr_un from, to;
-	char name[32];
+	char name[256];
 	static char buffer[BUF_SIZE];
+	char *chroot_dir;
 
 	if (argc != 2) {
 		printf("Usage: %s <path_to_socket>\n", argv[0]);
@@ -71,8 +73,13 @@ int main(int argc, char** argv)
 	
 	memset(&from, 0, sizeof(from));
 	from.sun_family = PF_LOCAL;
-	
-	sprintf(name, "/tmp/OpenSER.%d.XXXXXX", getpid());
+
+	chroot_dir = getenv("CHROOT_DIR");
+	if (chroot_dir == NULL)
+		chroot_dir = "";
+	sprintf(name, "%s/tmp/OpenSER.%d.XXXXXX", chroot_dir, getpid());
+	umask(0); /* set mode to 0666 for when openser is running as non-root user and openserctl is running as root */
+
 	if (mkstemp(name) == -1) {
 		fprintf(stderr, "Error in mkstemp with name=%s: %s\n", name, strerror(errno));
 		return -2;
