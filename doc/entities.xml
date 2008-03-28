@@ -10,23 +10,23 @@
 <!ENTITY openser "OpenSER">
 <!ENTITY opensername "Open SIP Express Router">
 
-<!ENTITY openserhome "http://openser.org/">
+<!ENTITY openserhome "http://www.openser.org/">
 <!ENTITY openserbugs "http://sourceforge.net/tracker/?group_id=139143">
-<!ENTITY openserhelp "http://openser.org/cgi-bin/mailman/listinfo/team">
-<!ENTITY openserusers "http://openser.org/cgi-bin/mailman/listinfo/users">
-<!ENTITY openserdev "http://openser.org/cgi-bin/mailman/listinfo/devel">
+<!ENTITY openserhelp "http://lists.openser.org/cgi-bin/mailman/listinfo/team">
+<!ENTITY openserusers "http://lists.openser.org/cgi-bin/mailman/listinfo/users">
+<!ENTITY openserdev "http://lists.openser.org/cgi-bin/mailman/listinfo/devel">
 <!ENTITY openserdbdocs "http://www.openser.org/docs/db-tables/openser-db-devel.html">
 
-<!ENTITY openserhomelink "<ulink url='&serhome;'>&serhome;</ulink>">
-<!ENTITY openserbugslink "<ulink url='&serbugs;'>&serbugs;</ulink>">
-<!ENTITY openserhelplink "<ulink url='&serhelp;'>&serhelp;</ulink>">
-<!ENTITY openseruserslink "<ulink url='&serusers;'>&serusers;</ulink>">
-<!ENTITY openserdevlink "<ulink url='&serdev;'>&serdev;</ulink>">
+<!ENTITY openserhomelink "<ulink url='&openserhome;'>&openserhome;</ulink>">
+<!ENTITY openserbugslink "<ulink url='&openserbugs;'>&openserbugs;</ulink>">
+<!ENTITY openserhelplink "<ulink url='&openserhelp;'>&openserhelp;</ulink>">
+<!ENTITY openseruserslink "<ulink url='&openserusers;'>&openserusers;</ulink>">
+<!ENTITY openserdevlink "<ulink url='&openserdev;'>&openserdev;</ulink>">
 <!ENTITY openserdbdocslink "<ulink url='&openserdbdocs;'>&openserdbdocs;</ulink>">
 
-<!ENTITY openserhelpmail "<email>team@openser.org</email>">
-<!ENTITY openserusersmail "<email>users@openser.org</email>">
-<!ENTITY openserdevmail "<email>devel@openser.org</email>">
+<!ENTITY openserhelpmail "<email>team@lists.openser.org</email>">
+<!ENTITY openserusersmail "<email>users@lists.openser.org</email>">
+<!ENTITY openserdevmail "<email>devel@lists.openser.org</email>">
 
 <!ENTITY adminguide "Admin Guide">
 <!ENTITY develguide "Developer Guide">
@@ -43,10 +43,6 @@
 <!ENTITY serhelplink "<ulink url='&serhelp;'>&serhelp;</ulink>">
 <!ENTITY seruserslink "<ulink url='&serusers;'>&serusers;</ulink>">
 <!ENTITY serdevlink "<ulink url='&serdev;'>&serdev;</ulink>">
-
-<!ENTITY serhelpmail "<email>team@openser.org</email>">
-<!ENTITY serusersmail "<email>users@openser.org</email>">
-<!ENTITY serdevmail "<email>devel@openser.org</email>">
 
 <!ENTITY defaultdb "mysql://openser:openserrw@localhost/openser">
 <!ENTITY defaultrodb "mysql://openserro:openserro@localhost/openser">
