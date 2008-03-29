@@ -2840,6 +2840,16 @@ int pv_parse_format(str *in, pv_elem_p *el)
 
 	/*LM_DBG("parsing [%.*s]\n", in->len, in->s);*/
 	
+	if(in->len == 0)
+	{
+		*el = pkg_malloc(sizeof(pv_elem_t));
+		if(*el == NULL)
+			goto error;
+		memset(*el, 0, sizeof(pv_elem_t));
+		e->text = *in;
+		return 0;
+	}
+
 	p = in->s;
 	*el = NULL;
 	e = e0 = NULL;
@@ -2875,6 +2885,9 @@ int pv_parse_format(str *in, pv_elem_p *el)
 		p = p0;
 	}
 	/*LM_DBG("format parsed OK: [%d] items\n", n);*/
+
+	if(*el == NULL)
+		return -1;
 
 	return 0;
 

@@ -583,7 +583,7 @@ int fixup_spve(void** param)
 		LM_ERR("wrong format[%s]\n", s.s);
 		return E_UNSPEC;
 	}
-	if((gp->v.pve == NULL) || (gp->v.pve->spec.getf==NULL))
+	if(gp->v.pve->spec.getf==NULL)
 	{
 		gp->type = GPARAM_TYPE_STR;
 		pv_elem_free_all(gp->v.pve);
