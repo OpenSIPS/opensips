@@ -2846,7 +2846,7 @@ int pv_parse_format(str *in, pv_elem_p *el)
 		if(*el == NULL)
 			goto error;
 		memset(*el, 0, sizeof(pv_elem_t));
-		e->text = *in;
+		(*el)->text = *in;
 		return 0;
 	}
 
