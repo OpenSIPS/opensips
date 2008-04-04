@@ -386,7 +386,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 				break;
 			}
 			if (a->elem[0].u.s.s==NULL) {
-				ret = append_branch(msg, 0, &msg->dst_uri, 0,
+				ret = append_branch(msg, 0, &msg->dst_uri, &msg->path_vec,
 					a->elem[1].u.number, getb0flags(), msg->force_send_socket);
 				/* reset all branch info */
 				msg->force_send_socket = 0;
@@ -395,9 +395,14 @@ int do_action(struct action* a, struct sip_msg* msg)
 					pkg_free(msg->dst_uri.s);
 				msg->dst_uri.s = 0;
 				msg->dst_uri.len = 0;
+				if(msg->path_vec.s!=0)
+					pkg_free(msg->path_vec.s);
+				msg->path_vec.s = 0;
+				msg->path_vec.len = 0;
 			} else {
-				ret = append_branch(msg, &a->elem[0].u.s, &msg->dst_uri, 0,
-					a->elem[1].u.number, getb0flags(), msg->force_send_socket);
+				ret = append_branch(msg, &a->elem[0].u.s, &msg->dst_uri, 
+					&msg->path_vec, a->elem[1].u.number, getb0flags(),
+					msg->force_send_socket);
 			}
 			break;
 		case LEN_GT_T:
