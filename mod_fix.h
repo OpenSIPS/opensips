@@ -66,6 +66,12 @@ int fixup_free_regexp_none(void** param, int param_no);
 int fixup_pvar_null(void **param, int param_no);
 int fixup_free_pvar_null(void** param, int param_no);
 
+int fixup_pvar_str(void** param, int param_no);
+int fixup_free_pvar_str(void** param, int param_no);
+
+int fixup_pvar_str_str(void** param, int param_no);
+int fixup_free_pvar_str_str(void** param, int param_no);
+
 int fixup_igp_igp(void** param, int param_no);
 int fixup_igp_null(void** param, int param_no);
 int fixup_get_ivalue(struct sip_msg* msg, gparam_p gp, int *val);

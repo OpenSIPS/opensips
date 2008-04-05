@@ -460,6 +460,84 @@ int fixup_free_pvar_null(void** param, int param_no)
 }
 
 /**
+ * fixup for functions that get two parameters
+ * - first parameter is converted to PV spec
+ * - second parameter is converted to str*
+ */
+int fixup_pvar_str(void** param, int param_no)
+{
+	if (param_no == 1)
+	{
+	    return fixup_pvar(param);
+	}
+	if (param_no != 2)
+	{
+	    LM_ERR("invalid parameter number %d\n", param_no);
+	    return E_UNSPEC;
+	}
+	return fixup_str(param);
+}
+
+/**
+ * fixup free for functions that get two parameters
+ * - first parameter was converted to PV spec
+ * - second parameter was converted to str*
+ */
+int fixup_free_pvar_str(void** param, int param_no)
+{
+	if(param_no == 1)
+	{
+	    return fixup_free_pvar(param);
+	}
+	if (param_no != 2)
+	{
+	    LM_ERR("invalid parameter number %d\n", param_no);
+	    return E_UNSPEC;
+	}
+	return fixup_free_str(param);
+}
+
+/**
+ * fixup for functions that get three parameters
+ * - first parameter is converted to PV spec
+ * - second parameter is converted to str*
+ * - third parameter is converted to str*
+ */
+int fixup_pvar_str_str(void** param, int param_no)
+{
+	if (param_no == 1)
+	{
+	    return fixup_pvar(param);
+	}
+	if (param_no != 2 && param_no != 3)
+	{
+	    LM_ERR("invalid parameter number %d\n", param_no);
+	    return E_UNSPEC;
+	}
+	return fixup_str(param);
+}
+
+/**
+ * fixup free for functions that get three parameters
+ * - first parameter was converted to PV spec
+ * - second parameter was converted to str*
+ * - third parameter was converted to str*
+ */
+int fixup_free_pvar_str_str(void** param, int param_no)
+{
+	if(param_no == 1)
+	{
+	    return fixup_free_pvar(param);
+	}
+	if (param_no != 2 && param_no != 3)
+	{
+	    LM_ERR("invalid parameter number %d\n", param_no);
+	    return E_UNSPEC;
+	}
+	return fixup_free_str(param);
+}
+
+/**
  * - helper function
  * Convert char* parameter to gparam_t (int or PV)
  */
