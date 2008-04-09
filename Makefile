@@ -49,8 +49,8 @@ skip_modules?=
 
 # if not set on the cmd. line or the env, exclude this modules:
 exclude_modules?= jabber cpl-c db_mysql db_postgres osp db_unixodbc \
-	avp_radius auth_radius group_radius uri_radius xmpp \
-	presence presence_xml presence_mwi pua pua_bla pua_mi \
+	db_oracle avp_radius auth_radius group_radius uri_radius \
+	xmpp presence presence_xml presence_mwi pua pua_bla pua_mi \
 	pua_usrloc pua_xmpp rls mi_xmlrpc perl snmpstats perlvdb \
 	ldap carrierroute h350 xcap_client db_berkeley seas
 ifeq ($(TLS),)
@@ -104,6 +104,12 @@ ifeq (,$(MODULE_PGSQL_INCLUDED))
 	PGSQLON=no
 else
 	PGSQLON=yes
+endif
+MODULE_ORACLE_INCLUDED=$(shell echo $(modules)| grep db_oracle )
+ifeq (,$(MODULE_ORACLE_INCLUDED))
+	ORACLEON=no
+else
+	ORACLEON=yes
 endif
 MODULE_BERKELEYDB_INCLUDED=$(shell echo $(modules)| grep db_berkeley )
 ifeq (,$(MODULE_BERKELEYDB_INCLUDED))
@@ -549,6 +555,9 @@ utils:
 		if [ "$(BERKELEYDBON)" = "yes" ]; then \
 			cd utils/db_berkeley; $(MAKE) all ; \
 		fi ;
+		if [ "$(ORACLEON)" = "yes" ]; then \
+			cd utils/db_oracle; $(MAKE) all ; \
+		fi ;
 
 install-modules: modules install-modules-tools $(modules-prefix)/$(modules-dir)
 	@for r in $(modules_full_path) "" ; do \
@@ -613,6 +622,53 @@ install-modules-tools: $(bin-prefix)/$(bin-dir)
 					$(data-prefix)/$(data-dir)/postgres/`basename "$$FILE"` ; \
 				fi ;\
 			done ; \
+		fi
+		# install Oracle stuff
+		if [ "$(ORACLEON)" = "yes" ]; then \
+			mkdir -p $(modules-prefix)/$(lib-dir)/openserctl ; \
+			sed -e "s#/usr/local/sbin#$(bin-target)#g" \
+				< scripts/openserctl.oracle > /tmp/openserctl.oracle ; \
+			$(INSTALL_CFG) /tmp/openserctl.oracle \
+				$(modules-prefix)/$(lib-dir)/openserctl/openserctl.oracle ; \
+			rm -fr /tmp/openserctl.oracle ; \
+			sed -e "s#/usr/local/share/openser#$(data-target)#g" \
+			< scripts/openserdbctl.oracle > /tmp/openserdbctl.oracle ; \
+			$(INSTALL_TOUCH) $(modules-prefix)/$(lib-dir)/openserctl/openserdbctl.oracle ; \
+			$(INSTALL_CFG) /tmp/openserdbctl.oracle $(modules-prefix)/$(lib-dir)/openserctl/ ; \
+			rm -fr /tmp/openserdbctl.oracle ; \
+			sed -e "s#/usr/local/share/openser#$(data-target)#g" \
+			< scripts/openserdbfunc.oracle > /tmp/openserdbfunc.oracle ; \
+			$(INSTALL_TOUCH) $(modules-prefix)/$(lib-dir)/openserctl/openserdbfunc.oracle ; \
+			$(INSTALL_CFG) /tmp/openserdbfunc.oracle $(modules-prefix)/$(lib-dir)/openserctl/ ; \
+			rm -fr /tmp/openserdbfunc.oracle ; \
+			mkdir -p $(data-prefix)/$(data-dir)/oracle ; \
+			for FILE in $(wildcard scripts/oracle/*) ; do \
+				if [ -f $$FILE ] ; then \
+				$(INSTALL_TOUCH) $$FILE \
+					$(data-prefix)/$(data-dir)/oracle/`basename "$$FILE"` ; \
+				$(INSTALL_CFG) $$FILE \
+					$(data-prefix)/$(data-dir)/oracle/`basename "$$FILE"` ; \
+				fi ;\
+			done ; \
+			mkdir -p $(data-prefix)/$(data-dir)/oracle/inc ; \
+			for FILE in $(wildcard scripts/oracle/inc/*) ; do \
+				if [ -f $$FILE ] ; then \
+				$(INSTALL_TOUCH) $$FILE \
+					$(data-prefix)/$(data-dir)/oracle/inc/`basename "$$FILE"` ; \
+				$(INSTALL_CFG) $$FILE \
+					$(data-prefix)/$(data-dir)/oracle/inc/`basename "$$FILE"` ; \
+				fi ;\
+			done ; \
+			mkdir -p $(data-prefix)/$(data-dir)/oracle/admin ; \
+			for FILE in $(wildcard scripts/oracle/admin/*) ; do \
+				if [ -f $$FILE ] ; then \
+				$(INSTALL_TOUCH) $$FILE \
+					$(data-prefix)/$(data-dir)/oracle/admin/`basename "$$FILE"` ; \
+				$(INSTALL_CFG) $$FILE \
+					$(data-prefix)/$(data-dir)/oracle/admin/`basename "$$FILE"` ; \
+				fi ;\
+			done ; \
+			$(INSTALL_BIN) utils/db_oracle/openser_orasel $(bin-prefix)/$(bin-dir) ; \
 		fi
 		# install Berkeley database stuff
 		if [ "$(BERKELEYDBON)" = "yes" ]; then \
