@@ -61,7 +61,9 @@
 		<xsl:call-template name="column.trailing"/>
 	    </xsl:when>
 	    <xsl:when test="$type='int'">
-		<xsl:text>INTEGER</xsl:text>
+			<xsl:if test="not(autoincrement)">
+				<xsl:text>INTEGER</xsl:text>
+			</xsl:if>
 		<xsl:call-template name="column.trailing"/>
 	    </xsl:when>
 	    <xsl:when test="$type='long'">
@@ -109,7 +111,7 @@
 	    <xsl:text> WITHOUT TIME ZONE</xsl:text>
 	</xsl:if>
         <xsl:if test="autoincrement">
-            <xsl:text> SERIAL</xsl:text>
+            <xsl:text>SERIAL</xsl:text>
         </xsl:if>
 	<!-- PRIMARY KEY column definition -->
         <xsl:if test="primary">
