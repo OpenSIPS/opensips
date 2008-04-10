@@ -95,13 +95,6 @@
 
 	<xsl:call-template name="column.type"/>
 
-	<xsl:variable name="null">
-	    <xsl:call-template name="get-null"/>
-	</xsl:variable>
-	<xsl:if test="$null=0">
-	    <xsl:text> NOT NULL</xsl:text>
-	</xsl:if>
-
 	<xsl:choose>
 	    <xsl:when test="default[@db=$db]">
 		<xsl:text> DEFAULT </xsl:text>
@@ -110,9 +103,7 @@
 			<xsl:text>NULL</xsl:text>
 		    </xsl:when>
 		    <xsl:otherwise>
-			<xsl:text>'</xsl:text>
 			<xsl:value-of select="default[@db=$db]"/>
-			<xsl:text>'</xsl:text>
 		    </xsl:otherwise>
 		</xsl:choose>
 	    </xsl:when>
@@ -133,6 +124,13 @@
 		</xsl:choose>
 	    </xsl:when>
 	</xsl:choose>
+
+	<xsl:variable name="null">
+	    <xsl:call-template name="get-null"/>
+	</xsl:variable>
+	<xsl:if test="$null=0">
+	    <xsl:text> NOT NULL</xsl:text>
+	</xsl:if>
 
 	<xsl:if test="not(position()=last())">
 	    <xsl:text>,</xsl:text>

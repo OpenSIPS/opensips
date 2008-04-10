@@ -38,8 +38,30 @@
     </xsl:template>
 
     <xsl:template name="table.close">
+	<xsl:variable name="table.name">
+		<xsl:call-template name="get-name"/>
+	</xsl:variable>
 	<xsl:text>)</xsl:text>
-	<xsl:text>;&#x0A;&#x0A;</xsl:text>	
+	<xsl:text>;&#x0A;&#x0A;</xsl:text>
+
+	<!-- small hack, as the version table don't have an id field -->
+	<xsl:if test="not($table.name='version')">
+		<!-- create the autoincrement trigger -->
+		<xsl:text>CREATE OR REPLACE TRIGGER </xsl:text>
+		<xsl:value-of select="concat($table.name, '_tr&#x0A;')"/>
+		<xsl:text>before insert on </xsl:text>
+		<xsl:value-of select="$table.name"/>
+		<xsl:text> FOR EACH ROW&#x0A;</xsl:text>
+		<xsl:text>BEGIN&#x0A;</xsl:text>
+		<xsl:text>  auto_id(:NEW.id);&#x0A;</xsl:text>
+		<xsl:text>END </xsl:text>
+		<xsl:value-of select="concat($table.name, '_tr;&#x0A;')"/>
+		<xsl:text>/&#x0A;</xsl:text>
+	</xsl:if>
+	<xsl:text>BEGIN map2users('</xsl:text>
+	<xsl:value-of select="$table.name"/>
+	<xsl:text>'); END;&#x0A;</xsl:text>
+	<xsl:text>/&#x0A;</xsl:text>
     </xsl:template>
 
     <xsl:template name="column.type">
@@ -52,17 +74,15 @@
 		<xsl:value-of select="normalize-space(db:type)"/>
 	    </xsl:when>
 	    <xsl:when test="$type='char'">
-		<xsl:text>TINYINT</xsl:text>
-		<xsl:call-template name="column.size"/>
+		<xsl:text>NUMBER(5)</xsl:text>
 		<xsl:call-template name="column.trailing"/>
 	    </xsl:when>
 	    <xsl:when test="$type='short'">
-		<xsl:text>SMALLINT</xsl:text>
-		<xsl:call-template name="column.size"/>
+		<xsl:text>NUMBER(5)</xsl:text>
 		<xsl:call-template name="column.trailing"/>
 	    </xsl:when>
 	    <xsl:when test="$type='int'">
-		<xsl:text>INT</xsl:text>
+		<xsl:text>NUMBER</xsl:text>
 		<xsl:call-template name="column.size"/>
 		<xsl:call-template name="column.trailing"/>
 	    </xsl:when>
@@ -72,22 +92,22 @@
 		<xsl:call-template name="column.trailing"/>
 	    </xsl:when>
 	    <xsl:when test="$type='datetime'">
-		<xsl:text>DATETIME</xsl:text>
+		<xsl:text>DATE</xsl:text>
 		<xsl:call-template name="column.size"/>
 		<xsl:call-template name="column.trailing"/>
 	    </xsl:when>
 	    <xsl:when test="$type='double'">
-		<xsl:text>DOUBLE</xsl:text>
+		<xsl:text>NUMBER</xsl:text>
 		<xsl:call-template name="column.size"/>
 		<xsl:call-template name="column.trailing"/>
 	    </xsl:when>
 	    <xsl:when test="$type='float'">
-		<xsl:text>FLOAT</xsl:text>
+		<xsl:text>NUMBER</xsl:text>
 		<xsl:call-template name="column.size"/>
 		<xsl:call-template name="column.trailing"/>
 	    </xsl:when>
 	    <xsl:when test="$type='string'">
-		<xsl:text>VARCHAR</xsl:text>
+		<xsl:text>VARCHAR2</xsl:text>
 		<xsl:call-template name="column.size"/>
 		<xsl:call-template name="column.trailing"/>
 	    </xsl:when>
@@ -97,7 +117,7 @@
 		<xsl:call-template name="column.trailing"/>
 	    </xsl:when>
 	    <xsl:when test="$type='text'">
-		<xsl:text>TEXT</xsl:text>
+		<xsl:text>CLOB</xsl:text>
 		<xsl:call-template name="column.size"/>
 		<xsl:call-template name="column.trailing"/>
 	    </xsl:when>
@@ -111,9 +131,15 @@
 	<xsl:variable name="signed">
 	    <xsl:call-template name="get-sign"/>
 	</xsl:variable>
-	
-	<xsl:if test="$signed = 0">
-	    <xsl:text> UNSIGNED</xsl:text>
+
+	<!-- PRIMARY KEY column definition -->
+	<xsl:if test="primary">
+		<xsl:variable name="table.name">
+	    	<xsl:call-template name="get-name">
+				<xsl:with-param name="select" select="parent::table"/>
+			</xsl:call-template>
+		</xsl:variable>
+		<xsl:text> PRIMARY KEY</xsl:text>
 	</xsl:if>
     </xsl:template>
 
@@ -138,6 +164,107 @@
 	<xsl:text>)</xsl:text>
 	<xsl:if test="not(position()=last())">
 	    <xsl:text>,</xsl:text>
+	    <xsl:text>&#x0A;</xsl:text>
+	</xsl:if>
+    </xsl:template>
+
+<!-- copied from sql.xsl because of oracle different index creation -->
+    <xsl:template match="table">
+	<xsl:variable name="table.name">
+	    <xsl:call-template name="get-name"/>
+	</xsl:variable>
+
+	<!-- Create row in version table -->
+	<xsl:apply-templates select="version"/>
+
+	<xsl:text>CREATE TABLE </xsl:text>
+	<xsl:value-of select="$table.name"/>
+	<xsl:text> (&#x0A;</xsl:text>
+
+	<!-- Process all columns -->
+	<xsl:apply-templates select="column"/>
+
+	<!-- Process all unique indexes -->
+	<xsl:apply-templates select="index[child::unique]"/>
+
+	<!-- Process all primary indexes -->
+	<xsl:apply-templates select="index[child::primary]"/>
+
+	<xsl:text>&#x0A;</xsl:text>
+
+	<xsl:call-template name="table.close"/>
+
+	<xsl:for-each select="index[count(child::unique)=0]">
+	    <xsl:if test="not(child::primary)">
+	        <xsl:call-template name="create_index"/>
+	    </xsl:if>
+	</xsl:for-each>
+    </xsl:template>
+
+    <xsl:template match="index">
+	<xsl:variable name="index.name">
+	    <xsl:call-template name="get-name"/>
+	</xsl:variable>
+	<xsl:variable name="table.name">
+	    <xsl:call-template name="get-name">
+		<xsl:with-param name="select" select="parent::table"/>
+	    </xsl:call-template>
+	</xsl:variable>
+
+	<xsl:if test="position()=1">
+	    <xsl:text>,&#x0A;</xsl:text>
+	</xsl:if>
+	<xsl:text>    </xsl:text>
+	<xsl:if test="not($index.name='')">
+	    <xsl:text>CONSTRAINT </xsl:text>
+	    <xsl:value-of select="$index.name"/>
+	</xsl:if>
+	<xsl:if test="unique">
+	    <xsl:text> UNIQUE (</xsl:text>
+	    <xsl:apply-templates select="colref"/>
+	    <xsl:text>)</xsl:text>
+	
+	    <xsl:if test="not(position()=last())">
+		<xsl:text>,</xsl:text>
+		<xsl:text>&#x0A;</xsl:text>
+	    </xsl:if>
+	</xsl:if>
+	<!-- PRIMARY KEY standalone definition -->
+	<xsl:if test="primary">
+	    <xsl:text>PRIMARY KEY</xsl:text>
+	    <xsl:text> (</xsl:text>
+	    <xsl:apply-templates select="colref"/>
+	    <xsl:text>)</xsl:text>
+	    <xsl:if test="not(position()=last())">
+		<xsl:text>,</xsl:text>
+		<xsl:text>&#x0A;</xsl:text>
+	    </xsl:if>
+	</xsl:if>
+    </xsl:template>
+
+    <xsl:template name="create_index">
+	<xsl:variable name="index.name">
+	    <xsl:call-template name="get-name"/>
+	</xsl:variable>
+	<xsl:variable name="table.name">
+	    <xsl:call-template name="get-name">
+		<xsl:with-param name="select" select="parent::table"/>
+	    </xsl:call-template>
+	</xsl:variable>
+
+	<xsl:text>CREATE </xsl:text>
+	<xsl:if test="unique">
+	    <xsl:text>UNIQUE </xsl:text>
+	</xsl:if>
+	<xsl:text>INDEX </xsl:text>
+	<xsl:value-of select="$index.name"/>
+	<xsl:text> ON </xsl:text>
+	<xsl:value-of select="$table.name"/>
+	<xsl:text> (</xsl:text>
+	<xsl:apply-templates select="colref"/>
+	<xsl:text>);&#x0A;</xsl:text>
+
+	<xsl:if test="position()=last()">
 	    <xsl:text>&#x0A;</xsl:text>
 	</xsl:if>
     </xsl:template>
