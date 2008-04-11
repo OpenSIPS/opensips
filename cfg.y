@@ -78,6 +78,8 @@
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
+#include <unistd.h>
 #include <netinet/in.h>
 #include <netinet/in_systm.h>
 #include <netinet/ip.h>
@@ -130,6 +132,7 @@ static pv_spec_t *spec;
 static pv_elem_t *pvmodel;
 static struct bl_rule *bl_head = 0;
 static struct bl_rule *bl_tail = 0;
+static struct stat statf;
 
 action_elem_t elems[MAX_ACTION_ELEMS];
 
@@ -1006,22 +1009,45 @@ assign_stm: DEBUG EQUAL NUMBER {
 				}
 	;
 
-module_stm:	LOADMODULE STRING	{	if(*$2!='/' && mpath!=NULL
-										&& strlen($2)+mpath_len<255)
-									{
-										strcpy(mpath_buf+mpath_len, $2);
-										LM_DBG("loading module %s\n",mpath_buf);
-										if (sr_load_module(mpath_buf)!=0){
-											yyerror("failed to load module");
-										}
-										mpath_buf[mpath_len]='\0';
-									} else {
-										LM_DBG("loading module %s\n", $2);
-										if (sr_load_module($2)!=0){
-											yyerror("failed to load module");
-										}
-									}
-								}
+module_stm:	LOADMODULE STRING	{
+			if(*$2!='/' && mpath!=NULL
+					&& strlen($2)+mpath_len<255)
+			{
+				strcpy(mpath_buf+mpath_len, $2);
+				if (stat(mpath_buf, &statf) == -1) {
+					i_tmp = strlen(mpath_buf);
+					if(strchr($2, '/')==NULL &&
+							strncmp(mpath_buf+i_tmp-3, ".so", 3)==0)
+					{
+						if(i_tmp+strlen($2)<255)
+						{
+							strcpy(mpath_buf+i_tmp-3, "/");
+							strcpy(mpath_buf+i_tmp-2, $2);
+							if (stat(mpath_buf, &statf) == -1) {
+								mpath_buf[mpath_len]='\0';
+								LM_ERR("module '%s' not found in '%s'\n",
+									$2, mpath_buf);
+								yyerror("failed to load module");
+							}
+						} else {
+							yyerror("failed to load module - path too long");
+						}
+					} else {
+						yyerror("failed to load module - not found");
+					}
+				}
+				LM_DBG("loading module %s\n", mpath_buf);
+				if (sr_load_module(mpath_buf)!=0){
+					yyerror("failed to load module");
+				}
+				mpath_buf[mpath_len]='\0';
+			} else {
+				LM_DBG("loading module %s\n", $2);
+				if (sr_load_module($2)!=0){
+					yyerror("failed to load module");
+				}
+			}
+		}
 		| LOADMODULE error	{ yyerror("string expected");  }
 		| MODPARAM LPAREN STRING COMMA STRING COMMA STRING RPAREN {
 				if (set_mod_param_regex($3, $5, STR_PARAM, $7) != 0) {
