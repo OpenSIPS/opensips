@@ -11,6 +11,14 @@
 # (all this must  be defined previously!,  see Makefile.defs & Makefile)
 #
 
+#directory lists for clean rules
+all_modules=$(shell [ -d modules -a -d utils ] && ls modules)
+all_utils=$(shell [ -d modules -a -d utils ] && ls utils)
+all_nostatic_modules=$(filter-out $(addprefix modules/, $(static_modules)), \
+			$(wildcard modules/*))
+all_modules:=$(addprefix modules/, $(all_modules))
+all_utils:=$(addprefix utils/, $(all_utils))
+
 #implicit rules
 %.o: %.c $(ALLDEP)
 	@echo "Compiling $<"
@@ -69,12 +77,16 @@ dbschema-docbook-clean:
 .PHONY: clean
 clean: docbook-clean dbschema-docbook-clean
 	-@rm -f $(objs) $(NAME) $(objs:.o=.il) 2>/dev/null
-	-@for r in $(modules) $(static_modules_path) "" ; do \
-		if [ -d "$$r" ]; then \
+	-@for r in $(all_modules) "" ; do \
+		if [ -d "$$r" -a -f "$$r/Makefile" ]; then \
 			$(MAKE) -C $$r clean ; \
 		fi ; \
 	done
-	-@if [ -d utils/openserunix ]; then $(MAKE) -C utils/openserunix clean; fi
+	-@for r in $(all_utils) "" ; do \
+		if [ -d "$$r" -a -f "$$r/Makefile" ]; then \
+			$(MAKE) -C $$r clean ; \
+		fi ; \
+	done
 
 .PHONY: proper
 .PHONY: distclean
@@ -82,8 +94,8 @@ clean: docbook-clean dbschema-docbook-clean
 proper realclean distclean: clean 
 	-@rm -f $(depends) $(auto_gen) 2>/dev/null
 	-@rm -f cfg.tab.h 2>/dev/null
-	-@for r in $(modules) "" ; do \
-		if [ -d "$$r" ]; then \
+	-@for r in $(all_nostatic_modules) "" ; do \
+		if [ -d "$$r" -a -f "$$r/Makefile" ]; then \
 			 $(MAKE) -C $$r proper ; \
 		fi ; \
 	done 
