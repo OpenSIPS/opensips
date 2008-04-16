@@ -168,6 +168,7 @@
 	<xsl:text>    </xsl:text>
 	<xsl:if test="not($index.name='')">
 	    <xsl:text>CONSTRAINT </xsl:text>
+		<!-- because postgres don't like identical index names, even on table level -->
 	    <xsl:value-of select="concat($table.name, '_', $index.name, ' ')"/>
 	</xsl:if>
 	<xsl:if test="unique">

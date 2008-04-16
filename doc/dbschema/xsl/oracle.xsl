@@ -82,8 +82,11 @@
 		<xsl:call-template name="column.trailing"/>
 	    </xsl:when>
 	    <xsl:when test="$type='int'">
-		<xsl:text>NUMBER</xsl:text>
-		<xsl:call-template name="column.size"/>
+		<xsl:text>NUMBER(10)</xsl:text>
+		<xsl:call-template name="column.trailing"/>
+	    </xsl:when>
+	    <xsl:when test="$type='bitmap'">
+		<xsl:text>NUMBER(11)</xsl:text>
 		<xsl:call-template name="column.trailing"/>
 	    </xsl:when>
 	    <xsl:when test="$type='long'">
@@ -217,7 +220,15 @@
 	<xsl:text>    </xsl:text>
 	<xsl:if test="not($index.name='')">
 	    <xsl:text>CONSTRAINT </xsl:text>
-	    <xsl:value-of select="$index.name"/>
+		<!-- because oracle don't allow index names longer than 30 -->
+		<xsl:choose>
+			<xsl:when test="not(string-length(concat($table.name, '_', $index.name)) > 29)">
+				<xsl:value-of select="concat($table.name, '_', $index.name, ' ')"/>
+			</xsl:when>
+			<xsl:otherwise>
+		    	<xsl:value-of select="concat('ORA_', $index.name, ' ')"/>
+			</xsl:otherwise>
+		</xsl:choose>
 	</xsl:if>
 	<xsl:if test="unique">
 	    <xsl:text> UNIQUE (</xsl:text>
@@ -257,7 +268,15 @@
 	    <xsl:text>UNIQUE </xsl:text>
 	</xsl:if>
 	<xsl:text>INDEX </xsl:text>
-	<xsl:value-of select="$index.name"/>
+		<!-- because oracle don't allow index names longer than 30 -->
+		<xsl:choose>
+			<xsl:when test="not(string-length(concat($table.name, '_', $index.name)) > 30)">
+				<xsl:value-of select="concat($table.name, '_', $index.name, ' ')"/>
+			</xsl:when>
+			<xsl:otherwise>
+		    	<xsl:value-of select="concat('ORA_', $index.name, ' ')"/>
+			</xsl:otherwise>
+		</xsl:choose>
 	<xsl:text> ON </xsl:text>
 	<xsl:value-of select="$table.name"/>
 	<xsl:text> (</xsl:text>
