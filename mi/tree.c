@@ -65,7 +65,7 @@ struct mi_root *init_mi_tree(unsigned int code, char *reason, int reason_len)
 }
 
 
-static void free_mi_node(struct mi_node *parent)
+void free_mi_node(struct mi_node *parent)
 {
 	struct mi_node *p, *q;
 
@@ -100,7 +100,7 @@ void free_mi_tree(struct mi_root *parent)
 }
 
 
-static inline struct mi_node *create_mi_node(char *name, int name_len,
+struct mi_node *create_mi_node(char *name, int name_len,
 									char *value, int value_len, int flags)
 {
 	struct mi_node *new;
@@ -188,6 +188,14 @@ struct mi_node *add_mi_node_sibling( struct mi_node *brother, int flags,
 	return add_next(brother, name, name_len, value, value_len, flags);
 }
 
+void add_mi_sibling_node( struct mi_node *brother, struct mi_node *sibling)
+{
+	if(!brother || !sibling)
+		return;
+	brother->last->next = sibling;
+	brother->last = sibling;
+
+}
 
 struct mi_node *addf_mi_node_sibling(struct mi_node *brother, int flags,
 							char *name, int name_len, char *fmt_val, ...)
