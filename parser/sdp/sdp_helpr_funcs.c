@@ -25,6 +25,7 @@
  * History:
  * --------
  * 2007-09-09 ported helper functions from nathelper module (osas)
+ * 2008-04-22 integrated RFC4975 attributes - patch provided by Denis Bilenko (denik)
  *
  */
 
@@ -35,10 +36,12 @@
 
 
 static str sup_ptypes[] = {
-	{ "udp", 3},
-	{ "udptl", 5},
-	{ "rtp/avp", 7},
-	{ "rtp/savpf", 9},
+	str_init("udp"),
+	str_init("udptl"),
+	str_init("rtp/avp"),
+	str_init("rtp/savpf"),
+	str_init("TCP/MSRP"),
+	str_init("TCP/TLS/MSRP"),
 	{ NULL, 0}
 };
 
@@ -217,20 +220,54 @@ int extract_rtpmap(str *body,
 }
 
 
-int extract_ptime(str *body, str *ptime)
+/* generic method for attribute extraction
+ * field must has format "a=attrname:" */
+int extract_field(str *body, str *value, str field)
 {
-	if (strncmp(body->s, "a=ptime:", 8) !=0) {
-		/*LM_DBG("We are not pointing to an a=rtpmap: attribute =>`%.*s'\n", body->len, body->s); */
+	if (strncmp(body->s, field.s, field.len < body->len ? field.len : body->len) !=0) {
+		/*LM_DBG("We are not pointing to an %.* attribute =>`%.*s'\n", field.len, field.s, body->len, body->s); */
 		return -1;
 	}
 
-	ptime->s = body->s + 8; /* skip `a=ptime:' */
-	ptime->len = eat_line(ptime->s, body->s + body->len -
-	          ptime->s) - ptime->s;
-	trim_len(ptime->len, ptime->s, *ptime);
+	value->s = body->s + field.len; /* skip `a=attrname:' */
+	value->len = eat_line(value->s, body->s + body->len -
+	          value->s) - value->s;
+	trim_len(value->len, value->s, *value);
 
 	return 0;
 }
+
+
+int extract_ptime(str *body, str *ptime)
+{
+	static const str field = str_init("a=ptime:");
+	return extract_field(body, ptime, field);
+}
+
+int extract_accept_types(str *body, str *accept_types)
+{
+	static const str field = str_init("a=accept-types:");
+	return extract_field(body, accept_types, field);
+}
+
+int extract_accept_wrapped_types(str *body, str *accept_wrapped_types)
+{
+	static const str field = str_init("a=accept-wrapped-types:");
+	return extract_field(body, accept_wrapped_types, field);
+}
+
+int extract_max_size(str *body, str *max_size)
+{
+	static const str field = str_init("a=max-size:");
+	return extract_field(body, max_size, field);
+}
+
+int extract_path(str *body, str *path)
+{
+	static const str field = str_init("a=path:");
+	return extract_field(body, path, field);
+}
+
 
 int extract_sendrecv_mode(str *body, str *sendrecv_mode)
 {

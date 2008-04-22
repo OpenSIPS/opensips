@@ -25,6 +25,7 @@
  * History:
  * --------
  * 2007-09-09 ported helper functions from nathelper module (osas)
+ * 2008-04-22 integrated RFC4975 attributes - patch provided by Denis Bilenko (denik)
  *
  */
 
@@ -48,6 +49,12 @@ int extract_ptime(str *body, str *ptime);
 int extract_sendrecv_mode(str *body, str *sendrecv_mode);
 int extract_mediaip(str *body, str *mediaip, int *pf, char *line);
 int extract_media_attr(str *body, str *mediamedia, str *mediaport, str *mediatransport, str *mediapayload);
+
+/* RFC4975 attributes */
+int extract_accept_types(str *body, str *accept_types);
+int extract_accept_wrapped_types(str *body, str *accept_wrapped_types);
+int extract_max_size(str *body, str *max_size);
+int extract_path(str *body, str *path);
 
 char *find_sdp_line(char *p, char *plimit, char linechar);
 char *find_next_sdp_line(char *p, char *plimit, char linechar, char *defptr);

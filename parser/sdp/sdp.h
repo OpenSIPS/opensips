@@ -25,6 +25,7 @@
  * HISTORY:
  * --------
  * 2007-09-09 osas: ported and enhanced sdp parsing functions from nathelper module
+ * 2008-04-22 osas: integrated RFC4975 attributes - patch provided by Denis Bilenko (denik)
  *
  */
 
@@ -57,6 +58,10 @@ typedef struct sdp_stream_cell {
 	str transport;
 	str payloads;
 	int payloads_num;                         /**< number of payloads inside a stream */
+	str path;                                 /**< RFC4975: path attribute */
+	str max_size;                             /**< RFC4975: max-size attribute */
+	str accept_types;                         /**< RFC4975: accept-types attribute */
+	str accept_wrapped_types;                 /**< RFC4975: accept-wrapped-types attribute */
 	struct sdp_payload_attr **p_payload_attr; /**< fast access pointers to payloads */
 	struct sdp_payload_attr *payload_attr;
 } sdp_stream_cell_t;

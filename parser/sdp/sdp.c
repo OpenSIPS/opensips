@@ -25,6 +25,7 @@
  * HISTORY:
  * --------
  * 2007-09-09 osas: ported and enhanced sdp parsing functions from nathelper module
+ * 2008-04-22 osas: integrated RFC4975 attributes - patch provided by Denis Bilenko (denik)
  *
  */
 
@@ -534,6 +535,14 @@ static int parse_sdp_session(str *sdp_body, int session_num, str *cnt_disp, sdp_
 				}
 				payload_attr = (sdp_payload_attr_t*)get_sdp_payload4payload(stream, &rtp_payload);
 				set_sdp_payload_attr(payload_attr, &rtp_enc, &rtp_clock, &rtp_params);
+			} else if (extract_accept_types(&tmpstr1, &stream->accept_types) == 0) {
+				a1p = stream->accept_types.s + stream->accept_types.len;
+			} else if (extract_accept_wrapped_types(&tmpstr1, &stream->accept_wrapped_types) == 0) {
+				a1p = stream->accept_wrapped_types.s + stream->accept_wrapped_types.len;
+			} else if (extract_max_size(&tmpstr1, &stream->max_size) == 0) {
+				a1p = stream->max_size.s + stream->max_size.len;
+			} else if (extract_path(&tmpstr1, &stream->path) == 0) {
+				a1p = stream->path.s + stream->path.len;
 			/*} else { */
 			/*	LM_DBG("else: `%.*s'\n", tmpstr1.len, tmpstr1.s); */
 			}
@@ -778,14 +787,18 @@ void print_sdp_session(sdp_session_cell_t *session)
 		session->streams_num, session->streams);
 	stream = session->streams;
 	while (stream) {
-		LM_DBG("....stream[%d]:%p=>%p {%p} '%.*s' '%.*s' '%.*s' '%.*s' (%d)=>%p\n",
+		LM_DBG("....stream[%d]:%p=>%p {%p} '%.*s' '%.*s' '%.*s' '%.*s' (%d)=>%p '%.*s' '%.*s' '%.*s' '%.*s'\n",
 			stream->stream_num, stream, stream->next,
 			stream->p_payload_attr,
 			stream->media.len, stream->media.s,
 			stream->port.len, stream->port.s,
 			stream->transport.len, stream->transport.s,
 			stream->payloads.len, stream->payloads.s,
-			stream->payloads_num, stream->payload_attr);
+			stream->payloads_num, stream->payload_attr,
+			stream->path.len, stream->path.s,
+			stream->max_size.len, stream->max_size.s,
+			stream->accept_types.len, stream->accept_types.s,
+			stream->accept_wrapped_types.len, stream->accept_wrapped_types.s);
 		payload = stream->payload_attr;
 		while (payload) {
 			LM_DBG("......payload[%d]:%p=>%p p_payload_attr[%d]:%p '%.*s' '%.*s' '%.*s' '%.*s' '%.*s' '%.*s'\n",
@@ -944,12 +957,12 @@ sdp_stream_cell_t * clone_sdp_stream_cell(sdp_stream_cell_t *stream)
 		return NULL;
 	}
 
+	/* NOTE: we are not cloning RFC4975 attributes */
 	len = sizeof(sdp_stream_cell_t) +
 			stream->media.len +
 			stream->port.len +
 			stream->transport.len +
 			stream->payloads.len +
-
 			stream->ip_addr.len;
 	clone_stream = (sdp_stream_cell_t*)shm_malloc(len);
 	if (clone_stream == NULL) {
@@ -1012,6 +1025,13 @@ sdp_stream_cell_t * clone_sdp_stream_cell(sdp_stream_cell_t *stream)
 		clone_stream->ip_addr.len = stream->ip_addr.len;
 		memcpy( p, stream->ip_addr.s, stream->ip_addr.len);
 	}
+
+	/* NOTE: we are not cloning RFC4975 attributes:
+	 * - path
+	 * - max_size
+	 * - accept_types
+	 * - accept_wrapped_types
+	 */
 
 	return clone_stream;
 error:
