@@ -134,7 +134,6 @@
 	<xsl:variable name="signed">
 	    <xsl:call-template name="get-sign"/>
 	</xsl:variable>
-
 	<!-- PRIMARY KEY column definition -->
 	<xsl:if test="primary">
 		<xsl:variable name="table.name">
@@ -143,31 +142,6 @@
 			</xsl:call-template>
 		</xsl:variable>
 		<xsl:text> PRIMARY KEY</xsl:text>
-	</xsl:if>
-    </xsl:template>
-
-    <xsl:template match="index">
-	<xsl:variable name="index.name">
-	    <xsl:call-template name="get-name"/>
-	</xsl:variable>
-
-	<xsl:if test="position()=1">
-	    <xsl:text>,&#x0A;</xsl:text>
-	</xsl:if>
-	<xsl:text>    </xsl:text>
-	<xsl:if test="unique">
-	    <xsl:text>UNIQUE </xsl:text>
-	</xsl:if>
-	<xsl:text>KEY </xsl:text>
-	<xsl:if test="not($index.name='')">
-	    <xsl:value-of select="concat($index.name, ' ')"/>
-	</xsl:if>
-	<xsl:text>(</xsl:text>
-	<xsl:apply-templates select="colref"/>
-	<xsl:text>)</xsl:text>
-	<xsl:if test="not(position()=last())">
-	    <xsl:text>,</xsl:text>
-	    <xsl:text>&#x0A;</xsl:text>
 	</xsl:if>
     </xsl:template>
 
