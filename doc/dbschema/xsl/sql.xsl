@@ -61,29 +61,112 @@
 	<!-- Process all columns -->
 	<xsl:apply-templates select="column"/>
 
-	<!-- Process all indexes -->
-	<xsl:apply-templates select="index"/>
+	<!-- Process all unique indexes -->
+	<xsl:apply-templates select="index[child::unique]"/>
+
+	<!-- Process all primary indexes -->
+	<xsl:apply-templates select="index[child::primary]"/>
 
 	<xsl:text>&#x0A;</xsl:text>
 
 	<xsl:call-template name="table.close"/>
+
+	<xsl:for-each select="index[count(child::unique)=0]">
+	    <xsl:if test="not(child::primary)">
+	        <xsl:call-template name="create_index"/>
+	    </xsl:if>
+	</xsl:for-each>
     </xsl:template>
 
-    <xsl:template name="table.close">
-	<xsl:text>);&#x0A;&#x0A;</xsl:text>
-    </xsl:template>
+<!-- ################ /TABLE ################  -->
 
-    <xsl:template match="version">
+
+<!-- ################ /VERSION ################  -->
+
+	<xsl:template match="version">
 	<xsl:text>INSERT INTO version (table_name, table_version) values ('</xsl:text>
 	<xsl:call-template name="get-name">
-	    <xsl:with-param name="select" select="parent::table"/>
+		<xsl:with-param name="select" select="parent::table"/>
 	</xsl:call-template>
 	<xsl:text>','</xsl:text>
 	<xsl:value-of select="text()"/>
 	<xsl:text>');&#x0A;</xsl:text>
+	</xsl:template>
+
+<!-- ################ /VERSION ################  -->
+
+
+<!-- ################ INDEX (constraint) ################  -->
+
+    <xsl:template match="index">
+	<xsl:variable name="index.name">
+	    <xsl:call-template name="get-name"/>
+	</xsl:variable>
+
+	<xsl:if test="position()=1">
+	    <xsl:text>,&#x0A;</xsl:text>
+	</xsl:if>
+	<xsl:text>    </xsl:text>
+	<xsl:if test="not($index.name='')">
+		<xsl:text>CONSTRAINT </xsl:text>
+		<xsl:call-template name="get-index-name"/>
+	</xsl:if>
+	<xsl:if test="unique">
+		<xsl:text> UNIQUE (</xsl:text>
+		<xsl:apply-templates select="colref"/>
+		<xsl:text>)</xsl:text>
+	    <xsl:if test="not(position()=last())">
+		<xsl:text>,</xsl:text>
+		<xsl:text>&#x0A;</xsl:text>
+	    </xsl:if>
+	</xsl:if>
+	<!-- PRIMARY KEY standalone definition -->
+	<xsl:if test="primary">
+	    <xsl:text> PRIMARY KEY </xsl:text>
+	    <xsl:text> (</xsl:text>
+	    <xsl:apply-templates select="colref"/>
+	    <xsl:text>)</xsl:text>
+	    <xsl:if test="not(position()=last())">
+		<xsl:text>,</xsl:text>
+		<xsl:text>&#x0A;</xsl:text>
+	    </xsl:if>
+	</xsl:if>
     </xsl:template>
-    
-<!-- ################ /TABLE ################  -->
+
+<!-- ################ /INDEX (constraint) ################  -->
+
+<!-- ################ INDEX (create) ################  -->
+
+    <xsl:template name="create_index">
+	<xsl:variable name="index.name">
+	    <xsl:call-template name="get-name"/>
+	</xsl:variable>
+	<xsl:variable name="table.name">
+	    <xsl:call-template name="get-name">
+		<xsl:with-param name="select" select="parent::table"/>
+	    </xsl:call-template>
+	</xsl:variable>
+
+	<xsl:text>CREATE </xsl:text>
+	<xsl:if test="unique">
+	    <xsl:text>UNIQUE </xsl:text>
+	</xsl:if>
+	<xsl:text>INDEX </xsl:text>
+	<xsl:if test="not($index.name='')">
+		<xsl:call-template name="get-index-name"/>
+	</xsl:if>
+	<xsl:text> ON </xsl:text>
+	<xsl:value-of select="$table.name"/>
+	<xsl:text> (</xsl:text>
+	<xsl:apply-templates select="colref"/>
+	<xsl:text>);&#x0A;</xsl:text>
+
+	<xsl:if test="position()=last()">
+	    <xsl:text>&#x0A;</xsl:text>
+	</xsl:if>
+    </xsl:template>
+
+<!-- ################ /INDEX (create) ################  -->
 
 
 <!-- ################ COLUMN ################  -->

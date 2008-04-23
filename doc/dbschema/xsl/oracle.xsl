@@ -145,40 +145,7 @@
 	</xsl:if>
     </xsl:template>
 
-<!-- copied from sql.xsl because of oracle different index creation -->
-    <xsl:template match="table">
-	<xsl:variable name="table.name">
-	    <xsl:call-template name="get-name"/>
-	</xsl:variable>
-
-	<!-- Create row in version table -->
-	<xsl:apply-templates select="version"/>
-
-	<xsl:text>CREATE TABLE </xsl:text>
-	<xsl:value-of select="$table.name"/>
-	<xsl:text> (&#x0A;</xsl:text>
-
-	<!-- Process all columns -->
-	<xsl:apply-templates select="column"/>
-
-	<!-- Process all unique indexes -->
-	<xsl:apply-templates select="index[child::unique]"/>
-
-	<!-- Process all primary indexes -->
-	<xsl:apply-templates select="index[child::primary]"/>
-
-	<xsl:text>&#x0A;</xsl:text>
-
-	<xsl:call-template name="table.close"/>
-
-	<xsl:for-each select="index[count(child::unique)=0]">
-	    <xsl:if test="not(child::primary)">
-	        <xsl:call-template name="create_index"/>
-	    </xsl:if>
-	</xsl:for-each>
-    </xsl:template>
-
-    <xsl:template match="index">
+	<xsl:template name="get-index-name">
 	<xsl:variable name="index.name">
 	    <xsl:call-template name="get-name"/>
 	</xsl:variable>
@@ -187,79 +154,15 @@
 		<xsl:with-param name="select" select="parent::table"/>
 	    </xsl:call-template>
 	</xsl:variable>
-
-	<xsl:if test="position()=1">
-	    <xsl:text>,&#x0A;</xsl:text>
-	</xsl:if>
-	<xsl:text>    </xsl:text>
-	<xsl:if test="not($index.name='')">
-	    <xsl:text>CONSTRAINT </xsl:text>
-		<!-- because oracle don't allow index names longer than 30 -->
-		<xsl:choose>
-			<xsl:when test="not(string-length(concat($table.name, '_', $index.name)) > 29)">
-				<xsl:value-of select="concat($table.name, '_', $index.name, ' ')"/>
-			</xsl:when>
-			<xsl:otherwise>
-		    	<xsl:value-of select="concat('ORA_', $index.name, ' ')"/>
-			</xsl:otherwise>
-		</xsl:choose>
-	</xsl:if>
-	<xsl:if test="unique">
-	    <xsl:text> UNIQUE (</xsl:text>
-	    <xsl:apply-templates select="colref"/>
-	    <xsl:text>)</xsl:text>
-	
-	    <xsl:if test="not(position()=last())">
-		<xsl:text>,</xsl:text>
-		<xsl:text>&#x0A;</xsl:text>
-	    </xsl:if>
-	</xsl:if>
-	<!-- PRIMARY KEY standalone definition -->
-	<xsl:if test="primary">
-	    <xsl:text>PRIMARY KEY</xsl:text>
-	    <xsl:text> (</xsl:text>
-	    <xsl:apply-templates select="colref"/>
-	    <xsl:text>)</xsl:text>
-	    <xsl:if test="not(position()=last())">
-		<xsl:text>,</xsl:text>
-		<xsl:text>&#x0A;</xsl:text>
-	    </xsl:if>
-	</xsl:if>
-    </xsl:template>
-
-    <xsl:template name="create_index">
-	<xsl:variable name="index.name">
-	    <xsl:call-template name="get-name"/>
-	</xsl:variable>
-	<xsl:variable name="table.name">
-	    <xsl:call-template name="get-name">
-		<xsl:with-param name="select" select="parent::table"/>
-	    </xsl:call-template>
-	</xsl:variable>
-
-	<xsl:text>CREATE </xsl:text>
-	<xsl:if test="unique">
-	    <xsl:text>UNIQUE </xsl:text>
-	</xsl:if>
-	<xsl:text>INDEX </xsl:text>
-		<!-- because oracle don't allow index names longer than 30 -->
-		<xsl:choose>
-			<xsl:when test="not(string-length(concat($table.name, '_', $index.name)) > 30)">
-				<xsl:value-of select="concat($table.name, '_', $index.name, ' ')"/>
-			</xsl:when>
-			<xsl:otherwise>
-		    	<xsl:value-of select="concat('ORA_', $index.name, ' ')"/>
-			</xsl:otherwise>
-		</xsl:choose>
-	<xsl:text> ON </xsl:text>
-	<xsl:value-of select="$table.name"/>
-	<xsl:text> (</xsl:text>
-	<xsl:apply-templates select="colref"/>
-	<xsl:text>);&#x0A;</xsl:text>
-
-	<xsl:if test="position()=last()">
-	    <xsl:text>&#x0A;</xsl:text>
-	</xsl:if>
-    </xsl:template>
+	<!-- because oracle don't allow index names longer than 30 -->
+	<xsl:choose>
+	<xsl:when test="not(string-length(concat($table.name, '_', $index.name)) > 30)">
+		<xsl:value-of select="concat($table.name, '_', $index.name, ' ')"/>
+	</xsl:when>
+	<xsl:otherwise>
+		<xsl:value-of select="concat('ORA_', $index.name, ' ')"/>
+	</xsl:otherwise>
+	</xsl:choose>
+	</xsl:template>
 
 </xsl:stylesheet>
