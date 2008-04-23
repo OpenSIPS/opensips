@@ -142,7 +142,6 @@
 	<!-- FIXME -->
 	<xsl:call-template name="get-type"/>
 	<xsl:call-template name="column.size"/>
-	<xsl:call-template name="column.trailing"/>
     </xsl:template>
 
     <xsl:template name="column.size">
@@ -157,35 +156,8 @@
 	</xsl:if>
     </xsl:template>
 
-    <xsl:template name="column.trailing"/>
-
 <!-- ################ /COLUMN ################  -->
 
-<!-- ################ INDEX ################  -->
-
-    <xsl:template match="index">
-	<!-- Translate unique indexes into SQL92 unique constraints -->
-	<xsl:if test="unique">
-	    <xsl:if test="position()=1">
-		<xsl:text>,&#x0A;</xsl:text>
-	    </xsl:if>
-	    <xsl:text>    </xsl:text>
-
-	    <xsl:call-template name="get-name"/>
-	    <xsl:text> UNIQUE (</xsl:text>
-
-	    <xsl:apply-templates match="colref"/>
-
-	    <xsl:text>)</xsl:text>
-
-	    <xsl:if test="not(position()=last())">
-		<xsl:text>,</xsl:text>
-		<xsl:text>&#x0A;</xsl:text>
-	    </xsl:if>
-	</xsl:if>
-    </xsl:template>
-
-<!-- ################ /INDEX ################  -->
 
 <!-- ################ COLREF ################  -->
 
