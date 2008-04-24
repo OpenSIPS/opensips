@@ -145,6 +145,59 @@
 	</xsl:if>
     </xsl:template>
 
+    <!-- copied from sql.xsl, for oracle the empty string and NULL are equivalent -->
+    <xsl:template match="column">
+	<xsl:text>    </xsl:text>
+	<xsl:call-template name="get-name"/>
+	<xsl:text> </xsl:text>
+
+	<xsl:call-template name="column.type"/>
+
+	<xsl:choose>
+	    <xsl:when test="default[@db=$db]">
+		<xsl:text> DEFAULT </xsl:text>
+		<xsl:choose>
+		    <xsl:when test="default[@db=$db]/null">
+			<xsl:text>NULL</xsl:text>
+		    </xsl:when>
+		    <xsl:otherwise>
+			<xsl:value-of select="default[@db=$db]"/>
+		    </xsl:otherwise>
+		</xsl:choose>
+	    </xsl:when>
+	    <xsl:when test="default">
+		<xsl:text> DEFAULT </xsl:text>
+		<xsl:choose>
+		    <xsl:when test="default/null">
+			<xsl:text>NULL</xsl:text>
+		    </xsl:when>
+		    <xsl:when test="string(number(default))='NaN'"><!-- test for string value -->
+			<xsl:text>'</xsl:text>
+			<xsl:value-of select="default"/>
+			<xsl:text>'</xsl:text>
+		    </xsl:when>
+		    <xsl:otherwise>
+			<xsl:value-of select="default"/><!-- ommit the quotes for numbers -->
+		    </xsl:otherwise>
+		</xsl:choose>
+	    </xsl:when>
+	</xsl:choose>
+
+	<xsl:variable name="null">
+	    <xsl:call-template name="get-null"/>
+	</xsl:variable>
+	<xsl:if test="$null=0">
+		<xsl:if test="string(number(default))!='NaN'"><!-- test for string value -->
+	    	<xsl:text> NOT NULL</xsl:text>
+		</xsl:if>
+	</xsl:if>
+
+	<xsl:if test="not(position()=last())">
+	    <xsl:text>,</xsl:text>
+	    <xsl:text>&#x0A;</xsl:text>
+	</xsl:if>
+    </xsl:template>
+
 	<xsl:template name="get-index-name">
 	<xsl:variable name="index.name">
 	    <xsl:call-template name="get-name"/>
