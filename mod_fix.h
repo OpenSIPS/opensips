@@ -20,6 +20,10 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+/**
+ * @file mod_fix.c
+ * @brief Generic fixup functions for module function parameter.
+ */
 
 #ifndef _mod_fix_h_
 #define _mod_fix_h_
@@ -31,6 +35,9 @@
 #define GPARAM_TYPE_PVS		2
 #define GPARAM_TYPE_PVE		3
 
+/**
+ * generic parameter that holds a string, an int or a pseudo-variable
+ */
 typedef struct _gparam
 {
 	int type;

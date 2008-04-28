@@ -20,6 +20,11 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+/**
+ * @file mod_fix.c
+ * @brief Generic fixup functions for module function parameter.
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <regex.h>
@@ -54,7 +59,7 @@
 
 /**
  * - helper function
- * Convert char* parameter to str* parameter   
+ * Convert char* parameter to str* parameter
  */
 int fixup_str(void** param)
 {
@@ -74,8 +79,8 @@ int fixup_str(void** param)
 }
 
 /**
- * - helper fuinction
- * free the str* parameter   
+ * - helper function
+ * free the str* parameter
  */
 int fixup_free_str(void** param)
 {
