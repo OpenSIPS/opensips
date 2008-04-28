@@ -613,10 +613,10 @@ ifeq			($(CC_CLASS), 4.x)
 else
 			#if gcc 3.0+
 ifeq			($(CC_CLASS), 3.x)
-					CPU_TYPE ?= prescott
+					CPU_TYPE ?= pentium4
 					CFLAGS+=-minline-all-stringops \
 							-falign-loops \
-							-march=$(CPU_TYPE)
+							-mtune=$(CPU_TYPE)
 else
 ifeq			($(CC_CLASS), 2.9x) #older gcc version (2.9[1-5])
 $(warning 			Old gcc detected ($(CC_SHORTVER)), use  gcc >= 3.1 \
