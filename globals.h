@@ -27,7 +27,6 @@
 #ifndef globals_h
 #define globals_h
 
-#include "types.h"
 #include "ip_addr.h"
 #include "str.h"
 #include "poll_types.h"
