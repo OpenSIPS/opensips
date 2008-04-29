@@ -1,8 +1,6 @@
 /*
  * $Id$
  *
- * adding/removing headers or any other data chunk from a message
- *
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of openser, a free SIP server.
@@ -21,79 +19,86 @@
  * along with this program; if not, write to the Free Software 
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * History:
- * --------
- *  2003-01-29  s/int/enum ... more convenient for gdb (jiri)
- *  2003-03-31  added subst lumps -- they expand in ip addr, port a.s.o (andrei)
- *  2003-04-01  added opt (condition) lumps (andrei)
- *  2003-04-02  added more subst lumps: SUBST_{SND,RCV}_ALL  
- *              => ip:port;transport=proto (andrei)
- *  2003-10-20  split from data_lump.h (andrei)
- *
  */
 
+/**
+ * \file lump_struct.h
+ * \brief Data structures for adding or removing data chunks from messages.
+ */
 
 #ifndef lump_struct_h
 #define lump_struct_h
 
 #include "./parser/hf.h"
 
-
+/**
+ * Operations on lumps.
+ */
 enum lump_op { LUMP_NOP=0, LUMP_DEL, LUMP_ADD, LUMP_ADD_SUBST, LUMP_ADD_OPT };
-enum lump_subst{ SUBST_NOP=0,                     /* do nothing */
-				 SUBST_RCV_IP,    SUBST_SND_IP,   /* add ip address */
-				 SUBST_RCV_PORT,  SUBST_SND_PORT, /* add port no */
-				 SUBST_RCV_PROTO, SUBST_SND_PROTO,/* add protocol(udp,tcp,tls)*/
-				 SUBST_RCV_ALL,   SUBST_SND_ALL   /*  ip:port;transport=proto */
+
+/**
+ * Substitutions for lumps.
+ * Where:
+ * SND = sending, e.g the src ip of the outgoing message
+ * RCV = received e.g the dst ip of the original incoming msg,
+ * or the ip of the socket on which the msg was received.
+ * For SUBST_{RCV,SND}_ALL, :port is added only if port!=5060
+ * and transport=proto only if proto!=udp is specified.
+ */
+enum lump_subst{ SUBST_NOP=0,                     /**< do nothing */
+				 SUBST_RCV_IP,    SUBST_SND_IP,   /**< add ip address */
+				 SUBST_RCV_PORT,  SUBST_SND_PORT, /**< add port no */
+				 SUBST_RCV_PROTO, SUBST_SND_PROTO,/**< add protocol(udp,tcp,tls)*/
+				 SUBST_RCV_ALL,   SUBST_SND_ALL   /**<  ip:port;transport=proto */
 				};
-				/* Where:
-				   SND = sending, e.g the src ip of the outgoing message
-				   RCV = received e.g the dst ip of the original incoming msg,
-				    or the ip of the ser socket on which the msg was received
-				   For SUBST_{RCV,SND}_ALL, :port is added only if port!=5060
-				    and transport=proto only if proto!=udp
-					*/
 
-enum lump_conditions {	COND_FALSE,         /* always false */
-						COND_TRUE,          /* always true */
-						COND_IF_DIFF_REALMS,/* true if RCV realm != SND realm */
-						COND_IF_DIFF_AF,    /* true if RCV af != SND af */
-						COND_IF_DIFF_PROTO, /* true if RCV proto != SND proto */
-						COND_IF_DIFF_PORT,  /* true if RCV port != SND port */
-						COND_IF_DIFF_IP,    /* true if RCV ip != SND ip */
-						COND_IF_RAND        /* 50-50 random prob.of being true*/
+/**
+ * Conditions for lumps.
+ * Where:
+ * REALM= ip_addr:port:proto
+ * af   = address family (ipv4 or ipv6)
+ * proto = protocol (tcp, udp, tls)
+ */
+enum lump_conditions {	COND_FALSE,         /**< always false */
+						COND_TRUE,          /**< always true */
+						COND_IF_DIFF_REALMS,/**< true if RCV realm != SND realm */
+						COND_IF_DIFF_AF,    /**< true if RCV af != SND af */
+						COND_IF_DIFF_PROTO, /**< true if RCV proto != SND proto */
+						COND_IF_DIFF_PORT,  /**< true if RCV port != SND port */
+						COND_IF_DIFF_IP,    /**< true if RCV ip != SND ip */
+						COND_IF_RAND        /**< 50-50 random prob.of being true*/
 						};
-						/* Where: 
-						   REALM= ip_addr:port:proto
-						   af   = address family (ipv4 or ipv6)
-						   proto = protocol (tcp, udp, tls)
-						*/
 
+/**
+ * Flags for lumps, mainly used from the tm module.
+ */
 enum lump_flag { LUMPFLAG_NONE=0, LUMPFLAG_DUPED=1,
 		LUMPFLAG_SHMEM=2 , LUMPFLAG_BRANCH=4, LUMPFLAG_COND_TRUE=8};
 
 
+/**
+ * Main lump structure.
+ */
 struct lump{
-	enum _hdr_types_t type; /* HDR_VIA_T, HDR_OTHER_T (0), ... */
-	enum lump_op op;   /* DEL, ADD, NOP, UNSPEC(=0) */
+	enum _hdr_types_t type; /**< HDR_VIA_T, HDR_OTHER_T (0), ... */
+	enum lump_op op;        /**< DEL, ADD, NOP, UNSPEC(=0) */
 	
 	union{
-		unsigned int offset; /* used for DEL, MODIFY */
-		enum lump_subst subst; /*what to subst: ip addr, port, proto*/
-		enum lump_conditions cond; /* condition for LUMP_ADD_OPT */
-		char * value; /* used for ADD */
+		unsigned int offset;       /**< used for DEL, MODIFY */
+		enum lump_subst subst;     /**< what to subst: ip addr, port, proto*/
+		enum lump_conditions cond; /**< condition for LUMP_ADD_OPT */
+		char * value; /**< used for ADD */
 	}u;
-	unsigned int len; /* length of this header field */
+	unsigned int len; /**< length of this header field */
 	
 	
-	struct lump* before; /* list of headers to be inserted in front of the
+	struct lump* before;  /**< list of headers to be inserted in front of the
 								current one */
-	struct lump* after; /* list of headers to be inserted immediately after
+	struct lump* after;   /**< list of headers to be inserted immediately after
 							  the current one */
-	
 	struct lump* next;
 
-	enum lump_flag flags; /* additional hints for use from TM's shmem */
+	enum lump_flag flags; /**< additional hints for use from TM's shmem */
 };
 
 
@@ -116,9 +121,9 @@ struct lump{
  * 
  */
 
-/* frees the content of a lump struct */
+/** frees the content of a lump struct */
 void free_lump(struct lump* l);
-/*frees an entire lump list, recursively */
+/** frees an entire lump list, recursively */
 void free_lump_list(struct lump* lump_list);
 
 #endif
