@@ -78,6 +78,7 @@ ARCH := $(shell $(GETARCH) |sed -e s/i.86/i386/ -e s/sun4u/sparc64/  \
 			-e s/armv4l/arm/ -e "s/Power Macintosh/ppc/" \
 			-e s/sun4v/sparc64/ -e "s/cobalt/mips2/" \
 			-e s/amd64/x86_64/ )
+
 # fix sparc -> sparc64
 ifeq ($(ARCH),sparc)
 	ifeq ($(shell uname -m),sun4u)
@@ -85,6 +86,13 @@ ifeq ($(ARCH),sparc)
 	endif
 	ifeq ($(shell uname -m),sun4v)
 		ARCH := sparc64
+	endif
+endif
+
+# additional check for architecture on solaris
+ifeq ($(OS),solaris)
+	ifeq ($(shell isainfo -k),amd64)
+		ARCH := x86_64
 	endif
 endif
 
@@ -103,6 +111,12 @@ OSREL_N= $(shell echo $(OSREL) | sed -e 's/^[^0-9]*//' \
 		[ -n "$$A" ] && R=`expr $$R \* 1000 + $$A` && \
 		[ -n "$$B" ] && R=`expr $$R \* 1000 + $$B` && \
 		[ -n "$$C" ] && R=`expr $$R \* 1000 + $$C`; echo $$R ) )
+
+# no Debug (-g) ?
+DEBUGSYM=-g
+ifdef NODEBUGSYM
+	DEBUGSYM:=
+endif
 
 # nicer compilation?
 Q=
@@ -591,6 +605,10 @@ LDFLAGS+=
 ifeq (,$(CFLAGS))
 # setting CFLAGS
 ifeq ($(mode), release)
+
+#common stuff
+CFLAGS+=$(DEBUGSYM)
+
 #if i386
 ifeq	($(ARCH), i386)
 	# These CPU optimization assumes that you run a Intel processor.
@@ -599,8 +617,8 @@ ifeq	($(ARCH), i386)
 		# if gcc 
 ifeq		($(CC_NAME), gcc)
 				#common stuff
-				CFLAGS+=-g -O9 -funroll-loops  -Wcast-align $(PROFILE) \
-					-Wall  
+				CFLAGS+=-O9 -funroll-loops  -Wcast-align $(PROFILE) \
+					-Wall 
 			#if gcc 4.0+
 ifeq			($(CC_CLASS), 4.x)
 					CPU_TYPE ?= prescott
@@ -635,7 +653,7 @@ endif			# CC_CLASS, 4.x
 
 else		# CC_NAME, gcc
 ifeq		($(CC_NAME), icc)
-			CFLAGS+=-g -O3  -ipo -ipo_obj -unroll  $(PROFILE) \
+			CFLAGS+=-O3  -ipo -ipo_obj -unroll  $(PROFILE) \
 					 -tpp6 -xK  #-openmp  #optimize for PIII 
 				# -prefetch doesn't seem to work
 				#( ty to inline acroos files, unroll loops,prefetch,
@@ -643,7 +661,7 @@ ifeq		($(CC_NAME), icc)
 				# mutlithread loops)
 else		#CC_NAME, icc
 ifeq		($(CC_NAME), suncc)
-			CFLAGS+=-g -xO5 -fast -native -xCC \
+			CFLAGS+=-xO5 -fast -native -xCC \
 					-xc99=no_lib # C99 support
 			# -Dinline="" # add this if cc < 5.3 (define inline as null)
 else
@@ -659,10 +677,11 @@ ifeq	($(ARCH), x86_64)
 	# These CPU optimization assumes that you run a Intel 64 processor.
 	# If you use a AMD 64 CPU, you could ajust the settings here for better performance.
 	# For gcc 4.x use CPU_TYPE ?= athlon64
+	# Perhaps it makes sense to use '-m64' here?
 		# if gcc 
 ifeq		($(CC_NAME), gcc)
 				#common stuff
-				CFLAGS+=-g -O9 -funroll-loops  -Wcast-align $(PROFILE) \
+				CFLAGS+=-O9 -funroll-loops  -Wcast-align $(PROFILE) \
 					-Wall 
 			#if gcc 4.0+
 ifeq			($(CC_CLASS), 4.x)
@@ -697,7 +716,7 @@ endif			# CC_CLASS, 4.x
 
 else		# CC_NAME, gcc
 ifeq		($(CC_NAME), icc)
-			CFLAGS+=-g -O3  -ipo -ipo_obj -unroll  $(PROFILE) \
+			CFLAGS+=-O3 -ipo -ipo_obj -unroll  $(PROFILE) \
 					 -tpp6 -xK  #-openmp  #optimize for PIII 
 				# -prefetch doesn't seem to work
 				#( ty to inline acroos files, unroll loops,prefetch,
@@ -715,7 +734,7 @@ ifeq	($(ARCH), sparc64)
 			#if gcc
 ifeq		($(CC_NAME), gcc)
 				#common stuff
-				CFLAGS+=-g -O9 -funroll-loops  $(PROFILE) \
+				CFLAGS+=-O9 -funroll-loops  $(PROFILE) \
 					-Wall\
 					#-Wcast-align \
 					#-Wmissing-prototypes 
@@ -767,7 +786,7 @@ endif			#CC_CLASS, 4.x
 
 else		#CC_NAME, gcc
 ifeq		($(CC_NAME), suncc)
-			CFLAGS+=-g -xO5 -fast -native -xarch=v8plusa -xCC \
+			CFLAGS+=-xO5 -fast -native -xarch=v8plusa -xCC \
 					-xc99=no_lib # C99 support
 			# -Dinline="" # add this if cc < 5.3 (define inline as null)
 else
@@ -855,7 +874,7 @@ ifeq	($(ARCH), mips2)
 		# if gcc 
 ifeq		($(CC_NAME), gcc)
 				#common stuff
-				CFLAGS+= -mips2 -O9 -funroll-loops $(PROFILE) \
+				CFLAGS+=-O9 -mips2 -funroll-loops $(PROFILE) \
 					-Wall 
 			#if gcc 4.0+
 ifeq			($(CC_CLASS), 4.x)
@@ -889,7 +908,7 @@ ifeq	($(ARCH), alpha)
 		# if gcc 
 ifeq		($(CC_NAME), gcc)
 				#common stuff
-				CFLAGS+= -O9 -funroll-loops $(PROFILE)  -Wall 
+				CFLAGS+=-O9 -funroll-loops $(PROFILE)  -Wall 
 			#if gcc 4.0+
 ifeq			($(CC_CLASS), 4.x)
 					CFLAGS+=-minline-all-stringops
@@ -922,7 +941,7 @@ ifeq	($(ARCH), ppc)
 		# if gcc 
 ifeq		($(CC_NAME), gcc)
 				#common stuff
-				CFLAGS+= -O9 -funroll-loops $(PROFILE)  -Wall 
+				CFLAGS+=-O9 -funroll-loops $(PROFILE)  -Wall 
 			#if gcc 4.0+
 ifeq			($(CC_CLASS), 4.x)
 					CPU_TYPE ?= powerpc
@@ -957,7 +976,7 @@ ifeq	($(ARCH), ppc64)
 		# if gcc 
 ifeq		($(CC_NAME), gcc)
 				#common stuff
-				CFLAGS+= -O9 -funroll-loops $(PROFILE)  -Wall 
+				CFLAGS+=-O9 -funroll-loops $(PROFILE)  -Wall 
 ifeq			($(CC_CLASS), 4.x)
 					CPU_TYPE ?= powerpc64
 					CFLAGS+=-ftree-vectorize \
@@ -1018,28 +1037,28 @@ endif
 	# -andrei
 else	#mode,release
 ifeq	($(CC_NAME), gcc)
-		CFLAGS += -g -Wcast-align $(PROFILE)
+		CFLAGS +=-Wcast-align $(PROFILE)
 ifeq		($(ARCH), sparc64)
 			CFLAGS+= -mcpu=ultrasparc 
 endif
 ifeq		($(LDTYPE), solaris)
 			#solaris ld
-			LDFLAGS+=-g $(PROFILE)
+			LDFLAGS+=$(PROFILE)
 			MOD_LDFLAGS=-G $(LDFLAGS)
 else
 			#gnu or other ld type
-			LDFLAGS+=-g -Wl,-E $(PROFILE)
+			LDFLAGS+=-Wl,-E $(PROFILE)
 			MOD_LDFLAGS=-shared $(LDFLAGS)
 endif
 endif
 ifeq	($(CC_NAME), icc)
-		CFLAGS+=-g  $(PROFILE)
-		LDFLAGS+=-g -Wl,-E $(PROFILE)
+		CFLAGS+= $(PROFILE)
+		LDFLAGS+=-Wl,-E $(PROFILE)
 		MOD_LDFLAGS=-shared $(LDFLAGS)
 endif
 ifeq	($(CC_NAME), suncc)
-		CFLAGS+= -g $(PROFILE)
-		LDFLAGS+=-g $(PROFILE)
+		CFLAGS+=$(PROFILE)
+		LDFLAGS+=$(PROFILE)
 		MOD_LDFLAGS=-G $(LDFLAGS)
 endif
 
@@ -1131,8 +1150,8 @@ ifeq  ($(OS), solaris)
 		#LDFLAGS=-O2 $(PROFILE)
 		#MOD_LDFLAGS=-O2 -G
 	else
-		#LDFLAGS=-g $(PROFILE)
-		#MOD_LDFLAGS=-g -G
+		#LDFLAGS=$(PROFILE)
+		#MOD_LDFLAGS=-G
 	endif
 	DEFAULT_YACC=yacc
 
