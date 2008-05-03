@@ -42,6 +42,10 @@ int escape_common(char *dst, char *src, int src_len)
 				dst[j++] = '\\';
 				dst[j++] = src[i];
 				break;
+			case '"':
+				dst[j++] = '\\';
+				dst[j++] = src[i];
+				break;
 			case '\\':
 				dst[j++] = '\\';
 				dst[j++] = src[i];
@@ -77,11 +81,15 @@ int unescape_common(char *dst, char *src, int src_len)
 					dst[j++] = '\'';
 					i++;
 					break;
+				case '"':
+					dst[j++] = '"';
+					i++;
+					break;
 				case '\\':
 					dst[j++] = '\\';
 					i++;
 					break;
-				case '\0':
+				case '0':
 					dst[j++] = '\0';
 					i++;
 					break;
