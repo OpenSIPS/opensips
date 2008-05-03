@@ -3244,7 +3244,9 @@ int pv_printf_s(struct sip_msg* msg, pv_elem_p list, str *s)
 void pv_spec_free(pv_spec_t *spec)
 {
 	if(spec==0) return;
-	/* should go recursively */
+	/* TODO: free name if it is PV */
+	if(spec->trans)
+		free_transformation((trans_t*)spec->trans);
 	pkg_free(spec);
 }
 
