@@ -264,6 +264,7 @@ TCP_CONNECT_TIMEOUT	"tcp_connect_timeout"
 TCP_CON_LIFETIME    "tcp_connection_lifetime"
 TCP_POLL_METHOD     "tcp_poll_method"
 TCP_MAX_CONNECTIONS "tcp_max_connections"
+TCP_OPT_CRLF_PINGPONG   "tcp_crlf_pingpong"
 DISABLE_TLS		"disable_tls"
 TLSLOG			"tlslog"|"tls_log"
 TLS_PORT_NO		"tls_port_no"
@@ -470,6 +471,7 @@ WHITESPACE	[ \t\r\n]
 <INITIAL>{CHROOT}	{ count(); yylval.strval=yytext; return CHROOT; }
 <INITIAL>{WDIR}	{ count(); yylval.strval=yytext; return WDIR; }
 <INITIAL>{MHOMED}	{ count(); yylval.strval=yytext; return MHOMED; }
+<INITIAL>{TCP_OPT_CRLF_PINGPONG}    { count(); yylval.strval=yytext; return TCP_OPT_CRLF_PINGPONG; }
 <INITIAL>{DISABLE_TCP}	{ count(); yylval.strval=yytext; return DISABLE_TCP; }
 <INITIAL>{TCP_CHILDREN}	{ count(); yylval.strval=yytext; return TCP_CHILDREN; }
 <INITIAL>{TCP_ACCEPT_ALIASES}	{ count(); yylval.strval=yytext;

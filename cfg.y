@@ -317,6 +317,7 @@ extern int line;
 %token TCP_CON_LIFETIME
 %token TCP_POLL_METHOD
 %token TCP_MAX_CONNECTIONS
+%token TCP_OPT_CRLF_PINGPONG
 %token DISABLE_TLS
 %token TLSLOG
 %token TLS_PORT_NO
@@ -695,6 +696,14 @@ assign_stm: DEBUG EQUAL NUMBER {
 									#endif
 									}
 		| TCP_MAX_CONNECTIONS EQUAL error { yyerror("number expected"); }
+		| TCP_OPT_CRLF_PINGPONG EQUAL NUMBER {
+			#ifdef USE_TCP
+				tcp_crlf_pingpong=$3;
+			#else
+				warn("tcp support not compiled in");
+			#endif
+		}
+		| TCP_OPT_CRLF_PINGPONG EQUAL error { yyerror("boolean value expected"); }
 		| DISABLE_TLS EQUAL NUMBER {
 									#ifdef USE_TLS
 										tls_disable=$3;

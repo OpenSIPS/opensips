@@ -186,6 +186,7 @@ int children_no = 0;			/* number of children processing requests */
 #ifdef USE_TCP
 int tcp_children_no = 0;
 int tcp_disable = 0; /* 1 if tcp is disabled */
+int tcp_crlf_pingpong = 1; /* 0: send CRLF pong to incoming CRLFCRLF ping */
 #endif
 #ifdef USE_TLS
 int tls_disable = 1; /* 1 if tls is disabled */

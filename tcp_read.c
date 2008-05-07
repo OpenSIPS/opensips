@@ -60,6 +60,7 @@
 #define HANDLE_IO_INLINE
 #include "io_wait.h"
 #include <fcntl.h> /* must be included after io_wait.h if SIGIO_RT is used */
+#include "forward.h"
 
 /* types used in io_wait* */
 enum fd_types { F_NONE, F_TCPMAIN, F_TCPCONN };
@@ -270,7 +271,13 @@ int tcp_read_headers(struct tcp_connection *c)
 			case H_SKIP_EMPTY:
 				switch (*p){
 					case '\n':
+						break;
 					case '\r':
+						if (tcp_crlf_pingpong) {
+							r->state=H_SKIP_EMPTY_CR_FOUND;
+							r->start=p;
+						}
+						break;
 					case ' ':
 					case '\t':
 						/* skip empty lines */
@@ -291,6 +298,35 @@ int tcp_read_headers(struct tcp_connection *c)
 						r->start=p;
 				};
 				p++;
+				break;
+			case H_SKIP_EMPTY_CR_FOUND:
+				if (*p=='\n'){
+					r->state=H_SKIP_EMPTY_CRLF_FOUND;
+					p++;
+				}else{
+					r->state=H_SKIP_EMPTY;
+				}
+				break;
+
+			case H_SKIP_EMPTY_CRLF_FOUND:
+				if (*p=='\r'){
+					r->state = H_SKIP_EMPTY_CRLFCR_FOUND;
+					p++;
+				}else{
+					r->state = H_SKIP_EMPTY;
+				}
+				break;
+
+			case H_SKIP_EMPTY_CRLFCR_FOUND:
+				if (*p=='\n'){
+					r->state = H_PING_CRLFCRLF;
+					r->complete = 1;
+					r->has_content_len = 1; /* hack to avoid error check */
+					p++;
+					goto skip;
+				}else{
+					r->state = H_SKIP_EMPTY;
+				}
 				break;
 			change_state_case(H_CONT_LEN1,  'O', 'o', H_CONT_LEN2);
 			change_state_case(H_CONT_LEN2,  'N', 'n', H_CONT_LEN3);
@@ -492,7 +528,14 @@ again:
 							   previous char, req->parsed should be ok
 							   because we always alloc BUF_SIZE+1 */
 			*req->parsed=0;
-			if (receive_msg(req->start, req->parsed-req->start, &con->rcv)<0){
+
+			if (req->state==H_PING_CRLFCRLF) {
+				if (tcp_send( con->rcv.bind_address, con->rcv.proto,CRLF,
+				CRLF_LEN, &(con->rcv.src_su), con->rcv.proto_reserved1) < 0) {
+					LM_ERR("CRLF pong - tcp_send() failed\n");
+				}
+			} else if (receive_msg(req->start, req->parsed-req->start,
+			&con->rcv)<0) {
 				*req->parsed=c;
 				resp=CONN_ERROR;
 				goto end_req;
