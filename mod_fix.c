@@ -463,6 +463,41 @@ int fixup_free_pvar_null(void** param, int param_no)
 	}
 	return fixup_free_pvar(param);
 }
+/**
+ * fixup for functions that get two parameters
+ * - both parameters are converted to PV spec
+ */
+int fixup_pvar_pvar(void** param, int param_no)
+{
+	if (param_no == 1)
+	{
+	    return fixup_pvar(param);
+	}
+	if (param_no != 2)
+	{
+	    LM_ERR("invalid parameter number %d\n", param_no);
+	    return E_UNSPEC;
+	}
+	return fixup_pvar(param);
+}
+
+/**
+ * fixup free for functions that get two parameters
+ * - both parameters were converted to PV spec
+ */
+int fixup_free_pvar_pvar(void** param, int param_no)
+{
+	if(param_no == 1)
+	{
+	    return fixup_free_pvar(param);
+	}
+	if (param_no != 2)
+	{
+	    LM_ERR("invalid parameter number %d\n", param_no);
+	    return E_UNSPEC;
+	}	
+	return fixup_free_pvar(param);
+}
 
 /**
  * fixup for functions that get two parameters

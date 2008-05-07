@@ -73,6 +73,9 @@ int fixup_free_regexp_none(void** param, int param_no);
 int fixup_pvar_null(void **param, int param_no);
 int fixup_free_pvar_null(void** param, int param_no);
 
+int fixup_pvar_pvar(void **param, int param_no);
+int fixup_free_pvar_pvar(void** param, int param_no);
+
 int fixup_pvar_str(void** param, int param_no);
 int fixup_free_pvar_str(void** param, int param_no);
 
