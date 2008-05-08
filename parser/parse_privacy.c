@@ -126,7 +126,7 @@ unsigned int parse_priv_value(char* start, unsigned int max_len,
     }
 
     if(len < max_len) {
-	if(start[len] != '\0' && start[len] != ',' && start[len] != ' '
+	if(start[len] != '\0' && start[len] != ';' && start[len] != ' '
 	   && start[len] != '\t' && start[len] != '\r' && start[len] != '\n')
 	    return 0;
     }
@@ -188,7 +188,7 @@ int parse_privacy(struct sip_msg *msg)
 
 	if(p >= beyond) break;
 
-	if (*p == ',') {
+	if (*p == ';') {
 	    p++;
 	    while(p < beyond && (*p == ' ' || *p == '\t'
 				 || *p == '\r' || *p == '\n'))
@@ -198,7 +198,7 @@ int parse_privacy(struct sip_msg *msg)
 		return -1;
 	    }		
 	} else {
-	    LM_ERR("Comma expected\n");
+	    LM_ERR("semicolon expected\n");
 	    return -1;
 	}
     }
