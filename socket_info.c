@@ -224,7 +224,7 @@ struct socket_info* grep_sock_info(str* host, unsigned short port,
 				 * can be written in mixed case, it will also match
 				 * ipv6 addresses if we are lucky*/
 				goto found;
-		/* check if host == ip address */
+			/* check if host == ip address */
 #ifdef USE_IPV6
 			/* ipv6 case is uglier, host can be [3ffe::1] */
 			ip6=str2ip6(host);
@@ -568,14 +568,27 @@ static int fix_socket_list(struct socket_info **list)
 		hostent2ip_addr(&si->address, he, 0); /*convert to ip_addr 
 														 format*/
 		if ((tmp=ip_addr2a(&si->address))==0) goto error;
-		si->address_str.s=(char*)pkg_malloc(strlen(tmp)+1);
-		if (si->address_str.s==0){
-			LM_ERR("out of pkg memory.\n");
-			goto error;
+		if (si->address.af == AF_INET6) {
+			si->address_str.s=(char*)pkg_malloc(strlen(tmp)+1+2);
+			if (si->address_str.s==0){
+				LM_ERR("out of pkg memory.\n");
+				goto error;
+			}
+			si->address_str.s[0] = '[';
+			strncpy( si->address_str.s+1 , tmp, strlen(tmp));
+			si->address_str.s[1+strlen(tmp)] = ']';
+			si->address_str.s[2+strlen(tmp)] = '\0';
+			si->address_str.len=strlen(tmp) + 2;
+		} else {
+			si->address_str.s=(char*)pkg_malloc(strlen(tmp)+1);
+			if (si->address_str.s==0){
+				LM_ERR("out of pkg memory.\n");
+				goto error;
+			}
+			strncpy(si->address_str.s, tmp, strlen(tmp)+1);
+			si->address_str.len=strlen(tmp);
 		}
-		strncpy(si->address_str.s, tmp, strlen(tmp)+1);
 		/* set is_ip (1 if name is an ip address, 0 otherwise) */
-		si->address_str.len=strlen(tmp);
 		if ( auto_aliases && (si->address_str.len==si->name.len) &&
 				(strncasecmp(si->address_str.s, si->name.s,
 								si->address_str.len)==0)

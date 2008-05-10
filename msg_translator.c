@@ -523,8 +523,6 @@ static inline int lumps_len(struct sip_msg* msg, struct lump* lumps,
 			case SUBST_RCV_IP: \
 				if (msg->rcv.bind_address){ \
 					new_len+=msg->rcv.bind_address->address_str.len; \
-					if (msg->rcv.bind_address->address.af!=AF_INET) \
-						new_len+=2; \
 				}else{ \
 					/* FIXME */ \
 					LM_CRIT("fixme:null bind_address\n"); \
@@ -562,8 +560,6 @@ static inline int lumps_len(struct sip_msg* msg, struct lump* lumps,
 			case SUBST_RCV_ALL: \
 				if (msg->rcv.bind_address){ \
 					new_len+=msg->rcv.bind_address->address_str.len; \
-					if (msg->rcv.bind_address->address.af!=AF_INET) \
-						new_len+=2; \
 					if (msg->rcv.bind_address->port_no!=SIP_PORT){ \
 						/* add :port_no */ \
 						new_len+=1+msg->rcv.bind_address->port_no_str.len; \
@@ -592,9 +588,6 @@ static inline int lumps_len(struct sip_msg* msg, struct lump* lumps,
 			case SUBST_SND_IP: \
 				if (send_sock){ \
 					new_len+=send_address_str->len; \
-					if (send_sock->address.af!=AF_INET && \
-							send_address_str==&(send_sock->address_str)) \
-						new_len+=2; \
 				}else{ \
 					LM_CRIT("fixme: lumps_len called with" \
 							" null send_sock\n"); \
@@ -632,9 +625,6 @@ static inline int lumps_len(struct sip_msg* msg, struct lump* lumps,
 			case SUBST_SND_ALL: \
 				if (send_sock){ \
 					new_len+=send_address_str->len; \
-					if ((send_sock->address.af!=AF_INET) && \
-							(send_address_str==&(send_sock->address_str))) \
-						new_len+=2; \
 					if ((send_sock->port_no!=SIP_PORT) || \
 							(send_port_str!=&(send_sock->port_no_str))){ \
 						/* add :port_no */ \
@@ -790,15 +780,9 @@ static inline void process_lumps(	struct sip_msg* msg,
 	switch((subst_l)->u.subst){ \
 		case SUBST_RCV_IP: \
 			if (msg->rcv.bind_address){  \
-				if (msg->rcv.bind_address->address.af!=AF_INET){\
-					new_buf[offset]='['; offset++; \
-				}\
 				memcpy(new_buf+offset, msg->rcv.bind_address->address_str.s, \
 						msg->rcv.bind_address->address_str.len); \
 				offset+=msg->rcv.bind_address->address_str.len; \
-				if (msg->rcv.bind_address->address.af!=AF_INET){\
-					new_buf[offset]=']'; offset++; \
-				}\
 			}else{  \
 				/*FIXME*/ \
 				LM_CRIT("null bind_address\n"); \
@@ -817,15 +801,9 @@ static inline void process_lumps(	struct sip_msg* msg,
 		case SUBST_RCV_ALL: \
 			if (msg->rcv.bind_address){  \
 				/* address */ \
-				if (msg->rcv.bind_address->address.af!=AF_INET){\
-					new_buf[offset]='['; offset++; \
-				}\
 				memcpy(new_buf+offset, msg->rcv.bind_address->address_str.s, \
 						msg->rcv.bind_address->address_str.len); \
 				offset+=msg->rcv.bind_address->address_str.len; \
-				if (msg->rcv.bind_address->address.af!=AF_INET){\
-					new_buf[offset]=']'; offset++; \
-				}\
 				/* :port */ \
 				if (msg->rcv.bind_address->port_no!=SIP_PORT){ \
 					new_buf[offset]=':'; offset++; \
@@ -870,17 +848,9 @@ static inline void process_lumps(	struct sip_msg* msg,
 			break; \
 		case SUBST_SND_IP: \
 			if (send_sock){  \
-				if ((send_sock->address.af!=AF_INET) && \
-						(send_address_str==&(send_sock->address_str))){\
-					new_buf[offset]='['; offset++; \
-				}\
 				memcpy(new_buf+offset, send_address_str->s, \
 									send_address_str->len); \
 				offset+=send_address_str->len; \
-				if ((send_sock->address.af!=AF_INET) && \
-						(send_address_str==&(send_sock->address_str))){\
-					new_buf[offset]=']'; offset++; \
-				}\
 			}else{  \
 				/*FIXME*/ \
 				LM_CRIT("called with null send_sock\n"); \
@@ -899,17 +869,9 @@ static inline void process_lumps(	struct sip_msg* msg,
 		case SUBST_SND_ALL: \
 			if (send_sock){  \
 				/* address */ \
-				if ((send_sock->address.af!=AF_INET) && \
-						(send_address_str==&(send_sock->address_str))){\
-					new_buf[offset]='['; offset++; \
-				}\
 				memcpy(new_buf+offset, send_address_str->s, \
 						send_address_str->len); \
 				offset+=send_address_str->len; \
-				if ((send_sock->address.af!=AF_INET) && \
-						(send_address_str==&(send_sock->address_str))){\
-					new_buf[offset]=']'; offset++; \
-				}\
 				/* :port */ \
 				if ((send_sock->port_no!=SIP_PORT) || \
 					(send_port_str!=&(send_sock->port_no_str))){ \
@@ -2030,17 +1992,6 @@ char* via_builder( unsigned int *len,
 	
 	via_len=local_via_len+address_str->len; /*space included in MY_VIA*/
 	
-#	ifdef USE_IPV6
-	/* add [] only if ipv6 and outbound socket address is used;
-	 * if using pre-set no check is made */
-	if ((send_sock->address.af==AF_INET6) &&
-		(address_str==&(send_sock->address_str))) {
-		line_buf[local_via_len]='[';
-		line_buf[local_via_len+1+address_str->len]=']';
-		extra_len=1;
-		via_len+=2; /* [ ]*/
-	}
-#	endif
 	memcpy(line_buf+local_via_len+extra_len, address_str->s, address_str->len);
 	if ((send_sock->port_no!=SIP_PORT) || (port_str!=&send_sock->port_no_str)){
 		line_buf[via_len]=':'; via_len++;
