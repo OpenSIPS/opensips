@@ -674,7 +674,7 @@ int parse_sdp(struct sip_msg* _m)
 
 	body.len = _m->len -(int)(body.s - _m->buf);
 	if (body.len==0) {
-		LM_ERR("message body has length zero\n");
+		LM_DBG("message body has length zero\n");
 		return 1;
 	}
 
