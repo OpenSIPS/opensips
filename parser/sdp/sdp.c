@@ -410,6 +410,7 @@ static int parse_sdp_session(str *sdp_body, int session_num, str *cnt_disp, sdp_
 	sdp_session_cell_t *session;
 	sdp_stream_cell_t *stream;
 	sdp_payload_attr_t *payload_attr;
+	int parse_payload_attr;
 
 	/*
 	 * Parsing of SDP body.
@@ -489,27 +490,32 @@ static int parse_sdp_session(str *sdp_body, int session_num, str *cnt_disp, sdp_
 		tmpstr1.s = sdp_payload.s;
 		tmpstr1.len = sdp_payload.len;
 		payloadnum = 0;
-		for (;;) {
-			a1p = eat_token_end(tmpstr1.s, tmpstr1.s + tmpstr1.len);
-			payload.s = tmpstr1.s;
-			payload.len = a1p - tmpstr1.s;
-			payload_attr = add_sdp_payload(stream, payloadnum, &payload);
-			if (payload_attr == 0) return -1;
-			tmpstr1.len -= payload.len;
-			tmpstr1.s = a1p;
-			a2p = eat_space_end(tmpstr1.s, tmpstr1.s + tmpstr1.len);
-			tmpstr1.len -= a2p - a1p;
-			tmpstr1.s = a2p;
-			if (a1p >= tmpstr1.s)
-				break;
-			payloadnum++;
+		if (tmpstr1.len != 0) {
+			for (;;) {
+				a1p = eat_token_end(tmpstr1.s, tmpstr1.s + tmpstr1.len);
+				payload.s = tmpstr1.s;
+				payload.len = a1p - tmpstr1.s;
+				payload_attr = add_sdp_payload(stream, payloadnum, &payload);
+				if (payload_attr == 0) return -1;
+				tmpstr1.len -= payload.len;
+				tmpstr1.s = a1p;
+				a2p = eat_space_end(tmpstr1.s, tmpstr1.s + tmpstr1.len);
+				tmpstr1.len -= a2p - a1p;
+				tmpstr1.s = a2p;
+				if (a1p >= tmpstr1.s)
+					break;
+				payloadnum++;
+			}
+
+			/* Initialize fast access pointers */
+			if (0 == init_p_payload_attr(stream, USE_PKG_MEM)) {
+				return -1;
+			}
+			parse_payload_attr = 1;
+		} else {
+			parse_payload_attr = 0;
 		}
 
-		/* Initialize fast access pointers */
-		if (0 == init_p_payload_attr(stream, USE_PKG_MEM)) {
-			return -1;
-		}
-		
 		payload_attr = 0;
 		/* Let's figure out the atributes */
 		a1p = find_sdp_line(m1p, m2p, 'a');
@@ -521,13 +527,13 @@ static int parse_sdp_session(str *sdp_body, int session_num, str *cnt_disp, sdp_
 			tmpstr1.s = a2p;
 			tmpstr1.len = m2p - a2p;
 
-			if (extract_ptime(&tmpstr1, &ptime) == 0) {
+			if (parse_payload_attr && extract_ptime(&tmpstr1, &ptime) == 0) {
 				a1p = ptime.s + ptime.len;
 				set_sdp_ptime_attr(stream, payload_attr, &ptime);
-			} else if (extract_sendrecv_mode(&tmpstr1, &sendrecv_mode) == 0) {
+			} else if (parse_payload_attr && extract_sendrecv_mode(&tmpstr1, &sendrecv_mode) == 0) {
 				a1p = sendrecv_mode.s + sendrecv_mode.len;
 				set_sdp_sendrecv_mode_attr(stream, payload_attr, &sendrecv_mode);
-			} else if (extract_rtpmap(&tmpstr1, &rtp_payload, &rtp_enc, &rtp_clock, &rtp_params) == 0) {
+			} else if (parse_payload_attr && extract_rtpmap(&tmpstr1, &rtp_payload, &rtp_enc, &rtp_clock, &rtp_params) == 0) {
 				if (rtp_params.len != 0 && rtp_params.s != NULL) {
 					a1p = rtp_params.s + rtp_params.len;
 				} else {
@@ -761,7 +767,9 @@ void free_sdp(sdp_info_t** _sdp)
 				payload = payload->next;
 				pkg_free(l_payload);
 			}
-			pkg_free(l_stream->p_payload_attr);
+			if (l_stream->p_payload_attr) {
+				pkg_free(l_stream->p_payload_attr);
+			}
 			pkg_free(l_stream);
 		}
 		pkg_free(l_session);
@@ -846,7 +854,9 @@ void free_cloned_sdp_stream(sdp_stream_cell_t *_stream)
 			payload = payload->next;
 			shm_free(l_payload);
 		}
-		shm_free(l_stream->p_payload_attr);
+		if (l_stream->p_payload_attr) {
+			shm_free(l_stream->p_payload_attr);
+		}
 		shm_free(l_stream);
 	}
 }
@@ -985,8 +995,10 @@ sdp_stream_cell_t * clone_sdp_stream_cell(sdp_stream_cell_t *stream)
 	clone_stream->payload_attr = payload_attr;
 
 	clone_stream->payloads_num = stream->payloads_num;
-	if (0 == init_p_payload_attr(clone_stream, USE_SHM_MEM)) {
-		goto error;
+	if (clone_stream->payloads_num) {
+		if (0 == init_p_payload_attr(clone_stream, USE_SHM_MEM)) {
+			goto error;
+		}
 	}
 
 	clone_stream->stream_num = stream->stream_num;
