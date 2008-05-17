@@ -60,7 +60,6 @@ int run_transformations(struct sip_msg *msg, trans_t *tr, pv_value_t *val)
 	while(it)
 	{
 		ret = (*it->trf)(msg, it->params, it->subtype, val);
-		LM_DBG("return val is %i\n", ret);
 		if(ret!=0)
 			return ret;
 		it = it->next;
@@ -685,6 +684,7 @@ int tr_eval_paramlist(struct sip_msg *msg, tr_param_t *tp, int subtype,
 			}
 			val->rs = _tr_empty;
 			break;
+
 		case TR_PL_NAME:
 			if(tp==NULL)
 			{
@@ -739,6 +739,15 @@ int tr_eval_paramlist(struct sip_msg *msg, tr_param_t *tp, int subtype,
 			}
 			val->rs = _tr_empty;
 			break;
+
+		case TR_PL_COUNT:
+			val->ri = 0;
+			for (pit = _tr_params_list; pit; pit=pit->next)
+				val->ri++;
+			val->flags = PV_TYPE_INT|PV_VAL_INT|PV_VAL_STR;
+			val->rs.s = int2str(val->ri, &val->rs.len);
+			break;
+
 		default:
 			LM_ERR("unknown subtype %d\n",
 					subtype);
@@ -1283,6 +1292,9 @@ char* tr_parse_paramlist(str* in, trans_t *t)
 					in->len, in->s);
 			goto error;
 		}
+		return p;
+	} else if(name.len==5 && strncasecmp(name.s, "count", 5)==0) {
+		t->subtype = TR_PL_COUNT;
 		return p;
 	}
 
