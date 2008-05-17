@@ -953,19 +953,19 @@ static int pv_get_proto(struct sip_msg *msg, pv_param_t *param,
 	switch(msg->rcv.proto)
 	{
 		case PROTO_UDP:
-			s.s = "UDP";
+			s.s = "udp";
 			s.len = 3;
 		break;
 		case PROTO_TCP:
-			s.s = "TCP";
+			s.s = "tcp";
 			s.len = 3;
 		break;
 		case PROTO_TLS:
-			s.s = "TLS";
+			s.s = "tls";
 			s.len = 3;
 		break;
 		case PROTO_SCTP:
-			s.s = "SCTP";
+			s.s = "sctp";
 			s.len = 4;
 		break;
 		default:
