@@ -381,6 +381,44 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 			}
 			break;
 
+		case TR_S_TOLOWER:
+			if(!(val->flags&PV_VAL_STR))
+			{
+				val->rs.s = int2str(val->ri, &val->rs.len);
+				val->flags |= PV_VAL_STR;
+				break;
+			}
+			if(val->rs.len>TR_BUFFER_SIZE-1)
+				return -1;
+			st.s = _tr_buffer;
+			st.len = val->rs.len;
+			for (i=0; i<st.len; i++)
+				st.s[i]=(val->rs.s[i]>='A' && val->rs.s[i]<='Z')
+							?('a' + val->rs.s[i] -'A'):val->rs.s[i];
+			memset(val, 0, sizeof(pv_value_t));
+			val->flags = PV_VAL_STR;
+			val->rs = st;
+			break;
+
+		case TR_S_TOUPPER:
+			if(!(val->flags&PV_VAL_STR))
+			{
+				val->rs.s = int2str(val->ri, &val->rs.len);
+				val->flags |= PV_VAL_STR;
+				break;
+			}
+			if(val->rs.len>TR_BUFFER_SIZE-1)
+				return -1;
+			st.s = _tr_buffer;
+			st.len = val->rs.len;
+			for (i=0; i<st.len; i++)
+				st.s[i]=(val->rs.s[i]>='a' && val->rs.s[i]<='z')
+							?('A' + val->rs.s[i] -'a'):val->rs.s[i];
+			memset(val, 0, sizeof(pv_value_t));
+			val->flags = PV_VAL_STR;
+			val->rs = st;
+			break;
+
 		default:
 			LM_ERR("unknown subtype %d\n",
 					subtype);
@@ -963,6 +1001,12 @@ char* tr_parse_string(str* in, trans_t *t)
 		return p;
 	} else if(name.len==3 && strncasecmp(name.s, "md5", 3)==0) {
 		t->subtype = TR_S_MD5;
+		return p;
+	} else if(name.len==7 && strncasecmp(name.s, "tolower", 7)==0) {
+		t->subtype = TR_S_TOLOWER;
+		return p;
+	} else if(name.len==7 && strncasecmp(name.s, "toupper", 7)==0) {
+		t->subtype = TR_S_TOUPPER;
 		return p;
 	} else if(name.len==11 && strncasecmp(name.s, "encode.hexa", 11)==0) {
 		t->subtype = TR_S_ENCODEHEXA;
