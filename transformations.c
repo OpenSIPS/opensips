@@ -685,6 +685,61 @@ int tr_eval_paramlist(struct sip_msg *msg, tr_param_t *tp, int subtype,
 			val->rs = _tr_empty;
 			break;
 
+		case TR_PL_VALUEAT:
+			if(tp==NULL)
+			{
+				LM_ERR("name invalid parameters\n");
+				return -1;
+			}
+
+			if(tp->type==TR_PARAM_NUMBER)
+			{
+				n = tp->v.n;
+			} else {
+				if(pv_get_spec_value(msg, (pv_spec_p)tp->v.data, &v)!=0
+						|| (!(v.flags&PV_VAL_INT)))
+				{
+					LM_ERR("name cannot get p1\n");
+					return -1;
+				}
+				n = v.ri;
+			}
+			if(n<0)
+			{
+				n = -n;
+				n--;
+				for (pit = _tr_params_list; pit; pit=pit->next)
+				{
+					if(n==0)
+					{
+						val->rs = pit->body;
+						goto done;
+					}
+					n--;
+				}
+			} else {
+				/* ugly hack -- params are in reverse order 
+				 * - first count then find */
+				i = 0;
+				for (pit = _tr_params_list; pit; pit=pit->next)
+					i++;
+				if(n<i)
+				{
+					n = i - n - 1;
+					for (pit = _tr_params_list; pit; pit=pit->next)
+					{
+						if(n==0)
+						{
+							val->rs = pit->body;
+							goto done;
+						}
+						n--;
+					}
+				}
+			}
+			val->rs = _tr_empty;
+			break;
+
 		case TR_PL_NAME:
 			if(tp==NULL)
 			{
@@ -1269,6 +1324,26 @@ char* tr_parse_paramlist(str* in, trans_t *t)
 		if(*p!=TR_RBRACKET)
 		{
 			LM_ERR("invalid value transformation: %.*s!\n",
+					in->len, in->s);
+			goto error;
+		}
+		return p;
+	} else if(name.len==7 && strncasecmp(name.s, "valueat", 7)==0) {
+		t->subtype = TR_PL_VALUEAT;
+		if(*p!=TR_PARAM_MARKER)
+		{
+			LM_ERR("invalid name transformation: %.*s\n",
+					in->len, in->s);
+			goto error;
+		}
+		p++;
+		_tr_parse_nparam(p, p0, tp, spec, n, sign, in, s)
+		t->params = tp;
+		tp = 0;
+		while(is_in_str(p, in) && (*p==' ' || *p=='\t' || *p=='\n')) p++;
+		if(*p!=TR_RBRACKET)
+		{
+			LM_ERR("invalid name transformation: %.*s!\n",
 					in->len, in->s);
 			goto error;
 		}

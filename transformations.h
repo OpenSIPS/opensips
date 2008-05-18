@@ -48,7 +48,7 @@ enum _tr_uri_subtype {
 	TR_URI_R2
 };
 enum _tr_param_subtype {
-	TR_PL_NONE=0, TR_PL_VALUE, TR_PL_NAME, TR_PL_COUNT
+	TR_PL_NONE=0, TR_PL_VALUE, TR_PL_VALUEAT, TR_PL_NAME, TR_PL_COUNT
 };
 enum _tr_param_type { TR_PARAM_NONE=0, TR_PARAM_STRING, TR_PARAM_NUMBER,
 	TR_PARAM_SPEC };
