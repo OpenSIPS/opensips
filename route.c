@@ -664,18 +664,24 @@ inline static int comp_ip(struct sip_msg *msg, int op, struct ip_addr* ip,
 					/* 3: (slow) rev dns the address
 					* and compare with all the aliases
 					* !!??!! review: remove this? */
-					he=rev_resolvehost(ip);
-					if (he==0){
-						print_ip( "comp_ip: could not rev_resolve ip address:"
-									" ", ip, "\n");
-					ret=0;
-					}else{
-						/*  compare with primary host name */
-						ret=comp_str(he->h_name, opd->v.data, op, opd->type);
-						/* compare with all the aliases */
-						for(h=he->h_aliases; (ret!=1) && (*h); h++){
-							ret=comp_str(*h, opd->v.data, op, opd->type);
+					if(received_dns & DO_REV_DNS)
+					{
+						he=rev_resolvehost(ip);
+						if (he==0){
+							print_ip("comp_ip: could not rev_resolve ip"
+									" address: ", ip, "\n");
+						ret=0;
+						}else{
+							/*  compare with primary host name */
+							ret=comp_str(he->h_name, opd->v.data, op,
+									opd->type);
+							/* compare with all the aliases */
+							for(h=he->h_aliases; (ret!=1) && (*h); h++){
+								ret=comp_str(*h, opd->v.data, op, opd->type);
+							}
 						}
+					} else {
+						return 0;
 					}
 					break;
 				case DIFF_OP:
