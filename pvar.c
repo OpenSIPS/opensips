@@ -1934,6 +1934,58 @@ error:
 	return -1;
 }
 
+int pv_set_ruri_port(struct sip_msg* msg, pv_param_t *param,
+		int op, pv_value_t *val)
+{
+	struct action  act;
+	char backup;
+
+	if(msg==NULL || param==NULL)
+	{
+		LM_ERR("bad parameters\n");
+		return -1;
+	}
+					
+	if(val == NULL)
+	{
+		memset(&act, 0, sizeof(act));
+		act.type = SET_PORT_T;
+		act.elem[0].type = STRING_ST;
+		act.elem[0].u.string = "";
+		if (do_action(&act, msg)<0)
+		{
+			LM_ERR("do action failed)\n");
+			goto error;
+		}
+		return 0;
+	}
+
+	if(!(val->flags&PV_VAL_STR))
+	{
+		val->rs.s = int2str(val->ri, &val->rs.len);
+		val->flags |= PV_VAL_STR;
+	}
+	
+	memset(&act, 0, sizeof(act));
+	act.elem[0].type = STRING_ST;
+	act.elem[0].u.string = val->rs.s;
+	backup = val->rs.s[val->rs.len];
+	val->rs.s[val->rs.len] = '\0';
+	act.type = SET_PORT_T;
+	if (do_action(&act, msg)<0)
+	{
+		LM_ERR("do action failed\n");
+		val->rs.s[val->rs.len] = backup;
+		goto error;
+	}
+	val->rs.s[val->rs.len] = backup;
+
+	return 0;
+error:
+	return -1;
+}
+
+
 int pv_set_branch(struct sip_msg* msg, pv_param_t *param,
 		int op, pv_value_t *val)
 {
@@ -2396,7 +2448,7 @@ static pv_export_t _pv_names_table[] = {
 		PVT_METHOD, pv_get_method, 0,
 		0, 0, 0, 0},
 	{{"rp", (sizeof("rp")-1)}, /* */
-		PVT_RURI_PORT, pv_get_ruri_attr, 0,
+		PVT_RURI_PORT, pv_get_ruri_attr, pv_set_ruri_port,
 		0, 0, pv_init_iname, 3},
 	{{"rP", (sizeof("rP")-1)}, /* */
 		PVT_RURI_PROTOCOL, pv_get_ruri_attr, 0,
