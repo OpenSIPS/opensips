@@ -91,6 +91,7 @@ enum request_method {
 #define FL_USE_UAC_TO         (1<<7) /* take TO hdr from UAC insteas of UAS */
 #define FL_USE_UAC_CSEQ       (1<<8) /* take CSEQ hdr from UAC insteas of UAS*/
 #define FL_REQ_UPSTREAM       (1<<9) /* it's an upstream going request */
+#define FL_DO_KEEPALIVE       (1<<10) // keepalive request's source after a positive reply
 
 
 #define IFISMETHOD(methodname,firstchar)                                  \
