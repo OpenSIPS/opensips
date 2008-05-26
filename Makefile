@@ -791,3 +791,11 @@ test:
 	-@echo "Start tests"
 	$(MAKE) -C test/
 	-@echo "Tests finished"
+
+doxygen:
+	-@echo "Create Doxygen documentation"
+	# disable call graphes, because of the DOT dependencies
+	(cat doc/doxygen/openser-doxygen; \
+	echo "HAVE_DOT=no" ;\
+	echo "PROJECT_NUMBER=$(NAME)-$(RELEASE)" )| doxygen -
+	-@echo "Doxygen documentation created"
