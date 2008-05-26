@@ -382,7 +382,22 @@ bin:
 
 .PHONY: deb
 deb:
+	rm -f debian
 	ln -sf packaging/debian
+	dpkg-buildpackage -rfakeroot -tc $(DEBBUILD_EXTRA_OPTIONS)
+	rm -f debian
+
+.PHONY: deb-sarge
+deb:
+	rm -f debian
+	ln -sf packaging/debian-sarge debian
+	dpkg-buildpackage -rfakeroot -tc $(DEBBUILD_EXTRA_OPTIONS)
+	rm -f debian
+
+.PHONY: deb-etch
+deb:
+	rm -f debian
+	ln -sf packaging/debian-etch debian
 	dpkg-buildpackage -rfakeroot -tc $(DEBBUILD_EXTRA_OPTIONS)
 	rm -f debian
 
