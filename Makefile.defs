@@ -465,7 +465,7 @@ DEFS+= $(extra_defs) \
 #PROFILE=  -pg #set this if you want profiling
 
 # WARNING: do not add mode=debug or mode=release anymore in the Makefile,
-# use make mode=debug all instead. Anyway no by default openser 
+# use make mode=debug all instead. Anyway now by default openser 
 # is  compiled w/ debugging symbols in all cases (-g). --andrei
 
 ifneq ($(SVNREVISION),)
