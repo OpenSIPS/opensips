@@ -70,6 +70,13 @@ struct sip_msg;
 			(_mystr).len--; \
 	}while(0)
 
+/* right and left space trimming */
+#define trim_spaces_lr(_s_) \
+	do{\
+		for(;(_s_).s[(_s_).len-1]==' ';(_s_).s[--(_s_).len]=0);\
+		for(;(_s_).s[0]==' ';(_s_).s=(_s_).s+1,(_s_).len--);\
+	}while(0);
+
 
 #define  translate_pointer( _new_buf , _org_buf , _p) \
 	( (_p)?(_new_buf + (_p-_org_buf)):(0) )
