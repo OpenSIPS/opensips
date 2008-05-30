@@ -70,6 +70,10 @@ str default_global_port={0,0};
 str default_via_address={0,0};
 str default_via_port={0,0};
 
+unsigned int get_next_msg_no(void)
+{
+	return ++msg_no;
+}
 
 /* WARNING: buf must be 0 terminated (buf[len]=0) or some things might 
  * break (e.g.: modules/textops)
