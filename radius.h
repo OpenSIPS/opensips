@@ -77,18 +77,21 @@ struct val {
 #define	A_CISCO_AVPAIR					26
 #define	A_SIP_AVP					27
 #define	A_TIME_STAMP					28
-#define	A_MAX						29
+#define	A_SIP_CALL_ID					29
+#define	A_SIP_REQUEST_HASH				30
+#define	A_MAX						31
 
 #define	V_STATUS_START			0
 #define	V_STATUS_STOP			1
 #define	V_STATUS_FAILED			2
 #define	V_CALL_CHECK			3
-#define	V_EMERGENCY_CALL		4
-#define	V_SIP_SESSION			5
-#define	V_GROUP_CHECK			6
-#define	V_SIP_CALLER_AVPS		7
-#define	V_SIP_CALLEE_AVPS		8
-#define	V_MAX				9
+#define	V_SIP_SESSION			4
+#define	V_GROUP_CHECK			5
+#define	V_SIP_CALLER_AVPS		6
+#define	V_SIP_CALLEE_AVPS		7
+#define	V_SIP_VERIFY_DESTINATION	8
+#define	V_SIP_VERIFY_SOURCE	        9
+#define	V_MAX			       10
 
 #define INIT_AV(rh, at, nr_at, vl, nr_vl, fn, e1, e2) \
 {									\
