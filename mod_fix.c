@@ -399,28 +399,28 @@ int fixup_free_regexp_none(void** param, int param_no)
  */
 int fixup_pvar(void **param)
 {
-    pv_spec_t *sp;
-    str s;
+	pv_spec_t *sp;
+	str s;
 
 	sp = (pv_spec_t*)pkg_malloc(sizeof(pv_spec_t));
 	if (sp == 0) {
-	    LM_ERR("no pkg memory left\n");
-	    return E_UNSPEC;
+		LM_ERR("no pkg memory left\n");
+		return E_UNSPEC;
 	}
 	s.s = (char*)*param; s.len = strlen(s.s);
 	if (pv_parse_spec(&s, sp) == 0) {
-	    LM_ERR("parsing of pseudo variable %s failed!\n", (char*)*param);
-	    pkg_free(sp);
-	    return E_UNSPEC;
+		LM_ERR("parsing of pseudo variable %s failed!\n", (char*)*param);
+		pkg_free(sp);
+		return E_UNSPEC;
 	}
 	if (sp->type == PVT_NULL) {
-	    LM_ERR("bad pseudo variable\n");
-	    pkg_free(sp);
-	    return E_UNSPEC;
+		LM_ERR("bad pseudo variable\n");
+		pkg_free(sp);
+		return E_UNSPEC;
 	}
 	*param = (void*)sp;
 
-    return 0;
+	return 0;
 }
 
 /**
