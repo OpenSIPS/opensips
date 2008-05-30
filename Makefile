@@ -52,7 +52,7 @@ exclude_modules?= jabber cpl-c db_mysql db_postgres osp db_unixodbc \
 	db_oracle avp_radius auth_radius group_radius uri_radius \
 	xmpp presence presence_xml presence_mwi pua pua_bla pua_mi \
 	pua_usrloc pua_xmpp rls mi_xmlrpc perl snmpstats perlvdb \
-	ldap carrierroute h350 xcap_client db_berkeley seas
+	ldap carrierroute h350 xcap_client db_berkeley seas peering
 ifeq ($(TLS),)
 	exclude_modules+= tlsops
 endif
