@@ -496,8 +496,6 @@ static inline int lump_check_opt(	struct lump *l,
 			if (ip_addr_cmp(ip, &snd_s->address)) return 0;
 			l->flags |= LUMPFLAG_COND_TRUE;
 			return 1;
-		case COND_IF_RAND:
-			return (rand()>=RAND_MAX/2);
 		default:
 			LM_CRIT("unknown lump condition %d\n", l->u.cond);
 	}

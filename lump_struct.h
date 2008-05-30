@@ -66,7 +66,6 @@ enum lump_conditions {	COND_FALSE,         /**< always false */
 						COND_IF_DIFF_PROTO, /**< true if RCV proto != SND proto */
 						COND_IF_DIFF_PORT,  /**< true if RCV port != SND port */
 						COND_IF_DIFF_IP,    /**< true if RCV ip != SND ip */
-						COND_IF_RAND        /**< 50-50 random prob.of being true*/
 						};
 
 /**
