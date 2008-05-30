@@ -209,9 +209,9 @@ struct sip_msg {
 	struct hdr_field* refer_to;
 	struct hdr_field* session_expires;
 	struct hdr_field* min_se;
-        struct hdr_field* ppi;
-        struct hdr_field* pai;
-        struct hdr_field* privacy;
+	struct hdr_field* ppi;
+	struct hdr_field* pai;
+	struct hdr_field* privacy;
 
 	struct sdp_info* sdp;
 
