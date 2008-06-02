@@ -351,7 +351,7 @@ int forward_request( struct sip_msg* msg, struct proxy_l * p)
 			if (buf)
 				pkg_free(buf);
 
-			buf = build_req_buf_from_sip_req( msg, &len, send_sock, p->proto);
+			buf = build_req_buf_from_sip_req(msg, &len, send_sock, p->proto, 0);
 			if (!buf){
 				LM_ERR("building req buf failed\n");
 				goto error;

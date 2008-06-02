@@ -38,6 +38,10 @@
 #define WARNING_PHRASE " \"Noisy feedback tells: "
 #define WARNING_PHRASE_LEN (sizeof(WARNING_PHRASE)-1)
 
+#define MSG_TRANS_SHM_FLAG    (1<<0)
+#define MSG_TRANS_NOVIA_FLAG  (1<<1)
+
+
 //#define MAX_CONTENT_LEN_BUF INT2STR_MAX_LEN /* see ut.h/int2str() */
 
 #include "parser/msg_parser.h"
@@ -69,7 +73,7 @@ struct hostport {
 
 char * build_req_buf_from_sip_req (	struct sip_msg* msg, 
 				unsigned int *returned_len, struct socket_info* send_sock,
-				int proto);
+				int proto, unsigned int flags);
 
 char * build_res_buf_from_sip_res(	struct sip_msg* msg,
 				unsigned int *returned_len);

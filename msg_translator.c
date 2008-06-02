@@ -1301,9 +1301,11 @@ static inline int insert_path_as_route(struct sip_msg* msg, str* path)
 
 char * build_req_buf_from_sip_req( struct sip_msg* msg,
 								unsigned int *returned_len,
-								struct socket_info* send_sock, int proto)
+								struct socket_info* send_sock, int proto,
+								unsigned int flags)
 {
-	unsigned int len, new_len, received_len, rport_len, uri_len, via_len, body_delta;
+	unsigned int len, new_len, received_len, rport_len;
+	unsigned int uri_len, via_len, body_delta;
 	char* line_buf;
 	char* received_buf;
 	char* rport_buf;
@@ -1333,7 +1335,26 @@ char * build_req_buf_from_sip_req( struct sip_msg* msg,
 	received_buf=0;
 	rport_buf=0;
 	line_buf=0;
-	
+
+	if (msg->path_vec.len) {
+		if (insert_path_as_route(msg, &msg->path_vec) < 0) {
+			LM_ERR("adding path lumps failed\n");
+			goto error;
+		}
+	}
+
+	/* Calculate message body difference and adjust
+	 * Content-Length
+	 */
+	body_delta = lumps_len(msg, msg->body_lumps, send_sock);
+	if (adjust_clen(msg, body_delta, proto) < 0) {
+		LM_ERR("failed to adjust Content-Length\n");
+		goto error;
+	}
+
+	if (flags&MSG_TRANS_NOVIA_FLAG)
+		goto build_msg;
+
 #ifdef USE_TCP
 	/* add id if tcp */
 	if (msg->rcv.proto==PROTO_TCP
@@ -1352,13 +1373,6 @@ char * build_req_buf_from_sip_req( struct sip_msg* msg,
 		extra_params.len=id_len;
 	}
 #endif
-
-	if (msg->path_vec.len) {
-		if (insert_path_as_route(msg, &msg->path_vec) < 0) {
-			LM_ERR("adding path lumps failed\n");
-			goto error;
-		}
-	}
 
 	/* check whether to add rport parameter to local via */
 	if(msg->msg_flags&FL_FORCE_LOCAL_RPORT) {
@@ -1381,15 +1395,6 @@ char * build_req_buf_from_sip_req( struct sip_msg* msg,
 		memcpy(extra_params.s+id_len, RPORT, RPORT_LEN-1);
 		extra_params.s[extra_params.len]='\0';
 		LM_DBG("extra param added: <%.*s>\n",extra_params.len, extra_params.s);
-	}
-	
-	/* Calculate message body difference and adjust
-	 * Content-Length
-	 */
-	body_delta = lumps_len(msg, msg->body_lumps, send_sock);
-	if (adjust_clen(msg, body_delta, proto) < 0) {
-		LM_ERR("failed to adjust Content-Length\n");
-		goto error00;
 	}
 
 	branch.s=msg->add_to_branch_s;
@@ -1473,6 +1478,7 @@ char * build_req_buf_from_sip_req( struct sip_msg* msg,
 			goto error03; /* free rport_buf */
 	}
 
+build_msg:
 	/* compute new msg len and fix overlapping zones*/
 	new_len=len+body_delta+lumps_len(msg, msg->add_rm, send_sock);
 #ifdef XL_DEBUG
@@ -1483,7 +1489,10 @@ char * build_req_buf_from_sip_req( struct sip_msg* msg,
 		uri_len=msg->new_uri.len;
 		new_len=new_len-msg->first_line.u.request.uri.len+uri_len;
 	}
-	new_buf=(char*)pkg_malloc(new_len+1);
+	if (flags&MSG_TRANS_SHM_FLAG)
+		new_buf=(char*)shm_malloc(new_len+1);
+	else 
+		new_buf=(char*)pkg_malloc(new_len+1);
 	if (new_buf==0){
 		ser_error=E_OUT_OF_MEM;
 		LM_ERR("out of pkg memory\n");
