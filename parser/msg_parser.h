@@ -81,18 +81,20 @@ enum request_method {
 	METHOD_OTHER=16384        /* 15 - 2^14 */
 };
 
-#define FL_FORCE_RPORT        (1<<0) /* force rport (top via) */
-#define FL_FORCE_ACTIVE       (1<<1) /* force active SDP */
-#define FL_FORCE_LOCAL_RPORT  (1<<2) /* force local rport (local via) */
-#define FL_SDP_IP_AFS         (1<<3) /* SDP IP rewritten */
-#define FL_SDP_PORT_AFS       (1<<4) /* SDP port rewritten */
-#define FL_SHM_CLONE          (1<<5) /* msg cloned in SHM as a single chunk */
-#define FL_USE_UAC_FROM       (1<<6) /* take FROM hdr from UAC insteas of UAS*/
-#define FL_USE_UAC_TO         (1<<7) /* take TO hdr from UAC insteas of UAS */
-#define FL_USE_UAC_CSEQ       (1<<8) /* take CSEQ hdr from UAC insteas of UAS*/
-#define FL_REQ_UPSTREAM       (1<<9) /* it's an upstream going request */
-#define FL_DO_KEEPALIVE       (1<<10) // keepalive request's source after a positive reply
-#define FL_USE_MEDIA_PROXY    (1<<11) // use mediaproxy on all messages during a dialog
+#define FL_FORCE_RPORT       (1<<0)  /* force rport (top via) */
+#define FL_FORCE_ACTIVE      (1<<1)  /* force active SDP */
+#define FL_FORCE_LOCAL_RPORT (1<<2)  /* force local rport (local via) */
+#define FL_SDP_IP_AFS        (1<<3)  /* SDP IP rewritten */
+#define FL_SDP_PORT_AFS      (1<<4)  /* SDP port rewritten */
+#define FL_SHM_CLONE         (1<<5)  /* msg cloned in SHM as a single chunk */
+#define FL_USE_UAC_FROM      (1<<6)  /* take FROM hdr from UAC insteas of UAS*/
+#define FL_USE_UAC_TO        (1<<7)  /* take TO hdr from UAC insteas of UAS */
+#define FL_USE_UAC_CSEQ      (1<<8)  /* take CSEQ hdr from UAC insteas of UAS*/
+#define FL_REQ_UPSTREAM      (1<<9)  /* it's an upstream going request */
+#define FL_DO_KEEPALIVE      (1<<10) /* keepalive request's source after a 
+                                      * positive reply */
+#define FL_USE_MEDIA_PROXY   (1<<11) /* use mediaproxy on all messages during
+                                      * a dialog */
 
 
 #define IFISMETHOD(methodname,firstchar)                                  \
