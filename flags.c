@@ -86,6 +86,12 @@ unsigned int fixup_flag(unsigned int idx)
 	return (1<<idx);
 }
 
+int setsflagsval( unsigned int val )
+{
+	sflags = val;
+	return 1;
+}
+
 int setsflag( unsigned int mask )
 {
 	sflags |= mask;

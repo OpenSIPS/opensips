@@ -43,6 +43,7 @@ int flag_idx2mask(int *flag);
 
 unsigned int fixup_flag(unsigned int idx);
 
+int setsflagsval( unsigned int val );
 int setsflag( unsigned int mask );
 int resetsflag( unsigned int mask );
 int issflagset( unsigned int mask );

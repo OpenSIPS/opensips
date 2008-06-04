@@ -2083,6 +2083,33 @@ int pv_set_mflags(struct sip_msg* msg, pv_param_t *param,
 	return 0;
 }
 
+int pv_set_sflags(struct sip_msg* msg, pv_param_t *param,
+		int op, pv_value_t *val)
+{
+	if(msg==NULL || param==NULL)
+	{
+		LM_ERR("bad parameters\n");
+		return -1;
+	}
+					
+	if(val == NULL)
+	{
+		setsflagsval(0);
+		return 0;
+	}
+
+	if(!(val->flags&PV_VAL_INT))
+	{
+		LM_ERR("assigning non-int value to script flags\n");
+		return -1;
+	}
+	
+	setsflagsval((unsigned int)val->ri);
+
+	return 0;
+}
+
+
 /********* end PV set functions *********/
 
 int pv_parse_scriptvar_name(pv_spec_p sp, str *in)
@@ -2507,10 +2534,10 @@ static pv_export_t _pv_names_table[] = {
 		PVT_RCVPORT, pv_get_rcvport, 0,
 		0, 0, 0, 0},
 	{{"sf", (sizeof("sf")-1)}, /* */
-		PVT_SFLAGS, pv_get_sflags, 0,
+		PVT_SFLAGS, pv_get_sflags, pv_set_sflags,
 		0, 0, 0, 0},
 	{{"sF", (sizeof("sF")-1)}, /* */
-		PVT_HEXSFLAGS, pv_get_hexsflags, 0,
+		PVT_HEXSFLAGS, pv_get_hexsflags, pv_set_sflags,
 		0, 0, 0, 0},
 	{{"src_ip", (sizeof("src_ip")-1)}, /* */
 		PVT_SRCIP, pv_get_srcip, 0,
