@@ -2057,6 +2057,32 @@ error:
 	return -1;
 }
 
+int pv_set_mflags(struct sip_msg* msg, pv_param_t *param,
+		int op, pv_value_t *val)
+{
+	if(msg==NULL || param==NULL)
+	{
+		LM_ERR("bad parameters\n");
+		return -1;
+	}
+					
+	if(val == NULL)
+	{
+		msg->flags = 0;
+		return 0;
+	}
+
+	if(!(val->flags&PV_VAL_INT))
+	{
+		LM_ERR("assigning non-int value to msg flags\n");
+		return -1;
+	}
+	
+	msg->flags = val->ri;
+
+	return 0;
+}
+
 /********* end PV set functions *********/
 
 int pv_parse_scriptvar_name(pv_spec_p sp, str *in)
@@ -2376,10 +2402,10 @@ static pv_export_t _pv_names_table[] = {
 		PVT_MSG_BUF, pv_get_msg_buf, 0,
 		0, 0, 0, 0},
 	{{"mf", (sizeof("mf")-1)}, /* */
-		PVT_FLAGS, pv_get_flags, 0,
+		PVT_FLAGS, pv_get_flags, pv_set_mflags,
 		0, 0, 0, 0},
 	{{"mF", (sizeof("mF")-1)}, /* */
-		PVT_HEXFLAGS, pv_get_hexflags, 0,
+		PVT_HEXFLAGS, pv_get_hexflags, pv_set_mflags,
 		0, 0, 0, 0},
 	{{"mi", (sizeof("mi")-1)}, /* */
 		PVT_MSGID, pv_get_msgid, 0,
