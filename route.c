@@ -768,17 +768,20 @@ inline static int comp_s2s(int op, str *s1, str *s2)
 			else ret = 0;
 			break;
 		case MATCH_OP:
-			backup  = s1->s[s1->len];  s1->s[s1->len] = '\0';
+			if(s1->len == 0) return 0;
+			backup = s1->s[s1->len];  s1->s[s1->len] = '\0';
 			ret=(regexec((regex_t*)s2, s1->s, 0, 0, 0)==0);
 			s1->s[s1->len] = backup;
 			break;
 		case NOTMATCH_OP:
-			backup  = s1->s[s1->len];  s1->s[s1->len] = '\0';
+			if(s1->len == 0) return 0;
+			backup = s1->s[s1->len];  s1->s[s1->len] = '\0';
 			ret=(regexec((regex_t*)s2, s1->s, 0, 0, 0)!=0);
 			s1->s[s1->len] = backup;
 			break;
 		case MATCHD_OP:
 		case NOTMATCHD_OP:
+			if(s1->len == 0) return 0;
 			re=(regex_t*)pkg_malloc(sizeof(regex_t));
 			if (re==0) {
 				LM_CRIT("pkg memory allocation failure\n");
