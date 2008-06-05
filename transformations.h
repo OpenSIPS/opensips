@@ -34,7 +34,7 @@
 #define TR_CLASS_MARKER	'.'
 #define TR_PARAM_MARKER	','
 
-enum _tr_type { TR_NONE=0, TR_STRING, TR_URI, TR_PARAMLIST };
+enum _tr_type { TR_NONE=0, TR_STRING, TR_URI, TR_PARAMLIST, TR_NAMEADDR };
 enum _tr_s_subtype { 
 	TR_S_NONE=0, TR_S_LEN, TR_S_INT, TR_S_MD5, TR_S_SUBSTR,
 	TR_S_SELECT, TR_S_ENCODEHEXA, TR_S_DECODEHEXA,
@@ -49,6 +49,9 @@ enum _tr_uri_subtype {
 };
 enum _tr_param_subtype {
 	TR_PL_NONE=0, TR_PL_VALUE, TR_PL_VALUEAT, TR_PL_NAME, TR_PL_COUNT
+};
+enum _tr_nameaddr_subtype {
+	TR_NA_NONE=0, TR_NA_NAME, TR_NA_URI, TR_NA_LEN
 };
 enum _tr_param_type { TR_PARAM_NONE=0, TR_PARAM_STRING, TR_PARAM_NUMBER,
 	TR_PARAM_SPEC };
@@ -79,6 +82,7 @@ char* parse_transformation(str *in, trans_t **tr);
 char* tr_parse_string(str* in, trans_t *t);
 char* tr_parse_uri(str* in, trans_t *t);
 char* tr_parse_paramlist(str* in, trans_t *t);
+char* tr_parse_nameaddr(str* in, trans_t *t);
 void destroy_transformation(trans_t *t);
 void free_transformation(trans_t *t);
 void free_tr_param(tr_param_t *tp);

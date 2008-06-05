@@ -37,6 +37,7 @@
 
 #include "parser/parse_param.h"
 #include "parser/parse_uri.h"
+#include "parser/parse_nameaddr.h"
 
 #include "strcommon.h"
 #include "transformations.h"
@@ -812,6 +813,72 @@ done:
 	return 0;
 }
 
+static str _tr_nameaddr_str = {0, 0};
+static name_addr_t _tr_nameaddr;
+
+int tr_eval_nameaddr(struct sip_msg *msg, tr_param_t *tp, int subtype,
+		pv_value_t *val)
+{
+	str sv;
+
+	if(val==NULL || (!(val->flags&PV_VAL_STR)) || val->rs.len<=0)
+		return -1;
+
+	if(_tr_nameaddr_str.len==0 || _tr_nameaddr_str.len!=val->rs.len ||
+			strncmp(_tr_nameaddr_str.s, val->rs.s, val->rs.len)!=0)
+	{
+		if(val->rs.len>_tr_nameaddr_str.len)
+		{
+			if(_tr_nameaddr_str.s) pkg_free(_tr_nameaddr_str.s);
+			_tr_nameaddr_str.s =
+						(char*)pkg_malloc((val->rs.len+1)*sizeof(char));
+			if(_tr_nameaddr_str.s==NULL)
+			{
+				LM_ERR("no more private memory\n");
+				memset(&_tr_nameaddr_str, 0, sizeof(str));
+				memset(&_tr_nameaddr, 0, sizeof(name_addr_t));
+				return -1;
+			}
+		}
+		_tr_nameaddr_str.len = val->rs.len;
+		memcpy(_tr_nameaddr_str.s, val->rs.s, val->rs.len);
+		_tr_nameaddr_str.s[_tr_nameaddr_str.len] = '\0';
+		
+		/* reset old values */
+		memset(&_tr_nameaddr, 0, sizeof(name_addr_t));
+		
+		/* parse params */
+		sv = _tr_nameaddr_str;
+		if (parse_nameaddr(&sv, &_tr_nameaddr)<0)
+			return -1;
+	}
+	
+	memset(val, 0, sizeof(pv_value_t));
+	val->flags = PV_VAL_STR;
+
+	switch(subtype)
+	{
+		case TR_NA_URI:
+			val->rs = (_tr_nameaddr.uri.s)?_tr_nameaddr.uri:_tr_empty;
+			break;
+		case TR_NA_LEN:
+			val->flags = PV_TYPE_INT|PV_VAL_INT|PV_VAL_STR;
+			val->ri = _tr_nameaddr.len;
+			val->rs.s = int2str(val->ri, &val->rs.len);
+			break;
+		case TR_NA_NAME:
+			val->rs = (_tr_nameaddr.name.s)?_tr_nameaddr.name:_tr_empty;
+			break;
+
+		default:
+			LM_ERR("unknown subtype %d\n",
+					subtype);
+			return -1;
+	}
+	return 0;
+}
+
+
 
 #define is_in_str(p, in) (p<in->s+in->len && *p)
 
@@ -880,6 +947,14 @@ char* parse_transformation(str *in, trans_t **tr)
 			t->trf = tr_eval_paramlist;
 			s.s = p; s.len = in->s + in->len - p;
 			p0 = tr_parse_paramlist(&s, t);
+			if(p0==NULL)
+				goto error;
+			p = p0;
+		} else if(tclass.len==8 && strncasecmp(tclass.s, "nameaddr", 8)==0) {
+			t->type = TR_PARAMLIST;
+			t->trf = tr_eval_nameaddr;
+			s.s = p; s.len = in->s + in->len - p;
+			p0 = tr_parse_nameaddr(&s, t);
 			if(p0==NULL)
 				goto error;
 			p = p0;
@@ -1383,6 +1458,47 @@ error:
 	return NULL;
 }
 
+char* tr_parse_nameaddr(str* in, trans_t *t)
+{
+	char *p;
+	str name;
+
+	if(in==NULL || t==NULL)
+		return NULL;
+
+	p = in->s;
+	name.s = in->s;
+
+	/* find next token */
+	while(is_in_str(p, in) && *p!=TR_PARAM_MARKER && *p!=TR_RBRACKET) p++;
+	if(*p=='\0')
+	{
+		LM_ERR("invalid transformation: %.*s\n",
+				in->len, in->s);
+		goto error;
+	}
+	name.len = p - name.s;
+	trim(&name);
+
+	if(name.len==3 && strncasecmp(name.s, "uri", 3)==0)
+	{
+		t->subtype = TR_NA_URI;
+		return p;
+	} else if(name.len==3 && strncasecmp(name.s, "len", 3)==0)
+	{
+		t->subtype = TR_NA_LEN;
+		return p;
+	} else if(name.len==4 && strncasecmp(name.s, "name", 4)==0) {
+		t->subtype = TR_NA_NAME;
+		return p;
+	}
+
+
+	LM_ERR("unknown transformation: %.*s/%.*s/%d!\n", in->len, in->s,
+			name.len, name.s, name.len);
+error:
+	return NULL;
+}
 
 
 void destroy_transformation(trans_t *t)
