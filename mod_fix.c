@@ -295,7 +295,7 @@ int fixup_uint_sint(void** param, int param_no)
  * - the input parameter must be pkg-allocated and will be freed by function
  *   (it is how it comes from the config parser)
  */
-int fixup_regexp(void** param)
+static int fixup_regexp(void** param, int rflags)
 {
 	regex_t* re;
 
@@ -303,7 +303,7 @@ int fixup_regexp(void** param)
 		LM_ERR("no more pkg memory\n");
 		return E_OUT_OF_MEM;
 	}
-	if (regcomp(re, *param, REG_EXTENDED|REG_ICASE|REG_NEWLINE) ) {
+	if (regcomp(re, *param, (REG_EXTENDED|REG_ICASE|REG_NEWLINE)&(~rflags))) {
 		pkg_free(re);
 		LM_ERR("bad re %s\n", (char*)*param);
 		return E_BAD_RE;
@@ -341,7 +341,22 @@ int fixup_regexp_null(void** param, int param_no)
 		LM_ERR("invalid parameter number %d\n", param_no);
 		return E_UNSPEC;
 	}
-	return fixup_regexp(param);
+	return fixup_regexp(param, 0);
+}
+
+/**
+ * fixup for functions that get one parameter
+ * - first parameter is converted to regular expression structure
+ *   where "match-any-character" operators also match a newline
+ */
+int fixup_regexpNL_null(void** param, int param_no)
+{
+	if(param_no != 1)
+	{
+		LM_ERR("invalid parameter number %d\n", param_no);
+		return E_UNSPEC;
+	}
+	return fixup_regexp(param, REG_NEWLINE);
 }
 
 /**
@@ -371,7 +386,25 @@ int fixup_regexp_none(void** param, int param_no)
 		return E_UNSPEC;
 	}
 	if (param_no == 1)
-		return fixup_regexp(param);
+		return fixup_regexp(param, 0);
+	return 0;
+}
+
+/**
+ * fixup for functions that get two parameters
+ * - first parameter is converted to regular expression structure
+ *   where "match-any-character" operators also match a newline
+ * - second parameter is not converted
+ */
+int fixup_regexpNL_none(void** param, int param_no)
+{
+	if (param_no != 1 && param_no != 2 )
+	{
+		LM_ERR("invalid parameter number %d\n", param_no);
+		return E_UNSPEC;
+	}
+	if (param_no == 1)
+		return fixup_regexp(param, REG_NEWLINE);
 	return 0;
 }
 
