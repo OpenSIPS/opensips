@@ -2109,6 +2109,31 @@ int pv_set_sflags(struct sip_msg* msg, pv_param_t *param,
 	return 0;
 }
 
+int pv_set_bflags(struct sip_msg* msg, pv_param_t *param,
+		int op, pv_value_t *val)
+{
+	if(msg==NULL || param==NULL)
+	{
+		LM_ERR("bad parameters\n");
+		return -1;
+	}
+					
+	if(val == NULL)
+	{
+		setb0flags(0);
+		return 0;
+	}
+
+	if(!(val->flags&PV_VAL_INT))
+	{
+		LM_ERR("assigning non-int value to branch 0 flags\n");
+		return -1;
+	}
+	
+	setb0flags((unsigned int)val->ri);
+
+	return 0;
+}
 
 /********* end PV set functions *********/
 
@@ -2330,10 +2355,10 @@ static pv_export_t _pv_names_table[] = {
 		PVT_ACC_USERNAME, pv_get_acc_username, 0,
 		0, 0, pv_init_iname, 1},
 	{{"bf", (sizeof("bf")-1)}, /* */
-		PVT_BFLAGS, pv_get_bflags, 0,
+		PVT_BFLAGS, pv_get_bflags, pv_set_bflags,
 		0, 0, 0, 0},
 	{{"bF", (sizeof("bF")-1)}, /* */
-		PVT_HEXBFLAGS, pv_get_hexbflags, 0,
+		PVT_HEXBFLAGS, pv_get_hexbflags, pv_set_bflags,
 		0, 0, 0, 0},
 	{{"br", (sizeof("br")-1)}, /* */
 		PVT_BRANCH, pv_get_branch, pv_set_branch,
