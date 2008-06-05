@@ -239,6 +239,12 @@ void print_expr(struct expr* exp)
 			case BXOR_OP:
 				LM_DBG("^");
 				break;
+			case BLSHIFT_OP:
+				LM_DBG("<<");
+				break;
+			case BRSHIFT_OP:
+				LM_DBG(">>");
+				break;
 			case BNOT_OP:
 				LM_DBG("~");
 				break;
@@ -359,6 +365,20 @@ void print_expr(struct expr* exp)
 					break;
 			case BXOR_OP:
 					LM_DBG("BXOR( ");
+					print_expr(exp->left.v.expr);
+					LM_DBG(", ");
+					print_expr(exp->right.v.expr);
+					LM_DBG(" )");
+					break;
+			case BLSHIFT_OP:
+					LM_DBG("BLSHIFT( ");
+					print_expr(exp->left.v.expr);
+					LM_DBG(", ");
+					print_expr(exp->right.v.expr);
+					LM_DBG(" )");
+					break;
+			case BRSHIFT_OP:
+					LM_DBG("BRSHIFT( ");
 					print_expr(exp->left.v.expr);
 					LM_DBG(", ");
 					print_expr(exp->right.v.expr);

@@ -374,7 +374,7 @@ extern int line;
 %nonassoc BXOREQ
 
 %left OR AND
-%left BOR BAND BXOR
+%left BOR BAND BXOR BLSHIFT BRSHIFT
 %left PLUS MINUS SLASH MULT MODULO
 %right NOT BNOT
 
@@ -1700,6 +1700,12 @@ assignexp :
 			}
 	| assignexp BXOR assignexp { 
 				$$ = mk_elem(BXOR_OP, EXPR_O, $1, EXPR_ST, $3);
+			}
+	| assignexp BLSHIFT assignexp { 
+				$$ = mk_elem(BLSHIFT_OP, EXPR_O, $1, EXPR_ST, $3);
+			}
+	| assignexp BRSHIFT assignexp { 
+				$$ = mk_elem(BRSHIFT_OP, EXPR_O, $1, EXPR_ST, $3);
 			}
 	| BNOT assignexp { 
 				$$ = mk_elem(BNOT_OP, EXPR_O, $2, 0, 0);

@@ -1174,6 +1174,12 @@ static int eval_elem(struct expr* e, struct sip_msg* msg, pv_value_t *val)
 						case BXOR_OP:
 							ival = lval.ri ^ rval.ri;
 							break;
+						case BLSHIFT_OP:
+							ival = lval.ri << rval.ri;
+							break;
+						case BRSHIFT_OP:
+							ival = lval.ri >> rval.ri;
+							break;
 						default:
 							LM_ERR("invalid int op %d\n", e->op);
 								val->ri = 0;

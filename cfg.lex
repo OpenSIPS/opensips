@@ -200,6 +200,8 @@ BAND	"&"
 BOR		"|"
 BXOR	"^"
 BNOT	"~"
+BLSHIFT	"<<"
+BRSHIFT	">>"
 NOT		!|"not"
 AND		"and"|"&&"
 OR		"or"|"||"
@@ -218,7 +220,7 @@ BOREQ	"|="
 BXOREQ	"^="
 
 ASSIGNOP	{EQUAL}|{COLONEQ}|{PLUSEQ}|{MINUSEQ}|{SLASHEQ}|{MULTEQ}|{MODULOEQ}|{BANDEQ}|{BOREQ}|{BXOREQ}
-BITOP		{BAND}|{BOR}|{BXOR}|{BNOT}
+BITOP		{BAND}|{BOR}|{BXOR}|{BNOT}|{BLSHIFT}|{BRSHIFT}
 ARITHOP		{PLUS}|{MINUS}|{SLASH}|{MULT}|{MODULO}
 LOGOP		{EQUAL_T}|{GT}|{LT}|{GTE}|{LTE}|{DIFF}|{MATCH}|{NOTMATCH}|{NOT}|{AND}|{OR}
 
@@ -561,6 +563,8 @@ WHITESPACE	[ \t\r\n]
 <INITIAL>{BOR}	{ count(); return BOR; }
 <INITIAL>{BXOR}	{ count(); return BXOR; }
 <INITIAL>{BNOT}	{ count(); return BNOT; }
+<INITIAL>{BLSHIFT}	{ count(); return BLSHIFT; }
+<INITIAL>{BRSHIFT}	{ count(); return BRSHIFT; }
 <INITIAL>{MULT}	{ count(); return MULT; }
 <INITIAL>{MODULO}	{ count(); return MODULO; }
 <INITIAL>{COLONEQ}	{ count(); return COLONEQ; }
