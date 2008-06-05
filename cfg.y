@@ -206,6 +206,7 @@ extern int line;
 %token ROUTE_ONREPLY
 %token ROUTE_BRANCH
 %token ROUTE_ERROR
+%token ROUTE_LOCAL
 %token SET_HOST
 %token SET_HOSTPORT
 %token PREFIX
@@ -440,6 +441,7 @@ statement:	assign_stm
 		| {rt=ONREPLY_ROUTE;} onreply_route_stm
 		| {rt=BRANCH_ROUTE;} branch_route_stm
 		| {rt=ERROR_ROUTE;} error_route_stm
+		| {rt=LOCAL_ROUTE;} local_route_stm
 
 		| CR	/* null statement*/
 	;
@@ -1420,6 +1422,17 @@ error_route_stm:  ROUTE_ERROR LBRACE actions RBRACE {
 										push($3, &error_rlist);
 										}
 		| ROUTE_ERROR error { yyerror("invalid error_route statement"); }
+	;
+
+local_route_stm:  ROUTE_LOCAL LBRACE actions RBRACE {
+										if (local_rlist!=0) {
+											yyerror("re-definition of local "
+													"route detected");
+											YYABORT;
+										}
+										push($3, &local_rlist);
+										}
+		| ROUTE_LOCAL error { yyerror("invalid local_route statement"); }
 	;
 
 exp:	exp AND exp 	{ $$=mk_exp(AND_OP, $1, $3); }

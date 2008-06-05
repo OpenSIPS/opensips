@@ -74,6 +74,7 @@ struct action* rlist[RT_NO];
 struct action* onreply_rlist[ONREPLY_RT_NO];
 struct action* failure_rlist[FAILURE_RT_NO];
 struct action* branch_rlist[BRANCH_RT_NO];
+struct action* local_rlist;
 struct action* error_rlist;
 
 int route_type = REQUEST_ROUTE;
@@ -93,6 +94,7 @@ void init_route_lists(void)
 	memset(failure_rlist, 0, sizeof(failure_rlist));
 	memset(branch_rlist, 0, sizeof(branch_rlist));
 	error_rlist = 0;
+	local_rlist = 0;
 }
 
 /* traverses an expr tree and compiles the REs where necessary) 
@@ -1473,6 +1475,11 @@ int fix_rls(void)
 			return ret;
 		}
 	}
+	if(local_rlist){
+		if ((ret=fix_actions(local_rlist))!=0){
+			return ret;
+		}
+	}
 	return 0;
 }
 
@@ -1593,6 +1600,13 @@ int check_rls(void)
 			return ret;
 		}
 	}
+	if(local_rlist){
+		if ((ret=check_actions(local_rlist,LOCAL_ROUTE))!=0){
+			LM_ERR("check failed for local_route\n");
+			return ret;
+		}
+	}
+
 	return rcheck_status;
 }
 
