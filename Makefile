@@ -542,11 +542,6 @@ install-bin: $(bin-prefix)/$(bin-dir) utils
 		$(INSTALL_CFG) /tmp/openserctl.sqlbase \
 			$(modules-prefix)/$(lib-dir)/openserctl/openserctl.sqlbase
 		rm -fr /tmp/openserctl.sqlbase
-		sed -e "s#/usr/local#$(bin-target)#g" \
-			< scripts/openserctl.dbtext > /tmp/openserctl.dbtext
-		$(INSTALL_CFG) /tmp/openserctl.dbtext \
-			$(modules-prefix)/$(lib-dir)/openserctl/openserctl.dbtext
-		rm -fr /tmp/openserctl.dbtext
 		# install db setup base script
 		sed -e "s#/usr/local/sbin#$(bin-target)#g" \
 			-e "s#/usr/local/etc/openser#$(cfg-target)#g" \
@@ -688,6 +683,11 @@ install-modules-tools: $(bin-prefix)/$(bin-dir)
 		# install Berkeley database stuff
 		if [ "$(BERKELEYDBON)" = "yes" ]; then \
 			mkdir -p $(modules-prefix)/$(lib-dir)/openserctl ; \
+			sed -e "s#/usr/local/share/openser/#$(data-target)#g" \
+				< scripts/openserctl.db_berkeley > /tmp/openserctl.db_berkeley ; \
+			$(INSTALL_CFG) /tmp/openserctl.db_berkeley \
+				$(modules-prefix)/$(lib-dir)/openserctl/openserctl.db_berkeley ; \
+			rm -fr /tmp/openserctl.db_berkeley ; \
 			sed -e "s#/usr/local/share/openser#$(data-target)#g" \
 				< scripts/openserdbctl.db_berkeley > /tmp/openserdbctl.db_berkeley ; \
 			$(INSTALL_TOUCH) $(modules-prefix)/$(lib-dir)/openserctl/openserdbctl.db_berkeley ; \
@@ -707,11 +707,19 @@ install-modules-tools: $(bin-prefix)/$(bin-dir)
 		# install dbtext stuff
 		if [ "$(DBTEXTON)" = "yes" ]; then \
 			mkdir -p $(modules-prefix)/$(lib-dir)/openserctl ; \
+			sed -e "s#/usr/local/share/openser/#$(data-target)#g" \
+				< scripts/openserctl.dbtext > /tmp/openserctl.dbtext ; \
+			$(INSTALL_CFG) /tmp/openserctl.dbtext \
+				$(modules-prefix)/$(lib-dir)/openserctl/openserctl.dbtext ; \
+			rm -fr /tmp/openserctl.dbtext ; \
 			sed -e "s#/usr/local/share/openser#$(data-target)#g" \
 				< scripts/openserdbctl.dbtext > /tmp/openserdbctl.dbtext ; \
 			$(INSTALL_TOUCH) $(modules-prefix)/$(lib-dir)/openserctl/openserdbctl.dbtext ; \
 			$(INSTALL_CFG) /tmp/openserdbctl.dbtext $(modules-prefix)/$(lib-dir)/openserctl/ ; \
 			rm -fr /tmp/openserdbctl.dbtext ; \
+			mkdir -p $(modules-prefix)/$(lib-dir)/openserctl/dbtextdb ; \
+			$(INSTALL_TOUCH) $(modules-prefix)/$(lib-dir)/openserctl/dbtextdb/dbtextdb.py ; \
+			$(INSTALL_BIN) scripts/dbtextdb/dbtextdb.py $(modules-prefix)/$(lib-dir)/openserctl/dbtextdb/ ; \
 			mkdir -p $(data-prefix)/$(data-dir)/dbtext/openser ; \
 			for FILE in $(wildcard scripts/dbtext/openser/*) ; do \
 				if [ -f $$FILE ] ; then \
