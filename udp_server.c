@@ -58,19 +58,23 @@
 
 
 #ifdef DBG_MSG_QA
-/* message quality assurance -- frequently, bugs in ser have
-   been indicated by zero characters or long whitespaces
-   in generated messages; this debugging option aborts if
-   any such message is sighted
-*/
+/**
+ * Do some message quality assurance.
+ * Frequently, bugs in the server have been indicated by zero characters
+ * or long whitespaces in generated messages; this debugging option
+ * aborts if any such message is sighted.
+ *
+ * \param buf message buffer
+ * \param len buffer length
+ * \param return one if the buffer passes the check, zero otherwise
+ */
 static int dbg_msg_qa(char *buf, int len)
 {
 #define _DBG_WS_LEN 3
 #define _DBG_WS "   "
 
 	char *scan;
-	int my_len;
-	int space_cnt;
+	int my_len, space_cnt;
 	enum { QA_ANY, QA_SPACE, QA_EOL1 } state;
 
 	my_len=len;
@@ -87,7 +91,7 @@ static int dbg_msg_qa(char *buf, int len)
 								return 0;
 							}
 						} else space_cnt=0;
-						state=QA_SPACE; 
+						state=QA_SPACE;
 						break;
 
 			case '\r':	/* ignore */
@@ -115,16 +119,16 @@ qa_passed:
 
 #endif
 
-
-int probe_max_receive_buffer( int udp_sock )
+/**
+ * Tries to find the maximum receiver buffer size. This value is
+ * system dependend, thus it need to detected on startup.
+ *
+ * \param udp_sock checked socket
+ * \return zero on success, -1 otherwise
+ */
+int probe_max_receive_buffer(int udp_sock)
 {
-	unsigned int optval;
-	unsigned int ioptval;
-	unsigned int ioptvallen;
-	unsigned int foptval;
-	unsigned int foptvallen;
-	unsigned int voptval;
-	unsigned int voptvallen;
+	unsigned int optval, ioptval, ioptvallen, foptval, foptvallen, voptval, voptvallen;
 	int phase=0;
 
 	/* try to increase buffer size as much as we can */
@@ -135,7 +139,7 @@ int probe_max_receive_buffer( int udp_sock )
 		LM_ERR("getsockopt: %s\n", strerror(errno));
 		return -1;
 	}
-	if ( ioptval==0 ) 
+	if ( ioptval==0 )
 	{
 		LM_DBG(" getsockopt: SO_RCVBUF initially set to 0; resetting to %d\n",
 			BUFFER_INCREMENT );
@@ -155,15 +159,13 @@ int probe_max_receive_buffer( int udp_sock )
 			LM_DBG("setsockopt: SOL_SOCKET failed"
 					" for %d, phase %d: %s\n", optval, phase, strerror(errno));
 			/* if setting buffer size failed and still in the aggressive
-			   phase, try less aggressively; otherwise give up 
-			*/
+			   phase, try less aggressively; otherwise give up */
 			if (phase==0) { phase=1; optval >>=1 ; continue; } 
 			else break;
 		} 
 		/* verify if change has taken effect */
 		/* Linux note -- otherwise I would never know that; funny thing: Linux
-		   doubles size for which we asked in setsockopt
-		*/
+		   doubles size for which we asked in setsockopt */
 		voptvallen=sizeof(voptval);
 		if (getsockopt( udp_sock, SOL_SOCKET, SO_RCVBUF, (void*) &voptval,
 		    &voptvallen) == -1 )
@@ -176,8 +178,7 @@ int probe_max_receive_buffer( int udp_sock )
 			if (voptval<optval) {
 				LM_DBG("setting SO_RCVBUF has no effect\n");
 				/* if setting buffer size failed and still in the aggressive
-				phase, try less aggressively; otherwise give up 
-				*/
+				phase, try less aggressively; otherwise give up */
 				if (phase==0) { phase=1; optval >>=1 ; continue; } 
 				else break;
 			} 
@@ -199,8 +200,11 @@ int probe_max_receive_buffer( int udp_sock )
 
 #ifdef USE_MCAST
 
-/*
- * Setup multicast receiver
+/**
+ * Setup a multicast receiver socket, supports IPv4 and IPv6.
+ * \param sock socket
+ * \param addr receiver address
+ * \return zero on success, -1 otherwise
  */
 static int setup_mcast_rcvr(int sock, union sockaddr_union* addr)
 {
@@ -210,7 +214,7 @@ static int setup_mcast_rcvr(int sock, union sockaddr_union* addr)
 #endif /* USE_IPV6 */
 	
 	if (addr->s.sa_family==AF_INET){
-		memcpy(&mreq.imr_multiaddr, &addr->sin.sin_addr, 
+		memcpy(&mreq.imr_multiaddr, &addr->sin.sin_addr,
 		       sizeof(struct in_addr));
 		mreq.imr_interface.s_addr = htonl(INADDR_ANY);
 		
@@ -222,7 +226,7 @@ static int setup_mcast_rcvr(int sock, union sockaddr_union* addr)
 		
 #ifdef USE_IPV6
 	} else if (addr->s.sa_family==AF_INET6){
-		memcpy(&mreq6.ipv6mr_multiaddr, &addr->sin6.sin6_addr, 
+		memcpy(&mreq6.ipv6mr_multiaddr, &addr->sin6.sin6_addr,
 		       sizeof(struct in6_addr));
 		mreq6.ipv6mr_interface = 0;
 #ifdef __OS_linux
@@ -245,7 +249,11 @@ static int setup_mcast_rcvr(int sock, union sockaddr_union* addr)
 
 #endif /* USE_MCAST */
 
-
+/**
+ * Initialize a UDP socket, supports multicast, IPv4 and IPv6.
+ * \param sock_info socket that should be bind
+ * \return zero on success, -1 otherwise
+ */
 int udp_init(struct socket_info* sock_info)
 {
 	union sockaddr_union* addr;
@@ -302,7 +310,7 @@ int udp_init(struct socket_info* sock_info)
 						&m_optval, sizeof(m_optval))==-1){
 			LM_WARN("setsockopt(IP_MULTICAST_LOOP): %s\n", strerror(errno));
 			/* it's only a warning because we might get this error if the
-			  network interface doesn't support multicasting -- andrei */
+			  network interface doesn't support multicasting */
 		}
 		if (mcast_ttl>=0){
 			m_optval = mcast_ttl;
@@ -318,7 +326,7 @@ int udp_init(struct socket_info* sock_info)
 						&mcast_loopback, sizeof(mcast_loopback))==-1){
 			LM_WARN("setsockopt (IPV6_MULTICAST_LOOP): %s\n", strerror(errno));
 			/* it's only a warning because we might get this error if the
-			  network interface doesn't support multicasting -- andrei */
+			  network interface doesn't support multicasting */
 		}
 		if (mcast_ttl>=0){
 			if (setsockopt(sock_info->socket, IPPROTO_IP, IPV6_MULTICAST_HOPS,
@@ -335,7 +343,7 @@ int udp_init(struct socket_info* sock_info)
 	}
 #endif /* USE_MCAST */
 
-	if ( probe_max_receive_buffer(sock_info->socket)==-1) goto error;
+	if (probe_max_receive_buffer(sock_info->socket)==-1) goto error;
 	
 	if (bind(sock_info->socket,  &addr->s, sockaddru_len(*addr))==-1){
 		LM_ERR("bind(%x, %p, %d) on %s: %s\n", sock_info->socket, &addr->s, 
@@ -348,17 +356,22 @@ int udp_init(struct socket_info* sock_info)
 	#endif
 		goto error;
 	}
-
-/*	pkg_free(addr);*/
 	return 0;
 
 error:
-/*	if (addr) pkg_free(addr);*/
 	return -1;
 }
 
 
-
+/**
+ * Main UDP receiver loop, processes data from the network, does some error
+ * checking and save it in an allocated buffer. This data is then forwarded
+ * to the receive_msg function. If an dynamic buffer is used, the buffer
+ * must be freed in later steps.
+ * \see receive_msg
+ * \see main_loop
+ * \return -1 for errors
+ */
 int udp_rcv_loop(void)
 {
 	int len;
@@ -372,14 +385,13 @@ int udp_rcv_loop(void)
 	unsigned int fromlen;
 	struct receive_info ri;
 
-
 	from=(union sockaddr_union*) pkg_malloc(sizeof(union sockaddr_union));
 	if (from==0){
 		LM_ERR("out of pkg memory\n");
 		goto error;
 	}
 	memset(from, 0 , sizeof(union sockaddr_union));
-	ri.bind_address=bind_address; /* this will not change, we do it only once*/
+	ri.bind_address=bind_address; /* this will not change, we do it only once */
 	ri.dst_port=bind_address->port_no;
 	ri.dst_ip=bind_address->address;
 	ri.proto=PROTO_UDP;
@@ -433,17 +445,11 @@ int udp_rcv_loop(void)
 			continue;
 		}
 		
-		
 		/* receive_msg must free buf too!*/
 		receive_msg(buf, len, &ri);
 		
 	/* skip: do other stuff */
-		
 	}
-	/*
-	if (from) pkg_free(from);
-	return 0;
-	*/
 	
 error:
 	if (from) pkg_free(from);
@@ -451,15 +457,19 @@ error:
 }
 
 
-
-
-/* which socket to use? main socket or new one? */
+/**
+ * Main UDP send function, called from msg_send.
+ * \see msg_send 
+ * \param source send socket
+ * \param buf sent data
+ * \param len data length in bytes
+ * \param to destination address
+ * \return -1 on error, the return value from sento on success
+ */
 int udp_send(struct socket_info *source, char *buf, unsigned len,
 										union sockaddr_union*  to)
 {
-
-	int n;
-	int tolen;
+	int n, tolen;
 
 #ifdef DBG_MSG_QA
 	/* aborts on error, does nothing otherwise */
