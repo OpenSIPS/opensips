@@ -31,7 +31,6 @@
 #include "str.h"
 #include "poll_types.h"
 
-#define NO_DNS     0
 #define DO_DNS     1
 #define DO_REV_DNS 2
 
