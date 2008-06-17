@@ -1,5 +1,6 @@
-/*$Id$
- * 
+/*
+ * $Id$
+ *
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of openser, a free SIP server.
@@ -25,6 +26,12 @@
  * 2003-10-08  receive_test function-alized (jiri)
  */
 
+/*!
+ * \file
+ * \brief Create and translate SIP messages/ message contents
+ * - \ref ViaSpecialParams
+ */
+
 
 #ifndef  _MSG_TRANSLATOR_H
 #define _MSG_TRANSLATOR_H
@@ -47,12 +54,12 @@
 #include "parser/msg_parser.h"
 #include "ip_addr.h"
 
-/* point to some remarkable positions in a SIP message */
+/*! \brief point to some remarkable positions in a SIP message */
 struct bookmark {
 	str to_tag_val;
 };
 
-/* used by via_builder */
+/*! \brief used by via_builder() */
 struct hostport {
 	str* host;
 	str* port;
@@ -71,7 +78,7 @@ struct hostport {
 			(hp)->port=&default_global_port; \
 	}while(0)
 
-char * build_req_buf_from_sip_req (	struct sip_msg* msg, 
+char * build_req_buf_from_sip_req (	struct sip_msg* msg,
 				unsigned int *returned_len, struct socket_info* send_sock,
 				int proto, unsigned int flags);
 
@@ -79,9 +86,9 @@ char * build_res_buf_from_sip_res(	struct sip_msg* msg,
 				unsigned int *returned_len);
 
 
-char * build_res_buf_from_sip_req( unsigned int code ,
-				str *text ,
-				str *new_tag ,
+char * build_res_buf_from_sip_req( unsigned int code,
+				str *text,
+				str *new_tag,
 				struct sip_msg* msg,
 				unsigned int *returned_len,
 				struct bookmark *bmark);

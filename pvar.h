@@ -18,12 +18,13 @@
  * You should have received a copy of the GNU General Public License 
  * along with this program; if not, write to the Free Software 
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- *
- * History:
- * =======
- *  2006-12-22  PV for script and branch flags added (bogdan)
- *
  */
+
+/*!
+ * \file
+ * \brief Definitions for Pseudo-variable support
+ */
+
 
 #ifndef _PVAR_H_
 #define _PVAR_H_
@@ -61,7 +62,7 @@
 #define PV_IDX_PVAR	1
 #define PV_IDX_ALL	2
 
-/* if PV name is dynamic, integer, or str */
+/*! if PV name is dynamic, integer, or str */
 #define pv_has_dname(pv) ((pv)->pvp.pvn.type==PV_NAME_PVAR)
 #define pv_has_iname(pv) ((pv)->pvp.pvn.type==PV_NAME_INTSTR \
 							&& !((pv)->pvp.pvn.u.isname.type&AVP_NAME_STR))
@@ -107,54 +108,54 @@ typedef int pv_flags_t;
 
 typedef struct _pv_value
 {
-	str rs;    /* string value */
-	int ri;    /* integer value */
-	int flags; /* flags about the type of value */
+	str rs;    /*!< string value */
+	int ri;    /*!< integer value */
+	int flags; /*!< flags about the type of value */
 } pv_value_t, *pv_value_p;
 
 typedef struct _pv_name
 {
-	int type;             /* type of name */
+	int type;             /*!< type of name */
 	union {
 		struct {
-			int type;     /* type of int_str name - compatibility with AVPs */
-			int_str name; /* the value of the name */
+			int type;     /*!< type of int_str name - compatibility with AVPs */
+			int_str name; /*!< the value of the name */
 		} isname;
-		void *dname;      /* PV value - dynamic name */
+		void *dname;      /*!< PV value - dynamic name */
 	} u;
 } pv_name_t, *pv_name_p;
 
 typedef struct _pv_index
 {
-	int type; /* type of PV index */
+	int type; /*!< type of PV index */
 	union {
-		int ival;   /* integer value */
-		void *dval; /* PV value - dynamic index */
+		int ival;   /*!< integer value */
+		void *dval; /*!< PV value - dynamic index */
 	} u;
 } pv_index_t, *pv_index_p;
 
 typedef struct _pv_param
 {
-	pv_name_t    pvn; /* PV name */
-	pv_index_t   pvi; /* PV index */
+	pv_name_t    pvn; /*!< PV name */
+	pv_index_t   pvi; /*!< PV index */
 } pv_param_t, *pv_param_p;
 
 typedef int (*pv_getf_t) (struct sip_msg*,  pv_param_t*, pv_value_t*);
 typedef int (*pv_setf_t) (struct sip_msg*,  pv_param_t*, int, pv_value_t*);
 
 typedef struct _pv_spec {
-	pv_type_t    type;   /* type of PV */
-	pv_getf_t    getf;   /* get PV value function */
-	pv_setf_t    setf;   /* set PV value function */
-	pv_param_t   pvp;    /* parameter to be given to get/set functions */
-	void         *trans; /* transformations */
+	pv_type_t    type;   /*!< type of PV */
+	pv_getf_t    getf;   /*!< get PV value function */
+	pv_setf_t    setf;   /*!< set PV value function */
+	pv_param_t   pvp;    /*!< parameter to be given to get/set functions */
+	void         *trans; /*!< transformations */
 } pv_spec_t, *pv_spec_p;
 
 typedef int (*pv_parse_name_f)(pv_spec_p sp, str *in);
 typedef int (*pv_parse_index_f)(pv_spec_p sp, str *in);
 typedef int (*pv_init_param_f)(pv_spec_p sp, int param);
 
-/**
+/*! \brief
  * PV spec format:
  * - $class_name
  * - $class_name(inner_name)
@@ -166,14 +167,14 @@ typedef int (*pv_init_param_f)(pv_spec_p sp, int param);
  * - $(class_name(inner_name)[index]{transformation})
  */
 typedef struct _pv_export {
-	str name;                      /* class name of PV */
-	pv_type_t type;                /* type of PV */
-	pv_getf_t  getf;               /* function to get the value */
-	pv_setf_t  setf;               /* function to set the value */
-	pv_parse_name_f parse_name;    /* function to parse the inner name */
-	pv_parse_index_f parse_index;  /* function to parse the index of PV */
-	pv_init_param_f init_param;    /* function to init the PV spec */
-	int iparam;                    /* parameter for the init function */
+	str name;                      /*!< class name of PV */
+	pv_type_t type;                /*!< type of PV */
+	pv_getf_t  getf;               /*!< function to get the value */
+	pv_setf_t  setf;               /*!< function to set the value */
+	pv_parse_name_f parse_name;    /*!< function to parse the inner name */
+	pv_parse_index_f parse_index;  /*!< function to parse the index of PV */
+	pv_init_param_f init_param;    /*!< function to init the PV spec */
+	int iparam;                    /*!< parameter for the init function */
 } pv_export_t;
 
 typedef struct _pv_elem
@@ -214,7 +215,7 @@ pvname_list_t* parse_pvname_list(str *in, unsigned int type);
 int register_pvars_mod(char *mod_name, pv_export_t *items);
 int pv_free_extra_list(void);
 
-/* PV helper functions */
+/*! \brief PV helper functions */
 int pv_parse_index(pv_spec_p sp, str *in);
 
 int pv_get_null(struct sip_msg *msg, pv_param_t *param, pv_value_t *res);

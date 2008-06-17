@@ -18,14 +18,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
- *
- *
- * History:
- * ---------
- *  2006-01-29  first version - imported from linux kernel sources (bogdan)
  */
 
-
+/*!
+ * \file
+ * \brief Assembler routines for atomic operations
+ */
 
 #ifndef _ATOMIC_OPS_H_
 #define _ATOMIC_OPS_H_
@@ -39,14 +37,14 @@
 	#define LOCK ""
 #endif
 
-/*
+/*! \brief
  * Make sure gcc doesn't try to be clever and move things around
  * on us. We need to use _exactly_ the address the user gave us,
  * not some alias that contains the same information.
  */
 typedef struct { volatile unsigned int counter; } atomic_t;
 
-/**
+/*! \brief
  * atomic_set - set atomic variable
  * @v: pointer of type atomic_t
  * @i: required value
@@ -55,7 +53,7 @@ typedef struct { volatile unsigned int counter; } atomic_t;
  */ 
 #define atomic_set(v,i)		(((v)->counter) = (i))
 
-/**
+/*! \brief
  * atomic_add - add integer to atomic variable
  * @i: integer value to add
  * @v: pointer of type atomic_t
@@ -70,7 +68,7 @@ static __inline__ void atomic_add(int i, atomic_t *v)
 		:"ir" (i), "m" (v->counter));
 }
 
-/**
+/*! \brief
  * atomic_sub - subtract the atomic variable
  * @i: integer value to subtract
  * @v: pointer of type atomic_t
@@ -85,7 +83,7 @@ static __inline__ void atomic_sub(int i, atomic_t *v)
 		:"ir" (i), "m" (v->counter));
 }
 
-/**
+/*! \brief
  * atomic_inc - increment atomic variable
  * @v: pointer of type atomic_t
  * 
@@ -99,7 +97,7 @@ static __inline__ void atomic_inc(atomic_t *v)
 		:"m" (v->counter));
 }
 
-/**
+/*! \brief
  * atomic_dec - decrement atomic variable
  * @v: pointer of type atomic_t
  * 

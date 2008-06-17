@@ -19,48 +19,9 @@
  * You should have received a copy of the GNU General Public License 
  * along with this program; if not, write to the Free Software 
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- *
- * History:
- * -------
- *  2002-01-29  argc/argv globalized via my_{argc|argv} (jiri)
- *  2003-01-23  mhomed added (jiri)
- *  2003-03-19  replaced all malloc/frees w/ pkg_malloc/pkg_free (andrei)
- *  2003-03-29  pkg cleaners for fifo and script callbacks introduced (jiri)
- *  2003-03-31  removed snmp part (obsolete & no place in core) (andrei)
- *  2003-04-06  child_init called in all processes (janakj)
- *  2003-04-08  init_mallocs split into init_{pkg,shm}_mallocs and 
- *               init_shm_mallocs called after cmd. line parsing (andrei)
- *  2003-04-15  added tcp_disable support (andrei)
- *  2003-05-09  closelog() before openlog to force opening a new fd 
- *              (needed on solaris) (andrei)
- *  2003-06-11  moved all signal handlers init. in install_sigs and moved it
- *              after daemonize (so that we won't catch anymore our own
- *              SIGCHLD generated when becoming session leader) (andrei)
- *              changed is_main default value to 1 (andrei)
- *  2003-06-28  kill_all_children is now used instead of kill(0, sig)
- *              see comment above it for explanations. (andrei)
- *  2003-06-29  replaced port_no_str snprintf w/ int2str (andrei)
- *  2003-10-10  added switch for config check (-c) (andrei)
- *  2003-10-24  converted to the new socket_info lists (andrei)
- *  2004-03-30  core dump is enabled by default
- *              added support for increasing the open files limit    (andrei)
- *  2004-04-28  sock_{user,group,uid,gid,mode} added
- *              user2uid() & user2gid() added  (andrei)
- *  2004-09-11  added timeout on children shutdown and final cleanup
- *               (if it takes more than 60s => something is definitely wrong
- *                => kill all or abort)  (andrei)
- *              force a shm_unlock before cleaning-up, in case we have a
- *               crashed childvwhich still holds the lock  (andrei)
- *  2004-12-02  removed -p, extended -l to support [proto:]address[:port],
- *               added parse_phostport, parse_proto (andrei)
- *  2005-06-16  always record the pid in pt[process_no].pid twice: once in the
- *               parent & once in the child to avoid a short window when one
- *               of them might use it "unset" (andrei)
- *  2005-12-22  added tos configurability (thanks to Andreas Granig)
- *  2006-04-26  2-stage TLS init: before and after config file parsing (klaus)
  */
 
-/**
+/*!
  * \file main.c
  * \brief Command line parsing, initializiation and server startup.
  *

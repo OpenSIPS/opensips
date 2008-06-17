@@ -20,13 +20,13 @@
  * You should have received a copy of the GNU General Public License 
  * along with this program; if not, write to the Free Software 
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- *
- * History:
- * ========
- *
- *  2006-12-22  functions branch flags added (bogdan)
- *
  */
+
+/*!
+ * \file
+ * \brief Destination set handling functions
+ */
+
 
 #include <string.h>
 #include "dprint.h"
@@ -68,20 +68,20 @@ struct branch
 };
 
 
-/* 
+/*! \brief
  * Where we store URIs of additional transaction branches
  * (-1 because of the default branch, #0)
  */
 static struct branch branches[MAX_BRANCHES - 1];
 
-/* how many of them we have */
+/*! how many of them we have */
 unsigned int nr_branches = 0;
 
-/* The q parameter of the Request-URI */
+/*! The q parameter of the Request-URI */
 static qvalue_t ruri_q = Q_UNSPECIFIED; 
 
 
-/* Branch flags of the Request-URI */
+/*! Branch flags of the Request-URI */
 static unsigned int ruri_bflags = 0;
 
 
@@ -100,7 +100,7 @@ static inline unsigned int* get_ptr_bflags(unsigned int b_idx)
 }
 
 
-/*
+/*! \brief
  * Get the per branch flags for RURI
  */
 unsigned int getb0flags(void)
@@ -129,7 +129,7 @@ int setbflag(unsigned int b_idx, unsigned int mask)
 }
 
 
-/*
+/*! \brief
  * Tests the per branch flags
  */
 int isbflagset(unsigned int b_idx, unsigned int mask)
@@ -144,7 +144,7 @@ int isbflagset(unsigned int b_idx, unsigned int mask)
 }
 
 
-/*
+/*! \brief
  * Resets the per branch flags
  */
 int resetbflag(unsigned int b_idx, unsigned int mask)
@@ -160,8 +160,8 @@ int resetbflag(unsigned int b_idx, unsigned int mask)
 }
 
 
-/*
- * Return the next branch from the dset
+/*! \brief Find the next brand from the destination set
+ * \return Return the next branch from the dset
  * array, 0 is returned if there are no
  * more branches
  */
@@ -200,7 +200,7 @@ char* get_branch(unsigned int idx, int* len, qvalue_t* q, str* dst_uri,
 }
 
 
-/*
+/*! \brief
  * Empty the dset array
  */
 void clear_branches(void)
@@ -211,7 +211,7 @@ void clear_branches(void)
 }
 
 
-/* 
+/* ! \brief
  * Add a new branch to current transaction 
  */
 int append_branch(struct sip_msg* msg, str* uri, str* dst_uri, str* path,
@@ -286,7 +286,7 @@ int append_branch(struct sip_msg* msg, str* uri, str* dst_uri, str* path,
 }
 
 
-/*
+/*! \brief
  * Create a Contact header field from the dset
  * array
  */
@@ -378,7 +378,7 @@ char* print_dset(struct sip_msg* msg, int* len)
 }
 
 
-/*
+/*! \brief
  * Sets the q parameter of the Request-URI
  */
 void set_ruri_q(qvalue_t q)
@@ -387,7 +387,7 @@ void set_ruri_q(qvalue_t q)
 }
 
 
-/*
+/*! \brief
  * Return the q value of the Request-URI
  */
 qvalue_t get_ruri_q(void)
@@ -397,7 +397,7 @@ qvalue_t get_ruri_q(void)
 
 
 
-/*
+/*! \brief
  * Get actual Request-URI
  */
 int get_request_uri(struct sip_msg* _m, str* _u)
@@ -415,7 +415,7 @@ int get_request_uri(struct sip_msg* _m, str* _u)
 }
 
 
-/*
+/*! \brief
  * Rewrite Request-URI
  */
 int rewrite_uri(struct sip_msg* _m, str* _s)
@@ -444,7 +444,7 @@ int rewrite_uri(struct sip_msg* _m, str* _s)
 }
 
 
-/* moves the uri to destination for all branches and
+/*! \brief moves the uri to destination for all branches and
  * all uris are set to given uri */
 int branch_uri2dset( str *new_uri )
 {

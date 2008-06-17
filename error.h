@@ -20,6 +20,11 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+/*!
+ * \file
+ * \brief Error definitions
+ */
+
 
 #ifndef error_h
 #define error_h
@@ -30,68 +35,50 @@
 /* #define E_BAD_ADDRESS -4 */
 #define E_BUG               -5
 #define E_CFG               -6
-#define E_NO_SOCKET	        -7
-/* unresolvable topmost Via */
-#define E_BAD_VIA           -8
-/* incomplete transaction tuple */
-#define E_BAD_TUPEL         -9
-/* script programming error */
-#define E_SCRIPT            -10
-/* error in execution of external tools */
-#define E_EXEC              -11
-/* too many branches demanded */
-#define E_TOO_MANY_BRANCHES -12
+#define E_NO_SOCKET         -7
+#define E_BAD_VIA           -8		/*!< unresolvable topmost Via */
+#define E_BAD_TUPEL         -9		/*!< incomplete transaction tuple */
+#define E_SCRIPT            -10		/*!< script programming error */
+#define E_EXEC              -11		/*!< error in execution of external tools */
+#define E_TOO_MANY_BRANCHES -12		/*!< too many branches demanded */
 #define E_BAD_TO            -13
-/* invalid params */
-#define E_INVALID_PARAMS    -14
-/* Invalid character in q */
-#define E_Q_INV_CHAR        -15
-/* Empty q */
-#define E_Q_EMPTY           -16
-/* q too big (> 1) */
-#define E_Q_TOO_BIG         -17
-/* Decimal part missing */
-#define E_Q_DEC_MISSING     -18
-/* Decimal part missing */
-#define E_NO_DESTINATION    -19
+#define E_INVALID_PARAMS    -14		/*!< invalid params */
+#define E_Q_INV_CHAR        -15		/*!< Invalid character in q */
+#define E_Q_EMPTY           -16		/*!< Empty q */
+#define E_Q_TOO_BIG         -17		/*!< q too big (> 1) */
+#define E_Q_DEC_MISSING     -18		/*!< Decimal part missing */
+#define E_NO_DESTINATION    -19		/*!< Decimal part missing */
 
 /* openser specific error codes */
-/* destination filtered */
-#define E_IP_BLOCKED      -473
-/* bad protocol, like */
-#define E_BAD_PROTO       -474
-/* unparseable URI */
-#define E_BAD_URI         -475
-/* unresolvable next-hop address */
-#define E_BAD_ADDRESS     -476
-/* generic send error */
-#define E_SEND            -477
+#define E_IP_BLOCKED      -473		/*!< destination filtered */
+#define E_BAD_PROTO       -474		/*!< bad protocol, like */
+#define E_BAD_URI         -475		/*!< unparseable URI */
+#define E_BAD_ADDRESS     -476		/*!< unresolvable next-hop address */
+#define E_SEND            -477		/*!< generic send error */
 
-/* generic malformed request */
-#define E_BAD_REQ	  -400
+#define E_BAD_REQ         -400		/*!< generic malformed request */
 
-/* error in server */
-#define E_BAD_SERVER	  -500
+#define E_BAD_SERVER	  -500		/*!< error in server */
 
 
 #define MAX_REASON_LEN	128
 
 #include "str.h"
 
-/* processing status of the last command */
+/*! \brief processing status of the last command */
 extern int ser_error;
 extern int prev_ser_error;
 
 struct sip_msg;
 
-/* ser error -> SIP error */
+/*! \brief ser error -> SIP error */
 int err2reason_phrase( int ser_error, int *sip_error, 
                 char *phrase, int etl, char *signature );
 
-/* SIP error core -> SIP text */
+/*! \brief SIP error core -> SIP text */
 char *error_text( int code );
 
-/* return pkg_malloc-ed reply status in status->s */
+/*! \brief return pkg_malloc-ed reply status in status->s */
 void get_reply_status( str *status, struct sip_msg *reply, int code );
 
 #endif

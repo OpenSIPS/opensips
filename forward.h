@@ -18,17 +18,12 @@
  * You should have received a copy of the GNU General Public License 
  * along with this program; if not, write to the Free Software 
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- *
- * History:
- * -------
- *  2001-??-?? created by andrei
- *  ????-??-?? lots of changes by a lot of people
- *  2003-02-11 added inline msg_send (andrei)
- *  2003-04-07 changed all ports to host byte order (andrei)
- *  2003-04-12  FORCE_RPORT_T added (andrei)
- *  2003-04-15  added tcp_disable support (andrei)
  */
 
+/*!
+ * \file
+ * \brief OpenSER Stateless forward support
+ */
 
 
 #ifndef forward_h
@@ -59,7 +54,7 @@ int update_sock_struct_from_via( union sockaddr_union* to,
 								 struct sip_msg* msg,
 								 struct via_body* via );
 
-/* use src_ip, port=src_port if rport, via port if via port, 5060 otherwise */
+/*! \brief use src_ip, port=src_port if rport, via port if via port, 5060 otherwise */
 #define update_sock_struct_from_ip(  to, msg ) \
 	init_su((to), &(msg)->rcv.src_ip, \
 			(((msg)->via1->rport)||((msg)->msg_flags&FL_FORCE_RPORT))? \
@@ -70,15 +65,19 @@ int forward_reply( struct sip_msg* msg);
 
 
 
-/* params:
- *  send_sock= 0 if already known (e.g. for udp in some cases), non-0 otherwise
- *  proto=TCP|UDP
- *  to = destination,
- *  id - only used on tcp, it will force sending on connection "id" if id!=0 
+/*! \brief
+ *
+ *  \param send_sock = 0 if already known (e.g. for udp in some cases), non-0 otherwise
+ *  \param proto =TCP|UDP
+ *  \param to = destination,
+ *  \param id - only used on tcp, it will force sending on connection "id" if id!=0 
  *       and the connection exists, else it will send to "to" 
  *       (useful for sending replies on  the same connection as the request
  *       that generated them; use 0 if you don't want this)
- * returns: 0 if ok, -1 on error*/
+ * \param buf ???
+ * \param len ???
+ * \return 0 if ok, -1 on error
+ */
 static inline int msg_send( struct socket_info* send_sock, int proto,
 							union sockaddr_union* to, int id,
 							char* buf, int len)

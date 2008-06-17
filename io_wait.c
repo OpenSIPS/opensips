@@ -19,21 +19,15 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
-/* 
- * tcp io wait common stuff used by tcp_main.c & tcp_read.c
- * (see io_wait.h)
- */
-/* 
- * History:
- * --------
- *  2005-06-15  created by andrei
- *  2005-06-26  added kqueue (andrei)
- *  2005-07-04  added /dev/poll (andrei)
+
+/*!
+ * \file
+ * \brief OpenSER TCP IO wait common functions
+ * Used by tcp_main.c and tcp_read.c
  */
 
 
-
-#ifdef USE_TCP /* for now it make sense only with tcp */
+#ifdef USE_TCP /*!< for now it make sense only with tcp */
 
 #ifdef HAVE_EPOLL
 #include <unistd.h> /* close() */
@@ -77,7 +71,7 @@ char* poll_support="poll"
 #endif
 ;
 
-
+/*! supported poll methods */
 char* poll_method_str[POLL_END]={ "none", "poll", "epoll_lt", "epoll_et", 
 								  "sigio_rt", "select", "kqueue",  "/dev/poll"
 								};
@@ -91,8 +85,12 @@ static sigset_t _sigio_rtsig_used;
 
 
 #ifdef HAVE_SIGIO_RT
-/* sigio specific init
- * returns -1 on error, 0 on success */
+/*!
+ * \brief sigio specific init
+ * \param h IO handle
+ * \param rsig real time signal
+ * \return returns -1 on error, 0 on success
+ */
 static int init_sigio(io_wait_h* h, int rsig)
 {
 	int r;
@@ -178,7 +176,10 @@ error:
 
 
 
-/* sigio specific destroy */
+/*!
+ * \brief sigio specific destroy 
+ * \param h IO handle
+ */
 static void destroy_sigio(io_wait_h* h)
 {
 	if (h->signo){
@@ -193,8 +194,11 @@ static void destroy_sigio(io_wait_h* h)
 
 
 #ifdef HAVE_EPOLL
-/* epoll specific init
- * returns -1 on error, 0 on success */
+/*!
+ * \brief epoll specific init
+ * \param h IO handle
+ * \return -1 on error, 0 on success
+ */
 static int init_epoll(io_wait_h* h)
 {
 again:
@@ -208,8 +212,10 @@ again:
 	return 0;
 }
 
-
-
+/*!
+ * \brief epoll specific destroy
+ * \param h IO handle
+ */
 static void destroy_epoll(io_wait_h* h)
 {
 	if (h->epfd!=-1){
@@ -222,8 +228,11 @@ static void destroy_epoll(io_wait_h* h)
 
 
 #ifdef HAVE_KQUEUE
-/* kqueue specific init
- * returns -1 on error, 0 on success */
+/*!
+ * \brief kqueue specific init
+ * \param h IO handle
+ * \return -1 on error, 0 on success
+ */
 static int init_kqueue(io_wait_h* h)
 {
 again:
@@ -238,7 +247,10 @@ again:
 }
 
 
-
+/*!
+ * \brief kqueue specific destroy
+ * \param h IO handle
+ */
 static void destroy_kqueue(io_wait_h* h)
 {
 	if (h->kq_fd!=-1){
@@ -251,8 +263,10 @@ static void destroy_kqueue(io_wait_h* h)
 
 
 #ifdef HAVE_DEVPOLL
-/* /dev/poll specific init
- * returns -1 on error, 0 on success */
+/*!
+ * \brief /dev/poll specific init
+ * \param h IO handle
+ * \return -1 on error, 0 on success */
 static int init_devpoll(io_wait_h* h)
 {
 again:
@@ -267,7 +281,10 @@ again:
 }
 
 
-
+/*!
+ * \brief dev/poll specific destroy
+ * \param h IO handle
+ */
 static void destroy_devpoll(io_wait_h* h)
 {
 	if (h->dpoll_fd!=-1){
@@ -280,6 +297,12 @@ static void destroy_devpoll(io_wait_h* h)
 
 
 #ifdef HAVE_SELECT
+/*!
+ * \brief select specific init
+ * \param h IO handle 
+ * \return zero
+ * \todo make this method void, and remove the check in io_wait.c
+ */
 static int init_select(io_wait_h* h)
 {
 	FD_ZERO(&h->master_set);
@@ -289,10 +312,15 @@ static int init_select(io_wait_h* h)
 
 
 
-/* return system version (major.minor.minor2) as
- *  (major<<16)|(minor)<<8|(minor2)
+/*!
+ * \brief return system version
+ * Return system version (major.minor.minor2) as (major<<16)|(minor)<<8|(minor2)
  * (if some of them are missing, they are set to 0)
  * if the parameters are not null they are set to the coresp. part 
+ * \param major major version
+ * \param minor minor version
+ * \param minor2 minor2 version
+ * \return (major<<16)|(minor)<<8|(minor2)
  */
 static unsigned int get_sys_version(int* major, int* minor, int* minor2)
 {
@@ -323,8 +351,10 @@ static unsigned int get_sys_version(int* major, int* minor, int* minor2)
 
 
 
-/*
- * returns 0 on success, and an error message on error
+/*!
+ * \brief Check preferred OS poll method
+ * \param poll_method supported IO poll methods
+ * \return 0 on success, and an error message on error
  */
 char* check_poll_method(enum poll_types poll_method)
 {
@@ -402,13 +432,16 @@ char* check_poll_method(enum poll_types poll_method)
 }
 
 
-
+/*!
+ * \brief Choose a IO poll method
+ * \return the choosen poll method
+ */
 enum poll_types choose_poll_method(void)
 {
 	enum poll_types poll_method;
 	unsigned int os_ver;
 
-	os_ver=get_sys_version(0,0,0);	
+	os_ver=get_sys_version(0,0,0);
 	poll_method=0;
 #ifdef HAVE_EPOLL
 	if (os_ver>=0x020542) /* if ver >= 2.5.66 */
@@ -445,7 +478,10 @@ enum poll_types choose_poll_method(void)
 }
 
 
-
+/*!
+ * \brief output the IO poll method name
+ * \param poll_method used poll method
+ */
 char* poll_method_name(enum poll_types poll_method)
 {
 	if ( poll_method<POLL_END )
@@ -457,8 +493,11 @@ char* poll_method_name(enum poll_types poll_method)
 
 
 
-/* converts a string into a poll_method
- * returns POLL_NONE (0) on error, else the corresponding poll type */
+/*!
+ * \brief converts a string into a poll_method
+ * \param s converted string
+ * \return POLL_NONE (0) on error, else the corresponding poll type 
+ */
 enum poll_types get_poll_type(char* s)
 {
 	int r;
@@ -474,10 +513,11 @@ enum poll_types get_poll_type(char* s)
 
 
 
-/* initializes the static vars/arrays
- * params:      h - pointer to the io_wait_h that will be initialized
- *         max_fd - maximum allowed fd number
- *         poll_m - poll method (0 for automatic best fit)
+/*!
+ * \brief initializes the static vars/arrays
+ * \param  h - pointer to the io_wait_h that will be initialized
+ * \param  max_fd - maximum allowed fd number
+ * \param  poll_method - poll method (0 for automatic best fit)
  */
 int init_io_wait(io_wait_h* h, int max_fd, enum poll_types poll_method)
 {
@@ -608,7 +648,10 @@ error:
 
 
 
-/* destroys everything init_io_wait allocated */
+/*!
+ * \brief destroys everything init_io_wait allocated
+ * \param h IO handle
+ */
 void destroy_io_wait(io_wait_h* h)
 {
 	switch(h->poll_method){
@@ -657,7 +700,6 @@ void destroy_io_wait(io_wait_h* h)
 			h->fd_hash=0;
 		}
 }
-
 
 
 #endif

@@ -1,6 +1,5 @@
-/* $Id$
- *
- * find & manage listen addresses 
+/*
+ * $Id$
  *
  * Copyright (C) 2001-2003 FhG Fokus
  *
@@ -19,14 +18,13 @@
  * You should have received a copy of the GNU General Public License 
  * along with this program; if not, write to" the Free Software 
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- *
- *
- * This file contains code that initializes and handles ser listen addresses
+ */
+
+/*!
+ * \file
+ * \brief Find & manage listen addresses.
+ * Contains code that initializes and handles server listen addresses
  * lists (struct socket_info). It is used mainly on startup.
- * 
- * History:
- * --------
- *  2003-10-22  created by andrei
  */
 
 
@@ -94,7 +92,7 @@ static inline struct socket_info** get_sock_info_list(unsigned short proto)
 }
 
 
-/* helper function:
+/*! \brief helper function:
  * returns next protocol, if the last one is reached return 0
  * useful for cycling on the supported protocols */
 static inline int next_proto(unsigned short proto)
@@ -156,7 +154,7 @@ static inline int next_proto(unsigned short proto)
 
 
 
-/* gets first non-null socket_info structure
+/*! \brief gets first non-null socket_info structure
  * (useful if for. e.g we are not listening on any udp sockets )
  */
 inline static struct socket_info* get_first_socket(void)
@@ -175,8 +173,9 @@ inline static struct socket_info* get_first_socket(void)
 }
 
 
-/* returns -1 on error, 0 on success
- * sets proto */
+/*! \brief  Sets protocol
+ * returns -1 on error, 0 on success
+ */
 inline static int parse_proto(unsigned char* s, long len, int* proto)
 {
 #define PROTO2UINT(a, b, c) ((	(((unsigned int)(a))<<16)+ \
@@ -220,7 +219,7 @@ inline static int parse_proto(unsigned char* s, long len, int* proto)
 
 
 
-/*
+/*! \brief
  * parses [proto:]host[:port]
  * where proto= udp|tcp|tls
  * returns 0 on success and -1 on failure

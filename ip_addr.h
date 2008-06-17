@@ -19,12 +19,13 @@
  * You should have received a copy of the GNU General Public License 
  * along with this program; if not, write to the Free Software 
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- *
- * History:
- * --------
- *  2003-02-13  added struct dest_info (andrei)
- *  2003-04-06  all ports are stored/passed in host byte order now (andrei)
  */
+
+/*!
+ * \file
+ * \brief ip address family related structures
+ */
+
 
 #ifndef ip_addr_h
 #define ip_addr_h
@@ -46,12 +47,12 @@ enum sip_protos { PROTO_NONE, PROTO_UDP, PROTO_TCP, PROTO_TLS, PROTO_SCTP };
 
 
 struct ip_addr{
-	unsigned int af; /* address family: AF_INET6 or AF_INET */
-	unsigned int len;    /* address len, 16 or 4 */
+	unsigned int af; /*!< address family: AF_INET6 or AF_INET */
+	unsigned int len;    /*!< address len, 16 or 4 */
 	
-	/* 64 bits aligned address */
+	/*! \brief 64 bits aligned address */
 	union {
-		unsigned long  addrl[16/sizeof(long)]; /* long format*/
+		unsigned long  addrl[16/sizeof(long)]; /*!< long format*/
 		unsigned int   addr32[4];
 		unsigned short addr16[8];
 		unsigned char  addr[16];
@@ -77,46 +78,45 @@ union sockaddr_union{
 
 enum si_flags { SI_NONE=0, SI_IS_IP=1, SI_IS_LO=2, SI_IS_MCAST=4 };
 
-struct socket_info{
+struct socket_info {
 	int socket;
-	str name; /* name - eg.: foo.bar or 10.0.0.1 */
-	struct ip_addr address; /* ip address */
-	str address_str;        /* ip address converted to string -- optimization*/
-	unsigned short port_no;  /* port number */
-	str port_no_str; /* port number converted to string -- optimization*/
-	enum si_flags flags; /* SI_IS_IP | SI_IS_LO | SI_IS_MCAST */
+	str name; /*!< name - eg.: foo.bar or 10.0.0.1 */
+	struct ip_addr address; /*!< ip address */
+	str address_str;        /*!< ip address converted to string -- optimization*/
+	unsigned short port_no;  /*!< port number */
+	str port_no_str; /*!< port number converted to string -- optimization*/
+	enum si_flags flags; /*!< SI_IS_IP | SI_IS_LO | SI_IS_MCAST */
 	union sockaddr_union su;
-	int proto; /* tcp or udp*/
+	int proto; /*!< tcp or udp*/
 	str sock_str;
 	struct socket_info* next;
 	struct socket_info* prev;
 };
 
 
-struct receive_info{
+struct receive_info {
 	struct ip_addr src_ip;
 	struct ip_addr dst_ip;
-	unsigned short src_port; /* host byte order */
-	unsigned short dst_port; /* host byte order */
+	unsigned short src_port; /*!< host byte order */
+	unsigned short dst_port; /*!< host byte order */
 	int proto;
-	int proto_reserved1; /* tcp stores the connection id here */
+	int proto_reserved1; /*!< tcp stores the connection id here */
 	int proto_reserved2;
-	union sockaddr_union src_su; /* useful for replies*/
-	struct socket_info* bind_address; /* sock_info structure on which 
-									  the msg was received*/
+	union sockaddr_union src_su; /*!< useful for replies*/
+	struct socket_info* bind_address; /*!< sock_info structure on which the msg was received*/
 	/* no need for dst_su yet */
 };
 
 
-struct dest_info{
+struct dest_info {
 	int proto;
-	int proto_reserved1; /* tcp stores the connection id here */ 
+	int proto_reserved1; /*!< tcp stores the connection id here */ 
 	union sockaddr_union to;
 	struct socket_info* send_sock;
 };
 
 
-struct socket_id{
+struct socket_id {
 	char* name;
 	int proto;
 	int port;
@@ -138,7 +138,7 @@ struct socket_id{
 #endif /*USE_IPV6*/
 #endif /* HAVE_SOCKADDR_SA_LEN*/
 	
-/* inits an ip_addr with the addr. info from a hostent structure
+/*! \brief inits an ip_addr with the addr. info from a hostent structure
  * ip = struct ip_addr*
  * he= struct hostent*
  */
@@ -172,11 +172,11 @@ void stdout_print_ip(struct ip_addr* ip);
 void print_net(struct net* net);
 
 #ifdef USE_MCAST
-/* Returns 1 if the given address is a multicast address */
+/*! \brief Returns 1 if the given address is a multicast address */
 int is_mcast(struct ip_addr* ip);
 #endif /* USE_MCAST */
 
-/* returns 1 if ip & net.mask == net.ip ; 0 otherwise & -1 on error 
+/*! \brief returns 1 if ip & net.mask == net.ip ; 0 otherwise & -1 on error 
 	[ diff. address families ]) */
 inline static int matchnet(struct ip_addr* ip, struct net* net)
 {
@@ -200,7 +200,7 @@ inline static int matchnet(struct ip_addr* ip, struct net* net)
 
 
 
-/* inits an ip_addr pointer from a sockaddr structure*/
+/*! \brief inits an ip_addr pointer from a sockaddr structure*/
 static inline void sockaddr2ip_addr(struct ip_addr* ip, struct sockaddr* sa)
 {
 	switch(sa->sa_family){
@@ -223,14 +223,14 @@ static inline void sockaddr2ip_addr(struct ip_addr* ip, struct sockaddr* sa)
 
 
 
-/* compare 2 ip_addrs (both args are pointers)*/
+/*! \brief compare 2 ip_addrs (both args are pointers)*/
 #define ip_addr_cmp(ip1, ip2) \
 	(((ip1)->af==(ip2)->af)&& \
 	 	(memcmp((ip1)->u.addr, (ip2)->u.addr, (ip1)->len)==0))
 
 
 
-/* compare 2 sockaddr_unions */
+/*! \brief compare 2 sockaddr_unions */
 static inline int su_cmp(union sockaddr_union* s1, union sockaddr_union* s2)
 {
 	if (s1->s.sa_family!=s2->s.sa_family) return 0;
@@ -252,7 +252,7 @@ static inline int su_cmp(union sockaddr_union* s1, union sockaddr_union* s2)
 
 
 
-/* gets the port number (host byte order) */
+/*! \brief gets the port number (host byte order) */
 static inline unsigned short su_getport(union sockaddr_union* su)
 {
 	if(su==0)
@@ -271,9 +271,7 @@ static inline unsigned short su_getport(union sockaddr_union* su)
 	}
 }
 
-
-
-/* sets the port number (host byte order) */
+/*! \brief sets the port number (host byte order) */
 static inline void su_setport(union sockaddr_union* su, unsigned short port)
 {
 	switch(su->s.sa_family){
@@ -290,36 +288,34 @@ static inline void su_setport(union sockaddr_union* su, unsigned short port)
 	}
 }
 
-
-
-/* inits an ip_addr pointer from a sockaddr_union ip address */
+/*! \brief inits an ip_addr pointer from a sockaddr_union ip address */
 static inline void su2ip_addr(struct ip_addr* ip, union sockaddr_union* su)
 {
 	switch(su->s.sa_family){
 	case AF_INET: 
-					ip->af=AF_INET;
-					ip->len=4;
-					memcpy(ip->u.addr, &su->sin.sin_addr, 4);
-					break;
+		ip->af=AF_INET;
+		ip->len=4;
+		memcpy(ip->u.addr, &su->sin.sin_addr, 4);
+		break;
 #ifdef USE_IPV6
 	case AF_INET6:
-					ip->af=AF_INET6;
-					ip->len=16;
-					memcpy(ip->u.addr, &su->sin6.sin6_addr, 16);
-					break;
+		ip->af=AF_INET6;
+		ip->len=16;
+		memcpy(ip->u.addr, &su->sin6.sin6_addr, 16);
+		break;
 #endif
 	default:
-					LM_CRIT("unknown address family %d\n", su->s.sa_family);
+		LM_CRIT("Unknown address family %d\n", su->s.sa_family);
 	}
 }
 
 
-/* ip_addr2su -> the same as init_su*/
+/*! \brief ip_addr2su -> the same as \ref init_su() */
 #define ip_addr2su init_su
 
-/* inits a struct sockaddr_union from a struct ip_addr and a port no 
- * returns 0 if ok, -1 on error (unknown address family)
- * the port number is in host byte order */
+/*! \brief inits a struct sockaddr_union from a struct ip_addr and a port no 
+ * \return 0 if ok, -1 on error (unknown address family)
+ * \note the port number is in host byte order */
 static inline int init_su( union sockaddr_union* su,
 							struct ip_addr* ip,
 							unsigned short   port ) 
@@ -352,10 +348,10 @@ static inline int init_su( union sockaddr_union* su,
 
 
 
-/* inits a struct sockaddr_union from a struct hostent, an address index in
+/*! \brief inits a struct sockaddr_union from a struct hostent, an address index in
  * the hostent structure and a port no. (host byte order)
  * WARNING: no index overflow  checks!
- * returns 0 if ok, -1 on error (unknown address family) */
+ * \return 0 if ok, -1 on error (unknown address family) */
 static inline int hostent2su( union sockaddr_union* su,
 								struct hostent* he,
 								unsigned int idx,
@@ -387,9 +383,10 @@ static inline int hostent2su( union sockaddr_union* su,
 	return 0;
 }
 
-/* maximum size of a str returned by ip_addr2a (including \0) */
+/*! \brief maximum size of a str returned by ip_addr2a (including \\0') */
 #define IP_ADDR_MAX_STR_SIZE 40 /* 1234:5678:9012:3456:7890:1234:5678:9012\0 */
-/* fast ip_addr -> string converter;
+
+/*! \brief fast ip_addr -> string converter;
  * it uses an internal buffer
  */
 static inline char* ip_addr2a(struct ip_addr* ip)
@@ -518,8 +515,8 @@ static inline char* ip_addr2a(struct ip_addr* ip)
 
 
 
-/* converts an ip_addr structure to a hostent, returns pointer to internal
- * statical structure */
+/*! \brief converts an ip_addr structure to a hostent
+ * \return pointer to internal statical structure */
 static inline struct hostent* ip_addr2he(str* name, struct ip_addr* ip)
 {
 	static struct hostent he;

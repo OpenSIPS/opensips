@@ -3,19 +3,14 @@
  *
  * Copyright (C) 2001-2003 FhG Fokus
  *
- * This file is part of ser, a free SIP server.
+ * This file is part of OpenSER, a free SIP server.
  *
- * ser is free software; you can redistribute it and/or modify
+ * OpenSER is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version
  *
- * For a license to use the ser software under conditions
- * other than those described here, or to purchase support for this
- * software, please contact iptel.org by e-mail at the following addresses:
- *    info@iptel.org
- *
- * ser is distributed in the hope that it will be useful,
+ * OpenSER is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
@@ -25,7 +20,12 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-/** \mainpage Developer documentation
+/*!
+ *\file
+ * \brief The help message that is shown on the console with 'openser -h'
+ */
+
+/*! \mainpage Developer documentation
  *
  * \section intro_sec Introduction
  * This is the OpenSER developer documentation. At the moment most information
@@ -51,12 +51,11 @@
  * \ref _str "str" - contains text variables \n
  *
  * \todo incomplete
+ *
+ * \section DeveloperGuide OpenSER Developer Guide
+ * Please check the OpenSER developer guide at http://www.openser.org/docs/openser-devel-guide/
  */
 
-/**
- * \file help_msg.h
- * The help message that is shown on the console with 'openser -h'
- */
 
 #ifndef HELP_MSG_H
 #define HELP_MSG_H

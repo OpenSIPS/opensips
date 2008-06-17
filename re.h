@@ -1,8 +1,6 @@
 /*
  * $Id$
  *
- * regexp and regexp substitutions implementations
- * 
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of openser, a free SIP server.
@@ -20,12 +18,11 @@
  * You should have received a copy of the GNU General Public License 
  * along with this program; if not, write to the Free Software 
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- *
- *
- * History:
- * --------
- *   2003-08-04  created by andrei
- *   2004-11-12  minor api extension, added *count (andrei)
+ */
+
+/*!
+ * \file
+ * \brief regexp and regexp substitutions implementations
  */
 
 #ifndef _re_h

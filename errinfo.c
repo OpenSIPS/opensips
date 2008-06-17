@@ -20,30 +20,33 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+/*!
+ * \file errinfo.c
+ * \brief OpenSER Error info functions
+ */
+
+
 #include <stdlib.h>
 #include <string.h>
 
 #include "dprint.h"
 #include "errinfo.h"
 
-/* global error info */
+/*! global error info */
 err_info_t _oser_err_info;
 
-/**
- *
+/*! \brief Get global error state
  */
 err_info_t* get_err_info(void) { return &_oser_err_info; }
 
-/**
- *
+/*! \brief Initialize global error state
  */
 void init_err_info(void)
 {
 	memset(&_oser_err_info, 0, sizeof(err_info_t));
 }
 
-/**
- *
+/*! \brief Set suggested error info message
  */
 void set_err_info(int ec, int el, char *info)
 {
@@ -58,8 +61,7 @@ void set_err_info(int ec, int el, char *info)
 	}
 }
 
-/**
- *
+/*! \brief Set suggested error reply
  */
 void set_err_reply(int rc, char *rr)
 {

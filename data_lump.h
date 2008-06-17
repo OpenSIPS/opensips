@@ -20,15 +20,11 @@
  * You should have received a copy of the GNU General Public License 
  * along with this program; if not, write to the Free Software 
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- *
- * History:
- * --------
- *  2003-01-29  s/int/enum ... more convenient for gdb (jiri)
- *  2003-03-31  added subst lumps -- they expand in ip addr, port a.s.o (andrei)
- *  2003-04-01  added opt (condition) lumps (andrei)
- *  2003-04-02  added more subst lumps: SUBST_{SND,RCV}_ALL  
- *              => ip:port;transport=proto (andrei)
- *
+ */
+
+/*!
+ * \file data_lump.h
+ * \brief adding/removing headers or any other data chunk from a message
  */
 
 
@@ -53,46 +49,52 @@ extern int init_lump_flags;
 	}while(0)
 
 
-/* adds a header to the end */
+/*! \brief adds a header to the end */
 struct lump* append_new_lump(struct lump** list, char* new_hdr,
 		unsigned int len, enum _hdr_types_t type);
-/* inserts a header to the beginning */
+
+/*! \brief inserts a header to the beginning */
 struct lump* insert_new_lump(struct lump** list, char* new_hdr,
 		unsigned int len, enum _hdr_types_t type);
+/*! \brief inserts a header to the beginning - after */
 struct lump* insert_new_lump_after(struct lump* after,
 		char* new_hdr, unsigned int len, enum _hdr_types_t type);
+/*! \brief inserts a header to the beginning - before */
 struct lump* insert_new_lump_before(struct lump* before, char* new_hdr,
 		unsigned int len,enum _hdr_types_t type);
 
-/* substitutions (replace with ip address, port etc) */
+/*! \brief substitutions (replace with ip address, port etc) - after */
 struct lump* insert_subst_lump_after(struct lump* after, enum lump_subst subst,
 		enum _hdr_types_t type);
+/*! \brief substitutions (replace with ip address, port etc)  - before */
 struct lump* insert_subst_lump_before(struct lump* before,
 		enum lump_subst subst, enum _hdr_types_t type);
 
-/* conditional lumps */
+/*! \brief conditional lumps - insert*/
 struct lump* insert_cond_lump_after(struct lump* after, enum lump_conditions c,
 		enum _hdr_types_t type);
+/*! \brief conditional lumps - before */
 struct lump* insert_cond_lump_before(struct lump* after,enum lump_conditions c,
 		enum _hdr_types_t type);
 
-/* removes an already existing header */
+/*! \brief removes an already existing header */
 struct lump* del_lump(struct sip_msg* msg, unsigned int offset,
 	unsigned int len, enum _hdr_types_t type);
-/* set an anchor */
+/*! \brief set an anchor */
 struct lump* anchor_lump(struct sip_msg* msg, unsigned int offset,
 	unsigned int len, enum _hdr_types_t type);
 
 
 
-/* duplicates a lump list shallowly in pkg-mem */
+/*! \brief duplicates a lump list shallowly in pkg-mem */
 struct lump* dup_lump_list( struct lump *l );
-/* frees a shallowly duplicated lump list */
+/*! \brief frees a shallowly duplicated lump list */
 void free_duped_lump_list(struct lump* l);
 
 
-/* remove all flaged lumps from the list */
+/*! \brief remove all flagged lumps from the list */
 void del_flaged_lumps( struct lump** lump_list, enum lump_flag flags );
+/*! \brief remove all unflagged lumps from the list */
 void del_notflaged_lumps( struct lump** lump_list, enum lump_flag not_flags);
 
 #endif

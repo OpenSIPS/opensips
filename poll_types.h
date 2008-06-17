@@ -1,6 +1,6 @@
-/* 
+/*
  * $Id$
- * 
+ *
  * Copyright (C) 2005 iptelorg GmbH
  *
  * This file is part of openser, a free SIP server.
@@ -19,16 +19,11 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
-/* 
- * io wait poll methods (enum, strings, related function)
- * see io_wait.h for more details
- * 
- *  
- */
-/* 
- * History:
- * --------
- *  2005-06-15  created by andrei
+
+/*!
+ * \file
+ * \brief IO wait poll methods (enum, strings, related function)
+ * see \ref io_wait.h for more details
  */
 
 

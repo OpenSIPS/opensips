@@ -1,4 +1,5 @@
-/* $Id$
+/*
+ * $Id$
  *
  * modules/plug-in structures declarations
  *
@@ -19,20 +20,11 @@
  * You should have received a copy of the GNU General Public License 
  * along with this program; if not, write to the Free Software 
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- *
- * History:
- * --------
- *  2003-03-10  changed module exports interface: added struct cmd_export
- *               and param_export (andrei)
- *  2003-03-16  Added flags field to cmd_export_ (janakj)
- *  2003-04-05  s/reply_route/failure_route, onreply_route introduced (jiri)
- *  2004-03-12  extra flag USE_FUNC_PARAM added to modparam type -
- *              instead of copying the param value, a func is called (bogdan)
- *  2004-09-19  switched to version.h for the module versions checks (andrei)
- *  2004-12-03  changed param_func_t to (modparam_t, void*), killed
- *               param_func_param_t   (andrei)
- *  2006-03-02  added find_cmd_export_t(), killed find_exportp() (bogdan)
- *  2006-11-28  added module_loaded() (Jeffrey Magder - SOMA Networks)
+ */
+
+/*!
+ * \file
+ * \brief modules/plug-in structures declarations
  */
 
 
@@ -104,9 +96,9 @@ struct cmd_export_ {
 
 
 struct param_export_ {
-	char* name;             /* null terminated param. name */
-	modparam_t type;        /* param. type */
-	void* param_pointer;    /* pointer to the param. memory location */
+	char* name;             /*!< null terminated param. name */
+	modparam_t type;        /*!< param. type */
+	void* param_pointer;    /*!< pointer to the param. memory location */
 };
 
 
@@ -124,32 +116,32 @@ typedef struct param_export_ param_export_t;
 typedef struct proc_export_ proc_export_t;
 
 struct module_exports{
-	char* name;                     /* null terminated module name */
-	unsigned int dlflags;           /* flags for dlopen */
+	char* name;                     /*!< null terminated module name */
+	unsigned int dlflags;           /*!< flags for dlopen */
 	
-	cmd_export_t* cmds;             /* null terminated array of the exported
+	cmd_export_t* cmds;             /*!< null terminated array of the exported
 	                                   commands */
-	param_export_t* params;         /* null terminated array of the exported
+	param_export_t* params;         /*!< null terminated array of the exported
 	                                   module parameters */
 
-	stat_export_t* stats;           /* null terminated array of the exported
+	stat_export_t* stats;           /*!< null terminated array of the exported
 	                                   module statistics */
 
-	mi_export_t* mi_cmds;           /* null terminated array of the exported
+	mi_export_t* mi_cmds;           /*!< null terminated array of the exported
 	                                   MI functions */
 
-	pv_export_t* items;             /* null terminated array of the exported
+	pv_export_t* items;             /*!< null terminated array of the exported
 	                                   module items (pseudo-variables) */
 
-	proc_export_t* procs;           /* null terminated array of the additional
+	proc_export_t* procs;           /*!< null terminated array of the additional
 	                                   processes reqired by the module */
 
-	init_function init_f;           /* Initialization function */
-	response_function response_f;   /* function used for responses,
+	init_function init_f;           /*!< Initialization function */
+	response_function response_f;   /*!< function used for responses,
 	                                   returns yes or no; can be null */
-	destroy_function destroy_f;     /* function called when the module should
+	destroy_function destroy_f;     /*!< function called when the module should
 	                                   be "destroyed", e.g: on openser exit */
-	child_init_function init_child_f;/* function called by all processes
+	child_init_function init_child_f;/*!< function called by all processes
 	                                    after the fork */
 };
 
@@ -165,7 +157,7 @@ struct sr_module{
 };
 
 
-struct sr_module* modules; /* global module list*/
+struct sr_module* modules; /*!< global module list*/
 
 int register_builtin_modules();
 int register_module(struct module_exports*, char*,  void*);
@@ -177,7 +169,7 @@ void destroy_modules();
 int init_child(int rank);
 int init_modules(void);
 
-/*
+/*! \brief
  * Find a parameter with given type and return it's
  * address in memory
  * If there is no such parameter, NULL is returned
@@ -192,13 +184,14 @@ void* find_param_export(char* mod, char* name, modparam_t type);
  *  - returns >0 if ok, 0 to drop message
  */
 
-/* Returns 1 if the module with name 'name' is loaded, and zero otherwise. */
+/*! \brief Check if module is loaded
+ * \return Returns 1 if the module with name 'name' is loaded, and zero otherwise. */
 int module_loaded(char *name);
 
-/* Counts the additional the number of processes requested by modules */
+/*! \brief Counts the additional the number of processes requested by modules */
 int count_module_procs();
 
-/* Forks and starts the additional processes required by modules */
+/*! \brief Forks and starts the additional processes required by modules */
 int start_module_procs();
 
 

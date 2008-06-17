@@ -20,9 +20,10 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-/**
- * @file mod_fix.c
- * @brief Generic fixup functions for module function parameter.
+/*!
+ * \file
+ * \brief Generic fixup functions for module function parameter.
+ * - \ref FixupNameFormat
  */
 
 #include <stdio.h>
@@ -36,7 +37,8 @@
 #include "pvar.h"
 #include "mod_fix.h"
 
-/**
+/*!
+ * \page FixupNameFormat Fixup Naming format
  * NAMING FORMAT
  * === fixup functions ===
  * + fixup_type1_type2(...)
@@ -57,8 +59,8 @@
  */
 
 
-/**
- * - helper function
+/*! \brief
+ * helper function
  * Convert char* parameter to str* parameter
  */
 int fixup_str(void** param)
@@ -78,7 +80,7 @@ int fixup_str(void** param)
 	return 0;
 }
 
-/**
+/*! \brief
  * - helper function
  * free the str* parameter
  */
@@ -91,7 +93,7 @@ int fixup_free_str(void** param)
 	return 0;
 }
 
-/**
+/*! \brief
  * fixup for functions that get one parameter
  * - first parameter is converted to str*
  */
@@ -105,7 +107,7 @@ int fixup_str_null(void** param, int param_no)
 	return fixup_str(param);
 }
 
-/**
+/*! \brief
  * fixup for functions that get two parameters
  * - first parameter is converted to str*
  * - second parameter is converted to str*
@@ -120,7 +122,7 @@ int fixup_str_str(void** param, int param_no)
 	return fixup_str(param);
 }
 
-/**
+/*! \brief
  * fixup free for functions that get one parameter
  * - first parameter was converted to str*
  */
@@ -134,7 +136,7 @@ int fixup_free_str_null(void** param, int param_no)
 	return fixup_free_str(param);
 }
 
-/**
+/*! \brief
  * fixup free for functions that get two parameters
  * - first parameter was converted to str*
  * - second parameter was converted to str*
@@ -149,7 +151,7 @@ int fixup_free_str_str(void** param, int param_no)
 	return fixup_free_str(param);
 }
 
-/**
+/*! \brief
  * - helper function
  * Convert char* parameter to unsigned int
  * - the input parameter must be pkg-allocated and will be freed by function
@@ -172,7 +174,7 @@ int fixup_uint(void** param)
 	return E_CFG;
 }
 
-/**
+/*! \brief
  * fixup for functions that get one parameter
  * - first parameter is converted to unsigned int
  */
@@ -186,7 +188,7 @@ int fixup_uint_null(void** param, int param_no)
 	return fixup_uint(param);
 }
 
-/**
+/*! \brief
  * fixup for functions that get two parameters
  * - first parameter is converted to unsigned int
  * - second parameter is converted to unsigned int
@@ -202,7 +204,7 @@ int fixup_uint_uint(void** param, int param_no)
 }
 
 #if 0
-/**
+/*! \brief
  * - helper function
  * Convert char* parameter to signed int
  * - the input parameter must be pkg-allocated and will be freed by function
@@ -225,7 +227,7 @@ int fixup_sint( void** param)
 	return E_CFG;
 }
 
-/**
+/*! \brief
  * fixup for functions that get one parameter
  * - first parameter is converted to signed int
  */
@@ -239,7 +241,7 @@ int fixup_sint_null(void** param, int param_no)
 	return fixup_sint(param);
 }
 
-/**
+/*! \brief
  * fixup for functions that get two parameters
  * - first parameter is converted to signed int
  * - second parameter is converted to signed int
@@ -254,7 +256,7 @@ int fixup_sint_sint(void** param, int param_no)
 	return fixup_sint(param);
 }
 
-/**
+/*! \brief
  * fixup for functions that get two parameters
  * - first parameter is converted to signed int
  * - second parameter is converted to unsigned int
@@ -271,7 +273,7 @@ int fixup_sint_uint(void** param, int param_no)
 	return fixup_uint(param);
 }
 
-/**
+/*! \brief
  * fixup for functions that get two parameters
  * - first parameter is converted to unsigned int
  * - second parameter is converted to signed int
@@ -289,9 +291,8 @@ int fixup_uint_sint(void** param, int param_no)
 }
 #endif
 
-/**
- * - helper function
- * Convert char* parameter to regular expression structure
+/*! \brief
+ * - helper function: Convert char* parameter to regular expression structure
  * - the input parameter must be pkg-allocated and will be freed by function
  *   (it is how it comes from the config parser)
  */
@@ -315,9 +316,8 @@ static int fixup_regexp(void** param, int rflags)
 	return 0;
 }
 
-/**
- * - helper function
- *  free the regular expression parameter
+/*! \brief
+ * - helper function: free the regular expression parameter
  */
 int fixup_free_regexp(void** param)
 {
@@ -330,7 +330,7 @@ int fixup_free_regexp(void** param)
 	return 0;
 }
 
-/**
+/*! \brief
  * fixup for functions that get one parameter
  * - first parameter is converted to regular expression structure
  */
@@ -344,7 +344,7 @@ int fixup_regexp_null(void** param, int param_no)
 	return fixup_regexp(param, 0);
 }
 
-/**
+/*! \brief
  * fixup for functions that get one parameter
  * - first parameter is converted to regular expression structure
  *   where "match-any-character" operators also match a newline
@@ -373,7 +373,7 @@ int fixup_free_regexp_null(void** param, int param_no)
 	return fixup_free_regexp(param);
 }
 
-/**
+/*! \brief
  * fixup for functions that get two parameters
  * - first parameter is converted to regular expression structure
  * - second parameter is not converted
@@ -390,7 +390,7 @@ int fixup_regexp_none(void** param, int param_no)
 	return 0;
 }
 
-/**
+/*! \brief
  * fixup for functions that get two parameters
  * - first parameter is converted to regular expression structure
  *   where "match-any-character" operators also match a newline
@@ -426,9 +426,8 @@ int fixup_free_regexp_none(void** param, int param_no)
 }
 
 
-/**
- * - helper function
- * Convert char* parameter to PV spec structure
+/*! \brief
+ * - helper function: Convert char* parameter to PV spec structure
  */
 int fixup_pvar(void **param)
 {
@@ -456,9 +455,8 @@ int fixup_pvar(void **param)
 	return 0;
 }
 
-/**
- * - helper function
- *  free the PV parameter
+/*! \brief
+ * - helper function: free the PV parameter
  */
 int fixup_free_pvar(void** param)
 {
@@ -469,7 +467,7 @@ int fixup_free_pvar(void** param)
     return 0;
 }
 
-/**
+/*! \brief
  * fixup for functions that get one parameter
  * - first parameter is converted to PV spec
  */
@@ -483,7 +481,7 @@ int fixup_pvar_null(void** param, int param_no)
 	return fixup_pvar(param);
 }
 
-/**
+/*! \brief
  * fixup free for functions that get one parameter
  * - first parameter was converted to PV spec
  */
@@ -496,7 +494,8 @@ int fixup_free_pvar_null(void** param, int param_no)
 	}
 	return fixup_free_pvar(param);
 }
-/**
+
+/*! \brief
  * fixup for functions that get two parameters
  * - both parameters are converted to PV spec
  */
@@ -514,7 +513,7 @@ int fixup_pvar_pvar(void** param, int param_no)
 	return fixup_pvar(param);
 }
 
-/**
+/*! \brief
  * fixup free for functions that get two parameters
  * - both parameters were converted to PV spec
  */
@@ -532,7 +531,7 @@ int fixup_free_pvar_pvar(void** param, int param_no)
 	return fixup_free_pvar(param);
 }
 
-/**
+/*! \brief
  * fixup for functions that get two parameters
  * - first parameter is converted to PV spec
  * - second parameter is converted to str*
@@ -551,7 +550,7 @@ int fixup_pvar_str(void** param, int param_no)
 	return fixup_str(param);
 }
 
-/**
+/*! \brief
  * fixup free for functions that get two parameters
  * - first parameter was converted to PV spec
  * - second parameter was converted to str*
@@ -570,7 +569,7 @@ int fixup_free_pvar_str(void** param, int param_no)
 	return fixup_free_str(param);
 }
 
-/**
+/*! \brief
  * fixup for functions that get three parameters
  * - first parameter is converted to PV spec
  * - second parameter is converted to str*
@@ -590,7 +589,7 @@ int fixup_pvar_str_str(void** param, int param_no)
 	return fixup_str(param);
 }
 
-/**
+/*! \brief
  * fixup free for functions that get three parameters
  * - first parameter was converted to PV spec
  * - second parameter was converted to str*
@@ -610,7 +609,7 @@ int fixup_free_pvar_str_str(void** param, int param_no)
 	return fixup_free_str(param);
 }
 
-/**
+/*! \brief
  * - helper function
  * Convert char* parameter to gparam_t (int or PV)
  */
@@ -658,7 +657,7 @@ int fixup_igp(void** param)
 	return 0;
 }
 
-/**
+/*! \brief
  * fixup for functions that get one parameter
  * - first parameter is converted to gparam_t (int or PV)
  */
@@ -672,7 +671,7 @@ int fixup_igp_null(void** param, int param_no)
 	return fixup_igp(param);
 }
 
-/**
+/*! \brief
  * fixup for functions that get two parameters
  * - first parameter is converted to gparam_t (int or PV)
  * - second parameter is converted to gparam_t (int or PV)
@@ -687,7 +686,7 @@ int fixup_igp_igp(void** param, int param_no)
 	return fixup_igp(param);
 }
 
-/**
+/*! \brief
  * fixup for functions that get three parameters
  * - first parameter is converted to gparam_t (int or PV)
  * - second parameter is converted to PV spec
@@ -705,7 +704,7 @@ int fixup_igp_pvar_pvar(void** param, int param_no)
     return fixup_pvar(param);
 }
 
-/**
+/*! \brief
  * fixup free for functions that get three parameters
  * - first parameter was converted to gparam_t (int or PV)
  * - second parameter was converted to PV spec
@@ -723,7 +722,7 @@ int fixup_free_igp_pvar_pvar(void** param, int param_no)
 	return fixup_free_pvar(param);
 }
 
-/**
+/*! \brief
  * - helper function
  * Return integer value from a gparam_t
  */
@@ -747,7 +746,7 @@ int fixup_get_ivalue(struct sip_msg* msg, gparam_p gp, int *val)
 	return 0;
 }
 
-/**
+/*! \brief
  * - helper function
  * Convert char* parameter to gparam_t (str or pv_elem_t)
  */
@@ -782,7 +781,7 @@ int fixup_spve(void** param)
 	return 0;
 }
 
-/**
+/*! \brief
  * fixup for functions that get one parameter
  * - first parameter is converted to gparam_t (str or pv_elem_t)
  */
@@ -796,7 +795,7 @@ int fixup_spve_null(void** param, int param_no)
 	return fixup_spve(param);
 }
 
-/**
+/*! \brief
  * fixup for functions that get two parameters
  * - first parameter is converted to gparam_t (str or pv_elem_t)
  * - second parameter is converted to gparam_t (str or pv_elem_t)
@@ -811,7 +810,7 @@ int fixup_spve_spve(void** param, int param_no)
 	return fixup_spve(param);
 }
 
-/**
+/*! \brief
  * fixup for functions that get two parameters
  * - first parameter is converted to gparam_t (str or pv_elem_t)
  * - second parameter is converted to uint
@@ -829,7 +828,7 @@ int fixup_spve_uint(void** param, int param_no)
 	return fixup_uint(param);
 }
 
-/**
+/*! \brief
  * - helper function
  * Return string value from a gparam_t
  */

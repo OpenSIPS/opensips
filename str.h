@@ -20,17 +20,16 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-/**
- * \file str.h
- * \brief Common data type for text variables.
- */
-
 #ifndef str_h
 #define str_h
 
-
 /**
-  * \brief Common data type for text variables.
+ * \file
+ * \brief Common data type for text variables.
+ */
+
+/*!
+  * \page DataTypeText Common data type for text variables.
   *
   * This data type encapsulate a standard C char array. Its recommended to use
   * this type if you need variables holding text. Its caches the length of the
@@ -44,7 +43,7 @@
   * array is normally not large enough to store this additional null-termination.
   * So you must copy the char array to a new buffer that is (len + 1) big,
   * otherwise memory corruption and undefinied behavour will occur.
-  * Most libraries provides also functions that can work with a explicit given
+  * Most libraries provides also functions that can work with an explicit given
   * length, thus avoiding the need for this copy operation.
   */
 struct _str{

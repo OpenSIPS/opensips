@@ -26,6 +26,12 @@
  *  2005-11-29 splitted from lcr module (bogdan)
  */
 
+/*!
+ * \file serialize.h
+ * \brief sequential forking implementation
+ */
+
+
 #ifndef _CORE_SERIALIZE_H_
 #define _CORE_SERIALIZE_H_
 
@@ -35,13 +41,13 @@
 int init_serialization();
 
 
-/* converts the destination set (for parallel forking) into AVPS used
+/*! \brief converts the destination set (for parallel forking) into AVPS used
  * for serial forking.
  */
 int serialize_branches(struct sip_msg *msg, int clean_before );
 
 
-/* gets the next branches for serial foking
+/*! \brief gets the next branches for serial forking
  */
 int next_branches( struct sip_msg *msg );
 

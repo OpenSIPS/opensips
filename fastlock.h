@@ -1,8 +1,6 @@
 /*
  * $Id$
  *
- * fast architecture specific locking
- *
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of openser, a free SIP server.
@@ -20,30 +18,16 @@
  * You should have received a copy of the GNU General Public License 
  * along with this program; if not, write to the Free Software 
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- *
- *History:
- *--------
- *  2002-02-05  created by andrei
- *  2003-01-16  added PPC locking code contributed by Dinos Dorkofikis
- *               <kdor@intranet.gr>
- *  2004-09-12  added MIPS locking for ISA>=2 (>r3000)  (andrei)
- *  2004-12-16  for now use the same locking code for sparc32 as for sparc64
- *               (it will work only if NOSMP is defined) (andrei)
- *
- *  2005-04-27  added alpha locking code (andrei)
- *  2005-05-25  PPC locking code enabled for PPC64; added a lwsync to
- *               the tsl part and replaced the sync with a lwsync for the
- *               unlock part (andrei)
  */
 
-/**
- * \file fastlock.h
+/*!
+ * \file
  * \brief Assembler routines for fast architecture dependend locking.
  *
  * Contains the assembler routines for the fast architecture dependend
  * locking primitives used by the server. This routines are needed e.g.
  * to protect shared data structures that are accessed from muliple processes.
- * @todo replace this with the assembler routines provided by the linux kernel
+ * \todo replace this with the assembler routines provided by the linux kernel
  */
 
 
@@ -58,15 +42,15 @@
 	#define sched_yield()	sleep(0)
 #endif
 
-/** The actual lock */
+/*! The actual lock */
 typedef  volatile int fl_lock_t;
 
-/** Initialize a lock, zero is unlocked. */
+/*! Initialize a lock, zero is unlocked. */
 #define init_lock( l ) (l)=0
 
 
 
-/**
+/*! \brief
  * Test and set a lock. Used by the get_lock function.
  * \param lock the lock that should be set
  * \return 1 if the lock is held by someone else, 0 otherwise
@@ -166,7 +150,7 @@ inline static int tsl(fl_lock_t* lock)
 }
 
 
-/**
+/*! \brief
  * Set a lock.
  * \param lock the lock that should be set
  * \see tsl
@@ -189,7 +173,7 @@ inline static void get_lock(fl_lock_t* lock)
 }
 
 
-/**
+/*! \brief
  * Release a lock
  * \param lock the lock that should be released
  */
@@ -250,7 +234,6 @@ inline static void release_lock(fl_lock_t* lock)
 #error "unknown architecture"
 #endif
 }
-
 
 
 #endif

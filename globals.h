@@ -1,8 +1,6 @@
 /*
  * $Id$
  *
- * global variables
- *
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of openser, a free SIP server.
@@ -22,6 +20,10 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+/*!
+ * \file
+ * \brief Global variables
+ */
 
 
 #ifndef globals_h
@@ -42,26 +44,21 @@ extern unsigned short port_no;
 extern char* pid_file;
 extern char* pgid_file;
 
-extern struct socket_info* bind_address; /* pointer to the crt. proc.
-											listening address */
-extern struct socket_info* sendipv4; /* ipv4 socket to use when msg.
-										comes from ipv6*/
-extern struct socket_info* sendipv6; /* same as above for ipv6 */
+extern struct socket_info* bind_address; /*!< pointer to the crt. proc.  listening address */
+extern struct socket_info* sendipv4; /*!< ipv4 socket to use when msg.  comes from ipv6*/
+extern struct socket_info* sendipv6; /*!< same as above for ipv6 */
 #ifdef USE_TCP
-extern struct socket_info* sendipv4_tcp; /* ipv4 socket to use when msg.
-										comes from ipv6*/
-extern struct socket_info* sendipv6_tcp; /* same as above for ipv6 */
-extern int unix_tcp_sock; /* socket used for communication with tcp main*/
+extern struct socket_info* sendipv4_tcp; /*!< ipv4 socket to use when msg.  comes from ipv6*/
+extern struct socket_info* sendipv6_tcp; /*!< same as above for ipv6 */
+extern int unix_tcp_sock; /*!< socket used for communication with tcp main*/
 #endif
 #ifdef USE_TLS
-extern struct socket_info* sendipv4_tls; /* ipv4 socket to use when msg.
-										comes from ipv6*/
-extern struct socket_info* sendipv6_tls; /* same as above for ipv6 */
+extern struct socket_info* sendipv4_tls; /*!< ipv4 socket to use when msg.  comes from ipv6*/
+extern struct socket_info* sendipv6_tls; /*!< same as above for ipv6 */
 #endif
 #ifdef USE_SCTP
-extern struct socket_info* sendipv4_sctp; /* ipv4 socket to use when msg.
-                                             comes from ipv6*/
-extern struct socket_info* sendipv6_sctp; /* same as above for ipv6 */
+extern struct socket_info* sendipv4_sctp; /*!< ipv4 socket to use when msg.  comes from ipv6*/
+extern struct socket_info* sendipv6_sctp; /*!< same as above for ipv6 */
 #endif
 
 extern int auto_aliases;
@@ -74,7 +71,7 @@ extern int tcp_disable;
 extern int tcp_accept_aliases;
 extern int tcp_connect_timeout;
 extern int tcp_send_timeout;
-extern int tcp_con_lifetime; /* connection lifetime */
+extern int tcp_con_lifetime; /*!< connection lifetime */
 extern enum poll_types tcp_poll_method;
 extern int tcp_max_fd_no;
 extern int tcp_max_connections;
@@ -123,30 +120,23 @@ extern int reply_to_via;
 
 extern int is_main;
 
-/* debugging level for dumping memory status */
-extern int memlog;
+extern int memlog; /*!< debugging level for dumping memory status */
 
-/* looking up outbound interface ? */
-extern int mhomed;
+extern int mhomed; /*!< looking up outbound interface ? */
 
-/* command-line arguments */
-extern int my_argc;
+extern int my_argc; /*!< command-line arguments */
 extern char **my_argv;
 
-/* pre-set addresses */
-extern str default_global_address;
-/* pre-ser ports */
-extern str default_global_port;
+extern str default_global_address; /*!< pre-set addresses */
+extern str default_global_port; /*!< pre-ser ports */
 
-/* core dump and file limits */
-extern int disable_core_dump;
-extern int open_files_limit;
+extern int disable_core_dump; /*!< core dump limits */
+extern int open_files_limit; /*!< file limits */
 
-/* resolver */
-extern int dns_retr_time;
-extern int dns_retr_no;
-extern int dns_servers_no;
-extern int dns_search_list;
+extern int dns_retr_time; /*!< DNS resolver: Retry time */
+extern int dns_retr_no; /*!< DNS resolver : Retry # */
+extern int dns_servers_no; /*!< DNS resolver: Server no  */
+extern int dns_search_list; /*!< DNS resolver: Search list */
 
 extern int max_while_loops;
 

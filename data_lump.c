@@ -17,19 +17,11 @@
  * You should have received a copy of the GNU General Public License 
  * along with this program; if not, write to the Free Software 
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- *
- * History:
- * --------
- *  2003-01-19  support for duplication lump lists added (jiri)
- *  2003-03-31  added subst lumps --they expand in ip addr, port a.s.o (andrei)
- *  2003-04-01  added conditional lump support functions (andrei)
- *  2003-10-20  anchor_lump & del_lump will automatically choose the lump list
- *              based on  msg->eoh comparisons (andrei)
- *  2003-10-28  added extra checks (paranoia) for {anchor,del}_lump (andrei)
- *  2005-08-22  added init_lump_flags -initial flags- for all built lumps
- *              (bogdan)
- *  2005-08-23  del_nonshm_lump() -> del_flaged_lumps(LUMPFLAG_SHMEM) (bogdan)
+ */
 
+/*!
+ * \file data_lump.c
+ * \brief OpenSER Lump (internal message manipulation) functions
  */
 
 
@@ -46,15 +38,15 @@
 #include <dmalloc.h>
 #endif
 
-/* WARNING: all lump add/insert operations expect a pkg_malloc'ed char* 
+/*! \note WARNING: all lump add/insert operations expect a pkg_malloc'ed char* 
  * pointer the will be DEALLOCATED when the sip_msg is destroyed! */
 
 enum lump_dir { LD_NEXT, LD_BEFORE, LD_AFTER };
 
 int init_lump_flags = 0;
 
-/* adds a header to the end
- * returns  pointer on success, 0 on error */
+/*! \brief adds a header to the end
+ * \return returns  pointer on success, 0 on error */
 struct lump* append_new_lump(struct lump** list, char* new_hdr,
 							unsigned int len, enum _hdr_types_t type)
 {
@@ -81,8 +73,8 @@ struct lump* append_new_lump(struct lump** list, char* new_hdr,
 
 
 
-/* inserts a header to the beginning 
- * returns pointer if success, 0 on error */
+/*! \brief inserts a header to the beginning 
+ *  \return returns pointer if success, 0 on error */
 struct lump* insert_new_lump(struct lump** list, char* new_hdr,
 								unsigned int len, enum _hdr_types_t type)
 {
@@ -106,8 +98,8 @@ struct lump* insert_new_lump(struct lump** list, char* new_hdr,
 
 
 
-/* inserts a  header/data lump immediately after hdr 
- * returns pointer on success, 0 on error */
+/*! \brief inserts a  header/data lump immediately after hdr 
+ * \return returns pointer on success, 0 on error */
 struct lump* insert_new_lump_after( struct lump* after, char* new_hdr,
 							unsigned int len, enum _hdr_types_t type)
 {
@@ -132,8 +124,8 @@ struct lump* insert_new_lump_after( struct lump* after, char* new_hdr,
 
 
 
-/* inserts a  header/data lump immediately before "before" 
- * returns pointer on success, 0 on error */
+/*! \brief inserts a  header/data lump immediately before "before" 
+ * \return returns pointer on success, 0 on error */
 struct lump* insert_new_lump_before( struct lump* before, char* new_hdr,
 							unsigned int len, enum _hdr_types_t type)
 {
@@ -158,8 +150,8 @@ struct lump* insert_new_lump_before( struct lump* before, char* new_hdr,
 
 
 
-/* inserts a  subst lump immediately after hdr 
- * returns pointer on success, 0 on error */
+/*! \brief inserts a  subst lump immediately after hdr 
+ * \return returns pointer on success, 0 on error */
 struct lump* insert_subst_lump_after( struct lump* after,enum lump_subst subst,
 										enum _hdr_types_t type)
 {
@@ -184,8 +176,8 @@ struct lump* insert_subst_lump_after( struct lump* after,enum lump_subst subst,
 
 
 
-/* inserts a  subst lump immediately before "before" 
- * returns pointer on success, 0 on error */
+/*! \brief inserts a  subst lump immediately before "before" 
+ * \return returns pointer on success, 0 on error */
 struct lump* insert_subst_lump_before(	struct lump* before, 
 										enum lump_subst subst,
 										enum _hdr_types_t type)
@@ -211,8 +203,8 @@ struct lump* insert_subst_lump_before(	struct lump* before,
 
 
 
-/* inserts a  cond lump immediately after hdr 
- * returns pointer on success, 0 on error */
+/*! \brief inserts a  cond lump immediately after hdr 
+ * \return returns pointer on success, 0 on error */
 struct lump* insert_cond_lump_after( struct lump* after,enum lump_conditions c,
 										enum _hdr_types_t type)
 {
@@ -237,8 +229,8 @@ struct lump* insert_cond_lump_after( struct lump* after,enum lump_conditions c,
 
 
 
-/* inserts a  conditional lump immediately before "before" 
- * returns pointer on success, 0 on error */
+/*! \brief inserts a  conditional lump immediately before "before" 
+ * \return returns pointer on success, 0 on error */
 struct lump* insert_cond_lump_before(	struct lump* before, 
 										enum lump_conditions c,
 										enum _hdr_types_t type)
@@ -264,7 +256,7 @@ struct lump* insert_cond_lump_before(	struct lump* before,
 
 
 
-/* removes an already existing header/data lump */
+/*! \brief removes an already existing header/data lump */
 /* WARNING: this function adds the lump either to the msg->add_rm or
  * msg->body_lumps list, depending on the offset being greater than msg->eoh,
  * so msg->eoh must be parsed (parse with HDR_EOH) if you think your lump
@@ -321,7 +313,7 @@ struct lump* del_lump(struct sip_msg* msg, unsigned int offset,
 
 
 
-/* add an anchor
+/*! \brief add an anchor
  * WARNING: this function adds the lump either to the msg->add_rm or
  * msg->body_lumps list, depending on the offset being greater than msg->eoh,
  * so msg->eoh must be parsed (parse with HDR_EOH) if you think your lump
@@ -426,7 +418,7 @@ void free_lump_list(struct lump* l)
 	}
 }
 
-/* free (shallow-ly) a lump and its after/before lists */
+/*! \brief free (shallow-ly) a lump and its after/before lists */
 static void free_shallow_lump( struct lump *l )
 {
 	struct lump *r, *foo;
@@ -444,7 +436,7 @@ static void free_shallow_lump( struct lump *l )
 	pkg_free(l);
 }
 
-/* duplicate (shallow-ly) a lump list into pkg memory */
+/*! \brief* duplicate (shallow-ly) a lump list into pkg memory */
 static struct lump *dup_lump_list_r( struct lump *l, 
 				enum lump_dir dir, int *error)
 {
@@ -499,9 +491,9 @@ deeperror:
 
 
 
-/* shallow pkg copy of a lump list
+/*! \brief shallow pkg copy of a lump list
  *
- * if either original list empty or error occur returns, 0
+ * \return if either original list empty or error occur returns, 0
  * is returned, pointer to the copy otherwise
  */
 struct lump* dup_lump_list( struct lump *l )
@@ -514,6 +506,8 @@ struct lump* dup_lump_list( struct lump *l )
 
 
 
+/*! \brief Free duplicated lump list
+ */
 void free_duped_lump_list(struct lump* l)
 {
 	struct lump *r, *foo,*crt;
@@ -549,6 +543,8 @@ void free_duped_lump_list(struct lump* l)
 
 
 
+/*! \brief Delete flagged lumps
+ */
 void del_flaged_lumps( struct lump** lump_list, enum lump_flag flags )
 {
 	struct lump *r, *foo, *crt, **prev, *prev_r;
@@ -601,6 +597,8 @@ void del_flaged_lumps( struct lump** lump_list, enum lump_flag flags )
 }
 
 
+/*! \brief Delete not flagged lumps
+ */
 void del_notflaged_lumps( struct lump** lump_list, enum lump_flag not_flags )
 {
 	struct lump *r, *foo, *crt, **prev, *prev_r;

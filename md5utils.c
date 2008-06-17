@@ -21,6 +21,12 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+/*!
+ * \file
+ * \brief OpenSER MD5 handling functions
+ */
+
+
 #include <stdio.h>
 #include <sys/stat.h>
 
@@ -31,12 +37,12 @@
 #include "ut.h"
 
 
-/**
+/*! \brief
   * Calculate a MD5 digests over a string array and stores
   * the result in the destination char array.
   * This function assumes 32 bytes in the destination buffer.
   * \param dest destination
-  * \param src str input array
+  * \param src string input array
   * \param size elements in the input array
   */
 void MD5StringArray(char *dest, str src[], unsigned int size)
@@ -57,11 +63,11 @@ void MD5StringArray(char *dest, str src[], unsigned int size)
 	LM_DBG("MD5 calculated: %.*s\n", MD5_LEN, dest);
 }
 
-/**
+/*! \brief
   * Calculate a MD5 digest over a file.
   * This function assumes 32 bytes in the destination buffer.
   * \param dest destination
-  * \param name file for that the digest should be calculated
+  * \param file_name file for that the digest should be calculated
   * \return zero on success, negative on errors
   */
 int MD5File(char *dest, const char *file_name)

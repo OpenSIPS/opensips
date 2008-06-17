@@ -1,8 +1,6 @@
 /*
  * $Id$
  *
- *  Crc - 32 + 16 BIT ANSI X3.66 + CCITT CRC checksum files
- *
  * Copyright (C) 1986 Gary S. Brown.  You may use this program, or
  * code or tables extracted from it, as desired without restriction.
  * Copyright (C) 2001-2003 FhG Fokus
@@ -22,6 +20,11 @@
  * You should have received a copy of the GNU General Public License 
  * along with this program; if not, write to the Free Software 
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ */
+
+/*!
+ * \file
+ * \brief CRC - 32 + 16 BIT ANSI X3.66 + CCITT CRC checksum files
  */
 
 

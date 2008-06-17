@@ -1,6 +1,6 @@
-/* 
+/*
  * $Id$
- * 
+ *
  * Copyright (C) 2005 iptelorg GmbH
  *
  * This file is part of openser, a free SIP server.
@@ -19,32 +19,30 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
-/*
- * tcp io wait common stuff used by tcp_main.c & tcp_read.c
+
+/*!
+ * \file
+ * \brief tcp io wait common stuff used by tcp_main.c & tcp_read.c
+ * - \ref TCPiowait
+ */
+
+/*! \page TCPiowait TCP io wait common stuff used by tcp_main.c & tcp_read.c
  * All the functions are inline because of speed reasons and because they are
  * used only from 2 places.
  * You also have to define:
- *     int handle_io(struct fd_map* fm, int idx) (see below)
+ *   -  int handle_io(struct fd_map* fm, int idx) (see below)
  *     (this could be trivially replaced by a callback pointer entry attached
  *      to the io_wait handler if more flexibility rather then performance
  *      is needed)
- *      fd_type - define to some enum of you choice and define also
+ *   -   fd_type - define to some enum of you choice and define also
  *                FD_TYPE_DEFINED (if you don't do it fd_type will be defined
  *                to int). 0 has a special not set/not init. meaning
  *                (a lot of sanity checks and the sigio_rt code are based on
  *                 this assumption)
- *     local_malloc (defaults to pkg_malloc)
- *     local_free   (defaults to pkg_free)
+ *   -  local_malloc (defaults to pkg_malloc)
+ *   -  local_free   (defaults to pkg_free)
  *  
  */
-/* 
- * History:
- * --------
- *  2005-06-13  created by andrei
- *  2005-06-26  added kqueue (andrei)
- *  2005-07-01  added /dev/poll (andrei)
- */
-
 
 
 #ifndef _io_wait_h
@@ -99,7 +97,7 @@ typedef int fd_type;
 #define FD_TYPE_DEFINED
 #endif
 
-/* maps a fd to some other structure; used in almost all cases
+/*! \brief maps a fd to some other structure; used in almost all cases
  * except epoll and maybe kqueue or /dev/poll */
 struct fd_map{
 	int fd;               /* fd no */
@@ -122,7 +120,7 @@ struct fd_map{
 #endif
 
 
-/* handler structure */
+/*! \brief handler structure */
 struct io_wait_handler{
 #ifdef HAVE_EPOLL
 	struct epoll_event* ep_array;
@@ -160,21 +158,23 @@ struct io_wait_handler{
 typedef struct io_wait_handler io_wait_h;
 
 
-/* get the corresponding fd_map structure pointer */
+/*! \brief get the corresponding fd_map structure pointer */
 #define get_fd_map(h, fd)		(&(h)->fd_hash[(fd)])
-/* remove a fd_map structure from the hash; the pointer must be returned
- * by get_fd_map or hash_fd_map*/
+
+/*! \brief remove a fd_map structure from the hash;
+ * the pointer must be returned by get_fd_map or hash_fd_map
+ */
 #define unhash_fd_map(pfm)	\
 	do{ \
 		(pfm)->type=0 /*F_NONE */; \
 		(pfm)->fd=-1; \
 	}while(0)
 
-/* add a fd_map structure to the fd hash */
+/*! \brief add a fd_map structure to the fd hash */
 static inline struct fd_map* hash_fd_map(	io_wait_h* h,
-											int fd,
-											fd_type type,
-											void* data)
+						int fd,
+						fd_type type,
+						void* data)
 {
 	h->fd_hash[fd].fd=fd;
 	h->fd_hash[fd].type=type;
@@ -185,12 +185,13 @@ static inline struct fd_map* hash_fd_map(	io_wait_h* h,
 
 
 #ifdef HANDLE_IO_INLINE
-/* generic handle io routine, this must be defined in the including file
+/*!\brief generic handle io routine
+ * this must be defined in the including file
  * (faster then registering a callback pointer)
  *
- * params:  fm  - pointer to a fd hash entry
- *          idx - index in the fd_array (or -1 if not known)
- * return: -1 on error
+ * \param fm pointer to a fd hash entry
+ * \param idx index in the fd_array (or -1 if not known)
+ * \return return: -1 on error
  *          0 on EAGAIN or when by some other way it is known that no more 
  *            io events are queued on the fd (the receive buffer is empty).
  *            Usefull to detect when there are no more io events queued for
@@ -243,12 +244,13 @@ again:
 
 
 
-/* generic io_watch_add function
- * returns 0 on success, -1 on error
+/*! \brief generic io_watch_add function
+ * \return 0 on success, -1 on error
  *
  * this version should be faster than pointers to poll_method specific
  * functions (it avoids functions calls, the overhead being only an extra
- *  switch())*/
+ *  switch())
+*/
 inline static int io_watch_add(	io_wait_h* h,
 								int fd,
 								fd_type type,
@@ -453,17 +455,21 @@ error:
 
 
 #define IO_FD_CLOSING 16
-/* parameters:    h - handler 
- *               fd - file descriptor
- *            index - index in the fd_array if known, -1 if not
+
+/*!
+ * \brief
+ * \param h handler
+ * \param fd file descriptor
+ * \param idx index in the fd_array if known, -1 if not
  *                    (if index==-1 fd_array will be searched for the
  *                     corresponding fd* entry -- slower but unavoidable in 
  *                     some cases). index is not used (no fd_array) for epoll,
  *                     /dev/poll and kqueue
- *            flags - optimization flags, e.g. IO_FD_CLOSING, the fd was 
- *                    or will shortly be closed, in some cases we can avoid
- *                    extra remove operations (e.g.: epoll, kqueue, sigio)
- * returns 0 if ok, -1 on error */
+ * \param flags optimization flags, e.g. IO_FD_CLOSING, the fd was or will
+ *                    shortly be closed, in some cases we can avoid extra
+ *                    remove operations (e.g.: epoll, kqueue, sigio)
+ * \return 0 if ok, -1 on error
+ */
 inline static int io_watch_del(io_wait_h* h, int fd, int idx, int flags)
 {
 	
@@ -610,12 +616,12 @@ error:
 
 
 
-/* io_wait_loop_x style function 
+/*! \brief io_wait_loop_x style function
  * wait for io using poll()
- * params: h      - io_wait handle
- *         t      - timeout in s
- *         repeat - if !=0 handle_io will be called until it returns <=0
- * returns: number of IO events handled on success (can be 0), -1 on error
+ * \param h io_wait handle
+ * \param t timeout in s
+ * \param repeat if !=0 handle_io will be called until it returns <=0
+ * \return number of IO events handled on success (can be 0), -1 on error
  */
 inline static int io_wait_loop_poll(io_wait_h* h, int t, int repeat)
 {
@@ -653,7 +659,7 @@ error:
 
 
 #ifdef HAVE_SELECT
-/* wait for io using select */
+/*! \brief wait for io using select */
 inline static int io_wait_loop_select(io_wait_h* h, int t, int repeat)
 {
 	fd_set sel_set;
@@ -772,7 +778,7 @@ error:
 
 
 #ifdef HAVE_SIGIO_RT
-/* sigio rt version has no repeat (it doesn't make sense)*/
+/*! \brief sigio rt version has no repeat (it doesn't make sense)*/
 inline static int io_wait_loop_sigio_rt(io_wait_h* h, int t)
 {
 	int n;
@@ -921,14 +927,14 @@ error:
 /* init */
 
 
-/* initializes the static vars/arrays
- * params:      h - pointer to the io_wait_h that will be initialized
- *         max_fd - maximum allowed fd number
- *         poll_m - poll method (0 for automatic best fit)
+/*! \brief initializes the static vars/arrays
+ * \param h pointer to the io_wait_h that will be initialized
+ * \param max_fd maximum allowed fd number
+ * \param poll_method poll method (0 for automatic best fit)
  */
 int init_io_wait(io_wait_h* h, int max_fd, enum poll_types poll_method);
 
-/* destroys everything init_io_wait allocated */
+/*! \brief destroys everything init_io_wait allocated */
 void destroy_io_wait(io_wait_h* h);
 
 

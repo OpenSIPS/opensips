@@ -18,17 +18,12 @@
  * You should have received a copy of the GNU General Public License 
  * along with this program; if not, write to the Free Software 
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- *
- * History:
- *---------
- *
- * 2006-01-20 - new_hash1() added; support for configurable hash size
- *              added (bogdan)
- * 2006-03-13 - new_hash1() and new_hash2() merged into core_hash();
- *              added core_case_hash() for case insensitive hashes;
- *              all TM dependet stuff moved to TM config file (bogdan)
  */
 
+/*!
+ * \file
+ * \brief Hash functions
+ */
 
 
 #ifndef _HASH_FUNC_H_

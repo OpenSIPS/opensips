@@ -18,16 +18,12 @@
  * You should have received a copy of the GNU General Public License 
  * along with this program; if not, write to the Free Software 
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- *
- * History:
- * --------
- * 2002-02-14 : created by bogdan
- * 2003-09-11 : lump_rpl type added - LUMP_RPL_BODY & LUMP_RPL_HDR (bogdan)
- * 2003-11-11 : build_lump_rpl merged into add_lump_rpl; type removed;
- *              flags LUMP_RPL_BODY, LUMP_RPL_NODUP and LUMP_RPL_NOFREE
- *              added (bogdan)
  */
 
+/*!
+ * \file
+ * \brief  Data lump reply handling
+ */
 
 #ifndef data_lump_rpl_h
 #define data_lump_rpl_h

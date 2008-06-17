@@ -1,8 +1,6 @@
 /*
  * $Id$
  *
- * resolver related functions
- *
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of openser, a free SIP server.
@@ -20,14 +18,12 @@
  * You should have received a copy of the GNU General Public License 
  * along with this program; if not, write to the Free Software 
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- *
- * History:
- * --------
- *  2003-04-12  support for resolving ipv6 address references added (andrei)
- *  2004-07-28  darwin needs nameser_compat.h (andrei)
- *  2007-01-25  support for DNS failover added (bogdan)
  */
 
+/*!
+ * \file
+ * \brief resolver related functions
+ */
 
 
 #ifndef __resolve_h
@@ -52,17 +48,17 @@
 #define MAX_DNS_NAME 256
 #define MAX_DNS_STRING 255
 
-/* this is not official yet */
+/*! \brief this is not official yet */
 #define T_EBL		65300
 
-/* query union*/
+/*! \brief query union*/
 union dns_query{
 	HEADER hdr;
 	unsigned char buff[MAX_QUERY_SIZE];
 };
 
 
-/* rdata struct*/
+/*! \brief rdata struct*/
 struct rdata {
 	unsigned short type;
 	unsigned short class;
@@ -72,7 +68,7 @@ struct rdata {
 };
 
 
-/* srv rec. struct*/
+/*! \brief srv rec. struct*/
 struct srv_rdata {
 	unsigned short priority;
 	unsigned short weight;
@@ -81,7 +77,7 @@ struct srv_rdata {
 	char name[MAX_DNS_NAME];
 };
 
-/* naptr rec. struct*/
+/*! \brief naptr rec. struct*/
 struct naptr_rdata {
 	unsigned short order;
 	unsigned short pref;
@@ -96,7 +92,7 @@ struct naptr_rdata {
 };
 
 
-/* A rec. struct */
+/*! \brief A rec. struct */
 struct a_rdata {
 	unsigned char ip[4];
 };
@@ -105,19 +101,19 @@ struct aaaa_rdata {
 	unsigned char ip6[16];
 };
 
-/* cname rec. struct*/
+/*! \brief cname rec. struct*/
 struct cname_rdata {
 	char name[MAX_DNS_NAME];
 };
 
-/* txt rec. struct*/
-/* This is not strictly correct as TXT records *could* contain multiple strings. */
+/*! \brief txt rec. struct
+\note	This is not strictly correct as TXT records *could* contain multiple strings. */
 struct txt_rdata {
 	char txt[MAX_DNS_NAME];
 };
 
-/* EBL rec. struct*/
-/* This is an experimental RR for infrastructure ENUM */
+/*! \brief EBL rec. struct
+\note This is an experimental RR for infrastructure ENUM */
 struct ebl_rdata {
 	unsigned char position;
 	unsigned int separator_len;
@@ -126,7 +122,7 @@ struct ebl_rdata {
 	char apex[MAX_DNS_NAME];
 };
 
-/* DNS failover related structures */
+/*! \brief DNS failover related structures */
 struct dns_node {
 	unsigned short type;
 	unsigned short size;
@@ -163,7 +159,7 @@ extern int dns_try_ipv6;
 
 
 
-/* converts a str to an ipv4 address, returns the address or 0 on error
+/*! \brief converts a str to an ipv4 address, returns the address or 0 on error
    Warning: the result is a pointer to a statically allocated structure */
 static inline struct ip_addr* str2ip(str* st)
 {
@@ -208,7 +204,7 @@ error_dots:
 
 
 
-/* returns an ip_addr struct.; on error returns 0
+/*! \brief returns an ip_addr struct.; on error returns 0
  * the ip_addr struct is static, so subsequent calls will destroy its content*/
 static inline struct ip_addr* str2ip6(str* st)
 {
@@ -311,7 +307,7 @@ struct hostent* sip_resolvehost(str* name, unsigned short* port,
 
 
 
-/* gethostbyname wrappers
+/*! \brief gethostbyname wrappers
  * use this, someday they will use a local cache */
 
 static inline struct hostent* resolvehost(char* name, int no_ip_test)
@@ -361,13 +357,13 @@ static inline struct hostent* resolvehost(char* name, int no_ip_test)
 }
 
 
-/* free the DNS resolver state machine */
+/*! \brief free the DNS resolver state machine */
 void free_dns_res( struct proxy_l *p );
 
-/* make a perfect copy of a resolver state machine */
+/*! \brief make a perfect copy of a resolver state machine */
 struct dns_node *dns_res_copy(struct dns_node *s);
 
-/* taked the next destination from a resolver state machine */
+/*! \brief taked the next destination from a resolver state machine */
 int get_next_su(struct proxy_l *p, union sockaddr_union* su, int add_to_bl);
 
 

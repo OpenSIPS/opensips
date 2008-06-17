@@ -1,6 +1,5 @@
-/* $Id$
- * 
- * ser locking library
+/*
+ * $Id$
  *
  * Copyright (C) 2001-2003 FhG Fokus
  *
@@ -19,28 +18,28 @@
  * You should have received a copy of the GNU General Public License 
  * along with this program; if not, write to the Free Software 
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- * 
- * WARNING: don't include this directly include instead locking.h!
- * 
- * History:
- * --------
- *  2003-03-06  created by andrei (contains parts of the original locking.h)
- *  2003-03-17  fixed cast warning in shm_free (forced to void*) (andrei)
- *  2004-07-28  s/lock_set_t/gen_lock_set_t/ because of a type conflict
- *              on darwin (andrei)
+ */
+
+/*!
+ * \file
+ * \brief OpenSER locking library
+ * \note WARNING: don't include this directly, use instead locking.h.
+ */
+
+
+/*!
+ * \page OpenSERLocks OpenSER locking library
+ * Implements simple locks and lock sets.
  *
- * Implements: (see also locking.h)
-
-	simple locks:
-	-------------
-	gen_lock_t* lock_alloc();               - allocates a lock in shared mem.
-	void    lock_dealloc(gen_lock_t* lock); - deallocates the lock's shared m.
-	
-	lock sets: [implemented only for FL & SYSV so far]
-	----------
-	gen_lock_set_t* lock_set_alloc(no)           - allocs a lock set in shm.
-	void lock_set_dealloc(gen_lock_set_t* s);    - deallocs the lock set shm.
-
+ * simple locks:
+ * - gen_lock_t* lock_alloc();               - allocates a lock in shared mem.
+ * - void    lock_dealloc(gen_lock_t* lock); - deallocates the lock's shared m.
+ *
+ * lock sets: [implemented only for FL & SYSV so far]
+ * - gen_lock_set_t* lock_set_alloc(no)           - allocs a lock set in shm.
+ * - void lock_set_dealloc(gen_lock_set_t* s);    - deallocs the lock set shm.
+ * 
+ * \see locking.h
 */
 
 #ifndef _lock_alloc_h

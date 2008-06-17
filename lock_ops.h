@@ -1,6 +1,5 @@
-/* $Id$ *
- *
- * ser locking library
+/*
+ * $Id$ *
  *
  * Copyright (C) 2001-2003 FhG Fokus
  *
@@ -19,46 +18,35 @@
  * You should have received a copy of the GNU General Public License 
  * along with this program; if not, write to the Free Software 
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- *
- * 
- *   WARNING: do not include this file directly, use instead locking.h
- *   (unless you don't need to alloc/dealloc locks)
- *
- * History:
- * --------
- *  2002-12-16  created by andrei
- *  2003-02-20  s/gen_lock_t/gen_lock_t/ to avoid a type conflict 
- *               on solaris  (andrei)
- *  2003-03-05  lock set support added for FAST_LOCK & SYSV (andrei)
- *  2003-03-06  removed *_alloc,*_dealloc & moved them to lock_alloc.h
- *              renamed locking.h to lock_ops.h (all this to solve
- *              the locking.h<->shm_mem.h interdependency) (andrei)
- *  2003-03-10  lock set support added also for PTHREAD_MUTEX & POSIX_SEM
- *               (andrei)
- *  2003-03-17  possible signal interruptions treated for sysv (andrei)
- *  2004-07-28  s/lock_set_t/gen_lock_set_t/ because of a type conflict
- *              on darwin (andrei)
- *
- * Implements:
-
-	simple locks:
-	-------------
-	gen_lock_t* lock_init(gen_lock_t* lock); - inits the lock
-	void    lock_destroy(gen_lock_t* lock);  - removes the lock (e.g sysv rmid)
-	void    lock_get(gen_lock_t* lock);      - lock (mutex down)
-	void    lock_release(gen_lock_t* lock);  - unlock (mutex up)
-	
-	lock sets: [implemented only for FL & SYSV so far]
-	----------
-	gen_lock_set_t* lock_set_init(gen_lock_set_t* set);  - inits the lock set
-	void lock_set_destroy(gen_lock_set_t* s);      - removes the lock set
-	void lock_set_get(gen_lock_set_t* s, int i);   - locks sem i from the set
-	void lock_set_release(gen_lock_set_t* s, int i)- unlocks sem i from the set
-
-    WARNING:
-	  - lock_set_init may fail for large number of sems (e.g. sysv). 
-      - signals are not treated! (some locks are "awakened" by the signals)
  */
+
+/*!
+ * \file
+ * \brief OpenSER locking operations
+ *
+ * Implements simple locks and lock sets.
+ *
+ * simple locks:
+ * - gen_lock_t* lock_init(gen_lock_t* lock); - inits the lock
+ * - void    lock_destroy(gen_lock_t* lock);  - removes the lock (e.g sysv rmid)
+ * - void    lock_get(gen_lock_t* lock);      - lock (mutex down)
+ * - void    lock_release(gen_lock_t* lock);  - unlock (mutex up)
+ *
+ * lock sets: [implemented only for FL & SYSV so far]
+ * - gen_lock_set_t* lock_set_init(gen_lock_set_t* set);  - inits the lock set
+ * - void lock_set_destroy(gen_lock_set_t* s);      - removes the lock set
+ * - void lock_set_get(gen_lock_set_t* s, int i);   - locks sem i from the set
+ * - void lock_set_release(gen_lock_set_t* s, int i)- unlocks sem i from the set
+ *
+ * WARNING:
+ * - lock_set_init may fail for large number of sems (e.g. sysv). 
+ * - signals are not treated! (some locks are "awakened" by the signals)
+ *
+ * \note Warning: do not include this file directly, use instead locking.h
+ * (unless you don't need to alloc/dealloc locks).
+ * \todo investigate futex support on linux
+ */
+
 
 #ifndef _lock_ops_h
 #define _lock_ops_h

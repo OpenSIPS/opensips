@@ -18,14 +18,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
- *
- *
- * History:
- * ---------
- *  2006-01-23  first version (bogdan)
- *  2006-11-28  Added statistics for the number of bad URI's, methods, and 
- *              proxy requests (Jeffrey Magder - SOMA Networks)
  */
+
+/*!
+ * \file
+ * \brief  OpenSER statistics
+ */
+
 
 #ifndef _CORE_STATS_H_
 #define _CORE_STATS_H_
@@ -35,37 +34,37 @@
 #ifdef STATISTICS
 extern stat_export_t core_stats[];
 
-/* received requests */
+/*! \brief received requests */
 extern stat_var* rcv_reqs;
 
-/* received replies */
+/*! \brief received replies */
 extern stat_var* rcv_rpls;
 
-/* forwarded requests */
+/*! \brief forwarded requests */
 extern stat_var* fwd_reqs;
 
-/* forwarded replies */
+/*! \brief forwarded replies */
 extern stat_var* fwd_rpls;
 
-/* dropped requests */
+/*! \brief dropped requests */
 extern stat_var* drp_reqs;
 
-/* dropped replies */
+/*! \brief dropped replies */
 extern stat_var* drp_rpls;
 
-/* error requests */
+/*! \brief error requests */
 extern stat_var* err_reqs;
 
-/* error replies */
+/*! \brief error replies */
 extern stat_var* err_rpls;
 
-/* Set in parse_uri() */
+/*! \brief Set in parse_uri() */
 extern stat_var* bad_URIs;
 
-/* Set in parse_method() */
+/*! \brief Set in parse_method() */
 extern stat_var* unsupported_methods;
 
-/* Set in get_hdr_field(). */
+/*! \brief Set in get_hdr_field(). */
 extern stat_var* bad_msg_hdr;
  
 #endif /*STATISTICS*/

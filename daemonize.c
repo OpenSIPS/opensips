@@ -18,34 +18,31 @@
  * You should have received a copy of the GNU General Public License 
  * along with this program; if not, write to the Free Software 
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- * 
- * History:
- * --------
- *  2004-02-20  removed from ser main.c into its own file (andrei)
- *  2004-03-04  moved setuid/setgid in do_suid() (andrei)
- *  2004-03-25  added increase_open_fds & set_core_dump (andrei)
- *  2004-05-03  applied pgid patch from janakj
+ */
+
+/*!
+ * \file
+ * \brief Setup the OpenSER daemon prozess
  */
 
 
 #include <sys/types.h>
 
-#define _XOPEN_SOURCE   /* needed on linux for the  getpgid prototype,  but
+#define _XOPEN_SOURCE   /* needed on linux for the  getpgid prototype, but
                            openbsd 3.2 won't include common types (uint a.s.o)
                            if defined before including sys/types.h */
 #define _XOPEN_SOURCE_EXTENDED /* same as above */
 #define __USE_XOPEN_EXTENDED /* same as above, overrides features.h */
 #define __EXTENSIONS__ /* needed on solaris: if XOPEN_SOURCE is defined
                           struct timeval defintion from <sys/time.h> won't
-                          be included => workarround define _EXTENSIONS_
-                           -andrei */
+                          be included => workarround define _EXTENSIONS_ */
 #include <signal.h>
 #include <syslog.h>
 #include <errno.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/time.h>    
+#include <sys/time.h>
 #include <sys/resource.h> /* setrlimit */
 #include <unistd.h>
 #ifdef __OS_linux
@@ -56,13 +53,17 @@
 #include "globals.h"
 #include "dprint.h"
 
-/* daemon init, return 0 on success, -1 on error */
-int daemonize(char*  name, int * own_pgid)
+/*!
+ * \brief daemon init
+ * \param name daemon name
+ * \param own_pgid daemon process group
+ * \return return 0 on success, -1 on error
+ */
+int daemonize(char* name, int * own_pgid)
 {
 	FILE *pid_stream;
 	pid_t pid;
 	int r, p;
-
 
 	p=-1;
 
@@ -215,7 +216,12 @@ error:
 }
 
 
-
+/*!
+ * \brief set daemon user and group id
+ * \param uid user id
+ * \param gid group id
+ * \return return 0 on success, -1 on error
+ */
 int do_suid(const int uid, const int gid)
 {
 	if (gid){
@@ -246,11 +252,14 @@ error:
 
 
 
-/* try to increase the open file limit */
+/*!
+ * \brief try to increase the open file limit
+ * \param target target that should be reached
+ * \return return 0 on success, -1 on error
+ */
 int increase_open_fds(unsigned int target)
 {
-	struct rlimit lim;
-	struct rlimit orig;
+	struct rlimit lim, orig;
 	
 	if (getrlimit(RLIMIT_NOFILE, &lim)<0){
 		LM_CRIT("cannot get the maximum number of file descriptors: %s\n",
@@ -300,11 +309,15 @@ error:
 
 
 
-/* enable core dumps */
+/*!
+ * \brief enable or disable core dumps
+ * \param enable set to 1 to enable, to 0 to disable
+ * \param size core dump size
+ * \return return 0 on success, -1 on error
+ */
 int set_core_dump(int enable, unsigned int size)
 {
-	struct rlimit lim;
-	struct rlimit newlim;
+	struct rlimit lim, newlim;
 	
 	if (enable){
 		if (getrlimit(RLIMIT_CORE, &lim)<0){

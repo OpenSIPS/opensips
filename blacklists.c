@@ -18,14 +18,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
- *
- *
- * History:
- * ---------
- *  2007-01-30  first version (bogdan)
  */
 
-
+/*!
+ * \file
+ * \brief OpenSER Blacklist functions
+ */
 
 
 #include <stdio.h>
@@ -337,7 +335,7 @@ static inline int ip_class_compare(struct net *net1, struct net *net2)
 }
 
 
-/* adds a new rule to a list of rules */
+/*! \brief adds a new rule to a list of rules */
 int add_rule_to_list(struct bl_rule **first, struct bl_rule **last,
 			struct net *ip_net, str *body, unsigned short port,
 			unsigned short proto, int flags)

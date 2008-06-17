@@ -3,7 +3,6 @@
  *
  * Copyright (C) 2007 1&1 Internet AG
  *
- *
  * This file is part of openser, a free SIP server.
  *
  * openser is free software; you can redistribute it and/or modify
@@ -19,8 +18,15 @@
  * You should have received a copy of the GNU General Public License 
  * along with this program; if not, write to the Free Software 
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- *
  */
+
+/*!
+ * \file
+ * \brief
+ * Functions for determinung a pseudo random number over a message's
+ * header field, based on CRC32 or a prime number algorithm.
+ */
+
 #include "sr_module.h"
 #include "parser/parse_uri.h"
 #include "parser/parse_to.h"
@@ -32,8 +38,6 @@
 #include "prime_hash.h"
 
 
-/************* Declaration of Static Helpers *******************************/
-
 static int determine_source(struct sip_msg *msg, enum hash_source source,
                             str *source_string);
 static int validate_msg(struct sip_msg * msg);
@@ -42,8 +46,6 @@ static int determine_fromto_uri (struct to_body *fromto, str *source_string);
 static int determine_fromto_user (struct to_body *fromto, str *source_string);
 static int first_token (str *source_string);
 
-
-/************* Interface Functions *****************************************/
 
 int hash_func (struct sip_msg * msg,
                          enum hash_source source, int denominator) {

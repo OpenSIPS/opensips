@@ -20,30 +20,35 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+/*!
+ * \file errinfo.h
+ * \brief Error handling
+ */
+
 
 #ifndef _errinfo_h_
 #define _errinfo_h_
 
 #include "str.h"
 
-/* error clases */
-#define OSER_EC_PARSER	1 /* parse error */
-#define OSER_EC_PMEMORY	2 /* private memory error */
-#define OSER_EC_SMEMORY	3 /* share memory error */
+/*! \name ErrorClasses  error clases */
+#define OSER_EC_PARSER	1 /*!< parse error */
+#define OSER_EC_PMEMORY	2 /*!< private memory error */
+#define OSER_EC_SMEMORY	3 /*!< share memory error */
 
 #define OSER_EL_CRITIC	1
 #define OSER_EL_HIGH	2
-#define OSER_EL_MEDIUM	3 /* severity level normal - used by parsing errors */
+#define OSER_EL_MEDIUM	3 /*!< severity level normal - used by parsing errors */
 #define OSER_EL_NORMAL	4
-#define OSER_EL_LOW		5
+#define OSER_EL_LOW	5
 
 typedef struct err_info_
 {
-	int eclass;		/* error class */
-	int level;		/* severity level (lower is higher) */
-	str info;		/* error details */
-	int rcode;		/* recommended reply code */
-	str rreason;	/* recommended reply reason phrase */
+	int eclass;		/*!< error class */
+	int level;		/*!< severity level (lower is higher) */
+	str info;		/*!< error details */
+	int rcode;		/*!< recommended reply code */
+	str rreason;	/*!< recommended reply reason phrase */
 } err_info_t;
 
 void init_err_info();
@@ -52,4 +57,3 @@ void set_err_reply(int rc, char *rr);
 err_info_t* get_err_info();
 
 #endif
-

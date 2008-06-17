@@ -25,6 +25,12 @@ These notices must be retained in any copies of any part of this
 documentation and/or software.
  */
 
+/*!
+ * \file
+ * \brief MD5.H - header file for MD5C.C
+ */
+
+
 #ifndef MD5_H
 #define MD5_H
 

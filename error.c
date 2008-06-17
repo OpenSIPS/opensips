@@ -19,12 +19,19 @@
  * along with this program; if not, write to the Free Software 
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * http://www.iana.org/assignments/sip-parameters
  *
  * History:
  * --------
  * 2003-04-04 phrase length corrected not to include trailer 0 (jiri)
  * 2006-12-18 error phrases updates (norman)
+ */
+
+/*!
+ * \file error.c
+ * \brief OpenSER Error handling functions
+ *
+ * \note For a list of error codes in SIP, please check
+ * http://www.iana.org/assignments/sip-parameters
  */
 
 
@@ -34,18 +41,17 @@
 #include "parser/msg_parser.h"
 #include "mem/mem.h"
 
-/* current function's error; */
+/*! current function's error; */
 int ser_error=-1;
-/* previous error */
+/*! previous error */
 int prev_ser_error=-1;
 
 int err2reason_phrase( 
-	int ser_error,  /* current internal ser error */
-	int *sip_error,  /* the sip error code to which ser 	
-					    ser error will be turned */
-	char *phrase,    /* resulting error text */
-	int etl, 		/* error text buffer length */
-	char *signature ) /* extra text to be appended */
+	int ser_error,  	/*!< current internal ser error */
+	int *sip_error,  	/*!< the sip error code to which ser error will be turned */
+	char *phrase,    	/*!< resulting error text */
+	int etl, 		/*!< error text buffer length */
+	char *signature ) 	/*!< extra text to be appended */
 {
 
 	char *error_txt;

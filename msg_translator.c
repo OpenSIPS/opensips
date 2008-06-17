@@ -1,4 +1,4 @@
-/* 
+/*
  * $Id$
  *
  * Copyright (C) 2001-2003 FhG Fokus
@@ -20,45 +20,19 @@
  * You should have received a copy of the GNU General Public License 
  * along with this program; if not, write to the Free Software 
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- * 
- *
- * History:
- * --------
- * 2003-01-20  bug_fix: use of return value of snprintf aligned to C99 (jiri)
- * 2003-01-23  added rport patches, contributed by 
- *              Maxim Sobolev <sobomax@FreeBSD.org> and heavily modified by me
- *              (andrei)
- * 2003-01-24  added i param to via of outgoing requests (used by tcp),
- *              modified via_builder params (andrei)
- * 2003-01-27  more rport fixes (make use of new via_param->start)  (andrei)
- * 2003-01-27  next baby-step to removing ZT - PRESERVE_ZT (jiri)
- * 2003-01-29  scratchpad removed (jiri)
- * 2003-02-28  scratchpad compatibility abandoned (jiri)
- * 2003-03-01  VOICE_MAIL defs removed (jiri)
- * 2003-03-06  totags in outgoing replies bookmarked to enable
- *             ACK/200 tag matching (andrei)
- * 2003-03-18  killed the build_warning snprintf (andrei)
- * 2003-03-31  added subst lump support (andrei)
- * 2003-04-01  added opt (conditional) lump support (andrei)
- * 2003-04-02  added more subst lumps: SUBST_{SND,RCV}_ALL  
- *              => ip:port;transport=proto (andrei)
- * 2003-04-12  added FL_FORCE_RPORT support (andrei)
- * 2003-04-13  updated warning builder -- fixed (andrei)
- * 2003-07-10  check_via_address knows now how to compare with ipv6 address
- *              references (e.g [::1]) (andrei)
- *             build_req_fomr_sip_req no longer adds 1 for ipv6 via parameter
- *              position calculations ([] are part of host.s now) (andrei)
- * 2003-10-02  via+lump dst address/port can be set to preset values (andrei)
- * 2003-10-08  receive_test function-alized (jiri)
- * 2003-10-20  added body_lump list (sip_msg), adjust_clen (andrei & jan)
- * 2003-11-11  type of rpl_lumps replaced by flags (bogdan)
- * 2007-02-22  insert_path_as_route() imported from TM as we need it for
- *             stateless processing also; contributed by Andreas Granig
- *             (bogdan)
- *
  */
-/* Via special params:
- * requests:
+
+/*!
+ * \file
+ * \brief Create and translate SIP messages/ message contents
+ * - \ref ViaSpecialParams
+ */
+
+/*! \page ViaSpecialParams Via header special parameters
+ *
+ * Via special params:
+ *
+ * \section requests Requests:
  * - if the address in via is different from the src_ip or an existing
  *   received=something is found, received=src_ip is added (and any preexisting
  *   received is deleted). received is added as the first via parameter if no
@@ -67,7 +41,7 @@
  *   FL_FORCE_RPORT is set (e.g. script force_rport() cmd) rport=src_port
  *   is added (over previous rport / as first via param or after received
  *   if no received was present and received is added too)
- * local replies:
+ * \section localreplies Local replies:
  *    (see also sl_send_reply)
  *  - rport and received are added in mostly the same way as for requests, but 
  *    in the reverse order (first rport and then received). See also 
@@ -84,7 +58,7 @@
  *    source ip address. The destination port is set to the source port if 
  *    rport is present or FL_FORCE_RPORT flag is set, to the via port or to
  *    the default sip port (5060) if neither rport or via port are present.
- * "normal" replies:
+ * \section normalreplies "Normal" replies:
  *  - if received is present the message is sent to the received address else
  *    if no port is present (neither a normal via port or rport) a dns srv 
  *    lookup is performed on the host part and the reply is sent to the 
@@ -95,8 +69,8 @@
  *  - if no port is present the destination port will be taken from the srv
  *    lookup. If the srv lookup fails or is not performed (e.g. ip address
  *    in host) the destination port will be set to the default sip port (5060).
- *  
- * Known limitations:
+ *
+ * \section limitations Known limitations:
  * - when locally replying to a message, rport and received will be appended to
  *   the via header parameters (for forwarded requests they are inserted at the
  *   beginning).
@@ -104,7 +78,6 @@
  *   received is already present in the original message (this should not
  *   happen though, but ...)
  *
- *--andrei
 */
 
 #include <sys/types.h>
@@ -143,21 +116,16 @@ extern int version_len;
 
 
 
-
-
-
-
-/* checks if ip is in host(name) and ?host(ip)=name?
+/*! \brief checks if ip is in host(name) and ?host(ip)=name?
  * ip must be in network byte order!
  *  resolver = DO_DNS | DO_REV_DNS; if 0 no dns check is made
- * return 0 if equal */
+ * \return 0 if equal */
 static int check_via_address(struct ip_addr* ip, str *name, 
 				unsigned short port, unsigned short proto, int resolver)
 {
 	struct hostent* he;
-	int i;
+	int i, len;
 	char* s;
-	int len;
 
 	/* maybe we are lucky and name it's an ip */
 	s=ip_addr2a(ip);
@@ -213,7 +181,7 @@ static int check_via_address(struct ip_addr* ip, str *name,
 }
 
 
-/* check if IP address in Via != source IP address of signaling */
+/*! \brief check if IP address in Via != source IP address of signaling */
 int received_test( struct sip_msg *msg )
 {
 	int rcvd;
@@ -237,8 +205,7 @@ static char * warning_builder( struct sip_msg *msg, unsigned int *returned_len)
 {
 	static char buf[MAX_WARNING_LEN];
 	str *foo;
-	int print_len, l;
-	int clen;
+	int print_len, l, clen;
 	char* t;
 
 #define str_print(string, string_len) \
@@ -313,11 +280,9 @@ error_overflow:
 
 char* received_builder(struct sip_msg *msg, unsigned int *received_len)
 {
-	char *buf;
-	int  len;
+	char *buf, *tmp;
+	int  len, tmp_len;
 	struct ip_addr *source_ip;
-	char *tmp;
-	int  tmp_len;
 
 	source_ip=&msg->rcv.src_ip;
 
@@ -344,10 +309,8 @@ char* received_builder(struct sip_msg *msg, unsigned int *received_len)
 
 char* rport_builder(struct sip_msg *msg, unsigned int *rport_len)
 {
-	char* buf;
-	char* tmp;
-	int tmp_len;
-	int len;
+	char* buf, * tmp;
+	int len, tmp_len;
 	
 	tmp_len=0;
 	tmp=int2str(msg->rcv.src_port, &tmp_len);
@@ -370,11 +333,9 @@ char* rport_builder(struct sip_msg *msg, unsigned int *rport_len)
 
 char* id_builder(struct sip_msg* msg, unsigned int *id_len)
 {
-	char* buf;
-	int len, value_len;
+	char* buf, *p;
+	int len, value_len, size;
 	char revhex[sizeof(int)*2];
-	char* p;
-	int size;
 	
 	size=sizeof(int)*2;
 	p=&revhex[0];
@@ -401,13 +362,8 @@ char* id_builder(struct sip_msg* msg, unsigned int *id_len)
 
 char* clen_builder(struct sip_msg* msg, int *clen_len, int diff)
 {
-	char* buf;
-	int len;
-	int value;
-	char* value_s;
-	int value_len;
-	char* body;
-	
+	char *buf, *body, * value_s;
+	int len, value, value_len;
 	
 	body=get_body(msg);
 	if (body==0){
@@ -436,7 +392,7 @@ char* clen_builder(struct sip_msg* msg, int *clen_len, int diff)
 
 
 
-/* checks if a lump opt condition 
+/*! \brief* checks if a lump opt condition 
  * returns 1 if cond is true, 0 if false */
 static inline int lump_check_opt(	struct lump *l,
 									struct sip_msg* msg,
@@ -504,17 +460,14 @@ static inline int lump_check_opt(	struct lump *l,
 
 
 
-/* computes the "unpacked" len of a lump list,
+/*! \brief computes the "unpacked" len of a lump list,
    code moved from build_req_from_req */
 static inline int lumps_len(struct sip_msg* msg, struct lump* lumps,
 											struct socket_info* send_sock)
 {
-	unsigned int s_offset;
-	unsigned int new_len;
-	struct lump* t;
-	struct lump* r;
-	str* send_address_str;
-	str* send_port_str;
+	unsigned int s_offset, new_len;
+	struct lump *t, *r;
+	str *send_address_str, *send_port_str;
 
 #define SUBST_LUMP_LEN(subst_l) \
 		switch((subst_l)->u.subst){ \
@@ -755,7 +708,7 @@ skip_after:
 
 
 
-/* another helper functions, adds/Removes the lump,
+/*! \brief another helper functions, adds/Removes the lump,
 	code moved form build_req_from_req  */
 
 static inline void process_lumps(	struct sip_msg* msg,
@@ -765,14 +718,10 @@ static inline void process_lumps(	struct sip_msg* msg,
 									unsigned int* orig_offs,
 									struct socket_info* send_sock)
 {
-	struct lump *t;
-	struct lump *r;
+	struct lump *t, *r;
 	char* orig;
-	unsigned int size;
-	unsigned int offset;
-	unsigned int s_offset;
-	str* send_address_str;
-	str* send_port_str;
+	unsigned int size, offset, s_offset;
+	str *send_address_str, *send_port_str;
 
 #define SUBST_LUMP(subst_l) \
 	switch((subst_l)->u.subst){ \
@@ -1142,7 +1091,7 @@ skip_nop_after:
 }
 
 
-/*
+/*! \brief
  * Adjust/insert Content-Length if necessary
  */
 static inline int adjust_clen(struct sip_msg* msg, int body_delta, int proto)
@@ -1238,7 +1187,7 @@ error:
 }
 
 
-/*
+/*! \brief
  * Save given Path body as Route header in message.
  * 
  * If another Route HF is found, it's placed right before that. 
@@ -1304,22 +1253,12 @@ char * build_req_buf_from_sip_req( struct sip_msg* msg,
 								struct socket_info* send_sock, int proto,
 								unsigned int flags)
 {
-	unsigned int len, new_len, received_len, rport_len;
-	unsigned int uri_len, via_len, body_delta;
-	char* line_buf;
-	char* received_buf;
-	char* rport_buf;
-	char* new_buf;
-	char* buf;
-	unsigned int offset, s_offset, size;
-	struct lump* anchor;
-	struct lump* via_insert_param;
-	str branch;
-	str extra_params;
+	unsigned int len, new_len, received_len, rport_len, uri_len, via_len, body_delta;
+	char *line_buf, *received_buf, *rport_buf, *new_buf, *buf, *id_buf;
+	unsigned int offset, s_offset, size, id_len;
+	struct lump *anchor, *via_insert_param;
+	str branch, extra_params;
 	struct hostport hp;
-	char* id_buf;
-	unsigned int id_len;
-	
 	
 	id_buf=0;
 	id_len=0;
@@ -1542,11 +1481,9 @@ error:
 char * build_res_buf_from_sip_res( struct sip_msg* msg,
 				unsigned int *returned_len)
 {
-	unsigned int new_len, via_len, body_delta;
-	char* new_buf;
+	unsigned int new_len, via_len, body_delta, len;
+	char *new_buf, *buf;
 	unsigned offset, s_offset, via_offset;
-	char* buf;
-	unsigned int len;
 
 	buf=msg->buf;
 	len=msg->len;
@@ -1613,23 +1550,12 @@ error:
 char * build_res_buf_from_sip_req( unsigned int code, str *text ,str *new_tag,
 		struct sip_msg* msg, unsigned int *returned_len, struct bookmark *bmark)
 {
-	char              *buf, *p;
-	unsigned int      len,foo;
+	char              *buf, *p, *received_buf, *rport_buf, *warning_buf, *content_len_buf, *after_body, *totags;
+	unsigned int      len, foo, received_len, rport_len, warning_len, content_len_len;
 	struct hdr_field  *hdr;
-	struct lump_rpl   *lump;
-	struct lump_rpl   *body;
+	struct lump_rpl   *lump, *body;
 	int               i;
-	char*             received_buf;
-	unsigned int      received_len;
-	char*             rport_buf;
-	unsigned int      rport_len;
-	char*             warning_buf;
-	unsigned int      warning_len;
-	char*             content_len_buf;
-	unsigned int      content_len_len;
-	char *after_body;
 	str  to_tag;
-	char *totags;
 
 	body = 0;
 	buf=0;
@@ -1893,7 +1819,7 @@ error00:
 
 
 
-/* return number of chars printed or 0 if space exceeded;
+/*! \brief return number of chars printed or 0 if space exceeded;
    assumes buffer size of at least MAX_BRANCH_PARAM_LEN
  */
 int branch_builder( unsigned int hash_index,
@@ -1950,10 +1876,9 @@ char* via_builder( unsigned int *len,
 	struct socket_info* send_sock,
 	str* branch, str* extra_params, int proto, struct hostport* hp)
 {
-	unsigned int  via_len, extra_len;
-	char               *line_buf;
-	int max_len;
-	int local_via_len=MY_VIA_LEN;
+	unsigned int via_len, extra_len;
+	char *line_buf;
+	int max_len, local_via_len=MY_VIA_LEN;
 	str* address_str; /* address displayed in via */
 	str* port_str; /* port no displayed in via */
 	

@@ -19,8 +19,16 @@
  * along with this program; if not, write to the Free Software 
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- *
- * Description of the logging functions:
+ */
+
+/*!
+ * \file
+ * \brief OpenSER Debug console print functions
+ * \see syslog.h
+ */
+
+
+/*! \page DebugLogFunction Description of the logging functions:
  *
  *  A) macros to log on a predefine log level and with standard prefix
  *     for with additional info: [time] 
@@ -46,13 +54,13 @@
 #include <syslog.h>
 #include <time.h>
 
-#define L_ALERT -3
-#define L_CRIT  -2
-#define L_ERR   -1
-#define L_WARN   1
-#define L_NOTICE 2
-#define L_INFO   3
-#define L_DBG    4
+#define L_ALERT -3	/*!< Alert level */
+#define L_CRIT  -2	/*!< Critical level */
+#define L_ERR   -1	/*!< Error level */
+#define L_WARN   1	/*!< Warning level */
+#define L_NOTICE 2	/*!< Notice level */
+#define L_INFO   3	/*!< Info level */
+#define L_DBG    4	/*!< Debug level */
 
 
 #ifdef __SUNPRO_C

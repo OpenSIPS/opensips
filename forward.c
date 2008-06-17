@@ -19,34 +19,12 @@
  * You should have received a copy of the GNU General Public License 
  * along with this program; if not, write to the Free Software 
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- *
- * History:
- * -------
- *  2001-??-??  created by andrei
- *  ????-??-??  lots of changes by a lot of people
- *  2003-01-23  support for determination of outbound interface added :
- *               get_out_socket (jiri)
- *  2003-01-24  reply to rport support added, contributed by
- *               Maxim Sobolev <sobomax@FreeBSD.org> and modified by andrei
- *  2003-02-11  removed calls to upd_send & tcp_send & replaced them with
- *               calls to msg_send (andrei)
- *  2003-03-19  replaced all mallocs/frees w/ pkg_malloc/pkg_free (andrei)
- *  2003-04-02  fixed get_send_socket for tcp fwd to udp (andrei)
- *  2003-04-03  added su_setport (andrei)
- *  2003-04-04  update_sock_struct_from_via now differentiates between
- *               local replies  & "normal" replies (andrei)
- *  2003-04-12  update_sock_struct_from via uses also FL_FORCE_RPORT for
- *               local replies (andrei)
- *  2003-08-21  check_self properly handles ipv6 addresses & refs   (andrei)
- *  2003-10-21  check_self updated to handle proto (andrei)
- *  2003-10-24  converted to the new socket_info lists (andrei)
- *  2004-10-10  modified check_self to use grep_sock_info (andrei)
- *  2004-11-08  added force_send_socket support in get_send_socket (andrei)
- *  2006-09-06  added new algorithm for building VIA branch parameter for 
- *              stateless requests - it complies to RFC3261 requirement to be
- *              unique through time and space (bogdan)
  */
 
+/*!
+ * \file
+ * \brief OpenSER Stateless forward support
+ */
 
 
 #include <string.h>
@@ -75,8 +53,9 @@
 
 
 
-/* return a socket_info_pointer to the sending socket; as opposed to
- * get_send_socket, which returns process's default socket, get_out_socket
+/*! \brief return a socket_info_pointer to the sending socket
+ * \note As opposed to
+ * get_send_socket(), which returns process's default socket, get_out_socket
  * attempts to determine the outbound interface which will be used;
  * it creates a temporary connected socket to determine it; it will
  * be very likely noticeably slower, but it can deal better with
@@ -123,10 +102,12 @@ error:
 
 
 
-/* returns a socket_info pointer to the sending socket or 0 on error
- * params: sip msg (can be null), destination socket_union pointer, protocol
- * if msg!=null and msg->force_send_socket, the force_send_socket will be
- * used
+/*! \brief returns a socket_info pointer to the sending socket or 0 on error
+ * \param msg SIP message (can be null)
+ * \param to  destination socket_union pointer
+ * \param proto protocol 
+ *
+ * \note if msg!=null and msg->force_send_socket, the force_send_socket will be used
  */
 struct socket_info* get_send_socket(struct sip_msg *msg, 
 										union sockaddr_union* to, int proto)
@@ -235,7 +216,8 @@ struct socket_info* get_send_socket(struct sip_msg *msg,
 
 
 
-/* checks if the proto: host:port is one of the address we listen on;
+/*! \brief checks if the proto: host:port is one of the address we listen on
+ *
  * if port==0, the  port number is ignored
  * if proto==0 (PROTO_NONE) the protocol is ignored
  * returns 1 if true, 0 if false, -1 on error
@@ -462,7 +444,7 @@ int update_sock_struct_from_via( union sockaddr_union* to,
 
 
 
-/* removes first via & sends msg to the second */
+/*! \brief removes first via & sends msg to the second */
 int forward_reply(struct sip_msg* msg)
 {
 	char* new_buf;
