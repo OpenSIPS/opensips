@@ -4,6 +4,1349 @@
 
 ===================== Changes since release 1.3.0 =============================
 
+2008-06-18 12:30  Ovidiu Sas, <osas at voipembedded dot com>
+
+	* [r4405] modules/ratelimit/ratelimit.c:
+	  ratelimit must register it's own timer
+	  heavy traffic with radius acc enabled will generate jitter and
+	  inaccurate traffic shaping control
+
+2008-06-18 10:42  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r4404] modules/ldap/Makefile:
+	  - add prober LOCALBASE includes for solaris LDAP libraries
+	  - closes #1912012, contributed from Sergio Gutierrez, saguti at gmail
+	  dot com
+
+2008-06-17 16:17  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r4403] Makefile.defs:
+	  - devel version increased
+
+2008-06-17 16:15  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r4402] action.c, action.h, atomic.h, blacklists.c, blacklists.h,
+	  config.h, core_stats.c, core_stats.h, crc.c, daemonize.c, daemonize.h,
+	  data_lump.c, data_lump.h, data_lump_rpl.c, data_lump_rpl.h, dprint.c,
+	  dprint.h, dset.c, dset.h, errinfo.c, errinfo.h, error.c, error.h,
+	  fastlock.h, flags.c, flags.h, forward.c, forward.h, globals.h,
+	  hash_func.h, help_msg.h, io_wait.c, io_wait.h, ip_addr.c, ip_addr.h,
+	  lock_alloc.h, lock_ops.h, locking.h, lump_struct.h, main.c, md5.c,
+	  md5.h, md5utils.c, mod_fix.c, mod_fix.h, modparam.c, msg_translator.c,
+	  msg_translator.h, poll_types.h, prime_hash.c, prime_hash.h, pvar.h,
+	  qvalue.c, qvalue.h, re.h, resolve.h, serialize.h, socket_info.h,
+	  sr_module.c, sr_module.h, statistics.h, str.h:
+	  - convert existing documentation to doxygen format
+	  - based on a patch (#1980924) from Olle E. Johansson, oej at edvina
+	  dot net
+	  - add some extensions, fix some (small) errors
+	  - also make some cleanups in several files:
+	  - whitespace/ tab fixes, alignment fixes
+	  - combine a few variables definitions to make functions more compact
+	  - remove some history stuff from the copyright header, the really old
+	  ones don't
+	  matter any more, for the last years this information is present in the
+	  repository
+	  - fix old copyright statement in help_msg.h
+
+2008-06-17 13:44  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r4401] modules/seas/seas_action.c, modules/sst/sst_handlers.c:
+	  - fix more doxygen errors
+
+2008-06-17 13:43  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r4400] modules/avpops/Makefile, modules/avpops/avpops.c:
+	  - improve error messages, add some doxygen and fix Makefile comment
+	  patch from Olle E. Johansson
+
+2008-06-17 13:41  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r4399] modules/xlog/doc/xlog_admin.xml:
+	  - improve xlog documentation, patch from Olle E. Johansson
+
+2008-06-17 13:06  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r4398] db/db.h, db/db_id.c, db/db_query.h, modules/db_mysql/dbase.c:
+	  - fix database related doxygen errors
+
+2008-06-17 12:41  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r4397] modules/carrierroute/carrier_tree.c,
+	  modules/carrierroute/carrier_tree.h,
+	  modules/carrierroute/carrierroute.c,
+	  modules/carrierroute/carrierroute.h, modules/carrierroute/route.h,
+	  modules/carrierroute/route_config.c, modules/carrierroute/route_db.c,
+	  modules/carrierroute/route_fifo.c, modules/carrierroute/route_func.c,
+	  modules/carrierroute/route_rule.c, modules/carrierroute/route_rule.h,
+	  modules/carrierroute/route_tree.c, modules/carrierroute/route_tree.h:
+	  - fix all doxygen errors
+	  - add some documentation
+
+2008-06-17 10:47  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r4396] modules/jabber/xjab_jcon.c, modules/jabber/xjab_util.c,
+	  modules/jabber/xjab_wlist.c, modules/jabber/xjab_worker.c,
+	  modules/msilo/msfuncs.c, modules/seas/statistics.c:
+	  - fix some doxygen errors in comments, \0 -> \\0, #return -> return
+
+2008-06-16 15:49  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r4395] openser.8, openser.cfg.5:
+	  - update project list addresses in man pages
+
+2008-06-16 14:54  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r4394] globals.h:
+	  - remove unused #define 'NO_DNS'
+
+2008-06-12 17:51  Ovidiu Sas, <osas at voipembedded dot com>
+
+	* [r4393] scripts/openserctl, scripts/openserctl.base:
+	  fix hardcoded grep command: grep -> $EGREP
+
+2008-06-12 17:41  Juha Heinanen, <jh at tutpro dot com>
+
+	* [r4392] scripts/openserctl, scripts/openserctl.base:
+	  * Updated openserctl lcr show and addgw commands to correspond to
+	  the current version of gw table.
+
+2008-06-12 16:43  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r4391] modules/sms/sms_funcs.c:
+	  - remove some long outcommented code that is not used anymore
+
+2008-06-12 16:38  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r4390] modules/mangler/mangler.c:
+	  - remove long outcommented functions that are not used anymore
+
+2008-06-12 15:57  Ovidiu Sas, <osas at voipembedded dot com>
+
+	* [r4389] scripts/openserctl.sqlbase:
+	  remove duplicate 'usage_trusted' for openserctl script
+
+2008-06-12 15:32  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r4388] udp_server.c:
+	  - remove some long outcommented stuff
+	  - add doxygen documentation to the functions
+	  - some cleanups in style and whitespaces
+
+2008-06-12 14:24  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r4387] doc/entities.xml:
+	  - remove some old entitites that are not used anymore
+
+2008-06-12 14:08  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r4386] modules/uri_db/README, modules/uri_db/doc/uri_db_admin.xml,
+	  modules/uri_db/uridb_mod.c:
+	  - remove unused subscriber_table parameter
+	  - improve module documentation
+
+2008-06-12 11:12  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r4384] Makefile:
+	  - install openserctl.dbtext and openserctl.db_berkeley with
+	  'install-module-tools'
+	  - install also the python helper for dbtext, closes #1991267
+
+2008-06-12 11:07  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r4383] scripts/openserctl:
+	  - sync DB names with openserdbctl, add also db_berkeley to openserctl
+	  - most commands will not work for DB, but at least a few are
+	  implemented
+
+2008-06-12 11:04  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r4382] scripts/openserctl.db_berkeley, scripts/openserctl.dbtext:
+	  - fix default database path for dbtext and db_berkeley
+
+2008-06-12 09:35  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r4381] scripts/openserctl.db_berkeley:
+	  - add svn:keywords property
+
+2008-06-11 15:56  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r4379] modules/tm/README, modules/tm/doc/tm_admin.xml:
+	  - cleanup section about statistics, fix some spelling errors
+
+2008-06-11 14:06  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r4378] modules/domain/domain.c:
+	  - properly enable the is_uri_host_local() for LOCAL ROUTE
+
+2008-06-11 14:04  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r4377] action.c:
+	  -do not trigger the ERROR ROUTE while running the LOCAL ROUTE
+
+2008-06-11 14:01  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r4376] modules/tm/uac.c:
+	  bug fixed - properly advertise the route type while running LOCAL
+	  ROUTE
+
+2008-06-11 13:09  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r4374] modules/sl/README, modules/sl/doc/sl_admin.xml:
+	  - fix small error in example, closes #1990015
+
+2008-06-11 12:44  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r4373] modules/dialog/dlg_handlers.c:
+	  - add log message if the timeout_avp is invalid and the default value
+	  is used
+
+2008-06-10 15:11  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r4372] modules/avpops/avpops_impl.c:
+	  - enable case sensitive checking for FM ops
+
+2008-06-10 15:09  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r4371] modules/uri_radius/urirad_mod.c:
+	  - the radius function for checking uri are safe in LOCAL ROUTE
+
+2008-06-10 15:07  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r4370] modules/uri_db/uridb_mod.c:
+	  -one function is safe to be used from LOCAL ROUTE
+
+2008-06-10 15:05  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r4369] modules/uri/uri_mod.c:
+	  - several URI functions are suitable for LOCAL ROUTE
+
+2008-06-10 15:03  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r4368] modules/group_radius/grouprad_mod.c:
+	  - group radius checking can be done from LOCAL_ROUTE
+
+2008-06-10 15:02  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r4367] modules/statistics/statistics.c:
+	  statistics are safe to be used from LOCAL ROUTE
+
+2008-06-10 15:01  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r4366] modules/siptrace/siptrace.c:
+	  - siptrace can be done from LOCAL ROUTE
+
+2008-06-10 15:00  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r4365] modules/ratelimit/ratelimit.c:
+	  rate limits may be checked from LOCAL ROUTE
+
+2008-06-10 14:56  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r4364] modules/permissions/permissions.c:
+	  -permissions may be checked from LOCAL ROUTE
+
+2008-06-10 14:55  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r4363] modules/peering/peering.c:
+	  - peer detection can be done from LOCAL_ROUTE
+
+2008-06-10 14:53  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r4362] modules/mediaproxy/mediaproxy.c,
+	  modules/nat_traversal/nat_traversal.c, modules/nathelper/nathelper.c:
+	  - nat traversal functions may be called from LOCAL_ROUTE
+
+2008-06-10 14:52  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r4361] modules/h350/h350_mod.c, modules/ldap/ldap_mod.c:
+	  - LDAP queries are safe to be called from LOCAL_ROUTE
+
+2008-06-10 14:50  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r4360] modules/group/group_mod.c:
+	  -allow the group functions to be called from LOCAL_ROUTE
+
+2008-06-10 14:49  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r4359] modules/exec/exec_mod.c:
+	  - enable several functions (only the one suitable) for LOCAL_ROUTE
+
+2008-06-10 14:48  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r4358] modules/domain/domain_mod.c:
+	  allow the group functions to be called from LOCAL_ROUTE
+
+2008-06-10 14:47  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r4357] modules/diversion/diversion.c:
+	  enable exported functions to be called from the LOCAL_ROUTE
+
+2008-06-10 14:46  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r4356] modules/cfgutils/cfgutils.c:
+	  enable the exported functions to be called from LOCAL_ROUTE
+
+2008-06-10 14:10  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r4355] etc/openser.cfg, modules/acc/README,
+	  modules/acc/doc/acc_admin.xml:
+	  - spelling fix, accouting -> accounting
+
+2008-06-10 13:12  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r4354] modules/dialog/README, modules/dialog/doc/dialog_admin.xml:
+	  - some spelling fixes
+
+2008-06-10 11:52  Daniel-Constantin Mierla, <miconda at gmail dot com>
+
+	* [r4353] modules/gflags/README, modules/gflags/doc/gflags_admin.xml:
+	  - forgot to update doc after last commit changes
+
+2008-06-10 11:48  Daniel-Constantin Mierla, <miconda at gmail dot com>
+
+	* [r4352] modules/gflags/gflags.c:
+	  - functions enabled for LOCAL_ROUTE
+
+2008-06-10 11:32  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r4351] examples/acc-mysql.cfg, examples/flag_reply.cfg,
+	  examples/msilo.cfg, examples/nathelper.cfg, examples/pstn.cfg,
+	  examples/replicate.cfg:
+	  - fix several errors in example configuration
+	  - port to new driver names and syntax
+
+2008-06-09 15:43  Juha Heinanen, <jh at tutpro dot com>
+
+	* [r4350] modules/peering/peering.c:
+	  * Fixed copy/paste error.
+
+2008-06-09 14:52  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r4349] test/11.sh, test/12.sh, test/13.sh, test/14.sh, test/15.sh,
+	  test/16.sh, test/17.sh, test/18.sh, test/19.sh, test/20.sh,
+	  test/21.sh, test/22.sh, test/23.sh, test/25.sh, test/26.sh,
+	  test/27.sh, test/28.sh, test/29.sh, test/30.sh, test/31.sh,
+	  test/32.sh, test/33.sh, test/include, test/include/common,
+	  test/include/require:
+	  - add some small functions to check for an compiled openser, modules
+	  and some helper programs
+	  - add also a variable for a "all module" statement for inclusion in
+	  the cfg
+	  - convert existing tests to use the functions
+
+2008-06-09 13:27  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r4348] test/15.sh:
+	  - add dialplan module also to non SQL tests
+
+2008-06-09 11:24  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r4347] test/2.cfg:
+	  - add dialplan to test 2
+
+2008-06-09 11:21  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r4346] modules/dialplan/dp_db.c:
+	  - dialplan modules uses as default the read-only DB URL
+
+2008-06-09 11:15  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r4345] modules/dialplan/dialplan.c:
+	  - remove unused variable 'attr'
+	  - fix inconsistent indention (whitespace -> tabs)
+
+2008-06-06 19:01  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r4344] db/schema/dialplan.xml:
+	  -fixed swapped values
+
+2008-06-06 18:56  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r4343] modules/dialplan/dialplan.c:
+	  simplify the returned MI tree in dp_translate command
+
+2008-06-06 18:16  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r4342] modules/dialplan/README,
+	  modules/dialplan/doc/dialplan_admin.xml:
+	  - fixed doc referencies
+
+2008-06-06 18:06  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r4341] modules/dialplan/dialplan.c:
+	  - fixed misspelled PV
+
+2008-06-06 17:10  Anca Vamanu, <anca at voice-system dot ro>
+
+	* [r4340] modules/auth/nonce.c:
+	  - fixed an editing bug from the last commit
+
+2008-06-06 16:57  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r4339] modules/carrierroute/carrierroute.c,
+	  modules/carrierroute/route_func.c:
+	  - fix regression from 1.3 branch, and some extensions
+	  - allow any PV for carrier and route functions
+	  - Thanks to Carsten Bock for the report
+
+2008-06-06 16:47  Anca Vamanu, <anca at voice-system dot ro>
+
+	* [r4338] modules/auth/api.c, modules/auth/api.h, modules/auth/index.c,
+	  modules/auth/nonce.c, modules/auth/nonce.h:
+	  - moved index check after expires check
+	  - changed log level from error to debug if nonce is reused
+
+2008-06-06 16:43  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r4337] modules/dialplan/dp_db.c:
+	  - use new db_check_table_version()
+	  Credits go to Henning Westerholt
+
+2008-06-06 16:17  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r4336] modules/dialplan/dialplan.c, modules/dialplan/dialplan.h,
+	  modules/dialplan/dp_db.c, modules/dialplan/dp_db.h,
+	  modules/dialplan/dp_repl.c, modules/dialplan/trex.c,
+	  modules/dialplan/trex.h:
+	  - set ID SVN property
+
+2008-06-06 16:09  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r4335] modules/dialplan/trex.h:
+	  - added note that the original T-Rex code was modified. This is
+	  requied by the license of the code.
+	  Thanks to Henning Westerholt for noticing this.
+
+2008-06-06 16:04  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r4334] modules/dialplan/README,
+	  modules/dialplan/doc/dialplan_admin.xml:
+	  did some spell checking in the docs
+
+2008-06-06 15:33  Anca Vamanu, <anca at voice-system dot ro>
+
+	* [r4333] modules/presence/notify.c:
+	  - fixed bug introduced in rev 4264 of not sending Notifies to active
+	  users on Publish update
+
+2008-06-06 14:36  Anca Vamanu, <anca at voice-system dot ro>
+
+	* [r4331] db/schema/Makefile, db/schema/dialplan.xml,
+	  db/schema/openser-dialplan.xml, modules/dialplan,
+	  modules/dialplan/Makefile, modules/dialplan/README,
+	  modules/dialplan/dialplan.c, modules/dialplan/dialplan.h,
+	  modules/dialplan/doc, modules/dialplan/doc/dialplan.xml,
+	  modules/dialplan/doc/dialplan_admin.xml,
+	  modules/dialplan/doc/dialplan_devel.xml, modules/dialplan/dp_db.c,
+	  modules/dialplan/dp_db.h, modules/dialplan/dp_repl.c,
+	  modules/dialplan/trex.c, modules/dialplan/trex.h,
+	  scripts/db_berkeley/openser/dialplan,
+	  scripts/db_berkeley/openser/version, scripts/dbtext/openser/dialplan,
+	  scripts/dbtext/openser/version, scripts/mysql/dialplan-create.sql,
+	  scripts/openserctlrc, scripts/openserdbctl.base,
+	  scripts/oracle/dialplan-create.sql,
+	  scripts/postgres/dialplan-create.sql:
+	  - uploaded new modules that implements generic string translations
+	  based on matching and replacement rules. It can be used to manipulate
+	  R-URI or a PV and to translated to a new format/value.
+
+2008-06-06 13:18  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r4330] modules/avpops/README, modules/avpops/avpops.c,
+	  modules/avpops/doc/avpops_admin.xml:
+	  -avpops functions are enabled from LOCAL_ROUTE - AVP handling is safe
+	  here.
+
+2008-06-06 11:09  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r4329] modules/benchmark/benchmark.c:
+	  - allow benchmarking functions to be called from LOCAL ROUTE
+
+2008-06-06 11:06  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r4328] modules/textops/textops.c:
+	  - allow all request related functions to be called from LOCAL ROUTE
+
+2008-06-06 11:02  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r4327] modules/tm/uac.c:
+	  - added support for triggering the LOCAL_ROUTE when a new internal
+	  request is generated (like Mi t_uac_dlg, requests generated by SMS,
+	  msilo, imc, presence modules)
+	  more info will follow on the mailing lists
+
+2008-06-06 10:50  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r4326] modules/acc/acc_mod.c:
+	  - acc script functions enabled for BRANCH and LOCAL Routes
+
+2008-06-06 10:21  Anca Vamanu, <anca at voice-system dot ro>
+
+	* [r4325] modules/pua/hash.h:
+	  - applied patch from Denis Bilenko, denis at ag-projects dot com that
+	   adds 'conference' event
+
+2008-06-06 10:12  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r4324] modules/xlog/xlog.c:
+	  - allow xlog functions in LOCAL_ROUTE
+
+2008-06-06 08:57  Daniel-Constantin Mierla, <miconda at gmail dot com>
+
+	* [r4323] modules/dispatcher/dispatch.c:
+	  - fixed loading dispatcher list file when flags field was missing
+	  (reported and patch by Carsten Bock, #1986167)
+
+2008-06-06 05:05  Dan Pascu, <dan at ag-projects dot com>
+
+	* [r4322] modules/pua/hash.h:
+	  Made some indents consistent
+
+2008-06-05 18:58  Ovidiu Sas, <osas at voipembedded dot com>
+
+	* [r4321] modules/sst/sst_handlers.c:
+	  Turn into DBG some bogus ERR probes for cancelled calls and expired
+	  dialogs.
+
+2008-06-05 18:38  Daniel-Constantin Mierla, <miconda at gmail dot com>
+
+	* [r4320] cfg.lex, cfg.y, route.c, route_struct.c, route_struct.h:
+	  - added two new integer operators
+	  - '>>' - bitwise right shift
+	  - '<<' - bitwise left shift
+
+2008-06-05 18:22  Ovidiu Sas, <osas at voipembedded dot com>
+
+	* [r4319] modules/statistics/README,
+	  modules/statistics/doc/statistics_admin.xml:
+	  udpate doc to reflect new signature for exported functions (string ->
+	  string|pvar)
+
+2008-06-05 18:02  Elena-Ramona Modroiu, <ramona at rosdeve dot ro>
+
+	* [r4318] modules/pdt/README, modules/pdt/doc/pdt.xml,
+	  modules/pdt/doc/pdt_admin.xml:
+	  - updated reference to the sql creation script
+	  - more details about update and lookup operations (reported by Olle
+	  Johansson)
+
+2008-06-05 16:27  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r4317] cfg.lex, cfg.y, route.c, route.h:
+	  -new type of route added (local_route) ; this will be triggered by TM
+	  each time a new internal request is generated.
+	  (still work on progress)
+
+2008-06-05 16:15  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r4316] modules/statistics/statistics.c:
+	  - update_stat() and reset_stat() functions accept PV for the name of
+	  the statistic. Both function are able to recognize at startup if the
+	  parmeter is string or PV and accordingly fix it in the most efficient
+	  way (for runtime).
+	  Based on an idea from patch 1984901
+
+2008-06-05 15:26  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r4315] mod_fix.c, mod_fix.h, modules/textops/README,
+	  modules/textops/doc/textops_admin.xml, modules/textops/textops.c:
+	  - added new function "replace_body_atonce()", which allows to replace
+	  multiple lines at once (opposed to replace_body_all(), which does
+	  line-by-line matching).
+	  Contributed by Andreas Granig
+	  Closes Patch #1968083
+
+2008-06-05 14:51  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r4314] modules/dialog/README, modules/dialog/dialog.c,
+	  modules/dialog/dlg_db_handler.h, modules/dialog/doc/dialog_admin.xml:
+	  - new db_mode added - DB_MODE_SHUTDOWN : dialog info is read at
+	  startup and only flushed back to DB at shutdown - there are no runtime
+	  updates.
+
+2008-06-05 14:02  Ovidiu Sas, <osas at voipembedded dot com>
+
+	* [r4313] modules/ratelimit/ratelimit.c:
+	  display the value of the last counter via mi rl_stats command
+
+2008-06-05 13:22  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r4312] modules/tm/README, modules/tm/doc/tm_admin.xml,
+	  modules/tm/t_reply.c, modules/tm/t_reply.h, modules/tm/tm.c:
+	  - added new module paramter "disable_6xx_block" to controll the 6xx
+	  replies handling - if the RFC3261 should be respected (blocking serial
+	  forking after 6xx) or treate 6xx as standard negative reply (against
+	  the RFC3261)
+	  This option is really needed if you want to do call forwarding to
+	  voicemail or announcement or other user in case of failure
+
+2008-06-05 09:09  Daniel-Constantin Mierla, <miconda at gmail dot com>
+
+	* [r4311] transformations.c, transformations.h:
+	  - new transformation: nameaddr
+	  - return parts of a name-address structure
+	  - the PV value should start with name-address
+	  - components:
+	  - name - return the dispay name of the structure
+	  - uri - return the uri of the structure
+	  - len - return the lenght of the name-addr part in the value
+	  - helpful to properly extract URI from headers that follow similar
+	  structure as To header
+	  - the header parameters start from val + nameaddr.len
+
+2008-06-05 08:38  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r4310] modules/presence/notify.c:
+	  - revert commit rev4261 after discussion on devel list
+
+2008-06-05 07:13  Daniel-Constantin Mierla, <miconda at gmail dot com>
+
+	* [r4309] modules/dispatcher/README:
+	  - readme regenerated
+
+2008-06-05 07:12  Daniel-Constantin Mierla, <miconda at gmail dot com>
+
+	* [r4308] modules/dispatcher/dispatch.c, modules/dispatcher/dispatch.h,
+	  modules/dispatcher/dispatcher.c,
+	  modules/dispatcher/doc/dispatcher_admin.xml:
+	  - adding ds_probing_mode parameter to control which gateways are
+	  tested for availability (re-worked patch submitted by Konstantin
+	  Bokarius, #1893021)
+
+2008-06-05 06:41  Daniel-Constantin Mierla, <miconda at gmail dot com>
+
+	* [r4307] pvar.c:
+	  - branch flags set for r-uri can be set via assign operation
+
+2008-06-04 21:08  Daniel-Constantin Mierla, <miconda at gmail dot com>
+
+	* [r4306] flags.c, flags.h, pvar.c:
+	  - script flags value can be set via assign operation
+
+2008-06-04 20:54  Daniel-Constantin Mierla, <miconda at gmail dot com>
+
+	* [r4305] pvar.c:
+	  - message flags can be set via assign operation
+
+2008-06-04 11:16  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r4303] route.c:
+	  - fix segfault in MATCH_OP, NOTMATCH_OP, MATCHD_OP and NOTMATCHD_OP
+	  script operations
+	  - if str.s != 0 and str.len == 0 then the str.s value will be set to
+	  NULL,
+	  causes a crash in the following regexec
+
+2008-06-03 09:26  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r4302] modules/dialog/dialog.c:
+	  - some improvements - all profile related script functions accept as
+	  "value" paramter:
+	  1) a static string, 2) a PV, 3) combination of strings and PV
+
+2008-06-03 09:04  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r4301] modules/ldap/ldap_exp_fn.c, modules/ldap/ldap_mod.c:
+	  some enhancements for ldap_search() param processing:
+	  - detect & report empty ldap_url at startup, rather than runtime
+	  - speed-up to avoid all PV printing if the param is a static string
+
+2008-06-03 08:52  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r4300] modules/ldap/api.h, modules/ldap/iniparser.c,
+	  modules/ldap/iniparser.h, modules/ldap/ld_session.c,
+	  modules/ldap/ld_session.h, modules/ldap/ldap_api_fn.c,
+	  modules/ldap/ldap_api_fn.h, modules/ldap/ldap_connect.c,
+	  modules/ldap/ldap_connect.h, modules/ldap/ldap_escape.c,
+	  modules/ldap/ldap_escape.h, modules/ldap/ldap_exp_fn.c,
+	  modules/ldap/ldap_exp_fn.h, modules/ldap/ldap_mod.c:
+	  - added svn prop for ID
+
+2008-06-03 08:46  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r4299] modules/tm/README, modules/tm/doc/tm_admin.xml,
+	  modules/tm/tm.c:
+	  - t_reply() accepts PVs in both parameters
+
+2008-06-03 08:00  Juha Heinanen, <jh at tutpro dot com>
+
+	* [r4298] modules/peering/README, modules/peering/doc/peering_admin.xml,
+	  modules/peering/peering.c:
+	  * Fixed AVP in example.
+	  * Added branch_route to route blocks, where verify_destination() and
+	  verify_source() can be called.
+
+2008-06-02 20:49  Dan Pascu, <dan at ag-projects dot com>
+
+	* [r4297] modules/nat_traversal/Makefile, modules/nat_traversal/README,
+	  modules/nat_traversal/doc/nat_traversal.xml,
+	  modules/nat_traversal/doc/nat_traversal_admin.xml,
+	  modules/nat_traversal/nat_traversal.c:
+	  Added svn properties on files
+
+2008-06-02 16:51  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r4296] forward.c, modules/tm/t_fwd.c, msg_translator.c,
+	  msg_translator.h:
+	  - build_req_buf_from_sip_req() accepts flags to control the buffer
+	  building:
+	  MSG_TRANS_SHM_FLAG - build the buffer in SHM memory; this avoids
+	  un-necessary memory copying (allocating in pkg, moving in shm)
+	  MSG_TRANS_NOVIA_FLAG - do not add a local VIA header - needed for a
+	  new functionality
+
+2008-06-02 16:42  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r4295] parser/msg_parser.h:
+	  - comments syntax fixed
+
+2008-06-02 15:18  Anca Vamanu, <anca at voice-system dot ro>
+
+	* [r4294] modules/auth/README, modules/auth/api.c,
+	  modules/auth/auth_mod.c, modules/auth/auth_mod.h,
+	  modules/auth/challenge.c, modules/auth/doc/auth_admin.xml,
+	  modules/auth/index.c, modules/auth/index.h, modules/auth/nonce.c,
+	  modules/auth/nonce.h:
+	  added re-usage check for nonces:
+	  The authentication mechanism offers protection against sniffing
+	  intrusion. The module generates and verifies the nonces so that they
+	  can be used only once (in an auth response). This is done by having a
+	  lifetime value and an index associated with every nonce. Using only an
+	  expiration value is not good enough because,as this value has to be of
+	  few tens of seconds, it is possible for someone to sniff on the
+	  network, get the credentials and then reuse them in another packet
+	  with which to register a different contact or make calls using the
+	  others's account. The index ensures that this will never be possible
+	  since it is generated as unique through the lifetime of the nonce.
+
+	  The auth module keeps state for each nonce - to validate it only on
+	  the first usage. A binary array (which can by default accomodate 100K
+	  nonces) is used to keep the state. An index in this array is allocated
+	  when the challenge is generated; this index in kept for the whole life
+	  duration of the nonce. After the first auth result (for the nonce),
+	  the following auth results for that nonce are discarded and
+	  re-challenged.
+
+2008-06-02 14:38  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r4293] modules/dialog/README, modules/dialog/doc/dialog_admin.xml:
+	  - added documentation for how dialog profiling works and for all
+	  related parameters, functions and MI commands.
+
+2008-06-02 12:03  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r4292] modules/dialog/dlg_profile.c, modules/dialog/dlg_profile.h:
+	  - set keywords props on the files
+
+2008-06-02 12:02  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r4291] modules/dialog/dialog.c, modules/dialog/dlg_handlers.c,
+	  modules/dialog/dlg_hash.c, modules/dialog/dlg_hash.h,
+	  modules/dialog/dlg_profile.c, modules/dialog/dlg_profile.h:
+	  Dialog profiling support added:
+	  ==============================
+	  Dialog profiling means dialogs can be dynamically added in different
+	  (and several) profile tables. Logically, a profile table can have a
+	  special meaning (like dialogs outside the doamin, dialogs terminated
+	  to PSTN, etc).
+	  There are two types of profiles:
+	  A) with no value - a dialog simply belongs to a profile. (like
+	  outbound calls profile)
+	  B) with value - a dialog belongs to a profile having a certain value
+	  (like caller profile, where the value is the caller ID)
+	  A dialog can be added to multiple profiles in the same time.
+
+	  Profiles are visible (at the moment) in the request route (for initial
+	  and sequential requests) and in the branch, failure and reply routes
+	  of the original request.
+
+	  New module parameters:
+	  profiles_with_value - STRING - semi-colon separated list of names for
+	  profiles with value
+	  profiles_no_value - STRING - semi-colon separated list of names for
+	  profiles no value
+
+	  New script functions:
+	  set_dlg_profile - adds a dialog into a profile
+	  is_in_profile - checks if the current dialog is in a certain profile
+	  get_profile_size - returns into a PV the size of a certain dialog
+
+	  New MI commands:
+	  profile_get_size - returns the size of a certain dialog
+	  profile_list_dlgs - lists (with no context) the dialogs from a certain
+	  profile.
+	  Documentation will be added soon, code is in alpha version.
+
+2008-06-02 10:51  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r4290] Makefile.defs, modules/db_oracle/README,
+	  modules/db_oracle/doc/db_oracle_admin.xml, modules/usrloc/dlist.c:
+	  - add a new define 'ORACLE_USRLOC' as short term fix before the code
+	  freeze
+	  - in 1.5 this will be removed again and fixed by introduction of some
+	  new DB API functions, as discussed on the devel list
+
+2008-06-02 10:28  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r4289] modules/usrloc/dlist.c, scripts/openserdbctl.mysql,
+	  scripts/openserdbctl.pgsql:
+	  - revert commit rev 3973
+
+2008-06-02 10:22  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r4288] test/25.sh, test/7.cfg:
+	  - remove some mediaproxy parameter, there are not available anymore
+	  - fix userblacklist test after recent schema changes
+
+2008-05-30 15:58  Dan Pascu, <dan at ag-projects dot com>
+
+	* [r4287] modules/mediaproxy/README, modules/mediaproxy/config,
+	  modules/mediaproxy/doc/mediaproxy.xml,
+	  modules/mediaproxy/doc/mediaproxy_admin.xml,
+	  modules/mediaproxy/functions.h, modules/mediaproxy/mediaproxy.c,
+	  modules/nat_traversal/README,
+	  modules/nat_traversal/doc/nat_traversal_admin.xml,
+	  modules/nat_traversal/nat_traversal.c, parser/msg_parser.h:
+	  - Second generation mediaproxy module. This requires MediaProxy 2.0.0
+	  or newer, available from http://ag-projects.com/MediaProxy.html
+	  It offers offers orders of magitude better performance, as it uses the
+	  Linux connection tracking support to relay the streams. This limits
+	  the number of processed streams only by the network interface and the
+	  Linux kernel packet forwarding speeds, as it avoids completely the need to
+	  copy the stream data from kernel space to user space and back as
+	  traditional recv/send relaying does.
+	  - New and improved interface based on the dialog module, where the use
+	  of the mediaproxy can be triggered at the first INVITE after which all
+	  the requests and replies which belong to the dialog and have an SDP body
+	  will be modified automatically without any need to call any more functions
+	  in the script. When the dialog ends, the mediaproxy session is also
+	  closed automatically without the need to manually call end_media_session() in
+	  the script.
+	  - Migrated all signaling related NAT traversal functionality to the
+	  nat_traversal module (fix_contact and client_nat_test).
+	  The mediaproxy module now only deals with media relaying.
+
+2008-05-30 15:51  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r4286] lump_struct.h, msg_translator.c:
+	  - remove COND_IF_RAND condition in lumps, this is not used at all
+
+2008-05-30 15:05  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r4285] Makefile:
+	  - add peering module to exclude module list
+
+2008-05-30 11:32  Juha Heinanen, <jh at tutpro dot com>
+
+	* [r4284] packaging/debian-etch/rules, packaging/debian-sarge/rules,
+	  packaging/debian/rules:
+	  * Added peering module to debian packages.
+
+2008-05-30 10:48  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r4283] modules/msilo/msilo.c:
+	  - spelling fix in log message
+
+2008-05-30 10:33  Juha Heinanen, <jh at tutpro dot com>
+
+	* [r4282] modules/peering, modules/peering/Makefile,
+	  modules/peering/README, modules/peering/doc,
+	  modules/peering/doc/peering.xml,
+	  modules/peering/doc/peering_admin.xml, modules/peering/peering.c,
+	  modules/peering/peering.h, modules/peering/verify.c,
+	  modules/peering/verify.h, radius.h:
+	  * Introduced peering module (see README).
+	  * Removed V_EMERGENCY_CALL radius.h value which is not used by any
+	  OpenSER module.
+
+2008-05-30 09:35  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r4281] modules/tm/h_table.h:
+	  - added a new field in the transaction structure to be used for higher
+	  level applications to store some context. Required for dialog module
+	  (profiling functionality).
+
+2008-05-30 09:33  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r4280] parser/msg_parser.h:
+	  - only some text re-formatting to keep alignment (replaced spaces with
+	  tabs)
+
+2008-05-30 09:30  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r4279] modules/cpl-c/cpl_parser.c, ut.h:
+	  - moved macro trimlr() from cpl module to core utils as
+	  trim_space_lr() - this functionality is required also from other
+	  modules (like dialog)
+
+2008-05-30 09:28  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r4278] mod_fix.c, mod_fix.h:
+	  - exposed the fixup_pvar() function for direct usage
+	  Needed by dialog module
+
+2008-05-30 09:26  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r4277] receive.c, receive.h:
+	  - allow access to the msg_no variable (used for generating unique -per
+	  process- IDs for sip_msg structures) from other code.
+	  Needed in some new TM functionality
+
+2008-05-30 09:24  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r4276] modules/path/path_mod.c:
+	  - only some text re-formatting to avoid text wrapping in console
+
+2008-05-30 09:12  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r4273] modules/rr/README, modules/rr/doc/rr_admin.xml:
+	  - fixed spelling errors in docs
+	  Reported by Ruchir Brahmbhatt.
+
+2008-05-30 08:57  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r4270] modules/tm/README, modules/tm/doc/tm_admin.xml:
+	  - fixed spelling errors in docs
+	  Reported by Ruchir Brahmbhatt.
+
+2008-05-29 18:32  Ovidiu Sas, <osas at voipembedded dot com>
+
+	* [r4269] modules/tm/README, modules/tm/doc/tm_admin.xml:
+	  Update doc for flag 0x2 for t_relay
+
+2008-05-29 14:59  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r4266] Makefile.defs:
+	  - fixed minor misspelling (no -> now)
+	  Reported by Anatoly Pidruchny.
+
+2008-05-29 14:27  Anca Vamanu, <anca at voice-system dot ro>
+
+	* [r4264] modules/presence/notify.c:
+	  - fixed not sending Notify to watchers when status is polite-block
+	  (reported by Sigrid Thijs, igrid dot thijs at androme dot com)
+
+2008-05-29 14:13  Anca Vamanu, <anca at voice-system dot ro>
+
+	* [r4263] modules/pua_mi/mi_func.c:
+	  - fixed wrong lengths for strings used in reply
+
+2008-05-29 02:26  Maxim Sobolev, <sobomax at sippysoft dot com>
+
+	* [r4262] modules/nathelper/nathelper.c,
+	  modules/nathelper/nhelpr_funcs.c:
+	  Change the way we append parameter to the end of SDP: instead of
+	  appending before the terminating CRLF, append it before any number
+	  trailing CRs and LFs and prepend CFLF before appending. This should
+	  prevent nathelper from generating broken SDPs when brain-damaged UA
+	  sends us a request that has arbitrary number of CRs/LFs at the end of
+	  SDP (such as Fring 3.30 for example).
+	  Before:
+	  ----
+	  v=0
+	  o=- 1212022997 1212022997 IN IP4 xx.xxx.xxx.xx
+	  s=OSS RTP Session
+	  c=IN IP4 xx.xxx.xxx.xx
+	  t=0 0
+	  m=audio 9 RTP/AVP 96 3 107 8 0 101
+	  a=rtpmap:96 AMR/8000
+	  a=fmtp:96 mode-set=0
+	  a=rtpmap:3 GSM/8000
+	  a=rtpmap:107 iLBC/8000
+	  a=rtpmap:8 PCMA/8000
+	  a=rtpmap:0 PCMU/8000
+	  a=rtpmap:101 telephone-event/8000
+	  a=fmtp:101 0-15
+	  
+	  
+	  a=direction:active
+	  ----
+	  After:
+	  ----
+	  v=0
+	  o=- 1212026907 1212026907 IN IP4 xx.xxx.xxx.xx
+	  s=OSS RTP Session
+	  c=IN IP4 xx.xxx.xxx.xx
+	  t=0 0
+	  m=audio 9 RTP/AVP 96 3 107 8 0 101
+	  a=rtpmap:96 AMR/8000
+	  a=fmtp:96 mode-set=0
+	  a=rtpmap:3 GSM/8000
+	  a=rtpmap:107 iLBC/8000
+	  a=rtpmap:8 PCMA/8000
+	  a=rtpmap:0 PCMU/8000
+	  a=rtpmap:101 telephone-event/8000
+	  a=fmtp:101 0-15
+	  a=direction:active
+	  
+	  
+
+2008-05-28 10:55  Juha Heinanen, <jh at tutpro dot com>
+
+	* [r4261] modules/presence/notify.c:
+	  * Noise reduction.
+
+2008-05-28 10:10  Juha Heinanen, <jh at tutpro dot com>
+
+	* [r4260] modules/pua_mi/README, modules/pua_mi/doc/pua_mi_admin.xml,
+	  modules/pua_mi/mi_func.c:
+	  * Added extra_headers parameter to pua_mi/pua_publish function.
+
+2008-05-26 19:57  Dan Pascu, <dan at ag-projects dot com>
+
+	* [r4258] Makefile:
+	  Fixed wrong target names for deb-sarge and deb-etch in Makefile
+
+2008-05-26 17:17  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r4257] Makefile:
+	  - separate build-targets for Debian Etch and Sarge
+	  closes #1830970, patch provided from Carsten Bock
+
+2008-05-26 16:48  Daniel-Constantin Mierla, <miconda at gmail dot com>
+
+	* [r4255] modules/siptrace/README,
+	  modules/siptrace/doc/siptrace_admin.xml:
+	  - fixed some copy and paste errors (reported by Olle E. Johansson)
+
+2008-05-26 16:03  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r4254] test/2.cfg, test/33.sh:
+	  - silence killall statement, as this should fail
+	  - add new nat_traversal module to 'load all' test
+
+2008-05-26 15:19  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r4253] Makefile:
+	  - new target for make
+	  'make doxygen' - create doxygen documentation (without DOT graphs)
+	  - patch provided from Johansson Olle E, oej at edvina dot net
+
+2008-05-26 10:37  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r4252] modules/carrierroute/route_func.c:
+	  - add ERROR logging for failures in load_user_carrier
+
+2008-05-26 10:37  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r4251] modules/carrierroute/route_db.c:
+	  - fix bug in load_user_carrier - add explicit check for 'NULL' values
+	  in cr_preferred_carrier colums, some MySQL driver version return a
+	  negative value for such a column, instead of '0'
+
+2008-05-26 09:59  Anca Vamanu, <anca at voice-system dot ro>
+
+	* [r4248] modules/presence/README,
+	  modules/presence/doc/presence_admin.xml, modules/presence_xml/README,
+	  modules/presence_xml/doc/presence_xml_admin.xml:
+	  - fixed wrong sql script name in documentation (reported by Florent Le
+	  Saout, le-saout dot florent at laposte.net)
+
+2008-05-26 06:10  Juha Heinanen, <jh at tutpro dot com>
+
+	* [r4246] modules/domain/domain.c, modules/domain/domain.h,
+	  modules/domain/domain_mod.c:
+	  * Conversion to use db_check_table_version.
+
+2008-05-23 10:25  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r4245] modules/presence/README,
+	  modules/presence/doc/presence_admin.xml, modules/xmpp/README,
+	  modules/xmpp/doc/xmpp_admin.xml:
+	  - remove wrong ';' at the end of some modparam statements
+
+2008-05-23 09:19  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r4244] modules/acc/README, modules/acc/doc/acc_admin.xml:
+	  - port from 1.3 branch, rev4243
+	  - fix spelling errors in module documentation
+
+2008-05-22 16:44  Dan Pascu, <dan at ag-projects dot com>
+
+	* [r4242] modules/nat_traversal, modules/nat_traversal/Makefile,
+	  modules/nat_traversal/README, modules/nat_traversal/doc,
+	  modules/nat_traversal/doc/nat_traversal.xml,
+	  modules/nat_traversal/doc/nat_traversal_admin.xml,
+	  modules/nat_traversal/nat_traversal.c, parser/msg_parser.h:
+	  Added new nat_traversal module that deals with NAT traversal for SIP
+	  signaling
+
+2008-05-22 08:57  Anca Vamanu, <anca at voice-system dot ro>
+
+	* [r4241] modules/pua_usrloc/README,
+	  modules/pua_usrloc/doc/pua_usrloc_admin.xml,
+	  modules/pua_usrloc/pua_usrloc.c:
+	  - fixed typo in documentation (reported by Schumann Sebastian)
+
+2008-05-21 16:12  Anca Vamanu, <anca at voice-system dot ro>
+
+	* [r4238] modules/rls/rls.c:
+	  - set parameter xcap_root not required if parameter
+	  rls_resource_list_server is set
+	  - fixed example for setting xcap_root parameter
+	  (reported by Adrian Georgescu, ag at ag-projects dot com)
+
+2008-05-21 15:45  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r4236] scripts/openserdbctl.mysql:
+	  - fix " ERROR 1071 (42000) at line 2: Specified key was too long;
+	  max key length is 1000 bytes" problem with mysql using UTF-8
+	  - Patch provided from Peter Lemenkov, lemenkov at gmail dot com1
+	  - remove superfluous '-n' from charset output
+
+2008-05-21 15:15  Anca Vamanu, <anca at voice-system dot ro>
+
+	* [r4235] modules/pua_bla/pua_bla.c, modules/pua_bla/pua_bla.h,
+	  modules/pua_bla/registrar_cb.c:
+	  - renamed variable outbound_proxy to avoid conflict with variable from
+	  pua module
+
+2008-05-21 14:05  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r4234] db/schema/carrierfailureroute.xml, db/schema/carrierroute.xml,
+	  db/schema/entities.xml, db/schema/globalblacklist.xml,
+	  db/schema/userblacklist.xml,
+	  scripts/db_berkeley/openser/globalblacklist,
+	  scripts/db_berkeley/openser/userblacklist,
+	  scripts/dbtext/openser/globalblacklist,
+	  scripts/dbtext/openser/userblacklist,
+	  scripts/mysql/userblacklist-create.sql,
+	  scripts/oracle/userblacklist-create.sql,
+	  scripts/postgres/userblacklist-create.sql:
+	  - add 'description_len' to entitity.xml
+	  - sync description length and type of globalblacklist table to
+	  carrierroute
+	  - remove description column of userblacklist table, this is not really
+	  needed
+	  - carrierroute and carrierfailureroute table use the entity, no
+	  visible change
+
+2008-05-21 09:13  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r4233] scripts/openserctl.dbtext, test/33.sh:
+	  - fix test 33, add a small sleep as the core dumping is sometimes slow
+	  - add a TEST check for the dbtext DB to the openserctl.dbtext, fix
+	  test 10
+
+2008-05-21 07:50  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r4232] db/db.c, db/db.h, modules/auth_db/authdb_mod.c,
+	  modules/carrierroute/route_db.c, modules/cpl-c/cpl_db.c,
+	  modules/dialog/dlg_db_handler.c, modules/domain/domain.c,
+	  modules/group/group.c, modules/group/group.h,
+	  modules/group/group_mod.c, modules/lcr/lcr_mod.c,
+	  modules/msilo/msilo.c, modules/permissions/address.c,
+	  modules/permissions/trusted.c, modules/presence/presence.c,
+	  modules/presence_xml/presence_xml.c, modules/pua/pua.c,
+	  modules/rls/rls.c, modules/userblacklist/db.c, modules/usrloc/dlist.c,
+	  modules/xcap_client/xcap_client.c:
+	  - add db_check_table_version funtion to db API
+	  - this function includes error logging and also a error message on
+	  version mismatch, its require now a exact match of the version numbers
+	  - convert most of the modules to use this function, instead of
+	  implementing their own error handling again
+	  - new modules should use this function
+	  - increase trusted table version define for permissions module, it
+	  should be the same as the DB version entry
+	  - TODO: convert uri_db, domain, domainpolicy and dispatch too
+
+2008-05-20 13:56  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r4231] modules/cfgutils/README, modules/cfgutils/cfgutils.c,
+	  modules/cfgutils/doc/cfgutils_admin.xml:
+	  - deactivate config file hashing if no hash_file parameter is given,
+	  this caused startup problems in some cases when a relative path to a
+	  config file was specified. Reported from Daniel
+
+2008-05-20 12:54  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r4230] modules/diversion/diversion.c:
+	  - decrease log level of startup notice, this should be INFO as in
+	  other modules
+
+2008-05-19 14:21  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r4228] modules/cfgutils/README,
+	  modules/cfgutils/doc/cfgutils_admin.xml:
+	  - fix some errors in documentation
+
+2008-05-19 14:17  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r4227] test/33.cfg, test/33.sh:
+	  - add test for cfgutils (check config file hashing, some parameter
+	  definitions, memory dumps and core dump functionality)
+
+2008-05-19 12:35  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r4225] modules/db_unixodbc/con.h:
+	  - <sqlext.h> don't includes <sqlucode.h> in old unixodbc versions,
+	  e.g. Debian sarge
+	  - Patch provided from Carsten Bock, lists at bock dot info
+
+2008-05-19 10:52  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r4224] modules/cpl-c/cpl.c:
+	  - improve log message a little bit
+
+2008-05-19 10:52  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r4223] modules/cfgutils/README, modules/cfgutils/cfgutils.c,
+	  modules/cfgutils/doc/cfgutils_admin.xml:
+	  - remove 'dbg_' prefix, this is not needed
+
+2008-05-19 08:35  Daniel-Constantin Mierla, <miconda at gmail dot com>
+
+	* [r4222] pvar.c:
+	  - r-uri port PV ($rp) can be used in assignments to set the r-uri port
+
+2008-05-19 07:55  Elena-Ramona Modroiu, <ramona at rosdeve dot ro>
+
+	* [r4221] modules/alias_db/README, modules/alias_db/alias_db.c,
+	  modules/alias_db/alias_db.h, modules/alias_db/alookup.c,
+	  modules/alias_db/doc/alias_db.xml,
+	  modules/alias_db/doc/alias_db_admin.xml:
+	  - allow one alias to many destinations (first replaces the r-uri, next
+	  are added as branches)
+	  - new param: append_branches to control addition of branches (default
+	  is 0, don't add branches -- preserves old behavior)
+
+2008-05-19 07:05  Daniel-Constantin Mierla, <miconda at gmail dot com>
+
+	* [r4218] route.c:
+	  - don't do reverse dns lookup for ip comparison when rev_dns is off
+	  (credits to Michael Young for testing)
+
+2008-05-19 06:47  Daniel-Constantin Mierla, <miconda at gmail dot com>
+
+	* [r4214] action.c:
+	  - skip printing semicolon (':') if the port parameter is empty string
+
+2008-05-18 07:53  Daniel-Constantin Mierla, <miconda at gmail dot com>
+
+	* [r4213] transformations.c, transformations.h:
+	  - new param transformation
+	  param.valueat - return value of parameter at given position
+
+2008-05-17 15:21  Daniel-Constantin Mierla, <miconda at gmail dot com>
+
+	* [r4212] transformations.c, transformations.h:
+	  - new param transporamtion
+	  param.count - return number of parameters in the list
+
+2008-05-17 14:57  Daniel-Constantin Mierla, <miconda at gmail dot com>
+
+	* [r4211] Makefile.defs, transformations.c, transformations.h:
+	  - two new string transformations
+	  s.tolower - converts ASCII letters to lower case
+	  s.toupper - converts ASCII letters to upper case
+
+2008-05-17 14:32  Daniel-Constantin Mierla, <miconda at gmail dot com>
+
+	* [r4210] pvar.c:
+	  - protocol PV prints lowercase -- the common way in SIP parameters
+	  (comparison not affected)
+
+2008-05-17 14:09  Daniel-Constantin Mierla, <miconda at gmail dot com>
+
+	* [r4209] modules/msilo/README, modules/msilo/doc/msilo_admin.xml:
+	  - added note about reminder messages
+
+2008-05-17 07:36  Daniel-Constantin Mierla, <miconda at gmail dot com>
+
+	* [r4208] modules/msilo/README, modules/msilo/doc/msilo.cfg:
+	  - angle brackets removed
+	  - README regenerated
+
+2008-05-17 07:33  Daniel-Constantin Mierla, <miconda at gmail dot com>
+
+	* [r4207] modules/msilo/doc/msilo.cfg:
+	  - sample msilo config updated
+
+2008-05-17 07:27  Daniel-Constantin Mierla, <miconda at gmail dot com>
+
+	* [r4206] modules/msilo/README, modules/msilo/doc/msilo_admin.xml,
+	  modules/msilo/msilo.c:
+	  - more flexibility in defining From header, contact, message body and
+	  content-type for notifications (a different approach to get
+	  functionalities of the patch #1887826 submitted by Inaki Baz Castillo)
+
+2008-05-17 07:18  Dan Pascu, <dan at ag-projects dot com>
+
+	* [r4204] modules/dialog/dlg_req_within.c:
+	  Fixed wrong reference counting that could occur in certain cases when
+	  terminating the call using the MI dlg_end_dlg command. In such cases
+	  the reference count was not decremented enough and kept the dialog in
+	  memory because it never reached 0.
+	  One case where this could happen is if a BYE send by one of the
+	  endpoints.
+	  arrived at the same time the local BYE messages were generated.
+	  Another case is when the messages in the dialog are forwarded to the
+	  proxy itself, having more than 1 Record-Route with the proxy. There are
+	  certain situations in this case where the route set in the dialog module
+	  is wrong having one of the routes pointing to the proxy itself duplicated.
+	  This makes the generated BYEs to be routed 1 more time than normal to the
+	  proxy itself,triggering a dialog termination as if an external BYE has been
+	  received, thus mimicking the previous mentioned case.
+	  There is still a bug related to the wrong route set that needs to be
+	  fixed, however this patch is able to fix and handle all cases gracefully,
+	  even when the route set is wrong.
+
+2008-05-17 06:49  Dan Pascu, <dan at ag-projects dot com>
+
+	* [r4201] modules/dialog/dlg_handlers.c:
+	  Fixed wrong reference counting when DID_FALLBACK is used and an early
+	  in-dialog message like PRACK is received and it doesn't match the
+	  dialog elements when the fallback check is performed. In this case there
+	  was a missing refcount decrementing which resulted in the dialog never
+	  reaching a refcount of 0 and thus it was being kept in memory.
+
+2008-05-17 06:40  Dan Pascu, <dan at ag-projects dot com>
+
+	* [r4200] modules/dialog/dlg_hash.c, modules/dialog/dlg_hash.h:
+	  Log a debug message when the reference counter is increased to help
+	  with tracing reference counting problems
+
+2008-05-16 15:44  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r4198] modules/permissions/trusted.c:
+	  - fix error in allow_trusted function log message if no db_url has
+	  been set
+
+2008-05-15 14:41  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r4195] modules/cfgutils/README, modules/cfgutils/cfgutils.c,
+	  modules/cfgutils/doc/cfgutils_admin.xml:
+	  - extend cfgutils with debugging helpers usable from config script:
+	  abort, shm_status and pkg_status
+	  - functionality ported from SERs 'dbg' module, adapted to OpenSER
+	  - add documentation
+
+2008-05-15 10:56  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+
+	* [r4190] modules/tm/t_reply.c:
+	  - fixed race condition that may lead to deadlock on the transaction
+	  lock. As the reply route (t_on_reply()) stored in transaction may be
+	  changed in reply route br the current process or any other process, to
+	  avoid race conditions, it is better to make a local copy of the reply
+	  route number to be sure it will not be changed.
+	  The deadlock can appear as the reply route number is used in several
+	  conditions to determine id locking is required. But as this value may
+	  be changed (by current or other process), it may lead to multiple
+	  lockings with no unlock -> deadlock.
+	  NOTE: this might happen only if onreply_avp_mode is turned on.
+
+2008-05-15 10:35  Anca Vamanu, <anca at voice-system dot ro>
+
+	* [r4188] modules/presence/notify.c, modules/presence/presence.c:
+	  - fixed handling polite-block action (reported by Sigrid Thijs,
+	  sigrid.thijs at androme dot com)
+
+2008-05-15 09:44  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
+
+	* [r4186] ChangeLog:
+	  - update changelog
+
 2008-05-14 16:03  Elena-Ramona Modroiu, <ramona at rosdeve dot ro>
 
 	* [r4185] modules/pdt/README, modules/pdt/doc/pdt_admin.xml,
@@ -639,10 +1982,7 @@
 	* [r4069] parser/sdp/sdp.c, parser/sdp/sdp.h,
 	  parser/sdp/sdp_helpr_funcs.c, parser/sdp/sdp_helpr_funcs.h:
 	  Add RFC4975 attributes to the SDP parser:
-	  * accept-types
-	  * accept-wrapped-types
-	  * path
-	  * max_size
+	  * accept-types, accept-wrapped-types, path, max_size
 	  Closes patch [ 1947804 ] SDP parser - add media attributes for MSRP
 	  protocol(rfc4975). Credits goes to Denis Bilenko - denik
 
@@ -706,8 +2046,7 @@
 
 	* [r4058] modules/db_postgres/db_res.c, modules/db_unixodbc/res.c:
 	  - db_postgres and db_unixodbc handles TEXT colums now as DB_BLOB type
-	  similar
-	  to the other database modules
+	  similar to the other database modules
 	  - activate warning in db_unixodbc for unhandled data types
 	  - closes bug #1940022
 
@@ -922,7 +2261,7 @@
 
 	* [r4015] modules/presence/presence.c, modules/presence/subscribe.c:
 	  - removed subscribe dialogs from database when status switches to
-	  'terminated' (reported by Sigrid Thijs <sigrid.thijs@androme.com>)
+	  'terminated' (reported by Sigrid Thijs, sigrid dot thijs at androme.com)
 
 2008-04-15 09:38  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
 
@@ -936,8 +2275,7 @@
 	  before or after dialog module init. If registered before, the callback
 	  will be run only after the dialogs are actually loaded from DB (at
 	  init); if registered after dialog init, the callback will be run on
-	  the spot.
-	  All these are needed for some work in progress.
+	  the spot. All these are needed for some work in progress.
 
 2008-04-14 13:45  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
 
@@ -1068,8 +2406,7 @@
 	  db/schema/userblacklist.xml, db/schema/usr_preferences.xml,
 	  doc/dbschema/xsl/postgres.xsl:
 	  - improve 'autoincrement' type for postgres, now its not necessary
-	  anymore to
-	  specify this workaround in the scheme sources
+	  anymore to specify this workaround in the scheme sources
 
 2008-04-09 16:12  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
 
@@ -1209,7 +2546,7 @@
 	  buidling high level applications (like IPPBX) on top of OpenSER
 	  - the TM API was vertically extended, so it is backward compatible and
 	  it is not affecting the modules already using the API
-	  Credits go to Andrei Pisau < andrei.pisau @ voice-system dot ro>
+	  Credits go to Andrei Pisau, andrei dot pisau at voice-system dot ro
 
 2008-04-04 08:44  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
 
@@ -1310,8 +2647,7 @@
 	  anyway
 	  - carrierroute code changed as comment is displayed from setup tools
 	  - the other modules don't use the colum in question, its only a
-	  comment
-	  so no version update is necessary
+	  comment so no version update is necessary
 	  - SQL scheme files and documentation also updated
 	  - Patch provided from Iouri Kharon, yjh at styx dot cabel dot net
 
@@ -1348,15 +2684,13 @@
 
 	* [r3964] modules/dialog/dlg_db_handler.c:
 	  - fixed usage of "continue" in a "do{}while" macro.
-	  Part of bug 1913465.
-	  Credits go to Ben Smithurst.
+	  Part of bug 1913465, credits go to Ben Smithurst.
 
 2008-03-31 08:59  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
 
 	* [r3962] modules/dialog/dlg_cb.h, modules/dialog/dlg_req_within.c:
 	  - fixed memory leak in DLG_BYE_DLG MI command.
-	  Closed patch 1918358.
-	  Credits go to Carsten Bock
+	  Closed patch 1918358, credits go to Carsten Bock
 
 2008-03-29 14:13  Daniel-Constantin Mierla, <miconda at gmail dot com>
 
@@ -3289,7 +4623,7 @@
 	  - exported a new function to be called from the script that makes
 	  possible updating the remote target in a Subscribe-Notify dialog when
 	  receiving a Notify message (reported by Marco Happenhofer
-	  <marco.happenhofer@tuwien.ac.at>)
+	  <marco dot happenhofer at tuwien dot ac dot at)
 
 2008-03-04 16:56  Daniel-Constantin Mierla, <miconda at gmail dot com>
 
@@ -3315,8 +4649,8 @@
 	  modules/presence/notify.c, modules/presence/presence.c,
 	  modules/presence/presentity.c:
 	  - fixed not updating remote target to the Contact of the in-dialog
-	  Subscribe messages (reported by Marco Happenhofer
-	  <marco.happenhofer@tuwien.ac.at>)
+	  Subscribe messages (reported by Marco Happenhofer,
+	  marco dot happenhofer at tuwien dot ac dot at)
 
 2008-03-04 13:46  Daniel-Constantin Mierla, <miconda at gmail dot com>
 
@@ -3735,7 +5069,7 @@
 	* [r3792] modules/pua/send_subscribe.c:
 	  - fixed a bug introduced in a previous commit - wrong order operations
 	  - using msg fields before parse_headers is called (thanks to Zahid
-	  Mehmood <zm23@columbia.edu>)
+	  Mehmood, zm23 at columbia dot edu)
 
 2008-02-28 16:20  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
 
@@ -4301,7 +5635,7 @@
 	* [r3740] modules/pua/pua.c, modules/pua/send_publish.c,
 	  modules/pua/send_subscribe.c, modules/pua/send_subscribe.h:
 	  - fixed a bug of using uninitialized variable when a FAKE_REPLY was
-	  received (thanks to Zahid Mehmood <zm23@columbia.edu>)
+	  received (thanks to Zahid Mehmood, zm23 at columbia dot edu)
 
 2008-02-20 17:59  Henning Westerholt, <henning dot westerholt at 1und1 dot de>
 
@@ -4324,7 +5658,7 @@
 	  modules/presence/notify.h, modules/presence/presentity.c,
 	  modules/presence/publish.c:
 	  - fixed a bug in getting presentity uri from Publish request uri
-	  (reported by Eric PTAK <eric.ptak.fr@gmail.com>)
+	  (reported by Eric PTAK, eric dot ptak dot fr at gmail dot com)
 
 2008-02-20 05:02  Ovidiu Sas, <osas at voipembedded dot com>
 
@@ -6430,7 +7764,7 @@
 
 ===================== 2005-10-28 OpenSER v1.0.0 released ======================
 
-===================== 2005-06-14 Release 0.9.4 ================================
+===================== 2005-06-14 OpenSER v0.9.4 released ======================
 
 * 2005-06-14
  - Initial release of OpenSER (v0.9.4) spawned from SER branch 0.9.0
