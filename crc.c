@@ -33,8 +33,6 @@
 #include "ut.h"
 #include "crc.h"
 
-#define OK 0
-#define ERROR (-1)
 #define UPDC32(ch, crc) (crc_32_tab[((crc) ^ (ch)) & 0xff] ^ ((crc) >> 8))
 #define UPDCIT(ch, crc) (ccitt_tab[((crc) ^ (ch)) & 0xff] ^ ((crc) >> 8))
 #define UPDC16(ch, crc) (crc_16_tab[((crc) ^ (ch)) & 0xff] ^ ((crc) >> 8))
