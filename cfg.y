@@ -1425,12 +1425,16 @@ error_route_stm:  ROUTE_ERROR LBRACE actions RBRACE {
 	;
 
 local_route_stm:  ROUTE_LOCAL LBRACE actions RBRACE {
+										#ifdef USE_LOCAL_ROUTE
 										if (local_rlist!=0) {
 											yyerror("re-definition of local "
 													"route detected");
 											YYABORT;
 										}
 										push($3, &local_rlist);
+										#else
+										yyerror("local_route statement and local_route was not compiled in");
+										#endif
 										}
 		| ROUTE_LOCAL error { yyerror("invalid local_route statement"); }
 	;

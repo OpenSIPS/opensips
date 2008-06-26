@@ -43,7 +43,9 @@ extern struct action* rlist[RT_NO];
 extern struct action* onreply_rlist[ONREPLY_RT_NO];
 extern struct action* failure_rlist[FAILURE_RT_NO];
 extern struct action* branch_rlist[BRANCH_RT_NO];
+#ifdef USE_LOCAL_ROUTE
 extern struct action* local_rlist;
+#endif
 extern struct action* error_rlist;
 
 #define REQUEST_ROUTE 1  /* Request route block */

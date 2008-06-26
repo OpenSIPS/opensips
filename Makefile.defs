@@ -439,6 +439,8 @@ endif
 # -DORACLE_USRLOC
 #		use oracle compatible SQL in the the get_all_ucontacts function in usrloc,
 #		needed for example from the nathelper module
+# -DUSE_LOCAL_ROUTE
+#		enable the local_route functionality in the core
 
 
 DEFS+= $(extra_defs) \
@@ -464,7 +466,8 @@ DEFS+= $(extra_defs) \
 	 #-DNOSMP \
 	 #-DEXTRA_DEBUG \
 	 #-DUSE_SHM_MEM \
-	 #-DORACLE_USRLOC
+	 #-DORACLE_USRLOC \
+	 #-DUSE_LOCAL_ROUTE
 
 #PROFILE=  -pg #set this if you want profiling
 

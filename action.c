@@ -119,9 +119,15 @@ int run_action_list(struct action* a, struct sip_msg* msg)
 		/* if action returns 0, then stop processing the script */
 		if(ret==0)
 			action_flags |= ACT_FL_EXIT;
+#ifndef USE_LOCAL_ROUTE
+		if(error_rlist!=NULL && !is_route_type(ERROR_ROUTE)
+				&& !is_route_type(ONREPLY_ROUTE)
+#else
 		if(error_rlist!=NULL &&
 				(route_type&(ERROR_ROUTE|ONREPLY_ROUTE|LOCAL_ROUTE))==0
+#endif
 				&& _oser_err_info.eclass!=0)
+
 		{
 			LM_DBG("jumping to error route\n");
 			set_route_type( ERROR_ROUTE );
