@@ -19,6 +19,32 @@
  * You should have received a copy of the GNU General Public License 
  * along with this program; if not, write to the Free Software 
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
+ * History:
+ * -------
+ *  2001-??-??  created by andrei
+ *  ????-??-??  lots of changes by a lot of people
+ *  2003-01-23  support for determination of outbound interface added :
+ *               get_out_socket (jiri)
+ *  2003-01-24  reply to rport support added, contributed by
+ *               Maxim Sobolev <sobomax@FreeBSD.org> and modified by andrei
+ *  2003-02-11  removed calls to upd_send & tcp_send & replaced them with
+ *               calls to msg_send (andrei)
+ *  2003-03-19  replaced all mallocs/frees w/ pkg_malloc/pkg_free (andrei)
+ *  2003-04-02  fixed get_send_socket for tcp fwd to udp (andrei)
+ *  2003-04-03  added su_setport (andrei)
+ *  2003-04-04  update_sock_struct_from_via now differentiates between
+ *               local replies  & "normal" replies (andrei)
+ *  2003-04-12  update_sock_struct_from via uses also FL_FORCE_RPORT for
+ *               local replies (andrei)
+ *  2003-08-21  check_self properly handles ipv6 addresses & refs   (andrei)
+ *  2003-10-21  check_self updated to handle proto (andrei)
+ *  2003-10-24  converted to the new socket_info lists (andrei)
+ *  2004-10-10  modified check_self to use grep_sock_info (andrei)
+ *  2004-11-08  added force_send_socket support in get_send_socket (andrei)
+ *  2006-09-06  added new algorithm for building VIA branch parameter for 
+ *              stateless requests - it complies to RFC3261 requirement to be
+ *              unique through time and space (bogdan)
  */
 
 /*!

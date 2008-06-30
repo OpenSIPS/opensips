@@ -19,6 +19,26 @@
  * You should have received a copy of the GNU General Public License 
  * along with this program; if not, write to the Free Software 
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
+ * History:
+ * ---------
+ *  2003-02-28  scratchpad compatibility abandoned (jiri)
+ *  2003-01-29  removed scratchpad (jiri)
+ *  2003-03-19  fixed set* len calculation bug & simplified a little the code
+ *              (should be a little faster now) (andrei)
+ *              replaced all mallocs/frees w/ pkg_malloc/pkg_free (andrei)
+ *  2003-04-01  Added support for loose routing in forward (janakj)
+ *  2003-04-12  FORCE_RPORT_T added (andrei)
+ *  2003-04-22  strip_tail added (jiri)
+ *  2003-10-02  added SET_ADV_ADDR_T & SET_ADV_PORT_T (andrei)
+ *  2003-10-29  added FORCE_TCP_ALIAS_T (andrei)
+ *  2004-11-30  added FORCE_SEND_SOCKET_T (andrei)
+ *  2005-11-29  added serialize_branches and next_branches (bogdan)
+ *  2006-03-02  MODULE_T action points to a cmd_export_t struct instead to 
+ *               a function address - more info is accessible (bogdan)
+ *  2006-05-22  forward(_udp,_tcp,_tls) and send(_tcp) merged in forward() and
+ *               send() (bogdan)
+ *  2006-12-22  functions for script and branch flags added (bogdan)
  */
 
 /*!

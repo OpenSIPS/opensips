@@ -18,6 +18,19 @@
  * You should have received a copy of the GNU General Public License 
  * along with this program; if not, write to the Free Software 
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
+ * History:
+ * --------
+ *  2003-03-10  switched to new module_exports format: updated find_export,
+ *               find_export_param, find_module (andrei)
+ *  2003-03-19  replaced all mallocs/frees w/ pkg_malloc/pkg_free (andrei)
+ *  2003-03-19  Support for flags in find_export (janakj)
+ *  2003-03-29  cleaning pkg_mallocs introduced (jiri)
+ *  2003-04-24  module version checking introduced (jiri)
+ *  2004-09-19  compile flags are checked too (andrei)
+ *  2006-03-02  added find_cmd_export_t(), killed find_exportp() and
+ *              find_module() (bogdan)
+ *  2006-11-28  added module_loaded() (Jeffrey Magder - SOMA Networks)
  */
 
 /*!

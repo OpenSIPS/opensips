@@ -20,6 +20,20 @@
  * You should have received a copy of the GNU General Public License 
  * along with this program; if not, write to the Free Software 
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
+ * History:
+ * --------
+ *  2003-03-10  changed module exports interface: added struct cmd_export
+ *               and param_export (andrei)
+ *  2003-03-16  Added flags field to cmd_export_ (janakj)
+ *  2003-04-05  s/reply_route/failure_route, onreply_route introduced (jiri)
+ *  2004-03-12  extra flag USE_FUNC_PARAM added to modparam type -
+ *              instead of copying the param value, a func is called (bogdan)
+ *  2004-09-19  switched to version.h for the module versions checks (andrei)
+ *  2004-12-03  changed param_func_t to (modparam_t, void*), killed
+ *               param_func_param_t   (andrei)
+ *  2006-03-02  added find_cmd_export_t(), killed find_exportp() (bogdan)
+ *  2006-11-28  added module_loaded() (Jeffrey Magder - SOMA Networks)
  */
 
 /*!

@@ -20,6 +20,40 @@
  * You should have received a copy of the GNU General Public License 
  * along with this program; if not, write to the Free Software 
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
+ * History:
+ * --------
+ * 2003-01-20  bug_fix: use of return value of snprintf aligned to C99 (jiri)
+ * 2003-01-23  added rport patches, contributed by 
+ *              Maxim Sobolev <sobomax@FreeBSD.org> and heavily modified by me
+ *              (andrei)
+ * 2003-01-24  added i param to via of outgoing requests (used by tcp),
+ *              modified via_builder params (andrei)
+ * 2003-01-27  more rport fixes (make use of new via_param->start)  (andrei)
+ * 2003-01-27  next baby-step to removing ZT - PRESERVE_ZT (jiri)
+ * 2003-01-29  scratchpad removed (jiri)
+ * 2003-02-28  scratchpad compatibility abandoned (jiri)
+ * 2003-03-01  VOICE_MAIL defs removed (jiri)
+ * 2003-03-06  totags in outgoing replies bookmarked to enable
+ *             ACK/200 tag matching (andrei)
+ * 2003-03-18  killed the build_warning snprintf (andrei)
+ * 2003-03-31  added subst lump support (andrei)
+ * 2003-04-01  added opt (conditional) lump support (andrei)
+ * 2003-04-02  added more subst lumps: SUBST_{SND,RCV}_ALL  
+ *              => ip:port;transport=proto (andrei)
+ * 2003-04-12  added FL_FORCE_RPORT support (andrei)
+ * 2003-04-13  updated warning builder -- fixed (andrei)
+ * 2003-07-10  check_via_address knows now how to compare with ipv6 address
+ *              references (e.g [::1]) (andrei)
+ *             build_req_fomr_sip_req no longer adds 1 for ipv6 via parameter
+ *              position calculations ([] are part of host.s now) (andrei)
+ * 2003-10-02  via+lump dst address/port can be set to preset values (andrei)
+ * 2003-10-08  receive_test function-alized (jiri)
+ * 2003-10-20  added body_lump list (sip_msg), adjust_clen (andrei & jan)
+ * 2003-11-11  type of rpl_lumps replaced by flags (bogdan)
+ * 2007-02-22  insert_path_as_route() imported from TM as we need it for
+ *             stateless processing also; contributed by Andreas Granig
+ *             (bogdan)
  */
 
 /*!

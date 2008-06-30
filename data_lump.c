@@ -17,6 +17,18 @@
  * You should have received a copy of the GNU General Public License 
  * along with this program; if not, write to the Free Software 
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
+ * History:
+ * --------
+ *  2003-01-19  support for duplication lump lists added (jiri)
+ *  2003-03-31  added subst lumps --they expand in ip addr, port a.s.o (andrei)
+ *  2003-04-01  added conditional lump support functions (andrei)
+ *  2003-10-20  anchor_lump & del_lump will automatically choose the lump list
+ *              based on  msg->eoh comparisons (andrei)
+ *  2003-10-28  added extra checks (paranoia) for {anchor,del}_lump (andrei)
+ *  2005-08-22  added init_lump_flags -initial flags- for all built lumps
+ *              (bogdan)
+ *  2005-08-23  del_nonshm_lump() -> del_flaged_lumps(LUMPFLAG_SHMEM) (bogdan)
  */
 
 /*!

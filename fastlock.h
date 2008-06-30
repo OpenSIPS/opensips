@@ -18,6 +18,20 @@
  * You should have received a copy of the GNU General Public License 
  * along with this program; if not, write to the Free Software 
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
+ * History:
+ * --------
+ *  2002-02-05  created by andrei
+ *  2003-01-16  added PPC locking code contributed by Dinos Dorkofikis
+ *               <kdor@intranet.gr>
+ *  2004-09-12  added MIPS locking for ISA>=2 (>r3000)  (andrei)
+ *  2004-12-16  for now use the same locking code for sparc32 as for sparc64
+ *               (it will work only if NOSMP is defined) (andrei)
+ *
+ *  2005-04-27  added alpha locking code (andrei)
+ *  2005-05-25  PPC locking code enabled for PPC64; added a lwsync to
+ *               the tsl part and replaced the sync with a lwsync for the
+ *               unlock part (andrei)
  */
 
 /*!

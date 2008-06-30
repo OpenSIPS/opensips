@@ -18,6 +18,20 @@
  * You should have received a copy of the GNU General Public License 
  * along with this program; if not, write to the Free Software 
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * History:
+ * --------
+ *  2002-12-16  created by andrei
+ *  2003-02-20  s/gen_lock_t/gen_lock_t/ to avoid a type conflict 
+ *               on solaris  (andrei)
+ *  2003-03-05  lock set support added for FAST_LOCK & SYSV (andrei)
+ *  2003-03-06  removed *_alloc,*_dealloc & moved them to lock_alloc.h
+ *              renamed locking.h to lock_ops.h (all this to solve
+ *              the locking.h<->shm_mem.h interdependency) (andrei)
+ *  2003-03-10  lock set support added also for PTHREAD_MUTEX & POSIX_SEM
+ *               (andrei)
+ *  2003-03-17  possible signal interruptions treated for sysv (andrei)
+ *  2004-07-28  s/lock_set_t/gen_lock_set_t/ because of a type conflict
+ *              on darwin (andrei)
  */
 
 /*!

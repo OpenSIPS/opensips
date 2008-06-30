@@ -18,6 +18,15 @@
  * You should have received a copy of the GNU General Public License 
  * along with this program; if not, write to the Free Software 
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
+ * History:
+ * -------
+ *  2001-??-?? created by andrei
+ *  ????-??-?? lots of changes by a lot of people
+ *  2003-02-11 added inline msg_send (andrei)
+ *  2003-04-07 changed all ports to host byte order (andrei)
+ *  2003-04-12  FORCE_RPORT_T added (andrei)
+ *  2003-04-15  added tcp_disable support (andrei)
  */
 
 /*!

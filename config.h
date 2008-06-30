@@ -18,6 +18,13 @@
  * You should have received a copy of the GNU General Public License 
  * along with this program; if not, write to the Free Software 
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
+ * History:
+ * --------
+ * 2003-04-05  DEFAULT_*_URL introduced (jiri)
+ * 2003-07-04  fixed SRV lookup prefix for TLS/sips (andrei)
+ * 2007-02-16  Added an OPENSER_OID define to localize OpenSER's IANA assigned
+ *             OID under the enterprise branch (jmagder)
  */
 
 /*!

@@ -18,6 +18,12 @@
  * You should have received a copy of the GNU General Public License 
  * along with this program; if not, write to the Free Software 
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
+ * History:
+ * --------
+ *  2003-04-12  support for resolving ipv6 address references added (andrei)
+ *  2004-07-28  darwin needs nameser_compat.h (andrei)
+ *  2007-01-25  support for DNS failover added (bogdan)
  */
 
 /*!

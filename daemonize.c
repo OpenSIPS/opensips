@@ -18,6 +18,13 @@
  * You should have received a copy of the GNU General Public License 
  * along with this program; if not, write to the Free Software 
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
+ * History:
+ * --------
+ *  2004-02-20  removed from ser main.c into its own file (andrei)
+ *  2004-03-04  moved setuid/setgid in do_suid() (andrei)
+ *  2004-03-25  added increase_open_fds & set_core_dump (andrei)
+ *  2004-05-03  applied pgid patch from janakj
  */
 
 /*!

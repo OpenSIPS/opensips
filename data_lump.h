@@ -20,6 +20,15 @@
  * You should have received a copy of the GNU General Public License 
  * along with this program; if not, write to the Free Software 
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
+ * History:
+ * --------
+ *  2003-01-29  s/int/enum ... more convenient for gdb (jiri)
+ *  2003-03-31  added subst lumps -- they expand in ip addr, port a.s.o (andrei)
+ *  2003-04-01  added opt (condition) lumps (andrei)
+ *  2003-04-02  added more subst lumps: SUBST_{SND,RCV}_ALL  
+ *              => ip:port;transport=proto (andrei)
+ *
  */
 
 /*!

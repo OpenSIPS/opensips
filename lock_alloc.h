@@ -18,6 +18,13 @@
  * You should have received a copy of the GNU General Public License 
  * along with this program; if not, write to the Free Software 
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
+ * History:
+ * --------
+ *  2003-03-06  created by andrei (contains parts of the original locking.h)
+ *  2003-03-17  fixed cast warning in shm_free (forced to void*) (andrei)
+ *  2004-07-28  s/lock_set_t/gen_lock_set_t/ because of a type conflict
+ *              on darwin (andrei)
  */
 
 /*!
