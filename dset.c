@@ -1,8 +1,6 @@
 /*
  * $Id$
  *
- * destination set
- *
  * Copyright (C) 2001-2004 FhG FOKUS
  *
  * This file is part of openser, a free SIP server.
