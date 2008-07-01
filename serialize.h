@@ -28,7 +28,7 @@
 
 /*!
  * \file serialize.h
- * \brief sequential forking implementation
+ * \brief Sequential forking implementation
  */
 
 

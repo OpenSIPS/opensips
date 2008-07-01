@@ -25,6 +25,11 @@
  *
  */
 
+/*!
+ * \file
+ * \brief SCTP support
+ */
+
 #ifdef USE_SCTP
 
 #include <stdlib.h>
@@ -233,7 +238,7 @@ error:
 
 
 
-/* which socket to use? main socket or new one? */
+/*! \brief which socket to use? main socket or new one? */
 int sctp_server_send(struct socket_info *source, char *buf, unsigned len,
 										union sockaddr_union*  to)
 {

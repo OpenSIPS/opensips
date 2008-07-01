@@ -21,6 +21,11 @@
  *
  */
 
+/*!
+ * \file
+ * \brief Script variables
+ */
+
 #ifndef _SCRIPT_VAR_H_
 #define _SCRIPT_VAR_H_
 

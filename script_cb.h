@@ -24,6 +24,11 @@
  *  2005-02-13  script callbacks devided into request and reply types (bogdan)
  */
 
+/*!
+ * \file
+ * \brief Script callbacks
+ */
+
 #ifndef _SCRIPT_CB_H_
 #define _SCRIPT_CB_H_
 

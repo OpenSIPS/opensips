@@ -27,6 +27,11 @@
  *              SOMA Networks)
  */
 
+/*!
+ * \file
+ * \brief Statistics support
+ */
+
 
 #include <string.h>
 
@@ -63,7 +68,8 @@ gen_lock_t *stat_lock = 0;
 
 
 
-/* Returns the statistic associated with 'numerical_code' and 'out_codes'.
+/*! \brief
+ * Returns the statistic associated with 'numerical_code' and 'out_codes'.
  * Specifically:
  *
  *  - if out_codes is nonzero, then the stat_var for the number of messages 

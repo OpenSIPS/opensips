@@ -1,8 +1,6 @@
 /*
  * $Id$
  *
- * Script callbacks 
- *
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of openser, a free SIP server.
@@ -26,6 +24,11 @@
  *  2003-03-29  cleaning pkg allocation introduced (jiri)
  *  2003-03-19  replaced all mallocs/frees w/ pkg_malloc/pkg_free (andrei)
  *  2005-02-13  script callbacks devided into request and reply types (bogdan)
+ */
+
+/*!
+ * \file
+ * \brief Script callbacks
  */
 
 

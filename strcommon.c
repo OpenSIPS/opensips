@@ -19,12 +19,17 @@
  * along with this program; if not, write to the Free Software 
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
+
+ */
+/*!
+ * \file
+ * \brief Generic string handling functions
  */
 
 #include "ut.h"
 #include "strcommon.h"
 
-/*
+/*! \brief
  * add backslashes to special characters
  */
 int escape_common(char *dst, char *src, int src_len)
@@ -60,7 +65,8 @@ int escape_common(char *dst, char *src, int src_len)
 	}
 	return j;
 }
-/*
+
+/*! \brief
  * remove backslashes to special characters
  */
 int unescape_common(char *dst, char *src, int src_len)
@@ -104,6 +110,7 @@ int unescape_common(char *dst, char *src, int src_len)
 	return j;
 }
 
+/*! \brief Compute MD5 checksum */
 void compute_md5(char *dst, char *src, int src_len)
 {
 	MD5_CTX context;
@@ -114,7 +121,7 @@ void compute_md5(char *dst, char *src, int src_len)
 	string2hex(digest, 16, dst);
 }
 
-/* unscape all printable ascii characters */
+/*! \brief Unscape all printable ASCII characters */
 int unescape_user(str *sin, str *sout)
 {
 	char *at, *p, c;
@@ -218,16 +225,16 @@ int unescape_user(str *sin, str *sout)
 	return 0;
 }
 
+/*! \brief
+ * Escape all printable characters that are not valid in user
+ * part of request uri
+ * no_need_to_escape = unreserved | user-unreserved
+ * unreserved = aplhanum | mark
+ * mark = - | _ | . | ! | ~ | * | ' | ( | )
+ * user-unreserved = & | = | + | $ | , | ; | ? | /
+ */
 int escape_user(str *sin, str *sout)
 {
-
-	/* escape all printable characters that are not valid in user
-	 * part of request uri
-	 * no_need_to_escape = unreserved | user-unreserved
-	 * unreserved = aplhanum | mark
-	 * mark = - | _ | . | ! | ~ | * | ' | ( | )
-	 * user-unreserved = & | = | + | $ | , | ; | ? | /
-	 */
 
 	char *at, *p;
 	unsigned char x;
@@ -303,10 +310,10 @@ int unescape_param(str *sin, str *sout)
 }
 
 
-// escape all printable characters that are not valid in
-// a param part of request uri: = | ; | , |   | " | ? | &
-//
-
+/*! \brief
+ * Escape all printable characters that are not valid in
+ * a param part of request uri: = | ; | , |   | " | ? | &
+ */
 int escape_param(str *sin, str *sout)
 {
     char *at, *p;

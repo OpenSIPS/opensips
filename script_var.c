@@ -21,6 +21,11 @@
  *
  */
 
+/*!
+ * \file
+ * \brief Script variables
+ */
+
 #include <assert.h>
 #include <ctype.h>
 #include <string.h>

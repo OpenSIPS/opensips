@@ -27,6 +27,11 @@
  *  2003-10-27  tcp port aliases support added (andrei)
  */
 
+/*!
+ * \file
+ * \brief TCP protocol support
+ */
+
 
 
 #ifndef _tcp_conn_h
@@ -36,28 +41,26 @@
 #include "locking.h"
 
 
-#define TCP_CON_MAX_ALIASES 4 /* maximum number of port aliases */
+#define TCP_CON_MAX_ALIASES 4 			/*!< Maximum number of port aliases */
 
-#define TCP_BUF_SIZE 65535
-#define DEFAULT_TCP_CONNECTION_LIFETIME 120 /* in  seconds */
-#define DEFAULT_TCP_SEND_TIMEOUT 10 /* if a send can't write for more then 10s,
-									   timeout */
-#define DEFAULT_TCP_CONNECT_TIMEOUT 10 /* if a connect doesn't complete in this
-										  time, timeout */
-#define DEFAULT_TCP_MAX_CONNECTIONS 2048 /* maximum connections */
-#define TCP_CHILD_TIMEOUT 5 /* after 5 seconds, the child "returns" 
+#define TCP_BUF_SIZE 65535			/*!< TCP buffer size */
+#define DEFAULT_TCP_CONNECTION_LIFETIME 120 	/*!< TCP connection lifetime, in seconds */
+#define DEFAULT_TCP_SEND_TIMEOUT 10 		/*!< If a send can't write for more then 10s, timeout */
+#define DEFAULT_TCP_CONNECT_TIMEOUT 10		/*!< If a connect doesn't complete in this time, timeout */
+#define DEFAULT_TCP_MAX_CONNECTIONS 2048	/*!< Maximum number of connections */
+#define TCP_CHILD_TIMEOUT 5 			/*!< After 5 seconds, the child "returns" 
 							 the connection to the tcp master process */
-#define TCP_MAIN_SELECT_TIMEOUT 5 /* how often "tcp main" checks for timeout*/
-#define TCP_CHILD_SELECT_TIMEOUT 2 /* the same as above but for children */
+#define TCP_MAIN_SELECT_TIMEOUT 5		/*!< how often "tcp main" checks for timeout*/
+#define TCP_CHILD_SELECT_TIMEOUT 2		/*!< the same as above but for children */
 
 
 /* tcp connection flags */
 #define F_CONN_NON_BLOCKING   1
-#define F_CONN_REMOVED        2 /* no longer in "main" listen fd list */
+#define F_CONN_REMOVED        2 /*!< no longer in "main" listen fd list */
 
 
 enum tcp_req_errors {	TCP_REQ_INIT, TCP_REQ_OK, TCP_READ_ERROR,
-						TCP_REQ_OVERRUN, TCP_REQ_BAD_LEN };
+		TCP_REQ_OVERRUN, TCP_REQ_BAD_LEN };
 enum tcp_req_states {	H_SKIP_EMPTY, H_SKIP, H_LF, H_LFCR,  H_BODY, H_STARTWS,
 		H_CONT_LEN1, H_CONT_LEN2, H_CONT_LEN3, H_CONT_LEN4, H_CONT_LEN5,
 		H_CONT_LEN6, H_CONT_LEN7, H_CONT_LEN8, H_CONT_LEN9, H_CONT_LEN10,
@@ -67,30 +70,27 @@ enum tcp_req_states {	H_SKIP_EMPTY, H_SKIP, H_LF, H_LFCR,  H_BODY, H_STARTWS,
 	};
 
 enum tcp_conn_states { S_CONN_ERROR=-2, S_CONN_BAD=-1, S_CONN_OK=0, 
-						S_CONN_INIT, S_CONN_EOF, 
-						S_CONN_ACCEPT, S_CONN_CONNECT };
+		S_CONN_INIT, S_CONN_EOF, S_CONN_ACCEPT, S_CONN_CONNECT };
 
 
 /* fd communication commands */
 enum conn_cmds { CONN_DESTROY=-3, CONN_ERROR=-2, CONN_EOF=-1, CONN_RELEASE, 
-					CONN_GET_FD, CONN_NEW };
+		CONN_GET_FD, CONN_NEW };
 /* CONN_RELEASE, EOF, ERROR, DESTROY can be used by "reader" processes
  * CONN_GET_FD, NEW, ERROR only by writers */
 
 struct tcp_req{
 	struct tcp_req* next;
 	/* sockaddr ? */
-	char buf[TCP_BUF_SIZE+1]; /* bytes read so far (+0-terminator)*/
-	char* start; /* where the message starts, after all the empty lines are
-					skipped*/
-	char* pos; /* current position in buf */
-	char* parsed; /* last parsed position */
-	char* body; /* body position */
+	char buf[TCP_BUF_SIZE+1];		/*!< bytes read so far (+0-terminator)*/
+	char* start;				/*!< where the message starts, after all the empty lines are skipped*/
+	char* pos;				/*!< current position in buf */
+	char* parsed;				/*!< last parsed position */
+	char* body;				/*!< body position */
 	unsigned int   content_len;
-	unsigned short has_content_len; /* 1 if content_length was parsed ok*/
-	unsigned short complete; /* 1 if one req has been fully read, 0 otherwise*/
-	unsigned int   bytes_to_go; /* how many bytes we have still to read from 
-								the body*/
+	unsigned short has_content_len;		/*!< 1 if content_length was parsed ok*/
+	unsigned short complete;		/*!< 1 if one req has been fully read, 0 otherwise*/
+	unsigned int   bytes_to_go;		/*!< how many bytes we have still to read from the body*/
 	enum tcp_req_errors error;
 	enum tcp_req_states state;
 };
@@ -99,43 +99,40 @@ struct tcp_req{
 
 struct tcp_connection;
 
-/* tcp port alias structure */
+/*! \brief TCP port alias structure */
 struct tcp_conn_alias{
 	struct tcp_connection* parent;
 	struct tcp_conn_alias* next;
 	struct tcp_conn_alias* prev;
-	unsigned short port; /* alias port */
-	unsigned short hash; /* hash index in the address hash */
+	unsigned short port;			/*!< alias port */
+	unsigned short hash;			/*!< hash index in the address hash */
 };
 
 
 
+/*! \brief TCP connection structure */
 struct tcp_connection{
-	int s; /*socket, used by "tcp main" */
-	int fd; /* used only by "children", don't modify it! private data! */
+	int s;					/*!< socket, used by "tcp main" */
+	int fd;					/*!< used only by "children", don't modify it! private data! */
 	gen_lock_t write_lock;
-	int id; /* id (unique!) used to retrieve a specific connection when
-	           reply-ing*/
-	struct receive_info rcv; /* src & dst ip, ports, proto a.s.o*/
-	struct tcp_req req; /* request data */
+	int id;					/*!< id (unique!) used to retrieve a specific connection when reply-ing*/
+	struct receive_info rcv;		/*!< src & dst ip, ports, proto a.s.o*/
+	struct tcp_req req;			/*!< request data */
 	volatile int refcnt;
-	enum sip_protos type; /* PROTO_TCP or a protocol over it, e.g. TLS */
-	int flags; /* connection related flags */
-	enum tcp_conn_states state; /* connection state */
-	void* extra_data; /* extra data associated to the connection, 0 for tcp*/
-	unsigned int timeout;/* connection timeout, after this it will be removed*/
-	unsigned int lifetime; /* lifetime to be set for the connection */
-	unsigned id_hash; /* hash index in the id_hash */
-	struct tcp_connection* id_next; /* next, prev in id hash table */
-	struct tcp_connection* id_prev;
-	struct tcp_connection* c_next; /* child next prev (use locally) */
-	struct tcp_connection* c_prev;
-	struct tcp_conn_alias con_aliases[TCP_CON_MAX_ALIASES];
-	int aliases; /* aliases number, at least 1 */
+	enum sip_protos type;			/*!< PROTO_TCP or a protocol over it, e.g. TLS */
+	int flags;				/*!< connection related flags */
+	enum tcp_conn_states state;		/*!< connection state */
+	void* extra_data;			/*!< extra data associated to the connection, 0 for tcp*/
+	unsigned int timeout;			/*!< connection timeout, after this it will be removed*/
+	unsigned int lifetime;			/*!< lifetime to be set for the connection */
+	unsigned id_hash;			/*!< hash index in the id_hash */
+	struct tcp_connection* id_next;		/*!< next in id hash table */
+	struct tcp_connection* id_prev;		/*!< prev in id hash table */
+	struct tcp_connection* c_next;		/*!< Child next (use locally) */
+	struct tcp_connection* c_prev;		/*!< Child prev (use locally */
+	struct tcp_conn_alias con_aliases[TCP_CON_MAX_ALIASES];	/*!< Aliases for this connection */
+	int aliases;				/*!< Number of aliases, at least 1 */
 };
-
-
-
 
 
 
@@ -148,8 +145,8 @@ struct tcp_connection{
 	}while(0)
 
 
-/* add a tcpconn to a list*/
-/* list head, new element, next member, prev member */
+/*! \brief add a tcpconn to a list
+ * list head, new element, next member, prev member */
 #define tcpconn_listadd(head, c, next, prev) \
 	do{ \
 		/* add it at the begining of the list*/ \
@@ -160,7 +157,7 @@ struct tcp_connection{
 	} while(0)
 
 
-/* remove a tcpconn from a list*/
+/*! \brief remove a tcpconn from a list*/
 #define tcpconn_listrm(head, c, next, prev) \
 	do{ \
 		if ((head)==(c)) (head)=(c)->next; \

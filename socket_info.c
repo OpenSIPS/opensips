@@ -1,7 +1,5 @@
 /* $Id$
  *
- * find & manage listen addresses 
- *
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of openser, a free SIP server.
@@ -30,6 +28,11 @@
  *  2004-10-10  added grep_sock_info (andrei)
  *  2004-11-08  added find_si (andrei)
  *  2007-01-11  auto_aliases option added (bogdan)
+ */
+
+/*!
+ * \file
+ * \brief Find & manage listen addresses
  */
 
 

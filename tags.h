@@ -27,12 +27,17 @@
  *   who generated the to-tag in loops through the same
  *   server -- in such cases, fixed part is constant, but
  *   the variable part varies because it depends on 
- *   via
+ *   the via header
  *   
  * History:
  * --------
  *  2003-02-18  changed TOTAG_LEN into TOTAG_VALUE_LEN, to solve
  *               redefinition conflict with tm/t_msgbuilder.h (andrei)
+ */
+
+/*!
+ * \file
+ * \brief Tag handling functions
  */
 
 
@@ -47,7 +52,8 @@
 
 #define TOTAG_VALUE_LEN (MD5_LEN+CRC16_LEN+1)
 
-/* generate variable part of to-tag for a request;
+/*! \brief 
+ * Generate variable part of to-tag for a request;
  * it will have length of CRC16_LEN, sufficiently
  * long buffer must be passed to the function */
 static inline void calc_crc_suffix( struct sip_msg *msg, char *tag_suffix)

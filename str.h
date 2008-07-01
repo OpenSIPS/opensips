@@ -26,6 +26,7 @@
 /**
  * \file
  * \brief Common data type for text variables.
+ * - \ref DataTypeText
  */
 
 /*!

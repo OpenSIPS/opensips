@@ -20,6 +20,11 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+/*!
+ * \file
+ * \brief TCP connection handling
+ */
+
 #ifndef tcp_init_h
 #define tcp_init_h
 #include "ip_addr.h"

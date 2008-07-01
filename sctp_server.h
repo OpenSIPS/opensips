@@ -24,6 +24,11 @@
  *  2007-06-22	sctp_server.h created, using udp_server.h as template -gmarmon
  */
 
+/*!
+ * \file
+ * \brief SCTP protocol support
+ */
+
 #ifdef USE_SCTP
 
 #ifndef sctp_server_h

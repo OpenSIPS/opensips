@@ -1,8 +1,6 @@
 /*
  * $Id$
  *
- * sequential forking implementation
- *
  * Copyright (C) 2005 Juha Heinanen
  *
  * This file is part of openser, a free SIP server.
@@ -26,6 +24,11 @@
  *  2005-11-29 splitted from lcr module (bogdan)
  */
 
+/*!
+ * \file
+ * \brief Sequential forking implementation
+ */
+
 #include "str.h"
 #include "qvalue.h"
 #include "usr_avp.h"
@@ -43,12 +46,9 @@ struct serial_contact {
 	int next;
 };
 
-/* usr_avp flag for sequential forking */
-#define Q_FLAG            (1<<4)
-/* avp alias to be used */
-#define SERIAL_AVP_ALIAS  "serial_branch"
-/* avp ID of serial AVP */
-#define SERIAL_AVL_ID     0xff3434
+#define Q_FLAG            (1<<4)		/*!< usr_avp flag for sequential forking */
+#define SERIAL_AVP_ALIAS  "serial_branch"	/*!< avp alias to be used */
+#define SERIAL_AVL_ID     0xff3434		/*!< avp ID of serial AVP */
 
 static int_str serial_avp;
 
@@ -64,13 +64,12 @@ int init_serialization(void)
 
 
 
-/* 
+/*! \brief
  * Loads contacts in destination set into "serial_fork" AVP in reverse
  * priority order and associated each contact with Q_FLAG telling if
  * contact is the last one in its priority class.  Finally, removes
  * all branches from destination set.
  */
-
 int serialize_branches(struct sip_msg *msg, int clean_before )
 {
 	static struct serial_contact contacts[MAX_BRANCHES];
@@ -168,14 +167,13 @@ error:
 
 
 
-/*
+/*! \brief
  * Adds to request a destination set that includes all highest priority
  * class contacts in "serial_avp" AVP.   If called from a route block,
  * rewrites the request uri with first contact and adds the remaining
  * contacts as branches.  If called from failure route block, adds all
  * contacts as brances.  Removes added contacts from "serial_avp" AVP.
  */
-
 int next_branches( struct sip_msg *msg)
 {
 	struct usr_avp *avp, *prev;

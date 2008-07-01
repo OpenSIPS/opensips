@@ -20,6 +20,10 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
+/*!
+ * \file
+ * \brief Common string handling functions
+ */
 
 #ifndef _STRCOMMON_H_
 #define _STRCOMMON_H_

@@ -104,7 +104,8 @@ stat_var* get_stat( str *name );
 
 unsigned int get_stat_val( stat_var *var );
 
-/* Returns the statistic associated with 'numerical_code' and 'is_a_reply'.
+/*! \brief
+ * Returns the statistic associated with 'numerical_code' and 'is_a_reply'.
  * Specifically:
  *
  *  - if in_codes is nonzero, then the stat_var for the number of messages 

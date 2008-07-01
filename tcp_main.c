@@ -57,6 +57,11 @@
  *              decrement the no. of open connections on timeout too    (andrei)
  */
 
+/*!
+ * \file
+ * \brief TCP connection support (main)
+ */
+
 
 #ifdef USE_TCP
 
@@ -117,47 +122,44 @@
 enum fd_types { F_NONE, F_SOCKINFO /* a tcp_listen fd */,
 				F_TCPCONN, F_TCPCHILD, F_PROC };
 
-struct tcp_child{
+struct tcp_child {
 	pid_t pid;
-	int proc_no; /* ser proc_no, for debugging */
-	int unix_sock; /* unix "read child" sock fd */
+	int proc_no;		/*!<  OpenSER proc_no, for debugging */
+	int unix_sock;		/*!< unix "read child" sock fd */
 	int busy;
-	int n_reqs; /* number of requests serviced so far */
+	int n_reqs;		/*!< number of requests serviced so far */
 };
 
 
-
-int tcp_accept_aliases=0; /* by default don't accept aliases */
+int tcp_accept_aliases=0;		/*!< by default don't accept aliases */
 int tcp_connect_timeout=DEFAULT_TCP_CONNECT_TIMEOUT;
 int tcp_send_timeout=DEFAULT_TCP_SEND_TIMEOUT;
 int tcp_con_lifetime=DEFAULT_TCP_CONNECTION_LIFETIME;
-enum poll_types tcp_poll_method=0; /* by default choose the best method */
+enum poll_types tcp_poll_method=0; 	/*!< by default choose the best method */
 int tcp_max_connections=DEFAULT_TCP_MAX_CONNECTIONS;
 int tcp_max_fd_no=0;
 
-static int tcp_connections_no=0; /* current open connections */
+static int tcp_connections_no=0;	/*!< current number of open connections */
 
-/* connection hash table (after ip&port) , includes also aliases */
+/*! \brief connection hash table (after ip&port) , includes also aliases */
 struct tcp_conn_alias** tcpconn_aliases_hash=0;
-/* connection hash table (after connection id) */
+/*! \brief connection hash table (after connection id) */
 struct tcp_connection** tcpconn_id_hash=0;
 gen_lock_t* tcpconn_lock=0;
 
 struct tcp_child *tcp_children=0;
-static int* connection_id=0; /*  unique for each connection, used for 
-								quickly finding the corresponding connection
-								for a reply */
+static int* connection_id=0; /*!< unique for each connection, used for 
+				quickly finding the corresponding connection for a reply */
 int unix_tcp_sock = -1;
 
-static int tcp_proto_no=-1; /* tcp protocol number as returned by
-							   getprotobyname */
+static int tcp_proto_no=-1; /*!< tcp protocol number as returned by getprotobyname */
 
 static io_wait_h io_h;
 
 
 
-/* set all socket/fd options:  disable nagle, tos lowdelay, non-blocking
- * return -1 on error */
+/*! \brief Set all socket/fd options:  disable nagle, tos lowdelay, non-blocking
+ * \return -1 on error */
 static int init_sock_opt(int s)
 {
 	int flags;
@@ -193,13 +195,12 @@ error:
 
 
 
-/* blocking connect on a non-blocking fd; it will timeout after
+/*! \brief blocking connect on a non-blocking fd; it will timeout after
  * tcp_connect_timeout 
  * if BLOCKING_USE_SELECT and HAVE_SELECT are defined it will internally
  * use select() instead of poll (bad if fd > FD_SET_SIZE, poll is preferred)
  */
-static int tcp_blocking_connect(int fd, const struct sockaddr *servaddr,
-								socklen_t addrlen)
+static int tcp_blocking_connect(int fd, const struct sockaddr *servaddr, socklen_t addrlen)
 {
 	int n;
 #if defined(HAVE_SELECT) && defined(BLOCKING_USE_SELECT)
@@ -291,7 +292,7 @@ end:
 
 
 #if 0
-/* blocking write even on non-blocking sockets 
+/*! \brief blocking write even on non-blocking sockets 
  * if TCP_TIMEOUT will return with error */
 static int tcp_blocking_write(struct tcp_connection* c, int fd, char* buf,
 								unsigned int len)
@@ -490,7 +491,7 @@ struct tcp_connection*  tcpconn_add(struct tcp_connection *c)
 }
 
 
-/* unsafe tcpconn_rm version (nolocks) */
+/*! \brief unsafe tcpconn_rm version (nolocks) */
 void _tcpconn_rm(struct tcp_connection* c)
 {
 	int r;
@@ -526,8 +527,8 @@ void tcpconn_rm(struct tcp_connection* c)
 }
 
 
-/* finds a connection, if id=0 uses the ip addr & port (host byte order)
- * WARNING: unprotected (locks) use tcpconn_get unless you really
+/*! \brief finds a connection, if id=0 uses the ip addr & port (host byte order)
+ * \note WARNING: unprotected (locks) use tcpconn_get unless you really
  * know what you are doing */
 struct tcp_connection* _tcpconn_find(int id, struct ip_addr* ip, int port)
 {
@@ -567,7 +568,7 @@ struct tcp_connection* _tcpconn_find(int id, struct ip_addr* ip, int port)
 
 
 
-/* _tcpconn_find with locks and timeout */
+/*! \brief _tcpconn_find with locks and timeout */
 struct tcp_connection* tcpconn_get(int id, struct ip_addr* ip, int port,
 									int timeout)
 {
@@ -584,8 +585,8 @@ struct tcp_connection* tcpconn_get(int id, struct ip_addr* ip, int port,
 
 
 
-/* add port as an alias for the "id" connection
- * returns 0 on success,-1 on failure */
+/*! \brief add port as an alias for the "id" connection
+ * \return 0 on success,-1 on failure */
 int tcpconn_add_alias(int id, int port, int proto)
 {
 	struct tcp_connection* c;
@@ -660,7 +661,7 @@ void tcpconn_put(struct tcp_connection* c)
 
 
 
-/* finds a tcpconn & sends on it */
+/*! \brief Finds a tcpconn & sends on it */
 int tcp_send(struct socket_info* send_sock, int type, char* buf, unsigned len,
 			union sockaddr_union* to, int id)
 {
@@ -837,7 +838,7 @@ int tcp_init(struct socket_info* sock_info)
 
 #if  !defined(TCP_DONT_REUSEADDR) 
 	/* Stevens, "Network Programming", Section 7.5, "Generic Socket
-     * Options": "...server started,..a child continues..on existing
+	 * Options": "...server started,..a child continues..on existing
 	 * connection..listening server is restarted...call to bind fails
 	 * ... ALL TCP servers should specify the SO_REUSEADDRE option 
 	 * to allow the server to be restarted in this situation
@@ -925,10 +926,11 @@ static int send2child(struct tcp_connection* tcpconn)
 }
 
 
-/* handles a new connection, called internally by tcp_main_loop/handle_io.
- * params: si - pointer to one of the tcp socket_info structures on which
+/*! \brief
+ * handles a new connection, called internally by tcp_main_loop/handle_io.
+ * \param si - pointer to one of the tcp socket_info structures on which
  *              an io event was detected (connection attempt)
- * returns:  handle_* return convention: -1 on error, 0 on EAGAIN (no more
+ * \return  handle_* return convention: -1 on error, 0 on EAGAIN (no more
  *           io events queued), >0 on success. success/error refer only to
  *           the accept.
  */
@@ -989,7 +991,7 @@ static inline int handle_new_connect(struct socket_info* si)
 
 
 
-/* used internally by tcp_main_loop() */
+/*! \brief used internally by tcp_main_loop() */
 static void tcpconn_destroy(struct tcp_connection* tcpconn)
 {
 	int fd;
@@ -1021,11 +1023,12 @@ static void tcpconn_destroy(struct tcp_connection* tcpconn)
 
 
 
-/* handles an io event on one of the watched tcp connections
+/*! \brief
+ * handles an io event on one of the watched tcp connections
  * 
- * params: tcpconn - pointer to the tcp_connection for which we have an io ev.
- *         fd_i    - index in the fd_array table (needed for delete)
- * returns:  handle_* return convention, but on success it always returns 0
+ * \param    tcpconn - pointer to the tcp_connection for which we have an io ev.
+ * \param    fd_i    - index in the fd_array table (needed for delete)
+ * \return   handle_* return convention, but on success it always returns 0
  *           (because it's one-shot, after a succesfull execution the fd is
  *            removed from tcp_main's watch fd list and passed to a child =>
  *            tcp_main is not interested in further io events that might be
@@ -1091,12 +1094,12 @@ static inline void set_tcp_timeout(struct tcp_connection *c)
 }
 
 
-/* handles io from a tcp child process
- * params: tcp_c - pointer in the tcp_children array, to the entry for
+/*! \brief handles io from a tcp child process
+ * \param  tcp_c - pointer in the tcp_children array, to the entry for
  *                 which an io event was detected 
- *         fd_i  - fd index in the fd_array (usefull for optimizing
+ * \param  fd_i  - fd index in the fd_array (usefull for optimizing
  *                 io_watch_deletes)
- * returns:  handle_* return convention: -1 on error, 0 on EAGAIN (no more
+ * \return handle_* return convention: -1 on error, 0 on EAGAIN (no more
  *           io events queued), >0 on success. success/error refer only to
  *           the reads from the fd.
  */
@@ -1197,17 +1200,17 @@ error:
 
 
 
-/* handles io from a "generic" ser process (get fd or new_fd from a tcp_send)
+/*! \brief handles io from a "generic" ser process (get fd or new_fd from a tcp_send)
  * 
- * params: p     - pointer in the ser processes array (pt[]), to the entry for
+ * \param p     - pointer in the ser processes array (pt[]), to the entry for
  *                 which an io event was detected
- *         fd_i  - fd index in the fd_array (usefull for optimizing
+ * \param fd_i  - fd index in the fd_array (usefull for optimizing
  *                 io_watch_deletes)
- * returns:  handle_* return convention:
- *          -1 on error reading from the fd,
- *           0 on EAGAIN  or when no  more io events are queued 
+ * \return  handle_* return convention:
+ *          - -1 on error reading from the fd,
+ *          -  0 on EAGAIN  or when no  more io events are queued 
  *             (receive buffer empty),
- *           >0 on successfull reads from the fd (the receive buffer might
+ *          -  >0 on successfull reads from the fd (the receive buffer might
  *             be non-empty).
  */
 inline static int handle_ser_child(struct process_table* p, int fd_i)
@@ -1315,12 +1318,12 @@ error:
 
 
 
-/* generic handle io routine, it will call the appropiate
+/*! \brief generic handle io routine, it will call the appropiate
  *  handle_xxx() based on the fd_map type
  *
- * params:  fm  - pointer to a fd hash entry
- *          idx - index in the fd_array (or -1 if not known)
- * return: -1 on error
+ * \param  fm  - pointer to a fd hash entry
+ * \param  idx - index in the fd_array (or -1 if not known)
+ * \return -1 on error
  *          0 on EAGAIN or when by some other way it is known that no more 
  *            io events are queued on the fd (the receive buffer is empty).
  *            Usefull to detect when there are no more io events queued for
@@ -1359,9 +1362,11 @@ error:
 
 
 
-/* very inefficient for now - FIXME
+/*! \brief very inefficient for now - FIXME
  * keep in sync with tcpconn_destroy, the "delete" part should be
- * the same except for io_watch_del..*/
+ * the same except for io_watch_del..
+ * \todo FIXME (very inefficient for now)
+ */
 static inline void tcpconn_timeout(int force)
 {
 	struct tcp_connection *c, *next;
@@ -1403,7 +1408,7 @@ static inline void tcpconn_timeout(int force)
 
 
 
-/* tcp main loop */
+/*! \brief tcp main loop */
 void tcp_main_loop(void)
 {
 
@@ -1413,7 +1418,7 @@ void tcp_main_loop(void)
 	/* init io_wait (here because we want the memory allocated only in
 	 * the tcp_main process) */
 
-	/* FIXME: TODO: make tcp_max_fd_no a config param */
+	/*! \todo FIXME: TODO: make tcp_max_fd_no a config param */
 	if  (init_io_wait(&io_h, tcp_max_fd_no, tcp_poll_method)<0)
 		goto error;
 	/* init: start watching all the fds*/
@@ -1535,7 +1540,7 @@ error:
 
 
 
-/* cleanup before exit */
+/*! \brief cleanup before exit */
 void destroy_tcp(void)
 {
 		if (tcpconn_id_hash){
@@ -1639,7 +1644,7 @@ error:
 
 
 
-/* starts the tcp processes */
+/*! \brief starts the tcp processes */
 int tcp_init_children(int *chd_rank)
 {
 	int r;

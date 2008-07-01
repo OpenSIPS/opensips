@@ -93,8 +93,8 @@ static inline struct socket_info** get_sock_info_list(unsigned short proto)
 
 
 /*! \brief helper function:
- * returns next protocol, if the last one is reached return 0
- * useful for cycling on the supported protocols */
+ * \return next protocol, if the last one is reached return 0
+ * \note useful for cycling on the supported protocols */
 static inline int next_proto(unsigned short proto)
 {
 	switch(proto){
@@ -173,8 +173,8 @@ inline static struct socket_info* get_first_socket(void)
 }
 
 
-/*! \brief  Sets protocol
- * returns -1 on error, 0 on success
+/*! \brief Sets protocol
+ * \return -1 on error, 0 on success
  */
 inline static int parse_proto(unsigned char* s, long len, int* proto)
 {
@@ -220,9 +220,8 @@ inline static int parse_proto(unsigned char* s, long len, int* proto)
 
 
 /*! \brief
- * parses [proto:]host[:port]
- * where proto= udp|tcp|tls
- * returns 0 on success and -1 on failure
+ * parses [proto:]host[:port] where proto= udp|tcp|tls
+ * \return 0 on success and -1 on failure
  */
 inline static int parse_phostport(char* s, int slen, char** host, int* hlen,
 													int* port, int* proto)
