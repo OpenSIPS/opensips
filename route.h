@@ -20,6 +20,10 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+/*!
+ * \file 
+ * \brief SIP routing engine
+ */
 
 #ifndef route_h
 #define route_h
@@ -37,23 +41,21 @@
 /*#include "cfg_parser.h" */
 
 
-/* main "script table" */
-extern struct action* rlist[RT_NO];
-/* main reply route table */
-extern struct action* onreply_rlist[ONREPLY_RT_NO];
-extern struct action* failure_rlist[FAILURE_RT_NO];
-extern struct action* branch_rlist[BRANCH_RT_NO];
+extern struct action* rlist[RT_NO];			/*!< main "script table" */
+extern struct action* onreply_rlist[ONREPLY_RT_NO];	/*!< main reply route table */
+extern struct action* failure_rlist[FAILURE_RT_NO];	/*!< Failure route table */
+extern struct action* branch_rlist[BRANCH_RT_NO];	/*!< Branch routes table */
 #ifdef USE_LOCAL_ROUTE
-extern struct action* local_rlist;
+extern struct action* local_rlist;			/*!< Local route table */
 #endif
-extern struct action* error_rlist;
+extern struct action* error_rlist;			/*!< Error route table */
 
-#define REQUEST_ROUTE 1  /* Request route block */
-#define FAILURE_ROUTE 2  /* Negative-reply route block */
-#define ONREPLY_ROUTE 4  /* Received-reply route block */
-#define BRANCH_ROUTE  8  /* Sending-branch route block */
-#define ERROR_ROUTE  16  /* Error-handling route block */
-#define LOCAL_ROUTE  32  /* Local-requests route block */
+#define REQUEST_ROUTE 1	 /*!< Request route block */
+#define FAILURE_ROUTE 2  /*!< Negative-reply route block */
+#define ONREPLY_ROUTE 4  /*!< Received-reply route block */
+#define BRANCH_ROUTE  8  /*!< Sending-branch route block */
+#define ERROR_ROUTE  16  /*!< Error-handling route block */
+#define LOCAL_ROUTE  32  /*!< Local-requests route block */
 
 extern int route_type;
 

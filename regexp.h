@@ -23,6 +23,11 @@
  *
  */
 
+/*!
+ * \file 
+ * \brief Regular expression definitions 
+ */
+
 
 #ifndef REGEXP_H
 #define REGEXP_H

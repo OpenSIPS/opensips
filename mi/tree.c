@@ -25,7 +25,11 @@
  *  2006-09-08  first version (bogdan)
  */
 
-
+/*!
+ * \file 
+ * \brief MI :: Tree 
+ * \ingroup mi
+ */
 
 #include <string.h>
 #include <stdio.h>

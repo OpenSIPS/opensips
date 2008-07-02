@@ -85,9 +85,9 @@ poll_loop: \
 	
 
 
-/* sends on fd (which must be O_NONBLOCK); if it cannot send any data
+/*! \brief sends on fd (which must be O_NONBLOCK); if it cannot send any data
  * in timeout milliseconds it will return ERROR
- * returns: -1 on error, or number of bytes written
+ * \return -1 on error, or number of bytes written
  *  (if less than len => couldn't send all)
  *  bugs: signals will reset the timer
  */
@@ -122,9 +122,9 @@ error:
 
 
 
-/* sends on dgram fd (which must be O_NONBLOCK); if it cannot send any data
+/*! \brief sends on dgram fd (which must be O_NONBLOCK); if it cannot send any data
  * in timeout milliseconds it will return ERROR
- * returns: -1 on error, or number of bytes written
+ * \return -1 on error, or number of bytes written
  *  (if less than len => couldn't send all)
  *  bugs: signals will reset the timer
  */
@@ -144,13 +144,12 @@ error:
 }
 
 	
-/* sends on connected datagram fd (which must be O_NONBLOCK); 
+/*! \brief sends on connected datagram fd (which must be O_NONBLOCK); 
  * if it cannot send any data in timeout milliseconds it will return ERROR
- * returns: -1 on error, or number of bytes written
+ * \return -1 on error, or number of bytes written
  *  (if less than len => couldn't send all)
  *  bugs: signals will reset the timer
  */
-
 int tsend_dgram_ev(int fd, const struct iovec* v, int count, int timeout)
 {
 	TSEND_INIT;

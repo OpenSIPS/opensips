@@ -28,6 +28,11 @@
  */
 
 
+/*!
+ * \file
+ * \brief Timer related functions
+ */
+
 
 #ifndef timer_h
 #define timer_h
@@ -61,12 +66,12 @@ int init_timer(void);
 
 void destroy_timer(void);
 
-/* Counts the timer processes that needs to be created */
+/*! \brief Counts the timer processes that needs to be created */
 int count_timer_procs(void);
 
 int start_timer_processes(void);
 
-/*register a periodic timer;
+/*! \brief register a periodic timer;
  * ret: <0 on error*/
 int register_timer(timer_function f, void* param, unsigned int interval);
 

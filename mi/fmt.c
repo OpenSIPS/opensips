@@ -25,6 +25,13 @@
  *  2006-09-08  first version (bogdan)
  */
 
+/*!
+ * \file 
+ * \brief MI :: Format handling
+ * \ingroup mi
+ */
+
+
 #include <string.h>
 #include "../dprint.h"
 #include "../mem/mem.h"

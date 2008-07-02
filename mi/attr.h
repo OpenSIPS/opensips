@@ -25,6 +25,11 @@
  *  2006-09-08  first version (bogdan)
  */
 
+/*!
+ * \file 
+ * \brief MI :: Attributes
+ * \ingroup mi
+ */
 
 #ifndef _MI_ATTR_H
 #define _MI_ATTR_H

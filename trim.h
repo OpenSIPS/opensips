@@ -45,7 +45,7 @@
                        }
 
 
-/*
+/*! \brief
  * Remove any leading whitechars, like spaces,
  * horizontal tabs, carriage returns and line
  * feeds
@@ -64,7 +64,7 @@ static inline void trim_leading(str* _s)
 }
 
 
-/*
+/*! \brief
  * Remove any trailing white char, like spaces,
  * horizontal tabs, carriage returns and line feeds
  *
@@ -81,7 +81,7 @@ static inline void trim_trailing(str* _s)
 }
 
 
-/*
+/*! \brief
  * Do trim_leading and trim_trailing
  *
  * WARNING: String structure will be modified !

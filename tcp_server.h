@@ -20,6 +20,10 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+/*! 
+ * \brief TCP server 
+ */
+
 
 #ifndef tcp_server_h
 #define tcp_server_h

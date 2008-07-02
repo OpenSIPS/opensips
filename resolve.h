@@ -28,7 +28,7 @@
 
 /*!
  * \file
- * \brief resolver related functions
+ * \brief DNS resolver related functions
  */
 
 

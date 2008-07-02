@@ -27,6 +27,11 @@
  */ 
 
 
+/*!
+ * \file 
+ * \brief DNS resolver for OpenSER
+ */
+
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <arpa/nameser.h>
@@ -56,7 +61,7 @@ struct dns_val {
 #define local_malloc pkg_malloc
 #define local_free   pkg_free
 
-int dns_try_ipv6=0; /* default off */
+int dns_try_ipv6=0; /*!< default off */
 /* declared in globals.h */
 int dns_retr_time=-1;
 int dns_retr_no=-1;
@@ -69,19 +74,19 @@ static struct bl_head *failover_bl=0;
 #define DNS_REVOLVER_BL_NAME  "dns"
 #define DNS_BL_EXPIRE         4*60
 
-/* init. the resolver
- * params: retr_time  - time before retransmitting (must be >0)
- *         retr_no    - retransmissions number
- *         servers_no - how many dns servers will be used
+/*! \brief Initialize the DNS resolver
+ * retr_time  - time before retransmitting (must be >0)
+ * retr_no    - retransmissions number
+ * servers_no - how many dns servers will be used
  *                      (from the one listed in /etc/resolv.conf)
- *         search     - if 0 the search list in /etc/resolv.conf will
+ * search     - if 0 the search list in /etc/resolv.conf will
  *                      be ignored (HINT: even if you don't have a
  *                      search list in resolv.conf, it's still better
- *                      to set search to 0, because an empty seachlist
+ *                      to set search to 0, because an empty searchlist
  *                      means in fact search "" => it takes more time)
  * If any of the parameters <0, the default (system specific) value
  * will be used. See also resolv.conf(5).
- * returns: 0 on success, -1 on error
+ * \return 0 on success, -1 on error
  */
 int resolv_init(void)
 {
@@ -104,6 +109,7 @@ int resolv_init(void)
 
 
 
+/*! \brief Initialize blacklist */
 int resolv_blacklist_init(void)
 {
 	str name = str_init(DNS_REVOLVER_BL_NAME);
@@ -120,13 +126,14 @@ int resolv_blacklist_init(void)
 }
 
 
- /*  skips over a domain name in a dns message
- *  (it can be  a sequence of labels ending in \0, a pointer or
+/*! \brief Skips over a domain name in a dns message
+ *  (it can be  a sequence of labels ending in \\0, a pointer or
  *   a sequence of labels ending in a pointer -- see rfc1035
- *   returns pointer after the domain name or null on error*/
+ *   returns pointer after the domain name or null on error
+ */
 unsigned char* dns_skipname(unsigned char* p, unsigned char* end)
 {
-	while(p<end){
+	while(p<end) {
 		/* check if \0 (root label length) */
 		if (*p==0){
 			p+=1;
@@ -146,12 +153,13 @@ unsigned char* dns_skipname(unsigned char* p, unsigned char* end)
 
 
 
-/* parses the srv record into a srv_rdata structure
- *   msg   - pointer to the dns message
- *   end   - pointer to the end of the message
- *   rdata - pointer  to the rdata part of the srv answer
- * returns 0 on error, or a dyn. alloc'ed srv_rdata structure */
-/* SRV rdata format:
+/*! \brief parses the srv record into a srv_rdata structure
+ *   \param msg   - pointer to the dns message
+ *   \param end   - pointer to the end of the message
+ *   \param rdata - pointer  to the rdata part of the srv answer
+ *   \return 0 on error, or a dyn. alloc'ed srv_rdata structure 
+ *
+ * SRV rdata format:
  *            111111
  *  0123456789012345
  * +----------------+
@@ -197,12 +205,13 @@ error:
 }
 
 
-/* parses the naptr record into a naptr_rdata structure
- *   msg   - pointer to the dns message
- *   end   - pointer to the end of the message
- *   rdata - pointer  to the rdata part of the naptr answer
- * returns 0 on error, or a dyn. alloc'ed naptr_rdata structure */
-/* NAPTR rdata format:
+/*! \brief parses the naptr record into a naptr_rdata structure
+ *   \param msg   - pointer to the dns message
+ *   \param end   - pointer to the end of the message
+ *   \param rdata - pointer  to the rdata part of the naptr answer
+ *   \return  0 on error, or a dyn. alloc'ed naptr_rdata structure 
+ *
+ * NAPTR rdata format:
  *            111111
  *  0123456789012345
  * +----------------+
@@ -229,7 +238,8 @@ struct naptr_rdata* dns_naptr_parser( unsigned char* msg, unsigned char* end,
 	struct naptr_rdata* naptr;
 	
 	naptr = 0;
-	if ((rdata + 7) >= end) goto error;
+	if ((rdata + 7) >= end)
+		goto error;
 	naptr=(struct naptr_rdata*)local_malloc(sizeof(struct naptr_rdata));
 	if (naptr == 0){
 		LM_ERR("out of pkg memory\n");
@@ -241,31 +251,32 @@ struct naptr_rdata* dns_naptr_parser( unsigned char* msg, unsigned char* end,
 	memcpy((void*)&naptr->pref, rdata + 2, 2);
 	naptr->pref=ntohs(naptr->pref);
 	naptr->flags_len = (int)rdata[4];
-	if ((rdata + 7 +  naptr->flags_len) >= end) goto error;
+	if ((rdata + 7 +  naptr->flags_len) >= end)
+		goto error;
 	memcpy((void*)&naptr->flags, rdata + 5, naptr->flags_len);
 	naptr->services_len = (int)rdata[5 + naptr->flags_len];
 	if ((rdata + 7 + naptr->flags_len + naptr->services_len) >= end) goto error;
 	memcpy((void*)&naptr->services, rdata + 6 + naptr->flags_len, naptr->services_len);
 	naptr->regexp_len = (int)rdata[6 + naptr->flags_len + naptr->services_len];
-	if ((rdata + 7 + naptr->flags_len + naptr->services_len +
-					naptr->regexp_len) >= end) goto error;
+	if ((rdata + 7 + naptr->flags_len + naptr->services_len + naptr->regexp_len) >= end)
+		goto error;
 	memcpy((void*)&naptr->regexp, rdata + 7 + naptr->flags_len +
 				naptr->services_len, naptr->regexp_len);
-	rdata = rdata + 7 + naptr->flags_len + naptr->services_len + 
-			naptr->regexp_len;
+	rdata = rdata + 7 + naptr->flags_len + naptr->services_len + naptr->regexp_len;
 	naptr->repl_len=dn_expand(msg, end, rdata, naptr->repl, MAX_DNS_NAME-1);
 	if ( naptr->repl_len==(unsigned int)-1 )
 		goto error;
 	/* add terminating 0 ? (warning: len=compressed name len) */
 	return naptr;
 error:
-	if (naptr) local_free(naptr);
+	if (naptr)
+		local_free(naptr);
 	return 0;
 }
 
 
 
-/* parses a CNAME record into a cname_rdata structure */
+/*! \brief Parses a CNAME record into a cname_rdata structure */
 struct cname_rdata* dns_cname_parser( unsigned char* msg, unsigned char* end,
 									  unsigned char* rdata)
 {
@@ -288,8 +299,8 @@ error:
 
 
 
-/* parses an A record rdata into an a_rdata structure
- * returns 0 on error or a dyn. alloc'ed a_rdata struct
+/*! \brief Parses an A record rdata into an a_rdata structure
+ * \return 0 on error or a dyn. alloc'ed a_rdata struct
  */
 struct a_rdata* dns_a_parser(unsigned char* rdata, unsigned char* end)
 {
@@ -309,8 +320,9 @@ error:
 
 
 
-/* parses an AAAA (ipv6) record rdata into an aaaa_rdata structure
- * returns 0 on error or a dyn. alloc'ed aaaa_rdata struct */
+/*! \brief Parses an AAAA (ipv6) record rdata into an aaaa_rdata structure
+ * \return 0 on error or a dyn. alloc'ed aaaa_rdata struct 
+ */
 struct aaaa_rdata* dns_aaaa_parser(unsigned char* rdata, unsigned char* end)
 {
 	struct aaaa_rdata* aaaa;
@@ -327,14 +339,13 @@ error:
 	return 0;
 }
 
-/* RFC1035:
- *
- * <character-string> is a single length octet followed by that number of characters.
- * TXT-DATA        One or more <character-string>s.
+/*! \brief Parses a TXT record into a txt_rdata structure
+ * \note RFC1035:
+ * - <character-string> is a single length octet followed by that number of characters.
+ * - TXT-DATA        One or more <character-string>s.
  *
  * We only take the first string here.
  */
-/* parses a TXT record into a txt_rdata structure */
 struct txt_rdata* dns_txt_parser( unsigned char* msg, unsigned char* end,
 									  unsigned char* rdata)
 {
@@ -349,19 +360,24 @@ struct txt_rdata* dns_txt_parser( unsigned char* msg, unsigned char* end,
 	}
 
 	len = *rdata;
-	if (rdata + 1 + len >= end) goto error;	/*  something fishy in the record */
-	if (len >= sizeof(txt->txt)) goto error; /* not enough space? */
+	if (rdata + 1 + len >= end)
+		goto error;	/*  something fishy in the record */
+	if (len >= sizeof(txt->txt))
+		goto error; /* not enough space? */
 	memcpy(txt->txt, rdata+1, len);
 	txt->txt[len] = 0;		/* 0-terminate string */
 	return txt;
 
 error:
-	if (txt) local_free(txt);
+	if (txt)
+		local_free(txt);
 	return 0;
 }
 
 
-/* EBL Record
+/*! \brief parses a EBL record into a ebl_rdata structure 
+ *
+ * EBL Record
  *
  *    0  1  2  3  4  5  6  7
  *    +--+--+--+--+--+--+--+--+
@@ -372,7 +388,6 @@ error:
  *    /         APEX          /
  *    +--+--+--+--+--+--+--+--+
  */
-/* parses a EBL record into a ebl_rdata structure */
 struct ebl_rdata* dns_ebl_parser( unsigned char* msg, unsigned char* end,
 									  unsigned char* rdata)
 {
@@ -387,16 +402,19 @@ struct ebl_rdata* dns_ebl_parser( unsigned char* msg, unsigned char* end,
 	}
 
 	len = *rdata;
-	if (rdata + 1 + len >= end) goto error;	/*  something fishy in the record */
+	if (rdata + 1 + len >= end)
+		goto error;	/*  something fishy in the record */
 
 	ebl->position = *rdata;
-	if ( ebl->position > 15 ) goto error; /* doesn't make sense: E.164 numbers can't be longer */
+	if ( ebl->position > 15 )
+		goto error; /* doesn't make sense: E.164 numbers can't be longer */
 
 	rdata++;
 
 	ebl->separator_len = (int) *rdata;
 	rdata++;
-	if ((rdata + 1 +  ebl->separator_len) >= end) goto error;
+	if ((rdata + 1 +  ebl->separator_len) >= end)
+		goto error;
 	memcpy((void*)&ebl->separator, rdata, ebl->separator_len);
 	rdata += ebl->separator_len;
 
@@ -407,14 +425,15 @@ struct ebl_rdata* dns_ebl_parser( unsigned char* msg, unsigned char* end,
 	return ebl;
 
 error:
-	if (ebl) local_free(ebl);
+	if (ebl)
+		local_free(ebl);
 	return 0;
 }
 
 
 
 
-/* frees completely a struct rdata list */
+/*! \brief frees completely a struct rdata list */
 void free_rdata_list(struct rdata* head)
 {
 	struct rdata* l;
@@ -423,17 +442,18 @@ void free_rdata_list(struct rdata* head)
 	for( l=head; l ; l=next_l) {
 		next_l = l->next;
 		/* free the parsed rdata*/
-		if (l->rdata) local_free(l->rdata);
+		if (l->rdata)
+			local_free(l->rdata);
 		local_free(l);
 	}
 }
 
 
 
-/* gets the DNS records for name:type
- * returns a dyn. alloc'ed struct rdata linked list with the parsed responses
+/*! \brief gets the DNS records for name:type
+ * \return A dyn. alloc'ed struct rdata linked list with the parsed responses
  * or 0 on error
- * see rfc1035 for the query/response format */
+ * \note see rfc1035 for the query/response format */
 struct rdata* get_record(char* name, int type)
 {
 	int size;
@@ -735,8 +755,7 @@ static inline int a2dns_node(struct rdata *head, struct dns_node **dn)
 }
 
 
-static inline struct hostent* do_srv_lookup(char *name,
-							unsigned short* port, struct dns_node **dn)
+static inline struct hostent* do_srv_lookup(char *name, unsigned short* port, struct dns_node **dn)
 {
 	struct hostent *he;
 	struct srv_rdata *srv;
@@ -773,8 +792,7 @@ static inline struct hostent* do_srv_lookup(char *name,
 #define naptr_prio(_naptr) \
 	((unsigned int)((((_naptr)->order) << 16) + ((_naptr)->pref)))
 
-static inline void filter_and_sort_naptr( struct rdata** head_p,
-									struct rdata** filtered_p, int is_sips)
+static inline void filter_and_sort_naptr( struct rdata** head_p, struct rdata** filtered_p, int is_sips)
 {
 	struct naptr_rdata *naptr;
 	struct rdata *head;
@@ -1158,7 +1176,7 @@ do_srv:
 	if (he)
 		return he;
 	
-	LM_DBG("no valid SRV record found for %s,trying A record lookup...\n",
+	LM_DBG("no valid SRV record found for %s, trying A record lookup...\n",
 		tmp);
 	/* set default port */
 	*port = (is_sips||((*proto)==PROTO_TLS))?SIPS_PORT:SIP_PORT;

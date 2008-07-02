@@ -25,6 +25,12 @@
  *  2006-09-08  first version (bogdan)
  */
 
+/*!
+ * \file 
+ * \brief MI :: Attributes
+ * \ingroup mi
+ */
+
 
 #include <stdio.h>
 #include <string.h>

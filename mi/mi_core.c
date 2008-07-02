@@ -26,6 +26,14 @@
  */
 
 
+/*!
+ * \file 
+ * \brief MI :: Core 
+ * \ingroup mi
+ */
+
+
+
 #include <time.h>
 #include <stdio.h>
 #include <string.h>

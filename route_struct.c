@@ -32,7 +32,10 @@
  *  2006-12-22  support for script and branch flags added (bogdan)
  */
 
-
+/*!
+ * \file 
+ * \brief SIP routing engine - structure helping functions
+ */
 
 #include  "route_struct.h"
 

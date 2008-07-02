@@ -25,6 +25,11 @@
  *  2006-09-08  first version (bogdan)
  */
 
+/*!
+ * \file 
+ * \brief MI :: Management
+ * \ingroup mi
+ */
 
 
 #ifndef _MI_MI_H_

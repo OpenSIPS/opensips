@@ -21,18 +21,22 @@
  *
  */
 
+/*! \file
+ * \brief Transformations support
+ */
+
 #ifndef _TRANSFORMATIONS_H_
 #define _TRANSFORMATIONS_H_
 
 #include "usr_avp.h"
 #include "pvar.h"
 
-#define TR_LBRACKET_STR	"{"
+#define TR_LBRACKET_STR		"{"
 #define TR_LBRACKET		'{'
-#define TR_RBRACKET_STR	"}"
+#define TR_RBRACKET_STR		"}"
 #define TR_RBRACKET		'}'
-#define TR_CLASS_MARKER	'.'
-#define TR_PARAM_MARKER	','
+#define TR_CLASS_MARKER		'.'
+#define TR_PARAM_MARKER		','
 
 enum _tr_type { TR_NONE=0, TR_STRING, TR_URI, TR_PARAMLIST, TR_NAMEADDR };
 enum _tr_s_subtype { 

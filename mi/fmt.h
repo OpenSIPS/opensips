@@ -25,6 +25,13 @@
  *  2006-09-08  first version (bogdan)
  */
 
+/*!
+ * \file 
+ * \brief MI :: Format handling
+ * \ingroup mi
+ */
+
+
 
 #ifndef _MI_FMT_H_
 #define _MI_FMT_H_
@@ -32,7 +39,7 @@
 #include <stdarg.h>
 #include <errno.h>
 
-/* size of the buffer used for printing the FMT */
+/*! \brief size of the buffer used for printing the FMT */
 #define DEFAULT_MI_FMT_BUF_SIZE 2048
 
 extern char *mi_fmt_buf;

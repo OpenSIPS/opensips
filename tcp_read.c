@@ -30,6 +30,11 @@
  * 2005-07-05  migrated to the new io_wait code (andrei)
  */
 
+/*!
+ * \file
+ * \brief TCP connections - read functions
+ */
+
 #ifdef USE_TCP
 
 #include <stdio.h>
@@ -62,20 +67,19 @@
 #include <fcntl.h> /* must be included after io_wait.h if SIGIO_RT is used */
 #include "forward.h"
 
-/* types used in io_wait* */
-enum fd_types { F_NONE, F_TCPMAIN, F_TCPCONN };
+enum fd_types { F_NONE, F_TCPMAIN, F_TCPCONN };		/*!< types used in io_wait* */
 
-/* list of tcp connections handled by this process */
-static struct tcp_connection* tcp_conn_lst=0;
+static struct tcp_connection* tcp_conn_lst=0;		/*!< list of tcp connections handled by this process */
 static io_wait_h io_w; /* io_wait handler*/
 static int tcpmain_sock=-1;
 
 
-/* reads next available bytes
- * return number of bytes read, 0 on EOF or -1 on error,
+/*! \brief reads next available bytes
+ * \return number of bytes read, 0 on EOF or -1 on error,
  * on EOF it also sets c->state to S_CONN_EOF
  * (to distinguish from reads that would block which could return 0)
- * sets also r->error */
+ * sets also r->error 
+ */
 int tcp_read(struct tcp_connection *c)
 {
 	int bytes_free, bytes_read;
@@ -116,12 +120,15 @@ again:
 
 
 
-/* reads all headers (until double crlf), & parses the content-length header
- * (WARNING: inefficient, tries to reuse receive_msg but will go through
+/*! \brief
+ * reads all headers (until double crlf), & parses the content-length header
+ *
+ * \note (WARNING: inefficient, tries to reuse receive_msg but will go through
  * the headers twice [once here looking for Content-Length and for the end
  * of the headers and once in receive_msg]; a more speed efficient version will
  * result in either major code duplication or major changes to the receive code)
- * returns number of bytes read & sets r->state & r->body
+ *
+ * \return number of bytes read & sets r->state & r->body
  * when either r->body!=0 or r->state==H_BODY =>
  * all headers have been read. It should be called in a while loop.
  * returns < 0 if error or 0 if EOF */
@@ -730,7 +737,8 @@ skip:
 
 
 
-/* handle io routine, based on the fd_map type
+/*! \brief
+ *  handle io routine, based on the fd_map type
  * (it will be called from io_wait_loop* )
  * params:  fm  - pointer to a fd hash entry
  *          idx - index in the fd_array (or -1 if not known)
@@ -846,7 +854,7 @@ void force_tcp_conn_lifetime(struct receive_info *rcv, unsigned int timeout)
 
 
 
-/* releases expired connections and cleans up bad ones (state<0) */
+/*! \brief  releases expired connections and cleans up bad ones (state<0) */
 static inline void tcp_receive_timeout(void)
 {
 	struct tcp_connection* con;

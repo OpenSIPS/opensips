@@ -23,6 +23,10 @@
  *
  */
 
+/*!
+ * \file 
+ * \brief Regular Expression functions
+ */
 
 #include <sys/types.h>
 #include <string.h>
@@ -31,7 +35,7 @@
 #include "regexp.h"
 #include "dprint.h"
 
-/* Replace in replacement tokens \d with substrings of string pointed by
+/*! \brief Replace in replacement tokens \\d with substrings of string pointed by
  * pmatch.
  */
 int replace(regmatch_t* pmatch, char* string, char* replacement, str* result)
@@ -78,7 +82,7 @@ int replace(regmatch_t* pmatch, char* string, char* replacement, str* result)
 }
 
 
-/* Match pattern against string and store result in pmatch */
+/*! \brief Match pattern against string and store result in pmatch */
 int reg_match(char *pattern, char *string, regmatch_t *pmatch)
 {
 	regex_t preg;
@@ -99,8 +103,8 @@ int reg_match(char *pattern, char *string, regmatch_t *pmatch)
 }
 
 
-/* Match pattern against string and, if match succeeds, and replace string
- * with replacement substituting tokens \d with matched substrings.
+/*! \brief Match pattern against string and, if match succeeds, and replace string
+ * with replacement substituting tokens \\d with matched substrings.
  */
 int reg_replace(char *pattern, char *replacement, char *string, str *result)
 {

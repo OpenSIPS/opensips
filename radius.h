@@ -25,6 +25,12 @@
  *
  */
 
+/*!
+ * \file
+ * \brief Radius support
+ */
+
+
 #ifndef _RADIUS_CORE_H
 #define _RADIUS_CORE_H
 

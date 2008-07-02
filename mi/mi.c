@@ -25,6 +25,23 @@
  *  2006-09-08  first version (bogdan)
  */
 
+/*!
+ * \file 
+ * \brief MI :: Attributes
+ * \ingroup mi
+ */
+
+/*!
+ * \defgroup mi OpenSER Management Interface
+ * 
+ * The OpenSER management interface (MI) is a plugin architecture with a few different 
+ * handlers that gives access to the management interface over various transports.
+ *
+ * The OpenSER core and modules register commands to the interface at runtime.
+ * Look into the various module documentation files for information of these
+ * commands.
+ *
+ */
 
 #include <string.h>
 

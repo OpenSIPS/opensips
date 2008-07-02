@@ -41,6 +41,13 @@
  *  2006-12-22  support for script and branch flags added (bogdan)
  */
 
+
+/*!
+ * \file 
+ * \brief SIP routing engine
+ */
+
+
  
 #include <stdlib.h>
 #include <sys/types.h>
@@ -86,8 +93,8 @@ static int fix_actions(struct action* a); /*fwd declaration*/
 
 extern int return_code;
 
-/*
- *
+/*! 
+ * \brief Initialize routing lists
  */
 void init_route_lists(void)
 {
@@ -101,8 +108,9 @@ void init_route_lists(void)
 #endif
 }
 
-/* traverses an expr tree and compiles the REs where necessary) 
- * returns: 0 for ok, <0 if errors */
+/*! \brief traverses an expression tree and compiles the REs where necessary) 
+ * \return 0 for ok, <0 if errors 
+ */
 static int fix_expr(struct expr* exp)
 {
 	regex_t* re;
@@ -117,16 +125,16 @@ static int fix_expr(struct expr* exp)
 		switch(exp->op){
 			case AND_OP:
 			case OR_OP:
-						if ((ret=fix_expr(exp->left.v.expr))!=0)
-							return ret;
-						ret=fix_expr(exp->right.v.expr);
-						break;
+					if ((ret=fix_expr(exp->left.v.expr))!=0)
+						return ret;
+					ret=fix_expr(exp->right.v.expr);
+					break;
 			case NOT_OP:
 			case EVAL_OP:
-						ret=fix_expr(exp->left.v.expr);
-						break;
+					ret=fix_expr(exp->left.v.expr);
+					break;
 			default:
-						LM_CRIT("unknown op %d\n", exp->op);
+					LM_CRIT("unknown op %d\n", exp->op);
 		}
 	}else if (exp->type==ELEM_T){
 			if (exp->op==MATCH_OP || exp->op==NOTMATCH_OP){
@@ -180,8 +188,8 @@ static int fix_expr(struct expr* exp)
 
 
 
-/* adds the proxies in the proxy list & resolves the hostnames */
-/* returns 0 if ok, <0 on error */
+/*! \brief Adds the proxies in the proxy list & resolves the hostnames 
+ * \return 0 if ok, <0 on error */
 static int fix_actions(struct action* a)
 {
 	struct action *t;
@@ -467,7 +475,9 @@ inline static int comp_no( int port, void *param, int op, int subtype )
 	}
 }
 
-/* eval_elem helping function, returns str op param */
+/*! \brief eval_elem helping function
+ * \return str op param 
+ */
 inline static int comp_strval(struct sip_msg *msg, int op, str* ival,
 		operand_t *opd)
 {
@@ -558,7 +568,8 @@ error:
 	return -1;
 }
 
-/* eval_elem helping function, returns str op param */
+/*! \brief eval_elem helping function, returns str op param 
+ */
 inline static int comp_str(char* str, void* param, int op, int subtype)
 {
 	int ret;
@@ -604,7 +615,7 @@ error:
 }
 
 
-/* check_self wrapper -- it checks also for the op */
+/*! \brief check_self wrapper -- it checks also for the op */
 inline static int check_self_op(int op, str* s, unsigned short p)
 {
 	int ret;
@@ -624,7 +635,7 @@ inline static int check_self_op(int op, str* s, unsigned short p)
 }
 
 
-/* eval_elem helping function, returns an op param */
+/*! \brief eval_elem helping function, returns an op param */
 inline static int comp_ip(struct sip_msg *msg, int op, struct ip_addr* ip,
 		operand_t *opd)
 {
@@ -714,7 +725,7 @@ error_op:
 	
 }
 
-/* compare str to str */
+/*! \brief compare str to str */
 inline static int comp_s2s(int op, str *s1, str *s2)
 {
 	char backup;
@@ -818,7 +829,7 @@ inline static int comp_s2s(int op, str *s1, str *s2)
 	return ret;
 }
 
-/* compare nr to nr */
+/*! \brief compare nr to nr */
 inline static int comp_n2n(int op, int n1, int n2)
 {
 	switch(op) {
@@ -987,7 +998,9 @@ error:
 }
 
 
-/* returns: 0/1 (false/true) or -1 on error, -127 EXPR_DROP */
+/*! \brief 
+ * \return 0/1 (false/true) or -1 on error, -127 EXPR_DROP 
+ */
 static int eval_elem(struct expr* e, struct sip_msg* msg, pv_value_t *val)
 {
 
@@ -1367,7 +1380,7 @@ error:
 
 
 
-/* ret= 0/1 (true/false) ,  -1 on error or EXPR_DROP (-127)  */
+/*! \return ret= 0/1 (true/false) ,  -1 on error or EXPR_DROP (-127)  */
 int eval_expr(struct expr* e, struct sip_msg* msg, pv_value_t *val)
 {
 	static int rec_lev=0;
@@ -1419,7 +1432,8 @@ skip:
 }
 
 
-/* adds an action list to head; a must be null terminated (last a->next=0))*/
+/*! \brief adds an action list to head; a must be null terminated (last a->next=0))
+ */
 void push(struct action* a, struct action** head)
 {
 	struct action *t;
@@ -1447,8 +1461,9 @@ error:
 
 
 
-/* fixes all action tables */
-/* returns 0 if ok , <0 on error */
+/*! \brief fixes all action tables 
+ * \return 0 if ok , <0 on error 
+ */
 int fix_rls(void)
 {
 	int i,ret;
@@ -1567,9 +1582,10 @@ error:
 }
 
 
-/* check all routing tables for compatiblity between
+/*! \brief check all routing tables for compatiblity between
  * route types and called module functions;
- * returns 0 if ok , <0 on error */
+ * \return 0 if ok , <0 on error 
+ */
 int check_rls(void)
 {
 	int i,ret;
@@ -1626,7 +1642,7 @@ int check_rls(void)
 
 
 
-/* debug function, prints main routing table */
+/*! \brief debug function, prints main routing table */
 void print_rl(void)
 {
 	int j;

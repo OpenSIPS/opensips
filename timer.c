@@ -27,6 +27,11 @@
  *  2007-02-02  timer with resolution of microseconds added (bogdan)
  */
 
+/*!
+ * \file
+ * \brief Timer handling
+ */
+
 #include <unistd.h>
 #include <sys/select.h>
 #include <sys/time.h>

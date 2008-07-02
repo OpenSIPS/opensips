@@ -29,6 +29,12 @@
  *   2007-07-27  split function for parsing of replacing string (ancuta)
  */
 
+/*!
+ * \file
+ * \brief Regexp and regexp substitutions implementations
+ */
+
+
 
 #include "dprint.h"
 #include "mem/mem.h"
@@ -47,7 +53,7 @@ void subst_expr_free(struct subst_expr* se)
 
 
 
-/* frees the entire list, head (l) too */
+/*! \brief frees the entire list, head (l) too */
 void replace_lst_free(struct replace_lst* l)
 {
 	struct replace_lst* t;
@@ -61,9 +67,9 @@ void replace_lst_free(struct replace_lst* l)
 }
 
 #define MAX_REPLACE_WITH 100
-/*parse_repl(rw, &p, end, &max_pmatch)*/
 int parse_repl(struct replace_with * rw, char ** begin, 
-				char * end, int *max_token_nb, int with_sep){
+				char * end, int *max_token_nb, int with_sep)
+{
 
 	char* p0;
 	char * repl;
@@ -196,7 +202,8 @@ error:
 }
 
 
-/* parse a /regular expression/replacement/flags into a subst_expr structure */
+/*! \brief Parse a /regular expression/replacement/flags into a subst_expr structure 
+ */
 struct subst_expr* subst_parser(str* subst)
 {
 	char c;
@@ -367,8 +374,9 @@ static int replace_len(const char* match, int nmatch, regmatch_t* pmatch,
 
 #endif
 
-/* rpl.s will be alloc'ed with the proper size & rpl.len set
- * returns 0 on success, <0 on error*/
+/*! \brief Replies will be allocated with the proper size & rpl.len set
+ * \return 0 on success, <0 on error
+ */
 static int replace_build(const char* match, int nmatch, regmatch_t* pmatch,
 					struct subst_expr* se, struct sip_msg* msg, str* rpl)
 {
@@ -483,10 +491,11 @@ error:
 
 
 
-/* WARNING: input must be 0 terminated! */
-/* returns: 0 if no match or error, or subst result; if count!=0
+/*! \brief run substitutions
+ * \return 0 if no match or error, or subst result; if count!=0
  *           it will be set to 0 (no match), the number of matches
  *           or -1 (error).
+ * \note WARNING: input must be 0 terminated!
  */
 struct replace_lst* subst_run(struct subst_expr* se, const char* input,
 								struct sip_msg* msg, int* count)
@@ -566,7 +575,7 @@ error:
 
 
 
-/* returns the substitution result in a str, input must be 0 term
+/*! \return the substitution result in a str, input must be 0 term
  *  0 on no match or malloc error
  *  if count is non zero it will be set to the number of matches, or -1
  *   if error 

@@ -36,6 +36,11 @@
  * 2006-12-22 functions for script flags added (bogdan)
  */
 
+/*! 
+ * \file 
+ * \brief Receive message and process routing for it
+ */
+
 
 #include <string.h>
 #include <stdlib.h>
@@ -75,7 +80,7 @@ unsigned int get_next_msg_no(void)
 	return ++msg_no;
 }
 
-/* WARNING: buf must be 0 terminated (buf[len]=0) or some things might 
+/*! \note WARNING: buf must be 0 terminated (buf[len]=0) or some things might 
  * break (e.g.: modules/textops)
  */
 int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info) 
@@ -161,7 +166,7 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info)
 
 		/* execute post request-script callbacks */
 		exec_post_req_cb(msg);
-	}else if (msg->first_line.type==SIP_REPLY){
+	} else if (msg->first_line.type==SIP_REPLY) {
 		update_stat( rcv_rpls, 1);
 		/* sanity checks */
 		if ((msg->via1==0) || (msg->via1->error!=PARSE_OK)){

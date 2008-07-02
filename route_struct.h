@@ -30,6 +30,11 @@
  *  2006-12-22  support for script and branch flags added (bogdan)
  */
 
+/*!
+ * \file 
+ * \brief SIP routing engine - structure management
+ */
+
 
 #ifndef route_struct_h
 #define route_struct_h
@@ -46,7 +51,7 @@
  * 
  */
 
-
+/*! \todo Add documentation for all ENUMs in this file. */
 enum { EXP_T=1, ELEM_T };
 enum { AND_OP=1, OR_OP, NOT_OP, EVAL_OP, PLUS_OP, MINUS_OP, DIV_OP, MULT_OP, MODULO_OP,
 		BAND_OP, BOR_OP, BXOR_OP, BNOT_OP, BLSHIFT_OP, BRSHIFT_OP };
@@ -104,8 +109,8 @@ typedef struct operand {
 
 
 struct expr{
-	int type; /* exp, exp_elem */
-	int op; /* and, or, not | ==,  =~ */
+	int type; /*!< exp, exp_elem */
+	int op; /*!< and, or, not | ==,  =~ */
 	operand_t left;
 	operand_t right;
 };
@@ -121,9 +126,10 @@ typedef struct action_elem_ {
 	} u;
 } action_elem_t, *action_elem_p;
 
-/* increase MAX_ACTION_ELEMS to support more module function parameters
+/*! \brief increase MAX_ACTION_ELEMS to support more module function parameters
    if you change this define, you need also to change the assignment in
-   the action.c file */
+   the action.c file 
+ */
 #define MAX_ACTION_ELEMS	7
 struct action{
 	int type;  /* forward, drop, log, send ...*/

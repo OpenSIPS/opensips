@@ -25,6 +25,13 @@
  *  2006-09-08  first version (bogdan)
  */
 
+/*!
+ * \file 
+ * \brief MI :: Core
+ * \ingroup mi
+ */
+
+
 
 #ifndef _MI_MI_CORE_H_
 #define _MI_MI_CORE_H_
