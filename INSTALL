@@ -127,6 +127,10 @@ make exclude_modules=exec modules
 or
 make exclude_modules="" skip_modules=exec modules
 
+-generate README file for textops module
+
+make modules=modules/textops modules-readme
+
 -compile with gcc-3.2 instead of gcc
 
 make CC=gcc-3.2 all
