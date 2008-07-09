@@ -6,7 +6,7 @@
 include ../../Makefile.defs
 
 auto_gen=
-NAME=openserunix
+NAME=opensipsunix
 
 
 include ../../Makefile.sources
