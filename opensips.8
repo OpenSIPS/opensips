@@ -1,13 +1,13 @@
-.\" $Id$
+.\" $Id: opensips.8 4395 2008-06-16 15:49:24Z henningw $
 .\" Process with
-.\" groff -man -Tascii openser.8
+.\" groff -man -Tascii opensips.8
 .\" 
-.TH "OpenSER" "8" "08.06.2006" "OpenSER" "VoIP SIP Server"
+.TH "OpenSIPS" "8" "08.06.2006" "OpenSIPS" "VoIP SIP Server"
 .SH "NAME"
-openser \- flexible and roboust SIP (RFC3261, RFC3263) server for Voice over IP (VoIP)
+opensips \- flexible and roboust SIP (RFC3261, RFC3263) server for Voice over IP (VoIP)
 
 .SH "SYNOPSIS"
-.B openser
+.B opensips
 [
 .B \-hcCrRvdDEVT
 ] [
@@ -41,7 +41,7 @@ openser \- flexible and roboust SIP (RFC3261, RFC3263) server for Voice over IP 
 ]
 
 .SH "DESCRIPTION"
-.B OpenSER 
+.B OpenSIPS 
 .BR  
 is a SIP\-based VoIP server running on most Unix\-like operating systems. It supports UDP, TCP and TLS transport layers. Among its features:
 .IP  *
@@ -88,7 +88,7 @@ Turns on debugging, multiple
 increase the debug level.
 .TP 
 .BI \-D
-Runs openser in the foreground (it doesn't fork into daemon mode).
+Runs opensips in the foreground (it doesn't fork into daemon mode).
 .TP 
 .BI \-E
 Sends all the log messages to stderr.
@@ -103,7 +103,7 @@ Displays the version number.
 Reads the configuration from 
 .B " config\-file" 
 (default
-.I  /etc/openser/openser.cfg
+.I  /etc/opensips/opensips.cfg
 ).
 .TP 
 .BI \-l " address"
@@ -131,7 +131,7 @@ Size of the shared memory which will be allocated (in Megabytes).
 .TP 
 .BI \-w " working\-dir" 
 Specifies the working directory. In the very improbable event that 
-.B openser 
+.B opensips 
 will crash, the core file will be generated here.
 .TP 
 .BI \-W " method"
@@ -139,32 +139,32 @@ Specify poll method.
 .TP 
 .BI \-t " chroot\-dir"
 Forces 
-.B openser 
+.B opensips 
 to chroot after reading the config file.
 .TP 
 .BI \-u " uid"
 Changes the user id under which 
-.B openser
+.B opensips
 runs.
 .TP 
 .BI \-g " gid"
 Changes the group id under which 
-.B openser 
+.B opensips 
 runs.
 .TP 
 .BI \-P " pid\-file"
 Creates a file containing the pid of the main 
-.B openser 
+.B opensips 
 process.
 .TP 
 .BI \-i " fifo\-path"
 Creates a fifo, usefull for monitoring
-.B openser
+.B opensips
 status.
 .TP 
 .BI \-x " socket\-path"
 Creates a unix socket, usefull for monitoring
-.B openser
+.B opensips
 status ( same as
 .BI \-i " fifo\-path" 
 but using instead unix sockets).
@@ -172,28 +172,28 @@ but using instead unix sockets).
 
 .SH "FILES"
 .PD 0
-.B /usr/sbin/openser
+.B /usr/sbin/opensips
 .br 
-.B /etc/openser/openser.cfg
+.B /etc/opensips/opensips.cfg
 .br 
-.B /usr/lib/openser/modules/*
+.B /usr/lib/opensips/modules/*
 .PD
 .SH "AUTHORS"
 see 
-.B /usr/share/doc/openser/AUTHORS
+.B /usr/share/doc/opensips/AUTHORS
 
 .SH "SEE ALSO"
-.BR openser.cfg(5)
+.BR opensips.cfg(5)
 .PP 
-Full documentation on openser is available at
-.I http://www.openser.org/.
+Full documentation on opensips is available at
+.I http://www.opensips.org/.
 .PP 
 Project tracker and SVN
 .I 
-http://sourceforge.net/projects/openser/.
+http://sourceforge.net/projects/opensips/.
 .PP 
 Mailing lists:
 .nf 
-users@lists.openser.org \- openser user community
+users@lists.opensips.org \- opensips user community
 .nf 
-devel@lists.openser.org \- openser development, new features and unstable version
+devel@lists.opensips.org \- opensips development, new features and unstable version

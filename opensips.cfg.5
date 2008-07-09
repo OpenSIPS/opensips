@@ -1,0 +1,47 @@
+.\" $Id: opensips.cfg.5 4395 2008-06-16 15:49:24Z henningw $
+.TH opensips.cfg 5 08.06.2006 opensips "Open SIP Server" 
+.\" Process with
+.\" groff -man -Tascii opensips.cfg.5 
+.\"
+.SH NAME
+opensips.cfg \- opensips configuration file
+.SH SYNOPSIS
+.I /etc/opensips/opensips.cfg
+.SH DESCRIPTION
+.B opensips
+reads the configuration data from
+.I /etc/opensips/opensips.cfg
+(or the file specified with
+.B \-f
+on the command line).
+The file contains global configuration parameters, module loading commands and the script that will be executed for each received request. Lines starting with
+.B #
+or enclosed in
+.B /* ... */
+are interpreted as comments.
+.PP
+This manual page is incomplete. For further information please read the
+.I opensips documentation (http://www.opensips.org/).
+
+.SH FILES
+.bL
+.I /etc/opensips/opensips.cfg
+.br
+
+.SH AUTHORS
+
+see 
+.B /usr/share/doc/opensips/AUTHORS
+
+.SH SEE ALSO
+.BR opensips(8)
+.PP
+Full documentation on opensips is available at
+.I http://www.opensips.org/.
+.PP
+Mailing lists:
+.nf 
+users@lists.opensips.org - opensips user community
+.nf 
+devel@lists.opensips.org - opensips development, new features and unstable version
+
