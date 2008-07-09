@@ -99,7 +99,7 @@ proper realclean distclean: clean
 			 $(MAKE) -C $$r proper ; \
 		fi ; \
 	done 
-	-@if [ -d utils/openserunix ]; then $(MAKE) -C utils/openserunix proper; fi
+	-@if [ -d utils/opensipsunix ]; then $(MAKE) -C utils/opensipsunix proper; fi
 	-@if [ -d utils/db_berkeley ]; then $(MAKE) -C utils/db_berkeley proper; fi
 	-@if [ -d utils/db_oracle ]; then $(MAKE) -C utils/db_oracle proper; fi
 
@@ -111,7 +111,7 @@ mantainer-clean: distclean
 			$(MAKE) -C $$r mantainer-clean; \
 		fi ; \
 	 done 
-	-@if [ -d utils/openserunix ]; then $(MAKE) -C utils/openserunix mantainer-clean; fi
+	-@if [ -d utils/opensipsunix ]; then $(MAKE) -C utils/opensipsunix mantainer-clean; fi
 
 
 .PHONY: install_module_custom

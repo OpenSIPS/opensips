@@ -57,7 +57,7 @@ makefile_defs=1
 export makefile_defs
 
 # main binary name
-MAIN_NAME=openser
+MAIN_NAME=opensips
 
 #version number
 VERSION = 1
@@ -472,7 +472,7 @@ DEFS+= $(extra_defs) \
 #PROFILE=  -pg #set this if you want profiling
 
 # WARNING: do not add mode=debug or mode=release anymore in the Makefile,
-# use make mode=debug all instead. Anyway now by default openser 
+# use make mode=debug all instead. Anyway now by default opensips 
 # is  compiled w/ debugging symbols in all cases (-g). --andrei
 
 ifneq ($(SVNREVISION),)
@@ -771,7 +771,7 @@ $(warning 			Old gcc detected ($(CC_SHORTVER)), use  gcc >= 3.1 \
 					for better results)
 ifneq				($(OS), netbsd)
 						# on netbsd/sparc64,  gcc 2.95.3 does not compile
-						# ser with -mv8
+						# opensips with -mv8
 						CFLAGS+= -mv8 
 endif
 ifeq					($(ASTYPE), solaris)

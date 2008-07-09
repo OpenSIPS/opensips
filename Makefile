@@ -9,7 +9,7 @@
 #  History:
 #  --------
 #              created by andrei
-#  2003-02-24  make install no longer overwrites openser.cfg  - patch provided
+#  2003-02-24  make install no longer overwrites opensips.cfg  - patch provided
 #               by Maxim Sobolev   <sobomax@FreeBSD.org> and 
 #                  Tomas Bjoerklund <tomas@webservices.se>
 #  2003-03-11  PREFIX & LOCALBASE must also be exported (andrei)
@@ -21,9 +21,9 @@
 #               calls -- see comment (andrei)
 #  2003-06-02  make tar changes -- unpacks in $NAME-$RELEASE  (andrei)
 #  2003-06-03  make install-cfg will properly replace the module path
-#               in the cfg (re: /usr/.*lib/openser/modules)
-#              openser.cfg.default is installed only if there is a previous
-#               cfg. -- fixes packages containing openser.cfg.default (andrei)
+#               in the cfg (re: /usr/.*lib/opensips/modules)
+#              opensips.cfg.default is installed only if there is a previous
+#               cfg. -- fixes packages containing opensips.cfg.default (andrei)
 #  2003-08-29  install-modules-doc split from install-doc, added 
 #               install-modules-all, removed README.cfg (andrei)
 #              added skip_cfg_install (andrei)
@@ -39,8 +39,8 @@ auto_gen=lex.yy.c cfg.tab.c   #lexx, yacc etc
 #include  source related defs
 include Makefile.sources
 
-# whether or not to install openser.cfg or just openser.cfg.default
-# (openser.cfg will never be overwritten by make install, this is usefull
+# whether or not to install opensips.cfg or just opensips.cfg.default
+# (opensips.cfg will never be overwritten by make install, this is usefull
 #  when creating packages)
 skip_cfg_install?=
 
@@ -411,7 +411,7 @@ sunpkg:
 	cd ../..)
 	cat /dev/null > ../$(NAME)-$(RELEASE)-$(OS)-$(ARCH)-local
 	pkgtrans -s tmp/$(NAME)_sun_pkg/ ../$(NAME)-$(RELEASE)-$(OS)-$(ARCH)-local \
-		OpenSER
+		OpenSIPS
 	gzip -9 ../$(NAME)-$(RELEASE)-$(OS)-$(ARCH)-local
 	rm -rf tmp/$(NAME)
 	rm -rf tmp/$(NAME)_sun_pkg
@@ -479,13 +479,13 @@ install-cfg: $(cfg-prefix)/$(cfg-dir)
 					$(cfg-prefix)/$(cfg-dir)/dictionary.radius; \
 			fi; \
 		fi
-		# openserctl config
-		$(INSTALL_TOUCH)   $(cfg-prefix)/$(cfg-dir)/openserctlrc.sample
-		$(INSTALL_CFG) scripts/openserctlrc \
-			$(cfg-prefix)/$(cfg-dir)/openserctlrc.sample
-		if [ ! -f $(cfg-prefix)/$(cfg-dir)/openserctlrc ]; then \
-			mv -f $(cfg-prefix)/$(cfg-dir)/openserctlrc.sample \
-				$(cfg-prefix)/$(cfg-dir)/openserctlrc; \
+		# opensipsctl config
+		$(INSTALL_TOUCH)   $(cfg-prefix)/$(cfg-dir)/opensipsctlrc.sample
+		$(INSTALL_CFG) scripts/opensipsctlrc \
+			$(cfg-prefix)/$(cfg-dir)/opensipsctlrc.sample
+		if [ ! -f $(cfg-prefix)/$(cfg-dir)/opensipsctlrc ]; then \
+			mv -f $(cfg-prefix)/$(cfg-dir)/opensipsctlrc.sample \
+				$(cfg-prefix)/$(cfg-dir)/opensipsctlrc; \
 		fi
 		#$(INSTALL_CFG) etc/$(NAME).cfg $(cfg-prefix)/$(cfg-dir)
 		if [ "$(TLS)" != "" ] ; then \
@@ -507,55 +507,55 @@ install-cfg: $(cfg-prefix)/$(cfg-dir)
 install-bin: $(bin-prefix)/$(bin-dir) utils
 		$(INSTALL_TOUCH) $(bin-prefix)/$(bin-dir)/$(NAME) 
 		$(INSTALL_BIN) $(NAME) $(bin-prefix)/$(bin-dir)
-		cat scripts/openserctl | \
+		cat scripts/opensipsctl | \
 		sed -e "s#/usr/local/sbin#$(bin-target)#g" | \
-		sed -e "s#/usr/local/lib/openser#$(lib-target)#g" | \
-		sed -e "s#/usr/local/etc/openser#$(cfg-target)#g"  >/tmp/openserctl
-		$(INSTALL_TOUCH) $(bin-prefix)/$(bin-dir)/openserctl
-		$(INSTALL_BIN) /tmp/openserctl $(bin-prefix)/$(bin-dir)
-		rm -fr /tmp/openserctl
+		sed -e "s#/usr/local/lib/opensips#$(lib-target)#g" | \
+		sed -e "s#/usr/local/etc/opensips#$(cfg-target)#g"  >/tmp/opensipsctl
+		$(INSTALL_TOUCH) $(bin-prefix)/$(bin-dir)/opensipsctl
+		$(INSTALL_BIN) /tmp/opensipsctl $(bin-prefix)/$(bin-dir)
+		rm -fr /tmp/opensipsctl
 		sed -e "s#/usr/local/sbin#$(bin-target)#g" \
-			< scripts/openserctl.base > /tmp/openserctl.base
-		mkdir -p $(modules-prefix)/$(lib-dir)/openserctl 
+			< scripts/opensipsctl.base > /tmp/opensipsctl.base
+		mkdir -p $(modules-prefix)/$(lib-dir)/opensipsctl 
 		$(INSTALL_TOUCH) \
-			$(modules-prefix)/$(lib-dir)/openserctl
-		$(INSTALL_CFG) /tmp/openserctl.base \
-			$(modules-prefix)/$(lib-dir)/openserctl/openserctl.base
-		rm -fr /tmp/openserctl.base
+			$(modules-prefix)/$(lib-dir)/opensipsctl
+		$(INSTALL_CFG) /tmp/opensipsctl.base \
+			$(modules-prefix)/$(lib-dir)/opensipsctl/opensipsctl.base
+		rm -fr /tmp/opensipsctl.base
 		sed -e "s#/usr/local#$(bin-target)#g" \
-			< scripts/openserctl.ctlbase > /tmp/openserctl.ctlbase
-		$(INSTALL_CFG) /tmp/openserctl.ctlbase \
-			$(modules-prefix)/$(lib-dir)/openserctl/openserctl.ctlbase
-		rm -fr /tmp/openserctl.ctlbase
+			< scripts/opensipsctl.ctlbase > /tmp/opensipsctl.ctlbase
+		$(INSTALL_CFG) /tmp/opensipsctl.ctlbase \
+			$(modules-prefix)/$(lib-dir)/opensipsctl/opensipsctl.ctlbase
+		rm -fr /tmp/opensipsctl.ctlbase
 		sed -e "s#/usr/local#$(bin-target)#g" \
-			< scripts/openserctl.fifo > /tmp/openserctl.fifo
-		$(INSTALL_CFG) /tmp/openserctl.fifo \
-			$(modules-prefix)/$(lib-dir)/openserctl/openserctl.fifo
-		rm -fr /tmp/openserctl.fifo
+			< scripts/opensipsctl.fifo > /tmp/opensipsctl.fifo
+		$(INSTALL_CFG) /tmp/opensipsctl.fifo \
+			$(modules-prefix)/$(lib-dir)/opensipsctl/opensipsctl.fifo
+		rm -fr /tmp/opensipsctl.fifo
 		sed -e "s#/usr/local#$(bin-target)#g" \
-			< scripts/openserctl.unixsock > /tmp/openserctl.unixsock
-		$(INSTALL_CFG) /tmp/openserctl.unixsock \
-			$(modules-prefix)/$(lib-dir)/openserctl/openserctl.unixsock
-		rm -fr /tmp/openserctl.unixsock
+			< scripts/opensipsctl.unixsock > /tmp/opensipsctl.unixsock
+		$(INSTALL_CFG) /tmp/opensipsctl.unixsock \
+			$(modules-prefix)/$(lib-dir)/opensipsctl/opensipsctl.unixsock
+		rm -fr /tmp/opensipsctl.unixsock
 		sed -e "s#/usr/local#$(bin-target)#g" \
-			< scripts/openserctl.sqlbase > /tmp/openserctl.sqlbase
-		$(INSTALL_CFG) /tmp/openserctl.sqlbase \
-			$(modules-prefix)/$(lib-dir)/openserctl/openserctl.sqlbase
-		rm -fr /tmp/openserctl.sqlbase
+			< scripts/opensipsctl.sqlbase > /tmp/opensipsctl.sqlbase
+		$(INSTALL_CFG) /tmp/opensipsctl.sqlbase \
+			$(modules-prefix)/$(lib-dir)/opensipsctl/opensipsctl.sqlbase
+		rm -fr /tmp/opensipsctl.sqlbase
 		# install db setup base script
 		sed -e "s#/usr/local/sbin#$(bin-target)#g" \
-			-e "s#/usr/local/etc/openser#$(cfg-target)#g" \
-			< scripts/openserdbctl.base > /tmp/openserdbctl.base
-		$(INSTALL_CFG) /tmp/openserdbctl.base \
-			$(modules-prefix)/$(lib-dir)/openserctl/openserdbctl.base
-		rm -fr /tmp/openserdbctl.base
-		cat scripts/openserdbctl | \
+			-e "s#/usr/local/etc/opensips#$(cfg-target)#g" \
+			< scripts/opensipsdbctl.base > /tmp/opensipsdbctl.base
+		$(INSTALL_CFG) /tmp/opensipsdbctl.base \
+			$(modules-prefix)/$(lib-dir)/opensipsctl/opensipsdbctl.base
+		rm -fr /tmp/opensipsdbctl.base
+		cat scripts/opensipsdbctl | \
 		sed -e "s#/usr/local/sbin#$(bin-target)#g" | \
-		sed -e "s#/usr/local/lib/openser#$(lib-target)#g" | \
-		sed -e "s#/usr/local/etc/openser#$(cfg-target)#g"  >/tmp/openserdbctl
-		$(INSTALL_TOUCH) $(bin-prefix)/$(bin-dir)/openserdbctl
-		$(INSTALL_BIN) /tmp/openserdbctl $(bin-prefix)/$(bin-dir)
-		rm -fr /tmp/openserdbctl
+		sed -e "s#/usr/local/lib/opensips#$(lib-target)#g" | \
+		sed -e "s#/usr/local/etc/opensips#$(cfg-target)#g"  >/tmp/opensipsdbctl
+		$(INSTALL_TOUCH) $(bin-prefix)/$(bin-dir)/opensipsdbctl
+		$(INSTALL_BIN) /tmp/opensipsdbctl $(bin-prefix)/$(bin-dir)
+		rm -fr /tmp/opensipsdbctl
 		$(INSTALL_TOUCH)   $(bin-prefix)/$(bin-dir)/$(NAME)unix
 		$(INSTALL_BIN) utils/$(NAME)unix/$(NAME)unix $(bin-prefix)/$(bin-dir)
 
@@ -589,17 +589,17 @@ install-modules-all: install-modules install-modules-doc
 install-modules-tools: $(bin-prefix)/$(bin-dir)
 		# install MySQL stuff
 		if [ "$(MYSQLON)" = "yes" ]; then \
-			mkdir -p $(modules-prefix)/$(lib-dir)/openserctl ; \
+			mkdir -p $(modules-prefix)/$(lib-dir)/opensipsctl ; \
 			sed -e "s#/usr/local/sbin#$(bin-target)#g" \
-				< scripts/openserctl.mysql > /tmp/openserctl.mysql ; \
-			$(INSTALL_CFG) /tmp/openserctl.mysql \
-				$(modules-prefix)/$(lib-dir)/openserctl/openserctl.mysql ; \
-			rm -fr /tmp/openserctl.mysql ; \
-			sed -e "s#/usr/local/share/openser#$(data-target)#g" \
-			< scripts/openserdbctl.mysql > /tmp/openserdbctl.mysql ; \
-			$(INSTALL_TOUCH) $(modules-prefix)/$(lib-dir)/openserctl/openserdbctl.mysql ; \
-			$(INSTALL_CFG) /tmp/openserdbctl.mysql $(modules-prefix)/$(lib-dir)/openserctl/ ; \
-			rm -fr /tmp/openserdbctl.mysql ; \
+				< scripts/opensipsctl.mysql > /tmp/opensipsctl.mysql ; \
+			$(INSTALL_CFG) /tmp/opensipsctl.mysql \
+				$(modules-prefix)/$(lib-dir)/opensipsctl/opensipsctl.mysql ; \
+			rm -fr /tmp/opensipsctl.mysql ; \
+			sed -e "s#/usr/local/share/opensips#$(data-target)#g" \
+			< scripts/opensipsdbctl.mysql > /tmp/opensipsdbctl.mysql ; \
+			$(INSTALL_TOUCH) $(modules-prefix)/$(lib-dir)/opensipsctl/opensipsdbctl.mysql ; \
+			$(INSTALL_CFG) /tmp/opensipsdbctl.mysql $(modules-prefix)/$(lib-dir)/opensipsctl/ ; \
+			rm -fr /tmp/opensipsdbctl.mysql ; \
 			mkdir -p $(data-prefix)/$(data-dir)/mysql ; \
 			for FILE in $(wildcard scripts/mysql/*) ; do \
 				if [ -f $$FILE ] ; then \
@@ -612,17 +612,17 @@ install-modules-tools: $(bin-prefix)/$(bin-dir)
 		fi
 		# install PostgreSQL stuff
 		if [ "$(PGSQLON)" = "yes" ]; then \
-			mkdir -p $(modules-prefix)/$(lib-dir)/openserctl ; \
+			mkdir -p $(modules-prefix)/$(lib-dir)/opensipsctl ; \
 			sed -e "s#/usr/local/sbin#$(bin-target)#g" \
-				< scripts/openserctl.pgsql > /tmp/openserctl.pgsql ; \
-			$(INSTALL_CFG) /tmp/openserctl.pgsql \
-				$(modules-prefix)/$(lib-dir)/openserctl/openserctl.pgsql ; \
-			rm -fr /tmp/openserctl.pgsql ; \
-			sed -e "s#/usr/local/share/openser#$(data-target)#g" \
-				< scripts/openserdbctl.pgsql > /tmp/openserdbctl.pgsql ; \
-			$(INSTALL_TOUCH) $(modules-prefix)/$(lib-dir)/openserctl/openserdbctl.pgsql ; \
-			$(INSTALL_CFG) /tmp/openserdbctl.pgsql $(modules-prefix)/$(lib-dir)/openserctl/ ; \
-			rm -fr /tmp/openserdbctl.pgsql ; \
+				< scripts/opensipsctl.pgsql > /tmp/opensipsctl.pgsql ; \
+			$(INSTALL_CFG) /tmp/opensipsctl.pgsql \
+				$(modules-prefix)/$(lib-dir)/opensipsctl/opensipsctl.pgsql ; \
+			rm -fr /tmp/opensipsctl.pgsql ; \
+			sed -e "s#/usr/local/share/opensips#$(data-target)#g" \
+				< scripts/opensipsdbctl.pgsql > /tmp/opensipsdbctl.pgsql ; \
+			$(INSTALL_TOUCH) $(modules-prefix)/$(lib-dir)/opensipsctl/opensipsdbctl.pgsql ; \
+			$(INSTALL_CFG) /tmp/opensipsdbctl.pgsql $(modules-prefix)/$(lib-dir)/opensipsctl/ ; \
+			rm -fr /tmp/opensipsdbctl.pgsql ; \
 			mkdir -p $(data-prefix)/$(data-dir)/postgres ; \
 			for FILE in $(wildcard scripts/postgres/*) ; do \
 				if [ -f $$FILE ] ; then \
@@ -635,22 +635,22 @@ install-modules-tools: $(bin-prefix)/$(bin-dir)
 		fi
 		# install Oracle stuff
 		if [ "$(ORACLEON)" = "yes" ]; then \
-			mkdir -p $(modules-prefix)/$(lib-dir)/openserctl ; \
+			mkdir -p $(modules-prefix)/$(lib-dir)/opensipsctl ; \
 			sed -e "s#/usr/local/sbin#$(bin-target)#g" \
-				< scripts/openserctl.oracle > /tmp/openserctl.oracle ; \
-			$(INSTALL_CFG) /tmp/openserctl.oracle \
-				$(modules-prefix)/$(lib-dir)/openserctl/openserctl.oracle ; \
-			rm -fr /tmp/openserctl.oracle ; \
-			sed -e "s#/usr/local/share/openser#$(data-target)#g" \
-			< scripts/openserdbctl.oracle > /tmp/openserdbctl.oracle ; \
-			$(INSTALL_TOUCH) $(modules-prefix)/$(lib-dir)/openserctl/openserdbctl.oracle ; \
-			$(INSTALL_CFG) /tmp/openserdbctl.oracle $(modules-prefix)/$(lib-dir)/openserctl/ ; \
-			rm -fr /tmp/openserdbctl.oracle ; \
-			sed -e "s#/usr/local/share/openser#$(data-target)#g" \
-			< scripts/openserdbfunc.oracle > /tmp/openserdbfunc.oracle ; \
-			$(INSTALL_TOUCH) $(modules-prefix)/$(lib-dir)/openserctl/openserdbfunc.oracle ; \
-			$(INSTALL_CFG) /tmp/openserdbfunc.oracle $(modules-prefix)/$(lib-dir)/openserctl/ ; \
-			rm -fr /tmp/openserdbfunc.oracle ; \
+				< scripts/opensipsctl.oracle > /tmp/opensipsctl.oracle ; \
+			$(INSTALL_CFG) /tmp/opensipsctl.oracle \
+				$(modules-prefix)/$(lib-dir)/opensipsctl/opensipsctl.oracle ; \
+			rm -fr /tmp/opensipsctl.oracle ; \
+			sed -e "s#/usr/local/share/opensips#$(data-target)#g" \
+			< scripts/opensipsdbctl.oracle > /tmp/opensipsdbctl.oracle ; \
+			$(INSTALL_TOUCH) $(modules-prefix)/$(lib-dir)/opensipsctl/opensipsdbctl.oracle ; \
+			$(INSTALL_CFG) /tmp/opensipsdbctl.oracle $(modules-prefix)/$(lib-dir)/opensipsctl/ ; \
+			rm -fr /tmp/opensipsdbctl.oracle ; \
+			sed -e "s#/usr/local/share/opensips#$(data-target)#g" \
+			< scripts/opensipsdbfunc.oracle > /tmp/opensipsdbfunc.oracle ; \
+			$(INSTALL_TOUCH) $(modules-prefix)/$(lib-dir)/opensipsctl/opensipsdbfunc.oracle ; \
+			$(INSTALL_CFG) /tmp/opensipsdbfunc.oracle $(modules-prefix)/$(lib-dir)/opensipsctl/ ; \
+			rm -fr /tmp/opensipsdbfunc.oracle ; \
 			mkdir -p $(data-prefix)/$(data-dir)/oracle ; \
 			for FILE in $(wildcard scripts/oracle/*) ; do \
 				if [ -f $$FILE ] ; then \
@@ -678,55 +678,55 @@ install-modules-tools: $(bin-prefix)/$(bin-dir)
 					$(data-prefix)/$(data-dir)/oracle/admin/`basename "$$FILE"` ; \
 				fi ;\
 			done ; \
-			$(INSTALL_BIN) utils/db_oracle/openser_orasel $(bin-prefix)/$(bin-dir) ; \
+			$(INSTALL_BIN) utils/db_oracle/opensips_orasel $(bin-prefix)/$(bin-dir) ; \
 		fi
 		# install Berkeley database stuff
 		if [ "$(BERKELEYDBON)" = "yes" ]; then \
-			mkdir -p $(modules-prefix)/$(lib-dir)/openserctl ; \
-			sed -e "s#/usr/local/share/openser/#$(data-target)#g" \
-				< scripts/openserctl.db_berkeley > /tmp/openserctl.db_berkeley ; \
-			$(INSTALL_CFG) /tmp/openserctl.db_berkeley \
-				$(modules-prefix)/$(lib-dir)/openserctl/openserctl.db_berkeley ; \
-			rm -fr /tmp/openserctl.db_berkeley ; \
-			sed -e "s#/usr/local/share/openser#$(data-target)#g" \
-				< scripts/openserdbctl.db_berkeley > /tmp/openserdbctl.db_berkeley ; \
-			$(INSTALL_TOUCH) $(modules-prefix)/$(lib-dir)/openserctl/openserdbctl.db_berkeley ; \
-			$(INSTALL_CFG) /tmp/openserdbctl.db_berkeley $(modules-prefix)/$(lib-dir)/openserctl/ ; \
-			rm -fr /tmp/openserdbctl.db_berkeley ; \
-			mkdir -p $(data-prefix)/$(data-dir)/db_berkeley/openser ; \
-			for FILE in $(wildcard scripts/db_berkeley/openser/*) ; do \
+			mkdir -p $(modules-prefix)/$(lib-dir)/opensipsctl ; \
+			sed -e "s#/usr/local/share/opensips/#$(data-target)#g" \
+				< scripts/opensipsctl.db_berkeley > /tmp/opensipsctl.db_berkeley ; \
+			$(INSTALL_CFG) /tmp/opensipsctl.db_berkeley \
+				$(modules-prefix)/$(lib-dir)/opensipsctl/opensipsctl.db_berkeley ; \
+			rm -fr /tmp/opensipsctl.db_berkeley ; \
+			sed -e "s#/usr/local/share/opensips#$(data-target)#g" \
+				< scripts/opensipsdbctl.db_berkeley > /tmp/opensipsdbctl.db_berkeley ; \
+			$(INSTALL_TOUCH) $(modules-prefix)/$(lib-dir)/opensipsctl/opensipsdbctl.db_berkeley ; \
+			$(INSTALL_CFG) /tmp/opensipsdbctl.db_berkeley $(modules-prefix)/$(lib-dir)/opensipsctl/ ; \
+			rm -fr /tmp/opensipsdbctl.db_berkeley ; \
+			mkdir -p $(data-prefix)/$(data-dir)/db_berkeley/opensips ; \
+			for FILE in $(wildcard scripts/db_berkeley/opensips/*) ; do \
 				if [ -f $$FILE ] ; then \
 				$(INSTALL_TOUCH) $$FILE \
-					$(data-prefix)/$(data-dir)/db_berkeley/openser/`basename "$$FILE"` ; \
+					$(data-prefix)/$(data-dir)/db_berkeley/opensips/`basename "$$FILE"` ; \
 				$(INSTALL_CFG) $$FILE \
-					$(data-prefix)/$(data-dir)/db_berkeley/openser/`basename "$$FILE"` ; \
+					$(data-prefix)/$(data-dir)/db_berkeley/opensips/`basename "$$FILE"` ; \
 				fi ;\
 			done ; \
 			$(INSTALL_BIN) utils/db_berkeley/bdb_recover $(bin-prefix)/$(bin-dir) ; \
 		fi
 		# install dbtext stuff
 		if [ "$(DBTEXTON)" = "yes" ]; then \
-			mkdir -p $(modules-prefix)/$(lib-dir)/openserctl ; \
-			sed -e "s#/usr/local/share/openser/#$(data-target)#g" \
-				< scripts/openserctl.dbtext > /tmp/openserctl.dbtext ; \
-			$(INSTALL_CFG) /tmp/openserctl.dbtext \
-				$(modules-prefix)/$(lib-dir)/openserctl/openserctl.dbtext ; \
-			rm -fr /tmp/openserctl.dbtext ; \
-			sed -e "s#/usr/local/share/openser#$(data-target)#g" \
-				< scripts/openserdbctl.dbtext > /tmp/openserdbctl.dbtext ; \
-			$(INSTALL_TOUCH) $(modules-prefix)/$(lib-dir)/openserctl/openserdbctl.dbtext ; \
-			$(INSTALL_CFG) /tmp/openserdbctl.dbtext $(modules-prefix)/$(lib-dir)/openserctl/ ; \
-			rm -fr /tmp/openserdbctl.dbtext ; \
-			mkdir -p $(modules-prefix)/$(lib-dir)/openserctl/dbtextdb ; \
-			$(INSTALL_TOUCH) $(modules-prefix)/$(lib-dir)/openserctl/dbtextdb/dbtextdb.py ; \
-			$(INSTALL_BIN) scripts/dbtextdb/dbtextdb.py $(modules-prefix)/$(lib-dir)/openserctl/dbtextdb/ ; \
-			mkdir -p $(data-prefix)/$(data-dir)/dbtext/openser ; \
-			for FILE in $(wildcard scripts/dbtext/openser/*) ; do \
+			mkdir -p $(modules-prefix)/$(lib-dir)/opensipsctl ; \
+			sed -e "s#/usr/local/share/opensips/#$(data-target)#g" \
+				< scripts/opensipsctl.dbtext > /tmp/opensipsctl.dbtext ; \
+			$(INSTALL_CFG) /tmp/opensipsctl.dbtext \
+				$(modules-prefix)/$(lib-dir)/opensipsctl/opensipsctl.dbtext ; \
+			rm -fr /tmp/opensipsctl.dbtext ; \
+			sed -e "s#/usr/local/share/opensips#$(data-target)#g" \
+				< scripts/opensipsdbctl.dbtext > /tmp/opensipsdbctl.dbtext ; \
+			$(INSTALL_TOUCH) $(modules-prefix)/$(lib-dir)/opensipsctl/opensipsdbctl.dbtext ; \
+			$(INSTALL_CFG) /tmp/opensipsdbctl.dbtext $(modules-prefix)/$(lib-dir)/opensipsctl/ ; \
+			rm -fr /tmp/opensipsdbctl.dbtext ; \
+			mkdir -p $(modules-prefix)/$(lib-dir)/opensipsctl/dbtextdb ; \
+			$(INSTALL_TOUCH) $(modules-prefix)/$(lib-dir)/opensipsctl/dbtextdb/dbtextdb.py ; \
+			$(INSTALL_BIN) scripts/dbtextdb/dbtextdb.py $(modules-prefix)/$(lib-dir)/opensipsctl/dbtextdb/ ; \
+			mkdir -p $(data-prefix)/$(data-dir)/dbtext/opensips ; \
+			for FILE in $(wildcard scripts/dbtext/opensips/*) ; do \
 				if [ -f $$FILE ] ; then \
 					$(INSTALL_TOUCH) $$FILE \
-						$(data-prefix)/$(data-dir)/dbtext/openser/`basename "$$FILE"` ; \
+						$(data-prefix)/$(data-dir)/dbtext/opensips/`basename "$$FILE"` ; \
 					$(INSTALL_CFG) $$FILE \
-						$(data-prefix)/$(data-dir)/dbtext/openser/`basename "$$FILE"` ; \
+						$(data-prefix)/$(data-dir)/dbtext/opensips/`basename "$$FILE"` ; \
 				fi ;\
 			done ;\
 		fi
@@ -776,15 +776,15 @@ install-man: $(man-prefix)/$(man-dir)/man8 $(man-prefix)/$(man-dir)/man5
 			-e "s#/usr/sbin/#$(bin-target)#g" \
 			-e "s#/usr/lib/$(NAME)/modules/#$(modules-target)#g" \
 			-e "s#/usr/share/doc/$(NAME)/#$(doc-target)#g" \
-			< scripts/openserctl.8 > $(man-prefix)/$(man-dir)/man8/openserctl.8
-		chmod 644  $(man-prefix)/$(man-dir)/man8/openserctl.8
+			< scripts/opensipsctl.8 > $(man-prefix)/$(man-dir)/man8/opensipsctl.8
+		chmod 644  $(man-prefix)/$(man-dir)/man8/opensipsctl.8
 		sed -e "s#/etc/$(NAME)/$(NAME)\.cfg#$(cfg-target)$(NAME).cfg#g" \
 			-e "s#/usr/sbin/#$(bin-target)#g" \
 			-e "s#/usr/lib/$(NAME)/modules/#$(modules-target)#g" \
 			-e "s#/usr/share/doc/$(NAME)/#$(doc-target)#g" \
-			< utils/openserunix/openserunix.8 > \
-			$(man-prefix)/$(man-dir)/man8/openserunix.8
-		chmod 644  $(man-prefix)/$(man-dir)/man8/openserunix.8
+			< utils/opensipsunix/opensipsunix.8 > \
+			$(man-prefix)/$(man-dir)/man8/opensipsunix.8
+		chmod 644  $(man-prefix)/$(man-dir)/man8/opensipsunix.8
 
 install-modules-docbook: $(doc-prefix)/$(doc-dir)
 	-@for r in $(modules_basenames) "" ; do \
@@ -818,7 +818,7 @@ test:
 doxygen:
 	-@echo "Create Doxygen documentation"
 	# disable call graphes, because of the DOT dependencies
-	(cat doc/doxygen/openser-doxygen; \
+	(cat doc/doxygen/opensips-doxygen; \
 	echo "HAVE_DOT=no" ;\
 	echo "PROJECT_NUMBER=$(NAME)-$(RELEASE)" )| doxygen -
 	-@echo "Doxygen documentation created"
