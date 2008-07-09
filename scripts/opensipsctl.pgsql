@@ -1,7 +1,7 @@
 #
-# $Id$
+# $Id: opensipsctl.pgsql 3519 2008-01-10 12:45:43Z henningw $
 #
-# sc: openser control; tool for maintaining openser
+# sc: opensips control; tool for maintaining opensips
 #
 #===================================================================
 
@@ -12,10 +12,10 @@
 ##### ----------------------------------------------- #####
 ### load SQL base
 #
-if [ -f "$MYLIBDIR/openserctl.sqlbase" ]; then
-	. "$MYLIBDIR/openserctl.sqlbase"
+if [ -f "$MYLIBDIR/opensipsctl.sqlbase" ]; then
+	. "$MYLIBDIR/opensipsctl.sqlbase"
 else
-	echo "Cannot load SQL core functions '$MYLIBDIR/openserctl.sqlbase' - exiting ..."
+	echo "Cannot load SQL core functions '$MYLIBDIR/opensipsctl.sqlbase' - exiting ..."
 	exit -1
 fi
 

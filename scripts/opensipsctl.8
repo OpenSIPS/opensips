@@ -1,30 +1,30 @@
-.\" $Id$
-.TH openserctl 8 21.06.2006 openser "OpenSER" 
+.\" $Id: opensipsctl.8 3783 2008-02-28 10:38:09Z bogdan_iancu $
+.TH opensipsctl 8 21.06.2006 opensips "OpenSIPS" 
 .\" Process with
-.\" groff -man -Tascii openserctl.8 
+.\" groff -man -Tascii opensipsctl.8 
 .\"
 .SH NAME
-openserctl \- openser control tool
+opensipsctl \- opensips control tool
 .SH SYNOPSIS
-.B openserctl
+.B opensipsctl
 .BI command
 [
 .BI parameters
 ]
 
 .SH DESCRIPTION
-.B openserctl
+.B opensipsctl
 is a shell script to control
-.B OpenSER SIP server
+.B OpenSIPS SIP server
 It can be used to manage users, domains, aliases and other server options
 
 .SH FILES
 .bL
-.I /etc/openser/.openserctlrc
+.I /etc/opensips/.opensipsctlrc
 .br
-.I /usr/local/etc/openser/.openserctlrc
+.I /usr/local/etc/opensips/.opensipsctlrc
 .br
-.I ~/.openserctlrc
+.I ~/.opensipsctlrc
 .br
 
 .SH COMMANDS
@@ -210,17 +210,17 @@ lcr addroute +1 '' 1 1
 .SH AUTHORS
 
 see 
-.B /usr/share/doc/openser/AUTHORS
+.B /usr/share/doc/opensips/AUTHORS
 
 .SH SEE ALSO
-.BR openser(8), openser.cfg(5)
+.BR opensips(8), opensips.cfg(5)
 .PP
-Full documentation on openser is available at
-.I http://www.openser.org/.
+Full documentation on opensips is available at
+.I http://www.opensips.org/.
 .PP
 Mailing lists:
 .nf 
-users@openser.org - openser user community
+users@opensips.org - opensips user community
 .nf 
-devel@openser.org - openser development, new features and unstable version
+devel@opensips.org - opensips development, new features and unstable version
 

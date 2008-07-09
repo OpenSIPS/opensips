@@ -1,6 +1,6 @@
-# $Id$
+# $Id: opensipsctl.db_berkeley 4382 2008-06-12 11:04:51Z henningw $
 #
-# openser control; tool for maintaining openser's databases
+# opensips control; tool for maintaining opensips's databases
 #
 # History:
 # --------
@@ -10,12 +10,12 @@
 
 # path to the db_berkeley directory
 if [ -z "$DB_PATH" ] ; then
-	DB_PATH="/usr/local/share/openser/db_berkeley/openser"
+	DB_PATH="/usr/local/share/opensips/db_berkeley/opensips"
 fi
 
 #===================================================================
 
-openser_bdb() {
+opensips_bdb() {
 case $1 in
 	reload)
 		shift

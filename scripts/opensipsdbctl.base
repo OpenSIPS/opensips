@@ -2,23 +2,23 @@ PATH=$PATH:/usr/local/sbin
 
 # config vars
 
-# name of the database to be used by OpenSER
-DBNAME=${DBNAME:-openser}
+# name of the database to be used by OpenSIPS
+DBNAME=${DBNAME:-opensips}
 
 # address of database server
 DBHOST=${DBHOST:-localhost}
 
 # user with full privileges over DBNAME database
-DBRWUSER=${DBRWUSER:-openser}
+DBRWUSER=${DBRWUSER:-opensips}
 
 # password user with full privileges over DBNAME database
-DBRWPW=${DBRWPW:-openserrw}
+DBRWPW=${DBRWPW:-opensipsrw}
 
 # read-only user
-DBROUSER=${DBROUSER:-openserro}
+DBROUSER=${DBROUSER:-opensipsro}
 
 # password for read-only user
-DBROPW=${DBROPW:-openserro}
+DBROPW=${DBROPW:-opensipsro}
 
 # user name column
 USERCOL=${USERCOL:-username}
@@ -128,7 +128,7 @@ credentials()
 	fi
 }
 
-# FIXME use the definition from openserctl.base
+# FIXME use the definition from opensipsctl.base
 
 mdbg() {
 	if [ "0$VERBOSE" -ne 0 ] ; then

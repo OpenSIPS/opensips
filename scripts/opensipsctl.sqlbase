@@ -1,7 +1,7 @@
 #
-# $Id$
+# $Id: opensipsctl.sqlbase 4389 2008-06-12 15:57:26Z osas $
 #
-# sc: openser control; tool for maintaining openser
+# sc: opensips control; tool for maintaining opensips
 #
 #===================================================================
 
@@ -9,21 +9,21 @@
 ### common variables and functions for SQL engines
 
 if [ -z "$DBNAME" ] ; then
-	DBNAME=openser
+	DBNAME=opensips
 fi
 if [ -z "$DBHOST" ] ; then
 	DBHOST=localhost
 fi
 if [ -z "$DBRWUSER" ] ; then
-	DBRWUSER=openser
+	DBRWUSER=opensips
 fi
 
 # the read-only user for whom password may be stored here
 if [ -z "$DBROUSER" ] ; then
-	DBROUSER=openserro
+	DBROUSER=opensipsro
 fi
 if [ -z "$DBROPW" ] ; then
-	DBROPW=openserro
+	DBROPW=opensipsro
 fi
 
 # full privileges SQL user

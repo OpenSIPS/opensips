@@ -1,7 +1,7 @@
 #!/bin/sh
 # $Id$
 #
-# Script for adding and dropping OpenSER Oracle tables
+# Script for adding and dropping OpenSIPS Oracle tables
 #
 # History:
 
@@ -12,7 +12,7 @@ DBSYSUSER="sys"
 
 
 # path to the database schemas
-DATA_DIR="/usr/local/share/openser"
+DATA_DIR="/usr/local/share/opensips"
 if [ -d "$DATA_DIR/oracle" ] ; then
 	DB_SCHEMA="$DATA_DIR/oracle"
 else
@@ -23,10 +23,10 @@ fi
 ##### ----------------------------------------------- #####
 ### load ORACLE SQL base
 #
-if [ -f "$MYLIBDIR/openserdbfunc.oracle" ]; then
-	. "$MYLIBDIR/openserdbfunc.oracle"
+if [ -f "$MYLIBDIR/opensipsdbfunc.oracle" ]; then
+	. "$MYLIBDIR/opensipsdbfunc.oracle"
 else
-	echo "Cannot load ORACLE core functions '$MYLIBDIR/openserdbfunc.oracle' - exiting ..."
+	echo "Cannot load ORACLE core functions '$MYLIBDIR/opensipsdbfunc.oracle' - exiting ..."
 	exit -1
 fi
 
@@ -38,10 +38,10 @@ if [ -z "$SQLPLUS" ] ; then
 	fi
 	export SQLPLUS
 fi
-if [ -z "$OPENSER_ORASEL" ] ; then
-	OPENSER_ORASEL=`which openser_orasel 2>/dev/null`
+if [ -z "$OPENSIPS_ORASEL" ] ; then
+	OPENSIPS_ORASEL=`which opensips_orasel 2>/dev/null`
 	if [ -n "$SQLPLUS" ]; then
-		export OPENSER_ORASEL
+		export OPENSIPS_ORASEL
 	fi
 fi
 
@@ -78,10 +78,10 @@ oracle_root_cmd()
 }
 
 
-openser_drop()  # pars: <database name>
+opensips_drop()  # pars: <database name>
 {
 if [ $# -ne 1 ] ; then
-	merr "openser_drop function takes one params"
+	merr "opensips_drop function takes one params"
 	exit 1
 fi
 
@@ -119,13 +119,13 @@ if [ -n "$DBSYSUSER" ]; then
 fi
 
 minfo "Scheme '$DBROOTUSER' in database '$1' dropped"
-} #openser_drop
+} #opensips_drop
 
 
-openser_create() # pars: <database name>
+opensips_create() # pars: <database name>
 {
 if [ $# -ne 1 ] ; then
-	merr "openser_create function takes one param"
+	merr "opensips_create function takes one param"
 	exit 1
 fi
 
@@ -209,7 +209,7 @@ if [ -e $DB_SCHEMA/extensions-create.sql ]; then
 	fi
 fi
 
-minfo "Core OpenSER tables succesfully created."
+minfo "Core OpenSIPS tables succesfully created."
 
 get_answer $INSTALL_PRESENCE_TABLES "Install presence related tables? (y/n): "
 if [ "$ANSWER" = "y" ]; then
@@ -220,7 +220,7 @@ get_answer $INSTALL_EXTRA_TABLES "Install tables for $EXTRA_MODULES? (y/n): "
 if [ "$ANSWER" = "y" ]; then
 	extra_create $1
 fi
-} # openser_create
+} # opensips_create
 
 
 presence_create() # pars: <database name>
@@ -281,8 +281,8 @@ oracle_dump()
 	if [ -n "$1" ]; then
 		SUFF="@$1"
 	fi
-	if [ -n "$OPENSER_ORASEL" ]; then
-		$OPENSER_ORASEL ${DBROUSER}/${DBROPW}$SUFF -BLNe \
+	if [ -n "$OPENSIPS_ORASEL" ]; then
+		$OPENSIPS_ORASEL ${DBROUSER}/${DBROPW}$SUFF -BLNe \
 		    "select * from table(dump_tables('$DBROOTUSER'));" >$2
 	else
 		echo "set feed 0 lin 8000 pages 0

@@ -1,7 +1,7 @@
 #
-# $Id$
+# $Id: opensipsctl.ctlbase 3511 2008-01-08 10:20:46Z henningw $
 #
-# sc: openser control; tool for maintaining openser
+# sc: opensips control; tool for maintaining opensips
 #
 #===================================================================
 
@@ -38,7 +38,7 @@ EOF
 }
 USAGE_FUNCTIONS="$USAGE_FUNCTIONS usage_online"
 
-usage_openser_monitor() {
+usage_opensips_monitor() {
 	echo
 	mecho " -- command 'monitor' - show internal status"
 	echo
@@ -46,7 +46,7 @@ cat <<EOF
  monitor ............................ show server's internal status
 EOF
 }
-USAGE_FUNCTIONS="$USAGE_FUNCTIONS usage_openser_monitor"
+USAGE_FUNCTIONS="$USAGE_FUNCTIONS usage_opensips_monitor"
 
 usage_ping() {
 	echo

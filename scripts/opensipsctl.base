@@ -1,7 +1,7 @@
 #
-# $Id$
+# $Id: opensipsctl.base 4448 2008-07-03 16:43:01Z henningw $
 #
-# sc: openser control; tool for maintaining openser
+# sc: opensips control; tool for maintaining opensips
 #
 #===================================================================
 
@@ -82,9 +82,9 @@ if [ -z "$EXPR" ] ; then
 fi
 
 ##### ------------------------------------------------ #####
-### configuration for starting/stopping openser
+### configuration for starting/stopping opensips
 if [ -z "$PID_FILE" ] ; then
-	PID_FILE=/var/run/openser.pid
+	PID_FILE=/var/run/opensips.pid
 fi
 if [ -z "$SYSLOG" ] ; then
 	SYSLOG=1 # 0=output to console, 1=output to syslog
@@ -95,8 +95,8 @@ fi
 if [ -z "$DIR" ] ; then
 	DIR=`dirname $0`
 fi
-if [ -z "$OSERBIN" ] ; then
-	OSERBIN=$DIR/openser
+if [ -z "$OSIPSBIN" ] ; then
+	OSIPSBIN=$DIR/opensips
 fi
 
 ##### ------------------------------------------------ #####
@@ -302,9 +302,9 @@ usage_base() {
 	mecho " -- command 'start|stop|restart'"
 	echo
 cat <<EOF
- restart ............................ restart OpenSER
- start .............................. start OpenSER
- stop ............................... stop OpenSER
+ restart ............................ restart OpenSIPS
+ start .............................. start OpenSIPS
+ stop ............................... stop OpenSIPS
 EOF
 }
 
@@ -509,14 +509,14 @@ get_my_host() {
 # calculate name and domain of current user
 set_user() {
 
-	OSERUSER=`echo $1|$AWK -F@ '{print $1}'`
-	OSERDOMAIN=`echo $1|$AWK -F@ '{print $2}'`
+	OSIPSUSER=`echo $1|$AWK -F@ '{print $1}'`
+	OSIPSDOMAIN=`echo $1|$AWK -F@ '{print $2}'`
 
-	if [ -z "$OSERDOMAIN" ] ; then
-		OSERDOMAIN="$SIP_DOMAIN"
+	if [ -z "$OSIPSDOMAIN" ] ; then
+		OSIPSDOMAIN="$SIP_DOMAIN"
 	fi
 
-	if [ -z "$OSERDOMAIN" ] ; then
+	if [ -z "$OSIPSDOMAIN" ] ; then
 		merr "domain unknown: use usernames with domain or set default domain \
 in SIP_DOMAIN"
 		exit 1
@@ -620,6 +620,6 @@ _gen_phplib_id()
 credentials()
 {
 	set_user $1
-	_gen_ha1 "$OSERUSER" "$OSERDOMAIN" "$2"
-	_gen_ha1b "$OSERUSER" "$OSERDOMAIN" "$2"
+	_gen_ha1 "$OSIPSUSER" "$OSIPSDOMAIN" "$2"
+	_gen_ha1b "$OSIPSUSER" "$OSIPSDOMAIN" "$2"
 }

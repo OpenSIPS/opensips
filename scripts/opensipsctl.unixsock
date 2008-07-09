@@ -1,7 +1,7 @@
 #
-# $Id$
+# $Id: opensipsctl.unixsock 3954 2008-03-27 19:15:18Z osas $
 #
-# sc: openser control; tool for maintaining openser
+# sc: opensips control; tool for maintaining opensips
 #
 #===================================================================
 
@@ -12,10 +12,10 @@
 ##### ----------------------------------------------- #####
 ### load CTL base
 #
-if [ -f "$MYLIBDIR/openserctl.ctlbase" ]; then
-	. "$MYLIBDIR/openserctl.ctlbase"
+if [ -f "$MYLIBDIR/opensipsctl.ctlbase" ]; then
+	. "$MYLIBDIR/opensipsctl.ctlbase"
 else
-	mwarn "Cannot load CTL core functions '$MYLIBDIR/openserctl.ctlbase' ..."
+	mwarn "Cannot load CTL core functions '$MYLIBDIR/opensipsctl.ctlbase' ..."
 	# exit -1
 fi
 
@@ -23,13 +23,13 @@ fi
 ##### ----------------------------------------------- #####
 ### parameters
 #
-export CHROOT_DIR # needed for openserunix
-if [ -z "$OSER_UNIXSOCK" ]; then
-	OSER_UNIXSOCK=$CHROOT_DIR/tmp/openser.sock
+export CHROOT_DIR # needed for opensipsunix
+if [ -z "$OSIPS_UNIXSOCK" ]; then
+	OSIPS_UNIXSOCK=$CHROOT_DIR/tmp/opensips.sock
 fi
 
-if [ -z "$OSERUNIX" ]; then
-	OSERUNIX=openserunix
+if [ -z "$OSIPSUNIX" ]; then
+	OSIPSUNIX=opensipsunix
 fi
 
 #
@@ -64,14 +64,14 @@ unixsock_cmd()
 	done
 	CMD="${CMD}\n"
 	
-	printf "$CMD" | $OSERUNIX $OSER_UNIXSOCK | filter_fl
+	printf "$CMD" | $OSIPSUNIX $OSIPS_UNIXSOCK | filter_fl
 
 	mdbg "UNIXSOCK command was:\n$CMD"
 }
 
 CTLCMD=unixsock_cmd
 
-unixsock_openser_monitor() {
+unixsock_opensips_monitor() {
 		attempt=0
 		if [ "$2" == "" ]; then
 		    loops=-1;
@@ -114,5 +114,5 @@ unixsock_openser_monitor() {
 
 }
 
-OPENSER_MONITOR=unixsock_openser_monitor
+OPENSIPS_MONITOR=unixsock_opensips_monitor
 

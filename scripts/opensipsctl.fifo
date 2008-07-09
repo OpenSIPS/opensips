@@ -1,7 +1,7 @@
 #
-# $Id$
+# $Id: opensipsctl.fifo 3953 2008-03-27 15:11:40Z osas $
 #
-# openser control tool for maintaining openser
+# opensips control tool for maintaining opensips
 #
 #===================================================================
 
@@ -12,10 +12,10 @@
 ##### ----------------------------------------------- #####
 ### load CTL base
 #
-if [ -f "$MYLIBDIR/openserctl.ctlbase" ]; then
-	. "$MYLIBDIR/openserctl.ctlbase"
+if [ -f "$MYLIBDIR/opensipsctl.ctlbase" ]; then
+	. "$MYLIBDIR/opensipsctl.ctlbase"
 else
-	mwarn "Cannot load CTL core functions '$MYLIBDIR/openserctl.ctlbase' ..."
+	mwarn "Cannot load CTL core functions '$MYLIBDIR/opensipsctl.ctlbase' ..."
 	# exit -1
 fi
 
@@ -23,8 +23,8 @@ fi
 ##### ----------------------------------------------- #####
 ### parameters
 #
-if [ -z "$OSER_FIFO" ]; then
-	OSER_FIFO=/tmp/openser_fifo
+if [ -z "$OSIPS_FIFO" ]; then
+	OSIPS_FIFO=/tmp/opensips_fifo
 fi
 
 #
@@ -50,14 +50,14 @@ fifo_cmd()
 		merr "fifo_cmd must take at least command name as parameter"
 		exit 1
 	fi
-	name=openser_receiver_$$
+	name=opensips_receiver_$$
 	path=$CHROOT_DIR/tmp/$name
-	if [ ! -w $OSER_FIFO ]; then
-		merr "Error opening OpenSER's FIFO $OSER_FIFO"
-		merr "Make sure you have the line 'modparam(\"mi_fifo\", \"fifo_name\", \"$OSER_FIFO\")' in your config"
+	if [ ! -w $OSIPS_FIFO ]; then
+		merr "Error opening OpenSIPS's FIFO $OSIPS_FIFO"
+		merr "Make sure you have the line 'modparam(\"mi_fifo\", \"fifo_name\", \"$OSIPS_FIFO\")' in your config"
 		merr "and also have loaded the mi_fifo module."
 		if [ ! -z $CHROOT_DIR ]; then
-			merr "[chrooted environment] Check that $OSER_FIFO is symlinked to ${CHROOT_DIR}${OSER_FIFO}"
+			merr "[chrooted environment] Check that $OSIPS_FIFO is symlinked to ${CHROOT_DIR}${OSIPS_FIFO}"
 		fi
 		exit 2
 	fi
@@ -86,7 +86,7 @@ fifo_cmd()
 	cat < $path | filter_fl &
 
 	# issue FIFO request (printf taken to deal with \n)
-	printf "$CMD" > $OSER_FIFO
+	printf "$CMD" > $OSIPS_FIFO
 
 	# wait for the reader to complete
 	wait
@@ -98,12 +98,12 @@ fifo_cmd()
 
 CTLCMD=fifo_cmd
 
-fifo_openser_monitor() {
-	name=openser_receiver_$$
+fifo_opensips_monitor() {
+	name=opensips_receiver_$$
 	path=$CHROOT_DIR/tmp/$name
-	if [ ! -w $OSER_FIFO ]; then
-		merr "Error opening OpenSER's FIFO $OSER_FIFO"
-		merr "Make sure you have the line 'modparam(\"mi_fifo\", \"fifo_name\", \"$OSER_FIFO\")' in your config"
+	if [ ! -w $OSIPS_FIFO ]; then
+		merr "Error opening OpenSIPS's FIFO $OSIPS_FIFO"
+		merr "Make sure you have the line 'modparam(\"mi_fifo\", \"fifo_name\", \"$OSIPS_FIFO\")' in your config"
 		merr "and also have loaded the mi_fifo module."
 		exit 1
 	fi
@@ -132,14 +132,14 @@ fifo_openser_monitor() {
 		mecho "[cycle #: $attempt; if constant make sure server lives]"
 
 		cat < $path | filter_fl &
-		cat > $OSER_FIFO <<EOF
+		cat > $OSIPS_FIFO <<EOF
 :version:$name
 
 EOF
 		wait
 
 		cat < $path | filter_fl &
-		cat > $OSER_FIFO << EOF
+		cat > $OSIPS_FIFO << EOF
 :uptime:$name
 
 EOF
@@ -148,7 +148,7 @@ EOF
 
 		mecho "Transaction Statistics: "
 		cat < $path | filter_fl &
-		cat > $OSER_FIFO <<EOF
+		cat > $OSIPS_FIFO <<EOF
 :get_statistics:$name
 UAS_transactions
 UAC_transactions
@@ -160,7 +160,7 @@ EOF
 
 		mecho "Stateless Server Statistics: "
 		cat < $path | filter_fl &
-		cat > $OSER_FIFO <<EOF
+		cat > $OSIPS_FIFO <<EOF
 :get_statistics:$name
 sent_replies
 sent_err_replies
@@ -172,7 +172,7 @@ EOF
 
 		mecho "UsrLoc Stats: "
 		cat < $path | filter_fl &
-		cat > $OSER_FIFO <<EOF
+		cat > $OSIPS_FIFO <<EOF
 :get_statistics:$name
 usrloc:
 
@@ -187,5 +187,5 @@ EOF
 	exit 0
 }
 
-OPENSER_MONITOR=fifo_openser_monitor
+OPENSIPS_MONITOR=fifo_opensips_monitor
 

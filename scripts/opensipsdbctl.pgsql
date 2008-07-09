@@ -1,6 +1,6 @@
-# $Id$
+# $Id: opensipsdbctl.pgsql 4289 2008-06-02 10:28:42Z henningw $
 #
-# Script for adding and dropping OpenSER Postgres tables
+# Script for adding and dropping OpenSIPS Postgres tables
 #
 # History:
 # 2006-05-16  added ability to specify MD5 from a configuration file
@@ -24,12 +24,12 @@
 # 2007-01-26  added seperate installation routine for presence related tables
 #             and fix permissions for the SERIAL sequences.
 # 2007-05-21  Move SQL database definitions out of this script (henning)
-# 2007-05-31  Move common definitions to openserdbctl.base file (henningw)
+# 2007-05-31  Move common definitions to opensipsdbctl.base file (henningw)
 #
-# 2007-06-11  Use a common control tool for database tasks, like the openserctl
+# 2007-06-11  Use a common control tool for database tasks, like the opensipsctl
 
 # path to the database schemas
-DATA_DIR="/usr/local/share/openser"
+DATA_DIR="/usr/local/share/opensips"
 if [ -d "$DATA_DIR/postgres" ] ; then
 	DB_SCHEMA="$DATA_DIR/postgres"
 else
@@ -72,10 +72,10 @@ sql_query()
 }
 
 
-openser_drop()  # pars: <database name>
+opensips_drop()  # pars: <database name>
 {
 if [ $# -ne 1 ] ; then
-	merr "openser_drop function takes two params"
+	merr "opensips_drop function takes two params"
 	exit 1
 fi
 
@@ -95,13 +95,13 @@ else
 fi
 
 minfo "Database $1 dropped"
-} #openser_drop
+} #opensips_drop
 
 
-openser_create () # pars: <database name>
+opensips_create () # pars: <database name>
 {
 if [ $# -ne 1 ] ; then
-	merr "openser_create function takes one param"
+	merr "opensips_create function takes one param"
 	exit 1
 fi
 
@@ -161,7 +161,7 @@ then
 	fi
 fi
 
-minfo "Core OpenSER tables succesfully created."
+minfo "Core OpenSIPS tables succesfully created."
 
 get_answer $INSTALL_PRESENCE_TABLES "Install presence related tables? (y/n): "
 if [ "$ANSWER" = "y" ]; then
@@ -172,7 +172,7 @@ get_answer $INSTALL_EXTRA_TABLES "Install tables for $EXTRA_MODULES? (y/n): "
 if [ "$ANSWER" = "y" ]; then
 	extra_create $1
 fi
-} # openser_create
+} # opensips_create
 
 
 presence_create () # pars: <database name>

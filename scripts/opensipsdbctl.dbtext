@@ -1,31 +1,31 @@
-# $Id$
+# $Id: opensipsdbctl.dbtext 3519 2008-01-10 12:45:43Z henningw $
 #
-# Script for adding and dropping OpenSER DBTEXT tables
+# Script for adding and dropping OpenSIPS DBTEXT tables
 #
 # History:
 # 2007-02-14  Branch from mysqldb.sh script and adapt minimal capabilities(Cesc Santasusana)
 #
-# 2007-05-31  Move common definitions to openserdbctl.base file (henningw)
+# 2007-05-31  Move common definitions to opensipsdbctl.base file (henningw)
 # 2007-06-13  Move database definitions out of this script, use a common
-#             control tool for database tasks, like the openserctl (henning)
+#             control tool for database tasks, like the opensipsctl (henning)
 
 # path to the database schemas
-DATA_DIR="/usr/local/share/openser"
-if [ -d "$DATA_DIR/dbtext/openser" ] ; then
-	DB_SCHEMA="$DATA_DIR/dbtext/openser"
+DATA_DIR="/usr/local/share/opensips"
+if [ -d "$DATA_DIR/dbtext/opensips" ] ; then
+	DB_SCHEMA="$DATA_DIR/dbtext/opensips"
 else
-	DB_SCHEMA="./dbtext/openser"
+	DB_SCHEMA="./dbtext/opensips"
 fi
 
 # path to the dbtext database
 if [ -z "$DB_PATH" ] ; then
-	DB_PATH="/usr/local/etc/openser/dbtext"
+	DB_PATH="/usr/local/etc/opensips/dbtext"
 fi
 
-openser_drop()  # pars: <database name>
+opensips_drop()  # pars: <database name>
 {
 if [ $# -ne 1 ] ; then
-	merr "openser_drop function takes one param"
+	merr "opensips_drop function takes one param"
 	exit 1
 fi
 
@@ -35,10 +35,10 @@ minfo "DBTEXT ... erasing all files at: $DB_PATH"
 rm -rf $DB_PATH
 }
 
-openser_create () # pars: <database name>
+opensips_create () # pars: <database name>
 {
 if [ $# -ne 1 ] ; then
-	merr "openser_create function takes one param (DB_PATH)"
+	merr "opensips_create function takes one param (DB_PATH)"
 	exit 1
 fi
 

@@ -1,8 +1,8 @@
 #!/bin/bash 
 #
-# $Id$
+# $Id: opensipsdbctl 3997 2008-04-09 15:46:09Z yjh-styx $
 #
-# openser control tool for maintaining openser databases
+# opensips control tool for maintaining opensips databases
 #
 #===================================================================
 
@@ -13,32 +13,32 @@ PATH=$PATH:/usr/local/sbin/
 TEST="false"
 
 ### include resource files, if any
-if [ -f /etc/openser/openserctlrc ]; then
-	. /etc/openser/openserctlrc
+if [ -f /etc/opensips/opensipsctlrc ]; then
+	. /etc/opensips/opensipsctlrc
 fi
-if [ -f /usr/local/etc/openser/openserctlrc ]; then
-	. /usr/local/etc/openser/openserctlrc
+if [ -f /usr/local/etc/opensips/opensipsctlrc ]; then
+	. /usr/local/etc/opensips/opensipsctlrc
 fi
-if [ -f ~/.openserctlrc ]; then
-	. ~/.openserctlrc
+if [ -f ~/.opensipsctlrc ]; then
+	. ~/.opensipsctlrc
 fi
 
 if [ $TEST = "true" ]; then
-	if [ -f ./openserctlrc ]; then
-		. ./openserctlrc
+	if [ -f ./opensipsctlrc ]; then
+		. ./opensipsctlrc
 	fi
 fi
 
 
 ### version for this script
-VERSION='$Revision$'
+VERSION='$Revision: 3997 $'
 
 if [ -z "$MYDIR" ] ; then
 	MYDIR=`dirname $0`
 fi
 
 if [ -z "$MYLIBDIR" ] ; then
-	MYLIBDIR="/usr/local/lib/openser/openserctl"
+	MYLIBDIR="/usr/local/lib/opensips/opensipsctl"
 	if [ ! -d "$MYLIBDIR" ]; then
 		MYLIBDIR=$MYDIR
 	fi
@@ -48,10 +48,10 @@ fi
 ##### ------------------------------------------------ #####
 ### load base functions
 #
-if [ -f "$MYLIBDIR/openserdbctl.base" ]; then
-	. "$MYLIBDIR/openserdbctl.base"
+if [ -f "$MYLIBDIR/opensipsdbctl.base" ]; then
+	. "$MYLIBDIR/opensipsdbctl.base"
 else
-	echo -e "Cannot load core functions '$MYLIBDIR/openserdbctl.base' - exiting ...\n"
+	echo -e "Cannot load core functions '$MYLIBDIR/opensipsdbctl.base' - exiting ...\n"
 	exit -1
 fi
 
@@ -67,45 +67,45 @@ fi
 
 case $DBENGINE in
 	MYSQL|mysql|MySQL)
-		if [ -f "$MYLIBDIR/openserdbctl.mysql" ]; then
-			. "$MYLIBDIR/openserdbctl.mysql"
+		if [ -f "$MYLIBDIR/opensipsdbctl.mysql" ]; then
+			. "$MYLIBDIR/opensipsdbctl.mysql"
 			USED_DBENGINE="mysql"
 		else
-			merr "could not load the script in $MYLIBDIR/openserdbctl.mysql for database engine $DBENGINE"
+			merr "could not load the script in $MYLIBDIR/opensipsdbctl.mysql for database engine $DBENGINE"
 		fi
 		;;
 	PGSQL|pgsql|postgres|postgresql|POSTGRESQL)
-		if [ -f "$MYLIBDIR/openserdbctl.pgsql" ]; then
-			. "$MYLIBDIR/openserdbctl.pgsql"
+		if [ -f "$MYLIBDIR/opensipsdbctl.pgsql" ]; then
+			. "$MYLIBDIR/opensipsdbctl.pgsql"
 			USED_DBENGINE="postgres"
 		else
-			merr "could not load the script in $MYLIBDIR/openserdbctl.pgsql for database engine $DBENGINE"
+			merr "could not load the script in $MYLIBDIR/opensipsdbctl.pgsql for database engine $DBENGINE"
 		fi
 		;;
 	ORACLE|oracle|Oracle)
-		if [ -f "$MYLIBDIR/openserdbctl.oracle" ]; then
-			. "$MYLIBDIR/openserdbctl.oracle"
+		if [ -f "$MYLIBDIR/opensipsdbctl.oracle" ]; then
+			. "$MYLIBDIR/opensipsdbctl.oracle"
 			USED_DBENGINE="oracle"
 		else
-			merr "could not load the script in $MYLIBDIR/openserdbctl.oracle for database engine $DBENGINE"
+			merr "could not load the script in $MYLIBDIR/opensipsdbctl.oracle for database engine $DBENGINE"
 		fi
 		;;
 	DBTEXT|dbtext|textdb)
-		if [ -f "$MYLIBDIR/openserdbctl.dbtext" ]; then
-			. "$MYLIBDIR/openserdbctl.dbtext"
+		if [ -f "$MYLIBDIR/opensipsdbctl.dbtext" ]; then
+			. "$MYLIBDIR/opensipsdbctl.dbtext"
 			USED_DBENGINE="dbtext"
 			DBNAME=$DB_PATH
 		else
-			merr "could not load the script in $MYLIBDIR/openserdbctl.dbtext for database engine $DBENGINE"
+			merr "could not load the script in $MYLIBDIR/opensipsdbctl.dbtext for database engine $DBENGINE"
 		fi
 		;;
 	DB_BERKELEY|db_berkeley|BERKELEY|berkeley)
-		if [ -f "$MYLIBDIR/openserdbctl.db_berkeley" ]; then
-			. "$MYLIBDIR/openserdbctl.db_berkeley"
+		if [ -f "$MYLIBDIR/opensipsdbctl.db_berkeley" ]; then
+			. "$MYLIBDIR/opensipsdbctl.db_berkeley"
 			USED_DBENGINE="berkeley"
 			DBNAME=$DB_PATH
 		else
-			merr "could not load the script in $MYLIBDIR/openserdbctl.db_berkeley for database engine $DBENGINE"
+			merr "could not load the script in $MYLIBDIR/opensipsdbctl.db_berkeley for database engine $DBENGINE"
 		fi
 		;;
 esac
@@ -119,10 +119,10 @@ fi
 
 
 # dump all rows
-openser_dump()  # pars: <database name>
+opensips_dump()  # pars: <database name>
 {
 	if [ $# -ne 2 ] ; then
-		merr "openser_dump function takes two param"
+		merr "opensips_dump function takes two param"
 		exit 1
 	fi
 	if [ "$USED_DBENGINE" == "oracle" ]; then
@@ -140,10 +140,10 @@ openser_dump()  # pars: <database name>
 }
 
 
-openser_restore() #pars: <database name> <filename>
+opensips_restore() #pars: <database name> <filename>
 {
 	if [ $# -ne 2 ] ; then
-		merr "openser_restore function takes two params"
+		merr "opensips_restore function takes two params"
 		exit 1
 	fi
 	if [ "$USED_DBENGINE" == "oracle" ]; then
@@ -172,7 +172,7 @@ case $1 in
 		# create new database
 		minfo "Creating new Database $3...."
 		NO_USER_INIT="yes"
-		openser_create $3
+		opensips_create $3
 		if [ "$?" -ne 0 ] ; then
 			echo "migrate: creating new database failed"
 			exit 1
@@ -194,21 +194,21 @@ case $1 in
 			usage
 			exit 1
 		fi
-		tmp_file=`mktemp /tmp/openserdbctl.XXXXXXXXXX` || exit 1
-		openser_dump $DBNAME $tmp_file
+		tmp_file=`mktemp /tmp/opensipsdbctl.XXXXXXXXXX` || exit 1
+		opensips_dump $DBNAME $tmp_file
 		ret=$?
 		if [ "$ret" -ne 0 ]; then
 			rm $tmp_file
 			exit $ret
 		fi
 		NO_USER_INIT="yes"
-		openser_create $1
+		opensips_create $1
 		ret=$?
 		if [ "$ret" -ne 0 ]; then
 			rm $tmp_file
 			exit $ret
 		fi
-		openser_restore $1 $tmp_file
+		opensips_restore $1 $tmp_file
 		ret=$?
 		rm -f $tmp_file
 		exit $ret
@@ -224,7 +224,7 @@ case $1 in
 			usage
 			exit 1
 		fi
-		openser_dump $DBNAME $1
+		opensips_dump $DBNAME $1
 		exit $?
 		;;
 	restore)
@@ -238,7 +238,7 @@ case $1 in
 			usage
 			exit 1
 		fi
-		openser_restore $DBNAME $1
+		opensips_restore $DBNAME $1
 		exit $?
 		;;
 	create)
@@ -248,7 +248,7 @@ case $1 in
 			DBNAME="$1"
 		fi
 
-		openser_create $DBNAME
+		opensips_create $DBNAME
 		exit $?
 		;;
 	presence)
@@ -260,14 +260,14 @@ case $1 in
 		exit $?
 		;;
 	drop)
-		# delete openser database
+		# delete opensips database
 		# create new database structures
 		shift
 		if [ $# -eq 1 ] ; then
 			DBNAME="$1"
 		fi
 
-		openser_drop $DBNAME
+		opensips_drop $DBNAME
 		exit $?
 		;;
 	reinit)
@@ -277,17 +277,17 @@ case $1 in
 		if [ $# -eq 1 ] ; then
 			DBNAME="$1"
 		fi
-		openser_drop $DBNAME
+		opensips_drop $DBNAME
 		ret=$?
 		if [ "$ret" -ne 0 ]; then
 			exit $ret
 		fi
-		openser_create $DBNAME
+		opensips_create $DBNAME
 		exit $?
 		;;
 	bdb|db_berkeley)
 		shift
-		openser_berkeley "$@"
+		opensips_berkeley "$@"
 		exit $?
 		;;
 	version)

@@ -1,8 +1,8 @@
 #!/bin/bash
 #
-# $Id$
+# $Id: opensipsctl 4448 2008-07-03 16:43:01Z henningw $
 #
-# openser control tool for maintaining openser
+# opensips control tool for maintaining opensips
 #
 #===================================================================
 
@@ -13,38 +13,38 @@ PATH=$PATH:/usr/local/sbin/
 TEST="false"
 
 ### include config files
-if [ -f /etc/openser/openserctlrc ]; then
-	. /etc/openser/openserctlrc
+if [ -f /etc/opensips/opensipsctlrc ]; then
+	. /etc/opensips/opensipsctlrc
 fi
-if [ -f /usr/local/etc/openser/openserctlrc ]; then
-	. /usr/local/etc/openser/openserctlrc
+if [ -f /usr/local/etc/opensips/opensipsctlrc ]; then
+	. /usr/local/etc/opensips/opensipsctlrc
 fi
-if [ -f ~/.openserctlrc ]; then
-	. ~/.openserctlrc
+if [ -f ~/.opensipsctlrc ]; then
+	. ~/.opensipsctlrc
 fi
 
 if [ $TEST = "true" ]; then
-	if [ -f ./openserctlrc ]; then
-		. ./openserctlrc
+	if [ -f ./opensipsctlrc ]; then
+		. ./opensipsctlrc
 	fi
 fi
 
 
 ### force values for variables in this section
-# you better set the variables in ~/.openserctlrc
+# you better set the variables in ~/.opensipsctlrc
 if [ -z "$ETCDIR" ] ; then
-	ETCDIR="/usr/local/etc/openser"
+	ETCDIR="/usr/local/etc/opensips"
 fi
 
 ### version for this script
-VERSION='$Revision$'
+VERSION='$Revision: 4448 $'
 
 if [ -z "$MYDIR" ] ; then
 	MYDIR=`dirname $0`
 fi
 
 if [ -z "$MYLIBDIR" ] ; then
-	MYLIBDIR="/usr/local/lib/openser/openserctl"
+	MYLIBDIR="/usr/local/lib/opensips/opensipsctl"
 	if [ ! -d "$MYLIBDIR" ]; then
 		MYLIBDIR=$MYDIR
 	fi
@@ -53,10 +53,10 @@ fi
 ##### ------------------------------------------------ #####
 ### load base functions
 #
-if [ -f "$MYLIBDIR/openserctl.base" ]; then
-	. "$MYLIBDIR/openserctl.base"
+if [ -f "$MYLIBDIR/opensipsctl.base" ]; then
+	. "$MYLIBDIR/opensipsctl.base"
 else
-	echo -e "Cannot load core functions '$MYLIBDIR/openserctl.base' - exiting ...\n"
+	echo -e "Cannot load core functions '$MYLIBDIR/opensipsctl.base' - exiting ...\n"
 	exit -1
 fi
 
@@ -67,33 +67,33 @@ fi
 DBENGINELOADED=0
 case $DBENGINE in
 	MYSQL|mysql|MySQL)
-		if [ -f "$MYLIBDIR/openserctl.mysql" ]; then
-			. "$MYLIBDIR/openserctl.mysql"
+		if [ -f "$MYLIBDIR/opensipsctl.mysql" ]; then
+			. "$MYLIBDIR/opensipsctl.mysql"
 			DBENGINELOADED=1
 		fi
 		;;
 	PGSQL|pgsql|postgres|postgresql|POSTGRESQL)
-		if [ -f "$MYLIBDIR/openserctl.pgsql" ]; then
-			. "$MYLIBDIR/openserctl.pgsql"
+		if [ -f "$MYLIBDIR/opensipsctl.pgsql" ]; then
+			. "$MYLIBDIR/opensipsctl.pgsql"
 			DBENGINELOADED=1
 		fi
 		;;
 	ORACLE|oracle|Oracle)
-		if [ -f "$MYLIBDIR/openserctl.oracle" ]; then
-			. "$MYLIBDIR/openserctl.oracle"
+		if [ -f "$MYLIBDIR/opensipsctl.oracle" ]; then
+			. "$MYLIBDIR/opensipsctl.oracle"
 			DBENGINELOADED=1
 		fi
 		;;
 
 	DBTEXT|dbtext|textdb)
-		if [ -f "$MYLIBDIR/openserctl.dbtext" ]; then
-			. "$MYLIBDIR/openserctl.dbtext"
+		if [ -f "$MYLIBDIR/opensipsctl.dbtext" ]; then
+			. "$MYLIBDIR/opensipsctl.dbtext"
 			DBENGINELOADED=1
 		fi
 		;;
 	DB_BERKELEY|db_berkeley|BERKELEY|berkeley)
-		if [ -f "$MYLIBDIR/openserctl.db_berkeley" ]; then
-			. "$MYLIBDIR/openserctl.db_berkeley"
+		if [ -f "$MYLIBDIR/opensipsctl.db_berkeley" ]; then
+			. "$MYLIBDIR/opensipsctl.db_berkeley"
 			DBENGINELOADED=1
 		fi
 		;;
@@ -117,14 +117,14 @@ load_ctlengine() {
 	fi
 	case $CTLENGINE in
 		FIFO|fifo)
-			if [ -f "$MYLIBDIR/openserctl.fifo" ]; then
-				. "$MYLIBDIR/openserctl.fifo"
+			if [ -f "$MYLIBDIR/opensipsctl.fifo" ]; then
+				. "$MYLIBDIR/opensipsctl.fifo"
 				CTLENGINELOADED=1
 			fi
 			;;
 		UNIXSOCK|unixsock)
-			if [ -f "$MYLIBDIR/openserctl.unixsock" ]; then
-				. "$MYLIBDIR/openserctl.unixsock"
+			if [ -f "$MYLIBDIR/opensipsctl.unixsock" ]; then
+				. "$MYLIBDIR/opensipsctl.unixsock"
 				CTLENGINELOADED=1
 			fi
 			;;
@@ -195,7 +195,7 @@ is_user() {
 	set_user $1
 	
 	QUERY="select count(*) from $SUB_TABLE where \
-$SUBSCRIBER_COLUMN='$OSERUSER' and $REALM_COLUMN='$OSERDOMAIN';"
+$SUBSCRIBER_COLUMN='$OSIPSUSER' and $REALM_COLUMN='$OSIPSDOMAIN';"
 
 	CNT=`$DBROCMD "$QUERY" "$DBRAWPARAMS" | $EGREP -v ERROR | $LAST_LINE`
 	mdbg "is_user: user counter=$CNT"
@@ -244,8 +244,8 @@ acl() {
 					fi
 				fi
 				set_user $2
-				CLAUSE=" WHERE $ACL_USER_COLUMN='$OSERUSER' AND \
-					$ACL_DOMAIN_COLUMN='$OSERDOMAIN' "
+				CLAUSE=" WHERE $ACL_USER_COLUMN='$OSIPSUSER' AND \
+					$ACL_DOMAIN_COLUMN='$OSIPSDOMAIN' "
 			elif [ $# -ne 1 ] ; then
 				usage_acl
 				exit 1
@@ -292,7 +292,7 @@ acl() {
 
 				QUERY="insert into $ACL_TABLE ($ACL_USER_COLUMN,\
 $ACL_GROUP_COLUMN,$ACL_MODIFIED_COLUMN,$ACL_DOMAIN_COLUMN ) values \
-('$OSERUSER','$1', now(), '$OSERDOMAIN' );"
+('$OSIPSUSER','$1', now(), '$OSIPSDOMAIN' );"
 				$DBCMD "$QUERY"
 				if [ $? -ne 0 ] ; then
 					merr "acl - SQL Error"
@@ -303,7 +303,7 @@ $ACL_GROUP_COLUMN,$ACL_MODIFIED_COLUMN,$ACL_DOMAIN_COLUMN ) values \
 			done
 
 			if [ $acl_inserted -eq 1 ] ; then
-				$0 acl show "$OSERUSER@$OSERDOMAIN"
+				$0 acl show "$OSIPSUSER@$OSIPSDOMAIN"
 			fi
 
 			;;
@@ -320,7 +320,7 @@ $ACL_GROUP_COLUMN,$ACL_MODIFIED_COLUMN,$ACL_DOMAIN_COLUMN ) values \
 			set_user $2
 
 			QUERY="delete from $ACL_TABLE where \
-$ACL_TABLE.$ACL_USER_COLUMN='$OSERUSER' AND $ACL_DOMAIN_COLUMN='$OSERDOMAIN' \
+$ACL_TABLE.$ACL_USER_COLUMN='$OSIPSUSER' AND $ACL_DOMAIN_COLUMN='$OSIPSDOMAIN' \
 $CLAUSE;"
 			$DBCMD "$QUERY"
 
@@ -347,14 +347,14 @@ check_ul_alias() {
 	RET="$?"
 	ALIAS_UL_EXISTS=0
 	if [ $RET -ne 0 ] ; then
-		merr "OpenSER $CTLENGINE not accessible: $RET"
+		merr "OpenSIPS $CTLENGINE not accessible: $RET"
 		exit 1
 	fi
 	echo "$RES" | $EGREP "^404" > /dev/null
 	if [ $? -ne 0 ] ; then
 		echo "$RES" | $EGREP "^400" > /dev/null
 		if [ $? -eq 0 ] ; then
-			merr "400; check if you use aliases in OpenSER"
+			merr "400; check if you use aliases in OpenSIPS"
 			exit 1
 		fi
 		echo "$RES" | $EGREP "^200" > /dev/null
@@ -432,8 +432,8 @@ alias_db() {
 				
 				set_user $2
 				
-				CLAUSE="WHERE $DA_USER_COLUMN='$OSERUSER' AND \
-$DA_DOMAIN_COLUMN='$OSERDOMAIN'"
+				CLAUSE="WHERE $DA_USER_COLUMN='$OSIPSUSER' AND \
+$DA_DOMAIN_COLUMN='$OSIPSDOMAIN'"
 				mecho "Dumping aliases for user=<$2>"
 				echo
 				QUERY="SELECT CONCAT($DA_ALIAS_USER_COLUMN,\
@@ -485,8 +485,8 @@ $DA_USER_COLUMN, $DA_DOMAIN_COLUMN FROM $DA_TABLE;"
 			
 			set_user $2
 			
-			CLAUSE="WHERE $DA_ALIAS_USER_COLUMN='$OSERUSER' AND \
-$DA_ALIAS_DOMAIN_COLUMN='$OSERDOMAIN'"
+			CLAUSE="WHERE $DA_ALIAS_USER_COLUMN='$OSIPSUSER' AND \
+$DA_ALIAS_DOMAIN_COLUMN='$OSIPSDOMAIN'"
 			QUERY="SELECT CONCAT($DA_USER_COLUMN,'@',$DA_DOMAIN_COLUMN) \
 AS 'SIP-ID' FROM $DA_TABLE $CLAUSE ; "
 			$DBROCMD "$QUERY"
@@ -525,18 +525,18 @@ AS 'SIP-ID' FROM $DA_TABLE $CLAUSE ; "
 			fi
 			
 			set_user $1
-			TMP_OSERUSER=$OSERUSER
-			TMP_OSERDOMAIN=$OSERDOMAIN
+			TMP_OSIPSUSER=$OSIPSUSER
+			TMP_OSIPSDOMAIN=$OSIPSDOMAIN
 			set_user $2
 			
-			if `is_value_in_db $DA_TABLE $DA_ALIAS_USER_COLUMN $TMP_OSERUSER`; then
-				minfo "$TMP_OSERUSER alias already in $DA_TABLE table"
+			if `is_value_in_db $DA_TABLE $DA_ALIAS_USER_COLUMN $TMP_OSIPSUSER`; then
+				minfo "$TMP_OSIPSUSER alias already in $DA_TABLE table"
 				exit 0
 			fi
 
 			QUERY="INSERT INTO $DA_TABLE ($DA_USER_COLUMN,$DA_DOMAIN_COLUMN,\
-$DA_ALIAS_USER_COLUMN,$DA_ALIAS_DOMAIN_COLUMN) VALUES ('$OSERUSER',\
-'$OSERDOMAIN','$TMP_OSERUSER','$TMP_OSERDOMAIN' );"
+$DA_ALIAS_USER_COLUMN,$DA_ALIAS_DOMAIN_COLUMN) VALUES ('$OSIPSUSER',\
+'$OSIPSDOMAIN','$TMP_OSIPSUSER','$TMP_OSIPSDOMAIN' );"
 			$DBCMD "$QUERY"
 			if [ $? -ne 0 ] ; then
 				merr "alias_db - SQL Error"
@@ -561,8 +561,8 @@ $DA_ALIAS_USER_COLUMN,$DA_ALIAS_DOMAIN_COLUMN) VALUES ('$OSERUSER',\
 			fi
 
 			set_user $1
-			CLAUSE="WHERE $DA_ALIAS_USER_COLUMN='$OSERUSER' AND \
-$DA_ALIAS_DOMAIN_COLUMN='$OSERDOMAIN'"
+			CLAUSE="WHERE $DA_ALIAS_USER_COLUMN='$OSIPSUSER' AND \
+$DA_ALIAS_DOMAIN_COLUMN='$OSIPSDOMAIN'"
 			QUERY="DELETE FROM $DA_TABLE $CLAUSE;"
 			$DBCMD "$QUERY"
 			if [ $? -ne 0 ] ; then
@@ -636,11 +636,11 @@ avpops() {
 						if [ "$?" -eq "0" ] ; then
 							set_user $1
 							if [ "$CLAUSE" = "" ] ; then
-								CLAUSE=" WHERE $AVP_USER_COLUMN='$OSERUSER' \
-AND $AVP_DOMAIN_COLUMN='$OSERDOMAIN'"
+								CLAUSE=" WHERE $AVP_USER_COLUMN='$OSIPSUSER' \
+AND $AVP_DOMAIN_COLUMN='$OSIPSDOMAIN'"
 							else
 								CLAUSE="$CLAUSE AND \
-$AVP_USER_COLUMN='$OSERUSER' AND $AVP_DOMAIN_COLUMN='$OSERDOMAIN'"
+$AVP_USER_COLUMN='$OSIPSUSER' AND $AVP_DOMAIN_COLUMN='$OSIPSDOMAIN'"
 							fi
 						else
 							if [ "$CLAUSE" = "" ] ; then
@@ -744,7 +744,7 @@ FROM $AVP_TABLE $CLAUSE;"
 			QUERY="INSERT INTO $AVP_TABLE \
 ($AVP_UUID_COLUMN,$AVP_USER_COLUMN,$AVP_DOMAIN_COLUMN,$AVP_ATTRIBUTE_COLUMN,\
 $AVP_TYPE_COLUMN,$AVP_VALUE_COLUMN,$AVP_MODIFIED_COLUMN) \
-VALUES ('$AVP_UUID','$OSERUSER','$OSERDOMAIN','$2',$3,'$4',NOW());"
+VALUES ('$AVP_UUID','$OSIPSUSER','$OSIPSDOMAIN','$2',$3,'$4',NOW());"
 			# echo "Query: $QUERY"
 			$DBCMD "$QUERY"
 			if [ $? -ne 0 ] ; then
@@ -782,11 +782,11 @@ VALUES ('$AVP_UUID','$OSERUSER','$OSERDOMAIN','$2',$3,'$4',NOW());"
 						if [ "$?" -eq "0" ] ; then
 							set_user $1
 							if [ "$CLAUSE" = "" ] ; then
-								CLAUSE="WHERE $AVP_USER_COLUMN='$OSERUSER' \
-AND $AVP_DOMAIN_COLUMN='$OSERDOMAIN'"
+								CLAUSE="WHERE $AVP_USER_COLUMN='$OSIPSUSER' \
+AND $AVP_DOMAIN_COLUMN='$OSIPSDOMAIN'"
 							else
 								CLAUSE="$CLAUSE AND \
-$AVP_USER_COLUMN='$OSERUSER' AND $AVP_DOMAIN_COLUMN='$OSERDOMAIN'"
+$AVP_USER_COLUMN='$OSIPSUSER' AND $AVP_DOMAIN_COLUMN='$OSIPSDOMAIN'"
 							fi
 						else
 							if [ "$CLAUSE" = "" ] ; then
@@ -1443,33 +1443,33 @@ dispatcher() {
 
 #
 ##### ------------------------------------------------ #####
-### openser_start
+### opensips_start
 #
-openser_start() {
+opensips_start() {
 	echo
-	minfo "Starting OpenSER : "
+	minfo "Starting OpenSIPS : "
 	if [ -r $PID_FILE ] ; then
-		ps axw | $EGREP openser
+		ps axw | $EGREP opensips
 		ls -l $PID_FILE
-		minfo "PID file exists ($PID_FILE)! OpenSER already running?"
+		minfo "PID file exists ($PID_FILE)! OpenSIPS already running?"
 		exit 1
 	fi
 	
-	if [ ! -x "$OSERBIN" ] ; then
+	if [ ! -x "$OSIPSBIN" ] ; then
 		echo
-		merr "OpenSER binaries not found at $OSERBIN"
-		merr "set OSERBIN to the path of openser in $0 or ~/.openserctlrc"
+		merr "OpenSIPS binaries not found at $OSIPSBIN"
+		merr "set OSIPSBIN to the path of opensips in $0 or ~/.opensipsctlrc"
 		exit 1
 	fi
 	if [ $SYSLOG = 1 ] ; then
-		$OSERBIN -P $PID_FILE $STARTOPTIONS 1>/dev/null 2>/dev/null
+		$OSIPSBIN -P $PID_FILE $STARTOPTIONS 1>/dev/null 2>/dev/null
 	else
-	 	$OSERBIN -P $PID_FILE -E $STARTOPTIONS
+	 	$OSIPSBIN -P $PID_FILE -E $STARTOPTIONS
 	fi
 	sleep 3
 	if [ ! -s $PID_FILE ] ; then
 		echo
-		merr "PID file $PID_FILE does not exist -- OpenSER start failed"
+		merr "PID file $PID_FILE does not exist -- OpenSIPS start failed"
 		exit 1
 	fi
 	minfo "started (pid: `cat $PID_FILE`)"
@@ -1477,18 +1477,18 @@ openser_start() {
 
 #
 ##### ------------------------------------------------ #####
-### openser_stop
+### opensips_stop
 #
-openser_stop() {
+opensips_stop() {
 	echo
-	minfo "Stopping OpenSER : "
+	minfo "Stopping OpenSIPS : "
 	if [ -r $PID_FILE ] ; then
 		kill `cat $PID_FILE`
 		minfo "stopped"
 	else
 		echo
-		merr "No PID file found ($PID_FILE)! OpenSER probably not running"
-		minfo "check with 'ps axw | $EGREP openser'"
+		merr "No PID file found ($PID_FILE)! OpenSIPS probably not running"
+		minfo "check with 'ps axw | $EGREP opensips'"
 		exit 1
 	fi
 }
@@ -1525,8 +1525,8 @@ rpid() {
 					merr "rpid - invalid user '$2'"
 					exit 1;
 				fi
-				CLAUSE=" WHERE $SUBSCRIBER_COLUMN='$OSERUSER' AND \
-$REALM_COLUMN='$OSERDOMAIN' "
+				CLAUSE=" WHERE $SUBSCRIBER_COLUMN='$OSIPSUSER' AND \
+$REALM_COLUMN='$OSIPSDOMAIN' "
 			elif [ $# -ne 1 ] ; then
 				usage_rpid
 				exit 1
@@ -1565,14 +1565,14 @@ $CLAUSE ; "
 			fi
 
 			QUERY="UPDATE $SUB_TABLE SET $RPID_COLUMN=$RPID_VAL \
-WHERE $SUBSCRIBER_COLUMN='$OSERUSER' AND $REALM_COLUMN='$OSERDOMAIN';"
+WHERE $SUBSCRIBER_COLUMN='$OSIPSUSER' AND $REALM_COLUMN='$OSIPSDOMAIN';"
 			$DBCMD "$QUERY"
 			if [ $? -ne 0 ] ; then
 				merr "rpid - SQL Error"
 				exit 1
 			fi
 
-			$0 rpid show "$OSERUSER@$OSERDOMAIN"
+			$0 rpid show "$OSIPSUSER@$OSIPSDOMAIN"
 
 			;;
 
@@ -1610,8 +1610,8 @@ speeddial() {
 				
 				set_user $2
 				
-				CLAUSE="WHERE $SD_USER_COLUMN='$OSERUSER' AND \
-$SD_DOMAIN_COLUMN='$OSERDOMAIN'"
+				CLAUSE="WHERE $SD_USER_COLUMN='$OSIPSUSER' AND \
+$SD_DOMAIN_COLUMN='$OSIPSDOMAIN'"
 				mecho "Dumping speed-dials for user=<$2>"
 				echo
 				QUERY="SELECT CONCAT($SD_SD_USER_COLUMN,'@',\
@@ -1681,8 +1681,8 @@ $SD_DESC_COLUMN FROM $SD_TABLE;"
 			
 			set_user $2
 			
-			CLAUSE="WHERE $SD_SD_USER_COLUMN='$OSERUSER' AND \
-$SD_SD_DOMAIN_COLUMN='$OSERDOMAIN'"
+			CLAUSE="WHERE $SD_SD_USER_COLUMN='$OSIPSUSER' AND \
+$SD_SD_DOMAIN_COLUMN='$OSIPSDOMAIN'"
 			QUERY="SELECT CONCAT($SD_USER_COLUMN,'@',$SD_DOMAIN_COLUMN) \
 AS 'Owner', $SD_NEW_URI_COLUMN AS 'New URI', $SD_DESC_COLUMN FROM \
 $SD_TABLE $CLAUSE ; "
@@ -1692,7 +1692,7 @@ $SD_TABLE $CLAUSE ; "
 			# { 
 			#	  if(line==0) print "##  SIP-ID    \tNew-URI   \tDescritpion\n";
 			#	  else {
-			#		  ORS_BAK=ORS;usage_openser_monitor() {
+			#		  ORS_BAK=ORS;usage_opensips_monitor() {
 			#		  ORS="";
 			#		  print line ") " $1 "@" $2 "\t" $3 "\t\"" $4;
 			#		  for (i=5;i<=NF;++i) print FS $i;
@@ -1732,13 +1732,13 @@ $SD_TABLE $CLAUSE ; "
 			fi
 			
 			set_user $1
-			TMP_OSERUSER=$OSERUSER
-			TMP_OSERDOMAIN=$OSERDOMAIN
+			TMP_OSIPSUSER=$OSIPSUSER
+			TMP_OSIPSDOMAIN=$OSIPSDOMAIN
 			set_user $2
 			
 			QUERY="INSERT INTO $SD_TABLE ($SD_USER_COLUMN,$SD_DOMAIN_COLUMN,\
 $SD_SD_USER_COLUMN,$SD_SD_DOMAIN_COLUMN,$SD_NEW_URI_COLUMN,$SD_DESC_COLUMN) \
-VALUES ('$TMP_OSERUSER','$TMP_OSERDOMAIN','$OSERUSER','$OSERDOMAIN','$3','$4');"
+VALUES ('$TMP_OSIPSUSER','$TMP_OSIPSDOMAIN','$OSIPSUSER','$OSIPSDOMAIN','$3','$4');"
 			$DBCMD "$QUERY"
 			if [ $? -ne 0 ] ; then
 				merr "speeddial - SQL Error"
@@ -1770,13 +1770,13 @@ VALUES ('$TMP_OSERUSER','$TMP_OSERDOMAIN','$OSERUSER','$OSERDOMAIN','$3','$4');"
 			fi
 
 			set_user $1
-			TMP_OSERUSER=$OSERUSER
-			TMP_OSERDOMAIN=$OSERDOMAIN
+			TMP_OSIPSUSER=$OSIPSUSER
+			TMP_OSIPSDOMAIN=$OSIPSDOMAIN
 			set_user $2
 
-			CLAUSE="WHERE $SD_USER_COLUMN='$TMP_OSERUSER' AND \
-$SD_DOMAIN_COLUMN='$TMP_OSERDOMAIN' AND $SD_SD_USER_COLUMN='$OSERUSER' AND \
-$SD_SD_DOMAIN_COLUMN='$OSERDOMAIN'"
+			CLAUSE="WHERE $SD_USER_COLUMN='$TMP_OSIPSUSER' AND \
+$SD_DOMAIN_COLUMN='$TMP_OSIPSDOMAIN' AND $SD_SD_USER_COLUMN='$OSIPSUSER' AND \
+$SD_SD_DOMAIN_COLUMN='$OSIPSDOMAIN'"
 			QUERY="DELETE FROM $SD_TABLE $CLAUSE;"
 			$DBCMD "$QUERY"
 			if [ $? -ne 0 ] ; then
@@ -1828,7 +1828,7 @@ subscriber() {
 				exit 1
 			fi
 			set_user $1
-			check_alias $OSERUSER $OSERDOMAIN
+			check_alias $OSIPSUSER $OSIPSDOMAIN
 			if [ "$ALIAS_EXISTS" = "1" ] ; then
 				minfo "user '$1' already exists as alias"
 				exit 1
@@ -1842,7 +1842,7 @@ subscriber() {
 
 			QUERY="insert into $SUB_TABLE ($SUBSCRIBER_COLUMN,\
 				$REALM_COLUMN,$HA1_COLUMN,$HA1B_COLUMN,$PASSWORD_COLUMN) \
-				values ('$OSERUSER','$OSERDOMAIN','$HA1','$HA1B','$PASS');";
+				values ('$OSIPSUSER','$OSIPSDOMAIN','$HA1','$HA1B','$PASS');";
 			$DBCMD "$QUERY"
 			if [ $? -ne 0 ] ; then
 				merr "introducing the new user '$1' to the database failed"
@@ -1873,7 +1873,7 @@ subscriber() {
 
 			QUERY="update $SUB_TABLE set $HA1_COLUMN='$HA1', \
 $HA1B_COLUMN='$HA1B', $PASSWORD_COLUMN='$PASS' \
-WHERE $SUBSCRIBER_COLUMN='$OSERUSER' and $REALM_COLUMN='$OSERDOMAIN';"
+WHERE $SUBSCRIBER_COLUMN='$OSIPSUSER' and $REALM_COLUMN='$OSIPSDOMAIN';"
 			$DBCMD "$QUERY"
 			if [ $? -ne 0 ] ; then
 				merr "password change failed"
@@ -1901,14 +1901,14 @@ WHERE $SUBSCRIBER_COLUMN='$OSERUSER' and $REALM_COLUMN='$OSERDOMAIN';"
 			acl revoke $1  > /dev/null 2>&1
 
 			# destroy db-aliases
-			QUERY="delete from $DA_TABLE where $DA_USER_COLUMN='$OSERUSER' \
-and $DA_DOMAIN_COLUMN='$OSERDOMAIN';"
+			QUERY="delete from $DA_TABLE where $DA_USER_COLUMN='$OSIPSUSER' \
+and $DA_DOMAIN_COLUMN='$OSIPSDOMAIN';"
 			$DBCMD "$QUERY"
 
 
 			# destroy the user now
-			QUERY="delete from $SUB_TABLE where $SUBSCRIBER_COLUMN='$OSERUSER' \
-and $REALM_COLUMN='$OSERDOMAIN';"
+			QUERY="delete from $SUB_TABLE where $SUBSCRIBER_COLUMN='$OSIPSUSER' \
+and $REALM_COLUMN='$OSIPSDOMAIN';"
 			$DBCMD "$QUERY"
 
 			# and also all his contacts
@@ -1964,7 +1964,7 @@ usrloc() {
 				else
 					set_user $2
 					$CTLCMD ul_show_contact \
-						$USRLOC_TABLE "$OSERUSER@$OSERDOMAIN"
+						$USRLOC_TABLE "$OSIPSUSER@$OSIPSDOMAIN"
 				fi
 			elif [ $# -eq 1 ] ; then
 				$CTLCMD ul_dump
@@ -2006,7 +2006,7 @@ usrloc() {
 				fi
 			fi
 
-			check_alias $OSERUSER $OSERDOMAIN
+			check_alias $OSIPSUSER $OSIPSDOMAIN
 			if [ "$ALIAS_EXISTS" = "1" ] ; then
 				if [ "$CHECK_SUB" -ne 0 ] ; then
 					minfo "alias already defined"
@@ -2016,7 +2016,7 @@ usrloc() {
 				exit 1
 			fi
 
-			$CTLCMD ul_add "$USRLOC_TABLE" "$OSERUSER@$OSERDOMAIN" "$2" \
+			$CTLCMD ul_add "$USRLOC_TABLE" "$OSIPSUSER@$OSIPSDOMAIN" "$2" \
 "$UL_EXPIRES" "1.00" "0" "$UL_FLAGS" "$BR_FLAGS" "$ALL_METHODS"
 			exit $?
 			;;
@@ -2024,7 +2024,7 @@ usrloc() {
 			if [ $# -eq 2 ] ; then
 				shift
 				set_user $1
-				$CTLCMD ul_rm $USRLOC_TABLE "$OSERUSER@$OSERDOMAIN"
+				$CTLCMD ul_rm $USRLOC_TABLE "$OSIPSUSER@$OSIPSDOMAIN"
 
 			elif [ $# -eq 3 ] ; then
 				shift
@@ -2035,7 +2035,7 @@ usrloc() {
 					exit 1
 				fi
 
-				$CTLCMD ul_rm_contact $USRLOC_TABLE "$OSERUSER@$OSERDOMAIN" "$2"
+				$CTLCMD ul_rm_contact $USRLOC_TABLE "$OSIPSUSER@$OSIPSDOMAIN" "$2"
 
 			else
 				merr "wrong number of params"
@@ -2285,7 +2285,7 @@ case $1 in
 
 	monitor|console|moni|con)
 		require_ctlengine
-		$OPENSER_MONITOR "$@"
+		$OPENSIPS_MONITOR "$@"
 		;;
 
 	online)
@@ -2311,9 +2311,9 @@ case $1 in
 		;;
 
 	restart)
-		openser_stop
+		opensips_stop
 		sleep 2
-		openser_start
+		opensips_start
 		;;
 	
 	rpid)
@@ -2330,11 +2330,11 @@ case $1 in
 		;;
 
 	start)
-		openser_start
+		opensips_start
 		;;
 
 	stop)
-		openser_stop
+		opensips_stop
 		;;
 
 	version)
