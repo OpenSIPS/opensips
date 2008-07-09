@@ -1,16 +1,16 @@
 /*
- * $Id$
+ * $Id: opensipsunix.c 3954 2008-03-27 19:15:18Z osas $
  *
  * Copyright (C) 2004 FhG FOKUS
  *
- * This file is part of openser, a free SIP server.
+ * This file is part of opensips, a free SIP server.
  *
- * openser is free software; you can redistribute it and/or modify
+ * opensips is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version
  *
- * openser is distributed in the hope that it will be useful,
+ * opensips is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
@@ -77,8 +77,8 @@ int main(int argc, char** argv)
 	chroot_dir = getenv("CHROOT_DIR");
 	if (chroot_dir == NULL)
 		chroot_dir = "";
-	sprintf(name, "%s/tmp/OpenSER.%d.XXXXXX", chroot_dir, getpid());
-	umask(0); /* set mode to 0666 for when openser is running as non-root user and openserctl is running as root */
+	sprintf(name, "%s/tmp/OpenSIPS.%d.XXXXXX", chroot_dir, getpid());
+	umask(0); /* set mode to 0666 for when opensips is running as non-root user and opensipsctl is running as root */
 
 	if (mkstemp(name) == -1) {
 		fprintf(stderr, "Error in mkstemp with name=%s: %s\n", name, strerror(errno));
