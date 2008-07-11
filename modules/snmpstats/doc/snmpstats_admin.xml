@@ -8,7 +8,7 @@
 		<title>Overview</title>
 
 		<para>The SNMPStats module provides an SNMP management interface
-		to OpenSER.  Specifically, it provides general SNMP queryable 
+		to OpenSIPS.  Specifically, it provides general SNMP queryable 
 		scalar statistics, table representations of more complicated data such as 
 		user and contact information, and alarm monitoring capabilities.
 		</para>
@@ -86,7 +86,7 @@
 			</listitem>
 			<listitem>
 				<para>
-				The number of bytes waiting to be consumed across all of OpenSERs
+				The number of bytes waiting to be consumed across all of OpenSIPSs
 				listening ports has passed a minor or major threshold.  The idea is
 				that a network operation centre can be made aware that a machine 
 				hosting a SIP server may be entering a degraded state, and to 
@@ -114,7 +114,7 @@
 	<section>
 	<title>How the SNMPStats module gets its data</title>
 	<para>
-	The SNMPStats module uses OpenSERs internal statistic framework to collect most of its
+	The SNMPStats module uses OpenSIPSs internal statistic framework to collect most of its
 	data. However, there are two exceptions.  
 	<orderedlist>
 		<listitem>
@@ -127,8 +127,8 @@
 		<listitem>
 			<para>
 			The SNMPStats modules openserSIPMsgQueueDepthMinorEvent and 
-			openserSIPMsgQueueDepthMajorEvent alarms rely on the OpenSER core to find out
-			what interfaces, ports, and transports OpenSER is listening on.  However,
+			openserSIPMsgQueueDepthMajorEvent alarms rely on the OpenSIPS core to find out
+			what interfaces, ports, and transports OpenSIPS is listening on.  However,
 			the module will actually query the proc file system to find out the number
 			of bytes waiting to be consumed.  (Currently, this will only work on systems
 			providing the proc file system).
@@ -146,12 +146,12 @@
 	</para>
 	<para>
 	The SNMPStats module expects to connect to a <emphasis>Master Agent</emphasis>.  This
-	would be a NetSNMP daemon running either on the same system as the OpenSER instance, or 
+	would be a NetSNMP daemon running either on the same system as the OpenSIPS instance, or 
 	on another system.  (Communication can take place over TCP, so there is no restriction
-	that this daemon need be on the same system as OpenSER).
+	that this daemon need be on the same system as OpenSIPS).
 	</para>
 	<para>
-	If the master agent is unavailable when OpenSER first starts up, the SNMPStats module will
+	If the master agent is unavailable when OpenSIPS first starts up, the SNMPStats module will
 	continue to run.  However, you will not be able to query it.  Thankfully, the SNMPStats
 	module continually looks for its master agent.  So even if the master agent is started late, 
 	or if the link to the SNMPStats module is severed due to a temporary hardware failure
@@ -170,7 +170,7 @@
 	<section>
 	<title>Dependencies</title>
 	<section>
-		<title>&openser; Modules</title>
+		<title>&osips; Modules</title>
 		<para>
 		The SNMPStats module provides a plethora of statistics, some of which are collected
 		by other modules.  If the dependent modules are not loaded then those specific 
@@ -206,7 +206,7 @@
 	<title>External Libraries or Applications</title>
 	<para>
 	The following libraries or applications must be installed before running
-	&openser; with this module loaded:
+	&osips; with this module loaded:
 		<itemizedlist>
 		<listitem>
 		<para>
@@ -228,7 +228,7 @@
 		<title><varname>sipEntityType</varname> (String) </title>
 
 		<para>
-		This parameter describes the entity type for this OpenSER instance,
+		This parameter describes the entity type for this OpenSIPS instance,
 		and will be used in determining what is returned for the
 		openserSIPEntityType scalar. Valid parameters are:
 		</para>
@@ -251,7 +251,7 @@ modparam("snmpstats", "sipEntityType", "proxyServer")
 
 		<para>
 		Note that as the above example shows, you can define this parameter more
-		than once.  This is of course because a given OpenSER instance can take on
+		than once.  This is of course because a given OpenSIPS instance can take on
 		more than one role.
 		</para>
 	</section>
@@ -261,7 +261,7 @@ modparam("snmpstats", "sipEntityType", "proxyServer")
 
 		<para>
 		The SNMPStats module monitors the number of bytes waiting to be consumed by 
-		OpenSER.  If the number of bytes waiting to be consumed exceeds a minor
+		OpenSIPS.  If the number of bytes waiting to be consumed exceeds a minor
 		threshold, the SNMPStats module will send out an openserMsgQueueDepthMinorEvent
 		trap to signal that an alarm condition has occured.  The minor threshold is set
 		with the MsgQueueMinorThreshold parameter.  
@@ -286,7 +286,7 @@ modparam("snmpstats", "MsgQueueMinorThreshold", 2000)
 
 		<para>
 		The SNMPStats module monitors the number of bytes waiting to be consumed by 
-		OpenSER.  If the number of bytes waiting to be consumed exceeds a major
+		OpenSIPS.  If the number of bytes waiting to be consumed exceeds a major
 		threshold, the SNMPStats module will send out an openserMsgQueueDepthMajorEvent
 		trap to signal that an alarm condition has occured.  The major threshold is set
 		with the MsgQueueMajorThreshold parameter.  
@@ -439,7 +439,7 @@ modparam("snmpstats", "snmpCommunity", "customCommunityString")
 	<para>
 	The SNMPStats modules makefile requires that the NetSNMP script
 	"net-snmp-config" can run.  At a minimum, running "net-snmp-config --agent-libs"
-	from the OpenSER source directory should return something similar to: 
+	from the OpenSIPS source directory should return something similar to: 
 
 	<programlisting format="linespecific">
     -L/usr/local/lib -lnetsnmpmibs -lnetsnmpagent -lnetsnmphelpers -lnetsnmp
@@ -532,7 +532,7 @@ modparam("snmpstats", "snmpCommunity", "customCommunityString")
 	The above line tells the SNMPStats module to register with the master agent on
 	the localhost, port 705.  The parameters should match up with the snmpd process.
 	Note that the master agent (snmpd) does not need to be present on the same
-	machine as OpenSER.  localhost could be replaced with any other machine. 
+	machine as OpenSIPS.  localhost could be replaced with any other machine. 
 	</para>
 	</section>
 	
@@ -560,7 +560,7 @@ modparam("snmpstats", "snmpCommunity", "customCommunityString")
     NET-SNMP version 5.3.1
 	</programlisting>
 
-	Now, start up OpenSER in another window.  In the snmpd window, you should see a
+	Now, start up OpenSIPS in another window.  In the snmpd window, you should see a
 	bunch of:
 
 	<programlisting format="linespecific">

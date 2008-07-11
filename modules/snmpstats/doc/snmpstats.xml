@@ -5,7 +5,7 @@
 <!ENTITY admin SYSTEM "snmpstats_admin.xml">
 <!ENTITY faq SYSTEM "snmpstats_faq.xml">
 
-<!-- Include general OpenSER documentation entities -->
+<!-- Include general OpenSIPS documentation entities -->
 <!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
 %docentities;
 
@@ -14,7 +14,7 @@
 <book>
 	<bookinfo>
 	<title>SNMPStats Module (Simple Network Management Protocal Statistic Module)</title>
-	<productname class="trade">&opensername;</productname>
+	<productname class="trade">&osipsname;</productname>
 	<authorgroup>
 		<author>
 		<firstname>Jeffrey</firstname>

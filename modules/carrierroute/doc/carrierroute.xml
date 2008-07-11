@@ -6,7 +6,7 @@
 <!ENTITY admin SYSTEM "carrierroute_admin.xml">
 <!ENTITY faq SYSTEM "../../../doc/module_faq.xml">
 
-<!-- Include general OpenSER documentation entities -->
+<!-- Include general OpenSIPS documentation entities -->
 <!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
 %docentities;
 
@@ -15,7 +15,7 @@
 <book>
 	<bookinfo>
 	<title>carrierroute</title>
-	<productname class="trade">&opensername;</productname>
+	<productname class="trade">&osipsname;</productname>
 	<authorgroup>
 		<author>
 		<firstname>Jonas</firstname>

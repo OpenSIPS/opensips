@@ -307,7 +307,7 @@
   <section>
   <title>Dependencies</title>
     <section>
-    <title>&openser; Modules</title>
+    <title>&osips; Modules</title>
       <para>
         The following modules must be loaded before this module:
         <itemizedlist>
@@ -334,7 +334,7 @@
     <title>External Libraries or Applications</title>
       <para>
         The following libraries or applications must be installed before
-        running &openser; with this module loaded:
+        running &osips; with this module loaded:
         <itemizedlist>
           <listitem><para>
             <emphasis>None</emphasis>.
@@ -448,7 +448,7 @@ modparam("nat_traversal", "keepalive_from", "sip:keepalive@my-domain.com")
       <title>Setting the <varname>keepalive_extra_headers</varname> parameter</title>
         <programlisting format="linespecific">
 ...
-modparam("nat_traversal", "keepalive_extra_headers", "User-Agent: OpenSER\r\nX-MyHeader: some_value\r\n")
+modparam("nat_traversal", "keepalive_extra_headers", "User-Agent: OpenSIPS\r\nX-MyHeader: some_value\r\n")
 ...
         </programlisting>
       </example>
@@ -458,18 +458,18 @@ modparam("nat_traversal", "keepalive_extra_headers", "User-Agent: OpenSER\r\nX-M
     <title><varname>keepalive_state_file</varname> (string)</title>
       <para>
         Specifies a filename where information about the NAT endpoints and the
-        conditions for which they are being kept alive is saved when &openser;
-        exits. The information in this file is then used when &openser; starts
+        conditions for which they are being kept alive is saved when &osips;
+        exits. The information in this file is then used when &osips; starts
         to restore its internal state and continue to send keepalive messages
         to the NAT endpoints that have not expired in the meantime. This is
-        useful when restarting &openser; to avoid losing keepalive state
+        useful when restarting &osips; to avoid losing keepalive state
         information about the NAT endpoints. The internal keepalive state is
-        guaranteed to be saved in this file on exit, even when &openser;
+        guaranteed to be saved in this file on exit, even when &osips;
         crashes.
       </para>
       <para>
         The value of this parameter can be either a relative path, in which
-        case it will store it in the &openser; working directory, or an
+        case it will store it in the &osips; working directory, or an
         absolute path.
       </para>
       <para>
@@ -481,7 +481,7 @@ modparam("nat_traversal", "keepalive_extra_headers", "User-Agent: OpenSER\r\nX-M
       <title>Setting the <varname>keepalive_state_file</varname> parameter</title>
         <programlisting format="linespecific">
 ...
-modparam("nat_traversal", "keepalive_state_file", "/var/run/openser/keepalive_state")
+modparam("nat_traversal", "keepalive_state_file", "/var/run/opensips/keepalive_state")
 ...
         </programlisting>
       </example>
@@ -509,7 +509,7 @@ modparam("nat_traversal", "keepalive_state_file", "/var/run/openser/keepalive_st
               in the Contact field of the SIP message.
         </para></listitem>
         <listitem><para>
-          2 - tests if client has contacted &openser; from an address that
+          2 - tests if client has contacted &osips; from an address that
               is different from the one in the Via field. Both the IP and
               port are compared by this test.
         </para></listitem>

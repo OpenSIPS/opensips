@@ -8,7 +8,7 @@
 	<title>Overview</title>
 	<para>
 		This module provides the possibility to print user formatted log or
-		debug messages from &openser; scripts, similar to printf function. 
+		debug messages from &osips; scripts, similar to printf function. 
 		A C-style printf specifier is replaced with a part of the &sip; request or other
 		variables from system.
 		<xref linkend="sec-implemented-specifiers"/> shows what can be printed
@@ -19,11 +19,11 @@
 	<title>Implemented Specifiers</title>
 	<para>
 	In the xlog function, you use pseudo-variables, that are a part
-	of &openser; core and are used by other modules as well (e.g., avpops
+	of &osips; core and are used by other modules as well (e.g., avpops
 	in the function avp_printf())
 	</para>
 	<para>
-	The most important changes from earlier versions of OpenSER are:
+	The most important changes from earlier versions of OpenSIPS are:
 	</para>
 	<itemizedlist>
 		<listitem>
@@ -46,21 +46,21 @@
 		</listitem>
 	</itemizedlist>
 	<para>
-	The full list of available pseudo-variables in &openser; is availabe at:
-	<ulink url="http://openser.org/dokuwiki/">
-	http://openser.org/dokuwiki/</ulink>
+	The full list of available pseudo-variables in &osips; is availabe at:
+	<ulink url="http://opensips.org/dokuwiki/">
+	http://opensips.org/dokuwiki/</ulink>
 	</para>
 	</section>
 	<section>
 	<title>Dependencies</title>
 	<section>
-		<title>&openser; Modules</title>
+		<title>&osips; Modules</title>
 		<para>
 		The following modules must be loaded before this module:
 			<itemizedlist>
 			<listitem>
 			<para>
-				<emphasis>No dependencies on other &openser; modules</emphasis>.
+				<emphasis>No dependencies on other &osips; modules</emphasis>.
 			</para>
 			</listitem>
 			</itemizedlist>
@@ -70,7 +70,7 @@
 		<title>External Libraries or Applications</title>
 		<para>
 		The following libraries or applications must be installed before running
-		&openser; with this module loaded:
+		&osips; with this module loaded:
 			<itemizedlist>
 			<listitem>
 			<para>

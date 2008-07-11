@@ -39,7 +39,7 @@
 		</listitem>	
 	</itemizedlist>
 	<programlisting format="linespecific"> <emphasis>	<![CDATA[ ### ---8<--- cut here ---8<--- ###
-	if (avp_check("$rd", "eq/s:sip-xmpp.openser.org")) {
+	if (avp_check("$rd", "eq/s:sip-xmpp.opensips.org")) {
 		if (!t_newtran()) {
 			sl_reply_error();
 	...........]]>	</emphasis> </programlisting> 	
@@ -51,16 +51,16 @@
 	<para>	A use case, for the component-mode, would look like this:</para>
 	<itemizedlist>
 		<listitem>
-			<para>Openser is running on sip-server.openser.org;</para>
+			<para>Openser is running on sip-server.opensips.org;</para>
 		</listitem>
 		<listitem>
-			<para>the gateway is running on sip-xmpp.openser.org;</para>
+			<para>the gateway is running on sip-xmpp.opensips.org;</para>
 		</listitem>	
 		<listitem>
-			<para>the jabber server is running on xmpp.openser.org;</para>
+			<para>the jabber server is running on xmpp.opensips.org;</para>
 		</listitem>	
 		<listitem>
-			<para>the component is running on xmpp-sip.openser.org.</para>
+			<para>the component is running on xmpp-sip.opensips.org.</para>
 		</listitem>	
 	</itemizedlist>
 	<para>
@@ -69,13 +69,13 @@
 	<para>	A use case, for the server-mode, would look like this: </para>
 	<itemizedlist>
 		<listitem>
-			<para>Openser is running on sip-server.openser.org; </para>
+			<para>Openser is running on sip-server.opensips.org; </para>
 		</listitem>
 		<listitem>
-			<para>the gateway is running on sip-xmpp.openser.org;</para>
+			<para>the gateway is running on sip-xmpp.opensips.org;</para>
 		</listitem>	
 		<listitem>
-			<para>the "XMPP server" is running on xmpp-sip.openser.org.</para>
+			<para>the "XMPP server" is running on xmpp-sip.opensips.org.</para>
 		</listitem>
 	</itemizedlist>	
 	<para>In both cases, the destination address must have the same pattern:</para>
@@ -86,7 +86,7 @@
 	<section>
 	<title>Dependencies</title>
 	<section>
-		<title>&openser; Modules</title>
+		<title>&osips; Modules</title>
 		<para>
 		The following modules must be loaded before this module:
 			<itemizedlist>
@@ -102,7 +102,7 @@
 		<title>External Libraries or Applications</title>
 		<para>
 		The following libraries or applications must be installed before running
-		&openser; with this module loaded:
+		&osips; with this module loaded:
 			<itemizedlist>
 			<listitem>
 			<para>
@@ -176,7 +176,7 @@
 		<title>Set <varname>gateway_domain</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
- modparam("xmpp", "gateway_domain", "sip-xmpp.openser.org")
+ modparam("xmpp", "gateway_domain", "sip-xmpp.opensips.org")
 ...
 </programlisting>
 		</example>
@@ -195,7 +195,7 @@
 		<title>Set <varname>xmpp_domain</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
- modparam("xmpp", "xmpp_domain", "xmpp-sip.openser.org")
+ modparam("xmpp", "xmpp_domain", "xmpp-sip.opensips.org")
 ...
 </programlisting>
 		</example>
@@ -214,7 +214,7 @@
 		<title>Set <varname>xmpp_host</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
- modparam("xmpp", "xmpp_host", "xmpp.openser.org")
+ modparam("xmpp", "xmpp_host", "xmpp.opensips.org")
 ...
 </programlisting>
 		</example>
@@ -267,8 +267,8 @@
 		<title><varname>outbound_proxy</varname> (string)</title>
 		<para>
 		The SIP address used as next hop when sending the message. Very
-		useful when using OpenSER with a domain name not in DNS, or
-		when using a separate OpenSER instance for xmpp processing. If
+		useful when using OpenSIPS with a domain name not in DNS, or
+		when using a separate OpenSIPS instance for xmpp processing. If
 		not set, the message will be sent to the address in destination
 		URI.
 		</para>
@@ -281,7 +281,7 @@
 		<title>Set <varname>outbound_proxy</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
- modparam("xmpp", "outbound_proxy", "sip:openser.org;transport=tcp")
+ modparam("xmpp", "outbound_proxy", "sip:opensips.org;transport=tcp")
 ...
 </programlisting>
 		</example>
@@ -314,7 +314,7 @@ xmpp_send_message();
 	<title>Configuration</title>
 		<para>
 		Next is presented a sample configuration file one can use to implement a
-		standalone SIP-to-XMPP gateway. You can run an instance of OpenSER on a
+		standalone SIP-to-XMPP gateway. You can run an instance of OpenSIPS on a
 		separate machine or on different port with the following config, and have
 		the main SIP server configured to forward all SIP requests for XMPP world
 		to it.

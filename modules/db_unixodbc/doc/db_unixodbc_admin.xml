@@ -7,7 +7,7 @@
 	<section>
 	<title>Overview</title>
 	<para>
-	This module allows to use the unixodbc package with &openser;. It have been 
+	This module allows to use the unixodbc package with &osips;. It have been 
 	tested with mysql and the odbc connector, but it should work also with 
 	other database. The auth_db module works.
 	</para>
@@ -25,13 +25,13 @@
 	<section>
 	<title>Dependencies</title>
 	<section>
-		<title>&openser; Modules</title>
+		<title>&osips; Modules</title>
 		<para>
 		The following modules must be loaded before this module:
 			<itemizedlist>
 			<listitem>
 			<para>
-				<emphasis>No dependencies on other &openser; modules</emphasis>.
+				<emphasis>No dependencies on other &osips; modules</emphasis>.
 			</para>
 			</listitem>
 			</itemizedlist>
@@ -41,7 +41,7 @@
 		<title>External Libraries or Applications</title>
 		<para>
 		The following libraries or applications must be installed before running
-		&openser; with this module loaded:
+		&osips; with this module loaded:
 			<itemizedlist>
 			<listitem>
 			<para>
@@ -151,7 +151,7 @@ modparam("db_unixodbc", "use_escape_common", 1)
 	</para>
 	<programlisting format="linespecific">
 ....
-loadmodule "/usr/local/lib/openser/modules/db_unixodbc.so"
+loadmodule "/usr/local/lib/opensips/modules/db_unixodbc.so"
 ....
 </programlisting>
 	<para>
@@ -159,8 +159,8 @@ loadmodule "/usr/local/lib/openser/modules/db_unixodbc.so"
 	</para>
 	<programlisting format="linespecific">
 ....
-loadmodule "/usr/local/lib/openser/modules/auth.so"
-loadmodule "/usr/local/lib/openser/modules/auth_db.so"
+loadmodule "/usr/local/lib/opensips/modules/auth.so"
+loadmodule "/usr/local/lib/opensips/modules/auth_db.so"
 modparam("usrloc", "db_mode", 2)
 modparam("auth_db", "calculate_ha1", yes)
 modparam("auth_db", "password_column", "password")

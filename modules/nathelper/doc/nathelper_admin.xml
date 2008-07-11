@@ -36,7 +36,7 @@
 			<itemizedlist>
 				<listitem>
 				<para><emphasis>Advantages:</emphasis> low bandwitdh traffic,
-				easy to generate by &openser;;
+				easy to generate by &osips;;
 				</para>
 				</listitem>
 				<listitem>
@@ -56,14 +56,14 @@
 			<itemizedlist>
 				<listitem>
 				<para><emphasis>Advantages:</emphasis> bidirectional traffic
-				through NAT, since each PING request from &openser; (inbound 
+				through NAT, since each PING request from &osips; (inbound 
 				traffic) will force the SIP client to generate a SIP reply 
 				(outbound traffic) - the NAT bind will be surely kept open.
 				</para>
 				</listitem>
 				<listitem>
 				<para><emphasis>Disadvantages:</emphasis> higher bandwitdh 
-				traffic, more expensive (as time) to generate by &openser;;
+				traffic, more expensive (as time) to generate by &osips;;
 				</para>
 				</listitem>
 			</itemizedlist>
@@ -107,7 +107,7 @@
 	<section>
 	<title>Dependencies</title>
 	<section>
-		<title>&openser; Modules</title>
+		<title>&osips; Modules</title>
 		<para>
 		The following modules must be loaded before this module:
 			<itemizedlist>
@@ -124,7 +124,7 @@
 		<title>External Libraries or Applications</title>
 		<para>
 		The following libraries or applications must be installed before 
-		running &openser; with this module loaded:
+		running &osips; with this module loaded:
 			<itemizedlist>
 			<listitem>
 			<para>
@@ -805,7 +805,7 @@ start_recording();
 			<title><function moreinfo="none">nh_enable_ping</function> usage</title>
 			<programlisting format="linespecific">
 ...
-$ openserctl fifo nh_enable_ping 1
+$ opensipsctl fifo nh_enable_ping 1
 ...
 			</programlisting>
 			</example>
@@ -833,7 +833,7 @@ $ openserctl fifo nh_enable_ping 1
 			<function moreinfo="none">nh_enable_rtpp</function> usage</title>
 			<programlisting format="linespecific">
 ...
-$ openserctl fifo nh_enable_rtpp udp:192.168.2.133:8081 0
+$ opensipsctl fifo nh_enable_rtpp udp:192.168.2.133:8081 0
 ...
 			</programlisting>
 			</example>
@@ -853,7 +853,7 @@ $ openserctl fifo nh_enable_rtpp udp:192.168.2.133:8081 0
 				<function moreinfo="none">nh_show_rtpp</function> usage</title>
 			<programlisting format="linespecific">
 ...
-$ openserctl fifo nh_show_rtpp 
+$ opensipsctl fifo nh_show_rtpp 
 ...
 			</programlisting>
 			</example>

@@ -21,7 +21,7 @@
 		message.
 		</para>
 		<para>
-		&openser; is a forking proxy and therefore a single message can be sent 
+		&osips; is a forking proxy and therefore a single message can be sent 
 		to different destinations simultaneously. When checking permissions 
 		all the destinations must be checked and if one of them fails, the 
 		forwarding will fail.
@@ -229,13 +229,13 @@
 	<section>
 	<title>Dependencies</title>
 	<section>
-		<title>&openser; Modules</title>
+		<title>&osips; Modules</title>
 		<para>
 		The following modules must be loaded before this module:
 			<itemizedlist>
 			<listitem>
 			<para>
-				<emphasis>No dependencies on other &openser; modules</emphasis>.
+				<emphasis>No dependencies on other &osips; modules</emphasis>.
 			</para>
 			</listitem>
 			</itemizedlist>
@@ -245,7 +245,7 @@
 		<title>External Libraries or Applications</title>
 		<para>
 		The following libraries or applications must be installed before running
-		&openser; with this module loaded:
+		&osips; with this module loaded:
 			<itemizedlist>
 			<listitem>
 			<para>
@@ -881,7 +881,7 @@ if (method=="REGISTER") {
 		</listitem>
 		<listitem>
 			<para><emphasis>pvar</emphasis> - Any
-			pseudo-variable defined in OpenSER.
+			pseudo-variable defined in OpenSIPS.
 			</para>
 		</listitem>
 		</itemizedlist>
@@ -1096,7 +1096,7 @@ if (allow_trusted("$si", "$proto")) {
 		<para>
 		Tests if (URI, Contact) pair is allowed according to
 		allow/deny files.  The files must already have been
-		 loaded by OpenSER.
+		 loaded by OpenSIPS.
 		</para>
 		<para>Parameters: </para>
 		<itemizedlist>

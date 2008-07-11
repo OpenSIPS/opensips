@@ -21,7 +21,7 @@
 		<section>
 	<title>Dependencies</title>
 	<section>
-		<title>&openser; Modules</title>
+		<title>&osips; Modules</title>
 		<para>
 		The following modules must be loaded before this module:
 			<itemizedlist>
@@ -42,7 +42,7 @@
 		<title>External Libraries or Applications</title>
 		<para>
 		The following libraries or applications must be installed before running
-		&openser; with this module loaded:
+		&osips; with this module loaded:
 			<itemizedlist>
 			<listitem>
 			<para>
@@ -69,7 +69,7 @@
 		<title>Set <varname>default_domain</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam(pua_usrloc, "default_domain", "openser.org")
+modparam(pua_usrloc, "default_domain", "opensips.org")
 ...
 </programlisting>
 		</example>
@@ -113,7 +113,7 @@ modparam(pua_usrloc, "entity_prefix", "pres")
 		<title><function>pua_set_publish</function> usage</title>
 	<programlisting format="linespecific">
 ...
-if(is_method("REGISTER") &amp;&amp; from_uri=~"john@openser.org") 
+if(is_method("REGISTER") &amp;&amp; from_uri=~"john@opensips.org") 
 	pua_set_publish();		
 ...
 </programlisting>

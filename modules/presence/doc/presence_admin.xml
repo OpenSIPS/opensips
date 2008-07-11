@@ -7,7 +7,7 @@
 	<title>Overview</title>
 	<para> The modules handles PUBLISH and SUBSCRIBE messages and generates
 	NOTIFY messages in a general, event independent way. It allows registering 
-	events to it from other &openser; modules. Events that can currently be added to
+	events to it from other &osips; modules. Events that can currently be added to
 	it are: presence, presence.winfo, dialog;sla from presence_xml
 	module and message-summary from presence_mwi module.
 	</para>
@@ -38,7 +38,7 @@
 	<section>
 	<title>Dependencies</title>
 	<section>
-		<title>&openser; Modules</title>
+		<title>&osips; Modules</title>
 		<para>
 		The following modules must be loaded before this module:
 			<itemizedlist>
@@ -500,12 +500,12 @@ if(method=="SUBSCRIBE")
 <section>
 	<title>Installation</title>
 	<para>
-	The module requires 3 table in OpenSER database: presentity,
+	The module requires 3 table in OpenSIPS database: presentity,
 	active_watchers and watchers tables. The SQL 
 	syntax to create them can be found in presence-create.sql     
 	script in the database directories in the openser/scripts folder.
 	You can also find the complete database documentation on the
-	project webpage, &openserdbdocslink;.
+	project webpage, &osipsdbdocslink;.
 	</para>
 </section>
 

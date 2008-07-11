@@ -7,21 +7,21 @@
 	<section>
 	<title>Overview</title>
 	<para>
-		This is a module which integrates the Berkeley DB into OpenSER.
-		It implements the DB API defined in OpenSER.
+		This is a module which integrates the Berkeley DB into OpenSIPS.
+		It implements the DB API defined in OpenSIPS.
 	</para>
 	</section>
 
 	<section>
 	<title>Dependencies</title>
 	<section>
-		<title>&openser; Modules</title>
+		<title>&osips; Modules</title>
 		<para>
 		The following modules must be loaded before this module:
 			<itemizedlist>
 			<listitem>
 			<para>
-				<emphasis>No dependencies on other &openser; modules</emphasis>.
+				<emphasis>No dependencies on other &osips; modules</emphasis>.
 			</para>
 			</listitem>
 			</itemizedlist>
@@ -32,7 +32,7 @@
 		<title>External Libraries or Applications</title>
 		<para>
 		The following libraries or applications must be installed before running
-		&openser; with this module loaded:
+		&osips; with this module loaded:
 			<itemizedlist>
 			<listitem>
 			<para>
@@ -145,7 +145,7 @@ modparam("db_berkeley", "journal_roll_interval", 3600)
 		
 		<para>Parameters: <emphasis>tablename (or db_path); to reload a particular table 
 		provide the tablename as the arguement (eg subscriber); to reload all tables provide the db_path to
-		the db files. The path can be found in openserctlrc DB_PATH variable. 
+		the db files. The path can be found in opensipsctlrc DB_PATH variable. 
 		</emphasis></para>
 	</section>
 	</section>
@@ -159,7 +159,7 @@ modparam("db_berkeley", "journal_roll_interval", 3600)
 		</para>
 		
 		<para>
-		Next, prepare to compile OpenSER with the db_berkeley module. 
+		Next, prepare to compile OpenSIPS with the db_berkeley module. 
 		In the directory /modules/db_berkeley, modify the Makefile to point 
 		to your distribution of Berkeley DB. You may also define 'BDB_EXTRA_DEBUG' 
 		to compile in extra debug logs. However, it is not a recommended 
@@ -175,7 +175,7 @@ modparam("db_berkeley", "journal_roll_interval", 3600)
 			<listitem>
 			<para>
 			edit the "Makefile" and remove "db_berkeley" from "excluded_modules"
-			list. Then follow the standard procedure to install &openser;:
+			list. Then follow the standard procedure to install &osips;:
 			"make all; make install".
 			</para>
 			</listitem>
@@ -188,7 +188,7 @@ modparam("db_berkeley", "journal_roll_interval", 3600)
 		</itemizedlist>
 		
 		<para>
-		Installation of OpenSER is performed by simply running make install
+		Installation of OpenSIPS is performed by simply running make install
 		as root user of the main directory. This will install the binaries 
 		in /usr/local/sbin/.
 		If this was successful, openser control engine files should now 
@@ -197,22 +197,22 @@ modparam("db_berkeley", "journal_roll_interval", 3600)
 		
 		<para>
 		Decide where (on the filesystem) you want to install the Berkeley DB files.
-		For instance, '/usr/local/etc/openser/db_berkeley' directory.
-		Make note of this directory as we need to add this path to the openserctlrc file.
-		Note: OpenSER will not startup without these DB files.
+		For instance, '/usr/local/etc/opensips/db_berkeley' directory.
+		Make note of this directory as we need to add this path to the opensipsctlrc file.
+		Note: OpenSIPS will not startup without these DB files.
 		</para>
 		
 		<para>
-		Edit openserctlrc - There are two parameters in this file that should be 
+		Edit opensipsctlrc - There are two parameters in this file that should be 
 		configured before openserctrdb script can work properly: DBENGINE and DB_PATH.
-		Edit file: '/usr/local/etc/openser/openserctlrc'
+		Edit file: '/usr/local/etc/opensips/opensipsctlrc'
 		</para>
 	        <programlisting  format="linespecific">
 		## database type: MYSQL, PGSQL, DB_BERKELEY, or DBTEXT, by default none is loaded
 		# DBENGINE=DB_BERKELEY
 		
 		## database path used by dbtext or db_berkeley
-		# DB_PATH="/usr/local/etc/openser/db_berkeley"
+		# DB_PATH="/usr/local/etc/opensips/db_berkeley"
 		</programlisting>
 		
 		<para>
@@ -220,7 +220,7 @@ modparam("db_berkeley", "journal_roll_interval", 3600)
 		The DB files are initially seeded with necessary meta-data. 
 		This is a good time to review the meta-data section details,
 		before making modifications to your tables dbschema.
-		By default, the files are installed in '/usr/local/share/openser/db_berkeley/openser'
+		By default, the files are installed in '/usr/local/share/opensips/db_berkeley/openser'
 		By default these tables are created Read/Write and without any journalling as 
 		shown. These settings can be modified on a per table basis.
 		Note: If you plan to use bdb_recover, you must change the LOGFLAGS.
@@ -244,10 +244,10 @@ modparam("db_berkeley", "journal_roll_interval", 3600)
 		</programlisting>
 		
 		<para>
-		Modify the OpenSER configuration file to use db_berkeley module. 
+		Modify the OpenSIPS configuration file to use db_berkeley module. 
 		The database URL for modules must be the path to the directory where 
 		the Berkeley DB table-files are located, prefixed by "berkeley://", 
-		e.g., "berkeley:///usr/local/etc/openser/db_berkeley". 
+		e.g., "berkeley:///usr/local/etc/opensips/db_berkeley". 
 		</para>
 		
 		<para>
@@ -491,8 +491,8 @@ username(str) domain(str) password(str) ha1(str) ha1b(str) first_name(str) last_
 	<title>DB Maintaince Script : openserdbctl </title>
 	
 	<para>
-	Use the openserdbctl script for maintaining OpenSER Berkeley DB tables.
-	This script assumes you have DBENGINE and DB_PATH setup correctly in openserctlrc.
+	Use the openserdbctl script for maintaining OpenSIPS Berkeley DB tables.
+	This script assumes you have DBENGINE and DB_PATH setup correctly in opensipsctlrc.
 	Note Unsupported commands are- backup, restore, migrate, copy, serweb.
 	<example>
 	<title>openserdbctl</title>
@@ -518,7 +518,7 @@ usage: openserdbctl create
 	The db_berkeley module uses the Concurrent Data Store (CDS) architecture. 
 	As such, no transaction or journaling is provided by the DB natively. 
 	The application bdb_recover is specifically written to recover data from 
-	journal files that OpenSER creates.  
+	journal files that OpenSIPS creates.  
 	The bdb_recover application requires an additional text file that contains 
 	the table schema.
 	</para>
@@ -526,7 +526,7 @@ usage: openserdbctl create
 	<para>
 	The schema is loaded with the '-s' option and is required for all operations.
 	Provide the path to the db_berkeley plain-text schema files. By default, these
-	install to '/usr/local/share/openser/db_berkeley/openser/'.
+	install to '/usr/local/share/opensips/db_berkeley/opensips/'.
 	</para>
 	
 	<para>

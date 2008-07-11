@@ -8,7 +8,7 @@
 	<title>Overview</title>
 	<para>
 		The module implements text based operations over the SIP message
-		processed by OpenSER. SIP is a text based protocol and the module
+		processed by OpenSIPS. SIP is a text based protocol and the module
 		provides a large set of very useful functions to manipulate the
 		message at text level, e.g., regular expression search and replace,
 		Perl-like substitutions, checks for method type, header presence,
@@ -31,13 +31,13 @@ From: medabeda
 	<section>
 	<title>Dependencies</title>
 	<section>
-		<title>&openser; Modules</title>
+		<title>&osips; Modules</title>
 		<para>
 		The following modules must be loaded before this module:
 			<itemizedlist>
 			<listitem>
 			<para>
-				<emphasis>No dependencies on other &openser; modules</emphasis>.
+				<emphasis>No dependencies on other &osips; modules</emphasis>.
 			</para>
 			</listitem>
 			</itemizedlist>
@@ -47,7 +47,7 @@ From: medabeda
 		<title>External Libraries or Applications</title>
 		<para>
 		The following libraries or applications must be installed before 
-		running &openser; with this module loaded:
+		running &osips; with this module loaded:
 			<itemizedlist>
 			<listitem>
 			<para>
@@ -209,7 +209,7 @@ search_append_body("[Oo]pen[Ss]er", " SIP Proxy");
 		<title><function>replace</function> usage</title>
 		<programlisting format="linespecific">
 ...
-replace("openser", "OpenSER SIP Proxy");
+replace("openser", "OpenSIPS SIP Proxy");
 ...
 </programlisting>
 		</example>
@@ -242,7 +242,7 @@ replace("openser", "OpenSER SIP Proxy");
 		<title><function>replace_body</function> usage</title>
 		<programlisting format="linespecific">
 ...
-replace_body("openser", "OpenSER SIP Proxy");
+replace_body("openser", "OpenSIPS SIP Proxy");
 ...
 </programlisting>
 		</example>
@@ -274,7 +274,7 @@ replace_body("openser", "OpenSER SIP Proxy");
 		<title><function>replace_all</function> usage</title>
 		<programlisting format="linespecific">
 ...
-replace_all("openser", "OpenSER SIP Proxy");
+replace_all("openser", "OpenSIPS SIP Proxy");
 ...
 </programlisting>
 		</example>
@@ -307,7 +307,7 @@ replace_all("openser", "OpenSER SIP Proxy");
 		<title><function>replace_body_all</function> usage</title>
 		<programlisting format="linespecific">
 ...
-replace_body_all("openser", "OpenSER SIP Proxy");
+replace_body_all("openser", "OpenSIPS SIP Proxy");
 ...
 </programlisting>
 		</example>
@@ -875,7 +875,7 @@ append_time();
 		The 'name' can be a list of methods in the form of
 		'method1|method2|...'. In this case, the function returns true if the
 		SIP message's method is one from the list. IMPORTANT NOTE: in the list
-		must be only methods defined in &openser; with ID (invite, cancel, ack,
+		must be only methods defined in &osips; with ID (invite, cancel, ack,
 		bye, options, info, update, register, message, subscribe, notify,
 		refer, prack, publish; for more see:
 		<ulink url="http://www.iana.org/assignments/sip-parameters">
@@ -1022,7 +1022,7 @@ if(is_privacy("id"))
 		<para>
 			Search functions are applied to the original request,
 			i.e., they ignore all changes resulting from message
-			processing in &openser; script.
+			processing in &osips; script.
 		</para>
 	</section>
 </chapter>

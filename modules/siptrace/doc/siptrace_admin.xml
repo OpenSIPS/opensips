@@ -14,7 +14,7 @@
 		<itemizedlist>
 		<listitem>
 		<para>
-		by calling explicitely the sip_trace() method in OpenSER configuration
+		by calling explicitely the sip_trace() method in OpenSIPS configuration
 		file. In this case the original message is processed.
 		</para>
 		</listitem>
@@ -33,16 +33,16 @@
 	The tracing can be turned on/off using fifo commad.
 	</para>
 	<para>
-	openserctl fifo sip_trace on
+	opensipsctl fifo sip_trace on
 	</para>
 	<para>
-	openserctl fifo sip_trace off
+	opensipsctl fifo sip_trace off
 	</para>
 	</section>
 	<section>
 	<title>Dependencies</title>
 	<section>
-		<title>&openser; Modules</title>
+		<title>&osips; Modules</title>
 		<para>
 		The following modules must be loaded before this module:
 			<itemizedlist>
@@ -65,7 +65,7 @@
 		<title>External Libraries or Applications</title>
 		<para>
 		The following libraries or applications must be installed before running
-		&openser; with this module loaded:
+		&osips; with this module loaded:
 			<itemizedlist>
 			<listitem>
 			<para>
@@ -312,14 +312,14 @@ sip_trace();
 	<section>
 		<title>Database setup</title>
 		<para>
-			Before running &openser; with siptrace, you have to setup the database 
+			Before running &osips; with siptrace, you have to setup the database 
 			tables where the module will store the data. For that, if the 
 			table were not created by the installation script or you choose
 			to install everything by yourself you can use the siptrace-create.sql
 			<acronym>SQL</acronym> script in the database directories in the 
 			openser/scripts folder as template. 
 			You can also find the complete database documentation on the
-			project webpage, &openserdbdocslink;.
+			project webpage, &osipsdbdocslink;.
 		</para>
 	</section>
 

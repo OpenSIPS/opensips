@@ -39,7 +39,7 @@
 	<section>
 	<title>Dependencies</title>
 		<section>
-		<title>&openser; Modules</title>
+		<title>&osips; Modules</title>
 			<para>
 			The module depends on the following modules
 			(in the other words 
@@ -55,7 +55,7 @@
 			<title>External Libraries or Applications</title>
 			<para>
 			The following libraries or applications must be installed 
-			before compilling &openser; with this module
+			before compilling &osips; with this module
 				loaded:
 			</para>
 			<itemizedlist>
@@ -166,7 +166,7 @@ modparam("peering", "verify_source_service_type", 22)
 		 </para>
 		 <para>
 		 Value of each SIP-AVP reply attribute is mapped to an
-		 OpenSER AVP.  Prefix # in front of name or value indicates a
+		 OpenSIPS AVP.  Prefix # in front of name or value indicates a
 	string name or string value, respectively.
 		 </para>
 		 <para>
@@ -238,7 +238,7 @@ if (verify_destination()) {
 		 </para>
 		 <para>
 		 Value of each SIP-AVP reply attribute is mapped to an
-		 OpenSER 
+		 OpenSIPS 
 		 AVP.  Prefix # in front of name or value indicates a
 	string name or string value, respectively.
 		 </para>
