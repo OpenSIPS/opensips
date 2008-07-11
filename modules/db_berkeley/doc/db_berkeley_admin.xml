@@ -192,7 +192,7 @@ modparam("db_berkeley", "journal_roll_interval", 3600)
 		as root user of the main directory. This will install the binaries 
 		in /usr/local/sbin/.
 		If this was successful, openser control engine files should now 
-		be installed as /usr/local/sbin/openserdbctl.
+		be installed as /usr/local/sbin/opensipsdbctl.
 		</para>
 		
 		<para>
@@ -234,13 +234,13 @@ modparam("db_berkeley", "journal_roll_interval", 3600)
 		
 		
 		<para>
-		Execute openserdbctl - There are three (3) groups of tables you may need depending
+		Execute opensipsdbctl - There are three (3) groups of tables you may need depending
 		on your situation.
 		</para>
 	        <programlisting  format="linespecific">
-		openserdbctl create   		(required)
-		openserdbctl presence 		(optional)
-		openserdbctl extra    		(optional)
+		opensipsdbctl create   		(required)
+		opensipsdbctl presence 		(optional)
+		opensipsdbctl extra    		(optional)
 		</programlisting>
 		
 		<para>
@@ -284,7 +284,7 @@ modparam("db_berkeley", "journal_roll_interval", 3600)
 	<title>Database Schema and Metadata</title>
 	
 	<para>
-	All Berkeley DB tables are created via the openserdbctl script. 
+	All Berkeley DB tables are created via the opensipsdbctl script. 
 	This section provides details as to the content and 
 	format of the DB file upon creation.
 	</para>
@@ -488,25 +488,25 @@ username(str) domain(str) password(str) ha1(str) ha1b(str) first_name(str) last_
 	</section>
 	
 	<section>
-	<title>DB Maintaince Script : openserdbctl </title>
+	<title>DB Maintaince Script : opensipsdbctl </title>
 	
 	<para>
-	Use the openserdbctl script for maintaining OpenSIPS Berkeley DB tables.
+	Use the opensipsdbctl script for maintaining OpenSIPS Berkeley DB tables.
 	This script assumes you have DBENGINE and DB_PATH setup correctly in opensipsctlrc.
 	Note Unsupported commands are- backup, restore, migrate, copy, serweb.
 	<example>
-	<title>openserdbctl</title>
+	<title>opensipsdbctl</title>
 	<programlisting>
-usage: openserdbctl create   
-       openserdbctl presence 
-       openserdbctl extra    
-       openserdbctl drop     
-       openserdbctl reinit   
-       openserdbctl bdb list         (lists the underlying db files in DB_PATH)
-       openserdbctl bdb cat       db (prints the contents of db file to STDOUT in plain-text)
-       openserdbctl bdb swap      db (installs db.new by db -> db.old; db.new -> db)
-       openserdbctl bdb append    db datafile (appends data to a new instance of db; output DB_PATH/db.new)
-       openserdbctl bdb newappend db datafile (appends data to a new instance of db; output DB_PATH/db.new)
+usage: opensipsdbctl create   
+       opensipsdbctl presence 
+       opensipsdbctl extra    
+       opensipsdbctl drop     
+       opensipsdbctl reinit   
+       opensipsdbctl bdb list         (lists the underlying db files in DB_PATH)
+       opensipsdbctl bdb cat       db (prints the contents of db file to STDOUT in plain-text)
+       opensipsdbctl bdb swap      db (installs db.new by db -> db.old; db.new -> db)
+       opensipsdbctl bdb append    db datafile (appends data to a new instance of db; output DB_PATH/db.new)
+       opensipsdbctl bdb newappend db datafile (appends data to a new instance of db; output DB_PATH/db.new)
 	</programlisting>
 	</example>
 	</para>
