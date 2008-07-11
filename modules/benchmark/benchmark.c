@@ -7,14 +7,14 @@
  *                    (Bastian Friedrich <bastian.friedrich@collax.com>)
  * Copyright (C) 2007 Voice Sistem SRL
  *
- * This file is part of openser, a free SIP server.
+ * This file is part of opensips, a free SIP server.
  *
- * openser is free software; you can redistribute it and/or modify
+ * opensips is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version
  *
- * openser is distributed in the hope that it will be useful,
+ * opensips is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
@@ -168,7 +168,7 @@ struct module_exports exports = {
 
 /*
  * mod_init
- * Called by openser at init time
+ * Called by opensips at init time
  */
 static int mod_init(void) {
 
@@ -193,7 +193,7 @@ static int child_init(int rank)
 
 /*
  * destroy
- * called by openser at exit time
+ * called by opensips at exit time
  */
 static void destroy(void)
 {

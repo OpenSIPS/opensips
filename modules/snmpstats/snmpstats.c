@@ -5,14 +5,14 @@
  * Copyright (C) 2006 SOMA Networks, INC.
  * Written by: Jeffrey Magder (jmagder@somanetworks.com)
  *
- * This file is part of openser, a free SIP server.
+ * This file is part of opensips, a free SIP server.
  *
- * openser is free software; you can redistribute it and/or modify it
+ * opensips is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version
  *
- * openser is distributed in the hope that it will be useful, but
+ * opensips is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * General Public License for more details.
@@ -79,7 +79,7 @@
 #include "utilities.h"
 #include "sub_agent.h"
 
-/* Required in every OpenSER Module. */
+/* Required in every OpenSIPS Module. */
 MODULE_VERSION
 
 /* 
@@ -97,7 +97,7 @@ volatile pid_t sysUpTime_pid;
  * for a full description. */
 static int spawn_sysUpTime_child();
 
-/* Storage for the "snmpgetPath" and "snmpCommunity" openser.cfg parameters.
+/* Storage for the "snmpgetPath" and "snmpCommunity" opensips.cfg parameters.
  * The parameters are used to define what happens with the sysUpTime child.  */
 char *snmpget_path   = NULL;
 char *snmp_community = NULL;
@@ -209,9 +209,9 @@ static int register_message_code_statistics(void)
 	return 0;
 }
 
-/* This is the first function to be called by OpenSER, to initialize the module.
+/* This is the first function to be called by OpenSIPS, to initialize the module.
  * This call must always return a value as soon as possible.  If it were not to
- * return, then OpenSER would not be able to initialize any of the other
+ * return, then OpenSIPS would not be able to initialize any of the other
  * modules. */
 static int mod_init(void) 
 {
@@ -257,7 +257,7 @@ static int mod_init(void)
 }
 
 
-/* This function is called when OpenSER has finished creating all instances of
+/* This function is called when OpenSIPS has finished creating all instances of
  * itself.  It is at this point that we want to create our AgentX sub-agent
  * process, and register a handler for any state changes of our child. */
 static int mod_child_init(int rank) 
@@ -273,7 +273,7 @@ static int mod_child_init(int rank)
 	return 0;
 }
 
-/* This function is called when OpenSER is shutting down. When this happens, we
+/* This function is called when OpenSIPS is shutting down. When this happens, we
  * log a useful message and kill the AgentX Sub-Agent child process */
 static void mod_destroy(void) 
 {
@@ -454,7 +454,7 @@ static int spawn_sysUpTime_child(void)
 }
 
 
-/* This function is called whenever the openser.cfg file specifies the
+/* This function is called whenever the opensips.cfg file specifies the
  * snmpgetPath parameter.  The function will set the snmpget_path parameter. */
 int set_snmpget_path( modparam_t type, void *val) 
 {

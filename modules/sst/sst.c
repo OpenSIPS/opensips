@@ -7,14 +7,14 @@
  * Copyright (C) 2006 SOMA Networks, INC.
  * Written by: Ron Winacott (karwin)
  *
- * This file is part of openser, a free SIP server.
+ * This file is part of opensips, a free SIP server.
  *
- * openser is free software; you can redistribute it and/or modify it
+ * opensips is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version
  *
- * openser is distributed in the hope that it will be useful, but
+ * opensips is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * General Public License for more details.
@@ -135,8 +135,8 @@ struct module_exports exports= {
  * Bind to the dialog module and setup the callbacks. Also initialize
  * the shared memory to store our interninal information in.
  *
- * @return 0 to continue to load the OpenSER, -1 to stop the loading
- * and abort OpenSER.
+ * @return 0 to continue to load the OpenSIPS, -1 to stop the loading
+ * and abort OpenSIPS.
  */
 static int mod_init(void) 
 {

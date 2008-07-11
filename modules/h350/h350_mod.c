@@ -1,21 +1,21 @@
 /* 
  * $Id: $
  *
- * OpenSER H.350 Module
+ * OpenSIPS H.350 Module
  *
  * Copyright (C) 2007 University of North Carolina
  *
  * Original author: Christian Schlatter, cs@unc.edu
  * 
  *
- * This file is part of openser, a free SIP server.
+ * This file is part of opensips, a free SIP server.
  *
- * openser is free software; you can redistribute it and/or modify
+ * opensips is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version
  *
- * openser is distributed in the hope that it will be useful,
+ * opensips is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.

@@ -5,14 +5,14 @@
  * Copyright (C) 2006 SOMA Networks, INC.
  * Written by: Jeffrey Magder (jmagder@somanetworks.com)
  *
- * This file is part of openser, a free SIP server.
+ * This file is part of opensips, a free SIP server.
  *
- * openser is free software; you can redistribute it and/or modify it
+ * opensips is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version
  *
- * openser is distributed in the hope that it will be useful, but
+ * opensips is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * General Public License for more details.
@@ -56,8 +56,8 @@
  *
  * - The interprocess buffer was necessary, because NetSNMP's containers can be
  *   very inefficient at adding large amounts of data at a time, such as when
- *   OpenSER first starts up.  It was decided its better to make an SNMP manager
- *   wait for data, instead of slowing down the rest of OpenSER while the
+ *   OpenSIPS first starts up.  It was decided its better to make an SNMP manager
+ *   wait for data, instead of slowing down the rest of OpenSIPS while the
  *   sub-agent processes the data. 
  *
  * - It is important to send periodic SNMP requests to this table (or the user

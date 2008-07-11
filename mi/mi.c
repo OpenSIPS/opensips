@@ -3,14 +3,14 @@
  *
  * Copyright (C) 2006 Voice Sistem SRL
  *
- * This file is part of openser, a free SIP server.
+ * This file is part of opensips, a free SIP server.
  *
- * openser is free software; you can redistribute it and/or modify
+ * opensips is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
  *
- * openser is distributed in the hope that it will be useful,
+ * opensips is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
@@ -32,12 +32,12 @@
  */
 
 /*!
- * \defgroup mi OpenSER Management Interface
+ * \defgroup mi OpenSIPS Management Interface
  * 
- * The OpenSER management interface (MI) is a plugin architecture with a few different 
+ * The OpenSIPS management interface (MI) is a plugin architecture with a few different 
  * handlers that gives access to the management interface over various transports.
  *
- * The OpenSER core and modules register commands to the interface at runtime.
+ * The OpenSIPS core and modules register commands to the interface at runtime.
  * Look into the various module documentation files for information of these
  * commands.
  *

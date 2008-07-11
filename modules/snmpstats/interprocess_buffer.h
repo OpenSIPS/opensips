@@ -5,14 +5,14 @@
  * Copyright (C) 2006 SOMA Networks, INC.
  * Written by: Jeffrey Magder (jmagder@somanetworks.com)
  *
- * This file is part of openser, a free SIP server.
+ * This file is part of opensips, a free SIP server.
  *
- * openser is free software; you can redistribute it and/or modify it
+ * opensips is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version
  *
- * openser is distributed in the hope that it will be useful, but
+ * opensips is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * General Public License for more details.
@@ -41,7 +41,7 @@
  *
  * This doesn't remove the NetSNMP inefficiency of course, but it does move it
  * to a non-critical path.  Such an approach allows SNMP support with almost no
- * overhead to the rest of OpenSER.
+ * overhead to the rest of OpenSIPS.
  */
 
 #ifndef _SNMPSTATS_USER_UTILITIES_

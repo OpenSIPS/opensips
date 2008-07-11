@@ -5,14 +5,14 @@
  * Copyright (C) 2004,2005 Free Software Foundation, Inc.
  * Copyright (C) 2006 enum.at
  *
- * This file is part of openser, a free SIP server.
+ * This file is part of opensips, a free SIP server.
  *
- * openser is free software; you can redistribute it and/or modify
+ * opensips is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version
  *
- * openser is distributed in the hope that it will be useful,
+ * opensips is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
@@ -648,7 +648,7 @@ init_tls_domains(struct tls_domain *d)
 }
 
 /*
- * called from main.c when openser exits (main process) 
+ * called from main.c when opensips exits (main process) 
  */
 void
 destroy_tls(void)

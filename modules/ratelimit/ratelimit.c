@@ -6,14 +6,14 @@
  * Copyright (C) 2006 Hendrik Scholz <hscholz@raisdorf.net>
  * Copyright (C) 2008 Ovidiu Sas <osas@voipembedded.com>
  *
- * This file is part of openser, a free SIP server.
+ * This file is part of opensips, a free SIP server.
  *
- * openser is free software; you can redistribute it and/or modify
+ * opensips is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version
  *
- * openser is distributed in the hope that it will be useful,
+ * opensips is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
@@ -97,7 +97,7 @@ str_map_t algo_names[] = {
 
 /* at jiri@iptel.org's suggestion:
  *
- * set this to 'cpu' to have openser look at /proc/stat every time_interval
+ * set this to 'cpu' to have opensips look at /proc/stat every time_interval
  * or set it to 'external' and you can push data in from an external source
  * via the fifo interface
  */
@@ -565,7 +565,7 @@ static int mod_init(void)
 	return 0;
 }
 
-/* generic openSER module functions */
+/* generic opensips module functions */
 static int child_init(int rank)
 {
 	LM_DBG("# %d / pid <%d>\n", rank, getpid());

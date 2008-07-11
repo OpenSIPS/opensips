@@ -3,14 +3,14 @@
  *
  * Copyright (C) 2001-2003 FhG Fokus
  *
- * This file is part of openser, a free SIP server.
+ * This file is part of opensips, a free SIP server.
  *
- * openser is free software; you can redistribute it and/or modify
+ * opensips is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version
  *
- * openser is distributed in the hope that it will be useful,
+ * opensips is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
@@ -49,7 +49,7 @@
 #define E_Q_DEC_MISSING     -18		/*!< Decimal part missing */
 #define E_NO_DESTINATION    -19		/*!< Decimal part missing */
 
-/* openser specific error codes */
+/* opensips specific error codes */
 #define E_IP_BLOCKED      -473		/*!< destination filtered */
 #define E_BAD_PROTO       -474		/*!< bad protocol, like */
 #define E_BAD_URI         -475		/*!< unparseable URI */

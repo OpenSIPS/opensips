@@ -6,14 +6,14 @@
 
  * Copyright (C) 2007 Cisco Systems
  *
- * This file is part of openser, a free SIP server.
+ * This file is part of opensips, a free SIP server.
  *
- * openser is free software; you can redistribute it and/or modify
+ * opensips is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version
  *
- * openser is distributed in the hope that it will be useful,
+ * opensips is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
@@ -549,14 +549,14 @@ void bdblib_log(int op, table_p _tp, char* _msg, int len)
  * Instead it is done on first-use (lazy-initialized) to only create handles to 
  * files (db) that we require.
  * 
- * There is one db file per openser table (eg. acc), and they should exist
+ * There is one db file per opensips table (eg. acc), and they should exist
  * in your DB_PATH (refer to openserctlrc) directory.
  *
  * This function does _not_ create the underlying binary db tables.
  * Creating the tables MUST be manually performed before 
- * openser startup by 'openserdbctl create'
+ * opensips startup by 'openserdbctl create'
  *
- * Function returns NULL on error, which will cause openser to exit.
+ * Function returns NULL on error, which will cause opensips to exit.
  *
  */
 table_p bdblib_create_table(database_p _db, str *_s)

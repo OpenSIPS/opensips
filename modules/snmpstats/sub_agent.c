@@ -93,7 +93,7 @@ static int initialize_agentx(void)
 }
 
 /* Creates a child that will become the AgentX sub-agent.  The child will
- * insulate itself from the rest of OpenSER by overriding most of signal
+ * insulate itself from the rest of OpenSIPS by overriding most of signal
  * handlers. */
 void agentx_child(int rank)
 {

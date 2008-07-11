@@ -4,14 +4,14 @@
  * Copyright (C) 2001-2003 FhG Fokus
  * Copyright (C) 2005-2006 Voice Sistem S.R.L
  *
- * This file is part of openser, a free SIP server.
+ * This file is part of opensips, a free SIP server.
  *
- * openser is free software; you can redistribute it and/or modify
+ * opensips is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version
  *
- * openser is distributed in the hope that it will be useful,
+ * opensips is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
@@ -227,7 +227,7 @@ str server_header = {SERVER_HDR,sizeof(SERVER_HDR)-1};
    Default is to use USER_AGENT CRLF (assigned later).
 */
 str user_agent_header = {USER_AGENT,sizeof(USER_AGENT)-1};
-/* should openser try to locate outbound interface on multihomed
+/* should opensips try to locate outbound interface on multihomed
  * host? by default not -- too expensive
  */
 int mhomed=0;
@@ -377,7 +377,7 @@ void cleanup(int show_status)
  * to the shell which launched us => most signals will kill it if 
  * it's not in interactive mode and we don't want this. The non-daemonized 
  * case can occur when an error is encountered before daemonize is called 
- * (e.g. when parsing the config file) or when openser is started in 
+ * (e.g. when parsing the config file) or when opensips is started in 
  * "dont-fork" mode.
  * \param signum signal for killing the children
  */

@@ -5,14 +5,14 @@
  * Copyright (C) 2006 SOMA Networks, INC.
  * Written by: Jeffrey Magder (jmagder@somanetworks.com)
  *
- * This file is part of openser, a free SIP server.
+ * This file is part of opensips, a free SIP server.
  *
- * openser is free software; you can redistribute it and/or modify it
+ * opensips is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version
  *
- * openser is distributed in the hope that it will be useful, but
+ * opensips is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * General Public License for more details.
@@ -263,7 +263,7 @@ void init_openserObjects(void)
  * - All scalars involving alarm status's and thresholds.  
  *
  * By default they are initialized to -1, which disables alarm checks.
- * These are set through the openser.cfg file with the following modparams to
+ * These are set through the opensips.cfg file with the following modparams to
  * the snmpstats module:
  *
  *  - dlg_minor_threshold  

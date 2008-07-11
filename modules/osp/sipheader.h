@@ -1,7 +1,7 @@
 /*
- * openser osp module. 
+ * opensips osp module. 
  *
- * This module enables openser to communicate with an Open Settlement 
+ * This module enables opensips to communicate with an Open Settlement 
  * Protocol (OSP) server.  The Open Settlement Protocol is an ETSI 
  * defined standard for Inter-Domain VoIP pricing, authorization
  * and usage exchange.  The technical specifications for OSP 
@@ -11,14 +11,14 @@
  * 
  * Copyright (C) 2001-2005 Fhg Fokus
  *
- * This file is part of openser, a free SIP server.
+ * This file is part of opensips, a free SIP server.
  *
- * openser is free software; you can redistribute it and/or modify
+ * opensips is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version
  *
- * openser is distributed in the hope that it will be useful,
+ * opensips is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.

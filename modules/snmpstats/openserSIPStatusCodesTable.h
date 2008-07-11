@@ -5,14 +5,14 @@
  * Copyright (C) 2006 SOMA Networks, INC.
  * Written by: Jeffrey Magder (jmagder@somanetworks.com)
  *
- * This file is part of openser, a free SIP server.
+ * This file is part of opensips, a free SIP server.
  *
- * openser is free software; you can redistribute it and/or modify it
+ * opensips is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version
  *
- * openser is distributed in the hope that it will be useful, but
+ * opensips is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * General Public License for more details.
@@ -82,7 +82,7 @@ extern "C" {
  * When the get request is received, the statistics framework will be queried,
  * and these values subtracted from that query.  This effectively gives us how
  * many of the given message codes have occured since the creation of the row,
- * insead of since OpenSER first loaded up.
+ * insead of since OpenSIPS first loaded up.
  */
 typedef struct openserSIPStatusCodesTable_context_s {
 	

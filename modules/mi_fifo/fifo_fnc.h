@@ -3,14 +3,14 @@
  *
  * Copyright (C) 2006 Voice Sistem SRL
  *
- * This file is part of a module for openser, a free SIP server.
+ * This file is part of a module for opensips, a free SIP server.
  *
- * openser is free software; you can redistribute it and/or modify
+ * opensips is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version
  *
- * openser is distributed in the hope that it will be useful,
+ * opensips is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
@@ -34,7 +34,7 @@
 #include <errno.h>
 
 
-/* how patient is openser with FIFO clients not awaiting a reply? 
+/* how patient is opensips with FIFO clients not awaiting a reply? 
    default = 4 x 80ms = 0.32 sec
 */
 #define FIFO_REPLY_RETRIES  4

@@ -4,14 +4,14 @@
  *
  * Copyright (C) 2002-2003 Juha Heinanen
  *
- * This file is part of openser, a free SIP server.
+ * This file is part of opensips, a free SIP server.
  *
- * openser is free software; you can redistribute it and/or modify
+ * opensips is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version
  *
- * openser is distributed in the hope that it will be useful,
+ * opensips is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
@@ -52,7 +52,7 @@ int dp_can_connect(struct sip_msg* _msg, char* _s1, char* _s2);
 /*
  * Apply DP-DDDS policy to current SIP message. This means
  * build a new destination URI from the policy AVP and export it
- * as AVP. Then in openser.cfg this new target AVP can be pushed
+ * as AVP. Then in opensips.cfg this new target AVP can be pushed
  * into the destination URI $duri
  */
 int dp_apply_policy(struct sip_msg* _msg, char* _s1, char* _s2);
