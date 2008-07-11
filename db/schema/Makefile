@@ -2,7 +2,7 @@
 # $Id$
 #
 
-# OpenSER database descriptions for modules
+# OpenSIPS database descriptions for modules
 TABLES = standard acc imc lcr siptrace domainpolicy cpl domain group \
 	dialog permissions registrar usrloc msilo alias_db uri_db speeddial \
 	avpops auth_db pdt dispatcher presence rls extensions carrierroute \
@@ -58,7 +58,7 @@ mysql:
 		--stringparam dir "$(ROOT)/scripts/mysql" \
 		--stringparam prefix "$$FILE-" \
 		--stringparam db "mysql" \
-		$(MYSQL_XSL) openser-"$$FILE".xml ; \
+		$(MYSQL_XSL) opensips-"$$FILE".xml ; \
 	done
 
 mysql_clean:
@@ -71,7 +71,7 @@ postgres:
 		--stringparam dir "$(ROOT)/scripts/postgres" \
 		--stringparam prefix "$$FILE-" \
 		--stringparam db "postgres" \
-		$(POSTGRES_XSL) openser-"$$FILE".xml ; \
+		$(POSTGRES_XSL) opensips-"$$FILE".xml ; \
 	done
 
 postgres_clean:
@@ -84,7 +84,7 @@ oracle:
 		--stringparam dir "$(ROOT)/scripts/oracle" \
 		--stringparam prefix "$$FILE-" \
 		--stringparam db "oracle" \
-		$(ORACLE_XSL) openser-"$$FILE".xml ; \
+		$(ORACLE_XSL) opensips-"$$FILE".xml ; \
 	done
 
 oracle_clean:
@@ -94,17 +94,17 @@ oracle_clean:
 dbtext:
 	for FILE in $(TABLES); do \
 		XML_CATALOG_FILES=$(CATALOG) $(XSLTPROC) $(XSLTPROC_FLAGS) \
-		--stringparam dir "$(ROOT)/scripts/dbtext/openser" \
+		--stringparam dir "$(ROOT)/scripts/dbtext/opensips" \
 		--stringparam prefix "" \
 		--stringparam db "dbtext" \
-		$(DBTEXT_XSL) openser-"$$FILE".xml ; \
+		$(DBTEXT_XSL) opensips-"$$FILE".xml ; \
 	done
-	TMPFILE=`mktemp -t openser-test.XXXXXXXXXX`
+	TMPFILE=`mktemp -t opensips-test.XXXXXXXXXX`
 	# small hack to create the version table entries, this is here easier as with XSL
-	for FILE in  $(wildcard $(ROOT)/scripts/dbtext/openser/*) ; do \
+	for FILE in  $(wildcard $(ROOT)/scripts/dbtext/opensips/*) ; do \
 		if [ -f "$$FILE" ]; then \
-			if [  "$$FILE" != "$(ROOT)/scripts/dbtext/openser/version" ]; then \
-				tail -n 1 "$$FILE" >> "$(ROOT)/scripts/dbtext/openser/version" ; \
+			if [  "$$FILE" != "$(ROOT)/scripts/dbtext/opensips/version" ]; then \
+				tail -n 1 "$$FILE" >> "$(ROOT)/scripts/dbtext/opensips/version" ; \
  				head -n 1 "$$FILE" > $TMPFILE ; \
 				cp $TMPFILE "$$FILE" ; \
 			fi ; \
@@ -113,23 +113,23 @@ dbtext:
 	rm -f $TMPFILE
 
 dbtext_clean:
-	-@rm -f $(ROOT)/scripts/dbtext/openser/*
+	-@rm -f $(ROOT)/scripts/dbtext/opensips/*
 
 .PHONY: db_berkeley db_berkeley_clean
 db_berkeley:
 	for FILE in $(TABLES); do \
 		XML_CATALOG_FILES=$(CATALOG) $(XSLTPROC) $(XSLTPROC_FLAGS) \
-		--stringparam dir "$(ROOT)/scripts/db_berkeley/openser" \
+		--stringparam dir "$(ROOT)/scripts/db_berkeley/opensips" \
 		--stringparam prefix "" \
 		--stringparam db "db_berkeley" \
-		$(DB_BERKELEY_XSL) openser-"$$FILE".xml ; \
+		$(DB_BERKELEY_XSL) opensips-"$$FILE".xml ; \
 	done
-	TMPFILE=`mktemp -t openser-test.XXXXXXXXXX`
+	TMPFILE=`mktemp -t opensips-test.XXXXXXXXXX`
 	# small hack to create the version table entries, this is here easier as with XSL
-	for FILE in  $(wildcard $(ROOT)/scripts/db_berkeley/openser/*) ; do \
+	for FILE in  $(wildcard $(ROOT)/scripts/db_berkeley/opensips/*) ; do \
 		if [ -f "$$FILE" ]; then \
-			if [  "$$FILE" != "$(ROOT)/scripts/db_berkeley/openser/version" ]; then \
-				tail -n 2 "$$FILE" >> "$(ROOT)/scripts/db_berkeley/openser/version" ; \
+			if [  "$$FILE" != "$(ROOT)/scripts/db_berkeley/opensips/version" ]; then \
+				tail -n 2 "$$FILE" >> "$(ROOT)/scripts/db_berkeley/opensips/version" ; \
  				head -n 10 "$$FILE" > $TMPFILE ; \
 				cp $TMPFILE "$$FILE" ; \
 			fi ; \
@@ -138,7 +138,7 @@ db_berkeley:
 	rm -f $TMPFILE
 
 db_berkeley_clean:
-	-@rm -f $(ROOT)/scripts/db_berkeley/openser/*
+	-@rm -f $(ROOT)/scripts/db_berkeley/opensips/*
 
 
 .PHONY: docbook docbook_clean
@@ -147,7 +147,7 @@ docbook:
 		XML_CATALOG_FILES=$(CATALOG) $(XSLTPROC) $(XSLTPROC_FLAGS) \
 		--stringparam dir "$(ROOT)/doc/database" \
 		--stringparam prefix "$$FILE-" \
-		$(DOCBOOK_XSL) openser-"$$FILE".xml ; \
+		$(DOCBOOK_XSL) opensips-"$$FILE".xml ; \
 	done ; \
 
 	# link all documents to one file, to get nicer output
