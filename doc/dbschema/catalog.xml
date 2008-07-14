@@ -7,14 +7,14 @@
     *
     * Copyright (C) 2001-2007 FhG Fokus
     *
-    * This file is part of openser, a free SIP server.
+    * This file is part of opensips, a free SIP server.
     *
-    * openser is free software; you can redistribute it and/or modify
+    * opensips is free software; you can redistribute it and/or modify
     * it under the terms of the GNU General Public License as published by
     * the Free Software Foundation; either version 2 of the License, or
     * (at your option) any later version
     *
-    * openser is distributed in the hope that it will be useful,
+    * opensips is distributed in the hope that it will be useful,
     * but WITHOUT ANY WARRANTY; without even the implied warranty of
     * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     * GNU General Public License for more details.
@@ -35,13 +35,13 @@
 	 source tree
       -->
 
-    <public publicId="-//openser.org//DTD DBSchema V1.1//EN"
+    <public publicId="-//opensips.org//DTD DBSchema V1.1//EN"
             uri="dtd/dbschema.dtd"/>
 
-    <rewriteURI uriStartString="http://openser.org/pub/openser/dbschema/dtd/1.1/"
+    <rewriteURI uriStartString="http://opensips.org/pub/opensips/dbschema/dtd/1.1/"
                 rewritePrefix="dtd/"/> 
 
-    <rewriteURI uriStartString="http://openser.org/dbschema/xsl/current/"
+    <rewriteURI uriStartString="http://opensips.org/dbschema/xsl/current/"
                 rewritePrefix="xsl/"/> 
 
     <!-- Uncomment the following entry if you have docbook DTDs in unusual

@@ -92,7 +92,7 @@
 	<section>
 	<title>Dynamic Rate Limiting Algorithms</title>
 	<para>
-		When running openser on different machines, one has to adjust the drop
+		When running &osips; on different machines, one has to adjust the drop
 		rates for the static algorithms to maintain a sub 100% load average or
 		packets start getting dropped in the network stack.  While this is not
 		in itself difficult, it isn't neither accurate nor trivial: another

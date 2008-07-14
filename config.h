@@ -39,7 +39,7 @@
 #define SIP_PORT  5060		/*!< default sip port if none specified */
 #define SIPS_PORT 5061		/*! default sip port for tls if none specified */
 
-#define CFG_FILE CFG_DIR "openser.cfg"
+#define CFG_FILE CFG_DIR "opensips.cfg"
 
 #define TLS_PKEY_FILE CFG_DIR "tls/cert.pem" 
 #define TLS_CERT_FILE CFG_DIR "tls/cert.pem"
@@ -69,10 +69,10 @@
 #define CONTENT_LENGTH "Content-Length: "
 #define CONTENT_LENGTH_LEN (sizeof(CONTENT_LENGTH)-1)
 
-#define USER_AGENT "User-Agent: OpenSER (" VERSION " (" ARCH "/" OS"))"		/*!< Default User-Agent header */
+#define USER_AGENT "User-Agent: OpenSIPS (" VERSION " (" ARCH "/" OS"))"		/*!< Default User-Agent header */
 #define USER_AGENT_LEN (sizeof(USER_AGENT)-1)
 
-#define SERVER_HDR "Server: OpenSER (" VERSION " (" ARCH "/" OS"))"		/*!< Default Server: header */
+#define SERVER_HDR "Server: OpenSIPS (" VERSION " (" ARCH "/" OS"))"		/*!< Default Server: header */
 #define SERVER_HDR_LEN (sizeof(SERVER_HDR)-1)
 
 #define MAX_WARNING_LEN  256
@@ -153,13 +153,13 @@
 
 #define PATH_MAX_GUESS	1024			/*!< maximum path length */
 
-#define DEFAULT_DB_URL "mysql://openser:openserrw@localhost/openser"
+#define DEFAULT_DB_URL "mysql://opensips:opensipsrw@localhost/opensips"
 #define DEFAULT_DB_URL_LEN (sizeof(DEFAULT_DB_URL) - 1)
 
-#define DEFAULT_RODB_URL "mysql://openserro:openserro@localhost/openser"
+#define DEFAULT_RODB_URL "mysql://opensipsro:opensipsro@localhost/opensips"
 #define DEFAULT_RODB_URL_LEN (sizeof(DEFAULT_RODB_URL) - 1)
 
-#define VERSION_TABLE     "version" 		/*!< Table holding versions of other openser tables */
+#define VERSION_TABLE     "version" 		/*!< Table holding versions of other opensips tables */
 #define VERSION_COLUMN    "table_version"	/*!< Column name for the version value in version table */
 #define TABLENAME_COLUMN  "table_name"		/*!< Column name of the table name column in the version table */
 

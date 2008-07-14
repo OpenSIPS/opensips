@@ -78,14 +78,14 @@
 		<para>
 		<emphasis>
 			Default value is 
-			<quote>mysql://openserro:openserro@localhost/openser</quote>.
+			<quote>&defaultdb;</quote>.
 		</emphasis>
 		</para>
 		<example>
 		<title>Set <varname>db_url</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("group", "db_url", "mysql://username:password@dbhost/openser")
+modparam("group", "db_url", "mysql://username:password@dbhost/opensips")
 ...
 </programlisting>
 		</example>

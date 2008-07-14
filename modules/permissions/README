@@ -18,8 +18,8 @@ Juha Heinanen
 
    Copyright © 2006-2008 Juha Heinanen
    Revision History
-   Revision $Revision$ $Date: 2008-05-07 11:34:34 +0200
-                              (Mi, 07 Mai 2008) $
+   Revision $Revision$ $Date: 2008-07-12 00:16:22 +0300
+                              (Sat, 12 Jul 2008) $
      __________________________________________________________
 
    Table of Contents
@@ -36,7 +36,7 @@ Juha Heinanen
 
         1.2. Dependencies
 
-              1.2.1. OpenSER Modules
+              1.2.1. OpenSIPS Modules
               1.2.2. External Libraries or Applications
 
         1.3. Exported Parameters
@@ -129,7 +129,7 @@ Chapter 1. Admin Guide
    When allow_routing function is called it tries to find a rule
    that matches selected fields of the message.
 
-   OpenSER is a forking proxy and therefore a single message can
+   OpenSIPS is a forking proxy and therefore a single message can
    be sent to different destinations simultaneously. When checking
    permissions all the destinations must be checked and if one of
    them fails, the forwarding will fail.
@@ -212,10 +212,10 @@ Chapter 1. Admin Guide
 
    The module can be used to determine if an address (IP address
    and port) matches any of the IP subnets stored in cached
-   openser database table. Port 0 in cached database table matches
-   any port. IP address and port to be matched can be either taken
-   from the request (allow_source_address) or given as pvar
-   arguments (allow_address).
+   OpenSIPS database table. Port 0 in cached database table
+   matches any port. IP address and port to be matched can be
+   either taken from the request (allow_source_address) or given
+   as pvar arguments (allow_address).
 
    Addresses stored in cached database table can be grouped
    together into one or more groups specified by a group
@@ -250,15 +250,15 @@ Chapter 1. Admin Guide
 
 1.2. Dependencies
 
-1.2.1. OpenSER Modules
+1.2.1. OpenSIPS Modules
 
    The following modules must be loaded before this module:
-     * No dependencies on other OpenSER modules.
+     * No dependencies on other OpenSIPS modules.
 
 1.2.2. External Libraries or Applications
 
    The following libraries or applications must be installed
-   before running OpenSER with this module loaded:
+   before running OpenSIPS with this module loaded:
      * None.
 
 1.3. Exported Parameters
@@ -645,7 +645,7 @@ if (method=="REGISTER") {
        If the parameter doesn't contain full pathname then the
        function expects the file to be located in the same
        directory as the main configuration file of the server.
-     * pvar - Any pseudo-variable defined in OpenSER.
+     * pvar - Any pseudo-variable defined in OpenSIPS.
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
@@ -788,7 +788,7 @@ if (allow_trusted("$si", "$proto")) {
 1.5.6.  allow_uri
 
    Tests if (URI, Contact) pair is allowed according to allow/deny
-   files. The files must already have been loaded by OpenSER.
+   files. The files must already have been loaded by OpenSIPS.
 
    Parameters:
      * basename - Basename from which allow and deny filenames

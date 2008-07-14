@@ -209,7 +209,7 @@ search_append_body("[Oo]pen[Ss]er", " SIP Proxy");
 		<title><function>replace</function> usage</title>
 		<programlisting format="linespecific">
 ...
-replace("openser", "OpenSIPS SIP Proxy");
+replace("opensips", "Open SIP Server");
 ...
 </programlisting>
 		</example>
@@ -242,7 +242,7 @@ replace("openser", "OpenSIPS SIP Proxy");
 		<title><function>replace_body</function> usage</title>
 		<programlisting format="linespecific">
 ...
-replace_body("openser", "OpenSIPS SIP Proxy");
+replace_body("opensips", "Open SIP Server");
 ...
 </programlisting>
 		</example>
@@ -274,7 +274,7 @@ replace_body("openser", "OpenSIPS SIP Proxy");
 		<title><function>replace_all</function> usage</title>
 		<programlisting format="linespecific">
 ...
-replace_all("openser", "OpenSIPS SIP Proxy");
+replace_all("opensips", "Open SIP Server");
 ...
 </programlisting>
 		</example>
@@ -307,7 +307,7 @@ replace_all("openser", "OpenSIPS SIP Proxy");
 		<title><function>replace_body_all</function> usage</title>
 		<programlisting format="linespecific">
 ...
-replace_body_all("openser", "OpenSIPS SIP Proxy");
+replace_body_all("opensips", "Open SIP Server");
 ...
 </programlisting>
 		</example>

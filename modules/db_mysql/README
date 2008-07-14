@@ -12,8 +12,8 @@ Daniel-Constantin Mierla
 
    Copyright © 2006 voice-system.ro
    Revision History
-   Revision $Revision$ $Date: 2008-03-19 21:31:30 +0200
-                              (Wed, 19 Mar 2008) $
+   Revision $Revision$ $Date: 2008-07-12 00:16:22 +0300
+                              (Sat, 12 Jul 2008) $
      __________________________________________________________
 
    Table of Contents
@@ -23,7 +23,7 @@ Daniel-Constantin Mierla
         1.1. Overview
         1.2. Dependencies
 
-              1.2.1. OpenSER Modules
+              1.2.1. OpenSIPS Modules
               1.2.2. External Libraries or Applications
 
         1.3. Exported Parameters
@@ -45,20 +45,20 @@ Chapter 1. Admin Guide
 
 1.1. Overview
 
-   This is a module which provides MySQL connectivity for OpenSER.
-   It implements the DB API defined in OpenSER.
+   This is a module which provides MySQL connectivity for
+   OpenSIPS. It implements the DB API defined in OpenSIPS.
 
 1.2. Dependencies
 
-1.2.1. OpenSER Modules
+1.2.1. OpenSIPS Modules
 
    The following modules must be loaded before this module:
-     * No dependencies on other OpenSER modules.
+     * No dependencies on other OpenSIPS modules.
 
 1.2.2. External Libraries or Applications
 
    The following libraries or applications must be installed
-   before running OpenSER with this module loaded:
+   before running OpenSIPS with this module loaded:
      * libmysqlclient-dev - the development libraries of
        mysql-client.
 
@@ -117,7 +117,7 @@ modparam("auto_reconnect", "auto_reconnect", 0)
    next options.
      * - edit the "Makefile" and remove "db_mysql" from
        "excluded_modules" list. Then follow the standard procedure
-       to install OpenSER: "make all; make install".
+       to install OpenSIPS: "make all; make install".
      * - from command line use: 'make all
        include_modules="db_mysql"; make install
        include_modules="db_mysql"'.

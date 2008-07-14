@@ -43,12 +43,12 @@
 		</para>
 		<para>
 		Default value is 
-			<quote>mysql://openserro:openserro@localhost/openser</quote>
+			<quote>&defaultrodb;</quote>
 		</para>
 		<example>
 		<title>Setting db_url parameter</title>
 		<programlisting format="linespecific">
-modparam("domainpolicy", "db_url", "postgresql://openserro:pass@db_host/openser")
+modparam("domainpolicy", "db_url", "postgresql://user:pass@db_host/opensips")
 </programlisting>
 		</example>
 	</section>

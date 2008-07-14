@@ -317,7 +317,7 @@ sip_trace();
 			table were not created by the installation script or you choose
 			to install everything by yourself you can use the siptrace-create.sql
 			<acronym>SQL</acronym> script in the database directories in the 
-			openser/scripts folder as template. 
+			opensips/scripts folder as template. 
 			You can also find the complete database documentation on the
 			project webpage, &osipsdbdocslink;.
 		</para>

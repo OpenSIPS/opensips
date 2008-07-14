@@ -93,7 +93,7 @@ Chapter 1. Admin Guide
    This is URL of the database to be used.
 
    Default value is
-   "mysql://openserro:openserro@localhost/openser"
+   "mysql://opensipsro:opensipsro@localhost/opensips"
 
    Example 1.1. Setting db_url parameter
 modparam("domain", "db_url", "mysql://ser:pass@db_host/ser")
@@ -235,7 +235,7 @@ if (is_domain_local("$avp(s:some_avp)")) {
 Chapter 2. Developer Guide
 
    The module provides is_domain_local API function for use by
-   other OpenSER modules.
+   other OpenSIPS modules.
 
 2.1. Available Functions
 

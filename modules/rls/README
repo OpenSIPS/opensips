@@ -21,7 +21,7 @@ Anca-Maria Vamanu
         1.1. Overview
         1.2. Dependencies
 
-              1.2.1. OpenSER Modules
+              1.2.1. OpenSIPS Modules
               1.2.2. External Libraries or Applications
 
         1.3. Exported Parameters
@@ -101,7 +101,7 @@ Chapter 1. Admin Guide
 
 1.2. Dependencies
 
-1.2.1. OpenSER Modules
+1.2.1. OpenSIPS Modules
 
    The following modules must be loaded before this module:
      * a database module.
@@ -120,7 +120,7 @@ Chapter 1. Admin Guide
 
    The database url.
 
-   Default value is "mysql://openser:openserrw@localhost/openser".
+   Default value is "mysql://opensips:opensipsrw@localhost/osips".
 
    Example 1.1. Set db_url parameter
 ...
@@ -311,14 +311,14 @@ if(method=="NOTIFY")
 
 1.5. Installation
 
-   The module requires 2 table in OpenSER database: rls_presentity
-   and rls_watchers.The SQL syntax to create them can be found in
-   rls-create.sql script in the database directories in the
-   openser/scripts folder. You can also find the complete database
-   documentation on the project webpage,
-   http://www.openser.org/docs/db-tables/openser-db-devel.html.
+   The module requires 2 table in OpenSIPS database:
+   rls_presentity and rls_watchers.The SQL syntax to create them
+   can be found in rls-create.sql script in the database
+   directories in the opensips/scripts folder. You can also find
+   the complete database documentation on the project webpage,
+   http://www.opensips.org/docs/db-tables/opensips-db-devel.html.
 
 Chapter 2. Developer Guide
 
-   The module provides no functions to be used in other OpenSER
+   The module provides no functions to be used in other OpenSIPS
    modules.

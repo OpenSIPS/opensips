@@ -22,7 +22,7 @@ Andreea-Ancuta Onofrei
         1.3. Usage cases
         1.4. Dependencies
 
-              1.4.1. OpenSER Modules
+              1.4.1. OpenSIPS Modules
               1.4.2. External Libraries or Applications
 
         1.5. Exported Parameters
@@ -116,7 +116,7 @@ Chapter 1. Admin Guide
 
 1.4. Dependencies
 
-1.4.1. OpenSER Modules
+1.4.1. OpenSIPS Modules
 
    The following modules must be loaded before this module:
      * None
@@ -124,7 +124,7 @@ Chapter 1. Admin Guide
 1.4.2. External Libraries or Applications
 
    The following libraries or applications must be installed
-   before running OpenSER with this module loaded:
+   before running OpenSIPS with this module loaded:
      * None.
 
 1.5. Exported Parameters
@@ -133,7 +133,7 @@ Chapter 1. Admin Guide
 
    The translation rules will be loaded using this database url.
 
-   Default value is "mysql://openser:openserrw@localhost/openser".
+   Default value is "mysql://opensips:opensipsrw@localhost/osips".
 
    Example 1.1. Set db_url parameter
 ...
@@ -347,17 +347,17 @@ xlog("translated to var $var(y) \n");
 
 1.8. Installation
 
-   The modules requires one table in OpenSER database:
+   The modules requires one table in OpenSIPS database:
    dialplan.The SQL syntax to create them can be found in
    dialplan-create.sql script in the database directories in the
-   openser/scripts folder. You can also find the complete database
-   documentation on the project webpage,
-   http://www.openser.org/docs/db-tables/openser-db-devel.html.
+   opensips/scripts folder. You can also find the complete
+   database documentation on the project webpage,
+   http://www.opensips.org/docs/db-tables/opensips-db-devel.html.
 
 Chapter 2. Developer's Guide
 
    Revision History
    Revision $Revision: 1.1 $ $Date: 2007/08/30 13:16:22 $
 
-   The module does not provide any API to use in other OpenSER
+   The module does not provide any API to use in other OpenSIPS
    modules.

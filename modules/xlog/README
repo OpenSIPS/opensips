@@ -17,8 +17,8 @@ Elena-Ramona Modroiu
 
    Copyright © 2008 Elena-Ramona Modroiu
    Revision History
-   Revision $Revision$ $Date: 2008-03-19 21:31:30 +0200
-                              (Wed, 19 Mar 2008) $
+   Revision $Revision$ $Date: 2008-07-12 00:16:22 +0300
+                              (Sat, 12 Jul 2008) $
      __________________________________________________________
 
    Table of Contents
@@ -29,7 +29,7 @@ Elena-Ramona Modroiu
         1.2. Implemented Specifiers
         1.3. Dependencies
 
-              1.3.1. OpenSER Modules
+              1.3.1. OpenSIPS Modules
               1.3.2. External Libraries or Applications
 
         1.4. Exported Parameters
@@ -54,18 +54,19 @@ Chapter 1. Admin Guide
 1.1. Overview
 
    This module provides the possibility to print user formatted
-   log or debug messages from OpenSER scripts, similar to printf
-   function but now a specifier is replaced with a part of the SIP
-   request or other variables from system. Section 1.2,
+   log or debug messages from OpenSIPS scripts, similar to printf
+   function. A C-style printf specifier is replaced with a part of
+   the SIP request or other variables from system. Section 1.2,
    "Implemented Specifiers" shows what can be printed out.
 
 1.2. Implemented Specifiers
 
-   The specifiers have been replaced by pseudo-variables which are
-   now part of OpenSER core and are used by other modules as well
-   (e.g., avpops in the function avp_printf())
+   In the xlog function, you use pseudo-variables, that are a part
+   of OpenSIPS core and are used by other modules as well (e.g.,
+   avpops in the function avp_printf())
 
-   The most important changes are:
+   The most important changes from earlier versions of OpenSIPS
+   are:
      * - '%' has been replaced by '$'
      * - to print a header, use now $hdr(header_name[index])
        instead of %{header_name[index]}
@@ -73,20 +74,20 @@ Chapter 1. Admin Guide
        of %{[si]:avp_id[index]} or $avp([$avp_alias[index])
        instead of %{[$avp_alias[index]}
 
-   The full list of available pseudo-variables in OpenSER is
-   availabe at: http://openser.org/dokuwiki/
+   The full list of available pseudo-variables in OpenSIPS is
+   availabe at: http://opensips.org/dokuwiki/
 
 1.3. Dependencies
 
-1.3.1. OpenSER Modules
+1.3.1. OpenSIPS Modules
 
    The following modules must be loaded before this module:
-     * No dependencies on other OpenSER modules.
+     * No dependencies on other OpenSIPS modules.
 
 1.3.2. External Libraries or Applications
 
    The following libraries or applications must be installed
-   before running OpenSER with this module loaded:
+   before running OpenSIPS with this module loaded:
      * None.
 
 1.4. Exported Parameters
@@ -119,7 +120,7 @@ modparam("xlog", "force_color", 0)
 
    Print a formated message using LOG function.
 
-   Meaning of the parameters is as follows:
+   Meaning of the parameters are as follows:
      * level - The level that will be used in LOG function. It can
        be:
           + L_ALERT - log level -3
@@ -131,7 +132,7 @@ modparam("xlog", "force_color", 0)
           + L_DBG - log level 4
           + $pv - any valid pseudo-variable, that has an integer
             value. See above options for valid log levels.
-       If it is not a pseudo-variable, then What really matters is
+       If it is not a pseudo-variable, then what really matters is
        the third letter of the value. If the log level is higher
        than the "debug" global parameter, the message is not
        printed to syslog.

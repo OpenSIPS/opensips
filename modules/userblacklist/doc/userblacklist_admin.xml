@@ -201,7 +201,7 @@ opensipsctl fifo reload_blacklist
 			the table was not created by the installation script or you choose
 			to install everything by yourself you can use the userblacklist-create.sql
 			<acronym>SQL</acronym> script in the database directories in the 
-			openser/scripts folder as template. 
+			opensips/scripts folder as template. 
 			Database and table name can be set with module parameters so they 
 			can be changed, but the name of the columns must be as they are 
 			in the <acronym>SQL</acronym> script.

@@ -110,7 +110,7 @@
 		server and proper dictionary is used (one is available at 
 		etc/sip_dictionary). Also note that Debian radiusclient-ng uses
 		/var/run/radius.seq as seqfile but OpenSIPS Debian init script expects
-		/var/run/opensips/openser_radius.seq, so is needed to change it in
+		/var/run/opensips/opensips_radius.seq, so is needed to change it in
 		radiusclient-ng configuration or in OpenSIPS Debian init script (if not,
 		OpenSIPS can't create the seq file when not running as root). Uses along
 		with FreeRadius (<ulink url='http://www.freeradius.org/'>
@@ -715,7 +715,7 @@ modparam("acc", "db_table_missed_calls", "myMC_table")
 		<example>
 		<title>db_url example</title>
 		<programlisting format="linespecific">
-modparam("acc", "db_url", "mysql://user:password@localhost/openser")
+modparam("acc", "db_url", "mysql://user:password@localhost/opensips")
 </programlisting>
 		</example>
 	</section>

@@ -26,8 +26,8 @@ Bogdan-Andrei Iancu
 
    Copyright © 2004, 2006 voice-system.ro
    Revision History
-   Revision $Revision$ $Date: 2008-03-10 16:13:24 +0100
-                              (Mo, 10 MÃ¤r 2008) $
+   Revision $Revision$ $Date: 2008-07-12 00:16:22 +0300
+                              (Sat, 12 Jul 2008) $
      __________________________________________________________
 
    Table of Contents
@@ -52,7 +52,7 @@ Bogdan-Andrei Iancu
 
         1.4. Dependencies
 
-              1.4.1. OpenSER Modules
+              1.4.1. OpenSIPS Modules
               1.4.2. External Libraries or Applications
 
         1.5. Exported Parameters
@@ -186,7 +186,7 @@ Chapter 1. Admin Guide
      * All flags related to accounting need to be set in request
        processing route - only the "missed-call" flag may be
        toggled from other types of routes.
-     * There is no session/dialog accounting (yet) -- OpenSER
+     * There is no session/dialog accounting (yet) -- OpenSIPS
        maintains no sessions. If one needs to correlate INVITEs
        with BYEs for generating proper CDRs for example for
        purpose of billing, then it is better done in the entity
@@ -210,11 +210,11 @@ Chapter 1. Admin Guide
    particular, accounting secret must match that one configured in
    server and proper dictionary is used (one is available at
    etc/sip_dictionary). Also note that Debian radiusclient-ng uses
-   /var/run/radius.seq as seqfile but OpenSER Debian init script
-   expects /var/run/openser/openser_radius.seq, so is needed to
-   change it in radiusclient-ng configuration or in OpenSER Debian
-   init script (if not, OpenSER can't create the seq file when not
-   running as root). Uses along with FreeRadius (
+   /var/run/radius.seq as seqfile but OpenSIPS Debian init script
+   expects /var/run/opensips/opensips_radius.seq, so is needed to
+   change it in radiusclient-ng configuration or in OpenSIPS
+   Debian init script (if not, OpenSIPS can't create the seq file
+   when not running as root). Uses along with FreeRadius (
    http://www.freeradius.org/) and Radiator (
    http://www.open.com.au/radiator/) servers have been reported to
    us.
@@ -268,9 +268,9 @@ if (uri=~"sip:+40") /* calls to Romania */ {
      * xxx_extra = extra_definition (';'extra_definition)*
      * extra_definition = log_name '=' pseudo_variable
 
-   The full list of supported pseudo-variables in OpenSER is
+   The full list of supported pseudo-variables in OpenSIPS is
    availabe at:
-   http://openser.org/dokuwiki/doku.php/pseudovariables:devel
+   http://opensips.org/dokuwiki/doku.php/pseudovariables:devel
 
    Via log_name you define how/where the data will be logged. Its
    meaning depends of the accounting support which is used:
@@ -358,7 +358,7 @@ Note
 
 1.4. Dependencies
 
-1.4.1. OpenSER Modules
+1.4.1. OpenSIPS Modules
 
    The module depends on the following modules (in the other words
    the listed modules must be loaded before this module):
@@ -370,7 +370,7 @@ Note
 1.4.2. External Libraries or Applications
 
    The following libraries or applications must be installed
-   before running OpenSER with this module loaded:
+   before running OpenSIPS with this module loaded:
      * radiusclient-ng 0.5.0 or higher -- if compiled with RADIUS
        support. See
        http://developer.berlios.de/projects/radiusclient-ng/.
@@ -610,7 +610,7 @@ modparam("acc", "db_table_missed_calls", "myMC_table")
    Default value is "NULL" (SQL disabled).
 
    Example 1.21. db_url example
-modparam("acc", "db_url", "mysql://user:password@localhost/openser")
+modparam("acc", "db_url", "mysql://user:password@localhost/opensips")
 
 1.5.22. acc_method_column (string)
 
@@ -839,9 +839,9 @@ Chapter 2. Frequently Asked Questions
 
    2.4.
 
-       Where can I find more about OpenSER?
+       Where can I find more about OpenSIPS?
 
-       Take a look at http://www.openser.org/.
+       Take a look at http://www.opensips.org/.
 
    2.5.
 
@@ -850,16 +850,16 @@ Chapter 2. Frequently Asked Questions
        First at all check if your question was already answered on one
        of our mailing lists:
          * User Mailing List -
-           http://lists.openser.org/cgi-bin/mailman/listinfo/users
+           http://lists.opensips.org/cgi-bin/mailman/listinfo/users
          * Developer Mailing List -
-           http://lists.openser.org/cgi-bin/mailman/listinfo/devel
+           http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
 
-       E-mails regarding any stable OpenSER release should be sent to
-       <users@lists.openser.org> and e-mails regarding development
-       versions should be sent to <devel@lists.openser.org>.
+       E-mails regarding any stable OpenSIPS release should be sent to
+       <users@lists.opensips.org> and e-mails regarding development
+       versions should be sent to <devel@lists.opensips.org>.
 
        If you want to keep the mail private, send it to
-       <team@lists.openser.org>.
+       <team@lists.opensips.org>.
 
    2.6.
 

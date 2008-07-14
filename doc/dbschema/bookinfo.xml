@@ -1,13 +1,13 @@
 <book>
 <title>OpenSER database tables</title>
 <bookinfo>
-	<productname class="trade">&openser;</productname>
+	<productname class="trade">&osips;</productname>
 	<authorgroup>
 		<author>
-			<firstname>&openser;</firstname>
+			<firstname>&osips;</firstname>
 			<surname>Development Team</surname>
-			<affiliation><orgname>&openserhomelink;</orgname></affiliation>
-			<address>&openserdevmail;</address>
+			<affiliation><orgname>&osipshomelink;</orgname></affiliation>
+			<address>&osipsdevmail;</address>
 		</author>
 		<editor>
 			<firstname>Henning</firstname>

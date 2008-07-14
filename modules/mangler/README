@@ -10,8 +10,8 @@ Gabriel Vasile
 
    Copyright © 2003 Fill in here
    Revision History
-   Revision $Revision$ $Date: 2008-03-19 20:31:30 +0100
-                              (Mi, 19 MÃ¤r 2008) $
+   Revision $Revision$ $Date: 2008-07-12 00:16:22 +0300
+                              (Sat, 12 Jul 2008) $
      __________________________________________________________
 
    Table of Contents
@@ -21,7 +21,7 @@ Gabriel Vasile
         1.1. Overview
         1.2. Dependencies
 
-              1.2.1. OpenSER Modules
+              1.2.1. OpenSIPS Modules
               1.2.2. External Libraries or Applications
 
         1.3. Exported Parameters
@@ -54,15 +54,15 @@ Chapter 1. Admin Guide
 
 1.2. Dependencies
 
-1.2.1. OpenSER Modules
+1.2.1. OpenSIPS Modules
 
    The following modules must be loaded before this module:
-     * No dependencies on other OpenSER modules.
+     * No dependencies on other OpenSIPS modules.
 
 1.2.2. External Libraries or Applications
 
    The following libraries or applications must be installed
-   before running OpenSER with this module loaded:
+   before running OpenSIPS with this module loaded:
      * None.
 
 1.3. Exported Parameters

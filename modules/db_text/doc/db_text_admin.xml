@@ -28,7 +28,7 @@
 		NOTE: even when is in non-caching mode, the module does not write
 		back to hard drive after changes. In this mode, the module checks if
 		the corresponding file on disk has changed, and reloads it. The write
-		on disk happens at openser shut down.
+		on disk happens at OpenSIPS shut down.
 	</para>
 		<section>
 		<title>Design of dbtext engine</title>

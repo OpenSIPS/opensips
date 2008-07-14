@@ -18,7 +18,7 @@
 		 a function exported by pua modules to publish elementary presence
 		 information, such as basic status "open" or "closed", for clients that
 		 do not implement client-to-server presence.
-		 Through pua_bla , BRIDGED LINE APPEARANCE features are added to openser.
+		 Through pua_bla , BRIDGED LINE APPEARANCE features are added to OpenSIPs.
 		 The pua_xmpp module represents a gateway between SIP and XMPP, so that 
 		 jabber and SIP clients can exchange presence information. 
 	</para>
@@ -249,7 +249,7 @@ if(method=="NOTIFY")
 	<para>
 	The module requires 1 table in OpenSIPS database: pua. The SQL 
 	syntax to create it can be found in presence_xml-create.sql     
-	script in the database directories in the openser/scripts folder.
+	script in the database directories in the opensips/scripts folder.
 	You can also find the complete database documentation on the
 	project webpage, &osipsdbdocslink;.
 	</para>

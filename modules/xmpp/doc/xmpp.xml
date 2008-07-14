@@ -5,7 +5,7 @@
 
 <!ENTITY admin SYSTEM "xmpp_admin.xml">
 <!ENTITY faq SYSTEM "../../../doc/module_faq.xml">
-<!ENTITY cfg SYSTEM "openser-xmpp.cfg">
+<!ENTITY cfg SYSTEM "opensips-xmpp.cfg">
 
 <!-- Include general documentation entities -->
 <!ENTITY % docentities SYSTEM "../../../doc/entities.xml">

@@ -101,7 +101,7 @@
 		<para>
 		<emphasis>
 			Default value is 
-				<quote>mysql://openser:openserrw@localhost/openser</quote>.
+				<quote>&defaultdb;</quote>.
 		</emphasis>
 		</para>
 		<example>
@@ -498,7 +498,7 @@ xlog("translated to var $var(y) \n");
 	    <para>
         The modules requires one table in OpenSIPS database: dialplan.The SQL 
         syntax to create them can be found in dialplan-create.sql     
-        script in the database directories in the openser/scripts folder.
+        script in the database directories in the opensips/scripts folder.
         You can also find the complete database documentation on the
         project webpage, &osipsdbdocslink;.
         </para>

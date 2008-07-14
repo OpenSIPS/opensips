@@ -3,7 +3,7 @@
  *
  * Copyright (C) 2006 Voice Sistem SRL
  *
- * This file is part of Open SIP Express Router (openser).
+ * This file is part of Open SIP Server (opensips).
  *
  * opensips is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License

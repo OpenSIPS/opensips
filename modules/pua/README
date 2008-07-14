@@ -10,8 +10,8 @@ Anca-Maria Vamanu
 
    Copyright © 2006 voice-system.ro
    Revision History
-   Revision $Revision$ $Date: 2008-03-19 20:31:30 +0100
-                              (Mi, 19 MÃ¤r 2008) $
+   Revision $Revision$ $Date: 2008-07-12 00:16:22 +0300
+                              (Sat, 12 Jul 2008) $
      __________________________________________________________
 
    Table of Contents
@@ -21,7 +21,7 @@ Anca-Maria Vamanu
         1.1. Overview
         1.2. Dependencies
 
-              1.2.1. OpenSER Modules
+              1.2.1. OpenSIPS Modules
               1.2.2. External Libraries or Applications
 
         1.3. Exported Parameters
@@ -79,7 +79,7 @@ Chapter 1. Admin Guide
    information, such as basic status "open" or "closed", for
    clients that do not implement client-to-server presence.
    Through pua_bla , BRIDGED LINE APPEARANCE features are added to
-   openser. The pua_xmpp module represents a gateway between SIP
+   OpenSIPs. The pua_xmpp module represents a gateway between SIP
    and XMPP, so that jabber and SIP clients can exchange presence
    information.
 
@@ -88,7 +88,7 @@ Chapter 1. Admin Guide
 
 1.2. Dependencies
 
-1.2.1. OpenSER Modules
+1.2.1. OpenSIPS Modules
 
    The following modules must be loaded before this module:
      * a database modules.
@@ -97,7 +97,7 @@ Chapter 1. Admin Guide
 1.2.2. External Libraries or Applications
 
    The following libraries or applications must be installed
-   before running OpenSER with this module loaded:
+   before running OpenSIPS with this module loaded:
      * libxml.
 
 1.3. Exported Parameters
@@ -120,7 +120,7 @@ modparam("pua", "hash_size", 11)
    Database url.
 
    Default value is
-   ">mysql://openser:openserrw@localhost/openser".
+   ">mysql://opensips:opensipsrw@localhost/osips".
 
    Example 1.2. Set db_url parameter
 ...
@@ -212,17 +212,17 @@ if(method=="NOTIFY")
 
 1.5. Installation
 
-   The module requires 1 table in OpenSER database: pua. The SQL
+   The module requires 1 table in OpenSIPS database: pua. The SQL
    syntax to create it can be found in presence_xml-create.sql
-   script in the database directories in the openser/scripts
+   script in the database directories in the opensips/scripts
    folder. You can also find the complete database documentation
    on the project webpage,
-   http://www.openser.org/docs/db-tables/openser-db-devel.html.
+   http://www.opensips.org/docs/db-tables/opensips-db-devel.html.
 
 Chapter 2. Developer Guide
 
    The module provides the following functions that can be used in
-   other OpenSER modules.
+   other OpenSIPS modules.
 
 2.1.  bind_pua(pua_api_t* api)
 

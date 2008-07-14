@@ -151,7 +151,7 @@ modparam("dialog", "enable_stats", 0)
 		IMPORTANT: If dialogs' information should be stored in a database, 
 		a constant hash_size should be used, otherwise the restored process 
 		will not take place. If you really want to modify the hash_size you 
-		must delete all table's rows before restarting openser.
+		must delete all table's rows before restarting &osips;.
 		</para>
 		<para>
 		<emphasis>

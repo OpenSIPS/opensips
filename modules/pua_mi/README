@@ -14,8 +14,8 @@ Juha Heinanen
 
    Copyright © 2006 voice-system.ro
    Revision History
-   Revision $Revision$ $Date: 2008-03-19 21:31:30 +0200
-                              (Wed, 19 Mar 2008) $
+   Revision $Revision$ $Date: 2008-07-12 00:16:22 +0300
+                              (Sat, 12 Jul 2008) $
      __________________________________________________________
 
    Table of Contents
@@ -25,7 +25,7 @@ Juha Heinanen
         1.1. Overview
         1.2. Dependencies
 
-              1.2.1. OpenSER Modules
+              1.2.1. OpenSIPS Modules
               1.2.2. External Libraries or Applications
 
         1.3. Exported Parameters
@@ -57,7 +57,7 @@ Chapter 1. Admin Guide
 
 1.2. Dependencies
 
-1.2.1. OpenSER Modules
+1.2.1. OpenSIPS Modules
 
    The following modules must be loaded before this module:
      * pua
@@ -65,7 +65,7 @@ Chapter 1. Admin Guide
 1.2.2. External Libraries or Applications
 
    The following libraries or applications must be installed
-   before running OpenSER with this module loaded:
+   before running OpenSIPS with this module loaded:
      * none
 
 1.3. Exported Parameters
@@ -82,7 +82,7 @@ Chapter 1. Admin Guide
 1.5.1.  pua_publish
 
    Command parameters:
-     * presentity_uri - e.g. sip:system@openser.org
+     * presentity_uri - e.g. sip:system@opensips.org
      * expires - Relative expires time in seconds (e.g. 3600).
      * event package - Event package that is target of published
        information (e.g. presence).
@@ -100,7 +100,7 @@ Chapter 1. Admin Guide
 ...
 
 :pua_publish:fifo_test_reply
-sip:system@openser.org
+sip:system@opensips.org
 3600
 presence
 application/pidf+xml
@@ -109,17 +109,17 @@ application/pidf+xml
 <?xml version='1.0'?><presence xmlns='urn:ietf:params:xml:ns:pidf' xmlns
 :dm='urn:ietf:params:xml:ns:pidf:data-model' xmlns:rpid='urn:ietf:params
 :xml:ns:pidf:rpid' xmlns:c='urn:ietf:params:xml:ns:pidf:cipid' entity='s
-ystem@openser.org'><tuple id='0x81475a0'><status><basic>open</basic></st
-atus></tuple><dm:person id='pdd748945'><rpid:activities><rpid:away/>away
-</rpid:activities><dm:note>CPU:16 MEM:476</dm:note></dm:person></presenc
-e>
+ystem@opensips.org'><tuple id='0x81475a0'><status><basic>open</basic></s
+tatus></tuple><dm:person id='pdd748945'><rpid:activities><rpid:away/>awa
+y</rpid:activities><dm:note>CPU:16 MEM:476</dm:note></dm:person></presen
+ce>
 
 
 1.6.  pua_subscribe
 
    Command parameters:
-     * presentity_uri - e.g. sip:presentity@openser.org
-     * watcher_uri - e.g. sip:watcher@openser.org
+     * presentity_uri - e.g. sip:presentity@opensips.org
+     * watcher_uri - e.g. sip:watcher@opensips.org
      * event package
      * expires - Relative time in seconds for the desired validity
        of the subscription.

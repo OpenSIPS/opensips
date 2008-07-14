@@ -12,8 +12,8 @@ Daniel-Constantin Mierla
 
    Copyright © 2003 FhG FOKUS
    Revision History
-   Revision $Revision$ $Date: 2008-03-19 21:31:30 +0200
-                              (Wed, 19 Mar 2008) $
+   Revision $Revision$ $Date: 2008-07-12 00:16:22 +0300
+                              (Sat, 12 Jul 2008) $
      __________________________________________________________
 
    Table of Contents
@@ -23,7 +23,7 @@ Daniel-Constantin Mierla
         1.1. Overview
         1.2. Dependencies
 
-              1.2.1. OpenSER modules
+              1.2.1. OpenSIPS modules
               1.2.2. External libraries or applications
 
         1.3. Exported Parameters
@@ -70,7 +70,7 @@ Daniel-Constantin Mierla
 
         1.6. Installation and Running
 
-              1.6.1. OpenSER config file
+              1.6.1. OpenSIPS config file
 
    List of Examples
 
@@ -102,15 +102,15 @@ Daniel-Constantin Mierla
    1.26. Set the "max_messages" parameter
    1.27. m_store usage
    1.28. m_dump usage
-   1.29. OpenSER config script - sample msilo usage
+   1.29. OpenSIPS config script - sample msilo usage
 
 Chapter 1. Admin Guide
 
 1.1. Overview
 
    This modules provides offline message storage for the Open SIP
-   Express Router. It stores received messages for an offline user
-   and sends them when the user becomes online.
+   Server. It stores received messages for an offline user and
+   sends them when the user becomes online.
 
    For each message, the modules stores "Request-URI" ("R-URI")
    only if it is a complete address of record
@@ -124,7 +124,7 @@ Chapter 1. Admin Guide
    database. Expiration time is computed based on incoming time
    and one of the module's parameters.
 
-   Every time when a user registers with OpenSER, the module is
+   Every time when a user registers with OpenSIPS, the module is
    looking in database for offline messages intended for that
    user. All of them will be sent to contact address provided in
    REGISTER request.
@@ -141,7 +141,7 @@ Chapter 1. Admin Guide
 
 1.2. Dependencies
 
-1.2.1. OpenSER modules
+1.2.1. OpenSIPS modules
 
    The following modules must be loaded before this module:
      * database module - mysql, dbtext or other module that
@@ -152,7 +152,7 @@ Chapter 1. Admin Guide
 1.2.2. External libraries or applications
 
    The following libraries or applications must be installed
-   before running OpenSER with this module:
+   before running OpenSIPS with this module:
      * none.
 
 1.3. Exported Parameters
@@ -161,7 +161,7 @@ Chapter 1. Admin Guide
 
    Database URL.
 
-   Default value is "mysql://openser:openserrw@localhost/openser".
+   Default value is "mysql://opensips:opensipsrw@localhost/osips".
 
    Example 1.1. Set the "db_url" parameter
 ...
@@ -251,16 +251,16 @@ modparam("msilo", "reminder", "sip:registrar@example.org")
 1.3.8. outbound_proxy (string)
 
    The SIP address used as next hop when sending the message. Very
-   useful when using OpenSER with a domain name not in DNS, or
-   when using a separate OpenSER instance for msilo processing. If
-   not set, the message will be sent to the address in destination
-   URI.
+   useful when using OpenSIPS with a domain name not in DNS, or
+   when using a separate OpenSIPS instance for msilo processing.
+   If not set, the message will be sent to the address in
+   destination URI.
 
    Default value is "NULL".
 
    Example 1.8. Set the "outbound_proxy" parameter
 ...
-modparam("msilo", "outbound_proxy", "sip:openser.org;transport=tcp")
+modparam("msilo", "outbound_proxy", "sip:opensips.org;transport=tcp")
 ...
 
 1.3.9. expire_time (int)
@@ -553,11 +553,11 @@ m_dump("$fu");
 
 1.6. Installation and Running
 
-1.6.1. OpenSER config file
+1.6.1. OpenSIPS config file
 
    Next picture displays a sample usage of msilo.
 
-   Example 1.29. OpenSER config script - sample msilo usage
+   Example 1.29. OpenSIPS config script - sample msilo usage
 ...
 # $Id$
 #

@@ -14,8 +14,8 @@ Henning Westerholt
 
    Copyright © 2007 1&1 Internet AG
    Revision History
-   Revision $Revision: 3912 $ $Date: 2008-03-10 16:13:24 +0100
-                              (Mo, 10 MÃ¤r 2008) $
+   Revision $Revision: 4473 $ $Date: 2008-07-12 00:16:22 +0300
+                              (Sat, 12 Jul 2008) $
      __________________________________________________________
 
    Table of Contents
@@ -25,7 +25,7 @@ Henning Westerholt
         1.1. Overview
         1.2. Dependencies
 
-              1.2.1. OpenSER Modules
+              1.2.1. OpenSIPS Modules
               1.2.2. External Libraries or Applications
 
         1.3. Exported Parameters
@@ -162,7 +162,7 @@ Chapter 1. Admin Guide
 
    The module provides routing, balancing and blacklisting
    capabilities. It reads routing entries from a database source
-   or from a config file at OpenSER startup. It can uses one
+   or from a config file at OpenSIPS startup. It can uses one
    routing tree (for one carrier), or if needed for every user a
    different routing tree (unique for each carrier) for number
    prefix based routing. It supports several route tree domains,
@@ -210,7 +210,7 @@ Chapter 1. Admin Guide
 
 1.2. Dependencies
 
-1.2.1. OpenSER Modules
+1.2.1. OpenSIPS Modules
 
    The following module must be loaded before this module:
      * a database module, when a database is used as configuration
@@ -224,7 +224,7 @@ Chapter 1. Admin Guide
 1.2.2. External Libraries or Applications
 
    The following libraries or applications must be installed
-   before running OpenSER with this module loaded:
+   before running OpenSIPS with this module loaded:
      * libconfuse, a configuration file parser library.
 
 1.3. Exported Parameters
@@ -234,7 +234,7 @@ Chapter 1. Admin Guide
    Url to the database containing the routing data.
 
    Default value is
-   "mysql://openserro:openserro@localhost/openser".
+   "mysql://opensipsro:opensipsro@localhost/osips".
 
    Example 1.1. Set db_url parameter
 ...
@@ -513,12 +513,12 @@ modparam("carrierroute", "config_source", "file")
 
    Specifies the path to the config file.
 
-   Default value is "/etc/openser/carrierroute.conf".
+   Default value is "/etc/opensips/carrierroute.conf".
 
    Example 1.23. Set config_file parameter
 ...
-modparam("carrierroute", "config_file", "/etc/openser/carrierroute.conf"
-)
+modparam("carrierroute", "config_file", "/etc/opensips/carrierroute.conf
+")
 ...
 
 1.3.24. default_tree (string)
@@ -872,7 +872,7 @@ reply_code, dstavp)
 
    Example 1.38. cr_replace_host usage
 ...
-openserctl fifo cr_replace_host "-d proxy -p 49 -h proxy1 -t proxy2"
+opensipsctl fifo cr_replace_host "-d proxy -p 49 -h proxy1 -t proxy2"
 ...
 
 1.5.4. cr_deactivate_host
@@ -894,7 +894,7 @@ openserctl fifo cr_replace_host "-d proxy -p 49 -h proxy1 -t proxy2"
 
    Example 1.39. cr_deactivate_host usage
 ...
-openserctl fifo cr_deactivate_host "-d proxy -p 49 -h proxy1"
+opensipsctl fifo cr_deactivate_host "-d proxy -p 49 -h proxy1"
 ...
 
 1.5.5. cr_activate_host
@@ -910,7 +910,7 @@ openserctl fifo cr_deactivate_host "-d proxy -p 49 -h proxy1"
 
    Example 1.40. cr_activate_host usage
 ...
-openserctl fifo cr_activate_host "-d proxy -p 49 -h proxy1"
+opensipsctl fifo cr_activate_host "-d proxy -p 49 -h proxy1"
 ...
 
 1.5.6. cr_add_host
@@ -930,7 +930,7 @@ openserctl fifo cr_activate_host "-d proxy -p 49 -h proxy1"
 
    Example 1.41. cr_add_host usage
 ...
-openserctl fifo cr_add_host "-d proxy -p 49 -h proxy1 -w 0.25"
+opensipsctl fifo cr_add_host "-d proxy -p 49 -h proxy1 -w 0.25"
 ...
 
 1.5.7. cr_delete_host
@@ -951,7 +951,7 @@ openserctl fifo cr_add_host "-d proxy -p 49 -h proxy1 -w 0.25"
 
    Example 1.42. cr_delete_host usage
 ...
-openserctl fifo cr_delete_host "-d proxy -p 49 -h proxy1 -w 0.25"
+opensipsctl fifo cr_delete_host "-d proxy -p 49 -h proxy1 -w 0.25"
 ...
 
 1.6. Examples
@@ -1092,17 +1092,17 @@ domain register {
 
 1.7.1. Database setup
 
-   Before running OpenSER with carrierroute, you have to setup the
-   database table where the module will store the routing data.
-   For that, if the table was not created by the installation
-   script or you choose to install everything by yourself you can
-   use the carrierroute-create.sql SQL script in the database
-   directories in the openser/scripts folder as template. Database
-   and table name can be set with module parameters so they can be
-   changed, but the name of the columns must be as they are in the
-   SQL script. You can also find the complete database
-   documentation on the project webpage,
-   http://www.openser.org/docs/db-tables/openser-db-devel.html.
+   Before running OpenSIPS with carrierroute, you have to setup
+   the database table where the module will store the routing
+   data. For that, if the table was not created by the
+   installation script or you choose to install everything by
+   yourself you can use the carrierroute-create.sql SQL script in
+   the database directories in the opensips/scripts folder as
+   template. Database and table name can be set with module
+   parameters so they can be changed, but the name of the columns
+   must be as they are in the SQL script. You can also find the
+   complete database documentation on the project webpage,
+   http://www.opensips.org/docs/db-tables/opensips-db-devel.html.
    The flags and mask columns have the same function as in the
    carrierfailureroute table. A zero value in the flags and mask
    column means that any message flags will match this rule.

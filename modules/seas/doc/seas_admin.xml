@@ -691,7 +691,7 @@ loadmodule "/usr/local/lib/opensips/modules/textops.so"
 loadmodule "/usr/local/lib/opensips/modules/seas.so"
 loadmodule "/usr/local/lib/opensips/modules/mi_fifo.so"
 
-modparam("mi_fifo", "fifo_name", "/tmp/openser_fifo")
+modparam("mi_fifo", "fifo_name", "/tmp/opensips_fifo")
 modparam("usrloc", "db_mode",   0)
 modparam("rr", "enable_full_lr", 1)
 modparam("seas", "listen_sockets", "127.0.0.1:5080");
@@ -759,7 +759,7 @@ loadmodule "modules/tm/tm.so"
 loadmodule "modules/seas/seas.so"
 loadmodule "modules/mi_fifo/mi_fifo.so"
 
-modparam("mi_fifo", "fifo_name", "/tmp/openser_fifo")
+modparam("mi_fifo", "fifo_name", "/tmp/opensips_fifo")
 modparam("seas", "listen_sockets","127.0.0.1:5080")
 
 route{

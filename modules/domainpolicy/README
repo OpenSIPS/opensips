@@ -108,11 +108,11 @@ Chapter 1. Admin Guide
    This is URL of the database to be used.
 
    Default value is
-   "mysql://openserro:openserro@localhost/openser"
+   "mysql://opensipsro:opensipsro@localhost/osips"
 
    Example 1.1. Setting db_url parameter
-modparam("domainpolicy", "db_url", "postgresql://openserro:pass@db_host/
-openser")
+modparam("domainpolicy", "db_url", "postgresql://user:pass@db_host/opens
+ips")
 
 1.3.2. dp_table (string)
 

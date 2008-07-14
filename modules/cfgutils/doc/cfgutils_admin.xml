@@ -608,7 +608,7 @@ if ($time(year) == 2008) {
 			<title><varname>$shv(name)</varname></title>
 			<para>
 				It is a class of pseudo-variables stored in shared memory. The
-				value of $shv(name) is visible across all openser processes.
+				value of $shv(name) is visible across all opensips processes.
 				Each <quote>shv</quote> has single value and it is initialized
 				to integer 0. You can use <quote>shvset</quote> parameter to
 				initialize the shared variable. The module exports a set of MI

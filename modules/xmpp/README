@@ -12,8 +12,8 @@ Andreea Spirea
 
    Copyright © 2006 voice-system.ro
    Revision History
-   Revision $Revision$ $Date: 2008-03-19 20:31:30 +0100
-                              (Mi, 19 MÃ¤r 2008) $
+   Revision $Revision$ $Date: 2008-07-12 00:16:22 +0300
+                              (Sat, 12 Jul 2008) $
      __________________________________________________________
 
    Table of Contents
@@ -23,7 +23,7 @@ Andreea Spirea
         1.1. Overview
         1.2. Dependencies
 
-              1.2.1. OpenSER Modules
+              1.2.1. OpenSIPS Modules
               1.2.2. External Libraries or Applications
 
         1.3. Exported Parameters
@@ -84,12 +84,12 @@ Chapter 1. Admin Guide
        gateway_domain) and xmpp_host, which are explained in the
        Exported Parameters section;
      * listen = your ip;
-     * alias=openser domain and alias=gateway domain;
+     * alias=opensips domain and alias=gateway domain;
      * in the following section of the configuration file, change
        to your gateway domain:
 
          ### ---8<--- cut here ---8<--- ###
-        if (avp_check("$rd", "eq/s:sip-xmpp.openser.org")) {
+        if (avp_check("$rd", "eq/s:sip-xmpp.opensips.org")) {
                 if (!t_newtran()) {
                         sl_reply_error();
         ...........
@@ -98,10 +98,10 @@ Chapter 1. Admin Guide
        be the same as the xmpp_password parameter.
 
    A use case, for the component-mode, would look like this:
-     * Openser is running on sip-server.openser.org;
-     * the gateway is running on sip-xmpp.openser.org;
-     * the jabber server is running on xmpp.openser.org;
-     * the component is running on xmpp-sip.openser.org.
+     * Openser is running on sip-server.opensips.org;
+     * the gateway is running on sip-xmpp.opensips.org;
+     * the jabber server is running on xmpp.opensips.org;
+     * the component is running on xmpp-sip.opensips.org.
 
    In the server mode, the xmpp module is a minimal jabber server,
    thus you do not need to install another jabber server, the
@@ -113,9 +113,9 @@ Chapter 1. Admin Guide
    section, from component to server.
 
    A use case, for the server-mode, would look like this:
-     * Openser is running on sip-server.openser.org;
-     * the gateway is running on sip-xmpp.openser.org;
-     * the "XMPP server" is running on xmpp-sip.openser.org.
+     * Openser is running on sip-server.opensips.org;
+     * the gateway is running on sip-xmpp.opensips.org;
+     * the "XMPP server" is running on xmpp-sip.opensips.org.
 
    In both cases, the destination address must have the same
    pattern:
@@ -125,11 +125,11 @@ Chapter 1. Admin Guide
    From a jabber client's point of view, the destination will look
    like:
 
-   "sip_username<delim>openser_domain@xmpp_domain"
+   "sip_username<delim>opensips_domain@xmpp_domain"
 
 1.2. Dependencies
 
-1.2.1. OpenSER Modules
+1.2.1. OpenSIPS Modules
 
    The following modules must be loaded before this module:
      * requires 'tm' module.
@@ -137,7 +137,7 @@ Chapter 1. Admin Guide
 1.2.2. External Libraries or Applications
 
    The following libraries or applications must be installed
-   before running OpenSER with this module loaded:
+   before running OpenSIPS with this module loaded:
      * libexpat1-devel - used for parsing/building XML.
 
 1.3. Exported Parameters
@@ -161,7 +161,7 @@ Chapter 1. Admin Guide
    client looks like this:
    "sip:username<domain_separator>jabber_server@gateway_domain".
    The address of a SIP client has the following pattern :
-   "sip_username<domain_separator>openser_domain@xmpp_domain";
+   "sip_username<domain_separator>opensips_domain@xmpp_domain";
 
    Default value is "*".
 
@@ -181,7 +181,7 @@ Chapter 1. Admin Guide
 
    Example 1.3. Set gateway_domain parameter
 ...
- modparam("xmpp", "gateway_domain", "sip-xmpp.openser.org")
+ modparam("xmpp", "gateway_domain", "sip-xmpp.opensips.org")
 ...
 
 1.3.4. xmpp_domain (string)
@@ -193,7 +193,7 @@ Chapter 1. Admin Guide
 
    Example 1.4. Set xmpp_domain parameter
 ...
- modparam("xmpp", "xmpp_domain", "xmpp-sip.openser.org")
+ modparam("xmpp", "xmpp_domain", "xmpp-sip.opensips.org")
 ...
 
 1.3.5. xmpp_host (string)
@@ -206,7 +206,7 @@ Chapter 1. Admin Guide
 
    Example 1.5. Set xmpp_host parameter
 ...
- modparam("xmpp", "xmpp_host", "xmpp.openser.org")
+ modparam("xmpp", "xmpp_host", "xmpp.opensips.org")
 ...
 
 1.3.6. xmpp_port (integer)
@@ -244,8 +244,8 @@ Chapter 1. Admin Guide
 1.3.8. outbound_proxy (string)
 
    The SIP address used as next hop when sending the message. Very
-   useful when using OpenSER with a domain name not in DNS, or
-   when using a separate OpenSER instance for xmpp processing. If
+   useful when using OpenSIPS with a domain name not in DNS, or
+   when using a separate OpenSIPS instance for xmpp processing. If
    not set, the message will be sent to the address in destination
    URI.
 
@@ -253,7 +253,7 @@ Chapter 1. Admin Guide
 
    Example 1.8. Set outbound_proxy parameter
 ...
- modparam("xmpp", "outbound_proxy", "sip:openser.org;transport=tcp")
+ modparam("xmpp", "outbound_proxy", "sip:opensips.org;transport=tcp")
 ...
 
 1.4. Exported Functions
@@ -272,7 +272,7 @@ xmpp_send_message();
 
    Next is presented a sample configuration file one can use to
    implement a standalone SIP-to-XMPP gateway. You can run an
-   instance of OpenSER on a separate machine or on different port
+   instance of OpenSIPS on a separate machine or on different port
    with the following config, and have the main SIP server
    configured to forward all SIP requests for XMPP world to it.
 ....
@@ -302,11 +302,11 @@ rev_dns=no      # (cmd. line: -R)
 children=4
 
 listen=udp:10.10.10.10:5076
-alias=sip-xmpp.openser.org
+alias=sip-xmpp.opensips.org
 
 # ------------------ module loading ----------------------------------
 
-mpath="/usr/local/openser-1.1.0-xmpp/lib/openser/modules/"
+mpath="/usr/local/opensips-1.1.0-xmpp/lib/opensips/modules/"
 loadmodule "sl.so"
 loadmodule "tm.so"
 loadmodule "rr.so"
@@ -319,9 +319,9 @@ loadmodule "mi_fifo.so"
 loadmodule "xmpp.so"
 
 modparam("xmpp", "domain_separator", "*")
-modparam("xmpp", "gateway_domain", "sip-xmpp.openser.org")
-modparam("xmpp", "xmpp_domain", "xmpp-sip.openser.org")
-modparam("xmpp", "xmpp_host", "xmpp.openser.org")
+modparam("xmpp", "gateway_domain", "sip-xmpp.opensips.org")
+modparam("xmpp", "xmpp_domain", "xmpp-sip.opensips.org")
+modparam("xmpp", "xmpp_host", "xmpp.opensips.org")
 
 modparam("xmpp", "backend", "server")
 # modparam("xmpp", "backend", "component")
@@ -330,7 +330,7 @@ modparam("xmpp", "backend", "server")
 
 # -- mi_fifo params --
 
-modparam("mi_fifo", "fifo_name", "/tmp/openser_fifo_xmpp")
+modparam("mi_fifo", "fifo_name", "/tmp/opensips_fifo_xmpp")
 
 # -- usrloc params --
 
