@@ -145,8 +145,8 @@
 #include "mi/mi_core.h"
 
 static char id[]="@(#) $Id$";
-static char* version=OPENSER_FULL_VERSION;
-static char* flags=OPENSER_COMPILE_FLAGS;
+static char* version=OPENSIPS_FULL_VERSION;
+static char* flags=OPENSIPS_COMPILE_FLAGS;
 char compiled[]= __TIME__ " " __DATE__ ;
 
 /**
@@ -1262,7 +1262,7 @@ try_again:
 		}
 	}
 
-	/* print OpenSER version to log for history tracking */
+	/* print OpenSIPS version to log for history tracking */
 	LM_NOTICE("version: %s\n", version);
 	
 	/* print some data about the configuration */

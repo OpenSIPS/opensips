@@ -2,20 +2,20 @@
 -------------------------------------------------------------------------
 IMPORTANT NOTES
 
-1) The GPL applies to this copy of OpenSER (Open SER) software.
+1) The GPL applies to this copy of OpenSIPS (Open SIP Server) software.
 
-2) openser software allows programmers to plug-in external modules to the
+2) opensips software allows programmers to plug-in external modules to the
    core part. Note that GPL mandates all plug-ins developed for the
-   openser software released under GPL license to be GPL-ed as well.
+   opensips software released under GPL license to be GPL-ed as well.
 
    (see http://www.gnu.org/copyleft/gpl-faq.html#GPLAndPlugins
     for a detailed explanation)
 
-3) OpenSER software is derived from SER (SIP Express Router) project
+3) OpenSIPS software is derived from SER (SIP Express Router) project
    developed by FhG FOKUS.
 
 4) Note that the GPL bellow is copyrighted by the Free Software Foundation,
-   but the openser software is mainly copyrighted by FhG FOKUS (each source
+   but the opensips software is mainly copyrighted by FhG FOKUS (each source
    file has posted the copyright holder).
 
 -------------------------------------------------------------------------
@@ -25,10 +25,10 @@ GNU Licence FAQ
 This FAQ provides answers to most frequently asked questions. To fully
 understand implications of the GNU license, read it.
 
-- you can run OpenSER for any purpose
+- you can run OpenSIPS for any purpose
 - you can redistribute it as long as you include source code and
   license conditions with the distribution
-- you cannot release programs derived from OpenSER without releasing
+- you cannot release programs derived from OpenSIPS without releasing
   their source code
 
 

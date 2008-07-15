@@ -6,7 +6,7 @@
   %entities;
 ]>
 
-<!-- Version table for OpenSER, and inclusion point for custom extensions -->
+<!-- Version table for OpenSIPS, and inclusion point for custom extensions -->
 
 <database xmlns:xi="http://www.w3.org/2001/XInclude">
     <name>Version</name>

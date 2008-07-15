@@ -52,8 +52,6 @@
  *
  * \todo incomplete
  *
- * \section DeveloperGuide OpenSIPS Developer Guide
- * Please check the OpenSIPS developer guide at http://www.opensips.org/docs/openser-devel-guide/
  */
 
 

@@ -1,5 +1,5 @@
 <book>
-<title>OpenSER database tables</title>
+<title>OpenSIPS database tables</title>
 <bookinfo>
 	<productname class="trade">&osips;</productname>
 	<authorgroup>
@@ -24,7 +24,7 @@
 	</authorgroup>
 	<copyright>
 		<year>2007</year>
-		<holder>OpenSER development Team</holder>
+		<holder>OpenSIPS development Team</holder>
 	</copyright>
 	<revhistory>
 		<revision>

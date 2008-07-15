@@ -35,7 +35,7 @@
 
 
 /*!
- * \page OpenSERLocks OpenSIPS locking library
+ * \page OpenSIPS locking library
  * Implements simple locks and lock sets.
  *
  * simple locks:

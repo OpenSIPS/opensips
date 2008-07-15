@@ -30,7 +30,7 @@
          "http://www.oasis-open.org/committees/entity/release/1.0/catalog.dtd">
 <catalog xmlns="urn:oasis:names:tc:entity:xmlns:xml:catalog" prefer="public">
 
-    <!-- DTDs and XSL stylesheets for DBSchema are bundled with OpenSER
+    <!-- DTDs and XSL stylesheets for DBSchema are bundled with OpenSIPS
          so we will just redirect xsltproc to their location in the
 	 source tree
       -->

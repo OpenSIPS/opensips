@@ -6,7 +6,7 @@
   %entities;
 ]>
 
-<!-- Inclusion point for custom extensions for OpenSER -->
+<!-- Inclusion point for custom extensions for OpenSIPS -->
 
 <database xmlns:xi="http://www.w3.org/2001/XInclude">
     <name>Extensions</name>

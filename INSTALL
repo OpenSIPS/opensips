@@ -3,30 +3,30 @@ $Id$
 
      ===========================================
 
-            OpenSER Installation Notes
+            OpenSIPS Installation Notes
 
-             http://www.openser.org/
+             http://www.opensips.org/
 
      ===========================================
 
-  This memo gives you hints how to set up OpenSER quickly. To 
-  understand how OpenSER works and how to configure it properly,
-  read admin's guide available from OpenSER website. We also
-  urge you to read latest ISSUES (available from OpenSER website 
+  This memo gives you hints how to set up OpenSIPS quickly. To 
+  understand how OpenSIPS works and how to configure it properly,
+  read admin's guide available from OpenSIPS website. We also
+  urge you to read latest ISSUES (available from OpenSIPS website 
   too) and check for potential problems in this release.
   Users of previous releases are encouraged to read NEWS to
-  learn how to move to this new OpenSER version.
+  learn how to move to this new OpenSIPS version.
   
 
 TOC
 
 1. Supported Architectures and Requirements
-2. Howto Build openser From Source Distribution
+2. Howto Build opensips From Source Distribution
 3. Quick-Start Installation Guide
    A) Getting Help
    B) Disclaimers
    C) Quick Start
-   D) openser with Persistent Data Storage
+   D) opensips with Persistent Data Storage
 4. Troubleshooting
 
 
@@ -75,7 +75,7 @@ Requirements:
 - libperl - libs and devel headers - if you want PERL connector to support
    perl scripting from you config file (perl module)
 - libsnmp9 - libs and devel headers - if you want SNMP client functionality 
-   (SNMP AgentX subagent) for openser
+   (SNMP AgentX subagent) for opensips
 - libldap libs and devel headers v2.1 or greater - if you want LDAP support
 - libconfuse and devel headers - if you want to compile the carrierroute
   module
@@ -87,7 +87,7 @@ OS Notes:
   need also gtar and ginstall.
 
 
-2. Howto Build openser From Source Distribution
+2. Howto Build opensips From Source Distribution
 -------------------------------------------
 
 (NOTE: if make doesn't work try gmake  instead)
@@ -95,7 +95,7 @@ OS Notes:
 - compile with default options (TLS support is enabled by "TLS=1"; SCTP
 support is enabled by "SCTP=1"):
 
-make   #builds only openser core, equivalent to make openser
+make   #builds only opensips core, equivalent to make opensips
 make modules
 
 or make all #builds everything
@@ -189,21 +189,21 @@ make prefix=/usr/local  install
 
 Note: If you use prefix parameter in make install then you also need
 to use this parameter in previous make commands, i.e. make, make modules,
-or make all. If you fail to do this then OpenSER will look for the default
+or make all. If you fail to do this then OpenSIPS will look for the default
 configuration file in a wrong directory, because the directory of the
-default configuration file is hard coded into openser during compile time. 
+default configuration file is hard coded into opensips during compile time. 
 When you use a different prefix parameter when installing then the 
-directory hard coded in openser and the directory in which the file will be 
+directory hard coded in opensips and the directory in which the file will be 
 installed by make install will not match. (You can specify exact location
-of the configuration file using -f parameter of openser).
+of the configuration file using -f parameter of opensips).
 
 For example, if you do the following:
 make all
 make prefix=/ install
 
 Then the installation will put the default configuration file into
-/etc/openser/openser.cfg (because prefix is /), but openser will look for the
-file in /usr/local/etc/openser/openser.cfg (because there was no prefix
+/etc/opensips/opensips.cfg (because prefix is /), but opensips will look for the
+file in /usr/local/etc/opensips/opensips.cfg (because there was no prefix
 parameter in make all and /usr/local is the default value of prefix).
 
 Workaround is trivial, use the same parameters in all make commands:
@@ -219,17 +219,17 @@ That applies to other make parameters as well (for example parameters
 
 A) Getting Help
 
-This guide gives you instructions on how to quickly set up OpenSER 
+This guide gives you instructions on how to quickly set up OpenSIPS 
 on your box. In case the default configuration does not fly, check 
-documentation at openser site
-  http://www.openser.org/
-to learn how to configure OpenSER for your site.
+documentation at opensips site
+  http://www.opensips.org/
+to learn how to configure OpenSIPS for your site.
 
 If the documentation does not resolve your problem you may try contacting 
-our user forum by E-mail at users@openser.org -- that is the mailing list 
-of openser community. To participate in the mailing list, subscribe at the 
+our user forum by E-mail at users@opensips.org -- that is the mailing list 
+of opensips community. To participate in the mailing list, subscribe at the 
 following web address:
-  http://www.openser.org/cgi-bin/mailman/listinfo/users
+  http://www.opensips.org/cgi-bin/mailman/listinfo/users
 
 
 B) Disclaimers
@@ -244,18 +244,18 @@ dependencies on MySQL which is needed for storing user credentials.)
 C) Quick Start
 
 The following step-by step guide gives you instructions how to install the 
-sql-free distribution of openser. If you need persistence and authentication, 
+sql-free distribution of opensips. If you need persistence and authentication, 
 then you have to install additional MySql support -- proceed to section D)
 after you are finished with C).
 
 1) Download an RPM or debian package from our site
-     http://openser.org/pub/openser/latest/packages/
+     http://opensips.org/pub/opensips/latest/packages/
 If you don't use an rpm or debian based distribution, see if corresponding 
 packages are available or try our tar.gz'ed binaries.
 If you use Gentoo Linux you do not have to download a package.
 For debian, packages are available via the Debian official repositories for
 testing and unstable. For stable, use the project's repository at:
-     deb http://www.openser.org/debian stable main
+     deb http://www.opensips.org/debian stable main
 
 2) install the package
 RPM:
@@ -265,17 +265,17 @@ debian:
     or if APT repository is used:
     apt-get install <package_name> 
 gentoo:
-    emerge openser
-    (or if use only stable packets: ACCEPT_KEYWORDS="~x86" emerge openser)
+    emerge opensips
+    (or if use only stable packets: ACCEPT_KEYWORDS="~x86" emerge opensips)
 tar.gz:
     cd /; tar zxvf <package_name>_os_arch.tar.gz
     (it will install in /usr/local/, and the configuration file in
-     /usr/local/etc/openser/openser.cfg)
+     /usr/local/etc/opensips/opensips.cfg)
 Solaris:
     gunzip <package_name>.gz ; pkgadd -d <package_name>
 *BSD:
     pkg_add package_name
-    Note that the OpenSER package is in the FreeBSD package tree included, 
+    Note that the OpenSIPS package is in the FreeBSD package tree included, 
     but is not present in the OpenBSD and NetBSD repository. You'll probably
     have more luck trying to build directly from the source with the tar.gz,
     as the package files for this systems are somewhat out of date at the
@@ -283,33 +283,33 @@ Solaris:
 
 3) start the server
 RPM + gentoo:
-    /etc/init.d/openser start
+    /etc/init.d/opensips start
 debian:
-    openser is started automatically after the install
-    (in case something fails you can start it with /etc/init.d/openser start)
+    opensips is started automatically after the install
+    (in case something fails you can start it with /etc/init.d/opensips start)
 tar.gz:
     the tar.gz does not include an init.d script, you'll have to create one of
     your own or adapt one from the source distribution (debian/init.d,
-    rpm/openser.init.*, gentoo/openser.init)
-    You can start openser directly with /usr/local/sbin/openser.
+    rpm/opensips.init.*, gentoo/opensips.init)
+    You can start opensips directly with /usr/local/sbin/opensips.
 Solaris:
     see tar.gz.
 
-4) optionally, watch server's health using the openserctl utility
+4) optionally, watch server's health using the opensipsctl utility
     - to do so, first set the environment variable SIP_DOMAIN to your domain 
       name, e.g., in Bourne shell, call
         export SIP_DOMAIN="myserver.foobar.com"
     - if you are using other than 'localhost' mysql server for maintaining
       subscriber database, change the variable 'SQL_HOST' to the proper
-      host name in the openserctl script
-    - run the openserctl utility
-        /usr/sbin/openserctl moni
+      host name in the opensipsctl script
+    - run the opensipsctl utility
+        /usr/sbin/opensipsctl moni
       or
-        /usr/local/sbin/openserserctl moni (if you installed from a tar.gz
+        /usr/local/sbin/opensipsserctl moni (if you installed from a tar.gz
         or solaris package)
-    - you can create a resource file for openserctl, name it .openserctlrc
+    - you can create a resource file for opensipsctl, name it .opensipsctlrc
       and place it in your home directory. You can set there the values for
-      openserctl variables (e.g., SIP_DOMAIN, SQL_HOST, SQL_USER, SQL_DB ...)
+      opensipsctl variables (e.g., SIP_DOMAIN, SQL_HOST, SQL_USER, SQL_DB ...)
 
 5) Register with the server using your favourite SIP User Agent.
    For example, users of Windows Messenger need to set
@@ -321,16 +321,16 @@ Solaris:
 
 
 
-D) openser with Persistent Data Storage
+D) opensips with Persistent Data Storage
 
 The default configuration is very simple and features many simplifications. 
 In particular, it does not authenticate users and loses User Location database 
 on reboot. To provide persistence, keep user credentials and remember users' 
-locations across reboots, openser can be configured to use MySQL. Before you
+locations across reboots, opensips can be configured to use MySQL. Before you
 proceed, you need to make sure MySQL is installed on your box.
 
-1) Download the package containing mysql support for openser from: 
-    http://www.openser.org/pub/openser/
+1) Download the package containing mysql support for opensips from: 
+    http://www.opensips.org/pub/opensips/
     (rpm and deb provided, most of the binary tar.gz distributions and the 
      solaris package include it; if it is not present you'll have to rebuild
      from the source).
@@ -344,27 +344,27 @@ proceed, you need to make sure MySQL is installed on your box.
       or if APT repository is used
       apt-get install <package_name> 
     Gentoo Linux:
-      emerge openser
+      emerge opensips
       (if do not want to put 'mysql' into your USE variable you can type:
-      USE="mysql" emerge openser)
+      USE="mysql" emerge opensips)
 3) create SQL tables
-    You must specify your database type in the /etc/openserctlrc file, e.g.
+    You must specify your database type in the /etc/opensipsctlrc file, e.g.
     MySQL. See section 7 for an explanation of further possible parameters.
-    - if you have a previously installed OpenSER on your system, use
-         /usr/sbin/openserdbctl migrate
-      to convert your OpenSER database into new structures
+    - if you have a previously installed OpenSIPS on your system, use
+         /usr/sbin/opensipsdbctl migrate
+      to convert your OpenSIPS database into new structures
       NOTE: "migrate" is available only for mysql DBs
     - otherwise, if this is your very first installation, use
-         /usr/sbin/openserdbctl create
-      to create OpenSER database structures
+         /usr/sbin/opensipsdbctl create
+      to create OpenSIPS database structures
       (you will be prompted for password of MySQL "root" user)
 
-4) configure openser to use SQL
-    uncomment all lines in configuration file openser.cfg which are related to 
+4) configure opensips to use SQL
+    uncomment all lines in configuration file opensips.cfg which are related to 
     authentication:
-    - loadmodule "/usr/lib/openser/modules/db_mysql.so"
-    - loadmodule "/usr/lib/openser/modules/auth.so"
-    - loadmodule "/usr/lib/openser/modules/auth_db.so"
+    - loadmodule "/usr/lib/opensips/modules/db_mysql.so"
+    - loadmodule "/usr/lib/opensips/modules/auth.so"
+    - loadmodule "/usr/lib/opensips/modules/auth_db.so"
     - modparam("usrloc", "db_mode", 2)
     - modparam("auth", "calculate_ha1", yes)
     - modparam("auth_db", "password_column", "password")
@@ -381,16 +381,16 @@ proceed, you need to make sure MySQL is installed on your box.
         break;
       }
 6) restart the server
-    /etc/init.d/openser restart
-7) you can now start  managing the server using the openserctl utility; 
+    /etc/init.d/opensips restart
+7) you can now start  managing the server using the opensipsctl utility; 
    you need to first set the environment variable SIP_DOMAIN to your 
    local SIP realm, e.g.,
        export SIP_DOMAIN="myserver.foobar.com"
-   or you can configure via the resource file for openserctlrc. The default
+   or you can configure via the resource file for opensipsctlrc. The default
    file is installed in the etc/ directory of your installation (along with the
-   OpenSER config file). For per user configuration, create .openserctlrc
+   OpenSIPS config file). For per user configuration, create .opensipsctlrc
    in your home directory.
-   You can set there the values for openserctl variables like:
+   You can set there the values for opensipsctl variables like:
         SIP_DOMAIN - your SIP domain
         DBENGINE - database type: MYSQL, PGSQL or DBTEXT by default none is loaded
         DBHOST - database host
@@ -407,23 +407,23 @@ proceed, you need to make sure MySQL is installed on your box.
         OSER_FIFO - path to FIFO file
         VERBOSE - verbose - debug purposes - default '0'
 
-   a) watch the server status using 'openserctl moni'
+   a) watch the server status using 'opensipsctl moni'
    b) try to login with your SIP client as user 'admin' with 
-      password 'openserrw'
+      password 'opensipsrw'
    c) try adding new users using 
-       'openserctl add <name> <password> <email>'
+       'opensipsctl add <name> <password> <email>'
 
 8) default values (database url, users and passwords) are:
-   - DEFAULT_DB_URL="mysql://openser:openserrw@localhost/openser"
-   - r/w user: openser ; passwd: openserrw
-   - r/o user: openserro ; passwd: openserro
+   - DEFAULT_DB_URL="mysql://opensips:opensipsrw@localhost/opensips"
+   - r/w user: opensips ; passwd: opensipsrw
+   - r/o user: opensipsro ; passwd: opensipsro
      VERY IMPORTANT NOTE: for security reasons, do change the values of 
      passwords after installation
 
 4. Troubleshooting
 ------------------
 
-Q: SIP requests are replied by openser with "483 Too Many Hops" or 
+Q: SIP requests are replied by opensips with "483 Too Many Hops" or 
    "513 Message Too Large"
 
 A: In both cases, the reason is probably an error in request routing script 
@@ -436,6 +436,6 @@ A: In both cases, the reason is probably an error in request routing script
    max_forwards header field reaches zero or the request grows too big.
    Solutions is easy: make sure that domain matching 
    is correctly configured. A quick way to achieve that is to introduce a config
-   option to openser.cfg: alias=domainname, where domainname shall be replaced
+   option to opensips.cfg: alias=domainname, where domainname shall be replaced
    with name of domain, which you wish to server and which appears in
    request-URIs.
