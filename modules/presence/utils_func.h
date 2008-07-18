@@ -49,23 +49,24 @@ static inline int uandd_to_uri(str user,  str domain, str *out)
 
 	size = user.len + domain.len+7;
 
-	out->s = (char*)pkg_malloc(size*sizeof(char));
+	out->s = (char*)pkg_malloc(size);
 	if(out->s == NULL)
 	{
 		LM_ERR("no more memory\n");
 		return -1;
 	}
-	out->len = 0;
 	strcpy(out->s,"sip:");
 	out->len = 4;
-	strncpy(out->s+out->len, user.s, user.len);
-	out->len += user.len;
-	out->s[out->len] = '@';
-	out->len+= 1;
-	strncpy(out->s + out->len, domain.s, domain.len);
-	out->len += domain.len;
+	if( user.len != 0)
+	{
+		memcpy(out->s+out->len, user.s, user.len);
+		out->len += user.len;
+		out->s[out->len++] = '@';
+	}
 
-	out->s[out->len] = 0;
+	memcpy(out->s + out->len, domain.s, domain.len);
+	out->len += domain.len;
+	out->s[out->len] = '\0';
 	
 	return 0;
 }
@@ -84,7 +85,7 @@ static inline str* get_local_contact(struct sip_msg* msg)
 		LM_ERR("No more memory\n");
 		return NULL;
 	}
-	contact->s= (char*)pkg_malloc(LCONTACT_BUF_SIZE* sizeof(char));
+	contact->s= (char*)pkg_malloc(LCONTACT_BUF_SIZE);
 	if(contact->s== NULL)
 	{
 		LM_ERR("No more memory\n");
@@ -92,7 +93,7 @@ static inline str* get_local_contact(struct sip_msg* msg)
 		return NULL;
 	}
 
-	memset(contact->s, 0, LCONTACT_BUF_SIZE*sizeof(char));
+	memset(contact->s, 0, LCONTACT_BUF_SIZE);
 	contact->len= 0;
 	
 	if(msg->rcv.proto== PROTO_NONE || msg->rcv.proto==PROTO_UDP)
