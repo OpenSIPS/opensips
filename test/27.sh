@@ -3,14 +3,14 @@
 
 # Copyright (C) 2008 Voice System
 #
-# This file is part of openser, a free SIP server.
+# This file is part of opensips, a free SIP server.
 #
-# openser is free software; you can redistribute it and/or modify
+# opensips is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or
 # (at your option) any later version
 #
-# openser is distributed in the hope that it will be useful,
+# opensips is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
@@ -21,13 +21,13 @@
 
 source include/require
 
-if ! (check_sipp && check_openser && check_module "db_mysql" && check_module "presence" && check_module "presence_xml"); then
+if ! (check_sipp && check_opensips && check_module "db_mysql" && check_module "presence" && check_module "presence_xml"); then
 	exit 0
 fi ;
 
 CFG=presence.cfg
 
-../openser -w . -f $CFG &> /dev/null;
+../opensips -w . -f $CFG &> /dev/null;
 ret=$?
 sleep 1
 
@@ -44,7 +44,7 @@ fi;
 
 
 #cleanup:
-killall -9 openser &> /dev/null;
+killall -9 opensips &> /dev/null;
 killall -9 sipp &> /dev/null;
 
 exit $ret;

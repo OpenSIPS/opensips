@@ -1,16 +1,16 @@
 #!/bin/bash
-# test basic db related openserctl functionality for dbtext
+# test basic db related opensipsctl functionality for dbtext
 
 # Copyright (C) 2007 1&1 Internet AG
 #
-# This file is part of openser, a free SIP server.
+# This file is part of opensips, a free SIP server.
 #
-# openser is free software; you can redistribute it and/or modify
+# opensips is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or
 # (at your option) any later version
 #
-# openser is distributed in the hope that it will be useful,
+# opensips is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
@@ -22,28 +22,28 @@
 cd ../scripts
 
 # setup config file
-cp openserctlrc openserctlrc.bak
-cp openserctl openserctl.bak
-sed -i "s/# DBENGINE=MYSQL/DBENGINE=DBTEXT/g" openserctlrc
-sed -i "s/TEST=\"false\"/TEST=\"true\"/g" openserctl
+cp opensipsctlrc opensipsctlrc.bak
+cp opensipsctl opensipsctl.bak
+sed -i "s/# DBENGINE=MYSQL/DBENGINE=DBTEXT/g" opensipsctlrc
+sed -i "s/TEST=\"false\"/TEST=\"true\"/g" opensipsctl
 
-./openserctl avp list > /dev/null
+./opensipsctl avp list > /dev/null
 
 ret=$?
 
 if [ "$ret" -eq 0 ] ; then
-	./openserctl domain showdb > /dev/null
+	./opensipsctl domain showdb > /dev/null
 	ret=$?
 fi ;
 
 if [ "$ret" -eq 0 ] ; then
-	./openserctl lcr show > /dev/null
+	./opensipsctl lcr show > /dev/null
 	ret=$?
 fi ;
 
 # cleanup
-mv openserctlrc.bak openserctlrc
-mv openserctl.bak openserctl
+mv opensipsctlrc.bak opensipsctlrc
+mv opensipsctl.bak opensipsctl
 
 cd ../test
 exit $ret

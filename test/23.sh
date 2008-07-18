@@ -3,14 +3,14 @@
 
 # Copyright (C) 2007 1&1 Internet AG
 #
-# This file is part of openser, a free SIP server.
+# This file is part of opensips, a free SIP server.
 #
-# openser is free software; you can redistribute it and/or modify
+# opensips is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or
 # (at your option) any later version
 #
-# openser is distributed in the hope that it will be useful,
+# opensips is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
@@ -21,7 +21,7 @@
 
 source include/require
 
-if ! (check_openser && check_module "carrierroute" && check_module "db_postgres"); then
+if ! (check_opensips && check_module "carrierroute" && check_module "db_postgres"); then
 	exit 0
 fi ;
 
@@ -32,10 +32,10 @@ cp $CFG $CFG.bak
 # setup config
 echo "loadmodule \"db_postgres/db_postgres.so\"" >> $CFG
 echo "modparam(\"carrierroute\", \"config_source\", \"db\")" >> $CFG
-echo "modparam(\"carrierroute\", \"db_url\", \"postgres://openserro:openserro@localhost/openser\")" >> $CFG
+echo "modparam(\"carrierroute\", \"db_url\", \"postgres://opensipsro:opensipsro@localhost/opensips\")" >> $CFG
 
 # setup database
-PGPASSWORD='openserrw' psql -A -t -n -q -h localhost -U openser openser -c "insert into route_tree (id, carrier) values ('1', 'carrier1');
+PGPASSWORD='opensipsrw' psql -A -t -n -q -h localhost -U opensips opensips -c "insert into route_tree (id, carrier) values ('1', 'carrier1');
 insert into route_tree (id, carrier) values ('2', 'default');
 insert into route_tree (id, carrier) values ('3', 'premium');
 insert into carrierroute (id, carrier, scan_prefix, domain, prob, strip, rewrite_host) values ('1','1','49','0','0.5','0','host1.local.domain');
@@ -48,17 +48,17 @@ insert into carrierroute (id, carrier, scan_prefix, domain, prob, strip, rewrite
 insert into carrierroute (id, carrier, scan_prefix, domain, prob, strip, rewrite_host) values ('20','2','','0','1','0','host6');
 insert into carrierroute (id, carrier, scan_prefix, domain, prob, strip, rewrite_host) values ('21','3','','0','1','0','premium.host.local');"
 
-../openser -w . -f $CFG > /dev/null
+../opensips -w . -f $CFG > /dev/null
 ret=$?
 
 sleep 1
 
 cd ../scripts
 
-TMPFILE=`mktemp -t openser-test.XXXXXXXXXX`
+TMPFILE=`mktemp -t opensips-test.XXXXXXXXXX`
 
 if [ "$ret" -eq 0 ] ; then
-	./openserctl fifo cr_dump_routes > $TMPFILE
+	./opensipsctl fifo cr_dump_routes > $TMPFILE
 	ret=$?
 fi ;
 
@@ -86,10 +86,10 @@ Printing tree for domain 0
 	fi ;
 fi ;
 
-killall -9 openser
+killall -9 opensips
 
 # cleanup database
-PGPASSWORD='openserrw' psql -A -t -n -q -h localhost -U openser openser -c "delete from route_tree where id = 1;
+PGPASSWORD='opensipsrw' psql -A -t -n -q -h localhost -U opensips opensips -c "delete from route_tree where id = 1;
 delete from route_tree where id = 2;
 delete from route_tree where id = 3;
 delete from carrierroute where carrier=1;

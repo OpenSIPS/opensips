@@ -3,14 +3,14 @@
 
 # Copyright (C) 2007 1&1 Internet AG
 #
-# This file is part of openser, a free SIP server.
+# This file is part of opensips, a free SIP server.
 #
-# openser is free software; you can redistribute it and/or modify
+# opensips is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or
 # (at your option) any later version
 #
-# openser is distributed in the hope that it will be useful,
+# opensips is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
@@ -22,13 +22,13 @@
 source include/require
 
 CFG=12.cfg
-TMPFILE=`mktemp -t openser-test.XXXXXXXXXX`
+TMPFILE=`mktemp -t opensips-test.XXXXXXXXXX`
 
-if ! (check_netcat && check_openser); then
+if ! (check_netcat && check_opensips); then
 	exit 0
 fi ;
 
-../openser -w . -f $CFG &> $TMPFILE
+../opensips -w . -f $CFG &> $TMPFILE
 ret=$?
 
 sleep 1
@@ -39,7 +39,7 @@ cat register.sip | nc -q 1 -u localhost 5060 > /dev/null
 cd ../scripts
 
 if [ "$ret" -eq 0 ] ; then
-	./openserctl ul show | grep "AOR:: 1000" > /dev/null
+	./opensipsctl ul show | grep "AOR:: 1000" > /dev/null
 	ret=$?
 fi ;
 
@@ -47,7 +47,7 @@ fi ;
 cat ../test/unregister.sip | nc -q 1 -u localhost 5060 > /dev/null
 
 if [ "$ret" -eq 0 ] ; then
-	./openserctl ul show | grep "AOR:: 1000" > /dev/null
+	./opensipsctl ul show | grep "AOR:: 1000" > /dev/null
 	ret=$?
 	if [ "$ret" -eq 0 ] ; then
 		ret=1
@@ -83,7 +83,7 @@ fi ;
 
 cd ../test
 
-killall -9 openser
+killall -9 opensips
 rm $TMPFILE
 
 exit $ret

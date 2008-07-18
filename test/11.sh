@@ -3,14 +3,14 @@
 
 # Copyright (C) 2007 1&1 Internet AG
 #
-# This file is part of openser, a free SIP server.
+# This file is part of opensips, a free SIP server.
 #
-# openser is free software; you can redistribute it and/or modify
+# opensips is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or
 # (at your option) any later version
 #
-# openser is distributed in the hope that it will be useful,
+# opensips is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
@@ -23,7 +23,7 @@ source include/require
 
 CFG=11.cfg
 
-if ! (check_netcat && check_openser && check_module "db_mysql"); then
+if ! (check_netcat && check_opensips && check_module "db_mysql"); then
 	exit 0
 fi ;
 
@@ -31,7 +31,7 @@ cp $CFG $CFG.bak
 
 echo "loadmodule \"db_mysql/db_mysql.so\"" >> $CFG
 
-../openser -w . -f $CFG > /dev/null
+../opensips -w . -f $CFG > /dev/null
 ret=$?
 
 sleep 1
@@ -42,11 +42,11 @@ cat register.sip | nc -q 1 -u localhost 5060 > /dev/null
 cd ../scripts
 
 if [ "$ret" -eq 0 ] ; then
-	./openserctl ul show | grep "AOR:: 1000" > /dev/null
+	./opensipsctl ul show | grep "AOR:: 1000" > /dev/null
 	ret=$?
 fi ;
 
-TMP=`mysql -B -u openserro --password=openserro openser -e "select COUNT(*) from location where username="1000";" | tail -n 1`
+TMP=`mysql -B -u opensipsro --password=opensipsro opensips -e "select COUNT(*) from location where username="1000";" | tail -n 1`
 if [ "$TMP" -eq 0 ] ; then
 	ret=1
 fi ;
@@ -55,7 +55,7 @@ fi ;
 cat ../test/unregister.sip | nc -q 1 -u localhost 5060 > /dev/null
 
 if [ "$ret" -eq 0 ] ; then
-	./openserctl ul show | grep "AOR:: 1000" > /dev/null
+	./opensipsctl ul show | grep "AOR:: 1000" > /dev/null
 	ret=$?
 	if [ "$ret" -eq 0 ] ; then
 		ret=1
@@ -64,11 +64,11 @@ if [ "$ret" -eq 0 ] ; then
 	fi ;
 fi ;
 
-ret=`mysql -B -u openserro --password=openserro openser -e "select COUNT(*) from location where username="1000";" | tail -n 1`
+ret=`mysql -B -u opensipsro --password=opensipsro opensips -e "select COUNT(*) from location where username="1000";" | tail -n 1`
 
 cd ../test
 
-killall -9 openser
+killall -9 opensips
 
 mv $CFG.bak $CFG
 

@@ -3,14 +3,14 @@
 
 # Copyright (C) 2007 1&1 Internet AG
 #
-# This file is part of openser, a free SIP server.
+# This file is part of opensips, a free SIP server.
 #
-# openser is free software; you can redistribute it and/or modify
+# opensips is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or
 # (at your option) any later version
 #
-# openser is distributed in the hope that it will be useful,
+# opensips is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
@@ -23,7 +23,7 @@ source include/require
 
 CFG=13.cfg
 
-if ! (check_openser && check_module "carrierroute" ); then
+if ! (check_opensips && check_module "carrierroute" ); then
 	exit 0
 fi ;
 
@@ -34,7 +34,7 @@ echo "loadmodule \"db_mysql/db_mysql.so\"" >> $CFG
 echo "modparam(\"carrierroute\", \"config_source\", \"db\")" >> $CFG
 
 # setup database
-MYSQL="mysql openser -u openser --password=openserrw -e"
+MYSQL="mysql opensips -u opensips --password=opensipsrw -e"
 
 $MYSQL "insert into route_tree (id, carrier) values ('1', 'carrier1');"
 $MYSQL "insert into route_tree (id, carrier) values ('2', 'default');"
@@ -61,7 +61,7 @@ mask, next_domain) values ('3', '2', '1', '49', 'host1.local', '503', '', '', '2
 $MYSQL "insert into carrierfailureroute(id, carrier, domain, scan_prefix, host_name, reply_code, flags,
 mask, next_domain) values ('4', '2', '2', '49', 'host1.local', '5..', '', '', '3');"
 
-../openser -w . -f $CFG > /dev/null
+../opensips -w . -f $CFG > /dev/null
 
 ret=$?
 
@@ -69,10 +69,10 @@ sleep 1
 
 cd ../scripts
 
-TMPFILE=`mktemp -t openser-test.XXXXXXXXXX`
+TMPFILE=`mktemp -t opensips-test.XXXXXXXXXX`
 
 if [ "$ret" -eq 0 ] ; then
-	./openserctl fifo cr_dump_routes > $TMPFILE
+	./opensipsctl fifo cr_dump_routes > $TMPFILE
 	ret=$?
 fi ;
 
@@ -104,7 +104,7 @@ Printing tree for domain 0
 	fi ;
 fi ;
 
-killall -9 openser
+killall -9 opensips
 
 # cleanup database
 $MYSQL "delete from route_tree where id = 1;"

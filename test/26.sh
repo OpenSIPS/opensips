@@ -3,14 +3,14 @@
 
 # Copyright (C) 2007 1&1 Internet AG
 #
-# This file is part of openser, a free SIP server.
+# This file is part of opensips, a free SIP server.
 #
-# openser is free software; you can redistribute it and/or modify
+# opensips is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or
 # (at your option) any later version
 #
-# openser is distributed in the hope that it will be useful,
+# opensips is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
@@ -21,7 +21,7 @@
 
 source include/require
 
-if ! (check_openser && check_module "carrierroute" ); then
+if ! (check_opensips && check_module "carrierroute" ); then
 	exit 0
 fi ;
 
@@ -34,7 +34,7 @@ echo "loadmodule \"db_mysql/db_mysql.so\"" >> $CFG
 echo "modparam(\"carrierroute\", \"config_source\", \"db\")" >> $CFG
 
 # setup database
-MYSQL="mysql openser -u openser --password=openserrw -e"
+MYSQL="mysql opensips -u opensips --password=opensipsrw -e"
 
 $MYSQL "insert into route_tree (id, carrier) values ('1', 'default');"
 $MYSQL "insert into route_tree (id, carrier) values ('2', 'carrier1');"
@@ -70,7 +70,7 @@ $MYSQL "insert into subscriber (username, cr_preferred_carrier) values ('4972112
 $MYSQL "insert into subscriber (username, cr_preferred_carrier) values ('49721123456785', 3);"
 
 
-../openser -w . -f $CFG > /dev/null
+../opensips -w . -f $CFG > /dev/null
 
 ret=$?
 
@@ -109,7 +109,7 @@ $MYSQL "insert into carrierfailureroute(id, carrier, domain, scan_prefix, host_n
 flags, mask, next_domain) values ('5', '3', 'fallback', '49', '127.0.0.1:10000', '486', '', '', '2');"
 
 if [ ! "$ret" -eq 0 ] ; then
-	../scripts/openserctl fifo cr_reload_routes
+	../scripts/opensipsctl fifo cr_reload_routes
 	killall sipp &> /dev/null
 	sipp -sf failure_route.xml -bg -i localhost -m 10 -p 10000 &> /dev/null
 	sipp -sn uac -s 49721123456785 127.0.0.1:5060 -i 127.0.0.1 -m 10 -p 5061 &> /dev/null
@@ -117,7 +117,7 @@ if [ ! "$ret" -eq 0 ] ; then
 fi;
 
 
-killall -9 openser
+killall -9 opensips
 killall -9 sipp
 
 # cleanup database

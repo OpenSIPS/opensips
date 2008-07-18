@@ -3,14 +3,14 @@
 
 # Copyright (C) 2007 1&1 Internet AG
 #
-# This file is part of openser, a free SIP server.
+# This file is part of opensips, a free SIP server.
 #
-# openser is free software; you can redistribute it and/or modify
+# opensips is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or
 # (at your option) any later version
 #
-# openser is distributed in the hope that it will be useful,
+# opensips is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
@@ -21,19 +21,19 @@
 
 source include/require
 
-if ! (check_sipp && check_openser); then
+if ! (check_sipp && check_opensips); then
 	exit 0
 fi ;
 
 
 CFG=21.cfg
 
-MYSQL="mysql openser -u openser --password=openserrw -e"
+MYSQL="mysql opensips -u opensips --password=opensipsrw -e"
 
 # add an registrar entry to the db;
 $MYSQL "INSERT INTO subscriber (username, domain, password, email_address) VALUES (\"alice\",\"localhost\",\"alice\",\"alice@localhost\");"
 
-../openser -w . -f $CFG &> /dev/null;
+../opensips -w . -f $CFG &> /dev/null;
 ret=$?
 sleep 1
 
@@ -48,7 +48,7 @@ if [ "$ret" -eq 0 ] ; then
 fi;
 
 #cleanup
-killall -9 openser &> /dev/null;
+killall -9 opensips &> /dev/null;
 killall -9 sipp &> /dev/null;
 $MYSQL "DELETE FROM subscriber WHERE((username = \"alice\") and (domain = \"localhost\"));"
 

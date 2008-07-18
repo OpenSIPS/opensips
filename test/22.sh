@@ -3,14 +3,14 @@
 
 # Copyright (C) 2007 1&1 Internet AG
 #
-# This file is part of openser, a free SIP server.
+# This file is part of opensips, a free SIP server.
 #
-# openser is free software; you can redistribute it and/or modify
+# opensips is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or
 # (at your option) any later version
 #
-# openser is distributed in the hope that it will be useful,
+# opensips is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
@@ -21,7 +21,7 @@
 
 source include/require
 
-if ! (check_netcat && check_openser && check_module "db_postgres"); then
+if ! (check_netcat && check_opensips && check_module "db_postgres"); then
 	exit 0
 fi ;
 
@@ -29,9 +29,9 @@ CFG=11.cfg
 
 cp $CFG $CFG.tmp
 echo "loadmodule \"db_postgres/db_postgres.so\"" >> $CFG
-echo "modparam(\"usrloc\", \"db_url\", \"postgres://openser:openserrw@localhost/openser\")" >> $CFG
+echo "modparam(\"usrloc\", \"db_url\", \"postgres://opensips:opensipsrw@localhost/opensips\")" >> $CFG
 
-../openser -w . -f $CFG > /dev/null
+../opensips -w . -f $CFG > /dev/null
 ret=$?
 
 sleep 1
@@ -41,11 +41,11 @@ cat register.sip | nc -q 1 -u localhost 5060 > /dev/null
 cd ../scripts
 
 if [ "$ret" -eq 0 ] ; then
-	./openserctl ul show | grep "AOR:: 1000" > /dev/null
+	./opensipsctl ul show | grep "AOR:: 1000" > /dev/null
 	ret=$?
 fi ;
 
-TMP=`PGPASSWORD='openserro' psql -A -t -n -q -h localhost -U openserro openser -c "select COUNT(*) from location where username='1000';" | tail -n 1`
+TMP=`PGPASSWORD='opensipsro' psql -A -t -n -q -h localhost -U opensipsro opensips -c "select COUNT(*) from location where username='1000';" | tail -n 1`
 if [ "$TMP" -eq 0 ] ; then
 	ret=1
 fi ;
@@ -54,7 +54,7 @@ fi ;
 cat ../test/unregister.sip | nc -q 1 -u localhost 5060 > /dev/null
 
 if [ "$ret" -eq 0 ] ; then
-	./openserctl ul show | grep "AOR:: 1000" > /dev/null
+	./opensipsctl ul show | grep "AOR:: 1000" > /dev/null
 	ret=$?
 	if [ "$ret" -eq 0 ] ; then
 		ret=1
@@ -63,9 +63,9 @@ if [ "$ret" -eq 0 ] ; then
 	fi ;
 fi ;
 
-ret=`PGPASSWORD='openserro' psql -A -t -n -q -h localhost -U openserro openser -c "select COUNT(*) from location where username='1000';" | tail -n 1`
+ret=`PGPASSWORD='opensipsro' psql -A -t -n -q -h localhost -U opensipsro opensips -c "select COUNT(*) from location where username='1000';" | tail -n 1`
 
-killall -9 openser
+killall -9 opensips
 
 cd ../test
 mv $CFG.tmp $CFG
