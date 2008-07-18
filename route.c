@@ -81,9 +81,7 @@ struct action* rlist[RT_NO];
 struct action* onreply_rlist[ONREPLY_RT_NO];
 struct action* failure_rlist[FAILURE_RT_NO];
 struct action* branch_rlist[BRANCH_RT_NO];
-#ifdef USE_LOCAL_ROUTE
 struct action* local_rlist;
-#endif
 struct action* error_rlist;
 
 int route_type = REQUEST_ROUTE;
@@ -103,9 +101,7 @@ void init_route_lists(void)
 	memset(failure_rlist, 0, sizeof(failure_rlist));
 	memset(branch_rlist, 0, sizeof(branch_rlist));
 	error_rlist = 0;
-#ifdef USE_LOCAL_ROUTE
 	local_rlist = 0;
-#endif
 }
 
 /*! \brief traverses an expression tree and compiles the REs where necessary) 
@@ -1500,13 +1496,11 @@ int fix_rls(void)
 			return ret;
 		}
 	}
-#ifdef USE_LOCAL_ROUTE
 	if(local_rlist){
 		if ((ret=fix_actions(local_rlist))!=0){
 			return ret;
 		}
 	}
-#endif
 	return 0;
 }
 
@@ -1628,14 +1622,12 @@ int check_rls(void)
 			return ret;
 		}
 	}
-#ifdef USE_LOCAL_ROUTE
 	if(local_rlist){
 		if ((ret=check_actions(local_rlist,LOCAL_ROUTE))!=0){
 			LM_ERR("check failed for local_route\n");
 			return ret;
 		}
 	}
-#endif
 	return rcheck_status;
 }
 

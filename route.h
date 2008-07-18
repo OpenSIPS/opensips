@@ -45,9 +45,7 @@ extern struct action* rlist[RT_NO];			/*!< main "script table" */
 extern struct action* onreply_rlist[ONREPLY_RT_NO];	/*!< main reply route table */
 extern struct action* failure_rlist[FAILURE_RT_NO];	/*!< Failure route table */
 extern struct action* branch_rlist[BRANCH_RT_NO];	/*!< Branch routes table */
-#ifdef USE_LOCAL_ROUTE
 extern struct action* local_rlist;			/*!< Local route table */
-#endif
 extern struct action* error_rlist;			/*!< Error route table */
 
 #define REQUEST_ROUTE 1	 /*!< Request route block */
