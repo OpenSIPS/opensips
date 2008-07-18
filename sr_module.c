@@ -222,7 +222,7 @@ int sr_load_module(char* path)
 	struct module_exports* exp;
 	struct sr_module* t;
 	
-	handle=dlopen(path, OPENSER_DLFLAGS); /* resolve all symbols now */
+	handle=dlopen(path, OPENSIPS_DLFLAGS); /* resolve all symbols now */
 	if (handle==0){
 		LM_ERR("could not open module <%s>: %s\n", path, dlerror() );
 		goto error;
@@ -243,7 +243,7 @@ int sr_load_module(char* path)
 		LM_ERR("load_module: %s\n", error);
 		goto error1;
 	}
-	if(exp->dlflags!=DEFAULT_DLFLAGS && exp->dlflags!=OPENSER_DLFLAGS) {
+	if(exp->dlflags!=DEFAULT_DLFLAGS && exp->dlflags!=OPENSIPS_DLFLAGS) {
 		moddlflags = exp->dlflags;
 		dlclose(handle);
 		LM_DBG("reloading module %s with flags %d\n", path, moddlflags);

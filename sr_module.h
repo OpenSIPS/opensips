@@ -83,17 +83,17 @@ typedef int (*mod_proc_wrapper)();
 #define PROC_TCP_MAIN -4  /* TCP main process */
 
 #define DEFAULT_DLFLAGS	0 /* value that signals to module loader to
-							use default dlopen flags in openser */
+							use default dlopen flags in opensips */
 #ifndef RTLD_NOW
 /* for openbsd */
 #define RTLD_NOW DL_LAZY
 #endif
 
-#define OPENSER_DLFLAGS	RTLD_NOW
+#define OPENSIPS_DLFLAGS	RTLD_NOW
 
 #define MODULE_VERSION \
-	char *module_version=OPENSER_FULL_VERSION; \
-	char *module_flags=OPENSER_COMPILE_FLAGS;
+	char *module_version=OPENSIPS_FULL_VERSION; \
+	char *module_flags=OPENSIPS_COMPILE_FLAGS;
 
 
 struct cmd_export_ {
