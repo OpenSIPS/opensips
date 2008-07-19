@@ -42,29 +42,29 @@
 +			cp -f $(cfg-prefix)/$(cfg-dir)/dictionary.radius.default \
  				$(cfg-prefix)/$(cfg-dir)/dictionary.radius; \
  		fi
- 		# openserctl config
+ 		# opensipsctl config
 @@ -445,7 +432,7 @@
- 		sed -e "s#/usr/local/lib/openser#$(lib-target)#g" | \
- 		sed -e "s#/usr/local/etc/openser#$(cfg-target)#g"  >/tmp/openserctl
- 		$(INSTALL_TOUCH) $(bin-prefix)/$(bin-dir)/openserctl
--		$(INSTALL_BIN) /tmp/openserctl $(bin-prefix)/$(bin-dir)
-+		$(BSD_INSTALL_SCRIPT) /tmp/openserctl $(bin-prefix)/$(bin-dir)
- 		rm -fr /tmp/openserctl
+ 		sed -e "s#/usr/local/lib/opensips#$(lib-target)#g" | \
+ 		sed -e "s#/usr/local/etc/opensips#$(cfg-target)#g"  >/tmp/opensipsctl
+ 		$(INSTALL_TOUCH) $(bin-prefix)/$(bin-dir)/opensipsctl
+-		$(INSTALL_BIN) /tmp/opensipsctl $(bin-prefix)/$(bin-dir)
++		$(BSD_INSTALL_SCRIPT) /tmp/opensipsctl $(bin-prefix)/$(bin-dir)
+ 		rm -fr /tmp/opensipsctl
  		sed -e "s#/usr/local/sbin#$(bin-target)#g" \
- 			< scripts/openserctl.base > /tmp/openserctl.base
+ 			< scripts/opensipsctl.base > /tmp/opensipsctl.base
 @@ -492,10 +479,10 @@
- 		sed -e "s#/usr/local/lib/openser#$(lib-target)#g" | \
- 		sed -e "s#/usr/local/etc/openser#$(cfg-target)#g"  >/tmp/openserdbctl
- 		$(INSTALL_TOUCH) $(bin-prefix)/$(bin-dir)/openserdbctl
--		$(INSTALL_BIN) /tmp/openserdbctl $(bin-prefix)/$(bin-dir)
-+		$(BSD_INSTALL_SCRIPT) /tmp/openserdbctl $(bin-prefix)/$(bin-dir)
- 		rm -fr /tmp/openserdbctl
+ 		sed -e "s#/usr/local/lib/opensips#$(lib-target)#g" | \
+ 		sed -e "s#/usr/local/etc/opensips#$(cfg-target)#g"  >/tmp/opensipsdbctl
+ 		$(INSTALL_TOUCH) $(bin-prefix)/$(bin-dir)/opensipsdbctl
+-		$(INSTALL_BIN) /tmp/opensipsdbctl $(bin-prefix)/$(bin-dir)
++		$(BSD_INSTALL_SCRIPT) /tmp/opensipsdbctl $(bin-prefix)/$(bin-dir)
+ 		rm -fr /tmp/opensipsdbctl
  		$(INSTALL_TOUCH)   $(bin-prefix)/$(bin-dir)/$(NAME)unix
 -		$(INSTALL_BIN) utils/$(NAME)unix/$(NAME)unix $(bin-prefix)/$(bin-dir)
 +		$(BSD_INSTALL_SCRIPT) utils/$(NAME)unix/$(NAME)unix $(bin-prefix)/$(bin-dir)
  		# install dbtext stuff
- 		mkdir -p $(modules-prefix)/$(lib-dir)/openserctl ; \
- 		sed -e "s#/usr/local/share/openser#$(data-target)#g" \
+ 		mkdir -p $(modules-prefix)/$(lib-dir)/opensipsctl ; \
+ 		sed -e "s#/usr/local/share/opensips#$(data-target)#g" \
 @@ -624,9 +611,7 @@
  			if [ -f modules/"$$r"/README ]; then \
  				$(INSTALL_TOUCH)  $(doc-prefix)/$(doc-dir)/README ; \

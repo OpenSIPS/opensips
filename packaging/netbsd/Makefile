@@ -1,21 +1,21 @@
-# New ports collection makefile for:    openser
+# New ports collection makefile for:    opensips
 #
 # $NetBSD$
 #
 # $Id$
 #
 
-COMMENT= "OpenSER"
+COMMENT= "OpenSIPS"
 
-PORTNAME= openser
+PORTNAME= opensips
 PORTVERSION= 1.2.0-notls
 CATEGORIES= net
-MASTER_SITES= http://openser.org/pub/openser/1.2.0/src/
+MASTER_SITES= http://opensips.org/pub/opensips/1.2.0/src/
 
-MAINTAINER= daniel@voice-system.ro
+MAINTAINER= bogdan@voice-system.ro
 
-MAN8=openser.8
-MAN5=openser.cfg.5
+MAN8=opensips.8
+MAN5=opensips.cfg.5
 # MANCOMPRESSED must not be specified (if defined is assumed to be yes)
 
 

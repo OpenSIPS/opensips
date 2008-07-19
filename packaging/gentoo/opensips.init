@@ -1,0 +1,22 @@
+#!/sbin/runscript
+# Copyright 2002 Frauenhofer Gesellschaft FOKUS, Germany.
+# Distributed under the terms of the GNU General Public License, v2 or later
+# $Header$
+
+depend() {
+	need net
+}
+
+start() {
+	ebegin "Starting OpenSIPS"
+	start-stop-daemon --start --quiet --pidfile /var/run/opensips.pid \
+		--exec /usr/sbin/opensips -- -P /var/run/opensips.pid
+	eend $?
+}
+
+stop() {
+	ebegin "Stopping OpenSIPS"
+	start-stop-daemon --stop --quiet --pidfile /var/run/opensips.pid
+	eend $?
+}
+

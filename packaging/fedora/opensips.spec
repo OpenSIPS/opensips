@@ -1,16 +1,16 @@
 %define	EXCLUDE_MODULES	mi_xmlrpc osp
 
 Summary:	Open Source SIP Server
-Name:		openser
+Name:		opensips
 Version:	1.3.0
 Release:	1%{?dist}
 License:	GPLv2+
 Group:		System Environment/Daemons
-Source0:	http://www.openser.org/pub/%{name}/%{version}/src/%{name}-%{version}-tls_src.tar.gz
-Source1:	openser.init
-Patch1:		openser--acc_radius_enable.diff
-Patch3:		openser--openssl-paths.diff
-URL:		http://www.openser.org/
+Source0:	http://www.opensips.org/pub/%{name}/%{version}/src/%{name}-%{version}-tls_src.tar.gz
+Source1:	opensips.init
+Patch1:		opensips--acc_radius_enable.diff
+Patch3:		opensips--openssl-paths.diff
+URL:		http://www.opensips.org/
 
 BuildRequires:	expat-devel
 BuildRequires:	libxml2-devel
@@ -38,8 +38,8 @@ Requires(preun):/sbin/service
 BuildRoot: 	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 %description
-OpenSER or OPEN SIP Express Router is a very fast and flexible SIP (RFC3261)
-proxy server. Written entirely in C, openser can handle thousands calls
+OpenSIPS or Open SIP Server is a very fast and flexible SIP (RFC3261)
+server. Written entirely in C, OpenSIPS can handle thousands calls
 per second even on low-budget hardware. A C Shell like scripting language
 provides full control over the server's behaviour. It's modular
 architecture allows only required functionality to be loaded.
@@ -134,8 +134,8 @@ Group:		System Environment/Daemons
 Requires:	%{name} = %{version}-%{release}
 
 %description	db_berkeley
-This is a module which integrates the Berkeley DB into OpenSER. It implements 
-the DB API defined in OpenSER.
+This is a module which integrates the Berkeley DB into OpenSIPS. It implements 
+the DB API defined in OpenSIPS.
 
 %package	h350
 Summary:	H350 implementation	
@@ -143,12 +143,12 @@ Group:		System Environment/Daemons
 Requires:	%{name} = %{version}-%{release}
 
 %description	h350
-The OpenSER H350 module enables an OpenSER SIP proxy server to access SIP 
+The OpenSIPS H350 module enables an OpenSIPS SIP server to access SIP 
 account data stored in an LDAP [RFC4510] directory  containing H.350 [H.350] 
 commObjects. 
 
 %package	jabber
-Summary:	Gateway between OpenSER and a jabber server
+Summary:	Gateway between OpenSIPS and a jabber server
 Group:		System Environment/Daemons
 Requires:	%{name} = %{version}-%{release}
 
@@ -161,10 +161,10 @@ Group:		System Environment/Daemons
 Requires:	%{name} = %{version}-%{release}
 
 %description	ldap
-The LDAP module implements an LDAP search interface for OpenSER.
+The LDAP module implements an LDAP search interface for OpenSIPS.
 
 %package	mysql
-Summary:	MySQL Storage Support for the OpenSER
+Summary:	MySQL Storage Support for the OpenSIPS
 Group:		System Environment/Daemons
 Requires:	%{name} = %{version}-%{release}
 
@@ -173,7 +173,7 @@ The %{name}-mysql package contains the MySQL plugin for %{name}, which allows
 a MySQL-Database to be used for persistent storage.
 
 %package 	perl
-Summary:	Helps implement your own OpenSER extensions in Perl
+Summary:	Helps implement your own OpenSIPS extensions in Perl
 Group:		System Environment/Daemons
 # require perl-devel for >F7 and perl for <=F6
 BuildRequires:	perl(ExtUtils::MakeMaker)
@@ -181,10 +181,10 @@ Requires:	%{name} = %{version}-%{release}
 Requires:	perl(:MODULE_COMPAT_%(eval "`%{__perl} -V:version`"; echo $version))
 
 %description	perl
-The time needed when writing a new OpenSER module unfortunately is quite
+The time needed when writing a new OpenSIPS module unfortunately is quite
 high, while the options provided by the configuration file are limited to
 the features implemented in the modules. With this Perl module, you can
-easily implement your own OpenSER extensions in Perl.  This allows for
+easily implement your own OpenSIPS extensions in Perl.  This allows for
 simple access to the full world of CPAN modules. SIP URI rewriting could be
 implemented based on regular expressions; accessing arbitrary data backends,
 e.g. LDAP or Berkeley DB files, is now extremely simple.
@@ -200,11 +200,11 @@ Requires:	perl(:MODULE_COMPAT_%(eval "`%{__perl} -V:version`"; echo $version))
 
 %description	perlvdb
 The Perl Virtual Database (VDB) provides a virtualization framework for 
-OpenSER's database access. It does not handle a particular database engine 
+OpenSIPS's database access. It does not handle a particular database engine 
 itself but lets the user relay database requests to arbitrary Perl functions.
 
 %package	postgresql
-Summary:	PostgreSQL Storage Support for the OpenSER
+Summary:	PostgreSQL Storage Support for the OpenSIPS
 Group:		System Environment/Daemons
 Requires:	%{name} = %{version}-%{release}
 
@@ -323,12 +323,12 @@ Group:		System Environment/Daemons
 Requires:	%{name} = %{version}-%{release}
 
 %description	seas
-SEAS module enables OpenSER to transfer the execution logic control of a sip
+SEAS module enables OpenSIPS to transfer the execution logic control of a sip
 message to a given external entity, called the Application Server. When the
-OpenSER script is being executed on an incoming SIP message, invocation of
+OpenSIPS script is being executed on an incoming SIP message, invocation of
 the as_relay_t() function makes this module send the message along with some
 transaction information to the specified Application Server. The Application
-Server then executes some call-control logic code, and tells OpenSER to take
+Server then executes some call-control logic code, and tells OpenSIPS to take
 some actions, ie. forward the message downstream, or respond to the message
 with a SIP repy, etc
 
@@ -346,18 +346,18 @@ message really reached its destination as a SMS--or multi-part messages--if
 a SIP messages is too long it will be split and sent as multiple SMS.
 
 %package	snmpstats
-Summary:	SNMP management interface for the OpenSER
+Summary:	SNMP management interface for the OpenSIPS
 Group:		System Environment/Daemons
 Requires:	%{name} = %{version}-%{release}
 
 %description	snmpstats
 The %{name}-snmpstats package provides an SNMP management interface to
-OpenSER.  Specifically, it provides general SNMP queryable scalar statistics,
+OpenSIPS.  Specifically, it provides general SNMP queryable scalar statistics,
 table representations of more complicated data such as user and contact
 information, and alarm monitoring capabilities.
 
 %package	tlsops
-Summary:	TLS-relating functions for the OpenSER
+Summary:	TLS-relating functions for the OpenSIPS
 Group:		System Environment/Daemons
 Requires:	%{name} = %{version}-%{release}
 
@@ -367,7 +367,7 @@ routing script, and exports pseudo variables with certificate and TLS
 parameters.
 
 %package	unixodbc
-Summary:	OpenSER unixODBC Storage support
+Summary:	OpenSIPS unixODBC Storage support
 Group:		System Environment/Daemons
 Requires:	%{name} = %{version}-%{release}
 
@@ -389,18 +389,18 @@ Group:		System Environment/Daemons
 Requires:	%{name} = %{version}-%{release}
 
 %description	xcap_client
-The modules is an XCAP client for OpenSER that can be used by other modules.
+The modules is an XCAP client for OpenSIPS that can be used by other modules.
 It fetches XCAP elements, either documents or part of them, by sending HTTP 
 GET requests. It also offers support for conditional queries. It uses libcurl 
 library as a client-side HTTP transfer library.
 
 %package	xmpp
-Summary:	Gateway between OpenSER and a jabber server
+Summary:	Gateway between OpenSIPS and a jabber server
 Group:		System Environment/Daemons
 Requires:	%{name} = %{version}-%{release}
 
 %description	xmpp
-This modules is a gateway between Openser and a jabber server. It enables
+This modules is a gateway between OpenSIPS and a jabber server. It enables
 the exchange of instant messages between SIP clients and XMPP(jabber)
 clients.
 
@@ -413,27 +413,27 @@ cp -pRf modules/acc modules/acc_radius
 %build
 LOCALBASE=/usr CFLAGS="%{optflags}" %{__make} all %{?_smp_mflags} TLS=1 \
   exclude_modules="%EXCLUDE_MODULES" \
-  cfg-target=%{_sysconfdir}/openser/ \
-  modules-dir=%{_lib}/openser/modules
+  cfg-target=%{_sysconfdir}/opensips/ \
+  modules-dir=%{_lib}/opensips/modules
 
 %install
 rm -rf $RPM_BUILD_ROOT
 %{__make} install TLS=1 exclude_modules="%EXCLUDE_MODULES" \
   basedir=%{buildroot} prefix=%{_prefix} \
   cfg-prefix=%{buildroot} \
-  modules-dir=%{_lib}/openser/modules
+  modules-dir=%{_lib}/opensips/modules
 cp -pf modules/acc_radius/acc.so \
-  %{buildroot}/%{_libdir}/openser/modules/acc_radius.so
-chmod 0755 %{buildroot}/%{_libdir}/openser/modules/acc_radius.so
+  %{buildroot}/%{_libdir}/opensips/modules/acc_radius.so
+chmod 0755 %{buildroot}/%{_libdir}/opensips/modules/acc_radius.so
 
 # clean some things
 mkdir -p $RPM_BUILD_ROOT/%{perl_vendorlib}
-mv $RPM_BUILD_ROOT/%{_libdir}/openser/perl/* \
+mv $RPM_BUILD_ROOT/%{_libdir}/opensips/perl/* \
   $RPM_BUILD_ROOT/%{perl_vendorlib}/
-mv $RPM_BUILD_ROOT/%{_sysconfdir}/openser/tls/README \
-  $RPM_BUILD_ROOT/%{_docdir}/openser/README.tls
-rm -f $RPM_BUILD_ROOT%{_docdir}/openser/INSTALL
-mv $RPM_BUILD_ROOT/%{_docdir}/openser docdir
+mv $RPM_BUILD_ROOT/%{_sysconfdir}/opensips/tls/README \
+  $RPM_BUILD_ROOT/%{_docdir}/opensips/README.tls
+rm -f $RPM_BUILD_ROOT%{_docdir}/opensips/INSTALL
+mv $RPM_BUILD_ROOT/%{_docdir}/opensips docdir
 
 # recode documentation
 for i in docdir/*; do
@@ -444,64 +444,64 @@ done
 
 mkdir -p $RPM_BUILD_ROOT%{_initrddir}
 %{__install} -p -D -m 755 %{SOURCE1} \
-  $RPM_BUILD_ROOT%{_initrddir}/openser
-echo -e "\nETCDIR=\"%{_sysconfdir}/openser\"\n" \
-  >> $RPM_BUILD_ROOT%{_sysconfdir}/%{name}/openserctlrc
+  $RPM_BUILD_ROOT%{_initrddir}/opensips
+echo -e "\nETCDIR=\"%{_sysconfdir}/opensips\"\n" \
+  >> $RPM_BUILD_ROOT%{_sysconfdir}/%{name}/opensipsctlrc
 
 %clean
 rm -rf $RPM_BUILD_ROOT
 
 %post
-/sbin/chkconfig --add openser
+/sbin/chkconfig --add opensips
 
 %preun
 if [ $1 = 0 ]; then
- /sbin/service openser stop > /dev/null 2>&1
- /sbin/chkconfig --del openser
+ /sbin/service opensips stop > /dev/null 2>&1
+ /sbin/chkconfig --del opensips
 fi
 
 %files
 %defattr(-,root,root,-)
-%{_sbindir}/openser
-%{_sbindir}/openserctl
-%{_sbindir}/openserdbctl
-%{_sbindir}/openserunix
+%{_sbindir}/opensips
+%{_sbindir}/opensipsctl
+%{_sbindir}/opensipsdbctl
+%{_sbindir}/opensipsunix
 
-%dir %{_sysconfdir}/openser
-%dir %{_sysconfdir}/openser/tls
-%dir %{_libdir}/openser/
-%dir %{_libdir}/openser/modules/
-%dir %{_libdir}/openser/openserctl/
+%dir %{_sysconfdir}/opensips
+%dir %{_sysconfdir}/opensips/tls
+%dir %{_libdir}/opensips/
+%dir %{_libdir}/opensips/modules/
+%dir %{_libdir}/opensips/opensipsctl/
 
-%attr(755,root,root) %{_initrddir}/openser
+%attr(755,root,root) %{_initrddir}/opensips
 
-%config(noreplace) %{_sysconfdir}/openser/dictionary.radius
-%config(noreplace) %{_sysconfdir}/openser/openser.cfg
-%config(noreplace) %{_sysconfdir}/openser/openserctlrc
+%config(noreplace) %{_sysconfdir}/opensips/dictionary.radius
+%config(noreplace) %{_sysconfdir}/opensips/opensips.cfg
+%config(noreplace) %{_sysconfdir}/opensips/opensipsctlrc
 
-%config(noreplace) %{_sysconfdir}/openser/tls/ca.conf
-%config(noreplace) %{_sysconfdir}/openser/tls/request.conf
-%config(noreplace) %{_sysconfdir}/openser/tls/rootCA/cacert.pem
-%config(noreplace) %{_sysconfdir}/openser/tls/rootCA/certs/01.pem
-%config(noreplace) %{_sysconfdir}/openser/tls/rootCA/index.txt
-%config(noreplace) %{_sysconfdir}/openser/tls/rootCA/private/cakey.pem
-%config(noreplace) %{_sysconfdir}/openser/tls/rootCA/serial
-%config(noreplace) %{_sysconfdir}/openser/tls/user.conf
-%config(noreplace) %{_sysconfdir}/openser/tls/user/user-calist.pem
-%config(noreplace) %{_sysconfdir}/openser/tls/user/user-cert.pem
-%config(noreplace) %{_sysconfdir}/openser/tls/user/user-cert_req.pem
-%config(noreplace) %{_sysconfdir}/openser/tls/user/user-privkey.pem
+%config(noreplace) %{_sysconfdir}/opensips/tls/ca.conf
+%config(noreplace) %{_sysconfdir}/opensips/tls/request.conf
+%config(noreplace) %{_sysconfdir}/opensips/tls/rootCA/cacert.pem
+%config(noreplace) %{_sysconfdir}/opensips/tls/rootCA/certs/01.pem
+%config(noreplace) %{_sysconfdir}/opensips/tls/rootCA/index.txt
+%config(noreplace) %{_sysconfdir}/opensips/tls/rootCA/private/cakey.pem
+%config(noreplace) %{_sysconfdir}/opensips/tls/rootCA/serial
+%config(noreplace) %{_sysconfdir}/opensips/tls/user.conf
+%config(noreplace) %{_sysconfdir}/opensips/tls/user/user-calist.pem
+%config(noreplace) %{_sysconfdir}/opensips/tls/user/user-cert.pem
+%config(noreplace) %{_sysconfdir}/opensips/tls/user/user-cert_req.pem
+%config(noreplace) %{_sysconfdir}/opensips/tls/user/user-privkey.pem
 
-%{_libdir}/openser/openserctl/openserctl.*
-%{_libdir}/openser/openserctl/openserdbctl.base
-%{_libdir}/openser/openserctl/openserdbctl.dbtext
+%{_libdir}/opensips/opensipsctl/opensipsctl.*
+%{_libdir}/opensips/opensipsctl/opensipsdbctl.base
+%{_libdir}/opensips/opensipsctl/opensipsdbctl.dbtext
 
-%{_datadir}/openser/dbtext/openser/*
+%{_datadir}/opensips/dbtext/opensips/*
 
-%{_mandir}/man5/openser.cfg.5*
-%{_mandir}/man8/openser.8*
-%{_mandir}/man8/openserctl.8*
-%{_mandir}/man8/openserunix.8*
+%{_mandir}/man5/opensips.cfg.5*
+%{_mandir}/man8/opensips.8*
+%{_mandir}/man8/opensipsctl.8*
+%{_mandir}/man8/opensipsunix.8*
 
 %doc docdir/AUTHORS
 %doc docdir/NEWS
@@ -509,52 +509,52 @@ fi
 %doc docdir/README-MODULES
 %doc docdir/README.tls
 
-%{_libdir}/openser/modules/alias_db.so
-%{_libdir}/openser/modules/auth.so
-%{_libdir}/openser/modules/auth_db.so
-%{_libdir}/openser/modules/avpops.so
-%{_libdir}/openser/modules/benchmark.so
-%{_libdir}/openser/modules/cfgutils.so
-%{_libdir}/openser/modules/dbtext.so
-%{_libdir}/openser/modules/dialog.so
-%{_libdir}/openser/modules/dispatcher.so
-%{_libdir}/openser/modules/diversion.so
-%{_libdir}/openser/modules/domain.so
-%{_libdir}/openser/modules/domainpolicy.so
-%{_libdir}/openser/modules/enum.so
-%{_libdir}/openser/modules/exec.so
-%{_libdir}/openser/modules/flatstore.so
-%{_libdir}/openser/modules/gflags.so
-%{_libdir}/openser/modules/group.so
-%{_libdir}/openser/modules/imc.so
-%{_libdir}/openser/modules/lcr.so
-%{_libdir}/openser/modules/mangler.so
-%{_libdir}/openser/modules/maxfwd.so
-%{_libdir}/openser/modules/mediaproxy.so
-%{_libdir}/openser/modules/mi_fifo.so
-%{_libdir}/openser/modules/mi_datagram.so
-%{_libdir}/openser/modules/msilo.so
-%{_libdir}/openser/modules/nathelper.so
-%{_libdir}/openser/modules/options.so
-%{_libdir}/openser/modules/path.so
-%{_libdir}/openser/modules/pdt.so
-%{_libdir}/openser/modules/permissions.so
-%{_libdir}/openser/modules/pike.so
-%{_libdir}/openser/modules/registrar.so
-%{_libdir}/openser/modules/rr.so
-%{_libdir}/openser/modules/siptrace.so
-%{_libdir}/openser/modules/sl.so
-%{_libdir}/openser/modules/speeddial.so
-%{_libdir}/openser/modules/sst.so
-%{_libdir}/openser/modules/statistics.so
-%{_libdir}/openser/modules/textops.so
-%{_libdir}/openser/modules/tm.so
-%{_libdir}/openser/modules/uac.so
-%{_libdir}/openser/modules/uac_redirect.so
-%{_libdir}/openser/modules/uri.so
-%{_libdir}/openser/modules/uri_db.so
-%{_libdir}/openser/modules/usrloc.so
-%{_libdir}/openser/modules/xlog.so
+%{_libdir}/opensips/modules/alias_db.so
+%{_libdir}/opensips/modules/auth.so
+%{_libdir}/opensips/modules/auth_db.so
+%{_libdir}/opensips/modules/avpops.so
+%{_libdir}/opensips/modules/benchmark.so
+%{_libdir}/opensips/modules/cfgutils.so
+%{_libdir}/opensips/modules/dbtext.so
+%{_libdir}/opensips/modules/dialog.so
+%{_libdir}/opensips/modules/dispatcher.so
+%{_libdir}/opensips/modules/diversion.so
+%{_libdir}/opensips/modules/domain.so
+%{_libdir}/opensips/modules/domainpolicy.so
+%{_libdir}/opensips/modules/enum.so
+%{_libdir}/opensips/modules/exec.so
+%{_libdir}/opensips/modules/flatstore.so
+%{_libdir}/opensips/modules/gflags.so
+%{_libdir}/opensips/modules/group.so
+%{_libdir}/opensips/modules/imc.so
+%{_libdir}/opensips/modules/lcr.so
+%{_libdir}/opensips/modules/mangler.so
+%{_libdir}/opensips/modules/maxfwd.so
+%{_libdir}/opensips/modules/mediaproxy.so
+%{_libdir}/opensips/modules/mi_fifo.so
+%{_libdir}/opensips/modules/mi_datagram.so
+%{_libdir}/opensips/modules/msilo.so
+%{_libdir}/opensips/modules/nathelper.so
+%{_libdir}/opensips/modules/options.so
+%{_libdir}/opensips/modules/path.so
+%{_libdir}/opensips/modules/pdt.so
+%{_libdir}/opensips/modules/permissions.so
+%{_libdir}/opensips/modules/pike.so
+%{_libdir}/opensips/modules/registrar.so
+%{_libdir}/opensips/modules/rr.so
+%{_libdir}/opensips/modules/siptrace.so
+%{_libdir}/opensips/modules/sl.so
+%{_libdir}/opensips/modules/speeddial.so
+%{_libdir}/opensips/modules/sst.so
+%{_libdir}/opensips/modules/statistics.so
+%{_libdir}/opensips/modules/textops.so
+%{_libdir}/opensips/modules/tm.so
+%{_libdir}/opensips/modules/uac.so
+%{_libdir}/opensips/modules/uac_redirect.so
+%{_libdir}/opensips/modules/uri.so
+%{_libdir}/opensips/modules/uri_db.so
+%{_libdir}/opensips/modules/usrloc.so
+%{_libdir}/opensips/modules/xlog.so
 
 %doc docdir/README.alias_db
 %doc docdir/README.auth
@@ -605,204 +605,204 @@ fi
 
 %files acc
 %defattr(-,root,root,-)
-%{_libdir}/openser/modules/acc.so
+%{_libdir}/opensips/modules/acc.so
 %doc docdir/README.acc
 
 %files acc_radius
 %defattr(-,root,root,-)
-%{_libdir}/openser/modules/acc_radius.so
+%{_libdir}/opensips/modules/acc_radius.so
 %doc docdir/README.acc_radius
 
 %files auth_diameter
 %defattr(-,root,root,-)
-%{_libdir}/openser/modules/auth_diameter.so
+%{_libdir}/opensips/modules/auth_diameter.so
 %doc docdir/README.auth_diameter
 
 %files auth_radius
 %defattr(-,root,root,-)
-%{_libdir}/openser/modules/auth_radius.so
+%{_libdir}/opensips/modules/auth_radius.so
 %doc docdir/README.auth_radius
 
 %files avp_radius
 %defattr(-,root,root,-)
-%{_libdir}/openser/modules/avp_radius.so
+%{_libdir}/opensips/modules/avp_radius.so
 %doc docdir/README.avp_radius
 
 %files carrierroute
 %defattr(-,root,root,-)
-%{_libdir}/openser/modules/carrierroute.so
+%{_libdir}/opensips/modules/carrierroute.so
 %doc docdir/README.carrierroute
 
 %files cpl-c
 %defattr(-,root,root,-)
-%{_libdir}/openser/modules/cpl-c.so
+%{_libdir}/opensips/modules/cpl-c.so
 %doc docdir/README.cpl-c
 
 %files db_berkeley
 %defattr(-,root,root,-)
 %{_sbindir}/bdb_recover
-%{_libdir}/openser/modules/db_berkeley.so
-%{_libdir}/openser/openserctl/openserdbctl.db_berkeley
-%{_datadir}/openser/db_berkeley/openser/*
+%{_libdir}/opensips/modules/db_berkeley.so
+%{_libdir}/opensips/opensipsctl/opensipsdbctl.db_berkeley
+%{_datadir}/opensips/db_berkeley/opensips/*
 %doc docdir/README.db_berkeley
 
 %files group_radius
 %defattr(-,root,root,-)
-%{_libdir}/openser/modules/group_radius.so
+%{_libdir}/opensips/modules/group_radius.so
 %doc docdir/README.group_radius
 
 %files h350
 %defattr(-,root,root,-)
-%{_libdir}/openser/modules/h350.so
+%{_libdir}/opensips/modules/h350.so
 %doc docdir/README.h350
 
 %files jabber
 %defattr(-,root,root,-)
-%{_libdir}/openser/modules/jabber.so
+%{_libdir}/opensips/modules/jabber.so
 %doc docdir/README.jabber
 
 %files ldap
 %defattr(-,root,root,-)
-%{_libdir}/openser/modules/ldap.so
+%{_libdir}/opensips/modules/ldap.so
 %doc docdir/README.ldap
 
 %files mysql
 %defattr(-,root,root,-)
-%{_libdir}/openser/modules/mysql.so
-%{_libdir}/openser/openserctl/openserdbctl.mysql
-%{_datadir}/openser/mysql/*.sql
+%{_libdir}/opensips/modules/mysql.so
+%{_libdir}/opensips/opensipsctl/opensipsdbctl.mysql
+%{_datadir}/opensips/mysql/*.sql
 %doc docdir/README.mysql
 
 %files perl
 %defattr(-,root,root,-)
-%dir %{perl_vendorlib}/OpenSER
-%dir %{perl_vendorlib}/OpenSER/LDAPUtils
-%dir %{perl_vendorlib}/OpenSER/Utils
-%{_libdir}/openser/modules/perl.so
-%{perl_vendorlib}/OpenSER.pm
-%{perl_vendorlib}/OpenSER/Constants.pm
-%{perl_vendorlib}/OpenSER/LDAPUtils/LDAPConf.pm
-%{perl_vendorlib}/OpenSER/LDAPUtils/LDAPConnection.pm
-%{perl_vendorlib}/OpenSER/Message.pm
-%{perl_vendorlib}/OpenSER/Utils/PhoneNumbers.pm
-%{perl_vendorlib}/OpenSER/Utils/Debug.pm
+%dir %{perl_vendorlib}/OpenSIPS
+%dir %{perl_vendorlib}/OpenSIPS/LDAPUtils
+%dir %{perl_vendorlib}/OpenSIPS/Utils
+%{_libdir}/opensips/modules/perl.so
+%{perl_vendorlib}/OpenSIPS.pm
+%{perl_vendorlib}/OpenSIPS/Constants.pm
+%{perl_vendorlib}/OpenSIPS/LDAPUtils/LDAPConf.pm
+%{perl_vendorlib}/OpenSIPS/LDAPUtils/LDAPConnection.pm
+%{perl_vendorlib}/OpenSIPS/Message.pm
+%{perl_vendorlib}/OpenSIPS/Utils/PhoneNumbers.pm
+%{perl_vendorlib}/OpenSIPS/Utils/Debug.pm
 %doc docdir/README.perl
 
 %files perlvdb
 %defattr(-,root,root,-)
-%dir %{perl_vendorlib}/OpenSER/VDB
-%dir %{perl_vendorlib}/OpenSER/VDB/Adapter
-%{_libdir}/openser/modules/perlvdb.so
-%{perl_vendorlib}/OpenSER/VDB.pm
-%{perl_vendorlib}/OpenSER/VDB/Adapter/AccountingSIPtrace.pm
-%{perl_vendorlib}/OpenSER/VDB/Adapter/Alias.pm
-%{perl_vendorlib}/OpenSER/VDB/Adapter/Auth.pm
-%{perl_vendorlib}/OpenSER/VDB/Adapter/Describe.pm
-%{perl_vendorlib}/OpenSER/VDB/Adapter/Speeddial.pm
-%{perl_vendorlib}/OpenSER/VDB/Adapter/TableVersions.pm
-%{perl_vendorlib}/OpenSER/VDB/Column.pm
-%{perl_vendorlib}/OpenSER/VDB/Pair.pm
-%{perl_vendorlib}/OpenSER/VDB/ReqCond.pm
-%{perl_vendorlib}/OpenSER/VDB/Result.pm
-%{perl_vendorlib}/OpenSER/VDB/VTab.pm
-%{perl_vendorlib}/OpenSER/VDB/Value.pm
+%dir %{perl_vendorlib}/OpenSIPS/VDB
+%dir %{perl_vendorlib}/OpenSIPS/VDB/Adapter
+%{_libdir}/opensips/modules/perlvdb.so
+%{perl_vendorlib}/OpenSIPS/VDB.pm
+%{perl_vendorlib}/OpenSIPS/VDB/Adapter/AccountingSIPtrace.pm
+%{perl_vendorlib}/OpenSIPS/VDB/Adapter/Alias.pm
+%{perl_vendorlib}/OpenSIPS/VDB/Adapter/Auth.pm
+%{perl_vendorlib}/OpenSIPS/VDB/Adapter/Describe.pm
+%{perl_vendorlib}/OpenSIPS/VDB/Adapter/Speeddial.pm
+%{perl_vendorlib}/OpenSIPS/VDB/Adapter/TableVersions.pm
+%{perl_vendorlib}/OpenSIPS/VDB/Column.pm
+%{perl_vendorlib}/OpenSIPS/VDB/Pair.pm
+%{perl_vendorlib}/OpenSIPS/VDB/ReqCond.pm
+%{perl_vendorlib}/OpenSIPS/VDB/Result.pm
+%{perl_vendorlib}/OpenSIPS/VDB/VTab.pm
+%{perl_vendorlib}/OpenSIPS/VDB/Value.pm
 %doc docdir/README.perlvdb
 
 %files postgresql
 %defattr(-,root,root,-)
-%{_libdir}/openser/modules/postgres.so
-%{_libdir}/openser/openserctl/openserdbctl.pgsql
-%{_datadir}/openser/postgres/*.sql
+%{_libdir}/opensips/modules/postgres.so
+%{_libdir}/opensips/opensipsctl/opensipsdbctl.pgsql
+%{_datadir}/opensips/postgres/*.sql
 %doc docdir/README.postgres
 
 %files presence
 %defattr(-,root,root,-)
-%{_libdir}/openser/modules/presence.so
+%{_libdir}/opensips/modules/presence.so
 %doc docdir/README.presence
 
 %files presence_mwi
 %defattr(-,root,root,-)
-%{_libdir}/openser/modules/presence_mwi.so
+%{_libdir}/opensips/modules/presence_mwi.so
 %doc docdir/README.presence_mwi
 
 %files presence_xml
 %defattr(-,root,root,-)
-%{_libdir}/openser/modules/presence_xml.so
+%{_libdir}/opensips/modules/presence_xml.so
 %doc docdir/README.presence_xml
 
 %files pua
 %defattr(-,root,root,-)
-%{_libdir}/openser/modules/pua.so
+%{_libdir}/opensips/modules/pua.so
 %doc docdir/README.pua
 
 %files pua_bla
 %defattr(-,root,root,-)
-%{_libdir}/openser/modules/pua_bla.so
+%{_libdir}/opensips/modules/pua_bla.so
 %doc docdir/README.pua_bla
 
 %files pua_mi
 %defattr(-,root,root,-)
-%{_libdir}/openser/modules/pua_mi.so
+%{_libdir}/opensips/modules/pua_mi.so
 %doc docdir/README.pua_mi
 
 %files pua_usrloc
 %defattr(-,root,root,-)
-%{_libdir}/openser/modules/pua_usrloc.so
+%{_libdir}/opensips/modules/pua_usrloc.so
 %doc docdir/README.pua_usrloc
 
 %files pua_xmpp
 %defattr(-,root,root,-)
-%{_libdir}/openser/modules/pua_xmpp.so
+%{_libdir}/opensips/modules/pua_xmpp.so
 %doc docdir/README.pua_xmpp
 
 %files rls
 %defattr(-,root,root,-)
-%{_libdir}/openser/modules/rls.so
+%{_libdir}/opensips/modules/rls.so
 %doc docdir/README.rls
 
 %files seas
 %defattr(-,root,root,-)
-%{_libdir}/openser/modules/seas.so
+%{_libdir}/opensips/modules/seas.so
 %doc docdir/README.seas
 
 %files sms
 %defattr(-,root,root,-)
-%{_libdir}/openser/modules/sms.so
+%{_libdir}/opensips/modules/sms.so
 %doc docdir/README.sms
 
 %files snmpstats
 %defattr(-,root,root,-)
-%{_libdir}/openser/modules/snmpstats.so
+%{_libdir}/opensips/modules/snmpstats.so
 %doc docdir/README.snmpstats
-%{_datadir}/snmp/mibs/OPENSER-MIB
-%{_datadir}/snmp/mibs/OPENSER-REG-MIB
-%{_datadir}/snmp/mibs/OPENSER-SIP-COMMON-MIB
-%{_datadir}/snmp/mibs/OPENSER-SIP-SERVER-MIB
-%{_datadir}/snmp/mibs/OPENSER-TC
+%{_datadir}/snmp/mibs/OPENSIPS-MIB
+%{_datadir}/snmp/mibs/OPENSIPS-REG-MIB
+%{_datadir}/snmp/mibs/OPENSIPS-SIP-COMMON-MIB
+%{_datadir}/snmp/mibs/OPENSIPS-SIP-SERVER-MIB
+%{_datadir}/snmp/mibs/OPENSIPS-TC
 
 %files tlsops
 %defattr(-,root,root,-)
-%{_libdir}/openser/modules/tlsops.so
+%{_libdir}/opensips/modules/tlsops.so
 %doc docdir/README.tlsops
 
 %files uri_radius
 %defattr(-,root,root,-)
-%{_libdir}/openser/modules/uri_radius.so
+%{_libdir}/opensips/modules/uri_radius.so
 %doc docdir/README.uri_radius
 
 %files unixodbc
 %defattr(-,root,root,-)
-%{_libdir}/openser/modules/unixodbc.so
+%{_libdir}/opensips/modules/unixodbc.so
 %doc docdir/README.unixodbc
 
 %files xcap_client
 %defattr(-,root,root,-)
-%{_libdir}/openser/modules/xcap_client.so
+%{_libdir}/opensips/modules/xcap_client.so
 %doc docdir/README.xcap_client
 
 %files xmpp
 %defattr(-,root,root,-)
-%{_libdir}/openser/modules/xmpp.so
+%{_libdir}/opensips/modules/xmpp.so
 %doc docdir/README.xmpp
 
 %changelog
@@ -815,7 +815,7 @@ fi
 - Latest snapshot - 1.3.0pre1
 
 * Mon Dec 10 2007 Jan ONDREJ (SAL) <ondrejj(at)salstar.sk> 1.2.2-11
-- added ETCDIR into openserctlrc (need openser-1.3 to work)
+- added ETCDIR into opensipsctlrc (need opensips-1.3 to work)
 
 * Mon Sep 24 2007 Jan ONDREJ (SAL) <ondrejj(at)salstar.sk> 1.2.2-10
 - perl scripts moved to perl_vendorlib directory
@@ -842,7 +842,7 @@ fi
 
 * Sun Aug 26 2007 Jan ONDREJ (SAL) <ondrejj(at)salstar.sk> 1.2.2-6
 - Fedora Core 6 build updates
-- changed attributes for openser.init to be rpmlint more silent
+- changed attributes for opensips.init to be rpmlint more silent
 
 * Sun Aug 26 2007 Peter Lemenkov <lemenkov@gmail.com> 1.2.2-5
 - fixed paths for openssl libs and includes
@@ -856,8 +856,8 @@ fi
 - Make rpmlint more silent
 
 * Fri Aug 24 2007 Jan ONDREJ (SAL) <ondrejj(at)salstar.sk> 1.2.2-2
-- added openser.init script
-- removed Patch0: openser--Makefile.diff and updated build section
+- added opensips.init script
+- removed Patch0: opensips--Makefile.diff and updated build section
 - spec file is 80 characters wide
 - added radius_accounting condition
 

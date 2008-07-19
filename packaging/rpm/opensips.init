@@ -1,19 +1,19 @@
 #!/bin/bash
 #
-# Startup script for OpenSER
+# Startup script for OpenSIPS
 #
 # chkconfig: 345 85 15
-# description: OpenSER is a fast SIP Proxy.
+# description: OpenSIPS is a fast SIP Server.
 #
-# processname: openser
-# pidfile: /var/run/openser.pid
-# config: /etc/openser/openser.cfg
+# processname: opensips
+# pidfile: /var/run/opensips.pid
+# config: /etc/opensips/opensips.cfg
 
 # Source function library.
 . /etc/rc.d/init.d/functions
 
-oser=/usr/sbin/openser
-prog=openser
+oser=/usr/sbin/opensips
+prog=opensips
 RETVAL=0
 
 start() {
@@ -21,7 +21,7 @@ start() {
 	daemon $oser $OPTIONS >/dev/null 2>/dev/null
 	RETVAL=$?
 	echo
-	[ $RETVAL = 0 ] && touch /var/lock/subsys/openser
+	[ $RETVAL = 0 ] && touch /var/lock/subsys/opensips
 	return $RETVAL
 }
 
@@ -30,7 +30,7 @@ stop() {
 	killproc $oser
 	RETVAL=$?
 	echo
-	[ $RETVAL = 0 ] && rm -f /var/lock/subsys/openser /var/run/openser.pid
+	[ $RETVAL = 0 ] && rm -f /var/lock/subsys/opensips /var/run/opensips.pid
 }
 
 # See how we were called.
@@ -50,7 +50,7 @@ case "$1" in
 		start
 		;;
 	condrestart)
-		if [ -f /var/run/openser.pid ] ; then
+		if [ -f /var/run/opensips.pid ] ; then
 			stop
 			start
 		fi

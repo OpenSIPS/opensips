@@ -4,10 +4,10 @@
 
 inherit eutils
 
-DESCRIPTION="OpenSER - flexible and robust SIP (RFC3261) server"
-HOMEPAGE="http://www.openser.org/"
+DESCRIPTION="OpenSIPS - flexible and robust SIP (RFC3261) server"
+HOMEPAGE="http://www.opensips.org/"
 MY_P="${P}_src"
-SRC_URI="http://openser.org/pub/openser/${PV}/src/${MY_P}.tar.gz"
+SRC_URI="http://opensips.org/pub/opensips/${PV}/src/${MY_P}.tar.gz"
 
 LICENSE="GPL-2"
 SLOT="0"
@@ -76,7 +76,7 @@ src_compile() {
 		prefix=${ROOT}/ \
 		include_modules="${inc_mod}" \
 		cfg-prefix=${ROOT}/ \
-		cfg-target=${ROOT}/etc/openser/ || die
+		cfg-target=${ROOT}/etc/opensips/ || die
 }
 
 src_install () {
@@ -88,31 +88,31 @@ src_install () {
 		bin-prefix=${D}/usr/sbin \
 		bin-dir="" \
 		cfg-prefix=${D}/etc \
-		cfg-dir=openser/ \
-		cfg-target=${D}/etc/openser \
-		modules-prefix=${D}/usr/lib/openser \
+		cfg-dir=opensips/ \
+		cfg-target=${D}/etc/opensips \
+		modules-prefix=${D}/usr/lib/opensips \
 		modules-dir=modules \
-		modules-target=${D}/usr/lib/openser/modules/ \
+		modules-target=${D}/usr/lib/opensips/modules/ \
 		man-prefix=${D}/usr/share/man \
 		man-dir="" \
 		doc-prefix=${D}/usr/share/doc \
 		doc-dir=${PF} || die
 	exeinto /etc/init.d
-	newexe ${FILESDIR}/openser.init openser
+	newexe ${FILESDIR}/opensips.init opensips
 
 	# fix what the Makefile don't do
 	use mysql || \
-		rm ${D}/usr/sbin/openser_mysql.sh
+		rm ${D}/usr/sbin/opensips_mysql.sh
 }
 
 pkg_postinst() {
-	einfo "WARNING: If you upgraded from a previous OpenSER version"
+	einfo "WARNING: If you upgraded from a previous OpenSIPS version"
 	einfo "please read the README, NEWS and INSTALL files in the"
 	einfo "documentation directory because the database and the"
-	einfo "configuration file of old OpenSER versions are incompatible"
+	einfo "configuration file of old OpenSIPS versions are incompatible"
 	einfo "with the current version."
 }
 
 pkg_prerm () {
-	${D}/etc/init.d/openser stop >/dev/null
+	${D}/etc/init.d/opensips stop >/dev/null
 }

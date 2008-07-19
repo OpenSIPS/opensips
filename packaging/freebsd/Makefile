@@ -1,18 +1,18 @@
-# New ports collection makefile for:	openser
+# New ports collection makefile for:	opensips
 # Date created:				20 October 2005
 # Whom:					jesusr
 #
-# $FreeBSD: ports/net/openser/Makefile,v 1.9 2007/08/20 09:12:42 miwi Exp $
+# $FreeBSD: ports/net/opensips/Makefile,v 1.9 2007/08/20 09:12:42 miwi Exp $
 #
 
-PORTNAME=	openser
+PORTNAME=	opensips
 PORTVERSION=	1.3.0
 CATEGORIES=	net
-MASTER_SITES=	http://openser.org/pub/openser/${PORTVERSION}/src/
+MASTER_SITES=	http://opensips.org/pub/opensips/${PORTVERSION}/src/
 DISTNAME=	${PORTNAME}-${PORTVERSION}-tls_src
 
 MAINTAINER=	jesusr@FreeBSD.org
-COMMENT=	A very fast and configurable SIP proxy with TLS support
+COMMENT=	A very fast and configurable SIP server with TLS support
 
 LIB_DEPENDS=	radiusclient-ng.2:${PORTSDIR}/net/radiusclient
 
@@ -24,14 +24,14 @@ MAKE_ENV=	CC="${CC}" \
 		PTHREAD_CFLAGS="${PTHREAD_CFLAGS}" \
 		PTHREAD_LIBS="${PTHREAD_LIBS}"
 
-PLIST_FILES=	sbin/openser sbin/openserctl sbin/openserdbctl sbin/openserunix \
-		lib/openser/openserctl/openserctl.base lib/openser/openserctl/openserctl.ctlbase \
-		lib/openser/openserctl/openserctl.dbtext lib/openser/openserctl/openserctl.fifo \
-		lib/openser/openserctl/openserctl.sqlbase lib/openser/openserctl/openserctl.unixsock \
-		lib/openser/openserctl/openserdbctl.base lib/openser/openserctl/openserdbctl.dbtext \
-		etc/openser/openserctlrc
+PLIST_FILES=	sbin/opensips sbin/opensipsctl sbin/opensipsdbctl sbin/opensipsunix \
+		lib/opensips/opensipsctl/opensipsctl.base lib/opensips/opensipsctl/opensipsctl.ctlbase \
+		lib/opensips/opensipsctl/opensipsctl.dbtext lib/opensips/opensipsctl/opensipsctl.fifo \
+		lib/opensips/opensipsctl/opensipsctl.sqlbase lib/opensips/opensipsctl/opensipsctl.unixsock \
+		lib/opensips/opensipsctl/opensipsdbctl.base lib/opensips/opensipsctl/opensipsdbctl.dbtext \
+		etc/opensips/opensipsctlrc
 
-PLIST_DIRS=	lib/openser/modules lib/openser/openserctl lib/openser
+PLIST_DIRS=	lib/opensips/modules lib/opensips/opensipsctl lib/opensips
 
 MODULES=	acc alias_db auth auth_db auth_diameter avpops benchmark \
 		cfgutils dbtext dialog dispatcher diversion domain \
@@ -44,15 +44,15 @@ MODULES=	acc alias_db auth auth_db auth_diameter avpops benchmark \
 RC_FILES=	acc/radiusclient.conf \
 		acc/servers \
 		dictionary.radius \
-		openser.cfg
+		opensips.cfg
 RC_DIRS=	acc
 
 ONLY_FOR_ARCHS=	i386
 
-MAN5=		openser.cfg.5
-MAN8=		openser.8 \
-		openserctl.8 \
-		openserunix.8
+MAN5=		opensips.cfg.5
+MAN8=		opensips.8 \
+		opensipsctl.8 \
+		opensipsunix.8
 
 PORTDOCS=	*
 
@@ -71,7 +71,7 @@ OPTIONS=	MYSQL "MySQL support" on \
 .if defined(WITH_MYSQL)
 USE_MYSQL=	yes
 MODULES+=	mysql
-PLIST_FILES+=	lib/openser/openserctl/openserdbctl.mysql lib/openser/openserctl/openserctl.mysql
+PLIST_FILES+=	lib/opensips/opensipsctl/opensipsdbctl.mysql lib/opensips/opensipsctl/opensipsctl.mysql
 .else
 MAKE_ENV+=	MYSQL=mysql
 .endif
@@ -79,7 +79,7 @@ MAKE_ENV+=	MYSQL=mysql
 .if defined(WITH_POSTGRESQL)
 USE_PGSQL=	yes
 MODULES+=	postgres
-PLIST_FILES+=	lib/openser/openserctl/openserdbctl.pgsql lib/openser/openserctl/openserctl.pgsql
+PLIST_FILES+=	lib/opensips/opensipsctl/opensipsdbctl.pgsql lib/opensips/opensipsctl/opensipsctl.pgsql
 .else
 MAKE_ENV+=	POSTGRESQL=postgres
 .endif
@@ -94,7 +94,7 @@ MAKE_ENV+=	UNIXODBC=unixodbc
 .if defined(WITH_CPL)
 USE_GNOME=	libxml2
 MODULES+=	cpl-c
-PLIST_FILES+=	etc/openser/cpl-06.dtd
+PLIST_FILES+=	etc/opensips/cpl-06.dtd
 .else
 MAKE_ENV+=	CPL=cpl-c
 .endif
@@ -134,8 +134,8 @@ MODULES+=	snmpstats
 MAKE_ENV+=	SNMPSTATS=snmpstats
 .endif
 
-PLIST_FILES+=	${MODULES:S|^|lib/openser/modules/|:S|$|.so|} \
-		${RC_FILES:S|^|etc/openser/|:S|$|.default|}
+PLIST_FILES+=	${MODULES:S|^|lib/opensips/modules/|:S|$|.so|} \
+		${RC_FILES:S|^|etc/opensips/|:S|$|.default|}
 
 post-patch:
 .if defined(NOPORTDOCS)
@@ -143,30 +143,30 @@ post-patch:
 		${WRKSRC}/Makefile
 .endif
 	@${REINPLACE_CMD} -e 's|-g -O9 ||' -e 's|-O9 ||' ${WRKSRC}/Makefile.defs
-	@${REINPLACE_CMD} -e 's|/usr/local/etc/openser|${PREFIX}/etc/openser|' \
-		${WRKSRC}/scripts/openserdbctl.dbtext
-	@${REINPLACE_CMD} -e 's|/usr/local/share/openser|${PREFIX}/share/openser|' \
-		${WRKSRC}/scripts/openserdbctl.dbtext
-	@${REINPLACE_CMD} -e 's|/etc/openser|${PREFIX}/etc/openser|' \
+	@${REINPLACE_CMD} -e 's|/usr/local/etc/opensips|${PREFIX}/etc/opensips|' \
+		${WRKSRC}/scripts/opensipsdbctl.dbtext
+	@${REINPLACE_CMD} -e 's|/usr/local/share/opensips|${PREFIX}/share/opensips|' \
+		${WRKSRC}/scripts/opensipsdbctl.dbtext
+	@${REINPLACE_CMD} -e 's|/etc/opensips|${PREFIX}/etc/opensips|' \
 		${WRKSRC}/modules/mediaproxy/README \
 		${WRKSRC}/modules/cpl-c/README \
 		${WRKSRC}/INSTALL
-	@${REINPLACE_CMD} -e 's|/usr/local/sbin/openser|${PREFIX}/sbin/openser|' \
+	@${REINPLACE_CMD} -e 's|/usr/local/sbin/opensips|${PREFIX}/sbin/opensips|' \
 		${WRKSRC}/INSTALL
 	@${REINPLACE_CMD} -e 's|/usr/local|${PREFIX}|' \
-		${WRKSRC}/etc/openser.cfg \
-		${WRKSRC}/scripts/openserctl \
-		${WRKSRC}/scripts/openserctl.8 \
-		${WRKSRC}/scripts/openserctl.base \
-		${WRKSRC}/scripts/openserctl.db_berkeley \
-		${WRKSRC}/scripts/openserctl.dbtext \
-		${WRKSRC}/scripts/openserctlrc \
-		${WRKSRC}/scripts/openserdbctl \
-		${WRKSRC}/scripts/openserdbctl.base \
-		${WRKSRC}/scripts/openserdbctl.db_berkeley \
-		${WRKSRC}/scripts/openserdbctl.dbtext \
-		${WRKSRC}/scripts/openserdbctl.mysql \
-		${WRKSRC}/scripts/openserdbctl.pgsql \
+		${WRKSRC}/etc/opensips.cfg \
+		${WRKSRC}/scripts/opensipsctl \
+		${WRKSRC}/scripts/opensipsctl.8 \
+		${WRKSRC}/scripts/opensipsctl.base \
+		${WRKSRC}/scripts/opensipsctl.db_berkeley \
+		${WRKSRC}/scripts/opensipsctl.dbtext \
+		${WRKSRC}/scripts/opensipsctlrc \
+		${WRKSRC}/scripts/opensipsdbctl \
+		${WRKSRC}/scripts/opensipsdbctl.base \
+		${WRKSRC}/scripts/opensipsdbctl.db_berkeley \
+		${WRKSRC}/scripts/opensipsdbctl.dbtext \
+		${WRKSRC}/scripts/opensipsdbctl.mysql \
+		${WRKSRC}/scripts/opensipsdbctl.pgsql \
 		${WRKSRC}/modules/acc/README \
 		${WRKSRC}/modules/avp_radius/README \
 		${WRKSRC}/modules/db_berkeley/README \
@@ -179,22 +179,22 @@ post-patch:
 		${WRKSRC}/modules/unixodbc/README
 	@${REINPLACE_CMD} -e 's|/usr/local|${LOCALBASE}|' \
 		${WRKSRC}/modules/acc/etc/radiusclient.conf
-	@${REINPLACE_CMD} -e 's|/usr/local/etc/radiusclient|${PREFIX}/etc/openser/acc|' \
+	@${REINPLACE_CMD} -e 's|/usr/local/etc/radiusclient|${PREFIX}/etc/opensips/acc|' \
 		${WRKSRC}/modules/acc/acc_mod.c ${WRKSRC}/modules/acc/README
 
 post-install:
-	${INSTALL_DATA} ${WRKSRC}/etc/openser.cfg \
-		${PREFIX}/etc/openser/openser.cfg.default
-	${MKDIR} ${PREFIX}/etc/openser/acc
+	${INSTALL_DATA} ${WRKSRC}/etc/opensips.cfg \
+		${PREFIX}/etc/opensips/opensips.cfg.default
+	${MKDIR} ${PREFIX}/etc/opensips/acc
 	${INSTALL_DATA} ${WRKSRC}/modules/acc/etc/radiusclient.conf \
-		${PREFIX}/etc/openser/acc/radiusclient.conf.default
+		${PREFIX}/etc/opensips/acc/radiusclient.conf.default
 	${INSTALL_DATA} ${WRKSRC}/modules/acc/etc/servers \
-		${PREFIX}/etc/openser/acc/servers.default
+		${PREFIX}/etc/opensips/acc/servers.default
 .for d in ${TLS_RC_DIRS}
-	${MKDIR} ${PREFIX}/etc/openser/${d}
+	${MKDIR} ${PREFIX}/etc/opensips/${d}
 .endfor
 .for f in ${TLS_RC_FILES}
-	${INSTALL_DATA} ${WRKSRC}/etc/${f} ${PREFIX}/etc/openser/${f}.default
+	${INSTALL_DATA} ${WRKSRC}/etc/${f} ${PREFIX}/etc/opensips/${f}.default
 .endfor
 	@PKG_PREFIX=${PREFIX} ${SH} ${PKGINSTALL} ${PKGNAME} POST-INSTALL
 
