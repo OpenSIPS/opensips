@@ -52,6 +52,12 @@ char* get_branch( unsigned int idx, int* len, qvalue_t* q, str* dst_uri,
 
 
 /*! \brief
+ * Disable/Enables parallel branch usage (read and write)
+ */
+void set_dset_state(unsigned char enable);
+
+
+/*! \brief
  * Empty the array of branches
  */
 void clear_branches(void);

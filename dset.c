@@ -72,6 +72,8 @@ struct branch
  */
 static struct branch branches[MAX_BRANCHES - 1];
 
+static unsigned char dset_state = 1 /*enabled*/ ;
+
 /*! how many of them we have */
 unsigned int nr_branches = 0;
 
@@ -158,6 +160,42 @@ int resetbflag(unsigned int b_idx, unsigned int mask)
 }
 
 
+/*! \brief Disable/Enables parallel branch usage (read and write)
+ */
+void set_dset_state(unsigned char enable)
+{
+	static unsigned int bk_nr_branches;
+	static qvalue_t bk_ruri_q;
+	static unsigned int bk_ruri_bflags;
+
+	if (enable) {
+		/* enable dset usage */
+		if (dset_state==1) return; /* already enabled */
+		/* enable read */
+		nr_branches = bk_nr_branches;
+		bk_nr_branches = 0;
+		ruri_q = bk_ruri_q;
+		bk_ruri_q = Q_UNSPECIFIED;
+		ruri_bflags = bk_ruri_bflags;
+		bk_ruri_bflags = 0;
+		/* enable write */
+		dset_state = 1;
+	} else {
+		/* disable dset usage */
+		if (dset_state==0) return; /* already disabled */
+		/* disable read */
+		bk_nr_branches = nr_branches;
+		nr_branches = 0;
+		bk_ruri_q = ruri_q;
+		ruri_q = Q_UNSPECIFIED;
+		bk_ruri_bflags = ruri_bflags;
+		ruri_bflags = 0;
+		/* disabel write */
+		dset_state = 0;
+	}
+}
+
+
 /*! \brief Find the next brand from the destination set
  * \return Return the next branch from the dset
  * array, 0 is returned if there are no
@@ -216,6 +254,9 @@ int append_branch(struct sip_msg* msg, str* uri, str* dst_uri, str* path,
 		qvalue_t q, unsigned int flags, struct socket_info* force_socket)
 {
 	str luri;
+
+	if (dset_state==0)
+		return;
 
 	/* if we have already set up the maximum number
 	 * of branches, don't try new ones 
