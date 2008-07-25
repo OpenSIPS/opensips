@@ -78,6 +78,7 @@ struct rdata {
 struct srv_rdata {
 	unsigned short priority;
 	unsigned short weight;
+	unsigned short running_sum;
 	unsigned short port;
 	unsigned int name_len;
 	char name[MAX_DNS_NAME];

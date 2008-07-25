@@ -24,6 +24,7 @@
  *  2003-02-13  added proto to sip_resolvehost, for SRV lookups (andrei)
  *  2003-07-03  default port value set according to proto (andrei)
  *  2007-01-25  support for DNS failover added (bogdan)
+ *  2008-07-25  support for SRV load-balancing added (bogdan)
  */ 
 
 
@@ -37,6 +38,7 @@
 #include <arpa/nameser.h>
 #include <resolv.h>
 #include <string.h>
+#include <stdlib.h>
 
 #include "mem/mem.h"
 #include "mem/shm_mem.h"
@@ -565,7 +567,7 @@ struct rdata* get_record(char* name, int type)
 					crt_srv=(struct srv_rdata*)(*crt)->rdata;
 					if ((srv_rd->priority <  crt_srv->priority) ||
 					   ( (srv_rd->priority == crt_srv->priority) && 
-							 (srv_rd->weight > crt_srv->weight) ) ){
+							 ((srv_rd->weight==0) || (crt_srv->weight!=0)) ) ){
 						/* insert here */
 						goto skip;
 					}
@@ -755,6 +757,73 @@ static inline int a2dns_node(struct rdata *head, struct dns_node **dn)
 }
 
 
+static inline void sort_srvs(struct rdata **head)
+{
+#define rd2srv(_rd) ((struct srv_rdata*)_rd->rdata)
+	struct rdata *rd = *head;
+	struct rdata *tail = NULL;
+	struct rdata *rd_next;
+	struct rdata *crt;
+	struct rdata *crt2;
+	unsigned int weight_sum;
+	unsigned int rand_no;
+
+
+	*head = NULL;
+
+	while( rd ) {
+		rd_next = rd->next;
+		if (rd->type!=T_SRV) {
+			rd->next = NULL;
+			free_rdata_list(rd);
+		} else {
+			/* only on element with same priority ? */
+			if (rd_next==NULL ||
+			rd2srv(rd)->priority!=rd2srv(rd_next)->priority) {
+				if (tail) {tail->next=rd;tail=rd;}
+				else {*head=tail=rd;}
+			} else {
+				/* multiple nodes with same priority */
+				/* -> calculate running sums (and detect the end) */
+				weight_sum = rd2srv(rd)->running_sum = rd2srv(rd)->weight;
+				crt = rd;
+				while( crt && crt->next && 
+				(rd2srv(rd)->priority==rd2srv(crt->next)->priority) ) {
+					crt = crt->next;
+					weight_sum += rd2srv(crt)->weight;
+					rd2srv(rd)->running_sum = weight_sum;
+				}
+				/* crt will point to last RR with same priority */
+				rd_next = crt->next;
+				crt->next = NULL;
+
+				/* order the elements between rd and crt */
+				while (rd->next) {
+					rand_no = (unsigned int) (weight_sum * rand() / RAND_MAX);
+					for( crt=rd,crt2=NULL ; crt ; crt2=crt,crt=crt->next)
+						if (rd2srv(crt)->running_sum>=rand_no) break;
+					// crt == NULL ??
+					/* remove the element from the list ... */
+					if (crt2==NULL) { rd = rd->next;}
+					else {crt2->next = crt->next;}
+					/* .... and update the running sums */
+					for ( crt2=crt->next ; crt2 ; crt2=crt2->next)
+						rd2srv(crt2)->running_sum -= rd2srv(crt)->weight;
+					/* link the crt in the new list */
+					crt->next = 0;
+					if (tail) {tail->next=crt;tail=crt;}
+					else {*head=tail=crt;}
+				}
+				/* just insert the last remaining element */
+				tail->next = rd; tail = rd ;
+			}
+		}
+
+		rd = rd_next;
+	}
+}
+
+
 static inline struct hostent* do_srv_lookup(char *name, unsigned short* port, struct dns_node **dn)
 {
 	struct hostent *he;
@@ -764,6 +833,7 @@ static inline struct hostent* do_srv_lookup(char *name, unsigned short* port, st
 
 	/* perform SRV lookup */
 	head = get_record( name, T_SRV);
+	sort_srvs(&head);
 	for( rd=head; rd ; rd=rd->next ) {
 		if (rd->type!=T_SRV)
 			continue; /*should never happen*/
