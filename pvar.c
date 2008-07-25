@@ -2332,7 +2332,6 @@ static pv_export_t _pv_names_table[] = {
 		pv_parse_index, 0, 0},
 	{{"var", (sizeof("var")-1)}, PVT_SCRIPTVAR, pv_get_scriptvar,
 		pv_set_scriptvar, pv_parse_scriptvar_name, 0, 0, 0},
-
 	{{"ai", (sizeof("ai")-1)}, /* */
 		PVT_PAI_URI, pv_get_pai, 0,
 		0, 0, 0, 0},
