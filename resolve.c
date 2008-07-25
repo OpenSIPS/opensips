@@ -791,7 +791,7 @@ static inline void sort_srvs(struct rdata **head)
 				(rd2srv(rd)->priority==rd2srv(crt->next)->priority) ) {
 					crt = crt->next;
 					weight_sum += rd2srv(crt)->weight;
-					rd2srv(rd)->running_sum = weight_sum;
+					rd2srv(crt)->running_sum = weight_sum;
 				}
 				/* crt will point to last RR with same priority */
 				rd_next = crt->next;
@@ -799,9 +799,11 @@ static inline void sort_srvs(struct rdata **head)
 
 				/* order the elements between rd and crt */
 				while (rd->next) {
-					rand_no = (unsigned int) (weight_sum * rand() / RAND_MAX);
-					for( crt=rd,crt2=NULL ; crt ; crt2=crt,crt=crt->next)
+					rand_no = (unsigned int)
+						(weight_sum*((float)rand()/RAND_MAX));
+					for( crt=rd,crt2=NULL ; crt ; crt2=crt,crt=crt->next) {
 						if (rd2srv(crt)->running_sum>=rand_no) break;
+					}
 					// crt == NULL ??
 					/* remove the element from the list ... */
 					if (crt2==NULL) { rd = rd->next;}
