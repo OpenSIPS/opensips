@@ -1,6 +1,6 @@
-cat /tmp/openser_reply &
-cat > /tmp/openser_fifo << EOF
-:pdt_add:openser_reply
+cat /tmp/opensips_reply &
+cat > /tmp/opensips_fifo << EOF
+:pdt_add:opensips_reply
 localhost
 *57
 127.com

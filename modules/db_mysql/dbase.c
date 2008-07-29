@@ -178,7 +178,7 @@ static int db_mysql_store_result(const db_con_t* _h, db_res_t** _r)
 		LM_ERR("error while converting result\n");
 		pkg_free(*_r);
 		*_r = 0;
-		/* all mem on openser API side is already freed by
+		/* all mem on opensips API side is already freed by
 		 * db_mysql_convert_result in case of error, but we also need
 		 * to free the mem from the mysql lib side */
 		mysql_free_result(CON_RESULT(_h));

@@ -24,8 +24,8 @@
  *  2005-05-31 created by bogdan
  */
 
-#ifndef _OPENSER_AAA_AVPS_H_
-#define _OPENSER_AAA_AVPS_H_
+#ifndef _OPENSIPS_AAA_AVPS_H_
+#define _OPENSIPS_AAA_AVPS_H_
 
 #include "../../mem/mem.h"
 #include "../../dprint.h"

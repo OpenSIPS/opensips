@@ -83,7 +83,7 @@ static int w_ldap_result_check_2(struct sip_msg* msg,
 /* 
 * Default module parameter values 
 */
-#define DEF_LDAP_CONFIG "/usr/local/etc/openser/ldap.cfg"
+#define DEF_LDAP_CONFIG "/usr/local/etc/opensips/ldap.cfg"
 
 /*
 * Module parameter variables

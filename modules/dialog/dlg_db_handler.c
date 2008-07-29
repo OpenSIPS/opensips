@@ -290,7 +290,7 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 
 		if(dlg->h_entry != VAL_INT(values)){
 			LM_ERR("inconsistent hash data in the dialog database: "
-				"you may have restarted openser using a different hash_size:"
+				"you may have restarted opensips using a different hash_size:"
 				"please erase %.*s database and restart\n", 
 				dialog_table_name.len, dialog_table_name.s);
 			shm_free(dlg);

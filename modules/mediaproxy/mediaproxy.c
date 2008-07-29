@@ -583,8 +583,9 @@ get_user_agent(struct sip_msg* msg)
         return msg->user_agent->body;
     }
 
-    // If we can't find user-agent, look after the `Server' header
-    // This is a temporary hack. Normally it should be extracted by openser.
+    /* If we can't find user-agent, look after the `Server' header
+       This is a temporary hack. Normally it should be extracted by opensips.
+	 */
 
     block.s   = msg->buf;
     block.len = msg->len;

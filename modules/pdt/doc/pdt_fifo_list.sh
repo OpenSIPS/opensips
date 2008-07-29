@@ -1,6 +1,6 @@
-cat /tmp/openser_reply &
-cat > /tmp/openser_fifo << EOF
-:pdt_list:openser_reply
+cat /tmp/opensips_reply &
+cat > /tmp/opensips_fifo << EOF
+:pdt_list:opensips_reply
 local
 .
 .

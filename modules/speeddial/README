@@ -229,22 +229,23 @@ rev_dns=no      # (cmd. line: -R)
 
 # ------------------ module loading ----------------------------------
 
-loadmodule "/usr/local/lib/openser/modules/sl.so"
-loadmodule "/usr/local/lib/openser/modules/tm.so"
-loadmodule "/usr/local/lib/openser/modules/rr.so"
-loadmodule "/usr/local/lib/openser/modules/maxfwd.so"
-loadmodule "/usr/local/lib/openser/modules/usrloc.so"
-loadmodule "/usr/local/lib/openser/modules/registrar.so"
-loadmodule "/usr/local/lib/openser/modules/textops.so"
-loadmodule "/usr/local/lib/openser/modules/mysql.so"
-loadmodule "/usr/local/lib/openser/modules/speeddial.so"
-loadmodule "/usr/local/lib/openser/modules/mi_fifo.so"
+mpath="/usr/local/lib/opensips/modules"
+loadmodule "sl.so"
+loadmodule "tm.so"
+loadmodule "rr.so"
+loadmodule "maxfwd.so"
+loadmodule "usrloc.so"
+loadmodule "registrar.so"
+loadmodule "textops.so"
+loadmodule "mysql.so"
+loadmodule "speeddial.so"
+loadmodule "mi_fifo.so"
 
 # ----------------- setting module-specific parameters ---------------
 
 # -- mi_fifo params --
 
-modparam("mi_fifo", "fifo_name", "/tmp/openser_fifo")
+modparam("mi_fifo", "fifo_name", "/tmp/opensips_fifo")
 
 # -- usrloc params --
 

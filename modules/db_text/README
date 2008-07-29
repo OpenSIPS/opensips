@@ -288,13 +288,13 @@ loadmodule "modules/auth_db/auth_db.so"
 
 # -- mi_fifo params --
 
-modparam("mi_fifo", "fifo_name", "/tmp/openser_fifo")
+modparam("mi_fifo", "fifo_name", "/tmp/opensips_fifo")
 
 # -- usrloc params --
 
 # use dbtext database for persistent storage
 modparam("usrloc", "db_mode", 2)
-modparam("usrloc|auth_db", "db_url", "dbtext:///tmp/openserdb")
+modparam("usrloc|auth_db", "db_url", "dbtext:///tmp/opensipsdb")
 
 # -- auth params --
 #

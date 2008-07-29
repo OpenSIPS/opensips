@@ -169,7 +169,7 @@ unsigned int get_on_reply(void)
 void tm_init_tags(void)
 {
 	init_tags(tm_tags, &tm_tag_suffix, 
-		"OpenSER-TM/tags", TM_TAG_SEPARATOR );
+		"OpenSIPS-TM/tags", TM_TAG_SEPARATOR );
 }
 
 /* returns 0 if the message was previously acknowledged

@@ -301,7 +301,7 @@ int bdblib_create_dbenv(DB_ENV **_dbenv, char* _home)
 	char *progname;
 	int rc, flags;
 	
-	progname = "openser";
+	progname = "opensips";
 	
 	/* Create an environment and initialize it for additional error * reporting. */ 
 	if ((rc = db_env_create(&env, 0)) != 0) 
@@ -550,11 +550,11 @@ void bdblib_log(int op, table_p _tp, char* _msg, int len)
  * files (db) that we require.
  * 
  * There is one db file per opensips table (eg. acc), and they should exist
- * in your DB_PATH (refer to openserctlrc) directory.
+ * in your DB_PATH (refer to opensipsctlrc) directory.
  *
  * This function does _not_ create the underlying binary db tables.
  * Creating the tables MUST be manually performed before 
- * opensips startup by 'openserdbctl create'
+ * opensips startup by 'opensipsdbctl create'
  *
  * Function returns NULL on error, which will cause opensips to exit.
  *
@@ -726,7 +726,7 @@ int bdblib_create_journal(table_p _tp)
 	
 	if(! _db_p || ! _tp) return -1;
 	if(! _db_parms->log_enable) return 0;
-	/* journal filename ; e.g. '/var/openser/db/location-YYYYMMDDhhmmss.jnl' */
+	/* journal filename ; e.g. '/var/opensips/db/location-YYYYMMDDhhmmss.jnl' */
 	s=fn;
 	strncpy(s, _db_p->name.s, _db_p->name.len);
 	s+=_db_p->name.len;

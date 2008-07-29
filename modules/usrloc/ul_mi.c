@@ -48,8 +48,8 @@
 
 
 #define MI_UL_CSEQ 1
-static str mi_ul_cid = str_init("dfjrewr12386fd6-343@openser.mi");
-static str mi_ul_ua  = str_init("OpenSER MI Server");
+static str mi_ul_cid = str_init("dfjrewr12386fd6-343@opensips.mi");
+static str mi_ul_ua  = str_init("OpenSIPS MI Server");
 
 
 

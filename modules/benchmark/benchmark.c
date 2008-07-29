@@ -1,7 +1,7 @@
 /*
  * $Id: benchmark.c 941 2007-04-11 12:37:21Z bastian $
  *
- * Benchmarking module for OpenSER
+ * Benchmarking module for OpenSIPS
  *
  * Copyright (C) 2007 Collax GmbH
  *                    (Bastian Friedrich <bastian.friedrich@collax.com>)
