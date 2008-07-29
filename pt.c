@@ -123,7 +123,7 @@ void set_proc_attrs( char *fmt, ...)
 
 /* This function is to be called only by the main process!
  * */
-pid_t openser_fork(char *proc_desc)
+pid_t internal_fork(char *proc_desc)
 {
 	#define CHILD_COUNTER_STOP  656565656
 	static int process_counter = 1;

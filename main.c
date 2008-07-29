@@ -764,7 +764,7 @@ static int main_loop(void)
 		for(si=udp_listen; si; si=si->next){
 			for(i=0;i<children_no;i++){
 				chd_rank++;
-				if ( (pid=openser_fork( "UDP receiver"))<0 ) {
+				if ( (pid=internal_fork( "UDP receiver"))<0 ) {
 					LM_CRIT("cannot fork UDP process\n");
 					goto error;
 				} else if (pid==0){
@@ -791,7 +791,7 @@ static int main_loop(void)
 		for(si=sctp_listen; si; si=si->next){
 			for(i=0;i<children_no;i++){
 				chd_rank++;
-				if ( (pid=openser_fork( "SCTP receiver"))<0 ) {
+				if ( (pid=internal_fork( "SCTP receiver"))<0 ) {
 					LM_CRIT("cannot fork SCTP process\n");
 					goto error;
 				} else if (pid==0){
@@ -831,7 +831,7 @@ static int main_loop(void)
 		/* start tcp  & tls receivers */
 		if (tcp_init_children(&chd_rank)<0) goto error;
 		/* start tcp+tls master proc */
-		if ( (pid=openser_fork( "TCP main"))<0 ) {
+		if ( (pid=internal_fork( "TCP main"))<0 ) {
 			LM_CRIT("cannot fork tcp main process\n");
 			goto error;
 		}else if (pid==0){

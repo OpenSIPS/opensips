@@ -56,7 +56,7 @@ extern unsigned int counted_processes;
 
 int   init_multi_proc_support();
 void  set_proc_attrs( char *fmt, ...);
-pid_t openser_fork(char *proc_desc);
+pid_t internal_fork(char *proc_desc);
 
 /* return processes pid */
 inline static int my_pid(void)

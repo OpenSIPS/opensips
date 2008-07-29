@@ -567,7 +567,7 @@ int start_module_procs(void)
 			for ( l=0; l<m->exports->procs[n].no ; l++) {
 				LM_DBG("forking process \"%s\"/%d for module %s\n",
 					m->exports->procs[n].name, l, m->exports->name);
-				x = openser_fork(m->exports->procs[n].name);
+				x = internal_fork(m->exports->procs[n].name);
 				if (x<0) {
 					LM_ERR("failed to fork process \"%s\"/%d for module %s\n",
 						m->exports->procs[n].name, l, m->exports->name);

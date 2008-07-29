@@ -378,7 +378,7 @@ int start_timer_processes(void)
 		if (tpl->timer_list==NULL && tpl->utimer_list==NULL)
 			continue;
 		/* fork a new process */
-		if ( (pid=openser_fork("timer"))<0 ) {
+		if ( (pid=internal_fork("timer"))<0 ) {
 			LM_CRIT("cannot fork timer process\n");
 			goto error;
 		} else if (pid==0) {

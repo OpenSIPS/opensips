@@ -1681,7 +1681,7 @@ int tcp_init_children(int *chd_rank)
 		}
 		
 		(*chd_rank)++;
-		pid=openser_fork("SIP receiver TCP");
+		pid=internal_fork("SIP receiver TCP");
 		if (pid<0){
 			LM_ERR("fork failed\n");
 			goto error;
