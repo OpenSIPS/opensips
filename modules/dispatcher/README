@@ -608,6 +608,7 @@ ds_select_dst("1", "0");
 
    Example 1.23. OpenSIPS config script - sample dispatcher usage
 ...
+#
 # $Id$
 # sample config file for dispatcher module
 #
@@ -625,7 +626,7 @@ port=5060
 # for more info: sip_router -h
 
 # ------------------ module loading ----------------------------------
-mpath="/usr/local/lib/openser/modules/"
+mpath="/usr/local/lib/opensips/modules/"
 loadmodule "maxfwd.so"
 loadmodule "sl.so"
 loadmodule "dispatcher.so"
