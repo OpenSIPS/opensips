@@ -1,19 +1,19 @@
 /*
- * $Id$
+ * $Id: opensipsxs.xs 3557 2008-01-20 19:40:20Z bogdan_iancu $
  *
- * Perl module for OpenSER
+ * Perl module for OpenSIPS
  *
  * Copyright (C) 2006 Collax GmbH
  *                    (Bastian Friedrich <bastian.friedrich@collax.com>)
  *
- * This file is part of openser, a free SIP server.
+ * This file is part of opensips, a free SIP server.
  *
- * openser is free software; you can redistribute it and/or modify
+ * opensips is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version
  *
- * openser is distributed in the hope that it will be useful,
+ * opensips is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
@@ -430,19 +430,19 @@ inline int sv2int_str(SV *val, int_str *is,
 /* ************************************************************************ */
 /* Object methods begin here */
 
-=head1 OpenSER
+=head1 OpenSIPS
 
-This module provides access to a limited number of OpenSER core functions.
+This module provides access to a limited number of OpenSIPS core functions.
 As the most interesting functions deal with SIP messages, they are located
-in the OpenSER::Message class below.
+in the OpenSIPS::Message class below.
 
 =cut
 
-MODULE = OpenSER PACKAGE = OpenSER
+MODULE = OpenSIPS PACKAGE = OpenSIPS
 
 =head2 log(level,message)
 
-Logs the message with OpenSER's logging facility. The logging level
+Logs the message with OpenSIPS's logging facility. The logging level
 is one of the following:
 
  * L_ALERT
@@ -455,10 +455,10 @@ is one of the following:
 
 Please note that this method is I<NOT> automatically exported, as it collides
 with the perl function log (which calculates the logarithm). Either explicitly
-import the function (via C<use OpenSER qw ( log );>), or call it with its full
+import the function (via C<use OpenSIPS qw ( log );>), or call it with its full
 name:
 
- OpenSER::log(L_INFO, "foobar");
+ OpenSIPS::log(L_INFO, "foobar");
 
 =cut
 
@@ -482,13 +482,13 @@ log(level, log)
 
 
 
-MODULE = OpenSER PACKAGE = OpenSER::Message
+MODULE = OpenSIPS PACKAGE = OpenSIPS::Message
 
 PROTOTYPES: ENABLE
 
-=head1 OpenSER::Message
+=head1 OpenSIPS::Message
 
-This package provides access functions for an OpenSER C<sip_msg> structure and
+This package provides access functions for an OpenSIPS C<sip_msg> structure and
 its sub-components. Through its means it is possible to fully configure
 alternative routing decisions.
 
@@ -846,7 +846,7 @@ parameters self, string1, string2.
 C<string1> and/or C<string2> may be omitted.
 
 As this function provides access to the functions that are exported to the
-OpenSER configuration file, it is autoloaded for unknown functions. Instead of
+OpenSIPS configuration file, it is autoloaded for unknown functions. Instead of
 writing
 
  $m->moduleFunction("sl_send_reply", "500", "Internal Error");
@@ -859,7 +859,7 @@ you may as well write
 
 WARNING
 
-In OpenSER 1.2, only a limited subset of module functions is available. This
+In OpenSIPS 1.2, only a limited subset of module functions is available. This
 restriction will be removed in a later version.
 
 Here is a list of functions that are expected to be working (not claiming
@@ -992,7 +992,7 @@ moduleFunction (self, func, string1 = NULL, string2 = NULL)
 
 =head2 log(level,message) (deprecated type)
 
-Logs the message with OpenSER's logging facility. The logging level
+Logs the message with OpenSIPS's logging facility. The logging level
 is one of the following:
 
  * L_ALERT
@@ -1003,8 +1003,8 @@ is one of the following:
  * L_INFO
  * L_DBG
 
-The logging function should be accessed via the OpenSER module variant. This
-one, located in OpenSER::Message, is deprecated.
+The logging function should be accessed via the OpenSIPS module variant. This
+one, located in OpenSIPS::Message, is deprecated.
 
 =cut
 
@@ -1286,7 +1286,7 @@ next_branches(self)
 
 =head2 getParsedRURI()
 
-Returns the current destination URI as an OpenSER::URI object.
+Returns the current destination URI as an OpenSIPS::URI object.
 
 =cut
 
@@ -1308,7 +1308,7 @@ getParsedRURI(self)
 
 		uri = &(msg->parsed_uri);
 		ret = sv_newmortal();
-		sv_setref_pv(ret, "OpenSER::URI", (void *)uri);
+		sv_setref_pv(ret, "OpenSIPS::URI", (void *)uri);
 		SvREADONLY_on(SvRV(ret));
 
 		ST(0) = ret;
@@ -1316,9 +1316,9 @@ getParsedRURI(self)
 	
 
 
-MODULE = OpenSER PACKAGE = OpenSER::URI
+MODULE = OpenSIPS PACKAGE = OpenSIPS::URI
 
-=head1 OpenSER::URI
+=head1 OpenSIPS::URI
 
 This package provides functions for access to sip_uri structures.
 
@@ -1588,9 +1588,9 @@ r2_val(self)
 
 
 
-=head1 OpenSER::AVP
+=head1 OpenSIPS::AVP
 
-This package provides access functions for OpenSER's AVPs.
+This package provides access functions for OpenSIPS's AVPs.
 These variables can be created, evaluated, modified and removed through this
 package.
 
@@ -1601,20 +1601,20 @@ documentation of add method below.
 =cut
 
 
-MODULE = OpenSER PACKAGE = OpenSER::AVP
+MODULE = OpenSIPS PACKAGE = OpenSIPS::AVP
 
 =head2 add(name,val)
 
 Add an AVP.
 
-Add an OpenSER AVP to its environment. name and val may both be integers or
+Add an OpenSIPS AVP to its environment. name and val may both be integers or
 strings; this function will try to guess what is correct. Please note that
  
- OpenSER::AVP::add("10", "10")
+ OpenSIPS::AVP::add("10", "10")
 
 is something different than
 
- OpenSER::AVP::add(10, 10)
+ OpenSIPS::AVP::add(10, 10)
 
 due to this evaluation: The first will create _string_ AVPs with the name
 10, while the latter will create a numerical AVP.
@@ -1654,10 +1654,10 @@ add(p_name, p_val)
 
 =head2 get(name)
 
-get an OpenSER AVP:
+get an OpenSIPS AVP:
 
- my $numavp = OpenSER::AVP::get(5);
- my $stravp = OpenSER::AVP::get("foo");
+ my $numavp = OpenSIPS::AVP::get(5);
+ my $stravp = OpenSIPS::AVP::get("foo");
 
 =cut
 
@@ -1707,8 +1707,8 @@ get(p_name)
 
 Destroy an AVP.
 
- OpenSER::AVP::destroy(5);
- OpenSER::AVP::destroy("foo");
+ OpenSIPS::AVP::destroy(5);
+ OpenSIPS::AVP::destroy("foo");
 
 =cut
 

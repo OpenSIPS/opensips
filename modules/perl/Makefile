@@ -24,7 +24,7 @@ endif
 
 include ../../Makefile.modules
 
-PODFILES=openserxs.xs `find lib/perl -name *.pm`
+PODFILES=opensipsxs.xs `find lib/perl -name *.pm`
 
 ifeq ($(TYPEMAP),)
 	ifeq ($(PERLLIBPATH),)
@@ -33,44 +33,44 @@ ifeq ($(TYPEMAP),)
 	TYPEMAP=$(PERLLIBPATH)/ExtUtils/typemap
 endif
 
-perl.d: openserxs.o
-perl.o: perl.c openserxs.o
+perl.d: opensipsxs.o
+perl.o: perl.c opensipsxs.o
 
-openserxs.o: openserxs.c openserxs.d
-	$(CC) $(MOD_CFLAGS) -Wno-unused $(DEFS) -c -o openserxs.o openserxs.c
+opensipsxs.o: opensipsxs.c opensipsxs.d
+	$(CC) $(MOD_CFLAGS) -Wno-unused $(DEFS) -c -o opensipsxs.o opensipsxs.c
 
-openserxs.c: openserxs.xs typemap
-	xsubpp -typemap $(TYPEMAP) -typemap typemap openserxs.xs > openserxs.c
+opensipsxs.c: opensipsxs.xs typemap
+	xsubpp -typemap $(TYPEMAP) -typemap typemap opensipsxs.xs > opensipsxs.c
 
 clean:	clean-special
 
 .PHONY: clean-special
 clean-special:
-	rm -f openserxs.c openserxs.o openserxs.d
+	rm -f opensipsxs.c opensipsxs.o opensipsxs.d
 
 .PHONY: perlpod
 perlpod: doc/perl_pod.sgml
 
-doc/perl_pod.sgml: openserxs.xs
-	cat $(PODFILES) | pod2docbook --doctype=chapter --title='OpenSER Perl API' --no-header - doc/perl_pod.sgml
+doc/perl_pod.sgml: opensipsxs.xs
+	cat $(PODFILES) | pod2docbook --doctype=chapter --title='OpenSIPS Perl API' --no-header - doc/perl_pod.sgml
 
 install_module_custom:
-	echo "installing Perl OpenSER packages ..."
+	echo "installing Perl OpenSIPS packages ..."
 	mkdir -p $(modules-prefix)/$(lib-dir)/perl
 	$(INSTALL_CFG) lib/perl/*.pm $(modules-prefix)/$(lib-dir)/perl
-	mkdir -p $(modules-prefix)/$(lib-dir)/perl/OpenSER
-	$(INSTALL_CFG) lib/perl/OpenSER/*.pm \
-		$(modules-prefix)/$(lib-dir)/perl/OpenSER
-	mkdir -p $(modules-prefix)/$(lib-dir)/perl/OpenSER/LDAPUtils
-	$(INSTALL_CFG) lib/perl/OpenSER/LDAPUtils/*.pm \
-		$(modules-prefix)/$(lib-dir)/perl/OpenSER/LDAPUtils
-	mkdir -p $(modules-prefix)/$(lib-dir)/perl/OpenSER/Utils
-	$(INSTALL_CFG) lib/perl/OpenSER/Utils/*.pm \
-		$(modules-prefix)/$(lib-dir)/perl/OpenSER/Utils
-	mkdir -p $(modules-prefix)/$(lib-dir)/perl/OpenSER/VDB
-	$(INSTALL_CFG) lib/perl/OpenSER/VDB/*.pm \
-		$(modules-prefix)/$(lib-dir)/perl/OpenSER/VDB
-	mkdir -p $(modules-prefix)/$(lib-dir)/perl/OpenSER/VDB/Adapter
-	$(INSTALL_CFG) lib/perl/OpenSER/VDB/Adapter/*.pm \
-		$(modules-prefix)/$(lib-dir)/perl/OpenSER/VDB/Adapter
+	mkdir -p $(modules-prefix)/$(lib-dir)/perl/OpenSIPS
+	$(INSTALL_CFG) lib/perl/OpenSIPS/*.pm \
+		$(modules-prefix)/$(lib-dir)/perl/OpenSIPS
+	mkdir -p $(modules-prefix)/$(lib-dir)/perl/OpenSIPS/LDAPUtils
+	$(INSTALL_CFG) lib/perl/OpenSIPS/LDAPUtils/*.pm \
+		$(modules-prefix)/$(lib-dir)/perl/OpenSIPS/LDAPUtils
+	mkdir -p $(modules-prefix)/$(lib-dir)/perl/OpenSIPS/Utils
+	$(INSTALL_CFG) lib/perl/OpenSIPS/Utils/*.pm \
+		$(modules-prefix)/$(lib-dir)/perl/OpenSIPS/Utils
+	mkdir -p $(modules-prefix)/$(lib-dir)/perl/OpenSIPS/VDB
+	$(INSTALL_CFG) lib/perl/OpenSIPS/VDB/*.pm \
+		$(modules-prefix)/$(lib-dir)/perl/OpenSIPS/VDB
+	mkdir -p $(modules-prefix)/$(lib-dir)/perl/OpenSIPS/VDB/Adapter
+	$(INSTALL_CFG) lib/perl/OpenSIPS/VDB/Adapter/*.pm \
+		$(modules-prefix)/$(lib-dir)/perl/OpenSIPS/VDB/Adapter
 
