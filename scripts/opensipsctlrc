@@ -1,6 +1,6 @@
 # $Id: opensipsctlrc 4331 2008-06-06 14:36:01Z anca_vamanu $
 #
-# The OpenSER configuration file for the control tools.
+# The OpenSIPS configuration file for the control tools.
 #
 # Here you can set variables used in the opensipsctl and opensipsdbctl setup
 # scripts. Per default all variables here are commented out, the control tools
@@ -121,7 +121,7 @@
 ## in the subscriber table - default '1'
 # STORE_PLAINTEXT_PW=0
 
-## OPENSER START Options
+## OPENSIPS START Options
 ## PID file path - default is: /var/run/opensips.pid
 # PID_FILE=/var/run/opensips.pid
 

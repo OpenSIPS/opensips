@@ -1,7 +1,7 @@
 # $Id$
 
 The content here is quite obselete. Please refer to
-http://www.openser.org/docs/modules/ for a actual list.
+http://www.opensips.org/docs/modules/ for a actual list.
 
 
 'Use' tells how deployable a module is. Regular indicates
@@ -15,7 +15,7 @@ beta if it is under test.
 'Depends on' field tells which modules the module needs. 
 
 
-List of currently available openser modules:
+List of currently available opensips modules:
 
 Name:       acc
 Use:        regular

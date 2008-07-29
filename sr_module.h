@@ -78,7 +78,7 @@ typedef void (*mod_proc)(int no);
 typedef int (*mod_proc_wrapper)();
 
 /* Macros - used as rank in child_init function */
-#define PROC_MAIN      0  /* Main openser process */
+#define PROC_MAIN      0  /* Main opensips process */
 #define PROC_TIMER    -1  /* Timer attendant process */
 #define PROC_TCP_MAIN -4  /* TCP main process */
 
@@ -154,7 +154,7 @@ struct module_exports{
 	response_function response_f;   /*!< function used for responses,
 	                                   returns yes or no; can be null */
 	destroy_function destroy_f;     /*!< function called when the module should
-	                                   be "destroyed", e.g: on openser exit */
+	                                   be "destroyed", e.g: on opensips exit */
 	child_init_function init_child_f;/*!< function called by all processes
 	                                    after the fork */
 };

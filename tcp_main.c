@@ -124,7 +124,7 @@ enum fd_types { F_NONE, F_SOCKINFO /* a tcp_listen fd */,
 
 struct tcp_child {
 	pid_t pid;
-	int proc_no;		/*!<  OpenSER proc_no, for debugging */
+	int proc_no;		/*!<  OpenSIPS proc_no, for debugging */
 	int unix_sock;		/*!< unix "read child" sock fd */
 	int busy;
 	int n_reqs;		/*!< number of requests serviced so far */
@@ -1448,7 +1448,7 @@ void tcp_main_loop(void)
 		}
 	}
 #endif
-	/* add all the unix sockets used for communcation with other openser 
+	/* add all the unix sockets used for communcation with other opensips
 	 * processes (get fd, new connection a.s.o) */
 	for (r=1; r<counted_processes; r++){
 		/* skip myslef (as process) and -1 socks (disabled) 

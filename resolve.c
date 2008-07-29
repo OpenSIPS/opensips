@@ -30,7 +30,7 @@
 
 /*!
  * \file 
- * \brief DNS resolver for OpenSER
+ * \brief DNS resolver for OpenSIPS
  */
 
 #include <sys/types.h>
