@@ -518,8 +518,13 @@ static inline int pre_match_parse( struct sip_msg *req, str *callid,
 														str *ftag, str *ttag)
 {
 	if (parse_headers(req,HDR_CALLID_F|HDR_TO_F,0)<0 || !req->callid ||
-	!req->to || get_to(req)->tag_value.len==0 ) {
+	!req->to ) {
 		LM_ERR("bad request or missing CALLID/TO hdr :-/\n");
+		return -1;
+	}
+
+	if (get_to(req)->tag_value.len==0) {
+		/* out of dialog request with preloaded Route headers; ignore. */
 		return -1;
 	}
 
