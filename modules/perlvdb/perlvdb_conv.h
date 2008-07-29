@@ -35,9 +35,9 @@
 
 #include <XSUB.h>
 
-#define PERL_CLASS_VALUE	"OpenSER::VDB::Value"
-#define PERL_CLASS_PAIR		"OpenSER::VDB::Pair"
-#define PERL_CLASS_REQCOND	"OpenSER::VDB::ReqCond"
+#define PERL_CLASS_VALUE	"OpenSIPS::VDB::Value"
+#define PERL_CLASS_PAIR		"OpenSIPS::VDB::Pair"
+#define PERL_CLASS_REQCOND	"OpenSIPS::VDB::ReqCond"
 
 #define PERL_CONSTRUCTOR_NAME	"new"
 

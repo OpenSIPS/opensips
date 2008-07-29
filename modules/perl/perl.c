@@ -1,7 +1,7 @@
 /*
  * $Id$
  *
- * Perl module for OpenSER
+ * Perl module for OpenSIPS
  *
  * Copyright (C) 2006 Collax GmbH
  *                    (Bastian Friedrich <bastian.friedrich@collax.com>)
@@ -24,7 +24,7 @@
  *
  */
 
-#define DEFAULTMODULE "OpenSER"
+#define DEFAULTMODULE "OpenSIPS"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -173,7 +173,7 @@ static int child_init(int rank)
 
 
 EXTERN_C void boot_DynaLoader (pTHX_ CV* cv);
-EXTERN_C void boot_OpenSER(pTHX_ CV* cv);
+EXTERN_C void boot_OpenSIPS(pTHX_ CV* cv);
 
 
 /*
@@ -184,7 +184,7 @@ EXTERN_C void xs_init(pTHX) {
         char *file = __FILE__;
         dXSUB_SYS;
 
-        newXS("OpenSER::bootstrap", boot_OpenSER, file);
+        newXS("OpenSIPS::bootstrap", boot_OpenSIPS, file);
 
         newXS("DynaLoader::boot_DynaLoader", boot_DynaLoader, file);
 }
@@ -220,7 +220,7 @@ PerlInterpreter *parser_init(void) {
 		argc++;
 	}
 
-	argv[argc] = "-M"DEFAULTMODULE; argc++; /* Always "use" Openser.pm */
+	argv[argc] = "-M"DEFAULTMODULE; argc++; /* Always "use" Opensips.pm */
 
 	argv[argc] = filename; /* The script itself */
 	argc++;

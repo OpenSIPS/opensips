@@ -1,7 +1,7 @@
 /*
  * $Id$
  *
- * Perl module for OpenSER
+ * Perl module for OpenSIPS
  *
  * Copyright (C) 2006 Collax GmbH
  *                    (Bastian Friedrich <bastian.friedrich@collax.com>)
@@ -44,7 +44,7 @@ extern PerlInterpreter *my_perl;
 
 extern struct sl_binds slb;
 
-#define PERLCLASS_MESSAGE	"OpenSER::Message"
-#define PERLCLASS_URI		"OpenSER::URI"
+#define PERLCLASS_MESSAGE	"OpenSIPS::Message"
+#define PERLCLASS_URI		"OpenSIPS::URI"
 
 #endif /* PERL_MOD_H */

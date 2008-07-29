@@ -1,19 +1,19 @@
 #
 # $Id: TableVersions.pm 757 2007-01-05 10:56:28Z bastian $
 #
-# Perl module for OpenSER
+# Perl module for OpenSIPS
 #
 # Copyright (C) 2007 Collax GmbH
 #                    (Bastian Friedrich <bastian.friedrich@collax.com>)
 #
-# This file is part of openser, a free SIP server.
+# This file is part of opensips, a free SIP server.
 #
-# openser is free software; you can redistribute it and/or modify
+# opensips is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or
 # (at your option) any later version
 #
-# openser is distributed in the hope that it will be useful,
+# opensips is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
@@ -23,10 +23,10 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
 
-package OpenSER::VDB::Adapter::TableVersions;
+package OpenSIPS::VDB::Adapter::TableVersions;
 
-use OpenSER;
-use OpenSER::Constants;
+use OpenSIPS;
+use OpenSIPS::Constants;
 
 sub version {
 	my $table = shift;
@@ -37,10 +37,10 @@ sub version {
 	my @cols;
 	my @row;
 
-	push @cols, new OpenSER::VDB::Column(DB_INT, "table_version");
-	push @row, new OpenSER::VDB::Value(DB_INT, $v);
+	push @cols, new OpenSIPS::VDB::Column(DB_INT, "table_version");
+	push @row, new OpenSIPS::VDB::Value(DB_INT, $v);
 	
-	return new OpenSER::VDB::Result(\@cols, (bless \@row, OpenSER::Utils::Debug));
+	return new OpenSIPS::VDB::Result(\@cols, (bless \@row, OpenSIPS::Utils::Debug));
 }
 
 1;

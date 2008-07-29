@@ -1,19 +1,19 @@
 #
 # $Id$
 #
-# Perl module for OpenSER
+# Perl module for OpenSIPS
 #
 # Copyright (C) 2006 Collax GmbH
 #                    (Bastian Friedrich <bastian.friedrich@collax.com>)
 #
-# This file is part of openser, a free SIP server.
+# This file is part of opensips, a free SIP server.
 #
-# openser is free software; you can redistribute it and/or modify
+# opensips is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or
 # (at your option) any later version
 #
-# openser is distributed in the hope that it will be useful,
+# opensips is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
@@ -26,13 +26,13 @@
 # This file was kindly donated by Collax GmbH
 
 
-=head1 OpenSER::Utils::PhoneNumbers
+=head1 OpenSIPS::Utils::PhoneNumbers
 
-OpenSER::Utils::PhoneNumbers - Functions for canonical forms of phone numbers.
+OpenSIPS::Utils::PhoneNumbers - Functions for canonical forms of phone numbers.
 
- use OpenSER::Utils::PhoneNumbers;
+ use OpenSIPS::Utils::PhoneNumbers;
 
- my $phonenumbers = new OpenSER::Utils::PhoneNumbers(
+ my $phonenumbers = new OpenSIPS::Utils::PhoneNumbers(
       publicAccessPrefix => "0",
       internationalPrefix => "+",
       longDistancePrefix => "0",
@@ -81,7 +81,7 @@ This module exports the following functions when C<use>ed:
 
 =cut
 
-package OpenSER::Utils::PhoneNumbers;
+package OpenSIPS::Utils::PhoneNumbers;
 
 use Exporter;
 our @ISA = qw(Exporter);
@@ -94,7 +94,7 @@ our @EXPORT = qw(
 
 The new operator returns an object of this type and sets its locational
 context according to the passed parameters. See
-L<OpenSER::Utils::PhoneNumbers> above.
+L<OpenSIPS::Utils::PhoneNumbers> above.
 
 =cut
 

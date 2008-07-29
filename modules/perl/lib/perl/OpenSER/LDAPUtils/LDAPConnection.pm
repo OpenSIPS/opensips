@@ -1,19 +1,19 @@
 #
 # $Id$
 #
-# Perl module for OpenSER
+# Perl module for OpenSIPS
 #
 # Copyright (C) 2006 Collax GmbH
 #		     (Bastian Friedrich <bastian.friedrich@collax.com>)
 #
-# This file is part of openser, a free SIP server.
+# This file is part of opensips, a free SIP server.
 #
-# openser is free software; you can redistribute it and/or modify
+# opensips is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or
 # (at your option) any later version
 #
-# openser is distributed in the hope that it will be useful,
+# opensips is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
@@ -25,21 +25,21 @@
 
 # This file was kindly donated by Collax GmbH
 
-=head1 OpenSER::LDAPUtils::LDAPConnection
+=head1 OpenSIPS::LDAPUtils::LDAPConnection
 
-OpenSER::LDAPUtils::LDAPConnection - Perl module to perform simple LDAP queries.
+OpenSIPS::LDAPUtils::LDAPConnection - Perl module to perform simple LDAP queries.
 
 OO-Style interface:
 
-  use OpenSER::LDAPUtils::LDAPConnection;
-  my $ldap = new OpenSER::LDAPUtils::LDAPConnection;
+  use OpenSIPS::LDAPUtils::LDAPConnection;
+  my $ldap = new OpenSIPS::LDAPUtils::LDAPConnection;
   my @rows = $ldap-search("uid=andi","ou=people,ou=coreworks,ou=de");
 
 Procedural interface:
 
-  use OpenSER::LDAPUtils::LDAPConnection;
+  use OpenSIPS::LDAPUtils::LDAPConnection;
   my @rows = $ldap->search(
-  	new OpenSER::LDAPUtils::LDAPConfig(), "uid=andi","ou=people,ou=coreworks,ou=de");
+  	new OpenSIPS::LDAPUtils::LDAPConfig(), "uid=andi","ou=people,ou=coreworks,ou=de");
 
 This perl module offers a somewhat simplified interface to the C<Net::LDAP>
 functionality. It is intended for cases where just a few attributes should
@@ -47,9 +47,9 @@ be retrieved without the overhead of the full featured C<Net::LDAP>.
 
 =cut
 
-package OpenSER::LDAPUtils::LDAPConnection;
+package OpenSIPS::LDAPUtils::LDAPConnection;
 
-use OpenSER::LDAPUtils::LDAPConf;
+use OpenSIPS::LDAPUtils::LDAPConf;
 use Net::LDAP;
 use Authen::SASL;
 use UNIVERSAL qw( isa );
@@ -62,9 +62,9 @@ my $ldap_singleton = undef;
 Set up a new LDAP connection.
 
 The first argument, when given, should be a hash reference pointing
-to to the connection parameters, possibly an C<OpenSER::LDAPUtils::LDAPConfig>
+to to the connection parameters, possibly an C<OpenSIPS::LDAPUtils::LDAPConfig>
 object. This argument may be C<undef> in which case a new (default)
-C<OpenSER::LDAPUtils::LDAPConfig> object is used.
+C<OpenSIPS::LDAPUtils::LDAPConfig> object is used.
 
 When the optional second argument is a true value, the connection
 will be authenticated. Otherwise an anonymous bind is done.
@@ -79,7 +79,7 @@ sub new {
     my $doauth   = shift;
 
     if( ! defined( $conf ) ) {
-      $conf = new OpenSER::LDAPUtils::LDAPConf();
+      $conf = new OpenSIPS::LDAPUtils::LDAPConf();
     }
 
     #print STDERR "new ldap checks\n";
@@ -137,14 +137,14 @@ perform an ldap search, return the dn of the first matching
 directory entry, unless a specific attribute has been requested,
 in wich case the values(s) fot this attribute are returned.
 
-When the first argument (conf) is a C<OpenSER::LDAPUtils::LDAPConnection>, it
+When the first argument (conf) is a C<OpenSIPS::LDAPUtils::LDAPConnection>, it
 will be used to perform the queries. You can pass the first argument 
 implicitly by using the "method" syntax.
 
 Otherwise the C<conf> argument should be a reference to a hash 
 containing the connection setup parameters as contained in a 
-C<OpenSER::LDAPUtils::LDAPConf> object. In this mode, the
-C<OpenSER::LDAPUtils::LDAPConnection> from previous queries will be reused.
+C<OpenSIPS::LDAPUtils::LDAPConf> object. In this mode, the
+C<OpenSIPS::LDAPUtils::LDAPConnection> from previous queries will be reused.
 
 =head3 Arguments:
 
@@ -185,11 +185,11 @@ sub search {
 
     my $ldap = undef;
 
-    if( isa($conf ,"OpenSER::LDAPUtils::LDAPConnection") ) {
+    if( isa($conf ,"OpenSIPS::LDAPUtils::LDAPConnection") ) {
       $ldap = $conf;
     } else {
       if( ! $ldap_singleton ) {
-        $ldap_singleton = new OpenSER::LDAPUtils::LDAPConnection($conf);
+        $ldap_singleton = new OpenSIPS::LDAPUtils::LDAPConnection($conf);
       }
       return undef unless $ldap_singleton;
       $ldap = $ldap_singleton;

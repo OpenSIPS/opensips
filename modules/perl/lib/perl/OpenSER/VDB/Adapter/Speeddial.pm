@@ -1,19 +1,19 @@
 #
 # $Id: Speeddial.pm 757 2007-01-05 10:56:28Z bastian $
 #
-# Perl module for OpenSER
+# Perl module for OpenSIPS
 #
 # Copyright (C) 2007 Collax GmbH
 #                    (Bastian Friedrich <bastian.friedrich@collax.com>)
 #
-# This file is part of openser, a free SIP server.
+# This file is part of opensips, a free SIP server.
 #
-# openser is free software; you can redistribute it and/or modify
+# opensips is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or
 # (at your option) any later version
 #
-# openser is distributed in the hope that it will be useful,
+# opensips is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
@@ -23,22 +23,22 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
 
-=head1 OpenSER::VDB::Adapter::Speeddial
+=head1 OpenSIPS::VDB::Adapter::Speeddial
 
 This adapter can be used with the speeddial module.
 
 =cut
 
-package OpenSER::VDB::Adapter::Speeddial;
+package OpenSIPS::VDB::Adapter::Speeddial;
 
-use OpenSER::Constants;
-use OpenSER qw ( log );
+use OpenSIPS::Constants;
+use OpenSIPS qw ( log );
 
-use OpenSER::VDB;
-use OpenSER::VDB::Column;
-use OpenSER::VDB::Result;
+use OpenSIPS::VDB;
+use OpenSIPS::VDB::Column;
+use OpenSIPS::VDB::Result;
 
-our @ISA = qw ( OpenSER::VDB );
+our @ISA = qw ( OpenSIPS::VDB );
 
 sub query {
 	my $self = shift;
@@ -66,14 +66,14 @@ sub query {
 	
 	my $result;
 
-	push @cols, new OpenSER::VDB::Column(DB_STRING, "uid_name");
+	push @cols, new OpenSIPS::VDB::Column(DB_STRING, "uid_name");
 
 	if ($newaddr) {
-		my $resval = new OpenSER::VDB::Value(DB_STRING, $newaddr );
+		my $resval = new OpenSIPS::VDB::Value(DB_STRING, $newaddr );
 		push my @row, $resval;
-		$result = new OpenSER::VDB::Result(\@cols, (bless \@row, "OpenSER::Utils::Debug"));
+		$result = new OpenSIPS::VDB::Result(\@cols, (bless \@row, "OpenSIPS::Utils::Debug"));
 	} else {
-		$result = new OpenSER::VDB::Result(\@cols);
+		$result = new OpenSIPS::VDB::Result(\@cols);
 	}
 
 	return $result;

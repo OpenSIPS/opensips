@@ -1,19 +1,19 @@
 #
 # $Id: Describe.pm 757 2007-01-05 10:56:28Z bastian $
 #
-# Perl module for OpenSER
+# Perl module for OpenSIPS
 #
 # Copyright (C) 2007 Collax GmbH
 #                    (Bastian Friedrich <bastian.friedrich@collax.com>)
 #
-# This file is part of openser, a free SIP server.
+# This file is part of opensips, a free SIP server.
 #
-# openser is free software; you can redistribute it and/or modify
+# opensips is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or
 # (at your option) any later version
 #
-# openser is distributed in the hope that it will be useful,
+# opensips is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
@@ -23,7 +23,7 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
 
-=head1 OpenSER::VDB::Adapter::Describe
+=head1 OpenSIPS::VDB::Adapter::Describe
 
 This package is intended for debug usage. It will print information about requested
 functions and operations of a client module.
@@ -32,18 +32,18 @@ Use this module to request schema information when creating new adapters.
 
 =cut
 
-package OpenSER::VDB::Adapter::Describe;
+package OpenSIPS::VDB::Adapter::Describe;
 
-use OpenSER::Constants;
-use OpenSER qw ( log );
+use OpenSIPS::Constants;
+use OpenSIPS qw ( log );
 
-use OpenSER::VDB;
-use OpenSER::VDB::Column;
-use OpenSER::VDB::Result;
+use OpenSIPS::VDB;
+use OpenSIPS::VDB::Column;
+use OpenSIPS::VDB::Result;
 
 use Data::Dumper;
 
-our @ISA = qw ( OpenSER::VDB );
+our @ISA = qw ( OpenSIPS::VDB );
 
 sub use_table {
 	my $self = shift;
@@ -132,12 +132,12 @@ sub query {
 
 	for my $k (@$retkeys) {
 		$keys_descr .= " ($k)";
-		push @cols, new OpenSER::VDB::Column(DB_STRING, $k);
+		push @cols, new OpenSIPS::VDB::Column(DB_STRING, $k);
 	}
 	log(L_INFO, "perlvdb:Describe: The following keys were requested: $keys_descr\n");
 	log(L_INFO, "perlvdb:Describe: Order requested: '$order'\n");
 
-	return new OpenSER::VDB::Result(\@cols);
+	return new OpenSIPS::VDB::Result(\@cols);
 }
 
 1;

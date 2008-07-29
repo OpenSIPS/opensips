@@ -1,19 +1,19 @@
 #
 # $Id: ReqCond.pm 757 2007-01-05 10:56:28Z bastian $
 #
-# Perl module for OpenSER
+# Perl module for OpenSIPS
 #
 # Copyright (C) 2006 Collax GmbH
 #                    (Bastian Friedrich <bastian.friedrich@collax.com>)
 #
-# This file is part of openser, a free SIP server.
+# This file is part of opensips, a free SIP server.
 #
-# openser is free software; you can redistribute it and/or modify
+# opensips is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or
 # (at your option) any later version
 #
-# openser is distributed in the hope that it will be useful,
+# opensips is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
@@ -23,21 +23,21 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
 
-=head1 OpenSER::VDB::ReqCond
+=head1 OpenSIPS::VDB::ReqCond
 
 This package represents a request condition for database access, consisting of a 
 column name, an operator (=, <, >, ...), a data type and a value.
 
-This package inherits from OpenSER::VDB::Pair and thus includes its methods.
+This package inherits from OpenSIPS::VDB::Pair and thus includes its methods.
 
 =cut
 
-package OpenSER::VDB::ReqCond;
+package OpenSIPS::VDB::ReqCond;
 
-use OpenSER::VDB::Value;
-use OpenSER::VDB::Pair;
+use OpenSIPS::VDB::Value;
+use OpenSIPS::VDB::Pair;
 
-our @ISA = qw ( OpenSER::VDB::Pair OpenSER::Utils::Debug );
+our @ISA = qw ( OpenSIPS::VDB::Pair OpenSIPS::Utils::Debug );
 
 =head2 new(key,op,type,name)
 
@@ -52,7 +52,7 @@ sub new {
 	my $type = shift;
 	my $data = shift;
 
-	my $self = new OpenSER::VDB::Pair($key, $type, $data);
+	my $self = new OpenSIPS::VDB::Pair($key, $type, $data);
 
 	bless $self, $class;
 

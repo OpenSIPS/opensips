@@ -1,5 +1,5 @@
-use OpenSER qw ( log );
-use OpenSER::Constants;
+use OpenSIPS qw ( log );
+use OpenSIPS::Constants;
 
 sub setflag{
 	my $m = shift;

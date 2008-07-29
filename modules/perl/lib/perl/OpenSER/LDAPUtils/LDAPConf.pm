@@ -1,19 +1,19 @@
 #
 # $Id$
 #
-# Perl module for OpenSER
+# Perl module for OpenSIPS
 #
 # Copyright (C) 2006 Collax GmbH 
 #                    (Bastian Friedrich <bastian.friedrich@collax.com>)
 #
-# This file is part of openser, a free SIP server.
+# This file is part of opensips, a free SIP server.
 #
-# openser is free software; you can redistribute it and/or modify
+# opensips is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or
 # (at your option) any later version
 #
-# openser is distributed in the hope that it will be useful,
+# opensips is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
@@ -25,12 +25,12 @@
 
 # This file was kindly donated by Collax GmbH
 
-=head1 OpenSER::LDAPUtils::LDAPConf
+=head1 OpenSIPS::LDAPUtils::LDAPConf
 
-OpenSER::LDAPUtils::LDAPConf - Read openldap config from standard config files.
+OpenSIPS::LDAPUtils::LDAPConf - Read openldap config from standard config files.
 
- use OpenSER::LDAPUtils::LDAPConf;
- my $conf = new OpenSER::LDAPUtils::LDAPConf();
+ use OpenSIPS::LDAPUtils::LDAPConf;
+ my $conf = new OpenSIPS::LDAPUtils::LDAPConf();
 
 This module may be used to retrieve the global LDAP configuration as
 used by other LDAP software, such as C<nsswitch.ldap> and C<pam-ldap>.
@@ -40,7 +40,7 @@ When used from an account with sufficient privilegs (e.g. root), the
 ldap manager passwort is also retrieved.
 
 =cut
-package OpenSER::LDAPUtils::LDAPConf;
+package OpenSIPS::LDAPUtils::LDAPConf;
 
 my $def_ldap_path = "/etc/openldap" ;
 my $def_conf      = "ldap.conf";
@@ -48,7 +48,7 @@ my $def_secret    = "ldap.secret";
 
 =head2 Constructor new()
 
-Returns a new, initialized C<OpenSER::LDAPUtils::LDAPConf> object.
+Returns a new, initialized C<OpenSIPS::LDAPUtils::LDAPConf> object.
 
 =cut
 sub new {

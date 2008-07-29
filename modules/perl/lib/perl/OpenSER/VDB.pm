@@ -1,19 +1,19 @@
 #
 # $Id: VDB.pm 757 2007-01-05 10:56:28Z bastian $
 #
-# Perl module for OpenSER
+# Perl module for OpenSIPS
 #
 # Copyright (C) 2006 Collax GmbH
 #                    (Bastian Friedrich <bastian.friedrich@collax.com>)
 #
-# This file is part of openser, a free SIP server.
+# This file is part of opensips, a free SIP server.
 #
-# openser is free software; you can redistribute it and/or modify
+# opensips is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or
 # (at your option) any later version
 #
-# openser is distributed in the hope that it will be useful,
+# opensips is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
@@ -23,31 +23,31 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
 
-=head1 OpenSER::VDB
+=head1 OpenSIPS::VDB
 
 This package is an (abstract) base class for all virtual databases. Derived
-packages can be configured to be used by OpenSER as a database.
+packages can be configured to be used by OpenSIPS as a database.
 
 The base class itself should NOT be used in this context, as it does not
 provide any functionality.
 
 =cut
 
-package OpenSER::VDB;
+package OpenSIPS::VDB;
 
-use OpenSER;
-use OpenSER::Constants;
+use OpenSIPS;
+use OpenSIPS::Constants;
 
-use OpenSER::VDB::Column;
-use OpenSER::VDB::Pair;
-use OpenSER::VDB::ReqCond;
-use OpenSER::VDB::Result;
-use OpenSER::VDB::Value;
-use OpenSER::VDB::VTab;
+use OpenSIPS::VDB::Column;
+use OpenSIPS::VDB::Pair;
+use OpenSIPS::VDB::ReqCond;
+use OpenSIPS::VDB::Result;
+use OpenSIPS::VDB::Value;
+use OpenSIPS::VDB::VTab;
 
 use UNIVERSAL qw ( can );
 
-our @ISA = qw ( OpenSER::Utils::Debug );
+our @ISA = qw ( OpenSIPS::Utils::Debug );
 
 sub new {
 	my $class = shift;
@@ -85,22 +85,22 @@ sub use_table {
 			$pkg = $2;
 		}
 
-		OpenSER::log(L_DBG, "perlvdb:VDB: Setting VTab: v is $v (pkg is $pkg, func/method is $3)\n");
+		OpenSIPS::log(L_DBG, "perlvdb:VDB: Setting VTab: v is $v (pkg is $pkg, func/method is $3)\n");
 
 		if (can($pkg, $3)) {
-			$self->{vtabs}->{$v} = new OpenSER::VDB::VTab( func => $pkg . "::" . $3);
+			$self->{vtabs}->{$v} = new OpenSIPS::VDB::VTab( func => $pkg . "::" . $3);
 		} elsif (can($v, "init")) {
 			$v->init();
-			$self->{vtabs}->{$v} = new OpenSER::VDB::VTab( obj => $v );
+			$self->{vtabs}->{$v} = new OpenSIPS::VDB::VTab( obj => $v );
 		} elsif (can($v, "new")) {
 			my $obj = $v->new();
-			$self->{vtabs}->{$v} = new OpenSER::VDB::VTab( obj => $obj );
+			$self->{vtabs}->{$v} = new OpenSIPS::VDB::VTab( obj => $obj );
 		} else {
-			OpenSER::log(L_ERR, "perlvdb:VDB: Invalid virtual table.\n");
+			OpenSIPS::log(L_ERR, "perlvdb:VDB: Invalid virtual table.\n");
 			return -1;
 		}
 	} else {
-		OpenSER::log(L_ERR, "perlvdb:VDB: Invalid virtual table.\n");
+		OpenSIPS::log(L_ERR, "perlvdb:VDB: Invalid virtual table.\n");
 		return -1;
 	}
 }
@@ -133,27 +133,27 @@ sub _query {
 
 
 sub insert {
-	OpenSER::log(L_INFO, "perlvdb:Insert not implemented in base class.\n");
+	OpenSIPS::log(L_INFO, "perlvdb:Insert not implemented in base class.\n");
 	return -1;
 }
 
 sub replace {
-	OpenSER::log(L_INFO, "perlvdb:Replace not implemented in base class.\n");
+	OpenSIPS::log(L_INFO, "perlvdb:Replace not implemented in base class.\n");
 	return -1;
 }
 
 sub delete {
-	OpenSER::log(L_INFO, "perlvdb:Delete not implemented in base class.\n");
+	OpenSIPS::log(L_INFO, "perlvdb:Delete not implemented in base class.\n");
 	return -1;
 }
 
 sub update {
-	OpenSER::log(L_INFO, "perlvdb:Update not implemented in base class.\n");
+	OpenSIPS::log(L_INFO, "perlvdb:Update not implemented in base class.\n");
 	return -1;
 }
 
 sub query {
-	OpenSER::log(L_INFO, "perlvdb:Query not implemented in base class.\n");
+	OpenSIPS::log(L_INFO, "perlvdb:Query not implemented in base class.\n");
 	return -1;
 }
 

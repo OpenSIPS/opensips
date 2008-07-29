@@ -1,19 +1,19 @@
 #
 # $Id: Auth.pm 757 2007-01-05 10:56:28Z bastian $
 #
-# Perl module for OpenSER
+# Perl module for OpenSIPS
 #
 # Copyright (C) 2007 Collax GmbH
 #                    (Bastian Friedrich <bastian.friedrich@collax.com>)
 #
-# This file is part of openser, a free SIP server.
+# This file is part of opensips, a free SIP server.
 #
-# openser is free software; you can redistribute it and/or modify
+# opensips is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or
 # (at your option) any later version
 #
-# openser is distributed in the hope that it will be useful,
+# opensips is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
@@ -23,7 +23,7 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
 
-=head1 OpenSER::VDB::Adapter::Auth
+=head1 OpenSIPS::VDB::Adapter::Auth
 
 This adapter is intended for usage with the auth_db module.
 The VTab should take a username as an argument and return a (plain text!)
@@ -31,19 +31,19 @@ password.
 
 =cut
 
-package OpenSER::VDB::Adapter::Auth;
+package OpenSIPS::VDB::Adapter::Auth;
 
-use OpenSER::Constants;
-use OpenSER qw ( log );
+use OpenSIPS::Constants;
+use OpenSIPS qw ( log );
 
-use OpenSER::VDB;
-use OpenSER::VDB::Column;
-use OpenSER::VDB::Result;
-use OpenSER::VDB::Adapter::TableVersions;
+use OpenSIPS::VDB;
+use OpenSIPS::VDB::Column;
+use OpenSIPS::VDB::Result;
+use OpenSIPS::VDB::Adapter::TableVersions;
 
 use Data::Dumper;
 
-our @ISA = qw ( OpenSER::VDB );
+our @ISA = qw ( OpenSIPS::VDB );
 
 sub query {
 	my $self = shift;
@@ -58,7 +58,7 @@ sub query {
 	my $password = undef;
 
 	if ($self->{tablename} eq "version") {
-		return OpenSER::VDB::Adapter::TableVersions::version(@$conds[0]->data());
+		return OpenSIPS::VDB::Adapter::TableVersions::version(@$conds[0]->data());
 	}
 		
 	if ((scalar @$conds != 1) || (scalar @$retkeys != 2)) {
@@ -71,7 +71,7 @@ sub query {
 	}
 
 	for my $k (@$retkeys) {
-		push @cols, new OpenSER::VDB::Column(DB_STRING, $k);
+		push @cols, new OpenSIPS::VDB::Column(DB_STRING, $k);
 	}
 
 	my $vtab = $self->{vtabs}->{$self->{tablename}};
@@ -81,11 +81,11 @@ sub query {
 
 	if ($password) {
 		my @row;
-		push @row, new OpenSER::VDB::Value(DB_STRING, $password);
+		push @row, new OpenSIPS::VDB::Value(DB_STRING, $password);
 		push @row, undef;
-		$result = new OpenSER::VDB::Result(\@cols, (bless \@row, "OpenSER::Utils::Debug"));
+		$result = new OpenSIPS::VDB::Result(\@cols, (bless \@row, "OpenSIPS::Utils::Debug"));
 	} else {
-		$result = new OpenSER::VDB::Result(\@cols);
+		$result = new OpenSIPS::VDB::Result(\@cols);
 	}
 
 	return $result;

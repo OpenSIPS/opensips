@@ -241,7 +241,7 @@ int perlresult2dbres(SV *perlres, db_res_t **r) {
 			     modified db result value. */
 
 	if (!(SvROK(perlres) &&
-		(sv_derived_from(perlres, "OpenSER::VDB::Result")))) {
+		(sv_derived_from(perlres, "OpenSIPS::VDB::Result")))) {
 		goto error;
 	}
 	/* Memory allocation for C side result structure */
@@ -401,7 +401,7 @@ end:
 	av_undef(rowarray);
 	return retval;
 error:
-	LM_CRIT("broken result set. Exiting, leaving OpenSER in unknown state.\n");
+	LM_CRIT("broken result set. Exiting, leaving OpenSIPS in unknown state.\n");
 	return -1;
 }
 
