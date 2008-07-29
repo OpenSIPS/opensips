@@ -64,8 +64,9 @@ Bogdan-Andrei Iancu
         1.6. Exported Functions
 
               1.6.1. set_dlg_profile(profile,[value])
-              1.6.2. is_in_profile(profile,[value])
-              1.6.3. get_profile_size(profile,[value],size)
+              1.6.2. unset_dlg_profile(profile,[value])
+              1.6.3. is_in_profile(profile,[value])
+              1.6.4. get_profile_size(profile,[value],size)
 
         1.7. Exported statistics
 
@@ -133,8 +134,9 @@ Bogdan-Andrei Iancu
    1.31. Set profiles_with_value parameter
    1.32. Set profiles_no_value parameter
    1.33. set_dlg_profile usage
-   1.34. is_in_profile usage
-   1.35. get_profile_size usage
+   1.34. unset_dlg_profile usage
+   1.35. is_in_profile usage
+   1.36. get_profile_size usage
 
 Chapter 1. Admin Guide
 
@@ -643,7 +645,26 @@ set_dlg_profile("inbound_call");
 set_dlg_profile("caller","$fu");
 ...
 
-1.6.2.  is_in_profile(profile,[value])
+1.6.2.  unset_dlg_profile(profile,[value])
+
+   Removes the current dialog from a profile.
+
+   Meaning of the parameters is as follows:
+     * profile - name of the profile to be removed from;
+     * value (optional) - string value to define the belonging of
+       the dialog to the profile - note that the profile must
+       support values. Pseudo-variables are supported.
+
+   This function can be used from BRANCH_ROUTE, REPLY_ROUTE and
+   FAILURE_ROUTE.
+
+   Example 1.34. unset_dlg_profile usage
+...
+unset_dlg_profile("inbound_call");
+unset_dlg_profile("caller","$fu");
+...
+
+1.6.3.  is_in_profile(profile,[value])
 
    Checks if the current dialog belongs to a profile. If the
    profile supports values, the check can be reinforced to take
@@ -661,7 +682,7 @@ set_dlg_profile("caller","$fu");
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.34. is_in_profile usage
+   Example 1.35. is_in_profile usage
 ...
 if (is_in_profile("inbound_call")) {
         log("this request belongs to a inbound call\n");
@@ -672,7 +693,7 @@ if (is_in_profile("caller","XX")) {
 }
 ...
 
-1.6.3.  get_profile_size(profile,[value],size)
+1.6.4.  get_profile_size(profile,[value],size)
 
    Returns the number of dialogs belonging to a profile. If the
    profile supports values, the check can be reinforced to take
@@ -692,7 +713,7 @@ if (is_in_profile("caller","XX")) {
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.35. get_profile_size usage
+   Example 1.36. get_profile_size usage
 ...
 get_profile_size("inbound_call","$avp(size)");
 xlog("currently there are $avp(size) inbound calls\n");
