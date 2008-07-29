@@ -6,7 +6,7 @@
 	
 	<section>
 	<title>Overview</title>
-	<para>	This modules is a gateway between Openser and a jabber server. It enables the exchange of instant messages between
+	<para>	This modules is a gateway between OpenSIPS and a jabber server. It enables the exchange of instant messages between
 		SIP clients and XMPP(jabber) clients. </para>
 	<para>	The gateway has two modes to run:</para>
 
@@ -21,7 +21,7 @@
 	</itemizedlist>
 	<para>	In the component mode, you need a local XMPP server (recommended Jabberd2); the xmpp module will relay all your connections to a tcp connection to the local jabber server. The documentation and the source for a Jabber server are located at the following link:
 <ulink url="http://jabberd.jabberstudio.org/2/#download">http://jabberd.jabberstudio.org/2/#download</ulink>	</para>
-	<para> After you have a running XMPP server, what you need to do is set the following parameters in the Openser configuration file:</para>
+	<para> After you have a running XMPP server, what you need to do is set the following parameters in the OpenSIPS configuration file:</para>
 	<itemizedlist>
 		<listitem>
 			<para>gateway_domain, xmpp_domain (which can be the same as gateway_domain) and xmpp_host, which are explained in the Exported Parameters section;
@@ -51,7 +51,7 @@
 	<para>	A use case, for the component-mode, would look like this:</para>
 	<itemizedlist>
 		<listitem>
-			<para>Openser is running on sip-server.opensips.org;</para>
+			<para>OpenSIPS is running on sip-server.opensips.org;</para>
 		</listitem>
 		<listitem>
 			<para>the gateway is running on sip-xmpp.opensips.org;</para>
@@ -69,7 +69,7 @@
 	<para>	A use case, for the server-mode, would look like this: </para>
 	<itemizedlist>
 		<listitem>
-			<para>Openser is running on sip-server.opensips.org; </para>
+			<para>OpenSIPS is running on sip-server.opensips.org; </para>
 		</listitem>
 		<listitem>
 			<para>the gateway is running on sip-xmpp.opensips.org;</para>

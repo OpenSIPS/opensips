@@ -12,8 +12,8 @@ Andreea Spirea
 
    Copyright © 2006 voice-system.ro
    Revision History
-   Revision $Revision$ $Date: 2008-07-12 00:16:22 +0300
-                              (Sat, 12 Jul 2008) $
+   Revision $Revision$ $Date: 2008-07-14 11:26:17 +0300
+                              (Mon, 14 Jul 2008) $
      __________________________________________________________
 
    Table of Contents
@@ -59,7 +59,7 @@ Chapter 1. Admin Guide
 
 1.1. Overview
 
-   This modules is a gateway between Openser and a jabber server.
+   This modules is a gateway between OpenSIPS and a jabber server.
    It enables the exchange of instant messages between SIP clients
    and XMPP(jabber) clients.
 
@@ -79,7 +79,8 @@ Chapter 1. Admin Guide
    the following link: http://jabberd.jabberstudio.org/2/#download
 
    After you have a running XMPP server, what you need to do is
-   set the following parameters in the Openser configuration file:
+   set the following parameters in the OpenSIPS configuration
+   file:
      * gateway_domain, xmpp_domain (which can be the same as
        gateway_domain) and xmpp_host, which are explained in the
        Exported Parameters section;
@@ -98,7 +99,7 @@ Chapter 1. Admin Guide
        be the same as the xmpp_password parameter.
 
    A use case, for the component-mode, would look like this:
-     * Openser is running on sip-server.opensips.org;
+     * OpenSIPS is running on sip-server.opensips.org;
      * the gateway is running on sip-xmpp.opensips.org;
      * the jabber server is running on xmpp.opensips.org;
      * the component is running on xmpp-sip.opensips.org.
@@ -113,7 +114,7 @@ Chapter 1. Admin Guide
    section, from component to server.
 
    A use case, for the server-mode, would look like this:
-     * Openser is running on sip-server.opensips.org;
+     * OpenSIPS is running on sip-server.opensips.org;
      * the gateway is running on sip-xmpp.opensips.org;
      * the "XMPP server" is running on xmpp-sip.opensips.org.
 
