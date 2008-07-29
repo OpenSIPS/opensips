@@ -49,9 +49,10 @@ unsigned int parse_priv_value(char* start, unsigned int max_len,
     switch (start[0]) {
 
     case 'c':
+    case 'C':
 	if(max_len < 8)
 	    return 0;
-	if (strncmp(start, "critical", 8) == 0) {
+	if (strncasecmp(start, "critical", 8) == 0) {
 	    *value = PRIVACY_CRITICAL;
 	    len = 8;
 	    break;
@@ -60,16 +61,17 @@ unsigned int parse_priv_value(char* start, unsigned int max_len,
 	}
 
     case 'h':
+    case 'H':
 	if (max_len < 6)
 	    return 0;
-	if (strncmp(start, "header", 6) == 0) {
+	if (strncasecmp(start, "header", 6) == 0) {
 	    *value = PRIVACY_HEADER;
 	    len = 6;
 	    break;
 	}
 	if (max_len < 7)
 	    return 0;
-	if (strncmp(start, "history", 7) == 0) {
+	if (strncasecmp(start, "history", 7) == 0) {
 	    *value = PRIVACY_HISTORY;
 	    len = 7;
 	    break;
@@ -78,9 +80,10 @@ unsigned int parse_priv_value(char* start, unsigned int max_len,
 	}
 
     case 'i':
+    case 'I':
 	if(max_len < 2)
 	    return 0;
-	if (start[1] == 'd') {
+	if (start[1] == 'd' || start[1] == 'D') {
 	    *value = PRIVACY_ID;
 	    len = 2;
 	    break;
@@ -89,9 +92,10 @@ unsigned int parse_priv_value(char* start, unsigned int max_len,
 	}
 
     case 'n':
+    case 'N':
 	if(max_len < 4)
 	    return 0;
-	if (strncmp(start, "none", 4) == 0) {
+	if (strncasecmp(start, "none", 4) == 0) {
 	    *value = PRIVACY_NONE;
 	    len = 4;
 	    break;
@@ -100,9 +104,10 @@ unsigned int parse_priv_value(char* start, unsigned int max_len,
 	}
 
     case 's':
+    case 'S':
 	if(max_len < 7)
 	    return 0;
-	if (strncmp(start, "session", 7) == 0) {
+	if (strncasecmp(start, "session", 7) == 0) {
 	    *value = PRIVACY_SESSION;
 	    len = 7;
 	    break;
@@ -111,9 +116,10 @@ unsigned int parse_priv_value(char* start, unsigned int max_len,
 	}
 
     case 'u':
+    case 'U':
 	if(max_len < 4)
 	    return 0;
-	if (strncmp(start, "user", 4) == 0) {
+	if (strncasecmp(start, "user", 4) == 0) {
 	    *value = PRIVACY_USER;
 	    len = 4;
 	    break;

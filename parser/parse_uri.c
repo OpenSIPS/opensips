@@ -957,7 +957,7 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 	switch(uri->type){
 		case SIP_URI_T:
 			if ((uri->user_param_val.len == 5) &&
-				(strncmp(uri->user_param_val.s, "phone", 5) == 0)) {
+				(strncasecmp(uri->user_param_val.s, "phone", 5) == 0)) {
 				uri->type = TEL_URI_T;
 				/* move params from user into uri->params */
 				p=q_memchr(uri->user.s, ';', uri->user.len);
@@ -970,7 +970,7 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 			break;
 		case SIPS_URI_T:
 			if ((uri->user_param_val.len == 5) &&
-				(strncmp(uri->user_param_val.s, "phone", 5) == 0)) {
+				(strncasecmp(uri->user_param_val.s, "phone", 5) == 0)) {
 				uri->type = TELS_URI_T;
 				p=q_memchr(uri->user.s, ';', uri->user.len);
 				if (p){
