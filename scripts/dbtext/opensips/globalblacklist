@@ -1,0 +1,2 @@
+id(int,auto) prefix(string) whitelist(int) description(string,null) 
+globalblacklist:1
