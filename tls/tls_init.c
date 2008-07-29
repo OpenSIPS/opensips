@@ -42,7 +42,7 @@
 #include <netinet/ip.h>
 #include <unistd.h>
 
-#define SER_SSL_SESS_ID ((unsigned char*)"openser-tls-1.2.0")
+#define SER_SSL_SESS_ID ((unsigned char*)"opensips-tls-1.2.0")
 #define SER_SSL_SESS_ID_LEN (sizeof(SER_SSL_SESS_ID)-1)
 
 

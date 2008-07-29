@@ -34,9 +34,9 @@
 		<para>
 		The TLS support was simultaneously added in both projects. In SER,
 		the support was committed in a separate <quote>experimental</quote> 
-		CVS tree, as patch to the main CVS tree. In OpenSER, the support was
+		CVS tree, as patch to the main CVS tree. In OpenSIPS, the support was
 		integrated directly into the CVS tree, as a built-in component, and is
-		part of stable OpenSER since release >=1.0.0.
+		part of stable OpenSIPS since release >=1.0.0.
 		</para>
 	</section>
 
@@ -171,7 +171,7 @@
 	<section>
 		<title>Compiling TLS support</title>
 		<para>
-		To compile &ser; with the TLS support, the environment variable 
+		To compile &osips; with the TLS support, the environment variable 
 		TLS must be set. Note that this is required for all make commands 
 		(and not only for compiling). To set the variable, there are 
 		several ways to do it:
@@ -258,7 +258,7 @@
 			how many interconnected &ser;'s we want to have.
 			</para>
 			<para>
-			Using <quote>openserctl tls rootCA</quote>, you may create a local 
+			Using <quote>opensipsctl tls rootCA</quote>, you may create a local 
 			root CA.
 			</para>
 			<para>
@@ -271,13 +271,13 @@
 		<section>
 			<title>Creating a server/client certificate</title>
 			<para>
-			This part must be done for each OpenSER server interconnected 
+			This part must be done for each OpenSIPS server interconnected 
 			into your TLS enabled network: build a certificate request and
 			sign it with a root CA (yourself or from third party).
 			</para>
 			<para>
 			For this purpose you may use the 
-			<quote>openserctl tls userCERT</quote>
+			<quote>opensipsctl tls userCERT</quote>
 			</para>
 			<para>
 			The output of the script will be a directory containing all needed
@@ -294,7 +294,7 @@
 			accepted by your server):
 			</para>
 			<para>
-			If you use the <quote>openserctl tls userCERT</quote>, it will 
+			If you use the <quote>opensipsctl tls userCERT</quote>, it will 
 			create an one element CA list with the CA used to sign the 
 			certificate.
 			</para>
@@ -308,7 +308,7 @@
 			</itemizedlist>
 			<para>
 			Now copy intended &ser; certificate, private key and ca list 
-			file (basically the whole content of the openserX directory) to 
+			file (basically the whole content of the opensipsX directory) to 
 			your intended machine in some directory (which will be further 
 			refer by path <quote>path</quote>).
 			</para>
@@ -398,7 +398,7 @@
 	<section>
 		<title>&ser; TLS configuration parameters</title>
 		<para>
-		All these parameters can be used from the openser.cfg file, 
+		All these parameters can be used from the opensips.cfg file, 
 		to configure the behavior of &ser;-TLS.
 		</para>
 		<section>
@@ -546,7 +546,7 @@ tls_method = TLSv1
 					</title>
 				<programlisting format="linespecific">
 ...
-tls_certificate="/mycerts/certs/openser_server_cert.pem"
+tls_certificate="/mycerts/certs/opensips_server_cert.pem"
 ...
 				</programlisting>
 			</example>
@@ -788,7 +788,7 @@ tls_client_domain_avp=400    # only integer named AVPs are supported
 			For this purpose, TLS client domains can be associated with a name (e.g. the domain can be 
 			used as name). If the SIP proxy establishes a new outgoing TLS connection, it checks 
 			for the TLS client domain AVP (parameter tls_client_domain_avp). If this AVP is set (e.g.
-			in &ser;.cfg), &openser; searches for a TLS client domain with the same name and uses
+			in &ser;.cfg), &osips; searches for a TLS client domain with the same name and uses
 			the certificates defined in the respective tls_client_domain section.
 			</para>
 			<para>
@@ -932,10 +932,10 @@ route{
   listen=_your_serv_IP_
   port=5060
   children=4
-  fifo="/tmp/openser_fifo"
+  fifo="/tmp/opensips_fifo"
 
   #TLS specific settings
-  tls_certificate="/path/openserX_cert.pem"
+  tls_certificate="/path/opensipsX_cert.pem"
   tls_private_key="/path/privkey.pem"
   tls_ca_list="/path/calist.pem"
   tls_verify=on

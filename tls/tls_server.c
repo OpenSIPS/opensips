@@ -535,7 +535,7 @@ tls_tcpconn_init(struct tcp_connection *c, int sock)
 	int_str avp_tlscdom_name;
 	unsigned short avp_tlscdom_name_type;
 
-	// we use integer name avp, configured via openser.cfg
+	// we use integer name avp, configured via opensips.cfg
 	avp_tlscdom_name.n = tls_client_domain_avp;
 	avp_tlscdom_name_type = 0;
 

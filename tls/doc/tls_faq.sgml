@@ -31,22 +31,6 @@
 			Remember: first at all, check if your question wasn't already
 			answered.
 		</para>
-		<para>
-			if you want to keep the mail private, send it to
-			&serhelpmail;.
-		</para>
-		<para>
-			Also you can address to SER's user mailing list:
-		</para>
-		<itemizedlist>
-			<listitem>
-			<para>User Mailing List - serusers@iptel.org;</para>
-			</listitem>
-		</itemizedlist>
-		<warning><para>
-			NOTE that SER TLS and OpenSER TLS  may not be compatible (as
-			features / behaviour) in the future.
-		</para></warning>
 		</answer>
 	</qandaentry>
 	<qandaentry>
@@ -56,18 +40,14 @@
 		<answer>
 		<para>
 			Accumulate as much as possible information (&ser; version,
-			openser -V output, your OS (uname -a), &ser; logs, network dumps,
+			opensips -V output, your OS (uname -a), &ser; logs, network dumps,
 			core dump files, configuration file)
 			and send a mail to &serdevlink;
 		</para>
 		<para>
-			Also you may try SER's bug report web page:
-			http://bugs.sip-router.org
+			Also you may try OpenSIPS's bug report web page:
+			http://www.opensips.org/pmwiki.php?n=Development.Tracker
 		</para>
-		<warning><para>
-			NOTE that SER TLS and OpenSER TLS  may not be compatible (as code)
-			in the future, each version having its own bugs/problems.
-		</para></warning>
 	</answer>
 	</qandaentry>
 	<qandaentry>
@@ -76,7 +56,7 @@
 		</question>
 		<answer>
 		<para>
-			Increase the log level in openser.cfg (debug=4) and watch the log
+			Increase the log level in opensips.cfg (debug=4) and watch the log
 			statements in syslog.
 		</para>
 		<para>
