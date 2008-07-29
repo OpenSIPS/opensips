@@ -1,5 +1,5 @@
 #
-# $Id$
+# $Id: OpenSER.pm 4503 2008-07-29 09:48:11Z bogdan_iancu $
 #
 # Perl module for OpenSIPS
 #
