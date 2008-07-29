@@ -170,6 +170,7 @@ error:
 
 inline str* get_avp_name(struct usr_avp *avp)
 {
+	void *data;
 	switch ( avp->flags&(AVP_NAME_STR|AVP_VAL_STR) )
 	{
 		case 0:
@@ -179,10 +180,12 @@ inline str* get_avp_name(struct usr_avp *avp)
 			return 0;
 		case AVP_NAME_STR:
 			/* avp type str, int value */
-			return &((struct str_int_data*)(void*)&avp->data)->name;
+			data = (void*)&avp->data;
+			return &((struct str_int_data*)data)->name;
 		case AVP_NAME_STR|AVP_VAL_STR:
 			/* avp type str, str value */
-			return &((struct str_str_data*)(void*)&avp->data)->name;
+			data = (void*)&avp->data;
+			return &((struct str_str_data*)data)->name;
 	}
 
 	LM_ERR("unknown avp type (name&val) %d\n",
@@ -193,6 +196,8 @@ inline str* get_avp_name(struct usr_avp *avp)
 
 inline void get_avp_val(struct usr_avp *avp, int_str *val)
 {
+	void *data;
+
 	if (avp==0 || val==0)
 		return;
 
@@ -203,15 +208,18 @@ inline void get_avp_val(struct usr_avp *avp, int_str *val)
 			break;
 		case AVP_NAME_STR:
 			/* avp type str, int value */
-			val->n = ((struct str_int_data*)(void*)(&avp->data))->val;
+			data = (void*)&avp->data;
+			val->n = ((struct str_int_data*)data)->val;
 			break;
 		case AVP_VAL_STR:
 			/* avp type ID, str value */
-			val->s = *((str*)(void*)(&avp->data));
+			data = (void*)&avp->data;
+			val->s = *((str*)data);
 			break;
 		case AVP_NAME_STR|AVP_VAL_STR:
 			/* avp type str, str value */
-			val->s = ((struct str_str_data*)(void*)(&avp->data))->val;
+			data = (void*)&avp->data;
+			val->s = ((struct str_str_data*)data)->val;
 			break;
 	}
 }
