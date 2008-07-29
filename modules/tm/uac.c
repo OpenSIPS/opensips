@@ -56,6 +56,7 @@
 #include "../../receive.h"
 #include "../../route.h"
 #include "../../action.h"
+#include "../../dset.h"
 
 #include "ut.h"
 #include "h_table.h"

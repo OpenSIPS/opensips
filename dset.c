@@ -256,7 +256,7 @@ int append_branch(struct sip_msg* msg, str* uri, str* dst_uri, str* path,
 	str luri;
 
 	if (dset_state==0)
-		return;
+		return -1;
 
 	/* if we have already set up the maximum number
 	 * of branches, don't try new ones 
