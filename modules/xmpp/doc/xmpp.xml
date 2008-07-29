@@ -21,19 +21,16 @@
 	    <author>
 		<firstname>Andreea</firstname>
 		<surname>Spirea</surname>
-	    </author>
-	    <author>
-		<firstname>Daniel-Constantin</firstname>
-		<surname>Mierla</surname>
-			<email>miconda@gmail.com</email>
+			<email>team@gmail.com</email>
 	    </author>
 	    <editor>
 		<firstname>Andreea</firstname>
 		<surname>Spirea</surname>
+			<email>team@gmail.com</email>
 	    </editor>
 	</authorgroup>
 	<copyright>
-	    <year>2006</year>
+	    <year>2006-2008</year>
 	    <holder>&voicesystem;</holder>
 	</copyright>
 	<revhistory>

@@ -18,6 +18,11 @@
 	<productname class="trade">&osipsname;</productname>
 	<authorgroup>
 		<author>
+			<firstname>Bogdan-Andrei</firstname>
+			<surname>Iancu</surname>
+				<email>bogdan@voice-system.ro</email>
+		</author>
+		<author>
 			<firstname>Ramona-Elena</firstname>
 			<surname>Modroiu</surname>
 				<email>ramona@rosdev.ro</email>
@@ -29,7 +34,7 @@
 		</editor>
 	</authorgroup>
 	<copyright>
-		<year>2005</year>
+		<year>2005-2008</year>
 		<holder>Voice Sistem</holder>
 	</copyright>
 	<revhistory>

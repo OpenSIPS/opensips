@@ -26,7 +26,7 @@
 	    <author>
 		<firstname>Elena-Ramona</firstname>
 		<surname>Modroiu</surname>
-		<email>ramona@asipto.com</email>
+		<email>ramona@rosdev.ro</email>
 	    </author>
 	    <editor>
 		<firstname>Daniel-Constantin</firstname>
@@ -37,10 +37,6 @@
 	<copyright>
 	    <year>2005</year>
 	    <holder>&voicesystem;</holder>
-	</copyright>
-	<copyright>
-	    <year>2008</year>
-	    <holder>asipto.com</holder>
 	</copyright>
     </bookinfo>
     <toc></toc>

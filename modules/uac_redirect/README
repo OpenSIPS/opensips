@@ -99,11 +99,6 @@ Chapter 1. Admin Guide
    module will log three additional records corresponding to each
    redirect URI.
 
-   For each redirect contact, a separate record will be logged.
-   For example, if a call is redirected to three new contacts, the
-   module will log three additional records corresponding to each
-   redirect URI.
-
 1.3. Dependencies
 
 1.3.1. OpenSIPS Modules

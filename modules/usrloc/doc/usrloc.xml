@@ -26,11 +26,6 @@
 			<email>jan@iptel.org</email>
 		</address>
 		</author>
-		<author>
-		<firstname>Daniel-Constantin</firstname>
-		<surname>Mierla</surname>
-		<email>miconda@gmail.com</email>
-		</author>
 		<editor>
 		<firstname>Jan</firstname>
 		<surname>Janak</surname>
@@ -51,7 +46,7 @@
 		<holder>&fhg;</holder>
 	</copyright>
 	<copyright>
-		<year>2005</year>
+		<year>2005-2008</year>
 		<holder>&voicesystem;</holder>
 	</copyright>
 	<revhistory>

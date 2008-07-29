@@ -29,13 +29,19 @@
 		</address>
 	    </author>
 	    <author>
+		<firstname>Stefan</firstname>
+		<surname>Popescu</surname>
+		<address>
+		<email>team@voice-system.ro</email>
+		<otheraddr>
+		<ulink url="http://www.voice-system.ro">http://www.voice-system.ro</ulink>
+		</otheraddr>
+		</address>
+	    </author>
+	    <author>
 		<firstname>Daniel-Constantin</firstname>
 		<surname>Mierla</surname>
 		    <email>miconda@gmail.com</email>
-	    </author>
-	    <author>
-		<firstname>Stefan</firstname>
-		<surname>Popescu</surname>
 	    </author>
 	    <editor>
 		<firstname>Anca-Maria</firstname>
@@ -46,7 +52,7 @@
 	    </editor>
 	</authorgroup>
 	<copyright>
-	    <year>2006</year>
+	    <year>2006-2008</year>
 	    <holder>&voicesystem;</holder>
 	</copyright>
 	<revhistory>
