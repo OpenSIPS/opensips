@@ -160,7 +160,9 @@ export INSTALL_TOUCH
 ifneq ($(TLS),)
 	tar_extra_args+=
 else
-	tar_extra_args+=--exclude=$(notdir $(CURDIR))/tls* 
+	tar_extra_args+=--exclude=$(notdir $(CURDIR))/tls* \
+		--exclude=$(notdir $(CURDIR))/etc/tls* \
+		--exclude=$(notdir $(CURDIR))/modules/tls* 
 endif
 # include the common rules
 include Makefile.rules
