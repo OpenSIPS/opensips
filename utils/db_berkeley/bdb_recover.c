@@ -161,6 +161,7 @@ int create_all(void)
 #ifdef EXTRA_DEBUG
 	time_t tim1 = time(NULL);
 	time_t tim2;
+	int i;
 #endif
 
 	while(_tbc)
