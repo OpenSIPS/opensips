@@ -62,7 +62,7 @@
 
 #define DIALOG_TABLE_COL_NO 		18
 
-#define DIALOG_FEATCH_SIZE			128
+#define DIALOG_FETCH_SIZE			128
 
 extern str call_id_column; 
 extern str from_uri_column;

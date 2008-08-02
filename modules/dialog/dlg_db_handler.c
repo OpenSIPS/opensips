@@ -206,7 +206,7 @@ static int select_entire_dialog_table(db_res_t ** res)
 			LM_ERR("Error while querying (fetch) database\n");
 			return -1;
 		}
-		if(dialog_dbf.fetch_result(dialog_db_handle,res,DIALOG_FEATCH_SIZE)<0){
+		if(dialog_dbf.fetch_result(dialog_db_handle,res,DIALOG_FETCH_SIZE)<0){
 			LM_ERR("fetching rows failed\n");
 			return -1;
 		}
@@ -373,7 +373,7 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 		/* any more data to be fetched ?*/
 		if (DB_CAPABILITY(dialog_dbf, DB_CAP_FETCH)) {
 			if (dialog_dbf.fetch_result( dialog_db_handle, &res,
-			DIALOG_FEATCH_SIZE ) < 0) {
+			DIALOG_FETCH_SIZE ) < 0) {
 				LM_ERR("re-fetching rows failed\n");
 				goto error;
 			}
