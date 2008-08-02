@@ -10,11 +10,11 @@
 <!ENTITY osipsname "Open SIP Server">
 
 <!ENTITY osipshome "http://www.opensips.org/">
-<!ENTITY osipsbugs "http://sourceforge.net/tracker/?group_id=139143">
-<!ENTITY osipshelp "http://lists.opensips.org/cgi-bin/mailman/listinfo/team">
+<!ENTITY osipsbugs "http://sourceforge.net/tracker/?group_id=232389">
+<!ENTITY osipshelp "http://lists.opensips.org/cgi-bin/mailman/listinfo/users">
 <!ENTITY osipsusers "http://lists.opensips.org/cgi-bin/mailman/listinfo/users">
 <!ENTITY osipsdev "http://lists.opensips.org/cgi-bin/mailman/listinfo/devel">
-<!ENTITY osipsdbdocs "http://www.opensips.org/docs/db-tables/opensips-db-devel.html">
+<!ENTITY osipsdbdocs "http://www.opensips.org/html/db-schema.html">
 
 <!ENTITY osipshomelink "<ulink url='&osipshome;'>&osipshome;</ulink>">
 <!ENTITY osipsbugslink "<ulink url='&osipsbugs;'>&osipsbugs;</ulink>">
@@ -23,7 +23,7 @@
 <!ENTITY osipsdevlink "<ulink url='&osipsdev;'>&osipsdev;</ulink>">
 <!ENTITY osipsdbdocslink "<ulink url='&osipsdbdocs;'>&osipsdbdocs;</ulink>">
 
-<!ENTITY osipshelpmail "<email>team@lists.opensips.org</email>">
+<!ENTITY osipshelpmail "<email>users@lists.opensips.org</email>">
 <!ENTITY osipsusersmail "<email>users@lists.opensips.org</email>">
 <!ENTITY osipsdevmail "<email>devel@lists.opensips.org</email>">
 

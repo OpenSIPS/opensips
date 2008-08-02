@@ -3,7 +3,7 @@
 #
 
 # OpenSIPS database descriptions for modules
-TABLES := $(patsubst openser-%.xml,%,$(wildcard openser-*.xml))
+TABLES := $(patsubst opensips-%.xml,%,$(wildcard opensips-*.xml))
 
 ROOT=../..
 STYLESHEETS=$(ROOT)/doc/dbschema/xsl
