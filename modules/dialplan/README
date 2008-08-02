@@ -20,36 +20,40 @@ Andreea-Ancuta Onofrei
         1.1. Overview
         1.2. How it works
         1.3. Usage cases
-        1.4. Dependencies
+        1.4. Database structure and usage
 
-              1.4.1. OpenSIPS Modules
-              1.4.2. External Libraries or Applications
+              1.4.1. What to place in table
 
-        1.5. Exported Parameters
+        1.5. Dependencies
 
-              1.5.1. db_url (string)
-              1.5.2. table_name (string)
-              1.5.3. dpid_col (string)
-              1.5.4. pr_col (string)
-              1.5.5. match_op_col (string)
-              1.5.6. match_exp_col (string)
-              1.5.7. match_len_col (string)
-              1.5.8. subst_exp_col (string)
-              1.5.9. repl_exp_col (string)
-              1.5.10. attrs_col (string)
-              1.5.11. attrs_pvar (string)
-              1.5.12. fetch_rows (int)
+              1.5.1. OpenSIPS Modules
+              1.5.2. External Libraries or Applications
 
-        1.6. Exported Functions
+        1.6. Exported Parameters
 
-              1.6.1. dp_translate(id, src/dest)
+              1.6.1. db_url (string)
+              1.6.2. table_name (string)
+              1.6.3. dpid_col (string)
+              1.6.4. pr_col (string)
+              1.6.5. match_op_col (string)
+              1.6.6. match_exp_col (string)
+              1.6.7. match_len_col (string)
+              1.6.8. subst_exp_col (string)
+              1.6.9. repl_exp_col (string)
+              1.6.10. attrs_col (string)
+              1.6.11. attrs_pvar (string)
+              1.6.12. fetch_rows (int)
 
-        1.7. Exported MI Functions
+        1.7. Exported Functions
 
-              1.7.1. dp_reload
-              1.7.2. dp_translate
+              1.7.1. dp_translate(id, src/dest)
 
-        1.8. Installation
+        1.8. Exported MI Functions
+
+              1.8.1. dp_reload
+              1.8.2. dp_translate
+
+        1.9. Installation
 
    2. Developer's Guide
 
@@ -114,22 +118,89 @@ Chapter 1. Admin Guide
    Any other string-base translation or detection for whatever
    other purposes.
 
-1.4. Dependencies
+1.4. Database structure and usage
 
-1.4.1. OpenSIPS Modules
+   Depending what kind of operation (translation, matching, etc)
+   you want to do with the module, you need to appropriate
+   populate the DB records.
+
+   The definition of the tables used by the dialplan module can be
+   found at http://www.opensips.org/html/db-schema.html#AEN1501
+
+1.4.1. What to place in table
+
+1.4.1.1. String translation (regexp detection, subst translation)
+
+   Recognize a number block in all forms (international, national)
+   and convert it to a canonical format (e.164)
+     * match-op = 1 (regexp)
+     * match_exp = "^(0040|\+40|0|40)21[0-9]+" ; regular expresion
+       that will be used to match with this rule (if the rule
+       should be applied for the input string)
+     * match_len = 0 (not used for regexp op)
+     * subst_exp = "^(0040|\+40|0|40)(.+)" ; regular expresion
+       used to do the transformation (first part of the subst
+       operation)
+     * repl_exp = "40\2" ; second part of the subst (output) -
+       linked to the subst_exp field; when both defined, they work
+       as a subst()
+
+1.4.1.2. String translation (regexp detection, replacement)
+
+   Recognize the name of a country (multiple languages) and
+   convert it to a single fix value
+     * match-op = 1 (regexp)
+     * match_exp = "^((Germany)|(Germania)|(Deutschland)|(DE))" ;
+       regular expresion that will be used to match with this rule
+       (if the rule should be applied for the input string)
+     * match_len = 0 (not used for regexp op)
+     * subst_exp = NULL ; when translation is actually a
+       replacement, this field must be NULL.
+     * repl_exp = "DE" ; static string to replace the input -
+       whenever this rule will match, it will return this string
+       as output.
+
+1.4.1.3. Number detection (regexp detection, no replacement)
+
+   Recognize a block of numbers as belong to a single service and
+   signalize this via an attribute.
+     * match-op = 1 (regexp)
+     * match_exp = "^021456[0-9]{5}" ; regular expresion that will
+       be used to match with this rule (if the rule should be
+       applied for the input string)
+     * match_len = 0 (not used for regexp op)
+     * subst_exp = NULL ; no translation
+     * repl_exp = NULL ; no translation
+     * attrs = "serviceX" ; whatever string you will get into
+       OpenSIPS script and it will provide you more information
+       (totally custom)
+
+1.4.1.4. String conversion (equal detection, replacement)
+
+   Recognize a fix string/number and replace it with something
+   fix.
+     * match-op = 0 (equal)
+     * match_exp = "SIP server" ; string to be matched
+     * match_len = 10
+     * subst_exp = NULL ; no subst translation
+     * repl_exp = "OpenSIPS" ; output string
+
+1.5. Dependencies
+
+1.5.1. OpenSIPS Modules
 
    The following modules must be loaded before this module:
      * None
 
-1.4.2. External Libraries or Applications
+1.5.2. External Libraries or Applications
 
    The following libraries or applications must be installed
    before running OpenSIPS with this module loaded:
      * None.
 
-1.5. Exported Parameters
+1.6. Exported Parameters
 
-1.5.1. db_url (string)
+1.6.1. db_url (string)
 
    The translation rules will be loaded using this database url.
 
@@ -140,7 +211,7 @@ Chapter 1. Admin Guide
 modparam("dialplan", "db_url", "mysql://user:passwb@localhost/db")
 ...
 
-1.5.2. table_name (string)
+1.6.2. table_name (string)
 
    The table's name from which to load the translation rules.
 
@@ -151,7 +222,7 @@ modparam("dialplan", "db_url", "mysql://user:passwb@localhost/db")
 modparam("dialplan", "table_name", "my_table")
 ...
 
-1.5.3. dpid_col (string)
+1.6.3. dpid_col (string)
 
    The column name to store the dialplan ID group.
 
@@ -162,7 +233,7 @@ modparam("dialplan", "table_name", "my_table")
 modparam("dialplan", "dpid_col", "column_name")
 ...
 
-1.5.4. pr_col (string)
+1.6.4. pr_col (string)
 
    The column name to store the priority of the corresponding rule
    from the database raw.
@@ -174,7 +245,7 @@ modparam("dialplan", "dpid_col", "column_name")
 modparam("dialplan", "pr_col", "column_name")
 ...
 
-1.5.5. match_op_col (string)
+1.6.5. match_op_col (string)
 
    The column name to store the type of matching of the rule.
 
@@ -185,7 +256,7 @@ modparam("dialplan", "pr_col", "column_name")
 modparam("dialplan", "match_op_col", "column_name")
 ...
 
-1.5.6. match_exp_col (string)
+1.6.6. match_exp_col (string)
 
    The column name to store the rule match expression.
 
@@ -196,7 +267,7 @@ modparam("dialplan", "match_op_col", "column_name")
 modparam("dialplan", "match_exp_col", "column_name")
 ...
 
-1.5.7. match_len_col (string)
+1.6.7. match_len_col (string)
 
    The column name to store the length of a string matching the
    match expression.
@@ -208,7 +279,7 @@ modparam("dialplan", "match_exp_col", "column_name")
 modparam("dialplan", "match_len_col", "column_name")
 ...
 
-1.5.8. subst_exp_col (string)
+1.6.8. subst_exp_col (string)
 
    The column name to store the rule's substitution expression.
 
@@ -219,7 +290,7 @@ modparam("dialplan", "match_len_col", "column_name")
 modparam("dialplan", "subst_exp_col", "column_name")
 ...
 
-1.5.9. repl_exp_col (string)
+1.6.9. repl_exp_col (string)
 
    The column name to store the rule's replacement expression.
 
@@ -230,7 +301,7 @@ modparam("dialplan", "subst_exp_col", "column_name")
 modparam("dialplan", "repl_exp_col", "column_name")
 ...
 
-1.5.10. attrs_col (string)
+1.6.10. attrs_col (string)
 
    The column name to store the rule's attributes to be set to the
    message.
@@ -242,7 +313,7 @@ modparam("dialplan", "repl_exp_col", "column_name")
 modparam("dialplan", "attrs_col", "column_name")
 ...
 
-1.5.11. attrs_pvar (string)
+1.6.11. attrs_pvar (string)
 
    The pvar to store the rule's attributes, after translation
    (dp_translate() succeeds). This parameter can be an AVP or a
@@ -255,7 +326,7 @@ modparam("dialplan", "attrs_col", "column_name")
 modparam("dialplan", "attrs_pvar", "$avp(s:dest)")
 ...
 
-1.5.12. fetch_rows (int)
+1.6.12. fetch_rows (int)
 
    The number of rows to be fetched at once from database/
 
@@ -266,9 +337,9 @@ modparam("dialplan", "attrs_pvar", "$avp(s:dest)")
 modparam("dialplan", "fetch_rows", 4000)
 ...
 
-1.6. Exported Functions
+1.7. Exported Functions
 
-1.6.1.  dp_translate(id, src/dest)
+1.7.1.  dp_translate(id, src/dest)
 
    Will try to translate the src string into dest string according
    to the translation rules with dialplan ID equal to id.
@@ -313,9 +384,9 @@ dp_translate("$var(x)", "$avp(s:src)/$var(y)");
 xlog("translated to var $var(y) \n");
 ...
 
-1.7. Exported MI Functions
+1.8. Exported MI Functions
 
-1.7.1. dp_reload
+1.8.1. dp_reload
 
    It will update the translation rules, loading the database
    info.
@@ -328,7 +399,7 @@ xlog("translated to var $var(y) \n");
                 :dp_reload:
                 _empty_line_
 
-1.7.2. dp_translate
+1.8.2. dp_translate
 
    It will apply a translation rule identified by a dialplan id
    and an input string.
@@ -345,14 +416,14 @@ xlog("translated to var $var(y) \n");
             input
                 _empty_line_
 
-1.8. Installation
+1.9. Installation
 
    The modules requires one table in OpenSIPS database:
    dialplan.The SQL syntax to create them can be found in
    dialplan-create.sql script in the database directories in the
    opensips/scripts folder. You can also find the complete
    database documentation on the project webpage,
-   http://www.opensips.org/docs/db-tables/opensips-db-devel.html.
+   http://www.opensips.org/html/db-schema.html.
 
 Chapter 2. Developer's Guide
 

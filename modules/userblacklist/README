@@ -201,7 +201,7 @@ opensipsctl fifo reload_blacklist
    parameters so they can be changed, but the name of the columns
    must be as they are in the SQL script. You can also find the
    complete database documentation on the project webpage,
-   http://www.opensips.org/docs/db-tables/opensips-db-devel.html.
+   http://www.opensips.org/html/db-schema.html.
 
    Example 1.7. Example database content - globalblacklist table
 ...

@@ -56,6 +56,189 @@
 	</para>
 	</section>
 
+	<section>
+		<title>Database structure and usage</title>
+		<para>
+		Depending what kind of operation (translation, matching, etc) you want
+		to do with the module, you need to appropriate populate the DB records.
+		</para>
+		<para>
+		The definition of the tables used by the dialplan module can be found
+		at <ulink url="http://www.opensips.org/html/db-schema.html#AEN1501">&osipsdbdocslink;#AEN1501</ulink>
+		</para>
+		<section>
+		<title>What to place in table</title>
+
+		<section>
+		<title>String translation (regexp detection, subst translation)</title>
+			<para>
+			Recognize a number block in all forms (international, national)
+			and convert it to a canonical format (e.164)
+			</para>
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>match-op</emphasis> = 1 (regexp)
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>match_exp</emphasis> = "^(0040|\+40|0|40)21[0-9]+" ;
+				regular expresion that will be used to match with this rule (if
+				the rule should be applied for the input string)
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>match_len</emphasis> = 0 (not used for regexp op)
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>subst_exp</emphasis> = "^(0040|\+40|0|40)(.+)" ;
+				regular expresion used to do the transformation (first part
+				of the subst operation)
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>repl_exp</emphasis> = "40\2" ; second part of the 
+				subst (output) - linked to the subst_exp field; when both
+				defined, they work as a subst()
+			</para>
+			</listitem>
+			</itemizedlist>
+		</section>
+
+		<section>
+		<title>String translation (regexp detection, replacement)</title>
+			<para>
+			Recognize the name of a country (multiple languages) and convert
+			it to a single fix value
+			</para>
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>match-op</emphasis> = 1 (regexp)
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>match_exp</emphasis> = "^((Germany)|(Germania)|(Deutschland)|(DE))" ;
+				regular expresion that will be used to match with this rule (if
+				the rule should be applied for the input string)
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>match_len</emphasis> = 0 (not used for regexp op)
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>subst_exp</emphasis> = NULL ;
+				when translation is actually a replacement, this field must 
+				be NULL.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>repl_exp</emphasis> = "DE" ; static string to 
+				replace the input - whenever this rule will match, it will
+				return this string as output.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</section>
+
+		<section>
+		<title>Number detection (regexp detection, no replacement)</title>
+			<para>
+			Recognize a block of numbers as belong to a single service and 
+			signalize this via an attribute.
+			</para>
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>match-op</emphasis> = 1 (regexp)
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>match_exp</emphasis> = "^021456[0-9]{5}" ;
+				regular expresion that will be used to match with this rule (if
+				the rule should be applied for the input string)
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>match_len</emphasis> = 0 (not used for regexp op)
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>subst_exp</emphasis> = NULL ;
+				no translation
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>repl_exp</emphasis> = NULL ; 
+				no translation
+				</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>attrs</emphasis> = "serviceX" ; 
+				whatever string you will get into OpenSIPS script and it will 
+				provide you more information (totally custom)
+				</para>
+			</listitem>
+			</itemizedlist>
+		</section>
+
+		<section>
+		<title>String conversion (equal detection, replacement)</title>
+			<para>
+			Recognize a fix string/number and replace it with something fix.
+			</para>
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>match-op</emphasis> = 0 (equal)
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>match_exp</emphasis> = "SIP server" ;
+				string to be matched
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>match_len</emphasis> = 10
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>subst_exp</emphasis> = NULL ;
+				no subst translation
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>repl_exp</emphasis> = "OpenSIPS" ; 
+				output string
+				</para>
+			</listitem>
+			</itemizedlist>
+		</section>
+
+		</section>
+
+	</section>
+
+
 
 	<section>
 	<title>Dependencies</title>
@@ -492,17 +675,17 @@ xlog("translated to var $var(y) \n");
 		</programlisting>
 		</section>
 	</section>
-    
-    <section>
-	    <title>Installation</title>
-	    <para>
-        The modules requires one table in OpenSIPS database: dialplan.The SQL 
-        syntax to create them can be found in dialplan-create.sql     
-        script in the database directories in the opensips/scripts folder.
-        You can also find the complete database documentation on the
-        project webpage, &osipsdbdocslink;.
-        </para>
-    </section>
+
+	<section>
+		<title>Installation</title>
+		<para>
+		The modules requires one table in OpenSIPS database: dialplan.The SQL 
+		syntax to create them can be found in dialplan-create.sql     
+		script in the database directories in the opensips/scripts folder.
+		You can also find the complete database documentation on the
+		project webpage, &osipsdbdocslink;.
+		</para>
+	</section>
 
 
 

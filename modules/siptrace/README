@@ -245,7 +245,7 @@ sip_trace();
    siptrace-create.sql SQL script in the database directories in
    the opensips/scripts folder as template. You can also find the
    complete database documentation on the project webpage,
-   http://www.opensips.org/docs/db-tables/opensips-db-devel.html.
+   http://www.opensips.org/html/db-schema.html.
 
 1.7. Known issues
 

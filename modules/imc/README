@@ -16,8 +16,8 @@ Anca-Maria Vamanu
 
    Copyright © 2006-2008 voice-system.ro
    Revision History
-   Revision $Revision$ $Date: 2008-07-12 00:16:22 +0300
-                              (Sat, 12 Jul 2008) $
+   Revision $Revision$ $Date: 2008-07-29 19:23:00 +0300
+                              (Tue, 29 Jul 2008) $
      __________________________________________________________
 
    Table of Contents
@@ -314,4 +314,4 @@ if(is_method("MESSAGE)
    imc-create.sql SQL script in the database directories in the
    opensips/scripts folder as template. You can also find the
    complete database documentation on the project webpage,
-   http://www.opensips.org/docs/db-tables/opensips-db-devel.html.
+   http://www.opensips.org/html/db-schema.html.

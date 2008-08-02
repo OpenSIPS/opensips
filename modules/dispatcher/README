@@ -20,8 +20,8 @@ Carsten Bock
 
    Copyright © 2005 Voice-System.RO
    Revision History
-   Revision $Revision$ $Date: 2008-07-12 00:16:22 +0300
-                              (Sat, 12 Jul 2008) $
+   Revision $Revision$ $Date: 2008-07-29 19:23:00 +0300
+                              (Tue, 29 Jul 2008) $
      __________________________________________________________
 
    Table of Contents
@@ -696,11 +696,11 @@ Chapter 2. Frequently Asked Questions
        <devel@lists.opensips.org>.
 
        If you want to keep the mail private, send it to
-       <team@lists.opensips.org>.
+       <users@lists.opensips.org>.
 
    2.5.
 
        How can I report a bug?
 
        Please follow the guidelines provided at:
-       http://sourceforge.net/tracker/?group_id=139143
+       http://sourceforge.net/tracker/?group_id=232389
