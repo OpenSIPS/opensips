@@ -70,7 +70,7 @@
 	</xsl:variable>
 
 	<xsl:choose>
-	    <xsl:when test="db:type">
+	    <xsl:when test="type[@db=$db]">
 		<xsl:value-of select="normalize-space(db:type)"/>
 	    </xsl:when>
 	    <xsl:when test="$type='char'">
