@@ -513,10 +513,10 @@ init_tls(void)
 	LM_WARN("disabling compression due ZLIB problems\n");
 	comp_methods = SSL_COMP_get_compression_methods();
 	if (comp_methods==0) {
-		LM_ERR("null openssl compression methods\n");
-		return -1;
+		LM_INFO("openssl compression already disabled\n");
+	} else {
+		sk_SSL_COMP_zero(comp_methods);
 	}
-	sk_SSL_COMP_zero(comp_methods);
 #endif
 
 	SSL_library_init();
