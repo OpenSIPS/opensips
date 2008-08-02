@@ -71,7 +71,6 @@ int prime_hash_func(struct sip_msg * msg,
 		return -1;
 	}
 	if (determine_source (msg, source, &source_string) == -1) {
-		LM_ERR("could not determine source_string\n");
 		return -1;
 	}
 
