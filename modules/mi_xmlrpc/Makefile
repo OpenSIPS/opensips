@@ -41,7 +41,10 @@ ifeq ($(OLD),yes)
 	DEFS+=-DXMLRPC_OLD_VERSION
 else
 ifeq ($(NEW),yes)
-	# nothing to do
+	# we need filio.h for Solaris
+	ifeq ($(OS),solaris)
+		DEFS+=-DHAVE_SYS_FILIO_H
+	endif
 else
 $(warning			You are using an unsupported libxmlrpc-c3 \
 					 version  ($(XMLRPC_VER)), compile at your own risk!)
