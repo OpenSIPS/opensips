@@ -583,9 +583,8 @@ get_user_agent(struct sip_msg* msg)
         return msg->user_agent->body;
     }
 
-    /* If we can't find user-agent, look after the `Server' header
-       This is a temporary hack. Normally it should be extracted by opensips.
-	 */
+    // If we can't find user-agent, look after the `Server' header
+    // This is a temporary hack. Normally it should be extracted by opensips.
 
     block.s   = msg->buf;
     block.len = msg->len;
@@ -1315,8 +1314,7 @@ use_media_proxy(struct sip_msg *msg, char *dialog_id)
         if (stream.transport != TSupported)
             continue; // skip streams with unsupported transports
         if (stream.type.len + stream.ip.len + stream.port.len + stream.direction.len + 4 > str_buf.len) {
-            LM_ERR("media stream description is longer than %lu bytes\n",
-				(unsigned long)sizeof(media_str));
+            LM_ERR("media stream description is longer than %lu bytes\n", (unsigned long)sizeof(media_str));
             return -1;
         }
         len = sprintf(str_buf.s, "%.*s:%.*s:%.*s:%.*s,",
@@ -1361,8 +1359,7 @@ use_media_proxy(struct sip_msg *msg, char *dialog_id)
                    media_relay.len, media_relay.s);
 
     if (len >= sizeof(request)) {
-        LM_ERR("mediaproxy request is longer than %lu bytes\n",
-			(unsigned long)sizeof(request));
+        LM_ERR("mediaproxy request is longer than %lu bytes\n", (unsigned long)sizeof(request));
         return -1;
     }
 
@@ -1482,8 +1479,7 @@ end_media_session(str callid, str from_tag, str to_tag)
                    to_tag.len, to_tag.s);
 
     if (len >= sizeof(request)) {
-        LM_ERR("mediaproxy request is longer than %lu bytes\n",
-			(unsigned long)sizeof(request));
+        LM_ERR("mediaproxy request is longer than %lu bytes\n", (unsigned long)sizeof(request));
         return -1;
     }
 
