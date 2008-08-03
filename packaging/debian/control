@@ -132,8 +132,6 @@ Description: XMLRPC support for OpenSIPS's Management Interface
 Package: opensips-perl-modules
 Architecture: any
 Depends: ${shlibs:Depends}, opensips (= ${binary:Version})
-Replaces: opensips-perl-module
-Conflicts: opensips-perl-module
 Description: Perl extensions and database driver for OpenSIPS
  OpenSIPS is a very fast and flexible SIP (RFC3261)
  server. Written entirely in C, OpenSIPS can handle thousands calls
