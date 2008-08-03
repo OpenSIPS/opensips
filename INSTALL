@@ -404,7 +404,7 @@ proceed, you need to make sure MySQL is installed on your box.
                         UL - usrloc aliases
                         default none
         CTLENGINE - control engine: FIFO or UNIXSOCK
-        OSER_FIFO - path to FIFO file
+        OSIPS_FIFO - path to FIFO file
         VERBOSE - verbose - debug purposes - default '0'
 
    a) watch the server status using 'opensipsctl moni'
