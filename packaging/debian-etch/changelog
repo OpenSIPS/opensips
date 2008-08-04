@@ -1,7 +1,6 @@
-opensips (1.4.0-0) unstable; urgency=low
+opensips (1.4.0-1) unstable; urgency=low
 
   * First Public Release.
 
  -- Bogdan-Andrei Iancu <bogdan@voice-system.ro>  Mon, 21 Jul 2008 09:00:00 +0200
-
 
