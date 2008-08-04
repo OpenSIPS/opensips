@@ -75,7 +75,6 @@ else
 	# remove from compiling the code we have in the
 	# module for abyss server
 	exclude_files=$(wildcard abyss_*.c)
-	MY_LIBS:=$(filter-out %xmlrpc_xmlparse %xmlrpc_xmltok %pthread, $(MY_LIBS))
 endif
 
 
