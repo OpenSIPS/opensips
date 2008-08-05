@@ -154,7 +154,7 @@ static int generate_avps(VALUE_PAIR* received)
 int verify_destination(struct sip_msg* _msg, char* s1, char* s2)
 {
     VALUE_PAIR* send, *received;
-    UINT4 service;
+    uint32_t service;
     static char rad_msg[4096];
     int i;
 
@@ -258,7 +258,7 @@ int verify_source(struct sip_msg* _msg, char* s1, char* s2)
 {
     VALUE_PAIR* send, *received;
     struct hdr_field *hf;
-    UINT4 service;
+    uint32_t service;
     static char rad_msg[4096];
     int i;
 
