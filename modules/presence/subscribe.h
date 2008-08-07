@@ -41,6 +41,7 @@ struct pres_ev;
 #define ACTIVE_STATUS        1
 #define PENDING_STATUS       2
 #define TERMINATED_STATUS    3
+#define WAITING_STATUS       4
 
 struct subscription
 {

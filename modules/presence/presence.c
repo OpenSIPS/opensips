@@ -597,6 +597,7 @@ int pres_update_status(subs_t subs, str reason, db_key_t* query_cols,
 	update_vals[u_reason_col].type= DB_STR;
 	n_update_cols++;
 
+
 	status= subs.status;
 	if(subs.event->get_auth_status(&subs)< 0)
 	{

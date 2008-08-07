@@ -52,6 +52,7 @@ c_back_param* shm_dup_cbparam(subs_t* , subs_t*);
 void free_cbparam(c_back_param* cb_param);
 
 void p_tm_callback( struct cell *t, int type, struct tmcb_params *ps);
+int add_waiting_watchers(watcher_t ** watchers, str pres_uri, str event);
 
 str str_to_user_col = str_init("to_user");
 str str_username_col = str_init("username");
@@ -89,6 +90,8 @@ char* get_status_str(int status_flag)
 		case ACTIVE_STATUS: return "active";
 		case PENDING_STATUS: return "pending";
 		case TERMINATED_STATUS: return "terminated";
+		case WAITING_STATUS: return "waiting";
+	
 	}
 	return NULL;
 }
@@ -490,7 +493,13 @@ str* get_wi_notify_body(subs_t* subs, subs_t* watcher_subs)
 			watchers->next= w;
 		}
 	}
-	
+
+	if( add_waiting_watchers(&watchers, subs->pres_uri, subs->event->wipeer->name)< 0 )
+	{
+		LM_ERR("failed to add waiting watchers\n");
+		goto error;
+	}
+
 done:
 	notify_body = create_winfo_xml(watchers,version_str,subs->pres_uri,
 			state );
@@ -534,6 +543,149 @@ error:
 	}
 
 	return NULL;
+}
+
+int watcher_found_in_list(watcher_t * watchers, str wuri)
+{
+	watcher_t * w;
+
+	w = watchers->next;
+
+	while(w)
+	{
+		if(w->uri.len == wuri.len && strncmp(w->uri.s, wuri.s, wuri.len)== 0)
+			return 1;
+		w= w->next;
+	}
+
+	return 0;
+}
+
+int add_waiting_watchers(watcher_t ** watchers, str pres_uri, str event)
+{
+	watcher_t * w;
+	db_key_t query_cols[3];
+	db_val_t query_vals[3];
+	db_key_t result_cols[2];
+	db_res_t *result = NULL;
+	db_row_t *row= NULL ;	
+	db_val_t *row_vals;
+	int n_result_cols = 0;
+	int n_query_cols = 0;
+	int wuser_col, wdomain_col;
+	str wuser, wdomain, wuri;
+	int i;
+
+	/* select from watchers table the users that have subscribed to the presentity
+	 * and have status pending */
+
+	query_cols[n_query_cols] = &str_presentity_uri_col;
+	query_vals[n_query_cols].type = DB_STR;
+	query_vals[n_query_cols].nul = 0;
+	query_vals[n_query_cols].val.str_val = pres_uri;
+	n_query_cols++;
+
+	query_cols[n_query_cols] = &str_event_col;
+	query_vals[n_query_cols].type = DB_STR;
+	query_vals[n_query_cols].nul = 0;
+	query_vals[n_query_cols].val.str_val = event;
+	n_query_cols++;
+
+	query_cols[n_query_cols] = &str_status_col;
+	query_vals[n_query_cols].type = DB_INT;
+	query_vals[n_query_cols].nul = 0;
+	query_vals[n_query_cols].val.int_val = PENDING_STATUS;
+	n_query_cols++;
+
+	result_cols[wuser_col=n_result_cols++] = &str_watcher_username_col;
+	result_cols[wdomain_col=n_result_cols++] = &str_watcher_domain_col;
+	
+	if (pa_dbf.use_table(pa_db, &watchers_table) < 0) 
+	{
+		LM_ERR("sql use table 'watchers_table' failed\n");
+		return -1;
+	}
+
+	if (pa_dbf.query (pa_db, query_cols, 0, query_vals,
+		 result_cols, n_query_cols, n_result_cols, 0, &result) < 0) 
+	{
+		LM_ERR("failed to query %.*s table\n", watchers_table.len, watchers_table.s);
+		if(result)
+			pa_dbf.free_result(pa_db, result);
+		return -1;
+	}
+	
+	if(result== NULL)
+	{
+		LM_ERR("mysql query failed - null result\n");
+		return -1;
+	}
+
+	if (result->n<=0 )
+	{
+		LM_DBG("The query returned no result\n");
+		pa_dbf.free_result(pa_db, result);
+		return 0;
+	}
+
+	for(i=0; i< result->n; i++)
+	{
+		row = &result->rows[i];
+		row_vals = ROW_VALUES(row);
+
+		wuser.s = (char*)row_vals[wuser_col].val.string_val;
+		wuser.len = strlen(wuser.s);
+
+		wdomain.s = (char*)row_vals[wdomain_col].val.string_val;
+		wdomain.len = strlen(wdomain.s);
+
+		if(uandd_to_uri(wuser, wdomain, &wuri)<0)
+		{
+			LM_ERR("creating uri from username and domain\n");
+			goto error;
+		}
+
+		if(watcher_found_in_list(*watchers, wuri))
+		{
+			pkg_free(wuri.s);
+			continue;
+		}
+		
+		w= (watcher_t*)pkg_malloc(sizeof(watcher_t));
+		if(w== NULL)
+		{
+			ERR_MEM(PKG_MEM_STR);
+		}
+		memset(w, 0, sizeof(watcher_t));
+
+		w->status= WAITING_STATUS;
+		w->uri = wuri;
+		w->id.s = (char*)pkg_malloc(w->uri.len*2 +1);
+		if(w->id.s== NULL)
+		{
+			pkg_free(w->uri.s);
+			pkg_free(w);
+			ERR_MEM(PKG_MEM_STR);
+		}
+
+		to64frombits((unsigned char *)w->id.s,
+			(const unsigned char*)w->uri.s, w->uri.len);
+		w->id.len = strlen(w->id.s);
+		w->event= event;
+	
+		w->next= (*watchers)->next;
+		(*watchers)->next= w;
+
+	}
+
+	pa_dbf.free_result(pa_db, result);
+	return 0;
+
+error:
+	if(result)
+		pa_dbf.free_result(pa_db, result);
+	return -1;
+
 }
 
 str* build_empty_bla_body(str pres_uri)
@@ -711,7 +863,7 @@ db_query:
 
 	static str query_str = str_init("received_time");
 	if (pa_dbf.query (pa_db, query_cols, 0, query_vals,
-		 result_cols, n_query_cols, n_result_cols, &query_str ,  &result) < 0) 
+		 result_cols, n_query_cols, n_result_cols, &query_str, &result) < 0) 
 	{
 		LM_ERR("failed to query %.*s table\n", presentity_table.len, presentity_table.s);
 		if(result)
