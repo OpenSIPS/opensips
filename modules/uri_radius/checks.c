@@ -295,7 +295,7 @@ int radius_does_uri_user_exist(str user)
 {
     static char msg[4096];
     VALUE_PAIR *send, *received;
-    UINT4 service;
+    uint32_t service;
     int res;
     
     send = received = 0;
