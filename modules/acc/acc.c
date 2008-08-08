@@ -395,12 +395,9 @@ int acc_db_request( struct sip_msg *rq)
 
 /************ RADIUS & DIAMETER helper functions **************/
 #if defined(RAD_ACC) || defined (DIAM_ACC)
-#ifndef UINT4
-#define UINT4 uint32_t
-#endif
-inline static UINT4 phrase2code(str *phrase)
+inline static uint32_t phrase2code(str *phrase)
 {
-	UINT4 code;
+	uint32_t code;
 	int i;
 
 	if (phrase->len<3) return 0;
@@ -474,7 +471,7 @@ int init_acc_rad(char *rad_cfg, int srv_type)
 }
 
 
-static inline UINT4 rad_status( struct sip_msg *req, int code )
+static inline uint32_t rad_status( struct sip_msg *req, int code )
 {
 	if (code==0)
 		return rd_vals[RV_STATUS_FAILED].v;
@@ -499,7 +496,7 @@ int acc_rad_request( struct sip_msg *req )
 {
 	int attr_cnt;
 	VALUE_PAIR *send;
-	UINT4 av_type;
+	uint32_t av_type;
 	int offset;
 	int i;
 
@@ -515,14 +512,14 @@ int acc_rad_request( struct sip_msg *req )
 	av_type = rd_vals[RV_SIP_SESSION].v; /* session*/
 	ADD_RAD_AVPAIR( RA_SERVICE_TYPE, &av_type, -1);
 
-	av_type = (UINT4)acc_env.code; /* status=integer */
+	av_type = (uint32_t)acc_env.code; /* status=integer */
 	ADD_RAD_AVPAIR( RA_SIP_RESPONSE_CODE, &av_type, -1);
 
 	av_type = req->REQ_METHOD; /* method */
 	ADD_RAD_AVPAIR( RA_SIP_METHOD, &av_type, -1);
 
 	/* unix time */
-	av_type = (UINT4)acc_env.ts;
+	av_type = (uint32_t)acc_env.ts;
 	ADD_RAD_AVPAIR( RA_TIME_STAMP, &av_type, -1);
 
 	/* add extra also */
