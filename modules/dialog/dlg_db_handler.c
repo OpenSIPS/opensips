@@ -65,8 +65,8 @@ static db_con_t* dialog_db_handle    = 0; /* database connection handle */
 static db_func_t dialog_dbf;
 
 extern int dlg_enable_stats;
-extern stat_var *active_dlgs;
-extern stat_var *early_dlgs;
+extern int active_dlgs_cnt;
+extern int early_dlgs_cnt;
 
 #define SET_STR_VALUE(_val, _str)\
 	do{\
@@ -330,9 +330,9 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 			dlg->state 		= VAL_INT(values+8);
 			if (dlg->state==DLG_STATE_CONFIRMED_NA ||
 			dlg->state==DLG_STATE_CONFIRMED) {
-				if_update_stat(dlg_enable_stats, active_dlgs, 1);
+				active_dlgs_cnt++;
 			} else if (dlg->state==DLG_STATE_EARLY) {
-				if_update_stat(dlg_enable_stats, early_dlgs, 1);
+				early_dlgs_cnt++;
 			}
 
 			dlg->tl.timeout = (unsigned int)(VAL_INT(values+9)) + get_ticks();
