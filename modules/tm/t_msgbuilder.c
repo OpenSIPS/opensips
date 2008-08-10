@@ -188,7 +188,6 @@ static inline struct hdr_field* extract_parsed_hdrs( char *buf, int len)
 	static struct sip_msg msg;
 	struct hdr_field  *hdr;
 
-	LM_DBG("----parsing the buf req - first line\n");
 	/* skip the first line - not interesting */
 	p = eat_line( buf, len);
 	if (p>=buf+len)
@@ -271,7 +270,10 @@ char *build_local(struct cell *Trans,unsigned int branch,
 	*len+=from.len+Trans->callid.len+to.len+cseq_n.len+1+method_len+CRLF_LEN;
 
 	/* copy'n'paste Route headers that were sent out */
-	if (!is_local(Trans) && req && req->route) {
+	if (!is_local(Trans) &&
+	( (req && req->route) || /* at least one route was received*/
+	(Trans->uac[branch].path_vec.len!=0)) ) /* path was forced */
+	{
 		buf_hdrs = extract_parsed_hdrs(Trans->uac[branch].request.buffer.s,
 			Trans->uac[branch].request.buffer.len );
 		if (buf_hdrs==NULL) {
