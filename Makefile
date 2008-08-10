@@ -89,9 +89,13 @@ modules_basenames=$(shell echo $(modules)| \
 #modules_names=$(patsubst modules/%, %.so, $(modules))
 modules_full_path=$(join  $(modules), $(addprefix /, $(modules_names)))
 
-tls_configs=$(patsubst etc/%, %, $(wildcard etc/tls/*) \
+ifeq ($(TLS),)
+	tls_configs=""
+else
+	tls_configs=$(patsubst etc/%, %, $(wildcard etc/tls/*) \
 			$(wildcard etc/tls/rootCA/*) $(wildcard etc/tls/rootCA/certs/*) \
 			$(wildcard etc/tls/rootCA/private/*) $(wildcard etc/tls/user/*))
+endif
 
 MODULE_MYSQL_INCLUDED=$(shell echo $(modules)| grep db_mysql )
 ifeq (,$(MODULE_MYSQL_INCLUDED))
