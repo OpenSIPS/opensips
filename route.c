@@ -732,19 +732,24 @@ inline static int comp_s2s(int op, str *s1, str *s2)
 	regex_t* re;
 
 	ret = -1;
-	/* if any of values is NULL return FALSE */
-	if(s1->s==NULL || s2->s==NULL)
+	/* check the input values :
+	 *  s1 - must be a non-empty string
+	 *  s2 - must be a non-empty string or a regexp* for [NOT]MATCH_OP */
+	if ( s1->s==NULL )
 		return 0;
+
 	switch(op) {
 		case EQUAL_OP:
-			if(s1->len != s2->len) return 0;
+			if ( s2->s==NULL || s1->len != s2->len) return 0;
 			ret=(strncasecmp(s1->s, s2->s, s2->len)==0);
 		break;
 		case DIFF_OP:
+			if ( s2->s==NULL ) return 0;
 			if(s1->len != s2->len) return 1;
 			ret=(strncasecmp(s1->s, s2->s, s2->len)!=0);
 			break;
 		case GT_OP:
+			if ( s2->s==NULL ) return 0;
 			n = (s1->len>=s2->len)?s1->len:s2->len;
 			rt = strncasecmp(s1->s,s2->s, n);
 			if (rt>0)
@@ -754,6 +759,7 @@ inline static int comp_s2s(int op, str *s1, str *s2)
 			else ret = 0;
 			break;
 		case GTE_OP:
+			if ( s2->s==NULL ) return 0;
 			n = (s1->len>=s2->len)?s1->len:s2->len;
 			rt = strncasecmp(s1->s,s2->s, n);
 			if (rt>0)
@@ -763,6 +769,7 @@ inline static int comp_s2s(int op, str *s1, str *s2)
 			else ret = 0;
 			break;
 		case LT_OP:
+			if ( s2->s==NULL ) return 0;
 			n = (s1->len>=s2->len)?s1->len:s2->len;
 			rt = strncasecmp(s1->s,s2->s, n);
 			if (rt<0)
@@ -772,6 +779,7 @@ inline static int comp_s2s(int op, str *s1, str *s2)
 			else ret = 0;
 			break;
 		case LTE_OP:
+			if ( s2->s==NULL ) return 0;
 			n = (s1->len>=s2->len)?s1->len:s2->len;
 			rt = strncasecmp(s1->s,s2->s, n);
 			if (rt<0)
@@ -781,20 +789,20 @@ inline static int comp_s2s(int op, str *s1, str *s2)
 			else ret = 0;
 			break;
 		case MATCH_OP:
-			if(s1->len == 0) return 0;
+			if ( s2==NULL || s1->len == 0 ) return 0;
 			backup = s1->s[s1->len];  s1->s[s1->len] = '\0';
 			ret=(regexec((regex_t*)s2, s1->s, 0, 0, 0)==0);
 			s1->s[s1->len] = backup;
 			break;
 		case NOTMATCH_OP:
-			if(s1->len == 0) return 0;
+			if ( s2==NULL || s1->len == 0 ) return 0;
 			backup = s1->s[s1->len];  s1->s[s1->len] = '\0';
 			ret=(regexec((regex_t*)s2, s1->s, 0, 0, 0)!=0);
 			s1->s[s1->len] = backup;
 			break;
 		case MATCHD_OP:
 		case NOTMATCHD_OP:
-			if(s1->len == 0) return 0;
+			if ( s2==NULL || s1->len == 0 ) return 0;
 			re=(regex_t*)pkg_malloc(sizeof(regex_t));
 			if (re==0) {
 				LM_CRIT("pkg memory allocation failure\n");
