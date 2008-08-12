@@ -802,7 +802,7 @@ inline static int comp_s2s(int op, str *s1, str *s2)
 			break;
 		case MATCHD_OP:
 		case NOTMATCHD_OP:
-			if ( s2==NULL || s1->len == 0 ) return 0;
+			if ( s2->s==NULL || s1->len == 0 ) return 0;
 			re=(regex_t*)pkg_malloc(sizeof(regex_t));
 			if (re==0) {
 				LM_CRIT("pkg memory allocation failure\n");
