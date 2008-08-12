@@ -136,6 +136,12 @@ void print_sdp(sdp_info_t* sdp);
  * Note: only for debug purposes.
  */
 void print_sdp_session(sdp_session_cell_t* sdp_session);
+/**
+ * Print the content of the given sdp_stream structure.
+ *
+ * Note: only for debug purposes.
+ */
+void print_sdp_stream(sdp_stream_cell_t *stream);
 
 
 #endif /* SDP_H */

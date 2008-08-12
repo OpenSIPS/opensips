@@ -779,10 +779,41 @@ void free_sdp(sdp_info_t** _sdp)
 }
 
 
+void print_sdp_stream(sdp_stream_cell_t *stream)
+{
+	sdp_payload_attr_t *payload;
+
+	LM_INFO("....stream[%d]:%p=>%p {%p} '%.*s' '%.*s:%.*s' '%.*s' '%.*s' (%d)=>%p '%.*s' '%.*s' '%.*s' '%.*s'\n",
+		stream->stream_num, stream, stream->next,
+		stream->p_payload_attr,
+		stream->media.len, stream->media.s,
+		stream->ip_addr.len, stream->ip_addr.s,
+		stream->port.len, stream->port.s,
+		stream->transport.len, stream->transport.s,
+		stream->payloads.len, stream->payloads.s,
+		stream->payloads_num, stream->payload_attr,
+		stream->path.len, stream->path.s,
+		stream->max_size.len, stream->max_size.s,
+		stream->accept_types.len, stream->accept_types.s,
+		stream->accept_wrapped_types.len, stream->accept_wrapped_types.s);
+	payload = stream->payload_attr;
+	while (payload) {
+		LM_INFO("......payload[%d]:%p=>%p p_payload_attr[%d]:%p '%.*s' '%.*s' '%.*s' '%.*s' '%.*s' '%.*s'\n",
+			payload->payload_num, payload, payload->next,
+			payload->payload_num, stream->p_payload_attr[payload->payload_num],
+			payload->rtp_payload.len, payload->rtp_payload.s,
+			payload->rtp_enc.len, payload->rtp_enc.s,
+			payload->rtp_clock.len, payload->rtp_clock.s,
+			payload->rtp_params.len, payload->rtp_params.s,
+			payload->sendrecv_mode.len, payload->sendrecv_mode.s,
+			payload->ptime.len, payload->ptime.s);
+		payload=payload->next;
+	}
+}
+
 void print_sdp_session(sdp_session_cell_t *session)
 {
-	sdp_stream_cell_t *stream;
-	sdp_payload_attr_t *payload;
+	sdp_stream_cell_t *stream = session->streams;
 
 	if (session==NULL) {
 		LM_ERR("NULL session\n");
@@ -793,36 +824,12 @@ void print_sdp_session(sdp_session_cell_t *session)
 		session->session_num, session, session->next,
 		session->cnt_disp.len, session->cnt_disp.s,
 		session->streams_num, session->streams);
-	stream = session->streams;
 	while (stream) {
-		LM_DBG("....stream[%d]:%p=>%p {%p} '%.*s' '%.*s' '%.*s' '%.*s' (%d)=>%p '%.*s' '%.*s' '%.*s' '%.*s'\n",
-			stream->stream_num, stream, stream->next,
-			stream->p_payload_attr,
-			stream->media.len, stream->media.s,
-			stream->port.len, stream->port.s,
-			stream->transport.len, stream->transport.s,
-			stream->payloads.len, stream->payloads.s,
-			stream->payloads_num, stream->payload_attr,
-			stream->path.len, stream->path.s,
-			stream->max_size.len, stream->max_size.s,
-			stream->accept_types.len, stream->accept_types.s,
-			stream->accept_wrapped_types.len, stream->accept_wrapped_types.s);
-		payload = stream->payload_attr;
-		while (payload) {
-			LM_DBG("......payload[%d]:%p=>%p p_payload_attr[%d]:%p '%.*s' '%.*s' '%.*s' '%.*s' '%.*s' '%.*s'\n",
-				payload->payload_num, payload, payload->next,
-				payload->payload_num, stream->p_payload_attr[payload->payload_num],
-				payload->rtp_payload.len, payload->rtp_payload.s,
-				payload->rtp_enc.len, payload->rtp_enc.s,
-				payload->rtp_clock.len, payload->rtp_clock.s,
-				payload->rtp_params.len, payload->rtp_params.s,
-				payload->sendrecv_mode.len, payload->sendrecv_mode.s,
-				payload->ptime.len, payload->ptime.s);
-			payload=payload->next;
-		}
+		print_sdp_stream(stream);
 		stream=stream->next;
 	}
 }
+
 
 void print_sdp(sdp_info_t* sdp)
 {
