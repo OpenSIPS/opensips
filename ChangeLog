@@ -1,5 +1,146 @@
 # $Id$
 
+
+===================== 2008-08-13 OpenSIPS v1.4.1 released ======================
+
+
+2008-08-13 00:29:15  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+
+	* [4610] :
+	backport from trunk (rev #4609)
+	- complete the fix from rev #4600
+	  Credits go to Amy Linari. part of patch 2044475.
+
+
+2008-08-12 17:12:45  Ovidiu Sas <osas at voipembedded dot com> 
+
+	* [4607] :
+	backport from trunk (r4606):
+	- get rid of load_ctlengine (it prevents displaying proper help for basectl functions)
+
+
+2008-08-10 16:14:03  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+
+	* [4604] :
+	backport from trunk (rev #4603):
+	- fixed bug : route headers were not added in ACK and CANCEL when PATH was used by registrar module.
+	  The condition for migrating the Route set from INVITE to ACK/CANCEL had to be releaxed a bit to cover the PATH case also, but without doing too much extra parsing.
+	    Reported by Alex Hermann.
+
+
+2008-08-10 15:44:29  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+
+	* [4602] :
+	backport from trunk (rev #4601):
+	- fixed ugly bug in linking the dialog profile tables.
+	  Reported by Ovidiu Sas. Also many thanks to Ovidiu for testing and helping with debugging this problem. 
+
+
+2008-08-10 13:00:16  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+
+	* [4600] :
+	backport from trunk (#rev 4599):
+	- bug fixed: Matching operators fail to match on some platforms.
+	- Decription:
+	Due to a bug in route.c, the regular expression matching operators do not
+	work in all environments. For example, when building 1.4.0 or 1.3.2 on
+	Solaris 10 (sun4v or x86) they give the same result independent of input.
+	It would seem that if it were not for the accident of a particular struct
+	alignment, these operators would be broken on all platforms.
+
+	The underlying problem is a bad test in comp_s2s, which expects s2 to be a
+str*, and tests st->s==NULL. When handling the matching operators MATCH_OP
+and NOTMATCH_OP, it is a regex_t* instead - a fact reflected in the cast
+	under the appropriate switch case.
+
+	Credits go to Amy Linari (patch a bit reworked). Closes patch 2044475.
+
+
+
+2008-08-10 12:36:28  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+
+	* [4598] :
+	backport from trunk (rev #4597):
+	- fixed error in installing TLS related files
+	The installation of OpenSIPS fails because the sources tagged as notls do
+	not include the etc/tls subdirectory;
+	The patch defines the variable where those filenames should be store as
+	empty, so that installation does not fail.
+
+	Credits go to Sergio Gutierrez, closes patch #2042349
+
+
+2008-08-10 12:27:10  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+
+	* [4596] :
+	backport from trunk (rev #4595):
+	- fixed conflict in definition of struct queue in Solaris.
+	The struct named queue in module ratelimit conflicts with a struct named queue which is included in /usr/include/sys/stream.h in Solaris.
+	The patch renames queue to rl_queue, and queue_params to rl_queue_params in module.
+
+	Credits go to Sergio Gutierrez. Closes patch #2042287.
+
+
+2008-08-10 12:15:25  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+
+	* [4594] :
+	backport from trunk (rev #4593):
+	- fixed compiling on Solaris : MSG_NOSIGNAL not defined in Solaris; if not present, define MSG_NOSIGNAL as 0.
+	  Even if the send() call will not ignore SIGPIPE on Solaris, the signal will be cought by the signal handler installed by core and ignore. So, it should be safe on Solaris also, even without MSG_NOSIGNAL.
+
+	Credits go to Sergio Gutierrez. Closes patch 2042217.
+
+
+2008-08-10 12:00:02  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+
+	* [4592] :
+	backport from trunk (rev #4591):
+	fixed obsolete information for lcr in opensipsctl:
+	 - lcr addgw_grp has not sense anymore. So better remove it to don't get
+	 confused
+
+	Patch provided by Angel Carpintero - closes patch 2041321
+
+
+2008-08-09 00:35:00  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+
+	* [4590] :
+	backport from trunk (rev #4589):
+	- fixed improper access to statistic variables before having them initialized.
+
+
+2008-08-08 23:10:27  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+
+	* [4586] :
+	backport from trunk (rev #4585):
+	- compile fix - UINT4 replaced with uint32_t (portable data type)
+
+
+2008-08-07 12:25:55  Anca Vamanu, <anca at voice-system dot ro> 
+
+	* [4583] :
+	- backport from trunk
+		- fixed a bug in BLA when phone was restarted after having refreshed his registration at least once ( thanks to Zahid Mehmod<zm23@columbia.edu> for help with improving BLA)
+		- added null checks before inserting values in database to prevent a crash in mysql 
+
+
+
+2008-08-07 12:20:29  Anca Vamanu, <anca at voice-system dot ro> 
+
+	* [4582] :
+	- backport from trunk 
+	- the right fix for version reset when a refresh for presence.winfo is received 
+	( reported by Luci Stanescu <luci@ag-projects.com> , patch #2038736 in opensips and Bugs item #2026681 for kamailio)
+
+
+2008-08-05 07:54:00  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+
+	* [4579] :
+	backport from trunk (rev #4578):
+	- fixed no standard data type. UINT4 replaced with uint32_t.
+	  Reported by Peter Nixon
+
+
 ===================== 2008-08-04 OpenSIPS v1.4.0 released ======================
 
 
