@@ -563,6 +563,11 @@ get_to_tag(struct sip_msg *msg)
     static str notfound = str_init("");
     str tag;
 
+    if (msg->first_line.type==SIP_REPLY && msg->REPLY_STATUS<200) {
+        // Ignore the To tag for provisional replies
+        return notfound;
+    }
+
     if (!msg->to) {
         LM_ERR("missing To header\n");
         return notfound;
