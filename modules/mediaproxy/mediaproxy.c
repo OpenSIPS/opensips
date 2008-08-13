@@ -480,19 +480,19 @@ get_cseq_number(struct sip_msg *msg, str *cseq)
 static str
 get_from_uri(struct sip_msg *msg)
 {
-    static str notfound = str_init("unknown");
+    static str unknown = str_init("unknown");
     str uri;
     char *ptr;
 
     if (parse_from_header(msg) < 0) {
         LM_ERR("cannot parse the From header\n");
-        return notfound;
+        return unknown;
     }
 
     uri = get_from(msg)->uri;
 
     if (uri.len == 0)
-        return notfound;
+        return unknown;
 
     if (strncmp(uri.s, "sip:", 4)==0) {
         uri.s += 4;
@@ -510,19 +510,19 @@ get_from_uri(struct sip_msg *msg)
 static str
 get_to_uri(struct sip_msg *msg)
 {
-    static str notfound = str_init("unknown");
+    static str unknown = str_init("unknown");
     str uri;
     char *ptr;
 
     if (!msg->to) {
         LM_ERR("missing To header\n");
-        return notfound;
+        return unknown;
     }
 
     uri = get_to(msg)->uri;
 
     if (uri.len == 0)
-        return notfound;
+        return unknown;
 
     if (strncmp(uri.s, "sip:", 4)==0) {
         uri.s += 4;
@@ -540,18 +540,18 @@ get_to_uri(struct sip_msg *msg)
 static str
 get_from_tag(struct sip_msg *msg)
 {
-    static str notfound = str_init("");
+    static str undefined = str_init("");
     str tag;
 
     if (parse_from_header(msg) < 0) {
         LM_ERR("cannot parse the From header\n");
-        return notfound;
+        return undefined;
     }
 
     tag = get_from(msg)->tag_value;
 
     if (tag.len == 0)
-        return notfound;
+        return undefined;
 
     return tag;
 }
@@ -560,23 +560,23 @@ get_from_tag(struct sip_msg *msg)
 static str
 get_to_tag(struct sip_msg *msg)
 {
-    static str notfound = str_init("");
+    static str undefined = str_init("");
     str tag;
 
     if (msg->first_line.type==SIP_REPLY && msg->REPLY_STATUS<200) {
         // Ignore the To tag for provisional replies
-        return notfound;
+        return undefined;
     }
 
     if (!msg->to) {
         LM_ERR("missing To header\n");
-        return notfound;
+        return undefined;
     }
 
     tag = get_to(msg)->tag_value;
 
     if (tag.len == 0)
-        return notfound;
+        return undefined;
 
     return tag;
 }
@@ -585,7 +585,7 @@ get_to_tag(struct sip_msg *msg)
 static str
 get_user_agent(struct sip_msg* msg)
 {
-    static str notfound = str_init("unknown agent");
+    static str unknown = str_init("unknown agent");
     str block, server;
     char *ptr;
 
@@ -602,14 +602,14 @@ get_user_agent(struct sip_msg* msg)
 
     ptr = find_line_starting_with(&block, "Server:", True);
     if (!ptr)
-        return notfound;
+        return unknown;
 
     server.s   = ptr + 7;
     server.len = findendline(server.s, block.s+block.len-server.s) - server.s;
 
     trim(&server);
     if (server.len == 0)
-        return notfound;
+        return unknown;
 
     return server;
 }
@@ -636,12 +636,12 @@ get_signaling_ip(struct sip_msg* msg)
 static str
 get_media_relay(struct sip_msg* msg)
 {
-    static str notfound = str_init("");
+    static str undefined = str_init("");
     int_str value;
 
     if (!search_first_avp(media_relay_avp.type | AVP_VAL_STR,
                           media_relay_avp.name, &value, NULL) || value.s.s==NULL || value.s.len==0) {
-        return notfound;
+        return undefined;
     }
 
     return value.s;
@@ -766,14 +766,14 @@ get_direction_attribute(str *block, str *default_direction)
 static str
 get_rtcp_port_attribute(str *block)
 {
-    str zone, rtcp_port, notfound = {NULL, 0};
+    str zone, rtcp_port, undefined = {NULL, 0};
     char *ptr;
     int count;
 
     ptr = find_line_starting_with(block, "a=rtcp:", False);
 
     if (!ptr)
-        return notfound;
+        return undefined;
 
     zone.s = ptr + 7;
     zone.len = findendline(zone.s, block->s + block->len - zone.s) - zone.s;
@@ -782,7 +782,7 @@ get_rtcp_port_attribute(str *block)
 
     if (count != 1) {
         LM_ERR("invalid `a=rtcp' line in SDP body\n");
-        return notfound;
+        return undefined;
     }
 
     return rtcp_port;
