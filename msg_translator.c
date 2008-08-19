@@ -1382,8 +1382,10 @@ char * build_req_buf_from_sip_req( struct sip_msg* msg,
 
 	/* check if received needs to be added:
 	 *  - if the VIA address and the received address are different 
-	 *  - if the rport was forced (rport requires received) */
-	if ( (msg->msg_flags&FL_FORCE_RPORT) || received_test(msg) ) { 
+	 *  - if the rport was forced (rport requires received)
+	 *  - if the rport was received in the VIA hdr */
+	if ( msg->via1->rport || (msg->msg_flags&FL_FORCE_RPORT) ||
+	received_test(msg) ) {
 		if ((received_buf=received_builder(msg,&received_len))==0){
 			LM_ERR("received_builder failed\n");
 			goto error01;  /* free also line_buf */
