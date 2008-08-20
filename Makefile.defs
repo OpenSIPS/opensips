@@ -637,8 +637,12 @@ else
 ifeq			($(CC_CLASS), 3.x)
 					CPU_TYPE ?= pentium4
 					CFLAGS+=-minline-all-stringops \
-							-falign-loops \
-							-mtune=$(CPU_TYPE)
+							-falign-loops
+ifeq				(X,$(shell echo "$(CC_SHORTVER)" | sed -e 's/3\.[0-3]/X/'))
+					CFLAGS+=mcpu=$(CPU_TYPE)
+else
+					CFLAGS+=mtune=$(CPU_TYPE)
+endif
 else
 ifeq			($(CC_CLASS), 2.9x) #older gcc version (2.9[1-5])
 $(warning 			Old gcc detected ($(CC_SHORTVER)), use  gcc >= 3.1 \
