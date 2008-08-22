@@ -74,5 +74,5 @@ static inline void run_pua_callbacks(ua_pres_t* hentity, struct sip_msg* msg)
 	}
 }
 
-/* Q: should I call the registered callback functions when the modules refreshes a request? */
+/* Q: should I call the registered callback functions when the modules refresh a request? */
 #endif
