@@ -100,6 +100,7 @@ typedef void (*destroy_shtable_t)(shtable_t htable, int hash_size);
 
 typedef struct subscription* (*mem_copy_subs_t)(struct subscription* s, int mem_type);
 
+void free_subs(struct subscription* s);
 
 /* presentity hash table */
 typedef struct pres_entry
