@@ -623,9 +623,9 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 						"caller tag='%.*s'/%d, callee tag='%.*s'/%d\n",
 						dlg->callid.len, dlg->callid.s, dlg->callid.len,
 						dlg->tag[DLG_CALLER_LEG].len, dlg->tag[DLG_CALLER_LEG].s,
-                        dlg->tag[DLG_CALLER_LEG].len,
+						dlg->tag[DLG_CALLER_LEG].len,
 						dlg->tag[DLG_CALLEE_LEG].len, dlg->tag[DLG_CALLEE_LEG].s,
-                        dlg->tag[DLG_CALLEE_LEG].len);
+						dlg->tag[DLG_CALLEE_LEG].len);
 				unref_dlg(dlg, 1);
 				return;
 			}
