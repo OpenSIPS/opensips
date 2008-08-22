@@ -1487,7 +1487,7 @@ void update_db_subs(db_con_t *db,db_func_t dbf, shtable_t hash_table,
 				s= s->next;
 				prev_s->next= s;
 				
-				shm_free(del_s);
+				free_subs(del_s);
 				continue;
 			}
 			switch(s->db_flag)

@@ -273,6 +273,13 @@ error:
 	return -1;
 }
 
+void free_subs(subs_t* s)
+{
+	if(s->contact.s)
+		shm_free(s->contact.s);
+	shm_free(s);
+}
+
 int delete_shtable(shtable_t htable,unsigned int hash_code,str to_tag)
 {
 	subs_t* s= NULL, *ps= NULL;
@@ -290,8 +297,7 @@ int delete_shtable(shtable_t htable,unsigned int hash_code,str to_tag)
 		{
 			found= s->local_cseq;
 			ps->next= s->next;
-			shm_free(s->contact.s);
-			shm_free(s);
+			free_subs(s);
 			break;
 		}
 		ps= s;
