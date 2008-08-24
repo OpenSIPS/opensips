@@ -11,6 +11,7 @@ ifeq ($(BUILDER),)
 		-lnetsnmphelpers -lnetsnmp
 	INSTALLMIBDIR = $(cfg-prefix)/share/snmp/mibs
 else
+	DEFS += $(shell net-snmp-config --cflags)
 	BUILDAGENTLIBS = $(shell net-snmp-config --netsnmp-agent-libs)
 	INSTALLMIBDIR = $(cfg-prefix)$(shell net-snmp-config --prefix)/share/snmp/mibs
 endif 
