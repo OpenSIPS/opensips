@@ -166,7 +166,7 @@ int sctp_server_rcv_loop()
 
 
 	from=(union sockaddr_union*) pkg_malloc(sizeof(union sockaddr_union));
-	if (&from==0){
+	if (from==0){
 		LM_ERR("out of pkg memory\n");
 		goto error;
 	}
