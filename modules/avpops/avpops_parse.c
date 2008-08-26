@@ -287,8 +287,8 @@ int parse_avp_db(char *s, struct db_param *dbp, int allow_scheme)
 			/* update scheme flags with AVP name type*/
 			dbp->scheme->db_flags|=dbp->a.opd&AVPOPS_VAL_STR?AVP_NAME_STR:0;
 		} else {
-			/* duplicate table as str */
-			pkg_str_dup(dbp->table, &tmp);
+			/* duplicate table str into the db_param struct */
+			pkg_str_dup( &dbp->table, &tmp);
 		}
 	}
 
