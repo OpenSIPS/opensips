@@ -41,6 +41,7 @@
 #define EVENT_XCAP_CHANGE    4
 #define EVENT_DIALOG         5
 #define EVENT_MWI            6
+#define EVENT_DIALOG_SLA     7
 
 typedef struct event {
 	str text;       /* Original string representation */

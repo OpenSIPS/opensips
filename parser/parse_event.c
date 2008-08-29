@@ -58,6 +58,9 @@
 #define DIALOG_STR "dialog"
 #define DIALOG_STR_LEN 6
 
+#define DIALOG_SLA_STR "dialog;sla"
+#define DIALOG_SLA_STR_LEN 10
+
 static inline char* skip_token(char* _b, int _l)
 {
 	int i = 0;
@@ -124,6 +127,8 @@ int event_parser(char* _s, int _l, event_t* _e)
 	} else {
 		_e->parsed = EVENT_OTHER;
 	}
+	
+
 	if( (*end)== ';')
 	{
 		str params_str;
@@ -134,6 +139,13 @@ int event_parser(char* _s, int _l, event_t* _e)
 
 		if (parse_params(&params_str, CLASS_ANY, &phooks, &_e->params)<0)
 			return -1;
+		
+		if(_e->parsed == EVENT_DIALOG && _e->params!= NULL && _e->params->next== NULL&&
+				_e->params->name.len== 3 && strncmp(_e->params->name.s, "sla", 3)== 0 )
+		{
+			_e->parsed = EVENT_DIALOG_SLA;
+		}
+
 	}
 	else
 		_e->params= NULL;
