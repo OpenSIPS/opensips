@@ -501,7 +501,7 @@ int handle_subscribe(struct sip_msg* msg, char* str1, char* str2)
 			reply_str= pu_400_rpl;
 			goto error;
 		}
-		if(((event_t*)msg->event->parsed)->parsed & EVENT_OTHER)
+		if(((event_t*)msg->event->parsed)->parsed == EVENT_OTHER)
 		{	
 			goto bad_event;
 		}
@@ -895,7 +895,6 @@ int extract_sdialog_info(subs_t* subs,struct sip_msg* msg, int mexp, int* to_tag
             LM_ERR("failed to construct uri\n");
             goto error;
         }
-        LM_DBG("&&&&&&&&&&&&&&& dialog pres_uri= %.*s\n",subs->pres_uri.len, subs->pres_uri.s);
     }
 
 
