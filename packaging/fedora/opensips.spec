@@ -475,7 +475,7 @@ fi
 
 %attr(755,root,root) %{_initrddir}/opensips
 
-%config(noreplace) %{_sysconfdir}/opensips/dictionary.radius
+%config(noreplace) %{_sysconfdir}/opensips/dictionary.opensips
 %config(noreplace) %{_sysconfdir}/opensips/opensips.cfg
 %config(noreplace) %{_sysconfdir}/opensips/opensipsctlrc
 

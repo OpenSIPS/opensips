@@ -43,7 +43,7 @@ MODULES=	acc alias_db auth auth_db auth_diameter avpops benchmark \
 
 RC_FILES=	acc/radiusclient.conf \
 		acc/servers \
-		dictionary.radius \
+		dictionary.opensips \
 		opensips.cfg
 RC_DIRS=	acc
 

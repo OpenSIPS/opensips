@@ -477,12 +477,12 @@ install-cfg: $(cfg-prefix)/$(cfg-dir)
 		# radius dictionary
 		if [ "$(RADIUSDEPON)" = "yes" ]; then \
 			$(INSTALL_TOUCH) \
-				$(cfg-prefix)/$(cfg-dir)/dictionary.radius.sample ; \
-			$(INSTALL_CFG) etc/dictionary.radius \
-				$(cfg-prefix)/$(cfg-dir)/dictionary.radius.sample ; \
-			if [ ! -f $(cfg-prefix)/$(cfg-dir)/dictionary.radius ]; then \
-				mv -f $(cfg-prefix)/$(cfg-dir)/dictionary.radius.sample \
-					$(cfg-prefix)/$(cfg-dir)/dictionary.radius; \
+				$(cfg-prefix)/$(cfg-dir)/dictionary.opensips.sample ; \
+			$(INSTALL_CFG) etc/dictionary.opensips \
+				$(cfg-prefix)/$(cfg-dir)/dictionary.opensips.sample ; \
+			if [ ! -f $(cfg-prefix)/$(cfg-dir)/dictionary.opensips ]; then \
+				mv -f $(cfg-prefix)/$(cfg-dir)/dictionary.opensips.sample \
+					$(cfg-prefix)/$(cfg-dir)/dictionary.opensips; \
 			fi; \
 		fi
 		# opensipsctl config
