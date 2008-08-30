@@ -343,6 +343,18 @@ int radius_authorize_sterman(struct sip_msg* _msg, dig_cred_t* _cred, str* _meth
 		goto err;
 	}
 
+	/* Add CALL-ID in Acct-Session-Id Attribute */
+	if ( _msg->callid==NULL && 
+	(parse_headers(_msg, HDR_CALLID_F, 0)==-1 || _msg->callid==NULL)  ) {
+		LM_ERR("msg parsing failed or callid not present");
+		goto err;
+	}
+	if (rc_avpair_add(rh,&send,attrs[A_ACCT_SESSION_ID].v,_msg->callid->body.s,
+	_msg->callid->body.len, 0) == 0) {
+		LM_ERR("unable to add CALL-ID attribute\n");
+		goto err;
+	}
+
 	if (attrs[A_CISCO_AVPAIR].n != NULL) {
 		if (add_cisco_vsa(&send, _msg)) {
 			goto err;

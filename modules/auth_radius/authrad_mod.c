@@ -137,6 +137,7 @@ static int mod_init(void)
 	attrs[A_USER_NAME].n			= "User-Name";
 	attrs[A_CISCO_AVPAIR].n			= "Cisco-AVPair";
 	attrs[A_SIP_AVP].n				= "SIP-AVP";
+	attrs[A_ACCT_SESSION_ID].n		= "Acct-Session-Id";
 	vals[V_SIP_SESSION].n			= "Sip-Session";
 
 	if ((rh = rc_read_config(radius_config)) == NULL) {
