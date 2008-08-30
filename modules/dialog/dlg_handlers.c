@@ -581,7 +581,6 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 	int timeout;
 	unsigned int dir;
 
-
 	/* skip initial requests - they may end up here because of the
 	 * preloaded route */
 	if ( (!req->to && parse_headers(req, HDR_TO_F,0)<0) || !req->to ) {
