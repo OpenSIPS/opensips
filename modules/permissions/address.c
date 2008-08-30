@@ -41,6 +41,7 @@
 #include "../../usr_avp.h"
 #include "../../mod_fix.h"
 #include "../../ut.h"
+#include "../../resolve.h"
 
 #define TABLE_VERSION 3
 
@@ -312,7 +313,7 @@ int allow_address(struct sip_msg* _msg, char* _addr_group, char* _addr_sp,
 
     unsigned int addr, port;
     int addr_group;
-    struct in_addr addr_struct;
+    struct ip_addr *ip;
 
     addr_sp = (pv_spec_t *)_addr_sp;
     port_sp = (pv_spec_t *)_port_sp;
@@ -322,24 +323,24 @@ int allow_address(struct sip_msg* _msg, char* _addr_group, char* _addr_sp,
 	return -1;
     }
 
-    if (addr_sp && (pv_get_spec_value(_msg, addr_sp, &pv_val) == 0)) {
-	if (pv_val.flags & PV_VAL_INT) {
-	    addr = pv_val.ri;
-	} else if (pv_val.flags & PV_VAL_STR) {
-	    if (inet_aton(pv_val.rs.s, &addr_struct) == 0) {
-		LM_ERR("failed to convert IP address string to in_addr\n");
-		return -1;
-	    } else {
-		addr = addr_struct.s_addr;
-	    }
+	if (addr_sp && (pv_get_spec_value(_msg, addr_sp, &pv_val) == 0)) {
+		if (pv_val.flags & PV_VAL_INT) {
+			addr = pv_val.ri;
+		} else if (pv_val.flags & PV_VAL_STR) {
+			if ( (ip=str2ip( &pv_val.rs)) == NULL) {
+				LM_ERR("failed to convert IP address string to in_addr\n");
+				return -1;
+			} else {
+				addr = ip->u.addr32[0];
+			}
+		} else {
+			LM_ERR("IP address PV empty value\n");
+			return -1;
+		}
 	} else {
-	    LM_ERR("failed to convert IP address string to in_addr\n");
-	    return -1;
+		LM_ERR("cannot get value of address pvar\n");
+			return -1;
 	}
-    } else {
-	LM_ERR("cannot get value of address pvar\n");
-	return -1;
-    }
 
     if (port_sp && (pv_get_spec_value(_msg, port_sp, &pv_val) == 0)) {
 	if (pv_val.flags & PV_VAL_INT) {
