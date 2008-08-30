@@ -582,6 +582,8 @@ int user2uid(int* uid, int* gid, char* user);
 
 int group2gid(int* gid, char* group);
 
+char * NTcopy_str( str *s );
+
 /* utility function to give each children a unique seed */
 void seed_child(unsigned int seed);
 

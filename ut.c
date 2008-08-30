@@ -34,6 +34,39 @@
 
 char int2str_buf[INT2STR_MAX_LEN];
 
+/* make a null-termianted copy of the given string (in STR format) into
+ * a static local buffer
+ * !!IMPORTANT!! sequential calls do overwrite the previous values.
+ */
+char * NTcopy_str( str *s )
+{
+	static char *p=NULL;
+	static len = 0;
+
+	if (p!=NULL) {
+		if ( len < s->len+1 ) {
+			p = pkg_realloc( p , s->len+1 );
+			if (p==NULL) {
+				LM_ERR("no more pkg mem (%d)\n", s->len+1);
+				return NULL;
+			}
+			len = s->len+1;
+		}
+	} else {
+		p = pkg_malloc(s->len+1);
+		if (p==NULL) {
+			LM_ERR("no more pkg mem (%d)\n", s->len+1);
+			return NULL;
+		}
+		len = s->len+1;
+	}
+
+	memcpy( p , s->s, s->len);
+	p[s->len] = 0;
+
+	return p;
+}
+
 
 /* converts a username into uid:gid,
  * returns -1 on error & 0 on success */
@@ -84,6 +117,5 @@ error:
 /* utility function to give each children a unique seed */
 void seed_child(unsigned int seed)
 {
-	//LM_NOTICE("children seeded with %u", seed);
 	srand(seed);
 }
