@@ -366,6 +366,7 @@ struct sip_msg*  sip_msg_cloner( struct sip_msg *org_msg, int *sip_msg_len )
 			case HDR_MAXFORWARDS_T:
 			case HDR_ROUTE_T:
 			case HDR_RECORDROUTE_T:
+			case HDR_PATH_F:
 			case HDR_CONTENTTYPE_T:
 			case HDR_CONTENTLENGTH_T:
 			case HDR_EXPIRES_T:
@@ -660,6 +661,13 @@ do { \
 					LINK_SIBLING_HEADER(record_route, new_hdr);
 				}
 				break;
+			case HDR_PATH_T :
+				if (HOOK_NOT_SET(path)) {
+					new_msg->path = new_hdr;
+				} else {
+					LINK_SIBLING_HEADER(path, new_hdr);
+				}
+				break;
 			case HDR_CONTENTTYPE_T :
 				if (HOOK_NOT_SET(content_type)) {
 					new_msg->content_type = new_hdr;
@@ -792,14 +800,34 @@ do { \
 					new_msg->rpid = new_hdr;
 				}
 				break;
+			case HDR_REFER_TO_T:
+				if (HOOK_NOT_SET(refer_to)) {
+					new_msg->refer_to = new_hdr;
+				}
+				break;
+			case HDR_SESSION_EXPIRES_T:
+				if (HOOK_NOT_SET(session_expires)) {
+					new_msg->session_expires = new_hdr;
+				}
+				break;
+			case HDR_MIN_SE_T:
+				if (HOOK_NOT_SET(min_se)) {
+					new_msg->min_se = new_hdr;
+				}
+				break;
 			case HDR_PPI_T:
 				if (HOOK_NOT_SET(ppi)) {
 					new_msg->ppi = new_hdr;
 				}
 				break;
-			case HDR_REFER_TO_T:
-				if (HOOK_NOT_SET(refer_to)) {
-					new_msg->refer_to = new_hdr;
+			case HDR_PAI_T:
+				if (HOOK_NOT_SET(pai)) {
+					new_msg->pai = new_hdr;
+				}
+				break;
+			case HDR_PRIVACY_T:
+				if (HOOK_NOT_SET(privacy)) {
+					new_msg->privacy = new_hdr;
 				}
 				break;
 			default:
