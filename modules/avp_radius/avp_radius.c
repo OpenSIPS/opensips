@@ -116,11 +116,12 @@ static int mod_init(void)
 	memset(attrs, 0, sizeof(attrs));
 	memset(vals, 0, sizeof(vals));
 
-	attrs[A_SERVICE_TYPE].n	  = "Service-Type";
-	attrs[A_USER_NAME].n	  = "User-Name";
-	attrs[A_SIP_AVP].n	  = "SIP-AVP";
-	vals[V_SIP_CALLER_AVPS].n = "SIP-Caller-AVPs";
-	vals[V_SIP_CALLEE_AVPS].n = "SIP-Callee-AVPs";
+	attrs[A_SERVICE_TYPE].n		= "Service-Type";
+	attrs[A_USER_NAME].n		= "User-Name";
+	attrs[A_SIP_AVP].n			= "SIP-AVP";
+	attrs[A_ACCT_SESSION_ID].n	= "Acct-Session-Id";
+	vals[V_SIP_CALLER_AVPS].n	= "SIP-Caller-AVPs";
+	vals[V_SIP_CALLEE_AVPS].n	= "SIP-Callee-AVPs";
 
 	/* read config */
 	if ((rh = rc_read_config(radius_config)) == NULL) {
@@ -313,6 +314,18 @@ static int load_avp_user(struct sip_msg* msg, str* prefix, load_avp_param_t type
 
 	if (!rc_avpair_add(rh, &send, attrs[A_SERVICE_TYPE].v, &service, -1, 0)) {
 		LM_ERR("failed to add PW_SERVICE_TYPE\n");
+		goto error;
+	}
+
+	/* Add CALL-ID in Acct-Session-Id Attribute */
+	if ( msg->callid==NULL && 
+	(parse_headers(msg, HDR_CALLID_F, 0)==-1 || msg->callid==NULL)  ) {
+		LM_ERR("msg parsing failed or callid not present");
+		goto error;
+	}
+	if (rc_avpair_add(rh,&send,attrs[A_ACCT_SESSION_ID].v,msg->callid->body.s,
+	msg->callid->body.len, 0) == 0) {
+		LM_ERR("unable to add CALL-ID attribute\n");
 		goto error;
 	}
 
