@@ -2,10 +2,10 @@ INSERT INTO version (table_name, table_version) values ('sip_trace','2');
 CREATE TABLE sip_trace (
     id INT(10) UNSIGNED AUTO_INCREMENT PRIMARY KEY NOT NULL,
     time_stamp DATETIME DEFAULT '1900-01-01 00:00:01' NOT NULL,
-    callid VARCHAR(255) DEFAULT '' NOT NULL,
+    callid VARCHAR(256) DEFAULT '' NOT NULL,
     traced_user VARCHAR(128) DEFAULT '' NOT NULL,
     msg TEXT NOT NULL,
-    method VARCHAR(50) DEFAULT '' NOT NULL,
+    method VARCHAR(32) DEFAULT '' NOT NULL,
     status VARCHAR(128) DEFAULT '' NOT NULL,
     fromip VARCHAR(50) DEFAULT '' NOT NULL,
     toip VARCHAR(50) DEFAULT '' NOT NULL,

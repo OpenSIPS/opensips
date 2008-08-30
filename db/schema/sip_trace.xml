@@ -37,7 +37,7 @@
     <column id="callid">
         <name>callid</name>
         <type>string</type>
-        <size>&hf_len;</size>
+        <size>256</size>
         <default/>
         <description>call ID from SIP message</description>
         <natural/>
@@ -60,7 +60,7 @@
     <column>
         <name>method</name>
         <type>string</type>
-        <size>50</size>
+        <size>32</size>
         <default/>
         <description>SIP method name</description>
     </column>

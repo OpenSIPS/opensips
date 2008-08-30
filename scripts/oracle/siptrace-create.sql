@@ -2,10 +2,10 @@ INSERT INTO version (table_name, table_version) values ('sip_trace','2');
 CREATE TABLE sip_trace (
     id NUMBER(10) PRIMARY KEY,
     time_stamp DATE DEFAULT to_date('1900-01-01 00:00:01','yyyy-mm-dd hh24:mi:ss'),
-    callid VARCHAR2(255) DEFAULT '',
+    callid VARCHAR2(256) DEFAULT '',
     traced_user VARCHAR2(128) DEFAULT '',
     msg CLOB,
-    method VARCHAR2(50) DEFAULT '',
+    method VARCHAR2(32) DEFAULT '',
     status VARCHAR2(128) DEFAULT '',
     fromip VARCHAR2(50) DEFAULT '',
     toip VARCHAR2(50) DEFAULT '',
