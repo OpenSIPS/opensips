@@ -23,6 +23,8 @@
  * --------
  *  2003-11-06  body len is computed using the message len (it's
  *               not taken any more from the msg. content-length) (andrei)
+ *  2008-08-30  body len is taken from Conent-length header as it is more 
+ *               reliable (UDP packages may contain garbage at the end)(bogdan)
  */
 
 #include <stdio.h>
@@ -39,6 +41,7 @@
 #include "../../udp_server.h"
 #include "../../pt.h"
 #include "../../parser/msg_parser.h"
+#include "../../parser/parse_content.h"
 
 
 
@@ -159,7 +162,11 @@ int extract_body(struct sip_msg *msg, str *body )
 		LM_ERR("failed to get the message body\n");
 		goto error;
 	}
-	body->len = msg->len -(int)(body->s-msg->buf);
+	
+	/* better use the content-len value - no need of any explicit
+	 * parcing as get_body() parsed all headers and Conten-Length
+	 * body header is automaticaly parsed when found */
+	body->len = get_content_length(msg);
 	if (body->len==0) {
 		LM_ERR("message body has length zero\n");
 		goto error;
