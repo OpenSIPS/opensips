@@ -1,0 +1,95 @@
+Presence_XCAPDiff Module
+
+Denis Bilenko
+
+   <denis@ag-projects.com>
+
+Edited by
+
+Denis Bilenko
+
+   <denis@ag-projects.com>
+
+   Copyright © 2008 AG Projects
+   Revision History
+   Revision $Revision$ $Date$
+     __________________________________________________________
+
+   Table of Contents
+
+   1. Admin Guide
+
+        1.1. Overview
+        1.2. Dependencies
+
+              1.2.1. OpenSIPS Modules
+              1.2.2. External Libraries or Applications
+
+        1.3. Exported parameters
+
+              1.3.1. enable_presence (int)
+              1.3.2. enable_pua (int)
+
+   List of Examples
+
+   1.1. Disabling presence
+   1.2. Disabling pua
+
+Chapter 1. Admin Guide
+
+1.1. Overview
+
+   Presence_XCAPDiff is an OpenSIPS module that adds support for
+   "xcap-diff" event to presence and pua. At the moment, the
+   module just registers the event but doesn't do any
+   event-specific processing. Registering event with pua allows
+   XCAP server to publish xcap-event when modification of a
+   document happens. Registering event with presence allow clients
+   to subscribe for the event. The module is intended to be used
+   with OpenXCAP (www.openxcap.org) server, although it doesn't
+   contain any OpenXCAP-specific code and potentially could be
+   used with any XCAP server.
+
+1.2. Dependencies
+
+1.2.1. OpenSIPS Modules
+
+   The following modules must be loaded before this module:
+     * presence module - if enable_presence is non-zero (see below
+       the description of enable_presence).
+     * pua module - if enable_pua is non-zero (see below the
+       description of enable_pua).
+     * pua_mi module - if enable_pua is non-zero and you intent to
+       use this module with OpenXCAP.
+
+1.2.2. External Libraries or Applications
+
+   The following libraries or applications must be installed
+   before running OpenSIPS with this module loaded:
+     * None.
+
+1.3. Exported parameters
+
+1.3.1. enable_presence (int)
+
+   Boolean flag that specifies if "xcap-diff" event should be
+   registered with presence.
+
+   Default value is "1".
+
+   Example 1.1. Disabling presence
+...
+modparam("presence_xcapdiff", "enable_presence", 0)
+...
+
+1.3.2. enable_pua (int)
+
+   Boolean flag that specifies if "xcap-diff" event should be
+   registered with pua.
+
+   Default value is "1".
+
+   Example 1.2. Disabling pua
+...
+modparam("presence_xcapdiff", "enable_pua", 0)
+...
