@@ -1,0 +1,119 @@
+<!-- Module User's Guide -->
+
+<chapter>
+  
+  <title>&adminguide;</title>
+  
+  <section>
+  <title>Overview</title>
+    <para>
+      Presence_XCAPDiff is an &osips; module that adds support for
+      "xcap-diff" event to presence and pua. At the moment, the module
+      just registers the event but doesn't do any event-specific processing.
+
+      Registering event with pua allows XCAP server to publish xcap-event
+      when modification of a document happens.
+      Registering event with presence allow clients to subscribe for the event.
+
+      The module is intended to be used with OpenXCAP (www.openxcap.org) server,
+      although it doesn't contain any OpenXCAP-specific code and potentially could
+      be used with any XCAP server.
+    </para>
+  </section>
+  
+  <section>
+  <title>Dependencies</title>
+    <section>
+    <title>&osips; Modules</title>
+      <para>
+        The following modules must be loaded before this module:
+        <itemizedlist>
+          <listitem>
+            <para>
+              <emphasis>presence</emphasis> module - if enable_presence is non-zero
+              (see below the description of enable_presence).
+            </para>
+          </listitem>
+          <listitem>
+            <para>
+              <emphasis>pua</emphasis> module - if enable_pua is non-zero
+              (see below the description of enable_pua).
+            </para>
+          </listitem>
+          <listitem>
+            <para>
+              <emphasis>pua_mi</emphasis> module - if enable_pua is non-zero and 
+              you intent to use this module with OpenXCAP.
+            </para>
+          </listitem>
+        </itemizedlist>
+      </para>
+    </section>
+
+    <section>
+    <title>External Libraries or Applications</title>
+      <para>
+        The following libraries or applications must be installed before
+        running &osips; with this module loaded:
+        <itemizedlist>
+          <listitem>
+            <para>
+              <emphasis>None</emphasis>.
+            </para>
+          </listitem>
+        </itemizedlist>
+      </para>
+    </section>
+  </section>
+  
+  <section>
+  <title>Exported parameters</title>
+    <section>
+    <title><varname>enable_presence</varname> (int)</title>
+      <para>
+        Boolean flag that specifies if "xcap-diff" event should be registered with presence.
+      </para>
+
+      <para>
+        <emphasis>
+          Default value is <quote>1</quote>.
+        </emphasis>
+      </para>
+
+      <example>
+      <title>Disabling presence</title>
+        <programlisting format="linespecific">
+...
+modparam("presence_xcapdiff", "enable_presence", 0)
+...
+        </programlisting>
+      </example>
+    </section>
+
+    <section>
+    <title><varname>enable_pua</varname> (int)</title>
+      <para>
+        Boolean flag that specifies if "xcap-diff" event should be registered with pua.
+      </para>
+
+      <para>
+        <emphasis>
+          Default value is <quote>1</quote>.
+        </emphasis>
+      </para>
+
+      <example>
+      <title>Disabling pua</title>
+        <programlisting format="linespecific">
+...
+modparam("presence_xcapdiff", "enable_pua", 0)
+...
+        </programlisting>
+      </example>
+    </section>
+
+
+  </section>
+
+</chapter>
+
