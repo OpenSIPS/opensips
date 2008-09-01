@@ -39,6 +39,7 @@
 #define BLA_EVENT           1<<2
 #define MSGSUM_EVENT        1<<3
 #define CONFERENCE_EVENT    1<<4
+#define XCAPDIFF_EVENT      1<<5
 
 #define UL_PUBLISH          1<<0
 #define BLA_PUBLISH         1<<1
@@ -135,6 +136,10 @@ static inline int get_event_flag(str* event)
         case 8:
             if (strncmp(event->s, "presence", 8) == 0)
                 return PRESENCE_EVENT;
+            break;
+        case 9:
+            if (strncmp(event->s, "xcap-diff", 9) == 0)
+                return XCAPDIFF_EVENT;
             break;
         case 10:
             if (strncmp(event->s, "dialog;sla", 10) == 0)
