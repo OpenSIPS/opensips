@@ -239,7 +239,7 @@ static inline int ack_matching(struct cell *p_cell, struct sip_msg *p_msg)
 	}
 	/* it's a local dialog -- we wish to verify to-tags too */
 	if (dlg_matching(p_cell, p_msg)) {
-		return 1;
+		return 2;
 	}
 	return 0;
 }
