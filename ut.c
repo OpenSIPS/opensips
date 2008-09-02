@@ -41,7 +41,7 @@ char int2str_buf[INT2STR_MAX_LEN];
 char * NTcopy_str( str *s )
 {
 	static char *p=NULL;
-	static len = 0;
+	static unsigned int len = 0;
 
 	if (p!=NULL) {
 		if ( len < s->len+1 ) {
