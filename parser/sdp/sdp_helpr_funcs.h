@@ -49,6 +49,7 @@ int extract_ptime(str *body, str *ptime);
 int extract_sendrecv_mode(str *body, str *sendrecv_mode);
 int extract_mediaip(str *body, str *mediaip, int *pf, char *line);
 int extract_media_attr(str *body, str *mediamedia, str *mediaport, str *mediatransport, str *mediapayload);
+int extract_bwidth(str *body, str *bwtype, str *bwwitdth);
 
 /* RFC4975 attributes */
 int extract_accept_types(str *body, str *accept_types);

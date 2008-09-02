@@ -58,6 +58,11 @@ typedef struct sdp_stream_cell {
 	str transport;
 	str payloads;
 	int payloads_num;                         /**< number of payloads inside a stream */
+	/* b=<bwtype>:<bandwidth> */
+	str bw_type;                              /**< alphanumeric modifier giving the meaning of the <bandwidth> figure:
+							CT - conference total;
+							AS - application specific */
+	str bw_width;                            /**< The <bandwidth> is interpreted as kilobits per second by default */
 	str path;                                 /**< RFC4975: path attribute */
 	str max_size;                             /**< RFC4975: max-size attribute */
 	str accept_types;                         /**< RFC4975: accept-types attribute */
@@ -70,6 +75,11 @@ typedef struct sdp_session_cell {
 	struct sdp_session_cell *next;
 	int session_num;  /**< session index inside sdp */
 	str cnt_disp;     /**< the Content-Disposition header (for Content-Type:multipart/mixed) */
+	/* b=<bwtype>:<bandwidth> */
+	str bw_type;      /**< alphanumeric modifier giving the meaning of the <bandwidth> figure:
+				CT - conference total;
+				AS - application specific */
+	str bw_width;   /**< The <bandwidth> is interpreted as kilobits per second by default */
 	int streams_num;  /**< number of streams inside a session */
 	struct sdp_stream_cell*  streams;
 } sdp_session_cell_t;

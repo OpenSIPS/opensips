@@ -292,6 +292,42 @@ int extract_sendrecv_mode(str *body, str *sendrecv_mode)
 	return 0;
 }
 
+int extract_bwidth(str *body, str *bwtype, str *bwwitdth)
+{
+	char *cp, *cp1;
+	int len;
+
+	cp1 = NULL;
+	for (cp = body->s; (len = body->s + body->len - cp) > 0;) {
+		cp1 = (char*)ser_memmem(cp, "b=", len, 2);
+		if (cp1 == NULL || cp1[-1] == '\n' || cp1[-1] == '\r')
+			break;
+		cp = cp1 + 2;
+	}
+	if (cp1 == NULL)
+		return -1;
+
+	bwtype->s = cp1 + 2;
+	bwtype->len = eat_line(bwtype->s, body->s + body->len - bwtype->s) - bwtype->s;
+	trim_len(bwtype->len, bwtype->s, *bwtype);
+
+	cp = bwtype->s;
+	len = bwtype->len;
+	cp1 = (char*)ser_memmem(cp, ":", len, 1);
+	len -= cp1 - cp;
+	if (len <= 0) {
+		LM_ERR("invalid encoding in `b=%.*s'\n", bwtype->len, bwtype->s);
+		return -1;
+	}
+	bwtype->len = cp1 - cp;
+
+	/* skip ':' */
+	bwwitdth->s = cp1 + 1;
+	bwwitdth->len = len - 1;
+	
+	return 0;
+}
+
 int extract_mediaip(str *body, str *mediaip, int *pf, char *line)
 {
 	char *cp, *cp1;

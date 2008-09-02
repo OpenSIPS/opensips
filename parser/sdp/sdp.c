@@ -404,7 +404,7 @@ static int parse_sdp_session(str *sdp_body, int session_num, str *cnt_disp, sdp_
 	str payload;
 	str rtp_payload, rtp_enc, rtp_clock, rtp_params, ptime, sendrecv_mode;
 	char *bodylimit;
-	char *v1p, *o1p, *m1p, *m2p, *c1p, *c2p, *a1p, *a2p;
+	char *v1p, *o1p, *m1p, *m2p, *c1p, *c2p, *a1p, *a2p, *b1p;
 	str tmpstr1;
 	int stream_num, payloadnum, pf;
 	sdp_session_cell_t *session;
@@ -441,12 +441,22 @@ static int parse_sdp_session(str *sdp_body, int session_num, str *cnt_disp, sdp_
 		LM_ERR("no m= in session\n");
 		return -1;
 	}
-	/* Find c1p only between session begin and first media.
-	 * c1p will give common c= for all medias. */
-	c1p = find_sdp_line(o1p, m1p, 'c');
 	/* Allocate a session cell */
 	session = add_sdp_session(_sdp, session_num, cnt_disp);
 	if (session == 0) return -1;
+
+	/* Find c1p only between session begin and first media.
+	 * c1p will give common c= for all medias. */
+	c1p = find_sdp_line(o1p, m1p, 'c');
+
+	/* Find b1p only between session begin and first media.
+	 * b1p will give common b= for all medias. */
+	b1p = find_sdp_line(o1p, m1p, 'b');
+	if (b1p) {
+		tmpstr1.s = b1p;
+		tmpstr1.len = m1p - b1p;
+		extract_bwidth(&tmpstr1, &session->bw_type, &session->bw_width);
+	}
 
 	/* Have session. Iterate media descriptions in session */
 	m2p = m1p;
@@ -485,6 +495,14 @@ static int parse_sdp_session(str *sdp_body, int session_num, str *cnt_disp, sdp_
 		/* Allocate a stream cell */
 		stream = add_sdp_stream(session, stream_num, &sdp_media, &sdp_port, &sdp_transport, &sdp_payload, pf, &sdp_ip);
 		if (stream == 0) return -1;
+
+		/* b1p will point to per-media "b=" */
+		b1p = find_sdp_line(m1p, m2p, 'b');
+		if (b1p) {
+			tmpstr1.s = b1p;
+			tmpstr1.len = m2p - b1p;
+			extract_bwidth(&tmpstr1, &stream->bw_type, &stream->bw_width);
+		}
 
 		/* Parsing the payloads */
 		tmpstr1.s = sdp_payload.s;
@@ -783,14 +801,14 @@ void print_sdp_stream(sdp_stream_cell_t *stream)
 {
 	sdp_payload_attr_t *payload;
 
-	LM_INFO("....stream[%d]:%p=>%p {%p} '%.*s' '%.*s:%.*s' '%.*s' '%.*s' (%d)=>%p '%.*s' '%.*s' '%.*s' '%.*s'\n",
+	LM_DBG("....stream[%d]:%p=>%p {%p} '%.*s' '%.*s:%.*s' '%.*s' '%.*s' '%.*s:%.*s' (%d)=>%p '%.*s' '%.*s' '%.*s' '%.*s'\n",
 		stream->stream_num, stream, stream->next,
 		stream->p_payload_attr,
 		stream->media.len, stream->media.s,
-		stream->ip_addr.len, stream->ip_addr.s,
-		stream->port.len, stream->port.s,
+		stream->ip_addr.len, stream->ip_addr.s, stream->port.len, stream->port.s,
 		stream->transport.len, stream->transport.s,
 		stream->payloads.len, stream->payloads.s,
+		stream->bw_type.len, stream->bw_type.s, stream->bw_width.len, stream->bw_width.s,
 		stream->payloads_num, stream->payload_attr,
 		stream->path.len, stream->path.s,
 		stream->max_size.len, stream->max_size.s,
@@ -798,7 +816,7 @@ void print_sdp_stream(sdp_stream_cell_t *stream)
 		stream->accept_wrapped_types.len, stream->accept_wrapped_types.s);
 	payload = stream->payload_attr;
 	while (payload) {
-		LM_INFO("......payload[%d]:%p=>%p p_payload_attr[%d]:%p '%.*s' '%.*s' '%.*s' '%.*s' '%.*s' '%.*s'\n",
+		LM_DBG("......payload[%d]:%p=>%p p_payload_attr[%d]:%p '%.*s' '%.*s' '%.*s' '%.*s' '%.*s' '%.*s'\n",
 			payload->payload_num, payload, payload->next,
 			payload->payload_num, stream->p_payload_attr[payload->payload_num],
 			payload->rtp_payload.len, payload->rtp_payload.s,
@@ -820,9 +838,10 @@ void print_sdp_session(sdp_session_cell_t *session)
 		return;
 	}
 
-	LM_DBG("..session[%d]:%p=>%p '%.*s' (%d)=>%p\n",
+	LM_DBG("..session[%d]:%p=>%p '%.*s' '%.*s:%.*s' (%d)=>%p\n",
 		session->session_num, session, session->next,
 		session->cnt_disp.len, session->cnt_disp.s,
+		session->bw_type.len, session->bw_type.s, session->bw_width.len, session->bw_width.s,
 		session->streams_num, session->streams);
 	while (stream) {
 		print_sdp_stream(stream);
@@ -980,6 +999,8 @@ sdp_stream_cell_t * clone_sdp_stream_cell(sdp_stream_cell_t *stream)
 			stream->port.len +
 			stream->transport.len +
 			stream->payloads.len +
+			stream->bw_type.len +
+			stream->bw_width.len +
 			stream->ip_addr.len;
 	clone_stream = (sdp_stream_cell_t*)shm_malloc(len);
 	if (clone_stream == NULL) {
@@ -1039,10 +1060,23 @@ sdp_stream_cell_t * clone_sdp_stream_cell(sdp_stream_cell_t *stream)
 		p += stream->payloads.len;
 	}
 
+	if (stream->bw_type.len) {
+		clone_stream->bw_type.s = p;
+		clone_stream->bw_type.len = stream->bw_type.len;
+		p += stream->bw_type.len;
+	}
+
+	if (stream->bw_width.len) {
+		clone_stream->bw_width.s = p;
+		clone_stream->bw_width.len = stream->bw_width.len;
+		p += stream->bw_width.len;
+	}
+
 	if (stream->ip_addr.len) {
 		clone_stream->ip_addr.s = p;
 		clone_stream->ip_addr.len = stream->ip_addr.len;
 		memcpy( p, stream->ip_addr.s, stream->ip_addr.len);
+		//p += stream->payloads.len;
 	}
 
 	/* NOTE: we are not cloning RFC4975 attributes:
@@ -1069,7 +1103,8 @@ sdp_session_cell_t * clone_sdp_session_cell(sdp_session_cell_t *session)
 		LM_ERR("arg:NULL\n");
 		return NULL;
 	}
-	len = sizeof(sdp_session_cell_t) + session->cnt_disp.len;
+	len = sizeof(sdp_session_cell_t) + session->cnt_disp.len +
+		session->bw_type.len + session->bw_width.len;
 	clone_session = (sdp_session_cell_t*)shm_malloc(len);
 	if (clone_session == NULL) {
 		LM_ERR("no more shm mem (%d)\n",len);
@@ -1106,6 +1141,20 @@ sdp_session_cell_t * clone_sdp_session_cell(sdp_session_cell_t *session)
 		clone_session->cnt_disp.len = session->cnt_disp.len;
 		memcpy( p, session->cnt_disp.s, session->cnt_disp.len);
 		p += session->cnt_disp.len;
+	}
+
+	if (session->bw_type.len) {
+		clone_session->bw_type.s = p;
+		clone_session->bw_type.len = session->bw_type.len;
+		memcpy( p, session->bw_type.s, session->bw_type.len);
+		p += session->bw_type.len;
+	}
+
+	if (session->bw_width.len) {
+		clone_session->bw_width.s = p;
+		clone_session->bw_width.len = session->bw_width.len;
+		memcpy( p, session->bw_width.s, session->bw_width.len);
+		//p += session->bw_type.len;
 	}
 
 	return clone_session;
