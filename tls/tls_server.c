@@ -21,6 +21,11 @@
  * along with this program; if not, write to the Free Software 
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
+#include <sys/poll.h>
+#include <openssl/err.h>
+#include <openssl/ssl.h>
+#include <string.h>
+#include <errno.h>
 
 #include "../dprint.h"
 #include "tls_server.h"
@@ -28,9 +33,6 @@
 #include "tls_init.h"
 #include "tls_domain.h"
 #include "../ip_addr.h"
-#include <sys/poll.h>
-#include <openssl/err.h>
-#include <openssl/ssl.h>
 #include "../mem/shm_mem.h"
 #include "../timer.h"
 #include "../usr_avp.h"
@@ -361,8 +363,12 @@ tls_connect(struct tcp_connection *c)
 				*/
 				return 0;
 		
+			case SSL_ERROR_SYSCALL:
+				LM_ERR("SSL_ERROR_SYSCALL err=%s(%d)\n",
+					strerror(errno), errno);
 			default:
-				LM_ERR("something wrong in SSL: %d (ret=%d)\n",err,ret);
+				LM_ERR("something wrong in SSL: %d (ret=%d) err=%s(%d)\n",
+					err,ret,strerror(errno), errno);
 				c->state = S_CONN_BAD;
 				tls_print_errstack();
 				return -1;
