@@ -25,71 +25,46 @@ Denis Bilenko
               1.2.1. OpenSIPS Modules
               1.2.2. External Libraries or Applications
 
-        1.3. Exported parameters
-
-              1.3.1. enable_presence (int)
-              1.3.2. enable_pua (int)
-
-   List of Examples
-
-   1.1. Disabling presence
-   1.2. Disabling pua
-
 Chapter 1. Admin Guide
 
 1.1. Overview
 
-   Presence_XCAPDiff is an OpenSIPS module that adds support for
-   "xcap-diff" event to presence and pua. At the moment, the
-   module just registers the event but doesn't do any
-   event-specific processing. Registering event with pua allows
-   XCAP server to publish xcap-event when modification of a
-   document happens. Registering event with presence allow clients
-   to subscribe for the event. The module is intended to be used
-   with OpenXCAP (www.openxcap.org) server, although it doesn't
-   contain any OpenXCAP-specific code and potentially could be
-   used with any XCAP server.
+   The presence_xcapdiff is an OpenSIPS module that adds support
+   for the "xcap-diff" event to presence and pua. At the moment,
+   the module just registers the event but doesn't do any
+   event-specific processing. The module will automatically
+   determine if the presence and/or pua modules are present and if
+   so it will register the xcap-diff event with them. This allows
+   the module to automatically offer presence or pua related
+   functionality simply based on the presence of the
+   aforementioned modules in the OpenSIPS configuration, without
+   any need for manual configuration.
+
+   Registering the event with pua, allows the XCAP server to
+   publish the xcap-event when some modification of a document
+   happens. Registering the event with presence allows clients to
+   subscribe to the event.
+
+   The module is intended to be used with the OpenXCAP server
+   (www.openxcap.org), although it doesn't contain any
+   OpenXCAP-specific code and should be usable with any XCAP
+   server.
 
 1.2. Dependencies
 
 1.2.1. OpenSIPS Modules
 
    The following modules must be loaded before this module:
-     * presence module - if enable_presence is non-zero (see below
-       the description of enable_presence).
-     * pua module - if enable_pua is non-zero (see below the
-       description of enable_pua).
-     * pua_mi module - if enable_pua is non-zero and you intent to
-       use this module with OpenXCAP.
+     * presence module - to enable clients to subscribe to the
+       xcap-diff event package.
+     * pua module - to be able to publish the xcap-diff event when
+       some modification of a document happens.
+     * pua_mi module - to enable pua to publish the xcap-diff
+       event using the MI interface. This is needed if this module
+       is intended to be used in conjunction with OpenXCAP.
 
 1.2.2. External Libraries or Applications
 
    The following libraries or applications must be installed
    before running OpenSIPS with this module loaded:
      * None.
-
-1.3. Exported parameters
-
-1.3.1. enable_presence (int)
-
-   Boolean flag that specifies if "xcap-diff" event should be
-   registered with presence.
-
-   Default value is "1".
-
-   Example 1.1. Disabling presence
-...
-modparam("presence_xcapdiff", "enable_presence", 0)
-...
-
-1.3.2. enable_pua (int)
-
-   Boolean flag that specifies if "xcap-diff" event should be
-   registered with pua.
-
-   Default value is "1".
-
-   Example 1.2. Disabling pua
-...
-modparam("presence_xcapdiff", "enable_pua", 0)
-...
