@@ -9,7 +9,7 @@ pkginfo | grep -i $BASE > /dev/null
 
 if [ $? -eq 1 ]
 then
-	echo "OpenSIPS-ldap depends of package OpenSIPS-base and it is not installed";
+	echo "OpenSIPS-ldap depends on package OpenSIPS-base and it is not installed";
 	exit 1;
 fi
 
@@ -18,7 +18,7 @@ lines=`wc -l /tmp/.opensipsldap`
 
 if [ $lines = "0" ]
 then
-	echo "OpenSIPS-ldap depends of OpenLDAP Libraries, which cannot be found on system";
+	echo "OpenSIPS-ldap depends on OpenLDAP Libraries, which cannot be found on system";
 	exit 1;
 else
 	exit 0;

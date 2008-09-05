@@ -2,7 +2,7 @@
 
 LIBCONFUSE="libconfuse.a"
 TMPLIST="/tmp/.opensipsconfuse"
-echo "Set LD_LIBRARY_PATH before starting OpenSIPS to one of these directories:"
+echo "Set LD_LIBRARY_PATH to one of these directories before starting OpenSIPS:"
 echo " "
 
 cat $TMPLIST
