@@ -1,0 +1,40 @@
+i pkginfo
+i preinstall
+i postinstall
+d none /opt 0755 root sys
+d none /opt/opensips 0755 root root
+d none /opt/opensips/etc 0755 root root
+d none /opt/opensips/etc/opensips 0755 root root
+d none /opt/opensips/lib64 0755 root root
+d none /opt/opensips/lib64/opensips 0755 root root
+d none /opt/opensips/lib64/opensips/opensipsctl 0755 root root
+f none /opt/opensips/lib64/opensips/opensipsctl/opensipsctl.mysql 0644 root root
+f none /opt/opensips/lib64/opensips/opensipsctl/opensipsdbctl.mysql 0644 root root
+d none /opt/opensips/mysql 0755 root root
+f none /opt/opensips/mysql/acc-create.sql 0644 root root
+f none /opt/opensips/mysql/alias_db-create.sql 0644 root root
+f none /opt/opensips/mysql/auth_db-create.sql 0644 root root
+f none /opt/opensips/mysql/avpops-create.sql 0644 root root
+f none /opt/opensips/mysql/carrierroute-create.sql 0644 root root
+f none /opt/opensips/mysql/cpl-create.sql 0644 root root
+f none /opt/opensips/mysql/dialog-create.sql 0644 root root
+f none /opt/opensips/mysql/dialplan-create.sql 0644 root root
+f none /opt/opensips/mysql/dispatcher-create.sql 0644 root root
+f none /opt/opensips/mysql/domain-create.sql 0644 root root
+f none /opt/opensips/mysql/domainpolicy-create.sql 0644 root root
+f none /opt/opensips/mysql/group-create.sql 0644 root root
+f none /opt/opensips/mysql/imc-create.sql 0644 root root
+f none /opt/opensips/mysql/lcr-create.sql 0644 root root
+f none /opt/opensips/mysql/msilo-create.sql 0644 root root
+f none /opt/opensips/mysql/pdt-create.sql 0644 root root
+f none /opt/opensips/mysql/permissions-create.sql 0644 root root
+f none /opt/opensips/mysql/presence-create.sql 0644 root root
+f none /opt/opensips/mysql/registrar-create.sql 0644 root root
+f none /opt/opensips/mysql/rls-create.sql 0644 root root
+f none /opt/opensips/mysql/siptrace-create.sql 0644 root root
+f none /opt/opensips/mysql/speeddial-create.sql 0644 root root
+f none /opt/opensips/mysql/standard-create.sql 0644 root root
+f none /opt/opensips/mysql/uri_db-create.sql 0644 root root
+f none /opt/opensips/mysql/userblacklist-create.sql 0644 root root
+f none /opt/opensips/mysql/usrloc-create.sql 0644 root root
+f none /opt/opensips/README.db_mysql 0644 root root

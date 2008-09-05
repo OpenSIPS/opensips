@@ -1,0 +1,12 @@
+#!/sbin/sh
+
+LIBMYSQL="libmysqlclient.so.15"
+TMPLIST="/tmp/.opensipsmysql"
+echo "Set LD_LIBRARY_PATH before starting OpenSIPS to one of these directories:"
+echo " "
+
+cat $TMPLIST
+
+rm -f $TMPLIST
+
+exit 0;
