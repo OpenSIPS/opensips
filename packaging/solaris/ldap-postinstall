@@ -1,0 +1,11 @@
+#!/sbin/sh
+
+LIBMYSQL="libldap-2.4.so.2"
+TMPLIST="/tmp/.opensipsldap"
+echo "Set LD_LIBRARY_PATH before starting OpenSIPS to one of these directories:"
+echo " "
+
+cat $TMPLIST
+rm -f $TMPLIST
+
+exit 0;
