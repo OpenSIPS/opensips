@@ -786,7 +786,7 @@ int extract_sdialog_info(subs_t* subs,struct sip_msg* msg, int mexp, int* to_tag
 	/* examine the from header */
 	if (!msg->from || !msg->from->body.s)
 	{
-		LM_DBG("cannot find 'from' header!\n");
+		LM_ERR("cannot find 'from' header!\n");
 		goto error;
 	}
 	if (msg->from->parsed == NULL)
@@ -795,7 +795,7 @@ int extract_sdialog_info(subs_t* subs,struct sip_msg* msg, int mexp, int* to_tag
 		/* parsing from header */
 		if ( parse_from_header( msg )<0 ) 
 		{
-			LM_DBG("cannot parse From header\n");
+			LM_ERR("cannot parse From header\n");
 			goto error;
 		}
 	}
