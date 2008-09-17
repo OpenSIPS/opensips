@@ -1,6 +1,5 @@
 #!/sbin/sh
 
-LIBCONFUSE="libconfuse.a"
 TMPLIST="/tmp/.opensipsconfuse"
 echo "Set LD_LIBRARY_PATH to one of these directories before starting OpenSIPS:"
 echo " "
