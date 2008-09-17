@@ -9,7 +9,7 @@ pkginfo | grep -i $BASE > /dev/null
 
 if [ $? -eq 1 ]
 then
-	echo "OpenSIPS-snmp depends on package OpenSIPS-base and it is not installed";
+	echo "OpenSIPS-snmp depends on package OpenSIPS-base which is not installed";
 	exit 1;
 fi
 

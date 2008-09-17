@@ -4,9 +4,14 @@ TMPLIST="/tmp/.opensipssnmp"
 echo "NOTE: Set LD_LIBRARY_PATH to one of these directories before starting OpenSIPS:"
 echo " "
 echo " "
-echo "NOTE: Copy the files located at /opt/opensips/share to MIB directory of NET-SNMP installation."
 
 cat $TMPLIST
 rm -f $TMPLIST
+
+echo " "
+echo " "
+echo "NOTE: Copy the files located at /opt/opensips/share to MIB directory of NET-SNMP installation."
+echo " "
+echo " "
 
 exit 0;
