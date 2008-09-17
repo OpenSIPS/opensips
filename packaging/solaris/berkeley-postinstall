@@ -1,6 +1,5 @@
 #!/sbin/sh
 
-LIBBDB="libdb-4.4.so"
 TMPLIST="/tmp/.opensipsbdb"
 echo "Set LD_LIBRARY_PATH to one of these directories before starting OpenSIPS:"
 echo " "
