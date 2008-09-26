@@ -93,4 +93,34 @@ int init_shm_mallocs(void)
 	return 0;
 }
 
+#ifdef SYSTEM_MALLOC
+void *
+sys_malloc(size_t s, const char *file, const char *function, int line)
+{
+	void *v;
 
+	v = malloc(s);
+	LM_DBG("%s:%s:%d: malloc %p size %lu end %p\n", file, function, line,
+	    v, (unsigned long)s, (char *)v + s);
+	return v;
+}
+
+void *
+sys_realloc(void *p, size_t s, const char *file, const char *function, int line)
+{
+	void *v;
+
+	v = realloc(p, s);
+	LM_DBG("%s:%s:%d: realloc old %p to %p size %lu end %p\n", file,
+	    function, line, p, v, (unsigned long)s, (char *)v + s);
+	return v;
+}
+
+void
+sys_free(void *p, const char *file, const char *function, int line)
+{
+
+	LM_DBG("%s:%s:%d: free %p\n", file, function, line, p);
+	free(p);
+}
+#endif

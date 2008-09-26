@@ -114,15 +114,15 @@
 #	define pkg_status()  shm_status()
 #else
 #	include <stdlib.h>
-#	define pkg_malloc(s) \
-	(  { void *v; v=malloc((s)); \
-	   LM_DBG("malloc %p size %d end %p\n", v, s, (char*)v+(s));\
-	   v; } )
-#	define pkg_realloc(ptr, s) \
-	(  { void *v; v=realloc((ptr), (s)); \
-	   LM_DBG("realloc old %p to %p size %d end %p\n",ptr, v, s, (char*)v+(s));\
-	   v; } )
-#	define pkg_free(p)  do{ LM_DBG("free %p\n", (p)); free((p)); }while(0);
+
+void *sys_malloc(size_t, const char *, const char *, int);
+void *sys_realloc(void *, size_t, const char *, const char *, int);
+void sys_free(void *, const char *, const char *, int);
+
+#	define SYSTEM_MALLOC
+#	define pkg_malloc(s) sys_malloc((s), __FILE__, __FUNCTION__, __LINE__)
+#	define pkg_realloc(ptr, s) sys_realloc((ptr), (s), __FILE__, __FUNCTION__, __LINE__)
+#	define pkg_free(p) sys_free((p), __FILE__, __FUNCTION__, __LINE__)
 #	define pkg_status()
 #endif
 
