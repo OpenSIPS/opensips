@@ -28,6 +28,7 @@
 #define ut_h
 
 #include <sys/types.h>
+#include <sys/select.h>
 #include <sys/time.h>
 #include <limits.h>
 #include <unistd.h>
