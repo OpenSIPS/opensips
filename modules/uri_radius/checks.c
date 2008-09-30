@@ -148,7 +148,7 @@ static int generate_avps(VALUE_PAIR* received)
  * arguments, exists.
  * If so, loads AVPs based on reply items returned from Radius.
  */
-int radius_does_uri_user_host_exist(str user, str host)
+int radius_does_uri_user_host_exist(str user, str host, str callid)
 {
     static char msg[4096];
     VALUE_PAIR *send, *received;
@@ -158,79 +158,85 @@ int radius_does_uri_user_host_exist(str user, str host)
 
     send = received = 0;
 
-    if (!use_sip_uri_host) {
+	if (!use_sip_uri_host) {
 
-	/* Send userpart@hostpart of Request-URI in A_USER_NAME attr */
-	uri = (char*)pkg_malloc(user.len + host.len + 2);
-	if (!uri) {
-	    LM_ERR("no more pkg memory\n");
-	    return -1;
-	}
-	at = uri;
-	memcpy(at, user.s, user.len);
-	at += user.len;
-	*at = '@';
-	at++;
-	memcpy(at , host.s, host.len);
-	at += host.len;
-	*at = '\0';
-	if (!rc_avpair_add(rh, &send, attrs[A_USER_NAME].v, uri, -1, 0)) {
-	    LM_ERR("adding User-Name failed\n");
-	    rc_avpair_free(send);
-	    pkg_free(uri);
-	    return -1;
-	}
+		/* Send userpart@hostpart of Request-URI in A_USER_NAME attr */
+		uri = (char*)pkg_malloc(user.len + host.len + 2);
+		if (!uri) {
+			LM_ERR("no more pkg memory\n");
+			return -1;
+		}
+		at = uri;
+		memcpy(at, user.s, user.len);
+		at += user.len;
+		*at = '@';
+		at++;
+		memcpy(at , host.s, host.len);
+		at += host.len;
+		*at = '\0';
+		if (!rc_avpair_add(rh, &send, attrs[A_USER_NAME].v, uri, -1, 0)) {
+			LM_ERR("adding User-Name failed\n");
+			goto error;
+		}
 
-    } else {
-
-	/* Send userpart of Request-URI in A_USER_NAME attribute and
-	   hostpart in A_SIP_URI_HOST attribute */
-	if (!rc_avpair_add(rh, &send, attrs[A_USER_NAME].v,
-			   user.s, user.len, 0)) {
-	    LM_ERR("adding User-Name failed\n");
-	    rc_avpair_free(send);
-	    return -1;
-	}
-	if (!rc_avpair_add(rh, &send, attrs[A_SIP_URI_HOST].v,
-			   host.s, host.len, 0)) {
-	    LM_ERR("adding SIP-URI-Host failed\n");
-	    rc_avpair_free(send);
-	    return -1;
-	}
-    }
-	    
-    service = vals[V_CALL_CHECK].v;
-    if (!rc_avpair_add(rh, &send, attrs[A_SERVICE_TYPE].v, &service, -1, 0)) {
-	LM_ERR("adding service type failed\n");
-	rc_avpair_free(send);
-	if (uri) pkg_free(uri);
-	return -1;
-    }
-	
-    if ((res = rc_auth(rh, 0, send, &received, msg)) == OK_RC) {
-	LM_DBG("success\n");
-	rc_avpair_free(send);
-	generate_avps(received);
-	rc_avpair_free(received);
-	if (uri) pkg_free(uri);
-	return 1;
-    } else {
-	rc_avpair_free(send);
-	rc_avpair_free(received);
-	if (uri) pkg_free(uri);
-#ifdef REJECT_RC
-	if (res == REJECT_RC) {
-	    LM_DBG("rejected\n");
-	    return -1;
 	} else {
-	    LM_ERR("failure\n");
-	    return -2;
+
+		/* Send userpart of Request-URI in A_USER_NAME attribute and
+		   hostpart in A_SIP_URI_HOST attribute */
+		if (!rc_avpair_add(rh, &send, attrs[A_USER_NAME].v,
+				   user.s, user.len, 0)) {
+			LM_ERR("adding User-Name failed\n");
+			goto error;
+		}
+		if (!rc_avpair_add(rh, &send, attrs[A_SIP_URI_HOST].v,
+			   host.s, host.len, 0)) {
+			LM_ERR("adding SIP-URI-Host failed\n");
+			goto error;
+		}
 	}
+
+	service = vals[V_CALL_CHECK].v;
+	if (!rc_avpair_add(rh, &send, attrs[A_SERVICE_TYPE].v, &service, -1, 0)) {
+		LM_ERR("adding service type failed\n");
+		goto error;
+	}
+
+	/* Add CALL-ID in Acct-Session-Id Attribute */
+	if (rc_avpair_add(rh,&send,attrs[A_ACCT_SESSION_ID].v,callid.s,
+	callid.len, 0) == 0) {
+		LM_ERR("unable to add CALL-ID attribute\n");
+		goto error;
+	}
+
+	if ((res = rc_auth(rh, 0, send, &received, msg)) == OK_RC) {
+		LM_DBG("success\n");
+		rc_avpair_free(send);
+		generate_avps(received);
+		rc_avpair_free(received);
+		if (uri) pkg_free(uri);
+		return 1;
+	} else {
+		rc_avpair_free(send);
+		rc_avpair_free(received);
+		if (uri) pkg_free(uri);
+#ifdef REJECT_RC
+		if (res == REJECT_RC) {
+			LM_DBG("rejected\n");
+			return -1;
+		} else {
+			LM_ERR("failure\n");
+			return -2;
+		}
 #else
-	LM_DBG("failure\n");
-	return -1;
+		LM_DBG("failure\n");
+		return -1;
 #endif
-    }
+	}
+
+error:
+	rc_avpair_free(send);
+	if (uri) pkg_free(uri);
+	return -1;
 }
 
 
@@ -246,8 +252,15 @@ int radius_does_uri_exist_0(struct sip_msg* _m, char* _s1, char* _s2)
 	return -1;
     }
 
-    return radius_does_uri_user_host_exist(_m->parsed_uri.user,
-					   _m->parsed_uri.host);
+	if ( _m->callid==NULL &&
+	(parse_headers(_m, HDR_CALLID_F, 0)==-1 || _m->callid==NULL)  ) {
+		LM_ERR("msg parsing failed or callid not present");
+		return -1;
+	}
+
+
+	return radius_does_uri_user_host_exist(_m->parsed_uri.user,
+			_m->parsed_uri.host, _m->callid->body);
 }
 
 
@@ -278,12 +291,19 @@ int radius_does_uri_exist_1(struct sip_msg* _m, char* _sp, char* _s2)
 	return -1;
     }
 
-    if (parse_uri(pv_val.rs.s, pv_val.rs.len, &parsed_uri) < 0) {
-	LM_ERR("parsing of URI in pvar failed\n");
-	return -1;
-    }
+	if (parse_uri(pv_val.rs.s, pv_val.rs.len, &parsed_uri) < 0) {
+		LM_ERR("parsing of URI in pvar failed\n");
+		return -1;
+	}
 
-    return radius_does_uri_user_host_exist(parsed_uri.user, parsed_uri.host);
+	if ( _m->callid==NULL &&
+	(parse_headers(_m, HDR_CALLID_F, 0)==-1 || _m->callid==NULL)  ) {
+		LM_ERR("msg parsing failed or callid not present");
+		return -1;
+	}
+
+	return radius_does_uri_user_host_exist(parsed_uri.user, parsed_uri.host,
+		_m->callid->body);
 }
 
 
@@ -291,50 +311,58 @@ int radius_does_uri_exist_1(struct sip_msg* _m, char* _sp, char* _s2)
  * Check from Radius if URI user given as argument belongs to a local user.
  * If so, loads AVPs based on reply items returned from Radius.
  */
-int radius_does_uri_user_exist(str user)
+int radius_does_uri_user_exist(str user, str callid)
 {
     static char msg[4096];
     VALUE_PAIR *send, *received;
     uint32_t service;
     int res;
-    
-    send = received = 0;
-    
-    if (!rc_avpair_add(rh, &send, attrs[A_USER_NAME].v, user.s, user.len, 0)) {
-	LM_ERR("error adding User-Name\n");
-	rc_avpair_free(send);
-	return -1;
-    }
-    
-    service = vals[V_CALL_CHECK].v;
-    if (!rc_avpair_add(rh, &send, attrs[A_SERVICE_TYPE].v, &service, -1, 0)) {
-	LM_ERR("error adding service type\n");
-	rc_avpair_free(send);
-	return -1;
-    }
-	
-    if ((res = rc_auth(rh, 0, send, &received, msg)) == OK_RC) {
-	LM_DBG("success\n");
-	rc_avpair_free(send);
-	generate_avps(received);
-	rc_avpair_free(received);
-	return 1;
-    } else {
-	rc_avpair_free(send);
-	rc_avpair_free(received);
-#ifdef REJECT_RC
-	if (res == REJECT_RC) {
-	    LM_DBG("rejected\n");
-	    return -1;
-	} else {
-	    LM_ERR("failure\n");
-	    return -2;
+
+	send = received = 0;
+
+	if (!rc_avpair_add(rh, &send, attrs[A_USER_NAME].v, user.s, user.len, 0)) {
+		LM_ERR("error adding User-Name\n");
+		goto error;
 	}
+ 
+	service = vals[V_CALL_CHECK].v;
+	if (!rc_avpair_add(rh, &send, attrs[A_SERVICE_TYPE].v, &service, -1, 0)) {
+		LM_ERR("error adding service type\n");
+		goto error;
+	}
+
+	/* Add CALL-ID in Acct-Session-Id Attribute */
+	if (rc_avpair_add(rh,&send,attrs[A_ACCT_SESSION_ID].v,callid.s,
+	callid.len, 0) == 0) {
+		LM_ERR("unable to add CALL-ID attribute\n");
+		goto error;
+	}
+
+	if ((res = rc_auth(rh, 0, send, &received, msg)) == OK_RC) {
+		LM_DBG("success\n");
+		rc_avpair_free(send);
+		generate_avps(received);
+		rc_avpair_free(received);
+		return 1;
+	} else {
+		rc_avpair_free(send);
+		rc_avpair_free(received);
+#ifdef REJECT_RC
+		if (res == REJECT_RC) {
+			LM_DBG("rejected\n");
+			return -1;
+		} else {
+			LM_ERR("failure\n");
+			return -2;
+		}
 #else
-	LM_DBG("failure\n");
-	return -1;
+		LM_DBG("failure\n");
+		return -1;
 #endif
-    }
+	}
+error:
+	rc_avpair_free(send);
+	return -1;
 }
 
 
@@ -350,7 +378,13 @@ int radius_does_uri_user_exist_0(struct sip_msg* _m, char* _s1, char* _s2)
 	return -1;
     }
 
-    return radius_does_uri_user_exist(_m->parsed_uri.user);
+	if ( _m->callid==NULL &&
+	(parse_headers(_m, HDR_CALLID_F, 0)==-1 || _m->callid==NULL)  ) {
+		LM_ERR("msg parsing failed or callid not present");
+		return -1;
+	}
+
+    return radius_does_uri_user_exist(_m->parsed_uri.user, _m->callid->body);
 }
 
 
@@ -381,6 +415,12 @@ int radius_does_uri_user_exist_1(struct sip_msg* _m, char* _sp, char* _s2)
 	return -1;
     }
 
-    return radius_does_uri_user_exist(pv_val.rs);
+	if ( _m->callid==NULL &&
+	(parse_headers(_m, HDR_CALLID_F, 0)==-1 || _m->callid==NULL)  ) {
+		LM_ERR("msg parsing failed or callid not present");
+		return -1;
+	}
+
+    return radius_does_uri_user_exist(pv_val.rs, _m->callid->body);
 }
 

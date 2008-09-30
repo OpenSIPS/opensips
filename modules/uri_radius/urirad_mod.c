@@ -107,13 +107,13 @@ static int mod_init(void)
 
 	memset(attrs, 0, sizeof(attrs));
 	memset(vals, 0, sizeof(vals));
-	attrs[A_SERVICE_TYPE].n	= "Service-Type";
-	attrs[A_USER_NAME].n	= "User-Name";
-	if (use_sip_uri_host) {
-	    attrs[A_SIP_URI_HOST].n	= "SIP-URI-Host";
-	}
-	attrs[A_SIP_AVP].n	= "SIP-AVP";
-	vals[V_CALL_CHECK].n	= "Call-Check";
+	attrs[A_SERVICE_TYPE].n		= "Service-Type";
+	attrs[A_USER_NAME].n		= "User-Name";
+	if (use_sip_uri_host)
+		attrs[A_SIP_URI_HOST].n	= "SIP-URI-Host";
+	attrs[A_SIP_AVP].n			= "SIP-AVP";
+	attrs[A_ACCT_SESSION_ID].n	= "Acct-Session-Id";
+	vals[V_CALL_CHECK].n		= "Call-Check";
 
 	if ((rh = rc_read_config(radius_config)) == NULL) {
 		LM_ERR("opening configuration file failed\n");
