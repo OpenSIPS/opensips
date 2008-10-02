@@ -1874,9 +1874,7 @@ void p_tm_callback( struct cell *t, int type, struct tmcb_params *ps)
 		delete_shtable(subs_htable, hash_code, cb->to_tag);
 
 		delete_db_subs(cb->pres_uri, cb->ev_name, cb->to_tag);
-
-		goto done;
-	}	
+	}
 	/* send a more accurate Notify for presence depending on the reply for winfo*/
 	if(((c_back_param*)(*ps->param))->wi_subs!= NULL)
 	{
@@ -1884,7 +1882,7 @@ void p_tm_callback( struct cell *t, int type, struct tmcb_params *ps)
 	  * send a Notify for presence with no body (the stored presence information is 
 	  * not valid ) */
 
-		if(ps->code >= 300)
+		if(ps->code == 408)
 		{
 			if(notify( ((c_back_param*)(*ps->param))->wi_subs, NULL,NULL,1)< 0)
 			{
