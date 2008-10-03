@@ -44,6 +44,7 @@ typedef struct publ_info
 					   *	 same as the default value for that event) */	 
 	str* etag;
 	str* extra_headers;
+	str outbound_proxy;
 	void* cb_param;   /* the parameter for the function to be called on the callback 
 						 for the received reply; it must be allocated in share memory;
 						 a reference to it will be found in the cb_param filed of the ua_pres_structure

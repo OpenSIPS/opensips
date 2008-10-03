@@ -81,7 +81,10 @@ typedef struct publ_info
                           to Publish msg*/
   publrpl_cb_t* cbrpl;/*  callback function to be called when receiving
                           the reply for the sent request */
-  void* cbparam;      /*  extra parameter for tha callback function */					   
+  void* cbparam;      /*  extra parameter for tha callback function */
+
+  str outbound_proxy; /*  the outbound proxy to be used when sending
+							the Publish request*/
 
 }publ_info_t;
 ...

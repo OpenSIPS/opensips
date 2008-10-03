@@ -66,11 +66,28 @@
 		<title>Set <varname>server_address</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("pua_xmpp", "server_address", "160.23.23.10")
+modparam("pua_xmpp", "server_address", "sip:sa@opensips.org:5060")
 ...
 </programlisting>
 		</example>
 	</section>
+
+	<section>
+		<title><varname>presence_server</varname> (str)</title>
+		<para>
+		The the address of the presence server. If set, it will be
+		used as outbound proxy when sending PUBLISH requests.
+		</para>
+		<example>
+		<title>Set <varname>presence_server</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("pua_usrloc", "presence_server", "sip:pa@opensips.org:5075")
+...
+	</programlisting>
+		</example>
+	</section>
+
 	</section>
 
 	<section>

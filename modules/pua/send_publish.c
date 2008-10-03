@@ -211,6 +211,10 @@ void publ_cback_func(struct cell *t, int type, struct tmcb_params *ps)
 				publ.id= hentity->id;
 				publ.extra_headers= hentity->extra_headers;
 				publ.cb_param= hentity->cb_param;
+				if(hentity->outbound_proxy)
+				{
+					publ.outbound_proxy = *hentity->outbound_proxy;
+				}
 				if(send_publish(&publ)< 0)
 				{
 					LM_ERR("when trying to send PUBLISH\n");
@@ -296,10 +300,12 @@ void publ_cback_func(struct cell *t, int type, struct tmcb_params *ps)
 		goto done;
 	}
 	size= sizeof(ua_pres_t)+ sizeof(str)+ 
-		(hentity->pres_uri->len+ hentity->tuple_id.len + 
-		 hentity->id.len)* sizeof(char);
+		hentity->pres_uri->len+ hentity->tuple_id.len + 
+		 hentity->id.len;
 	if(hentity->extra_headers)
 		size+= sizeof(str)+ hentity->extra_headers->len* sizeof(char);
+	if(hentity->outbound_proxy)
+		size+=  sizeof(str)+ hentity->outbound_proxy->len;
 
 	presentity= (ua_pres_t*)shm_malloc(size);
 	if(presentity== NULL)
@@ -341,6 +347,17 @@ void publ_cback_func(struct cell *t, int type, struct tmcb_params *ps)
 				hentity->extra_headers->len);
 		presentity->extra_headers->len= hentity->extra_headers->len;
 		size+= hentity->extra_headers->len;
+	}
+
+	if(hentity->outbound_proxy)
+	{	
+		presentity->outbound_proxy= (str*)((char*)presentity+ size);
+		size+= sizeof(str);
+		presentity->outbound_proxy->s= (char*)presentity+ size;
+		memcpy(presentity->outbound_proxy->s, hentity->outbound_proxy->s,
+			hentity->outbound_proxy->len);
+		presentity->outbound_proxy->len= hentity->outbound_proxy->len;
+		size+= hentity->outbound_proxy->len;
 	}
 
 	presentity->desired_expires= hentity->desired_expires;
@@ -542,15 +559,15 @@ send_publish:
 	if(body && body->len && body->s )
 		LM_DBG("body:\n%.*s\n ", body->len, body->s);
 
-	result= tmb.t_request(&met,				/* Type of the message */
-			publ->pres_uri,					/* Request-URI */
-			publ->pres_uri,					/* To */
-			publ->pres_uri,					/* From */
-			str_hdr,						/* Optional headers */
-			body,							/* Message body */
-			&outbound_proxy,						/* Outbound proxy*/
-			publ_cback_func,				/* Callback function */
-			(void*)cb_param					/* Callback parameter */
+	result= tmb.t_request(&met,						/* Type of the message */
+			publ->pres_uri,							/* Request-URI */
+			publ->pres_uri,							/* To */
+			publ->pres_uri,							/* From */
+			str_hdr,								/* Optional headers */
+			body,									/* Message body */
+			(publ->outbound_proxy.s)?&publ->outbound_proxy:0,/*Outbound proxy*/
+			publ_cback_func,						/* Callback function */
+			(void*)cb_param							/* Callback parameter */
 			);
 
 	if(result< 0)
@@ -608,16 +625,19 @@ ua_pres_t* publish_cbparam(publ_info_t* publ,str* body,str* tuple_id,
 	int size;
 	ua_pres_t* cb_param= NULL;
 
-	size= sizeof(ua_pres_t)+ sizeof(str)+ (publ->pres_uri->len+ 
-		+ publ->content_type.len+ publ->id.len+ 1)*sizeof(char);
+	size= sizeof(ua_pres_t)+ sizeof(str)+ publ->pres_uri->len+ 
+		+ publ->content_type.len+ publ->id.len+ 1;
 	if(body && body->s && body->len)
-		size+= sizeof(str)+ body->len* sizeof(char);
+		size+= sizeof(str)+ body->len;
 	if(publ->etag)
-		size+= publ->etag->len* sizeof(char);
+		size+= publ->etag->len;
 	if(publ->extra_headers)
 		size+= sizeof(str)+ publ->extra_headers->len* sizeof(char);
 	if(tuple_id )
-		size+= tuple_id->len* sizeof(char);
+		size+= tuple_id->len;
+	if(publ->outbound_proxy.s)
+		size+= sizeof(str) + publ->outbound_proxy.len;
+
 
 	cb_param= (ua_pres_t*)shm_malloc(size);
 	if(cb_param== NULL)
@@ -690,6 +710,17 @@ ua_pres_t* publish_cbparam(publ_info_t* publ,str* body,str* tuple_id,
 		cb_param->tuple_id.len= tuple_id->len;
 		size+= tuple_id->len;
 	}
+	if(publ->outbound_proxy.s)
+	{	
+		cb_param->outbound_proxy = (str*)((char*)cb_param+ size);
+		size+= sizeof(str);
+		cb_param->outbound_proxy->s = (char*)cb_param+ size;
+		memcpy(cb_param->outbound_proxy->s, 
+				publ->outbound_proxy.s, publ->outbound_proxy.len);
+		cb_param->outbound_proxy->len= publ->outbound_proxy.len;
+		size+= publ->outbound_proxy.len;
+	}
+
 	cb_param->event= publ->event;
 	cb_param->flag|= publ->source_flag;
 	cb_param->cb_param= publ->cb_param;

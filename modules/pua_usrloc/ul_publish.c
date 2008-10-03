@@ -190,18 +190,12 @@ void ul_publish(ucontact_t* c, int type, void* param)
 	str* body= NULL;
 	str uri= {NULL, 0};
 	char* at= NULL;
-	publ_info_t* publ= NULL;
-	int size= 0;
-	str content_type;
-
-	content_type.s= "application/pidf+xml";
-	content_type.len= 20;
+	publ_info_t publ;
 
 	if(pua_ul_publish== 0)
 	{
-		LM_INFO("should not send ul publish\n");
 		return;
-	}	
+	}
 
 	if(type & UL_CONTACT_DELETE)
 		LM_DBG("\nul_publish: DELETE type\n");
@@ -239,76 +233,37 @@ void ul_publish(ucontact_t* c, int type, void* param)
 		memcpy(uri.s+ uri.len, default_domain.s, default_domain.len);
 		uri.len+= default_domain.len;		
 	}
-	LM_DBG("ul_publish: uri= %.*s\n", uri.len, uri.s);
 	
-	size= sizeof(publ_info_t)+ sizeof(str)+( uri.len 
-			+c->callid.len+ 12 + content_type.len)*sizeof(char); 
-	
-	if(body)
-		size+= sizeof(str)+ body->len* sizeof(char);
+	LM_DBG("uri= %.*s\n", uri.len, uri.s);
 
-	publ= (publ_info_t*)pkg_malloc(size);
-	if(publ== NULL)
-	{
-		LM_ERR("no more share memory\n");
-		goto error;
-	}
-	memset(publ, 0, size);
-	size= sizeof(publ_info_t);
-
-	publ->pres_uri= (str*)((char*)publ + size);
-	size+= sizeof(str);
-	publ->pres_uri->s= (char*)publ+ size;
-	memcpy(publ->pres_uri->s, uri.s, uri.len);
-	publ->pres_uri->len= uri.len;
-	size+= uri.len;
-
-	if(body)
-	{
-		publ->body= (str*)( (char*)publ + size);
-		size+= sizeof(str);
-
-		publ->body->s= (char*)publ + size;
-		memcpy(publ->body->s, body->s, body->len);
-		publ->body->len= body->len;
-		size+= body->len;
-	}
-	publ->id.s= (char*)publ+ size;
-	memcpy(publ->id.s, "UL_PUBLISH.", 11);
-	memcpy(publ->id.s+11, c->callid.s, c->callid.len);
-	publ->id.len= 11+ c->callid.len;
-	size+= publ->id.len;
-
-	publ->content_type.s= (char*)publ+ size;
-	memcpy(publ->content_type.s, content_type.s, content_type.len);
-	publ->content_type.len= content_type.len;
-	size+= content_type.len;
+	memset(&publ, 0, sizeof(publ_info_t));
+	publ.pres_uri= &uri;
+	publ.body = body;
+	publ.id = c->callid;
+	publ.content_type.s = "application/pidf+xml";
+	publ.content_type.len = 20;
 
 	if(type & UL_CONTACT_EXPIRE || type & UL_CONTACT_DELETE)
-		publ->expires= 0;
+		publ.expires= 0;
 	else
-		publ->expires= c->expires - (int)time(NULL);
+		publ.expires= c->expires - (int)time(NULL);
 	
 	if(type & UL_CONTACT_INSERT)
-		publ->flag|= INSERT_TYPE;
+		publ.flag|= INSERT_TYPE;
 	else
-		publ->flag|= UPDATE_TYPE;
+		publ.flag|= UPDATE_TYPE;
 
-	publ->source_flag|= UL_PUBLISH;
-	publ->event|= PRESENCE_EVENT;
-	publ->extra_headers= NULL;
-	print_publ(publ);
-	if(pua_send_publish(publ)< 0)
+	publ.source_flag|= UL_PUBLISH;
+	publ.event|= PRESENCE_EVENT;
+	publ.extra_headers= NULL;
+	publ.outbound_proxy = presence_server;
+
+	if(pua_send_publish(&publ)< 0)
 	{
-		LM_ERR("while sending publish\n");
-	}	
-
-	pua_ul_publish= 0;
+		LM_ERR("failed to send publish\n");
+	}
 
 error:
-
-	if(publ)
-		pkg_free(publ);
 
 	if(body)
 	{
@@ -322,7 +277,4 @@ error:
 	pua_ul_publish= 0;
 
 	return;
-
 }
-
-

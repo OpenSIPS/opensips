@@ -29,6 +29,9 @@ Juha Heinanen
               1.2.2. External Libraries or Applications
 
         1.3. Exported Parameters
+
+              1.3.1. presence_server (str)
+
         1.4. Exported Functions
         1.5. Exported MI functions
 
@@ -38,7 +41,8 @@ Juha Heinanen
 
    List of Examples
 
-   1.1. pua_publish FIFO example
+   1.1. Set presence_server parameter
+   1.2. pua_publish FIFO example
 
 Chapter 1. Admin Guide
 
@@ -70,7 +74,15 @@ Chapter 1. Admin Guide
 
 1.3. Exported Parameters
 
-     * none
+1.3.1. presence_server (str)
+
+   The the address of the presence server. If set, it will be used
+   as outbound proxy when sending PUBLISH requests.
+
+   Example 1.1. Set presence_server parameter
+...
+modparam("pua_mi", "presence_server", "sip:pa@opensips.org:5075")
+...
 
 1.4. Exported Functions
 
@@ -96,7 +108,7 @@ Chapter 1. Admin Guide
        information or missing if no published information. It has
        to be a single line for FIFO transport.
 
-   Example 1.1. pua_publish FIFO example
+   Example 1.2. pua_publish FIFO example
 ...
 
 :pua_publish:fifo_test_reply

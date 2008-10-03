@@ -69,7 +69,7 @@
 		<title>Set <varname>default_domain</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam(pua_usrloc, "default_domain", "opensips.org")
+modparam("pua_usrloc", "default_domain", "opensips.org")
 ...
 </programlisting>
 		</example>
@@ -89,11 +89,28 @@ modparam(pua_usrloc, "default_domain", "opensips.org")
 		<title>Set <varname>presentity_prefix</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam(pua_usrloc, "entity_prefix", "pres")
+modparam("pua_usrloc", "entity_prefix", "pres")
 ...
 </programlisting>
 		</example>
-</section>
+	</section>
+
+	<section>
+		<title><varname>presence_server</varname> (str)</title>
+		<para>
+		The the address of the presence server. If set, it will be
+		used as outbound proxy when sending PUBLISH requests.
+		</para>
+		<example>
+		<title>Set <varname>presence_server</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("pua_usrloc", "presence_server", "sip:pa@opensips.org:5075")
+...
+	</programlisting>
+		</example>
+	</section>
+
 
 </section>
 <section>
@@ -114,7 +131,7 @@ modparam(pua_usrloc, "entity_prefix", "pres")
 	<programlisting format="linespecific">
 ...
 if(is_method("REGISTER") &amp;&amp; from_uri=~"john@opensips.org") 
-	pua_set_publish();		
+	pua_set_publish();
 ...
 </programlisting>
 		</example>

@@ -30,6 +30,7 @@ Anca-Maria Vamanu
               1.3.2. header_name(str)
               1.3.3. outbound_proxy(str)
               1.3.4. server_address(str)
+              1.3.5. presence_server(str)
 
         1.4. Exported Functions
 
@@ -42,8 +43,9 @@ Anca-Maria Vamanu
    1.2. Set header_name parameter
    1.3. Set outbound_proxy parameter
    1.4. Set server_address parameter
-   1.5. bla_set_flag usage
-   1.6. bla_handle_notify usage
+   1.5. Set presence_server parameter
+   1.6. bla_set_flag usage
+   1.7. bla_handle_notify usage
 
 Chapter 1. Admin Guide
 
@@ -117,6 +119,18 @@ modparam("pua_bla", "outbound_proxy", "sip:proxy@opensips.org")
 modparam("pua_bla", "server_address", "sip:bla@160.34.23.12")
 ...
 
+1.3.5. presence_server(str)
+
+   The address of the presence server - will be used as an
+   outbound proxy when sending PUBLISH requests. It is optional.
+
+   Default value is "NULL".
+
+   Example 1.5. Set presence_server parameter
+...
+modparam("pua_bla", "presence_server", "sip:pa@opensips.org")
+...
+
 1.4. Exported Functions
 
 1.4.1.  bla_set_flag
@@ -125,7 +139,7 @@ modparam("pua_bla", "server_address", "sip:bla@160.34.23.12")
    AOR. The modules subscribes to the registered contacts for
    dialog;sla event.
 
-   Example 1.5. bla_set_flag usage
+   Example 1.6. bla_set_flag usage
 ...
 if(is_method("REGISTER") && to_uri=~"bla_aor@opensips.org")
         bla_set_flag();
@@ -138,7 +152,7 @@ if(is_method("REGISTER") && to_uri=~"bla_aor@opensips.org")
    request and passed to presence module for further handling. in
    case of a successful processing a 2xx reply should be sent.
 
-   Example 1.6. bla_handle_notify usage
+   Example 1.7. bla_handle_notify usage
 ...
 if(is_method("NOTIFY") && to_uri=~"bla_aor@opensips.org")
 {

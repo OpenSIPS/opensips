@@ -23,7 +23,7 @@
  *
  * History:
  * --------
- *  2007-03-30  initial version (anca)
+ *  2007-03-30  initial version (Anca Vamanu)
  */
 
 #include<stdio.h>
@@ -55,6 +55,9 @@ send_subscribe_t pua_send_subscribe;
 query_dialog_t pua_is_dialog;
 int bla_set_flag(struct sip_msg* , char*, char*);
 str server_address= {0, 0};
+str presence_server= {0, 0};
+
+
 static cmd_export_t cmds[]=
 {
 	{"bla_set_flag", (cmd_function)bla_set_flag,		 0, 0, 0, REQUEST_ROUTE},
@@ -66,7 +69,8 @@ static param_export_t params[]=
 	{"server_address",	 STR_PARAM, &server_address.s	 },
 	{"default_domain",	 STR_PARAM, &default_domain.s	 },
 	{"header_name",      STR_PARAM, &header_name.s       },
-	{"outbound_proxy",   STR_PARAM, &bla_outbound_proxy.s    },
+	{"outbound_proxy",   STR_PARAM, &bla_outbound_proxy.s},
+	{"presence_server",  STR_PARAM, &presence_server.s   },
 	{0,							 0,			0            }
 };
 
@@ -101,6 +105,11 @@ static int mod_init(void)
 		return -1;
 	}
 	server_address.len= strlen(server_address.s);
+
+	if(presence_server.s)
+	{
+		presence_server.len= strlen(presence_server.s);
+	}
 
 	if(default_domain.s == NULL )
 	{	

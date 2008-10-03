@@ -23,7 +23,7 @@
  *
  * History:
  * --------
- *  2006-11-29  initial version (anca)
+ *  2006-11-29  initial version (Anca Vamanu)
  */
 
 
@@ -665,15 +665,15 @@ int update_pua(ua_pres_t* p, unsigned int hash_code)
 			LM_ERR("while constructing publ callback param\n");
 			goto error;
 		}	
-		result= tmb.t_request(&met,				/* Type of the message */
-				p->pres_uri,					/* Request-URI */
-				p->pres_uri,					/* To */
-				p->pres_uri,					/* From */
-				str_hdr,						/* Optional headers */
-				0,								/* Message body */
-				0,								/* Outbound proxy*/
-				publ_cback_func,				/* Callback function */
-				(void*)cb_param					/* Callback parameter */
+		result= tmb.t_request(&met,						/*Type of the message*/
+				p->pres_uri,							/* Request-URI */
+				p->pres_uri,							/* To */
+				p->pres_uri,							/* From */
+				str_hdr,								/* Optional headers */
+				0,										/* Message body */
+				(p->outbound_proxy)?p->outbound_proxy:0,	/* Outbound proxy*/
+				publ_cback_func,						/* Callback function */
+				(void*)cb_param							/* Callback parameter*/
 				);
 		if(result< 0)
 		{

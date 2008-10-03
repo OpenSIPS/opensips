@@ -127,6 +127,27 @@ modparam("pua_bla", "server_address", "sip:bla@160.34.23.12")
 		</example>
 	</section>
 
+	<section>
+		<title><varname>presence_server</varname>(str)</title>
+		<para>
+			The address of the presence server - will be used as
+			an outbound proxy when sending PUBLISH requests. 
+			It is optional.
+		</para>
+		<para>
+		<emphasis>	Default value is <quote>NULL</quote>.	
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>presence_server</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("pua_bla", "presence_server", "sip:pa@opensips.org")
+...
+</programlisting>
+		</example>
+	</section>
+
 </section>	
 	
 	

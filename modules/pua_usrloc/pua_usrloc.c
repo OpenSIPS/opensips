@@ -23,7 +23,7 @@
  *
  * History:
  * --------
- *  2006-11-29  initial version (anca)
+ *  2006-11-29  initial version (Anca Vamanu)
  */
 
 #include <stdio.h>
@@ -53,6 +53,7 @@ str default_domain= {NULL, 0};
 int pua_ul_publish= 0;
 pua_api_t pua;
 str pres_prefix= {0, 0};
+str presence_server= {0, 0};
 
 /* Structure containing pointers to usrloc functions */
 usrloc_api_t ul;
@@ -73,9 +74,10 @@ static cmd_export_t cmds[]=
 };
 
 static param_export_t params[]={
-	{"default_domain",	 STR_PARAM, &default_domain.s	 },
-	{"entity_prefix",	 STR_PARAM, &pres_prefix.s		 },
-	{0,							 0,			0            }
+	{"default_domain",	 STR_PARAM, &default_domain.s	},
+	{"entity_prefix",	 STR_PARAM, &pres_prefix.s		},
+	{"presence_server",	 STR_PARAM, &presence_server.s	},
+	{0,							 0,			0			}
 };
 
 struct module_exports exports= {
@@ -116,6 +118,11 @@ static int mod_init(void)
 	}
 	else
 		pres_prefix.len= strlen(pres_prefix.s);
+	
+	if(presence_server.s)
+	{
+		presence_server.len= strlen(presence_server.s);
+	}
 
 	bind_usrloc = (bind_usrloc_t)find_export("ul_bind_usrloc", 1, 0);
 	if (!bind_usrloc)

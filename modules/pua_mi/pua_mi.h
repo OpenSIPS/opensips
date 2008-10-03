@@ -30,4 +30,6 @@
 extern send_publish_t pua_send_publish;
 extern send_subscribe_t pua_send_subscribe;
 
+extern str presence_server;
+
 #endif

@@ -232,7 +232,7 @@ struct mi_root* mi_pua_publish(struct mi_root* cmd, void* param)
 	else
 		publ.source_flag|= MI_PUBLISH;
 
-	LM_DBG("send publish\n");
+	publ.outbound_proxy = presence_server;
 
 	result= pua_send_publish(&publ);
 

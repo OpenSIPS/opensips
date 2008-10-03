@@ -57,14 +57,22 @@
 	
 	<section>
 		<title>Exported Parameters</title>
-		<itemizedlist>
-			<listitem>
-			<para>
-				<emphasis>none</emphasis>
-			</para>
-			</listitem>
-		</itemizedlist>	
-	</section>	
+		<section>
+		<title><varname>presence_server</varname> (str)</title>
+		<para>
+		The the address of the presence server. If set, it will be
+		used as outbound proxy when sending PUBLISH requests.
+		</para>
+		<example>
+		<title>Set <varname>presence_server</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("pua_mi", "presence_server", "sip:pa@opensips.org:5075")
+...
+	</programlisting>
+		</example>
+	</section>
+</section>	
 
 	<section>
 		<title>Exported Functions</title>

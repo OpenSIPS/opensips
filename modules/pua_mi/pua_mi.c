@@ -23,7 +23,7 @@
  *
  * History:
  * --------
- *  2006-11-29  initial version (anca)
+ *  2006-11-29  initial version (Anca Vamanu)
  */
 
 #include <stdio.h>
@@ -56,6 +56,7 @@ static void destroy(void);
 
 send_publish_t pua_send_publish;
 send_subscribe_t pua_send_subscribe;
+str presence_server= {0, 0};
 
 /*
  * Exported MI functions
@@ -66,12 +67,20 @@ static mi_export_t mi_cmds[] = {
 	{ 0,				 0,					 0,					 0,  0}
 };
 
+/*
+ * Exported parameters
+ */
+static param_export_t params[]={
+	{"presence_server",	 STR_PARAM, &presence_server.s	},
+	{0,							 0,			0			}
+};
+
 /** module exports */
 struct module_exports exports= {
 	"pua_mi",					/* module name */
 	DEFAULT_DLFLAGS,            /* dlopen flags */
 	 0,							/* exported functions */
-	 0,							/* exported parameters */
+	 params,					/* exported parameters */
 	 0,							/* exported statistics */
 	 mi_cmds,					/* exported MI functions */
 	 0,							/* exported pseudo-variables */
@@ -87,13 +96,15 @@ struct module_exports exports= {
  */
 static int mod_init(void)
 {
-	LM_DBG("...\n");
 	bind_pua_t bind_pua;
 	
+	if(presence_server.s)
+		presence_server.len = strlen(presence_server.s);
+
 	bind_pua= (bind_pua_t)find_export("bind_pua", 1,0);
 	if (!bind_pua)
 	{
-		LM_ERR("Can't bind pua\n");
+		LM_ERR("Can't bind pua (check if pua module is loaded)\n");
 		return -1;
 	}
 	

@@ -23,7 +23,7 @@
  *
  * History:
  * --------
- *  2007-03-29  initial version (anca)
+ *  2007-03-29  initial version (Anca Vamanu)
  */
 
 #include <stdio.h>
@@ -76,6 +76,7 @@ xmlNodeGetNodeByName_t XMLNodeGetNodeByName;
 xmlNodeGetNodeContentByName_t XMLNodeGetNodeContentByName;
 
 str server_address= {0, 0};
+str presence_server= {0, 0};
 
 /** module functions */
 
@@ -92,24 +93,25 @@ static cmd_export_t cmds[]=
 };
 
 static param_export_t params[]={
-	{"server_address",     STR_PARAM,	&server_address	},
+	{"server_address",		STR_PARAM,	&server_address	},
+	{"presence_server",		STR_PARAM,	&presence_server},
 	{0,						0,				0			}
 };
 
 /** module exports */
 struct module_exports exports= {
-	"pua_xmpp",                 /* module name */
-	DEFAULT_DLFLAGS,            /* dlopen flags */
-	cmds,                       /* exported functions */
-	params,                     /* exported  parameters */
-	0,                          /* exported statistics */
+	"pua_xmpp",					/* module name */
+	DEFAULT_DLFLAGS,			/* dlopen flags */
+	cmds,						/* exported functions */
+	params,						/* exported  parameters */
+	0,							/* exported statistics */
 	0,							/* exported MI functions*/
 	0,							/* exported pseudo-variables */
 	0,							/* extra processes */
-	mod_init,                   /* module initialization function */
-	(response_function) 0,      /* response handling function */
-	(destroy_function) 0,       /* destroy function */
-	child_init                  /* per-child init function */
+	mod_init,					/* module initialization function */
+	(response_function) 0,		/* response handling function */
+	(destroy_function) 0,		/* destroy function */
+	child_init					/* per-child init function */
 };
 
 /**
@@ -131,6 +133,9 @@ static int mod_init(void)
 	}
 	server_address.len= strlen(server_address.s);
 
+	if(presence_server.s)
+		presence_server.len = strlen(presence_server.s);
+	
 	/* import the TM auto-loading function */
 	if((load_tm=(load_tm_f)find_export("load_tm", 0, 0))==NULL)
 	{

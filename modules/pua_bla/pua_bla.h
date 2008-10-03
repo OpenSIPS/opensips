@@ -35,6 +35,7 @@ extern int is_bla_aor;
 extern str header_name;
 extern str bla_outbound_proxy;
 extern str server_address;
+extern str presence_server;
 extern str reg_from_uri;
 
 extern send_publish_t pua_send_publish;

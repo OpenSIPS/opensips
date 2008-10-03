@@ -421,6 +421,8 @@ int build_publish(xmlNodePtr pres_node, int expires)
 	publ.expires= expires;
 	publ.event= PRESENCE_EVENT;
 	publ.extra_headers= NULL;
+	publ.outbound_proxy = presence_server;
+
 
 	if( pua_send_publish(&publ)< 0)
 	{

@@ -32,4 +32,6 @@ void ul_publish(ucontact_t* c, int type, void* param);
 int pua_unset_publish(struct sip_msg* msg , void* param);
 
 extern str pres_prefix;
+extern str presence_server;
+
 #endif
