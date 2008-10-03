@@ -560,8 +560,8 @@ int http_get_rules_doc(str user, str domain, str* rules_doc)
 		goto error;
 	}
 
-	doc_sel.auid.s= "presence-rules";
-	doc_sel.auid.len= strlen("presence-rules");
+	doc_sel.auid.s= "pres-rules";
+	doc_sel.auid.len= strlen("pres-rules");
 	doc_sel.doc_type= PRES_RULES;
 	doc_sel.type= USERS_TYPE;
 	doc_sel.xid= uri;
@@ -582,8 +582,9 @@ int http_get_rules_doc(str user, str domain, str* rules_doc)
 		if(doc== NULL)
 		{
 			LM_ERR("while fetching data from xcap server\n");
-			goto error;	
+			goto error;
 		}
+		xs = xs->next;
 	}
 
 	rules_doc->s= doc;
