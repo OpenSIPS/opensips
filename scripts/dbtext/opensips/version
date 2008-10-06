@@ -12,6 +12,9 @@ dialplan:1
 dispatcher:2
 domain:1
 domainpolicy:2
+dr_gateways:1
+dr_groups:1
+dr_rules:1
 globalblacklist:1
 grp:2
 gw:7

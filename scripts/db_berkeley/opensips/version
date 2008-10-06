@@ -34,6 +34,12 @@ domain|
 domain|1
 domainpolicy|
 domainpolicy|2
+dr_gateways|
+dr_gateways|1
+dr_groups|
+dr_groups|1
+dr_rules|
+dr_rules|1
 globalblacklist|
 globalblacklist|1
 grp|
