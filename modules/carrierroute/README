@@ -1102,8 +1102,8 @@ domain register {
    parameters so they can be changed, but the name of the columns
    must be as they are in the SQL script. You can also find the
    complete database documentation on the project webpage,
-   http://www.opensips.org/docs/db-tables/opensips-db-devel.html.
-   The flags and mask columns have the same function as in the
+   http://www.opensips.org/html/docs/db/db-schema-devel.html. The
+   flags and mask columns have the same function as in the
    carrierfailureroute table. A zero value in the flags and mask
    column means that any message flags will match this rule.
 
