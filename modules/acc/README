@@ -270,7 +270,7 @@ if (uri=~"sip:+40") /* calls to Romania */ {
 
    The full list of supported pseudo-variables in OpenSIPS is
    availabe at:
-   http://opensips.org/dokuwiki/doku.php/pseudovariables:devel
+   http://www.opensips.org/pmwiki.php?n=Resources.DocsCoreVar
 
    Via log_name you define how/where the data will be logged. Its
    meaning depends of the accounting support which is used:
