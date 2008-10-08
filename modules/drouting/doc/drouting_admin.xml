@@ -76,7 +76,34 @@
 
 	</itemizedlist>
 	</section>
-	
+
+	<section>
+	<title>Performance</title>
+	<para>
+	There were several tests performed regarding the performance of the module
+	when dealing wil large number of routing rules.
+	</para>
+	<para>
+	The tests were performed with a set of 383000 rules and to values were
+	measured:
+	</para>
+	<itemizedlist>
+	<listitem><para>time to load from DB</para></listitem>
+	<listitem><para>used shared memory</para></listitem>
+	</itemizedlist>
+	<para>
+	The time to load was varying between 4 seconds and 8 seconds, depending of
+	the caching of the DB client - the first load was the slowest (as the DB 
+	query hits the disk drive); the following are faster as data in already 
+	cached in the DB client. So technically speaking, the time to load (without
+	the time to query which is DB type dependent) is ~4 seconds
+	</para>
+	<para>
+	After loading the data into shared memory ~ 96M of memory were used 
+	exclusivly for the DR data.
+	</para>
+	</section>
+
 
 	<section>
 	<title>Routing Rule Definition</title>
