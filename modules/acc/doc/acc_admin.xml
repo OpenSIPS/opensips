@@ -183,8 +183,8 @@ if (uri=~"sip:+40") /* calls to Romania */ {
 			<para>
 			The full list of supported pseudo-variables in &osips; is
 			availabe at: 
-			<ulink url="http://opensips.org/dokuwiki/doku.php/pseudovariables:devel">
-			http://opensips.org/dokuwiki/doku.php/pseudovariables:devel</ulink>
+			<ulink url="http://www.opensips.org/pmwiki.php?n=Resources.DocsCoreVar">
+			http://www.opensips.org/pmwiki.php?n=Resources.DocsCoreVar</ulink>
 			</para>
 			<para>
 			Via <emphasis>log_name</emphasis> you define how/where the 

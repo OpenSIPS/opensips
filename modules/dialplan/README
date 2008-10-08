@@ -125,7 +125,9 @@ Chapter 1. Admin Guide
    populate the DB records.
 
    The definition of the tables used by the dialplan module can be
-   found at http://www.opensips.org/html/db-schema.html#AEN1501
+   found at
+   http://www.opensips.org/html/docs/db/db-schema-devel.html#AEN15
+   01
 
 1.4.1. What to place in table
 
@@ -423,7 +425,7 @@ xlog("translated to var $var(y) \n");
    dialplan-create.sql script in the database directories in the
    opensips/scripts folder. You can also find the complete
    database documentation on the project webpage,
-   http://www.opensips.org/html/db-schema.html.
+   http://www.opensips.org/html/docs/db/db-schema-devel.html.
 
 Chapter 2. Developer's Guide
 

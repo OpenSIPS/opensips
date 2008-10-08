@@ -423,7 +423,7 @@ if(method=="SUBSCRIBE")
    them can be found in presence-create.sql script in the database
    directories in the opensips/scripts folder. You can also find
    the complete database documentation on the project webpage,
-   http://www.opensips.org/html/db-schema.html.
+   http://www.opensips.org/html/docs/db/db-schema-devel.html.
 
 Chapter 2. Developer Guide
 

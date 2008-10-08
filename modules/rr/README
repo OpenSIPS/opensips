@@ -75,7 +75,7 @@ Bogdan-Andrei Iancu
    1.8. record_route_preset usage
    1.9. add_rr_param usage
    1.10. check_route_param usage
-   1.11. check_route_param usage
+   1.11. is_direction usage
    2.1. Loading RR module's API from another module
 
 Chapter 1. Admin Guide
