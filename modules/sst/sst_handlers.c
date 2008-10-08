@@ -653,18 +653,14 @@ int sst_check_min(struct sip_msg *msg, char *flag, char *str2)
 			 * to send it.
 			 */
 			if (flag) {
-				char tmp[2]; /* to find the length */
-				int hdr_len = snprintf(tmp, 2, "%s %d", "MIN-SE:", sst_min_se);
-				char *minse_hdr = pkg_malloc(hdr_len+1);
+				char minse_hdr[3+1+2+1+1+11+CRLF_LEN+2];
+				int hdr_len = 3+1+2+1+1+11+CRLF_LEN+2;
 				memset(minse_hdr, 0, hdr_len+1);
-				snprintf(minse_hdr, hdr_len+1, "%s%d", "MIN-SE:", sst_min_se);
+				hdr_len = snprintf(minse_hdr, hdr_len,
+					"%s%d%s", "MIN-SE: ", sst_min_se,CRLF);
 				LM_DBG("Sending 422: %.*s\n", hdr_len, minse_hdr);
 				if (send_response(msg, 422, &sst_422_rpl, minse_hdr, hdr_len)){
 					LM_ERR("Error sending 422 reply.\n");
-				}
-				
-				if (minse_hdr) {
-					pkg_free(minse_hdr);
 				}
 			}
 			LM_DBG("Done returning true (1)\n");
@@ -906,10 +902,10 @@ static int send_reject(struct sip_msg *msg, unsigned int min_se)
 	int hdr_len = 0;
 	char *minse_hdr = NULL;
 
-	hdr_len = snprintf(tmp, 2, "%s %d", "MIN-SE:", min_se);
+	hdr_len = snprintf(tmp, 2, "%s %d%s", "MIN-SE:", min_se, CRLF);
 	if ((minse_hdr = pkg_malloc(hdr_len+1)) != NULL) {
 		memset(minse_hdr, 0, hdr_len+1);
-		snprintf(minse_hdr, hdr_len+1, "%s %d", "MIN-SE:", min_se);
+		snprintf(minse_hdr, hdr_len+1, "%s %d%s", "MIN-SE:", min_se, CRLF);
 		if (send_response(msg, 422, &sst_422_rpl, minse_hdr, hdr_len)) {
 			LM_ERR("Error sending 422 reply.\n");
 			return(-1);
