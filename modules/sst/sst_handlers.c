@@ -637,7 +637,7 @@ int sst_check_min(struct sip_msg *msg, char *flag, char *str2)
 			 * header
 			 */
 			LM_DBG("No MIN-SE header found.\n");
-			minse = se.interval;
+			minse = 90 /*this is the recommended value*/ /*se.interval*/;
 		}
 		
 		LM_DBG("Session-Expires: %d; MIN-SE: %d\n",	se.interval, minse);
