@@ -320,7 +320,7 @@ char* decode_mime_type(char *start, char *end, unsigned int *mime_type)
 	} else {
 		node = 0;
 		mark = p;
-		while (p<end && is_mime_char(*p) ) {
+		while (p<end && (is_mime_char(*p) || *p == '_')) {
 			while(node!=-1 && !is_char_equal(*p,subtype_tree[node].c) )
 				node = subtype_tree[node].next;
 			if (node!=-1 && subtype_tree[node].nr_sons)
