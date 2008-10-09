@@ -64,6 +64,8 @@ Daniel-Constantin Mierla
               1.3.24. remove_hf(hname)
               1.3.25. has_body(), has_body(mime)
               1.3.26. is_privacy(privacy_type)
+              1.3.27. strip_body()
+              1.3.28. add_body(body_text, new_content_type)
 
         1.4. Known Limitations
 
@@ -95,6 +97,8 @@ Daniel-Constantin Mierla
    1.24. remove_hf usage
    1.25. has_body usage
    1.26. is_privacy usage
+   1.27. is_privacy usage
+   1.28. add_body usage
 
 Chapter 1. Admin Guide
 
@@ -661,6 +665,38 @@ if(is_privacy("id"))
 {
     # do interesting stuff here
 }
+...
+
+1.3.27.  strip_body()
+
+   If the message has a body, this function deletes it, correcting
+   Content-Length. This function also deletes the Content-Type
+   header.
+
+   This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
+   FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
+
+   Example 1.27. is_privacy usage
+...
+strip_body();
+...
+
+1.3.28.  add_body(body_text, new_content_type)
+
+   This function can be used to add a body to a message. If a body
+   already exists, it will be replaced with the new one. The
+   second parameter is the content type of the new body. It is
+   optional: in case the function is used to replace an existing
+   body with a body of the same type, there is no need to set this
+   parameter. If the message has no body or if the types are
+   different, it is compulsory to set this parameter.
+
+   This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
+   FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
+
+   Example 1.28. add_body usage
+...
+add_body("Hello World!", "text/plain");
 ...
 
 1.4. Known Limitations

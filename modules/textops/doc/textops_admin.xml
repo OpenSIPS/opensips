@@ -1016,6 +1016,56 @@ if(is_privacy("id"))
 		</example>
 	</section>
 
+	<section>
+		<title>
+		<function moreinfo="none">strip_body()</function>
+		</title>
+		<para>
+		If the message has a body, this function deletes it,
+		correcting Content-Length. This function also deletes the 
+		Content-Type header.
+		</para>
+   		<para>
+		This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
+		FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
+		</para>
+		<example>
+		<title><function>is_privacy</function> usage</title>
+		<programlisting format="linespecific">
+...
+strip_body();
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title>
+		<function moreinfo="none">add_body(body_text, new_content_type)</function>
+		</title>
+		<para>
+		This function can be used to add a body to a message. If a body already
+		exists, it will be replaced with the new one. The second parameter is 
+		the content type of the new body. It is optional: in case the function
+		is used to replace an existing body with a body of the same type, there
+		is no need to set this parameter. If the message has no body or if the
+		types are different, it is compulsory to set this parameter.
+		</para>
+   		<para>
+		This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
+		FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
+		</para>
+		<example>
+		<title><function>add_body</function> usage</title>
+		<programlisting format="linespecific">
+...
+add_body("Hello World!", "text/plain");
+...
+</programlisting>
+		</example>
+	</section>
+
+
 	</section>
 	<section>
 		<title>Known Limitations</title>

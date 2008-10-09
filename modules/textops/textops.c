@@ -55,6 +55,7 @@
 #include "../../data_lump_rpl.h"
 #include "../../error.h"
 #include "../../mem/mem.h"
+#include "../../mem/shm_mem.h"
 #include "../../str.h"
 #include "../../re.h"
 #include "../../mod_fix.h"
@@ -111,6 +112,9 @@ static int append_time_f(struct sip_msg* msg, char* , char *);
 static int is_method_f(struct sip_msg* msg, char* , char *);
 static int has_body_f(struct sip_msg *msg, char *type, char *str2 );
 static int is_privacy_f(struct sip_msg *msg, char *privacy, char *str2 );
+static int strip_body_f(struct sip_msg *msg, char *str1, char *str2 );
+static int add_body_f_1(struct sip_msg *msg, char *str1, char *str2 );
+static int add_body_f_2(struct sip_msg *msg, char *str1, char *str2 );
 
 static int fixup_substre(void**, int);
 static int hname_fixup(void** param, int param_no);
@@ -119,6 +123,7 @@ static int fixup_method(void** param, int param_no);
 static int add_header_fixup(void** param, int param_no);
 static int fixup_body_type(void** param, int param_no);
 static int fixup_privacy(void** param, int param_no);
+
 
 static int mod_init(void);
 
@@ -205,6 +210,16 @@ static cmd_export_t cmds[]={
 	{"is_privacy",       (cmd_function)is_privacy_f,      1,
 		fixup_privacy, 0,
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"strip_body",      (cmd_function)strip_body_f,     0,
+		0, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE },
+	{"add_body",         (cmd_function)add_body_f_1,        1, 
+		fixup_spve_null, 0,
+		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"add_body",         (cmd_function)add_body_f_2,        2, 
+		add_header_fixup, 0,
+		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+
 	{0,0,0,0,0,0}
 };
 
@@ -1411,4 +1426,181 @@ static int is_privacy_f(struct sip_msg *msg, char *_privacy, char *str2 )
 
     return get_privacy_values(msg) & ((unsigned int)(long)_privacy) ? 1 : -1;
 
+}
+
+
+/*
+ *	Function to remove the body of a message
+ * */
+static int strip_body_f(struct sip_msg *msg, char *str1, char *str2 )
+{
+	int body_len;
+	char* body;
+
+	/* get body pointer */
+	body= get_body(msg);
+	if (body ==0 )
+		return -1;
+
+	/* all headears are already parsed by "get_body" */
+	if (msg->content_length==0) {
+		LM_ERR("very bogus message with body, but no content length hdr\n");
+		return -1;
+	}
+
+	body_len= get_content_length (msg);
+	if (body_len==0) {
+		LM_DBG("content length is zero\n");
+		return -1;
+	}
+	
+	/* delete all body lumps from the list */
+	free_lump_list(msg->body_lumps);
+	msg->body_lumps = NULL;
+
+	/* add delete body lump */
+	if( del_lump(msg, body- msg->buf, body_len, HDR_EOH_T) == 0) {
+		LM_ERR("failed to add lump to delete body\n");
+		return -1;
+	}
+
+	/* add delete content-type header lump */
+	if(del_lump(msg, msg->content_type->name.s- msg->buf, msg->content_type->len,
+				HDR_CONTENTTYPE_T) == 0) {
+		LM_ERR("failed to add lump to delete content type header\n");
+		return -1;
+	}
+
+	return 1;
+}
+
+/*
+ *	Function to add a new body
+ * */
+static int add_body_f(struct sip_msg *msg, gparam_p nbody, gparam_p ctype )
+{
+	int body_len;
+	char* body;
+	struct lump* anchor;
+	unsigned int offset;
+	str new_body;
+	char* value= NULL;
+	str content_type, ctype_hf;
+
+
+	if(fixup_get_svalue(msg, nbody, &new_body)!=0) {
+		LM_ERR("cannot print the format\n");
+		return -1;
+	}
+
+	if(new_body.s== NULL || new_body.len == 0) {
+		LM_ERR("null body parameter\n");
+		return -1;
+	}
+
+	/* must delete all body lumps from the list */
+	free_lump_list(msg->body_lumps);
+	msg->body_lumps = NULL;
+
+	/* get body pointer */
+	body= get_body(msg);
+	if(body== NULL ) {
+		LM_ERR("parsing failed\n");
+		return -1;
+	}
+	
+	offset = body - msg->buf;
+	body_len= get_content_length (msg);
+	if (body_len!=0) {
+		/* delete old body */
+		if(del_lump(msg, offset, body_len, HDR_EOH_T) == 0) {
+			LM_ERR("failed to add lump to delete body");
+			return -1;
+		}
+	}
+	else
+	{
+		LM_DBG("content length is zero\n");
+		if(ctype== NULL)
+		{
+			LM_ERR("No body found and no content-type name given"
+					" as parameter\n");
+			return -1;
+		}
+	}
+
+	/* add an add body lump */
+	anchor = anchor_lump(msg, offset, 0, 0);
+	if(anchor == 0) {
+		LM_ERR("failed to insert an add new body anchor");
+		return -1;
+	}
+
+	value = (char*)pkg_malloc(new_body.len);
+	if(value== NULL) {
+		LM_ERR("no more memory\n");
+		return -1;
+	}
+	memcpy(value, new_body.s, new_body.len);
+
+	if (insert_new_lump_before(anchor, value, new_body.len, 0) == 0) {
+		LM_ERR("failed to insert lump\n");
+		pkg_free(value);
+		return -1;
+	}
+	
+	if(ctype) {
+		if(fixup_get_svalue(msg, ctype, &content_type)!=0) {
+			LM_ERR("cannot print the format\n");
+			return -1;
+		}
+		
+		if(msg->content_type) {
+			/* verify if the parameter has the same value */
+			if(content_type.len == msg->content_type->body.len &&
+					strncmp(msg->content_type->body.s, content_type.s, content_type.len)== 0)
+			{
+				return 1;
+			}
+
+			if(del_lump(msg, msg->content_type->name.s- msg->buf, msg->content_type->len,
+				HDR_CONTENTTYPE_T) == 0) {
+				LM_ERR("failed to add lump to delete content type header\n");
+				return -1;
+			}
+		}
+		/* add new Content-Type header */
+		
+		/* construct header */
+		
+		ctype_hf.len = strlen("Content-Type: ") + content_type.len+ CRLF_LEN;
+		ctype_hf.s = (char*)pkg_malloc(ctype_hf.len);
+		if(ctype_hf.s == NULL) {
+			LM_ERR("no more memory\n");
+			return -1;
+		}
+		sprintf(ctype_hf.s, "Content-Type: %.*s%s", content_type.len,
+				content_type.s, CRLF);
+		
+		if( add_hf_helper(msg, &ctype_hf, 0, 0, 0, 0)< 0) {
+			LM_ERR("failed to add content type header\n");
+			pkg_free(ctype_hf.s);
+			return -1;
+		}
+		pkg_free(ctype_hf.s);
+	}
+
+
+	return 1;
+}
+
+
+static int add_body_f_1(struct sip_msg *msg, char *nbody, char *ctype )
+{
+	return add_body_f(msg, (gparam_p)nbody, NULL);
+}
+
+static int add_body_f_2(struct sip_msg *msg, char *nbody, char *ctype )
+{
+	return add_body_f(msg, (gparam_p)nbody, (gparam_p)ctype);
 }
