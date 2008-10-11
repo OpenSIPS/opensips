@@ -100,7 +100,7 @@ int onreply_avp_mode = 0;
 int disable_6xx_block = 0;
 
 /* flag for marching minor branches */
-int minor_branch_flag = 0;
+int minor_branch_flag = -1;
 
 /* private place where we create to-tags for replies */
 char tm_tags[TOTAG_VALUE_LEN];

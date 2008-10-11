@@ -548,11 +548,15 @@ static int mod_init(void)
 		return -1;
 	}
 
-	if (minor_branch_flag > (8*sizeof(int)-1)) {
-		LM_CRIT("invalid minor branch flag\n");
-		return -1;
+	if (minor_branch_flag!=-1) {
+		if (minor_branch_flag > (8*sizeof(int)-1)) {
+			LM_CRIT("invalid minor branch flag\n");
+			return -1;
+		}
+		minor_branch_flag = 1<<minor_branch_flag;
+	} else {
+		minor_branch_flag = 0;
 	}
-	minor_branch_flag = 1<<minor_branch_flag;
 
 	/* if statistics are disabled, prevent their registration to core */
 	if (tm_enable_stats==0)
