@@ -679,6 +679,38 @@ modparam("tm", "enable_stats", 0)
 		</example>
 	</section>
 
+	<section>
+		<title><varname>minor_branch_flag</varname> (integer)</title>
+		<para>
+		A branch flag index to be used in script to mark the minor branches 
+		( before t_relay() ).
+		</para>
+		<para>
+		A minor branch is a branch OpenSIPS will not wait to complete during
+		parallel forking. So, if the rest of the branches are negativly replied
+		OpenSIPS will not wait for a final answer from the minor branch, but
+		it will simply cancel it.
+		</para>
+		<para>
+		Main applicability of minor branch is to fork a branch to a media 
+		server for injecting (via 183 Early Media) some pre-call media - of
+		course, this branch will be transparanent for the rest of the call
+		branches (from branch selection point of view).
+		</para>
+		<para>
+		<emphasis>
+			Default value is none (disabled).
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>minor_branch_flag</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("tm", "minor_branch_flag", 3)
+...
+</programlisting>
+		</example>
+	</section>
 
 	</section>
 
