@@ -99,6 +99,9 @@ int onreply_avp_mode = 0;
 /* disable the 6xx fork-blocking - default no (as per RFC3261) */
 int disable_6xx_block = 0;
 
+/* flag for marching minor branches */
+int minor_branch_flag = 0;
+
 /* private place where we create to-tags for replies */
 char tm_tags[TOTAG_VALUE_LEN];
 static str  tm_tag = {tm_tags,TOTAG_VALUE_LEN};
@@ -672,19 +675,25 @@ done:
  * -1   ... error
  * -2   ... can't decide yet -- incomplete branches present
  */
-static inline int t_pick_branch( struct cell *t, int *res_code)
+static inline int t_pick_branch( struct cell *t, int *res_code, int *do_cancel)
 {
 	int lowest_b, lowest_s, b;
 	int cancelled;
 
 	lowest_b=-1; lowest_s=999;
 	cancelled = was_cancelled(t);
+	*do_cancel = 0;
 	for ( b=t->first_branch; b<t->nr_of_outgoings ; b++ ) {
 		/* skip 'empty branches' */
 		if (!t->uac[b].request.buffer.s) continue;
 		/* there is still an unfinished UAC transaction; wait now! */
-		if ( t->uac[b].last_received<200 ) 
+		if ( t->uac[b].last_received<200 ) {
+			if (t->uac[b].br_flags & minor_branch_flag) {
+				*do_cancel = 1;
+				continue;
+			}
 			return -2;
+		}
 		/* replys to cancel has max priority
 		 * 503 has minimum priority */
 		if ( (lowest_b==-1) ||
@@ -722,6 +731,7 @@ static enum rps t_should_relay_response( struct cell *Trans , int new_code,
 	int branch_cnt;
 	int picked_code;
 	int inv_through;
+	int do_cancel;
 
 	/* note: this code never lets replies to CANCEL go through;
 	   we generate always a local 200 for CANCEL; 200s are
@@ -791,7 +801,7 @@ static enum rps t_should_relay_response( struct cell *Trans , int new_code,
 			Trans->flags |= T_NO_NEW_BRANCHES_FLAG;
 		} else {
 			/* if all_final return lowest */
-			picked_branch = t_pick_branch( Trans, &picked_code);
+			picked_branch = t_pick_branch( Trans, &picked_code, &do_cancel);
 			if (picked_branch==-2) { /* branches open yet */
 				*should_store=1;
 				*should_relay=-1;
@@ -803,6 +813,12 @@ static enum rps t_should_relay_response( struct cell *Trans , int new_code,
 				LM_CRIT("pick_branch failed (lowest==-1) for code %d\n",new_code);
 				Trans->uac[branch].reply = 0;
 				goto discard;
+			}
+			if (do_cancel) {
+				branch_bm_t cb;
+				which_cancel( Trans, &cb );
+				cleanup_uac_timers(Trans);
+				cancel_uacs( Trans, cb);
 			}
 		}
 

@@ -54,6 +54,9 @@ extern char *tm_tag_suffix;
 
 extern int disable_6xx_block;
 
+/* flag for marching minor branches */
+extern int minor_branch_flag;
+
 /* has this to-tag been never seen in previous 200/INVs? */
 int unmatched_totag(struct cell *t, struct sip_msg *ack);
 
