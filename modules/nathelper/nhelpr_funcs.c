@@ -192,7 +192,7 @@ int extract_body(struct sip_msg *msg, str *body )
 	}
 	body->len -= skip;
 
-	/*LM_DBG("DEBUG:extract_body:=|%.*s|\n",body->len,body->s);*/
+	/*LM_DBG("DEBUG:extract_body:%d=|%.*s|\n",body->len,body->len,body->s);*/
 
 	return 1;
 error:
