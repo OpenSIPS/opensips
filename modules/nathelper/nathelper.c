@@ -2655,8 +2655,9 @@ force_rtp_proxy2_f(struct sip_msg* msg, char* str1, char* str2)
 			}
 			port = atoi(argv[0]);
 			if (port <= 0 || port > 65535) {
-				LM_ERR("incorrect port %i in reply "
-					"from rtp proxy\n",port);
+				if (port != 0 || flookup == 0)
+					LM_ERR("incorrect port %i in reply "
+						"from rtp proxy\n",port);
 				return -1;
 			}
 
