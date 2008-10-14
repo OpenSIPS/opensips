@@ -511,8 +511,19 @@ install-cfg: $(cfg-prefix)/$(cfg-dir)
 		fi
 
 install-bin: $(bin-prefix)/$(bin-dir) utils
+		# install opensips binary
 		$(INSTALL_TOUCH) $(bin-prefix)/$(bin-dir)/$(NAME) 
 		$(INSTALL_BIN) $(NAME) $(bin-prefix)/$(bin-dir)
+		# install osipsconsole
+		cat scripts/osipsconsole | \
+		sed -e "s#PATH_BIN[ \t]*=[ \t]*\"\./\"#PATH_BIN = \"$(bin-target)\"#g" | \
+		sed -e "s#PATH_CTLRC[ \t]*=[ \t]*\"\./scripts/\"#PATH_CTLRC = \"$(cfg-target)\"#g" | \
+		sed -e "s#PATH_ETC[ \t]*=[ \t]*\"\./etc/\"#PATH_ETC = \"$(cfg-target)\"#g" \
+		> /tmp/osipsconsole
+		$(INSTALL_TOUCH) $(bin-prefix)/$(bin-dir)/osipsconsole
+		$(INSTALL_BIN) /tmp/osipsconsole $(bin-prefix)/$(bin-dir)
+		rm -fr /tmp/osipsconsole
+		# install opensipsctl (and family) tool
 		cat scripts/opensipsctl | \
 		sed -e "s#/usr/local/sbin#$(bin-target)#g" | \
 		sed -e "s#/usr/local/lib/opensips#$(lib-target)#g" | \

@@ -37,8 +37,8 @@ use POSIX;
 ##### ------------------------------------------------ #####
 #
 
-####path to the directory where opensips binaries are...
-####asta pica...si OSIPSBIN...unde e plasat opensipsctlrc
+#### paths to the directories where opensips binaries & configs are
+#### and where the RC file may be...
 
 my $PATH_BIN = "./";
 my $PATH_CTLRC = "./scripts/";
@@ -49,13 +49,13 @@ my $OPENSIPSCTLRC = "";
 ### include config files
 if ( -e  $PATH_CTLRC . "opensipsctlrc" ) {
 	$OPENSIPSCTLRC = $PATH_CTLRC . "opensipsctlrc";
-	&include_opensipsctlrc();	
+	&include_opensipsctlrc();
 }
 
 
 if ( -e "~/.opensipsctlrc" ) {
 	$OPENSIPSCTLRC = "~/.opensipsctlrc";
-	&include_opensipsctlrc();	
+	&include_opensipsctlrc();
 }
 
 
