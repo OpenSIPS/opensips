@@ -71,7 +71,7 @@
 	</column>
 
 	<column id="gwlist">
-		<name>timerec</name>
+		<name>gwlist</name>
 		<type>string</type>
 		<size>255</size>
 		<description>Reference to the GWs/destinations to be used when

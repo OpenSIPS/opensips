@@ -16,7 +16,7 @@ CREATE TABLE dr_rules (
     timerec VARCHAR(255) NOT NULL,
     priority INT(11) DEFAULT 0 NOT NULL,
     routeid INT(11) UNSIGNED DEFAULT 0 NOT NULL,
-    timerec VARCHAR(255) NOT NULL,
+    gwlist VARCHAR(255) NOT NULL,
     description VARCHAR(128) DEFAULT '' NOT NULL
 ) ENGINE=MyISAM;
 
