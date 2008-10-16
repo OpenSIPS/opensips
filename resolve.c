@@ -804,13 +804,18 @@ static inline void sort_srvs(struct rdata **head)
 					for( crt=rd,crt2=NULL ; crt ; crt2=crt,crt=crt->next) {
 						if (rd2srv(crt)->running_sum>=rand_no) break;
 					}
-					// crt == NULL ??
+					if (crt == NULL) {
+						LM_CRIT("bug in sorting SRVs - rand>sum\n");
+						crt = rd;
+						crt2 = NULL;
+					}
 					/* remove the element from the list ... */
 					if (crt2==NULL) { rd = rd->next;}
 					else {crt2->next = crt->next;}
 					/* .... and update the running sums */
 					for ( crt2=crt->next ; crt2 ; crt2=crt2->next)
 						rd2srv(crt2)->running_sum -= rd2srv(crt)->weight;
+					weight_sum -= rd2srv(crt)->weight;
 					/* link the crt in the new list */
 					crt->next = 0;
 					if (tail) {tail->next=crt;tail=crt;}
