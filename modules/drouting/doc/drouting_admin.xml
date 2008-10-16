@@ -56,7 +56,7 @@
 	<listitem>
 	<para>
 	able to handle large volume of routing info (300K of rules) with minimal
-	speed/time and memory cosumption penalties
+	speed/time and memory consumption penalties
 	</para>
 	</listitem>
 	
@@ -69,7 +69,7 @@
 	
 	<listitem>
 	<para>
-	bidirectional behaviour - inbound and outbound processing (strip and 
+	bidirectional behavior - inbound and outbound processing (strip and 
 	prefixing when sending and receiving from a destination/GW)
 	</para>
 	</listitem>
@@ -81,7 +81,7 @@
 	<title>Performance</title>
 	<para>
 	There were several tests performed regarding the performance of the module
-	when dealing wil large number of routing rules.
+	when dealing with a large number of routing rules.
 	</para>
 	<para>
 	The tests were performed with a set of 383000 rules and to values were
@@ -100,7 +100,7 @@
 	</para>
 	<para>
 	After loading the data into shared memory ~ 96M of memory were used 
-	exclusivly for the DR data.
+	exclusively for the DR data.
 	</para>
 	</section>
 
@@ -177,6 +177,12 @@
 	<entry></entry>
 	<entry>PRI prefix of the gateway</entry>
 	</row>
+	<row>
+	<entry>description</entry>
+	<entry>varchar(128)</entry>
+	<entry></entry>
+	<entry>description of the gateway</entry>
+	</row>
 	</tbody>
 	</tgroup>
 	</table> 
@@ -191,7 +197,7 @@
 	<para>
 	<table>
 	<title>Sample dr_gateways records</title>
-	<tgroup cols="5">
+	<tgroup cols="6">
 	<thead>
 	<row>
 	<entry>gwid</entry>
@@ -199,6 +205,7 @@
 	<entry>address</entry>
 	<entry>strip</entry>
 	<entry>pri_prefix</entry>
+	<entry>description</entry>
 	</row>
 	</thead>
 	<tbody>
@@ -208,6 +215,7 @@
 	<entry>10.10.10.10:5080</entry>
 	<entry>0</entry>
 	<entry>2222</entry>
+	<entry>Gateway 1</entry>
 	</row>
 	<row>
 	<entry>2</entry>
@@ -215,6 +223,7 @@
 	<entry>10.10.10.10</entry>
 	<entry>2</entry>
 	<entry>3333</entry>
+	<entry>Gateway 2</entry>
 	</row>
 	<row>
 	<entry>3</entry>
@@ -222,6 +231,7 @@
 	<entry>10.10.10.11</entry>
 	<entry>0</entry>
 	<entry></entry>
+	<entry>Gateway 3</entry>
 	</row>
 	</tbody>
 	</tgroup>
@@ -286,14 +296,18 @@
 	<entry>0</entry>
 	<entry>route block to be execute</entry>
 	</row>
-
 	<row>
 	<entry>gwlist</entry>
 	<entry>varchar(255)</entry>
 	<entry></entry>
 	<entry>the list with GWs to be used</entry>
 	</row>
-
+	<row>
+	<entry>description</entry>
+	<entry>varchar(128)</entry>
+	<entry></entry>
+	<entry>description of this rule</entry>
+	</row>
 	</tbody>
 	</tgroup>
 	</table> 
@@ -610,7 +624,7 @@
 	<para>
 	<table align="center" frame= "all" pgwide="1">
 	<title>Sample dr_rules records</title>
-	<tgroup cols="7" align='left' colsep='1' rowsep='1'>
+	<tgroup cols="8" align='left' colsep='1' rowsep='1'>
 	<thead>
 	<row>
 	<entry>ruleid</entry>
@@ -620,6 +634,7 @@
 	<entry>priority</entry>
 	<entry>routeid</entry>
 	<entry>gwlist</entry>
+	<entry>description</entry>
 	</row>
 	</thead>
 	<tbody>
@@ -631,6 +646,7 @@
 	<entry>5</entry>
 	<entry>23</entry>
 	<entry>1,2</entry>
+	<entry>Rule 1</entry>
 	</row>
 	<row>
 	<entry>2</entry>
@@ -640,6 +656,7 @@
 	<entry>0</entry>
 	<entry>0</entry>
 	<entry>1,2</entry>
+	<entry>Rule 2</entry>
 	</row>
 	<row>
 	<entry>3</entry>
@@ -649,6 +666,7 @@
 	<entry>0</entry>
 	<entry>0</entry>
 	<entry>3</entry>
+	<entry>Rule 3</entry>
 	</row>
 	</tbody>
 	</tgroup>
@@ -941,7 +959,7 @@ modparam("drouting", "ruri_avp", 'i:33')
 			<emphasis>1 </emphasis>- random order, full set
 		</listitem>
 		<listitem>
-			<emphasis>0 </emphasis>- random order, one per set
+			<emphasis>2 </emphasis>- random order, one per set
 		</listitem>
 		</itemizedlist>
 		</para>
@@ -1006,7 +1024,7 @@ modparam("drouting", "force_dns", 0)
 	<title>Exported Functions</title>
 	<section>
 		<title>
-		<function moreinfo="none">do_routing([groupID])</function>
+		<function moreinfo="none">do_routing("[groupID]")</function>
 		</title>
 		<para>
 		Function to trigger routing of the message according to the 
@@ -1025,6 +1043,8 @@ modparam("drouting", "force_dns", 0)
 		<programlisting format="linespecific">
 ...
 do_routing();
+...
+do_routing("0");
 ...
 </programlisting>
 		</example>

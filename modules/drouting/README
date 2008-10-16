@@ -46,7 +46,7 @@ Anca-Maria Vamanu
 
         1.4. Exported Functions
 
-              1.4.1. do_routing([groupID])
+              1.4.1. do_routing("[groupID]")
               1.4.2. is_from_gw([[group], flags])
 
         1.5. Exported MI Functions
@@ -118,17 +118,17 @@ Chapter 1. Admin Guide
        database and loaded into memory at start up time; reload at
        runtime via MI command
      * able to handle large volume of routing info (300K of rules)
-       with minimal speed/time and memory cosumption penalties
+       with minimal speed/time and memory consumption penalties
      * script integration - Pseudo variables support in functions;
        scripting route triggering when rules are matched
-     * bidirectional behaviour - inbound and outbound processing
+     * bidirectional behavior - inbound and outbound processing
        (strip and prefixing when sending and receiving from a
        destination/GW)
 
 1.1.3. Performance
 
    There were several tests performed regarding the performance of
-   the module when dealing wil large number of routing rules.
+   the module when dealing with a large number of routing rules.
 
    The tests were performed with a set of 383000 rules and to
    values were measured:
@@ -143,7 +143,7 @@ Chapter 1. Admin Guide
    time to query which is DB type dependent) is ~4 seconds
 
    After loading the data into shared memory ~ 96M of memory were
-   used exclusivly for the DR data.
+   used exclusively for the DR data.
 
 1.1.4. Routing Rule Definition
 
@@ -169,6 +169,7 @@ Chapter 1. Admin Guide
    address     varchar(128)                address of the gateway
    strip       unsigned int 0              no of digits to strip
    pri_prefix  varchar(255)                PRI prefix of the gateway
+   description varchar(128)                description of the gateway
 
    Once a rule is matched, the STRIP number of digits are removed
    from the username part of the RURI and then the PRI prefix has
@@ -176,10 +177,10 @@ Chapter 1. Admin Guide
    the gateway.
 
    Table 1.2. Sample dr_gateways records
-   gwid type     address      strip pri_prefix
-   1    10   10.10.10.10:5080 0     2222
-   2    10   10.10.10.10      2     3333
-   3    20   10.10.10.11      0
+   gwid type     address      strip pri_prefix description
+   1    10   10.10.10.10:5080 0     2222       Gateway 1
+   2    10   10.10.10.10      2     3333       Gateway 2
+   3    20   10.10.10.11      0                Gateway 3
 
 1.1.4.2. Routing Rules
 
@@ -195,6 +196,7 @@ Chapter 1. Admin Guide
    priority    integer      0       priority of the rule
    routeid     integer      0       route block to be execute
    gwlist      varchar(255)         the list with GWs to be used
+   description varchar(128)         description of this rule
 
     a. groupid column
        Each user must be member of only one routing group. It must
@@ -346,11 +348,11 @@ Chapter 1. Admin Guide
     g. Routing Rules Examples
        Table 1.5. Sample dr_rules records
 
-   ruleid group prefix timerec priority routeid gwlist
+   ruleid group prefix timerec priority routeid gwlist description
    1 postpaid 0049 20040101T083000|10H|weekly|||MO,TU,WE,TH,FR 5
-   23 1,2
-   2 postpaid 0049 20040101T083000 0 0 1,2
-   3 prepaid 0049 20040101T083000 0 0 3
+   23 1,2 Rule 1
+   2 postpaid 0049 20040101T083000 0 0 1,2 Rule 2
+   3 prepaid 0049 20040101T083000 0 0 3 Rule 3
        (The time recurrence for first rule is:
        "20040101T083000|10H|weekly|||MO,TU,WE,TH,FR")
 
@@ -509,7 +511,7 @@ modparam("drouting", "ruri_avp", 'i:33')
    The order in which to sort the rules.
      * 0 - normal order
      * 1 - random order, full set
-     * 0 - random order, one per set
+     * 2 - random order, one per set
 
    Default value is "0".
 
@@ -545,7 +547,7 @@ modparam("drouting", "force_dns", 0)
 
 1.4. Exported Functions
 
-1.4.1.  do_routing([groupID])
+1.4.1.  do_routing("[groupID]")
 
    Function to trigger routing of the message according to the
    rules in the database table and the configured parameters.
@@ -560,6 +562,8 @@ modparam("drouting", "force_dns", 0)
    Example 1.13. do_routing usage
 ...
 do_routing();
+...
+do_routing("0");
 ...
 
 1.4.2.  is_from_gw([[group], flags])
