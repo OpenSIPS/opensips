@@ -26,19 +26,19 @@
 #
 
 use strict;
-#use warnings;
+use warnings;
 use Term::ReadLine;
 use Switch;
 use DBI;
 use POSIX;
+use Frontier::Client;
 
 ####variables that need to be changed
 
 ##### ------------------------------------------------ #####
 #
 
-#### paths to the directories where opensips binaries & configs are
-#### and where the RC file may be...
+####path to the directory where opensips binaries are...
 
 my $PATH_BIN = "./";
 my $PATH_CTLRC = "./scripts/";
@@ -49,20 +49,20 @@ my $OPENSIPSCTLRC = "";
 ### include config files
 if ( -e  $PATH_CTLRC . "opensipsctlrc" ) {
 	$OPENSIPSCTLRC = $PATH_CTLRC . "opensipsctlrc";
-	&include_opensipsctlrc();
+	&include_opensipsctlrc();	
 }
 
 
 if ( -e "~/.opensipsctlrc" ) {
 	$OPENSIPSCTLRC = "~/.opensipsctlrc";
-	&include_opensipsctlrc();
+	&include_opensipsctlrc();	
 }
 
 
 
 my $OSIPSBIN = $PATH_BIN . "opensips";
 
-
+my $argnum = $#ARGV + 1;
 ### aliases configuration  ( DB | UL )
 my $ALIASES_TYPE = "DB";
 
@@ -76,35 +76,35 @@ my $DBENGINE = "";
 my $SIP_DOMAIN = "";
 my $VERIFY_ACL = 0;
 my @ACL_GROUPS;
-my $DBNAME = " ";
-my $DBHOST = " ";
-my $DBRWUSER = " ";
-my $DBROUSER = " ";
-my $DBROPW = " ";
-my $DBROOTUSER = " ";
+my $DBNAME = "";
+my $DBHOST = "";
+my $DBRWUSER = "";
+my $DBROUSER = "";
+my $DBROPW = "";
+my $DBROOTUSER = "";
 my $CTLENGINE = "";
 	
 my $content;
 my @arr;
 my $var_name;
-my $EGREP = " ";
+my $EGREP = "";
 my $SYSLOG = "";
-my $STARTOPTIONS = " ";
-my $DIR = " ";
-my $TOOLPATH = " ";
-my $AWK = " ";
-my $MD5 = " ";
-my $SED = " ";
-my $LAST_LINE = " ";
-my $EXPR = " ";
-my $WATCH_PERIOD = " ";
+my $STARTOPTIONS = "";
+my $DIR = "";
+my $TOOLPATH = "";
+my $AWK = "";
+my $MD5 = "";
+my $SED = "";
+my $LAST_LINE = "";
+my $EXPR = "";
+my $WATCH_PERIOD = "";
 ##### ----------------------------------------------- #####
 #### Defined values
 my $ALL_METHODS=4294967295;
 my $USERNAME_RE="[-a-zA-Z0-9&=\+\$,;\?/_\.\!~\*'\(\)]+";
 
-my $OSIPSUSER = " ";
-my $OSIPSDOMAIN = " ";
+my $OSIPSUSER = "";
+my $OSIPSDOMAIN = "";
 my @OSIPS ;
 my $CTLENGINELOADED = 0;
 my $STORE_PLAINTEXT_PW;
@@ -112,8 +112,8 @@ my $ENABLE_ALIASES = 0;
 my $ALIAS_EXISTS = 0;
 
 
-my $ALIAS_DB_EXISTS = " ";
-my $ALIAS_UL_EXISTS = " ";
+my $ALIAS_DB_EXISTS = "";
+my $ALIAS_UL_EXISTS = "";
  
 my $DBENGINELOADED;
 my $PASS="";
@@ -142,7 +142,7 @@ my $term = Term::ReadLine->new("OpenSIPS");
 my $OUT = $term->OUT() ||\*STDOUT;
 my @cmd;
 my @command_list = ('acl'=> ('show','grant','revoke'),
-		    'add'=>'add',
+		    'adcr(d'=>'add',
 		    'avp'=>('list','add','rm'),
 		    'passwd'=>'passwd',
 		    'rm'=>'rm',
@@ -749,6 +749,7 @@ sub locate_tool() {
 }
 
 
+
 #
 ##### ------------------------------------------------ #####
 ### usage functions
@@ -1255,7 +1256,7 @@ sub is_value_in_db() {
 	# Connect to the database.
 	$dbh = DBI->connect("DBI:$DBENGINE:database=$DBNAME;host=$DBHOST",
 		                 "$DBROOTUSER", "",
-				 {'PrintError' => 0} );
+				 {'PrintError' => 0} ) or die "Database connection failed.";
 
 
 
@@ -1300,64 +1301,76 @@ sub not_command(){
 }
 
 
-
-my @history_list;
-open(HIST,"</tmp/osipsconsole_history");
-@history_list=<HIST>;
-while ( $#history_list gt 0 ){	
-	$result = shift(@history_list);
-	chomp($result);	
-	$term->addhistory($result);
-
+if ( $argnum  == 0 ) {	
+	&interactively();
+} elsif ($argnum gt 0) {
+	&non_interactively();
 }
-close(HIST);
-ET: while (1) {
 
-	$attribs->{completion_entry_function} = $attribs->{list_completion_function};
-	$attribs->{completion_word} = [@command_list];
-	$command = $term->readline('OpenSIPS$:');
+sub interactively(){
+	my @history_list;
+	open(HIST,"</tmp/osipsconsole_history");
+	@history_list=<HIST>;
+	while ( $#history_list gt 0 ){	
+		$result = shift(@history_list);
+		chomp($result);	
+		$term->addhistory($result);
+
+	}
+	close(HIST);
+	ET: while (1) {
+
+		$attribs->{completion_entry_function} = $attribs->{list_completion_function};
+		$attribs->{completion_word} = [@command_list];
+		$command = $term->readline('OpenSIPS$:');
 
 
 
-		if ( $command eq  "") {
-			next ET;			
-		} 
+			if ( $command eq  "") {
+				next ET;			
+			} 
 
-  	        @cmd = split(" ",$command);
+	  	        @cmd = split(" ",$command);
 		
-		my $found=0;
+			my $found=0;
 
 		
-		foreach my $i (@command_list){
+			foreach my $i (@command_list){
 
-			if ($cmd[0] eq $i) {
-				$found=1;
+				if ($cmd[0] eq $i) {
+					$found=1;
+				}
+
 			}
-
-	        }
 				
-		if ($found == 1 ) {
+			if ($found == 1 ) {
 
-			system(&cmd());
+				system(&cmd());
 
-		} elsif ( ($found == 0) & ($cmd[0] =~ /^quit/) ) {
-				#$dbh->disconnect();
-				open(HIST,"+>/tmp/osipsconsole_history");
-				print HIST @history_list; 
-				close(HIST);
-				print "Thank you for flying Opensips!!\n";
-				exit;
-	     	} elsif ( $found == 0 ) {
-			 	system(&not_command());
-		}		
+			} elsif ( ($found == 0) & ($cmd[0] =~ /^quit/) ) {
+					#$dbh->disconnect();
+					open(HIST,"+>/tmp/osipsconsole_history");
+					print HIST @history_list; 
+					close(HIST);
+					print "Thank you for flying Opensips!!\n";
+					exit;
+		     	} elsif ( $found == 0 ) {
+				 	system(&not_command());
+			}		
 			
 
 
-	        $term->addhistory($cmd[0]);
-		unshift(@history_list,"$command\n");
+			$term->addhistory($cmd[0]);
+			unshift(@history_list,"$command\n");
 
+	}
 }
 
+
+sub non_interactively(){
+	@cmd = @ARGV;		
+	&cmd();	
+}
 
 sub cmd() {
 	switch ($cmd[0]) {		
@@ -2733,7 +2746,6 @@ sub opensips_cr() {
 			$sth->finish(); 	
 
 			print "cr routes\n";
-
 			$sth = $dbh->prepare ( " SELECT * 
 						 FROM $CARRIERROUTE_TABLE ORDER BY $carrierroute_table{'CARRIERROUTE_CARRIERROUTE_CARRIER_COLUMN'},
 						 $carrierroute_table{'CARRIERROUTE_CARRIERROUTE_SCAN_PREFIX_COLUMN'}, 
