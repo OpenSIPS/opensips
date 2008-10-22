@@ -1900,7 +1900,6 @@ void p_tm_callback( struct cell *t, int type, struct tmcb_params *ps)
 	else
 		LM_DBG("Empty wi_subs parameter\n");
 
-done:
 	if(*ps->param !=NULL  )
 		free_cbparam((c_back_param*)(*ps->param));
 	return ;
