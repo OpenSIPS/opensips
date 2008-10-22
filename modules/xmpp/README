@@ -12,8 +12,8 @@ Andreea Spirea
 
    Copyright © 2006-2008 voice-system.ro
    Revision History
-   Revision $Revision$ $Date: 2008-07-29 19:23:00 +0300
-                              (Tue, 29 Jul 2008) $
+   Revision $Revision$ $Date: 2008-10-08 13:23:41 +0300
+                              (Wed, 08 Oct 2008) $
      __________________________________________________________
 
    Table of Contents
@@ -221,7 +221,7 @@ Chapter 1. Admin Guide
 
    Example 1.6. Set xmpp_port parameter
 ...
- modparam("xmpp", "xmpp_port", "5269")
+ modparam("xmpp", "xmpp_port", 5269)
 ...
 
 1.3.7. xmpp_password (string)
