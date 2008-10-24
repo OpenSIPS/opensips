@@ -40,7 +40,7 @@
 
 #define PTREE_CHILDREN 10
 #define IS_DECIMAL_DIGIT(d) \
-	((((d)-'0')>=0) && (((d) - '0') <= '9'))
+	(((d)>='0') && ((d)<= '9'))
 
 extern int tree_size;
 

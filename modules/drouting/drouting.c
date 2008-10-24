@@ -83,8 +83,10 @@ static db_func_t dr_dbf;        /* DB functions */
 static rt_data_t **rdata = 0;
 
 /* AVP used to store serial RURIs */
-static int ruri_avp_type = 0 ; /* AVP ID */
-static int_str ruri_avp_name = {.n=(int)0xad346b2f};
+static struct _ruri_avp{
+	unsigned short type; /* AVP ID */
+	int_str name; /* AVP name*/
+}ruri_avp = { 0, {.n=(int)0xad346b2f} };
 static str ruri_avp_spec = {0,0};
 
 /* statistic data */
@@ -124,13 +126,13 @@ MODULE_VERSION
  */
 static cmd_export_t cmds[] = {
 	{"do_routing",  (cmd_function)do_routing_0,  0,  0, 0,
-		REQUEST_ROUTE},
+		REQUEST_ROUTE|FAILURE_ROUTE},
 	{"do_routing",  (cmd_function)do_routing_1,  1,  fixup_do_routing, 0,
-		REQUEST_ROUTE},
+		REQUEST_ROUTE|FAILURE_ROUTE},
 	{"is_from_gw",  (cmd_function)is_from_gw_0,  0,  0, 0,
-		REQUEST_ROUTE},
+		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE},
 	{"is_from_gw",  (cmd_function)is_from_gw_1,  1,  fixup_from_gw, 0,
-		REQUEST_ROUTE},
+		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE},
 	{"is_from_gw",  (cmd_function)is_from_gw_2,  2,  fixup_from_gw, 0,
 		REQUEST_ROUTE},
 	{0, 0, 0, 0, 0, 0}
@@ -224,6 +226,8 @@ static inline int dr_reload_data( void )
 
 static int dr_init(void)
 {
+	pv_spec_t avp_spec;
+
 	LM_INFO("Dynamic-Routing - initializing\n");
 
 	/* check the module params */
@@ -258,9 +262,19 @@ static int dr_init(void)
 	/* fix AVP spec */
 	if (ruri_avp_spec.s) {
 		ruri_avp_spec.len = strlen(ruri_avp_spec.s);
-		if (parse_avp_spec( &ruri_avp_spec, &ruri_avp_type, &ruri_avp_name)<0){
-			LM_CRIT("invalid RURI AVP specs \"%s\"\n", ruri_avp_spec.s);
-			goto error;
+
+		if (pv_parse_spec( &ruri_avp_spec, &avp_spec)==0
+		|| avp_spec.type!=PVT_AVP) {
+			LM_ERR("malformed or non AVP [%.*s] for RURI AVP definition\n",
+				ruri_avp_spec.len, ruri_avp_spec.s);
+			return E_CFG;
+		}
+
+		if( pv_get_avp_name(0, &(avp_spec.pvp), &(ruri_avp.name),
+		&(ruri_avp.type) )!=0) {
+			LM_ERR("[%.*s]- invalid AVP definition for RURI AVP\n",
+				ruri_avp_spec.len, ruri_avp_spec.s);
+			return E_CFG;
 		}
 	}
 
@@ -536,7 +550,6 @@ static int do_routing(struct sip_msg* msg, dr_group_t *drg)
 	int    grp_id;
 	int    i, j, l, t;
 	str    *ruri;
-	int_str name;
 	int_str val;
 	struct usr_avp *avp;
 #define DR_MAX_GWLIST	32
@@ -572,26 +585,20 @@ static int do_routing(struct sip_msg* msg, dr_group_t *drg)
 			goto error1;
 		}
 	} else {
-		if(drg->type==1)
-			grp_id = (int)drg->data;
-		else if(drg->type==2||drg->type==3)
-		{
+		if(drg->type==0)
+			grp_id = (int)drg->u.grp_id;
+		else if(drg->type==1) {
 			grp_id = 0; /* call get avp here */
-			if(drg->type==2)
-				name.n = (int)drg->data;
-			else
-				name.s = *(str*)drg->data;
-			if((avp=search_first_avp( (drg->type==3)?AVP_NAME_STR:0,
-			name, &val, 0))==NULL||(avp->flags&AVP_VAL_STR))
-			{
-				LM_ERR( "failed to get "
-					"group id\n");
+			if((avp=search_first_avp( drg->u.avp_id.type,
+			drg->u.avp_id.name, &val, 0))==NULL||(avp->flags&AVP_VAL_STR)) {
+				LM_ERR( "failed to get group id\n");
 				goto error1;
 			}
 			grp_id = val.n;
 		} else
 			grp_id = 0; 
 	}
+	LM_DBG("using dr group %d\n",grp_id);
 
 	/* get the number */
 	ruri = GET_RURI(msg);
@@ -701,10 +708,10 @@ again:
 			local_gwlist[i] = i;
 		t = i;
 	}
-	/*
-	for(i=0; i<gwlist_size; i++)
-		LM_DBG("gw[%d]=%d\n", i, local_gwlist[i]); */
-	
+
+	/* do some cleanup first */
+	destroy_avps( ruri_avp.type, ruri_avp.name, 1);
+
 	/* push gwlist into avps in reverse order */
 	for( j=t-1 ; j>=1 ; j-- ) {
 		/* build uri*/
@@ -719,10 +726,9 @@ again:
 			local_gwlist[j], ruri->len, ruri->s);
 		/* add avp */
 		val.s = *ruri;
-		if (add_avp( AVP_VAL_STR|((unsigned short)ruri_avp_type),
-				ruri_avp_name, val)!=0 ) {
+		if (add_avp( AVP_VAL_STR|(ruri_avp.type),ruri_avp.name, val)!=0 ) {
 			LM_ERR("faield to insert avp\n");
-				pkg_free(ruri->s);
+			pkg_free(ruri->s);
 			goto error2;
 		}
 		pkg_free(ruri->s);
@@ -760,64 +766,54 @@ error1:
 	return ret;
 }
 
+
 static int fixup_do_routing(void** param, int param_no)
 {
 	char *s;
 	dr_group_t *drg;
-	int_str avp_name;
-	int avp_type;
+	pv_spec_t avp_spec;
 	str r;
-	str *rp;
 
 	s = (char*)*param;
-	
+
 	if (param_no==1)
 	{
 		drg = (dr_group_t*)pkg_malloc(sizeof(dr_group_t));
 		if(drg==NULL)
 		{
 			LM_ERR( "no more memory\n");
-			return E_UNSPEC;
+			return E_OUT_OF_MEM;
 		}
 		memset(drg, 0, sizeof(dr_group_t));
-		if ( *s=='$' || ((*s=='s'||*s=='S'||*s=='i'||*s=='i')&&(*(s+1)==':')))
-		{
-			drg->type = 2;
-			/* avp lookup */
+
+		if ( s==NULL || s[0]==0 ) {
+			LM_CRIT("empty group id definition");
+			return E_CFG;
+		}
+
+		if (s[0]=='$') {
+			/* param is a PV (AVP only supported) */
 			r.s = s;
-			if(*s=='$')
-				r.s++;
-			r.len = strlen(r.s);
-			if(parse_avp_spec(&r, &avp_type, &avp_name)!=0)
-			{
-				LM_ERR( "bad avp spec\n");
-				return E_UNSPEC;
+			r.len = strlen(s);
+			if (pv_parse_spec( &r, &avp_spec)==0
+			|| avp_spec.type!=PVT_AVP) {
+				LM_ERR("malformed or non AVP %s AVP definition\n", s);
+				return E_CFG;
 			}
-			if(avp_type&AVP_NAME_STR)
-			{
-				drg->type = 3;
-				rp = (str*)pkg_malloc(sizeof(str));
-				if(rp==NULL)
-				{
-					LM_ERR( "no more pkg memory.\n");
-					return E_UNSPEC;
-				}
-				rp->s = avp_name.s.s;
-				rp->len = avp_name.s.len;
-				drg->data = (void*)rp;
-			} else {
-				drg->data = (void*)avp_name.n;
+
+			if( pv_get_avp_name(0, &(avp_spec.pvp), &(drg->u.avp_id.name),
+			&(drg->u.avp_id.type) )!=0) {
+				LM_ERR("[%s]- invalid AVP definition\n", s);
+				return E_CFG;
 			}
-		} else {
 			drg->type = 1;
-			while(s && *s)
-			{
-				if(*s<'0' || *s>'9')
-				{
+		} else {
+			while(s && *s) {
+				if(*s<'0' || *s>'9') {
 					LM_ERR( "bad number\n");
 					return E_UNSPEC;
 				}
-				drg->data = (void*)(((int)drg->data)*10+(*s-'0'));
+				drg->u.grp_id = (drg->u.grp_id)*10+(*s-'0');
 				s++;
 			}
 		}

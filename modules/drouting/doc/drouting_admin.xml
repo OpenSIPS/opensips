@@ -270,7 +270,7 @@
 	<entry>groupid</entry>
 	<entry>varchar(255)</entry>
 	<entry></entry>
-	<entry>routing group for this rule</entry>
+	<entry>list of routing group IDs</entry>
 	</row>
 	<row>
 	<entry>prefix</entry>
@@ -640,7 +640,7 @@
 	<tbody>
 	<row>
 	<entry>1</entry>
-	<entry>postpaid</entry>
+	<entry>6</entry>
 	<entry>0049</entry>
 	<entry>20040101T083000|10H|weekly|||MO,TU,WE,TH,FR</entry>
 	<entry>5</entry>
@@ -650,7 +650,7 @@
 	</row>
 	<row>
 	<entry>2</entry>
-	<entry>postpaid</entry>
+	<entry>8</entry>
 	<entry>0049</entry>
 	<entry>20040101T083000</entry>
 	<entry>0</entry>
@@ -660,7 +660,7 @@
 	</row>
 	<row>
 	<entry>3</entry>
-	<entry>prepaid</entry>
+	<entry>7,8,9</entry>
 	<entry>0049</entry>
 	<entry>20040101T083000</entry>
 	<entry>0</entry>
@@ -929,7 +929,8 @@ modparam("drouting", "drg_grpid_col", "grpid")
 <section>
 		<title><varname>ruri_avp</varname> (str)</title>
 		<para>
-		The name of the avp storing Request URI.
+		The name of the avp for storing Request URIs to be later used 
+		(alternative destiantions for the current one).
 		</para>
 		<para>
 		<emphasis>Default value is <quote>NULL</quote>.
@@ -939,9 +940,8 @@ modparam("drouting", "drg_grpid_col", "grpid")
 		<title>Set <varname>ruri_avp</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-# dr_uri is an alias
-modparam("drouting", "ruri_avp", 'dr_ruri')
-modparam("drouting", "ruri_avp", 'i:33')
+modparam("drouting", "ruri_avp", '$avp(dr_ruri)')
+modparam("drouting", "ruri_avp", '$avp(i:33)')
 ...
 	</programlisting>
 		</example>
@@ -1035,7 +1035,8 @@ modparam("drouting", "force_dns", 0)
 		</para>
 		<para>
 		The module can take one optional parameter: the routing group the 
-		caller belongs to. If none specified, the function will automatically
+		caller belongs to - this may be a statis numerical value or an AVP
+		specification. If none specified, the function will automatically
 		try to query the dr_group table to get this information.
 		</para>
 		<example>
@@ -1046,13 +1047,14 @@ do_routing();
 ...
 do_routing("0");
 ...
+do_routing("$avp(i:10)");
 </programlisting>
 		</example>
 	</section>
 
 	<section>
 		<title>
-		<function moreinfo="none">is_from_gw([[group], flags])</function>
+		<function moreinfo="none">is_from_gw([group])</function>
 		</title>
 		<para>
 		The function checks if the sender of the message is a gateway
@@ -1063,7 +1065,7 @@ do_routing("0");
 		ONREPLY_ROUTE
 		</para>
 		<para>
-			The function can take two optional parameters:
+			The function can take one optional parameter:
 			<itemizedlist>
 				<listitem>
 					<emphasis>type</emphasis> - GW/destination type to 
@@ -1079,6 +1081,42 @@ do_routing("0");
 		<title><function>is_from_gw</function> usage</title>
 		<programlisting format="linespecific">
 ...
+if (is_from_gw("1") {
+}
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title>
+		<function moreinfo="none">is_from_gw( type, [flag])</function>
+		</title>
+		<para>
+		The function checks if the sender of the message is a gateway
+		from a certain group.
+		</para>
+		<para>
+		This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
+		</para>
+		<para>
+			The function can take two parameters:
+			<itemizedlist>
+				<listitem>
+					<emphasis>type</emphasis> (mandatory) - GW/destination
+					type to be checked
+				</listitem>
+				<listitem>
+					<emphasis>flags</emphasis> (optional) - if message is a 
+					request and the GW has a STRIP defined, then apply it 
+					if GW is source.
+				</listitem>
+			</itemizedlist>
+		</para>
+		<example>
+		<title><function>is_from_gw</function> usage</title>
+		<programlisting format="linespecific">
+...
 if (is_from_gw("3","1") {
 }
 ...
@@ -1086,6 +1124,8 @@ if (is_from_gw("3","1") {
 		</example>
 	</section>
 </section>
+
+
 
 <section>
 	<title>Exported MI Functions</title>

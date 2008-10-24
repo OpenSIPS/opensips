@@ -34,6 +34,7 @@
 #define routing_h
 
 #include "../../str.h"
+#include "../../usr_avp.h"
 #include "prefix_tree.h"
 #include "dr_time.h"
 
@@ -64,8 +65,15 @@ typedef struct rt_data_ {
 }rt_data_t;
 
 typedef struct _dr_group {
+	/* 0 - use grp ; 1 - use AVP */
 	int type;
-	void *data;
+	union {
+		unsigned int grp_id;
+		struct _avp_id{
+			int_str name;
+			unsigned short type;
+		}avp_id;
+	}u;
 } dr_group_t;
 
 /* init new rt_data structure */

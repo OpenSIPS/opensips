@@ -125,13 +125,14 @@ get_prefix(
 	char *tmp=NULL;
 	char local=0;
 	int idx=0;
+
 	if(NULL == ptree)
 		goto err_exit;
 	if(NULL == prefix)
 		goto err_exit;
 	tmp = prefix->s;
 	/* go the tree down to the last digit in the 
-	 * prefix string  or down to a leaf */
+	 * prefix string or down to a leaf */
 	while(tmp< (prefix->s+prefix->len)) {
 		if(NULL == tmp)
 			goto err_exit;
