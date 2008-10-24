@@ -23,7 +23,7 @@
  *
  * History:
  * --------
- *  2006-08-15  initial version (anca)
+ *  2006-08-15  initial version (Anca Vamanu)
  */
 
 #include <stdio.h>
@@ -100,6 +100,8 @@ static struct mi_root* mi_cleanup(struct mi_root* cmd, void* param);
 static int update_pw_dialogs(subs_t* subs, unsigned int hash_code, subs_t** subs_array);
 int update_watchers_status(str pres_uri, pres_ev_t* ev, str* rules_doc);
 static int mi_child_init(void);
+int refresh_send_winfo_notify(watcher_t* watcher, str pres_uri,
+		struct pres_ev* ev);
 
 int counter =0;
 int pid = 0;
@@ -753,6 +755,7 @@ int update_watchers_status(str pres_uri, pres_ev_t* ev, str* rules_doc)
 	unsigned int hash_code;
 	int err_ret= -1;
 	int n= 0;
+	watcher_t *watchers = NULL;
 
 	typedef struct ws
 	{
@@ -954,6 +957,15 @@ send_notify:
 
 	s= subs_array;
 
+	watchers= (watcher_t*)pkg_malloc(sizeof(watcher_t));
+	if(watchers== NULL)
+	{
+		LM_ERR("no more pkg memory\n");
+		goto done;
+	}
+	memset(watchers, 0, sizeof(watcher_t));
+
+
 	while(s)
 	{
 
@@ -973,10 +985,20 @@ send_notify:
                 goto done;
             }
         }
-
+		if(add_watcher_list(s, watchers)< 0)
+		{
+			LM_ERR("failed to add watcher to list\n");
+			continue;
+		}
         s= s->next;
 	}
 
+	if( refresh_send_winfo_notify(watchers, pres_uri, ev->wipeer) < 0)
+	{
+		LM_ERR("failed to send Notify for winfo\n");
+		goto done;
+	}
+	free_watcher_list(watchers);
 	free_subs_list(subs_array, PKG_MEM_TYPE, 0);
 	return 0;
 
@@ -998,7 +1020,67 @@ done:
 				pkg_free(ws_list[i].reason.s);
 		}
 	}
+	
+	free_watcher_list(watchers);
+	
 	return err_ret;
+}
+
+
+int refresh_send_winfo_notify(watcher_t* watchers, str pres_uri,
+		struct pres_ev* ev)
+{
+	subs_t* subs_array= NULL, *s;
+	str* winfo_nbody= NULL;
+	char version[12];
+
+	/* send Notify for watcher info */
+	if(watchers->next== NULL)
+		return 0;
+
+	subs_array= get_subs_dialog(&pres_uri, ev, NULL);
+	if(subs_array == NULL)
+	{
+		LM_DBG("Could not get subscription dialog\n");
+		return 0;
+	}
+
+	s= subs_array;
+
+	while(s)
+	{
+		/* extract notify body */
+		sprintf(version, "%d", s->version);
+		winfo_nbody =  create_winfo_xml(watchers, version, pres_uri,
+			ev->name, PARTIAL_STATE_FLAG);
+		if(winfo_nbody== NULL)
+		{
+			LM_ERR("failed to create winfo Notify body\n");
+			goto error;
+		}
+
+		if(notify(s, NULL, winfo_nbody, 0)< 0 )
+		{
+			LM_ERR("Could not send notify for [event]=%.*s\n",
+				s->event->name.len, s->event->name.s);
+			goto error;
+		}
+		
+		s = s->next;
+	}
+	xmlFree(winfo_nbody->s);
+	pkg_free(winfo_nbody);
+
+	return 0;
+
+error:
+	if(winfo_nbody)
+	{
+		if(winfo_nbody->s)
+			xmlFree(winfo_nbody->s);
+		pkg_free(winfo_nbody);
+	}
+	return -1;
 }
 
 static int update_pw_dialogs(subs_t* subs, unsigned int hash_code, subs_t** subs_array)
@@ -1046,6 +1128,16 @@ static int update_pw_dialogs(subs_t* subs, unsigned int hash_code, subs_t** subs
             }
 			else
 				ps= s;
+			
+			/* delete from database also */
+			if( delete_db_subs(cs->pres_uri, 
+						cs->event->name, cs->to_tag)< 0)
+			{
+				LM_ERR("deleting subscription record from database\n");
+				lock_release(&subs_htable[hash_code].lock);
+				pkg_free(cs);
+				return -1;
+			}
 
 			printf_subs(cs);
 		}

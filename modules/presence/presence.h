@@ -24,7 +24,7 @@
  *
  * History:
  * ---------
- *  2006-10-09  first version (anca)
+ *  2006-10-09  first version (Anca Vamanu)
  */
 
 #ifndef PA_MOD_H

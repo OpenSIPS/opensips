@@ -23,7 +23,7 @@
  *
  * History:
  * --------
- *  2006-08-15  initial version (anca)
+ *  2006-08-15  initial version (Anca Vamanu)
  */
 
 #include <time.h>
@@ -289,7 +289,6 @@ int handle_publish(struct sip_msg* msg, char* sender_uri, char* str2)
 	pres_ev_t* event= NULL;
 	str pres_user;
 	str pres_domain;
-	struct sip_uri pres_uri;
 	int reply_code;
 	str reply_str;
 	int sent_reply= 0;

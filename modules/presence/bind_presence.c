@@ -23,7 +23,7 @@
  *
  * History:
  * --------
- *  2007-04-17  initial version (anca)
+ *  2007-04-17  initial version (Anca Vamanu)
  */
 
 #include <stdio.h>
