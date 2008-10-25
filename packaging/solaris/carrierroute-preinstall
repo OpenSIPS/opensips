@@ -1,0 +1,25 @@
+#!/sbin/sh
+# Script for checking prerequisites for OpenSIPS-carrierroute
+
+BASE="OpenSIPS-base"
+LIBCONFUSE="libconfuse.a"
+TMPLIST="/tmp/.opensipsconfuse"
+
+pkginfo | grep -i $BASE > /dev/null
+
+if [ $? -eq 1 ]
+then
+	echo "OpenSIPS-carrierroute depends on package OpenSIPS-base which is not installed";
+	exit 1;
+fi
+
+find / -name $LIBCONFUSE > $TMPLIST 2>&1
+lines=`wc -l $TMPLIST`
+
+if [ $lines = "0" ]
+then
+	echo "OpenSIPS-carrierroute depends on libConfuse library, which cannot be found on system";
+	exit 1;
+else
+	exit 0;
+fi

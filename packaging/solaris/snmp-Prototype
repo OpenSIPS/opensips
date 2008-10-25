@@ -1,0 +1,19 @@
+i pkginfo
+i preinstall
+i postinstall
+d none /opt 0755 root sys
+d none /opt/opensips 0755 root root
+d none /opt/opensips/etc 0755 root root
+d none /opt/opensips/etc/opensips 0755 root root
+f none /opt/opensips/etc/opensips/opensips.cfg 0644 root root
+d none /opt/opensips/lib64 0755 root root
+d none /opt/opensips/lib64/opensips 0755 root root
+d none /opt/opensips/lib64/opensips/modules 0755 root root
+f none /opt/opensips/lib64/opensips/modules/snmpstats.so 0755 root root
+f none /opt/opensips/README.snmpstats 0644 root root
+d none /opt/opensips/share 0755 root root
+f none /opt/opensips/share/OPENSER-MIB 0644 root root
+f none /opt/opensips/share/OPENSER-REG-MIB 0644 root root
+f none /opt/opensips/share/OPENSER-SIP-COMMON-MIB 0644 root root
+f none /opt/opensips/share/OPENSER-SIP-SERVER-MIB 0644 root root
+f none /opt/opensips/share/OPENSER-TC 0644 root root
