@@ -687,6 +687,38 @@ int check_transaction_quadruple( struct sip_msg* msg )
 
 
 /*
+ * Make a private copy of the string and assign it to new_uri
+ */
+int set_ruri(struct sip_msg* msg, str* uri)
+{
+	char* ptr;
+
+	if (!msg || !uri) {
+		LM_ERR("invalid parameter value\n");
+		return -1;
+	}
+
+	if (msg->new_uri.s && (msg->new_uri.len >= uri->len)) {
+		memcpy(msg->new_uri.s, uri->s, uri->len);
+		msg->new_uri.len = uri->len;
+	} else {
+		ptr = (char*)pkg_malloc(uri->len);
+		if (!ptr) {
+			LM_ERR("not enough pkg memory (%d)\n",uri->len);
+			return -1;
+		}
+
+		memcpy(ptr, uri->s, uri->len);
+		if (msg->new_uri.s) pkg_free(msg->new_uri.s);
+		msg->new_uri.s = ptr;
+		msg->new_uri.len = uri->len;
+	}
+	return 0;
+}
+
+
+
+/*
  * Make a private copy of the string and assign it to dst_uri
  */
 int set_dst_uri(struct sip_msg* msg, str* uri)
