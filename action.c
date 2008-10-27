@@ -274,6 +274,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 	pv_spec_t *spec;
 	pv_elem_p model;
 	pv_value_t val;
+	str s;
 
 	/* reset the value of error to E_UNSPEC so avoid unknowledgable
 	   functions to return with error (status<0) and not setting it
@@ -514,23 +515,14 @@ int do_action(struct action* a, struct sip_msg* msg)
 					ret=E_BUG;
 					break;
 				}
-				if (a->type==SET_URI_T){
-					if (msg->new_uri.s) {
-						pkg_free(msg->new_uri.s);
-						msg->new_uri.len=0;
-					}
-					msg->parsed_uri_ok=0;
-					len=strlen(a->elem[0].u.string);
-					msg->new_uri.s=pkg_malloc(len+1);
-					if (msg->new_uri.s==0){
-						LM_ERR("memory allocation failure\n");
+				if (a->type==SET_URI_T) {
+					s.s = a->elem[0].u.string;
+					s.len = strlen(s.s);
+					if (set_ruri( msg, &s) ) {
+						LM_ERR("failed to set new RURI\n");
 						ret=E_OUT_OF_MEM;
 						break;
 					}
-					memcpy(msg->new_uri.s, a->elem[0].u.string, len);
-					msg->new_uri.s[len]=0;
-					msg->new_uri.len=len;
-					
 					ret=1;
 					break;
 				}
