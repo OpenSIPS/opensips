@@ -37,6 +37,7 @@
 #include "../../sr_module.h"
 #include "../../str.h"
 #include "../../dprint.h"
+#include "../../dset.h"
 #include "../../usr_avp.h"
 #include "../../db/db.h"
 #include "../../mem/mem.h"
@@ -109,6 +110,7 @@ static int fixup_from_gw(void** param, int param_no);
 static int do_routing(struct sip_msg* msg, dr_group_t *drg);
 static int do_routing_0(struct sip_msg* msg, char* str1, char* str2);
 static int do_routing_1(struct sip_msg* msg, char* str1, char* str2);
+static int next_routing(struct sip_msg* msg);
 static int is_from_gw_0(struct sip_msg* msg, char* str1, char* str2);
 static int is_from_gw_1(struct sip_msg* msg, char* str1, char* str2);
 static int is_from_gw_2(struct sip_msg* msg, char* str1, char* str2);
@@ -125,15 +127,17 @@ MODULE_VERSION
  * Exported functions
  */
 static cmd_export_t cmds[] = {
-	{"do_routing",  (cmd_function)do_routing_0,  0,  0, 0,
+	{"do_routing",  (cmd_function)do_routing_0,   0,  0, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE},
-	{"do_routing",  (cmd_function)do_routing_1,  1,  fixup_do_routing, 0,
+	{"do_routing",  (cmd_function)do_routing_1,   1,  fixup_do_routing, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE},
-	{"is_from_gw",  (cmd_function)is_from_gw_0,  0,  0, 0,
+	{"next_routing",  (cmd_function)next_routing, 0,  0, 0,
+		FAILURE_ROUTE},
+	{"is_from_gw",  (cmd_function)is_from_gw_0,   0,  0, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE},
-	{"is_from_gw",  (cmd_function)is_from_gw_1,  1,  fixup_from_gw, 0,
+	{"is_from_gw",  (cmd_function)is_from_gw_1,   1,  fixup_from_gw, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE},
-	{"is_from_gw",  (cmd_function)is_from_gw_2,  2,  fixup_from_gw, 0,
+	{"is_from_gw",  (cmd_function)is_from_gw_2,   2,  fixup_from_gw, 0,
 		REQUEST_ROUTE},
 	{0, 0, 0, 0, 0, 0}
 };
@@ -540,6 +544,28 @@ static int do_routing_0(struct sip_msg* msg, char* str1, char* str2)
 static int do_routing_1(struct sip_msg* msg, char* str1, char* str2)
 {
 	return do_routing(msg, (dr_group_t*)str1);
+}
+
+static int next_routing(struct sip_msg* msg)
+{
+	struct usr_avp *avp;
+	int_str val;
+
+	/* search for the first AVP containing a string */
+	do {
+		avp = search_first_avp(ruri_avp.type, ruri_avp.name, &val, 0);
+	}while (avp && (avp->flags&AVP_VAL_STR)==0 );
+
+	if (!avp) return -1;
+
+	if (rewrite_uri( msg, &val.s)==-1) {
+		LM_ERR("failed to rewite RURI\n");
+		return -1;
+	}
+
+	LM_DBG("setting new RURI <%.*s>\n", val.s.len,val.s.s);
+	destroy_avp(avp);
+	return 1;
 }
 
 static int do_routing(struct sip_msg* msg, dr_group_t *drg)
