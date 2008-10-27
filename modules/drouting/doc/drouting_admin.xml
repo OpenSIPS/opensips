@@ -1054,6 +1054,45 @@ do_routing("$avp(i:10)");
 
 	<section>
 		<title>
+		<function moreinfo="none">next_routing()</function>
+		</title>
+		<para>
+		The function takes the next available destination (set by do_routing, 
+		as alternative destinations) and push it into RURI. Note that the 
+		function just sets the RURI (nothing more).
+		</para>
+		<para>
+		If a new RURI is set, the used destination is removed from the 
+		pending set of alternative destinations.
+		</para>
+		<para>
+		This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
+		</para>
+		<para>
+		The function returns true only if a new RURI was set. False
+		is returned is no other alternative destinations are found or in case
+		of internal processing error.
+		</para>
+		<example>
+		<title><function>next_routing</function> usage</title>
+		<programlisting format="linespecific">
+...
+if (next_routing()) {
+	append_branch();
+	t_relay();
+	exit;
+}
+...
+</programlisting>
+		</example>
+	</section>
+
+
+
+
+
+	<section>
+		<title>
 		<function moreinfo="none">is_from_gw([group])</function>
 		</title>
 		<para>
