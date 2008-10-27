@@ -23,7 +23,7 @@
  *
  * History:
  * --------
- *  2007-04-17  initial version (anca)
+ *  2007-04-17  initial version (Anca Vamanu)
  */
 
 #ifndef _PRES_BIND_H_

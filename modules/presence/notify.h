@@ -23,7 +23,7 @@
  *
  * History:
  * --------
- *  2006-08-15  initial version (anca)
+ *  2006-08-15  initial version (Anca Vamanu)
  */
 
 #include "../../str.h"
@@ -47,7 +47,6 @@ typedef struct watcher
 	str uri;
 	str id;
 	int status;
-	str event;
 	str display_name;
 	str expiration;
 	str duration_subscribed;
@@ -59,7 +58,6 @@ typedef struct wid_cback
 	str pres_uri;
 	str ev_name;
 	str to_tag;   /* to identify the exact record */
-	subs_t* wi_subs;
 }c_back_param;
 
 extern str str_to_user_col;
@@ -106,5 +104,10 @@ int send_notify_request(subs_t* subs, subs_t * watcher_subs,
 		str* n_body,int force_null_body);
 
 char* get_status_str(int flag);
+void free_watcher_list(watcher_t* w);
+int add_watcher_list(subs_t* s, watcher_t* watchers);
+subs_t* get_subs_dialog(str* pres_uri, pres_ev_t* event, str* sender);
+str* create_winfo_xml(watcher_t* watchers, char* version,
+		str resource, str event, int STATE_FLAG );
 
 #endif

@@ -23,7 +23,7 @@
  *
  * History:
  * --------
- *  2006-08-15  initial version (anca)
+ *  2006-08-15  initial version (Anca Vamanu)
  */
 
 #include <stdio.h>
@@ -410,7 +410,8 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, str* body,
 		if (result->n > 0)
 		{
 
-			if(presentity->event->evp->parsed == EVENT_DIALOG)
+			if(presentity->event->evp->parsed == EVENT_DIALOG
+					&& body && body->s)
 			{
 				/* analize if previous body has a dialog */
 				row = &result->rows[0];

@@ -23,7 +23,7 @@
  *
  * History:
  * --------
- *  2006-08-15  initial version (anca)
+ *  2006-08-15  initial version (Anca Vamanu)
  */
 
 #include "../../ut.h"
@@ -254,10 +254,12 @@ int update_subscription(struct sip_msg* msg, subs_t* subs, int to_tag_gen,
 		int* sent_reply)
 {	
 	unsigned int hash_code;
-	
-	printf_subs(subs);	
+	int reply_code= 200;
 	
 	*sent_reply= 0;
+
+	if(subs->event->type & PUBL_TYPE)
+		reply_code=(subs->status==PENDING_STATUS)?202:200;
 
 	hash_code= core_hash(&subs->pres_uri, &subs->event->name, shtable_size);
 
@@ -274,20 +276,21 @@ int update_subscription(struct sip_msg* msg, subs_t* subs, int to_tag_gen,
 				goto error;
 			}
 			/* delete record from hash table also */
-
+			
 			subs->local_cseq= delete_shtable(subs_htable,hash_code,
 					subs->to_tag);
 		
+			if( send_2XX_reply(msg, reply_code, subs->expires, &subs->to_tag,
+						&subs->local_contact) <0)
+			{
+				LM_ERR("sending %d OK\n", reply_code);
+				goto error;
+			}
+			*sent_reply= 1;
+
 			if(subs->event->type & PUBL_TYPE)
-			{	
-				if( send_2XX_reply(msg, 202, subs->expires, &subs->to_tag,
-							&subs->local_contact) <0)
-				{
-					LM_ERR("sending 202 OK\n");
-					goto error;
-				}
-				*sent_reply= 1;
-				if(subs->event->wipeer)
+			{
+							if(subs->event->wipeer)
 				{
 					if(query_db_notify(&subs->pres_uri,
 								subs->event->wipeer, NULL)< 0)
@@ -296,17 +299,6 @@ int update_subscription(struct sip_msg* msg, subs_t* subs, int to_tag_gen,
 						goto error;
 					}
 				}
-
-			}	
-			else /* if unsubscribe for winfo */
-			{
-				if( send_2XX_reply(msg, 200, subs->expires, &subs->to_tag,
-							&subs->local_contact) <0)
-				{
-					LM_ERR("sending 200 OK reply\n");
-					goto error;
-				}
-				*sent_reply= 1;
 			}
 		
 			if(notify(subs, NULL, NULL, 0)< 0)
@@ -351,16 +343,16 @@ int update_subscription(struct sip_msg* msg, subs_t* subs, int to_tag_gen,
 
 /* reply_and_notify  */
 
+	if(send_2XX_reply(msg, reply_code, subs->expires,&subs->to_tag,
+			&subs->local_contact)<0)
+	{
+		LM_ERR("sending 202 OK reply\n");
+		goto error;
+	}
+	*sent_reply= 1;
+
 	if(subs->event->type & PUBL_TYPE)
 	{	
-		if(send_2XX_reply(msg, 202, subs->expires,&subs->to_tag,
-					&subs->local_contact)<0)
-		{
-			LM_ERR("sending 202 OK reply\n");
-			goto error;
-		}
-		*sent_reply= 1;
-		
 		if(subs->expires!= 0 && subs->event->wipeer)
 		{	
 			LM_DBG("send Notify with winfo\n");
@@ -368,14 +360,13 @@ int update_subscription(struct sip_msg* msg, subs_t* subs, int to_tag_gen,
 			{
 				LM_ERR("Could not send notify winfo\n");
 				goto error;
-			}	
-			if(subs->send_on_cback== 0)
-			{	
-				if(notify(subs, NULL, NULL, 0)< 0)
-				{
-					LM_ERR("Could not send notify\n");
-					goto error;
-				}
+			}
+			
+			/* send Notify for presence */
+			if(notify(subs, NULL, NULL, 0)< 0)
+			{
+				LM_ERR("Could not send notify\n");
+				goto error;
 			}
 		}
 		else
@@ -390,14 +381,6 @@ int update_subscription(struct sip_msg* msg, subs_t* subs, int to_tag_gen,
 	}
 	else 
 	{
-		if( send_2XX_reply(msg, 200, subs->expires, &subs->to_tag,
-					&subs->local_contact)<0)
-		{
-			LM_ERR("sending 200 OK reply\n");
-			goto error;
-		}		
-		*sent_reply= 1;
-		
 		if(notify(subs, NULL, NULL, 0 )< 0)
 		{
 			LM_ERR("sending notify request\n");

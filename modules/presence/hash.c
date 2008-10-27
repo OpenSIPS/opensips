@@ -23,7 +23,7 @@
  *
  * History:
  * --------
- *  2007-08-20  initial version (anca)
+ *  2007-08-20  initial version (Anca Vamanu)
  */
 
 #include <stdio.h>
@@ -165,7 +165,6 @@ subs_t* mem_copy_subs(subs_t* s, int mem_type)
 	dest->remote_cseq= s->remote_cseq;
 	dest->status= s->status;
 	dest->version= s->version;
-	dest->send_on_cback= s->send_on_cback;
 	dest->expires= s->expires;
 	dest->db_flag= s->db_flag;
 
@@ -223,7 +222,6 @@ subs_t* mem_copy_subs_noc(subs_t* s)
 	dest->remote_cseq= s->remote_cseq;
 	dest->status= s->status;
 	dest->version= s->version;
-	dest->send_on_cback= s->send_on_cback;
 	dest->expires= s->expires;
 	dest->db_flag= s->db_flag;
 

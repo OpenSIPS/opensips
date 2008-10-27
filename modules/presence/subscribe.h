@@ -23,7 +23,7 @@
  *
  * History:
  * --------
- *  2006-08-15  initial version (anca)
+ *  2006-08-15  initial version (Anca Vamanu)
  */
 
 #ifndef SUBSCRIBE_H
@@ -41,6 +41,7 @@ struct pres_ev;
 #define ACTIVE_STATUS        1
 #define PENDING_STATUS       2
 #define TERMINATED_STATUS    3
+#define WAITING_STATUS       4
 
 struct subscription
 {
@@ -64,7 +65,6 @@ struct subscription
 	unsigned int status;
 	str reason;
 	int version;
-	int send_on_cback;
 	int db_flag;
 	str* auth_rules_doc;
 	struct subscription* next;
