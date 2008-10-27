@@ -713,6 +713,7 @@ int set_ruri(struct sip_msg* msg, str* uri)
 		msg->new_uri.s = ptr;
 		msg->new_uri.len = uri->len;
 	}
+	msg->parsed_uri_ok = 0;
 	return 0;
 }
 
