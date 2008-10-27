@@ -47,26 +47,6 @@ extern db_func_t adbf;  /* DB functions */
 char useruri_buf[MAX_USERURI_SIZE];
 
 /**
- * Rewrite Request-URI
- */
-static inline int rewrite_ruri(struct sip_msg* _m, char* _s)
-{
-	struct action act;
-
-	act.type = SET_URI_T;
-	act.elem[0].type = STRING_ST;
-	act.elem[0].u.string = _s;
-	act.next = 0;
-	
-	if (do_action(&act, _m) < 0)
-	{
-		LM_ERR("do_action failed\n");
-		return -1;
-	}
-	return 0;
-}
-
-/**
  *
  */
 int alias_db_lookup(struct sip_msg* _msg, char* _table, char* _str2)
@@ -197,7 +177,8 @@ int alias_db_lookup(struct sip_msg* _msg, char* _table, char* _str2)
 		LM_DBG("new URI [%d] is [%s]\n", i, useruri_buf);
 		if(i==0)
 		{
-			if(rewrite_ruri(_msg, useruri_buf)<0)
+			user_s.s = useruri_buf;
+			if(set_ruri(_msg, &user_s)<0)
 			{
 				LM_ERR("cannot replace the R-URI\n");
 				goto err_server;

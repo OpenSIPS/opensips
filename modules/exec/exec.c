@@ -91,7 +91,6 @@ error01:
 
 int exec_str(struct sip_msg *msg, char *cmd, char *param, int param_len) {
 
-	struct action act;
 	int cmd_len;
 	FILE *pipe;	
 	char *cmd_line;
@@ -155,12 +154,8 @@ int exec_str(struct sip_msg *msg, char *cmd, char *param, int param_len) {
 		/* ZT */
 		uri.s[uri.len]=0;
 		if (uri_cnt==0) {
-			memset(&act, 0, sizeof(act));
-			act.type = SET_URI_T;
-			act.elem[0].type = STRING_ST;
-			act.elem[0].u.string = uri.s;
-			if (do_action(&act, msg)<0) {
-				LM_ERR("the action for has failed\n");
+			if (set_ruri(msg, &uri)==-1 ) {
+				LM_ERR("failed to set new RURI\n");
 				ser_error=E_OUT_OF_MEM;
 				goto error02;
 			}

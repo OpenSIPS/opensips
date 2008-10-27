@@ -42,25 +42,6 @@
 #define MAX_USERURI_SIZE	256
 static char useruri_buf[MAX_USERURI_SIZE];
 
-/**
- * Rewrite Request-URI
- */
-static inline int rewrite_ruri(struct sip_msg* _m, char* _s)
-{
-	struct action act;
-
-	act.type = SET_URI_T;
-	act.elem[0].type = STRING_ST;
-	act.elem[0].u.string = _s;
-	act.next = 0;
-	
-	if (do_action(&act, _m) < 0)
-	{
-		LM_ERR("do_action failed\n");
-		return -1;
-	}
-	return 0;
-}
 
 /**
  *
@@ -227,8 +208,8 @@ int sd_lookup(struct sip_msg* _msg, char* _table, char* _owner)
 		LM_DBG("failed to free result of query\n");
 
 	/* set the URI */
-	LM_DBG("URI of sd from R-URI [%s]\n", user_s.s);
-	if(rewrite_ruri(_msg, user_s.s)<0)
+	LM_DBG("URI of sd from R-URI [%.*s]\n", user_s.len,user_s.s);
+	if(set_ruri(_msg, &user_s)<0)
 	{
 		LM_ERR("failed to replace the R-URI\n");
 		goto err_server;

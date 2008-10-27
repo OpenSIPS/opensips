@@ -40,7 +40,6 @@ int cpl_proxy_to_loc_set( struct sip_msg *msg, struct location **locs,
 													unsigned char flag)
 {
 	struct location *foo;
-	struct action act;
 	int bflags;
 
 	if (!*locs) {
@@ -52,27 +51,17 @@ int cpl_proxy_to_loc_set( struct sip_msg *msg, struct location **locs,
 	 * in loc_set to rewrite the RURI */
 	if (!(flag&CPL_PROXY_DONE)) {
 		LM_DBG("rewriting Request-URI with <%s>\n",(*locs)->addr.uri.s);
-		/* build a new action for setting the URI */
-		act.type = SET_URI_T;
-		act.elem[0].type = STRING_ST;
-		act.elem[0].u.string = (*locs)->addr.uri.s;
-		act.next = 0;
-		/* push the action */
-		if (do_action(&act, msg) < 0) {
-			LM_ERR("do_action failed\n");
+		/* set RURI*/
+		if ( set_ruri( msg, &((*locs)->addr.uri))==-1 ) {
+			LM_ERR("failed to set new RURI\n");
 			goto error;
 		}
-		/* build a new action for setting the DSTURI */
+		/* set DST URI */
 		if((*locs)->addr.received.s && (*locs)->addr.received.len) {
 			LM_DBG("rewriting Destination URI "
 				"with <%s>\n",(*locs)->addr.received.s);
-			act.type = SET_DSTURI_T;
-			act.elem[0].type = STRING_ST;
-			act.elem[0].u.s = (*locs)->addr.received;
-			act.next = 0;
-			/* push the action */
-			if (do_action(&act, msg) < 0) {
-				LM_ERR("do_action failed\n");
+			if (set_dst_uri( msg, &((*locs)->addr.received) ) ) {
+				LM_ERR("failed to set destination URI\n");
 				goto error;
 			}
 		}
