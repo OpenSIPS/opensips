@@ -589,7 +589,7 @@ struct mi_root * mi_get_profile(struct mi_root *cmd_tree, void *param )
 		return 0;
 	rpl = &rpl_tree->node;
 
-	node = add_mi_node_child(rpl, MI_DUP_VALUE, "profile", 7, 0, 0);
+	node = add_mi_node_child(rpl, MI_DUP_VALUE, "profile", 7, NULL, 0);
 	if (node==0) {
 		free_mi_tree(rpl_tree);
 		return NULL;
@@ -598,8 +598,7 @@ struct mi_root * mi_get_profile(struct mi_root *cmd_tree, void *param )
 	attr = add_mi_attr(node, MI_DUP_VALUE, "name", 4, 
 		profile->name.s, profile->name.len);
 	if(attr == NULL) {
-		free_mi_tree(rpl_tree);
-		return NULL;
+		goto error;
 	}
 
 	if (value) {
@@ -608,18 +607,19 @@ struct mi_root * mi_get_profile(struct mi_root *cmd_tree, void *param )
 		attr = add_mi_attr(node, MI_DUP_VALUE, "value", 5, NULL, 0);
 	}
 	if(attr == NULL) {
-		free_mi_tree(rpl_tree);
-		return NULL;
+		goto error;
 	}
 
 	p= int2str((unsigned long)size, &len);
 	attr = add_mi_attr(node, MI_DUP_VALUE, "count", 5, p, len);
 	if(attr == NULL) {
-		free_mi_tree(rpl_tree);
-		return NULL;
+		goto error;
 	}
 
 	return rpl_tree;
+error:
+	free_mi_tree(rpl_tree);
+	return NULL;
 }
 
 
