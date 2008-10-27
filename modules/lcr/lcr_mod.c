@@ -2151,7 +2151,7 @@ static int next_contacts(struct sip_msg* msg, char* key, char* value)
 	    return -1;
 	}
 
-	rewrite_uri(msg, &uri);
+	set_ruri(msg, &uri);
 	set_dst_uri(msg, &dst);
 	set_path_vector(msg, &path);
 	msg->force_send_socket = sock;

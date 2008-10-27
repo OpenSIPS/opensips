@@ -488,7 +488,7 @@ static inline int handle_sr(struct sip_msg* _m, struct hdr_field* _hdr, rr_t* _r
 		LM_ERR("failed to check maddr\n");
 		return RR_ERROR;
 	}
-	if (rewrite_uri(_m, &uri) < 0) {
+	if (set_ruri(_m, &uri) < 0) {
 		LM_ERR("failed to rewrite request URI\n");
 		return -2;
 	}
@@ -639,7 +639,7 @@ static inline int after_strict(struct sip_msg* _m)
 			LM_ERR("failed to check maddr\n");
 			return RR_ERROR;
 		}
-		if (rewrite_uri(_m, &uri) < 0) {
+		if (set_ruri(_m, &uri) < 0) {
 			LM_ERR("failed to rewrite request URI\n");
 			return RR_ERROR;
 		}
@@ -698,7 +698,7 @@ static inline int after_strict(struct sip_msg* _m)
 			LM_ERR("checking maddr failed\n");
 			return RR_ERROR;
 		}
-		if (rewrite_uri(_m, &uri) < 0) {
+		if (set_ruri(_m, &uri) < 0) {
 			LM_ERR("failed to rewrite R-URI\n");
 			return RR_ERROR;
 		}

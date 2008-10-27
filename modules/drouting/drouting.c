@@ -37,7 +37,6 @@
 #include "../../sr_module.h"
 #include "../../str.h"
 #include "../../dprint.h"
-#include "../../dset.h"
 #include "../../usr_avp.h"
 #include "../../db/db.h"
 #include "../../mem/mem.h"
@@ -558,7 +557,7 @@ static int next_routing(struct sip_msg* msg)
 
 	if (!avp) return -1;
 
-	if (rewrite_uri( msg, &val.s)==-1) {
+	if (set_ruri( msg, &val.s)==-1) {
 		LM_ERR("failed to rewite RURI\n");
 		return -1;
 	}

@@ -650,7 +650,7 @@ int do_query(struct sip_msg* _msg, char *user, char *name, str *service) {
 	}
 	
 	if (first) {
-	    if (rewrite_uri(_msg, &result) == -1) {
+	    if (set_ruri(_msg, &result) == -1) {
 		goto done;
 	    }
 	    set_ruri_q(q);
@@ -1093,7 +1093,7 @@ int enum_pv_query_3(struct sip_msg* _msg, char* _sp, char* _suffix,
 		}
 
 		if (first) {
-			if (rewrite_uri(_msg, &result) == -1) {
+			if (set_ruri(_msg, &result) == -1) {
 				goto done;
 			}
 			set_ruri_q(q);

@@ -96,7 +96,7 @@ int lookup(struct sip_msg* _m, char* _t, char* _s)
 
 	ret = 1;
 	if (ptr) {
-		if (rewrite_uri(_m, &ptr->c) < 0) {
+		if (set_ruri(_m, &ptr->c) < 0) {
 			LM_ERR("unable to rewrite Request-URI\n");
 			ret = -3;
 			goto done;

@@ -506,7 +506,7 @@ static int ospPrepareDestination(
 
         if (type == OSP_MAIN_ROUTE) {
             if (isfirst == OSP_FIRST_ROUTE) {
-                rewrite_uri(msg, &newuri);
+                set_ruri(msg, &newuri);
             } else {
                 append_branch(msg, &newuri, NULL, NULL, Q_UNSPECIFIED, 0, NULL);
             }
@@ -516,7 +516,7 @@ static int ospPrepareDestination(
             /* For branch route, add route specific OSP information */
 
             /* Update the Request-Line */
-            rewrite_uri(msg, &newuri);
+            set_ruri(msg, &newuri);
 
             /* Add OSP token header */
             ospAddOspHeader(msg, dest->token, dest->tokensize);

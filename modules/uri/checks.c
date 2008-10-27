@@ -217,7 +217,7 @@ int add_uri_param(struct sip_msg* _msg, char* _param, char* _s2)
 		memcpy(new_uri.s, cur_uri->s, cur_uri->len);
 		*(new_uri.s + cur_uri->len) = ';';
 		memcpy(new_uri.s + cur_uri->len + 1, param->s, param->len);
-		if (rewrite_uri(_msg, &new_uri ) == 1) {
+		if (set_ruri(_msg, &new_uri ) == 1) {
 			goto ok;
 		} else {
 			goto nok;
@@ -275,7 +275,7 @@ int add_uri_param(struct sip_msg* _msg, char* _param, char* _s2)
 	at = at + 1;
 	memcpy(at, parsed_uri->headers.s, parsed_uri->headers.len);
 
-	if (rewrite_uri(_msg, &new_uri) == 1) {
+	if (set_ruri(_msg, &new_uri) == 1) {
 		goto ok;
 	}
 
@@ -331,7 +331,7 @@ int tel2sip(struct sip_msg* _msg, char* _s1, char* _s2)
 	at = at + 1;
 	memcpy(at, "user=phone", 10);
 
-	if (rewrite_uri(_msg, &suri) == 1) {
+	if (set_ruri(_msg, &suri) == 1) {
 		pkg_free(suri.s);
 		return 1;
 	} else {
