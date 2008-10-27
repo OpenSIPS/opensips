@@ -259,68 +259,57 @@ static int dp_update(struct sip_msg * msg, pv_spec_t * src, pv_spec_t * dest,
 	no_change = ((!repl->s) || (!repl->len)) && (src->type == dest->type) 
 		&& ((src->type == PVT_RURI) || (src->type == PVT_RURI_USERNAME));
 
-	if (no_change)
-		goto set_attr_pvar;
+	if (!no_change) {
 
-	switch(dest->type){
-		case PVT_RURI:
-			act.type = SET_URI_T;
-			act.elem[0].type = STRING_ST;
-			act.elem[0].u.string = repl->s;
-			act.next = 0;
-			break;
-	
-		case PVT_RURI_USERNAME:
-			act.type = SET_USER_T;
-			act.elem[0].type = STRING_ST;
-			act.elem[0].u.string = repl->s;
-			act.next = 0;
-			break;
-			
-		case PVT_AVP:
-			if(pv_get_avp_name(msg, &(dest->pvp), &avp_name, &name_type)!=0) {
-				LM_CRIT("BUG in getting dst AVP name\n");
+		switch(dest->type){
+			case PVT_RURI:
+				if (set_ruri(msg,repl)==-1) {
+					LM_ERR("failed to set RURI\n");
+					return -1;
+				}
+				break;
+
+			case PVT_RURI_USERNAME:
+				act.type = SET_USER_T;
+				act.elem[0].type = STRING_ST;
+				act.elem[0].u.string = repl->s;
+				act.next = 0;
+				if (do_action(&act, msg) < 0) {
+					LM_ERR("failed to set the output\n");
+					return -1;
+				}
+				break;
+
+			case PVT_AVP:
+				if(pv_get_avp_name(msg,&(dest->pvp),&avp_name,&name_type)!=0) {
+					LM_CRIT("BUG in getting dst AVP name\n");
+					return -1;
+				}
+				avp_val.s = *repl;
+				if (add_avp(AVP_VAL_STR|name_type, avp_name, avp_val)<0){
+					LM_ERR("cannot add dest AVP\n");
+					return -1;
+				}
+				break;
+
+			case PVT_SCRIPTVAR:
+				if(dest->pvp.pvn.u.dname == 0){
+					LM_ERR("cannot find dest svar\n");
+					return -1;
+				}
+				value.s = *repl;
+				var = (script_var_t *)dest->pvp.pvn.u.dname;
+				if(!set_var_value(var, &value,VAR_VAL_STR)) {
+					LM_ERR("cannot set dest svar\n");
+					return -1;
+				}
+				break;
+
+			default:
+				LM_ERR("invalid type\n");
 				return -1;
-			}
-
-			avp_val.s = *repl;
-			if (add_avp(AVP_VAL_STR|name_type, avp_name, avp_val)<0){
-				LM_ERR("cannot add dest AVP\n");
-				return -1;
-			}
-			goto set_attr_pvar;
-
-		case PVT_SCRIPTVAR:
-			if(dest->pvp.pvn.u.dname == 0){
-				LM_ERR("cannot find dest svar\n");
-				return -1;
-			}
-			value.s = *repl;
-			var = (script_var_t *)dest->pvp.pvn.u.dname;
-			if(!set_var_value(var, &value,VAR_VAL_STR)) {
-				LM_ERR("cannot set dest svar\n");
-				return -1;
-			}
-			goto set_attr_pvar;
-
-		default:
-			LM_ERR("invalid type\n");
-			return -1;
-	}
-
-	if (do_action(&act, msg) < 0) {
-		LM_ERR("failed to set the output\n");
-		return -1;
-	}
-
-	if(route_type==FAILURE_ROUTE) {
-		if (append_branch(msg, 0, 0, 0, Q_UNSPECIFIED, 0, 0)!=1 ){
-			LM_ERR("append_branch action failed\n");
-			return -1;
 		}
 	}
-
-set_attr_pvar:
 
 	if(!attr_pvar)
 		return 0;
