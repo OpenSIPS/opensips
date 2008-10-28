@@ -281,7 +281,7 @@ int handle_publish(struct sip_msg* msg, char* sender_uri, char* str2)
 	int lexpire;
 	presentity_t* presentity = 0;
 	struct hdr_field* hdr;
-	int found= 0, etag_gen = 0;
+	int etag_gen = 0;
 	str etag={0, 0};
 	str* sender= NULL;
 	static char buf[256];
@@ -334,18 +334,8 @@ int handle_publish(struct sip_msg* msg, char* sender_uri, char* str2)
 	}
 	
 	/* examine the SIP-If-Match header field */
-	hdr = msg->headers;
-	while (hdr!= NULL)
-	{
-		if(strncmp(hdr->name.s, "SIP-If-Match",12)==0|| 
-				strncmp(hdr->name.s,"Sip-If-Match",12)==0 )
-		{
-			found = 1;
-			break;
-		}
-		hdr = hdr->next;
-	}
-	if(found==0 )
+	hdr = get_header_by_static_name( msg, "SIP-If-Match");
+	if( hdr==NULL )
 	{
 		LM_DBG("SIP-If-Match header not found\n");
 		etag.s = generate_ETag(0);

@@ -319,19 +319,13 @@ int verify_source(struct sip_msg* _msg, char* s1, char* s2)
 	goto err;
     }
 
-    /* Add P-Request-Hash header body */
-    parse_headers(_msg, HDR_EOH_F, 0);
-    for (hf = _msg->headers; hf; hf = hf->next) {
-	if (hf->name.len != sizeof("P-Request-Hash") - 1)
-	    continue;
-	if (strncmp(hf->name.s, "P-Request-Hash",
-		    sizeof("P-Request-Hash") - 1) == 0)
-	    break;
-    }
-    if (!hf) {
-	LM_ERR("no P-Request-Hash header field\n");
-	goto err;
-    }
+	/* Add P-Request-Hash header body */
+	parse_headers(_msg, HDR_EOH_F, 0);
+	hf = get_header_by_static_name( _msg, "P-Request-Hash");
+	if (!hf) {
+		LM_ERR("no P-Request-Hash header field\n");
+		goto err;
+	}
     if ((hf->body.s == NULL) || (hf->body.len <= 0)) {
 	LM_ERR("error while accessing P-Request-Hash body\n");
 	goto err;

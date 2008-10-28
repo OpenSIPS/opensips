@@ -44,7 +44,6 @@ int bla_handle_notify(struct sip_msg* msg, char* s1, char* s2)
 	unsigned int expires= 0;
 	struct hdr_field* hdr;
 	str subs_state;
-	int found= 0;
 	str extra_headers= {0, 0};
 	static char buf[255];
 	xmlDoc* doc= NULL;
@@ -133,17 +132,8 @@ int bla_handle_notify(struct sip_msg* msg, char* s1, char* s2)
 	}
 
 	/* parse Subscription-State and extract expires if existing */
-	hdr = msg->headers;
-	while (hdr!= NULL)
-	{
-		if(strncmp(hdr->name.s, "Subscription-State",18)==0 )
-		{
-			found = 1;
-			break;
-		}
-		hdr = hdr->next;
-	}
-	if(found==0 )
+	hdr = get_header_by_static_name( msg, "Subscription-State");
+	if( hdr==NULL )
 	{
 		LM_ERR("No Subscription-State header found\n");
 		goto error;
