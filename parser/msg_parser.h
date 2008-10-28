@@ -354,6 +354,26 @@ inline static char* get_body(struct sip_msg *msg)
 }
 
 
+/* 
+ * Search through already parsed headers (no parsing done) a non-standard
+ * header - all known headers are skipped! 
+ */
+#define get_header_by_static_name(_msg, _name) \
+		get_header_by_name(_msg, _name, sizeof(name)-1)
+inline static struct hdr_field *get_header_by_name( struct sip_msg *msg,
+													char *s, unsigned int len)
+{
+	struct hdr_field *hdr;
+
+	for( hdr=msg->headers ; hdr ; hdr=hdr->next ) {
+		if (hdr->type==HDR_OTHER_T && len==hdr->name.len
+		&& strncasecmp(hdr->name.s,s,len)==0)
+			return hdr;
+	}
+	return NULL;
+}
+
+
 /*
  * Make a private copy of the string and assign it to new_uri (new RURI)
  */
