@@ -202,6 +202,13 @@ static int mod_init(void)
 	}
 
 	db_funcs.close(db_conn);
+
+	/* done with chekings - init the working connection */
+	if (uridb_db_bind(&db_url)!=0) {
+		LM_ERR("Failed to bind to a DB module\n");
+		goto error;
+	}
+
 	return 0;
 error:
 	return -1;
