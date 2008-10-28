@@ -127,7 +127,7 @@ static void sst_dialog_response_fwded_CB(struct dlg_cell* did, int type,
 static int send_response(struct sip_msg *request, int code, str *reason,
 		char *header, int header_len);
 static int append_header(struct sip_msg *msg, const char *header);
-static int remove_header(struct sip_msg *msg, const char *header);
+static int remove_minse_header(struct sip_msg *msg);
 static int set_timeout_avp(struct sip_msg *msg, unsigned int value);
 static int parse_msg_for_sst_info(struct sip_msg *msg, sst_msg_info_t *minfo);
 static int send_reject(struct sip_msg *msg, unsigned int min_se);
@@ -286,7 +286,7 @@ void sst_dialog_created_CB(struct dlg_cell *did, int type,
 				if (minfo.min_se) {
 					/* We need to update, which means, remove +
 					 * insert */
-					remove_header(msg, "Min-SE");
+					remove_minse_header(msg);
 				}
 				info->interval = MAX(sst_min_se, minfo.min_se);
 				snprintf(buf, 80, "Min-SE: %d\r\n", info->interval);
@@ -315,7 +315,7 @@ void sst_dialog_created_CB(struct dlg_cell *did, int type,
 		info->interval = MAX(minfo.min_se, sst_min_se);
 
 		if (minfo.min_se && minfo.min_se < sst_min_se) {
-			remove_header(msg, "Min-SE");
+			remove_minse_header(msg);
 			snprintf(buf, 80, "Min-SE: %d\r\n", info->interval);
 			if (append_header(msg, buf)) {
 				LM_ERR("failed to append modified Min-SE: header\n");
@@ -761,26 +761,19 @@ static int append_header(struct sip_msg *msg, const char *header)
  * @return 0 if the header was not found, >0 is successful, -1 on an
  *         error.
  */
-static int remove_header(struct sip_msg *msg, const char *header)
+static int remove_minse_header(struct sip_msg *msg)
 {
 	struct lump* anchor = NULL;
 	struct hdr_field *hf = NULL;
 	int cnt = 0;
-	int len = strlen(header);
 
+	/* parse all headers as we want to get all MIN-SE headers*/
 	if (parse_headers(msg, HDR_EOH_F, 0) == -1) {
 		LM_ERR("failed to parse headers in message.\n");
 		return(-1);
 	}
-	
-	for (hf = msg->headers; hf; hf = hf->next) {
-		if (hf->name.len != len) {
-			continue;
-		}
-		if (strncasecmp(hf->name.s, header, hf->name.len) != 0) {
-			continue;
-		}
 
+	for (hf = msg->min_se; hf; hf = hf->sibling) {
 		anchor = del_lump(msg, hf->name.s-msg->buf, hf->len, 0);
 		if (anchor == 0) {
 			LM_ERR("no more pkg memory\n");
