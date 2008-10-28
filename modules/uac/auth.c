@@ -229,14 +229,9 @@ static inline struct hdr_field *get_autenticate_hdr(struct sip_msg *rpl,
 		LM_ERR("failed to parse reply\n");
 		goto error;
 	}
-	for( hdr=rpl->headers ; hdr ; hdr=hdr->next )
-	{
-		if ( hdr->type!=HDR_OTHER_T )
-			continue;
-		if (hdr->name.len==hdr_name.len &&
-		strncasecmp(hdr->name.s,hdr_name.s, hdr_name.len)==0 )
-			return hdr;
-	}
+	hdr = get_header_by_name( rpl , hdr_name.s, hdr_name.len);
+	if (hdr)
+		return hdr;
 
 	LM_ERR("reply has no "
 		"auth hdr (%.*s)\n", hdr_name.len, hdr_name.s);

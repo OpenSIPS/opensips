@@ -130,13 +130,7 @@ static struct socket_info *get_sock_hdr(struct sip_msg *msg)
 		return 0;
 	}
 
-	for (hf=msg->headers; hf; hf=hf->next) {
-		if (hf->name.len==sock_hdr_name.len &&
-		strncasecmp(hf->name.s, sock_hdr_name.s, sock_hdr_name.len)==0 )
-			break;
-	}
-
-	/* hdr found? */
+	hf = get_header_by_name( msg, sock_hdr_name.s, sock_hdr_name.len);
 	if (hf==0)
 		return 0;
 

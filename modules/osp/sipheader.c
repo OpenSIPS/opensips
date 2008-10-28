@@ -340,24 +340,23 @@ int ospGetOspHeader(
     int errorcode;
     int result = -1;
 
-    parse_headers(msg, HDR_EOH_F, 0);
+	if (parse_headers(msg, HDR_EOH_F, 0)!=0) {
+		LM_ERR("failed to parse all headers");
+	} else {
+		hf = get_header_by_name( msg,  OSP_TOKEN_HEADER, OSP_HEADER_SIZE-2 );
+		if (hf) {
+			if ((errorcode = OSPPBase64Decode(hf->body.s, hf->body.len,
+			token, tokensize)) == OSPC_ERR_NO_ERROR) {
+				result = 0;
+			} else {
+				LM_ERR("failed to base64 decode token (%d)\n", errorcode);
+				LM_ERR("header '%.*s' length %d\n", 
+					hf->body.len, hf->body.s, hf->body.len);
+			}
+		}
+	}
 
-    for (hf = msg->headers; hf; hf = hf->next) {
-        if ((hf->type == HDR_OTHER_T) && (hf->name.len == OSP_HEADER_SIZE - 2)) {
-            // possible hit
-            if (strncasecmp(hf->name.s, OSP_TOKEN_HEADER, OSP_HEADER_SIZE) == 0) {
-                if ((errorcode = OSPPBase64Decode(hf->body.s, hf->body.len, token, tokensize)) == OSPC_ERR_NO_ERROR) {
-                    result = 0;
-                } else {
-                    LM_ERR("failed to base64 decode token (%d)\n", errorcode);
-                    LM_ERR("header '%.*s' length %d\n", hf->body.len, hf->body.s, hf->body.len);
-                }
-                break;
-            }        
-        } 
-    }
-
-    return result;
+	return result;
 }
 
 /* 
