@@ -59,7 +59,8 @@ static int mod_init(void);       /* Module initialization function */
 
 
 #define URI_TABLE "uri"
-#define URI_TABLE_LEN (sizeof(URI_TABLE) - 1)
+
+#define SUBSCRIBER_TABLE "subscriber"
 
 #define USER_COL "username"
 #define USER_COL_LEN (sizeof(USER_COL) - 1)
@@ -70,15 +71,13 @@ static int mod_init(void);       /* Module initialization function */
 #define URI_USER_COL "uri_user"
 #define URI_USER_COL_LEN (sizeof(URI_USER_COL) - 1)
 
-#define SUBSCRIBER_TABLE "subscriber"
-#define SUBSCRIBER_TABLE_LEN (sizeof(SUBSCRIBER_TABLE) - 1)
 
 
 /*
  * Module parameter variables
  */
 static str db_url         = {DEFAULT_RODB_URL, DEFAULT_RODB_URL_LEN};
-str db_table              = {SUBSCRIBER_TABLE, SUBSCRIBER_TABLE_LEN};
+str db_table              = {0,0};
 str uridb_user_col        = {USER_COL, USER_COL_LEN};
 str uridb_domain_col      = {DOMAIN_COL, DOMAIN_COL_LEN};
 str uridb_uriuser_col     = {URI_USER_COL, URI_USER_COL_LEN};
@@ -153,7 +152,9 @@ static int child_init(int rank)
  */
 static int mod_init(void)
 {
-	int ver;
+	int checkver;
+	db_func_t db_funcs;
+	db_con_t *db_conn = NULL;
 
 	LM_DBG("uri_db - initializing\n");
 
@@ -167,38 +168,40 @@ static int mod_init(void)
 		return 0;
 	}
 
+	if (!db_table.s) {
+		/* no table set -> use defaults */
+		if (use_uri_table)
+			db_table.s = URI_TABLE;
+		else
+			db_table.s = SUBSCRIBER_TABLE;
+	}
+
 	db_table.len = strlen(db_table.s);
 	uridb_user_col.len = strlen(uridb_user_col.s);
 	uridb_domain_col.len = strlen(uridb_domain_col.s);
 	uridb_uriuser_col.len = strlen(uridb_uriuser_col.s);
 
-	if (uridb_db_bind(&db_url)) {
+	if ( db_bind_mod(&db_url, &db_funcs) != 0 ) {
 		LM_ERR("No database module found\n");
 		goto error;
 	}
 
-	if (use_uri_table) {
-		/* Check table version */
-		ver = uridb_db_ver(&db_url, &db_table);
-		if (ver < 0) {
-			LM_ERR("Error while querying table version\n");
-			goto error;
-		} else if (ver < URI_TABLE_VERSION) {
-			LM_ERR("Invalid table version of the uri table\n");
-			goto error;
-		}
-	} else {
-		/* Check table version */
-		ver = uridb_db_ver(&db_url, &db_table);
-		if (ver < 0) {
-			LM_ERR("Error while querying table version\n");
-			goto error;
-		} else if (ver < SUBSCRIBER_TABLE_VERSION) {
-			LM_ERR("Invalid table version of the subscriber table\n");
-			goto error;
-		}
+	db_conn = db_funcs.init(&db_url);
+	if( db_conn == NULL ) {
+		LM_ERR("Could not connect to database\n");
+		goto error;
 	}
 
+	checkver = db_check_table_version( &db_funcs, db_conn, &db_table,
+		use_uri_table?URI_TABLE_VERSION:SUBSCRIBER_TABLE_VERSION );
+
+	if( checkver == -1 ) {
+		LM_ERR("Invalid table version.\n");
+		db_funcs.close(db_conn);
+		goto error;
+	}
+
+	db_funcs.close(db_conn);
 	return 0;
 error:
 	return -1;
