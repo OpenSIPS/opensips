@@ -41,6 +41,8 @@
 #ifndef MSG_PARSER_H
 #define MSG_PARSER_H
 
+#include <strings.h>
+
 #include "../str.h"
 #include "../lump_struct.h"
 #include "../flags.h"
