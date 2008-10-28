@@ -1516,18 +1516,21 @@ static int pv_get_hdr(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res)
 		return pv_get_null(msg, param, res);
 	}
 
-	for (hf=msg->headers; hf; hf=hf->next)
-	{
-		if(tv.flags == 0)
-		{
-			if (tv.ri==hf->type)
+	if (tv.flags==0) {
+		/* it is a known header -> use type to find it */
+		for (hf=msg->headers; hf; hf=hf->next) {
+			if (tv.ri==hf->type) 
 				break;
-		} else {
-			if (hf->name.len==tv.rs.len 
-					&& strncasecmp(hf->name.s, tv.rs.s, hf->name.len)==0)
+		}
+	} else {
+		/* it is an un-known header -> use name to find it */
+		for (hf=msg->headers; hf; hf=hf->next) {
+			if (hf->type==HDR_OTHER_T && hf->name.len==tv.rs.len
+			&& strncasecmp(hf->name.s, tv.rs.s, hf->name.len)==0)
 				break;
 		}
 	}
+
 	if(hf==NULL)
 		return pv_get_null(msg, param, res);
 	/* get the index */
@@ -1567,16 +1570,18 @@ static int pv_get_hdr(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res)
 			memcpy(p, hf->body.s, hf->body.len);
 			p += hf->body.len;
 			/* next hf */
-			for (; hf; hf=hf->next)
-			{
-				if(tv.flags == 0)
-				{
+			if (tv.flags==0) {
+				/* it is a known header -> use type to find it */
+				for ( ; hf; hf=hf->next) {
 					if (tv.ri==hf->type)
 						break;
-				} else {
-					if (hf->name.len==tv.rs.len 
-						&& strncasecmp(hf->name.s, tv.rs.s, hf->name.len)==0)
-					break;
+				}
+			} else {
+				/* it is an un-known header -> use name to find it */
+				for ( ; hf; hf=hf->next) {
+					if (hf->type==HDR_OTHER_T && hf->name.len==tv.rs.len
+					&& strncasecmp(hf->name.s, tv.rs.s, hf->name.len)==0)
+						break;
 				}
 			}
 		} while (hf);
@@ -1592,18 +1597,21 @@ static int pv_get_hdr(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res)
 	{
 		n = 1;
 		/* count headers */
-		for (hf0=hf->next; hf0; hf0=hf0->next)
-		{
-			if(tv.flags == 0)
-			{
-				if (tv.ri==hf0->type)
+		if (tv.flags==0 ) {
+			/* it is a known header -> use type to find it */
+			for (hf0=hf->next; hf0; hf0=hf0->next) {
+				if (tv.ri==hf0->type) 
 					n++;
-			} else {
-				if (hf0->name.len==tv.rs.len 
-					&& strncasecmp(hf0->name.s, tv.rs.s, hf0->name.len)==0)
-				n++;
+			}
+		} else {
+			/* it is an un-known header -> use name to find it */
+			for (hf0=hf->next; hf0; hf=hf0->next) {
+				if (hf0->type==HDR_OTHER_T && hf0->name.len==tv.rs.len
+				&& strncasecmp(hf0->name.s, tv.rs.s, hf0->name.len)==0)
+					n++;
 			}
 		}
+
 		idx = -idx;
 		if(idx>n)
 		{
@@ -1620,19 +1628,23 @@ static int pv_get_hdr(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res)
 	n=0;
 	while(n<idx)
 	{
-		for (hf0=hf->next; hf0; hf0=hf0->next)
-		{
-			if(tv.flags == 0)
-			{
-				if (tv.ri==hf0->type)
+		if (tv.flags==0) {
+			/* it is a known header -> use type to find it */
+			for (hf0=hf->next; hf0; hf0=hf0->next) {
+				if (tv.ri==hf0->type) {
 					n++;
-			} else {
-				if (hf0->name.len==tv.rs.len 
-					&& strncasecmp(hf0->name.s, tv.rs.s, hf0->name.len)==0)
-				n++;
+					if(n==idx) break;
+				}
 			}
-			if(n==idx)
-				break;
+		} else {
+			/* it is an un-known header -> use name to find it */
+			for (hf0=hf->next; hf0; hf=hf0->next) {
+				if (hf0->type==HDR_OTHER_T && hf0->name.len==tv.rs.len
+				&& strncasecmp(hf0->name.s, tv.rs.s, hf0->name.len)==0) {
+					n++;
+					if(n==idx) break;
+				}
+			}
 		}
 		if(hf0==NULL)
 			break;
