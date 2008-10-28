@@ -894,6 +894,8 @@ static int remove_hf_f(struct sip_msg* msg, char* str_hf, char* foo)
 			if (gp->v.ival!=hf->type)
 				continue;
 		} else {
+			if (hf->type!=HDR_OTHER_T)
+				continue;
 			if (hf->name.len!=gp->v.sval.len)
 				continue;
 			if (strncasecmp(hf->name.s, gp->v.sval.s, hf->name.len)!=0)
@@ -924,6 +926,8 @@ static int is_present_hf_f(struct sip_msg* msg, char* str_hf, char* foo)
 			if (gp->v.ival!=hf->type)
 				continue;
 		} else {
+			if (hf->type!=HDR_OTHER_T)
+				continue;
 			if (hf->name.len!=gp->v.sval.len)
 				continue;
 			if (strncasecmp(hf->name.s,gp->v.sval.s,hf->name.len)!=0)
@@ -1045,6 +1049,8 @@ static int add_hf_helper(struct sip_msg* msg, str *str1, str *str2,
 				if (hfanc->v.ival!=hf->type)
 					continue;
 			} else {
+				if (hf->type!=HDR_OTHER_T)
+					continue;
 				if (hf->name.len!=hfanc->v.sval.len)
 					continue;
 				if (strncasecmp(hf->name.s,hfanc->v.sval.s,hf->name.len)!=0)
