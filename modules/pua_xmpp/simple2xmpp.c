@@ -212,15 +212,9 @@ int Notify2Xmpp(struct sip_msg* msg, char* s1, char* s2)
 
 	/* treat the two cases: event= presence & event=presence.winfo */	
 	if(event_flag & PRESENCE_EVENT)
-	{	
+	{
 		LM_DBG("PRESENCE\n");
-		hdr = msg->headers;
-		while (hdr!= NULL)
-		{
-			if(strncmp(hdr->name.s, "Subscription-State",18)==0 )
-				break;
-			hdr = hdr->next;
-		}
+		hdr = get_header_by_static_name( msg, "Subscription-State" );
 		if(hdr && strncmp(hdr->body.s,"terminated", 10)== 0)
 		{
 			/* chack if reason timeout => don't send notification */
@@ -240,19 +234,13 @@ int Notify2Xmpp(struct sip_msg* msg, char* s1, char* s2)
 			goto error;
 		}
 		xmlFreeDoc(doc);
-	}	
+	}
 	else
-	{	
+	{
 		if(event_flag & PWINFO_EVENT)
 		{
 			LM_DBG("PRESENCE.WINFO\n");
-			hdr = msg->headers;
-			while (hdr!= NULL)
-			{
-				if(strncmp(hdr->name.s, "Subscription-State",18)==0 )
-					break;
-				hdr = hdr->next;
-			}
+			hdr = get_header_by_static_name( msg, "Subscription-State" );
 			if(hdr && strncmp(hdr->body.s,"terminated", 10)== 0)
 			{
 				LM_DBG("Notify for presence.winfo with" 

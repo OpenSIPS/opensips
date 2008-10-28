@@ -148,7 +148,6 @@ int rls_handle_notify(struct sip_msg* msg, char* c1, char* c2)
 	db_res_t* result= NULL;
 	int n_query_cols= 0;
 	str auth_state= {0, 0};
-	int found= 0;
 	str* reason= NULL;
 	int auth_flag;
 	struct hdr_field* hdr= NULL;
@@ -248,21 +247,12 @@ int rls_handle_notify(struct sip_msg* msg, char* c1, char* c2)
 	}
 
 	/* extract the subscription state */
-	hdr = msg->headers;
-	while (hdr!= NULL)
-	{
-		if(strncmp(hdr->name.s, "Subscription-State", 18)==0)  
-		{
-			found = 1;
-			break;
-		}
-		hdr = hdr->next;
-	}
-	if(found==0 )
+	hdr = get_header_by_static_name( msg, "Subscription-State");
+	if( hdr==NULL )
 	{
 		LM_ERR("'Subscription-State' header not found\n");
 		goto error;
-	}	
+	}
 	auth_state = hdr->body;
 
 	/* extract state and reason */

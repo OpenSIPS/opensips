@@ -485,13 +485,7 @@ int rls_handle_subscribe(struct sip_msg* msg, char* s1, char* s2)
 		goto found_support;
 	}
 */
-	hdr= msg->headers;
-	while(hdr)
-	{
-		if(strncmp(hdr->name.s, "Support", 7)== 0)
-			break;
-		hdr= hdr->next;
-	}
+	hdr = get_header_by_static_name( msg, "Support");
 	while(hdr!= NULL )
 	{
 		len= hdr->body.len- 8;

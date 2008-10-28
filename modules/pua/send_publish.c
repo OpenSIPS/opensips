@@ -150,7 +150,6 @@ void publ_cback_func(struct cell *t, int type, struct tmcb_params *ps)
 	struct sip_msg* msg= NULL;
 	ua_pres_t* presentity= NULL;
 	ua_pres_t* hentity= NULL;
-	int found = 0;
 	int size= 0;
 	unsigned int lexpire= 0;
 	str etag;
@@ -247,19 +246,10 @@ void publ_cback_func(struct cell *t, int type, struct tmcb_params *ps)
 	}
 	lexpire = ((exp_body_t*)msg->expires->parsed)->val;
 	LM_DBG("lexpire= %u\n", lexpire);
-		
-	hdr = msg->headers;
-	while (hdr!= NULL)
+
+	hdr = get_header_by_static_name( msg, "SIP-ETag");
+	if( hdr==NULL ) /* must find SIP-Etag header field in 200 OK msg*/
 	{
-		if(strncmp(hdr->name.s, "SIP-ETag",8)==0 )
-		{
-			found = 1;
-			break;
-		}
-		hdr = hdr->next;
-	}
-	if(found== 0) /* must find SIP-Etag header field in 200 OK msg*/
-	{	
 		LM_ERR("no SIP-ETag header field found\n");
 		goto error;
 	}

@@ -261,7 +261,6 @@ int mi_publ_rpl_cback( ua_pres_t* hentity, struct sip_msg* reply)
 	struct hdr_field* hdr= NULL;
 	int statuscode;
 	int lexpire;
-	int found;
 	str etag;
 	str reason= {0, 0};
 
@@ -298,18 +297,8 @@ int mi_publ_rpl_cback( ua_pres_t* hentity, struct sip_msg* reply)
 		lexpire = ((exp_body_t*)reply->expires->parsed)->val;
 		LM_DBG("lexpire= %d\n", lexpire);
 		
-		hdr = reply->headers;
-		found = 0;
-		while (hdr!= NULL)
-		{
-			if(strncmp(hdr->name.s, "SIP-ETag",8)==0 )
-			{
-				found = 1;
-				break;
-			}
-			hdr = hdr->next;
-		}
-		if(found== 0) /* must find SIP-Etag header field in 200 OK msg*/
+		hdr = get_header_by_static_name( reply, "SIP-ETag");
+		if( hdr==NULL ) /* must find SIP-Etag header field in 200 OK msg*/
 		{
 			LM_ERR("SIP-ETag header field not found\n");
 			goto error;
