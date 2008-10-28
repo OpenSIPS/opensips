@@ -384,7 +384,7 @@ int db_check_table_version(db_func_t* dbf, db_con_t* dbh, const str* table, cons
 		LM_ERR("querying version for table %.*s\n", table->len, table->s);
 		return -1;
 	} else if (ver != version) {
-		LM_ERR("invalid version %d for table %.*s found, espected %d\n", ver, table->len, table->s, version);
+		LM_ERR("invalid version %d for table %.*s found, expected %d\n", ver, table->len, table->s, version);
 		return -1;
 	}
 	return 0;
