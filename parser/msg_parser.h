@@ -359,7 +359,7 @@ inline static char* get_body(struct sip_msg *msg)
  * header - all known headers are skipped! 
  */
 #define get_header_by_static_name(_msg, _name) \
-		get_header_by_name(_msg, _name, sizeof(name)-1)
+		get_header_by_name(_msg, _name, sizeof(_name)-1)
 inline static struct hdr_field *get_header_by_name( struct sip_msg *msg,
 													char *s, unsigned int len)
 {
