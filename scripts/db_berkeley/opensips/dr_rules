@@ -1,5 +1,5 @@
 METADATA_COLUMNS
-ruleid(int) groupid(str) prefix(str) timerec(str) priority(int) routeid(int) timerec(str) description(str)
+ruleid(int) groupid(str) prefix(str) timerec(str) priority(int) routeid(int) gwlist(str) description(str)
 METADATA_KEY
 
 METADATA_READONLY
