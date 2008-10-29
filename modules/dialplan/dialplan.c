@@ -272,7 +272,7 @@ static int dp_update(struct sip_msg * msg, pv_spec_t * src, pv_spec_t * dest,
 			case PVT_RURI_USERNAME:
 				act.type = SET_USER_T;
 				act.elem[0].type = STRING_ST;
-				act.elem[0].u.string = repl->s;
+				act.elem[0].u.s = *repl;
 				act.next = 0;
 				if (do_action(&act, msg) < 0) {
 					LM_ERR("failed to set the output\n");

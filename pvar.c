@@ -1850,7 +1850,6 @@ int pv_set_ruri_user(struct sip_msg* msg, pv_param_t *param,
 		int op, pv_value_t *val)
 {
 	struct action  act;
-	char backup;
 
 	if(msg==NULL || param==NULL)
 	{
@@ -1879,18 +1878,14 @@ int pv_set_ruri_user(struct sip_msg* msg, pv_param_t *param,
 	}
 	
 	memset(&act, 0, sizeof(act));
-	act.elem[0].type = STRING_ST;
-	act.elem[0].u.string = val->rs.s;
-	backup = val->rs.s[val->rs.len];
-	val->rs.s[val->rs.len] = '\0';
+	act.elem[0].type = STR_ST;
+	act.elem[0].u.s = val->rs;
 	act.type = SET_USER_T;
 	if (do_action(&act, msg)<0)
 	{
 		LM_ERR("do action failed\n");
-		val->rs.s[val->rs.len] = backup;
 		goto error;
 	}
-	val->rs.s[val->rs.len] = backup;
 
 	return 0;
 error:
@@ -1901,7 +1896,6 @@ int pv_set_ruri_host(struct sip_msg* msg, pv_param_t *param,
 		int op, pv_value_t *val)
 {
 	struct action  act;
-	char backup;
 
 	if(msg==NULL || param==NULL || val==NULL)
 	{
@@ -1916,18 +1910,14 @@ int pv_set_ruri_host(struct sip_msg* msg, pv_param_t *param,
 	}
 	
 	memset(&act, 0, sizeof(act));
-	act.elem[0].type = STRING_ST;
-	act.elem[0].u.string = val->rs.s;
-	backup = val->rs.s[val->rs.len];
-	val->rs.s[val->rs.len] = '\0';
+	act.elem[0].type = STR_ST;
+	act.elem[0].u.s = val->rs;
 	act.type = SET_HOST_T;
 	if (do_action(&act, msg)<0)
 	{
 		LM_ERR("do action failed\n");
-		val->rs.s[val->rs.len] = backup;
 		goto error;
 	}
-	val->rs.s[val->rs.len] = backup;
 
 	return 0;
 error:
@@ -1938,7 +1928,6 @@ int pv_set_ruri_port(struct sip_msg* msg, pv_param_t *param,
 		int op, pv_value_t *val)
 {
 	struct action  act;
-	char backup;
 
 	if(msg==NULL || param==NULL)
 	{
@@ -1950,8 +1939,9 @@ int pv_set_ruri_port(struct sip_msg* msg, pv_param_t *param,
 	{
 		memset(&act, 0, sizeof(act));
 		act.type = SET_PORT_T;
-		act.elem[0].type = STRING_ST;
-		act.elem[0].u.string = "";
+		act.elem[0].type = STR_ST;
+		act.elem[0].u.s.s = "";
+		act.elem[0].u.s.len = 0;
 		if (do_action(&act, msg)<0)
 		{
 			LM_ERR("do action failed)\n");
@@ -1967,18 +1957,14 @@ int pv_set_ruri_port(struct sip_msg* msg, pv_param_t *param,
 	}
 	
 	memset(&act, 0, sizeof(act));
-	act.elem[0].type = STRING_ST;
-	act.elem[0].u.string = val->rs.s;
-	backup = val->rs.s[val->rs.len];
-	val->rs.s[val->rs.len] = '\0';
+	act.elem[0].type = STR_ST;
+	act.elem[0].u.s = val->rs;
 	act.type = SET_PORT_T;
 	if (do_action(&act, msg)<0)
 	{
 		LM_ERR("do action failed\n");
-		val->rs.s[val->rs.len] = backup;
 		goto error;
 	}
-	val->rs.s[val->rs.len] = backup;
 
 	return 0;
 error:

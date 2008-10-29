@@ -2060,13 +2060,13 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 		| ROUTE error { $$=0; yyerror("missing '(' or ')' ?"); }
 		| ROUTE LPAREN error RPAREN { $$=0; yyerror("bad route"
 						"argument"); }
-		| SET_HOST LPAREN STRING RPAREN { mk_action2( $$, SET_HOST_T, STRING_ST,
+		| SET_HOST LPAREN STRING RPAREN { mk_action2( $$, SET_HOST_T, STR_ST,
 														0, $3, 0); }
 		| SET_HOST error { $$=0; yyerror("missing '(' or ')' ?"); }
 		| SET_HOST LPAREN error RPAREN { $$=0; yyerror("bad argument, "
 														"string expected"); }
 
-		| PREFIX LPAREN STRING RPAREN { mk_action2( $$, PREFIX_T, STRING_ST,
+		| PREFIX LPAREN STRING RPAREN { mk_action2( $$, PREFIX_T, STR_ST,
 														0, $3, 0); }
 		| PREFIX error { $$=0; yyerror("missing '(' or ')' ?"); }
 		| PREFIX LPAREN error RPAREN { $$=0; yyerror("bad argument, "
@@ -2136,27 +2136,26 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 			}
 
 		| SET_HOSTPORT LPAREN STRING RPAREN { mk_action2( $$, SET_HOSTPORT_T, 
-														STRING_ST, 0, $3, 0); }
+														STR_ST, 0, $3, 0); }
 		| SET_HOSTPORT error { $$=0; yyerror("missing '(' or ')' ?"); }
 		| SET_HOSTPORT LPAREN error RPAREN { $$=0; yyerror("bad argument,"
 												" string expected"); }
-		| SET_PORT LPAREN STRING RPAREN { mk_action2( $$, SET_PORT_T, STRING_ST,
+		| SET_PORT LPAREN STRING RPAREN { mk_action2( $$, SET_PORT_T, STR_ST,
 														0, $3, 0); }
 		| SET_PORT error { $$=0; yyerror("missing '(' or ')' ?"); }
 		| SET_PORT LPAREN error RPAREN { $$=0; yyerror("bad argument, "
 														"string expected"); }
 		| SET_USER LPAREN STRING RPAREN { mk_action2( $$, SET_USER_T,
-														STRING_ST,
-														0, $3, 0); }
+														STR_ST, 0, $3, 0); }
 		| SET_USER error { $$=0; yyerror("missing '(' or ')' ?"); }
 		| SET_USER LPAREN error RPAREN { $$=0; yyerror("bad argument, "
 														"string expected"); }
 		| SET_USERPASS LPAREN STRING RPAREN { mk_action2( $$, SET_USERPASS_T, 
-														STRING_ST, 0, $3, 0); }
+														STR_ST, 0, $3, 0); }
 		| SET_USERPASS error { $$=0; yyerror("missing '(' or ')' ?"); }
 		| SET_USERPASS LPAREN error RPAREN { $$=0; yyerror("bad argument, "
 														"string expected"); }
-		| SET_URI LPAREN STRING RPAREN { mk_action2( $$, SET_URI_T, STRING_ST, 
+		| SET_URI LPAREN STRING RPAREN { mk_action2( $$, SET_URI_T, STR_ST, 
 														0, $3, 0); }
 		| SET_URI error { $$=0; yyerror("missing '(' or ')' ?"); }
 		| SET_URI LPAREN error RPAREN { $$=0; yyerror("bad argument, "

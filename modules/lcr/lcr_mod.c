@@ -1624,15 +1624,15 @@ static int next_gw(struct sip_msg* _m, char* _s1, char* _s2)
 		   (at_char + 1 - gw_uri_val.s.s));
 	    at = at + gw_uri_val.s.len - (at_char + 1 - gw_uri_val.s.s);
 	}
-	*at = '\0';
+	new_ruri.len = at - new_ruri.s;
 	/* Save Request-URI user for use in FAILURE_ROUTE */
 	val.s = _m->parsed_uri.user;
 	add_avp(ruri_user_avp_type|AVP_VAL_STR, ruri_user_avp, val);
 	LM_DBG("Added ruri_user_avp <%.*s>\n", val.s.len, val.s.s);
 	/* Rewrite Request URI */
 	act.type = SET_URI_T;
-	act.elem[0].type = STRING_ST;
-	act.elem[0].u.string = new_ruri.s;
+	act.elem[0].type = STR_ST;
+	act.elem[0].u.s = new_ruri;
 	rval = do_action(&act, _m);
 	pkg_free(new_ruri.s);
 	destroy_avp(gu_avp);

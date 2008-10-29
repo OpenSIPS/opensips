@@ -531,8 +531,8 @@ static int update_new_uri(struct sip_msg *msg, int plen, str *d, int mode)
 	}
 	
 	act.type = SET_HOSTPORT_T;
-	act.elem[0].type = STRING_ST;
-	act.elem[0].u.string = d->s;
+	act.elem[0].type = STR_ST;
+	act.elem[0].u.s = *d;
 	act.next = 0;
 
 	if (do_action(&act, msg) < 0)

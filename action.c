@@ -274,7 +274,6 @@ int do_action(struct action* a, struct sip_msg* msg)
 	pv_spec_t *spec;
 	pv_elem_p model;
 	pv_value_t val;
-	str s;
 
 	/* reset the value of error to E_UNSPEC so avoid unknowledgable
 	   functions to return with error (status<0) and not setting it
@@ -507,16 +506,14 @@ int do_action(struct action* a, struct sip_msg* msg)
 							a->elem[0].type);
 						break;
 					}
-				} else if (a->elem[0].type!=STRING_ST){
+				} else if (a->elem[0].type!=STR_ST){
 					LM_ALERT("BUG in set*() type %d\n",
 							a->elem[0].type);
 					ret=E_BUG;
 					break;
 				}
 				if (a->type==SET_URI_T) {
-					s.s = a->elem[0].u.string;
-					s.len = strlen(s.s);
-					if (set_ruri( msg, &s) ) {
+					if (set_ruri( msg, &a->elem[0].u.s) ) {
 						LM_ERR("failed to set new RURI\n");
 						ret=E_OUT_OF_MEM;
 						break;
@@ -532,7 +529,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 					len=msg->first_line.u.request.uri.len;
 				}
 				if (parse_uri(tmp, len, &uri)<0){
-					LM_ERR("bad uri <%s>, dropping packet\n", tmp);
+					LM_ERR("bad uri <%.*s>, dropping packet\n", len, tmp);
 					ret=E_UNSPEC;
 					break;
 				}
@@ -546,21 +543,22 @@ int do_action(struct action* a, struct sip_msg* msg)
 				end=new_uri+MAX_URI_SIZE;
 				crt=new_uri;
 				/* begin copying */
-				len=strlen("sip:"); if(crt+len>end) goto error_uri;
+				len = sizeof("sip:")-1;
+				if (crt+len>end) goto error_uri;
 				memcpy(crt,"sip:",len);crt+=len;
 
 				if (a->type==PREFIX_T) {
-					tmp=a->elem[0].u.string;
-					len=strlen(tmp); if(crt+len>end) goto error_uri;
-					memcpy(crt,tmp,len);crt+=len;
+					if (crt+a->elem[0].u.s.len>end) goto error_uri;
+					memcpy( crt, a->elem[0].u.s.s, a->elem[0].u.s.len);
+					crt+=a->elem[0].u.s.len;
 					/* whatever we had before, with prefix we have username 
 					   now */
 					user=1;
 				}
 
 				if ((a->type==SET_USER_T)||(a->type==SET_USERPASS_T)) {
-					tmp=a->elem[0].u.string;
-					len=strlen(tmp);
+					tmp=a->elem[0].u.s.s;
+					len=a->elem[0].u.s.len;
 				} else if (a->type==STRIP_T) {
 					if (a->elem[0].u.number>uri.user.len) {
 						LM_WARN("too long strip asked; "
@@ -610,9 +608,8 @@ int do_action(struct action* a, struct sip_msg* msg)
 					*crt='@'; crt++;
 				}
 				if ((a->type==SET_HOST_T) ||(a->type==SET_HOSTPORT_T)) {
-					tmp=a->elem[0].u.string;
-					if (tmp) len = strlen(tmp);
-					else len=0;
+					tmp=a->elem[0].u.s.s;
+					len=a->elem[0].u.s.len;
 				} else {
 					tmp=uri.host.s;
 					len = uri.host.len;
@@ -624,9 +621,8 @@ int do_action(struct action* a, struct sip_msg* msg)
 				/* port */
 				if (a->type==SET_HOSTPORT_T) tmp=0;
 				else if (a->type==SET_PORT_T) {
-					tmp=a->elem[0].u.string;
-					if (tmp) len = strlen(tmp);
-					else len = 0;
+					tmp=a->elem[0].u.s.s;
+					len=a->elem[0].u.s.len;
 				} else {
 					tmp=uri.port.s;
 					len = uri.port.len;
