@@ -1865,7 +1865,7 @@ case_stm: CASE snumber COLON actions SBREAK SEMICOLON
 							}
 		| CASE STRING COLON actions SBREAK SEMICOLON 
 										{ mk_action3( $$, CASE_T,
-													STRING_ST,
+													STR_ST,
 													ACTIONS_ST,
 													NUMBER_ST,
 													(void*)$2,
@@ -1874,7 +1874,7 @@ case_stm: CASE snumber COLON actions SBREAK SEMICOLON
 											}
 		| CASE STRING COLON SBREAK SEMICOLON 
 										{ mk_action3( $$, CASE_T,
-													STRING_ST,
+													STR_ST,
 													ACTIONS_ST,
 													NUMBER_ST,
 													(void*)$2,
@@ -1882,7 +1882,7 @@ case_stm: CASE snumber COLON actions SBREAK SEMICOLON
 													(void*)1);
 											}
 		| CASE STRING COLON actions { mk_action3( $$, CASE_T,
-													STRING_ST,
+													STR_ST,
 													ACTIONS_ST,
 													NUMBER_ST,
 													(void*)$2,
@@ -1890,7 +1890,7 @@ case_stm: CASE snumber COLON actions SBREAK SEMICOLON
 													(void*)0);
 									}
 		| CASE STRING COLON { mk_action3( $$, CASE_T,
-													STRING_ST,
+													STR_ST,
 													ACTIONS_ST,
 													NUMBER_ST,
 													(void*)$2,

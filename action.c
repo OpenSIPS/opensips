@@ -788,7 +788,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 					adefault=aitem;
 				if(cmatch==0)
 				{
-					if(aitem->elem[0].type==STRING_ST)
+					if(aitem->elem[0].type==STR_ST)
 					{
 						if(val.flags&PV_VAL_STR
 								&& val.rs.len==aitem->elem[0].u.s.len
