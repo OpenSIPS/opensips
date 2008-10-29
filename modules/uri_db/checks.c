@@ -40,8 +40,22 @@
 #include "uridb_mod.h"
 #include "checks.h"
 
-static db_con_t* db_handle = 0;   /* Database connection handle */
+static db_con_t* db_handle = NULL;   /* Database connection handle */
 static db_func_t uridb_dbf;
+
+/* Return codes reference */
+
+#define OK 		 	 1		/* success */
+#define ERR_INTERNAL		-1		/* Internal Error */
+#define ERR_CREDENTIALS 	-2		/* No credentials error */
+#define ERR_DBUSE  		-3		/* Data Base Use error */
+#define ERR_USERNOTFOUND  	-4		/* No found username error */
+#define ERR_DBEMTPYRES		-5		/* Emtpy Query Result */
+
+#define ERR_DBACCESS	   	-7     		/* Data Base Access Error */
+#define ERR_DBQUERY	  	-8		/* Data Base Query Error */
+#define ERR_SPOOFEDUSER   	-9		/* Spoofed User Error */
+#define ERR_NOMATCH	    	-10		/* No match Error */
 
 
 /*
@@ -59,7 +73,7 @@ static inline int check_username(struct sip_msg* _m, struct sip_uri *_uri)
 
 	if (!_uri) {
 		LM_ERR("Bad parameter\n");
-		return -1;
+		return ERR_INTERNAL;
 	}
 
 	/* Get authorized digest credentials */
@@ -69,7 +83,7 @@ static inline int check_username(struct sip_msg* _m, struct sip_uri *_uri)
 		if (!h) {
 			LM_ERR("No authorized credentials found (error in scripts)\n");
 			LM_ERR("Call {www,proxy}_authorize before calling check_* functions!\n");
-			return -2;
+			return ERR_CREDENTIALS;
 		}
 	}
 
@@ -79,7 +93,7 @@ static inline int check_username(struct sip_msg* _m, struct sip_uri *_uri)
 	/* Make sure that the URI contains username */
 	if (!_uri->user.len) {
 		LM_ERR("Username not found in URI\n");
-		return -4;
+		return ERR_USERNOTFOUND;
 	}
 
 	/* If use_uri_table is set, use URI table to determine if Digest username
@@ -90,7 +104,7 @@ static inline int check_username(struct sip_msg* _m, struct sip_uri *_uri)
 	if (use_uri_table) {
 		if (uridb_dbf.use_table(db_handle, &db_table) < 0) {
 			LM_ERR("Error while trying to use uri table\n");
-			return -7;
+			return ERR_DBACCESS;
 		}
 
 		keys[0] = &uridb_user_col;
@@ -108,7 +122,7 @@ static inline int check_username(struct sip_msg* _m, struct sip_uri *_uri)
 		if (uridb_dbf.query(db_handle, keys, 0, vals, cols, 3, 1, 0, &res) < 0)
 		{
 			LM_ERR("Error while querying database\n");
-			return -8;
+			return ERR_DBQUERY;
 		}
 
 		/* If the previous function returns at least one row, it means
@@ -119,12 +133,12 @@ static inline int check_username(struct sip_msg* _m, struct sip_uri *_uri)
 			LM_DBG("From/To user '%.*s' is spoofed\n",
 				   _uri->user.len, ZSW(_uri->user.s));
 			uridb_dbf.free_result(db_handle, res);
-			return -9;
+			return ERR_SPOOFEDUSER;
 		} else {
 			LM_DBG("From/To user '%.*s' and auth user match\n",
 				   _uri->user.len, ZSW(_uri->user.s));
 			uridb_dbf.free_result(db_handle, res);
-			return 1;
+			return OK;
 		}
 	} else {
 		/* URI table not used, simply compare digest username and From/To
@@ -134,12 +148,12 @@ static inline int check_username(struct sip_msg* _m, struct sip_uri *_uri)
 			if (!strncasecmp(_uri->user.s, c->digest.username.user.s, 
 			_uri->user.len)) {
 				LM_DBG("Digest username and URI username match\n");
-				return 1;
+				return OK;
 			}
 		}
 
 		LM_DBG("Digest username and URI username do NOT match\n");
-		return -10;
+		return ERR_NOMATCH;
 	}
 }
 
@@ -151,11 +165,11 @@ int check_to(struct sip_msg* _m, char* _s1, char* _s2)
 {
 	if (!_m->to && ((parse_headers(_m, HDR_TO_F, 0) == -1) || (!_m->to))) {
 		LM_ERR("Error while parsing To header field\n");
-		return -1;
+		return ERR_INTERNAL;
 	}
 	if(parse_to_uri(_m)==NULL) {
 		LM_ERR("Error while parsing To header URI\n");
-		return -1;
+		return ERR_INTERNAL;
 	}
 
 	return check_username(_m, &get_to(_m)->parsed_uri);
@@ -169,11 +183,11 @@ int check_from(struct sip_msg* _m, char* _s1, char* _s2)
 {
 	if (parse_from_header(_m) < 0) {
 		LM_ERR("Error while parsing From header field\n");
-		return -1;
+		return ERR_INTERNAL;
 	}
 	if(parse_from_uri(_m)==NULL) {
 		LM_ERR("Error while parsing From header URI\n");
-		return -1;
+		return ERR_INTERNAL;
 	}
 
 	return check_username(_m, &get_from(_m)->parsed_uri);
@@ -192,7 +206,7 @@ int does_uri_exist(struct sip_msg* _msg, char* _s1, char* _s2)
 
 	if (parse_sip_msg_uri(_msg) < 0) {
 		LM_ERR("Error while parsing URI\n");
-		return -1;
+		return ERR_INTERNAL;
 	}
 
 	if (use_uri_table) {
@@ -206,7 +220,7 @@ int does_uri_exist(struct sip_msg* _msg, char* _s1, char* _s2)
 	} else {
 		if (uridb_dbf.use_table(db_handle, &db_table) < 0) {
 			LM_ERR("Error while trying to use subscriber table\n");
-			return -3;
+			return ERR_DBUSE;
 		}
 		keys[0] = &uridb_user_col;
 		keys[1] = &uridb_domain_col;
@@ -221,17 +235,17 @@ int does_uri_exist(struct sip_msg* _msg, char* _s1, char* _s2)
 	if (uridb_dbf.query(db_handle, keys, 0, vals, cols, (use_domain ? 2 : 1),
 				1, 0, &res) < 0) {
 		LM_ERR("Error while querying database\n");
-		return -4;
+		return ERR_USERNOTFOUND;
 	}
 	
 	if (RES_ROW_N(res) == 0) {
 		LM_DBG("User in request uri does not exist\n");
 		uridb_dbf.free_result(db_handle, res);
-		return -5;
+		return ERR_DBEMTPYRES;
 	} else {
 		LM_DBG("User in request uri does exist\n");
 		uridb_dbf.free_result(db_handle, res);
-		return 1;
+		return OK;
 	}
 }
 
