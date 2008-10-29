@@ -174,7 +174,6 @@ void bye_reply_cb(struct cell* t, int type, struct tmcb_params* ps){
 		/* force delete from mem */
 		unref_dlg(dlg, 1);
 	}
-
 }
 
 

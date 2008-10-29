@@ -64,6 +64,7 @@
 #include "dlg_handlers.h"
 #include "dlg_db_handler.h"
 #include "dlg_profile.h"
+#include "dlg_req_within.h"
 
 static str       rr_param;
 static int       dlg_flag;
@@ -72,12 +73,10 @@ static int       default_timeout;
 static int       seq_match_mode;
 static int       shutdown_done = 0;
 
-extern struct tm_binds d_tmb;
 extern struct rr_binds d_rrb;
+extern int bye_on_timeout_flag;
 
 /* statistic variables */
-extern int dlg_enable_stats;
-extern stat_var *active_dlgs;
 extern stat_var *early_dlgs;
 extern stat_var *processed_dlgs;
 extern stat_var *expired_dlgs;
@@ -476,6 +475,10 @@ void dlg_onreq(struct cell* t, int type, struct tmcb_params *param)
 
 	dlg->lifetime = get_dlg_timeout(req);
 
+	if (req->flags&bye_on_timeout_flag)
+		dlg->flags |= DLG_FLAG_BYEONTIMEOUT;
+
+
 	t->dialog_ctx = (void*) dlg;
 
 	if_update_stat( dlg_enable_stats, processed_dlgs, 1);
@@ -756,6 +759,15 @@ void dlg_ontimeout( struct dlg_tl *tl)
 	int unref;
 
 	dlg = get_dlg_tl_payload(tl);
+
+	if ( (dlg->flags&DLG_FLAG_BYEONTIMEOUT) &&
+	(dlg->state==DLG_STATE_CONFIRMED_NA || dlg->state==DLG_STATE_CONFIRMED)) {
+		/* we just send the BYEs in both directions */
+		dlg_end_dlg( dlg, NULL);
+		/* is not 100% sure, but do it */
+		if_update_stat( dlg_enable_stats, expired_dlgs, 1);
+		return ;
+	}
 
 	next_state_dlg( dlg, DLG_EVENT_REQBYE, &old_state, &new_state, &unref);
 
