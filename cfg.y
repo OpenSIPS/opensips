@@ -2163,7 +2163,7 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 		| REVERT_URI LPAREN RPAREN { mk_action2( $$, REVERT_URI_T, 0,0,0,0); }
 		| REVERT_URI { mk_action2( $$, REVERT_URI_T, 0,0,0,0); }
 		| SET_DSTURI LPAREN STRING RPAREN { mk_action2( $$, SET_DSTURI_T,
-													STRING_ST, 0, $3, 0); }
+													STR_ST, 0, $3, 0); }
 		| SET_DSTURI error { $$=0; yyerror("missing '(' or ')' ?"); }
 		| SET_DSTURI LPAREN error RPAREN { $$=0; yyerror("bad argument, "
 										"string expected"); }
