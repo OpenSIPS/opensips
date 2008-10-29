@@ -894,7 +894,7 @@ int extract_sdialog_info(subs_t* subs,struct sip_msg* msg, int mexp, int* to_tag
 	}
 	subs->record_route = rec_route;
 			
-	subs->sockinfo_str= msg->rcv.bind_address->sock_str;
+	subs->sockinfo= msg->rcv.bind_address;
 
 	if( pfrom->tag_value.s ==NULL || pfrom->tag_value.len == 0)
 	{
@@ -1527,7 +1527,13 @@ void update_db_subs(db_con_t *db,db_func_t dbf, shtable_t hash_table,
 					query_vals[version_col].val.int_val= s->version;
 					query_vals[status_col].val.int_val= s->status;
 					query_vals[reason_col].val.str_val= s->reason;
-					query_vals[socket_info_col].val.str_val= s->sockinfo_str;
+					if(s->sockinfo)
+						query_vals[socket_info_col].val.str_val= s->sockinfo->sock_str;
+					else
+					{
+						query_vals[socket_info_col].val.str_val.s = 0;
+						query_vals[socket_info_col].val.str_val.len = 0;
+					}
 				
 					if(dbf.insert(db,query_cols,query_vals,n_query_cols )<0)
 					{
@@ -1570,11 +1576,13 @@ int restore_db_subs(void)
 	int event_col,contact_col,record_route_col, event_id_col, status_col;
 	int remote_cseq_col, local_cseq_col, local_contact_col, version_col;
 	subs_t s;
-	str ev_sname;
+	str ev_sname, sockinfo_str;
 	pres_ev_t* event= NULL;
 	event_t parsed_event;
 	unsigned int expires;
 	unsigned int hash_code;
+	int port, proto;
+	str host;
 
 	result_cols[pres_uri_col=n_result_cols++]	=&str_presentity_uri_col;
 	result_cols[expires_col=n_result_cols++]=&str_expires_col;
@@ -1733,8 +1741,19 @@ int restore_db_subs(void)
 		if(s.record_route.s)
 			s.record_route.len= strlen(s.record_route.s);
 	
-		s.sockinfo_str.s=(char*)row_vals[sockinfo_col].val.string_val;
-		s.sockinfo_str.len= strlen(s.sockinfo_str.s);
+		sockinfo_str.s = (char*)row_vals[sockinfo_col].val.string_val;
+		if (sockinfo_str.s)
+		{
+			sockinfo_str.len = strlen(sockinfo_str.s);
+			if (parse_phostport (sockinfo_str.s, sockinfo_str.len, &host.s,
+					&host.len, &port, &proto )< 0)
+			{
+				LM_ERR("bad format for stored sockinfo string\n");
+				goto error;
+			}
+			s.sockinfo = grep_sock_info(&host, (unsigned short) port,
+					(unsigned short) proto);
+		}
 
 		hash_code= core_hash(&s.pres_uri, &s.event->name, shtable_size);
 		if(insert_shtable(subs_htable, hash_code, &s)< 0)

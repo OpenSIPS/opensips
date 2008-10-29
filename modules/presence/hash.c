@@ -127,7 +127,7 @@ subs_t* mem_copy_subs(subs_t* s, int mem_type)
 
 	size= sizeof(subs_t)+ (s->pres_uri.len+ s->to_user.len
 		+ s->to_domain.len+ s->from_user.len+ s->from_domain.len+ s->callid.len
-		+ s->to_tag.len+ s->from_tag.len+s->sockinfo_str.len+s->event_id.len
+		+ s->to_tag.len+ s->from_tag.len+s->event_id.len
 		+ s->local_contact.len+ s->contact.len+ s->record_route.len+
 		+ s->reason.len+ 1)*sizeof(char);
 
@@ -151,7 +151,6 @@ subs_t* mem_copy_subs(subs_t* s, int mem_type)
 	CONT_COPY(dest, dest->to_tag, s->to_tag)
 	CONT_COPY(dest, dest->from_tag, s->from_tag)
 	CONT_COPY(dest, dest->callid, s->callid)
-	CONT_COPY(dest, dest->sockinfo_str, s->sockinfo_str)
 	CONT_COPY(dest, dest->local_contact, s->local_contact)
 	CONT_COPY(dest, dest->contact, s->contact)
 	CONT_COPY(dest, dest->record_route, s->record_route)
@@ -167,6 +166,7 @@ subs_t* mem_copy_subs(subs_t* s, int mem_type)
 	dest->version= s->version;
 	dest->expires= s->expires;
 	dest->db_flag= s->db_flag;
+	dest->sockinfo= s->sockinfo;
 
 	return dest;
 
@@ -189,7 +189,7 @@ subs_t* mem_copy_subs_noc(subs_t* s)
 
 	size= sizeof(subs_t)+ (s->pres_uri.len+ s->to_user.len
 		+ s->to_domain.len+ s->from_user.len+ s->from_domain.len+ s->callid.len
-		+ s->to_tag.len+ s->from_tag.len+s->sockinfo_str.len+s->event_id.len
+		+ s->to_tag.len+ s->from_tag.len+s->event_id.len
 		+ s->local_contact.len + s->record_route.len+
 		+ s->reason.len+ 1)*sizeof(char);
 
@@ -209,7 +209,6 @@ subs_t* mem_copy_subs_noc(subs_t* s)
 	CONT_COPY(dest, dest->to_tag, s->to_tag)
 	CONT_COPY(dest, dest->from_tag, s->from_tag)
 	CONT_COPY(dest, dest->callid, s->callid)
-	CONT_COPY(dest, dest->sockinfo_str, s->sockinfo_str)
 	CONT_COPY(dest, dest->local_contact, s->local_contact)
 	CONT_COPY(dest, dest->record_route, s->record_route)
 	if(s->event_id.s)
@@ -224,6 +223,7 @@ subs_t* mem_copy_subs_noc(subs_t* s)
 	dest->version= s->version;
 	dest->expires= s->expires;
 	dest->db_flag= s->db_flag;
+	dest->sockinfo = s->sockinfo;
 
 	dest->contact.s= (char*)shm_malloc(s->contact.len* sizeof(char));
 	if(dest->contact.s== NULL)

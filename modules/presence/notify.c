@@ -1107,20 +1107,8 @@ dlg_t* build_dlg_t(subs_t* subs)
 		}
 	}	
 	td->state= DLG_CONFIRMED ;
+	td->send_sock = subs->sockinfo;
 
-	if (subs->sockinfo_str.len) {
-		int port, proto;
-        str host;
-		if (parse_phostport (
-				subs->sockinfo_str.s,subs->sockinfo_str.len,&host.s,
-				&host.len,&port, &proto )) {
-			LM_ERR("bad sockinfo string\n");
-			goto error;
-		}
-		td->send_sock = grep_sock_info (
-			&host, (unsigned short) port, (unsigned short) proto);
-	}
-	
 	return td;
 
 error:		
@@ -1146,6 +1134,9 @@ int get_subs_db(str* pres_uri, pres_ev_t* event, str* sender,
 	int sockinfo_col= 0, local_contact_col= 0, event_id_col = 0;
 	subs_t s, *s_new;
 	int inc= 0;
+	str sockinfo_str;
+	int port, proto;
+	str host;
 		
 	if (pa_dbf.use_table(pa_db, &active_watchers_table) < 0) 
 	{
@@ -1276,8 +1267,19 @@ int get_subs_db(str* pres_uri, pres_ev_t* event, str* sender,
 		s.contact.s= (char*)row_vals[contact_col].val.string_val;
 		s.contact.len= strlen(s.contact.s);
 		
-		s.sockinfo_str.s = (char*)row_vals[sockinfo_col].val.string_val;
-		s.sockinfo_str.len = s.sockinfo_str.s?strlen(s.sockinfo_str.s):0;
+		sockinfo_str.s = (char*)row_vals[sockinfo_col].val.string_val;
+		if (sockinfo_str.s)
+		{
+			sockinfo_str.len = strlen(sockinfo_str.s);
+			if (parse_phostport (sockinfo_str.s, sockinfo_str.len,&host.s,
+					&host.len, &port, &proto )< 0)
+			{
+				LM_ERR("bad format for stored sockinfo string\n");
+				goto error;
+			}
+			s.sockinfo = grep_sock_info(&host, (unsigned short) port,
+					(unsigned short) proto);
+		}
 
 		s.local_contact.s = (char*)row_vals[local_contact_col].val.string_val;
 		s.local_contact.len = s.local_contact.s?strlen(s.local_contact.s):0;
@@ -1469,11 +1471,11 @@ int publ_notify(presentity_t* p, str pres_uri, str* body, str* offline_etag, str
 	s= subs_array;
 	while(s)
 	{
-		if (p->event->aux_body_processing) {
-			aux_body = p->event->aux_body_processing(s, notify_body?notify_body:body);
-		}
-
 		s->auth_rules_doc= rules_doc;
+		
+		if (p->event->aux_body_processing)
+			aux_body = p->event->aux_body_processing(s, notify_body?notify_body:body);
+
 		if(notify(s, NULL, aux_body?aux_body:(notify_body?notify_body:body), 0)< 0 )
 		{
 			LM_ERR("Could not send notify for %.*s\n",
@@ -1481,9 +1483,8 @@ int publ_notify(presentity_t* p, str pres_uri, str* body, str* offline_etag, str
 		}
 
 		if(aux_body!=NULL) {
-			if(aux_body->s)	{
+			if(aux_body->s)
 				p->event->aux_free_body(aux_body->s);
-			}
 			pkg_free(aux_body);
 		}
 		s= s->next;
@@ -1603,12 +1604,13 @@ int send_notify_request(subs_t* subs, subs_t * watcher_subs,
 	{
 		if( subs->event->req_auth)
 		{
-			
-			if(subs->auth_rules_doc && subs->event->apply_auth_nbody &&
-				subs->event->apply_auth_nbody(n_body, subs, &notify_body)< 0)
+			if(subs->auth_rules_doc && subs->event->apply_auth_nbody )
 			{
-				LM_ERR("in function apply_auth_nbody\n");
-				goto error;
+				if(subs->event->apply_auth_nbody(n_body, subs, &notify_body)< 0)
+				{
+					LM_ERR("in function apply_auth_nbody\n");
+					goto error;
+				}
 			}
 			if(notify_body== NULL)
 				notify_body= n_body;
