@@ -30,6 +30,12 @@
 #ifndef DLG_REQUEST_WITHIN_H
 #define DLG_REQUEST_WITHIN_H
 
+#include "../../statistics.h"
+#include "../../str.h"
+#include "../../mi/mi.h"
+#include "../tm/tm_load.h"
+#include "dlg_hash.h"
+
 #define MAX_FWD			"70"
 #define MAX_SIZE		256
 #define RCV_BYE_REPLY	1
@@ -42,6 +48,8 @@
 extern struct tm_binds d_tmb;
 extern int dlg_enable_stats;
 extern stat_var * active_dlgs;
+
+int dlg_end_dlg(struct dlg_cell *dlg, str *extra_hdrs);
 
 struct mi_root * mi_terminate_dlg(struct mi_root *cmd_tree, void *param );
 

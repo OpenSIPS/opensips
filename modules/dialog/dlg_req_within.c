@@ -179,12 +179,13 @@ void bye_reply_cb(struct cell* t, int type, struct tmcb_params* ps){
 
 
 
-static inline int build_extra_hdr(struct dlg_cell * cell, int dir,
-											str *extra_hdrs, str *str_hdr)
+static inline int build_extra_hdr(struct dlg_cell * cell, str *extra_hdrs,
+																str *str_hdr)
 {
 	char *p;
 
-	str_hdr->len = MAX_FWD_HDR_LEN + dlg_extra_hdrs.len + extra_hdrs->len;
+	str_hdr->len = MAX_FWD_HDR_LEN + dlg_extra_hdrs.len + 
+		extra_hdrs?extra_hdrs->len:0;
 
 	str_hdr->s = (char*)pkg_malloc( str_hdr->len * sizeof(char) );
 	if(!str_hdr->s){
@@ -198,7 +199,7 @@ static inline int build_extra_hdr(struct dlg_cell * cell, int dir,
 		memcpy( p, dlg_extra_hdrs.s, dlg_extra_hdrs.len);
 		p += dlg_extra_hdrs.len;
 	}
-	if (extra_hdrs->len) {
+	if (extra_hdrs) {
 		memcpy( p, extra_hdrs->s, extra_hdrs->len);
 		p += extra_hdrs->len;
 	}
@@ -208,7 +209,6 @@ static inline int build_extra_hdr(struct dlg_cell * cell, int dir,
 error: 
 	return -1;
 }
-
 
 
 /* cell- pointer to a struct dlg_cell
@@ -221,16 +221,10 @@ static inline int send_bye(struct dlg_cell * cell, int dir, str *extra_hdrs)
 	/*verify direction*/
 	dlg_t* dialog_info;
 	str met = {"BYE", 3};
-	str str_hdr = {NULL,0};
 	int result;
 
 	if ((dialog_info = build_dlg_t(cell, dir)) == 0){
 		LM_ERR("failed to create dlg_t\n");
-		goto err;
-	}
-
-	if ((build_extra_hdr(cell, dir, extra_hdrs, &str_hdr)) != 0){
-		LM_ERR("failed to create extra headers\n");
 		goto err;
 	}
 
@@ -240,7 +234,7 @@ static inline int send_bye(struct dlg_cell * cell, int dir, str *extra_hdrs)
 
 	result = d_tmb.t_request_within
 		(&met,         /* method*/
-		&str_hdr,      /* extra headers*/
+		extra_hdrs,    /* extra headers*/
 		NULL,          /* body*/
 		dialog_info,   /* dialog structure*/
 		bye_reply_cb,  /* callback function*/
@@ -252,7 +246,6 @@ static inline int send_bye(struct dlg_cell * cell, int dir, str *extra_hdrs)
 	}
 
 	free_tm_dlg(dialog_info);
-	pkg_free(str_hdr.s);
 
 	LM_DBG("BYE sent to %s\n", (dir==0)?"caller":"callee");
 	return 0;
@@ -260,11 +253,28 @@ static inline int send_bye(struct dlg_cell * cell, int dir, str *extra_hdrs)
 err1:
 	unref_dlg(cell, 1);
 err:
-	if(dialog_info)
-		free_tm_dlg(dialog_info);
-	if(str_hdr.s)
-		pkg_free(str_hdr.s);
 	return -1;
+}
+
+
+/* sends BYE in both directions
+ * returns 0 if both BYEs were successful
+ */
+int dlg_end_dlg(struct dlg_cell *dlg, str *extra_hdrs)
+{
+	str str_hdr = {NULL,0};
+	int res;
+
+	if ((build_extra_hdr(dlg, extra_hdrs, &str_hdr)) != 0){
+		LM_ERR("failed to create extra headers\n");
+		return -1;
+	}
+
+	res = ( ( (send_bye( dlg, DLG_CALLER_LEG, extra_hdrs)!=0) ||
+		(send_bye(dlg, DLG_CALLEE_LEG, extra_hdrs)!=0))?-1:0 );
+
+	pkg_free(str_hdr.s);
+	return res;
 }
 
 
@@ -275,7 +285,7 @@ struct mi_root * mi_terminate_dlg(struct mi_root *cmd_tree, void *param ){
 	struct mi_node* node;
 	unsigned int h_entry, h_id;
 	struct dlg_cell * dlg = NULL;
-	str mi_extra_hdrs = {NULL,0};
+	str *mi_extra_hdrs = NULL;
 	int status, msg_len;
 	char *msg;
 
@@ -299,18 +309,17 @@ struct mi_root * mi_terminate_dlg(struct mi_root *cmd_tree, void *param ){
 	if (node->next) {
 		node = node->next;
 		if (node->value.len && node->value.s)
-			mi_extra_hdrs = node->value;
+			mi_extra_hdrs = &node->value;
 	}
 
 	LM_DBG("h_entry %u h_id %u\n", h_entry, h_id);
 
 	dlg = lookup_dlg(h_entry, h_id);
 
-	// lookup_dlg has incremented the reference count
+	/* lookup_dlg has incremented the reference count !! */
 
 	if(dlg){
-		if ( (send_bye(dlg,DLG_CALLER_LEG,&mi_extra_hdrs)!=0) ||
-		(send_bye(dlg,DLG_CALLEE_LEG,&mi_extra_hdrs)!=0)) {
+		if ( dlg_end_dlg( dlg, mi_extra_hdrs) ) {
 			status = 500;
 			msg = MI_DLG_OPERATION_ERR;
 			msg_len = MI_DLG_OPERATION_ERR_LEN;
