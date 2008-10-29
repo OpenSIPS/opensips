@@ -462,9 +462,8 @@ int do_action(struct action* a, struct sip_msg* msg)
 				ret=E_BUG;
 				break;
 			}
-			LM_WARN("error(\"%s\", \"%s\") "
-					"not implemented yet\n", a->elem[0].u.string,
-					a->elem[1].u.string);
+			LM_ERR("error(\"%s\", \"%s\") not implemented yet\n",
+				a->elem[0].u.string, a->elem[1].u.string);
 			ret=1;
 			break;
 		case ROUTE_T:
