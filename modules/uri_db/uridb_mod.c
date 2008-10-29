@@ -77,7 +77,7 @@ static int mod_init(void);       /* Module initialization function */
  * Module parameter variables
  */
 static str db_url         = {DEFAULT_RODB_URL, DEFAULT_RODB_URL_LEN};
-str db_table              = {0,0};
+str db_table              = {NULL,0};
 str uridb_user_col        = {USER_COL, USER_COL_LEN};
 str uridb_domain_col      = {DOMAIN_COL, DOMAIN_COL_LEN};
 str uridb_uriuser_col     = {URI_USER_COL, URI_USER_COL_LEN};
@@ -140,7 +140,7 @@ struct module_exports exports = {
  */
 static int child_init(int rank)
 {
-	if (db_url.len)
+	if (db_url.len != 0)
 		return uridb_db_init(&db_url);
 	else
 		return 0;
@@ -156,6 +156,8 @@ static int mod_init(void)
 	db_func_t db_funcs;
 	db_con_t *db_conn = NULL;
 
+	
+
 	LM_DBG("uri_db - initializing\n");
 
 	db_url.len = strlen(db_url.s);
@@ -168,12 +170,16 @@ static int mod_init(void)
 		return 0;
 	}
 
-	if (!db_table.s) {
+	if (db_table.s == NULL) {
 		/* no table set -> use defaults */
-		if (use_uri_table)
+		if (use_uri_table){
 			db_table.s = URI_TABLE;
-		else
+			db_table.len = strlen(URI_TABLE)+1;
+		}
+		else {
 			db_table.s = SUBSCRIBER_TABLE;
+			db_table.len = strlen(SUBSCRIBER_TABLE)+1;
+		}
 	}
 
 	db_table.len = strlen(db_table.s);
@@ -195,6 +201,7 @@ static int mod_init(void)
 	checkver = db_check_table_version( &db_funcs, db_conn, &db_table,
 		use_uri_table?URI_TABLE_VERSION:SUBSCRIBER_TABLE_VERSION );
 
+	/** If checkver == -1, table validation failed */
 	if( checkver == -1 ) {
 		LM_ERR("Invalid table version.\n");
 		db_funcs.close(db_conn);
@@ -203,7 +210,7 @@ static int mod_init(void)
 
 	db_funcs.close(db_conn);
 
-	/* done with chekings - init the working connection */
+	/* done with checkings - init the working connection */
 	if (uridb_db_bind(&db_url)!=0) {
 		LM_ERR("Failed to bind to a DB module\n");
 		goto error;
