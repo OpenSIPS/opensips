@@ -76,12 +76,12 @@ struct expr* mk_elem(int op, int leftt, void *leftd, int rightt, void *rightd)
 	e->op=op;
 	e->left.type    = leftt;
 	e->left.v.data  = leftd;
-	if((e->left.type==STRING_ST || e->left.type==STRINGV_O)
+	if((e->left.type==STR_ST || e->left.type==STRINGV_O)
 			&& e->left.v.s.s!=NULL)
 		e->left.v.s.len = strlen(e->left.v.s.s);
 	e->right.type   = rightt;
 	e->right.v.data = rightd;
-	if((e->right.type==STRING_ST || e->right.type==STRINGV_O)
+	if((e->right.type==STR_ST || e->right.type==STRINGV_O)
 			&& e->right.v.s.s!=0)
 		e->right.v.s.len = strlen(e->right.v.s.s);
 	return e;

@@ -1697,7 +1697,7 @@ static int next_gw(struct sip_msg* _m, char* _s1, char* _s2)
 	}
 	new_ruri.len = at - new_ruri.s;
 	act.type = APPEND_BRANCH_T;
-	act.elem[0].type = STRING_ST;
+	act.elem[0].type = STR_ST;
 	act.elem[0].u.s = new_ruri;
 	act.elem[1].type = NUMBER_ST;
 	act.elem[1].u.number = 0;

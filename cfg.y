@@ -2087,15 +2087,15 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 				if (str2q(&q, $5, strlen($5)) < 0) {
 					yyerror("bad argument, q value expected");
 				}
-				mk_action2( $$, APPEND_BRANCH_T, STRING_ST, NUMBER_ST, $3,
+				mk_action2( $$, APPEND_BRANCH_T, STR_ST, NUMBER_ST, $3,
 						(void *)(long)q); } 
 		}
 		| APPEND_BRANCH LPAREN STRING RPAREN { mk_action2( $$, APPEND_BRANCH_T,
-						STRING_ST, NUMBER_ST, $3, (void *)Q_UNSPECIFIED) ; }
+						STR_ST, NUMBER_ST, $3, (void *)Q_UNSPECIFIED) ; }
 		| APPEND_BRANCH LPAREN RPAREN { mk_action2( $$, APPEND_BRANCH_T,
-						STRING_ST, NUMBER_ST, 0, (void *)Q_UNSPECIFIED) ; }
+						STR_ST, NUMBER_ST, 0, (void *)Q_UNSPECIFIED) ; }
 		| APPEND_BRANCH { mk_action2( $$, APPEND_BRANCH_T,
-						STRING_ST, NUMBER_ST, 0, (void *)Q_UNSPECIFIED ) ; }
+						STR_ST, NUMBER_ST, 0, (void *)Q_UNSPECIFIED ) ; }
 
 		| PV_PRINTF LPAREN STRING COMMA STRING RPAREN {
 				spec = (pv_spec_t*)pkg_malloc(sizeof(pv_spec_t));

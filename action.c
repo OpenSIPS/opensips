@@ -386,8 +386,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 			ret=1;
 			break;
 		case APPEND_BRANCH_T:
-			/* WARNING: even if type is STRING_ST, it expects a str !!!*/
-			if ((a->elem[0].type!=STRING_ST)) {
+			if ((a->elem[0].type!=STR_ST)) {
 				LM_ALERT("BUG in append_branch %d\n",
 					a->elem[0].type );
 				ret=E_BUG;

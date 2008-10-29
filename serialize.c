@@ -211,7 +211,7 @@ int next_branches( struct sip_msg *msg)
 	/* Append branches until out of branches or Q_FLAG is set */
 	do {
 		act.type = APPEND_BRANCH_T;
-		act.elem[0].type = STRING_ST;
+		act.elem[0].type = STR_ST;
 		act.elem[0].u.s = val.s;
 		act.elem[1].type = NUMBER_ST;
 		act.elem[1].u.number = 0;

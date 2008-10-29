@@ -1195,7 +1195,7 @@ append_branch(self, branch = NULL, qval = NULL)
 			if (str2q(&q, qval, strlen(qval)) < 0) {
 				LM_ERR("append_branch: Bad q value.");
 			} else { /* branch and qval set */
-				elems[0].type = STRING_ST;
+				elems[0].type = STR_ST;
 				elems[0].u.data = branch;
 				elems[1].type = NUMBER_ST;
 				elems[1].u.data = (void *)(long)q;
@@ -1206,7 +1206,7 @@ append_branch(self, branch = NULL, qval = NULL)
 			}
 		} else {
 			if (branch) { /* branch set, qval unset */
-				elems[0].type = STRING_ST;
+				elems[0].type = STR_ST;
 				elems[0].u.data = branch;
 				elems[1].type = NUMBER_ST;
 				elems[1].u.data = (void *)Q_UNSPECIFIED;
@@ -1215,7 +1215,7 @@ append_branch(self, branch = NULL, qval = NULL)
 						elems,
 						0);
 			} else { /* neither branch nor qval set */
-				elems[0].type = STRING_ST;
+				elems[0].type = STR_ST;
 				elems[0].u.data = NULL;
 				elems[1].type = NUMBER_ST;
 				elems[1].u.data = (void *)Q_UNSPECIFIED;
