@@ -196,13 +196,9 @@ int next_branches( struct sip_msg *msg)
 
 	if ( route_type == REQUEST_ROUTE) {
 		/* Set Request-URI */
-		act.type = SET_URI_T;
-		act.elem[0].type = STRING_ST;
-		act.elem[0].u.string = val.s.s;
-		rval = do_action(&act, msg);
-		if (rval != 1)
+		if (set_ruri(msg, &val.s)==-1)
 			goto error1;
-		LM_DBG("R-URI is <%s>\n", val.s.s);
+		LM_DBG("R-URI is <%.*s>\n", val.s.len, val.s.s);
 		if (avp->flags & Q_FLAG) {
 			destroy_avp(avp);
 			return 0;
