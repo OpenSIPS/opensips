@@ -185,7 +185,7 @@ static inline int build_extra_hdr(struct dlg_cell * cell, str *extra_hdrs,
 	char *p;
 
 	str_hdr->len = MAX_FWD_HDR_LEN + dlg_extra_hdrs.len + 
-		extra_hdrs?extra_hdrs->len:0;
+		(extra_hdrs?extra_hdrs->len:0);
 
 	str_hdr->s = (char*)pkg_malloc( str_hdr->len * sizeof(char) );
 	if(!str_hdr->s){
@@ -270,8 +270,8 @@ int dlg_end_dlg(struct dlg_cell *dlg, str *extra_hdrs)
 		return -1;
 	}
 
-	res = ( ( (send_bye( dlg, DLG_CALLER_LEG, extra_hdrs)!=0) ||
-		(send_bye(dlg, DLG_CALLEE_LEG, extra_hdrs)!=0))?-1:0 );
+	res = ( ( (send_bye( dlg, DLG_CALLER_LEG, &str_hdr)!=0) ||
+		(send_bye(dlg, DLG_CALLEE_LEG, &str_hdr)!=0))?-1:0 );
 
 	pkg_free(str_hdr.s);
 	return res;
