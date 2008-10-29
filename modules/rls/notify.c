@@ -67,7 +67,7 @@ dlg_t* rls_notify_dlg(subs_t* subs);
 void rls_notify_callback( struct cell *t, int type, struct tmcb_params *ps);
 
 
-int send_full_notify(subs_t* subs, xmlNodePtr rl_node, int version, str* rl_uri,
+int send_full_notify(subs_t* subs, xmlNodePtr service_node, int version, str* rl_uri,
 		unsigned int hash_code)
 {
 	str* rlmi_body= NULL;
@@ -111,7 +111,7 @@ int send_full_notify(subs_t* subs, xmlNodePtr rl_node, int version, str* rl_uri,
 	if(result== NULL)
 		goto error;
 
-	rlmi_body= constr_rlmi_doc(result, rl_uri, version, rl_node, &cid_array);
+	rlmi_body= constr_rlmi_doc(result, rl_uri, version, service_node, &cid_array);
 	if(rlmi_body== NULL)
 	{
 		LM_ERR("while constructing rlmi doc\n");
@@ -378,7 +378,7 @@ error:
 }
 
 str* constr_rlmi_doc(db_res_t *result, str* rl_uri, int version,
-		xmlNodePtr rl_node, char*** rlmi_cid_array)
+		xmlNodePtr service_node, char*** rlmi_cid_array)
 {
 	xmlDocPtr doc= NULL;
 	xmlNodePtr list_node= NULL;
@@ -432,7 +432,7 @@ str* constr_rlmi_doc(db_res_t *result, str* rl_uri, int version,
 	param.db_result= result;
 	param.cid_array= cid_array;
 
-	if(	process_list_and_exec(rl_node, add_resource,(void*)(&param))< 0)
+	if(	process_list_and_exec(service_node, add_resource,(void*)(&param))< 0)
 	{
 		LM_ERR("in process_list_and_exec function\n");
 		goto error;
@@ -598,9 +598,9 @@ str* rls_notify_extra_hdr(subs_t* subs, char* start_cid, char* boundary_string)
 	if(start_cid && boundary_string)
 	{
 		str_hdr->len+= sprintf(str_hdr->s+str_hdr->len,
-			"Content-Type: \"multipart/related;type=\"application/rlmi+xml\"");
+			"Content-Type: multipart/related;type=\"application/rlmi+xml\"");
 		str_hdr->len+= sprintf(str_hdr->s+str_hdr->len,
-				";start= <%s>;boundary=%s\r\n", start_cid, boundary_string);
+				";start= \"<%s>\";boundary=\"%s\"\r\n", start_cid, boundary_string);
 	}		
 	if(str_hdr->len> RLS_HDR_LEN)
 	{
@@ -855,6 +855,7 @@ done:
 
 }
 
+/* support only for list - ignore resource-list children */
 int process_list_and_exec(xmlNodePtr list_node, list_func_t function,
 		void* param)
 {

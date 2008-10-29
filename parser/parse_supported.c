@@ -85,6 +85,16 @@ static inline int parse_supported_body(str *body, unsigned int *sup)
 					p   += SUPPORTED_TIMER_LEN + 1;
 				}
 				break;
+			
+			/* "eventlist" */
+			case _even_:
+				if ( pos+9 <= len && LOWER_DWORD(READ(p+4))==_tlis_ && LOWER_BYTE(*(p+8))=='t'
+					 && IS_DELIM(p+9) ) {
+					*sup |= F_SUPPORTED_EVENTLIST;
+					pos += SUPPORTED_EVENTLIST_LEN + 1;
+					p   += SUPPORTED_EVENTLIST_LEN + 1;
+				}
+				break;
 
 			/* unknown */
 			default:

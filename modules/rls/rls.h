@@ -83,6 +83,7 @@ typedef struct rls_resource
 extern char* xcap_root;
 extern unsigned int xcap_port;
 extern str server_address; 
+extern str presence_server; 
 extern int waitn_time; 
 extern str rlsubs_table;
 extern str rlpres_table;
