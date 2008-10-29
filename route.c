@@ -134,7 +134,7 @@ static int fix_expr(struct expr* exp)
 		}
 	}else if (exp->type==ELEM_T){
 			if (exp->op==MATCH_OP || exp->op==NOTMATCH_OP){
-				if (exp->right.type==STRING_ST){
+				if (exp->right.type==STR_ST){
 					re=(regex_t*)pkg_malloc(sizeof(regex_t));
 					if (re==0){
 						LM_CRIT("out of pkg memory\n");
@@ -483,7 +483,7 @@ inline static int comp_strval(struct sip_msg *msg, int op, str* ival,
 	char backup2;
 	str res;
 	pv_value_t value;
-			
+
 	if(ival==NULL || ival->s==NULL)
 		goto error;
 	
@@ -503,7 +503,7 @@ inline static int comp_strval(struct sip_msg *msg, int op, str* ival,
 		}
 	} else if(opd->type == NUMBER_ST) {
 		res.s = sint2str(opd->v.n, &res.len);
-	}else if(opd->type == STRING_ST) {
+	}else if(opd->type == STR_ST) {
 		res = opd->v.s;
 	} else {
 		if((op!=MATCH_OP && op!=NOTMATCH_OP) || opd->type != RE_ST)
@@ -569,18 +569,18 @@ error:
 inline static int comp_str(char* str, void* param, int op, int subtype)
 {
 	int ret;
-	
+
 	ret=-1;
 	switch(op){
 		case EQUAL_OP:
-			if (subtype!=STRING_ST){
+			if (subtype!=STR_ST){
 				LM_CRIT("bad type %d, string expected\n", subtype);
 				goto error;
 			}
 			ret=(strcasecmp(str, (char*)param)==0);
 			break;
 		case DIFF_OP:
-			if (subtype!=STRING_ST){
+			if (subtype!=STR_ST){
 				LM_CRIT("bad type %d, string expected\n", subtype);
 				goto error;
 			}
@@ -654,7 +654,7 @@ inline static int comp_ip(struct sip_msg *msg, int op, struct ip_addr* ip,
 					goto error_op;
 			}
 			break;
-		case STRING_ST:
+		case STR_ST:
 		case RE_ST:
 			switch(op){
 				case EQUAL_OP:
@@ -663,7 +663,7 @@ inline static int comp_ip(struct sip_msg *msg, int op, struct ip_addr* ip,
 					ret=comp_str(ip_addr2a(ip), opd->v.data, op, opd->type);
 					if (ret==1) break;
 					/* 2: resolve (name) & compare w/ all the ips */
-					if (opd->type==STRING_ST){
+					if (opd->type==STR_ST){
 						he=resolvehost((char*)opd->v.data,0);
 						if (he==0){
 							LM_DBG("could not resolve %s\n",(char*)opd->v.data);
@@ -963,7 +963,7 @@ inline static int comp_scriptvar(struct sip_msg *msg, int op, operand_t *left,
 			/* comparing int */
 			type =2;
 			rn = right->v.n;
-		} else if(right->type == STRING_ST) {
+		} else if(right->type == STR_ST) {
 			if(!(lvalue.flags&PV_VAL_STR))
 			{
 				LM_CRIT("invalid operation %d/%d!!!\n", op,	right->type);

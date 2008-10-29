@@ -1471,7 +1471,6 @@ uri_type:	URI			{$$=URI_O;}
 		;
 
 script_var:	SCRIPTVAR	{ 
-				/* printf("\n+++ scriptvar <%s>\n", $1); */
 				spec = (pv_spec_t*)pkg_malloc(sizeof(pv_spec_t));
 				memset(spec, 0, sizeof(pv_spec_t));
 				tstr.s = $1;
@@ -1494,21 +1493,21 @@ exp_elem: exp_cond		{$$=$1; }
 		| script_var    {
 				$$=mk_elem(NO_OP, SCRIPTVAR_O,0,SCRIPTVAR_ST,(void*)$1);
 			}
-		| uri_type strop host 	{$$ = mk_elem($2, $1, 0, STRING_ST, $3); 
+		| uri_type strop host 	{$$ = mk_elem($2, $1, 0, STR_ST, $3); 
 				 			}
 		| DSTIP equalop ipnet	{ $$=mk_elem($2, DSTIP_O, 0, NET_ST, $3);
 								}
-		| DSTIP strop host	{ $$=mk_elem($2, DSTIP_O, 0, STRING_ST, $3);
+		| DSTIP strop host	{ $$=mk_elem($2, DSTIP_O, 0, STR_ST, $3);
 								}
 		| SRCIP equalop ipnet	{ $$=mk_elem($2, SRCIP_O, 0, NET_ST, $3);
 								}
-		| SRCIP strop host	{ $$=mk_elem($2, SRCIP_O, 0, STRING_ST, $3);
+		| SRCIP strop host	{ $$=mk_elem($2, SRCIP_O, 0, STR_ST, $3);
 								}
 	;
 
-exp_cond:	METHOD strop STRING	{$$= mk_elem($2, METHOD_O, 0, STRING_ST, $3);
+exp_cond:	METHOD strop STRING	{$$= mk_elem($2, METHOD_O, 0, STR_ST, $3);
 									}
-		| METHOD strop  ID	{$$ = mk_elem($2, METHOD_O, 0, STRING_ST, $3); 
+		| METHOD strop  ID	{$$ = mk_elem($2, METHOD_O, 0, STR_ST, $3); 
 				 			}
 		| METHOD strop error { $$=0; yyerror("string expected"); }
 		| METHOD error	{ $$=0; yyerror("invalid operator,"
@@ -1518,10 +1517,10 @@ exp_cond:	METHOD strop STRING	{$$= mk_elem($2, METHOD_O, 0, STRING_ST, $3);
 				$$=mk_elem( $2, SCRIPTVAR_O,(void*)$1,SCRIPTVAR_ST,(void*)$3);
 			}
 		| script_var strop STRING {
-				$$=mk_elem( $2, SCRIPTVAR_O,(void*)$1,STRING_ST,$3);
+				$$=mk_elem( $2, SCRIPTVAR_O,(void*)$1,STR_ST,$3);
 			}
 		| script_var strop ID {
-				$$=mk_elem( $2, SCRIPTVAR_O,(void*)$1,STRING_ST,$3);
+				$$=mk_elem( $2, SCRIPTVAR_O,(void*)$1,STR_ST,$3);
 			}
 		| script_var intop snumber {
 				$$=mk_elem( $2, SCRIPTVAR_O,(void*)$1,NUMBER_ST,(void *)$3);
@@ -1532,7 +1531,7 @@ exp_cond:	METHOD strop STRING	{$$= mk_elem($2, METHOD_O, 0, STRING_ST, $3);
 		| script_var equalop NULLV	{ 
 				$$=mk_elem( $2, SCRIPTVAR_O,(void*)$1, NULLV_ST, 0);
 			}
-		| uri_type strop STRING	{$$ = mk_elem($2, $1, 0, STRING_ST, $3); 
+		| uri_type strop STRING	{$$ = mk_elem($2, $1, 0, STR_ST, $3); 
 				 				}
 		| uri_type equalop MYSELF	{ $$=mk_elem($2, $1, 0, MYSELF_ST, 0);
 								}
@@ -1574,7 +1573,7 @@ exp_cond:	METHOD strop STRING	{$$= mk_elem($2, METHOD_O, 0, STRING_ST, $3);
 												mk_net_bitlen(ip_tmp, 
 														ip_tmp->len*8) );
 									}else{
-										$$=mk_elem($2, SRCIP_O, 0, STRING_ST,
+										$$=mk_elem($2, SRCIP_O, 0, STR_ST,
 												$3);
 									}
 								}
@@ -1594,7 +1593,7 @@ exp_cond:	METHOD strop STRING	{$$= mk_elem($2, METHOD_O, 0, STRING_ST, $3);
 												mk_net_bitlen(ip_tmp, 
 														ip_tmp->len*8) );
 									}else{
-										$$=mk_elem($2, DSTIP_O, 0, STRING_ST,
+										$$=mk_elem($2, DSTIP_O, 0, STR_ST,
 												$3);
 									}
 								}
