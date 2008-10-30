@@ -352,8 +352,8 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 					case ':':
 						/* the same as above for ':' */
 						goto error_bad_char;
-					case '@': /* error no user part, or
-								 be forgiving and accept it ? */
+					case '@': /* error no user part */
+						goto error_bad_char;
 					default:
 						state=URI_USER;
 				}
