@@ -78,9 +78,9 @@ static inline int check_username(struct sip_msg* _m, struct sip_uri *_uri)
 
 	/* Get authorized digest credentials */
 	get_authorized_cred(_m->authorization, &h);
-	if (!h) {
+	if (h == NULL) {
 		get_authorized_cred(_m->proxy_auth, &h);
-		if (!h) {
+		if (h == NULL) {
 			LM_ERR("No authorized credentials found (error in scripts)\n");
 			LM_ERR("Call {www,proxy}_authorize before calling check_* functions!\n");
 			return ERR_CREDENTIALS;
