@@ -38,6 +38,7 @@ Anca-Maria Vamanu
               1.3.10. integrated_xcap_server (int)
               1.3.11. to_presence_code (int)
               1.3.12. rls_event (str)
+              1.3.13. presence_server (str)
 
         1.4. Exported Functions
 
@@ -62,8 +63,9 @@ Anca-Maria Vamanu
    1.10. Set integrated_xcap_server parameter
    1.11. Set to_presence_code parameter
    1.12. Set rls_event parameter
-   1.13. rls_handle_subscribe usage
-   1.14. rls_handle_notify usage
+   1.13. Set presence_server parameter
+   1.14. rls_handle_subscribe usage
+   1.15. rls_handle_notify usage
 
 Chapter 1. Admin Guide
 
@@ -264,6 +266,18 @@ modparam("rls", "to_presence_code", 10)
 modparam("rls", "rls_event", "dialog;sla")
 ...
 
+1.3.13. presence_server (str)
+
+   The address of the presence server. It will be used as outbound
+   proxy for Subscribes requests sent by the RLS server to
+   bouncing on and off the proxy and having to include special
+   processing for this messages in the proxy's configuration file.
+
+   Example 1.13. Set presence_server parameter
+...
+modparam("rls", "presence_server", "sip:sa@presence.opensips.org:5060")
+...
+
 1.4. Exported Functions
 
 1.4.1.  rls_handle_subscribe()
@@ -275,7 +289,7 @@ modparam("rls", "rls_event", "dialog;sla")
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.13. rls_handle_subscribe usage
+   Example 1.14. rls_handle_subscribe usage
 ...
 For presence and rls on the same machine:
         modparam(rls, "to_presence_code", 10)
@@ -301,9 +315,20 @@ For rls only:
 
 1.4.2.  rls_handle_notify()
 
+   This function has to be called for Notify messages sent by
+   presence servers in reply to the Subscribe messages sent by
+   RLS.
+
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.14. rls_handle_notify usage
+   It can return 3 codes:
+     * 1 - the Notify was inside a dialog that was recognized by
+       the RLS server and was processed successfully.
+     * 2 - the Notify did not belog to a dialog initiated by the
+       RLS server.
+     * 3 - an error occurred during processing.
+
+   Example 1.15. rls_handle_notify usage
 ...
 if(method=="NOTIFY")
     rls_handle_notify();

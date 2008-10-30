@@ -23,7 +23,7 @@
  *
  * History:
  * --------
- *  2007-09-11  initial version (anca)
+ *  2007-09-11  initial version (Anca Vamanu)
  */
 #include <stdlib.h>
 #include <stdio.h>
@@ -477,16 +477,13 @@ int rls_handle_subscribe(struct sip_msg* msg, char* s1, char* s2)
 		}
 		pto = &TO;
 	}
-//	if (msg->from->parsed == NULL)
+		
+	if ( parse_from_uri(msg)<0 ) 
 	{
-//		LM_DBG("'From' header not parsed\n");
-		/* parsing from header */
-		if ( parse_from_uri(msg)<0 ) 
-		{
-			LM_DBG("ERROR cannot parse From header\n");
-			goto error;
-		}
+		LM_ERR("ERROR cannot parse From header\n");
+		goto error;
 	}
+
 	pfrom = (struct to_body*)msg->from->parsed;
 	if( pfrom->tag_value.s ==NULL || pfrom->tag_value.len == 0)
 	{
@@ -557,15 +554,16 @@ int rls_handle_subscribe(struct sip_msg* msg, char* s1, char* s2)
 		goto error;
 	}
 	
-	/*** if correct reply with 200 OK*/
-	if(reply_200(msg, &subs.contact, subs.expires, &subs.to_tag)< 0)
-		goto error;
 
 	hash_code= core_hash(&subs.callid, &subs.to_tag, hash_size);
 
 	if(pto->tag_value.s== NULL || pto->tag_value.len==0) 
 		/* if an initial subscribe */
 	{
+		/** reply with 200 OK*/
+		if(reply_200(msg, &subs.contact, subs.expires, &subs.to_tag)< 0)
+			goto error;
+
 		subs.local_cseq= 0;
 
 		if(subs.expires!= 0)
@@ -601,6 +599,10 @@ int rls_handle_subscribe(struct sip_msg* msg, char* s1, char* s2)
 			}
 			return 0;
 		}	
+		/** reply with 200 OK*/
+		if(reply_200(msg, &subs.contact, subs.expires, &subs.to_tag)< 0)
+			goto error;
+
 
 		if(get_resource_list(&subs.pres_uri, subs.from_user,
 					subs.from_domain, &service_node, &doc)< 0)
@@ -609,8 +611,6 @@ int rls_handle_subscribe(struct sip_msg* msg, char* s1, char* s2)
 			goto error;
 		}
 	}
-	
-
 /*** send Subscribe requests for all in the list */
 
 	/* call sending Notify with full state */
@@ -684,7 +684,6 @@ int update_rlsubs( subs_t* subs, unsigned int hash_code)
 	}
 
 	s->expires= subs->expires+ (int)time(NULL);
-	s->remote_cseq= subs->remote_cseq;
 	
 	if(s->db_flag & NO_UPDATEDB_FLAG)
 		s->db_flag= UPDATEDB_FLAG;
@@ -695,6 +694,7 @@ int update_rlsubs( subs_t* subs, unsigned int hash_code)
 		LM_DBG("stored cseq= %d\n", s->remote_cseq);
 		return Stale_cseq_code;
 	}
+	s->remote_cseq= subs->remote_cseq;
 
 	subs->pres_uri.s= (char*)pkg_malloc(s->pres_uri.len* sizeof(char));
 	if(subs->pres_uri.s== NULL)
@@ -725,6 +725,8 @@ int update_rlsubs( subs_t* subs, unsigned int hash_code)
 		}
 		ps->next= s->next;
 		shm_free(s);
+	
+		/* delete from rls_presentity table also */
 	}
 	else
 	{
@@ -766,6 +768,7 @@ int resource_subscriptions(subs_t* subs, xmlNodePtr rl_node)
 	static char buf[64];
 	str extra_headers;
 	str did_str= {0, 0};
+	int cont_no= 0;
 		
 	/* if is initial send an initial Subscribe 
 	 * else search in hash table for a previous subscription */
@@ -797,11 +800,15 @@ int resource_subscriptions(subs_t* subs, xmlNodePtr rl_node)
 			"Max-Forwards: 70\r\n");
 	s.extra_headers= &extra_headers;
 	
-	if(process_list_and_exec(rl_node, send_resource_subs,(void*)(&s))< 0)
+	if(process_list_and_exec(rl_node, send_resource_subs,(void*)(&s), 
+				&cont_no)< 0)
 	{
 		LM_ERR("while processing list\n");
 		goto error;
 	}
+	LM_INFO("Subscription from %.*s for resource list uri %.*s expanded to"
+			" %d contacts\n", wuri.len, wuri.s, subs->pres_uri.len,
+			subs->pres_uri.s, cont_no);
 
 	pkg_free(wuri.s);
 	pkg_free(did_str.s);

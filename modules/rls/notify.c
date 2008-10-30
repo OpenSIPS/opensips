@@ -23,7 +23,7 @@
  *
  * History:
  * --------
- *  2007-09-11  initial version (anca)
+ *  2007-09-11  initial version (Anca Vamanu)
  */
 
 #include <stdlib.h>
@@ -432,7 +432,7 @@ str* constr_rlmi_doc(db_res_t *result, str* rl_uri, int version,
 	param.db_result= result;
 	param.cid_array= cid_array;
 
-	if(	process_list_and_exec(service_node, add_resource,(void*)(&param))< 0)
+	if(process_list_and_exec(service_node, add_resource,(void*)(&param), 0)< 0)
 	{
 		LM_ERR("in process_list_and_exec function\n");
 		goto error;
@@ -761,19 +761,7 @@ dlg_t* rls_notify_dlg(subs_t* subs)
 		}
 	}	
 	td->state= DLG_CONFIRMED ;
-
-	if (subs->sockinfo_str.len) {
-		int port, proto;
-        str host;
-		if (parse_phostport (
-				subs->sockinfo_str.s,subs->sockinfo_str.len,&host.s,
-				&host.len,&port, &proto )) {
-			LM_ERR("bad sockinfo string\n");
-			goto error;
-		}
-		td->send_sock = grep_sock_info (
-			&host, (unsigned short) port, (unsigned short) proto);
-	}
+	td->send_sock = subs->sockinfo;
 	
 	return td;
 
@@ -857,7 +845,7 @@ done:
 
 /* support only for list - ignore resource-list children */
 int process_list_and_exec(xmlNodePtr list_node, list_func_t function,
-		void* param)
+		void* param, int* cont_no)
 {
 	xmlNodePtr node;
 	char* uri;
@@ -874,6 +862,8 @@ int process_list_and_exec(xmlNodePtr list_node, list_func_t function,
 				return -1;
 			}
 			LM_DBG("uri= %s\n", uri);
+			if(cont_no)
+				*cont_no = *cont_no+1;
 			if(function(uri, param)< 0)
 			{
 				LM_ERR(" infunction given as a parameter\n");
@@ -884,7 +874,7 @@ int process_list_and_exec(xmlNodePtr list_node, list_func_t function,
 		}
 		else
 		if(xmlStrcasecmp(node->name,(unsigned char*)"list")== 0)
-			process_list_and_exec(node, function, param);
+			process_list_and_exec(node, function, param, cont_no);
 	}
 	return 0;
 

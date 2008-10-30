@@ -23,7 +23,7 @@
  *
  * History:
  * --------
- *  2007-09-11  initial version (anca)
+ *  2007-09-11  initial version (Anca Vamanu)
  */
 
 #include <stdio.h>
@@ -557,6 +557,11 @@ int rls_restore_db_subs(void)
 	event_t parsed_event;
 	unsigned int expires;
 	unsigned int hash_code;
+	str sockinfo_str;
+	int port, proto;
+	str host;
+
+
 
 	result_cols[pres_uri_col=n_result_cols++] = &str_presentity_uri_col;
 	result_cols[expires_col=n_result_cols++] = &str_expires_col;
@@ -683,9 +688,20 @@ int rls_restore_db_subs(void)
 		s.record_route.s=(char*)row_vals[record_route_col].val.string_val;
 		if(s.record_route.s)
 			s.record_route.len= strlen(s.record_route.s);
-	
-		s.sockinfo_str.s=(char*)row_vals[sockinfo_col].val.string_val;
-		s.sockinfo_str.len= strlen(s.sockinfo_str.s);
+		
+		sockinfo_str.s = (char*)row_vals[sockinfo_col].val.string_val;
+		if (sockinfo_str.s)
+		{
+			sockinfo_str.len = strlen(sockinfo_str.s);
+			if (parse_phostport (sockinfo_str.s, sockinfo_str.len, &host.s,
+					&host.len, &port, &proto )< 0)
+			{
+				LM_ERR("bad format for stored sockinfo string\n");
+				goto error;
+			}
+			s.sockinfo = grep_sock_info(&host, (unsigned short) port,
+					(unsigned short) proto);
+		}
 
 		hash_code= core_hash(&s.pres_uri, &s.event->name, hash_size);
 		if(pres_insert_shtable(rls_table, hash_code, &s)< 0)

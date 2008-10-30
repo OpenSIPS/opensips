@@ -401,10 +401,35 @@ For rls only:
 		<function moreinfo="none">rls_handle_notify()</function>
 		</title>
 		<para>
-			
+			This function has to be called for Notify messages sent by presence
+			servers in reply to the Subscribe messages sent by RLS. 
 		</para>
 		<para>
 		This function can be used from REQUEST_ROUTE.
+		</para>
+		<para>
+			It can return 3 codes:
+		<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>1</emphasis> - the Notify was inside a dialog that was
+				recognized by the RLS server and was processed successfully.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>2</emphasis> - the Notify did not belog to a dialog initiated
+				by the RLS server.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>3</emphasis> - an error occurred during processing.
+			</para>
+			</listitem>
+
+		</itemizedlist>
+
 		</para>
 		<example>
 		<title><function>rls_handle_notify</function> usage</title>
