@@ -44,7 +44,6 @@ static db_con_t* db_handle = NULL;   /* Database connection handle */
 static db_func_t uridb_dbf;
 
 /* Return codes reference */
-
 #define OK 		 	 1		/* success */
 #define ERR_INTERNAL		-1		/* Internal Error */
 #define ERR_CREDENTIALS 	-2		/* No credentials error */
