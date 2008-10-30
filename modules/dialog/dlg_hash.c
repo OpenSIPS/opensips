@@ -548,6 +548,8 @@ void next_state_dlg(struct dlg_cell *dlg, int event,
 					break;
 				case DLG_STATE_CONFIRMED:
 					break;
+				case DLG_STATE_DELETED:
+					break;
 				default:
 					LM_CRIT("bogus event %d in state %d "
 						"for dlg with clid '%.*s' and tags '%.*s' '%.*s'\n",
