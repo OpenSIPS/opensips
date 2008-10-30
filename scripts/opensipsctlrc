@@ -15,7 +15,7 @@
 ## database type: MYSQL, PGSQL, ORACLE, DB_BERKELEY, or DBTEXT, by default none is loaded
 # If you want to setup a database with opensipsdbctl, you must at least specify
 # this parameter.
- DBENGINE=MYSQL
+# DBENGINE=MYSQL
 
 ## database host
 # DBHOST=localhost
@@ -65,7 +65,7 @@
 # AWK="awk"
 
 # grep tool
-# GREP="egrep"
+ GREP="egrep"
 
 # sed tool
 # SED="sed"
@@ -77,10 +77,10 @@
 #
 
 # If to install tables for the modules in the EXTRA_MODULES variable.
-INSTALL_EXTRA_TABLES=yes
+# INSTALL_EXTRA_TABLES=ask
 
 # If to install presence related tables.
-INSTALL_PRESENCE_TABLES=yes
+# INSTALL_PRESENCE_TABLES=ask
 
 # Define what module tables should be installed.
 # If you use the postgres database and want to change the installed tables, then you
@@ -102,17 +102,23 @@ INSTALL_PRESENCE_TABLES=yes
 
 ## control engine: FIFO or UNIXSOCK
 ## - default FIFO
-# CTLENGINE="FIFO"
+# CTLENGINE=xmlrpc
 
 ## path to FIFO file
 # OSIPS_FIFO="FIFO"
+
+## MI_CONNECTOR control engine: FIFO, UNIXSOCK, UDP, XMLRPC
+# MI_CONNECTOR=FIFO:/tmp/opensips_fifo
+# MI_CONNECTOR=UNIXSOCK:/tmp/opensips.sock
+ MI_CONNECTOR=UDP:192.168.2.133:8000
+# MI_CONNECTOR=XMLRPC:192.168.2.133:8000
 
 ## check ACL names; default on (1); off (0)
 # VERIFY_ACL=1
 
 ## ACL names - if VERIFY_ACL is set, only the ACL names from below list
 ## are accepted
-# ACL_GROUPS="local ld int voicemail free-pstn"
+ ACL_GROUPS="local ld int voicemail free-pstn"
 
 ## verbose - debug purposes - default '0'
 # VERBOSE=1
