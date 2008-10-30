@@ -358,7 +358,7 @@ while ( $#content gt -1 ){
 		}
 
 		if ( $EGREP eq "") {
-			if ( $arr[0] =~ /^\s*EGREP/ ) {
+			if ( $arr[0] =~ /^\s*GREP/ ) {
 			 	$EGREP = $arr[1]; 
 			}		
 		}
@@ -1449,7 +1449,7 @@ sub opensips_start(){
 	if ( ($#cmd+1) eq 1 ){
 		print "\nStarting opensips........\n";
 		if ( -r $PID_FILE ) {
-				`ps axw | $EGREP opensips`;
+				`ps -ef | egrep opensips`;
 				`ls -l $PID_FILE`;
 				print "\nPID file exists ( " . $PID_FILE . " )! OpenSIPS already running?\n";
 				return;
@@ -1504,7 +1504,9 @@ sub opensips_stop(){
 		else {               
 	
 		       print "\nNo PID file found ( " . $PID_FILE . " )! OpenSIPS probably not running\n";
-		       print "check with 'ps axw | " . $EGREP . " opensips'\n";               
+
+		       print "check with 'ps -ef | " . $EGREP . " opensips'\n";               
+		       
 		       return;	
 		}
 	}elsif ($cmd[1] =~ /h/){		
