@@ -23,7 +23,7 @@
  *
  * History:
  * --------
- *  2007-09-11  initial version (anca)
+ *  2007-09-11  initial version (Anca Vamanu)
  */
 
 #include <stdlib.h>
@@ -67,7 +67,7 @@ dlg_t* rls_notify_dlg(subs_t* subs);
 void rls_notify_callback( struct cell *t, int type, struct tmcb_params *ps);
 
 
-int send_full_notify(subs_t* subs, xmlNodePtr rl_node, int version, str* rl_uri,
+int send_full_notify(subs_t* subs, xmlNodePtr service_node, int version, str* rl_uri,
 		unsigned int hash_code)
 {
 	str* rlmi_body= NULL;
@@ -111,7 +111,7 @@ int send_full_notify(subs_t* subs, xmlNodePtr rl_node, int version, str* rl_uri,
 	if(result== NULL)
 		goto error;
 
-	rlmi_body= constr_rlmi_doc(result, rl_uri, version, rl_node, &cid_array);
+	rlmi_body= constr_rlmi_doc(result, rl_uri, version, service_node, &cid_array);
 	if(rlmi_body== NULL)
 	{
 		LM_ERR("while constructing rlmi doc\n");
@@ -378,7 +378,7 @@ error:
 }
 
 str* constr_rlmi_doc(db_res_t *result, str* rl_uri, int version,
-		xmlNodePtr rl_node, char*** rlmi_cid_array)
+		xmlNodePtr service_node, char*** rlmi_cid_array)
 {
 	xmlDocPtr doc= NULL;
 	xmlNodePtr list_node= NULL;
@@ -432,7 +432,7 @@ str* constr_rlmi_doc(db_res_t *result, str* rl_uri, int version,
 	param.db_result= result;
 	param.cid_array= cid_array;
 
-	if(	process_list_and_exec(rl_node, add_resource,(void*)(&param))< 0)
+	if(process_list_and_exec(service_node, add_resource,(void*)(&param), 0)< 0)
 	{
 		LM_ERR("in process_list_and_exec function\n");
 		goto error;
@@ -598,9 +598,9 @@ str* rls_notify_extra_hdr(subs_t* subs, char* start_cid, char* boundary_string)
 	if(start_cid && boundary_string)
 	{
 		str_hdr->len+= sprintf(str_hdr->s+str_hdr->len,
-			"Content-Type: \"multipart/related;type=\"application/rlmi+xml\"");
+			"Content-Type: multipart/related;type=\"application/rlmi+xml\"");
 		str_hdr->len+= sprintf(str_hdr->s+str_hdr->len,
-				";start= <%s>;boundary=%s\r\n", start_cid, boundary_string);
+				";start= \"<%s>\";boundary=\"%s\"\r\n", start_cid, boundary_string);
 	}		
 	if(str_hdr->len> RLS_HDR_LEN)
 	{
@@ -761,10 +761,9 @@ dlg_t* rls_notify_dlg(subs_t* subs)
 		}
 	}	
 	td->state= DLG_CONFIRMED ;
-
 	if (subs->sockinfo_str.len) {
 		int port, proto;
-        str host;
+		str host;
 		if (parse_phostport (
 				subs->sockinfo_str.s,subs->sockinfo_str.len,&host.s,
 				&host.len,&port, &proto )) {
@@ -774,7 +773,7 @@ dlg_t* rls_notify_dlg(subs_t* subs)
 		td->send_sock = grep_sock_info (
 			&host, (unsigned short) port, (unsigned short) proto);
 	}
-	
+
 	return td;
 
 error:
@@ -855,8 +854,9 @@ done:
 
 }
 
+/* support only for list - ignore resource-list children */
 int process_list_and_exec(xmlNodePtr list_node, list_func_t function,
-		void* param)
+		void* param, int* cont_no)
 {
 	xmlNodePtr node;
 	char* uri;
@@ -873,6 +873,8 @@ int process_list_and_exec(xmlNodePtr list_node, list_func_t function,
 				return -1;
 			}
 			LM_DBG("uri= %s\n", uri);
+			if(cont_no)
+				*cont_no = *cont_no+1;
 			if(function(uri, param)< 0)
 			{
 				LM_ERR(" infunction given as a parameter\n");
@@ -883,7 +885,7 @@ int process_list_and_exec(xmlNodePtr list_node, list_func_t function,
 		}
 		else
 		if(xmlStrcasecmp(node->name,(unsigned char*)"list")== 0)
-			process_list_and_exec(node, function, param);
+			process_list_and_exec(node, function, param, cont_no);
 	}
 	return 0;
 

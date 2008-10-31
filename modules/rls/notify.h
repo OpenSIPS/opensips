@@ -23,7 +23,7 @@
  *
  * History:
  * --------
- *  2007-09-11  initial version (anca)
+ *  2007-09-11  initial version (Anca Vamanu)
  *
  */
 
@@ -52,7 +52,7 @@ int send_full_notify(subs_t* subs, xmlNodePtr rl_node,
 
 typedef int (*list_func_t)(char* uri, void* param); 
 
-int process_list_and_exec(xmlNodePtr list, list_func_t function, void* param);
+int process_list_and_exec(xmlNodePtr list, list_func_t f, void* p, int* c);
 char* generate_string(int seed, int length);
 char* generate_cid(char* uri, int uri_len);
 char* get_auth_string(int flag);

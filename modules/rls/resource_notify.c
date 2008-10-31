@@ -23,7 +23,7 @@
  *
  * History:
  * --------
- *  2007-09-11  initial version (anca)
+ *  2007-09-11  initial version (Anca Vamanu)
  */
 
 #include <stdio.h>
@@ -74,6 +74,7 @@ int parse_subs_state(str auth_state, str** reason, int* expires)
 
 	if( strncmp(auth_state.s, "terminated", 10)== 0)
 	{
+		*expires = 0;
 		smc= strchr(auth_state.s, ';');
 		if(smc== NULL)
 		{
@@ -153,7 +154,7 @@ int rls_handle_notify(struct sip_msg* msg, char* c1, char* c2)
 	struct hdr_field* hdr= NULL;
 	int n, expires= -1;
 	str content_type= {0, 0};
-
+	int err_ret = -1;
 
 	LM_DBG("start\n");
 	/* extract the dialog information and check if an existing dialog*/	
@@ -175,8 +176,6 @@ int rls_handle_notify(struct sip_msg* msg, char* c1, char* c2)
 	if(msg->to->parsed != NULL)
 	{
 		pto = (struct to_body*)msg->to->parsed;
-		LM_DBG("'To' header ALREADY PARSED: <%.*s>\n",
-				pto->uri.len, pto->uri.s );	
 	}
 	else
 	{
@@ -237,12 +236,13 @@ int rls_handle_notify(struct sip_msg* msg, char* c1, char* c2)
 	}
 	if(pua_get_record_id(&dialog, &res_id)< 0) // verify if within a stored dialog
 	{
-		LM_ERR("occured when trying to get record id\n");
+		LM_ERR("error occured while trying to get dialog record id\n");
 		goto error;
 	}
 	if(res_id== 0)
 	{
-		LM_ERR("record not found\n");
+		LM_DBG("no dialog match found in hash table\n");
+		err_ret = 2;
 		goto error;
 	}
 
@@ -269,9 +269,12 @@ int rls_handle_notify(struct sip_msg* msg, char* c1, char* c2)
 	else
 		content_type= msg->content_type->body;
 
+	LM_DBG("NOTIFY for [user]= %.*s ",dialog.pres_uri->len,
+			dialog.pres_uri->s);
 	/*constructing the xml body*/
 	if(get_content_length(msg) == 0 )
 	{
+		LM_DBG("null body\n");
 		goto done;
 	}	
 	else
@@ -288,11 +291,10 @@ int rls_handle_notify(struct sip_msg* msg, char* c1, char* c2)
 			goto error;
 		}
 		body.len = get_content_length( msg );
-
+		LM_DBG("[body]= %.*s\n", body.len, body.s);
 	}
-	/* update in rlpres_table where rlsusb_did= res_id and resource_uri= from_uri*/
 	
-	LM_DBG("body= %.*s\n", body.len, body.s);
+	/* update in rlpres_table where rlsusb_did= res_id and resource_uri= from_uri*/
 
 	query_cols[n_query_cols]= &str_rlsubs_did_col;
 	query_vals[n_query_cols].type = DB_STR;
@@ -372,21 +374,29 @@ int rls_handle_notify(struct sip_msg* msg, char* c1, char* c2)
 			LM_ERR("in sql insert\n");
 			goto error;
 		}
-		LM_DBG("Inserted in database table new record\n");
 	}
 	else
 	{
-		LM_DBG("Updated in db table already existing record\n");
-		if(rls_dbf.update(rls_db, query_cols, 0, query_vals, query_cols+2,
-						query_vals+2, 2, n_query_cols-2)< 0)
+		if(expires!= 0)
 		{
-			LM_ERR("in sql update\n");
-			goto error;
+			if(rls_dbf.update(rls_db, query_cols, 0, query_vals, query_cols+2,
+						query_vals+2, 2, n_query_cols-2)< 0)
+			{
+				LM_ERR("in sql update\n");
+				goto error;
+			}
+		}
+		else  /* if terminated - delete from rls_presentity table */
+		{
+			if(rls_dbf.delete(rls_db, query_cols, 0, query_vals, 2)< 0)
+			{
+				LM_ERR("sql delete failed\n");
+				goto error;
+			}
+
 		}
 	}
 	
-	LM_DBG("Updated rlpres_table\n");	
-	/* reply 200OK */
 done:
 	if( slb.reply(msg, 200, &su_200_rpl)== -1)
 	{
@@ -397,7 +407,7 @@ done:
 	return 1;
 
 error:
-	return -1;
+	return err_ret;
 }
 /* callid, from_tag, to_tag parameters must be allocated */
 
@@ -579,7 +589,8 @@ void timer_send_notify(unsigned int ticks,void *param)
 				LM_ERR("while copying subs_t structure\n");
 				lock_release(&rls_table[hash_code].lock);
 				goto done;
-			}	
+			}
+			dialog->expires-= (int)time(NULL);
 			lock_release(&rls_table[hash_code].lock);
 
 			/* make new rlmi and multipart documents */

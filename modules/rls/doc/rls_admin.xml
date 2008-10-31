@@ -332,6 +332,24 @@ modparam("rls", "rls_event", "dialog;sla")
 		</example>
 	</section>
 
+	<section>
+		<title><varname>presence_server</varname> (str)</title>
+		<para>
+		The address of the presence server. It will be used as outbound proxy for
+		Subscribes requests sent by the RLS server to bouncing on and off the
+		proxy and having to include special processing for this messages
+		in the proxy's configuration file.
+		</para>
+		<example>
+		<title>Set <varname>presence_server</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("rls", "presence_server", "sip:sa@presence.opensips.org:5060")
+...
+		</programlisting>
+		</example>
+	</section>
+
 </section>
 
 <section>
@@ -383,10 +401,35 @@ For rls only:
 		<function moreinfo="none">rls_handle_notify()</function>
 		</title>
 		<para>
-			
+			This function has to be called for Notify messages sent by presence
+			servers in reply to the Subscribe messages sent by RLS. 
 		</para>
 		<para>
 		This function can be used from REQUEST_ROUTE.
+		</para>
+		<para>
+			It can return 3 codes:
+		<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>1</emphasis> - the Notify was inside a dialog that was
+				recognized by the RLS server and was processed successfully.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>2</emphasis> - the Notify did not belog to a dialog initiated
+				by the RLS server.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>3</emphasis> - an error occurred during processing.
+			</para>
+			</listitem>
+
+		</itemizedlist>
+
 		</para>
 		<example>
 		<title><function>rls_handle_notify</function> usage</title>

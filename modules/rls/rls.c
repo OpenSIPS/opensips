@@ -23,7 +23,7 @@
  *
  * History:
  * --------
- *  2007-09-11  initial version (anca)
+ *  2007-09-11  initial version (Anca Vamanu)
  */
 
 #include <stdio.h>
@@ -65,6 +65,7 @@ db_func_t rls_dbf;
 
 /** modules variables */
 str server_address= {0, 0};
+str presence_server= {0, 0};
 int waitn_time= 10;
 str rlsubs_table= str_init("rls_watchers");
 str rlpres_table= str_init("rls_presentity");
@@ -100,7 +101,7 @@ mem_copy_subs_t  pres_copy_subs;
 update_db_subs_t pres_update_db_subs;
 extract_sdialog_info_t pres_extract_sdialog_info;
 int rls_events= EVENT_PRESENCE;
-int to_presence_code= 1;
+int to_presence_code= 10;
 int rls_max_expires= 7200;
 
 /* functions imported from xcap_client module */
@@ -169,6 +170,7 @@ static cmd_export_t cmds[]=
 
 static param_export_t params[]={
 	{ "server_address",         STR_PARAM,   &server_address.s			     },
+	{ "presence_server",        STR_PARAM,   &presence_server.s			     },
 	{ "db_url",					STR_PARAM,   &db_url.s					     },
 	{ "rlsubs_table",	        STR_PARAM,   &rlsubs_table.s			     },
 	{ "rlpres_table",			STR_PARAM,   &rlpres_table.s			     },
@@ -224,6 +226,9 @@ static int mod_init(void)
 	}	
 	else
 		server_address.len= strlen(server_address.s);
+	
+	if(presence_server.s)
+		presence_server.len= strlen(presence_server.s);
 	
 	if(!rls_integrated_xcap_server && xcap_root== NULL)
 	{
@@ -350,11 +355,13 @@ static int mod_init(void)
 		LM_ERR("while creating new hash table\n");
 		return -1;
 	}
+	/*
 	if(rls_restore_db_subs()< 0)
 	{
 		LM_ERR("while restoring rl watchers table\n");
 		return -1;
 	}
+	*/
 
 	if(rls_db)
 		rls_dbf.close(rls_db);
@@ -676,9 +683,9 @@ int rls_restore_db_subs(void)
 		s.record_route.s=(char*)row_vals[record_route_col].val.string_val;
 		if(s.record_route.s)
 			s.record_route.len= strlen(s.record_route.s);
-	
+		
 		s.sockinfo_str.s=(char*)row_vals[sockinfo_col].val.string_val;
-		s.sockinfo_str.len= strlen(s.sockinfo_str.s);
+		s.sockinfo_str.len= (s.sockinfo_str.s)?strlen(s.sockinfo_str.s):0;
 
 		hash_code= core_hash(&s.pres_uri, &s.event->name, hash_size);
 		if(pres_insert_shtable(rls_table, hash_code, &s)< 0)
