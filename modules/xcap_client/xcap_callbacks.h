@@ -23,7 +23,7 @@
  *	
  *History:
  *--------
- *  2007-08-30  initial version (anca)
+ *  2007-08-30  initial version (Anca Vamanu)
  */
 
 #ifndef XCAP_CBACK
@@ -33,7 +33,7 @@
 
 #define PRES_RULES         1<<1
 #define RESOURCE_LIST      1<<2
-#define RLS_SERVICE        1<<3
+#define RLS_SERVICES       1<<3
 #define PIDF_MANIPULATION  1<<4
 
 
