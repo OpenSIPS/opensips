@@ -112,7 +112,7 @@ struct action* mk_action(int type, int n, action_elem_t *elem, int line)
 	{
 		a->elem[i].type = elem[i].type;
 		a->elem[i].u.data = elem[i].u.data;
-		if(a->elem[i].type==STRING_ST && a->elem[i].u.s.s!=NULL)
+		if(a->elem[i].type==STR_ST && a->elem[i].u.s.s!=NULL)
 			a->elem[i].u.s.len = strlen(a->elem[i].u.s.s);
 	}
 
