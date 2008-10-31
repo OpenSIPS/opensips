@@ -82,7 +82,8 @@ build_rt_info(
 	char *ep=NULL;
 	rt_info_t* rt = NULL;
 	int *idx = NULL, *t_idx=NULL;
-	int n=0, idx_size=0,i, grp_idx=0, t=0;
+	int n=0, idx_size=0,i, grp_idx=0;
+	long t=0;
 	pgw_t *pgw=NULL;
 
 	if(NULL == (rt = (rt_info_t*)shm_malloc(sizeof(rt_info_t)))) {
@@ -297,8 +298,8 @@ add_dst(
 	}
 
 	if (NULL==(pgw=(pgw_t*)shm_malloc(sizeof(pgw_t)))) {
-		LM_ERR("no more shm mem (%d)\n",
-			sizeof(pgw_t));
+		LM_ERR("no more shm mem (%u)\n",
+			(unsigned int)sizeof(pgw_t));
 		goto err_exit;
 	}
 	memset(pgw,0,sizeof(pgw_t));
@@ -374,8 +375,8 @@ add_dst(
 	LM_DBG("new gw ip addr [%s]\n", ip);
 	tmpa = (pgw_addr_t*)shm_malloc(sizeof(pgw_addr_t));
 	if(tmpa==NULL) {
-		LM_ERR("no more shm mem (%d)\n",
-			sizeof(pgw_addr_t));
+		LM_ERR("no more shm mem (%u)\n",
+			(unsigned int)sizeof(pgw_addr_t));
 		goto err_exit;
 	}
 	memset(tmpa, 0, sizeof(pgw_addr_t));
