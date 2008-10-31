@@ -292,24 +292,3 @@ void uridb_db_close(void)
 		db_handle=0;
 	}
 }
-
-
-int uridb_db_ver(const str* db_url, str* name)
-{
-	db_con_t* dbh;
-	int ver;
-	
-	if (uridb_dbf.init==0){
-		LM_CRIT("BUG: unbound database\n");
-		return -1;
-	}
-
-	dbh=uridb_dbf.init(db_url);
-	if (dbh==0){
-		LM_ERR("unable to open database connection\n");
-		return -1;
-	}
-	ver=db_table_version(&uridb_dbf, dbh, name);
-	uridb_dbf.close(dbh);
-	return ver;
-}
