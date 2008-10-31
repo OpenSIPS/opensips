@@ -70,7 +70,7 @@ static inline int check_username(struct sip_msg* _m, struct sip_uri *_uri)
 	db_key_t cols[1];
 	db_res_t* res = NULL;
 
-	if (!_uri) {
+	if (_uri == NULL) {
 		LM_ERR("Bad parameter\n");
 		return ERR_INTERNAL;
 	}
@@ -211,7 +211,7 @@ int does_uri_exist(struct sip_msg* _msg, char* _s1, char* _s2)
 	if (use_uri_table) {
 		if (uridb_dbf.use_table(db_handle, &db_table) < 0) {
 			LM_ERR("Error while trying to use uri table\n");
-			return -2;
+			return ERR_DBUSE;
 		}
 		keys[0] = &uridb_uriuser_col;
 		keys[1] = &uridb_domain_col;
@@ -254,17 +254,15 @@ int uridb_db_init(const str* db_url)
 {
 	if (uridb_dbf.init==0){
 		LM_CRIT("BUG: null dbf\n");
-		goto error;
+		return -1;
 	}
 	
 	db_handle=uridb_dbf.init(db_url);
-	if (db_handle==0){
+	if (db_handle==NULL){
 		LM_ERR("unable to connect to the database\n");
-		goto error;
+		return -1;
 	}
 	return 0;
-error:
-	return -1;
 }
 
 
@@ -287,8 +285,8 @@ int uridb_db_bind(const str* db_url)
 
 void uridb_db_close(void)
 {
-	if (db_handle && uridb_dbf.close){
+	if (db_handle != NULL && uridb_dbf.close != 0){
 		uridb_dbf.close(db_handle);
-		db_handle=0;
+		db_handle=NULL;
 	}
 }
