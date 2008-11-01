@@ -152,7 +152,7 @@ static int child_init(int rank)
  */
 static int mod_init(void)
 {
-	int checkver;
+	int checkver=-1;
 	db_func_t db_funcs;
 	db_con_t *db_conn = NULL;
 
@@ -162,7 +162,7 @@ static int mod_init(void)
 
 	db_url.len = strlen(db_url.s);
 	if (db_url.len == 0) {
-		if (use_uri_table) {
+		if (use_uri_table != 0) {
 			LM_ERR("configuration error - no database URL, "
 				"but use_uri_table is set!\n");
 			goto error;
@@ -172,7 +172,7 @@ static int mod_init(void)
 
 	if (db_table.s == NULL) {
 		/* no table set -> use defaults */
-		if (use_uri_table){
+		if (use_uri_table != 0){
 			db_table.s = URI_TABLE;
 			db_table.len = strlen(URI_TABLE)+1;
 		}

@@ -90,7 +90,7 @@ static inline int check_username(struct sip_msg* _m, struct sip_uri *_uri)
 
 	/* Parse To/From URI */
 	/* Make sure that the URI contains username */
-	if (!_uri->user.len) {
+	if (_uri->user.len == 0) {
 		LM_ERR("Username not found in URI\n");
 		return ERR_USERNOTFOUND;
 	}
