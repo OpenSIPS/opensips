@@ -85,23 +85,31 @@ static int w_add_rr_param(struct sip_msg *,char *, char *);
 static int w_check_route_param(struct sip_msg *,char *, char *);
 static int w_is_direction(struct sip_msg *,char *, char *);
 
+static int pv_get_rr_params(struct sip_msg *msg, pv_param_t *param, pv_value_t *res);
 /*! \brief
  * Exported functions
  */
 static cmd_export_t cmds[] = {
-	{"loose_route",          (cmd_function)loose_route,           0,     0, 0,
+	{"loose_route",          (cmd_function)loose_route,           0,
+			0, 0,
 			REQUEST_ROUTE},
-	{"record_route",         (cmd_function)w_record_route,        0,     0, 0,
+	{"record_route",         (cmd_function)w_record_route,        0,
+			0, 0,
 			REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
-	{"record_route",         (cmd_function)w_record_route,        1,     it_list_fixup, 0,
+	{"record_route",         (cmd_function)w_record_route,        1,
+			it_list_fixup, 0,
 			REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
-	{"record_route_preset",  (cmd_function)w_record_route_preset, 1,     it_list_fixup, 0,
+	{"record_route_preset",  (cmd_function)w_record_route_preset, 1,
+			it_list_fixup, 0,
 			REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
-	{"add_rr_param",         (cmd_function)w_add_rr_param,        1,     it_list_fixup, 0,
+	{"add_rr_param",         (cmd_function)w_add_rr_param,        1,
+			it_list_fixup, 0,
 			REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
-	{"check_route_param",    (cmd_function)w_check_route_param,   1,     fixup_regexp_null, fixup_free_regexp_null,
+	{"check_route_param",    (cmd_function)w_check_route_param,   1,
+			fixup_regexp_null, fixup_free_regexp_null,
 			REQUEST_ROUTE},
-	{"is_direction",         (cmd_function)w_is_direction,        1,     direction_fixup, 0,
+	{"is_direction",         (cmd_function)w_is_direction,        1,
+			direction_fixup, 0,
 			REQUEST_ROUTE},
 	{"load_rr",              (cmd_function)load_rr, 0, 0, 0, 0},
 	{0, 0, 0, 0, 0, 0}
@@ -123,6 +131,16 @@ static param_export_t params[] ={
 };
 
 
+/**
+ * pseudo-variables exported by RR module
+ */
+static pv_export_t mod_items[] = {
+	{ {"rr_params", sizeof("rr_params")-1}, 900, pv_get_rr_params, 0,
+		0, 0, 0, 0 },
+	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
+};
+
+
 struct module_exports exports = {
 	"rr",
 	DEFAULT_DLFLAGS, /*!< dlopen flags */
@@ -130,7 +148,7 @@ struct module_exports exports = {
 	params,      /*!< Exported parameters */
 	0,           /*!< exported statistics */
 	0,           /*!< exported MI functions */
-	0,           /*!< exported pseudo-variables */
+	mod_items,   /*!< exported pseudo-variables */
 	0,           /*!< extra processes */
 	mod_init,    /*!< initialize module */
 	0,           /*!< response function*/
@@ -208,6 +226,27 @@ static int direction_fixup(void** param, int param_no)
 		/* replace it with the flag */
 		*param = (void*)(unsigned long)n;
 	}
+	return 0;
+}
+
+
+static int pv_get_rr_params(struct sip_msg *msg, pv_param_t *param,
+															pv_value_t *res)
+{
+	str val;
+
+	if(msg==NULL || res==NULL)
+		return -1;
+
+	/* obtain routed params */
+	if (get_route_params(msg, &val) < 0 )
+		return -1;
+
+	res->rs.s = val.s;
+	res->rs.len = val.len;
+
+	res->flags = PV_VAL_STR;
+
 	return 0;
 }
 

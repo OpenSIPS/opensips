@@ -50,6 +50,7 @@ Bogdan-Andrei Iancu
               1.5.4. add_rr_param(param)
               1.5.5. check_route_param(re)
               1.5.6. is_direction(dir)
+              1.5.7. Exported pseudo-variables
 
    2. Developer Guide
 
@@ -347,6 +348,15 @@ if (is_direction("upstream")) {
     xdbg("upstream request ($rm)\n");
 }
 ...
+
+1.5.7. Exported pseudo-variables
+
+   Exported pseudo-variables are listed in the next sections.
+
+1.5.7.1. $rr_params
+
+   $rr_params - the whole string of the Route paramters - this is
+   available only after calling loose_route()
 
 Chapter 2. Developer Guide
 

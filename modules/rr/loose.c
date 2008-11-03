@@ -911,6 +911,21 @@ int loose_route(struct sip_msg* _m, char* _s1, char* _s2)
 }
 
 
+int get_route_params(struct sip_msg *msg, str *val)
+{
+	if(msg==NULL)
+		return -1;
+
+	/* check if the hooked params belong to the same message */
+	if (routed_msg_id != msg->id)
+		return -1;
+
+	val->s = routed_params.s;
+	val->len = routed_params.len;
+
+	return 0;
+}
+
 
 int check_route_param(struct sip_msg * msg, regex_t* re)
 {

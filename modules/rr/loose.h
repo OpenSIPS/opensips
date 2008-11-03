@@ -63,4 +63,9 @@ int is_direction(struct sip_msg *msg, int dir);
  */
 int get_route_param( struct sip_msg *msg, str *name, str *val);
 
+
+/*! \brief
+ * Gets all route params as a string
+ */
+int get_route_params(struct sip_msg *msg, str *val);
 #endif /* LOOSE_H */

@@ -426,8 +426,19 @@ if (is_direction("upstream")) {
 		</example>
 	</section>
 
-
-
+	<section>
+		<title>Exported pseudo-variables</title>
+		<para>
+		Exported pseudo-variables are listed in the next sections.
+		</para>
+		<section>
+		<title>$rr_params</title>
+			<para>
+			<emphasis>$rr_params</emphasis> - the whole string of the Route
+			paramters - this is available only after calling loose_route()
+			</para>
+		</section>
+	</section>
 
 	</section>
 </chapter>
