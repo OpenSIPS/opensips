@@ -97,6 +97,13 @@ int sl_shutdown(void)
 }
 
 
+int sl_get_totag(struct sip_msg *msg, str *totag)
+{
+	*totag = sl_tag;
+	return 0;
+}
+
+
 /* Take care of the statistics associated with numerical codes and replies */
 static inline void update_sl_reply_stat(int code) 
 {

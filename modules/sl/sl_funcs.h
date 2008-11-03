@@ -24,6 +24,7 @@
 #ifndef _SL_FUNCS_H
 #define _SL_FUNCS_H
 
+#include "../../str.h"
 #include "../../parser/msg_parser.h"
 
 #define SL_RPL_WAIT_TIME  2  /* in sec */
@@ -36,6 +37,7 @@ int sl_send_reply( struct sip_msg *msg, int code, str *reason);
 int sl_send_reply_dlg( struct sip_msg *msg, int code, str *reason, str *tag);
 int sl_filter_ACK( struct sip_msg *msg, void *foo );
 int sl_reply_error( struct sip_msg *msg );
+int sl_get_totag( struct sip_msg *msg, str *totag );
 
 
 #endif
