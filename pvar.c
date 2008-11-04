@@ -1572,13 +1572,13 @@ static int pv_get_hdr(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res)
 			/* next hf */
 			if (tv.flags==0) {
 				/* it is a known header -> use type to find it */
-				for ( ; hf; hf=hf->next) {
+				for (hf=hf->next ; hf; hf=hf->next) {
 					if (tv.ri==hf->type)
 						break;
 				}
 			} else {
 				/* it is an un-known header -> use name to find it */
-				for ( ; hf; hf=hf->next) {
+				for (hf=hf->next ; hf; hf=hf->next) {
 					if (hf->type==HDR_OTHER_T && hf->name.len==tv.rs.len
 					&& strncasecmp(hf->name.s, tv.rs.s, hf->name.len)==0)
 						break;
