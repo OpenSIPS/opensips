@@ -23,7 +23,7 @@
  *
  * History:
  * --------
- *  2007-03-30  initial version (anca)
+ *  2007-03-30  initial version (Anca Vamanu)
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -34,6 +34,8 @@
 #include "../../parser/parse_from.h"
 #include "../pua/hash.h"
 #include "pua_bla.h"
+
+#define DEFAULT_EXPIRES  3600
 
 int bla_handle_notify(struct sip_msg* msg, char* s1, char* s2)
 {
@@ -142,35 +144,39 @@ int bla_handle_notify(struct sip_msg* msg, char* s1, char* s2)
 	if(strncmp(subs_state.s, "terminated", 10)== 0)
 		expires= 0;
 	else
+	{
 		if(strncmp(subs_state.s, "active", 6)== 0 ||
 				strncmp(subs_state.s, "pending", 7)==0 )
 		{
+			expires = DEFAULT_EXPIRES;
 			char* sep= NULL;
 			str exp= {0, 0};
 			sep= strchr(subs_state.s, ';');
-			if(sep== NULL)
+			if(sep)
 			{
-				LM_ERR("No expires found in Notify\n");
-				goto error;
-			}
-			if(strncmp(sep+1, "expires=", 8)!= 0)
-			{
-				LM_ERR("No expires found in Notify\n");
-				goto error;
-			}
-			exp.s= sep+ 9;
-			sep= exp.s;
-			while((*sep)>='0' && (*sep)<='9')
-			{
-				sep++;
-				exp.len++;
-			}
-			if( str2int(&exp, &expires)< 0)
-			{
-				LM_ERR("while parsing int\n");
-				goto error;
+				if(strncmp(sep+1, "expires=", 8)== 0)
+				{
+					exp.s= sep+ 9;
+					sep= exp.s;
+					while((*sep)>='0' && (*sep)<='9')
+					{
+						sep++;
+						exp.len++;
+					}
+					if( str2int(&exp, &expires)< 0)
+					{
+						LM_ERR("while parsing int\n");
+						goto error;
+					}
+				}
 			}
 		}
+		else
+		{
+			LM_ERR("unknown Subscription-state token\n");
+			goto error;
+		}
+	}
 
 	if ( get_content_length(msg) == 0 )
 	{
