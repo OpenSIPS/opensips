@@ -1567,7 +1567,7 @@ static int pv_get_hdr(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res)
 			memcpy(p, hf->body.s, hf->body.len);
 			p += hf->body.len;
 			/* next hf */
-			for (; hf; hf=hf->next)
+			for (hf=hf->next; hf; hf=hf->next)
 			{
 				if(tv.flags == 0)
 				{
