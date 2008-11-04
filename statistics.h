@@ -184,9 +184,9 @@ extern gen_lock_t *stat_lock;
 		do { \
 			if (_c) update_stat( _var, _n); \
 		}while(0)
-	#define if_reset_stat(_c, _var, _n) \
+	#define if_reset_stat(_c, _var) \
 		do { \
-			if (_c) reset_stat( _var, _n); \
+			if (_c) reset_stat( _var); \
 		}while(0)
 #else
 	#define update_stat( _var, _n)
