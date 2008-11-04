@@ -424,7 +424,7 @@ For rls only:
 			</listitem>
 			<listitem>
 			<para>
-				<emphasis>3</emphasis> - an error occurred during processing.
+				<emphasis>-1</emphasis> - an error occurred during processing.
 			</para>
 			</listitem>
 
