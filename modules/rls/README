@@ -326,7 +326,7 @@ For rls only:
        the RLS server and was processed successfully.
      * 2 - the Notify did not belog to a dialog initiated by the
        RLS server.
-     * 3 - an error occurred during processing.
+     * -1 - an error occurred during processing.
 
    Example 1.15. rls_handle_notify usage
 ...
