@@ -33,6 +33,7 @@
 #
 
 #TLS=1
+#SCTP=1
 #FREERADIUS=1
 auto_gen=lex.yy.c cfg.tab.c   #lexx, yacc etc
 
@@ -48,11 +49,12 @@ skip_cfg_install?=
 skip_modules?=
 
 # if not set on the cmd. line or the env, exclude this modules:
-exclude_modules?= jabber cpl-c db_mysql db_postgres osp db_unixodbc \
-	db_oracle avp_radius auth_radius group_radius uri_radius \
-	xmpp presence presence_xml presence_mwi pua pua_bla pua_mi \
-	pua_usrloc pua_xmpp rls mi_xmlrpc perl snmpstats perlvdb \
-	ldap carrierroute h350 xcap_client db_berkeley seas peering
+exclude_modules?= jabber cpl-c xmpp rls mi_xmlrpc xcap_client \
+	db_mysql db_postgres db_unixodbc db_oracle db_berkeley \
+	avp_radius auth_radius group_radius uri_radius \
+	osp perl snmpstats perlvdb seas peering carrierroute mmgeoip \
+	presence presence_xml presence_mwi pua pua_bla pua_mi pua_usrloc pua_xmpp \
+	ldap h350
 ifeq ($(TLS),)
 	exclude_modules+= tlsops
 endif
