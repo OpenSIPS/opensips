@@ -91,8 +91,13 @@ int decrement_maxfwd( struct sip_msg* msg , int x, str *s)
 {
 	int i;
 
-	/*rewriting the max-fwd value in the message (buf and orig)*/
+	/* decrement the value */
 	x--;
+
+	/* update the stored value */
+	STORE_MAXWD_VAL(msg, x);
+
+	/* rewriting the max-fwd value in the message (buf and orig) */
 	for(i = s->len - 1; i >= 0; i--) {
 		s->s[i] = (x % 10) + '0';
 		x /= 10;
@@ -102,9 +107,6 @@ int decrement_maxfwd( struct sip_msg* msg , int x, str *s)
 		}
 	}
 	while(i >= 0) s->s[i--] = ' ';
-
-	/* update the stored value */
-	STORE_MAXWD_VAL(msg, x);
 
 	return 0;
 }
