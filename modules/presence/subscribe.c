@@ -81,7 +81,7 @@ int send_2XX_reply(struct sip_msg * msg, int reply_code, int lexpire,
 		goto error;
 	}
 
-	if( slb.reply_dlg( msg, reply_code, &su_200_rpl, rtag)== -1)
+	if( sigb.reply( msg, reply_code, &su_200_rpl, rtag)== -1)
 	{
 		LM_ERR("sending reply\n");
 		goto error;
@@ -280,7 +280,7 @@ int update_subscription(struct sip_msg* msg, subs_t* subs, int to_tag_gen,
 			subs->local_cseq= delete_shtable(subs_htable,hash_code,
 					subs->to_tag);
 		
-			if( send_2XX_reply(msg, reply_code, subs->expires, &subs->to_tag,
+			if( send_2XX_reply(msg, reply_code, subs->expires, 0,
 						&subs->local_contact) <0)
 			{
 				LM_ERR("sending %d OK\n", reply_code);
@@ -326,9 +326,26 @@ int update_subscription(struct sip_msg* msg, subs_t* subs, int to_tag_gen,
 				goto error;
 			}
 		}
+		
+		if(send_2XX_reply(msg, reply_code, subs->expires, 0,
+			&subs->local_contact)<0)
+		{
+			LM_ERR("sending 202 OK reply\n");
+			goto error;
+		}
+
+
 	}
 	else
 	{
+		if(send_2XX_reply(msg, reply_code, subs->expires, &subs->to_tag,
+			&subs->local_contact)<0)
+		{
+			LM_ERR("sending 202 OK reply\n");
+			goto error;
+		}
+		*sent_reply= 1;
+		
 		if(subs->expires!= 0)
 		{	
 			if(insert_shtable(subs_htable,hash_code,subs)< 0)
@@ -341,16 +358,7 @@ int update_subscription(struct sip_msg* msg, subs_t* subs, int to_tag_gen,
 		 * no update in database, but should try to send Notify */
 	}
 
-/* reply_and_notify  */
-
-	if(send_2XX_reply(msg, reply_code, subs->expires,&subs->to_tag,
-			&subs->local_contact)<0)
-	{
-		LM_ERR("sending 202 OK reply\n");
-		goto error;
-	}
-	*sent_reply= 1;
-
+/* send notify  */
 	if(subs->event->type & PUBL_TYPE)
 	{	
 		if(subs->expires!= 0 && subs->event->wipeer)
@@ -447,7 +455,7 @@ void msg_watchers_clean(unsigned int ticks,void *param)
 
 int handle_subscribe(struct sip_msg* msg, char* str1, char* str2)
 {
-	int  to_tag_gen = 0;
+	int  init_req = 0;
 	subs_t subs;
 	pres_ev_t* event= NULL;
 	event_t* parsed_event= NULL;
@@ -513,14 +521,14 @@ int handle_subscribe(struct sip_msg* msg, char* str1, char* str2)
 		ev_param= ev_param->next;
 	}		
 	
-	if(extract_sdialog_info(&subs, msg, max_expires, &to_tag_gen)< 0)
+	if(extract_sdialog_info(&subs, msg, max_expires, &init_req)< 0)
 	{
 		LM_ERR("failed to extract dialog information\n");
 		goto error;
 	}
 
 	/* getting presentity uri from Request-URI if initial subscribe - or else from database*/
-	if(to_tag_gen)
+	if(init_req)
 	{
 		if(parsed_event->parsed!= EVENT_DIALOG_SLA)
 		{
@@ -559,7 +567,7 @@ int handle_subscribe(struct sip_msg* msg, char* str1, char* str2)
 
 
 	/* if dialog initiation Subscribe - get subscription state */
-	if(to_tag_gen)
+	if(init_req)
 	{
 		if(!event->req_auth) 
 			subs.status = ACTIVE_STATUS;
@@ -624,7 +632,7 @@ int handle_subscribe(struct sip_msg* msg, char* str1, char* str2)
     LM_DBG("subscription status= %s - %s\n", get_status_str(subs.status), 
             found==0?"inserted":"found in watcher table");
 	
-	if(update_subscription(msg, &subs, to_tag_gen, &sent_reply) <0)
+	if(update_subscription(msg, &subs, init_req, &sent_reply) <0)
 	{	
 		LM_ERR("in update_subscription\n");
 		goto error;
@@ -693,16 +701,14 @@ error:
 }
 
 
-int extract_sdialog_info(subs_t* subs,struct sip_msg* msg, int mexp, int* to_tag_gen)
+int extract_sdialog_info(subs_t* subs,struct sip_msg* msg, int mexp, int* init_req)
 {
-	static char buf[50];
 	str rec_route= {0, 0};
 	int rt  = 0;
 	str* contact= NULL;
 	contact_body_t *b;
 	struct to_body *pto, *pfrom = NULL, TO;
 	int lexpire;
-	str rtag_value;
 	struct sip_uri uri;
 
 	/* examine the expire header field */
@@ -801,28 +807,14 @@ int extract_sdialog_info(subs_t* subs,struct sip_msg* msg, int mexp, int* to_tag
 		subs->from_domain = uri.host;
 	}
 
-	/*generate to_tag if the message does not have a to_tag*/
+	/*check if the message is an initial request */
 	if (pto->tag_value.s==NULL || pto->tag_value.len==0 )
 	{  
-		LM_DBG("generating to_tag\n");
-		*to_tag_gen = 1;
-		/*generate to_tag then insert it in avp*/
-		
-		rtag_value.s = buf;
-		rtag_value.len = sprintf(rtag_value.s,"%s.%d.%d.%d", to_tag_pref,
-				pid, (int)time(NULL), counter);
-		if(rtag_value.len<= 0)
-		{
-			LM_ERR("while creating to_tag\n");
-			goto error;
-		}
+		LM_DBG("initial request\n");
+		*init_req = 1;
 	}
 	else
-	{
-		*to_tag_gen = 0;
-		rtag_value=pto->tag_value;
-	}
-	subs->to_tag = rtag_value;
+		subs->to_tag = pto->tag_value;
 
 	if( msg->callid==NULL || msg->callid->body.s==NULL)
 	{
@@ -881,7 +873,7 @@ int extract_sdialog_info(subs_t* subs,struct sip_msg* msg, int mexp, int* to_tag
 
 
 	/*process record route and add it to a string*/
-	if(*to_tag_gen && msg->record_route!=NULL)
+	if(*init_req && msg->record_route!=NULL)
 	{
 		rt = print_rr_body(msg->record_route, &rec_route, 0, 0);
 		if(rt != 0)

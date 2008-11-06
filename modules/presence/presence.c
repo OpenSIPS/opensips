@@ -48,7 +48,7 @@
 #include "../../mem/shm_mem.h"
 #include "../../usr_avp.h"
 #include "../tm/tm_load.h"
-#include "../sl/sl_api.h"
+#include "../signaling/signaling.h"
 #include "../../pt.h"
 #include "../../mi/mi.h"
 #include "../pua/hash.h"
@@ -79,13 +79,10 @@ int library_mode= 0;
 str server_address= {0, 0};
 evlist_t* EvList= NULL;
 
-/* to tag prefix */
-char* to_tag_pref = "10";
-
 /* TM bind */
 struct tm_binds tmb;
-/* SL bind */
-struct sl_binds slb;
+/* SIGNALING bind */
+struct sig_binds sigb;
 
 /** module functions */
 
@@ -134,7 +131,6 @@ static param_export_t params[]={
 	{ "watchers_table",         STR_PARAM, &watchers_table.s},
 	{ "clean_period",           INT_PARAM, &clean_period },
 	{ "db_update_period",       INT_PARAM, &db_update_period },
-	{ "to_tag_pref",            STR_PARAM, &to_tag_pref },
 	{ "expires_offset",         INT_PARAM, &expires_offset },
 	{ "max_expires",            INT_PARAM, &max_expires },
 	{ "server_address",         STR_PARAM, &server_address.s},
@@ -198,9 +194,6 @@ static int mod_init(void)
 	if(expires_offset<0)
 		expires_offset = 0;
 	
-	if(to_tag_pref==NULL || strlen(to_tag_pref)==0)
-		to_tag_pref="10";
-
 	if(max_expires<= 0)
 		max_expires = 3600;
 
@@ -212,10 +205,10 @@ static int mod_init(void)
 	else
 		server_address.len= 0;
 
-	/* load SL API */
-	if(load_sl_api(&slb)==-1)
+	/* load SIGNALING API */
+	if(load_sig_api(&sigb)< 0)
 	{
-		LM_ERR("can't load sl functions\n");
+		LM_ERR("can't load signaling functions\n");
 		return -1;
 	}
 

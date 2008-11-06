@@ -32,7 +32,7 @@
 
 #include "../../parser/msg_parser.h"
 #include "../tm/tm_load.h"
-#include "../sl/sl_api.h"
+#include "../signaling/signaling.h"
 #include "../../db/db.h"
 #include "../../parser/parse_from.h"
 #include "event_list.h"
@@ -40,6 +40,8 @@
 
 /* TM bind */
 extern struct tm_binds tmb;
+extern struct sig_binds sigb;
+
 /* DB module bind */
 extern db_func_t pa_dbf;
 extern db_con_t* pa_db;
@@ -55,7 +57,6 @@ extern int pid;
 extern int startup_time;
 extern char *to_tag_pref;
 extern int expires_offset;
-extern struct sl_binds slb;
 extern str server_address;
 extern int max_expires;
 extern int fallback2db;

@@ -134,7 +134,7 @@ int send_error_reply(struct sip_msg* msg, int reply_code, str reply_str)
 		}
 	}
 
-	if (slb.reply(msg, reply_code, &reply_str) == -1)
+	if (sigb.reply(msg, reply_code, &reply_str, 0) == -1)
 	{
 		LM_ERR("sending %d %.*s reply\n", reply_code, reply_str.len, reply_str.s);
 		return -1;
