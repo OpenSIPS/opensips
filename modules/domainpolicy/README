@@ -108,7 +108,7 @@ Chapter 1. Admin Guide
    This is URL of the database to be used.
 
    Default value is
-   "mysql://opensipsro:opensipsro@localhost/osips"
+   "mysql://opensipsro:opensipsro@localhost/opensips"
 
    Example 1.1. Setting db_url parameter
 modparam("domainpolicy", "db_url", "postgresql://user:pass@db_host/opens

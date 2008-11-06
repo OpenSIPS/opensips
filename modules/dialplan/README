@@ -206,7 +206,7 @@ Chapter 1. Admin Guide
 
    The translation rules will be loaded using this database url.
 
-   Default value is "mysql://opensips:opensipsrw@localhost/osips".
+   Default value is "mysql://opensips:opensipsrw@localhost/opensips".
 
    Example 1.1. Set db_url parameter
 ...

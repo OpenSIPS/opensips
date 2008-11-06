@@ -173,7 +173,7 @@ Chapter 1. Admin Guide
    URL of the database table to be used.
 
    Default value is
-   "mysql://opensipsro:opensipsro@localhost/osips".
+   "mysql://opensipsro:opensipsro@localhost/opensips".
 
    Example 1.1. Setting db_url module parameter
 ...

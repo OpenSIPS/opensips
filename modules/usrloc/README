@@ -393,7 +393,7 @@ modparam("usrloc", "timer_interval", 120)
 
    URL of the database that should be used.
 
-   Default value is "mysql://opensips:opensipsrw@localhost/osips".
+   Default value is "mysql://opensips:opensipsrw@localhost/opensips".
 
    Example 1.19. Set db_url parameter
 ...

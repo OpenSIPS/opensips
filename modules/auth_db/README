@@ -107,7 +107,7 @@ Chapter 1. Admin Guide
    the database resides.
 
    Default value is
-   "mysql://opensipsro:opensipsro@localhost/osips".
+   "mysql://opensipsro:opensipsro@localhost/opensips".
 
    Example 1.1. db_url parameter usage
 modparam("auth_db", "db_url", "dbdriver://username:password@dbhost/dbnam
