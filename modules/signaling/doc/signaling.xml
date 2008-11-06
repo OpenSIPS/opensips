@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding='ISO-8859-1'?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN"
+"http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd" [
+
+
+<!ENTITY admin SYSTEM "signaling_admin.xml">
+<!ENTITY faq SYSTEM "../../../doc/module_faq.xml">
+
+<!-- Include general documentation entities -->
+<!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
+%docentities;
+
+]>
+
+<book>
+    <bookinfo>
+	<title>signaling Module</title>
+	<productname class="trade">&osipsname;</productname>
+	<authorgroup>
+	    <author>
+		<firstname>Anca-Maria</firstname>
+		<surname>Vamanu</surname>
+		<affiliation><orgname>&voicesystem;</orgname></affiliation>
+		<address>
+		    <email>anca@voice-system.ro</email>
+		</address>
+	    </author>
+	    <editor>
+		<firstname>Anca-Maria</firstname>
+		<surname>Vamanu</surname>
+		<address>
+		    <email>anca@voice-system.ro</email>
+		</address>
+	    </editor>
+	</authorgroup>
+	<copyright>
+	    <year>2008</year>
+	    <holder>&fhg;</holder>
+	</copyright>
+	<revhistory>
+	    <revision>
+		<revnumber>$Revision: 4473 $</revnumber>
+		<date>$Date:  $</date>
+	    </revision>
+	</revhistory>
+    </bookinfo>
+    <toc></toc>
+    
+    &admin;
+    &faq;
+    
+</book>

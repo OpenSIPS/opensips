@@ -1,0 +1,132 @@
+<!-- Module User's Guide -->
+
+<chapter>
+	
+	<title>&adminguide;</title>
+	
+	<section>
+	<title>Overview</title>
+	<para>
+		The <acronym>SIGNALING</acronym> module comes as a wrapper over 
+		tm and sl modules and offers one function to be called by the modules
+		that want to send a reply. 
+	</para>
+	<para>
+		The logic behind th emodule is to first search if a transaction is
+		created and if so, send a state full reply, using tm module, otherwise
+		send a stateless reply with the function exported by sl.
+		In this way, the script writer still has the call on how the transaction 
+		should be handled, state full or stateless and the reply is send 
+		accordingly to his choice.
+	</para>
+	<para>
+		For example, if you do a t_newtran() in the script before doing save() 
+		(for registration), the function will automatically send the reply in 
+		stateful mode as a transaction is available. If no transaction is done, 
+		the reply will be sent in stateless way (as now).
+	</para>
+	<para>
+		By doing this, we have the possibility to have same module sending 
+		either stateful either stateless replies, by just controlling this from 
+		the script (if we create or not a transaction).
+		So, the signalling will be more coherent as the replies will be sent 
+		according to the transaction presence (or not).
+	</para>
+	<para>
+	Moreover, this module offers the possibility of loading only one 
+	of the module, sl or tm, and send reply using only the module that is 
+	loaded. This is useful as not in all cases a user desires to send 
+	stateful or stateless replies and he should not be forced to load the 
+	module only because the send reply interface requires it.
+	</para>
+	</section>
+	<section>
+	<title>Dependencies</title>
+	<section>
+		<title>&osips; Modules</title>
+		<para>
+		At least one of the following modules must be loaded before this module:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>sl</emphasis>.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>tm</emphasis>.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+	<section>
+		<title>External Libraries or Applications</title>
+		<para>
+		The following libraries or applications must be installed before running
+		&osips; with this module loaded:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>None</emphasis>.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+	</section>
+
+	<section>
+	<title>Exported Parameters</title>
+		<para>
+		<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>None</emphasis>.
+			</para>
+			</listitem>
+		</itemizedlist>
+		</para>
+	</section>
+
+	<section>
+	<title>Exported Functions</title>
+	<section>
+		<title>
+		<function moreinfo="none">send_reply(code, reason)</function>
+		</title>
+		<para>
+		For the current request, a reply is sent back having the given code 
+		and text reason. The reply is sent stateless or statefull depending 
+		on which module is loaded and if a transaction was created, as 
+		explained above.
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>code</emphasis> - Return code.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>reason</emphasis> - Reason phrase.
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from REQUEST_ROUTE, ERROR_ROUTE.
+		</para>
+		<example>
+		<title><function>sl_send_reply</function> usage</title>
+		<programlisting format="linespecific">
+...
+send_reply("404", "Not found");
+...
+send_reply("$err.rcode", "$err.rreason");
+...
+		</programlisting>
+		</example>
+	</section>
+	</section>
+	
+</chapter>
+
