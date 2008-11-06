@@ -136,7 +136,7 @@ sip:12391001@mydomain.com  => sip:91001@alpha.org
 
    URL of the database table to be used.
 
-   Default value is "mysql://opensips:opensipsrw@localhost/osips".
+   Default value is "mysql://opensips:opensipsrw@localhost/opensips".
 
    Example 1.2. Set db_url parameter
 ...

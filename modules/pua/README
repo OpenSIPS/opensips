@@ -118,7 +118,7 @@ modparam("pua", "hash_size", 11)
    Database url.
 
    Default value is
-   ">mysql://opensips:opensipsrw@localhost/osips".
+   ">mysql://opensips:opensipsrw@localhost/opensips".
 
    Example 1.2. Set db_url parameter
 ...

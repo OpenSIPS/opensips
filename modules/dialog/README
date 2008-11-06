@@ -356,7 +356,7 @@ modparam("dialog", "dlg_match_mode", 1)
    If you want to store the information about the dialogs in a
    database a database url must be specified.
 
-   Default value is "mysql://opensips:opensipsrw@localhost/osips".
+   Default value is "mysql://opensips:opensipsrw@localhost/opensips".
 
    Example 1.10. Set db_url parameter
 ...
