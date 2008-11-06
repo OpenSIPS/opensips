@@ -355,7 +355,7 @@ void publ_cback_func(struct cell *t, int type, struct tmcb_params *ps)
 	presentity->flag|= hentity->flag;
 	presentity->event|= hentity->event;
 
-	presentity->etag.s= (char*)shm_malloc(etag.len* sizeof(char));
+	presentity->etag.s= (char*)shm_malloc(etag.len);
 	if(presentity->etag.s== NULL)
 	{
 		LM_ERR("No more share memory\n");
@@ -365,7 +365,7 @@ void publ_cback_func(struct cell *t, int type, struct tmcb_params *ps)
 	presentity->etag.len= etag.len;
 
 	insert_htable( presentity);
-	LM_DBG("***Inserted in hash table\n");		
+	LM_DBG("***Inserted in hash table\n");
 
 done:
 	if(hentity->ua_flag == REQ_OTHER)
@@ -650,7 +650,7 @@ ua_pres_t* publish_cbparam(publ_info_t* publ,str* body,str* tuple_id,
 
 	if(publ->id.s && publ->id.len)
 	{	
-		cb_param->id.s = ((char*)cb_param+ size);
+		cb_param->id.s = (char*)cb_param+ size;
 		memcpy(cb_param->id.s, publ->id.s, publ->id.len);
 		cb_param->id.len= publ->id.len;
 		size+= publ->id.len;

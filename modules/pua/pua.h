@@ -41,6 +41,5 @@ extern int HASH_SIZE;
 extern int min_expires;
 extern int pua_ul_publish;
 extern int default_expires;
-extern str outbound_proxy;
 
 #endif
