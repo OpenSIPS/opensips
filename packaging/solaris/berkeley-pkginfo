@@ -1,6 +1,6 @@
 PKG="OpenSIPS-berkeley"
 NAME="Programmable SIP Server DB Berkeley Support"
-VERSION="1.5.0dev"
+VERSION="1.5.0dev2-notls"
 ARCH="sparc"
 CLASSES="none"
 CATEGORY="utility"
