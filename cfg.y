@@ -544,7 +544,7 @@ blst_elem_list: blst_elem_list COMMA blst_elem {}
 		;
 
 
-assign_stm: DEBUG EQUAL NUMBER { 
+assign_stm: DEBUG EQUAL snumber { 
 #ifdef CHANGEABLE_DEBUG_LEVEL
 					*debug=$3;
 #else
