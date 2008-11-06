@@ -32,7 +32,7 @@
 <!ENTITY faqguide "Frequently Asked Questions">
 
 <!ENTITY defaultdb "mysql://opensips:opensipsrw@localhost/osips">
-<!ENTITY defaultrodb "mysql://opensipsro:opensipsro@localhost/osips">
+<!ENTITY defaultrodb "mysql://opensipsro:opensipsro@localhost/opensips">
 <!ENTITY exampledb "dbdriver://username:password@dbhost/dbname">
 
 <!-- Often used acronyms -->

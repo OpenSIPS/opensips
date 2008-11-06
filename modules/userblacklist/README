@@ -105,7 +105,7 @@ Chapter 1. Admin Guide
    Url to the database containing the routing data.
 
    Default value is
-   "mysql://opensipsro:opensipsro@localhost/osips".
+   "mysql://opensipsro:opensipsro@localhost/opensips".
 
    Example 1.1. Set db_url parameter
 ...
