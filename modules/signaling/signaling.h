@@ -29,6 +29,9 @@
 #ifndef _SIG_H_
 #define _SIG_H_
 
+#include "../../sr_module.h"
+#include "../../parser/msg_parser.h"
+
 typedef int (*sig_send_reply_f)(struct sip_msg *msg, int code, str *reason,
 		str *tag);
 
@@ -54,6 +57,5 @@ static inline int load_sig_api( struct sig_binds *sigb)
 
 	return 0;
 }
-
 
 #endif
