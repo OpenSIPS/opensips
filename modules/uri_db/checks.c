@@ -27,6 +27,7 @@
  * 2004-03-20: has_totag introduced (jiri)
  * 2004-06-07  updated to the new DB api, added uridb_db_{bind,init,close,ver}
  *              (andrei)
+ * 2008-11-07: Added statistics to module: positive_checks and negative_checls (saguti)
  */
 
 #include <string.h>

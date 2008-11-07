@@ -24,11 +24,12 @@
  * History:
  * -------
  *  2003-03-11: New module interface (janakj)
- *  2003-03-16: flags export parameter added (janakj)
- *  2003-03-19  replaces all mallocs/frees w/ pkg_malloc/pkg_free (andrei)
+ *  2003-03-16: Flags export parameter added (janakj)
+ *  2003-03-19: Replaces all mallocs/frees w/ pkg_malloc/pkg_free (andrei)
  *  2003-04-05: default_uri #define used (jiri)
  *  2004-03-20: has_totag introduced (jiri)
- *  2004-06-07  updated to the new DB api (andrei)
+ *  2004-06-07: Updated to the new DB api (andrei)
+ *  2008-11-07: Added statistics to module: positive_checks and negative_checks (saguti)
  */
 
 
