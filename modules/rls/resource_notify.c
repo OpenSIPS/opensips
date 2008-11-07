@@ -398,9 +398,9 @@ int rls_handle_notify(struct sip_msg* msg, char* c1, char* c2)
 	}
 	
 done:
-	if( slb.reply(msg, 200, &su_200_rpl)== -1)
+	if( rls_sigb.reply(msg, 200, &su_200_rpl, 0) < 0)
 	{
-		LM_ERR("while sending reply\n");
+		LM_ERR("failed to send SIP reply\n");
 		goto error;
 	}	
 

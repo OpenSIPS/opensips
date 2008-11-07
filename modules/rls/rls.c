@@ -44,7 +44,7 @@
 #include "../../mem/mem.h"
 #include "../../mem/shm_mem.h"
 #include "../tm/tm_load.h"
-#include "../sl/sl_api.h"
+#include "../signaling/signaling.h"
 #include "../presence/bind_presence.h"
 #include "../presence/hash.h"
 #include "../pua/pua_bind.h"
@@ -113,8 +113,8 @@ get_record_id_t pua_get_record_id;
 
 /* TM bind */
 struct tm_binds tmb;
-/* SL bind */
-struct sl_binds slb;
+/* SIGNALING bind */
+struct sig_binds rls_sigb;
 
 str str_rlsubs_did_col = str_init("rlsubs_did");
 str str_resource_uri_col = str_init("resource_uri");
@@ -158,6 +158,7 @@ void destroy(void);
 int rlsubs_table_restore();
 void rlsubs_table_update(unsigned int ticks,void *param);
 int add_rls_event(modparam_t type, void* val);
+int parse_xcap_root(void);
 
 static cmd_export_t cmds[]=
 {
@@ -169,35 +170,35 @@ static cmd_export_t cmds[]=
 };
 
 static param_export_t params[]={
-	{ "server_address",         STR_PARAM,   &server_address.s			     },
-	{ "presence_server",        STR_PARAM,   &presence_server.s			     },
-	{ "db_url",					STR_PARAM,   &db_url.s					     },
-	{ "rlsubs_table",	        STR_PARAM,   &rlsubs_table.s			     },
-	{ "rlpres_table",			STR_PARAM,   &rlpres_table.s			     },
-	{ "xcap_table",		    	STR_PARAM,   &rls_xcap_table.s    		     },
-	{ "waitn_time",				INT_PARAM,   &waitn_time				     },
-	{ "clean_period",			INT_PARAM,   &clean_period				     },
-	{ "max_expires",			INT_PARAM,   &rls_max_expires			     },
-	{ "hash_size",			    INT_PARAM,   &hash_size			             },
-	{ "integrated_xcap_server",	INT_PARAM,   &rls_integrated_xcap_server     },	
-	{ "to_presence_code",       INT_PARAM,   &to_presence_code               },
-	{ "xcap_root",              STR_PARAM,   &xcap_root                      },
+	{ "server_address",         STR_PARAM, &server_address.s           },
+	{ "presence_server",        STR_PARAM, &presence_server.s          },
+	{ "db_url",                 STR_PARAM, &db_url.s                   },
+	{ "rlsubs_table",           STR_PARAM, &rlsubs_table.s             },
+	{ "rlpres_table",           STR_PARAM, &rlpres_table.s             },
+	{ "xcap_table",             STR_PARAM, &rls_xcap_table.s           },
+	{ "waitn_time",             INT_PARAM, &waitn_time                 },
+	{ "clean_period",           INT_PARAM, &clean_period               },
+	{ "max_expires",            INT_PARAM, &rls_max_expires            },
+	{ "hash_size",              INT_PARAM, &hash_size                  },
+	{ "integrated_xcap_server", INT_PARAM, &rls_integrated_xcap_server },
+	{ "to_presence_code",       INT_PARAM, &to_presence_code           },
+	{ "xcap_root",              STR_PARAM, &xcap_root                  },
 	/*address and port(default: 80):"http://192.168.2.132:8000/xcap-root"*/
 	{ "rls_event",              STR_PARAM|USE_FUNC_PARAM,(void*)add_rls_event},
-	{0,							0,				0						     }
+	{  0,                       0,              0                       }
 };
 
 /** module exports */
 struct module_exports exports= {
-	"rls",  					/* module name */
-	DEFAULT_DLFLAGS,			/* dlopen flags */
-	cmds,						/* exported functions */
-	params,						/* exported parameters */
-	0,							/* exported statistics */
-	0,      					/* exported MI functions */
-	0,							/* exported pseudo-variables */
-	0,							/* extra processes */
-	mod_init,					/* module initialization function */
+	"rls",                      /* module name */
+	DEFAULT_DLFLAGS,            /* dlopen flags */
+	cmds,                       /* exported functions */
+	params,                     /* exported parameters */
+	0,                          /* exported statistics */
+	0,                          /* exported MI functions */
+	0,                          /* exported pseudo-variables */
+	0,                          /* extra processes */
+	mod_init,                   /* module initialization function */
 	(response_function) 0,      /* response handling function */
 	(destroy_function) destroy, /* destroy function */
 	child_init                  /* per-child init function */
@@ -216,60 +217,37 @@ static int mod_init(void)
 	libxml_api_t libxml_api;
 	bind_xcap_t bind_xcap;
 	xcap_api_t xcap_api;
-	char* sep;
 
 	LM_DBG("start\n");
 
 	if(!server_address.s)
 	{
 		LM_DBG("server_address parameter not set in configuration file\n");
-	}	
+	}
 	else
 		server_address.len= strlen(server_address.s);
 	
 	if(presence_server.s)
 		presence_server.len= strlen(presence_server.s);
 	
-	if(!rls_integrated_xcap_server && xcap_root== NULL)
+	if(!rls_integrated_xcap_server)
 	{
-		LM_ERR("xcap_root parameter not set\n");
-		return -1;
+		if(xcap_root== NULL)
+		{
+			LM_ERR("xcap_root parameter not set\n");
+			return -1;
+		}
+		if(parse_xcap_root() < 0)
+		{
+			LM_ERR("wrong format for xcap_root parameter\n");
+			return -1;
+		}
 	}
-	/* extract port if any */
-	if(xcap_root)
-    {
-        sep= strchr(xcap_root, ':');
-        if(sep)
-        {
-            char* sep2= NULL;
-            sep2= strchr(sep+ 1, ':');
-            if(sep2)
-                sep= sep2;
 
-            str port_str;
-
-            port_str.s= sep+ 1;
-            port_str.len= strlen(xcap_root)- (port_str.s-xcap_root);
-
-            if(str2int(&port_str, &xcap_port)< 0)
-            {
-                LM_ERR("converting string to int [port]= %.*s\n",port_str.len,
-                        port_str.s);
-                return -1;
-            }
-            if(xcap_port< 0 || xcap_port> 65535)
-            {
-                LM_ERR("wrong xcap server port\n");
-                return -1;
-            }
-            *sep= '\0';
-        }
-    }
-
-	/* load SL API */
-	if(load_sl_api(&slb)==-1)
+	/* load SIGNALING API */
+	if(load_sig_api(&rls_sigb)< 0)
 	{
-		LM_ERR("can't load sl functions\n");
+		LM_ERR("can't load signaling functions\n");
 		return -1;
 	}
 
@@ -452,6 +430,38 @@ static int mod_init(void)
 	
 	register_timer(rlsubs_table_update, 0, clean_period);
 	
+	return 0;
+}
+
+int parse_xcap_root(void)
+{
+	char* sep;
+	sep= strchr(xcap_root, ':');
+	
+	if(sep)
+	{
+		char* sep2= NULL;
+		str port_str;
+		
+		sep2= strchr(sep+ 1, '/');
+		if(!sep2)
+			sep2 = xcap_root + strlen(xcap_root);
+
+		port_str.s= sep+ 1;
+		port_str.len= sep2- port_str.s;
+
+		if(str2int(&port_str, &xcap_port)< 0)
+		{
+			LM_ERR("converting string to int [port]= %.*s\n",port_str.len,
+					port_str.s);
+			return -1;
+		}
+		if(xcap_port< 0 || xcap_port> 65535)
+		{
+			LM_ERR("wrong xcap server port\n");
+			return -1;
+		}
+	}
 	return 0;
 }
 

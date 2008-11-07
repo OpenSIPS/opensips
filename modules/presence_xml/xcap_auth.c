@@ -437,7 +437,7 @@ int get_rules_doc(str* user, str* domain, int type, str** rules_doc)
 		*rules_doc= NULL;
 		return 0;
 	}
-	LM_DBG("[user]= %.*s\t[domain]= %.*s", 
+	LM_DBG("[user]= %.*s\t[domain]= %.*s\n", 
 			user->len, user->s,	domain->len, domain->s);
 	/* first search in database */
 	query_cols[n_query_cols] = &tmp1;

@@ -271,13 +271,12 @@ int reply_421(struct sip_msg* msg)
 		return -1;
 	}
 
-	if (slb.reply(msg, 421, &pu_421_rpl) == -1)
+	if (rls_sigb.reply(msg, 421, &pu_421_rpl, 0) == -1)
 	{
-		LM_ERR("while sending reply\n");
+		LM_ERR("failed to send reply\n");
 		return -1;
 	}
 	return 0;
-
 }
 
 int reply_200(struct sip_msg* msg, str* contact, int expires, str* rtag)
@@ -321,9 +320,9 @@ int reply_200(struct sip_msg* msg, str* contact, int expires, str* rtag)
 		goto error;
 	}
 
-	if( slb.reply_dlg( msg, 200, &su_200_rpl, rtag)== -1)
+	if( rls_sigb.reply( msg, 200, &su_200_rpl, rtag)< 0)
 	{
-		LM_ERR("while sending reply\n");
+		LM_ERR("failed to send reply\n");
 		goto error;
 	}	
 	pkg_free(hdr_append.s);
@@ -367,9 +366,9 @@ int reply_489(struct sip_msg * msg)
 		LM_ERR("unable to add lump_rl\n");
 		return -1;
 	}
-	if (slb.reply(msg, 489, &pu_489_rpl) == -1)
+	if (rls_sigb.reply(msg, 489, &pu_489_rpl, 0) == -1)
 	{
-		LM_ERR("while sending reply\n");
+		LM_ERR("failed to send reply\n");
 		return -1;
 	}
 	return 0;
@@ -386,9 +385,9 @@ int rls_handle_subscribe(struct sip_msg* msg, char* s1, char* s2)
 	xmlDocPtr doc= NULL;
 	xmlNodePtr service_node= NULL;
 	unsigned int hash_code;
-	int to_tag_gen= 0;
 	event_t* parsed_event;
 	param_t* ev_param= NULL;
+	int init_req;
 
 /*** filter: 'For me or for presence server?' */	
 
@@ -397,9 +396,9 @@ int rls_handle_subscribe(struct sip_msg* msg, char* s1, char* s2)
 	if ( parse_headers(msg,HDR_EOH_F, 0)==-1 )
 	{
 		LM_ERR("parsing headers\n");
-		if (slb.reply(msg, 400, &pu_400_rpl) == -1)
+		if (rls_sigb.reply(msg, 400, &pu_400_rpl, 0) == -1)
 		{
-			LM_ERR("while sending 400 reply\n");
+			LM_ERR("failed to send 400 reply\n");
 			return -1;
 		}
 		return 0;
@@ -548,16 +547,15 @@ int rls_handle_subscribe(struct sip_msg* msg, char* s1, char* s2)
 	}
 
 	/* extract dialog information from message headers */
-	if(pres_extract_sdialog_info(&subs, msg, rls_max_expires, &to_tag_gen)< 0)
+	if(pres_extract_sdialog_info(&subs, msg, rls_max_expires, &init_req)< 0)
 	{
 		LM_ERR("bad Subscribe request\n");
 		goto error;
 	}
-	
 
 	hash_code= core_hash(&subs.callid, &subs.to_tag, hash_size);
 
-	if(pto->tag_value.s== NULL || pto->tag_value.len==0) 
+	if(init_req) 
 		/* if an initial subscribe */
 	{
 		/** reply with 200 OK*/
@@ -592,15 +590,15 @@ int rls_handle_subscribe(struct sip_msg* msg, char* s1, char* s2)
 		{
 			reason= (rt==400)?pu_400_rpl:stale_cseq_rpl;
 		
-			if (slb.reply(msg, 400, &reason) == -1)
+			if (rls_sigb.reply(msg, 400, &reason, 0) == -1)
 			{
-				LM_ERR("while sending reply\n");
+				LM_ERR("failed to send reply\n");
 				goto error;
 			}
 			return 0;
-		}	
+		}
 		/** reply with 200 OK*/
-		if(reply_200(msg, &subs.contact, subs.expires, &subs.to_tag)< 0)
+		if(reply_200(msg, &subs.contact, subs.expires, 0)< 0)
 			goto error;
 
 
@@ -643,7 +641,7 @@ int rls_handle_subscribe(struct sip_msg* msg, char* s1, char* s2)
 bad_event:
 	if(reply_489(msg)< 0)
 	{
-		LM_ERR("while sending 489 reply\n");
+		LM_ERR("failed to send 489 reply\n");
 		err_ret= -1;
 	}
 	err_ret= 0;

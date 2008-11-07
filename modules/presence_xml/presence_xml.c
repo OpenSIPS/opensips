@@ -43,7 +43,7 @@
 #include "../presence/hash.h"
 #include "../presence/notify.h"
 #include "../xcap_client/xcap_functions.h"
-#include "../sl/sl_api.h"
+#include "../signaling/signaling.h"
 #include "pidf.h"
 #include "add_events.h"
 #include "presence_xml.h"
@@ -76,8 +76,8 @@ int pidf_manipulation= 0;
 int integrated_xcap_server= 0;
 xcap_serv_t* xs_list= NULL;
 
-/* SL bind */
-struct sl_binds slb;
+/* SIGNALING bind */
+struct sig_binds xml_sigb;
 
 /* database connection */
 db_con_t *pxml_db = NULL;
@@ -155,9 +155,9 @@ static int mod_init(void)
 		return -1;
 	}
 	/* load SL API */
-	if(load_sl_api(&slb)==-1)
+	if(load_sig_api(&xml_sigb)==-1)
 	{
-		LM_ERR("can't load sl functions\n");
+		LM_ERR("can't load signaling functions\n");
 		return -1;
 	}
 

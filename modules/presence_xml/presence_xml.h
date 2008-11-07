@@ -30,7 +30,7 @@
 #define _PRES_XML_H_
 
 #include "../../db/db.h"
-#include "../sl/sl_api.h"
+#include "../signaling/signaling.h"
 #include "../presence/event_list.h"
 #include "../presence/presence.h"
 #include "../presence/presentity.h"
@@ -53,5 +53,6 @@ extern int integrated_xcap_server;
 extern xcap_serv_t* xs_list;
 extern xcapGetNewDoc_t xcap_GetNewDoc;
 extern pres_get_sphere_t pres_get_sphere;
+extern struct sig_binds xml_sigb;
 
 #endif
