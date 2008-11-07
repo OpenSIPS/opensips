@@ -27,7 +27,7 @@
  * 2004-03-20: has_totag introduced (jiri)
  * 2004-06-07  updated to the new DB api, added uridb_db_{bind,init,close,ver}
  *              (andrei)
- * 2008-11-07: Added statistics to module: positive_checks and negative_checls (saguti)
+ * 2008-11-07: Added statistics to module: positive_checks and negative_checks (saguti)
  */
 
 #include <string.h>
@@ -102,7 +102,7 @@ static inline int check_username(struct sip_msg* _m, struct sip_uri *_uri)
 	 * usernames for a single, thus a user can have several different usernames
 	 * (which are different from digest username and it will still match)
 	 */
-	if (use_uri_table) {
+	if (use_uri_table != 0) {
 		if (uridb_dbf.use_table(db_handle, &db_table) < 0) {
 			LM_ERR("Error while trying to use uri table\n");
 			return ERR_DBACCESS;
@@ -113,6 +113,7 @@ static inline int check_username(struct sip_msg* _m, struct sip_uri *_uri)
 		keys[2] = &uridb_uriuser_col;
 		cols[0] = &uridb_user_col;
 
+		/* The whole fields are type DB_STR, and not null */
 		VAL_TYPE(vals) = VAL_TYPE(vals + 1) = VAL_TYPE(vals + 2) = DB_STR;
 		VAL_NULL(vals) = VAL_NULL(vals + 1) = VAL_NULL(vals + 2) = 0;
 
@@ -214,7 +215,7 @@ int does_uri_exist(struct sip_msg* _msg, char* _s1, char* _s2)
 		return ERR_INTERNAL;
 	}
 
-	if (use_uri_table) {
+	if (use_uri_table != 0) {
 		if (uridb_dbf.use_table(db_handle, &db_table) < 0) {
 			LM_ERR("Error while trying to use uri table\n");
 			return ERR_DBUSE;
