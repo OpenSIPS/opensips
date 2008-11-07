@@ -206,7 +206,7 @@ static int mod_init(void)
 	db_conn = db_funcs.init(&db_url);
 	if( db_conn == NULL ) {
 		LM_ERR("Could not connect to database\n");
-		goto error;
+		return -1;
 	}
 
 	checkver = db_check_table_version( &db_funcs, db_conn, &db_table,
@@ -216,7 +216,7 @@ static int mod_init(void)
 	if( checkver == -1 ) {
 		LM_ERR("Invalid table version.\n");
 		db_funcs.close(db_conn);
-		goto error;
+		return -1;
 	}
 
 	db_funcs.close(db_conn);
@@ -224,7 +224,7 @@ static int mod_init(void)
 	/* done with checkings - init the working connection */
 	if (uridb_db_bind(&db_url)!=0) {
 		LM_ERR("Failed to bind to a DB module\n");
-		goto error;
+		return -1;
 	}
 
 	return 0;
