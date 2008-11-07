@@ -270,5 +270,23 @@ if (does_uri_exist()) {
 		</example>
 	</section>
 	</section>
+	
+	<section>
+		<title>Exported statistics</title>
+		<para>
+			Exported statistics are listed in the next sections.
+		</para>
+
+		<section>
+			<title>positive_checks</title>
+			<para>Number of tests executed for which a positive match is returned.</para>
+		</section>
+		<section>
+			<title>negative_checks</title>
+			<para>
+				Number of tests executed for which a negative match is returned. This includes no credentials found, or not match found in database.
+			</para>
+		</section>
+	</section>
 </chapter>
 

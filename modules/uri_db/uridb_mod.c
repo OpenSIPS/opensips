@@ -115,6 +115,16 @@ static param_export_t params[] = {
 	{0, 0, 0}
 };
 
+/*
+ *  * Module statistics
+ *   */
+
+stat_export_t uridb_stats[] = {
+        {"positive checks" ,  0,  &positive_checks  },
+        {"negative_checks"  ,  0,  &negative_checks  },
+        {0,0,0}
+};
+
 
 /*
  * Module interface
@@ -124,7 +134,7 @@ struct module_exports exports = {
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	cmds,      /* Exported functions */
 	params,    /* Exported parameters */
-	0,         /* exported statistics */
+	uridb_stats,         /* exported statistics */
 	0 ,        /* exported MI functions */
 	0,         /* exported pseudo-variables */
 	0,         /* extra processes */

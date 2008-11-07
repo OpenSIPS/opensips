@@ -32,6 +32,7 @@
 
 #include "../../db/db.h"
 #include "../../str.h"
+#include "../../statistics.h"
 
 /*
  * Module parameters variables
@@ -42,5 +43,16 @@ extern str uridb_domain_col;          /**< Name of domain column in URI table */
 extern str uridb_uriuser_col;         /**< Name of uri_user column in URI table */
 extern int use_uri_table;             /**< Whether or not should be uri table used */
 extern int use_domain;                /**< Should does_uri_exist honor the domain part ? */
+
+
+/*
+ * Variables to hold module statistics 
+ */
+
+/* Variable to account positive checks (matches) */
+stat_var *positive_checks;
+
+/* Variable to account negative checks (no matches) */
+stat_var *negative_checks;
 
 #endif /* URI_MOD_H */

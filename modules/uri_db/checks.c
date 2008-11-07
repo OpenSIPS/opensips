@@ -82,6 +82,7 @@ static inline int check_username(struct sip_msg* _m, struct sip_uri *_uri)
 		if (h == NULL) {
 			LM_ERR("No authorized credentials found (error in scripts)\n");
 			LM_ERR("Call {www,proxy}_authorize before calling check_* functions!\n");
+			update_stat(negative_checks, 1);
 			return ERR_CREDENTIALS;
 		}
 	}
@@ -132,11 +133,13 @@ static inline int check_username(struct sip_msg* _m, struct sip_uri *_uri)
 			LM_DBG("From/To user '%.*s' is spoofed\n",
 				   _uri->user.len, ZSW(_uri->user.s));
 			uridb_dbf.free_result(db_handle, res);
+			update_stat(negative_checks, 1);
 			return ERR_SPOOFEDUSER;
 		} else {
 			LM_DBG("From/To user '%.*s' and auth user match\n",
 				   _uri->user.len, ZSW(_uri->user.s));
 			uridb_dbf.free_result(db_handle, res);
+			update_stat(positive_checks, 1);
 			return OK;
 		}
 	} else {
@@ -147,11 +150,13 @@ static inline int check_username(struct sip_msg* _m, struct sip_uri *_uri)
 			if (!strncasecmp(_uri->user.s, c->digest.username.user.s, 
 			_uri->user.len)) {
 				LM_DBG("Digest username and URI username match\n");
+				update_stat(positive_checks, 1);
 				return OK;
 			}
 		}
 
 		LM_DBG("Digest username and URI username do NOT match\n");
+		update_stat(negative_checks, 1);
 		return ERR_NOMATCH;
 	}
 }
