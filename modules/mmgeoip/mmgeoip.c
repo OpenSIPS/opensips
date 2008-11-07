@@ -32,14 +32,15 @@
 #include "../../dprint.h"
 #include "../../str.h"
 #include "../../usr_avp.h"
+#include "../../mod_fix.h"
 #include "GeoIP.h"
 #include "GeoIPCity.h"
 
 MODULE_VERSION;
 
 #define MMG_OP_DELIMS ":|,/ "
-static str MMG_city_db_path = {0};
-static GeoIP *MMG_gi = 0;
+static str MMG_city_db_path = {NULL, 0};
+static GeoIP *MMG_gi = NULL;
 
 static int
 mod_init(void) 
