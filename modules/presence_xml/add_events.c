@@ -43,6 +43,8 @@
 
 static str pu_415_rpl  = str_init("Unsupported media type");
 
+extern struct sl_binds slb;
+
 int xml_add_events(void)
 {
 	pres_ev_t event;
