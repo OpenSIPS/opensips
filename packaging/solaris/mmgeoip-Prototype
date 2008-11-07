@@ -1,0 +1,9 @@
+i pkginfo
+i preinstall
+d none /opt 0755 root root
+d none /opt/opensips 0755 root root
+d none /opt/opensips/lib64 0755 root root
+d none /opt/opensips/lib64/opensips 0755 root root
+d none /opt/opensips/lib64/opensips/modules 0755 root root
+f none /opt/opensips/lib64/opensips/modules/mmgeoip.so 0755 root root
+f none /opt/opensips/README.mmgeoip 0644 root root
