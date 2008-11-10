@@ -67,6 +67,7 @@ int is_maxfwd_present( struct sip_msg* msg , str *foo)
 			return -1;
 		}
 	} else if (IS_MAXWD_STORED(msg)) {
+		trim_len( foo->len , foo->s , msg->maxforwards->body );
 		return FETCH_MAXWD_VAL(msg);
 	}
 
