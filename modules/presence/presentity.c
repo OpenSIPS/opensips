@@ -630,6 +630,7 @@ after_dialog_check:
 				goto error;
 			}
 			*sent_reply= 1;
+			goto done;
 		}
 	}
 

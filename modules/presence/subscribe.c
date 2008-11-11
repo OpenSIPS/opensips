@@ -250,7 +250,7 @@ int update_subs_db(subs_t* subs, int type)
 	return 0;
 }
 
-int update_subscription(struct sip_msg* msg, subs_t* subs, int to_tag_gen,
+int update_subscription(struct sip_msg* msg, subs_t* subs, int init_req,
 		int* sent_reply)
 {	
 	unsigned int hash_code;
@@ -263,7 +263,7 @@ int update_subscription(struct sip_msg* msg, subs_t* subs, int to_tag_gen,
 
 	hash_code= core_hash(&subs->pres_uri, &subs->event->name, shtable_size);
 
-	if( to_tag_gen ==0) /*if a SUBSCRIBE within a dialog */
+	if(init_req ==0) /*if a SUBSCRIBE within a dialog */
 	{
 		if(subs->expires == 0)
 		{
