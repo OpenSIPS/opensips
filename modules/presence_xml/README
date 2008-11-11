@@ -67,7 +67,7 @@ Chapter 1. Admin Guide
    The following modules must be loaded before this module:
      * a database module.
      * presence.
-     * sl.
+     * signaling.
      * xcap_client.
        Only compulsory if not using an integrated xcap server (if
        'integrated_xcap_server' parameter is not set).
@@ -84,7 +84,7 @@ Chapter 1. Admin Guide
 
    The database url.
 
-   Default value is "mysql://opensips:opensipsrw@localhost/opensips".
+   Default value is "mysql://opensips:opensipsrw@localhost/osips".
 
    Example 1.1. Set db_url parameter
 ...
