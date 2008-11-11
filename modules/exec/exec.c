@@ -286,3 +286,54 @@ error:
 	return ret;
 }
 
+
+int exec_getenv(struct sip_msg *msg, char *cmd, pvname_list_p avpl)
+{
+	int_str avp_val;
+	int_str avp_name;
+	unsigned short avp_type;
+	int ret;
+	str res;
+	pvname_list_t* crt;
+
+	/* pessimist: assume error by default */
+	ret=-1;
+
+	res.s=getenv(cmd);
+	if (res.s==NULL)
+	{
+		goto error;
+	}
+	res.len=strlen(res.s);
+
+	crt = avpl;
+
+	avp_type = 0;
+	if(crt==NULL)
+	{
+		avp_name.n = 1;
+	} else {
+		if(pv_get_avp_name(msg, &(crt->sname.pvp), &avp_name, &avp_type)!=0)
+		{
+			LM_ERR("can't get item name\n");
+			goto error;
+		}
+	}
+
+	avp_type |= AVP_VAL_STR;
+	avp_val.s = res;
+	
+	if(add_avp(avp_type, avp_name, avp_val)!=0)
+	{
+		LM_ERR("unable to add avp\n");
+		goto error;
+	}
+	
+	/* success */
+	ret=1;
+
+error:
+	return ret;
+}
+
+

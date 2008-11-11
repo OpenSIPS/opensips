@@ -34,6 +34,7 @@ Jan Janak
               1.4.1. exec_dset(command)
               1.4.2. exec_msg(command)
               1.4.3. exec_avp(command [, avplist])
+              1.4.4. exec_getenv(environment_variable [, avp])
 
         1.5. Known Issues
 
@@ -44,6 +45,7 @@ Jan Janak
    1.3. exec_dset usage
    1.4. exec_msg usage
    1.5. exec_avp usage
+   1.6. exec_getenv usage
 
 Chapter 1. Admin Guide
 
@@ -186,6 +188,29 @@ exec_msg("echo TEST > /tmp/$rU.txt");
 ...
 exec_avp("echo TEST");
 exec_avp("echo TEST", "$avp(s:test)");
+...
+
+1.4.4.  exec_getenv(environment_variable [, avp])
+
+   Get the value of an evironment_variable. The value is saved in
+   'avp'. If 'avp' is missing, the AVP is named 1. If there is no
+   such environment variable no value is returned.
+
+   Meaning of the parameters is as follows:
+     * environment_variable - Environent variable name. It can
+       include pseudo- variabes;
+     * avp - an AVP names to store the result in;
+
+   WARNING: if the var you are passing out has a bash special
+   character in it, the var needs to be placed inside quotes, for
+   ex: exec_getenv("'$ct'");
+
+   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
+
+   Example 1.6. exec_getenv usage
+...
+exec_getenv("HOSTNAME");
+exec_getenv("HOSTNAME", "$avp(s:test)");
 ...
 
 1.5. Known Issues

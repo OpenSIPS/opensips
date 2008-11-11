@@ -50,6 +50,7 @@ static int mod_init( void );
 inline static int w_exec_dset(struct sip_msg* msg, char* cmd, char* foo);
 inline static int w_exec_msg(struct sip_msg* msg, char* cmd, char* foo);
 inline static int w_exec_avp(struct sip_msg* msg, char* cmd, char* avpl);
+inline static int w_exec_getenv(struct sip_msg* msg, char* cmd, char* avpl);
 
 static int exec_avp_fixup(void** param, int param_no);
 
@@ -66,6 +67,8 @@ static cmd_export_t cmds[] = {
 	{"exec_avp",  (cmd_function)w_exec_avp,  1, fixup_spve_null,  0,
 		REQUEST_ROUTE|FAILURE_ROUTE|LOCAL_ROUTE},
 	{"exec_avp",  (cmd_function)w_exec_avp,  2, exec_avp_fixup, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE|LOCAL_ROUTE},
+	{"exec_getenv",  (cmd_function)w_exec_getenv,  2, exec_avp_fixup, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|LOCAL_ROUTE},
 	{0, 0, 0, 0, 0, 0}
 };
@@ -218,6 +221,25 @@ inline static int w_exec_avp(struct sip_msg* msg, char* cmd, char* avpl)
 	}
 	return ret;
 }
+
+inline static int w_exec_getenv(struct sip_msg* msg, char* cmd, char* avpl)
+{
+	str command;
+
+	if(msg==0 || cmd==0)
+		return -1;
+
+	if(fixup_get_svalue(msg, (gparam_p)cmd, &command)!=0)
+	{
+		LM_ERR("invalid command parameter");
+		return -1;
+	}
+
+	LM_DBG("executing getenv [%s]\n", command.s);
+
+	return exec_getenv(msg, command.s, (pvname_list_p)avpl);
+}
+
 
 static int exec_avp_fixup(void** param, int param_no)
 {
