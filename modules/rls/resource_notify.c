@@ -528,6 +528,8 @@ void timer_send_notify(unsigned int ticks,void *param)
 		auth_state_flag=     row_vals[auth_state_col].val.int_val;
 		pres_state=   (char*)row_vals[pres_state_col].val.string_val;
 		
+		LM_DBG("extracted from db did: [%s]\n", curr_did);
+
 		if(prev_did!= NULL && strcmp(prev_did, curr_did)) 
 		{
 			xmlDocDumpFormatMemory(rlmi_doc,(xmlChar**)(void*)&rlmi_cont.s,

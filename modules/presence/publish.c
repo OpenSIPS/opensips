@@ -46,8 +46,7 @@
 
 extern gen_lock_set_t* set;
 
-static str pu_400a_rpl = str_init("Bad request");
-static str pu_400b_rpl = str_init("Invalid request");
+static str pu_400_rpl = str_init("Bad request");
 static str pu_500_rpl  = str_init("Server Internal Error");
 static str pu_489_rpl  = str_init("Bad Event");
 
@@ -272,8 +271,13 @@ error:
 
 /**
  * PUBLISH request handling
- *
- */
+ *		returns:
+ *				0: success
+ *				-1: error
+ *		- sends a reply in all cases (success or error).
+ *	TODO replace -1 return code in error case with 0 ( exit from the script)
+ **/
+
 int handle_publish(struct sip_msg* msg, char* sender_uri, char* str2)
 {
 	struct sip_uri puri;
@@ -294,15 +298,13 @@ int handle_publish(struct sip_msg* msg, char* sender_uri, char* str2)
 	int sent_reply= 0;
 	char* sphere= NULL;
 
-	reply_code= 500;
-	reply_str= pu_500_rpl;
+	reply_code= 400;
+	reply_str= pu_400_rpl;
 
 	counter++;
 	if ( parse_headers(msg,HDR_EOH_F, 0)==-1 )
 	{
 		LM_ERR("parsing headers\n");
-		reply_code= 400;
-		reply_str= pu_400a_rpl;
 		goto error;
 	}
 	memset(&body, 0, sizeof(str));
@@ -314,8 +316,6 @@ int handle_publish(struct sip_msg* msg, char* sender_uri, char* str2)
 		if (!msg->event->parsed && (parse_event(msg->event) < 0))
 		{
 			LM_ERR("cannot parse Event header\n");
-			reply_code= 400;
-			reply_str= pu_400a_rpl;
 			goto error;
 		}
 		if(((event_t*)msg->event->parsed)->parsed == EVENT_OTHER)
@@ -342,6 +342,8 @@ int handle_publish(struct sip_msg* msg, char* sender_uri, char* str2)
 		if(etag.s == NULL)
 		{
 			LM_ERR("when generating etag\n");
+			reply_code = 500;
+			reply_str= pu_500_rpl;
 			goto error;
 		}
 		etag.len=(strlen(etag.s));
@@ -386,8 +388,6 @@ int handle_publish(struct sip_msg* msg, char* sender_uri, char* str2)
 	if( parse_sip_msg_uri(msg)< 0)
 	{
 		LM_ERR("parsing Request URI\n");
-		reply_code= 400; 
-		reply_str= pu_400a_rpl;
 		goto error;
 	}
 	pres_user= msg->parsed_uri.user;
@@ -396,10 +396,8 @@ int handle_publish(struct sip_msg* msg, char* sender_uri, char* str2)
 	if (!msg->content_length) 
 	{
 		LM_ERR("no Content-Length header found!\n");
-		reply_code= 400; 
-		reply_str= pu_400a_rpl;
 		goto error;
-	}	
+	}
 
 	/* process the body */
 	if ( get_content_length(msg) == 0 )
@@ -408,8 +406,6 @@ int handle_publish(struct sip_msg* msg, char* sender_uri, char* str2)
 		if (etag_gen)
 		{
 			LM_ERR("No E-Tag and no body found\n");
-			reply_code= 400;
-			reply_str= pu_400b_rpl;
 			goto error;
 		}
 	}
@@ -419,8 +415,6 @@ int handle_publish(struct sip_msg* msg, char* sender_uri, char* str2)
 		if (body.s== NULL) 
 		{
 			LM_ERR("cannot extract body\n");
-			reply_code= 400; 
-			reply_str= pu_400a_rpl;
 			goto error;
 		}
 		body.len= get_content_length( msg );
@@ -443,13 +437,13 @@ int handle_publish(struct sip_msg* msg, char* sender_uri, char* str2)
 		if(pv_printf(msg, (pv_elem_t*)sender_uri, buf, &buf_len)<0)
 		{
 			LM_ERR("cannot print the format\n");
+			reply_code= 500;
+			reply_str= pu_500_rpl;
 			goto error;
 		}
 		if(parse_uri(buf, buf_len, &puri)!=0)
 		{
 			LM_ERR("bad sender SIP address!\n");
-			reply_code= 400; 
-			reply_str= pu_400a_rpl;
 			goto error;
 		} 
 		else 
@@ -465,6 +459,8 @@ int handle_publish(struct sip_msg* msg, char* sender_uri, char* str2)
 		if(event->evs_publ_handl(msg)< 0)
 		{
 			LM_ERR("in event specific publish handling\n");
+			reply_code = 500;
+			reply_str = pu_500_rpl;
 			goto error;
 		}
 	}
@@ -477,6 +473,8 @@ int handle_publish(struct sip_msg* msg, char* sender_uri, char* str2)
 	if(presentity== NULL)
 	{
 		LM_ERR("creating presentity structure\n");
+		reply_code = 500;
+		reply_str = pu_500_rpl;
 		goto error;
 	}
 
@@ -484,6 +482,8 @@ int handle_publish(struct sip_msg* msg, char* sender_uri, char* str2)
 	if(update_presentity(msg, presentity, &body, etag_gen, &sent_reply, sphere) <0)
 	{
 		LM_ERR("when updating presentity\n");
+		reply_code = 500;
+		reply_str = pu_500_rpl;
 		goto error;
 	}
 

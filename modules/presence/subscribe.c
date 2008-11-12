@@ -250,13 +250,11 @@ int update_subs_db(subs_t* subs, int type)
 	return 0;
 }
 
-int update_subscription(struct sip_msg* msg, subs_t* subs, int init_req,
-		int* sent_reply)
+int update_subscription(struct sip_msg* msg, subs_t* subs, int init_req)
 {	
 	unsigned int hash_code;
 	int reply_code= 200;
 	
-	*sent_reply= 0;
 
 	if(subs->event->type & PUBL_TYPE)
 		reply_code=(subs->status==PENDING_STATUS)?202:200;
@@ -286,7 +284,6 @@ int update_subscription(struct sip_msg* msg, subs_t* subs, int init_req,
 				LM_ERR("sending %d OK\n", reply_code);
 				goto error;
 			}
-			*sent_reply= 1;
 
 			if(subs->event->type & PUBL_TYPE)
 			{
@@ -344,8 +341,7 @@ int update_subscription(struct sip_msg* msg, subs_t* subs, int init_req,
 			LM_ERR("sending 202 OK reply\n");
 			goto error;
 		}
-		*sent_reply= 1;
-		
+
 		if(subs->expires!= 0)
 		{	
 			if(insert_shtable(subs_htable,hash_code,subs)< 0)
@@ -384,8 +380,7 @@ int update_subscription(struct sip_msg* msg, subs_t* subs, int init_req,
 				LM_ERR("Could not send notify\n");
 				goto error;
 			}
-		}	
-			
+		}
 	}
 	else 
 	{
@@ -398,8 +393,6 @@ int update_subscription(struct sip_msg* msg, subs_t* subs, int init_req,
 	return 0;
 	
 error:
-
-	LM_ERR("occured\n");
 	return -1;
 
 }
@@ -453,6 +446,14 @@ void msg_watchers_clean(unsigned int ticks,void *param)
 		LM_ERR("cleaning pending subscriptions\n");
 }
 
+/*
+ *	Function called from the script to process a SUBSCRIBE request
+ *		returns:
+ *				1 : success
+ *				-1: error
+ *		- sends a reply in all cases (success or error).
+ *	TODO replace -1 return code in error case with 0 ( exit from the script)
+ * */
 int handle_subscribe(struct sip_msg* msg, char* str1, char* str2)
 {
 	int  init_req = 0;
@@ -465,21 +466,19 @@ int handle_subscribe(struct sip_msg* msg, char* str1, char* str2)
 	struct sip_uri uri;
 	int reply_code;
 	str reply_str;
-	int sent_reply= 0;
+	int ret;
 
 	/* ??? rename to avoid collisions with other symbols */
 	counter++;
 
 	memset(&subs, 0, sizeof(subs_t));
 	
-	reply_code= 500;
-	reply_str= pu_500_rpl;
+	reply_code= 400;
+	reply_str= pu_400_rpl;
 
 	if( parse_headers(msg,HDR_EOH_F, 0)==-1 )
 	{
 		LM_ERR("parsing headers\n");
-		reply_code= 400;
-		reply_str= pu_400_rpl;
 		goto error;
 	}
 	
@@ -488,8 +487,6 @@ int handle_subscribe(struct sip_msg* msg, char* str1, char* str2)
 	{
 		if (!msg->event->parsed && (parse_event(msg->event) < 0))
 		{
-			reply_code= 400;
-			reply_str= pu_400_rpl;
 			goto error;
 		}
 		if(((event_t*)msg->event->parsed)->parsed == EVENT_OTHER)
@@ -521,11 +518,21 @@ int handle_subscribe(struct sip_msg* msg, char* str1, char* str2)
 		ev_param= ev_param->next;
 	}		
 	
-	if(extract_sdialog_info(&subs, msg, max_expires, &init_req)< 0)
+	ret = extract_sdialog_info(&subs, msg, max_expires, &init_req);
+	if(ret< 0)
 	{
 		LM_ERR("failed to extract dialog information\n");
+		if(ret== -2)
+		{
+			reply_code= 500;
+			reply_str= pu_500_rpl;
+		}
 		goto error;
 	}
+
+	/* from now one most of the possible error are due to fail in internal processing */
+	reply_code= 500;
+	reply_str= pu_500_rpl;
 
 	/* getting presentity uri from Request-URI if initial subscribe - or else from database*/
 	if(init_req)
@@ -535,7 +542,10 @@ int handle_subscribe(struct sip_msg* msg, char* str1, char* str2)
 			if( parse_sip_msg_uri(msg)< 0)
 			{
 				LM_ERR("failed to parse R-URI\n");
-				return -1;
+				reply_code= 400;
+				reply_str= pu_400_rpl;
+				goto error;
+				;
 			}
 			if(uandd_to_uri(msg->parsed_uri.user, msg->parsed_uri.host,
 					&subs.pres_uri)< 0)
@@ -553,7 +563,7 @@ int handle_subscribe(struct sip_msg* msg, char* str1, char* str2)
 			goto error;
 		}
 		reason= subs.reason;
-	}	
+	}
 
 	/* call event specific subscription handling */
 	if(event->evs_subs_handl)
@@ -573,8 +583,9 @@ int handle_subscribe(struct sip_msg* msg, char* str1, char* str2)
 			subs.status = ACTIVE_STATUS;
 		else   
 		{
-			/* query in watchers_table */
-			if(get_db_subs_auth(&subs, &found)< 0)
+			/* query in watchers_table - if negative reply - server error */
+			
+			if(get_db_subs_auth(&subs, &found) < 0)
 			{
 				LM_ERR("getting subscription status from watchers table\n");
 				goto error;
@@ -585,8 +596,7 @@ int handle_subscribe(struct sip_msg* msg, char* str1, char* str2)
 				subs.status= PENDING_STATUS;
 				subs.reason.s= NULL;
 				subs.reason.len= 0;
-				/* here a query to xcap server must be done -> new process maybe */
-			
+
 				if(parse_uri(subs.pres_uri.s, subs.pres_uri.len, &uri)< 0)
 				{
 					LM_ERR("parsing uri\n");
@@ -598,7 +608,7 @@ int handle_subscribe(struct sip_msg* msg, char* str1, char* str2)
 					LM_ERR("getting rules doc\n");
 					goto error;
 				}
-				
+
 				if(subs.event->get_auth_status(&subs)< 0)
 				{
 					LM_ERR("in event specific function is_watcher_allowed\n");
@@ -632,10 +642,10 @@ int handle_subscribe(struct sip_msg* msg, char* str1, char* str2)
     LM_DBG("subscription status= %s - %s\n", get_status_str(subs.status), 
             found==0?"inserted":"found in watcher table");
 	
-	if(update_subscription(msg, &subs, init_req, &sent_reply) <0)
-	{	
+	if(update_subscription(msg, &subs, init_req) <0)
+	{
 		LM_ERR("in update_subscription\n");
-		goto error;
+		goto error_free;
 	}
 	if(subs.auth_rules_doc)
 	{
@@ -668,18 +678,14 @@ bad_event:
 	reply_str= pu_489_rpl;
 
 error:
-	
-	if(sent_reply== 0)
+	if(send_error_reply(msg, reply_code, reply_str)< 0)
 	{
-		if(send_error_reply(msg, reply_code, reply_str)< 0)
-		{
-			LM_ERR("failed to send reply on error case\n");
-		}
+		LM_ERR("failed to send reply on error case\n");
 	}
-
-	if(subs.pres_uri.s)	
+error_free:
+	if(subs.pres_uri.s)
 		pkg_free(subs.pres_uri.s);
-	
+
 	if(subs.auth_rules_doc)
 	{
 		if(subs.auth_rules_doc->s)
@@ -697,7 +703,6 @@ error:
 		pkg_free(subs.record_route.s);
 
 	return -1;
-
 }
 
 
@@ -710,6 +715,7 @@ int extract_sdialog_info(subs_t* subs,struct sip_msg* msg, int mexp, int* init_r
 	struct to_body *pto, *pfrom = NULL, TO;
 	int lexpire;
 	struct sip_uri uri;
+	int err_ret = -1;
 
 	/* examine the expire header field */
 	if(msg->expires && msg->expires->body.len > 0)
@@ -814,8 +820,10 @@ int extract_sdialog_info(subs_t* subs,struct sip_msg* msg, int mexp, int* init_r
 		*init_req = 1;
 	}
 	else
+	{
 		subs->to_tag = pto->tag_value;
-
+		*init_req = 0;
+	}
 	if( msg->callid==NULL || msg->callid->body.s==NULL)
 	{
 		LM_ERR("cannot parse callid header\n");
@@ -903,6 +911,7 @@ int extract_sdialog_info(subs_t* subs,struct sip_msg* msg, int mexp, int* init_r
 		if(contact== NULL)
 		{
 			LM_ERR("in function get_local_contact\n");
+			err_ret = -2;
 			goto error;
 		}
 		subs->local_contact= *contact;
@@ -914,10 +923,17 @@ int extract_sdialog_info(subs_t* subs,struct sip_msg* msg, int mexp, int* init_r
 	
 error:
 
-	return -1;
+	return err_ret;
+	/*
+	 *  -1 - bag message
+	 *  -2 - internal error
+	 * */
 }
 
-
+/*
+ * function that queries 'active_watchers' table for stored subscription dialog
+ *	- sets reply_code and reply_str in error case if different than server error
+ * */
 int get_stored_info(struct sip_msg* msg, subs_t* subs, int* reply_code,
 		str* reply_str)
 {	
@@ -930,12 +946,12 @@ int get_stored_info(struct sip_msg* msg, subs_t* subs, int* reply_code,
 
     if(subs->pres_uri.s == NULL)
     {
-	    uandd_to_uri(subs->to_user, subs->to_domain, &pres_uri);
-	    if(pres_uri.s== NULL)
-	    {
-		    LM_ERR("creating uri from user and domain\n");
-		    return -1;
-	    }
+		uandd_to_uri(subs->to_user, subs->to_domain, &pres_uri);
+		if(pres_uri.s== NULL)
+		{
+			LM_ERR("creating uri from user and domain\n");
+			return -1;
+		}
     }
     else
         pres_uri = subs->pres_uri;
@@ -981,7 +997,7 @@ int get_stored_info(struct sip_msg* msg, subs_t* subs, int* reply_code,
 
 	if(fallback2db)
 	{
-		return get_database_info(msg, subs, reply_code, reply_str);	
+		return get_database_info(msg, subs, reply_code, reply_str);
 	}
 
 not_found:
@@ -1838,6 +1854,9 @@ int refresh_watcher(str* pres_uri, str* watcher_uri, str* event,
 	return 0;
 }
 
+/*
+* function that queries 'watchers' table from subscription status
+* */
 int get_db_subs_auth(subs_t* subs, int* found)
 {
 	db_key_t db_keys[5];
@@ -1845,7 +1864,7 @@ int get_db_subs_auth(subs_t* subs, int* found)
 	int n_query_cols= 0; 
 	db_key_t result_cols[3];
 	db_res_t *result = NULL;
-	db_row_t *row ;	
+	db_row_t *row ;
 	db_val_t *row_vals ;
 
 	db_keys[n_query_cols] =&str_presentity_uri_col;

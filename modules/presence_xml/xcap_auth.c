@@ -1,5 +1,5 @@
 /*
- * $Id: xcap_auth.c 1337 2006-12-07 18:05:05Z bogdan_iancu $
+ * $Id: xcap_auth.c $
  *
  * presence_xml module - 
  *
@@ -23,7 +23,7 @@
  *
  * History:
  * --------
- *  2007-04-11  initial version (anca)
+ *  2007-04-11  initial version (Anca Vamanu)
  */
 
 #include <stdio.h>
@@ -432,11 +432,11 @@ int get_rules_doc(str* user, str* domain, int type, str** rules_doc)
 	static str tmp3 = str_init("doc_type");
 	static str tmp4 = str_init("doc");
 
+	*rules_doc= NULL;
+	
 	if(force_active)
-	{
-		*rules_doc= NULL;
 		return 0;
-	}
+	
 	LM_DBG("[user]= %.*s\t[domain]= %.*s\n", 
 			user->len, user->s,	domain->len, domain->s);
 	/* first search in database */
@@ -488,15 +488,15 @@ int get_rules_doc(str* user, str* domain, int type, str** rules_doc)
 		{
 			if(http_get_rules_doc(*user, *domain, &body)< 0)
 			{
-				LM_ERR("sending http GET request to xcap server\n");		
+				LM_ERR("fetching document with HTTP request from xcap server\n");
 				goto error;
 			}
-			if(body.s && body.len)
-				goto done; 
+			if(body.s && body.len)  /* if the document was found */
+				goto done;
 		}
 		pxml_dbf.free_result(pxml_db, result);
 		return 0;
-	}	
+	}
 	
 	row = &result->rows[xcap_doc_col];
 	row_vals = ROW_VALUES(row);
@@ -578,12 +578,13 @@ int http_get_rules_doc(str user, str domain, str* rules_doc)
 	{
 		req.xcap_root= xs->addr;
 		req.port= xs->port;
-		doc= xcap_GetNewDoc(req, user, domain);
-		if(doc== NULL)
+		if( xcap_GetNewDoc(req, user, domain, &doc) < 0)
 		{
 			LM_ERR("while fetching data from xcap server\n");
 			goto error;
 		}
+		if(doc)    /* if document found, stop searching */
+			break;
 		xs = xs->next;
 	}
 
@@ -593,8 +594,5 @@ int http_get_rules_doc(str user, str domain, str* rules_doc)
 	return 0;
 
 error:
-	
 	return -1;
-
-
 }

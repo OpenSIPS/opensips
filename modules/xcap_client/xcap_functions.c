@@ -303,7 +303,8 @@ error:
 	return NULL;
 }
 
-char* xcapGetNewDoc(xcap_get_req_t req, str user, str domain)
+int xcapGetNewDoc(xcap_get_req_t req, str user, 
+		str domain, char** xcap_doc)
 {
 	char* etag= NULL;
 	char* doc= NULL;
@@ -312,26 +313,27 @@ char* xcapGetNewDoc(xcap_get_req_t req, str user, str domain)
 	int n_query_cols = 0;
 	char* path= NULL;
 
+	*xcap_doc = NULL;
+
 	path= get_xcap_path(req);
 	if(path== NULL)
 	{
 		LM_ERR("while constructing xcap path\n");
-		return NULL;
+		return -1;
 	}
 	/* send HTTP request */
 	doc= send_http_get(path, req.port, NULL, 0, &etag);
 	if(doc== NULL)
 	{
 		LM_DBG("the searched document was not found\n");
-		goto done;
+		pkg_free(path);
+		return 0;
 	}
 
 	if(etag== NULL)
 	{
 		LM_ERR("no etag found\n");
-		pkg_free(doc); 
-		doc= NULL;
-		goto done;
+		goto error;
 	}
 	/* insert in xcap table*/
 	query_cols[n_query_cols] = &str_username_col;
@@ -385,18 +387,23 @@ char* xcapGetNewDoc(xcap_get_req_t req, str user, str domain)
 	if (xcap_dbf.use_table(xcap_db, &xcap_db_table) < 0) 
 	{
 		LM_ERR("in use_table-[table]= %.*s\n", xcap_db_table.len, xcap_db_table.s);
-		goto done;
+		goto error;
 	}
 	
 	if(xcap_dbf.insert(xcap_db, query_cols, query_vals, n_query_cols)< 0)
 	{
 		LM_ERR("in sql insert\n");
-		goto done;
+		goto error;
 	}
 
-done:
+	*xcap_doc = doc;
+	return 0;
+
+error:
 	pkg_free(path);
-	return doc;
+	if(doc)
+		pkg_free(doc); 
+	return -1;
 }
 
 char* get_xcap_path(xcap_get_req_t req)

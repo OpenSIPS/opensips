@@ -53,7 +53,7 @@
 			</listitem>
 			<listitem>
 			<para>
-				<emphasis>sl</emphasis>.
+				<emphasis>signaling</emphasis>.
 			</para>
 			</listitem>
 			<listitem>
@@ -81,7 +81,7 @@
 		<itemizedlist>
 			<listitem>
 			<para>
-				<emphasis>libxml</emphasis>.
+				<emphasis>libxml-dev</emphasis>.
 			</para>
 			</listitem>
 		</itemizedlist>
@@ -97,7 +97,7 @@
 		The database url.
 		</para>
 		<para>
-		<emphasis>	Default value is <quote>&defaultdb;</quote>.	
+		<emphasis>	Default value is <quote>&defaultdb;</quote>.
 		</emphasis>
 		</para>
 		<example>
