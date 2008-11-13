@@ -66,7 +66,7 @@
 		<itemizedlist>
 			<listitem>
 			<para>
-				<emphasis>libxml</emphasis>.
+				<emphasis>libxml-dev</emphasis>.
 			</para>
 			</listitem>
 		</itemizedlist>

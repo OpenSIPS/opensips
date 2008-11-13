@@ -119,8 +119,10 @@ typedef void (*xcap_nodeSel_free_t)(xcap_node_sel_t* node);
 
 /* specifical function to get a new document, not present in xcap table 
  * to be updated and handled by the xcap_client module*/
-char* xcapGetNewDoc(xcap_get_req_t req, str user, str domain);
-typedef char* (*xcapGetNewDoc_t)(xcap_get_req_t req, str user, str domain);
+int xcapGetNewDoc(xcap_get_req_t req, str user, 
+		str domain, char** xcap_doc);
+typedef int (*xcapGetNewDoc_t)(xcap_get_req_t req, str user, str domain,
+		char** xcap_doc);
 
 typedef struct xcap_api {
 	xcap_get_elem_t get_elem;

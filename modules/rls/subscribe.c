@@ -51,10 +51,13 @@
 int counter= 0;
 
 static str su_200_rpl     = str_init("OK");
-static str pu_421_rpl     = str_init("Extension Required");
+//static str pu_421_rpl     = str_init("Extension Required");
 static str pu_400_rpl     = str_init("Bad request");
+static str pu_500_rpl     = str_init("Server Error");
 static str stale_cseq_rpl = str_init("Stale Cseq Value");
 static str pu_489_rpl     = str_init("Bad Event");
+static str pu_404_rpl     = str_init("Not Found");
+static str pu_481_rpl     = str_init("Call/Transaction Does Not Exist");
 
 #define Stale_cseq_code 401
 
@@ -62,7 +65,8 @@ subs_t* constr_new_subs(struct sip_msg* msg, struct to_body *pto,
 		pres_ev_t* event);
 int resource_subscriptions(subs_t* subs, xmlNodePtr rl_node);
 
-int update_rlsubs( subs_t* subs,unsigned int hash_code);
+int update_rlsubs( subs_t* subs,unsigned int hash_code,
+		int* reply_code, str* reply_str);
 
 xmlNodePtr search_service_uri(xmlDocPtr doc, str* service_uri)
 {
@@ -75,13 +79,13 @@ xmlNodePtr search_service_uri(xmlDocPtr doc, str* service_uri)
 		LM_ERR("while extracting rls-services node\n");
 		return NULL;
 	}
-
 	for(node= rl_node->children; node; node= node->next)
 	{
 		if(xmlStrcasecmp(node->name,(unsigned char*)"service")== 0)
 		{
 			uri= XMLNodeGetAttrContentByName(node, "uri");
-			if(strlen(uri)== service_uri->len && strcmp(uri, service_uri->s)== 0)
+			if(strlen(uri)== service_uri->len && 
+					strncmp(uri, service_uri->s,service_uri->len)== 0)
 			{
 				xmlFree(uri);
 				return node;
@@ -92,6 +96,16 @@ xmlNodePtr search_service_uri(xmlDocPtr doc, str* service_uri)
 	return NULL;
 }
 
+/*
+ * Function that searches a resource list document for the user and then
+ * looks in the document for the service uri
+ *	returns:
+ *		 0: success ( service uri found)
+ *		-1: server error
+ *	 doc :
+ *	    NULL: document or service uri not found
+ *	    pointer to xmlDocPtr structure if service uri found
+ * */
 int get_resource_list(str* service_uri, str owner_user, str owner_domain,
 		xmlNodePtr* service_node, xmlDocPtr* rl_doc)
 {
@@ -111,6 +125,8 @@ int get_resource_list(str* service_uri, str owner_user, str owner_domain,
 	xmlNodePtr snode;
 	xcap_doc_sel_t doc_sel;
 	char* xcap_rl= NULL;
+
+	*rl_doc = NULL;
 
 	/* first search in database */
 	query_cols[n_query_cols] = &str_username_col;
@@ -155,12 +171,11 @@ int get_resource_list(str* service_uri, str owner_user, str owner_domain,
 
 	if(result->n<= 0)
 	{
-		LM_DBG("No rl document found\n");
+		LM_DBG("No rl document found in database\n");
 		
 		if(rls_integrated_xcap_server)
 		{
-			rls_dbf.free_result(rls_db, result);
-			return 0;
+			goto done;
 		}
 		
 		/* make an initial request to xcap_client module */
@@ -182,14 +197,17 @@ int get_resource_list(str* service_uri, str owner_user, str owner_domain,
 		req.etag= etag;
 		req.match_type= IF_NONE_MATCH;
 
-		xcap_rl= xcap_GetNewDoc(req, owner_user, owner_domain);
-		if(xcap_rl== NULL)
+		if(xcap_GetNewDoc(req, owner_user, owner_domain, &xcap_rl)< 0)
 		{
 			LM_ERR("while fetching data from xcap server\n");
 			pkg_free(doc_sel.xid.s);
 			goto error;
 		}
 		pkg_free(doc_sel.xid.s);
+		if(xcap_rl== NULL)  /* if the document was not found */
+		{
+			goto done;
+		}
 		body.s = xcap_rl;
 		body.len = strlen(xcap_rl);
 	}
@@ -201,13 +219,13 @@ int get_resource_list(str* service_uri, str owner_user, str owner_domain,
 		body.s = (char*)row_vals[xcap_col].val.string_val;
 		if(body.s== NULL)
 		{
-			LM_ERR("Xcap doc NULL\n");
+			LM_ERR("null xcap_doc column result\n");
 			goto error;
 		}	
 		body.len = strlen(body.s);
 		if(body.len== 0)
 		{
-			LM_ERR("Xcap doc empty\n");
+			LM_ERR("length 0 for xcap_doc column result\n");
 			goto error;
 		}
 	}
@@ -221,18 +239,21 @@ int get_resource_list(str* service_uri, str owner_user, str owner_domain,
 	}
 	
 	snode = search_service_uri(doc, service_uri);
-	if(!snode)
+	if(snode== NULL)
 	{
-		LM_ERR("service uri %.*s not found in rl document for user"
+		LM_DBG("service uri %.*s not found in rl document for user"
 			" sip:%.*s@%.*s\n", service_uri->len, service_uri->s,
 			owner_user.len, owner_user.s, owner_domain.len, owner_domain.s);
-		goto error;
+		xmlFreeDoc(doc);
+		goto done;
 	}
 
 	*rl_doc = doc;
 	*service_node = snode;
 
-	rls_dbf.free_result(rls_db, result);
+done:
+	if(result)
+		rls_dbf.free_result(rls_db, result);
 	if(xcap_rl)
 		pkg_free(xcap_rl);
 	
@@ -249,7 +270,8 @@ error:
 	return -1;
 }
 
-
+/*
+ * Not used anymore
 int reply_421(struct sip_msg* msg)
 {
 	str hdr_append;
@@ -279,6 +301,7 @@ int reply_421(struct sip_msg* msg)
 	return 0;
 
 }
+*/
 
 int reply_200(struct sip_msg* msg, str* contact, int expires, str* rtag)
 {
@@ -381,28 +404,26 @@ int rls_handle_subscribe(struct sip_msg* msg, char* s1, char* s2)
 	struct to_body *pto, *pfrom = NULL, TO;
 	subs_t subs;
 	pres_ev_t* event= NULL;
-	int err_ret= -1;
 	str* contact= NULL;
 	xmlDocPtr doc= NULL;
 	xmlNodePtr service_node= NULL;
-	unsigned int hash_code;
-	int to_tag_gen= 0;
+	unsigned int hash_code= 0;
 	event_t* parsed_event;
 	param_t* ev_param= NULL;
+	int init_req= 0;
+	int reply_code;
+	str reply_str;
 
 /*** filter: 'For me or for presence server?' */	
+	reply_code = 400;
+	reply_str = pu_400_rpl;
 
 	memset(&subs, 0, sizeof(subs_t));
 
 	if ( parse_headers(msg,HDR_EOH_F, 0)==-1 )
 	{
 		LM_ERR("parsing headers\n");
-		if (slb.reply(msg, 400, &pu_400_rpl) == -1)
-		{
-			LM_ERR("while sending 400 reply\n");
-			return -1;
-		}
-		return 0;
+		goto error;
 	}
 
 	/* check for Support: eventlist header */
@@ -415,7 +436,9 @@ int rls_handle_subscribe(struct sip_msg* msg, char* s1, char* s2)
 	if(parse_supported(msg) < 0)
 	{
 		LM_ERR("failed to parse supported headers\n");
-		return -1;
+		reply_code = 500;
+		reply_str = pu_500_rpl;
+		goto error;
 	}
 
 	if(!(get_supported(msg) & F_SUPPORTED_EVENTLIST))
@@ -430,6 +453,8 @@ int rls_handle_subscribe(struct sip_msg* msg, char* s1, char* s2)
 		if (!msg->event->parsed && (parse_event(msg->event) < 0))
 		{
 			LM_ERR("cannot parse Event header\n");
+			reply_code = 500;
+			reply_str = pu_500_rpl;
 			goto error;
 		}
 		if(! ( ((event_t*)msg->event->parsed)->parsed & rls_events) )
@@ -438,7 +463,9 @@ int rls_handle_subscribe(struct sip_msg* msg, char* s1, char* s2)
 		}
 	}
 	else
+	{
 		goto bad_event;
+	}
 
 	/* search event in the list */
 	parsed_event= (event_t*)msg->event->parsed;
@@ -472,7 +499,7 @@ int rls_handle_subscribe(struct sip_msg* msg, char* s1, char* s2)
 		memset( &TO , 0, sizeof(TO) );
 		if( !parse_to(msg->to->body.s,msg->to->body.s+msg->to->body.len+1,&TO));
 		{
-			LM_DBG("'To' header NOT parsed\n");
+			LM_ERR("parsing 'To' header failed\n");
 			goto error;
 		}
 		pto = &TO;
@@ -480,7 +507,7 @@ int rls_handle_subscribe(struct sip_msg* msg, char* s1, char* s2)
 		
 	if ( parse_from_uri(msg)<0 ) 
 	{
-		LM_ERR("ERROR cannot parse From header\n");
+		LM_ERR("failed to parse From header\n");
 		goto error;
 	}
 
@@ -507,32 +534,37 @@ int rls_handle_subscribe(struct sip_msg* msg, char* s1, char* s2)
 					&subs.pres_uri)< 0)
 		{
 			LM_ERR("while constructing uri from user and domain\n");
+			reply_code = 500;
+			reply_str = pu_500_rpl;
 			goto error;
 		}
+		
 		if( get_resource_list(&subs.pres_uri, fu.user, fu.host,
-					&service_node, &doc)< 0)
+					&service_node, &doc) < 0)
 		{
-			LM_ERR("while attepmting to get a resource list\n");
+			LM_ERR("failed to get resource list document\n");
+			reply_code = 500;
+			reply_str = pu_500_rpl;
 			goto error;
 		}
-		if( doc== NULL )
+		
+		if(doc== NULL|| service_node==NULL)
 		{
-			/* if not a resource list subscribe , return  to_presence_code
-			 * so that presence will handle the subscription*/
 			LM_DBG("list not found - search for uri = %.*s\n",subs.pres_uri.len,
-					subs.pres_uri.s);	
-			pkg_free(subs.pres_uri.s);
-			return to_presence_code; 
+				subs.pres_uri.s);
+			reply_code = 404;
+			reply_str = pu_404_rpl;
+			goto error;
 		}
 	}
-	else
+	else  /* if request inside a dialog */
 	{
 		if( msg->callid==NULL || msg->callid->body.s==NULL)
 		{
 			LM_ERR("cannot parse callid header\n");
 			goto error;
 		}
-	
+
 		/* search if a stored dialog */
 		hash_code= core_hash(&msg->callid->body, &pto->tag_value, hash_size);
 		lock_get(&rls_table[hash_code].lock);
@@ -541,28 +573,35 @@ int rls_handle_subscribe(struct sip_msg* msg, char* s1, char* s2)
 					pto->tag_value,	pfrom->tag_value, hash_code)== NULL)
 		{
 			lock_release(&rls_table[hash_code].lock);
-			pkg_free(subs.pres_uri.s);
-			return to_presence_code;
+			/* reply with Call/Transaction Does Not Exist */
+			LM_ERR("No dialog match found\n");
+			reply_code = 481;
+			reply_str = pu_481_rpl;
+			goto error;
 		}
 		lock_release(&rls_table[hash_code].lock);
 	}
 
+
 	/* extract dialog information from message headers */
-	if(pres_extract_sdialog_info(&subs, msg, rls_max_expires, &to_tag_gen)< 0)
+	if(pres_extract_sdialog_info(&subs, msg, rls_max_expires, &init_req)< 0)
 	{
 		LM_ERR("bad Subscribe request\n");
 		goto error;
 	}
 
-	hash_code= core_hash(&subs.callid, &subs.to_tag, hash_size);
+		reply_code = 500;
+	reply_str = pu_500_rpl;
 
-	if(pto->tag_value.s== NULL || pto->tag_value.len==0) 
-		/* if an initial subscribe */
+
+	if(init_req) /* if an initial subscribe */
 	{
 		/** reply with 200 OK*/
 		if(reply_200(msg, &subs.contact, subs.expires, &subs.to_tag)< 0)
-			goto error;
+			goto error_free;
 		
+		hash_code= core_hash(&subs.callid, &subs.to_tag, hash_size);
+
 		subs.local_cseq= 0;
 
 		if(subs.expires!= 0)
@@ -571,44 +610,36 @@ int rls_handle_subscribe(struct sip_msg* msg, char* s1, char* s2)
 			if(pres_insert_shtable(rls_table, hash_code, &subs)< 0)
 			{
 				LM_ERR("while adding new subscription\n");
-				goto error;
+				goto error_free;
 			}
 		}
 	}
 	else
 	{
-		str reason;
-		int rt;
-
-		rt= update_rlsubs(&subs, hash_code);
-		if(rt< 0)
+		if(update_rlsubs(&subs, hash_code, &reply_code, &reply_str)< 0)
 		{
 			LM_ERR("while updating resource list subscription\n");
 			goto error;
 		}
-	
-		if(rt>= 400)
-		{
-			reason= (rt==400)?pu_400_rpl:stale_cseq_rpl;
 		
-			if (slb.reply(msg, 400, &reason) == -1)
-			{
-				LM_ERR("while sending reply\n");
-				goto error;
-			}
-			return 0;
-		}	
-		/** reply with 200 OK*/
-		if(reply_200(msg, &subs.contact, subs.expires, &subs.to_tag)< 0)
-			goto error;
-
-
 		if(get_resource_list(&subs.pres_uri, subs.from_user,
 					subs.from_domain, &service_node, &doc)< 0)
 		{
 			LM_ERR("when getting resource list\n");
 			goto error;
 		}
+		if(doc== NULL || service_node== NULL)
+		{
+			LM_DBG("list not found( in-dialog request)- search for uri = %.*s\n",
+					subs.pres_uri.len, subs.pres_uri.s);
+			reply_code = 404;
+			reply_str = pu_404_rpl;
+			goto error;
+		}
+
+		/** reply with 200 OK*/
+		if(reply_200(msg, &subs.contact, subs.expires, &subs.to_tag)< 0)
+			goto error_free;
 	}
 /*** send Subscribe requests for all in the list */
 
@@ -617,13 +648,13 @@ int rls_handle_subscribe(struct sip_msg* msg, char* s1, char* s2)
 				&subs.pres_uri,hash_code)< 0)
 	{
 		LM_ERR("while sending full state Notify\n");
-		goto error;
+		goto error_free;
 	}
 
 	if(resource_subscriptions(&subs, service_node)< 0)
 	{
 		LM_ERR("while sending Subscribe requests to resources in a list\n");
-		goto error;
+		goto error_free;
 	}
 
 	if(contact)
@@ -641,14 +672,18 @@ int rls_handle_subscribe(struct sip_msg* msg, char* s1, char* s2)
 
 bad_event:
 	if(reply_489(msg)< 0)
-	{
 		LM_ERR("while sending 489 reply\n");
-		err_ret= -1;
-	}
-	err_ret= 0;
+	goto error_free;
 
 error:
-	LM_ERR("failed\n");
+	if (slb.reply(msg, reply_code, &reply_str) == -1)
+	{
+		LM_ERR("failed to send 400 reply\n");
+		return -1;
+	}
+
+
+error_free:
 
 	if(contact)
 	{	
@@ -663,10 +698,16 @@ error:
 			pkg_free(subs.record_route.s);	
 	if(doc)
 		xmlFreeDoc(doc);
-	return err_ret;
+	return -1;
 }
 
-int update_rlsubs( subs_t* subs, unsigned int hash_code)
+/*
+ * function that updates a subscription in hash table
+ *	sets reply_code and reply_str in case of error and
+ *	if different that server error
+ * */
+int update_rlsubs( subs_t* subs, unsigned int hash_code,
+		int* reply_code, str* reply_str)
 {
 	subs_t* s, *ps;
 
@@ -691,7 +732,9 @@ int update_rlsubs( subs_t* subs, unsigned int hash_code)
 	{
 		lock_release(&rls_table[hash_code].lock);
 		LM_DBG("stored cseq= %d\n", s->remote_cseq);
-		return Stale_cseq_code;
+		*reply_code =  Stale_cseq_code;
+		*reply_str = stale_cseq_rpl;
+		return -1;
 	}
 	s->remote_cseq= subs->remote_cseq;
 
@@ -725,7 +768,7 @@ int update_rlsubs( subs_t* subs, unsigned int hash_code)
 		ps->next= s->next;
 		shm_free(s);
 	
-		/* delete from rls_presentity table also */
+	/* delete from rls_presentity table also */
 	}
 	else
 	{

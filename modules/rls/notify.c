@@ -260,12 +260,16 @@ int agg_body_sendn_update(str* rl_uri, char* boundary_string, str* rlmi_body,
 	/* update local_cseq in cache list watchers table */
 	pkg_free(body.s);
 	body.s= NULL;
-
-	if(pres_update_shtable(rls_table, hash_code,subs, LOCAL_TYPE)< 0)
+	
+	if(subs->expires!= 0 && subs->status != TERMINATED_STATUS)
 	{
-		LM_ERR("updating in hash table\n");
-		goto error;
+		if(pres_update_shtable(rls_table, hash_code,subs, LOCAL_TYPE)< 0)
+		{
+			LM_ERR("updating in hash table\n");
+			goto error;
+		}
 	}
+
 	return 0;
 
 error:
@@ -591,7 +595,7 @@ str* rls_notify_extra_hdr(subs_t* subs, char* start_cid, char* boundary_string)
 			"Subscription-State: active;expires=%d\r\n", expires);
 	else
 		str_hdr->len+= sprintf(str_hdr->s+str_hdr->len,
-			"Subscription-State: terminated;reason=timeout");
+			"Subscription-State: terminated;reason=timeout\r\n");
 
 	str_hdr->len+= sprintf(str_hdr->s+str_hdr->len, "Require: eventlist\r\n");
 

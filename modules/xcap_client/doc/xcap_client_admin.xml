@@ -51,12 +51,12 @@
 			<itemizedlist>
 			<listitem>
 			<para>
-				<emphasis>libxml</emphasis>.
+				<emphasis>libxml-dev</emphasis>.
 			</para>
 			</listitem>
 			<listitem>
 			<para>
-				<emphasis>libcurl</emphasis>.
+				<emphasis>libcurl-dev</emphasis>.
 			</para>
 			</listitem>
 			</itemizedlist>
