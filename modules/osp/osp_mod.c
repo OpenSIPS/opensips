@@ -218,7 +218,7 @@ static int ospInitChild(
 
     code = ospSetupProvider();
 
-    LM_DBG("provider '%i' (%d)\n", _osp_provider, code);
+    LM_DBG("provider '%d' (%d)\n", _osp_provider, code);
 
     return 0;
 }
