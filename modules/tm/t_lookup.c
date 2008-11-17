@@ -932,24 +932,10 @@ int t_check( struct sip_msg* p_msg , int *param_branch )
 
 int init_rb( struct retr_buf *rb, struct sip_msg *msg)
 {
-	/*struct socket_info* send_sock;*/
-	struct via_body* via;
 	int proto;
 
-	via=msg->via1;
-	if (!reply_to_via) {
-		update_sock_struct_from_ip( &rb->dst.to, msg );
-		proto=msg->rcv.proto;
-	} else {
-		/*init retrans buffer*/
-		if (update_sock_struct_from_via( &(rb->dst.to), msg, via )==-1) {
-			LM_ERR("init_rb: cannot lookup reply dst: %.*s\n",
-				via->host.len, via->host.s );
-			ser_error=E_BAD_VIA;
-			return 0;
-		}
-		proto=via->proto;
-	}
+	update_sock_struct_from_ip( &rb->dst.to, msg );
+	proto=msg->rcv.proto;
 	rb->dst.proto=proto;
 	rb->dst.proto_reserved1=msg->rcv.proto_reserved1;
 	/* use for sending replies the incoming interface of the request -bogdan */

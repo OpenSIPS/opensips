@@ -244,10 +244,6 @@ int gid = 0;
 /* more config stuff */
 int disable_core_dump=0; /* by default enabled */
 int open_files_limit=-1; /* don't touch it by default */
-/* a hint to reply modules whether they should send reply
-   to IP advertised in Via or IP from which a request came
-*/
-int reply_to_via=0;
 
 #ifdef USE_MCAST
 int mcast_loopback = 0;

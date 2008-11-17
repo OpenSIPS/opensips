@@ -749,7 +749,6 @@ rev_dns=no      # (cmd. line: -R)
 port=5060
 children=4
 
-reply_to_via=1
 listen = tcp:localhost:5060 
 listen = udp:localhost:5060 
 

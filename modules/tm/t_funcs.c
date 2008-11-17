@@ -199,12 +199,9 @@ int t_relay_to( struct sip_msg  *p_msg , struct proxy_l *proxy, int flags)
 
 	new_tran = t_newtran( p_msg );
 
-	/* parsing error, memory alloc, whatever ... if via is bad
-	   and we are forced to reply there, return with 0 (->break),
-	   pass error status otherwise
-	*/
+	/* parsing error, memory alloc, whatever ... */
 	if (new_tran<0) {
-		ret = (ser_error==E_BAD_VIA && reply_to_via) ? 0 : new_tran;
+		ret =  new_tran;
 		goto done;
 	}
 	/* if that was a retransmission, break from script */

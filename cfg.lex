@@ -253,7 +253,6 @@ SIP_WARNING sip_warning
 SERVER_SIGNATURE server_signature
 SERVER_HEADER server_header
 USER_AGENT_HEADER user_agent_header
-REPLY_TO_VIA reply_to_via
 USER		"user"|"uid"
 GROUP		"group"|"gid"
 CHROOT		"chroot"
@@ -519,7 +518,6 @@ WHITESPACE	[ \t\r\n]
 <INITIAL>{SERVER_SIGNATURE}	{ count(); yylval.strval=yytext; return SERVER_SIGNATURE; }
 <INITIAL>{SERVER_HEADER}	{ count(); yylval.strval=yytext; return SERVER_HEADER; }
 <INITIAL>{USER_AGENT_HEADER}	{ count(); yylval.strval=yytext; return USER_AGENT_HEADER; }
-<INITIAL>{REPLY_TO_VIA}	{ count(); yylval.strval=yytext; return REPLY_TO_VIA; }
 <INITIAL>{ADVERTISED_ADDRESS}	{	count(); yylval.strval=yytext;
 									return ADVERTISED_ADDRESS; }
 <INITIAL>{ADVERTISED_PORT}		{	count(); yylval.strval=yytext;

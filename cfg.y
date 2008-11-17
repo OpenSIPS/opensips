@@ -300,7 +300,6 @@ extern int line;
 %token SERVER_SIGNATURE
 %token SERVER_HEADER
 %token USER_AGENT_HEADER
-%token REPLY_TO_VIA
 %token LOADMODULE
 %token MPATH
 %token MODPARAM
@@ -885,8 +884,6 @@ assign_stm: DEBUG EQUAL snumber {
 									user_agent_header.len=strlen($3);
 									}
 		| USER_AGENT_HEADER EQUAL error { yyerror("string value expected"); }
-		| REPLY_TO_VIA EQUAL NUMBER { reply_to_via=$3; }
-		| REPLY_TO_VIA EQUAL error { yyerror("boolean value expected"); }
 		| LISTEN EQUAL id_lst {
 							for(lst_tmp=$3; lst_tmp; lst_tmp=lst_tmp->next){
 								if (add_listen_iface(	lst_tmp->name,

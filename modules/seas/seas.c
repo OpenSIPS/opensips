@@ -247,7 +247,7 @@ static int w_as_relay_t(struct sip_msg *msg, char *entry, char *foo)
     */
    new_tran = seas_f.tmb.t_newtran(msg);
    if(new_tran<0) {
-      ret = (ser_error==E_BAD_VIA && reply_to_via) ? 0 : new_tran;
+      ret = new_tran;
       goto done;
    }
    /*retransmission: script processing should be stopped*/

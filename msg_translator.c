@@ -80,17 +80,9 @@
  *  - rport and received are added in mostly the same way as for requests, but 
  *    in the reverse order (first rport and then received). See also 
  *    limitations.
- *  - if reply_to_via is set (default off) the local reply will be sent to
- *    the address in via (received is ignored since it was not set by us). The
- *    destination port is either the message source port if via contains rport
- *    or the FL_FORCE_RPORT flag is set or the port from the via. If either
- *    port or rport are present a normal dns lookup (instead of a srv lookup)
- *    is performed on the address. If no port is present and a srv lookup is 
- *    performed the port is taken from the srv lookup. If the srv lookup failed
- *    or it was not performed, the port is set to the default sip port (5060).
- *  - if reply_to_via is off (default) the local reply is sent to the message
- *    source ip address. The destination port is set to the source port if 
- *    rport is present or FL_FORCE_RPORT flag is set, to the via port or to
+ *  - the local reply is sent to the message source ip address. The 
+ *    destination port is set to the source port if rport is present or 
+ *    FL_FORCE_RPORT flag is set, to the via port or to
  *    the default sip port (5060) if neither rport or via port are present.
  * \section normalreplies "Normal" replies:
  *  - if received is present the message is sent to the received address else
