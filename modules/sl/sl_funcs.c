@@ -139,7 +139,7 @@ static inline void update_sl_reply_stat(int code)
 }
 
 
-int sl_send_reply_helper(struct sip_msg *msg ,int code, str *text, str *tag)
+int sl_send_reply_helper(struct sip_msg *msg ,int code, str *text)
 {
 	str buf;
 	union sockaddr_union to;
@@ -172,14 +172,9 @@ int sl_send_reply_helper(struct sip_msg *msg ,int code, str *text, str *tag)
 		(msg->to || (parse_headers(msg,HDR_TO_F, 0)!=-1 && msg->to))
 		&& (get_to(msg)->tag_value.s==0 || get_to(msg)->tag_value.len==0) ) 
 	{
-		if(tag!=NULL && tag->s!=NULL) {
-			buf.s = build_res_buf_from_sip_req( code, text, tag,
-						msg, (unsigned int*)&buf.len, &dummy_bm);
-		} else {
-			calc_crc_suffix( msg, tag_suffix );
-			buf.s = build_res_buf_from_sip_req( code, text, &sl_tag, msg,
-				(unsigned int*)&buf.len, &dummy_bm);
-		}
+		calc_crc_suffix( msg, tag_suffix );
+		buf.s = build_res_buf_from_sip_req( code, text, &sl_tag, msg,
+			(unsigned int*)&buf.len, &dummy_bm);
 	} else {
 		buf.s = build_res_buf_from_sip_req( code, text, 0, msg,
 			(unsigned int*)&buf.len, &dummy_bm);
@@ -219,12 +214,7 @@ error:
 
 int sl_send_reply(struct sip_msg *msg ,int code, str *text)
 {
-	return sl_send_reply_helper(msg, code, text, 0);
-}
-
-int sl_send_reply_dlg(struct sip_msg *msg ,int code, str *text, str *tag)
-{
-	return sl_send_reply_helper(msg, code, text, tag);
+	return sl_send_reply_helper(msg, code, text);
 }
 
 
@@ -245,7 +235,7 @@ int sl_reply_error(struct sip_msg *msg )
 	text.s = err_buf;
 	LM_DBG("error text is %.*s\n",text.len,text.s);
 
-	ret = sl_send_reply_helper( msg, sip_error, &text, 0);
+	ret = sl_send_reply_helper( msg, sip_error, &text);
 	if (ret==-1)
 		return -1;
 	if_update_stat( sl_enable_stats, sent_err_rpls , 1);

@@ -250,7 +250,6 @@ int load_sl( struct sl_binds *slb)
 		return -1;
 
 	slb->reply      = sl_send_reply;
-	slb->reply_dlg  = sl_send_reply_dlg;
 	slb->get_totag  = sl_get_totag;
 
 	return 1;
