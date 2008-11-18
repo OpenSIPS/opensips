@@ -61,7 +61,7 @@
 #include "../../ut.h"
 #include "../../dprint.h"
 #include "../../sr_module.h" /* Needed for find_export() */
-#include "../sl/sl_api.h"
+#include "../signaling/signaling.h"
 
 #include "sst_handlers.h"
 #include "sst_mi.h"
@@ -137,7 +137,7 @@ static void setup_dialog_callbacks(struct dlg_cell *did, sst_info_t *info);
  * The pointer to the stateless reply function This is used to send a
  * 422 reply if asked to with a Min-SE: header value to small.
  */
-extern struct sl_binds slb;
+extern struct sig_binds sigb;
 
 /**
  * The dialog modules timeout AVP spac.
@@ -691,7 +691,7 @@ static int send_response(struct sip_msg *request, int code, str *reason,
 		char *header, int header_len) 
 {
 
-	if (slb.reply != 0) {
+	if (sigb.reply != 0) {
 		/* Add new headers if not null or zero length */
 		if ((header) && (header_len)) {
 			if (add_lump_rpl(request, header, header_len, LUMP_RPL_HDR) == 0) {
@@ -701,7 +701,7 @@ static int send_response(struct sip_msg *request, int code, str *reason,
 			}
 		}
 		/* Now using the sl function, send the reply/response */
-		if (slb.reply(request, code, reason) < 0) {
+		if (sigb.reply(request, code, reason, NULL) < 0) {
 			LM_ERR("Unable to sent reply.\n");
 			return -1;
 		}
