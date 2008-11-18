@@ -37,15 +37,15 @@
 #include "../../data_lump_rpl.h"
 #include "../../parser/msg_parser.h"
 #include "../../parser/parse_uri.h"
-#include "../sl/sl_api.h"
+#include "../signaling/signaling.h"
 
 MODULE_VERSION
 
 char *acpt_c, *acpt_enc_c, *acpt_lan_c, *supt_c;
 str acpt_s, acpt_enc_s, acpt_lan_s, supt_s;
 
-/** SL binds */
-struct sl_binds slb;
+/** SIGNALING binds */
+struct sig_binds sigb;
 
 static str opt_200_rpl = str_init("OK");
 static str opt_500_rpl = str_init("Server internal error");
@@ -97,9 +97,9 @@ static int mod_init(void) {
 
 	LM_INFO("initializing...\n");
 
-	/* load the SL API */
-	if (load_sl_api(&slb)!=0) {
-		LM_ERR("can't load SL API\n");
+	/* load SIGNALING API */
+	if(load_sig_api(&sigb)< 0) {
+		LM_ERR("can't load signaling functions\n");
 		return -1;
 	}
 
@@ -206,7 +206,7 @@ static int opt_reply(struct sip_msg* _msg, char* _foo, char* _bar) {
 
 	if (add_lump_rpl( _msg, rpl_hf.s, rpl_hf.len,
 	LUMP_RPL_HDR|LUMP_RPL_NODUP)!=0) {
-		if (slb.reply(_msg, 200, &opt_200_rpl) == -1) {
+		if (sigb.reply(_msg, 200, &opt_200_rpl, NULL) == -1) {
 			LM_ERR("failed to send 200 via send_reply\n");
 			return -1;
 		}
@@ -218,7 +218,7 @@ static int opt_reply(struct sip_msg* _msg, char* _foo, char* _bar) {
 	}
 
 error:
-	if (slb.reply(_msg, 500, &opt_500_rpl) == -1) {
+	if (sigb.reply(_msg, 500, &opt_500_rpl, NULL) == -1) {
 		LM_ERR("failed to send 500 via send_reply\n");
 		return -1;
 	}
