@@ -446,6 +446,21 @@ void unref_dlg(struct dlg_cell *dlg, unsigned int cnt)
 }
 
 
+/**
+ * Small logging helper functions for next_state_dlg.
+ * \param event logged event
+ * \param dlg dialog data
+ * \see next_state_dlg
+ */
+static inline void log_next_state_dlg(const int event, const struct dlg_cell *dlg) {
+	LM_CRIT("bogus event %d in state %d for dlg %p [%u:%u] with clid '%.*s' and tags "
+		"'%.*s' '%.*s'\n", event, dlg->state, dlg, dlg->h_entry, dlg->h_id,
+		dlg->callid.len, dlg->callid.s,
+		dlg->tag[DLG_CALLER_LEG].len, dlg->tag[DLG_CALLER_LEG].s,
+		dlg->tag[DLG_CALLEE_LEG].len, dlg->tag[DLG_CALLEE_LEG].s);
+}
+
+
 void next_state_dlg(struct dlg_cell *dlg, int event,
 								int *old_state, int *new_state, int *unref)
 {
@@ -473,12 +488,7 @@ void next_state_dlg(struct dlg_cell *dlg, int event,
 					unref_dlg_unsafe(dlg,1,d_entry);
 					break;
 				default:
-					LM_CRIT("bogus event %d in state %d "
-						"for dlg with clid '%.*s' and tags '%.*s' '%.*s'\n",
-						event,dlg->state,
-						dlg->callid.len, dlg->callid.s,
-						dlg->tag[DLG_CALLER_LEG].len, dlg->tag[DLG_CALLER_LEG].s,
-						dlg->tag[DLG_CALLEE_LEG].len, dlg->tag[DLG_CALLEE_LEG].s);
+					log_next_state_dlg(event, dlg);
 			}
 			break;
 		case DLG_EVENT_RPL1xx:
@@ -488,12 +498,7 @@ void next_state_dlg(struct dlg_cell *dlg, int event,
 					dlg->state = DLG_STATE_EARLY;
 					break;
 				default:
-					LM_CRIT("bogus event %d in state %d "
-						"for dlg with clid '%.*s' and tags '%.*s' '%.*s'\n",
-						event,dlg->state,
-						dlg->callid.len, dlg->callid.s,
-						dlg->tag[DLG_CALLER_LEG].len, dlg->tag[DLG_CALLER_LEG].s,
-						dlg->tag[DLG_CALLEE_LEG].len, dlg->tag[DLG_CALLEE_LEG].s);
+					log_next_state_dlg(event, dlg);
 			}
 			break;
 		case DLG_EVENT_RPL3xx:
@@ -504,12 +509,7 @@ void next_state_dlg(struct dlg_cell *dlg, int event,
 					*unref = 1;
 					break;
 				default:
-					LM_CRIT("bogus event %d in state %d "
-						"for dlg with clid '%.*s' and tags '%.*s' '%.*s'\n",
-						event,dlg->state,
-						dlg->callid.len, dlg->callid.s,
-						dlg->tag[DLG_CALLER_LEG].len, dlg->tag[DLG_CALLER_LEG].s,
-						dlg->tag[DLG_CALLEE_LEG].len, dlg->tag[DLG_CALLEE_LEG].s);
+					log_next_state_dlg(event, dlg);
 			}
 			break;
 		case DLG_EVENT_RPL2xx:
@@ -517,8 +517,8 @@ void next_state_dlg(struct dlg_cell *dlg, int event,
 				case DLG_STATE_DELETED:
 					if (dlg->flags&DLG_FLAG_HASBYE) {
 						LM_CRIT("bogus event %d in state %d (with BYE) "
-							"for dlg with clid '%.*s' and tags '%.*s' '%.*s'\n",
-							event,dlg->state,
+							"for dlg %p [%u:%u] with clid '%.*s' and tags '%.*s' '%.*s'\n",
+							event, dlg->state, dlg, dlg->h_entry, dlg->h_id,
 							dlg->callid.len, dlg->callid.s,
 							dlg->tag[DLG_CALLER_LEG].len, dlg->tag[DLG_CALLER_LEG].s,
 							dlg->tag[DLG_CALLEE_LEG].len, dlg->tag[DLG_CALLEE_LEG].s);
@@ -533,12 +533,7 @@ void next_state_dlg(struct dlg_cell *dlg, int event,
 				case DLG_STATE_CONFIRMED:
 					break;
 				default:
-					LM_CRIT("bogus event %d in state %d "
-						"for dlg with clid '%.*s' and tags '%.*s' '%.*s'\n",
-						event,dlg->state,
-						dlg->callid.len, dlg->callid.s,
-						dlg->tag[DLG_CALLER_LEG].len, dlg->tag[DLG_CALLER_LEG].s,
-						dlg->tag[DLG_CALLEE_LEG].len, dlg->tag[DLG_CALLEE_LEG].s);
+					log_next_state_dlg(event, dlg);
 			}
 			break;
 		case DLG_EVENT_REQACK:
@@ -551,12 +546,7 @@ void next_state_dlg(struct dlg_cell *dlg, int event,
 				case DLG_STATE_DELETED:
 					break;
 				default:
-					LM_CRIT("bogus event %d in state %d "
-						"for dlg with clid '%.*s' and tags '%.*s' '%.*s'\n",
-						event,dlg->state,
-						dlg->callid.len, dlg->callid.s,
-						dlg->tag[DLG_CALLER_LEG].len, dlg->tag[DLG_CALLER_LEG].s,
-						dlg->tag[DLG_CALLEE_LEG].len, dlg->tag[DLG_CALLEE_LEG].s);
+					log_next_state_dlg(event, dlg);
 			}
 			break;
 		case DLG_EVENT_REQBYE:
@@ -568,12 +558,7 @@ void next_state_dlg(struct dlg_cell *dlg, int event,
 					*unref = 1;
 					break;
 				default:
-					LM_CRIT("bogus event %d in state %d "
-						"for dlg with clid '%.*s' and tags '%.*s' '%.*s'\n",
-						event,dlg->state,
-						dlg->callid.len, dlg->callid.s,
-						dlg->tag[DLG_CALLER_LEG].len, dlg->tag[DLG_CALLER_LEG].s,
-						dlg->tag[DLG_CALLEE_LEG].len, dlg->tag[DLG_CALLEE_LEG].s);
+					log_next_state_dlg(event, dlg);
 			}
 			break;
 		case DLG_EVENT_REQPRACK:
@@ -582,12 +567,7 @@ void next_state_dlg(struct dlg_cell *dlg, int event,
 				case DLG_STATE_CONFIRMED_NA:
 					break;
 				default:
-					LM_CRIT("bogus event %d in state %d "
-						"for dlg with clid '%.*s' and tags '%.*s' '%.*s'\n",
-						event,dlg->state,
-						dlg->callid.len, dlg->callid.s,
-						dlg->tag[DLG_CALLER_LEG].len, dlg->tag[DLG_CALLER_LEG].s,
-						dlg->tag[DLG_CALLEE_LEG].len, dlg->tag[DLG_CALLEE_LEG].s);
+					log_next_state_dlg(event, dlg);
 			}
 			break;
 		case DLG_EVENT_REQ:
@@ -596,18 +576,13 @@ void next_state_dlg(struct dlg_cell *dlg, int event,
 				case DLG_STATE_CONFIRMED:
 					break;
 				default:
-					LM_CRIT("bogus event %d in state %d "
-						"for dlg with clid '%.*s' and tags '%.*s' '%.*s'\n",
-						event,dlg->state,
-						dlg->callid.len, dlg->callid.s,
-						dlg->tag[DLG_CALLER_LEG].len, dlg->tag[DLG_CALLER_LEG].s,
-						dlg->tag[DLG_CALLEE_LEG].len, dlg->tag[DLG_CALLEE_LEG].s);
+					log_next_state_dlg(event, dlg);
 			}
 			break;
 		default:
 			LM_CRIT("unknown event %d in state %d "
-				"for dlg with clid '%.*s' and tags '%.*s' '%.*s'\n",
-				event,dlg->state,
+				"for dlg %p [%u:%u] with clid '%.*s' and tags '%.*s' '%.*s'\n",
+				event, dlg->state, dlg, dlg->h_entry, dlg->h_id,
 				dlg->callid.len, dlg->callid.s,
 				dlg->tag[DLG_CALLER_LEG].len, dlg->tag[DLG_CALLER_LEG].s,
 				dlg->tag[DLG_CALLEE_LEG].len, dlg->tag[DLG_CALLEE_LEG].s);
