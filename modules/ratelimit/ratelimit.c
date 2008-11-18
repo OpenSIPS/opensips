@@ -45,7 +45,7 @@
 #include "../../mod_fix.h"
 #include "../../data_lump.h"
 #include "../../data_lump_rpl.h"
-#include "../sl/sl_api.h"
+#include "../signaling/signaling.h"
 
 MODULE_VERSION
 
@@ -61,8 +61,8 @@ MODULE_VERSION
 #define RXL(m, str, i) (m)[i].rm_eo - (m)[i].rm_so
 #define RXS(m, str, i) (str) + (m)[i].rm_so
 
-/** SL binds */
-struct sl_binds slb;
+/* SIGNALING bind */
+struct sig_binds sigb;
 
 static inline int str_cmp(const str * a, const str * b);
 static inline int str_i_cmp(const str * a, const str * b);
@@ -438,9 +438,9 @@ static int mod_init(void)
 		return -1;
 	}
 
-	/* load the SL API */
-	if (load_sl_api(&slb)!=0) {
-		LM_ERR("failed to load SL API\n");
+	/* load the SIGNALLING API */
+	if(load_sig_api(&sigb)< 0) {
+		LM_ERR("can't load signaling functions\n");
 		return -1;
 	}
 
@@ -678,41 +678,36 @@ static int rl_drop(struct sip_msg * msg, unsigned int low, unsigned int high)
 
 	LM_DBG("(%d, %d)\n", low, high);
 
-	if (slb.reply != 0) {
-		if (low != 0 && high != 0) {
-			hdr.s = (char *)pkg_malloc(64);
-			if (hdr.s == 0) {
-				LM_ERR("Can't allocate memory for Retry-After header\n");
-				return 0;
-			}
-			hdr.len = 0;
-			if (! hdr.s) {
-				LM_ERR("no memory for hdr\n");
-				return 0;
-			}
-
-			if (high == low) {
-				hdr.len = snprintf(hdr.s, 63, "Retry-After: %d\r\n", low);
-			} else {
-				hdr.len = snprintf(hdr.s, 63, "Retry-After: %d\r\n", 
-					low + rand() % (high - low + 1));
-			}
-
-			if (add_lump_rpl(msg, hdr.s, hdr.len, LUMP_RPL_HDR)==0) {
-				LM_ERR("Can't add header\n");
-				pkg_free(hdr.s);
-				return 0;
-			}
-
-			ret = slb.reply(msg, rl_drop_code, &rl_drop_reason);
-
-			pkg_free(hdr.s);
-		} else {
-			ret = slb.reply(msg, rl_drop_code, &rl_drop_reason);
+	if (low != 0 && high != 0) {
+		hdr.s = (char *)pkg_malloc(64);
+		if (hdr.s == 0) {
+			LM_ERR("Can't allocate memory for Retry-After header\n");
+			return 0;
 		}
+		hdr.len = 0;
+		if (! hdr.s) {
+			LM_ERR("no memory for hdr\n");
+			return 0;
+		}
+
+		if (high == low) {
+			hdr.len = snprintf(hdr.s, 63, "Retry-After: %d\r\n", low);
+		} else {
+			hdr.len = snprintf(hdr.s, 63, "Retry-After: %d\r\n", 
+				low + rand() % (high - low + 1));
+		}
+
+		if (add_lump_rpl(msg, hdr.s, hdr.len, LUMP_RPL_HDR)==0) {
+			LM_ERR("Can't add header\n");
+			pkg_free(hdr.s);
+			return 0;
+		}
+
+		ret = sigb.reply(msg, rl_drop_code, &rl_drop_reason, NULL);
+
+		pkg_free(hdr.s);
 	} else {
-		LM_ERR("Can't send reply\n");
-		return 0;
+		ret = sigb.reply(msg, rl_drop_code, &rl_drop_reason, NULL);
 	}
 	return ret;
 }
