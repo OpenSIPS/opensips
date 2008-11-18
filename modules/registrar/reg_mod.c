@@ -63,7 +63,7 @@
 #include "../../socket_info.h"
 #include "../../pvar.h"
 #include "../usrloc/ul_mod.h"
-#include "../sl/sl_api.h"
+#include "../signaling/signaling.h"
 #include "../../mod_fix.h"
 
 #include "save.h"
@@ -132,8 +132,8 @@ stat_var *max_expires_stat;
 stat_var *max_contacts_stat;
 stat_var *default_expire_stat;
 
-/** SL binds */
-struct sl_binds slb;
+/** SIGNALING binds */
+struct sig_binds sigb;
 
 
 /*! \brief
@@ -222,9 +222,9 @@ static int mod_init(void)
 
 	LM_INFO("initializing...\n");
 
-	/* load the SL API */
-	if (load_sl_api(&slb)!=0) {
-		LM_ERR("can't load SL API\n");
+	/* load SIGNALING API */
+	if(load_sig_api(&sigb)< 0) {
+		LM_ERR("can't load signaling functions\n");
 		return -1;
 	}
 

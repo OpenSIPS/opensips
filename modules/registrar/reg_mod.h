@@ -47,7 +47,7 @@
 #include "../../qvalue.h"
 #include "../../usr_avp.h"
 #include "../usrloc/usrloc.h"
-#include "../sl/sl_api.h"
+#include "../signaling/signaling.h"
 
 /* if DB support is used, this values must not exceed the 
  * storage capacity of the DB columns! See db/schema/entities.xml */
@@ -97,7 +97,7 @@ extern int sock_flag;
 
 usrloc_api_t ul;  /*!< Structure containing pointers to usrloc functions */
 
-extern struct sl_binds slb;
+extern struct sig_binds sigb;
 
 extern stat_var *accepted_registrations;
 extern stat_var *rejected_registrations;
