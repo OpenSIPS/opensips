@@ -1139,11 +1139,8 @@ int t_unref( struct sip_msg* p_msg  )
 	if (T!=T_NULL_CELL) {
 		if (p_msg->first_line.type==SIP_REQUEST){
 			kr=get_kr();
-			if (kr==0 
-					||(p_msg->REQ_METHOD==METHOD_ACK && !(kr & REQ_RLSD))) {
-				LM_WARN("script writer didn't release transaction\n");
+			if (kr==0 ||(p_msg->REQ_METHOD==METHOD_ACK && !(kr & REQ_RLSD)))
 				t_release_transaction(T);
-			}
 		}
 		UNREF( T );
 	}

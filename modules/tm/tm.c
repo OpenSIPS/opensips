@@ -100,7 +100,6 @@ static int child_init(int rank);
 
 
 /* exported functions */
-inline static int w_t_release(struct sip_msg* msg, char* , char* );
 inline static int w_t_newtran(struct sip_msg* p_msg, char* , char* );
 inline static int w_t_reply(struct sip_msg *msg, char* code, char* text);
 inline static int w_pv_t_reply(struct sip_msg *msg, char* code, char* text);
@@ -142,8 +141,6 @@ static cmd_export_t cmds[]={
 			0, REQUEST_ROUTE},
 	{"t_reply",         (cmd_function)w_pv_t_reply,     2, fixup_t_send_reply,
 			0, REQUEST_ROUTE | FAILURE_ROUTE },
-	{"t_release",       (cmd_function)w_t_release,      0, 0,
-			0, REQUEST_ROUTE},
 	{"t_replicate",     (cmd_function)w_t_replicate,    1, fixup_t_replicate,
 			0, REQUEST_ROUTE},
 	{"t_replicate",     (cmd_function)w_t_replicate,    2, fixup_t_replicate,
@@ -881,17 +878,6 @@ inline static int w_pv_t_reply(struct sip_msg *msg, char* code, char* text)
 	}
 
 	return w_t_reply(msg, (char*)(unsigned long)code_i, (char*)&code_s);
-}
-
-
-inline static int w_t_release(struct sip_msg* msg, char* str, char* str2)
-{
-	struct cell *t;
-
-	t=get_t();
-	if ( t && t!=T_UNDEFINED ) 
-		return t_release_transaction( t );
-	return 1;
 }
 
 
