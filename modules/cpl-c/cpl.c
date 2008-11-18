@@ -316,11 +316,12 @@ static int cpl_init(void)
 		LM_ERR("can't load TM API\n");
 		goto error;
 	}
-	/* load SL API */
-	if (load_sl_api(&cpl_fct.slb)!=0) {
-		LM_ERR("can't load SL API\n");
-		goto error;
+	/* load SIGNALING API */
+	if(load_sig_api(&cpl_fct.sigb)< 0) {
+		LM_ERR("can't load signaling functions\n");
+		return -1;
 	}
+
 
 	/* bind to usrloc module if requested */
 	if (lookup_domain) {
@@ -844,7 +845,7 @@ static int cpl_process_register(struct sip_msg* msg, int no_rpl)
 			goto resume_script;
 
 		/* send a 200 OK reply back */
-		cpl_fct.slb.reply( msg, 200, &cpl_ok_rpl);
+		cpl_fct.sigb.reply( msg, 200, &cpl_ok_rpl,NULL);
 		/* I send the reply and I don't want to return to script execution, so
 		 * I return 0 to do break */
 		goto stop_script;
@@ -880,7 +881,7 @@ static int cpl_process_register(struct sip_msg* msg, int no_rpl)
 		goto resume_script;
 
 	/* send a 200 OK reply back */
-	cpl_fct.slb.reply( msg, 200, &cpl_ok_rpl);
+	cpl_fct.sigb.reply( msg, 200, &cpl_ok_rpl,NULL);
 
 stop_script:
 	return 0;
@@ -888,7 +889,7 @@ resume_script:
 	return 1;
 error:
 	/* send a error reply back */
-	cpl_fct.slb.reply( msg, cpl_err->err_code, &cpl_err->err_msg);
+	cpl_fct.sigb.reply( msg, cpl_err->err_code, &cpl_err->err_msg, NULL);
 	/* I don't want to return to script execution, so I return 0 to do break */
 	return 0;
 }

@@ -604,15 +604,7 @@ static inline char *run_reject( struct cpl_interpreter *intr )
 	}
 
 	/* send the reply */
-	if ( intr->flags&CPL_IS_STATEFUL ) {
-		/* reply statefully */
-		i = cpl_fct.tmb.t_reply(intr->msg, (int)status, &reason );
-	} else {
-		/* reply statelessly */
-		i = cpl_fct.slb.reply(intr->msg, (int)status, &reason );
-	}
-
-	if ( i!=1 ) {
+	if (cpl_fct.sigb.reply(intr->msg, (int)status, &reason, NULL )!=1) {
 		LM_ERR("unable to send reject reply!\n");
 		goto runtime_error;
 	}
@@ -725,19 +717,10 @@ static inline char *run_redirect( struct cpl_interpreter *intr )
 	}
 
 	/* send the reply */
-	if ( intr->flags&CPL_IS_STATEFUL ) {
-		/* reply statefully */
-		if (permanent)
-			i = cpl_fct.tmb.t_reply( intr->msg, (int)301, &cpl_301_reason);
-		else
-			i = cpl_fct.tmb.t_reply( intr->msg, (int)302, &cpl_302_reason);
-	} else {
-		/* reply statelessly */
-		if (permanent)
-			i = cpl_fct.slb.reply( intr->msg,301,&cpl_301_reason);
-		else
-			i = cpl_fct.slb.reply( intr->msg,302,&cpl_302_reason);
-	}
+	if (permanent)
+		i = cpl_fct.sigb.reply( intr->msg,301,&cpl_301_reason, NULL);
+	else
+		i = cpl_fct.sigb.reply( intr->msg,302,&cpl_302_reason, NULL);
 
 	/* msg which I'm working on can be in private memory or is a clone into
 	 * shared memory (if I'm after a failed proxy); So, it's better to removed
