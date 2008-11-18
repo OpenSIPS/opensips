@@ -62,7 +62,7 @@ static cmd_export_t cmds[]=
 
 /** module exports */
 struct module_exports exports= {
-	"sipreply",					/* module name */
+	"signaling",				/* module name */
 	DEFAULT_DLFLAGS,			/* dlopen flags */
 	cmds,						/* exported functions */
 	0,							/* exported parameters */
