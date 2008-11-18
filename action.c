@@ -543,9 +543,9 @@ int do_action(struct action* a, struct sip_msg* msg)
 				end=new_uri+MAX_URI_SIZE;
 				crt=new_uri;
 				/* begin copying */
-				len = sizeof("sip:")-1;
+				len = (uri.user.len?uri.user.s:uri.host.s) - tmp;
 				if (crt+len>end) goto error_uri;
-				memcpy(crt,"sip:",len);crt+=len;
+				memcpy(crt,tmp,len);crt+=len;
 
 				if (a->type==PREFIX_T) {
 					if (crt+a->elem[0].u.s.len>end) goto error_uri;
