@@ -44,7 +44,7 @@
 #include "../../ut.h"
 #include "../../mod_fix.h"
 #include "../../lock_alloc.h"
-#include "../sl/sl_api.h"
+#include "../signaling/signaling.h"
 #include "auth_mod.h"
 #include "challenge.h"
 #include "rpid.h"
@@ -75,8 +75,8 @@ static int mod_init(void);
 int pv_proxy_authorize(struct sip_msg* msg, char* realm, char* str2);
 int pv_www_authorize(struct sip_msg* msg, char* realm, char* str2);
 
-/** SL binds */
-struct sl_binds slb;
+/** SIGNALING binds */
+struct sig_binds sigb;
 
 
 /*
@@ -212,10 +212,10 @@ static int mod_init(void)
 {
 	str stmp;
 	LM_INFO("initializing...\n");
-	
-	/* load the SL API */
-	if (load_sl_api(&slb)!=0) {
-		LM_ERR("can't load SL API\n");
+
+	/* load SIGNALING API */
+	if(load_sig_api(&sigb)< 0){
+		LM_ERR("can't load signaling functions\n");
 		return -1;
 	}
 
@@ -424,7 +424,7 @@ static inline int pv_authorize(struct sip_msg* msg, gparam_p realm,
 	res = auth_get_ha1(msg, &cred->digest.username, &domain, ha1);
 	if (res < 0) {
 		/* Error */
-		if (slb.reply(msg, 500, &auth_500_err) == -1) {
+		if (sigb.reply(msg, 500, &auth_500_err, NULL) == -1) {
 			LM_ERR("failed to send 500 reply\n");
 		}
 		return ERROR;
