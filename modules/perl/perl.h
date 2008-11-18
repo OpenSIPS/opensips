@@ -27,7 +27,7 @@
 #ifndef PERL_MOD_H
 #define PERL_MOD_H
 
-#include "../sl/sl_api.h"
+#include "../signaling/signaling.h"
 
 /* lock_ops.h defines union semun, perl does not need to redefine it */
 #ifdef USE_SYSV_SEM
@@ -42,7 +42,7 @@ extern char *modpath;
 
 extern PerlInterpreter *my_perl;
 
-extern struct sl_binds slb;
+extern struct sig_binds sigb;
 
 #define PERLCLASS_MESSAGE	"OpenSIPS::Message"
 #define PERLCLASS_URI		"OpenSIPS::URI"

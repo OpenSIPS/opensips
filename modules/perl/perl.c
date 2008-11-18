@@ -63,8 +63,8 @@ int unsafemodfnc = 0;
 /* Reference to the running Perl interpreter instance */
 PerlInterpreter *my_perl = NULL;
 
-/** SL binds */
-struct sl_binds slb;
+/** SIGNALING binds */
+struct sig_binds sigb;
 
 /*
  * Module destroy function prototype
@@ -311,14 +311,13 @@ static int mod_init(void) {
 	}
 
 	/**
-	 * We will need sl_send_reply from stateless
+	 * We will need reply() from signaling
 	 * module for sending replies
 	 */
 
-
-	/* load the SL API */
-	if (load_sl_api(&slb)!=0) {
-		LM_ERR("can't load SL API\n");
+	/* load SIGNALING API */
+	if(load_sig_api(&sigb)< 0) {
+		LM_ERR("can't load signaling functions\n");
 		return -1;
 	}
 
