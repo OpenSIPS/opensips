@@ -43,7 +43,7 @@
 #include "../../mod_fix.h"
 #include "../../mem/mem.h"
 #include "../auth/api.h"
-#include "../sl/sl_api.h"
+#include "../signaling/signaling.h"
 #include "aaa_avps.h"
 #include "authorize.h"
 
@@ -71,8 +71,8 @@ static int mod_init(void);
 
 static int auth_fixup(void** param, int param_no);
 
-/** SL binds */
-struct sl_binds slb;
+/** SIGNALING binds */
+struct sig_binds sigb;
 
 #define USER_COL "username"
 #define USER_COL_LEN (sizeof(USER_COL) - 1)
@@ -196,9 +196,9 @@ static int mod_init(void)
 		return -3;
 	}
 
-	/* load the SL API */
-	if (load_sl_api(&slb)!=0) {
-		LM_ERR("can't load SL API\n");
+	/* load SIGNALING API */
+	if(load_sig_api(&sigb)< 0) {
+		LM_ERR("can't load signaling functions\n");
 		return -1;
 	}
 

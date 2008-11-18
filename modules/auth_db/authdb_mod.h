@@ -29,7 +29,7 @@
 #include "../../str.h"
 #include "../../db/db.h"
 #include "../auth/api.h"
-#include "../sl/sl_api.h"
+#include "../signaling/signaling.h"
 #include "../../parser/msg_parser.h"
 
 
@@ -58,6 +58,6 @@ extern int credentials_n;
 /*
  * Pointer to reply function in stateless module
  */
-extern struct sl_binds slb;
+extern struct sig_binds sigb;
 
 #endif /* AUTHDB_MOD_H */
