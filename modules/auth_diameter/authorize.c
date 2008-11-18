@@ -745,7 +745,7 @@ int send_resp(struct sip_msg* m, int code, str* reason,
 		}
 	}
 
-	return slb.reply(m, code, reason);
+	return sigb.reply(m, code, reason, NULL);
 }
 
 

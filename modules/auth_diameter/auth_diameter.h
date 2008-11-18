@@ -31,7 +31,7 @@
 #define AUTHDIAM_MOD_H
 
 #include "../../parser/msg_parser.h"
-#include "../sl/sl_api.h"
+#include "../signaling/signaling.h"
 #include "defs.h"
 #define M_NAME "auth_diameter"
 
@@ -39,7 +39,7 @@ extern char *diameter_client_host;
 extern int diameter_client_port;
 
 /** SL binds */
-extern struct sl_binds slb;
+extern struct sig_binds sigb;
 
 int sockfd;
 int use_domain;
