@@ -40,9 +40,10 @@
 
 struct acc_extra
 {
-	str        name;       /* name (log comment/ column name) */
-	pv_spec_t  spec;       /* value's spec */
-	struct acc_extra *next;
+	str        name;           /* name (log comment/ column name) */
+	pv_spec_t  spec;           /* value's spec */
+	unsigned int     use_rpl;  /* if this value should be taken from reply */
+	struct acc_extra *next;    /* next extra value */
 };
 
 

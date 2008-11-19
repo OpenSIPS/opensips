@@ -43,6 +43,8 @@
 
 #define EQUAL '='
 #define SEPARATOR ';'
+#define REPLY_STR_S  "reply"
+#define REPLY_STR_LEN (sizeof(REPLY_STR_S)-1)
 
 
 #if MAX_ACC_EXTRA<MAX_ACC_LEG
@@ -165,6 +167,26 @@ struct acc_extra *parse_acc_extra(char *extra_str)
 		if ( (foo=pv_parse_spec(&stmp, &extra->spec))==0 )
 			goto parse_error;
 		s = foo;
+
+		/* skip spaces */
+		while (*s && isspace((int)*s))  s++;
+
+		/* type of message - request or reply ? */
+		if (*s=='/') {
+			s++;
+			while (*s && isspace((int)*s))  s++;
+			if (*s==0)
+				goto parse_error;
+			foo = s;
+			while (*s && isalpha((int)*s))  s++;
+			if (s-foo==REPLY_STR_LEN &&
+			strncasecmp(foo,REPLY_STR_S,REPLY_STR_LEN)==0 ) {
+				extra->use_rpl =1;
+			} else {
+				LM_ERR("unsupported marker <%.*s>\n",s-foo,foo);
+				goto error;
+			}
+		}
 
 		/* skip spaces */
 		while (*s && isspace((int)*s))  s++;
