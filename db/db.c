@@ -152,6 +152,10 @@ int db_bind_mod(const str* mod, db_func_t* mydbf)
 	}
 	// add the prefix
 	name = pkg_malloc(mod->len + 4);
+	if (!name) {
+		LM_ERR("no private memory left\n");
+		return -1;
+	}
 	memcpy(name, "db_", 3);
 	memcpy(name+3, mod->s, mod->len);
 	name[mod->len+3] = 0;
