@@ -394,10 +394,9 @@ static inline int hostent2su( union sockaddr_union* su,
 /*! \brief fast ip_addr -> string converter;
  * it uses an internal buffer
  */
+extern char _ip_addr_A_buff[IP_ADDR_MAX_STR_SIZE];
 static inline char* ip_addr2a(struct ip_addr* ip)
 {
-
-	static char buff[IP_ADDR_MAX_STR_SIZE];
 	int offset;
 	register unsigned char a,b,c;
 #ifdef USE_IPV6
@@ -419,26 +418,26 @@ static inline char* ip_addr2a(struct ip_addr* ip)
 				c=(hex4>>4)&0xf;
 				d=hex4&0xf;
 				if (a){
-					buff[offset]=HEXDIG(a);
-					buff[offset+1]=HEXDIG(b);
-					buff[offset+2]=HEXDIG(c);
-					buff[offset+3]=HEXDIG(d);
-					buff[offset+4]=':';
+					_ip_addr_A_buff[offset]=HEXDIG(a);
+					_ip_addr_A_buff[offset+1]=HEXDIG(b);
+					_ip_addr_A_buff[offset+2]=HEXDIG(c);
+					_ip_addr_A_buff[offset+3]=HEXDIG(d);
+					_ip_addr_A_buff[offset+4]=':';
 					offset+=5;
 				}else if(b){
-					buff[offset]=HEXDIG(b);
-					buff[offset+1]=HEXDIG(c);
-					buff[offset+2]=HEXDIG(d);
-					buff[offset+3]=':';
+					_ip_addr_A_buff[offset]=HEXDIG(b);
+					_ip_addr_A_buff[offset+1]=HEXDIG(c);
+					_ip_addr_A_buff[offset+2]=HEXDIG(d);
+					_ip_addr_A_buff[offset+3]=':';
 					offset+=4;
 				}else if(c){
-					buff[offset]=HEXDIG(c);
-					buff[offset+1]=HEXDIG(d);
-					buff[offset+2]=':';
+					_ip_addr_A_buff[offset]=HEXDIG(c);
+					_ip_addr_A_buff[offset+1]=HEXDIG(d);
+					_ip_addr_A_buff[offset+2]=':';
 					offset+=3;
 				}else{
-					buff[offset]=HEXDIG(d);
-					buff[offset+1]=':';
+					_ip_addr_A_buff[offset]=HEXDIG(d);
+					_ip_addr_A_buff[offset+1]=':';
 					offset+=2;
 				}
 			}
@@ -449,23 +448,23 @@ static inline char* ip_addr2a(struct ip_addr* ip)
 			c=(hex4>>4)&0xf;
 			d=hex4&0xf;
 			if (a){
-				buff[offset]=HEXDIG(a);
-				buff[offset+1]=HEXDIG(b);
-				buff[offset+2]=HEXDIG(c);
-				buff[offset+3]=HEXDIG(d);
-				buff[offset+4]=0;
+				_ip_addr_A_buff[offset]=HEXDIG(a);
+				_ip_addr_A_buff[offset+1]=HEXDIG(b);
+				_ip_addr_A_buff[offset+2]=HEXDIG(c);
+				_ip_addr_A_buff[offset+3]=HEXDIG(d);
+				_ip_addr_A_buff[offset+4]=0;
 			}else if(b){
-				buff[offset]=HEXDIG(b);
-				buff[offset+1]=HEXDIG(c);
-				buff[offset+2]=HEXDIG(d);
-				buff[offset+3]=0;
+				_ip_addr_A_buff[offset]=HEXDIG(b);
+				_ip_addr_A_buff[offset+1]=HEXDIG(c);
+				_ip_addr_A_buff[offset+2]=HEXDIG(d);
+				_ip_addr_A_buff[offset+3]=0;
 			}else if(c){
-				buff[offset]=HEXDIG(c);
-				buff[offset+1]=HEXDIG(d);
-				buff[offset+2]=0;
+				_ip_addr_A_buff[offset]=HEXDIG(c);
+				_ip_addr_A_buff[offset+1]=HEXDIG(d);
+				_ip_addr_A_buff[offset+2]=0;
 			}else{
-				buff[offset]=HEXDIG(d);
-				buff[offset+1]=0;
+				_ip_addr_A_buff[offset]=HEXDIG(d);
+				_ip_addr_A_buff[offset+1]=0;
 			}
 			break;
 	#endif
@@ -475,19 +474,19 @@ static inline char* ip_addr2a(struct ip_addr* ip)
 				c=ip->u.addr[r]%10;
 				b=ip->u.addr[r]%100/10;
 				if (a){
-					buff[offset]=a+'0';
-					buff[offset+1]=b+'0';
-					buff[offset+2]=c+'0';
-					buff[offset+3]='.';
+					_ip_addr_A_buff[offset]=a+'0';
+					_ip_addr_A_buff[offset+1]=b+'0';
+					_ip_addr_A_buff[offset+2]=c+'0';
+					_ip_addr_A_buff[offset+3]='.';
 					offset+=4;
 				}else if (b){
-					buff[offset]=b+'0';
-					buff[offset+1]=c+'0';
-					buff[offset+2]='.';
+					_ip_addr_A_buff[offset]=b+'0';
+					_ip_addr_A_buff[offset+1]=c+'0';
+					_ip_addr_A_buff[offset+2]='.';
 					offset+=3;
 				}else{
-					buff[offset]=c+'0';
-					buff[offset+1]='.';
+					_ip_addr_A_buff[offset]=c+'0';
+					_ip_addr_A_buff[offset+1]='.';
 					offset+=2;
 				}
 			}
@@ -496,17 +495,17 @@ static inline char* ip_addr2a(struct ip_addr* ip)
 			c=ip->u.addr[r]%10;
 			b=ip->u.addr[r]%100/10;
 			if (a){
-				buff[offset]=a+'0';
-				buff[offset+1]=b+'0';
-				buff[offset+2]=c+'0';
-				buff[offset+3]=0;
+				_ip_addr_A_buff[offset]=a+'0';
+				_ip_addr_A_buff[offset+1]=b+'0';
+				_ip_addr_A_buff[offset+2]=c+'0';
+				_ip_addr_A_buff[offset+3]=0;
 			}else if (b){
-				buff[offset]=b+'0';
-				buff[offset+1]=c+'0';
-				buff[offset+2]=0;
+				_ip_addr_A_buff[offset]=b+'0';
+				_ip_addr_A_buff[offset+1]=c+'0';
+				_ip_addr_A_buff[offset+2]=0;
 			}else{
-				buff[offset]=c+'0';
-				buff[offset+1]=0;
+				_ip_addr_A_buff[offset]=c+'0';
+				_ip_addr_A_buff[offset+1]=0;
 			}
 			break;
 		
@@ -515,7 +514,7 @@ static inline char* ip_addr2a(struct ip_addr* ip)
 			return 0;
 	}
 	
-	return buff;
+	return _ip_addr_A_buff;
 }
 
 
