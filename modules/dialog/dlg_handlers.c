@@ -475,7 +475,7 @@ void dlg_onreq(struct cell* t, int type, struct tmcb_params *param)
 
 	if ( d_tmb.register_tmcb( 0, t,
 				  TMCB_RESPONSE_OUT|TMCB_TRANS_DELETED|TMCB_RESPONSE_FWDED,
-				  dlg_onreply, (void*)dlg)<0 ) {
+				  dlg_onreply, (void*)dlg, 0)<0 ) {
 		LM_ERR("failed to register TMCB\n");
 		goto error;
 	}
@@ -753,7 +753,7 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 			if ( d_tmb.register_tmcb( req, 0, 
 			TMCB_RESPONSE_FWDED|TMCB_TRANS_DELETED,
 			(dir==DLG_DIR_UPSTREAM)?dlg_seq_down_onreply:dlg_seq_up_onreply,
-			(void*)dlg)<0 ) {
+			(void*)dlg, 0)<0 ) {
 				LM_ERR("failed to register TMCB (2)\n");
 					unref_dlg( dlg , 1);
 			}
