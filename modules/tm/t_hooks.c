@@ -45,6 +45,22 @@ struct tmcb_head_list tmcb_pending_hl = {0,0};
 unsigned int tmcb_pending_id = -1;
 
 
+void empty_tmcb_list(struct tmcb_head_list *head)
+{
+	struct tm_callback *cbp, *cbp_tmp;
+
+	for( cbp=head->first; cbp ; ) {
+		cbp_tmp = cbp;
+		cbp = cbp->next;
+		if (cbp_tmp->release)
+			cbp_tmp->release(cbp_tmp->param);
+		shm_free( cbp_tmp );
+	}
+	head->first = 0 ;
+	head->reg_types = 0;
+}
+
+
 int init_tmcb_lists(void)
 {
 	req_in_tmcb_hl = (struct tmcb_head_list*)shm_malloc
@@ -59,20 +75,6 @@ int init_tmcb_lists(void)
 }
 
 
-inline static void empty_tmcb_list(struct tmcb_head_list *head)
-{
-	struct tm_callback *cbp, *cbp_tmp;
-
-	for( cbp=head->first; cbp ; ) {
-		cbp_tmp = cbp;
-		cbp = cbp->next;
-		if (cbp_tmp->param) shm_free( cbp_tmp->param );
-		shm_free( cbp_tmp );
-	}
-	head->first = 0 ;
-	head->reg_types = 0;
-}
-
 void destroy_tmcb_lists(void)
 {
 	if (!req_in_tmcb_hl)
@@ -85,7 +87,7 @@ void destroy_tmcb_lists(void)
 
 
 int insert_tmcb(struct tmcb_head_list *cb_list, int types,
-									transaction_cb f, void *param )
+				transaction_cb f, void *param, release_tmcb_param release_func )
 {
 	struct tm_callback *cbp;
 
@@ -102,6 +104,7 @@ int insert_tmcb(struct tmcb_head_list *cb_list, int types,
 	/* ... and fill it up */
 	cbp->callback = f;
 	cbp->param = param;
+	cbp->release = release_func;
 	cbp->types = types;
 	if (cbp->next)
 		cbp->id = cbp->next->id+1;
@@ -118,7 +121,7 @@ int insert_tmcb(struct tmcb_head_list *cb_list, int types,
  * (global or per transaction, depending of event type)
 */
 int register_tmcb( struct sip_msg* p_msg, struct cell *t, int types,
-											transaction_cb f, void *param )
+				  transaction_cb f, void *param, release_tmcb_param release_func )
 {
 	struct tmcb_head_list *cb_list;
 
@@ -169,7 +172,7 @@ int register_tmcb( struct sip_msg* p_msg, struct cell *t, int types,
 		}
 	}
 
-	return insert_tmcb( cb_list, types, f, param );
+	return insert_tmcb( cb_list, types, f, param, release_func );
 }
 
 

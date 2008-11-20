@@ -170,9 +170,11 @@ struct tmcb_params {
 
 /* callback function prototype */
 typedef void (transaction_cb) (struct cell* t, int type, struct tmcb_params*);
+/* function to release the callback param */
+typedef void (release_tmcb_param) (void *param);
 /* register callback function prototype */
 typedef int (*register_tmcb_f)(struct sip_msg* p_msg, struct cell *t,
-		int cb_types, transaction_cb f, void *param);
+		int cb_types, transaction_cb f, void *param, release_tmcb_param func);
 
 
 struct tm_callback {
@@ -180,6 +182,7 @@ struct tm_callback {
 	int types;                   /* types of events that trigger the callback*/
 	transaction_cb* callback;    /* callback function */
 	void *param;                 /* param to be passed to callback function */
+	release_tmcb_param *release; /* function to release the callback param when the callback is deleted */
 	struct tm_callback* next;
 };
 
@@ -200,18 +203,20 @@ extern unsigned int tmcb_pending_id;
 	( req_in_tmcb_hl->first!=0 )
 
 
-int init_tmcb_lists();
+void empty_tmcb_list(struct tmcb_head_list *head);
 
-void destroy_tmcb_lists();
+int init_tmcb_lists(void);
+
+void destroy_tmcb_lists(void);
 
 
 /* register a callback for several types of events */
 int register_tmcb( struct sip_msg* p_msg, struct cell *t, int types,
-											transaction_cb f, void *param );
+				  transaction_cb f, void *param, release_tmcb_param release_func );
 
 /* inserts a callback into the a callback list */
 int insert_tmcb(struct tmcb_head_list *cb_list, int types,
-									transaction_cb f, void *param );
+				transaction_cb f, void *param, release_tmcb_param release_func );
 
 /* set extra params for callbacks */
 void set_extra_tmcb_params(void *extra1, void *extra2);

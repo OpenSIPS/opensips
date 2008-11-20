@@ -1371,7 +1371,7 @@ NAT_Keepalive(struct sip_msg *msg)
         // fallthrough
     case METHOD_SUBSCRIBE:
         msg->msg_flags |= FL_DO_KEEPALIVE;
-        if (tm_api.register_tmcb(msg, 0, TMCB_RESPONSE_IN, __tm_reply_in, 0) <= 0) {
+        if (tm_api.register_tmcb(msg, 0, TMCB_RESPONSE_IN, __tm_reply_in, 0, 0) <= 0) {
             LM_ERR("cannot register TM callback for incoming replies\n");
             return -1;
         }
