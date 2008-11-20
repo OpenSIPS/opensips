@@ -26,7 +26,7 @@
 #
 
 use strict;
-use warnings;
+#use warnings;
 use Term::ReadLine;
 use Switch;
 use DBI;
@@ -36,6 +36,7 @@ use IO::Socket;
 use Socket;
 use String;
 use Net::IP;
+use BerkeleyDB;
 
 ####variables that need to be changed
 
@@ -93,6 +94,7 @@ my $DBRWUSER = "";
 my $DBROUSER = "";
 my $DBROPW = "";
 my $DBROOTUSER = "";
+my $DBRWPW = "";
 my $CTLENGINE = "";
 	
 my @arr;
@@ -119,13 +121,49 @@ my $CTLENGINELOADED = 0;
 my $STORE_PLAINTEXT_PW;
 my $ENABLE_ALIASES = 0;
 my $ALIAS_EXISTS = 0;
+######-----------------------------------------------#######
+##database specific variables
+#
+my @STANDARD_TABLES = ('version', 'acc', 'dbaliases', 'lcr', 'domain', 'grp', 'uri', 'speed_dial', 'gw', 'pdt', 'subscriber', 'location', 're_grp', 'trusted', 'address', 'missed_calls', 'usr_preferences', 'aliases', 'silo', 'dialog', 'dispatcher', 'dialplan');
 
+my @STANDARD_MODULES = ('standard', 'acc', 'lcr', 'domain', 'group', 'permissions', 'registrar', 'usrloc', 'msilo', 'alias_db', 'uri_db',
+				     'speeddial', 'avpops', 'auth_db', 'pdt', 'dialog', 'dispatcher', 'dialplan' );
+my @EXTRA_TABLES = ('imc_members', 'imc_rooms', 'cpl', 'sip_trace', 'domainpolicy', 'carrierroute',
+		'route_tree', 'carrierfailureroute', 'userblacklist', 'globalblacklist');
+my @EXTRA_MODULES = ('imc', 'cpl', 'siptrace', 'domainpolicy', 'carrierroute', 'userblacklist');
+my @PRESENCE_TABLES = ('presentity', 'active_watchers', 'watchers', 'xcap', 'pua');
+my @PRESENCE_RLS_TABLES = ('rls_presentity', 'rls_watchers');
+my $HAS_EXTRA = "NO";
+my $NO_USER_INIT = "NO";
+my $MYSQL = "";
+my $PGSQL = "";
+my $MYLIBDIR = "/usr/local/lib/opensips/opensipsctl";
+my $DBTEXTCMD = $MYLIBDIR."/dbtextdb/dbtextdb.py";
+
+# Uncomment this to set the database root password if you want to run this 
+# script without any user prompt. This is unsafe, but useful e.g. for 
+# automatic testing.
+#my PW="";
+
+
+# path to the database schemas
+my $DB_SCHEMA = "";
+my $DATA_DIR = "/usr/local/share/opensips";
+my $DBTEXT_PATH = "/usr/local/share/opensips/dbtext/opensips";
+# path to the db_berkeley database
+my $DB_PATH;
+if ( $DB_PATH eq "" ) {
+	$DB_PATH = "/usr/local/etc/opensips/db_berkeley";
+}
+my $DUMP_CMD;
+my $LOAD_CMD;
+my $PW = "";
 
 my $ALIAS_DB_EXISTS = "";
 my $ALIAS_UL_EXISTS = "";
  
 my $DBENGINELOADED;
-my $PASS="";
+my $PASS = "";
 my $HA1;
 my $HA1B;
 my $sth;
@@ -185,7 +223,17 @@ my @command_list = ('acl'=> ('show','grant','revoke'),
 		    'version'=>'version',
 		    'xmlrpc'=>'xmlrpc',	
 		    'db'=>('exec','roexec','run','rorun','show'),
-		    'dialplan'=>('show','addrule','rm','rmpid','rmrule','reload')
+		    'dialplan'=>('show','addrule','rm','rmpid','rmrule','reload'),
+		    'migrate'=>'migrate',
+		    'copy'=>'copy',
+		    'backup'=>'backup',
+		    'restore'=>'restore',
+		    'create'=>'create',
+		    'presence'=>'presence',
+		    'extra'=>'extra',
+		    'drop'=>'reinit',
+		    'bdb'=>('list','ls','cat','swap','append','newappend','export','import','migrate'),
+		    'db_berkeley'=>('list','ls','cat','swap','append','newappend','export','import','migrate')			
 		    );
   		    
 		    
@@ -285,9 +333,9 @@ while ( $#content gt -1 ){
 
 		}					
 
-		if ( @ACL_GROUPS eq "") {
-			if ( $arr[0] =~ /^\s*ACL_GROUPS/ ) {
-			 	@ACL_GROUPS = $arr[1]; 
+		if ( $#ACL_GROUPS lt 0 ) {
+			if ( $arr[0] =~ /^\s*ACL_GROUPS/ ) {				
+			 	@ACL_GROUPS = split(" ",$arr[1]); 
 			}
 		}
 
@@ -296,46 +344,65 @@ while ( $#content gt -1 ){
 		
 		if ( $DBENGINE eq "" ) {
 			if ( $arr[0] =~ /^\s*DBENGINE/ ) {
-			 	$DBENGINE = lc ($arr[1]); 				
+				if ( $arr[1] =~ /^\s*MYSQL/ ) {
+					$DBENGINE = "mysql";
+				} elsif  ( $arr[1] =~ /^\s*PGSQL/ ) {
+					$DBENGINE = "Pg";
+				} else {	
+				 	$DBENGINE = $arr[1]; 					
+				}
 			}			
 		}
 
 		if ( $DBNAME eq "" ) {
 			if ( $arr[0] =~ /^\s*DBNAME/ ) {
-			 	$DBNAME = $arr[1]; 
+			 	my $str = $arr[1]; 
+				$DBNAME = new String($str);
 			}
 		}
 
 
 		if ( $DBHOST eq "" ) {
 			if ( $arr[0] =~ /^\s*DBHOST/ ) {
-			 	$DBHOST = $arr[1]; 
+			 	my $str = $arr[1]; 
+				$DBHOST = new String($str);
 			}
 		}
 
 		if ( $DBRWUSER eq "" ) {
 			if ( $arr[0] =~ /^\s*DBRWUSER/ ) {
-			 	$DBRWUSER = $arr[1]; 
+			 	my $str = $arr[1]; 
+				$DBRWUSER = new String($str);
 			}
 		}
 
 			# the read-only user for whom password may be stored here
 		if ( $DBROUSER eq "" ) {
 			if ( $arr[0] =~ /^\s*DBROUSER/ ) {
-			 	$DBROUSER = $arr[1]; 
+			 	my $str = $arr[1]; 
+				$DBROUSER = new String($str);
 			}
 		}
 
 		if ( $DBROPW eq "" ) {
 			if ( $arr[0] =~ /^\s*DBROPW/ ) {
-			 	$DBROPW = $arr[1]; 
+			 	my $str = $arr[1]; 
+				$DBROPW = new String($str);
 			}			
 		}
 
 		# full privileges SQL user
 		if ( $DBROOTUSER eq "" ) {
 			if ( $arr[0] =~ /^\s*DBROOTUSER/ ) {
-			 	$DBROOTUSER = $arr[1]; 
+			 	my $str = $arr[1]; 
+				$DBROOTUSER = new String($str);
+			}			
+		}
+
+		if ( $DBRWPW eq "" ) {
+			if ( $arr[0] =~ /^\s*DBRWPW/ ) {
+			 	my $str = $arr[1]; 
+				$DBRWPW = new String($str);
 			}			
 		}
 		
@@ -420,7 +487,7 @@ if ( ! $VERIFY_ACL ) {
 	$VERIFY_ACL = 1;
 }
 
-if ( @ACL_GROUPS eq "") {
+if ( $#ACL_GROUPS lt 0 ) {
 	@ACL_GROUPS=("local", "ld", "int", "voicemail", "free-pstn");
 }
 
@@ -440,6 +507,10 @@ if ( $DBHOST eq "" ) {
 
 if ( $DBRWUSER  eq "" ) {
 	$DBRWUSER = 'opensips';
+}
+
+if ( $DBRWPW  eq ""  ) {
+	$DBRWPW = "opensipsrw";
 }
 
 # the read-only user for whom password may be stored here
@@ -463,11 +534,12 @@ if ( ! $STORE_PLAINTEXT_PW ) {
 
 ### force values for variables in this section
 # you better set the variables in ~/.opensipsctlrc
+
 if ( !-z $ETCDIR ) {
 	$ETCDIR="/usr/local/etc/opensips";	
 }
 
-if ( $EGREP eq " " ) {
+if ( $EGREP eq "" ) {
 	&locate_tool("egrep");		
 	if ( !-e $TOOLPATH ){
 		# now error, but we can look for alternative names if it is the case
@@ -477,7 +549,7 @@ if ( $EGREP eq " " ) {
 	}
 }
 		
-if ($AWK eq " ") {
+if ($AWK eq "") {
 	&locate_tool('awk');
 	if ( !-e $TOOLPATH ) {
 		# now error, but we can look for alternative names if it is the case
@@ -487,7 +559,7 @@ if ($AWK eq " ") {
 	}
 }
 
-if ( $MD5 eq " ") {
+if ( $MD5 eq "") {
 	&locate_tool ('md5sum md5');
 	if ( !-e $TOOLPATH ) {
 		# now error, but we can look for alternative names if it is the case
@@ -497,7 +569,7 @@ if ( $MD5 eq " ") {
 	}
 }
 
-if ( $EXPR eq " " ) {
+if ( $EXPR eq "" ) {
 	&locate_tool('expr');
 	if ( !-e $TOOLPATH ) {
 		# now error, but we can look for alternative names if it is the case
@@ -517,6 +589,77 @@ if ( $EXPR eq " " ) {
 #	}
 #}
 
+
+##### ----------------------------------------------- #####
+### binaries
+{
+	if ( $MYSQL eq "" ) {
+		&locate_tool('mysql');
+		if ( !-e $TOOLPATH ) {
+			print "Error: 'mysql' tool not found: set MYSQL variable to correct tool path";
+		}
+		$MYSQL = $TOOLPATH;
+	}
+}
+
+
+##### ----------------------------------------------- #####
+### binaries
+if ($PGSQL eq "" ) {
+	&locate_tool('psql');
+	if ( !-e $TOOLPATH ) {
+		print "Error: 'psql' tool not found: set PGSQL variable to correct tool path\n";
+		return;
+	}
+	$PGSQL = $TOOLPATH;
+}
+
+
+#berkeley db utility program that writes out db to plain text
+#small hack to autodetect the db dump command, debian prefix the version..
+
+system("which db_dump > /dev/null");
+if ( $? == 0 ) {
+	$DUMP_CMD = "db_dump";					
+}
+
+system("which db4.4_dump > /dev/null");
+if ( $? == 0 ) {
+	$DUMP_CMD = "db4.4_dump";
+}
+
+system("which db4.5_dump > /dev/null");
+if ( $? == 0 ) {
+	$DUMP_CMD = "db4.5_dump";
+}
+
+system("which db4.6_dump > /dev/null");
+if ( $? == 0 ) {
+	$DUMP_CMD = "db4.6_dump";
+}
+
+#berkeley db utility program that imports data from plain text file
+#small hack to autodetect the db load command, debian prefix the version..
+
+system("which db_load > /dev/null");
+if ( $? == 0 ) {
+	$LOAD_CMD = "db_load";
+}
+
+system("which db4.4_load > /dev/null");
+if ( $? == 0 ) {
+	$LOAD_CMD = "db4.4_load";
+}
+
+system("which db4.5_load > /dev/null");
+if ( $? == 0 ) {
+	$LOAD_CMD = "db4.5_load";
+}
+
+system("which db4.6_load > /dev/null");
+if ( $? == 0 ) {
+	$LOAD_CMD = "db4.6_load";
+}
 
 # period in which stats are reprinted
 if ( -z $WATCH_PERIOD ) {
@@ -548,8 +691,8 @@ my %sub_table = ('REALM_COLUMN' => 'domain',
 		 'PASSWORD_COLUMN' => 'password',
 		 'RPID_COLUMN' => 'rpid',
 		 'SUBSCRIBER_COLUMN' => 'username',
-		 'PHP_LIB_COLUMN' => 'phplib_id'
-
+		 'PHP_LIB_COLUMN' => 'phplib_id',
+		 'EMAIL_ADDRESS' => 'email_address'
 		  );
 
 
@@ -561,7 +704,7 @@ if ( !-z $ACL_TABLE ) {
 my %acl_table = ( 'ACL_USER_COLUMN' => 'username',
 		  'ACL_DOMAIN_COLUMN' => 'domain',
 		  'ACL_GROUP_COLUMN' => 'grp',
-		  'ACL_MODIFIED_COLUMN' => 'last_modified'
+		  'ACL_MODIFIED_COLUMN' => 'last_modified',
 		);
 
 
@@ -885,7 +1028,7 @@ sub usage_cr() {
 sub usage_rpid() {
 	print " -- command 'rpid' - manage Remote-Party-ID (RPID)\n" .
 	      "rpid add <username> <rpid> ......... add rpid for a user (*)\n" .
-              "pid rm <username> ................. set rpid to NULL for a user (*)\n" . 
+              "rpid rm <username> ................. set rpid to NULL for a user (*)\n" . 
               "rpid show <username> ............... show rpid of a user\n";
 }
 
@@ -1027,6 +1170,40 @@ sub usage_unixsock() {
 	print " -- command 'unixsock'\n" .
    	      "unixsock ........................... send raw unixsock command\n";
 }
+
+
+# common functions
+sub usage_db() {
+my $COMMAND=`basename $0`;
+
+print "usage:create <db name or db_path, optional> .....(creates a new database)\n" .
+      "\tdrop <db name or db_path, optional> .......(!entirely deletes tables!)\n" .
+      "\treinit <db name or db_path, optional> .....(!entirely deletes and than re-creates tables!)\n" .
+      "\tbackup <file> .................................(dumps current database to file)\n" . 
+      "\trestore <file> ................................(restores tables from a file)\n" .
+      "\tcopy <new_db> .................................(creates a new db from an existing one)\n" .
+      "\tmigrate <old_db> <new_db> .....................(migrates DB from 1.2 to 1.3, not implemented yet!)\n" .
+      "\tpresence ......................................(adds the presence related tables)\n" . 
+      "\textra .........................................(adds the extra tables)\n\n" .
+      "\tif you want to manipulate database as other database user than\n" .
+      "\troot, want to change database name from default value \"$DBNAME\",\n" .
+      "\tor want to use other values for users and password, edit the\n" .
+      "\t\"config vars\" section of the command $COMMAND.\n";
+} #usage
+
+
+sub berkeley_usage() {
+#COMMAND=`basename $0`
+
+print "Script for maintaining OpenSIPS Berkeley DB tables\n".
+       "bdb | db_berkeley list      (lists the underlying db files in DB_PATH)\n".
+       "bdb | db_berkeley cat       <db>  (db_dump the underlying db file to STDOUT)\n".
+       "bdb | db_berkeley swap      <db>  (installs db.new by db -> db.old; db.new -> db)\n".
+       "bdb | db_berkeley append    <db> <datafile> (appends data to an existing db;output DB_PATH/db.new)\n".
+       "bdb | db_berkeley newappend <db> <datafile> (appends data to a new instance of db; output DB_PATH/db.new)\n".
+       "bdb | db_berkeley export <dump_dir> (exports table data to plain-txt files in dump_dir)\n".
+       "bdb | db_berkeley import <dump_dir> (imports plain-txt table data and creates new db tables in db_path)\n";
+} #usage
 
 # determine host name, typically for use in printing UAC
 # messages; we use today a simplistic but portable uname -n way --
@@ -1182,30 +1359,38 @@ sub is_user() {
 	system(&set_user($_[0]));
 	print $OSIPSUSER ." " .$OSIPSDOMAIN."\n";
 
-	#prepare the query	
-	$sth = $dbh->prepare( "SELECT count(*) 
-			       FROM $SUB_TABLE 
-			       WHERE $sub_table{'SUBSCRIBER_COLUMN'} = \"$OSIPSUSER\" 
-			       AND $sub_table{'REALM_COLUMN'} = \"$OSIPSDOMAIN\" " );
+	if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
+		my $key = join(" ",$OSIPSUSER,$OSIPSDOMAIN);
+		my $res = &bdb_select_where($SUB_TABLE,$key);
+		$result = $res;
+	} elsif ( $DBENGINE =~ /^DBTEXT$/) {
+		my $res = `\"$DBTEXTCMD\" \"SELECT COUNT(*) FROM $SUB_TABLE WHERE $sub_table{'SUBSCRIBER_COLUMN'} = \"$OSIPSUSER\" AND $sub_table{'REALM_COLUMN'} = \"$OSIPSDOMAIN\"\" 2>&1`;
+		$result = $res;
+	} else {
+		#prepare the query	
+		$sth = $dbh->prepare( "SELECT count(*) 
+				       FROM $SUB_TABLE 
+				       WHERE $sub_table{'SUBSCRIBER_COLUMN'} = \"$OSIPSUSER\" 
+				       AND $sub_table{'REALM_COLUMN'} = \"$OSIPSDOMAIN\" " );
 		
-	#execute the query
-	$sth->execute( );
-	warn "Entry could not be retrieved from table", $sth->errstr( ), "\n" if $sth->err( );
+		#execute the query
+		$sth->execute( );
+		warn "Entry could not be retrieved from table", $sth->errstr( ), "\n" if $sth->err( );
 
-	## Retrieve the results of a row of data and print
-	print "\tQuery results:\n================================================\n";
+		## Retrieve the results of a row of data and print
+		print "\tQuery results:\n================================================\n";
 
-	while ( @row = $sth->fetchrow_array( ) )  {
-		 print "@row\n";
-		 $result = "@row";
+		while ( @row = $sth->fetchrow_array( ) )  {
+			 print "@row\n";
+			 $result = "@row";
 
+		}
+	
+		$sth->finish();	
 	}
 	
-	$sth->finish();	
-
+	#print $result;
 	return $result;
-
-
 }
 
 
@@ -1227,19 +1412,25 @@ sub is_value_in_db() {
 	my $COL=$_[1];
 	my $VALUE=$_[2];
 	
+	if ( $DBENGINE =~ /^DB_BERKELEY$/) {
+		&bdb_select_where($TABLE,$VALUE);
+	} elsif ( $DBENGINE =~ /^DBTEXT$/) {
+		my $res == system("$DBTEXTCMD","SELECT count(*) FROM $TABLE WHERE $COL=\'$VALUE\'");
+		$result =$res;
+	} else {
+		#prepare query
+		$sth = $dbh->prepare( "SELECT count(*) FROM $TABLE WHERE $COL=\'$VALUE\'" );
 	
-	#prepare query
-	$sth = $dbh->prepare( "SELECT count(*) FROM $TABLE WHERE $COL=\'$VALUE\'" );
-	
-	#execute the query
-	$sth->execute( );
-	warn "Retrieving data from table failed", $sth->errstr( ), "\n" if $sth->err( );	
-	while ( @row = $sth->fetchrow_array( ) )  {
-		    $result = "@row";
- 		     print "@row\n";
-	}	
+		#execute the query
+		$sth->execute( );
+		warn "Retrieving data from table failed", $sth->errstr( ), "\n" if $sth->err( );	
+		while ( @row = $sth->fetchrow_array( ) )  {
+			    $result = "@row";
+	 		     print "@row\n";
+		}	
 
-	$sth->finish();
+		$sth->finish();
+	}
 
         if ($result == 0) {
 		$response = 0;
@@ -1268,25 +1459,83 @@ sub is_value_in_db() {
 #}
 
 
-	if ( $DBENGINE eq " " ) {
+	if ( $DBENGINE eq "" ) {
 		print "database engine not specified, please setup one in the config script";
 		$DBENGINELOADED = 0;
 	} else {
 	
-		switch ($DBENGINE) {
-			case (/^(mysql)|(MYSQL)/) {print "Used database is mysql\n";}
-			case (/^oracle$/i) {print "Used database is oracle\n";}
-			case (/^posgres$/i) {print "Used database is PosgreSQL\n";}
+		switch ( $DBENGINE ) {
+			case (/(^mysql$)|(^MYSQL$)/) {
+				print "Used database is mysql\n";
+				if ( -d $DATA_DIR."/mysql" ) {
+					$DB_SCHEMA=$DATA_DIR."/mysql";
+				} else {
+					$DB_SCHEMA="./mysql";
+				}
+				#Connect to the database.
+				$dbh = DBI->connect("DBI:$DBENGINE:database=$DBNAME;host=$DBHOST",
+				                 "$DBROOTUSER", "",
+						 {'PrintError' => 0} ) or die "Database connection failed.";
+				$DBENGINELOADED = 1;
+			}
+
+			case (/^oracle$/) {
+				print "Used database is Oracle\n";
+				if ( -d $DATA_DIR."/oracle" ) {
+					$DB_SCHEMA=$DATA_DIR."/oracle";
+				} else {
+					$DB_SCHEMA="./oracle";
+				}
+				#Connect to the database.
+				$dbh = DBI->connect("DBI:$DBENGINE:database=$DBNAME;host=$DBHOST",
+				                 "$DBROOTUSER", "",
+						 {'PrintError' => 0} ) or die "Database connection failed.";
+				$DBENGINELOADED = 1;
+
+			}
+
+			case (/^Pg$/) {
+				print "Used database is PostgreSQL\n";
+				if ( -d $DATA_DIR."/postgres" ) {
+					$DB_SCHEMA=$DATA_DIR."/postgres";
+				} else {
+					$DB_SCHEMA="./postgres";
+				}
+				$DBROOTUSER = "postgres";
+				#Connect to the database.
+				$dbh = DBI->connect("DBI:$DBENGINE:database=$DBNAME;host=$DBHOST",
+				                 "$DBROOTUSER", "",
+						 {'PrintError' => 0} ) or die "Database connection failed.";
+				$DBENGINELOADED = 1;
+			}
+
+			case (/^DBTEXT$/) {
+				print "Used database is DBTEXT\n";
+		#$DB_SCHEMA = "/home/administrator/work/opensips_1_4/scripts/dbtext/opensips";
+				if ( -d $DATA_DIR."/dbtext/opensips" ) {
+					$DB_SCHEMA="$DATA_DIR/dbtext/opensips";
+				} else {
+					$DB_SCHEMA="./dbtext/opensips";					
+				}
+				$ENV{DBTEXT_PATH} = $DBTEXT_PATH;
+				$DBENGINELOADED = 1;
+			}
+
+			case (/^DB_BERKELEY$/) {
+				print "Used database is DB_BERKELEY\n";
+		#$DB_SCHEMA = "/home/administrator/work/opensips_1_4/scripts/dbtext/opensips";
+				if ( -d $DATA_DIR."/db_berkeley/opensips" ) {
+					$DB_SCHEMA="$DATA_DIR/db_berkeley/opensips";
+				} else {
+					$DB_SCHEMA="./db_berkeley/opensips";
+				}
+				$ENV{PATH} = $DB_PATH;
+				$DBENGINELOADED = 1;
+
+			}
 		}
-		$DBENGINELOADED = 1;
+
 	}
-
-
-	# Connect to the database.
-	$dbh = DBI->connect("DBI:$DBENGINE:database=$DBNAME;host=$DBHOST",
-		                 "$DBROOTUSER", "",
-				 {'PrintError' => 0} ) or die "Database connection failed.";
-
 
 
 #
@@ -1360,7 +1609,6 @@ sub interactively(){
 			} 
 
 	  	        @cmd = split(" ",$command);
-		
 			my $found=0;
 
 		
@@ -1402,11 +1650,12 @@ sub non_interactively(){
 }
 
 sub cmd() {
+
 	switch ($cmd[0]) {		
 		case (/^acl$/)	 				{ system(&opensips_acl()); }
 		case (/^add$/)  				{ system(&subscriber()); }
 		case (/^avp$/)	 				{ system(&avpops()); }	
-		case (/^alias[(db)(_db)]$/)			{ system(&alias_db()); }
+		case (/(^aliasdb$)|(^alias_db$)/)		{ system(&alias_db()); }
 		case (/^cr$/) 					{ system(&opensips_cr()); }
 		case (/^dialplan$/)                     	{ system(&opensips_dialplan()); }
 		case (/^db$/)	 				{ system(&db_ops()); }
@@ -1422,13 +1671,14 @@ sub cmd() {
 		case (/^rpid$/)		 			{ system(&opensips_rpid()); }
 		case (/^restart$/)		   		{ system(&opensips_restart()); }		
 		case (/^rm$/)			      		{ system(&subscriber()); }
-		case (/^speed[(dial)(_dial)]$/)			{ system(&speeddial()); }
+		case (/(^speeddial$)|(^speed_dial$)/)			{ system(&speeddial()); }
 		case (/^start$/)		    		{ system(&opensips_start()); }	
 		case (/^stop$/)			      		{ system(&opensips_stop()); }
 		case (/^tls$/)	 	  			{ system(&tls_ca()); }
 		case (/^trusted$/)		 		{ system(&trusted()); }
-		case (/[(^ul)(^alias)(^usrloc)]$/)	  	{ system(&opensips_usrloc()); }		
+		case (/(^ul$)|(^alias$)|(^usrloc$)/)	  	{ system(&opensips_usrloc()); }		
 		case (/^version$/)				{ system(&opensips_version()); }
+		case (/(^extra$)|(^migrate$)|(^copy$)|(^backup$)|(^restore$)|(^create$)|(^presence$)|(^drop$)|(^reinit$)|(^bdb$)|(^db_berkeley$)|(^cat$)/) { system(&opensips_db()); }
 		else 						{ print " unknown command!!!\n"; }
 
 			
@@ -1463,7 +1713,7 @@ sub opensips_start(){
 
 		if ( $SYSLOG == 1 ) {
 			`$OSIPSBIN -P $PID_FILE $STARTOPTIONS 1>/dev/null 2>/dev/null`;
-			return;
+			return;0
 		} else {
 			`$OSIPSBIN -f $PATH_ETC/opensips.cfg -P $PID_FILE -E $STARTOPTIONS`;	
 			return;			
@@ -1549,52 +1799,74 @@ sub opensips_acl() {
 			case (/^show$/) {
 				
 				if ( $#cmd eq 1 ) {
-												
-					$sth = $dbh->prepare ("SELECT * FROM $ACL_TABLE ");	
 
-					##execute the query
-					$sth->execute( );
+					if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
+						&bdb_select($ACL_TABLE); 
+					} elsif ( $DBENGINE =~ /^DBTEXT$/) {
+						system("$DBTEXTCMD","SELECT * FROM $ACL_TABLE ");
+					} else {												
+						$sth = $dbh->prepare ("SELECT * FROM $ACL_TABLE ");	
 
-			 		## Retrieve the results of a row of data and print
-		 	                print "\tQuery results:\n================================================\n";
-					while (@row = $sth->fetchrow_array( ) )  {
-		     		              	print "@row\n";
-			    	        }		 
+						##execute the query
+						$sth->execute( );
 
-					warn "Error retireving data from the database! ", $sth->errstr( ), "\n" if $sth->err( );
+				 		## Retrieve the results of a row of data and print
+			 	                print "\tQuery results:\n================================================\n";
+						while (@row = $sth->fetchrow_array( ) )  {
+			     		             	print "@row\n";
+				    	        }		 
 
-					$sth->finish(); 
+						warn "Error retireving data from the database! ", $sth->errstr( ), "\n" if $sth->err( );
 
+						$sth->finish(); 
+					}
 	 				return;
-
 				}					
 				
 				if ( $#cmd == 2 ) {			
-							
+				
 					if (  &is_user($cmd[2]) == 0 ) {
-							print "Non-existent user " . $cmd[2];						
+							print "Non-existent user " . $cmd[2] . "\n";						
 							return;
 
 	  				 } else {
 
 						&set_user($cmd[2]);
+
+						if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
+							print "For DB BERKELEY, this operation needs 2 params: username\@domain and group\n";
+							return;
+						} elsif ( $DBENGINE =~ /^DBTEXT$/) {
+							system("$DBTEXTCMD","SELECT * 
+									     FROM $ACL_TABLE
+		                                                             WHERE $acl_table{'ACL_USER_COLUMN'}=\'$OSIPSUSER\'  
+		                                                             AND $acl_table{'ACL_DOMAIN_COLUMN'}=\'$OSIPSDOMAIN\' ");
+						} else {
 						
-						$sth = $dbh->prepare ("SELECT * 
-								       FROM $ACL_TABLE
-                                                                       WHERE $acl_table{'ACL_USER_COLUMN'}=\'$OSIPSUSER\'  
-                                                                       AND $acl_table{'ACL_DOMAIN_COLUMN'}=\'$OSIPSDOMAIN\' ");	
+							$sth = $dbh->prepare ("SELECT * 
+									       FROM $ACL_TABLE
+		                                                               WHERE $acl_table{'ACL_USER_COLUMN'}=\'$OSIPSUSER\'  
+		                                                               AND $acl_table{'ACL_DOMAIN_COLUMN'}=\'$OSIPSDOMAIN\' ");	
 				
-						 ##execute the query
-						 $sth->execute( );
+							 ##execute the query
+							 $sth->execute( );
 
-			 			 ## Retrieve the results of a row of data and print
-						 print "\tQuery results:\n================================================\n";
-					         while (@row = $sth->fetchrow_array( ) )  {
-		     		                 	print "@row\n";
-			    	                 }		 
-						 warn "Error retireving data from the database! ", $sth->errstr( ), "\n" if $sth->err( );
-						 $sth->finish(); }
-
+				 			 ## Retrieve the results of a row of data and print
+							 print "\tQuery results:\n================================================\n";
+							 while (@row = $sth->fetchrow_array( ) )  {
+			     		                 	print "@row\n";
+				    	                 }		 
+							 warn "Error retireving data from the database! ", $sth->errstr( ), "\n" if $sth->err( );
+							 $sth->finish(); }
+						}
+				} elsif ( $#cmd == 3 ){
+					if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
+						my $key = join(" ",$OSIPSUSER,$OSIPSDOMAIN,$cmd[3]);
+						&bdb_select_where($ACL_TABLE,$key); 
+					} else {
+						print "Too many parameters for $DBENGINE query\n";
+						return;
+					}
 				} else {
 					&usage_acl();
 					return;
@@ -1607,10 +1879,10 @@ sub opensips_acl() {
 				}
 
 				my $acl_inserted = 0;
-				&is_user($cmd[2]); 
+
 				if ( $#cmd == 3 ) {
 					
-					if (  &is_user($cmd[2]) == 0 ) {  
+					if ( &is_user($cmd[2]) == 0 ) {  
 						print "Non-existent user " . $cmd[2] . " Still proceeding? [Y|N]:";
 						if ( ( $input = <STDIN>) =~ /[y|Y]/  ) {
 							print "Proceeding with non-local user\n";
@@ -1623,7 +1895,8 @@ sub opensips_acl() {
 					if ( $VERIFY_ACL == 1 ) {
 						my $found = 0;
 						foreach my $i (@ACL_GROUPS) {
-							if ( $cmd[3] eq $i ) {
+							if ( $cmd[3] =~ /(^$i$)/ ) {
+								print $cmd[3]."...".$i."\n";
 								$found = 1;					
 							}
 						 }
@@ -1636,74 +1909,118 @@ sub opensips_acl() {
 
 					my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(time);
 					my $date = join("-",$year+1900,$mon+1,$mday+1);
-					my $time = join("-",$hour,$min,$sec);
+					my $time = join(":",$hour,$min,$sec);
 					my $last_modified =  join(" ",$date,$time);
 
-					$sth = $dbh->prepare ("INSERT INTO $ACL_TABLE ($acl_table{'ACL_USER_COLUMN'},$acl_table{'ACL_GROUP_COLUMN'},
-							       $acl_table{'ACL_MODIFIED_COLUMN'},$acl_table{'ACL_DOMAIN_COLUMN'} ) 
-							       VALUES (\"$OSIPSUSER\",\"$cmd[3]\",\'$last_modified\', \"$OSIPSDOMAIN\" ) " );	
-		
-					 ##execute the query
-					 $sth->execute( );
-	 
-					 print "Data was not inserted in database!", $sth->errstr( ), "\n" if $sth->err( );
+					my $unix_time = time();
 
-					 $sth->finish();
+					if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
+						my $key = join(" ",$OSIPSUSER,$OSIPSDOMAIN,$cmd[3]);
+						my $value = join(" ",$last_modified);
+						&bdb_insert($ACL_TABLE,$key,$value); 
+					} elsif ( $DBENGINE =~ /^DBTEXT$/) {
+
+						system("$DBTEXTCMD","INSERT INTO $ACL_TABLE ($acl_table{'ACL_USER_COLUMN'},$acl_table{'ACL_GROUP_COLUMN'},$acl_table{'ACL_MODIFIED_COLUMN'},$acl_table{'ACL_DOMAIN_COLUMN'} ) VALUES (\"$OSIPSUSER\",\"$cmd[3]\",$unix_time, \"$OSIPSDOMAIN\" ) ");
+					} else {
+						$sth = $dbh->prepare ("INSERT INTO $ACL_TABLE ($acl_table{'ACL_USER_COLUMN'},$acl_table{'ACL_GROUP_COLUMN'},
+								       $acl_table{'ACL_MODIFIED_COLUMN'},$acl_table{'ACL_DOMAIN_COLUMN'} ) 
+								       VALUES (\"$OSIPSUSER\",\"$cmd[3]\",\'$last_modified\', \"$OSIPSDOMAIN\" ) " );	
 		
-					 
-					if ( &is_user($cmd[2]) == 0 ) { 
-						print "acl - SQL Error\n";
-						return;
+						 ##execute the query
+						 $sth->execute( );
+		 
+						 print "Data was not inserted in database!", $sth->errstr( ), "\n" if $sth->err( );
+
+						 $sth->finish();
+		
+						 
+						if ( &is_user($cmd[2]) == 0 ) { 
+							print "acl - SQL Error\n";
+							return;
+						}
+						$acl_inserted = 1;
 					}
-					$acl_inserted = 1;
 					
 				}
 
 				if ( $acl_inserted == 1 ) {
-					$sth = $dbh->prepare ("SELECT * FROM $ACL_TABLE 
-							       WHERE $acl_table{'ACL_USER_COLUMN'}=\'$OSIPSUSER\' 
-							       AND $acl_table{'ACL_DOMAIN_COLUMN'}=\'$OSIPSDOMAIN\' ");	
-				
-						 ##execute the query
-						 $sth->execute( );
 
-			 			 ## Retrieve the results of a row of data and print						 
-		 	                         print "\tQuery results:\n================================================\n";
-					         while (@row = $sth->fetchrow_array( ) )  {
-		     		                 	print "@row\n";
-			    	                 }		 
-						 warn "Could not retrieve data! Data was not inserted in database!", $sth->errstr( ), "\n" if $sth->err( );
-						 $sth->finish(); 
+					if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
+						my $key = join(" ",$OSIPSUSER,$OSIPSDOMAIN,$cmd[3]);
+						&bdb_select_where($ACL_TABLE,$key); 
+					} elsif ( $DBENGINE =~ /^DBTEXT$/) {
+						system("$DBTEXTCMD","SELECT * FROM $ACL_TABLE 
+								       WHERE $acl_table{'ACL_USER_COLUMN'}=\'$OSIPSUSER\' 
+								       AND $acl_table{'ACL_DOMAIN_COLUMN'}=\'$OSIPSDOMAIN\' ");
+					} else {
+						$sth = $dbh->prepare ("SELECT * FROM $ACL_TABLE 
+								       WHERE $acl_table{'ACL_USER_COLUMN'}=\'$OSIPSUSER\' 
+								       AND $acl_table{'ACL_DOMAIN_COLUMN'}=\'$OSIPSDOMAIN\' ");	
+				
+							 ##execute the query
+							 $sth->execute( );
+
+				 			 ## Retrieve the results of a row of data and print						 
+			 	                         print "\tQuery results:\n================================================\n";
+							 while (@row = $sth->fetchrow_array( ) )  {
+			     		                 	print "@row\n";
+				    	                 }		 
+							 warn "Could not retrieve data! Data was not inserted in database!", $sth->errstr( ), "\n" if $sth->err( );
+							 $sth->finish();
+					} 
 	
 				}
 
 			}
 			case (/^revoke$/) {
+
+				 &set_user($cmd[2]);
+
 				 if ( $#cmd == 2 ) {
-					&set_user($cmd[2]);
-					$sth = $dbh->prepare ("DELETE FROM $ACL_TABLE 
-						               WHERE $acl_table{'ACL_USER_COLUMN'}=\'$OSIPSUSER\' 
-							       AND $acl_table{'ACL_DOMAIN_COLUMN'}=\'$OSIPSDOMAIN\'");	
-				
-					 ##execute the query
-					 $sth->execute( );
 
-		 			 ## Retrieve the results of a row of data and print
-					 warn "Could not delete entry! ", $sth->errstr( ), "\n" if $sth->err( );
-					 $sth->finish(); 
+					if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
+						print "Too few parameters for this operation!!!\n";
+					} elsif ( $DBENGINE =~ /^DBTEXT$/) {						
+						system("$DBTEXTCMD","DELETE FROM $ACL_TABLE 
+								       WHERE $acl_table{'ACL_USER_COLUMN'}=\'$OSIPSUSER\' 
+								       AND $acl_table{'ACL_DOMAIN_COLUMN'}=\'$OSIPSDOMAIN\'");
+					} else {
+						$sth = $dbh->prepare ("DELETE FROM $ACL_TABLE 
+								       WHERE $acl_table{'ACL_USER_COLUMN'}=\'$OSIPSUSER\' 
+								       AND $acl_table{'ACL_DOMAIN_COLUMN'}=\'$OSIPSDOMAIN\'");	
+				
+						 ##execute the query
+						 $sth->execute( );
+
+			 			 ## Retrieve the results of a row of data and print
+						 warn "Could not delete entry! ", $sth->errstr( ), "\n" if $sth->err( );
+						 $sth->finish();
+					}
+ 
 				} elsif ( $#cmd == 3 ) {
-					 $sth = $dbh->prepare ("DELETE FROM $ACL_TABLE 
-								WHERE $acl_table{'ACL_USER_COLUMN'}=\'$OSIPSUSER\' 
-								AND $acl_table{'ACL_DOMAIN_COLUMN'}=\'$OSIPSDOMAIN\' 
-								AND $acl_table{'ACL_GROUP_COLUMN'}=\'$cmd[3]\'");	
+
+
+					if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
+						my $key = join(" ",$OSIPSUSER,$OSIPSDOMAIN,$cmd[3]);
+						&bdb_delete($ACL_TABLE,$key); 
+					} elsif ( $DBENGINE =~ /^DBTEXT$/) {
+						system("$DBTEXTCMD","DELETE FROM $ACL_TABLE 
+									WHERE $acl_table{'ACL_USER_COLUMN'}=\'$OSIPSUSER\' 
+									AND $acl_table{'ACL_DOMAIN_COLUMN'}=\'$OSIPSDOMAIN\' 
+									AND $acl_table{'ACL_GROUP_COLUMN'}=\'$cmd[3]\'");
+					} else {
+						 $sth = $dbh->prepare ("DELETE FROM $ACL_TABLE 
+									WHERE $acl_table{'ACL_USER_COLUMN'}=\'$OSIPSUSER\' 
+									AND $acl_table{'ACL_DOMAIN_COLUMN'}=\'$OSIPSDOMAIN\' 
+									AND $acl_table{'ACL_GROUP_COLUMN'}=\'$cmd[3]\'");	
 				
-					 ##execute the query
-					 $sth->execute( );
+						 ##execute the query
+						 $sth->execute( );
 
-		 			 ## Retrieve the results of a row of data and print
-					 warn "Could not delete entry! ", $sth->errstr( ), "\n" if $sth->err( );
-					 $sth->finish(); 
-
+			 			 ## Retrieve the results of a row of data and print
+						 warn "Could not delete entry! ", $sth->errstr( ), "\n" if $sth->err( );
+						 $sth->finish(); 
+					}
 				} else {
 					print "acl - wrong number of parameters\n";
 					&usage_acl();
@@ -1752,16 +2069,27 @@ sub opensips_rpid() {
 					
 					&set_user($cmd[2]);
 					&is_user($cmd[2]);
-				 	$sth = $dbh->prepare("UPDATE $SUB_TABLE 
-							      SET $sub_table{'RPID_COLUMN'} = $cmd[3] 
-							      WHERE $sub_table{'SUBSCRIBER_COLUMN'}=\"$OSIPSUSER\" 
-							      AND  $sub_table{'REALM_COLUMN'}= \"$OSIPSDOMAIN\" " );	
 
-					 ##execute the query
-					 $sth->execute( );
-					 
-					 warn "Entry was not updated in database!", $sth->errstr( ), "\n" if $sth->err( );
-					 $sth->finish();
+					if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
+						my $key = join(" ",$OSIPSUSER,$OSIPSDOMAIN);
+						&bdb_update($SUB_TABLE,$key); 
+					} elsif ( $DBENGINE =~ /^DBTEXT$/) {
+						system("$DBTEXTCMD","UPDATE $SUB_TABLE 
+								      SET $sub_table{'RPID_COLUMN'} = $cmd[3] 
+								      WHERE $sub_table{'SUBSCRIBER_COLUMN'}=\"$OSIPSUSER\" 
+								      AND  $sub_table{'REALM_COLUMN'}= \"$OSIPSDOMAIN\" ");
+					} else {
+					 	$sth = $dbh->prepare("UPDATE $SUB_TABLE 
+								      SET $sub_table{'RPID_COLUMN'} = $cmd[3] 
+								      WHERE $sub_table{'SUBSCRIBER_COLUMN'}=\"$OSIPSUSER\" 
+								      AND  $sub_table{'REALM_COLUMN'}= \"$OSIPSDOMAIN\" " );	
+
+						 ##execute the query
+						 $sth->execute( );
+						 
+						 warn "Entry was not updated in database!", $sth->errstr( ), "\n" if $sth->err( );
+						 $sth->finish();
+					}
 				 }
 			}
  
@@ -1773,16 +2101,27 @@ sub opensips_rpid() {
 					&set_user($cmd[2]);
 					&is_user($cmd[2]);
 
-				 	$sth = $dbh->prepare("UPDATE $SUB_TABLE 
-							      SET rpid = null  
-   							      WHERE $sub_table{'SUBSCRIBER_COLUMN'} = \"$OSIPSUSER\" 
-                                                              AND $sub_table{'REALM_COLUMN'} = \"$OSIPSDOMAIN\" " );	
 
-					 ##execute the query
-					 $sth->execute( );
+					if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
+						my $key = join(" ",$OSIPSUSER,$OSIPSDOMAIN);
+						&bdb_update($SUB_TABLE,$key); 
+					} elsif ( $DBENGINE =~ /^DBTEXT$/) {
+						system("$DBTEXTCMD","UPDATE $SUB_TABLE 
+								      SET rpid = null  
+	   							      WHERE $sub_table{'SUBSCRIBER_COLUMN'} = \"$OSIPSUSER\" 
+		                                                      AND $sub_table{'REALM_COLUMN'} = \"$OSIPSDOMAIN\"");
+					} else {
+					 	$sth = $dbh->prepare("UPDATE $SUB_TABLE 
+								      SET rpid = null  
+	   							      WHERE $sub_table{'SUBSCRIBER_COLUMN'} = \"$OSIPSUSER\" 
+		                                                      AND $sub_table{'REALM_COLUMN'} = \"$OSIPSDOMAIN\" " );	
 
-					 warn "Entry was not updated in database!", $sth->errstr( ), "\n" if $sth->err( );
-					 $sth->finish();
+						 ##execute the query
+						 $sth->execute( );
+
+						 warn "Entry was not updated in database!", $sth->errstr( ), "\n" if $sth->err( );
+						 $sth->finish();
+					}
 				 }
 			} 
 			case (/^show$/) {
@@ -1790,14 +2129,26 @@ sub opensips_rpid() {
 					print "Too few parameters!\n";
 					return;
 				 } else{
-					if ( &is_user($cmd[2]) != 0 ) {
-					 	return;
-				 	} else {
+					if ( &is_user($cmd[2]) == 0 ) {
 						print "rpid - invalid user " . $cmd[2] . "\n";
-						return	;				 
+						return;				 
 					}
 				 }
-				 
+
+					if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
+						my $key = join(" ",$OSIPSUSER,$OSIPSDOMAIN);
+						&bdb_select_where($SUB_TABLE,$key); 
+					} elsif ( $DBENGINE =~ /^DBTEXT$/)  {
+						system("$DBTEXTCMD","select $sub_table{'SUBSCRIBER_COLUMN'}, $sub_table{'RPID_COLUMN'} FROM $SUB_TABLE WHERE $sub_table{'SUBSCRIBER_COLUMN'}=\'$OSIPSUSER\' AND $sub_table{'REALM_COLUMN'}=\'$OSIPSDOMAIN\'");
+					} else {
+					 	$sth = $dbh->prepare("select $sub_table{'SUBSCRIBER_COLUMN'}, $sub_table{'RPID_COLUMN'} FROM $SUB_TABLE WHERE $sub_table{'SUBSCRIBER_COLUMN'}=\'$OSIPSUSER\' AND $sub_table{'REALM_COLUMN'}=\'$OSIPSDOMAIN\'" );	
+
+						 ##execute the query
+						 $sth->execute( );
+
+						 warn "Entry was not updated in database!", $sth->errstr( ), "\n" if $sth->err( );
+						 $sth->finish();
+					}
 			} 
 
 			else {
@@ -1825,42 +2176,57 @@ sub opensips_lcr(){
 
 		case (/^show$/) {
 			print "lcr routes\n";
-			$sth = $dbh->prepare ( "SELECT * 
-						FROM $LCR_TABLE 
-						ORDER BY $lcr_table{'LCR_PREFIX_COLUMN'} ");	
+			if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
+				&bdb_select($LCR_TABLE); 
+			} elsif ( $DBENGINE =~ /^DBTEXT$/) {
+				system("$DBTEXTCMD","SELECT * 
+							FROM $LCR_TABLE 
+							ORDER BY $lcr_table{'LCR_PREFIX_COLUMN'} ");
+			} else {
+				$sth = $dbh->prepare ( "SELECT * 
+							FROM $LCR_TABLE 
+							ORDER BY $lcr_table{'LCR_PREFIX_COLUMN'} ");	
 				
-			 ##execute the query
-			 $sth->execute( );
- 			 
-			 ## Retrieve the results of a row of data and print
-			 print "\tQuery results:\n================================================\n";
+				 ##execute the query
+				 $sth->execute( );
+	 			 
+				 ## Retrieve the results of a row of data and print
+				 print "\tQuery results:\n================================================\n";
 
-		         while (@row = $sth->fetchrow_array( ) )  {
-     		                 	print "@row\n";
-    	                 }		 
-			 warn "Could not retrieve data! Data was not inserted in database!", $sth->errstr( ), "\n" if $sth->err( );
-			 $sth->finish(); 
-			
+				 while (@row = $sth->fetchrow_array( ) )  {
+	     		                 	print "@row\n";
+	    	                 }		 
+				 warn "Could not retrieve data! Data was not inserted in database!", $sth->errstr( ), "\n" if $sth->err( );
+				 $sth->finish(); 
+			}
+	
 			 #retrieve lcr gateways	
 			 print "lcr gateways\n";
-			 
-			 $sth = $dbh->prepare ( "SELECT $gw_table{'LCR_GW_GWNAME_COLUMN'}, $gw_table{'LCR_GW_IP_COLUMN'},$gw_table{'LCR_GW_PORT_COLUMN'}, 							 $gw_table{'LCR_GW_URIS_COLUMN'}, $gw_table{'LCR_GW_PROTO_COLUMN'},$gw_table{'LCR_GW_GRPID_COLUMN'}, 							 $gw_table{'LCR_GW_STRIP_COLUMN'}, $gw_table{'LCR_GW_TAG_COLUMN'},$gw_table{'LCR_GW_FLAGS_COLUMN'} 
-						 FROM $GW_TABLE 
-						 ORDER BY $gw_table{'LCR_GW_GRPID_COLUMN'}");	
+
+			if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
+				&bdb_select($GW_TABLE); 
+			} elsif ( $DBENGINE =~ /^DBTEXT$/) {
+				system("$DBTEXTCMD","SELECT $gw_table{'LCR_GW_GWNAME_COLUMN'}, $gw_table{'LCR_GW_IP_COLUMN'},$gw_table{'LCR_GW_PORT_COLUMN'}, 							 $gw_table{'LCR_GW_URIS_COLUMN'}, $gw_table{'LCR_GW_PROTO_COLUMN'},$gw_table{'LCR_GW_GRPID_COLUMN'}, 							 $gw_table{'LCR_GW_STRIP_COLUMN'}, $gw_table{'LCR_GW_TAG_COLUMN'},$gw_table{'LCR_GW_FLAGS_COLUMN'} 
+							 FROM $GW_TABLE 
+							 ORDER BY $gw_table{'LCR_GW_GRPID_COLUMN'}");
+			} else {			 
+				 $sth = $dbh->prepare ( "SELECT $gw_table{'LCR_GW_GWNAME_COLUMN'}, $gw_table{'LCR_GW_IP_COLUMN'},$gw_table{'LCR_GW_PORT_COLUMN'}, 							 $gw_table{'LCR_GW_URIS_COLUMN'}, $gw_table{'LCR_GW_PROTO_COLUMN'},$gw_table{'LCR_GW_GRPID_COLUMN'}, 							 $gw_table{'LCR_GW_STRIP_COLUMN'}, $gw_table{'LCR_GW_TAG_COLUMN'},$gw_table{'LCR_GW_FLAGS_COLUMN'} 
+							 FROM $GW_TABLE 
+							 ORDER BY $gw_table{'LCR_GW_GRPID_COLUMN'}");	
 				
-			 ##execute the query
-			 $sth->execute( );
+				 ##execute the query
+				 $sth->execute( );
 
- 			 ## Retrieve the results of a row of data and print						 
-                         print "\tQuery results:\n================================================\n";
+	 			 ## Retrieve the results of a row of data and print						 
+		                 print "\tQuery results:\n================================================\n";
 
-		         while (@row = $sth->fetchrow_array( ) )  {
-     		                 	print "@row\n";
-    	                 }		 
-			 warn "Could not retrieve data! Data was not inserted in database!", $sth->errstr( ), "\n" if $sth->err( );
-			 $sth->finish(); 
+				 while (@row = $sth->fetchrow_array( ) )  {
+	     		                 	print "@row\n";
+	    	                 }		 
+				 warn "Could not retrieve data! Data was not inserted in database!", $sth->errstr( ), "\n" if $sth->err( );
+				 $sth->finish(); 
 
-
+			}
 			
 		}
 
@@ -1875,18 +2241,25 @@ sub opensips_lcr(){
 				&usage_lcr();
 				return;
 			}
-	
-			$sth = $dbh->prepare (
-			"INSERT INTO $LCR_TABLE 
-			 ($lcr_table{'LCR_PREFIX_COLUMN'}, $lcr_table{'LCR_FROMURI_COLUMN'}, $lcr_table{'LCR_GRPID_COLUMN'}, $lcr_table{'LCR_PRIO_COLUMN'}) 				 VALUES (" . $cmd[2] . "," . $cmd[3] . "," . $cmd[4] . "," . $cmd[4] . ")" );	
- 
-			 ##execute the query
-			 $sth->execute( );
 
-	 		 print "Data was not inserted in database!", $sth->errstr( ), "\n" if $sth->err( );
+			if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
+				my $key = $cmd[2];
+				my $value = join(" ", $cmd[3],$cmd[4],$cmd[5]); 
+				&bdb_insert($LCR_TABLE,$key,$value); 
+			} elsif ( $DBENGINE =~ /^DBTEXT$/) {
+				system("$DBTEXTCMD","INSERT INTO $LCR_TABLE ($lcr_table{'LCR_PREFIX_COLUMN'}, $lcr_table{'LCR_FROMURI_COLUMN'}, $lcr_table{'LCR_GRPID_COLUMN'}, $lcr_table{'LCR_PRIO_COLUMN'}) VALUES (" . $cmd[2] . "," . $cmd[3] . "," . $cmd[4] . "," . $cmd[5] . ")");
+			} else {
+				$sth = $dbh->prepare (
+				"INSERT INTO $LCR_TABLE 
+				 ($lcr_table{'LCR_PREFIX_COLUMN'}, $lcr_table{'LCR_FROMURI_COLUMN'}, $lcr_table{'LCR_GRPID_COLUMN'}, $lcr_table{'LCR_PRIO_COLUMN'}) 				 VALUES (" . $cmd[2] . "," . $cmd[3] . "," . $cmd[4] . "," . $cmd[5] . ")" );	
+	 
+				 ##execute the query
+				 $sth->execute( );
 
-			 $sth->finish();
-		
+		 		 print "Data was not inserted in database!", $sth->errstr( ), "\n" if $sth->err( );
+
+				 $sth->finish();
+			}
 			
 			&mi_comm('lcr_reload');			
 		}
@@ -1898,27 +2271,38 @@ sub opensips_lcr(){
 				&usage_lcr();
 				return;
 			}
-	
-			$sth = $dbh->prepare ("DELETE FROM $LCR_TABLE 
-					       WHERE $lcr_table{'LCR_PREFIX_COLUMN'}=$cmd[2] 
-					       AND $lcr_table{'LCR_FROMURI_COLUMN'}=$cmd[3] 
-					       AND $lcr_table{'LCR_GRPID_COLUMN'}=$cmd[4] 
-                                               AND $lcr_table{'LCR_PRIO_COLUMN'}=$cmd[5]");	
-				
-			##execute the query
-			$sth->execute( );
 
-		 	## Retrieve the results of a row of data and print
-			warn "Could not delete entry!", $sth->errstr( ), "\n" if $sth->err( );
-			$sth->finish(); 
-			
+			if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
+				&bdb_delete($LCR_TABLE,$cmd[2]); 
+			} elsif ( $DBENGINE =~ /^DBTEXT$/) {
+				system("$DBTEXTCMD","DELETE FROM $LCR_TABLE 
+						       WHERE $lcr_table{'LCR_PREFIX_COLUMN'}=$cmd[2] 
+						       AND $lcr_table{'LCR_FROMURI_COLUMN'}=$cmd[3] 
+						       AND $lcr_table{'LCR_GRPID_COLUMN'}=$cmd[4] 
+		                                       AND $lcr_table{'LCR_PRIO_COLUMN'}=$cmd[5]");
+			} else {
+				$sth = $dbh->prepare ("DELETE FROM $LCR_TABLE 
+						       WHERE $lcr_table{'LCR_PREFIX_COLUMN'}=$cmd[2] 
+						       AND $lcr_table{'LCR_FROMURI_COLUMN'}=$cmd[3] 
+						       AND $lcr_table{'LCR_GRPID_COLUMN'}=$cmd[4] 
+		                                       AND $lcr_table{'LCR_PRIO_COLUMN'}=$cmd[5]");	
+				
+				##execute the query
+				$sth->execute( );
+
+			 	## Retrieve the results of a row of data and print
+				warn "Could not delete entry!", $sth->errstr( ), "\n" if $sth->err( );
+				$sth->finish(); 
+			}
+
 			&mi_comm('lcr_reload');			
 		}
 		
 		case (/^addgw$/) {
+
 			my ($GW_FLAGS, $GW_TAG, $GW_STRIP, $STRIP, $GW_NAME, $GW_IP, $GW_PORT, $GW_URI_SCHEME, $GW_GRP_ID, $GW_TRANSPORT);
-			
-			if ( $#cmd lt 7 ) {
+
+			if ( $#cmd < 7 ) {
 				print "Too few parameters!\n";
 				&usage_lcr();
 				return;
@@ -1967,15 +2351,22 @@ sub opensips_lcr(){
 			}
 			$GW_GRP_ID=$cmd[7];
 
-			$sth = $dbh->prepare ("INSERT INTO $GW_TABLE ( $gw_table{'LCR_GW_GWNAME_COLUMN'}, $gw_table{'LCR_GW_GRPID_COLUMN'},$gw_table{'LCR_GW_IP_COLUMN'},$gw_table{'LCR_GW_PORT_COLUMN'},$gw_table{'LCR_GW_URIS_COLUMN'},$gw_table{'LCR_GW_PROTO_COLUMN'},$gw_table{'LCR_GW_STRIP_COLUMN'},$gw_table{'LCR_GW_TAG_COLUMN'},$gw_table{'LCR_GW_FLAGS_COLUMN'} ) VALUES (\'$GW_NAME\', $GW_GRP_ID,\'$GW_IP\', $GW_PORT, $GW_URI_SCHEME,	$GW_TRANSPORT, $STRIP, \'$GW_TAG\', $GW_FLAGS)" );	
+			if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
+				my $key = $GW_NAME;
+				my $value = join(" ",$GW_GRP_ID,$GW_IP,$GW_PORT,$GW_URI_SCHEME,$GW_TRANSPORT,$STRIP,$GW_TAG, $GW_FLAGS);
+				&bdb_insert($GW_TABLE,$key,$value); 
+			} elsif ( $DBENGINE =~ /^DBTEXT$/) {
+				system("$DBTEXTCMD","INSERT INTO $GW_TABLE ( $gw_table{'LCR_GW_GWNAME_COLUMN'}, $gw_table{'LCR_GW_GRPID_COLUMN'},$gw_table{'LCR_GW_IP_COLUMN'},$gw_table{'LCR_GW_PORT_COLUMN'},$gw_table{'LCR_GW_URIS_COLUMN'},$gw_table{'LCR_GW_PROTO_COLUMN'},$gw_table{'LCR_GW_STRIP_COLUMN'},$gw_table{'LCR_GW_TAG_COLUMN'},$gw_table{'LCR_GW_FLAGS_COLUMN'} ) VALUES (\'$GW_NAME\', $GW_GRP_ID,\'$GW_IP\', $GW_PORT, $GW_URI_SCHEME,	$GW_TRANSPORT, $STRIP, \'$GW_TAG\', $GW_FLAGS)");
+			} else {
+				$sth = $dbh->prepare ("INSERT INTO $GW_TABLE ( $gw_table{'LCR_GW_GWNAME_COLUMN'}, $gw_table{'LCR_GW_GRPID_COLUMN'},$gw_table{'LCR_GW_IP_COLUMN'},$gw_table{'LCR_GW_PORT_COLUMN'},$gw_table{'LCR_GW_URIS_COLUMN'},$gw_table{'LCR_GW_PROTO_COLUMN'},$gw_table{'LCR_GW_STRIP_COLUMN'},$gw_table{'LCR_GW_TAG_COLUMN'},$gw_table{'LCR_GW_FLAGS_COLUMN'} ) VALUES (\'$GW_NAME\', $GW_GRP_ID,\'$GW_IP\', $GW_PORT, $GW_URI_SCHEME,	$GW_TRANSPORT, $STRIP, \'$GW_TAG\', $GW_FLAGS)" );	
  
-			 ##execute the query
-			 $sth->execute( );
+				 ##execute the query
+				 $sth->execute( );
 
-	 		 print "Data was not inserted in database!", $sth->errstr( ), "\n" if $sth->err( );
+		 		 print "Data was not inserted in database!", $sth->errstr( ), "\n" if $sth->err( );
 
-			 $sth->finish();
-		
+				 $sth->finish();
+			}
 			
 			&mi_comm('lcr_reload');		
 			
@@ -1987,15 +2378,23 @@ sub opensips_lcr(){
 				return;
 			}
 
-			$sth = $dbh->prepare ("DELETE FROM $GW_TABLE 
-					       WHERE $gw_table{'LCR_GW_GWNAME_COLUMN'}=$cmd[2]");	
+			if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
+				&bdb_delete($GW_TABLE,$cmd[2]); 
+			} elsif ( $DBENGINE =~ /^DBTEXT$/) {
+				system("$DBTEXTCMD","DELETE FROM $GW_TABLE 
+						       WHERE $gw_table{'LCR_GW_GWNAME_COLUMN'}=$cmd[2]");
+			} else {
+
+				$sth = $dbh->prepare ("DELETE FROM $GW_TABLE 
+						       WHERE $gw_table{'LCR_GW_GWNAME_COLUMN'}=$cmd[2]");	
 				
-			##execute the query
-			$sth->execute( );
-		 	## Retrieve the results of a row of data and print
+				##execute the query
+				$sth->execute( );
+			 	## Retrieve the results of a row of data and print
 			
-			warn "Could not delete entry!", $sth->errstr( ), "\n" if $sth->err( );
-			$sth->finish(); 
+				warn "Could not delete entry!", $sth->errstr( ), "\n" if $sth->err( );
+				$sth->finish();
+			} 
 			
 			&mi_comm('lcr_reload');			
 		}
@@ -2034,7 +2433,7 @@ sub subscriber() {
 			}
 			&credentials($cmd[1],$cmd[2]);
 			
-			if ( &is_user($cmd[1]) ne 0 ) {
+			if ( &is_user($cmd[1]) != 0 ) {
 				print "user " . $cmd[1] . " already exists\n";
 				return;
 			}
@@ -2047,18 +2446,29 @@ sub subscriber() {
 			} else {
 				print "Alias $cmd[1] does not exist!\n";
 			}		
-
-			#prepare the query
-			$sth = $dbh->prepare( "INSERT INTO $SUB_TABLE 
+			
+			if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
+				my $key = join(" ",$OSIPSUSER,$OSIPSDOMAIN);
+				my $value = join(" ", $cmd[2], $HA1, $HA1B);
+				&bdb_insert($SUB_TABLE, $key,$value);				
+			} elsif ( $DBENGINE =~ /^DBTEXT$/) {
+				system("$DBTEXTCMD","INSERT INTO $SUB_TABLE 
 					       ($sub_table{'SUBSCRIBER_COLUMN'},$sub_table{'REALM_COLUMN'},$sub_table{'HA1_COLUMN'},
-						$sub_table{'HA1B_COLUMN'},$sub_table{'PASSWORD_COLUMN'} ) 
-						VALUES (\"$OSIPSUSER\",\"$OSIPSDOMAIN	\",\"$HA1\",\"$HA1B\",\"$cmd[2]\") " );
+						$sub_table{'HA1B_COLUMN'},$sub_table{'PASSWORD_COLUMN'},$sub_table{'EMAIL_ADDRESS'} ) 
+						VALUES (\"$OSIPSUSER\",\"$OSIPSDOMAIN\",\"$HA1\",\"$HA1B\",\"$cmd[2]\", null) " );
+			} else {
+				#prepare the query
+				$sth = $dbh->prepare( "INSERT INTO $SUB_TABLE 
+						       ($sub_table{'SUBSCRIBER_COLUMN'},$sub_table{'REALM_COLUMN'},$sub_table{'HA1_COLUMN'},
+							$sub_table{'HA1B_COLUMN'},$sub_table{'PASSWORD_COLUMN'} ) 
+							VALUES (\"$OSIPSUSER\",\"$OSIPSDOMAIN	\",\"$HA1\",\"$HA1B\",\"$cmd[2]\") " );
 	
-			#execute the query
-			$sth->execute( );
+				#execute the query
+				$sth->execute( );
 
-			warn "Introducing the new user " . $cmd[1] . " to subscriber table failed", $sth->errstr( ), "\n" if $sth->err( );
-			$sth->finish();
+				warn "Introducing the new user " . $cmd[1] . " to subscriber table failed", $sth->errstr( ), "\n" if $sth->err( );
+				$sth->finish();
+			}
 		}
 
 		case (/^passwd$/) {
@@ -2066,7 +2476,6 @@ sub subscriber() {
 				&usage_subscriber();
 				return;
 			} elsif ($#cmd eq 2){
-
 
 				if ( &is_user( $cmd[1]) == 0 ) {
 					print "non-existent user: " . $cmd[1] . "\n";
@@ -2080,18 +2489,33 @@ sub subscriber() {
 				} else {
 					$PASS = "";
 				}
-				$sth = $dbh->prepare( "UPDATE $SUB_TABLE 
-						       SET $sub_table{'HA1_COLUMN'}=\'$HA1\',$sub_table{'HA1B_COLUMN'}=\'$HA1B\',
-						       $sub_table{'PASSWORD_COLUMN'}=\'$PASS\'
-						       WHERE $sub_table{'SUBSCRIBER_COLUMN'}=\'$OSIPSUSER\' 
-                                                       AND $sub_table{'REALM_COLUMN'}=\'$OSIPSDOMAIN\'" );
-	
-				#execute the query
-				$sth->execute( );
 
-				warn "Changing the password for user: " . $cmd[1] . " in database failed", $sth->errstr( ), "\n" if $sth->err( );
+			if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
+				my $key = join(" ",$OSIPSUSER,$OSIPSDOMAIN);
+				&bdb_update($SUB_TABLE, $key);				
+				#
+			} elsif ( $DBENGINE =~ /^DBTEXT$/) {
+					system("$DBTEXTCMD","UPDATE $SUB_TABLE 
+							       SET $sub_table{'HA1_COLUMN'}=\'$HA1\',$sub_table{'HA1B_COLUMN'}=\'$HA1B\',
+							       $sub_table{'PASSWORD_COLUMN'}=\'$PASS\'
+							       WHERE $sub_table{'SUBSCRIBER_COLUMN'}=\'$OSIPSUSER\' 
+		                                               AND $sub_table{'REALM_COLUMN'}=\'$OSIPSDOMAIN\'");
+
+				} else {
+
+					$sth = $dbh->prepare( "UPDATE $SUB_TABLE 
+							       SET $sub_table{'HA1_COLUMN'}=\'$HA1\',$sub_table{'HA1B_COLUMN'}=\'$HA1B\',
+							       $sub_table{'PASSWORD_COLUMN'}=\'$PASS\'
+							       WHERE $sub_table{'SUBSCRIBER_COLUMN'}=\'$OSIPSUSER\' 
+		                                               AND $sub_table{'REALM_COLUMN'}=\'$OSIPSDOMAIN\'" );
+	
+					#execute the query
+					$sth->execute( );
+
+					warn "Changing the password for user: " . $cmd[1] . " in database failed", $sth->errstr( ), "\n" if $sth->err( );
 			
-				$sth->finish();
+					$sth->finish();
+				}
 			}
  						
 		}
@@ -2113,26 +2537,42 @@ sub subscriber() {
 			# begin with remove all user's privileges
 			# ####################################################acl revoke $1  > /dev/null 2>&1
 
-			# destroy db-aliases			
-			$sth = $dbh->prepare("DELETE FROM $DA_TABLE 
+			# destroy db-aliases
+			if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
+				&bdb_delete($DA_TABLE, "$OSIPSUSER","$OSIPSDOMAIN");				
+				#&bdb_select($DA_TABLE);	
+			} elsif ( $DBENGINE =~ /^DBTEXT$/) {
+				system("$DBTEXTCMD", "DELETE FROM $DA_TABLE 
 					      WHERE $da_table{'DA_USER_COLUMN'}=\'$OSIPSUSER\' 
-			                      AND $da_table{'DA_DOMAIN_COLUMN'}=\'$OSIPSDOMAIN\'" );
-			#execute the query
-			$sth->execute( );			
-			warn "Destroying db-aliases for: " . $cmd[1] . " in database failed", $sth->errstr( ), "\n" if $sth->err( );
-			$sth->finish();
-
-
+			                      AND $da_table{'DA_DOMAIN_COLUMN'}=\'$OSIPSDOMAIN\'");
+			} else {		
+				$sth = $dbh->prepare("DELETE FROM $DA_TABLE 
+						      WHERE $da_table{'DA_USER_COLUMN'}=\'$OSIPSUSER\' 
+					              AND $da_table{'DA_DOMAIN_COLUMN'}=\'$OSIPSDOMAIN\'" );
+				#execute the query
+				$sth->execute( );			
+				warn "Destroying db-aliases for: " . $cmd[1] . " in database failed", $sth->errstr( ), "\n" if $sth->err( );
+				$sth->finish();
+			}
 
 			# destroy the user now
-			$sth = $dbh->prepare("DELETE FROM $SUB_TABLE 
+			if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
+				&bdb_delete($SUB_TABLE, "$OSIPSUSER","$OSIPSDOMAIN");				
+				#&bdb_select($SUB_TABLE);	
+			} elsif ( $DBENGINE =~ /^DBTEXT$/) {
+				system("$DBTEXTCMD", "DELETE FROM $SUB_TABLE 
 					      WHERE $sub_table{'SUBSCRIBER_COLUMN'}=\'$OSIPSUSER\'
- 					      AND $sub_table{'REALM_COLUMN'}=\'$OSIPSDOMAIN\'" );
-			#execute the query
-			$sth->execute( );			
+ 					      AND $sub_table{'REALM_COLUMN'}=\'$OSIPSDOMAIN\'");
+			} else {
+				$sth = $dbh->prepare("DELETE FROM $SUB_TABLE 
+						      WHERE $sub_table{'SUBSCRIBER_COLUMN'}=\'$OSIPSUSER\'
+	 					      AND $sub_table{'REALM_COLUMN'}=\'$OSIPSDOMAIN\'" );
+				#execute the query
+				$sth->execute( );			
 
-			warn "Destroying user " . $cmd[1] . " in subscriber table failed", $sth->errstr( ), "\n" if $sth->err( );
-			$sth->finish();
+				warn "Destroying user " . $cmd[1] . " in subscriber table failed", $sth->errstr( ), "\n" if $sth->err( );
+				$sth->finish();
+			}
 
 			# and also all his contacts			
 			&mi_comm(join(" ","ul_rm",$USRLOC_TABLE, $OSIPSUSER."\@".$OSIPSDOMAIN));
@@ -2354,19 +2794,26 @@ sub domain() {
 			}
 
 			&require_dbengine();
-			$sth = $dbh->prepare ( "select * FROM $DOMAIN_TABLE");	
+			
+			if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
+				&bdb_select($DOMAIN_TABLE);								
+			} elsif ( $DBENGINE =~ /^DBTEXT$/ ) {
+				system ("$DBTEXTCMD","select * FROM $DOMAIN_TABLE");
+			} else {
+				$sth = $dbh->prepare ( "select * FROM $DOMAIN_TABLE");	
 				
-			##execute the query
-			$sth->execute( );
+				##execute the query
+				$sth->execute( );
 
-			## Retrieve the results of a row of data and print						 
-			print "\tQuery results:\n================================================\n";
+				## Retrieve the results of a row of data and print						 
+				print "\tQuery results:\n================================================\n";
 
-			while (@row = $sth->fetchrow_array( ) )  {
-				print "@row\n";
-    	                 }		 
-			warn "Could not retrieve data! Data was not inserted in database!", $sth->errstr( ), "\n" if $sth->err( );
-			$sth->finish(); 			
+				while (@row = $sth->fetchrow_array( ) )  {
+					print "@row\n";
+	    	                 }		 
+				warn "Could not retrieve data! Data was not inserted in database!", $sth->errstr( ), "\n" if $sth->err( );
+				$sth->finish(); 			
+			}
 
 		}
 
@@ -2382,26 +2829,36 @@ sub domain() {
 				return;
 			}
 
-			if ( &is_value_in_db($DOMAIN_TABLE, $domain_table{'DO_DOMAIN_COLUMN'},$cmd[2]) ) {
+			if ( &is_value_in_db($DOMAIN_TABLE, $domain_table{'DO_DOMAIN_COLUMN'},$cmd[2]) == 1 ) {
 				print $cmd[2] . " is already in $DOMAIN_TABLE table\n";
 				return;
 			}	
 
 			my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(time);
 			my $date = join("-",$year+1900,$mon+1,$mday+1);
-			my $time = join("-",$hour,$min,$sec);
+			my $time = join(":",$hour,$min,$sec);
 			my $last_modified =  join(" ",$date,$time);
-			
-			$sth = $dbh->prepare( "INSERT INTO $DOMAIN_TABLE 
-					       ($domain_table{'DO_DOMAIN_COLUMN'}, $domain_table{'DO_LAST_MODIFIED_COLUMN'}) 
-					       VALUES (\'$cmd[2]\',\'$last_modified\') " );
-	
-			#execute the query
-			$sth->execute( );
+			my $unix_time = time();
 
-			warn "Introducing the new user " . $cmd[1] . " to the database failed", $sth->errstr( ), "\n" if $sth->err( );
-			$sth->finish();
-			
+			if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
+				my $key = $cmd[2];
+				my $value = $last_modified;
+				&bdb_insert($DOMAIN_TABLE,$key,$value);								
+			} elsif ( $DBENGINE =~ /^DBTEXT$/ ) {
+				system ("$DBTEXTCMD","INSERT INTO $DOMAIN_TABLE 
+					       ($domain_table{'DO_DOMAIN_COLUMN'}, $domain_table{'DO_LAST_MODIFIED_COLUMN'}) 
+					       VALUES (\'$cmd[2]\',$unix_time) ");
+			} else {
+				$sth = $dbh->prepare( "INSERT INTO $DOMAIN_TABLE 
+						       ($domain_table{'DO_DOMAIN_COLUMN'}, $domain_table{'DO_LAST_MODIFIED_COLUMN'}) 
+						       VALUES (\'$cmd[2]\',\'$last_modified\') " );
+	
+				#execute the query
+				$sth->execute( );
+
+				warn "Introducing the new user " . $cmd[1] . " to the database failed", $sth->errstr( ), "\n" if $sth->err( );
+				$sth->finish();
+			}
 		}
 		
 		case (/^rm$/) {	
@@ -2415,13 +2872,21 @@ sub domain() {
 				&usage_domain();
 				return;
 			}
-		
-			$sth = $dbh->prepare("DELETE FROM $DOMAIN_TABLE 
+
+			if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
+				my $key = $cmd[2];
+				&bdb_delete($DOMAIN_TABLE,$cmd[2]);								
+			} elsif ( $DBENGINE =~ /^DBTEXT$/ ) {
+				system ("$DBTEXTCMD","DELETE FROM $DOMAIN_TABLE 
    					      WHERE domain='$cmd[2]'" );
-			#execute the query
-			$sth->execute( );			
-			warn "Deleting domain " . $cmd[2] . " in table $DOMAIN_TABLE failed", $sth->errstr( ), "\n" if $sth->err( );
-			$sth->finish();
+			} else {
+				$sth = $dbh->prepare("DELETE FROM $DOMAIN_TABLE 
+	   					      WHERE domain='$cmd[2]'" );
+				#execute the query
+				$sth->execute( );			
+				warn "Deleting domain " . $cmd[2] . " in table $DOMAIN_TABLE failed", $sth->errstr( ), "\n" if $sth->err( );
+				$sth->finish();
+			}
 			
 			print "execute 'domain reload' to synchronize cache and database\n";
 
@@ -2479,20 +2944,25 @@ sub trusted() {
 		
 			&require_dbengine();
 
-			$sth = $dbh->prepare ( "SELECT * FROM $TRUSTED_TABLE");	
+			if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
+				&bdb_select($TRUSTED_TABLE);								
+			} elsif ( $DBENGINE =~ /^DBTEXT$/ ) {
+				system ("$DBTEXTCMD","SELECT * FROM $TRUSTED_TABLE");
+			} else {
+				$sth = $dbh->prepare ( "SELECT * FROM $TRUSTED_TABLE");	
 				
-			##execute the query
-			$sth->execute( );
+				##execute the query
+				$sth->execute( );
 
-			## Retrieve the results of a row of data and print						 
-			print "\tQuery results:\n================================================\n";
+				## Retrieve the results of a row of data and print						 
+				print "\tQuery results:\n================================================\n";
 
-			while (@row = $sth->fetchrow_array( ) )  {
-				print "@row\n";
-    	                 }		 
-			warn "Could not retrieve data! Data was not inserted in database!", $sth->errstr( ), "\n" if $sth->err( );
-			$sth->finish(); 
-			
+				while (@row = $sth->fetchrow_array( ) )  {
+					print "@row\n";
+	    	                 }		 
+				warn "Could not retrieve data! Data was not inserted in database!", $sth->errstr( ), "\n" if $sth->err( );
+				$sth->finish(); 
+			}			
 					
 	
 		}	
@@ -2516,7 +2986,7 @@ sub trusted() {
 				return;
 			}
 	
-			if ( &is_value_in_db( $TRUSTED_TABLE, $trusted_table{'TRUSTED_SRC_IP_COLUMN'}, $cmd[2] ) ) {
+			if ( &is_value_in_db( $TRUSTED_TABLE, $trusted_table{'TRUSTED_SRC_IP_COLUMN'}, $cmd[2] ) != 0 ) {
 				print $cmd[2] . " already in $TRUSTED_TABLE table\n";
 				return;
 			}
@@ -2531,20 +3001,30 @@ sub trusted() {
 				$PATTERN = $cmd[4];
 						
 			}
-			
-			$sth = $dbh->prepare( " INSERT INTO $TRUSTED_TABLE 
+
+			if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
+				my $key = $cmd[2];
+				my $value = join(" ",$cmd[3],$PATTERN, $cmd[5]);
+				&bdb_insert($TRUSTED_TABLE,$key,$value);								
+			} elsif ( $DBENGINE =~ /^DBTEXT$/ ) {
+				system ("$DBTEXTCMD", " INSERT INTO $TRUSTED_TABLE 
 						( $trusted_table{'TRUSTED_SRC_IP_COLUMN'}, $trusted_table{'TRUSTED_PROTO_COLUMN'}, 
 						$trusted_table{'TRUSTED_FROM_PATTERN_COLUMN'},$trusted_table{'TRUSTED_TAG_COLUMN'} ) 
 						VALUES (\'$cmd[2]\', \'$cmd[3]\', \'$PATTERN\', \'$cmd[5]\') " );
+			} else {			
+				$sth = $dbh->prepare( " INSERT INTO $TRUSTED_TABLE 
+							( $trusted_table{'TRUSTED_SRC_IP_COLUMN'}, $trusted_table{'TRUSTED_PROTO_COLUMN'}, 
+							$trusted_table{'TRUSTED_FROM_PATTERN_COLUMN'},$trusted_table{'TRUSTED_TAG_COLUMN'} ) 
+							VALUES (\'$cmd[2]\', \'$cmd[3]\', \'$PATTERN\', \'$cmd[5]\') " );
 	
-			#execute the query
-			$sth->execute( );
+				#execute the query
+				$sth->execute( );
 
-			warn "Introducing the new user " . $cmd[1] . " to the database failed", $sth->errstr( ), "\n" if $sth->err( );
-			$sth->finish();
+				warn "Introducing the new user " . $cmd[1] . " to the database failed", $sth->errstr( ), "\n" if $sth->err( );
+				$sth->finish();
 			
-			print "execute 'trusted reload' to synchronize cache and database\n";
-	
+				print "execute 'trusted reload' to synchronize cache and database\n";
+			}
 		}
 
 		case (/^rm$/) {
@@ -2554,13 +3034,21 @@ sub trusted() {
 				&usage_trusted();
 				return;
 			}
-				
-			$sth = $dbh->prepare("DELETE FROM $TRUSTED_TABLE 
+
+			if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
+				my $key = $cmd[2];
+				&bdb_delete($TRUSTED_TABLE,$key);								
+			} elsif ( $DBENGINE =~ /^DBTEXT$/ ) {
+				system ("$DBTEXTCMD", "DELETE FROM $TRUSTED_TABLE 
 					      WHERE $trusted_table{'TRUSTED_SRC_IP_COLUMN'} = \'$cmd[2]\'" );
-			#execute the query
-			$sth->execute( );			
-			warn "Deleting domain " . $cmd[2] . " in table $DOMAIN_TABLE failed", $sth->errstr( ), "\n" if $sth->err( );
-			$sth->finish();
+			} else {				
+				$sth = $dbh->prepare("DELETE FROM $TRUSTED_TABLE 
+						      WHERE $trusted_table{'TRUSTED_SRC_IP_COLUMN'} = \'$cmd[2]\'" );
+				#execute the query
+				$sth->execute( );			
+				warn "Deleting domain " . $cmd[2] . " in table $DOMAIN_TABLE failed", $sth->errstr( ), "\n" if $sth->err( );
+				$sth->finish();
+			}
 
 			print "execute 'trusted reload' to synchronize cache and database\n";
 	
@@ -2605,23 +3093,30 @@ sub opensips_dispatcher() {
 	
 			print "dispatcher gateways\n";
 			
-			$sth = $dbh->prepare ( "SELECT * 
+			if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
+				&bdb_select($DISPATCHER_TABLE);								
+			} elsif ( $DBENGINE =~ /^DBTEXT$/ ) {
+				system ("$DBTEXTCMD", "SELECT * 
 						FROM $DISPATCHER_TABLE 
-						ORDER BY $dispatcher_table{'DISPATCHER_SETID_COLUMN'}");	
+						ORDER BY $dispatcher_table{'DISPATCHER_SETID_COLUMN'}" );
+			} else {
+
+				$sth = $dbh->prepare ( "SELECT * 
+							FROM $DISPATCHER_TABLE 
+							ORDER BY $dispatcher_table{'DISPATCHER_SETID_COLUMN'}");	
 				
-			##execute the query
-			$sth->execute( );
+				##execute the query
+				$sth->execute( );
 
-			## Retrieve the results of a row of data and print						 
-			print "\tQuery results:\n================================================\n";
+				## Retrieve the results of a row of data and print						 
+				print "\tQuery results:\n================================================\n";
 
-			while (@row = $sth->fetchrow_array( ) )  {
-				print "@row\n";
-    	                 }		 
-			warn "Could not retrieve data! Data was not inserted in database!", $sth->errstr( ), "\n" if $sth->err( );
-			$sth->finish(); 		
-	
-
+				while (@row = $sth->fetchrow_array( ) )  {
+					print "@row\n";
+	    	                 }		 
+				warn "Could not retrieve data! Data was not inserted in database!", $sth->errstr( ), "\n" if $sth->err( );
+				$sth->finish(); 		
+			}
 
 		}	
 
@@ -2651,17 +3146,28 @@ sub opensips_dispatcher() {
 			$DISPATCHER_DESTINATION = $cmd[3];
 			$DISPATCHER_FLAGS = $cmd[4];
 
-
-			$sth = $dbh->prepare( " INSERT INTO $DISPATCHER_TABLE ( $dispatcher_table{'DISPATCHER_SETID_COLUMN'}, 
+			if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
+				my $key = join(" ",$DISPATCHER_SETID,$DISPATCHER_FLAGS);
+				my $value = join(" ",$DISPATCHER_DESTINATION,$DISPATCHER_DESCRIPTION);
+				&bdb_insert($DISPATCHER_TABLE,$key,$value);								
+			} elsif ( $DBENGINE =~ /^DBTEXT$/ ) {
+				system ("$DBTEXTCMD"," INSERT INTO $DISPATCHER_TABLE ( $dispatcher_table{'DISPATCHER_SETID_COLUMN'}, 
 						$dispatcher_table{'DISPATCHER_DESTINATION_COLUMN'}, $dispatcher_table{'DISPATCHER_FLAGS_COLUMN'},
  						$dispatcher_table{'DISPATCHER_DESCRIPTION_COLUMN'} ) 
-						VALUES ($DISPATCHER_SETID,\'$DISPATCHER_DESTINATION\',$DISPATCHER_FLAGS,\'$DISPATCHER_DESCRIPTION\') " );
-	
-			#execute the query
-			$sth->execute( );
+						VALUES ($DISPATCHER_SETID,\'$DISPATCHER_DESTINATION\',$DISPATCHER_FLAGS,\'$DISPATCHER_DESCRIPTION\') ");
+			} else {
 
-			warn "Introducing the new user " . $cmd[1] . " to the database failed", $sth->errstr( ), "\n" if $sth->err( );
-			$sth->finish();
+				$sth = $dbh->prepare( " INSERT INTO $DISPATCHER_TABLE ( $dispatcher_table{'DISPATCHER_SETID_COLUMN'}, 
+							$dispatcher_table{'DISPATCHER_DESTINATION_COLUMN'}, $dispatcher_table{'DISPATCHER_FLAGS_COLUMN'},
+							$dispatcher_table{'DISPATCHER_DESCRIPTION_COLUMN'} ) 
+							VALUES ($DISPATCHER_SETID,\'$DISPATCHER_DESTINATION\',$DISPATCHER_FLAGS,\'$DISPATCHER_DESCRIPTION\') " );
+
+				#execute the query
+				$sth->execute( );
+
+				warn "Introducing the new user " . $cmd[1] . " to the database failed", $sth->errstr( ), "\n" if $sth->err( );
+				$sth->finish();
+			}
 
 			&mi_comm('ds_reload');			
 
@@ -2669,17 +3175,28 @@ sub opensips_dispatcher() {
 
 		case (/^rmgw$/) {
 	
-			if ( $#cmd ne 2 ) {
+			if ( $#cmd lt 2 ) {
 				print "missing gateway id to be removed\n";
+				return;
+			} elsif ( ( $#cmd lt 3 ) && ( $DBENGINE =~ /^DB_BERKELEY$/ ) ) {
+				print "missing flag to be removed\n";
 				return;
 			}
 
-			$sth = $dbh->prepare("DELETE FROM $DISPATCHER_TABLE 
-					      WHERE $dispatcher_table{'DISPATCHER_ID_COLUMN'}=\'$cmd[2]\'" );
-			#execute the query
-			$sth->execute( );			
-			warn "Deleting domain " . $cmd[2] . " in table $DOMAIN_TABLE failed", $sth->errstr( ), "\n" if $sth->err( );
-			$sth->finish();
+			if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
+				my $key = join(" ",$cmd[2],$cmd[3]);				
+				&bdb_delete($DISPATCHER_TABLE,$key);								
+			} elsif ( $DBENGINE =~ /^DBTEXT$/ ) {
+				system ("$DBTEXTCMD","DELETE FROM $DISPATCHER_TABLE 
+					      WHERE $dispatcher_table{'DISPATCHER_SETID_COLUMN'}=\'$cmd[2]\'" );
+			} else {
+				$sth = $dbh->prepare("DELETE FROM $DISPATCHER_TABLE 
+						      WHERE $dispatcher_table{'DISPATCHER_SETID_COLUMN'}=\'$cmd[2]\'" );
+				#execute the query
+				$sth->execute( );			
+				warn "Deleting domain " . $cmd[2] . " in table $DOMAIN_TABLE failed", $sth->errstr( ), "\n" if $sth->err( );
+				$sth->finish();
+			}
 
 			&mi_comm('ds_reload');				
 
@@ -2734,41 +3251,59 @@ sub opensips_cr() {
 
 			print "cr routing tree\n";
 
-			$sth = $dbh->prepare ( "SELECT * 
-						FROM $ROUTE_TREE_TABLE 
-						ORDER BY $route_tree_table{'CARRIERROUTE_ROUTE_TREE_PREFIX_COLUMN'}");	
+			if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
+				&bdb_select($ROUTE_TREE_TABLE);								
+			} elsif ( $DBENGINE =~ /^DBTEXT$/ ) {
+				system ("$DBTEXTCMD","SELECT * 
+						      FROM $ROUTE_TREE_TABLE 
+						      ORDER BY $route_tree_table{'CARRIERROUTE_ROUTE_TREE_PREFIX_COLUMN'}" );
+			} else {
+
+				$sth = $dbh->prepare ( "SELECT * 
+							FROM $ROUTE_TREE_TABLE 
+							ORDER BY $route_tree_table{'CARRIERROUTE_ROUTE_TREE_PREFIX_COLUMN'}");	
 				
-			##execute the query
-			$sth->execute( );
+				##execute the query
+				$sth->execute( );
 
-			## Retrieve the results of a row of data and print						 
-			print "\tQuery results:\n================================================\n";
+				## Retrieve the results of a row of data and print						 
+				print "\tQuery results:\n================================================\n";
 
-			while (@row = $sth->fetchrow_array( ) )  {
-				print "@row\n";
-    	                 }		 
-			warn "Could not retrieve data!", $sth->errstr( ), "\n" if $sth->err( );
-			$sth->finish(); 	
+				while (@row = $sth->fetchrow_array( ) )  {
+					print "@row\n";
+	    	                 }		 
+				warn "Could not retrieve data!", $sth->errstr( ), "\n" if $sth->err( );
+				$sth->finish(); 	
+			}
 
 			print "cr routes\n";
-			$sth = $dbh->prepare ( " SELECT * 
+			if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
+				&bdb_select($CARRIERROUTE_TABLE);								
+			} elsif ( $DBENGINE =~ /^DBTEXT$/ ) {
+				system ("$DBTEXTCMD"," SELECT * 
 						 FROM $CARRIERROUTE_TABLE ORDER BY $carrierroute_table{'CARRIERROUTE_CARRIERROUTE_CARRIER_COLUMN'},
 						 $carrierroute_table{'CARRIERROUTE_CARRIERROUTE_SCAN_PREFIX_COLUMN'}, 
 						 $carrierroute_table{'CARRIERROUTE_CARRIERROUTE_DOMAIN_COLUMN'},
-						 $carrierroute_table{'CARRIERROUTE_CARRIERROUTE_PROB_COLUMN'} ");	
+						 $carrierroute_table{'CARRIERROUTE_CARRIERROUTE_PROB_COLUMN'} ");
+			} else {
+				$sth = $dbh->prepare ( " SELECT * 
+							 FROM $CARRIERROUTE_TABLE ORDER BY $carrierroute_table{'CARRIERROUTE_CARRIERROUTE_CARRIER_COLUMN'},
+							 $carrierroute_table{'CARRIERROUTE_CARRIERROUTE_SCAN_PREFIX_COLUMN'}, 
+							 $carrierroute_table{'CARRIERROUTE_CARRIERROUTE_DOMAIN_COLUMN'},
+							 $carrierroute_table{'CARRIERROUTE_CARRIERROUTE_PROB_COLUMN'} ");	
 				
-			##execute the query
-			$sth->execute( );
+				##execute the query
+				$sth->execute( );
 
-			## Retrieve the results of a row of data and print						 
-			print "\tQuery results:\n================================================\n";
+				## Retrieve the results of a row of data and print						 
+				print "\tQuery results:\n================================================\n";
 
-			while (@row = $sth->fetchrow_array( ) )  {
-				print "@row\n";
-    	                 }		 
-			warn "Could not retrieve data! Data was not inserted in database!", $sth->errstr( ), "\n" if $sth->err( );
-			$sth->finish(); 	
-
+				while (@row = $sth->fetchrow_array( ) )  {
+					print "@row\n";
+	    	                 }		 
+				warn "Could not retrieve data! Data was not inserted in database!", $sth->errstr( ), "\n" if $sth->err( );
+				$sth->finish(); 	
+			}
 		}
 
 		case (/^reload$/) {
@@ -2791,18 +3326,30 @@ sub opensips_cr() {
 				return;
 			}
 	
-			$sth = $dbh->prepare( " INSERT INTO $ROUTE_TREE_TABLE 
+			if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
+				my $key = $cmd[2];
+				my $value = $cmd[3];
+				&bdb_insert($ROUTE_TREE_TABLE,$key,$value);								
+			} elsif ( $DBENGINE =~ /^DBTEXT$/ ) {
+				system ("$DBTEXTCMD"," INSERT INTO $ROUTE_TREE_TABLE 
 						( $route_tree_table{'CARRIERROUTE_ROUTE_TREE_PREFIX_COLUMN'}, 
 						$route_tree_table{'CARRIERROUTE_ROUTE_TREE_CARRIER_COLUMN'}) 
-						VALUES ($cmd[2], \'$cmd[3]\') " );
+						VALUES ($cmd[2], \'$cmd[3]\') ");
+			} else {
+
+				$sth = $dbh->prepare( " INSERT INTO $ROUTE_TREE_TABLE 
+							( $route_tree_table{'CARRIERROUTE_ROUTE_TREE_PREFIX_COLUMN'}, 
+							$route_tree_table{'CARRIERROUTE_ROUTE_TREE_CARRIER_COLUMN'}) 
+							VALUES ($cmd[2], \'$cmd[3]\') " );
 	
-			#execute the query
-			$sth->execute( );
+				#execute the query
+				$sth->execute( );
 
-			warn "Introducing the new route tree prefix and route tree carrier to the database failed", $sth->errstr( ), "\n" if $sth->err( );
-			$sth->finish();
+				warn "Introducing the new route tree prefix and route tree carrier to the database failed", $sth->errstr( ), "\n" if $sth->err( );
+				$sth->finish();
+			}
 
-			print "execute 'cr reload' to synchronize cache and database"
+			print "execute 'cr reload' to synchronize cache and database\n";
 
 		
 		}
@@ -2815,14 +3362,22 @@ sub opensips_cr() {
 				return;
 			}
 
-			$sth = $dbh->prepare("DELETE FROM $ROUTE_TREE_TABLE 
+			if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
+				my $key = $cmd[2];
+				my $value = $cmd[1];
+				&bdb_delete($ROUTE_TREE_TABLE,$key,$value);								
+			} elsif ( $DBENGINE =~ /^DBTEXT$/ ) {
+				system ("$DBTEXTCMD","DELETE FROM $ROUTE_TREE_TABLE 
 					      WHERE $route_tree_table{'CARRIERROUTE_ROUTE_TREE_CARRIER_COLUMN'}=\'$cmd[2]\'" );
-			#execute the query
-			$sth->execute( );			
-			warn "Deleting route tree " . $cmd[2] . " in table $ROUTE_TREE_TABLE failed", $sth->errstr( ), "\n" if $sth->err( );
-			$sth->finish();
-	
-			print "execute 'cr reload' to synchronize cache and database"
+			} else {
+				$sth = $dbh->prepare("DELETE FROM $ROUTE_TREE_TABLE 
+						      WHERE $route_tree_table{'CARRIERROUTE_ROUTE_TREE_CARRIER_COLUMN'}=\'$cmd[2]\'" );
+				#execute the query
+				$sth->execute( );			
+				warn "Deleting route tree " . $cmd[2] . " in table $ROUTE_TREE_TABLE failed", $sth->errstr( ), "\n" if $sth->err( );
+				$sth->finish();
+			}
+			print "execute 'cr reload' to synchronize cache and database\n";
 		
 		}
 
@@ -2902,14 +3457,21 @@ sub opensips_cr() {
 			$DOMAIN = $cmd[4];
 			$REWRITE_HOST = $cmd[5];
 			
-			$sth = $dbh->prepare( " INSERT INTO $CARRIERROUTE_TABLE ( $carrierroute_table{'CARRIERROUTE_CARRIERROUTE_CARRIER_COLUMN'},$carrierroute_table{'CARRIERROUTE_CARRIERROUTE_SCAN_PREFIX_COLUMN'},$carrierroute_table{'CARRIERROUTE_CARRIERROUTE_DOMAIN_COLUMN'},$carrierroute_table{'CARRIERROUTE_CARRIERROUTE_PROB_COLUMN'}, $carrierroute_table{'CARRIERROUTE_CARRIERROUTE_STRIP_COLUMN'},$carrierroute_table{'CARRIERROUTE_CARRIERROUTE_REWRITE_HOST_COLUMN'}, $carrierroute_table{'CARRIERROUTE_CARRIERROUTE_REWRITE_PREFIX_COLUMN'}, $carrierroute_table{'CARRIERROUTE_CARRIERROUTE_REWRITE_SUFFIX_COLUMN'},$carrierroute_table{'CARRIERROUTE_CARRIERROUTE_COMMENT_COLUMN'},$carrierroute_table{'CARRIERROUTE_CARRIERROUTE_FLAGS_COLUMN'}, $carrierroute_table{'CARRIERROUTE_CARRIERROUTE_MASK_COLUMN'}) VALUES ($CARRIER, \'$SCAN_PREFIX\', \'$DOMAIN\', $PROB, $STRIP, \'$REWRITE_HOST\', \'$REWRITE_PREFIX\', \'$REWRITE_SUFFIX\', \'$COMMENT\', $FLAGS, $MASK)" );
+			if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
+				my $key = $CARRIER;
+				my $value = join(" ",$DOMAIN,$SCAN_PREFIX,$FLAGS,$MASK,$PROB,$STRIP,$REWRITE_HOST,$REWRITE_PREFIX,$REWRITE_SUFFIX,$COMMENT);
+				&bdb_insert($CARRIERROUTE_TABLE,$key,$value);								
+			} elsif ( $DBENGINE =~ /^DBTEXT$/ ) {
+				system ("$DBTEXTCMD"," INSERT INTO $CARRIERROUTE_TABLE ( $carrierroute_table{'CARRIERROUTE_CARRIERROUTE_CARRIER_COLUMN'},$carrierroute_table{'CARRIERROUTE_CARRIERROUTE_SCAN_PREFIX_COLUMN'},$carrierroute_table{'CARRIERROUTE_CARRIERROUTE_DOMAIN_COLUMN'},$carrierroute_table{'CARRIERROUTE_CARRIERROUTE_PROB_COLUMN'}, $carrierroute_table{'CARRIERROUTE_CARRIERROUTE_STRIP_COLUMN'},$carrierroute_table{'CARRIERROUTE_CARRIERROUTE_REWRITE_HOST_COLUMN'}, $carrierroute_table{'CARRIERROUTE_CARRIERROUTE_REWRITE_PREFIX_COLUMN'}, $carrierroute_table{'CARRIERROUTE_CARRIERROUTE_REWRITE_SUFFIX_COLUMN'},$carrierroute_table{'CARRIERROUTE_CARRIERROUTE_COMMENT_COLUMN'},$carrierroute_table{'CARRIERROUTE_CARRIERROUTE_FLAGS_COLUMN'}, $carrierroute_table{'CARRIERROUTE_CARRIERROUTE_MASK_COLUMN'}) VALUES ($CARRIER, \'$SCAN_PREFIX\', \'$DOMAIN\', $PROB, $STRIP, \'$REWRITE_HOST\', \'$REWRITE_PREFIX\', \'$REWRITE_SUFFIX\', \'$COMMENT\', $FLAGS, $MASK)");
+			} else {
+				$sth = $dbh->prepare( " INSERT INTO $CARRIERROUTE_TABLE ( $carrierroute_table{'CARRIERROUTE_CARRIERROUTE_CARRIER_COLUMN'},$carrierroute_table{'CARRIERROUTE_CARRIERROUTE_SCAN_PREFIX_COLUMN'},$carrierroute_table{'CARRIERROUTE_CARRIERROUTE_DOMAIN_COLUMN'},$carrierroute_table{'CARRIERROUTE_CARRIERROUTE_PROB_COLUMN'}, $carrierroute_table{'CARRIERROUTE_CARRIERROUTE_STRIP_COLUMN'},$carrierroute_table{'CARRIERROUTE_CARRIERROUTE_REWRITE_HOST_COLUMN'}, $carrierroute_table{'CARRIERROUTE_CARRIERROUTE_REWRITE_PREFIX_COLUMN'}, $carrierroute_table{'CARRIERROUTE_CARRIERROUTE_REWRITE_SUFFIX_COLUMN'},$carrierroute_table{'CARRIERROUTE_CARRIERROUTE_COMMENT_COLUMN'},$carrierroute_table{'CARRIERROUTE_CARRIERROUTE_FLAGS_COLUMN'}, $carrierroute_table{'CARRIERROUTE_CARRIERROUTE_MASK_COLUMN'}) VALUES ($CARRIER, \'$SCAN_PREFIX\', \'$DOMAIN\', $PROB, $STRIP, \'$REWRITE_HOST\', \'$REWRITE_PREFIX\', \'$REWRITE_SUFFIX\', \'$COMMENT\', $FLAGS, $MASK)" );
 	
-			#execute the query
-			$sth->execute( );
+				#execute the query
+				$sth->execute( );
 
-			warn "Introducing the new route tree prefix and route tree carrier to the database failed", $sth->errstr( ), "\n" if $sth->err( );
-			$sth->finish();
-
+				warn "Introducing the new route tree prefix and route tree carrier to the database failed", $sth->errstr( ), "\n" if $sth->err( );
+				$sth->finish();
+			}
 			print "execute 'cr reload' to synchronize cache and database\n";
 
 		
@@ -2923,14 +3485,24 @@ sub opensips_cr() {
 				return;
 			}
 
-			$sth = $dbh->prepare("DELETE FROM $CARRIERROUTE_TABLE 
+			if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
+				my $key = $cmd[2];
+				&bdb_delete($CARRIERROUTE_TABLE,$key);								
+			} elsif ( $DBENGINE =~ /^DBTEXT$/ ) {
+				system ("$DBTEXTCMD", "DELETE FROM $CARRIERROUTE_TABLE 
 					      WHERE $carrierroute_table{'CARRIERROUTE_CARRIERROUTE_CARRIER_COLUMN'}=\'$cmd[2]\' 
 					      AND $carrierroute_table{'CARRIERROUTE_CARRIERROUTE_SCAN_PREFIX_COLUMN'}=\'$cmd[3]\' 
-					      AND $carrierroute_table{'CARRIERROUTE_CARRIERROUTE_DOMAIN_COLUMN'}=\'$cmd[4]\' " );
-			#execute the query
-			$sth->execute( );			
-			warn "Deleting carrier " . $cmd[2] . " in table $CARRIERROUTE_TABLE failed", $sth->errstr( ), "\n" if $sth->err( );
-			$sth->finish();
+					      AND $carrierroute_table{'CARRIERROUTE_CARRIERROUTE_DOMAIN_COLUMN'}=\'$cmd[4]\' ");
+			} else {
+				$sth = $dbh->prepare("DELETE FROM $CARRIERROUTE_TABLE 
+						      WHERE $carrierroute_table{'CARRIERROUTE_CARRIERROUTE_CARRIER_COLUMN'}=\'$cmd[2]\' 
+						      AND $carrierroute_table{'CARRIERROUTE_CARRIERROUTE_SCAN_PREFIX_COLUMN'}=\'$cmd[3]\' 
+						      AND $carrierroute_table{'CARRIERROUTE_CARRIERROUTE_DOMAIN_COLUMN'}=\'$cmd[4]\' " );
+				#execute the query
+				$sth->execute( );			
+				warn "Deleting carrier " . $cmd[2] . " in table $CARRIERROUTE_TABLE failed", $sth->errstr( ), "\n" if $sth->err( );
+				$sth->finish();
+			}
 
 			print "execute 'cr reload' to synchronize cache and database\n";
 
@@ -2992,29 +3564,38 @@ sub check_db_alias() {
 	&require_dbengine();
 
 	$ALIAS_DB_EXISTS = 0;
-	
-	$sth = $dbh->prepare( "SELECT count(*) 
+
+	if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
+		$result = &bdb_select_where($DA_TABLE,"$OSIPSUSER","$OSIPSDOMAIN");
+	} elsif ( $DBENGINE =~ /^DBTEXT$/) {
+		my $res = system("$DBTEXTCMD","SELECT count(*) 
 			       FROM $DA_TABLE 
 			       WHERE $da_table{'DA_ALIAS_USER_COLUMN'}=\"$OSIPSUSER\" 
-                               AND $da_table{'DA_ALIAS_DOMAIN_COLUMN'}=\"$OSIPSDOMAIN\"" );
+                               AND $da_table{'DA_ALIAS_DOMAIN_COLUMN'}=\"$OSIPSDOMAIN\"");
+		$result = $res;
+	} else {
+	 	$sth = $dbh->prepare( "SELECT count(*) 
+				       FROM $DA_TABLE 
+				       WHERE $da_table{'DA_ALIAS_USER_COLUMN'}=\"$OSIPSUSER\" 
+		                       AND $da_table{'DA_ALIAS_DOMAIN_COLUMN'}=\"$OSIPSDOMAIN\"" );
 	
-	#execute the query
-	$sth->execute( );
+		#execute the query
+		$sth->execute( );
 
-	warn "Retrieving user " . $cmd[1] . " from $DA_TABLE failed", $sth->errstr( ), "\n" if $sth->err( );
+		warn "Retrieving user " . $cmd[1] . " from $DA_TABLE failed", $sth->errstr( ), "\n" if $sth->err( );
 			
 
-	#Retrieve the results of a row of data and print
-	print "\tQuery results:\n================================================\n";
-	while ( @row = $sth->fetchrow_array( ) )  {
- 		     print "@row\n";
-		     $result = "@row";	
+		#Retrieve the results of a row of data and print
+		print "\tQuery results:\n================================================\n";
+		while ( @row = $sth->fetchrow_array( ) )  {
+	 		     print "@row\n";
+			     $result = "@row";	
+		}
+		$sth->finish();
 	}
-	$sth->finish();
-
 
 	#print $result;
-	if ( $result eq 0 ) {
+	if ( $result == 0 ) {
 		$ALIAS_DB_EXISTS = 0;
 	} else {
 		$ALIAS_DB_EXISTS = 1;
@@ -3062,7 +3643,7 @@ sub alias_db() {
 
 
 	switch ($cmd[1]) {  
-		case (/^h$/) {
+		case (/(^h$)|(^help$)/) {
 			&usage_alias_db();
 			return;
 		}
@@ -3077,23 +3658,32 @@ sub alias_db() {
 				&set_user($cmd[2]);
 				
 				print "Dumping aliases for user=<".$cmd[2].">\n";
-				
-				$sth = $dbh->prepare( "SELECT CONCAT($da_table{'DA_ALIAS_USER_COLUMN'},\'@\',$da_table{'DA_ALIAS_DOMAIN_COLUMN'}) ALIAS 
- 						       FROM $DA_TABLE 
-						       WHERE $da_table{'DA_USER_COLUMN'}=\'$OSIPSUSER\' 
- 						       AND $da_table{'DA_DOMAIN_COLUMN'}=\'$OSIPSDOMAIN\'" );
+			
+				if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
+					my $key = join(" ",$OSIPSUSER,$OSIPSDOMAIN);
+					&bdb_select_where($DA_TABLE,$key);
+				} elsif ( $DBENGINE =~ /^DBTEXT$/ )	{
+					system("$DBTEXTCMD","SELECT CONCAT($da_table{'DA_ALIAS_USER_COLUMN'},\'@\',$da_table{'DA_ALIAS_DOMAIN_COLUMN'})
+							     ALIAS FROM $DA_TABLE 
+							     WHERE $da_table{'DA_USER_COLUMN'}=\'$OSIPSUSER\' 
+ 							     AND $da_table{'DA_DOMAIN_COLUMN'}=\'$OSIPSDOMAIN\'")
+				} else {
+					$sth = $dbh->prepare( "SELECT CONCAT($da_table{'DA_ALIAS_USER_COLUMN'},\'@\',$da_table{'DA_ALIAS_DOMAIN_COLUMN'}) ALIAS 
+	 						       FROM $DA_TABLE 
+							       WHERE $da_table{'DA_USER_COLUMN'}=\'$OSIPSUSER\' 
+	 						       AND $da_table{'DA_DOMAIN_COLUMN'}=\'$OSIPSDOMAIN\'" );
 	
-				#execute the query
-				$sth->execute( );
-				warn "Concatenting user with domain failed", $sth->errstr( ), "\n" if $sth->err( );
+					#execute the query
+					$sth->execute( );
+					warn "Concatenting user with domain failed", $sth->errstr( ), "\n" if $sth->err( );
 
-				#Retrieve the results of a row of data and print
-				print "\tQuery results:\n================================================\n";
-				while ( @row = $sth->fetchrow_array( ) )  {
-			 		     print "@row\n";
-				}	
-				$sth->finish();
-
+					#Retrieve the results of a row of data and print
+					print "\tQuery results:\n================================================\n";
+					while ( @row = $sth->fetchrow_array( ) )  {
+				 		     print "@row\n";
+					}	
+					$sth->finish();
+				}
 			
 			} elsif ( $#cmd eq 1 ) {
 				print "Dumping all aliases may take long: do you want to proceed? [Y|N]:";
@@ -3104,21 +3694,28 @@ sub alias_db() {
 				} 
 				
 				#preparing query
- 				$sth = $dbh->prepare( "SELECT $da_table{'DA_ALIAS_USER_COLUMN'}, $da_table{'DA_ALIAS_DOMAIN_COLUMN'},
+				if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
+					&bdb_select($DA_TABLE);
+				} elsif ( $DBENGINE =~ /^DBTEXT$/ )	{
+					system("$DBTEXTCMD", "SELECT $da_table{'DA_ALIAS_USER_COLUMN'}, $da_table{'DA_ALIAS_DOMAIN_COLUMN'},
 						       $da_table{'DA_USER_COLUMN'}, $da_table{'DA_DOMAIN_COLUMN'} 
 						       FROM $DA_TABLE" );
+				} else {
+	 				$sth = $dbh->prepare( "SELECT $da_table{'DA_ALIAS_USER_COLUMN'}, $da_table{'DA_ALIAS_DOMAIN_COLUMN'},
+							       $da_table{'DA_USER_COLUMN'}, $da_table{'DA_DOMAIN_COLUMN'} 
+							       FROM $DA_TABLE" );
 	
-				#execute the query
-				$sth->execute( );
-				warn "Retrieving data from table failed", $sth->errstr( ), "\n" if $sth->err( );
+					#execute the query
+					$sth->execute( );
+					warn "Retrieving data from table failed", $sth->errstr( ), "\n" if $sth->err( );
 	
-				#Retrieve the results of a row of data and print
-				print "\tQuery results:\n================================================\n";
-				while ( @row = $sth->fetchrow_array( ) )  {
-			 		     print "@row\n";
-				}	
-				$sth->finish();
-
+					#Retrieve the results of a row of data and print
+					print "\tQuery results:\n================================================\n";
+					while ( @row = $sth->fetchrow_array( ) )  {
+				 		     print "@row\n";
+					}	
+					$sth->finish();
+				}
 		
 			} else {
 				print "alias_db - wrong number of params for command [list]\n";
@@ -3142,20 +3739,32 @@ sub alias_db() {
 			
 			&set_user($cmd[2]);
 
-			#prepare query			
-		        $sth = $dbh->prepare( " SELECT CONCAT($da_table{'DA_USER_COLUMN'},\'@\',$da_table{'DA_DOMAIN_COLUMN'} ) AS SIP_ID FROM $DA_TABLE 							WHERE $da_table{'DA_ALIAS_USER_COLUMN'}=\'$OSIPSUSER\' 
-						AND $da_table{'DA_ALIAS_DOMAIN_COLUMN'}=\'$OSIPSDOMAIN\' " );
+			#prepare query	
+			if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
+				my $key = join(" ",$OSIPSUSER,$OSIPSDOMAIN);
+				&bdb_select_where($DA_TABLE,$key);
+			} elsif ( $DBENGINE =~ /^DBTEXT$/ )	{
+				system("$DBTEXTCMD", " SELECT CONCAT($da_table{'DA_USER_COLUMN'},\'@\',$da_table{'DA_DOMAIN_COLUMN'} ) AS SIP_ID 
+						       FROM $DA_TABLE
+   						       WHERE $da_table{'DA_ALIAS_USER_COLUMN'}=\'$OSIPSUSER\' 
+ 						       AND $da_table{'DA_ALIAS_DOMAIN_COLUMN'}=\'$OSIPSDOMAIN\' ");
+			} else {
+				$sth = $dbh->prepare( " SELECT CONCAT($da_table{'DA_USER_COLUMN'},\'@\',$da_table{'DA_DOMAIN_COLUMN'} ) AS SIP_ID 
+							FROM $DA_TABLE 				
+							WHERE $da_table{'DA_ALIAS_USER_COLUMN'}=\'$OSIPSUSER\' 
+							AND $da_table{'DA_ALIAS_DOMAIN_COLUMN'}=\'$OSIPSDOMAIN\' " );
 	
-			#execute the query
-			$sth->execute( );
-			warn "Retrieving data from table failed", $sth->errstr( ), "\n" if $sth->err( );			
+				#execute the query
+				$sth->execute( );
+				warn "Retrieving data from table failed", $sth->errstr( ), "\n" if $sth->err( );			
 
-			#Retrieve the results of a row of data and print
-			print "\tQuery results:\n================================================\n";
-			while ( @row = $sth->fetchrow_array( ) )  {
-				     print "@row\n";
-			}	
-			$sth->finish();
+				#Retrieve the results of a row of data and print
+				print "\tQuery results:\n================================================\n";
+				while ( @row = $sth->fetchrow_array( ) )  {
+					     print "@row\n";
+				}	
+				$sth->finish();
+			}
 
 		}
 
@@ -3188,17 +3797,27 @@ sub alias_db() {
 
 
 			#prepare query
-			$sth = $dbh->prepare( " INSERT INTO $DA_TABLE 
+			if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
+				my $key = join(" ",$TMP_OSIPSUSER,$TMP_OSIPSDOMAIN);
+				my $value = join(" ",$OSIPSUSER,$OSIPSDOMAIN);
+				&bdb_insert($DA_TABLE,$key,$value);
+			} elsif ( $DBENGINE =~ /^DBTEXT$/ )	{
+				system("$DBTEXTCMD"," INSERT INTO $DA_TABLE 
 						($da_table{'DA_USER_COLUMN'},$da_table{'DA_DOMAIN_COLUMN'},$da_table{'DA_ALIAS_USER_COLUMN'},
 						$da_table{'DA_ALIAS_DOMAIN_COLUMN'}) 
-						VALUES (\'$OSIPSUSER\',\'$OSIPSDOMAIN\',\'$TMP_OSIPSUSER\',\'$TMP_OSIPSDOMAIN\' )" );
+						VALUES (\'$OSIPSUSER\',\'$OSIPSDOMAIN\',\'$TMP_OSIPSUSER\',\'$TMP_OSIPSDOMAIN\' )");
+			} else {
+				$sth = $dbh->prepare( " INSERT INTO $DA_TABLE 
+							($da_table{'DA_USER_COLUMN'},$da_table{'DA_DOMAIN_COLUMN'},$da_table{'DA_ALIAS_USER_COLUMN'},
+							$da_table{'DA_ALIAS_DOMAIN_COLUMN'}) 
+							VALUES (\'$OSIPSUSER\',\'$OSIPSDOMAIN\',\'$TMP_OSIPSUSER\',\'$TMP_OSIPSDOMAIN\' )" );
 	
-			#execute the query
-			$sth->execute();
-			warn "Entry could not be inserted into table", $sth->errstr( ), "\n" if $sth->err( );
-			$sth->finish();
+				#execute the query
+				$sth->execute();
+				warn "Entry could not be inserted into table", $sth->errstr( ), "\n" if $sth->err( );
+				$sth->finish();
 
-							
+			}				
 		}
 		
 		case (/^rm$/) {
@@ -3217,15 +3836,23 @@ sub alias_db() {
 			&set_user ( $cmd[2] );
 
 			#prepare query
-			$sth = $dbh->prepare( " DELETE FROM $DA_TABLE 
+			if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
+				my $key = join(" ",$OSIPSUSER,$OSIPSDOMAIN);
+				&bdb_delete($DA_TABLE,$key);
+			} elsif ( $DBENGINE =~ /^DBTEXT$/ )	{
+				system("$DBTEXTCMD", " DELETE FROM $DA_TABLE 
 						WHERE $da_table{'DA_ALIAS_USER_COLUMN'}=\'$OSIPSUSER\' 
 						AND $da_table{'DA_ALIAS_DOMAIN_COLUMN'}=\'$OSIPSDOMAIN\'" );
+			} else {
+				$sth = $dbh->prepare( " DELETE FROM $DA_TABLE 
+							WHERE $da_table{'DA_ALIAS_USER_COLUMN'}=\'$OSIPSUSER\' 
+							AND $da_table{'DA_ALIAS_DOMAIN_COLUMN'}=\'$OSIPSDOMAIN\'" );
 	
-			#execute the query
-			$sth->execute( );
-			warn "Deleting entry failed!", $sth->errstr( ), "\n" if $sth->err( );
-			$sth->finish();
-
+				#execute the query
+				$sth->execute( );
+				warn "Deleting entry failed!", $sth->errstr( ), "\n" if $sth->err( );
+				$sth->finish();
+			}
 		
 		}	
 
@@ -4072,25 +4699,31 @@ sub avpops() {
 				$i+=2;
 			}
 
-			$sth = $dbh->prepare( "SELECT $avp_table{'AVP_UUID_COLUMN'},$avp_table{'AVP_USER_COLUMN'},$avp_table{'AVP_DOMAIN_COLUMN'},
+			if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
+				my $key = join(" ",$OSIPSUSER,$OSIPSDOMAIN);	
+				&bdb_select_where($CARRIERROUTE_TABLE,$key);								
+			} elsif ( $DBENGINE =~ /^DBTEXT$/  ) {
+				system("$DBTEXTCMD", " SELECT $avp_table{'AVP_UUID_COLUMN'},$avp_table{'AVP_USER_COLUMN'},$avp_table{'AVP_DOMAIN_COLUMN'}, $avp_table{'AVP_ATTRIBUTE_COLUMN'},$avp_table{'AVP_TYPE_COLUMN'},$avp_table{'AVP_VALUE_COLUMN'} FROM $AVP_TABLE $CLAUSE " );
+			} else {				
+				$sth = $dbh->prepare( "SELECT $avp_table{'AVP_UUID_COLUMN'},$avp_table{'AVP_USER_COLUMN'},$avp_table{'AVP_DOMAIN_COLUMN'},
 					       $avp_table{'AVP_ATTRIBUTE_COLUMN'},$avp_table{'AVP_TYPE_COLUMN'},$avp_table{'AVP_VALUE_COLUMN'} 
  					       FROM $AVP_TABLE $CLAUSE" );
 	
-			#execute the query
-			$sth->execute( );
-			warn "Retrieving data from table failed", $sth->errstr( ), "\n" if $sth->err( );	
-			while ( @row = $sth->fetchrow_array( ) )  {
-				print "@row\n";
-				$result = $#row+1;				    	
-			}	
+				#execute the query
+				$sth->execute( );
+				warn "Retrieving data from table failed", $sth->errstr( ), "\n" if $sth->err( );	
+				while ( @row = $sth->fetchrow_array( ) )  {
+					print "@row\n";
+					$result = $#row+1;				    	
+				}	
 		
-			if ( $result == 0 ) {
-				print "No entry found having the corresponding attributes!\n";
-			}
+				if ( $result == 0 ) {
+					print "No entry found having the corresponding attributes!\n";
+				}
 		
 			
-			$sth->finish();	
-
+				$sth->finish();	
+			}
 
 
 		}	
@@ -4124,20 +4757,31 @@ sub avpops() {
 			my $date = join("-",$year+1900,$mon+1,$mday+1);
 			my $time = join(":",$hour,$min,$sec);
 			my $last_modified =  join(" ",$date,$time);
+			my $unix_time = time();
 
-			$sth = $dbh->prepare ("INSERT INTO $AVP_TABLE ($avp_table{'AVP_UUID_COLUMN'},$avp_table{'AVP_USER_COLUMN'},
+			if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
+				my $key = join(" ",$OSIPSUSER,$OSIPSDOMAIN);
+				my $value = join(" ",$AVP_UUID,$cmd[5],$cmd[6],$cmd[7],$last_modified);
+				&bdb_insert($CARRIERROUTE_TABLE);								
+			} elsif ( $DBENGINE =~ /^DBTEXT$/  ) {
+				system("$DBTEXTCMD", "INSERT INTO $AVP_TABLE ($avp_table{'AVP_UUID_COLUMN'},$avp_table{'AVP_USER_COLUMN'},
+					       $avp_table{'AVP_DOMAIN_COLUMN'},$avp_table{'AVP_ATTRIBUTE_COLUMN'}, $avp_table{'AVP_TYPE_COLUMN'},
+ 					       $avp_table{'AVP_VALUE_COLUMN'},$avp_table{'AVP_MODIFIED_COLUMN'}) 
+					 VALUES (\'$AVP_UUID\',\'$OSIPSUSER\',\'$OSIPSDOMAIN\',\'$cmd[5]\',$cmd[6],\'$cmd[7]\',$unix_time)" );
+			} else {
+				$sth = $dbh->prepare ("INSERT INTO $AVP_TABLE ($avp_table{'AVP_UUID_COLUMN'},$avp_table{'AVP_USER_COLUMN'},
 					       $avp_table{'AVP_DOMAIN_COLUMN'},$avp_table{'AVP_ATTRIBUTE_COLUMN'}, $avp_table{'AVP_TYPE_COLUMN'},
  					       $avp_table{'AVP_VALUE_COLUMN'},$avp_table{'AVP_MODIFIED_COLUMN'}) 
 					 VALUES (\'$AVP_UUID\',\'$OSIPSUSER\',\'$OSIPSDOMAIN\',\'$cmd[5]\',$cmd[6],\'$cmd[7]\',\'$last_modified\')" );	
 
-			 ##execute the query
-			 $sth->execute( );
+				 ##execute the query
+				 $sth->execute( );
 
 
-	 		 warn "Data was not inserted in database!", $sth->errstr( ), "\n" if $sth->err( );
+		 		 warn "Data was not inserted in database!", $sth->errstr( ), "\n" if $sth->err( );
 
-			 $sth->finish();
-				
+				 $sth->finish();
+			}
 		
 		}	
 
@@ -4239,14 +4883,20 @@ sub avpops() {
 				$i+=2;
 			}
 
-			#prepare query
-			$sth = $dbh->prepare( "DELETE FROM $AVP_TABLE $CLAUSE " );
+			if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
+				my $key = join(" ",$OSIPSUSER,$OSIPSDOMAIN);
+				&bdb_delete($CARRIERROUTE_TABLE,$key);								
+			} elsif ( $DBENGINE =~ /^DBTEXT$/  ) {
+				system("$DBTEXTCMD", "DELETE FROM $AVP_TABLE $CLAUSE ");
+			} else {
+				#prepare query
+				$sth = $dbh->prepare( "DELETE FROM $AVP_TABLE $CLAUSE " );
 	
-			#execute the query
-			$sth->execute( );
-			warn "Deleting data from table failed", $sth->errstr( ), "\n" if $sth->err( );	
-	       	        $sth->finish();
-		
+				#execute the query
+				$sth->execute( );
+				warn "Deleting data from table failed", $sth->errstr( ), "\n" if $sth->err( );	
+		       	        $sth->finish();
+			}		
 		}	
 
 		case (/^(help$)|(h$)/) {
@@ -4284,98 +4934,62 @@ sub db_ops() {
 
 	switch ($cmd[1]) {
 
-		case (/^(exec$)|(query$)/) {
+		case (/(^exec$)|(^query$)/) {
 			if ( $#cmd lt 2 ) {
-				print "missing query parameter\n";
+				print "Missing query parameter\n";
 				return;
 			}			
-			$sth = $dbh->prepare("$cmd[2]");
 
-			#execute the query
-			$sth->execute( );
-			warn "Could not execute query", $sth->errstr( ), "\n" if $sth->err( );
-
-			## Retrieve the results of a row of data and print
-			print "\tQuery results:\n================================================\n";
-			while ( @row = $sth->fetchrow_array( ) )  {
-				 print "@row\n";				
-			}	
-
-	
-			$sth->finish();	
+			&db_query($cmd[2]);
 
 		}
 
-		case (/^(roexec$)|(roquery$)/) {
+		case (/(^roexec$)|(^roquery$)/) {
 			if ( $#cmd lt 2 ) {
-				print "missing query parameter\n";
+				print "Missing query parameter\n";
 				return;
 			}
-			
-			$sth = $dbh->prepare( "$cmd[2]" );
-		
-			#execute the query
-			$sth->execute( );
-			warn "Could not execute query", $sth->errstr( ), "\n" if $sth->err( );
-
-			## Retrieve the results of a row of data and print
-			print "\tQuery results:\n================================================\n";
-
-			while ( @row = $sth->fetchrow_array( ) )  {
-				 print "@row\n";				
-			}	
-
-	
-			$sth->finish();	
-
+			&db_ro_query($cmd[2]);
 		}
 		case (/^run$/) {
 			
+			my $QUERY;
+
 			if ( $#cmd lt 2 ) {
-				print "missing query parameter\n";
+				print "Missing query parameter\n";
 				return;
 			}
-			print "`\$$cmd[2]`";
-			system ("\$$cmd[2]");
-			if ( $? ne 0 ) { 
-				print "missing query value\n";
-				return;
-			}
-			#$DBCMD "$QUERY"
+
+			$QUERY = system("eval \$$cmd[2]");
+			#if ( $? != 0 ) { 
+			#	print "Missing query value\n";
+			#	return;
+			#}
+			&db_query($QUERY);
+			
 		}
 		case (/^rorun$/) {
+	
+			my $QUERY;
+	
 			if ( $#cmd lt 2 ) {
-				print "missing query parameter\n";
+				print "Missing query parameter\n";
 				return;
 			}
-			#eval QUERY=\$$1
-			#if [ -z "$QUERY" ] ; then
-			#	merr "missing query value"
-			#	exit 1
-			#fi
-			#$DBROCMD "$QUERY"
+			system ("eval $QUERY = \$$cmd[2]");
+			#if ( $QUERY != 0 ) {
+			#	print "Missing query value\n";
+			#	return;
+			#}
+			&db_ro_query($QUERY);
 		}
 		case (/^show$/) {
 			if ( $#cmd != 2 ) {
-				print "missing table parameter\n";
+				print "Missing table parameter\n";
 				return;
 			}
 
-			$sth = $dbh->prepare( "SELECT * FROM $cmd[2]" );
-		
-			#execute the query
-			$sth->execute( );
-			warn "Entry could not be retrieved from table\n", $sth->errstr( ), "\n" if $sth->err( );
-			## Retrieve the results of a row of data and print
-			print "\tQuery results:\n================================================\n";
-
-			while ( @row = $sth->fetchrow_array( ) )  {
-				 print "@row\n";				
-			}	
-
-	
-			$sth->finish();	
-
+			&db_ro_query("SELECT * FROM $cmd[2]");
 			
 		}
 		case (/^h$/) {
@@ -4409,7 +5023,7 @@ sub speeddial() {
 	switch ($cmd[1]) {
 
 		case (/^list$/) {
-
+	
 			if ($#cmd == 2) {
 				# print speed-dials for user
 				if ( &check_aor($cmd[2]) != 0 ) {
@@ -4420,43 +5034,52 @@ sub speeddial() {
 				&set_user($cmd[2]);
 				
 				print "Dumping speed-dials for user=<$cmd[2]>\n";
-				
-				$sth = $dbh->prepare("SELECT CONCAT($sd_table{'SD_SD_USER_COLUMN'},'\@',$sd_table{'SD_SD_DOMAIN_COLUMN'}) AS Short_number, $sd_table{'SD_NEW_URI_COLUMN'} AS New_URI,$sd_table{'SD_DESC_COLUMN'} FROM $SD_TABLE WHERE $sd_table{'SD_USER_COLUMN'}=\'$OSIPSUSER\' AND $sd_table{'SD_DOMAIN_COLUMN'}=\'$OSIPSDOMAIN\'");
-				#execute the query
-				$sth->execute( );
-				warn "Entry could not be retrieved from table\n", $sth->errstr( ), "\n" if $sth->err( );
-				## Retrieve the results of a row of data and print
-				print "\tQuery results:\n================================================\n";
-
-				while ( @row = $sth->fetchrow_array( ) )  {
-					 print "@row\n";				
-				}	
-
 	
-				$sth->finish();	
+				if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
+					my $key = join(" ",$OSIPSUSER,$OSIPSDOMAIN);
+					&bdb_select_where($SD_TABLE,$key);
+				} elsif ( $DBENGINE =~ /^DBTEXT$/ ) {
+					system("$DBTEXTCMD","SELECT CONCAT($sd_table{'SD_SD_USER_COLUMN'},'\@',$sd_table{'SD_SD_DOMAIN_COLUMN'}) AS Short_number, $sd_table{'SD_NEW_URI_COLUMN'} AS New_URI,$sd_table{'SD_DESC_COLUMN'} FROM $SD_TABLE WHERE $sd_table{'SD_USER_COLUMN'}=\'$OSIPSUSER\' AND $sd_table{'SD_DOMAIN_COLUMN'}=\'$OSIPSDOMAIN\'"); 
+				} else {			
+					$sth = $dbh->prepare("SELECT CONCAT($sd_table{'SD_SD_USER_COLUMN'},'\@',$sd_table{'SD_SD_DOMAIN_COLUMN'}) AS Short_number, $sd_table{'SD_NEW_URI_COLUMN'} AS New_URI,$sd_table{'SD_DESC_COLUMN'} FROM $SD_TABLE WHERE $sd_table{'SD_USER_COLUMN'}=\'$OSIPSUSER\' AND $sd_table{'SD_DOMAIN_COLUMN'}=\'$OSIPSDOMAIN\'");
+					#execute the query
+					$sth->execute( );
+					warn "Entry could not be retrieved from table\n", $sth->errstr( ), "\n" if $sth->err( );
+					## Retrieve the results of a row of data and print
+					print "\tQuery results:\n================================================\n";
+
+					while ( @row = $sth->fetchrow_array( ) )  {
+						 print "@row\n";				
+					}	
+	
+					$sth->finish();	
+				}
+
 			} elsif ($#cmd == 1) {
 				print "Dumping all speed-dials may take long: do you want to proceed? [Y|N] ";
-				if ((my $line = <STDIN>) eq "y|Y") {
+				if ( (my $line = <STDIN>) =~ /(^y$)|(^Y$)/ ) {
 					print "Dumping all speed-dials...\n";
 				} else {
 					return;
 				}
-				$sth = $dbh->prepare("SELECT CONCAT($sd_table{'SD_SD_USER_COLUMN'},'\@',$sd_table{'SD_SD_DOMAIN_COLUMN'}) AS Short_number, CONCAT($sd_table{'SD_USER_COLUMN'},'\@',$sd_table{'SD_DOMAIN_COLUMN'}) AS Owner, $sd_table{'SD_NEW_URI_COLUMN'} AS New_URI,$sd_table{'SD_DESC_COLUMN'} FROM $SD_TABLE");
-				#execute the query
-				$sth->execute( );
-				warn "Entry could not be retrieved from table\n", $sth->errstr( ), "\n" if $sth->err( );
-				## Retrieve the results of a row of data and print
-				print "\tQuery results:\n================================================\n";
 
-				while ( @row = $sth->fetchrow_array( ) )  {
-					 print "@row\n";				
-				}	
+				if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
+					&bdb_select($SD_TABLE);
+				} elsif ( $DBENGINE =~ /^DBTEXT$/ ) {
+					system("$DBTEXTCMD","SELECT CONCAT($sd_table{'SD_SD_USER_COLUMN'},'\@',$sd_table{'SD_SD_DOMAIN_COLUMN'}) AS Short_number, CONCAT($sd_table{'SD_USER_COLUMN'},'\@',$sd_table{'SD_DOMAIN_COLUMN'}) AS Owner, $sd_table{'SD_NEW_URI_COLUMN'} AS New_URI,$sd_table{'SD_DESC_COLUMN'} FROM $SD_TABLE");
+				} else {
+					$sth = $dbh->prepare("SELECT CONCAT($sd_table{'SD_SD_USER_COLUMN'},'\@',$sd_table{'SD_SD_DOMAIN_COLUMN'}) AS Short_number, CONCAT($sd_table{'SD_USER_COLUMN'},'\@',$sd_table{'SD_DOMAIN_COLUMN'}) AS Owner, $sd_table{'SD_NEW_URI_COLUMN'} AS New_URI,$sd_table{'SD_DESC_COLUMN'} FROM $SD_TABLE");
+					#execute the query
+					$sth->execute( );
+					warn "Entry could not be retrieved from table\n", $sth->errstr( ), "\n" if $sth->err( );
+					## Retrieve the results of a row of data and print
+					print "\tQuery results:\n================================================\n";
 
-			} else {
-				print "speeddial - wrong number of params for command [list]\n";
-				&usage_speeddial();
-				return;
-			}		
+					while ( @row = $sth->fetchrow_array( ) )  {
+						 print "@row\n";				
+					}	
+				}
+			} 
 
 		}	
 
@@ -4475,16 +5098,22 @@ sub speeddial() {
 			
 			&set_user($cmd[2]);
 		
-			$sth = $dbh->prepare("SELECT CONCAT($sd_table{'SD_USER_COLUMN'},'\@',$sd_table{'SD_DOMAIN_COLUMN'}) AS Owner, $sd_table{'SD_NEW_URI_COLUMN'} AS New_URI, $sd_table{'SD_DESC_COLUMN'} FROM $SD_TABLE WHERE $sd_table{'SD_SD_USER_COLUMN'}=\'$OSIPSUSER\' AND $sd_table{'SD_SD_DOMAIN_COLUMN'}=\'$OSIPSDOMAIN\'");
-			$sth->execute( );
-			warn "Entry could not be retrieved from table\n", $sth->errstr( ), "\n" if $sth->err( );
-			## Retrieve the results of a row of data and print
-			print "\tQuery results:\n================================================\n";
+			if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
+				my $key =  join("",$OSIPSUSER,$OSIPSDOMAIN);
+				&bdb_select_where($SD_TABLE,$key);
+			} elsif ( $DBENGINE =~ /^DBTEXT$/ ) {
+				system("$DBTEXTCMD","SELECT CONCAT($sd_table{'SD_USER_COLUMN'},'\@',$sd_table{'SD_DOMAIN_COLUMN'}) AS Owner, $sd_table{'SD_NEW_URI_COLUMN'} AS New_URI, $sd_table{'SD_DESC_COLUMN'} FROM $SD_TABLE WHERE $sd_table{'SD_SD_USER_COLUMN'}=\'$OSIPSUSER\' AND $sd_table{'SD_SD_DOMAIN_COLUMN'}=\'$OSIPSDOMAIN\'");
+			} else {
+				$sth = $dbh->prepare("SELECT CONCAT($sd_table{'SD_USER_COLUMN'},'\@',$sd_table{'SD_DOMAIN_COLUMN'}) AS Owner, $sd_table{'SD_NEW_URI_COLUMN'} AS New_URI, $sd_table{'SD_DESC_COLUMN'} FROM $SD_TABLE WHERE $sd_table{'SD_SD_USER_COLUMN'}=\'$OSIPSUSER\' AND $sd_table{'SD_SD_DOMAIN_COLUMN'}=\'$OSIPSDOMAIN\'");
+				$sth->execute( );
+				warn "Entry could not be retrieved from table\n", $sth->errstr( ), "\n" if $sth->err( );
+				## Retrieve the results of a row of data and print
+				print "\tQuery results:\n================================================\n";
 
-			while ( @row = $sth->fetchrow_array( ) )  {
-					 print "@row\n";				
+				while ( @row = $sth->fetchrow_array( ) )  {
+						 print "@row\n";				
+				}	
 			}	
-
 
 		}	
 
@@ -4518,24 +5147,36 @@ sub speeddial() {
 			$TMP_OSIPSDOMAIN = $OSIPSDOMAIN;
 			&set_user($cmd[3]);
 
-			$sth = $dbh->prepare("INSERT INTO $SD_TABLE ($sd_table{'SD_USER_COLUMN'},$sd_table{'SD_DOMAIN_COLUMN'},$sd_table{'SD_SD_USER_COLUMN'},$sd_table{'SD_SD_DOMAIN_COLUMN'},$sd_table{'SD_NEW_URI_COLUMN'},$sd_table{'SD_DESC_COLUMN'}) VALUES (\'$TMP_OSIPSUSER\',\'$TMP_OSIPSDOMAIN\',\'$OSIPSUSER\',\'$OSIPSDOMAIN\',\'$cmd[4]\',\'$cmd[5]\')");
+			if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
+				my $key =  join(" ",$TMP_OSIPSUSER,$TMP_OSIPSDOMAIN);
+				my $value = join(" ",$OSIPSUSER,$OSIPSDOMAIN,$cmd[4],$cmd[5]);
+				&bdb_insert($SD_TABLE,$key,$value);
+			} elsif ( $DBENGINE =~ /^DBTEXT$/ ) {
+				system("$DBTEXTCMD","INSERT INTO $SD_TABLE ($sd_table{'SD_USER_COLUMN'},$sd_table{'SD_DOMAIN_COLUMN'},$sd_table{'SD_SD_USER_COLUMN'},$sd_table{'SD_SD_DOMAIN_COLUMN'},$sd_table{'SD_NEW_URI_COLUMN'},$sd_table{'SD_DESC_COLUMN'}) VALUES (\'$TMP_OSIPSUSER\',\'$TMP_OSIPSDOMAIN\',\'$OSIPSUSER\',\'$OSIPSDOMAIN\',\'$cmd[4]\',\'$cmd[5]\')");
+			} else {
+				$sth = $dbh->prepare("INSERT INTO $SD_TABLE ($sd_table{'SD_USER_COLUMN'},$sd_table{'SD_DOMAIN_COLUMN'},$sd_table{'SD_SD_USER_COLUMN'},$sd_table{'SD_SD_DOMAIN_COLUMN'},$sd_table{'SD_NEW_URI_COLUMN'},$sd_table{'SD_DESC_COLUMN'}) VALUES (\'$TMP_OSIPSUSER\',\'$TMP_OSIPSDOMAIN\',\'$OSIPSUSER\',\'$OSIPSDOMAIN\',\'$cmd[4]\',\'$cmd[5]\')");
 
-			#execute the query
-			$sth->execute();
-			warn "Entry could not be inserted into table", $sth->errstr( ), "\n" if $sth->err( );
-			$sth->finish();
-
-		
-
+				#execute the query
+				$sth->execute();
+				warn "Entry could not be inserted into table", $sth->errstr( ), "\n" if $sth->err( );
+				$sth->finish();
+			}
 		}	
 
 		case (/^rm$/) {
 		
-	
-			if ( $#cmd != 3 ) {
-				print "speeddial rm - invalid number of parameters\n";
-				&usage_speeddial();
-				return;
+
+			if ($DBENGINE =~ /^DB_BERKELEY$/) {
+				if  ( $#cmd != 2 ) {
+					print "Wrong number of parameters!\n";
+					return;
+				}
+			} else {
+				if ( $#cmd != 3 ) {
+					print "speeddial rm - invalid number of parameters\n";
+					&usage_speeddial();
+					return;
+				}
 			}
 			
 			if ( &check_aor($cmd[2]) != 0 ) {
@@ -4553,13 +5194,19 @@ sub speeddial() {
 			$TMP_OSIPSDOMAIN = $OSIPSDOMAIN;
 			&set_user($cmd[3]);
 
-			$sth = $dbh->prepare("DELETE FROM $SD_TABLE WHERE $sd_table{'SD_USER_COLUMN'}=\'$TMP_OSIPSUSER\' AND $sd_table{'SD_DOMAIN_COLUMN'}=\'$TMP_OSIPSDOMAIN\' AND $sd_table{'SD_SD_USER_COLUMN'}=\'$OSIPSUSER\' AND $sd_table{'SD_SD_DOMAIN_COLUMN'}=\'$OSIPSDOMAIN\'");
+			if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
+				my $key =  join(" ",$TMP_OSIPSUSER,$TMP_OSIPSDOMAIN);
+				&bdb_delete($SD_TABLE,$key);
+			} elsif ( $DBENGINE =~ /^DBTEXT$/ ) {
+				system("$DBTEXTCMD","DELETE FROM $SD_TABLE WHERE $sd_table{'SD_USER_COLUMN'}=\'$TMP_OSIPSUSER\' AND $sd_table{'SD_DOMAIN_COLUMN'}=\'$TMP_OSIPSDOMAIN\' AND $sd_table{'SD_SD_USER_COLUMN'}=\'$OSIPSUSER\' AND $sd_table{'SD_SD_DOMAIN_COLUMN'}=\'$OSIPSDOMAIN\'");
+			} else {
+				$sth = $dbh->prepare("DELETE FROM $SD_TABLE WHERE $sd_table{'SD_USER_COLUMN'}=\'$TMP_OSIPSUSER\' AND $sd_table{'SD_DOMAIN_COLUMN'}=\'$TMP_OSIPSDOMAIN\' AND $sd_table{'SD_SD_USER_COLUMN'}=\'$OSIPSUSER\' AND $sd_table{'SD_SD_DOMAIN_COLUMN'}=\'$OSIPSDOMAIN\'");
 	
-			#execute the query
-			$sth->execute( );
-			warn "Deleting entry failed!", $sth->errstr( ), "\n" if $sth->err( );
-			$sth->finish();
-			
+				#execute the query
+				$sth->execute( );
+				warn "Deleting entry failed!", $sth->errstr( ), "\n" if $sth->err( );
+				$sth->finish();
+			}
 		}	
 
 		case (/^(help$)|(h$)/) {
@@ -4578,6 +5225,10 @@ sub speeddial() {
 }
 
 
+#
+##### ------------------------------------------------ #####
+### online 
+#
 sub opensips_online() {
 	my $var;
 	&require_ctlengine();
@@ -4589,6 +5240,11 @@ sub opensips_online() {
 	
 }
 
+
+#
+##### ------------------------------------------------ #####
+### dialplan 
+#
 sub opensips_dialplan() {
 	
 
@@ -4604,38 +5260,56 @@ sub opensips_dialplan() {
 			
 			if ( $#cmd == 2 ) {
 				print "dialplan $cmd[2] tables\n";
-				$sth = $dbh->prepare( " SELECT * 
-						 FROM $dialplan_table{'DIALPLAN_TABLE'} 
+
+				if ( $DBENGINE =~ /^DBTEXT$/ ) {
+					system("$DBTEXTCMD"," SELECT * 
+						 FROM $DIALPLAN_TABLE 
  						 WHERE $dialplan_table{'DIALPLAN_DPID_COLUMN'} = $cmd[2] 
-						 ORDER BY $dialplan_table{'DIALPLAN_PR_COLUMN'} " );
-				#execute query
-				$sth->execute( );
+						 ORDER BY $dialplan_table{'DIALPLAN_PR_COLUMN'} ");
+				} else {
+					$sth = $dbh->prepare( " SELECT * 
+							 FROM $DIALPLAN_TABLE
+	 						 WHERE $dialplan_table{'DIALPLAN_DPID_COLUMN'} = $cmd[2] 
+							 ORDER BY $dialplan_table{'DIALPLAN_PR_COLUMN'} " );
+					#execute query
+					$sth->execute( );
 
-				warn "Entry could not be retrieved from table\n", $sth->errstr( ), "\n" if $sth->err( );
+					warn "Entry could not be retrieved from table\n", $sth->errstr( ), "\n" if $sth->err( );
 
-				## Retrieve the results of a row of data and print
-				print "\tQuery results:\n================================================\n";
-				while ( @row = $sth->fetchrow_array( ) )  {
-						 print "@row\n";				
-				}	
-
+					## Retrieve the results of a row of data and print
+					print "\tQuery results:\n================================================\n";
+					while ( @row = $sth->fetchrow_array( ) )  {
+							 print "@row\n";				
+					}	
+					$sth->finish( );
+				}
 
 			} else {
 				print "dialplan tables\n";
-				$sth = $dbh->prepare( " SELECT * 
+				if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
+					&bdb_select($DIALPLAN_TABLE);
+				} elsif ( $DBENGINE =~ /^DBTEXT$/  ) {
+					system("$DBTEXTCMD", " SELECT * 
 							FROM $DIALPLAN_TABLE 
 							ORDER BY $dialplan_table{'DIALPLAN_DPID_COLUMN'}, 
-				$dialplan_table{'DIALPLAN_PR_COLUMN'} " );
+							$dialplan_table{'DIALPLAN_PR_COLUMN'} " );
+				} else {				
+					$sth = $dbh->prepare( " SELECT * 
+								FROM $DIALPLAN_TABLE 
+								ORDER BY $dialplan_table{'DIALPLAN_DPID_COLUMN'}, 
+					$dialplan_table{'DIALPLAN_PR_COLUMN'} " );
 
-				#execute query
-				$sth->execute( );
+					#execute query
+					$sth->execute( );
 
-				warn "Entry could not be retrieved from table\n", $sth->errstr( ), "\n" if $sth->err( );
+					warn "Entry could not be retrieved from table\n", $sth->errstr( ), "\n" if $sth->err( );
 
-				## Retrieve the results of a row of data and print
-				print "\tQuery results:\n================================================\n";
-				while ( @row = $sth->fetchrow_array( ) )  {
-						 print "@row\n";				
+					## Retrieve the results of a row of data and print
+					print "\tQuery results:\n================================================\n";
+					while ( @row = $sth->fetchrow_array( ) )  {
+							 print "@row\n";				
+					}
+					$sth->finish();
 				}	
 
 			}			
@@ -4669,7 +5343,7 @@ sub opensips_dialplan() {
 					$DIALPLAN_MATCH_OP = 1;
 				}
 				else {
-					print "dialplan - unexpected $DIALPLAN_MATCH_OP for operating matching. Use 'equal' or 'regexp'!";
+					print "dialplan - unexpected $DIALPLAN_MATCH_OP for operating matching. Use 'equal' or 'regexp'!\n";
 					return;
 				}
 			}
@@ -4680,7 +5354,8 @@ sub opensips_dialplan() {
 			my $DIALPLAN_REPL_EXP = $cmd[8];
 			my $DIALPLAN_ATTRS = $cmd[9];
 
-			$sth=$dbh->prepare( " INSERT INTO $DIALPLAN_TABLE 
+			if ( $DBENGINE =~ /^DBTEXT$/  ) {
+				system("$DBTEXTCMD"," INSERT INTO $DIALPLAN_TABLE 
 					     ( $dialplan_table{'DIALPLAN_DPID_COLUMN'}, $dialplan_table{'DIALPLAN_PR_COLUMN'}, 
 					     $dialplan_table{'DIALPLAN_MATCH_OP_COLUMN'}, $dialplan_table{'DIALPLAN_MATCH_EXP_COLUMN'}, 
 				 	     $dialplan_table{'DIALPLAN_MATCH_LEN_COLUMN'},	$dialplan_table{'DIALPLAN_SUBST_EXP_COLUMN'}, 
@@ -4688,13 +5363,24 @@ sub opensips_dialplan() {
 					     VALUES ( $DIALPLAN_DPID, $DIALPLAN_PR, $DIALPLAN_MATCH_OP, 
 					     \'$DIALPLAN_MATCH_EXP\', $DIALPLAN_MATCH_LEN, \'$DIALPLAN_SUBST_EXP\', 
 					     \'$DIALPLAN_REPL_EXP\', \'$DIALPLAN_ATTRS\') " );
+
+			} else {
+
+				$sth=$dbh->prepare( " INSERT INTO $DIALPLAN_TABLE 
+						     ( $dialplan_table{'DIALPLAN_DPID_COLUMN'}, $dialplan_table{'DIALPLAN_PR_COLUMN'}, 
+						     $dialplan_table{'DIALPLAN_MATCH_OP_COLUMN'}, $dialplan_table{'DIALPLAN_MATCH_EXP_COLUMN'}, 
+					 	     $dialplan_table{'DIALPLAN_MATCH_LEN_COLUMN'},	$dialplan_table{'DIALPLAN_SUBST_EXP_COLUMN'}, 
+				          	     $dialplan_table{'DIALPLAN_REPL_EXP_COLUMN'}, $dialplan_table{'DIALPLAN_ATTRS_COLUMN'} ) 
+						     VALUES ( $DIALPLAN_DPID, $DIALPLAN_PR, $DIALPLAN_MATCH_OP, 
+						     \'$DIALPLAN_MATCH_EXP\', $DIALPLAN_MATCH_LEN, \'$DIALPLAN_SUBST_EXP\', 
+						     \'$DIALPLAN_REPL_EXP\', \'$DIALPLAN_ATTRS\') " );
 			
 
-			#execute the query
-			$sth->execute();
-			warn "Entry could not be inserted into table", $sth->errstr( ), "\n" if $sth->err( );
-			$sth->finish();
-
+				#execute the query
+				$sth->execute();
+				warn "Entry could not be inserted into table", $sth->errstr( ), "\n" if $sth->err( );
+				$sth->finish();
+			}
 
 			&mi_comm('dp_reload');
 		}
@@ -4702,13 +5388,16 @@ sub opensips_dialplan() {
 
 		case (/^rm$/) {
 			print "rm";
+			if ( $DBENGINE =~ /^DBTEXT$/  ) {
+				system("$DBTEXTCMD"," DELETE FROM $DIALPLAN_TABLE ");
+			} else {
+				$sth = $dbh->prepare(" DELETE FROM $DIALPLAN_TABLE ");
 
-			$sth = $dbh->prepare(" DELETE FROM $DIALPLAN_TABLE ");
-
-			#execute the query
-			$sth->execute( );
-			warn "Deleting entry failed!", $sth->errstr( ), "\n" if $sth->err( );
-			$sth->finish();
+				#execute the query
+				$sth->execute( );
+				warn "Deleting entry failed!", $sth->errstr( ), "\n" if $sth->err( );
+				$sth->finish();
+			}
 
 			&mi_comm('dp_reload');			
 		}
@@ -4721,13 +5410,16 @@ sub opensips_dialplan() {
 				return;
 			}
 
+			if ( $DBENGINE =~ /^DBTEXT$/  ) {
+				system("$DBTEXTCMD"," DELETE FROM $DIALPLAN_TABLE WHERE $dialplan_table{'DIALPLAN_DPID_COLUMN'}=$cmd[2]" );
+			} else {
+				$sth = $dbh->prepare( " DELETE FROM $DIALPLAN_TABLE WHERE $dialplan_table{'DIALPLAN_DPID_COLUMN'}=$cmd[2]" );
 
-			$sth = $dbh->prepare( " DELETE FROM $DIALPLAN_TABLE WHERE $dialplan_table{'DIALPLAN_DPID_COLUMN'}=$cmd[2]" );
-
-			#execute the query
-			$sth->execute();
-			warn "Deleting entry failed!", $sth->errstr( ), "\n" if $sth->err( );
-			$sth->finish();
+				#execute the query
+				$sth->execute();
+				warn "Deleting entry failed!", $sth->errstr( ), "\n" if $sth->err( );
+				$sth->finish();
+			}
 
 
 			&mi_comm('dp_reload');			
@@ -4745,14 +5437,19 @@ sub opensips_dialplan() {
 			my $DIALPLAN_DPID = $cmd[2];
 			my $DIALPLAN_PR = $cmd[3];
 
-			$sth = $dbh->prepare ( "DELETE FROM $DIALPLAN_TABLE 
+			if ( $DBENGINE =~ /^DBTEXT$/  ) {
+				system("$DBTEXTCMD","DELETE FROM $DIALPLAN_TABLE 
 						WHERE $dialplan_table{'DIALPLAN_DPID_COLUMN'}=$DIALPLAN_DPID 
 						AND $dialplan_table{'DIALPLAN_PR_COLUMN'}=$DIALPLAN_PR " );
-			#execute query
-			$sth->execute();
-			warn "Deleting entry failed!", $sth->errstr( ), "\n" if $sth->err( );
-			$sth->finish();
-
+			} else {
+				$sth = $dbh->prepare ( "DELETE FROM $DIALPLAN_TABLE 
+							WHERE $dialplan_table{'DIALPLAN_DPID_COLUMN'}=$DIALPLAN_DPID 
+							AND $dialplan_table{'DIALPLAN_PR_COLUMN'}=$DIALPLAN_PR " );
+				#execute query
+				$sth->execute();
+				warn "Deleting entry failed!", $sth->errstr( ), "\n" if $sth->err( );
+				$sth->finish();
+			}
 
 			&mi_comm('dp_reload');			
 
@@ -4771,14 +5468,1918 @@ sub opensips_dialplan() {
 }
 
 
+#
+##### ------------------------------------------------ #####
+### ps shortcut 
+#
 sub opensips_ps(){
 	&require_ctlengine();
 	&mi_comm("ps");	
 	return;
 }
 
+
+#
+##### ------------------------------------------------ #####
+### version shortcut 
+#
 sub opensips_version() {
 	&require_ctlengine();
 	&mi_comm("version");
 	return;
+}
+
+
+#
+##### ------------------------------------------------ #####
+### database operations  
+#
+sub opensips_db() {
+
+	switch ($cmd[0]) {
+
+		case /(^migrate$)/{
+			
+			if ($cmd[1] =~ /^h$/) {
+				&usage_db();
+				return;
+			} elsif ( $#cmd != 1 ) {
+				if ( $DBENGINE !~ /^mysql$/ ) {
+					print $DBENGINE ." doesn't support the migrate operation\n";
+					return;
+				}
+
+				if ( $#cmd != 2 ) {
+					print "Migrate requires 2 parameters: old and new database\n";
+					&usage_db();
+					return;
+				}
+
+				print "Password for $DBROOTUSER (If no password is needed just hit Enter, else introduce password): ";
+				my $PASS = <STDIN>;
+				if ( $PASS =~ "\n" ) {
+					$PW = "";
+				} else {
+					$PW = $PASS;
+				}
+
+				# create new database
+				print "Creating new database $cmd[2]....\n";
+				$NO_USER_INIT="yes";
+				&mysql_opensips_create($cmd[2]);
+				#if ( $? != 0 ) {
+				#	print "Migrate: creating new database failed\n";
+				#	return;
+				#}
+
+				# migrate data
+				print "Migrating data from $cmd[1] to $cmd[2]....\n";
+				&mysql_migrate_db($cmd[1],$cmd[2]);
+				#if ( $? == 0 ) {
+				print "Migration successfully completed.\n";
+				#}	
+			}
+		}
+
+		case /(^copy$)/{
+
+			my ( $tmp_file);
+			# copy database to some other name
+			if ( ( $DBENGINE =~ /^DB_BERKELEY$/ ) || ( $DBENGINE =~ /^DBTEXT$/ ) ) {
+				print "$DBENGINE don't support this operation\n";
+				return;
+			}
+			
+			if ( $#cmd != 1 ) {
+				&usage_db();
+				return;
+			}
+
+			$tmp_file=`mktemp /tmp/opensipsdbctl.XXXXXXXXXX`;
+
+			&opensips_dump($DBNAME,$tmp_file);
+			if ( $? != 0 ) {
+				`rm $tmp_file`;
+				return;
+			}
+
+			$NO_USER_INIT="yes"
+			&opensips_create($cmd[1]);
+			if ( $? != 0 ) {
+				`rm $tmp_file`;
+				return;
+			}
+
+			&opensips_restore($cmd[1],$tmp_file);
+			`rm -f $tmp_file`;
+			return;
+		}
+
+		case /(^backup$)/{
+			if ( ($DBENGINE =~ /^DB_BERKELEY$/) || ( $DBENGINE =~ /^DBTEXT$/ ) ) {
+				print "$DBENGINE doesn't support the backup operation\n";
+				return;
+			}
+			# backup current database
+			if ($cmd[1] =~ /^h$/) {
+				&usage_db();
+				return;
+			} elsif ( $#cmd != 1 ) {
+				&usage_db();
+				return;
+			}
+			&opensips_dump($DBNAME, $cmd[1]);
+
+		}
+
+		case /(^restore$)/{
+
+			if ( ($DBENGINE =~ /^DB_BERKELEY$/) || ($DBENGINE =~ /^dbtext$/) ) {
+				print "$DBENGINE doesn't support the restore operation\n";
+				return;
+			}
+
+			if ($cmd[1] =~ /^h$/) {
+				&usage_db();
+				return;
+			} elsif ( $#cmd != 1 ) {
+				&usage_db();
+				return;
+			}
+			#&opensips_restore($cmd[1],);
+		}
+
+		case /(^create$)/{
+
+			if ($cmd[1] =~ /^h$/) {
+				&usage_db();
+				return;
+			} elsif ( $#cmd != 1 ) {
+				&usage_db();
+				return;
+			}
+			&opensips_create($cmd[1]);
+		}
+
+		case /(^presence$)/{
+
+			if ($cmd[1] =~ /^h$/) {
+				&usage_db();
+				return;
+			} elsif ( $#cmd != 1 ) {
+				&usage_db();
+				return;
+			}
+
+			&presence_create($cmd[1]);
+		}
+
+		case /(^extra$)/ {
+
+			if ($cmd[1] =~ /^h$/) {
+				&usage_db();
+				return;
+			} elsif ( $#cmd != 1 ) {
+				&usage_db();
+				return;
+			}
+
+			&extra_create($cmd[1]);
+		}
+
+		case /(^drop$)/ {
+	
+			if ($cmd[1] =~ /^h$/) {
+				&usage_db();
+				return;
+			} elsif ( $#cmd != 1 ) {
+				&usage_db();
+				return;
+			}
+			&opensips_drop($cmd[1]);
+		}
+
+		case /(^reinit$)/{
+
+			# delete database and create a new one
+			# create new database structures
+			if ( $#cmd != 1 ) {
+				&usage_db();
+				return;
+			}
+
+			if ( $cmd[1] =~ /^h$/ ) {
+				&usage_db();
+				return;
+			}
+
+			&opensips_drop($cmd[1]);
+
+			&opensips_create($cmd[1]);
+
+		}
+
+		case /(^bdb$)|(^db_berkeley$)/{
+			&opensips_berkeley();
+		}
+
+		else {
+			print "Unknown command\n";
+		}
+
+	}
+}
+
+sub opensips_create() {
+
+	my $db = $_[0];
+
+	switch ($DBENGINE) {				
+		case /(^mysql$)/ {	
+			print "Password for $DBROOTUSER (If no password is needed just hit Enter, else introduce password): ";
+			my $PASS = <STDIN>;
+			if ( $PASS =~ "\n" ) {
+				$PW = "";
+			} else {
+				$PW = $PASS;
+			}		
+			&mysql_opensips_create($db);
+		}
+		case /(^oracle$)/ {
+			#&oracle_opensips_create($db);
+		}
+		case /(^Pg$)/ {
+			&pgsql_opensips_create($db);
+		}
+		case /(^DBTEXT$)/ {
+			&dbtext_opensips_create($db);
+		}
+		case /(^DB_BERKELEY$)/ {
+			&bdb_opensips_create($db);
+		}
+	}
+
+}
+
+sub presence_create() {
+
+	my $db = $_[0];
+
+	switch ($DBENGINE) {
+
+		case /(^mysql$)/ {
+			print "Password for $DBROOTUSER (If no password is needed just hit Enter, else introduce password): ";
+			my $PASS = <STDIN>;
+			if ( $PASS =~ "\n" ) {
+				$PW = "";
+			} else {
+				$PW = $PASS;
+			}
+			&mysql_presence_create($db);
+		}
+		case /(^oracle$)/ {
+			#&oracle_presence_create($db);
+		}
+		case /(^Pg$)/ {
+			&pgsql_presence_create($db);
+		}
+		case /(^DBTEXT$)/ {
+			&dbtext_presence_create($db);
+		}
+		case /(^DB_BERKELEY$)/ {
+			&bdb_presence_create($db);
+		}
+
+	}
+}
+
+sub extra_create() {
+
+	my $db = $_[0];
+
+	switch ($DBENGINE) {
+		case /(^mysql$)/ {
+			print "Password for $DBROOTUSER (If no password is needed just hit Enter, else introduce password): ";
+			my $PASS = <STDIN>;
+			if ( $PASS =~ "\n" ) {
+				$PW = "";
+			} else {
+				$PW = $PASS;
+			}
+			&mysql_extra_create($cmd[1]);
+		}
+		case /(^oracle$)/ {
+			#&oracle_extra_create($db);
+		}
+		case /(^Pg$)/ {
+			&pgsql_extra_create($db);
+		}
+		case /(^DBTEXT$)/ {
+			&dbtext_extra_create($db);
+		}
+		case /(^DB_BERKELEY$)/ {
+			&bdb_extra_create($db);
+		}
+
+	}
+}
+
+sub opensips_drop() {
+
+	my $db = $_[0];
+
+	switch ($DBENGINE) {
+		case /(^mysql$)/ {
+			print "Password for $DBROOTUSER (If no password is needed just hit Enter, else introduce password): ";
+			my $PASS = <STDIN>;
+			if ( $PASS =~ "\n" ) {
+				$PW = "";
+			} else {
+				$PW = $PASS;
+			}
+			&mysql_opensips_drop($db);
+		}
+		case /(^oracle$)/ {
+			#&oracle_opensips_drop($db);
+		}
+		case /(^Pg$)/ {
+			&pgsql_opensips_drop($db);
+		}
+		case /(^DBTEXT$)/ {
+			&dbtext_opensips_drop($db);
+		}
+		case /(^DB_BERKELEY$)/ {
+			&bdb_opensips_drop($db);
+		}
+	}
+}
+
+
+# pars: <database name>
+
+#
+##### ------------------------------------------------ #####
+### database create functions 
+#
+sub mysql_opensips_create() {
+
+	my (@content, $temp, @query, $i, $ans, $TABLE, $test);
+
+	if ( $#_ lt 0 ) { 
+		print "opensips_create function takes one parameter\n";
+		return;
+	}
+
+	my $db = $_[0];
+
+	print "Creating database $db ...\n";
+
+	# Users: opensips is the regular user, opensipsro only for reading
+	&mysql_query("create database $db;" . 
+	"GRANT ALL PRIVILEGES ON $db.\* TO \'$DBRWUSER\' IDENTIFIED  BY \'$DBRWPW\'; " .
+	"GRANT ALL PRIVILEGES ON $db.* TO \'${DBRWUSER}\'\@\'$DBHOST\' IDENTIFIED BY \'$DBRWPW\';" .
+	"GRANT SELECT ON $db.* TO \'$DBROUSER\' IDENTIFIED BY \'$DBROPW\';" .
+	"GRANT SELECT ON " . $db. ".\* TO \'". ${DBROUSER} . "\'\@\'" . $DBHOST . "\' IDENTIFIED BY \'".$DBROPW."\';");
+	if ($? == 0 )	{
+		print "Database $db....created\n";
+	} else {
+		print "Creating database $db failed....Exiting!\n";
+	}
+
+	
+	foreach $TABLE (@STANDARD_MODULES) {
+		print "Creating core table: $TABLE...";
+		open(TABLE, "< $DB_SCHEMA/$TABLE-create.sql");
+		@content = <TABLE>;
+		$temp = "@content";
+		@query = split(";",$temp);
+		for ( $i=0; $i<$#query; $i++) {
+			&mysql_query($db, $query[$i]);
+		}
+		if ($? == 0 )	{
+			print "Table $TABLE was created!\n";
+		} else {
+			print "Table $TABLE could not be created!\n";
+		}
+	}
+
+	print "Core OpenSIPS tables succesfully created.\n";
+
+	if ( -e $DB_SCHEMA."/extensions-create.sql" ) {
+		print "Creating custom extensions tables\n";
+
+		open(TABLE, "< $DB_SCHEMA/extensions-create.sql");
+		@content = <TABLE>;
+		$temp = "@content";
+		@query = split(";",$temp);
+		for ( $i=0; $i<$#query; $i++) {
+			&mysql_query($db, $query[$i]);
+		}
+		if ($? == 0 )	{
+			print "Custom extension tables were created!\n";
+		} else {
+			print "Custom extension tables could not be created!\n";
+		}
+	}
+
+	print "Install presence related tables? (y/n): ";
+	if ( ( $ans = <STDIN> ) =~ /[(^y)(^Y)]$/ ) {
+		&mysql_presence_create($db);
+	} else {
+		return;
+	}
+
+	print "Install tables for @EXTRA_MODULES? (y/n): ";
+	if ( ( $ans = <STDIN> ) =~ /[(^y)(^Y)]$/ ) {
+		$HAS_EXTRA="yes";
+		&mysql_extra_create($db);
+	}  else {
+		return;
+	}
+	
+	return;
+	
+} 
+
+
+### pgsql database create functions 
+sub pgsql_opensips_create() {	# pars: <database name>
+
+	my ( $db, $TABLE, @query, $temp, @content, $i, $ans );
+
+	if ( $#_ != 0 ) {
+		print "opensips_create function takes one param\n";
+		return;
+	}
+	
+	$db = $_[0];
+
+
+	print "Creating database $db...\n";
+
+	&pgsql_query("template1", "create database \"$db\";");
+	if ( $? != 0 ) {
+		print "Creating database failed!";
+		return;
+	}
+
+	#&pgsql_query ($db, "CREATE FUNCTION \"concat\" (text,text) RETURNS text AS \"SELECT \$1 || \$2;\" LANGUAGE \'sql\';
+	 #       CREATE FUNCTION \"rand\" () RETURNS double precision AS \'SELECT random();\' LANGUAGE \'sql\';");
+
+	# emulate mysql proprietary functions used by the lcr module in postgresql
+
+	#if ( $? != 0 ) {
+	#	print "Creating pgsql emulation functions failed!";
+	#	return;
+	#}
+
+	foreach $TABLE (@STANDARD_MODULES) {
+		print "Creating core table: $TABLE...";
+		open(TABLE, "< $DB_SCHEMA/$TABLE-create.sql");
+		@content = <TABLE>;
+		$temp = "@content";
+		@query = split(";",$temp);
+		for ( $i=0; $i<$#query; $i++) {
+			&pgsql_query($db, $query[$i]);
+		}
+		if ( $? == 0 )	{
+			print "Table $TABLE was created!\n";
+		} else {
+			print "Table $TABLE could not be created!\n";
+		}
+	}
+
+	&pgsql_query ($db, "CREATE USER $DBRWUSER WITH PASSWORD '$DBRWPW';");
+	if ( $? == 0 )	{
+		print "Creating user $DBRWUSER in database succeded!\n";
+	} else {
+		print "Creating user $DBRWUSER in database failed!\n";
+	}
+	
+	&pgsql_query ($db,"CREATE USER $DBROUSER WITH PASSWORD '$DBROPW';");
+	if ( $? == 0 )	{
+		print "Creating user $DBROUSER in database succeded!\n";
+	} else {
+		print "Creating user $DBROUSER in database failed!\n";
+	}
+
+	foreach $TABLE ( @STANDARD_TABLES ) {
+		#print $TABLE;
+		&pgsql_query ( $db, "GRANT ALL PRIVILEGES ON TABLE $TABLE TO $DBRWUSER;");
+		&pgsql_query ($db, "GRANT SELECT ON TABLE $TABLE TO $DBROUSER;");
+		if ( $TABLE !~ /version/ ) {
+			&pgsql_query ( $db, "GRANT ALL PRIVILEGES ON TABLE " . $TABLE . "_id_seq TO $DBRWUSER;");
+			if ( $? != 0 ) {
+				print "Grant privileges to standard tables failed!\n";
+			} else {
+				print "Privileges to standard tables succeded!\n";
+			}
+	   		&pgsql_query ($db, "GRANT SELECT ON TABLE " . $TABLE . "_id_seq TO $DBROUSER;" );
+			if ( $? != 0 ) {
+				print "Grant privileges to standard tables failed!\n";
+			} else {
+				print "Privileges to standard tables succeded!\n";
+			}
+		}
+	}
+
+
+	if ( -e $DB_SCHEMA."/extensions-create.sql" ) {
+		print "Creating custom extensions tables\n";
+
+		open(TABLE, "< $DB_SCHEMA/extensions-create.sql");
+		@content = <TABLE>;
+		$temp = "@content";
+		@query = split(";",$temp);
+		for ( $i=0; $i<$#query; $i++) {
+			&pgsql_query($db, $query[$i]);
+		}
+		if ($? == 0 )	{
+			print "Custom extension tables were created!\n";
+		} else {
+			print "Custom extension tables could not be created!\n";
+		}
+	}
+
+	print "Core OpenSIPS tables succesfully created.\n";
+
+	print "Install presence related tables? (y/n): ";
+	if ( ( $ans = <STDIN> ) =~ /[(^y)(^Y)]$/ ) {
+		&pgsql_presence_create($db);
+	} else {
+		return;
+	}
+
+	print "Install tables for @EXTRA_MODULES? (y/n): ";
+	if ( ( $ans = <STDIN> ) =~ /[(^y)(^Y)]$/ ) {
+		$HAS_EXTRA="yes";
+		&pgsql_extra_create($db);
+	}  else {
+		return;
+	}
+	
+	return;
+}
+
+
+sub dbtext_opensips_create () { # pars: <database name>
+
+	my ( $DB_PATH, $TABLE, $ANSWER );
+
+	if ( $#_ != 0 ) {
+		print "opensips_create function takes one param (DB_PATH)\n";
+		return;
+	}
+
+	$DB_PATH = $_[0];
+
+	print "creating DBTEXT tables at: $DB_PATH ...\n";
+
+	`mkdir -p -m 777 $DB_PATH`;
+
+	foreach $TABLE ( @STANDARD_TABLES ) {
+	    print "Creating core table: $TABLE\n";
+print $DB_SCHEMA."/".$TABLE . " " . $DB_PATH."/".$TABLE;
+	    `cp $DB_SCHEMA/$TABLE $DB_PATH/$TABLE`;
+	    if ( $? != 0 ) {
+		print "Creating core tables failed!\n";
+		return;
+	    }
+	}
+
+	`chmod -R a+w $DB_PATH`;
+
+	print "Install presence related tables? (y/n): ";
+	if ( ($ANSWER = <STDIN> ) =~ /y|Y/ ) {
+		&dbtext_presence_create($DB_PATH);
+	}
+
+	print "Install tables for @EXTRA_MODULES? (y/n): ";
+	if ( ($ANSWER = <STDIN> ) =~ /y|Y/ ) {
+		&dbtext_extra_create($DB_PATH);
+	}
+} 
+
+sub bdb_opensips_create() { # pars: <DB_PATH>
+
+	my ($TABLE, $ans);
+	if ( $#_ != 0 ) {
+		print "opensips_create param [DB_PATH]\n";
+		return;
+	}
+	
+	$DB_PATH = $_[0];
+	if ( ! -d $_[0] ) {
+		print "creating Berkeley DB database at: [$_[0]]\n";
+		`mkdir -p -m 777 $DB_PATH`;
+	}
+	
+	foreach $TABLE (@STANDARD_TABLES) {
+	    print "Creating standard table: $TABLE\n";
+	    system("$LOAD_CMD -T -t hash -f $DB_SCHEMA/$TABLE -h $_[0] $TABLE");
+	    if ( $? != 0 ) {
+		print "Creating standard tables failed!\n";
+		return;
+	    }
+	}
+
+	print "Install presence related tables? (y/n): ";
+	if ( ($ans = <STDIN>) =~ /(^y$)|(^Y$)/ ) { 
+		&presence_create($DB_PATH);
+	}
+
+	print "Install presence related tables? (y/n): ";
+	if ( ($ans = <STDIN>) =~ /(^y$)|(^Y$)/ ) { 
+		&extra_create($DB_PATH);
+	}
+
+} # opensips_create
+
+
+
+
+#
+##### ------------------------------------------------ #####
+### mysql presence create functions  
+#
+sub mysql_presence_create(){ # pars: <database name>
+
+	my (@content, $temp, @query, $i, $TABLE);
+
+	if ( $#_ lt 0 ) {
+		print "presence_create function takes one parameter\n";
+		return;
+	}
+	
+	my $db = $_[0];
+	print "Creating presence tables into $db ...\n";
+
+	open(TABLE, "< $DB_SCHEMA/presence-create.sql");
+	@content = <TABLE>;	
+	$temp = "@content";
+	@query = split(";",$temp);		
+	for ( $i=0; $i<$#query; $i++) {
+		&mysql_query($db, $query[$i]);
+	}
+	if ($? == 0 )	{
+		print "Presence tables were created!\n";
+	} else {
+		print "Presence tables could not be created!\n";
+	}
+
+	open(TABLE, "< $DB_SCHEMA/rls-create.sql");
+	@content = <TABLE>;
+	$temp = "@content";
+	@query = split(";",$temp);
+	for ( $i=0; $i<$#query; $i++) {
+		&mysql_query($db, $query[$i]);
+	}
+	if ($? == 0 )	{
+		print "Presence_rls tables were created!\n";
+	} else {
+		print "Presence_rls tables could not be created!\n";
+	}
+
+	print "Presence tables succesfully created.\n";
+}  
+
+
+### pgsql presence create functions  
+#
+sub pgsql_presence_create(){ # pars: <database name>
+
+	my (@content, $temp, @query, $i, $TABLE);
+
+	if ( $#_ != 0 ) {
+		print "presence_create function takes one parameter\n";
+		return;
+	}
+	
+	my $db = $_[0];
+	print "Creating presence tables into $db ...\n";
+
+	open(TABLE, "< $DB_SCHEMA/presence-create.sql");
+	@content = <TABLE>;	
+	$temp = "@content";
+	@query = split(";",$temp);		
+	for ( $i=0; $i<$#query; $i++) {
+		&pgsql_query($db, $query[$i]);
+		if ($? == 0 )	{
+			print "Presence tables were created!\n";
+		} else {
+			print "Presence tables could not be created!\n";
+		}
+	}
+
+	open(TABLE, "< $DB_SCHEMA/rls-create.sql");
+	@content = <TABLE>;
+	$temp = "@content";
+	@query = split(";",$temp);
+	for ( $i=0; $i<$#query; $i++) {
+		&pgsql_query($db, $query[$i]);
+		if ($? == 0 )	{
+			print "Presence_rls tables were created!\n";
+		} else {
+			print "Presence_rls tables could not be created!\n";
+		}
+	}
+
+
+
+	foreach $TABLE (@PRESENCE_TABLES) {
+		&pgsql_query ($db, "GRANT ALL PRIVILEGES ON TABLE $TABLE TO $DBRWUSER;");
+		&pgsql_query ($db, "GRANT SELECT ON TABLE $TABLE TO $DBROUSER;");
+		&pgsql_query ($db, "GRANT ALL PRIVILEGES ON TABLE " . $TABLE . "_id_seq TO $DBRWUSER;");
+	    	&pgsql_query ($db, "GRANT SELECT ON TABLE " . $TABLE . "_id_seq TO $DBROUSER;");
+		if ($? == 0 )	{
+			print "Granting privileges to presence tables succeded!\n";
+		} else {
+			print "Granting privileges to presence tables failed!\n";
+		}
+	}
+
+	print "Presence tables succesfully created.\n";
+} 
+
+sub dbtext_presence_create () { # pars: <database name>
+
+	my ( $DB_PATH, $TABLE );
+	if ( $#_ != 0 ) {
+		print "presence_create function takes one param (DB_PATH)";
+		return;
+	}
+
+	$DB_PATH = $_[0];
+
+	print "creating DBTEXT presence tables at: $DB_PATH ...\n";
+
+	`mkdir -p $DB_PATH`;
+
+	foreach $TABLE (@PRESENCE_TABLES) {
+	 	print "Creating presence table: $TABLE\n";
+		`cp $DB_SCHEMA/$TABLE $DB_PATH/$TABLE`;
+
+		if ( $? != 0 ) {
+			print "Creating presence tables failed!\n";
+			return;
+		}
+	}
+
+	foreach $TABLE (@PRESENCE_RLS_TABLES) {
+	 	print "Creating presence table: $TABLE\n";
+		`cp $DB_SCHEMA/$TABLE $DB_PATH/$TABLE`;
+
+		if ( $? != 0 ) {
+			print "Creating presence_rls tables failed!\n";
+			return;
+		}
+	}
+
+}  # end presence_create
+
+
+sub bdb_presence_create() {# pars: <DB_PATH>
+
+	my ($TABLE);
+
+	if ( $#_ != 0 ) {
+		print "presence_create param [DB_PATH]\n";
+		return;
+	}
+	
+	$DB_PATH=$_[0];
+	if ( ! -d $_[0] ) {
+		# Assert: the directory should already exist
+		print "BerkeleyDB directory does not exist at: [$_[0]]\n";
+		print;
+	}
+
+	if ( ! -f $_[0]."/version" ) {
+		# Assert: directory should already contain table 'version'
+		print "BerkeleyDB directory does not have VERSION table at: [$_[0]]\n";
+		return;
+	}
+	
+	foreach $TABLE (@PRESENCE_TABLES) {
+	    print "Creating presence table: $TABLE\n";
+	    system("$LOAD_CMD -T -t hash -f $DB_SCHEMA/$TABLE -h $_[0] $TABLE");
+	    if ( $? != 0 ) {
+		print "Creating presence tables failed!\n";
+		return;
+	    }
+	}
+	
+	foreach $TABLE (@PRESENCE_RLS_TABLES) {
+	    print "Creating presence table: $TABLE\n";
+	    system("$LOAD_CMD -T -t hash -f $DB_SCHEMA/$TABLE -h $_[0] $TABLE");
+	    if ( $? != 0 ) {
+		print "Creating presence tables failed!\n";
+		return;
+	    }
+	}
+
+}  # end presence_create
+
+
+#
+##### ------------------------------------------------ #####
+### mysql extra functions  
+#
+sub mysql_extra_create() { # pars: <database name>
+
+	my (@content, $temp, @query, $i, $TABLE);
+
+	if ( $#_ lt 0 ) {
+		print "extra_create function takes one param\n";
+		return;
+	}
+	
+	my $db = $_[0];
+	print "Creating extra tables into $db...\n";
+
+	foreach $TABLE (@EXTRA_MODULES) {
+		print "Creating extra table: $TABLE....";
+		open(TABLE, "< $DB_SCHEMA/$TABLE-create.sql");
+		@content = <TABLE>;
+		$temp = "@content";
+		@query = split(";",$temp);
+		for ( $i=0; $i<$#query; $i++) {
+			&mysql_query($db, $query[$i]);
+		}
+		if ($? == 0 )	{
+			print "Table $TABLE was created!\n";
+		} else {
+			print "Table $TABLE could not be created!\n";
+		}
+	}
+	print "Extra tables succesfully created.\n";
+
+} 
+
+
+
+### pgsql extra functions  
+sub pgsql_extra_create() { # pars: <database name>
+
+	my (@content, $temp, @query, $i, $TABLE);
+
+	if ( $#_ != 0 ) {
+		print "extra_create function takes one param\n";
+		return;
+	}
+	
+	my $db = $_[0];
+	print "Creating extra tables into $db...\n";
+
+	foreach $TABLE (@EXTRA_MODULES) {
+		print "Creating extra table: $TABLE\n";
+		open(TABLE, "< $DB_SCHEMA/$TABLE-create.sql");
+		@content = <TABLE>;
+		$temp = "@content";
+		@query = split(";",$temp);
+		for ( $i=0; $i<$#query; $i++) {
+			&pgsql_query($db, $query[$i]);
+		}
+	}
+	print "Extra tables succesfully created.\n";
+
+
+	foreach $TABLE ( @EXTRA_TABLES ) {
+
+		&pgsql_query ($db, "GRANT ALL PRIVILEGES ON TABLE $TABLE TO $DBRWUSER;" );
+		if ($? == 0 )	{
+			print "Granting privileges on $TABLE to $DBRWUSER succeded!\n";
+		} else {
+			print "Granting priviliges on $TABLE to $DBRWUSER failed!\n";
+		}
+
+		&pgsql_query ($db, "GRANT SELECT ON TABLE $TABLE TO $DBROUSER;" );
+		if ($? == 0 )	{
+			print "Granting privileges on $TABLE to $DBROUSER succeded!\n";
+		} else {
+			print "Granting priviliges on $TABLE to $DBROUSER failed!\n";
+		}
+
+		if ( $TABLE !~ /route_tree/ ) {
+			&pgsql_query ($db, "GRANT ALL PRIVILEGES ON TABLE " . $TABLE . "_id_seq TO $DBRWUSER;");
+			if ($? == 0 )	{
+				print "Granting privileges on $TABLE to $DBRWUSER succeded!\n";
+			} else {
+				print "Granting priviliges on $TABLE to $DBRWUSER failed!\n";
+			}	
+
+		 	&pgsql_query ($db, "GRANT SELECT ON TABLE " . $TABLE . "_id_seq TO $DBROUSER;" );
+			if ($? == 0 )	{
+				print "Granting privileges on $TABLE to $DBROUSER succeded!\n";
+			} else {
+				print "Granting priviliges on $TABLE to $DBROUSER failed!\n";
+			}	
+		}
+	}
+
+
+} 
+
+
+sub dbtext_extra_create() { # pars: <database name>
+
+	my ( $DB_PATH, $TABLE );
+	if ( $#_ != 0 ) {
+		print "extra_create function takes one param\n";
+		return;
+	}
+
+	print "creating DBTEXT extra tables at: $DB_PATH ...\n";
+
+	foreach $TABLE (@EXTRA_TABLES) {
+	    print "Creating extra table: $TABLE\n";
+	    `cp $DB_SCHEMA/$TABLE $DB_PATH/$TABLE`;
+	    
+		if ( $? !=  0 ) {
+			print "Creating extra tables failed!\n";
+			return;
+	        }
+	}
+
+}  # end extra_create
+
+
+
+sub bdb_extra_create() { # pars: <DB_PATH>
+
+	my ($TABLE);
+
+	if ( $#_ != 0 ) {
+		print "extra_create function takes one param (DB_PATH)\n";
+		return;
+	}
+	
+	$DB_PATH = $_[0];
+	if ( ! -d $_[0] ) {
+		# Assert: the directory should already exist
+		print "BerkeleyDB directory does not exist at: [$_[0]]";
+		return;
+	}
+
+	if ( ! -f $_[0]."/version" ) {
+		# Assert: directory should already contain table 'version'
+		print "BerkeleyDB directory does not have VERSION table at: [$_[0]]\n";
+		return;
+	}
+	
+	foreach $TABLE (@EXTRA_TABLES) {
+	    print "Creating extra table: $TABLE\n";
+	    system("$LOAD_CMD -T -t hash -f $DB_SCHEMA/$TABLE -h $_[0] $TABLE");
+	    if ( $? != 0 ) {
+		print "Creating extra tables failed!\n";
+		return;
+	    }
+	}
+	
+}  # end extra_create
+
+
+#
+##### ------------------------------------------------ #####
+### mysql drop functions  
+#
+sub mysql_opensips_drop() {# pars: <database name>
+
+	if ( $#_ != 0 ) {
+		print "opensips_drop function takes two parameters!\n";
+		return;
+	}
+
+	my $db = $_[0];	
+
+	&mysql_query($db, "drop database $db");
+	if ($? == 0 )	{
+		print "Database was dropped!\n";
+	} else {
+		print "Database could not be dropped!\n";
+	}
+
+	return;
+} 
+
+### pgsql drop functions  
+sub pgsql_opensips_drop() {# pars: <database name>
+
+	if ( $#_ != 0 ) {
+		print "opensips_drop function takes two params\n";
+		return;
+	}
+
+	&pgsql_query("template1", "drop database \"$_[0]\";");
+	
+} 
+
+
+sub dbtext_opensips_drop() { # pars: <database name>
+
+	my $DB_PATH;
+	
+	if ( $#_ != 0 ) {
+		print "opensips_drop function takes one param\n";
+		return;
+	}
+
+	$DB_PATH = $_[0];
+
+	print "DBTEXT ... erasing all files at: $DB_PATH\n";
+	`rm -rf $DB_PATH`;
+}
+
+
+sub bdb_opensips_drop() { # pars:  <DB_PATH>
+
+	my $TABLE;
+
+	if ( $#_ != 0 ) {
+		print "opensips_drop function takes one param\n";
+		return;
+	}
+	
+	if ( ! -d $_[0] ) {
+		print "Directory does not exist:  $_[0]\n";
+	}
+	
+	print "Dropping Berkeley DB database at: $_[0] ...\n";
+	
+	# core
+	if ( -f $_[0]."/version" ) {
+		foreach $TABLE ( @STANDARD_TABLES ) {
+		    print "Dropping core table: $TABLE\n";
+		    `rm -f $_[0]/$TABLE`;
+		}
+	}
+	
+	# presence
+	if ( -f $_[0]."/presentity" ) {
+		foreach $TABLE (@PRESENCE_TABLES) {
+		    print "Dropping presence table: $TABLE\n";
+		    `rm -f $_[0]/$TABLE`;
+		}
+	}
+	
+	if ( -f $_[0]."/presentity" ) {
+		foreach $TABLE (@PRESENCE_RLS_TABLES) {
+		    print "Dropping presence table: $TABLE\n";
+		    `rm -f $_[0]/$TABLE`;
+		}
+	}
+
+	# extra tables
+	if ( -f $_[0]."/cpl" ) {
+		foreach $TABLE (@EXTRA_TABLES) {
+		    print "Dropping extra table: $TABLE\n";
+		    `rm -f $_[0]/$TABLE`;
+		}
+	}
+
+	# delete db files and directory
+	`rm -rf $_[0]/__db.001`;
+	`rm -rf $_[0]/__db.002`;
+	`rm -rf $_[0]/__db.003`;
+	`rm -rf $_[0]/__db.004`;
+	`rmdir $_[0]`;
+} ## end drop
+
+
+
+###migrate functions ---only for mysql
+sub mysql_migrate_db() { # 2 parameters (src_db, dst_db)
+
+	if ( $#_ != 1 ) {
+		print "migrate_db function takes 2 params\n";
+		return;
+	}
+
+	my $src_db=$_[0];
+	my $dst_db=$_[1];
+
+	### acc
+	&mysql_migrate_table($dst_db.".acc", "id,method,from_tag,to_tag,callid,sip_code,sip_reason,time", $src_db . ".acc", "?id,?method,?from_tag,?to_tag,?callid,?sip_code,?sip_reason,?time" );
+
+	### missed_calls
+	&mysql_migrate_table($dst_db . ".missed_calls", "id,method,from_tag,to_tag,callid,sip_code,sip_reason,time", $src_db . ".missed_calls", "?id,?method,?from_tag,?to_tag,?callid,?sip_code,?sip_reason,?time" );
+
+	### aliases
+	&mysql_migrate_table($dst_db . ".aliases", "id,username,domain,contact,expires,q,callid,cseq,last_modified,flags,cflags,user_agent", $src_db . ".aliases", "?id,?username,?domain,?contact,?expires,?q,?callid,?cseq,?last_modified,?flags,?cflags,?user_agent" );
+
+
+	### dbaliases
+	&mysql_migrate_table( $dst_db . ".dbaliases", "id,alias_username,alias_domain,username,domain", $src_db . ".dbaliases" ,"?id,?alias_username,?alias_domain,?username,?domain" );
+
+	### grp
+	&mysql_migrate_table( $dst_db . ".grp", "id,username,domain,grp,last_modified", $src_db . ".grp", "?id,?username,?domain,?grp,?last_modified" );
+
+	### re_grp
+	&mysql_migrate_table( $dst_db . ".re_grp", "id,reg_exp,group_id", $src_db . ".re_grp", "?id,?reg_exp,?group_id" );
+
+	### silo
+	&mysql_migrate_table( $dst_db . ".silo", "id,src_addr,dst_addr,username,domain,inc_time,exp_time,snd_time,ctype,body", $src_db . ".silo", "?id,?src_addr,?dst_addr,?username,?domain,?inc_time,?exp_time,?snd_time,?ctype,?body" );
+
+	### domain
+	&mysql_migrate_table( $dst_db . ".domain", "id,domain,last_modified", $src_db . ".domain", "?id,?domain,?last_modified" );
+
+	### uri
+	&mysql_migrate_table( $dst_db . ".uri", "id,username,domain,uri_user,last_modified", $src_db . ".uri", "?id,?username,?domain,?uri_user,?last_modified" );
+
+	### usr_preferences
+	&mysql_migrate_table($dst_db . ".usr_preferences", "id,uuid,username,domain,attribute,type,value,last_modified", $src_db . ".usr_preferences", "?id,?uuid,?username,?domain,?attribute,?type,?value,?last_modified" );
+
+
+	### trusted
+	&mysql_migrate_table( $dst_db . ".trusted", "id,src_ip,proto,from_pattern,tag", $src_db . ".trusted", "?id,?src_ip,?proto,?from_pattern,?tag" );
+
+	### address
+	&mysql_migrate_table( $dst_db . ".address", "id,grp,ip_addr,mask,port", $src_db . ".address", "?id,?grp,?ip_addr,?mask,?port" );
+
+	### speed_dial
+	&mysql_migrate_table( $dst_db . ".speed_dial", "id,username,domain,sd_username,sd_domain,new_uri,fname,lname,description", $src_db . ".speed_dial", "?id,?username,?domain,?sd_username,?sd_domain,?new_uri,?fname,?lname,?description" );
+
+	### gw
+	&mysql_migrate_table( $dst_db . ".gw", "id,gw_name,grp_id,ip_addr,port,uri_scheme,transport,strip,tag", $src_db . ".gw", "?id,?gw_name,?grp_id,?ip_addr,?port,?uri_scheme,?transport,?strip,?tag" );
+
+
+	### gw_grp
+	&mysql_migrate_table( $dst_db . ".gw_grp", "grp_id,grp_name", $src_db . ".gw_grp", "?grp_id,?grp_name" );
+
+	### lcr
+	&mysql_migrate_table( $dst_db. ".pdt", "id,sdomain,prefix,domain", $src_db . ".pdt", "?id,?sdomain,?prefix,?domain" );
+
+	### pdt
+	&mysql_migrate_table( $dst_db . ".subscriber", "id,username,domain,password,ha1,ha1b,rpid", $src_db . ".subscriber", "?id,?username,?domain,?password,?ha1,?ha1b,?rpid" );
+
+
+	if ( $HAS_EXTRA eq "yes" ) {
+		### cpl
+		&mysql_migrate_table( $dst_db . ".cpl", "id,username,domain,cpl_xml,cpl_bin", $src_db . ".cpl", "?id,?username,?domain,?cpl_xml,?cpl_bin" );
+
+		### siptrace
+		&mysql_migrate_table( $dst_db . ".sip_trace", "id,date,callid,traced_user,msg,method,status,fromip,toip,fromtag,direction", $src_db . ".sip_trace", "?id,?date,?callid,?traced_user,?msg,?method,?status,?fromip,?toip, ?fromtag,?direction" );
+
+		### imc_rooms
+		&mysql_migrate_table(  $dst_db . ".imc_rooms", "id,name,domain,flag", $src_db . ".imc_rooms", "?id,?name,?domain,?flag" );
+
+		### imc_members
+		&mysql_migrate_table(  $dst_db. ".imc_members", "id,username,domain,room,flag", $src_db. ".imc_members", "?id,?username,?domain,?room,?flag" );
+	}
+}
+
+
+sub mysql_migrate_table(){ # 4 paremeters (dst_table, dst_cols, src_table, src_cols)
+
+	if ( $#_ != 3 ) {
+		print "migrate_table function takes 4 parameters\n";
+		return;
+	}
+
+	my $dst_table = $_[0];
+	my $dst_cols = $_[1];
+	my $src_table = $_[2];
+	my $src_cols = $_[3];
+
+	$src_cols=`echo $src_cols | sed s/?/$src_table./g `;
+
+	print 
+	my $X = system("mysql -h $DBHOST -u$DBROOTUSER -e \"INSERT INTO $dst_table ($dst_cols) SELECT $src_cols FROM $src_table\"");
+	if ( $? != 0 ) {
+		system("echo $X | $EGREP \"ERROR 1146\" > /dev/null");
+		if ( $? != 0 ) {
+				print " -- Migrating $_[2] to $_[0].....SKIPPED (no source)\n";				
+		} 
+		print "ERROR: failed to migrate $src_table to $dst_table!!!";
+		print "Skip it and continue (y/n)? ";
+		if ( ( my $ans = <STDIN> ) =~ /[yY]$/ ) {
+			return;
+		}		
+	}
+
+	print " -- Migrating " . $src_table . " to " . $dst_table . ".....OK\n";
+
+}  ##migrate functions
+
+
+#
+##### ------------------------------------------------ #####
+### dump database 
+#
+sub opensips_dump() {
+
+	if ( $#_ != 1 ) {
+		print "opensips_dump function takes two param\n";
+		return;
+	}
+	
+	if ( $DBENGINE =~ /^mysql$/ ) {
+		system("mysqldump -h $DBHOST -u$DBROOTUSER -c -t $_[0] > $_[1]");
+		if ( $? != 0 ) {
+			print "db dump failed\n";
+			return;
+		}
+	} elsif ( $DBENGINE =~ /^Pg$/ ) {
+		system("pg_dump -h $DBHOST -U $DBROOTUSER -c $_[0] > $_[1]");
+		if ( $? != 0 ) {
+			print "db dump failed\n";
+			return;
+		}
+	} elsif ( $DBENGINE =~ /^oracle$/ ) {
+		#&....
+		return;
+	} else {
+		print "Unknown database engine !!!!";
+		return;
+	}
+
+	print "db dump successful\n";
+	return;
+}
+
+
+#
+##### ------------------------------------------------ #####
+### restore database 
+#
+sub opensips_restore() { #pars: <database name> <filename>
+
+	if ( $#_ != 1 ) {
+		print "opensips_restore function takes two params\n";
+		return;
+	}
+
+	if ( $DBENGINE =~ /^oracle$/ ) {
+		#oracle_restore $1 $2
+	} elsif ( $DBENGINE =~ /^mysql$/ ) {
+		&mysql_query("$_[0] < $_[1]");
+		return;
+		#sql_query $1 < $2
+	} elsif ( $DBENGINE =~ /^Pg$/ ) {
+		&pgsql_query("$_[0] < $_[1]");
+		return;
+	}
+
+	print "Database was restorered successfully\n";
+}
+
+
+#
+##### ------------------------------------------------ #####
+### database query functions 
+#
+sub mysql_query() {
+
+	my $MYSQL_CMD="mysql -h $DBHOST -u$DBROOTUSER ";
+
+	if ( $#_ gt 0 ) {
+		if ( $PW eq "") {
+			system("$MYSQL_CMD -D $_[0] -e \"$_[1]\"");
+			if ( $? != 0 ) {		
+				return 1;
+			} else {
+				return 0;
+			}
+		} else {
+			system("$MYSQL_CMD \"-p$PW\" -D $_[0] -e \"$_[1]\"");
+			if ( $? != 0 ) {		
+				return 1;
+			} else {
+				return 0;
+			}
+		}
+	} else {
+		if ( $PW eq "") {
+			system ("$MYSQL_CMD -e \"$_[0]\"");
+			if ( $? != 0 ) {		
+				return 1;
+			} else {
+				return 0;
+			}
+		} else {
+			system ("$MYSQL_CMD \"-p$PW\" -e \"$_[0]\"");
+			if ( $? != 0 ) {		
+				return 1;
+			} else {
+				return 0;
+			}
+		}
+	}
+}
+
+
+sub pgsql_query() {
+	my $PGSQL_CMD="psql -h $DBHOST -U $DBROOTUSER";	
+	if ( $#_ gt 0 ) {
+		system("$PGSQL_CMD -d $_[0] -c \"$_[1]\"");
+		if ( $? != 0 ) {
+			return 1;
+		} else {
+			return 0;
+		}
+	} else {
+		system("$PGSQL_CMD \"$_[0]\"");
+		if ( $? != 0 ) {
+			return 1;
+		} else {
+			return 0;
+		}
+	}
+}
+
+
+#
+##### ------------------------------------------------ #####
+### db_ops query functions 
+#
+sub db_query() {
+
+	my $query = $_[0];
+
+	switch ($DBENGINE) {
+		case /(^mysql$)/ {
+			&db_mysql_query($query);
+		}
+		case /(^Pg$)/ {
+			&db_pgsql_query($query);
+		}
+		case /(^DBTEXT$)/ {
+			&db_dbtext_query($query);
+		}
+	}
+
+}
+
+
+sub db_ro_query(){
+
+	my $query = $_[0];	
+
+	switch ($DBENGINE) {
+		case /(^mysql$)/ {
+			&db_mysql_ro_query($query);
+		}
+		case /(^Pg$)/ {
+			&db_pgsql_ro_query($query);
+		}
+		case /(^DBTEXT$)/ {
+			&db_dbtext_query($query);
+		}
+	}
+
+}
+
+
+# input: sql query, optional mysql command-line params
+sub db_mysql_query() {
+	
+	my $query = $_[0];
+	
+	# if password not yet queried, query it now
+	#prompt_pw "MySQL password for user '$DBRWUSER@$DBHOST'"
+	system("$MYSQL -h $DBHOST -u$DBRWUSER \"-p$DBRWPW\" -D $DBNAME -e \"$query\";");
+	if ( $? != 0 ) {		
+		return 1;
+	} else {
+		return 0;
+	}
+}
+
+
+# input: sql query, optional mysql command-line params
+sub db_mysql_ro_query() {
+
+	my $query = $_[0];
+
+	system("$MYSQL -h $DBHOST -u$DBROUSER \"-p$DBROPW\" -D $DBNAME -e \"$query\" ;");
+	if ( $? != 0 ) {		
+		return 1;
+	} else {
+		return 0;
+	}
+}
+
+
+# input: sql query, optional pgsql command-line params
+sub db_pgsql_query() {
+
+	my ( $query, $PGPASSWORD ); 
+	$query = $_[0];
+
+	print "pgsql_query: $PGSQL -A -q -t -P fieldsep=\'	\' -h $DBHOST -U $DBRWUSER $DBNAME -c \'$query\'\n";
+	system("$PGSQL -A -q -t -P fieldsep=\"	\" -h $DBHOST -U $DBRWUSER \"-W$DBRWPW\" $DBNAME \ -c \"$query\"");
+}
+
+
+# input: sql query, optional pgsql command-line params
+sub db_pgsql_ro_query() {
+
+	my $query = $_[0];
+	print "pgsql_ro_query: $PGSQL -h $DBHOST -U $DBROUSER -W $DBNAME -c '$query'\n";
+	system("$PGSQL -h $DBHOST -U $DBROUSER \"-W$DBROPW\" $DBNAME -c \"$query;\"");
+}
+
+
+sub db_dbtext_query() {
+	my $query = $_[0];
+	
+	#print $DBTEXTCMD." ".$query;
+	system("$DBTEXTCMD","$query");
+}
+
+sub opensips_berkeley()  { # parms: <op> <arg1> <arg2>
+
+	if ($#cmd lt 2 ) {
+		&berkeley_usage();
+		return;	
+	} elsif ($cmd[1] =~ /^h$/) {
+		&berkeley_usage();
+		return;		
+	}
+
+	switch ($cmd[1]) {
+		case /(^list$)|(^ls$)/ {
+			system("ls -al $DB_PATH");
+		}
+
+		case /(^cat$)/ {
+			&opensips_cat($cmd[2],$DB_PATH);			
+		}
+
+		case /(^swap$)/ {
+			&opensips_swap($cmd[2], $DB_PATH);
+		}
+
+		case /(^append$)/ {
+			&opensips_append($cmd[2], $cmd[3], $DB_PATH);
+		}
+
+		case /(^newappend$)/ {
+			#shift
+			#opensips_newappend  $1 $2 $DB_PATH
+			#exit $?
+		}
+
+		case /(^export$)/ {
+			&opensips_export($cmd[2],$DB_PATH);
+		}
+
+		case /(^migrate$)/ {
+			&opensips_migrate($cmd[2], $DB_PATH);
+		}
+	
+		case /(^import$)/ {
+			#shift
+			#opensips_import  $1 $DB_PATH
+			#exit $?
+		}
+
+		else {
+			&berkeley_usage();
+		}
+	}
+}
+
+##
+# MIGRATE (schema)
+# Examine each plain-txt file in DUMP_DIR
+#  (Assumes that opensips_export was already invoked)
+#
+# Migrate converts data from schema-old to schema-new in place.
+#
+# After this step is complete the IMPORT should be executed.
+sub opensips_migrate() { # parms: <DUMP_DIR> [DB_PATH]
+
+	print "db_berkeley migrate not implemented\n";
+	return;
+}
+
+
+# cat all rows to STDOUT
+sub opensips_cat() { # pars: <database name> <DB_PATH>
+
+	if ( $#_ != 1 ) {
+		print  "opensips_cat params <db> [DB_PATH]\n";
+		return;
+	}
+	
+	system("$DUMP_CMD -p -h $_[1] $_[0]");
+}
+
+
+##
+# EXPORT existing data to plain-txt files in DUMP_DIR
+# eg.  DB_PATH/version ---> DUMP_DIR/version.txt
+#
+# Export is used as part of a DB migration process to another 
+# major version of berkeley db.
+sub opensips_export() { # parms: <DUMP_DIR> [DB_PATH]
+
+	my ($DUMP_DIR, $PATH, $TABLE);
+	if ( $#_ lt 1 ) {
+		print  "opensips_dump parms: <DUMP_DIR> [DB_PATH]\n";
+		return;
+	}
+	
+	$DUMP_DIR = $_[0];
+	$PATH = $_[1];
+
+	# Assert: the DB_PATH directory should already exist
+	if ( ! -d $PATH ) {
+		print "BerkeleyDB directory does not exist at: [$PATH]\n";
+		return;
+	}
+	
+	# Assert: DB_PATH directory should already contain table 'version'
+	if ( ! -f $PATH."/version" ) {
+		print "BerkeleyDB directory does not have VERSION table at: [$PATH]\n";
+		return;
+	}
+	
+	# Create dir at <DUMP_DIR> to store the exported data
+	if ( ! -d  $DUMP_DIR) {
+		print "creating DUMP_DIR at: [$DUMP_DIR]\n";
+		`mkdir -p $DUMP_DIR`;
+	} else {
+		print "Cleaning out DUMP_DIR to get ready for new data\n";
+		`rm -rf $DUMP_DIR/*`;
+	}
+
+
+	foreach $TABLE (@STANDARD_TABLES) {
+	    if ( -f $PATH."/".$TABLE ) {
+		    print "Exporting standard table: $TABLE\n";
+		    system("$DUMP_CMD -p -h $PATH $TABLE  | perl -pe 's/^\w.*// ; s/^\s(.*)/$DUMP_DIR/' > $DUMP_DIR/$TABLE.txt");
+		    
+		    # Check return code to make sure the export worked ok
+		    if ( $? != 0 ) {
+			print "Export of standard table failed [$TABLE]\n";
+			# there was a problem, but it is not something
+			# we can handle here; We can deal with this at import
+			# time.
+		    }
+	    } else {
+	    	    print "Table not found: [$TABLE]\n";
+	    }
+	}
+	
+	# Dump the PRESENCE tables to plain-text files in DUMP_DIR
+	foreach $TABLE (@PRESENCE_TABLES) {
+	    if ( -f $PATH."/".$TABLE ) {
+		    print "Exporting presence table: $TABLE\n";
+		    system("$DUMP_CMD -p -h $PATH $TABLE  | perl -pe 's/^\w.*// ; s/^\s(.*)/$DUMP_DIR/' > $DUMP_DIR/$TABLE.txt");
+		    if ( $? != 0 ) {
+			print "Export of presence table failed [$TABLE]\n";
+		    }
+	    } else {
+	    	    print "Table not found: [$TABLE]\n";
+	    }
+	}
+	
+	# Dump the EXTRA tables to plain-text files in DUMP_DIR
+	foreach $TABLE (@EXTRA_TABLES) {
+	    if ( -f $PATH."/".$TABLE ) {
+		    print "Exporting extra table: $TABLE\n";
+		    system("$DUMP_CMD -p -h $PATH $TABLE  | perl -pe 's/^\w.*// ; s/^\s(.*)/$DUMP_DIR/' > $DUMP_DIR/$TABLE.txt");
+		    if ( $? != 0 ) {
+			print "Export of extra table failed [$TABLE]\n";
+		    }
+	    } else {
+	    	    print "Table not found: [$TABLE]\n";
+	   }
+	}
+	
+	print "All tables are now exported to DUMP_DIR: [$DUMP_DIR]\n";
+	return;
+
+}
+
+
+sub opensips_swap() { # parms: <db> [DB_PATH]
+	
+	my ( $DB, $DBNEW, $DBOLD );
+
+	if ( $#_ lt 1 ) {
+		print "opensips_swap parms: <db> [DB_PATH]\n";
+		return;
+	}
+	
+	$DB = $_[1]."/".$_[0];
+	$DBNEW = $DB.".new";
+	$DBOLD = $DB.".old";
+	`cp $DB $DBOLD`;
+	`mv $DBNEW $DB`;
+}
+
+
+#####
+# append process is:
+# 1. copy DB_PATH/db to DB_PATH/db.new
+# 2. appends contents of newdata to DB_PATH/db.new
+#
+sub opensips_append() { # parms: <db> <newdata> [DB_PATH]
+
+	my ( $DB, $DBNEW );
+
+	if ( $#_ lt 2  ) {
+		print  "opensips_append parms: <db> <newdata> [DB_PATH]\n";
+		return;
+	}
+	
+	$DB = $_[2]."/".$_[0];
+	$DBNEW = $DB.".new";
+	if ( -e $DBNEW ) {
+		`rm $DBNEW`;
+	}
+	
+	`cp $DB $DBNEW`;
+# echo "$LOAD_CMD -T -t hash -f $2 -h $3 $1.new"
+	system("$LOAD_CMD -T -t hash -f $_[1] -h $_[2] $_[0].new");
+	
+# echo "$LOAD_CMD -r fileid -h $3 $1.new"
+  	system("$LOAD_CMD -r fileid -h $_[2] $_[0].new");
+}
+
+
+sub opensips_newappend() { # parms: <db> <newdata> [DB_PATH]
+
+	my ( $DB, $DBNEW, $TMPENV, $OLDPWD);
+
+	if ( $#_ lt 2  ) {
+		print  "opensips_append parms: <db> <newdata> [DB_PATH]\n";
+		return;
+	}
+	
+	$DB = $_[2]."/".$_[0];
+	$DBNEW = $DB.".new";
+	if ( -e $DBNEW ) {
+		`rm $DBNEW`;
+	}
+	$TMPENV = "/tmp/sc-$$";
+	&bdb_opensips_create($TMPENV);
+	`cd $OLDPWD`;
+	system("$LOAD_CMD -T -t hash -f $_[1] -h $TMPENV $_[0]");
+	`mv $TMPENV/$_[0] $DBNEW`;
+	`rm -rf $TMPENV`;
+}
+
+
+##
+# IMPORT existing plain-txt files from DUMP_DIR to DB_PATH
+# eg.  DUMP_DIR/version.txt  --> DB_PATH/version
+#
+# import is used as part of DB migrate to another major version of berkeley db.
+# this will over-write anything in DB_PATH
+sub opensips_import() { # parms: <DUMP_DIR> [DB_PATH]
+
+	my ($TABLE);
+
+	if ( $#_ lt 1  ) {
+		print  "opensips_dump parms: <DUMP_DIR> [DB_PATH]\n";
+		return;
+	}
+	
+	# Assert: DUMP_DIR (source dir) already exists
+	if ( ! -d $_[0] ) {
+		print "Berkeley DUMP_DIR directory does not exist: [$_[0]]\n";
+		return;
+	}
+	
+	# Assert: DUMP_DIR directory should already contain table 'version.txt'
+	if ( ! -e $_[0]."/version.txt" ) {
+		print "DUMP_DIR directory does not have VERSION.txt data at: [$_[0]]\n";
+		return;
+	}
+	
+	# Assert: destination dir exists [DB_PATH]
+	if ( ! -d $_[1] ) {
+		print "Berkeley DB_PATH directory is being created: [$_[1]]";
+		`mkdir -p $_[1]`;
+	} else {
+		# Wipe out the destination dir to make room for new data
+		print "Berkeley DB_PATH directory is being purged at: [$_[1]]\n";
+		`rm -rf $_[1]./*`;
+	}
+	
+	# Creates STANDARD tables from plain-text files in DUMP_DIR
+	foreach $TABLE (@STANDARD_TABLES) {
+	    if ( -f $_[0]."/".$TABLE."txt" ) {
+		    print "Importing standard table: $TABLE\n";
+		    system("$LOAD_CMD -T -t hash -f $_[0]/$TABLE.txt -h $_[1] $TABLE");
+		    
+		    # Check return code to make sure the export worked ok
+		    if ( $? != 0 ) {
+			print "Import of standard table failed [$TABLE.txt]\n";
+			print "Create this missing table with bdb_recover.\n";
+		    }
+	    } else {
+	    	    print "Import data not found for table: [$TABLE.txt]\n"; 
+		    print "Create this missing table with bdb_recover.\n";
+	    }
+	}
+	
+
+	# Creates PRESENCE tables from plain-text files in DUMP_DIR
+	foreach $TABLE (@PRESENCE_TABLES) {
+	    if ( -f $_[0]."/".$TABLE.".txt" ) {
+		    print "Importing presence table: $TABLE\n";
+		    system("$LOAD_CMD -T -t hash -f $_[0]/$TABLE.txt -h $_[1] $TABLE");
+		    
+		    # Check return code to make sure the export worked ok
+		    if ( $? != 0 ) {
+			print "Import of presence table failed [$TABLE.txt]\n";
+			print "Create this missing table with bdb_recover.\n";
+		    }
+	    } else {
+		    print "Import data not found for table: [$TABLE.txt]\n";
+	    }
+	}
+
+
+	foreach $TABLE (@PRESENCE_RLS_TABLES) {
+	    if ( -f $_[0]."/".$TABLE.".txt" ) {
+		    print "Importing presence table: $TABLE\n";
+		    system("$LOAD_CMD -T -t hash -f $_[0]/$TABLE.txt -h $_[1] $TABLE");
+		    
+		    # Check return code to make sure the export worked ok
+		    if ( $? != 0 ) {
+			print "Import of presence table failed [$TABLE.txt]\n";
+			print "Create this missing table with bdb_recover.\n";
+		    }
+	    } else {
+		    print "Import data not found for table: [$TABLE.txt]\n";
+	    }
+	}
+
+
+	# Creates EXTRA tables from plain-text files in DUMP_DIR
+	foreach $TABLE (@EXTRA_TABLES) {
+	    if ( -s $_[0]."/".$TABLE.".txt" ) {
+		    print "Importing extra table: $TABLE\n";
+		    system("$LOAD_CMD -T -t hash -f $_[0]/$TABLE.txt -h $_[1] $TABLE");
+		    
+		    # Check return code to make sure the export worked ok
+		    if ( $? != 0 ) {
+			print "Import of extra table failed [$TABLE.txt]\n";
+			print "Create this missing table with bdb_recover.\n";
+		    }
+	    } else {
+		    print "Import data not found for table: [$TABLE.txt]\n";
+	    }
+	}
+	
+	print "All tables are now imported to DB_PATH: [$_[1]]\n";
+	return;
+
+}
+
+
+#
+##### ------------------------------------------------ #####
+### Berkeley DB control functions 
+#
+
+sub bdb_select() {
+	
+	my ($TABLE, $db, $cursor);
+	my ($key, $value) = ("", "") ;
+
+	$TABLE = $_[0];
+	
+	unlink $DB_PATH;
+
+	$db = new BerkeleyDB::Hash
+              -Filename   => "$DB_PATH/$TABLE"
+              #-Flags      => DB_CREATE
+        or die "Cannot open file $DB_PATH: $! $BerkeleyDB::Error\n" ;
+	
+	# print the contents of the file 
+	$cursor = $db->db_cursor() ;
+	while ($cursor->c_get($key, $value, DB_NEXT) == 0)
+		{ print "$key -> $value\n" }
+
+	undef $cursor ;
+	undef $db ;
+
+}
+
+sub bdb_select_where() {
+	
+	my ( $TABLE, $db, $key, $value, $result );
+	
+	$TABLE = $_[0];
+	$key = $_[1];	
+
+	unlink $DB_PATH;
+
+	$db = new BerkeleyDB::Hash
+              -Filename   => "$DB_PATH/$TABLE"
+              #-Flags      => DB_CREATE
+        or die "Cannot open file $DB_PATH: $! $BerkeleyDB::Error\n" ;
+
+	# Check for existence of a key   
+	if ( $db->db_get($key, $value) == 0 ) {
+		print "$key -> $value\n\n"; 
+		$result = 1;
+	} else {
+		$result = 0;
+		print "Value does not exist in the database\n";
+	}
+
+	undef $db ;
+	return $result;
+
+}
+
+sub bdb_insert() {
+
+	my ($TABLE, $db, $key, $value);
+	
+	$TABLE = $_[0];
+	$key = $_[1];
+	$value =$_[2];
+	
+	unlink $DB_PATH;
+
+	$db = new BerkeleyDB::Hash
+              -Filename   => "$DB_PATH/$TABLE"
+              #-Flags      => DB_CREATE
+        or die "Cannot open file $DB_PATH: $! $BerkeleyDB::Error\n" ;
+
+
+
+	# Add a few key/value pairs to the file
+	$db->db_put($key, $value,DB_NOOVERWRITE) ;
+
+	undef $db;
+
+}
+
+sub bdb_delete() {
+
+	my ($TABLE, $db, $key);
+	
+	$TABLE = $_[0];
+	$key = $_[1];
+
+	unlink $DB_PATH;
+
+	$db = new BerkeleyDB::Hash
+              -Filename   => "$DB_PATH/$TABLE"
+              #-Flags      => DB_CREATE
+        or die "Cannot open file $DB_PATH: $! $BerkeleyDB::Error\n" ;
+
+	# Delete a key/value pair
+	$db->db_del($key) ;
+
+	undef $db ;
+
+}
+
+
+sub bdb_update() {
+	
+	my ( $TABLE, $db, $key, $value, $status, $cursor, @val_array );
+	
+	$TABLE = $_[0];
+	shift(@_);
+	$key = "@_";	
+	unlink $DB_PATH;
+
+	$db = new BerkeleyDB::Hash
+              -Filename   => "$DB_PATH/$TABLE"
+              #-Flags      => DB_CREATE
+        or die "Cannot open file $DB_PATH: $! $BerkeleyDB::Error\n" ;
+
+	# print the contents of the file 
+	$cursor = $db->db_cursor() ;
+	if ( defined $key ) {
+		$status = $cursor->c_get($key, $value, DB_SET);
+		if ( $status == 0 ) {
+			@val_array = split(" ",$value);
+			if ( $cmd[0] =~ /^rpid$/) {
+				if ( $cmd[1] =~ /^add$/ ) {
+					if ( $#val_array == 4 ) {
+						$val_array[$#val_array] = $cmd[3];						
+					} elsif ( ( $#val_array == 3 ) && ( $val_array[$#val_array-1] =~ /^s*\d+$/) ) {
+						$val_array[$#val_array] = $cmd[3];						
+					} elsif ( ( $#val_array == 3 ) && ( $val_array[1] =~ /^s*\.@\..\.s*$/) && ($val_array[2] =~ /^s*\d+$/) && ($val_array[3] =~ /^s*\d+$/) ) {
+						$val_array[$#val_array+1] = $cmd[3];						
+					} else {
+						$val_array[$#val_array+1] = $cmd[3];						
+					}
+
+				} elsif ( $cmd[1] =~ /^rm$/ ) {
+					pop(@val_array);
+				}
+			} elsif ( $cmd[0] =~ /^passwd$/ ) {
+				$val_array[0] = $PASS;	
+			}	
+		}
+
+		$status = $cursor->c_put($key, "@val_array", DB_CURRENT);
+	}
+
+	undef $cursor ;
+	undef $db ;
 }
