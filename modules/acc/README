@@ -256,7 +256,7 @@ if (uri=~"sip:+40") /* calls to Romania */ {
    Along the static default information, ACC modules allows
    dynamical selection of extra information to be logged. This
    allows you to log any pseudo-variable (AVPs, parts of the
-   request, etc).
+   request, parts of the reply, etc).
 
 1.2.2. Definitions and syntax
 
@@ -266,7 +266,17 @@ if (uri=~"sip:+40") /* calls to Romania */ {
    include headers, AVPs values or other message or system values.
    The syntax of the parameter is:
      * xxx_extra = extra_definition (';'extra_definition)*
-     * extra_definition = log_name '=' pseudo_variable
+     * extra_definition = log_name '=' pseudo_variable ['/reply']
+
+   Each PV (pseudo variable) may be evaluated in the context of
+   the request message (to access info from it) or in the context
+   of the reply message (final reply for the request).
+
+   Using "/reply" marker, the PV will be evaluated in the context
+   of the reply; by default (without the marker), the evaluation
+   is done in the contect of the request. This will allow you to
+   automatically account information (message or network related)
+   from both request and reply in the same time.
 
    The full list of supported pseudo-variables in OpenSIPS is
    availabe at:
@@ -507,7 +517,8 @@ modparam("acc", "log_facility", "LOG_DAEMON")
    Default value is NULL.
 
    Example 1.11. log_extra example
-modparam("acc", "log_extra", "ua=$hdr(User-Agent);uuid=$avp(i:123)")
+modparam("acc", "log_extra",
+        "uaA=$hdr(User-Agent);uaB=$hdr(Server)/reply;uuid=$avp(i:123)")
 
 1.5.12. radius_config (string)
 
@@ -562,7 +573,8 @@ modparam("acc", "service_type", 16)
    Default value is NULL.
 
    Example 1.16. radius_extra example
-modparam("acc", "radius_extra", "via=$hdr(Via[*]); email=$avp(s:email)")
+modparam("acc", "radius_extra",
+        "via=$hdr(Via[*]); email=$avp(s:email); Bcontact=$ct / reply")
 
 1.5.17. db_flag (integer)
 

@@ -160,7 +160,7 @@ if (uri=~"sip:+40") /* calls to Romania */ {
 			Along the static default information, ACC modules 
 			allows dynamical selection of extra information to be logged. 
 			This allows you to log any pseudo-variable (AVPs, parts of 
-			the request, etc).
+			the request, parts of the reply, etc).
 			</para>
 		</section>
 		<section>
@@ -177,9 +177,21 @@ if (uri=~"sip:+40") /* calls to Romania */ {
 				xxx_extra = extra_definition (';'extra_definition)*
 				</emphasis></para></listitem>
 				<listitem><para><emphasis>
-				extra_definition = log_name '=' pseudo_variable
+				extra_definition = log_name '=' pseudo_variable ['/reply']
 				</emphasis></para></listitem>
 			</itemizedlist>
+			<para>
+			Each PV (pseudo variable) may be evaluated in the context of the 
+			request message (to access info from it) or in the context of 
+			the reply message (final reply for the request).
+			</para>
+			<para>
+			Using <quote>/reply</quote> marker, the PV will be evaluated in
+			the context of the reply; by default (without the marker), the 
+			evaluation is done in the contect of the request. This will allow
+			you to automatically account information (message or network
+			related) from both request and reply in the same time.
+			</para>
 			<para>
 			The full list of supported pseudo-variables in &osips; is
 			availabe at: 
@@ -549,7 +561,8 @@ modparam("acc", "log_facility", "LOG_DAEMON")
 		<example>
 		<title>log_extra example</title>
 		<programlisting format="linespecific">
-modparam("acc", "log_extra", "ua=$hdr(User-Agent);uuid=$avp(i:123)")
+modparam("acc", "log_extra",
+	"uaA=$hdr(User-Agent);uaB=$hdr(Server)/reply;uuid=$avp(i:123)")
 </programlisting>
 		</example>
 	</section>
@@ -636,7 +649,8 @@ modparam("acc", "service_type", 16)
 		<example>
 		<title>radius_extra example</title>
 		<programlisting format="linespecific">
-modparam("acc", "radius_extra", "via=$hdr(Via[*]); email=$avp(s:email)")
+modparam("acc", "radius_extra",
+	"via=$hdr(Via[*]); email=$avp(s:email); Bcontact=$ct / reply")
 </programlisting>
 		</example>
 	</section>
