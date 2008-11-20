@@ -38,6 +38,7 @@
 #include "../../dprint.h"
 #include "../../ut.h"
 #include "../../usr_avp.h"
+#include "../../socket_info.h"
 #include "../../mem/mem.h"
 #include "acc_extra.h"
 
@@ -55,13 +56,14 @@
 /* here we copy the strings returned by int2str (which uses a static buffer) */
 static char int_buf[INT2STR_MAX_LEN*MAX_ACC_INT_BUF];
 
-static char *static_detector = 0;
+static char* static_detector[2] = {NULL,NULL};
 
 void init_acc_extra(void)
 {
 	int i;
 	/* ugly trick to get the address of the static buffer */
-	static_detector = int2str( (unsigned long)3, &i) + i;
+	static_detector[0] = int2str( (unsigned long)3, &i) + i;
+	static_detector[1] = ip_addr2a(&udp_listen->address);
 }
 
 
@@ -296,7 +298,8 @@ int extra2strar( struct acc_extra *extra, struct sip_msg *rq,
 			val_arr[n].len = 0;
 		} else {
 			/* set the value into the acc buffer */
-			if (value.rs.s+value.rs.len==static_detector) {
+			if (value.rs.s+value.rs.len==static_detector[0] ||
+			value.rs.s==static_detector[1]) {
 				val_arr[n].s = int_buf + r*INT2STR_MAX_LEN;
 				val_arr[n].len = value.rs.len;
 				memcpy(val_arr[n].s, value.rs.s, value.rs.len);
