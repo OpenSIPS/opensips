@@ -195,7 +195,7 @@ void acc_log_init(void)
 }
 
 
-int acc_log_request( struct sip_msg *rq)
+int acc_log_request( struct sip_msg *rq, struct sip_msg *rpl)
 {
 	static char log_msg[MAX_SYSLOG_SIZE];
 	static char *log_msg_end=log_msg+MAX_SYSLOG_SIZE-2;
@@ -208,7 +208,7 @@ int acc_log_request( struct sip_msg *rq)
 	m = core2strar( rq, val_arr);
 
 	/* get extra values */
-	m += extra2strar( log_extra, rq, val_arr+m);
+	m += extra2strar( log_extra, rq, rpl, val_arr+m);
 
 	for ( i=0,p=log_msg ; i<m ; i++ ) {
 		if (p+1+log_attrs[i].len+1+val_arr[i].len >= log_msg_end) {
@@ -344,7 +344,7 @@ void acc_db_close(void)
 }
 
 
-int acc_db_request( struct sip_msg *rq)
+int acc_db_request( struct sip_msg *rq, struct sip_msg *rpl)
 {
 	int m;
 	int n;
@@ -359,7 +359,7 @@ int acc_db_request( struct sip_msg *rq)
 	VAL_TIME(db_vals+(m++)) = acc_env.ts;
 
 	/* extra columns */
-	m += extra2strar( db_extra, rq, val_arr+m);
+	m += extra2strar( db_extra, rq, rpl, val_arr+m);
 
 	for( i++ ; i<m; i++)
 		VAL_STR(db_vals+i) = val_arr[i];
@@ -492,7 +492,7 @@ static inline uint32_t rad_status( struct sip_msg *req, int code )
 		} \
 	}while(0)
 
-int acc_rad_request( struct sip_msg *req )
+int acc_rad_request( struct sip_msg *req, struct sip_msg *rpl)
 {
 	int attr_cnt;
 	VALUE_PAIR *send;
@@ -523,7 +523,7 @@ int acc_rad_request( struct sip_msg *req )
 	ADD_RAD_AVPAIR( RA_TIME_STAMP, &av_type, -1);
 
 	/* add extra also */
-	attr_cnt += extra2strar( rad_extra, req, val_arr+attr_cnt);
+	attr_cnt += extra2strar( rad_extra, req, rpl, val_arr+attr_cnt);
 
 	/* add the values for the vector - start from 1 instead of
 	 * 0 to skip the first value which is the METHOD as string */
@@ -616,7 +616,7 @@ inline unsigned long diam_status(struct sip_msg *rq, int code)
 }
 
 
-int acc_diam_request( struct sip_msg *req )
+int acc_diam_request( struct sip_msg *req, struct sip_msg *rpl)
 {
 	int attr_cnt;
 	int cnt;
@@ -682,7 +682,7 @@ int acc_diam_request( struct sip_msg *req )
 	}
 
 	/* also the extra attributes */
-	attr_cnt += extra2strar( dia_extra, req, val_arr);
+	attr_cnt += extra2strar( dia_extra, rpl, req, val_arr);
 
 	/* add attributes */
 	for(i=0; i<attr_cnt; i++) {

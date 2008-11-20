@@ -59,10 +59,11 @@ struct acc_extra *parse_acc_leg(char *extra);
 
 void destroy_extras( struct acc_extra *extra);
 
-int extra2strar( struct acc_extra *extra, struct sip_msg *rq, str *val_arr);
+int extra2strar( struct acc_extra *extra, struct sip_msg *rq,
+		struct sip_msg *rpl,str *val_arr);
 
-int legs2strar( struct acc_extra *legs, struct sip_msg *rq, str *val_arr,
-																	int start);
+int legs2strar( struct acc_extra *legs, struct sip_msg *rq,
+		str *val_arr, int start);
 
 int extra2int( struct acc_extra *extra, int *attrs );
 

@@ -66,23 +66,23 @@
 #define MAX_SYSLOG_SIZE  65536
 
 void acc_log_init();
-int  acc_log_request( struct sip_msg *req);
+int  acc_log_request( struct sip_msg *req, struct sip_msg *rpl);
 
 #ifdef SQL_ACC
 int  acc_db_init(const str* db_url);
 int  acc_db_init_child(const str* db_url);
 void acc_db_close();
-int  acc_db_request( struct sip_msg *req);
+int  acc_db_request( struct sip_msg *req, struct sip_msg *rpl);
 #endif
 
 #ifdef RAD_ACC
 int  init_acc_rad(char *rad_cfg, int srv_type);
-int  acc_rad_request( struct sip_msg *req );
+int  acc_rad_request( struct sip_msg *req, struct sip_msg *rpl);
 #endif
 
 #ifdef DIAM_ACC
 int  acc_diam_init();
-int  acc_diam_request( struct sip_msg *req );
+int  acc_diam_request( struct sip_msg *req, struct sip_msg *rpl);
 #endif
 
 #endif

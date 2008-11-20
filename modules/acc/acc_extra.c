@@ -258,19 +258,30 @@ int extra2int( struct acc_extra *extra, int *attrs )
 
 
 
-int extra2strar( struct acc_extra *extra, struct sip_msg *rq, str *val_arr)
+int extra2strar( struct acc_extra *extra, struct sip_msg *rq,
+											struct sip_msg *rpl, str *val_arr)
 {
 	pv_value_t value;
 	int n;
 	int r;
 
-	n = 0;
-	r = 0;
-
-	while (extra) {
+	for( n=0,r=0 ; extra ; extra=extra->next,n++) {
 		/* get the value */
-		if (pv_get_spec_value( rq, &extra->spec, &value)!=0) {
-			LM_ERR("failed to get '%.*s'\n", extra->name.len,extra->name.s);
+		if (extra->use_rpl) {
+			if (rpl==NULL || rpl==FAKED_REPLY ) {
+				/* force a NULL value */
+				value.flags |= PV_VAL_NULL;
+			} else if (pv_get_spec_value( rpl, &extra->spec, &value)!=0 ) {
+				LM_ERR("failed to get '%.*s'\n",extra->name.len,extra->name.s);
+				/* force a NULL value */
+				value.flags |= PV_VAL_NULL;
+			}
+		} else {
+			if (pv_get_spec_value( rq, &extra->spec, &value)!=0) {
+				LM_ERR("failed to get '%.*s'\n",extra->name.len,extra->name.s);
+				/* force a NULL value */
+				value.flags |= PV_VAL_NULL;
+			}
 		}
 
 		/* check for overflow */
@@ -294,9 +305,6 @@ int extra2strar( struct acc_extra *extra, struct sip_msg *rq, str *val_arr)
 				val_arr[n] = value.rs;
 			}
 		}
-		n++;
-
-		extra = extra->next;
 	}
 
 done:

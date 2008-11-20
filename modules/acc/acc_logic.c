@@ -165,7 +165,7 @@ int w_acc_log_request(struct sip_msg *rq, char *comment, char *foo)
 	env_set_to( rq->to );
 	env_set_comment((struct acc_param*)comment);
 	env_set_text( ACC_REQUEST, ACC_REQUEST_LEN);
-	return acc_log_request(rq);
+	return acc_log_request( rq, NULL);
 }
 
 
@@ -181,7 +181,7 @@ int w_acc_db_request(struct sip_msg *rq, char *comment, char *table)
 	env_set_to( rq->to );
 	env_set_comment((struct acc_param*)comment);
 	env_set_text(table, strlen(table));
-	return acc_db_request(rq);
+	return acc_db_request( rq, NULL);
 }
 #endif
 
@@ -193,7 +193,7 @@ int w_acc_rad_request(struct sip_msg *rq, char *comment, char *foo)
 		return -1;
 	env_set_to( rq->to );
 	env_set_comment((struct acc_param*)comment);
-	return acc_rad_request(rq);
+	return acc_rad_request( rq, NULL);
 }
 #endif
 
@@ -205,7 +205,7 @@ int w_acc_diam_request(struct sip_msg *rq, char *comment, char *foo)
 		return -1;
 	env_set_to( rq->to );
 	env_set_comment((struct acc_param*)comment);
-	return acc_diam_request(rq);
+	return acc_diam_request( rq, NULL);
 }
 #endif
 
@@ -302,26 +302,26 @@ static inline void on_missed(struct cell *t, struct sip_msg *req,
 
 	if (is_log_mc_on(req)) {
 		env_set_text( ACC_MISSED, ACC_MISSED_LEN);
-		acc_log_request( req );
+		acc_log_request( req, reply );
 		flags_to_reset |= log_missed_flag;
 	}
 #ifdef SQL_ACC
 	if (is_db_mc_on(req)) {
 		env_set_text(db_table_mc.s, db_table_mc.len);
-		acc_db_request( req );
+		acc_db_request( req, reply );
 		flags_to_reset |= db_missed_flag;
 	}
 #endif
 #ifdef RAD_ACC
 	if (is_rad_mc_on(req)) {
-		acc_rad_request( req );
+		acc_rad_request( req, reply );
 		flags_to_reset |= radius_missed_flag;
 	}
 #endif
 /* DIAMETER */
 #ifdef DIAM_ACC
 	if (is_diam_mc_on(req)) {
-		acc_diam_request( req );
+		acc_diam_request( req, reply );
 		flags_to_reset |= diameter_missed_flag;
 	}
 #endif
@@ -368,22 +368,22 @@ static inline void acc_onreply( struct cell* t, struct sip_msg *req,
 
 	if ( is_log_acc_on(req) ) {
 		env_set_text( ACC_ANSWERED, ACC_ANSWERED_LEN);
-		acc_log_request(req);
+		acc_log_request( req, reply );
 	}
 #ifdef SQL_ACC
 	if (is_db_acc_on(req)) {
 		env_set_text( db_table_acc.s, db_table_acc.len);
-		acc_db_request(req);
+		acc_db_request( req, reply );
 	}
 #endif
 #ifdef RAD_ACC
 	if (is_rad_acc_on(req))
-		acc_rad_request(req);
+		acc_rad_request( req, reply );
 #endif
 /* DIAMETER */
 #ifdef DIAM_ACC
 	if (is_diam_acc_on(req))
-		acc_diam_request(req);
+		acc_diam_request( req, reply );
 #endif
 
 	if (new_uri_bk.len>=0) {
@@ -406,23 +406,23 @@ static inline void acc_onack( struct cell* t, struct sip_msg *req,
 
 	if (is_log_acc_on(req)) {
 		env_set_text( ACC_ACKED, ACC_ACKED_LEN);
-		acc_log_request( ack );
+		acc_log_request( ack, NULL );
 	}
 #ifdef SQL_ACC
 	if (is_db_acc_on(req)) {
 		env_set_text( db_table_acc.s, db_table_acc.len);
-		acc_db_request( ack );
+		acc_db_request( ack, NULL );
 	}
 #endif
 #ifdef RAD_ACC
 	if (is_rad_acc_on(req)) {
-		acc_rad_request(ack);
+		acc_rad_request( ack, NULL );
 	}
 #endif
 /* DIAMETER */
 #ifdef DIAM_ACC
 	if (is_diam_acc_on(req)) {
-		acc_diam_request(ack);
+		acc_diam_request( ack, NULL);
 	}
 #endif
 	
