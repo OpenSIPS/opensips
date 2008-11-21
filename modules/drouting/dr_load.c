@@ -302,7 +302,8 @@ rt_data_t* dr_load_routing_info( db_func_t *dr_dbf, db_con_t* db_hdl,
 			/* add the destinaton definition in */
 			if ( add_dst( rdata, int_vals[0], str_vals[0], int_vals[1],
 					str_vals[1], int_vals[2])<0 ) {
-				LM_ERR("failed to add destination -> skipping\n");
+				LM_ERR("failed to add destination id %d -> skipping\n",
+					int_vals[0]);
 				continue;
 			}
 			n++;
@@ -392,22 +393,21 @@ rt_data_t* dr_load_routing_info( db_func_t *dr_dbf, db_con_t* db_hdl,
 			str_vals[3] = (char*)VAL_STRING(ROW_VALUES(row)+6);
 			/* parse the time definition */
 			if ((time_rec=parse_time_def(str_vals[2]))==0) {
-				LM_ERR("bad time definition "
-					"<%s> -> skipping rule\n",str_vals[2]);
+				LM_ERR("bad time definition <%s> for rule id %d -> skipping\n",
+					str_vals[2], int_vals[0]);
 				continue;
 			}
 			/* build the routing rule */
 			if ((ri = build_rt_info( int_vals[2], time_rec, int_vals[3],
 					str_vals[3], rdata->pgw_l))== 0 ) {
-				LM_ERR("failed to add "
-					"routing rule-> skipping rule\n");
+				LM_ERR("failed to add routing info for rule id %d -> "
+					"skipping\n", int_vals[0]);
 				tmrec_free( time_rec );
 				continue;
 			}
 			/* add the rule */
 			if (add_rule( rdata, str_vals[0], &tmp, ri)!=0) {
-				LM_ERR("failed to add"
-						" rule -> skipping\n");
+				LM_ERR("failed to add rule id %d -> skipping\n", int_vals[0]);
 				free_rt_info( ri );
 				continue;
 			}

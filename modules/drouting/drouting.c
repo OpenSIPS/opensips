@@ -705,10 +705,11 @@ again:
 					local_gwlist[t++]   = j + rand()%(i-j);
 					if(sort_order==1)
 					{
-						local_gwlist[t++] = j + rand()%(i-j);
-						while(local_gwlist[j+1]==local_gwlist[j])
-							local_gwlist[t++] = j + rand()%(i-j);
-		
+						do{
+							local_gwlist[t] = j + rand()%(i-j);
+						}while(local_gwlist[t]==local_gwlist[t-1]);
+						t++;
+
 						/*
 						LM_DBG("selected gw[%d]=%d"
 							" gw[%d]=%d.\n",
