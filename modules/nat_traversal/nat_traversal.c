@@ -1138,7 +1138,10 @@ __dialog_destroy(struct dlg_cell *dlg, int type, struct dlg_cb_params *_params)
     unsigned h;
     int i;
 
-    if (!param)
+    // If nat_table is NULL, it's because it was already removed during
+    // shutdown by mod_destroy. However we can still receive dialog destroy
+    // notifications when the dialog module removes the dialogs on shutdown.
+    if (!param || !nat_table)
         return;
 
     if (param->caller_uri) {
@@ -1796,6 +1799,7 @@ mod_destroy(void)
     if (nat_table) {
         save_keepalive_state();
         HashTable_del(nat_table);
+        nat_table = NULL;
     }
 }
 
