@@ -159,8 +159,8 @@ static inline unsigned int dlg2hash( dlg_t* dlg )
 }
 
 
-static inline struct sip_msg* buf_to_sip_msg(char *buf, unsigned int len,	
- 	     														dlg_t *dialog)
+static inline struct sip_msg* buf_to_sip_msg(char *buf, unsigned int len,
+															dlg_t *dialog)
 {
 	static struct sip_msg req;
 
@@ -173,8 +173,8 @@ static inline struct sip_msg* buf_to_sip_msg(char *buf, unsigned int len,
 		return NULL;
 	}
 	/* populate some special fields in sip_msg */
-   	req.set_global_address=default_global_address;
-   	req.set_global_port=default_global_port;
+	req.set_global_address=default_global_address;
+	req.set_global_port=default_global_port;
 	req.force_send_socket = dialog->send_sock; 
 	if (set_dst_uri(&req, dialog->hooks.next_hop)) {
 		LM_ERR("failed to set dst_uri");
@@ -314,7 +314,6 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 					MSG_TRANS_SHM_FLAG|MSG_TRANS_NOVIA_FLAG );
 				if (!buf1) {
 					LM_ERR("no more shm mem\n"); 
-					free_sip_msg(req);
 					/* keep original buffer */
 				} else {
 					shm_free(buf);
@@ -323,6 +322,7 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 					/* use new buffer */
 				}
 			}
+			free_sip_msg(req);
 		}
 	}
 
