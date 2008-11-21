@@ -314,7 +314,6 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 					MSG_TRANS_SHM_FLAG|MSG_TRANS_NOVIA_FLAG );
 				if (!buf1) {
 					LM_ERR("no more shm mem\n"); 
-					free_sip_msg(req);
 					/* keep original buffer */
 				} else {
 					shm_free(buf);
@@ -323,6 +322,7 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 					/* use new buffer */
 				}
 			}
+			free_sip_msg(req);
 		}
 	}
 
