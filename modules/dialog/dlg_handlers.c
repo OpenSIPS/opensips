@@ -567,6 +567,9 @@ static inline int update_cseqs(struct dlg_cell *dlg, struct sip_msg *req,
 static void
 unreference_dialog(void *dialog)
 {
+	// if the dialog table is gone, it means the system is shutting down.
+	if (!d_table)
+		return;
 	unref_dlg((struct dlg_cell*)dialog, 1);
 }
 
