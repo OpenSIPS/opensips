@@ -603,7 +603,6 @@ int rls_handle_subscribe(struct sip_msg* msg, char* s1, char* s2)
 
 	if(init_req) /* if an initial subscribe */
 	{
-		LM_DBG("initial request!\n");
 		/** reply with 200 OK*/
 		if(reply_200(msg, &subs.contact, subs.expires, &subs.to_tag)< 0)
 			goto error_free;
@@ -623,7 +622,6 @@ int rls_handle_subscribe(struct sip_msg* msg, char* s1, char* s2)
 	}
 	else
 	{
-		LM_DBG("in dialog request!");
 		if(update_rlsubs(&subs, hash_code, &reply_code, &reply_str) < 0)
 		{
 			LM_ERR("while updating resource list subscription\n");
@@ -815,8 +813,6 @@ int resource_subscriptions(subs_t* subs, xmlNodePtr rl_node)
 	char* uri= NULL;
 	subs_info_t s;
 	str wuri= {0, 0};
-	static char buf[64];
-	str extra_headers;
 	str did_str= {0, 0};
 	int cont_no= 0;
 		
@@ -845,10 +841,6 @@ int resource_subscriptions(subs_t* subs, xmlNodePtr rl_node)
 	}
 	s.expires= subs->expires;
 	s.source_flag= RLS_SUBSCRIBE;
-	extra_headers.s= buf;
-	extra_headers.len= sprintf(extra_headers.s,
-			"Max-Forwards: 70\r\n");
-	s.extra_headers= &extra_headers;
 	
 	if(process_list_and_exec(rl_node, send_resource_subs,(void*)(&s), 
 				&cont_no)< 0)
