@@ -36,11 +36,11 @@ Anca-Maria Vamanu
               1.3.3. drr_table(str)
               1.3.4. drg_table(str)
               1.3.5. use_domain (int)
-              1.3.6. drg_user_col (str)
-              1.3.7. drg_domain_col (str)
-              1.3.8. drg_grpid_col (str)
-              1.3.9. ruri_avp (str)
-              1.3.10. sort_order (int)
+              1.3.6. sort_order (int)
+              1.3.7. drg_user_col (str)
+              1.3.8. drg_domain_col (str)
+              1.3.9. drg_grpid_col (str)
+              1.3.10. ruri_avp (str)
               1.3.11. fetch_rows (int)
               1.3.12. force_dns (int)
 
@@ -74,11 +74,11 @@ Anca-Maria Vamanu
    1.3. Set drr_table parameter
    1.4. Set drg_table parameter
    1.5. Set use_domain parameter
-   1.6. Set drg_user_col parameter
-   1.7. Set drg_domain_col parameter
-   1.8. Set drg_grpid_col parameter
-   1.9. Set ruri_avp parameter
-   1.10. Set sort_order parameter
+   1.6. Set sort_order parameter
+   1.7. Set drg_user_col parameter
+   1.8. Set drg_domain_col parameter
+   1.9. Set drg_grpid_col parameter
+   1.10. Set ruri_avp parameter
    1.11. Set fetch_rows parameter
    1.12. Set force_dns parameter
    1.13. do_routing usage
@@ -121,6 +121,8 @@ Chapter 1. Admin Guide
      * routing info (destinations, rules, groups) are stored in a
        database and loaded into memory at start up time; reload at
        runtime via MI command
+     * load balancing or random selection of the destinations
+       (from a given set)
      * able to handle large volume of routing info (300K of rules)
        with minimal speed/time and memory consumption penalties
      * script integration - Pseudo variables support in functions;
@@ -186,7 +188,22 @@ Chapter 1. Admin Guide
    2    10   10.10.10.10      2     3333       Gateway 2
    3    20   10.10.10.11      0                Gateway 3
 
-1.1.4.2. Routing Rules
+1.1.4.2. Destionation/GW lists
+
+   For each rule, you can set a list of destinations to be used.
+   The list is comma or pipe separated enumeration of the
+   destinations. The module will use (one by one) each destination
+   from the list (in the given order).
+
+   Also the module allows the usage of groups in the destination
+   lists. A group of destinations is delimited by semi-colon char.
+   inside the whole destination list ( like: 2,4;5,78,23;4;7;2 ).
+   The destinations from within a group may be act differently
+   (like load-balancing, random selection, etc), depending of the
+   "sort_order" module parameter - more about this is available
+   under the module paramters section.
+
+1.1.4.3. Routing Rules
 
    Default name for the table storing rule definitions is
    "dr_rules".
@@ -461,67 +478,78 @@ modparam("drouting", "drg_table", "groups")
 modparam("drouting", "use_domain", 0)
 ...
 
-1.3.6. drg_user_col (str)
+1.3.6. sort_order (int)
+
+   Defines how the destination list should be processed (ordering
+   of the elements). Possible modes are
+     * 0 - destination groups are ignored and all the destinations
+       are tried in the given order; Ex: list 1,2;3,4,5;6 will
+       lead to usage as 1,2,3,4,5,6
+     * 1 - the destinations from each group are randomly arranged
+       (only the two elements are randomly selected); groups do
+       maintain their order (as given); the resulting list is used
+       (with all the defined destinations). Ex: 1,2;3,4,5;6 ->
+       randomiser -> (A) 2,1;4,3,5;6 -> usage 2,1,4,3,5,6 (B)
+       1,2;3,5,4;6 -> usage 1,2,3,5,4,6
+     * 2 - from each destination group, only a single destination
+       is randomly selected; groups do maintain their order (as
+       given); Ex: 1,2;3,4,5;6 -> randomiser -> (A) 2;4;6 -> usage
+       2,4,6 (B) 1;5;6 -> usage 1,5,6
+
+   Default value is "0".
+
+   Example 1.6. Set sort_order parameter
+...
+modparam("drouting", "sort_order", 2)
+...
+
+1.3.7. drg_user_col (str)
 
    The name of the column in group db table where the username is
    stored.
 
    Default value is "username".
 
-   Example 1.6. Set drg_user_col parameter
+   Example 1.7. Set drg_user_col parameter
 ...
 modparam("drouting", "drg_user_col", "user")
 ...
 
-1.3.7. drg_domain_col (str)
+1.3.8. drg_domain_col (str)
 
    The name of the column in group db table where the domain is
    stored.
 
    Default value is "domain".
 
-   Example 1.7. Set drg_domain_col parameter
+   Example 1.8. Set drg_domain_col parameter
 ...
 modparam("drouting", "drg_domain_col", "host")
 ...
 
-1.3.8. drg_grpid_col (str)
+1.3.9. drg_grpid_col (str)
 
    The name of the column in group db table where the group id is
    stored.
 
    Default value is "groupid".
 
-   Example 1.8. Set drg_grpid_col parameter
+   Example 1.9. Set drg_grpid_col parameter
 ...
 modparam("drouting", "drg_grpid_col", "grpid")
 ...
 
-1.3.9. ruri_avp (str)
+1.3.10. ruri_avp (str)
 
    The name of the avp for storing Request URIs to be later used
    (alternative destiantions for the current one).
 
    Default value is "NULL".
 
-   Example 1.9. Set ruri_avp parameter
+   Example 1.10. Set ruri_avp parameter
 ...
 modparam("drouting", "ruri_avp", '$avp(dr_ruri)')
 modparam("drouting", "ruri_avp", '$avp(i:33)')
-...
-
-1.3.10. sort_order (int)
-
-   The order in which to sort the rules.
-     * 0 - normal order
-     * 1 - random order, full set
-     * 2 - random order, one per set
-
-   Default value is "0".
-
-   Example 1.10. Set sort_order parameter
-...
-modparam("drouting", "sort_order", 2)
 ...
 
 1.3.11. fetch_rows (int)

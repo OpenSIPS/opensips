@@ -55,6 +55,12 @@
 
 	<listitem>
 	<para>
+	load balancing or random selection of the destinations (from a given set)
+	</para>
+	</listitem>
+
+	<listitem>
+	<para>
 	able to handle large volume of routing info (300K of rules) with minimal
 	speed/time and memory consumption penalties
 	</para>
@@ -236,6 +242,25 @@
 	</tbody>
 	</tgroup>
 	</table> 
+	</para>
+	</section>
+
+
+	<section>
+	<title>Destionation/GW lists</title>
+	<para>
+	For each rule, you can set a list of destinations to be used. The list is
+	comma or pipe separated enumeration of the destinations. The module
+	will use (one by one) each destination from the list (in the given order).
+	</para>
+	<para>
+	Also the module allows the usage of groups in the destination lists. A
+	group of destinations is delimited by semi-colon char. inside the whole
+	destination list ( like: 2,4;5,78,23;4;7;2 ). The destinations from 
+	within a group may be act differently (like load-balancing, random 
+	selection, etc), depending of the <quote>sort_order</quote> module 
+	parameter - more about this is available under the module paramters 
+	section.
 	</para>
 	</section>
 
@@ -850,7 +875,6 @@ modparam("drouting", "drg_table", "groups")
 		</example>
 	</section>
 
-
 	<section>
 		<title><varname>use_domain</varname> (int)</title>
 		<para>
@@ -870,6 +894,51 @@ modparam("drouting", "use_domain", 0)
 </programlisting>
 		</example>
 	</section>
+
+	<section>
+		<title><varname>sort_order</varname> (int)</title>
+		<para>
+		Defines how the destination list should be processed (ordering of
+		the elements). Possible modes are
+		<itemizedlist>
+		<listitem>
+			<emphasis>0</emphasis> - destination groups are ignored and all the
+			destinations are tried in the given order; 
+			Ex: list 1,2;3,4,5;6 will lead to usage as 1,2,3,4,5,6 
+		</listitem>
+		<listitem>
+			<emphasis>1</emphasis> - the destinations from each group are
+			randomly arranged (only the two elements are randomly selected);
+			groups do maintain their order (as given); the resulting list is 
+			used (with all the defined destinations).
+			Ex: 1,2;3,4,5;6 -> randomiser -> 
+			(A) 2,1;4,3,5;6  -> usage 2,1,4,3,5,6
+			(B) 1,2;3,5,4;6  -> usage 1,2,3,5,4,6
+		</listitem>
+		<listitem>
+			<emphasis>2</emphasis> - from each destination group, only a 
+			single destination is randomly selected; groups do maintain their
+			order (as given);
+			Ex: 1,2;3,4,5;6 -> randomiser ->
+			(A) 2;4;6  -> usage 2,4,6
+			(B) 1;5;6  -> usage 1,5,6
+		</listitem>
+		</itemizedlist>
+		</para>
+		<para>
+		<emphasis>Default value is <quote>0</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>sort_order</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("drouting", "sort_order", 2)
+...
+</programlisting>
+		</example>
+	</section>
+
 	<section>
 		<title><varname>drg_user_col</varname> (str)</title>
 		<para>
@@ -948,36 +1017,6 @@ modparam("drouting", "ruri_avp", '$avp(i:33)')
 	</section>
 
 	<section>
-		<title><varname>sort_order</varname> (int)</title>
-		<para>
-		The order in which to sort the rules.
-		<itemizedlist>
-		<listitem>
-			<emphasis>0 </emphasis>- normal order
-		</listitem>
-		<listitem>
-			<emphasis>1 </emphasis>- random order, full set
-		</listitem>
-		<listitem>
-			<emphasis>2 </emphasis>- random order, one per set
-		</listitem>
-		</itemizedlist>
-		</para>
-		<para>
-		<emphasis>Default value is <quote>0</quote>.
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>sort_order</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("drouting", "sort_order", 2)
-...
-</programlisting>
-		</example>
-	</section>
-
-<section>
 		<title><varname>fetch_rows</varname> (int)</title>
 		<para>
 		</para>
