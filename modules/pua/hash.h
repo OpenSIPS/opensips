@@ -134,25 +134,25 @@ static inline int get_event_flag(str* event)
     switch (event->len) 
     {
         case 8:
-            if (strncmp(event->s, "presence", 8) == 0)
+            if (strncasecmp(event->s, "presence", 8) == 0)
                 return PRESENCE_EVENT;
             break;
         case 9:
-            if (strncmp(event->s, "xcap-diff", 9) == 0)
+            if (strncasecmp(event->s, "xcap-diff", 9) == 0)
                 return XCAPDIFF_EVENT;
             break;
         case 10:
-            if (strncmp(event->s, "dialog;sla", 10) == 0)
+            if (strncasecmp(event->s, "dialog;sla", 10) == 0)
                 return BLA_EVENT;
             if (strncmp(event->s, "conference", 10) == 0)
                 return CONFERENCE_EVENT;
             break;
         case 14:
-            if (strncmp(event->s, "presence;winfo", 14) == 0)
+            if (strncasecmp(event->s, "presence;winfo", 14) == 0)
                 return PWINFO_EVENT;
             break;
         case 15:
-            if (strncmp(event->s, "message-summary", 15) == 0)
+            if (strncasecmp(event->s, "message-summary", 15) == 0)
                 return MSGSUM_EVENT;
     }
 

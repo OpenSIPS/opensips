@@ -123,7 +123,7 @@ static inline str* get_local_contact(struct sip_msg* msg)
 	ip.len= strlen(ip.s);
 	port = msg->rcv.dst_port;
 
-	if(strncmp(ip.s, "sip:", 4)!=0)
+	if(strncasecmp(ip.s, "sip:", 4)!=0)
 	{
 		strncpy(contact->s, "sip:", 4);
 		contact->len+= 4;

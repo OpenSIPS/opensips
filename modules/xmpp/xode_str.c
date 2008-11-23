@@ -175,20 +175,20 @@ char *xode_strunescape(xode_pool p, char *buf)
     {
         if (buf[i]=='&')
         {
-            if (strncmp(&buf[i],"&amp;",5)==0)
+            if (strncasecmp(&buf[i],"&amp;",5)==0)
             {
                 temp[j] = '&';
                 i += 4;
-            } else if (strncmp(&buf[i],"&quot;",6)==0) {
+            } else if (strncasecmp(&buf[i],"&quot;",6)==0) {
                 temp[j] = '\"';
                 i += 5;
-            } else if (strncmp(&buf[i],"&apos;",6)==0) {
+            } else if (strncasecmp(&buf[i],"&apos;",6)==0) {
                 temp[j] = '\'';
                 i += 5;
-            } else if (strncmp(&buf[i],"&lt;",4)==0) {
+            } else if (strncasecmp(&buf[i],"&lt;",4)==0) {
                 temp[j] = '<';
                 i += 3;
-            } else if (strncmp(&buf[i],"&gt;",4)==0) {
+            } else if (strncasecmp(&buf[i],"&gt;",4)==0) {
                 temp[j] = '>';
                 i += 3;
             }

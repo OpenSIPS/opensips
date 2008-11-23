@@ -161,7 +161,7 @@ int extract_rtpmap(str *body,
 	char *cp, *cp1;
 	int len;
 
-	if (strncmp(body->s, "a=rtpmap:", 9) !=0) {
+	if (strncasecmp(body->s, "a=rtpmap:", 9) !=0) {
 		/*LM_DBG("We are not pointing to an a=rtpmap: attribute =>`%.*s'\n", body->len, body->s); */
 		return -1;
 	}
@@ -274,10 +274,10 @@ int extract_sendrecv_mode(str *body, str *sendrecv_mode)
 	char *cp1;
 
 	cp1 = body->s;
-	if ( !( (strncmp(cp1, "a=sendrecv", 10) == 0) ||
-		(strncmp(cp1, "a=inactive", 10) == 0) ||
-		(strncmp(cp1, "a=recvonly", 10) == 0) ||
-		(strncmp(cp1, "a=sendonly", 10) == 0) )) {
+	if ( !( (strncasecmp(cp1, "a=sendrecv", 10) == 0) ||
+		(strncasecmp(cp1, "a=inactive", 10) == 0) ||
+		(strncasecmp(cp1, "a=recvonly", 10) == 0) ||
+		(strncasecmp(cp1, "a=sendonly", 10) == 0) )) {
 		return -1;
 	}
 

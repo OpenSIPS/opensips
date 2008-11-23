@@ -487,7 +487,7 @@ int rls_handle_subscribe(struct sip_msg* msg, char* s1, char* s2)
 	ev_param= parsed_event->params;
 	while(ev_param)
 	{
-		if(ev_param->name.len== 2 && strncmp(ev_param->name.s, "id", 2)== 0)
+		if(ev_param->name.len== 2 && strncasecmp(ev_param->name.s, "id", 2)== 0)
 		{
 			subs.event_id= ev_param->body;
 			break;

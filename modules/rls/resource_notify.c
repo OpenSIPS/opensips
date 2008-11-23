@@ -66,13 +66,13 @@ int parse_subs_state(str auth_state, str** reason, int* expires)
 	int len, flag= -1;
 
 
-	if( strncmp(auth_state.s, "active", 6)== 0)
+	if( strncasecmp(auth_state.s, "active", 6)== 0)
 		flag= ACTIVE_STATE;
 
-	if( strncmp(auth_state.s, "pending", 7)== 0)
+	if( strncasecmp(auth_state.s, "pending", 7)== 0)
 		flag= PENDING_STATE; 
 
-	if( strncmp(auth_state.s, "terminated", 10)== 0)
+	if( strncasecmp(auth_state.s, "terminated", 10)== 0)
 	{
 		*expires = 0;
 		smc= strchr(auth_state.s, ';');
@@ -81,7 +81,7 @@ int parse_subs_state(str auth_state, str** reason, int* expires)
 			LM_ERR("terminated state and no reason found");
 			return -1;
 		}
-		if(strncmp(smc+1, "reason=", 7))
+		if(strncasecmp(smc+1, "reason=", 7))
 		{
 			LM_ERR("terminated state and no reason found");
 			return -1;
@@ -110,7 +110,7 @@ int parse_subs_state(str auth_state, str** reason, int* expires)
 			LM_ERR("active or pending state and no expires parameter found");
 			return -1;
 		}
-		if(strncmp(smc+1, "expires=", 8))
+		if(strncasecmp(smc+1, "expires=", 8))
 		{
 			LM_ERR("active or pending state and no expires parameter found");
 			return -1;

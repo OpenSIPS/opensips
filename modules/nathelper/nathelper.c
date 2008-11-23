@@ -604,13 +604,13 @@ static int add_rtpproxy_socks(struct rtpp_set * rtpp_list,
 		LM_DBG("url is %s, len is %i\n", pnode->rn_url.s, pnode->rn_url.len);
 		/* Leave only address in rn_address */
 		pnode->rn_address = pnode->rn_url.s;
-		if (strncmp(pnode->rn_address, "udp:", 4) == 0) {
+		if (strncasecmp(pnode->rn_address, "udp:", 4) == 0) {
 			pnode->rn_umode = 1;
 			pnode->rn_address += 4;
-		} else if (strncmp(pnode->rn_address, "udp6:", 5) == 0) {
+		} else if (strncasecmp(pnode->rn_address, "udp6:", 5) == 0) {
 			pnode->rn_umode = 6;
 			pnode->rn_address += 5;
-		} else if (strncmp(pnode->rn_address, "unix:", 5) == 0) {
+		} else if (strncasecmp(pnode->rn_address, "unix:", 5) == 0) {
 			pnode->rn_umode = 0;
 			pnode->rn_address += 5;
 		}

@@ -141,20 +141,20 @@ int bla_handle_notify(struct sip_msg* msg, char* s1, char* s2)
 		goto error;
 	}
 	subs_state= hdr->body;
-	if(strncmp(subs_state.s, "terminated", 10)== 0)
+	if(strncasecmp(subs_state.s, "terminated", 10)== 0)
 		expires= 0;
 	else
 	{
-		if(strncmp(subs_state.s, "active", 6)== 0 ||
+		if(strncasecmp(subs_state.s, "active", 6)== 0 ||
 				strncmp(subs_state.s, "pending", 7)==0 )
 		{
 			expires = DEFAULT_EXPIRES;
 			char* sep= NULL;
-			str exp= {0, 0};
+			str exp= {NULL, 0};
 			sep= strchr(subs_state.s, ';');
 			if(sep)
 			{
-				if(strncmp(sep+1, "expires=", 8)== 0)
+				if(strncasecmp(sep+1, "expires=", 8)== 0)
 				{
 					exp.s= sep+ 9;
 					sep= exp.s;

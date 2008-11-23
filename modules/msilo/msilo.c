@@ -800,7 +800,7 @@ static int m_store(struct sip_msg* msg, char* owner, char* s2)
 			ctaddr.len =
 			((contact_body_t*)(msg->contact->parsed))->contacts->uri.len;
 		
-			if(!ctaddr.s || ctaddr.len < 6 || strncmp(ctaddr.s, "sip:", 4)
+			if(!ctaddr.s || ctaddr.len < 6 || strncasecmp(ctaddr.s, "sip:", 4)
 				|| ctaddr.s[4]==' ')
 				ctaddr.s = NULL;
 			else

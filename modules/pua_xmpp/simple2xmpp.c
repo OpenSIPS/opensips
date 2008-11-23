@@ -175,11 +175,11 @@ int Notify2Xmpp(struct sip_msg* msg, char* s1, char* s2)
 	dialog.to_tag= pfrom->tag_value;
 	dialog.flag|= XMPP_SUBSCRIBE;
 	if(msg->event->body.len== 8 && 
-			(strncmp(msg->event->body.s,"presence",8 )==0))
+			(strncasecmp(msg->event->body.s,"presence",8 )==0))
 		event_flag|= PRESENCE_EVENT;
 	else
 	if(msg->event->body.len== 14 && 
-			(strncmp(msg->event->body.s,"presence.winfo",14 )==0))
+			(strncasecmp(msg->event->body.s,"presence.winfo",14 )==0))
 		event_flag|= PWINFO_EVENT;
 	else
 	{
@@ -215,10 +215,10 @@ int Notify2Xmpp(struct sip_msg* msg, char* s1, char* s2)
 	{
 		LM_DBG("PRESENCE\n");
 		hdr = get_header_by_static_name( msg, "Subscription-State" );
-		if(hdr && strncmp(hdr->body.s,"terminated", 10)== 0)
+		if(hdr && strncasecmp(hdr->body.s,"terminated", 10)== 0)
 		{
 			/* chack if reason timeout => don't send notification */
-			if(strncmp(hdr->body.s+11,"reason=timeout", 14)== 0)
+			if(strncasecmp(hdr->body.s+11,"reason=timeout", 14)== 0)
 			{
 				LM_DBG("Received Notification with state"
 					"terminated; reason= timeout=> don't send notification\n");
@@ -241,7 +241,7 @@ int Notify2Xmpp(struct sip_msg* msg, char* s1, char* s2)
 		{
 			LM_DBG("PRESENCE.WINFO\n");
 			hdr = get_header_by_static_name( msg, "Subscription-State" );
-			if(hdr && strncmp(hdr->body.s,"terminated", 10)== 0)
+			if(hdr && strncasecmp(hdr->body.s,"terminated", 10)== 0)
 			{
 				LM_DBG("Notify for presence.winfo with" 
 					" Subscription-State terminated- should not translate\n");
