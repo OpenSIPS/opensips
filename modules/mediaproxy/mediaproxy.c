@@ -493,7 +493,7 @@ get_from_uri(struct sip_msg *msg)
     if (uri.len == 0)
         return unknown;
 
-    if (strncmp(uri.s, "sip:", 4)==0) {
+    if (strncasecmp(uri.s, "sip:", 4)==0) {
         uri.s += 4;
         uri.len -= 4;
     }
@@ -523,7 +523,7 @@ get_to_uri(struct sip_msg *msg)
     if (uri.len == 0)
         return unknown;
 
-    if (strncmp(uri.s, "sip:", 4)==0) {
+    if (strncasecmp(uri.s, "sip:", 4)==0) {
         uri.s += 4;
         uri.len -= 4;
     }
@@ -748,8 +748,8 @@ get_direction_attribute(str *block, str *default_direction)
         line.len = findendline(line.s, zone.s + zone.len - line.s) - line.s;
 
         if (line.len==8) {
-            if (strncmp(line.s, "sendrecv", 8)==0 || strncmp(line.s, "sendonly", 8)==0 ||
-                strncmp(line.s, "recvonly", 8)==0 || strncmp(line.s, "inactive", 8)==0) {
+            if (strncasecmp(line.s, "sendrecv", 8)==0 || strncasecmp(line.s, "sendonly", 8)==0 ||
+                strncasecmp(line.s, "recvonly", 8)==0 || strncasecmp(line.s, "inactive", 8)==0) {
                 return line;
             }
         }

@@ -377,7 +377,8 @@ int imc_handle_invite(struct sip_msg* msg, imc_cmd_t *cmd,
 
 	if(add_domain)
 		size += dst->host.len;
-	if(cmd->param[0].len<4 || strncmp(cmd->param[0].s, "sip:", 4)!=0)
+
+	if(cmd->param[0].len<4 || strncasecmp(cmd->param[0].s, "sip:", 4)!=0)
 	{
 		size += 4;
 		add_sip = 1;
@@ -512,8 +513,10 @@ int imc_handle_invite(struct sip_msg* msg, imc_cmd_t *cmd,
 error:
 	if(uri.s!=0)
 		pkg_free(uri.s);
+
 	if(room!=NULL)
 		imc_release_room(room);
+
 	return -1;
 }
 
@@ -594,7 +597,7 @@ int imc_handle_remove(struct sip_msg* msg, imc_cmd_t *cmd,
 
 	if(add_domain)
 		size += dst->host.len;
-	if(cmd->param[0].len<=4 || strncmp(cmd->param[0].s, "sip:", 4)!=0)
+	if(cmd->param[0].len<=4 || strncasecmp(cmd->param[0].s, "sip:", 4)!=0)
 	{
 		size+= 4;
 		add_sip = 1;

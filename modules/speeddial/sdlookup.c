@@ -213,7 +213,7 @@ int sd_lookup(struct sip_msg* _msg, char* _table, char* _owner)
 	}
 	
 	/* check 'sip:' */
-	if(user_s.len<4 || strncmp(user_s.s, "sip:", 4))
+	if(user_s.len<4 || strncasecmp(user_s.s, "sip:", 4))
 	{
 		memcpy(useruri_buf, "sip:", 4);
 		user_s.s -= 4;

@@ -34,7 +34,9 @@
 /* utility function that skips spaces and tabs */
 inline char *eat_sp_tab(char *at, char *over)
 {
-    while((at < over) && ((*at == ' ') || (*at == '\t'))) at++;
+    while((at < over) && ((*at == ' ') || (*at == '\t')))
+	at++;
+
     return at;
 }
 
@@ -43,6 +45,7 @@ inline char *eat_printable(char *at, char *over)
 {
     while ((at < over) && ((*at == '\t') || ((*at >= 32) && (*at <= 126))))
 	at++;
+
     return at;
 }
 
@@ -69,29 +72,57 @@ int mwi_publ_handl(struct sip_msg* msg)
     over = body.s + body.len;
 
     /* check msg-status-line */
-    if (body.len <= 16) goto err;
-    if (strncmp(body.s, "Messages-Waiting", 16) != 0) goto err;
+    if (body.len <= 16){
+	 goto err;
+    }
+
+    if (strncasecmp(body.s, "Messages-Waiting", 16) != 0){
+	goto err;
+    }
+
     at = at + 16;
     at = eat_sp_tab(at, over);
-    if ((at >= over) || (*at != ':')) goto err;
+
+    if ((at >= over) || (*at != ':')){ 
+	goto err;
+    }
+
     at++;
-    if ((at >= over) || ((*at != ' ') && (*at != '\t'))) goto err;
+
+    if ((at >= over) || ((*at != ' ') && (*at != '\t'))){
+	goto err;
+    }
+
     at++;
     at = eat_sp_tab(at, over);
-    if (at + 3 >= over) goto err;
-    if (strncmp(at, "yes", 3) == 0) at = at + 3;
+
+    if (at + 3 >= over){
+	goto err;
+    }
+
+    if (strncasecmp(at, "yes", 3) == 0) 
+	at = at + 3;
     else
-	if (strncmp(at, "no", 2) == 0) at = at + 2;
+    {
+	if (strncasecmp(at, "no", 2) == 0) 
+		at = at + 2;
 	else
 	    goto err;
-    if ((at + 1 >= over) || (*at != '\r') || (*(at + 1) != '\n')) goto err;
+    }
+
+    if ((at + 1 >= over) || (*at != '\r') || (*(at + 1) != '\n')) 
+	goto err;
+
     at = at + 2;
     
     /* check that remaining body consists of lines that only contain
        printable ascii chars */
     while (at < over) {
 	at = eat_printable(at, over);
-	if ((at + 1 >= over) || (*at != '\r') || (*(at + 1) != '\n')) goto err;
+
+	if ((at + 1 >= over) || (*at != '\r') || (*(at + 1) != '\n'))
+		goto err;
+
 	at = at + 2;
     }
     

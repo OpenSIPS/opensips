@@ -175,7 +175,7 @@ int add_event(pres_ev_t* event)
 	memcpy(ev->content_type.s, event->content_type.s, event->content_type.len);
 
 	sep= strchr(event->name.s, '.');
-	if(sep && strncmp(sep+1, "winfo", 5)== 0)
+	if(sep != NULL && strncasecmp(sep+1, "winfo", 5)== 0)
 	{	
 		ev->type= WINFO_TYPE;
 		wipeer_name.s= event->name.s;

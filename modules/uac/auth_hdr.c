@@ -214,7 +214,7 @@ int parse_authenticate_body( str *body, struct authenticate_body *auth)
 		{
 			case QOP_STATE:
 				auth->qop = val;
-				if(val.len>=4 && !strncmp(val.s, "auth", 4))
+				if(val.len>=4 && !strncasecmp(val.s, "auth", 4))
 					auth->flags |= QOP_AUTH;
 				break;
 			case REALM_STATE:

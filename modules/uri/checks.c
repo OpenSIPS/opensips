@@ -305,7 +305,9 @@ int tel2sip(struct sip_msg* _msg, char* _s1, char* _s2)
 
 	if (ruri->len < 4) return 1;
 
-	if (strncmp(ruri->s, "tel:", 4) != 0) return 1;
+	if (strncasecmp(ruri->s, "tel:", 4) != 0){
+		return 1;
+	}
 
 	if ((pfuri=parse_from_uri(_msg))==NULL) {
 		LM_ERR("parsing From header failed\n");
