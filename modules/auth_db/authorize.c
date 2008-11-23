@@ -126,6 +126,10 @@ static inline int get_ha1(struct username* _username, str* _domain,
 		_ha1[result.len] = '\0';
 	}
 
+	if(auth_db_handle != NULL && res != NULL) {
+		auth_dbf.free(auth_db_handle, res);
+	}
+	
 	return 0;
 }
 
