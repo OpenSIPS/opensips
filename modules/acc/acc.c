@@ -473,8 +473,6 @@ int init_acc_rad(char *rad_cfg, int srv_type)
 
 static inline uint32_t rad_status( struct sip_msg *req, int code )
 {
-	if (code==0)
-		return rd_vals[RV_STATUS_FAILED].v;
 	if ((req->REQ_METHOD==METHOD_INVITE || req->REQ_METHOD==METHOD_ACK)
 				&& code>=200 && code<300)
 		return rd_vals[RV_STATUS_START].v;
