@@ -1628,7 +1628,7 @@ restore_keepalive_state(void)
     time_t rtime, stime, now;
     NAT_Contact *contact;
     struct socket_info *sock;
-    int port, proto, res, skip;
+    int port, proto, res;
     unsigned h;
     str host;
     FILE *f;
@@ -1645,7 +1645,7 @@ restore_keepalive_state(void)
 
     now = time(NULL);
 
-    skip = fscanf(f, STATE_FILE_HEADER); // skip header
+    res = fscanf(f, STATE_FILE_HEADER); // skip header
 
     while (True) {
         res = fscanf(f, "%63s %63s %ld %ld", uri, socket, &rtime, &stime);
