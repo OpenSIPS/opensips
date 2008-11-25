@@ -310,27 +310,9 @@ error_port:
 }
 
 
-#define MAX_SOCKET_STR ( 4 + 1 + IP_ADDR_MAX_STR_SIZE+1+INT2STR_MAX_LEN+1)
-#define sock_str_len(_sock) ( 3 + 1*((_sock)->proto==PROTO_SCTP) + 1 + \
-		(_sock)->address_str.len + 1 + (_sock)->port_no_str.len)
-
-static inline char* socket2str(struct socket_info *sock, char *s, int* len)
+static inline char* proto2str(int proto, char *p)
 {
-	static char buf[MAX_SOCKET_STR];
-	char *p,*p1;
-
-	if (s) {
-		/* buffer provided -> check lenght */
-		if ( sock_str_len(sock) > *len ) {
-			LM_ERR("buffer too short\n");
-			return 0;
-		}
-		p = p1 = s;
-	} else {
-		p = p1 = buf;
-	}
-
-	switch (sock->proto) {
+	switch (proto) {
 		case PROTO_UDP:
 			*(p++) = 'u';
 			*(p++) = 'd';
@@ -353,9 +335,35 @@ static inline char* socket2str(struct socket_info *sock, char *s, int* len)
 			*(p++) = 'p';
 			break;
 		default:
-			LM_CRIT("unsupported proto %d\n", sock->proto);
+			LM_CRIT("unsupported proto %d\n", proto);
 			return 0;
 	}
+	return p;
+}
+
+#define MAX_SOCKET_STR ( 4 + 1 + IP_ADDR_MAX_STR_SIZE+1+INT2STR_MAX_LEN+1)
+#define sock_str_len(_sock) ( 3 + 1*((_sock)->proto==PROTO_SCTP) + 1 + \
+		(_sock)->address_str.len + 1 + (_sock)->port_no_str.len)
+
+static inline char* socket2str(struct socket_info *sock, char *s, int* len)
+{
+	static char buf[MAX_SOCKET_STR];
+	char *p,*p1;
+
+	if (s) {
+		/* buffer provided -> check lenght */
+		if ( sock_str_len(sock) > *len ) {
+			LM_ERR("buffer too short\n");
+			return 0;
+		}
+		p = p1 = s;
+	} else {
+		p = p1 = buf;
+	}
+
+	p = proto2str( sock->proto, p);
+	if (p==NULL) return 0;
+
 	*(p++) = ':';
 	memcpy( p, sock->address_str.s, sock->address_str.len);
 	p += sock->address_str.len;
