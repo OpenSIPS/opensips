@@ -55,27 +55,52 @@ static str pu_489_rpl  = str_init("Bad Event");
 int send_2XX_reply(struct sip_msg * msg, int reply_code, int lexpire,
 		str *rtag, str* local_contact)
 {
-	static str hdr_append;
-	
-	hdr_append.s = (char *)pkg_malloc( sizeof(char)*(local_contact->len+ 128));
-	if(hdr_append.s == NULL)
+	char * hdr_append;
+	int lexpire_len;
+	char *lexpire_s;
+	int len;
+	char *p;
+
+	lexpire_s = int2str((unsigned long)lexpire, &lexpire_len);
+
+	len = 9 /*"Expires: "*/ + lexpire_len + CRLF_LEN
+		+ 10 /*"Contact: <"*/ + local_contact->len + 1 /*">"*/
+		+ ((msg->rcv.proto!=PROTO_UDP)?15/*";transport=xxxx"*/:0)
+		+ CRLF_LEN;
+
+	hdr_append = (char *)pkg_malloc( len );
+	if(hdr_append == NULL)
 	{
 		ERR_MEM(PKG_MEM_STR);
 	}
-	hdr_append.len = sprintf(hdr_append.s, "Expires: %d\r\n", lexpire);	
-	
-	strncpy(hdr_append.s+hdr_append.len ,"Contact: <", 10);
-	hdr_append.len += 10;
-	strncpy(hdr_append.s+hdr_append.len, local_contact->s, local_contact->len);
-	hdr_append.len+= local_contact->len;
-	strncpy(hdr_append.s+hdr_append.len, ">", 1);
-	hdr_append.len += 1;
-	strncpy(hdr_append.s+hdr_append.len, CRLF, CRLF_LEN);
-	hdr_append.len += CRLF_LEN;
 
-	hdr_append.s[hdr_append.len]= '\0';
-	
-	if (add_lump_rpl( msg, hdr_append.s, hdr_append.len, LUMP_RPL_HDR)==0 )
+	p = hdr_append;
+	/* expires header */
+	memcpy(p, "Expires: ", 9);
+	p += 9;
+	memcpy(p,lexpire_s,lexpire_len);
+	p += lexpire_len;
+	memcpy(p,CRLF,CRLF_LEN);
+	p += CRLF_LEN;
+	/* contact header */
+	memcpy(p,"Contact: <", 10);
+	p += 10;
+	memcpy(p,local_contact->s,local_contact->len);
+	p += local_contact->len;
+	if (msg->rcv.proto!=PROTO_UDP) {
+		memcpy(p,";transport=",11);
+		p += 11;
+		p = proto2str(msg->rcv.proto, p);
+		if (p==NULL) {
+			LM_ERR("invalid proto\n");
+			goto error;
+		}
+	}
+	*(p++) = '>';
+	memcpy(p, CRLF, CRLF_LEN);
+	p += CRLF_LEN;
+
+	if (add_lump_rpl( msg, hdr_append, p-hdr_append, LUMP_RPL_HDR)==0 )
 	{
 		LM_ERR("unable to add lump_rl\n");
 		goto error;
@@ -87,12 +112,12 @@ int send_2XX_reply(struct sip_msg * msg, int reply_code, int lexpire,
 		goto error;
 	}
 	
-	pkg_free(hdr_append.s);
+	pkg_free(hdr_append);
 	return 0;
 
 error:
 
-	pkg_free(hdr_append.s);
+	pkg_free(hdr_append);
 	return -1;
 }
 
