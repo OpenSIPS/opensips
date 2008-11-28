@@ -455,10 +455,10 @@ void dlg_onreq(struct cell* t, int type, struct tmcb_params *param)
 	/* move pending profile linkers into dialog */
 	set_current_dialog( req, dlg);
 
+	link_dlg( dlg , 2/* extra ref for the callback and current dlg hook */);
+
 	/* first INVITE seen (dialog created, unconfirmed) */
 	run_create_callbacks( dlg, req);
-
-	link_dlg( dlg , 2/* extra ref for the callback and current dlg hook */);
 
 	if ( seq_match_mode!=SEQ_MATCH_NO_ID &&
 	add_dlg_rr_param( req, dlg->h_entry, dlg->h_id)<0 ) {
