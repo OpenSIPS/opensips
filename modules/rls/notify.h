@@ -42,7 +42,7 @@
 
 #define REALLOC_BUF\
 		size+= BUF_REALLOC_SIZE;\
-		buf= (char*)realloc(buf, size);\
+		buf= (char*)pkg_realloc(buf, size);\
 		if(buf== NULL) \
 		{	ERR_MEM("constr_multipart_body");}
 
