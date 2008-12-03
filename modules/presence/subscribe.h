@@ -100,8 +100,8 @@ typedef void (*update_db_subs_t)(db_con_t * ,db_func_t ,shtable_t ,int ,int ,
 		handle_expired_func_t);
 
 int extract_sdialog_info(subs_t* subs,struct sip_msg* msg, int max_expire,
-		int* to_tag_gen);
+		int* to_tag_gen, str local_address);
 typedef int (*extract_sdialog_info_t)(subs_t* subs, struct sip_msg* msg,
-		int max_expire, int* to_tag_gen);
+		int max_expire, int* to_tag_gen, str local_address);
 
 #endif

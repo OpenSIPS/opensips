@@ -344,7 +344,24 @@ modparam("rls", "rls_event", "dialog;sla")
 		<title>Set <varname>presence_server</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("rls", "presence_server", "sip:sa@presence.opensips.org:5060")
+modparam("rls", "presence_server", "sip:pres@opensips.org:5060")
+...
+		</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>server_address</varname> (str)</title>
+		<para>
+		The address of the server that will be used as a contact in sent
+		Subscribe request and 200Ok replies for Subscribe messages for RLS.
+		It is compulosy.
+		</para>
+		<example>
+		<title>Set <varname>server_address</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("rls", "server_address", "sip:rls@opensips.org:5060")
 ...
 		</programlisting>
 		</example>

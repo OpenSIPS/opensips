@@ -78,7 +78,7 @@ char* generate_ETag(int publ_count)
 	}
 
 	etag[size] = '\0';
-	LM_DBG("etag= %s / %d\n ",etag, size);
+	LM_DBG("etag= %s / %d\n",etag, size);
 	return etag;
 
 error:

@@ -279,7 +279,6 @@ int update_subscription(struct sip_msg* msg, subs_t* subs, int init_req)
 {	
 	unsigned int hash_code;
 	int reply_code= 200;
-	
 
 	if(subs->event->type & PUBL_TYPE)
 		reply_code=(subs->status==PENDING_STATUS)?202:200;
@@ -352,18 +351,16 @@ int update_subscription(struct sip_msg* msg, subs_t* subs, int init_req)
 		if(send_2XX_reply(msg, reply_code, subs->expires, 0,
 			&subs->local_contact)<0)
 		{
-			LM_ERR("sending 202 OK reply\n");
+			LM_ERR("sending 2XX reply\n");
 			goto error;
 		}
-
-
 	}
 	else
 	{
 		if(send_2XX_reply(msg, reply_code, subs->expires, &subs->to_tag,
 			&subs->local_contact)<0)
 		{
-			LM_ERR("sending 202 OK reply\n");
+			LM_ERR("sending 2XX reply\n");
 			goto error;
 		}
 
@@ -381,7 +378,7 @@ int update_subscription(struct sip_msg* msg, subs_t* subs, int init_req)
 
 /* send notify  */
 	if(subs->event->type & PUBL_TYPE)
-	{	
+	{
 		if(subs->expires!= 0 && subs->event->wipeer)
 		{	
 			LM_DBG("send Notify with winfo\n");
@@ -407,7 +404,7 @@ int update_subscription(struct sip_msg* msg, subs_t* subs, int init_req)
 			}
 		}
 	}
-	else 
+	else
 	{
 		if(notify(subs, NULL, NULL, 0 )< 0)
 		{
@@ -541,9 +538,10 @@ int handle_subscribe(struct sip_msg* msg, char* str1, char* str2)
 			break;
 		}
 		ev_param= ev_param->next;
-	}		
+	}
 	
-	ret = extract_sdialog_info(&subs, msg, max_expires, &init_req);
+	ret = extract_sdialog_info(&subs, msg, max_expires, &init_req,
+			server_address);
 	if(ret< 0)
 	{
 		LM_ERR("failed to extract dialog information\n");
@@ -695,10 +693,10 @@ int handle_subscribe(struct sip_msg* msg, char* str1, char* str2)
 bad_event:
 
 	LM_ERR("Missing or unsupported event header field value\n");
-		
+
 	if(parsed_event && parsed_event->text.s)
 		LM_ERR("\tevent= %.*s\n",parsed_event->text.len,parsed_event->text.s);
-	
+
 	reply_code= BAD_EVENT_CODE;
 	reply_str= pu_489_rpl;
 
@@ -731,7 +729,8 @@ error_free:
 }
 
 
-int extract_sdialog_info(subs_t* subs,struct sip_msg* msg, int mexp, int* init_req)
+int extract_sdialog_info(subs_t* subs,struct sip_msg* msg, int mexp, int* init_req,
+		str local_address)
 {
 	str rec_route= {0, 0};
 	int rt  = 0;
@@ -889,21 +888,20 @@ int extract_sdialog_info(subs_t* subs,struct sip_msg* msg, int mexp, int* init_r
 	LM_DBG("subs->contact= %.*s - len = %d\n",subs->contact.len,
 			subs->contact.s, subs->contact.len);	
 
-    if(subs->event->evp->parsed== EVENT_DIALOG_SLA)
-    {
-        /* user_contact@from_domain */
-        if(parse_uri(subs->contact.s, subs->contact.len, &uri)< 0)
-        {
-            LM_ERR("failed to parse contact uri\n");
-            goto error;
-        }
-        if(uandd_to_uri(uri.user, subs->from_domain, &subs->pres_uri)< 0)
-        {
-            LM_ERR("failed to construct uri\n");
-            goto error;
-        }
-    }
-
+	if(subs->event->evp->parsed== EVENT_DIALOG_SLA)
+	{
+		/* user_contact@from_domain */
+		if(parse_uri(subs->contact.s, subs->contact.len, &uri)< 0)
+		{
+			LM_ERR("failed to parse contact uri\n");
+			goto error;
+		}
+		if(uandd_to_uri(uri.user, subs->from_domain, &subs->pres_uri)< 0)
+		{
+			LM_ERR("failed to construct uri\n");
+			goto error;
+		}
+	}
 
 	/*process record route and add it to a string*/
 	if(*init_req && msg->record_route!=NULL)
@@ -930,7 +928,7 @@ int extract_sdialog_info(subs_t* subs,struct sip_msg* msg, int mexp, int* init_r
 
 	subs->version = 0;
 	
-	if((!server_address.s) || (server_address.len== 0))
+	if((!local_address.s) || (local_address.len== 0))
 	{
 		contact= get_local_contact(msg);
 		if(contact== NULL)
@@ -942,7 +940,7 @@ int extract_sdialog_info(subs_t* subs,struct sip_msg* msg, int mexp, int* init_r
 		subs->local_contact= *contact;
 	}
 	else
-		subs->local_contact= server_address;
+		subs->local_contact= local_address;
 	
 	return 0;
 	
@@ -950,7 +948,7 @@ error:
 
 	return err_ret;
 	/*
-	 *  -1 - bag message
+	 *  -1 - bad message
 	 *  -2 - internal error
 	 * */
 }

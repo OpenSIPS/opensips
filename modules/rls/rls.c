@@ -222,10 +222,10 @@ static int mod_init(void)
 
 	if(!server_address.s)
 	{
-		LM_DBG("server_address parameter not set in configuration file\n");
+		LM_ERR("server_address parameter not set in configuration file\n");
+		return -1;
 	}
-	else
-		server_address.len= strlen(server_address.s);
+	server_address.len= strlen(server_address.s);
 	
 	if(presence_server.s)
 		presence_server.len= strlen(presence_server.s);
