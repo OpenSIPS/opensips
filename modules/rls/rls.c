@@ -219,14 +219,14 @@ static int mod_init(void)
 	char* sep;
 
 	LM_DBG("start\n");
-
+  
 	if(!server_address.s)
 	{
-		LM_DBG("server_address parameter not set in configuration file\n");
-	}	
-	else
-		server_address.len= strlen(server_address.s);
-	
+		LM_ERR("server_address parameter not set in configuration file\n");
+		return -1;
+	}
+	server_address.len= strlen(server_address.s);
+
 	if(presence_server.s)
 		presence_server.len= strlen(presence_server.s);
 	

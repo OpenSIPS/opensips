@@ -39,6 +39,7 @@ Anca-Maria Vamanu
               1.3.11. to_presence_code (int)
               1.3.12. rls_event (str)
               1.3.13. presence_server (str)
+              1.3.14. server_address (str)
 
         1.4. Exported Functions
 
@@ -64,8 +65,9 @@ Anca-Maria Vamanu
    1.11. Set to_presence_code parameter
    1.12. Set rls_event parameter
    1.13. Set presence_server parameter
-   1.14. rls_handle_subscribe usage
-   1.15. rls_handle_notify usage
+   1.14. Set server_address parameter
+   1.15. rls_handle_subscribe usage
+   1.16. rls_handle_notify usage
 
 Chapter 1. Admin Guide
 
@@ -275,7 +277,18 @@ modparam("rls", "rls_event", "dialog;sla")
 
    Example 1.13. Set presence_server parameter
 ...
-modparam("rls", "presence_server", "sip:sa@presence.opensips.org:5060")
+modparam("rls", "presence_server", "sip:pres@opensips.org:5060")
+...
+
+1.3.14. server_address (str)
+
+   The address of the server that will be used as a contact in
+   sent Subscribe request and 200Ok replies for Subscribe messages
+   for RLS. It is compulosy.
+
+   Example 1.14. Set server_address parameter
+...
+modparam("rls", "server_address", "sip:rls@opensips.org:5060")
 ...
 
 1.4. Exported Functions
@@ -289,7 +302,7 @@ modparam("rls", "presence_server", "sip:sa@presence.opensips.org:5060")
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.14. rls_handle_subscribe usage
+   Example 1.15. rls_handle_subscribe usage
 ...
 For presence and rls on the same machine:
         modparam(rls, "to_presence_code", 10)
@@ -328,7 +341,7 @@ For rls only:
        RLS server.
      * -1 - an error occurred during processing.
 
-   Example 1.15. rls_handle_notify usage
+   Example 1.16. rls_handle_notify usage
 ...
 if(method=="NOTIFY")
     rls_handle_notify();

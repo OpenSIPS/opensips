@@ -541,90 +541,137 @@ error:
 	return NULL;
 }
 
-str* rls_notify_extra_hdr(subs_t* subs, char* start_cid, char* boundary_string)
+int rls_notify_extra_hdr(subs_t* subs, char* start_cid, char* boundary_string,
+		str *hdr)
 {
-	str* str_hdr= NULL;
-	int len= 0, expires;
+	int len;
+	int lexpire_len;
+	char* lexpire_s;
+	char* p;
+	int port, proto;
+	str host;
 
-	str_hdr= (str*)pkg_malloc(sizeof(str));
-	if(str_hdr== NULL)
+	lexpire_s = int2str(subs->expires, &lexpire_len);
+	/* parse sockinfo */
+	if (parse_phostport (
+			subs->sockinfo_str.s,subs->sockinfo_str.len,&host.s,
+			&host.len, &port, &proto ))
 	{
-		ERR_MEM(PKG_MEM_STR);
+		LM_ERR("bad sockinfo string\n");
+		return -1;
 	}
-	memset(str_hdr, 0, sizeof(str));
 
-	str_hdr->s= (char*)pkg_malloc(RLS_HDR_LEN* sizeof(char));
-	if(str_hdr->s== NULL)
+
+	len = 14 /*Max-Forwards: */ + 4 /* valoarea */ + CRLF_LEN + 
+		7 /*Event: */ + subs->event->name.len +4 /*;id=*/+ subs->event_id.len+
+		CRLF_LEN + 10 /*Contact: <*/ + subs->local_contact.len + 1/*>*/ +
+		((proto!=PROTO_UDP)?15/*";transport=xxxx"*/:0) + 
+		CRLF_LEN +/*Subscription-State:*/ 20 + 
+		((subs->expires>0)?(15+lexpire_len):25) + CRLF_LEN + /*Require: */ 18
+		+ CRLF_LEN + ((start_cid && boundary_string)?(/*Content-Type*/59 +
+		/*start*/12 + strlen(start_cid) + /*boundary*/12 + 
+		strlen(boundary_string) + CRLF_LEN):0);
+
+	hdr->s = (char*)pkg_malloc(len);
+	if(hdr->s== NULL)
 	{
-		ERR_MEM(PKG_MEM_STR);
+		LM_ERR("while allocating memory\n");
+		return -1;
 	}
-	memcpy(str_hdr->s ,"Max-Forwards: ", 14);
-	str_hdr->len = 14;
-	len= sprintf(str_hdr->s+str_hdr->len, "%d", MAX_FORWARD);
+
+	p = hdr->s;
+
+	memcpy(p,"Max-Forwards: ", 14);
+	p+= 14;
+	len= sprintf(p, "%d", MAX_FORWARD);
 	if(len<= 0)
 	{
 		LM_ERR("while printing in string\n");
-		goto error;
-	}	
-	str_hdr->len+= len; 
-	memcpy(str_hdr->s+str_hdr->len, CRLF, CRLF_LEN);
-	str_hdr->len += CRLF_LEN;
+		pkg_free(hdr->s);
+		return -1;
+	}
+	p+= len;
 
-	memcpy(str_hdr->s+str_hdr->len  ,"Event: ", 7);
-	str_hdr->len+= 7;
-	memcpy(str_hdr->s+str_hdr->len, subs->event->name.s,
-			subs->event->name.len);
-	str_hdr->len+= subs->event->name.len;		
-	memcpy(str_hdr->s+str_hdr->len, CRLF, CRLF_LEN);
-	str_hdr->len += CRLF_LEN;
+	memcpy(p, CRLF, CRLF_LEN);
+	p += CRLF_LEN;
 
-	memcpy(str_hdr->s+str_hdr->len ,"Contact: <", 10);
-	str_hdr->len += 10;
-	memcpy(str_hdr->s+str_hdr->len,subs->local_contact.s,
-			subs->local_contact.len);
-	str_hdr->len +=  subs->local_contact.len;
-	memcpy(str_hdr->s+str_hdr->len, ">", 1);
-	str_hdr->len += 1;
-	memcpy(str_hdr->s+str_hdr->len, CRLF, CRLF_LEN);
-	str_hdr->len += CRLF_LEN;
+	memcpy(p ,"Event: ", 7);
+	p+= 7;
+	memcpy(p, subs->event->name.s, subs->event->name.len);
+	p+= subs->event->name.len;
+	if(subs->event_id.len && subs->event_id.s) 
+	{
+ 		memcpy(p, ";id=", 4);
+ 		p += 4;
+ 		memcpy(p, subs->event_id.s, subs->event_id.len);
+ 		p += subs->event_id.len;
+ 	}
+	memcpy(p, CRLF, CRLF_LEN);
+	p += CRLF_LEN;
 
-	expires= subs->expires;
+	memcpy(p ,"Contact: <", 10);
+	p += 10;
+	memcpy(p, subs->local_contact.s, subs->local_contact.len);
+	p +=  subs->local_contact.len;
+	
+	if (proto!=PROTO_UDP) {
+		memcpy(p,";transport=",11);
+		p += 11;
+		p = proto2str(proto, p);
+		if (p == NULL)
+		{
+			LM_ERR("invalid proto\n");
+			pkg_free(hdr->s);
+			return -1;
+		}
+	}
+	*(p++) = '>';
 
-	if( expires> 0 )
-		str_hdr->len+= sprintf(str_hdr->s+str_hdr->len,
-			"Subscription-State: active;expires=%d\r\n", expires);
+	memcpy(p, CRLF, CRLF_LEN);
+	p += CRLF_LEN;
+
+	if(subs->expires> 0 )
+	{
+		memcpy(p, "Subscription-State: active;expires=", 35);
+		p += 35;
+		memcpy(p, lexpire_s, lexpire_len);
+		p+= lexpire_len;
+	}
 	else
-		str_hdr->len+= sprintf(str_hdr->s+str_hdr->len,
-			"Subscription-State: terminated;reason=timeout\r\n");
+	{
+		memcpy(p, "Subscription-State: terminated;reason=timeout", 45);
+		p += 45;
+	}
 
-	str_hdr->len+= sprintf(str_hdr->s+str_hdr->len, "Require: eventlist\r\n");
+	memcpy(p, CRLF, CRLF_LEN);
+	p += CRLF_LEN;
+
+	memcpy(p, "Require: eventlist", 18);
+	p += 18;
+	memcpy(p, CRLF, CRLF_LEN);
+	p += CRLF_LEN;
 
 	if(start_cid && boundary_string)
 	{
-		str_hdr->len+= sprintf(str_hdr->s+str_hdr->len,
-			"Content-Type: multipart/related;type=\"application/rlmi+xml\"");
-		str_hdr->len+= sprintf(str_hdr->s+str_hdr->len,
-				";start= \"<%s>\";boundary=\"%s\"\r\n", start_cid, boundary_string);
-	}		
-	if(str_hdr->len> RLS_HDR_LEN)
-	{
-		LM_ERR("buffer size overflow\n");
-		goto error;
+		memcpy(p,"Content-Type: multipart/related;type=\"application/rlmi+xml\"", 59 );
+		p += 59;
+		memcpy(p, ";start= \"<", 10);
+		p += 10;
+		memcpy(p, start_cid, strlen(start_cid));
+		p += strlen(start_cid);
+		memcpy(p, ">\";boundary=\"", 13);
+		p += 13;
+		memcpy(p, boundary_string, strlen(boundary_string));
+		p += strlen(boundary_string);
+		*(p++) = '"';
+		memcpy(p, CRLF, CRLF_LEN);
+		p += CRLF_LEN;
 	}
-	str_hdr->s[str_hdr->len] = '\0';
+	hdr->len = p - hdr->s;
 
-	return str_hdr;
-
-error:
-	if(str_hdr)
-	{
-		if(str_hdr->s)
-			pkg_free(str_hdr->s);
-		pkg_free(str_hdr);
-	}
-	return NULL;
-
+	return 0;
 }
+
 void rls_free_td(dlg_t* td)
 {
 		pkg_free(td->loc_uri.s);
@@ -637,7 +684,7 @@ int rls_send_notify(subs_t* subs, str* body, char* start_cid,
 {
 	dlg_t* td= NULL;
 	str met= {"NOTIFY", 6};
-	str* str_hdr= NULL;
+	str str_hdr = {0, 0};
 	dialog_id_t* cb_param= NULL;
 	int size;
 	int rt;
@@ -677,20 +724,19 @@ int rls_send_notify(subs_t* subs, str* body, char* start_cid,
 	
 	LM_DBG("constructed cb_param\n");
 
-	str_hdr= rls_notify_extra_hdr(subs, start_cid, boundary_string);
-	if(str_hdr== NULL || str_hdr->s== NULL)
+	if(rls_notify_extra_hdr(subs, start_cid, boundary_string, &str_hdr) < 0)
 	{
 		LM_ERR("while building extra headers\n");
 		goto error;
 	}
-	LM_DBG("str_hdr= %.*s\n", str_hdr->len, str_hdr->s);
+	LM_DBG("str_hdr= %.*s\n", str_hdr.len, str_hdr.s);
 	rt = tmb.t_request_within
-		(&met,						             
-		str_hdr,                               
-		body,                           
-		td,					                  
-		rls_notify_callback,				        
-		(void*)cb_param);				
+		(&met,
+		&str_hdr,
+		body,
+		td,
+		rls_notify_callback,
+		(void*)cb_param);
 
 	if(rt < 0)
 	{
@@ -698,8 +744,7 @@ int rls_send_notify(subs_t* subs, str* body, char* start_cid,
 		goto error;	
 	}
 
-	pkg_free(str_hdr->s);
-	pkg_free(str_hdr);
+	pkg_free(str_hdr.s);
 	rls_free_td(td);
 	return 0;
 
@@ -708,14 +753,11 @@ error:
 		rls_free_td(td);
 	if(cb_param)
 		shm_free(cb_param);
-	if(str_hdr)
-	{
-		if(str_hdr->s)
-			pkg_free(str_hdr->s);
-		pkg_free(str_hdr);
-	}
+		
+	if(str_hdr.s)
+		pkg_free(str_hdr.s);
+	
 	return -1;
-
 }
 
 dlg_t* rls_notify_dlg(subs_t* subs)

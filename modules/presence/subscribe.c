@@ -351,7 +351,7 @@ int update_subscription(struct sip_msg* msg, subs_t* subs, int init_req)
 		if(send_2XX_reply(msg, reply_code, subs->expires,&subs->to_tag,
 			&subs->local_contact)<0)
 		{
-			LM_ERR("sending 202 OK reply\n");
+			LM_ERR("sending %d OK reply\n", reply_code);
 			goto error;
 		}
 	}
@@ -360,7 +360,7 @@ int update_subscription(struct sip_msg* msg, subs_t* subs, int init_req)
 		if(send_2XX_reply(msg, reply_code, subs->expires, &subs->to_tag,
 			&subs->local_contact)<0)
 		{
-			LM_ERR("sending 202 OK reply\n");
+			LM_ERR("sending %d OK reply\n", reply_code);
 			goto error;
 		}
 
@@ -541,7 +541,8 @@ int handle_subscribe(struct sip_msg* msg, char* str1, char* str2)
 		ev_param= ev_param->next;
 	}
 
-	ret = extract_sdialog_info(&subs, msg, max_expires, &init_req);
+	ret = extract_sdialog_info(&subs, msg, max_expires, &init_req, 
+			server_address);
 	if(ret< 0)
 	{
 		LM_ERR("failed to extract dialog information\n");
@@ -729,7 +730,8 @@ error_free:
 }
 
 
-int extract_sdialog_info(subs_t* subs,struct sip_msg* msg, int mexp, int* init_req)
+int extract_sdialog_info(subs_t* subs,struct sip_msg* msg, int mexp,
+		int* init_req, str local_address)
 {
 	static char buf[50];
 	str rec_route= {0, 0};
@@ -942,7 +944,7 @@ int extract_sdialog_info(subs_t* subs,struct sip_msg* msg, int mexp, int* init_r
 
 	subs->version = 0;
 	
-	if((!server_address.s) || (server_address.len== 0))
+	if((!local_address.s) || (local_address.len== 0))
 	{
 		contact= get_local_contact(msg);
 		if(contact== NULL)
@@ -954,7 +956,7 @@ int extract_sdialog_info(subs_t* subs,struct sip_msg* msg, int mexp, int* init_r
 		subs->local_contact= *contact;
 	}
 	else
-		subs->local_contact= server_address;
+		subs->local_contact= local_address;
 	
 	return 0;
 	

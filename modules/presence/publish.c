@@ -168,12 +168,14 @@ void msg_presentity_clean(unsigned int ticks,void *param)
 		pres->event= contains_event(&event, &ev);
 		if(pres->event== NULL)
 		{
-			LM_ERR("event not found\n");
-			free_event_params(ev.params, PKG_MEM_TYPE);
-			goto error;
+			LM_DBG("event not found\n");
+			p[i].p = 0;
+			goto no_notify;
 		}	
-	
+		
 		p[i].p= pres;
+
+no_notify:
 		if(uandd_to_uri(user, domain, &p[i].uri)< 0)
 		{
 			LM_ERR("constructing uri\n");
@@ -196,6 +198,9 @@ void msg_presentity_clean(unsigned int ticks,void *param)
 	
 	for(i= 0; i<n ; i++)
 	{
+		if(p[i].p == 0)
+			continue;
+
 		LM_DBG("found expired publish for [user]=%.*s  [domanin]=%.*s\n",
 			p[i].p->user.len,p[i].p->user.s, p[i].p->domain.len, p[i].p->domain.s);
 		

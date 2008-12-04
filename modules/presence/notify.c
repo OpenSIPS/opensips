@@ -45,7 +45,6 @@
 #include "notify.h"
 #include "utils_func.h"
 
-#define ALLOC_SIZE 3000
 #define MAX_FORWARD 70
 
 c_back_param* shm_dup_cbparam(subs_t*);
@@ -111,140 +110,145 @@ void printf_subs(subs_t* subs)
 		subs->contact.s,subs->record_route.len,subs->record_route.s);
 }
 
-int build_str_hdr(subs_t* subs, int is_body, str** hdr)
+int build_str_hdr(subs_t* subs, int is_body, str* hdr)
 {
-	str* str_hdr = NULL;	
-	char* subs_expires = NULL;
 	int len = 0;
-	pres_ev_t* event= subs->event;
-	int expires_t;
-	char* status= NULL;
+	int lexpire_len;
+	char* lexpire_s;
+	char* p;
+	char* status;
+	int port, proto;
+    str host;
 
-	str_hdr =(str*)pkg_malloc(sizeof(str));
-	if(str_hdr== NULL)
+	if(hdr == NULL)
+	{
+		LM_ERR("NULL pointer\n");
+		return -1;
+	}
+	lexpire_s = int2str(subs->expires, &lexpire_len);
+
+	/* parse sockinfo */
+	if (parse_phostport (
+			subs->sockinfo_str.s,subs->sockinfo_str.len,&host.s,
+			&host.len, &port, &proto ))
+	{
+		LM_ERR("bad sockinfo string\n");
+		return -1;
+	}
+
+	len = 14 /*Max-Forwards: */ + 4 /* valoarea */ + CRLF_LEN + 
+		7 /*Event: */ + subs->event->name.len +4 /*;id=*/+ subs->event_id.len+
+		CRLF_LEN + 10 /*Contact: <*/ + subs->local_contact.len + 1/*>*/ +
+		((proto!=PROTO_UDP)?15/*";transport=xxxx"*/:0) + 
+		CRLF_LEN + 20 /*Subscription-State: */ + 
+		((subs->status== TERMINATED_STATUS)?(10/*;reason=*/+subs->reason.len):
+		 9/*expires=*/ + lexpire_len) + CRLF_LEN + (is_body?(14 
+		/*Content-Type: */+subs->event->content_type.len + CRLF_LEN):0);
+
+	hdr->s = (char*)pkg_malloc(len);
+	if(hdr->s== NULL)
 	{
 		LM_ERR("while allocating memory\n");
 		return -1;
 	}
-	memset(str_hdr, 0, sizeof(str));
 
-	str_hdr->s = (char*)pkg_malloc(ALLOC_SIZE* sizeof(char));
-	if(str_hdr->s== NULL)
-	{
-		LM_ERR("while allocating memory\n");
-		pkg_free(str_hdr);
-		return -1;
-	}	
+	p = hdr->s;
 
-	strncpy(str_hdr->s ,"Max-Forwards: ", 14);
-	str_hdr->len = 14;
-	len= sprintf(str_hdr->s+str_hdr->len, "%d", MAX_FORWARD);
+	memcpy(p,"Max-Forwards: ", 14);
+	p+= 14;
+	len= sprintf(p, "%d", MAX_FORWARD);
 	if(len<= 0)
 	{
 		LM_ERR("while printing in string\n");
-		pkg_free(str_hdr->s);
-		pkg_free(str_hdr);
+		pkg_free(hdr->s);
 		return -1;
-	}	
-	str_hdr->len+= len; 
-	strncpy(str_hdr->s+str_hdr->len, CRLF, CRLF_LEN);
-	str_hdr->len += CRLF_LEN;
+	}
+	p+= len;
 
-	strncpy(str_hdr->s+str_hdr->len  ,"Event: ", 7);
-	str_hdr->len+= 7;
-	strncpy(str_hdr->s+str_hdr->len, event->name.s, event->name.len);
-	str_hdr->len+= event->name.len;
+	memcpy(p, CRLF, CRLF_LEN);
+	p += CRLF_LEN;
+
+	memcpy(p ,"Event: ", 7);
+	p+= 7;
+	memcpy(p, subs->event->name.s, subs->event->name.len);
+	p+= subs->event->name.len;
 	if(subs->event_id.len && subs->event_id.s) 
 	{
- 		strncpy(str_hdr->s+str_hdr->len, ";id=", 4);
- 		str_hdr->len += 4;
- 		strncpy(str_hdr->s+str_hdr->len, subs->event_id.s, subs->event_id.len);
- 		str_hdr->len += subs->event_id.len;
+ 		memcpy(p, ";id=", 4);
+ 		p += 4;
+ 		memcpy(p, subs->event_id.s, subs->event_id.len);
+ 		p += subs->event_id.len;
  	}
-	strncpy(str_hdr->s+str_hdr->len, CRLF, CRLF_LEN);
-	str_hdr->len += CRLF_LEN;
+	memcpy(p, CRLF, CRLF_LEN);
+	p += CRLF_LEN;
 
-	strncpy(str_hdr->s+str_hdr->len ,"Contact: <", 10);
-	str_hdr->len += 10;
-	strncpy(str_hdr->s+str_hdr->len, subs->local_contact.s, subs->local_contact.len);
-	str_hdr->len +=  subs->local_contact.len;
-	strncpy(str_hdr->s+str_hdr->len, ">", 1);
-	str_hdr->len += 1;
-	strncpy(str_hdr->s+str_hdr->len, CRLF, CRLF_LEN);
-	str_hdr->len += CRLF_LEN;
+	memcpy(p ,"Contact: <", 10);
+	p += 10;
+	memcpy(p, subs->local_contact.s, subs->local_contact.len);
+	p +=  subs->local_contact.len;
 	
-	strncpy(str_hdr->s+str_hdr->len,"Subscription-State: ", 20);
-	str_hdr->len+= 20;
+	if (proto!=PROTO_UDP) {
+		memcpy(p,";transport=",11);
+		p += 11;
+		p = proto2str(proto, p);
+		if (p == NULL)
+		{
+			LM_ERR("invalid proto\n");
+			pkg_free(hdr->s);
+			return -1;
+		}
+	}
+	*(p++) = '>';
+
+	memcpy(p, CRLF, CRLF_LEN);
+	p += CRLF_LEN;
+	
+	memcpy(p, "Subscription-State: ", 20);
+	p+= 20;
 	status= get_status_str(subs->status);
 	if(status== NULL)
 	{
 		LM_ERR("bad status flag= %d\n", subs->status);
-		pkg_free(str_hdr->s);
-		pkg_free(str_hdr);
+		pkg_free(hdr->s);
 		return -1;
 	}
-	strcpy(str_hdr->s+str_hdr->len, status);
-	str_hdr->len+= strlen(status);
-	
-	expires_t= subs->expires;
+	len = strlen(status);
+	memcpy(p, status, len);
+	p += len;
 	
 	if(subs->status== TERMINATED_STATUS)
 	{
 		LM_DBG("state = terminated\n");
-		
-		strncpy(str_hdr->s+str_hdr->len,";reason=", 8);
-		str_hdr->len+= 8;
-		strncpy(str_hdr->s+str_hdr->len, subs->reason.s ,subs->reason.len );
-		str_hdr->len+= subs->reason.len;
-		strncpy(str_hdr->s+str_hdr->len, CRLF, CRLF_LEN);
-		str_hdr->len+= CRLF_LEN;
+		memcpy(p,";reason=", 8);
+		p+= 8;
+		memcpy(p, subs->reason.s ,subs->reason.len );
+		p+= subs->reason.len;
+		memcpy(p, CRLF, CRLF_LEN);
+		p+= CRLF_LEN;
 	}
 	else
 	{	
-		strncpy(str_hdr->s+str_hdr->len,";expires=", 9);
-		str_hdr->len+= 9;
-	
-		subs_expires= int2str(expires_t, &len); 
-
-		if(subs_expires == NULL || len == 0)
-		{
-			LM_ERR("converting int to str\n");
-			pkg_free(str_hdr->s);
-			pkg_free(str_hdr);
-			return -1;
-		}
-
-		LM_DBG("expires = %d\n", expires_t);
-
-		strncpy(str_hdr->s+str_hdr->len,subs_expires ,len );
-		str_hdr->len += len;
-		strncpy(str_hdr->s+str_hdr->len, CRLF, CRLF_LEN);
-		str_hdr->len += CRLF_LEN;
+		memcpy(p,";expires=", 9);
+		p += 9;
+		memcpy(p, lexpire_s ,lexpire_len );
+		p += lexpire_len;
+		memcpy(p, CRLF, CRLF_LEN);
+		p += CRLF_LEN;
 	}
 	
 	if(is_body)
 	{	
-		strncpy(str_hdr->s+str_hdr->len,"Content-Type: ", 14);
-		str_hdr->len += 14;
-		strncpy(str_hdr->s+str_hdr->len, event->content_type.s , event->content_type.len);
-		str_hdr->len += event->content_type.len;
-		strncpy(str_hdr->s+str_hdr->len, CRLF, CRLF_LEN);
-		str_hdr->len += CRLF_LEN;
+		memcpy(p,"Content-Type: ", 14);
+		p += 14;
+		memcpy(p, subs->event->content_type.s , subs->event->content_type.len);
+		p += subs->event->content_type.len;
+		memcpy(p, CRLF, CRLF_LEN);
+		p += CRLF_LEN;
 	}
 	
-	if(str_hdr->len> ALLOC_SIZE)
-	{
-		LM_ERR("buffer size overflown\n");
-		pkg_free(str_hdr->s);
-		pkg_free(str_hdr);
-		return -1;
-
-	}
-	str_hdr->s[str_hdr->len] = '\0';
-	*hdr= str_hdr;
+	hdr->len = p - hdr->s;
 
 	return 0;
-
 }
 
 int get_wi_subs_db(subs_t* subs, watcher_t* watchers)
@@ -1557,7 +1561,7 @@ int send_notify_request(subs_t* subs, subs_t * watcher_subs,
 {
 	dlg_t* td = NULL;
 	str met = {"NOTIFY", 6};
-	str* str_hdr = NULL;
+	str str_hdr = {0, 0};
 	str* notify_body = NULL;
 	int result= 0;
     c_back_param *cb_param= NULL;
@@ -1654,7 +1658,7 @@ jump_over_body:
 		LM_ERR("while building headers\n");
 		goto error;
 	}	
-	LM_DBG("headers:\n%.*s\n", str_hdr->len, str_hdr->s);
+	LM_DBG("headers:\n%.*s\n", str_hdr.len, str_hdr.s);
 
 	/* construct the dlg_t structure */
 	td = build_dlg_t(subs);
@@ -1673,7 +1677,7 @@ jump_over_body:
 
 	result = tmb.t_request_within
 		(&met,              /* method*/
-		str_hdr,            /* extra headers*/
+		&str_hdr,           /* extra headers*/
 		notify_body,        /* body*/
 		td,                 /* dialog structure*/
 		p_tm_callback,      /* callback function*/
@@ -1692,8 +1696,7 @@ jump_over_body:
 
 	free_tm_dlg(td);
 	
-	pkg_free(str_hdr->s);
-	pkg_free(str_hdr);
+	pkg_free(str_hdr.s);
 	
 	if((int)(long)n_body!= (int)(long)notify_body)
 	{
@@ -1716,12 +1719,9 @@ jump_over_body:
 
 error:
 	free_tm_dlg(td);
-	if(str_hdr!=NULL)
-	{
-		if(str_hdr->s)
-			pkg_free(str_hdr->s);
-		pkg_free(str_hdr);
-	}
+	if(str_hdr.s)
+		pkg_free(str_hdr.s);
+	
 	if((int)(long)n_body!= (int)(long)notify_body)
 	{
 		if(notify_body!=NULL)

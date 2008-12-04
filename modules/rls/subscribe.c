@@ -303,42 +303,59 @@ int reply_421(struct sip_msg* msg)
 }
 */
 
-int reply_200(struct sip_msg* msg, str* contact, int expires, str* rtag)
+int reply_200(struct sip_msg* msg, str* local_contact, int expires, str* rtag)
 {
-	str hdr_append;
+	char* hdr_append;
 	int len;
-	
-	hdr_append.s = (char *)pkg_malloc( sizeof(char)*(contact->len+ 70));
-	if(hdr_append.s == NULL)
-	{
-		LM_ERR("no more pkg memory\n");
-		return -1;
-	}
-	hdr_append.len = sprintf(hdr_append.s, "Expires: %d\r\n", expires);	
-	if(hdr_append.len< 0)
-	{
-		LM_ERR("unsuccessful sprintf\n");
-		goto error;
-	}
-	strncpy(hdr_append.s+hdr_append.len ,"Contact: <", 10);
-	hdr_append.len += 10;
-	strncpy(hdr_append.s+hdr_append.len, contact->s, contact->len);
-	hdr_append.len+= contact->len;
-	strncpy(hdr_append.s+hdr_append.len, ">", 1);
-	hdr_append.len += 1;
-	strncpy(hdr_append.s+hdr_append.len, CRLF, CRLF_LEN);
-	hdr_append.len += CRLF_LEN;
+	int lexpire_len;
+	char *lexpire_s;
+	char* p;
 
-	len = sprintf(hdr_append.s+ hdr_append.len, "Require: eventlist\r\n");
-	if(len < 0)
+	lexpire_s = int2str((unsigned long)expires, &lexpire_len);
+
+	len = 9 /*"Expires: "*/ + lexpire_len + CRLF_LEN
+		+ 10 /*"Contact: <"*/ + local_contact->len + 1 /*">"*/
+		+ ((msg->rcv.proto!=PROTO_UDP)?15/*";transport=xxxx"*/:0)
+		+ CRLF_LEN + 18 /*Require: eventlist*/ + CRLF_LEN;
+
+	hdr_append = (char *)pkg_malloc( len );
+	if(hdr_append == NULL)
 	{
-		LM_ERR("unsuccessful sprintf\n");
-		goto error;
+		ERR_MEM(PKG_MEM_STR);
 	}
-	hdr_append.len+= len;
-	hdr_append.s[hdr_append.len]= '\0';
-	
-	if (add_lump_rpl( msg, hdr_append.s, hdr_append.len, LUMP_RPL_HDR)==0 )
+
+	p = hdr_append;
+	/* expires header */
+	memcpy(p, "Expires: ", 9);
+	p += 9;
+	memcpy(p,lexpire_s,lexpire_len);
+	p += lexpire_len;
+	memcpy(p,CRLF,CRLF_LEN);
+	p += CRLF_LEN;
+	/* contact header */
+	memcpy(p,"Contact: <", 10);
+	p += 10;
+	memcpy(p,local_contact->s,local_contact->len);
+	p += local_contact->len;
+	if (msg->rcv.proto!=PROTO_UDP) {
+		memcpy(p,";transport=",11);
+		p += 11;
+		p = proto2str(msg->rcv.proto, p);
+		if (p==NULL) {
+			LM_ERR("invalid proto\n");
+			goto error;
+		}
+	}
+	*(p++) = '>';
+	memcpy(p, CRLF, CRLF_LEN);
+	p += CRLF_LEN;
+
+	memcpy(p, "Require: eventlist", 18);
+	p += 18;
+	memcpy(p, CRLF, CRLF_LEN);
+	p += CRLF_LEN;
+
+	if (add_lump_rpl( msg, hdr_append, p-hdr_append, LUMP_RPL_HDR)==0 )
 	{
 		LM_ERR("unable to add lump_rl\n");
 		goto error;
@@ -349,11 +366,11 @@ int reply_200(struct sip_msg* msg, str* contact, int expires, str* rtag)
 		LM_ERR("while sending reply\n");
 		goto error;
 	}	
-	pkg_free(hdr_append.s);
+	pkg_free(hdr_append);
 	return 0;
 
 error:
-	pkg_free(hdr_append.s);
+	pkg_free(hdr_append);
 	return -1;
 }	
 
@@ -584,7 +601,8 @@ int rls_handle_subscribe(struct sip_msg* msg, char* s1, char* s2)
 
 
 	/* extract dialog information from message headers */
-	if(pres_extract_sdialog_info(&subs, msg, rls_max_expires, &init_req)< 0)
+	if(pres_extract_sdialog_info(&subs, msg, rls_max_expires, &init_req,
+				server_address)< 0)
 	{
 		LM_ERR("bad Subscribe request\n");
 		goto error;
@@ -597,7 +615,7 @@ int rls_handle_subscribe(struct sip_msg* msg, char* s1, char* s2)
 	if(init_req) /* if an initial subscribe */
 	{
 		/** reply with 200 OK*/
-		if(reply_200(msg, &subs.contact, subs.expires, &subs.to_tag)< 0)
+		if(reply_200(msg, &subs.local_contact, subs.expires, &subs.to_tag)< 0)
 			goto error_free;
 		
 		hash_code= core_hash(&subs.callid, &subs.to_tag, hash_size);
@@ -638,7 +656,7 @@ int rls_handle_subscribe(struct sip_msg* msg, char* s1, char* s2)
 		}
 
 		/** reply with 200 OK*/
-		if(reply_200(msg, &subs.contact, subs.expires, &subs.to_tag)< 0)
+		if(reply_200(msg, &subs.local_contact, subs.expires, &subs.to_tag)< 0)
 			goto error_free;
 	}
 /*** send Subscribe requests for all in the list */

@@ -37,7 +37,6 @@
 #define BOUNDARY_STRING_LEN    24
 #define BUF_REALLOC_SIZE       2048
 #define MAX_HEADERS_LENGTH     (104+ 255+ 1)
-#define RLS_HDR_LEN      1024
 #define MAX_FORWARD 70
 
 #define REALLOC_BUF\
