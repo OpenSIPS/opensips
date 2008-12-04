@@ -129,8 +129,8 @@ int build_str_hdr(subs_t* subs, int is_body, str* hdr)
 	len = 14 /*Max-Forwards: */ + 4 /* valoarea */ + CRLF_LEN + 
 		7 /*Event: */ + subs->event->name.len +4 /*;id=*/+ subs->event_id.len+
 		CRLF_LEN + 10 /*Contact: <*/ + subs->local_contact.len + 1/*>*/ +
-		((subs->sockinfo->proto!=PROTO_UDP)?15/*";transport=xxxx"*/:0) + 
-		CRLF_LEN + 20 /*Subscription-State: */ + 
+		((subs->sockinfo && subs->sockinfo->proto!=PROTO_UDP)?
+		 15/*";transport=xxxx"*/:0) + CRLF_LEN + 20 /*Subscription-State: */ +
 		((subs->status== TERMINATED_STATUS)?(10/*;reason=*/+subs->reason.len):
 		 9/*expires=*/ + lexpire_len) + CRLF_LEN + (is_body?(14 
 		/*Content-Type: */+subs->event->content_type.len + CRLF_LEN):0);
@@ -177,7 +177,8 @@ int build_str_hdr(subs_t* subs, int is_body, str* hdr)
 	memcpy(p, subs->local_contact.s, subs->local_contact.len);
 	p +=  subs->local_contact.len;
 	
-	if (subs->sockinfo->proto!=PROTO_UDP) {
+	if (subs->sockinfo && subs->sockinfo->proto!=PROTO_UDP) 
+	{
 		memcpy(p,";transport=",11);
 		p += 11;
 		p = proto2str(subs->sockinfo->proto, p);

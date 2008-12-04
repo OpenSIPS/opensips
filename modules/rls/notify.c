@@ -554,8 +554,8 @@ int rls_notify_extra_hdr(subs_t* subs, char* start_cid, char* boundary_string,
 	len = 14 /*Max-Forwards: */ + 4 /* valoarea */ + CRLF_LEN + 
 		7 /*Event: */ + subs->event->name.len +4 /*;id=*/+ subs->event_id.len+
 		CRLF_LEN + 10 /*Contact: <*/ + subs->local_contact.len + 1/*>*/ +
-		((subs->sockinfo->proto!=PROTO_UDP)?15/*";transport=xxxx"*/:0) + 
-		CRLF_LEN +/*Subscription-State:*/ 20 + 
+		((subs->sockinfo && subs->sockinfo->proto!=PROTO_UDP)?
+		 15/*";transport=xxxx"*/:0) + CRLF_LEN +/*Subscription-State:*/ 20 +
 		((subs->expires>0)?(15+lexpire_len):25) + CRLF_LEN + /*Require: */ 18
 		+ CRLF_LEN + ((start_cid && boundary_string)?(/*Content-Type*/59 +
 		/*start*/12 + strlen(start_cid) + /*boundary*/12 + 
@@ -603,7 +603,8 @@ int rls_notify_extra_hdr(subs_t* subs, char* start_cid, char* boundary_string,
 	memcpy(p, subs->local_contact.s, subs->local_contact.len);
 	p +=  subs->local_contact.len;
 	
-	if (subs->sockinfo->proto!=PROTO_UDP) {
+	if (subs->sockinfo && subs->sockinfo->proto!=PROTO_UDP)
+	{
 		memcpy(p,";transport=",11);
 		p += 11;
 		p = proto2str(subs->sockinfo->proto, p);
