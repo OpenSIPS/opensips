@@ -1458,7 +1458,7 @@ sub is_value_in_db() {
 #	}
 #}
 
-
+sub db_load() {
 	if ( $DBENGINE eq "" ) {
 		print "database engine not specified, please setup one in the config script";
 		$DBENGINELOADED = 0;
@@ -1474,7 +1474,7 @@ sub is_value_in_db() {
 				}
 				#Connect to the database.
 				$dbh = DBI->connect("DBI:$DBENGINE:database=$DBNAME;host=$DBHOST",
-				                 "$DBROOTUSER", "",
+				                 "$DBRWUSER", "$DBRWPW",
 						 {'PrintError' => 0} ) or die "Database connection failed.";
 				$DBENGINELOADED = 1;
 			}
@@ -1488,7 +1488,7 @@ sub is_value_in_db() {
 				}
 				#Connect to the database.
 				$dbh = DBI->connect("DBI:$DBENGINE:database=$DBNAME;host=$DBHOST",
-				                 "$DBROOTUSER", "",
+				                 "$DBRWUSER", "$DBRWPW",
 						 {'PrintError' => 0} ) or die "Database connection failed.";
 				$DBENGINELOADED = 1;
 
@@ -1504,7 +1504,7 @@ sub is_value_in_db() {
 				$DBROOTUSER = "postgres";
 				#Connect to the database.
 				$dbh = DBI->connect("DBI:$DBENGINE:database=$DBNAME;host=$DBHOST",
-				                 "$DBROOTUSER", "",
+				                 "$DBRWUSER", "$DBRWPW",
 						 {'PrintError' => 0} ) or die "Database connection failed.";
 				$DBENGINELOADED = 1;
 			}
@@ -1536,7 +1536,7 @@ sub is_value_in_db() {
 		}
 
 	}
-
+}
 
 #
 ##### ------------------------------------------------ #####
@@ -1652,30 +1652,30 @@ sub non_interactively(){
 sub cmd() {
 
 	switch ($cmd[0]) {		
-		case (/^acl$/)	 				{ system(&opensips_acl()); }
-		case (/^add$/)  				{ system(&subscriber()); }
-		case (/^avp$/)	 				{ system(&avpops()); }	
-		case (/(^aliasdb$)|(^alias_db$)/)		{ system(&alias_db()); }
-		case (/^cr$/) 					{ system(&opensips_cr()); }
-		case (/^dialplan$/)                     	{ system(&opensips_dialplan()); }
-		case (/^db$/)	 				{ system(&db_ops()); }
-		case (/^dispatcher$/) 				{ system(&opensips_dispatcher()); }
-		case (/^domain$/) 				{ system(&domain()); }
+		case (/^acl$/)	 				{ &db_load(); system(&opensips_acl()); }
+		case (/^add$/)  				{ &db_load(); system(&subscriber()); }
+		case (/^avp$/)	 				{ &db_load(); system(&avpops()); }	
+		case (/(^aliasdb$)|(^alias_db$)/)		{ &db_load(); system(&alias_db()); }
+		case (/^cr$/) 					{ &db_load(); system(&opensips_cr()); }
+		case (/^dialplan$/)                     	{ &db_load(); system(&opensips_dialplan()); }
+		case (/^db$/)	 				{ &db_load(); system(&db_ops()); }
+		case (/^dispatcher$/) 				{ &db_load(); system(&opensips_dispatcher()); }
+		case (/^domain$/) 				{ &db_load(); system(&domain()); }
 		case (/(^fifo$)|(^unixsock$)|(^udp$)|(^xmlrpc$)/){ &mi_comm(); } 
-		case (/^lcr$/) 					{ system(&opensips_lcr()); } 
+		case (/^lcr$/) 					{ &db_load(); system(&opensips_lcr()); } 
 		case (/(^moni$)|(^monitor$)|(^con$)|(^console$)/){ &mi_comm_monitor(); }
 		case (/^ping$/)		 			{ system(&options_ping()); }
 		case (/^ps$/)					{ system(&opensips_ps()); }
-		case (/^passwd$/)		      		{ system(&subscriber()); }		
+		case (/^passwd$/)		      		{ &db_load(); system(&subscriber()); }		
 		case (/^online$/)				{ &opensips_online(); }
-		case (/^rpid$/)		 			{ system(&opensips_rpid()); }
+		case (/^rpid$/)		 			{ &db_load(); system(&opensips_rpid()); }
 		case (/^restart$/)		   		{ system(&opensips_restart()); }		
-		case (/^rm$/)			      		{ system(&subscriber()); }
-		case (/(^speeddial$)|(^speed_dial$)/)			{ system(&speeddial()); }
+		case (/^rm$/)			      		{ &db_load(); system(&subscriber()); }
+		case (/(^speeddial$)|(^speed_dial$)/)		{ &db_load(); system(&speeddial()); }
 		case (/^start$/)		    		{ system(&opensips_start()); }	
 		case (/^stop$/)			      		{ system(&opensips_stop()); }
-		case (/^tls$/)	 	  			{ system(&tls_ca()); }
-		case (/^trusted$/)		 		{ system(&trusted()); }
+		case (/^tls$/)	 	  			{ &db_load(); system(&tls_ca()); }
+		case (/^trusted$/)		 		{ &db_load(); system(&trusted()); }
 		case (/(^ul$)|(^alias$)|(^usrloc$)/)	  	{ system(&opensips_usrloc()); }		
 		case (/^version$/)				{ system(&opensips_version()); }
 		case (/(^extra$)|(^migrate$)|(^copy$)|(^backup$)|(^restore$)|(^create$)|(^presence$)|(^drop$)|(^reinit$)|(^bdb$)|(^db_berkeley$)|(^cat$)/) { system(&opensips_db()); }
