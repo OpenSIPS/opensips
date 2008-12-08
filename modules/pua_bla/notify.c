@@ -25,9 +25,8 @@
  * --------
  *  2007-03-30  initial version (Anca Vamanu)
  */
-#include<stdio.h>
-#include<stdlib.h>
-#include<libxml/parser.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 #include "../../parser/parse_content.h"
 #include "../../parser/contact/parse_contact.h"
@@ -48,7 +47,6 @@ int bla_handle_notify(struct sip_msg* msg, char* s1, char* s2)
 	str subs_state;
 	str extra_headers= {0, 0};
 	static char buf[255];
-	xmlDoc* doc= NULL;
 	str contact;
 
 	memset(&publ, 0, sizeof(publ_info_t));
@@ -65,7 +63,7 @@ int bla_handle_notify(struct sip_msg* msg, char* s1, char* s2)
 	if( msg->to==NULL || msg->to->body.s==NULL)
 	{
 		LM_ERR("cannot parse TO header\n");
-		goto error;
+		return -1;
 	}
 	/* examine the to header */
 	if(msg->to->parsed != NULL)
@@ -81,7 +79,7 @@ int bla_handle_notify(struct sip_msg* msg, char* s1, char* s2)
 		if(TO.uri.len <= 0)
 		{
 			LM_DBG("'To' header NOT parsed\n");
-			goto error;
+			return -1;
 		}
 		pto = &TO;
 	}
@@ -91,21 +89,21 @@ int bla_handle_notify(struct sip_msg* msg, char* s1, char* s2)
 	if (pto->tag_value.s==NULL || pto->tag_value.len==0 )
 	{
 		LM_ERR("NULL to_tag value\n");
-		goto error;
+		return -1;
 	}
 	dialog.from_tag= pto->tag_value;
 
 	if( msg->callid==NULL || msg->callid->body.s==NULL)
 	{
 		LM_ERR("cannot parse callid header\n");
-		goto error;
+		return -1;
 	}
 	dialog.call_id = msg->callid->body;
 
 	if (!msg->from || !msg->from->body.s)
 	{
 		LM_ERR("cannot find 'from' header!\n");
-		goto error;
+		return -1;
 	}
 	if (msg->from->parsed == NULL)
 	{
@@ -114,7 +112,7 @@ int bla_handle_notify(struct sip_msg* msg, char* s1, char* s2)
 		if ( parse_from_header( msg )<0 )
 		{
 			LM_DBG(" ERROR cannot parse From header\n");
-			goto error;
+			return -1;
 		}
 	}
 	pfrom = (struct to_body*)msg->from->parsed;
@@ -123,7 +121,7 @@ int bla_handle_notify(struct sip_msg* msg, char* s1, char* s2)
 	if( pfrom->tag_value.s ==NULL || pfrom->tag_value.len == 0)
 	{
 		LM_ERR("no from tag value present\n");
-		goto error;
+		return -1;
 	}
 
 	dialog.to_tag= pfrom->tag_value;
@@ -132,7 +130,7 @@ int bla_handle_notify(struct sip_msg* msg, char* s1, char* s2)
 	if(pua_is_dialog(&dialog)< 0)
 	{
 		LM_ERR("Notify in a non existing dialog\n");
-		goto error;
+		return -1;
 	}
 	LM_DBG("found a matching dialog\n");
 
@@ -140,15 +138,15 @@ int bla_handle_notify(struct sip_msg* msg, char* s1, char* s2)
 	hdr = get_header_by_static_name( msg, "Subscription-State");
 	if( hdr==NULL ) {
 		LM_ERR("No Subscription-State header found\n");
-		goto error;
+		return -1;
 	}
 	subs_state= hdr->body;
 	if(strncmp(subs_state.s, "terminated", 10)== 0)
 		expires= 0;
 	else
 	{
-		if(strncmp(subs_state.s, "active", 6)== 0 ||
-				strncmp(subs_state.s, "pending", 7)==0 )
+		if(strncasecmp(subs_state.s, "active", 6)== 0 ||
+				strncasecmp(subs_state.s, "pending", 7)==0 )
 		{
 			expires = DEFAULT_EXPIRES;
 			char* sep= NULL;
@@ -168,7 +166,7 @@ int bla_handle_notify(struct sip_msg* msg, char* s1, char* s2)
 					if( str2int(&exp, &expires)< 0)
 					{
 						LM_ERR("while parsing int\n");
-						goto error;
+						return -1;
 					}
 				}
 			}
@@ -176,14 +174,14 @@ int bla_handle_notify(struct sip_msg* msg, char* s1, char* s2)
 		else
 		{
 			LM_ERR("unknown Subscription-state token\n");
-			goto error;
+			return -1;
 		}
 	}
 
 	if ( get_content_length(msg) == 0 )
 	{
 		LM_ERR("content length= 0\n");
-		goto error;
+		return -1;
 	}
 	else
 	{
@@ -191,7 +189,7 @@ int bla_handle_notify(struct sip_msg* msg, char* s1, char* s2)
 		if (body.s== NULL)
 		{
 			LM_ERR("cannot extract body from msg\n");
-			goto error;
+			return -1;
 		}
 		body.len = get_content_length( msg );
 	}
@@ -199,18 +197,18 @@ int bla_handle_notify(struct sip_msg* msg, char* s1, char* s2)
 	if(msg->contact== NULL || msg->contact->body.s== NULL)
 	{
 		LM_ERR("no contact header found");
-		goto error;
+		return -1;
 	}
 	if( parse_contact(msg->contact) <0 )
 	{
 		LM_ERR(" cannot parse contact header\n");
-		goto error;
+		return -1;
 	}
 
 	if(msg->contact->parsed == NULL)
 	{
 		LM_ERR("cannot parse contact header\n");
-		goto error;
+		return -1;
 	}
 	contact = ((contact_body_t* )msg->contact->parsed)->contacts->uri;
 
@@ -234,18 +232,9 @@ int bla_handle_notify(struct sip_msg* msg, char* s1, char* s2)
 	if(pua_send_publish(&publ)< 0)
 	{
 		LM_ERR("while sending Publish\n");
-		goto error;
+		return -1;
 	}
 
-	xmlCleanupParser();
-	xmlMemoryDump();
-
 	return 1;
-
-error:
-	if(doc)
-		xmlFreeDoc(doc);
-
-	return 0;
 }
 
