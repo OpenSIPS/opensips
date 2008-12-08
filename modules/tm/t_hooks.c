@@ -209,7 +209,8 @@ void run_trans_callbacks( int type , struct cell *trans,
 		}
 	}
 	/* SHM message cleanup */
-	if (trans->uas.request && trans->uas.request->msg_flags&FL_SHM_CLONE)
+	if (type==TMCB_RESPONSE_OUT &&
+	trans->uas.request && trans->uas.request->msg_flags&FL_SHM_CLONE)
 		clean_msg_clone( trans->uas.request, trans->uas.request, trans->uas.end_request);
 	/* env cleanup */
 	set_avp_list( backup );
