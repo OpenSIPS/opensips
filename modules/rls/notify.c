@@ -795,10 +795,11 @@ dlg_t* rls_notify_dlg(subs_t* subs)
 			LM_ERR("in function parse_rr_body\n");
 			goto error;
 		}
-	}	
+	}
+
 	td->state= DLG_CONFIRMED ;
 	td->send_sock = subs->sockinfo;
-	
+
 	return td;
 
 error:

@@ -563,7 +563,7 @@ void timer_send_notify(unsigned int ticks,void *param)
 			{
 				LM_ERR("bad format for "
 					"resource list Subscribe dialog indentifier(rlsubs did)\n");
-				goto done;
+				continue;
 
 			}
 			hash_code= core_hash(&callid, &to_tag, hash_size);
