@@ -124,7 +124,7 @@ inline void destroy_dlg(struct dlg_cell *dlg)
 			dlg->tag[DLG_CALLER_LEG].len, dlg->tag[DLG_CALLER_LEG].s,
 			dlg->tag[DLG_CALLEE_LEG].len, dlg->tag[DLG_CALLEE_LEG].s);
 	} else if (ret > 0) {
-		LM_WARN("inconsitent dlg timer data on dlg %p [%u:%u] "
+		LM_DBG("dlg expired or not in list - dlg %p [%u:%u] "
 			"with clid '%.*s' and tags '%.*s' '%.*s'\n",
 			dlg, dlg->h_entry, dlg->h_id,
 			dlg->callid.len, dlg->callid.s,
@@ -469,9 +469,11 @@ void unref_dlg(struct dlg_cell *dlg, unsigned int cnt)
  * \param dlg dialog data
  * \see next_state_dlg
  */
-static inline void log_next_state_dlg(const int event, const struct dlg_cell *dlg) {
-	LM_CRIT("bogus event %d in state %d for dlg %p [%u:%u] with clid '%.*s' and tags "
-		"'%.*s' '%.*s'\n", event, dlg->state, dlg, dlg->h_entry, dlg->h_id,
+static inline void log_next_state_dlg(const int event,
+												const struct dlg_cell *dlg) {
+	LM_CRIT("bogus event %d in state %d for dlg %p [%u:%u] with "
+		"clid '%.*s' and tags '%.*s' '%.*s'\n",
+		event, dlg->state, dlg, dlg->h_entry, dlg->h_id,
 		dlg->callid.len, dlg->callid.s,
 		dlg->tag[DLG_CALLER_LEG].len, dlg->tag[DLG_CALLER_LEG].s,
 		dlg->tag[DLG_CALLEE_LEG].len, dlg->tag[DLG_CALLEE_LEG].s);
@@ -484,7 +486,7 @@ void next_state_dlg(struct dlg_cell *dlg, int event,
 	struct dlg_entry *d_entry;
 
 	d_entry = &(d_table->entries[dlg->h_entry]);
-
+	*unref = 0;
 
 	dlg_lock( d_table, d_entry);
 
@@ -496,13 +498,19 @@ void next_state_dlg(struct dlg_cell *dlg, int event,
 				case DLG_STATE_UNCONFIRMED:
 				case DLG_STATE_EARLY:
 					dlg->state = DLG_STATE_DELETED;
-					unref_dlg_unsafe(dlg,1,d_entry);
-					*unref = 1;
+					unref_dlg_unsafe(dlg,1,d_entry); /* unref from TM CBs*/
+					*unref = 1; /* unref from hash -> t failed */
 					break;
 				case DLG_STATE_CONFIRMED_NA:
 				case DLG_STATE_CONFIRMED:
+					unref_dlg_unsafe(dlg,1,d_entry); /* unref from TM CBs*/
+					break;
 				case DLG_STATE_DELETED:
-					unref_dlg_unsafe(dlg,1,d_entry);
+					/* as the dialog aleady is in DELETE state, it is 
+					dangerous to directly unref it from here as it might
+					be last ref -> dialog will be destroied and we will end up
+					with a dangling pointer :D - bogdan */
+					*unref = 1; /* unref from TM CBs*/
 					break;
 				default:
 					log_next_state_dlg(event, dlg);
@@ -523,7 +531,7 @@ void next_state_dlg(struct dlg_cell *dlg, int event,
 				case DLG_STATE_UNCONFIRMED:
 				case DLG_STATE_EARLY:
 					dlg->state = DLG_STATE_DELETED;
-					*unref = 1;
+					*unref = 1; /* unref from hash -> t failed */
 					break;
 				default:
 					log_next_state_dlg(event, dlg);
@@ -533,15 +541,10 @@ void next_state_dlg(struct dlg_cell *dlg, int event,
 			switch (dlg->state) {
 				case DLG_STATE_DELETED:
 					if (dlg->flags&DLG_FLAG_HASBYE) {
-						LM_CRIT("bogus event %d in state %d (with BYE) "
-							"for dlg %p [%u:%u] with clid '%.*s' and tags '%.*s' '%.*s'\n",
-							event, dlg->state, dlg, dlg->h_entry, dlg->h_id,
-							dlg->callid.len, dlg->callid.s,
-							dlg->tag[DLG_CALLER_LEG].len, dlg->tag[DLG_CALLER_LEG].s,
-							dlg->tag[DLG_CALLEE_LEG].len, dlg->tag[DLG_CALLEE_LEG].s);
+						log_next_state_dlg(event, dlg);
 						break;
 					}
-					ref_dlg_unsafe(dlg,1);
+					ref_dlg_unsafe(dlg,1); /* back in hash */
 				case DLG_STATE_UNCONFIRMED:
 				case DLG_STATE_EARLY:
 					dlg->state = DLG_STATE_CONFIRMED_NA;
@@ -570,7 +573,7 @@ void next_state_dlg(struct dlg_cell *dlg, int event,
 				case DLG_STATE_CONFIRMED:
 					dlg->flags |= DLG_FLAG_HASBYE;
 					dlg->state = DLG_STATE_DELETED;
-					*unref = 1;
+					*unref = 1; /* unref from hash -> dialog ended */
 					break;
 				case DLG_STATE_DELETED:
 					break;

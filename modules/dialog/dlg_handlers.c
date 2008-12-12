@@ -321,6 +321,9 @@ static void dlg_onreply(struct cell* t, int type, struct tmcb_params *param)
 				dlg->callid.len, dlg->callid.s,
 				dlg->tag[DLG_CALLER_LEG].len, dlg->tag[DLG_CALLER_LEG].s,
 				dlg->tag[DLG_CALLEE_LEG].len, dlg->tag[DLG_CALLEE_LEG].s);
+		} else {
+			/* reference dialog as kept in timer list */
+			ref_dlg(dlg,1);
 		}
 
 		/* dialog confirmed */
@@ -344,6 +347,11 @@ static void dlg_onreply(struct cell* t, int type, struct tmcb_params *param)
 			if_update_stat(dlg_enable_stats, early_dlgs, -1);
 		return;
 	}
+
+	/* in any other case, check if the dialog state machine
+	   requests to unref the dialog */
+	if (unref)
+		unref_dlg(dlg,unref);
 
 	return;
 }
@@ -466,8 +474,8 @@ void dlg_onreq(struct cell* t, int type, struct tmcb_params *param)
 	}
 
 	if ( d_tmb.register_tmcb( 0, t,
-				  TMCB_RESPONSE_OUT|TMCB_TRANS_DELETED|TMCB_RESPONSE_FWDED,
-				  dlg_onreply, (void*)dlg, 0)<0 ) {
+				TMCB_RESPONSE_OUT|TMCB_TRANS_DELETED|TMCB_RESPONSE_FWDED,
+				dlg_onreply, (void*)dlg, 0)<0 ) {
 		LM_ERR("failed to register TMCB\n");
 		goto error;
 	}
@@ -476,7 +484,6 @@ void dlg_onreq(struct cell* t, int type, struct tmcb_params *param)
 
 	if (req->flags&bye_on_timeout_flag)
 		dlg->flags |= DLG_FLAG_BYEONTIMEOUT;
-
 
 	t->dialog_ctx = (void*) dlg;
 
@@ -570,7 +577,7 @@ static inline int update_cseqs(struct dlg_cell *dlg, struct sip_msg *req,
 static void
 unreference_dialog(void *dialog)
 {
-	// if the dialog table is gone, it means the system is shutting down.
+	/* if the dialog table is gone, it means the system is shutting down.*/
 	if (!d_table)
 		return;
 	unref_dlg((struct dlg_cell*)dialog, 1);
@@ -702,12 +709,15 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 				dlg->tag[DLG_CALLER_LEG].len, dlg->tag[DLG_CALLER_LEG].s,
 				dlg->tag[DLG_CALLEE_LEG].len, dlg->tag[DLG_CALLEE_LEG].s);
 		} else if (ret > 0) {
-			LM_WARN("inconsitent dlg timer data on dlg %p [%u:%u] "
+			LM_DBG("dlg expired (not in timer list) on dlg %p [%u:%u] "
 				"with clid '%.*s' and tags '%.*s' '%.*s'\n",
 				dlg, dlg->h_entry, dlg->h_id,
 				dlg->callid.len, dlg->callid.s,
 				dlg->tag[DLG_CALLER_LEG].len, dlg->tag[DLG_CALLER_LEG].s,
 				dlg->tag[DLG_CALLEE_LEG].len, dlg->tag[DLG_CALLEE_LEG].s);
+		} else {
+			/* dialog sucessfully removed from timer -> unref */
+			unref++;
 		}
 		/* dialog terminated (BYE) */
 		run_dlg_callbacks( DLGCB_TERMINATED, dlg, req, dir, 0);
@@ -773,6 +783,9 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 #define get_dlg_tl_payload(_tl_)  ((struct dlg_cell*)((char *)(_tl_)- \
 		(unsigned long)(&((struct dlg_cell*)0)->tl)))
 
+/* When done, this function also has the job to unref the dialog as removed
+ * from timer list. This must be done in all cases!!
+ */
 void dlg_ontimeout( struct dlg_tl *tl)
 {
 	struct dlg_cell *dlg;
@@ -786,6 +799,9 @@ void dlg_ontimeout( struct dlg_tl *tl)
 	(dlg->state==DLG_STATE_CONFIRMED_NA || dlg->state==DLG_STATE_CONFIRMED)) {
 		/* we just send the BYEs in both directions */
 		dlg_end_dlg( dlg, NULL);
+		/* dialog is no longer refed by timer; from now one it is refed
+		   by the send_bye functions */
+		unref_dlg( dlg, 1);
 		/* is not 100% sure, but do it */
 		if_update_stat( dlg_enable_stats, expired_dlgs, 1);
 		return ;
@@ -794,7 +810,7 @@ void dlg_ontimeout( struct dlg_tl *tl)
 	next_state_dlg( dlg, DLG_EVENT_REQBYE, &old_state, &new_state, &unref);
 
 	if (new_state==DLG_STATE_DELETED && old_state!=DLG_STATE_DELETED) {
-		LM_WARN("timeout for dlg with CallID '%.*s' and tags '%.*s' '%.*s'\n",
+		LM_DBG("timeout for dlg with CallID '%.*s' and tags '%.*s' '%.*s'\n",
 			dlg->callid.len, dlg->callid.s,
 			dlg->tag[DLG_CALLER_LEG].len, dlg->tag[DLG_CALLER_LEG].s,
 			dlg->tag[DLG_CALLEE_LEG].len, dlg->tag[DLG_CALLEE_LEG].s);
@@ -806,10 +822,12 @@ void dlg_ontimeout( struct dlg_tl *tl)
 		if (dlg_db_mode)
 			remove_dialog_from_db(dlg);
 
-		unref_dlg(dlg, unref);
+		unref_dlg(dlg, unref + 1 /*timer list*/);
 
 		if_update_stat( dlg_enable_stats, expired_dlgs, 1);
 		if_update_stat( dlg_enable_stats, active_dlgs, -1);
+	} else {
+		unref_dlg(dlg, 1 /*just timer list*/);
 	}
 
 	return;
