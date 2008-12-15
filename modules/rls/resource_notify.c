@@ -264,12 +264,12 @@ int rls_handle_notify(struct sip_msg* msg, char* c1, char* c2)
 	}
 	if(msg->content_type== NULL || msg->content_type->body.s== NULL)
 	{
-		LM_DBG("cannot find content type header header\n");
+		LM_DBG("cannot find content type header\n");
 	}
 	else
 		content_type= msg->content_type->body;
 
-	LM_DBG("NOTIFY for [user]= %.*s ",dialog.pres_uri->len,
+	LM_DBG("NOTIFY for [user]= %.*s\n",dialog.pres_uri->len,
 			dialog.pres_uri->s);
 	/*constructing the xml body*/
 	if(get_content_length(msg) == 0 )
@@ -510,7 +510,7 @@ void timer_send_notify(unsigned int ticks,void *param)
 
 	/* for the multipart body , use here also an initial allocated
 	 * and reallocated on need buffer */
-	buf= pkg_malloc(size* sizeof(char));
+	buf= pkg_malloc(size);
 	if(buf== NULL)
 	{
 		ERR_MEM(PKG_MEM_STR);
@@ -563,6 +563,7 @@ void timer_send_notify(unsigned int ticks,void *param)
 			{
 				LM_ERR("bad format for "
 					"resource list Subscribe dialog indentifier(rlsubs did)\n");
+				prev_did = NULL;
 				continue;
 
 			}
@@ -578,6 +579,7 @@ void timer_send_notify(unsigned int ticks,void *param)
 						callid.len, callid.s,from_tag.len,from_tag.s,
 						to_tag.len,to_tag.s);
 				lock_release(&rls_table[hash_code].lock);
+				prev_did = NULL;
 				continue;
 			}
 			LM_DBG("Found rl-subs record in hash table\n");

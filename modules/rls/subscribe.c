@@ -755,7 +755,7 @@ int update_rlsubs( subs_t* subs, unsigned int hash_code,
 	if(	s->remote_cseq>= subs->remote_cseq)
 	{
 		lock_release(&rls_table[hash_code].lock);
-		LM_DBG("stored cseq= %d\n", s->remote_cseq);
+		LM_DBG("stale cseq stored cseq= %d - received cseq= %d\n", s->remote_cseq, subs->remote_cseq);
 		*reply_code =  Stale_cseq_code;
 		*reply_str = stale_cseq_rpl;
 		return -1;
@@ -775,8 +775,7 @@ int update_rlsubs( subs_t* subs, unsigned int hash_code,
 
 	if(s->record_route.s && s->record_route.len)
 	{
-		subs->record_route.s= (char*)pkg_malloc
-			(s->record_route.len* sizeof(char));
+		subs->record_route.s= (char*)pkg_malloc(s->record_route.len);
 		if(subs->record_route.s== NULL)
 		{
 			ERR_MEM(PKG_MEM_STR);
@@ -808,11 +807,6 @@ int update_rlsubs( subs_t* subs, unsigned int hash_code,
 		shm_free(s);
 	
 	/* delete from rls_presentity table also */
-	}
-	else
-	{
-		s->remote_cseq= subs->remote_cseq;
-		s->expires= subs->expires+ (int)time(NULL);
 	}
 	
 	lock_release(&rls_table[hash_code].lock);

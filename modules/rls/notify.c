@@ -257,7 +257,6 @@ int agg_body_sendn_update(str* rl_uri, char* boundary_string, str* rlmi_body,
 		LM_ERR("when sending Notify\n");
 		goto error;
 	}
-	/* update local_cseq in cache list watchers table */
 	pkg_free(body.s);
 	body.s= NULL;
 	
