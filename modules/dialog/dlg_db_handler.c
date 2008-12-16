@@ -270,11 +270,11 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 
 	nr_rows = RES_ROW_N(res);
 
-	LM_DBG("the database has information about %i dialogs\n", nr_rows);
-
-	rows = RES_ROWS(res);
-
 	do {
+		LM_DBG("loading information from database for %i dialogs\n", nr_rows);
+
+		rows = RES_ROWS(res);
+
 		/* for every row---dialog */
 		for(i=0; i<nr_rows; i++){
 
@@ -381,7 +381,7 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 		if (DB_CAPABILITY(dialog_dbf, DB_CAP_FETCH)) {
 			if (dialog_dbf.fetch_result( dialog_db_handle, &res,
 			DIALOG_FETCH_SIZE ) < 0) {
-				LM_ERR("re-fetching rows failed\n");
+				LM_ERR("fetching more rows failed\n");
 				goto error;
 			}
 			nr_rows = RES_ROW_N(res);
