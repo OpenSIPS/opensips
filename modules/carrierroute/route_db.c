@@ -146,6 +146,7 @@ int load_user_carrier(str * user, str * domain) {
 	}
 
 	if (VAL_NULL(ROW_VALUES(RES_ROWS(res)))) {
+		dbf.free_result(dbh, res);
 		return 0;
 	}
 
@@ -235,51 +236,75 @@ int load_route_data(struct rewrite_data * rd) {
 		return -1;
 	}
 
-	if (dbf.query(dbh, NULL, NULL, NULL, (db_key_t *)columns, 0,
-	              COLUMN_NUM, NULL, &res) < 0) {
-		LM_ERR("Failed to query database.\n");
-		return -1;
-	}
-	for (i = 0; i < RES_ROW_N(res); ++i) {
-		row = &RES_ROWS(res)[i];
-		tmp_domain.s=(char *)row->values[COL_DOMAIN].val.string_val;
-		tmp_scan_prefix.s=(char *)row->values[COL_SCAN_PREFIX].val.string_val;
-		tmp_rewrite_host.s=(char *)row->values[COL_REWRITE_HOST].val.string_val;
-		tmp_rewrite_prefix.s=(char *)row->values[COL_REWRITE_PREFIX].val.string_val;
-		tmp_rewrite_suffix.s=(char *)row->values[COL_REWRITE_SUFFIX].val.string_val;
-		tmp_comment.s=(char *)row->values[COL_COMMENT].val.string_val;
-		if (tmp_domain.s==NULL) tmp_domain.s="";
-		if (tmp_scan_prefix.s==NULL) tmp_scan_prefix.s="";
-		if (tmp_rewrite_host.s==NULL) tmp_rewrite_host.s="";
-		if (tmp_rewrite_prefix.s==NULL) tmp_rewrite_prefix.s="";
-		if (tmp_rewrite_suffix.s==NULL) tmp_rewrite_suffix.s="";
-		if (tmp_comment.s==NULL) tmp_comment.s="";
-		tmp_domain.len=strlen(tmp_domain.s);
-		tmp_scan_prefix.len=strlen(tmp_scan_prefix.s);
-		tmp_rewrite_host.len=strlen(tmp_rewrite_host.s);
-		tmp_rewrite_prefix.len=strlen(tmp_rewrite_prefix.s);
-		tmp_rewrite_suffix.len=strlen(tmp_rewrite_suffix.s);
-		tmp_comment.len=strlen(tmp_comment.s);
-		if (add_route(rd,
-				row->values[COL_CARRIER].val.int_val,
-				&tmp_domain,
-				&tmp_scan_prefix,
-				row->values[COL_FLAGS].val.int_val,
-				row->values[COL_MASK].val.int_val,
-				0,
-				row->values[COL_PROB].val.double_val,
-				&tmp_rewrite_host,
-				row->values[COL_STRIP].val.int_val,
-				&tmp_rewrite_prefix,
-				&tmp_rewrite_suffix,
-				1,
-				0,
-				-1,
-				NULL,
-				&tmp_comment) == -1) {
-			goto errout;
+	if (DB_CAPABILITY(dbf, DB_CAP_FETCH)) {
+		if (dbf.query(dbh, NULL, NULL, NULL, (db_key_t *) columns, 0, COLUMN_NUM, NULL, NULL) < 0) {
+			LM_ERR("Failed to query database to prepare fetchrow.\n");
+			return -1;
+		}
+		if(dbf.fetch_result(dbh, &res, cr_fetch_rows) < 0) {
+			LM_ERR("Fetching rows failed\n");
+			return -1;
+		}
+	} else {
+		if (dbf.query(dbh, NULL, NULL, NULL, (db_key_t *)columns, 0, COLUMN_NUM, NULL, &res) < 0) {
+			LM_ERR("Failed to query database.\n");
+			return -1;
 		}
 	}
+	int n = 0;
+	do {
+		LM_DBG("loading, cycle %d", n++);
+			for (i = 0; i < RES_ROW_N(res); ++i) {
+			row = &RES_ROWS(res)[i];
+			tmp_domain.s=(char *)row->values[COL_DOMAIN].val.string_val;
+			tmp_scan_prefix.s=(char *)row->values[COL_SCAN_PREFIX].val.string_val;
+			tmp_rewrite_host.s=(char *)row->values[COL_REWRITE_HOST].val.string_val;
+			tmp_rewrite_prefix.s=(char *)row->values[COL_REWRITE_PREFIX].val.string_val;
+			tmp_rewrite_suffix.s=(char *)row->values[COL_REWRITE_SUFFIX].val.string_val;
+			tmp_comment.s=(char *)row->values[COL_COMMENT].val.string_val;
+			if (tmp_domain.s==NULL) tmp_domain.s="";
+			if (tmp_scan_prefix.s==NULL) tmp_scan_prefix.s="";
+			if (tmp_rewrite_host.s==NULL) tmp_rewrite_host.s="";
+			if (tmp_rewrite_prefix.s==NULL) tmp_rewrite_prefix.s="";
+			if (tmp_rewrite_suffix.s==NULL) tmp_rewrite_suffix.s="";
+			if (tmp_comment.s==NULL) tmp_comment.s="";
+			tmp_domain.len=strlen(tmp_domain.s);
+			tmp_scan_prefix.len=strlen(tmp_scan_prefix.s);
+			tmp_rewrite_host.len=strlen(tmp_rewrite_host.s);
+			tmp_rewrite_prefix.len=strlen(tmp_rewrite_prefix.s);
+			tmp_rewrite_suffix.len=strlen(tmp_rewrite_suffix.s);
+			tmp_comment.len=strlen(tmp_comment.s);
+			if (add_route(rd,
+					row->values[COL_CARRIER].val.int_val,
+					&tmp_domain,
+					&tmp_scan_prefix,
+					row->values[COL_FLAGS].val.int_val,
+					row->values[COL_MASK].val.int_val,
+					0,
+					row->values[COL_PROB].val.double_val,
+					&tmp_rewrite_host,
+					row->values[COL_STRIP].val.int_val,
+					&tmp_rewrite_prefix,
+					&tmp_rewrite_suffix,
+					1,
+					0,
+					-1,
+					NULL,
+					&tmp_comment) == -1) {
+				goto errout;
+			}
+		}
+		if (DB_CAPABILITY(dbf, DB_CAP_FETCH)) {
+			if(dbf.fetch_result(dbh, &res, cr_fetch_rows) < 0) {
+				LM_ERR("fetching rows failed\n");
+				dbf.free_result(dbh, res);
+				return -1;
+			}
+		} else {
+			break;
+		}
+	} while(RES_ROW_N(res) > 0);
+
 	dbf.free_result(dbh, res);
 	res = NULL;
 	

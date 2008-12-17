@@ -129,6 +129,8 @@ int use_domain = 0;
 
 int fallback_default = 1;
 
+int cr_fetch_rows = 2000;
+
 
 /************* Declaration of Interface Functions **************************/
 static int mod_init(void);
@@ -189,10 +191,11 @@ static param_export_t params[]= {
 	{"carrier_id_col",             STR_PARAM, &carrier_id_col.s },
 	{"carrier_name_col",           STR_PARAM, &carrier_name_col.s },
 	{"config_source",              STR_PARAM, &config_source },
-	{"default_tree",               STR_PARAM, &default_tree },
+	{"default_tree",               STR_PARAM, &default_tree.s },
 	{"config_file",                STR_PARAM, &config_file },
 	{"use_domain",                 INT_PARAM, &use_domain },
 	{"fallback_default",           INT_PARAM, &fallback_default },
+	{"fetch_rows",                 INT_PARAM, &cr_fetch_rows },
 	{0,0,0}
 };
 
@@ -355,8 +358,9 @@ static int carrier_fixup(void ** param) {
 	
 	s.s = (char *)(*param);
 	s.len = strlen(s.s);
-	if (pv_parse_spec(&s, &avp_spec)==0) {
-		/* This is a name */
+
+	if (s.s[0]!='$') {
+		/* This is a name string */
 		mp->type=MP_INT;
 		
 		/* get carrier id */
@@ -371,6 +375,12 @@ static int carrier_fixup(void ** param) {
 		*param = (void *)mp;
 	}
 	else {
+		/* This is a pseudo-variable */
+		if (pv_parse_spec(&s, &avp_spec)==0) {
+			LM_ERR("pv_parse_spec failed for '%s'\n", (char *)(*param));
+			pkg_free(mp);
+			return -1;
+		}
 			if (avp_spec.type==PVT_AVP) {
 			/* This is an AVP - could be an id or name */
 			mp->type=MP_AVP;
@@ -383,6 +393,7 @@ static int carrier_fixup(void ** param) {
 			mp->type=MP_PVE;
 			if(pv_parse_format(&s, &(mp->u.p))<0) {
 				LM_ERR("pv_parse_format failed for '%s'\n", (char *)(*param));
+				pkg_free(mp);
 				return -1;
 			}
 		}
@@ -415,8 +426,9 @@ static int domain_fixup(void ** param) {
 	
 	s.s = (char *)(*param);
 	s.len = strlen(s.s);
-	if (pv_parse_spec(&s, &avp_spec)==0 || avp_spec.type!=PVT_AVP) {
-		/* This is a name */
+	
+	if (s.s[0]!='$') {
+		/* This is a name string */
 		mp->type=MP_INT;
 		
 		/* get domain id */
@@ -429,6 +441,12 @@ static int domain_fixup(void ** param) {
 		*param = (void *)mp;
 	}
 	else {
+		/* This is a pseudo-variable */
+		if (pv_parse_spec(&s, &avp_spec)==0) {
+			LM_ERR("pv_parse_spec failed for '%s'\n", (char *)(*param));
+			pkg_free(mp);
+			return -1;
+		}
 		if (avp_spec.type==PVT_AVP) {
 			/* This is an AVP - could be an id or name */
 			mp->type=MP_AVP;
@@ -441,6 +459,7 @@ static int domain_fixup(void ** param) {
 			mp->type=MP_PVE;
 			if(pv_parse_format(&s, &(mp->u.p))<0) {
 				LM_ERR("pv_parse_format failed for '%s'\n", (char *)(*param));
+				pkg_free(mp);
 				return -1;
 			}
 		}	

@@ -426,6 +426,7 @@ static int actually_rewrite(const struct route_rule *rs, str *dest,
 		avp_val.s = rs->host;
 		if (add_avp(AVP_VAL_STR | dstavp->u.a.flags, dstavp->u.a.name, avp_val)<0) {
 			LM_ERR("set AVP failed\n");
+			pkg_free(dest->s);
 			return -1;
 		}
 	}
@@ -486,7 +487,8 @@ static int rewrite_on_rule(const struct route_tree_item * route_tree, flag_t fla
 			}
 			break;
 		case alg_crc32:
-			if(rf->dice_max == 0){
+			if(rf->dice_max == 0) {
+				LM_ERR("invalid dice_max value\n");
 				return -1;
 			}
 			if ((prob = hash_func(msg, hash_source, rf->dice_max)) < 0) {
@@ -515,7 +517,9 @@ static int rewrite_on_rule(const struct route_tree_item * route_tree, flag_t fla
 				}
 			}
 			break;
-		default: return -1;
+		default:
+			LM_ERR("invalid hash algorithm\n");
+			return -1;
 	}
 	return actually_rewrite(rr, dest, msg, user, dstavp);
 }
