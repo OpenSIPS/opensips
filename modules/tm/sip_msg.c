@@ -492,8 +492,16 @@ do { \
 			org_msg->first_line.u.request.version.s );
 		if(new_msg->parsed_orig_ruri_ok)
 			uri_trans(new_msg->buf, org_msg->buf, &new_msg->parsed_orig_ruri);
-		if(new_msg->parsed_uri_ok)
-			uri_trans(new_msg->buf, org_msg->buf, &new_msg->parsed_uri);
+		if(new_msg->parsed_uri_ok) {
+			if (new_msg->new_uri.s) {
+				/* uri string in a separate buffer */
+				uri_trans(new_msg->new_uri.s, org_msg->new_uri.s,
+					&new_msg->parsed_uri);
+			} else {
+				/* uri string still in buf */
+				uri_trans(new_msg->buf, org_msg->buf, &new_msg->parsed_uri);
+			}
+		}
 	}
 	else if ( org_msg->first_line.type==SIP_REPLY )
 	{
