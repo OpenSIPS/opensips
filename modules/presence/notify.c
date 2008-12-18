@@ -116,7 +116,7 @@ int build_str_hdr(subs_t* subs, int is_body, str* hdr)
 	int lexpire_len;
 	char* lexpire_s;
 	char* p;
-	char* status;
+	str status;
 	int port, proto;
     str host;
 
@@ -135,12 +135,21 @@ int build_str_hdr(subs_t* subs, int is_body, str* hdr)
 		LM_ERR("bad sockinfo string\n");
 		return -1;
 	}
+	
+	status.s= get_status_str(subs->status);
+	if(status.s== NULL)
+	{
+		LM_ERR("bad status flag= %d\n", subs->status);
+		pkg_free(hdr->s);
+		return -1;
+	}
+	status.len = strlen(status.s);
 
 	len = 14 /*Max-Forwards: */ + 4 /* valoarea */ + CRLF_LEN + 
 		7 /*Event: */ + subs->event->name.len +4 /*;id=*/+ subs->event_id.len+
 		CRLF_LEN + 10 /*Contact: <*/ + subs->local_contact.len + 1/*>*/ +
 		((proto!=PROTO_UDP)?15/*";transport=xxxx"*/:0) + 
-		CRLF_LEN + 20 /*Subscription-State: */ + 
+		CRLF_LEN + 20 /*Subscription-State: */ +  status.len +
 		((subs->status== TERMINATED_STATUS)?(10/*;reason=*/+subs->reason.len):
 		 9/*expires=*/ + lexpire_len) + CRLF_LEN + (is_body?(14 
 		/*Content-Type: */+subs->event->content_type.len + CRLF_LEN):0);
@@ -205,16 +214,9 @@ int build_str_hdr(subs_t* subs, int is_body, str* hdr)
 	
 	memcpy(p, "Subscription-State: ", 20);
 	p+= 20;
-	status= get_status_str(subs->status);
-	if(status== NULL)
-	{
-		LM_ERR("bad status flag= %d\n", subs->status);
-		pkg_free(hdr->s);
-		return -1;
-	}
-	len = strlen(status);
-	memcpy(p, status, len);
-	p += len;
+
+	memcpy(p, status.s, status.len);
+	p += status.len;
 	
 	if(subs->status== TERMINATED_STATUS)
 	{
