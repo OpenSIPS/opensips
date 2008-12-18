@@ -321,7 +321,7 @@ static void dlg_onreply(struct cell* t, int type, struct tmcb_params *param)
 				dlg, dlg->h_entry, dlg->h_id, event, old_state, new_state,
 				dlg->callid.len, dlg->callid.s,
 				dlg->tag[DLG_CALLER_LEG].len, dlg->tag[DLG_CALLER_LEG].s,
-				dlg->tag[DLG_CALLEE_LEG].len, dlg->tag[DLG_CALLEE_LEG].s);
+				dlg->tag[DLG_CALLEE_LEG].len, ZSW(dlg->tag[DLG_CALLEE_LEG].s));
 		}
 
 		/* dialog confirmed */
@@ -641,9 +641,11 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 				LM_WARN("dialog identification elements are callid='%.*s'/%d, "
 						"caller tag='%.*s'/%d, callee tag='%.*s'/%d\n",
 						dlg->callid.len, dlg->callid.s, dlg->callid.len,
-						dlg->tag[DLG_CALLER_LEG].len, dlg->tag[DLG_CALLER_LEG].s,
 						dlg->tag[DLG_CALLER_LEG].len,
-						dlg->tag[DLG_CALLEE_LEG].len, dlg->tag[DLG_CALLEE_LEG].s,
+						dlg->tag[DLG_CALLER_LEG].s,
+						dlg->tag[DLG_CALLER_LEG].len,
+						dlg->tag[DLG_CALLEE_LEG].len,
+						ZSW(dlg->tag[DLG_CALLEE_LEG].s),
 						dlg->tag[DLG_CALLEE_LEG].len);
 				unref_dlg(dlg, 1);
 				return;
@@ -697,14 +699,14 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 				dlg, dlg->h_entry, dlg->h_id,
 				dlg->callid.len, dlg->callid.s,
 				dlg->tag[DLG_CALLER_LEG].len, dlg->tag[DLG_CALLER_LEG].s,
-				dlg->tag[DLG_CALLEE_LEG].len, dlg->tag[DLG_CALLEE_LEG].s);
+				dlg->tag[DLG_CALLEE_LEG].len, ZSW(dlg->tag[DLG_CALLEE_LEG].s));
 		} else if (ret > 0) {
 			LM_WARN("inconsitent dlg timer data on dlg %p [%u:%u] "
 				"with clid '%.*s' and tags '%.*s' '%.*s'\n",
 				dlg, dlg->h_entry, dlg->h_id,
 				dlg->callid.len, dlg->callid.s,
 				dlg->tag[DLG_CALLER_LEG].len, dlg->tag[DLG_CALLER_LEG].s,
-				dlg->tag[DLG_CALLEE_LEG].len, dlg->tag[DLG_CALLEE_LEG].s);
+				dlg->tag[DLG_CALLEE_LEG].len, ZSW(dlg->tag[DLG_CALLEE_LEG].s));
 		}
 		/* dialog terminated (BYE) */
 		run_dlg_callbacks( DLGCB_TERMINATED, dlg, req, dir, 0);
@@ -785,7 +787,7 @@ void dlg_ontimeout( struct dlg_tl *tl)
 		LM_WARN("timeout for dlg with CallID '%.*s' and tags '%.*s' '%.*s'\n",
 			dlg->callid.len, dlg->callid.s,
 			dlg->tag[DLG_CALLER_LEG].len, dlg->tag[DLG_CALLER_LEG].s,
-			dlg->tag[DLG_CALLEE_LEG].len, dlg->tag[DLG_CALLEE_LEG].s);
+			dlg->tag[DLG_CALLEE_LEG].len, ZSW(dlg->tag[DLG_CALLEE_LEG].s));
 
 		/* dialog timeout */
 		run_dlg_callbacks( DLGCB_EXPIRED, dlg, 0, DLG_DIR_NONE, 0);
