@@ -36,16 +36,16 @@
 
 #define BOUNDARY_STRING_LEN    24
 #define BUF_REALLOC_SIZE       2048
-#define MAX_HEADERS_LENGTH     (104+ 255+ 1)
 #define MAX_FORWARD 70
 
 #define REALLOC_BUF\
+		do{ \
 		size+= BUF_REALLOC_SIZE;\
 		buf= (char*)pkg_realloc(buf, size);\
 		if(buf== NULL) \
-		{	ERR_MEM("constr_multipart_body");}
+		{	ERR_MEM("constr_multipart_body");} \
+		}while(0)
 
-#define COMPUTE_ANTET_LEN(boundary_string) (strlen( boundary_string)+ MAX_HEADERS_LENGTH + 6)
 int send_full_notify(subs_t* subs, xmlNodePtr rl_node, 
 		int version, str* rl_uri, unsigned int hash_code);
 
@@ -55,8 +55,8 @@ int process_list_and_exec(xmlNodePtr list, list_func_t f, void* p, int* c);
 char* generate_string(int seed, int length);
 char* generate_cid(char* uri, int uri_len);
 char* get_auth_string(int flag);
-int agg_body_sendn_update(str* rl_uri, char* boundary_string, str* rlmi_body,
+int agg_body_sendn_update(str* rl_uri, str boundary_string, str* rlmi_body,
 		str* multipart_body, subs_t* subs, unsigned int hash_code);
-int rls_send_notify(subs_t* subs,str* body,char* start_cid,char* boundary_string);
+int rls_send_notify(subs_t* subs,str* body, str* start_cid, str* boundary_string);
 
 #endif

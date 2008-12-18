@@ -458,13 +458,16 @@ void timer_send_notify(unsigned int ticks,void *param)
 	xmlNodePtr list_node= NULL, instance_node= NULL, resource_node;
 	unsigned int hash_code= 0;
 	int len;
-	int size= BUF_REALLOC_SIZE, buf_len= 0;	
-	char* buf= NULL, *auth_state= NULL, *boundary_string= NULL, *cid= NULL;
-	int contor= 0, auth_state_flag, antet_len;
+	int size= BUF_REALLOC_SIZE, buf_len= 0;
+	char* buf= NULL, *auth_state= NULL;
+	int contor= 0, auth_state_flag;
 	str bstr= {0, 0};
 	str rlmi_cont= {0, 0}, multi_cont;
 	subs_t* s, *dialog= NULL;
 	char* rl_uri= NULL;
+	char* str_aux = NULL;
+	str content_type, cid;
+	int add_len;
 
 	query_cols[0]= &str_updated_col;
 	query_vals[0].type = DB_INT;
@@ -498,15 +501,13 @@ void timer_send_notify(unsigned int ticks,void *param)
 
 	/* generate the boundary string */
 
-	boundary_string= generate_string((int)time(NULL), BOUNDARY_STRING_LEN);
-	bstr.len= strlen(boundary_string);
-	bstr.s= (char*)pkg_malloc((bstr.len+ 1)* sizeof(char));
-	if(bstr.s== NULL)
+	bstr.s= generate_string((int)time(NULL), BOUNDARY_STRING_LEN);
+	if(bstr.s == NULL)
 	{
-		ERR_MEM(PKG_MEM_STR);
+		LM_ERR("failed to generate random string\n");
+		goto error;
 	}
-	memcpy(bstr.s, boundary_string, bstr.len);
-	bstr.s[bstr.len]= '\0';
+	bstr.len= strlen(bstr.s);
 
 	/* for the multipart body , use here also an initial allocated
 	 * and reallocated on need buffer */
@@ -516,7 +517,6 @@ void timer_send_notify(unsigned int ticks,void *param)
 		ERR_MEM(PKG_MEM_STR);
 	}
 
-	antet_len= COMPUTE_ANTET_LEN(bstr.s);
 	LM_DBG("found %d records with updated state\n", result->n);
 	for(i= 0; i< result->n; i++)
 	{
@@ -527,6 +527,8 @@ void timer_send_notify(unsigned int ticks,void *param)
 		resource_uri= (char*)row_vals[resource_uri_col].val.string_val;
 		auth_state_flag=     row_vals[auth_state_col].val.int_val;
 		pres_state=   (char*)row_vals[pres_state_col].val.string_val;
+		content_type.s = (char*)row_vals[content_type_col].val.string_val;
+		content_type.len = strlen(content_type.s);
 
 		if(prev_did!= NULL && strcmp(prev_did, curr_did)) 
 		{
@@ -536,7 +538,7 @@ void timer_send_notify(unsigned int ticks,void *param)
 			multi_cont.s= buf;
 			multi_cont.len= buf_len;
 
-			 if(agg_body_sendn_update(&dialog->pres_uri, bstr.s, &rlmi_cont, 
+			 if(agg_body_sendn_update(&dialog->pres_uri, bstr, &rlmi_cont, 
 						 (buf_len==0)?NULL:&multi_cont, dialog, hash_code)<0)
 			 {
 				 LM_ERR("in function agg_body_sendn_update\n");
@@ -644,7 +646,7 @@ void timer_send_notify(unsigned int ticks,void *param)
 		while(1)
 		{
 			contor++;
-			cid= NULL;
+			cid.s= NULL;
 			instance_node= xmlNewChild(resource_node, NULL, 
 					BAD_CAST "instance", NULL);
 			if(instance_node== NULL)
@@ -652,9 +654,16 @@ void timer_send_notify(unsigned int ticks,void *param)
 				LM_ERR("while adding instance child\n");
 				goto error;
 			}
+			str_aux = generate_string(contor, 8);
+			if(str_aux == NULL)
+			{
+				LM_ERR("failed to create random string\n");
+				goto error;
+			}
 			xmlNewProp(instance_node, BAD_CAST "id", 
-					BAD_CAST generate_string(contor, 8));
-			
+					BAD_CAST str_aux);
+			pkg_free(str_aux);
+
 			auth_state= get_auth_string(auth_state_flag);
 			if(auth_state== NULL)
 			{
@@ -665,8 +674,9 @@ void timer_send_notify(unsigned int ticks,void *param)
 		
 			if(auth_state_flag & ACTIVE_STATE)
 			{
-				cid= generate_cid(resource_uri, strlen(resource_uri));
-				xmlNewProp(instance_node, BAD_CAST "cid", BAD_CAST cid);
+				cid.s= generate_cid(resource_uri, strlen(resource_uri));
+				cid.len = strlen(cid.s);
+				xmlNewProp(instance_node, BAD_CAST "cid", BAD_CAST cid.s);
 			}
 			else
 			if(auth_state_flag & TERMINATED_STATE)
@@ -676,18 +686,23 @@ void timer_send_notify(unsigned int ticks,void *param)
 			}
 		
 			/* add in the multipart buffer */
-			if(cid)
+			if(cid.s)
 			{
-				if(buf_len+ antet_len+ strlen(pres_state)+ 4 > size)
-				{
-					REALLOC_BUF
-				}
-				buf_len+= sprintf(buf+ buf_len, "--%s\r\n\r\n", bstr.s);
+				/* calculate the length of the new content that will be written
+				 * in buf */
+				add_len = 6 + bstr.len + 35 + 16 + cid.len + 18 +  content_type.len+ 
+					 strlen(pres_state)+ 4;
+				if(buf_len+ add_len > size)
+					REALLOC_BUF;
+				
+				buf_len+= sprintf(buf+ buf_len, "--%.*s\r\n\r\n", bstr.len, bstr.s);
 				buf_len+= sprintf(buf+ buf_len, "Content-Transfer-Encoding: binary\r\n");
-				buf_len+= sprintf(buf+ buf_len, "Content-ID: <%s>\r\n", cid);
-				buf_len+= sprintf(buf+ buf_len, "Content-Type: %s\r\n\r\n",  
-						row_vals[content_type_col].val.string_val);
-				buf_len+= sprintf(buf+buf_len,"%s\r\n\r\n", pres_state);
+				buf_len+= sprintf(buf+ buf_len, "Content-ID: <%.*s>\r\n", cid.len, cid.s);
+				buf_len+= sprintf(buf+ buf_len, "Content-Type: %s\r\n\r\n", content_type.s);
+				buf_len+= sprintf(buf+ buf_len, "%s\r\n\r\n", pres_state);
+				
+				pkg_free(cid.s);
+				cid.s = NULL;
 			}
 
 			i++;
@@ -722,7 +737,7 @@ void timer_send_notify(unsigned int ticks,void *param)
 		multi_cont.s= buf;
 		multi_cont.len= buf_len;
 	
-		 if(agg_body_sendn_update(&dialog->pres_uri, bstr.s, &rlmi_cont, 
+		 if(agg_body_sendn_update(&dialog->pres_uri, bstr, &rlmi_cont, 
 			 (buf_len==0)?NULL:&multi_cont, dialog, hash_code)<0)
 		 {
 			 LM_ERR("in function agg_body_sendn_update\n");
