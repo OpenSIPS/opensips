@@ -23,7 +23,7 @@
  *
  * History:
  * --------
- *  2007-09-11  initial version (anca)
+ *  2007-09-11  initial version (Anca Vamanu)
  */
 
 #ifndef RLS_SUBSCRIBE_H

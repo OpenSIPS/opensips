@@ -51,16 +51,15 @@ typedef struct res_param
 {
 	xmlNodePtr list_node;
 	db_res_t* db_result;
-	char** cid_array;
+	str* cid_array;
 }res_param_t;
 
 int resource_uri_col=0, content_type_col, pres_state_col= 0,
 	auth_state_col= 0, reason_col= 0;
 
 str* constr_rlmi_doc(db_res_t* result, str* rl_uri, int version,
-		xmlNodePtr rl_node, char*** cid_array);
-str* constr_multipart_body(db_res_t* result,char** cid_array,
-		char* boundary_string);
+		xmlNodePtr rl_node, str** cid_array);
+str* constr_multipart_body(db_res_t* result, str* cid_array, str bstr);
 
 dlg_t* rls_notify_dlg(subs_t* subs);
 
@@ -76,8 +75,8 @@ int send_full_notify(subs_t* subs, xmlNodePtr service_node, int version, str* rl
 	db_val_t query_vals[2], update_vals[2];
 	db_res_t *result= NULL;
 	int n_result_cols= 0, i;
-	char* boundary_string;
-	char** cid_array= NULL;
+	str bstr= {0, 0};
+	str* cid_array= NULL;
 	str rlsubs_did= {0, 0};
 
 	LM_DBG("start\n");
@@ -118,12 +117,17 @@ int send_full_notify(subs_t* subs, xmlNodePtr service_node, int version, str* rl
 		goto error;
 	}
 
-	boundary_string= generate_string((int)time(NULL), BOUNDARY_STRING_LEN);
-	
+	bstr.s= generate_string((int)time(NULL), BOUNDARY_STRING_LEN);
+	if(bstr.s == NULL)
+	{
+		LM_ERR("failed to generate random string\n");
+		goto error;
+	}
+	bstr.len = BOUNDARY_STRING_LEN;
+
 	if(result->n> 0)
 	{
-		multipart_body= constr_multipart_body(result, cid_array, 
-				boundary_string);
+		multipart_body= constr_multipart_body(result, cid_array, bstr);
 		if(multipart_body== NULL)
 		{
 			LM_ERR("while constructing multipart body\n");
@@ -131,8 +135,8 @@ int send_full_notify(subs_t* subs, xmlNodePtr service_node, int version, str* rl
 		}
 		for(i = 0; i<result->n; i++)
 		{
-			if(cid_array[i])
-				pkg_free(cid_array[i]);
+			if(cid_array[i].s)
+				pkg_free(cid_array[i].s);
 		}
 	}
 	pkg_free(cid_array);
@@ -140,7 +144,7 @@ int send_full_notify(subs_t* subs, xmlNodePtr service_node, int version, str* rl
 	rls_dbf.free_result(rls_db, result);
 	result= NULL;
 
-	if(agg_body_sendn_update(rl_uri, boundary_string, rlmi_body,
+	if(agg_body_sendn_update(rl_uri, bstr, rlmi_body,
 		multipart_body, subs, hash_code)< 0)
 	{
 		LM_ERR("in function agg_body_sendn_update\n");
@@ -165,6 +169,7 @@ int send_full_notify(subs_t* subs, xmlNodePtr service_node, int version, str* rl
 		goto error;
 	}
 
+	pkg_free(bstr.s);
 	xmlFree(rlmi_body->s);
 	pkg_free(rlmi_body);
 
@@ -177,6 +182,9 @@ int send_full_notify(subs_t* subs, xmlNodePtr service_node, int version, str* rl
 
 	return 0;
 error:
+
+	if(bstr.s)
+		pkg_free(bstr.s);
 
 	if(rlmi_body)
 	{
@@ -194,8 +202,8 @@ error:
 	if(cid_array)
 	{
 		for(i= 0; i< result->n ; i++)
-			if(cid_array[i])
-				pkg_free(cid_array[i]);
+			if(cid_array[i].s)
+				pkg_free(cid_array[i].s);
 		pkg_free(cid_array);
 	}
 	if(result)
@@ -205,30 +213,36 @@ error:
 	return -1;
 }
 
-int agg_body_sendn_update(str* rl_uri, char* boundary_string, str* rlmi_body,
+int agg_body_sendn_update(str* rl_uri, str boundary_string, str* rlmi_body,
 		str* multipart_body, subs_t* subs, unsigned int hash_code)
 {
-	char* cid;
+	str cid;
 	int len;
 	str body= {0, 0};
 	int init_len;
 
-	cid= generate_cid(rl_uri->s, rl_uri->len);
+	cid.s= generate_cid(rl_uri->s, rl_uri->len);
+	if(cid.s == NULL)
+	{
+		LM_ERR("failed to generate cid\n");
+		return -1;
+	}
+	cid.len = strlen(cid.s);
 
-	len= 2*strlen(boundary_string)+ 4+ 102+ strlen(cid)+ 2+ rlmi_body->len+50;
+	len= 2*boundary_string.len+ 4+ 102+ cid.len+ 2+ rlmi_body->len+50+1;
 	if(multipart_body)
 		len+= multipart_body->len;
 	
 	init_len= len;
 
-	body.s= (char*)pkg_malloc(len* sizeof(char));
+	body.s= (char*)pkg_malloc(len);
 	if(body.s== NULL)
 	{
 		ERR_MEM(PKG_MEM_STR);
 	}
-	len=  sprintf(body.s, "--%s\r\n", boundary_string);
+	len=  sprintf(body.s, "--%.*s\r\n", boundary_string.len, boundary_string.s);
 	len+= sprintf(body.s+ len , "Content-Transfer-Encoding: binary\r\n");
-	len+= sprintf(body.s+ len , "Content-ID: <%s>\r\n", cid);	
+	len+= sprintf(body.s+ len , "Content-ID: <%.*s>\r\n", cid.len, cid.s);	
 	len+= sprintf(body.s+ len , 
 			"Content-Type: application/rlmi+xml;charset=\"UTF-8r\"\r\n");
 	len+= sprintf(body.s+ len, "\r\n"); /*blank line*/
@@ -241,7 +255,7 @@ int agg_body_sendn_update(str* rl_uri, char* boundary_string, str* rlmi_body,
 		memcpy(body.s+ len, multipart_body->s, multipart_body->len);
 		len+= multipart_body->len;
 	}
-	len+= sprintf(body.s+ len, "--%s--\r\n", boundary_string);
+	len+= sprintf(body.s+ len, "--%.*s--\r\n", boundary_string.len, boundary_string.s);
 
 	if(init_len< len)
 	{
@@ -252,7 +266,7 @@ int agg_body_sendn_update(str* rl_uri, char* boundary_string, str* rlmi_body,
 	body.len= len;
 
 	/* send Notify */
-	if(rls_send_notify(subs, &body, cid, boundary_string)< 0)
+	if(rls_send_notify(subs, &body, &cid, &boundary_string)< 0)
 	{
 		LM_ERR("when sending Notify\n");
 		goto error;
@@ -269,9 +283,12 @@ int agg_body_sendn_update(str* rl_uri, char* boundary_string, str* rlmi_body,
 		}
 	}
 
+	pkg_free(cid.s);
 	return 0;
 
 error:
+	if(cid.s)
+		pkg_free(cid.s);
 	if(body.s)
 		pkg_free(body.s);
 
@@ -280,7 +297,7 @@ error:
 
 
 int add_resource_instance(char* uri, xmlNodePtr resource_node,
-		db_res_t* result, char** cid_array)
+		db_res_t* result, str* cid_array)
 {
 	xmlNodePtr instance_node= NULL;
 	db_row_t *row;	
@@ -290,6 +307,7 @@ int add_resource_instance(char* uri, xmlNodePtr resource_node,
 	int contor= 0;
 	str cid;
 	int auth_state_flag;
+	char* str_aux = NULL;
 
 	for(i= 0; i< result->n; i++)
 	{
@@ -312,8 +330,16 @@ int add_resource_instance(char* uri, xmlNodePtr resource_node,
 				goto error;
 			}
 		
+			str_aux = generate_string(contor, 8);
+			if(str_aux == NULL)
+			{
+				LM_ERR("failed to generate random string\n");
+				goto error;
+			}
 			xmlNewProp(instance_node, BAD_CAST "id",
-					BAD_CAST generate_string(contor, 8));
+					BAD_CAST str_aux);
+			pkg_free(str_aux);
+
 			auth_state_flag= row_vals[auth_state_col].val.int_val;
 			auth_state= get_auth_string(auth_state_flag );
 			if(auth_state== NULL)
@@ -326,15 +352,13 @@ int add_resource_instance(char* uri, xmlNodePtr resource_node,
 			if(auth_state_flag & ACTIVE_STATE)
 			{
 				cid.s= generate_cid(uri, strlen(uri));
-				cid.len= strlen(cid.s);
-
-				cid_array[i]= (char*)pkg_malloc((1+ cid.len)*sizeof(char));
-				if(cid_array[i]== NULL)
+				if(cid.s == NULL)
 				{
-					ERR_MEM(PKG_MEM_STR);
-				}	
-				memcpy(cid_array[i], cid.s, cid.len);
-				cid_array[i][cid.len]= '\0';
+					LM_ERR("failed to generate cid\n");
+					goto error;
+				}
+				cid.len= strlen(cid.s);
+				cid_array[i]= cid;
 
 				xmlNewProp(instance_node, BAD_CAST "cid", BAD_CAST cid.s);
 			}
@@ -355,7 +379,7 @@ error:
 
 int add_resource(char* uri, void* param)
 {
-	char** cid_array= ((res_param_t*)param)->cid_array;
+	str* cid_array= ((res_param_t*)param)->cid_array;
 	xmlNodePtr list_node= ((res_param_t*)param)->list_node;
 	xmlNodePtr resource_node= NULL;
 	db_res_t *result= ((res_param_t*)param)->db_result;
@@ -381,7 +405,7 @@ error:
 }
 
 str* constr_rlmi_doc(db_res_t *result, str* rl_uri, int version,
-		xmlNodePtr service_node, char*** rlmi_cid_array)
+		xmlNodePtr service_node, str** rlmi_cid_array)
 {
 	xmlDocPtr doc= NULL;
 	xmlNodePtr list_node= NULL;
@@ -389,16 +413,16 @@ str* constr_rlmi_doc(db_res_t *result, str* rl_uri, int version,
 	int len; 
 	char* uri;
 	res_param_t param;
-	char** cid_array= NULL;
+	str* cid_array= NULL;
 	int n= result->n;
 
 	LM_DBG("start\n");
-	cid_array= (char**)pkg_malloc(n* sizeof(char*));
+	cid_array= (str*)pkg_malloc(n* sizeof(str));
 	if(cid_array== NULL)
 	{
 		ERR_MEM(PKG_MEM_STR);
 	}
-	memset(cid_array, 0, n* sizeof(char*));
+	memset(cid_array, 0, n* sizeof(str));
 
 	doc= xmlNewDoc(BAD_CAST "1.0");
 	if(doc== NULL)
@@ -461,27 +485,25 @@ error:
 }
 
 
-str* constr_multipart_body(db_res_t* result, char** cid_array, 
-		char* boundary_string)
+str* constr_multipart_body(db_res_t* result, str* cid_array, str boundary_string)
 {
 	char* buf= NULL;
 	int size= BUF_REALLOC_SIZE;
 	int i, length= 0;
 	db_row_t *row;	
 	db_val_t *row_vals;
-	char* content_id= NULL;
+	str content_id={0, 0};
 	str body= {0, 0};
-	int antet_len;
+	int add_len;
 	str* multi_body= NULL;
+	str content_type;
 	
 	LM_DBG("start\n");
-	buf= pkg_malloc(size* sizeof(char));
+	buf= pkg_malloc(size);
 	if(buf== NULL)
 	{
 		ERR_MEM(PKG_MEM_STR);
 	}
-
-	antet_len= COMPUTE_ANTET_LEN (boundary_string);
 
 	for(i= 0; i< result->n; i++)
 	{
@@ -490,36 +512,45 @@ str* constr_multipart_body(db_res_t* result, char** cid_array,
 	
 		if(row_vals[auth_state_col].val.int_val!= ACTIVE_STATE)
 			continue;
-	
-		if(length+ antet_len+ body.len+ 4 > size)
-		{
-			REALLOC_BUF
-		}
 
-		length+= sprintf(buf+ length, "--%s\r\n\r\n", boundary_string);
-		length+= sprintf(buf+ length, "Content-Transfer-Encoding: binary\r\n");
+		content_type.s = (char*)row_vals[content_type_col].val.string_val;
+		if(content_type.s == NULL)
+		{
+			LM_ERR("empty content type column\n");
+			goto error;
+		}
+		content_type.len = strlen(content_type.s);
+		body.s= (char*)row_vals[pres_state_col].val.string_val;
+		body.len= strlen(body.s);
+
 		content_id= cid_array[i];
-		if(content_id== NULL)
+		if(content_id.s== NULL)
 		{
 			LM_ERR("No cid found in array for uri= %s\n",
 					row_vals[resource_uri_col].val.string_val);
 			goto error;
 		}
 
-		length+= sprintf(buf+ length, "Content-ID: <%s>\r\n",content_id);
+		add_len = 2 + boundary_string.len + 4 /*"--%s\r\n\r\n"*/ + 
+					35 + 16 + content_id.len + 18 + content_type.len + 
+					body.len + 4;
+
+		if(length+ add_len > size)
+			REALLOC_BUF;
+
+		length+= sprintf(buf+ length, "--%.*s\r\n\r\n", boundary_string.len, boundary_string.s);
+		length+= sprintf(buf+ length, "Content-Transfer-Encoding: binary\r\n");
+
+		length+= sprintf(buf+ length, "Content-ID: <%.*s>\r\n",content_id.len, content_id.s);
 		length+= sprintf(buf+ length, "Content-Type: %s\r\n\r\n",
-				row_vals[content_type_col].val.string_val);
-		
-		body.s= (char*)row_vals[pres_state_col].val.string_val;
-		body.len= strlen(body.s);
+				content_type.s);
 
 		length+= sprintf(buf+length,"%s\r\n\r\n", body.s);
 	}
 
-	if(length+ strlen( boundary_string)+ 7> size )
-	{
-		REALLOC_BUF
-	}
+	if(length+ boundary_string.len+ 7> size )
+		REALLOC_BUF;
+	
 	buf[length]= '\0';
 	
 	multi_body= (str*)pkg_malloc(sizeof(str));
@@ -540,7 +571,7 @@ error:
 	return NULL;
 }
 
-int rls_notify_extra_hdr(subs_t* subs, char* start_cid, char* boundary_string,
+int rls_notify_extra_hdr(subs_t* subs, str* start_cid, str* boundary_string,
 		str *hdr)
 {
 	int len;
@@ -557,8 +588,8 @@ int rls_notify_extra_hdr(subs_t* subs, char* start_cid, char* boundary_string,
 		 15/*";transport=xxxx"*/:0) + CRLF_LEN +/*Subscription-State:*/ 20 +
 		((subs->expires>0)?(15+lexpire_len):25) + CRLF_LEN + /*Require: */ 18
 		+ CRLF_LEN + ((start_cid && boundary_string)?(/*Content-Type*/59 +
-		/*start*/12 + strlen(start_cid) + /*boundary*/12 + 
-		strlen(boundary_string) + CRLF_LEN):0);
+		/*start*/12 + start_cid->len + /*boundary*/12 + 
+		boundary_string->len + CRLF_LEN):0);
 
 	hdr->s = (char*)pkg_malloc(len);
 	if(hdr->s== NULL)
@@ -646,12 +677,12 @@ int rls_notify_extra_hdr(subs_t* subs, char* start_cid, char* boundary_string,
 		p += 59;
 		memcpy(p, ";start= \"<", 10);
 		p += 10;
-		memcpy(p, start_cid, strlen(start_cid));
-		p += strlen(start_cid);
+		memcpy(p, start_cid->s, start_cid->len);
+		p += start_cid->len;
 		memcpy(p, ">\";boundary=\"", 13);
 		p += 13;
-		memcpy(p, boundary_string, strlen(boundary_string));
-		p += strlen(boundary_string);
+		memcpy(p, boundary_string->s, boundary_string->len);
+		p += boundary_string->len;
 		*(p++) = '"';
 		memcpy(p, CRLF, CRLF_LEN);
 		p += CRLF_LEN;
@@ -668,8 +699,8 @@ void rls_free_td(dlg_t* td)
 		pkg_free(td);
 }
 
-int rls_send_notify(subs_t* subs, str* body, char* start_cid,
-		char* boundary_string)
+int rls_send_notify(subs_t* subs, str* body, str* start_cid,
+		str* boundary_string)
 {
 	dlg_t* td= NULL;
 	str met= {"NOTIFY", 6};
@@ -918,15 +949,17 @@ int process_list_and_exec(xmlNodePtr list_node, list_func_t function,
 
 char* generate_string(int seed, int length)
 {
-	static char buf[128];
-    int r,i;
+    char* rstr;
+	int r,i;
 
-    if(length>= 128)
+	rstr = (char*) pkg_malloc(length + 1);
+	if(rstr == NULL) 
 	{
-		LM_ERR("requested length exceeds buffer size\n");
+		LM_ERR("no more memory\n");
 		return NULL;
 	}
-	srand(seed); 
+
+	srand(seed);
 		
 	for(i=0; i<length; i++) 
 	{
@@ -934,21 +967,28 @@ char* generate_string(int seed, int length)
 	    if(r>'Z' && r< 'a')
 			r= '0'+ (r- 'Z');
 
-        sprintf(buf+i, "%c", r);
+		rstr[i] = r;
     }
-	buf[length]= '\0';
+	rstr[length]= '\0';
 
-	return buf;
+	return rstr;
 }
 
 char* generate_cid(char* uri, int uri_len)
 {
-	static char cid[512];
+	char* cid;
 	int len;
+
+	cid = (char*) pkg_malloc(uri_len + 30);
+	if(cid == NULL)
+	{
+		LM_ERR("no more memory\n");
+		return NULL;
+	}
 
 	len= sprintf(cid, "%d.%.*s.%d", (int)time(NULL), uri_len, uri, rand());
 	cid[len]= '\0';
-	
+
 	return cid;
 }
 
