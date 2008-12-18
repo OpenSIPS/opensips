@@ -369,7 +369,8 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 					dlg, dlg->h_entry, dlg->h_id,
 					dlg->callid.len, dlg->callid.s,
 					dlg->tag[DLG_CALLER_LEG].len, dlg->tag[DLG_CALLER_LEG].s,
-					dlg->tag[DLG_CALLEE_LEG].len, dlg->tag[DLG_CALLEE_LEG].s);
+					dlg->tag[DLG_CALLEE_LEG].len,
+					ZSW(dlg->tag[DLG_CALLEE_LEG].s));
 				/* destroy the dialog */
 				unref_dlg(dlg,1);
 				continue;

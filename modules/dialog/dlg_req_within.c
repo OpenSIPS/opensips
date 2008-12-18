@@ -160,14 +160,14 @@ void bye_reply_cb(struct cell* t, int type, struct tmcb_params* ps){
 				dlg, dlg->h_entry, dlg->h_id,
 				dlg->callid.len, dlg->callid.s,
 				dlg->tag[DLG_CALLER_LEG].len, dlg->tag[DLG_CALLER_LEG].s,
-				dlg->tag[DLG_CALLEE_LEG].len, dlg->tag[DLG_CALLEE_LEG].s);
+				dlg->tag[DLG_CALLEE_LEG].len, ZSW(dlg->tag[DLG_CALLEE_LEG].s));
 		} else if (ret > 0) {
 			LM_DBG("dlg already expired (not in timer list) %p [%u:%u] "
 				"with clid '%.*s' and tags '%.*s' '%.*s'\n",
 				dlg, dlg->h_entry, dlg->h_id,
 				dlg->callid.len, dlg->callid.s,
 				dlg->tag[DLG_CALLER_LEG].len, dlg->tag[DLG_CALLER_LEG].s,
-				dlg->tag[DLG_CALLEE_LEG].len, dlg->tag[DLG_CALLEE_LEG].s);
+				dlg->tag[DLG_CALLEE_LEG].len, ZSW(dlg->tag[DLG_CALLEE_LEG].s));
 		} else {
 			/* successfully removed from timer list */
 			unref++;

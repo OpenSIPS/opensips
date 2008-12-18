@@ -122,14 +122,14 @@ inline void destroy_dlg(struct dlg_cell *dlg)
 			dlg, dlg->h_entry, dlg->h_id,
 			dlg->callid.len, dlg->callid.s,
 			dlg->tag[DLG_CALLER_LEG].len, dlg->tag[DLG_CALLER_LEG].s,
-			dlg->tag[DLG_CALLEE_LEG].len, dlg->tag[DLG_CALLEE_LEG].s);
+			dlg->tag[DLG_CALLEE_LEG].len, ZSW(dlg->tag[DLG_CALLEE_LEG].s));
 	} else if (ret > 0) {
 		LM_DBG("dlg expired or not in list - dlg %p [%u:%u] "
 			"with clid '%.*s' and tags '%.*s' '%.*s'\n",
 			dlg, dlg->h_entry, dlg->h_id,
 			dlg->callid.len, dlg->callid.s,
 			dlg->tag[DLG_CALLER_LEG].len, dlg->tag[DLG_CALLER_LEG].s,
-			dlg->tag[DLG_CALLEE_LEG].len, dlg->tag[DLG_CALLEE_LEG].s);
+			dlg->tag[DLG_CALLEE_LEG].len, ZSW(dlg->tag[DLG_CALLEE_LEG].s));
 	}
 
 	run_dlg_callbacks( DLGCB_DESTROY , dlg, 0, DLG_DIR_NONE, 0);
@@ -476,7 +476,7 @@ static inline void log_next_state_dlg(const int event,
 		event, dlg->state, dlg, dlg->h_entry, dlg->h_id,
 		dlg->callid.len, dlg->callid.s,
 		dlg->tag[DLG_CALLER_LEG].len, dlg->tag[DLG_CALLER_LEG].s,
-		dlg->tag[DLG_CALLEE_LEG].len, dlg->tag[DLG_CALLEE_LEG].s);
+		dlg->tag[DLG_CALLEE_LEG].len, ZSW(dlg->tag[DLG_CALLEE_LEG].s));
 }
 
 
@@ -605,7 +605,7 @@ void next_state_dlg(struct dlg_cell *dlg, int event,
 				event, dlg->state, dlg, dlg->h_entry, dlg->h_id,
 				dlg->callid.len, dlg->callid.s,
 				dlg->tag[DLG_CALLER_LEG].len, dlg->tag[DLG_CALLER_LEG].s,
-				dlg->tag[DLG_CALLEE_LEG].len, dlg->tag[DLG_CALLEE_LEG].s);
+				dlg->tag[DLG_CALLEE_LEG].len, ZSW(dlg->tag[DLG_CALLEE_LEG].s));
 	}
 	*new_state = dlg->state;
 

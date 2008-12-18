@@ -150,7 +150,7 @@ inline void destroy_dlg(struct dlg_cell *dlg);
 				(_dlg)->tag[DLG_CALLER_LEG].len,\
 				(_dlg)->tag[DLG_CALLER_LEG].s,\
 				(_dlg)->tag[DLG_CALLEE_LEG].len,\
-				(_dlg)->tag[DLG_CALLEE_LEG].s); \
+				ZSW((_dlg)->tag[DLG_CALLEE_LEG].s)); \
 		}\
 		if ((_dlg)->ref<=0) { \
 			unlink_unsafe_dlg( _d_entry, _dlg);\
