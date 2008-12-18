@@ -1579,7 +1579,7 @@ opensips_start() {
 	echo
 	minfo "Starting OpenSIPS : "
 	if [ -r $PID_FILE ] ; then
-		ps axw | $EGREP opensips
+		ps -ef | $EGREP opensips
 		ls -l $PID_FILE
 		minfo "PID file exists ($PID_FILE)! OpenSIPS already running?"
 		exit 1
@@ -1618,7 +1618,7 @@ opensips_stop() {
 	else
 		echo
 		merr "No PID file found ($PID_FILE)! OpenSIPS probably not running"
-		minfo "check with 'ps axw | $EGREP opensips'"
+		minfo "check with 'ps -ef | $EGREP opensips'"
 		exit 1
 	fi
 }
