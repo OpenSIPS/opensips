@@ -34,7 +34,13 @@
 		how much time to wait for a reply to a challenge). However, be aware not to
 		set it to a too smaller value.
     </para>
-	</section>
+		<para>
+		However this mechanism does not work for architectures using a cluster
+		of servers that share the same dns name for load balancing. In this case
+		you can disable the nonce reusability check by setting the module parameter
+		'disable_nonce_check'.
+	</para>
+</section>
 
 	<section>
 		<title>Dependencies</title>
@@ -243,6 +249,27 @@ modparam("auth", "calculate_ha1", 1)
 </programlisting>
 		</example>
 	</section>
+	</section>
+
+	<section>
+		<title><varname>disable_nonce_check</varname> (int)</title>
+		<para>
+		By setting this parameter you disable the security mechanism 
+		that protects against intrusion sniffing and does not allow
+		nonces to be reused. But, because of the current implementation,
+		having this enabled breaks auth for an architecture where load
+		is balanced by having more servers with the same dns name.
+		This parameter has to be set in this case.
+		</para>
+		<para>
+		Default value is <quote>0 ( enabled)</quote>.
+		</para>
+		<example>
+		<title><varname>password_spec</varname> parameter usage</title>
+		<programlisting format="linespecific">
+modparam("auth", "disable_nonce_check", 1)
+</programlisting>
+		</example>
 	</section>
 
 	<section>

@@ -101,20 +101,24 @@ void calc_nonce(char* _nonce, int _expires, int _index, str* _secret)
 {
 	MD5_CTX ctx;
 	unsigned char bin[16];
+	unsigned int offset = 8;
 
 	MD5Init(&ctx);
 	
 
 	integer2hex(_nonce, _expires);
 
-    integer2hex(_nonce + 8, _index);
-    
-    MD5Update(&ctx, _nonce, 16);
+	if(!disable_nonce_check) {
+		integer2hex(_nonce + 8, _index);
+		offset = 16;
+	}
+
+    MD5Update(&ctx, _nonce, offset);
 
 	MD5Update(&ctx, _secret->s, _secret->len);
 	MD5Final(bin, &ctx);
-	string2hex(bin, 16, _nonce + 16);
-	_nonce[16 + 32] = '\0';
+	string2hex(bin, 16, _nonce + offset);
+	_nonce[offset + 32] = '\0';
 }
 
 /*
@@ -143,24 +147,25 @@ int check_nonce(str* _nonce, str* _secret)
 {
 	int expires;
 	char non[NONCE_LEN + 1];
-    int index;
+    int index = 0;
 
 	if (_nonce->s == 0) {
 		return -1;  /* Invalid nonce */
 	}
 
-	if (NONCE_LEN != _nonce->len) {
+	if (NONCE_LEN != ((!disable_nonce_check)?_nonce->len:_nonce->len +8)) {
 		return 1; /* Lengths must be equal */
 	}
 
 	expires = get_nonce_expires(_nonce);
-    index = get_nonce_index(_nonce);
+    if(!disable_nonce_check)
+		index = get_nonce_index(_nonce);
 
     calc_nonce(non, expires, index, _secret);
 
  	
 	LM_DBG("comparing [%.*s] and [%.*s]\n",
-			_nonce->len, ZSW(_nonce->s), NONCE_LEN, non);
+			_nonce->len, ZSW(_nonce->s), ((!disable_nonce_check)?NONCE_LEN:NONCE_LEN-8), non);
     if (!memcmp(non, _nonce->s, _nonce->len)) {
 		return 0;
 	}

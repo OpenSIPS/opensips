@@ -84,21 +84,23 @@ static inline char *build_auth_hf(int _retries, int _stale, str* _realm,
 	char *hf, *p;
     int index;
 
-    /* get the nonce index and mark it as used */
-    index= reserve_nonce_index();
-    if(index == -1)
-    {
-        LM_ERR("no more nonces can be generated\n");
-        return 0;
-    }
-    LM_DBG("nonce index= %d\n", index);
+	if(!disable_nonce_check) {
+		/* get the nonce index and mark it as used */
+		index= reserve_nonce_index();
+		if(index == -1)
+		{
+			LM_ERR("no more nonces can be generated\n");
+			return 0;
+		}
+		LM_DBG("nonce index= %d\n", index);
+	}
 
-	     /* length calculation */
+	/* length calculation */
 	*_len=hf_name_len=strlen(_hf_name);
 	*_len+=DIGEST_REALM_LEN
 		+_realm->len
 		+DIGEST_NONCE_LEN
-		+NONCE_LEN
+		+((!disable_nonce_check)?NONCE_LEN:NONCE_LEN-8)
 		+1 /* '"' */
 		+((_qop)? QOP_PARAM_LEN:0)
 		+((_stale)? STALE_PARAM_LEN : 0)
@@ -119,7 +121,7 @@ static inline char *build_auth_hf(int _retries, int _stale, str* _realm,
 	memcpy(p, _realm->s, _realm->len);p+=_realm->len;
 	memcpy(p, DIGEST_NONCE, DIGEST_NONCE_LEN);p+=DIGEST_NONCE_LEN;
 	calc_nonce(p, time(0) + nonce_expire, index, &secret);
-	p+=NONCE_LEN;
+	p+=((!disable_nonce_check)?NONCE_LEN:NONCE_LEN-8);
 	*p='"';p++;
 	if (_qop) {
 		memcpy(p, QOP_PARAM, QOP_PARAM_LEN);
