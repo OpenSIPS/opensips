@@ -249,7 +249,6 @@ modparam("auth", "calculate_ha1", 1)
 </programlisting>
 		</example>
 	</section>
-	</section>
 
 	<section>
 		<title><varname>disable_nonce_check</varname> (int)</title>
@@ -265,11 +264,12 @@ modparam("auth", "calculate_ha1", 1)
 		Default value is <quote>0 ( enabled)</quote>.
 		</para>
 		<example>
-		<title><varname>password_spec</varname> parameter usage</title>
+		<title><varname>disable_nonce_check</varname> parameter usage</title>
 		<programlisting format="linespecific">
 modparam("auth", "disable_nonce_check", 1)
 </programlisting>
 		</example>
+	</section>
 	</section>
 
 	<section>
