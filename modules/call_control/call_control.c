@@ -73,6 +73,11 @@ MODULE_VERSION
 # define AF_LOCAL AF_UNIX
 #endif
 
+// Solaris does not have the MSG_NOSIGNAL flag for the send(2) syscall
+#ifndef MSG_NOSIGNAL
+# define MSG_NOSIGNAL 0
+#endif
+
 
 
 typedef int Bool;
