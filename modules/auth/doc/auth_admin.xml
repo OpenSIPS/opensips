@@ -261,7 +261,7 @@ modparam("auth", "calculate_ha1", 1)
 		This parameter has to be set in this case.
 		</para>
 		<para>
-		Default value is <quote>0 ( enabled)</quote>.
+		Default value is <quote>0</quote> (enabled).
 		</para>
 		<example>
 		<title><varname>disable_nonce_check</varname> parameter usage</title>
