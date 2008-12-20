@@ -335,24 +335,6 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 				early_dlgs_cnt++;
 			}
 
-			dlg->tl.timeout = (unsigned int)(VAL_INT(values+9)) + get_ticks();
-			if (dlg->tl.timeout<=(unsigned int)time(0))
-				dlg->tl.timeout = 0;
-			else
-				dlg->tl.timeout -= (unsigned int)time(0);
-
-			/*restore the timer values */
-			if (0 != insert_dlg_timer( &(dlg->tl), (int)dlg->tl.timeout )) {
-				LM_CRIT("Unable to insert dlg %p [%u:%u] "
-					"with clid '%.*s' and tags '%.*s' '%.*s'\n",
-					dlg, dlg->h_entry, dlg->h_id,
-					dlg->callid.len, dlg->callid.s,
-					dlg->tag[DLG_CALLER_LEG].len, dlg->tag[DLG_CALLER_LEG].s,
-					dlg->tag[DLG_CALLEE_LEG].len,
-					ZSW(dlg->tag[DLG_CALLEE_LEG].s));
-			}
-			LM_DBG("current dialog timeout is %u\n", dlg->tl.timeout);
-
 			GET_STR_VALUE(cseq1, values, 10 , 1, 1);
 			GET_STR_VALUE(cseq2, values, 11 , 1, 1);
 			GET_STR_VALUE(rroute1, values, 12, 0, 0);
@@ -365,12 +347,37 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 			(dlg_set_leg_info( dlg, &to_tag, &rroute2, &contact2,
 			&cseq2, DLG_CALLEE_LEG)!=0) ) {
 				LM_ERR("dlg_set_leg_info failed\n");
+				/* destroy the dialog */
 				unref_dlg(dlg,1);
 				continue;
 			}
 
 			dlg->bind_addr[DLG_CALLER_LEG] = create_socket_info(values, 16);
 			dlg->bind_addr[DLG_CALLEE_LEG] = create_socket_info(values, 17);
+
+			/* calculcate timeout */
+			dlg->tl.timeout = (unsigned int)(VAL_INT(values+9)) + get_ticks();
+			if (dlg->tl.timeout<=(unsigned int)time(0))
+				dlg->tl.timeout = 0;
+			else
+				dlg->tl.timeout -= (unsigned int)time(0);
+
+			/* restore the timer values */
+			if (0 != insert_dlg_timer( &(dlg->tl), (int)dlg->tl.timeout )) {
+				LM_CRIT("Unable to insert dlg %p [%u:%u] "
+					"with clid '%.*s' and tags '%.*s' '%.*s'\n",
+					dlg, dlg->h_entry, dlg->h_id,
+					dlg->callid.len, dlg->callid.s,
+					dlg->tag[DLG_CALLER_LEG].len, dlg->tag[DLG_CALLER_LEG].s,
+					dlg->tag[DLG_CALLEE_LEG].len,
+					ZSW(dlg->tag[DLG_CALLEE_LEG].s));
+				/* destroy the dialog */
+				unref_dlg(dlg,1);
+				continue;
+			}
+			/* reference the dialog as kept in the timer list */
+			ref_dlg(dlg,1);
+			LM_DBG("current dialog timeout is %u\n", dlg->tl.timeout);
 
 			dlg->lifetime = 0;
 			dlg->flags = 0;

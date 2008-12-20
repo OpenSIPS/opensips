@@ -83,7 +83,7 @@ void destroy_dlg_timer(void)
 
 
 
-static inline void insert_dialog_timer_unsafe(struct dlg_tl *tl)
+static inline void insert_dlg_timer_unsafe(struct dlg_tl *tl)
 {
 	struct dlg_tl* ptr;
 
@@ -112,7 +112,8 @@ int insert_dlg_timer(struct dlg_tl *tl, int interval)
 		return -1;
 	}
 	tl->timeout = get_ticks()+interval;
-	insert_dialog_timer_unsafe( tl );
+
+	insert_dlg_timer_unsafe( tl );
 
 	lock_release( d_timer->lock);
 
@@ -121,7 +122,7 @@ int insert_dlg_timer(struct dlg_tl *tl, int interval)
 
 
 
-static inline void remove_dialog_timer_unsafe(struct dlg_tl *tl)
+static inline void remove_dlg_timer_unsafe(struct dlg_tl *tl)
 {
 	tl->prev->next = tl->next;
 	tl->next->prev = tl->prev;
@@ -129,47 +130,44 @@ static inline void remove_dialog_timer_unsafe(struct dlg_tl *tl)
 
 
 
-int remove_dlg_timer_unsafe(struct dlg_tl *tl)
+/* returns:
+      0 - dialog OK and removed from timer list
+      1 - dialog OK but not found in timer list
+     -1 - dialog not OK
+ */
+int remove_dlg_timer(struct dlg_tl *tl)
 {
-	int ret = 0;
+	lock_get( d_timer->lock);
 
-	if (tl->prev==NULL && tl->next==NULL) {
-		if (tl->timeout != 0) {
-			LM_WARN("bogus non null timeout %u on unlinked dialog tl %p\n",
-				tl->timeout, tl);
-			return 1;
-		}
-		return 0;
+	if (tl->prev==NULL && tl->timeout==0) {
+		/* dialog is not in timer list; either it is completly removed
+		   (prev=next=timeout=0), either is in process by timeout routine
+		   (prev=timeout=0;next!=0) */
+		lock_release( d_timer->lock);
+		return 1;
 	}
+
 	if (tl->prev==NULL || tl->next==NULL) {
 		LM_CRIT("bogus tl=%p tl->prev=%p tl->next=%p\n",
 			tl, tl->prev, tl->next);
+		lock_release( d_timer->lock);
 		return -1;
 	}
-	if (tl->timeout == 0) {
-		LM_WARN("bogus null timeout on linked dialog tl=%p\n", tl);
-		ret = 2;
-	}
 
-	remove_dialog_timer_unsafe(tl);
+	remove_dlg_timer_unsafe(tl);
 	tl->next = NULL;
 	tl->prev = NULL;
 	tl->timeout = 0;
 
-	return ret;
-}
-
-int remove_dlg_timer(struct dlg_tl *tl)
-{
-	int ret = 0;
-
-	lock_get( d_timer->lock);
-	ret = remove_dlg_timer_unsafe(tl);
 	lock_release( d_timer->lock);
-	return ret;
+	return 0;
 }
 
 
+
+/* returns :
+     0 - dialog was inserted in timer list with the new timeout
+    -1 - failure (dialog is expired, so it cannot be added again) */
 int update_dlg_timer( struct dlg_tl *tl, int timeout )
 {
 	lock_get( d_timer->lock);
@@ -179,11 +177,11 @@ int update_dlg_timer( struct dlg_tl *tl, int timeout )
 			lock_release( d_timer->lock);
 			return -1;
 		}
-		remove_dialog_timer_unsafe(tl);
+		remove_dlg_timer_unsafe(tl);
 	}
 
 	tl->timeout = get_ticks()+timeout;
-	insert_dialog_timer_unsafe( tl );
+	insert_dlg_timer_unsafe( tl );
 
 	lock_release( d_timer->lock);
 	return 0;
@@ -205,17 +203,19 @@ static inline struct dlg_tl* get_expired_dlgs(unsigned int time)
 
 	end = &d_timer->first;
 	tl = d_timer->first.next;
-	LM_WARN("start with tl=%p tl->prev=%p tl->next=%p (%d) at %d "
+	LM_DBG("start with tl=%p tl->prev=%p tl->next=%p (%d) at %d "
 		"and end with end=%p end->prev=%p end->next=%p\n",
 		tl,tl->prev,tl->next,tl->timeout,time,
 		end,end->prev,end->next);
 	while( tl!=end && tl->timeout <= time) {
-		LM_WARN("getting tl=%p tl->prev=%p tl->next=%p with %d\n",
+		LM_DBG("getting tl=%p tl->prev=%p tl->next=%p with %d\n",
 			tl,tl->prev,tl->next,tl->timeout);
 		tl->prev = 0;
+		tl->timeout = 0;
 		tl=tl->next;
 	}
-	LM_WARN("end with tl=%p tl->prev=%p tl->next=%p and d_timer->first.next->prev=%p\n",
+	LM_DBG("end with tl=%p tl->prev=%p tl->next=%p and "
+		"d_timer->first.next->prev=%p\n",
 		tl,tl->prev,tl->next,d_timer->first.next->prev);
 
 	if (tl==end && d_timer->first.next->prev) {
@@ -243,8 +243,8 @@ void dlg_timer_routine(unsigned int ticks , void * attr)
 	while (tl) {
 		ctl = tl;
 		tl = tl->next;
-		ctl->next = (struct dlg_tl *)NULL;
-		ctl->timeout = 0;
+		/* keep dialog as expired (next is still set) */
+		ctl->next = (struct dlg_tl*)(-1);
 		LM_DBG("tl=%p next=%p\n", ctl, tl);
 		timer_hdl( ctl );
 	}
