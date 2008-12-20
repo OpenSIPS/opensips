@@ -1324,7 +1324,7 @@ int ds_set_state(int group, str *address, int state, int type)
 					if (idx->dlist[i].failure_count
 							> probing_threshhold) 
 						idx->dlist[i].failure_count
-							= probing_threshhold;				
+							= probing_threshhold;
 				}
 			}
 			/* Reset the Failure-Counter */
@@ -1546,16 +1546,16 @@ static void ds_options_callback( struct cell *t, int type,
  */
 void ds_check_timer(unsigned int ticks, void* param)
 {
-	
+#ifdef USELESS_CODE
 	struct socket_info* send_sock = 0;
 	struct sip_uri curi;
 	union sockaddr_union to;
 	struct hostent* he;
 	unsigned short proto;
-	dlg_t * dialog;	
+#endif
 	ds_set_p list;
 	int j;
-	
+
 	/* Check for the list. */
 	if(_ds_list==NULL || _ds_list_nr<=0)
 	{
@@ -1574,7 +1574,7 @@ void ds_check_timer(unsigned int ticks, void* param)
 			{
 				LM_DBG("probing set #%d, URI %.*s\n", list->id,
 						list->dlist[j].uri.len, list->dlist[j].uri.s);
-				
+#ifdef USELESS_CODE
 				/* Parse the URI of the destination, we want to probe (we need
 				 * more information about the destination) */
 				if (parse_uri(list->dlist[j].uri.s,
@@ -1612,17 +1612,18 @@ void ds_check_timer(unsigned int ticks, void* param)
 					LM_ERR("can't get sending socket\n");
 					continue;
 				}
-				
-				/* Execute the Dialog using the "req_outside"-Method of the
+#endif
+				/* Execute the Dialog using the "request"-Method of the
 				 * TM-Module.
-				 * req_outside(str* m, str* t, str* f, str* h, str* b,
-				 *		dlg_t** d, transaction_cb c, void* cp); */
-				if (tmb.t_request_outside(&ds_ping_method,
+				 * request(str* m, str* ruri, str* t, str* f, str* h, str* b,
+				 *		str* oburi, transaction_cb c, void* cp); */
+				if (tmb.t_request(&ds_ping_method,
+							&list->dlist[j].uri,
 							&list->dlist[j].uri,
 							&ds_ping_from,
 							NULL,
 							NULL,
-							&dialog,
+							NULL,
 							ds_options_callback,
 							(void*)(long)list->id) < 0) {
 					LM_ERR("unable to execute dialog\n");
