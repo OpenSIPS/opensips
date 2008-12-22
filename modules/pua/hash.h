@@ -40,6 +40,7 @@
 #define MSGSUM_EVENT        1<<3
 #define CONFERENCE_EVENT    1<<4
 #define XCAPDIFF_EVENT      1<<5
+#define DIALOG_EVENT        1<<6
 
 #define UL_PUBLISH          1<<0
 #define BLA_PUBLISH         1<<1
@@ -51,6 +52,7 @@
 #define MI_ASYN_PUBLISH     1<<7
 #define MI_SUBSCRIBE        1<<8
 #define RLS_SUBSCRIBE       1<<9
+#define DIALOG_PUBLISH      1<<10
 
 #define NO_UPDATEDB_FLAG    1<<0
 #define UPDATEDB_FLAG       1<<1
@@ -133,31 +135,34 @@ static inline int get_event_flag(str* event)
 {
     switch (event->len) 
     {
-        case 8:
-            if (strncasecmp(event->s, "presence", 8) == 0)
-                return PRESENCE_EVENT;
-            break;
-        case 9:
-            if (strncasecmp(event->s, "xcap-diff", 9) == 0)
-                return XCAPDIFF_EVENT;
-            break;
-        case 10:
-            if (strncasecmp(event->s, "dialog;sla", 10) == 0)
-                return BLA_EVENT;
-            if (strncmp(event->s, "conference", 10) == 0)
-                return CONFERENCE_EVENT;
-            break;
-        case 14:
-            if (strncasecmp(event->s, "presence;winfo", 14) == 0)
-                return PWINFO_EVENT;
-            break;
-        case 15:
-            if (strncasecmp(event->s, "message-summary", 15) == 0)
-                return MSGSUM_EVENT;
-    }
-
-    LM_ERR("Unknown event string\n");
-    return -1;
+		case 6:
+			if (strncasecmp(event->s, "dialog", 6) == 0)
+				return DIALOG_EVENT;
+			break;
+		case 8:
+			if (strncasecmp(event->s, "presence", 8) == 0)
+				return PRESENCE_EVENT;
+			break;
+		case 9:
+			if (strncasecmp(event->s, "xcap-diff", 9) == 0)
+				return XCAPDIFF_EVENT;
+			break;
+		case 10:
+			if (strncasecmp(event->s, "dialog;sla", 10) == 0)
+				return BLA_EVENT;
+			if (strncmp(event->s, "conference", 10) == 0)
+				return CONFERENCE_EVENT;
+			break;
+		case 14:
+			if (strncasecmp(event->s, "presence;winfo", 14) == 0)
+				return PWINFO_EVENT;
+			break;
+		case 15:
+			if (strncasecmp(event->s, "message-summary", 15) == 0)
+				return MSGSUM_EVENT;
+	}
+	LM_ERR("Unknown event string\n");
+	return -1;
 }
 
 int update_contact(struct sip_msg* msg, char* str1, char* str2);

@@ -106,38 +106,38 @@ static void hashT_clean(unsigned int ticks,void *param);
 
 static cmd_export_t cmds[]=
 {
-	{"bind_libxml_api",			(cmd_function)bind_libxml_api,	1, 0, 0, 0},
-	{"bind_pua",				(cmd_function)bind_pua,			1, 0, 0, 0},
-	{"pua_update_contact",		(cmd_function)update_contact,	0, 0, 0, REQUEST_ROUTE},
-	{0,							0,								0, 0, 0, 0} 
+	{"bind_libxml_api",         (cmd_function)bind_libxml_api,  1, 0, 0, 0},
+	{"bind_pua",                (cmd_function)bind_pua,         1, 0, 0, 0},
+	{"pua_update_contact",      (cmd_function)update_contact,   0, 0, 0, REQUEST_ROUTE},
+	{0,                         0,                              0, 0, 0, 0} 
 };
 
 static param_export_t params[]={
-	{"hash_size" ,		 INT_PARAM, &HASH_SIZE			 },
-	{"db_url" ,			 STR_PARAM, &db_url.s			 },
-	{"db_table" ,		 STR_PARAM, &db_table.s			 },
-	{"min_expires",		 INT_PARAM, &min_expires		 },
-	{"default_expires",  INT_PARAM, &default_expires     },
-	{"update_period",	 INT_PARAM, &update_period       },
-	{0,							 0,			0            }
+	{"hash_size" ,       INT_PARAM, &HASH_SIZE          },
+	{"db_url" ,          STR_PARAM, &db_url.s           },
+	{"db_table" ,        STR_PARAM, &db_table.s         },
+	{"min_expires",      INT_PARAM, &min_expires        },
+	{"default_expires",  INT_PARAM, &default_expires    },
+	{"update_period",    INT_PARAM, &update_period      },
+	{0,                          0,         0           }
 };
 
 /** module exports */
 struct module_exports exports= {
-	"pua",						/* module name */
+	"pua",                      /* module name */
 	DEFAULT_DLFLAGS,            /* dlopen flags */
-	cmds,						/* exported functions */
-	params,						/* exported parameters */
-	0,							/* exported statistics */
-	0,							/* exported MI functions */
-	0,							/* exported pseudo-variables */
-	0,							/* extra processes */
-	mod_init,					/* module initialization function */
-	(response_function) 0,		/* response handling function */
-	destroy,					/* destroy function */
+	cmds,                       /* exported functions */
+	params,                     /* exported parameters */
+	0,                          /* exported statistics */
+	0,                          /* exported MI functions */
+	0,                          /* exported pseudo-variables */
+	0,                          /* extra processes */
+	mod_init,                   /* module initialization function */
+	(response_function) 0,      /* response handling function */
+	destroy,                    /* destroy function */
 	child_init                  /* per-child init function */
 };
-	
+
 /**
  * init module function
  */
@@ -146,7 +146,7 @@ static int mod_init(void)
 	load_tm_f  load_tm;
 
 	LM_DBG("...\n");
-	
+
 	if(min_expires< 0)
 		min_expires= 0;
 
@@ -263,27 +263,27 @@ static int child_init(int rank)
 		LM_ERR("Child %d: connecting to database failed\n", rank);
 		return -1;
 	}
-	
+
 	if (pua_dbf.use_table(pua_db, &db_table) < 0)
 	{
 		LM_ERR("child %d: Error in use_table pua\n", rank);
 		return -1;
 	}
-	
+
 	LM_DBG("child %d: Database connection opened successfully\n", rank);
 
 	return 0;
-}	
+}
 
 static void destroy(void)
-{	
+{
 	LM_DBG("destroying module ...\n");
 	if (puacb_list)
 		destroy_puacb_list();
 
 	if(pua_db && HashT)
 		db_update(0,0);
-	
+
 	if(HashT)
 		destroy_htable();
 
@@ -751,7 +751,7 @@ static void db_update(unsigned int ticks,void *param)
 	int watcher_col,callid_col,totag_col,fromtag_col,record_route_col,cseq_col;
 	int no_lock= 0, contact_col, desired_expires_col, extra_headers_col;
 	int remote_contact_col, version_col;
-	
+
 	if(ticks== 0 && param == NULL)
 		no_lock= 1;
 
@@ -799,13 +799,13 @@ static void db_update(unsigned int ticks,void *param)
 	q_cols[etag_col= n_query_cols] = &str_etag_col;
 	q_vals[etag_col].type = DB_STR;
 	q_vals[etag_col].nul = 0;
-	n_query_cols++;	
+	n_query_cols++;
 
 	q_cols[tuple_col= n_query_cols] = &str_tuple_id_col;
 	q_vals[tuple_col].type = DB_STR;
 	q_vals[tuple_col].nul = 0;
 	n_query_cols++;
-	
+
 	q_cols[cseq_col= n_query_cols]= &str_cseq_col;
 	q_vals[cseq_col].type = DB_INT;
 	q_vals[cseq_col].nul = 0;
@@ -815,7 +815,7 @@ static void db_update(unsigned int ticks,void *param)
 	q_vals[expires_col].type = DB_INT;
 	q_vals[expires_col].nul = 0;
 	n_query_cols++;
-	
+
 	q_cols[desired_expires_col= n_query_cols] = &str_desired_expires_col;
 	q_vals[desired_expires_col].type = DB_INT;
 	q_vals[desired_expires_col].nul = 0;
@@ -825,7 +825,7 @@ static void db_update(unsigned int ticks,void *param)
 	q_vals[record_route_col].type = DB_STR;
 	q_vals[record_route_col].nul = 0;
 	n_query_cols++;
-	
+
 	q_cols[contact_col= n_query_cols] = &str_contact_col;
 	q_vals[contact_col].type = DB_STR;
 	q_vals[contact_col].nul = 0;
@@ -851,11 +851,11 @@ static void db_update(unsigned int ticks,void *param)
 	db_cols[0]= &str_expires_col;
 	db_vals[0].type = DB_INT;
 	db_vals[0].nul = 0;
-	
+
 	db_cols[1]= &str_cseq_col;
 	db_vals[1].type = DB_INT;
 	db_vals[1].nul = 0;
-						
+
 	db_cols[2]= &str_etag_col;
 	db_vals[2].type = DB_STR;
 	db_vals[2].nul = 0;
@@ -863,7 +863,7 @@ static void db_update(unsigned int ticks,void *param)
 	db_cols[3]= &str_desired_expires_col;
 	db_vals[3].type = DB_INT;
 	db_vals[3].nul = 0;
-	
+
 	result_cols[0]= &str_expires_col;
 
 	if(pua_db== NULL)
@@ -882,7 +882,7 @@ static void db_update(unsigned int ticks,void *param)
 	{
 		if(!no_lock)
 			lock_get(&HashT->p_records[i].lock);	
-		
+
 		p = HashT->p_records[i].entity->next;
 		while(p)
 		{
@@ -891,7 +891,7 @@ static void db_update(unsigned int ticks,void *param)
 				p= p->next;
 				continue;
 			}
-			
+
 			switch(p->db_flag)
 			{
 				case NO_UPDATEDB_FLAG:
@@ -899,7 +899,7 @@ static void db_update(unsigned int ticks,void *param)
 					LM_DBG("NO_UPDATEDB_FLAG\n");
 					break;			  
 				}
-				
+
 				case UPDATEDB_FLAG:
 				{
 					LM_DBG("UPDATEDB_FLAG\n");
@@ -914,21 +914,21 @@ static void db_update(unsigned int ticks,void *param)
 					
 					q_vals[flag_col].val.int_val = p->flag;
 					n_query_update++;
-						
+
 					q_vals[event_col].val.int_val = p->event;
 					n_query_update++;
-				
+
 					if(p->watcher_uri)
 					{
 						q_vals[watcher_col].val.str_val = *(p->watcher_uri);
 						n_query_update++;
-									
+
 						q_vals[callid_col].val.str_val = p->call_id;
 						n_query_update++;
-					
+
 						q_vals[totag_col].val.str_val = p->to_tag;
 						n_query_update++;
-						
+
 						q_vals[fromtag_col].val.str_val = p->from_tag;
 						n_query_update++;
 					}
@@ -938,10 +938,10 @@ static void db_update(unsigned int ticks,void *param)
 
 					db_vals[1].val.int_val= p->cseq	;
 					n_update_cols++;
-					
+
 					db_vals[2].val.str_val= p->etag	;
 					n_update_cols++;
-						
+
 					db_vals[3].val.int_val= p->desired_expires;
 					n_update_cols++;
 					
@@ -959,7 +959,7 @@ static void db_update(unsigned int ticks,void *param)
 						return ;
 					}
 					if(res && res->n> 0)
-					{																				
+					{
 						if(pua_dbf.update(pua_db, q_cols, 0, q_vals, db_cols, 
 								db_vals, n_query_update, n_update_cols)<0)
 						{
@@ -971,22 +971,22 @@ static void db_update(unsigned int ticks,void *param)
 							return ;
 						}
 						pua_dbf.free_result(pua_db, res);
-						res= NULL;		
+						res= NULL;
 					}
 					else
 					{
 						if(res)
-						{	
+						{
 							pua_dbf.free_result(pua_db, res);
 							res= NULL;
 						}
 						LM_DBG("UPDATEDB_FLAG and no record found\n");
 					//	p->db_flag= INSERTDB_FLAG;
-					}	
-					break;	
+					}
+					break;
 				}
 				case INSERTDB_FLAG:
-				{	
+				{
 					LM_DBG("INSERTDB_FLAG\n");
 					q_vals[puri_col].val.str_val = *(p->pres_uri);
 					q_vals[pid_col].val.str_val = p->id;
@@ -1042,11 +1042,11 @@ static void db_update(unsigned int ticks,void *param)
 				}
 
 			}
-			p->db_flag= NO_UPDATEDB_FLAG;	
+			p->db_flag= NO_UPDATEDB_FLAG;
 			p= p->next;
 		}
 		if(!no_lock)
-			lock_release(&HashT->p_records[i].lock);	
+			lock_release(&HashT->p_records[i].lock);
 	}
 
 	db_vals[0].val.int_val= (int)time(NULL)- 10;
@@ -1055,9 +1055,9 @@ static void db_update(unsigned int ticks,void *param)
 	{
 		LM_ERR("while deleting from db table pua\n");
 	}
-	
+
 	return ;
-}	
+}
 
 static ua_pres_t* build_uppubl_cbparam(ua_pres_t* p)
 {

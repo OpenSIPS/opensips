@@ -511,15 +511,21 @@ insert:
 
 	if(publ->body && publ->body->s)
 	{
-		ret_code= ev->process_body(publ, &body, ver, &tuple_id );
-		if( ret_code< 0 || body== NULL)
+		if( ev->process_body)
 		{
-			LM_ERR("while processing body\n");
-			if(body== NULL)
-				LM_ERR("NULL body\n");
-			goto error;
+			ret_code= ev->process_body(publ, &body, ver, &tuple_id );
+			if( ret_code< 0 || body== NULL)
+			{
+				LM_ERR("while processing body\n");
+				if(body== NULL)
+					LM_ERR("NULL body\n");
+				goto error;
+			}
 		}
+		else
+			body = publ->body;
 	}
+
 	if(tuple_id)
 		LM_DBG("tuple_id= %.*s\n", tuple_id->len, tuple_id->s  );
 	
@@ -569,7 +575,7 @@ send_publish:
 
 	pkg_free(str_hdr);
 
-	if( body && ret_code)
+	if( body && ret_code && ev->process_body)
 	{
 		if(body->s)
 			free(body->s);
@@ -593,7 +599,7 @@ error:
 	if(cb_param)
 		shm_free(cb_param);
 
-	if(body&& ret_code)
+	if(body&& ret_code && ev->process_body)
 	{
 		if(body->s)
 			free(body->s);
