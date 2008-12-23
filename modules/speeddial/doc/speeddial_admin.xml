@@ -217,7 +217,7 @@ modparam("speeddial", "use_domain", 1)
 		<itemizedlist>
 		<listitem>
 			<para><emphasis>table</emphasis> - The name of the table storing the
-			speed dial records.
+			speed dial records. This parameter may include pseudovariables.
 			</para>
 		</listitem>
 		<listitem>
