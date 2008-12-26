@@ -27,6 +27,7 @@
  *  2007-03-29  adaption to opensips 1.2 and some cleanups
  *  2007-04-20  rename to cfgutils, use pseudovariable for get_random_val
  *              add "rand_" prefix, add sleep and usleep functions
+ *  2008-12-26  pseudovar argument for sleep and usleep functions (saguti).
  *
  * cfgutils module: random probability functions for opensips;
  * it provide functions to make a decision in the script
@@ -105,9 +106,9 @@ static cmd_export_t cmds[]={
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"rand_event",      (cmd_function)rand_event, 0, 0, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"sleep",  (cmd_function)m_sleep,  1, fixup_uint_null, 0,
+	{"sleep",  (cmd_function)m_sleep,  1, fixup_spve_null, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"usleep", (cmd_function)m_usleep, 1, fixup_uint_null, 0,
+	{"usleep", (cmd_function)m_usleep, 1, fixup_spve_null, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"abort",      (cmd_function)dbg_abort,        0, 0, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
@@ -354,15 +355,38 @@ static int pv_get_random_val(struct sip_msg *msg, pv_param_t *param,
 
 static int m_sleep(struct sip_msg *msg, char *time, char *str2)
 {
-	LM_DBG("sleep %lu seconds\n", (unsigned long)time);
-	sleep((unsigned int)(unsigned long)time);
+
+	str time_s={NULL,0};
+	long seconds;
+
+	if(time == NULL || fixup_get_svalue(msg, (gparam_p)time, &time_s)!=0) {
+		LM_ERR("Invalid time argument\n");
+		return -1;
+	}
+
+	seconds = atol(time_s.s);
+	LM_DBG("sleep %d\n", (unsigned int)seconds);
+
+	sleep((unsigned int)seconds);
+
 	return 1;
 }
 
 static int m_usleep(struct sip_msg *msg, char *time, char *str2)
 {
-	LM_DBG("sleep %lu microseconds\n", (unsigned long)time);
-	sleep_us((unsigned int)(unsigned long)time);
+	str time_s= { NULL, 0 };
+	long useconds;
+
+	if(time == NULL || fixup_get_svalue(msg, (gparam_p)time, &time_s) != 0) {
+		LM_ERR("Invalid useconds argument.\n");
+		return -1;
+	}
+
+	useconds = atol(time_s.s);
+	LM_DBG("sleep %d\n", (unsigned int)useconds);
+
+	sleep_us((unsigned int)useconds);
+
 	return 1;
 }
 

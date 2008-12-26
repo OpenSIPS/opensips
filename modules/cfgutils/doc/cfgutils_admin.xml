@@ -250,6 +250,8 @@ rand_get_prob();
 		<itemizedlist>
 			<listitem>
 				<para><emphasis>time</emphasis> - Time to wait in seconds.
+				String may be a pseudovariable. In case that variable does 
+				not contain a numerical value, it is evaluated to zero seconds.
 				</para>
 			</listitem>
 		</itemizedlist>
@@ -262,6 +264,9 @@ rand_get_prob();
 			<programlisting format="linespecific">
 ...
 sleep("1");
+...
+$avp(s:secs)="10";
+sleep("$avp(s:secs)");
 ...
 			</programlisting>
 		</example>
@@ -278,6 +283,8 @@ sleep("1");
 		<itemizedlist>
 			<listitem>
 				<para><emphasis>time</emphasis> - Time to wait in milli-seconds.
+				The string may contain a pseudovariable. In case that pseudovar
+				does not contain a numerical value, it is evaluated to zero seconds.
 				</para>
 			</listitem>
 		</itemizedlist>
