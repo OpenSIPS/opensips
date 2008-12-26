@@ -1610,16 +1610,25 @@ opensips_start() {
 ### opensips_stop
 #
 opensips_stop() {
-	echo
-	minfo "Stopping OpenSIPS : "
-	if [ -r $PID_FILE ] ; then
-		kill `cat $PID_FILE`
-		minfo "stopped"
+
+	# In case stop was called in restart, it should not exit.
+
+	if [ $1 == "restart" ]
+	then
+		echo 
+		minfo "OpenSIPS restarting...."
 	else
 		echo
-		merr "No PID file found ($PID_FILE)! OpenSIPS probably not running"
-		minfo "check with 'ps -ef | $EGREP opensips'"
-		exit 1
+		minfo "Stopping OpenSIPS : "
+		if [ -r $PID_FILE ] ; then
+			kill `cat $PID_FILE`
+			minfo "stopped"
+		else
+			echo
+			merr "No PID file found ($PID_FILE)! OpenSIPS probably not running"
+			minfo "check with 'ps -ef | $EGREP opensips'"
+			exit 1
+		fi
 	fi
 }
 
