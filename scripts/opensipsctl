@@ -2455,7 +2455,7 @@ case $1 in
 		;;
 
 	restart)
-		opensips_stop
+		opensips_stop restart
 		sleep 2
 		opensips_start
 		;;
