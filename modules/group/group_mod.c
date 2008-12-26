@@ -30,6 +30,7 @@
  *  2003-04-05  default_uri #define used (jiri)
  *  2004-06-07  updated to the new DB api: calls to group_db_* (andrei)
  *  2005-10-06 - added support for regexp-based groups (bogdan)
+ *  2008-12-26  pseudovar argument for group parameter at is_user_in (saguti).
  */
 
 
@@ -45,11 +46,14 @@
 #include "group_mod.h"
 #include "group.h"
 #include "re_group.h"
+#include "../../mod_fix.h"
 
 MODULE_VERSION
 
 #define TABLE_VERSION    2
 #define RE_TABLE_VERSION 1
+
+static group_check_p get_hf( char *str1);
 
 /*
  * Module destroy function prototype
@@ -67,11 +71,6 @@ static int child_init(int rank);
  * Module initialization function prototype
  */
 static int mod_init(void);
-
-
-/* Header field fixup */
-static int hf_fixup(void** param, int param_no);
-
 
 static int get_gid_fixup(void** param, int param_no);
 
@@ -123,7 +122,7 @@ db_con_t* group_dbh = 0;
  * Exported functions
  */
 static cmd_export_t cmds[] = {
-	{"is_user_in",      (cmd_function)is_user_in,      2,  hf_fixup, 0,
+	{"is_user_in",      (cmd_function)is_user_in,      2,  fixup_spve_spve, 0,
 			REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"get_user_group",  (cmd_function)get_user_group,  2,  get_gid_fixup, 0,
 			REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
@@ -228,76 +227,6 @@ static void destroy(void)
 }
 
 
-/*
- * Convert HF description string to hdr_field pointer
- *
- * Supported strings: 
- * "Request-URI", "To", "From", "Credentials"
- */
-static group_check_p get_hf( char *str1)
-{
-	group_check_p gcp=NULL;
-	str s;
-
-	gcp = (group_check_p)pkg_malloc(sizeof(group_check_t));
-	if(gcp == NULL) {
-		LM_ERR("no pkg more memory\n");
-		return 0;
-	}
-	memset(gcp, 0, sizeof(group_check_t));
-
-	if (!strcasecmp( str1, "Request-URI")) {
-		gcp->id = 1;
-	} else if (!strcasecmp( str1, "To")) {
-		gcp->id = 2;
-	} else if (!strcasecmp( str1, "From")) {
-		gcp->id = 3;
-	} else if (!strcasecmp( str1, "Credentials")) {
-		gcp->id = 4;
-	} else {
-		s.s = str1; s.len = strlen(s.s);
-		if(pv_parse_spec( &s, &gcp->sp)==NULL
-			|| gcp->sp.type!=PVT_AVP)
-		{
-			LM_ERR("unsupported User Field identifier\n");
-			pkg_free( gcp );
-			return 0;
-		}
-		gcp->id = 5;
-	}
-
-	/* do not free all the time, needed by pseudo-variable spec */
-	if(gcp->id!=5)
-		pkg_free(str1);
-
-	return gcp;
-}
-
-
-static int hf_fixup(void** param, int param_no)
-{
-	void* ptr;
-	str* s;
-
-	if (param_no == 1) {
-		ptr = *param;
-		if ( (*param = (void*)get_hf( ptr ))==0 )
-			return E_UNSPEC;
-	} else if (param_no == 2) {
-		s = (str*)pkg_malloc(sizeof(str));
-		if (!s) {
-			LM_ERR("no pkg memory left\n");
-			return E_UNSPEC;
-		}
-		s->s = (char*)*param;
-		s->len = strlen(s->s);
-		*param = (void*)s;
-	}
-
-	return 0;
-}
-
-
 static int get_gid_fixup(void** param, int param_no)
 {
 	pv_spec_t *sp;
@@ -327,5 +256,50 @@ static int get_gid_fixup(void** param, int param_no)
 	}
 
 	return 0;
+}
+
+/*
+ *  *  * Convert HF description string to hdr_field pointer
+ *   *   *                                                   
+ *    *    * Supported strings:                                
+ *     *     * "Request-URI", "To", "From", "Credentials"        
+ *      *      */                                                  
+static group_check_p get_hf( char *str1)                    
+{                                                           
+        group_check_p gcp=NULL;                             
+        str s;                                              
+
+        gcp = (group_check_p)pkg_malloc(sizeof(group_check_t));
+        if(gcp == NULL) {
+                LM_ERR("no pkg more memory\n");
+                return 0;
+        }
+        memset(gcp, 0, sizeof(group_check_t));
+
+        if (!strcasecmp( str1, "Request-URI")) {
+                gcp->id = 1;
+        } else if (!strcasecmp( str1, "To")) {
+                gcp->id = 2;
+        } else if (!strcasecmp( str1, "From")) {
+                gcp->id = 3;
+        } else if (!strcasecmp( str1, "Credentials")) {
+                gcp->id = 4;
+        } else {
+                s.s = str1; s.len = strlen(s.s);
+                if(pv_parse_spec( &s, &gcp->sp)==NULL
+                        || gcp->sp.type!=PVT_AVP)
+                {
+                        LM_ERR("unsupported User Field identifier\n");
+                        pkg_free( gcp );
+                        return 0;
+                }
+                gcp->id = 5;
+        }
+
+        /* do not free all the time, needed by pseudo-variable spec */
+        if(gcp->id!=5)
+                pkg_free(str1);
+
+        return gcp;
 }
 

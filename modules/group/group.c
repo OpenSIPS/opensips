@@ -26,6 +26,7 @@
  * 2003-02-25 - created by janakj
  * 2004-06-07   updated to the new DB api, added group_db_{bind,init,close,ver}
  *               (andrei)
+ * 2008-12-26 - pseudovariable argument for group parameter at is_user_in (saguti).
  *
  */
 
@@ -38,10 +39,11 @@
 #include "../../parser/hf.h"            /* Header Field types */
 #include "../../parser/parse_from.h"    /* From parser */
 #include "../../parser/parse_uri.h"
+#include "../../mod_fix.h"
 #include "group.h"
 #include "group_mod.h"                   /* Module parameters */
 
-
+static group_check_p get_hf( char *str1);
 
 int get_username_domain(struct sip_msg *msg, group_check_p gcp,
 											str *username, str *domain)
@@ -132,7 +134,22 @@ int is_user_in(struct sip_msg* _msg, char* _hf, char* _grp)
 	keys[2] = &domain_column;
 	col[0]  = &group_column;
 
-	if ( get_username_domain( _msg, (group_check_p)_hf, &(VAL_STR(vals)),
+	str hf_s = { NULL, 0 };
+	str grp_s = { NULL, 0 };
+
+	if(_hf ==  NULL || fixup_get_svalue(_msg, (gparam_p)_hf, &hf_s) != 0) {
+		LM_ERR("Invalid parameter URI\n");
+		return -1;
+	}
+
+	if(_grp == NULL || fixup_get_svalue(_msg, (gparam_p)_grp, &grp_s) != 0) {
+		LM_ERR("Invalid parameter grp\n");
+		return -1;
+	}
+
+	group_check_p hfPtr = get_hf(hf_s.s);
+
+	if ( get_username_domain( _msg, hfPtr, &(VAL_STR(vals)),
 	&(VAL_STR(vals+2)))!=0) {
 		LM_ERR("failed to get username@domain\n");
 		return -1;
@@ -146,7 +163,7 @@ int is_user_in(struct sip_msg* _msg, char* _hf, char* _grp)
 	VAL_TYPE(vals) = VAL_TYPE(vals + 1) = VAL_TYPE(vals + 2) = DB_STR;
 	VAL_NULL(vals) = VAL_NULL(vals + 1) = VAL_NULL(vals + 2) = 0;
 
-	VAL_STR(vals + 1) = *((str*)_grp);
+	VAL_STR(vals + 1) = *(&grp_s);
 
 	if (group_dbf.use_table(group_dbh, &table) < 0) {
 		LM_ERR("failed to use_table\n");
@@ -161,12 +178,12 @@ int is_user_in(struct sip_msg* _msg, char* _hf, char* _grp)
 
 	if (RES_ROW_N(res) == 0) {
 		LM_DBG("user is not in group '%.*s'\n", 
-		    ((str*)_grp)->len, ZSW(((str*)_grp)->s));
+		    (grp_s.len), ZSW((grp_s.s)));
 		group_dbf.free_result(group_dbh, res);
 		return -6;
 	} else {
 		LM_DBG("user is in group '%.*s'\n", 
-			((str*)_grp)->len, ZSW(((str*)_grp)->s));
+			(grp_s.len), ZSW((grp_s.s)));
 		group_dbf.free_result(group_dbh, res);
 		return 1;
 	}
@@ -214,3 +231,48 @@ void group_db_close(void)
 	}
 }
 
+/*
+ *  * Convert HF description string to hdr_field pointer
+ *  *                                                   
+ *  * Supported strings:                                
+ *  * "Request-URI", "To", "From", "Credentials"        
+ *  * It is a copy from get_hf at group_mod.c     
+*/                                                  
+static group_check_p get_hf( char *str1)             
+{                                                    
+        group_check_p gcp=NULL;                      
+        str s;                                       
+
+        gcp = (group_check_p)pkg_malloc(sizeof(group_check_t));
+        if(gcp == NULL) {                                      
+                LM_ERR("no pkg more memory\n");                
+                return 0;                                      
+        }                                                      
+        memset(gcp, 0, sizeof(group_check_t));                 
+
+        if (!strcasecmp( str1, "Request-URI")) {
+                gcp->id = 1;                    
+        } else if (!strcasecmp( str1, "To")) {  
+                gcp->id = 2;                    
+        } else if (!strcasecmp( str1, "From")) {
+                gcp->id = 3;                    
+        } else if (!strcasecmp( str1, "Credentials")) {
+                gcp->id = 4;                           
+        } else {                                       
+                s.s = str1; s.len = strlen(s.s);       
+                if(pv_parse_spec( &s, &gcp->sp)==NULL  
+                        || gcp->sp.type!=PVT_AVP)      
+                {                                      
+                        LM_ERR("unsupported User Field identifier\n");
+                        pkg_free( gcp );                              
+                        return 0;                                     
+                }                                                     
+                gcp->id = 5;                                          
+        }                                                             
+
+        /* do not free all the time, needed by pseudo-variable spec */
+        if(gcp->id!=5)                                                
+                pkg_free(str1);                                       
+
+        return gcp;
+} 

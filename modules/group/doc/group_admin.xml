@@ -319,6 +319,7 @@ modparam("group", "multiple_gid", 0)
 		</listitem>
 		<listitem>
 			<para><emphasis>group</emphasis> - Name of the group to check.
+			The string may contain a pseudovariable.
 			</para>
 		</listitem>
 		</itemizedlist>
@@ -330,6 +331,12 @@ modparam("group", "multiple_gid", 0)
 		<programlisting format="linespecific">
 ...
 if (is_user_in("Request-URI", "ld")) {
+	...
+};
+...
+$avp(s:grouptocheck)="offline";
+
+if (is_user_in("Credentials", "$avp(s:grouptocheck)")) {
 	...
 };
 ...
