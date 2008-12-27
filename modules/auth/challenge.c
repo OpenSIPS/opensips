@@ -81,7 +81,7 @@ static inline char *build_auth_hf(int _retries, int _stale, str* _realm,
 {
 	int hf_name_len;
 	char *hf, *p;
-	int index;
+	int index = 0;
 
 	if(!disable_nonce_check) {
 		/* get the nonce index and mark it as used */
