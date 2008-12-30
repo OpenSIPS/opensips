@@ -79,10 +79,9 @@ static str auth_500_err = str_init(MESSAGE_500);
 static inline char *build_auth_hf(int _retries, int _stale, str* _realm, 
 				  int* _len, int _qop, char* _hf_name)
 {
-	
 	int hf_name_len;
 	char *hf, *p;
-    int index;
+	int index = 0;
 
 	if(!disable_nonce_check) {
 		/* get the nonce index and mark it as used */
