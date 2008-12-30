@@ -29,24 +29,23 @@ Ramona-Elena Modroiu
         1.3. AVP naming format
         1.4. Exported Parameters
 
-              1.4.1. avp_url (string)
-              1.4.2. db_url (string)
-              1.4.3. avp_table (string)
-              1.4.4. use_domain (integer)
-              1.4.5. uuid_column (string)
-              1.4.6. username_column (string)
-              1.4.7. domain_column (string)
-              1.4.8. attribute_column (string)
-              1.4.9. value_column (string)
-              1.4.10. type_column (string)
-              1.4.11. db_scheme (string)
+              1.4.1. db_url (string)
+              1.4.2. avp_table (string)
+              1.4.3. use_domain (integer)
+              1.4.4. uuid_column (string)
+              1.4.5. username_column (string)
+              1.4.6. domain_column (string)
+              1.4.7. attribute_column (string)
+              1.4.8. value_column (string)
+              1.4.9. type_column (string)
+              1.4.10. db_scheme (string)
 
         1.5. Exported Functions
 
-              1.5.1. avp_db_load(source,name)
-              1.5.2. avp_db_store(source,name)
-              1.5.3. avp_db_delete(source,name)
-              1.5.4. avp_db_query(query[,dest])
+              1.5.1. avp_db_load(source,name[,db_id])
+              1.5.2. avp_db_store(source,name[,db_id])
+              1.5.3. avp_db_delete(source,name[,db_id])
+              1.5.4. avp_db_query(query[[,dest],db_id])
               1.5.5. avp_delete(name)
               1.5.6. avp_pushto(destination,name)
               1.5.7. avp_check(name,op_value)
@@ -158,22 +157,26 @@ ags 1
 
 1.4. Exported Parameters
 
-1.4.1. avp_url (string)
+1.4.1. db_url (string)
 
-   DB URL for database connection.
+   DB URL for database connection. As the module allows the usage
+   of multiple DBs (DB URLs), the actual DB URL may be preceded by
+   an reference number. This reference number is to be passed to
+   AVPOPS function that what to explicitly use this DB connection.
+   If no reference number is given, 0 is assumed - this is the
+   default DB URL.
 
    This parameter is optional, it's default value being NULL.
 
    Example 1.2. Set avp_url parameter
 ...
-modparam("avpops","avp_url","mysql://user:passwd@host/database")
+# default URL
+modparam("avpops","db_url","mysql://user:passwd@host/database")
+# an additional DB URL
+modparam("avpops","db_url","1 postgres://user:passwd@host2/opensips")
 ...
 
-1.4.2. db_url (string)
-
-   This parameter has the same meaning as "avp_url" parameter.
-
-1.4.3. avp_table (string)
+1.4.2. avp_table (string)
 
    DB table to be used.
 
@@ -184,7 +187,7 @@ modparam("avpops","avp_url","mysql://user:passwd@host/database")
 modparam("avpops","avp_table","avptable")
 ...
 
-1.4.4. use_domain (integer)
+1.4.3. use_domain (integer)
 
    If the domain part of the an URI should be used for identifying
    an AVP in DB operations.
@@ -196,7 +199,7 @@ modparam("avpops","avp_table","avptable")
 modparam("avpops","use_domain",1)
 ...
 
-1.4.5. uuid_column (string)
+1.4.4. uuid_column (string)
 
    Name of column containing the uuid (unique user id).
 
@@ -207,7 +210,7 @@ modparam("avpops","use_domain",1)
 modparam("avpops","uuid_column","uuid")
 ...
 
-1.4.6. username_column (string)
+1.4.5. username_column (string)
 
    Name of column containing the username.
 
@@ -218,7 +221,7 @@ modparam("avpops","uuid_column","uuid")
 modparam("avpops","username_column","username")
 ...
 
-1.4.7. domain_column (string)
+1.4.6. domain_column (string)
 
    Name of column containing the domain name.
 
@@ -229,7 +232,7 @@ modparam("avpops","username_column","username")
 modparam("avpops","domain_column","domain")
 ...
 
-1.4.8. attribute_column (string)
+1.4.7. attribute_column (string)
 
    Name of column containing the attribute name (AVP name).
 
@@ -240,7 +243,7 @@ modparam("avpops","domain_column","domain")
 modparam("avpops","attribute_column","attribute")
 ...
 
-1.4.9. value_column (string)
+1.4.8. value_column (string)
 
    Name of column containing the AVP value.
 
@@ -251,7 +254,7 @@ modparam("avpops","attribute_column","attribute")
 modparam("avpops","value_column","value")
 ...
 
-1.4.10. type_column (string)
+1.4.9. type_column (string)
 
    Name of column containing the AVP type.
 
@@ -262,7 +265,7 @@ modparam("avpops","value_column","value")
 modparam("avpops","type_column","type")
 ...
 
-1.4.11. db_scheme (string)
+1.4.10. db_scheme (string)
 
    Definition of a DB scheme to be used for non-standard access to
    Database information.
@@ -287,7 +290,7 @@ modparam("avpops","db_scheme",
 
 1.5. Exported Functions
 
-1.5.1.  avp_db_load(source,name)
+1.5.1.  avp_db_load(source,name[,db_id])
 
    Loads from DB into memory the AVPs corresponding to the given
    source. If given, it sets the script flags for loaded AVPs. It
@@ -313,19 +316,23 @@ modparam("avpops","db_scheme",
             'a' or 'A' means matching any of AVP name types ('i'
             and 's'), the rest have the meaning descriped in 'AVP
             naming format' chapter.
+     * db_id - reference to a defined DB URL (a numerical id) -
+       see the "db_url" module parameter.
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
 
    Example 1.12. avp_db_load usage
 ...
-avp_db_load("$fu","$(i:678)");
-avp_db_load("$ru/domain","i:/domain_preferences");
-avp_db_load("$uuid","$avp(s:404fwd)/fwd_table");
-avp_db_load("$ru","$avp(i1:123)/$some_scheme");
+avp_db_load("$fu","$avp(i:678)");
+avp_db_load("$ru/domain","i/domain_preferences");
+avp_db_load("$avp(s:uuid)","$avp(s:404fwd)/fwd_table");
+avp_db_load("$ru","$avp(i:123)/$some_scheme");
+# use DB URL id 3
+avp_db_load("$ru","$avp(i:1)","3");
 ...
 
-1.5.2.  avp_db_store(source,name)
+1.5.2.  avp_db_store(source,name[,db_id])
 
    Stores to DB the AVPs corresponding to the given source.
 
@@ -340,9 +347,11 @@ avp_db_load("$ru","$avp(i1:123)/$some_scheme");
 ...
 avp_db_store("$tu","$avp(i:678)");
 avp_db_store("$ru/username","$avp(email)");
+# use DB URL id 3
+avp_db_store("$ru","$avp(i:1)","3");
 ...
 
-1.5.3.  avp_db_delete(source,name)
+1.5.3.  avp_db_delete(source,name[,db_id])
 
    Deletes from DB the AVPs corresponding to the given source.
 
@@ -357,10 +366,12 @@ avp_db_store("$ru/username","$avp(email)");
 ...
 avp_db_delete("$tu","$avp(i:678)");
 avp_db_delete("$ru/username","$avp(email)");
-avp_db_delete("$uuid","$avp(s:404fwd)/fwd_table");
+avp_db_delete("$avp(s:uuid)","$avp(s:404fwd)/fwd_table");
+# use DB URL id 3
+avp_db_delete("$ru","$avp(i:1)","3");
 ...
 
-1.5.4.  avp_db_query(query[,dest])
+1.5.4.  avp_db_query(query[[,dest],db_id])
 
    Make a database query and store the result in AVPs.
 
@@ -381,6 +392,8 @@ avp_db_delete("$uuid","$avp(s:404fwd)/fwd_table");
        then multiple AVPs with corresponding name will be added.
        The value type of the AVP (string or integer) will be
        derived from the type of the columns.
+     * db_id - reference to a defined DB URL (a numerical id) -
+       see the "db_url" module parameter.
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
@@ -391,6 +404,7 @@ avp_db_query("select password, ha1 from subscriber where username='$tu'"
 ,
         "$avp(i:678);$avp(i:679)");
 avp_db_query("delete from subscriber");
+avp_db_query("delete from subscriber","","2");
 ...
 
 1.5.5.  avp_delete(name)

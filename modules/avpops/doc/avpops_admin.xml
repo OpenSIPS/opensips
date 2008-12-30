@@ -128,9 +128,14 @@ $avp(i3:123) - the AVP identified by the integer 123 which has script flags 1
 	<section>
 		<title>Exported Parameters</title>
 		<section>
-			<title><varname>avp_url</varname> (string)</title>
+			<title><varname>db_url</varname> (string)</title>
 			<para>
-			DB URL for database connection.
+			DB URL for database connection. As the module allows the usage
+			of multiple DBs (DB URLs), the actual DB URL may be preceded by 
+			an reference number. This reference number is to be passed to 
+			AVPOPS function that what to explicitly use this DB connection.
+			If no reference number is given, 0 is assumed - this is the default
+			DB URL.
 			</para>
 			<para>
 				<emphasis>
@@ -141,17 +146,13 @@ $avp(i3:123) - the AVP identified by the integer 123 which has script flags 1
 				<title>Set <varname>avp_url</varname> parameter</title>
 				<programlisting format="linespecific">
 ...
-modparam("avpops","avp_url","mysql://user:passwd@host/database")
+# default URL
+modparam("avpops","db_url","mysql://user:passwd@host/database")
+# an additional DB URL
+modparam("avpops","db_url","1 postgres://user:passwd@host2/opensips")
 ...
 				</programlisting>
 			</example>
-		</section>
-		<section>
-			<title><varname>db_url</varname> (string)</title>
-			<para>
-			This parameter has the same meaning as <quote>avp_url</quote>
-			parameter.
-			</para>
 		</section>
 		<section>
 			<title><varname>avp_table</varname> (string)</title>
@@ -355,7 +356,7 @@ modparam("avpops","db_scheme",
 		<title>Exported Functions</title>
 		<section>
 			<title>
-				<function moreinfo="none">avp_db_load(source,name)
+				<function moreinfo="none">avp_db_load(source,name[,db_id])
 				</function>
 			</title>
 			<para>
@@ -403,6 +404,12 @@ modparam("avpops","db_scheme",
 				</itemizedlist>
 				</para>
 			</listitem>
+			<listitem>
+				<para><emphasis>db_id</emphasis> - reference to a defined
+				DB URL (a numerical id) - see the <quote>db_url</quote>
+				module parameter.
+				</para>
+			</listitem>
 			</itemizedlist>
 			<para>
 			This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
@@ -413,17 +420,19 @@ modparam("avpops","db_scheme",
 				<title><function>avp_db_load</function> usage</title>
 				<programlisting format="linespecific">
 ...
-avp_db_load("$fu","$(i:678)");
-avp_db_load("$ru/domain","i:/domain_preferences");
-avp_db_load("$uuid","$avp(s:404fwd)/fwd_table");
-avp_db_load("$ru","$avp(i1:123)/$some_scheme");
+avp_db_load("$fu","$avp(i:678)");
+avp_db_load("$ru/domain","i/domain_preferences");
+avp_db_load("$avp(s:uuid)","$avp(s:404fwd)/fwd_table");
+avp_db_load("$ru","$avp(i:123)/$some_scheme");
+# use DB URL id 3
+avp_db_load("$ru","$avp(i:1)","3");
 ...
 				</programlisting>
 			</example>
 		</section>
 		<section>
 			<title>
-				<function moreinfo="none">avp_db_store(source,name)</function>
+				<function moreinfo="none">avp_db_store(source,name[,db_id])</function>
 			</title>
 			<para>
 			Stores to DB the AVPs corresponding to the given
@@ -444,13 +453,15 @@ avp_db_load("$ru","$avp(i1:123)/$some_scheme");
 ...
 avp_db_store("$tu","$avp(i:678)");
 avp_db_store("$ru/username","$avp(email)");
+# use DB URL id 3
+avp_db_store("$ru","$avp(i:1)","3");
 ...
 				</programlisting>
 			</example>
 		</section>
 		<section>
 			<title>
-				<function moreinfo="none">avp_db_delete(source,name)</function>
+				<function moreinfo="none">avp_db_delete(source,name[,db_id])</function>
 			</title>
 			<para>
 			Deletes from DB the AVPs corresponding to the given
@@ -470,14 +481,16 @@ avp_db_store("$ru/username","$avp(email)");
 ...
 avp_db_delete("$tu","$avp(i:678)");
 avp_db_delete("$ru/username","$avp(email)");
-avp_db_delete("$uuid","$avp(s:404fwd)/fwd_table");
+avp_db_delete("$avp(s:uuid)","$avp(s:404fwd)/fwd_table");
+# use DB URL id 3
+avp_db_delete("$ru","$avp(i:1)","3");
 ...
 				</programlisting>
 			</example>
 		</section>
 		<section>
 			<title>
-				<function moreinfo="none">avp_db_query(query[,dest])</function>
+				<function moreinfo="none">avp_db_query(query[[,dest],db_id])</function>
 			</title>
 			<para>
 			Make a database query and store the result in AVPs.
@@ -510,6 +523,12 @@ avp_db_delete("$uuid","$avp(s:404fwd)/fwd_table");
 				be derived from the type of the columns.
 				</para>
 			</listitem>
+			<listitem>
+				<para><emphasis>db_id</emphasis> - reference to a defined
+				DB URL (a numerical id) - see the <quote>db_url</quote>
+				module parameter.
+				</para>
+			</listitem>
 			</itemizedlist>
 			<para>
 			This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
@@ -522,6 +541,7 @@ avp_db_delete("$uuid","$avp(s:404fwd)/fwd_table");
 avp_db_query("select password, ha1 from subscriber where username='$tu'",
 	"$avp(i:678);$avp(i:679)");
 avp_db_query("delete from subscriber");
+avp_db_query("delete from subscriber","","2");
 ...
 				</programlisting>
 			</example>

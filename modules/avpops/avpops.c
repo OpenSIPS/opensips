@@ -51,8 +51,7 @@
 MODULE_VERSION
 
 /* modules param variables */
-static str db_url          = {NULL, 0};  /* database url */
-static str db_table        = {NULL, 0};  /* table */
+static str db_table        = str_init("usr_preferencs");  /* table */
 static int use_domain      = 0;  /* if domain should be use for avp matching */
 static str uuid_col        = str_init("uuid");
 static str attribute_col   = str_init("attribute");
@@ -60,8 +59,10 @@ static str value_col       = str_init("value");
 static str type_col        = str_init("type");
 static str username_col    = str_init("username");
 static str domain_col      = str_init("domain");
-static str* db_columns[6] = {&uuid_col, &attribute_col, &value_col, &type_col, &username_col, &domain_col};
+static str* db_columns[6] = {&uuid_col, &attribute_col, &value_col,
+                             &type_col, &username_col, &domain_col};
 
+static struct db_url* default_db_url = NULL;
 
 static int avpops_init(void);
 static int avpops_child_init(int rank);
@@ -79,11 +80,14 @@ static int fixup_subst(void** param, int param_no);
 static int fixup_is_avp_set(void** param, int param_no);
 
 static int w_print_avps(struct sip_msg* msg, char* foo, char *bar);
-static int w_dbload_avps(struct sip_msg* msg, char* source, char* param);
-static int w_dbdelete_avps(struct sip_msg* msg, char* source, char* param);
-static int w_dbstore_avps(struct sip_msg* msg, char* source, char* param);
-static int w_dbquery1_avps(struct sip_msg* msg, char* query, char* param);
-static int w_dbquery2_avps(struct sip_msg* msg, char* query, char* dest);
+static int w_dbload_avps(struct sip_msg* msg, char* source,
+		char* param, char* url);
+static int w_dbdelete_avps(struct sip_msg* msg, char* source,
+		char* param, char* url);
+static int w_dbstore_avps(struct sip_msg* msg, char* source,
+		char* param, char* url);
+static int w_dbquery_avps(struct sip_msg* msg, char* query,
+		char* dest, char* url);
 static int w_delete_avps(struct sip_msg* msg, char* param, char *foo);
 static int w_copy_avps(struct sip_msg* msg, char* param, char *check);
 static int w_pushto_avps(struct sip_msg* msg, char* destination, char *param);
@@ -100,13 +104,21 @@ static cmd_export_t cmds[] = {
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|ONREPLY_ROUTE|LOCAL_ROUTE},
 	{"avp_db_load", (cmd_function)w_dbload_avps,  2, fixup_db_load_avp, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|ONREPLY_ROUTE|LOCAL_ROUTE},
+	{"avp_db_load", (cmd_function)w_dbload_avps,  3, fixup_db_load_avp, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|ONREPLY_ROUTE|LOCAL_ROUTE},
 	{"avp_db_delete", (cmd_function)w_dbdelete_avps, 2, fixup_db_delete_avp, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|ONREPLY_ROUTE|LOCAL_ROUTE},
+	{"avp_db_delete", (cmd_function)w_dbdelete_avps, 3, fixup_db_delete_avp, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|ONREPLY_ROUTE|LOCAL_ROUTE},
 	{"avp_db_store", (cmd_function)w_dbstore_avps,  2, fixup_db_store_avp, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|ONREPLY_ROUTE|LOCAL_ROUTE},
-	{"avp_db_query", (cmd_function)w_dbquery1_avps, 1, fixup_db_query_avp, 0,
+	{"avp_db_store", (cmd_function)w_dbstore_avps,  3, fixup_db_store_avp, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|ONREPLY_ROUTE|LOCAL_ROUTE},
-	{"avp_db_query", (cmd_function)w_dbquery2_avps, 2, fixup_db_query_avp, 0,
+	{"avp_db_query", (cmd_function)w_dbquery_avps, 1, fixup_db_query_avp, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|ONREPLY_ROUTE|LOCAL_ROUTE},
+	{"avp_db_query", (cmd_function)w_dbquery_avps, 2, fixup_db_query_avp, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|ONREPLY_ROUTE|LOCAL_ROUTE},
+	{"avp_db_query", (cmd_function)w_dbquery_avps, 3, fixup_db_query_avp, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|ONREPLY_ROUTE|LOCAL_ROUTE},
 	{"avp_delete", (cmd_function)w_delete_avps, 1, fixup_delete_avp, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|ONREPLY_ROUTE|LOCAL_ROUTE},
@@ -130,8 +142,7 @@ static cmd_export_t cmds[] = {
  * Exported parameters
  */
 static param_export_t params[] = {
-	{"db_url",            STR_PARAM, &db_url.s        },
-	{"avp_url",           STR_PARAM, &db_url.s        },
+	{"db_url",            STR_PARAM|USE_FUNC_PARAM, (void*)add_db_url },
 	{"avp_table",         STR_PARAM, &db_table.s      },
 	{"use_domain",        INT_PARAM, &use_domain      },
 	{"uuid_column",       STR_PARAM, &uuid_col.s      },
@@ -161,12 +172,11 @@ struct module_exports exports = {
 };
 
 
+
 static int avpops_init(void)
 {
 	LM_INFO("initializing...\n");
 
-	if (db_url.s)
-		db_url.len = strlen(db_url.s);
 	if (db_table.s)
 		db_table.len = strlen(db_table.s);
 	uuid_col.len = strlen(uuid_col.s);
@@ -176,19 +186,11 @@ static int avpops_init(void)
 	username_col.len = strlen(username_col.s);
 	domain_col.len = strlen(domain_col.s);
 
-	/* if DB_URL defined -> bind to a DB module */
-	if (db_url.s!=0)
-	{
-		/* check AVP_TABLE param */
-		if (db_table.s==0)
-		{
-			LM_CRIT("\"AVP_DB\" present but \"AVP_TABLE\" found empty\n");
-			goto error;
-		}
-		/* bind to the DB module */
-		if (avpops_db_bind(&db_url)<0)
-			goto error;
-	}
+	/* bind to the DB module */
+	if (avpops_db_bind()<0)
+		goto error;
+
+	default_db_url = get_default_db_url();
 
 	init_store_avps(db_columns);
 
@@ -200,14 +202,36 @@ error:
 
 static int avpops_child_init(int rank)
 {
-	/* init DB only if enabled */
-	if (db_url.s==0)
-		return 0;
 	/* skip main process and TCP manager process */
 	if (rank==PROC_MAIN || rank==PROC_TCP_MAIN)
 		return 0;
 	/* init DB connection */
-	return avpops_db_init(&db_url, &db_table, db_columns);
+	return avpops_db_init(&db_table, db_columns);
+}
+
+
+static int fixup_db_url(void ** param)
+{
+	struct db_url* url;
+	unsigned int ui;
+	str s;
+
+	s.s = (char*)*param;
+	s.len = strlen(s.s);
+
+	if(str2int(&s, &ui)!=0) {
+		LM_ERR("bad db_url number <%s>\n", (char *)(*param));
+		return E_CFG;
+	}
+
+	url = get_db_url(ui);
+	if (url==NULL) {
+		LM_ERR("no db_url with id <%s>\n", (char *)(*param));
+		return E_CFG;
+	}
+	pkg_free(*param);
+	*param=(void *)url;
+	return 0;
 }
 
 
@@ -220,13 +244,13 @@ static int fixup_db_avp(void** param, int param_no, int allow_scheme)
 	str s;
 	char *p;
 
+	if (default_db_url==NULL) {
+		LM_ERR("no db url defined to be used by this function\n");
+		return E_CFG;
+	}
+
 	flags=0;
 	flags0=0;
-	if (db_url.s==0)
-	{
-		LM_ERR("you have to configure a db_url for using avp_db_xxx functions\n");
-		return E_UNSPEC;
-	}
 
 	s.s = (char*)*param;
 	if (param_no==1)
@@ -303,6 +327,8 @@ static int fixup_db_avp(void** param, int param_no, int allow_scheme)
 			return E_UNSPEC;
 		}
 		*param=(void*)dbp;
+	} else if (param_no==3) {
+		return fixup_db_url(param);
 	}
 
 	return 0;
@@ -331,10 +357,9 @@ static int fixup_db_query_avp(void** param, int param_no)
 	pvname_list_t *anlist = NULL;
 	str s;
 
-	if (db_url.s==0)
-	{
-		LM_ERR("you have to configure db_url for using avp_db_query function\n");
-		return E_UNSPEC;
+	if (default_db_url==NULL) {
+		LM_ERR("no db url defined to be used by this function\n");
+		return E_CFG;
 	}
 
 	s.s = (char*)(*param);
@@ -356,12 +381,11 @@ static int fixup_db_query_avp(void** param, int param_no)
 		*param = (void*)model;
 		return 0;
 	} else if(param_no==2) {
-		if(s.s==NULL)
-		{
-			LM_ERR("null format in P%d\n", param_no);
-			return E_UNSPEC;
+		if(s.s==NULL || s.s[0]==0) {
+			*param = NULL;
+			return 0;
 		}
-				s.len = strlen(s.s);
+		s.len = strlen(s.s);
 
 		anlist = parse_pvname_list(&s, PVT_AVP);
 		if(anlist==NULL)
@@ -371,6 +395,8 @@ static int fixup_db_query_avp(void** param, int param_no)
 		}
 		*param = (void*)anlist;
 		return 0;
+	} else if (param_no==3) {
+		return fixup_db_url(param);
 	}
 
 	return 0;
@@ -986,32 +1012,39 @@ static int fixup_is_avp_set(void** param, int param_no)
 	return 0;
 }
 
-static int w_dbload_avps(struct sip_msg* msg, char* source, char* param)
+static int w_dbload_avps(struct sip_msg* msg, char* source,
+													char* param, char *url)
 {
 	return ops_dbload_avps ( msg, (struct fis_param*)source,
-								(struct db_param*)param, use_domain);
+		(struct db_param*)param,
+		url?(struct db_url*)url:default_db_url,
+		use_domain);
 }
 
-static int w_dbdelete_avps(struct sip_msg* msg, char* source, char* param)
+static int w_dbdelete_avps(struct sip_msg* msg, char* source,
+													char* param, char *url)
 {
 	return ops_dbdelete_avps ( msg, (struct fis_param*)source,
-								(struct db_param*)param, use_domain);
+		(struct db_param*)param,
+		url?(struct db_url*)url:default_db_url,
+		use_domain);
 }
 
-static int w_dbstore_avps(struct sip_msg* msg, char* source, char* param)
+static int w_dbstore_avps(struct sip_msg* msg, char* source,
+													char* param, char *url)
 {
 	return ops_dbstore_avps ( msg, (struct fis_param*)source,
-								(struct db_param*)param, use_domain);
+		(struct db_param*)param,
+		url?(struct db_url*)url:default_db_url,
+		use_domain);
 }
 
-static int w_dbquery1_avps(struct sip_msg* msg, char* query, char* param)
+static int w_dbquery_avps(struct sip_msg* msg, char* query,
+													char* dest, char *url)
 {
-	return ops_dbquery_avps ( msg, (pv_elem_t*)query, 0);
-}
-
-static int w_dbquery2_avps(struct sip_msg* msg, char* query, char* dest)
-{
-	return ops_dbquery_avps ( msg, (pv_elem_t*)query, (pvname_list_t*)dest);
+	return ops_dbquery_avps ( msg, (pv_elem_t*)query,
+		url?(struct db_url*)url:default_db_url,
+		(pvname_list_t*)dest);
 }
 
 static int w_delete_avps(struct sip_msg* msg, char* param, char* foo)

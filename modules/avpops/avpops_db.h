@@ -36,6 +36,13 @@
 #include "../../sr_module.h"
 #include "../../pvar.h"
 
+struct db_url
+{
+	str url;
+	unsigned int idx;
+	db_con_t  *hdl;     /* DB handler */
+	db_func_t dbf;  /* DB functions */
+};
 
 /* definition of a DB scheme*/
 struct db_scheme
@@ -51,21 +58,29 @@ struct db_scheme
 };
 
 
-int avpops_db_bind(const str* db_url);
+int add_db_url(modparam_t type, void *val);
 
-int avpops_db_init(const str* db_url, const str* db_table, str **db_columns);
+struct db_url* get_db_url(unsigned int idx);
 
-db_res_t *db_load_avp( str *uuid, str *username, str *domain,
+struct db_url* get_default_db_url(void);
+
+int avpops_db_bind(void);
+
+int avpops_db_init(const str* db_table, str **db_columns);
+
+db_res_t *db_load_avp(struct db_url *url,str *uuid, str *username, str *domain,
 		char *attr, const str *table, struct db_scheme *scheme);
 
-void db_close_query( db_res_t *res );
+void db_close_query( struct db_url *url, db_res_t *res );
 
-int db_store_avp( db_key_t *keys, db_val_t *vals, int n, const str *table);
+int db_store_avp( struct db_url *url, db_key_t *keys, db_val_t *vals,
+		int n, const str *table);
 
-int db_delete_avp( str *uuid, str *username, str *domain,
+int db_delete_avp( struct db_url *url, str *uuid, str *username, str *domain,
 		char *attr, const str *table);
 
-int db_query_avp(struct sip_msg* msg, char *query, pvname_list_t* dest);
+int db_query_avp(struct db_url *url, struct sip_msg* msg, char *query,
+		pvname_list_t* dest);
 
 int avp_add_db_scheme( modparam_t type, void* val);
 

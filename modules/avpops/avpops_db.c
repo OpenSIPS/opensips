@@ -37,8 +37,6 @@
 #include "avpops_db.h"
 
 
-static db_con_t  *db_hdl=0;     /* DB handler */
-static db_func_t avpops_dbf;    /* DB functions */
 static str       def_table;    /* default DB table */
 static str      **db_columns;  /* array with names of DB columns */
 
@@ -48,21 +46,102 @@ static db_val_t   vals_cmp[3]; /* statement as in "select" and "delete" */
 /* linked list with all defined DB schemes */
 static struct db_scheme  *db_scheme_list=0;
 
+/* array of db urls */
+static struct db_url *db_urls = NULL;  /* array of database urls */
+static unsigned int no_db_urls = 0;
 
-int avpops_db_bind(const str* db_url)
+
+struct db_url* get_db_url(unsigned int idx)
 {
-	if (db_bind_mod(db_url, &avpops_dbf ))
-	{
-		LM_CRIT("cannot bind to database module! "
-			"Did you load a database module ?\n");
-		return -1;
+	unsigned int i;
+
+	for (i=0;i<no_db_urls;i++) {
+		if (db_urls[i].idx == idx)
+			return &db_urls[i];
+	}
+	return NULL;
+}
+
+
+struct db_url* get_default_db_url(void)
+{
+	struct db_url *url;
+
+	url = get_db_url( 0 );
+	if (url!=NULL)
+		return url;
+	if (no_db_urls==0)
+		return NULL;
+	return &db_urls[0];
+}
+
+
+int add_db_url(modparam_t type, void *val)
+{
+	char *param=(char*)val, *url=0;;
+	long idx;
+
+	if(!param)
+		return E_UNSPEC;
+	if(STR_PARAM & (type != STR_PARAM)){
+		LM_ERR("Expected string type parameter for DBX URL.\n");
+		return E_CFG;
 	}
 
-	if (!DB_CAPABILITY(avpops_dbf, DB_CAP_ALL))
-	{
-		LM_CRIT("database modules does not "
-			"provide all functions needed by avpops module\n");
-		return -1;
+	idx = strtol(param, &url, 10);
+	if(param==url) {
+		/* default URL */
+		idx = 0;
+	}
+
+	while(isspace(*url)) url++;
+
+	if (no_db_urls==0) {
+		db_urls = (struct db_url*)pkg_malloc(sizeof(struct db_url));
+	} else {
+		if (get_db_url(idx)!=NULL) {
+			LM_ERR("db_url idx %ld overwritten (multiple definitions)\n",idx);
+			return E_CFG;
+		}
+		db_urls = (struct db_url*)pkg_realloc
+			(db_urls, (no_db_urls+1)*sizeof(struct db_url));
+	}
+
+	if (db_urls==NULL) {
+		LM_ERR("failed to alloc pkg array\n");
+		return E_OUT_OF_MEM;
+	}
+
+	db_urls[no_db_urls].url.s = url;
+	db_urls[no_db_urls].url.len = strlen(url);
+	db_urls[no_db_urls].idx = idx;
+	db_urls[no_db_urls].hdl = NULL;
+
+	no_db_urls++;
+
+	return 0;
+}
+
+
+
+int avpops_db_bind(void)
+{
+	unsigned int i;
+
+	for(i=0;i<no_db_urls;i++) {
+		if (db_bind_mod(&db_urls[i].url, &db_urls[i].dbf )) {
+			LM_CRIT("cannot bind to database module for %.*s! "
+				"Did you load a database module ?\n",
+				db_urls[i].url.len,db_urls[i].url.s);
+			return -1;
+		}
+
+		if (!DB_CAPABILITY(db_urls[i].dbf, DB_CAP_ALL)) {
+			LM_CRIT("database modules (%.*s) does not "
+				"provide all functions needed by avpops module\n",
+				db_urls[i].url.len,db_urls[i].url.s);
+			return -1;
+		}
 	}
 
 	return 0;
@@ -70,30 +149,33 @@ int avpops_db_bind(const str* db_url)
 }
 
 
-int avpops_db_init(const str* db_url, const str* db_table, str** db_cols)
+int avpops_db_init(const str* db_table, str** db_cols)
 {
-	
-	db_hdl = avpops_dbf.init(db_url);
-	if (db_hdl==0)
-	{
-		LM_ERR("cannot initialize database connection\n");
-		goto error;
+	unsigned int i;
+
+	for(i=0;i<no_db_urls;i++) {
+		db_urls[i].hdl = db_urls[i].dbf.init( &db_urls[i].url );
+		if (db_urls[i].hdl==0) {
+			LM_ERR("cannot initialize database connection for %s\n",
+				db_urls[i].url.s);
+			goto error;
+		}
+		if (db_urls[i].dbf.use_table(db_urls[i].hdl, db_table)<0) {
+			LM_ERR("cannot select table \"%.*s\"\n",
+				db_table->len, db_table->s);
+			goto error;
+		}
 	}
-	if (avpops_dbf.use_table(db_hdl, db_table)<0)
-	{
-		LM_ERR("cannot select table \"%.*s\"\n", db_table->len, db_table->s);
-		goto error;
-	}
+
 	def_table.s = db_table->s;
 	def_table.len = db_table->len;
 	db_columns = db_cols;
 
 	return 0;
 error:
-	if (db_hdl)
-	{
-		avpops_dbf.close(db_hdl);
-		db_hdl=0;
+	for(i--;i>=0;i--){
+		db_urls[i].dbf.close(db_urls[i].hdl);
+		db_urls[i].hdl = NULL;
 	}
 	return -1;
 }
@@ -158,19 +240,18 @@ struct db_scheme *avp_get_db_scheme (str *name)
 }
 
 
-static inline int set_table( const str *table, char *func)
+static inline int set_table( struct db_url *url, const str *table, char *func)
 {
-	if (table && table->s)
-	{
-		if ( avpops_dbf.use_table( db_hdl, table)<0 )
-		{
-			LM_ERR("db-%s: cannot set table \"%.*s\"\n", func, table->len, table->s);
+	if (table && table->s) {
+		if ( url->dbf.use_table( url->hdl, table)<0 ) {
+			LM_ERR("db-%s: cannot set table \"%.*s\"\n",
+				func, table->len, table->s);
 			return -1;
 		}
 	} else {
-		if ( avpops_dbf.use_table( db_hdl, &def_table)<0 )
-		{
-			LM_ERR("db-%s: cannot set table \"%.*s\"\n", func, def_table.len, def_table.s);
+		if ( url->dbf.use_table( url->hdl, &def_table)<0 ) {
+			LM_ERR("db-%s: cannot set table \"%.*s\"\n",
+				func, def_table.len, def_table.s);
 			return -1;
 		}
 	}
@@ -229,8 +310,8 @@ static inline int prepare_selection( str *uuid, str *username, str *domain,
 }
 
 
-db_res_t *db_load_avp( str *uuid, str *username, str *domain,
-							char *attr, const str *table, struct db_scheme *scheme)
+db_res_t *db_load_avp(struct db_url *url, str *uuid, str *username,str *domain,
+					char *attr, const str *table, struct db_scheme *scheme)
 {
 	static db_key_t   keys_ret[3];
 	unsigned int      nr_keys_cmp;
@@ -241,7 +322,7 @@ db_res_t *db_load_avp( str *uuid, str *username, str *domain,
 	nr_keys_cmp = prepare_selection( uuid, username, domain, attr, scheme);
 
 	/* set table */
-	if (set_table( scheme?&scheme->table:table ,"load")!=0)
+	if (set_table( url, scheme?&scheme->table:table ,"load")!=0)
 		return 0;
 
 	/* return keys */
@@ -258,7 +339,7 @@ db_res_t *db_load_avp( str *uuid, str *username, str *domain,
 	}
 
 	/* do the DB query */
-	if ( avpops_dbf.query( db_hdl, keys_cmp, 0/*op*/, vals_cmp, keys_ret,
+	if ( url->dbf.query( url->hdl, keys_cmp, 0/*op*/, vals_cmp, keys_ret,
 			nr_keys_cmp, nr_keys_ret, 0/*order*/, &res) < 0)
 		return 0;
 
@@ -266,22 +347,22 @@ db_res_t *db_load_avp( str *uuid, str *username, str *domain,
 }
 
 
-void db_close_query( db_res_t *res )
+void db_close_query(struct db_url *url, db_res_t *res )
 {
 	LM_DBG("close avp query\n");
-	avpops_dbf.free_result( db_hdl, res);
+	url->dbf.free_result( url->hdl, res);
 }
 
 
-int db_store_avp( db_key_t *keys, db_val_t *vals, int n, const str *table)
+int db_store_avp(struct db_url *url, db_key_t *keys, db_val_t *vals,
+													int n, const str *table)
 {
 	int r;
-	if (set_table( table ,"store")!=0)
+	if (set_table( url, table ,"store")!=0)
 		return -1;
 
-	r = avpops_dbf.insert( db_hdl, keys, vals, n);
-	if (r<0)
-	{
+	r = url->dbf.insert( url->hdl, keys, vals, n);
+	if (r<0) {
 		LM_ERR("insert failed\n");
 		return -1;
 	}
@@ -290,8 +371,8 @@ int db_store_avp( db_key_t *keys, db_val_t *vals, int n, const str *table)
 
 
 
-int db_delete_avp( str *uuid, str *username, str *domain, char *attr,
-															const str *table)
+int db_delete_avp(struct db_url *url, str *uuid, str *username, str *domain,
+												char *attr, const str *table)
 {
 	unsigned int  nr_keys_cmp;
 
@@ -299,17 +380,20 @@ int db_delete_avp( str *uuid, str *username, str *domain, char *attr,
 	nr_keys_cmp = prepare_selection( uuid, username, domain, attr, 0);
 
 	/* set table */
-	if (set_table( table ,"delete")!=0)
+	if (set_table( url, table ,"delete")!=0)
 		return -1;
 
 	/* do the DB query */
-	if ( avpops_dbf.delete( db_hdl, keys_cmp, 0, vals_cmp, nr_keys_cmp) < 0)
+	if ( url->dbf.delete( url->hdl, keys_cmp, 0, vals_cmp, nr_keys_cmp) < 0)
 		return 0;
 
 	return 0;
 }
 
-int db_query_avp(struct sip_msg *msg, char *query, pvname_list_t* dest)
+
+
+int db_query_avp(struct db_url *url, struct sip_msg *msg, char *query,
+														pvname_list_t* dest)
 {
 	int_str avp_val;
 	int_str avp_name;
@@ -318,17 +402,17 @@ int db_query_avp(struct sip_msg *msg, char *query, pvname_list_t* dest)
 	int i, j;
 	pvname_list_t* crt;
 	static str query_str;
-	
+
 	if(query==NULL)
 	{
 		LM_ERR("bad parameter\n");
 		return -1;
 	}
-	
+
 	query_str.s = query;
 	query_str.len = strlen(query);
 	
-	if(avpops_dbf.raw_query(db_hdl, &query_str, &db_res)!=0)
+	if(url->dbf.raw_query( url->hdl, &query_str, &db_res)!=0)
 	{
 		LM_ERR("cannot do the query\n");
 		return -1;
@@ -337,7 +421,7 @@ int db_query_avp(struct sip_msg *msg, char *query, pvname_list_t* dest)
 	if(db_res==NULL || RES_ROW_N(db_res)<=0 || RES_COL_N(db_res)<=0)
 	{
 		LM_DBG("no result after query\n");
-		db_close_query( db_res );
+		db_close_query( url, db_res );
 		return 1;
 	}
 
@@ -409,7 +493,7 @@ int db_query_avp(struct sip_msg *msg, char *query, pvname_list_t* dest)
 			if(add_avp(avp_type, avp_name, avp_val)!=0)
 			{
 				LM_ERR("unable to add avp\n");
-				db_close_query( db_res );
+				db_close_query( url, db_res );
 				return -1;
 			}
 next_avp:
@@ -422,6 +506,6 @@ next_avp:
 		}
 	}
 
-	db_close_query( db_res );
+	db_close_query( url, db_res );
 	return 0;
 }

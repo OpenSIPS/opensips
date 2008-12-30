@@ -121,16 +121,16 @@ struct db_param
 void init_store_avps(str **db_columns);
 
 int ops_dbload_avps (struct sip_msg* msg, struct fis_param *sp,
-								struct db_param *dbp, int use_domain);
+					struct db_param *dbp,  struct db_url *url, int use_domain);
 
 int ops_dbdelete_avps(struct sip_msg* msg, struct fis_param *sp,
-								struct db_param *dbp, int use_domain);
+					struct db_param *dbp,  struct db_url *url, int use_domain);
 
 int ops_dbstore_avps(struct sip_msg* msg, struct fis_param *sp,
-								struct db_param *dbp, int use_domain);
+					struct db_param *dbp,  struct db_url *url, int use_domain);
 
 int ops_dbquery_avps(struct sip_msg* msg, pv_elem_t* query,
-								pvname_list_t* dest);
+					struct db_url *url, pvname_list_t* dest);
 
 int ops_delete_avp(struct sip_msg* msg,
 								struct fis_param *ap);

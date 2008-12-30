@@ -281,7 +281,7 @@ static int avpops_get_aname(struct sip_msg* msg, struct fis_param *ap,
 static char avpops_attr_buf[AVPOPS_ATTR_LEN];
 
 int ops_dbload_avps (struct sip_msg* msg, struct fis_param *sp,
-									struct db_param *dbp, int use_domain)
+					struct db_param *dbp, struct db_url *url, int use_domain)
 {
 	struct sip_uri   uri;
 	db_res_t         *res = NULL;
@@ -375,7 +375,7 @@ int ops_dbload_avps (struct sip_msg* msg, struct fis_param *sp,
 	}
 
 	/* do DB query */
-	res = db_load_avp( s0, s1,
+	res = db_load_avp( url, s0, s1,
 			((use_domain)||(sp->opd&AVPOPS_FLAG_DOMAIN0))?s2:0,
 			dbp->sa.s, &dbp->table, dbp->scheme);
 
@@ -414,7 +414,7 @@ int ops_dbload_avps (struct sip_msg* msg, struct fis_param *sp,
 		n++;
 	}
 
-	db_close_query( res );
+	db_close_query( url, res );
 
 	LM_DBG("loaded avps = %d\n",n);
 
@@ -425,7 +425,7 @@ error:
 
 
 int ops_dbdelete_avps (struct sip_msg* msg, struct fis_param *sp,
-									struct db_param *dbp, int use_domain)
+					struct db_param *dbp, struct db_url *url, int use_domain)
 {
 	struct sip_uri  uri;
 	int             res;
@@ -516,7 +516,7 @@ int ops_dbdelete_avps (struct sip_msg* msg, struct fis_param *sp,
 	}
 
 	/* do DB delete */
-	res = db_delete_avp(s0, s1,
+	res = db_delete_avp( url, s0, s1,
 			(use_domain||(sp->opd&AVPOPS_FLAG_DOMAIN0))?s2:0,
 			dbp->sa.s, &dbp->table);
 
@@ -534,7 +534,7 @@ error:
 
 
 int ops_dbstore_avps (struct sip_msg* msg, struct fis_param *sp,
-									struct db_param *dbp, int use_domain)
+					struct db_param *dbp, struct db_url *url, int use_domain)
 {
 	struct sip_uri   uri;
 	struct usr_avp   **avp_list;
@@ -677,7 +677,7 @@ int ops_dbstore_avps (struct sip_msg* msg, struct fis_param *sp,
 			int_str2db_val( i_s, &store_vals[2].val.str_val,
 				avp->flags&AVP_VAL_STR);
 			/* save avp */
-			if (db_store_avp( store_keys, store_vals,
+			if (db_store_avp( url, store_keys, store_vals,
 					keys_nr, &dbp->table)==0 )
 			{
 				avp->flags |= AVP_IS_IN_DB;
@@ -715,7 +715,7 @@ int ops_dbstore_avps (struct sip_msg* msg, struct fis_param *sp,
 			int_str2db_val( i_s, &store_vals[2].val.str_val,
 				avp->flags&AVP_VAL_STR);
 			/* save avp */
-			if (db_store_avp( store_keys, store_vals,
+			if (db_store_avp( url, store_keys, store_vals,
 			keys_nr, &dbp->table)==0)
 			{
 				avp->flags |= AVP_IS_IN_DB;
@@ -731,8 +731,10 @@ error:
 	return -1;
 }
 
+
+
 int ops_dbquery_avps(struct sip_msg* msg, pv_elem_t* query,
-		pvname_list_t* dest)
+									struct db_url *url, pvname_list_t* dest)
 {
 	int printbuf_len;
 
@@ -751,7 +753,7 @@ int ops_dbquery_avps(struct sip_msg* msg, pv_elem_t* query,
 
 	LM_DBG("query [%s]\n", printbuf);
 	
-	if(db_query_avp(msg, printbuf, dest)!=0)
+	if(db_query_avp(url, msg, printbuf, dest)!=0)
 		return -1;
 	return 1;
 }
