@@ -187,7 +187,7 @@ void bye_reply_cb(struct cell* t, int type, struct tmcb_params* ps){
 		/* trash the dialog from DB and memory */
 		LM_DBG("second final reply\n");
 		/* delete the dialog from DB */
-		if (dlg_db_mode)
+		if (should_remove_dlg_db())
 			remove_dialog_from_db(dlg);
 		/* force delete from mem */
 		unref_dlg(dlg, 1);

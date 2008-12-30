@@ -120,6 +120,36 @@ int dlg_connect_db(const str *db_url)
 }
 
 
+static int use_dialog_table(void)
+{
+	if(!dialog_db_handle){
+		LM_ERR("invalid database handle\n");
+		return -1;
+	}
+
+	if (dialog_dbf.use_table(dialog_db_handle, &dialog_table_name) < 0) {
+		LM_ERR("Error in use_table\n");
+		return -1;
+	}
+
+	return 0;
+}
+
+
+static int remove_all_dialogs_from_db(void)
+{
+	if (use_dialog_table()!=0)
+		return -1;
+
+	if(dialog_dbf.delete(dialog_db_handle, NULL, NULL, NULL, 0) < 0) {
+		LM_ERR("failed to delete database information\n");
+		return -1;
+	}
+
+	return 0;
+}
+
+
 int init_dlg_db(const str *db_url, int dlg_hash_size , int db_update_period)
 {
 	/* Find a database module */
@@ -133,12 +163,13 @@ int init_dlg_db(const str *db_url, int dlg_hash_size , int db_update_period)
 		return -1;
 	}
 
-	if(db_check_table_version(&dialog_dbf, dialog_db_handle, &dialog_table_name, DLG_TABLE_VERSION) < 0) {
+	if(db_check_table_version(&dialog_dbf, dialog_db_handle,
+	&dialog_table_name, DLG_TABLE_VERSION) < 0) {
 		LM_ERR("error during table version check.\n");
 		return -1;
 	}
 
-	if( (dlg_db_mode==DB_MODE_DELAYED) && 
+	if( (dlg_db_mode==DB_MODE_DELAYED) &&
 	(register_timer( dialog_update_db, 0, db_update_period)<0 )) {
 		LM_ERR("failed to register update db\n");
 		return -1;
@@ -147,6 +178,10 @@ int init_dlg_db(const str *db_url, int dlg_hash_size , int db_update_period)
 	if( (load_dialog_info_from_db(dlg_hash_size) ) !=0 ){
 		LM_ERR("unable to load the dialog data\n");
 		return -1;
+	}
+
+	if (dlg_db_mode==DB_MODE_SHUTDOWN && remove_all_dialogs_from_db()!=0) {
+		LM_WARN("failed to properly remove all the dialogs form DB\n");
 	}
 
 	dialog_dbf.close(dialog_db_handle);
@@ -164,23 +199,6 @@ void destroy_dlg_db(void)
 		dialog_dbf.close(dialog_db_handle);
 		dialog_db_handle = 0;
 	}
-}
-
-
-
-static int use_dialog_table(void)
-{
-	if(!dialog_db_handle){
-		LM_ERR("invalid database handle\n");
-		return -1;
-	}
-
-	if (dialog_dbf.use_table(dialog_db_handle, &dialog_table_name) < 0) {
-		LM_ERR("Error in use_table\n");
-		return -1;
-	}
-
-	return 0;
 }
 
 
@@ -405,12 +423,13 @@ end:
 error:
 	dialog_dbf.free_result(dialog_db_handle, res);
 	return -1;
-
 }
 
 
 
-/*this is only called from destroy_dlg, where the cell's entry lock is acquired*/
+/* this is only called from destroy_dlg, where the cell's entry 
+ * lock is acquired
+ */
 int remove_dialog_from_db(struct dlg_cell * cell)
 {
 	db_val_t values[2];

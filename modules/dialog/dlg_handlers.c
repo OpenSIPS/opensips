@@ -723,7 +723,7 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 		run_dlg_callbacks( DLGCB_TERMINATED, dlg, req, dir, 0);
 
 		/* delete the dialog from DB */
-		if (dlg_db_mode)
+		if (should_remove_dlg_db())
 			remove_dialog_from_db(dlg);
 
 		/* destroy dialog */
@@ -807,7 +807,7 @@ void dlg_ontimeout( struct dlg_tl *tl)
 		run_dlg_callbacks( DLGCB_EXPIRED, dlg, 0, DLG_DIR_NONE, 0);
 
 		/* delete the dialog from DB */
-		if (dlg_db_mode)
+		if (should_remove_dlg_db())
 			remove_dialog_from_db(dlg);
 
 		unref_dlg(dlg, unref + 1 /*timer list*/);
