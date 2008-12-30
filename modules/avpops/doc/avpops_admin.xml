@@ -413,10 +413,10 @@ modparam("avpops","db_scheme",
 				<title><function>avp_db_load</function> usage</title>
 				<programlisting format="linespecific">
 ...
-avp_db_load("$fu","$(i:678)");
-avp_db_load("$ru/domain","i:/domain_preferences");
-avp_db_load("$uuid","$avp(s:404fwd)/fwd_table");
-avp_db_load("$ru","$avp(i1:123)/$some_scheme");
+avp_db_load("$fu","$avp(i:678)");
+avp_db_load("$ru/domain","i/domain_preferences");
+avp_db_load("$avp(s:uuid)","$avp(s:404fwd)/fwd_table");
+avp_db_load("$ru","$avp(i:123)/$some_scheme");
 ...
 				</programlisting>
 			</example>
@@ -470,7 +470,7 @@ avp_db_store("$ru/username","$avp(email)");
 ...
 avp_db_delete("$tu","$avp(i:678)");
 avp_db_delete("$ru/username","$avp(email)");
-avp_db_delete("$uuid","$avp(s:404fwd)/fwd_table");
+avp_db_delete("$avp(s:uuid)","$avp(s:404fwd)/fwd_table");
 ...
 				</programlisting>
 			</example>
