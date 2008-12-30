@@ -62,24 +62,23 @@ int free_tm_dlg(dlg_t *td)
 
 
 
-dlg_t * build_dlg_t(struct dlg_cell * cell, int dir){
-
+dlg_t * build_dlg_t(struct dlg_cell * cell, int dir)
+{
 	dlg_t* td = NULL;
 	str cseq;
 	unsigned int loc_seq;
 
 	td = (dlg_t*)pkg_malloc(sizeof(dlg_t));
 	if(!td){
-	
 		LM_ERR("out of pkg memory\n");
 		return NULL;
 	}
 	memset(td, 0, sizeof(dlg_t));
 
 	/*local sequence number*/
-	cseq = (dir == DLG_CALLER_LEG) ?	cell->cseq[DLG_CALLER_LEG]:
-										cell->cseq[DLG_CALLEE_LEG];
-	if(str2int(&cseq, &loc_seq) != 0){
+	cseq = (dir == DLG_CALLER_LEG) ?	cell->cseq[DLG_CALLEE_LEG]:
+										cell->cseq[DLG_CALLER_LEG];
+	if( !cseq.s || !cseq.len || str2int(&cseq, &loc_seq) != 0){
 		LM_ERR("invalid cseq\n");
 		goto error;
 	}
@@ -89,7 +88,6 @@ dlg_t * build_dlg_t(struct dlg_cell * cell, int dir){
 
 	/*route set*/
 	if( cell->route_set[dir].s && cell->route_set[dir].len){
-		
 		if( parse_rr_body(cell->route_set[dir].s, cell->route_set[dir].len, 
 						&td->route_set) !=0){
 		 	LM_ERR("failed to parse route set\n");
@@ -98,8 +96,7 @@ dlg_t * build_dlg_t(struct dlg_cell * cell, int dir){
 	} 
 
 	/*remote target--- Request URI*/
-	if(cell->contact[dir].s==0 || cell->contact[dir].len==0){
-
+	if (cell->contact[dir].s==0 || cell->contact[dir].len==0) {
 		LM_ERR("no contact available\n");
 		goto error;
 	}
@@ -111,7 +108,7 @@ dlg_t * build_dlg_t(struct dlg_cell * cell, int dir){
 	td->id.rem_tag = cell->tag[dir];
 	td->id.loc_tag = (dir == DLG_CALLER_LEG) ? 	cell->tag[DLG_CALLEE_LEG]:
 												cell->tag[DLG_CALLER_LEG];
-	
+
 	td->state= DLG_CONFIRMED;
 	td->send_sock = cell->bind_addr[dir];
 
@@ -187,7 +184,7 @@ void bye_reply_cb(struct cell* t, int type, struct tmcb_params* ps){
 		/* trash the dialog from DB and memory */
 		LM_DBG("second final reply\n");
 		/* delete the dialog from DB */
-		if (dlg_db_mode)
+		if (should_remove_dlg_db())
 			remove_dialog_from_db(dlg);
 		/* force delete from mem */
 		unref_dlg(dlg, 1);

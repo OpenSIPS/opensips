@@ -257,10 +257,12 @@ int dlg_set_leg_info(struct dlg_cell *dlg, str* tag, str *rr, str *contact,
 	memcpy( p, tag->s, tag->len);
 	p += tag->len;
 	/* contact */
-	dlg->contact[leg].s = p;
-	dlg->contact[leg].len = contact->len;
-	memcpy( p, contact->s, contact->len);
-	p += contact->len;
+	if (contact->len) {
+		dlg->contact[leg].s = p;
+		dlg->contact[leg].len = contact->len;
+		memcpy( p, contact->s, contact->len);
+		p += contact->len;
+	}
 	/* rr */
 	if (rr->len) {
 		dlg->route_set[leg].s = p;

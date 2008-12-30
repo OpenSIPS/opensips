@@ -508,7 +508,7 @@ static int child_init(int rank)
 	}
 
 	if ( (dlg_db_mode==DB_MODE_REALTIME && (rank>0 || rank==PROC_TIMER)) ||
-	(dlg_db_mode==DB_MODE_SHUTDOWN && (rank==PROC_MAIN)) ||
+	(dlg_db_mode==DB_MODE_SHUTDOWN && (rank==(dont_fork?1:PROC_MAIN)) ) ||
 	(dlg_db_mode==DB_MODE_DELAYED && (rank==PROC_MAIN || rank==PROC_TIMER ||
 	rank>0) )){
 		if ( dlg_connect_db(&db_url) ) {
@@ -516,11 +516,6 @@ static int child_init(int rank)
 			return -1;
 		}
 	}
-
-	/* in DB_MODE_SHUTDOWN only PROC_MAIN will do a DB dump at the end, so
-	 * for the rest of the processes will be the same as DB_MODE_NONE */
-	if (dlg_db_mode==DB_MODE_SHUTDOWN && rank!=PROC_MAIN)
-		dlg_db_mode = DB_MODE_NONE;
 
 	return 0;
 }

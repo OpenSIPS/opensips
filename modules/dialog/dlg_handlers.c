@@ -181,47 +181,52 @@ static int populate_leg_info( struct dlg_cell *dlg, struct sip_msg *msg,
 	/* extract the contact address */
 	if (!msg->contact&&(parse_headers(msg,HDR_CONTACT_F,0)<0||!msg->contact)){
 		LM_ERR("bad sip message or missing Contact hdr\n");
-		goto error0;
+		contact.s = NULL;
+		contact.len = 0;
+	} else {
+		if ( parse_contact(msg->contact)<0 ||
+		((contact_body_t *)msg->contact->parsed)->contacts==NULL ||
+		((contact_body_t *)msg->contact->parsed)->contacts->next!=NULL ) {
+			LM_ERR("bad Contact HDR\n");
+			contact.s = NULL;
+			contact.len = 0;
+		} else {
+			contact = ((contact_body_t *)msg->contact->parsed)->contacts->uri;
+		}
 	}
-	if ( parse_contact(msg->contact)<0 ||
-	((contact_body_t *)msg->contact->parsed)->contacts==NULL ||
-	((contact_body_t *)msg->contact->parsed)->contacts->next!=NULL ) {
-		LM_ERR("bad Contact HDR\n");
-		goto error0;
-	}
-	contact = ((contact_body_t *)msg->contact->parsed)->contacts->uri;
 
 	/* extract the RR parts */
+	skip_recs = 0;
 	if(!msg->record_route && (parse_headers(msg,HDR_RECORDROUTE_F,0)<0)  ){
 		LM_ERR("failed to parse record route header\n");
-		goto error0;
-	}
-
-	if (leg==DLG_CALLER_LEG) {
-		skip_recs = 0;
-	} else {
-		/* was the 200 OK received or local generated */
-		skip_recs = dlg->from_rr_nb +
-			((t->relaied_reply_branch>=0)?
-				(t->uac[t->relaied_reply_branch].added_rr):0);
-	}
-
-	if(msg->record_route){
-		if( print_rr_body(msg->record_route, &rr_set, leg, 
-							&skip_recs) != 0 ){
-			LM_ERR("failed to print route records \n");
-			goto error0;
-		}
-	} else {
 		rr_set.s = 0;
 		rr_set.len = 0;
+	} else {
+		if (leg==DLG_CALLEE_LEG) {
+			/* was the 200 OK received or local generated */
+			skip_recs = dlg->from_rr_nb +
+				((t->relaied_reply_branch>=0)?
+					(t->uac[t->relaied_reply_branch].added_rr):0);
+		}
+
+		if(msg->record_route){
+			if( print_rr_body(msg->record_route, &rr_set, leg, 
+								&skip_recs) != 0 ){
+				LM_ERR("failed to print route records \n");
+				rr_set.s = 0;
+				rr_set.len = 0;
+			}
+		} else {
+			rr_set.s = 0;
+			rr_set.len = 0;
+		}
 	}
 
 	if(leg==DLG_CALLER_LEG)
 		dlg->from_rr_nb = skip_recs;
 
 	LM_DBG("route_set %.*s, contact %.*s, cseq %.*s and bind_addr %.*s\n",
-		rr_set.len, rr_set.s, contact.len, contact.s,
+		rr_set.len, ZSW(rr_set.s), contact.len, ZSW(contact.s),
 		cseq.len, cseq.s, 
 		msg->rcv.bind_address->sock_str.len,
 		msg->rcv.bind_address->sock_str.s);
@@ -725,7 +730,7 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 		run_dlg_callbacks( DLGCB_TERMINATED, dlg, req, dir, 0);
 
 		/* delete the dialog from DB */
-		if (dlg_db_mode)
+		if (should_remove_dlg_db())
 			remove_dialog_from_db(dlg);
 
 		/* destroy dialog */
@@ -821,7 +826,7 @@ void dlg_ontimeout( struct dlg_tl *tl)
 		run_dlg_callbacks( DLGCB_EXPIRED, dlg, 0, DLG_DIR_NONE, 0);
 
 		/* delete the dialog from DB */
-		if (dlg_db_mode)
+		if (should_remove_dlg_db())
 			remove_dialog_from_db(dlg);
 
 		unref_dlg(dlg, unref + 1 /*timer list*/);

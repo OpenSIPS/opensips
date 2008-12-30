@@ -85,6 +85,9 @@ extern str from_sock_column;
 extern str dialog_table_name;
 extern int dlg_db_mode;
 
+#define should_remove_dlg_db() (dlg_db_mode && (dlg_db_mode!=DB_MODE_SHUTDOWN))
+
+
 int init_dlg_db(const str *db_url, int dlg_hash_size, int db_update_period);
 int dlg_connect_db(const str *db_url);
 void destroy_dlg_db();

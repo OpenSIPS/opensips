@@ -191,7 +191,7 @@ struct mi_root * mi_print_dlgs_ctx(struct mi_root *cmd, void *param );
 static inline int match_dialog(struct dlg_cell *dlg, str *callid,
 							   str *ftag, str *ttag, unsigned int *dir) {
 	if (dlg->tag[DLG_CALLEE_LEG].len == 0) {
-        // dialog to tag is undetermined ATM.
+		/* dialog to tag is undetermined ATM.*/
 		if (*dir==DLG_DIR_DOWNSTREAM) {
 			if (dlg->callid.len == callid->len &&
 			dlg->tag[DLG_CALLER_LEG].len == ftag->len &&
@@ -254,10 +254,10 @@ static inline int match_dialog(struct dlg_cell *dlg, str *callid,
 				*dir = DLG_DIR_UPSTREAM;
 				return 1;
 			} else if (dlg->tag[DLG_CALLER_LEG].len == ftag->len &&
-					   dlg->tag[DLG_CALLEE_LEG].len == ttag->len &&
-					   strncmp(dlg->tag[DLG_CALLER_LEG].s, ftag->s, ftag->len)==0 &&
-					   strncmp(dlg->tag[DLG_CALLEE_LEG].s, ttag->s, ttag->len)==0 &&
-					   strncmp(dlg->callid.s, callid->s, callid->len)==0) {
+				dlg->tag[DLG_CALLEE_LEG].len == ttag->len &&
+				strncmp(dlg->tag[DLG_CALLER_LEG].s, ftag->s, ftag->len)==0 &&
+				strncmp(dlg->tag[DLG_CALLEE_LEG].s, ttag->s, ttag->len)==0 &&
+				strncmp(dlg->callid.s, callid->s, callid->len)==0) {
 
 				*dir = DLG_DIR_DOWNSTREAM;
 				return 1;
