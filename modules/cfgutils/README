@@ -14,6 +14,10 @@ Elena-Ramona Modroiu
    rosdev.ro
    <ramona@rosdev.ro>
 
+Edited by:
+   
+   Sergio Gutierrez
+
    Copyright © 2007, 2008 1und1 Internet AG, BASIS AudioNet GmbH,
    Elena-Ramona Modroiu
    Revision History
@@ -253,7 +257,9 @@ rand_get_prob();
    Waits "time" seconds.
 
    Meaning of the parameters is as follows:
-     * time - Time to wait in seconds.
+     * time - Time to wait in seconds. String may be a pseudovariable.
+     In case that pseudovariable does not contain a numerical value, it
+     is evaluated to zero seconds.
 
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.
@@ -262,13 +268,20 @@ rand_get_prob();
 ...
 sleep("1");
 ...
+...
+$avp(s:secs)="10";
+sleep("$avp(s:secs)");
+...
+
 
 1.4.6.  usleep(time)
 
-   Waits "time" milli-seconds.
+   Waits "time" milli-seconds. 
 
    Meaning of the parameters is as follows:
-     * time - Time to wait in milli-seconds.
+     * time - Time to wait in milli-seconds. String may be a pseudovariable.
+     In case that pseudovariable does not contain a numerical value, it is
+     evaluated to zero seconds.
 
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.
@@ -277,6 +290,7 @@ sleep("1");
 ...
 usleep("500");
 ...
+
 
 1.4.7.  abort()
 
