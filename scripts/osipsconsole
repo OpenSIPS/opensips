@@ -593,7 +593,7 @@ if ( $EXPR eq "" ) {
 ##### ----------------------------------------------- #####
 ### binaries
 {
-	if ( $MYSQL eq "" ) {
+	if ( ($DBENGINE eq "mysql") &&  ( $MYSQL eq "" ) ) {
 		&locate_tool('mysql');
 		if ( !-e $TOOLPATH ) {
 			print "Error: 'mysql' tool not found: set MYSQL variable to correct tool path";
@@ -605,7 +605,8 @@ if ( $EXPR eq "" ) {
 
 ##### ----------------------------------------------- #####
 ### binaries
-if ($PGSQL eq "" ) {
+if ( ($DBENGINE eq "Pg") && ($PGSQL eq "" ) ) {
+        &locate_tool('psql');
 	&locate_tool('psql');
 	if ( !-e $TOOLPATH ) {
 		print "Error: 'psql' tool not found: set PGSQL variable to correct tool path\n";
