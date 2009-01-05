@@ -206,13 +206,34 @@ static int fix_actions(struct action* a)
 	}
 	for(t=a; t!=0; t=t->next){
 		switch(t->type){
+			case ROUTE_T:
+				if (t->elem[0].type!=NUMBER_ST){
+					LM_ALERT("BUG in route() type %d\n",
+						t->elem[0].type);
+					ret = E_BUG;
+					goto error;
+				}
+				if ((t->elem[0].u.number>RT_NO)||(t->elem[0].u.number<0)){
+					LM_ALERT("invalid routing table number in"
+							"route(%lu)\n", t->elem[0].u.number);
+					ret = E_CFG;
+					goto error;
+				}
+				if ( rlist[t->elem[0].u.number]==NULL ) {
+					LM_ERR("called route %d is not defined\n",
+						(int)t->elem[0].u.number);
+					ret = E_CFG;
+					goto error;
+				}
+				break;
 			case FORWARD_T:
 				if (t->elem[0].type==NOSUBTYPE)
 					break;
 			case SEND_T:
 				if (t->elem[0].type!=STRING_ST) {
 					LM_CRIT("invalid type %d (should be string)\n", t->type);
-					return E_BUG;
+					ret = E_BUG;
+					goto error;
 				}
 				ret = parse_phostport( t->elem[0].u.string,
 						strlen(t->elem[0].u.string),
@@ -220,12 +241,14 @@ static int fix_actions(struct action* a)
 				if (ret!=0) {
 					LM_ERR("ERROR:fix_actions: FORWARD/SEND bad "
 						"argument\n");
-					return E_CFG;
+					ret = E_CFG;
+					goto error;
 				}
 				p = add_proxy( &host,(unsigned short)port, proto);
 				if (p==0) {
 					LM_ERR("forward/send failed to add proxy");
-					return E_CFG;
+					ret = E_CFG;
+					goto error;
 				}
 				t->elem[0].type = PROXY_ST;
 				t->elem[0].u.data = (void*)p;
@@ -234,17 +257,20 @@ static int fix_actions(struct action* a)
 				if (t->elem[0].type!=EXPR_ST){
 					LM_CRIT("invalid subtype %d for if (should be expr)\n",
 								t->elem[0].type);
-					return E_BUG;
+					ret = E_BUG;
+					goto error;
 				}else if( (t->elem[1].type!=ACTIONS_ST)
 						&&(t->elem[1].type!=NOSUBTYPE) ){
 					LM_CRIT("invalid subtype %d for if() {...} (should be"
 								"action)\n", t->elem[1].type);
-					return E_BUG;
+					ret = E_BUG;
+					goto error;
 				}else if( (t->elem[2].type!=ACTIONS_ST)
 						&&(t->elem[2].type!=NOSUBTYPE) ){
 					LM_CRIT("invalid subtype %d for if() {} else{...}(should"
 							"be action)\n", t->elem[2].type);
-					return E_BUG;
+					ret = E_BUG;
+					goto error;
 				}
 				if (t->elem[0].u.data){
 					if ((ret=fix_expr((struct expr*)t->elem[0].u.data))<0)
@@ -263,12 +289,14 @@ static int fix_actions(struct action* a)
 				if (t->elem[0].type!=EXPR_ST){
 					LM_CRIT("invalid subtype %d for while (should be expr)\n",
 								t->elem[0].type);
-					return E_BUG;
+					ret = E_BUG;
+					goto error;
 				}else if( (t->elem[1].type!=ACTIONS_ST)
 						&&(t->elem[1].type!=NOSUBTYPE) ){
 					LM_CRIT("invalid subtype %d for while() {...} (should be"
 								"action)\n", t->elem[1].type);
-					return E_BUG;
+					ret = E_BUG;
+					goto error;
 				}
 				if (t->elem[0].u.data){
 					if ((ret=fix_expr((struct expr*)t->elem[0].u.data))<0)
@@ -318,7 +346,8 @@ static int fix_actions(struct action* a)
 				if (t->elem[0].type!=SOCKID_ST){
 					LM_CRIT("invalid subtype %d for force_send_socket\n",
 								t->elem[0].type);
-					return E_BUG;
+					ret = E_BUG;
+					goto error;
 				}
 				he=resolvehost(((struct socket_id*)t->elem[0].u.data)->name,0);
 				if (he==0){
