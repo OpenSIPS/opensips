@@ -94,11 +94,12 @@ int publ_send200ok(struct sip_msg *msg, int lexpire, str etag)
 
 	LM_DBG("send 200OK reply\n");	
 	LM_DBG("etag= %s - len= %d\n", etag.s, etag.len);
-	
+
 	hdr_append.s = buf;
 	hdr_append.s[0]='\0';
-	hdr_append.len = sprintf(hdr_append.s, "Expires: %d\r\n",lexpire -
-			expires_offset);
+	
+	hdr_append.len = sprintf(hdr_append.s, "Expires: %d\r\n",((lexpire==0)?0:
+			(lexpire - expires_offset)));
 	if(hdr_append.len < 0)
 	{
 		LM_ERR("unsuccessful sprintf\n");
