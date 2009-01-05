@@ -448,6 +448,13 @@ void dlg_onreq(struct cell* t, int type, struct tmcb_params *param)
 	s = req->callid->body;
 	trim(&s);
 
+	/* some sanity checks */
+	if (s.len==0 || get_from(req)->tag_value.len==0) {
+		LM_ERR("invalid request -> callid (%d) or from TAG (%d) empty\n",
+			s.len, get_from(req)->tag_value.len);
+		return;
+	}
+
 	dlg = build_new_dlg( &s /*callid*/, &(get_from(req)->uri) /*from uri*/,
 		&(get_to(req)->uri) /*to uri*/,
 		&(get_from(req)->tag_value)/*from_tag*/ );

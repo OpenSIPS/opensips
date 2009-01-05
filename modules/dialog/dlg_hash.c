@@ -207,7 +207,9 @@ struct dlg_cell* build_new_dlg( str *callid, str *from_uri, str *to_uri,
 	dlg->state = DLG_STATE_UNCONFIRMED;
 
 	dlg->h_entry = core_hash( callid, from_tag->len?from_tag:0, d_table->size);
-	LM_DBG("new dialog on hash %u\n",dlg->h_entry);
+	LM_DBG("new dialog %p (c=%.*s,f=%.*s,t=%.*s,ft=%.*s) on hash %u\n",
+		dlg, callid->len,callid->s, from_uri->len, from_uri->s,
+		to_uri->len,to_uri->s, from_tag->len, from_tag->s, dlg->h_entry);
 
 	p = (char*)(dlg+1);
 
