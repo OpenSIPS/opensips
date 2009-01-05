@@ -606,7 +606,6 @@ if ( $EXPR eq "" ) {
 ##### ----------------------------------------------- #####
 ### binaries
 if ( ($DBENGINE eq "Pg") && ($PGSQL eq "" ) ) {
-        &locate_tool('psql');
 	&locate_tool('psql');
 	if ( !-e $TOOLPATH ) {
 		print "Error: 'psql' tool not found: set PGSQL variable to correct tool path\n";
