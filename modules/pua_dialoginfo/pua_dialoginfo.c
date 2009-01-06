@@ -56,8 +56,6 @@ MODULE_VERSION
 #define DEF_INCLUDE_TAGS 1
 #define DEF_CALLER_ALWAYS_CONFIRMED 0
 
-#define PUA_DIALOGINFO_DEBUG 0
-
 #define DEFAULT_CREATED_LIFETIME 3600
 
 /* define PUA_DIALOGINFO_DEBUG to activate more verbose 
@@ -256,11 +254,12 @@ __dialog_created(struct dlg_cell *dlg, int type, struct dlg_cb_params *_params)
 	if (request->REQ_METHOD != METHOD_INVITE)
 		return;
 
-	LM_DBG("new INVITE dialog created: from=%.*s\n", dlg->from_uri.len, dlg->from_uri.s);
+	LM_DBG("new INVITE dialog created: from=%.*s\n",
+		dlg->from_uri.len, dlg->from_uri.s);
 
 	/* register dialog callbacks which triggers sending PUBLISH */
-	if (dlg_api.register_dlgcb(dlg, 
-		DLGCB_FAILED| DLGCB_CONFIRMED | DLGCB_TERMINATED | DLGCB_EXPIRED | 
+	if (dlg_api.register_dlgcb(dlg,
+		DLGCB_FAILED| DLGCB_CONFIRMED | DLGCB_TERMINATED | DLGCB_EXPIRED |
 		DLGCB_REQ_WITHIN | DLGCB_EARLY,
 		__dialog_sendpublish, 0, 0) != 0) {
 		LM_ERR("cannot register callback for interesting dialog types\n");
@@ -269,10 +268,10 @@ __dialog_created(struct dlg_cell *dlg, int type, struct dlg_cb_params *_params)
 
 #ifdef PUA_DIALOGINFO_DEBUG
 	/* dialog callback testing (registered last to be executed frist) */
-	if (dlg_api.register_dlgcb(dlg, 
-		DLGCB_FAILED| DLGCB_CONFIRMED | DLGCB_REQ_WITHIN | DLGCB_TERMINATED | DLGCB_EXPIRED | 
-		DLGCB_EARLY | DLGCB_RESPONSE_FWDED | DLGCB_RESPONSE_WITHIN  | 
-		DLGCB_MI_CONTEXT | DLGCB_DESTROY,
+	if (dlg_api.register_dlgcb(dlg,
+		DLGCB_FAILED| DLGCB_CONFIRMED | DLGCB_REQ_WITHIN | DLGCB_TERMINATED |
+		DLGCB_EXPIRED | DLGCB_EARLY | DLGCB_RESPONSE_FWDED |
+		DLGCB_RESPONSE_WITHIN  | DLGCB_MI_CONTEXT | DLGCB_DESTROY,
 		__dialog_cbtest, NULL, NULL) != 0) {
 		LM_ERR("cannot register callback for all dialog types\n");
 		return;
