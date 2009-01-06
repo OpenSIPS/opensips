@@ -132,7 +132,7 @@ ua_pres_t* search_htable(ua_pres_t* pres, unsigned int hash_code)
 					if(!(pres->id.len== p->id.len &&
 						strncmp(p->id.s, pres->id.s,pres->id.len)==0))
 							continue;
-				}				
+				}
 
 				if(pres->watcher_uri)
 				{
@@ -141,10 +141,13 @@ ua_pres_t* search_htable(ua_pres_t* pres, unsigned int hash_code)
 								  pres->watcher_uri->len )==0))
 					{
 						if(pres->remote_contact.s)
+						{
 							if(pres->remote_contact.len== p->remote_contact.len &&
 								strncmp(pres->remote_contact.s, p->remote_contact.s,
 										 p->remote_contact.len)== 0)
 								break;
+						}
+						break;
 					}
 				}
 				else

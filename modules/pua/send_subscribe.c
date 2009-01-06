@@ -432,14 +432,20 @@ void subs_cback_func(struct cell *t, int cb_type, struct tmcb_params *ps)
 	contact = ((contact_body_t* )msg->contact->parsed)->contacts->uri;
 
 	if(presentity)
-	{		
-		if(lexpire== 0 )
+	{	
+		/* do not delete the dialog - allow Notifies to be recognized as
+		 * inside a known dialog */
+		/*if(lexpire== 0 )
 		{
 			LM_DBG("lexpire= 0 Delete from hash table");
 			delete_htable(presentity, hash_code);
 			lock_release(&HashT->p_records[hash_code].lock);
 			goto done;
 		}
+		*/
+		if(lexpire== 0 )
+			lexpire = 5;
+
 		LM_DBG("*** Update expires\n");
 		update_htable(presentity, hentity->desired_expires, lexpire, NULL,
 				hash_code, &contact);
