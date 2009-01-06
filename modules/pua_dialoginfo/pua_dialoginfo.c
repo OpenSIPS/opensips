@@ -107,84 +107,102 @@ struct module_exports exports= {
 	0,						/* destroy function */
 	NULL					/* per-child init function */
 };
-	
+
 
 #ifdef PUA_DIALOGINFO_DEBUG
 static void
 __dialog_cbtest(struct dlg_cell *dlg, int type, struct dlg_cb_params *_params)
 {
 	str tag;
-	LM_DBG("dialog callback received, from=%.*s, to=%.*s\n", dlg->from_uri.len, dlg->from_uri.s, dlg->to_uri.len, dlg->to_uri.s);
+
+	LM_DBG("dialog callback received, from=%.*s, to=%.*s\n",
+		dlg->from_uri.len, dlg->from_uri.s, dlg->to_uri.len, dlg->to_uri.s);
+
 	if (dlg->tag[0].len && dlg->tag[0].s ) {
-		LM_DBG("dialog callback: tag[0] = %.*s\n", dlg->tag[0].len, dlg->tag[0].s);
+		LM_DBG("dialog callback: tag[0] = %.*s\n",
+			dlg->tag[0].len, dlg->tag[0].s);
 	}
 	if (dlg->tag[0].len && dlg->tag[1].s ) {
-		LM_DBG("dialog callback: tag[1] = %.*s\n", dlg->tag[1].len, dlg->tag[1].s);
+		LM_DBG("dialog callback: tag[1] = %.*s\n",
+			dlg->tag[1].len, dlg->tag[1].s);
 	}
 
-if (type != DLGCB_DESTROY) {
-	/* get to tag*/
-	if ( !_params->msg->to) {
-		// to header not defined, parse to header
-		LM_DBG("to header not defined, parse to header\n");
-		if (parse_headers(_params->msg, HDR_TO_F,0)<0) {
-			//parser error
-			LM_ERR("parsing of to-header failed\n");
-			tag.s = 0;
-			tag.len = 0;
-		} else if (!_params->msg->to) {
-			// to header still not defined
-			LM_ERR("no to although to-header is parsed: bad reply or missing TO hdr :-/\n");
-			tag.s = 0;
-			tag.len = 0;
-		} else 
+	if (_params->msg && _params->msg!=FAKED_REPLY && type != DLGCB_DESTROY) {
+		/* get to tag*/
+		if ( !_params->msg->to) {
+			/* to header not defined, parse to header */
+			LM_DBG("to header not defined, parse to header\n");
+			if (parse_headers(_params->msg, HDR_TO_F,0)<0) {
+				/* parser error */
+				LM_ERR("parsing of to-header failed\n");
+				tag.s = 0;
+				tag.len = 0;
+			} else if (!_params->msg->to) {
+				/* to header still not defined */
+				LM_ERR("no to although to-header is parsed: bad reply "
+					"or missing TO hdr :-/\n");
+				tag.s = 0;
+				tag.len = 0;
+			} else 
+				tag = get_to(_params->msg)->tag_value;
+		} else {
 			tag = get_to(_params->msg)->tag_value;
-	} else {
-		tag = get_to(_params->msg)->tag_value;
-		if (tag.s==0 || tag.len==0) {
-			LM_DBG("missing TAG param in TO hdr :-/\n");
-			tag.s = 0;
-			tag.len = 0;
+			if (tag.s==0 || tag.len==0) {
+				LM_DBG("missing TAG param in TO hdr :-/\n");
+				tag.s = 0;
+				tag.len = 0;
+			}
+		}
+		if (tag.s) {
+			LM_DBG("dialog callback: _params->msg->to->parsed->tag_value "
+				"= %.*s\n", tag.len, tag.s);
 		}
 	}
-	if (tag.s) {
-		LM_DBG("dialog callback: _params->msg->to->parsed->tag_value = %.*s\n", tag.len, tag.s);
-	}
-}
 
 	switch (type) {
 	case DLGCB_FAILED:
-		LM_DBG("dialog callback type 'DLGCB_FAILED' received, from=%.*s\n", dlg->from_uri.len, dlg->from_uri.s);
+		LM_DBG("dialog callback type 'DLGCB_FAILED' received, from=%.*s\n",
+			dlg->from_uri.len, dlg->from_uri.s);
 		break;
 	case DLGCB_CONFIRMED:
-		LM_DBG("dialog callback type 'DLGCB_CONFIRMED' received, from=%.*s\n", dlg->from_uri.len, dlg->from_uri.s);
+		LM_DBG("dialog callback type 'DLGCB_CONFIRMED' received, from=%.*s\n",
+			dlg->from_uri.len, dlg->from_uri.s);
 		break;
 	case DLGCB_REQ_WITHIN:
-		LM_DBG("dialog callback type 'DLGCB_REQ_WITHIN' received, from=%.*s\n", dlg->from_uri.len, dlg->from_uri.s);
+		LM_DBG("dialog callback type 'DLGCB_REQ_WITHIN' received, from=%.*s\n",
+			dlg->from_uri.len, dlg->from_uri.s);
 		break;
 	case DLGCB_TERMINATED:
-		LM_DBG("dialog callback type 'DLGCB_TERMINATED' received, from=%.*s\n", dlg->from_uri.len, dlg->from_uri.s);
+		LM_DBG("dialog callback type 'DLGCB_TERMINATED' received, from=%.*s\n",
+			dlg->from_uri.len, dlg->from_uri.s);
 		break;
 	case DLGCB_EXPIRED:
-		LM_DBG("dialog callback type 'DLGCB_EXPIRED' received, from=%.*s\n", dlg->from_uri.len, dlg->from_uri.s);
+		LM_DBG("dialog callback type 'DLGCB_EXPIRED' received, from=%.*s\n",
+			dlg->from_uri.len, dlg->from_uri.s);
 		break;
 	case DLGCB_EARLY:
-		LM_DBG("dialog callback type 'DLGCB_EARLY' received, from=%.*s\n", dlg->from_uri.len, dlg->from_uri.s);
+		LM_DBG("dialog callback type 'DLGCB_EARLY' received, from=%.*s\n",
+			dlg->from_uri.len, dlg->from_uri.s);
 		break;
 	case DLGCB_RESPONSE_FWDED:
-		LM_DBG("dialog callback type 'DLGCB_RESPONSE_FWDED' received, from=%.*s\n", dlg->from_uri.len, dlg->from_uri.s);
+		LM_DBG("dialog callback type 'DLGCB_RESPONSE_FWDED' received, "
+			"from=%.*s\n", dlg->from_uri.len, dlg->from_uri.s);
 		break;
 	case DLGCB_RESPONSE_WITHIN:
-		LM_DBG("dialog callback type 'DLGCB_RESPONSE_WITHIN' received, from=%.*s\n", dlg->from_uri.len, dlg->from_uri.s);
+		LM_DBG("dialog callback type 'DLGCB_RESPONSE_WITHIN' received, "
+			"from=%.*s\n", dlg->from_uri.len, dlg->from_uri.s);
 		break;
 	case DLGCB_MI_CONTEXT:
-		LM_DBG("dialog callback type 'DLGCB_MI_CONTEXT' received, from=%.*s\n", dlg->from_uri.len, dlg->from_uri.s);
+		LM_DBG("dialog callback type 'DLGCB_MI_CONTEXT' received, from=%.*s\n",
+			dlg->from_uri.len, dlg->from_uri.s);
 		break;
 	case DLGCB_DESTROY:
-		LM_DBG("dialog callback type 'DLGCB_DESTROY' received, from=%.*s\n", dlg->from_uri.len, dlg->from_uri.s);
+		LM_DBG("dialog callback type 'DLGCB_DESTROY' received, from=%.*s\n",
+			dlg->from_uri.len, dlg->from_uri.s);
 		break;
 	default:
-		LM_DBG("dialog callback type 'unknown' received, from=%.*s\n", dlg->from_uri.len, dlg->from_uri.s);
+		LM_DBG("dialog callback type 'unknown' received, from=%.*s\n",
+			dlg->from_uri.len, dlg->from_uri.s);
 	}
 }
 #endif
