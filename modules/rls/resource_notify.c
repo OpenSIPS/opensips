@@ -530,6 +530,9 @@ void timer_send_notify(unsigned int ticks,void *param)
 		content_type.s = (char*)row_vals[content_type_col].val.string_val;
 		content_type.len = strlen(content_type.s);
 
+		/* if all the info for one dialog have been collected -> send notify */
+		/* the 'dialog' variable must be filled with the dialog info */
+		/* 'buf' must contain the body */
 		if(prev_did!= NULL && strcmp(prev_did, curr_did)) 
 		{
 			xmlDocDumpFormatMemory(rlmi_doc,(xmlChar**)(void*)&rlmi_cont.s,
@@ -545,11 +548,6 @@ void timer_send_notify(unsigned int ticks,void *param)
 				 goto error;
 			 }
 			xmlFree(rlmi_cont.s);
-			if(buf_len)		
-			{	
-				pkg_free(buf);
-				buf= NULL;
-			}
 			xmlFreeDoc(rlmi_doc);
 			rlmi_doc= NULL;
 			pkg_free(rl_uri);
@@ -558,9 +556,11 @@ void timer_send_notify(unsigned int ticks,void *param)
 			dialog= NULL;
 		}
 
-		if(prev_did== NULL || strcmp(prev_did, curr_did)) /*if first or different*/
+		/* for the new dialog -> search the dialog info and 
+		 * fill the dialog structure and start a new rlmi document */
+		if(prev_did== NULL || strcmp(prev_did, curr_did)) 
 		{
-			/* search the subscription in rlsubs_table*/		
+			/* search the subscription in rlsubs_table*/
 			if( parse_rlsubs_did(curr_did, &callid, &from_tag, &to_tag)< 0)
 			{
 				LM_ERR("bad format for "
@@ -660,7 +660,7 @@ void timer_send_notify(unsigned int ticks,void *param)
 				LM_ERR("failed to create random string\n");
 				goto error;
 			}
-			xmlNewProp(instance_node, BAD_CAST "id", 
+			xmlNewProp(instance_node, BAD_CAST "id",
 					BAD_CAST str_aux);
 			pkg_free(str_aux);
 
@@ -744,16 +744,14 @@ void timer_send_notify(unsigned int ticks,void *param)
 			 goto error;
 		}
 		xmlFree(rlmi_cont.s);
-		if(buf_len)		
-		{	
-			pkg_free(buf);
-			buf= NULL;
-		}
 		pkg_free(rl_uri);
 		rl_uri= NULL;
 		pkg_free(dialog);
 		dialog= NULL;
 	}
+
+	pkg_free(buf);
+	buf = NULL;
 
 	/* update the rlpres table */
 	update_cols[0]= &str_updated_col;
