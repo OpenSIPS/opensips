@@ -45,7 +45,6 @@ typedef enum auth_result {
 	AUTHORIZED,         /* Authorized. If returned by pre_auth, */
 	                    /* no digest authorization necessary */
 	DO_AUTHORIZATION,   /* Can only be returned by pre_auth. */
-    NONCE_REUSED        /* Returned if nonce is used more than once */
 	                    /* Means to continue doing authorization */
 } auth_result_t;
 
