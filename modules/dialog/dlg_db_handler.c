@@ -396,7 +396,7 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 			LM_DBG("current dialog timeout is %u\n", dlg->tl.timeout);
 
 			dlg->lifetime = 0;
-			dlg->flags = 0;
+			dlg->flags = (dlg_db_mode==DB_MODE_SHUTDOWN)?DLG_FLAG_NEW:0;
 			next_dialog:
 			;
 		}
