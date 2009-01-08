@@ -826,7 +826,6 @@ int send_resource_subs(char* uri, void* param)
 	pres_uri.len= strlen(uri);
 
 	((subs_info_t*)param)->pres_uri= &pres_uri;
-	((subs_info_t*)param)->remote_target= &presence_server;
 
 	return pua_send_subscribe((subs_info_t*)param);
 }
