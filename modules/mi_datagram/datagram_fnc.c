@@ -561,7 +561,8 @@ void mi_datagram_server(int rx_sock, int tx_sock)
 				LM_DBG("the response: %s has been sent in %i octets\n", 
 					dtgram.start, ret);
 			}else{
-				LM_ERR("failed to send the response\n");
+				LM_ERR("failed to send the response: %s (%d)\n",
+					strerror(errno), errno);
 			}
 			free_mi_tree( mi_rpl );
 			free_async_handler(hdl);
