@@ -54,8 +54,8 @@ inline int db_free_row(db_row_t* _r)
 	 * which use a pointer to a buffer like DB_STRING, DB_STR and DB_BLOB and
 	 * the database module copied them during the assignment.
 	 * If this is not done, a memory leak will happen.
-	 * Don't try to free the static dummy string (as indicated from the NULL value),
-	 * as this is not valid.
+	 * Don't try to free the static dummy string (as indicated from the NULL
+	 * value), as this is not valid.
 	 */
 	for (col = 0; col < ROW_N(_r); col++) {
 		_val = &(ROW_VALUES(_r)[col]);
