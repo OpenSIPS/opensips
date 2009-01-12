@@ -2133,7 +2133,6 @@ static int next_contacts(struct sip_msg* msg, char* key, char* value)
     struct socket_info *sock;
     unsigned int flags;
 
-    if (route_type == REQUEST_ROUTE) {
 	/* Find first lcr_contact_avp value */
 	avp = search_first_avp(contact_avp_type, contact_avp, &val, 0);
 	if (!avp) {
@@ -2143,8 +2142,7 @@ static int next_contacts(struct sip_msg* msg, char* key, char* value)
 
 	LM_DBG("Next contact is <%s>\n", val.s.s);
 
-	if (decode_branch_info(val.s.s, &uri, &dst, &path, &sock, &flags)
-	    == 0) {
+	if (decode_branch_info(val.s.s, &uri, &dst, &path, &sock, &flags)== 0) {
 	    LM_ERR("Decoding of branch info <%.*s> failed\n",
 		   val.s.len, val.s.s);
 	    destroy_avp(avp);
@@ -2158,99 +2156,60 @@ static int next_contacts(struct sip_msg* msg, char* key, char* value)
 	setb0flags(flags);
 
 	if (avp->flags & Q_FLAG) {
-	    destroy_avp(avp);
-	    /* Set fr_inv_timer */
-	    val.n = fr_inv_timer_next;
-	    if (add_avp(fr_inv_timer_avp_type, fr_inv_timer_avp, val) != 0) {
-		LM_ERR("Setting of fr_inv_timer_avp failed\n");
-		return -1;
-	    }
-	    return 1;
+		destroy_avp(avp);
+		if (route_type == REQUEST_ROUTE) {
+			/* Set fr_inv_timer */
+			val.n = fr_inv_timer_next;
+			if (add_avp(fr_inv_timer_avp_type, fr_inv_timer_avp, val) != 0) {
+				LM_ERR("Setting of fr_inv_timer_avp failed\n");
+				return -1;
+			}
+		}
+		return 1;
 	}
 
 	/* Append branches until out of branches or Q_FLAG is set */
 	prev = avp;
 	while ((avp = search_next_avp(avp, &val))) {
-	    destroy_avp(prev);
+		destroy_avp(prev);
 
-	    LM_DBG("Next contact is <%s>\n", val.s.s);
+		LM_DBG("Next contact is <%s>\n", val.s.s);
 
-	    if (decode_branch_info(val.s.s, &uri, &dst, &path, &sock, &flags)
-		== 0) {
-		LM_ERR("Decoding of branch info <%.*s> failed\n",
-		       val.s.len, val.s.s);
-		destroy_avp(avp);
-		return -1;
-	    }
-
-	    if (append_branch(msg, &uri, &dst, &path, 0, flags, sock) != 1) {
-		LM_ERR("Appending branch failed\n");
-		destroy_avp(avp);
-		return -1;
-	    }
-
-	    if (avp->flags & Q_FLAG) {
-		destroy_avp(avp);
-		val.n = fr_inv_timer_next;
-		if (add_avp(fr_inv_timer_avp_type, fr_inv_timer_avp, val)
-		    != 0) {
-		    LM_ERR("Setting of fr_inv_timer_avp failed\n");
-		    return -1;
+		if (decode_branch_info(val.s.s, &uri, &dst, &path, &sock, &flags)== 0){
+			LM_ERR("Decoding of branch info <%.*s> failed\n",
+				val.s.len, val.s.s);
+			destroy_avp(avp);
+			return -1;
 		}
-		return 1;
-	    }
-	    prev = avp;
+
+		if (append_branch(msg, &uri, &dst, &path, 0, flags, sock) != 1) {
+			LM_ERR("Appending branch failed\n");
+			destroy_avp(avp);
+			return -1;
+		}
+
+		if (avp->flags & Q_FLAG) {
+			destroy_avp(avp);
+			if (route_type == REQUEST_ROUTE) {
+				val.n = fr_inv_timer_next;
+				if (add_avp(fr_inv_timer_avp_type, fr_inv_timer_avp, val)!= 0){
+					LM_ERR("Setting of fr_inv_timer_avp failed\n");
+					return -1;
+				}
+			}
+			return 1;
+		}
+		prev = avp;
 	}
-	
-    } else if ( route_type == FAILURE_ROUTE) {
-
-	avp = search_first_avp(contact_avp_type, contact_avp, &val, 0);
-	if (!avp) return -1;
-
-	prev = avp;
-	do {
-
-	    LM_DBG("next contact is <%s>\n", val.s.s);
-
-	    if (decode_branch_info(val.s.s, &uri, &dst, &path, &sock, &flags)
-		== 0) {
-		LM_ERR("Decoding of branch info <%.*s> failed\n",
-		       val.s.len, val.s.s);
-		destroy_avp(avp);
-		return -1;
-	    }
-	    
-	    if (append_branch(msg, &uri, &dst, &path, 0, flags, sock) != 1) {
-		LM_ERR("Appending branch failed\n");
-		destroy_avp(avp);
-		return -1;
-	    }
-
-	    if (avp->flags & Q_FLAG) {
-		destroy_avp(avp);
-		return 1;
-	    }
-
-	    prev = avp;
-	    avp = search_next_avp(avp, &val);
-	    destroy_avp(prev);
-
-	} while (avp);
 
 	/* Restore fr_inv_timer */
 	val.n = fr_inv_timer;
 	if (add_avp(fr_inv_timer_avp_type, fr_inv_timer_avp, val) != 0) {
-	    LM_ERR("Setting of fr_inv_timer_avp failed\n");
-	    return -1;
+		LM_ERR("Setting of fr_inv_timer_avp failed\n");
+		return -1;
 	}
-	
-    } else {
-	/* unsupported route type */
-	LM_ERR("Unsupported route type\n");
-	return -1;
-    }
 
-    return 1;
+	return 1;
 }
 
 
