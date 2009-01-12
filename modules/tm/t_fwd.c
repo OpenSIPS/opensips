@@ -564,7 +564,6 @@ int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 	int i, q;
 	struct cell *t_invite;
 	int success_branch;
-	int try_new;
 	str dst_uri;
 	struct socket_info *bk_sock;
 	unsigned int br_flags;
@@ -606,23 +605,18 @@ int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 	/* branch to begin with */
 	t->first_branch=t->nr_of_outgoings;
 
-	/* on first-time forwarding, use current uri, later only what
-	   is in additional branches (which may be continuously refilled)
-	*/
-	if (t->first_branch==0) {
-		try_new=1;
-		current_uri = *GET_RURI(p_msg);
-		branch_ret = add_uac( t, p_msg, &current_uri, &backup_dst, 
-				&p_msg->path_vec, proxy);
-		if (branch_ret>=0)
-			added_branches |= 1<<branch_ret;
-		else
-			lowest_ret=branch_ret;
-	} else try_new=0;
+	/* as first branch, use current uri */
+	current_uri = *GET_RURI(p_msg);
+	branch_ret = add_uac( t, p_msg, &current_uri, &backup_dst, 
+		&p_msg->path_vec, proxy);
+	if (branch_ret>=0)
+		added_branches |= 1<<branch_ret;
+	else
+		lowest_ret=branch_ret;
 
+	/* ....and now add the remaining additional branches */
 	for( idx=0; (current_uri.s=get_branch( idx, &current_uri.len, &q,
 	&dst_uri, &path, &br_flags, &p_msg->force_send_socket))!=0 ; idx++ ) {
-		try_new++;
 		setb0flags(br_flags);
 		branch_ret = add_uac( t, p_msg, &current_uri, &dst_uri, &path, proxy);
 		/* pick some of the errors in case things go wrong;
@@ -651,11 +645,6 @@ int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 
 	/* things went wrong ... no new branch has been fwd-ed at all */
 	if (added_branches==0) {
-		if (try_new==0) {
-			ser_error = E_NO_DESTINATION;
-			LM_ERR("no branch for forwarding\n");
-			return -1;
-		}
 		LM_ERR("failure to add branches\n");
 		ser_error = lowest_ret;
 		return lowest_ret;
