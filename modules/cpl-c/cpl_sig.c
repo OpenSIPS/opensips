@@ -47,32 +47,29 @@ int cpl_proxy_to_loc_set( struct sip_msg *msg, struct location **locs,
 		goto error;
 	}
 
-	/* if it's the first time when this sip_msg is proxied, use the first addr
-	 * in loc_set to rewrite the RURI */
-	if (!(flag&CPL_PROXY_DONE)) {
-		LM_DBG("rewriting Request-URI with <%s>\n",(*locs)->addr.uri.s);
-		/* set RURI*/
-		if ( set_ruri( msg, &((*locs)->addr.uri))==-1 ) {
-			LM_ERR("failed to set new RURI\n");
+	/* use the first addr in loc_set to rewrite the RURI */
+	LM_DBG("rewriting Request-URI with <%s>\n",(*locs)->addr.uri.s);
+	/* set RURI*/
+	if ( set_ruri( msg, &((*locs)->addr.uri))==-1 ) {
+		LM_ERR("failed to set new RURI\n");
+		goto error;
+	}
+	/* set DST URI */
+	if((*locs)->addr.received.s && (*locs)->addr.received.len) {
+		LM_DBG("rewriting Destination URI "
+			"with <%s>\n",(*locs)->addr.received.s);
+		if (set_dst_uri( msg, &((*locs)->addr.received) ) ) {
+			LM_ERR("failed to set destination URI\n");
 			goto error;
 		}
-		/* set DST URI */
-		if((*locs)->addr.received.s && (*locs)->addr.received.len) {
-			LM_DBG("rewriting Destination URI "
-				"with <%s>\n",(*locs)->addr.received.s);
-			if (set_dst_uri( msg, &((*locs)->addr.received) ) ) {
-				LM_ERR("failed to set destination URI\n");
-				goto error;
-			}
-		}
-		/* is the location NATED? */
-		if ((*locs)->flags&CPL_LOC_NATED)
-			setbflag( 0, cpl_fct.ulb.nat_flag );
-		/* free the location and point to the next one */
-		foo = (*locs)->next;
-		free_location( *locs );
-		*locs = foo;
 	}
+	/* is the location NATED? */
+	if ((*locs)->flags&CPL_LOC_NATED)
+		setbflag( 0, cpl_fct.ulb.nat_flag );
+	/* free the location and point to the next one */
+	foo = (*locs)->next;
+	free_location( *locs );
+	*locs = foo;
 
 	/* add the rest of the locations as branches */
 	while(*locs) {
