@@ -98,5 +98,6 @@ int fixup_get_svalue(struct sip_msg* msg, gparam_p gp, str *val);
 
 
 int fixup_pvar(void **param);
+int fixup_str(void **param);
 
 #endif
