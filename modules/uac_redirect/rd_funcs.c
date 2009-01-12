@@ -261,19 +261,29 @@ static int shmcontact2dset(struct sip_msg *req, struct sip_msg *sh_rpl,
 
 	added = 0;
 
-	/* add the sortet contacts as branches in dset and log this! */
+	/* add the sorted contacts as branches in dset and log this! */
 	for ( i=0 ; i<n ; i++ ) {
-		LM_DBG("adding contact <%.*s>\n", scontacts[i]->uri.len, scontacts[i]->uri.s);
-		if (append_branch( 0, &scontacts[i]->uri, 0, 0, sqvalues[i], 0, 0)<0) {
-			LM_ERR("failed to add contact to dset\n");
-		} else {
-			added++;
-			if (rd_acc_fct!=0 && reason) {
-				/* log the redirect */
-				req->new_uri =  scontacts[i]->uri;
-				//FIXME
-				rd_acc_fct( req, (char*)reason, acc_db_table, NULL, NULL, NULL, NULL);
+		LM_DBG("adding contact <%.*s>\n",
+			scontacts[i]->uri.len, scontacts[i]->uri.s);
+		if (i==0) {
+			/* set RURI*/
+			if ( set_ruri( req, &scontacts[i]->uri)==-1 ) {
+				LM_ERR("failed to set new RURI\n");
+				goto restore;
 			}
+		} else {
+			if (append_branch(0,&scontacts[i]->uri,0,0,sqvalues[i],0,0)<0) {
+				LM_ERR("failed to add contact to dset\n");
+				continue;
+			}
+		}
+		added++;
+		if (rd_acc_fct!=0 && reason) {
+			/* log the redirect */
+			req->new_uri =  scontacts[i]->uri;
+			//FIXME
+			rd_acc_fct( req, (char*)reason, acc_db_table, 
+					NULL, NULL, NULL, NULL);
 		}
 	}
 
