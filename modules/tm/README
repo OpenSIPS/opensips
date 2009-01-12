@@ -76,9 +76,11 @@ Bogdan-Andrei Iancu
 
               1.4.10. t_check_trans()
               1.4.11. t_was_cancelled()
-              1.4.12. t_on_failure(failure_route)
-              1.4.13. t_on_reply(reply_route)
-              1.4.14. t_on_branch(branch_route)
+              1.4.12. t_cancel_branch()
+              1.4.13. t_cancel_call()
+              1.4.14. t_on_failure(failure_route)
+              1.4.15. t_on_reply(reply_route)
+              1.4.16. t_on_branch(branch_route)
 
         1.5. Exported pseudo-variables
 
@@ -144,9 +146,11 @@ Bogdan-Andrei Iancu
    1.28. t_write_fifo/unix usage
    1.29. t_check_trans usage
    1.30. t_was_cancelled usage
-   1.31. t_on_failure usage
-   1.32. t_on_reply usage
-   1.33. t_on_branch usage
+   1.31. t_cancel_branch usage
+   1.32. t_cancel_call usage
+   1.33. t_on_failure usage
+   1.34. t_on_reply usage
+   1.35. t_on_branch usage
 
 Chapter 1. Admin Guide
 
@@ -229,7 +233,7 @@ Chapter 1. Admin Guide
    executing replies from the other branch).
 
    For how to define branch flags and use via script, see
-   Section 1.4.14, " t_on_branch(branch_route) " and the
+   Section 1.4.16, " t_on_branch(branch_route) " and the
    setbflag(), resetbflag() and isbflagset() script functions.
 
    Also, modules may set branch flags before transaction creation
@@ -853,7 +857,43 @@ if (t_was_cancelled()) {
 }
 ...
 
-1.4.12.  t_on_failure(failure_route)
+1.4.12.  t_cancel_branch()
+
+   This function is to be call when a reply was received and it
+   will generate a CANCEL (if still suitable) for the branch the
+   reply belongs to
+
+   This function can be used from ONREPLY_ROUTE.
+
+   Example 1.31. t_cancel_branch usage
+onreply_route[3] {
+...
+        if (t_check_status("183")) {
+                # no support for early media
+                t_cancel_branch();
+        }
+...
+}
+
+1.4.13.  t_cancel_call()
+
+   This function is to be call when a reply was received and it
+   will generate a CANCEL (if still suitable) for all the ongoing
+   branches of the call.
+
+   This function can be used from ONREPLY_ROUTE.
+
+   Example 1.32. t_cancel_call usage
+onreply_route[3] {
+...
+        if ($hdr(User-Agent)=~"Snom") {
+                # drop calls involving snom UA
+                t_cancel_call();
+        }
+...
+}
+
+1.4.14.  t_on_failure(failure_route)
 
    Sets reply routing block, to which control is passed after a
    transaction completed with a negative result but before sending
@@ -880,7 +920,7 @@ if (t_was_cancelled()) {
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    ONREPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.31. t_on_failure usage
+   Example 1.33. t_on_failure usage
 ...
 route {
         t_on_failure("1");
@@ -894,7 +934,7 @@ failure_route[1] {
 }
 ...
 
-1.4.13.  t_on_reply(reply_route)
+1.4.15.  t_on_reply(reply_route)
 
    Sets reply routing block, to which control is passed each time
    a reply (provisional or final) for the transaction is received.
@@ -921,7 +961,7 @@ failure_route[1] {
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    ONREPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.32. t_on_reply usage
+   Example 1.34. t_on_reply usage
 ...
 route {
         t_on_reply("1");
@@ -938,7 +978,7 @@ onreply_route[1] {
 }
 ...
 
-1.4.14.  t_on_branch(branch_route)
+1.4.16.  t_on_branch(branch_route)
 
    Sets a branch route to be execute separately for each branch of
    the transaction before being sent out - changes in that route
@@ -962,7 +1002,7 @@ onreply_route[1] {
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    ONREPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.33. t_on_branch usage
+   Example 1.35. t_on_branch usage
 ...
 route {
         t_on_branch("1");
