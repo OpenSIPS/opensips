@@ -172,11 +172,11 @@ static cmd_export_t cmds[]={
 	{"t_check_trans",   (cmd_function)t_check_trans,    0, 0,
 			0, REQUEST_ROUTE | BRANCH_ROUTE },
 	{"t_was_cancelled", (cmd_function)t_was_cancelled,  0, 0,
-			0, ONREPLY_ROUTE },
+			0, FAILURE_ROUTE | ONREPLY_ROUTE },
 	{"t_cancel_call",   (cmd_function)w_t_cancel_call,  0, 0,
 			0, ONREPLY_ROUTE },
 	{"t_cancel_branch", (cmd_function)w_t_cancel_branch,0, 0,
-			0, FAILURE_ROUTE | ONREPLY_ROUTE },
+			0, ONREPLY_ROUTE },
 	{"load_tm",         (cmd_function)load_tm,          0, 0,
 			0, 0},
 	{0,0,0,0,0,0}
