@@ -968,28 +968,11 @@ static inline int ds_update_dst(struct sip_msg *msg, str *uri, int mode)
 				LM_ERR("error while setting host\n");
 				return -1;
 			}
-			if(route_type==FAILURE_ROUTE)
-			{
-				if (append_branch(msg, 0, 0, 0, Q_UNSPECIFIED, 0, 0)!=1 )
-				{
-					LM_ERR("append_branch action failed\n");
-					return -1;
-				}
-			}
-		break;
+			break;
 		default:
-			if(route_type==FAILURE_ROUTE)
-			{
-				if (append_branch(msg, 0, uri, 0, Q_UNSPECIFIED, 0, 0)!=1 )
-				{
-					LM_ERR("append_branch action failed\n");
-					return -1;
-				}
-			} else {
-				if (set_dst_uri(msg, uri) < 0) {
-					LM_ERR("error while setting dst uri\n");
-					return -1;
-				}	
+			if (set_dst_uri(msg, uri) < 0) {
+				LM_ERR("error while setting dst uri\n");
+				return -1;
 			}
 		break;
 	}
