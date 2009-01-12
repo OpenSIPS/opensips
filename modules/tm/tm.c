@@ -113,6 +113,8 @@ inline static int t_flush_flags(struct sip_msg* msg, char*, char* );
 inline static int t_local_replied(struct sip_msg* msg, char *type, char* );
 inline static int t_check_trans(struct sip_msg* msg, char* , char* );
 inline static int t_was_cancelled(struct sip_msg* msg, char* , char* );
+inline static int w_t_cancel_call(struct sip_msg* msg, char* , char* );
+inline static int w_t_cancel_branch(struct sip_msg* msg, char* , char* );
 
 
 /* strings with avp definition */
@@ -170,6 +172,10 @@ static cmd_export_t cmds[]={
 	{"t_check_trans",   (cmd_function)t_check_trans,    0, 0,
 			0, REQUEST_ROUTE | BRANCH_ROUTE },
 	{"t_was_cancelled", (cmd_function)t_was_cancelled,  0, 0,
+			0, ONREPLY_ROUTE },
+	{"t_cancel_call",   (cmd_function)w_t_cancel_call,  0, 0,
+			0, ONREPLY_ROUTE },
+	{"t_cancel_branch", (cmd_function)w_t_cancel_branch,0, 0,
 			0, FAILURE_ROUTE | ONREPLY_ROUTE },
 	{"load_tm",         (cmd_function)load_tm,          0, 0,
 			0, 0},
@@ -991,12 +997,65 @@ route_err:
 }
 
 
+extern int _tm_branch_index;
+inline static int w_t_cancel_call(struct sip_msg *msg, char *p1 , char *p2 )
+{
+	branch_bm_t cancel_bitmap;
+	struct cell *t;
+
+	t=get_t();
+
+	if (t==NULL || t==T_UNDEFINED) {
+		/* no transaction */
+		LM_ERR("cannot cancel a reply with no transaction");
+		return -1;
+	}
+	if (!is_invite(t))
+		return -1;
+
+	/* lock and get the branches to cancel */
+	cancel_bitmap = 0;
+	LOCK_REPLIES(t);
+	which_cancel( t, &cancel_bitmap );
+	UNLOCK_REPLIES(t);
+
+	if (msg->first_line.u.reply.statuscode>=200) 
+		/* do not cancel the current branch as we got a final response here */
+		cancel_bitmap &= ~(1<<_tm_branch_index);
+
+	/* send cancels out */
+	cancel_uacs(t, cancel_bitmap);
+
+	return 1;
+}
+
+
+inline static int w_t_cancel_branch(struct sip_msg *msg, char *p1 , char *p2 )
+{
+	struct cell *t;
+
+	t=get_t();
+
+	if (t==NULL || t==T_UNDEFINED) {
+		/* no transaction */
+		LM_ERR("cannot cancel a reply with no transaction");
+		return -1;
+	}
+	if (!is_invite(t) || msg->first_line.u.reply.statuscode>=200)
+		return -1;
+
+	/* send cancel out */
+	cancel_uacs(t, 1<<_tm_branch_index);
+
+	return 1;
+}
+
+
 
 /* item functions */
 static int pv_get_tm_branch_idx(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {
-	extern int _tm_branch_index;
 	int l = 0;
 	char *ch = NULL;
 

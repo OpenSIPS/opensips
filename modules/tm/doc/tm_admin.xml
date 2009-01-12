@@ -1140,6 +1140,60 @@ if (t_was_cancelled()) {
 
 	<section>
 		<title>
+		<function moreinfo="none">t_cancel_branch()</function>
+		</title>
+		<para>
+		This function is to be call when a reply was received and it will
+		generate a CANCEL (if still suitable) for the branch the reply
+		belongs to
+		</para>
+		<para>
+		This function can be used from ONREPLY_ROUTE.
+		</para>
+		<example>
+		<title><function>t_cancel_branch</function> usage</title>
+		<programlisting format="linespecific">
+onreply_route[3] {
+...
+	if (t_check_status("183")) {
+		# no support for early media
+		t_cancel_branch();
+	}
+...
+}
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title>
+		<function moreinfo="none">t_cancel_call()</function>
+		</title>
+		<para>
+		This function is to be call when a reply was received and it will
+		generate a CANCEL (if still suitable) for all the ongoing branches of
+		the call.
+		</para>
+		<para>
+		This function can be used from ONREPLY_ROUTE.
+		</para>
+		<example>
+		<title><function>t_cancel_call</function> usage</title>
+		<programlisting format="linespecific">
+onreply_route[3] {
+...
+	if ($hdr(User-Agent)=~"Snom") {
+		# drop calls involving snom UA
+		t_cancel_call();
+	}
+...
+}
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title>
 		<function moreinfo="none">t_on_failure(failure_route)</function>
 		</title>
 		<para>
