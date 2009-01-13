@@ -108,6 +108,29 @@ error0:
 }
 
 
+static inline void free_dlg_dlg(struct dlg_cell *dlg)
+{
+	if (dlg->cbs.first)
+		destroy_dlg_callbacks_list(dlg->cbs.first);
+
+	if (dlg->profile_links)
+		destroy_linkers(dlg->profile_links);
+
+	if (dlg->tag[DLG_CALLER_LEG].s)
+		shm_free(dlg->tag[DLG_CALLER_LEG].s);
+
+	if (dlg->tag[DLG_CALLEE_LEG].s)
+		shm_free(dlg->tag[DLG_CALLEE_LEG].s);
+
+	if (dlg->cseq[DLG_CALLER_LEG].s)
+		shm_free(dlg->cseq[DLG_CALLER_LEG].s);
+
+	if (dlg->cseq[DLG_CALLEE_LEG].s)
+		shm_free(dlg->cseq[DLG_CALLEE_LEG].s);
+
+	shm_free(dlg);
+}
+
 
 inline void destroy_dlg(struct dlg_cell *dlg)
 {
@@ -134,25 +157,7 @@ inline void destroy_dlg(struct dlg_cell *dlg)
 
 	run_dlg_callbacks( DLGCB_DESTROY , dlg, 0, DLG_DIR_NONE, 0);
 
-	if (dlg->cbs.first)
-		destroy_dlg_callbacks_list(dlg->cbs.first);
-
-	if (dlg->profile_links)
-		destroy_linkers(dlg->profile_links);
-
-	if (dlg->tag[DLG_CALLER_LEG].s)
-		shm_free(dlg->tag[DLG_CALLER_LEG].s);
-
-	if (dlg->tag[DLG_CALLEE_LEG].s)
-		shm_free(dlg->tag[DLG_CALLEE_LEG].s);
-
-	if (dlg->cseq[DLG_CALLER_LEG].s)
-		shm_free(dlg->cseq[DLG_CALLER_LEG].s);
-
-	if (dlg->cseq[DLG_CALLEE_LEG].s)
-		shm_free(dlg->cseq[DLG_CALLEE_LEG].s);
-
-	shm_free(dlg);
+	free_dlg_dlg(dlg);
 }
 
 
@@ -175,7 +180,7 @@ void destroy_dlg_table(void)
 		while (dlg) {
 			l_dlg = dlg;
 			dlg = dlg->next;
-			destroy_dlg(l_dlg);
+			free_dlg_dlg(l_dlg);
 		}
 
 	}
