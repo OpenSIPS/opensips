@@ -83,12 +83,9 @@ extern stat_var *expired_dlgs;
 extern stat_var *failed_dlgs;
 
 
-static unsigned int CURR_DLG_LIFETIME = 0;
-static unsigned int CURR_DLG_STATUS = 0;
-static unsigned int CURR_DLG_ID  = 0xffffffff;
-
 #define RR_DLG_PARAM_SIZE  (2*2*sizeof(int)+3+MAX_DLG_RR_PARAM_NAME)
 #define DLG_SEPARATOR      '.'
+
 
 
 void init_dlg_handlers(char *rr_param_p, int dlg_flag_p,
@@ -414,36 +411,64 @@ inline static int get_dlg_timeout(struct sip_msg *req)
 }
 
 
+static void unreference_dialog(void *dialog)
+{
+	/* if the dialog table is gone, it means the system is shutting down.*/
+	if (!d_table)
+		return;
+	unref_dlg((struct dlg_cell*)dialog, 1);
+}
+
+
+static void unreference_dialog_create(void *dialog)
+{
+	struct tmcb_params params;
+
+	params.param = (void*)&dialog;
+	/* just a wapper */
+	dlg_onreply( 0, TMCB_TRANS_DELETED, &params);
+}
+
 
 void dlg_onreq(struct cell* t, int type, struct tmcb_params *param)
 {
-	struct dlg_cell *dlg;
-	struct sip_msg *req;
-	str s;
+	/* should we create dialog? */
+	if ( (param->req->flags & dlg_flag) != dlg_flag)
+		return;
 
-	req = param->req;
+	/* is the dialog already created? */
+	if (current_dlg_pointer!=NULL)
+		return;
+
+	/* create the dialog */
+	dlg_create_dialog(t, param->req);
+}
+
+
+
+int dlg_create_dialog(struct cell* t, struct sip_msg *req)
+{
+	struct dlg_cell *dlg;
+	str s;
 
 	if ( (!req->to && parse_headers(req, HDR_TO_F,0)<0) || !req->to ) {
 		LM_ERR("bad request or missing TO hdr :-/\n");
-		return;
+		return -1;
 	}
 	s = get_to(req)->tag_value;
 	if (s.s!=0 && s.len!=0)
-		return;
+		return -1;
 
 	if (req->first_line.u.request.method_value==METHOD_CANCEL)
-		return;
-
-	if ( (req->flags & dlg_flag) != dlg_flag)
-		return;
+		return -1;
 
 	if ( parse_from_header(req)) {
 		LM_ERR("bad request or missing FROM hdr :-/\n");
-		return;
+		return -1;
 	}
 	if ((!req->callid && parse_headers(req,HDR_CALLID_F,0)<0) || !req->callid){
 		LM_ERR("bad request or missing CALLID hdr :-/\n");
-		return;
+		return -1;
 	}
 	s = req->callid->body;
 	trim(&s);
@@ -452,7 +477,7 @@ void dlg_onreq(struct cell* t, int type, struct tmcb_params *param)
 	if (s.len==0 || get_from(req)->tag_value.len==0) {
 		LM_ERR("invalid request -> callid (%d) or from TAG (%d) empty\n",
 			s.len, get_from(req)->tag_value.len);
-		return;
+		return -1;
 	}
 
 	dlg = build_new_dlg( &s /*callid*/, &(get_from(req)->uri) /*from uri*/,
@@ -460,7 +485,7 @@ void dlg_onreq(struct cell* t, int type, struct tmcb_params *param)
 		&(get_from(req)->tag_value)/*from_tag*/ );
 	if (dlg==0) {
 		LM_ERR("failed to create new dialog\n");
-		return;
+		return -1;
 	}
 
 	/* save caller's tag, cseq, contact and record route*/
@@ -468,11 +493,11 @@ void dlg_onreq(struct cell* t, int type, struct tmcb_params *param)
 	&(get_from(req)->tag_value)) !=0) {
 		LM_ERR("could not add further info to the dialog\n");
 		shm_free(dlg);
-		return;
+		return -1;
 	}
 
-	/* move pending profile linkers into dialog */
-	set_current_dialog( req, dlg);
+	/* set current dialog */
+	set_current_dialog(dlg);
 
 	link_dlg( dlg , 2/* extra ref for the callback and current dlg hook */);
 
@@ -485,9 +510,9 @@ void dlg_onreq(struct cell* t, int type, struct tmcb_params *param)
 		goto error;
 	}
 
-	if ( d_tmb.register_tmcb( 0, t,
-				TMCB_RESPONSE_OUT|TMCB_TRANS_DELETED|TMCB_RESPONSE_FWDED,
-				dlg_onreply, (void*)dlg, 0)<0 ) {
+	if ( d_tmb.register_tmcb( req, t,
+				TMCB_RESPONSE_OUT|TMCB_RESPONSE_FWDED,
+				dlg_onreply, (void*)dlg, unreference_dialog_create)<0 ) {
 		LM_ERR("failed to register TMCB\n");
 		goto error;
 	}
@@ -497,16 +522,17 @@ void dlg_onreq(struct cell* t, int type, struct tmcb_params *param)
 	if (req->flags&bye_on_timeout_flag)
 		dlg->flags |= DLG_FLAG_BYEONTIMEOUT;
 
-	t->dialog_ctx = (void*) dlg;
+	if (t)
+		t->dialog_ctx = (void*) dlg;
 
 	if_update_stat( dlg_enable_stats, processed_dlgs, 1);
 
-	return;
+	return 0;
 error:
-	unref_dlg(dlg,2);
-	profile_cleanup( req, NULL);
+	unref_dlg(dlg,1);
+	dialog_cleanup( req, NULL);
 	update_stat(failed_dlgs, 1);
-	return;
+	return -1;
 }
 
 
@@ -583,16 +609,6 @@ static inline int update_cseqs(struct dlg_cell *dlg, struct sip_msg *req,
 		LM_CRIT("dir is not set!\n");
 		return -1;
 	}
-}
-
-
-static void
-unreference_dialog(void *dialog)
-{
-	/* if the dialog table is gone, it means the system is shutting down.*/
-	if (!d_table)
-		return;
-	unref_dlg((struct dlg_cell*)dialog, 1);
 }
 
 
@@ -702,12 +718,8 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 
 	next_state_dlg( dlg, event, &old_state, &new_state, &unref);
 
-	CURR_DLG_ID = req->id;
-	CURR_DLG_LIFETIME = (unsigned int)(time(0))-dlg->start_ts;
-	CURR_DLG_STATUS = new_state;
-
 	/* set current dialog - it will keep a ref! */
-	set_current_dialog( req, dlg);
+	set_current_dialog(dlg);
 
 	/* run actions for the transition */
 	if (event==DLG_EVENT_REQBYE && new_state==DLG_STATE_DELETED &&
@@ -848,51 +860,4 @@ void dlg_ontimeout( struct dlg_tl *tl)
 }
 
 
-/* item/pseudo-variables functions */
-int pv_get_dlg_lifetime(struct sip_msg *msg, pv_param_t *param,
-		pv_value_t *res)
-{
-	int l = 0;
-	char *ch = NULL;
-
-	if(msg==NULL || res==NULL)
-		return -1;
-
-	if (CURR_DLG_ID!=msg->id)
-		return pv_get_null( msg, param, res);
-
-	res->ri = CURR_DLG_LIFETIME;
-	ch = int2str( (unsigned long)res->ri, &l);
-
-	res->rs.s = ch;
-	res->rs.len = l;
-
-	res->flags = PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT;
-
-	return 0;
-}
-
-
-int pv_get_dlg_status(struct sip_msg *msg, pv_param_t *param,
-		pv_value_t *res)
-{
-	int l = 0;
-	char *ch = NULL;
-
-	if(msg==NULL || res==NULL)
-		return -1;
-
-	if (CURR_DLG_ID!=msg->id)
-		return pv_get_null( msg, param, res);
-
-	res->ri = CURR_DLG_STATUS;
-	ch = int2str( (unsigned long)res->ri, &l);
-
-	res->rs.s = ch;
-	res->rs.len = l;
-
-	res->flags = PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT;
-
-	return 0;
-}
 

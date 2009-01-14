@@ -43,11 +43,15 @@
 #define SEQ_MATCH_FALLBACK   1
 #define SEQ_MATCH_NO_ID      2
 
+typedef int (*create_dlg_f)(struct cell* t, struct sip_msg *req);
+
 void init_dlg_handlers(char *rr_param, int dlg_flag,
 		pv_spec_t *timeout_avp, int default_timeout,
 		int seq_match_mode);
 
 void destroy_dlg_handlers();
+
+int dlg_create_dialog(struct cell* t, struct sip_msg *req);
 
 void dlg_onreq(struct cell* t, int type, struct tmcb_params *param);
 
@@ -55,10 +59,4 @@ void dlg_onroute(struct sip_msg* req, str *rr_param, void *param);
 
 void dlg_ontimeout( struct dlg_tl *tl);
 
-/* item/pseudo-variables functions */
-int pv_get_dlg_lifetime(struct sip_msg *msg, pv_param_t *param,
-		pv_value_t *res);
-
-int pv_get_dlg_status(struct sip_msg *msg, pv_param_t *param,
-		pv_value_t *res);
 #endif

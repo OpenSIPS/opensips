@@ -49,6 +49,8 @@
 #include "../../ut.h"
 #include "../../hash_func.h"
 #include "../../mi/mi.h"
+#include "../../route.h"
+#include "../tm/tm_load.h"
 #include "dlg_hash.h"
 #include "dlg_profile.h"
 
@@ -56,7 +58,46 @@
 #define MIN_LDG_LOCKS  2
 
 
-struct dlg_table *d_table = 0;
+extern struct tm_binds d_tmb;
+
+
+struct dlg_table *d_table = NULL;
+struct dlg_cell  *current_dlg_pointer = NULL ;
+
+
+int dialog_cleanup( struct sip_msg *msg, void *param )
+{
+	if (current_dlg_pointer) {
+		unref_dlg( current_dlg_pointer, 1);
+		current_dlg_pointer = NULL;
+	}
+
+	/* need to return non-zero - 0 will break the exec of the request */
+	return 1;
+}
+
+
+
+struct dlg_cell *get_current_dialog(void)
+{
+	struct cell *trans;
+
+	if (route_type==REQUEST_ROUTE) {
+		/* use the per-process static holder */
+		return current_dlg_pointer;
+	} else {
+		/* use current transaction to get dialog */
+		trans = d_tmb.t_gett();
+		if (trans==NULL || trans==T_UNDEFINED)
+			return NULL;
+		return (struct dlg_cell*)trans->dialog_ctx;
+	}
+}
+
+
+
+
+
 
 int init_dlg_table(unsigned int size)
 {
@@ -108,6 +149,29 @@ error0:
 }
 
 
+static inline void free_dlg_dlg(struct dlg_cell *dlg)
+{
+	if (dlg->cbs.first)
+		destroy_dlg_callbacks_list(dlg->cbs.first);
+
+	if (dlg->profile_links)
+		destroy_linkers(dlg->profile_links);
+
+	if (dlg->tag[DLG_CALLER_LEG].s)
+		shm_free(dlg->tag[DLG_CALLER_LEG].s);
+
+	if (dlg->tag[DLG_CALLEE_LEG].s)
+		shm_free(dlg->tag[DLG_CALLEE_LEG].s);
+
+	if (dlg->cseq[DLG_CALLER_LEG].s)
+		shm_free(dlg->cseq[DLG_CALLER_LEG].s);
+
+	if (dlg->cseq[DLG_CALLEE_LEG].s)
+		shm_free(dlg->cseq[DLG_CALLEE_LEG].s);
+
+	shm_free(dlg);
+}
+
 
 inline void destroy_dlg(struct dlg_cell *dlg)
 {
@@ -134,25 +198,7 @@ inline void destroy_dlg(struct dlg_cell *dlg)
 
 	run_dlg_callbacks( DLGCB_DESTROY , dlg, 0, DLG_DIR_NONE, 0);
 
-	if (dlg->cbs.first)
-		destroy_dlg_callbacks_list(dlg->cbs.first);
-
-	if (dlg->profile_links)
-		destroy_linkers(dlg->profile_links);
-
-	if (dlg->tag[DLG_CALLER_LEG].s)
-		shm_free(dlg->tag[DLG_CALLER_LEG].s);
-
-	if (dlg->tag[DLG_CALLEE_LEG].s)
-		shm_free(dlg->tag[DLG_CALLEE_LEG].s);
-
-	if (dlg->cseq[DLG_CALLER_LEG].s)
-		shm_free(dlg->cseq[DLG_CALLER_LEG].s);
-
-	if (dlg->cseq[DLG_CALLEE_LEG].s)
-		shm_free(dlg->cseq[DLG_CALLEE_LEG].s);
-
-	shm_free(dlg);
+	free_dlg_dlg(dlg);
 }
 
 
@@ -175,7 +221,7 @@ void destroy_dlg_table(void)
 		while (dlg) {
 			l_dlg = dlg;
 			dlg = dlg->next;
-			destroy_dlg(l_dlg);
+			free_dlg_dlg(l_dlg);
 		}
 
 	}
@@ -643,6 +689,11 @@ static inline int internal_mi_print_dlg(struct mi_node *rpl,
 
 	p= int2str((unsigned long)dlg->state, &len);
 	node1 = add_mi_node_child( node, MI_DUP_VALUE, "state", 5, p, len);
+	if (node1==0)
+		goto error;
+
+	p= int2str((unsigned long)dlg->user_flags, &len);
+	node1 = add_mi_node_child( node, MI_DUP_VALUE, "user_flags", 10, p, len);
 	if (node1==0)
 		goto error;
 

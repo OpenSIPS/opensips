@@ -38,6 +38,7 @@
 #define TO_TAG_COL				"to_tag"
 #define HASH_ID_COL				"hash_id"
 #define HASH_ENTRY_COL			"hash_entry"
+#define USER_FLAGS_COL			"user_flags"
 #define STATE_COL				"state"
 #define START_TIME_COL			"start_time"
 #define TIMEOUT_COL				"timeout"

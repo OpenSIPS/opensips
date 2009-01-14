@@ -35,7 +35,6 @@
 
 #define PROFILE_HASH_SIZE 16
 
-
 static struct dlg_profile_table *profiles = NULL;
 
 
@@ -203,14 +202,6 @@ void destroy_dlg_profiles(void)
 }
 
 
-#include "../../route.h"
-#include "../tm/tm_load.h"
-extern struct tm_binds d_tmb;
-
-static unsigned int            current_dlg_msg_id = 0 ;
-static struct dlg_cell         *current_dlg_pointer = NULL ;
-static struct dlg_profile_link *current_pending_linkers = NULL;
-
 
 void destroy_linkers(struct dlg_profile_link *linker)
 {
@@ -241,48 +232,6 @@ void destroy_linkers(struct dlg_profile_link *linker)
 		}
 		/* free memory */
 		shm_free(l);
-	}
-}
-
-
-
-int profile_cleanup( struct sip_msg *msg, void *param )
-{
-	current_dlg_msg_id = 0;
-	if (current_dlg_pointer) {
-		unref_dlg( current_dlg_pointer, 1);
-		current_dlg_pointer = NULL;
-	}
-	if (current_pending_linkers) {
-		destroy_linkers(current_pending_linkers);
-		current_pending_linkers = NULL;
-	}
-
-	/* need to return non-zero - 0 will break the exec of the request */
-	return 1;
-}
-
-
-
-static struct dlg_cell *get_current_dialog(struct sip_msg *msg)
-{
-	struct cell *trans;
-
-	if (route_type==REQUEST_ROUTE) {
-		/* use the per-process static holder */
-		if (msg->id==current_dlg_msg_id)
-			return current_dlg_pointer;
-		current_dlg_pointer = NULL;
-		current_dlg_msg_id = msg->id;
-		destroy_linkers(current_pending_linkers);
-		current_pending_linkers = NULL;
-		return NULL;
-	} else {
-		/* use current transaction to get dialog */
-		trans = d_tmb.t_gett();
-		if (trans==NULL || trans==T_UNDEFINED)
-			return NULL;
-		return (struct dlg_cell*)trans->dialog_ctx;
 	}
 }
 
@@ -347,32 +296,6 @@ static void link_dlg_profile(struct dlg_profile_link *linker,
 
 
 
-void set_current_dialog(struct sip_msg *msg, struct dlg_cell *dlg)
-{
-	struct dlg_profile_link *linker;
-	struct dlg_profile_link *tlinker;
-
-	/* if linkers are not from current request, just discard them */
-	if (msg->id!=current_dlg_msg_id) {
-		current_dlg_msg_id = msg->id;
-		destroy_linkers(current_pending_linkers);
-	} else {
-		/* add the linker, one be one, to the dialog */
-		linker = current_pending_linkers;
-		while (linker) {
-			tlinker = linker;
-			linker = linker->next;
-			/* process tlinker */
-			tlinker->next = NULL;
-			link_dlg_profile( tlinker, dlg);
-		}
-	}
-	current_pending_linkers = NULL;
-	current_dlg_pointer = dlg;
-}
-
-
-
 int set_dlg_profile(struct sip_msg *msg, str *value,
 									struct dlg_profile_table *profile)
 {
@@ -380,11 +303,9 @@ int set_dlg_profile(struct sip_msg *msg, str *value,
 	struct dlg_profile_link *linker;
 
 	/* get current dialog */
-	dlg = get_current_dialog(msg);
-
-	if (dlg==NULL && route_type!=REQUEST_ROUTE) {
-		LM_CRIT("BUG - dialog not found in a non REQUEST route (%d)\n",
-			REQUEST_ROUTE);
+	dlg = get_current_dialog();
+	if (dlg==NULL) {
+		LM_ERR("dialog was not yet created - script error\n");
 		return -1;
 	}
 
@@ -407,14 +328,8 @@ int set_dlg_profile(struct sip_msg *msg, str *value,
 		linker->hash_linker.value.len = value->len;
 	}
 
-	if (dlg!=NULL) {
-		/* add linker directly to the dialog and profile */
-		link_dlg_profile( linker, dlg);
-	} else {
-		/* no dialog yet -> set linker as pending */
-		linker->next = current_pending_linkers;
-		current_pending_linkers = linker;
-	}
+	/* add linker to the dialog and profile */
+	link_dlg_profile( linker, dlg);
 
 	return 0;
 }
@@ -429,10 +344,9 @@ int unset_dlg_profile(struct sip_msg *msg, str *value,
 	struct dlg_entry *d_entry;
 
 	/* get current dialog */
-	dlg = get_current_dialog(msg);
-
-	if (dlg==NULL || route_type==REQUEST_ROUTE) {
-		LM_CRIT("BUG - dialog NULL or del_profile used in request route\n");
+	dlg = get_current_dialog();
+	if (dlg==NULL) {
+		LM_ERR("dialog was not yet created - script error\n");
 		return -1;
 	}
 
@@ -482,8 +396,7 @@ int is_dlg_in_profile(struct sip_msg *msg, struct dlg_profile_table *profile,
 	struct dlg_entry *d_entry;
 
 	/* get current dialog */
-	dlg = get_current_dialog(msg);
-
+	dlg = get_current_dialog();
 	if (dlg==NULL)
 		return -1;
 

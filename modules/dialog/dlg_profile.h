@@ -73,11 +73,7 @@ void destroy_dlg_profiles();
 
 struct dlg_profile_table* search_dlg_profile(str *name);
 
-int profile_cleanup( struct sip_msg *msg, void *param );
-
 void destroy_linkers(struct dlg_profile_link *linker);
-
-void set_current_dialog(struct sip_msg *msg, struct dlg_cell *dlg);
 
 int set_dlg_profile(struct sip_msg *msg, str *value,
 		struct dlg_profile_table *profile);

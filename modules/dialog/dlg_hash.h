@@ -42,6 +42,7 @@
 #include "../../mi/mi.h"
 #include "dlg_timer.h"
 #include "dlg_cb.h"
+#include "dlg_vals.h"
 
 
 #define DLG_STATE_UNCONFIRMED  1
@@ -85,6 +86,7 @@ struct dlg_cell
 	unsigned int         start_ts;    /* start time  (absolute UNIX ts)*/
 	unsigned int         flags;
 	unsigned int         from_rr_nb;
+	unsigned int         user_flags;
 	struct dlg_tl        tl;
 	str                  callid;
 	str                  from_uri;
@@ -96,6 +98,7 @@ struct dlg_cell
 	struct socket_info * bind_addr[2];
 	struct dlg_head_cbl  cbs;
 	struct dlg_profile_link *profile_links;
+	struct dlg_val          *vals;
 };
 
 
@@ -119,7 +122,13 @@ struct dlg_table
 
 
 extern struct dlg_table *d_table;
+extern struct dlg_cell  *current_dlg_pointer;
 
+
+#define set_current_dialog(_dlg) \
+		current_dlg_pointer = _dlg
+
+struct dlg_cell *get_current_dialog();
 
 #define dlg_lock(_table, _entry) \
 		lock_set_get( (_table)->locks, (_entry)->lock_idx);
@@ -159,6 +168,8 @@ inline void destroy_dlg(struct dlg_cell *dlg);
 		}\
 	}while(0)
 
+
+int dialog_cleanup( struct sip_msg *msg, void *param );
 
 int init_dlg_table(unsigned int size);
 
