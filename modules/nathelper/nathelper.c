@@ -3015,14 +3015,16 @@ nh_timer(unsigned int ticks, void *timer_idx)
 			continue;
 		}
 		hostent2su(&to, he, 0, curi.port_no);
+
 		if (send_sock==0) {
 			send_sock=force_socket ? force_socket : 
 					get_send_socket(0, &to, PROTO_UDP);
+			if (send_sock == NULL) {
+				LM_ERR("can't get sending socket\n");
+				continue;
+			}
 		}
-		if (send_sock == NULL) {
-			LM_ERR("can't get sending socket\n");
-			continue;
-		}
+
 		if ( (flags&sipping_flag)!=0 &&
 		(opt.s=build_sipping( &c, send_sock, &path, &opt.len))!=0 ) {
 			if (udp_send(send_sock, opt.s, opt.len, &to)<0){
@@ -3035,7 +3037,7 @@ nh_timer(unsigned int ticks, void *timer_idx)
 		} else {
 			if (udp_send(send_sock, (char *)sbuf, sizeof(sbuf), &to)<0 ) {
 				LM_ERR("udp_send failed\n");
-			}
+}
 		}
 	}
 	pkg_free(buf);
