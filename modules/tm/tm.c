@@ -502,9 +502,11 @@ int load_tm( struct tm_binds *tmb)
 }
 
 
-static int do_t_unref( struct sip_msg *foo, void *bar)
+static int do_t_cleanup( struct sip_msg *foo, void *bar)
 {
 	struct cell *t;
+
+	empty_tmcb_list(&tmcb_pending_hl);
 
 	t = get_cancelled_t();
 	if (t!=NULL && t!=T_UNDEFINED)
@@ -616,7 +618,7 @@ static int mod_init(void)
 	}
 
 	/* register post-script clean-up function */
-	if (register_script_cb( do_t_unref, POST_SCRIPT_CB|REQ_TYPE_CB, 0)<0 ) {
+	if (register_script_cb( do_t_cleanup, POST_SCRIPT_CB|REQ_TYPE_CB, 0)<0 ) {
 		LM_ERR("failed to register POST request callback\n");
 		return -1;
 	}
