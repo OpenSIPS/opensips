@@ -68,6 +68,11 @@ Bogdan-Andrei Iancu
               1.6.2. unset_dlg_profile(profile,[value])
               1.6.3. is_in_profile(profile,[value])
               1.6.4. get_profile_size(profile,[value],size)
+              1.6.5. set_dlg_flag(idx)
+              1.6.6. reset_dlg_flag(idx)
+              1.6.7. is_dlg_flag_set(idx)
+              1.6.8. store_dlg_value(name,val)
+              1.6.9. fetch_dlg_value(name,pvar)
 
         1.7. Exported statistics
 
@@ -90,6 +95,8 @@ Bogdan-Andrei Iancu
               1.9.1. $DLG_count
               1.9.2. $DLG_status
               1.9.3. $DLG_lifetime
+              1.9.4. $DLG_flags
+              1.9.5. $dlg_val(name)
 
    2. Developer Guide
 
@@ -139,6 +146,11 @@ Bogdan-Andrei Iancu
    1.35. unset_dlg_profile usage
    1.36. is_in_profile usage
    1.37. get_profile_size usage
+   1.38. set_dlg_flag usage
+   1.39. reset_dlg_flag usage
+   1.40. is_dlg_flag_set usage
+   1.41. store_dlg_value usage
+   1.42. fetch_dlg_value usage
 
 Chapter 1. Admin Guide
 
@@ -147,8 +159,12 @@ Chapter 1. Admin Guide
    The dialog module provides dialog awareness to the OpenSIPS
    proxy. Its functionality is to keep trace of the current
    dialogs, to offer information about them (like how many dialogs
-   are active). The module exports no functions that could be used
-   directly from scripts.
+   are active).
+
+   Aside tracking, the dialog module offers functionalities like
+   flags and attributes per dialog (persistent data across
+   dialog), dialog profiling and dialog termination (on timeout
+   base or external triggered).
 
    The module, via an internal API, also provide the foundation to
    build on top of it more complex dialog-based functionalities
@@ -356,7 +372,7 @@ modparam("dialog", "dlg_match_mode", 1)
    If you want to store the information about the dialogs in a
    database a database url must be specified.
 
-   Default value is "mysql://opensips:opensipsrw@localhost/opensips".
+   Default value is "mysql://opensips:opensipsrw@localhost/osips".
 
    Example 1.10. Set db_url parameter
 ...
@@ -749,6 +765,102 @@ get_profile_size("caller","$fu");
 xlog("currently, the user %fu has $avp(size) active outgoing calls\n");
 ...
 
+1.6.5.  set_dlg_flag(idx)
+
+   Sets the dialog flag index idx to true. The dialog flags are
+   dialog persistent and they can be accessed (set and test) for
+   all requests belonging to the dialog.
+
+   The flag index can be between 0 and 31.
+
+   This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
+   REPLY_ROUTE and FAILURE_ROUTE.
+
+   Example 1.38. set_dlg_flag usage
+...
+set_dlg_flag("3");
+...
+
+1.6.6.  reset_dlg_flag(idx)
+
+   Resets the dialog flag index idx to false. The dialog flags are
+   dialog persistent and they can be accessed (set and test) for
+   all requests belonging to the dialog.
+
+   The flag index can be between 0 and 31.
+
+   This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
+   REPLY_ROUTE and FAILURE_ROUTE.
+
+   Example 1.39. reset_dlg_flag usage
+...
+reset_dlg_flag("16");
+...
+
+1.6.7.  is_dlg_flag_set(idx)
+
+   Returns true if the dialog flag index idx is set. The dialog
+   flags are dialog persistent and they can be accessed (set and
+   test) for all requests belonging to the dialog.
+
+   The flag index can be between 0 and 31.
+
+   This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
+   REPLY_ROUTE and FAILURE_ROUTE.
+
+   Example 1.40. is_dlg_flag_set usage
+...
+if (is_dlg_flag_set("16")) {
+        xlog("dialog flag 16 is set\n");
+}
+...
+
+1.6.8.  store_dlg_value(name,val)
+
+   Attaches to the dialog the value val under the name name. The
+   values attached to dialogs are dialog persistent and they can
+   be accessed (read and write) for all requests belonging to the
+   dialog.
+
+   Parameter val may contain pseudo-variables.
+
+   Same functionality may be obtain by assigning a value to pseudo
+   variable $dlg_val(name).
+
+   This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
+   REPLY_ROUTE and FAILURE_ROUTE.
+
+   Example 1.41. store_dlg_value usage
+...
+store_dlg_value("inv_src_ip","$si");
+store_dlg_value("account type","prepaid");
+# or
+$dlg_val("account_type") = "prepaid";
+...
+
+1.6.9.  fetch_dlg_value(name,pvar)
+
+   Fetches from the dialog the value of attribute named name. The
+   values attached to dialogs are dialog persistent and they can
+   be accessed (read and write) for all requests belonging to the
+   dialog.
+
+   Parameter pvar may be a script var ($var) or and avp ($avp).
+
+   Same functionality may be obtain by reading the pseudo variable
+   $dlg_val(name).
+
+   This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
+   REPLY_ROUTE and FAILURE_ROUTE.
+
+   Example 1.42. fetch_dlg_value usage
+...
+fetch_dlg_value("inv_src_ip","$avp(i:2)");
+fetch_dlg_value("account type","$var(account)");
+# or
+$var(account) = $dlg_val("account_type");
+...
+
 1.7. Exported statistics
 
 1.7.1. active_dialogs
@@ -901,6 +1013,23 @@ xlog("currently, the user %fu has $avp(size) active outgoing calls\n");
    from the dialog confirmation and the current moment. This PV
    will be available only for sequential requests, after doing
    loose_route().
+
+   NULL will be returned if there is no dialog for the request.
+
+1.9.4. $DLG_flags
+
+   Returns the the dialog flags array (as a single interger value)
+   of the dialog corresponding to the processed sequential
+   request. This PV will be available only for sequential
+   requests, after doing loose_route().
+
+   NULL will be returned if there is no dialog for the request.
+
+1.9.5. $dlg_val(name)
+
+   This is a read/write variable that allows access to the dialog
+   attribute named name. This PV will be available only for
+   sequential requests, after doing loose_route().
 
    NULL will be returned if there is no dialog for the request.
 
