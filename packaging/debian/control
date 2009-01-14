@@ -195,3 +195,16 @@ Description: LDAP modules for OpenSIPS
  This package provides the ldap and h350 modules for OpenSIPS, enabling LDAP
  queries from the OpenSIPS config and storage of SIP account data in an LDAP
  directory.
+
+
+Package: opensips-console
+Architecture: any
+Depends: ${shlibs:Depends}, opensips (= ${binary:Version}), python-mysqldb, libfrontier-rpc-perl, libnet-ip-perl, libberkeleydb-perl
+Suggests: opensips-mysql-module, opensips-postgres-module, opensips-unixodbc-module, opensips-xmlrpc-module, opensips-berkeley-module 
+Description: 
+ OpenSIPS is a very fast and flexible SIP (RFC3261)
+ server. Written entirely in C, OpenSIPS can handle thousands calls
+ per second even on low-budget hardware.
+ .
+ This package provides an OpenSIPS Console written in Perl for OpenSIPS
+ provisioning.
