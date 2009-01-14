@@ -96,11 +96,21 @@ ifeq ($(OS),solaris)
 	endif
 endif
 
-SMP_STR = $(shell uname -v | grep -i "SMP")
-ifeq (,$(SMP_STR))
-	ISSMP=no
+# Check of SMP systems
+ifeq ($(OS),solaris)
+	CPU=$(shell /usr/sbin/psrinfo | grep -i online | wc -l)
+	ifeq ($(CPU),1)
+		ISSMP=no
+	else
+		ISSMP=yes
+	endif
 else
-	ISSMP=yes
+	SMP_STR = $(shell uname -v | grep -i "SMP")
+	ifeq (,$(SMP_STR))
+		ISSMP=no
+	else
+		ISSMP=yes
+	endif
 endif
 
 OSREL = $(shell uname -r)
