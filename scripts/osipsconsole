@@ -50,17 +50,17 @@ my $PATH_CTLRC = "./scripts/";
 my $PATH_ETC = "./etc/";
 
 
-my $OPENSIPSCTLRC = "";
+my $OSIPSCONSOLERC = "";
 ### include config files
-if ( -e  $PATH_CTLRC . "opensipsctlrc" ) {
-	$OPENSIPSCTLRC = $PATH_CTLRC . "opensipsctlrc";
-	&include_opensipsctlrc();	
+if ( -e  $PATH_CTLRC . "osipsconsolerc" ) {
+	$OSIPSCONSOLERC = $PATH_CTLRC . "osipsconsolerc";
+	&include_osipsconsolerc();	
 }
 
 
-if ( -e "~/.opensipsctlrc" ) {
-	$OPENSIPSCTLRC = "~/.opensipsctlrc";
-	&include_opensipsctlrc();	
+if ( -e "~/.osipsconsolerc" ) {
+	$OSIPSCONSOLERC = "~/.osipsconsolerc";
+	&include_osipsconsolerc();	
 }
 
 
@@ -245,9 +245,9 @@ my $command;
 
 #
 ##### ------------------------------------------------ #####
-###paths are either initialized in the script or in the opensipsctlrc file
-sub include_opensipsctlrc() {
-	open (FILE,"< $OPENSIPSCTLRC") || die "Can't Open File: opensipsctlrc\n";
+###paths are either initialized in the script or in the  file osipsconsolerc
+sub include_osipsconsolerc() {
+	open (FILE,"< $OSIPSCONSOLERC") || die "Can't Open File: osipsconsolerc\n";
 
 	while ($line=<FILE>){		
 		if ( $line !~ m/^(\s*\w+)/g ) {				
@@ -436,12 +436,6 @@ while ( $#content gt -1 ){
 			}		
 		}
 
-		if ( !-z $OSIPS_FIFO ) {
-			if ( $arr[0] =~ /^\s*OSIPS_FIFO/ ) {
-			 	$OSIPS_FIFO = $arr[1]; 
-			}		
-		}
-
 } 	
 	
 
@@ -533,7 +527,7 @@ if ( ! $STORE_PLAINTEXT_PW ) {
 
 
 ### force values for variables in this section
-# you better set the variables in ~/.opensipsctlrc
+# you better set the variables in ~/.osipsconsolerc
 
 if ( !-z $ETCDIR ) {
 	$ETCDIR="/usr/local/etc/opensips";	
@@ -1707,7 +1701,7 @@ sub opensips_start(){
 
 		if ( ! -x $OSIPSBIN ) {
 			print "\nOpenSIPS binaries not found at " . $OSIPSBIN . "\n";
-			print "\nset OSIPSBIN to the path of opensips in " . $0 . " or ~/.opensipsctlrc\n";		        
+			print "\nset OSIPSBIN to the path of opensips in " . $0 . " or ~/.osipsconsolerc\n";		        
 			return;
 		}
 

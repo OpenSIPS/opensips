@@ -426,7 +426,7 @@ sunpkg:
 
 
 .PHONY: install
-install: all mk-install-dirs install-cfg install-bin install-modules \
+install: all mk-install-dirs install-cfg install-bin install-console install-modules \
 	install-doc install-man
 
 .PHONY: dbschema
@@ -496,6 +496,14 @@ install-cfg: $(cfg-prefix)/$(cfg-dir)
 			mv -f $(cfg-prefix)/$(cfg-dir)/opensipsctlrc.sample \
 				$(cfg-prefix)/$(cfg-dir)/opensipsctlrc; \
 		fi
+		# osipsconsole config
+		$(INSTALL_TOUCH)   $(cfg-prefix)/$(cfg-dir)/osipsconsolerc.sample
+		$(INSTALL_CFG) scripts/osipsconsolerc \
+			$(cfg-prefix)/$(cfg-dir)/osipsconsolerc.sample
+		if [ ! -f $(cfg-prefix)/$(cfg-dir)/osipsconsolerc ]; then \
+			mv -f $(cfg-prefix)/$(cfg-dir)/osipsconsolerc.sample \
+				$(cfg-prefix)/$(cfg-dir)/osipsconsolerc; \
+		fi
 		#$(INSTALL_CFG) etc/$(NAME).cfg $(cfg-prefix)/$(cfg-dir)
 		if [ "$(TLS)" != "" ] ; then \
 			mkdir -p $(cfg-prefix)/$(cfg-dir)/tls ; \
@@ -513,10 +521,7 @@ install-cfg: $(cfg-prefix)/$(cfg-dir)
 			done ; \
 		fi
 
-install-bin: $(bin-prefix)/$(bin-dir) utils
-		# install opensips binary
-		$(INSTALL_TOUCH) $(bin-prefix)/$(bin-dir)/$(NAME) 
-		$(INSTALL_BIN) $(NAME) $(bin-prefix)/$(bin-dir)
+install-console: $(bin-prefix)/$(bin-dir)
 		# install osipsconsole
 		cat scripts/osipsconsole | \
 		sed -e "s#PATH_BIN[ \t]*=[ \t]*\"\./\"#PATH_BIN = \"$(bin-target)\"#g" | \
@@ -526,6 +531,11 @@ install-bin: $(bin-prefix)/$(bin-dir) utils
 		$(INSTALL_TOUCH) $(bin-prefix)/$(bin-dir)/osipsconsole
 		$(INSTALL_BIN) /tmp/osipsconsole $(bin-prefix)/$(bin-dir)
 		rm -fr /tmp/osipsconsole
+
+install-bin: $(bin-prefix)/$(bin-dir) utils
+		# install opensips binary
+		$(INSTALL_TOUCH) $(bin-prefix)/$(bin-dir)/$(NAME) 
+		$(INSTALL_BIN) $(NAME) $(bin-prefix)/$(bin-dir)
 		# install opensipsctl (and family) tool
 		cat scripts/opensipsctl | \
 		sed -e "s#/usr/local/sbin#$(bin-target)#g" | \
