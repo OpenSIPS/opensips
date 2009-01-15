@@ -5,9 +5,9 @@
 ## DP: Debian uses /usr/lib even for 64bit architectures.
 
 @DPATCH@
-diff -urNad opensips-1.2.0~/Makefile.defs opensips-1.2.0/Makefile.defs
---- opensips-1.2.0~/Makefile.defs	2007-02-24 12:35:45.000000000 +0100
-+++ opensips-1.2.0/Makefile.defs	2007-02-24 16:26:45.886854110 +0100
+diff -urNad opensips-1.4.0~/Makefile.defs opensips-1.4.0/Makefile.defs
+--- opensips-1.4.0~/Makefile.defs	2007-02-24 12:35:45.000000000 +0100
++++ opensips-1.4.0/Makefile.defs	2007-02-24 16:26:45.886854110 +0100
 @@ -123,14 +123,12 @@
  bin-dir = sbin/
  
