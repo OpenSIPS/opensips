@@ -12,7 +12,7 @@ locate_tool() {
 	while [ -n "$1" ]
 	do
 		if [ -x /usr/bin/which ] ; then
-			TOOLPATH=`which $1`
+			TOOLPATH=`/usr/bin/which $1`
 			if [ -n "$TOOLPATH" ]; then
 				return
 			fi
@@ -28,6 +28,15 @@ locate_tool() {
 		fi
 		if [ -x "/usr/local/bin/$1" ] ; then
 			TOOLPATH="/usr/local/bin/$1"
+			return
+		fi
+		# Additional locations of GNU tools in Solaris
+		if [ -x "/usr/sfw/bin/$1" ] ; then
+			TOOLPATH="/usr/sfw/bin/$1"
+			return
+		fi
+		if [ -x "/opt/csw/bin/$1" ] ; then
+			TOOLPATH="/opt/csw/bin/$1"
 			return
 		fi
 		shift
@@ -69,7 +78,7 @@ if [ -z "$LAST_LINE" ] ; then
 		echo "error: 'TAIL' tool not found: set TAIL variable to correct tool path"
 		exit
 	fi
-	LAST_LINE="$TOOLPATH -n 1"
+	LAST_LINE="$TOOLPATH -1"
 fi
 if [ -z "$EXPR" ] ; then
 	locate_tool expr
