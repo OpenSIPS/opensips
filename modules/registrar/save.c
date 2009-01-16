@@ -681,11 +681,13 @@ static inline int add_contacts(struct sip_msg* _m, contact_t* _c,
  * Process REGISTER request and save it's contacts
  */
 #define is_cflag_set(_name) (((unsigned int)(unsigned long)_cflags)&(_name))
-int save(struct sip_msg* _m, char* _d, char* _cflags)
+int save(struct sip_msg* _m, char* _d, char* _cflags, char* _s)
 {
 	contact_t* c;
 	int st;
 	str aor;
+	str uri;
+	pv_value_t val;
 
 	rerrno = R_FINE;
 
@@ -700,7 +702,22 @@ int save(struct sip_msg* _m, char* _d, char* _cflags)
 	get_act_time();
 	c = get_first_contact(_m);
 
-	if (extract_aor(&get_to(_m)->uri, &aor) < 0) {
+	if (_s) {
+		if (pv_get_spec_value( _m, (pv_spec_p)_s, &val)!=0) {
+			LM_ERR("failed to get PV value\n");
+			return -1;
+		}
+		if ( (val.flags&PV_VAL_STR)==0 ) {
+			LM_ERR("PV vals is not string\n");
+			return -1;
+		}
+		uri = val.rs;
+	} else {
+		uri = get_to(_m)->uri;
+	}
+
+
+	if (extract_aor( &uri, &aor) < 0) {
 		LM_ERR("failed to extract Address Of Record\n");
 		goto error;
 	}

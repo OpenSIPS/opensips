@@ -266,31 +266,6 @@ modparam("registrar", "append_branches", 0)
 	</section>
 
 	<section>
-		<title><varname>aor_avp</varname> (str)</title>
-		<para>
-		If set, the module will try first to get the AOR from this AVP 
-		instead of fetching it form the processed request.
-		</para>
-		<para>
-		The AVP must contain a valid SIP URI. If no AVP is found, it will be
-		tried to get the AOR from the message (standard behaviour).
-		</para>
-		<para>
-		<emphasis>
-			Default value is "NULL" (disabled).
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>aor_avp</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("registrar", "aor_avp", "$avp(i:3223)")
-...
-</programlisting>
-		</example>
-	</section>
-
-	<section>
 		<title><varname>case_sensitive</varname> (integer)</title>
 		<para>
 		If set to 1 then <acronym>AOR</acronym> comparison will be case 
@@ -588,7 +563,7 @@ modparam("registrar", "path_use_received", 1)
 	<title>Exported Functions</title>
 	<section>
 		<title>
-		<function moreinfo="none">save(domain)</function>
+		<function moreinfo="none">save(domain [,flags] [,aor])</function>
 		</title>
 		<para>
 		The function processes a REGISTER message. It can add, remove or 
@@ -596,37 +571,6 @@ modparam("registrar", "path_use_received", 1)
 		REGISTER message. On success, 200 OK will be returned listing all 
 		contacts that are currently in usrloc. On an error, error message 
 		will be send with a short description in reason phrase.
-		</para>
-		<para>Meaning of the parameters is as follows:</para>
-		<itemizedlist>
-		<listitem>
-			<para>
-			<emphasis>domain</emphasis> - Logical domain within registrar. 
-			If database is used then this must be name of the table which 
-			stores the contacts.
-			</para>
-		</listitem>
-		</itemizedlist>
-		<para>
-		This function can be used from REQUEST_ROUTE.
-		</para>
-		<example>
-		<title><function>save</function> usage</title>
-		<programlisting format="linespecific">
-...
-save("location");
-...
-</programlisting>
-		</example>
-	</section>
-
-	<section>
-		<title>
-		<function moreinfo="none">save(domain,flags)</function>
-		</title>
-		<para>
-		Same as <function>save()</function> but it accepts a set of flags for
-		controlling its behaviour.
 		</para>
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
@@ -655,6 +599,13 @@ save("location");
 			</itemizedlist>
 			<para>The flags may be given in decimal or hexa format.</para>
 		</listitem>
+		<listitem>
+			<para>
+			<emphasis>aor</emphasis> (optional) - Variable contain a custom
+			AOR; if missing, the AOR will be taken from the default place - 
+			the TO header URI.
+			</para>
+		</listitem>
 		</itemizedlist>
 		<para>
 		This function can be used from REQUEST_ROUTE.
@@ -663,7 +614,17 @@ save("location");
 		<title><function>save</function> usage</title>
 		<programlisting format="linespecific">
 ...
+# save into 'location', no flags, use default AOR (TO URI)
+save("location");
+...
+# save into 'location', do not update DB, use default AOR (TO URI)
 save("location","0x01");
+...
+# save into 'location', no flags, use as AOR the FROM URI
+save("location","$fu");
+...
+# save into 'location', do not send reply, take AOR from AVP
+save("location","0x02", "$avp(i:1)");
 ...
 </programlisting>
 		</example>

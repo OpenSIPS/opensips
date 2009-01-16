@@ -40,26 +40,24 @@ Bogdan-Andre Iancu
               1.3.5. tcp_persistent_flag (integer)
               1.3.6. realm_prefix (string)
               1.3.7. append_branches (integer)
-              1.3.8. aor_avp (str)
-              1.3.9. case_sensitive (integer)
-              1.3.10. received_avp (str)
-              1.3.11. received_param (string)
-              1.3.12. max_contacts (integer)
-              1.3.13. retry_after (integer)
-              1.3.14. sock_flag (integer)
-              1.3.15. sock_hdr_name (string)
-              1.3.16. method_filtering (integer)
-              1.3.17. use_path (integer)
-              1.3.18. path_mode (integer)
-              1.3.19. path_use_received (integer)
+              1.3.8. case_sensitive (integer)
+              1.3.9. received_avp (str)
+              1.3.10. received_param (string)
+              1.3.11. max_contacts (integer)
+              1.3.12. retry_after (integer)
+              1.3.13. sock_flag (integer)
+              1.3.14. sock_hdr_name (string)
+              1.3.15. method_filtering (integer)
+              1.3.16. use_path (integer)
+              1.3.17. path_mode (integer)
+              1.3.18. path_use_received (integer)
 
         1.4. Exported Functions
 
-              1.4.1. save(domain)
-              1.4.2. save(domain,flags)
-              1.4.3. lookup(domain)
-              1.4.4. registered(domain [,AOR])
-              1.4.5. add_sock_hdr(hdr_name)
+              1.4.1. save(domain [,flags] [,aor])
+              1.4.2. lookup(domain)
+              1.4.3. registered(domain [,AOR])
+              1.4.4. add_sock_hdr(hdr_name)
 
         1.5. Exported Statistics
 
@@ -80,23 +78,21 @@ Bogdan-Andre Iancu
    1.5. Set tcp_persistent_flag parameter
    1.6. Set realm_prefix parameter
    1.7. Set append_branches parameter
-   1.8. Set aor_avp parameter
-   1.9. Set case_sensitive parameter
-   1.10. Set received_avp parameter
-   1.11. Set received_param parameter
-   1.12. Set max_contacts parameter
-   1.13. Set retry_after parameter
-   1.14. Set sock_flag parameter
-   1.15. Set sock_hdr_namer parameter
-   1.16. Set method_filtering parameter
-   1.17. Set use_path parameter
-   1.18. Set path_mode parameter
-   1.19. Set path_use_received parameter
-   1.20. save usage
-   1.21. save usage
-   1.22. lookup usage
-   1.23. registered usage
-   1.24. add_sock_hdr usage
+   1.8. Set case_sensitive parameter
+   1.9. Set received_avp parameter
+   1.10. Set received_param parameter
+   1.11. Set max_contacts parameter
+   1.12. Set retry_after parameter
+   1.13. Set sock_flag parameter
+   1.14. Set sock_hdr_namer parameter
+   1.15. Set method_filtering parameter
+   1.16. Set use_path parameter
+   1.17. Set path_mode parameter
+   1.18. Set path_use_received parameter
+   1.19. save usage
+   1.20. lookup usage
+   1.21. registered usage
+   1.22. add_sock_hdr usage
 
 Chapter 1. Admin Guide
 
@@ -256,23 +252,7 @@ modparam("registrar", "realm_prefix", "sip.")
 modparam("registrar", "append_branches", 0)
 ...
 
-1.3.8. aor_avp (str)
-
-   If set, the module will try first to get the AOR from this AVP
-   instead of fetching it form the processed request.
-
-   The AVP must contain a valid SIP URI. If no AVP is found, it
-   will be tried to get the AOR from the message (standard
-   behaviour).
-
-   Default value is "NULL" (disabled).
-
-   Example 1.8. Set aor_avp parameter
-...
-modparam("registrar", "aor_avp", "$avp(i:3223)")
-...
-
-1.3.9. case_sensitive (integer)
+1.3.8. case_sensitive (integer)
 
    If set to 1 then AOR comparison will be case sensitive, if set
    to 0 then AOR comparison will be case insensitive--This is
@@ -280,12 +260,12 @@ modparam("registrar", "aor_avp", "$avp(i:3223)")
 
    Default value is 0.
 
-   Example 1.9. Set case_sensitive parameter
+   Example 1.8. Set case_sensitive parameter
 ...
 modparam("registrar", "case_sensitive", 1)
 ...
 
-1.3.10. received_avp (str)
+1.3.9. received_avp (str)
 
    Registrar will store the value of the AVP configured by this
    parameter in the received column in the user location database.
@@ -300,24 +280,24 @@ Note
 
    Default value is "NULL" (disabled).
 
-   Example 1.10. Set received_avp parameter
+   Example 1.9. Set received_avp parameter
 ...
 modparam("registrar", "received_avp", "$avp(s:rcv)")
 ...
 
-1.3.11. received_param (string)
+1.3.10. received_param (string)
 
    The name of the parameter that will be appended to Contacts of
    200 OK when the received URI was set by nathelper module.
 
    Default value is "received".
 
-   Example 1.11. Set received_param parameter
+   Example 1.10. Set received_param parameter
 ...
 modparam("registrar", "received_param", "rcv")
 ...
 
-1.3.12. max_contacts (integer)
+1.3.11. max_contacts (integer)
 
    The parameter can be used to limit the number of contacts per
    AOR (Address of Record) in the user location database. Value 0
@@ -325,13 +305,13 @@ modparam("registrar", "received_param", "rcv")
 
    Default value is 0.
 
-   Example 1.12. Set max_contacts parameter
+   Example 1.11. Set max_contacts parameter
 ...
 # Allow no more than 10 contacts per AOR
 modparam("registrar", "max_contacts", 10)
 ...
 
-1.3.13. retry_after (integer)
+1.3.12. retry_after (integer)
 
    The registrar can generate 5xx reply to REGISTER in various
    situations. It can, for example, happen when the max_contacts
@@ -346,12 +326,12 @@ modparam("registrar", "max_contacts", 10)
 
    Default value is 0 (disabled).
 
-   Example 1.13. Set retry_after parameter
+   Example 1.12. Set retry_after parameter
 ...
 modparam("registrar", "retry_after", 30)
 ...
 
-1.3.14. sock_flag (integer)
+1.3.13. sock_flag (integer)
 
    Message flag to signal to register module to look into REGISTER
    request for a header which contains a socket description
@@ -362,12 +342,12 @@ modparam("registrar", "retry_after", 30)
 
    Default value is -1 (no flag).
 
-   Example 1.14. Set sock_flag parameter
+   Example 1.13. Set sock_flag parameter
 ...
 modparam("registrar", "sock_flag", 18)
 ...
 
-1.3.15. sock_hdr_name (string)
+1.3.14. sock_hdr_name (string)
 
    Header which contains a socket description (proto:IP:port) to
    override the received socket info. The header will be read only
@@ -377,12 +357,12 @@ modparam("registrar", "sock_flag", 18)
 
    Default value is NULL.
 
-   Example 1.15. Set sock_hdr_namer parameter
+   Example 1.14. Set sock_hdr_namer parameter
 ...
 modparam("registrar", "sock_hdr_name", "Sock-Info")
 ...
 
-1.3.16. method_filtering (integer)
+1.3.15. method_filtering (integer)
 
    Tells if the contact filtering based on supported methods
    should be performed during lookup. It's enabled only if it has
@@ -390,24 +370,24 @@ modparam("registrar", "sock_hdr_name", "Sock-Info")
 
    Default value is 0 (disabled).
 
-   Example 1.16. Set method_filtering parameter
+   Example 1.15. Set method_filtering parameter
 ...
 modparam("registrar", "method_filtering", 1)
 ...
 
-1.3.17. use_path (integer)
+1.3.16. use_path (integer)
 
    If set to 1, the Path header is handled according to the
    parameter "path_mode".
 
    Default value is 0 (disabled).
 
-   Example 1.17. Set use_path parameter
+   Example 1.16. Set use_path parameter
 ...
 modparam("registrar", "use_path", 1)
 ...
 
-1.3.18. path_mode (integer)
+1.3.17. path_mode (integer)
 
    The registrar module implements three different modes regarding
    the response to a registration which includes one or more Path
@@ -428,12 +408,12 @@ modparam("registrar", "use_path", 1)
 
    Default value is 2.
 
-   Example 1.18. Set path_mode parameter
+   Example 1.17. Set path_mode parameter
 ...
 modparam("registrar", "path_mode", 0)
 ...
 
-1.3.19. path_use_received (integer)
+1.3.18. path_use_received (integer)
 
    If set to 1, the "received" parameter of the first Path URI of
    a registration is set as received-uri and the NAT branch flag
@@ -443,14 +423,14 @@ modparam("registrar", "path_mode", 0)
 
    Default value is 0 (disabled).
 
-   Example 1.19. Set path_use_received parameter
+   Example 1.18. Set path_use_received parameter
 ...
 modparam("registrar", "path_use_received", 1)
 ...
 
 1.4. Exported Functions
 
-1.4.1.  save(domain)
+1.4.1.  save(domain [,flags] [,aor])
 
    The function processes a REGISTER message. It can add, remove
    or modify usrloc records depending on Contact and Expires HFs
@@ -463,23 +443,6 @@ modparam("registrar", "path_use_received", 1)
      * domain - Logical domain within registrar. If database is
        used then this must be name of the table which stores the
        contacts.
-
-   This function can be used from REQUEST_ROUTE.
-
-   Example 1.20. save usage
-...
-save("location");
-...
-
-1.4.2.  save(domain,flags)
-
-   Same as save() but it accepts a set of flags for controlling
-   its behaviour.
-
-   Meaning of the parameters is as follows:
-     * domain - Logical domain within registrar. If database is
-       used then this must be name of the table which stores the
-       contacts.
      * flags - the value may be a bitwise OR of the following
        flags:
           + 0x01 - save the contacts only in memory cache without
@@ -487,15 +450,28 @@ save("location");
           + 0x02 - do not generate a SIP reply to the current
             REGISTER request.
        The flags may be given in decimal or hexa format.
+     * aor (optional) - Variable contain a custom AOR; if missing,
+       the AOR will be taken from the default place - the TO
+       header URI.
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.21. save usage
+   Example 1.19. save usage
 ...
+# save into 'location', no flags, use default AOR (TO URI)
+save("location");
+...
+# save into 'location', do not update DB, use default AOR (TO URI)
 save("location","0x01");
 ...
+# save into 'location', no flags, use as AOR the FROM URI
+save("location","$fu");
+...
+# save into 'location', do not send reply, take AOR from AVP
+save("location","0x02", "$avp(i:1)");
+...
 
-1.4.3.  lookup(domain)
+1.4.2.  lookup(domain)
 
    The functions extracts username from Request-URI and tries to
    find all contacts for the username in usrloc. If there are no
@@ -519,7 +495,7 @@ save("location","0x01");
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
-   Example 1.22. lookup usage
+   Example 1.20. lookup usage
 ...
 lookup("location");
 switch ($?) {
@@ -533,7 +509,7 @@ switch ($?) {
 };
 ...
 
-1.4.4.  registered(domain [,AOR])
+1.4.3.  registered(domain [,AOR])
 
    The function returns true if an AOR is registered, false
    otherwise. The function does not modify the message being
@@ -546,7 +522,7 @@ switch ($?) {
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
-   Example 1.23. registered usage
+   Example 1.21. registered usage
 ...
 if (registered("location")) {
         sl_send_reply("100", "Trying");
@@ -557,7 +533,7 @@ if (registered("location","$fu")) {
 }
 ...
 
-1.4.5.  add_sock_hdr(hdr_name)
+1.4.4.  add_sock_hdr(hdr_name)
 
    Adds to the current REGISTER request a new header with
    "hdr_name" which contains the description of the received
@@ -570,7 +546,7 @@ if (registered("location","$fu")) {
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.24. add_sock_hdr usage
+   Example 1.22. add_sock_hdr usage
 ...
 add_sock_hdr("Sock-Info");
 ...

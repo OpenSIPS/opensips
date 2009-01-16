@@ -108,11 +108,6 @@ int path_mode = PATH_MODE_STRICT;		/*!< if the Path HF should be inserted in the
 int path_use_params = 0;			/*!< if the received- and nat-parameters of last Path uri should be used
  						 * to determine if UAC is nat'ed */
 
-char *aor_avp_param =0;				/*!< if instead of extacting the AOR from the request, it should be 
- 						 * fetched via this AVP ID */
-unsigned short aor_avp_type=0;
-int_str aor_avp_name;
-
 char* rcv_avp_param = 0;
 unsigned short rcv_avp_type = 0;
 int_str rcv_avp_name;
@@ -145,7 +140,11 @@ static cmd_export_t cmds[] = {
 			REQUEST_ROUTE },
 	{"save",         (cmd_function)save,         2,    save_fixup,     0,
 			REQUEST_ROUTE },
-	{"lookup",       (cmd_function)lookup,       1,  domain_fixup,     0,
+	{"save",         (cmd_function)save,         3,    save_fixup,     0,
+			REQUEST_ROUTE },
+	{"lookup",       (cmd_function)lookup,       1,  registered_fixup, 0,
+			REQUEST_ROUTE | FAILURE_ROUTE },
+	{"lookup",       (cmd_function)lookup,       2,  registered_fixup, 0,
 			REQUEST_ROUTE | FAILURE_ROUTE },
 	{"registered",   (cmd_function)registered,   1,  registered_fixup, 0,
 			REQUEST_ROUTE | FAILURE_ROUTE },
@@ -171,7 +170,6 @@ static param_export_t params[] = {
 	{"max_expires",        INT_PARAM, &max_expires         },
 	{"received_param",     STR_PARAM, &rcv_param           },
 	{"received_avp",       STR_PARAM, &rcv_avp_param       },
-	{"aor_avp",            STR_PARAM, &aor_avp_param       },
 	{"max_contacts",       INT_PARAM, &max_contacts        },
 	{"retry_after",        INT_PARAM, &retry_after         },
 	{"sock_flag",          INT_PARAM, &sock_flag           },
@@ -252,23 +250,6 @@ static int mod_init(void)
 	} else {
 		rcv_avp_name.n = 0;
 		rcv_avp_type = 0;
-	}
-	if (aor_avp_param && *aor_avp_param) {
-		s.s = aor_avp_param; s.len = strlen(s.s);
-		if (pv_parse_spec(&s, &avp_spec)==0
-				|| avp_spec.type!=PVT_AVP) {
-			LM_ERR("malformed or non AVP %s AVP definition\n", aor_avp_param);
-			return -1;
-		}
-
-		if(pv_get_avp_name(0, &avp_spec.pvp, &aor_avp_name, &aor_avp_type)!=0)
-		{
-			LM_ERR("[%s]- invalid AVP definition\n", aor_avp_param);
-			return -1;
-		}
-	} else {
-		aor_avp_name.n = 0;
-		aor_avp_type = 0;
 	}
 
 	bind_usrloc = (bind_usrloc_t)find_export("ul_bind_usrloc", 1, 0);
@@ -358,25 +339,43 @@ static int domain_fixup(void** param, int param_no)
 static int save_fixup(void** param, int param_no)
 {
 	unsigned int flags;
+	void ** next_param;
 	str s;
+	int ret;
 
 	if (param_no == 1) {
 		return domain_fixup(param,param_no);
-	} else {
+	} else if (param_no == 2) {
 		s.s = (char*)*param;
 		s.len = strlen(s.s);
-		flags = 0;
-		if ( (strno2int(&s, &flags )<0) || (flags>REG_SAVE_ALL_FL) ) {
-			LM_ERR("bad flags <%s>\n", (char *)(*param));
-			return E_CFG;
+		if (s.s[0]==PV_MARKER) {
+			ret = fixup_pvar(param);
+			if (ret!=0)
+				return -1;
+			next_param = (void**)(((char*)param) + sizeof(action_elem_t));
+			if (*next_param) {
+				LM_ERR("invalid param order");
+			}
+			*next_param = *param;
+			*param = 0;
+			return 0;
+		} else {
+			flags = 0;
+			if ( (strno2int(&s, &flags )<0) || (flags>REG_SAVE_ALL_FL) ) {
+				LM_ERR("bad flags <%s>\n", (char *)(*param));
+				return E_CFG;
+			}
+			if (ul.db_mode==DB_ONLY && flags&REG_SAVE_MEM_FL) {
+				LM_ERR("MEM flag set while using the DB_ONLY mode "
+					"in USRLOC\n");
+				return E_CFG;
+			}
+			pkg_free(*param);
+			*param = (void*)(unsigned long int)flags;
+			return 0;
 		}
-		if (ul.db_mode==DB_ONLY && flags&REG_SAVE_MEM_FL) {
-			LM_ERR("MEM flag set while using the DB_ONLY mode in USRLOC\n");
-			return E_CFG;
-		}
-		pkg_free(*param);
-		*param = (void*)(unsigned long int)flags;
-		return 0;
+	} else {
+		return fixup_pvar(param);
 	}
 }
 

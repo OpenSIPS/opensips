@@ -45,7 +45,7 @@
 /*! \brief
  * Process REGISTER request and save it's contacts
  */
-int save(struct sip_msg* _m, char* _d, char* _cflags);
+int save(struct sip_msg* _m, char* _d, char* _cflags, char* _s);
 
 
 #endif /* SAVE_H */
