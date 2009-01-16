@@ -81,6 +81,7 @@ static int  child_init(int);
 static void mod_destroy(void);
 /*! \brief Fixup functions */
 static int domain_fixup(void** param, int param_no);
+static int registered_fixup(void** param, int param_no);
 static int save_fixup(void** param, int param_no);
 /*! \brief Functions */
 static int add_sock_hdr(struct sip_msg* msg, char *str, char *foo);
@@ -140,15 +141,17 @@ struct sig_binds sigb;
  * Exported functions
  */
 static cmd_export_t cmds[] = {
-	{"save",         (cmd_function)save,         1,    save_fixup, 0,
+	{"save",         (cmd_function)save,         1,    save_fixup,     0,
 			REQUEST_ROUTE },
-	{"save",         (cmd_function)save,         2,    save_fixup, 0,
+	{"save",         (cmd_function)save,         2,    save_fixup,     0,
 			REQUEST_ROUTE },
-	{"lookup",       (cmd_function)lookup,       1,  domain_fixup, 0,
+	{"lookup",       (cmd_function)lookup,       1,  domain_fixup,     0,
 			REQUEST_ROUTE | FAILURE_ROUTE },
-	{"registered",   (cmd_function)registered,   1,  domain_fixup, 0,
+	{"registered",   (cmd_function)registered,   1,  registered_fixup, 0,
 			REQUEST_ROUTE | FAILURE_ROUTE },
-	{"add_sock_hdr", (cmd_function)add_sock_hdr, 1,fixup_str_null, 0,
+	{"registered",   (cmd_function)registered,   2,  registered_fixup, 0,
+			REQUEST_ROUTE | FAILURE_ROUTE },
+	{"add_sock_hdr", (cmd_function)add_sock_hdr, 1,  fixup_str_null,   0,
 			REQUEST_ROUTE },
 	{0, 0, 0, 0, 0, 0}
 };
@@ -375,6 +378,17 @@ static int save_fixup(void** param, int param_no)
 		*param = (void*)(unsigned long int)flags;
 		return 0;
 	}
+}
+
+
+static int registered_fixup(void** param, int param_no)
+{
+	if (param_no == 1) {
+		return domain_fixup(param,param_no);
+	} else {
+		return fixup_pvar(param);
+	}
+
 }
 
 

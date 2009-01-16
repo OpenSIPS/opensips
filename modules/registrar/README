@@ -58,7 +58,7 @@ Bogdan-Andre Iancu
               1.4.1. save(domain)
               1.4.2. save(domain,flags)
               1.4.3. lookup(domain)
-              1.4.4. registered(domain)
+              1.4.4. registered(domain [,AOR])
               1.4.5. add_sock_hdr(hdr_name)
 
         1.5. Exported Statistics
@@ -533,15 +533,16 @@ switch ($?) {
 };
 ...
 
-1.4.4.  registered(domain)
+1.4.4.  registered(domain [,AOR])
 
-   The function returns true if the AOR in the Request-URI is
-   registered, false otherwise. The function does not modify the
-   message being process, it neither rewrites the Request-URI if a
-   contact is found not append branches.
+   The function returns true if an AOR is registered, false
+   otherwise. The function does not modify the message being
+   process.
 
    Meaning of the parameters is as follows:
      * domain - Name of table that should be used for the lookup.
+     * AOR (optional)- AOR to lookup for; if missing, the RURI is
+       used as AOR; This can be a variable.
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
@@ -551,6 +552,9 @@ if (registered("location")) {
         sl_send_reply("100", "Trying");
         ...
 };
+if (registered("location","$fu")) {
+        xlog("caller is registered\n");
+}
 ...
 
 1.4.5.  add_sock_hdr(hdr_name)
