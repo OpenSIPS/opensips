@@ -468,7 +468,7 @@ static inline int reload_permanent_list(struct bl_rule *first,
 	}
 	lock_release( head->lock );
 
-	for(p = head->first ; p ; p = p->next){
+	for(p = head->first ; p ; ){
 		q = p;
 		p = p->next;
 		shm_free(q);
