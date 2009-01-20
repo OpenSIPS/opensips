@@ -535,7 +535,7 @@ void mi_datagram_server(int rx_sock, int tx_sock)
 		}
 
 		LM_DBG("done parsing the mi tree\n");
-		if ( (mi_rpl=run_mi_cmd(f, mi_cmd))==0 ){
+		if ( (mi_rpl=run_mi_cmd(f, mi_cmd, NULL, NULL))==0 ){
 		/*error while running the command*/
 			LM_ERR("failed to process the command\n");
 			mi_send_dgram(tx_sock, MI_COMMAND_FAILED, MI_COMMAND_FAILED_LEN,

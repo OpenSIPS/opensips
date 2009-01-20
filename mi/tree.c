@@ -58,6 +58,7 @@ struct mi_root *init_mi_tree(unsigned int code, char *reason, int reason_len)
 
 	memset(root,0,sizeof(struct mi_root));
 	root->node.next = root->node.last = &root->node;
+	root->node.flags = MI_NOT_COMPLETED;
 
 	if (reason && reason_len) {
 		root->reason.s = reason;
@@ -69,7 +70,7 @@ struct mi_root *init_mi_tree(unsigned int code, char *reason, int reason_len)
 }
 
 
-static void free_mi_node(struct mi_node *parent)
+void free_mi_node(struct mi_node *parent)
 {
 	struct mi_node *p, *q;
 
@@ -162,6 +163,7 @@ static inline struct mi_node *create_mi_node(char *name, int name_len,
 		}
 	}
 	new->last = new;
+	new->flags = flags;
 
 	return new;
 }

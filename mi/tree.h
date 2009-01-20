@@ -45,8 +45,10 @@ struct mi_handler;
 
 #include "attr.h"
 
-#define MI_DUP_NAME   (1<<0)
-#define MI_DUP_VALUE  (1<<1)
+#define MI_DUP_NAME   		(1<<0)
+#define MI_DUP_VALUE  		(1<<1)
+#define MI_NOT_COMPLETED  	(1<<2)
+#define MI_WRITTEN		(1<<3)
 
 #define MI_OK_S              "OK"
 #define MI_OK_LEN            (sizeof(MI_OK_S)-1)
@@ -66,6 +68,7 @@ struct mi_handler;
 struct mi_node {
 	str value;
 	str name;
+	unsigned int flags;
 	struct mi_node *kids;
 	struct mi_node *next;
 	struct mi_node *last;
@@ -82,6 +85,8 @@ struct mi_root {
 struct mi_root *init_mi_tree(unsigned int code, char *reason, int reason_len);
 
 void free_mi_tree(struct mi_root *parent);
+
+void free_mi_node(struct mi_node *parent);
 
 struct mi_node *add_mi_node_sibling(struct mi_node *brother, int flags,
 	char *name, int name_len, char *value, int value_len);

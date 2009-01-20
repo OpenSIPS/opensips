@@ -487,7 +487,7 @@ void mi_fifo_server(FILE *fifo_stream)
 
 		LM_DBG("done parsing the mi tree\n");
 
-		if ( (mi_rpl=run_mi_cmd(f, mi_cmd))==0 ){
+		if ( (mi_rpl=run_mi_cmd(f, mi_cmd,NULL,NULL))==0 ){
 			if (!reply_stream)
 				mi_open_reply( file, reply_stream, failure);
 			mi_fifo_reply(reply_stream, "500 command '%s' failed\n", command);
