@@ -1,5 +1,5 @@
 /*
- * $Id: dr_load.c,v 1.2 2007/09/12 08:08:22 daniel Exp $
+ * $Id$
  *
  * Copyright (C) 2005-2008 Voice Sistem SRL
  *

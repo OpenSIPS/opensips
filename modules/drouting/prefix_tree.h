@@ -1,5 +1,5 @@
 /*
- * $Id: prefix_tree.h,v 1.2 2007/08/27 10:09:00 daniel Exp $
+ * $Id$
  *
  * Copyright (C) 2005-2008 Voice Sistem SRL
  *

@@ -1,5 +1,5 @@
 /*
- * $Id: routing.c,v 1.4 2007/10/03 14:10:48 daniel Exp $
+ * $Id$
  *
  * Copyright (C) 2005-2008 Voice Sistem SRL
  *

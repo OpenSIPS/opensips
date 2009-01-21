@@ -1,5 +1,5 @@
 /*
- * $Id: drouting.c,v 1.10 2007/10/03 14:10:48 daniel Exp $
+ * $Id$
  *
  * Copyright (C) 2005-2009 Voice Sistem SRL
  *
