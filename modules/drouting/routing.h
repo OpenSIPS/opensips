@@ -94,7 +94,9 @@ add_dst(
 	/* pri prefix */
 	char*,
 	/* dst type*/
-	int
+	int,
+	/* dst attrs*/
+	char*
 	);
 
 /* build a routing info list element */

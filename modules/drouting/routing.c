@@ -279,7 +279,9 @@ add_dst(
 	/* pri prefix */
 	char* pri,
 	/* dst type*/
-	int type
+	int type,
+	/* dst attrs*/
+	char* attrs
 	)
 {
 	pgw_t *pgw=NULL, *tmp=NULL;
@@ -287,7 +289,7 @@ add_dst(
 	struct hostent* he;
 	struct sip_uri uri;
 	struct ip_addr ipa;
-	
+	int l_ip,l_pri,l_attrs;
 #define GWABUF_MAX_SIZE	512
 	char gwabuf[GWABUF_MAX_SIZE];
 	str gwas;
@@ -297,29 +299,31 @@ add_dst(
 		goto err_exit;
 	}
 
-	if (NULL==(pgw=(pgw_t*)shm_malloc(sizeof(pgw_t)))) {
+	l_ip = strlen(ip);
+	l_pri = pri?strlen(pri):0;
+	l_attrs = attrs?strlen(attrs):0;
+
+	pgw = (pgw_t*)shm_malloc(sizeof(pgw_t) + l_ip + l_pri + l_attrs);
+	if (NULL==pgw) {
 		LM_ERR("no more shm mem (%u)\n",
-			(unsigned int)sizeof(pgw_t));
+			(unsigned int)(sizeof(pgw_t)+l_ip+l_pri +l_attrs));
 		goto err_exit;
 	}
 	memset(pgw,0,sizeof(pgw_t));
 
-	pgw->ip.len= strlen(ip);
-	if(NULL==(pgw->ip.s=(char*)shm_malloc(pgw->ip.len))) {
-		LM_ERR("no more shm mem (%d)\n",
-			pgw->ip.len);
-		goto err_exit;
-	}
-	memcpy(pgw->ip.s, ip, pgw->ip.len);
+	pgw->ip.len= l_ip;
+	pgw->ip.s = (char*)(pgw+1);
+	memcpy(pgw->ip.s, ip, l_ip);
 
 	if (pri) {
-		pgw->pri.len= strlen(pri);
-		if(NULL==(pgw->pri.s=(char*)shm_malloc(pgw->pri.len))) {
-			LM_ERR("no more shm mem (%d)\n",
-				pgw->pri.len);
-			goto err_exit;
-		}
-		memcpy(pgw->pri.s, pri, pgw->pri.len);
+		pgw->pri.len = l_pri;
+		pgw->pri.s = ((char*)(pgw+1))+l_ip;
+		memcpy(pgw->pri.s, pri, l_pri);
+	}
+	if (attrs) {
+		pgw->attrs.len = l_attrs;
+		pgw->attrs.s = ((char*)(pgw+1))+l_ip+l_ip;
+		memcpy(pgw->attrs.s, attrs, l_attrs);
 	}
 	pgw->id = id;
 	pgw->strip = strip;
@@ -417,10 +421,6 @@ del_pgw_list(
 	while(NULL!=pgw_l){
 		t = pgw_l;
 		pgw_l=pgw_l->next;
-		if(NULL!=t->ip.s)
-			shm_free(t->ip.s);
-		if(NULL!=t->pri.s)
-			shm_free(t->pri.s);
 		shm_free(t);
 	}
 }

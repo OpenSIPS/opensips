@@ -53,11 +53,13 @@
 #define STRIP_DRD_COL    "strip"
 #define PREFIX_DRD_COL   "pri_prefix"
 #define TYPE_DRD_COL     "type"
-static str dst_id_drd_col = str_init("gwid");
-static str address_drd_col = str_init("address");
-static str strip_drd_col = str_init("strip");
-static str prefix_drd_col = str_init("pri_prefix");
-static str type_drd_col = str_init("type");
+#define ATTRS_DRD_COL    "attrs"
+static str dst_id_drd_col = str_init(DST_ID_DRD_COL);
+static str address_drd_col = str_init(ADDRESS_DRD_COL);
+static str strip_drd_col = str_init(STRIP_DRD_COL);
+static str prefix_drd_col = str_init(PREFIX_DRD_COL);
+static str type_drd_col = str_init(TYPE_DRD_COL);
+static str attrs_drd_col = str_init(ATTRS_DRD_COL);
 
 #define RULE_ID_DRR_COL   "ruleid"
 #define GROUP_DRR_COL     "groupid"
@@ -66,14 +68,27 @@ static str type_drd_col = str_init("type");
 #define PRIORITY_DRR_COL  "priority"
 #define ROUTEID_DRR_COL   "routeid"
 #define DSTLIST_DRR_COL   "gwlist"
-static str rule_id_drr_col = str_init("ruleid");
-static str group_drr_col = str_init("groupid");
-static str prefix_drr_col = str_init("prefix");
-static str time_drr_col = str_init("timerec");
-static str priority_drr_col = str_init("priority");
-static str routeid_drr_col = str_init("routeid");
-static str dstlist_drr_col = str_init("gwlist");
+static str rule_id_drr_col = str_init(RULE_ID_DRR_COL);
+static str group_drr_col = str_init(GROUP_DRR_COL);
+static str prefix_drr_col = str_init(PREFIX_DRR_COL);
+static str time_drr_col = str_init(TIME_DRR_COL);
+static str priority_drr_col = str_init(PRIORITY_DRR_COL);
+static str routeid_drr_col = str_init(ROUTEID_DRR_COL);
+static str dstlist_drr_col = str_init(DSTLIST_DRR_COL);
 
+#define ID_DRL_COL     "id"
+#define GWLIST_DRL_CAL "gwlist"
+static str id_drl_col = str_init(ID_DRL_COL);
+static str gwlist_drl_col = str_init(GWLIST_DRL_CAL);
+
+struct dr_gwl_tmp {
+	unsigned int id;
+	char *gwlist;
+	struct dr_gwl_tmp *next;
+};
+
+
+static struct dr_gwl_tmp* dr_gw_lists = NULL;
 
 #define check_val( _val, _type, _not_null, _is_empty_str) \
 	do{\
@@ -117,6 +132,49 @@ static str dstlist_drr_col = str_init("gwlist");
 	} while(0)
 
 extern int dr_fetch_rows;
+
+
+static int add_tmp_gw_list(unsigned int id, char *list)
+{
+	struct dr_gwl_tmp *tmp;
+	unsigned int list_len;
+
+	list_len = strlen(list) + 1;
+	tmp = (struct dr_gwl_tmp*)pkg_malloc(sizeof(struct dr_gwl_tmp) + list_len);
+	if (tmp==NULL) {
+		LM_ERR("no more pkg mem\n");
+		return -1;
+	}
+	tmp->id = id;
+	tmp->gwlist = (char*)(tmp+1);
+	memcpy(tmp->gwlist, list, list_len);
+
+	tmp->next = dr_gw_lists;
+	dr_gw_lists = tmp;
+	return 0;
+}
+
+static char* get_tmp_gw_list(unsigned int id)
+{
+	struct dr_gwl_tmp *tmp;
+
+	for( tmp=dr_gw_lists ; tmp ; tmp=tmp->next )
+		if (tmp->id == id) return tmp->gwlist;
+	return NULL;
+}
+
+static void free_tmp_gw_list(void)
+{
+	struct dr_gwl_tmp *tmp, *tmp1;
+
+	for( tmp=dr_gw_lists ; tmp ; ) {
+		tmp1 = tmp;
+		tmp = tmp->next;
+		pkg_free(tmp1);
+	}
+	dr_gw_lists = NULL;
+}
+
 
 static inline tmrec_t* parse_time_def(char *time_str)
 {
@@ -223,7 +281,7 @@ error:
 
 
 rt_data_t* dr_load_routing_info( db_func_t *dr_dbf, db_con_t* db_hdl,
-											str *drd_table, str* drr_table )
+							str *drd_table, str *drl_table, str* drr_table )
 {
 	int    int_vals[4];
 	char * str_vals[4];
@@ -234,6 +292,8 @@ rt_data_t* dr_load_routing_info( db_func_t *dr_dbf, db_con_t* db_hdl,
 	rt_info_t *ri;
 	rt_data_t *rdata;
 	tmrec_t   *time_rec;
+	unsigned int id;
+	str s_id;
 	int i,n;
 
 	res = 0;
@@ -257,9 +317,10 @@ rt_data_t* dr_load_routing_info( db_func_t *dr_dbf, db_con_t* db_hdl,
 	columns[2] = &strip_drd_col;
 	columns[3] = &prefix_drd_col;
 	columns[4] = &type_drd_col;
+	columns[5] = &attrs_drd_col;
 
 	if (DB_CAPABILITY(*dr_dbf, DB_CAP_FETCH)) {
-		if ( dr_dbf->query( db_hdl, 0, 0, 0, columns, 0, 5, 0, 0 ) < 0) {
+		if ( dr_dbf->query( db_hdl, 0, 0, 0, columns, 0, 6, 0, 0 ) < 0) {
 			LM_ERR("DB query failed\n");
 			goto error;
 		}
@@ -268,7 +329,7 @@ rt_data_t* dr_load_routing_info( db_func_t *dr_dbf, db_con_t* db_hdl,
 			goto error;
 		}
 	} else {
-		if ( dr_dbf->query( db_hdl, 0, 0, 0, columns, 0, 5, 0, &res) < 0) {
+		if ( dr_dbf->query( db_hdl, 0, 0, 0, columns, 0, 6, 0, &res) < 0) {
 			LM_ERR("DB query failed\n");
 			goto error;
 		}
@@ -298,10 +359,13 @@ rt_data_t* dr_load_routing_info( db_func_t *dr_dbf, db_con_t* db_hdl,
 			/* TYPE column */
 			check_val( ROW_VALUES(row)+4, DB_INT, 1, 0);
 			int_vals[2] = VAL_INT(ROW_VALUES(row)+4);
+			/* ATTRS column */
+			check_val( ROW_VALUES(row)+5, DB_STRING, 0, 0);
+			str_vals[2] = (char*)VAL_STRING(ROW_VALUES(row)+5);
 
 			/* add the destinaton definition in */
 			if ( add_dst( rdata, int_vals[0], str_vals[0], int_vals[1],
-					str_vals[1], int_vals[2])<0 ) {
+					str_vals[1], int_vals[2], str_vals[2])<0 ) {
 				LM_ERR("failed to add destination id %d -> skipping\n",
 					int_vals[0]);
 				continue;
@@ -325,6 +389,65 @@ rt_data_t* dr_load_routing_info( db_func_t *dr_dbf, db_con_t* db_hdl,
 		LM_WARN("no valid "
 			"destinations set -> ignoring the routing rules\n");
 		return rdata;
+	}
+
+	/* read the gw lists, if any */
+	if (dr_dbf->use_table( db_hdl, drl_table) < 0) {
+		LM_ERR("cannot select table \"%.*s\"\n", drl_table->len,drl_table->s);
+		goto error;
+	}
+
+	columns[0] = &id_drl_col;
+	columns[1] = &gwlist_drl_col;
+
+	if (DB_CAPABILITY(*dr_dbf, DB_CAP_FETCH)) {
+		if ( dr_dbf->query( db_hdl, 0, 0, 0, columns, 0, 2, 0, 0 ) < 0) {
+			LM_ERR("DB query failed\n");
+			goto error;
+		}
+		if(dr_dbf->fetch_result(db_hdl, &res, dr_fetch_rows)<0) {
+			LM_ERR("Error fetching rows\n");
+			goto error;
+		}
+	} else {
+		if ( dr_dbf->query( db_hdl, 0, 0, 0, columns, 0, 2, 0, &res) < 0) {
+			LM_ERR("DB query failed\n");
+			goto error;
+		}
+	}
+
+	if (RES_ROW_N(res) == 0) {
+		LM_DBG("table \"%.*s\" empty\n", drl_table->len,drl_table->s );
+	} else {
+		LM_DBG("%d records found in %.*s\n",
+			RES_ROW_N(res), drl_table->len,drl_table->s);
+		do {
+			for(i=0; i < RES_ROW_N(res); i++) {
+				row = RES_ROWS(res) + i;
+				/* ID column */
+				check_val( ROW_VALUES(row), DB_INT, 1, 0);
+				int_vals[0] = VAL_INT   (ROW_VALUES(row));
+				/* GWLIST column */
+				check_val( ROW_VALUES(row)+1, DB_STRING, 1, 1);
+				str_vals[0] = (char*)VAL_STRING(ROW_VALUES(row)+1);
+
+				if (add_tmp_gw_list(int_vals[0], str_vals[0])!=0) {
+					LM_ERR("failed to add temporary GW list\n");
+					goto error;
+				}
+			}
+			if (DB_CAPABILITY(*dr_dbf, DB_CAP_FETCH)) {
+				if(dr_dbf->fetch_result(db_hdl, &res, dr_fetch_rows)<0) {
+					LM_ERR( "fetching rows (1)\n");
+					goto error;
+				}
+			} else {
+				break;
+			}
+		} while(RES_ROW_N(res)>0);
+
+		dr_dbf->free_result(db_hdl, res);
+		res = 0;
 	}
 
 	/* read the routing rules */
@@ -397,6 +520,17 @@ rt_data_t* dr_load_routing_info( db_func_t *dr_dbf, db_con_t* db_hdl,
 					str_vals[2], int_vals[0]);
 				continue;
 			}
+			/* is gw_list a list or a list id? */
+			if (str_vals[3][0]=='#') {
+				s_id.s = str_vals[3]+1;
+				s_id.len = strlen(s_id.s);
+				if ( str2int( &s_id, &id)!=0 ||
+				(str_vals[3]=get_tmp_gw_list(id))==NULL ) {
+					LM_ERR("invalid reference to a GW list <%s> -> skipping\n",
+						str_vals[3]);
+					continue;
+				}
+			}
 			/* build the routing rule */
 			if ((ri = build_rt_info( int_vals[2], time_rec, int_vals[3],
 					str_vals[3], rdata->pgw_l))== 0 ) {
@@ -425,6 +559,8 @@ rt_data_t* dr_load_routing_info( db_func_t *dr_dbf, db_con_t* db_hdl,
 
 	dr_dbf->free_result(db_hdl, res);
 	res = 0;
+
+	free_tmp_gw_list();
 
 	if (n==0) {
 		LM_WARN("no valid routing rules -> discarding all destinations\n");

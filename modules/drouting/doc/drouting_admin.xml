@@ -80,6 +80,15 @@
 	</para>
 	</listitem>
 
+	<listitem>
+	<para>
+	blacklisting - the module allows definition of backlists based on the
+	destination IPs. This blacklists are to be used to prevent malicious 
+	forwarding to GWs (based on DNS lookups) when the script logic does
+	none-GE forwarding (like foreign domains).
+	</para>
+	</listitem>
+
 	</itemizedlist>
 	</section>
 
@@ -823,7 +832,7 @@ modparam("drouting", "db_url",
 	<section>
 		<title><varname>drd_table</varname>(str)</title>
 		<para>
-		The name of the db name storing gateway addresses.
+		The name of the db table storing gateway addresses.
 		</para>
 		<para>
 		<emphasis>	Default value is <quote>dr_gateways</quote>.
@@ -841,7 +850,7 @@ modparam("drouting", "drd_table", "dr_gateways")
 	<section>
 		<title><varname>drr_table</varname>(str)</title>
 		<para>
-		The name of the db name storing routing rules.
+		The name of the db table storing routing rules.
 		</para>
 		<para>
 		<emphasis>	Default value is <quote>dr_rules</quote>.
@@ -856,10 +865,11 @@ modparam("drouting", "drr_table", "rules")
 </programlisting>
 		</example>
 	</section>
+
 	<section>
 		<title><varname>drg_table</varname>(str)</title>
 		<para>
-		The name of the db name storing groups.
+		The name of the db table storing groups.
 		</para>
 		<para>
 		<emphasis>	Default value is <quote>dr_groups</quote>.
@@ -876,20 +886,20 @@ modparam("drouting", "drg_table", "groups")
 	</section>
 
 	<section>
-		<title><varname>use_domain</varname> (int)</title>
+		<title><varname>drl_table</varname>(str)</title>
 		<para>
-			Flag to configure whether to use domain match when querying
-			database for user's routing group.
+		The name of the db table storing definitions of destination lists (to 
+		be used directly by the routing rules).
 		</para>
 		<para>
-		<emphasis>Default value is <quote>1</quote>.
+		<emphasis>	Default value is <quote>dr_gw_lists</quote>.
 		</emphasis>
 		</para>
 		<example>
-		<title>Set <varname>use_domain</varname> parameter</title>
+		<title>Set <varname>drl_table</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("drouting", "use_domain", 0)
+modparam("drouting", "drl_table", "my_gw_lists")
 ...
 </programlisting>
 		</example>
@@ -934,6 +944,94 @@ modparam("drouting", "use_domain", 0)
 		<programlisting format="linespecific">
 ...
 modparam("drouting", "sort_order", 2)
+...
+</programlisting>
+		</example>
+	</section>
+
+<section>
+		<title><varname>ruri_avp</varname> (str)</title>
+		<para>
+		The name of the avp for storing Request URIs to be later used 
+		(alternative destiantions for the current one).
+		</para>
+		<para>
+		<emphasis>Default value is <quote>NULL</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>ruri_avp</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("drouting", "ruri_avp", '$avp(dr_ruri)')
+modparam("drouting", "ruri_avp", '$avp(i:33)')
+...
+	</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>attrs_avp</varname> (str)</title>
+		<para>
+		The name of the avp for storing the attribute of the current selected
+		destination - once a new destination is selected (via the 
+		use_next_gw() function), the AVP will be updated with the attrs of the
+		new used destination.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>NULL</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>attrs_avp</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("drouting", "attrs_avp", '$avp(dr_attrs)')
+modparam("drouting", "atrrs_avp", '$avp(i:67)')
+...
+	</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>define_blacklist</varname> (str)</title>
+		<para>
+		Defines a backlist based on a list of GW types - the list will contain
+		the IPs (no port, all protocols) of the GWs with the specified types.
+		</para>
+		<para>
+		Multiple instances of this param are allowed.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>NULL</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>define_blacklist</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("drouting", "define_blacklist", 'bl_name= 3,5,25,23')
+modparam("drouting", "define_blacklist", 'list= 4,2')
+...
+	</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>use_domain</varname> (int)</title>
+		<para>
+			Flag to configure whether to use domain match when querying
+			database for user's routing group.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>1</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>use_domain</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("drouting", "use_domain", 0)
 ...
 </programlisting>
 		</example>
@@ -995,27 +1093,6 @@ modparam("drouting", "drg_grpid_col", "grpid")
 		</example>
 	</section>
 
-<section>
-		<title><varname>ruri_avp</varname> (str)</title>
-		<para>
-		The name of the avp for storing Request URIs to be later used 
-		(alternative destiantions for the current one).
-		</para>
-		<para>
-		<emphasis>Default value is <quote>NULL</quote>.
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>ruri_avp</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("drouting", "ruri_avp", '$avp(dr_ruri)')
-modparam("drouting", "ruri_avp", '$avp(i:33)')
-...
-	</programlisting>
-		</example>
-	</section>
-
 	<section>
 		<title><varname>fetch_rows</varname> (int)</title>
 		<para>
@@ -1044,7 +1121,7 @@ modparam("drouting", "fetch_rows", 1500)
 		routing.
 		</para>
 		<para>
-		<emphasis>Default value is <quote>1</quote>.
+		<emphasis>Default value is <quote>1 (enabled)</quote>.
 		</emphasis>
 		</para>
 		<example>
@@ -1093,7 +1170,7 @@ do_routing("$avp(i:10)");
 
 	<section>
 		<title>
-		<function moreinfo="none">next_routing()</function>
+		<function moreinfo="none">use_next_gw()/next_routing()</function>
 		</title>
 		<para>
 		The function takes the next available destination (set by do_routing, 
@@ -1113,11 +1190,10 @@ do_routing("$avp(i:10)");
 		of internal processing error.
 		</para>
 		<example>
-		<title><function>next_routing</function> usage</title>
+		<title><function>use_next_gw</function> usage</title>
 		<programlisting format="linespecific">
 ...
-if (next_routing()) {
-	append_branch();
+if (use_next_gw()) {
 	t_relay();
 	exit;
 }
@@ -1126,13 +1202,47 @@ if (next_routing()) {
 		</example>
 	</section>
 
-
-
+	<section>
+		<title>
+		<function moreinfo="none">goes_to_gw([type])</function>
+		</title>
+		<para>
+		Function returns true if the destination of the current request 
+		(destination URI or Request URI) points (as IP) to one of the gateways.
+		There no DNS lookups done if the domain part of the URI is not an IP.
+		</para>
+		<para>
+		This function does not change anything in the message.
+		</para>
+		<para>
+		This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
+		</para>
+		<para>
+			The function can take one optional parameter:
+			<itemizedlist>
+				<listitem>
+					<emphasis>type</emphasis> (optional) - GW/destination 
+					type to be checked
+				</listitem>
+			</itemizedlist>
+		</para>
+		<example>
+		<title><function>goes_to_gw</function> usage</title>
+		<programlisting format="linespecific">
+...
+if (goes_to_gw("1")) {
+	sl_send_reply("403","Forbidden");
+	exit;
+}
+...
+</programlisting>
+		</example>
+	</section>
 
 
 	<section>
 		<title>
-		<function moreinfo="none">is_from_gw([group])</function>
+		<function moreinfo="none">is_from_gw([type])</function>
 		</title>
 		<para>
 		The function checks if the sender of the message is a gateway
@@ -1146,8 +1256,8 @@ if (next_routing()) {
 			The function can take one optional parameter:
 			<itemizedlist>
 				<listitem>
-					<emphasis>type</emphasis> - GW/destination type to 
-					be checked
+					<emphasis>type</emphasis> (optional) - GW/destination type
+					to be checked
 				</listitem>
 				<listitem>
 					<emphasis>flags</emphasis> - if message is a request and

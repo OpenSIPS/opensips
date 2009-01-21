@@ -71,6 +71,7 @@ typedef struct pgw_ {
 	int strip;
 	str ip;
 	int type;
+	str attrs;
 	struct pgw_ *next;
 }pgw_t;
 

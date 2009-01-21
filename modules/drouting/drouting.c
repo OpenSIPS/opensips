@@ -1,7 +1,7 @@
 /*
  * $Id: drouting.c,v 1.10 2007/10/03 14:10:48 daniel Exp $
  *
- * Copyright (C) 2005-2008 Voice Sistem SRL
+ * Copyright (C) 2005-2009 Voice Sistem SRL
  *
  * This file is part of Open SIP Server (OpenSIPS).
  *
@@ -45,6 +45,7 @@
 #include "../../action.h"
 #include "../../error.h"
 #include "../../ut.h"
+#include "../../resolve.h"
 #include "../../parser/parse_from.h"
 #include "../../parser/parse_uri.h"
 #include "../../mi/mi.h"
@@ -52,6 +53,7 @@
 #include "dr_load.h"
 #include "prefix_tree.h"
 #include "routing.h"
+#include "dr_bl.h"
 
 
 /*** DB relatede stuff ***/
@@ -60,6 +62,7 @@ static str db_url = {NULL,0};
 static str drg_table = str_init("dr_groups");
 static str drd_table = str_init("dr_gateways");
 static str drr_table = str_init("dr_rules");
+static str drl_table = str_init("dr_gw_lists");
 /* DRG use domain */
 static int use_domain = 1;
 /**
@@ -89,6 +92,13 @@ static struct _ruri_avp{
 }ruri_avp = { 0, {.n=(int)0xad346b2f} };
 static str ruri_avp_spec = {0,0};
 
+/* AVP used to store serial ATTRs */
+static struct _attrs_avp{
+	unsigned short type; /* AVP ID */
+	int_str name; /* AVP name*/
+}attrs_avp = { 0, {.n=(int)0xad346b30} };
+static str attrs_avp_spec = {0,0};
+
 /* statistic data */
 int tree_size = 0;
 int inode = 0;
@@ -109,10 +119,12 @@ static int fixup_from_gw(void** param, int param_no);
 static int do_routing(struct sip_msg* msg, dr_group_t *drg);
 static int do_routing_0(struct sip_msg* msg, char* str1, char* str2);
 static int do_routing_1(struct sip_msg* msg, char* str1, char* str2);
-static int next_routing(struct sip_msg* msg);
+static int use_next_gw(struct sip_msg* msg);
 static int is_from_gw_0(struct sip_msg* msg, char* str1, char* str2);
 static int is_from_gw_1(struct sip_msg* msg, char* str1, char* str2);
 static int is_from_gw_2(struct sip_msg* msg, char* str1, char* str2);
+static int goes_to_gw_0(struct sip_msg* msg, char* f1, char* f2);
+static int goes_to_gw_1(struct sip_msg* msg, char* f1, char* f2);
 
 static struct mi_root* dr_reload_cmd(struct mi_root *cmd_tree, void *param);
 static int mi_child_init();
@@ -130,7 +142,9 @@ static cmd_export_t cmds[] = {
 		REQUEST_ROUTE|FAILURE_ROUTE},
 	{"do_routing",  (cmd_function)do_routing_1,   1,  fixup_do_routing, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE},
-	{"next_routing",  (cmd_function)next_routing, 0,  0, 0,
+	{"use_next_gw",  (cmd_function)use_next_gw,   0,  0, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE},
+	{"next_routing",  (cmd_function)use_next_gw, 0,  0, 0,
 		FAILURE_ROUTE},
 	{"is_from_gw",  (cmd_function)is_from_gw_0,   0,  0, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE},
@@ -138,6 +152,10 @@ static cmd_export_t cmds[] = {
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE},
 	{"is_from_gw",  (cmd_function)is_from_gw_2,   2,  fixup_from_gw, 0,
 		REQUEST_ROUTE},
+	{"goes_to_gw",  (cmd_function)goes_to_gw_0,   0,  0, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE},
+	{"goes_to_gw",  (cmd_function)goes_to_gw_1,   1,  fixup_from_gw, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE},
 	{0, 0, 0, 0, 0, 0}
 };
 
@@ -150,14 +168,17 @@ static param_export_t params[] = {
 	{"drd_table",       STR_PARAM, &drd_table.s     },
 	{"drr_table",       STR_PARAM, &drr_table.s     },
 	{"drg_table",       STR_PARAM, &drg_table.s     },
+	{"drl_table",       STR_PARAM, &drl_table.s     },
 	{"use_domain",      INT_PARAM, &use_domain      },
 	{"drg_user_col",    STR_PARAM, &drg_user_col.s  },
 	{"drg_domain_col",  STR_PARAM, &drg_domain_col.s},
 	{"drg_grpid_col",   STR_PARAM, &drg_grpid_col.s },
 	{"ruri_avp",        STR_PARAM, &ruri_avp_spec.s },
+	{"attrs_avp",       STR_PARAM, &ruri_avp_spec.s },
 	{"sort_order",      INT_PARAM, &sort_order      },
 	{"fetch_rows",      INT_PARAM, &dr_fetch_rows   },
 	{"force_dns",       INT_PARAM, &dr_force_dns    },
+	{"define_blacklist",STR_PARAM|USE_FUNC_PARAM, (void*)set_dr_bl },
 	{0, 0, 0}
 };
 
@@ -194,7 +215,8 @@ static inline int dr_reload_data( void )
 	rt_data_t *new_data;
 	rt_data_t *old_data;
 
-	new_data = dr_load_routing_info( &dr_dbf, db_hdl, &drd_table, &drr_table);
+	new_data = dr_load_routing_info( &dr_dbf, db_hdl,
+		&drd_table, &drl_table, &drr_table);
 	if ( new_data==0 ) {
 		LM_CRIT("failed to load routing info\n");
 		return -1;
@@ -222,6 +244,10 @@ static inline int dr_reload_data( void )
 	/* destroy old data */
 	if (old_data)
 		free_rt_data( old_data, 1 );
+
+	/* generate new blacklist from the routing info */
+	populate_dr_bls((*rdata)->pgw_addr_l);
+
 	return 0;
 }
 
@@ -258,6 +284,12 @@ static int dr_init(void)
 		goto error;
 	}
 
+	drl_table.len = strlen(drl_table.s);
+	if (drl_table.s[0]==0) {
+		LM_CRIT("mandatory parameter \"DRL_TABLE\"  found empty\n");
+		goto error;
+	}
+
 	drg_user_col.len = strlen(drg_user_col.s);
 	drg_domain_col.len = strlen(drg_domain_col.s);
 	drg_grpid_col.len = strlen(drg_grpid_col.s);
@@ -279,6 +311,28 @@ static int dr_init(void)
 				ruri_avp_spec.len, ruri_avp_spec.s);
 			return E_CFG;
 		}
+	}
+	if (attrs_avp_spec.s) {
+		attrs_avp_spec.len = strlen(attrs_avp_spec.s);
+
+		if (pv_parse_spec( &attrs_avp_spec, &avp_spec)==0
+		|| avp_spec.type!=PVT_AVP) {
+			LM_ERR("malformed or non AVP [%.*s] for ATTRS AVP definition\n",
+				attrs_avp_spec.len, attrs_avp_spec.s);
+			return E_CFG;
+		}
+
+		if( pv_get_avp_name(0, &(avp_spec.pvp), &(attrs_avp.name),
+		&(attrs_avp.type) )!=0) {
+			LM_ERR("[%.*s]- invalid AVP definition for ATTRS AVP\n",
+				attrs_avp_spec.len, attrs_avp_spec.s);
+			return E_CFG;
+		}
+	}
+
+	if (init_dr_bls()!=0) {
+		LM_ERR("failed to init DR blacklists\n");
+		return E_CFG;
 	}
 
 	/* data pointer in shm */
@@ -312,19 +366,6 @@ static int dr_init(void)
 		return -1;
 	}
 
-	/* init DB connection for loading routing data */
-	if ( (db_hdl=dr_dbf.init(&db_url))==0 ) {
-		LM_CRIT("cannot initialize database connection\n");
-		goto error;
-	}
-
-	if ( dr_reload_data()!=0 ) {
-		LM_CRIT("failed to load routing data\n");
-		goto error;
-	}
-
-	dr_dbf.close( db_hdl );
-	db_hdl = 0;
 	return 0;
 error:
 	if (ref_lock) {
@@ -357,6 +398,12 @@ static int dr_child_init(int rank)
 		return -1;
 	}
 
+	/* child 1 load the routing info */
+	if ( (rank==1) && dr_reload_data()!=0 ) {
+		LM_CRIT("failed to load routing data\n");
+		return -1;
+	}
+
 	/* set GROUP table for workers */
 	if (dr_dbf.use_table( db_hdl, &drg_table) < 0) {
 		LM_ERR("cannot select table \"%.*s\"\n", drg_table.len, drg_table.s);
@@ -369,7 +416,12 @@ static int dr_child_init(int rank)
 
 static int mi_child_init( void )
 {
-	return dr_child_init(1);
+	/* init DB connection */
+	if ( (db_hdl=dr_dbf.init(&db_url))==0 ) {
+		LM_CRIT("cannot initialize database connection\n");
+		return -1;
+	}
+	return 0;
 }
 
 
@@ -395,6 +447,9 @@ static int dr_exit(void)
 		lock_dealloc( ref_lock );
 		ref_lock = 0;
 	}
+
+	/* destroy blacklists */
+	destroy_dr_bls();
 
 	return 0;
 }
@@ -545,12 +600,13 @@ static int do_routing_1(struct sip_msg* msg, char* str1, char* str2)
 	return do_routing(msg, (dr_group_t*)str1);
 }
 
-static int next_routing(struct sip_msg* msg)
+
+static int use_next_gw(struct sip_msg* msg)
 {
 	struct usr_avp *avp;
 	int_str val;
 
-	/* search for the first AVP containing a string */
+	/* search for the first RURI AVP containing a string */
 	do {
 		avp = search_first_avp(ruri_avp.type, ruri_avp.name, &val, 0);
 	}while (avp && (avp->flags&AVP_VAL_STR)==0 );
@@ -561,11 +617,20 @@ static int next_routing(struct sip_msg* msg)
 		LM_ERR("failed to rewite RURI\n");
 		return -1;
 	}
+	destroy_avp(avp);
+
+	/* remove the old attrs */
+	do {
+		avp = search_first_avp(attrs_avp.type, attrs_avp.name, &val, 0);
+	}while (avp && (avp->flags&AVP_VAL_STR)==0 );
+
+	if (avp)
+		destroy_avp(avp);
 
 	LM_DBG("setting new RURI <%.*s>\n", val.s.len,val.s.s);
-	destroy_avp(avp);
 	return 1;
 }
+
 
 static int do_routing(struct sip_msg* msg, dr_group_t *drg)
 {
@@ -750,20 +815,33 @@ again:
 		}
 		LM_DBG("adding gw [%d] as avp \"%.*s\"\n",
 			local_gwlist[j], ruri->len, ruri->s);
-		/* add avp */
+		/* add ruri avp */
 		val.s = *ruri;
 		if (add_avp( AVP_VAL_STR|(ruri_avp.type),ruri_avp.name, val)!=0 ) {
-			LM_ERR("faield to insert avp\n");
+			LM_ERR("failed to insert ruri avp\n");
 			pkg_free(ruri->s);
 			goto error2;
 		}
 		pkg_free(ruri->s);
+		/* add attrs avp */
+		val.s = rt_info->pgwl[local_gwlist[j]].pgw->attrs;
+		if (add_avp( AVP_VAL_STR|(attrs_avp.type),attrs_avp.name, val)!=0 ) {
+			LM_ERR("failed to insert attrs avp\n");
+			goto error2;
+		}
 	}
 
 	/* use first GW in RURI */
 	ruri = build_ruri(&uri, rt_info->pgwl[local_gwlist[0]].pgw->strip,
 			&rt_info->pgwl[local_gwlist[0]].pgw->pri,
 			&rt_info->pgwl[local_gwlist[0]].pgw->ip);
+
+	/* add attrs avp */
+	val.s = rt_info->pgwl[local_gwlist[0]].pgw->attrs;
+	if (add_avp( AVP_VAL_STR|(attrs_avp.type),attrs_avp.name, val)!=0 ) {
+		LM_ERR("failed to insert attrs avp\n");
+		goto error2;
+	}
 
 	/* we are done reading -> unref the data */
 	lock_get( ref_lock );
@@ -888,6 +966,7 @@ static int strip_username(struct sip_msg* msg, int strip)
 	return 0;
 }
 
+
 static int is_from_gw_0(struct sip_msg* msg, char* str, char* str2)
 {
 	pgw_addr_t *pgwa = NULL;
@@ -941,5 +1020,47 @@ static int is_from_gw_2(struct sip_msg* msg, char* str1, char* str2)
 		pgwa = pgwa->next;
 	}
 	return -1;
+}
+
+
+static int goes_to_gw_1(struct sip_msg* msg, char* _type, char* _f2)
+{
+	pgw_addr_t *pgwa = NULL;
+	struct sip_uri puri;
+	struct ip_addr *ip;
+	str *uri;
+	int type;
+
+	if(rdata==NULL || *rdata==NULL || msg==NULL)
+		return -1;
+
+	uri = GET_NEXT_HOP(msg);
+	type = (int)(long)_type;
+
+	if (parse_uri(uri->s, uri->len, &puri)<0){
+		LM_ERR("bad uri <%.*s>\n", uri->len, uri->s);
+		return -1;
+	}
+
+	if ( ((ip=str2ip(&puri.host))!=0)
+#ifdef USE_IPV6
+	|| ((ip=str2ip6(&puri.host))!=0)
+#endif
+	){
+		pgwa = (*rdata)->pgw_addr_l;
+		while(pgwa) {
+			if( (type<0 || type==pgwa->type) && ip_addr_cmp(&pgwa->ip, ip))
+				return 1;
+			pgwa = pgwa->next;
+		}
+	}
+
+	return -1;
+}
+
+
+static int goes_to_gw_0(struct sip_msg* msg, char* _type, char* _f2)
+{
+	return goes_to_gw_1(msg, (char*)(long)-1, _f2);
 }
 
