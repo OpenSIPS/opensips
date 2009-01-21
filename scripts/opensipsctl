@@ -1479,7 +1479,7 @@ opensips_start() {
 opensips_stop() {
 
 	# In case stop was_called in restart, it should not exit.
-	if [ $1 == "restart" ]
+	if [ "$1" == "restart" ]
 	then
 		echo
 		minfo "OpenSIPS restarting..."
