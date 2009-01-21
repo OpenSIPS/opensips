@@ -123,7 +123,7 @@
 	<section>
 	<title>Routing Rule Definition</title>
 	<para>
-	Dynamic routing rules are stored in a database, in three tables:
+	Dynamic routing rules are stored in a database, in four tables:
 	</para>
 	<itemizedlist>
 	<listitem>
@@ -138,6 +138,11 @@
 	<para>one for storing the users mappings over groups
 	</para>
 	</listitem>
+	<listitem>
+        <para>one for storing a list of gateways, so you don't have to enter all
+	the elements every time you need it
+        </para>
+        </listitem>
 	</itemizedlist>
 	<section>
 	<title>Gateway Addresses</title>
@@ -256,7 +261,7 @@
 
 
 	<section>
-	<title>Destionation/GW lists</title>
+	<title>Destination/GW lists</title>
 	<para>
 	For each rule, you can set a list of destinations to be used. The list is
 	comma or pipe separated enumeration of the destinations. The module
@@ -890,6 +895,9 @@ modparam("drouting", "drg_table", "groups")
 		<para>
 		The name of the db table storing definitions of destination lists (to 
 		be used directly by the routing rules).
+		You will have a identifier to a group of gateways instead of having all the
+		members of the group as a individual elements.
+		Very useful to reuse a list of gateways in different places.
 		</para>
 		<para>
 		<emphasis>	Default value is <quote>dr_gw_lists</quote>.
@@ -921,7 +929,7 @@ modparam("drouting", "drl_table", "my_gw_lists")
 			randomly arranged (only the two elements are randomly selected);
 			groups do maintain their order (as given); the resulting list is 
 			used (with all the defined destinations).
-			Ex: 1,2;3,4,5;6 -> randomiser -> 
+			Ex: 1,2;3,4,5;6 -> randomizer -> 
 			(A) 2,1;4,3,5;6  -> usage 2,1,4,3,5,6
 			(B) 1,2;3,5,4;6  -> usage 1,2,3,5,4,6
 		</listitem>
@@ -929,7 +937,7 @@ modparam("drouting", "drl_table", "my_gw_lists")
 			<emphasis>2</emphasis> - from each destination group, only a 
 			single destination is randomly selected; groups do maintain their
 			order (as given);
-			Ex: 1,2;3,4,5;6 -> randomiser ->
+			Ex: 1,2;3,4,5;6 -> randomizer ->
 			(A) 2;4;6  -> usage 2,4,6
 			(B) 1;5;6  -> usage 1,5,6
 		</listitem>

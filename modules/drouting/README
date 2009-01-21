@@ -166,11 +166,12 @@ Chapter 1. Admin Guide
 
 1.1.4. Routing Rule Definition
 
-   Dynamic routing rules are stored in a database, in three
-   tables:
+   Dynamic routing rules are stored in a database, in four tables:
      * one for storing the gateway definitions
      * one for storing the routing rule definitions
      * one for storing the users mappings over groups
+     * one for storing a list of gateways, so you don't have to
+       enter all the elements every time you need it
 
 1.1.4.1. Gateway Addresses
 
@@ -201,7 +202,7 @@ Chapter 1. Admin Guide
    2    10   10.10.10.10      2     3333       Gateway 2
    3    20   10.10.10.11      0                Gateway 3
 
-1.1.4.2. Destionation/GW lists
+1.1.4.2. Destination/GW lists
 
    For each rule, you can set a list of destinations to be used.
    The list is comma or pipe separated enumeration of the
@@ -482,7 +483,10 @@ modparam("drouting", "drg_table", "groups")
 1.3.5. drl_table(str)
 
    The name of the db table storing definitions of destination
-   lists (to be used directly by the routing rules).
+   lists (to be used directly by the routing rules). You will have
+   a identifier to a group of gateways instead of having all the
+   members of the group as a individual elements. Very useful to
+   reuse a list of gateways in different places.
 
    Default value is "dr_gw_lists".
 
@@ -502,11 +506,11 @@ modparam("drouting", "drl_table", "my_gw_lists")
        (only the two elements are randomly selected); groups do
        maintain their order (as given); the resulting list is used
        (with all the defined destinations). Ex: 1,2;3,4,5;6 ->
-       randomiser -> (A) 2,1;4,3,5;6 -> usage 2,1,4,3,5,6 (B)
+       randomizer -> (A) 2,1;4,3,5;6 -> usage 2,1,4,3,5,6 (B)
        1,2;3,5,4;6 -> usage 1,2,3,5,4,6
      * 2 - from each destination group, only a single destination
        is randomly selected; groups do maintain their order (as
-       given); Ex: 1,2;3,4,5;6 -> randomiser -> (A) 2;4;6 -> usage
+       given); Ex: 1,2;3,4,5;6 -> randomizer -> (A) 2;4;6 -> usage
        2,4,6 (B) 1;5;6 -> usage 1,5,6
 
    Default value is "0".
