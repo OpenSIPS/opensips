@@ -77,11 +77,6 @@ typedef struct mi_export_ {
 
 
 
-static mi_flush_f *crt_flush_fnct = NULL;
-static void *crt_flush_param = NULL;
-
-
-
 int register_mi_cmd( mi_cmd_f f, char *name, void *param,
 		mi_child_init_f in, unsigned int flags);
 
@@ -90,6 +85,12 @@ int register_mi_mod( char *mod_name, mi_export_t *mis);
 int init_mi_child();
 
 struct mi_cmd* lookup_mi_cmd( char *name, int len);
+
+
+extern mi_flush_f *crt_flush_fnct;
+extern void *crt_flush_param;
+
+
 
 static inline struct mi_root* run_mi_cmd(struct mi_cmd *cmd, struct mi_root *t,
 										mi_flush_f *f, void *param)
@@ -103,8 +104,8 @@ static inline struct mi_root* run_mi_cmd(struct mi_cmd *cmd, struct mi_root *t,
 	ret = cmd->f( t, cmd->param);
 	
 	/* reset the flush function */
-	crt_flush_fnct = NULL;
-	crt_flush_param = NULL;
+	crt_flush_fnct = 0;
+	crt_flush_param = 0;
 
 	return ret;
 }

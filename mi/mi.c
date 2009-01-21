@@ -52,6 +52,9 @@
 static struct mi_cmd*  mi_cmds = 0;
 static int mi_cmds_no = 0;
 
+mi_flush_f *crt_flush_fnct = NULL;
+void *crt_flush_param = NULL;
+
 
 static inline int get_mi_id( char *name, int len)
 {
