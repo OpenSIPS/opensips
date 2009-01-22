@@ -753,8 +753,6 @@ void timer_send_notify(unsigned int ticks,void *param)
 		dialog= NULL;
 	}
 
-	pkg_free(buf);
-
 	/* update the rlpres table */
 	update_cols[0]= &str_updated_col;
 	update_vals[0].type = DB_INT;
