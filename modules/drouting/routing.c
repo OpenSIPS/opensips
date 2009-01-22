@@ -322,7 +322,7 @@ add_dst(
 	}
 	if (attrs) {
 		pgw->attrs.len = l_attrs;
-		pgw->attrs.s = ((char*)(pgw+1))+l_ip+l_ip;
+		pgw->attrs.s = ((char*)(pgw+1))+l_ip+l_pri;
 		memcpy(pgw->attrs.s, attrs, l_attrs);
 	}
 	pgw->id = id;
@@ -402,13 +402,8 @@ done:
 	return 0;
 
 err_exit:
-	if(NULL!=pgw) {
-		if (NULL!=pgw->ip.s)
-			shm_free(pgw->ip.s);
-		if(NULL!=pgw->pri.s)
-			shm_free(pgw->pri.s);
+	if(NULL!=pgw)
 		shm_free(pgw);
-	}
 	return -1;
 }
 
