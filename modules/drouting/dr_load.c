@@ -445,10 +445,9 @@ rt_data_t* dr_load_routing_info( db_func_t *dr_dbf, db_con_t* db_hdl,
 				break;
 			}
 		} while(RES_ROW_N(res)>0);
-
-		dr_dbf->free_result(db_hdl, res);
-		res = 0;
 	}
+	dr_dbf->free_result(db_hdl, res);
+	res = 0;
 
 	/* read the routing rules */
 	if (dr_dbf->use_table( db_hdl, drr_table) < 0) {
