@@ -618,16 +618,15 @@ static int use_next_gw(struct sip_msg* msg)
 		return -1;
 	}
 	destroy_avp(avp);
+	LM_DBG("new RURI set to <%.*s>\n", val.s.len,val.s.s);
 
 	/* remove the old attrs */
+	avp = NULL;
 	do {
-		avp = search_first_avp(attrs_avp.type, attrs_avp.name, &val, 0);
+		if (avp) destroy_avp(avp);
+		avp = search_first_avp(attrs_avp.type, attrs_avp.name, NULL, 0);
 	}while (avp && (avp->flags&AVP_VAL_STR)==0 );
 
-	if (avp)
-		destroy_avp(avp);
-
-	LM_DBG("setting new RURI <%.*s>\n", val.s.len,val.s.s);
 	return 1;
 }
 
