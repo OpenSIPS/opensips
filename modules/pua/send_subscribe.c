@@ -334,7 +334,7 @@ void subs_cback_func(struct cell *t, int cb_type, struct tmcb_params *ps)
 		}			
 		if( pto->tag_value.s ==NULL || pto->tag_value.len == 0)
 		{
-			LM_ERR("no from tag value present\n");
+			LM_ERR("no to tag value present\n");
 			goto done;
 		}
 		hentity->call_id=  msg->callid->body;
