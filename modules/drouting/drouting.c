@@ -174,7 +174,7 @@ static param_export_t params[] = {
 	{"drg_domain_col",  STR_PARAM, &drg_domain_col.s},
 	{"drg_grpid_col",   STR_PARAM, &drg_grpid_col.s },
 	{"ruri_avp",        STR_PARAM, &ruri_avp_spec.s },
-	{"attrs_avp",       STR_PARAM, &ruri_avp_spec.s },
+	{"attrs_avp",       STR_PARAM, &attrs_avp_spec.s},
 	{"sort_order",      INT_PARAM, &sort_order      },
 	{"fetch_rows",      INT_PARAM, &dr_fetch_rows   },
 	{"force_dns",       INT_PARAM, &dr_force_dns    },
@@ -626,6 +626,7 @@ static int use_next_gw(struct sip_msg* msg)
 		if (avp) destroy_avp(avp);
 		avp = search_first_avp(attrs_avp.type, attrs_avp.name, NULL, 0);
 	}while (avp && (avp->flags&AVP_VAL_STR)==0 );
+	if (avp) destroy_avp(avp);
 
 	return 1;
 }
@@ -824,6 +825,7 @@ again:
 		pkg_free(ruri->s);
 		/* add attrs avp */
 		val.s = rt_info->pgwl[local_gwlist[j]].pgw->attrs;
+		LM_DBG("setting attr [%.*s] as avp\n",val.s.len,val.s.s);
 		if (add_avp( AVP_VAL_STR|(attrs_avp.type),attrs_avp.name, val)!=0 ) {
 			LM_ERR("failed to insert attrs avp\n");
 			goto error2;
@@ -837,6 +839,7 @@ again:
 
 	/* add attrs avp */
 	val.s = rt_info->pgwl[local_gwlist[0]].pgw->attrs;
+	LM_DBG("setting attr [%.*s] as for ruri\n",val.s.len,val.s.s);
 	if (add_avp( AVP_VAL_STR|(attrs_avp.type),attrs_avp.name, val)!=0 ) {
 		LM_ERR("failed to insert attrs avp\n");
 		goto error2;
