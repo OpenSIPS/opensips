@@ -403,10 +403,18 @@ done:
 		LM_ERR("failed to send SIP reply\n");
 		goto error;
 	}	
+	pkg_free(res_id->s);
+	pkg_free(res_id);
 
 	return 1;
 
 error:
+	if(res_id)
+	{
+		pkg_free(res_id->s);
+		pkg_free(res_id);
+	}
+
 	return err_ret;
 }
 /* callid, from_tag, to_tag parameters must be allocated */
