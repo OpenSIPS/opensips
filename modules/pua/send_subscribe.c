@@ -452,6 +452,16 @@ void subs_cback_func(struct cell *t, int cb_type, struct tmcb_params *ps)
 		lock_release(&HashT->p_records[hash_code].lock);
 		goto done;
 	}
+	else
+	{
+		/* if no record found, but not an initial request -> return erorr */
+		if(hentity->call_id.s != NULL)
+		{
+			LM_ERR("Not an initial request and no record found in hashtable\n");
+			lock_release(&HashT->p_records[hash_code].lock);
+			goto error;
+		}
+	}
 
 	lock_release(&HashT->p_records[hash_code].lock);
 
