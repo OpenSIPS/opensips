@@ -403,10 +403,17 @@ done:
 		LM_ERR("while sending reply\n");
 		goto error;
 	}	
+	pkg_free(res_id->s);
+	pkg_free(res_id);
 
 	return 1;
 
 error:
+	if(res_id)
+	{
+		pkg_free(res_id->s);
+		pkg_free(res_id);
+	}
 	return err_ret;
 }
 /* callid, from_tag, to_tag parameters must be allocated */
@@ -749,9 +756,6 @@ void timer_send_notify(unsigned int ticks,void *param)
 		pkg_free(dialog);
 		dialog= NULL;
 	}
-
-	pkg_free(buf);
-	buf = NULL;
 
 	/* update the rlpres table */
 	update_cols[0]= &str_updated_col;
