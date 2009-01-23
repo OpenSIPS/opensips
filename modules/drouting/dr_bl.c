@@ -68,6 +68,9 @@ int init_dr_bls(void)
 	str val;
 	char *p;
 
+	if (bl_lists==NULL)
+		return 0;
+
 	for( i=0 ; i<bl_lists_size ; i++ ) {
 		LM_DBG("processing bl definition <%s>\n",bl_lists[i]);
 		/* get name */
