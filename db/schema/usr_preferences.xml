@@ -68,7 +68,7 @@
         <description>AVP type</description>
     </column>
 
-    <column>
+    <column id="value">
         <name>value</name>
         <type>string</type>
         <size>&avp_val_len;</size>
@@ -97,4 +97,8 @@
         <colref linkend="attribute"/>
     </index>
 
+    <index>
+	<name>value_idx</name>
+	<colref linkend="value"/>
+    </index>
 </table>
