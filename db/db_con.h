@@ -30,6 +30,7 @@
 #define DB_CON_H
 
 #include "../str.h"
+#include "db_ps.h"
 
 
 /**
@@ -37,8 +38,9 @@
  * are used as a connection handle from modules uses the db API.
  */
 typedef struct {
-	const str* table;      /**< Default table that should be used              */
-	unsigned long tail;    /**< Variable length tail, database module specific */
+	const str* table;   /**< Default table that should be used        */
+	db_ps_t* curr_ps;   /**< Prepared statement to be used for next query */
+	unsigned long tail; /**< Variable length tail, database module specific */
 } db_con_t;
 
 

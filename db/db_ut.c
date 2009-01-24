@@ -155,7 +155,7 @@ inline int db_str2time(const char* _s, time_t* _v)
 }
 
 
-inline int db_time2str(time_t _v, char* _s, int* _l)
+inline int db_time2str_nq(time_t _v, char* _s, int* _l)
 {
 	struct tm* t;
 	int l;
@@ -164,8 +164,6 @@ inline int db_time2str(time_t _v, char* _s, int* _l)
 		LM_ERR("Invalid parameter value\n");
 		return -1;
 	}
-
-	*_s++ = '\'';
 
 	/* Convert time_t structure to format accepted by the database */
 	t = localtime(&_v);
@@ -180,8 +178,25 @@ inline int db_time2str(time_t _v, char* _s, int* _l)
 	}
 	*_l = l;
 
-	*(_s + l) = '\'';
-	*_l = l + 2;
+	return 0;
+}
+
+
+inline int db_time2str(time_t _v, char* _s, int* _l)
+{
+	if ((!_s) || (!_l) || (*_l < 2)) {
+		LM_ERR("Invalid parameter value\n");
+		return -1;
+	}
+
+	*_s++ = '\'';
+
+	if (db_time2str_nq(_v, _s, _l)!=0)
+		return -1;
+
+	*(_s + *_l) = '\'';
+	*_l += 2;
+
 	return 0;
 }
 
@@ -231,12 +246,16 @@ int db_print_values(const db_con_t* _c, char* _b, const int _l, const db_val_t* 
 	}
 
 	for(i = 0; i < _n; i++) {
-		l = _l - len;
-		if ( (*val2str)(_c, _v + i, _b + len, &l) < 0) {
-			LM_ERR("Error while converting value to string\n");
-			return -1;
+		if (CON_HAS_PS(_c)) {
+			*(_b+len++) = '?';
+		} else {
+			l = _l - len;
+			if ( (*val2str)(_c, _v + i, _b + len, &l) < 0) {
+				LM_ERR("Error while converting value to string\n");
+				return -1;
+			}
+			len += l;
 		}
-		len += l;
 		if (i != (_n - 1)) {
 			*(_b + len) = ',';
 			len++;
@@ -262,7 +281,8 @@ int db_print_where(const db_con_t* _c, char* _b, const int _l, const db_key_t* _
 
 	for(i = 0; i < _n; i++) {
 		if (_o) {
-			ret = snprintf(_b + len, _l - len, "%.*s%s", _k[i]->len, _k[i]->s, _o[i]);
+			ret = snprintf(_b + len, _l - len, "%.*s%s", 
+				_k[i]->len, _k[i]->s, _o[i]);
 			if (ret < 0 || ret >= (_l - len)) goto error;
 			len += ret;
 		} else {
@@ -270,12 +290,16 @@ int db_print_where(const db_con_t* _c, char* _b, const int _l, const db_key_t* _
 			if (ret < 0 || ret >= (_l - len)) goto error;
 			len += ret;
 		}
-		l = _l - len;
-		if ( (*val2str)(_c, &(_v[i]), _b + len, &l) < 0) {
-			LM_ERR("Error while converting value to string\n");
-			return -1;
+		if (CON_HAS_PS(_c)) {
+			*(_b+len++) = '?';
+		} else {
+			l = _l - len;
+			if ( (*val2str)(_c, &(_v[i]), _b + len, &l) < 0) {
+				LM_ERR("Error while converting value to string\n");
+				return -1;
+			}
+			len += l;
 		}
-		len += l;
 		if (i != (_n - 1)) {
 			ret = snprintf(_b + len, _l - len, " AND ");
 			if (ret < 0 || ret >= (_l - len)) goto error;
@@ -309,12 +333,16 @@ int db_print_set(const db_con_t* _c, char* _b, const int _l, const db_key_t* _k,
 		if (ret < 0 || ret >= (_l - len)) goto error;
 		len += ret;
 
-		l = _l - len;
-		if ( (*val2str)(_c, &(_v[i]), _b + len, &l) < 0) {
-			LM_ERR("Error while converting value to string\n");
-			return -1;
+		if (CON_HAS_PS(_c)) {
+			*(_b+len++) = '?';
+		} else {
+			l = _l - len;
+			if ( (*val2str)(_c, &(_v[i]), _b + len, &l) < 0) {
+				LM_ERR("Error while converting value to string\n");
+				return -1;
+			}
+			len += l;
 		}
-		len += l;
 		if (i != (_n - 1)) {
 			if ((_l - len) >= 1) {
 				*(_b + len++) = ',';

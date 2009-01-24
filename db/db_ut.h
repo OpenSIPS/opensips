@@ -125,6 +125,7 @@ int db_time2str(time_t _v, char* _s, int* _l);
  * \return zero on sucess, negative on conversion errors
  */
 int db_str2time(const char* _s, time_t* _v);
+int db_time2str_nq(time_t _v, char* _s, int* _l);
 
 
 /**

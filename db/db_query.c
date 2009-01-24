@@ -47,7 +47,7 @@ int db_do_query(const db_con_t* _h, const db_key_t* _k, const db_op_t* _op,
 {
 	int off, ret;
 
-	if (!_h || !val2str || !submit_query || !store_result) {
+	if (!_h || !val2str || !submit_query || (_r && !store_result)) {
 		LM_ERR("invalid parameter value\n");
 		return -1;
 	}
