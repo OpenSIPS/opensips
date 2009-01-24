@@ -101,7 +101,7 @@ dbtext:
 	for FILE in  $(wildcard $(ROOT)/scripts/dbtext/opensips/*) ; do \
 		if [ -f "$$FILE" ]; then \
 			if [  "$$FILE" != "$(ROOT)/scripts/dbtext/opensips/version" ]; then \
-				tail -n 1 "$$FILE" >> "$(ROOT)/scripts/dbtext/opensips/version" ; \
+				tail -1 "$$FILE" >> "$(ROOT)/scripts/dbtext/opensips/version" ; \
  				head -n 1 "$$FILE" > $TMPFILE ; \
 				cp $TMPFILE "$$FILE" ; \
 			fi ; \
@@ -126,7 +126,7 @@ db_berkeley:
 	for FILE in  $(wildcard $(ROOT)/scripts/db_berkeley/opensips/*) ; do \
 		if [ -f "$$FILE" ]; then \
 			if [  "$$FILE" != "$(ROOT)/scripts/db_berkeley/opensips/version" ]; then \
-				tail -n 2 "$$FILE" >> "$(ROOT)/scripts/db_berkeley/opensips/version" ; \
+				tail -2 "$$FILE" >> "$(ROOT)/scripts/db_berkeley/opensips/version" ; \
  				head -n 10 "$$FILE" > $TMPFILE ; \
 				cp $TMPFILE "$$FILE" ; \
 			fi ; \
