@@ -1,5 +1,5 @@
 /*
- * $Id: db.h 4472 2008-07-11 19:51:40Z bogdan_iancu $
+ * $Id$
  *
  * Copyright (C) 2009 Voice Sistem SRL
  *
@@ -38,6 +38,7 @@ typedef void * db_ps_t;
 /** Pointer to the address of the current used prepared statment */
 #define CON_PS_REFERENCE(cn)      ((cn)->curr_ps)
 
+#define CON_RESET_CURR_PS(cn)    *((void***)&cn->curr_ps)=NULL
 
 #endif
 
