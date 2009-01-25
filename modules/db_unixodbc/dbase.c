@@ -243,12 +243,14 @@ int db_unixodbc_free_result(db_con_t* _h, db_res_t* _r)
  * _nc: number of columns to return
  * _o: order by the specified column
  */
-int db_unixodbc_query(const db_con_t* _h, const db_key_t* _k, const db_op_t* _op,
-const db_val_t* _v, const db_key_t* _c, const int _n, const int _nc,
-const db_key_t _o, db_res_t** _r)
+int db_unixodbc_query(const db_con_t* _h, const db_key_t* _k,
+		const db_op_t* _op, const db_val_t* _v, const db_key_t* _c,
+		const int _n, const int _nc, const db_key_t _o, db_res_t** _r)
 {
+	CON_RESET_CURR_PS(_h); /* no prepared statements support */
 	return db_do_query(_h, _k, _op, _v, _c, _n, _nc, _o, _r,
-	db_unixodbc_val2str,  db_unixodbc_submit_query, db_unixodbc_store_result);
+		db_unixodbc_val2str,  db_unixodbc_submit_query,
+		db_unixodbc_store_result);
 }
 
 /*
@@ -256,8 +258,9 @@ const db_key_t _o, db_res_t** _r)
  */
 int db_unixodbc_raw_query(const db_con_t* _h, const str* _s, db_res_t** _r)
 {
+	CON_RESET_CURR_PS(_h); /* no prepared statements support */
 	return db_do_raw_query(_h, _s, _r, db_unixodbc_submit_query,
-	db_unixodbc_store_result);
+		db_unixodbc_store_result);
 }
 
 /*
@@ -269,8 +272,9 @@ int db_unixodbc_raw_query(const db_con_t* _h, const str* _s, db_res_t** _r)
  */
 int db_unixodbc_insert(const db_con_t* _h, const db_key_t* _k, const db_val_t* _v, const int _n)
 {
+	CON_RESET_CURR_PS(_h); /* no prepared statements support */
 	return db_do_insert(_h, _k, _v, _n, db_unixodbc_val2str,
-	db_unixodbc_submit_query);
+		db_unixodbc_submit_query);
 }
 
 /*
@@ -284,8 +288,9 @@ int db_unixodbc_insert(const db_con_t* _h, const db_key_t* _k, const db_val_t* _
 int db_unixodbc_delete(const db_con_t* _h, const db_key_t* _k, const db_op_t* _o,
 const db_val_t* _v, const int _n)
 {
+	CON_RESET_CURR_PS(_h); /* no prepared statements support */
 	return db_do_delete(_h, _k, _o, _v, _n, db_unixodbc_val2str,
-	db_unixodbc_submit_query);
+		db_unixodbc_submit_query);
 }
 
 /*
@@ -299,20 +304,24 @@ const db_val_t* _v, const int _n)
  * _n: number of key=value pairs
  * _un: number of columns to update
  */
-int db_unixodbc_update(const db_con_t* _h, const db_key_t* _k, const db_op_t* _o,
-const db_val_t* _v, const db_key_t* _uk, const db_val_t* _uv, const int _n, const int _un)
+int db_unixodbc_update(const db_con_t* _h, const db_key_t* _k,
+		const db_op_t* _o, const db_val_t* _v, const db_key_t* _uk,
+		const db_val_t* _uv, const int _n, const int _un)
 {
+	CON_RESET_CURR_PS(_h); /* no prepared statements support */
 	return db_do_update(_h, _k, _o, _v, _uk, _uv, _n, _un, db_unixodbc_val2str,
-	db_unixodbc_submit_query);
+		db_unixodbc_submit_query);
 }
 
 /*
  * Just like insert, but replace the row if it exists
  */
-int db_unixodbc_replace(const db_con_t* _h, const db_key_t* _k, const db_val_t* _v, const int _n)
+int db_unixodbc_replace(const db_con_t* _h, const db_key_t* _k, 
+		const db_val_t* _v, const int _n)
 {
+	CON_RESET_CURR_PS(_h); /* no prepared statements support */
 	return db_do_replace(_h, _k, _v, _n, db_unixodbc_val2str,
-	db_unixodbc_submit_query);
+		db_unixodbc_submit_query);
 }
 
 /*

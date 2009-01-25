@@ -356,12 +356,14 @@ int db_postgres_free_result(db_con_t* _con, db_res_t* _r)
  * _nc: number of columns to return
  * _o: order by the specified column
  */
-int db_postgres_query(const db_con_t* _h, const db_key_t* _k, const db_op_t* _op,
-	     const db_val_t* _v, const db_key_t* _c, const int _n, const int _nc,
-	     const db_key_t _o, db_res_t** _r)
+int db_postgres_query(const db_con_t* _h, const db_key_t* _k,
+	const db_op_t* _op, const db_val_t* _v, const db_key_t* _c, const int _n,
+	const int _nc, const db_key_t _o, db_res_t** _r)
 {
-	return db_do_query(_h, _k, _op, _v, _c, _n, _nc, _o, _r, db_postgres_val2str,
-		db_postgres_submit_query, db_postgres_store_result);
+	CON_RESET_CURR_PS(_h); /* no prepared statements support */
+	return db_do_query(_h, _k, _op, _v, _c, _n, _nc, _o, _r,
+		db_postgres_val2str, db_postgres_submit_query,
+		db_postgres_store_result);
 }
 
 
@@ -370,6 +372,7 @@ int db_postgres_query(const db_con_t* _h, const db_key_t* _k, const db_op_t* _op
  */
 int db_postgres_raw_query(const db_con_t* _h, const str* _s, db_res_t** _r)
 {
+	CON_RESET_CURR_PS(_h); /* no prepared statements support */
 	return db_do_raw_query(_h, _s, _r, db_postgres_submit_query,
 		db_postgres_store_result);
 }
@@ -483,13 +486,15 @@ done:
  * _v: values of the keys
  * _n: number of key=value pairs
  */
-int db_postgres_insert(const db_con_t* _h, const db_key_t* _k, const db_val_t* _v,
-		const int _n)
+int db_postgres_insert(const db_con_t* _h, const db_key_t* _k, 
+		const db_val_t* _v, const int _n)
 {
 	db_res_t* _r = NULL;
 
-	int tmp = db_do_insert(_h, _k, _v, _n, db_postgres_val2str, db_postgres_submit_query);
-	// finish the async query, otherwise the next query will not complete
+	CON_RESET_CURR_PS(_h); /* no prepared statements support */
+	int tmp = db_do_insert(_h, _k, _v, _n, db_postgres_val2str,
+		db_postgres_submit_query);
+	/* finish the async query, otherwise the next query will not complete */
 	if (db_postgres_store_result(_h, &_r) != 0)
 		LM_WARN("unexpected result returned");
 	
@@ -508,10 +513,12 @@ int db_postgres_insert(const db_con_t* _h, const db_key_t* _k, const db_val_t* _
  * _v: values of the keys that must match
  * _n: number of key=value pairs
  */
-int db_postgres_delete(const db_con_t* _h, const db_key_t* _k, const db_op_t* _o,
-		const db_val_t* _v, const int _n)
+int db_postgres_delete(const db_con_t* _h, const db_key_t* _k,
+		const db_op_t* _o, const db_val_t* _v, const int _n)
 {
 	db_res_t* _r = NULL;
+
+	CON_RESET_CURR_PS(_h); /* no prepared statements support */
 	int tmp = db_do_delete(_h, _k, _o, _v, _n, db_postgres_val2str,
 		db_postgres_submit_query);
 
@@ -536,17 +543,19 @@ int db_postgres_delete(const db_con_t* _h, const db_key_t* _k, const db_op_t* _o
  * _n: number of key=value pairs
  * _un: number of columns to update
  */
-int db_postgres_update(const db_con_t* _h, const db_key_t* _k, const db_op_t* _o,
-		const db_val_t* _v, const db_key_t* _uk, const db_val_t* _uv, const int _n,
-		const int _un)
+int db_postgres_update(const db_con_t* _h, const db_key_t* _k,
+		const db_op_t* _o, const db_val_t* _v, const db_key_t* _uk, 
+		const db_val_t* _uv, const int _n, const int _un)
 {
 	db_res_t* _r = NULL;
-	int tmp = db_do_update(_h, _k, _o, _v, _uk, _uv, _n, _un, db_postgres_val2str,
-		db_postgres_submit_query);
+
+	CON_RESET_CURR_PS(_h); /* no prepared statements support */
+	int tmp = db_do_update(_h, _k, _o, _v, _uk, _uv, _n, _un,
+		db_postgres_val2str, db_postgres_submit_query);
 
 	if (db_postgres_store_result(_h, &_r) != 0)
 		LM_WARN("unexpected result returned");
-	
+
 	if (_r)
 		db_free_result(_r);
 

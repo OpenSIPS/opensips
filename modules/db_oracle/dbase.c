@@ -356,6 +356,7 @@ int db_oracle_query(const db_con_t* _h, const db_key_t* _k, const db_op_t* _op,
 	cb._nw = 0;
 	CON_ORA(_h)->pqdata = &cb;
 	CON_ORA(_h)->bindpos = 0;
+	CON_RESET_CURR_PS(_h); /* no prepared statements support */
 	rc = db_do_query(_h, _k, _op, _v, _c, _n, _nc, _o, _r,
 		db_oracle_val2str, db_oracle_submit_query, db_oracle_store_result);
 	CON_ORA(_h)->pqdata = NULL;	/* paranoid for next call */
@@ -379,7 +380,7 @@ badparam:
 		return -1;
 	}
 
-
+	CON_RESET_CURR_PS(_h); /* no prepared statements support */
 	memset(&cb, 0, sizeof(cb));
 
 	p = _s->s;
@@ -433,6 +434,7 @@ int db_oracle_insert(const db_con_t* _h, const db_key_t* _k, const db_val_t* _v,
 	cb._nw = 0;
 	CON_ORA(_h)->pqdata = &cb;
 	CON_ORA(_h)->bindpos = 0;
+	CON_RESET_CURR_PS(_h); /* no prepared statements support */
 	rc = db_do_insert(_h, _k, _v, _n, db_oracle_val2str, db_oracle_submit_query);
 	CON_ORA(_h)->pqdata = NULL;	/* paranoid for next call */
 	return rc;
@@ -465,6 +467,7 @@ int db_oracle_delete(const db_con_t* _h, const db_key_t* _k, const db_op_t* _o,
 	cb._nw = 0;
 	CON_ORA(_h)->pqdata = &cb;
 	CON_ORA(_h)->bindpos = 0;
+	CON_RESET_CURR_PS(_h); /* no prepared statements support */
 	rc = db_do_delete(_h, _k, _o, _v, _n, db_oracle_val2str, db_oracle_submit_query);
 	CON_ORA(_h)->pqdata = NULL;	/* paranoid for next call */
 	return rc;
@@ -501,6 +504,7 @@ int db_oracle_update(const db_con_t* _h, const db_key_t* _k, const db_op_t* _o,
 	cb._nw = _n;
 	CON_ORA(_h)->pqdata = &cb;
 	CON_ORA(_h)->bindpos = 0;
+	CON_RESET_CURR_PS(_h); /* no prepared statements support */
 	rc = db_do_update(_h, _k, _o, _v, _uk, _uv, _n, _un,
 			db_oracle_val2str, db_oracle_submit_query);
 	CON_ORA(_h)->pqdata = NULL;	/* paranoid for next call */
