@@ -59,6 +59,7 @@ static inline int get_ha1(struct username* _username, str* _domain,
 	db_val_t vals[2];
 	db_key_t *col;
 	str result;
+	static db_ps_t auth_ps = NULL;
 
 	int n, nc;
 
@@ -68,14 +69,22 @@ static inline int get_ha1(struct username* _username, str* _domain,
 		return -1;
 	}
 
-	keys[0] = &user_column;
-	keys[1] = &domain_column;
-	/* should we calculate the HA1, and is it calculated with domain? */
-	col[0] = (_username->domain.len && !calc_ha1) ?
-		(&pass_column_2) : (&pass_column);
+	if (auth_ps==NULL) {
+		keys[0] = &user_column;
+		keys[1] = &domain_column;
+		/* should we calculate the HA1, and is it calculated with domain? */
+		col[0] = (_username->domain.len && !calc_ha1) ?
+			(&pass_column_2) : (&pass_column);
 
-	for (n = 0, cred=credentials; cred ; n++, cred=cred->next) {
-		col[1 + n] = &cred->attr_name;
+		for (n = 0, cred=credentials; cred ; n++, cred=cred->next) {
+			col[1 + n] = &cred->attr_name;
+		}
+
+		if (auth_dbf.use_table(auth_db_handle, _table) < 0) {
+			LM_ERR("failed to use_table\n");
+			pkg_free(col);
+			return -1;
+		}
 	}
 
 	VAL_TYPE(vals) = VAL_TYPE(vals + 1) = DB_STR;
@@ -90,14 +99,10 @@ static inline int get_ha1(struct username* _username, str* _domain,
 		VAL_STR(vals + 1) = *_domain;
 	}
 
+	CON_PS_REFERENCE(auth_db_handle) = &auth_ps;
+
 	n = (use_domain ? 2 : 1);
 	nc = 1 + credentials_n;
-	if (auth_dbf.use_table(auth_db_handle, _table) < 0) {
-		LM_ERR("failed to use_table\n");
-		pkg_free(col);
-		return -1;
-	}
-
 	if (auth_dbf.query(auth_db_handle, keys, 0, vals, col, n, nc, 0, res) < 0) {
 		LM_ERR("failed to query database\n");
 		pkg_free(col);
@@ -192,9 +197,10 @@ static int generate_avps(db_res_t* result)
 				ivalue.n);
 			break;
 		default:
-			LM_ERR("subscriber table column `%.*s' has unsuported type. "
+			LM_ERR("subscriber table column %d `%.*s' has unsuported type. "
 				"Only string/str or int columns are supported by"
-				"load_credentials.\n", result->col.names[i]->len, result->col.names[i]->s);
+				"load_credentials.\n", i,
+				result->col.names[i]->len, result->col.names[i]->s);
 			break;
 		}
 	}
