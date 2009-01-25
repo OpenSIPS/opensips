@@ -30,6 +30,8 @@
  * 2005-05-31 general definition of AVPs in credentials now accepted - ID AVP,
  *            STRING AVP, AVP aliases (bogdan)
  * 2006-03-01 pseudo variables support for domain name (bogdan)
+ * 2009-01-25 added prepared statements support in running the DB queries
+ *             (bogdan)
  */
 
 
