@@ -244,6 +244,7 @@ int db_mysql_query(const db_con_t* _h, const db_key_t* _k, const db_op_t* _op,
 	     const db_val_t* _v, const db_key_t* _c, const int _n, const int _nc,
 	     const db_key_t _o, db_res_t** _r)
 {
+	CON_RESET_CURR_PS(_h); /* no prepared statements support */
 	return db_do_query(_h, _k, _op, _v, _c, _n, _nc, _o, _r,
 	db_mysql_val2str, db_mysql_submit_query, db_mysql_store_result);
 }
@@ -365,6 +366,7 @@ int db_mysql_fetch_result(const db_con_t* _h, db_res_t** _r, const int nrows)
  */
 int db_mysql_raw_query(const db_con_t* _h, const str* _s, db_res_t** _r)
 {
+	CON_RESET_CURR_PS(_h); /* no prepared statements support */
 	return db_do_raw_query(_h, _s, _r, db_mysql_submit_query,
 	db_mysql_store_result);
 }
@@ -380,6 +382,7 @@ int db_mysql_raw_query(const db_con_t* _h, const str* _s, db_res_t** _r)
  */
 int db_mysql_insert(const db_con_t* _h, const db_key_t* _k, const db_val_t* _v, const int _n)
 {
+	CON_RESET_CURR_PS(_h); /* no prepared statements support */
 	return db_do_insert(_h, _k, _v, _n, db_mysql_val2str,
 	db_mysql_submit_query);
 }
@@ -397,6 +400,7 @@ int db_mysql_insert(const db_con_t* _h, const db_key_t* _k, const db_val_t* _v, 
 int db_mysql_delete(const db_con_t* _h, const db_key_t* _k, const db_op_t* _o,
 	const db_val_t* _v, const int _n)
 {
+	CON_RESET_CURR_PS(_h); /* no prepared statements support */
 	return db_do_delete(_h, _k, _o, _v, _n, db_mysql_val2str,
 	db_mysql_submit_query);
 }
@@ -418,6 +422,7 @@ int db_mysql_update(const db_con_t* _h, const db_key_t* _k, const db_op_t* _o,
 	const db_val_t* _v, const db_key_t* _uk, const db_val_t* _uv, const int _n, 
 	const int _un)
 {
+	CON_RESET_CURR_PS(_h); /* no prepared statements support */
 	return db_do_update(_h, _k, _o, _v, _uk, _uv, _n, _un, db_mysql_val2str,
 	db_mysql_submit_query);
 }
@@ -433,6 +438,7 @@ int db_mysql_update(const db_con_t* _h, const db_key_t* _k, const db_op_t* _o,
  */
 int db_mysql_replace(const db_con_t* _h, const db_key_t* _k, const db_val_t* _v, const int _n)
 {
+	CON_RESET_CURR_PS(_h); /* no prepared statements support */
 	return db_do_replace(_h, _k, _v, _n, db_mysql_val2str,
 	db_mysql_submit_query);
 }
@@ -473,6 +479,8 @@ int db_last_inserted_id(const db_con_t* _h)
 		return -1;
 	}
  
+	CON_RESET_CURR_PS(_h); /* no prepared statements support */
+
 	ret = snprintf(sql_buf, SQL_BUF_LEN, "insert into %.*s (", CON_TABLE(_h)->len, CON_TABLE(_h)->s);
 	if (ret < 0 || ret >= SQL_BUF_LEN) goto error;
 	off = ret;
