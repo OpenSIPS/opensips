@@ -43,7 +43,7 @@
 #define SEQ_MATCH_FALLBACK   1
 #define SEQ_MATCH_NO_ID      2
 
-typedef int (*create_dlg_f)(struct cell* t, struct sip_msg *req);
+typedef int (*create_dlg_f)(struct sip_msg *req);
 
 void init_dlg_handlers(char *rr_param, int dlg_flag,
 		pv_spec_t *timeout_avp, int default_timeout,

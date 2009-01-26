@@ -33,9 +33,12 @@
 #include "dlg_handlers.h"
 #include "../../sr_module.h"
 
+typedef struct dlg_cell *(*get_dlg_f)( void );
+
 struct dlg_binds {
 	register_dlgcb_f  register_dlgcb;
 	create_dlg_f      create_dlg;
+	get_dlg_f         get_dlg;
 };
 
 

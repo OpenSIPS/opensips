@@ -388,11 +388,17 @@ static int fixup_dlg_fval(void** param, int param_no)
 }
 
 
+static struct dlg_cell *w_get_dlg(void)
+{
+	return current_dlg_pointer;
+}
+
 
 int load_dlg( struct dlg_binds *dlgb )
 {
 	dlgb->register_dlgcb = register_dlgcb;
-	dlgb->create_dlg = dlg_create_dialog;
+	dlgb->create_dlg = w_create_dialog;
+	dlgb->get_dlg = w_get_dlg;
 	return 1;
 }
 
