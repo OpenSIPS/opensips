@@ -80,6 +80,7 @@ extern int early_dlgs_cnt;
 		if ( (_str).len != 0) { \
 			VAL_STR((_val)).s 		= (_str).s;\
 			VAL_STR((_val)).len 	= (_str).len;\
+			VAL_NULL(_val) = 0;\
 		} else { \
 			VAL_STR((_val)).s 		= NULL;\
 			VAL_STR((_val)).len 	= 0;\
