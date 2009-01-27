@@ -29,17 +29,18 @@ Daniel-Constantin Mierla
         1.3. Exported Parameters
 
               1.3.1. db_url (str)
-              1.3.2. table (str)
-              1.3.3. trace_flag (integer)
-              1.3.4. trace_on (integer)
-              1.3.5. traced_user_avp (str)
-              1.3.6. trace_table_avp (str)
-              1.3.7. duplicate_uri (str)
-              1.3.8. trace_local_ip (str)
+              1.3.2. trace_flag (integer)
+              1.3.3. trace_on (integer)
+              1.3.4. traced_user_avp (str)
+              1.3.5. trace_table_avp (str)
+              1.3.6. duplicate_uri (str)
+              1.3.7. trace_local_ip (str)
+              1.3.8. table (str)
 
         1.4. Exported Functions
 
               1.4.1. sip_trace()
+              1.4.2. trace_dialog()
 
         1.5. Exported MI Functions
 
@@ -51,14 +52,15 @@ Daniel-Constantin Mierla
    List of Examples
 
    1.1. Set db_url parameter
-   1.2. Set sip_trace parameter
-   1.3. Set trace_flag parameter
-   1.4. Set trace_on parameter
-   1.5. Set traced_user_avp parameter
-   1.6. Set trace_table_avp parameter
-   1.7. Set duplicate_uri parameter
-   1.8. Set trace_local_ip parameter
+   1.2. Set trace_flag parameter
+   1.3. Set trace_on parameter
+   1.4. Set traced_user_avp parameter
+   1.5. Set trace_table_avp parameter
+   1.6. Set duplicate_uri parameter
+   1.7. Set trace_local_ip parameter
+   1.8. Set sip_trace parameter
    1.9. sip_trace() usage
+   1.10. trace_dialog() usage
 
 Chapter 1. Admin Guide
 
@@ -111,40 +113,29 @@ Chapter 1. Admin Guide
 modparam("siptrace", "db_url", "mysql://user:passwd@host/dbname")
 ...
 
-1.3.2. table (str)
-
-   Name of the table where to store the SIP messages.
-
-   Default value is "sip_trace".
-
-   Example 1.2. Set sip_trace parameter
-...
-modparam("siptrace", "table", "strace")
-...
-
-1.3.3. trace_flag (integer)
+1.3.2. trace_flag (integer)
 
    Which flag is used to mark messages to trace
 
    Default value is "0".
 
-   Example 1.3. Set trace_flag parameter
+   Example 1.2. Set trace_flag parameter
 ...
 modparam("siptrace", "trace_flag", 22)
 ...
 
-1.3.4. trace_on (integer)
+1.3.3. trace_on (integer)
 
    Parameter to enable/disable trace (on(1)/off(0))
 
    Default value is "0".
 
-   Example 1.4. Set trace_on parameter
+   Example 1.3. Set trace_on parameter
 ...
 modparam("siptrace", "trace_on", 1)
 ...
 
-1.3.5. traced_user_avp (str)
+1.3.4. traced_user_avp (str)
 
    The name of the AVP storing the SIP URI of the traced user. If
    the AVP is set, messages are stored in database table and
@@ -154,13 +145,13 @@ modparam("siptrace", "trace_on", 1)
 
    Default value is "NULL" (feature disabled).
 
-   Example 1.5. Set traced_user_avp parameter
+   Example 1.4. Set traced_user_avp parameter
 ...
 modparam("siptrace", "traced_user_avp", "$avp(i:123)")
 modparam("siptrace", "traced_user_avp", "$avp(s:user)")
 ...
 
-1.3.6. trace_table_avp (str)
+1.3.5. trace_table_avp (str)
 
    The name of the AVP storing the name of the table where to
    store the SIP messages. If it is not set, the value of 'table'
@@ -170,25 +161,25 @@ modparam("siptrace", "traced_user_avp", "$avp(s:user)")
 
    Default value is "NULL" (feature disabled).
 
-   Example 1.6. Set trace_table_avp parameter
+   Example 1.5. Set trace_table_avp parameter
 ...
 modparam("siptrace", "trace_table_avp", "$avp(i:345)")
 modparam("siptrace", "trace_table_avp", "$avp(s:siptrace_table)")
 ...
 
-1.3.7. duplicate_uri (str)
+1.3.6. duplicate_uri (str)
 
    The address in form of SIP uri where to send a duplicate of
    traced message. It uses UDP all the time.
 
    Default value is "NULL".
 
-   Example 1.7. Set duplicate_uri parameter
+   Example 1.6. Set duplicate_uri parameter
 ...
 modparam("siptrace", "duplicate_uri", "sip:10.1.1.1:5888")
 ...
 
-1.3.8. trace_local_ip (str)
+1.3.7. trace_local_ip (str)
 
    The address to be used in fromip field for local generated
    messages. If not set, the module sets it to the address of the
@@ -196,9 +187,20 @@ modparam("siptrace", "duplicate_uri", "sip:10.1.1.1:5888")
 
    Default value is "NULL".
 
-   Example 1.8. Set trace_local_ip parameter
+   Example 1.7. Set trace_local_ip parameter
 ...
 modparam("siptrace", "trace_local_ip", "10.1.1.1:5064")
+...
+
+1.3.8. table (str)
+
+   Name of the table where to store the SIP messages.
+
+   Default value is "sip_trace".
+
+   Example 1.8. Set sip_trace parameter
+...
+modparam("siptrace", "table", "strace")
 ...
 
 1.4. Exported Functions
@@ -214,6 +216,24 @@ modparam("siptrace", "trace_local_ip", "10.1.1.1:5064")
    Example 1.9. sip_trace() usage
 ...
 sip_trace();
+...
+
+1.4.2.  trace_dialog()
+
+   The function triggers the tracing of all messages belonging to
+   a dialog. The function must be called for the initial request
+   (that starts the dialog) and it will automatically take care of
+   tracing evertyhing related to that dialog.
+
+   When using this function, you do not have to explicity set any
+   tracing flag or to explicitly call anothe trace function.
+
+   This function can be used from REQUEST_ROUTE.
+
+   Example 1.10. trace_dialog() usage
+...
+if(is_method("INVITE") && !has_totag())
+        trace_dialog();
 ...
 
 1.5. Exported MI Functions

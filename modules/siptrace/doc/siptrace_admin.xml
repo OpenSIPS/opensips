@@ -98,25 +98,6 @@ modparam("siptrace", "db_url", "mysql://user:passwd@host/dbname")
 		</example>
 	</section>
 	<section>
-		<title><varname>table</varname> (str)</title>
-		<para>
-		Name of the table where to store the SIP messages.
-		</para>
-		<para>
-		<emphasis>
-			Default value is "sip_trace".
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>sip_trace</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("siptrace", "table", "strace")
-...
-</programlisting>
-		</example>
-	</section>
-	<section>
 		<title><varname>trace_flag</varname> (integer)</title>
 		<para>
 		Which flag is used to mark messages to trace
@@ -244,6 +225,25 @@ modparam("siptrace", "trace_local_ip", "10.1.1.1:5064")
 </programlisting>
 		</example>
 	</section>
+	<section>
+		<title><varname>table</varname> (str)</title>
+		<para>
+		Name of the table where to store the SIP messages.
+		</para>
+		<para>
+		<emphasis>
+			Default value is "sip_trace".
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>sip_trace</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("siptrace", "table", "strace")
+...
+</programlisting>
+		</example>
+	</section>
 	</section>
 	
 	<section>
@@ -264,6 +264,33 @@ modparam("siptrace", "trace_local_ip", "10.1.1.1:5064")
 		<programlisting format="linespecific">
 ...
 sip_trace();
+...
+</programlisting>
+		</example>
+	</section>
+	<section>
+		<title>
+		<function moreinfo="none">trace_dialog()</function>
+		</title>
+		<para>
+		The function triggers the tracing of all messages belonging to a
+		dialog. The function must be called for the initial request (that 
+		starts the dialog) and it will automatically take care of tracing
+		evertyhing related to that dialog.
+		</para>
+		<para>
+		When using this function, you do not have to explicity set any tracing
+		flag or to explicitly call anothe trace function.
+		</para>
+		<para>
+		This function can be used from REQUEST_ROUTE.
+		</para>
+		<example>
+		<title><function>trace_dialog()</function> usage</title>
+		<programlisting format="linespecific">
+...
+if(is_method("INVITE") &amp;&amp; !has_totag())
+	trace_dialog();
 ...
 </programlisting>
 		</example>
