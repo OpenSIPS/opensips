@@ -3,7 +3,7 @@
  *
  * siptrace module - helper module to trace sip messages
  *
- * Copyright (C) 2006 Voice Sistem S.R.L.
+ * Copyright (C) 2006-2009 Voice Sistem S.R.L.
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -40,18 +40,24 @@
 #include "../../parser/parse_from.h"
 #include "../../pvar.h"
 #include "../tm/tm_load.h"
+#include "../dialog/dlg_load.h"
 #include "../sl/sl_cb.h"
 #include "../../str.h"
 
 MODULE_VERSION
 
 struct tm_binds tmb;
+struct dlg_binds dlgb;
 
 /* module function prototypes */
 static int mod_init(void);
 static int child_init(int rank);
 static void destroy(void);
-static int sip_trace(struct sip_msg*, char*, char*);
+
+static int fixup_trace_dialog(void** param, int param_no);
+
+static int sip_trace(struct sip_msg*);
+static int trace_dialog(struct sip_msg*);
 
 static int trace_send_duplicate(char *buf, int len);
 
@@ -112,6 +118,8 @@ register_slcb_t register_slcb_f=NULL;
 static cmd_export_t cmds[] = {
 	{"sip_trace", (cmd_function)sip_trace, 0, 0, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"trace_dialog", (cmd_function)trace_dialog, 0, fixup_trace_dialog, 0,
+		REQUEST_ROUTE},
 	{0, 0, 0, 0, 0, 0}
 };
 
@@ -181,6 +189,18 @@ struct module_exports exports = {
 };
 
 
+static int fixup_trace_dialog(void** param, int param_no)
+{
+	/* register callback to dialog */
+	if (load_dlg_api(&dlgb)!=0) {
+		LM_ERR("can't load dialog api\n");
+		return -1;
+	}
+
+	return 0;
+}
+
+
 static int mod_init(void)
 {
 	pv_spec_t avp_spec;
@@ -231,7 +251,7 @@ static int mod_init(void)
 	}
 	
 	*trace_on_flag = trace_on;
-	
+
 	/* register callbacks to TM */
 	if (load_tm_api(&tmb)!=0)
 	{
@@ -281,14 +301,16 @@ static int mod_init(void)
 	{
 		if (pv_parse_spec(&traced_user_avp_str, &avp_spec)==0
 				|| avp_spec.type!=PVT_AVP) {
-			LM_ERR("malformed or non AVP %.*s AVP definition\n", traced_user_avp_str.len, traced_user_avp_str.s);
+			LM_ERR("malformed or non AVP %.*s AVP definition\n",
+				traced_user_avp_str.len, traced_user_avp_str.s);
 			return -1;
 		}
 
 		if(pv_get_avp_name(0, &avp_spec.pvp, &traced_user_avp,
 					&traced_user_avp_type)!=0)
 		{
-			LM_ERR("[%.*s] - invalid AVP definition\n", traced_user_avp_str.len, traced_user_avp_str.s);
+			LM_ERR("[%.*s] - invalid AVP definition\n",
+				traced_user_avp_str.len, traced_user_avp_str.s);
 			return -1;
 		}
 	} else {
@@ -299,14 +321,16 @@ static int mod_init(void)
 	{
 		if (pv_parse_spec(&trace_table_avp_str, &avp_spec)==0
 				|| avp_spec.type!=PVT_AVP) {
-			LM_ERR("malformed or non AVP %.*s AVP definition\n", trace_table_avp_str.len, trace_table_avp_str.s);
+			LM_ERR("malformed or non AVP %.*s AVP definition\n",
+				trace_table_avp_str.len, trace_table_avp_str.s);
 			return -1;
 		}
 
 		if(pv_get_avp_name(0, &avp_spec.pvp, &trace_table_avp,
 					&trace_table_avp_type)!=0)
 		{
-			LM_ERR("[%.*s] - invalid AVP definition\n", trace_table_avp_str.len, trace_table_avp_str.s);
+			LM_ERR("[%.*s] - invalid AVP definition\n"
+				, trace_table_avp_str.len, trace_table_avp_str.s);
 			return -1;
 		}
 	} else {
@@ -338,6 +362,51 @@ static void destroy(void)
 	if (trace_on_flag)
 		shm_free(trace_on_flag);
 }
+
+
+static void trace_transaction(struct dlg_cell* dlg, int type,
+												struct dlg_cb_params * params)
+{
+	if (params->msg==NULL)
+		return;
+
+	/* trace current request */
+	sip_trace(params->msg);
+	/* set the flag */
+	params->msg->flags |= trace_flag;
+}
+
+
+static int trace_dialog(struct sip_msg *msg)
+{
+	struct dlg_cell* dlg;
+
+	if (dlgb.create_dlg(msg)<1) {
+		LM_ERR("failed to create dialog\n");
+		return -1;
+	}
+
+	dlg = dlgb.get_dlg();
+	if (dlg==NULL) {
+		LM_CRIT("BUG: no dialog found after create dialog\n");
+		return -1;
+	}
+
+	if(dlgb.register_dlgcb(dlg, DLGCB_REQ_WITHIN|DLGCB_TERMINATED,
+	trace_transaction,0,0)!=0) {
+		LM_ERR("failed to register dialog callback\n");
+		return -1;
+	}
+
+	/* trace current request */
+	sip_trace(msg);
+
+	/* set the flag to trace the rest of the transaction */
+	msg->flags |= trace_flag;
+
+	return 1;
+}
+
 
 static inline int siptrace_copy_proto(int proto, char *buf)
 {
@@ -374,7 +443,7 @@ static inline str* siptrace_get_table(void)
 	return &avp_value.s;
 }
 
-static int sip_trace(struct sip_msg *msg, char *s1, char *s2)
+static int sip_trace(struct sip_msg *msg)
 {
 	db_key_t db_keys[NR_KEYS];
 	db_val_t db_vals[NR_KEYS];
@@ -1225,7 +1294,7 @@ static void trace_sl_ack_in( unsigned int types, struct sip_msg* req,
 									struct sl_cb_param *sl_param)
 {
 	LM_DBG("storing ack...\n");
-	sip_trace(req, 0, 0);
+	sip_trace(req);
 }
 
 static void trace_sl_onreply_out( unsigned int types, struct sip_msg* req,
