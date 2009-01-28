@@ -329,6 +329,8 @@ static inline ucontact_info_t* dbrow2info( db_val_t *vals, str *contact)
 
 int preload_udomain(db_con_t* _c, udomain_t* _d)
 {
+	/* no use to try prepared statements here as this query is performed
+	   once at startup -bogdan */
 	char uri[MAX_URI_SIZE];
 	ucontact_info_t *ci;
 	db_row_t *row;
@@ -484,11 +486,12 @@ error:
  */
 urecord_t* db_load_urecord(db_con_t* _c, udomain_t* _d, str *_aor)
 {
+	static db_ps_t my_ps = NULL;
 	ucontact_info_t *ci;
 	db_key_t columns[13];
 	db_key_t keys[2];
-	db_key_t order;
 	db_val_t vals[2];
+	db_key_t order = &q_col;
 	db_res_t* res = NULL;
 	str contact;
 	char *domain;
@@ -497,11 +500,36 @@ urecord_t* db_load_urecord(db_con_t* _c, udomain_t* _d, str *_aor)
 	urecord_t* r;
 	ucontact_t* c;
 
-	keys[0] = &user_col;
+	if (my_ps==NULL) {
+		keys[0] = &user_col;
+		keys[1] = &domain_col;
+
+		columns[0] = &contact_col;
+		columns[1] = &expires_col;
+		columns[2] = &q_col;
+		columns[3] = &callid_col;
+		columns[4] = &cseq_col;
+		columns[5] = &flags_col;
+		columns[6] = &cflags_col;
+		columns[7] = &user_agent_col;
+		columns[8] = &received_col;
+		columns[9] = &path_col;
+		columns[10] = &sock_col;
+		columns[11] = &methods_col;
+		columns[12] = &last_mod_col;
+
+		if (desc_time_order)
+			order = &last_mod_col;
+
+		if (ul_dbf.use_table(_c, _d->name) < 0) {
+			LM_ERR("failed to use table %.*s\n", _d->name->len, _d->name->s);
+			return 0;
+		}
+	}
+
 	vals[0].type = DB_STR;
 	vals[0].nul = 0;
 	if (use_domain) {
-		keys[1] = &domain_col;
 		vals[1].type = DB_STR;
 		vals[1].nul = 0;
 		domain = q_memchr(_aor->s, '@', _aor->len);
@@ -518,29 +546,7 @@ urecord_t* db_load_urecord(db_con_t* _c, udomain_t* _d, str *_aor)
 		vals[0].val.str_val = *_aor;
 	}
 
-	columns[0] = &contact_col;
-	columns[1] = &expires_col;
-	columns[2] = &q_col;
-	columns[3] = &callid_col;
-	columns[4] = &cseq_col;
-	columns[5] = &flags_col;
-	columns[6] = &cflags_col;
-	columns[7] = &user_agent_col;
-	columns[8] = &received_col;
-	columns[9] = &path_col;
-	columns[10] = &sock_col;
-	columns[11] = &methods_col;
-	columns[12] = &last_mod_col;
-
-	if (desc_time_order)
-		order = &last_mod_col;
-	else
-		order = &q_col;
-
-	if (ul_dbf.use_table(_c, _d->name) < 0) {
-		LM_ERR("failed to use table %.*s\n", _d->name->len, _d->name->s);
-		return 0;
-	}
+	CON_PS_REFERENCE(_c) = &my_ps;
 
 	if (ul_dbf.query(_c, keys, 0, vals, columns, (use_domain)?2:1, 13, order,
 				&res) < 0) {
@@ -586,26 +592,32 @@ urecord_t* db_load_urecord(db_con_t* _c, udomain_t* _d, str *_aor)
 
 int db_timer_udomain(udomain_t* _d)
 {
+	static db_ps_t my_ps = NULL;
 	db_key_t keys[2];
 	db_op_t  ops[2];
 	db_val_t vals[2];
 
-	keys[0] = &expires_col;
-	ops[0] = "<";
+	if (my_ps==NULL) {
+		keys[0] = &expires_col;
+		ops[0] = "<";
+		keys[1] = &expires_col;
+		ops[1] = "!=";
+
+		if (ul_dbf.use_table(ul_dbh, _d->name) < 0) {
+			LM_ERR("use_table failed\n");
+			return -1;
+		}
+	}
+
 	vals[0].type = DB_DATETIME;
 	vals[0].nul = 0;
 	vals[0].val.time_val = act_time + 1;
 
-	keys[1] = &expires_col;
-	ops[1] = "!=";
 	vals[1].type = DB_DATETIME;
 	vals[1].nul = 0;
 	vals[1].val.time_val = 0;
 
-	if (ul_dbf.use_table(ul_dbh, _d->name) < 0) {
-		LM_ERR("use_table failed\n");
-		return -1;
-	}
+	CON_PS_REFERENCE(ul_dbh) = &my_ps;
 
 	if (ul_dbf.delete(ul_dbh, keys, ops, vals, 2) < 0) {
 		LM_ERR("failed to delete from table %s\n",_d->name->s);
