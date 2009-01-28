@@ -189,7 +189,7 @@ my $term = Term::ReadLine->new("OpenSIPS");
 my $OUT = $term->OUT() ||\*STDOUT;
 my @cmd;
 my @command_list = ('acl'=> ('show','grant','revoke'),
-		    'adcr(d'=>'add',
+		    'add'=>'add',
 		    'avp'=>('list','add','rm'),
 		    'passwd'=>'passwd',
 		    'rm'=>'rm',
@@ -233,7 +233,10 @@ my @command_list = ('acl'=> ('show','grant','revoke'),
 		    'extra'=>'extra',
 		    'drop'=>'reinit',
 		    'bdb'=>('list','ls','cat','swap','append','newappend','export','import','migrate'),
-		    'db_berkeley'=>('list','ls','cat','swap','append','newappend','export','import','migrate')			
+		    'db_berkeley'=>('list','ls','cat','swap','append','newappend','export','import','migrate'),
+		    'dr'=>('gateway', 'rules'),
+		    'gateway'=>('add','rm','list'), 
+		    'rules'=>('add','rm','list')				
 		    );
   		    
 		    
@@ -863,7 +866,7 @@ my $DIALPLAN_TABLE = " ";
 if ( !-z $DIALPLAN_TABLE ) {
 	$DIALPLAN_TABLE = 'dialplan';
 }
-my %dialplan_table = ('DIALPLAN_ID_COLUMN'=> 'id',
+my %dialplan_table = ('DIALPLAN_ID_COLUMN' => 'id',
 		'DIALPLAN_DPID_COLUMN' => 'dpid',
 		'DIALPLAN_PR_COLUMN' => 'pr',
 		'DIALPLAN_MATCH_OP_COLUMN' => 'match_op',
@@ -874,7 +877,34 @@ my %dialplan_table = ('DIALPLAN_ID_COLUMN'=> 'id',
 		'DIALPLAN_ATTRS_COLUMN' => 'attrs'
 		);
 
+#drouting tables
+my $DR_GW_TABLE = " ";
+if ( !-z $DR_GW_TABLE ) {
+	$DR_GW_TABLE = 'dr_gateways';
+}
+my %dr_gw_table = ('DR_GW_GWID_COLUMN' => 'gwid',
+		   'DR_GW_ADDRESS_COLUMN' => 'address',	
+		   'DR_GW_TYPE_COLUMN' => 'type',
+		   'DR_GW_STRIP_COLUMN' => 'strip',
+		   'DR_GW_PRI_PREFIX_COLUMN' => 'pri_prefix',
+		   'DR_GW_DESCRIPTION_COLUMN' => 'description'
+		);	
 
+
+# dr_rules table
+my $DR_RULES_TABLE = " ";
+if ( !-z $DR_RULES_TABLE ) {
+	$DR_RULES_TABLE = 'dr_rules';
+}
+my %dr_rules_table = (  'DR_RULES_RULEID_COLUMN' => 'ruleid',
+			'DR_RULES_GROUPID_COLUMN' => 'groupid',
+			'DR_RULES_PREFIX_COLUMN' => 'prefix', 
+			'DR_RULES_TIMEREC_COLUMN' => 'timerec',
+			'DR_RULES_PRIORITY_COLUMN' => 'priority',
+			'DR_RULES_ROUTEID_COLUMN' => 'routeid',
+			'DR_RULES_GWLIST_COLUMN' => 'gwlist',
+			'DR_RULES_DESCRIPTION_COLUMN' => 'description'
+			);
 
 ##### ----------------------------------------------- #####
 ### path to useful tools
@@ -1199,6 +1229,27 @@ print "Script for maintaining OpenSIPS Berkeley DB tables\n".
        "bdb | db_berkeley import <dump_dir> (imports plain-txt table data and creates new db tables in db_path)\n";
 } #usage
 
+
+# droute
+sub usage_dr() {
+	print " -- command 'droute'\n" . 
+ 	      "dr gateway add <address> [<type>] [<strip>] [<pri_prefix>] [<description>].....\n" .
+ 	      		    "\t\t\t\t..........................adds new route\n" .
+ 	      "dr gateway rm <gwid>................................removes route\n" . 
+ 	      "dr gateway list <type>..............................lists route(s)\n" .
+ 	      "dr gateway list <address>...........................lists route(s)\n" .
+ 	      "dr gateway list ....................................lists all routes\n" .
+	      "dr gateway h........................................droute help\n" .
+ 	      "dr rules add <gwlist> [<groupid>][<prefix>][<timerec>][<priority>][<routeid>][<description>].....\n" .
+		            "\t\t\t\t.............adds new rule(s)\n" .
+ 	      "dr rules rm <ruleid> .................................removes rules\n" .
+ 	      "dr rules list...............................lists rules(s)\n" .
+ 	      "dr rules list <gwlist>...............................lists rules(s)\n" .
+ 	      "dr rules list <groupid>...............................lists rules(s)\n" .
+	      "dr rules h..................................dr rules help\n" .
+	      "dr h........................................dr help\n";
+}
+
 # determine host name, typically for use in printing UAC
 # messages; we use today a simplistic but portable uname -n way --
 # no domain name is displayed ; fifo_uac expands !! to host
@@ -1452,7 +1503,7 @@ sub is_value_in_db() {
 #	}
 #}
 
-sub db_load() {
+#sub db_load() {
 	if ( $DBENGINE eq "" ) {
 		print "database engine not specified, please setup one in the config script";
 		$DBENGINELOADED = 0;
@@ -1467,8 +1518,11 @@ sub db_load() {
 					$DB_SCHEMA="./mysql";
 				}
 				#Connect to the database.
+#print "DBI:$DBENGINE:database=$DBNAME;host=$DBHOST","$DBRWUSER", "$DBRWPW"."\n";
+#				$dbh = DBI->connect("DBI:$DBENGINE:database=$DBNAME;host=$DBHOST",
+#				                 "$DBRWUSER", "$DBRWPW",
 				$dbh = DBI->connect("DBI:$DBENGINE:database=$DBNAME;host=$DBHOST",
-				                 "$DBRWUSER", "$DBRWPW",
+				                 "root", "",
 						 {'PrintError' => 0} ) or die "Database connection failed.";
 				$DBENGINELOADED = 1;
 			}
@@ -1530,7 +1584,7 @@ sub db_load() {
 		}
 
 	}
-}
+#}
 
 #
 ##### ------------------------------------------------ #####
@@ -1646,33 +1700,34 @@ sub non_interactively(){
 sub cmd() {
 
 	switch ($cmd[0]) {		
-		case (/^acl$/)	 				{ &db_load(); system(&opensips_acl()); }
-		case (/^add$/)  				{ &db_load(); system(&subscriber()); }
-		case (/^avp$/)	 				{ &db_load(); system(&avpops()); }	
-		case (/(^aliasdb$)|(^alias_db$)/)		{ &db_load(); system(&alias_db()); }
-		case (/^cr$/) 					{ &db_load(); system(&opensips_cr()); }
-		case (/^dialplan$/)                     	{ &db_load(); system(&opensips_dialplan()); }
-		case (/^db$/)	 				{ &db_load(); system(&db_ops()); }
-		case (/^dispatcher$/) 				{ &db_load(); system(&opensips_dispatcher()); }
-		case (/^domain$/) 				{ &db_load(); system(&domain()); }
+		case (/^acl$/)	 				{ system(&opensips_acl()); }
+		case (/^add$/)  				{ system(&subscriber()); }
+		case (/^avp$/)	 				{ system(&avpops()); }	
+		case (/(^aliasdb$)|(^alias_db$)/)		{ system(&alias_db()); }
+		case (/^cr$/) 					{ system(&opensips_cr()); }
+		case (/^dialplan$/)                     	{ system(&opensips_dialplan()); }
+		case (/^db$/)	 				{ system(&db_ops()); }
+		case (/^dispatcher$/) 				{ system(&opensips_dispatcher()); }
+		case (/^domain$/) 				{ system(&domain()); }
 		case (/(^fifo$)|(^unixsock$)|(^udp$)|(^xmlrpc$)/){ &mi_comm(); } 
-		case (/^lcr$/) 					{ &db_load(); system(&opensips_lcr()); } 
+		case (/^lcr$/) 					{ system(&opensips_lcr()); } 
 		case (/(^moni$)|(^monitor$)|(^con$)|(^console$)/){ &mi_comm_monitor(); }
 		case (/^ping$/)		 			{ system(&options_ping()); }
 		case (/^ps$/)					{ system(&opensips_ps()); }
-		case (/^passwd$/)		      		{ &db_load(); system(&subscriber()); }		
+		case (/^passwd$/)		      		{ system(&subscriber()); }		
 		case (/^online$/)				{ &opensips_online(); }
-		case (/^rpid$/)		 			{ &db_load(); system(&opensips_rpid()); }
+		case (/^rpid$/)		 			{ system(&opensips_rpid()); }
 		case (/^restart$/)		   		{ system(&opensips_restart()); }		
-		case (/^rm$/)			      		{ &db_load(); system(&subscriber()); }
-		case (/(^speeddial$)|(^speed_dial$)/)		{ &db_load(); system(&speeddial()); }
+		case (/^rm$/)			      		{ system(&subscriber()); }
+		case (/(^speeddial$)|(^speed_dial$)/)		{ system(&speeddial()); }
 		case (/^start$/)		    		{ system(&opensips_start()); }	
 		case (/^stop$/)			      		{ system(&opensips_stop()); }
-		case (/^tls$/)	 	  			{ &db_load(); system(&tls_ca()); }
-		case (/^trusted$/)		 		{ &db_load(); system(&trusted()); }
+		case (/^tls$/)	 	  			{ system(&tls_ca()); }
+		case (/^trusted$/)		 		{ system(&trusted()); }
 		case (/(^ul$)|(^alias$)|(^usrloc$)/)	  	{ system(&opensips_usrloc()); }		
 		case (/^version$/)				{ system(&opensips_version()); }
 		case (/(^extra$)|(^migrate$)|(^copy$)|(^backup$)|(^restore$)|(^create$)|(^presence$)|(^drop$)|(^reinit$)|(^bdb$)|(^db_berkeley$)|(^cat$)/) { system(&opensips_db()); }
+		case (/^dr$/)				      	{ system(&opensips_dr()); }
 		else 						{ print " unknown command!!!\n"; }
 
 			
@@ -3680,7 +3735,7 @@ sub alias_db() {
 				}
 			
 			} elsif ( $#cmd eq 1 ) {
-				print "Dumping all aliases may take long: do you want to proceed? [Y|N]:";
+				print "Dum1ping all aliases may take long: do you want to proceed? [Y|N]:";
 				if ( ( my $input = <STDIN>) =~ /[y|Y]/ ) { 
 							print "Dumping all aliases...\n";
 						    } else {
@@ -7376,4 +7431,400 @@ sub bdb_update() {
 
 	undef $cursor ;
 	undef $db ;
+}
+
+
+sub opensips_dr() {
+
+	my ( @var, $address, $gwid, $type, $strip, $pri_prefix, $description, $i );
+
+	my ( $groupid, $prefix, $timerec, $priority, $routeid, $gwlist, $description, @var, $i, $ruleid );
+
+	if ( $cmd[1] =~ /(^gateway$)/ ) {
+		if ( $#cmd < 2 ) {
+			print "Too few parameters!";
+			&usage_dr();
+			return;
+		} if ( $#cmd > 7 ) {
+			print "Too many parameters!";
+			&usage_dr();
+			return;
+		}	  
+	
+		switch ($cmd[2]) {
+
+			case /(^add$)/ {
+				$type = 0;
+				$strip = 0; 
+				$pri_prefix = 'NULL';
+				$description = ' ';
+				$i = 0;
+
+				@var = split ("=",$cmd[3]);
+				$address = $var[1];
+			
+				if ( ($#cmd > 3) & ($#cmd <= 7) ) { 
+					$i += 4;
+					while ( $i < $#cmd+1 ) {
+						@var = split ("=",$cmd[$i]);
+						print "var[1]".$var[1];
+						switch ($var[0]) {
+							case /(type)/ {
+								print $type . "before\n";
+								$type = $var[1]; 
+								print $type . "after\n";
+							}
+							case /(strip)/ {
+								$strip = $var[1];
+							}
+							case /(pri_prefix)/ {
+								$pri_prefix = $var[1];
+							}
+							case /(description)/ {
+								$description = $var[1];
+							}
+						}	
+						$i++;
+					}
+					print $type . "after loop\n";
+				}
+
+				#prepare query
+				#if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
+				#	my $key = join(" ",$TMP_OSIPSUSER,$TMP_OSIPSDOMAIN);
+				#	my $value = join(" ",$OSIPSUSER,$OSIPSDOMAIN);
+				#	&bdb_insert($DA_TABLE,$key,$value);
+				#} els
+				if ( $DBENGINE =~ /^DBTEXT$/ )	{
+					system("$DBTEXTCMD"," INSERT INTO $DR_GW_TABLE 
+						($dr_gw_table{'DR_GW_ADDRESS_COLUMN'},$dr_gw_table{'DR_GW_TYPE_COLUMN'},
+						$dr_gw_table{'DR_GW_STRIP_COLUMN'},$dr_gw_table{'DR_GW_PRI_PREFIX_COLUMN'},
+						$dr_gw_table{'DR_GW_DESCRIPTION_COLUMN'}) 
+						VALUES (\'$address\',$type,$strip,\'$pri_prefix\',\'$description\' )");
+				} else {
+					$sth = $dbh->prepare( "INSERT INTO $DR_GW_TABLE 
+					($dr_gw_table{'DR_GW_ADDRESS_COLUMN'},$dr_gw_table{'DR_GW_TYPE_COLUMN'},
+					$dr_gw_table{'DR_GW_STRIP_COLUMN'},$dr_gw_table{'DR_GW_PRI_PREFIX_COLUMN'},
+					$dr_gw_table{'DR_GW_DESCRIPTION_COLUMN'}) 
+					VALUES (\'$address\',$type,$strip,\'$pri_prefix\',\'$description\' )");
+					#execute the query
+					$sth->execute();
+					warn "Entry could not be inserted into table", $sth->errstr( ), "\n" if $sth->err( );
+					$sth->finish();
+	
+				}				
+	
+			}
+
+			case /(^rm$)/ {
+
+				@var = split("=",$cmd[3]);
+				$gwid = $var[1];
+
+				if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
+					my $key = $gwid;
+					&bdb_delete($DR_GW_TABLE,$key);
+				} elsif ( $DBENGINE =~ /^DBTEXT$/ )	{
+					system("$DBTEXTCMD"," DELETE FROM $DR_GW_TABLE WHERE $dr_gw_table{'DR_GW_GWID_COLUMN'}=$gwid ");
+				} else {
+					$sth = $dbh->prepare(" DELETE FROM $DR_GW_TABLE WHERE $dr_gw_table{'DR_GW_GWID_COLUMN'}=$gwid ");
+	
+					#execute the query
+					$sth->execute();
+					warn "Entry could not be deleted from table", $sth->errstr( ), "\n" if $sth->err( );
+					$sth->finish();
+
+				}				
+
+			}
+
+			case /(^list$)/ {
+		
+				if ( $#cmd == 2 ) {
+					if ( $DBENGINE =~ /^DBTEXT$/ )	{
+						system("$DBTEXTCMD"," SELECT * FROM $DR_GW_TABLE ");
+					} else {
+						$sth = $dbh->prepare( " SELECT * FROM $DR_GW_TABLE " );
+	
+		
+						#execute the query
+						$sth->execute( );
+						warn "Retrieving data from table failed", $sth->errstr( ), "\n" if $sth->err( );
+	
+						#Retrieve the results of a row of data and print
+						print "\tQuery results:\n================================================\n";
+						while ( @row = $sth->fetchrow_array( ) )  {
+							print "gwid=$row[0] type=$row[1] address=$row[2] strip=$row[3] pri_prefix=$row[4] description=$row[5]\n";
+						}	
+						$sth->finish();
+					}	
+					return;	
+				} elsif ( $#cmd == 3 ) {
+					@var = split("=",$cmd[3]);	
+					switch ( $var[0] ) {
+				
+						case /(^type$)/ {
+							$type = $var[1];
+ 
+							#prepare query
+					
+							#if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
+							#	my $key = ;
+							#	&bdb_select_where($DR_GW_TABLE,$key);
+							#} els
+							if ( $DBENGINE =~ /^DBTEXT$/ )	{
+								system("$DBTEXTCMD"," SELECT * FROM $DR_GW_TABLE WHERE $dr_gw_table{'DR_GW_TYPE_COLUMN'}=$var[1] ");
+							} else {
+
+								$sth = $dbh->prepare( " SELECT * FROM $DR_GW_TABLE WHERE $dr_gw_table{'DR_GW_TYPE_COLUMN'}=$var[1]");	
+		
+								#execute the query
+								$sth->execute( );
+								warn "Retrieving data from table failed", $sth->errstr( ), "\n" if $sth->err( );
+			
+								#Retrieve the results of a row of data and print
+								print "\tQuery results:\n================================================\n";
+								while ( @row = $sth->fetchrow_array( ) )  {
+									print "gwid=$row[0] type=$row[1] address=$row[2] strip=$row[3] pri_prefix=$row[4] description=$row[5]\n";
+								}	
+								$sth->finish();
+							}		
+						}
+						case /(^address$)/ {
+
+							#prepare query
+							#if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
+							#	my $key = join(" ",$TMP_OSIPSUSER,$TMP_OSIPSDOMAIN);
+							#	&bdb_select_where($DA_TABLE,$key,$value);
+							#} els
+							if ( $DBENGINE =~ /^DBTEXT$/ )	{
+							    system("$DBTEXTCMD"," SELECT * FROM $DR_GW_TABLE WHERE  $dr_gw_table{'DR_GW_ADDRESS_COLUMN'}=\'$var[1]\' ");		
+							} else {
+							    $sth = $dbh->prepare( " SELECT * FROM $DR_GW_TABLE WHERE $dr_gw_table{'DR_GW_ADDRESS_COLUMN'}=\'$var[1]\' " );
+		
+								#execute the query
+								$sth->execute( );
+								warn "Retrieving data from table failed", $sth->errstr( ), "\n" if $sth->err( );
+		
+								#Retrieve the results of a row of data and print
+								print "\tQuery results:\n================================================\n";
+								while ( @row = $sth->fetchrow_array( ) )  {
+							 		     print "gwid=$row[0] type=$row[1] address=$row[2] strip=$row[3] pri_prefix=$row[4] description=$row[5]\n";
+								}	
+								$sth->finish();
+							}		
+						}
+					}
+				}
+			}
+
+			case /(^h$)/ {
+				&usage_dr();
+			}
+
+			else {print "Not an droute option!!\n"};
+
+		}
+
+
+		} elsif ( $cmd[1] =~ /(^rules$)/ ) {
+
+			if ( $#cmd < 2 ) {
+				print "Too few parameters!";
+				&usage_dr();
+				return;
+			} elsif ( $#cmd > 9 ) {
+				print "Too many parameters!";
+				&usage_dr();
+				return;
+			}
+
+			switch ($cmd[2]) {
+
+				case /(^add$)/ {
+					$groupid = ' ';
+				    	$prefix = ' ';
+					$timerec = ' ';
+					$priority = 0;
+					$routeid = 0; 
+					$gwlist = ' ';
+					$description = ' ';
+					$i = 0;
+
+					@var = split ("=",$cmd[3]);
+					$gwlist = $var[1];
+			
+					if ( ($#cmd > 3) & ($#cmd <= 9) ) { 
+						$i += 4;		
+						while ( $i < $#cmd+1 ) {
+							@var = split ("=",$cmd[$i]);				
+							switch ($var[0]) {
+								case /(^groupid$)/ {
+									$groupid = $var[1]; 
+								}
+								case /(^prefix$)/ {
+									$prefix = $var[1];
+								}
+								case /(^timerec$)/ {
+									$timerec = $var[1];
+								}
+								case /(^priority$)/ {
+									$priority = $var[1];
+								}
+								case /(^routeid$)/ {
+									$routeid = $var[1];
+								}
+								case /(^description$)/ {
+									$description = $var[1];
+								}
+							}	
+							$i++;
+						}
+					}
+
+					#prepare query
+					#if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
+					#	my $key = join(" ",$TMP_OSIPSUSER,$TMP_OSIPSDOMAIN);
+					#	my $value = join(" ",$OSIPSUSER,$OSIPSDOMAIN);
+					#	&bdb_insert($DA_TABLE,$key,$value);
+					#} els
+					if ( $DBENGINE =~ /^DBTEXT$/ )	{
+						system("$DBTEXTCMD"," INSERT INTO $DR_RULES_TABLE 
+								($dr_rules_table{'DR_RULES_GWLIST_COLUMN'},$dr_rules_table{'DR_RULES_GROUPID_COLUMN'},
+								$dr_rules_table{'DR_RULES_PREFIX_COLUMN'},$dr_rules_table{'DR_RULES_TIMEREC_COLUMN'},
+								$dr_rules_table{'DR_RULES_PRIORITY_COLUMN'},$dr_rules_table{'DR_RULES_ROUTEID_COLUMN'},
+								$dr_rules_table{'DR_RULES_DESCRIPTION_COLUMN'}) 
+								VALUES (\'$gwlist\',\'$groupid\',\'$prefix\',\'$timerec\',$priority,$routeid,\'$description\' )");
+					} else {
+						$sth = $dbh->prepare( " INSERT INTO $DR_RULES_TABLE 
+								($dr_rules_table{'DR_RULES_GWLIST_COLUMN'},$dr_rules_table{'DR_RULES_GROUPID_COLUMN'},
+								$dr_rules_table{'DR_RULES_PREFIX_COLUMN'},$dr_rules_table{'DR_RULES_TIMEREC_COLUMN'},
+								$dr_rules_table{'DR_RULES_PRIORITY_COLUMN'},$dr_rules_table{'DR_RULES_ROUTEID_COLUMN'},
+								$dr_rules_table{'DR_RULES_DESCRIPTION_COLUMN'}) 
+								VALUES (\'$gwlist\',\'$groupid\',\'$prefix\',\'$timerec\',$priority,$routeid,\'$description\' )" );
+						#execute the query
+						$sth->execute();
+						warn "Entry could not be inserted into table", $sth->errstr( ), "\n" if $sth->err( );
+						$sth->finish();
+
+					}				
+
+						
+				}
+
+				case /(^rm$)/ {
+
+					@var = split("=",$cmd[3]);
+					$ruleid = $var[1];
+
+					if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
+						my $key = $ruleid;
+						&bdb_delete($DR_RULES_TABLE,$key);
+					} elsif ( $DBENGINE =~ /^DBTEXT$/ )	{
+						system("$DBTEXTCMD"," DELETE FROM $DR_RULES_TABLE WHERE $dr_rules_table{'DR_RULES_RULEID_COLUMN'}=$ruleid ");
+					} else {
+						$sth = $dbh->prepare(" DELETE FROM $DR_RULES_TABLE WHERE $dr_rules_table{'DR_RULES_RULEID_COLUMN'}=$ruleid ");
+	
+						#execute the query
+						$sth->execute();
+						warn "Entry could not be deleted from table", $sth->errstr( ), "\n" if $sth->err( );
+						$sth->finish();
+
+					}		
+				}
+
+				case /(^list$)/ {
+					if ( $#cmd == 2 ) {
+						if ( $DBENGINE =~ /^DBTEXT$/ )	{
+							system("$DBTEXTCMD"," SELECT * FROM $DR_RULES_TABLE ");
+						} else {
+							$sth = $dbh->prepare( " SELECT * FROM $DR_RULES_TABLE " );
+	
+		
+							#execute the query
+							$sth->execute( );
+							warn "Retrieving data from table failed", $sth->errstr( ), "\n" if $sth->err( );
+
+							#Retrieve the results of a row of data and print
+							print "\tQuery results:\n================================================\n";
+							while ( @row = $sth->fetchrow_array( ) )  {
+								print "ruleid=$row[0] groupid=$row[1] prefix=$row[2] timerec=$row[3] priority=$row[4] routeid=$row[5] gwlist=$row[6] description=$row[7]\n";
+						}	
+							$sth->finish();
+						}	
+						return;	
+					} elsif ( $#cmd == 3 ) {
+						@var = split("=",$cmd[3]);	
+						switch ( $var[0] ) {
+				
+							case /(^gwlist$)/ {
+								$gwlist = $var[1];
+		 
+								#prepare query
+				
+								#if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
+								#	my $key = ;
+								#	&bdb_select_where($DR_GW_TABLE,$key);
+								#} els
+								if ( $DBENGINE =~ /^DBTEXT$/ )	{
+									system("$DBTEXTCMD"," SELECT * FROM $DR_RULES_TABLE WHERE $dr_rules_table{'DR_RULES_GWLIST_COLUMN'}=\'$var[1]\' ");
+								} else {
+
+									$sth = $dbh->prepare( " SELECT * FROM $DR_RULES_TABLE WHERE 
+												$dr_rules_table{'DR_RULES_GWLIST_COLUMN'}=\'$var[1]\'");	
+		
+									#execute the query
+									$sth->execute( );
+									warn "Retrieving data from table failed", $sth->errstr( ), "\n" if $sth->err( );
+		
+									#Retrieve the results of a row of data and print
+									print "\tQuery results:\n================================================\n";
+									while ( @row = $sth->fetchrow_array( ) )  {
+										print "ruleid=$row[0] groupid=$row[1] prefix=$row[2] timerec=$row[3] priority=$row[4] routeid=$row[5] gwlist=$row[6] description=$row[7]\n";
+									}	
+									$sth->finish();
+								}		
+							}
+							case /(^groupid$)/ {
+								$groupid = $var[1];
+								#prepare query
+								#if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
+								#	my $key = join(" ",$TMP_OSIPSUSER,$TMP_OSIPSDOMAIN);
+								#	&bdb_select_where($DA_TABLE,$key,$value);
+								#} els
+								if ( $DBENGINE =~ /^DBTEXT$/ )	{
+									system("$DBTEXTCMD"," SELECT * FROM $DR_RULES_TABLE WHERE 
+									$dr_rules_table{'DR_RULES_GROUPID_COLUMN'}=\'$var[1]\' ");
+								} else {
+
+									$sth = $dbh->prepare( " SELECT * FROM $DR_RULES_TABLE WHERE 
+												$dr_rules_table{'DR_RULES_GROUPID_COLUMN'}=\'$var[1]\'");	
+		
+									#execute the query
+									$sth->execute( );
+									warn "Retrieving data from table failed", $sth->errstr( ), "\n" if $sth->err( );
+		
+									#Retrieve the results of a row of data and print
+									print "\tQuery results:\n================================================\n";
+									while ( @row = $sth->fetchrow_array( ) )  {
+										print "ruleid=$row[0] groupid=$row[1] prefix=$row[2] timerec=$row[3] priority=$row[4] routeid=$row[5] gwlist=$row[6] description=$row[7]\n";
+									}	
+									$sth->finish();
+								}		
+							}
+						}
+					}
+
+				}
+
+				case /(^h$)/ {
+					&usage_dr();
+		     	        }
+		 		
+				else {print "Not an dr_rules option!!\n"};
+
+			}
+
+
+		}
 }
