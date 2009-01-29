@@ -71,22 +71,15 @@ static inline int get_ha1(struct username* _username, str* _domain,
 		return -1;
 	}
 
-	if (auth_ps==NULL) {
-		keys[0] = &user_column;
-		keys[1] = &domain_column;
-		/* should we calculate the HA1, and is it calculated with domain? */
-		col[0] = (_username->domain.len && !calc_ha1) ?
-			(&pass_column_2) : (&pass_column);
+	keys[0] = &user_column;
+	keys[1] = &domain_column;
 
-		for (n = 0, cred=credentials; cred ; n++, cred=cred->next) {
-			col[1 + n] = &cred->attr_name;
-		}
+	/* should we calculate the HA1, and is it calculated with domain? */
+	col[0] = (_username->domain.len && !calc_ha1) ?
+		(&pass_column_2) : (&pass_column);
 
-		if (auth_dbf.use_table(auth_db_handle, _table) < 0) {
-			LM_ERR("failed to use_table\n");
-			pkg_free(col);
-			return -1;
-		}
+	for (n = 0, cred=credentials; cred ; n++, cred=cred->next) {
+		col[1 + n] = &cred->attr_name;
 	}
 
 	VAL_TYPE(vals) = VAL_TYPE(vals + 1) = DB_STR;
@@ -99,6 +92,12 @@ static inline int get_ha1(struct username* _username, str* _domain,
 		VAL_STR(vals + 1) = _username->domain;
 	} else {
 		VAL_STR(vals + 1) = *_domain;
+	}
+
+	if (auth_dbf.use_table(auth_db_handle, _table) < 0) {
+		LM_ERR("failed to use_table\n");
+		pkg_free(col);
+		return -1;
 	}
 
 	CON_PS_REFERENCE(auth_db_handle) = &auth_ps;
