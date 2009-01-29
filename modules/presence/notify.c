@@ -245,7 +245,8 @@ int build_str_hdr(subs_t* subs, int is_body, str* hdr)
 }
 
 int get_wi_subs_db(subs_t* subs, watcher_t* watchers)
-{	
+{
+	static db_ps_t my_ps = NULL;
 	db_key_t query_cols[6];
 	db_op_t  query_ops[6];
 	db_val_t query_vals[6];
@@ -285,6 +286,7 @@ int get_wi_subs_db(subs_t* subs, watcher_t* watchers)
 		goto error;
 	}
 
+	CON_PS_REFERENCE(pa_db) = &my_ps;
 	if (pa_dbf.query (pa_db, query_cols, query_ops, query_vals,
 		 result_cols, n_query_cols, n_result_cols, 0,  &result) < 0) 
 	{
@@ -529,6 +531,7 @@ int watcher_found_in_list(watcher_t * watchers, str wuri)
 
 int add_waiting_watchers(watcher_t* watchers, str pres_uri, str event)
 {
+	static db_ps_t my_ps = NULL;
 	watcher_t * w;
 	db_key_t query_cols[3];
 	db_val_t query_vals[3];
@@ -571,6 +574,8 @@ int add_waiting_watchers(watcher_t* watchers, str pres_uri, str event)
 		LM_ERR("sql use table 'watchers_table' failed\n");
 		return -1;
 	}
+
+	CON_PS_REFERENCE(pa_db) = &my_ps;
 
 	if (pa_dbf.query (pa_db, query_cols, 0, query_vals,
 		 result_cols, n_query_cols, n_result_cols, 0, &result) < 0) 
@@ -750,6 +755,7 @@ error:
 str* get_p_notify_body(str pres_uri, pres_ev_t* event, str* etag,
 		str* contact)
 {
+	static db_ps_t my_ps = NULL;
 	db_key_t query_cols[6];
 	db_val_t query_vals[6];
 	db_key_t result_cols[6];
@@ -769,6 +775,7 @@ str* get_p_notify_body(str pres_uri, pres_ev_t* event, str* etag,
 	struct sip_uri uri;
 	unsigned int hash_code;
 	str sender;
+	static str query_str = str_init("received_time");
 
 	if(parse_uri(pres_uri.s, pres_uri.len, &uri)< 0)
 	{
@@ -825,7 +832,7 @@ db_query:
 		return NULL;
 	}
 
-	static str query_str = str_init("received_time");
+	CON_PS_REFERENCE(pa_db) = &my_ps;
 	if (pa_dbf.query (pa_db, query_cols, 0, query_vals,
 		 result_cols, n_query_cols, n_result_cols, &query_str, &result) < 0) 
 	{
@@ -1115,6 +1122,7 @@ error:
 int get_subs_db(str* pres_uri, pres_ev_t* event, str* sender,
 		subs_t** s_array, int* n)
 {
+	static db_ps_t my_ps = NULL;
 	db_key_t query_cols[7];
 	db_op_t  query_ops[7];
 	db_val_t query_vals[7];
@@ -1161,17 +1169,23 @@ int get_subs_db(str* pres_uri, pres_ev_t* event, str* sender,
 	query_vals[n_query_cols].nul = 0;
 	query_vals[n_query_cols].val.int_val = ACTIVE_STATUS;
 	n_query_cols++;
+	
+	query_cols[n_query_cols] = &str_contact_col;
+	query_ops[n_query_cols] = OP_NEQ;
+	query_vals[n_query_cols].type = DB_STR;
+	query_vals[n_query_cols].nul = 0;
 
 	if(sender)
 	{	
 		LM_DBG("Do not send Notify to:[uri]= %.*s\n",sender->len,sender->s);
-		query_cols[n_query_cols] = &str_contact_col;
-		query_ops[n_query_cols] = OP_NEQ;
-		query_vals[n_query_cols].type = DB_STR;
-		query_vals[n_query_cols].nul = 0;
 		query_vals[n_query_cols].val.str_val = *sender;
-		n_query_cols++;
 	}
+	else
+	{
+		query_vals[n_query_cols].val.str_val.s = "";
+		query_vals[n_query_cols].val.str_val.len = 0;
+	}
+	n_query_cols++;
 
 	result_cols[to_user_col=n_result_cols++]      =   &str_to_user_col;
 	result_cols[to_domain_col=n_result_cols++]    =   &str_to_domain_col;
@@ -1190,6 +1204,7 @@ int get_subs_db(str* pres_uri, pres_ev_t* event, str* sender,
 	result_cols[local_contact_col=n_result_cols++]=   &str_local_contact_col;
 	result_cols[version_col=n_result_cols++]      =   &str_version_col;
 
+	CON_PS_REFERENCE(pa_db) = &my_ps;
 	if (pa_dbf.query(pa_db, query_cols, query_ops, query_vals,result_cols,
 				n_query_cols, n_result_cols, 0, &result) < 0) 
 	{

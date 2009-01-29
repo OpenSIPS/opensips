@@ -610,6 +610,7 @@ static struct mi_root* mi_cleanup(struct mi_root* cmd, void* param)
 int pres_update_status(subs_t subs, str reason, db_key_t* query_cols,
         db_val_t* query_vals, int n_query_cols, subs_t** subs_array)
 {
+	static db_ps_t my_ps = NULL;
 	db_key_t update_cols[5];
 	db_val_t update_vals[5];
 	int n_update_cols= 0;
@@ -634,7 +635,6 @@ int pres_update_status(subs_t subs, str reason, db_key_t* query_cols,
 	update_vals[u_reason_col].nul= 0;
 	update_vals[u_reason_col].type= DB_STR;
 	n_update_cols++;
-
 
 	status= subs.status;
 	if(subs.event->get_auth_status(&subs)< 0)
@@ -666,6 +666,8 @@ int pres_update_status(subs_t subs, str reason, db_key_t* query_cols,
 			return -1;
 		}
 
+		CON_PS_REFERENCE(pa_db) = &my_ps;
+
 		if(pa_dbf.update(pa_db, query_cols, 0, query_vals, update_cols,
 					update_vals, n_query_cols, n_update_cols)< 0)
 		{
@@ -688,51 +690,54 @@ int pres_update_status(subs_t subs, str reason, db_key_t* query_cols,
 
 int pres_db_delete_status(subs_t* s)
 {
-    int n_query_cols= 0;
-    db_key_t query_cols[5];
-    db_val_t query_vals[5];
+	static db_ps_t my_ps = NULL;
+	int n_query_cols= 0;
+	db_key_t query_cols[5];
+	db_val_t query_vals[5];
 
-    if (pa_dbf.use_table(pa_db, &active_watchers_table) < 0) 
-    {
-        LM_ERR("sql use table failed\n");
-        return -1;
-    }
+	if (pa_dbf.use_table(pa_db, &active_watchers_table) < 0) 
+	{
+		LM_ERR("sql use table failed\n");
+		return -1;
+	}
 
-    query_cols[n_query_cols]= &str_event_col;
-    query_vals[n_query_cols].nul= 0;
-    query_vals[n_query_cols].type= DB_STR;
-    query_vals[n_query_cols].val.str_val= s->event->name ;
-    n_query_cols++;
+	query_cols[n_query_cols]= &str_event_col;
+	query_vals[n_query_cols].nul= 0;
+	query_vals[n_query_cols].type= DB_STR;
+	query_vals[n_query_cols].val.str_val= s->event->name ;
+	n_query_cols++;
 
-    query_cols[n_query_cols]= &str_presentity_uri_col;
-    query_vals[n_query_cols].nul= 0;
-    query_vals[n_query_cols].type= DB_STR;
-    query_vals[n_query_cols].val.str_val= s->pres_uri;
-    n_query_cols++;
+	query_cols[n_query_cols]= &str_presentity_uri_col;
+	query_vals[n_query_cols].nul= 0;
+	query_vals[n_query_cols].type= DB_STR;
+	query_vals[n_query_cols].val.str_val= s->pres_uri;
+	n_query_cols++;
 
-    query_cols[n_query_cols]= &str_watcher_username_col;
-    query_vals[n_query_cols].nul= 0;
-    query_vals[n_query_cols].type= DB_STR;
-    query_vals[n_query_cols].val.str_val= s->from_user;
-    n_query_cols++;
+	query_cols[n_query_cols]= &str_watcher_username_col;
+	query_vals[n_query_cols].nul= 0;
+	query_vals[n_query_cols].type= DB_STR;
+	query_vals[n_query_cols].val.str_val= s->from_user;
+	n_query_cols++;
 
-    query_cols[n_query_cols]= &str_watcher_domain_col;
-    query_vals[n_query_cols].nul= 0;
-    query_vals[n_query_cols].type= DB_STR;
-    query_vals[n_query_cols].val.str_val= s->from_domain;
-    n_query_cols++;
+	query_cols[n_query_cols]= &str_watcher_domain_col;
+	query_vals[n_query_cols].nul= 0;
+	query_vals[n_query_cols].type= DB_STR;
+	query_vals[n_query_cols].val.str_val= s->from_domain;
+	n_query_cols++;
 
-    if(pa_dbf.delete(pa_db, query_cols, 0, query_vals, n_query_cols)< 0)
-    {
-        LM_ERR("sql delete failed\n");
-        return -1;
-    }
-    return 0;
+	CON_PS_REFERENCE(pa_db) = &my_ps;
 
+	if(pa_dbf.delete(pa_db, query_cols, 0, query_vals, n_query_cols)< 0)
+	{
+		LM_ERR("sql delete failed\n");
+		return -1;
+	}
+	return 0;
 }
 
 int update_watchers_status(str pres_uri, pres_ev_t* ev, str* rules_doc)
 {
+	static db_ps_t my_ps = NULL;
 	subs_t subs;
 	db_key_t query_cols[6], result_cols[5];
 	db_val_t query_vals[6];
@@ -799,6 +804,7 @@ int update_watchers_status(str pres_uri, pres_ev_t* ev, str* rules_doc)
 		goto done;
 	}
 
+	CON_PS_REFERENCE(pa_db) = &my_ps;
 	if(pa_dbf.query(pa_db, query_cols, 0, query_vals, result_cols,n_query_cols,
 				n_result_cols, 0, &result)< 0)
 	{

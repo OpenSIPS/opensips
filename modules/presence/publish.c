@@ -58,6 +58,7 @@ struct p_modif
 
 void msg_presentity_clean(unsigned int ticks,void *param)
 {
+	static db_ps_t my_ps_delete = NULL, my_ps_query = NULL;
 	db_key_t db_keys[2];
 	db_val_t db_vals[2];
 	db_op_t  db_ops[2] ;
@@ -74,6 +75,7 @@ void msg_presentity_clean(unsigned int ticks,void *param)
 	str user, domain, etag, event;
 	int n_result_cols= 0;
 	str* rules_doc= NULL;
+	static str query_str = str_init("username");
 
 
 	if (pa_dbf.use_table(pa_db, &presentity_table) < 0) 
@@ -95,7 +97,8 @@ void msg_presentity_clean(unsigned int ticks,void *param)
 	result_cols[etag_col=n_result_cols++] = &str_etag_col;
 	result_cols[event_col=n_result_cols++] = &str_event_col;
 
-	static str query_str = str_init("username");
+	CON_PS_REFERENCE(pa_db) = &my_ps_query;
+
 	if(pa_dbf.query(pa_db, db_keys, db_ops, db_vals, result_cols,
 						1, n_result_cols, &query_str, &result )< 0)
 	{
@@ -232,6 +235,8 @@ no_notify:
 		goto error;
 	}
 	
+	CON_PS_REFERENCE(pa_db) = &my_ps_delete;
+
 	if (pa_dbf.delete(pa_db, db_keys, db_ops, db_vals, 1) < 0) 
 		LM_ERR("cleaning expired messages\n");
 	

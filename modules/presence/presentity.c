@@ -263,6 +263,9 @@ int check_if_dialog(str body, int *is_dialog)
 int update_presentity(struct sip_msg* msg, presentity_t* presentity, str* body,
 		int new_t, int* sent_reply, char* sphere)
 {
+	static db_ps_t my_ps_insert = NULL, my_ps_update_no_body = NULL,
+		   my_ps_update_body = NULL;
+	static db_ps_t my_ps_delete = NULL, my_ps_query = NULL;
 	db_key_t query_cols[12], update_keys[8], result_cols[5];
 	db_op_t  query_ops[12];
 	db_val_t query_vals[12], update_vals[8];
@@ -297,7 +300,6 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, str* body,
 		LM_ERR("constructing uri from user and domain\n");
 		goto error;
 	}
-
 
 	query_cols[n_query_cols] = &str_domain_col;
 	query_ops[n_query_cols] = OP_EQ;
@@ -348,15 +350,20 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, str* body,
 				(int)time(NULL);
 		n_query_cols++;
 	
+		query_cols[n_query_cols] = &str_sender_col;
+		query_vals[n_query_cols].type = DB_STR;
+		query_vals[n_query_cols].nul = 0;
+
 		if( presentity->sender)
 		{
-			query_cols[n_query_cols] = &str_sender_col;
-			query_vals[n_query_cols].type = DB_STR;
-			query_vals[n_query_cols].nul = 0;
-			query_vals[n_query_cols].val.str_val.s = presentity->sender->s;
-			query_vals[n_query_cols].val.str_val.len = presentity->sender->len;
-			n_query_cols++;
+			query_vals[n_query_cols].val.str_val = *presentity->sender;
 		}
+		else
+		{
+			query_vals[n_query_cols].val.str_val.s = "";
+			query_vals[n_query_cols].val.str_val.len = 0;
+		}
+		n_query_cols++;
 
 		query_cols[n_query_cols] = &str_body_col;
 		query_vals[n_query_cols].type = DB_BLOB;
@@ -377,7 +384,8 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, str* body,
 		}
 
 		LM_DBG("inserting %d cols into table\n",n_query_cols);
-				
+
+		CON_PS_REFERENCE(pa_db) = &my_ps_insert;
 		if (pa_dbf.insert(pa_db, query_cols, query_vals, n_query_cols) < 0) 
 		{
 			LM_ERR("inserting new record in database\n");
@@ -399,6 +407,7 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, str* body,
 			goto error;
 		}
 
+		CON_PS_REFERENCE(pa_db) = &my_ps_query;
 		if (pa_dbf.query (pa_db, query_cols, query_ops, query_vals,
 			 result_cols, n_query_cols, n_result_cols, 0, &result) < 0) 
 		{
@@ -474,6 +483,7 @@ after_dialog_check:
 				}
 
 				LM_DBG("expires =0 -> deleting from database\n");
+				CON_PS_REFERENCE(pa_db) = &my_ps_delete;
 				if(pa_dbf.delete(pa_db,query_cols,0,query_vals,n_query_cols)<0)
 				{
 					LM_ERR("unsuccessful sql delete operation");
@@ -508,7 +518,7 @@ after_dialog_check:
 				*sent_reply= 1;
 				goto done;
 			}
-
+			
 			if(presentity->event->etag_not_new== 0)
 			{	
 				/* generate another etag */
@@ -543,16 +553,17 @@ after_dialog_check:
 				etag.len=(strlen(etag.s));
 				
 				cur_etag= etag;
-
-				update_keys[n_update_cols] = &str_etag_col;
-				update_vals[n_update_cols].type = DB_STR;
-				update_vals[n_update_cols].nul = 0;
-				update_vals[n_update_cols].val.str_val = etag;
-				n_update_cols++;
-
 			}
 			else
+			{
 				cur_etag= presentity->etag;
+			}
+
+			update_keys[n_update_cols] = &str_etag_col;
+			update_vals[n_update_cols].type = DB_STR;
+			update_vals[n_update_cols].nul = 0;
+			update_vals[n_update_cols].val.str_val = cur_etag;
+			n_update_cols++;
 			
 			update_keys[n_update_cols] = &str_expires_col;
 			update_vals[n_update_cols].type = DB_INT;
@@ -565,6 +576,21 @@ after_dialog_check:
 			update_vals[n_update_cols].type = DB_INT;
 			update_vals[n_update_cols].nul = 0;
 			update_vals[n_update_cols].val.int_val= presentity->received_time;
+			n_update_cols++;
+
+			update_keys[n_update_cols] = &str_sender_col;
+			update_vals[n_update_cols].type = DB_STR;
+			update_vals[n_update_cols].nul = 0;
+
+			if( presentity->sender)
+			{
+				update_vals[n_update_cols].val.str_val = *presentity->sender;
+			}
+			else
+			{
+				update_vals[n_update_cols].val.str_val.s = "";
+				update_vals[n_update_cols].val.str_val.len = 0;
+			}
 			n_update_cols++;
 
 			if(body && body->s)
@@ -585,15 +611,11 @@ after_dialog_check:
 						goto error;
 					}
 				}
+				CON_PS_REFERENCE(pa_db) = &my_ps_update_body;
 			}
-			
-			if( presentity->sender)
+			else
 			{
-				update_keys[n_update_cols] = &str_sender_col;
-				update_vals[n_update_cols].type = DB_STR;
-				update_vals[n_update_cols].nul = 0;
-				update_vals[n_update_cols].val.str_val = *presentity->sender;
-				n_update_cols++;
+				CON_PS_REFERENCE(pa_db) = &my_ps_update_no_body;
 			}
 
 			if( pa_dbf.update( pa_db,query_cols, query_ops, query_vals,
@@ -678,6 +700,7 @@ int pres_htable_restore(void)
 {
 	/* query all records from presentity table and insert records 
 	 * in presentity table */
+	static db_ps_t my_ps = NULL;
 	db_key_t result_cols[6];
 	db_res_t *result= NULL;
 	db_row_t *row= NULL ;	
@@ -689,6 +712,7 @@ int pres_htable_restore(void)
 	int event;
 	event_t ev;
 	char* sphere= NULL;
+	static str query_str = str_init("username");
 
 	result_cols[user_col= n_result_cols++]= &str_username_col;
 	result_cols[domain_col= n_result_cols++]= &str_domain_col;
@@ -702,7 +726,7 @@ int pres_htable_restore(void)
 		LM_ERR("unsuccessful use table sql operation\n");
 		goto error;
 	}
-	static str query_str = str_init("username");
+	CON_PS_REFERENCE(pa_db) = &my_ps;
 	if (pa_dbf.query (pa_db, 0, 0, 0,result_cols,0, n_result_cols,
 				&query_str, &result) < 0)
 	{
@@ -848,6 +872,7 @@ xmlNodePtr xmlNodeGetNodeByName(xmlNodePtr node, const char *name,
 
 char* get_sphere(str* pres_uri)
 {
+	static db_ps_t my_ps = NULL;
 	unsigned int hash_code;
 	char* sphere= NULL;
 	pres_entry_t* p;
@@ -861,6 +886,7 @@ char* get_sphere(str* pres_uri)
 	int n_query_cols = 0;
 	struct sip_uri uri;
 	str body;
+	static str query_str = str_init("received_time");
 
 
 	if(!sphere_enable)
@@ -930,7 +956,7 @@ char* get_sphere(str* pres_uri)
 		return NULL;
 	}
 
-	static str query_str = str_init("received_time");
+	CON_PS_REFERENCE(pa_db) = &my_ps;
 	if (pa_dbf.query (pa_db, query_cols, 0, query_vals,
 		 result_cols, n_query_cols, n_result_cols, &query_str ,  &result) < 0) 
 	{
