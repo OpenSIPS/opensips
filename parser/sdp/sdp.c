@@ -282,19 +282,8 @@ sdp_session_cell_t* get_sdp_session_sdp(struct sdp_info* sdp, int session_num)
 sdp_session_cell_t* get_sdp_session(struct sip_msg* _m, int session_num)
 {
 	sdp_session_cell_t *session;
-	return get_sdp_session_sdp(_m->sdp, session_num);
-
 	if (_m->sdp == NULL) return NULL;
-	if (session_num > _m->sdp->sessions_num) return NULL;
-	session = _m->sdp->sessions;
-	while (session) {
-		if (session->session_num == session_num) {
-			return session;
-		} else {
-			session = session->next;
-		}
-	}
-	return NULL;
+	return get_sdp_session_sdp(_m->sdp, session_num);
 }
 
 
