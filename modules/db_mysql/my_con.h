@@ -31,6 +31,36 @@
 #include <mysql/mysql.h>
 
 
+#define PREP_STMT_VAL_LEN	1024
+
+struct bind_content {
+	char buf[PREP_STMT_VAL_LEN];
+	unsigned long len;
+	my_bool null;
+};
+
+struct my_stmt_ctx {
+	MYSQL_STMT *stmt;
+	str table;
+	int has_out;
+	struct my_stmt_ctx *next;
+};
+
+struct prep_stmt {
+	struct my_stmt_ctx *stmts;
+	struct my_stmt_ctx *ctx;
+	/*in*/
+	MYSQL_BIND *bind_in;
+	struct bind_content *in_bufs;
+	/*out*/
+	int cols_out;
+	MYSQL_BIND *bind_out;
+	struct bind_content *out_bufs;
+	/*linking*/
+	struct prep_stmt *next;
+};
+
+
 struct my_con {
 	struct db_id* id;        /* Connection identifier */
 	unsigned int ref;        /* Reference count */
@@ -40,7 +70,10 @@ struct my_con {
 	MYSQL* con;              /* Connection representation */
 	MYSQL_ROW row;           /* Actual row in the result */
 	time_t timestamp;        /* Timestamp of last query */
+
+	struct prep_stmt *ps_list; /* list of prepared statements */
 };
+
 
 
 /*
@@ -50,6 +83,18 @@ struct my_con {
 #define CON_CONNECTION(db_con) (((struct my_con*)((db_con)->tail))->con)
 #define CON_ROW(db_con)        (((struct my_con*)((db_con)->tail))->row)
 #define CON_TIMESTAMP(db_con)  (((struct my_con*)((db_con)->tail))->timestamp)
+#define CON_PS_LIST(db_con)    (((struct my_con*)((db_con)->tail))->ps_list)
+
+#define CON_MYSQL_PS(db_con) \
+	((struct prep_stmt*)(CON_CURR_PS(db_con)))
+#define CON_PS_STMT(db_con) \
+	(CON_MYSQL_PS(db_con)->ctx->stmt)
+#define CON_PS_STMTS(db_con) \
+	(CON_MYSQL_PS(db_con)->stmts)
+#define CON_PS_OUTCOL_LEN(_db_con, _i) \
+	((CON_MYSQL_PS(_db_con)->out_bufs)[_i].len)
+#define CON_PS_OUTCOL_BUF(_db_con, _i) \
+	((CON_MYSQL_PS(_db_con)->out_bufs)[_i].buf)
 
 
 /*

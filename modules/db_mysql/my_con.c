@@ -23,6 +23,7 @@
 
 #include "my_con.h"
 #include "db_mysql.h"
+#include "dbase.h"
 #include <mysql/mysql_version.h>
 #include "../../mem/mem.h"
 #include "../../dprint.h"
@@ -114,6 +115,7 @@ void db_mysql_free_connection(struct pool_con* con)
 	struct my_con * _c;
 	_c = (struct my_con*) con;
 
+	if (_c->ps_list) db_mysql_free_stmt_list(_c->ps_list);
 	if (_c->res) mysql_free_result(_c->res);
 	if (_c->id) free_db_id(_c->id);
 	if (_c->con) {

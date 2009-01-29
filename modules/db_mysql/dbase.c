@@ -5,6 +5,7 @@
  *
  * Copyright (C) 2001-2003 FhG Fokus
  * Copyright (C) 2007-2008 1&1 Internet AG
+ * Copyright (C) 2009 Voice Sistem SRL
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -54,10 +55,10 @@
  * Send a SQL query to the database server. This methods tries to reconnect
  * to the server if the connection is gone and the auto_reconnect parameter is
  * enabled. It also issues a mysql_ping before the query to connect again after
- * a long waiting period because for some older mysql versions the auto reconnect
- * don't work sufficient. If auto_reconnect is enabled and the server supports it,
- * then the mysql_ping is probably not necessary, but its safer to do it in this
- * cases too.
+ * a long waiting period because for some older mysql versions the auto 
+ * reconnect don't work sufficient. If auto_reconnect is enabled and the 
+ * server supports it, then the mysql_ping is probably not necessary, but 
+ * its safer to do it in this cases too.
  *
  * \param _h handle for the db
  * \param _s executed query
@@ -77,13 +78,14 @@ static int db_mysql_submit_query(const db_con_t* _h, const str* _s)
 		t = time(0);
 		if ((t - CON_TIMESTAMP(_h)) > db_mysql_ping_interval) {
 			if (mysql_ping(CON_CONNECTION(_h))) {
-				LM_WARN("driver error on ping: %s\n", mysql_error(CON_CONNECTION(_h)));
+				LM_WARN("driver error on ping: %s\n",
+					mysql_error(CON_CONNECTION(_h)));
 			}
 		}
 		/*
-		 * We're doing later a query anyway that will reset the timout of the server,
-		 * so it makes sense to set the timestamp value to the actual time in order
-		 * to prevent unnecessary pings.
+		 * We're doing later a query anyway that will reset the timout of the
+		 * server, so it makes sense to set the timestamp value to the actual 
+		 * time in order to prevent unnecessary pings.
 		 */
 		CON_TIMESTAMP(_h) = t;
 	}
@@ -115,6 +117,333 @@ static int db_mysql_submit_query(const db_con_t* _h, const str* _s)
 	return -2;
 }
 
+
+/*
+ *	Actually free prep_stmt structure
+*/
+static void db_mysql_free_pq(struct prep_stmt *pq_ptr)
+{
+	struct my_stmt_ctx *ctx;
+	struct my_stmt_ctx *ctx2;
+
+	if ( pq_ptr == NULL )
+		return;
+
+	for(ctx=pq_ptr->stmts ; ctx ; ) {
+		ctx2 = ctx;
+		ctx = ctx->next;
+		mysql_stmt_close(ctx2->stmt);
+		pkg_free(ctx2);
+	}
+
+	/* free out part */
+	pkg_free(pq_ptr->bind_out);
+
+	/* free in part and the struct */
+	pkg_free(pq_ptr);
+}
+
+
+/*
+**	Free all allocated prep_stmt structures
+ */
+void db_mysql_free_stmt_list(struct prep_stmt *head)
+{
+	struct prep_stmt *pq_ptr;
+
+	while ( head!= NULL ) {
+		pq_ptr = head;
+		head = head->next;
+		db_mysql_free_pq(pq_ptr);
+	}
+}
+
+
+static int has_stmt_ctx(const db_con_t* conn, struct my_stmt_ctx **ctx_p)
+{
+	struct my_stmt_ctx *ctx;
+
+	if (CON_MYSQL_PS(conn) != NULL) {
+		/* search for the context */
+		for ( ctx=CON_PS_STMTS(conn) ; ctx ; ctx=ctx->next ) {
+			if (ctx->table.len== CON_TABLE(conn)->len &&
+			memcmp(ctx->table.s, CON_TABLE(conn)->s, CON_TABLE(conn)->len)==0){
+				LM_DBG("ctx found for %.*s\n", ctx->table.len,ctx->table.s);
+				*ctx_p = ctx;
+				return 1;
+			}
+		}
+	}
+	*ctx_p = NULL;
+	LM_DBG("ctx not found for %.*s\n",
+		CON_TABLE(conn)->len, CON_TABLE(conn)->s);
+	return 0;
+}
+
+static struct my_stmt_ctx * get_new_stmt_ctx(const db_con_t* conn,
+														const str *query)
+{
+	struct my_stmt_ctx *ctx;
+
+	/* new one */
+	ctx = (struct my_stmt_ctx*)pkg_malloc
+		( sizeof(struct my_stmt_ctx) + CON_TABLE(conn)->len);
+	if (ctx==NULL) {
+		LM_ERR("no more pkg mem for statement context\n");
+		return NULL;
+	}
+	ctx->table.s = (char*)(ctx+1);
+	ctx->table.len = CON_TABLE(conn)->len;
+	memcpy( ctx->table.s, CON_TABLE(conn)->s, ctx->table.len);
+	ctx->next = 0;
+	ctx->has_out = 0;
+	/* initialize the statement */
+	if ( ! (ctx->stmt=mysql_stmt_init(CON_CONNECTION(conn))) ) {
+		LM_ERR("failed while mysql_stmt_init()\n");
+		return NULL;
+	}
+	if ( mysql_stmt_prepare(ctx->stmt, query->s, query->len) ) {
+		LM_ERR("failed while mysql_stmt_prepare()\n");
+		return NULL;
+	}
+
+	return ctx;
+}
+
+
+
+/**	Try to exec SQL query using prepared statements API
+ **
+ **  All query templates and pointers to in/out params are stored in
+ **  prep_stmt structure.  This structures organized in two-connected
+ **  list and query template searches in this list fistly.
+ **
+ */
+static int db_mysql_do_prepared_query(const db_con_t* conn, const str *query,
+	const db_val_t* v, int n, const db_val_t* uv, int un)
+{
+	int i, code, cols;
+	int total;
+	int len;
+	struct prep_stmt *pq_ptr;
+	struct my_stmt_ctx *ctx;
+	MYSQL_BIND *mysql_bind;
+
+	total = n+un;
+
+	if ( CON_MYSQL_PS(conn) == NULL ) {
+		/*  First time when this query is run, so we need to init it ->
+		**  allocate new structure for prepared statemet and its values
+		*/
+		LM_DBG("new query=|%.*s|\n", query->len, query->s);
+		pq_ptr = (struct prep_stmt*)pkg_malloc( sizeof(struct prep_stmt) +
+			total*(sizeof(struct bind_content) + sizeof(MYSQL_BIND)) );
+		if (pq_ptr==NULL) {
+			LM_ERR("no more pkg mem for the a new prepared statement\n");
+			return -1;
+		}
+		memset( pq_ptr, 0, sizeof( struct prep_stmt) +
+			total*(sizeof(struct bind_content) + sizeof(MYSQL_BIND)) );
+		/* get a new context */
+		ctx = get_new_stmt_ctx(conn, query);
+		if (ctx==NULL) {
+			LM_ERR("failed to create new context\n");
+			pkg_free(pq_ptr);
+			return -1;
+		}
+		/* link it */
+		pq_ptr->stmts = ctx;
+		/* set it as current */
+		pq_ptr->ctx = ctx;
+		LM_DBG("prepared statement successfully prepared\n");
+		pq_ptr->cols_out = -1;
+		/* set the in bind array */
+		if (total) {
+			pq_ptr->bind_in = (MYSQL_BIND*)(pq_ptr+1);
+			pq_ptr->in_bufs = (struct bind_content*)(pq_ptr->bind_in + total);
+		}
+		mysql_bind = pq_ptr->bind_in;
+		for( i=0 ; i<total ; i++ ) {
+			mysql_bind[i].buffer_type = MYSQL_TYPE_STRING;
+			mysql_bind[i].buffer_length = PREP_STMT_VAL_LEN;
+			mysql_bind[i].buffer = pq_ptr->in_bufs[i].buf;
+			mysql_bind[i].length = &pq_ptr->in_bufs[i].len;
+			mysql_bind[i].is_null = &pq_ptr->in_bufs[i].null;
+		}
+		/* bind in values to the statement */
+		LM_DBG("doing BIND_PARAM in...\n");
+		if ( mysql_stmt_bind_param(ctx->stmt, mysql_bind) ) {
+			LM_ERR("mysql_stmt_bind_param() failed: %s\n",
+				mysql_stmt_error(ctx->stmt));
+			db_mysql_free_pq(pq_ptr);
+			return -1;
+		}
+		LM_DBG("prepared statement successfully set...\n");
+		/* link it to the connection */
+		pq_ptr->next = CON_PS_LIST(conn);
+		CON_PS_LIST(conn) = pq_ptr;
+		/* also return it for direct future usage */
+		CON_CURR_PS(conn) = pq_ptr;
+	} else {
+		pq_ptr = CON_MYSQL_PS(conn);
+		mysql_bind = pq_ptr->bind_in;
+		if (pq_ptr->ctx==NULL) {
+			/* get a new context */
+			ctx = get_new_stmt_ctx(conn, query);
+			if (ctx==NULL) {
+				LM_ERR("failed to create new context\n");
+				return -1;
+			}
+			/* bind in values to the statement */
+			LM_DBG("doing BIND_PARAM in...\n");
+			if ( mysql_stmt_bind_param(ctx->stmt, mysql_bind) ) {
+				LM_ERR("mysql_stmt_bind_param() failed: %s\n",
+					mysql_stmt_error(ctx->stmt));
+				pkg_free(ctx);
+				return -1;
+			}
+			/* link it */
+			ctx->next = pq_ptr->stmts;
+			pq_ptr->stmts = ctx;
+			/* set it as current */
+			pq_ptr->ctx = ctx;
+		} else {
+			ctx = pq_ptr->ctx;
+		}
+	}
+
+	LM_DBG("set values for the statement run\n");
+
+	/* set first set of values */
+	for( i=0 ; i<n ; i++ ) {
+		len = PREP_STMT_VAL_LEN;
+		if (VAL_NULL(v+i)) {
+			*(mysql_bind[i].is_null) = 1;
+			strcpy(mysql_bind[i].buffer, "NULL");
+			*(mysql_bind[i].length) = 4;
+		} else {
+			*(mysql_bind[i].is_null) = 0;
+			if ( db_mysql_val2str_nq(conn,v+i,mysql_bind[i].buffer,&len)<0 ) {
+				LM_ERR("val2str() failed for i=%d (1)\n", i);
+				return -1;
+			}
+			*(mysql_bind[i].length) = len;
+		}
+		LM_DBG("added val (%d): len=%ld; buf=%s; is_null=%d\n", i,
+			*(mysql_bind[i].length), (char *)mysql_bind[i].buffer,
+			*(mysql_bind[i].is_null));
+	}
+
+	/* set second set of values */
+	for( i=0 ; i<un ; i++ ) {
+		len = PREP_STMT_VAL_LEN;
+		if (VAL_NULL(uv+i)) {
+			*(mysql_bind[i+n].is_null) = 1;
+			strcpy(mysql_bind[i+n].buffer, "NULL");
+			*(mysql_bind[i+n].length) = 4;
+		} else {
+			*(mysql_bind[i+n].is_null) = 0;
+			if ( db_mysql_val2str_nq(conn,uv+n,mysql_bind[i].buffer,&len)<0 ) {
+				LM_ERR("val2str() failed for i=%d (1)\n", i);
+				return -1;
+			}
+			*(mysql_bind[i+n].length) = len;
+		}
+		LM_DBG("added val 2 (%d): len=%ld; buf=%s; is_null=%d\n", i+n,
+			*(mysql_bind[i].length), (char *)mysql_bind[i].buffer,
+			*(mysql_bind[i].is_null));
+	}
+
+	CON_RESULT(conn) = mysql_stmt_result_metadata(ctx->stmt);
+	if ( ! CON_RESULT(conn) ) {
+		cols = 0;
+	} else {
+		cols = mysql_num_fields(CON_RESULT(conn));
+	}
+
+	/* from db_mysql_submit_query(): */
+	/* When a server connection is lost and a query is attempted, most of
+	 * the time the query will return a CR_SERVER_LOST, then at the second
+	 * attempt to execute it, the mysql lib will reconnect and succeed.
+	 * However is a few cases, the first attempt returns CR_SERVER_GONE_ERROR
+	 * the second CR_SERVER_LOST and only the third succeeds.
+	 * Thus the 3 in the loop count. Increasing the loop count over this
+	 * value shouldn't be needed, but it doesn't hurt either, since the loop
+	 * will most of the time stop at the second or sometimes at the third
+	 * iteration.
+	 */
+	i=0;
+	do {
+		code = mysql_stmt_execute(ctx->stmt);
+		if (code && code != CR_SERVER_GONE_ERROR && code != CR_SERVER_LOST) {
+			LM_ERR("mysql_stmt_execute() failed: %s\n",
+				mysql_stmt_error(ctx->stmt));
+			return -1;
+		}
+		i++;
+	} while (code!=0 && i<(db_mysql_auto_reconnect ? 3 : 1));
+
+	/* check and get results */
+	if ( cols>0 ) {
+		LM_DBG("prepared statement has %d columns in result\n",cols);
+		/* set the out bind array ? */
+		if (pq_ptr->cols_out==-1) {
+			pq_ptr->cols_out = cols;
+			pq_ptr->bind_out = (MYSQL_BIND*)pkg_malloc( pq_ptr->cols_out*
+				(sizeof(struct bind_content) + sizeof(MYSQL_BIND)));
+			if (pq_ptr->bind_out==NULL) {
+				db_mysql_free_pq(pq_ptr);
+				CON_CURR_PS(conn) = NULL;
+				LM_ERR("no more pkg mem for the a new prepared statement\n");
+				return -1;
+			}
+			pq_ptr->out_bufs = (struct bind_content*)(pq_ptr->bind_out+total);
+			mysql_bind = pq_ptr->bind_out;
+			/* prepare the pointers */
+			for( i=0 ; i<pq_ptr->cols_out ; i++ ) {
+				mysql_bind[i].buffer =  pq_ptr->out_bufs[i].buf;
+				mysql_bind[i].buffer_type = MYSQL_TYPE_STRING;
+				mysql_bind[i].buffer_length = PREP_STMT_VAL_LEN;
+				mysql_bind[i].length = &pq_ptr->out_bufs[i].len;
+				mysql_bind[i].is_null = &pq_ptr->out_bufs[i].null;
+			}
+			/* bind out values to the statement */
+			LM_DBG("doing to BIND_PARAM out ...\n");
+			if ( mysql_stmt_bind_result(ctx->stmt, mysql_bind) ) {
+				LM_ERR("mysql_stmt_bind_result() failed: %s\n",
+					mysql_stmt_error(ctx->stmt));
+				return -1;
+			}
+			ctx->has_out = 1;
+		} else if (!ctx->has_out) {
+			/* bind out values to the statement */
+			LM_DBG("doing to BIND_PARAM out ...\n");
+			if ( mysql_stmt_bind_result(ctx->stmt, pq_ptr->bind_out) ) {
+				LM_ERR("mysql_stmt_bind_result() failed: %s\n",
+					mysql_stmt_error(ctx->stmt));
+				return -1;
+			}
+			ctx->has_out = 1;
+		}
+
+		if ( mysql_stmt_store_result(ctx->stmt) ) {
+			LM_ERR("mysql_stmt_store_result() failed: %s (%d)\n",
+				mysql_stmt_error(ctx->stmt),
+				mysql_stmt_errno(ctx->stmt));
+			return -1;
+		}
+	}
+
+	return 0;
+}
+
+
+static str query_holder = {NULL,0};
+static int db_mysql_submit_dummy_query(const db_con_t* _h, const str* _s)
+{
+	query_holder = *_s;
+	return 0;
+}
 
 
 /**
@@ -160,7 +489,8 @@ static int db_mysql_store_result(const db_con_t* _h, db_res_t** _r)
 		return -2;
 	}
 
-	CON_RESULT(_h) = mysql_store_result(CON_CONNECTION(_h));
+	if (!CON_HAS_PS(_h))
+		CON_RESULT(_h) = mysql_store_result(CON_CONNECTION(_h));
 	if (!CON_RESULT(_h)) {
 		if (mysql_field_count(CON_CONNECTION(_h)) == 0) {
 			(*_r)->col.n = 0;
@@ -244,9 +574,22 @@ int db_mysql_query(const db_con_t* _h, const db_key_t* _k, const db_op_t* _op,
 	     const db_val_t* _v, const db_key_t* _c, const int _n, const int _nc,
 	     const db_key_t _o, db_res_t** _r)
 {
-	CON_RESET_CURR_PS(_h); /* no prepared statements support */
+	int ret;
+
+	if (CON_HAS_PS(_h)) {
+		if (CON_HAS_UNINIT_PS(_h)) {
+			ret = db_do_query(_h, _k, _op, _v, _c, _n, _nc, _o, NULL,
+				db_mysql_val2str, db_mysql_submit_dummy_query, NULL);
+			if (ret!=0) return ret;
+		}
+		ret = db_mysql_do_prepared_query(_h, &query_holder, _v, _n, NULL, 0);
+		if (ret!=0) return ret;
+		ret = db_mysql_store_result(_h, _r);
+		CON_RESET_CURR_PS(_h);
+		return ret;
+	}
 	return db_do_query(_h, _k, _op, _v, _c, _n, _nc, _o, _r,
-	db_mysql_val2str, db_mysql_submit_query, db_mysql_store_result);
+		db_mysql_val2str, db_mysql_submit_query, db_mysql_store_result);
 }
 
 /**
@@ -280,7 +623,8 @@ int db_mysql_fetch_result(const db_con_t* _h, db_res_t** _r, const int nrows)
 			return -2;
 		}
 
-		CON_RESULT(_h) = mysql_store_result(CON_CONNECTION(_h));
+		if (!CON_HAS_PS(_h))
+			CON_RESULT(_h) = mysql_store_result(CON_CONNECTION(_h));
 		if (!CON_RESULT(_h)) {
 			if (mysql_field_count(CON_CONNECTION(_h)) == 0) {
 				(*_r)->col.n = 0;
@@ -298,7 +642,11 @@ int db_mysql_fetch_result(const db_con_t* _h, db_res_t** _r, const int nrows)
 			return -4;
 		}
 
-		RES_NUM_ROWS(*_r) = mysql_num_rows(CON_RESULT(_h));
+		if (CON_HAS_PS(_h)) {
+			RES_NUM_ROWS(*_r) = mysql_stmt_num_rows(CON_PS_STMT(_h));
+		} else {
+			RES_NUM_ROWS(*_r) = mysql_num_rows(CON_RESULT(_h));
+		}
 		if (!RES_NUM_ROWS(*_r)) {
 			LM_DBG("no rows returned from the query\n");
 			RES_ROWS(*_r) = 0;
@@ -320,8 +668,9 @@ int db_mysql_fetch_result(const db_con_t* _h, db_res_t** _r, const int nrows)
 	if(rows<=0)
 		return 0;
 
-	/* if the fetch count is less than the remaining rows to process                 */
-	/* set the number of rows to process (during this call) equal to the fetch count */
+	/* if the fetch count is less than the remaining rows to process */
+	/* set the number of rows to process (during this call) equal 
+	to the fetch count */
 	if(nrows < rows)
 		rows = nrows;
 
@@ -330,19 +679,27 @@ int db_mysql_fetch_result(const db_con_t* _h, db_res_t** _r, const int nrows)
 	LM_DBG("converting row %d of %d count %d\n", RES_LAST_ROW(*_r),
 			RES_NUM_ROWS(*_r), RES_ROW_N(*_r));
 
-	RES_ROWS(*_r) = (struct db_row*)pkg_malloc(sizeof(db_row_t) * rows);
-	if (!RES_ROWS(*_r)) {
+	if (db_allocate_rows(*_r, rows)!=0) {
 		LM_ERR("no memory left\n");
 		return -5;
 	}
 
 	for(i = 0; i < rows; i++) {
-		CON_ROW(_h) = mysql_fetch_row(CON_RESULT(_h));
-		if (!CON_ROW(_h)) {
-			LM_ERR("driver error: %s\n", mysql_error(CON_CONNECTION(_h)));
-			RES_ROW_N(*_r) = i;
-			db_free_rows(*_r);
-			return -6;
+		if (CON_HAS_PS(_h)) {
+			if ( mysql_stmt_fetch(CON_PS_STMT(_h)) == 1 ) {
+				LM_ERR("driver error: %s\n", mysql_error(CON_CONNECTION(_h)));
+				RES_ROW_N(*_r) = i;
+				db_free_rows(*_r);
+				return -6;
+			}
+		} else {
+			CON_ROW(_h) = mysql_fetch_row(CON_RESULT(_h));
+			if (!CON_ROW(_h)) {
+				LM_ERR("driver error: %s\n", mysql_error(CON_CONNECTION(_h)));
+				RES_ROW_N(*_r) = i;
+				db_free_rows(*_r);
+				return -6;
+			}
 		}
 		if (db_mysql_convert_row(_h, *_r, &(RES_ROWS(*_r)[i])) < 0) {
 			LM_ERR("error while converting row #%d\n", i);
@@ -382,9 +739,20 @@ int db_mysql_raw_query(const db_con_t* _h, const str* _s, db_res_t** _r)
  */
 int db_mysql_insert(const db_con_t* _h, const db_key_t* _k, const db_val_t* _v, const int _n)
 {
-	CON_RESET_CURR_PS(_h); /* no prepared statements support */
+	int ret;
+
+	if (CON_HAS_PS(_h)) {
+		if (CON_HAS_UNINIT_PS(_h)||!has_stmt_ctx(_h,&(CON_MYSQL_PS(_h)->ctx))){
+			ret = db_do_insert(_h, _k, _v, _n, db_mysql_val2str,
+				db_mysql_submit_dummy_query);
+			if (ret!=0) return ret;
+		}
+		ret = db_mysql_do_prepared_query(_h, &query_holder, _v, _n, NULL, 0);
+		CON_RESET_CURR_PS(_h);
+		return ret;
+	}
 	return db_do_insert(_h, _k, _v, _n, db_mysql_val2str,
-	db_mysql_submit_query);
+		db_mysql_submit_query);
 }
 
 
@@ -400,9 +768,20 @@ int db_mysql_insert(const db_con_t* _h, const db_key_t* _k, const db_val_t* _v, 
 int db_mysql_delete(const db_con_t* _h, const db_key_t* _k, const db_op_t* _o,
 	const db_val_t* _v, const int _n)
 {
-	CON_RESET_CURR_PS(_h); /* no prepared statements support */
+	int ret;
+
+	if (CON_HAS_PS(_h)) {
+		if (CON_HAS_UNINIT_PS(_h)||!has_stmt_ctx(_h,&(CON_MYSQL_PS(_h)->ctx))){
+			ret = db_do_delete(_h, _k, _o, _v, _n, db_mysql_val2str,
+				db_mysql_submit_dummy_query);
+			if (ret!=0) return ret;
+		}
+		ret = db_mysql_do_prepared_query(_h, &query_holder, _v, _n, NULL, 0);
+		CON_RESET_CURR_PS(_h);
+		return ret;
+	}
 	return db_do_delete(_h, _k, _o, _v, _n, db_mysql_val2str,
-	db_mysql_submit_query);
+		db_mysql_submit_query);
 }
 
 
@@ -422,9 +801,20 @@ int db_mysql_update(const db_con_t* _h, const db_key_t* _k, const db_op_t* _o,
 	const db_val_t* _v, const db_key_t* _uk, const db_val_t* _uv, const int _n, 
 	const int _un)
 {
-	CON_RESET_CURR_PS(_h); /* no prepared statements support */
+	int ret;
+
+	if (CON_HAS_PS(_h)) {
+		if (CON_HAS_UNINIT_PS(_h)||!has_stmt_ctx(_h,&(CON_MYSQL_PS(_h)->ctx))){
+			ret = db_do_update(_h, _k, _o, _v, _uk, _uv, _n, _un,
+				db_mysql_val2str, db_mysql_submit_dummy_query);
+			if (ret!=0) return ret;
+		}
+		ret = db_mysql_do_prepared_query(_h, &query_holder, _uv, _un, _v, _n);
+		CON_RESET_CURR_PS(_h);
+		return ret;
+	}
 	return db_do_update(_h, _k, _o, _v, _uk, _uv, _n, _un, db_mysql_val2str,
-	db_mysql_submit_query);
+		db_mysql_submit_query);
 }
 
 
@@ -438,9 +828,20 @@ int db_mysql_update(const db_con_t* _h, const db_key_t* _k, const db_op_t* _o,
  */
 int db_mysql_replace(const db_con_t* _h, const db_key_t* _k, const db_val_t* _v, const int _n)
 {
-	CON_RESET_CURR_PS(_h); /* no prepared statements support */
+	int ret;
+
+	if (CON_HAS_PS(_h)) {
+		if (CON_HAS_UNINIT_PS(_h)||!has_stmt_ctx(_h,&(CON_MYSQL_PS(_h)->ctx))){
+			ret = db_do_replace(_h, _k, _v, _n, db_mysql_val2str,
+				db_mysql_submit_dummy_query);
+			if (ret!=0) return ret;
+		}
+		ret = db_mysql_do_prepared_query(_h, &query_holder, _v, _n, NULL, 0);
+		CON_RESET_CURR_PS(_h);
+		return ret;
+	}
 	return db_do_replace(_h, _k, _v, _n, db_mysql_val2str,
-	db_mysql_submit_query);
+		db_mysql_submit_query);
 }
 
 
@@ -481,7 +882,8 @@ int db_last_inserted_id(const db_con_t* _h)
  
 	CON_RESET_CURR_PS(_h); /* no prepared statements support */
 
-	ret = snprintf(sql_buf, SQL_BUF_LEN, "insert into %.*s (", CON_TABLE(_h)->len, CON_TABLE(_h)->s);
+	ret = snprintf(sql_buf, SQL_BUF_LEN, "insert into %.*s (",
+		CON_TABLE(_h)->len, CON_TABLE(_h)->s);
 	if (ret < 0 || ret >= SQL_BUF_LEN) goto error;
 	off = ret;
 
@@ -492,7 +894,8 @@ int db_last_inserted_id(const db_con_t* _h)
 	ret = snprintf(sql_buf + off, SQL_BUF_LEN - off, ") values (");
 	if (ret < 0 || ret >= (SQL_BUF_LEN - off)) goto error;
 	off += ret;
-	ret = db_print_values(_h, sql_buf + off, SQL_BUF_LEN - off, _v, _n, db_mysql_val2str);
+	ret = db_print_values(_h, sql_buf + off, SQL_BUF_LEN - off, _v, _n,
+		db_mysql_val2str);
 	if (ret < 0) return -1;
 	off += ret;
 
@@ -502,7 +905,8 @@ int db_last_inserted_id(const db_con_t* _h)
 	if (ret < 0 || ret >= (SQL_BUF_LEN - off)) goto error;
 	off += ret;
 	
-	ret = db_print_set(_h, sql_buf + off, SQL_BUF_LEN - off, _k, _v, _n, db_mysql_val2str);
+	ret = db_print_set(_h, sql_buf + off, SQL_BUF_LEN - off, _k, _v, _n,
+		db_mysql_val2str);
 	if (ret < 0) return -1;
 	off += ret;
 	

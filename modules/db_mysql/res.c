@@ -47,7 +47,11 @@ int db_mysql_get_columns(const db_con_t* _h, db_res_t* _r)
 		return -1;
 	}
 
-	RES_COL_N(_r) = mysql_field_count(CON_CONNECTION(_h));
+	if (CON_HAS_PS(_h)) {
+		RES_COL_N(_r) = CON_MYSQL_PS(_h)->cols_out;
+	} else {
+		RES_COL_N(_r) = mysql_field_count(CON_CONNECTION(_h));
+	}
 	if (!RES_COL_N(_r)) {
 		LM_ERR("no columns returned from the query\n");
 		return -2;
@@ -62,16 +66,7 @@ int db_mysql_get_columns(const db_con_t* _h, db_res_t* _r)
 
 	fields = mysql_fetch_fields(CON_RESULT(_h));
 	for(col = 0; col < RES_COL_N(_r); col++) {
-		RES_NAMES(_r)[col] = (str*)pkg_malloc(sizeof(str));
-		if (! RES_NAMES(_r)[col]) {
-			LM_ERR("no private memory left\n");
-			db_free_columns(_r);
-			return -4;
-		}
-		LM_DBG("allocate %lu bytes for RES_NAMES[%d] at %p\n",
-				(unsigned long)sizeof(str), col, RES_NAMES(_r)[col]);
-
-		/* The pointer that is here returned is part of the result structure. */
+		/* The pointer that is here returned is part of the result structure */
 		RES_NAMES(_r)[col]->s = fields[col].name;
 		RES_NAMES(_r)[col]->len = strlen(fields[col].name);
 
@@ -100,6 +95,7 @@ int db_mysql_get_columns(const db_con_t* _h, db_res_t* _r)
 				break;
 
 			case MYSQL_TYPE_DATETIME:
+			case MYSQL_TYPE_DATE:
 				LM_DBG("use DB_DATETIME result type\n");
 				RES_TYPES(_r)[col] = DB_DATETIME;
 				break;
@@ -137,36 +133,42 @@ int db_mysql_get_columns(const db_con_t* _h, db_res_t* _r)
  */
 static inline int db_mysql_convert_rows(const db_con_t* _h, db_res_t* _r)
 {
-	int row, len;
+	int row;
 
 	if ((!_h) || (!_r)) {
 		LM_ERR("invalid parameter\n");
 		return -1;
 	}
 
-	RES_ROW_N(_r) = mysql_num_rows(CON_RESULT(_h));
+	if (CON_HAS_PS(_h)) {
+		RES_ROW_N(_r) = mysql_stmt_num_rows(CON_PS_STMT(_h));
+	} else {
+		RES_ROW_N(_r) = mysql_num_rows(CON_RESULT(_h));
+	}
 	if (!RES_ROW_N(_r)) {
 		LM_DBG("no rows returned from the query\n");
 		RES_ROWS(_r) = 0;
 		return 0;
 	}
 
-	len = sizeof(db_row_t) * RES_ROW_N(_r);
-	RES_ROWS(_r) = (struct db_row*)pkg_malloc(len);
-	if (!RES_ROWS(_r)) {
+	if (db_allocate_rows( _r, RES_ROW_N(_r))!=0) {
 		LM_ERR("no private memory left\n");
 		return -2;
 	}
-	LM_DBG("allocate %d bytes for rows at %p\n", len, RES_ROWS(_r));
-	memset(RES_ROWS(_r), 0, len);
 
 	for(row = 0; row < RES_ROW_N(_r); row++) {
-		CON_ROW(_h) = mysql_fetch_row(CON_RESULT(_h));
-		if (!CON_ROW(_h)) {
-			LM_ERR("driver error: %s\n", mysql_error(CON_CONNECTION(_h)));
-			RES_ROW_N(_r) = row;
-			db_free_rows(_r);
-			return -3;
+		if (CON_HAS_PS(_h)) {
+			mysql_stmt_fetch(CON_PS_STMT(_h));
+			//if(mysql_stmt_fetch(CON_PS_STMT(_h))!=1)
+			//	LM_ERR("STMT ERR=%s\n",mysql_stmt_error(CON_PS_STMT(_h)));
+		} else {
+			CON_ROW(_h) = mysql_fetch_row(CON_RESULT(_h));
+			if (!CON_ROW(_h)) {
+				LM_ERR("driver error: %s\n", mysql_error(CON_CONNECTION(_h)));
+				RES_ROW_N(_r) = row;
+				db_free_rows(_r);
+				return -3;
+			}
 		}
 		if (db_mysql_convert_row(_h, _r, &(RES_ROWS(_r)[row])) < 0) {
 			LM_ERR("error while converting row #%d\n", row);

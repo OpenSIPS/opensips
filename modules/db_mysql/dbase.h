@@ -34,6 +34,7 @@
 #include "../../db/db_op.h"
 #include "../../db/db_val.h"
 #include "../../str.h"
+#include "my_con.h"
 
 /*
  * Initialize database connection
@@ -117,5 +118,10 @@ int db_insert_update(const db_con_t* _h, const db_key_t* _k, const db_val_t* _v,
  */
 int db_mysql_use_table(db_con_t* _h, const str* _t);
 
+
+/*
+ *	Free all allocated prep_stmt structures
+ */
+void db_mysql_free_stmt_list(struct prep_stmt *head);
 
 #endif /* DBASE_H */

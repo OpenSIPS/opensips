@@ -128,7 +128,7 @@ int db_mysql_str2val(const db_type_t _t, db_val_t* _v, const char* _s, const int
 
 
 /*
- * Used when converting result from a query
+ * Used when converting values to be used in a DB query
  */
 int db_mysql_val2str(const db_con_t* _c, const db_val_t* _v, char* _s, int* _len)
 {
@@ -238,4 +238,105 @@ int db_mysql_val2str(const db_con_t* _c, const db_val_t* _v, char* _s, int* _len
 		return -9;
 	}
 	/*return -8; --not reached*/
+}
+
+
+/*
+ * Used when converting values to be used in a prepared statement
+ */
+int db_mysql_val2str_nq(const db_con_t* _c, const db_val_t* _v, char* _s,
+																	int* _len)
+{
+	int l;
+
+	if (!_c || !_v || !_s || !_len || !*_len) {
+		LM_ERR("invalid parameter value\n");
+		return -1;
+	}
+
+	if (VAL_NULL(_v)) {
+		if (*_len < sizeof("NULL")) {
+			LM_ERR("buffer too small\n");
+			return -1;
+		}
+		*_len = snprintf(_s, *_len, "NULL");
+		return 0;
+	}
+	
+	switch(VAL_TYPE(_v)) {
+	case DB_INT:
+		if (db_int2str(VAL_INT(_v), _s, _len) < 0) {
+			LM_ERR("error while converting string to int\n");
+			return -2;
+		} else {
+			return 0;
+		}
+		break;
+
+	case DB_BITMAP:
+		if (db_int2str(VAL_BITMAP(_v), _s, _len) < 0) {
+			LM_ERR("error while converting string to int\n");
+			return -3;
+		} else {
+			return 0;
+		}
+		break;
+
+	case DB_DOUBLE:
+		if (db_double2str(VAL_DOUBLE(_v), _s, _len) < 0) {
+			LM_ERR("error while converting string to double\n");
+			return -4;
+		} else {
+			return 0;
+		}
+		break;
+
+	case DB_STRING:
+		l = strlen(VAL_STRING(_v));
+		if (*_len < (l * 2 + 3)) {
+			LM_ERR("destination buffer too short\n");
+			return -5;
+		} else {
+			*_len = mysql_real_escape_string(CON_CONNECTION(_c), _s,
+					VAL_STRING(_v), l);
+			return 0;
+		}
+		break;
+
+	case DB_STR:
+		if (*_len < (VAL_STR(_v).len * 2 + 3)) {
+			LM_ERR("destination buffer too short\n");
+			return -6;
+		} else {
+			*_len = mysql_real_escape_string(CON_CONNECTION(_c), _s, 
+					VAL_STR(_v).s, VAL_STR(_v).len);
+			return 0;
+		}
+		break;
+
+	case DB_DATETIME:
+		if (db_time2str_nq(VAL_TIME(_v), _s, _len) < 0) {
+			LM_ERR("error while converting string to time_t\n");
+			return -7;
+		} else {
+			return 0;
+		}
+		break;
+
+	case DB_BLOB:
+		l = VAL_BLOB(_v).len;
+		if (*_len < (l * 2 + 3)) {
+			LM_ERR("destination buffer too short\n");
+			return -8;
+		} else {
+			*_len = mysql_real_escape_string(CON_CONNECTION(_c), _s, 
+					VAL_STR(_v).s, l);
+			return 0;
+		}			
+		break;
+
+	default:
+		LM_DBG("unknown data type\n");
+		return -9;
+	}
 }
