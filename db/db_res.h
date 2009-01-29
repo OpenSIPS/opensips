@@ -119,4 +119,7 @@ inline int db_free_result(db_res_t* _r);
  */
 inline int db_allocate_columns(db_res_t* _r, const unsigned int cols);
 
+
+inline int db_allocate_rows(db_res_t* _res, const unsigned int rows);
+
 #endif /* DB_RES_H */

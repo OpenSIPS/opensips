@@ -42,17 +42,12 @@
  */
 inline int db_free_rows(db_res_t* _r)
 {
-	int i;
-
 	if (!_r) {
 		LM_ERR("invalid parameter value\n");
 		return -1;
 	}
 	LM_DBG("freeing %d rows\n", RES_ROW_N(_r));
 
-	for(i = 0; i < RES_ROW_N(_r); i++) {
-		db_free_row(&(RES_ROWS(_r)[i]));
-	}
 	RES_ROW_N(_r) = 0;
 
 	if (RES_ROWS(_r)) {
@@ -69,31 +64,15 @@ inline int db_free_rows(db_res_t* _r)
  */
 inline int db_free_columns(db_res_t* _r)
 {
-	int col;
-
 	if (!_r) {
 		LM_ERR("invalid parameter value\n");
 		return -1;
 	}
-	LM_DBG("freeing %d columns\n", RES_COL_N(_r));
-	/* free memory previously allocated to save column names */
-	for(col = 0; col < RES_COL_N(_r); col++) {
-		if (RES_NAMES(_r)[col]!=NULL) {
-			LM_DBG("freeing RES_NAMES[%d] at %p\n", col, RES_NAMES(_r)[col]);
-			pkg_free((str *)RES_NAMES(_r)[col]);
-			RES_NAMES(_r)[col] = NULL;
-		}
-	}
 	/* free names and types */
 	if (RES_NAMES(_r)) {
-		LM_DBG("freeing result names at %p\n", RES_NAMES(_r));
+		LM_DBG("freeing result columns at %p\n", RES_NAMES(_r));
 		pkg_free(RES_NAMES(_r));
 		RES_NAMES(_r) = NULL;
-	}
-	if (RES_TYPES(_r)) {
-		LM_DBG("freeing result types at %p\n", RES_TYPES(_r));
-		pkg_free(RES_TYPES(_r));
-		RES_TYPES(_r) = NULL;
 	}
 	return 0;
 }
@@ -140,24 +119,59 @@ inline int db_free_result(db_res_t* _r)
  */
 inline int db_allocate_columns(db_res_t* _r, const unsigned int cols)
 {
-	RES_NAMES(_r) = (db_key_t*)pkg_malloc(sizeof(db_key_t) * cols);
+	unsigned int i;
+
+	RES_NAMES(_r) = (db_key_t*)pkg_malloc
+		( cols * (sizeof(db_key_t)+sizeof(db_type_t)+sizeof(str)) );
 	if (!RES_NAMES(_r)) {
 		LM_ERR("no private memory left\n");
 		return -1;
 	}
-	LM_DBG("allocate %d bytes for result names at %p\n",
-		(int)(sizeof(db_key_t) * cols),
+	LM_DBG("allocate %d bytes for result columns at %p\n",
+		(int)(cols * (sizeof(db_key_t)+sizeof(db_type_t)+sizeof(str))),
 		RES_NAMES(_r));
 
-	RES_TYPES(_r) = (db_type_t*)pkg_malloc(sizeof(db_type_t) * cols);
-	if (!RES_TYPES(_r)) {
-		LM_ERR("no private memory left\n");
-		pkg_free(RES_NAMES(_r));
-		return -1;
-	}
-	LM_DBG("allocate %d bytes for result types at %p\n",
-		(int)(sizeof(db_type_t) * cols),
-		RES_TYPES(_r));
+	RES_TYPES(_r) = (db_type_t*)(RES_NAMES(_r)+cols);
+
+	for ( i=0 ; i<cols ; i++)
+		RES_NAMES(_r)[i] = (str*)(RES_TYPES(_r)+cols)+i;
 
 	return 0;
 }
+
+/*
+ * Allocate storage for rows in existing
+ * result structure.
+ */
+inline int db_allocate_rows(db_res_t* _res, const unsigned int rows)
+{
+	unsigned int i;
+
+	RES_ROWS(_res) = (struct db_row*)pkg_malloc
+		(rows * (sizeof(db_row_t) + sizeof(db_val_t) * RES_COL_N(_res)) );
+	if (!RES_ROWS(_res)) {
+		LM_ERR("no memory left\n");
+		return -1;
+	}
+	memset( RES_ROWS(_res), 0 ,
+		rows * (sizeof(db_row_t) + sizeof(db_val_t) * RES_COL_N(_res)));
+
+	LM_DBG("allocate %d bytes for result rows and values at %p\n",
+		(int)(rows * (sizeof(db_row_t) + sizeof(db_val_t) * RES_COL_N(_res))),
+		RES_ROWS(_res));
+
+	for( i=0 ; i<rows ; i++ )
+		/* the values of the row i */
+		ROW_VALUES( &(RES_ROWS(_res)[i]) ) =
+			((db_val_t*)(RES_ROWS(_res)+rows)) + RES_COL_N(_res)*i;
+
+	return 0;
+}
+
+
+
+
+
+
+
+
