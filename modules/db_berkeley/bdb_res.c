@@ -68,16 +68,7 @@ int bdb_get_columns(table_p _tp, db_res_t* _res, int* _lres, int _nc)
 		column_p cp = NULL;
 		cp = (_lres) ? _tp->colp[_lres[col]] : _tp->colp[col];
 
-		RES_NAMES(_res)[col] = (str*)pkg_malloc(sizeof(str));
-		if (! RES_NAMES(_res)[col]) {
-			LM_ERR("no private memory left\n");
-			db_free_columns(_res);
-			return -3;
-		}
-		LM_DBG("allocate %lu bytes for RES_NAMES[%d] at %p\n",
-			(unsigned long)sizeof(str), col, RES_NAMES(_res)[col]);
-
-		/* The pointer that is here returned is part of the result structure. */
+		/* The pointer that is here returned is part of the result structure.*/
 		RES_NAMES(_res)[col]->s = cp->name.s;
 		RES_NAMES(_res)[col]->len = cp->name.len;
 
@@ -98,45 +89,25 @@ int bdb_convert_row(db_res_t* _res, char *bdb_result, int* _lres)
 {
 	int col, len, i, j;
 	char **row_buf, *s;
-	db_row_t* row = NULL;
 	col = len = i = j = 0;
-	
+	struct db_row* row = NULL;
+
 	if (!_res) {
 		LM_ERR("invalid parameter\n");
 		return -1;
 	}
 
-	/* Allocate a single row structure */
-	len = sizeof(db_row_t);
-	row = (db_row_t*)pkg_malloc(len);
-	if (!row) {
-		LM_ERR("no private memory left\n");
-		return -1;
-	}
-	LM_DBG("allocate %d bytes for row %p\n", len, row);
-	memset(row, 0, len);
-	RES_ROWS(_res) = row;
-	
 	/* Save the number of rows in the current fetch */
 	RES_ROW_N(_res) = 1;
-
-	/* Allocate storage to hold the bdb result values */
-	len = sizeof(db_val_t) * RES_COL_N(_res);
-	ROW_VALUES(row) = (db_val_t*)pkg_malloc(len);
-
-	if (!ROW_VALUES(row)) {
-		LM_ERR("no private memory left\n");
-		return -1;
-	}
-	LM_DBG("allocate %d bytes for row values at %p\n", len, ROW_VALUES(row));
-	memset(ROW_VALUES(row), 0, len);
+	row = RES_ROWS(_res);
 
 	/* Save the number of columns in the ROW structure */
 	ROW_N(row) = RES_COL_N(_res);
 
 	/*
 	 * Allocate an array of pointers one per column.
-	 * It that will be used to hold the address of the string representation of each column.
+	 * It that will be used to hold the address of the string 
+	 * representation of each column.
 	 */
 	len = sizeof(char *) * RES_COL_N(_res);
 	row_buf = (char **)pkg_malloc(len);
@@ -144,7 +115,8 @@ int bdb_convert_row(db_res_t* _res, char *bdb_result, int* _lres)
 		LM_ERR("no private memory left\n");
 		return -1;
 	}
-	LM_DBG("allocate for %d columns %d bytes in row buffer at %p\n", RES_COL_N(_res), len, row_buf);
+	LM_DBG("allocate for %d columns %d bytes in row buffer at %p\n",
+		RES_COL_N(_res), len, row_buf);
 	memset(row_buf, 0, len);
 
 	/*populate the row_buf with bdb_result*/
@@ -257,20 +229,9 @@ int bdb_append_row(db_res_t* _res, char *bdb_result, int* _lres, int _rx)
 	
 	row = &(RES_ROWS(_res)[_rx]);
 	
-	/* Allocate storage to hold the bdb result values */
-	len = sizeof(db_val_t) * RES_COL_N(_res);
-	ROW_VALUES(row) = (db_val_t*)pkg_malloc(len);
-	
-	if (!ROW_VALUES(row)) {
-		LM_ERR("no private memory left\n");
-		return -1;
-	}
-	LM_DBG("allocate %d bytes for row values at %p\n", len, ROW_VALUES(row));
-	memset(ROW_VALUES(row), 0, len);
-	
 	/* Save the number of columns in the ROW structure */
 	ROW_N(row) = RES_COL_N(_res);
-	
+
 	/*
 	 * Allocate an array of pointers one per column.
 	 * It that will be used to hold the address of the string representation of each column.

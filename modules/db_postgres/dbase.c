@@ -221,11 +221,13 @@ int db_postgres_fetch_result(const db_con_t* _con, db_res_t** _res, const int nr
 
 		switch(pqresult) {
 			case PGRES_COMMAND_OK:
-				/* Successful completion of a command returning no data (such as INSERT or UPDATE). */
+				/* Successful completion of a command returning no data 
+				 * (such as INSERT or UPDATE). */
 				return 0;
 
 			case PGRES_TUPLES_OK:
-				/* Successful completion of a command returning data (such as a SELECT or SHOW). */
+				/* Successful completion of a command returning data 
+				 * (such as a SELECT or SHOW). */
 				if (db_postgres_get_columns(_con, *_res) < 0) {
 					LM_ERR("failed to get column names\n");
 					return -2;
@@ -234,8 +236,8 @@ int db_postgres_fetch_result(const db_con_t* _con, db_res_t** _res, const int nr
 
 			case PGRES_FATAL_ERROR:
 				LM_ERR("%p - invalid query, execution aborted\n", _con);
-				LM_ERR("%p - PQresultStatus(%s)\n", _con, PQresStatus(pqresult));
-				LM_ERR("%p: %s\n", _con, PQresultErrorMessage(CON_RESULT(_con)));
+				LM_ERR("%p - PQresultStatus(%s)\n",_con,PQresStatus(pqresult));
+				LM_ERR("%p: %s\n",_con,PQresultErrorMessage(CON_RESULT(_con)));
 				if (*_res)
 					db_free_result(*_res);
 				*_res = 0;
@@ -251,8 +253,8 @@ int db_postgres_fetch_result(const db_con_t* _con, db_res_t** _res, const int nr
 			case PGRES_BAD_RESPONSE:
 			default:
 				LM_ERR("%p - probable invalid query\n", _con);
-				LM_ERR("%p - PQresultStatus(%s)\n", _con, PQresStatus(pqresult));
-				LM_ERR("%p: %s\n", _con, PQresultErrorMessage(CON_RESULT(_con)));
+				LM_ERR("%p - PQresultStatus(%s)\n",_con,PQresStatus(pqresult));
+				LM_ERR("%p: %s\n",_con,PQresultErrorMessage(CON_RESULT(_con)));
 				if (*_res)
 					db_free_result(*_res);
 				*_res = 0;
@@ -278,7 +280,8 @@ int db_postgres_fetch_result(const db_con_t* _con, db_res_t** _res, const int nr
 		return 0;
 
 	/* if the fetch count is less than the remaining rows to process                 */
-	/* set the number of rows to process (during this call) equal to the fetch count */
+	/* set the number of rows to process (during this call) equal to 
+	 * the fetch count */
 	if (nrows < rows)
 		rows = nrows;
 

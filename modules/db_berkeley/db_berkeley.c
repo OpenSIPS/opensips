@@ -359,7 +359,7 @@ int bdb_query(db_con_t* _con, db_key_t* _k, db_op_t* _op, db_val_t* _v,
 	table_p _tp = NULL;
 	char kbuf[MAX_ROW_SIZE];
 	char dbuf[MAX_ROW_SIZE];
-	u_int32_t i, len, ret; 
+	u_int32_t i, ret; 
 	int klen=MAX_ROW_SIZE;
 	int *lkey=NULL, *lres=NULL;
 	DBT key, data;
@@ -466,25 +466,26 @@ int bdb_query(db_con_t* _con, db_key_t* _k, db_op_t* _op, db_val_t* _v,
 		}
 		
 		if(i == 0)
-		{	
+		{
 			/*return empty table*/
 			RES_ROW_N(*_r) = 0;
 			BDB_CON_RESULT(_con) = *_r;
 			return 0;
 		}
-		
-		/*allocate N rows in the result*/
 		RES_ROW_N(*_r) = i;
-		len  = sizeof(db_row_t) * i;
-		RES_ROWS(*_r) = (db_row_t*)pkg_malloc( len );
-		memset(RES_ROWS(*_r), 0, len);
-		
+
 		/*fill in the column part of db_res_t (metadata) */
 		if ((ret = bdb_get_columns(_tbc->dtp, *_r, lres, _nc)) < 0) 
 		{	LM_ERR("Error while getting column names\n");
 			goto error;
 		}
-		
+
+		/*allocate N rows in the result*/
+		if (db_allocate_rows(*_r, i)!=0) {
+			LM_ERR("failed to allocated rows\n");
+			goto error;
+		}
+
 		/* Acquire a cursor for the database. */
 		if ((ret = db->cursor(db, NULL, &dbcp, 0)) != 0) 
 		{	LM_ERR("Error creating cursor\n");
@@ -563,6 +564,11 @@ int bdb_query(db_con_t* _con, db_key_t* _k, db_op_t* _op, db_val_t* _v,
 		/*fill in the col part of db_res_t */
 		if ((ret = bdb_get_columns(_tbc->dtp, *_r, lres, _nc)) < 0) 
 		{	LM_ERR("Error while getting column names\n");
+			goto error;
+		}
+		/*allocate N rows in the result*/
+		if (db_allocate_rows(*_r, 1)!=0) {
+			LM_ERR("failed to allocated rows\n");
 			goto error;
 		}
 		/*fill in the row part of db_res_t */

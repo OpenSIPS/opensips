@@ -107,19 +107,11 @@ int db_postgres_get_columns(const db_con_t* _h, db_res_t* _r)
 		return -3;
 	}
 
-	/* For each column both the name and the OID number of the data type are saved. */
+	/* For each column both the name and the OID number of the 
+	 * data type are saved. */
 	for(col = 0; col < RES_COL_N(_r); col++) {
 
-		RES_NAMES(_r)[col] = (str*)pkg_malloc(sizeof(str));
-		if (! RES_NAMES(_r)[col]) {
-			LM_ERR("no private memory left\n");
-			db_free_columns(_r);
-			return -4;
-		}
-		LM_DBG("allocate %d bytes for RES_NAMES[%d] at %p\n", sizeof(str), col,
-				RES_NAMES(_r)[col]);
-
-		/* The pointer that is here returned is part of the result structure. */
+		/* The pointer that is here returned is part of the result structure.*/
 		RES_NAMES(_r)[col]->s = PQfname(CON_RESULT(_h), col);
 		RES_NAMES(_r)[col]->len = strlen(PQfname(CON_RESULT(_h), col));
 
@@ -199,28 +191,24 @@ int db_postgres_convert_rows(const db_con_t* _h, db_res_t* _r)
 		RES_ROWS(_r) = 0;
 		return 0;
 	}
-	/*Allocate an array of pointers per column to holds the string representation */
+	/* Allocate an array of pointers per column to holds the string 
+	 * representation */
 	len = sizeof(char *) * RES_COL_N(_r);
 	row_buf = (char**)pkg_malloc(len);
 	if (!row_buf) {
 		LM_ERR("no private memory left\n");
 		return -1;
 	}
-	LM_DBG("allocate for %d columns %d bytes in row buffer at %p\n", RES_COL_N(_r), len, row_buf);
+	LM_DBG("allocate for %d columns %d bytes in row buffer at %p\n",
+		RES_COL_N(_r), len, row_buf);
 	memset(row_buf, 0, len);
 
-	/* Allocate a row structure for each row in the current fetch. */
-	len = sizeof(db_row_t) * RES_ROW_N(_r);
-	RES_ROWS(_r) = (db_row_t*)pkg_malloc(len);
-	LM_DBG("allocate %d bytes for %d rows at %p\n", len, RES_ROW_N(_r), RES_ROWS(_r));
-
-	if (!RES_ROWS(_r)) {
+	if (db_allocate_rows( _r, RES_ROW_N(_r))!=0) {
 		LM_ERR("no private memory left\n");
-		return -1;
+		return -2;
 	}
-	memset(RES_ROWS(_r), 0, len);
 
-	for(row = RES_LAST_ROW(_r); row < (RES_LAST_ROW(_r) + RES_ROW_N(_r)); row++) {
+	for(row=RES_LAST_ROW(_r); row<(RES_LAST_ROW(_r)+RES_ROW_N(_r)) ; row++) {
 		for(col = 0; col < RES_COL_N(_r); col++) {
 				/*
 				 * The row data pointer returned by PQgetvalue points to storage
@@ -238,11 +226,13 @@ int db_postgres_convert_rows(const db_con_t* _h, db_res_t* _r)
 					return -1;
 				}
 				memset(row_buf[col], 0, len+1);
-				LM_DBG("allocated %d bytes for row_buf[%d] at %p\n", len, col, row_buf[col]);
+				LM_DBG("allocated %d bytes for row_buf[%d] at %p\n",
+					len, col, row_buf[col]);
 
 				strncpy(row_buf[col], s, len);
 				LM_DBG("[%d][%d] Column[%.*s]=[%s]\n",
-					row, col, RES_NAMES(_r)[col]->len, RES_NAMES(_r)[col]->s, row_buf[col]);
+					row, col, RES_NAMES(_r)[col]->len,
+					RES_NAMES(_r)[col]->s, row_buf[col]);
 		}
 
 		/* ASSERT: row_buf contains an entire row in strings */
@@ -311,27 +301,12 @@ int db_postgres_convert_rows(const db_con_t* _h, db_res_t* _r)
 int db_postgres_convert_row(const db_con_t* _h, db_res_t* _r, db_row_t* _row,
 		char **row_buf)
 {
-	int col, len;
+	int col;
 
 	if (!_h || !_r || !_row)  {
 		LM_ERR("invalid parameter value\n");
 		return -1;
 	}
-
-	/*
-	 * Allocate storage to hold the data type value converted from a string
-	 * because PostgreSQL returns (most) data as strings
-	 */
-	len = sizeof(db_val_t) * RES_COL_N(_r);
-	ROW_VALUES(_row) = (db_val_t*)pkg_malloc(len);
-
-	if (!ROW_VALUES(_row)) {
-		LM_ERR("no private memory left\n");
-		return -1;
-	}
-	LM_DBG("allocate %d bytes for row values at %p\n", len, ROW_VALUES(_row));
-	ROW_N(_row) = RES_COL_N(_r);
-	memset(ROW_VALUES(_row), 0, len);
 
 	/* Save the number of columns in the ROW structure */
 	ROW_N(_row) = RES_COL_N(_r);

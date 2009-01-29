@@ -71,15 +71,6 @@ static inline int db_unixodbc_get_columns(const db_con_t* _h, db_res_t* _r)
 
 	for(col = 0; col < cols; col++)
 	{
-		RES_NAMES(_r)[col] = (str*)pkg_malloc(sizeof(str));
-		if (! RES_NAMES(_r)[col]) {
-			LM_ERR("no private memory left\n");
-			db_free_columns(_r);
-			return -4;
-		}
-		LM_DBG("allocate %lu bytes for RES_NAMES[%d] at %p\n",
-			(unsigned long)sizeof(str),col,	RES_NAMES(_r)[col]);
-
 		char columnname[80];
 		SQLRETURN ret;
 		SQLSMALLINT namelength, datatype, decimaldigits, nullable;
@@ -163,7 +154,7 @@ static inline int db_unixodbc_get_columns(const db_con_t* _h, db_res_t* _r)
  */
 static inline int db_unixodbc_convert_rows(const db_con_t* _h, db_res_t* _r)
 {
-	int row_n = 0, i = 0, ret = 0, len;
+	int row_n = 0, i = 0, ret = 0;
 	SQLSMALLINT columns;
 	list* rows = NULL;
 	list* rowstart = NULL;
@@ -215,15 +206,10 @@ static inline int db_unixodbc_convert_rows(const db_con_t* _h, db_res_t* _r)
 		return 0;
 	}
 
-	len = sizeof(db_row_t) * row_n;
-	RES_ROWS(_r) = (struct db_row*)pkg_malloc(len);
-	if (!RES_ROWS(_r)) {
+	if (db_allocate_rows( _r, row_n)!=0) {
 		LM_ERR("no private memory left\n");
 		return -2;
 	}
-	LM_DBG("allocate %d bytes for rows at %p\n", len,
-			RES_ROWS(_r));
-	memset(RES_ROWS(_r), 0, len);
 
 	i = 0;
 	rows = rowstart;

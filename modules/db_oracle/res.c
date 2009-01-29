@@ -103,22 +103,19 @@ static int get_columns(ora_con_t* con, db_res_t* _r, OCIStmt* _c, dmap_t* _d)
 
 		{
 			text* name;
-			str* sname;
 			status = OCIAttrGet(param, OCI_DTYPE_PARAM,
 				(dvoid**)(dvoid*)&name,	&len, OCI_ATTR_NAME,
 				con->errhp);
 			if (status != OCI_SUCCESS) goto ora_err;
-			sname = (str*)pkg_malloc(sizeof(str)+len+1);
-			if (!sname) {
+			RES_NAMES(_r)[i]->s = (char*)pkg_malloc(len+1);
+			if (!RES_NAMES(_r)[i]->s) {
 				db_free_columns(_r);
 				LM_ERR("no private memory left\n");
 				return -5;
 			}
-			sname->len = len;
-			sname->s = (char*)sname + sizeof(str);
-			memcpy(sname->s, name, len);
-			sname->s[len] = '\0';
-			RES_NAMES(_r)[i] = sname;
+			RES_NAMES(_r)[i]->len = len;
+			memcpy(RES_NAMES(_r)[i]->s, name, len);
+			RES_NAMES(_r)[i]->s[len] = '\0';
 		}
 
 		status = OCIAttrGet(param, OCI_DTYPE_PARAM,
@@ -261,13 +258,6 @@ static int convert_row(db_res_t* _res, db_row_t* _r, dmap_t* _d)
 	unsigned i, n = RES_COL_N(_res);
 
 	ROW_N(_r) = n;
-	ROW_VALUES(_r) = (db_val_t*)pkg_malloc(sizeof(db_val_t) * n);
-	if (!ROW_VALUES(_r)) {
-nomem:
-		LM_ERR("no private memory left\n");
-		return -1;
-	}
-	memset(ROW_VALUES(_r), 0, sizeof(db_val_t) * n);
 
 	for (i = 0; i < n; i++) {
 		static const str dummy_string = {"", 0};
@@ -389,12 +379,10 @@ static int get_rows(ora_con_t* con, db_res_t* _r, OCIStmt* _c, dmap_t* _d)
 	}
 
 	RES_ROW_N(_r) = rcnt;
-	RES_ROWS(_r) = (db_row_t*)pkg_malloc(sizeof(db_row_t) * rcnt);
-	if (!RES_ROWS(_r)) {
+	if (db_allocate_rows( _r, rcnt)!=0) {
 		LM_ERR("no private memory left\n");
 		return -1;
 	}
-	memset(RES_ROWS(_r), 0, sizeof(db_row_t) * rcnt);
 
 	while ( 1 ) {
 		if (convert_row(_r, &RES_ROWS(_r)[--rcnt], _d) < 0) {
