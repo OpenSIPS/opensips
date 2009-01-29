@@ -199,6 +199,8 @@ static int fix_actions(struct action* a)
 	struct proxy_l *p;
 	struct bl_head *blh;
 	int i;
+	str s;
+	pv_elem_t *model=NULL;
 
 	if (a==0){
 		LM_CRIT("null pointer\n");
@@ -464,6 +466,45 @@ static int fix_actions(struct action* a)
 				}
 				t->elem[0].type = BLACKLIST_ST;
 				t->elem[0].u.data = blh;
+				break;
+			case CACHE_STORE_T:
+				s.s = (char*)t->elem[1].u.data;
+				s.len = strlen(s.s);
+				if(s.len==0) {
+					LM_ERR("param 2 is empty string!\n");
+					return E_CFG;
+				}
+
+				if(pv_parse_format(&s ,&model) || model==NULL) {
+						LM_ERR("wrong format [%s] for value param!\n", s.s);
+						ret=E_BUG;
+						goto error;
+				}
+				t->elem[1].u.data = (void*)model;
+
+				s.s = (char*)t->elem[2].u.data;
+				s.len = strlen(s.s);
+				if(s.len==0) {
+					LM_ERR("param 2 is empty string!\n");
+					return E_CFG;
+				}
+
+				if(pv_parse_format(&s ,&model) || model==NULL) {
+						LM_ERR("wrong format [%s] for value param!\n", s.s);
+						ret=E_BUG;
+						goto error;
+				}
+				t->elem[2].u.data = (void*)model;
+
+				break;
+			
+			case CACHE_FETCH_T:
+				if(((pv_spec_p)t->elem[2].u.data)->type!= PVT_AVP)
+				{
+					LM_ERR("Wrong type for the third argument - must be an AVP\n");
+					ret=E_BUG;
+					goto error;
+				}
 				break;
 		}
 	}

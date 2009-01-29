@@ -267,6 +267,9 @@ extern int line;
 %token TLS
 %token SCTP
 %token NULLV
+%token CACHE_STORE
+%token CACHE_FETCH
+%token CACHE_REMOVE
 
 /* config vars. */
 %token DEBUG
@@ -2272,6 +2275,44 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 								" string expected");
 								}
 		| UNUSE_BLACKLIST error {$$=0; yyerror("missing '(' or ')' ?"); }
+		| CACHE_STORE LPAREN STRING COMMA STRING COMMA STRING RPAREN { 
+									mk_action3( $$, CACHE_STORE_T,
+													STR_ST,
+													STR_ST,
+													STR_ST,
+													$3,
+													$5,
+													$7);
+							}
+		| CACHE_STORE LPAREN STRING COMMA STRING COMMA STRING COMMA NUMBER 
+								RPAREN { 
+								elems[0].type = STR_ST; 
+								elems[0].u.data = $3; 
+								elems[1].type = STR_ST; 
+								elems[1].u.data = $5; 
+								elems[2].type = STR_ST; 
+								elems[2].u.data = $7; 
+								elems[3].type = NUMBER_ST; 
+								elems[3].u.data = (void*)$9; 
+								$$ = mk_action(CACHE_STORE_T, 4, elems, line); 
+
+							}
+		| CACHE_REMOVE LPAREN STRING COMMA STRING RPAREN { 
+									mk_action2( $$, CACHE_REMOVE_T,
+													STR_ST,
+													STR_ST,
+													$3,
+													$5);
+							}
+		| CACHE_FETCH LPAREN STRING COMMA STRING COMMA script_var RPAREN { 
+									mk_action3( $$, CACHE_FETCH_T,
+													STR_ST,
+													STR_ST,
+													SCRIPTVAR_ST,
+													$3,
+													$5,
+													$7);
+							}
 		| ID LPAREN RPAREN		{
 						 			cmd_tmp=(void*)find_cmd_export_t($1, 0, rt);
 									if (cmd_tmp==0){
@@ -2307,6 +2348,12 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 									}
 								}
 		| ID LPAREN error RPAREN { $$=0; yyerror("bad arguments"); }
+
+
+
+
+
+
 	;
 
 

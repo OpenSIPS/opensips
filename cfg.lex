@@ -160,6 +160,9 @@ SERIALIZE_BRANCHES	"serialize_branches"
 NEXT_BRANCHES	"next_branches"
 USE_BLACKLIST	"use_blacklist"
 UNUSE_BLACKLIST	"unuse_blacklist"
+CACHE_STORE		"cache_store"
+CACHE_FETCH		"cache_fetch"
+CACHE_REMOVE	"cache_remove"
 
 /*ACTION LVALUES*/
 URIHOST			"uri:host"
@@ -425,6 +428,14 @@ WHITESPACE	[ \t\r\n]
 									return USE_BLACKLIST; }
 <INITIAL>{UNUSE_BLACKLIST}	{	count(); yylval.strval=yytext;
 									return UNUSE_BLACKLIST; }
+
+<INITIAL>{CACHE_STORE}		{	count(); yylval.strval=yytext;
+									return CACHE_STORE; }
+<INITIAL>{CACHE_FETCH}		{	count(); yylval.strval=yytext;
+									return CACHE_FETCH; }
+<INITIAL>{CACHE_REMOVE}		{	count(); yylval.strval=yytext;
+									return CACHE_REMOVE; }
+
 
 <INITIAL>{MAX_LEN}	{ count(); yylval.strval=yytext; return MAX_LEN; }
 

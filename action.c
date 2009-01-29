@@ -66,6 +66,7 @@
 #include "errinfo.h"
 #include "serialize.h"
 #include "blacklists.h"
+#include "memcache.h"
 #ifdef USE_TCP
 #include "tcp_server.h"
 #endif
@@ -758,6 +759,121 @@ int do_action(struct action* a, struct sip_msg* msg)
 					}
 				}
 			break;
+		case CACHE_STORE_T:
+			if ((a->elem[0].type!=STR_ST)) {
+				LM_ALERT("BUG in cache_store() - first argument not of"
+						" type string [%d]\n",
+					a->elem[0].type );
+				ret=E_BUG;
+				break;
+			}
+
+			if ((a->elem[1].type!=STR_ST)) {
+				LM_ALERT("BUG in cache_store()  - second argument not of "
+						"type string [%d]\n", a->elem[1].type );
+				ret=E_BUG;
+				break;
+			}
+
+			if ((a->elem[2].type!=STR_ST)) {
+				LM_ALERT("BUG in cache_store() - third argument not of type"
+						" string%d\n", a->elem[2].type );
+				ret=E_BUG;
+				break;
+			}
+
+			pv_elem_t *pve;
+			str name_s, val_s;
+			int expires = 0;
+
+			/* parse the name argument */
+			pve = (pv_elem_t *)a->elem[1].u.data;
+			if ( pv_printf_s(msg, pve, &name_s)!=0 || 
+			name_s.len == 0 || name_s.s == NULL) {
+				LM_WARN("cannot get string for value\n");
+				ret=E_BUG;
+				break;
+			}
+
+			/* parse the value argument */
+			pve = (pv_elem_t *)a->elem[2].u.data;
+			if ( pv_printf_s(msg, pve, &val_s)!=0 || 
+			val_s.len == 0 || val_s.s == NULL) {
+				LM_WARN("cannot get string for value\n");
+				ret=E_BUG;
+				break;
+			}
+
+			if ((a->elem[3].type==NUMBER_ST)) {
+				expires = (unsigned int)a->elem[3].u.data;
+			}
+
+			ret = cache_store(a->elem[0].u.data, name_s.s,
+					val_s.s, expires);
+
+			break;
+		case CACHE_REMOVE_T:
+			if ((a->elem[0].type!=STR_ST)) {
+				LM_ALERT("BUG in cache_remove() %d\n",
+					a->elem[0].type );
+				ret=E_BUG;
+				break;
+			}
+			if ((a->elem[1].type!=STR_ST)) {
+				LM_ALERT("BUG in cache_remove() %d\n",
+					a->elem[1].type );
+				ret=E_BUG;
+				break;
+			}
+			ret = cache_remove(a->elem[0].u.data, a->elem[1].u.data);
+			break;
+		case CACHE_FETCH_T:
+			if ((a->elem[0].type!=STR_ST)) {
+				LM_ALERT("BUG in cache_fetch() %d\n",
+					a->elem[0].type );
+				ret=E_BUG;
+				break;
+			}
+			if ((a->elem[1].type!=STR_ST)) {
+				LM_ALERT("BUG in cache_fetch() %d\n",
+					a->elem[1].type );
+				ret=E_BUG;
+				break;
+			}
+			if (a->elem[2].type!=SCRIPTVAR_ST){
+				LM_ALERT("BUG in cache_fetch() type %d\n",
+						a->elem[2].type);
+				ret=E_BUG;
+				break;
+			}
+			str aux = {0, 0};
+
+			ret = cache_fetch(a->elem[0].u.data, a->elem[1].u.data, &aux.s);
+			if(ret > 0)
+			{
+				aux.len = strlen(aux.s);
+				int_str res;
+				int_str avp_name;
+				unsigned short avp_type;
+
+				spec = (pv_spec_t*)a->elem[2].u.data;
+				if (pv_get_avp_name( msg, &(spec->pvp), &avp_name,
+						&avp_type)!=0){
+					LM_CRIT("BUG in getting AVP name\n");
+					pkg_free(aux.s);
+					return -1;
+				}
+				res.s = aux;
+				if (add_avp(AVP_VAL_STR|avp_type, avp_name, res)<0){
+					LM_ERR("cannot add AVP\n");
+					pkg_free(aux.s);
+					return -1;
+				}
+				pkg_free(aux.s);
+			}
+			
+			break;
+
 		case SWITCH_T:
 			if (a->elem[0].type!=SCRIPTVAR_ST){
 				LM_ALERT("BUG in switch() type %d\n",
@@ -772,6 +888,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 				ret=E_BUG;
 				break;
 			}
+
 			/* get the value of pvar */
 			if(a->elem[1].type!=ACTIONS_ST) {
 				LM_ALERT("BUG in switch() actions\n");
