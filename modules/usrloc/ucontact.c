@@ -383,28 +383,21 @@ int db_insert_ucontact(ucontact_t* _c)
 		return 0;
 	}
 
-	if (my_ps==NULL) {
-		keys[0] = &user_col;
-		keys[1] = &contact_col;
-		keys[2] = &expires_col;
-		keys[3] = &q_col;
-		keys[4] = &callid_col;
-		keys[5] = &cseq_col;
-		keys[6] = &flags_col;
-		keys[7] = &cflags_col;
-		keys[8] = &user_agent_col;
-		keys[9] = &received_col;
-		keys[10] = &path_col;
-		keys[11] = &sock_col;
-		keys[12] = &methods_col;
-		keys[13] = &last_mod_col;
-		keys[14] = &domain_col;
-
-		if (ul_dbf.use_table(ul_dbh, _c->domain) < 0) {
-			LM_ERR("sql use_table failed\n");
-			return -1;
-		}
-	}
+	keys[0] = &user_col;
+	keys[1] = &contact_col;
+	keys[2] = &expires_col;
+	keys[3] = &q_col;
+	keys[4] = &callid_col;
+	keys[5] = &cseq_col;
+	keys[6] = &flags_col;
+	keys[7] = &cflags_col;
+	keys[8] = &user_agent_col;
+	keys[9] = &received_col;
+	keys[10] = &path_col;
+	keys[11] = &sock_col;
+	keys[12] = &methods_col;
+	keys[13] = &last_mod_col;
+	keys[14] = &domain_col;
 
 	vals[0].type = DB_STR;
 	vals[0].nul = 0;
@@ -499,6 +492,12 @@ int db_insert_ucontact(ucontact_t* _c)
 		}
 	}
 
+	if (ul_dbf.use_table(ul_dbh, _c->domain) < 0) {
+		LM_ERR("sql use_table failed\n");
+		return -1;
+	}
+
+
 	CON_PS_REFERENCE(ul_dbh) = &my_ps;
 
 	if (ul_dbf.insert(ul_dbh, keys, vals, (use_domain) ? (15) : (14)) < 0) {
@@ -527,28 +526,21 @@ int db_update_ucontact(ucontact_t* _c)
 		return 0;
 	}
 
-	if (my_ps==NULL) {
-		keys1[0] = &user_col;
-		keys1[1] = &contact_col;
-		keys1[2] = &callid_col;
-		keys1[3] = &domain_col;
-		keys2[0] = &expires_col;
-		keys2[1] = &q_col;
-		keys2[2] = &cseq_col;
-		keys2[3] = &flags_col;
-		keys2[4] = &cflags_col;
-		keys2[5] = &user_agent_col;
-		keys2[6] = &received_col;
-		keys2[7] = &path_col;
-		keys2[8] = &sock_col;
-		keys2[9] = &methods_col;
-		keys2[10] = &last_mod_col;
-
-		if (ul_dbf.use_table(ul_dbh, _c->domain) < 0) {
-			LM_ERR("sql use_table failed\n");
-			return -1;
-		}
-	}
+	keys1[0] = &user_col;
+	keys1[1] = &contact_col;
+	keys1[2] = &callid_col;
+	keys1[3] = &domain_col;
+	keys2[0] = &expires_col;
+	keys2[1] = &q_col;
+	keys2[2] = &cseq_col;
+	keys2[3] = &flags_col;
+	keys2[4] = &cflags_col;
+	keys2[5] = &user_agent_col;
+	keys2[6] = &received_col;
+	keys2[7] = &path_col;
+	keys2[8] = &sock_col;
+	keys2[9] = &methods_col;
+	keys2[10] = &last_mod_col;
 
 	vals1[0].type = DB_STR;
 	vals1[0].nul = 0;
@@ -636,6 +628,11 @@ int db_update_ucontact(ucontact_t* _c)
 		}
 	}
 
+	if (ul_dbf.use_table(ul_dbh, _c->domain) < 0) {
+		LM_ERR("sql use_table failed\n");
+		return -1;
+	}
+
 	CON_PS_REFERENCE(ul_dbh) = &my_ps;
 
 	if (ul_dbf.update(ul_dbh, keys1, 0, vals1, keys2, vals2, 
@@ -662,17 +659,10 @@ int db_delete_ucontact(ucontact_t* _c)
 		return 0;
 	}
 
-	if (my_ps==NULL) {
-		keys[0] = &user_col;
-		keys[1] = &contact_col;
-		keys[2] = &callid_col;
-		keys[3] = &domain_col;
-
-		if (ul_dbf.use_table(ul_dbh, _c->domain) < 0) {
-			LM_ERR("sql use_table failed\n");
-			return -1;
-		}
-	}
+	keys[0] = &user_col;
+	keys[1] = &contact_col;
+	keys[2] = &callid_col;
+	keys[3] = &domain_col;
 
 	vals[0].type = DB_STR;
 	vals[0].nul = 0;
@@ -698,6 +688,11 @@ int db_delete_ucontact(ucontact_t* _c)
 			vals[3].val.str_val.s = dom + 1;
 			vals[3].val.str_val.len = _c->aor->s + _c->aor->len - dom - 1;
 		}
+	}
+
+	if (ul_dbf.use_table(ul_dbh, _c->domain) < 0) {
+		LM_ERR("sql use_table failed\n");
+		return -1;
 	}
 
 	CON_PS_REFERENCE(ul_dbh) = &my_ps;

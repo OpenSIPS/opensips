@@ -366,15 +366,8 @@ int db_delete_urecord(urecord_t* _r)
 	db_val_t vals[2];
 	char* dom;
 
-	if (my_ps==NULL) {
-		keys[0] = &user_col;
-		keys[1] = &domain_col;
-
-		if (ul_dbf.use_table(ul_dbh, _r->domain) < 0) {
-			LM_ERR("use_table failed\n");
-			return -1;
-		}
-	}
+	keys[0] = &user_col;
+	keys[1] = &domain_col;
 
 	vals[0].type = DB_STR;
 	vals[0].nul = 0;
@@ -389,6 +382,11 @@ int db_delete_urecord(urecord_t* _r)
 		vals[1].nul = 0;
 		vals[1].val.str_val.s = dom + 1;
 		vals[1].val.str_val.len = _r->aor.s + _r->aor.len - dom - 1;
+	}
+
+	if (ul_dbf.use_table(ul_dbh, _r->domain) < 0) {
+		LM_ERR("use_table failed\n");
+		return -1;
 	}
 
 	CON_PS_REFERENCE(ul_dbh) = &my_ps;

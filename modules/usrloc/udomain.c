@@ -500,32 +500,25 @@ urecord_t* db_load_urecord(db_con_t* _c, udomain_t* _d, str *_aor)
 	urecord_t* r;
 	ucontact_t* c;
 
-	if (my_ps==NULL) {
-		keys[0] = &user_col;
-		keys[1] = &domain_col;
+	keys[0] = &user_col;
+	keys[1] = &domain_col;
 
-		columns[0] = &contact_col;
-		columns[1] = &expires_col;
-		columns[2] = &q_col;
-		columns[3] = &callid_col;
-		columns[4] = &cseq_col;
-		columns[5] = &flags_col;
-		columns[6] = &cflags_col;
-		columns[7] = &user_agent_col;
-		columns[8] = &received_col;
-		columns[9] = &path_col;
-		columns[10] = &sock_col;
-		columns[11] = &methods_col;
-		columns[12] = &last_mod_col;
+	columns[0] = &contact_col;
+	columns[1] = &expires_col;
+	columns[2] = &q_col;
+	columns[3] = &callid_col;
+	columns[4] = &cseq_col;
+	columns[5] = &flags_col;
+	columns[6] = &cflags_col;
+	columns[7] = &user_agent_col;
+	columns[8] = &received_col;
+	columns[9] = &path_col;
+	columns[10] = &sock_col;
+	columns[11] = &methods_col;
+	columns[12] = &last_mod_col;
 
-		if (desc_time_order)
-			order = &last_mod_col;
-
-		if (ul_dbf.use_table(_c, _d->name) < 0) {
-			LM_ERR("failed to use table %.*s\n", _d->name->len, _d->name->s);
-			return 0;
-		}
-	}
+	if (desc_time_order)
+		order = &last_mod_col;
 
 	vals[0].type = DB_STR;
 	vals[0].nul = 0;
@@ -544,6 +537,11 @@ urecord_t* db_load_urecord(db_con_t* _c, udomain_t* _d, str *_aor)
 		}
 	} else {
 		vals[0].val.str_val = *_aor;
+	}
+
+	if (ul_dbf.use_table(_c, _d->name) < 0) {
+		LM_ERR("failed to use table %.*s\n", _d->name->len, _d->name->s);
+		return 0;
 	}
 
 	CON_PS_REFERENCE(_c) = &my_ps;
