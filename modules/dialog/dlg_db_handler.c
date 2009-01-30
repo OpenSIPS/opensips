@@ -127,10 +127,7 @@ static int use_dialog_table(void)
 		return -1;
 	}
 
-	if (dialog_dbf.use_table(dialog_db_handle, &dialog_table_name) < 0) {
-		LM_ERR("Error in use_table\n");
-		return -1;
-	}
+	dialog_dbf.use_table(dialog_db_handle, &dialog_table_name);
 
 	return 0;
 }
@@ -432,6 +429,7 @@ error:
  */
 int remove_dialog_from_db(struct dlg_cell * cell)
 {
+	static db_ps_t my_ps = NULL;
 	db_val_t values[2];
 	db_key_t match_keys[2] = { &h_entry_column, &h_id_column};
 
@@ -449,6 +447,8 @@ int remove_dialog_from_db(struct dlg_cell * cell)
 	VAL_INT(values) 	= cell->h_entry;
 	VAL_INT(values+1) 	= cell->h_id;
 
+	CON_PS_REFERENCE(dialog_db_handle) = &my_ps;
+
 	if(dialog_dbf.delete(dialog_db_handle, match_keys, 0, values, 2) < 0) {
 		LM_ERR("failed to delete database information\n");
 		return -1;
@@ -463,6 +463,8 @@ int remove_dialog_from_db(struct dlg_cell * cell)
 
 int update_dialog_dbinfo(struct dlg_cell * cell)
 {
+	static db_ps_t my_ps_insert = NULL;
+	static db_ps_t my_ps_update = NULL;
 	struct dlg_entry entry;
 	db_val_t values[DIALOG_TABLE_COL_NO];
 
@@ -520,6 +522,8 @@ int update_dialog_dbinfo(struct dlg_cell * cell)
 		SET_STR_VALUE(values+16, cell->contact[DLG_CALLER_LEG]);
 		SET_STR_VALUE(values+17, cell->contact[DLG_CALLEE_LEG]);
 
+		CON_PS_REFERENCE(dialog_db_handle) = &my_ps_insert;
+
 		if((dialog_dbf.insert(dialog_db_handle, insert_keys, values, 
 								DIALOG_TABLE_COL_NO)) !=0){
 			LM_ERR("could not add another dialog to db\n");
@@ -547,6 +551,8 @@ int update_dialog_dbinfo(struct dlg_cell * cell)
 		SET_STR_VALUE(values+12, cell->cseq[DLG_CALLER_LEG]);
 		SET_STR_VALUE(values+13, cell->cseq[DLG_CALLEE_LEG]);
 
+		CON_PS_REFERENCE(dialog_db_handle) = &my_ps_update;
+
 		if((dialog_dbf.update(dialog_db_handle, (insert_keys), 0, 
 						(values), (insert_keys+10), (values+10), 2, 4)) !=0){
 			LM_ERR("could not update database info\n");
@@ -569,6 +575,8 @@ error:
 
 void dialog_update_db(unsigned int ticks, void * param)
 {
+	static db_ps_t my_ps_update = NULL;
+	static db_ps_t my_ps_insert = NULL;
 	int index;
 	db_val_t values[DIALOG_TABLE_COL_NO];
 	struct dlg_entry entry;
@@ -634,6 +642,8 @@ void dialog_update_db(unsigned int ticks, void * param)
 				SET_STR_VALUE(values+16, cell->contact[DLG_CALLER_LEG]);
 				SET_STR_VALUE(values+17, cell->contact[DLG_CALLEE_LEG]);
 
+				CON_PS_REFERENCE(dialog_db_handle) = &my_ps_insert;
+
 				if((dialog_dbf.insert(dialog_db_handle, insert_keys, 
 				values, DIALOG_TABLE_COL_NO)) !=0){
 					LM_ERR("could not add another dialog to db\n");
@@ -652,6 +662,8 @@ void dialog_update_db(unsigned int ticks, void * param)
 					 + cell->tl.timeout - get_ticks()) );
 				SET_STR_VALUE(values+12, cell->cseq[DLG_CALLER_LEG]);
 				SET_STR_VALUE(values+13, cell->cseq[DLG_CALLEE_LEG]);
+
+				CON_PS_REFERENCE(dialog_db_handle) = &my_ps_update;
 
 				if((dialog_dbf.update(dialog_db_handle, (insert_keys), 0, 
 				(values), (insert_keys+10), (values+10), 2, 4)) !=0) {

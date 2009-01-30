@@ -64,6 +64,7 @@ static db_func_t uridb_dbf;
  */
 static inline int check_username(struct sip_msg* _m, struct sip_uri *_uri)
 {
+	static db_ps_t my_ps = NULL;
 	struct hdr_field* h;
 	auth_body_t* c;
 	db_key_t keys[3];
@@ -103,11 +104,6 @@ static inline int check_username(struct sip_msg* _m, struct sip_uri *_uri)
 	 * (which are different from digest username and it will still match)
 	 */
 	if (use_uri_table != 0) {
-		if (uridb_dbf.use_table(db_handle, &db_table) < 0) {
-			LM_ERR("Error while trying to use uri table\n");
-			return ERR_DBACCESS;
-		}
-
 		keys[0] = &uridb_user_col;
 		keys[1] = &uridb_domain_col;
 		keys[2] = &uridb_uriuser_col;
@@ -120,6 +116,9 @@ static inline int check_username(struct sip_msg* _m, struct sip_uri *_uri)
 		VAL_STR(vals) = c->digest.username.user;
 		VAL_STR(vals + 1) = *GET_REALM(&c->digest);
 		VAL_STR(vals + 2) = _uri->user;
+
+		uridb_dbf.use_table(db_handle, &db_table);
+		CON_PS_REFERENCE(db_handle) = &my_ps;
 
 		if (uridb_dbf.query(db_handle, keys, 0, vals, cols, 3, 1, 0, &res) < 0)
 		{
@@ -205,6 +204,7 @@ int check_from(struct sip_msg* _m, char* _s1, char* _s2)
  */
 int does_uri_exist(struct sip_msg* _msg, char* _s1, char* _s2)
 {
+	static db_ps_t my_ps = NULL;
 	db_key_t keys[2];
 	db_val_t vals[2];
 	db_key_t cols[1];
@@ -216,18 +216,12 @@ int does_uri_exist(struct sip_msg* _msg, char* _s1, char* _s2)
 	}
 
 	if (use_uri_table != 0) {
-		if (uridb_dbf.use_table(db_handle, &db_table) < 0) {
-			LM_ERR("Error while trying to use uri table\n");
-			return ERR_DBUSE;
-		}
+		uridb_dbf.use_table(db_handle, &db_table);
 		keys[0] = &uridb_uriuser_col;
 		keys[1] = &uridb_domain_col;
 		cols[0] = &uridb_uriuser_col;
 	} else {
-		if (uridb_dbf.use_table(db_handle, &db_table) < 0) {
-			LM_ERR("Error while trying to use subscriber table\n");
-			return ERR_DBUSE;
-		}
+		uridb_dbf.use_table(db_handle, &db_table);
 		keys[0] = &uridb_user_col;
 		keys[1] = &uridb_domain_col;
 		cols[0] = &uridb_user_col;
@@ -237,6 +231,8 @@ int does_uri_exist(struct sip_msg* _msg, char* _s1, char* _s2)
 	VAL_NULL(vals) = VAL_NULL(vals + 1) = 0;
 	VAL_STR(vals) = _msg->parsed_uri.user;
 	VAL_STR(vals + 1) = _msg->parsed_uri.host;
+
+	CON_PS_REFERENCE(db_handle) = &my_ps;
 
 	if (uridb_dbf.query(db_handle, keys, 0, vals, cols, (use_domain ? 2 : 1),
 				1, 0, &res) < 0) {

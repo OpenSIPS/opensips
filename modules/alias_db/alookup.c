@@ -3,7 +3,7 @@
  *
  * ALIAS_DB Module
  *
- * Copyright (C) 2004 Voice Sistem SRL
+ * Copyright (C) 2004-2009 Voice Sistem SRL
  *
  * This file is part of a module for opensips, a free SIP server.
  *
@@ -51,13 +51,14 @@ char useruri_buf[MAX_USERURI_SIZE];
  */
 int alias_db_lookup(struct sip_msg* _msg, char* _table, char* _str2)
 {
+	static db_ps_t my_ps = NULL;
 	str user_s, table_s;
 	db_key_t db_keys[2] = {&alias_user_column, &alias_domain_column};
 	db_val_t db_vals[2];
 	db_key_t db_cols[] = {&user_column, &domain_column};
 	db_res_t* db_res = NULL;
 	int i;
-	
+
 	if(_table==NULL || fixup_get_svalue(_msg, (gparam_p)_table, &table_s)!=0)
 	{
 		LM_ERR("invalid table parameter\n");
@@ -88,8 +89,10 @@ int alias_db_lookup(struct sip_msg* _msg, char* _table, char* _str2)
 			db_vals[1].val.str_val.len -= domain_prefix.len;
 		}
 	}
-	
+
 	adbf.use_table(db_handle, &table_s);
+	CON_PS_REFERENCE(db_handle) = &my_ps;
+
 	if(adbf.query(db_handle, db_keys, NULL, db_vals, db_cols,
 		(use_domain)?2:1 /*no keys*/, 2 /*no cols*/, NULL, &db_res)!=0)
 	{

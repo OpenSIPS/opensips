@@ -124,6 +124,7 @@ int get_username_domain(struct sip_msg *msg, group_check_p gcp,
  */
 int is_user_in(struct sip_msg* _msg, char* _hf, char* _grp)
 {
+	static db_ps_t my_ps = NULL;
 	db_key_t keys[3];
 	db_val_t vals[3];
 	db_key_t col[1];
@@ -165,10 +166,8 @@ int is_user_in(struct sip_msg* _msg, char* _hf, char* _grp)
 
 	VAL_STR(vals + 1) = *(&grp_s);
 
-	if (group_dbf.use_table(group_dbh, &table) < 0) {
-		LM_ERR("failed to use_table\n");
-		return -5;
-	}
+	group_dbf.use_table(group_dbh, &table);
+	CON_PS_REFERENCE(group_dbh) = &my_ps;
 
 	if (group_dbf.query(group_dbh, keys, 0, vals, col, (use_domain) ? (3): (2),
 				1, 0, &res) < 0) {

@@ -48,6 +48,7 @@ static char useruri_buf[MAX_USERURI_SIZE];
  */
 int sd_lookup(struct sip_msg* _msg, char* _table, char* _owner)
 {
+	static db_ps_t my_ps = NULL;
 	str user_s, table_s, uri_s;
 	int nr_keys;
 	struct sip_uri *puri;
@@ -146,8 +147,10 @@ int sd_lookup(struct sip_msg* _msg, char* _table, char* _owner)
 			db_vals[nr_keys].val.str_val.len -= dstrip_s.len;
 		}
 	}
-	
+
 	db_funcs.use_table(db_handle, &table_s);
+	CON_PS_REFERENCE(db_handle) = &my_ps;
+
 	if(db_funcs.query(db_handle, db_keys, NULL, db_vals, db_cols,
 		nr_keys /*no keys*/, 1 /*no cols*/, NULL, &db_res)!=0)
 	{

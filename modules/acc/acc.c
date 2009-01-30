@@ -346,6 +346,7 @@ void acc_db_close(void)
 
 int acc_db_request( struct sip_msg *rq, struct sip_msg *rpl)
 {
+	static db_ps_t my_ps = NULL;
 	int m;
 	int n;
 	int i;
@@ -364,10 +365,8 @@ int acc_db_request( struct sip_msg *rq, struct sip_msg *rpl)
 	for( i++ ; i<m; i++)
 		VAL_STR(db_vals+i) = val_arr[i];
 
-	if (acc_dbf.use_table(db_handle, &acc_env.text/*table*/) < 0) {
-		LM_ERR("error in use_table\n");
-		return -1;
-	}
+	acc_dbf.use_table(db_handle, &acc_env.text/*table*/);
+	CON_PS_REFERENCE(db_handle) = &my_ps;
 
 	/* multi-leg columns */
 	if ( !leg_info ) {
