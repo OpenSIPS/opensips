@@ -1,5 +1,5 @@
 /*
- * $Id: hash.c $
+ * $Id$
  *
  * memory cache system module
  *
@@ -95,15 +95,13 @@ void lcache_htable_destroy(void)
 	cache_htable = NULL;
 }
 
-int lcache_htable_insert(char* attr, char* value, unsigned int expires)
+int lcache_htable_insert(str* attr, str* value, unsigned int expires)
 {
 	lcache_entry_t* me, *it;
-	str attr_str = {attr, strlen(attr)};
-	str value_str = {value, strlen(value)};
 	int hash_code;
 	int size;
 
-	size= sizeof(lcache_entry_t) + attr_str.len + value_str.len +1;
+	size= sizeof(lcache_entry_t) + attr->len + value->len;
 
 	me = (lcache_entry_t*)shm_malloc(size);
 	if(me == NULL)
@@ -114,27 +112,25 @@ int lcache_htable_insert(char* attr, char* value, unsigned int expires)
 	memset(me, 0, size);
 
 	me->attr.s = (char*)me + (sizeof(lcache_entry_t));
-	memcpy(me->attr.s, attr, attr_str.len);
-	me->attr.len = attr_str.len;
+	memcpy(me->attr.s, attr->s, attr->len);
+	me->attr.len = attr->len;
 
-	me->value.s = (char*)me + (sizeof(lcache_entry_t)) + attr_str.len;
-	memcpy(me->value.s, value, value_str.len);
-	me->value.s[value_str.len] = '\0';
-	me->value.len = value_str.len;
+	me->value.s = (char*)me + (sizeof(lcache_entry_t)) + attr->len;
+	memcpy(me->value.s, value->s, value->len);
+	me->value.len = value->len;
 	if( expires != 0)
 		me->expires = get_ticks() + expires;
 
-	hash_code= core_hash(&attr_str, 0, cache_htable_size);
+	hash_code= core_hash( attr, 0, cache_htable_size);
 	lock_get(&cache_htable[hash_code].lock);
 
 	it = cache_htable[hash_code].entries;
 
 	/* if a previous record for the same attr delete it */
-	lcache_htable_remove_safe(attr_str, &it);
+	lcache_htable_remove_safe( *attr, &it);
 
 	me->next = it;
 	cache_htable[hash_code].entries = me;
-	
 
 	lock_release(&cache_htable[hash_code].lock);
 
@@ -165,36 +161,34 @@ void lcache_htable_remove_safe(str attr, lcache_entry_t** it_p)
 	LM_DBG("entry not found\n");
 }
 
-void lcache_htable_remove(char* attr)
+void lcache_htable_remove(str* attr)
 {
 	int hash_code;
-	str attr_str = {attr, strlen(attr)};
 
-	hash_code= core_hash(&attr_str, 0, cache_htable_size);
+	hash_code= core_hash( attr, 0, cache_htable_size);
 	lock_get(&cache_htable[hash_code].lock);
 
-	lcache_htable_remove_safe(attr_str, &cache_htable[hash_code].entries);
+	lcache_htable_remove_safe( *attr, &cache_htable[hash_code].entries);
 
 	lock_release(&cache_htable[hash_code].lock);
 
 }
 
-int lcache_htable_fetch(char* attr, char** res)
+int lcache_htable_fetch(str* attr, str* res)
 {
 	int hash_code;
 	lcache_entry_t* it = NULL, *it_aux = NULL;
-	str attr_str = {attr, strlen(attr)};
 	char* value;
 
-	hash_code= core_hash(&attr_str, 0, cache_htable_size);
+	hash_code= core_hash( attr, 0, cache_htable_size);
 	lock_get(&cache_htable[hash_code].lock);
 
 	it = cache_htable[hash_code].entries;
 
 	while(it)
 	{
-		if(it->attr.len == attr_str.len && 
-				(strncmp(it->attr.s, attr_str.s, attr_str.len) == 0))
+		if(it->attr.len == attr->len && 
+				(strncmp(it->attr.s, attr->s, attr->len) == 0))
 		{
 			if( it->expires != 0 && it->expires < get_ticks())
 			{
@@ -209,7 +203,7 @@ int lcache_htable_fetch(char* attr, char** res)
 				lock_release(&cache_htable[hash_code].lock);
 				return -1;
 			}
-			value = (char*)pkg_malloc(it->value.len + 1);
+			value = (char*)pkg_malloc(it->value.len);
 			if(value == NULL)
 			{
 				LM_ERR("no more memory\n");
@@ -217,9 +211,9 @@ int lcache_htable_fetch(char* attr, char** res)
 				return -1;
 			}
 			memcpy(value, it->value.s, it->value.len);
-			value[it->value.len] = '\0';
+			res->len = it->value.len;
+			res->s = value;
 			lock_release(&cache_htable[hash_code].lock);
-			*res = value;
 			return 1;
 		}
 

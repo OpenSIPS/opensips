@@ -275,6 +275,8 @@ int do_action(struct action* a, struct sip_msg* msg)
 	pv_spec_t *spec;
 	pv_elem_p model;
 	pv_value_t val;
+	pv_elem_t *pve;
+	str name_s;
 
 	/* reset the value of error to E_UNSPEC so avoid unknowledgable
 	   functions to return with error (status<0) and not setting it
@@ -782,8 +784,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 				break;
 			}
 
-			pv_elem_t *pve;
-			str name_s, val_s;
+			str val_s;
 			int expires = 0;
 
 			/* parse the name argument */
@@ -808,9 +809,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 				expires = (unsigned int)a->elem[3].u.data;
 			}
 
-			ret = cache_store(a->elem[0].u.data, name_s.s,
-					val_s.s, expires);
-
+			ret = cache_store( &a->elem[0].u.s, &name_s, &val_s, expires);
 			break;
 		case CACHE_REMOVE_T:
 			if ((a->elem[0].type!=STR_ST)) {
@@ -825,7 +824,15 @@ int do_action(struct action* a, struct sip_msg* msg)
 				ret=E_BUG;
 				break;
 			}
-			ret = cache_remove(a->elem[0].u.data, a->elem[1].u.data);
+			/* parse the name argument */
+			pve = (pv_elem_t *)a->elem[1].u.data;
+			if ( pv_printf_s(msg, pve, &name_s)!=0 || 
+			name_s.len == 0 || name_s.s == NULL) {
+				LM_WARN("cannot get string for value\n");
+				ret=E_BUG;
+				break;
+			}
+			ret = cache_remove( &a->elem[0].u.s, &name_s);
 			break;
 		case CACHE_FETCH_T:
 			if ((a->elem[0].type!=STR_ST)) {
@@ -847,11 +854,18 @@ int do_action(struct action* a, struct sip_msg* msg)
 				break;
 			}
 			str aux = {0, 0};
+			/* parse the name argument */
+			pve = (pv_elem_t *)a->elem[1].u.data;
+			if ( pv_printf_s(msg, pve, &name_s)!=0 || 
+			name_s.len == 0 || name_s.s == NULL) {
+				LM_WARN("cannot get string for value\n");
+				ret=E_BUG;
+				break;
+			}
 
-			ret = cache_fetch(a->elem[0].u.data, a->elem[1].u.data, &aux.s);
+			ret = cache_fetch( &a->elem[0].u.s, &name_s, &aux);
 			if(ret > 0)
 			{
-				aux.len = strlen(aux.s);
 				int_str res;
 				int_str avp_name;
 				unsigned short avp_type;

@@ -1,5 +1,5 @@
 /*
- * $Id: memcache.c $
+ * $Id$
  *
  * Copyright (C) 2009 Anca Vamanu
  *
@@ -112,10 +112,9 @@ int register_memcache(memcache_t* cs_entry)
 	return 0;
 }
 
-int cache_store(char* memcache_system, char* attr, char* val,
+int cache_store(str* memcache_system, str* attr, str* val,
 		unsigned int expires)
 {
-	str cs_name;
 	memcache_t* cs;
 
 	if(memcache_system == NULL || attr == NULL || val == NULL)
@@ -124,14 +123,12 @@ int cache_store(char* memcache_system, char* attr, char* val,
 		return -1;
 	}
 
-	cs_name.s = memcache_system;
-	cs_name.len = strlen(memcache_system);
-
-	cs = lookup_memcache(cs_name);
+	cs = lookup_memcache(*memcache_system);
 	if(cs == NULL)
 	{
-		LM_ERR("Wrong argument <%s> - no memory memcache system with"
-				" this name registered\n", memcache_system);
+		LM_ERR("Wrong argument <%.*s> - no memory memcache system with"
+				" this name registered\n",
+				memcache_system->len,memcache_system->s);
 		return -1;
 	}
 
@@ -139,9 +136,8 @@ int cache_store(char* memcache_system, char* attr, char* val,
 
 }
 
-int cache_remove(char* memcache_system, char* attr)
+int cache_remove(str* memcache_system, str* attr)
 {
-	str cs_name;
 	memcache_t* cs;
 
 	if(memcache_system == NULL || attr == NULL)
@@ -150,25 +146,21 @@ int cache_remove(char* memcache_system, char* attr)
 		return -1;
 	}
 
-	cs_name.s = memcache_system;
-	cs_name.len = strlen(memcache_system);
-
-	cs = lookup_memcache(cs_name);
+	cs = lookup_memcache(*memcache_system);
 	if(cs == NULL)
 	{
-		LM_ERR("Wrong argument <%s> - no memory memcache system with"
-				" this name registered\n", memcache_system);
+		LM_ERR("Wrong argument <%.*s> - no memory memcache system with"
+				" this name registered\n",
+				memcache_system->len,memcache_system->s);
 		return -1;
 	}
-
 	cs->remove(attr);
 
 	return 1;
 }
 
-int cache_fetch(char* memcache_system, char* attr, char** val)
+int cache_fetch(str* memcache_system, str* attr, str* val)
 {
-	str cs_name;
 	memcache_t* cs;
 
 	if(memcache_system == NULL || attr == NULL )
@@ -177,14 +169,12 @@ int cache_fetch(char* memcache_system, char* attr, char** val)
 		return -1;
 	}
 
-	cs_name.s = memcache_system;
-	cs_name.len = strlen(memcache_system);
-
-	cs = lookup_memcache(cs_name);
+	cs = lookup_memcache(*memcache_system);
 	if(cs == NULL)
 	{
-		LM_ERR("Wrong argument <%s> - no memory memcache system with"
-				" this name registered\n", memcache_system);
+		LM_ERR("Wrong argument <%.*s> - no memory memcache system with"
+				" this name registered\n",
+				memcache_system->len,memcache_system->s);
 		return -1;
 	}
 	

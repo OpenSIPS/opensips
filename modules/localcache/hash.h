@@ -1,5 +1,5 @@
 /*
- * $Id: hash.h $
+ * $Id$
  *
  * memory cache system module
  *
@@ -51,9 +51,9 @@ typedef struct lcache
 
 int lcache_htable_init(int size);
 void lcache_htable_destroy();
-int lcache_htable_insert(char* attr, char* value, unsigned int expires);
-void lcache_htable_remove(char* attr);
-int lcache_htable_fetch(char* attr, char** val);
+int lcache_htable_insert(str* attr, str* value, unsigned int expires);
+void lcache_htable_remove(str* attr);
+int lcache_htable_fetch(str* attr, str* val);
 
 
 #endif

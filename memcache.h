@@ -1,5 +1,5 @@
 /*
- * $Id: memcache.h $
+ * $Id:$
  *
  * Copyright (C) 2009 Anca Vamanu
  *
@@ -29,9 +29,9 @@
 
 #include "str.h"
 
-typedef int (memcache_store_f)(char* name, char* value, unsigned int expires);
-typedef void (memcache_remove_f)(char* name);
-typedef int (memcache_fetch_f)(char* name, char** val);
+typedef int (memcache_store_f)(str* name, str* value, unsigned int expires);
+typedef void (memcache_remove_f)(str* name);
+typedef int (memcache_fetch_f)(str* name, str* val);
 
 typedef struct memcache {
 	str name;
@@ -44,9 +44,8 @@ typedef struct memcache {
 int register_memcache(memcache_t* cs);
 
 /* functions to be used from script */
-int cache_store(char* memcache, char* attr, char* val,
-		unsigned int expires);
-int cache_remove(char* memcache, char* attr);
-int cache_fetch(char* memcache, char* attr, char** val);
+int cache_store(str* memcache, str* attr, str* val, unsigned int expires);
+int cache_remove(str* memcache, str* attr);
+int cache_fetch(str* memcache, str* attr, str* val);
 
 #endif
