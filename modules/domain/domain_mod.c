@@ -34,13 +34,14 @@
  */
 
 
-#include "domain_mod.h"
 #include <stdio.h>
 #include "../../mem/shm_mem.h"
 #include "../../mem/mem.h"
 #include "../../sr_module.h"
 #include "../../pvar.h"
 #include "../../mod_fix.h"
+#include "../../name_alias.h"
+#include "domain_mod.h"
 #include "domain.h"
 #include "mi.h"
 #include "hash.h"
@@ -84,6 +85,9 @@ struct domain_list ***hash_table = 0;	/* Pointer to current hash table pointer *
 struct domain_list **hash_table_1 = 0;	/* Pointer to hash table 1 */
 struct domain_list **hash_table_2 = 0;	/* Pointer to hash table 2 */
 
+
+static int is_domain_alias(char* name, int len, unsigned short port,
+														unsigned short proto);
 
 /*
  * Exported functions
@@ -144,10 +148,10 @@ struct module_exports exports = {
 
 static int mod_init(void)
 {
-        int i;
+	int i;
 
 	LM_DBG("Initializing\n");
-	
+
 	db_url.len = strlen(db_url.s);
 	domain_table.len = strlen(domain_table.s);
 	domain_col.len = strlen(domain_col.s);
@@ -194,6 +198,12 @@ static int mod_init(void)
 		}
 
 		domain_db_close();
+	}
+
+	/* register the alias check function to core */
+	if (register_alias_fct(is_domain_alias)!=0) {
+		LM_ERR("failed to register the alias check function\n");
+		goto error;
 	}
 
 	return 0;
@@ -243,3 +253,18 @@ static void destroy(void)
 		hash_table_2 = 0;
 	}
 }
+
+
+static int is_domain_alias(char* name, int len, unsigned short port,
+														unsigned short proto)
+{
+	str domain;
+
+	domain.s = name;
+	domain.len = len;
+	if (is_domain_local(&domain)==1) {
+		return 1;
+	}
+	return 0;
+}
+
