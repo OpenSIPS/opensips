@@ -1,5 +1,5 @@
 /*
- * $Id: name_alias.h 4472 2008-07-11 19:51:40Z bogdan_iancu $
+ * $Id$
  *
  * Copyright (C) 2001-2003 FhG Fokus
  * Copyright (C) 2009 Voice Sistem SRL
