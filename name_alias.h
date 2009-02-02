@@ -2,6 +2,7 @@
  * $Id$
  *
  * Copyright (C) 2001-2003 FhG Fokus
+ * Copyright (C) 2009 Voice Sistem SRL
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -23,10 +24,12 @@
  * --------
  *  2003-03-19  replaced all mallocs/frees w/ pkg_malloc/pkg_free (andrei)
  *  2003-10-21  support for proto added: proto:host:port (andrei)
+ *  2009-02-01  added interface to registed additional functions for checking
+ *              the aliases (bogdan)
  */
 
 
-
+#include <strings.h>
 #include "str.h"
 #include "dprint.h"
 #include "mem/mem.h"
@@ -44,6 +47,15 @@ struct host_alias{
 extern struct host_alias* aliases;
 
 
+typedef int (is_alias_fct)(char* name, int len, unsigned short port,
+		unsigned short proto);
+
+struct alias_function {
+	is_alias_fct *alias_f;
+	struct alias_function *next;
+};
+
+extern struct alias_function* alias_fcts;
 
 /* returns 1 if  name is in the alias list; if port=0, port no is ignored
  * if proto=0, proto is ignored*/
@@ -68,44 +80,23 @@ static inline int grep_aliases(char* name, int len, unsigned short port,
 }
 
 
+/* adds an alias to the list (only if it isn't already there) */
+int add_alias(char* name, int len, unsigned short port, unsigned short proto);
 
-/* adds an alias to the list (only if it isn't already there)
- * if port==0, the alias will match all the ports
- * if proto==0, the alias will match all the protocols
- * returns 1 if a new alias was added, 0 if a matching alias was already on
- * the list and  -1 on error */
-static inline int add_alias(char* name, int len, unsigned short port, 
+
+static inline int check_alias_fcts(char* name, int len, unsigned short port,
 								unsigned short proto)
 {
-	struct host_alias* a;
-	
-	if ((port) && (proto)){
-		/* don't add if there is already an alias matching it */
-		if (grep_aliases(name,len, port, proto)) return 0;
-	}else{
-		/* don't add if already in the list with port or proto ==0*/
-		for(a=aliases;a;a=a->next)
-			if ((a->alias.len==len) && (a->port==port) && (a->proto==proto) &&
-					(strncasecmp(a->alias.s, name, len)==0))
-				return 0;
+	struct alias_function *af;
+
+	for( af=alias_fcts ; af ; af=af->next ) {
+		if ( af->alias_f(name,len,port,proto)>0 )
+			return 1;
 	}
-	a=(struct host_alias*)pkg_malloc(sizeof(struct host_alias));
-	if(a==0) goto error;
-	a->alias.s=(char*)pkg_malloc(len+1);
-	if (a->alias.s==0) goto error;
-	a->alias.len=len;
-	memcpy(a->alias.s, name, len);
-	a->alias.s[len]=0; /* null terminate for easier printing*/
-	a->port=port;
-	a->proto=proto;
-	a->next=aliases;
-	aliases=a;
-	return 1;
-error:
-	LM_ERR("pkg memory allocation error\n");
-	if (a) pkg_free(a);
-	return -1;
+	return 0;
 }
 
+
+int register_alias_fct( is_alias_fct *fct );
 
 
