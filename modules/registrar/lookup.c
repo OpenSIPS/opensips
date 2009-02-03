@@ -205,6 +205,10 @@ int registered(struct sip_msg* _m, char* _t, char* _s)
 		}
 		uri = val.rs;
 	} else {
+		if (_m->first_line.type!=SIP_REQUEST) {
+			LM_ERR("no AOR and called for a reply!");
+			return -1;
+		}
 		if (_m->new_uri.s) uri = _m->new_uri;
 		else uri = _m->first_line.u.request.uri;
 	}

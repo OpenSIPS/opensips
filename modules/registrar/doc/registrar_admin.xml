@@ -701,9 +701,12 @@ switch ($?) {
 		<function moreinfo="none">registered(domain [,AOR])</function>
 		</title>
 		<para>
-		The function returns true if an AOR is
-		registered, false otherwise.  The function does not modify the 
-		message being process.
+		The function returns true if an AOR is registered, false otherwise.
+		The function does not modify the message being process.
+		</para>
+		<para>
+		NOTE: if called for a reply (from onreply_route), you must pass an
+		AOR (as parameter), otherwise the function will fail.
 		</para>
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
@@ -721,7 +724,8 @@ switch ($?) {
 		</listitem>
 		</itemizedlist>
 		<para>
-		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
+		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+			BRANCH_ROUTE, ONREPLY_ROUTE, LOCAL_ROUTE.
 		</para>
 		<example>
 		<title><function>registered</function> usage</title>

@@ -137,21 +137,21 @@ struct sig_binds sigb;
  */
 static cmd_export_t cmds[] = {
 	{"save",         (cmd_function)save,         1,    save_fixup,     0,
-			REQUEST_ROUTE },
+		REQUEST_ROUTE },
 	{"save",         (cmd_function)save,         2,    save_fixup,     0,
-			REQUEST_ROUTE },
+		REQUEST_ROUTE },
 	{"save",         (cmd_function)save,         3,    save_fixup,     0,
-			REQUEST_ROUTE },
+		REQUEST_ROUTE },
 	{"lookup",       (cmd_function)lookup,       1,  registered_fixup, 0,
-			REQUEST_ROUTE | FAILURE_ROUTE },
+		REQUEST_ROUTE | FAILURE_ROUTE },
 	{"lookup",       (cmd_function)lookup,       2,  registered_fixup, 0,
-			REQUEST_ROUTE | FAILURE_ROUTE },
+		REQUEST_ROUTE | FAILURE_ROUTE },
 	{"registered",   (cmd_function)registered,   1,  registered_fixup, 0,
-			REQUEST_ROUTE | FAILURE_ROUTE },
+		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"registered",   (cmd_function)registered,   2,  registered_fixup, 0,
-			REQUEST_ROUTE | FAILURE_ROUTE },
+		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"add_sock_hdr", (cmd_function)add_sock_hdr, 1,  fixup_str_null,   0,
-			REQUEST_ROUTE },
+		REQUEST_ROUTE },
 	{0, 0, 0, 0, 0, 0}
 };
 

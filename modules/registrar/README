@@ -515,12 +515,16 @@ switch ($?) {
    otherwise. The function does not modify the message being
    process.
 
+   NOTE: if called for a reply (from onreply_route), you must pass
+   an AOR (as parameter), otherwise the function will fail.
+
    Meaning of the parameters is as follows:
      * domain - Name of table that should be used for the lookup.
      * AOR (optional)- AOR to lookup for; if missing, the RURI is
        used as AOR; This can be a variable.
 
-   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
+   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+   BRANCH_ROUTE, ONREPLY_ROUTE, LOCAL_ROUTE.
 
    Example 1.21. registered usage
 ...
