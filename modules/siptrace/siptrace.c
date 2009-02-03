@@ -846,7 +846,7 @@ static void trace_onreq_out(struct cell* t, int type, struct tmcb_params *ps)
 		db_vals[9].val.str_val.len = 0;
 	
 		LM_DBG("storing info...\n");
-		CON_PS_REFERENCE(db_con) = &siptrace_ps;
+		// FIXME CON_PS_REFERENCE(db_con) = &siptrace_ps;
 		if(db_funcs.insert(db_con, db_keys, db_vals, NR_KEYS) < 0)
 		{
 			LM_ERR("error storing trace\n");
@@ -867,7 +867,7 @@ static void trace_onreq_out(struct cell* t, int type, struct tmcb_params *ps)
 	db_vals[9].val.str_val.len = avp_value.s.len;
 
 	LM_DBG("storing info...\n");
-	CON_PS_REFERENCE(db_con) = &siptrace_ps;
+	// FIXME CON_PS_REFERENCE(db_con) = &siptrace_ps;
 	if(db_funcs.insert(db_con, db_keys, db_vals, NR_KEYS) < 0)
 	{
 		LM_ERR("error storing trace\n");
@@ -881,7 +881,7 @@ static void trace_onreq_out(struct cell* t, int type, struct tmcb_params *ps)
 		db_vals[9].val.str_val.len = avp_value.s.len;
 
 		LM_DBG("storing info...\n");
-		CON_PS_REFERENCE(db_con) = &siptrace_ps;
+		// FIXME CON_PS_REFERENCE(db_con) = &siptrace_ps;
 		if(db_funcs.insert(db_con, db_keys, db_vals, NR_KEYS) < 0)
 		{
 			LM_ERR("error storing trace\n");
@@ -1032,7 +1032,7 @@ static void trace_onreply_in(struct cell* t, int type, struct tmcb_params *ps)
 		db_vals[9].val.str_val.len = 0;
 	
 		LM_DBG("storing info...\n");
-		CON_PS_REFERENCE(db_con) = &siptrace_ps;
+		// FIXME CON_PS_REFERENCE(db_con) = &siptrace_ps;
 		if(db_funcs.insert(db_con, db_keys, db_vals, NR_KEYS) < 0)
 		{
 			LM_ERR("error storing trace\n");
@@ -1053,7 +1053,7 @@ static void trace_onreply_in(struct cell* t, int type, struct tmcb_params *ps)
 	db_vals[9].val.str_val.len = avp_value.s.len;
 
 	LM_DBG("storing info...\n");
-	CON_PS_REFERENCE(db_con) = &siptrace_ps;
+	// FIXME CON_PS_REFERENCE(db_con) = &siptrace_ps;
 	if(db_funcs.insert(db_con, db_keys, db_vals, NR_KEYS) < 0)
 	{
 		LM_ERR("error storing trace\n");
@@ -1067,7 +1067,7 @@ static void trace_onreply_in(struct cell* t, int type, struct tmcb_params *ps)
 		db_vals[9].val.str_val.len = avp_value.s.len;
 
 		LM_DBG("storing info ...\n");
-		CON_PS_REFERENCE(db_con) = &siptrace_ps;
+		// FIXME CON_PS_REFERENCE(db_con) = &siptrace_ps;
 		if(db_funcs.insert(db_con, db_keys, db_vals, NR_KEYS) < 0)
 		{
 			LM_ERR("error storing trace\n");
@@ -1254,7 +1254,7 @@ static void trace_onreply_out(struct cell* t, int type, struct tmcb_params *ps)
 		db_vals[9].val.str_val.len = 0;
 	
 		LM_DBG("storing info...\n");
-		CON_PS_REFERENCE(db_con) = &siptrace_ps;
+		// FIXME CON_PS_REFERENCE(db_con) = &siptrace_ps;
 		if(db_funcs.insert(db_con, db_keys, db_vals, NR_KEYS) < 0)
 		{
 			LM_ERR("error storing trace\n");
@@ -1275,7 +1275,7 @@ static void trace_onreply_out(struct cell* t, int type, struct tmcb_params *ps)
 	db_vals[9].val.str_val.len = avp_value.s.len;
 
 	LM_DBG("storing info...\n");
-	CON_PS_REFERENCE(db_con) = &siptrace_ps;
+	// FIXME CON_PS_REFERENCE(db_con) = &siptrace_ps;
 	if(db_funcs.insert(db_con, db_keys, db_vals, NR_KEYS) < 0)
 	{
 		LM_ERR("error storing trace\n");
@@ -1289,7 +1289,7 @@ static void trace_onreply_out(struct cell* t, int type, struct tmcb_params *ps)
 		db_vals[9].val.str_val.len = avp_value.s.len;
 
 		LM_DBG("### - storing info (%d) ...\n", faked);
-		CON_PS_REFERENCE(db_con) = &siptrace_ps;
+		//FIXME CON_PS_REFERENCE(db_con) = &siptrace_ps;
 		if(db_funcs.insert(db_con, db_keys, db_vals, NR_KEYS) < 0)
 		{
 			LM_ERR("error storing trace\n");
@@ -1449,7 +1449,7 @@ static void trace_sl_onreply_out( unsigned int types, struct sip_msg* req,
 		db_vals[9].val.str_val.len = 0;
 	
 		LM_DBG("storing info...\n");
-		CON_PS_REFERENCE(db_con) = &siptrace_ps;
+		// FIXME CON_PS_REFERENCE(db_con) = &siptrace_ps;
 		if(db_funcs.insert(db_con, db_keys, db_vals, NR_KEYS) < 0)
 		{
 			LM_ERR("error storing trace\n");
@@ -1470,7 +1470,7 @@ static void trace_sl_onreply_out( unsigned int types, struct sip_msg* req,
 	db_vals[9].val.str_val.len = avp_value.s.len;
 
 	LM_DBG("storing info...\n");
-	CON_PS_REFERENCE(db_con) = &siptrace_ps;
+	//FIXME CON_PS_REFERENCE(db_con) = &siptrace_ps;
 	if(db_funcs.insert(db_con, db_keys, db_vals, NR_KEYS) < 0)
 	{
 		LM_ERR("error storing trace\n");
@@ -1484,7 +1484,7 @@ static void trace_sl_onreply_out( unsigned int types, struct sip_msg* req,
 		db_vals[9].val.str_val.len = avp_value.s.len;
 
 		LM_DBG("### - storing info (%d) ...\n", faked);
-		CON_PS_REFERENCE(db_con) = &siptrace_ps;
+		// FIXME CON_PS_REFERENCE(db_con) = &siptrace_ps;
 		if(db_funcs.insert(db_con, db_keys, db_vals, NR_KEYS) < 0)
 		{
 			LM_ERR("error storing trace\n");
