@@ -1234,14 +1234,14 @@ print "Script for maintaining OpenSIPS Berkeley DB tables\n".
 sub usage_dr() {
 	print " -- command 'droute'\n" . 
  	      "dr gateway add <address> [<type>] [<strip>] [<pri_prefix>] [<description>].....\n" .
- 	      		    "\t\t\t\t..........................adds new route\n" .
+ 	      		    "\t\t\t\t\t\t\t..........................adds new route\n" .
  	      "dr gateway rm <gwid>................................removes route\n" . 
  	      "dr gateway list <type>..............................lists route(s)\n" .
  	      "dr gateway list <address>...........................lists route(s)\n" .
  	      "dr gateway list ....................................lists all routes\n" .
 	      "dr gateway h........................................droute help\n" .
  	      "dr rules add <gwlist> [<groupid>][<prefix>][<timerec>][<priority>][<routeid>][<description>].....\n" .
-		            "\t\t\t\t.............adds new rule(s)\n" .
+		            "\t\t\t\t\t\t\t\t.............adds new rule(s)\n" .
  	      "dr rules rm <ruleid> .................................removes rules\n" .
  	      "dr rules list...............................lists rules(s)\n" .
  	      "dr rules list <gwlist>...............................lists rules(s)\n" .
@@ -1503,7 +1503,7 @@ sub is_value_in_db() {
 #	}
 #}
 
-#sub db_load() {
+sub db_load() {
 	if ( $DBENGINE eq "" ) {
 		print "database engine not specified, please setup one in the config script";
 		$DBENGINELOADED = 0;
@@ -1518,11 +1518,8 @@ sub is_value_in_db() {
 					$DB_SCHEMA="./mysql";
 				}
 				#Connect to the database.
-#print "DBI:$DBENGINE:database=$DBNAME;host=$DBHOST","$DBRWUSER", "$DBRWPW"."\n";
-#				$dbh = DBI->connect("DBI:$DBENGINE:database=$DBNAME;host=$DBHOST",
-#				                 "$DBRWUSER", "$DBRWPW",
 				$dbh = DBI->connect("DBI:$DBENGINE:database=$DBNAME;host=$DBHOST",
-				                 "root", "",
+				                 "$DBRWUSER", "$DBRWPW",
 						 {'PrintError' => 0} ) or die "Database connection failed.";
 				$DBENGINELOADED = 1;
 			}
@@ -1584,7 +1581,7 @@ sub is_value_in_db() {
 		}
 
 	}
-#}
+}
 
 #
 ##### ------------------------------------------------ #####
@@ -1700,34 +1697,34 @@ sub non_interactively(){
 sub cmd() {
 
 	switch ($cmd[0]) {		
-		case (/^acl$/)	 				{ system(&opensips_acl()); }
-		case (/^add$/)  				{ system(&subscriber()); }
-		case (/^avp$/)	 				{ system(&avpops()); }	
-		case (/(^aliasdb$)|(^alias_db$)/)		{ system(&alias_db()); }
-		case (/^cr$/) 					{ system(&opensips_cr()); }
-		case (/^dialplan$/)                     	{ system(&opensips_dialplan()); }
-		case (/^db$/)	 				{ system(&db_ops()); }
-		case (/^dispatcher$/) 				{ system(&opensips_dispatcher()); }
-		case (/^domain$/) 				{ system(&domain()); }
+		case (/^acl$/)	 				{ &db_load(); system(&opensips_acl()); }
+		case (/^add$/)  				{ &db_load(); system(&subscriber()); }
+		case (/^avp$/)	 				{ &db_load(); system(&avpops()); }	
+		case (/(^aliasdb$)|(^alias_db$)/)		{ &db_load(); system(&alias_db()); }
+		case (/^cr$/) 					{ &db_load(); system(&opensips_cr()); }
+		case (/^dialplan$/)                     	{ &db_load(); system(&opensips_dialplan()); }
+		case (/^db$/)	 				{ &db_load(); system(&db_ops()); }
+		case (/^dispatcher$/) 				{ &db_load(); system(&opensips_dispatcher()); }
+		case (/^domain$/) 				{ &db_load(); system(&domain()); }
 		case (/(^fifo$)|(^unixsock$)|(^udp$)|(^xmlrpc$)/){ &mi_comm(); } 
-		case (/^lcr$/) 					{ system(&opensips_lcr()); } 
+		case (/^lcr$/) 					{ &db_load(); system(&opensips_lcr()); } 
 		case (/(^moni$)|(^monitor$)|(^con$)|(^console$)/){ &mi_comm_monitor(); }
 		case (/^ping$/)		 			{ system(&options_ping()); }
 		case (/^ps$/)					{ system(&opensips_ps()); }
-		case (/^passwd$/)		      		{ system(&subscriber()); }		
+		case (/^passwd$/)		      		{ &db_load(); system(&subscriber()); }		
 		case (/^online$/)				{ &opensips_online(); }
-		case (/^rpid$/)		 			{ system(&opensips_rpid()); }
+		case (/^rpid$/)		 			{ &db_load(); system(&opensips_rpid()); }
 		case (/^restart$/)		   		{ system(&opensips_restart()); }		
-		case (/^rm$/)			      		{ system(&subscriber()); }
-		case (/(^speeddial$)|(^speed_dial$)/)		{ system(&speeddial()); }
+		case (/^rm$/)			      		{ &db_load(); system(&subscriber()); }
+		case (/(^speeddial$)|(^speed_dial$)/)		{ &db_load(); system(&speeddial()); }
 		case (/^start$/)		    		{ system(&opensips_start()); }	
 		case (/^stop$/)			      		{ system(&opensips_stop()); }
-		case (/^tls$/)	 	  			{ system(&tls_ca()); }
-		case (/^trusted$/)		 		{ system(&trusted()); }
+		case (/^tls$/)	 	  			{ &db_load(); system(&tls_ca()); }
+		case (/^trusted$/)		 		{ &db_load(); system(&trusted()); }
 		case (/(^ul$)|(^alias$)|(^usrloc$)/)	  	{ system(&opensips_usrloc()); }		
 		case (/^version$/)				{ system(&opensips_version()); }
 		case (/(^extra$)|(^migrate$)|(^copy$)|(^backup$)|(^restore$)|(^create$)|(^presence$)|(^drop$)|(^reinit$)|(^bdb$)|(^db_berkeley$)|(^cat$)/) { system(&opensips_db()); }
-		case (/^dr$/)				      	{ system(&opensips_dr()); }
+		case (/^dr$/)				      	{ &db_load(); system(&opensips_dr()); }
 		else 						{ print " unknown command!!!\n"; }
 
 			
@@ -3735,7 +3732,7 @@ sub alias_db() {
 				}
 			
 			} elsif ( $#cmd eq 1 ) {
-				print "Dum1ping all aliases may take long: do you want to proceed? [Y|N]:";
+				print "Dumping all aliases may take long: do you want to proceed? [Y|N]:";
 				if ( ( my $input = <STDIN>) =~ /[y|Y]/ ) { 
 							print "Dumping all aliases...\n";
 						    } else {
