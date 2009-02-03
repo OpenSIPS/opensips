@@ -85,6 +85,8 @@ static int pv_get_tm_branch_idx(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res);
 static int pv_get_tm_reply_code(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res);
+static int pv_get_tm_ruri(struct sip_msg *msg, pv_param_t *param,
+		pv_value_t *res);
 
 /* fixup functions */
 static int fixup_t_send_reply(void** param, int param_no);
@@ -249,6 +251,8 @@ static pv_export_t mod_items[] = {
 	{ {"T_branch_idx", sizeof("T_branch_idx")-1}, 900, pv_get_tm_branch_idx, 0,
 		 0, 0, 0, 0 },
 	{ {"T_reply_code", sizeof("T_reply_code")-1}, 901, pv_get_tm_reply_code, 0,
+		 0, 0, 0, 0 },
+	{ {"T_ruri",       sizeof("T_ruri")-1},       902, pv_get_tm_ruri,       0,
 		 0, 0, 0, 0 },
 	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
 };
@@ -1054,7 +1058,7 @@ inline static int w_t_cancel_branch(struct sip_msg *msg, char *p1 , char *p2 )
 
 
 
-/* item functions */
+/* pseudo-variable functions */
 static int pv_get_tm_branch_idx(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {
@@ -1124,4 +1128,38 @@ static int pv_get_tm_reply_code(struct sip_msg *msg, pv_param_t *param,
 	res->flags = PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT;
 	return 0;
 }
+
+static int pv_get_tm_ruri(struct sip_msg *msg, pv_param_t *param,
+		pv_value_t *res)
+{
+	struct cell *t;
+
+	if(msg==NULL || res==NULL)
+		return -1;
+
+	/* first get the transaction */
+	if (t_check( msg , 0 )==-1) return -1;
+	if ( (t=get_t())==0) {
+		/* no T */
+		if (msg!=NULL&&msg!=FAKED_REPLY && msg->first_line.type==SIP_REQUEST){
+			res->rs = *GET_RURI(msg);
+			res->flags = PV_VAL_STR|PV_TYPE_INT;
+			return 0;
+		}
+		return pv_get_null(msg, param,res);
+	}
+
+	/* return the RURI for the current branch */
+	if (_tm_branch_index>=t->nr_of_outgoings) {
+		LM_ERR("BUG: _tm_branch_index greater than nr_of_outgoings\n");
+		return -1;
+	}
+
+	res->rs = t->uac[_tm_branch_index].uri;
+
+	res->flags = PV_VAL_STR|PV_TYPE_INT;
+
+	return 0;
+}
+
 

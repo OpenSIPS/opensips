@@ -1394,6 +1394,16 @@ branch_route[1] {
 			no-reply or error, '0' value is returned.
 			</para>
 		</section>
+		<section>
+		<title>$T_ruri</title>
+			<para>
+			<emphasis>$T_ruri</emphasis> - the ruri of the current branch; this
+			information is taken from the transaction structure, so you can 
+			access this information for any sip message (request/reply) that
+			has a transaction.
+			</para>
+		</section>
+
 	</section>
 
 

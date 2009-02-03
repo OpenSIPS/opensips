@@ -86,6 +86,7 @@ Bogdan-Andrei Iancu
 
               1.5.1. $T_branch_idx
               1.5.2. $T_reply_code
+              1.5.3. $T_ruri
 
         1.6. Exported MI Functions
 
@@ -1037,6 +1038,13 @@ branch_route[1] {
    reply_route will be the current processed reply; in
    failure_route will be the negative winning reply. In case of
    no-reply or error, '0' value is returned.
+
+1.5.3. $T_ruri
+
+   $T_ruri - the ruri of the current branch; this information is
+   taken from the transaction structure, so you can access this
+   information for any sip message (request/reply) that has a
+   transaction.
 
 1.6. Exported MI Functions
 
