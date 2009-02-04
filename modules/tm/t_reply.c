@@ -1280,6 +1280,8 @@ error:
 
 
 
+extern int _tm_branch_index;
+
 
 /*  This function is called whenever a reply for our module is received; 
   * we need to register  this function on module initialization;
@@ -1352,6 +1354,8 @@ int reply_received( struct sip_msg  *p_msg )
 	parse_headers( p_msg, HDR_RETRY_AFTER_F, 0)==-1) {
 		LM_ERR("failed to parse reply (looking for Retry-After\n");
 	}
+
+	_tm_branch_index = branch;
 
 	/* processing of on_reply block */
 	reply_route = t->on_reply;
@@ -1461,6 +1465,7 @@ done:
 	 * simply do nothing; that will make the other party to 
 	 * retransmit; hopefuly, we'll then be better off 
 	 */
+	_tm_branch_index = 0;
 	return 0;
 not_found:
 	set_t(T_UNDEFINED);
