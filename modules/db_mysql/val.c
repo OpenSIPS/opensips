@@ -293,23 +293,23 @@ int db_mysql_val2str_nq(const db_con_t* _c, const db_val_t* _v, char* _s,
 
 	case DB_STRING:
 		l = strlen(VAL_STRING(_v));
-		if (*_len < (l * 2 + 3)) {
+		if (*_len < l) {
 			LM_ERR("destination buffer too short\n");
 			return -5;
 		} else {
-			*_len = mysql_real_escape_string(CON_CONNECTION(_c), _s,
-					VAL_STRING(_v), l);
+			*_len = l;
+			memcpy( _s, VAL_STRING(_v), l);
 			return 0;
 		}
 		break;
 
 	case DB_STR:
-		if (*_len < (VAL_STR(_v).len * 2 + 3)) {
+		if (*_len < VAL_STR(_v).len) {
 			LM_ERR("destination buffer too short\n");
 			return -6;
 		} else {
-			*_len = mysql_real_escape_string(CON_CONNECTION(_c), _s, 
-					VAL_STR(_v).s, VAL_STR(_v).len);
+			*_len = VAL_STR(_v).len;
+			memcpy( _s, VAL_STR(_v).s, VAL_STR(_v).len);
 			return 0;
 		}
 		break;
@@ -325,14 +325,14 @@ int db_mysql_val2str_nq(const db_con_t* _c, const db_val_t* _v, char* _s,
 
 	case DB_BLOB:
 		l = VAL_BLOB(_v).len;
-		if (*_len < (l * 2 + 3)) {
+		if (*_len < l) {
 			LM_ERR("destination buffer too short\n");
 			return -8;
 		} else {
-			*_len = mysql_real_escape_string(CON_CONNECTION(_c), _s, 
-					VAL_STR(_v).s, l);
+			*_len = l;
+			memcpy( _s, VAL_STR(_v).s, l);
 			return 0;
-		}			
+		}
 		break;
 
 	default:
