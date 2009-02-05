@@ -41,7 +41,6 @@ int db_mysql_str2val(const db_type_t _t, db_val_t* _v, const char* _s,
  */
 int db_mysql_val2str(const db_con_t* _con, const db_val_t* _v, char* _s,
 		int* _len);
-int db_mysql_val2str_nq(const db_con_t* _c, const db_val_t* _v, char* _s,
-		int* _len);
+int db_mysql_val2bind(const db_val_t* v, MYSQL_BIND *binds, unsigned int i);
 
 #endif /* VAL_H */

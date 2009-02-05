@@ -212,6 +212,63 @@ static struct my_stmt_ctx * get_new_stmt_ctx(const db_con_t* conn,
 
 
 
+static struct prep_stmt* alloc_new_prepared_stmt(const db_val_t* v, int n,
+			const db_val_t* uv, int un)
+{
+	struct prep_stmt *pq_ptr;
+	MYSQL_TIME *mt;
+	int total;
+	int time_no;
+	int i;
+	int len;
+
+	total = n+un;
+	time_no = 0;
+	for(i=0 ; i<n ;i++)
+		if (VAL_TYPE(v+i)==DB_DATETIME) time_no++;
+	for(i=0 ; i<un ;i++)
+		if (VAL_TYPE(uv+i)==DB_DATETIME) time_no++;
+
+	len = sizeof(struct prep_stmt) + time_no*sizeof(MYSQL_TIME) +
+			total*(sizeof(struct bind_icontent) + sizeof(MYSQL_BIND));
+
+	pq_ptr = (struct prep_stmt*)pkg_malloc( len );
+	if (pq_ptr==NULL) {
+		LM_ERR("no more pkg mem for the a new prepared statement\n");
+		return NULL;
+	}
+	memset( pq_ptr, 0, len);
+
+	/* set the in bind array */
+	if (total) {
+		pq_ptr->bind_in = (MYSQL_BIND*)(pq_ptr+1);
+		pq_ptr->in_bufs = (struct bind_icontent*)(pq_ptr->bind_in + total);
+		mt = (MYSQL_TIME*)(pq_ptr->in_bufs + total);
+
+		for( i=0 ; i<n ; i++ ) {
+			pq_ptr->bind_in[i].length = &pq_ptr->in_bufs[i].len;
+			pq_ptr->bind_in[i].is_null = &pq_ptr->in_bufs[i].null;
+			if (VAL_TYPE(v+i)==DB_DATETIME)
+				pq_ptr->bind_in[i].buffer = &mt[--time_no];
+		}
+		for( i=0 ; i<un ; i++ ) {
+			pq_ptr->bind_in[n+i].length = &pq_ptr->in_bufs[n+i].len;
+			pq_ptr->bind_in[n+i].is_null = &pq_ptr->in_bufs[n+i].null;
+			if (VAL_TYPE(uv+i)==DB_DATETIME)
+				pq_ptr->bind_in[n+i].buffer = &mt[--time_no];
+		}
+		if (time_no!=0) {
+			LM_CRIT("bug - time_no=%d\n",time_no);
+			pkg_free(pq_ptr);
+			return NULL;
+		}
+	}
+
+	return pq_ptr;
+}
+
+
+
 /**	Try to exec SQL query using prepared statements API
  **
  **  All query templates and pointers to in/out params are stored in
@@ -223,27 +280,20 @@ static int db_mysql_do_prepared_query(const db_con_t* conn, const str *query,
 	const db_val_t* v, int n, const db_val_t* uv, int un)
 {
 	int i, code, cols;
-	int total;
-	int len;
 	struct prep_stmt *pq_ptr;
 	struct my_stmt_ctx *ctx;
 	MYSQL_BIND *mysql_bind;
-
-	total = n+un;
 
 	if ( CON_MYSQL_PS(conn) == NULL ) {
 		/*  First time when this query is run, so we need to init it ->
 		**  allocate new structure for prepared statemet and its values
 		*/
 		LM_DBG("new query=|%.*s|\n", query->len, query->s);
-		pq_ptr = (struct prep_stmt*)pkg_malloc( sizeof(struct prep_stmt) +
-			total*(sizeof(struct bind_content) + sizeof(MYSQL_BIND)) );
+		pq_ptr = alloc_new_prepared_stmt( v, n, uv, un);
 		if (pq_ptr==NULL) {
-			LM_ERR("no more pkg mem for the a new prepared statement\n");
+			LM_ERR("failed to allocated a new statement\n");
 			return -1;
 		}
-		memset( pq_ptr, 0, sizeof( struct prep_stmt) +
-			total*(sizeof(struct bind_content) + sizeof(MYSQL_BIND)) );
 		/* get a new context */
 		ctx = get_new_stmt_ctx(conn, query);
 		if (ctx==NULL) {
@@ -255,29 +305,9 @@ static int db_mysql_do_prepared_query(const db_con_t* conn, const str *query,
 		pq_ptr->stmts = ctx;
 		/* set it as current */
 		pq_ptr->ctx = ctx;
-		LM_DBG("prepared statement successfully prepared\n");
 		pq_ptr->cols_out = -1;
 		/* set the in bind array */
-		if (total) {
-			pq_ptr->bind_in = (MYSQL_BIND*)(pq_ptr+1);
-			pq_ptr->in_bufs = (struct bind_content*)(pq_ptr->bind_in + total);
-		}
 		mysql_bind = pq_ptr->bind_in;
-		for( i=0 ; i<total ; i++ ) {
-			mysql_bind[i].buffer_type = MYSQL_TYPE_STRING;
-			mysql_bind[i].buffer_length = PREP_STMT_VAL_LEN;
-			mysql_bind[i].buffer = pq_ptr->in_bufs[i].buf;
-			mysql_bind[i].length = &pq_ptr->in_bufs[i].len;
-			mysql_bind[i].is_null = &pq_ptr->in_bufs[i].null;
-		}
-		/* bind in values to the statement */
-		LM_DBG("doing BIND_PARAM in...\n");
-		if ( mysql_stmt_bind_param(ctx->stmt, mysql_bind) ) {
-			LM_ERR("mysql_stmt_bind_param() failed: %s\n",
-				mysql_stmt_error(ctx->stmt));
-			db_mysql_free_pq(pq_ptr);
-			return -1;
-		}
 		LM_DBG("prepared statement successfully set...\n");
 		/* link it to the connection */
 		pq_ptr->next = CON_PS_LIST(conn);
@@ -294,14 +324,6 @@ static int db_mysql_do_prepared_query(const db_con_t* conn, const str *query,
 				LM_ERR("failed to create new context\n");
 				return -1;
 			}
-			/* bind in values to the statement */
-			LM_DBG("doing BIND_PARAM in...\n");
-			if ( mysql_stmt_bind_param(ctx->stmt, mysql_bind) ) {
-				LM_ERR("mysql_stmt_bind_param() failed: %s\n",
-					mysql_stmt_error(ctx->stmt));
-				pkg_free(ctx);
-				return -1;
-			}
 			/* link it */
 			ctx->next = pq_ptr->stmts;
 			pq_ptr->stmts = ctx;
@@ -316,42 +338,26 @@ static int db_mysql_do_prepared_query(const db_con_t* conn, const str *query,
 
 	/* set first set of values */
 	for( i=0 ; i<n ; i++ ) {
-		len = PREP_STMT_VAL_LEN;
-		if (VAL_NULL(v+i)) {
-			*(mysql_bind[i].is_null) = 1;
-			strcpy(mysql_bind[i].buffer, "NULL");
-			*(mysql_bind[i].length) = 4;
-		} else {
-			*(mysql_bind[i].is_null) = 0;
-			if ( db_mysql_val2str_nq(conn,v+i,mysql_bind[i].buffer,&len)<0 ) {
-				LM_ERR("val2str() failed for i=%d (1)\n", i);
-				return -1;
-			}
-			*(mysql_bind[i].length) = len;
+		if (db_mysql_val2bind( v+i , mysql_bind, i)<0 ) {
+			LM_ERR("val2bind() failed for i=%d (1)\n", i);
+			return -1;
 		}
-		LM_DBG("added val (%d): len=%ld; buf=%s; is_null=%d\n", i,
-			*(mysql_bind[i].length), (char *)mysql_bind[i].buffer,
-			*(mysql_bind[i].is_null));
 	}
 
 	/* set second set of values */
 	for( i=0 ; i<un ; i++ ) {
-		len = PREP_STMT_VAL_LEN;
-		if (VAL_NULL(uv+i)) {
-			*(mysql_bind[i+n].is_null) = 1;
-			strcpy(mysql_bind[i+n].buffer, "NULL");
-			*(mysql_bind[i+n].length) = 4;
-		} else {
-			*(mysql_bind[i+n].is_null) = 0;
-			if ( db_mysql_val2str_nq(conn,uv+n,mysql_bind[i].buffer,&len)<0 ) {
-				LM_ERR("val2str() failed for i=%d (1)\n", i);
-				return -1;
-			}
-			*(mysql_bind[i+n].length) = len;
+		if (db_mysql_val2bind( uv+i , mysql_bind, i+n)<0 ) {
+			LM_ERR("val2bind() failed for i=%d (2)\n", i);
+			return -1;
 		}
-		LM_DBG("added val 2 (%d): len=%ld; buf=%s; is_null=%d\n", i+n,
-			*(mysql_bind[i].length), (char *)mysql_bind[i].buffer,
-			*(mysql_bind[i].is_null));
+	}
+
+	/* bind in values to the statement */
+	LM_DBG("doing BIND_PARAM in...\n");
+	if ( mysql_stmt_bind_param(ctx->stmt, mysql_bind) ) {
+		LM_ERR("mysql_stmt_bind_param() failed: %s\n",
+			mysql_stmt_error(ctx->stmt));
+		return -1;
 	}
 
 	CON_RESULT(conn) = mysql_stmt_result_metadata(ctx->stmt);
@@ -389,15 +395,15 @@ static int db_mysql_do_prepared_query(const db_con_t* conn, const str *query,
 		/* set the out bind array ? */
 		if (pq_ptr->cols_out==-1) {
 			pq_ptr->cols_out = cols;
-			pq_ptr->bind_out = (MYSQL_BIND*)pkg_malloc( pq_ptr->cols_out*
-				(sizeof(struct bind_content) + sizeof(MYSQL_BIND)));
+			pq_ptr->bind_out = (MYSQL_BIND*)pkg_malloc
+				( cols*(sizeof(struct bind_ocontent) + sizeof(MYSQL_BIND)) );
 			if (pq_ptr->bind_out==NULL) {
 				db_mysql_free_pq(pq_ptr);
 				CON_CURR_PS(conn) = NULL;
 				LM_ERR("no more pkg mem for the a new prepared statement\n");
 				return -1;
 			}
-			pq_ptr->out_bufs = (struct bind_content*)(pq_ptr->bind_out+total);
+			pq_ptr->out_bufs = (struct bind_ocontent*)(pq_ptr->bind_out+cols);
 			mysql_bind = pq_ptr->bind_out;
 			/* prepare the pointers */
 			for( i=0 ; i<pq_ptr->cols_out ; i++ ) {

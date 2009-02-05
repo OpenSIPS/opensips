@@ -241,102 +241,77 @@ int db_mysql_val2str(const db_con_t* _c, const db_val_t* _v, char* _s, int* _len
 }
 
 
-/*
- * Used when converting values to be used in a prepared statement
- */
-int db_mysql_val2str_nq(const db_con_t* _c, const db_val_t* _v, char* _s,
-																	int* _len)
+int db_mysql_val2bind(const db_val_t* v, MYSQL_BIND *binds, unsigned int i)
 {
-	int l;
+	struct tm *t;
+	MYSQL_TIME *mt;
 
-	if (!_c || !_v || !_s || !_len || !*_len) {
-		LM_ERR("invalid parameter value\n");
-		return -1;
-	}
-
-	if (VAL_NULL(_v)) {
-		if (*_len < sizeof("NULL")) {
-			LM_ERR("buffer too small\n");
-			return -1;
-		}
-		*_len = snprintf(_s, *_len, "NULL");
+	if (VAL_NULL(v)) {
+		*(binds[i].is_null) = 1;
+		*(binds[i].length) = 0;
 		return 0;
+	} else {
+		*(binds[i].is_null) = 0;
 	}
-	
-	switch(VAL_TYPE(_v)) {
-	case DB_INT:
-		if (db_int2str(VAL_INT(_v), _s, _len) < 0) {
-			LM_ERR("error while converting string to int\n");
-			return -2;
-		} else {
-			return 0;
-		}
-		break;
 
-	case DB_BITMAP:
-		if (db_int2str(VAL_BITMAP(_v), _s, _len) < 0) {
-			LM_ERR("error while converting string to int\n");
-			return -3;
-		} else {
-			return 0;
-		}
-		break;
+	switch(VAL_TYPE(v)) {
+		case DB_INT:
+			binds[i].buffer_type= MYSQL_TYPE_LONG;
+			binds[i].buffer= (char*)&(VAL_INT(v));
+			*binds[i].length= sizeof(VAL_INT(v));
+			break;
 
-	case DB_DOUBLE:
-		if (db_double2str(VAL_DOUBLE(_v), _s, _len) < 0) {
-			LM_ERR("error while converting string to double\n");
-			return -4;
-		} else {
-			return 0;
-		}
-		break;
+		case DB_BITMAP:
+			binds[i].buffer_type= MYSQL_TYPE_LONG;
+			binds[i].buffer= (char*)&(VAL_BITMAP(v));
+			*binds[i].length= sizeof(VAL_BITMAP(v));
+			break;
 
-	case DB_STRING:
-		l = strlen(VAL_STRING(_v));
-		if (*_len < l) {
-			LM_ERR("destination buffer too short\n");
-			return -5;
-		} else {
-			*_len = l;
-			memcpy( _s, VAL_STRING(_v), l);
-			return 0;
-		}
-		break;
+		case DB_DOUBLE:
+			binds[i].buffer_type= MYSQL_TYPE_DOUBLE;
+			binds[i].buffer= (char*)&(VAL_DOUBLE(v));
+			*binds[i].length= sizeof(VAL_DOUBLE(v));
+			break;
 
-	case DB_STR:
-		if (*_len < VAL_STR(_v).len) {
-			LM_ERR("destination buffer too short\n");
-			return -6;
-		} else {
-			*_len = VAL_STR(_v).len;
-			memcpy( _s, VAL_STR(_v).s, VAL_STR(_v).len);
-			return 0;
-		}
-		break;
+		case DB_STRING:
+			binds[i].buffer_type= MYSQL_TYPE_STRING;
+			binds[i].buffer= (char*)VAL_STRING(v);
+			*binds[i].length= strlen(VAL_STRING(v));
+			break;
 
-	case DB_DATETIME:
-		if (db_time2str_nq(VAL_TIME(_v), _s, _len) < 0) {
-			LM_ERR("error while converting string to time_t\n");
-			return -7;
-		} else {
-			return 0;
-		}
-		break;
+		case DB_STR:
+			binds[i].buffer_type= MYSQL_TYPE_STRING;
+			binds[i].buffer= VAL_STR(v).s;
+			*binds[i].length= VAL_STR(v).len;
+			break;
 
-	case DB_BLOB:
-		l = VAL_BLOB(_v).len;
-		if (*_len < l) {
-			LM_ERR("destination buffer too short\n");
-			return -8;
-		} else {
-			*_len = l;
-			memcpy( _s, VAL_STR(_v).s, l);
-			return 0;
-		}
-		break;
+		case DB_DATETIME:
+			binds[i].buffer_type= MYSQL_TYPE_DATETIME;
+			t = localtime( &VAL_TIME(v) );
+			mt = (MYSQL_TIME*)binds[i].buffer;
+			mt->year = 1900 + t->tm_year;
+			mt->month = t->tm_mon;
+			mt->day = t->tm_mday;
+			mt->hour = t->tm_hour;
+			mt->minute = t->tm_min;
+			mt->second = t->tm_sec;
+			*binds[i].length= sizeof(MYSQL_TIME);
+			break;
 
-	default:
-		LM_ERR("unknown data type (%d)\n",VAL_TYPE(_v));
-		return -9;
+		case DB_BLOB:
+			binds[i].buffer_type= MYSQL_TYPE_BLOB;
+			binds[i].buffer= VAL_BLOB(v).s;
+			*binds[i].length= VAL_BLOB(v).len;
+			break;
+
+		default:
+			LM_ERR("unknown data type (%d)\n",VAL_TYPE(v));
+			return -9;
 	}
+
+	LM_DBG("added val (%d): len=%ld; type=%d; is_null=%d\n", i,
+		*(binds[i].length), binds[i].buffer_type, *(binds[i].is_null));
+
+	return 0;
 }
+

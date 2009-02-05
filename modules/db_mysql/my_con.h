@@ -33,11 +33,17 @@
 
 #define PREP_STMT_VAL_LEN	1024
 
-struct bind_content {
+struct bind_icontent {
+	unsigned long len;
+	my_bool null;
+};
+
+struct bind_ocontent {
 	char buf[PREP_STMT_VAL_LEN];
 	unsigned long len;
 	my_bool null;
 };
+
 
 struct my_stmt_ctx {
 	MYSQL_STMT *stmt;
@@ -51,11 +57,11 @@ struct prep_stmt {
 	struct my_stmt_ctx *ctx;
 	/*in*/
 	MYSQL_BIND *bind_in;
-	struct bind_content *in_bufs;
+	struct bind_icontent *in_bufs;
 	/*out*/
 	int cols_out;
 	MYSQL_BIND *bind_out;
-	struct bind_content *out_bufs;
+	struct bind_ocontent *out_bufs;
 	/*linking*/
 	struct prep_stmt *next;
 };
