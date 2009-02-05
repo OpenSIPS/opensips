@@ -136,6 +136,26 @@ modparam("siptrace", "trace_on", 1)
 		</example>
 	</section>
 	<section>
+		<title><varname>enable_ack_trace</varname> (integer)</title>
+		<para>
+		Parameter to enable/disable tracing of statelessly received ACKs
+		(on(1)/off(0))
+		</para>
+		<para>
+		<emphasis>
+			Default value is "0".
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>enable_ack_trace</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("siptrace", "enable_ack_trace", 1)
+...
+</programlisting>
+		</example>
+	</section>
+	<section>
 		<title><varname>traced_user_avp</varname> (str)</title>
 		<para>
 		The name of the AVP storing the SIP URI of the traced user. If

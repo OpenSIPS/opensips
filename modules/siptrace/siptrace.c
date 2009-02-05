@@ -105,6 +105,8 @@ static str trace_table_avp_str = {NULL, 0};
 
 static str trace_local_ip = {NULL, 0};
 
+static unsigned int enable_ack_trace = 0;
+
 /** database connection */
 db_con_t *db_con = NULL;
 db_func_t db_funcs;      /* Database functions */
@@ -146,6 +148,7 @@ static param_export_t params[] = {
 	{"trace_table_avp",    STR_PARAM, &trace_table_avp_str.s},
 	{"duplicate_uri",      STR_PARAM, &dup_uri_str.s        },
 	{"trace_local_ip",     STR_PARAM, &trace_local_ip.s     },
+	{"enable_ack_trace",   INT_PARAM, &enable_ack_trace     },
 	{0, 0, 0}
 };
 
@@ -277,7 +280,7 @@ static int mod_init(void)
 		LM_ERR("can't register trace_sl_onreply_out\n");
 		return -1;
 	}
-	if(register_slcb_f(SLCB_ACK_IN,trace_sl_ack_in, NULL)!=0)
+	if(enable_ack_trace&&register_slcb_f(SLCB_ACK_IN,trace_sl_ack_in,NULL)!=0)
 	{
 		LM_ERR("can't register trace_sl_ack_in\n");
 		return -1;
