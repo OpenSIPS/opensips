@@ -142,8 +142,7 @@ my $DBTEXTCMD = $MYLIBDIR."/dbtextdb/dbtextdb.py";
 
 # path to the database schemas
 my $DB_SCHEMA = "";
-my $DATA_DIR = "/usr/src/opensips_head/scripts";
-#my $DATA_DIR = "/usr/local/share/opensips";
+my $DATA_DIR = "/usr/local/share/opensips";
 my $DBTEXT_PATH = "/usr/local/share/opensips/dbtext/opensips";
 # path to the db_berkeley database
 my $DB_PATH;
