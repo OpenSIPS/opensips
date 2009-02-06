@@ -149,6 +149,10 @@ int is_user_in(struct sip_msg* _msg, char* _hf, char* _grp)
 	}
 
 	group_check_p hfPtr = get_hf(hf_s.s);
+	if (hfPtr==NULL) {
+		LM_ERR("unable to get user/dom source\n");
+		return -1;
+	}
 
 	if ( get_username_domain( _msg, hfPtr, &(VAL_STR(vals)),
 	&(VAL_STR(vals+2)))!=0) {
@@ -236,42 +240,41 @@ void group_db_close(void)
  *  * Supported strings:                                
  *  * "Request-URI", "To", "From", "Credentials"        
  *  * It is a copy from get_hf at group_mod.c     
-*/                                                  
-static group_check_p get_hf( char *str1)             
-{                                                    
-        group_check_p gcp=NULL;                      
-        str s;                                       
+*/
+static group_check_p get_hf( char *str1)
+{
+	group_check_p gcp=NULL;
+	str s;
 
-        gcp = (group_check_p)pkg_malloc(sizeof(group_check_t));
-        if(gcp == NULL) {                                      
-                LM_ERR("no pkg more memory\n");                
-                return 0;                                      
-        }                                                      
-        memset(gcp, 0, sizeof(group_check_t));                 
+	gcp = (group_check_p)pkg_malloc(sizeof(group_check_t));
+	if(gcp == NULL) {
+		LM_ERR("no pkg more memory\n");
+		return NULL;
+	}
+	memset(gcp, 0, sizeof(group_check_t));
 
-        if (!strcasecmp( str1, "Request-URI")) {
-                gcp->id = 1;                    
-        } else if (!strcasecmp( str1, "To")) {  
-                gcp->id = 2;                    
-        } else if (!strcasecmp( str1, "From")) {
-                gcp->id = 3;                    
-        } else if (!strcasecmp( str1, "Credentials")) {
-                gcp->id = 4;                           
-        } else {                                       
-                s.s = str1; s.len = strlen(s.s);       
-                if(pv_parse_spec( &s, &gcp->sp)==NULL  
-                        || gcp->sp.type!=PVT_AVP)      
-                {                                      
-                        LM_ERR("unsupported User Field identifier\n");
-                        pkg_free( gcp );                              
-                        return 0;                                     
-                }                                                     
-                gcp->id = 5;                                          
-        }                                                             
+	if (!strcasecmp( str1, "Request-URI")) {
+		gcp->id = 1;
+	} else if (!strcasecmp( str1, "To")) {
+		gcp->id = 2;
+	} else if (!strcasecmp( str1, "From")) {
+		gcp->id = 3;
+	} else if (!strcasecmp( str1, "Credentials")) {
+		gcp->id = 4;
+	} else {
+		s.s = str1; s.len = strlen(s.s);
+		if(pv_parse_spec( &s, &gcp->sp)==NULL || gcp->sp.type!=PVT_AVP)
+		{
+			LM_ERR("unsupported User Field identifier\n");
+			pkg_free( gcp );
+			return NULL;
+		}
+		gcp->id = 5;
+	}
 
-        /* do not free all the time, needed by pseudo-variable spec */
-        if(gcp->id!=5)                                                
-                pkg_free(str1);                                       
+	/* do not free all the time, needed by pseudo-variable spec */
+	if(gcp->id!=5)
+		pkg_free(str1);
 
-        return gcp;
-} 
+	return gcp;
+}
