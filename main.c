@@ -285,6 +285,10 @@ struct socket_info* sendipv6_sctp;
  * during fixing listening sockets */
 int auto_aliases=1;
 
+/* if the stateless forwarding support in core should be 
+ * disabled or not */
+int sl_fwd_disabled=-1;
+
 unsigned short port_no=0; /* default port*/
 #ifdef USE_TLS
 unsigned short tls_port_no=0; /* default port */

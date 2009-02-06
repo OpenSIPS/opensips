@@ -508,6 +508,10 @@ int forward_reply(struct sip_msg* msg)
 		}
 	}
 
+	/* if stateless fwd was disabled, we cannot have stateless replies here*/
+	if (sl_fwd_disabled)
+		goto skip;
+
 	/* we have to forward the reply stateless, so we need second via -bogdan*/
 	if (parse_headers( msg, HDR_VIA2_F, 0 )==-1 
 		|| (msg->via2==0) || (msg->via2->error!=PARSE_OK))

@@ -229,6 +229,13 @@ static int fix_actions(struct action* a)
 				}
 				break;
 			case FORWARD_T:
+				if (sl_fwd_disabled>0) {
+					LM_ERR("stateless forwarding disabled, but forward() "
+						"is used!!\n");
+					ret = E_CFG;
+					goto error;
+				}
+				sl_fwd_disabled = 0;
 				if (t->elem[0].type==NOSUBTYPE)
 					break;
 			case SEND_T:

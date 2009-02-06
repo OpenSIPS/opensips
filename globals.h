@@ -140,4 +140,6 @@ extern int dns_search_list; /*!< DNS resolver: Search list */
 
 extern int max_while_loops;
 
+extern int sl_fwd_disabled;
+
 #endif

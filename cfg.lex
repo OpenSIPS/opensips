@@ -297,6 +297,7 @@ DISABLE_DNS_FAILOVER  "disable_dns_failover"
 DISABLE_DNS_BLACKLIST "disable_dns_blacklist"
 DST_BLACKLIST		"dst_blacklist"
 MAX_WHILE_LOOPS "max_while_loops"
+DISABLE_STATELESS_FWD	"disable_stateless_fwd"
 
 MPATH	mpath
 LOADMODULE	loadmodule
@@ -549,6 +550,8 @@ WHITESPACE	[ \t\r\n]
 									return DISABLE_DNS_BLACKLIST; }
 <INITIAL>{DST_BLACKLIST}	{	count(); yylval.strval=yytext;
 									return DST_BLACKLIST; }
+<INITIAL>{DISABLE_STATELESS_FWD}	{	count(); yylval.strval=yytext;
+									return DISABLE_STATELESS_FWD; }
 
 <INITIAL>{MPATH}	   { count(); yylval.strval=yytext; return MPATH; }
 <INITIAL>{LOADMODULE}  { count(); yylval.strval=yytext; return LOADMODULE; }

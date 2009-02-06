@@ -351,6 +351,7 @@ extern int line;
 %token DISABLE_DNS_FAILOVER
 %token DISABLE_DNS_BLACKLIST
 %token DST_BLACKLIST
+%token DISABLE_STATELESS_FWD
 
 
 
@@ -1017,6 +1018,9 @@ assign_stm: DEBUG EQUAL snumber {
 					YYABORT;
 				}
 				bl_head = bl_tail = 0;
+				}
+		| DISABLE_STATELESS_FWD EQUAL NUMBER {
+				sl_fwd_disabled=$3;
 				}
 	;
 
