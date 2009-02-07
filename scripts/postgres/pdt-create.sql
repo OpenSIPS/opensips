@@ -1,4 +1,4 @@
-INSERT INTO version (table_name, table_version) values ('pdt','1');
+INSERT INTO version (table_name, table_version) values ('pdt','2');
 CREATE TABLE pdt (
     id SERIAL PRIMARY KEY NOT NULL,
     sdomain VARCHAR(128) NOT NULL,

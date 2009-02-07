@@ -1,4 +1,4 @@
-INSERT INTO version (table_name, table_version) values ('carrierroute','2');
+INSERT INTO version (table_name, table_version) values ('carrierroute','3');
 CREATE TABLE carrierroute (
     id SERIAL PRIMARY KEY NOT NULL,
     carrier INTEGER DEFAULT 0 NOT NULL,
@@ -14,7 +14,7 @@ CREATE TABLE carrierroute (
     description VARCHAR(255) DEFAULT NULL
 );
 
-INSERT INTO version (table_name, table_version) values ('carrierfailureroute','1');
+INSERT INTO version (table_name, table_version) values ('carrierfailureroute','2');
 CREATE TABLE carrierfailureroute (
     id SERIAL PRIMARY KEY NOT NULL,
     carrier INTEGER DEFAULT 0 NOT NULL,
@@ -28,7 +28,7 @@ CREATE TABLE carrierfailureroute (
     description VARCHAR(255) DEFAULT NULL
 );
 
-INSERT INTO version (table_name, table_version) values ('route_tree','1');
+INSERT INTO version (table_name, table_version) values ('route_tree','2');
 CREATE TABLE route_tree (
     id SERIAL PRIMARY KEY NOT NULL,
     carrier VARCHAR(64) DEFAULT NULL

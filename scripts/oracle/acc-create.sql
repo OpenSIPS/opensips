@@ -1,4 +1,4 @@
-INSERT INTO version (table_name, table_version) values ('acc','4');
+INSERT INTO version (table_name, table_version) values ('acc','5');
 CREATE TABLE acc (
     id NUMBER(10) PRIMARY KEY,
     method VARCHAR2(16) DEFAULT '',
@@ -20,7 +20,7 @@ BEGIN map2users('acc'); END;
 /
 CREATE INDEX acc_callid_idx  ON acc (callid);
 
-INSERT INTO version (table_name, table_version) values ('missed_calls','3');
+INSERT INTO version (table_name, table_version) values ('missed_calls','4');
 CREATE TABLE missed_calls (
     id NUMBER(10) PRIMARY KEY,
     method VARCHAR2(16) DEFAULT '',

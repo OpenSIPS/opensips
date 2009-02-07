@@ -56,8 +56,8 @@
 
 MODULE_VERSION
 
-#define P_TABLE_VERSION 0
-#define W_TABLE_VERSION 1
+#define P_TABLE_VERSION 1
+#define W_TABLE_VERSION 2
 
 /** database connection */
 db_con_t *rls_db = NULL;

@@ -57,7 +57,7 @@ int db_init(const str *url, const str *table)
 		LM_ERR("child can't connect to database.\n");
 		return -1;
 	}
-	if(db_check_table_version(&dbf, dbc, table, 1) < 0) {
+	if(db_check_table_version(&dbf, dbc, table, 2) < 0) {
 		LM_ERR("during table version check.\n");
 		return -1;
 	}

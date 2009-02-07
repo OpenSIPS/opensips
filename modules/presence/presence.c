@@ -60,9 +60,9 @@
 
 MODULE_VERSION
 
-#define S_TABLE_VERSION  3
-#define P_TABLE_VERSION  3
-#define ACTWATCH_TABLE_VERSION 9
+#define S_TABLE_VERSION  4
+#define P_TABLE_VERSION  4
+#define ACTWATCH_TABLE_VERSION 10
 
 char *log_buf = NULL;
 static int clean_period=100;

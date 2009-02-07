@@ -31,7 +31,7 @@
 #include "../../str.h"
 #include "cpl_db.h"
 
-#define TABLE_VERSION 1
+#define TABLE_VERSION 2
 
 static db_con_t* db_hdl=0;
 static db_func_t cpl_dbf;

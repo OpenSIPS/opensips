@@ -62,7 +62,7 @@ MODULE_VERSION
  * increment this value if you change the table in
  * an backwards incompatible way
  */
-#define TABLE_VERSION 1
+#define TABLE_VERSION 2
 
 #define DOMAIN_TABLE "domain"
 #define DOMAIN_TABLE_LEN (sizeof(DOMAIN_TABLE) - 1)

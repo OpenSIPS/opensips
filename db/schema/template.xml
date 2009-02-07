@@ -9,7 +9,7 @@
 
 <table id="table_name" xmlns:db="http://docbook.org/ns/docbook"> <!-- set id for colref links and namespace for "db:para" nodes -->
     <name>table_name</name>
-    <version>1</version>
+    <version>2</version>
     <type db="mysql">&MYSQL_TABLE_TYPE;</type><!-- specify the table type for mysql -->
     <description>
         <db:para>table documentation</db:para>

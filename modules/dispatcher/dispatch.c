@@ -65,7 +65,7 @@
 #include "dispatch.h"
 
 #define DS_TABLE_VERSION	1
-#define DS_TABLE_VERSION2	2
+#define DS_TABLE_VERSION2	3
 
 static int _ds_table_version = DS_TABLE_VERSION;
 

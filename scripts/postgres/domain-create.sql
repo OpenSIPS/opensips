@@ -1,4 +1,4 @@
-INSERT INTO version (table_name, table_version) values ('domain','1');
+INSERT INTO version (table_name, table_version) values ('domain','2');
 CREATE TABLE domain (
     id SERIAL PRIMARY KEY NOT NULL,
     domain VARCHAR(64) DEFAULT '' NOT NULL,

@@ -1,4 +1,4 @@
-INSERT INTO version (table_name, table_version) values ('dr_gateways','2');
+INSERT INTO version (table_name, table_version) values ('dr_gateways','3');
 CREATE TABLE dr_gateways (
     gwid NUMBER(10) PRIMARY KEY,
     type NUMBER(10) DEFAULT 0 NOT NULL,
@@ -17,7 +17,7 @@ END dr_gateways_tr;
 /
 BEGIN map2users('dr_gateways'); END;
 /
-INSERT INTO version (table_name, table_version) values ('dr_rules','1');
+INSERT INTO version (table_name, table_version) values ('dr_rules','2');
 CREATE TABLE dr_rules (
     ruleid NUMBER(10) PRIMARY KEY,
     groupid VARCHAR2(255),
@@ -52,7 +52,7 @@ END dr_gw_lists_tr;
 /
 BEGIN map2users('dr_gw_lists'); END;
 /
-INSERT INTO version (table_name, table_version) values ('dr_groups','1');
+INSERT INTO version (table_name, table_version) values ('dr_groups','2');
 CREATE TABLE dr_groups (
     id NUMBER(10) PRIMARY KEY,
     username VARCHAR2(64),

@@ -1,4 +1,4 @@
-INSERT INTO version (table_name, table_version) values ('gw','7');
+INSERT INTO version (table_name, table_version) values ('gw','8');
 CREATE TABLE gw (
     id SERIAL PRIMARY KEY NOT NULL,
     gw_name VARCHAR(128) NOT NULL,
@@ -15,7 +15,7 @@ CREATE TABLE gw (
 
 CREATE INDEX gw_grp_id_idx ON gw (grp_id);
 
-INSERT INTO version (table_name, table_version) values ('lcr','2');
+INSERT INTO version (table_name, table_version) values ('lcr','3');
 CREATE TABLE lcr (
     id SERIAL PRIMARY KEY NOT NULL,
     prefix VARCHAR(16) DEFAULT NULL,

@@ -1,4 +1,4 @@
-INSERT INTO version (table_name, table_version) values ('uri','1');
+INSERT INTO version (table_name, table_version) values ('uri','2');
 CREATE TABLE uri (
     id NUMBER(10) PRIMARY KEY,
     username VARCHAR2(64) DEFAULT '',

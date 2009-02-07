@@ -1,4 +1,4 @@
-INSERT INTO version (table_name, table_version) values ('subscriber','6');
+INSERT INTO version (table_name, table_version) values ('subscriber','7');
 CREATE TABLE subscriber (
     id NUMBER(10) PRIMARY KEY,
     username VARCHAR2(64) DEFAULT '',

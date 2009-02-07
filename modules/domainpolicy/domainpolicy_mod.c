@@ -53,7 +53,7 @@ MODULE_VERSION
  * increment this value if you change the table in
  * an backwards incompatible way
  */
-#define DOMAINPOLICY_TABLE_VERSION 2
+#define DOMAINPOLICY_TABLE_VERSION 3
 
 
 #define DOMAINPOLICY_TABLE "domainpolicy"

@@ -1,4 +1,4 @@
-INSERT INTO version (table_name, table_version) values ('domainpolicy','2');
+INSERT INTO version (table_name, table_version) values ('domainpolicy','3');
 CREATE TABLE domainpolicy (
     id SERIAL PRIMARY KEY NOT NULL,
     rule VARCHAR(255) NOT NULL,

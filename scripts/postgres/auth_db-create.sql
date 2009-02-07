@@ -1,4 +1,4 @@
-INSERT INTO version (table_name, table_version) values ('subscriber','6');
+INSERT INTO version (table_name, table_version) values ('subscriber','7');
 CREATE TABLE subscriber (
     id SERIAL PRIMARY KEY NOT NULL,
     username VARCHAR(64) DEFAULT '' NOT NULL,

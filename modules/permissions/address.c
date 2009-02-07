@@ -43,7 +43,7 @@
 #include "../../ut.h"
 #include "../../resolve.h"
 
-#define TABLE_VERSION 3
+#define TABLE_VERSION 4
 
 struct addr_list ***addr_hash_table; /* Ptr to current hash table ptr */
 struct addr_list **addr_hash_table_1;     /* Pointer to hash table 1 */

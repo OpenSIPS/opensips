@@ -108,7 +108,7 @@ static str sc_snd_time = str_init("snd_time");  /* 9 */
 
 MODULE_VERSION
 
-#define S_TABLE_VERSION 5
+#define S_TABLE_VERSION 6
 
 /** database connection */
 static db_con_t *db_con = NULL;

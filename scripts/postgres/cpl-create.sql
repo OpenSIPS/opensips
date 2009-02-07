@@ -1,4 +1,4 @@
-INSERT INTO version (table_name, table_version) values ('cpl','1');
+INSERT INTO version (table_name, table_version) values ('cpl','2');
 CREATE TABLE cpl (
     id SERIAL PRIMARY KEY NOT NULL,
     username VARCHAR(64) NOT NULL,

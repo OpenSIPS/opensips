@@ -1,4 +1,4 @@
-INSERT INTO version (table_name, table_version) values ('domain','1');
+INSERT INTO version (table_name, table_version) values ('domain','2');
 CREATE TABLE domain (
     id NUMBER(10) PRIMARY KEY,
     domain VARCHAR2(64) DEFAULT '',

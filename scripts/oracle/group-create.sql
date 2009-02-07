@@ -1,4 +1,4 @@
-INSERT INTO version (table_name, table_version) values ('grp','2');
+INSERT INTO version (table_name, table_version) values ('grp','3');
 CREATE TABLE grp (
     id NUMBER(10) PRIMARY KEY,
     username VARCHAR2(64) DEFAULT '',
@@ -16,7 +16,7 @@ END grp_tr;
 /
 BEGIN map2users('grp'); END;
 /
-INSERT INTO version (table_name, table_version) values ('re_grp','1');
+INSERT INTO version (table_name, table_version) values ('re_grp','2');
 CREATE TABLE re_grp (
     id NUMBER(10) PRIMARY KEY,
     reg_exp VARCHAR2(128) DEFAULT '',

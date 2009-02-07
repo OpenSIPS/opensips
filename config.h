@@ -50,7 +50,7 @@
 
 #define CHILD_NO    8		/*!< default number of child processes started */
 
-#define RT_NO 40 		/*!< routing tables number */
+#define RT_NO 100 		/*!< routing tables number */
 #define FAILURE_RT_NO RT_NO	/*!< on_failure routing tables number */
 #define ONREPLY_RT_NO RT_NO	/*!< on_reply routing tables number */
 #define BRANCH_RT_NO  RT_NO 	/*!< T-branch routing tables number */

@@ -1,4 +1,4 @@
-INSERT INTO version (table_name, table_version) values ('trusted','4');
+INSERT INTO version (table_name, table_version) values ('trusted','5');
 CREATE TABLE trusted (
     id NUMBER(10) PRIMARY KEY,
     src_ip VARCHAR2(50),
@@ -17,7 +17,7 @@ BEGIN map2users('trusted'); END;
 /
 CREATE INDEX trusted_peer_idx  ON trusted (src_ip);
 
-INSERT INTO version (table_name, table_version) values ('address','3');
+INSERT INTO version (table_name, table_version) values ('address','4');
 CREATE TABLE address (
     id NUMBER(10) PRIMARY KEY,
     grp NUMBER(5) DEFAULT 0 NOT NULL,

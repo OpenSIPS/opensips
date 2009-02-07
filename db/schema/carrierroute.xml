@@ -9,7 +9,7 @@
 	  
 	  <table id="carrierroute" xmlns:db="http://docbook.org/ns/docbook">
 		  <name>carrierroute</name>
-		  <version>2</version>
+		  <version>3</version>
 		  <type db="mysql">&MYSQL_TABLE_TYPE;</type>
 		  <description>
 			  <db:para>This table is used by the carrierroute module to provides routing, balancing and blacklisting capabilities. More information is available at: http://www.opensips.org/docs/modules/devel/carrierroute.html

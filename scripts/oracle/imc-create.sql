@@ -1,4 +1,4 @@
-INSERT INTO version (table_name, table_version) values ('imc_rooms','1');
+INSERT INTO version (table_name, table_version) values ('imc_rooms','2');
 CREATE TABLE imc_rooms (
     id NUMBER(10) PRIMARY KEY,
     name VARCHAR2(64),
@@ -15,7 +15,7 @@ END imc_rooms_tr;
 /
 BEGIN map2users('imc_rooms'); END;
 /
-INSERT INTO version (table_name, table_version) values ('imc_members','1');
+INSERT INTO version (table_name, table_version) values ('imc_members','2');
 CREATE TABLE imc_members (
     id NUMBER(10) PRIMARY KEY,
     username VARCHAR2(64),

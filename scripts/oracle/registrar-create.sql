@@ -1,4 +1,4 @@
-INSERT INTO version (table_name, table_version) values ('aliases','1004');
+INSERT INTO version (table_name, table_version) values ('aliases','1005');
 CREATE TABLE aliases (
     id NUMBER(10) PRIMARY KEY,
     username VARCHAR2(64) DEFAULT '',

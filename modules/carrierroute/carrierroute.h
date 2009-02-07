@@ -81,9 +81,9 @@
 #define SP_ROUTE_MODE_DB 1
 #define SP_ROUTE_MODE_FILE 2
 
-#define ROUTE_TABLE_VER 2
-#define CARRIER_TABLE_VER 1
-#define FAILURE_TABLE_VER 1
+#define ROUTE_TABLE_VER 3
+#define CARRIER_TABLE_VER 2
+#define FAILURE_TABLE_VER 2
 
 extern str db_url;
 extern str db_table;

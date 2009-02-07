@@ -50,8 +50,8 @@
 
 MODULE_VERSION
 
-#define TABLE_VERSION    2
-#define RE_TABLE_VERSION 1
+#define TABLE_VERSION    3
+#define RE_TABLE_VERSION 2
 
 static group_check_p get_hf( char *str1);
 

@@ -1,4 +1,4 @@
-INSERT INTO version (table_name, table_version) values ('speed_dial','2');
+INSERT INTO version (table_name, table_version) values ('speed_dial','3');
 CREATE TABLE speed_dial (
     id NUMBER(10) PRIMARY KEY,
     username VARCHAR2(64) DEFAULT '',

@@ -1,4 +1,4 @@
-INSERT INTO version (table_name, table_version) values ('presentity','3');
+INSERT INTO version (table_name, table_version) values ('presentity','4');
 CREATE TABLE presentity (
     id SERIAL PRIMARY KEY NOT NULL,
     username VARCHAR(64) NOT NULL,
@@ -12,7 +12,7 @@ CREATE TABLE presentity (
     CONSTRAINT presentity_presentity_idx UNIQUE (username, domain, event, etag)
 );
 
-INSERT INTO version (table_name, table_version) values ('active_watchers','9');
+INSERT INTO version (table_name, table_version) values ('active_watchers','10');
 CREATE TABLE active_watchers (
     id SERIAL PRIMARY KEY NOT NULL,
     presentity_uri VARCHAR(128) NOT NULL,
@@ -38,7 +38,7 @@ CREATE TABLE active_watchers (
     CONSTRAINT active_watchers_active_watchers_idx UNIQUE (presentity_uri, callid, to_tag, from_tag)
 );
 
-INSERT INTO version (table_name, table_version) values ('watchers','3');
+INSERT INTO version (table_name, table_version) values ('watchers','4');
 CREATE TABLE watchers (
     id SERIAL PRIMARY KEY NOT NULL,
     presentity_uri VARCHAR(128) NOT NULL,
@@ -51,7 +51,7 @@ CREATE TABLE watchers (
     CONSTRAINT watchers_watcher_idx UNIQUE (presentity_uri, watcher_username, watcher_domain, event)
 );
 
-INSERT INTO version (table_name, table_version) values ('xcap','3');
+INSERT INTO version (table_name, table_version) values ('xcap','4');
 CREATE TABLE xcap (
     id SERIAL PRIMARY KEY NOT NULL,
     username VARCHAR(64) NOT NULL,
@@ -67,7 +67,7 @@ CREATE TABLE xcap (
 
 CREATE INDEX xcap_source_idx ON xcap (source);
 
-INSERT INTO version (table_name, table_version) values ('pua','6');
+INSERT INTO version (table_name, table_version) values ('pua','7');
 CREATE TABLE pua (
     id SERIAL PRIMARY KEY NOT NULL,
     pres_uri VARCHAR(128) NOT NULL,

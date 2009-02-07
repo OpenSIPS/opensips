@@ -1,4 +1,4 @@
-INSERT INTO version (table_name, table_version) values ('gw','7');
+INSERT INTO version (table_name, table_version) values ('gw','8');
 CREATE TABLE gw (
     id NUMBER(10) PRIMARY KEY,
     gw_name VARCHAR2(128),
@@ -23,7 +23,7 @@ BEGIN map2users('gw'); END;
 /
 CREATE INDEX gw_grp_id_idx  ON gw (grp_id);
 
-INSERT INTO version (table_name, table_version) values ('lcr','2');
+INSERT INTO version (table_name, table_version) values ('lcr','3');
 CREATE TABLE lcr (
     id NUMBER(10) PRIMARY KEY,
     prefix VARCHAR2(16) DEFAULT NULL,

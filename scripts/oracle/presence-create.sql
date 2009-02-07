@@ -1,4 +1,4 @@
-INSERT INTO version (table_name, table_version) values ('presentity','3');
+INSERT INTO version (table_name, table_version) values ('presentity','4');
 CREATE TABLE presentity (
     id NUMBER(10) PRIMARY KEY,
     username VARCHAR2(64),
@@ -20,7 +20,7 @@ END presentity_tr;
 /
 BEGIN map2users('presentity'); END;
 /
-INSERT INTO version (table_name, table_version) values ('active_watchers','9');
+INSERT INTO version (table_name, table_version) values ('active_watchers','10');
 CREATE TABLE active_watchers (
     id NUMBER(10) PRIMARY KEY,
     presentity_uri VARCHAR2(128),
@@ -54,7 +54,7 @@ END active_watchers_tr;
 /
 BEGIN map2users('active_watchers'); END;
 /
-INSERT INTO version (table_name, table_version) values ('watchers','3');
+INSERT INTO version (table_name, table_version) values ('watchers','4');
 CREATE TABLE watchers (
     id NUMBER(10) PRIMARY KEY,
     presentity_uri VARCHAR2(128),
@@ -75,7 +75,7 @@ END watchers_tr;
 /
 BEGIN map2users('watchers'); END;
 /
-INSERT INTO version (table_name, table_version) values ('xcap','3');
+INSERT INTO version (table_name, table_version) values ('xcap','4');
 CREATE TABLE xcap (
     id NUMBER(10) PRIMARY KEY,
     username VARCHAR2(64),
@@ -99,7 +99,7 @@ BEGIN map2users('xcap'); END;
 /
 CREATE INDEX xcap_source_idx  ON xcap (source);
 
-INSERT INTO version (table_name, table_version) values ('pua','6');
+INSERT INTO version (table_name, table_version) values ('pua','7');
 CREATE TABLE pua (
     id NUMBER(10) PRIMARY KEY,
     pres_uri VARCHAR2(128),

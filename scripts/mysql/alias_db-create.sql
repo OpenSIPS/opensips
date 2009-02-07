@@ -1,10 +1,10 @@
-INSERT INTO version (table_name, table_version) values ('dbaliases','1');
+INSERT INTO version (table_name, table_version) values ('dbaliases','2');
 CREATE TABLE dbaliases (
     id INT(10) UNSIGNED AUTO_INCREMENT PRIMARY KEY NOT NULL,
-    alias_username VARCHAR(64) DEFAULT '' NOT NULL,
-    alias_domain VARCHAR(64) DEFAULT '' NOT NULL,
-    username VARCHAR(64) DEFAULT '' NOT NULL,
-    domain VARCHAR(64) DEFAULT '' NOT NULL,
+    alias_username CHAR(64) DEFAULT '' NOT NULL,
+    alias_domain CHAR(64) DEFAULT '' NOT NULL,
+    username CHAR(64) DEFAULT '' NOT NULL,
+    domain CHAR(64) DEFAULT '' NOT NULL,
     CONSTRAINT alias_idx UNIQUE (alias_username, alias_domain)
 ) ENGINE=MyISAM;
 

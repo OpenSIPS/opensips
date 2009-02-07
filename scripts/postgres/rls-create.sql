@@ -14,7 +14,7 @@ CREATE TABLE rls_presentity (
 
 CREATE INDEX rls_presentity_updated_idx ON rls_presentity (updated);
 
-INSERT INTO version (table_name, table_version) values ('rls_watchers','1');
+INSERT INTO version (table_name, table_version) values ('rls_watchers','2');
 CREATE TABLE rls_watchers (
     id SERIAL PRIMARY KEY NOT NULL,
     presentity_uri VARCHAR(128) NOT NULL,

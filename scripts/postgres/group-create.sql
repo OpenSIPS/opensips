@@ -1,4 +1,4 @@
-INSERT INTO version (table_name, table_version) values ('grp','2');
+INSERT INTO version (table_name, table_version) values ('grp','3');
 CREATE TABLE grp (
     id SERIAL PRIMARY KEY NOT NULL,
     username VARCHAR(64) DEFAULT '' NOT NULL,
@@ -8,7 +8,7 @@ CREATE TABLE grp (
     CONSTRAINT grp_account_group_idx UNIQUE (username, domain, grp)
 );
 
-INSERT INTO version (table_name, table_version) values ('re_grp','1');
+INSERT INTO version (table_name, table_version) values ('re_grp','2');
 CREATE TABLE re_grp (
     id SERIAL PRIMARY KEY NOT NULL,
     reg_exp VARCHAR(128) DEFAULT '' NOT NULL,

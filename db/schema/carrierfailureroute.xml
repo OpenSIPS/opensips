@@ -9,7 +9,7 @@
 	  
 	  <table id="carrierfailureroute" xmlns:db="http://docbook.org/ns/docbook">
 		  <name>carrierfailureroute</name>
-		  <version>1</version>
+		  <version>2</version>
 		  <type db="mysql">&MYSQL_TABLE_TYPE;</type>
 		  <description>
 			  <db:para>This table is used by the carrierroute module to provide failure routing capabilities. More information is available at: http://www.opensips.org/docs/modules/devel/carrierroute.html

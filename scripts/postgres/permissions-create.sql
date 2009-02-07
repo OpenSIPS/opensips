@@ -1,4 +1,4 @@
-INSERT INTO version (table_name, table_version) values ('trusted','4');
+INSERT INTO version (table_name, table_version) values ('trusted','5');
 CREATE TABLE trusted (
     id SERIAL PRIMARY KEY NOT NULL,
     src_ip VARCHAR(50) NOT NULL,
@@ -9,7 +9,7 @@ CREATE TABLE trusted (
 
 CREATE INDEX trusted_peer_idx ON trusted (src_ip);
 
-INSERT INTO version (table_name, table_version) values ('address','3');
+INSERT INTO version (table_name, table_version) values ('address','4');
 CREATE TABLE address (
     id SERIAL PRIMARY KEY NOT NULL,
     grp SMALLINT DEFAULT 0 NOT NULL,

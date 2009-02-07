@@ -1,4 +1,4 @@
-INSERT INTO version (table_name, table_version) values ('usr_preferences','2');
+INSERT INTO version (table_name, table_version) values ('usr_preferences','3');
 CREATE TABLE usr_preferences (
     id NUMBER(10) PRIMARY KEY,
     uuid VARCHAR2(64) DEFAULT '',

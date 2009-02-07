@@ -1,4 +1,4 @@
-INSERT INTO version (table_name, table_version) values ('imc_rooms','1');
+INSERT INTO version (table_name, table_version) values ('imc_rooms','2');
 CREATE TABLE imc_rooms (
     id SERIAL PRIMARY KEY NOT NULL,
     name VARCHAR(64) NOT NULL,
@@ -7,7 +7,7 @@ CREATE TABLE imc_rooms (
     CONSTRAINT imc_rooms_name_domain_idx UNIQUE (name, domain)
 );
 
-INSERT INTO version (table_name, table_version) values ('imc_members','1');
+INSERT INTO version (table_name, table_version) values ('imc_members','2');
 CREATE TABLE imc_members (
     id SERIAL PRIMARY KEY NOT NULL,
     username VARCHAR(64) NOT NULL,

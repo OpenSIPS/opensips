@@ -1,4 +1,4 @@
-INSERT INTO version (table_name, table_version) values ('userblacklist','1');
+INSERT INTO version (table_name, table_version) values ('userblacklist','2');
 CREATE TABLE userblacklist (
     id SERIAL PRIMARY KEY NOT NULL,
     username VARCHAR(64) DEFAULT '' NOT NULL,
@@ -9,7 +9,7 @@ CREATE TABLE userblacklist (
 
 CREATE INDEX userblacklist_userblacklist_idx ON userblacklist (username, domain, prefix);
 
-INSERT INTO version (table_name, table_version) values ('globalblacklist','1');
+INSERT INTO version (table_name, table_version) values ('globalblacklist','2');
 CREATE TABLE globalblacklist (
     id SERIAL PRIMARY KEY NOT NULL,
     prefix VARCHAR(64) DEFAULT '' NOT NULL,

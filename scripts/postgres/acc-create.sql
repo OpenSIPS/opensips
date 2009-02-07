@@ -1,4 +1,4 @@
-INSERT INTO version (table_name, table_version) values ('acc','4');
+INSERT INTO version (table_name, table_version) values ('acc','5');
 CREATE TABLE acc (
     id SERIAL PRIMARY KEY NOT NULL,
     method VARCHAR(16) DEFAULT '' NOT NULL,
@@ -12,7 +12,7 @@ CREATE TABLE acc (
 
 CREATE INDEX acc_callid_idx ON acc (callid);
 
-INSERT INTO version (table_name, table_version) values ('missed_calls','3');
+INSERT INTO version (table_name, table_version) values ('missed_calls','4');
 CREATE TABLE missed_calls (
     id SERIAL PRIMARY KEY NOT NULL,
     method VARCHAR(16) DEFAULT '' NOT NULL,
