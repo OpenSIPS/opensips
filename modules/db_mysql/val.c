@@ -290,7 +290,7 @@ int db_mysql_val2bind(const db_val_t* v, MYSQL_BIND *binds, unsigned int i)
 			t = localtime( &VAL_TIME(v) );
 			mt = (MYSQL_TIME*)binds[i].buffer;
 			mt->year = 1900 + t->tm_year;
-			mt->month = t->tm_mon;
+			mt->month = (t->tm_mon)+1;
 			mt->day = t->tm_mday;
 			mt->hour = t->tm_hour;
 			mt->minute = t->tm_min;
