@@ -52,8 +52,8 @@
 
 
 struct msg_start {
-	int type;                         /* Type of the Message - Request/Response */
-	int len; 						/* length including delimiter */
+	int type;                 /* Type of the Message - Request/Response */
+	int len;                  /* length including delimiter */
 	union {
 		struct {
 			str method;       /* Method string */

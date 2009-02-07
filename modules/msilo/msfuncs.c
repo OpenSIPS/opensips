@@ -228,7 +228,7 @@ int m_build_headers(str *buf, str ctype, str contact, time_t date)
 		strncpy(p, CONTACT_SUFFIX, CONTACT_SUFFIX_LEN);
 		p += CONTACT_SUFFIX_LEN;
 	}
-	buf->len = p - buf->s;	
+	buf->len = p - buf->s;
 	return 0;
 error:
 	return -1;
