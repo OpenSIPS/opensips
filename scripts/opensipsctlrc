@@ -65,7 +65,7 @@
 # AWK="awk"
 
 # grep tool
- GREP="egrep"
+GREP="grep"
 
 # sed tool
 # SED="sed"
