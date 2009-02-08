@@ -66,6 +66,15 @@ struct dlg_profile_table {
 	struct dlg_profile_table *next;
 };
 
+typedef int (*set_dlg_profile_f)(struct sip_msg *msg, str *value,
+										struct dlg_profile_table *profile);
+
+typedef unsigned int (*get_profile_size_f)(struct dlg_profile_table *profile,
+										str *value);
+
+typedef int (*add_profiles_f)(char* profiles, unsigned int has_value);
+
+
 
 int add_profile_definitions( char* profiles, unsigned int has_value);
 
