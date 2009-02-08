@@ -94,7 +94,7 @@
 		<xsl:call-template name="column.trailing"/>
 	    </xsl:when>
 	    <xsl:when test="$type='string'">
-		<xsl:text>VARCHAR</xsl:text>
+		<xsl:text>CHAR</xsl:text>
 		<xsl:call-template name="column.size"/>
 		<xsl:call-template name="column.trailing"/>
 	    </xsl:when>
