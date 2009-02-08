@@ -51,8 +51,8 @@ MODULE_VERSION
  * increment this value if you change the table in
  * an backwards incompatible way
  */
-#define URI_TABLE_VERSION 1
-#define SUBSCRIBER_TABLE_VERSION 6
+#define URI_TABLE_VERSION 2
+#define SUBSCRIBER_TABLE_VERSION 7
 
 static void destroy(void);       /* Module destroy function */
 static int child_init(int rank); /* Per-child initialization function */
