@@ -49,7 +49,7 @@
 
 MODULE_VERSION
 
-#define TABLE_VERSION 6
+#define TABLE_VERSION 7
 
 /*
  * Module destroy function prototype
