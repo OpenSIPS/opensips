@@ -74,6 +74,8 @@ typedef unsigned int (*get_profile_size_f)(struct dlg_profile_table *profile,
 
 typedef int (*add_profiles_f)(char* profiles, unsigned int has_value);
 
+typedef struct dlg_profile_table* (*search_dlg_profile_f)(str *name);
+
 
 
 int add_profile_definitions( char* profiles, unsigned int has_value);

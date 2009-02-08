@@ -41,6 +41,7 @@ struct dlg_binds {
 	create_dlg_f         create_dlg;
 	get_dlg_f            get_dlg;
 	add_profiles_f       add_profiles;
+	search_dlg_profile_f search_profile;
 	set_dlg_profile_f    set_profile;
 	get_profile_size_f   get_profile_size;
 };

@@ -400,6 +400,7 @@ int load_dlg( struct dlg_binds *dlgb )
 	dlgb->create_dlg = w_create_dialog;
 	dlgb->get_dlg = w_get_dlg;
 	dlgb->add_profiles = add_profile_definitions;
+	dlgb->search_profile = search_dlg_profile;
 	dlgb->set_profile = set_dlg_profile;
 	dlgb->get_profile_size = get_profile_size;
 	return 1;
