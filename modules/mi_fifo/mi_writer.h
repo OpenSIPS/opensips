@@ -35,6 +35,7 @@ int  mi_writer_init( unsigned int size, char *ident);
 void mi_writer_destroy(void);
 
 int mi_write_tree( FILE *stream, struct mi_root *tree);
+int mi_flush_tree(FILE *stream, struct mi_root *tree);
 
 #endif /* _MI_WRITER_H_ */
 
