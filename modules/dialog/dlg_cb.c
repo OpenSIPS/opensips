@@ -88,15 +88,15 @@ void destroy_dlg_callbacks(unsigned int types)
 		if (create_cbs && create_cbs!=POINTER_CLOSED_MARKER) {
 			destroy_dlg_callbacks_list(create_cbs->first);
 			shm_free(create_cbs);
-			create_cbs = POINTER_CLOSED_MARKER;
 		}
+		create_cbs = POINTER_CLOSED_MARKER;
 	}
 	if (types&DLGCB_LOADED) {
 		if (load_cbs && load_cbs!=POINTER_CLOSED_MARKER) {
 			destroy_dlg_callbacks_list(load_cbs->first);
 			shm_free(load_cbs);
-			load_cbs = POINTER_CLOSED_MARKER;
 		}
+		load_cbs = POINTER_CLOSED_MARKER;
 	}
 }
 
@@ -135,7 +135,7 @@ int register_dlgcb(struct dlg_cell *dlg, int types, dialog_cb f,
 	cb->callback_param_free = ff;
 
 	if ( types==DLGCB_CREATED ) {
-		if (load_cbs==POINTER_CLOSED_MARKER) {
+		if (create_cbs==POINTER_CLOSED_MARKER) {
 			LM_CRIT("DLGCB_CREATED type registered after shutdown!?!\n");
 			goto error;
 		}
