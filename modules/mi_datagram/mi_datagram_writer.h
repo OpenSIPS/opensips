@@ -33,6 +33,7 @@
 int  mi_datagram_writer_init( unsigned int size, char *ident);
 
 int mi_datagram_write_tree( datagram_stream * dtgram, struct mi_root *tree);
+int mi_datagram_flush_tree( datagram_stream * dtgram, struct mi_root *tree);
 
 #endif /* _MI_DATAGRAM_WRITER_H_ */
 

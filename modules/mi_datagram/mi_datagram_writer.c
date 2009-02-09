@@ -153,9 +153,11 @@ static int datagram_recur_write_tree(datagram_stream *dtgram,
 									  struct mi_node *tree, int level)
 {
 	for( ; tree ; tree=tree->next ) {
-		if (mi_datagram_write_node( dtgram, tree, level)!=0) {
-			LM_ERR("failed to write -line too long!!!\n");
-			return -1;
+		if (!(tree->flags & MI_WRITTEN)) {	
+			if (mi_datagram_write_node( dtgram, tree, level)!=0) {
+				LM_ERR("failed to write -line too long!!!\n");
+				return -1;
+			}
 		}
 		if (tree->kids) {
 			if (datagram_recur_write_tree(dtgram, tree->kids, level+1)<0)
@@ -173,26 +175,28 @@ int mi_datagram_write_tree(datagram_stream * dtgram, struct mi_root *tree)
 	dtgram->current = dtgram->start;
 	dtgram->len = mi_write_buffer_len;
 
-	/* write the root node */
-	code.s = int2str((unsigned long)tree->code, &code.len);
-	if (code.len+tree->reason.len+1 > dtgram->len) {
-		LM_ERR("failed to write - reason too long!!!\n");
-		return -1;
+	if (!(tree->node.flags & MI_WRITTEN)) {
+		/* write the root node */
+		code.s = int2str((unsigned long)tree->code, &code.len);
+		if (code.len+tree->reason.len+1>dtgram->len) {
+			LM_ERR("failed to write - reason too long!\n");
+			return -1;
+		}
+	
+		memcpy( dtgram->start, code.s, code.len);
+		dtgram->current += code.len;
+		*(dtgram->current) = ' ';
+		dtgram->current++;
+
+		if (tree->reason.len) {
+			memcpy(dtgram->current, tree->reason.s, tree->reason.len);
+			dtgram->current += tree->reason.len;
+		}
+
+		*(dtgram->current) = '\n';
+		dtgram->current++;
+		dtgram->len -= code.len + 1 + tree->reason.len+1;
 	}
-
-	memcpy( dtgram->start, code.s, code.len);
-	dtgram->current += code.len;
-	*(dtgram->current) = ' ';
-	dtgram->current++;
-
-	if (tree->reason.len) {
-		memcpy(dtgram->current, tree->reason.s, tree->reason.len);
-		dtgram->current += tree->reason.len;
-	}
-
-	*(dtgram->current) = '\n';
-	dtgram->current++;
-	dtgram->len -= code.len + 1 + tree->reason.len+1;
 
 	if (datagram_recur_write_tree(dtgram, tree->node.kids, 0)!=0)
 		return -1;
@@ -202,6 +206,95 @@ int mi_datagram_write_tree(datagram_stream * dtgram, struct mi_root *tree)
 		return -1;
 	}
 
+	*(dtgram->current) = '\n';
+	dtgram->len--;
+	*(dtgram->current) = '\0';
+
+	return 0;
+}
+
+static int mi_datagram_recur_flush_tree(datagram_stream * dtgram,
+										struct mi_node *tree, int level)
+{
+	struct mi_node *kid, *tmp;	
+	int ret;
+
+	for(kid = tree->kids ; kid ; ){		
+		/* write the current kid */
+		if (!(kid->flags & MI_WRITTEN)){
+			if (mi_datagram_write_node( dtgram, kid, level)<0) {
+				LM_ERR("failed to write -line too long!!!\n");
+				return -1;
+			}
+			/* we are sure that this node has been written 
+		 	* => avoid writing it again */
+			kid->flags |= MI_WRITTEN;
+		}
+			
+		/* write the current kid's children */
+		if ((ret = mi_datagram_recur_flush_tree(dtgram, kid, level+1))<0)
+			return -1;
+		else if (ret > 0)
+			return ret;
+	
+		if (!(kid->flags & MI_NOT_COMPLETED)){
+			tmp = kid;
+			kid = kid->next;
+			tree->kids = kid;
+
+			if(!tmp->kids){
+				/* this node does not have any kids */
+				free_mi_node(tmp); 
+			}
+		}
+		else{
+			/* the node will have more kids => to keep the tree shape, do not
+			 * flush any other node for now */
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
+int mi_datagram_flush_tree(datagram_stream * dtgram, struct mi_root *tree)
+{
+	str code;
+
+	if (!(tree->node.flags & MI_WRITTEN)) {
+		/* write the root node */
+		code.s = int2str((unsigned long)tree->code, &code.len);
+		if (code.len+tree->reason.len+1>dtgram->len) {
+			LM_ERR("failed to write - reason too long!\n");
+			return -1;
+		}
+		memcpy( dtgram->start, code.s, code.len);
+		dtgram->current += code.len;
+		*(dtgram->current) = ' ';
+		dtgram->current++;
+
+		if (tree->reason.len) {
+			memcpy(dtgram->current, tree->reason.s, tree->reason.len);
+			dtgram->current += tree->reason.len;
+		}
+		
+		*(dtgram->current) = '\n';
+		dtgram->current++;
+		dtgram->len -= code.len + 1 + tree->reason.len+1;
+		
+		/* we are sure that this node has been written 
+		 * => avoid writing it again */
+		tree->node.flags |= MI_WRITTEN;
+	}
+
+	if (mi_datagram_recur_flush_tree(dtgram, &tree->node, 0)<0)
+		return -1;
+
+	if (dtgram->len<=0) {
+		LM_ERR("failed to write - EOC does not fit in!\n");
+		return -1;
+	}
+	
 	*(dtgram->current) = '\n';
 	dtgram->len--;
 	*(dtgram->current) = '\0';
