@@ -905,7 +905,7 @@ int main(int argc, char** argv)
 
 	/*init pkg mallocs (before parsing cfg or cmd line !)*/
 	if (init_pkg_mallocs()==-1)
-		goto error;
+		goto error00;
 
 	init_route_lists();
 	/* process command line (get port no, cfg. file path etc) */
@@ -929,7 +929,7 @@ int main(int argc, char** argv)
 					shm_mem_size=strtol(optarg, &tmp, 10) * 1024 * 1024;
 					if (tmp &&(*tmp)){
 						LM_ERR("bad shmem size number: -m %s\n", optarg);
-						goto error;
+						goto error00;
 					};
 
 					break;
@@ -937,27 +937,27 @@ int main(int argc, char** argv)
 					maxbuffer=strtol(optarg, &tmp, 10);
 					if (tmp &&(*tmp)){
 						LM_ERR("bad max buffer size number: -b %s\n", optarg);
-						goto error;
+						goto error00;
 					}
 					break;
 			case 'l':
 					if (parse_phostport(optarg, strlen(optarg), &tmp, &tmp_len,
 											&port, &proto)<0){
 						LM_ERR("bad -l address specifier: %s\n", optarg);
-						goto error;
+						goto error00;
 					}
 					tmp[tmp_len]=0; /* null terminate the host */
 					/* add a new addr. to our address list */
 					if (add_listen_iface(tmp, port, proto, 0)!=0){
 						LM_ERR("failed to add new listen address\n");
-						goto error;
+						goto error00;
 					}
 					break;
 			case 'n':
 					children_no=strtol(optarg, &tmp, 10);
 					if ((tmp==0) ||(*tmp)){
 						LM_ERR("bad process number: -n %s\n", optarg);
-						goto error;
+						goto error00;
 					}
 					break;
 			case 'v':
@@ -1000,7 +1000,7 @@ int main(int argc, char** argv)
 					tcp_children_no=strtol(optarg, &tmp, 10);
 					if ((tmp==0) ||(*tmp)){
 						LM_ERR("bad process number: -N %s\n", optarg);
-						goto error;
+						goto error00;
 					}
 #else
 					LM_WARN("tcp support not compiled in\n");
@@ -1012,7 +1012,7 @@ int main(int argc, char** argv)
 					if (tcp_poll_method==POLL_NONE){
 						LM_ERR("bad poll method name: -W %s\ntry "
 							"one of %s.\n", optarg, poll_support);
-						goto error;
+						goto error00;
 					}
 #else
 					LM_WARN("tcp support not compiled in\n");
@@ -1056,10 +1056,10 @@ int main(int argc, char** argv)
 						LM_ERR("Unknown option `-%c`.\n", optopt);
 					else
 						LM_ERR("Unknown option character `\\x%x`.\n", optopt);
-					goto error;
+					goto error00;
 			case ':':
 					LM_ERR("Option `-%c` requires an argument.\n", optopt);
-					goto error;
+					goto error00;
 			default:
 					abort();
 		}
@@ -1075,7 +1075,7 @@ int main(int argc, char** argv)
 	if (cfg_stream==0){
 		LM_ERR("loading config file(%s): %s\n", cfg_file,
 				strerror(errno));
-		goto error;
+		goto error00;
 	}
 
 	/* seed the prng, try to use /dev/urandom if possible */
@@ -1109,13 +1109,13 @@ try_again:
 	   must be done before reading the config */
 	if (pre_init_tls()<0){
 		LM_CRIT("could not pre_init_tls, exiting...\n");
-		goto error;
+		goto error00;
 	}
 #endif /* USE_TLS */
 
 	if (preinit_black_lists()!=0) {
 		LM_CRIT("failed to alloc black list's anchor\n");
-		goto error;
+		goto error00;
 	}
 
 	/* parse the config file, prior to this only default values
@@ -1123,7 +1123,7 @@ try_again:
 	yyin=cfg_stream;
 	if ((yyparse()!=0)||(cfg_errors)){
 		LM_ERR("bad config file (%d errors)\n", cfg_errors);
-		goto error;
+		goto error00;
 	}
 
 	if (config_check>1 && check_rls()!=0) {
@@ -1157,18 +1157,18 @@ try_again:
 	if (user){
 		if (user2uid(&uid, &gid, user)<0){
 			LM_ERR("bad user name/uid number: -u %s\n", user);
-			goto error;
+			goto error00;
 		}
 	}
 	if (group){
 		if (group2gid(&gid, group)<0){
 			LM_ERR("bad group name/gid number: -u %s\n", group);
-			goto error;
+			goto error00;
 		}
 	}
 	if (fix_all_socket_lists()!=0){
 		LM_ERR("failed to initialize list addresses\n");
-		goto error;
+		goto error00;
 	}
 	/* print all the listen addresses */
 	printf("Listening on \n");
@@ -1323,5 +1323,6 @@ error:
 	kill_all_children(SIGTERM);
 	/*clean-up*/
 	cleanup(0);
+error00:
 	return ret;
 }
