@@ -174,8 +174,10 @@ int avpops_db_init(const str* db_table, str** db_cols)
 	return 0;
 error:
 	for(i--;i>=0;i--){
-		db_urls[i].dbf.close(db_urls[i].hdl);
-		db_urls[i].hdl = NULL;
+		if (db_urls[i].hdl) {
+			db_urls[i].dbf.close(db_urls[i].hdl);
+			db_urls[i].hdl = NULL;
+		}
 	}
 	return -1;
 }
