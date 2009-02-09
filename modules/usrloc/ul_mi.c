@@ -320,7 +320,6 @@ struct mi_root* mi_usrloc_dump(struct mi_root *cmd, void *param)
 	udomain_t* dom;
 	time_t t;
 	char *p;
-	int max;
 	int len;
 	int n;
 	int i;
@@ -345,7 +344,7 @@ struct mi_root* mi_usrloc_dump(struct mi_root *cmd, void *param)
 
 	for( dl=root ; dl ; dl=dl->next ) {
 		/* add a domain node */
-		node = add_mi_node_child( rpl, 0, "Domain", 6,
+		node = add_mi_node_child( rpl, MI_NOT_COMPLETED, "Domain", 6,
 					dl->name.s, dl->name.len);
 		if (node==0)
 			goto error;
@@ -358,18 +357,19 @@ struct mi_root* mi_usrloc_dump(struct mi_root *cmd, void *param)
 			goto error;
 
 		/* add the entries per hash */
-		for(i=0,n=0,max=0; i<dom->size; i++) {
+		for(i=0,n=0; i<dom->size; i++) {
 			lock_ulslot( dom, i);
 
-			n += dom->table[i].n;
-			if(max<dom->table[i].n)
-				max= dom->table[i].n;
 			for( r = dom->table[i].first ; r ; r=r->next ) {
 				/* add entry */
 				if (mi_add_aor_node( node, r, t, short_dump)!=0) {
 					unlock_ulslot( dom, i);
 					goto error;
 				}
+				n++;
+				/* at each 50 AORs, flush the tree */
+				if ( (n % 50) == 0 )
+					flush_mi_tree(rpl_tree);
 			}
 
 			unlock_ulslot( dom, i);
@@ -378,11 +378,6 @@ struct mi_root* mi_usrloc_dump(struct mi_root *cmd, void *param)
 		/* add more attributes to the domain node */
 		p= int2str((unsigned long)n, &len);
 		attr = add_mi_attr( node, MI_DUP_VALUE, "records", 7, p, len);
-		if (attr==0)
-			goto error;
-
-		p= int2str((unsigned long)max, &len);
-		attr = add_mi_attr( node, MI_DUP_VALUE, "max_slot", 8, p, len);
 		if (attr==0)
 			goto error;
 
