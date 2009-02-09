@@ -35,7 +35,9 @@
 
 int xr_writer_init( unsigned int size );
 char * xr_build_response( xmlrpc_env * env, struct mi_root * tree );
+char * xr_flush_response( xmlrpc_env * env, struct mi_root * tree );
 int xr_build_response_array( xmlrpc_env * env, struct mi_root * tree );
+int xr_flush_response_array( xmlrpc_env * env, struct mi_root * tree );
 
 
 #endif /* _XR_WRITER_H_ */

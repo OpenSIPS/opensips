@@ -218,7 +218,7 @@ xmlrpc_value*  default_method	(xmlrpc_env* 	env,
 
 	LM_DBG("done parsing the mi tree.\n");
 
-	if ( ( mi_rpl = run_mi_cmd(f, mi_cmd, NULL, NULL) ) == 0 ){
+	if ((mi_rpl=run_mi_cmd(f,mi_cmd,(mi_flush_f*)xr_flush_response,env))==0){
 		LM_ERR("command (%s) processing failed.\n", methodName);
 		xmlrpc_env_set_fault_formatted(env, XMLRPC_INTERNAL_ERROR, 
 			"Command (%s) processing failed.\n", methodName);
