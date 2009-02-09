@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE table PUBLIC "-//opensips.org//DTD DBSchema V1.1//EN" 
+  "http://opensips.org/pub/opensips/dbschema/dtd/1.1/dbschema.dtd" [
+
+<!ENTITY % entities SYSTEM "entities.xml">
+%entities;
+
+]>
+
+<table id="load_balancer" xmlns:db="http://docbook.org/ns/docbook">
+	<name>load_balancer</name>
+	<version>1</version>
+	<type db="mysql">&MYSQL_TABLE_TYPE;</type>
+	<description>
+		<db:para>This table is used by the Load-Balancer module to store
+		information about the destinations the balance the calls between.
+		More information can be found at: &OPENSIPS_MOD_DOC;load_balancer.html.
+		</db:para>
+	</description>
+
+	<column id="id">
+		<name>id</name>
+		<type>unsigned int</type>
+		<size>&table_id_len;</size>
+		<autoincrement/>
+		<primary/>
+		<type db="dbtext">int,auto</type>
+		<description>unique ID of the destination
+		</description>
+	</column>
+
+	<column id="group_id">
+		<name>group_id</name>
+		<type>unsigned int</type>
+		<size>11</size>
+		<default>0</default>
+		<description>The group the destination belongs to</description>
+	</column>
+
+	<column id="dst_uri">
+		<name>dst_uri</name>
+		<type>string</type>
+		<size>128</size>
+		<description>Destination address as a SIP URI</description>
+	</column>
+
+	<column id="resources">
+		<name>resources</name>
+		<type>string</type>
+		<size>255</size>
+		<description>String with the definition of the resource provided
+		by the destination and the capacity of each resource</description>
+	</column>
+
+	<column id="description">
+		<name>description</name>
+		<type>string</type>
+		<size>128</size>
+		<default></default>
+		<description>Text description of the destination</description>
+	</column>
+</table>

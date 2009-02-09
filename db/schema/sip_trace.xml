@@ -37,7 +37,7 @@
     <column id="callid">
         <name>callid</name>
         <type>string</type>
-        <size>256</size>
+        <size>255</size>
         <default/>
         <description>call ID from SIP message</description>
         <natural/>

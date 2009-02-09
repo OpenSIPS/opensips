@@ -100,7 +100,7 @@
 
 	<column>
 		<name>caller_route_set</name>
-		<type>string</type>
+		<type>text</type>
 		<size>512</size>
 		<null/>
 		<description>Route set on the caller side.</description>
@@ -108,7 +108,7 @@
 
 	<column>
 		<name>callee_route_set</name>
-		<type>string</type>
+		<type>text</type>
 		<size>512</size>
 		<null/>
 		<description>Route set on on the caller side.</description>
