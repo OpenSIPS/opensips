@@ -57,7 +57,7 @@ Anca-Maria Vamanu
 
         1.5. Exported MI Functions
 
-              1.5.1. DR_RELOAD
+              1.5.1. dr_reload
 
         1.6. Installation
 
@@ -744,14 +744,14 @@ if (is_from_gw("3","1") {
 
 1.5. Exported MI Functions
 
-1.5.1.  DR_RELOAD
+1.5.1.  dr_reload
 
    Command to reload routing rules from database.
 
    It takes no parameter.
 
    MI FIFO Command Format:
-                :DR_RELOAD:fifo_reply
+                :dr_reload:fifo_reply
                 _empty_line_
 
 1.6. Installation

@@ -1327,7 +1327,7 @@ if (is_from_gw("3","1") {
 	<title>Exported MI Functions</title>
 	<section>
 		<title>
-		<function moreinfo="none">DR_RELOAD</function>
+		<function moreinfo="none">dr_reload</function>
 		</title>
 		<para>
 		Command to reload routing rules from database.
@@ -1340,7 +1340,7 @@ if (is_from_gw("3","1") {
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		:DR_RELOAD:fifo_reply
+		:dr_reload:fifo_reply
 		_empty_line_
 		</programlisting>
 	</section>

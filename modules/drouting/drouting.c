@@ -129,7 +129,7 @@ static int goes_to_gw_1(struct sip_msg* msg, char* f1, char* f2);
 static struct mi_root* dr_reload_cmd(struct mi_root *cmd_tree, void *param);
 static int mi_child_init();
 
-#define RELOAD_MI_CMD  "DR_RELOAD"
+#define RELOAD_MI_CMD  "dr_reload"
 
 
 MODULE_VERSION
