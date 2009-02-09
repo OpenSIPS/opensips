@@ -1,12 +1,12 @@
 INSERT INTO version (table_name, table_version) values ('closeddial','1');
 CREATE TABLE closeddial (
     id INT(10) UNSIGNED AUTO_INCREMENT PRIMARY KEY NOT NULL,
-    username VARCHAR(64) DEFAULT '' NOT NULL,
-    domain VARCHAR(64) DEFAULT '' NOT NULL,
-    cd_username VARCHAR(64) DEFAULT '' NOT NULL,
-    cd_domain VARCHAR(64) DEFAULT '' NOT NULL,
-    group_id VARCHAR(64) DEFAULT '' NOT NULL,
-    new_uri VARCHAR(128) DEFAULT '' NOT NULL,
+    username CHAR(64) DEFAULT '' NOT NULL,
+    domain CHAR(64) DEFAULT '' NOT NULL,
+    cd_username CHAR(64) DEFAULT '' NOT NULL,
+    cd_domain CHAR(64) DEFAULT '' NOT NULL,
+    group_id CHAR(64) DEFAULT '' NOT NULL,
+    new_uri CHAR(128) DEFAULT '' NOT NULL,
     CONSTRAINT cd_idx1 UNIQUE (username, domain, cd_domain, cd_username, group_id)
 ) ENGINE=MyISAM;
 

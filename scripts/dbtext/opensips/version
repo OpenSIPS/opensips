@@ -5,6 +5,7 @@ address:4
 aliases:1005
 carrierfailureroute:2
 carrierroute:3
+closeddial:1
 cpl:2
 dbaliases:2
 dialog:3
@@ -22,6 +23,7 @@ gw:8
 imc_members:2
 imc_rooms:2
 lcr:3
+load_balancer:1
 location:1005
 missed_calls:4
 pdt:2

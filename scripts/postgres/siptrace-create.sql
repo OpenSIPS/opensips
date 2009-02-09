@@ -2,7 +2,7 @@ INSERT INTO version (table_name, table_version) values ('sip_trace','3');
 CREATE TABLE sip_trace (
     id SERIAL PRIMARY KEY NOT NULL,
     time_stamp TIMESTAMP WITHOUT TIME ZONE DEFAULT '1900-01-01 00:00:01' NOT NULL,
-    callid VARCHAR(256) DEFAULT '' NOT NULL,
+    callid VARCHAR(255) DEFAULT '' NOT NULL,
     traced_user VARCHAR(128) DEFAULT '' NOT NULL,
     msg TEXT NOT NULL,
     method VARCHAR(32) DEFAULT '' NOT NULL,

@@ -5,7 +5,7 @@ CREATE TABLE dr_gateways (
     address CHAR(128) NOT NULL,
     strip INT(11) UNSIGNED DEFAULT 0 NOT NULL,
     pri_prefix CHAR(16) DEFAULT NULL,
-    attrs CHAR(256) DEFAULT NULL,
+    attrs CHAR(255) DEFAULT NULL,
     description CHAR(128) DEFAULT '' NOT NULL
 ) ENGINE=MyISAM;
 

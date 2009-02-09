@@ -5,7 +5,7 @@ CREATE TABLE dr_gateways (
     address VARCHAR(128) NOT NULL,
     strip INTEGER DEFAULT 0 NOT NULL,
     pri_prefix VARCHAR(16) DEFAULT NULL,
-    attrs VARCHAR(256) DEFAULT NULL,
+    attrs VARCHAR(255) DEFAULT NULL,
     description VARCHAR(128) DEFAULT '' NOT NULL
 );
 

@@ -20,6 +20,8 @@ carrierfailureroute|
 carrierfailureroute|2
 carrierroute|
 carrierroute|3
+closeddial|
+closeddial|1
 cpl|
 cpl|2
 dbaliases|
@@ -54,6 +56,8 @@ imc_rooms|
 imc_rooms|2
 lcr|
 lcr|3
+load_balancer|
+load_balancer|1
 location|
 location|1005
 missed_calls|
