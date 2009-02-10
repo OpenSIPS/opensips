@@ -220,6 +220,7 @@ modparam("closeddial", "user_domain", 1)
 </programlisting>
 		</example>
 	</section>
+	</section>
 
 	<section>
 	<title>Exported Functions</title>
