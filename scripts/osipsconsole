@@ -5845,7 +5845,12 @@ sub opensips_drop() {
 sub mysql_opensips_create() {
 
 	my (@content, $temp, @query, $i, $ans, $TABLE, $test);
-        $DB_SCHEMA .= "/mysql";
+	if ( -d $DATA_DIR."/mysql" ) {
+        	$DB_SCHEMA=$DATA_DIR."/mysql";
+        } else {
+                $DB_SCHEMA="./mysql";
+        }
+
 	if ( $#_ lt 0 ) { 
 		print "opensips_create function takes one parameter\n";
 		return;
@@ -5916,8 +5921,14 @@ sub mysql_opensips_create() {
 
 ### pgsql database create functions 
 sub pgsql_opensips_create() {	# pars: <database name>
-        $DB_SCHEMA .= "/postgres";
+        
 	my ( $db, $TABLE, @query, $temp, @content, $i, $ans );
+
+        if ( -d $DATA_DIR."/mysql" ) {
+                $DB_SCHEMA=$DATA_DIR."/postgres";
+        } else {
+                $DB_SCHEMA="./postgres";
+        }
 
 	if ( $#_ != 0 ) {
 		print "opensips_create function takes one param\n";
@@ -6035,8 +6046,13 @@ sub pgsql_opensips_create() {	# pars: <database name>
 
 
 sub dbtext_opensips_create () { # pars: <database name>
-        $DB_SCHEMA .= "/dbtext/opensips";
 	my ( $DB_PATH, $TABLE, $ANSWER );
+
+        if ( -d $DATA_DIR."/mysql" ) {
+                $DB_SCHEMA=$DATA_DIR."/dbtext/opensips";
+        } else {
+                $DB_SCHEMA="./dbtest/opensips";
+        }
 
 	if ( $#_ != 0 ) {
 		print "opensips_create function takes one param (DB_PATH)\n";
@@ -6051,7 +6067,6 @@ sub dbtext_opensips_create () { # pars: <database name>
 
 	foreach $TABLE ( @STANDARD_TABLES ) {
 	    print "Creating core table: $TABLE\n";
-print $DB_SCHEMA."/".$TABLE . " " . $DB_PATH."/".$TABLE;
 	    `cp $DB_SCHEMA/$TABLE $DB_PATH/$TABLE`;
 	    if ( $? != 0 ) {
 		print "Creating core tables failed!\n";
@@ -6073,8 +6088,15 @@ print $DB_SCHEMA."/".$TABLE . " " . $DB_PATH."/".$TABLE;
 } 
 
 sub bdb_opensips_create() { # pars: <DB_PATH>
-        $DB_SCHEMA .= "/db_berkeley/opensips";
+
 	my ($TABLE, $ans);
+
+        if ( -d $DATA_DIR."/mysql" ) {
+                $DB_SCHEMA=$DATA_DIR."/db_berkeley/opensips";
+        } else {
+                $DB_SCHEMA="./db_berkeley/opensips";
+        }
+
 	if ( $#_ != 0 ) {
 		print "opensips_create param [DB_PATH]\n";
 		return;
@@ -6115,8 +6137,14 @@ sub bdb_opensips_create() { # pars: <DB_PATH>
 ### mysql presence create functions  
 #
 sub mysql_presence_create(){ # pars: <database name>
-        $DB_SCHEMA .= "/mysql";
+
 	my (@content, $temp, @query, $i, $TABLE);
+
+        if ( -d $DATA_DIR."/mysql" ) {
+                $DB_SCHEMA=$DATA_DIR."/mysql";
+        } else {
+                $DB_SCHEMA="./mysql";
+        }
 
 	if ( $#_ lt 0 ) {
 		print "presence_create function takes one parameter\n";
@@ -6148,8 +6176,14 @@ sub mysql_presence_create(){ # pars: <database name>
 ### pgsql presence create functions  
 #
 sub pgsql_presence_create(){ # pars: <database name>
-        $DB_SCHEMA .= "/postgres";
+
 	my (@content, $temp, @query, $i, $TABLE);
+
+        if ( -d $DATA_DIR."/mysql" ) {
+                $DB_SCHEMA=$DATA_DIR."/postgres";
+        } else {
+                $DB_SCHEMA="./postgres";
+        }
 
 	if ( $#_ != 0 ) {
 		print "presence_create function takes one parameter\n";
@@ -6203,8 +6237,13 @@ sub pgsql_presence_create(){ # pars: <database name>
 } 
 
 sub dbtext_presence_create () { # pars: <database name>
-        $DB_SCHEMA .= "/dbtext/opensips";
 	my ( $DB_PATH, $TABLE );
+        if ( -d $DATA_DIR."/mysql" ) {
+                $DB_SCHEMA=$DATA_DIR."/dbtext/opensips";
+        } else {
+                $DB_SCHEMA="./dbtext/opensips";
+        }
+
 	if ( $#_ != 0 ) {
 		print "presence_create function takes one param (DB_PATH)";
 		return;
@@ -6240,8 +6279,13 @@ sub dbtext_presence_create () { # pars: <database name>
 
 
 sub bdb_presence_create() {# pars: <DB_PATH>
-        $DB_SCHEMA .= "/db_berkeley/opensips";
 	my ($TABLE);
+
+        if ( -d $DATA_DIR."/mysql" ) {
+                $DB_SCHEMA=$DATA_DIR."/db_berkeley/opensips";
+        } else {
+                $DB_SCHEMA="./db_berkeley/opensips";
+        }
 
 	if ( $#_ != 0 ) {
 		print "presence_create param [DB_PATH]\n";
@@ -6287,8 +6331,13 @@ sub bdb_presence_create() {# pars: <DB_PATH>
 ### mysql extra functions  
 #
 sub mysql_extra_create() { # pars: <database name>
-        $DB_SCHEMA .= "/mysql";
 	my (@content, $temp, @query, $i, $TABLE);
+
+        if ( -d $DATA_DIR."/mysql" ) {
+                $DB_SCHEMA=$DATA_DIR."/mysql";
+        } else {
+                $DB_SCHEMA="./mysql";
+        }
 
 	if ( $#_ lt 0 ) {
 		print "extra_create function takes one param\n";
@@ -6315,8 +6364,12 @@ sub mysql_extra_create() { # pars: <database name>
 
 ### pgsql extra functions  
 sub pgsql_extra_create() { # pars: <database name>
-        $DB_SCHEMA .= "/postgres";
 	my (@content, $temp, @query, $i, $TABLE);
+        if ( -d $DATA_DIR."/mysql" ) {
+                $DB_SCHEMA=$DATA_DIR."/postgres";
+        } else {
+                $DB_SCHEMA="./postgres";
+        }
 
 	if ( $#_ != 0 ) {
 		print "extra_create function takes one param\n";
@@ -6377,8 +6430,14 @@ sub pgsql_extra_create() { # pars: <database name>
 
 
 sub dbtext_extra_create() { # pars: <database name>
-        $DB_SCHEMA .= "/dbtext/opensips";
+       
 	my ( $DB_PATH, $TABLE );
+        if ( -d $DATA_DIR."/mysql" ) {
+                $DB_SCHEMA=$DATA_DIR."/dbtext/opensips";
+        } else {
+                $DB_SCHEMA="./dbtext/opensips";
+        }
+
 	if ( $#_ != 0 ) {
 		print "extra_create function takes one param\n";
 		return;
@@ -6401,8 +6460,13 @@ sub dbtext_extra_create() { # pars: <database name>
 
 
 sub bdb_extra_create() { # pars: <DB_PATH>
-        $DB_SCHEMA .= "/db_berkeley/opensips";
+        
 	my ($TABLE);
+        if ( -d $DATA_DIR."/mysql" ) {
+                $DB_SCHEMA=$DATA_DIR."/db_berkeley/opensips";
+        } else {
+                $DB_SCHEMA="./db_berkeley/opensips";
+        }
 
 	if ( $#_ != 0 ) {
 		print "extra_create function takes one param (DB_PATH)\n";
