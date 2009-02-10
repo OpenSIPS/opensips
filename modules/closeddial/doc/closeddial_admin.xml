@@ -10,7 +10,7 @@
 		This module provides functionality which allows to group users
 		using a common field, in such a way that a particular group defines
 		abbreviated codes for users, allowing closed dialing within the group,
-		locating users by their abbreviated code, besides their full
+		locating users by their abbreviated code, besides their 
 		full identification. This module offers a functionality similar to
 		Centrex.
 		The relationship between users and their abbreviated codes, and their
@@ -96,8 +96,8 @@ modparam("closeddial", "user_column", "user")
 	<section>
 		<title><varname>domain_column</varname> (string)</title>
 		<para>
-		Column of the table which stores the group_id which groups
-		the usernames.
+		Column of the table which stores the domain associated to 
+		usernames.
 		</para>
 		<para>
 		<emphasis>
@@ -241,7 +241,7 @@ modparam("closeddial", "user_domain", 1)
 		<itemizedlist>
 		<listitem>
 			<para><emphasis>domain</emphasis>  
-			Table where sarching is going to be perfomed on.
+			Table where searching is going to be perfomed on.
 			</para>
 		</listitem>
 		<listitem>
@@ -252,7 +252,7 @@ modparam("closeddial", "user_domain", 1)
 		</listitem>
 		</itemizedlist>
 		<para>
-			Both of the parameters can contiain pseudovariables.
+			Both of the parameters can contain pseudovariables.
 		</para>
 		<para>
 		This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
