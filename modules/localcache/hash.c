@@ -173,7 +173,12 @@ void lcache_htable_remove(str* attr)
 	lock_release(&cache_htable[hash_code].lock);
 
 }
-
+/*
+ *	return :
+ *		1  - if found
+ *		0  - if not found
+ *	   -1  - if error
+ * */
 int lcache_htable_fetch(str* attr, str* res)
 {
 	int hash_code;
@@ -201,7 +206,7 @@ int lcache_htable_fetch(str* attr, str* res)
 					cache_htable[hash_code].entries = NULL;
 
 				lock_release(&cache_htable[hash_code].lock);
-				return -1;
+				return 0;
 			}
 			value = (char*)pkg_malloc(it->value.len);
 			if(value == NULL)
@@ -222,5 +227,5 @@ int lcache_htable_fetch(str* attr, str* res)
 	}
 	
 	lock_release(&cache_htable[hash_code].lock);
-	return -1;
+	return 0;
 }
