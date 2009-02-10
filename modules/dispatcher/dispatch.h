@@ -97,5 +97,7 @@ int ds_is_from_list(struct sip_msg *_m, int group);
  */
 void ds_check_timer(unsigned int ticks, void* param);
 
+int check_options_rplcode(int code);
+
 #endif
 

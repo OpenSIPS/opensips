@@ -489,6 +489,28 @@ modparam("dispatcher", "force_dst", 1)
  		</example>
 	</section>
 
+	<section>
+ 		<title><varname>options_reply_codes</varname> (str)</title>
+ 		<para>
+		This parameter must contain a list of SIP reply codes separated by comma.
+		The codes defined here will be considered as valid reply codes for OPTIONS
+		messages used for pinging, apart for 200.
+ 		</para>
+ 		<para>
+ 		<emphasis>
+ 			Default value is <quote>NULL</quote>.
+ 		</emphasis>
+ 		</para>
+ 		<example>
+ 		<title>Set the <quote>options_reply_codes</quote> parameter</title>
+ <programlisting format="linespecific">
+ ...
+ modparam("dispatcher", "options_reply_codes", "501, 403")
+ ...
+ </programlisting>
+ 		</example>
+	</section>
+
 	</section>
 
 	<section>
