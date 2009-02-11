@@ -317,7 +317,10 @@ static int convert_row(db_res_t* _res, db_row_t* _r, dmap_t* _d)
 			{
 				size_t len = _d->len[i];
 				char *pstr = pkg_malloc(len+1);
-				if (!pstr) goto nomem;
+
+				if (pstr == NULL)
+					return -1;
+
 				memcpy(pstr, _d->pv[i].c, len);
 				pstr[len] = '\0';
 				VAL_FREE(v) = 1;
