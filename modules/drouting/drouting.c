@@ -106,8 +106,8 @@ int unode = 0;
 
 /* lock, ref counter and flag used for reloading the date */
 static gen_lock_t *ref_lock = 0;
-static volatile int data_refcnt = 0;
-static volatile int reload_flag = 0;
+static int* data_refcnt = 0;
+static int* reload_flag = 0;
 
 static int dr_init(void);
 static int dr_child_init(int rank);
@@ -224,13 +224,13 @@ static inline int dr_reload_data( void )
 
 	/* block access to data for all readers */
 	lock_get( ref_lock );
-	reload_flag = 1;
+	*reload_flag = 1;
 	lock_release( ref_lock );
 
 	/* wait for all readers to finish - it's a kind of busy waitting but
 	 * it's not critical;
 	 * at this point, data_refcnt can only be decremented */
-	while (data_refcnt) {
+	while (*data_refcnt) {
 		usleep(10);
 	}
 
@@ -239,7 +239,7 @@ static inline int dr_reload_data( void )
 	*rdata = new_data;
 
 	/* release the readers */
-	reload_flag = 0;
+	*reload_flag = 0;
 
 	/* destroy old data */
 	if (old_data)
@@ -352,6 +352,15 @@ static int dr_init(void)
 		LM_CRIT("failed to init ref_lock\n");
 		goto error;
 	}
+	data_refcnt = (int*)shm_malloc(sizeof(int));
+	reload_flag = (int*)shm_malloc(sizeof(int));
+	if(!data_refcnt || !reload_flag)
+	{
+		LM_ERR("no more shared memory\n");
+		goto error;
+	}
+	*data_refcnt = 0;
+	*reload_flag = 0;
 
 	/* bind to the mysql module */
 	if (db_bind_mod( &db_url, &dr_dbf  )) {
@@ -447,6 +456,11 @@ static int dr_exit(void)
 		lock_dealloc( ref_lock );
 		ref_lock = 0;
 	}
+	
+	if(reload_flag)
+		shm_free(reload_flag);
+	if(data_refcnt)
+		shm_free(data_refcnt);
 
 	/* destroy blacklists */
 	destroy_dr_bls();
@@ -703,12 +717,12 @@ again:
 	lock_get( ref_lock );
 	/* if reload must be done, do un ugly busy waiting 
 	 * until reload is finished */
-	if (reload_flag) {
+	if (*reload_flag) {
 		lock_release( ref_lock );
 		usleep(5);
 		goto again;
 	}
-	data_refcnt++;
+	*data_refcnt = *data_refcnt + 1;
 	lock_release( ref_lock );
 
 	/* search a prefix */
@@ -847,7 +861,7 @@ again:
 
 	/* we are done reading -> unref the data */
 	lock_get( ref_lock );
-	data_refcnt--;
+	*data_refcnt = *data_refcnt - 1;
 	lock_release( ref_lock );
 
 	/* what hev we get here?? */
@@ -866,7 +880,7 @@ again:
 error2:
 	/* we are done reading -> unref the data */
 	lock_get( ref_lock );
-	data_refcnt--;
+	*data_refcnt = *data_refcnt - 1;
 	lock_release( ref_lock );
 error1:
 	return ret;

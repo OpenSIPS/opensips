@@ -50,8 +50,8 @@ struct dlg_binds lb_dlg_binds;
 
 /* lock, ref counter and flag used for reloading the date */
 static gen_lock_t *ref_lock = 0;
-static volatile int data_refcnt = 0;
-static volatile int reload_flag = 0;
+static int* data_refcnt = 0;
+static int* reload_flag = 0;
 static struct lb_data **curr_data = NULL;
 
 
@@ -145,13 +145,13 @@ static inline int lb_reload_data( void )
 
 	/* block access to data for all readers */
 	lock_get( ref_lock );
-	reload_flag = 1;
+	*reload_flag = 1;
 	lock_release( ref_lock );
 
 	/* wait for all readers to finish - it's a kind of busy waitting but
 	 * it's not critical;
 	 * at this point, data_refcnt can only be decremented */
-	while (data_refcnt) {
+	while (*data_refcnt) {
 		usleep(10);
 	}
 
@@ -160,7 +160,7 @@ static inline int lb_reload_data( void )
 	*curr_data = new_data;
 
 	/* release the readers */
-	reload_flag = 0;
+	*reload_flag = 0;
 
 	/* destroy old data */
 	if (old_data)
@@ -201,6 +201,12 @@ static int mod_init(void)
 		LM_CRIT("failed to init ref_lock\n");
 		return -1;
 	}
+	data_refcnt = (int*) shm_malloc(sizeof(int));
+	reload_flag = (int*) shm_malloc(sizeof(int));
+	if(!data_refcnt || !reload_flag) {
+		LM_ERR("No more shared memory\n");
+		return -1;
+	}
 
 	/* init and open DB connection */
 	if (init_lb_db(&db_url, table_name)!=0) {
@@ -230,7 +236,7 @@ static int child_init(int rank)
 static int mi_child_init( void )
 {
 	/* init DB connection */
-	if ( (&db_url)==0 ) {
+	if ( lb_connect_db(&db_url)==0 ) {
 		LM_CRIT("cannot initialize database connection\n");
 		return -1;
 	}
@@ -255,6 +261,11 @@ static void mod_destroy(void)
 		lock_dealloc( ref_lock );
 		ref_lock = 0;
 	}
+
+	if(data_refcnt)
+		shm_free(data_refcnt);
+	if(reload_flag)
+		shm_free(reload_flag);
 }
 
 
@@ -267,12 +278,12 @@ again:
 	lock_get( ref_lock );
 	/* if reload must be done, do un ugly busy waiting 
 	 * until reload is finished */
-	if (reload_flag) {
+	if (*reload_flag) {
 		lock_release( ref_lock );
 		usleep(5);
 		goto again;
 	}
-	data_refcnt++;
+	*data_refcnt = *data_refcnt + 1;
 	lock_release( ref_lock );
 
 	/* do lb */
@@ -281,7 +292,7 @@ again:
 
 	/* we are done reading -> unref the data */
 	lock_get( ref_lock );
-	data_refcnt--;
+	*data_refcnt = *data_refcnt - 1;
 	lock_release( ref_lock );
 
 	if (ret<0)

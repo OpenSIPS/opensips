@@ -86,8 +86,8 @@ str pdt_char_list = {"0123456789", 10};
 
 /* lock, ref counter and flag used for reloading the date */
 static gen_lock_t *pdt_lock = 0;
-static volatile int pdt_tree_refcnt = 0;
-static volatile int pdt_reload_flag = 0;
+static int* pdt_tree_refcnt = 0;
+static int* pdt_reload_flag = 0;
 
 static int  w_prefix2domain(struct sip_msg* msg, char* str1, char* str2);
 static int  w_prefix2domain_1(struct sip_msg* msg, char* mode, char* str2);
@@ -217,6 +217,16 @@ static int mod_init(void)
 		LM_CRIT("failed to init lock\n");
 		goto error1;
 	}
+
+	pdt_tree_refcnt = (int*)shm_malloc(sizeof(int));
+	pdt_reload_flag = (int*)shm_malloc(sizeof(int));
+	if(!pdt_tree_refcnt || !pdt_reload_flag)
+	{
+		LM_ERR("No more shared memory");
+		goto error1;
+	}
+	*pdt_tree_refcnt = 0;
+	*pdt_reload_flag = 0;
 	
 	/* tree pointer in shm */
 	_ptree = (pdt_tree_t**)shm_malloc( sizeof(pdt_tree_t*) );
@@ -310,6 +320,11 @@ static void mod_destroy(void)
 		lock_dealloc( pdt_lock );
 		pdt_lock = 0;
 	}
+
+	if(pdt_tree_refcnt)
+		shm_free(pdt_tree_refcnt);
+	if(pdt_reload_flag)
+		shm_free(pdt_reload_flag);
 
 }
 
@@ -415,12 +430,12 @@ static int prefix2domain(struct sip_msg* msg, int mode, int sd_en)
 
 again:
 	lock_get( pdt_lock );
-	if (pdt_reload_flag) {
+	if (*pdt_reload_flag) {
 		lock_release( pdt_lock );
 		sleep_us(5);
 		goto again;
 	}
-	pdt_tree_refcnt++;
+	*pdt_tree_refcnt = *pdt_tree_refcnt + 1;
 	lock_release( pdt_lock );
 
 	if(sd_en==2)
@@ -492,13 +507,13 @@ again:
 	}
 
 	lock_get( pdt_lock );
-	pdt_tree_refcnt--;
+	*pdt_tree_refcnt  = *pdt_tree_refcnt - 1;
 	lock_release( pdt_lock );
 	return 1;
 
 error:
 	lock_get( pdt_lock );
-	pdt_tree_refcnt--;
+	*pdt_tree_refcnt  = *pdt_tree_refcnt - 1;
 	lock_release( pdt_lock );
 	return -1;
 }
@@ -652,17 +667,17 @@ static int pdt_load_db(void)
 
 	/* block all readers */
 	lock_get( pdt_lock );
-	pdt_reload_flag = 1;
+	*pdt_reload_flag = 1;
 	lock_release( pdt_lock );
 
-	while (pdt_tree_refcnt) {
+	while (*pdt_tree_refcnt) {
 		sleep_us(10);
 	}
 
 	old_tree = *_ptree;
 	*_ptree = _ptree_new;
 
-	pdt_reload_flag = 0;
+	*pdt_reload_flag = 0;
 
 	/* free old data */
 	if (old_tree!=NULL)
