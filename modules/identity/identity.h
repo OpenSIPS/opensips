@@ -31,6 +31,11 @@
 #ifndef _IDENTITY_H_
 #define _IDENTITY_H_
 
+/* Solaris does not define FNM_CASEFOLD for fnmatch() */
+#ifdef __OS_solaris
+#define FNM_CASEFOLD FNM_IGNORECASE
+#endif
+
 #define MAX_TIME 64 //max. length of timestamp
 #define DATE_FORMAT "%a, %d %b %Y %H:%M:%S GMT"
 #define MAXDATEDELTA_AUTH 600 //max. allowed | dateHF - now | for authentication service in seconds
