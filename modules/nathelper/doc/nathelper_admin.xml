@@ -119,6 +119,14 @@
 				contacts are to be pinged.
 			</para>
 			</listitem>
+			<listitem>
+			<para>
+				<emphasis>a database</emphasis> module - only if you want
+				to load use a database table from where to load the rtp proxies
+				sets.
+			</para>
+			</listitem>
+
 			</itemizedlist>
 		</para>
 	</section>
@@ -454,7 +462,106 @@ modparam("nathelper", "nortpproxy_str", "a=sdpmangled:yes\r\n")
 </programlisting>
 		</example>
 	</section>
+
+	<section>
+		<title><varname>db_url</varname> (string)</title>
+		<para>
+			The database url. This parameter should be set if you want to 
+			use a database table from where to load or reload definitions of
+			socket(s) used to connect to (a set) RTPProxy. The record from
+			the database table will be read at start up (added to the ones
+			defined with the rtpproxy_sock module parameter) and when the MI command
+			nh_reload_rtpp is issued(the definitions will be replaced with the
+			ones from the database table).
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>NULL</quote>.
+		</emphasis>
+		</para>
+
+		<example>
+		<title>Set <varname>db_url</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("nathelper", "db_url", 
+		"mysql://opensips:opensipsrw@192.168.2.132/opensips")
+...
+
+</programlisting>
+		</example>
 	</section>
+
+	<section>
+		<title><varname>db_table</varname> (string)</title>
+		<para>
+			The name of the database table containing definitions of
+			socket(s) used to connect to (a set) RTPProxy.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>nh_sockets</quote>.
+		</emphasis>
+		</para>
+
+		<example>
+		<title>Set <varname>db_table</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("nathelper", "db_table", "nh_rtpp") 
+...
+
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>rtpp_socket_col</varname> (string)</title>
+		<para>
+			The name rtpp socket column in the database table.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>rtpproxy_sock</quote>.
+		</emphasis>
+		</para>
+
+		<example>
+		<title>Set <varname>rtpp_socket_col</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("nathelper", "rtpp_socket_col", "rtpp_socket") 
+...
+
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>set_id_col</varname> (string)</title>
+		<para>
+			The name set id column in the database table.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>set_id</quote>.
+		</emphasis>
+		</para>
+
+		<example>
+		<title>Set <varname>set_id</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("nathelper", "set_id_col", "rtpp_set_id") 
+...
+
+</programlisting>
+		</example>
+	</section>
+
+
+
+</section>
 
 
 	<section>
@@ -1039,6 +1146,30 @@ $ opensipsctl fifo nh_show_rtpp
 			</programlisting>
 			</example>
 		</section>
+
+		<section>
+			<title><function moreinfo="none">nh_reload_rtpp</function></title>
+			<para>
+			Reload rtp proxies sets from database. The function will delete all
+			previous records and populate the list with the entries from the
+			database table. The db_url parameter must be set if you want to use
+			this command.
+			</para>
+			<para>
+			No parameter.
+			</para>
+			<example>
+			<title>
+				<function moreinfo="none">nh_reload_rtpp</function> usage</title>
+			<programlisting format="linespecific">
+...
+$ opensipsctl fifo nh_reload_rtpp 
+...
+			</programlisting>
+			</example>
+		</section>
+
+
 	</section>
 
 </chapter>

@@ -214,8 +214,12 @@
 #include "nhelpr_funcs.h"
 #include "sip_pinger.h"
 #include "rtpproxy_stream.h"
+#include "../../db/db.h"
+#include "../../locking.h"
  
 MODULE_VERSION
+
+#define NH_TABLE_VERSION  0
 
 #if !defined(AF_LOCAL)
 #define	AF_LOCAL AF_UNIX
@@ -241,7 +245,9 @@ MODULE_VERSION
 #define MI_MIN_RECHECK_TICKS		0
 #define MI_MAX_RECHECK_TICKS		(unsigned int)-1
 
+
 #define MI_SHOW_RTP_PROXIES			"nh_show_rtpp"
+#define MI_RELOAD_RTP_PROXIES       "nh_reload_rtpp"
 
 #define MI_RTP_PROXY_NOT_FOUND		"RTP proxy not found"
 #define MI_RTP_PROXY_NOT_FOUND_LEN	(sizeof(MI_RTP_PROXY_NOT_FOUND)-1)
@@ -301,12 +307,14 @@ static int set_rtp_proxy_set_f(struct sip_msg * msg, char * str1, char * str2);
 static struct rtpp_set * select_rtpp_set(int id_set);
 
 static int rtpproxy_set_store(modparam_t type, void * val);
-static int nathelper_add_rtpproxy_set( char * rtp_proxies);
+static int nathelper_add_rtpproxy_set( char * rtp_proxies, int set_id);
+static int _add_proxies_from_database();
 
 static void nh_timer(unsigned int, void *);
 static int mod_init(void);
 static int child_init(int);
 static void mod_destroy(void);
+static int mi_child_init(void);
 
 /*mi commands*/
 static struct mi_root* mi_enable_natping(struct mi_root* cmd_tree,
@@ -315,7 +323,10 @@ static struct mi_root* mi_enable_rtp_proxy(struct mi_root* cmd_tree,
 		void* param );
 static struct mi_root* mi_show_rtpproxies(struct mi_root* cmd_tree,
 		void* param);
+static struct mi_root* mi_reload_rtpproxies(struct mi_root* cmd_tree,
+                void* param);
 
+void free_rtpp_sets();
 
 static usrloc_api_t ul;
 
@@ -383,7 +394,7 @@ static unsigned int current_msg_id = (unsigned int)-1;
 /* RTP proxy balancing list */
 struct rtpp_set_head * rtpp_set_list =0;
 struct rtpp_set * selected_rtpp_set =0;
-struct rtpp_set * default_rtpp_set=0;
+struct rtpp_set ** default_rtpp_set=0;
 
 /* array with the sockets used by rtpporxy (per process)*/
 static unsigned int rtpp_no = 0;
@@ -392,6 +403,18 @@ static int *rtpp_socks = 0;
 
 /*0-> disabled, 1 ->enabled*/
 unsigned int *natping_state=0;
+
+/* DB support for loading proxies */
+static str db_url = {NULL, 0};
+static str table = str_init("nh_sockets");
+static str rtpp_sock_col = str_init("rtpproxy_sock");
+static str set_id_col = str_init("set_id");
+static db_con_t *db_connection = NULL;
+static db_func_t db_functions;
+
+static gen_lock_t *nh_lock=NULL;
+static int* reload_flag;
+static int* data_refcnt;
 
 static cmd_export_t cmds[] = {
 	{"fix_nated_contact",  (cmd_function)fix_nated_contact_f,    0,
@@ -482,6 +505,10 @@ static param_export_t params[] = {
 	{"sipping_bflag",         INT_PARAM, &sipping_flag          },
 	{"natping_processes",     INT_PARAM, &natping_processes     },
 	{"natping_socket",        STR_PARAM, &natping_socket        },
+	{"db_url",	        	  STR_PARAM, &db_url.s		        },
+	{"db_table",              STR_PARAM, &table.s		        },
+	{"rtpp_socket_col",       STR_PARAM, &rtpp_sock_col.s		},
+	{"set_id_col",            STR_PARAM, &set_id_col.s	        },
 	{0, 0, 0}
 };
 
@@ -489,6 +516,8 @@ static mi_export_t mi_cmds[] = {
 	{MI_SET_NATPING_STATE,    mi_enable_natping,    0,                0, 0},
 	{MI_ENABLE_RTP_PROXY,     mi_enable_rtp_proxy,  0,                0, 0},
 	{MI_SHOW_RTP_PROXIES,     mi_show_rtpproxies,   MI_NO_INPUT_FLAG, 0, 0},
+	{MI_RELOAD_RTP_PROXIES,   mi_reload_rtpproxies, MI_NO_INPUT_FLAG, 0,
+		mi_child_init},
 	{ 0, 0, 0, 0, 0}
 };
 
@@ -631,7 +660,7 @@ static int add_rtpproxy_socks(struct rtpp_set * rtpp_list,
 /*	0-succes
  *  -1 - erorr
  * */
-static int nathelper_add_rtpproxy_set( char * rtp_proxies)
+static int nathelper_add_rtpproxy_set( char * rtp_proxies, int set_id)
 {
 	char *p,*p2;
 	struct rtpp_set * rtpp_list;
@@ -650,27 +679,34 @@ static int nathelper_add_rtpproxy_set( char * rtp_proxies)
 		return 0;
 	}
 
-	rtp_proxies = strstr(p, "==");
-	if(rtp_proxies){
-		if(*(rtp_proxies +2)=='\0'){
-			LM_ERR("script error -invalid rtp proxy list!\n");
-			return -1;
+	if(set_id < 0)
+	{
+		rtp_proxies = strstr(p, "==");
+		if(rtp_proxies){
+			if(*(rtp_proxies +2)=='\0'){
+				LM_ERR("script error -invalid rtp proxy list!\n");
+				return -1;
+			}
+			
+			*rtp_proxies = '\0';
+			p2 = rtp_proxies-1;
+			for(;isspace(*p2); *p2 = '\0',p2--);
+			id_set.s = p;	id_set.len = p2 - p+1;
+				
+			if(id_set.len <= 0 ||str2int(&id_set, &my_current_id)<0 ){
+			LM_ERR("script error -invalid set_id value!\n");
+				return -1;
+			}
+				
+			rtp_proxies+=2;
+		}else{
+			rtp_proxies = p;
+			my_current_id = DEFAULT_RTPP_SET_ID;
 		}
-			
-		*rtp_proxies = '\0';
-		p2 = rtp_proxies-1;
-		for(;isspace(*p2); *p2 = '\0',p2--);
-		id_set.s = p;	id_set.len = p2 - p+1;
-			
-		if(id_set.len <= 0 ||str2int(&id_set, &my_current_id)<0 ){
-		LM_ERR("script error -invalid set_id value!\n");
-			return -1;
-		}
-			
-		rtp_proxies+=2;
-	}else{
+	}
+	else{
 		rtp_proxies = p;
-		my_current_id = DEFAULT_RTPP_SET_ID;
+		my_current_id = set_id;
 	}
 
 	for(;*rtp_proxies && isspace(*rtp_proxies);rtp_proxies++);
@@ -704,7 +740,8 @@ static int nathelper_add_rtpproxy_set( char * rtp_proxies)
 	}
 
 	if (new_list) {
-		if(!rtpp_set_list){/*initialize the list of set*/
+		if(!rtpp_set_list){/*initialize the list of set -
+							 executed only on the first call*/
 			rtpp_set_list = shm_malloc(sizeof(struct rtpp_set_head));
 			if(!rtpp_set_list){
 				LM_ERR("no shm memory left\n");
@@ -722,10 +759,6 @@ static int nathelper_add_rtpproxy_set( char * rtp_proxies)
 
 		rtpp_set_list->rset_last = rtpp_list;
 		rtpp_set_count++;
-
-		if(my_current_id == DEFAULT_RTPP_SET_ID){
-			default_rtpp_set = rtpp_list;
-		}
 	}
 
 	return 0;
@@ -889,6 +922,43 @@ error:
 				(_name_len), (_string), (_len))   ) == 0)\
 			goto _error;\
 	}while(0);
+
+static struct mi_root* mi_reload_rtpproxies(struct mi_root* cmd_tree, void* param)
+{
+	if(db_url.s == NULL) {
+		LM_ERR("Dynamic loading of rtpproxies not enabled\n");
+		return init_mi_tree( 400, MI_BAD_PARM_S, MI_BAD_PARM_LEN);
+	}
+
+	/* writer lock */
+	/* block access to data for all readers */
+	lock_get( nh_lock );
+	*reload_flag = 1;
+	lock_release( nh_lock );
+
+	/* wait for all readers to finish */
+	while (*data_refcnt) {
+		usleep(10);
+	}
+
+	/* no more activ readers */
+	if(rtpp_set_list != NULL) {
+		free_rtpp_sets();	
+	}
+
+	if(_add_proxies_from_database() < 0) {
+		lock_release(nh_lock);
+		return init_mi_tree( 500, MI_INTERNAL_ERR_S, MI_INTERNAL_ERR_LEN);
+	}
+
+	/* update pointer to default_rtpp_set*/
+	*default_rtpp_set = select_rtpp_set(DEFAULT_RTPP_SET_ID);
+	
+	/* release the readers */
+	*reload_flag = 0;
+
+	return init_mi_tree(200, MI_OK_S, MI_OK_LEN);
+}
 
 static struct mi_root* mi_show_rtpproxies(struct mi_root* cmd_tree, 
 												void* param)
@@ -1056,11 +1126,7 @@ mod_init(void)
 		if (init_raw_socket() < 0)
 			return -1;
 	}
-
-	/* any rtpproxy configured? */
-	if(rtpp_set_list)
-		default_rtpp_set = select_rtpp_set(DEFAULT_RTPP_SET_ID);
-
+	
 	if (nortpproxy_str.s==NULL || nortpproxy_str.s[0]==0) {
 		nortpproxy_str.len = 0;
 		nortpproxy_str.s = NULL;
@@ -1136,24 +1202,192 @@ mod_init(void)
 		nets_1918[i].netaddr = ntohl(addr.s_addr) & nets_1918[i].mask;
 	}
 
-	/* storing the list of rtp proxy sets in shared memory*/
-	for(i=0;i<rtpp_sets;i++){
-		if(nathelper_add_rtpproxy_set(rtpp_strings[i]) !=0){
-			for(;i<rtpp_sets;i++)
-				if(rtpp_strings[i])
-					pkg_free(rtpp_strings[i]);
+	if(db_url.s == NULL)
+	{
+		/* storing the list of rtp proxy sets in shared memory*/
+		for(i=0;i<rtpp_sets;i++){
+			if(nathelper_add_rtpproxy_set(rtpp_strings[i], -1) !=0){
+				for(;i<rtpp_sets;i++)
+					if(rtpp_strings[i])
+						pkg_free(rtpp_strings[i]);
+				pkg_free(rtpp_strings);
+				return -1;
+			}
+			if(rtpp_strings[i])
+				pkg_free(rtpp_strings[i]);
+		}
+		if (rtpp_strings)
 			pkg_free(rtpp_strings);
+	} else {
+		db_url.len=strlen(db_url.s);
+		rtpp_sock_col.len = strlen(rtpp_sock_col.s);
+		set_id_col.len = strlen(set_id_col.s);
+
+		if(db_bind_mod(&db_url, &db_functions) == -1) {
+			LM_ERR("Failed bind to database\n");
+			return -1;
+		} 
+
+		if (!DB_CAPABILITY(db_functions, DB_CAP_ALL))
+		{
+			LM_ERR("Database module does not implement all functions"
+					" needed by presence module\n");
 			return -1;
 		}
-		if(rtpp_strings[i])
-			pkg_free(rtpp_strings[i]);
-	}
-	if (rtpp_strings)
-		pkg_free(rtpp_strings);
 
+    	db_connection = db_functions.init(&db_url);
+		if(db_connection == NULL) {
+			LM_ERR("Failed to connect to database");
+			return -1;
+		}
+
+		/*verify table versions */
+		if(db_check_table_version(&db_functions, db_connection, &table,
+					NH_TABLE_VERSION) < 0){
+	 			LM_ERR("error during table version check\n");
+				return -1;
+		}
+
+		if(_add_proxies_from_database() != 0) {
+				return -1;
+		}
+		
+		db_functions.close(db_connection);
+		db_connection = NULL;
+	
+		nh_lock = lock_alloc();
+
+		if(nh_lock == NULL) {
+			LM_ERR("failed to alloc lock\n");
+			return -1;
+		}
+		if (lock_init(nh_lock)==0 ) {
+			LM_CRIT("failed to init ref_lock\n");
+			return -1;
+		}
+		
+		reload_flag = (int*)shm_malloc(sizeof(int));
+		data_refcnt = (int*)shm_malloc(sizeof(int));
+		
+		if(!reload_flag || !data_refcnt)
+		{
+			LM_ERR("No more shared memory\n");
+			return -1;
+		}
+		*data_refcnt = 0;
+		*reload_flag = 0;
+	}
+	
+	default_rtpp_set = (struct rtpp_set**)shm_malloc(sizeof(struct rtpp_set*));
+	if(default_rtpp_set == NULL)
+	{
+		LM_ERR("No more shared memory\n");
+		return -1;
+	}
+	*default_rtpp_set = NULL;
+
+	/* any rtpproxy configured? */
+	if(rtpp_set_list)
+		*default_rtpp_set = select_rtpp_set(DEFAULT_RTPP_SET_ID);
+	
 	return 0;
 }
 
+static int mi_child_init(void)
+{
+	if(!db_url.s)
+		return 0;
+	
+	if (db_functions.init==0)
+	{
+		LM_CRIT("database not bound\n");
+		return -1;
+	}
+
+	db_connection = db_functions.init(&db_url);
+	if(db_connection == NULL) {
+		LM_ERR("Failed to connect to database");
+		return -1;
+	}
+	
+	LM_DBG("Database connection opened successfully\n");
+
+
+
+	return 0;
+
+}
+
+static int _add_proxies_from_database(void) {
+
+	/* select * from nh_sockets */
+	db_key_t colsToReturn[2];
+	db_res_t *result = NULL;
+	int rowCount = 0;
+	char *rtpp_socket;
+	db_row_t *row;
+	db_val_t *row_vals;
+	int set_id;
+
+	colsToReturn[0]=&rtpp_sock_col;
+	colsToReturn[1]=&set_id_col;
+
+	if(db_functions.use_table(db_connection, &table) < 0) {
+		LM_ERR("Error trying to use table\n");
+		return -1;
+	}
+
+	if(db_functions.query(db_connection, 0, 0, 0,colsToReturn, 0, 2, 0,
+				&result) < 0) {
+		LM_ERR("Error querying database");
+		if(result)
+			db_functions.free_result(db_connection, result);
+		return -1;
+	}
+
+	if(result == NULL)
+	{
+		LM_ERR("mysql query failed - NULL result");
+		return -1;
+	}
+
+	if (RES_ROW_N(result)<=0 || RES_ROWS(result)[0].values[0].nul != 0) {
+		LM_DBG("No proxies were found\n");
+		if(db_functions.free_result(db_connection, result) < 0){
+			LM_ERR("Error freeing result\n");
+		}
+		return -1;
+	}
+
+	for(rowCount=0; rowCount < RES_ROW_N(result); rowCount++) {
+		
+		row= &result->rows[rowCount];
+		row_vals = ROW_VALUES(row);
+
+		rtpp_socket = (char*)row_vals[0].val.string_val;
+		if(rtpp_socket == NULL)
+		{
+			LM_ERR("NULL value for rtpproxy_socket column\n");
+			goto error;
+		}
+		set_id= row_vals[1].val.int_val;
+
+		if(nathelper_add_rtpproxy_set(rtpp_socket, set_id) == -1)
+		{
+			LM_ERR("faild to add rtp proxy\n");
+			goto error;
+		}
+	}
+
+	db_functions.free_result(db_connection, result);
+		
+	return 0;
+
+error:
+	if(result)
+		db_functions.free_result(db_connection, result);
+	return -1;
+}
 
 static int
 child_init(int rank)
@@ -1244,18 +1478,10 @@ rptest:
 	return 0;
 }
 
-
-static void mod_destroy(void)
-{
+void free_rtpp_sets(void)
+{	
 	struct rtpp_set * crt_list, * last_list;
 	struct rtpp_node * crt_rtpp, *last_rtpp;
-
-	/*free the shared memory*/
-	if (natping_state)
-		shm_free(natping_state);
-
-	if(rtpp_set_list == NULL)
-		return;
 
 	for(crt_list = rtpp_set_list->rset_first; crt_list != NULL; ){
 
@@ -1272,9 +1498,33 @@ static void mod_destroy(void)
 		last_list = crt_list;
 		crt_list = last_list->rset_next;
 		shm_free(last_list);
+		last_list = NULL;
 	}
+	rtpp_set_list->rset_first = NULL;
+	rtpp_set_list->rset_last = NULL;
+}
 
+static void mod_destroy(void)
+{
+	/*free the shared memory*/
+	if (natping_state)
+		shm_free(natping_state);
+
+	if(rtpp_set_list == NULL)
+		return;
+
+	free_rtpp_sets();
 	shm_free(rtpp_set_list);
+
+	if(reload_flag)
+		shm_free(reload_flag);
+	if(data_refcnt)
+		shm_free(data_refcnt);
+	if(nh_lock)
+	{
+		lock_destroy(nh_lock);
+		lock_dealloc(nh_lock);
+	}
 }
 
 
@@ -2228,19 +2478,53 @@ unforce_rtp_proxy_f(struct sip_msg* msg, char* str1, char* str2)
 	STR2IOVEC(callid, v[3]);
 	STR2IOVEC(from_tag, v[5]);
 	STR2IOVEC(to_tag, v[7]);
-	
+
+	if(nh_lock)
+	{
+	/* lock the data for reading */
+	/* ref the data for reading */
+again:
+	lock_get( nh_lock );
+	/* if reload must be done, do un ugly busy waiting 
+	 * until reload is finished */
+	if (*reload_flag) {
+		lock_release( nh_lock );
+		usleep(5);
+		goto again;
+	}
+	*data_refcnt = *data_refcnt + 1;
+	lock_release( nh_lock );
+	}
+
 	if(msg->id != current_msg_id){
-		selected_rtpp_set = default_rtpp_set;
+		selected_rtpp_set = *default_rtpp_set;
 	}
 	
 	node = select_rtpp_node(callid, 1);
 	if (!node) {
 		LM_ERR("no available proxies\n");
-		return -1;
+		goto error;
 	}
 	send_rtpp_command(node, v, (to_tag.len > 0) ? 8 : 6);
 
+	if(nh_lock)
+	{
+		/* we are done reading -> unref the data */
+		lock_get( nh_lock );
+		*data_refcnt = *data_refcnt - 1;
+		lock_release( nh_lock );
+	}
+
 	return 1;
+error:
+	if(!nh_lock)
+		return -1;
+	/* we are done reading -> unref the data */
+	lock_get( nh_lock );
+	*data_refcnt = *data_refcnt - 1;
+	lock_release( nh_lock );
+
+	return -1;
 }
 
 /*
@@ -2572,8 +2856,25 @@ force_rtp_proxy(struct sip_msg* msg, char* str1, char* str2, int offer)
 	v2p = v1p;
 	medianum = 0;
 
+	if(nh_lock)
+	{
+	/* lock for reading */
+	/* ref the data for reading */
+again:
+		lock_get( nh_lock );
+		/* if reload must be done, do un ugly busy waiting 
+		 * until reload is finished */
+		if (*reload_flag) {
+			lock_release( nh_lock );
+			usleep(5);
+			goto again;
+		}
+		*data_refcnt = *data_refcnt + 1;
+		lock_release( nh_lock );
+	}
+
 	if(msg->id != current_msg_id){
-		selected_rtpp_set = default_rtpp_set;
+		selected_rtpp_set = *default_rtpp_set;
 	}
 
 	for(;;) {
@@ -2587,13 +2888,13 @@ force_rtp_proxy(struct sip_msg* msg, char* str1, char* str2, int offer)
 		o1p = find_sdp_line(v1p, v2p, 'o');
 		if (o1p==0) {
 			LM_ERR("no o= in session\n");
-			return -1;
+			goto error;
 		}
 		/* Have this session media description? */
 		m1p = find_sdp_line(o1p, v2p, 'm');
 		if (m1p == NULL) {
 			LM_ERR("no m= in session\n");
-			return -1;
+			goto error;
 		}
 		/*
 		 * Find c1p only between session begin and first media.
@@ -2617,18 +2918,18 @@ force_rtp_proxy(struct sip_msg* msg, char* str1, char* str2, int offer)
 			if (tmpstr1.s == NULL) {
 				/* No "c=" */
 				LM_ERR("can't find media IP in the message\n");
-				return -1;
+				goto error;
 			}
 			tmpstr1.len = v2p - tmpstr1.s; /* limit is session limit text */
 			if (extract_mediaip(&tmpstr1, &oldip, &pf,"c=") == -1) {
 				LM_ERR("can't extract media IP from the message\n");
-				return -1;
+				goto error;
 			}
 			tmpstr1.s = m1p;
 			tmpstr1.len = m2p - m1p;
 			if (extract_mediainfo(&tmpstr1, &oldport, &payload_types) == -1) {
 				LM_ERR("can't extract media port from the message\n");
-				return -1;
+				goto error;
 			}
 			++medianum;
 			if (asymmetric != 0 || real != 0) {
@@ -2664,7 +2965,7 @@ force_rtp_proxy(struct sip_msg* msg, char* str1, char* str2, int offer)
 				node = select_rtpp_node(callid, 1);
 				if (!node) {
 					LM_ERR("no available proxies\n");
-					return -1;
+					goto error;
 				}
 				len = v[1].iov_len;
 				if (rep_oidx > 0) {
@@ -2722,14 +3023,14 @@ force_rtp_proxy(struct sip_msg* msg, char* str1, char* str2, int offer)
 			}
 			if (argc < 1) {
 				LM_ERR("no reply from rtp proxy\n");
-				return -1;
+				goto error;
 			}
 			port = atoi(argv[0]);
 			if (port <= 0 || port > 65535) {
 				if (port != 0 || flookup == 0)
 					LM_ERR("incorrect port %i in reply "
 						"from rtp proxy\n",port);
-				return -1;
+				goto error;
 			}
 
 			pf1 = (argc >= 3 && argv[2][0] == '6') ? AF_INET6 : AF_INET;
@@ -2759,7 +3060,7 @@ force_rtp_proxy(struct sip_msg* msg, char* str1, char* str2, int offer)
 			if(oldport.len!=1 || oldport.s[0]!='0')
 			{
 				if (alter_mediaport(msg, &body1, &oldport, &newport, 0) == -1)
-					return -1;
+					goto error;
 			}
 			/*
 			 * Alter IP. Don't alter IP common for the session
@@ -2769,7 +3070,7 @@ force_rtp_proxy(struct sip_msg* msg, char* str1, char* str2, int offer)
 				body1.s = c2p ? c2p : c1p;
 				body1.len = bodylimit - body1.s;
 				if (alter_mediaip(msg, &body1, &oldip, pf, &newip, pf1, 0)==-1)
-					return -1;
+					goto error;
 				if (!c2p)
 					c1p_altered = 1;
 			}
@@ -2781,12 +3082,12 @@ force_rtp_proxy(struct sip_msg* msg, char* str1, char* str2, int offer)
 				tmpstr1.len = v2p - tmpstr1.s;
 				if (extract_mediaip(&tmpstr1, &oldip, &pf,"c=") == -1) {
 					LM_ERR("can't extract media IP from the message\n");
-					return -1;
+					goto error;
 				}
 				body1.s = c1p;
 				body1.len = bodylimit - body1.s;
 				if (alter_mediaip(msg, &body1, &oldip, pf, &newip, pf1, 0)==-1)
-					return -1;
+					goto error;
 				c1p_altered = 1;
 			}
 			/*
@@ -2797,16 +3098,24 @@ force_rtp_proxy(struct sip_msg* msg, char* str1, char* str2, int offer)
 				tmpstr1.len = v2p - tmpstr1.s;
 				if (extract_mediaip(&tmpstr1, &oldip, &pf,"o=") == -1) {
 					LM_ERR("can't extract media IP from the message\n");
-					return -1;
+					goto error;
 				}
 				body1.s = o1p;
 				body1.len = bodylimit - body1.s;
 				if (alter_mediaip(msg, &body1, &oldip, pf, &newip, pf1, 0)==-1)
-					return -1;
+					goto error;
 				o1p = 0;
 			}
 		} /* Iterate medias in session */
 	} /* Iterate sessions */
+
+	if(nh_lock)
+	{
+		/* we are done reading -> unref the data */
+		lock_get( nh_lock );
+		*data_refcnt = *data_refcnt - 1;
+		lock_release( nh_lock );
+	}
 
 	if (proxied == 0 && nortpproxy_str.len) {
 		cp = pkg_malloc((nortpproxy_str.len + CRLF_LEN) * sizeof(char));
@@ -2830,6 +3139,17 @@ force_rtp_proxy(struct sip_msg* msg, char* str1, char* str2, int offer)
 	}
 
 	return 1;
+
+error:
+	if(!nh_lock)
+		return -1;
+
+	/* we are done reading -> unref the data */
+	lock_get( nh_lock );
+	*data_refcnt = *data_refcnt - 1;
+	lock_release( nh_lock );
+
+	return -1;
 }
 
 static int
@@ -3227,23 +3547,42 @@ static int start_recording_f(struct sip_msg* msg, char *foo, char *bar)
 		return -1;
 	}
 
-	if(msg->id != current_msg_id){
-		selected_rtpp_set = default_rtpp_set;
-	}
 
 	STR2IOVEC(callid, v[3]);
 	STR2IOVEC(from_tag, v[5]);
 	STR2IOVEC(to_tag, v[7]);
+	
+	if(nh_lock)
+	{
+	/* lock for reading */
+	/* ref the data for reading */
+again:
+		lock_get( nh_lock );
+		/* if reload must be done, do un ugly busy waiting 
+		 * until reload is finished */
+		if (*reload_flag) {
+			lock_release( nh_lock );
+			usleep(5);
+			goto again;
+		}
+		*data_refcnt = *data_refcnt + 1;
+		lock_release( nh_lock );
+	}
+
+	if(msg->id != current_msg_id){
+		selected_rtpp_set = *default_rtpp_set;
+	}
+	
 	node = select_rtpp_node(callid, 1);
 	if (!node) {
 		LM_ERR("no available proxies\n");
-		return -1;
+		goto error;
 	}
 
 	nitems = 8;
 	if (msg->first_line.type == SIP_REPLY) {
 		if (to_tag.len == 0)
-			return -1;
+			goto error;
 		STR2IOVEC(to_tag, v[5]);
 		STR2IOVEC(from_tag, v[7]);
 	} else {
@@ -3254,7 +3593,24 @@ static int start_recording_f(struct sip_msg* msg, char *foo, char *bar)
 	}
 	send_rtpp_command(node, v, nitems);
 
+	if(nh_lock)
+	{
+		/* we are done reading -> unref the data */
+		lock_get( nh_lock );
+		*data_refcnt = *data_refcnt - 1;
+		lock_release( nh_lock );
+	}
 	return 1;
+
+error:
+	if(!nh_lock)
+		return -1;
+
+	/* we are done reading -> unref the data */
+	lock_get( nh_lock );
+	*data_refcnt = *data_refcnt - 1;
+	lock_release( nh_lock );
+	return -1;
 }
 
 

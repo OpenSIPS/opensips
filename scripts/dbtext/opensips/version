@@ -26,6 +26,7 @@ lcr:3
 load_balancer:1
 location:1005
 missed_calls:4
+nh_sockets:0
 pdt:2
 presentity:4
 pua:7

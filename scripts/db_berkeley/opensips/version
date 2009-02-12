@@ -62,6 +62,8 @@ location|
 location|1005
 missed_calls|
 missed_calls|4
+nh_sockets|
+nh_sockets|0
 pdt|
 pdt|2
 presentity|

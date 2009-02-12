@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE table PUBLIC "-//opensips.org//DTD DBSchema V1.1//EN" 
+  "http://opensips.org/pub/opensips/dbschema/dtd/1.1/dbschema.dtd" [
+
+<!ENTITY % entities SYSTEM "entities.xml">
+%entities;
+
+]>
+
+<table id="nh_sockets" xmlns:db="http://docbook.org/ns/docbook">
+	<name>nh_sockets</name>
+	<version>0</version>
+	<type db="mysql">&MYSQL_TABLE_TYPE;</type>
+	<description>
+		<db:para>This table is used by the NAT Helper module to store
+	    definitions of socket(s) used to connect to (a set) RTPProxy.	
+		More information can be found at: &OPENSIPS_MOD_DOC;nathelper.html.
+		</db:para>
+	</description>
+
+	<column id="id">
+        <name>id</name>
+        <type>unsigned int</type>
+        <size>&table_id_len;</size>
+        <autoincrement/>
+        <primary/>
+        <type db="dbtext">int,auto</type>
+        <description>Unique ID</description>
+    </column>
+	
+	<column>
+        <name>rtpproxy_sock</name>
+        <type>text</type>
+		<description>A list of sockets use to connect to a set of RTPProxy.
+			Example: "udp:localhost:12221 udp:localhost:12222".
+		</description>
+	</column>
+
+	<column id="set_id">
+        <name>set_id</name>
+        <type>unsigned int</type>
+        <size>&table_id_len;</size>
+        <description>The ID of the RTPProxy set.</description>
+    </column>
+
+</table>
