@@ -807,19 +807,25 @@ int mi_print_dlg(struct mi_node *rpl, struct dlg_cell *dlg, int with_context)
 }
 
 
-static int internal_mi_print_dlgs(struct mi_node *rpl, int with_context)
+static int internal_mi_print_dlgs(struct mi_root *rpl_tree,struct mi_node *rpl,
+															int with_context)
 {
 	struct dlg_cell *dlg;
 	unsigned int i;
+	unsigned int n;
 
 	LM_DBG("printing %i dialogs\n", d_table->size);
+	rpl->flags |= MI_NOT_COMPLETED;
 
-	for( i=0 ; i<d_table->size ; i++ ) {
+	for( i=0,n=0 ; i<d_table->size ; i++ ) {
 		dlg_lock( d_table, &(d_table->entries[i]) );
 
 		for( dlg=d_table->entries[i].first ; dlg ; dlg=dlg->next ) {
 			if (internal_mi_print_dlg(rpl, dlg, with_context)!=0)
 				goto error;
+			n++;
+			if ( (n % 50) == 0 )
+				flush_mi_tree(rpl_tree);
 		}
 		dlg_unlock( d_table, &(d_table->entries[i]) );
 	}
@@ -903,7 +909,7 @@ struct mi_root * mi_print_dlgs(struct mi_root *cmd_tree, void *param )
 	rpl = &rpl_tree->node;
 
 	if (dlg==NULL) {
-		if ( internal_mi_print_dlgs(rpl,0)!=0 )
+		if ( internal_mi_print_dlgs(rpl_tree, rpl,0)!=0 )
 			goto error;
 	} else {
 		if ( internal_mi_print_dlg(rpl,dlg,0)!=0 )
@@ -934,7 +940,7 @@ struct mi_root * mi_print_dlgs_ctx(struct mi_root *cmd_tree, void *param )
 	rpl = &rpl_tree->node;
 
 	if (dlg==NULL) {
-		if ( internal_mi_print_dlgs(rpl,1)!=0 )
+		if ( internal_mi_print_dlgs(rpl_tree, rpl,1)!=0 )
 			goto error;
 	} else {
 		if ( internal_mi_print_dlg(rpl,dlg,1)!=0 )
