@@ -61,6 +61,8 @@ static void mod_destroy(void);
 static int mi_child_init();
 
 static struct mi_root* mi_lb_reload(struct mi_root *cmd_tree, void *param);
+static struct mi_root* mi_lb_resize(struct mi_root *cmd_tree, void *param);
+static struct mi_root* mi_lb_list(struct mi_root *cmd_tree, void *param);
 
 static int fixup_resources(void** param, int param_no);
 
@@ -85,6 +87,8 @@ static param_export_t mod_params[]={
 
 static mi_export_t mi_cmds[] = {
 	{ "lb_reload",   mi_lb_reload,   MI_NO_INPUT_FLAG,   0,  mi_child_init},
+	{ "lb_resize",   mi_lb_resize,   0,                  0,  0},
+	{ "lb_list",     mi_lb_list,     MI_NO_INPUT_FLAG,   0,  0},
 	{ 0, 0, 0, 0, 0}
 };
 
@@ -301,7 +305,7 @@ again:
 }
 
 
-
+/******************** MI commands ***********************/
 
 static struct mi_root* mi_lb_reload(struct mi_root *cmd_tree, void *param)
 {
@@ -317,4 +321,115 @@ error:
 	return init_mi_tree( 500, "Failed to reload",16);
 }
 
+/*! \brief
+ * Expects 3 nodes: 
+ *        destination ID (number)
+ *        resource name (string)
+ *        size (number)
+ */
 
+static struct mi_root* mi_lb_resize(struct mi_root *cmd, void *param)
+{
+	struct lb_dst *dst;
+	struct mi_node *node;
+	unsigned int  id, size;
+	str *name;
+	int n;
+
+	for( n=0,node = cmd->node.kids; n<3 && node ; n++,node=node->next );
+	if (n!=3 || node!=0)
+		return init_mi_tree( 400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
+
+	node = cmd->node.kids;
+
+	/* id (param 1) */
+	if (str2int( &node->value, &id) < 0)
+		goto bad_syntax;
+
+	/* resource (param 2) */
+	node = node->next;
+	name = &node->value;
+
+	/* id (param 3) */
+	node = node->next;
+	if (str2int( &node->value, &size) < 0)
+		goto bad_syntax;
+
+	/* get destination */
+	for( dst=(*curr_data)->dsts ; dst && dst->id!=id ; dst=dst->next);
+	if (dst==NULL)
+		return init_mi_tree( 404, MI_SSTR("Destination ID not found"));
+
+	/* get resource */
+	for( n=0 ; n<dst->rmap_no ; n++)
+		if (dst->rmap[n].resource->name.len == name->len &&
+		memcmp( dst->rmap[n].resource->name.s, name->s, name->len)==0)
+			break;
+	if (n==dst->rmap_no)
+		return init_mi_tree( 404, MI_SSTR("Destination has no such resource"));
+
+	dst->rmap[n].max_load = size;
+
+	return init_mi_tree( 200, MI_SSTR(MI_OK_S));
+bad_syntax:
+	return init_mi_tree( 400, MI_SSTR(MI_BAD_PARM_S));
+
+}
+
+
+static struct mi_root* mi_lb_list(struct mi_root *cmd_tree, void *param)
+{
+	struct mi_root *rpl_tree;
+	struct mi_node *dst_node;
+	struct mi_node *node;
+	struct mi_attr *attr;
+	struct lb_dst *dst;
+	char *p;
+	int len;
+	int i;
+
+	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
+	if (rpl_tree==NULL)
+		return NULL;
+
+	/* go through all destination */
+	for( dst=(*curr_data)->dsts ; dst ; dst=dst->next) {
+		/* add a destination node */
+		dst_node = add_mi_node_child( &rpl_tree->node, 0, "Destination", 11,
+					dst->uri.s, dst->uri.len);
+		if (dst_node==0)
+			goto error;
+
+		/* add some attributes to the destination node */
+		p= int2str((unsigned long)dst->id, &len);
+		attr = add_mi_attr( dst_node, MI_DUP_VALUE, "id", 2, p, len);
+		if (attr==0)
+			goto error;
+
+		/* go through all resources */
+		for( i=0 ; i<dst->rmap_no ; i++) {
+		/* add a resource node */
+			node = add_mi_node_child( dst_node, 0, "Resource", 8,
+				dst->rmap[i].resource->name.s,dst->rmap[i].resource->name.len);
+			if (dst_node==0)
+				goto error;
+
+			/* add some attributes to the destination node */
+			p= int2str((unsigned long)dst->rmap[i].max_load, &len);
+			attr = add_mi_attr( node, MI_DUP_VALUE, "max", 3, p, len);
+			if (attr==0)
+				goto error;
+
+			p= int2str((unsigned long)lb_dlg_binds.get_profile_size
+				(dst->rmap[i].resource->profile, &dst->profile_id), &len);
+			attr = add_mi_attr( node, MI_DUP_VALUE, "load", 4, p, len);
+			if (attr==0)
+				goto error;
+		}
+	}
+
+	return rpl_tree;
+error:
+	free_mi_tree(rpl_tree);
+	return 0;
+}
