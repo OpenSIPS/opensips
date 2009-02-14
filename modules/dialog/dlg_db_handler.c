@@ -38,6 +38,7 @@
 #include "../../socket_info.h"
 #include "dlg_hash.h"
 #include "dlg_db_handler.h"
+#include "dlg_cb.h"
 
 
 str call_id_column			=	str_init(CALL_ID_COL);
@@ -456,6 +457,9 @@ int remove_dialog_from_db(struct dlg_cell * cell)
 
 	LM_DBG("callid was %.*s\n", cell->callid.len, cell->callid.s );
 
+	/* dialog saved */
+	run_dlg_callbacks( DLGCB_SAVED, cell, 0, DLG_DIR_NONE, 0);
+
 	return 0;
 }
 
@@ -529,8 +533,12 @@ int update_dialog_dbinfo(struct dlg_cell * cell)
 			LM_ERR("could not add another dialog to db\n");
 			goto error;
 		}
+
+		/* dialog saved */
+		run_dlg_callbacks( DLGCB_SAVED, cell, 0, DLG_DIR_NONE, 0);
+
 		cell->flags &= ~(DLG_FLAG_NEW|DLG_FLAG_CHANGED);
-		
+
 	} else if((cell->flags & DLG_FLAG_CHANGED) != 0) {
 		/* save only dialog's state and timeout */
 		VAL_TYPE(values) = VAL_TYPE(values+1) = 
@@ -558,6 +566,10 @@ int update_dialog_dbinfo(struct dlg_cell * cell)
 			LM_ERR("could not update database info\n");
 			goto error;
 		}
+
+		/* dialog saved */
+		run_dlg_callbacks( DLGCB_SAVED, cell, 0, DLG_DIR_NONE, 0);
+
 		cell->flags &= ~(DLG_FLAG_CHANGED);
 	} else {
 		return 0;
@@ -650,6 +662,9 @@ void dialog_update_db(unsigned int ticks, void * param)
 					goto error;
 				}
 
+				/* dialog saved */
+				run_dlg_callbacks( DLGCB_SAVED, cell, 0, DLG_DIR_NONE, 0);
+
 				cell->flags &= ~(DLG_FLAG_NEW |DLG_FLAG_CHANGED);
 
 			} else if( (cell->flags & DLG_FLAG_CHANGED)!=0 ){
@@ -671,8 +686,10 @@ void dialog_update_db(unsigned int ticks, void * param)
 					goto error;
 				}
 
-				cell->flags &= ~DLG_FLAG_CHANGED;
+				/* dialog saved */
+				run_dlg_callbacks( DLGCB_SAVED, cell, 0, DLG_DIR_NONE, 0);
 
+				cell->flags &= ~DLG_FLAG_CHANGED;
 			}
 
 		}

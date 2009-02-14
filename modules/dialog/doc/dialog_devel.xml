@@ -31,6 +31,10 @@
 				</para>
 			</listitem>
 			<listitem>
+				<para><emphasis>DLGCB_SAVED</emphasis>
+				</para>
+			</listitem>
+			<listitem>
 				<para><emphasis>DLG_CREATED</emphasis> - called when a new 
 				dialog is created - it's a global type (not associated to 
 				any dialog)

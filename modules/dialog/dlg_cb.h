@@ -65,6 +65,7 @@ typedef int (*register_dlgcb_f)(struct dlg_cell* dlg, int cb_types,
 #define DLGCB_RESPONSE_WITHIN (1<<9)
 #define DLGCB_MI_CONTEXT      (1<<10)
 #define DLGCB_DESTROY         (1<<11)
+#define DLGCB_SAVED           (1<<12)
 
 struct dlg_callback {
 	int types;
