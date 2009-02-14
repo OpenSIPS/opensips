@@ -76,6 +76,11 @@ typedef int (*add_profiles_f)(char* profiles, unsigned int has_value);
 
 typedef struct dlg_profile_table* (*search_dlg_profile_f)(str *name);
 
+struct dlg_profile_value_name {
+	int size;
+	str **values_string;
+	int *values_count;
+};
 
 
 int add_profile_definitions( char* profiles, unsigned int has_value);
@@ -99,7 +104,11 @@ unsigned int get_profile_size(struct dlg_profile_table *profile, str *value);
 
 struct mi_root * mi_get_profile(struct mi_root *cmd_tree, void *param );
 
+struct mi_root * mi_get_profile_values(struct mi_root *cmd_tree, void *param );
+
 struct mi_root * mi_profile_list(struct mi_root *cmd_tree, void *param );
+
+void get_value_names(struct dlg_profile_table *profile, struct dlg_profile_value_name *);
 
 #endif
 

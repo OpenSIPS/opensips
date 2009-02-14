@@ -459,6 +459,67 @@ unsigned int get_profile_size(struct dlg_profile_table *profile, str *value)
 	}
 }
 
+void get_value_names(struct dlg_profile_table *profile, struct dlg_profile_value_name* dpvn )
+{
+	struct dlg_profile_hash *hash_anchor,**ph=NULL;
+	int string_anchor;
+	unsigned int i,n,x;
+	unsigned int found,total_entries;
+
+	if (profile->has_value==0) {
+		return;
+	}
+	get_lock( &profile->lock );
+
+	ph = (struct dlg_profile_hash **)shm_malloc( (profile->size)*sizeof(struct dlg_profile_hash *) );
+	memset( ph, 0, (profile->size)*sizeof(struct dlg_profile_hash *) );
+
+        for( i=0,n=0,total_entries=0 ; i<profile->size ; i++ ) {
+        	if( profile->entries[i].content > 0 ) {
+			ph[n] = profile->entries[i].first;
+			n += 1;
+			total_entries+=profile->entries[i].content;
+		}	
+	}
+	if( n == 0 ) {
+		shm_free(ph);
+		release_lock( &profile->lock );
+		return;
+	}
+	dpvn->size = 0;
+	dpvn->values_string = (str **)shm_malloc( (total_entries+1)*sizeof(str *) );
+	dpvn->values_count = (int *)shm_malloc( (total_entries+1)*sizeof(int) );
+	memset( dpvn->values_string, 0, (total_entries+1)*sizeof(str *) );
+	memset( dpvn->values_count, 0, (total_entries+1)*sizeof(int) );
+	for( i=0; i<n; i++ ) { //which profile hash entry are we looking at
+		hash_anchor = ph[i];
+		string_anchor = dpvn->size;
+		do { 
+			found = 0;
+			for( x=string_anchor; x<dpvn->size; x++ ) {
+				if( memcmp(dpvn->values_string[x]->s,ph[i]->value.s,ph[i]->value.len)==0 ) {
+					found = 1;
+					dpvn->values_count[x]++;
+					break;
+				}
+			}
+			if( found ==0 ) {
+				dpvn->values_string[dpvn->size] = (str *)shm_malloc( sizeof(str) );
+				dpvn->values_string[dpvn->size]->s = (char*)shm_malloc((ph[i]->value.len)*sizeof(char));
+				dpvn->values_string[dpvn->size]->len = ph[i]->value.len;
+				dpvn->values_count[dpvn->size] = 1;
+				memset( dpvn->values_string[dpvn->size]->s, 0 , ph[i]->value.len);
+				strncpy( dpvn->values_string[dpvn->size]->s, ph[i]->value.s, ph[i]->value.len );
+				dpvn->size++;
+			}
+			ph[i]=ph[i]->next;
+		} while( ph[i]!=hash_anchor );
+	}
+
+	shm_free(ph);
+	release_lock( &profile->lock );
+	return;
+}
 /****************************** MI commands *********************************/
 
 struct mi_root * mi_get_profile(struct mi_root *cmd_tree, void *param )
@@ -535,6 +596,101 @@ error:
 	return NULL;
 }
 
+struct mi_root * mi_get_profile_values(struct mi_root *cmd_tree, void *param )
+{
+	struct mi_node* node;
+	struct mi_root* rpl_tree= NULL;
+	struct mi_node* rpl = NULL;
+	struct mi_attr* attr;
+	struct dlg_profile_table *profile;
+	str *value;
+	str *profile_name;
+	unsigned int size,combined;
+	int len,i;
+	char *p;
+	struct dlg_profile_value_name dpvn;
+
+	dpvn.values_string=NULL;
+	dpvn.values_count=NULL;
+	dpvn.size = 0;
+	combined = 0;
+	node = cmd_tree->node.kids;
+	if (node==NULL || !node->value.s || !node->value.len)
+		return init_mi_tree( 400, MI_SSTR(MI_MISSING_PARM));
+	profile_name = &node->value;
+	if (node->next) {
+		node = node->next;
+		if (!node->value.s || !node->value.len)
+			return init_mi_tree( 400, MI_SSTR(MI_BAD_PARM));
+		if (node->next)
+			return init_mi_tree( 400, MI_SSTR(MI_MISSING_PARM));
+		value = &node->value;
+	} else {
+		value = NULL;
+	}
+	profile = search_dlg_profile( profile_name );
+	if (profile==NULL)
+		return init_mi_tree( 404, MI_SSTR("Profile not found"));
+	/* gather dialog count for all values in this profile */
+	get_value_names( profile, &dpvn );
+	rpl_tree = init_mi_tree( 200, MI_SSTR(MI_OK));
+	if (rpl_tree==0)
+		goto error;
+	rpl = &rpl_tree->node;
+	for (i = 0; i <= dpvn.size; i++) {
+		if(dpvn.values_string && dpvn.values_string[i]) {
+			value = dpvn.values_string[i];
+			size = dpvn.values_count[i];
+		} else {
+			value = NULL;
+			size = combined;
+		}
+		node = add_mi_node_child(rpl, MI_DUP_VALUE, "profile", 7, NULL, 0);
+		if (node==0) {
+			goto error;
+		}
+		attr = add_mi_attr(node, MI_DUP_VALUE, "name", 4, 
+			profile->name.s, profile->name.len);
+		if(attr == NULL) {
+			goto error;
+		}
+
+		if (value) {
+			attr = add_mi_attr(node, MI_DUP_VALUE, "value", 5, value->s, value->len);
+		} else {
+			attr = add_mi_attr(node, MI_DUP_VALUE, "value", 5, NULL, 0);
+		}
+		if(attr == NULL) {
+			goto error;
+		}
+		p= int2str((unsigned long)size, &len);
+		attr = add_mi_attr(node, MI_DUP_VALUE, "count", 5, p, len);
+		if(attr == NULL) {
+			goto error;
+		}
+		combined+=size;
+	}//end of for i<=dpvn.size
+	if(dpvn.values_string) {
+		for(i = 0; i < dpvn.size; i++) {
+			shm_free(dpvn.values_string[i]->s);
+			shm_free(dpvn.values_string[i]);
+		}
+		shm_free(dpvn.values_string);
+		shm_free(dpvn.values_count);
+	}
+	return rpl_tree;
+error:
+        if(dpvn.values_string) {
+                for(i = 0; i < dpvn.size; i++) {
+			shm_free(dpvn.values_string[i]->s);
+                        shm_free(dpvn.values_string[i]);
+                }
+        	shm_free(dpvn.values_string);
+		shm_free(dpvn.values_count);
+        }
+	free_mi_tree(rpl_tree);
+	return NULL;
+}
 
 struct mi_root * mi_profile_list(struct mi_root *cmd_tree, void *param )
 {

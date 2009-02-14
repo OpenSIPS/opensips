@@ -132,7 +132,6 @@ int pv_set_dlg_flags(struct sip_msg *msg, pv_param_t *param, int op,
 
 
 
-
 static cmd_export_t cmds[]={
 	{"create_dialog", (cmd_function)w_create_dialog,      0,NULL,
 			0, REQUEST_ROUTE},
@@ -220,6 +219,7 @@ static mi_export_t mi_cmds[] = {
 	{ "dlg_end_dlg",        mi_terminate_dlg,    0,  0,  0},
 	{ "profile_get_size",   mi_get_profile,      0,  0,  0},
 	{ "profile_list_dlgs",  mi_profile_list,     0,  0,  0},
+	{ "profile_get_values", mi_get_profile_values, 0,  0,  0},
 	{ 0, 0, 0, 0, 0}
 };
 
