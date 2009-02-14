@@ -836,12 +836,15 @@ static int filter_body_f(struct sip_msg* msg, char* _content_type,
 		if (strncasecmp(start, content_type->s, content_type->len)
 		    == 0) {
 		    start = start + content_type->len;
+		    len = len - content_type->len;
 		    if ((*start != 13) || (*(start + 1) != 10)) {
 			LM_ERR("No CRLF found after content type\n");
 			return -1;
 		    }
-		    start = start + 2;
-		    len = len - content_type->len - 2;
+		    while ((len > 3) && !(*start == 13 && *(start+1) == 10 && *(start+2) == 13 && *(start+3) == 10)) {
+			len = len - 1;
+			start = start + 1;
+		    }
 		    while ((len > 0) && ((*start == 13) || (*start == 10))) {
 			len = len - 1;
 			start = start + 1;
