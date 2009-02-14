@@ -417,7 +417,7 @@ inline static uint32_t phrase2code(str *phrase)
 #ifdef RAD_ACC
 enum { RA_ACCT_STATUS_TYPE=0, RA_SERVICE_TYPE, RA_SIP_RESPONSE_CODE,
 	RA_SIP_METHOD, RA_TIME_STAMP, RA_STATIC_MAX};
-enum {RV_STATUS_START=0, RV_STATUS_STOP, RV_STATUS_FAILED,
+enum {RV_STATUS_START=0, RV_STATUS_STOP, RV_STATUS_ALIVE, RV_STATUS_FAILED,
 	RV_SIP_SESSION, RV_STATIC_MAX};
 static struct attr
 	rd_attrs[RA_STATIC_MAX+ACC_CORE_LEN-2+MAX_ACC_EXTRA+MAX_ACC_LEG];
@@ -442,6 +442,7 @@ int init_acc_rad(char *rad_cfg, int srv_type)
 
 	rd_vals[RV_STATUS_START].n        = "Start";
 	rd_vals[RV_STATUS_STOP].n         = "Stop";
+	rd_vals[RV_STATUS_ALIVE].n        = "Alive";
 	rd_vals[RV_STATUS_FAILED].n       = "Failed";
 	rd_vals[RV_SIP_SESSION].n         = "Sip-Session";
 
@@ -472,11 +473,13 @@ int init_acc_rad(char *rad_cfg, int srv_type)
 
 static inline uint32_t rad_status( struct sip_msg *req, int code )
 {
-	if ((req->REQ_METHOD==METHOD_INVITE || req->REQ_METHOD==METHOD_ACK)
+	if (req->REQ_METHOD==METHOD_INVITE && get_to(req)->tag_value.len==0
 				&& code>=200 && code<300)
 		return rd_vals[RV_STATUS_START].v;
 	if ((req->REQ_METHOD==METHOD_BYE || req->REQ_METHOD==METHOD_CANCEL))
 		return rd_vals[RV_STATUS_STOP].v;
+	if (get_to(req)->tag_value.len)
+		return rd_vals[RV_STATUS_ALIVE].v;
 	return rd_vals[RV_STATUS_FAILED].v;
 }
 
