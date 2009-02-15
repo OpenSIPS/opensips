@@ -68,8 +68,6 @@ void list_hash(int h_index);
 dpl_id_p* rules_hash = NULL;
 int * crt_idx, *next_idx;
 
-
-
 int init_db_data(void)
 {
 	if(dp_table_name.s == 0){
@@ -224,6 +222,23 @@ int dp_load_db(void)
 
 	nr_rows = RES_ROW_N(res);
 
+	/* if lock initialized - if called from reload - lock for reading */
+	
+	if(ref_lock)
+	{
+		/* block access to data for all readers */
+		lock_get( ref_lock );
+		*reload_flag = 1;
+		lock_release( ref_lock );
+
+		/* wait for all readers to finish - it's a kind of busy waitting but
+		 * it's not critical;
+		 * at this point, data_refcnt can only be decremented */
+		while (*data_refcnt) {
+			usleep(10);
+		}
+	}
+
 	*next_idx = ((*crt_idx) == 0)? 1:0;
 	destroy_hash(*next_idx);
 
@@ -250,6 +265,9 @@ int dp_load_db(void)
 				LM_ERR("failure while fetching!\n");
 				if (res)
 					dp_dbf.free_result(dp_db_handle, res);
+				if(ref_lock)
+					/* release the readers */
+					*reload_flag = 0;
 				return -1;
 			}
 		} else {
@@ -262,6 +280,13 @@ end:
 	/*update data*/
 	*crt_idx = *next_idx;
 	list_hash(*crt_idx);
+	
+	/* if lock defined - release the exclusive writing access */
+	if(ref_lock)
+		/* release the readers */
+		*reload_flag = 0;
+
+
 	dp_dbf.free_result(dp_db_handle, res);
 	return 0;
 
@@ -270,6 +295,10 @@ err2:
 	destroy_hash(*next_idx);
 	dp_dbf.free_result(dp_db_handle, res);
 	*next_idx = *crt_idx; 
+	/* if lock defined - release the exclusive writing access */
+	if(ref_lock)
+		/* release the readers */
+		*reload_flag = 0;
 	return -1;
 }
 
@@ -586,6 +615,19 @@ void list_hash(int h_index)
 	dpl_index_p indexp;
 	dpl_node_p rulep;
 
+	/* lock the data for reading */
+
+again:
+	lock_get( ref_lock );
+	/* if reload must be done, do un ugly busy waiting 
+	 * until reload is finished */
+	if (*reload_flag) {
+		lock_release( ref_lock );
+		usleep(5);
+		goto again;
+	}
+	*data_refcnt = *data_refcnt + 1;
+	lock_release( ref_lock );
 
 	if(!rules_hash[h_index])
 		return;
@@ -599,6 +641,12 @@ void list_hash(int h_index)
 			}
 		}
 	}
+
+	/* we are done reading -> unref the data */
+	lock_get( ref_lock );
+	*data_refcnt = *data_refcnt - 1;
+	lock_release( ref_lock );
+
 }
 
 

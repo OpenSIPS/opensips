@@ -66,6 +66,12 @@ dp_param_p default_par2 = NULL;
 
 int dp_fetch_rows = 1000;
 
+/* lock, ref counter and flag used for reloading the date */
+gen_lock_t *ref_lock = NULL;
+int* data_refcnt = 0;
+int* reload_flag = 0;
+
+
 static param_export_t mod_params[]={
 	{ "db_url",			STR_PARAM,	&dp_db_url.s },
 	{ "table_name",		STR_PARAM,	&dp_table_name.s },
@@ -171,6 +177,25 @@ static int mod_init(void)
 	if(dp_fetch_rows<=0)
 		dp_fetch_rows = 1000;
 
+	/* create & init lock */
+	if ( (ref_lock=lock_alloc())==0) {
+		LM_CRIT("failed to alloc ref_lock\n");
+		return -1;
+	}
+	if (lock_init(ref_lock)==0 ) {
+		LM_CRIT("failed to init ref_lock\n");
+		return -1;
+	}
+	data_refcnt = (int*)shm_malloc(sizeof(int));
+	reload_flag = (int*)shm_malloc(sizeof(int));
+	if(!data_refcnt || !reload_flag)
+	{
+		LM_ERR("no more shared memory\n");
+		return -1;
+	}
+	*data_refcnt = 0;
+	*reload_flag = 0;
+
 	return 0;
 }
 
@@ -198,6 +223,20 @@ static void mod_destroy(void)
 
 	/*close database connection*/
 	dp_disconnect_db();
+
+	/* destroy lock */
+	if (ref_lock) {
+		lock_destroy( ref_lock );
+		lock_dealloc( ref_lock );
+		ref_lock = 0;
+	}
+	
+	if(reload_flag)
+		shm_free(reload_flag);
+	if(data_refcnt)
+		shm_free(data_refcnt);
+
+
 }
 
 
@@ -373,15 +412,28 @@ static int dp_translate_f(struct sip_msg* msg, char* str1, char* str2)
 	}
 	LM_DBG("dpid is %i\n", dpid);
 
+	/* ref the data for reading */
+again:
+	lock_get( ref_lock );
+	/* if reload must be done, do un ugly busy waiting 
+	 * until reload is finished */
+	if (*reload_flag) {
+		lock_release( ref_lock );
+		usleep(5);
+		goto again;
+	}
+	*data_refcnt = *data_refcnt + 1;
+	lock_release( ref_lock );
+
 	if ((idp = select_dpid(dpid)) ==0 ){
 		LM_DBG("no information available for dpid %i\n", dpid);
-		return -1;
+		goto error;
 	}
 
 	repl_par = (str2!=NULL)? ((dp_param_p)str2):default_par2;
 	if (dp_get_svalue(msg, repl_par->v.sp[0], &input)!=0){
 		LM_ERR("invalid param 2\n");
-		return -1;
+		goto error;
 	}
 
 	LM_DBG("input is %.*s\n", input.len, input.s);
@@ -390,7 +442,7 @@ static int dp_translate_f(struct sip_msg* msg, char* str1, char* str2)
 	if (translate(msg, input, &output, idp, attrs_par)!=0){
 		LM_DBG("could not translate %.*s "
 			"with dpid %i\n", input.len, input.s, idp->dp_id);
-		return -1;
+		goto error;
 	}
 	LM_DBG("input %.*s with dpid %i => output %.*s\n",
 			input.len, input.s, idp->dp_id, output.len, output.s);
@@ -399,11 +451,22 @@ static int dp_translate_f(struct sip_msg* msg, char* str1, char* str2)
 	if (dp_update(msg, &repl_par->v.sp[0], &repl_par->v.sp[1], 
 	&output, attrs_par) !=0){
 		LM_ERR("cannot set the output\n");
-		return -1;
+		goto error;
 	}
+	/* we are done reading -> unref the data */
+	lock_get( ref_lock );
+	*data_refcnt = *data_refcnt - 1;
+	lock_release( ref_lock );
 
 	return 1;
-		
+
+error:
+	/* we are done reading -> unref the data */
+	lock_get( ref_lock );
+	*data_refcnt = *data_refcnt - 1;
+	lock_release( ref_lock );
+
+	return -1;		
 }
 
 #define verify_par_type(_par_no, _spec)\
@@ -549,12 +612,6 @@ static struct mi_root * mi_translate(struct mi_root *cmd, void *param)
 		LM_ERR("Wrong id parameter - should be an integer\n");
 		return init_mi_tree(404, "Wrong id parameter", 18);
 	}
-
-	if ((idp = select_dpid(dpid)) ==0 ){
-		LM_ERR("no information available for dpid %i\n", dpid);
-		return init_mi_tree(404, "No information available for dpid", 33);
-	}
-
 	node = node->next;
 	if(node == NULL)
 		return init_mi_tree( 400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
@@ -567,14 +624,39 @@ static struct mi_root * mi_translate(struct mi_root *cmd, void *param)
 		LM_ERR( "empty input parameter\n");
 		return init_mi_tree(404, "Empty input parameter", 21);
 	}
-
 	LM_DBG("input is %.*s\n", input.len, input.s);
+
+	/* ref the data for reading */
+again:
+	lock_get( ref_lock );
+	/* if reload must be done, do un ugly busy waiting 
+	 * until reload is finished */
+	if (*reload_flag) {
+		lock_release( ref_lock );
+		usleep(5);
+		goto again;
+	}
+	*data_refcnt = *data_refcnt + 1;
+	lock_release( ref_lock );
+
+	if ((idp = select_dpid(dpid)) ==0 ){
+		LM_ERR("no information available for dpid %i\n", dpid);
+		lock_get( ref_lock );
+		*data_refcnt = *data_refcnt - 1;
+		lock_release( ref_lock );
+		return init_mi_tree(404, "No information available for dpid", 33);
+	}
 
 	if (translate(NULL, input, &output, idp, &attrs)!=0){
 		LM_DBG("could not translate %.*s with dpid %i\n", 
 			input.len, input.s, idp->dp_id);
-		return 0;
+		goto error1;
 	}
+	/* we are done reading -> unref the data */
+	lock_get( ref_lock );
+	*data_refcnt = *data_refcnt - 1;
+	lock_release( ref_lock );
+
 	LM_DBG("input %.*s with dpid %i => output %.*s\n",
 			input.len, input.s, idp->dp_id, output.len, output.s);
 
@@ -593,6 +675,11 @@ static struct mi_root * mi_translate(struct mi_root *cmd, void *param)
 		goto error;
 
 	return rpl;
+error1:
+	/* we are done reading -> unref the data */
+	lock_get( ref_lock );
+	*data_refcnt = *data_refcnt - 1;
+	lock_release( ref_lock );
 
 error:
 	if(rpl)

@@ -29,6 +29,7 @@
 #define _DP_DIALPLAN_H
 
 #include "../../parser/msg_parser.h"
+#include "../../locking.h"
 
 /*see copyright in trex.h*/
 #include "trex.h"
@@ -88,4 +89,9 @@ void repl_expr_free(struct subst_expr *se);
 int translate(struct sip_msg *msg, str user_name, str* repl_user, dpl_id_p idp, str *);
 int rule_translate(struct sip_msg *msg, str , dpl_node_t * rule,  str *);
 int test_match(str string, TRex *);
+
+extern gen_lock_t *ref_lock;
+extern int* data_refcnt;
+extern int* reload_flag;
+
 #endif
