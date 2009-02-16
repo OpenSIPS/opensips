@@ -1159,7 +1159,7 @@ modparam("drouting", "force_dns", 0)
 		</para>
 		<para>
 		The module can take one optional parameter: the routing group the 
-		caller belongs to - this may be a statis numerical value or an AVP
+		caller belongs to - this may be a static numerical value or an AVP
 		specification. If none specified, the function will automatically
 		try to query the dr_group table to get this information.
 		</para>

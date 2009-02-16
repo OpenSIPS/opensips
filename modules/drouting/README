@@ -647,7 +647,7 @@ modparam("drouting", "force_dns", 0)
    This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
    The module can take one optional parameter: the routing group
-   the caller belongs to - this may be a statis numerical value or
+   the caller belongs to - this may be a static numerical value or
    an AVP specification. If none specified, the function will
    automatically try to query the dr_group table to get this
    information.
