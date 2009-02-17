@@ -109,15 +109,22 @@ db_charset_test()
 		ALLCHARSETS=`echo "show character set" | $CMD | $AWK '{print $1}' | $SED -e 1d | $GREP -iv  "utf8" | $GREP -iv "ucs2"`
 	fi
 
+	tries=0;
+
 	while [ `echo "$ALLCHARSETS" | $GREP -icw $CURRCHARSET`  = "0" ]
 	do
 		mwarn "Your current default mysql characters set cannot be used to create DB. Please choice another one from the following list:"
 		mecho "$ALLCHARSETS"
+
+		let tries=tries+1;
 		mecho "Enter character set name: "
 		read CURRCHARSET
-		if [ `echo $CURRCHARSET | $GREP -cE "\w+"` = "0" ]; then
-			merr "can't continue: user break"
-			exit 1
+
+		if [ $tries -ge 3 ]
+		then
+			merr "Check your current charset"
+			merr "Exiting..."
+			exit 1;
 		fi
 	done
 	CHARSET=$CURRCHARSET
