@@ -1,0 +1,228 @@
+<!-- Module User's Guide -->
+
+<chapter>
+	
+	<title>&adminguide;</title>
+	
+	<section>
+	<title>Overview</title>
+	<para>
+	The Load-Balancer module provides load-balancing for &osips; proxy. 
+	</para>
+	</section>
+
+	<section>
+	<title>How it works</title>
+	</section>
+
+	<section>
+	<title>Dependencies</title>
+	<section>
+		<title>&osips; Modules</title>
+		<para>
+		The following modules must be loaded before this module:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>Dialog</emphasis> - Dialog module
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>database</emphasis> - one of the DB modules
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+
+
+	<section>
+		<title>External Libraries or Applications</title>
+		<para>
+		The following libraries or applications must be installed before 
+		running &osips; with this module loaded:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>None</emphasis>.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+	</section>
+
+
+	<section>
+	<title>Exported Parameters</title>
+
+	<section>
+		<title><varname>db_url</varname> (string)</title>
+		<para>
+		The URL pointing to the database where the load-balancing rules 
+		are stored.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>&defaultdb;</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>db_url</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("load_balancer", "db_url", "&exampledb;")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>db_table</varname> (string)</title>
+		<para>
+		The name of the DB table containing the load-balancing rules.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>load_balancer</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>db_table</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("", "db_table", "lb")
+...
+</programlisting>
+		</example>
+	</section>
+
+	</section>
+
+
+	<section>
+	<title>Exported Functions</title>
+	<section>
+		<title>
+		<function moreinfo="none">load_balance(grp,resources)</function>
+		</title>
+		<para>
+		The function performs load-balancing over the available destinations in
+		order to find the less loaded destination that can provide the 
+		requested resources and belong to a requested group.
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>grp</emphasis> - group id for the destinations; the
+			destination may be grouped in several groups you can you for 
+			differnet scenarios.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>resources</emphasis> - string containing a 
+			semi-colon list of resources required by the current call.
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		Function returns true is a new destination URI is set pointing to the 
+		selected destiantion.
+		NOTE that the RURI will not be changed by this function.
+		</para>
+		<para>
+		This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
+			REPLY_ROUTE and FAILURE_ROUTE.
+		</para>
+		<example>
+		<title><function>set_dlg_profile</function> usage</title>
+		<programlisting format="linespecific">
+...
+if (load_balance("1","trascoding;conference")) {
+	# dst URI points to the new destination
+	xlog("sending call to $du\n");
+	t_relay();
+	exit;
+}
+...
+</programlisting>
+		</example>
+	</section>
+
+	</section>
+
+
+	<section>
+	<title>Exported statistics</title>
+	<para>
+	NONE
+	</para>
+	</section>
+
+
+	<section>
+	<title>Exported MI Functions</title>
+
+		<section>
+		<title><varname>lb_reload</varname></title>
+		<para>
+		Trigers the reload of the load balancing data from the DB.
+		</para>
+		<para>
+		MI FIFO Command Format:
+		</para>
+		<programlisting  format="linespecific">
+		:lb_reload:_reply_fifo_file_
+		_empty_line_
+		</programlisting>
+		</section>
+
+		<section>
+		<title><varname>lb_resize</varname></title>
+		<para>
+		Changes the capacity for a resource of a destination. The function 
+		receives as parameters the ID (as per DB) of the destination along 
+		with the name of the resource you want to resize.
+		</para>
+		<para>
+		MI FIFO Command Format:
+		</para>
+		<programlisting  format="linespecific">
+		:lb_resize:_reply_fifo_file_
+		11   /*dstination id*/
+		voicemail  /*resource name*/
+		56   /* new resource capacity*/
+		_empty_line_
+		</programlisting>
+		</section>
+
+		<section>
+		<title><varname>lb_list</varname></title>
+		<para>
+		Lists all the destinations and the maximum and current load for each 
+		resource of the destination.
+		</para>
+		<para>
+		MI FIFO Command Format:
+		</para>
+		<programlisting  format="linespecific">
+		:lb_list:_reply_fifo_file_
+		_empty_line_
+		</programlisting>
+		</section>
+
+	</section>
+
+
+	<section>
+	<title>Exported pseudo-variables</title>
+	<para>
+	NONE
+	</para>
+	</section>
+
+
+
+</chapter>
+
