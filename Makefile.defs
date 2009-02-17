@@ -47,7 +47,8 @@
 #  2007-02-12  CPU replaced with CPU_TYPE to avoid overlapping with system 
 #              env. variables on some OS. (bogdan)
 #  2007-11-29  Add support for GNU/kFreeBSD. Substitute / for _ in $(OS).
-#
+#  2009-01-15  Detection of CPU Type in Solaris to apply specific optimization 
+#	       flags (saguti)
 
 # check if already included/exported
 
@@ -70,6 +71,10 @@ OS = $(shell uname -s | sed -e s/SunOS/solaris/ | tr "[A-Z/]" "[a-z_]")
 
 ifeq ($(OS),solaris)
 	GETARCH=uname -p
+	
+	# CHIP Detection
+	CHIP = $(shell /usr/sbin/modinfo | grep SUNW | head | cut -d, -f2 | \
+			awk '{print $1}' | tr "[A-Z]" "[a-z]" | sed 's/ ()//g' )
 else
 	GETARCH=uname -m
 endif
@@ -758,17 +763,46 @@ ifeq		($(CC_NAME), gcc)
 					#-Wmissing-prototypes 
 				#if gcc 4.x
 ifeq			($(CC_CLASS), 4.x)
-					CPU_TYPE ?= ultrasparc
-					#use 32bit for now
-					CFLAGS+=-mcpu=ultrasparc \
-							-mtune=$(CPU_TYPE) \
-							-ftree-vectorize
-else
-				#if gcc 3.0+
-ifeq			($(CC_CLASS), 3.x)
-					CPU_TYPE ?= ultrasparc
-					#use 32bit for now
-					CFLAGS+= -mcpu=ultrasparc -mtune=$(CPU_TYPE)   \
+
+					# Processors of Family UltraSparc II
+					ifeq ($(CHIP), ultrasparc-ii)
+						CFLAGS+= -ftree-vectorize -mcpu=ultrasparc -mtune=ultrasparc -mvis 
+					endif
+
+					# Processors of Family UltraSparc III (III, III, IIIi, IIICu)
+					ifeq ($(CHIP), ultrasparc-iiii)
+						CFLAGS+= -ftree-vectorize -mcpu=ultrasparc3 -mtune=ultrasparc3 -mvis
+					endif
+
+					ifeq ($(CHIP), ultrasparc-iii)
+						CFLAGS+= -ftree-vectorize -mcpu=ultrasparc3 -mtune=ultrasparc3 -mvis
+					endif
+
+					ifeq ($(CHIP), ultrasparc-iiicu)
+						CFLAGS+= -ftree-vectorize -mcpu=ultrasparc3 -mtune=ultrasparc3 -mvis
+					endif
+
+					# Processors of Family UltraSparc T1
+					ifeq ($(CHIP), ultrasparc-ti)
+						# niagara switch is not supported on GCC < 4.2
+						# Sets to default ultrasparc
+						ifeq ($(CC_SHORTVER), 4.2)
+							CFLAGS+= -ftree-vectorize -mcpu=niagara -mtune=niagara -mvis
+						else
+							ifeq ($(CC_SHORTVER), 4.3)
+								CFLAGS+= -ftree-vectorize -mcpu=niagara -mtune=niagara -mvis
+							else
+								CFLAGS+= -ftree-vectorize -mcpu=ultrasparc -mtune=ultrasparc -mvis
+							endif
+						endif
+					endif
+
+					# If processor detection fails, defaults to UltraSPARC without VIS
+					ifeq (,$(CHIP))
+						#CPU_TYPE=ultrasparc
+						CFLAGS += -mcpu=ultrasparc -mtune=ultrasparc 
+					endif
+
 					# use -m64 to force 64 bit (but add it also to LDFLAGS), 
 					# -m32 for 32 bit (default on solaris),
 					# nothing for arch. default
@@ -776,6 +810,51 @@ ifeq			($(CC_CLASS), 3.x)
 					#-mno-epilogue #try to inline function exit code
 					#-mflat # omit save/restore
 					#-,faster-structs #faster non Sparc ABI structure copy ops
+
+else
+				#if gcc 3.0+
+ifeq			($(CC_CLASS), 3.x)
+
+					# Processors of Family UltraSparc II
+					ifeq ($(CHIP), ultrasparc-ii)
+						#CPU_TYPE=ultrasparc
+						CFLAGS+= -mcpu=ultrasparc -mtune=ultrasparc -mvis 
+					endif
+
+					# Processors of Family UltraSparc III
+					ifeq ($(CHIP), ultrasparc-iiii)
+						CFLAGS+= -mcpu=ultrasparc3 -mtune=ultrasparc3 -mvis
+					endif
+
+					ifeq ($(CHIP), ultrasparc-iiii)
+						CFLAGS+= -mcpu=ultrasparc3 -mtune=ultrasparc3 -mvis
+					endif
+
+					ifeq ($(CHIP), ultrasparc-iiicu)
+						CFLAGS+= -mcpu=ultrasparc3 -mtune=ultrasparc3 -mvis
+					endif
+
+					# Processors of Family UltraSparc T1
+					ifeq ($(CHIP), ultrasparc-ti)
+						# niagara switch is not supported on GCC < 4.2
+						# Sets to default ultrasparc
+						CFLAGS+= -mcpu=ultrasparc -mtune=ultrasparc -mvis
+					endif
+
+					# If processor detection fails, defaults to UltraSPARC without VIS
+					ifeq (,$(CHIP))
+						#CPU_TYPE=ultrasparc
+						CFLAGS += -mcpu=ultrasparc -mtune=ultrasparc 
+					endif
+
+					# use -m64 to force 64 bit (but add it also to LDFLAGS), 
+					# -m32 for 32 bit (default on solaris),
+					# nothing for arch. default
+					# -mcpu=v9 or ultrasparc? # -mtune implied by -mcpu
+					#-mno-epilogue #try to inline function exit code
+					#-mflat # omit save/restore
+					#-,faster-structs #faster non Sparc ABI structure copy ops
+
 else			# CC_CLASS, 3.0
 ifeq			($(CC_CLASS), 2.9x) #older gcc version (2.9[1-5])
 $(warning 			Old gcc detected ($(CC_SHORTVER)), use  gcc >= 3.1 \
