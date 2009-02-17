@@ -44,6 +44,7 @@
 #include "hash.h"
 #include "utils_func.h"
 
+#define PRESENTITY_FETCH_SIZE			128
 
 xmlNodePtr xmlNodeGetNodeByName(xmlNodePtr node, const char *name,
 													const char *ns);
@@ -700,10 +701,9 @@ int pres_htable_restore(void)
 {
 	/* query all records from presentity table and insert records 
 	 * in presentity table */
-	static db_ps_t my_ps = NULL;
 	db_key_t result_cols[6];
 	db_res_t *result= NULL;
-	db_row_t *row= NULL ;	
+	db_row_t *rows= NULL ;	
 	db_val_t *row_vals;
 	int  i;
 	str user, domain, ev_str, uri, body;
@@ -712,7 +712,7 @@ int pres_htable_restore(void)
 	int event;
 	event_t ev;
 	char* sphere= NULL;
-	static str query_str = str_init("username");
+	int nr_rows;
 
 	result_cols[user_col= n_result_cols++]= &str_username_col;
 	result_cols[domain_col= n_result_cols++]= &str_domain_col;
@@ -721,80 +721,130 @@ int pres_htable_restore(void)
 	if(sphere_enable)
 		result_cols[body_col= n_result_cols++]= &str_body_col;
 
+
+
 	if (pa_dbf.use_table(pa_db, &presentity_table) < 0)
 	{
 		LM_ERR("unsuccessful use table sql operation\n");
 		goto error;
 	}
-	CON_PS_REFERENCE(pa_db) = &my_ps;
-	if (pa_dbf.query (pa_db, 0, 0, 0,result_cols,0, n_result_cols,
-				&query_str, &result) < 0)
-	{
-		LM_ERR("querying presentity\n");
-		goto error;
-	}
-	if(result== NULL)
-		goto error;
 
-	if(result->n<= 0)
+	/* select the whole tabel and all the columns */
+	if (DB_CAPABILITY(pa_dbf, DB_CAP_FETCH)) 
 	{
-		pa_dbf.free_result(pa_db, result);
-		return 0;
-	}
-		
-	for(i= 0; i< result->n; i++)
-	{
-		row = &result->rows[i];
-		row_vals = ROW_VALUES(row);
-
-		if(row_vals[expires_col].val.int_val< (int)time(NULL))
-			continue;
-		
-		sphere= NULL;
-		user.s= (char*)row_vals[user_col].val.string_val;
-		user.len= strlen(user.s);
-		domain.s= (char*)row_vals[domain_col].val.string_val;
-		domain.len= strlen(domain.s);
-		ev_str.s= (char*)row_vals[event_col].val.string_val;
-		ev_str.len= strlen(ev_str.s);
-
-		if(event_parser(ev_str.s, ev_str.len, &ev)< 0)
+		if(pa_dbf.query(pa_db,0,0,0,result_cols, 0,
+		n_result_cols, result_cols[user_col], 0) < 0) 
 		{
-			LM_ERR("parsing event\n");
+			LM_ERR("Error while querying (fetch) database\n");
+			return -1;
+		}
+		if(pa_dbf.fetch_result(pa_db,&result,PRESENTITY_FETCH_SIZE)<0)
+		{
+			LM_ERR("fetching rows failed\n");
+			return -1;
+		}
+	} else 
+	{
+		if (pa_dbf.query (pa_db, 0, 0, 0,result_cols,0, n_result_cols,
+					result_cols[user_col], &result) < 0)
+		{
+			LM_ERR("querying presentity\n");
+			goto error;
+		}
+	}
+
+	nr_rows = RES_ROW_N(result);
+
+	do {
+		LM_DBG("loading information from database for %i records\n", nr_rows);
+
+		rows = RES_ROWS(result);
+
+		/* for every row */
+		for(i=0; i<nr_rows; i++)
+		{
+			row_vals = ROW_VALUES(rows + i);
+
+			if (VAL_NULL(row_vals) || VAL_NULL(row_vals+1))
+			{
+				LM_ERR("columns %.*s or/and %.*s cannot be null -> skipping\n",
+					str_username_col.len, str_username_col.s,
+					str_domain_col.len, str_domain_col.s);
+				continue;
+			}
+
+			if (VAL_NULL(row_vals+2) || VAL_NULL(row_vals+3)) 
+			{
+				LM_ERR("columns %.*s or/and %.*s cannot be null -> skipping\n",
+					str_event_col.len, str_event_col.s,
+					str_domain_col.len, str_domain_col.s);
+				continue;
+			}
+
+			if(row_vals[expires_col].val.int_val< (int)time(NULL))
+				continue;
+			
+			sphere= NULL;
+			user.s= (char*)row_vals[user_col].val.string_val;
+			user.len= strlen(user.s);
+			domain.s= (char*)row_vals[domain_col].val.string_val;
+			domain.len= strlen(domain.s);
+			ev_str.s= (char*)row_vals[event_col].val.string_val;
+			ev_str.len= strlen(ev_str.s);
+
+			if(event_parser(ev_str.s, ev_str.len, &ev)< 0)
+			{
+				LM_ERR("parsing event\n");
+				free_event_params(ev.params, PKG_MEM_TYPE);
+				goto error;
+			}
+			event= ev.parsed;
 			free_event_params(ev.params, PKG_MEM_TYPE);
-			goto error;
-		}
-		event= ev.parsed;
-		free_event_params(ev.params, PKG_MEM_TYPE);
 
-		if(uandd_to_uri(user, domain, &uri)< 0)
-		{
-			LM_ERR("constructing uri\n");
-			goto error;
-		}
-		/* insert in hash_table*/
-	
-		if(sphere_enable && event== EVENT_PRESENCE )
-		{
-			body.s= (char*)row_vals[body_col].val.string_val;
-			body.len= strlen(body.s);
-			sphere= extract_sphere(body);
-		}
+			if(uandd_to_uri(user, domain, &uri)< 0)
+			{
+				LM_ERR("constructing uri\n");
+				goto error;
+			}
+			/* insert in hash_table*/
+		
+			if(sphere_enable && event== EVENT_PRESENCE )
+			{
+				body.s= (char*)row_vals[body_col].val.string_val;
+				body.len= strlen(body.s);
+				sphere= extract_sphere(body);
+			}
 
-		if(insert_phtable(&uri, event, sphere)< 0)
-		{
-			LM_ERR("inserting record in presentity hash table");
-			pkg_free(uri.s);
+			if(insert_phtable(&uri, event, sphere)< 0)
+			{
+				LM_ERR("inserting record in presentity hash table");
+				pkg_free(uri.s);
+				if(sphere)
+					pkg_free(sphere);
+				goto error;
+			}
 			if(sphere)
 				pkg_free(sphere);
-			goto error;
+			pkg_free(uri.s);
 		}
-		if(sphere)
-			pkg_free(sphere);
-		pkg_free(uri.s);
-	}
-	pa_dbf.free_result(pa_db, result);
 
+		/* any more data to be fetched ?*/
+		if (DB_CAPABILITY(pa_dbf, DB_CAP_FETCH)) 
+		{
+			if (pa_dbf.fetch_result( pa_db, &result,
+			PRESENTITY_FETCH_SIZE ) < 0) 
+			{
+				LM_ERR("fetching more rows failed\n");
+				goto error;
+			}
+			nr_rows = RES_ROW_N(result);
+		} else 
+			nr_rows = 0;
+
+	}while (nr_rows>0);
+
+	pa_dbf.free_result(pa_db, result);
+		
 	return 0;
 
 error:
