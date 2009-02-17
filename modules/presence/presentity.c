@@ -266,7 +266,8 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, str* body,
 {
 	static db_ps_t my_ps_insert = NULL, my_ps_update_no_body = NULL,
 		   my_ps_update_body = NULL;
-	static db_ps_t my_ps_delete = NULL, my_ps_query = NULL;
+	static db_ps_t my_ps_delete = NULL;
+	// static db_ps_t my_ps_query = NULL;
 	db_key_t query_cols[12], update_keys[8], result_cols[5];
 	db_op_t  query_ops[12];
 	db_val_t query_vals[12], update_vals[8];
@@ -408,7 +409,7 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, str* body,
 			goto error;
 		}
 
-		CON_PS_REFERENCE(pa_db) = &my_ps_query;
+	//	CON_PS_REFERENCE(pa_db) = &my_ps_query;
 		if (pa_dbf.query (pa_db, query_cols, query_ops, query_vals,
 			 result_cols, n_query_cols, n_result_cols, 0, &result) < 0) 
 		{
@@ -922,7 +923,7 @@ xmlNodePtr xmlNodeGetNodeByName(xmlNodePtr node, const char *name,
 
 char* get_sphere(str* pres_uri)
 {
-	static db_ps_t my_ps = NULL;
+//	static db_ps_t my_ps = NULL;
 	unsigned int hash_code;
 	char* sphere= NULL;
 	pres_entry_t* p;
@@ -1006,7 +1007,7 @@ char* get_sphere(str* pres_uri)
 		return NULL;
 	}
 
-	CON_PS_REFERENCE(pa_db) = &my_ps;
+	// CON_PS_REFERENCE(pa_db) = &my_ps; 
 	if (pa_dbf.query (pa_db, query_cols, 0, query_vals,
 		 result_cols, n_query_cols, n_result_cols, &query_str ,  &result) < 0) 
 	{
