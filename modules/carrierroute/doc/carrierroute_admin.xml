@@ -663,7 +663,7 @@ modparam("carrierroute", "fallback_default", 1)
         <title>Set <varname>db_failuretable</varname> parameter</title>
 		    <programlisting format="linespecific">
 ...
-modparam("carrierroute", "db_failuretable", "carrierfailureroute")
+modparam("carrierroute", "db_failure_table", "carrierfailureroute")
 ...
 		    </programlisting>
 	    </example>
