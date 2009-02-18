@@ -660,7 +660,7 @@ modparam("carrierroute", "fallback_default", 1)
 		    </emphasis>
 	    </para>
 	    <example>
-        <title>Set <varname>db_failuretable</varname> parameter</title>
+        <title>Set <varname>db_failure_table</varname> parameter</title>
 		    <programlisting format="linespecific">
 ...
 modparam("carrierroute", "db_failure_table", "carrierfailureroute")
