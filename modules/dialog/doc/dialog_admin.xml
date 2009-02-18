@@ -880,6 +880,33 @@ modparam("dialog", "profiles_no_value", "inbound ; outbound")
 
 	<section>
 	<title>Exported Functions</title>
+
+	<section>
+		<title>
+		<function moreinfo="none">create_dialog()</function>
+		</title>
+		<para>
+		The function creats the dialog for the currently processed request. The
+		request must be an initial request.
+		</para>
+		<para>
+		The function returns true if the dialog was successfully created or 
+		if the dialog was previously created.
+		</para>
+		<para>
+		This function can be used from REQUEST_ROUTE.
+		</para>
+		<example>
+		<title><function>create_dialog()</function> usage</title>
+		<programlisting format="linespecific">
+...
+create_dialog();
+...
+</programlisting>
+		</example>
+	</section>
+
+
 	<section>
 		<title>
 		<function moreinfo="none">set_dlg_profile(profile,[value])</function>
@@ -889,6 +916,10 @@ modparam("dialog", "profiles_no_value", "inbound ; outbound")
 		not supports values, this will be silently discarded. Also, there is
 		no check for inserting the same dialog in the same profile for multiple
 		times.
+		</para>
+		<para>
+		NOTE: the dialog must be created before using this function (use 
+		create_dialog() function before).
 		</para>
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
@@ -926,6 +957,10 @@ set_dlg_profile("caller","$fu");
 		</title>
 		<para>
 		Removes the current dialog from a profile.
+		</para>
+		<para>
+		NOTE: the dialog must be created before using this function (use 
+		create_dialog() function before).
 		</para>
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
@@ -969,6 +1004,10 @@ unset_dlg_profile("caller","$fu");
 		specific value. If not value is passed, only simply belonging of the 
 		dialog to the profile is checked. Note that the profile does not 
 		supports values, this will be silently discarded.
+		</para>
+		<para>
+		NOTE: the dialog must be created before using this function (use 
+		create_dialog() function before).
 		</para>
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
@@ -1064,6 +1103,10 @@ xlog("currently, the user %fu has $avp(size) active outgoing calls\n");
 		The flag index can be between 0 and 31.
 		</para>
 		<para>
+		NOTE: the dialog must be created before using this function (use 
+		create_dialog() function before).
+		</para>
+		<para>
 		This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
 			REPLY_ROUTE and FAILURE_ROUTE.
 		</para>
@@ -1090,6 +1133,10 @@ set_dlg_flag("3");
 		The flag index can be between 0 and 31.
 		</para>
 		<para>
+		NOTE: the dialog must be created before using this function (use 
+		create_dialog() function before).
+		</para>
+		<para>
 		This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
 			REPLY_ROUTE and FAILURE_ROUTE.
 		</para>
@@ -1114,6 +1161,10 @@ reset_dlg_flag("16");
 		</para>
 		<para>
 		The flag index can be between 0 and 31.
+		</para>
+		<para>
+		NOTE: the dialog must be created before using this function (use 
+		create_dialog() function before).
 		</para>
 		<para>
 		This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
@@ -1143,6 +1194,10 @@ if (is_dlg_flag_set("16")) {
 		</para>
 		<para>
 		Parameter <emphasis>val</emphasis> may contain pseudo-variables.
+		</para>
+		<para>
+		NOTE: the dialog must be created before using this function (use 
+		create_dialog() function before).
 		</para>
 		<para>
 		Same functionality may be obtain by assigning a value to pseudo
@@ -1178,6 +1233,10 @@ $dlg_val("account_type") = "prepaid";
 		<para>
 		Parameter <emphasis>pvar</emphasis> may be a script var ($var) or
 		and avp ($avp).
+		</para>
+		<para>
+		NOTE: the dialog must be created before using this function (use 
+		create_dialog() function before).
 		</para>
 		<para>
 		Same functionality may be obtain by reading the pseudo
