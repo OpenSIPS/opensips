@@ -54,7 +54,7 @@ exclude_modules?= jabber cpl-c xmpp rls mi_xmlrpc xcap_client \
 	avp_radius auth_radius group_radius uri_radius \
 	osp perl snmpstats perlvdb seas peering carrierroute mmgeoip \
 	presence presence_xml presence_mwi pua pua_bla pua_mi pua_usrloc pua_xmpp \
-	ldap h350 closeddial identity
+	ldap h350 closeddial identity regex
 ifeq ($(TLS),)
 	exclude_modules+= tlsops
 endif
