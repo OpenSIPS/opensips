@@ -507,6 +507,24 @@ void timer_send_notify(unsigned int ticks,void *param)
 	if(result== NULL || result->n<= 0)
 		goto done;
 
+	/* update the rlpres table */
+	update_cols[0]= &str_updated_col;
+	update_vals[0].type = DB_INT;
+	update_vals[0].nul = 0;
+	update_vals[0].val.int_val= NO_UPDATE_TYPE; 
+
+	if (rls_dbf.use_table(rls_db, &rlpres_table) < 0) 
+	{
+		LM_ERR("in use_table\n");
+		goto error;
+	}
+	if(rls_dbf.update(rls_db, query_cols, 0, query_vals, update_cols,
+					update_vals, 1, 1)< 0)
+	{
+		LM_ERR("in sql update\n");
+		goto error;
+	}
+
 	/* generate the boundary string */
 
 	bstr.s= generate_string((int)time(NULL), BOUNDARY_STRING_LEN);
@@ -548,8 +566,8 @@ void timer_send_notify(unsigned int ticks,void *param)
 		
 			multi_cont.s= buf;
 			multi_cont.len= buf_len;
-
-			 if(agg_body_sendn_update(&dialog->pres_uri, bstr, &rlmi_cont, 
+			 
+			if(agg_body_sendn_update(&dialog->pres_uri, bstr, &rlmi_cont, 
 						 (buf_len==0)?NULL:&multi_cont, dialog, hash_code)<0)
 			 {
 				 LM_ERR("in function agg_body_sendn_update\n");
@@ -725,10 +743,12 @@ void timer_send_notify(unsigned int ticks,void *param)
 
 			row = &result->rows[i];
 			row_vals = ROW_VALUES(row);
-		
-			if(strncmp(row_vals[resource_uri_col].val.string_val,
-					resource_uri, strlen(resource_uri)))
+	
+			if(strncmp(row_vals[resource_uri_col].val.string_val,resource_uri,
+					strlen(resource_uri)) || strncmp(curr_did, 
+					row_vals[did_col].val.string_val, strlen(curr_did)))
 			{
+				LM_DBG("in while(1) dar am iesit\n");
 				i--;
 				break;
 			}
@@ -761,25 +781,6 @@ void timer_send_notify(unsigned int ticks,void *param)
 		dialog= NULL;
 	}
 
-	/* update the rlpres table */
-	update_cols[0]= &str_updated_col;
-	update_vals[0].type = DB_INT;
-	update_vals[0].nul = 0;
-	update_vals[0].val.int_val= NO_UPDATE_TYPE; 
-
-	if (rls_dbf.use_table(rls_db, &rlpres_table) < 0) 
-	{
-		LM_ERR("in use_table\n");
-		goto error;
-	}
-	if(rls_dbf.update(rls_db, query_cols, 0, query_vals, update_cols,
-					update_vals, 1, 1)< 0)
-	{
-		LM_ERR("in sql update\n");
-		goto error;
-	}
-
-
 error:
 done:
 	if(result)
@@ -811,7 +812,7 @@ void rls_presentity_clean(unsigned int ticks,void *param)
 	query_ops[0]= OP_LT;
 	query_vals[0].nul= 0;
 	query_vals[0].type= DB_INT;
-	query_vals[0].val.int_val= (int)time(NULL);
+	query_vals[0].val.int_val= (int)time(NULL)-10;
 
 	if (rls_dbf.use_table(rls_db, &rlpres_table) < 0) 
 	{
