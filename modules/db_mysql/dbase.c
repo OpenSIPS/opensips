@@ -187,7 +187,7 @@ static struct my_stmt_ctx * get_new_stmt_ctx(const db_con_t* conn,
 
 	/* new one */
 	ctx = (struct my_stmt_ctx*)pkg_malloc
-		( sizeof(struct my_stmt_ctx) + CON_TABLE(conn)->len);
+		( sizeof(struct my_stmt_ctx) + CON_TABLE(conn)->len + query->len);
 	if (ctx==NULL) {
 		LM_ERR("no more pkg mem for statement context\n");
 		return NULL;
@@ -195,6 +195,9 @@ static struct my_stmt_ctx * get_new_stmt_ctx(const db_con_t* conn,
 	ctx->table.s = (char*)(ctx+1);
 	ctx->table.len = CON_TABLE(conn)->len;
 	memcpy( ctx->table.s, CON_TABLE(conn)->s, ctx->table.len);
+	ctx->query.s = ctx->table.s + ctx->table.len;
+	ctx->query.len = query->len;
+	memcpy( ctx->query.s, query->s, query->len);
 	ctx->next = 0;
 	ctx->has_out = 0;
 	/* initialize the statement */
@@ -352,39 +355,48 @@ static int db_mysql_do_prepared_query(const db_con_t* conn, const str *query,
 		}
 	}
 
-	/* bind in values to the statement */
-	LM_DBG("doing BIND_PARAM in...\n");
-	if ( mysql_stmt_bind_param(ctx->stmt, mysql_bind) ) {
-		LM_ERR("mysql_stmt_bind_param() failed: %s\n",
-			mysql_stmt_error(ctx->stmt));
-		return -1;
-	}
-
-	CON_RESULT(conn) = mysql_stmt_result_metadata(ctx->stmt);
-	if ( ! CON_RESULT(conn) ) {
-		cols = 0;
-	} else {
-		cols = mysql_num_fields(CON_RESULT(conn));
-	}
-
-	/* from db_mysql_submit_query(): */
-	/* When a server connection is lost and a query is attempted, most of
-	 * the time the query will return a CR_SERVER_LOST, then at the second
-	 * attempt to execute it, the mysql lib will reconnect and succeed.
-	 * However is a few cases, the first attempt returns CR_SERVER_GONE_ERROR
-	 * the second CR_SERVER_LOST and only the third succeeds.
-	 * Thus the 3 in the loop count. Increasing the loop count over this
-	 * value shouldn't be needed, but it doesn't hurt either, since the loop
-	 * will most of the time stop at the second or sometimes at the third
-	 * iteration.
-	 */
 	i=0;
 	do {
-		code = mysql_stmt_execute(ctx->stmt);
-		if (code && code != CR_SERVER_GONE_ERROR && code != CR_SERVER_LOST) {
-			LM_ERR("mysql_stmt_execute() failed: %s\n",
+		/* bind in values to the statement */
+		LM_DBG("doing BIND_PARAM in...\n");
+		if ( mysql_stmt_bind_param(ctx->stmt, mysql_bind) ) {
+			LM_ERR("mysql_stmt_bind_param() failed: %s\n",
 				mysql_stmt_error(ctx->stmt));
 			return -1;
+		}
+
+		CON_RESULT(conn) = mysql_stmt_result_metadata(ctx->stmt);
+		if ( ! CON_RESULT(conn) ) {
+			cols = 0;
+		} else {
+			cols = mysql_num_fields(CON_RESULT(conn));
+		}
+
+		if ( (code = mysql_stmt_execute(ctx->stmt)!=0 )) {
+			//if (code != CR_SERVER_GONE_ERROR && code != CR_SERVER_LOST) {
+			if (memcmp(mysql_stmt_error(ctx->stmt),"Lost",4)!=0) {
+				LM_ERR("mysql_stmt_execute() failed: (%d) %s\n",
+					code, mysql_stmt_error(ctx->stmt));
+				return -1;
+			}
+			LM_DBG("mysql server gone or lost -> re-init the statement\n");
+			/* reset the old prepared statement */
+			mysql_stmt_close(ctx->stmt);
+			/* re-init the statement */
+			if ( !(ctx->stmt=mysql_stmt_init(CON_CONNECTION(conn))) ) {
+				LM_ERR("failed while mysql_stmt_init()\n");
+				/* destroy everything */
+				db_mysql_free_pq(pq_ptr);
+				CON_PS_LIST(conn) = NULL;
+				return -1;
+			}
+			if ( mysql_stmt_prepare(ctx->stmt, ctx->query.s, ctx->query.len)) {
+				LM_ERR("failed while mysql_stmt_prepare()\n");
+				/* destroy everything */
+				db_mysql_free_pq(pq_ptr);
+				CON_PS_LIST(conn) = NULL;
+				return -1;
+			}
 		}
 		i++;
 	} while (code!=0 && i<(db_mysql_auto_reconnect ? 3 : 1));

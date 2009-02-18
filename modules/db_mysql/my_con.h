@@ -48,6 +48,7 @@ struct bind_ocontent {
 struct my_stmt_ctx {
 	MYSQL_STMT *stmt;
 	str table;
+	str query;
 	int has_out;
 	struct my_stmt_ctx *next;
 };
