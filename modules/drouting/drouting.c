@@ -927,6 +927,8 @@ static int fixup_do_routing(void** param, int param_no)
 				return E_CFG;
 			}
 			drg->type = 1;
+			/* do not free the param as the AVP spec may point inside 
+			   this string*/
 		} else {
 			while(s && *s) {
 				if(*s<'0' || *s>'9') {
@@ -936,8 +938,8 @@ static int fixup_do_routing(void** param, int param_no)
 				drg->u.grp_id = (drg->u.grp_id)*10+(*s-'0');
 				s++;
 			}
+			pkg_free(*param);
 		}
-		pkg_free(*param);
 		*param = (void*)drg;
 	}
 
