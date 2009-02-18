@@ -95,7 +95,7 @@ char* get_status_str(int status_flag)
 	return NULL;
 }
 
-void printf_subs(subs_t* subs)
+inline void printf_subs(subs_t* subs)
 {	
 	LM_DBG("\n\t[pres_uri]= %.*s\n\t[to_user]= %.*s\t[to_domain]= %.*s"
 		"\n\t[w_user]= %.*s\t[w_domain]= %.*s\n\t[event]= %.*s\n\t[status]= %s"
@@ -1204,7 +1204,7 @@ int get_subs_db(str* pres_uri, pres_ev_t* event, str* sender,
 	result_cols[local_contact_col=n_result_cols++]=   &str_local_contact_col;
 	result_cols[version_col=n_result_cols++]      =   &str_version_col;
 
-	CON_PS_REFERENCE(pa_db) = &my_ps;
+	//CON_PS_REFERENCE(pa_db) = &my_ps;
 	if (pa_dbf.query(pa_db, query_cols, query_ops, query_vals,result_cols,
 				n_query_cols, n_result_cols, 0, &result) < 0) 
 	{
@@ -1308,9 +1308,9 @@ int get_subs_db(str* pres_uri, pres_ev_t* event, str* sender,
 		}
 		s_new->next= (*s_array);
 		(*s_array)= s_new;
+		
 		printf_subs(s_new);
 		inc++;
-		
 	}
 	pa_dbf.free_result(pa_db, result);
 	*n= inc;
@@ -1382,69 +1382,52 @@ subs_t* get_subs_dialog(str* pres_uri, pres_ev_t* event, str* sender)
 			goto error;
 		}
 	}
-	hash_code= core_hash(pres_uri, &event->name, shtable_size);
-	
-	lock_get(&subs_htable[hash_code].lock);
-
-	s= subs_htable[hash_code].entries;
-
-	while(s->next)
+	else
 	{
-		s= s->next;
-	
-		printf_subs(s);
+		/* get records from hash table */
+		hash_code= core_hash(pres_uri, &event->name, shtable_size);
 		
-		if(s->expires< (int)time(NULL))
-		{
-			LM_DBG("expired subs\n");
-			continue;
-		}
-		
-		if((!(s->status== ACTIVE_STATUS &&
-            s->reason.len== 0 &&
-			s->event== event && s->pres_uri.len== pres_uri->len &&
-			strncmp(s->pres_uri.s, pres_uri->s, pres_uri->len)== 0)) || 
-			(sender && sender->len== s->contact.len && 
-			strncmp(sender->s, s->contact.s, sender->len)== 0))
-			continue;
+		lock_get(&subs_htable[hash_code].lock);
 
-		if(fallback2db)
+		s= subs_htable[hash_code].entries;
+
+		while(s->next)
 		{
-			if(s->db_flag== NO_UPDATEDB_FLAG)
+			s= s->next;
+		
+			printf_subs(s);
+			
+			if(s->expires< (int)time(NULL))
 			{
-				LM_DBG("s->db_flag==NO_UPDATEDB_FLAG\n");
+				LM_DBG("expired subs\n");
 				continue;
 			}
 			
-			if(s->db_flag== UPDATEDB_FLAG)
+			if((!(s->status== ACTIVE_STATUS &&
+				s->reason.len== 0 &&
+				s->event== event && s->pres_uri.len== pres_uri->len &&
+				strncmp(s->pres_uri.s, pres_uri->s, pres_uri->len)== 0)) || 
+				(sender && sender->len== s->contact.len && 
+				strncmp(sender->s, s->contact.s, sender->len)== 0))
+				continue;
+
+			s_new= mem_copy_subs(s, PKG_MEM_TYPE);
+			if(s_new== NULL)
 			{
-				LM_DBG("s->db_flag== UPDATEDB_FLAG\n");
-				if(n>0 && update_in_list(s, s_array, i, n)< 0)
-				{
-					LM_DBG("dialog not found in list fetched from database\n");
-					/* insert record */
-				}
-				else
-					continue;			
+				LM_ERR("copying subs_t structure\n");
+				lock_release(&subs_htable[hash_code].lock);
+				goto error;
 			}
+			s_new->expires-= (int)time(NULL);
+			s_new->next= s_array;
+			s_array= s_new;
+			i++;
 		}
-		
-		LM_DBG("s->db_flag= INSERTDB_FLAG\n");
-		s_new= mem_copy_subs(s, PKG_MEM_TYPE);
-		if(s_new== NULL)
-		{
-			LM_ERR("copying subs_t structure\n");
-			lock_release(&subs_htable[hash_code].lock);
-			goto error;
-		}
-		s_new->expires-= (int)time(NULL);
-		s_new->next= s_array;
-		s_array= s_new;
-		i++;
+		lock_release(&subs_htable[hash_code].lock);
+		n = i;
 	}
 
-	lock_release(&subs_htable[hash_code].lock);
-	LM_DBG("found %d dialogs( %d in database and %d in hash_table)\n",n+i,n,i);
+	LM_DBG("found %d dialogs\n",n);
 
 	return s_array;
 
@@ -1788,21 +1771,17 @@ int notify(subs_t* subs, subs_t * watcher_subs, str* n_body,int force_null_body)
 
 		if(update_shtable(subs_htable, hash_code, subs, LOCAL_TYPE)< 0)
 		{
-			if(subs->db_flag!= INSERTDB_FLAG && fallback2db)
+			LM_DBG("record not found in subs htable\n");
+		}
+		if(fallback2db)
+		{
+			if(update_subs_db(subs, LOCAL_TYPE)< 0)
 			{
-				LM_DBG("record not found in subs htable\n");
-				if(update_subs_db(subs, LOCAL_TYPE)< 0)
-				{
-					LM_ERR("updating subscription in database\n");
-					return -1;
-				}
-			}
-			else
-			{
-				LM_ERR("record not found in subs htable\n");
+				LM_ERR("updating subscription in database\n");
 				return -1;
 			}
 		}
+
 	}
      
     if(subs->reason.s && subs->status== ACTIVE_STATUS && 

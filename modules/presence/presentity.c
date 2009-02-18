@@ -264,10 +264,9 @@ int check_if_dialog(str body, int *is_dialog)
 int update_presentity(struct sip_msg* msg, presentity_t* presentity, str* body,
 		int new_t, int* sent_reply, char* sphere)
 {
-	static db_ps_t my_ps_insert = NULL, my_ps_update_no_body = NULL,
-		   my_ps_update_body = NULL;
-	static db_ps_t my_ps_delete = NULL;
-	// static db_ps_t my_ps_query = NULL;
+//	static db_ps_t my_ps_insert = NULL, my_ps_update_no_body = NULL,
+//		   my_ps_update_body = NULL;
+//	static db_ps_t my_ps_delete = NULL, my_ps_query = NULL;
 	db_key_t query_cols[12], update_keys[8], result_cols[5];
 	db_op_t  query_ops[12];
 	db_val_t query_vals[12], update_vals[8];
@@ -387,7 +386,7 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, str* body,
 
 		LM_DBG("inserting %d cols into table\n",n_query_cols);
 
-		CON_PS_REFERENCE(pa_db) = &my_ps_insert;
+		//CON_PS_REFERENCE(pa_db) = &my_ps_insert;
 		if (pa_dbf.insert(pa_db, query_cols, query_vals, n_query_cols) < 0) 
 		{
 			LM_ERR("inserting new record in database\n");
@@ -485,7 +484,7 @@ after_dialog_check:
 				}
 
 				LM_DBG("expires =0 -> deleting from database\n");
-				CON_PS_REFERENCE(pa_db) = &my_ps_delete;
+			//	CON_PS_REFERENCE(pa_db) = &my_ps_delete;
 				if(pa_dbf.delete(pa_db,query_cols,0,query_vals,n_query_cols)<0)
 				{
 					LM_ERR("unsuccessful sql delete operation");
@@ -613,11 +612,11 @@ after_dialog_check:
 						goto error;
 					}
 				}
-				CON_PS_REFERENCE(pa_db) = &my_ps_update_body;
+			//	CON_PS_REFERENCE(pa_db) = &my_ps_update_body;
 			}
 			else
 			{
-				CON_PS_REFERENCE(pa_db) = &my_ps_update_no_body;
+			//	CON_PS_REFERENCE(pa_db) = &my_ps_update_no_body;
 			}
 
 			if( pa_dbf.update( pa_db,query_cols, query_ops, query_vals,

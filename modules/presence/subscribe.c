@@ -46,6 +46,7 @@ int get_database_info(struct sip_msg* msg, subs_t* subs, int* error_ret,
 		str* reply_str);
 int get_db_subs_auth(subs_t* subs, int* found);
 int insert_db_subs_auth(subs_t* subs);
+int insert_subs_db(subs_t* s);
 
 static str su_200_rpl  = str_init("OK");
 static str pu_481_rpl  = str_init("Subscription does not exist");
@@ -351,7 +352,6 @@ int update_subscription(struct sip_msg* msg, subs_t* subs, int init_req)
 		{
 			if(fallback2db)
 			{
-				/* update in database table */
 				if(update_subs_db(subs, REMOTE_TYPE)< 0)
 				{
 					LM_ERR("updating subscription in database table\n");
@@ -363,6 +363,7 @@ int update_subscription(struct sip_msg* msg, subs_t* subs, int init_req)
 				LM_ERR("updating subscription record in hash table\n");
 				goto error;
 			}
+
 		}
 		
 		if(send_2XX_reply(msg, reply_code, subs->expires, 0,
@@ -371,7 +372,7 @@ int update_subscription(struct sip_msg* msg, subs_t* subs, int init_req)
 			LM_ERR("sending 2XX reply\n");
 			goto error;
 		}
-	}
+	} 
 	else
 	{
 		if(send_2XX_reply(msg, reply_code, subs->expires, &subs->to_tag,
@@ -387,6 +388,15 @@ int update_subscription(struct sip_msg* msg, subs_t* subs, int init_req)
 			{
 				LM_ERR("inserting new record in subs_htable\n");
 				goto error;
+			}
+
+			if(fallback2db)
+			{
+				if(insert_subs_db(subs) < 0)
+				{
+					LM_ERR("failed to insert subscription in database\n");
+					goto error;
+				}
 			}
 		}
 		/*otherwise there is a subscription outside a dialog with expires= 0 
@@ -1549,7 +1559,7 @@ void update_db_subs(db_con_t *db,db_func_t dbf, shtable_t hash_table,
 					update_vals[u_status_col].val.int_val= s->status;
 					update_vals[u_reason_col].val.str_val= s->reason;
 
-					CON_PS_REFERENCE(pa_db) = &my_ps_update;
+					CON_PS_REFERENCE(db) = &my_ps_update;
 					if(dbf.update(db, query_cols, 0, query_vals, update_cols, 
 								update_vals, n_query_update, n_update_cols)< 0)
 					{
@@ -1591,7 +1601,7 @@ void update_db_subs(db_con_t *db,db_func_t dbf, shtable_t hash_table,
 						query_vals[socket_info_col].val.str_val.len = 0;
 					}
 				
-					CON_PS_REFERENCE(pa_db) = &my_ps_insert;
+					CON_PS_REFERENCE(db) = &my_ps_insert;
 					if(dbf.insert(db,query_cols,query_vals,n_query_cols )<0)
 					{
 						LM_ERR("unsuccessful sql insert\n");
@@ -1619,6 +1629,154 @@ void update_db_subs(db_con_t *db,db_func_t dbf, shtable_t hash_table,
 		LM_ERR("deleting expired information from database\n");
 	}
 
+}
+
+int insert_subs_db(subs_t* s)
+{
+	static db_ps_t my_ps = NULL;
+	db_key_t query_cols[22];
+	db_val_t query_vals[22];
+	int n_query_cols= 0;
+
+	query_cols[n_query_cols] =&str_presentity_uri_col;
+	query_vals[n_query_cols].type = DB_STR;
+	query_vals[n_query_cols].nul = 0;
+	query_vals[n_query_cols].val.str_val= s->pres_uri;
+	n_query_cols++;
+	
+	query_cols[n_query_cols] =&str_callid_col;
+	query_vals[n_query_cols].type = DB_STR;
+	query_vals[n_query_cols].nul = 0;
+	query_vals[n_query_cols].val.str_val= s->callid;
+	n_query_cols++;
+
+	query_cols[n_query_cols] =&str_to_tag_col;
+	query_vals[n_query_cols].type = DB_STR;
+	query_vals[n_query_cols].nul = 0;
+	query_vals[n_query_cols].val.str_val= s->to_tag;
+	n_query_cols++;
+	
+	query_cols[n_query_cols] =&str_from_tag_col;
+	query_vals[n_query_cols].type = DB_STR;
+	query_vals[n_query_cols].nul = 0;
+	query_vals[n_query_cols].val.str_val= s->from_tag;
+	n_query_cols++;
+
+	query_cols[n_query_cols] =&str_to_user_col;
+	query_vals[n_query_cols].type = DB_STR;
+	query_vals[n_query_cols].nul = 0;
+	query_vals[n_query_cols].val.str_val = s->to_user;
+	n_query_cols++;
+
+	query_cols[n_query_cols] =&str_to_domain_col;
+	query_vals[n_query_cols].type = DB_STR;
+	query_vals[n_query_cols].nul = 0;
+	query_vals[n_query_cols].val.str_val = s->to_domain;
+	n_query_cols++;
+	
+	query_cols[n_query_cols] =&str_watcher_username_col;
+	query_vals[n_query_cols].type = DB_STR;
+	query_vals[n_query_cols].nul = 0;
+	query_vals[n_query_cols].val.str_val = s->from_user;
+	n_query_cols++;
+
+	query_cols[n_query_cols] =&str_watcher_domain_col;
+	query_vals[n_query_cols].type = DB_STR;
+	query_vals[n_query_cols].nul = 0;
+	query_vals[n_query_cols].val.str_val = s->from_domain;
+	n_query_cols++;
+	
+	query_cols[n_query_cols] =&str_event_col;
+	query_vals[n_query_cols].type = DB_STR;
+	query_vals[n_query_cols].nul = 0;
+	query_vals[n_query_cols].val.str_val = s->event->name;
+	n_query_cols++;	
+
+	query_cols[n_query_cols] =&str_event_id_col;
+	query_vals[n_query_cols].type = DB_STR;
+	query_vals[n_query_cols].nul = 0;
+	query_vals[n_query_cols].val.str_val = s->event_id;
+	n_query_cols++;
+
+	query_cols[n_query_cols]=&str_local_cseq_col;
+	query_vals[n_query_cols].type = DB_INT;
+	query_vals[n_query_cols].nul = 0;
+	query_vals[n_query_cols].val.int_val= s->local_cseq;
+	n_query_cols++;
+
+	query_cols[n_query_cols]=&str_remote_cseq_col;
+	query_vals[n_query_cols].type = DB_INT;
+	query_vals[n_query_cols].nul = 0;
+	query_vals[n_query_cols].val.int_val= s->remote_cseq;
+	n_query_cols++;
+
+	query_cols[n_query_cols] =&str_expires_col;
+	query_vals[n_query_cols].type = DB_INT;
+	query_vals[n_query_cols].nul = 0;
+	query_vals[n_query_cols].val.int_val = s->expires;
+	n_query_cols++;
+
+	query_cols[n_query_cols] =&str_status_col;
+	query_vals[n_query_cols].type = DB_INT;
+	query_vals[n_query_cols].nul = 0;
+	query_vals[n_query_cols].val.int_val= s->status;
+	n_query_cols++;
+
+	query_cols[n_query_cols] =&str_reason_col;
+	query_vals[n_query_cols].type = DB_STR;
+	query_vals[n_query_cols].nul = 0;
+	query_vals[n_query_cols].val.str_val= s->reason;
+	n_query_cols++;
+
+	query_cols[n_query_cols] =&str_record_route_col;
+	query_vals[n_query_cols].type = DB_STR;
+	query_vals[n_query_cols].nul = 0;
+	query_vals[n_query_cols].val.str_val = s->record_route;
+	n_query_cols++;
+	
+	query_cols[n_query_cols] =&str_contact_col;
+	query_vals[n_query_cols].type = DB_STR;
+	query_vals[n_query_cols].nul = 0;
+	query_vals[n_query_cols].val.str_val = s->contact;
+	n_query_cols++;
+
+	query_cols[n_query_cols] =&str_local_contact_col;
+	query_vals[n_query_cols].type = DB_STR;
+	query_vals[n_query_cols].nul = 0;
+	query_vals[n_query_cols].val.str_val = s->local_contact;
+	n_query_cols++;
+
+	query_cols[n_query_cols]=&str_version_col;
+	query_vals[n_query_cols].type = DB_INT;
+	query_vals[n_query_cols].nul = 0;
+	query_vals[n_query_cols].val.int_val= s->version;
+	n_query_cols++;
+
+	query_cols[n_query_cols] =&str_socket_info_col;
+	query_vals[n_query_cols].type = DB_STR;
+	query_vals[n_query_cols].nul = 0;
+	if(s->sockinfo)
+		query_vals[n_query_cols].val.str_val= s->sockinfo->sock_str;
+	else
+	{
+		query_vals[n_query_cols].val.str_val.s = 0;
+		query_vals[n_query_cols].val.str_val.len = 0;
+	}
+	n_query_cols++;
+	if(pa_dbf.use_table(pa_db, &active_watchers_table)< 0)
+	{
+		LM_ERR("in use table\n");
+		return -1;
+	}
+
+	CON_PS_REFERENCE(pa_db) = &my_ps;
+	if(pa_dbf.insert(pa_db,query_cols,query_vals,n_query_cols )<0)
+	{
+		LM_ERR("unsuccessful sql insert\n");
+		return -1;
+	}
+
+	return 0;
 }
 
 int restore_db_subs(void)
