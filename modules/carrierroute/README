@@ -124,7 +124,7 @@ Henning Westerholt
    1.24. Set default_tree parameter
    1.25. Set use_domain parameter
    1.26. Set fallback_default parameter
-   1.27. Set db_failuretable parameter
+   1.27. Set db_failure_table parameter
    1.28. Set failure_id_column parameter
    1.29. Set failure_carrier_column parameter
    1.30. Set failure_scan_prefix_column parameter
@@ -565,9 +565,9 @@ modparam("carrierroute", "fallback_default", 1)
 
    Default value is "carrierfailureroute".
 
-   Example 1.27. Set db_failuretable parameter
+   Example 1.27. Set db_failure_table parameter
 ...
-modparam("carrierroute", "db_failuretable", "carrierfailureroute")
+modparam("carrierroute", "db_failure_table", "carrierfailureroute")
 ...
 
 1.3.28. failure_id_column (string)
