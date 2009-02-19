@@ -436,7 +436,7 @@ modparam("acc", "report_cancels", 1)
 	<section>
 		<title><varname>detect_direction</varname> (integer)</title>
 		<para>
-		Controlles the direction detection for sequential requests. If 
+		Controls the direction detection for sequential requests. If 
 		enabled (non zero value), for sequential requests with upstream
 		direction (from callee to caller), the FROM and TO will be swapped
 		(the direction will be preserved as in the original request).
@@ -914,7 +914,7 @@ modparam("acc", "diameter_client_host", "3a_server.net")
 		listening -- DIAMETER specific.
 		</para>
 		<para>
-		Default value is 3000.
+		Default value is <quote>3000</quote>.
 		</para>
 		<example>
 		<title>diameter_client_host example</title>
