@@ -282,7 +282,7 @@ modparam("auth", "disable_nonce_check", 1)
 		The function challenges a user agent. It will generate a 
 		WWW-Authorize header field containing a digest challenge, it will 
 		put the header field into a response generated from the request the 
-		server is processing and send the reply. Upon reception of such a 
+		server is processing and will send the reply. Upon reception of such a 
 		reply the user agent should compute credentials and retry the
 		request. For more information regarding digest authentication 
 		see RFC2617.
@@ -290,15 +290,15 @@ modparam("auth", "disable_nonce_check", 1)
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>realm</emphasis> - Realm is a opaque string that 
-			the user agent should present to the user so he can decide what 
+			<para><emphasis>realm</emphasis> - Realm is an opaque string that 
+			the user agent should present to the user so it can decide what 
 			username and password to use. Usually this is domain of the host 
 			the server is running on.
 			</para>
 			<para>
 			If an empty string <quote></quote> is used then the server will 
-			generate it from the request. In case of REGISTER requests To 
-			header field domain will be used (because this header field 
+			generate it from the request. In case of REGISTER request's To 
+			header field, domain will be used (because this header field 
 			represents a user being registered), for all other messages From 
 			header field domain will be used.
 			</para>
@@ -316,7 +316,7 @@ modparam("auth", "disable_nonce_check", 1)
 			On the other hand there are still some user agents that cannot handle
 			request without a qop parameter too.
 			</para>
-			<para>Enabling this parameter don't improve the security at the moment,
+			<para>Enabling this parameter does not improve security at the moment,
 			because the sequence number is not stored and therefore could not be
 			checked. Actually there is no information kept by the module during
 			the challenge and response requests.
@@ -347,21 +347,21 @@ if (www_authorize("siphub.net", "subscriber")) {
 		The function challenges a user agent. It will generate a 
 		Proxy-Authorize header field containing a digest challenge, it will 
 		put the header field into a response generated from the request the 
-		server is processing and send the reply. Upon reception of such a 
+		server is processing and will send the reply. Upon reception of such a 
 		reply the user agent should compute credentials and retry the request.
 		For more information regarding digest authentication see RFC2617.
 		</para>
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>realm</emphasis> - Realm is a opaque string that 
-			the user agent should present to the user so he can decide what 
+			<para><emphasis>realm</emphasis> - Realm is an opaque string that 
+			the user agent should present to the user so it can decide what 
 			username and password to use. Usually this is domain of the host 
 			the server is running on.
 			</para>
 			<para>
 			If an empty string <quote></quote> is used then the server will 
-			generate it from the request. From header field domain will be 
+			generate it from the request. <quote>From</quote> header field domain will be 
 			used as realm.
 			</para>
 			<para>
@@ -556,7 +556,7 @@ append_rpid_hf("", ";party=calling;id-type=subscriber;screen=yes");
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>realm</emphasis> - Realm is a opaque string that 
+			<para><emphasis>realm</emphasis> - Realm is an opaque string that 
 			the user agent should present to the user so he can decide what 
 			username and password to use. Usually this is domain of the host 
 			the server is running on.
@@ -610,7 +610,7 @@ if (pv_www_authorize("opensips.org")) {
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>realm</emphasis> - Realm is a opaque string that 
+			<para><emphasis>realm</emphasis> - Realm is an opaque string that 
 			the user agent should present to the user so he can decide what 
 			username and password to use. Usually this is domain of the host 
 			the server is running on.
