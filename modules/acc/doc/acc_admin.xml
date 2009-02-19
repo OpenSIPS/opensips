@@ -424,7 +424,7 @@ modparam("acc", "report_cancels", 1)
 	<section>
 		<title><varname>detect_direction</varname> (integer)</title>
 		<para>
-		Controlles the direction detection for sequential requests. If 
+		Controls the direction detection for sequential requests. If 
 		enabled (non zero value), for sequential requests with upstream
 		direction (from callee to caller), the FROM and TO will be swapped
 		(the direction will be preserved as in the original request).
@@ -616,11 +616,12 @@ modparam("acc", "radius_missed_flag", 3)
 		Radius service type used for accounting.
 		</para>
 		<para>
-		Default value is 15 (SIP).
+		Default value is not-set.
 		</para>
 		<example>
 		<title>service_type example</title>
 		<programlisting format="linespecific">
+# Default value of service type for SIP is 15
 modparam("acc", "service_type", 16)
 </programlisting>
 		</example>
@@ -706,7 +707,7 @@ modparam("acc", "db_table_missed_calls", "myMC_table")
 	<section>
 		<title><varname>db_url</varname> (string)</title>
 		<para>
-		SQL address -- database specific. If is set to NULL or emty string,
+		SQL address -- database specific. If is set to NULL or empty string,
 		the SQL support is disabled.
 		</para>
 		<para>
@@ -783,7 +784,7 @@ modparam("acc", "acc_callid_column", "callid")
 	<section>
 		<title><varname>acc_sip_code_column</varname> (string)</title>
 		<para>
-		Column name in accounting table to store the final reply's numric code
+		Column name in accounting table to store the final reply's numeric code
 		value in string format.
 		</para>
 		<para>
@@ -899,7 +900,7 @@ modparam("acc", "diameter_client_host", "3a_server.net")
 		listening -- DIAMETER specific.
 		</para>
 		<para>
-		Default value is 3000.
+		Default value is <quote>3000</quote>.
 		</para>
 		<example>
 		<title>diameter_client_host example</title>
