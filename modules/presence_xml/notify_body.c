@@ -539,8 +539,8 @@ str* agregate_xmls(str* pres_user, str* pres_domain, str** body_array, int n)
 		node= xmlNodeGetChildByName(new_p_root, "tuple");
 		if(node== NULL)
 		{
-			LM_ERR("couldn't extract tuple node\n");
-			goto error;
+			LM_DBG("no tuple node found\n");
+			goto append_label;
 		}
 		tuple_id= xmlNodeGetAttrContentByName(node, "id");
 		if(tuple_id== NULL)
@@ -578,6 +578,7 @@ str* agregate_xmls(str* pres_user, str* pres_domain, str** body_array, int n)
 
 		if(append) 
 		{	
+append_label:
 			for(node= new_p_root->children; node; node= node->next)
 			{	
 				add_node= xmlCopyNode(node, 1);
