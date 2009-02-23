@@ -174,15 +174,15 @@ str* get_final_notify_body( subs_t *subs, str* notify_body, xmlNodePtr rule_node
 	doc_root = xmlDocGetNodeByName(doc,"presence", NULL);
 	if(doc_root == NULL)
 	{
-		LM_ERR("while extracting the transformation node\n");
+		LM_ERR("while extracting the presence node\n");
 		goto error;
 	}
 
 	transf_node = xmlNodeGetChildByName(rule_node, "transformations");
 	if(transf_node == NULL)
-	{
-		LM_ERR("while extracting the transformation node\n");
-		goto error;
+	{ 
+		LM_DBG("No transformations node found\n");
+		goto done;
 	}
 	
 	for(node = transf_node->children; node; node = node->next )
@@ -406,6 +406,7 @@ str* get_final_notify_body( subs_t *subs, str* notify_body, xmlNodePtr rule_node
 	
 		}
 	}
+done:
 	xmlDocDumpFormatMemory(doc,(xmlChar**)(void*)&new_body->s,
 			&new_body->len, 1);
 	LM_DBG("body = \n%.*s\n", new_body->len,
@@ -539,8 +540,8 @@ str* agregate_xmls(str* pres_user, str* pres_domain, str** body_array, int n)
 		node= xmlNodeGetChildByName(new_p_root, "tuple");
 		if(node== NULL)
 		{
-			LM_ERR("couldn't extract tuple node\n");
-			goto error;
+			LM_DBG("no tuple node found\n");
+			goto append_label;
 		}
 		tuple_id= xmlNodeGetAttrContentByName(node, "id");
 		if(tuple_id== NULL)
@@ -578,6 +579,7 @@ str* agregate_xmls(str* pres_user, str* pres_domain, str** body_array, int n)
 
 		if(append) 
 		{	
+append_label:
 			for(node= new_p_root->children; node; node= node->next)
 			{	
 				add_node= xmlCopyNode(node, 1);
