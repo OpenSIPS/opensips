@@ -156,7 +156,8 @@ int delete_db_subs(str pres_uri, str ev_stored_name, str to_tag)
 		return -1;
 	}
 
-	CON_PS_REFERENCE(pa_db) = &my_ps;
+//	CON_PS_REFERENCE(pa_db) = &my_ps;
+	LM_DBG("delete subs \n");
 	if(pa_dbf.delete(pa_db, query_cols, 0, query_vals,
 				n_query_cols)< 0 )
 	{
@@ -1350,7 +1351,8 @@ void timer_db_update(unsigned int ticks,void *param)
 void update_db_subs(db_con_t *db,db_func_t dbf, shtable_t hash_table,
 	int htable_size, int no_lock, handle_expired_func_t handle_expired_func)
 {	
-	static db_ps_t my_ps_delete = NULL, my_ps_update = NULL, my_ps_insert = NULL;
+//	static db_ps_t my_ps_delete = NULL
+	static db_ps_t my_ps_update = NULL, my_ps_insert = NULL;
 	db_key_t query_cols[22], update_cols[7];
 	db_val_t query_vals[22], update_vals[7];
 	db_op_t update_ops[1];
@@ -1621,9 +1623,11 @@ void update_db_subs(db_con_t *db,db_func_t dbf, shtable_t hash_table,
 			lock_release(&hash_table[i].lock);	
 	}
 
+	LM_DBG("delete expired\n");
 	update_vals[0].val.int_val= (int)time(NULL)- 10;
 	update_ops[0]= OP_LT;
-	CON_PS_REFERENCE(pa_db) = &my_ps_delete;
+//	CON_PS_REFERENCE(pa_db) = &my_ps_delete;
+	
 	if(dbf.delete(db, update_cols, update_ops, update_vals, 1) < 0)
 	{
 		LM_ERR("deleting expired information from database\n");
@@ -1713,7 +1717,7 @@ int insert_subs_db(subs_t* s)
 	query_cols[n_query_cols] =&str_expires_col;
 	query_vals[n_query_cols].type = DB_INT;
 	query_vals[n_query_cols].nul = 0;
-	query_vals[n_query_cols].val.int_val = s->expires;
+	query_vals[n_query_cols].val.int_val = s->expires + (int)time(NULL);
 	n_query_cols++;
 
 	query_cols[n_query_cols] =&str_status_col;

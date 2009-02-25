@@ -246,7 +246,7 @@ int build_str_hdr(subs_t* subs, int is_body, str* hdr)
 
 int get_wi_subs_db(subs_t* subs, watcher_t* watchers)
 {
-	static db_ps_t my_ps = NULL;
+//	static db_ps_t my_ps = NULL;
 	db_key_t query_cols[6];
 	db_op_t  query_ops[6];
 	db_val_t query_vals[6];
@@ -286,7 +286,7 @@ int get_wi_subs_db(subs_t* subs, watcher_t* watchers)
 		goto error;
 	}
 
-	CON_PS_REFERENCE(pa_db) = &my_ps;
+//	CON_PS_REFERENCE(pa_db) = &my_ps;
 	if (pa_dbf.query (pa_db, query_cols, query_ops, query_vals,
 		 result_cols, n_query_cols, n_result_cols, 0,  &result) < 0) 
 	{
@@ -531,7 +531,7 @@ int watcher_found_in_list(watcher_t * watchers, str wuri)
 
 int add_waiting_watchers(watcher_t* watchers, str pres_uri, str event)
 {
-	static db_ps_t my_ps = NULL;
+//	static db_ps_t my_ps = NULL;
 	watcher_t * w;
 	db_key_t query_cols[3];
 	db_val_t query_vals[3];
@@ -575,7 +575,7 @@ int add_waiting_watchers(watcher_t* watchers, str pres_uri, str event)
 		return -1;
 	}
 
-	CON_PS_REFERENCE(pa_db) = &my_ps;
+//	CON_PS_REFERENCE(pa_db) = &my_ps;
 
 	if (pa_dbf.query (pa_db, query_cols, 0, query_vals,
 		 result_cols, n_query_cols, n_result_cols, 0, &result) < 0) 
@@ -755,7 +755,7 @@ error:
 str* get_p_notify_body(str pres_uri, pres_ev_t* event, str* etag,
 		str* contact)
 {
-	static db_ps_t my_ps = NULL;
+//	static db_ps_t my_ps = NULL;
 	db_key_t query_cols[6];
 	db_val_t query_vals[6];
 	db_key_t result_cols[6];
@@ -832,7 +832,7 @@ db_query:
 		return NULL;
 	}
 
-	CON_PS_REFERENCE(pa_db) = &my_ps;
+//	CON_PS_REFERENCE(pa_db) = &my_ps;
 	if (pa_dbf.query (pa_db, query_cols, 0, query_vals,
 		 result_cols, n_query_cols, n_result_cols, &query_str, &result) < 0) 
 	{
@@ -1122,7 +1122,7 @@ error:
 int get_subs_db(str* pres_uri, pres_ev_t* event, str* sender,
 		subs_t** s_array, int* n)
 {
-	static db_ps_t my_ps = NULL;
+//	static db_ps_t my_ps = NULL;
 	db_key_t query_cols[7];
 	db_op_t  query_ops[7];
 	db_val_t query_vals[7];
