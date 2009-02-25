@@ -503,7 +503,8 @@ str* agregate_xmls(str* pres_user, str* pres_domain, str** body_array, int n)
 
 		xml_array[j] = NULL;
 		xml_array[j] = xmlParseMemory( body_array[i]->s, body_array[i]->len );
-		
+		LM_DBG("i = [%d] - body: %.*s\n", i,  body_array[i]->len, body_array[i]->s);
+
 		if( xml_array[j]== NULL)
 		{
 			LM_ERR("while parsing xml body message\n");
@@ -528,8 +529,10 @@ str* agregate_xmls(str* pres_user, str* pres_domain, str** body_array, int n)
 		goto error;
 	}
 
-	for(i= j; i>=0; i--)
+	for(i= j-1; i>=0; i--)
 	{
+		LM_DBG("i = %d\n", i);
+
 		new_p_root= xmlDocGetNodeByName( xml_array[i], "presence", NULL);
 		if(new_p_root ==NULL)
 		{
@@ -541,6 +544,7 @@ str* agregate_xmls(str* pres_user, str* pres_domain, str** body_array, int n)
 		if(node== NULL)
 		{
 			LM_DBG("no tuple node found\n");
+			append = 1;
 			goto append_label;
 		}
 		tuple_id= xmlNodeGetAttrContentByName(node, "id");
@@ -577,15 +581,17 @@ str* agregate_xmls(str* pres_user, str* pres_domain, str** body_array, int n)
 		xmlFree(tuple_id);
 		tuple_id= NULL;
 
+append_label:
 		if(append) 
 		{	
-append_label:
+			LM_DBG("in if\n");
 			for(node= new_p_root->children; node; node= node->next)
 			{	
+				LM_DBG("adding node [%s]\n", node->name);
 				add_node= xmlCopyNode(node, 1);
 				if(add_node== NULL)
 				{
-					LM_ERR("while copying node\n");
+					LM_ERR("while copying node [%s]\n", node->name);
 					goto error;
 				}
 				if(xmlAddChild(p_root, add_node)== NULL)
@@ -593,7 +599,6 @@ append_label:
 					LM_ERR("while adding child\n");
 					goto error;
 				}
-								
 			}
 		}
 	}
@@ -606,6 +611,8 @@ append_label:
 
 	xmlDocDumpFormatMemory(xml_array[j],(xmlChar**)(void*)&body->s, 
 			&body->len, 1);	
+
+	LM_DBG("body = %.*s\n", body->len, body->s);
 
   	for(i=0; i<=j; i++)
 	{
@@ -686,7 +693,7 @@ str* offline_nbody(str* body)
 	root_node= xmlCopyNode(pres_node, 2);
 	if(root_node== NULL)
 	{
-		LM_ERR("while copying node\n");
+		LM_ERR("while copying root node\n");
 		goto error;
 	}
     xmlDocSetRootElement(new_doc, root_node);
@@ -694,7 +701,7 @@ str* offline_nbody(str* body)
 	tuple_node= xmlCopyNode(tuple_node, 2);
 	if(tuple_node== NULL)
 	{
-		LM_ERR("while copying node\n");
+		LM_ERR("no tuple node found\n");
 		goto error;
 	}
 	xmlAddChild(root_node, tuple_node);
