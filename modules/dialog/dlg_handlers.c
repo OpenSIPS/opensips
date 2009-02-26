@@ -164,7 +164,7 @@ static int populate_leg_info( struct dlg_cell *dlg, struct sip_msg *msg,
 
 	/* extract the cseq number as string */
 	if (leg==DLG_CALLER_LEG) {
-		if((!msg->cseq || parse_headers(msg,HDR_CSEQ_F,0)<0) || !msg->cseq || 
+		if((!msg->cseq && (parse_headers(msg,HDR_CSEQ_F,0)<0 || !msg->cseq)) ||
 		!msg->cseq->parsed){
 			LM_ERR("bad sip message or missing CSeq hdr :-/\n");
 			goto error0;
