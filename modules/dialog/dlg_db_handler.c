@@ -508,7 +508,13 @@ int update_dialog_dbinfo(struct dlg_cell * cell)
 		SET_STR_VALUE(values+6, cell->tag[DLG_CALLEE_LEG]);
 
 		SET_STR_VALUE(values+7, cell->bind_addr[DLG_CALLER_LEG]->sock_str);
-		SET_STR_VALUE(values+8, cell->bind_addr[DLG_CALLEE_LEG]->sock_str);
+		if (cell->bind_addr[DLG_CALLEE_LEG]) {
+			SET_STR_VALUE(values+8, cell->bind_addr[DLG_CALLEE_LEG]->sock_str);
+		} else {
+			VAL_NULL(values+8) = 1;
+			VAL_STR(values+8).s = NULL;
+			VAL_STR(values+8).len = 0;
+		}
 
 		SET_INT_VALUE(values+9, cell->start_ts);
 		SET_INT_VALUE(values+10, cell->state);
@@ -517,7 +523,7 @@ int update_dialog_dbinfo(struct dlg_cell * cell)
 
 		LM_DBG("sock_info is %.*s\n", 
 			cell->bind_addr[DLG_CALLER_LEG]->sock_str.len,
-			cell->bind_addr[DLG_CALLEE_LEG]->sock_str.s);
+			cell->bind_addr[DLG_CALLER_LEG]->sock_str.s);
 
 		SET_STR_VALUE(values+12, cell->cseq[DLG_CALLER_LEG]);
 		SET_STR_VALUE(values+13, cell->cseq[DLG_CALLEE_LEG]);
