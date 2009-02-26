@@ -102,7 +102,21 @@ ifeq ($(OS),solaris)
 endif
 
 # Check of SMP systems
-ISSMP=yes
+ifeq ($(OS),solaris)
+	CPU=$(shell /usr/sbin/psrinfo | grep -i online | wc -l)
+	ifeq ($(CPU),1)
+		ISSMP=no
+	else
+		ISSMP=yes
+	endif
+else
+	SMP_STR = $(shell uname -v | grep -i "SMP")
+	ifeq (,$(SMP_STR))
+		ISSMP=no
+	else
+		ISSMP=yes
+	endif
+endif
 
 OSREL = $(shell uname -r)
 # numerical version (good for comparisons: A.B.C => A*1000000+B*1000+C)
@@ -147,12 +161,14 @@ cfg-dir = etc/$(MAIN_NAME)/
 bin-dir = sbin/
 
 ARCH_B= $(shell echo $(ARCH) | sed -e 's/.*64.*/64b/')
-ifneq ($(ARCH_B),64b)
+ifeq ($(ARCH_B),64b)
+	LIBDIR ?= lib64
+else
+	LIBDIR ?= lib
 	# assume 32b - it is not really used further
 	ARCH_B=32b
 endif
 
-LIBDIR ?= lib
 lib-dir = $(LIBDIR)/$(MAIN_NAME)
 modules-dir = $(LIBDIR)/$(MAIN_NAME)/modules/
 
