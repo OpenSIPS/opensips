@@ -205,8 +205,8 @@ int radius_authorize_sterman(struct sip_msg* _msg, dig_cred_t* _cred, str* _meth
 	str method, user, user_name;
 	str *ruri;
 	int i;
-	
-	send = received = 0;
+
+	send = received = NULL;
 
 	if (!(_cred && _method && _user)) {
 		LM_ERR("invalid parameter value\n");
@@ -365,7 +365,7 @@ int radius_authorize_sterman(struct sip_msg* _msg, dig_cred_t* _cred, str* _meth
 	if ((i = rc_auth(rh, SIP_PORT, send, &received, msg)) == OK_RC) {
 		LM_DBG("Success\n");
 		rc_avpair_free(send);
-		send = 0;
+		send = NULL;
 
 		generate_avps(received);
 
@@ -373,11 +373,12 @@ int radius_authorize_sterman(struct sip_msg* _msg, dig_cred_t* _cred, str* _meth
 		return 1;
 	} else {
 #ifdef REJECT_RC
-                if (i == REJECT_RC) {
-                        LM_DBG("Failure\n");
-                        goto err;
-                }
-#endif 
+		if (i == REJECT_RC) {
+			LM_DBG("Failure\n");
+			goto err;
+		}
+		if (received) generate_avps(received);
+#endif
 		LM_ERR("authorization failed\n");
 	}
 
