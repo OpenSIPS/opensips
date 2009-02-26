@@ -644,8 +644,14 @@ void dialog_update_db(unsigned int ticks, void * param)
 
 				SET_STR_VALUE(values+7,
 					cell->bind_addr[DLG_CALLER_LEG]->sock_str);
-				SET_STR_VALUE(values+8,
-					cell->bind_addr[DLG_CALLEE_LEG]->sock_str);
+				if (cell->bind_addr[DLG_CALLEE_LEG]) {
+					SET_STR_VALUE(values+8, 
+						cell->bind_addr[DLG_CALLEE_LEG]->sock_str);
+				} else {
+					VAL_NULL(values+8) = 1;
+					VAL_STR(values+8).s = NULL;
+					VAL_STR(values+8).len = 0;
+				}
 
 				SET_INT_VALUE(values+9,  cell->start_ts);
 				SET_INT_VALUE(values+10, cell->state);
