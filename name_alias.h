@@ -63,6 +63,7 @@ static inline int grep_aliases(char* name, int len, unsigned short port,
 								unsigned short proto)
 {
 	struct  host_alias* a;
+	struct alias_function *af;
 	
 #ifdef USE_IPV6
 	if ((len>2)&&((*name)=='[')&&(name[len-1]==']')){
@@ -76,19 +77,7 @@ static inline int grep_aliases(char* name, int len, unsigned short port,
 				(a->port==port)) && ((a->proto==0) || (proto==0) || 
 				(a->proto==proto)) && (strncasecmp(a->alias.s, name, len)==0))
 			return 1;
-	return 0;
-}
-
-
-/* adds an alias to the list (only if it isn't already there) */
-int add_alias(char* name, int len, unsigned short port, unsigned short proto);
-
-
-static inline int check_alias_fcts(char* name, int len, unsigned short port,
-								unsigned short proto)
-{
-	struct alias_function *af;
-
+	
 	for( af=alias_fcts ; af ; af=af->next ) {
 		if ( af->alias_f(name,len,port,proto)>0 )
 			return 1;
@@ -97,6 +86,10 @@ static inline int check_alias_fcts(char* name, int len, unsigned short port,
 }
 
 
+/* adds an alias to the list (only if it isn't already there) */
+int add_alias(char* name, int len, unsigned short port, unsigned short proto);
+
+/* register a new function for detecting aliases */
 int register_alias_fct( is_alias_fct *fct );
 
 
