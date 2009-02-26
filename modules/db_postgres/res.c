@@ -211,15 +211,28 @@ int db_postgres_convert_rows(const db_con_t* _h, db_res_t* _r)
 	for(row=RES_LAST_ROW(_r); row<(RES_LAST_ROW(_r)+RES_ROW_N(_r)) ; row++) {
 		for(col = 0; col < RES_COL_N(_r); col++) {
 				/*
-				 * The row data pointer returned by PQgetvalue points to storage
-				 * that is part of the PGresult structure. One should not modify
-				 * the data it points to, and one must explicitly copy the data
-				 * into other storage if it is to be used past the lifetime of
-				 * the PGresult structure itself.
+				 * The row data pointer returned by PQgetvalue points to 
+				 * storage that is part of the PGresult structure. One should 
+				 * not modify the data it points to, and one must explicitly 
+				 * copy the data into other storage if it is to be used past 
+				 * the lifetime of the PGresult structure itself.
 				 */
-				s = PQgetvalue(CON_RESULT(_h), row, col);
-				LM_DBG("PQgetvalue(%p,%d,%d)=[%s]\n", _h, row, col, s);
-				len = strlen(s);
+				
+				/*
+				 * There's a weird bug (or just weird behavior) in the postgres
+				 * API - if the result is a BLOB (like 'text') and is with 
+				 * zero length, we get a pointer to nowhere, which is not 
+				 * null-terminated. The fix for this is to check what does the 
+				 * DB think about the length and use that as a correction.
+				 */
+				if ( (len=PQgetlength(CON_RESULT(_h), row, col))==0 ) {
+					s="";
+					LM_DBG("PQgetvalue(%p,%d,%d)=[], zero len\n", _h, row,col);
+				} else {
+					s = PQgetvalue(CON_RESULT(_h), row, col);
+					len = strlen(s);
+					LM_DBG("PQgetvalue(%p,%d,%d)=[%s]\n", _h, row, col, s);
+				}
 				row_buf[col] = pkg_malloc(len+1);
 				if (!row_buf[col]) {
 					LM_ERR("no private memory left\n");
