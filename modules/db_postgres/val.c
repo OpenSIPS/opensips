@@ -145,6 +145,7 @@ int db_postgres_str2val(const db_type_t _t, db_val_t* _v, const char* _s, const 
 		 */
 		VAL_BLOB(_v).s = (char*)PQunescapeBytea((unsigned char*)_s, 
 			(size_t*)(void*)&(VAL_BLOB(_v).len) );
+		VAL_BLOB(_v).s[VAL_BLOB(_v).len]='\0';
 		VAL_TYPE(_v) = DB_BLOB;
 		VAL_FREE(_v) = 1;
 		LM_DBG("got blob len %d\n", _l);
