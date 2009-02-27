@@ -207,7 +207,8 @@ static struct my_stmt_ctx * get_new_stmt_ctx(const db_con_t* conn,
 		return NULL;
 	}
 	if ( mysql_stmt_prepare(ctx->stmt, query->s, query->len) ) {
-		LM_ERR("failed while mysql_stmt_prepare()\n");
+		LM_ERR("failed while mysql_stmt_prepare: %s\n",
+			mysql_stmt_error(ctx->stmt));
 		return NULL;
 	}
 
@@ -407,7 +408,8 @@ static int db_mysql_do_prepared_query(const db_con_t* conn, const str *query,
 				return -1;
 			}
 			if ( mysql_stmt_prepare(ctx->stmt, ctx->query.s, ctx->query.len)) {
-				LM_ERR("failed while mysql_stmt_prepare()\n");
+				LM_ERR("failed while mysql_stmt_prepare: %s\n",
+					mysql_stmt_error(ctx->stmt));
 				/* destroy everything */
 				db_mysql_free_pq(pq_ptr);
 				CON_PS_LIST(conn) = NULL;
