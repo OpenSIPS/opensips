@@ -14,13 +14,15 @@ endif
 
 ifneq ($(PCRECFG),)
 
-        # use autodetection
-        DEFS += $(shell $(PCRECFG) --cflags)
-        LIBS = $(shell $(PCRECFG) --libs)
+	# use autodetection
+	DEFS += $(shell $(PCRECFG) --cflags)
+	LIBS = $(shell $(PCRECFG) --libs)
 
 else
-       DEFS+=-I/usr/include -I/usr/sfw/include -I/usr/local/include -I/opt/csw/include -I$(LOCALBASE)/include
-       LIBS=-I/usr/lib -I/usr/sfw/lib -I/usr/local/lib -I/opt/csw/lib -I$(LOCALBASE)/lib -lpcre
+
+	DEFS+=-I/usr/include -I/usr/sfw/include -I/usr/local/include -I/opt/csw/include -I$(LOCALBASE)/include
+	LIBS=-I/usr/lib -I/usr/sfw/lib -I/usr/local/lib -I/opt/csw/lib -I$(LOCALBASE)/lib -lpcre
+
 endif
 
 include ../../Makefile.modules
