@@ -242,8 +242,7 @@ int db_postgres_convert_rows(const db_con_t* _h, db_res_t* _r)
 					LM_DBG("PQgetvalue(%p,%d,%d)=[], zero len\n", _h, row,col);
 				} else {
 					s = PQgetvalue(CON_RESULT(_h), row, col);
-					len = strlen(s);
-					LM_DBG("PQgetvalue(%p,%d,%d)=[%s]\n", _h, row, col, s);
+					LM_DBG("PQgetvalue(%p,%d,%d)=[%.*s]\n", _h, row,col,len,s);
 				}
 				row_buf[col] = pkg_malloc(len+1);
 				if (!row_buf[col]) {
