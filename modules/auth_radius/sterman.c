@@ -382,7 +382,7 @@ int radius_authorize_sterman(struct sip_msg* _msg, dig_cred_t* _cred, str* _meth
 		LM_ERR("authorization failed\n");
 	}
 
- err:
+err:
 	if (send) rc_avpair_free(send);
 	if (received) rc_avpair_free(received);
 	return -1;
