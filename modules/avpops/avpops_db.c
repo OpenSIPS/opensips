@@ -151,7 +151,7 @@ int avpops_db_bind(void)
 
 int avpops_db_init(const str* db_table, str** db_cols)
 {
-	unsigned int i;
+	int i;
 
 	for(i=0;i<no_db_urls;i++) {
 		db_urls[i].hdl = db_urls[i].dbf.init( &db_urls[i].url );
@@ -173,7 +173,7 @@ int avpops_db_init(const str* db_table, str** db_cols)
 
 	return 0;
 error:
-	for(i--;i>=0;i--){
+	for(--i;i>=0;i--){
 		if (db_urls[i].hdl) {
 			db_urls[i].dbf.close(db_urls[i].hdl);
 			db_urls[i].hdl = NULL;
