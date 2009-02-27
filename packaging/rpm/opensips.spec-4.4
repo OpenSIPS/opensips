@@ -1,14 +1,15 @@
 %define name    opensips
-%define ver     1.4.0
+%define ver     1.4.4
 %define rel     0
+%define _sharedir %{_prefix}/share
 
-%define EXCLUDED_MODULES	mysql jabber cpl-c avp_radius auth_radius group_radius uri_radius pa postgres osp tlsops unixodbc
-%define MYSQL_MODULES		mysql
-%define UNIXODBC_MODULES	unixodbc
-%define POSTGRES_MODULES	postgres
+%define EXCLUDED_MODULES	db_mysql jabber cpl-c avp_radius auth_radius group_radius uri_radius pua db_postgres osp tlsops db_unixodbc
+%define MYSQL_MODULES		db_mysql
+%define UNIXODBC_MODULES	db_unixodbc
+%define POSTGRES_MODULES	db_postgres
 %define JABBER_MODULES		jabber
 %define CPL_MODULES			cpl-c
-%define PA_MODULES			pa
+%define PUA_MODULES			pua
 %define RADIUS_MODULES		avp_radius auth_radius group_radius uri_radius
 %define RADIUS_MOD_PATH		modules/avp_radius modules/auth_radius modules/group_radius modules/uri_radius
 
@@ -17,14 +18,14 @@ Name:         %name
 Version:      %ver
 Release:      %rel
 Packager:     Bogdan-Andrei Iancu <bogdan@voice-system.ro>
-Copyright:    GPL
+License:      GPL
 Group:        System Environment/Daemons
-Source:       http://opensips.org/pub/opensips/stable/%{name}-%{ver}_src.tar.gz
+source:       http://opensips.org/pub/opensips/%{ver}/src/%{name}-%{ver}-tls_src.tar.gz
 Source2:      opensips.init
 URL:          http://opensips.org/
 Vendor:       opensips.org
-BuildRoot:    /var/tmp/%{name}-%{ver}-root
-Conflicts:    opensips-mysql < %ver, opensips-jabber < %ver, opensips-radius < %ver, opensips-cpl < %ver, opensips-unixodbc < %ver, opensips-pa < %ver, opensips-postgres < %ver
+BuildRoot:    %{_tmppath}/%{name}-%{ver}-buildroot
+Conflicts:    opensips-mysql < %ver, opensips-jabber < %ver, opensips-radius < %ver, opensips-cpl < %ver, opensips-unixodbc < %ver, opensips-pua < %ver, opensips-postgres < %ver
 BuildPrereq:  make flex bison
 
 
@@ -67,7 +68,7 @@ entries.
 Summary:  UNIXODBC connectivity for OpenSIPS.
 Group:    System Environment/Daemons
 Requires: opensips = %ver
-BuildPrereq:  unixodbc-dev
+BuildPrereq:  unixODBC-devel
 
 %description unixodbc
 The opensips-unixodbc package contains UNIXODBC database connectivity support
@@ -86,19 +87,19 @@ The opensips-jabber package contains a sip to jabber message translator.
 Summary:  CPL interpreter engine for the OpenSIPS.
 Group:    System Environment/Daemons
 Requires: opensips = %ver
-BuildPrereq:  libxml2-dev
+BuildPrereq:  libxml2-devel
 
 %description cpl
 The opensips-cpl package contains a SIP CPL interpreter engine.
 
-%package  pa
-Summary:  sip presence agent support for the OpenSIPS.
+%package  pua
+Summary:  sip presence user agent support for the OpenSIPS.
 Group:    System Environment/Daemons
 Requires: opensips = %ver
-BuildPrereq:  libxml2-dev
+BuildPrereq:  libxml2-devel
 
-%description pa
-The opensips-pa package contains a sip Presence Agent.
+%description pua
+The opensips-pua package contains a sip Presence Agent.
 
 %package  radius
 Summary:  opensips radius authentication, group and uri check modules.
@@ -111,7 +112,7 @@ The opensips-radius package contains modules for radius authentication, group
  membership and uri checking.
 
 %prep
-%setup
+%setup -n %{name}-%{ver}-tls
 
 %build
 make all skip_modules="%EXCLUDED_MODULES"         cfg-target=/%{_sysconfdir}/opensips/
@@ -120,7 +121,7 @@ make modules modules="modules/%POSTGRES_MODULES"  cfg-target=/%{_sysconfdir}/ope
 make modules modules="modules/%UNIXODBC_MODULES"  cfg-target=/%{_sysconfdir}/opensips/
 make modules modules="modules/%JABBER_MODULES"    cfg-target=/%{_sysconfdir}/opensips/
 make modules modules="modules/%CPL_MODULES"       cfg-target=/%{_sysconfdir}/opensips/
-make modules modules="modules/%PA_MODULES"        cfg-target=/%{_sysconfdir}/opensips/
+make modules modules="modules/%PUA_MODULES"        cfg-target=/%{_sysconfdir}/opensips/
 make modules modules="%RADIUS_MOD_PATH"           cfg-target=/%{_sysconfdir}/opensips/
 
 
@@ -182,12 +183,12 @@ make install-doc modules="modules/%CPL_MODULES" \
 		prefix=/usr \
 		cfg-prefix=$RPM_BUILD_ROOT \
 		cfg-target=/%{_sysconfdir}/opensips/ 
-make install-modules modules="modules/%PA_MODULES" \
+make install-modules modules="modules/%PUA_MODULES" \
 		basedir=$RPM_BUILD_ROOT \
 		prefix=/usr \
 		cfg-prefix=$RPM_BUILD_ROOT \
 		cfg-target=/%{_sysconfdir}/opensips/ 
-make install-doc modules="modules/%PA_MODULES" \
+make install-doc modules="modules/%PUA_MODULES" \
 		basedir=$RPM_BUILD_ROOT \
 		prefix=/usr \
 		cfg-prefix=$RPM_BUILD_ROOT \
@@ -237,33 +238,43 @@ fi
 %doc %{_docdir}/opensips/README.auth_db
 %doc %{_docdir}/opensips/README.auth_diameter
 %doc %{_docdir}/opensips/README.avpops
-%doc %{_docdir}/opensips/README.dbtext
+%doc %{_docdir}/opensips/README.benchmark
+%doc %{_docdir}/opensips/README.cfgutils
+%doc %{_docdir}/opensips/README.db_flatstore
+%doc %{_docdir}/opensips/README.db_text
 %doc %{_docdir}/opensips/README.dialog
+%doc %{_docdir}/opensips/README.dialplan
 %doc %{_docdir}/opensips/README.dispatcher
 %doc %{_docdir}/opensips/README.diversion
 %doc %{_docdir}/opensips/README.domain
+%doc %{_docdir}/opensips/README.domainpolicy
 %doc %{_docdir}/opensips/README.enum
 %doc %{_docdir}/opensips/README.exec
-%doc %{_docdir}/opensips/README.flatstore
 %doc %{_docdir}/opensips/README.gflags
 %doc %{_docdir}/opensips/README.group
+%doc %{_docdir}/opensips/README.imc
 %doc %{_docdir}/opensips/README.lcr
 %doc %{_docdir}/opensips/README.mangler
 %doc %{_docdir}/opensips/README.maxfwd
 %doc %{_docdir}/opensips/README.mediaproxy
+%doc %{_docdir}/opensips/README.mi_datagram
+%doc %{_docdir}/opensips/README.mi_fifo
 %doc %{_docdir}/opensips/README.msilo
 %doc %{_docdir}/opensips/README.nathelper
+%doc %{_docdir}/opensips/README.nat_traversal
 %doc %{_docdir}/opensips/README.options
 %doc %{_docdir}/opensips/README.path
 %doc %{_docdir}/opensips/README.pdt
 %doc %{_docdir}/opensips/README.permissions
 %doc %{_docdir}/opensips/README.pike
+%doc %{_docdir}/opensips/README.ratelimit
 %doc %{_docdir}/opensips/README.registrar
 %doc %{_docdir}/opensips/README.rr
 %doc %{_docdir}/opensips/README.siptrace
 %doc %{_docdir}/opensips/README.sl
 %doc %{_docdir}/opensips/README.sms
 %doc %{_docdir}/opensips/README.speeddial
+%doc %{_docdir}/opensips/README.sst
 %doc %{_docdir}/opensips/README.statistics
 %doc %{_docdir}/opensips/README.textops
 %doc %{_docdir}/opensips/README.tm
@@ -271,6 +282,7 @@ fi
 %doc %{_docdir}/opensips/README.uac_redirect
 %doc %{_docdir}/opensips/README.uri
 %doc %{_docdir}/opensips/README.uri_db
+%doc %{_docdir}/opensips/README.userblacklist
 %doc %{_docdir}/opensips/README.usrloc
 %doc %{_docdir}/opensips/README.xlog
 
@@ -282,79 +294,101 @@ fi
 %dir %{_libdir}/opensips/modules
 %{_libdir}/opensips/modules/acc.so
 %{_libdir}/opensips/modules/alias_db.so
-%{_libdir}/opensips/modules/auth.so
 %{_libdir}/opensips/modules/auth_db.so
 %{_libdir}/opensips/modules/auth_diameter.so
+%{_libdir}/opensips/modules/auth.so
 %{_libdir}/opensips/modules/avpops.so
-%{_libdir}/opensips/modules/dbtext.so
+%{_libdir}/opensips/modules/benchmark.so
+%{_libdir}/opensips/modules/cfgutils.so
+%{_libdir}/opensips/modules/db_flatstore.so
+%{_libdir}/opensips/modules/db_text.so
+%{_libdir}/opensips/modules/dialog.so
+%{_libdir}/opensips/modules/dialplan.so
 %{_libdir}/opensips/modules/dispatcher.so
 %{_libdir}/opensips/modules/diversion.so
+%{_libdir}/opensips/modules/domainpolicy.so
 %{_libdir}/opensips/modules/domain.so
 %{_libdir}/opensips/modules/enum.so
 %{_libdir}/opensips/modules/exec.so
-%{_libdir}/opensips/modules/flatstore.so
 %{_libdir}/opensips/modules/gflags.so
 %{_libdir}/opensips/modules/group.so
+%{_libdir}/opensips/modules/imc.so
 %{_libdir}/opensips/modules/lcr.so
 %{_libdir}/opensips/modules/mangler.so
 %{_libdir}/opensips/modules/maxfwd.so
 %{_libdir}/opensips/modules/mediaproxy.so
+%{_libdir}/opensips/modules/mi_datagram.so
+%{_libdir}/opensips/modules/mi_fifo.so
 %{_libdir}/opensips/modules/msilo.so
 %{_libdir}/opensips/modules/nathelper.so
+%{_libdir}/opensips/modules/nat_traversal.so
 %{_libdir}/opensips/modules/options.so
 %{_libdir}/opensips/modules/path.so
 %{_libdir}/opensips/modules/pdt.so
 %{_libdir}/opensips/modules/permissions.so
 %{_libdir}/opensips/modules/pike.so
+%{_libdir}/opensips/modules/ratelimit.so
 %{_libdir}/opensips/modules/registrar.so
 %{_libdir}/opensips/modules/rr.so
 %{_libdir}/opensips/modules/siptrace.so
 %{_libdir}/opensips/modules/sl.so
 %{_libdir}/opensips/modules/sms.so
 %{_libdir}/opensips/modules/speeddial.so
+%{_libdir}/opensips/modules/sst.so
 %{_libdir}/opensips/modules/statistics.so
 %{_libdir}/opensips/modules/textops.so
 %{_libdir}/opensips/modules/tm.so
-%{_libdir}/opensips/modules/uac.so
 %{_libdir}/opensips/modules/uac_redirect.so
-%{_libdir}/opensips/modules/uri.so
+%{_libdir}/opensips/modules/uac.so
 %{_libdir}/opensips/modules/uri_db.so
+%{_libdir}/opensips/modules/uri.so
+%{_libdir}/opensips/modules/userblacklist.so
 %{_libdir}/opensips/modules/usrloc.so
 %{_libdir}/opensips/modules/xlog.so
 
 %{_sbindir}/opensips
 %{_sbindir}/opensipsctl
-%{_libdir}/opensipsctl/opensipsctl.base
-%{_libdir}/opensipsctl/opensipsctl.sqlbase
-%{_libdir}/opensipsctl/opensipsctl.ctlbase
-%{_libdir}/opensipsctl/opensipsctl.fifo
-%{_libdir}/opensipsctl/opensipsctl.unixsock
+%{_sbindir}/opensipsunix
+%{_libdir}/opensips/opensipsctl/dbtextdb/dbtextdb.py
+%{_libdir}/opensips/opensipsctl/opensipsctl.base
+%{_libdir}/opensips/opensipsctl/opensipsctl.ctlbase
+%{_libdir}/opensips/opensipsctl/opensipsctl.dbtext
+%{_libdir}/opensips/opensipsctl/opensipsctl.fifo
+%{_libdir}/opensips/opensipsctl/opensipsctl.sqlbase
+%{_libdir}/opensips/opensipsctl/opensipsctl.unixsock
+%{_libdir}/opensips/opensipsctl/opensipsdbctl.base
+%{_libdir}/opensips/opensipsctl/opensipsdbctl.dbtext
 
 %{_mandir}/man5/*
 %{_mandir}/man8/*
 
+%{_sharedir}/opensips/dbtext/opensips/*
 
 %files mysql
 %defattr(-,root,root)
-%doc %{_docdir}/opensips/README.mysql
+%doc %{_docdir}/opensips/README.db_mysql
 
-%{_libdir}/opensips/modules/mysql.so
-%{_sbindir}/opensips_mysql.sh
-%{_libdir}/opensipsctl/opensipsctl.mysql
+%{_libdir}/opensips/modules/db_mysql.so
+%{_sbindir}/opensipsdbctl
+%{_libdir}/opensips/opensipsctl/opensipsdbctl.mysql
+%{_libdir}/opensips/opensipsctl/opensipsctl.mysql
+%{_sharedir}/opensips/mysql/*
 
 %files postgres
 %defattr(-,root,root)
-%doc %{_docdir}/opensips/README.postgres
+%doc %{_docdir}/opensips/README.db_postgres
 
-%{_libdir}/opensips/modules/postgres.so
-%{_sbindir}/opensips_postgres.sh
-%{_libdir}/opensipsctl/opensipsctl.pgsql
+%{_libdir}/opensips/modules/db_postgres.so
+%{_sbindir}/opensipsdbctl
+%{_libdir}/opensips/opensipsctl/opensipsdbctl.pgsql
+%{_libdir}/opensips/opensipsctl/opensipsctl.pgsql
+%{_sharedir}/opensips/postgres/*
 
 %files unixodbc
 %defattr(-,root,root)
-%doc %{_docdir}/opensips/README.unixodbc
+%doc %{_docdir}/opensips/README.db_unixodbc
 
-%{_libdir}/opensips/modules/unixodbc.so
+%{_libdir}/opensips/modules/db_unixodbc.so
 
 %files jabber
 %defattr(-,root,root)
@@ -368,11 +402,11 @@ fi
 
 %{_libdir}/opensips/modules/cpl-c.so
 
-%files pa
+%files pua
 %defattr(-,root,root)
-%doc %{_docdir}/opensips/README.pa
+%doc %{_docdir}/opensips/README.pua
 
-%{_libdir}/opensips/modules/pa.so
+%{_libdir}/opensips/modules/pua.so
 
 %files radius
 %defattr(-,root,root)
@@ -388,6 +422,13 @@ fi
 
 
 %changelog
+* Thu Feb 26 2009 Julian Yap <julianokyap@gmail.com>
+- Update spec to OpenSIPS version 1.4.4.
+- Rename database module names.
+- Rename PUA module.
+- Fix dependencies.
+- Minor build fixes.
+- Additional files and new modules.
 
 * Mon Jul 21 2008 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
 - First version of the spec file.
