@@ -36,6 +36,7 @@
 #include <string.h>
 #include <mysql/mysql.h>
 #include <mysql/errmsg.h>
+#include <mysql/mysqld_error.h>
 #include <mysql/mysql_version.h>
 #include "../../mem/mem.h"
 #include "../../dprint.h"
@@ -373,11 +374,26 @@ static int db_mysql_do_prepared_query(const db_con_t* conn, const str *query,
 		}
 
 		if ( (code = mysql_stmt_execute(ctx->stmt)!=0 )) {
-			//if (code != CR_SERVER_GONE_ERROR && code != CR_SERVER_LOST) {
-			if (memcmp(mysql_stmt_error(ctx->stmt),"Lost",4)!=0) {
-				LM_ERR("mysql_stmt_execute() failed: (%d) %s\n",
-					code, mysql_stmt_error(ctx->stmt));
-				return -1;
+			code = mysql_stmt_errno(ctx->stmt);
+			LM_DBG("-------mysql_stmt_execute => %d\n",code);
+			if (code==0) {
+				/* bug in the libmysqlclient lib */
+				if (memcmp(mysql_stmt_error(ctx->stmt),"Lost",4)!=0 &&
+				memcmp(mysql_stmt_error(ctx->stmt),"Unknown prepared statement",26)!=0 &&
+				memcmp(mysql_stmt_error(ctx->stmt),"MySQL server has gone",20)!=0) {
+					LM_ERR("mysql_stmt_execute() failed(1): %s\n",
+						mysql_stmt_error(ctx->stmt));
+					return -1;
+				}
+				/* try reconnect */
+			} else {
+				if (code != CR_SERVER_GONE_ERROR && code != CR_SERVER_LOST
+				&& code!= ER_UNKNOWN_STMT_HANDLER ) {
+					LM_ERR("mysql_stmt_execute() failed(2): (%d) %s\n",
+						code, mysql_stmt_error(ctx->stmt));
+					return -1;
+				}
+				/* try reconnect */
 			}
 			LM_DBG("mysql server gone or lost -> re-init the statement\n");
 			/* reset the old prepared statement */
