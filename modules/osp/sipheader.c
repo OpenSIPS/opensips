@@ -404,7 +404,7 @@ int ospGetSourceAddress(
  */
 int ospGetCallId(
     struct sip_msg* msg, 
-    OSPTCALLID** callid)
+    OSPT_CALL_ID** callid)
 {
     struct hdr_field* hf;
     int result = -1;

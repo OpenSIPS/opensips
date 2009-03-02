@@ -81,8 +81,8 @@ static int ospLoadRoutes(
     int errorcode;
     osp_dest* dest;
     osp_dest dests[OSP_DEF_DESTS];
-    OSPE_DEST_PROT protocol;
-    OSPE_DEST_OSP_ENABLED enabled;
+    OSPE_DEST_PROTOCOL protocol;
+    OSPE_DEST_OSPENABLED enabled;
     int result = 0;
     
     for (count = 0; count < destcount; count++) {
@@ -151,17 +151,17 @@ static int ospLoadRoutes(
         if (errorcode != OSPC_ERR_NO_ERROR) {
             /* This does not mean an ERROR. The OSP server may not support OSP 2.1.1 */
             LM_DBG("cannot get dest protocol (%d)\n", errorcode);
-            protocol = OSPE_DEST_PROT_SIP;
+            protocol = OSPC_DPROT_SIP;
         }
         switch (protocol) {
-            case OSPE_DEST_PROT_H323_LRQ:
-            case OSPE_DEST_PROT_H323_SETUP:
-            case OSPE_DEST_PROT_IAX:
+            case OSPC_DPROT_LRQ:
+            case OSPC_DPROT_Q931:
+            case OSPC_DPROT_IAX:
                 dest->supported = 0;
                 break;
-            case OSPE_DEST_PROT_SIP:
-            case OSPE_DEST_PROT_UNDEFINED:
-            case OSPE_DEST_PROT_UNKNOWN:
+            case OSPC_DPROT_SIP:
+            case OSPC_DPROT_UNDEFINED:
+            case OSPC_DPROT_UNKNOWN:
             default:
                 dest->supported = 1;
                 break;
@@ -171,7 +171,7 @@ static int ospLoadRoutes(
         if (errorcode != OSPC_ERR_NO_ERROR) {
             /* This does not mean an ERROR. The OSP server may not support OSP 2.1.1 */
             LM_DBG("cannot get dest OSP version (%d)\n", errorcode);
-        } else if (enabled == OSPE_OSP_FALSE) {
+        } else if (enabled == OSPC_DOSP_FALSE) {
             /* Destination device does not support OSP. Do not send token to it */
             dest->token[0] = '\0';
             dest->tokensize = 0;
@@ -186,7 +186,7 @@ static int ospLoadRoutes(
 
         strncpy(dest->source, source, sizeof(dest->source) - 1);
         strncpy(dest->srcdev, sourcedev, sizeof(dest->srcdev) - 1);
-        dest->type = OSPC_SOURCE;
+        dest->type = OSPC_ROLE_SOURCE;
         dest->transid = ospGetTransactionId(transaction);
         dest->authtime = authtime;
 
@@ -257,7 +257,7 @@ int ospRequestRouting(
     int_str snidval;
     char snid[OSP_STRBUF_SIZE];
     unsigned int callidnumber = 1;
-    OSPTCALLID* callids[callidnumber];
+    OSPT_CALL_ID* callids[callidnumber];
     unsigned int logsize = 0;
     char* detaillog = NULL;
     const char** preferred = NULL;
@@ -322,9 +322,9 @@ int ospRequestRouting(
             _osp_device_ip,    /* from the configuration file */
             deviceinfo,        /* source device of call, protocol specific, in OSP format */
             calling,           /* calling number in nodotted e164 notation */
-            OSPC_E164,         /* calling number format */
+            OSPC_NFORMAT_E164, /* calling number format */
             called,            /* called number */
-            OSPC_E164,         /* called number format */
+            OSPC_NFORMAT_E164, /* called number format */
             "",                /* optional username string, used if no number */
             callidnumber,      /* number of call ids, here always 1 */
             callids,           /* sized-1 array of call ids */

@@ -144,7 +144,7 @@ static OSPTTHREADRETURN ospReportUsageWork(
 
     OSPPTransactionRecordFailure(
         usage->ospvTransaction,
-        (enum OSPEFAILREASON)usage->ospvReleaseCode);
+        usage->ospvReleaseCode);
 
     for (i = 1; i <= MAX_RETRIES; i++) {
         errorcode = OSPPTransactionReportUsage(
@@ -157,7 +157,7 @@ static OSPTTHREADRETURN ospReportUsageWork(
             usage->ospvIsPDDInfoPresent,
             usage->ospvPostDialDelay,
             usage->ospvReleaseSource,
-            (unsigned char*)"", 0, 0, 0, 0, NULL, NULL);
+            NULL, -1, -1, -1, -1, NULL, NULL);
 
         if (errorcode == OSPC_ERR_NO_ERROR) {
             LM_DBG("reporte usage for '%llu'\n", 

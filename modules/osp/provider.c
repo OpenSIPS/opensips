@@ -54,9 +54,9 @@ extern OSPTPROVHANDLE _osp_provider;
 int ospSetupProvider(void) 
 {
     OSPTPRIVATEKEY privatekey;
-    OSPTCERT localcert;
-    OSPTCERT cacert;
-    OSPTCERT* cacerts[1];
+    OSPT_CERT localcert;
+    OSPT_CERT cacert;
+    OSPT_CERT* cacerts[1];
     int result;
 
     cacerts[0] = &cacert;
@@ -78,7 +78,7 @@ int ospSetupProvider(void)
             &privatekey,
             &localcert,
             1,
-            (const OSPTCERT**)cacerts,
+            (const OSPT_CERT**)cacerts,
             1,
             _osp_ssl_lifetime,
             _osp_sp_number,

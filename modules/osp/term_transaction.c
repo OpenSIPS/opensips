@@ -80,7 +80,7 @@ int ospValidateHeader (
     void* detaillog = NULL;
     unsigned int logsize = 0;
     unsigned char* callidval = (unsigned char*)"";
-    OSPTCALLID* callid = NULL;
+    OSPT_CALL_ID* callid = NULL;
     unsigned callidsize = 0;
     unsigned char token[OSP_TOKENBUF_SIZE];
     unsigned int tokensize = sizeof(token);
@@ -131,9 +131,9 @@ int ospValidateHeader (
             "",
             "",
             dest.calling,
-            OSPC_E164,
+            OSPC_NFORMAT_E164,
             dest.called,
-            OSPC_E164,
+            OSPC_NFORMAT_E164,
             callidsize,
             callidval,
             tokensize,
@@ -153,7 +153,7 @@ int ospValidateHeader (
             memcpy(dest.callid, callid->ospmCallIdVal, dest.callidsize);
             dest.callid[dest.callidsize] = 0;
             dest.transid = ospGetTransactionId(transaction);
-            dest.type = OSPC_DESTINATION;
+            dest.type = OSPC_ROLE_DESTINATION;
             dest.authtime = time(NULL);
             strncpy(dest.host, _osp_device_ip, sizeof(dest.host) - 1);
             strncpy(dest.origcalled, dest.called, sizeof(dest.origcalled) - 1);
