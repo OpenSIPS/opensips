@@ -295,6 +295,7 @@ static int re_init_statement(const db_con_t* conn, struct prep_stmt *pq_ptr,
 {
 	struct my_stmt_ctx *ctx1, *ctx2;
 
+	LM_DBG(" query  is <%.*s>, ptr=%p\n", ctx->query.len, ctx->query.s, ctx->stmt);
 	/* re-init the statement */
 	if ( !(ctx->stmt=mysql_stmt_init(CON_CONNECTION(conn))) ) {
 		LM_ERR("failed while rmysql_stmt_init()\n");
