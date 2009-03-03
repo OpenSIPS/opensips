@@ -613,7 +613,7 @@ int db_mysql_query(const db_con_t* _h, const db_key_t* _k, const db_op_t* _op,
 	int ret;
 
 	if (CON_HAS_PS(_h)) {
-		if (CON_HAS_UNINIT_PS(_h)) {
+		if (CON_HAS_UNINIT_PS(_h)||!has_stmt_ctx(_h,&(CON_MYSQL_PS(_h)->ctx))){
 			ret = db_do_query(_h, _k, _op, _v, _c, _n, _nc, _o, NULL,
 				db_mysql_val2str, db_mysql_submit_dummy_query, NULL);
 			if (ret!=0) return ret;
