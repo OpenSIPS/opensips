@@ -50,6 +50,22 @@
 #include "dbase.h"
 
 
+
+static void reset_all_statements(const db_con_t* conn)
+{
+	struct prep_stmt *pq_ptr;
+	struct my_stmt_ctx *ctx;
+
+	for( pq_ptr=CON_PS_LIST(conn); pq_ptr ; pq_ptr=pq_ptr->next ) {
+		for (ctx = pq_ptr->ctx ; ctx ; ctx=ctx->next ) {
+			mysql_stmt_close(ctx->stmt);
+			ctx->stmt = NULL;
+			ctx->has_out = 0;
+		}
+	}
+}
+
+
 /**
  * \brief Send a SQL query to the server.
  *
@@ -113,6 +129,7 @@ static int db_mysql_submit_query(const db_con_t* _h, const str* _s)
 		if (code != CR_SERVER_GONE_ERROR && code != CR_SERVER_LOST) {
 			break;
 		}
+		reset_all_statements(_h);
 	}
 	LM_ERR("driver error on query: %s\n", mysql_error(CON_CONNECTION(_h)));
 	return -2;
@@ -273,6 +290,42 @@ static struct prep_stmt* alloc_new_prepared_stmt(const db_val_t* v, int n,
 }
 
 
+static int re_init_statement(const db_con_t* conn, struct prep_stmt *pq_ptr,
+													struct my_stmt_ctx *ctx)
+{
+	struct my_stmt_ctx *ctx1, *ctx2;
+
+	/* re-init the statement */
+	if ( !(ctx->stmt=mysql_stmt_init(CON_CONNECTION(conn))) ) {
+		LM_ERR("failed while rmysql_stmt_init()\n");
+		goto error;
+	}
+	if ( mysql_stmt_prepare(ctx->stmt, ctx->query.s, ctx->query.len)) {
+		LM_ERR("failed while mysql_stmt_prepare: %s\n",
+			mysql_stmt_error(ctx->stmt));
+		goto error;
+	}
+
+	return 0;
+error:
+	/* destroy the context only */
+	mysql_stmt_close(ctx->stmt);
+	/* remove the context from STMT list */
+	for( ctx1=NULL,ctx2=pq_ptr->ctx ; ctx2 ; ) {
+		if (ctx2==ctx) {
+			if (ctx1)
+				ctx1->next = ctx2->next;
+			else
+				pq_ptr->ctx = ctx2->next;
+		}
+		ctx1 = ctx2;
+		ctx2 = ctx2->next;
+	}
+	pkg_free(ctx);
+	return -1;
+}
+
+
 
 /**	Try to exec SQL query using prepared statements API
  **
@@ -336,6 +389,10 @@ static int db_mysql_do_prepared_query(const db_con_t* conn, const str *query,
 			pq_ptr->ctx = ctx;
 		} else {
 			ctx = pq_ptr->ctx;
+			if ( ctx->stmt==NULL && re_init_statement(conn, pq_ptr, ctx)!=0 ) {
+				LM_ERR("failed to re-init statement!\n");
+				return -1;
+			}
 		}
 	}
 
@@ -376,12 +433,15 @@ static int db_mysql_do_prepared_query(const db_con_t* conn, const str *query,
 
 		if ( (code = mysql_stmt_execute(ctx->stmt)!=0 )) {
 			code = mysql_stmt_errno(ctx->stmt);
-			LM_DBG("-------mysql_stmt_execute => %d\n",code);
+			LM_DBG("mysql_stmt_execute => %d\n",code);
 			if (code==0) {
 				/* bug in the libmysqlclient lib */
-				if (memcmp(mysql_stmt_error(ctx->stmt),"Lost",4)!=0 &&
-				memcmp(mysql_stmt_error(ctx->stmt),"Unknown prepared statement",26)!=0 &&
-				memcmp(mysql_stmt_error(ctx->stmt),"MySQL server has gone",20)!=0) {
+				if (memcmp(mysql_stmt_error(ctx->stmt),
+				"Lost",4)!=0 &&
+				memcmp(mysql_stmt_error(ctx->stmt),
+				"Unknown prepared statement",26)!=0 &&
+				memcmp(mysql_stmt_error(ctx->stmt),
+				"MySQL server has gone",20)!=0) {
 					LM_ERR("mysql_stmt_execute() failed(1): %s\n",
 						mysql_stmt_error(ctx->stmt));
 					return -1;
@@ -396,23 +456,12 @@ static int db_mysql_do_prepared_query(const db_con_t* conn, const str *query,
 				}
 				/* try reconnect */
 			}
+			/* reset all statements from this connection */
+			reset_all_statements(conn);
+			/* re-init current statement/context */
 			LM_DBG("mysql server gone or lost -> re-init the statement\n");
-			/* reset the old prepared statement */
-			mysql_stmt_close(ctx->stmt);
-			/* re-init the statement */
-			if ( !(ctx->stmt=mysql_stmt_init(CON_CONNECTION(conn))) ) {
-				LM_ERR("failed while mysql_stmt_init()\n");
-				/* destroy everything */
-				db_mysql_free_pq(pq_ptr);
-				CON_PS_LIST(conn) = NULL;
-				return -1;
-			}
-			if ( mysql_stmt_prepare(ctx->stmt, ctx->query.s, ctx->query.len)) {
-				LM_ERR("failed while mysql_stmt_prepare: %s\n",
-					mysql_stmt_error(ctx->stmt));
-				/* destroy everything */
-				db_mysql_free_pq(pq_ptr);
-				CON_PS_LIST(conn) = NULL;
+			if ( re_init_statement(conn, pq_ptr, ctx)!=0 ) {
+				LM_ERR("failed to re-init statement!\n");
 				return -1;
 			}
 		}
