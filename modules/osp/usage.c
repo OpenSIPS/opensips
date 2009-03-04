@@ -72,7 +72,7 @@ extern struct rr_binds osp_rr;
 static void ospRecordTransaction(struct sip_msg* msg, unsigned long long transid, char* uac, char* from, char* to, time_t authtime, int isorig, unsigned destinationCount);
 static int ospBuildUsageFromDestination(OSPTTRANHANDLE transaction, osp_dest* dest, int lastcode);
 static int ospReportUsageFromDestination(OSPTTRANHANDLE transaction, osp_dest* dest);
-static int ospReportUsageFromCookie(struct sip_msg* msg, char* cooky, OSPTCALLID* callid, int release, OSPE_MSG_ROLETYPES type);
+static int ospReportUsageFromCookie(struct sip_msg* msg, char* cooky, OSPT_CALL_ID* callid, int release, OSPE_ROLE type);
 
 /*
  * Create OSP cookie and insert it into Record-Route header
@@ -201,9 +201,9 @@ void ospRecordTermTransaction(
 static int ospReportUsageFromCookie(
     struct sip_msg* msg,
     char* cookie, 
-    OSPTCALLID* callid, 
+    OSPT_CALL_ID* callid, 
     int release,
-    OSPE_MSG_ROLETYPES type)
+    OSPE_ROLE type)
 {
     char* tmp;
     char* token;
@@ -272,16 +272,16 @@ static int ospReportUsageFromCookie(
     }
 
     switch (type) {
-        case OSPC_DESTINATION:
+        case OSPC_ROLE_DESTINATION:
             if (cookieflags == OSP_COOKIEHAS_TERMALL) {
                 releasecode = 10016;
             } else {
                 releasecode = 9016;
             }
             break;
-        case OSPC_SOURCE:
-        case OSPC_OTHER:
-        case OSPC_UNDEFINED_ROLE:
+        case OSPC_ROLE_SOURCE:
+        case OSPC_ROLE_OTHER:
+        case OSPC_ROLE_UNDEFINED:
         default:
             if (cookieflags == OSP_COOKIEHAS_ORIGALL) {
                 releasecode = 10016;
@@ -342,15 +342,15 @@ static int ospReportUsageFromCookie(
     LM_DBG("created transaction handle '%d' (%d)\n", transaction, errorcode);
 
     switch (type) {
-        case OSPC_DESTINATION:
+        case OSPC_ROLE_DESTINATION:
             ospConvertAddress(originator, srcbuf, sizeof(srcbuf));
             source = srcbuf;
             destination = _osp_device_ip;
             srcdev = "";
             break;
-        case OSPC_SOURCE:
-        case OSPC_OTHER:
-        case OSPC_UNDEFINED_ROLE:
+        case OSPC_ROLE_SOURCE:
+        case OSPC_ROLE_OTHER:
+        case OSPC_ROLE_UNDEFINED:
         default:
             source = _osp_device_ip;
             ospConvertAddress(terminator, dstbuf, sizeof(dstbuf));
@@ -369,12 +369,12 @@ static int ospReportUsageFromCookie(
         srcdev,
         "",
         calling,
-        OSPC_E164,
+        OSPC_NFORMAT_E164,
         called,
-        OSPC_E164,
+        OSPC_NFORMAT_E164,
         callid->ospmCallIdLen,
         callid->ospmCallIdVal,
-        (enum OSPEFAILREASON)0,
+        0,
         NULL,
         NULL);
 
@@ -417,7 +417,7 @@ int ospReportUsage(
     char* tmp;
     char* token;
     char parameters[OSP_HEADERBUF_SIZE];
-    OSPTCALLID* callid = NULL;
+    OSPT_CALL_ID* callid = NULL;
     int result = MODULE_RETURNCODE_FALSE;
 
     ospGetCallId(msg, &callid);
@@ -438,13 +438,13 @@ int ospReportUsage(
                     LM_INFO("report orig duration for call_id '%.*s'\n",
                         callid->ospmCallIdLen,
                         callid->ospmCallIdVal);
-                    ospReportUsageFromCookie(msg, token + strlen(OSP_ORIG_COOKIE) + 1, callid, release, OSPC_SOURCE);
+                    ospReportUsageFromCookie(msg, token + strlen(OSP_ORIG_COOKIE) + 1, callid, release, OSPC_ROLE_SOURCE);
                     result = MODULE_RETURNCODE_TRUE;
                 } else if (strncmp(token, OSP_TERM_COOKIE, strlen(OSP_TERM_COOKIE)) == 0) {
                     LM_INFO("report term duration for call_id '%.*s'\n",
                         callid->ospmCallIdLen,
                         callid->ospmCallIdVal);
-                    ospReportUsageFromCookie(msg, token + strlen(OSP_TERM_COOKIE) + 1, callid, release, OSPC_DESTINATION);
+                    ospReportUsageFromCookie(msg, token + strlen(OSP_TERM_COOKIE) + 1, callid, release, OSPC_ROLE_DESTINATION);
                     result = MODULE_RETURNCODE_TRUE;
                 } else {
                     LM_DBG("ignoring parameter '%s'\n", token);
@@ -457,7 +457,7 @@ int ospReportUsage(
             LM_INFO("report other duration for call_id '%.*s'\n",
                callid->ospmCallIdLen,
                callid->ospmCallIdVal);
-            ospReportUsageFromCookie(msg, NULL, callid, release, OSPC_SOURCE);
+            ospReportUsageFromCookie(msg, NULL, callid, release, OSPC_ROLE_SOURCE);
             result = MODULE_RETURNCODE_TRUE;
         }
 
@@ -488,7 +488,7 @@ static int ospBuildUsageFromDestination(
     char* source;
     char* srcdev;
 
-    if (dest->type == OSPC_SOURCE) {
+    if (dest->type == OSPC_ROLE_SOURCE) {
         ospConvertAddress(dest->srcdev, addr, sizeof(addr));
         source = dest->source;
         srcdev = addr;
@@ -507,12 +507,12 @@ static int ospBuildUsageFromDestination(
         srcdev,
         dest->destdev,
         dest->calling,
-        OSPC_E164,
+        OSPC_NFORMAT_E164,
         dest->origcalled,       /* Report original called number */
-        OSPC_E164,
+        OSPC_NFORMAT_E164,
         dest->callidsize,
         dest->callid,
-        (enum OSPEFAILREASON)lastcode,
+        lastcode,
         NULL,
         NULL);
 
