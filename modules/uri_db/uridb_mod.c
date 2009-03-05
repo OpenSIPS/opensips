@@ -159,7 +159,7 @@ static int mod_init(void)
 
 	db_url.len = strlen(db_url.s);
 	if (db_url.len == 0) {
-		if (use_uri_table) {
+		if (use_uri_table != 0) {
 			LM_ERR("configuration error - no database URL, "
 				"but use_uri_table is set!\n");
 			goto error;
@@ -167,6 +167,14 @@ static int mod_init(void)
 		return 0;
 	}
 
+	if(db_table.s == NULL) {
+		if(use_uri_table != 0) {
+			db_table.s=URI_TABLE;
+		} else {
+			db_table.s=SUBSCRIBER_TABLE;
+		}
+	}
+			
 	db_table.len = strlen(db_table.s);
 	uridb_user_col.len = strlen(uridb_user_col.s);
 	uridb_domain_col.len = strlen(uridb_domain_col.s);
@@ -177,7 +185,7 @@ static int mod_init(void)
 		goto error;
 	}
 
-	if (use_uri_table) {
+	if (use_uri_table != 0) {
 		/* Check table version */
 		ver = uridb_db_ver(&db_url, &db_table);
 		if (ver < 0) {
