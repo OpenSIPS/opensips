@@ -403,6 +403,8 @@ int load_dlg( struct dlg_binds *dlgb )
 	dlgb->search_profile = search_dlg_profile;
 	dlgb->set_profile = set_dlg_profile;
 	dlgb->get_profile_size = get_profile_size;
+	dlgb->store_dlg_value = store_dlg_value;
+	dlgb->fetch_dlg_value = fetch_dlg_value;
 	return 1;
 }
 

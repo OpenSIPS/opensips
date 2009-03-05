@@ -32,6 +32,7 @@
 #include "dlg_cb.h"
 #include "dlg_handlers.h"
 #include "dlg_profile.h"
+#include "dlg_vals.h"
 #include "../../sr_module.h"
 
 typedef struct dlg_cell *(*get_dlg_f)( void );
@@ -44,6 +45,8 @@ struct dlg_binds {
 	search_dlg_profile_f search_profile;
 	set_dlg_profile_f    set_profile;
 	get_profile_size_f   get_profile_size;
+	store_dlg_value_f    store_dlg_value;
+	fetch_dlg_value_f    fetch_dlg_value;
 };
 
 

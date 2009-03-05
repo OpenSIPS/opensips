@@ -50,6 +50,12 @@ int pv_set_dlg_val(struct sip_msg* msg, pv_param_t *param,
 		int op, pv_value_t *val);
 
 
+typedef int (*store_dlg_value_f)(struct dlg_cell *dlg,
+		str *name, str *val);
+
+typedef int (*fetch_dlg_value_f)(struct dlg_cell *dlg,
+		str *name, str *val);
+
 
 int store_dlg_value(struct dlg_cell *dlg, str *name, str *val);
 
