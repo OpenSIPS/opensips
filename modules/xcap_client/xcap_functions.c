@@ -45,7 +45,7 @@
 #define ETAG_HDR          "Etag: "
 #define ETAG_HDR_LEN      strlen("Etag: ")
 
-size_t write_function( void *ptr, size_t size, size_t nmemb, void *stream);
+size_t write_function( void *ptr, size_t size, size_t nmemb, void *buff);
 char* get_xcap_path(xcap_get_req_t req);
 
 int bind_xcap(xcap_api_t* api)
@@ -527,13 +527,14 @@ char* send_http_get(char* path, unsigned int xcap_port, char* match_etag,
 		int match_type, char** etag)
 {
 	int len;
-	char* stream= NULL;
+	str buff= {0, 0};
 	CURLcode ret_code;
 	CURL* curl_handle= NULL;
 	static char buf[128];
 	char* match_header= NULL;
 	*etag= NULL;
-	
+	long int http_ret_code=-1;
+
 	if(match_etag)
 	{
 		char* hdr_name= NULL;
@@ -560,7 +561,7 @@ char* send_http_get(char* path, unsigned int xcap_port, char* match_etag,
 	
 	curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, write_function);
 	
-	curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, &stream);
+	curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, &buff);
 
 	curl_easy_setopt(curl_handle, CURLOPT_HEADERFUNCTION, get_xcap_etag);
 	
@@ -573,36 +574,43 @@ char* send_http_get(char* path, unsigned int xcap_port, char* match_etag,
 	curl_easy_setopt(curl_handle, CURLOPT_FAILONERROR, 1);
 
 	ret_code= curl_easy_perform(curl_handle );
-	
-	if( ret_code== CURLE_WRITE_ERROR)
-	{
-		LM_ERR("while performing curl option\n");
-		if(stream)
-			pkg_free(stream);
-		stream= NULL;
+	 
+	if( ret_code!=0) {
+		LM_ERR("Error [%i] while performing curl operation", ret_code);
+		pkg_free(buff.s);
 		return NULL;
+	} else {
+		curl_easy_getinfo(curl_handle, CURLINFO_RESPONSE_CODE, &http_ret_code);
 	}
+	LM_DBG("send_http_get return %ld. Content length=%d", http_ret_code, buff.len);
 
-	curl_global_cleanup();
-	return stream;
+	return buff.s;
 }
+
 
 size_t write_function( void *ptr, size_t size, size_t nmemb, void *stream)
 {
 	/* allocate memory and copy */
-	char* data;
+	char* newData;
+	char* s = (char*)ptr;
+	int len = (int)(size*nmemb);
+	str* buff = (str*) stream;
 
-	data= (char*)pkg_malloc(size* nmemb);
-	if(data== NULL)
-	{
+	if (len == -1) 
+		len=strlen(s);
+	if (len == 0) 
+		return buff->len;
+
+	newData= (char*)pkg_realloc(buff->s, buff->len + len + 1);
+	if(newData== NULL) 
 		ERR_MEM(PKG_MEM_STR);
-	}
 
-	memcpy(data, (char*)ptr, size* nmemb);
-	
-	*((char**) stream)= data;
+    memcpy(newData+buff->len, s , len);
+    buff->s = newData;
+    buff->len += len;
 
-	return size* nmemb;
+    buff->s[buff->len] = 0;
+    return buff->len;
 
 error:
 	return CURLE_WRITE_ERROR;
