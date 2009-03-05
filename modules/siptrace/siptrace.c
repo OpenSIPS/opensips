@@ -367,11 +367,46 @@ static void destroy(void)
 }
 
 
+static str* generate_val_name(unsigned char n)
+{
+	#define SIPTRACE_VAL_NAME "trace_xxx"
+	static str v_name = {NULL,0};
+
+	if (v_name.s==NULL) {
+		v_name.len = sizeof(SIPTRACE_VAL_NAME)-1;
+		v_name.s = pkg_malloc(v_name.len);
+		if (v_name.s==NULL) {
+			LM_ERR("failed to get pkg mem\n");
+			return NULL;
+		}
+		memcpy(v_name.s, SIPTRACE_VAL_NAME, v_name.len);
+	}
+	v_name.s[v_name.len-2] = '0' + n/10;
+	v_name.s[v_name.len-1] = '0' + n%10;
+
+	return &v_name;
+}
+
+
 static void trace_transaction(struct dlg_cell* dlg, int type,
 												struct dlg_cb_params * params)
 {
+	unsigned char n;
+	static int_str avp_value;
+	str *name;
+
 	if (params->msg==NULL)
 		return;
+
+	/* restore the AVPs from the dialog values */
+	n = 0;
+	do {
+		name = generate_val_name(n);
+		if (dlgb.fetch_dlg_value( dlg, name, &avp_value.s)!=0)
+			break;
+		add_avp( traced_user_avp_type|AVP_VAL_STR, traced_user_avp, avp_value);
+		n++;
+	}while(1);
 
 	/* trace current request */
 	sip_trace(params->msg);
@@ -382,7 +417,11 @@ static void trace_transaction(struct dlg_cell* dlg, int type,
 
 static int trace_dialog(struct sip_msg *msg)
 {
+	unsigned char n;
 	struct dlg_cell* dlg;
+	struct usr_avp *avp;
+	static int_str avp_value;
+	str *name;
 
 	if (dlgb.create_dlg(msg)<1) {
 		LM_ERR("failed to create dialog\n");
@@ -399,6 +438,23 @@ static int trace_dialog(struct sip_msg *msg)
 	trace_transaction,0,0)!=0) {
 		LM_ERR("failed to register dialog callback\n");
 		return -1;
+	}
+
+	/* store in dialog the user avps for tracing ; we will restore 
+	 them for each transactin from the dialog */
+	if(traced_user_avp.n!=0) {
+		n = 0;
+		avp=search_first_avp(traced_user_avp_type, traced_user_avp,
+				&avp_value, 0);
+		while(avp!=NULL) {
+			/* generate a name */
+			name = generate_val_name(n);
+			/* add the avp value as dialog var */
+			dlgb.store_dlg_value( dlg, name, &avp_value.s);
+			/* next avp */
+			avp = search_next_avp( avp, &avp_value);
+			n++;
+		}
 	}
 
 	/* trace current request */
