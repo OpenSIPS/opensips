@@ -94,8 +94,6 @@
 	    </xsl:when>
 	    <xsl:when test="$type='text'">
 		<xsl:text>TEXT</xsl:text>
-		<xsl:call-template name="column.size"/>
-		<xsl:call-template name="column.trailing"/>
 	    </xsl:when>
 	    <xsl:otherwise>
 		<xsl:call-template name="type-error"/>
