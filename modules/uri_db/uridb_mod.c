@@ -185,11 +185,9 @@ static int mod_init(void)
 		/* no table set -> use defaults */
 		if (use_uri_table != 0){
 			db_table.s = URI_TABLE;
-			db_table.len = strlen(URI_TABLE)+1;
 		}
 		else {
 			db_table.s = SUBSCRIBER_TABLE;
-			db_table.len = strlen(SUBSCRIBER_TABLE)+1;
 		}
 	}
 
