@@ -195,7 +195,7 @@ int does_uri_exist(struct sip_msg* _msg, char* _s1, char* _s2)
 		return -1;
 	}
 
-	if (use_uri_table) {
+	if (use_uri_table != 0) {
 		if (uridb_dbf.use_table(db_handle, &db_table) < 0) {
 			LM_ERR("Error while trying to use uri table\n");
 			return -2;

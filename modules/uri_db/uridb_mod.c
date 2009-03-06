@@ -78,7 +78,7 @@ static int mod_init(void);       /* Module initialization function */
  * Module parameter variables
  */
 static str db_url         = {DEFAULT_RODB_URL, DEFAULT_RODB_URL_LEN};
-str db_table              = {SUBSCRIBER_TABLE, SUBSCRIBER_TABLE_LEN};
+str db_table              = {NULL,0};
 str uridb_user_col        = {USER_COL, USER_COL_LEN};
 str uridb_domain_col      = {DOMAIN_COL, DOMAIN_COL_LEN};
 str uridb_uriuser_col     = {URI_USER_COL, URI_USER_COL_LEN};
