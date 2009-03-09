@@ -229,7 +229,7 @@ Chapter 1. Admin Guide
    prefix      varchar(64)          destination prefix for this route
    timerec     varchar(255)         time recurrence for this rule
    priority    integer      0       priority of the rule
-   routeid     integer      0       route block to be execute
+   routeid     integer      0       route block to be executed
    gwlist      varchar(255)         the list with GWs to be used
    description varchar(128)         description of this rule
 
@@ -373,7 +373,9 @@ Chapter 1. Admin Guide
        priority.
     e. routeid column
        If different than 0, then execute the route with the
-       specified ID.
+       specified ID. That is, a route which can be used to perform custom
+       operations on message. At this route, no modification is performed
+       at signaling level.
     f. gwlist column
        A comma separated list of gateway identifiers corresponding
        to a row in table "dr_gateways". The first gateway is tried

@@ -109,7 +109,7 @@
 	<para>
 	The time to load was varying between 4 seconds and 8 seconds, depending of
 	the caching of the DB client - the first load was the slowest (as the DB 
-	query hits the disk drive); the following are faster as data in already 
+	query hits the disk drive); the following are faster as data is already 
 	cached in the DB client. So technically speaking, the time to load (without
 	the time to query which is DB type dependent) is ~4 seconds
 	</para>
@@ -642,6 +642,9 @@
 	</para>
 	<para>
 	If different than 0, then execute the route with the specified ID.
+	That is, a route which can be used to perform custom
+	operations on message. At this route, no modification is performed
+	at signaling level.
 	</para>
 	</listitem>
 	<listitem>
