@@ -79,7 +79,8 @@ struct my_con* db_mysql_new_connection(const struct db_id* id)
 	if (!mysql_real_connect(ptr->con, id->host, id->username, id->password,
 				id->database, id->port, 0, 0)) {
 #endif
-		LM_ERR("driver error: %s\n", mysql_error(ptr->con));
+		LM_ERR("driver error(%d): %s\n",
+			mysql_errno(ptr->con), mysql_error(ptr->con));
 		mysql_close(ptr->con);
 		goto err;
 	}
