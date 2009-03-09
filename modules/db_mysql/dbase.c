@@ -58,9 +58,11 @@ static void reset_all_statements(const db_con_t* conn)
 
 	for( pq_ptr=CON_PS_LIST(conn); pq_ptr ; pq_ptr=pq_ptr->next ) {
 		for (ctx = pq_ptr->ctx ; ctx ; ctx=ctx->next ) {
-			mysql_stmt_close(ctx->stmt);
-			ctx->stmt = NULL;
-			ctx->has_out = 0;
+			if (ctx->stmt) {
+				mysql_stmt_close(ctx->stmt);
+				ctx->stmt = NULL;
+				ctx->has_out = 0;
+			}
 		}
 	}
 }
