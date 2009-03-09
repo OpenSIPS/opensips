@@ -513,17 +513,11 @@ ys");
 
 1.4.3.  next_gw()
 
-   If called from a route block, replaces URI scheme, host, port,
-   and transport of Request-URI by the values stored in first
-   gw_uri_avp AVP and destroys that AVP. Saves user part of
+   Replaces URI scheme, host, port, and transport of Request-URI
+   by the values stored in first gw_uri_avp AVP and destroys that
+   AVP. If called first time, it also saves the user part of
    Request-URI into ruri_user_avp AVP for use in subsequent
    next_gw() calls.
-
-   If called from a failure route block, appends a new branch to
-   request, where URI scheme, host, port, and transport of
-   Request-URI is replaced by the values stored in the first
-   gw_uri_avp AVP and destroys that AVP. Request-URI user is taken
-   from ruri_user_avp AVP.
 
    As a side effect, stores gateway's flags to flags_avp.
 
