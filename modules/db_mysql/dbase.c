@@ -152,12 +152,14 @@ static void db_mysql_free_pq(struct prep_stmt *pq_ptr)
 	for(ctx=pq_ptr->stmts ; ctx ; ) {
 		ctx2 = ctx;
 		ctx = ctx->next;
-		mysql_stmt_close(ctx2->stmt);
+		if (ctx2->stmt)
+			mysql_stmt_close(ctx2->stmt);
 		pkg_free(ctx2);
 	}
 
 	/* free out part */
-	pkg_free(pq_ptr->bind_out);
+	if (pq_ptr->bind_out)
+		pkg_free(pq_ptr->bind_out);
 
 	/* free in part and the struct */
 	pkg_free(pq_ptr);
