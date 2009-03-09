@@ -368,8 +368,11 @@ add_dst(
 	}
 	hostent2ip_addr(&ipa, he, 0);
 	tmpa = r->pgw_addr_l;
+	if (uri.port_no==0)
+		uri.port_no = SIP_PORT;
 	while(tmpa) {
-		if(tmpa->type==type && ip_addr_cmp(&ipa, &tmpa->ip)) {
+		if(tmpa->type==type && uri.port_no==tmpa->port
+		&& ip_addr_cmp(&ipa, &tmpa->ip)) {
 			LM_DBG("gw ip addr [%s] loaded\n", ip);
 			goto done;
 		}
@@ -385,6 +388,7 @@ add_dst(
 	}
 	memset(tmpa, 0, sizeof(pgw_addr_t));
 	memcpy(&tmpa->ip, &ipa, sizeof(struct ip_addr));
+	tmpa->port = uri.port_no;
 	tmpa->type = type;
 	tmpa->strip = strip;
 	tmpa->next = r->pgw_addr_l;

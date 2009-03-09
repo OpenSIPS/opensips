@@ -58,6 +58,7 @@ do {\
 /* list of PSTN gw */
 typedef struct pgw_addr_ {
 	struct ip_addr ip;
+	unsigned short port;
 	int type;
 	int strip;
 	struct pgw_addr_ *next;
