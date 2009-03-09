@@ -264,7 +264,7 @@ modparam("closeddial", "user_domain", 1)
 ...
 
 # Abbreviated code of two digits
-if($(ru{s.len}) == 2)
+if($(rU{s.len}) == 2)
 {
         # Group AVP could be loaded at register time.
         $avp(s:group)="companyA";
@@ -273,7 +273,7 @@ if($(ru{s.len}) == 2)
 ...
 
 # Abbreviated code of three digits
-if($(ru{s.len}) == 3)
+if($(rU{s.len}) == 3)
 {
         # Group is searched on database, by using
         # From username.
