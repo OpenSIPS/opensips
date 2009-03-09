@@ -1652,7 +1652,7 @@ static int next_gw(struct sip_msg* _m, char* _s1, char* _s2)
 	    LM_ERR("No ruri_user AVP\n");
 	    return -1;
 	}
-	new_ruri.s = pkg_malloc(gw_uri_val.s.len + _m->parsed_uri.user.len);
+	new_ruri.s = pkg_malloc(gw_uri_val.s.len + ruri_user_val.s.len);
 	if (!new_ruri.s) {
 	    LM_ERR("No memory for new R-URI.\n");
 	    return -1;
