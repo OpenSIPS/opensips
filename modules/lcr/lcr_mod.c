@@ -1542,10 +1542,9 @@ static int load_gws_1(struct sip_msg* _m, char* _sp, char* _s2)
 
 
 /*
- * If called from request route block, rewrites scheme, host, port, and
- * transport parts of R-URI based on first gw_uri AVP value, which is then
- * destroyed.  Also saves R-URI user to ruri_user AVP for later use in
- * failure route block.
+ * Rewrites scheme, host, port, and transport parts of R-URI based on first 
+ * gw_uri AVP value, which is then destroyed.  Also saves R-URI user to 
+ * ruri_user AVP for later use in failure route block.
  * If called from failure route block, appends a new branch to request
  * where scheme, host, port, and transport of URI are taken from the first
  * gw_uri AVP value, which is then destroyed.  URI user is taken from
@@ -1555,7 +1554,6 @@ static int load_gws_1(struct sip_msg* _m, char* _sp, char* _s2)
 static int next_gw(struct sip_msg* _m, char* _s1, char* _s2)
 {
     int_str gw_uri_val, ruri_user_val, val;
-    struct action act;
     struct usr_avp *gu_avp, *ru_avp;
     int rval;
     str new_ruri;
@@ -1573,86 +1571,25 @@ static int next_gw(struct sip_msg* _m, char* _s1, char* _s2)
     gw_uri_val.s.len = gw_uri_val.s.len - (at - gw_uri_val.s.s);
     gw_uri_val.s.s = at;
 
-    if (route_type == REQUEST_ROUTE) {
-
-	/* Create new Request-URI taking URI user from current Request-URI
-	   and other parts of from gw_uri AVP. */
-	if (parse_sip_msg_uri(_m) < 0) {
-	    LM_ERR("Parsing of R-URI failed\n");
-	    return -1;
-	}
-	new_ruri.s = pkg_malloc(gw_uri_val.s.len + _m->parsed_uri.user.len);
-	if (!new_ruri.s) {
-	    LM_ERR("No memory for new R-URI\n");
-	    return -1;
-	}
-	at_char = memchr(gw_uri_val.s.s, '@', gw_uri_val.s.len);
-	if (!at_char) {
-	    pkg_free(new_ruri.s);
-	    LM_ERR("No @ in gateway URI <%.*s>\n",
-		   gw_uri_val.s.len, gw_uri_val.s.s);
-	    return -1;
-	}
-	strip_char = memchr(gw_uri_val.s.s, '|', gw_uri_val.s.len);
-	if (!strip_char || strip_char + 1 >= at_char) {
-	    pkg_free(new_ruri.s);
-	    LM_ERR("No strip character | and at least one "
-		   "character before @ in gateway URI <%.*s>\n",
-		   gw_uri_val.s.len, gw_uri_val.s.s);
-	    return -1;
-	}
-	at = new_ruri.s;
-	memcpy(at, gw_uri_val.s.s, strip_char - gw_uri_val.s.s);
-	at = at + (strip_char - gw_uri_val.s.s);
-	strip = strtol(strip_char + 1, &endptr, 10);
-	if (endptr != at_char) {
-	    pkg_free(new_ruri.s);
-	    LM_ERR("Non-digit char between | and @ chars in gw URI <%.*s>\n",
-		   gw_uri_val.s.len, gw_uri_val.s.s);
-	    return -1;
-	}
-	if (_m->parsed_uri.user.len - strip > 0) {
-	    memcpy(at, _m->parsed_uri.user.s + strip,
-		   _m->parsed_uri.user.len - strip);
-	    at = at + _m->parsed_uri.user.len - strip;
-	}
-	if (*(at - 1) != ':') {
-	    memcpy(at, at_char, gw_uri_val.s.len - (at_char - gw_uri_val.s.s));
-	    at = at + gw_uri_val.s.len - (at_char - gw_uri_val.s.s);
-	} else {
-	    memcpy(at, at_char + 1, gw_uri_val.s.len -
-		   (at_char + 1 - gw_uri_val.s.s));
-	    at = at + gw_uri_val.s.len - (at_char + 1 - gw_uri_val.s.s);
-	}
-	new_ruri.len = at - new_ruri.s;
-	/* Save Request-URI user for use in FAILURE_ROUTE */
-	val.s = _m->parsed_uri.user;
-	add_avp(ruri_user_avp_type|AVP_VAL_STR, ruri_user_avp, val);
-	LM_DBG("Added ruri_user_avp <%.*s>\n", val.s.len, val.s.s);
-	/* Rewrite Request URI */
-	act.type = SET_URI_T;
-	act.elem[0].type = STR_ST;
-	act.elem[0].u.s = new_ruri;
-	rval = do_action(&act, _m);
-	pkg_free(new_ruri.s);
-	destroy_avp(gu_avp);
-	if (rval != 1) {
-	    LM_ERR("Calling do_action failed with return value <%d>\n", rval);
-	    return -1;
-	}
-	return 1;
-
-    } else if (route_type == FAILURE_ROUTE) {
-
 	/* Create new Request-URI taking URI user from ruri_user AVP
 	   and other parts of from gateway URI AVP. */
 	ru_avp = search_first_avp(ruri_user_avp_type, ruri_user_avp,
-				  &ruri_user_val, 0);
+		&ruri_user_val, 0);
 	if (!ru_avp) {
-	    LM_ERR("No ruri_user AVP\n");
-	    return -1;
+		LM_DBG("ruri_user AVP no yet set -> use RURI\n");
+		/* parse RURI and ger username */
+		if (parse_sip_msg_uri(_m) < 0) {
+			LM_ERR("Parsing of R-URI failed\n");
+			return -1;
+		}
+		ruri_user_val.s = _m->parsed_uri.user;
+		/* Save Request-URI user for use in FAILURE_ROUTE */
+		val.s = _m->parsed_uri.user;
+		add_avp(ruri_user_avp_type|AVP_VAL_STR, ruri_user_avp, val);
+		LM_DBG("Added ruri_user_avp <%.*s>\n", val.s.len, val.s.s);
 	}
-	new_ruri.s = pkg_malloc(gw_uri_val.s.len + _m->parsed_uri.user.len);
+
+	new_ruri.s = pkg_malloc(gw_uri_val.s.len + ruri_user_val.s.len);
 	if (!new_ruri.s) {
 	    LM_ERR("No memory for new R-URI.\n");
 	    return -1;
@@ -1696,24 +1633,17 @@ static int next_gw(struct sip_msg* _m, char* _s1, char* _s2)
 	    at = at + gw_uri_val.s.len - (at_char + 1 - gw_uri_val.s.s);
 	}
 	new_ruri.len = at - new_ruri.s;
-	act.type = APPEND_BRANCH_T;
-	act.elem[0].type = STR_ST;
-	act.elem[0].u.s = new_ruri;
-	act.elem[1].type = NUMBER_ST;
-	act.elem[1].u.number = 0;
-	rval = do_action(&act, _m);
+
+	/* set new RURI */
+	rval = set_ruri( _m, &new_ruri);
 	pkg_free(new_ruri.s);
 	destroy_avp(gu_avp);
-	if (rval != 1) {
-	    LM_ERR("Calling do_action failed with return value <%d>\n", rval);
-	    return -1;
+	if (rval!=0) {
+		LM_ERR("failed to set new RURI\n");
+		return -1;
 	}
-	return 1;
-    }
 
-    /* unsupported route type */
-    LM_ERR("Unsupported route type\n");
-    return -1;
+	return 1;
 }
 
 
