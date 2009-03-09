@@ -51,7 +51,7 @@
 			the listed modules must be loaded before this module):
 			<itemizedlist>
 			<listitem>
-				<para><emphasis>sl</emphasis> -- Stateless replies</para>
+				<para><emphasis>signalign</emphasis> -- Signaling module</para>
 			</listitem>
 			</itemizedlist>
 			</para>
