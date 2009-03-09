@@ -451,6 +451,11 @@ void dlg_onreq(struct cell* t, int type, struct tmcb_params *param)
 }
 
 
+static void dlg_new_tran(struct cell* t, int type, struct tmcb_params *param)
+{
+	t->dialog_ctx = (void*) (struct dlg_cell *)(*param->param);
+}
+
 
 int dlg_create_dialog(struct cell* t, struct sip_msg *req)
 {
@@ -528,8 +533,15 @@ int dlg_create_dialog(struct cell* t, struct sip_msg *req)
 	if (req->flags&bye_on_timeout_flag)
 		dlg->flags |= DLG_FLAG_BYEONTIMEOUT;
 
-	if (t)
+	if (t) {
 		t->dialog_ctx = (void*) dlg;
+	} else {
+		if ( d_tmb.register_tmcb( req, t, TMCB_REQUEST_IN,
+		dlg_new_tran, (void*)dlg, NULL)<0 ) {
+			LM_ERR("failed to register TMCB\n");
+			goto error;
+		}
+	}
 
 	if_update_stat( dlg_enable_stats, processed_dlgs, 1);
 

@@ -96,9 +96,6 @@ struct dlg_cell *get_current_dialog(void)
 
 
 
-
-
-
 int init_dlg_table(unsigned int size)
 {
 	unsigned int n;
