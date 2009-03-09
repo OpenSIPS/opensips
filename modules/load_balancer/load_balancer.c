@@ -240,7 +240,7 @@ static int child_init(int rank)
 static int mi_child_init( void )
 {
 	/* init DB connection */
-	if ( lb_connect_db(&db_url)==0 ) {
+	if ( lb_connect_db(&db_url)!=0 ) {
 		LM_CRIT("cannot initialize database connection\n");
 		return -1;
 	}
