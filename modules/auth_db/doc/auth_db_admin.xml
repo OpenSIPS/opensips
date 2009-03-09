@@ -172,10 +172,10 @@ modparam("auth_db", "password_column_2", "ha1_2")
 		parameter.
 		</para>
 		<para>
-		The <quote>password_column_2</quote>column contain also HA1 strings
+		The <quote>password_column_2</quote> column contains also HA1 strings
 		but they should be calculated including the domain in the username
 		parameter (as opposed to password_column which (when containing HA1
-		strings) should always contains HA1 strings calculated without domain
+		strings) should always contain HA1 strings calculated without domain
 		in username.
 		</para>
 		<para>
@@ -221,7 +221,7 @@ modparam("auth_db", "use_domain", 1)
 	<section>
 		<title><varname>load_credentials</varname> (string)</title>
 		<para>
-		This parameter specifies of credentials to be fetch from database when
+		This parameter specifies credentials to be fetched from database when
 		the authentication is performed. The loaded credentials will be stored
 		in AVPs. If the AVP name is not specificaly given, it will be used a
 		NAME AVP with the same name as the column name.
@@ -296,8 +296,8 @@ modparam("auth_db", "load_credentials", "$avp(i:13)=rpid;email_address")
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>realm</emphasis> - Realm is a opaque string that 
-			the user agent should present to the user so he can decide what 
+			<para><emphasis>realm</emphasis> - Realm is an opaque string that 
+			the user agent should present to the user so it can decide what 
 			username and password to use. Usually this is domain of the host 
 			the server is running on.
 			</para>
@@ -373,8 +373,8 @@ if (www_authorize("siphub.net", "subscriber")) {
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>realm</emphasis> - Realm is a opaque string that 
-			the user agent should present to the user so he can decide what 
+			<para><emphasis>realm</emphasis> - Realm is an opaque string that 
+			the user agent should present to the user so it can decide what 
 			username and password to use. Usually this is domain of the host 
 			the server is running on.
 			</para>
