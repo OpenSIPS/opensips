@@ -453,7 +453,17 @@ void dlg_onreq(struct cell* t, int type, struct tmcb_params *param)
 
 static void dlg_new_tran(struct cell* t, int type, struct tmcb_params *param)
 {
-	t->dialog_ctx = (void*) (struct dlg_cell *)(*param->param);
+	struct dlg_cell *dlg = (struct dlg_cell *)(*param->param);
+
+	/* first INVITE seen (dialog created, unconfirmed) */
+	run_create_callbacks( dlg, param->req);
+
+	dlg->lifetime = get_dlg_timeout(param->req);
+
+	if (param->req->flags&bye_on_timeout_flag)
+		dlg->flags |= DLG_FLAG_BYEONTIMEOUT;
+
+	t->dialog_ctx = (void*)dlg;
 }
 
 
@@ -512,9 +522,6 @@ int dlg_create_dialog(struct cell* t, struct sip_msg *req)
 
 	link_dlg( dlg , 2/* extra ref for the callback and current dlg hook */);
 
-	/* first INVITE seen (dialog created, unconfirmed) */
-	run_create_callbacks( dlg, req);
-
 	if ( seq_match_mode!=SEQ_MATCH_NO_ID &&
 	add_dlg_rr_param( req, dlg->h_entry, dlg->h_id)<0 ) {
 		LM_ERR("failed to add RR param\n");
@@ -528,12 +535,15 @@ int dlg_create_dialog(struct cell* t, struct sip_msg *req)
 		goto error;
 	}
 
-	dlg->lifetime = get_dlg_timeout(req);
-
-	if (req->flags&bye_on_timeout_flag)
-		dlg->flags |= DLG_FLAG_BYEONTIMEOUT;
-
 	if (t) {
+		/* first INVITE seen (dialog created, unconfirmed) */
+		run_create_callbacks( dlg, req);
+
+		dlg->lifetime = get_dlg_timeout(req);
+
+		if (req->flags&bye_on_timeout_flag)
+			dlg->flags |= DLG_FLAG_BYEONTIMEOUT;
+
 		t->dialog_ctx = (void*) dlg;
 	} else {
 		if ( d_tmb.register_tmcb( req, t, TMCB_REQUEST_IN,
