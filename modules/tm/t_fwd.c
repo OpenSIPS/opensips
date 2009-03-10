@@ -575,6 +575,9 @@ int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 	/* make -Wall happy */
 	current_uri.s=0;
 
+	/* before doing enything, update the t falgs from msg */
+	t->uas.request->flags = p_msg->flags;
+
 	if (p_msg->REQ_METHOD==METHOD_CANCEL) {
 		t_invite=t_lookupOriginalT(  p_msg );
 		if (t_invite!=T_NULL_CELL) {
