@@ -31,7 +31,7 @@
 <!ENTITY develguide "Developer Guide">
 <!ENTITY faqguide "Frequently Asked Questions">
 
-<!ENTITY defaultdb "mysql://opensips:opensipsrw@localhost/osips">
+<!ENTITY defaultdb "mysql://opensips:opensipsrw@localhost/opensips">
 <!ENTITY defaultrodb "mysql://opensipsro:opensipsro@localhost/opensips">
 <!ENTITY exampledb "dbdriver://username:password@dbhost/dbname">
 
