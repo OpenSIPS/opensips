@@ -45,12 +45,13 @@ struct cell;
 #define TMCB_RESPONSE_FWDED     (1<<4)
 #define TMCB_ON_FAILURE_RO      (1<<5)
 #define TMCB_ON_FAILURE         (1<<6)
-#define TMCB_RESPONSE_OUT       (1<<7)
-#define TMCB_LOCAL_COMPLETED    (1<<8)
-#define TMCB_LOCAL_RESPONSE_OUT (1<<9)
-#define TMCB_REQUEST_BUILT      (1<<10)
-#define TMCB_TRANS_DELETED      (1<<11)
-#define TMCB_MAX                ((1<<12)-1)
+#define TMCB_RESPONSE_PRE_OUT   (1<<7)
+#define TMCB_RESPONSE_OUT       (1<<8)
+#define TMCB_LOCAL_COMPLETED    (1<<9)
+#define TMCB_LOCAL_RESPONSE_OUT (1<<10)
+#define TMCB_REQUEST_BUILT      (1<<11)
+#define TMCB_TRANS_DELETED      (1<<12)
+#define TMCB_MAX                ((1<<13)-1)
 
 /* 
  *  Caution: most of the callbacks work with shmem-ized messages
@@ -72,19 +73,25 @@ struct cell;
  *  ---------------------
  *
  * TMCB_REQUEST_IN -- a brand-new request was received and is
- * about to establish transaction; it is not yet cloned and
- * lives in pkg mem -- your last chance to mangle it before
- * it gets shmem-ized (then, it's read-only); it's called from
- * HASH_LOCK, so be careful. It is guaranteed not to be
- * a retransmission. The transactional context is mostly
- * incomplete -- this callback is called in very early stage
- * before the message is shmem-ized (so that you can work
- * with it).
+ *  about to establish transaction; it is not yet cloned and
+ *  lives in pkg mem -- your last chance to mangle it before
+ *  it gets shmem-ized (then, it's read-only); it's called from
+ *  HASH_LOCK, so be careful. It is guaranteed not to be
+ *  a retransmission. The transactional context is mostly
+ *  incomplete -- this callback is called in very early stage
+ *  before the message is shmem-ized (so that you can work
+ *  with it).
  *
  * TMCB_RESPONSE_IN -- a brand-new reply was received which matches
- * an existing transaction. It may or may not be a retransmission.
+ *  an existing transaction. It may or may not be a retransmission.
  *
- *  TMCB_RESPONSE_OUT -- a final reply was sent out (either local 
+ * TMCB_RESPONSE_PRE_OUT -- a final reply is about to be sent out 
+ *  (either local or proxied); you cannnot change the reply, but 
+ *  it is usefull to update your state before putting the reply on
+ *  the network and to avoid any races (receiving an ACK before 
+ *  updating with the status of the reply)
+ *
+ * TMCB_RESPONSE_OUT -- a final reply was sent out (either local 
  *  or proxied) -- there is nothing more you can change from
  *  the callback, it is good for accounting-like uses.
  *
@@ -95,22 +102,16 @@ struct cell;
  *    otherwise. Check for t->uas.request validity too if you
  *    need it ... locally initiated UAC transactions set it to 0.
  *
- *    Also note, that reply callbacks are not called if a transaction
- *    is dropped silently. That's the case when noisy_ctimer is
- *    disabled (by default) and C-timer hits. The proxy server then
- *    drops state silently, doesn't use callbacks and expects the
- *    transaction to complete statelessly.
- *
- *  TMCB_ON_FAILURE_RO -- called on receipt of a reply or timer;
+ * TMCB_ON_FAILURE_RO -- called on receipt of a reply or timer;
  *  it means all branches completed with a failure; the callback 
  *  function MUST not change anything in the transaction (READONLY)
  *  that's a chance for doing ACC or stuff like this
  *
- *  TMCB_ON_FAILURE -- called on receipt of a reply or timer;
+ * TMCB_ON_FAILURE -- called on receipt of a reply or timer;
  *  it means all branches completed with a failure; that's 
  *  a chance for example to add new transaction branches
  *
- *  TMCB_RESPONSE_FWDED -- called when a reply is about to be
+ * TMCB_RESPONSE_FWDED -- called when a reply is about to be
  *  forwarded; it is called after a message is received but before
  *  a message is sent out: it is called when the decision is 
  *  made to forward a reply; it is parametrized by pkg message 
@@ -132,7 +133,7 @@ struct cell;
  *     feature, either set the global option "noisy_ctimer"
  *     to 1, or set t->noisy_ctimer for selected transaction.
  *
- *  TMCB_E2EACK_IN -- called when an ACK belonging to a proxied
+ * TMCB_E2EACK_IN -- called when an ACK belonging to a proxied
  *  INVITE transaction completed with 200 arrived. Note that
  *  because it can be only dialog-wise matched, only the first
  *  transaction occurrence will be matched with spirals. If
@@ -140,21 +141,23 @@ struct cell;
  *  ACK and the callback will never be triggered.
  *
  *
- *  TMCB_REQUEST_FWDED -- request is being forwarded out. It is 
+ * TMCB_REQUEST_FWDED -- request is being forwarded out. It is 
  *  called before a message is forwarded and it is your last
  *  chance to change its shape. 
  *
- *  TMCB_LOCAL_COMPLETED -- final reply for localy initiated
+ * TMCB_LOCAL_COMPLETED -- final reply for localy initiated
  *  transaction arrived. Message may be FAKED_REPLY.
  *
-
-	note that callbacks MUST be installed before forking
-	(callback lists do not live in shmem and have no access
-	protection), i.e., at best from mod_init functions.
-
-	the callback's param MUST be in shared memory and will
-	NOT be freed by TM; you must do it yourself from the
-	callback function if necessary.
+ *
+ * IMPORTANT NOTES:
+ *
+ * 1) that callbacks MUST be installed before forking
+ *  (callback lists do not live in shmem and have no access
+ *  protection), i.e., at best from mod_init functions.
+ *
+ * 2) the callback's param MUST be in shared memory and will
+ *  NOT be freed by TM; you must do it yourself from the
+ *  callback function if necessary.
 */
 
 
