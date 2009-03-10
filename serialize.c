@@ -109,18 +109,18 @@ int serialize_branches(struct sip_msg *msg, int clean_before )
 	n++;
 
 	/* Insert branch URIs to contact list in increasing q order */
-	for( idx=0 ; (branch.s=get_branch(idx,&branch.len,&q,0,0,0,0))!=0 ; idx++ ) {
+	for( idx=0 ; (branch.s=get_branch(idx,&branch.len,&q,0,0,0,0))!=0 ; idx++){
 		contacts[n].uri = branch;
 		contacts[n].q = q;
 
 		/* insert based on q */
-		for( i=0 ; i!=-1 && contacts[i].q < q ; i=contacts[i].next );
+		for( i=first ; i!=-1 && contacts[i].q < q ; i=contacts[i].next );
 		if (i==-1) {
 			/* append */
 			last = contacts[last].next = n;
 			contacts[n].next = -1;
 		} else {
-			if (i==0) {
+			if (i==first) {
 				/* first element */
 				contacts[n].next = first;
 				first = n;
@@ -153,8 +153,8 @@ int serialize_branches(struct sip_msg *msg, int clean_before )
 			LM_ERR("failed to add avp\n");
 			goto error;
 		}
-		LM_DBG("loaded <%s>, q=%d q_flag <%d>\n", val.s.s, contacts[i].q,
-				contacts[i].q_flag);
+		LM_DBG("loaded <%.*s>, q=%d q_flag <%d>\n", val.s.len, val.s.s,
+			contacts[i].q, contacts[i].q_flag);
 	}
 
 	/* Clear all branches */
