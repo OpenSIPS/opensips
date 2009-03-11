@@ -337,8 +337,9 @@ int record_route_preset(struct sip_msg* _m, str* _data)
 	str user;
 	struct to_body* from;
 	struct lump* l;
-	char* hdr, *p;
-	int hdr_len;
+	struct lump* l2;
+	char *hdr, *suffix, *p, *term;
+	int hdr_len, suffix_len;
 
 	from = 0;
 	user.len = 0;
@@ -358,11 +359,10 @@ int record_route_preset(struct sip_msg* _m, str* _data)
 		}
 		from = (struct to_body*)_m->from->parsed;
 	}
-	
-	l = anchor_lump(_m, _m->headers->name.s - _m->buf, 0, HDR_RECORDROUTE_T);
-	if (!l) {
-		LM_ERR("failed to create lump anchor\n");
-		return -3;
+
+	if (rr_param_buf.len && rr_param_msg!=_m->id) {
+		/* rr_params were set for a different message -> reset buffer */
+		rr_param_buf.len = 0;
 	}
 
 	hdr_len = RR_PREFIX_LEN;
@@ -370,24 +370,26 @@ int record_route_preset(struct sip_msg* _m, str* _data)
 		hdr_len += user.len + 1; /* @ */
 	hdr_len += _data->len;
 
+	suffix_len = 0;
 	if (append_fromtag && from->tag_value.len) {
-		hdr_len += RR_FROMTAG_LEN + from->tag_value.len;
-	}
-	
-	if (enable_full_lr) {
-		hdr_len += RR_LR_FULL_LEN;
-	} else {
-		hdr_len += RR_LR_LEN;
+		suffix_len += RR_FROMTAG_LEN + from->tag_value.len;
 	}
 
-	hdr_len += RR_TERM_LEN;
+	if (enable_full_lr) {
+		suffix_len += RR_LR_FULL_LEN;
+	} else {
+		suffix_len += RR_LR_LEN;
+	}
 
 	hdr = pkg_malloc(hdr_len);
-	if (!hdr) {
+	term = pkg_malloc(RR_TERM_LEN);
+	suffix = pkg_malloc(suffix_len);
+	if (!hdr || !term || !suffix) {
 		LM_ERR("no pkg memory left\n");
 		return -4;
 	}
 
+	/* header */
 	p = hdr;
 	memcpy(p, RR_PREFIX, RR_PREFIX_LEN);
 	p += RR_PREFIX_LEN;
@@ -401,7 +403,9 @@ int record_route_preset(struct sip_msg* _m, str* _data)
 
 	memcpy(p, _data->s, _data->len);
 	p += _data->len;
-	
+
+	/*suffix*/
+	p = suffix;
 	if (append_fromtag && from->tag_value.len) {
 		memcpy(p, RR_FROMTAG, RR_FROMTAG_LEN);
 		p += RR_FROMTAG_LEN;
@@ -417,14 +421,50 @@ int record_route_preset(struct sip_msg* _m, str* _data)
 		p += RR_LR_LEN;
 	}
 
-	memcpy(p, RR_TERM, RR_TERM_LEN);
+	memcpy(term, RR_TERM, RR_TERM_LEN);
 
-	if (!insert_new_lump_after(l, hdr, hdr_len, 0)) {
-		LM_ERR("failed to insert new lump\n");
-		pkg_free(hdr);
-		return -5;
+	l = anchor_lump(_m, _m->headers->name.s - _m->buf, 0, HDR_RECORDROUTE_T);
+	l2 = anchor_lump(_m, _m->headers->name.s - _m->buf, 0, 0);
+	if (!l || !l2) {
+		LM_ERR("failed to create lump anchor\n");
+		goto error;
 	}
+
+	if (!(l=insert_new_lump_after(l, hdr, hdr_len, 0))) {
+		LM_ERR("failed to insert new lump\n");
+		goto error;
+	}
+	hdr = NULL;
+
+	l2 = insert_new_lump_before(l2, suffix, suffix_len, HDR_RECORDROUTE_T);
+	if (l2==NULL) {
+		LM_ERR("failed to insert suffix lump\n");
+		goto error;
+	}
+	suffix = NULL;
+
+	if (rr_param_buf.len) {
+		l2 = insert_rr_param_lump(l2, rr_param_buf.s, rr_param_buf.len);
+		if (l2==0) {
+			LM_ERR("failed to insert param lump\n");
+			goto error;
+		}
+	}
+
+	if (!(l2=insert_new_lump_before(l2, term, RR_TERM_LEN, 0))) {
+		LM_ERR("failed to insert term lump");
+		goto error;
+	}
+	term = NULL;
+
+	/* reset the rr_param buffer */
+	rr_param_buf.len = 0;
 	return 1;
+error:
+	if (hdr) pkg_free(hdr);
+	if (term) pkg_free(term);
+	if (suffix) pkg_free(suffix);
+	return -1;
 }
 
 
@@ -457,6 +497,7 @@ int add_rr_param(struct sip_msg* msg, str* rr_param)
 
 	root = msg->add_rm;
 	last_param = get_rr_param_lump( &root );
+	LM_DBG("adding (%.*s) %p\n",rr_param->len,rr_param->s,last_param);
 	if (last_param) {
 		/* RR was already done -> have to add a new lump before this one */
 		if (insert_rr_param_lump( last_param, rr_param->s, rr_param->len)==0) {
@@ -465,13 +506,12 @@ int add_rr_param(struct sip_msg* msg, str* rr_param)
 		}
 		/* double routing enabled? */
 		if (enable_double_rr) {
-			if (root==0 || (last_param=get_rr_param_lump(&root))==0) {
-				LM_CRIT("failed to locate double RR lump\n");
-				goto error;
-			}
-			if (insert_rr_param_lump(last_param,rr_param->s,rr_param->len)==0){
-				LM_ERR("failed to add 2nd lump\n");
-				goto error;
+			if (root && (last_param=get_rr_param_lump(&root))!=NULL) {
+				if (insert_rr_param_lump(last_param,rr_param->s,
+				rr_param->len)==0) {
+					LM_ERR("failed to add 2nd lump\n");
+					goto error;
+				}
 			}
 		}
 	} else {
