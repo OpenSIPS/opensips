@@ -438,32 +438,28 @@ static void unreference_dialog_create(void *dialog)
 
 void dlg_onreq(struct cell* t, int type, struct tmcb_params *param)
 {
-	/* should we create dialog? */
-	if ( (param->req->flags & dlg_flag) != dlg_flag)
-		return;
-
-	/* is the dialog already created? */
-	if (current_dlg_pointer!=NULL)
-		return;
-
-	/* create the dialog */
-	dlg_create_dialog(t, param->req);
-}
-
-
-static void dlg_new_tran(struct cell* t, int type, struct tmcb_params *param)
-{
 	struct dlg_cell *dlg = (struct dlg_cell *)(*param->param);
 
-	/* first INVITE seen (dialog created, unconfirmed) */
-	run_create_callbacks( dlg, param->req);
+	/* is the dialog already created? */
+	if (current_dlg_pointer!=NULL) {
+		/* dialog was previously created by create_dialog() 
+		   -> just do the last settings */
+		run_create_callbacks( dlg, param->req);
 
-	dlg->lifetime = get_dlg_timeout(param->req);
+		dlg->lifetime = get_dlg_timeout(param->req);
 
-	if (param->req->flags&bye_on_timeout_flag)
-		dlg->flags |= DLG_FLAG_BYEONTIMEOUT;
+		if (param->req->flags&bye_on_timeout_flag)
+			dlg->flags |= DLG_FLAG_BYEONTIMEOUT;
 
-	t->dialog_ctx = (void*)dlg;
+		t->dialog_ctx = (void*)dlg;
+	} else {
+		/* should we create dialog? */
+		if ( (param->req->flags & dlg_flag) != dlg_flag)
+			return;
+
+		/* create the dialog */
+		dlg_create_dialog(t, param->req);
+	}
 }
 
 
@@ -535,6 +531,8 @@ int dlg_create_dialog(struct cell* t, struct sip_msg *req)
 		goto error;
 	}
 
+	/* complete the dialog setup only if transaction aleady exists;
+	   if not, wait for the TMCB_REQUEST_IN callback to do this job */
 	if (t) {
 		/* first INVITE seen (dialog created, unconfirmed) */
 		run_create_callbacks( dlg, req);
@@ -545,12 +543,6 @@ int dlg_create_dialog(struct cell* t, struct sip_msg *req)
 			dlg->flags |= DLG_FLAG_BYEONTIMEOUT;
 
 		t->dialog_ctx = (void*) dlg;
-	} else {
-		if ( d_tmb.register_tmcb( req, t, TMCB_REQUEST_IN,
-		dlg_new_tran, (void*)dlg, NULL)<0 ) {
-			LM_ERR("failed to register TMCB\n");
-			goto error;
-		}
 	}
 
 	if_update_stat( dlg_enable_stats, processed_dlgs, 1);
