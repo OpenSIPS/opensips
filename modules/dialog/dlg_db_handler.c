@@ -621,8 +621,6 @@ void dialog_update_db(unsigned int ticks, void * param)
 	VAL_TYPE(values+14) = VAL_TYPE(values+15) = VAL_TYPE(values+16) = 
 	VAL_TYPE(values+17) = DB_STR;
 
-	LM_DBG("saving current_info \n");
-
 	for(index = 0; index< d_table->size; index++){
 
 		/* lock the whole entry */
@@ -632,6 +630,8 @@ void dialog_update_db(unsigned int ticks, void * param)
 		for(cell = entry.first; cell != NULL; cell = cell->next){
 
 			if( (cell->flags & DLG_FLAG_NEW) != 0 ) {
+
+				LM_DBG("inserting new dialog %p\n",cell);
 
 				SET_INT_VALUE(values, cell->h_entry);
 				SET_INT_VALUE(values+1, cell->h_id);
@@ -680,6 +680,8 @@ void dialog_update_db(unsigned int ticks, void * param)
 				cell->flags &= ~(DLG_FLAG_NEW |DLG_FLAG_CHANGED);
 
 			} else if( (cell->flags & DLG_FLAG_CHANGED)!=0 ){
+
+				LM_DBG("updating existing dialog %p\n",cell);
 
 				SET_INT_VALUE(values, cell->h_entry);
 				SET_INT_VALUE(values+1, cell->h_id);

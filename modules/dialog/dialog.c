@@ -687,7 +687,7 @@ static int w_set_dlg_profile(struct sip_msg *msg, char *profile, char *value)
 	} else {
 		if ( set_dlg_profile( msg, NULL,
 		(struct dlg_profile_table*)profile) < 0 ) {
-			LM_ERR("failed to set profile");
+			LM_ERR("failed to set profile\n");
 			return -1;
 		}
 	}
@@ -711,13 +711,13 @@ static int w_unset_dlg_profile(struct sip_msg *msg, char *profile, char *value)
 		}
 		if ( unset_dlg_profile( msg, &val_s,
 		(struct dlg_profile_table*)profile) < 0 ) {
-			LM_ERR("failed to unset profile");
+			LM_ERR("failed to unset profile\n");
 			return -1;
 		}
 	} else {
 		if ( unset_dlg_profile( msg, NULL,
 		(struct dlg_profile_table*)profile) < 0 ) {
-			LM_ERR("failed to unset profile");
+			LM_ERR("failed to unset profile\n");
 			return -1;
 		}
 	}
