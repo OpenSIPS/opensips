@@ -438,20 +438,18 @@ static void unreference_dialog_create(void *dialog)
 
 void dlg_onreq(struct cell* t, int type, struct tmcb_params *param)
 {
-	struct dlg_cell *dlg = (struct dlg_cell *)(*param->param);
-
 	/* is the dialog already created? */
 	if (current_dlg_pointer!=NULL) {
 		/* dialog was previously created by create_dialog() 
 		   -> just do the last settings */
-		run_create_callbacks( dlg, param->req);
+		run_create_callbacks( current_dlg_pointer, param->req);
 
-		dlg->lifetime = get_dlg_timeout(param->req);
+		current_dlg_pointer->lifetime = get_dlg_timeout(param->req);
 
 		if (param->req->flags&bye_on_timeout_flag)
-			dlg->flags |= DLG_FLAG_BYEONTIMEOUT;
+			current_dlg_pointer->flags |= DLG_FLAG_BYEONTIMEOUT;
 
-		t->dialog_ctx = (void*)dlg;
+		t->dialog_ctx = (void*)current_dlg_pointer;
 	} else {
 		/* should we create dialog? */
 		if ( (param->req->flags & dlg_flag) != dlg_flag)
