@@ -1363,7 +1363,7 @@ void update_db_subs(db_con_t *db,db_func_t dbf, shtable_t hash_table,
 	int u_expires_col, u_local_cseq_col, u_remote_cseq_col, u_version_col, 
 		u_reason_col, u_status_col; 
 	int i;
-	subs_t* s= NULL, *prev_s= NULL, *s_copy = NULL;
+	subs_t* s= NULL, *prev_s= NULL;
 	int n_query_cols= 0, n_update_cols= 0;
 	int n_query_update;
 
@@ -1520,34 +1520,24 @@ void update_db_subs(db_con_t *db,db_func_t dbf, shtable_t hash_table,
 			if(s->expires < (int)time(NULL)- 50)	
 			{
 				LM_DBG("Found expired record\n");
-				if(!no_lock)
-				{
-					/* copy the subs record and release the lock to avoid blocking 
-					 * due to delay when sending Notify requests */
-					s_copy= mem_copy_subs(s, PKG_MEM_TYPE);
-					if(s_copy== NULL)
-					{
-						LM_ERR("failed to copy subs_t structure in private memory\n");
-						lock_release(&hash_table[i].lock);
-						return;
-					}
-					lock_release(&hash_table[i].lock);
-
-					if(handle_expired_func(s_copy)< 0)
-					{
-						LM_ERR("in function handle_expired_record\n");
-						pkg_free(s_copy);
-						return;
-					}
-					pkg_free(s_copy);
-
-					lock_get(&hash_table[i].lock);
-				}
 				del_s= s;
 				s= s->next;
 				prev_s->next= s;
-				
+
+				if(!no_lock)
+				{
+					lock_release(&hash_table[i].lock);
+					if(handle_expired_func(del_s)< 0)
+					{
+						LM_ERR("in function handle_expired_record\n");
+						return;
+					}
+				}
 				free_subs(del_s);
+
+				if(!no_lock)
+					lock_get(&hash_table[i].lock);
+
 				continue;
 			}
 			switch(s->db_flag)
