@@ -442,7 +442,7 @@ static struct mi_root *mi_cachefetch(struct mi_root *cmd, void *param)
 		return init_mi_tree(404, "Too many arguments", 18);
 
 	ret = cache_fetch(&mc_system, &attr, &value);
-	if(ret< 0)
+	if(ret== -1)
 	{
 		LM_ERR("cache_fetch command failed\n");
 		return init_mi_tree(500, "Cache fetch command failed", 26);
@@ -456,7 +456,7 @@ static struct mi_root *mi_cachefetch(struct mi_root *cmd, void *param)
 		return 0;
 	}
 
-	if(ret == 0 || value.s == 0 || value.len == 0)
+	if(ret == -2 || value.s == 0 || value.len == 0)
 	{
 		addf_mi_node_child( &rpl_tree->node, 0, 0, 0, "Value not found");
 		goto done;
