@@ -98,7 +98,7 @@ inline static struct proxy_l *uri2proxy( str *uri, int forced_proto )
 		LM_ERR("bad_uri: %.*s\n", uri->len, uri->s );
 		return 0;
 	}
-	
+
 	if (parsed_uri.type==SIPS_URI_T &&
 	((parsed_uri.proto!=PROTO_TLS) && (parsed_uri.proto!=PROTO_NONE)) ) {
 		LM_ERR("bad transport for sips uri: %d\n", parsed_uri.proto);
@@ -108,8 +108,9 @@ inline static struct proxy_l *uri2proxy( str *uri, int forced_proto )
 
 	proto = get_proto(forced_proto, proto);
 
-	p = mk_proxy( &parsed_uri.host, parsed_uri.port_no, proto,
-		(parsed_uri.type==SIPS_URI_T)?1:0 );
+	p = mk_proxy(
+		parsed_uri.maddr_val.len?&parsed_uri.maddr_val:&parsed_uri.host,
+		parsed_uri.port_no, proto, (parsed_uri.type==SIPS_URI_T)?1:0 );
 	if (p == 0) {
 		LM_ERR("bad host name in URI <%.*s>\n", uri->len, ZSW(uri->s));
 		return 0;
