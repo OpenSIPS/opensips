@@ -329,8 +329,8 @@ int do_action(struct action* a, struct sip_msg* msg)
 					break;
 				}
 				/* create a temporary proxy*/
-				p=mk_proxy(&u->host, u->port_no, u->proto,
-					(u->type==SIPS_URI_T)?1:0 );
+				p=mk_proxy(u->maddr_val.len?&u->maddr_val:&u->host,
+					u->port_no, u->proto, (u->type==SIPS_URI_T)?1:0 );
 				if (p==0){
 					LM_ERR("bad host name in uri, dropping packet\n");
 					ret=E_BAD_ADDRESS;
