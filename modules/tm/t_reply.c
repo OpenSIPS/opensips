@@ -682,6 +682,50 @@ done:
 }
 
 
+static inline int branch_prio( short ret_code, unsigned int is_cancelled)
+{
+	int first_digit;
+
+	first_digit = ret_code / 100;
+
+	switch(first_digit){
+		case 1:                    /* 100 - 199 */
+		case 2:                    /* 200 - 299 */
+			return ret_code;
+		case 6:
+			return ret_code - 300; /* 300 - 399 */
+		case 3:
+			return ret_code + 100; /* 400 - 499 */
+		case 5:
+			if (ret_code==503)
+				return 801;        /* 801 */
+			return ret_code + 200; /* 700 - 799 */
+		case 4:
+			switch(ret_code){
+				case 401:
+					return 500;    /* 500 - 599 */
+				case 407:
+					return 501;
+				case 415:
+					return 502;
+				case 420:
+					return 503;
+				case 484:
+					return 504;
+				case 408:
+					return 800;   /* 800 */
+				case 487:
+					if(is_cancelled)
+						return 0;
+				default: /* the rest of ret codes in the 4xx class */
+					return ret_code + 200; /* 600 - 699 */
+			}
+		default:
+			return ret_code + 200; /* > 900 */
+		}
+}
+
+
 /* select a branch for forwarding; returns:
  * 0..X ... branch number
  * -1   ... error
@@ -689,8 +733,8 @@ done:
  */
 static inline int t_pick_branch( struct cell *t, int *res_code, int *do_cancel)
 {
-	int lowest_b, lowest_s, b;
-	int cancelled;
+	int lowest_b, lowest_s, b, prio;
+	unsigned int cancelled;
 
 	lowest_b=-1; lowest_s=999;
 	cancelled = was_cancelled(t);
@@ -706,19 +750,15 @@ static inline int t_pick_branch( struct cell *t, int *res_code, int *do_cancel)
 			}
 			return -2;
 		}
-		/* replys to cancel has max priority
-		 * 503 has minimum priority */
-		if ( (lowest_b==-1) ||
-		(cancelled && t->uac[b].last_received==487) ||
-		( (lowest_s!=487 || !cancelled) && (
-			(lowest_s==503) || (t->uac[b].last_received!=503
-			&& t->uac[b].last_received<lowest_s)
-		))) {
-			lowest_b =b;
-			lowest_s = t->uac[b].last_received;
+		/* compare against the priority of the current branch */
+		prio = branch_prio(t->uac[b].last_received,cancelled);
+		if ( (lowest_b==-1) || (prio<lowest_s) ) {
+			lowest_b = b;
+			lowest_s = prio;
 		}
 	} /* find lowest branch */
-	LM_DBG("picked branch %d, code %d\n",lowest_b,lowest_s);
+	LM_DBG("picked branch %d, code %d (prio=%d)\n",
+		lowest_b,t->uac[lowest_b].last_received,lowest_s);
 
 	*res_code=lowest_s;
 	return lowest_b;
