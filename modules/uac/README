@@ -199,7 +199,15 @@ modparam("uac","auth_password_avp","$avp(i:12)")
 
    display and URI parameters can include pseudo-variables.
 
-   This function can be used from REQUEST_ROUTE.
+   IMPORTANT: calling the function more than once per branch will
+   lead to inconsistent changes over the request.Be sure you do
+   the change only ONCE per branch. Note that calling the function
+   from REQUEST ROUTE affects all the branches!, so no other
+   change will be possible in the future. For per branch changes
+   use BRANCH and FAILURE route.
+
+   This function can be used from REQUEST_ROUTE, BRANCH_ROUTE and
+   FAILURE_ROUTE.
 
    Example 1.8. uac_replace_from usage
 ...

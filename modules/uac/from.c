@@ -382,13 +382,17 @@ int replace_from( struct sip_msg *msg, str *from_dsp, str *from_uri)
 		LM_ERR("add_RR_param failed\n");
 		goto error1;
 	}
-	msg->msg_flags |= FL_USE_UAC_FROM;
 
-	/* add TM callback to restore the FROM hdr in reply */
-	if (uac_tmb.register_tmcb(msg,0,TMCB_RESPONSE_IN,restore_from_reply,0,0)!=1)
-	{
-		LM_ERR("failed to install TM callback\n");
-		goto error1;
+	if ((msg->msg_flags&FL_USE_UAC_FROM)==0) {
+		/* first time here */
+		msg->msg_flags |= FL_USE_UAC_FROM;
+
+		/* add TM callback to restore the FROM hdr in reply */
+		if (uac_tmb.register_tmcb( msg, 0, TMCB_RESPONSE_IN,
+		restore_from_reply,0,0)!=1) {
+			LM_ERR("failed to install TM callback\n");
+			goto error1;
+		}
 	}
 
 	pkg_free(param.s);
