@@ -264,12 +264,6 @@ static int child_init(int rank)
 		return -1;
 	}
 
-	if (pua_dbf.use_table(pua_db, &db_table) < 0)
-	{
-		LM_ERR("child %d: Error in use_table pua\n", rank);
-		return -1;
-	}
-
 	LM_DBG("child %d: Database connection opened successfully\n", rank);
 
 	return 0;

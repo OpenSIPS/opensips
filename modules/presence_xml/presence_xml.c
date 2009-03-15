@@ -60,8 +60,6 @@ static int pxml_add_xcap_server( modparam_t type, void* val);
 static int shm_copy_xcap_list(void);
 static void free_xs_list(xcap_serv_t* xs_list, int mem_type);
 static int xcap_doc_updated(int doc_type, str xid, char* doc);
-static int mi_child_init(void);
-static struct mi_root* dum(struct mi_root* cmd, void* param);
 
 /** module variables ***/
 add_event_t pres_add_event;
@@ -97,10 +95,6 @@ static param_export_t params[]={
 	{  0,						0,										    0}
 };
 
-static mi_export_t mi_cmds[] = {
-	{ "dum",             dum,          0,  0,  mi_child_init},
-	{  0,                0,            0,  0,        0      }
-};
 
 /** module exports */
 struct module_exports exports= {
@@ -109,7 +103,7 @@ struct module_exports exports= {
 	 0,  						/* exported functions */
 	 params,					/* exported parameters */
 	 0,							/* exported statistics */
-	 mi_cmds,					/* exported MI functions */
+	 0,							/* exported MI functions */
 	 0,							/* exported pseudo-variables */
 	 0,							/* extra processes */
 	 mod_init,					/* module initialization function */
@@ -232,30 +226,6 @@ static int mod_init(void)
 	return 0;
 }
 
-static int mi_child_init(void)
-{	
-	if (pxml_dbf.init==0)
-	{
-		LM_CRIT("database not bound\n");
-		return -1;
-	}
-	pxml_db = pxml_dbf.init(&db_url);
-	if (pxml_db== NULL)
-	{
-		LM_ERR("while connecting database\n");
-		return -1;
-	}
-		
-	if (pxml_dbf.use_table(pxml_db, &xcap_table) < 0)
-	{
-		LM_ERR("in use_table SQL operation\n");
-		return -1;
-	}
-	
-	LM_DBG("Database connection opened successfully\n");
-
-	return 0;
-}	
 
 static int child_init(int rank)
 {
@@ -270,11 +240,6 @@ static int child_init(int rank)
 	if (pxml_db== NULL)
 	{
 		LM_ERR("child %d: ERROR while connecting database\n",rank);
-		return -1;
-	}
-	if (pxml_dbf.use_table(pxml_db, &xcap_table) < 0)
-	{
-		LM_ERR("child %d: ERROR in use_table\n", rank);
 		return -1;
 	}
 	
@@ -443,7 +408,3 @@ static int xcap_doc_updated(int doc_type, str xid, char* doc)
 
 }
 
-static struct mi_root* dum(struct mi_root* cmd, void* param)
-{
-	return 0;
-}

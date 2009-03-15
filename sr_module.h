@@ -80,6 +80,7 @@ typedef int (*mod_proc_wrapper)();
 /* Macros - used as rank in child_init function */
 #define PROC_MAIN      0  /* Main opensips process */
 #define PROC_TIMER    -1  /* Timer attendant process */
+#define PROC_MODULE   -2  /* Extra process requested by modules */
 #define PROC_TCP_MAIN -4  /* TCP main process */
 
 #define DEFAULT_DLFLAGS	0 /* value that signals to module loader to
@@ -94,6 +95,9 @@ typedef int (*mod_proc_wrapper)();
 #define MODULE_VERSION \
 	char *module_version=OPENSIPS_FULL_VERSION; \
 	char *module_flags=OPENSIPS_COMPILE_FLAGS;
+
+
+#define PROC_FLAG_INITCHILD  (1<<0)
 
 
 struct cmd_export_ {
@@ -122,6 +126,7 @@ struct proc_export_ {
 	mod_proc_wrapper post_fork_function;
 	mod_proc function;
 	unsigned int no;
+	unsigned int flags;
 };
 
 

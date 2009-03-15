@@ -127,7 +127,6 @@ static int goes_to_gw_0(struct sip_msg* msg, char* f1, char* f2);
 static int goes_to_gw_1(struct sip_msg* msg, char* f1, char* f2);
 
 static struct mi_root* dr_reload_cmd(struct mi_root *cmd_tree, void *param);
-static int mi_child_init();
 
 #define RELOAD_MI_CMD  "dr_reload"
 
@@ -187,7 +186,7 @@ static param_export_t params[] = {
  * Exported MI functions
  */
 static mi_export_t mi_cmds[] = {
-	{ RELOAD_MI_CMD, dr_reload_cmd, MI_NO_INPUT_FLAG, 0, mi_child_init },
+	{ RELOAD_MI_CMD, dr_reload_cmd, MI_NO_INPUT_FLAG, 0, 0 },
 	{ 0, 0, 0, 0, 0}
 };
 
@@ -398,7 +397,7 @@ error:
 static int dr_child_init(int rank)
 {
 	/* only workers needs DB connection */
-	if (rank <=PROC_MAIN)
+	if (rank==PROC_MAIN || rank==PROC_TCP_MAIN)
 		return 0;
 
 	/* init DB connection */
@@ -419,17 +418,6 @@ static int dr_child_init(int rank)
 		return -1;
 	}
 	srand(getpid()+time(0)+rank);
-	return 0;
-}
-
-
-static int mi_child_init( void )
-{
-	/* init DB connection */
-	if ( (db_hdl=dr_dbf.init(&db_url))==0 ) {
-		LM_CRIT("cannot initialize database connection\n");
-		return -1;
-	}
 	return 0;
 }
 

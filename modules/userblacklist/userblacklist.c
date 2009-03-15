@@ -72,7 +72,6 @@ static int check_blacklist(struct sip_msg *msg, struct check_blacklist_fs_t *arg
 /* ---- module init functions: */
 static int mod_init(void);
 static int child_init(int rank);
-static int mi_child_init(void);
 static void mod_destroy(void);
 
 /* --- fifo functions */
@@ -98,7 +97,7 @@ static param_export_t params[] = {
 
 /* Exported MI functions */
 static mi_export_t mi_cmds[] = {
-	{ "reload_blacklist", mi_reload_blacklist, MI_NO_INPUT_FLAG, 0, mi_child_init },
+	{ "reload_blacklist", mi_reload_blacklist, MI_NO_INPUT_FLAG, 0, 0 },
 	{ 0, 0, 0, 0, 0}
 };
 
@@ -534,17 +533,6 @@ static int mod_init(void)
 
 
 static int child_init(int rank)
-{
-	if (db_init(&db_url, &db_table) != 0) return -1;
-	if (dt_init(&dt_root) != 0) return -1;
-	/* because we've added new sources during the fixup */
-	if (reload_sources() != 0) return -1;
-
-	return 0;
-}
-
-
-static int mi_child_init(void)
 {
 	if (db_init(&db_url, &db_table) != 0) return -1;
 	if (dt_init(&dt_root) != 0) return -1;

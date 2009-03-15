@@ -91,7 +91,7 @@ static param_export_t mod_params[]={
 
 static mi_export_t mi_cmds[] = {
 	{ "dp_reload",  mi_reload_rules,   MI_NO_INPUT_FLAG,  0,  mi_child_init},
-	{ "dp_translate",  mi_translate,   0,  0,  0},
+	{ "dp_translate",  mi_translate,   0,                 0,  0},
 	{ 0, 0, 0, 0, 0}
 };
 
@@ -202,8 +202,6 @@ static int mod_init(void)
 
 static int child_init(int rank)
 {
-	if(rank>0)
-		return dp_connect_db();
 	return 0;
 }
 
@@ -220,9 +218,6 @@ static void mod_destroy(void)
 		attr_pvar = NULL;
 	}
 	destroy_data();
-
-	/*close database connection*/
-	dp_disconnect_db();
 
 	/* destroy lock */
 	if (ref_lock) {

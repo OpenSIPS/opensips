@@ -1,9 +1,11 @@
 /*
  * $Id$
  *
- * Domain module
+ * Domain Policy related functions
  *
- * Copyright (C) 2002-2003 Juha Heinanen
+ * Copyright (C) 2006 Otmar Lendl & Klaus Darilion
+ *
+ * Based on the ENUM and domain module.
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -23,12 +25,8 @@
  *
  * History:
  * -------
- * 2003-03-11: New module interface (janakj)
- * 2003-03-16: flags export parameter added (janakj)
- * 2003-04-05: default_uri #define used (jiri)
- * 2003-04-06: db connection closed in mod_init (janakj)
- * 2004-06-06  updated to the new DB api, cleanup: static dbf & handler,
- *              calls to domainpolicy_db_{bind,init,close,ver} (andrei)
+ *  2006-04-20  Initial Version
+ *  2006-09-08  Updated to -02 version, added support for D2P+SIP:std
  */
 
 
@@ -269,7 +267,7 @@ static int child_init(int rank)
 	LM_DBG("initializing\n");
 
 	/* Check if database is needed by child */
-	if (rank > 0)  {
+	if (rank!=PROC_MAIN && rank!=PROC_TCP_MAIN)  {
 		if (domainpolicy_db_init(&db_url)<0) {
 			LM_ERR("unable to connect to the database\n");
 			return -1;

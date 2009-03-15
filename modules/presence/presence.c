@@ -96,7 +96,6 @@ static struct mi_root* mi_refreshWatchers(struct mi_root* cmd, void* param);
 static struct mi_root* mi_cleanup(struct mi_root* cmd, void* param);
 static int update_pw_dialogs(subs_t* subs, unsigned int hash_code, subs_t** subs_array);
 int update_watchers_status(str pres_uri, pres_ev_t* ev, str* rules_doc);
-static int mi_child_init(void);
 int refresh_send_winfo_notify(watcher_t* watcher, str pres_uri,
 		struct pres_ev* ev);
 
@@ -142,8 +141,8 @@ static param_export_t params[]={
 };
 
 static mi_export_t mi_cmds[] = {
-	{ "refreshWatchers", mi_refreshWatchers,    0,  0,  mi_child_init},
-	{ "cleanup",         mi_cleanup,            0,  0,  mi_child_init},
+	{ "refreshWatchers", mi_refreshWatchers,    0,  0,  0},
+	{ "cleanup",         mi_cleanup,            0,  0,  0},
 	{  0,                0,                     0,  0,  0}
 };
 
@@ -324,7 +323,7 @@ static int child_init(int rank)
 	LM_NOTICE("init_child [%d]  pid [%d]\n", rank, getpid());
 
 	pid = my_pid();
-	
+
 	if(library_mode)
 		return 0;
 
@@ -339,69 +338,12 @@ static int child_init(int rank)
 		LM_ERR("child %d: unsuccessful connecting to database\n", rank);
 		return -1;
 	}
-	
-	if (pa_dbf.use_table(pa_db, &presentity_table) < 0)  
-	{
-		LM_ERR( "child %d:unsuccessful use_table presentity_table\n", rank);
-		return -1;
-	}
-
-	if (pa_dbf.use_table(pa_db, &active_watchers_table) < 0)  
-	{
-		LM_ERR( "child %d:unsuccessful use_table active_watchers_table\n",
-				rank);
-		return -1;
-	}
-
-	if (pa_dbf.use_table(pa_db, &watchers_table) < 0)  
-	{
-		LM_ERR( "child %d:unsuccessful use_table watchers_table\n", rank);
-		return -1;
-	}
 
 	LM_DBG("child %d: Database connection opened successfully\n", rank);
-	
+
 	return 0;
 }
 
-static int mi_child_init(void)
-{
-	if(library_mode)
-		return 0;
-
-	if (pa_dbf.init==0)
-	{
-		LM_CRIT("database not bound\n");
-		return -1;
-	}
-	pa_db = pa_dbf.init(&db_url);
-	if (!pa_db)
-	{
-		LM_ERR("connecting database\n");
-		return -1;
-	}
-	
-	if (pa_dbf.use_table(pa_db, &presentity_table) < 0)
-	{
-		LM_ERR( "unsuccessful use_table presentity_table\n");
-		return -1;
-	}
-
-	if (pa_dbf.use_table(pa_db, &active_watchers_table) < 0)
-	{
-		LM_ERR( "unsuccessful use_table active_watchers_table\n");
-		return -1;
-	}
-
-	if (pa_dbf.use_table(pa_db, &watchers_table) < 0)
-	{
-		LM_ERR( "unsuccessful use_table watchers_table\n");
-		return -1;
-	}
-
-	LM_DBG("Database connection opened successfully\n");
-	return 0;
-}
 
 
 /*

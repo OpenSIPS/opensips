@@ -90,8 +90,8 @@ static void mod_destroy(void);
 
 
 static proc_export_t mod_procs[] = {
-	{"SNMP AgentX",  0,  0, agentx_child, 1 },
-	{0,0,0,0,0}
+	{"SNMP AgentX",  0,  0, agentx_child, 1 , 0},
+	{0,0,0,0,0,0}
 };
 
 

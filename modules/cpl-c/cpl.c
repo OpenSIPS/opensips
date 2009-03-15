@@ -106,7 +106,6 @@ static int w_process_register_norpl(struct sip_msg* msg, char* str,char* str2);
 static int cpl_process_register(struct sip_msg* msg, int no_rpl);
 static int fixup_cpl_run_script(void** param, int param_no);
 static int cpl_init(void);
-static int mi_child_init(void);
 static int cpl_child_init(int rank);
 static int cpl_exit(void);
 static void cpl_process(int rank);
@@ -116,8 +115,8 @@ static void cpl_process(int rank);
  * Exported processes
  */
 static proc_export_t cpl_procs[] = {
-	{"CPL Aux",  0,  0,  cpl_process, 1 },
-	{0,0,0,0,0}
+	{"CPL Aux",  0,  0,  cpl_process, 1, 0 },
+	{0,0,0,0,0,0}
 };
 
 
@@ -163,9 +162,9 @@ static param_export_t params[] = {
  * Exported MI functions
  */
 static mi_export_t mi_cmds[] = {
-	{ "LOAD_CPL",   mi_cpl_load,     0,  0,  mi_child_init },
-	{ "REMOVE_CPL", mi_cpl_remove,   0,  0,  0             },
-	{ "GET_CPL",    mi_cpl_get,      0,  0,  0             },
+	{ "LOAD_CPL",   mi_cpl_load,     0,  0,  0 },
+	{ "REMOVE_CPL", mi_cpl_remove,   0,  0,  0 },
+	{ "GET_CPL",    mi_cpl_get,      0,  0,  0 },
 	{ 0, 0, 0, 0, 0}
 };
 
@@ -394,12 +393,6 @@ error:
 
 
 static int cpl_child_init(int rank)
-{
-	return cpl_db_init(&db_url, &db_table);
-}
-
-
-static int mi_child_init(void)
 {
 	return cpl_db_init(&db_url, &db_table);
 }

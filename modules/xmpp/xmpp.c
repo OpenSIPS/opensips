@@ -132,8 +132,8 @@ str outbound_proxy= {0, 0};
 #define DEFAULT_SERVER_PORT 5269
 
 static proc_export_t procs[] = {
-	{"XMPP receiver",  0,  0, xmpp_process, 1 },
-	{0,0,0,0,0}
+	{"XMPP receiver",  0,  0, xmpp_process, 1 , 0},
+	{0,0,0,0,0,0}
 };
 
 

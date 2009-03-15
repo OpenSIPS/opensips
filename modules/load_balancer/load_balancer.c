@@ -73,7 +73,7 @@ static int w_load_balance(struct sip_msg *req, char *grp,  char *rl);
 
 static cmd_export_t cmds[]={
 	{"load_balance", (cmd_function)w_load_balance,      2, fixup_resources,
-			0, REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE|LOCAL_ROUTE},
+			0, REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
 	{0,0,0,0,0,0}
 	};
 

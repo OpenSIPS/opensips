@@ -433,6 +433,7 @@ int init_child(int rank)
 	switch(rank) {
 	case PROC_MAIN:     type = "PROC_MAIN";     break;
 	case PROC_TIMER:    type = "PROC_TIMER";    break;
+	case PROC_MODULE:   type = "PROC_MODULE";   break;
 	case PROC_TCP_MAIN: type = "PROC_TCP_MAIN"; break;
 	}
 
@@ -573,7 +574,14 @@ int start_module_procs(void)
 						m->exports->procs[n].name, l, m->exports->name);
 					return -1;
 				} else if (x==0) {
-					/* new process -> run the function */
+					/* new process */
+					/* initialize the process for the rest of the modules */
+					if ( (m->exports->procs[n].flags&PROC_FLAG_INITCHILD) &&
+					init_child(PROC_MODULE) < 0) {
+						LM_ERR("error in init_child for PROC_MODULE\n");
+						exit(-1);
+					}
+					/* run the function */
 					m->exports->procs[n].function(l);
 					/* we shouldn't get here */
 					exit(0);
