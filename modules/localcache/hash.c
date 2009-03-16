@@ -37,7 +37,7 @@
 #include "hash.h"
 
 
-void lcache_htable_remove_safe(str attr, lcache_entry_t** it);
+void lcache_htable_remove_safe(str attr, lcache_entry_t* it);
 
 int lcache_htable_init(int size)
 {
@@ -58,6 +58,12 @@ int lcache_htable_init(int size)
 			LM_ERR("failed to initialize lock [%d]\n", i);
 			goto error;
 		}
+		cache_htable[i].entries = shm_malloc(sizeof(lcache_entry_t));
+		if(cache_htable[i].entries == NULL)
+		{
+			LM_ERR("failed to initialize entries list [%d]\n", i);
+			goto error;
+		}
 	}
 
 	return 0;
@@ -66,6 +72,8 @@ error:
 	for(j = 0; j< i; j++)
 	{
 		lock_destroy(&cache_htable[j].lock);
+		shm_free(cache_htable[j].entries);
+		cache_htable[j].entries = NULL;
 	}
 	shm_free(cache_htable);
 	cache_htable = NULL;
@@ -127,19 +135,19 @@ int lcache_htable_insert(str* attr, str* value, unsigned int expires)
 	it = cache_htable[hash_code].entries;
 
 	/* if a previous record for the same attr delete it */
-	lcache_htable_remove_safe( *attr, &it);
+	lcache_htable_remove_safe( *attr, it);
 
-	me->next = it;
-	cache_htable[hash_code].entries = me;
+	me->next = it->next;
+	it->next = me;
 
 	lock_release(&cache_htable[hash_code].lock);
 
 	return 1;
 }
 
-void lcache_htable_remove_safe(str attr, lcache_entry_t** it_p)
+void lcache_htable_remove_safe(str attr, lcache_entry_t* it_p)
 {
-	lcache_entry_t* me = NULL, *it= *it_p;
+	lcache_entry_t *me = it_p, *it = it_p->next;
 
 	while(it)
 	{
@@ -148,11 +156,8 @@ void lcache_htable_remove_safe(str attr, lcache_entry_t** it_p)
 		{
 			shm_free(it);
 			
-			if(me)
-				me->next = it->next;
-			else
-				*it_p = NULL;
-			
+			me->next = it->next;
+
 			return;
 		}
 		me = it;
@@ -168,7 +173,7 @@ void lcache_htable_remove(str* attr)
 	hash_code= core_hash( attr, 0, cache_htable_size);
 	lock_get(&cache_htable[hash_code].lock);
 
-	lcache_htable_remove_safe( *attr, &cache_htable[hash_code].entries);
+	lcache_htable_remove_safe( *attr, cache_htable[hash_code].entries);
 
 	lock_release(&cache_htable[hash_code].lock);
 
@@ -188,7 +193,8 @@ int lcache_htable_fetch(str* attr, str* res)
 	hash_code= core_hash( attr, 0, cache_htable_size);
 	lock_get(&cache_htable[hash_code].lock);
 
-	it = cache_htable[hash_code].entries;
+	it_aux = cache_htable[hash_code].entries;
+	it = cache_htable[hash_code].entries->next;
 
 	while(it)
 	{
@@ -200,10 +206,7 @@ int lcache_htable_fetch(str* attr, str* res)
 				/* found an expired entry  -> delete it */
 				shm_free(it);
 			
-				if(it_aux)
-					it_aux->next = it->next;
-				else
-					cache_htable[hash_code].entries = NULL;
+				it_aux->next = it->next;
 
 				lock_release(&cache_htable[hash_code].lock);
 				return -2;

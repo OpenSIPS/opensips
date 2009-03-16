@@ -1,5 +1,5 @@
 /*
- * $Id:$
+ * $Id$
  *
  * memory cache system module
  *
@@ -145,8 +145,8 @@ void localcache_clean(unsigned int ticks,void *param)
 	for(i = 0; i< cache_htable_size; i++)
 	{
 		lock_get(&cache_htable[i].lock);
-		me1 = cache_htable[i].entries;
-		me2 = NULL;
+		me1 = cache_htable[i].entries->next;
+		me2 = cache_htable[i].entries;
 
 		while(me1)
 		{
@@ -155,18 +155,9 @@ void localcache_clean(unsigned int ticks,void *param)
 				LM_DBG("deleted entry attr= [%.*s]\n", 
 						me1->attr.len, me1->attr.s);
 
-				if(me2)
-				{
-					me2->next = me1->next;
-					shm_free(me1);
-					me1 = me2->next;
-				}
-				else
-				{
-					shm_free(me1);
-					cache_htable[i].entries = NULL;
-					break;
-				}
+				me2->next = me1->next;
+				shm_free(me1);
+				me1 = me2->next;
 			}
 			else
 			{
