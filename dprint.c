@@ -118,8 +118,12 @@ void set_proc_debug_level(int level)
 
 void reset_proc_debug_level(void)
 {
+#ifndef CHANGEABLE_DEBUG_LEVEL
 	debug = old_proc_level;
-#ifdef CHANGEABLE_DEBUG_LEVEL
-	old_proc_level = NULL;
+#else
+	if (old_proc_level) {
+		debug = old_proc_level;
+		old_proc_level = NULL;
+	}
 #endif
 }
