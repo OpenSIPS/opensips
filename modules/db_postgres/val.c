@@ -45,6 +45,7 @@
 
 #include <string.h>
 #include <time.h>
+#include <stdlib.h>
 
 
 /*
@@ -55,6 +56,7 @@
 int db_postgres_str2val(const db_type_t _t, db_val_t* _v, const char* _s, const int _l)
 {
 	static str dummy_string = {"", 0};
+	char *x;
 
 	if (!_v) {
 		LM_ERR("invalid parameter value\n");
@@ -66,9 +68,7 @@ int db_postgres_str2val(const db_type_t _t, db_val_t* _v, const char* _s, const 
 		 * string so that we do not crash when the NULL flag
 		 * is set but the module does not check it properly
 		 */
-		VAL_STRING(_v) = dummy_string.s;
 		VAL_STR(_v) = dummy_string;
-		VAL_BLOB(_v) = dummy_string;
 		VAL_TYPE(_v) = _t;
 		VAL_NULL(_v) = 1;
 		return 0;
@@ -122,7 +122,6 @@ int db_postgres_str2val(const db_type_t _t, db_val_t* _v, const char* _s, const 
 		VAL_STR(_v).len = _l;
 		VAL_TYPE(_v) = DB_STR;
 		VAL_FREE(_v) = 1;
-		_s = 0;
 		return 0;
 
 	case DB_DATETIME:
@@ -143,9 +142,16 @@ int db_postgres_str2val(const db_type_t _t, db_val_t* _v, const char* _s, const 
 		 * This is needed when retrieving bytea data in text format,
 		 * but not when retrieving it in binary format.
 		 */
-		VAL_BLOB(_v).s = (char*)PQunescapeBytea((unsigned char*)_s, 
+		x = (char*)PQunescapeBytea((unsigned char*)_s,
 			(size_t*)(void*)&(VAL_BLOB(_v).len) );
+		VAL_BLOB(_v).s = pkg_malloc( VAL_BLOB(_v).len+1 );
+		if (VAL_BLOB(_v).s==NULL) {
+			LM_ERR("failed to allocate pkg for BLOB\n");
+			return -6;
+		}
+		memcpy( VAL_BLOB(_v).s, x, VAL_BLOB(_v).len);
 		VAL_BLOB(_v).s[VAL_BLOB(_v).len]='\0';
+		free(x);
 		VAL_TYPE(_v) = DB_BLOB;
 		VAL_FREE(_v) = 1;
 		LM_DBG("got blob len %d\n", _l);
