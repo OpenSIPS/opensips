@@ -2791,7 +2791,7 @@ sub options_ping() {
 
 	my $myhost = &get_my_host();
 	&require_ctlengine();
-	my $temp = &mi_comm(join(" ","t_uac_dlg", "OPTIONS", "$cmd[1]", ".", ".","\"From:daemon\@$myhost\r\nTo:<$cmd[1]>\r\nContact:daemon\@$myhost\""));		
+	my $temp = &mi_comm(join(" ","t_uac_dlg", "OPTIONS", "$cmd[1]", ".", ".","\"From:sip:daemon\@$myhost\r\nTo:<$cmd[1]>\r\nContact:sip:daemon\@$myhost\""));		
 	print $temp;	
 	return;	
 }
