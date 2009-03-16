@@ -48,6 +48,8 @@ inline int db_free_row(db_row_t* _r)
 		return -1;
 	}
 
+	LM_DBG("freeing row values at %p\n", ROW_VALUES(_r));
+
 	/*
 	 * Loop thru each columm, then check to determine if the storage pointed to
 	 * by db_val_t structure must be freed. This is required for all data types
@@ -90,10 +92,6 @@ inline int db_free_row(db_row_t* _r)
 		}
 	}
 
-	if (ROW_VALUES(_r)) {
-		LM_DBG("freeing row values at %p\n", ROW_VALUES(_r));
-		pkg_free(ROW_VALUES(_r));
-		ROW_VALUES(_r) = NULL;
-	}
+	ROW_VALUES(_r) = NULL;
 	return 0;
 }
