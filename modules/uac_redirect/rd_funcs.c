@@ -48,7 +48,6 @@ int get_redirect( struct sip_msg *msg , int maxt, int maxb,
 												struct acc_param *reason)
 {
 	struct cell *t;
-	str backup_uri;
 	int max;
 	int cts_added;
 	int n;
@@ -65,7 +64,6 @@ int get_redirect( struct sip_msg *msg , int maxt, int maxb,
 	LM_DBG("resume branch=%d\n", t->first_branch);
 
 	cts_added = 0; /* no contact added */
-	backup_uri = msg->new_uri; /* shmcontact2dset will ater this value */
 
 	/* look if there are any 3xx branches starting from resume_branch */
 	for( i=t->first_branch ; i<t->nr_of_outgoings ; i++) {
@@ -93,9 +91,6 @@ int get_redirect( struct sip_msg *msg , int maxt, int maxb,
 			cts_added += n;
 		}
 	}
-
-	/* restore original new_uri */
-	msg->new_uri = backup_uri;
 
 	/* return false if no contact was appended */
 	return (cts_added>0)?1:-1;
@@ -176,6 +171,7 @@ static int shmcontact2dset(struct sip_msg *req, struct sip_msg *sh_rpl,
 	struct hdr_field *hdr;
 	struct hdr_field *contact_hdr;
 	contact_t        *contacts;
+	str backup_uri;
 	int n,i;
 	int added;
 	int dup;
@@ -280,10 +276,12 @@ static int shmcontact2dset(struct sip_msg *req, struct sip_msg *sh_rpl,
 		added++;
 		if (rd_acc_fct!=0 && reason) {
 			/* log the redirect */
+			backup_uri = req->new_uri;
 			req->new_uri =  scontacts[i]->uri;
 			//FIXME
 			rd_acc_fct( req, (char*)reason, acc_db_table, 
 					NULL, NULL, NULL, NULL);
+			req->new_uri = backup_uri;
 		}
 	}
 
