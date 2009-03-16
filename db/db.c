@@ -271,7 +271,7 @@ db_con_t* db_do_init(const str* url, void* (*new_connection)())
 		/* Not in the pool yet */
 		con = new_connection(id);
 		if (!con) {
-			LM_ERR("could not add connection to the pool");
+			LM_ERR("could not add connection to the pool\n");
 			goto err;
 		}
 		pool_insert((struct pool_con*)con);
