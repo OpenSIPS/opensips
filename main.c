@@ -357,6 +357,7 @@ void cleanup(int show_status)
 	}
 #ifdef CHANGEABLE_DEBUG_LEVEL
 	if (debug!=&debug_init) {
+		reset_proc_debug_level();
 		debug_init = *debug;
 		shm_free(debug);
 		debug = &debug_init;
