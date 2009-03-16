@@ -632,18 +632,18 @@ done:
  */
 int db_mysql_free_result(db_con_t* _h, db_res_t* _r)
 {
-     if ((!_h) || (!_r)) {
-	     LM_ERR("invalid parameter value\n");
-	     return -1;
-     }
+	if ((!_h) || (!_r)) {
+		LM_ERR("invalid parameter value\n");
+		return -1;
+	}
 
-     if (db_free_result(_r) < 0) {
-	     LM_ERR("unable to free result structure\n");
-	     return -1;
-     }
-     mysql_free_result(CON_RESULT(_h));
-     CON_RESULT(_h) = 0;
-     return 0;
+	if (db_free_result(_r) < 0) {
+		LM_ERR("unable to free result structure\n");
+		return -1;
+	}
+	mysql_free_result(CON_RESULT(_h));
+	CON_RESULT(_h) = 0;
+	return 0;
 }
 
 
