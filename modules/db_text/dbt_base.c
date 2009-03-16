@@ -336,7 +336,7 @@ int dbt_insert(db_con_t* _h, db_key_t* _k, db_val_t* _v, int _n)
 			LM_ERR("incompatible types v[%d] - c[%d]!\n", i, j);
 			goto clean;
 		}
-		if(_v[i].type == DB_STRING)
+		if(_v[i].type == DB_STRING && !_v[i].nul)
 			_v[i].val.str_val.len = strlen(_v[i].val.string_val);
 		if(dbt_row_set_val(_drp, &(_v[i]), _tbc->colv[j]->type, j))
 		{
@@ -411,6 +411,8 @@ int dbt_delete(db_con_t* _h, db_key_t* _k, db_op_t* _o, db_val_t* _v, int _n)
 		LM_DBG("deleting all records\n");
 		dbt_table_free_rows(_tbc);
 		/* unlock databse */
+
+		dbt_release_table(DBT_CON_CONNECTION(_h), CON_TABLE(_h));
 		return 0;
 	}
 
