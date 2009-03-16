@@ -259,21 +259,7 @@ utime_t get_uticks(void)
 static inline void timer_ticker(struct sr_timer *timer_list)
 {
 	struct sr_timer* t;
-	unsigned int prev_jiffies;
 
-	prev_jiffies=*jiffies;
-	*jiffies+=TIMER_TICK;
-	/* test for overflow (if tick= 1s =>overflow in 136 years)*/
-	if (*jiffies<prev_jiffies){ 
-		/*force expire & update every timer, a little buggy but it 
-		 * happens once in 136 years :) */
-		for(t=timer_list;t;t=t->next){
-			t->expires=*jiffies+t->interval;
-			t->u.timer_f(*jiffies, t->t_param);
-		}
-		return;
-	}
-	
 	for (t=timer_list;t; t=t->next){
 		if (*jiffies>=t->expires){
 			t->expires=*jiffies+t->interval;
@@ -288,10 +274,6 @@ static inline void utimer_ticker(struct sr_timer *utimer_list)
 {
 	struct sr_timer* t;
 
-	*ujiffies+=UTIMER_TICK;
-	/* no overflow test as even if we go for 1 microsecond tick, this will
-	 * happen in 14038618 years :P */
-
 	for ( t=utimer_list ; t ; t=t->next){
 		if (*ujiffies>=t->expires){
 			t->expires=*ujiffies+t->interval;
@@ -302,10 +284,8 @@ static inline void utimer_ticker(struct sr_timer *utimer_list)
 
 
 
-static void run_timer_process(struct sr_timer_process *tpl, int do_jiffies)
+static void run_timer_process(struct sr_timer_process *tpl)
 {
-	unsigned int local_jiffies=0;
-	utime_t      local_ujiffies=0;
 	unsigned int multiple;
 	unsigned int cnt;
 	struct timeval o_tv;
@@ -323,11 +303,6 @@ static void run_timer_process(struct sr_timer_process *tpl, int do_jiffies)
 
 	LM_DBG("tv = %ld, %ld , m=%d\n",
 		o_tv.tv_sec,o_tv.tv_usec,multiple);
-
-	if (!do_jiffies) {
-		jiffies = &local_jiffies;
-		ujiffies = &local_ujiffies;
-	}
 
 	if (tpl->utimer_list==NULL) {
 		for( ; ; ) {
@@ -368,13 +343,65 @@ static void run_timer_process(struct sr_timer_process *tpl, int do_jiffies)
 
 
 
+static void run_timer_process_jif(void)
+{
+	unsigned int multiple;
+	unsigned int cnt;
+	struct timeval o_tv;
+	struct timeval tv;
+
+	o_tv.tv_sec = 0;
+	o_tv.tv_usec = UTIMER_TICK;
+	multiple = ((TIMER_TICK*1000000)) / (UTIMER_TICK);
+
+	LM_DBG("tv = %ld, %ld , m=%d\n",
+		o_tv.tv_sec,o_tv.tv_usec,multiple);
+
+	for( cnt=1 ; ; cnt++ ) {
+		tv = o_tv;
+		select( 0, 0, 0, 0, &tv);
+		*(ujiffies)+=UTIMER_TICK;
+		/* no overflow test as even if we go for 1 microsecond tick, this will
+		 * happen in 14038618 years :P */
+
+		if (cnt==multiple) {
+			*(jiffies)+=TIMER_TICK;
+			/* test for overflow (if tick= 1s =>overflow in 136 years)*/
+			cnt = 0;
+		}
+	}
+	return ;
+}
+
+
+
 int start_timer_processes(void)
 {
 	struct sr_timer_process *tpl;
 	pid_t pid;
-	unsigned int first;
 
-	for( tpl=timer_proc_list, first=1 ; tpl ; tpl=tpl->next,first=0 ) {
+	/*
+	 * A change of the way timers were run. In the pre-1.5 times,
+	 * all timer processes had their own jiffies and just the first
+	 * one was doing the global ones. Now, there's a separate process
+	* that increases jiffies - run_timer_process_jif(), and the rest
+	 * just use that one.
+	 *
+	 * The main reason for this change was when a function that relied
+	 * on jiffies for its timeouts got called from the timer thread and
+	 * was unable to detect timeouts. 
+	 */
+
+	if ( (pid=internal_fork("time_keeper"))<0 ) {
+		LM_CRIT("cannot fork time keeper process\n");
+		goto error;
+	} else if (pid==0) {
+		/* new process */
+		run_timer_process_jif();
+		exit(-1);
+	}
+
+	for( tpl=timer_proc_list ; tpl ; tpl=tpl->next ) {
 		if (tpl->timer_list==NULL && tpl->utimer_list==NULL)
 			continue;
 		/* fork a new process */
@@ -388,7 +415,7 @@ int start_timer_processes(void)
 				LM_ERR("init_child failed for timer proc\n");
 				exit(-1);
 			}
-			run_timer_process( tpl, first);
+			run_timer_process( tpl );
 			exit(-1);
 		}
 	}
@@ -405,7 +432,9 @@ int count_timer_procs(void)
 	struct sr_timer_process *tpl;
 	int n;
 
-	n = 0;
+	/* we have the time keeper process */
+	n = 1;
+	/* and the timer handler procs */
 	for( tpl=timer_proc_list; tpl ; tpl=tpl->next ) {
 		if (tpl->timer_list==NULL && tpl->utimer_list==NULL)
 			continue;
