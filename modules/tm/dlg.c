@@ -49,7 +49,7 @@
 #define ROUTE_PREFIX "Route: "
 #define ROUTE_PREFIX_LEN (sizeof(ROUTE_PREFIX) - 1)
 
-#define ROUTE_SEPARATOR "," CRLF "       "
+#define ROUTE_SEPARATOR ","
 #define ROUTE_SEPARATOR_LEN (sizeof(ROUTE_SEPARATOR) - 1)
 
 
@@ -874,7 +874,7 @@ char* print_routeset(char* buf, dlg_t* _d)
 			memcpy(buf, ROUTE_SEPARATOR, ROUTE_SEPARATOR_LEN);
 			buf += ROUTE_SEPARATOR_LEN;
 		}
-		memcpy(buf, "<", 1);
+		*buf = '<';
 		buf++;
 		memcpy(buf, _d->hooks.last_route->s, _d->hooks.last_route->len);
 		buf += _d->hooks.last_route->len;
