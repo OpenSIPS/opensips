@@ -340,6 +340,14 @@ void cleanup(int show_status)
 	destroy_script_cb();
 	pv_free_extra_list();
 	destroy_black_lists();
+#ifdef CHANGEABLE_DEBUG_LEVEL
+	if (debug!=&debug_init) {
+		reset_proc_debug_level();
+		debug_init = *debug;
+		shm_free(debug);
+		debug = &debug_init;
+	}
+#endif
 #ifdef PKG_MALLOC
 	if (show_status){
 		LM_GEN1(memlog, "Memory status (pkg):\n");
@@ -353,14 +361,6 @@ void cleanup(int show_status)
 			LM_GEN1(memlog, "Memory status (shm):\n");
 			shm_status();
 	}
-#ifdef CHANGEABLE_DEBUG_LEVEL
-	if (debug!=&debug_init) {
-		reset_proc_debug_level();
-		debug_init = *debug;
-		shm_free(debug);
-		debug = &debug_init;
-	}
-#endif
 	/* zero all shmem alloc vars that we still use */
 	shm_mem_destroy();
 #endif
