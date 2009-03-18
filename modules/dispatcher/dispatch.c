@@ -561,23 +561,26 @@ int ds_destroy_list(void)
 
 void destroy_list(int list_id)
 {
-	ds_set_p  sp = NULL;
-	ds_dest_p dest = NULL;
+	ds_set_p  sp;
+	ds_set_p  sp_curr;
+	ds_dest_p dest;
 
 	sp = ds_lists[list_id];
 
-	while(sp)
-	{
-		for(dest = sp->dlist; dest!= NULL; dest=dest->next)
-		{
-			if(dest->uri.s!=NULL)
-   			{
-   				shm_free(dest->uri.s);
-   				dest->uri.s = NULL;
-	   		}
-		}
-		shm_free(sp->dlist);
+	while(sp) {
+		sp_curr = sp;
 		sp = sp->next;
+
+		dest = sp_curr->dlist;
+		if (dest) {
+			do {
+				if(dest->uri.s!=NULL)
+					shm_free(dest->uri.s);
+				dest = dest->next;
+			}while(dest);
+			shm_free(sp_curr->dlist);
+		}
+		shm_free(sp_curr);
 	}
 	
 	ds_lists[list_id]  = NULL;
