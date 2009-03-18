@@ -100,6 +100,7 @@ int db_do_query(const db_con_t* _h, const db_key_t* _k, const db_op_t* _op,
 		LM_ERR("error while submitting query\n");
 		return -2;
 	}
+	LM_DBG("SYNC-DBG - SELECT successfully executed!\n");
 
 	if(_r) {
 		int tmp = store_result(_h, _r);
@@ -107,6 +108,7 @@ int db_do_query(const db_con_t* _h, const db_key_t* _k, const db_op_t* _op,
 			LM_ERR("error while storing result");
 			return tmp;
 		}
+		LM_DBG("SYNC-DBG - SELECT result was stored!\n");
 	}
 	return 0;
 
@@ -129,6 +131,7 @@ int db_do_raw_query(const db_con_t* _h, const str* _s, db_res_t** _r,
 		LM_ERR("error while submitting query\n");
 		return -2;
 	}
+	LM_DBG("SYNC-DBG - raw query succesfully executed!\n");
 
 	if(_r) {
 		int tmp = store_result(_h, _r);
@@ -136,6 +139,7 @@ int db_do_raw_query(const db_con_t* _h, const str* _s, db_res_t** _r,
 			LM_ERR("error while storing result");
 			return tmp;
 		}
+		LM_DBG("SYNC-DBG - SELECT result was stored!\n");
 	}
 	return 0;
 }

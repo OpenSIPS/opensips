@@ -115,6 +115,7 @@ inline int db_free_result(db_res_t* _r)
 	LM_DBG("freeing result set at %p\n", _r);
 	pkg_free(_r);
 	_r = NULL;
+	LM_DBG("SYNC-DBG - freeing result!\n");
 	return 0;
 }
 
