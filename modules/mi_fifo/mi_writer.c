@@ -216,7 +216,7 @@ static int recur_flush_tree(FILE *stream, struct mi_node *tree, str *buf,
 	struct mi_node *kid, *tmp;	
 	int ret;
 
-	for(kid = tree->kids ; kid ; ){		
+	for(kid = tree->kids ; kid ; ){
 		/* write the current kid */
 		if (!(kid->flags & MI_WRITTEN)){
 			if (mi_write_node( buf, kid, level)!=0) {
@@ -230,19 +230,19 @@ static int recur_flush_tree(FILE *stream, struct mi_node *tree, str *buf,
 					LM_ERR("failed to write - line too long!\n");
 					return -1;
 				}
-
-				/* we are sure that this node has been written 
-		 		* => avoid writing it again */
-				kid->flags |= MI_WRITTEN;
 			}
+
+			/* we are sure that this node has been written 
+			* => avoid writing it again */
+			kid->flags |= MI_WRITTEN;
 		}
-			
+
 		/* write the current kid's children */
 		if ((ret = recur_flush_tree(stream, kid, buf, level+1))<0)
 			return -1;
 		else if (ret > 0)
 			return ret;
-	
+
 		if (!(kid->flags & MI_NOT_COMPLETED)){
 			tmp = kid;
 			kid = kid->next;
