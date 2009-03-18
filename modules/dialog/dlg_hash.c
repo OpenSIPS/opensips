@@ -277,6 +277,13 @@ int dlg_set_leg_info(struct dlg_cell *dlg, str* tag, str *rr, str *contact,
 	dlg->cseq[leg].len = cseq->len;
 	memcpy( dlg->cseq[leg].s, cseq->s, cseq->len);
 
+	LM_DBG("set leg %d for %p: tag=<%.*s> rr=<%.*s> ct=<%.*s> cseq=<%.*s>\n",
+		leg,dlg,
+		dlg->tag[leg].len,dlg->tag[leg].s,
+		dlg->route_set[leg].len,dlg->route_set[leg].s,
+		dlg->contact[leg].len,dlg->contact[leg].s,
+		dlg->cseq[leg].len,dlg->cseq[leg].s
+		);
 	return 0;
 }
 
@@ -353,13 +360,28 @@ static inline struct dlg_cell* internal_get_dlg(unsigned int h_entry,
 
 	dlg_lock( d_table, d_entry);
 
+	LM_DBG("input ci=<%.*s>(%d), tt=<%.*s>(%d), ft=<%.*s>(%d)\n",
+		callid->len,callid->s, callid->len,
+		ftag->len, ftag->s, ftag->len,
+		ttag->len, ttag->s, ttag->len);
+
 	for( dlg = d_entry->first ; dlg ; dlg = dlg->next ) {
 		/* Check callid / fromtag / totag */
+#ifdef EXTRA_DEBUG
+		LM_DBG("DLG (%p)(%d): ci=<%.*s>(%d), ft=<%.*s>(%d), tt=<%.*s>(%d),"
+			"ct_er=%d, ct_ee=%d\n",
+			dlg,dlg->state,dlg->callid.len,dlg->callid.s, dlg->callid.len,
+			dlg->tag[0].len,dlg->tag[0].s, dlg->tag[0].len,
+			dlg->tag[1].len,dlg->tag[1].s, dlg->tag[1].len,
+			dlg->contact[0].len,dlg->contact[1].len);
+#endif
 		if (match_dialog( dlg, callid, ftag, ttag, dir)==1) {
-			if (dlg->state==DLG_STATE_DELETED) {
-				dlg_unlock( d_table, d_entry);
-				goto not_found;
-			}
+			if (dlg->state==DLG_STATE_DELETED)
+				/* even if matched, skip the deleted dialogs as they may be
+				   a previous unsuccessfull attempt of established call
+				   with the same callid and fromtag - like in auth/challenge
+				   case -bogdan */
+				continue;
 			dlg->ref++;
 			LM_DBG("ref dlg %p with 1 -> %d\n", dlg, dlg->ref);
 			dlg_unlock( d_table, d_entry);
@@ -371,7 +393,6 @@ static inline struct dlg_cell* internal_get_dlg(unsigned int h_entry,
 
 	dlg_unlock( d_table, d_entry);
 
-not_found:
 	LM_DBG("no dialog callid='%.*s' found\n", callid->len, callid->s);
 	return 0;
 }
