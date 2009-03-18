@@ -301,6 +301,8 @@ static void dlg_onreply(struct cell* t, int type, struct tmcb_params *param)
 					tag.len = 0;
 				}
 			}
+			LM_DBG("%p totag in rpl is <%.*s> (%d)\n",
+				dlg, tag.len,tag.s,tag.len);
 
 			/* save callee's tag, cseq, contact and record route*/
 			if (populate_leg_info( dlg, rpl, t, DLG_CALLEE_LEG, &tag) !=0) {
