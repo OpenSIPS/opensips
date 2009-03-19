@@ -486,7 +486,7 @@ error:
  */
 urecord_t* db_load_urecord(db_con_t* _c, udomain_t* _d, str *_aor)
 {
-	static db_ps_t my_ps = NULL;
+	/*static db_ps_t my_ps = NULL;*/
 	ucontact_info_t *ci;
 	db_key_t columns[13];
 	db_key_t keys[2];
@@ -544,7 +544,7 @@ urecord_t* db_load_urecord(db_con_t* _c, udomain_t* _d, str *_aor)
 		return 0;
 	}
 
-	CON_PS_REFERENCE(_c) = &my_ps;
+	/* CON_PS_REFERENCE(_c) = &my_ps; - this is still dangerous with STMT */
 
 	if (ul_dbf.query(_c, keys, 0, vals, columns, (use_domain)?2:1, 13, order,
 				&res) < 0) {

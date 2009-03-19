@@ -91,7 +91,8 @@ int alias_db_lookup(struct sip_msg* _msg, char* _table, char* _str2)
 	}
 
 	adbf.use_table(db_handle, &table_s);
-	CON_PS_REFERENCE(db_handle) = &my_ps;
+	if (!ald_append_branches)
+		CON_PS_REFERENCE(db_handle) = &my_ps;
 
 	if(adbf.query(db_handle, db_keys, NULL, db_vals, db_cols,
 		(use_domain)?2:1 /*no keys*/, 2 /*no cols*/, NULL, &db_res)!=0)
