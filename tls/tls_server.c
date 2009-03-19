@@ -504,6 +504,8 @@ _tls_read(struct tcp_connection *c, void *buf, size_t len)
 		case SSL_ERROR_WANT_WRITE:
 			return 0;
 	
+		case SSL_ERROR_SYSCALL:
+			LM_ERR("SYSCALL error -> (%d) <%s>\n",errno,strerror(errno));
 		default:
 			LM_ERR("something wrong in SSL: %d\n",err);
 			c->state = S_CONN_BAD;
