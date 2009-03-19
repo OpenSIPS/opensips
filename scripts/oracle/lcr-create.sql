@@ -29,7 +29,7 @@ CREATE TABLE lcr (
     prefix VARCHAR2(16) DEFAULT NULL,
     from_uri VARCHAR2(64) DEFAULT NULL,
     grp_id NUMBER(10),
-    priority NUMBER(5)
+    priority NUMBER(10)
 );
 
 CREATE OR REPLACE TRIGGER lcr_tr

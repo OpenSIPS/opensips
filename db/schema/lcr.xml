@@ -53,7 +53,7 @@
 
     <column>
         <name>priority</name>
-        <type>unsigned char</type>
+        <type>unsigned int</type>
         <description>Priority</description>
     </column>
 
