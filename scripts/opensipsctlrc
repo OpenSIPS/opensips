@@ -15,13 +15,13 @@
 ## database type: MYSQL, PGSQL, ORACLE, DB_BERKELEY, or DBTEXT, by default none is loaded
 # If you want to setup a database with opensipsdbctl, you must at least specify
 # this parameter.
-# DBENGINE=MYSQL
+# DBENGINE=PGSQL
 
 ## database host
 # DBHOST=localhost
 
 ## database name (for ORACLE this is TNS name)
-# DBNAME=opensips
+# DBNAME=opensips_1_4
 
 # database path used by dbtext or db_berkeley
 # DB_PATH="/usr/local/etc/opensips/dbtext"
@@ -39,7 +39,7 @@
 # DBROPW=opensipsro
 
 ## database super user (for ORACLE this is 'scheme-creator' user)
-# DBROOTUSER="root"
+# DBROOTUSER="postgres"
 
 # user name column
 # USERCOL="username"
@@ -65,7 +65,7 @@
 # AWK="awk"
 
 # grep tool
-GREP="grep"
+# GREP="grep"
 
 # sed tool
 # SED="sed"
@@ -110,7 +110,7 @@ GREP="grep"
 ## MI_CONNECTOR control engine: FIFO, UNIXSOCK, UDP, XMLRPC
 # MI_CONNECTOR=FIFO:/tmp/opensips_fifo
 # MI_CONNECTOR=UNIXSOCK:/tmp/opensips.sock
- MI_CONNECTOR=UDP:192.168.2.133:8000
+# MI_CONNECTOR=UDP:192.168.2.133:8000
 # MI_CONNECTOR=XMLRPC:192.168.2.133:8000
 
 ## check ACL names; default on (1); off (0)
@@ -118,7 +118,7 @@ GREP="grep"
 
 ## ACL names - if VERIFY_ACL is set, only the ACL names from below list
 ## are accepted
- ACL_GROUPS="local ld int voicemail free-pstn"
+# ACL_GROUPS="local ld int voicemail free-pstn"
 
 ## verbose - debug purposes - default '0'
 # VERBOSE=1
