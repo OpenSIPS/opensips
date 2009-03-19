@@ -593,6 +593,7 @@ static int db_mysql_store_result(const db_con_t* _h, db_res_t** _r)
 			return -3;
 		}
 	}
+	LM_DBG("SYNC-DBG - SELECT result was stored!\n");
 
 	if (db_mysql_convert_result(_h, *_r) < 0) {
 		LM_ERR("error while converting result\n");
@@ -674,6 +675,7 @@ int db_mysql_query(const db_con_t* _h, const db_key_t* _k, const db_op_t* _op,
 		}
 		ret = db_mysql_do_prepared_query(_h, &query_holder, _v, _n, NULL, 0);
 		if (ret!=0) return ret;
+		LM_DBG("SYNC-DBG - SELECT-STMT successfully executed!!\n");
 		ret = db_mysql_store_result(_h, _r);
 		CON_RESET_CURR_PS(_h);
 		return ret;

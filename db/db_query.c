@@ -108,7 +108,6 @@ int db_do_query(const db_con_t* _h, const db_key_t* _k, const db_op_t* _op,
 			LM_ERR("error while storing result");
 			return tmp;
 		}
-		LM_DBG("SYNC-DBG - SELECT result was stored!\n");
 	}
 	return 0;
 
