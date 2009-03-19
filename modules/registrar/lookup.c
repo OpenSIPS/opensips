@@ -109,6 +109,7 @@ int lookup(struct sip_msg* _m, char* _t, char* _s)
 
 	ret = 1;
 	if (ptr) {
+		LM_DBG("setting as ruri <%.*s>\n",ptr->c.len,ptr->c.s);
 		if (set_ruri(_m, &ptr->c) < 0) {
 			LM_ERR("unable to rewrite Request-URI\n");
 			ret = -3;
@@ -153,6 +154,7 @@ int lookup(struct sip_msg* _m, char* _t, char* _s)
 
 	/* Append branches if enabled */
 	if (!append_branches) goto done;
+	LM_DBG("looking for branches\n");
 
 	for( ; ptr ; ptr = ptr->next ) {
 		if (VALID_CONTACT(ptr, act_time) && allowed_method(_m, ptr)) {
@@ -165,6 +167,7 @@ int lookup(struct sip_msg* _m, char* _t, char* _s)
 
 			/* The same as for the first contact applies for branches 
 			 * regarding path vs. received. */
+			LM_DBG("setting branch <%.*s>\n",ptr->c.len,ptr->c.s);
 			if (append_branch(_m,&ptr->c,path_dst.len?&path_dst:&ptr->received,
 			&ptr->path, ptr->q, ptr->cflags, ptr->sock) == -1) {
 				LM_ERR("failed to append a branch\n");
