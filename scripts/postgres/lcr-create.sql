@@ -21,7 +21,7 @@ CREATE TABLE lcr (
     prefix VARCHAR(16) DEFAULT NULL,
     from_uri VARCHAR(64) DEFAULT NULL,
     grp_id INTEGER NOT NULL,
-    priority SMALLINT NOT NULL
+    priority INTEGER NOT NULL
 );
 
 CREATE INDEX lcr_prefix_idx ON lcr (prefix);

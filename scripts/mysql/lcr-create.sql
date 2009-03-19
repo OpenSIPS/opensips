@@ -21,7 +21,7 @@ CREATE TABLE lcr (
     prefix VARCHAR(16) DEFAULT NULL,
     from_uri VARCHAR(64) DEFAULT NULL,
     grp_id INT UNSIGNED NOT NULL,
-    priority TINYINT UNSIGNED NOT NULL
+    priority INT UNSIGNED NOT NULL
 ) ENGINE=MyISAM;
 
 CREATE INDEX prefix_idx ON lcr (prefix);
