@@ -984,7 +984,7 @@ assign_stm: DEBUG EQUAL snumber {
 #if defined(IPTOS_LOWCOST)
 									",IPTOS_LOWCOST"
 #endif
-#if !defined(IPTOS_MINCOST)
+#if defined(IPTOS_MINCOST)
 									",IPTOS_MINCOST"
 #endif
 									"\n");
