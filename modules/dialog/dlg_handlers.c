@@ -442,6 +442,10 @@ void dlg_onreq(struct cell* t, int type, struct tmcb_params *param)
 {
 	/* is the dialog already created? */
 	if (current_dlg_pointer!=NULL) {
+		/* new, un-initialized dialog ? */
+		if ( current_dlg_pointer->flags & DLG_FLAG_ISINIT )
+			return;
+
 		/* dialog was previously created by create_dialog() 
 		   -> just do the last settings */
 		run_create_callbacks( current_dlg_pointer, param->req);
@@ -452,6 +456,9 @@ void dlg_onreq(struct cell* t, int type, struct tmcb_params *param)
 			current_dlg_pointer->flags |= DLG_FLAG_BYEONTIMEOUT;
 
 		t->dialog_ctx = (void*)current_dlg_pointer;
+
+		/* dialog is fully initialized */
+		current_dlg_pointer->flags |= DLG_FLAG_ISINIT;
 	} else {
 		/* should we create dialog? */
 		if ( (param->req->flags & dlg_flag) != dlg_flag)
@@ -543,6 +550,8 @@ int dlg_create_dialog(struct cell* t, struct sip_msg *req)
 			dlg->flags |= DLG_FLAG_BYEONTIMEOUT;
 
 		t->dialog_ctx = (void*) dlg;
+
+		dlg->flags |= DLG_FLAG_ISINIT;
 	}
 
 	if_update_stat( dlg_enable_stats, processed_dlgs, 1);

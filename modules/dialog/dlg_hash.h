@@ -64,6 +64,7 @@
 #define DLG_FLAG_CHANGED       (1<<1)
 #define DLG_FLAG_HASBYE        (1<<2)
 #define DLG_FLAG_BYEONTIMEOUT  (1<<3)
+#define DLG_FLAG_ISINIT        (1<<4)
 
 #define DLG_CALLER_LEG         0
 #define DLG_CALLEE_LEG         1
