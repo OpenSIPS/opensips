@@ -485,11 +485,11 @@ if ( $#ACL_GROUPS lt 0 ) {
 ##### ----------------------------------------------- #####
 ### common variables and functions for SQL engines
 if ( $DBENGINE eq "" ) {
-	$DBENGINE = 'mysql';
+	$DBENGINE = 'Pg';
 }
 
 if ( $DBNAME eq "" ) {
-	$DBNAME = 'opensips';
+	$DBNAME = 'opensips_1_4';
 }
 	
 if ( $DBHOST eq "" ) {
@@ -3720,6 +3720,21 @@ sub alias_db() {
 							     ALIAS FROM $DA_TABLE 
 							     WHERE $da_table{'DA_USER_COLUMN'}=\'$OSIPSUSER\' 
  							     AND $da_table{'DA_DOMAIN_COLUMN'}=\'$OSIPSDOMAIN\'")
+				} elsif ($DBENGINE =~ /^Pg$/ ) {
+					$sth = $dbh->prepare( "SELECT ($da_table{'DA_ALIAS_USER_COLUMN'} || \'@\' || $da_table{'DA_ALIAS_DOMAIN_COLUMN'}) ALIAS 
+	 						       FROM $DA_TABLE 
+							       WHERE $da_table{'DA_USER_COLUMN'}=\'$OSIPSUSER\' 
+	 						       AND $da_table{'DA_DOMAIN_COLUMN'}=\'$OSIPSDOMAIN\'" );
+					#execute the query
+					$sth->execute( );
+					warn "Concatenting user with domain failed", $sth->errstr( ), "\n" if $sth->err( );
+
+					#Retrieve the results of a row of data and print
+					print "\tQuery results:\n================================================\n";
+					while ( @row = $sth->fetchrow_array( ) )  {
+				 		     print "@row\n";
+					}	
+					$sth->finish();
 				} else {
 					$sth = $dbh->prepare( "SELECT CONCAT($da_table{'DA_ALIAS_USER_COLUMN'},\'@\',$da_table{'DA_ALIAS_DOMAIN_COLUMN'}) ALIAS 
 	 						       FROM $DA_TABLE 
@@ -3801,6 +3816,21 @@ sub alias_db() {
 						       FROM $DA_TABLE
    						       WHERE $da_table{'DA_ALIAS_USER_COLUMN'}=\'$OSIPSUSER\' 
  						       AND $da_table{'DA_ALIAS_DOMAIN_COLUMN'}=\'$OSIPSDOMAIN\' ");
+			} elsif ( $DBENGINE =~ /^Pg$/ ) {
+				$sth = $dbh->prepare( " SELECT ($da_table{'DA_USER_COLUMN'} || \'@\' || $da_table{'DA_DOMAIN_COLUMN'} ) AS SIP_ID 
+							FROM $DA_TABLE 				
+							WHERE $da_table{'DA_ALIAS_USER_COLUMN'}=\'$OSIPSUSER\' 
+							AND $da_table{'DA_ALIAS_DOMAIN_COLUMN'}=\'$OSIPSDOMAIN\' " );
+	
+				#execute the query
+				$sth->execute( );
+				warn "Retrieving data from table failed", $sth->errstr( ), "\n" if $sth->err( );			
+
+				#Retrieve the results of a row of data and print
+				print "\tQuery results:\n================================================\n";
+				while ( @row = $sth->fetchrow_array( ) )  {
+					     print "@row\n";
+				}	
 			} else {
 				$sth = $dbh->prepare( " SELECT CONCAT($da_table{'DA_USER_COLUMN'},\'@\',$da_table{'DA_DOMAIN_COLUMN'} ) AS SIP_ID 
 							FROM $DA_TABLE 				
@@ -5093,6 +5123,18 @@ sub speeddial() {
 					&bdb_select_where($SD_TABLE,$key);
 				} elsif ( $DBENGINE =~ /^DBTEXT$/ ) {
 					system("$DBTEXTCMD","SELECT CONCAT($sd_table{'SD_SD_USER_COLUMN'},'\@',$sd_table{'SD_SD_DOMAIN_COLUMN'}) AS Short_number, $sd_table{'SD_NEW_URI_COLUMN'} AS New_URI,$sd_table{'SD_DESC_COLUMN'} FROM $SD_TABLE WHERE $sd_table{'SD_USER_COLUMN'}=\'$OSIPSUSER\' AND $sd_table{'SD_DOMAIN_COLUMN'}=\'$OSIPSDOMAIN\'"); 
+				} elsif ( $DBENGINE =~ /^Pg$/  ) {			
+					$sth = $dbh->prepare("SELECT ($sd_table{'SD_SD_USER_COLUMN'}||'\@'||$sd_table{'SD_SD_DOMAIN_COLUMN'}) AS Short_number, $sd_table{'SD_NEW_URI_COLUMN'} AS New_URI,$sd_table{'SD_DESC_COLUMN'} FROM $SD_TABLE WHERE $sd_table{'SD_USER_COLUMN'}=\'$OSIPSUSER\' AND $sd_table{'SD_DOMAIN_COLUMN'}=\'$OSIPSDOMAIN\'");
+					#execute the query
+					$sth->execute( );
+					warn "Entry could not be retrieved from table\n", $sth->errstr( ), "\n" if $sth->err( );
+					## Retrieve the results of a row of data and print
+					print "\tQuery results:\n================================================\n";
+
+					while ( @row = $sth->fetchrow_array( ) )  {
+						 print "@row\n";				
+					}	
+	
 				} else {			
 					$sth = $dbh->prepare("SELECT CONCAT($sd_table{'SD_SD_USER_COLUMN'},'\@',$sd_table{'SD_SD_DOMAIN_COLUMN'}) AS Short_number, $sd_table{'SD_NEW_URI_COLUMN'} AS New_URI,$sd_table{'SD_DESC_COLUMN'} FROM $SD_TABLE WHERE $sd_table{'SD_USER_COLUMN'}=\'$OSIPSUSER\' AND $sd_table{'SD_DOMAIN_COLUMN'}=\'$OSIPSDOMAIN\'");
 					#execute the query
@@ -5120,6 +5162,17 @@ sub speeddial() {
 					&bdb_select($SD_TABLE);
 				} elsif ( $DBENGINE =~ /^DBTEXT$/ ) {
 					system("$DBTEXTCMD","SELECT CONCAT($sd_table{'SD_SD_USER_COLUMN'},'\@',$sd_table{'SD_SD_DOMAIN_COLUMN'}) AS Short_number, CONCAT($sd_table{'SD_USER_COLUMN'},'\@',$sd_table{'SD_DOMAIN_COLUMN'}) AS Owner, $sd_table{'SD_NEW_URI_COLUMN'} AS New_URI,$sd_table{'SD_DESC_COLUMN'} FROM $SD_TABLE");
+				} elsif ( $DBENGINE =~ /^Pg$/ ) {
+					$sth = $dbh->prepare("SELECT ($sd_table{'SD_SD_USER_COLUMN'}||'\@'||$sd_table{'SD_SD_DOMAIN_COLUMN'}) AS Short_number, ($sd_table{'SD_USER_COLUMN'}||'\@'||$sd_table{'SD_DOMAIN_COLUMN'}) AS Owner, $sd_table{'SD_NEW_URI_COLUMN'} AS New_URI,$sd_table{'SD_DESC_COLUMN'} FROM $SD_TABLE");
+					#execute the query
+					$sth->execute( );
+					warn "Entry could not be retrieved from table\n", $sth->errstr( ), "\n" if $sth->err( );
+					## Retrieve the results of a row of data and print
+					print "\tQuery results:\n================================================\n";
+
+					while ( @row = $sth->fetchrow_array( ) )  {
+						 print "@row\n";				
+					}
 				} else {
 					$sth = $dbh->prepare("SELECT CONCAT($sd_table{'SD_SD_USER_COLUMN'},'\@',$sd_table{'SD_SD_DOMAIN_COLUMN'}) AS Short_number, CONCAT($sd_table{'SD_USER_COLUMN'},'\@',$sd_table{'SD_DOMAIN_COLUMN'}) AS Owner, $sd_table{'SD_NEW_URI_COLUMN'} AS New_URI,$sd_table{'SD_DESC_COLUMN'} FROM $SD_TABLE");
 					#execute the query
@@ -5156,6 +5209,16 @@ sub speeddial() {
 				&bdb_select_where($SD_TABLE,$key);
 			} elsif ( $DBENGINE =~ /^DBTEXT$/ ) {
 				system("$DBTEXTCMD","SELECT CONCAT($sd_table{'SD_USER_COLUMN'},'\@',$sd_table{'SD_DOMAIN_COLUMN'}) AS Owner, $sd_table{'SD_NEW_URI_COLUMN'} AS New_URI, $sd_table{'SD_DESC_COLUMN'} FROM $SD_TABLE WHERE $sd_table{'SD_SD_USER_COLUMN'}=\'$OSIPSUSER\' AND $sd_table{'SD_SD_DOMAIN_COLUMN'}=\'$OSIPSDOMAIN\'");
+			} elsif ( $DBENGINE =~ /^Pg$/ ) {
+				$sth = $dbh->prepare("SELECT ($sd_table{'SD_USER_COLUMN'}||'\@'||$sd_table{'SD_DOMAIN_COLUMN'}) AS Owner, $sd_table{'SD_NEW_URI_COLUMN'} AS New_URI, $sd_table{'SD_DESC_COLUMN'} FROM $SD_TABLE WHERE $sd_table{'SD_SD_USER_COLUMN'}=\'$OSIPSUSER\' AND $sd_table{'SD_SD_DOMAIN_COLUMN'}=\'$OSIPSDOMAIN\'");
+				$sth->execute( );
+				warn "Entry could not be retrieved from table\n", $sth->errstr( ), "\n" if $sth->err( );
+				## Retrieve the results of a row of data and print
+				print "\tQuery results:\n================================================\n";
+
+				while ( @row = $sth->fetchrow_array( ) )  {
+						 print "@row\n";				
+				}
 			} else {
 				$sth = $dbh->prepare("SELECT CONCAT($sd_table{'SD_USER_COLUMN'},'\@',$sd_table{'SD_DOMAIN_COLUMN'}) AS Owner, $sd_table{'SD_NEW_URI_COLUMN'} AS New_URI, $sd_table{'SD_DESC_COLUMN'} FROM $SD_TABLE WHERE $sd_table{'SD_SD_USER_COLUMN'}=\'$OSIPSUSER\' AND $sd_table{'SD_SD_DOMAIN_COLUMN'}=\'$OSIPSDOMAIN\'");
 				$sth->execute( );
