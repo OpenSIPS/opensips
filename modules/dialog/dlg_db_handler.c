@@ -312,6 +312,11 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 				continue;
 			}
 
+			if ( VAL_INT(values+8) == DLG_STATE_DELETED ) {
+				LM_DBG("dialog already terminated -> skipping\n");
+				continue;
+			}
+
 			/*restore the dialog info*/
 			GET_STR_VALUE(callid, values, 2, 1, 0);
 			GET_STR_VALUE(from_uri, values, 3, 1, 0);
@@ -628,6 +633,11 @@ void dialog_update_db(unsigned int ticks, void * param)
 		for(cell = entry.first; cell != NULL; cell = cell->next){
 
 			if( (cell->flags & DLG_FLAG_NEW) != 0 ) {
+
+				if ( cell->state == DLG_STATE_DELETED ) {
+					/* don't need to insert dialogs already terminated */
+					continue;
+				}
 
 				VAL_INT(values)			= cell->h_entry;
 				VAL_INT(values+1)		= cell->h_id;
