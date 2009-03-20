@@ -1066,7 +1066,6 @@ static int update_pw_dialogs(subs_t* subs, unsigned int hash_code, subs_t** subs
 				shm_free(s->contact.s);
                 shm_free(s);
                 LM_DBG(" deleted terminated dialog from hash table\n");
-       
 				/* delete from database also */
 				if( delete_db_subs(cs->pres_uri, 
 							cs->event->name, cs->to_tag)< 0)

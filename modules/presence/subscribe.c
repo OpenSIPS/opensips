@@ -127,7 +127,7 @@ error:
 
 int delete_db_subs(str pres_uri, str ev_stored_name, str to_tag)
 {
-//	static db_ps_t my_ps = NULL;
+	static db_ps_t my_ps = NULL;
 	db_key_t query_cols[5];
 	db_val_t query_vals[5];
 	int n_query_cols= 0;
@@ -156,7 +156,7 @@ int delete_db_subs(str pres_uri, str ev_stored_name, str to_tag)
 		return -1;
 	}
 
-//	CON_PS_REFERENCE(pa_db) = &my_ps;
+	CON_PS_REFERENCE(pa_db) = &my_ps;
 	LM_DBG("delete subs \n");
 	if(pa_dbf.delete(pa_db, query_cols, 0, query_vals,
 				n_query_cols)< 0 )
@@ -1350,7 +1350,7 @@ void timer_db_update(unsigned int ticks,void *param)
 void update_db_subs(db_con_t *db,db_func_t dbf, shtable_t hash_table,
 	int htable_size, int no_lock, handle_expired_func_t handle_expired_func)
 {	
-//	static db_ps_t my_ps_delete = NULL
+	static db_ps_t my_ps_delete = NULL;
 	static db_ps_t my_ps_update = NULL, my_ps_insert = NULL;
 	db_key_t query_cols[22], update_cols[7];
 	db_val_t query_vals[22], update_vals[7];
@@ -1628,7 +1628,7 @@ void update_db_subs(db_con_t *db,db_func_t dbf, shtable_t hash_table,
 	LM_DBG("delete expired\n");
 	update_vals[0].val.int_val= (int)time(NULL)- 10;
 	update_ops[0]= OP_LT;
-//	CON_PS_REFERENCE(pa_db) = &my_ps_delete;
+	CON_PS_REFERENCE(pa_db) = &my_ps_delete;
 	
 	if(dbf.delete(db, update_cols, update_ops, update_vals, 1) < 0)
 	{
@@ -2010,11 +2010,14 @@ int restore_db_subs(void)
 
 	pa_dbf.free_result(pa_db, result);
 
-	/* delete all records */
-	if(pa_dbf.delete(pa_db, 0,0,0,0)< 0)
+	if(!fallback2db)
 	{
-		LM_ERR("deleting all records from database table\n");
-		return -1;
+		/* delete all records */
+		if(pa_dbf.delete(pa_db, 0,0,0,0)< 0)
+		{
+			LM_ERR("deleting all records from database table\n");
+			return -1;
+		}
 	}
 
 	return 0;
