@@ -1356,6 +1356,45 @@ __tm_reply_in(struct cell *trans, int type, struct tmcb_params *param)
 }
 
 
+// callback to handle outgoing replies for the request's transaction
+//
+static void
+__tm_reply_out(struct cell *trans, int type, struct tmcb_params *param)
+{
+    struct sip_msg reply;
+    time_t expire;
+
+    // only handle locally generated replies here (FAKED_REPLY) as the
+    // in-transit replies are processed in __tm_reply_in()
+    if (param->req==NULL || param->rpl!=FAKED_REPLY)
+        return;
+
+    if (param->code >= 200 && param->code < 300) {
+        memset(&reply, 0, sizeof(struct sip_msg));
+        reply.buf = ((str*)param->extra1)->s;
+        reply.len = ((str*)param->extra1)->len;
+
+        if (parse_msg(reply.buf, reply.len, &reply) != 0) {
+            LM_ERR("cannot parse outgoing TM reply for keepalive information\n");
+            return;
+        }
+
+        switch (param->req->REQ_METHOD) {
+        case METHOD_SUBSCRIBE:
+            expire = get_expires(&reply);
+            if (expire > 0)
+                keepalive_subscription(param->req, expire);
+            break;
+        case METHOD_REGISTER:
+            expire = get_register_expire(param->req, &reply);
+            if (expire > 0)
+                keepalive_registration(param->req, expire);
+            break;
+        }
+    }
+}
+
+
 // Keepalive NAT for an UA while it has registered contacts or active dialogs
 //
 static int
@@ -1382,6 +1421,10 @@ NAT_Keepalive(struct sip_msg *msg)
         msg->msg_flags |= FL_DO_KEEPALIVE;
         if (tm_api.register_tmcb(msg, 0, TMCB_RESPONSE_IN, __tm_reply_in, 0, 0) <= 0) {
             LM_ERR("cannot register TM callback for incoming replies\n");
+            return -1;
+        }
+        if (tm_api.register_tmcb(msg, 0, TMCB_RESPONSE_OUT, __tm_reply_out, 0, 0) <= 0) {
+            LM_ERR("cannot register TM callback for outgoing replies\n");
             return -1;
         }
         return 1;
