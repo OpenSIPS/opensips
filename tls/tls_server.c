@@ -677,19 +677,17 @@ tls_close(struct tcp_connection *c, int fd)
  */
 size_t
 tls_blocking_write(struct tcp_connection *c, int fd, const char *buf,
-		   size_t len)
+		size_t len)
 {
-	int             written,
-					n;
-	int             timeout;
+	#define MAX_SSL_RETRIES 32
+	int             written, n;
+	int             timeout, retries;
 	struct pollfd   pf;
 	pf.fd = fd;
-	pf.events = POLLOUT | POLLIN;	/* we need both because of ssl
-					 * library */
-
-	/* LM_DBG("entered\n"); //noisy */
+	pf.events = POLLOUT | POLLIN;	/* we need both because of ssl library */
 
 	written = 0;
+	retries = 0;
 
 	if (tls_update_fd(c, fd) < 0)
 		goto error;
@@ -723,6 +721,18 @@ again:
 	if (n < 0) {
 		LM_ERR("failed to send data\n");
 		goto error;
+	}
+
+	/* avoid looping if nothing happens */
+	if (n==0) {
+		retries++;
+		if (retries==MAX_SSL_RETRIES) {
+			LM_ERR("too many retries with no operation\n");
+			goto error;
+		}
+	} else {
+		/* reset the retries if we succeded in doing something*/
+		retries = 0;
 	}
 
 	written += n;
@@ -775,7 +785,7 @@ poll_loop:
 		* although poll should never signal them since we're not
 		* interested in them => we should never reach this point) 
 		*/
-}
+	}
 
 error:
 	return -1;
