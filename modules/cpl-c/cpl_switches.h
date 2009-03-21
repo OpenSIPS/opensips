@@ -447,6 +447,8 @@ not_present:
 		check_overflow_by_ptr( kid+SIMPLE_NODE_SIZE(kid), intr, script_error);
 		if (NODE_TYPE(kid)==NOT_PRESENT_NODE)
 			return get_first_child(kid);
+		if (NODE_TYPE(kid)==OTERWISE_NODE)
+			return get_first_child(kid);
 	}
 	return DEFAULT_ACTION;
 runtime_error:
