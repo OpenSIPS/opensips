@@ -1329,7 +1329,7 @@ __sl_reply_out(unsigned int types, struct sip_msg *request, struct sl_cb_param *
 }
 
 
-// callback to handle incoming replies for the request's transactions
+// callback to handle incoming replies for the request's transaction
 //
 static void
 __tm_reply_in(struct cell *trans, int type, struct tmcb_params *param)
