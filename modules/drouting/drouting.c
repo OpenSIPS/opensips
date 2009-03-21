@@ -71,7 +71,7 @@ static int use_domain = 1;
  * - 2 - random order, one per set
  */
 static int sort_order = 0;
-int dr_fetch_rows = 2000;
+int dr_fetch_rows = 1000;
 int dr_force_dns = 1;
 
 /* DRG table columns */
