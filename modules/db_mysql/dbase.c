@@ -633,7 +633,6 @@ done:
  */
 int db_mysql_free_result(db_con_t* _h, db_res_t* _r)
 {
-	LM_DBG("SYNC-DBGX (%p) - STOP!!\n",_h);
 	if ((!_h) || (!_r)) {
 		LM_ERR("invalid parameter value\n");
 		return -1;
@@ -668,7 +667,6 @@ int db_mysql_query(const db_con_t* _h, const db_key_t* _k, const db_op_t* _op,
 {
 	int ret;
 
-	LM_DBG("SYNC-DBGX (%p)- START!!\n",_h);
 	if (CON_HAS_PS(_h)) {
 		if (CON_HAS_UNINIT_PS(_h)||!has_stmt_ctx(_h,&(CON_MYSQL_PS(_h)->ctx))){
 			ret = db_do_query(_h, _k, _op, _v, _c, _n, _nc, _o, NULL,
@@ -817,7 +815,6 @@ int db_mysql_fetch_result(const db_con_t* _h, db_res_t** _r, const int nrows)
  */
 int db_mysql_raw_query(const db_con_t* _h, const str* _s, db_res_t** _r)
 {
-	LM_DBG("SYNC-DBGX (%p) - START!!\n", _h);
 	CON_RESET_CURR_PS(_h); /* no prepared statements support */
 	return db_do_raw_query(_h, _s, _r, db_mysql_submit_query,
 	db_mysql_store_result);
