@@ -26,9 +26,8 @@ by a team including core and main developers of SER project.
 Info
 ----
 
-NEWS files contains detailed listing of all new features and fixes brought
-by this OpenSIPS release. For information regarding the OpenSIPS installation,
-please see the INSTALL file.
+For information regarding the OpenSIPS installation, please see the INSTALL 
+file.
 
 For current developers/contributors of this project, see the CREDITS and
 AUTHORS file. For complete license information, please see the COPYING file.
@@ -40,7 +39,7 @@ Docs
 
 Documentation about each module can be found in the README file in each
 module directory. For online documentation, please see
-           http://www.opensips.org/docs
+           http://www.opensips.org/index.php?n=Resources.Documentation
 
 For additional documentation, tutorials and examples please see also
            http://voice-system.ro/docs
@@ -59,3 +58,12 @@ reports, etc - please use the
            devel@lists.opensips.org
 public mailing list.
 
+For questions regarding businesses around OpenSIPS - like products, 
+consultancy, trainings, etc - please use the
+           business@lists.opensips.org
+public mailing list.
+
+Also there is a generic news mailing list where you can learn about what is 
+new or important for the OpenSIPS project, about alerts and updates regarding
+relaces and about events around the project.
+           news@lists.opensips.org
