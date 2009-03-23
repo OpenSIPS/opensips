@@ -155,10 +155,31 @@ static int mod_init(void)
 	{
 		register_timer(query_xcap_update, 0, query_period);
 	}
+	
+	if(xcap_db)
+		xcap_dbf.close(xcap_db);
+	xcap_db = NULL;
+
 	return 0;
 }
+
+
 static int child_init(int rank)
-{ 
+{
+	if (xcap_dbf.init==0)
+	{
+		LM_CRIT("child_init: database not bound\n");
+		return -1;
+	}
+	xcap_db = xcap_dbf.init(&xcap_db_url);
+	if (!xcap_db)
+	{
+		LM_ERR("child %d: unsuccessful connecting to database\n", rank);
+		return -1;
+	}
+
+	LM_DBG("child %d: Database connection opened successfully\n", rank);
+
 	return 0;
 }
 
