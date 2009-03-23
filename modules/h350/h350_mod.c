@@ -126,8 +126,8 @@ static int child_init(int rank)
 {
 	
 	/* don't do anything for non-worker process */
-        if (rank < 1) {
-        	return 0;
+	if (rank == PROC_MAIN || rank == PROC_TCP_MAIN) {
+		return 0;
 	}
 
 	h350_search_scope_int = ldap_api.ldap_str2scope(h350_search_scope.s);

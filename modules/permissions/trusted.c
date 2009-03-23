@@ -231,7 +231,7 @@ int init_child_trusted(int rank)
 	}
 	
 	/* Check if database is needed by child */
-	if (db_mode==DISABLE_CACHE && rank>0) {
+	if (db_mode==DISABLE_CACHE && (rank>0 || rank==PROC_TIMER)) {
 		db_handle = perm_dbf.init(&db_url);
 		if (!db_handle) {
 			LM_ERR("unable to connect database\n");

@@ -269,7 +269,7 @@ static int child_init(int rank)
 	LM_DBG("initializing\n");
 
 	/* Check if database is needed by child */
-	if (rank > 0)  {
+	if (rank>0 || rank==PROC_TIMER)  {
 		if (domainpolicy_db_init(&db_url)<0) {
 			LM_ERR("unable to connect to the database\n");
 			return -1;

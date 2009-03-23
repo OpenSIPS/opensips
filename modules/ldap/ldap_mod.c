@@ -158,7 +158,7 @@ static int child_init(int rank)
 	char* ld_name;
 	
 	/* don't do anything for non-worker process */
-	if (rank < 1) {
+	if (rank==PROC_MAIN || rank==PROC_TCP_MAIN) {
 		return 0;
 	}
 
