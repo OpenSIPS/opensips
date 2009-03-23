@@ -43,7 +43,7 @@
 
 #define AS_BUF_SIZE 4000
 
-#define ENCODED_MSG_SIZE 3200
+#define ENCODED_MSG_SIZE 32000
 
 /** EVENT FLAGS */
 
