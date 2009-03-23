@@ -1,658 +1,498 @@
-# $Id$
 
+===================== 2009-03-23 OpenSIPS v1.4.5 released =====================
 
-===================== 2008-08-13 OpenSIPS v1.4.1 released ======================
+2009-03-23 13:52:17  Anca Vamanu, <anca at voice-system dot ro> 
+	* [5515] :
 
+	- backport from trunk rev 5513
+		- fixed database connection not closed in main process and reopened in each child - caused 'Command out of syn' error
 
-2008-08-13 00:29:15  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
 
-	* [4610] :
-	backport from trunk (rev #4609)
-	- complete the fix from rev #4600
-	  Credits go to Amy Linari. part of patch 2044475.
+2009-03-21 21:20:11  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [5500] :
 
+	backport from trunk (rev #5499):
+	- fixed action taken if the string header is not found -> if not found and no "not_present" node exists, use the "otherwise" node.
 
-2008-08-12 17:12:45  Ovidiu Sas <osas at voipembedded dot com> 
+	  Reported by Inaki Baz Castillo 
 
-	* [4607] :
-	backport from trunk (r4606):
-	- get rid of load_ctlengine (it prevents displaying proper help for basectl functions)
 
+2009-03-21 19:40:57  Dan Pascu <dan at ag-projects dot com> 
+	* [5498] :
 
-2008-08-10 16:14:03  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	Fixed typo in comment
 
-	* [4604] :
-	backport from trunk (rev #4603):
-	- fixed bug : route headers were not added in ACK and CANCEL when PATH was used by registrar module.
-	  The condition for migrating the Route set from INVITE to ACK/CANCEL had to be releaxed a bit to cover the PATH case also, but without doing too much extra parsing.
-	    Reported by Alex Hermann.
+2009-03-21 18:36:32  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [5492] :
 
+	backport from trunk (rev #5461):
 
-2008-08-10 15:44:29  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	- fixed bug in tls_blocking_write : avoid infinit looping because of SSL_ERROR_WANT_READ/WRITE with no ops - after 32 attempts without any write, report error.
+	  Closes bug #2505427.
 
-	* [4602] :
-	backport from trunk (rev #4601):
-	- fixed ugly bug in linking the dialog profile tables.
-	  Reported by Ovidiu Sas. Also many thanks to Ovidiu for testing and helping with debugging this problem. 
 
 
-2008-08-10 13:00:16  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+2009-03-20 18:14:01  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [5491] :
 
-	* [4600] :
-	backport from trunk (#rev 4599):
-	- bug fixed: Matching operators fail to match on some platforms.
-	- Decription:
-	Due to a bug in route.c, the regular expression matching operators do not
-	work in all environments. For example, when building 1.4.0 or 1.3.2 on
-	Solaris 10 (sun4v or x86) they give the same result independent of input.
-	It would seem that if it were not for the accident of a particular struct
-	alignment, these operators would be broken on all platforms.
+	backport from trunk (rev #5490)
 
-	The underlying problem is a bad test in comp_s2s, which expects s2 to be a
-str*, and tests st->s==NULL. When handling the matching operators MATCH_OP
-and NOTMATCH_OP, it is a regex_t* instead - a fact reflected in the cast
-	under the appropriate switch case.
+	- fixed creation of requests that have URO params in TO/FROM hdr and also requires TAG.
+	 
+	  Credits go to Christophe Sollet.
+	  Closes patch 2694523.
 
-	Credits go to Amy Linari (patch a bit reworked). Closes patch 2044475.
 
 
+2009-03-20 15:04:36  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [5487] :
 
-2008-08-10 12:36:28  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	backport from trunk (rev #5486):
+	- fixed loading and inserting of DELETED dialogs in DB.
+	  
+	  Credits go to Hugues Mitonneau.
+	  Closes patch #2694252
 
-	* [4598] :
-	backport from trunk (rev #4597):
-	- fixed error in installing TLS related files
-	The installation of OpenSIPS fails because the sources tagged as notls do
-	not include the etc/tls subdirectory;
-	The patch defines the variable where those filenames should be store as
-	empty, so that installation does not fail.
 
-	Credits go to Sergio Gutierrez, closes patch #2042349
+2009-03-20 14:09:13  Iulia Buble <iulia at opensips dot org> 
+	* [5485] :
 
+	Postgres bug fixed. Bug item #2557032, raised by David Roberge
 
-2008-08-10 12:27:10  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+2009-03-19 17:51:11  Dan Pascu <dan at ag-projects dot com> 
+	* [5480] :
 
-	* [4596] :
-	backport from trunk (rev #4595):
-	- fixed conflict in definition of struct queue in Solaris.
-	The struct named queue in module ratelimit conflicts with a struct named queue which is included in /usr/include/sys/stream.h in Solaris.
-	The patch renames queue to rl_queue, and queue_params to rl_queue_params in module.
+	Fixed wrong condition in test
 
-	Credits go to Sergio Gutierrez. Closes patch #2042287.
+2009-03-19 13:24:26  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [5478] :
 
+	backport from trunk (rev #5477):
+	- more verbous error when SSL_ERROR_SYSCALL happens
 
-2008-08-10 12:15:25  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
 
-	* [4594] :
-	backport from trunk (rev #4593):
-	- fixed compiling on Solaris : MSG_NOSIGNAL not defined in Solaris; if not present, define MSG_NOSIGNAL as 0.
-	  Even if the send() call will not ignore SIGPIPE on Solaris, the signal will be cought by the signal handler installed by core and ignore. So, it should be safe on Solaris also, even without MSG_NOSIGNAL.
+2009-03-19 11:42:06  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [5474] :
 
-	Credits go to Sergio Gutierrez. Closes patch 2042217.
+	backport from trunk (rev #5473):
+	- change data type for priority column in LCR table from unsigned char to unsigned int to avoid problem with MSSQL via UNIXODBC
+	  Closese bug id #2689928.
+	  Credits go to Alex Massover.
 
 
-2008-08-10 12:00:02  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+2009-03-18 16:53:14  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [5472] :
 
-	* [4592] :
-	backport from trunk (rev #4591):
-	fixed obsolete information for lcr in opensipsctl:
-	 - lcr addgw_grp has not sense anymore. So better remove it to don't get
-	 confused
+	backport from trunk (rev #5471):
+	- fixed bogus reference to the query string:
+	  Credits go to Alex Massover
+	  Closes patch #2691928
 
-	Patch provided by Angel Carpintero - closes patch 2041321
 
+2009-03-18 14:38:04  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [5468] :
 
-2008-08-09 00:35:00  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	backport from trunk (rev #5462):
+	- fixed bug in matching dialog (based on SIP elements) - instead of reprting NOT FOUND when matching a dialog in DELETE state, simply continue, becuase maybe there was second successfull attempt of the call with the same callid and fromtag. Typicall example: INVITE + 407 -> dialog DELETED, INVITE+ 200 OK - both dialogs have the same callid and fromtag.
 
-	* [4590] :
-	backport from trunk (rev #4589):
-	- fixed improper access to statistic variables before having them initialized.
+	 Many, many thanks to Herman Bastiaens for reporting and helping with the debugging.
 
 
-2008-08-08 23:10:27  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+2009-03-18 13:38:44  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [5467] :
 
-	* [4586] :
-	backport from trunk (rev #4585):
-	- compile fix - UINT4 replaced with uint32_t (portable data type)
+	backport from trunk (rev #5466):
+	- fixed mem leak at shutdown
 
 
-2008-08-07 12:25:55  Anca Vamanu, <anca at voice-system dot ro> 
+2009-03-18 13:22:40  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [5465] :
 
-	* [4583] :
-	- backport from trunk
-		- fixed a bug in BLA when phone was restarted after having refreshed his registration at least once ( thanks to Zahid Mehmod<zm23@columbia.edu> for help with improving BLA)
-		- added null checks before inserting values in database to prevent a crash in mysql 
+	backport from trunk (rev #5464):
+	- fixed mem leak in disaptcher at reload time
 
 
+2009-03-17 11:35:12  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [5460] :
 
-2008-08-07 12:20:29  Anca Vamanu, <anca at voice-system dot ro> 
+	backport from trunk (rev #5431):
 
-	* [4582] :
-	- backport from trunk 
-	- the right fix for version reset when a refresh for presence.winfo is received 
-	( reported by Luci Stanescu <luci@ag-projects.com> , patch #2038736 in opensips and Bugs item #2026681 for kamailio)
+	- fixed record_route_preset() function to accept the parameters set from script (via add_rr_param) or  via internal API
 
 
-2008-08-05 07:54:00  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
 
-	* [4579] :
-	backport from trunk (rev #4578):
-	- fixed no standard data type. UINT4 replaced with uint32_t.
-	  Reported by Peter Nixon
+2009-03-17 11:29:13  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [5459] :
 
+	backport from trunk (rev #5434):
+	- fixed RR printing in TM dlg related functions
 
-===================== 2008-08-04 OpenSIPS v1.4.0 released ======================
 
 
-2008-08-03 06:41:05  Dan Pascu, <dan at ag-projects dot com> 
+2009-03-16 20:43:53  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [5457] :
 
-	* [4555] :
-	Fixed variable name in INSTALL that was forgotten during the openser to opensips renaming
+	backport from trunk - rev 5440
 
-2008-08-03 06:34:10  Dan Pascu, <dan at ag-projects dot com> 
+	- fixed initialization of the MI processes - init them as normal work processes (init_child) as the route may be executed there.
 
-	* [4554] :
-	Fixed variable name in opensipsctlrc that was forgotten during the openser to opensips renaming
+	- fixed DB initialization of several modules (no support for timer)
 
-2008-08-02 22:38:19  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	- reworked the EXTRA PROC interface to allow passing flags (if a process requires initialization from the modules or not)
 
-	* [4553] :
-	- added usage examples for dialplan
-	- READMEs re-generated
 
+2009-03-16 20:27:55  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [5456] :
 
-2008-08-02 21:49:56  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	 backport from trunk (rev 5455):
+	- fixed bogus free of the changeable debug pointer.
 
-	* [4552] :
-	- db schema re-generated
 
+2009-03-16 17:26:44  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [5451] :
 
-2008-08-02 21:43:08  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	backport from trunk (rev #5449):
+	- fixed BLOB handling in postgres - the escaped BLOB needs to be moved back into pkg memory as PQunescapeBytea allocates the string in system mem.
+	  Credits go to Vasil Kolev
 
-	* [4551] :
-	- updated entities and fixed dir for db schema
 
+2009-03-16 15:08:45  Sergio Gutierrez <saguti at gmail dot com> 
+	* [5448] :
 
-2008-08-02 20:36:14  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	- Backport of revisions 5709 and 5710 from Kamailio.
+	  Credits go to Henning Westherholt.
 
-	* [4550] :
-	fixed strange 64bits warning
 
+2009-03-15 20:44:54  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [5443] :
 
-2008-08-02 20:15:49  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	backport from trunk (rev #5442):
+	- automatically use the maddr indication (when forwarding to a SIP URI) if present in URI.
 
-	* [4549] :
-	- fixed TLS init when openssl lib has already the compression disabled.
+	  Closes bug #2056761.
 
 
-2008-08-02 20:06:07  Dan Pascu, <dan at ag-projects dot com> 
+2009-03-11 17:43:23  Sergio Gutierrez <saguti at gmail dot com> 
+	* [5433] :
 
-	* [4548] :
-	Fixed typo in macro name
+	- Backport from trunk, revision 5432.
+	Closes Bug 2682953. Credits go to Andreas.
 
-2008-08-02 19:55:33  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
 
-	* [4547] :
-	- fixed redefinition of standard C variables (better explicitly include the proper header file)
 
+2009-03-11 15:00:07  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [5430] :
 
-2008-08-02 19:47:24  Dan Pascu, <dan at ag-projects dot com> 
+	bavkport from trunk (rev 5425):
+	 fixed bug in the branch serialize algorithm
 
-	* [4546] :
-	Updated debian standards version for sid
 
-2008-08-02 19:46:28  Dan Pascu, <dan at ag-projects dot com> 
+2009-03-09 15:42:50  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [5409] :
 
-	* [4545] :
-	Fixed lintian warning about debian revision number being included in the version of the libdb-dev build dependency
+	- fixed improper calculation of new RURI in next_gw() in failure route
 
-2008-08-02 19:43:35  Dan Pascu, <dan at ag-projects dot com> 
 
-	* [4544] :
-	Suggest python for dbtextdb.py
+2009-03-09 14:40:38  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [5406] :
 
-2008-08-02 19:30:58  Dan Pascu, <dan at ag-projects dot com> 
+	backport from trunk (rev #5405):
+	- fixed setting of Q value when appending the curent RURI as branch
 
-	* [4543] :
-	Do not depend on a particular version of python
 
-2008-08-02 19:07:02  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+2009-03-09 13:31:42  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [5403] :
 
-	* [4542] :
-	- increase the upper limit for new libxmlrpc-c3 version
+	backport from trunk (rev 5402):
+	- more verbous when come to error
 
 
-2008-08-02 18:46:56  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+2009-03-06 17:16:38  Sergio Gutierrez <saguti at gmail dot com> 
+	* [5399] :
 
-	* [4541] :
-	- automatically determine table names
-	  Credits go to Dan Pascu
+	- Fixed ignore of use_uri_table parameter.
 
 
-2008-08-02 18:45:04  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+2009-03-05 21:50:53  Sergio Gutierrez <saguti at gmail dot com> 
+	* [5396] :
 
-	* [4540] :
-	- fixed warnings about inexistent man macro
-	  Credits go to Dan Pascu
+	- Fixed ignore of use_uri_table parameter.
 
 
-2008-08-02 18:39:10  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
 
-	* [4539] :
-	fix error in oracle DB scheme generation, reported from Dan Pascu
+2009-03-04 04:34:48  Di-Shi Sun <di-shi at transnexus dot com> 
+	* [5388] :
 
+	Updated release notes.
 
-2008-08-02 18:33:14  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
 
-	* [4538] :
-	- define HAVE_SYS_FILIO_H for compiling on Solaris (based on a patch provided by  Sergio Gutierrez)
+2009-03-04 04:32:15  Di-Shi Sun <di-shi at transnexus dot com> 
+	* [5387] :
 
+	Updated README.
 
-2008-08-02 18:08:25  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
 
-	* [4537] :
-	- related to commit 4533
+2009-03-02 05:09:45  Di-Shi Sun <di-shi at transnexus dot com> 
+	* [5383] :
 
+	Updated to use OSP Toolkit 3.5.0.
 
-2008-08-02 18:06:12  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
 
-	* [4536] :
-	fix broken openserctl trusted [2003521]
-	 - add back the ability to set empty pattern
-	 - add back the ability to set a tag
-	Credits go to Ovidiu Sas
+2009-02-28 00:11:59  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [5382] :
 
+	replace broken opensips.spec-4.1 with working opensips.spec-4.4.
 
+	Closes patch 2641715.
+	Credits go to Marc LEURENT and Julian Yap
 
-2008-08-02 18:02:20  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
 
-	* [4535] :
-	- fix PGRES_FATAL_ERROR bug in postgres driver
-	- the result set was cleared in this case, but no error was> returned
-	- reported from Andrew O. Zhukov, gnugk at telegroup dot com dot ua
+2009-02-27 18:06:42  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [5375] :
 
-	- further bug fixes for db_postgres_fetch_result and db_postgres_store_result
-	- return also for all other abnormal query states an error, as the result set
-	  is here set to zero too
-	- this is probably a little bit to strict, but in the openser context this
-	  types normally should not happen
-	- as the old behaviour could lead to crashes if this gets eventually reported
-	  from the driver, this is surely an improvement  :-)  
-	  (most query user check only for return value < 0, and not for == 0)
-	- in case for the PGRES_EMPTY_QUERY this could be not recognized as error
-	  from upper layers at all, as this is defined as zero in the pg driver..
+	backport from trunk (rev #5370):
+	-fixed fetching of returned AVPS in RADIUS reply.
+	 
+	 Closes bug #2627561
+	 Credits go to Alex Massover.
 
-	- change log level for 'probably invalid queries' from WARN to ERR
-	- as we stop execution and return a failure anyway, we should also
-	  inform the user with the correct log level about this
-	- move error message to default case
 
-	Credits go to Henning Westerholt.
+2009-02-27 17:37:13  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [5374] :
 
+	backport from trunk (rev 5372 + 5372):
 
+	- fix the blob len calculation - use the len from the DB driver.
 
-2008-08-02 18:00:47  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	- I looked into PGunescape (which is used on BLOB fields) and turns out it doesn't add NULL termination on the strings. It wouldn't be a problem if some other code didnt't rely on strlen() of such fields...
+	Closes bug 2642701.
+	Credits go to Vasil Kolev.
 
-	* [4534] :
-	Do not link against libs we do not use symbols from
 
-	Credits go to Dan Pascu and Henning Westerholt.
+2009-02-26 12:19:50  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [5369] :
 
+	backport from trunk (rev 5368):
+	- fixed bad parsing of returned BLOBs.
 
-2008-08-02 17:17:05  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	Closes bug #2636665.
+	Credita go to Vasil Kolev.
 
-	* [4533] :
-	various log message enhancements:
-	  - remove prime_hash specific logging, instead log all hash_errors in the
-	    actual routing function, now CRC32 errors are also logged
-	  - change log level for doesn't completed rewrite_uri_recursor to INFO,
-	    this is not necessarily an error, e.g. for blacklisted URIs. If an
-	    error occured during this stage, its logged in previous steps of the
-	    processing anyway.
-	  - improve error messages for PV printing, instead of a generic message
-	    give some hints about the problem
 
-	Credits go to Henning Westerholt.
+2009-02-26 11:47:00  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [5366] :
 
+	backport from trunk (rev #5365 + #5365):
+	- fixed crash when trying to save in DB the callee socket (that might be null).
 
-2008-08-02 16:52:49  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	Closes bug #2633350.
+	Credits go to Vasil Kolev.
 
-	* [4532] :
-	- link only with the strictly necessary libs
-	  Credits for the fic go to Stanislaw Pitucha.
+	- completion to the previous fix - another place where the callee socket (which may be NULL) is saved in DB.
 
 
-2008-08-02 16:48:01  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
 
-	* [4531] :
-	 - fixed dialog loading at startup - if there are too many (>200) dialogs in DB, the default PKG memory is not enough to load them all -> the module will fail to initialize
-	  -> select is replaced by fetch.
+2009-02-26 11:12:00  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [5363] :
 
-	  Credits go to Carsten Bock for th fix
+	backport from trunk (rev #5362):
 
+	- fixed detection and parsing of CSEQ header.
 
-2008-08-02 15:59:47  Dan Pascu, <dan at ag-projects dot com> 
+	Closes #2638551.
+	Credits go to Norm Brandinger.
 
-	* [4530] :
-	Compacted statements (testing commit rights)
 
-2008-08-01 12:47:33  Anca Vamanu, <anca at voice-system dot ro> 
+2009-02-25 11:46:08  Dan Pascu <dan at ag-projects dot com> 
+	* [5358] :
 
-	* [4529] :
-	- applied patched from Denis Bilenko<denis@ag-projects.com>
+	Do not fix contact, only if both IP and port are the same
 
+2009-02-23 15:55:41  Anca Vamanu, <anca at voice-system dot ro> 
+	* [5354] :
 
-2008-08-01 11:58:03  Anca Vamanu, <anca at voice-system dot ro> 
+	- fix:	- removed considering the 'tuple' element in application/pidf+xml documents compulsory
+			- removed considering 'transformations' node in pres-rules xcap document to be compulsory
+		( reported by Oren K. )
 
-	* [4528] :
-	- updated version count for tables presentity and pua
 
+2009-02-19 19:37:01  Sergio Gutierrez <saguti at gmail dot com> 
+	* [5350] :
 
-2008-07-30 20:09:33  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	- Fixed typos and grammar.
 
-	* [4527] :
-	fixed compile error when EXTRA_DEBUG is used
 
+2009-02-19 18:37:37  Sergio Gutierrez <saguti at gmail dot com> 
+	* [5348] :
 
-2008-07-30 19:28:12  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	- Fixed small typos and grammar.
 
-	* [4526] :
-	64bits compile warnings fixed
 
+2009-02-19 17:25:13  Sergio Gutierrez <saguti at gmail dot com> 
+	* [5347] :
 
+	- Fix order of includes. Backport from Kamailio, revision 5624 (Credits go to Jan Janak)
 
-2008-07-30 17:42:34  Anca Vamanu, <anca at voice-system dot ro> 
 
-	* [4525] :
-	- fixed spelling in documentation
+2009-02-19 02:33:51  Sergio Gutierrez <saguti at gmail dot com> 
+	* [5345] :
 
+	- Fixed small typos in doc.
 
-2008-07-30 17:41:49  Anca Vamanu, <anca at voice-system dot ro> 
 
-	* [4524] :
-	- fixing a bug when phones use the same address
+2009-02-18 22:20:20  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [5339] :
 
+	- fixed typo in docs
 
-2008-07-30 17:38:31  Anca Vamanu, <anca at voice-system dot ro> 
 
-	* [4523] :
-	- fixed some more bugs in BLA
-		- problem at openser restart
-		- phone refresh issue
-		- added one more column in table presentity
-		- added one more column in table pua
+2009-02-17 16:52:19  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [5327] :
 
+	Backport from trunk (rev #5326)
 
-2008-07-30 11:19:11  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	This patch defines an approach to detect SPARC processors, so that more
+	specific optimization options can be added to GCC.
+	The family of chips detected are UltraSPARC II, UltraSPARC III (Cu and i),
+	and UltraSPARC T1; for this last one, optimizations are used only if gcc is
+	> 4.2.
+	See http://gcc.gnu.org/onlinedocs/gcc/SPARC-Options.html#SPARC-Options for
+	more info.
 
-	* [4522] :
-	- do not add /etc/tls and tlsops module in non-tls tarballs
+	Closes patch 2512634.
+	Credits go to Sergio Gutierrez
 
 
-2008-07-29 19:23:00  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+2009-02-17 16:29:29  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [5325] :
 
-	* [4521] :
-	- update information about authors and copyrights. Added people who actually wrote the modules and remove additions that snicked in duirnf docs update or docs conversion.
+	Backport from trunk (rev #5324)
 
+	At charset_test() in opensipsdbctl.mysql script. grep is called with an
+	option which is not supported by standard grep in Solaris.
+	This patch proposes a different approach for that case; it defines a
+	variable which counts how many times user has failed in passing a supported
+	charset; after 3 tries, script exits with error code of 1.
 
-2008-07-29 18:31:43  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	Closes 2577793.
+	Credits go to Sergio Gutierrez.
 
-	* [4520] :
-	- reverted extra author masked by the revision 3940
 
+2009-02-17 00:22:49  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [5320] :
 
-2008-07-29 18:15:50  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	- RLS module added to the opensips-presence deb package
 
-	* [4519] :
-	- fix privacy and URI user parameter parser, they should handled
-	  case-insensitive
-	- reported from Bayan Towfiq, bayan at flowroute dot com
-	  Credits go to Henning Westerholt
 
+2009-02-15 00:34:01  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [5315] :
 
-2008-07-29 18:06:52  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	backport from trunk (rev #5314):
 
-	* [4518] :
-	 -fixed bogus error message for out of dialog requests with preloaded Route headers
-	 Credits go to Dan Pascu
+	When 'content-type' is not the last header of a multipart content,
+	remaining headers were not filtered out.
 
+	Closed patch #2538033.
+	Contributed by Hugues Mitonneau
 
-2008-07-29 17:39:44  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
 
-	* [4517] :
-	- missing include
 
+2009-02-09 20:04:22  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [5292] :
 
-2008-07-29 17:05:53  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	backport from trunk (rev #5291):
+	When the dialog module is initialized, the load callback list is not properly marked as destroyed. So when a module register itself as a load callback, this one is not 'run on the spot'.
 
-	* [4516] :
-	- new function added : unset_dlg_profile() - removes the dialog from a profile; This functionality is very useful if you have scenarios with serial forking and the profile is related to the destination.
+	Closes bug #2581745
 
 
-2008-07-29 14:52:48  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+2009-02-09 18:28:58  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [5284] :
 
-	* [4515] :
-	- compile warning on gcc 4.3 fixed
+	backport from trunk (rev #5240)
+	- do not destroy modules if not initialized - module resorces may get lost (fifo files, sockets, etc). 
+	Side efect of this bug: If opensips is up and running and at the same time 'opensips -c' is run in order to check a new config, if errors are detected in the new config, the opensisps_fifo file is removed.
 
+	Closes bug 2166305.
 
-2008-07-29 14:49:52  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
 
-	* [4514] :
-	- compile warnings fixed
+2009-02-09 13:46:02  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [5279] :
 
+	backport from trunk (rev #5278):
+	- fixed accessing the RPL structure in dlg_onreply - the reply may be a FAKED_REPLY when the INVITE is replied from the script.
+	  Closes bug 2573029
+	  Credits go to vasil dot kolev at attractel dot com
 
-2008-07-29 14:42:49  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
 
-	* [4513] :
-	bug fixed - active and early dialogs counters (statistics variables) are properly set while loading DB content 
+2009-02-08 02:17:25  Sergio Gutierrez <saguti at gmail dot com> 
+	* [5269] :
 
+	- Error in example. The variable to evaluate return code of previous function is $retcode
 
 
-2008-07-29 14:23:25  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
 
-	* [4512] :
-	- flushed NEWS as it was deprecated
+2009-02-04 11:35:38  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [5247] :
 
+	backport from trunk (rev 5246):
+	- fixed availability of branch index in onreply route and failure route
 
-2008-07-29 14:21:31  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
 
-	* [4511] :
-	- various updates of the project name
+2009-01-27 11:58:18  Anca Vamanu, <anca at voice-system dot ro> 
+	* [5218] :
 
+	- backport from trunk rev #5203
+		- fixed the last commit - wrong check to see if initial request ( thanks to Norman Brandinger for help in finding this)
 
-2008-07-29 14:20:38  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
 
-	* [4510] :
-	- refereces to project name updated
+2009-01-23 19:00:48  Anca Vamanu, <anca at voice-system dot ro> 
+	* [5205] :
 
+	- fixed memory leak bug
 
-2008-07-29 14:19:40  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
 
-	* [4509] :
-	- utils update (project name)
+2009-01-23 15:31:07  Anca Vamanu, <anca at voice-system dot ro> 
+	* [5202] :
 
+	- fixed a error in a log message ( reported by Norman Brandinger)
+	--Ths lin, and those below, will be ignored--
 
-2008-07-29 14:18:52  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	M    send_subscribe.c
 
-	* [4508] :
-	- TLS docs updated
 
+2009-01-23 15:15:10  Anca Vamanu, <anca at voice-system dot ro> 
+	* [5200] :
 
-2008-07-29 13:53:32  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	- fixed a bug in not handling an error case ( reported by Norm Brandinger in Bug item #2530958 )
 
-	* [4507] :
-	- project name updates
 
+2009-01-21 13:47:44  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [5187] :
 
-2008-07-29 13:45:39  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	- fixed some bash syntax error
+	  Credits go to Neil D'souza.
 
-	* [4506] :
-	- example config file / docs / comments updated (project name)
 
+2009-01-21 05:14:14  Di-Shi Sun <di-shi at transnexus dot com> 
+	* [5183] :
 
+	Added LOCALBASE.
 
-2008-07-29 13:06:02  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
 
-	* [4505] :
-	-docs and perl API updated to reflect the new project name
+2009-01-20 11:10:23  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [5180] :
 
+	- backport from trunk (rev #5179)
+	fixed freeing the blacklist list
 
-2008-07-29 12:55:03  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
 
-	* [4504] :
-	- internal function renamed
+2009-01-16 15:33:24  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [5176] :
 
+	-backport from trunk (rev #5099):
+	Don't modify strings allocated in the shared memory pool, this
+	can cause race conditions.
 
-2008-07-29 12:48:11  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+===================== 2009-01-15 OpenSIPS v1.4.4 released =====================
 
-	* [4503] :
-	-docs and perl API updated to reflect the new project name
-
-
-2008-07-29 12:30:30  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-
-	* [4502] :
-	- example config file updated (project name)
-
-
-2008-07-29 12:27:16  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-
-	* [4501] :
-	- example config file updated (project name)
-
-
-2008-07-29 12:25:46  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-
-	* [4500] :
-	- documentation updated (project name)
-
-
-2008-07-29 12:22:27  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-
-	* [4499] :
-	- example config file updated (project name)
-
-
-2008-07-29 12:14:46  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-
-	* [4498] :
-	- perl container renamed to fit the new project name
-
-
-2008-07-29 12:05:48  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-
-	* [4497] :
-	- directory holders for DB specs renamed to reflect the project name
-	- script example file renamed
-	 (all part of project migration)
-
-
-2008-07-29 11:31:12  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-
-	* [4496] :
-	- for sequential requests, the dialog lifetime is not update only if explicitly set from the script. This will avoid overwritting an initial custom lifetime with the default lifetime, during a sequential request.
-	Reported by Kobi Eshun.
-
-
-2008-07-25 19:39:15  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-
-	* [4495] :
-	- fixes related to SRV load-balancing
-
-
-2008-07-25 18:58:12  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-
-	* [4494] :
-	- fixes related to SRV load-balancing
-
-
-2008-07-25 17:24:58  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-
-	* [4493] :
-	- SRV lookup is now doing proper load balancing (based on weights) between records with the same priority.
-
-
-2008-07-25 17:23:22  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-
-	* [4492] :
-	- removed empty lines
-
-
-2008-07-25 16:15:22  Anca Vamanu, <anca at voice-system dot ro> 
-
-	* [4491] :
-	- fixed version bug for winfo Notifies ( Bugs item #2026681 for openser)
-
-
-2008-07-25 15:03:26  Anca Vamanu, <anca at voice-system dot ro> 
-
-	* [4490] :
-	- fixed a restart bug in presence module
-	- fixed not storing version field in database in pua module
-
-
-2008-07-24 19:58:32  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-
-	* [4489] :
-	- FL_FORCE_RPORT forces also addition of received parameter
-
-
-2008-07-24 18:27:31  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-
-	* [4488] :
-	- fixed proper next_label_id computation when the dialogs are loaded from DB.
-	  Credits for the fix go to Carsten Bock
-
-
-2008-07-24 18:06:18  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-
-	* [4487] :
-	- fixed bug in calculating the number of routes that need to be skipped when populating the callee route set - there is no logic bug, but a C syntax one :P
-	  Credits go to Dan Pascu for reporting it.
-
-
-2008-07-21 20:22:41  Anca Vamanu, <anca at voice-system dot ro> 
-
-	* [4486] :
-	- fixed a copy-paste error in the documentation
-
-
-2008-07-21 12:34:49  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-
-	* [4485] :
-	- make usage of branches safe in local_route; even if there is no case for using branches there, a mechanism for enabling/disabling the branches in local route avoids any scripting errors.
-
-
-2008-07-20 17:30:31  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-
-	* [4484] :
-	- fixed script flags usage in local route
-
-
-2008-07-19 20:38:40  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-
-	* [4483] :
-	- updated packaging specs (part of the project migration)
-
-
-
-2008-07-18 17:16:01  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-
-	* [4482] :
-	- local route enabled by default
-
-
-2008-07-18 15:44:16  Anca Vamanu, <anca at voice-system dot ro> 
-
-	* [4481] :
-	- fixed some bugs that appeanred when dealing with event 'dialog;sla'
-
-
-2008-07-18 15:37:29  Anca Vamanu, <anca at voice-system dot ro> 
-
-	* [4480] :
-	- fixed some bugs regarding event 'dialog;sla' processing
-
-
-* 2008-07-10 
-- OpenSIPS spawned from OpenSER branch 1.4.0
