@@ -93,7 +93,7 @@ struct lb_res_str_list *parse_resorces_list(char *r_list, int has_val)
 		}
 		for(; (p-1)!=name.s && isspace(*(p-1)) ; p-- );
 		if (p==name.s) {
-			LM_ERR("empty resource name around %d\n",p-r_list);
+			LM_ERR("empty resource name around %d\n",(unsigned int)(p-r_list));
 			goto error;
 		}
 		name.len = p-name.s;

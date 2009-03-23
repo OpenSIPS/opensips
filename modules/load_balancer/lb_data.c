@@ -90,8 +90,8 @@ static struct lb_resource *add_lb_resource(struct lb_data *data, str *name)
 	new_res = (struct lb_resource*)shm_malloc
 		( sizeof(struct lb_resource) + name->len );
 	if (new_res==NULL) {
-		LM_ERR("failed to allocate shm mem (%d)\n",
-			sizeof(struct lb_resource) + name->len );
+		LM_ERR("failed to allocate shm mem (%ld)\n",
+			(unsigned long)(sizeof(struct lb_resource) + name->len) );
 		return NULL;
 	}
 	memset( new_res , 0 , sizeof(struct lb_resource));
@@ -194,7 +194,7 @@ static int lb_set_resource_bitmask(struct lb_resource *res, unsigned int bit)
 	/* set the bit */
 	size = bit / (8*sizeof(&res->dst_bitmap));
 	LM_DBG("setting bit %u in unit %u , pos %d\n", bit, size,
-		bit % (8*sizeof(&res->dst_bitmap)));
+		bit % ((unsigned int)(8*sizeof(&res->dst_bitmap))));
 	res->dst_bitmap[size] |= 1<<( bit % (8*sizeof(&res->dst_bitmap)) );
 
 	return 0;

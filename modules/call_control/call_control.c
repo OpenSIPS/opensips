@@ -445,7 +445,7 @@ make_request(CallInfo *call)
                        call->from_tag.len, call->from_tag.s);
 
         if (len >= sizeof(request)) {
-            LM_ERR("callcontrol request is longer than %d bytes\n", sizeof(request));
+            LM_ERR("callcontrol request is longer than %ld bytes\n", (unsigned long)sizeof(request));
             return NULL;
         }
 
@@ -461,7 +461,7 @@ make_request(CallInfo *call)
                        call->dialog_id.h_entry, call->dialog_id.h_id);
 
         if (len >= sizeof(request)) {
-            LM_ERR("callcontrol request is longer than %d bytes\n", sizeof(request));
+            LM_ERR("callcontrol request is longer than %ld bytes\n", (unsigned long)sizeof(request));
             return NULL;
         }
 
@@ -475,7 +475,7 @@ make_request(CallInfo *call)
                        call->callid.len, call->callid.s);
 
         if (len >= sizeof(request)) {
-            LM_ERR("callcontrol request is longer than %d bytes\n", sizeof(request));
+            LM_ERR("callcontrol request is longer than %ld bytes\n", (unsigned long)sizeof(request));
             return NULL;
         }
 

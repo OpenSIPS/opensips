@@ -185,7 +185,7 @@ struct acc_extra *parse_acc_extra(char *extra_str)
 			strncasecmp(foo,REPLY_STR_S,REPLY_STR_LEN)==0 ) {
 				extra->use_rpl =1;
 			} else {
-				LM_ERR("unsupported marker <%.*s>\n",s-foo,foo);
+				LM_ERR("unsupported marker <%.*s>\n",(unsigned int)(s-foo),foo);
 				goto error;
 			}
 		}
