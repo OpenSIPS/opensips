@@ -45,7 +45,7 @@
 # AWK="awk"
 
 # grep tool
- GREP="egrep"
+# GREP="egrep"
 
 # sed tool
 # SED="sed"
@@ -77,7 +77,7 @@
 ## MI_CONNECTOR control engine: FIFO, UNIXSOCK, UDP, XMLRPC
 # MI_CONNECTOR=FIFO:/tmp/opensips_fifo
 # MI_CONNECTOR=UNIXSOCK:/tmp/opensips.sock
- MI_CONNECTOR=UDP:192.168.2.133:8000
+# MI_CONNECTOR=UDP:192.168.2.133:8000
 # MI_CONNECTOR=XMLRPC:192.168.2.133:8000
 
 ## check ACL names; default on (1); off (0)
@@ -85,7 +85,7 @@
 
 ## ACL names - if VERIFY_ACL is set, only the ACL names from below list
 ## are accepted
- ACL_GROUPS="local ld int voicemail free-pstn"
+# ACL_GROUPS="local ld int voicemail free-pstn"
 
 ## do (1) or don't (0) store plaintext passwords
 ## in the subscriber table - default '1'
