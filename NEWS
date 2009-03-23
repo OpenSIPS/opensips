@@ -1,0 +1,342 @@
+What is new in 1.5.0
+
+1.1  Core
+
+    * Add support for parsing the bandwidth attribute inside SDP: b=<bwtype>:<bandwidth>
+    * Added support in the parser to identify the content-subtype "media_control+xml" [RFC5168]
+    * Allow negative debug level (starting from L_ERR, the debug vals are negative)
+    * Removed old "reply_to_via" core paramter as it is violating the RFC 3261.
+    * Fix bug in preserving URI scheme - all functions that are performing partial change of the RURI (like rewritehostport, rewriteuser, strip, prefix, striptail, setport, sethost) were overwriting the URI scheme to SIP
+    * Fixed bug in creating the pid file : if opensips is changing user, it needs also to change the owner of the pid file, so that it will be able to deleted at the end. (Affected scenario : (1) opensips is launched by root but configured to run as opensips user; (2) pid file is created as user root -> pid file is owned by root; (3) opensips deamonizes and runs as opensips ; (4) opensips shutdown and, as user opensips is not able to remove pid file which is owned by root
+    * Added support in the MI internal API for doing flush (partial write of the MI reply tree). This will allow functions that output large amount of date to return the data in multiple sequences -> function will be able to retune any amount of data without any memory issues.
+    * New API to allow registrations of new functions for "myself" test (to see if a domain is local or alias).
+    * internal rework of the functions for setting the RURI
+    * internal new functions for searching the headers (rev 4833)
+    * internal optimization & cleanup of script functions operating with strings : STRING params replaced with STR to avoid len calculation 
+
+1.2  Stateless processing
+
+If no stateless forwarding function is detected (in config script), the core will automatically trigger the dumping of received stateless replies.
+Read more: http://lists.opensips.org/pipermail/users/2009-February/002951.html
+1.3  Memory cache support
+Memory Cache API
+
+A new API was added in core to allow development of different modules that implements memory functionalities like memory_store and memory_fetch. See the MemCache Tutorial
+Local memory store
+
+New module that implements local memory storage support by storing Attribute-Value pairs in shared memory
+MemCache implementation
+
+Future new implementation of the memory cache via memcache system (for external interaction) - not necessary planned for 1.5
+SystemV sharing
+
+Future new implementation of the memory cache via System V shared mem (for external interaction) - not necessary planned for 1.5
+1.4  Load-balancing module (NEW)
+
+The "load-balancing" module comes to provide traffic routing based on load. Shortly, when OpenSIPS routes calls to a set of destinations, it is able to keep the load status (as number of ongoing calls) of each destination and to choose to route to the less loaded destination (at that moment). OpenSIPS is aware of the capacity of each destination - it is preconfigured with the maximum load accepted by the destinations. To be more precise, when routing, OpenSIPS will consider the less loaded destination not the destination with the smallest number of ongoing calls, but the destination with the largest available slot.
+
+Read: http://www.opensips.org/index.php?n=Resources.DocsTutLoadbalancing
+1.5  DB enhancement
+Prepared statements
+
+The support in DB API provides support for prepared statements. Modules using DB API may or may not request the usage of prepared statements instead of normal queries.
+
+Right now, only the mysql driver (db_mysql) implements the prepared statements support.
+
+There are several modules already using the prepared statements support:
+
+    * acc
+    * auth_db
+    * alias_db
+    * dialog
+    * domain
+    * group
+    * presence_*
+    * siptrace
+    * speeddial
+    * uri_db
+    * usrloc 
+
+Memory fragmentation
+
+The entire way of managing the DB result structure was reworked in order to avoid memory fragmentation:
+
+    * the idea was to eliminate the usage of small chucks of memory (4-10 bytes);
+    * instead of keep allocating/freeing for each DB result a number of chunks ( function of no of columns and no of rows), right now only 3 mem chuncks are used for a response. 
+
+Reducing the memory fragmentation is a key factor in producing a robust and endurable application.
+1.6  Data flush in MI commands
+
+This new addition is to fix the limitation related to commands not able to return large volume of data in replies (like listing all the registered users, all the ongoing dialogs, etc):
+
+    * MI API was changed to allow such flush commands ;
+    * mi_XXXX module implement the new flush functionality ;
+    * usrloc uses mi_flush for dumping the location list 
+
+1.7  OpenSIPS Console - NEW
+
+This is a new provisioning tool for OpenSIPS - the OpenSIPS console (osipsconsole). It intends to be a generic tool for OpenSIPS provisioning and to include all the functionalities which are now provided by several scripts - it will replace the opensipsctl & opensipsdbctl scripts.
+
+Osipsconsole is not one command script, but a console - you start the application, you get a prompt, you can run the available commands, you have embedded help, command history (in the current session and from previous session).
+
+Read: http://lists.opensips.org/pipermail/users/2008-October/000795.html
+1.8 OpenSIPS Control Panel - NEW
+
+OpenSIPS Control Panel (OpenSIPS-CP) is a web interface (PHP based) for provisioning your OpenSIPS system. OpenSIPS-CP is not designed for provisioning users, but for provisioning the operational side of OpenSIPS (like DB, MI operations).
+
+OpenSIPS-CP is a collection of tools - different functionalities are implemented in separated tools.
+
+Read: http://lists.opensips.org/pipermail/users/2008-October/000844.html
+Web Site: http://opensips-cp.sourceforge.net/
+1.9  DynamicRouting module - NEW
+
+Dynamic Routing is a module for selecting (based on multiple criteria) the the best gateway/destination to be used for delivering a certain call. Least Cost Routing (LCR) is a special case of dynamic routing - when the rules are ordered based on costs.
+
+See detailed documentation: http://www.opensips.org/html/docs/modules/devel/drouting.html
+1.10  MaxMind GeoIP module - NEW
+
+The module provides runtime geo-location information to the OpenSIPS scripting environment. Various geographic data available include country code, region, city, postal code, time zone and more, all described in the module documentation.
+
+Read: http://lists.opensips.org/pipermail/users/2008-November/001244.html
+Documentation: http://www.opensips.org/html/docs/modules/devel/mmgeoip.html
+
+---
+1.11  QOS module - NEW
+
+The qos module uses the dialog module to be notified of any new or updated dialogs. It will then look for and extract the SDP session (if present) from SIP requests and replies and keep track of it for the entire life of a dialog.
+
+Read: http://lists.opensips.org/pipermail/users/2008-December/002163.html
+Documentation: http://www.opensips.org/html/docs/modules/devel/qos.html
+1.12  Call Control - NEW
+
+This module allows one to limit the duration of calls and automatically end them when they exceed the imposed limit. Its main use case is to implement a prepaid system, but it can also be used to impose a global limit on all calls processed by the proxy
+
+Read: http://lists.opensips.org/pipermail/users/2008-December/002062.html
+Documentation: http://www.opensips.org/html/docs/modules/devel/call_control.html
+1.13  Signalling module -NEW
+
+The SIGNALING module comes as a wrapper over tm and sl modules and offers one function to be called from script or by the modules that want to send a reply. The reply (depending of the current state - if transaction exists or not) will be automatically sent in the best manner (stateless or stateful).
+
+Read: http://lists.opensips.org/pipermail/users/2008-November/001543.html
+Documentation: http://www.opensips.org/html/docs/modules/devel/signaling.html
+1.14  PUA_DIALOGINFO & PRESENCE_DIALOGINFO - NEW
+
+The modules enable the handling of "Event: dialog" (as defined in RFC 4235) inside of the presence module. This can be used distribute the dialog-info status to the subscribed watchers.
+
+Documentation: http://www.opensips.org/html/docs/modules/devel/pua_dialoginfo.html
+Documentation: http://www.opensips.org/html/docs/modules/devel/presence_dialoginfo.html
+1.15  SIP identity module - NEW
+
+This is an implementation of SIP identity as per RFC 4474. The module implements both identification and verification of the SIP messages.
+
+Documentation: http://www.opensips.org/html/docs/modules/devel/identity.html
+1.16  Dialog Module
+
+    * improved dialog state machine to be more flexible
+    * better dialog matching (more efficient)
+    * Automatic call termination on dialog timeout (by sending BYE in both directions). Read http://lists.opensips.org/pipermail/users/2008-October/001116.html
+    * dialog persistent flags added. These flags will be visible for all the requests that belong to the same dialog. Available functions:
+          o set_dlg_flag("n");
+          o reset_dlg_flag("n");
+          o is_dlg_flag_set("n"); 
+
+Available PVs:
+
+        * $DLG_flags (can be used directly from script via bitwise ops) 
+
+    * dialog persistent attributes - These attribute are visible for all the requests that belong to the same dialog; they can be manipulated (added,fetched) during the dialog lifetime. Available functions:
+          o store_dlg_value("attr_name","attr_val"); // attr_val may contain PVs
+          o fetch_dlg_value("attr_name","pv"); // pv is $var or $avp 
+
+Available PVs:
+
+        * $dlg_val("attr_name"); // set and get available 
+
+READ: http://lists.opensips.org/pipermail/users/2009-January/002446.html
+
+    * added new function create_dialog() to explicitly create the dialog from the script (instead of waiting for the t_relay()) - this function is also available via the module API 
+
+1.17  ACC module
+
+    * extra accounting from replies - an extra accounting value may come from request context, but also from reply context. This new functionality provides easy and automatic access to all information from the reply. Read http://lists.opensips.org/pipermail/users/2008-November/001584.html
+    * early_media module parameter triggers reply accounting for all provisional replies with body (not only 183). 
+
+1.18  AVPOPS module
+
+    * added support for multiple DB connection (different DBs, different DB types, different DB hosts). Module parameter "db_url" allows multiple definitions. All AVPOPS DB ops may indicate the usage of a specific/different db_url. Read: http://lists.opensips.org/pipermail/users/2008-December/002209.html
+    * fixed bogus handling of table name in avpops_db_xxxx functions 
+
+1.19  TEXTOPS module
+
+    * added two new functions to be used from the script:
+          o strip_body() : deletes the message body
+          o add_body(new_body, content_type): adds a body to the message, replacing the initial one if it exists 
+
+1.20  TM module
+
+    * minor branch for parallel forking - minor branch is a branch not taken into account during branch selection when closing a transaction). Read http://lists.opensips.org/pipermail/users/2008-October/000748.html
+    * as TM is doing automatic release of the transactions at the end of script, the t_release() function is not longer available in script. This a low level function in transaction processing and all related processing is automatically done, so the user must not be aware or take care of it -> easier scripting now.
+    * new functions added:
+          o t_cancel_branch()
+          o t_cancel_call() 
+
+Read: http://lists.opensips.org/pipermail/users/2009-January/002364.html
+
+    * new PV $T_ruri - the RURI of the current branch; this information is taken from the transaction structure, so you can access this information for any sip message (request/reply) that has a transaction.
+    * in failure route, use the msg RURI as first branch (as for request route), instead of using only the append branches. This is part of a bigger plan to align the scripting in failure route and request route. There will be no need to call append_branch() in failure route, just be make use of the RURI for relay
+    * fixed e2eACK matching for local replied transaction - extended also for 3261 matching.
+    * fixed race in concurrent callback execution -> random crash 
+
+1.21  PRESENCE module
+
+    * new event "dialog;sla"
+    * introduce MI command to trigger database cleanup
+    * improved Subscribe receive sockinfo storing and processing: 
+
+	- keep a pointer to the sockinfo structure in memory
+	- when updating in database - store the corresponding string
+	- when fetching dialog info from database parse the string and search for the sockinfo structure
+
+    * fixed BLA when call in put on hold
+    * add "transport=proto" parameter to the contact if other proto than UDP is used. 
+
+1.22  Pua module
+
+    * xcap-diff event support 
+
+1.23  RLS module
+
+    * use rls-services document to take the list instead of resource-list document
+    * send 200 OK faster so that retransmissions don't occur because of time consuming processing
+    * added presence_server exported parameter to have the possibility to set the address of the presence server and avoid Subscribe messages being sent by the RLS bouncing on and off the main proxy
+    * added special return code for rls_handle_notify function to show wheter the Notify request was processed or not by RLS (suggested by Adrian Georgescu
+    * added a INFO level message for Subscribe messages processed by RLS with the format : Subscription from [watcher] for resource list uri [list_uri] expanded to [no_of_contacts] contacts (suggested by Adrian Georgescu)
+    * updated the use of sockinfo field from subst_t structure to the definition commited in rev 4856
+    * fixed a bug in timer_notify_update function related to the relevance of expires value(relative instead of absolute)
+    * added deleting record from rls_presentity table when a Notify with subscription-state=terminate is received instead of being deleted on timer 
+
+1.24  REGISTRAR module
+
+    * registered(), save() and lookup() functions may take an optional second param with a custome AOR. Mainly to tests more than only the RURI as AOR: registered("location","$fu");
+    * "aor_avp" module parameter is dropped and useless
+    * registered() function can be used from onreply route, branch route and local route. NOTE: if used from onreply route it is mandatory to pass as parameter an AOR (as replies do not have RURI). 
+
+1.25  Domains module
+
+    * use the new core API for exporting a function to check if domain is local or not - this is used by the RR module for detecting the preloaded RR when domain is used instead of IPs. Read http://lists.opensips.org/pipermail/users/2009-February/002869.html 
+
+1.26  SIPTRACE module
+
+    * dialog support in tracing message - with a single script function you can trace the entire dialog. READ: http://lists.opensips.org/pipermail/users/2009-January/002768.html 
+
+1.27  NATHELPER module
+
+    * the list of RTPproxy sockets can be provisioned via DB now (versus the previous hardcoding in script).This allows provisioning at runtime (adding or removing rtpproxies) without restarting OpenSIPS.
+      Read: http://lists.opensips.org/pipermail/users/2009-February/003174.html
+    * improved logic for extracting the body from the SIP message
+    * New rtpproxy_offer() and rtpproxy_answers() functions whose purpose is similar to force_rtp_proxy's 'S' flag (to allow SDP-less INVITEs), but providing cleaner API.
+    * New family of functions rtpproxy_stream2uac(), rtpproxy_stream2uas(), rtpproxy_stop_stream2uac() and rtpproxy_stop_stream2uas() allowing to play pre-recorded announcement/MOH to one or both parties in response to various events. This feature requires latest 1.2 version snapshot of RTPproxy available at http://www.rtpproxy.org
+    * Inclease list of recognizable and proxable streams with rtp/avpf, rtp/savp and udp/bfcp. 
+
+1.28  RR module
+
+    * added new PV - $rr_params to export the entire Route param string 
+
+1.29  PERMISSION module
+
+    * allow_trusted(), allow_address() are allowed to be used in reply route. 
+
+1.30  EXEC module
+
+    * New extension in exec module (based on exec_avp code) that enables to read an environment variable and put its value inside an avp. For example, exec_getenv("HOSTNAME",$avp(s:hostname)); 
+
+1.31  AUTH module
+
+    * added module parameter 'disable_nonce_check' that allows disabling the nonce re-usability checking
+    * Use the STALE_NONCE error code for the nonce reused case as well 
+
+1.32  DISPATCHER module
+
+    * the reply codes of the probing requests can be configured via module parameter - a list of reply codes to be considered successful when probing.
+      Read: http://www.opensips.org/html/docs/modules/devel/dispatcher.html#id271069
+    * more efficient way of generating the probing requests
+    * aligned module to new way of filling in branches in Failure Route (which is the same as for Request Route): (1) first branch goes to RURI; (2) following branches are added with append_branch() 
+
+1.33  auth_radius module
+
+    * use SIP callid as Acct-Session-Id in orde to create a relationship between an auth and acc request (RFC2866, xection 5.5) 
+
+1.34  avp_radius module
+
+    * use SIP callid as Acct-Session-Id in orde to create a relationship between an auth and acc request (RFC2866, xection 5.5) 
+
+1.35  group_radius module
+
+    * use SIP callid as Acct-Session-Id in orde to create a relationship between an auth and acc request (RFC2866, xection 5.5) 
+
+1.36  uri_radius module
+
+    * use SIP callid as Acct-Session-Id in orde to create a relationship between an auth and acc request (RFC2866, xection 5.5) 
+
+---
+1.37  SST module
+
+    * fixed improper setting of the dialog timeout value (from sst to dialog)
+    * fixed sending of malformed replies
+    * set the default value of MINSE to 60 if the header exists 
+
+1.38  gflags module
+
+    * fixed is_gflag MI function - function returns true if all bits (from bitmask) are set 
+
+1.39  URI_DB module
+
+    * use DB API function for proper check on the table version
+    * new statistic variables 
+
+1.40  SL module
+
+    * new internal function to fetch the generated to_tag 
+
+1.41  CARRIERROUATE module
+
+    * fetch support 
+
+1.42  GROUP module
+
+    * Acceptance of a pseudovariable as second argument (group to check) of is_user_in function(). 
+
+1.43  CFGUTILS module
+
+    * Acceptance of a pseudovariable argument in sleep and usleep functions 
+
+1.44  LCR module
+
+    * aligned lcr module to new way of filling in branches in Failure Route (which is the same as for Request Route): (1) first branch goes to RURI; (2) following branches are added with append_branch() 
+
+1.45  UAC REDIRECT module
+
+    * aligned module to new way of filling in branches in Failure Route (which is the same as for Request Route): (1) first branch goes to RURI; (2) following branches are added with append_branch() 
+
+1.46  UAC module
+
+    * uac_replace_from() allowed per branch 
+
+1.47  CPL-c module
+
+    * aligned module to new way of filling in branches in Failure Route (which is the same as for Request Route): (1) first branch goes to RURI; (2) following branches are added with append_branch() 
+
+1.48  Generic Fixes
+
+    * OS portability (mainly Solaris fixes)
+    * fixed memory leaks (modules and core)
+    * reduced memory fragmentation
+    * replaced strncmp by strncasecmp in comparing SIP/SDP headers 
+
+1.49  Tools fixing
+
+    * auto detection for libraries location
+    * compile options
+    * solaris packaging
+    * opensipsctl - dialplan support
+    * opensipcctl - changed behaviour in restart. If opensips is already stopped, does not exit, but it tries to start it. 
