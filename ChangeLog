@@ -1,6 +1,27 @@
 
 ===================== 2009-03-23 OpenSIPS v1.4.5 released =====================
 
+2009-03-23 17:40:10  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+	* [5521] :
+
+	backport from trunk (rev #5440):
+	- fixed DB initialization of several modules (no support for timer)
+
+
+2009-03-23 17:20:59  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+	* [5520] :
+
+	backport from trunk (rev 5501):
+	- Temporal workaround for bug 2495521; this will be completely 
+	after 1.5 release.
+
+
+2009-03-23 15:44:45  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro>
+	* [5519] :
+
+	- preapring the 1.4.5 release
+
+
 2009-03-23 13:52:17  Anca Vamanu, <anca at voice-system dot ro> 
 	* [5515] :
 
