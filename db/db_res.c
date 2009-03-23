@@ -138,10 +138,10 @@ inline int db_allocate_columns(db_res_t* _r, const unsigned int cols)
 		(int)(cols * (sizeof(db_key_t)+sizeof(db_type_t)+sizeof(str))),
 		RES_NAMES(_r));
 
-	RES_TYPES(_r) = (db_type_t*)(RES_NAMES(_r)+cols);
-
 	for ( i=0 ; i<cols ; i++)
-		RES_NAMES(_r)[i] = (str*)(RES_TYPES(_r)+cols)+i;
+		RES_NAMES(_r)[i] = (str*)(RES_NAMES(_r)+cols)+i;
+
+	RES_TYPES(_r) = (db_type_t*)(RES_NAMES(_r)[0]+cols);
 
 	return 0;
 }
