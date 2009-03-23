@@ -12,7 +12,7 @@ Vcs-Browser: http://svn.debian.org/wsvn/pkg-voip/opensips/?op=log
 Package: opensips
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}, adduser
-Suggests: opensips-mysql-module, opensips-postgres-module, opensips-unixodbc-module, opensips-jabber-module, opensips-cpl-module, opensips-radius-modules, opensips-presence-modules, opensips-xmlrpc-module, opensips-perl-modules, opensips-snmpstats-module, opensips-xmpp-module, opensips-carrierroute-module, opensips-berkeley-module, opensips-ldap-modules, opensips-geoip-module, opensips-regex-module, opensips-identity-module, python
+Suggests: opensips-mysql-module, opensips-postgres-module, opensips-unixodbc-module, opensips-jabber-module, opensips-cpl-module, opensips-radius-modules, opensips-presence-modules, opensips-xmlrpc-module, opensips-perl-modules, opensips-snmpstats-module, opensips-xmpp-module, opensips-carrierroute-module, opensips-berkeley-module, opensips-ldap-modules, opensips-geoip-module, opensips-regex-module, opensips-identity-module, opensips-console, python
 Description: very fast and configurable SIP server
  OpenSIPS is a very fast and flexible SIP (RFC3261)
  server. Written entirely in C, OpenSIPS can handle thousands calls
@@ -196,7 +196,6 @@ Description: LDAP modules for OpenSIPS
  queries from the OpenSIPS config and storage of SIP account data in an LDAP
  directory.
 
-
 Package: opensips-geoip-module
 Architecture: any
 Depends: ${shlibs:Depends}, opensips (= ${binary:Version})
@@ -212,7 +211,6 @@ Description: IP address-to-location looku (MaxMind GeoIP API) for OpenSIPS
  compatible   Lookups are executed against the freely-available GeoLite City
  database; and the non-free GeoIP City database is drop-in compatible
 
-
 Package: opensips-regex-module
 Architecture: any
 Depends: ${shlibs:Depends}, opensips (= ${binary:Version})
@@ -225,7 +223,6 @@ Description: PCRE regexp modules for OpenSIPS
  expressions using the powerful PCRE library. By default, OpenSIPS support
  sed-like regular expresions; PCRE library brings perl-like regular expresions.
 
-
 Package: opensips-identity-module
 Architecture: any
 Depends: ${shlibs:Depends}, opensips (= ${binary:Version})
@@ -235,7 +232,6 @@ Description: SIP Identity module for OpenSIPS
  per second even on low-budget hardware.
  .
  This package provides support for SIP Identity (see RFC 4474).
-
 
 Package: opensips-console
 Architecture: any
