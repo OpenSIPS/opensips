@@ -783,7 +783,7 @@ ifeq			($(CC_CLASS), 4.x)
 					endif
 
 					# Processors of Family UltraSparc T1
-					ifeq ($(CHIP), ultrasparc-ti)
+					ifeq ($(CHIP), ultrasparc-t1)
 						# niagara switch is not supported on GCC < 4.2
 						# Sets to default ultrasparc
 						ifeq ($(CC_SHORTVER), 4.2)
@@ -835,7 +835,7 @@ ifeq			($(CC_CLASS), 3.x)
 					endif
 
 					# Processors of Family UltraSparc T1
-					ifeq ($(CHIP), ultrasparc-ti)
+					ifeq ($(CHIP), ultrasparc-t1)
 						# niagara switch is not supported on GCC < 4.2
 						# Sets to default ultrasparc
 						CFLAGS+= -mcpu=ultrasparc -mtune=ultrasparc -mvis
