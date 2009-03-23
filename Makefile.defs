@@ -105,16 +105,16 @@ endif
 ifeq ($(OS),solaris)
 	CPU=$(shell /usr/sbin/psrinfo | grep -i online | wc -l)
 	ifeq ($(CPU),1)
-		ISSMP=no
+		ISSMP ?= no
 	else
-		ISSMP=yes
+		ISSMP ?= yes
 	endif
 else
 	SMP_STR = $(shell uname -v | grep -i "SMP")
 	ifeq (,$(SMP_STR))
-		ISSMP=no
+		ISSMP ?= no
 	else
-		ISSMP=yes
+		ISSMP ?= yes
 	endif
 endif
 
@@ -160,7 +160,7 @@ SYSBASE ?= /usr
 cfg-dir = etc/$(MAIN_NAME)/
 bin-dir = sbin/
 
-ARCH_B= $(shell echo $(ARCH) | sed -e 's/.*64.*/64b/')
+ARCH_B = $(shell echo $(ARCH) | sed -e 's/.*64.*/64b/')
 ifeq ($(ARCH_B),64b)
 	LIBDIR ?= lib64
 else

@@ -103,6 +103,9 @@ else
 	CFLAGS += -O2
 endif
 
+# force lib (versus lib64) and SMP support all the time
+CFLAGS += LIBDIR=lib ISSMP=yes
+
 ifeq (,$(findstring nostrip,$(DEB_BUILD_OPTIONS)))
 	INSTALL_PROGRAM += -s
 endif
