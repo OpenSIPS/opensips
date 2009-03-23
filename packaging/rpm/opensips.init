@@ -12,25 +12,28 @@
 # Source function library.
 . /etc/rc.d/init.d/functions
 
-oser=/usr/sbin/opensips
-prog=opensips
+OSIPS=/usr/sbin/opensips
+PROG=opensips
+PID_FILE=/var/run/opensips.pid
+LOCK_FILE=/var/lock/subsys/opensips
+OPTIONS="-P $PID_FILE"
 RETVAL=0
 
 start() {
-	echo -n $"Starting $prog: "
-	daemon $oser $OPTIONS >/dev/null 2>/dev/null
+	echo -n $"Starting $PROG: "
+	daemon $OSIPS $OPTIONS >/dev/null 2>/dev/null
 	RETVAL=$?
 	echo
-	[ $RETVAL = 0 ] && touch /var/lock/subsys/opensips
+	[ $RETVAL = 0 ] && touch $LOCK_FILE
 	return $RETVAL
 }
 
 stop() {
-	echo -n $"Stopping $prog: "
-	killproc $oser
+	echo -n $"Stopping $PROG: "
+	killproc $OSIPS
 	RETVAL=$?
 	echo
-	[ $RETVAL = 0 ] && rm -f /var/lock/subsys/opensips /var/run/opensips.pid
+	[ $RETVAL = 0 ] && rm -f $LOCK_FILE $PID_FILE
 }
 
 # See how we were called.
@@ -42,7 +45,7 @@ case "$1" in
 		stop
 		;;
 	status)
-		status $oser
+		status $OSIPS
 		RETVAL=$?
 		;;
 	restart)
@@ -50,13 +53,13 @@ case "$1" in
 		start
 		;;
 	condrestart)
-		if [ -f /var/run/opensips.pid ] ; then
+		if [ -f $PID_FILE ] ; then
 			stop
 			start
 		fi
 		;;
 	*)
-		echo $"Usage: $prog {start|stop|restart|condrestart|status|help}"
+		echo $"Usage: $PROG {start|stop|restart|condrestart|status|help}"
 		exit 1
 esac
 
