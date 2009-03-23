@@ -2,7 +2,7 @@
 
 Summary:	Open Source SIP Server
 Name:		opensips
-Version:	1.3.0
+Version:	1.5.0
 Release:	1%{?dist}
 License:	GPLv2+
 Group:		System Environment/Daemons
@@ -512,40 +512,51 @@ fi
 %{_libdir}/opensips/modules/alias_db.so
 %{_libdir}/opensips/modules/auth.so
 %{_libdir}/opensips/modules/auth_db.so
+%{_libdir}/opensips/modules/auth_diameter.so
 %{_libdir}/opensips/modules/avpops.so
 %{_libdir}/opensips/modules/benchmark.so
+%{_libdir}/opensips/modules/call_control.so
 %{_libdir}/opensips/modules/cfgutils.so
-%{_libdir}/opensips/modules/dbtext.so
+%{_libdir}/opensips/modules/closeddial.so
+%{_libdir}/opensips/modules/db_flatstore.so
+%{_libdir}/opensips/modules/db_text.so
 %{_libdir}/opensips/modules/dialog.so
+%{_libdir}/opensips/modules/dialplan.so
 %{_libdir}/opensips/modules/dispatcher.so
 %{_libdir}/opensips/modules/diversion.so
 %{_libdir}/opensips/modules/domain.so
-%{_libdir}/opensips/modules/domainpolicy.so
+%{_libdir}/opensips/modules/drouting.so
 %{_libdir}/opensips/modules/enum.so
 %{_libdir}/opensips/modules/exec.so
-%{_libdir}/opensips/modules/flatstore.so
 %{_libdir}/opensips/modules/gflags.so
 %{_libdir}/opensips/modules/group.so
 %{_libdir}/opensips/modules/imc.so
 %{_libdir}/opensips/modules/lcr.so
+%{_libdir}/opensips/modules/load_balancer.so
+%{_libdir}/opensips/modules/localcache.so
 %{_libdir}/opensips/modules/mangler.so
 %{_libdir}/opensips/modules/maxfwd.so
 %{_libdir}/opensips/modules/mediaproxy.so
-%{_libdir}/opensips/modules/mi_fifo.so
 %{_libdir}/opensips/modules/mi_datagram.so
+%{_libdir}/opensips/modules/mi_fifo.so
 %{_libdir}/opensips/modules/msilo.so
 %{_libdir}/opensips/modules/nathelper.so
+%{_libdir}/opensips/modules/nat_traversal.so
 %{_libdir}/opensips/modules/options.so
 %{_libdir}/opensips/modules/path.so
 %{_libdir}/opensips/modules/pdt.so
 %{_libdir}/opensips/modules/permissions.so
 %{_libdir}/opensips/modules/pike.so
+%{_libdir}/opensips/modules/qos.so
+%{_libdir}/opensips/modules/ratelimit.so
 %{_libdir}/opensips/modules/registrar.so
 %{_libdir}/opensips/modules/rr.so
+%{_libdir}/opensips/modules/seas.so
+%{_libdir}/opensips/modules/signaling.so
 %{_libdir}/opensips/modules/siptrace.so
 %{_libdir}/opensips/modules/sl.so
+%{_libdir}/opensips/modules/sms.so
 %{_libdir}/opensips/modules/speeddial.so
-%{_libdir}/opensips/modules/sst.so
 %{_libdir}/opensips/modules/statistics.so
 %{_libdir}/opensips/modules/textops.so
 %{_libdir}/opensips/modules/tm.so
@@ -553,55 +564,69 @@ fi
 %{_libdir}/opensips/modules/uac_redirect.so
 %{_libdir}/opensips/modules/uri.so
 %{_libdir}/opensips/modules/uri_db.so
+%{_libdir}/opensips/modules/userblacklist.so
 %{_libdir}/opensips/modules/usrloc.so
 %{_libdir}/opensips/modules/xlog.so
 
-%doc docdir/README.alias_db
-%doc docdir/README.auth
-%doc docdir/README.auth_db
-%doc docdir/README.avpops
-%doc docdir/README.benchmark
-%doc docdir/README.cfgutils
-%doc docdir/README.dbtext
-%doc docdir/README.dialog
-%doc docdir/README.dispatcher
-%doc docdir/README.diversion
-%doc docdir/README.domain
-%doc docdir/README.domainpolicy
-%doc docdir/README.enum
-%doc docdir/README.exec
-%doc docdir/README.flatstore
-%doc docdir/README.gflags
-%doc docdir/README.group
-%doc docdir/README.imc
-%doc docdir/README.lcr
-%doc docdir/README.mangler
-%doc docdir/README.maxfwd
-%doc docdir/README.mediaproxy
-%doc docdir/README.mi_fifo
-%doc docdir/README.mi_datagram
-%doc docdir/README.msilo
-%doc docdir/README.nathelper
-%doc docdir/README.options
-%doc docdir/README.path
-%doc docdir/README.pdt
-%doc docdir/README.permissions
-%doc docdir/README.pike
-%doc docdir/README.registrar
-%doc docdir/README.rr
-%doc docdir/README.siptrace
-%doc docdir/README.sl
-%doc docdir/README.speeddial
-%doc docdir/README.sst
-%doc docdir/README.statistics
-%doc docdir/README.textops
-%doc docdir/README.tm
-%doc docdir/README.uac
-%doc docdir/README.uac_redirect
-%doc docdir/README.uri
-%doc docdir/README.uri_db
-%doc docdir/README.usrloc
-%doc docdir/README.xlog
+%doc docdir/opensips/README.alias_db
+%doc docdir/opensips/README.auth
+%doc docdir/opensips/README.auth_db
+%doc docdir/opensips/README.auth_diameter
+%doc docdir/opensips/README.avpops
+%doc docdir/opensips/README.benchmark
+%doc docdir/opensips/README.call_control
+%doc docdir/opensips/README.cfgutils
+%doc docdir/opensips/README.closeddial
+%doc docdir/opensips/README.db_flatstore
+%doc docdir/opensips/README.db_text
+%doc docdir/opensips/README.dialog
+%doc docdir/opensips/README.dialplan
+%doc docdir/opensips/README.dispatcher
+%doc docdir/opensips/README.diversion
+%doc docdir/opensips/README.domain
+%doc docdir/opensips/README.drouting
+%doc docdir/opensips/README.enum
+%doc docdir/opensips/README.exec
+%doc docdir/opensips/README.gflags
+%doc docdir/opensips/README.group
+%doc docdir/opensips/README.imc
+%doc docdir/opensips/README.lcr
+%doc docdir/opensips/README.load_balancer
+%doc docdir/opensips/README.localcache
+%doc docdir/opensips/README.mangler
+%doc docdir/opensips/README.maxfwd
+%doc docdir/opensips/README.mediaproxy
+%doc docdir/opensips/README.mi_datagram
+%doc docdir/opensips/README.mi_fifo
+%doc docdir/opensips/README.msilo
+%doc docdir/opensips/README.nathelper
+%doc docdir/opensips/README.nat_traversal
+%doc docdir/opensips/README.options
+%doc docdir/opensips/README.path
+%doc docdir/opensips/README.pdt
+%doc docdir/opensips/README.permissions
+%doc docdir/opensips/README.pike
+%doc docdir/opensips/README.qos
+%doc docdir/opensips/README.ratelimit
+%doc docdir/opensips/README.registrar
+%doc docdir/opensips/README.rr
+%doc docdir/opensips/README.seas
+%doc docdir/opensips/README.signaling
+%doc docdir/opensips/README.siptrace
+%doc docdir/opensips/README.sl
+%doc docdir/opensips/README.sms
+%doc docdir/opensips/README.speeddial
+%doc docdir/opensips/README.sst
+%doc docdir/opensips/README.statistics
+%doc docdir/opensips/README.textops
+%doc docdir/opensips/README.tm
+%doc docdir/opensips/README.uac
+%doc docdir/opensips/README.uac_redirect
+%doc docdir/opensips/README.uri
+%doc docdir/opensips/README.uri_db
+%doc docdir/opensips/README.userblacklist
+%doc docdir/opensips/README.usrloc
+%doc docdir/opensips/README.xlog
 
 %files acc
 %defattr(-,root,root,-)
@@ -668,7 +693,7 @@ fi
 
 %files mysql
 %defattr(-,root,root,-)
-%{_libdir}/opensips/modules/mysql.so
+%{_libdir}/opensips/modules/db_mysql.so
 %{_libdir}/opensips/opensipsctl/opensipsdbctl.mysql
 %{_datadir}/opensips/mysql/*.sql
 %doc docdir/README.mysql
@@ -710,7 +735,7 @@ fi
 
 %files postgresql
 %defattr(-,root,root,-)
-%{_libdir}/opensips/modules/postgres.so
+%{_libdir}/opensips/modules/db_postgres.so
 %{_libdir}/opensips/opensipsctl/opensipsdbctl.pgsql
 %{_datadir}/opensips/postgres/*.sql
 %doc docdir/README.postgres
@@ -792,7 +817,7 @@ fi
 
 %files unixodbc
 %defattr(-,root,root,-)
-%{_libdir}/opensips/modules/unixodbc.so
+%{_libdir}/opensips/modules/db_unixodbc.so
 %doc docdir/README.unixodbc
 
 %files xcap_client
@@ -806,6 +831,11 @@ fi
 %doc docdir/README.xmpp
 
 %changelog
+
+* Mon Mar 23 2009 Bogdan-Andrei Iancu <bogdan@voice-system.ro> 1.5.0-1
+- Final ver. 1.5.0
+- fix module renaming
+- added the new modules
 
 * Thu Dec 13 2007 Peter Lemenkov <lemenkov@gmail.com> 1.3.0-1
 - Final ver. 1.3.0

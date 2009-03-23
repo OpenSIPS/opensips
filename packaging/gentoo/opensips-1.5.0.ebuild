@@ -28,10 +28,10 @@ make_options=""
 
 pkg_setup() {
 	use mysql && \
-		inc_mod="${inc_mod} mysql"
+		inc_mod="${inc_mod} db_mysql"
 
 	use postgres && \
-		inc_mod="${inc_mod} postgres"
+		inc_mod="${inc_mod} db_postgres"
 
 	use radius && \
 		inc_mod="${inc_mod} auth_radius group_radius uri_radius avp_radius"
@@ -43,7 +43,7 @@ pkg_setup() {
 		inc_mod="${inc_mod} cpl-c"
 
 	use unixodbc && \
-		inc_mod="${inc_mod} unixodbc"
+		inc_mod="${inc_mod} db_unixodbc"
 
 	export inc_mod
 }
