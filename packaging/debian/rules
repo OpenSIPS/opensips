@@ -104,7 +104,7 @@ else
 endif
 
 # force lib (versus lib64) and SMP support all the time
-CFLAGS += LIBDIR=lib ISSMP=yes
+VARS = LIBDIR=lib ISSMP=yes TLS=$(TLS)
 
 ifeq (,$(findstring nostrip,$(DEB_BUILD_OPTIONS)))
 	INSTALL_PROGRAM += -s
@@ -123,27 +123,27 @@ build-stamp: patch-stamp configure-stamp
 	dh_testdir
 
 	# Add here commands to compile the package.
-	CC="$(CC)" CFLAGS="$(CFLAGS)" TLS=$(TLS) $(MAKE) all skip_modules="$(EXCLUDED_MODULES)" cfg-target=/etc/opensips/
-	CC="$(CC)" CFLAGS="$(CFLAGS)" TLS=$(TLS) $(MAKE) modules modules="$(MYSQL_MOD_PATH)" cfg-target=/etc/opensips/
-	CC="$(CC)" CFLAGS="$(CFLAGS)" TLS=$(TLS) $(MAKE) modules modules="$(POSTGRES_MOD_PATH)" cfg-target=/etc/opensips/
-	CC="$(CC)" CFLAGS="$(CFLAGS)" TLS=$(TLS) $(MAKE) modules modules="$(UNIXODBC_MOD_PATH)" cfg-target=/etc/opensips/
-	CC="$(CC)" CFLAGS="$(CFLAGS)" TLS=$(TLS) $(MAKE) modules modules="$(JABBER_MOD_PATH)" cfg-target=/etc/opensips/
-	CC="$(CC)" CFLAGS="$(CFLAGS)" TLS=$(TLS) $(MAKE) modules modules="$(CPL_MOD_PATH)" cfg-target=/etc/opensips/
-	CC="$(CC)" CFLAGS="$(CFLAGS)" TLS=$(TLS) $(MAKE) modules modules="$(RADIUS_MOD_PATH)" cfg-target=/etc/opensips/
-	CC="$(CC)" CFLAGS="$(CFLAGS)" TLS=$(TLS) $(MAKE) modules modules="$(PRESENCE_MOD_PATH)" cfg-target=/etc/opensips/
-	CC="$(CC)" CFLAGS="$(CFLAGS)" TLS=$(TLS) $(MAKE) modules modules="$(XMLRPC_MOD_PATH)" cfg-target=/etc/opensips/
-	CC="$(CC)" CFLAGS="$(CFLAGS)" TLS=$(TLS) $(MAKE) modules modules="$(PERL_MOD_PATH)" cfg-target=/etc/opensips/
-	CC="$(CC)" CFLAGS="$(CFLAGS)" TLS=$(TLS) $(MAKE) modules modules="$(SNMPSTATS_MOD_PATH)" cfg-target=/etc/opensips/
-	CC="$(CC)" CFLAGS="$(CFLAGS)" TLS=$(TLS) $(MAKE) modules modules="$(XMPP_MOD_PATH)" cfg-target=/etc/opensips/
-	CC="$(CC)" CFLAGS="$(CFLAGS)" TLS=$(TLS) $(MAKE) modules modules="$(CROUTE_MOD_PATH)" cfg-target=/etc/opensips/
-	CC="$(CC)" CFLAGS="$(CFLAGS)" TLS=$(TLS) $(MAKE) modules modules="$(BERKELEY_MOD_PATH)" cfg-target=/etc/opensips/
-	CC="$(CC)" CFLAGS="$(CFLAGS)" TLS=$(TLS) $(MAKE) modules modules="$(LDAP_MOD_PATH)" cfg-target=/etc/opensips/
-	CC="$(CC)" CFLAGS="$(CFLAGS)" TLS=$(TLS) $(MAKE) modules modules="$(GEOIP_MOD_PATH)" cfg-target=/etc/opensips/
-	CC="$(CC)" CFLAGS="$(CFLAGS)" TLS=$(TLS) $(MAKE) modules modules="$(REGEX_MOD_PATH)" cfg-target=/etc/opensips/
-	CC="$(CC)" CFLAGS="$(CFLAGS)" TLS=$(TLS) $(MAKE) modules modules="$(IDENTITY_MOD_PATH)" cfg-target=/etc/opensips/
+	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) all skip_modules="$(EXCLUDED_MODULES)" cfg-target=/etc/opensips/
+	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) modules modules="$(MYSQL_MOD_PATH)" cfg-target=/etc/opensips/
+	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) modules modules="$(POSTGRES_MOD_PATH)" cfg-target=/etc/opensips/
+	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) modules modules="$(UNIXODBC_MOD_PATH)" cfg-target=/etc/opensips/
+	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) modules modules="$(JABBER_MOD_PATH)" cfg-target=/etc/opensips/
+	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) modules modules="$(CPL_MOD_PATH)" cfg-target=/etc/opensips/
+	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) modules modules="$(RADIUS_MOD_PATH)" cfg-target=/etc/opensips/
+	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) modules modules="$(PRESENCE_MOD_PATH)" cfg-target=/etc/opensips/
+	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) modules modules="$(XMLRPC_MOD_PATH)" cfg-target=/etc/opensips/
+	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) modules modules="$(PERL_MOD_PATH)" cfg-target=/etc/opensips/
+	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) modules modules="$(SNMPSTATS_MOD_PATH)" cfg-target=/etc/opensips/
+	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) modules modules="$(XMPP_MOD_PATH)" cfg-target=/etc/opensips/
+	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) modules modules="$(CROUTE_MOD_PATH)" cfg-target=/etc/opensips/
+	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) modules modules="$(BERKELEY_MOD_PATH)" cfg-target=/etc/opensips/
+	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) modules modules="$(LDAP_MOD_PATH)" cfg-target=/etc/opensips/
+	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) modules modules="$(GEOIP_MOD_PATH)" cfg-target=/etc/opensips/
+	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) modules modules="$(REGEX_MOD_PATH)" cfg-target=/etc/opensips/
+	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) modules modules="$(IDENTITY_MOD_PATH)" cfg-target=/etc/opensips/
 
 	# generate the utils db_berkeley
-	CC="$(CC)" CFLAGS="$(CFLAGS)" TLS=$(TLS) $(MAKE) utils include_modules="db_berkeley"
+	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) utils include_modules="db_berkeley"
 
 	touch build-stamp
 
@@ -154,7 +154,7 @@ real-clean:
 	rm -f build-stamp configure-stamp
 
 	# Add here commands to clean up after the build process.
-	$(MAKE) TLS=$(TLS) include_modules="$(ALL_MODULES)" proper
+	$(MAKE) $(VARS) include_modules="$(ALL_MODULES)" proper
 	rm -f cfg.tab.h
 	rm -f utils/opensipsunix/opensipsunix.o utils/opensipsunix/opensipsunix
 	rm -f utils/db_berkeley/bdb_recover.o utils/db_berkeley/bdb_recover
@@ -169,7 +169,7 @@ install: build
 
 	# Add here commands to install the package into debian/opensips
 	# opensips base package
-	CC="$(CC)" CFLAGS="$(CFLAGS)" TLS=$(TLS) $(MAKE) install skip_modules="$(EXCLUDED_MODULES)" \
+	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) install skip_modules="$(EXCLUDED_MODULES)" \
 		basedir=$(CURDIR)/debian/opensips \
 		prefix=/usr \
 		cfg-prefix=$(CURDIR)/debian/opensips \
@@ -181,7 +181,7 @@ install: build
 	rm -f  $(CURDIR)/debian/opensips/usr/sbin/osipsconsole
 
 	# install only the mysql module
-	CC="$(CC)" CFLAGS="$(CFLAGS)" TLS=$(TLS) $(MAKE) install-modules-all modules="$(MYSQL_MOD_PATH)"  \
+	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) install-modules-all modules="$(MYSQL_MOD_PATH)"  \
 		basedir=$(CURDIR)/debian/opensips-mysql-module \
 		prefix=/usr \
 		cfg-prefix=$(CURDIR)/debian/opensips-mysql-module \
@@ -189,7 +189,7 @@ install: build
 		doc-dir=share/doc/opensips-mysql-module
 
 	# install only the postgres module
-	CC="$(CC)" CFLAGS="$(CFLAGS)" TLS=$(TLS) $(MAKE) install-modules-all modules="$(POSTGRES_MOD_PATH)"  \
+	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) install-modules-all modules="$(POSTGRES_MOD_PATH)"  \
 		basedir=$(CURDIR)/debian/opensips-postgres-module \
 		prefix=/usr \
 		cfg-prefix=$(CURDIR)/debian/opensips-postgres-module \
@@ -197,7 +197,7 @@ install: build
 		doc-dir=share/doc/opensips-postgres-module
 
 	# install only the unixodbc module
-	CC="$(CC)" CFLAGS="$(CFLAGS)" TLS=$(TLS) $(MAKE) install-modules-all modules="$(UNIXODBC_MOD_PATH)"  \
+	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) install-modules-all modules="$(UNIXODBC_MOD_PATH)"  \
 		basedir=$(CURDIR)/debian/opensips-unixodbc-module \
 		prefix=/usr \
 		cfg-prefix=$(CURDIR)/debian/opensips-unixodbc-module \
@@ -205,7 +205,7 @@ install: build
 		doc-dir=share/doc/opensips-unixodbc-module
 
 	# install only the jabber module
-	CC="$(CC)" CFLAGS="$(CFLAGS)" TLS=$(TLS) $(MAKE) install-modules-all modules="$(JABBER_MOD_PATH)"  \
+	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) install-modules-all modules="$(JABBER_MOD_PATH)"  \
 		basedir=$(CURDIR)/debian/opensips-jabber-module \
 		prefix=/usr \
 		cfg-prefix=$(CURDIR)/debian/opensips-jabber-module \
@@ -213,7 +213,7 @@ install: build
 		doc-dir=share/doc/opensips-jabber-module
 
 	# install only the cpl module
-	CC="$(CC)" CFLAGS="$(CFLAGS)" TLS=$(TLS) $(MAKE) install-modules-all modules="$(CPL_MOD_PATH)"  \
+	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) install-modules-all modules="$(CPL_MOD_PATH)"  \
 		basedir=$(CURDIR)/debian/opensips-cpl-module \
 		prefix=/usr \
 		cfg-prefix=$(CURDIR)/debian/opensips-cpl-module \
@@ -221,7 +221,7 @@ install: build
 		doc-dir=share/doc/opensips-cpl-module
 
 	# install only the radius modules
-	CC="$(CC)" CFLAGS="$(CFLAGS)" TLS=$(TLS) $(MAKE) install-modules-all modules="$(RADIUS_MOD_PATH)"  \
+	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) install-modules-all modules="$(RADIUS_MOD_PATH)"  \
 		basedir=$(CURDIR)/debian/opensips-radius-modules \
 		prefix=/usr \
 		cfg-prefix=$(CURDIR)/debian/opensips-radius-modules \
@@ -229,7 +229,7 @@ install: build
 		doc-dir=share/doc/opensips-radius-modules
 
 	# install only the presence modules
-	CC="$(CC)" CFLAGS="$(CFLAGS)" TLS=$(TLS) $(MAKE) install-modules-all modules="$(PRESENCE_MOD_PATH)"  \
+	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) install-modules-all modules="$(PRESENCE_MOD_PATH)"  \
 		basedir=$(CURDIR)/debian/opensips-presence-modules \
 		prefix=/usr \
 		cfg-prefix=$(CURDIR)/debian/opensips-presence-modules \
@@ -237,7 +237,7 @@ install: build
 		doc-dir=share/doc/opensips-presence-modules
 
 	# install only the xmlrpc module
-	CC="$(CC)" CFLAGS="$(CFLAGS)" TLS=$(TLS) $(MAKE) install-modules-all modules="$(XMLRPC_MOD_PATH)"  \
+	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) install-modules-all modules="$(XMLRPC_MOD_PATH)"  \
 		basedir=$(CURDIR)/debian/opensips-xmlrpc-module \
 		prefix=/usr \
 		cfg-prefix=$(CURDIR)/debian/opensips-xmlrpc-module \
@@ -245,7 +245,7 @@ install: build
 		doc-dir=share/doc/opensips-xmlrpc-module
 
 	# install only the perl modules
-	CC="$(CC)" CFLAGS="$(CFLAGS)" TLS=$(TLS) $(MAKE) install-modules-all modules="$(PERL_MOD_PATH)"  \
+	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) install-modules-all modules="$(PERL_MOD_PATH)"  \
 		basedir=$(CURDIR)/debian/opensips-perl-modules \
 		prefix=/usr \
 		cfg-prefix=$(CURDIR)/debian/opensips-perl-modules \
@@ -253,7 +253,7 @@ install: build
 		doc-dir=share/doc/opensips-perl-modules
 
 	# install only the snmpstats module
-	CC="$(CC)" CFLAGS="$(CFLAGS)" TLS=$(TLS) $(MAKE) install-modules-all modules="$(SNMPSTATS_MOD_PATH)"  \
+	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) install-modules-all modules="$(SNMPSTATS_MOD_PATH)"  \
 		basedir=$(CURDIR)/debian/opensips-snmpstats-module \
 		prefix=/usr \
 		cfg-prefix=$(CURDIR)/debian/opensips-snmpstats-module \
@@ -261,7 +261,7 @@ install: build
 		doc-dir=share/doc/opensips-snmpstats-module
 
 	# install only the xmpp module
-	CC="$(CC)" CFLAGS="$(CFLAGS)" TLS=$(TLS) $(MAKE) install-modules-all modules="$(XMPP_MOD_PATH)"  \
+	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) install-modules-all modules="$(XMPP_MOD_PATH)"  \
 		basedir=$(CURDIR)/debian/opensips-xmpp-module \
 		prefix=/usr \
 		cfg-prefix=$(CURDIR)/debian/opensips-xmpp-module \
@@ -269,7 +269,7 @@ install: build
 		doc-dir=share/doc/opensips-xmpp-module
 
 	# install only the carrierroute module
-	CC="$(CC)" CFLAGS="$(CFLAGS)" TLS=$(TLS) $(MAKE) install-modules-all modules="$(CROUTE_MOD_PATH)"  \
+	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) install-modules-all modules="$(CROUTE_MOD_PATH)"  \
 		basedir=$(CURDIR)/debian/opensips-carrierroute-module \
 		prefix=/usr \
 		cfg-prefix=$(CURDIR)/debian/opensips-carrierroute-module \
@@ -277,7 +277,7 @@ install: build
 		doc-dir=share/doc/opensips-carrierroute-module
 
 	# install only the db_berkeley module
-	CC="$(CC)" CFLAGS="$(CFLAGS)" TLS=$(TLS) $(MAKE) install-modules-all modules="$(BERKELEY_MOD_PATH)"  \
+	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) install-modules-all modules="$(BERKELEY_MOD_PATH)"  \
 		basedir=$(CURDIR)/debian/opensips-berkeley-module \
 		prefix=/usr \
 		cfg-prefix=$(CURDIR)/debian/opensips-berkeley-module \
@@ -285,7 +285,7 @@ install: build
 		doc-dir=share/doc/opensips-berkeley-module
 
 	# install only the ldap modules
-	CC="$(CC)" CFLAGS="$(CFLAGS)" TLS=$(TLS) $(MAKE) install-modules-all modules="$(LDAP_MOD_PATH)"  \
+	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) install-modules-all modules="$(LDAP_MOD_PATH)"  \
 		basedir=$(CURDIR)/debian/opensips-ldap-modules \
 		prefix=/usr \
 		cfg-prefix=$(CURDIR)/debian/opensips-ldap-modules \
@@ -293,7 +293,7 @@ install: build
 		doc-dir=share/doc/opensips-ldap-modules
 
 	# install only the geoip modules
-	CC="$(CC)" CFLAGS="$(CFLAGS)" TLS=$(TLS) $(MAKE) install-modules-all modules="$(GEOIP_MOD_PATH)"  \
+	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) install-modules-all modules="$(GEOIP_MOD_PATH)"  \
 		basedir=$(CURDIR)/debian/opensips-geoip-module \
 		prefix=/usr \
 		cfg-prefix=$(CURDIR)/debian/opensips-geoip-module \
@@ -301,7 +301,7 @@ install: build
 		doc-dir=share/doc/opensips-geoip-module
 
 	# install only the regex modules
-	CC="$(CC)" CFLAGS="$(CFLAGS)" TLS=$(TLS) $(MAKE) install-modules-all modules="$(REGEX_MOD_PATH)"  \
+	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) install-modules-all modules="$(REGEX_MOD_PATH)"  \
 		basedir=$(CURDIR)/debian/opensips-regex-module \
 		prefix=/usr \
 		cfg-prefix=$(CURDIR)/debian/opensips-regex-module \
@@ -309,7 +309,7 @@ install: build
 		doc-dir=share/doc/opensips-regex-module
 
 	# install only the geoip modules
-	CC="$(CC)" CFLAGS="$(CFLAGS)" TLS=$(TLS) $(MAKE) install-modules-all modules="$(IDENTITY_MOD_PATH)"  \
+	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) install-modules-all modules="$(IDENTITY_MOD_PATH)"  \
 		basedir=$(CURDIR)/debian/opensips-identity-module \
 		prefix=/usr \
 		cfg-prefix=$(CURDIR)/debian/opensips-identity-module \
