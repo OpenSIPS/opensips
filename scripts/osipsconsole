@@ -485,7 +485,7 @@ if ( $#ACL_GROUPS lt 0 ) {
 ##### ----------------------------------------------- #####
 ### common variables and functions for SQL engines
 if ( $DBENGINE eq "" ) {
-	$DBENGINE = 'Pg';
+	$DBENGINE = 'MYSQL';
 }
 
 if ( $DBNAME eq "" ) {
@@ -6721,17 +6721,21 @@ sub mysql_migrate_db() { # 2 parameters (src_db, dst_db)
 	&mysql_migrate_table( $dst_db . ".speed_dial", "id,username,domain,sd_username,sd_domain,new_uri,fname,lname,description", $src_db . ".speed_dial", "?id,?username,?domain,?sd_username,?sd_domain,?new_uri,?fname,?lname,?description" );
 
 	### gw
-	&mysql_migrate_table( $dst_db . ".gw", "id,gw_name,grp_id,ip_addr,port,uri_scheme,transport,strip,tag", $src_db . ".gw", "?id,?gw_name,?grp_id,?ip_addr,?port,?uri_scheme,?transport,?strip,?tag" );
+	&mysql_migrate_table( $dst_db . ".gw", "id,gw_name,grp_id,ip_addr,port,uri_scheme,transport,strip,tag,flags", $src_db . ".gw", "?id,?gw_name,?grp_id,?ip_addr,?port,?uri_scheme,?transport,?strip,?tag,?flags" );
 
 
 	### gw_grp
 	&mysql_migrate_table( $dst_db . ".gw_grp", "grp_id,grp_name", $src_db . ".gw_grp", "?grp_id,?grp_name" );
 
 	### lcr
-	&mysql_migrate_table( $dst_db. ".pdt", "id,sdomain,prefix,domain", $src_db . ".pdt", "?id,?sdomain,?prefix,?domain" );
+	&mysql_migrate_table( $dst_db . ".lcr", "id,prefix,from_uri,grp_id,priority", $src_db . ".lcr", "?id,?prefix,?from_uri,?grp_id,?priority" );
+	
 
 	### pdt
-	&mysql_migrate_table( $dst_db . ".subscriber", "id,username,domain,password,ha1,ha1b,rpid", $src_db . ".subscriber", "?id,?username,?domain,?password,?ha1,?ha1b,?rpid" );
+	&mysql_migrate_table( $dst_db. ".pdt", "id,sdomain,prefix,domain", $src_db . ".pdt", "?id,?sdomain,?prefix,?domain" );
+
+	### subscriber
+	&mysql_migrate_table( $dst_db . ".subscriber", "id,username,domain,password,ha1,ha1b,rpid", $src_db . ".subscriber", "?id,?username,?domain,?password,?email_address,?ha1,?ha1b,?rpid" );
 
 
 	if ( $HAS_EXTRA eq "yes" ) {
@@ -6739,7 +6743,7 @@ sub mysql_migrate_db() { # 2 parameters (src_db, dst_db)
 		&mysql_migrate_table( $dst_db . ".cpl", "id,username,domain,cpl_xml,cpl_bin", $src_db . ".cpl", "?id,?username,?domain,?cpl_xml,?cpl_bin" );
 
 		### siptrace
-		&mysql_migrate_table( $dst_db . ".sip_trace", "id,date,callid,traced_user,msg,method,status,fromip,toip,fromtag,direction", $src_db . ".sip_trace", "?id,?date,?callid,?traced_user,?msg,?method,?status,?fromip,?toip, ?fromtag,?direction" );
+		&mysql_migrate_table( $dst_db . ".sip_trace", "id,time_stamp,callid,traced_user,msg,method,status,fromip,toip,fromtag,direction", $src_db . ".sip_trace", "?id,?time_stamp,?callid,?traced_user,?msg,?method,?status,?fromip,?toip, ?fromtag,?direction" );
 
 		### imc_rooms
 		&mysql_migrate_table(  $dst_db . ".imc_rooms", "id,name,domain,flag", $src_db . ".imc_rooms", "?id,?name,?domain,?flag" );
