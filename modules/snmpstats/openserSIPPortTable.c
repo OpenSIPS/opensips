@@ -34,7 +34,6 @@
  */
 
 #include "snmpstats_globals.h"
-#include "network_stats.h"
 #include "../../socket_info.h"
 
 #include <net-snmp/net-snmp-config.h>
