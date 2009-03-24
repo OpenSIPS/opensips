@@ -7,7 +7,7 @@
 %define MYSQL_MODULES		modules/db_mysql
 %define UNIXODBC_MODULES	modules/db_unixodbc
 %define POSTGRES_MODULES	modules/db_postgres
-%define JABBER_MODULES		modules/jabber modules/xmpp
+%define XMPP_MODULES		modules/jabber modules/xmpp
 %define CPL_MODULES			modules/cpl-c
 %define SNMPSTATS_MODULES	modules/snmpstats
 %define PRESENCE_MODULES	modules/presence modules/presence_dialoginfo modules/presence_xml modules/presence_mwi modules/presence_xcapdiff modules/pua modules/pua_bla modules/pua_dialoginfo modules/pua_mi modules/pua_usrloc modules/pua_xmpp modules/rls modules/xcap_client
@@ -96,7 +96,7 @@ The opensips-cpl package contains a SIP CPL interpreter engine.
 Summary:  sip presence user agent support for the OpenSIPS.
 Group:    System Environment/Daemons
 Requires: opensips = %ver
-BuildPrereq:  libxml2-devel
+BuildPrereq:  libxml2-devel curl-devel
 
 %description presence
 The opensips-pua package contains a sip Presence Agent.
@@ -218,12 +218,12 @@ make install-doc modules="%RADIUS_MODULES" \
 		prefix=/usr \
 		cfg-prefix=$RPM_BUILD_ROOT \
 		cfg-target=/%{_sysconfdir}/opensips/ 
-make install-modules modules="modules/%SNMPSTATS_MODULES" \
+make install-modules modules="%SNMPSTATS_MODULES" \
 		basedir=$RPM_BUILD_ROOT \
 		prefix=/usr \
 		cfg-prefix=$RPM_BUILD_ROOT \
 		cfg-target=/%{_sysconfdir}/opensips/ 
-make install-doc modules="modules/%SNMPSTATS_MODULES" \
+make install-doc modules="%SNMPSTATS_MODULES" \
 		basedir=$RPM_BUILD_ROOT \
 		prefix=/usr \
 		cfg-prefix=$RPM_BUILD_ROOT \
@@ -255,6 +255,7 @@ fi
 %doc %{_docdir}/opensips/AUTHORS
 %doc %{_docdir}/opensips/INSTALL
 %doc %{_docdir}/opensips/README
+%doc %{_docdir}/opensips/NEWS
 %doc %{_docdir}/opensips/README-MODULES
 %doc %{_docdir}/opensips/README.acc
 %doc %{_docdir}/opensips/README.alias_db
@@ -273,6 +274,7 @@ fi
 %doc %{_docdir}/opensips/README.dispatcher
 %doc %{_docdir}/opensips/README.diversion
 %doc %{_docdir}/opensips/README.domain
+%doc %{_docdir}/opensips/README.domainpolicy
 %doc %{_docdir}/opensips/README.drouting
 %doc %{_docdir}/opensips/README.enum
 %doc %{_docdir}/opensips/README.exec
@@ -288,8 +290,8 @@ fi
 %doc %{_docdir}/opensips/README.mi_datagram
 %doc %{_docdir}/opensips/README.mi_fifo
 %doc %{_docdir}/opensips/README.msilo
-%doc %{_docdir}/opensips/README.nathelper
 %doc %{_docdir}/opensips/README.nat_traversal
+%doc %{_docdir}/opensips/README.nathelper
 %doc %{_docdir}/opensips/README.options
 %doc %{_docdir}/opensips/README.path
 %doc %{_docdir}/opensips/README.pdt
@@ -340,6 +342,7 @@ fi
 %{_libdir}/opensips/modules/dispatcher.so
 %{_libdir}/opensips/modules/diversion.so
 %{_libdir}/opensips/modules/domain.so
+%{_libdir}/opensips/modules/domainpolicy.so
 %{_libdir}/opensips/modules/drouting.so
 %{_libdir}/opensips/modules/enum.so
 %{_libdir}/opensips/modules/exec.so
@@ -355,8 +358,8 @@ fi
 %{_libdir}/opensips/modules/mi_datagram.so
 %{_libdir}/opensips/modules/mi_fifo.so
 %{_libdir}/opensips/modules/msilo.so
-%{_libdir}/opensips/modules/nathelper.so
 %{_libdir}/opensips/modules/nat_traversal.so
+%{_libdir}/opensips/modules/nathelper.so
 %{_libdir}/opensips/modules/options.so
 %{_libdir}/opensips/modules/path.so
 %{_libdir}/opensips/modules/pdt.so
@@ -372,6 +375,7 @@ fi
 %{_libdir}/opensips/modules/sl.so
 %{_libdir}/opensips/modules/sms.so
 %{_libdir}/opensips/modules/speeddial.so
+%{_libdir}/opensips/modules/sst.so
 %{_libdir}/opensips/modules/statistics.so
 %{_libdir}/opensips/modules/textops.so
 %{_libdir}/opensips/modules/tm.so
@@ -387,6 +391,7 @@ fi
 %{_sbindir}/osipsconsole
 %{_sbindir}/opensipsctl
 %{_sbindir}/opensipsdbctl
+%{_sbindir}/opensipsunix
 %{_libdir}/opensips/opensipsctl/dbtextdb/dbtextdb.py
 %{_libdir}/opensips/opensipsctl/opensipsctl.base
 %{_libdir}/opensips/opensipsctl/opensipsctl.ctlbase
@@ -479,7 +484,7 @@ fi
 %doc %{_docdir}/opensips/README.auth_radius
 %doc %{_docdir}/opensips/README.group_radius
 %doc %{_docdir}/opensips/README.uri_radius
-%{_libdir}/opensips/modules/peering.so
+%doc %{_docdir}/opensips/README.peering
 
 %{_libdir}/opensips/modules/avp_radius.so
 %{_libdir}/opensips/modules/auth_radius.so
@@ -503,6 +508,11 @@ fi
 
 
 %changelog
+* Tue Mar 24 2009 Marc Leurent <lftsy@leurent.eu>
+- Fix snmpstats packaging
+- Fix xmpp packaging
+- Add some missing README and modules .so files in main package
+
 * Tue Mar 03 2009 Julian Yap <julianokyap@gmail.com>
 - Update spec to OpenSIPS version 1.5.0.
 
