@@ -391,8 +391,8 @@ int handle_publish(struct sip_msg* msg, char* sender_uri, char* str2)
 		LM_DBG("'expires' not found; default=%d\n",	event->default_expires);
 		lexpire = event->default_expires;
 	}
-	if(lexpire > max_expires)
-		lexpire = max_expires;
+	if(lexpire > max_expires_publish)
+		lexpire = max_expires_publish;
 
 	/* get pres_uri from Request-URI*/
 	if( parse_sip_msg_uri(msg)< 0)

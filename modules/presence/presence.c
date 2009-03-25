@@ -105,7 +105,8 @@ char prefix='a';
 int startup_time=0;
 str db_url = {0, 0};
 int expires_offset = 0;
-int max_expires= 3600;
+int max_expires_subscribe= 3600;
+int max_expires_publish= 3600;
 int shtable_size= 9;
 shtable_t subs_htable= NULL;
 int fallback2db= 0;
@@ -131,7 +132,8 @@ static param_export_t params[]={
 	{ "clean_period",           INT_PARAM, &clean_period },
 	{ "db_update_period",       INT_PARAM, &db_update_period },
 	{ "expires_offset",         INT_PARAM, &expires_offset },
-	{ "max_expires",            INT_PARAM, &max_expires },
+	{ "max_expires_subscribe",  INT_PARAM, &max_expires_subscribe },
+	{ "max_expires_publish",    INT_PARAM, &max_expires_publish },
 	{ "server_address",         STR_PARAM, &server_address.s},
 	{ "subs_htable_size",       INT_PARAM, &shtable_size},
 	{ "pres_htable_size",       INT_PARAM, &phtable_size},
@@ -193,8 +195,11 @@ static int mod_init(void)
 	if(expires_offset<0)
 		expires_offset = 0;
 	
-	if(max_expires<= 0)
-		max_expires = 3600;
+	if(max_expires_subscribe<= 0)
+		max_expires_subscribe = 3600;
+
+	if(max_expires_publish<= 0)
+		max_expires_publish = 3600;
 
 	if(server_address.s== NULL)
 		LM_DBG("server_address parameter not set in configuration file\n");

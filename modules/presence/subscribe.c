@@ -571,7 +571,7 @@ int handle_subscribe(struct sip_msg* msg, char* str1, char* str2)
 		ev_param= ev_param->next;
 	}
 	
-	ret = extract_sdialog_info(&subs, msg, max_expires, &init_req,
+	ret = extract_sdialog_info(&subs, msg, max_expires_subscribe, &init_req,
 			server_address);
 	if(ret< 0)
 	{
