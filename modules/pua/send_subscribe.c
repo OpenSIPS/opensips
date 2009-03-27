@@ -558,7 +558,6 @@ void subs_cback_func(struct cell *t, int cb_type, struct tmcb_params *ps)
 		pkg_free(record_route.s);
 	}
 
-	
 	presentity->contact.s= (char*)presentity + size;
 	memcpy(presentity->contact.s, hentity->contact.s, hentity->contact.len);
 	presentity->contact.len= hentity->contact.len;
@@ -585,7 +584,7 @@ void subs_cback_func(struct cell *t, int cb_type, struct tmcb_params *ps)
 	}
 
 	/* write the remote contact filed */
-	presentity->remote_contact.s= (char*)shm_malloc(contact.len* sizeof(char));
+	presentity->remote_contact.s= (char*)shm_malloc(contact.len);
 	if(presentity->remote_contact.s== NULL)
 	{
 		ERR_MEM(SHARE_MEM);

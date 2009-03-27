@@ -48,6 +48,8 @@ void print_ua_pres(ua_pres_t* p)
 		LM_DBG("\tto_tag= %.*s  len= %d\n", p->to_tag.len, p->to_tag.s, p->to_tag.len);
 		LM_DBG("\tflag= %d\n", p->flag);
 		LM_DBG("\tevent= %d\n", p->event);
+		LM_DBG("\tremote_contact= [%.*s]\n", p->remote_contact.len, p->remote_contact.s);
+
 	}	
 	else
 	{
@@ -147,7 +149,8 @@ ua_pres_t* search_htable(ua_pres_t* pres, unsigned int hash_code)
 										 p->remote_contact.len)== 0)
 								break;
 						}
-						break;
+						else
+							break;
 					}
 				}
 				else
