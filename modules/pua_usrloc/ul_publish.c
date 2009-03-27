@@ -191,6 +191,7 @@ void ul_publish(ucontact_t* c, int type, void* param)
 	str uri= {NULL, 0};
 	char* at= NULL;
 	publ_info_t publ;
+	int error;
 
 	if(pua_ul_publish== 0)
 	{
@@ -249,18 +250,35 @@ void ul_publish(ucontact_t* c, int type, void* param)
 		publ.expires= c->expires - (int)time(NULL);
 	
 	if(type & UL_CONTACT_INSERT)
-		publ.flag|= INSERT_TYPE;
+		publ.flag= INSERT_TYPE;
 	else
-		publ.flag|= UPDATE_TYPE;
+		publ.flag= UPDATE_TYPE;
 
 	publ.source_flag|= UL_PUBLISH;
 	publ.event|= PRESENCE_EVENT;
 	publ.extra_headers= NULL;
 	publ.outbound_proxy = presence_server;
 
-	if(pua_send_publish(&publ)< 0)
+	if((error = pua_send_publish(&publ))< 0)
 	{
-		LM_ERR("failed to send publish\n");
+		if(publ.flag ==  INSERT_TYPE && error== ERR_PUBLISH_NO_BODY )
+		{
+			LM_DBG("Usrloc Publish for update failed - try Insert\n");
+			publ.body= build_pidf(c);
+			if(publ.body == NULL || publ.body->s == NULL)
+			{
+				LM_ERR("failed to generate publish body\n");
+				goto error;
+			}
+			publ.flag= INSERT_TYPE;
+
+			if(pua_send_publish(&publ)< 0)
+			{
+			   LM_ERR("failed to send publish\n");
+			}
+		}
+		else
+			LM_ERR("failed to send publish\n");
 	}
 
 error:

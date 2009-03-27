@@ -31,6 +31,8 @@
 #include "hash.h"
 #include "event_list.h"
 
+#define ERR_PUBLISH_NO_BODY -10
+
 typedef struct publ_info
 {
 	str id;
