@@ -147,7 +147,8 @@ ua_pres_t* search_htable(ua_pres_t* pres, unsigned int hash_code)
 										 p->remote_contact.len)== 0)
 								break;
 						}
-						break;
+						else
+							break;
 					}
 				}
 				else
