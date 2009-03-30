@@ -41,6 +41,7 @@
 #include "sipheader.h"
 
 extern int _osp_use_rpid;
+extern int _osp_use_rn;
 
 static void ospSkipPlus(char* e164);
 static int ospAppendHeader(struct sip_msg* msg, str* header); 
@@ -215,12 +216,16 @@ int ospGetUriUserpart(
     char* uriuser, 
     int buffersize)
 {
+    char* delim = NULL;
     int result = -1;
 
     uriuser[0] = '\0';
 
     if (parse_sip_msg_uri(msg) >= 0) {
         ospCopyStrToBuffer(&msg->parsed_uri.user, uriuser, buffersize);
+        if ((delim = strchr(uriuser, ';')) != NULL) {
+            *delim = '\0';
+        }
         ospSkipPlus(uriuser);
         result = 0;
     } else {
@@ -623,4 +628,51 @@ void ospGetNextHop(
         ospCopyStrToBuffer(&msg->parsed_uri.host, nexthop, buffersize);
         found = 1;
     }
+}
+
+/* 
+ * Get routing number from Request-Line
+ * param msg SIP message
+ * param routingnumber Routing number
+ * param buffersize Size of routingnumber
+ * return 0 success, -1 failure
+ */
+int ospGetRoutingNumber(
+    struct sip_msg* msg, 
+    char* routingnumber, 
+    int buffersize)
+{
+    str sv;
+    param_hooks_t phooks;
+    param_t* params = NULL;
+    param_t* pit;
+    int result = -1;
+
+    routingnumber[0] = '\0';
+
+    if (_osp_use_rn != 0) {
+        if (parse_sip_msg_uri(msg) >= 0) {
+            sv = msg->parsed_uri.user;
+            parse_params(&sv, CLASS_ANY, &phooks, &params);
+            for (pit = params; pit; pit = pit->next) {
+                if ((pit->name.len == OSP_RN_SIZE) && (strncasecmp(pit->name.s, OSP_RN_NAME, OSP_RN_SIZE) == 0)) {
+                    ospCopyStrToBuffer(&pit->body, routingnumber, buffersize);
+                    result = 0;
+                    break;
+                }
+            }
+            if (params != NULL) {
+                free_params(params);
+            }
+            if (result != 0) {
+                LM_DBG("without routing number parameter\n");
+            }
+        } else {
+            LM_ERR("failed to parse Request-Line URI\n");
+        }
+    } else {
+        LM_DBG("do not use routing number\n");
+    }
+
+    return result;
 }

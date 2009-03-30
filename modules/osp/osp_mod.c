@@ -62,6 +62,7 @@ extern int _osp_retry_limit;
 extern int _osp_timeout;
 extern int _osp_max_dests;
 extern int _osp_use_rpid;
+extern int _osp_use_rn;
 extern int _osp_redir_uri;
 extern char _osp_PRIVATE_KEY[];
 extern char _osp_LOCAL_CERTIFICATE[];
@@ -141,6 +142,7 @@ static param_export_t params[]={
     {"timeout",                        INT_PARAM, &_osp_timeout},
     {"max_destinations",               INT_PARAM, &_osp_max_dests},
     {"use_rpid_for_calling_number",    INT_PARAM, &_osp_use_rpid},
+    {"use_routing_number",             INT_PARAM, &_osp_use_rn},
     {"redirection_uri_format",         INT_PARAM, &_osp_redir_uri},
     {"source_networkid_avp",           STR_PARAM, &_osp_snid_avp},
     {0,0,0} 
@@ -334,6 +336,7 @@ static void ospDumpParameters(void)
     LM_INFO("    timeout '%d' ", _osp_timeout);
     LM_INFO("    validate_call_id '%d' ", _osp_validate_callid);
     LM_INFO("    use_rpid_for_calling_number '%d' ", _osp_use_rpid);
+    LM_INFO("    use_routing_number '%d' ", _osp_use_rn);
     LM_INFO("    redirection_uri_format '%d' ", _osp_redir_uri);
     LM_INFO("    max_destinations '%d'\n", _osp_max_dests);
     if (_osp_snid_avpname.n == 0) {

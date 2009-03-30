@@ -214,6 +214,16 @@ modparam("osp","use_rpid_calling_number",1)
       </example>
     </section>
     <section>
+      <title><varname>use_routing_number</varname></title>
+      <para>The use_routing_number (integer) parameter instructs the OSP module to use the routing number in the Request URI of the SIP INVITE message. If this value is set to 1, the OSP Module uses the routing number in the Request URI of the INVITE message when a rn parameter exists. If this value is set to 0, the OSP Module will not use the routing number of the INVITE message. The default value is 1.</para>
+      <example>
+        <title>Instructing the module to use routing number in Request URI</title>
+        <programlisting format="linespecific">
+modparam("osp","use_routing_number",1)
+        </programlisting>
+      </example>
+    </section>
+    <section>
       <title><varname>redirection_uri_format</varname></title>
       <para>The redirection_uri_format (integer) parameter instructs the OSP module to use the different URI format in the SIP redirection message. If this value is set to 0, the OSP Module uses "xxxxxxxxxx@xxx.xxx.xxx.xxx" URI in the SIP redirection messages. If this value is set to 1, the OSP Module will use <quote>&lt;xxxxxxxxxx@xxx.xxx.xxx.xxx&gt;</quote> URI in the SIP redirection messages. The default value is 0</para>
       <example>

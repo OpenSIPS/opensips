@@ -37,6 +37,9 @@
 #define OSP_TOKEN_HEADER    "P-OSP-Auth-Token: "
 #define OSP_HEADER_SIZE     strlen(OSP_TOKEN_HEADER)
 
+#define OSP_RN_NAME         "rn"
+#define OSP_RN_SIZE         strlen(OSP_RN_NAME)
+
 void ospCopyStrToBuffer(str* source, char* buffer, int buffersize);
 int ospGetFromUserpart(struct sip_msg* msg, char* fromuser, int buffersize);
 int ospGetRpidUserpart(struct sip_msg* msg, char* fromuser, int buffersize);
@@ -49,6 +52,7 @@ int ospGetCallId(struct sip_msg* msg, OSPT_CALL_ID** callid);
 int ospGetRouteParameters(struct sip_msg* msg, char* routeparams, int buffersize);
 int ospRebuildDestionationUri(str* newuri, char* called, char* dest, char* port, int format);
 void ospGetNextHop(struct sip_msg* msg, char* nexthop, int buffersize);
+int ospGetRoutingNumber(struct sip_msg* msg, char* routingnumber, int buffersize);
 
 #endif /* _OSP_MOD_SIPHEADER_H_ */
 

@@ -45,8 +45,9 @@ Di-Shi Sun
               1.3.13. max_destinations
               1.3.14. validate_call_id
               1.3.15. use_rpid_for_calling_number
-              1.3.16. redirection_uri_format
-              1.3.17. source_networkid_avp
+              1.3.16. use_routing_number
+              1.3.17. redirection_uri_format
+              1.3.18. source_networkid_avp
 
         1.4. Exported Functions
 
@@ -80,16 +81,19 @@ Di-Shi Sun
    1.15. Instructing the module to use calling number in
           Remote-Party-ID
 
-   1.16. Setting the redirection URI format
-   1.17. Setting the source network ID AVP
-   1.18. checkospheader usage
-   1.19. validateospheader usage
-   1.20. requestosprouting usage
-   1.21. checkosproute usage
-   1.22. prepareosproute usage
-   1.23. checkcallingtranslation usage
-   1.24. prepareallosproute usage
-   1.25. reportospusage usage
+   1.16. Instructing the module to use routing number in Request
+          URI
+
+   1.17. Setting the redirection URI format
+   1.18. Setting the source network ID AVP
+   1.19. checkospheader usage
+   1.20. validateospheader usage
+   1.21. requestosprouting usage
+   1.22. checkosproute usage
+   1.23. prepareosproute usage
+   1.24. checkcallingtranslation usage
+   1.25. prepareallosproute usage
+   1.26. reportospusage usage
 
 Chapter 1. Admin Guide
 
@@ -343,7 +347,21 @@ modparam("osp","validate_call_id",1)
    Remote-Party-ID
 modparam("osp","use_rpid_calling_number",1)
 
-1.3.16. redirection_uri_format
+1.3.16. use_routing_number
+
+   The use_routing_number (integer) parameter instructs the OSP
+   module to use the routing number in the Request URI of the SIP
+   INVITE message. If this value is set to 1, the OSP Module uses
+   the routing number in the Request URI of the INVITE message
+   when a rn parameter exists. If this value is set to 0, the OSP
+   Module will not use the routing number of the INVITE message.
+   The default value is 1.
+
+   Example 1.16. Instructing the module to use routing number in
+   Request URI
+modparam("osp","use_routing_number",1)
+
+1.3.17. redirection_uri_format
 
    The redirection_uri_format (integer) parameter instructs the
    OSP module to use the different URI format in the SIP
@@ -353,10 +371,10 @@ modparam("osp","use_rpid_calling_number",1)
    “<xxxxxxxxxx@xxx.xxx.xxx.xxx>” URI in the SIP redirection
    messages. The default value is 0
 
-   Example 1.16. Setting the redirection URI format
+   Example 1.17. Setting the redirection URI format
 modparam("osp","redirection_uri_format",1)
 
-1.3.17. source_networkid_avp
+1.3.18. source_networkid_avp
 
    The source_networkid_avp (string) parameter instructs the OSP
    module to use the defined AVP to pass the source network ID
@@ -366,7 +384,7 @@ modparam("osp","redirection_uri_format",1)
    variables are described in
    http://opensips.org/dokuwiki/doku.php/pseudovariables:1.3.x.
 
-   Example 1.17. Setting the source network ID AVP
+   Example 1.18. Setting the source network ID AVP
 modparam("osp","source_networkid_avp","$avp(s:snid)")
 
 1.4. Exported Functions
@@ -378,7 +396,7 @@ modparam("osp","source_networkid_avp","$avp(s:snid)")
 
    This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
-   Example 1.18. checkospheader usage
+   Example 1.19. checkospheader usage
 ...
 if (checkospheader()) {
   log(1,"OSP header field found.\n");
@@ -397,7 +415,7 @@ if (checkospheader()) {
 
    This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
-   Example 1.19. validateospheader usage
+   Example 1.20. validateospheader usage
 ...
 if (validateospheader()) {
   log(1,"valid OSP header found\n");
@@ -426,7 +444,7 @@ if (validateospheader()) {
 
    This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
-   Example 1.20. requestosprouting usage
+   Example 1.21. requestosprouting usage
 ...
 if (requestosprouting()) {
   log(1,"successfully queried OSP server, now relaying call\n");
@@ -442,7 +460,7 @@ if (requestosprouting()) {
 
    This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
-   Example 1.21. checkosproute usage
+   Example 1.22. checkosproute usage
 ...
 if (checkosproute()) {
   log(1,"There is at least one route for the call\n");
@@ -465,7 +483,7 @@ if (checkosproute()) {
 
    This function can be used from BRANCH_ROUTE.
 
-   Example 1.22. prepareosproute usage
+   Example 1.23. prepareosproute usage
 ...
 if (prepareosproute()) {
   log(1,"successfully prepared the route, now relaying call\n");
@@ -487,7 +505,7 @@ if (prepareosproute()) {
 
    This function can be used from BRANCH_ROUTE.
 
-   Example 1.23. checkcallingtranslation usage
+   Example 1.24. checkcallingtranslation usage
 ...
 if (checkcallingtranslation()) {
   # Remove the Remote_Party-ID from the received message
@@ -509,7 +527,7 @@ if (checkcallingtranslation()) {
 
    This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
-   Example 1.24. prepareallosproute usage
+   Example 1.25. prepareallosproute usage
 ...
 if (prepareallosproute()) {
   log(1,"Routes are prepared, now either forking or redirecting the cal
@@ -536,7 +554,7 @@ l\n");
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.25. reportospusage usage
+   Example 1.26. reportospusage usage
 ...
 if (is_direction("downstream")) {
   log(1,"This BYE message is from SOURCE\n");

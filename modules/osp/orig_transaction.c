@@ -249,8 +249,9 @@ int ospRequestRouting(
 {
     int errorcode;
     time_t authtime;
-    char called[OSP_E164BUF_SIZE];
     char calling[OSP_E164BUF_SIZE];
+    char called[OSP_E164BUF_SIZE];
+    char routingnumber[OSP_E164BUF_SIZE];
     char sourcedev[OSP_STRBUF_SIZE];
     char deviceinfo[OSP_STRBUF_SIZE];
     struct usr_avp* snidavp = NULL;
@@ -286,6 +287,8 @@ int ospRequestRouting(
     } else {
         ospConvertAddress(sourcedev, deviceinfo, sizeof(deviceinfo));
 
+        ospGetRoutingNumber(msg, routingnumber, sizeof(routingnumber));
+
         if ((_osp_snid_avpname.n != 0) &&
             ((snidavp = search_first_avp(_osp_snid_avptype, _osp_snid_avpname, &snidval, 0)) != NULL) &&
             (snidavp->flags & AVP_VAL_STR) && (snidval.s.s && snidval.s.len)) 
@@ -303,6 +306,7 @@ int ospRequestRouting(
             "source_networkid '%s' "
             "calling '%s' "
             "called '%s' "
+            "routing_number '%s' "
             "call_id '%.*s' "
             "dest_count '%d'\n",
             _osp_device_ip,
@@ -311,10 +315,13 @@ int ospRequestRouting(
             snid,
             calling,
             called,
+            routingnumber,
             callids[0]->ospmCallIdLen,
             callids[0]->ospmCallIdVal,
             destcount
         );    
+
+        OSPPTransactionSetRoutingNumber(transaction, routingnumber);
 
         /* try to request authorization */
         errorcode = OSPPTransactionRequestAuthorisation(
