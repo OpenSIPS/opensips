@@ -1,0 +1,11 @@
+#!/sbin/sh
+
+TMPLIST="/tmp/.opensipspcre"
+echo "Set LD_LIBRARY_PATH to one of these directories before starting OpenSIPS:"
+echo " "
+
+cat $TMPLIST
+
+rm -f $TMPLIST
+
+exit 0;

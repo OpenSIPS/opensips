@@ -1,5 +1,5 @@
-PKG="OpenSIPS-mysql"
-NAME="Programmable SIP Server MySQL Support"
+PKG="OpenSIPS-regex"
+NAME="Programmable SIP Server Regex Module"
 VERSION="1.5.0"
 ARCH="sparc"
 CLASSES="none"
