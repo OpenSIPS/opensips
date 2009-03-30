@@ -1,0 +1,10 @@
+i pkginfo
+i preinstall
+i postinstall
+d none /opt 0755 root sys
+d none /opt/opensips 0755 root root
+d none /opt/opensips/lib64 0755 root root
+d none /opt/opensips/lib64/opensips 0755 root root
+d none /opt/opensips/lib64/opensips/modules 0755 root root
+f none /opt/opensips/lib64/opensips/modules/mi_xmlrpc.so 0755 root root
+f none /opt/opensips/README.mi_xmlrpc 0644 root root
