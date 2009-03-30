@@ -230,7 +230,8 @@ my @command_list = ('acl'=> ('show','grant','revoke'),
 		    'db_berkeley'=>('list','ls','cat','swap','append','newappend','export','import','migrate'),
 		    'dr'=>('gateway', 'rules'),
 		    'gateway'=>('add','rm','list'), 
-		    'rules'=>('add','rm','list')				
+		    'rules'=>('add','rm','list'),
+		    'help'=>'help'				
 		    );
   		    
 		    
@@ -1732,6 +1733,7 @@ sub cmd() {
 		case (/^version$/)				{ system(&opensips_version()); }
 		case (/(^extra$)|(^migrate$)|(^copy$)|(^backup$)|(^restore$)|(^create$)|(^presence$)|(^drop$)|(^reinit$)|(^bdb$)|(^db_berkeley$)|(^cat$)/) {system(&opensips_db()); }
 		case (/^dr$/)				      	{ &db_load(); system(&opensips_dr()); }
+		case (/^help$/)				      	{ system(&opensips_help()); }
 		else 						{ print " unknown command!!!\n"; }
 
 			
@@ -1744,6 +1746,61 @@ sub cmd() {
 
 
 #all
+##### ------------------------------------------------ #####
+#
+sub opensips_help() {
+
+        &usage_online();
+        print "\n\n";
+        &usage_opensips_monitor();
+        print "\n\n";
+        &usage_ping();
+        print "\n\n";
+        &usage_usrloc();
+        print "\n\n";
+        &usage_base();
+        print "\n\n";
+        &usage_tls();
+        print "\n\n";
+        &usage_acl();
+        print "\n\n";
+        &usage_lcr();
+        print "\n\n";
+        &usage_cr();
+        print "\n\n";
+        &usage_rpid();
+        print "\n\n";
+        &usage_subscriber();
+        print "\n\n";
+        &usage_trusted();
+        print "\n\n";
+        &usage_dispatcher();
+        print "\n\n";
+        &usage_db_ops();
+        print "\n\n";
+        &usage_speeddial();
+        print "\n\n";
+        &usage_avp();
+        print "\n\n";
+        &usage_alias_db();
+        print "\n\n";
+        &usage_domain();
+        print "\n\n";
+        &usage_fifo();
+        print "\n\n";
+        &usage_dialplan;
+        print "\n\n";
+        &usage_unixsock();
+        print "\n\n";
+        &usage_db();
+        print "\n\n";
+        &berkeley_usage();
+        print "\n\n";
+        &usage_dr();
+        print "\n\n";
+}
+
+
 ##### ------------------------------------------------ #####
 ### opensips_start
 #
