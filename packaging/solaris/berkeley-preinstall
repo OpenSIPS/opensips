@@ -2,7 +2,7 @@
 # Script for checking prerequisites for OpenSIPS-berkeley
 
 BASE="OpenSIPS-base"
-LIBBDB="libdb-4.4.so"
+LIBBDB="libdb-4.7.so"
 TMPLIST="/tmp/.opensipsbdb"
 
 pkginfo | grep -i $BASE > /dev/null

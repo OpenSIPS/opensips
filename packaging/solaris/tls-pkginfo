@@ -1,5 +1,5 @@
-PKG="OpenSIPS-berkeley-dbg"
-NAME="Programmable SIP Server Berkeley Database Support - Debugging Symbols"
+PKG="OpenSIPS-base-TLS"
+NAME="Programmable SIP Server Base Install with TLS"
 VERSION="1.6.0dev0-notls"
 ARCH="sparc"
 CLASSES="none"
