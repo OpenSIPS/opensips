@@ -27,6 +27,7 @@
 #include <sys/types.h>
 #include <regex.h>
 
+#include "../../mod_fix.h"
 #include "../../str.h"
 #include "../../mem/mem.h"
 #include "../../route_struct.h"
@@ -131,6 +132,7 @@ error:
 int get_user_group(struct sip_msg *req, char *user, char *avp)
 {
 	static char uri_buf[MAX_URI_SIZE];
+	str user_str;
 	str  username;
 	str  domain;
 	pv_spec_t *pvs;
@@ -140,7 +142,12 @@ int get_user_group(struct sip_msg *req, char *user, char *avp)
 	char *c;
 	int n;
 
-	if (get_username_domain( req, (group_check_p)user, &username, &domain)!=0){
+	if(user ==  NULL || fixup_get_svalue(req, (gparam_p)user, &user_str) != 0){
+		LM_ERR("Invalid parameter URI\n");
+		return -1;
+	}
+
+	if (get_username_domain( req, &user_str, &username, &domain)!=0){
 		LM_ERR("failed to get username@domain\n");
 		goto error;
 	}

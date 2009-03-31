@@ -46,8 +46,8 @@ typedef struct _group_check
 /*
  * extracts username and domain from MSG
  */
-int get_username_domain(struct sip_msg *msg, group_check_p gcp,
-	str *username, str *domain);
+int get_username_domain(struct sip_msg *msg, str *hf_s,
+		str *username, str *domain);
 
 
 /*

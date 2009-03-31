@@ -230,13 +230,10 @@ static void destroy(void)
 static int get_gid_fixup(void** param, int param_no)
 {
 	pv_spec_t *sp;
-	void *ptr;
 	str  name;
 
 	if (param_no == 1) {
-		ptr = *param;
-		if ( (*param = (void*)get_hf( ptr ))==0 )
-			return E_UNSPEC;
+		return fixup_spve_spve(param, param_no);
 	} else if (param_no == 2) {
 		name.s = (char*)*param;
 		name.len = strlen(name.s);
