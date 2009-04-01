@@ -619,6 +619,12 @@ after_dialog_check:
 			//	CON_PS_REFERENCE(pa_db) = &my_ps_update_no_body;
 			}
 
+			if (pa_dbf.use_table(pa_db, &presentity_table) < 0) 
+			{
+				LM_ERR("unsuccessful sql use table\n");
+				goto error;
+			}
+
 			if( pa_dbf.update( pa_db,query_cols, query_ops, query_vals,
 					update_keys, update_vals, n_query_cols, n_update_cols )<0) 
 			{
