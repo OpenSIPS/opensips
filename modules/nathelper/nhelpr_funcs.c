@@ -174,6 +174,12 @@ int extract_body(struct sip_msg *msg, str *body )
 		LM_ERR("message body has length zero\n");
 		goto error;
 	}
+	/* sanity check to be sure we do not overflow if CT is bogus */
+	if (body->s + body->len > msg->buf+msg->len) {
+		LM_ERR("bogus cotent type (%d) pointing outside the message %p %p\n",
+			body->len,body->s + body->len,msg->buf+msg->len );
+		goto error;
+	}
 	
 	/* no need for parse_headers(msg, EOH), get_body will 
 	 * parse everything */
@@ -199,6 +205,8 @@ int extract_body(struct sip_msg *msg, str *body )
 
 	return 1;
 error:
+	body->s = NULL;
+	body->len = 0;
 	return -1;
 }
 
