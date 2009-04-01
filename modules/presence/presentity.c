@@ -595,6 +595,12 @@ after_dialog_check:
 				n_update_cols++;
 			}
 
+			if (pa_dbf.use_table(pa_db, &presentity_table) < 0) 
+			{
+				LM_ERR("unsuccessful sql use table\n");
+				goto error;
+			}
+
 			if( pa_dbf.update( pa_db,query_cols, query_ops, query_vals,
 					update_keys, update_vals, n_query_cols, n_update_cols )<0) 
 			{
