@@ -53,8 +53,6 @@ MODULE_VERSION
 #define TABLE_VERSION    3
 #define RE_TABLE_VERSION 2
 
-static group_check_p get_hf( char *str1);
-
 /*
  * Module destroy function prototype
  */
@@ -230,13 +228,10 @@ static void destroy(void)
 static int get_gid_fixup(void** param, int param_no)
 {
 	pv_spec_t *sp;
-	void *ptr;
 	str  name;
 
 	if (param_no == 1) {
-		ptr = *param;
-		if ( (*param = (void*)get_hf( ptr ))==0 )
-			return E_UNSPEC;
+		return fixup_spve_spve(param, param_no);
 	} else if (param_no == 2) {
 		name.s = (char*)*param;
 		name.len = strlen(name.s);
@@ -257,49 +252,3 @@ static int get_gid_fixup(void** param, int param_no)
 
 	return 0;
 }
-
-/*
- *  *  * Convert HF description string to hdr_field pointer
- *   *   *                                                   
- *    *    * Supported strings:                                
- *     *     * "Request-URI", "To", "From", "Credentials"        
- *      *      */                                                  
-static group_check_p get_hf( char *str1)                    
-{                                                           
-        group_check_p gcp=NULL;                             
-        str s;                                              
-
-        gcp = (group_check_p)pkg_malloc(sizeof(group_check_t));
-        if(gcp == NULL) {
-                LM_ERR("no pkg more memory\n");
-                return 0;
-        }
-        memset(gcp, 0, sizeof(group_check_t));
-
-        if (!strcasecmp( str1, "Request-URI")) {
-                gcp->id = 1;
-        } else if (!strcasecmp( str1, "To")) {
-                gcp->id = 2;
-        } else if (!strcasecmp( str1, "From")) {
-                gcp->id = 3;
-        } else if (!strcasecmp( str1, "Credentials")) {
-                gcp->id = 4;
-        } else {
-                s.s = str1; s.len = strlen(s.s);
-                if(pv_parse_spec( &s, &gcp->sp)==NULL
-                        || gcp->sp.type!=PVT_AVP)
-                {
-                        LM_ERR("unsupported User Field identifier\n");
-                        pkg_free( gcp );
-                        return 0;
-                }
-                gcp->id = 5;
-        }
-
-        /* do not free all the time, needed by pseudo-variable spec */
-        if(gcp->id!=5)
-                pkg_free(str1);
-
-        return gcp;
-}
-

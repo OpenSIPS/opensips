@@ -43,20 +43,19 @@
 #include "group.h"
 #include "group_mod.h"                   /* Module parameters */
 
-static group_check_p get_hf( char *str1);
+static unsigned int hf_type( str *str1);
 
-int get_username_domain(struct sip_msg *msg, group_check_p gcp,
+int get_username_domain(struct sip_msg *msg, str *hf_s,
 											str *username, str *domain)
 {
 	struct sip_uri puri;
 	struct sip_uri *turi;
 	struct hdr_field* h;
 	struct auth_body* c = 0; /* Makes gcc happy */
-	pv_value_t value;
 
 	turi = NULL;
 
-	switch(gcp->id) {
+	switch( hf_type(hf_s) ) {
 		case 1: /* Request-URI */
 			if(parse_sip_msg_uri(msg)<0) {
 				LM_ERR("failed to get Request-URI\n");
@@ -92,22 +91,16 @@ int get_username_domain(struct sip_msg *msg, group_check_p gcp,
 			c = (auth_body_t*)(h->parsed);
 			break;
 
-		case 5: /* AVP spec */
-			if(pv_get_spec_value( msg, &gcp->sp, &value)!=0 
-				|| value.flags&PV_VAL_NULL || value.rs.len<=0)
-			{
-				LM_ERR("no AVP found (error in scripts)\n");
-				return -1;
-			}
-			if (parse_uri(value.rs.s, value.rs.len, &puri) < 0) {
-				LM_ERR("failed to parse URI <%.*s>\n",value.rs.len, value.rs.s);
+		default: /* string */
+			if (parse_uri(hf_s->s, hf_s->len, &puri) < 0) {
+				LM_ERR("failed to parse URI <%.*s>\n",hf_s->len, hf_s->s);
 				return -1;
 			}
 			turi = &puri;
 			break;
 	}
 
-	if (gcp->id != 4) {
+	if ( c==NULL ) {
 		*username = turi->user;
 		*domain = turi->host;
 	} else {
@@ -148,13 +141,7 @@ int is_user_in(struct sip_msg* _msg, char* _hf, char* _grp)
 		return -1;
 	}
 
-	group_check_p hfPtr = get_hf(hf_s.s);
-	if (hfPtr==NULL) {
-		LM_ERR("unable to get user/dom source\n");
-		return -1;
-	}
-
-	if ( get_username_domain( _msg, hfPtr, &(VAL_STR(vals)),
+	if ( get_username_domain( _msg, &hf_s, &(VAL_STR(vals)),
 	&(VAL_STR(vals+2)))!=0) {
 		LM_ERR("failed to get username@domain\n");
 		return -1;
@@ -235,46 +222,20 @@ void group_db_close(void)
 }
 
 /*
- *  * Convert HF description string to hdr_field pointer
- *  *                                                   
- *  * Supported strings:                                
  *  * "Request-URI", "To", "From", "Credentials"        
- *  * It is a copy from get_hf at group_mod.c     
 */
-static group_check_p get_hf( char *str1)
+static unsigned int hf_type( str *str1)
 {
-	group_check_p gcp=NULL;
-	str s;
-
-	gcp = (group_check_p)pkg_malloc(sizeof(group_check_t));
-	if(gcp == NULL) {
-		LM_ERR("no pkg more memory\n");
-		return NULL;
-	}
-	memset(gcp, 0, sizeof(group_check_t));
-
-	if (!strcasecmp( str1, "Request-URI")) {
-		gcp->id = 1;
-	} else if (!strcasecmp( str1, "To")) {
-		gcp->id = 2;
-	} else if (!strcasecmp( str1, "From")) {
-		gcp->id = 3;
-	} else if (!strcasecmp( str1, "Credentials")) {
-		gcp->id = 4;
+	if (str1->len==11 && !strncasecmp( str1->s, "Request-URI",11)) {
+		return 1;
+	} else if (str1->len==2 && !strncasecmp( str1->s, "To", 2)) {
+		return 2;
+	} else if (str1->len==4 && !strncasecmp( str1->s, "From", 4)) {
+		return 3;
+	} else if (str1->len==11 && !strncasecmp( str1->s, "Credentials",11)) {
+		return 4;
 	} else {
-		s.s = str1; s.len = strlen(s.s);
-		if(pv_parse_spec( &s, &gcp->sp)==NULL || gcp->sp.type!=PVT_AVP)
-		{
-			LM_ERR("unsupported User Field identifier\n");
-			pkg_free( gcp );
-			return NULL;
-		}
-		gcp->id = 5;
+		return 0;
 	}
 
-	/* do not free all the time, needed by pseudo-variable spec */
-	if(gcp->id!=5)
-		pkg_free(str1);
-
-	return gcp;
 }
