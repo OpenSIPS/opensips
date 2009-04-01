@@ -42,6 +42,7 @@ struct bind_ocontent {
 	char buf[PREP_STMT_VAL_LEN];
 	unsigned long len;
 	my_bool null;
+	my_bool error;
 };
 
 

@@ -214,6 +214,8 @@ static struct my_stmt_ctx * get_new_stmt_ctx(const db_con_t* conn,
 		LM_ERR("no more pkg mem for statement context\n");
 		return NULL;
 	}
+	memset( ctx, 0, 
+		sizeof(struct my_stmt_ctx) + CON_TABLE(conn)->len + query->len);
 	ctx->table.s = (char*)(ctx+1);
 	ctx->table.len = CON_TABLE(conn)->len;
 	memcpy( ctx->table.s, CON_TABLE(conn)->s, ctx->table.len);
@@ -487,6 +489,9 @@ static int db_mysql_do_prepared_query(const db_con_t* conn, const str *query,
 				LM_ERR("no more pkg mem for the a new prepared statement\n");
 				return -1;
 			}
+			memset(pq_ptr->bind_out, 0 ,
+				cols*(sizeof(struct bind_ocontent) + sizeof(MYSQL_BIND)));
+
 			pq_ptr->out_bufs = (struct bind_ocontent*)(pq_ptr->bind_out+cols);
 			mysql_bind = pq_ptr->bind_out;
 			/* prepare the pointers */
@@ -496,6 +501,9 @@ static int db_mysql_do_prepared_query(const db_con_t* conn, const str *query,
 				mysql_bind[i].buffer_length = PREP_STMT_VAL_LEN;
 				mysql_bind[i].length = &pq_ptr->out_bufs[i].len;
 				mysql_bind[i].is_null = &pq_ptr->out_bufs[i].null;
+#if (MYSQL_VERSION_ID >= 50030)
+				mysql_bind[i].error = &pq_ptr->out_bufs[i].error;
+#endif
 			}
 			/* bind out values to the statement */
 			LM_DBG("doing to BIND_PARAM out ...\n");
