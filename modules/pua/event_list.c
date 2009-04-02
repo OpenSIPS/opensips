@@ -58,6 +58,12 @@ int add_pua_event(int ev_flag, char* name, char* content_type,
 	int ctype_len= 0;
 	str str_name;	
 
+	if(pua_evlist == NULL)
+	{
+		LM_ERR("ERROR: 'pua' module must be loaded before this module\n");
+		return -1;
+	}
+
 	name_len= strlen(name);
 	str_name.s= name;
 	str_name.len= name_len;
@@ -70,7 +76,7 @@ int add_pua_event(int ev_flag, char* name, char* content_type,
 	if(content_type)
 		ctype_len= strlen(content_type);
 
-	size= sizeof(pua_event_t)+ (name_len+ ctype_len)* sizeof(char);
+	size= sizeof(pua_event_t)+ (name_len+ ctype_len);
 
 	event= (pua_event_t*)shm_malloc(size);
 	if(event== NULL)
@@ -101,7 +107,7 @@ int add_pua_event(int ev_flag, char* name, char* content_type,
 	pua_evlist->next= event;
 
 	return 0;
-}	
+}
 
 pua_event_t* contains_pua_event(str* name)
 {
@@ -113,7 +119,7 @@ pua_event_t* contains_pua_event(str* name)
 		if(event->name.len== name->len &&
 				strncmp(event->name.s, name->s, name->len)== 0)
 		{
-			return event;	
+			return event;
 		}
 		event= event->next;
 	}	
