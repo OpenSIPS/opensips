@@ -56,8 +56,12 @@ static void reset_all_statements(const db_con_t* conn)
 	struct prep_stmt *pq_ptr;
 	struct my_stmt_ctx *ctx;
 
+	LM_DBG("reseting all statements on connection: (%p)%li\n", 
+		conn,conn->tail);
 	for( pq_ptr=CON_PS_LIST(conn); pq_ptr ; pq_ptr=pq_ptr->next ) {
 		for (ctx = pq_ptr->ctx ; ctx ; ctx=ctx->next ) {
+			LM_DBG("resetting statement (%p) for context %p (%.*s)\n",
+				ctx->stmt, ctx, ctx->table.len,ctx->table.s);
 			if (ctx->stmt) {
 				mysql_stmt_close(ctx->stmt);
 				ctx->stmt = NULL;
@@ -87,11 +91,14 @@ static int db_mysql_submit_query(const db_con_t* _h, const str* _s)
 {	
 	time_t t;
 	int i, code;
+	unsigned long id;
 
 	if (!_h || !_s || !_s->s) {
 		LM_ERR("invalid parameter value\n");
 		return -1;
 	}
+
+	id = mysql_thread_id(CON_CONNECTION(_h));
 
 	if (db_mysql_ping_interval) {
 		t = time(0);
@@ -125,6 +132,8 @@ static int db_mysql_submit_query(const db_con_t* _h, const str* _s)
 	 */
 	for (i=0; i < (db_mysql_auto_reconnect ? 3 : 1); i++) {
 		if (mysql_real_query(CON_CONNECTION(_h), _s->s, _s->len) == 0) {
+			if (id!=mysql_thread_id(CON_CONNECTION(_h)))
+				reset_all_statements(_h);
 			return 0;
 		}
 		code = mysql_errno(CON_CONNECTION(_h));
@@ -348,6 +357,8 @@ static int db_mysql_do_prepared_query(const db_con_t* conn, const str *query,
 	struct prep_stmt *pq_ptr;
 	struct my_stmt_ctx *ctx;
 	MYSQL_BIND *mysql_bind;
+
+	LM_DBG("conn=%p (tail=%ld) MC=%p\n",conn, conn->tail,CON_CONNECTION(conn));
 
 	if ( CON_MYSQL_PS(conn) == NULL ) {
 		/*  First time when this query is run, so we need to init it ->
