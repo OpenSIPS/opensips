@@ -449,6 +449,18 @@ static int db_mysql_do_prepared_query(const db_con_t* conn, const str *query,
 			cols = mysql_num_fields(CON_RESULT(conn));
 		}
 
+		/* this is a very ugly hack in order to avoid a bug in the mysql lib
+		 *     http://bugs.mysql.com/bug.php?id=43560
+		 * We use the mysql_ping() function to before mysql_stmt_execute() as 
+		   this function crashes if mysql server is down (on "Can't connect 
+		   to local MySQL server" error)
+		 */
+		if (mysql_ping(CON_CONNECTION(conn))) {
+			LM_WARN("driver error on ping: %s\n",
+				mysql_error(CON_CONNECTION(conn)));
+			return -1;
+		}
+
 		if ( (code = mysql_stmt_execute(ctx->stmt)!=0 )) {
 			code = mysql_stmt_errno(ctx->stmt);
 			LM_DBG("mysql_stmt_execute => %d\n",code);
