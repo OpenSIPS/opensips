@@ -240,7 +240,6 @@ int dp_load_db(void)
 	}
 
 	*next_idx = ((*crt_idx) == 0)? 1:0;
-	destroy_hash(*next_idx);
 
 	if(nr_rows == 0){
 		LM_WARN("no data in the db\n");
@@ -277,13 +276,15 @@ int dp_load_db(void)
 	
 
 end:
+	destroy_hash(*crt_idx);
 	/*update data*/
 	*crt_idx = *next_idx;
-	list_hash(*crt_idx);
-	
+
 	/* if lock defined - release the exclusive writing access */
 	if(ref_lock)
 		*reload_flag = 0;
+
+	list_hash(*crt_idx);
 
 
 	dp_dbf.free_result(dp_db_handle, res);
