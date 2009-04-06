@@ -80,6 +80,7 @@ struct my_con {
 	time_t timestamp;        /* Timestamp of last query */
 
 	struct prep_stmt *ps_list; /* list of prepared statements */
+	unsigned int disconnected; /* (CR_CONNECTION_ERROR) was detected */
 };
 
 
@@ -92,6 +93,7 @@ struct my_con {
 #define CON_ROW(db_con)        (((struct my_con*)((db_con)->tail))->row)
 #define CON_TIMESTAMP(db_con)  (((struct my_con*)((db_con)->tail))->timestamp)
 #define CON_PS_LIST(db_con)    (((struct my_con*)((db_con)->tail))->ps_list)
+#define CON_DISCON(db_con)     (((struct my_con*)((db_con)->tail))->disconnected)
 
 #define CON_MYSQL_PS(db_con) \
 	((struct prep_stmt*)(CON_CURR_PS(db_con)))

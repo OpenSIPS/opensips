@@ -134,10 +134,13 @@ static int db_mysql_submit_query(const db_con_t* _h, const str* _s)
 		if (mysql_real_query(CON_CONNECTION(_h), _s->s, _s->len) == 0) {
 			if (id!=mysql_thread_id(CON_CONNECTION(_h)))
 				reset_all_statements(_h);
+			CON_DISCON(_h) = 0;
 			return 0;
 		}
 		code = mysql_errno(CON_CONNECTION(_h));
 		if (code != CR_SERVER_GONE_ERROR && code != CR_SERVER_LOST) {
+			if (code==CR_CONNECTION_ERROR)
+				CON_DISCON(_h) = 1;
 			break;
 		}
 		reset_all_statements(_h);
@@ -455,7 +458,7 @@ static int db_mysql_do_prepared_query(const db_con_t* conn, const str *query,
 		   this function crashes if mysql server is down (on "Can't connect 
 		   to local MySQL server" error)
 		 */
-		if (mysql_ping(CON_CONNECTION(conn))) {
+		if (CON_DISCON(conn) && mysql_ping(CON_CONNECTION(conn))) {
 			LM_WARN("driver error on ping: %s\n",
 				mysql_error(CON_CONNECTION(conn)));
 			return -1;
@@ -482,6 +485,8 @@ static int db_mysql_do_prepared_query(const db_con_t* conn, const str *query,
 				&& code!= ER_UNKNOWN_STMT_HANDLER ) {
 					LM_ERR("mysql_stmt_execute() failed(2): (%d) %s\n",
 						code, mysql_stmt_error(ctx->stmt));
+					if (code==CR_CONNECTION_ERROR)
+						CON_DISCON(conn) = 1;
 					return -1;
 				}
 				/* try reconnect */
@@ -497,6 +502,7 @@ static int db_mysql_do_prepared_query(const db_con_t* conn, const str *query,
 		}
 		i++;
 	} while (code!=0 && i<(db_mysql_auto_reconnect ? 3 : 1));
+	CON_DISCON(conn) = 0;
 
 	/* check and get results */
 	if ( cols>0 ) {
