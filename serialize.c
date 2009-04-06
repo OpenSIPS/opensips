@@ -194,22 +194,20 @@ int next_branches( struct sip_msg *msg)
 		goto error;
 	}
 
-	if ( route_type == REQUEST_ROUTE) {
-		/* Set Request-URI */
-		if (set_ruri(msg, &val.s)==-1)
-			goto error1;
-		LM_DBG("R-URI is <%.*s>\n", val.s.len, val.s.s);
-		if (avp->flags & Q_FLAG) {
-			destroy_avp(avp);
-			return 0;
-		}
-		if ( (avp=search_next_avp(avp, &val))==0 )
-			return 0;
-		/* continue */
+	/* Set Request-URI */
+	if (set_ruri(msg, &val.s)==-1)
+		goto error1;
+	LM_DBG("R-URI is <%.*s>\n", val.s.len, val.s.s);
+	if (avp->flags & Q_FLAG) {
+		destroy_avp(avp);
+		return 0;
 	}
+	prev = avp;
+	avp = search_next_avp(prev, &val);
+	destroy_avp(prev);
 
 	/* Append branches until out of branches or Q_FLAG is set */
-	do {
+	while(avp!=NULL) {
 		act.type = APPEND_BRANCH_T;
 		act.elem[0].type = STR_ST;
 		act.elem[0].u.s = val.s;
@@ -230,7 +228,7 @@ int next_branches( struct sip_msg *msg)
 		prev = avp;
 		avp=search_next_avp(prev, &val);
 		destroy_avp(prev);
-	}while ( avp );
+	}
 
 	return 0;
 error1:
