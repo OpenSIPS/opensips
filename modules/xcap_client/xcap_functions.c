@@ -455,7 +455,9 @@ char* get_xcap_path(xcap_get_req_t req)
 		LM_ERR("buffer size overflow\n");
 		goto error;
 	}
-	pkg_free(node_selector);
+	
+	if(node_selector)
+		pkg_free(node_selector);
 
 	return path;
 	
