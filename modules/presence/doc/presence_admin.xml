@@ -211,24 +211,45 @@ modparam("presence", "expires_offset", 10)
 
 </section>
        <section>
-               <title><varname>max_expires</varname> (int)</title>
+               <title><varname>max_expires_subscribe</varname> (int)</title>
                <para>
-               The the maximum admissible expires value for PUBLISH/SUBSCRIBE
-               message.
+               The the maximum admissible expires value for SUBSCRIBE
+               messages.
                </para>
                <para>
                <emphasis>Default value is <quote>3600</quote>.
                </emphasis>
                </para>
                <example>
-               <title>Set <varname>max_expires</varname> parameter</title>
+               <title>Set <varname>max_expires_subscribe</varname> parameter</title>
                <programlisting format="linespecific">
 ...
-modparam("presence", "max_expires", 3600)
+modparam("presence", "max_expires_subscribe", 3600)
 ...
 </programlisting>
                </example>
        </section>
+
+<section>
+               <title><varname>max_expires_publish</varname> (int)</title>
+               <para>
+               The the maximum admissible expires value for PUBLISH
+               messages.
+               </para>
+               <para>
+               <emphasis>Default value is <quote>3600</quote>.
+               </emphasis>
+               </para>
+               <example>
+               <title>Set <varname>max_expires_publish</varname> parameter</title>
+               <programlisting format="linespecific">
+...
+modparam("presence", "max_expires_publish", 3600)
+...
+</programlisting>
+               </example>
+       </section>
+
 
 <section>
 		<title><varname>server_address</varname> (str)</title>
