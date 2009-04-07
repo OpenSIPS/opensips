@@ -100,9 +100,9 @@ static int db_mysql_submit_query(const db_con_t* _h, const str* _s)
 
 	id = mysql_thread_id(CON_CONNECTION(_h));
 
-	if (db_mysql_ping_interval) {
+	if (CON_DISCON(_h) || db_mysql_ping_interval) {
 		t = time(0);
-		if ((t - CON_TIMESTAMP(_h)) > db_mysql_ping_interval) {
+		if ( CON_DISCON(_h) || ((t - CON_TIMESTAMP(_h)) > db_mysql_ping_interval)) {
 			if (mysql_ping(CON_CONNECTION(_h))) {
 				LM_WARN("driver error on ping: %s\n",
 					mysql_error(CON_CONNECTION(_h)));
@@ -134,15 +134,18 @@ static int db_mysql_submit_query(const db_con_t* _h, const str* _s)
 		if (mysql_real_query(CON_CONNECTION(_h), _s->s, _s->len) == 0) {
 			if (id!=mysql_thread_id(CON_CONNECTION(_h)))
 				reset_all_statements(_h);
+			LM_DBG("discon reset for %ld\n",_h->tail);
 			CON_DISCON(_h) = 0;
 			return 0;
 		}
 		code = mysql_errno(CON_CONNECTION(_h));
-		if (code != CR_SERVER_GONE_ERROR && code != CR_SERVER_LOST) {
-			if (code==CR_CONNECTION_ERROR)
-				CON_DISCON(_h) = 1;
+
+		if (code != CR_SERVER_GONE_ERROR && code != CR_SERVER_LOST &&
+		code != CR_CONNECTION_ERROR)
 			break;
-		}
+
+		CON_DISCON(_h) = 1;
+		LM_DBG("discon set for %ld\n",_h->tail);
 		reset_all_statements(_h);
 	}
 	LM_ERR("driver error on query: %s\n", mysql_error(CON_CONNECTION(_h)));
@@ -218,6 +221,7 @@ static struct my_stmt_ctx * get_new_stmt_ctx(const db_con_t* conn,
 														const str *query)
 {
 	struct my_stmt_ctx *ctx;
+	unsigned int code;
 
 	/* new one */
 	ctx = (struct my_stmt_ctx*)pkg_malloc
@@ -242,8 +246,16 @@ static struct my_stmt_ctx * get_new_stmt_ctx(const db_con_t* conn,
 		return NULL;
 	}
 	if ( mysql_stmt_prepare(ctx->stmt, query->s, query->len) ) {
-		LM_ERR("failed while mysql_stmt_prepare: %s\n",
-			mysql_stmt_error(ctx->stmt));
+		code = mysql_errno(CON_CONNECTION(conn));
+		LM_ERR("failed while mysql_stmt_prepare: (%u) %s\n",
+			code, mysql_stmt_error(ctx->stmt));
+		if (code==CR_CONNECTION_ERROR||code==CR_CONN_HOST_ERROR||
+		code==CR_SERVER_GONE_ERROR||code==CR_SERVER_LOST) {
+			LM_DBG("discon set for %ld\n",conn->tail);
+			CON_DISCON(conn) = 1;
+		}
+		mysql_stmt_close(ctx->stmt);
+		pkg_free(ctx);
 		return NULL;
 	}
 
@@ -312,16 +324,28 @@ static int re_init_statement(const db_con_t* conn, struct prep_stmt *pq_ptr,
 													struct my_stmt_ctx *ctx)
 {
 	struct my_stmt_ctx *ctx1, *ctx2;
+	unsigned int code;
 
-	LM_DBG(" query  is <%.*s>, ptr=%p\n", ctx->query.len, ctx->query.s, ctx->stmt);
+	LM_DBG(" query  is <%.*s>, ptr=%p\n",
+		ctx->query.len, ctx->query.s, ctx->stmt);
 	/* re-init the statement */
 	if ( !(ctx->stmt=mysql_stmt_init(CON_CONNECTION(conn))) ) {
 		LM_ERR("failed while rmysql_stmt_init()\n");
 		goto error;
 	}
 	if ( mysql_stmt_prepare(ctx->stmt, ctx->query.s, ctx->query.len)) {
-		LM_ERR("failed while mysql_stmt_prepare: %s\n",
-			mysql_stmt_error(ctx->stmt));
+		code = mysql_errno(CON_CONNECTION(conn));
+		LM_ERR("failed while mysql_stmt_prepare: (%u) %s\n",
+			code,mysql_stmt_error(ctx->stmt));
+		if (code==CR_CONNECTION_ERROR||code==CR_CONN_HOST_ERROR||
+		code==CR_SERVER_GONE_ERROR||code==CR_SERVER_LOST) {
+			LM_DBG("discon set for %ld\n",conn->tail);
+			CON_DISCON(conn) = 1;
+			mysql_stmt_close(ctx->stmt);
+			ctx->stmt = NULL;
+			ctx->has_out = 0;
+			return -2;
+		}
 		goto error;
 	}
 
@@ -336,6 +360,7 @@ error:
 				ctx1->next = ctx2->next;
 			else
 				pq_ptr->ctx = ctx2->next;
+			break;
 		}
 		ctx1 = ctx2;
 		ctx2 = ctx2->next;
@@ -360,6 +385,7 @@ static int db_mysql_do_prepared_query(const db_con_t* conn, const str *query,
 	struct prep_stmt *pq_ptr;
 	struct my_stmt_ctx *ctx;
 	MYSQL_BIND *mysql_bind;
+	unsigned long id;
 
 	LM_DBG("conn=%p (tail=%ld) MC=%p\n",conn, conn->tail,CON_CONNECTION(conn));
 
@@ -417,6 +443,34 @@ static int db_mysql_do_prepared_query(const db_con_t* conn, const str *query,
 		}
 	}
 
+	/* this is a very ugly hack in order to avoid a bug in the mysql lib
+	 *     http://bugs.mysql.com/bug.php?id=43560
+	 * We use the mysql_ping() function to before mysql_stmt_execute() as 
+	   this function crashes if mysql server is down (on "Can't connect 
+	   to local MySQL server" error)
+	 */
+	LM_DBG("discon is %d for %ld\n",CON_DISCON(conn),conn->tail);
+	if (CON_DISCON(conn)) {
+		id = mysql_thread_id(CON_CONNECTION(conn));
+		if (mysql_ping(CON_CONNECTION(conn))) {
+			code = mysql_errno(CON_CONNECTION(conn));
+			LM_ERR("driver error on ping: (%u) %s\n", code,
+				mysql_error(CON_CONNECTION(conn)));
+			if (code==CR_CONNECTION_ERROR || code==CR_CONN_HOST_ERROR) {
+				LM_DBG("discon set for %ld\n",conn->tail);
+				CON_DISCON(conn) = 1;
+			}
+			return -1;
+		}
+		if (id!=mysql_thread_id(CON_CONNECTION(conn))) {
+			reset_all_statements(conn);
+			if ( re_init_statement(conn, pq_ptr, ctx)!=0 ) {
+				LM_ERR("failed to re-init statement!\n");
+				return -1;
+			}
+		}
+	}
+
 	LM_DBG("set values for the statement run\n");
 
 	/* set first set of values */
@@ -435,6 +489,7 @@ static int db_mysql_do_prepared_query(const db_con_t* conn, const str *query,
 		}
 	}
 
+	/* run the query */
 	i=0;
 	do {
 		/* bind in values to the statement */
@@ -450,18 +505,6 @@ static int db_mysql_do_prepared_query(const db_con_t* conn, const str *query,
 			cols = 0;
 		} else {
 			cols = mysql_num_fields(CON_RESULT(conn));
-		}
-
-		/* this is a very ugly hack in order to avoid a bug in the mysql lib
-		 *     http://bugs.mysql.com/bug.php?id=43560
-		 * We use the mysql_ping() function to before mysql_stmt_execute() as 
-		   this function crashes if mysql server is down (on "Can't connect 
-		   to local MySQL server" error)
-		 */
-		if (CON_DISCON(conn) && mysql_ping(CON_CONNECTION(conn))) {
-			LM_WARN("driver error on ping: %s\n",
-				mysql_error(CON_CONNECTION(conn)));
-			return -1;
 		}
 
 		if ( (code = mysql_stmt_execute(ctx->stmt)!=0 )) {
@@ -485,8 +528,14 @@ static int db_mysql_do_prepared_query(const db_con_t* conn, const str *query,
 				&& code!= ER_UNKNOWN_STMT_HANDLER ) {
 					LM_ERR("mysql_stmt_execute() failed(2): (%d) %s\n",
 						code, mysql_stmt_error(ctx->stmt));
-					if (code==CR_CONNECTION_ERROR)
+					if (code==CR_CONNECTION_ERROR) {
+						/* do not reset and re-try; just mark the 
+						 * connection as disconnected and the 
+						 * statements will be resert at reconnect 
+						 * time (probably in the mysql_ping) */
+						LM_DBG("discon set for %ld\n",conn->tail);
 						CON_DISCON(conn) = 1;
+					}
 					return -1;
 				}
 				/* try reconnect */
@@ -502,6 +551,7 @@ static int db_mysql_do_prepared_query(const db_con_t* conn, const str *query,
 		}
 		i++;
 	} while (code!=0 && i<(db_mysql_auto_reconnect ? 3 : 1));
+	LM_DBG("discon reset for %ld\n",conn->tail);
 	CON_DISCON(conn) = 0;
 
 	/* check and get results */
