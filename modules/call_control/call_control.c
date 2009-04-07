@@ -802,6 +802,16 @@ __dialog_created(struct dlg_cell *dlg, int type, struct dlg_cb_params *_params)
 }
 
 
+static void
+__dialog_loaded(struct dlg_cell *dlg, int type, struct dlg_cb_params *_params)
+{
+    if (dlg_api.register_dlgcb(dlg, DLGCB_RESPONSE_FWDED, __dialog_replies, NULL, NULL) != 0)
+        LM_ERR("cannot register callback for dialog confirmation\n");
+    if (dlg_api.register_dlgcb(dlg, DLGCB_TERMINATED | DLGCB_FAILED | DLGCB_EXPIRED | DLGCB_DESTROY, __dialog_ended, (void*)CCActive, NULL) != 0)
+        LM_ERR("cannot register callback for dialog termination\n");
+}
+
+
 // Public API
 //
 
@@ -893,6 +903,11 @@ mod_init(void)
     if (dlg_api.register_dlgcb(NULL, DLGCB_CREATED, __dialog_created, NULL, NULL) != 0) {
         LM_CRIT("cannot register callback for dialog creation\n");
         return -1;
+    }
+
+    // register dialog loading callback
+    if (dlg_api.register_dlgcb(NULL, DLGCB_LOADED, __dialog_loaded, NULL, NULL) != 0) {
+        LM_ERR("cannot register callback for dialogs loaded from the database\n");
     }
 
     // register a pre-script callback to automatically enable dialog tracing
