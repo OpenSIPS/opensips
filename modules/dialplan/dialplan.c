@@ -169,14 +169,6 @@ static int mod_init(void)
 		return -1;
 	}
 
-	if(init_data() != 0) {
-		LM_ERR("could not initialize data\n");
-		return -1;
-	}
-
-	if(dp_fetch_rows<=0)
-		dp_fetch_rows = 1000;
-
 	/* create & init lock */
 	if ( (ref_lock=lock_alloc())==0) {
 		LM_CRIT("failed to alloc ref_lock\n");
@@ -195,6 +187,14 @@ static int mod_init(void)
 	}
 	*data_refcnt = 0;
 	*reload_flag = 0;
+
+	if(dp_fetch_rows<=0)
+		dp_fetch_rows = 1000;
+
+	if(init_data() != 0) {
+		LM_ERR("could not initialize data\n");
+		return -1;
+	}
 
 	return 0;
 }
