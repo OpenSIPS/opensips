@@ -2067,7 +2067,7 @@ static int next_contacts(struct sip_msg* msg, char* key, char* value)
 	avp = search_first_avp(contact_avp_type, contact_avp, &val, 0);
 	if (!avp) {
 	    LM_DBG("No AVPs -- we are done!\n");
-	    return 1;
+	    return -1;
 	}
 
 	LM_DBG("Next contact is <%s>\n", val.s.s);
