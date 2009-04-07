@@ -297,13 +297,13 @@ int ospAddOspHeader(
     char buffer[OSP_HEADERBUF_SIZE];
     unsigned char encodedtoken[OSP_TOKENBUF_SIZE];
     unsigned int encodedtokensize = sizeof(encodedtoken);
-    int  result = -1;
+    int errorcode, result = -1;
 
     if (tokensize == 0) {
         LM_DBG("destination is not OSP device\n");
         result = 0;
     } else {
-        if (OSPPBase64Encode(token, tokensize, encodedtoken, &encodedtokensize) == 0) {
+        if ((errorcode = OSPPBase64Encode(token, tokensize, encodedtoken, &encodedtokensize)) == OSPC_ERR_NO_ERROR) {
             snprintf(buffer,
                 sizeof(buffer),
                 "%s%.*s\r\n", 
@@ -322,7 +322,7 @@ int ospAddOspHeader(
                 LM_ERR("failed to append osp header\n");
             }
         } else {
-            LM_ERR("failed to base64 encode token\n");
+            LM_ERR("failed to base64 encode token (%d)\n", errorcode);
         }
     }
 
@@ -345,23 +345,22 @@ int ospGetOspHeader(
     int errorcode;
     int result = -1;
 
-	if (parse_headers(msg, HDR_EOH_F, 0)!=0) {
-		LM_ERR("failed to parse all headers");
-	} else {
-		hf = get_header_by_name( msg,  OSP_TOKEN_HEADER, OSP_HEADER_SIZE-2 );
-		if (hf) {
-			if ((errorcode = OSPPBase64Decode(hf->body.s, hf->body.len,
-			token, tokensize)) == OSPC_ERR_NO_ERROR) {
-				result = 0;
-			} else {
-				LM_ERR("failed to base64 decode token (%d)\n", errorcode);
-				LM_ERR("header '%.*s' length %d\n", 
-					hf->body.len, hf->body.s, hf->body.len);
-			}
-		}
-	}
+    if (parse_headers(msg, HDR_EOH_F, 0) != 0) {
+        LM_ERR("failed to parse all headers");
+    } else {
+        hf = get_header_by_name( msg,  OSP_TOKEN_HEADER, OSP_HEADER_SIZE-2 );
+        if (hf) {
+            if ((errorcode = OSPPBase64Decode(hf->body.s, hf->body.len, token, tokensize)) == OSPC_ERR_NO_ERROR) {
+                result = 0;
+            } else {
+                LM_ERR("failed to base64 decode token (%d)\n", errorcode);
+                LM_ERR("header '%.*s' length %d\n", 
+                    hf->body.len, hf->body.s, hf->body.len);
+            }
+        }
+    }
 
-	return result;
+    return result;
 }
 
 /* 

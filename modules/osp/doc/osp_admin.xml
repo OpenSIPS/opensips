@@ -98,8 +98,19 @@ modparam("osp","device_port","5060")
       </example>
     </section>
     <section>
+      <title><varname>use_security_features</varname></title>
+      <para>The use_security_features (integer) parameter instructs the OSP module how to use the OSP security features. If this value is set to 1, the OSP Module uses the OSP security features. If this value is set to 0, the OSP Module will not use the OSP security features. The default value is 0.</para>
+      <example>
+        <title>Instructing the module not to use OSP security features</title>
+        <programlisting format="linespecific">
+modparam("osp","use_security_features",0)
+        </programlisting>
+      </example>
+    </section>
+    <section>
       <title><varname>token_format</varname></title>
       <para>When OpenSIPS receives a SIP INVITE with a peering token, the OSP Module will validate the token to determine whether or not the call has been authorized by a peering server. Peering tokens may, or may not, be digitally signed. The token_format (integer) parameter defines if OpenSIPS will validate signed or unsigned tokens or both. The values for token format are defined below. The default value is 2.</para>
+      <para>If use_security_features parameter is set to 0, signed tokens cannot be validated.</para>
       <para>0 - Validate only signed tokens. Calls with valid signed tokens are allowed.</para>
       <para>1 - Validate only unsigned tokens. Calls with valid unsigned tokens are allowed.</para>
       <para>2 - Validate both signed and unsigned tokens are allowed. Calls with valid tokens are allowed.</para>
@@ -113,6 +124,7 @@ modparam("osp","token_format",2)
     <section>
       <title><varname>private_key</varname>, <varname>local_certificate</varname>, <varname>ca_certificates</varname></title>
       <para>These parameters identify files are used for validating peering authorization tokens and establishing a secure channel between OpenSIPS and a peering server using SSL.  The files are generated using the 'Enroll' utility from the OSP Toolkit. By default, the proxy will look for pkey.pem, localcert.pem, and cacart_0.pem in the default configuration directory. The default config directory is set at compile time using CFG_DIR and defaults to /usr/local/etc/opensips/. The files may be copied to the expected file location or the parameters below may be changed.</para>
+      <para>If use_security_features parameter is set to 0, these parameters will be ignored.</para>
       <example>
         <title>Set authorization files</title>
         <para>If the default CFG_DIR value was used at compile time, the files will be loaded from:</para>
@@ -205,7 +217,7 @@ modparam("osp","validate_call_id",1)
     </section>
     <section>
       <title><varname>use_rpid_for_calling_number</varname></title>
-      <para>The use_rpid_for_calling_number (integer) parameter instructs the OSP module to use the calling number in the Remote-Party-ID of the SIP INVITE message. If this value is set to 1, the OSP Module uses the calling number in the Reomte-Party-ID header of the INVITE message when a Remote-Party-ID exists. If this value is set to 0, the OSP Module will use the calling number in the From header of the INVITE message. The default value is 1.</para>
+      <para>The use_rpid_for_calling_number (integer) parameter instructs the OSP module how to use the calling number in the Remote-Party-ID of the SIP INVITE message. If this value is set to 1, the OSP Module uses the calling number in the Reomte-Party-ID header of the INVITE message when a Remote-Party-ID exists. If this value is set to 0, the OSP Module will use the calling number in the From header of the INVITE message. The default value is 1.</para>
       <example>
         <title>Instructing the module to use calling number in Remote-Party-ID</title>
         <programlisting format="linespecific">
@@ -215,7 +227,7 @@ modparam("osp","use_rpid_calling_number",1)
     </section>
     <section>
       <title><varname>use_routing_number</varname></title>
-      <para>The use_routing_number (integer) parameter instructs the OSP module to use the routing number in the Request URI of the SIP INVITE message. If this value is set to 1, the OSP Module uses the routing number in the Request URI of the INVITE message when a rn parameter exists. If this value is set to 0, the OSP Module will not use the routing number of the INVITE message. The default value is 1.</para>
+      <para>The use_routing_number (integer) parameter instructs the OSP module how to use the routing number in the Request URI of the SIP INVITE message. If this value is set to 1, the OSP Module uses the routing number in the Request URI of the INVITE message when a rn parameter exists. If this value is set to 0, the OSP Module will not use the routing number of the INVITE message. The default value is 1.</para>
       <example>
         <title>Instructing the module to use routing number in Request URI</title>
         <programlisting format="linespecific">
