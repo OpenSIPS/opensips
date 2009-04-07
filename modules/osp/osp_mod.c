@@ -49,9 +49,10 @@ extern char* _osp_sp_uris[];
 extern unsigned long _osp_sp_weights[];
 extern char* _osp_device_ip;
 extern char* _osp_device_port;
-extern unsigned char* _osp_private_key;
-extern unsigned char* _osp_local_certificate;
-extern unsigned char* _osp_ca_certificate;
+extern int _osp_use_security;
+extern char* _osp_private_key;
+extern char* _osp_local_certificate;
+extern char* _osp_ca_certificate;
 extern int _osp_crypto_hw;
 extern int _osp_validate_callid;
 extern int _osp_token_format;
@@ -129,6 +130,7 @@ static param_export_t params[]={
     {"sp16_weight",                    INT_PARAM, &(_osp_sp_weights[15])},
     {"device_ip",                      STR_PARAM, &_osp_device_ip},
     {"device_port",                    STR_PARAM, &_osp_device_port},
+    {"use_security_features",          INT_PARAM, &_osp_use_security},
     {"private_key",                    STR_PARAM, &_osp_private_key},
     {"local_certificate",              STR_PARAM, &_osp_local_certificate},
     {"ca_certificates",                STR_PARAM, &_osp_ca_certificate},
@@ -236,20 +238,23 @@ static int ospVerifyParameters(void)
     str avp_str;
     int result = 0;
 
-    /* Default location for the cert files is in the compile time variable CFG_DIR */
-    if (_osp_private_key == NULL) {
-        sprintf(_osp_PRIVATE_KEY, "%spkey.pem", CFG_DIR);
-        _osp_private_key = (unsigned char*)_osp_PRIVATE_KEY;
-    } 
+    /* If use_security_features is 0, ignroe the certificate files */
+    if (_osp_use_security != 0 ) {
+        /* Default location for the cert files is in the compile time variable CFG_DIR */
+        if (_osp_private_key == NULL) {
+            sprintf(_osp_PRIVATE_KEY, "%spkey.pem", CFG_DIR);
+            _osp_private_key = _osp_PRIVATE_KEY;
+        } 
 
-    if (_osp_local_certificate == NULL) {
-        sprintf(_osp_LOCAL_CERTIFICATE, "%slocalcert.pem", CFG_DIR);
-        _osp_local_certificate = (unsigned char*)_osp_LOCAL_CERTIFICATE;
-    }
+        if (_osp_local_certificate == NULL) {
+            sprintf(_osp_LOCAL_CERTIFICATE, "%slocalcert.pem", CFG_DIR);
+            _osp_local_certificate = _osp_LOCAL_CERTIFICATE;
+        }
 
-    if (_osp_ca_certificate == NULL) {
-        sprintf(_osp_CA_CERTIFICATE, "%scacert_0.pem", CFG_DIR);
-        _osp_ca_certificate = (unsigned char*)_osp_CA_CERTIFICATE;
+        if (_osp_ca_certificate == NULL) {
+            sprintf(_osp_CA_CERTIFICATE, "%scacert_0.pem", CFG_DIR);
+            _osp_ca_certificate = _osp_CA_CERTIFICATE;
+        }
     }
 
     if (_osp_device_ip == NULL) {
@@ -324,9 +329,12 @@ static void ospDumpParameters(void)
             osp_index[i], _osp_sp_uris[i], osp_index[i], _osp_sp_weights[i]);
     }
     LM_INFO("    device_ip '%s' device_port '%s' ", _osp_device_ip, _osp_device_port);
-    LM_INFO("    private_key '%s' ", _osp_private_key);
-    LM_INFO("    local_certificate '%s' ", _osp_local_certificate);
-    LM_INFO("    ca_certificates '%s' ", _osp_ca_certificate);
+    LM_INFO("    use_security_features '%d' ", _osp_use_security);
+    if (_osp_use_security != 0) {
+        LM_INFO("    private_key '%s' ", _osp_private_key);
+        LM_INFO("    local_certificate '%s' ", _osp_local_certificate);
+        LM_INFO("    ca_certificates '%s' ", _osp_ca_certificate);
+    }
     LM_INFO("    enable_crypto_hardware_support '%d' ", _osp_crypto_hw);
     LM_INFO("    token_format '%d' ", _osp_token_format);
     LM_INFO("    ssl_lifetime '%d' ", _osp_ssl_lifetime);

@@ -39,6 +39,7 @@
 #define OSP_DEF_SPS                     16
 #define OSP_DEF_WEIGHT                  1000
 #define OSP_DEF_HW                      0
+#define OSP_DEF_USESEC                  0
 #define OSP_DEF_CALLID                  1    /* Validate call ids, set to 0 to disable */
 #define OSP_DEF_TOKEN                   2
 #define OSP_DEF_SSLLIFE                 300
@@ -52,8 +53,8 @@
 #define OSP_DEF_REDIRURI                0   /* 0 for "xxxxxxxxxx@xxx.xxx.xxx.xxx", 1 for "<xxxxxxxxxx@xxx.xxx.xxx.xxx>" format */
 #define OSP_DEF_SNIDAVP                 "$avp(s:_osp_source_networkid_)"
 
-#define OSP_KEYBUF_SIZE                 256
 #define OSP_STRBUF_SIZE                 256
+#define OSP_KEYBUF_SIZE                 1024
 #define OSP_E164BUF_SIZE                1024
 #define OSP_TOKENBUF_SIZE               2048
 #define OSP_HEADERBUF_SIZE              3072

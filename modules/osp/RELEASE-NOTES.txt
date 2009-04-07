@@ -72,6 +72,13 @@
    o Report destination count in source-stop usage indications, requires
      osptoolkit version 3.4.0
 
-2009 March 04
+2009 March 4
    o Updated for OSP Toolkit 3.5.0
+
+2009 March 30
+   o Fixed the parsing called number issue caused by the number portability
+     parameters in user part of RURI.
+
+2009 April 7
+   o Fixed the issue caused by without certificate files.
 
