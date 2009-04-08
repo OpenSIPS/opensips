@@ -211,6 +211,8 @@ static int mod_init(void)
 		LM_ERR("No more shared memory\n");
 		return -1;
 	}
+	*data_refcnt = 0;
+	*reload_flag = 0;
 
 	/* init and open DB connection */
 	if (init_lb_db(&db_url, table_name)!=0) {
