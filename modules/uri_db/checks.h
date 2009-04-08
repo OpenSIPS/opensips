@@ -17,13 +17,15 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
  * --------
  * 2003-03-26 created by janakj
+ * 2009-03-10: Added get_auth_id() function to retrieve auth id and realm for
+ *             a given uri (overturn technologies GmbH, Andreas Westermaier)
  */
 
 
@@ -53,6 +55,13 @@ int check_from(struct sip_msg* _msg, char* _str1, char* _str2);
 int does_uri_exist(struct sip_msg* _msg, char* _table, char* _s2);
 
 
+/*
+ * Retrieves authentication id and realm for a given uri from uri_table
+ */
+int get_auth_id(struct sip_msg* _msg, char* _uri, char* _auth_user, char* _auth_realm);
+
+
+int set_result_pv(struct sip_msg* _msg, unsigned short _avp_type, int_str _avp_val, char* _res_avp);
 int uridb_db_init(const str* db_url);
 int uridb_db_bind(const str* db_url);
 void uridb_db_close();

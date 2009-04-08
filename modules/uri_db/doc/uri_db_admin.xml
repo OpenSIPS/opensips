@@ -269,6 +269,31 @@ if (does_uri_exist()) {
 </programlisting>
 		</example>
 	</section>
+	
+	<section>
+		<title>
+		<function moreinfo="none">get_auth_id(string, var, var)</function>
+		</title>
+		<para>
+		Checks given uri-string username against &uri; table (if use_uri_table is set) or
+		subscriber table (database backend required).
+		Returns true if the user exists in the database, and sets the given variables to
+		the authentication id and realm corresponding to the given uri.
+		</para>
+		<para>
+		This function can be used from REQUEST_ROUTE.
+		</para>
+		<example>
+		<title><function>get_auth_id</function> usage</title>
+		<programlisting format="linespecific">
+...
+if (get_auth_id("$ru", "$avp(s:auth_id)", "$avp(s:auth_realm)")) {
+	...
+};
+...
+</programlisting>
+		</example>
+	</section>
 	</section>
 	
 	<section>

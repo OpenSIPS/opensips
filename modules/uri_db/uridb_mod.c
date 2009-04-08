@@ -1,5 +1,5 @@
-/* 
- * $Id$ 
+/*
+ * $Id$
  *
  * Various URI related functions
  *
@@ -17,8 +17,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -30,6 +30,8 @@
  *  2004-03-20: has_totag introduced (jiri)
  *  2004-06-07: Updated to the new DB api (andrei)
  *  2008-11-07: Added statistics to module: positive_checks and negative_checks (saguti)
+ *  2009-03-13: Added get_auth_id() function to retrieve auth id and realm for
+ *              a given uri (overturn technologies GmbH, Andreas Westermaier)
  */
 
 
@@ -41,6 +43,7 @@
 #include "../../ut.h"
 #include "../../error.h"
 #include "../../mem/mem.h"
+#include "../../mod_fix.h"
 #include "uridb_mod.h"
 #include "checks.h"
 
@@ -87,6 +90,8 @@ int use_uri_table = 0;     /* Should uri table be used */
 int use_domain = 0;        /* Should does_uri_exist honor the domain part ? */
 
 static int fixup_exist(void** param, int param_no);
+static int fixup_get_auth_id(void** param, int param_no);
+
 
 /*
  * Exported functions
@@ -97,6 +102,8 @@ static cmd_export_t cmds[] = {
 	{"check_from",     (cmd_function)check_from,     0, 0, 0,
 		REQUEST_ROUTE},
 	{"does_uri_exist", (cmd_function)does_uri_exist, 0, fixup_exist, 0,
+		REQUEST_ROUTE|LOCAL_ROUTE},
+	{"get_auth_id", (cmd_function) get_auth_id,      3, fixup_get_auth_id, 0,
 		REQUEST_ROUTE|LOCAL_ROUTE},
 	{0, 0, 0, 0, 0, 0}
 };
@@ -167,7 +174,7 @@ static int mod_init(void)
 	db_func_t db_funcs;
 	db_con_t *db_conn = NULL;
 
-	
+
 
 	LM_DBG("uri_db - initializing\n");
 
@@ -243,5 +250,61 @@ static int fixup_exist(void** param, int param_no)
 		LM_ERR("configuration error - does_uri_exist() called with no database URL!\n");
 		return E_CFG;
 	}
+	return 0;
+}
+
+
+/**
+ * Check proper configuration for 'get_auth_id()' and convert function parameters.
+ */
+static int fixup_get_auth_id(void** param, int param_no)
+{
+	pv_elem_t *model = NULL;
+	pv_spec_t *sp;
+	str s;
+	int ret;
+
+	// just to avoid doing the folowing checks multiple times
+	// currently unnecessary because only one check is done
+	//if (param_no == 1) {
+		if (db_url.len == 0) {
+			LM_ERR("configuration error - 'get_auth_id()' requires a configured database backend");
+			return E_CFG;
+		}
+	//}
+
+	if (param_no > 0 && param_no <= 3) {
+		switch (param_no) {
+			case 1:		// pv which contains the sip id searched for
+				s.s = (char*) (*param);
+				s.len = strlen(s.s);
+				if (s.len == 0) {
+					LM_ERR("param %d is empty string!\n", param_no);
+					return E_CFG;
+				}
+				if(pv_parse_format(&s ,&model) || model == NULL) {
+					LM_ERR("wrong format [%s] for value param!\n", s.s);
+					return E_CFG;
+				}
+				*param = (void*) model;
+				break;
+
+			case 2:		// pv to return the result auth id
+			case 3:		// pv to return the result auth realm
+				ret = fixup_pvar(param);
+				if (ret < 0) return ret;
+				sp = (pv_spec_t*) (*param);
+				if (sp->type != PVT_AVP && sp->type != PVT_SCRIPTVAR) {
+					LM_ERR("return must be an AVP or SCRIPT VAR!\n");
+					return E_SCRIPT;
+				}
+				break;
+		}
+
+	} else {
+		LM_ERR("wrong number of parameters\n");
+		return E_UNSPEC;
+	}
+
 	return 0;
 }
