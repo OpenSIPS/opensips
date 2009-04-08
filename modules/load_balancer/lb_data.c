@@ -114,15 +114,24 @@ static struct lb_resource *add_lb_resource(struct lb_data *data, str *name)
 	profile_name.len = snprintf( buf, PROFILE_MAX_NAME-1, "lbX%.*s",
 		name->len,name->s);
 	profile_name.s = buf;
-	LM_DBG("adding dialog profile <%.*s>\n", profile_name.len,profile_name.s);
-	if (lb_dlg_binds.add_profiles( buf, 1 /*has value*/ )!=0) {
-		LM_ERR("failed to add dialog profile <%s>\n",buf);
-		goto error;
-	}
+	/* first check if the profile already exists */
 	new_res->profile = lb_dlg_binds.search_profile( &profile_name );
 	if (new_res->profile==NULL) {
-		LM_CRIT("bug -  cannot find just added profile\n");
-		goto error;
+		/* create a new one */
+		LM_DBG("adding dialog profile <%.*s>\n",
+			profile_name.len,profile_name.s);
+		if (lb_dlg_binds.add_profiles( buf, 1 /*has value*/ )!=0) {
+			LM_ERR("failed to add dialog profile <%s>\n",buf);
+			goto error;
+		}
+		new_res->profile = lb_dlg_binds.search_profile( &profile_name );
+		if (new_res->profile==NULL) {
+			LM_CRIT("bug -  cannot find just added profile\n");
+			goto error;
+		}
+	} else {
+		LM_DBG("dialog profile <%.*s> found created\n",
+			profile_name.len,profile_name.s);
 	}
 
 	/* keep the list alphabetical ordered */
