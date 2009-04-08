@@ -663,10 +663,8 @@ check_content_type(struct sip_msg *msg)
     type = msg->content_type->body;
     trim(&type);
 
-    if (strncasecmp(type.s, "application/sdp", 15) != 0) {
-        LM_ERR("invalid Content-Type for SDP: %.*s\n", type.len, type.s);
+    if (strncasecmp(type.s, "application/sdp", 15) != 0)
         return False;
-    }
 
     if (!(isspace((int)type.s[15]) || type.s[15] == ';' || type.s[15] == 0)) {
         LM_ERR("invalid character after Content-Type: `%c'\n", type.s[15]);
@@ -695,10 +693,8 @@ get_sdp_message(struct sip_msg *msg, str *sdp)
     if (sdp->len == 0)
         return -2;
 
-    if (!check_content_type(msg)) {
-        LM_ERR("content type is not `application/sdp'\n");
+    if (!check_content_type(msg))
         return -1;
-    }
 
     return 1;
 }
