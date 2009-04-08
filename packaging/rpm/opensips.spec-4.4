@@ -1,15 +1,16 @@
 %define name    opensips
-%define ver     1.4.4
+%define ver     1.4.5
 %define rel     0
 %define _sharedir %{_prefix}/share
 
-%define EXCLUDED_MODULES	db_mysql jabber cpl-c avp_radius auth_radius group_radius uri_radius pua db_postgres osp tlsops db_unixodbc
+%define EXCLUDED_MODULES	db_mysql snmpstats jabber cpl-c avp_radius auth_radius group_radius uri_radius pua db_postgres osp tlsops db_unixodbc
 %define MYSQL_MODULES		db_mysql
+%define SNMPSTATS_MODULES	snmpstats
 %define UNIXODBC_MODULES	db_unixodbc
 %define POSTGRES_MODULES	db_postgres
 %define JABBER_MODULES		jabber
-%define CPL_MODULES			cpl-c
-%define PUA_MODULES			pua
+%define CPL_MODULES		cpl-c
+%define PUA_MODULES		pua
 %define RADIUS_MODULES		avp_radius auth_radius group_radius uri_radius
 %define RADIUS_MOD_PATH		modules/avp_radius modules/auth_radius modules/group_radius modules/uri_radius
 
@@ -25,7 +26,7 @@ Source2:      opensips.init
 URL:          http://opensips.org/
 Vendor:       opensips.org
 BuildRoot:    %{_tmppath}/%{name}-%{ver}-buildroot
-Conflicts:    opensips-mysql < %ver, opensips-jabber < %ver, opensips-radius < %ver, opensips-cpl < %ver, opensips-unixodbc < %ver, opensips-pua < %ver, opensips-postgres < %ver
+Conflicts:    opensips-snmpstats < %ver, opensips-mysql < %ver, opensips-jabber < %ver, opensips-radius < %ver, opensips-cpl < %ver, opensips-unixodbc < %ver, opensips-pua < %ver, opensips-postgres < %ver
 BuildPrereq:  make flex bison
 
 
@@ -41,6 +42,20 @@ radius authentication, record routing, an SMS gateway, a jabber gateway, a
 transaction and dialog module, OSP module, statistics support, 
 registrar and user location, SNMP, SIMPLE Presence and Perl programming
 interface.
+
+
+%package  snmpstats
+Summary:  SNMP AgentX subagent module for OpenSIPS
+Group:    System Environment/Daemons
+Requires: opensips = %ver
+BuildPrereq:  lm_sensors-devel
+
+%description snmpstats
+OpenSIPS is a very fast and flexible SIP (RFC3261)
+server. Written entirely in C, OpenSIPS can handle thousands calls
+per second even on low-budget hardware.
+This package provides the snmpstats module for OpenSIPS. This module acts
+as an AgentX subagent which connects to a master agent.
 
 %package  mysql
 Summary:  MySQL connectivity for the OpenSIPS.
@@ -117,6 +132,7 @@ The opensips-radius package contains modules for radius authentication, group
 %build
 make all skip_modules="%EXCLUDED_MODULES"         cfg-target=/%{_sysconfdir}/opensips/
 make modules modules="modules/%MYSQL_MODULES"     cfg-target=/%{_sysconfdir}/opensips/
+make modules modules="modules/%SNMPSTATS_MODULES" cfg-target=/%{_sysconfdir}/opensips/
 make modules modules="modules/%POSTGRES_MODULES"  cfg-target=/%{_sysconfdir}/opensips/
 make modules modules="modules/%UNIXODBC_MODULES"  cfg-target=/%{_sysconfdir}/opensips/
 make modules modules="modules/%JABBER_MODULES"    cfg-target=/%{_sysconfdir}/opensips/
@@ -139,6 +155,16 @@ make install-modules modules="modules/%MYSQL_MODULES" \
 		cfg-prefix=$RPM_BUILD_ROOT \
 		cfg-target=/%{_sysconfdir}/opensips/ 
 make install-doc modules="modules/%MYSQL_MODULES" \
+		basedir=$RPM_BUILD_ROOT \
+		prefix=/usr \
+		cfg-prefix=$RPM_BUILD_ROOT \
+		cfg-target=/%{_sysconfdir}/opensips/ 
+make install-modules modules="modules/%SNMPSTATS_MODULES" \
+		basedir=$RPM_BUILD_ROOT \
+		prefix=/usr \
+		cfg-prefix=$RPM_BUILD_ROOT \
+		cfg-target=/%{_sysconfdir}/opensips/ 
+make install-doc modules="modules/%SNMPSTATS_MODULES" \
 		basedir=$RPM_BUILD_ROOT \
 		prefix=/usr \
 		cfg-prefix=$RPM_BUILD_ROOT \
@@ -294,9 +320,9 @@ fi
 %dir %{_libdir}/opensips/modules
 %{_libdir}/opensips/modules/acc.so
 %{_libdir}/opensips/modules/alias_db.so
+%{_libdir}/opensips/modules/auth.so
 %{_libdir}/opensips/modules/auth_db.so
 %{_libdir}/opensips/modules/auth_diameter.so
-%{_libdir}/opensips/modules/auth.so
 %{_libdir}/opensips/modules/avpops.so
 %{_libdir}/opensips/modules/benchmark.so
 %{_libdir}/opensips/modules/cfgutils.so
@@ -306,8 +332,8 @@ fi
 %{_libdir}/opensips/modules/dialplan.so
 %{_libdir}/opensips/modules/dispatcher.so
 %{_libdir}/opensips/modules/diversion.so
-%{_libdir}/opensips/modules/domainpolicy.so
 %{_libdir}/opensips/modules/domain.so
+%{_libdir}/opensips/modules/domainpolicy.so
 %{_libdir}/opensips/modules/enum.so
 %{_libdir}/opensips/modules/exec.so
 %{_libdir}/opensips/modules/gflags.so
@@ -320,8 +346,8 @@ fi
 %{_libdir}/opensips/modules/mi_datagram.so
 %{_libdir}/opensips/modules/mi_fifo.so
 %{_libdir}/opensips/modules/msilo.so
-%{_libdir}/opensips/modules/nathelper.so
 %{_libdir}/opensips/modules/nat_traversal.so
+%{_libdir}/opensips/modules/nathelper.so
 %{_libdir}/opensips/modules/options.so
 %{_libdir}/opensips/modules/path.so
 %{_libdir}/opensips/modules/pdt.so
@@ -338,10 +364,10 @@ fi
 %{_libdir}/opensips/modules/statistics.so
 %{_libdir}/opensips/modules/textops.so
 %{_libdir}/opensips/modules/tm.so
-%{_libdir}/opensips/modules/uac_redirect.so
 %{_libdir}/opensips/modules/uac.so
-%{_libdir}/opensips/modules/uri_db.so
+%{_libdir}/opensips/modules/uac_redirect.so
 %{_libdir}/opensips/modules/uri.so
+%{_libdir}/opensips/modules/uri_db.so
 %{_libdir}/opensips/modules/userblacklist.so
 %{_libdir}/opensips/modules/usrloc.so
 %{_libdir}/opensips/modules/xlog.so
@@ -373,6 +399,19 @@ fi
 %{_libdir}/opensips/opensipsctl/opensipsdbctl.mysql
 %{_libdir}/opensips/opensipsctl/opensipsctl.mysql
 %{_sharedir}/opensips/mysql/*
+
+
+%files snmpstats
+%defattr(-,root,root)
+%doc %{_docdir}/opensips/README.snmpstats
+
+%{_libdir}/opensips/modules/snmpstats.so
+%{_sharedir}/snmp/mibs/OPENSER-MIB
+%{_sharedir}/snmp/mibs/OPENSER-REG-MIB
+%{_sharedir}/snmp/mibs/OPENSER-SIP-COMMON-MIB
+%{_sharedir}/snmp/mibs/OPENSER-SIP-SERVER-MIB
+%{_sharedir}/snmp/mibs/OPENSER-TC
+
 
 %files postgres
 %defattr(-,root,root)
@@ -422,6 +461,10 @@ fi
 
 
 %changelog
+* Thu Mar 05 2009 Marc Leurent <marc.leurent@vtx-telecom.ch>
+- Add snmpstats packaging
+- Add snmpstats packaging build requirements
+
 * Thu Feb 26 2009 Julian Yap <julianokyap@gmail.com>
 - Update spec to OpenSIPS version 1.4.4.
 - Rename database module names.
