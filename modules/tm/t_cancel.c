@@ -37,6 +37,11 @@
 #include "t_lookup.h" /* for t_lookup_callid in fifo_uac_cancel */
 
 
+#define CANCEL_REASON  \
+	"Reason: SIP ;cause=200 ;text=\"Call completed elsewhere\""
+
+
+
 /* determine which branches should be canceled; do it
    only from within REPLY_LOCK, otherwise collisions
    could occur (e.g., two 200 for two branches processed
@@ -117,8 +122,14 @@ void cancel_branch( struct cell *t, int branch )
 char *build_cancel(struct cell *Trans,unsigned int branch,
 	unsigned int *len )
 {
-	return build_local( Trans, branch, len,
-		CANCEL, CANCEL_LEN, &Trans->to );
+	str method = str_init(CANCEL);
+	str reason = str_init(CANCEL_REASON CRLF);
+	str *extra = NULL;
+
+	/* add any reason hdr, as per RFC 3326 */
+	if (is_invite(Trans) && Trans->uas.status==200)
+		extra = &reason;
+	return build_local( Trans, branch, &method, &Trans->to, extra, len );
 }
 
 

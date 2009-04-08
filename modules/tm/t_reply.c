@@ -274,6 +274,7 @@ inline static int update_totag_set(struct cell *t, struct sip_msg *ok)
  */
 static int send_ack(struct sip_msg* rpl, struct cell *trans, int branch)
 {
+	str method = str_init(ACK);
 	str to;
 	char *ack_p;
 	unsigned int  ack_len;
@@ -288,7 +289,7 @@ static int send_ack(struct sip_msg* rpl, struct cell *trans, int branch)
 
 	ack_p = is_local(trans)?
 		build_dlg_ack(rpl, trans, branch, &to, &ack_len):
-		build_local( trans, branch, &ack_len, ACK, ACK_LEN, &to );
+		build_local( trans, branch, &method, &to, NULL, &ack_len );
 	if (ack_p==0) {
 		LM_ERR("failed to build ACK\n");
 		goto error;

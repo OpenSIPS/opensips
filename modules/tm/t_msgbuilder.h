@@ -47,7 +47,7 @@
 #define LOCAL_MAXFWD_VALUE "70"
 
 char *build_local(struct cell *Trans, unsigned int branch,
-	unsigned int *len, char *method, int method_len, str *to);
+	str *method, str *to, str *extra, unsigned int *len);
 
 char *build_uac_request(  str msg_type, str dst, str from,
 	str fromtag, int cseq, str callid, str headers, 

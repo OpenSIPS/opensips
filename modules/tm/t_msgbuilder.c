@@ -217,7 +217,7 @@ error:
    customers of this function are local ACK and local CANCEL
  */
 char *build_local(struct cell *Trans,unsigned int branch,
-	unsigned int *len, char *method, int method_len, str *uas_to)
+	str *method, str *uas_to, str *extra, unsigned int *len)
 {
 	char                *cancel_buf, *p, *via;
 	unsigned int         via_len;
@@ -251,7 +251,7 @@ char *build_local(struct cell *Trans,unsigned int branch,
 		from.len,from.s , to.len,to.s , cseq_n.len,cseq_n.s);
 
 	/* method, separators, version  */
-	*len=SIP_VERSION_LEN + method_len + 2 /* spaces */ + CRLF_LEN;
+	*len=SIP_VERSION_LEN + method->len + 2 /* spaces */ + CRLF_LEN;
 	*len+=Trans->uac[branch].uri.len;
 
 	/*via*/
@@ -267,7 +267,7 @@ char *build_local(struct cell *Trans,unsigned int branch,
 	}
 	*len+= via_len;
 	/*headers*/
-	*len+=from.len+Trans->callid.len+to.len+cseq_n.len+1+method_len+CRLF_LEN;
+	*len+=from.len+Trans->callid.len+to.len+cseq_n.len+1+method->len+CRLF_LEN;
 
 	/* copy'n'paste Route headers that were sent out */
 	if (!is_local(Trans) &&
@@ -290,7 +290,8 @@ char *build_local(struct cell *Trans,unsigned int branch,
 		*len += user_agent_header.len + CRLF_LEN;
 	}
 	/* Content Length, MaxFwd, EoM */
-	*len+=LOCAL_MAXFWD_HEADER_LEN + CONTENT_LENGTH_LEN+1 + CRLF_LEN + CRLF_LEN;
+	*len+=LOCAL_MAXFWD_HEADER_LEN + CONTENT_LENGTH_LEN+1 + extra?extra->len:0 +
+		CRLF_LEN + CRLF_LEN;
 
 	cancel_buf=shm_malloc( *len+1 );
 	if (!cancel_buf)
@@ -300,7 +301,7 @@ char *build_local(struct cell *Trans,unsigned int branch,
 	}
 	p = cancel_buf;
 
-	append_string( p, method, method_len );
+	append_string( p, method->s, method->len );
 	*(p++) = ' ';
 	append_string( p, Trans->uac[branch].uri.s, Trans->uac[branch].uri.len);
 	append_string( p, " " SIP_VERSION CRLF, 1+SIP_VERSION_LEN+CRLF_LEN );
@@ -315,7 +316,7 @@ char *build_local(struct cell *Trans,unsigned int branch,
 
 	append_string( p, cseq_n.s, cseq_n.len );
 	*(p++) = ' ';
-	append_string( p, method, method_len );
+	append_string( p, method->s, method->len );
 	append_string( p, CRLF LOCAL_MAXFWD_HEADER,
 		CRLF_LEN+LOCAL_MAXFWD_HEADER_LEN );
 
@@ -324,6 +325,9 @@ char *build_local(struct cell *Trans,unsigned int branch,
 		if(hdr->type==HDR_ROUTE_T) {
 			append_string(p, hdr->name.s, hdr->len );
 		}
+
+	if (extra)
+		append_string(p, extra->s, extra->len );
 
 	/* User Agent header, Content Length, EoM */
 	if (server_signature) {
