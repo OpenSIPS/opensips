@@ -350,8 +350,8 @@ static unsigned int get_dst_load(struct lb_resource **res, unsigned int res_no,
 		av = dst->rmap[l].max_load -
 			lb_dlg_binds.get_profile_size(res[k]->profile, &dst->profile_id);
 		if (av < 0) {
-			LM_CRIT("bug - negative availability for resource in dst\n");
-			return 0;
+			LM_WARN("negative availability for resource in dst\n");
+			av = 0;
 		}
 		if (av < available) /* computing a minimum */
 			available = av;
