@@ -59,7 +59,7 @@ static void reset_all_statements(const db_con_t* conn)
 	LM_DBG("reseting all statements on connection: (%p)%li\n", 
 		conn,conn->tail);
 	for( pq_ptr=CON_PS_LIST(conn); pq_ptr ; pq_ptr=pq_ptr->next ) {
-		for (ctx = pq_ptr->ctx ; ctx ; ctx=ctx->next ) {
+		for (ctx = pq_ptr->stmts ; ctx ; ctx=ctx->next ) {
 			LM_DBG("resetting statement (%p) for context %p (%.*s)\n",
 				ctx->stmt, ctx, ctx->table.len,ctx->table.s);
 			if (ctx->stmt) {
@@ -354,12 +354,12 @@ error:
 	/* destroy the context only */
 	mysql_stmt_close(ctx->stmt);
 	/* remove the context from STMT list */
-	for( ctx1=NULL,ctx2=pq_ptr->ctx ; ctx2 ; ) {
+	for( ctx1=NULL,ctx2=pq_ptr->stmts ; ctx2 ; ) {
 		if (ctx2==ctx) {
 			if (ctx1)
 				ctx1->next = ctx2->next;
 			else
-				pq_ptr->ctx = ctx2->next;
+				pq_ptr->stmts = ctx2->next;
 			break;
 		}
 		ctx1 = ctx2;
