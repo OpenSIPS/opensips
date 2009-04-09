@@ -432,7 +432,7 @@ modparam("acc", "report_cancels", 1)
 
 1.5.5. detect_direction (integer)
 
-   Controlles the direction detection for sequential requests. If
+   Controls the direction detection for sequential requests. If
    enabled (non zero value), for sequential requests with upstream
    direction (from callee to caller), the FROM and TO will be
    swapped (the direction will be preserved as in the original
@@ -561,10 +561,11 @@ modparam("acc", "radius_missed_flag", 3)
 
    Radius service type used for accounting.
 
-   Default value is 15 (SIP).
+   Default value is not-set.
 
    Example 1.15. service_type example
-modparam("acc", "service_type", 16)
+# Default value of service type for SIP is 15
+modparam("acc", "service_type", 15)
 
 1.5.16. radius_extra (string)
 
@@ -617,7 +618,7 @@ modparam("acc", "db_table_missed_calls", "myMC_table")
 
 1.5.21. db_url (string)
 
-   SQL address -- database specific. If is set to NULL or emty
+   SQL address -- database specific. If is set to NULL or empty
    string, the SQL support is disabled.
 
    Default value is "NULL" (SQL disabled).
@@ -668,7 +669,7 @@ modparam("acc", "acc_callid_column", "callid")
 1.5.26. acc_sip_code_column (string)
 
    Column name in accounting table to store the final reply's
-   numric code value in string format.
+   numeric code value in string format.
 
    Default value is "sip_code".
 
@@ -740,7 +741,7 @@ modparam("acc", "diameter_client_host", "3a_server.net")
    Port number where the Diameter Client is listening -- DIAMETER
    specific.
 
-   Default value is 3000.
+   Default value is "3000".
 
    Example 1.33. diameter_client_host example
 modparam("acc", "diameter_client_port", 3000)
@@ -826,24 +827,24 @@ Chapter 2. Frequently Asked Questions
 
    2.1.
 
-       What happend with old log_fmt parameter
+       What happened with old log_fmt parameter
 
        The parameter became obsolete with the restructure of the data
        logged by ACC module (refer to the Overview chapter). For
        similar behaviour you can use the extra accouting (see the
-       coresponding chapter).
+       corresponding chapter).
 
    2.2.
 
-       What happend with old multi_leg_enabled parameter
+       What happened with old multi_leg_enabled parameter
 
-       The parameter becaome obsolete by the addition of the new
+       The parameter became obsolete by the addition of the new
        multi_leg_info parameter. The multi-leg accouting is
        automatically enabled when multi_leg_info is defined.
 
    2.3.
 
-       What happend with old src_leg_avp_id and dst_leg_avp_id
+       What happened with old src_leg_avp_id and dst_leg_avp_id
        parameters
 
        The parameter was replaced by the more generic new parameter

@@ -136,7 +136,7 @@ Chapter 1. Admin Guide
 
    The following modules must be loaded before this module:
      * usrloc - User Location Module.
-     * sl - Stateless Replies.
+     * signaling - Signaling module.
 
 1.2.2. External Libraries or Applications
 
@@ -498,7 +498,7 @@ save("location","0x02", "$avp(i:1)");
    Example 1.20. lookup usage
 ...
 lookup("location");
-switch ($?) {
+switch ($retcode) {
     case -1:
     case -3:
         sl_send_reply("404", "Not Found");

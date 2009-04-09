@@ -40,6 +40,7 @@ struct _TConn {
     TThreadProc * job;
     TThreadDoneFn * done;
     char buffer[BUFFER_SIZE];
+	time_t  start;
 };
 
 typedef struct _TConn TConn;

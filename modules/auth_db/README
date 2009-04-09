@@ -179,10 +179,10 @@ modparam("auth_db", "password_column_2", "ha1_2")
    calculated from the column specified in the "password_column"
    parameter.
 
-   The "password_column_2"column contain also HA1 strings but they
-   should be calculated including the domain in the username
+   The "password_column_2" column contains also HA1 strings but
+   they should be calculated including the domain in the username
    parameter (as opposed to password_column which (when containing
-   HA1 strings) should always contains HA1 strings calculated
+   HA1 strings) should always contain HA1 strings calculated
    without domain in username.
 
    This ensures that the authentication will always work when
@@ -211,7 +211,7 @@ modparam("auth_db", "use_domain", 1)
 
 1.3.8. load_credentials (string)
 
-   This parameter specifies of credentials to be fetch from
+   This parameter specifies credentials to be fetched from
    database when the authentication is performed. The loaded
    credentials will be stored in AVPs. If the AVP name is not
    specificaly given, it will be used a NAME AVP with the same
@@ -253,9 +253,9 @@ modparam("auth_db", "load_credentials", "$avp(i:13)=rpid;email_address")
      * -1 (invalid user) - authentication user does not exist.
 
    Meaning of the parameters is as follows:
-     * realm - Realm is a opaque string that the user agent should
-       present to the user so he can decide what username and
-       password to use. Usually this is domain of the host the
+     * realm - Realm is an opaque string that the user agent
+       should present to the user so it can decide what username
+       and password to use. Usually this is domain of the host the
        server is running on.
        If an empty string "" is used then the server will generate
        it from the request. In case of REGISTER requests To header
@@ -295,9 +295,9 @@ if (www_authorize("siphub.net", "subscriber")) {
      * -1 (invalid user) - authentication user does not exist.
 
    Meaning of the parameters is as follows:
-     * realm - Realm is a opaque string that the user agent should
-       present to the user so he can decide what username and
-       password to use. Usually this is domain of the host the
+     * realm - Realm is an opaque string that the user agent
+       should present to the user so it can decide what username
+       and password to use. Usually this is domain of the host the
        server is running on.
        If an empty string "" is used then the server will generate
        it from the request. From header field domain will be used

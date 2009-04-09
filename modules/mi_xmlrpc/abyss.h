@@ -362,6 +362,7 @@ uint32 SocketAvailableReadBytes(TSocket *s);
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <limits.h>
+#include <time.h>
 
 #ifndef NAME_MAX
 #define NAME_MAX	1024

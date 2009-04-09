@@ -88,7 +88,8 @@ Chapter 1. Admin Guide
    The URL of database where the table containing speed dial
    records.
 
-   Default value is mysql://opensipsro:opensipsro@localhost/opensips.
+   Default value is
+   mysql://opensipsro:opensipsro@localhost/opensips.
 
    Example 1.1. Set db_url parameter
 ...
@@ -191,7 +192,7 @@ modparam("speeddial", "use_domain", 1)
 
    Meaning of the parameters is as follows:
      * table - The name of the table storing the speed dial
-       records.
+       records. This parameter may include pseudovariables.
      * owner - The SIP URI of the owner of short dialing codes. If
        not pressent, URI of From header is used.
 

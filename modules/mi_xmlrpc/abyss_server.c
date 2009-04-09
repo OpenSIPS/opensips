@@ -32,6 +32,7 @@
 #include "abyss_info.h"
 
 #include "abyss_server.h"
+#include "../../dprint.h"
 
 
 void
@@ -1265,6 +1266,8 @@ addToOutstandingConnList(outstandingConnList * const listP,
     listP->firstP = connectionP;
 
     ++listP->count;
+    LM_ERR("conn %p added to list -> size=%d\n",
+               connectionP,listP->count);
 }
 
 
@@ -1289,10 +1292,15 @@ freeFinishedConns(outstandingConnList * const listP) {
             /* Take it out of the list */
             *pp = connectionP->nextOutstandingP;
             --listP->count;
+            LM_ERR("conn %p removed from list -> size=%d\n",
+               connectionP,listP->count);
             
             ConnWaitAndRelease(connectionP);
         } else {
             /* Move to next connection in list */
+            LM_ERR("conn %p (thread=%p) still in list (start=%lu) -> size=%d\n",
+               connectionP,connectionP->threadP, connectionP->start,
+			   listP->count);
             pp = &connectionP->nextOutstandingP;
         }
     }
@@ -1352,6 +1360,7 @@ waitForConnectionCapacity(outstandingConnList * const outstandingConnListP) {
 void
 ServerHandleSigchld(pid_t const pid) {
 
+    LM_ERR("thread %u detected as terminated by SIGCHLD\n",pid);
     ThreadHandleSigchld(pid);
 }
 #endif

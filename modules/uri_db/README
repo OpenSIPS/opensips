@@ -12,12 +12,22 @@ Edited by
 
 Bogdan-Andrei Iancu
 
+Edited by
+
+Sergio Gutierrez
+
+Edited by
+
+Andreas Westermaier
+
+   overturn technologies GmbH
+
    Copyright © 2003 FhG FOKUS
 
    Copyright © 2005 voice-system.ro
    Revision History
-   Revision $Revision$ $Date: 2008-07-12 00:16:22 +0300
-                              (Sat, 12 Jul 2008) $
+   Revision $Revision$ $Date: 2009-04-08 18:39:29 +0300
+                              (Wed, 08 Apr 2009) $
      __________________________________________________________
 
    Table of Contents
@@ -45,6 +55,12 @@ Bogdan-Andrei Iancu
               1.4.1. check_to()
               1.4.2. check_from()
               1.4.3. does_uri_exist()
+              1.4.4. get_auth_id(string, var, var)
+
+        1.5. Exported statistics
+
+              1.5.1. positive_checks
+              1.5.2. negative_checks
 
    List of Examples
 
@@ -58,6 +74,7 @@ Bogdan-Andrei Iancu
    1.8. check_to usage
    1.9. check_from usage
    1.10. does_uri_exist usage
+   1.11. get_auth_id usage
 
 Chapter 1. Admin Guide
 
@@ -218,3 +235,35 @@ if (does_uri_exist()) {
         ...
 };
 ...
+
+1.4.4.  get_auth_id(string, var, var)
+
+   Checks given uri-string username against URI table (if
+   use_uri_table is set) or subscriber table (database backend
+   required). Returns true if the user exists in the database, and
+   sets the given variables to the authentication id and realm
+   corresponding to the given uri.
+
+   This function can be used from REQUEST_ROUTE.
+
+   Example 1.11. get_auth_id usage
+...
+if (get_auth_id("$ru", "$avp(s:auth_id)", "$avp(s:auth_realm)")) {
+        ...
+};
+...
+
+1.5. Exported statistics
+
+   Exported statistics are listed in the next sections.
+
+1.5.1. positive_checks
+
+   Number of tests executed for which a positive match is
+   returned.
+
+1.5.2. negative_checks
+
+   Number of tests executed for which a negative match is
+   returned. This includes no credentials found, or not match
+   found in database.
