@@ -290,8 +290,8 @@ char *build_local(struct cell *Trans,unsigned int branch,
 		*len += user_agent_header.len + CRLF_LEN;
 	}
 	/* Content Length, MaxFwd, EoM */
-	*len+=LOCAL_MAXFWD_HEADER_LEN + CONTENT_LENGTH_LEN+1 + extra?extra->len:0 +
-		CRLF_LEN + CRLF_LEN;
+	*len+=LOCAL_MAXFWD_HEADER_LEN + CONTENT_LENGTH_LEN+1 + (extra?extra->len:0)
+		+ CRLF_LEN + CRLF_LEN;
 
 	cancel_buf=shm_malloc( *len+1 );
 	if (!cancel_buf)
