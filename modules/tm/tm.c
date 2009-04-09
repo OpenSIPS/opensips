@@ -837,30 +837,40 @@ static int t_was_cancelled(struct sip_msg* msg, char *foo, char *bar)
 }
 
 
-inline static int w_t_reply(struct sip_msg* msg, char* str1, char* str2)
+inline static int w_t_reply(struct sip_msg* msg, char* code, char* text)
 {
 	struct cell *t;
+	int r;
 
 	if (msg->REQ_METHOD==METHOD_ACK) {
 		LM_WARN("ACKs are not replied\n");
 		return -1;
 	}
-	t=get_t();
-	if ( t==0 || t==T_UNDEFINED ) {
-		LM_ERR("failed to send a t_reply to a message for which no "
-			"transaction-state has been established\n");
-		return -1;
-	}
-	/* if called from reply_route, make sure that unsafe version
-	 * is called; we are already in a mutex and another mutex in
-	 * the safe version would lead to a deadlock
-	 */
 	switch (route_type) {
 		case FAILURE_ROUTE:
-			LM_DBG("t_reply_unsafe called from w_t_reply\n");
-			return t_reply_unsafe(t, msg, (unsigned int)(long)str1,(str*)str2);
+			/* if called from reply_route, make sure that unsafe version
+			 * is called; we are already in a mutex and another mutex in
+			 * the safe version would lead to a deadlock */
+			t=get_t();
+			if ( t==0 || t==T_UNDEFINED ) {
+				LM_ERR("BUG - no transaction found in Failure Route\n");
+				return -1;
+			}
+			return t_reply_unsafe(t, msg, (unsigned int)(long)code,(str*)text);
 		case REQUEST_ROUTE:
-			return t_reply( t, msg, (unsigned int)(long) str1, (str*)str2);
+			t=get_t();
+			if ( t==0 || t==T_UNDEFINED ) {
+				r = t_newtran( msg );
+				if (r==0) {
+					/* retransmission -> break the script */
+					return 0;
+				} else if (r<0) {
+					LM_ERR("could not create a new transaction\n");
+					return -1;
+				}
+				t=get_t();
+			}
+			return t_reply( t, msg, (unsigned int)(long)code, (str*)text);
 		default:
 			LM_CRIT("unsupported route_type (%d)\n", route_type);
 			return -1;
