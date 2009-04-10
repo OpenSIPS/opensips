@@ -31,6 +31,7 @@
 #define PS_HASH_H
 
 #include "../../lock_ops.h"
+#include "../../str.h"
 //#include "presentity.h"
 
 struct presentity;
