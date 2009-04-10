@@ -113,6 +113,13 @@ int add_event(pres_ev_t* event)
 	char buf[50];
 	int not_in_list= 0;
 
+
+	if(EvList == NULL)
+	{
+		LM_ERR("'presence' modules must be loaded before this module\n");
+		return -1;
+	}
+	
 	memset(&parsed_event, 0, sizeof(event_t));
 
 	if(event->name.s== NULL || event->name.len== 0)
