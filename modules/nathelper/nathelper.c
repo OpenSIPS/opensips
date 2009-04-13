@@ -2655,7 +2655,7 @@ force_rtp_proxy(struct sip_msg* msg, char* str1, char* str2, int offer)
 	int create, port, len, asymmetric, flookup, argc, proxied, real;
 	int orgip, commip;
 	int oidx, pf, pf1, force, swap, rep_oidx;
-	char opts[32];
+	char opts[64];
 	char rep_opts[16];
 	char *cp, *cp1;
 	char  *cpend, *next;
