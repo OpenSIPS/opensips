@@ -471,7 +471,7 @@ install-cfg: $(cfg-prefix)/$(cfg-dir)
 			< $(cfg-prefix)/$(cfg-dir)$(NAME).cfg.sample0 \
 			> $(cfg-prefix)/$(cfg-dir)$(NAME).cfg.sample
 		rm -fr $(cfg-prefix)/$(cfg-dir)$(NAME).cfg.sample0
-		chmod 500 $(cfg-prefix)/$(cfg-dir)$(NAME).cfg.sample
+		chmod 600 $(cfg-prefix)/$(cfg-dir)$(NAME).cfg.sample
 		chmod 700 $(cfg-prefix)/$(cfg-dir)
 		if [ -z "${skip_cfg_install}" -a \
 				! -f $(cfg-prefix)/$(cfg-dir)$(NAME).cfg ]; then \
