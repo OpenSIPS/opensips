@@ -2,97 +2,146 @@
 
 ===================== 2009-04-13 OpenSIPS v1.5.1 released =====================
 
-2009-03-26 20:48:20  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5547] :
 
-	backport from trunk (rev #5546):
-	- fixed bug: push the q value in RURI branch also
+2009-04-13 16:30:06  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [5631] :
 
-
-2009-03-27 16:05:05  Anca Vamanu, <anca at voice-system dot ro> 
-	* [5553] :
-
-	- backport from trunk
-	1. in pua module:  fixed remote contact match when using pua_bla ( thanks to Zahid Mehmood <zm23@columbia.edu> for detailed report)
-	2. in pua_usrloc and pua module: - fixed error when pua table gets out of sync with location table by loosing records and resulting in Publish update requests to fail
-	       - credits go to Inaki Baz Castillo <ibc@aliax.net> for the initial patch
+	backport from trunk (rev #5630):
+	- increased buffer len of arg 1 as it contains the codec index that may overflow.
+	  Credits go to David Feng (dfeng99) on forum.
 
 
-2009-03-30 04:55:50  Di-Shi Sun <di-shi at transnexus dot com> 
-	* [5554] :
+2009-04-13 15:40:30  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [5629] :
 
-	Fixed the parsing called number issue caused by the number portability parameters in user part of RURI.
-
-
-2009-03-30 18:00:57  Sergio Gutierrez <saguti at gmail dot com> 
-	* [5558] :
-
-	- Updated packing files to last version.
-	- Added packaging files for new modules.
-
-2009-03-30 18:12:04  Iulia Buble <iulia at opensips dot org> 
-	* [5560] :
-
-	Help command was added. Info on all commands can be obtained either by typing: 
-			help in the console 
-		or
-			by typing     ./osipsconsole help.
+	 prepared for 1.5.1
 
 
+2009-04-13 14:58:49  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [5627] :
 
-2009-04-01 12:16:47  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5563] :
-
-	backport from trunk (rev# 5562):
-	- fixed the way the sip URI and group value are processed.
-	  Reported by Carlo Dimaggio
-
-
-2009-04-01 15:21:55  Anca Vamanu, <anca at voice-system dot ro> 
-	* [5565] :
-
-	-fixed bug: set database table before update ( reported by Visu.M <visumrs@gmail.com> )
+	backport from trunk (rev #5626):
+	- fixed testing of MIN-SE and when the 422 reply must be sent out.
+	  Based on a report from Jeff Pyle.
 
 
-2009-04-01 20:39:53  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5570] :
+2009-04-13 12:16:12  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [5625] :
 
-	backport from trunk (rev #5568):
-	- fixed bug in extracting the body - do not rely 100% on the content-lenght hdr value as it might be bogus -> do a sanity check to see if the end of the body is not somehow outside the message body.
-
-	  Closes bug 2649267.
-	  Many thanks to Bobby Smith for helping with debugging this!
-
-
-2009-04-01 21:04:26  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5572] :
-
-	backport from trunk (rev #5571):
-	- fixed bug in improper set of the MYSQL bind out structure.
-
-	Many, many thanks to Thomas Gelf for helping with the debug and testing and to Franz Edler for testing this fix
+	backport from trunk (rev 5624):
+		
+	- Modify sample configuration file permissions to avoid error when doing make install-cfg after previous install.
+	Closes bug #2745618. Thanks to ledda for reporting.
 
 
-2009-04-01 21:30:39  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5574] :
+2009-04-10 14:26:34  Anca Vamanu, <anca at voice-system dot ro> 
+	* [5623] :
 
-	backport from trunk (rev #5573):
-	- fixed bogus param type in do_action() (STRING_ST -> STR_ST).
-	  Closes bug 2723978.
+	- fix: added check if presence module is loaded before modules wanting to register events
+
+
+2009-04-08 19:21:46  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [5615] :
+
+	backport from trunk (rev #5614 ):
+	- if no uid/gid is set, do not try to change it.
+
+	  Closes bug #2732021 .
+
+
+2009-04-08 18:47:53  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [5613] :
+
+	backport from trunk (rev #5612):
+	 - the availaility of a resource may be negative not necessary because of a bug,
+	 but because of a load resize via MI.
+
+	   Closes bug #2739622.
 
 
 
-2009-04-02 17:59:37  Anca Vamanu, <anca at voice-system dot ro> 
-	* [5577] :
+2009-04-08 18:36:53  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [5610] :
 
-	- added dependency check if module pua is loaded before modules adding events in pua module
+	backport from trunk (rev #5609):
+	- fixed issue at reload time - the dialog profiles may be already created sue previous data.
+	 Closes bug 2739455.
 
 
-2009-04-03 17:39:15  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5579] :
 
-	backport from trunk (rev #5578):
-	- fixed bug in resetting the prepared statements when a text-based query triggers an auto reconnect - the problem was that both mysql_ping() and mysql_real_query() do not report the reconnect event at all (if auto reconnect is set).
+2009-04-08 15:47:29  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [5608] :
+
+	backport from trunk (rev 5607):
+
+	fixed bug in working with the list of contexts per statement - the bug poping up only in handling DB erorrs
+
+	Reported by Brett Nemeroff.
+
+
+
+2009-04-08 10:28:31  Dan Pascu <dan at ag-projects dot com> 
+	* [5603] :
+
+	Changed mediaproxy to silently ignore unknown content types instead of logging errors (backport from trunk rev 5602)
+
+2009-04-07 18:46:24  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [5601] :
+
+	backport from trunk (rev #5600):
+	- fixed return code for next_contacts() - return all the time false if no other AVPs are available.
+	  Reported by Amit Sharma 
+
+
+2009-04-07 17:18:46  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [5599] :
+
+	backport from trunk (rev #5591 + #5596):
+
+	- fixed deadlock are reload time (because of some newly used debug function).
+	  Reported by Dan Bogos
+
+	- bogus return (for empty data) fixed (as was leading to a deadlock)
+	  Reported by Dan Bogos
+
+
+2009-04-07 17:07:46  Dan Pascu <dan at ag-projects dot com> 
+	* [5598] :
+
+	Correctly handle calls under call control after a restart (based on a patch by Mauro Davi')
+
+2009-04-07 15:52:50  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [5595] :
+
+	backport from trunk (rev #5594):
+	- much better and complete fix for he bug reported in commit #5581 + #5587
+
+	many thanks to Thomas Gelf for helping with testing (again)
+
+
+2009-04-07 09:09:21  Di-Shi Sun <di-shi at transnexus dot com> 
+	* [5592] :
+
+	Fixed the issue caused by without certificate files.
+
+
+2009-04-06 16:43:15  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [5589] :
+
+	backport from trunk (rev #5588)
+
+
+2009-04-06 13:43:29  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [5587] :
+
+	backport from trunk (rev #5586):
+	- better fixed (with no performace penalties) for the previous fix (with the "caonnot connect to mysql server" issue) - see comments on rev #5581
+
+
+2009-04-06 12:34:40  Anca Vamanu, <anca at voice-system dot ro> 
+	* [5584] :
+
+	- fixed wrong memory free ( reported by JayaPrakash <jp.manchu@gmail.com> )
 
 
 2009-04-06 11:31:42  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
@@ -107,131 +156,97 @@
 
 
 
-2009-04-06 12:34:40  Anca Vamanu, <anca at voice-system dot ro> 
-	* [5584] :
+2009-04-03 17:39:15  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [5579] :
 
-	- fixed wrong memory free ( reported by JayaPrakash <jp.manchu@gmail.com> )
-
-
-2009-04-06 13:43:29  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5587] :
-
-	backport from trunk (rev #5586):
-	- better fixed (with no performace penalties) for the previous fix (with the "caonnot connect to mysql server" issue) - see comments on rev #5581
+	backport from trunk (rev #5578):
+	- fixed bug in resetting the prepared statements when a text-based query triggers an auto reconnect - the problem was that both mysql_ping() and mysql_real_query() do not report the reconnect event at all (if auto reconnect is set).
 
 
-2009-04-06 16:43:15  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5589] :
+2009-04-02 17:59:37  Anca Vamanu, <anca at voice-system dot ro> 
+	* [5577] :
 
-	backport from trunk (rev #5588)
-
-
-2009-04-07 09:09:21  Di-Shi Sun <di-shi at transnexus dot com> 
-	* [5592] :
-
-	Fixed the issue caused by without certificate files.
+	- added dependency check if module pua is loaded before modules adding events in pua module
 
 
-2009-04-07 15:52:50  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5595] :
+2009-04-01 21:30:39  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [5574] :
 
-	backport from trunk (rev #5594):
-	- much better and complete fix for he bug reported in commit #5581 + #5587
-
-	many thanks to Thomas Gelf for helping with testing (again)
-
-
-2009-04-07 17:07:46  Dan Pascu <dan at ag-projects dot com> 
-	* [5598] :
-
-	Correctly handle calls under call control after a restart (based on a patch by Mauro Davi')
-
-2009-04-07 17:18:46  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5599] :
-
-	backport from trunk (rev #5591 + #5596):
-
-	- fixed deadlock are reload time (because of some newly used debug function).
-	  Reported by Dan Bogos
-
-	- bogus return (for empty data) fixed (as was leading to a deadlock)
-	  Reported by Dan Bogos
-
-
-2009-04-07 18:46:24  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5601] :
-
-	backport from trunk (rev #5600):
-	- fixed return code for next_contacts() - return all the time false if no other AVPs are available.
-	  Reported by Amit Sharma 
-
-
-2009-04-08 10:28:31  Dan Pascu <dan at ag-projects dot com> 
-	* [5603] :
-
-	Changed mediaproxy to silently ignore unknown content types instead of logging errors (backport from trunk rev 5602)
-
-2009-04-08 15:47:29  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5608] :
-
-	backport from trunk (rev 5607):
-
-	fixed bug in working with the list of contexts per statement - the bug poping up only in handling DB erorrs
-
-	Reported by Brett Nemeroff.
+	backport from trunk (rev #5573):
+	- fixed bogus param type in do_action() (STRING_ST -> STR_ST).
+	  Closes bug 2723978.
 
 
 
-2009-04-08 18:36:53  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5610] :
+2009-04-01 21:04:26  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [5572] :
 
-	backport from trunk (rev #5609):
-	- fixed issue at reload time - the dialog profiles may be already created sue previous data.
-	 Closes bug 2739455.
+	backport from trunk (rev #5571):
+	- fixed bug in improper set of the MYSQL bind out structure.
 
-
-
-2009-04-08 18:47:53  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5613] :
-
-	backport from trunk (rev #5612):
-	 - the availaility of a resource may be negative not necessary because of a bug,
-	 but because of a load resize via MI.
-
-	   Closes bug #2739622.
+	Many, many thanks to Thomas Gelf for helping with the debug and testing and to Franz Edler for testing this fix
 
 
+2009-04-01 20:39:53  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [5570] :
 
-2009-04-08 19:21:46  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5615] :
+	backport from trunk (rev #5568):
+	- fixed bug in extracting the body - do not rely 100% on the content-lenght hdr value as it might be bogus -> do a sanity check to see if the end of the body is not somehow outside the message body.
 
-	backport from trunk (rev #5614 ):
-	- if no uid/gid is set, do not try to change it.
-
-	  Closes bug #2732021 .
-
-
-2009-04-10 14:26:34  Anca Vamanu, <anca at voice-system dot ro> 
-	* [5623] :
-
-	- fix: added check if presence module is loaded before modules wanting to register events
+	  Closes bug 2649267.
+	  Many thanks to Bobby Smith for helping with debugging this!
 
 
-2009-04-13 12:16:12  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5625] :
+2009-04-01 15:21:55  Anca Vamanu, <anca at voice-system dot ro> 
+	* [5565] :
 
-	backport from trunk (rev 5624):
-		
-	- Modify sample configuration file permissions to avoid error when doing make install-cfg after previous install.
-	Closes bug #2745618. Thanks to ledda for reporting.
+	-fixed bug: set database table before update ( reported by Visu.M <visumrs@gmail.com> )
 
 
-2009-04-13 14:58:49  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5627] :
+2009-04-01 12:16:47  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [5563] :
 
-	backport from trunk (rev #5626):
-	- fixed testing of MIN-SE and when the 422 reply must be sent out.
-	  Based on a report from Jeff Pyle.
+	backport from trunk (rev# 5562):
+	- fixed the way the sip URI and group value are processed.
+	  Reported by Carlo Dimaggio
+
+
+2009-03-30 18:12:04  Iulia Buble <iulia at opensips dot org> 
+	* [5560] :
+
+	Help command was added. Info on all commands can be obtained either by typing: 
+			help in the console 
+		or
+			by typing     ./osipsconsole help.
+
+
+
+2009-03-30 18:00:57  Sergio Gutierrez <saguti at gmail dot com> 
+	* [5558] :
+
+	- Updated packing files to last version.
+	- Added packaging files for new modules.
+
+2009-03-30 04:55:50  Di-Shi Sun <di-shi at transnexus dot com> 
+	* [5554] :
+
+	Fixed the parsing called number issue caused by the number portability parameters in user part of RURI.
+
+
+2009-03-27 16:05:05  Anca Vamanu, <anca at voice-system dot ro> 
+	* [5553] :
+
+	- backport from trunk
+	1. in pua module:  fixed remote contact match when using pua_bla ( thanks to Zahid Mehmood <zm23@columbia.edu> for detailed report)
+	2. in pua_usrloc and pua module: - fixed error when pua table gets out of sync with location table by loosing records and resulting in Publish update requests to fail
+	                                 - credits go to Inaki Baz Castillo <ibc@aliax.net> for the initial patch
+
+
+2009-03-26 20:48:20  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [5547] :
+
+	backport from trunk (rev #5546):
+	- fixed bug: push the q value in RURI branch also
 
 
 
