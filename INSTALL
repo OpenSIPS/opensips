@@ -27,6 +27,7 @@ TOC
    B) Disclaimers
    C) Quick Start
    D) opensips with Persistent Data Storage
+   E) osipsconsole installation
 4. Troubleshooting
 
 
@@ -419,6 +420,75 @@ proceed, you need to make sure MySQL is installed on your box.
    - r/o user: opensipsro ; passwd: opensipsro
      VERY IMPORTANT NOTE: for security reasons, do change the values of 
      passwords after installation
+
+E) osipsconsole installation
+
+1) Perl requirements
+
+        For the osipsconsole tool the following perl modules are needed:
+
+        DBI
+        DBD::mysql
+        DBD::Pg
+        DBD::Oracle
+        BerkeleyDB
+        Frontier::RPC2
+
+2) Debian/Ubuntu Installation
+
+    In order for the script to work, there are listed bellow the modules needed and
+    their debian package correspondent, a brief description of each package and
+    whether it is mandatory to install it or not. ( To be mentioned the fact that
+    these packages have been tested in Debian and Ubuntu distros. )
+
+Perl module | Debian Package  | Description            | Use
+------------------------------------------------------------------
+perl               |perl                    |Practical Extraction and| mandatory
+                   |                        |Report Language         |
+
+DBI                |libdbi-perl             |Perl database interface | mandatory
+
+DBD::mysql         |libdbd-mysql-perl       |MySQL driver for the Perl5|*optional
+                   |                        |Database Interface (DBI) |
+
+DBD::Pg            |libdbd-pg-perl          |PostgreSQL database      |*optional
+                   |                        |driver for the DBI module|
+
+**DBD::Oracle      |       ------           |Oracle database driver for|*optional
+                   |                        |the DBI module           |
+
+Frontier::RPC2     |libfrontier-rpc-perl    |encode/decode RPC2       |mandatory
+                   |                        |format XML               |
+
+Term::ReadLine::Gnu|libterm-readline-gnu-per|Perl extension for the GNU|mandatory
+                   |                        |Readline/History Library  |
+
+BerkeleyDB         |libberkeleydb-perl      |Perl extension for        |mandatory
+                   |                        |Berkeley database         |
+                   |                        |version 2, 3 or 4         |
+
+
+   Install these packages using apt-get:
+
+    apt-get install perl libdbi-perl libdbd-mysql-perl libdbd-pg-perl
+                    libfrontier-rpc-perl libterm-readline-gnu-perl
+
+
+   NOTE: * packages are at the user's choice. At least one of them is
+         mandatory, depending on the DB type used by OpenSIPS. The other
+         ones have no need of being installed.
+         ** For the DBD::Oracle module there is no debian package. This
+         will be installed as follows:
+             - Download the .tar.gz archive from:
+           http://search.cpan.org/~pythian/DBD-Oracle-1.22/Oracle.pm
+             - Decompress and unpack it
+             - cd DBD-Oracle-1.22
+             - perl Makefile.PL
+             - make
+             - make test
+             - make install
+
+
 
 4. Troubleshooting
 ------------------
