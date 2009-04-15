@@ -2297,7 +2297,7 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 								elems[2].type = STR_ST; 
 								elems[2].u.data = $7; 
 								elems[3].type = NUMBER_ST; 
-								elems[3].u.data = (void*)$9; 
+								elems[3].u.number = $9;
 								$$ = mk_action(CACHE_STORE_T, 4, elems, line); 
 
 							}
