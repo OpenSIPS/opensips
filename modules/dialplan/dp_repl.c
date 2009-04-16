@@ -203,10 +203,9 @@ int rule_translate(struct sip_msg *msg, str string, dpl_node_t * rule,
 				result->len++;
 				break;
 			case REPLACE_URI:
-				
-                if ( msg== NULL || msg->first_line.type!=SIP_REQUEST){
+				if ( msg== NULL || msg->first_line.type!=SIP_REQUEST){
 					LM_CRIT("uri substitution attempt on no request"
-                            " message\n");
+						" message\n");
 					break; /* ignore, we can continue */
 				}
 				uri= (msg->new_uri.s)?(&msg->new_uri):
@@ -219,12 +218,11 @@ int rule_translate(struct sip_msg *msg, str string, dpl_node_t * rule,
 				result->len+=uri->len;
 				break;
 			case REPLACE_SPEC:
-				if (msg== NULL)
-                {
-                    LM_DBG("replace spec attempted on no message\n");
-                    break;
-                }
-                if(pv_get_spec_value(msg, 
+				if (msg== NULL) {
+					LM_DBG("replace spec attempted on no message\n");
+					break;
+				}
+			if(pv_get_spec_value(msg, 
 				&repl_comp->replace[repl_nb].u.spec, &sv)!=0){
 					LM_CRIT( "item substitution returned error\n");
 					break; /* ignore, we can continue */
@@ -243,6 +241,15 @@ int rule_translate(struct sip_msg *msg, str string, dpl_node_t * rule,
 		}
 		repl_nb++;
 	}
+	/* anything left? */
+	if( repl_nb && token.offset+token.size < repl_comp->replacement.len){
+		/*copy from the replacing string*/
+		memcpy(result->s + result->len,
+			repl_comp->replacement.s + token.offset+token.size, 
+			repl_comp->replacement.len -(token.offset+token.size) );
+			result->len +=repl_comp->replacement.len-(token.offset+token.size);
+	}
+
 	result->s[result->len] = '\0';
 	return 0;
 
