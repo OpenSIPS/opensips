@@ -242,7 +242,7 @@ int rule_translate(struct sip_msg *msg, str string, dpl_node_t * rule,
 		repl_nb++;
 	}
 	/* anything left? */
-	if( token.offset+token.size < repl_comp->replacement.len){
+	if( repl_nb && token.offset+token.size < repl_comp->replacement.len){
 		/*copy from the replacing string*/
 		memcpy(result->s + result->len,
 			repl_comp->replacement.s + token.offset+token.size, 
