@@ -860,23 +860,21 @@ error:
 	return -1;
 }
 
-static struct tm _cfgutils_ts;
-static unsigned int _cfgutils_msg_id = 0;
 
 int pv_get_time(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {
+	static struct tm stored_ts;
+	static time_t stored_t = 0;
 	time_t t;
 
 	if(msg==NULL || param==NULL)
 		return -1;
 
-	if(_cfgutils_msg_id != msg->id)
-	{
-		pv_update_time(msg, &t);
-		_cfgutils_msg_id = msg->id;
-		if(localtime_r(&t, &_cfgutils_ts) == NULL)
-		{
+	t = time(NULL);
+	if (t!=stored_t) {
+		stored_t = t;
+		if (localtime_r(&t, &stored_ts) == NULL) {
 			LM_ERR("unable to break time to attributes\n");
 			return -1;
 		}
@@ -885,27 +883,27 @@ int pv_get_time(struct sip_msg *msg, pv_param_t *param,
 	switch(param->pvn.u.isname.name.n)
 	{
 		case 1:
-			return pv_get_uintval(msg, param, res, (unsigned int)_cfgutils_ts.tm_min);
+			return pv_get_uintval(msg, param, res, (unsigned int)stored_ts.tm_min);
 		case 2:
-			return pv_get_uintval(msg, param, res, (unsigned int)_cfgutils_ts.tm_hour);
+			return pv_get_uintval(msg, param, res, (unsigned int)stored_ts.tm_hour);
 		case 3:
-			return pv_get_uintval(msg, param, res, (unsigned int)_cfgutils_ts.tm_mday);
+			return pv_get_uintval(msg, param, res, (unsigned int)stored_ts.tm_mday);
 		case 4:
 			return pv_get_uintval(msg, param, res, 
-					(unsigned int)(_cfgutils_ts.tm_mon+1));
+					(unsigned int)(stored_ts.tm_mon+1));
 		case 5:
 			return pv_get_uintval(msg, param, res,
-					(unsigned int)(_cfgutils_ts.tm_year+1900));
+					(unsigned int)(stored_ts.tm_year+1900));
 		case 6:
 			return pv_get_uintval(msg, param, res, 
-					(unsigned int)(_cfgutils_ts.tm_wday+1));
+					(unsigned int)(stored_ts.tm_wday+1));
 		case 7:
 			return pv_get_uintval(msg, param, res, 
-					(unsigned int)(_cfgutils_ts.tm_yday+1));
+					(unsigned int)(stored_ts.tm_yday+1));
 		case 8:
-			return pv_get_sintval(msg, param, res, _cfgutils_ts.tm_isdst);
+			return pv_get_sintval(msg, param, res, stored_ts.tm_isdst);
 		default:
-			return pv_get_uintval(msg, param, res, (unsigned int)_cfgutils_ts.tm_sec);
+			return pv_get_uintval(msg, param, res, (unsigned int)stored_ts.tm_sec);
 	}
 }
 
