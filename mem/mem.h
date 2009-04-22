@@ -61,6 +61,16 @@
 	extern char mem_pool[PKG_MEM_POOL_SIZE];
 
 
+#ifdef STATISTICS
+#define PKG_TOTAL_SIZE_IDX       0
+#define PKG_USED_SIZE_IDX        1
+#define PKG_REAL_USED_SIZE_IDX   2
+#define PKG_MAX_USED_SIZE_IDX    3
+#define PKG_FREE_SIZE_IDX        4
+#define PKG_FRAGMENTS_SIZE_IDX   5
+typedef unsigned long pkg_status_holder[6];
+#endif
+
 #	ifdef DBG_QM_MALLOC
 #ifdef __SUNPRO_C
 		#define __FUNCTION__ ""  /* gcc specific */
@@ -103,15 +113,33 @@
 #	ifdef VQ_MALLOC
 #		define pkg_status()  vqm_status(mem_block)
 #	elif defined F_MALLOC
-#		define pkg_status()  fm_status(mem_block)
+#		define pkg_status()        fm_status(mem_block)
+#		define MY_PKG_GET_SIZE()   fm_get_size(mem_block)
+#		define MY_PKG_GET_USED()   fm_get_used(mem_block)
+#		define MY_PKG_GET_RUSED()  fm_get_real_used(mem_block)
+#		define MY_PKG_GET_MUSED()  fm_get_max_real_used(mem_block)
+#		define MY_PKG_GET_FREE()   fm_get_free(mem_block)
+#		define MY_PKG_GET_FRAGS()  fm_get_frags(mem_block)
 #	else
 #		define pkg_status()  qm_status(mem_block)
+#		define MY_PKG_GET_SIZE()   qm_get_size(mem_block)
+#		define MY_PKG_GET_USED()   qm_get_used(mem_block)
+#		define MY_PKG_GET_RUSED()  qm_get_real_used(mem_block)
+#		define MY_PKG_GET_MUSED()  qm_get_max_real_used(mem_block)
+#		define MY_PKG_GET_FREE()   qm_get_free(mem_block)
+#		define MY_PKG_GET_FRAGS()  qm_get_frags(mem_block)
 #	endif
 #elif defined(SHM_MEM) && defined(USE_SHM_MEM)
 #	include "shm_mem.h"
 #	define pkg_malloc(s) shm_malloc((s))
 #	define pkg_free(p)   shm_free((p))
 #	define pkg_status()  shm_status()
+#	define MY_PKG_GET_SIZE()
+#	define MY_PKG_GET_USED()
+#	define MY_PKG_GET_RUSED()
+#	define MY_PKG_GET_MUSED()
+#	define MY_PKG_GET_FREE()
+#	define MY_PKG_GET_FRAGS()
 #else
 #	include <stdlib.h>
 
@@ -124,9 +152,17 @@ void sys_free(void *, const char *, const char *, int);
 #	define pkg_realloc(ptr, s) sys_realloc((ptr), (s), __FILE__, __FUNCTION__, __LINE__)
 #	define pkg_free(p) sys_free((p), __FILE__, __FUNCTION__, __LINE__)
 #	define pkg_status()
+#	define MY_PKG_GET_SIZE()
+#	define MY_PKG_GET_USED()
+#	define MY_PKG_GET_RUSED()
+#	define MY_PKG_GET_MUSED()
+#	define MY_PKG_GET_FREE()
+#	define MY_PKG_GET_FRAGS()
 #endif
 
 int init_pkg_mallocs();
 int init_shm_mallocs();
+
+void set_pkg_stats(pkg_status_holder*);
 
 #endif
