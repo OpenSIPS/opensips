@@ -1125,7 +1125,7 @@ static void rl_timer(unsigned int ticks, void *param)
 			break;
 	}
 
-	*network_load_value = get_total_bytes_waiting();
+	*network_load_value = get_total_bytes_waiting(PROTO_NONE);
 
 	if (rl_dbg_str->s) {
 		c = p = rl_dbg_str->s;

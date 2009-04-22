@@ -1061,8 +1061,10 @@ static int get_used_waiting_queue(
 	char lineBuffer[MAX_PROC_BUFFER];
 	int  ipAddress[NUM_IP_OCTETS+1];
 	int  rx_queue;
-	
 	int  waitingQueueSize = 0;
+
+	if (listSize==0 || interfaceList==NULL)
+		return 0;
 
 	/* Set up the file we want to open. */
 	if (forTCP) {
@@ -1111,45 +1113,39 @@ static int get_used_waiting_queue(
  *       interface.  On other systems, zero will always be returned.  To change
  *       this in the future, add an equivalent for get_used_waiting_queue(). 
  */
-int get_total_bytes_waiting(void) 
+int get_total_bytes_waiting(int only_proto)
 {
+	static int *UDPList  = NULL;
+	static int *TCPList  = NULL;
+	static int *TLSList  = NULL;
+
+	static int numUDPSockets  = -1;
+	static int numTCPSockets  = -1;
+	static int numTLSSockets  = -1;
+
 	int bytesWaiting = 0;
-
-	int *UDPList  = NULL;
-	int *TCPList  = NULL;
-	int *TLSList  = NULL;
-
-	int numUDPSockets  = 0;
-	int numTCPSockets  = 0; 
-	int numTLSSockets  = 0;
 
 	/* Extract out the IP address address for UDP, TCP, and TLS, keeping
 	 * track of the number of IP addresses from each transport  */
-	numUDPSockets  = get_socket_list_from_proto(&UDPList,  PROTO_UDP);
-	numTCPSockets  = get_socket_list_from_proto(&TCPList,  PROTO_TCP);
-	numTLSSockets  = get_socket_list_from_proto(&TLSList,  PROTO_TLS);
+	if (numUDPSockets==-1)
+		numUDPSockets  = get_socket_list_from_proto(&UDPList,  PROTO_UDP);
+	if (numTCPSockets==-1)
+		numTCPSockets  = get_socket_list_from_proto(&TCPList,  PROTO_TCP);
+	if (numTLSSockets==-1)
+		numTLSSockets  = get_socket_list_from_proto(&TLSList,  PROTO_TLS);
 
 	/* Find out the number of bytes waiting on our interface list over all
 	 * UDP and TCP transports. */
-	bytesWaiting  += get_used_waiting_queue(0, UDPList,  numUDPSockets);
-	bytesWaiting  += get_used_waiting_queue(1, TCPList,  numTCPSockets);
-	bytesWaiting  += get_used_waiting_queue(1, TLSList,  numTLSSockets);
-
-	/* get_socket_list_from_proto() allocated a chunk of memory, so we need
-	 * to free it. */
-	if (numUDPSockets > 0)
-	{
-		pkg_free(UDPList);
-	}
-
-	if (numTCPSockets > 0) 
-	{
-		pkg_free(TCPList);
-	}
-
-	if (numTLSSockets > 0)
-	{
-		pkg_free(TLSList);
+	if (only_proto==PROTO_NONE) {
+		bytesWaiting  += get_used_waiting_queue(0, UDPList,  numUDPSockets);
+		bytesWaiting  += get_used_waiting_queue(1, TCPList,  numTCPSockets);
+		bytesWaiting  += get_used_waiting_queue(1, TLSList,  numTLSSockets);
+	} else if (only_proto==PROTO_UDP) {
+		bytesWaiting  += get_used_waiting_queue(0, UDPList,  numUDPSockets);
+	} else if (only_proto==PROTO_TCP) {
+		bytesWaiting  += get_used_waiting_queue(1, TCPList,  numTCPSockets);
+	} else if (only_proto==PROTO_TLS) {
+		bytesWaiting  += get_used_waiting_queue(1, TLSList,  numTLSSockets);
 	}
 
 	return bytesWaiting;

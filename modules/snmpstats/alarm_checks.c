@@ -51,7 +51,7 @@ int check_msg_queue_alarm(int threshold_to_compare_to)
 		return 0;
 	}
 	
-	bytesWaiting = get_total_bytes_waiting(); 
+	bytesWaiting = get_total_bytes_waiting(PROTO_NONE); 
 
 	if (bytesWaiting > threshold_to_compare_to)
 	{

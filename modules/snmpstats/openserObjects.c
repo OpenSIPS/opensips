@@ -287,7 +287,7 @@ int handle_openserMsgQueueDepth(netsnmp_mib_handler *handler,
 {
 	int bytesWaiting;
 	
-	bytesWaiting = get_total_bytes_waiting();
+	bytesWaiting = get_total_bytes_waiting(PROTO_NONE);
 
 	if (reqinfo->mode == MODE_GET) {
 		snmp_set_var_typed_value(requests->requestvb, ASN_GAUGE,
