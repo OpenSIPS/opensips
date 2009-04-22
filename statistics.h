@@ -24,6 +24,7 @@
  *  2006-01-16  first version (bogdan)
  *  2006-11-28  added get_stat_var_from_num_code() (Jeffrey Magder -
  *              SOMA Networks)
+ *  2009-04-23  function var accepts a context parameter (bogdan)
  */
 
 /*!
@@ -53,14 +54,15 @@ typedef unsigned int stat_val;
 typedef atomic_t stat_val;
 #endif
 
-typedef unsigned long (*stat_function)(void);
+typedef unsigned long (*stat_function)(unsigned short);
 
 struct module_stats_;
 
 typedef struct stat_var_{
 	unsigned int mod_idx;
 	str name;
-	int flags;
+	unsigned short flags;
+	unsigned short context;
 	union{
 		stat_val *val;
 		stat_function f;
@@ -85,18 +87,25 @@ typedef struct stats_collector_ {
 
 typedef struct stat_export_ {
 	char* name;                /* null terminated statistic name */
-	int flags;                 /* flags */
+	unsigned short flags;      /* flags */
 	stat_var** stat_pointer;   /* pointer to the variable's mem location *
 	                            * NOTE - it's in shm mem */
 } stat_export_t;
 
 
 #ifdef STATISTICS
+
+char *build_stat_name( str* prefix, char *var_name);
+
 int init_stats_collector();
 
 void destroy_stats_collector();
 
-int register_stat( char *module, char *name, stat_var **pvar, int flags);
+#define register_stat(_mod,_name,_pvar,_flags) \
+		register_stat2(_mod,_name,_pvar,_flags, 0)
+
+int register_stat2( char *module, char *name, stat_var **pvar, 
+		unsigned  short flags, unsigned short context);
 
 int register_module_stats(char *module, stat_export_t *stats);
 
@@ -159,7 +168,7 @@ extern gen_lock_t *stat_lock;
 				}\
 			}while(0)
 		#define get_stat_val( _var ) ((unsigned long)\
-			((_var)->flags&STAT_IS_FUNC)?(_var)->u.f():*((_var)->u.val))
+			((_var)->flags&STAT_IS_FUNC)?(_var)->u.f((_var)->context):*((_var)->u.val))
 	#else
 		#define update_stat( _var, _n) \
 			do { \
@@ -177,7 +186,7 @@ extern gen_lock_t *stat_lock;
 				}\
 			}while(0)
 		#define get_stat_val( _var ) ((unsigned long)\
-			((_var)->flags&STAT_IS_FUNC)?(_var)->u.f():(_var)->u.val->counter)
+			((_var)->flags&STAT_IS_FUNC)?(_var)->u.f((_var)->context):(_var)->u.val->counter)
 	#endif /* NO_ATOMIC_OPS */
 
 	#define if_update_stat(_c, _var, _n) \

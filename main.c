@@ -128,6 +128,7 @@
 #include "ut.h"
 #include "serialize.h"
 #include "statistics.h"
+#include "core_stats.h"
 #include "pvar.h"
 #ifdef USE_TCP
 #include "poll_types.h"
@@ -478,6 +479,10 @@ void handle_sigs(void)
 #endif
 			break;
 			
+		case SIGUSR2:
+			set_pkg_stats( get_pkg_status_holder(process_no) );
+			break;
+			
 		case SIGCHLD:
 			do_exit = 0;
 			while ((chld=waitpid( -1, &chld_status, WNOHANG ))>0) {
@@ -576,9 +581,11 @@ static void sig_usr(int signo)
 					pkg_status();
 					#endif
 					break;
-				/* ignored*/
 			case SIGUSR2:
+					set_pkg_stats( get_pkg_status_holder(process_no) );
+					break;
 			case SIGHUP:
+					/* ignored*/
 					break;
 			case SIGCHLD:
 					LM_DBG("SIGCHLD received: "
@@ -1305,6 +1312,12 @@ try_again:
 	/* init multi processes support */
 	if (init_multi_proc_support()!=0) {
 		LM_ERR("failed to init multi-proc support\n");
+		goto error;
+	}
+
+	/* init stats support for pkg mem */
+	if (init_pkg_stats(counted_processes)!=0) {
+		LM_ERR("failed to init stats for pkg\n");
 		goto error;
 	}
 

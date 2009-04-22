@@ -25,6 +25,7 @@
  *  2006-01-16  first version (bogdan)
  *  2006-11-28  added get_stat_var_from_num_code() (Jeffrey Magder -
  *              SOMA Networks)
+ *  2009-04-23  function var accepts a context parameter (bogdan)
  */
 
 /*!
@@ -99,6 +100,27 @@ stat_var *get_stat_var_from_num_code(unsigned int numerical_code, int out_codes)
 }
 
 
+char *build_stat_name( str* prefix, char *var_name)
+{
+	int n;
+	char *s;
+	char *p;
+
+	n = prefix->len + 1 + strlen(var_name) + 1;
+	s = (char*)shm_malloc( n );
+	if (s==0) {
+		LM_ERR("no more shm mem\n");
+		return 0;
+	}
+	memcpy( s, prefix->s, prefix->len);
+	p = s + prefix->len;
+	*(p++) = '-';
+	memcpy( p , var_name, strlen(var_name));
+	p += strlen(var_name);
+	*(p++) = 0;
+	return s;
+}
+
 
 int init_stats_collector(void)
 {
@@ -133,6 +155,11 @@ int init_stats_collector(void)
 	/* register sh_mem statistics */
 	if (register_module_stats( "shmem", shm_stats)!=0 ) {
 		LM_ERR("failed to register sh_mem statistics\n");
+		goto error;
+	}
+	/* register sh_mem statistics */
+	if (register_module_stats( "net", net_stats)!=0 ) {
+		LM_ERR("failed to register network statistics\n");
 		goto error;
 	}
 	LM_DBG("statistics manager successfully initialized\n");
@@ -227,7 +254,8 @@ static inline module_stats* add_stat_module( char *module)
 }
 
 
-int register_stat( char *module, char *name, stat_var **pvar, int flags)
+int register_stat2( char *module, char *name, stat_var **pvar,
+									unsigned short flags, unsigned short ctx)
 {
 	module_stats* mods;
 	stat_var *stat;
@@ -282,6 +310,7 @@ int register_stat( char *module, char *name, stat_var **pvar, int flags)
 	stat->name.s = name;
 	stat->name.len = strlen(name);
 	stat->flags = flags;
+	stat->context = ctx;
 
 
 	/* compute the hash by name */

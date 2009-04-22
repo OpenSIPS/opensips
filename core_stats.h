@@ -24,6 +24,7 @@
  *  2006-01-23  first version (bogdan)
  *  2006-11-28  Added statistics for the number of bad URI's, methods, and 
  *              proxy requests (Jeffrey Magder - SOMA Networks)
+ *  2009-04-23  NET and PKG statistics added (bogdan)
  */
 
 /*!
@@ -35,10 +36,12 @@
 #ifndef _CORE_STATS_H_
 #define _CORE_STATS_H_
 
+#include "mem/mem.h"
 #include "statistics.h"
 
 #ifdef STATISTICS
 extern stat_export_t core_stats[];
+extern stat_export_t net_stats[];
 
 /*! \brief received requests */
 extern stat_var* rcv_reqs;
@@ -72,7 +75,10 @@ extern stat_var* unsupported_methods;
 
 /*! \brief Set in get_hdr_field(). */
 extern stat_var* bad_msg_hdr;
- 
+
+int init_pkg_stats(int no_procs);
+pkg_status_holder* get_pkg_status_holder(int proc_id);
+
 #endif /*STATISTICS*/
 
 #endif /*_CORE_STATS_H_*/
