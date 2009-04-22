@@ -84,12 +84,12 @@
 #	define MY_STATUS fm_status
 #	define MY_MEMINFO	fm_info
 #	ifdef STATISTICS
-#		define MY_GET_SIZE	fm_get_size
-#		define MY_GET_USED	fm_get_used
-#		define MY_GET_RUSED	fm_get_real_used
-#		define MY_GET_MUSED	fm_get_max_real_used
-#		define MY_GET_FREE	fm_get_free
-#		define MY_GET_FRAGS	fm_get_frags
+#		define MY_SHM_GET_SIZE	fm_get_size
+#		define MY_SHM_GET_USED	fm_get_used
+#		define MY_SHM_GET_RUSED	fm_get_real_used
+#		define MY_SHM_GET_MUSED	fm_get_max_real_used
+#		define MY_SHM_GET_FREE	fm_get_free
+#		define MY_SHM_GET_FRAGS	fm_get_frags
 #	endif
 #	define  shm_malloc_init fm_malloc_init
 #else
@@ -101,12 +101,12 @@
 #	define MY_STATUS qm_status
 #	define MY_MEMINFO	qm_info
 #	ifdef STATISTICS
-#		define MY_GET_SIZE	qm_get_size
-#		define MY_GET_USED	qm_get_used
-#		define MY_GET_RUSED	qm_get_real_used
-#		define MY_GET_MUSED	qm_get_max_real_used
-#		define MY_GET_FREE	qm_get_free
-#		define MY_GET_FRAGS	qm_get_frags
+#		define MY_SHM_GET_SIZE	qm_get_size
+#		define MY_SHM_GET_USED	qm_get_used
+#		define MY_SHM_GET_RUSED	qm_get_real_used
+#		define MY_SHM_GET_MUSED	qm_get_max_real_used
+#		define MY_SHM_GET_FREE	qm_get_free
+#		define MY_SHM_GET_FRAGS	qm_get_frags
 #	endif
 #	define  shm_malloc_init qm_malloc_init
 #endif
@@ -254,23 +254,23 @@ do{\
 #ifdef STATISTICS
 extern stat_export_t shm_stats[];
 
-inline static unsigned long shm_get_size(void) {
-	return MY_GET_SIZE(shm_block);
+inline static unsigned long shm_get_size(unsigned short foo) {
+	return MY_SHM_GET_SIZE(shm_block);
 }
-inline static unsigned long shm_get_used(void) {
-	return MY_GET_USED(shm_block);
+inline static unsigned long shm_get_used(unsigned short foo) {
+	return MY_SHM_GET_USED(shm_block);
 }
-inline static unsigned long shm_get_rused(void) {
-	return MY_GET_RUSED(shm_block);
+inline static unsigned long shm_get_rused(unsigned short foo) {
+	return MY_SHM_GET_RUSED(shm_block);
 }
-inline static unsigned long shm_get_mused(void) {
-	return MY_GET_MUSED(shm_block);
+inline static unsigned long shm_get_mused(unsigned short foo) {
+	return MY_SHM_GET_MUSED(shm_block);
 }
-inline static unsigned long shm_get_free(void) {
-	return MY_GET_FREE(shm_block);
+inline static unsigned long shm_get_free(unsigned short foo) {
+	return MY_SHM_GET_FREE(shm_block);
 }
-inline static unsigned long shm_get_frags(void) {
-	return MY_GET_FRAGS(shm_block);
+inline static unsigned long shm_get_frags(unsigned short foo) {
+	return MY_SHM_GET_FRAGS(shm_block);
 }
 #endif /*STATISTICS*/
 
