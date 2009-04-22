@@ -25,9 +25,11 @@
  *  2006-09-01  Introduced allow_address function
  */
 
-#include <sys/types.h>
 #include <regex.h>
 #include <string.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
 #include <arpa/inet.h>
 
 #include "permissions.h"
