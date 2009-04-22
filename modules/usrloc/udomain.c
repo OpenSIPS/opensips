@@ -47,29 +47,6 @@
 #include "utime.h"
 
 
-#ifdef STATISTICS
-static char *build_stat_name( str* domain, char *var_name)
-{
-	int n;
-	char *s;
-	char *p;
-
-	n = domain->len + 1 + strlen(var_name) + 1;
-	s = (char*)shm_malloc( n );
-	if (s==0) {
-		LM_ERR("no more shm mem\n");
-		return 0;
-	}
-	memcpy( s, domain->s, domain->len);
-	p = s + domain->len;
-	*(p++) = '-';
-	memcpy( p , var_name, strlen(var_name));
-	p += strlen(var_name);
-	*(p++) = 0;
-	return s;
-}
-#endif
-
 
 /*! \brief
  * Create a new domain structure
