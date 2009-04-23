@@ -805,14 +805,22 @@ start_recording();
 1.7.1. nh_enable_ping
 
    Enables natping if parameter value greater than 0. Disables
-   natping if parameter value is 0.
+   natping if parameter value is 0. With no parameter, it returns
+   the current natping status.
 
-   The function takes only one parameter - a number in decimal
-   format.
+   The function may takean optional parameter (for set operations)
+   - a number in decimal format.
 
    Example 1.30. nh_enable_ping usage
 ...
-$ opensipsctl fifo nh_enable_ping 1
+$ opensipsctl fifo nh_enable_ping
+Status:: 1
+$
+$ opensipsctl fifo nh_enable_ping 0
+$
+$ opensipsctl fifo nh_enable_ping
+Status:: 0
+$
 ...
 
 1.7.2. nh_enable_rtpp

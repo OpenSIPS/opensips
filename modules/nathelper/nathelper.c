@@ -889,21 +889,34 @@ static struct mi_root* mi_enable_natping(struct mi_root* cmd_tree,
 {
 	unsigned int value;
 	struct mi_node* node;
+	struct mi_root* root;
+	char *s;
+	int len;
 
 	if (natping_state==NULL)
 		return init_mi_tree( 400, MI_PING_DISABLED, MI_PING_DISABLED_LEN);
 
 	node = cmd_tree->node.kids;
-	if(node == NULL)
-		return init_mi_tree( 400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
+	if(node == NULL) {
+		root = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
+		if (root==NULL)
+			return NULL;
+		node = &root->node;
+		s =  int2str(*natping_state, &len);
+		if (!add_mi_node_child(node, MI_DUP_VALUE, MI_SSTR("Status"), s, len)){
+				LM_ERR("cannot add the child node to the tree\n");
+				goto error;
+			}
+		return root;
+	}
 
 	value = 0;
 	if( strno2int( &node->value, &value) <0)
 		goto error;
 
 	(*natping_state) = value?1:0;
-	
-	return init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
+
+	return  init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
 error:
 	return init_mi_tree( 400, MI_BAD_PARM_S, MI_BAD_PARM_LEN);
 }
