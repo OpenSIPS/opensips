@@ -293,11 +293,13 @@ static inline char *run_lookup( struct cpl_interpreter *intr )
 				/* start adding locations to set */
 				do {
 					LM_DBG("adding <%.*s>q=%d\n",
-						contact->c.len,contact->c.s,(int)(10*contact->q));
+						contact->c.len,contact->c.s,
+						(int)((contact->q==Q_UNSPECIFIED)?10:10*contact->q));
 					if (add_location( &(intr->loc_set), &contact->c, 
-					&contact->received, (int)(10*contact->q),
+					&contact->received,
+					(int)((contact->q==Q_UNSPECIFIED)?10:10*contact->q),
 					CPL_LOC_DUPL|
-						((contact->cflags&cpl_fct.ulb.nat_flag)?CPL_LOC_NATED:0)
+					((contact->cflags&cpl_fct.ulb.nat_flag)?CPL_LOC_NATED:0)
 					)==-1) {
 						LM_ERR("unable to add location to set :-(\n");
 						cpl_fct.ulb.unlock_udomain( cpl_env.lu_domain, &intr->user );
