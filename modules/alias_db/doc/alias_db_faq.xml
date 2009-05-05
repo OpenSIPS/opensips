@@ -1,0 +1,36 @@
+<!-- Module FAQ -->
+
+<chapter>
+	
+	<title>&faqguide;</title>
+	<qandaset defaultlabel="number">
+
+	<qandaentry>
+		<question>
+		<para>What happened with old use_domain parameter</para>
+		</question>
+		<answer>
+		<para>
+			The global parameter (affecting the entire module) was replaced 
+			with a per lookup parameter (affecting only current lookup).
+			See the "d" (do not used domain part) flag in the db_alias_lookup()
+			and db_alias_find() functions.
+		</para>
+		</answer>
+	</qandaentry>
+
+	<qandaentry>
+		<question>
+		<para>How can I report a bug?</para>
+		</question>
+		<answer>
+		<para>
+			Please follow the guidelines provided at:
+			&osipsbugslink;.
+		</para>
+		</answer>
+	</qandaentry>
+	</qandaset>
+
+</chapter>
+
