@@ -2,19 +2,19 @@ ALIAS_DB Module
 
 Daniel-Constantin Mierla
 
-   <miconda@gmail.com>
+   <team@voice-system.ro>
 
 Elena-Ramona Modroiu
 
-   <ramona@rosdev.ro>
+   <team@voice-system.ro>
 
 Edited by
 
 Daniel-Constantin Mierla
 
-   <miconda@gmail.com>
+   <team@voice-system.ro>
 
-   Copyright © 2005 voice-system.ro
+   Copyright © 2005-2009 voice-system.ro
      __________________________________________________________
 
    Table of Contents
@@ -34,13 +34,16 @@ Daniel-Constantin Mierla
               1.3.3. domain_column (str)
               1.3.4. alias_user_column (str)
               1.3.5. alias_domain_column (str)
-              1.3.6. use_domain (int)
-              1.3.7. domain_prefix (str)
-              1.3.8. append_branches (int)
+              1.3.6. domain_prefix (str)
+              1.3.7. append_branches (int)
 
         1.4. Exported Functions
 
-              1.4.1. alias_db_lookup(table_name)
+              1.4.1. alias_db_lookup( table_name [,flags] )
+              1.4.2. alias_db_find( table_name , input, output
+                      [,flags] )
+
+   2. Frequently Asked Questions
 
    List of Examples
 
@@ -49,10 +52,10 @@ Daniel-Constantin Mierla
    1.3. Set domain_column parameter
    1.4. Set alias_user_column parameter
    1.5. Set alias_domain_column parameter
-   1.6. Set use_domain parameter
-   1.7. Set domain_prefix parameter
-   1.8. Set append_branches parameter
-   1.9. alias_db_lookup() usage
+   1.6. Set domain_prefix parameter
+   1.7. Set append_branches parameter
+   1.8. alias_db_lookup() usage
+   1.9. alias_db_find() usage
 
 Chapter 1. Admin Guide
 
@@ -140,32 +143,19 @@ modparam("alias_db", "alias_user_column", "auser")
 modparam("alias_db", "alias_domain_column", "adomain")
 ...
 
-1.3.6. use_domain (int)
-
-   Specifies whether to use or not the domain from R-URI when
-   searching for alias. If set to 0, the domain from R-URI is not
-   used, if set to 1 the domain from R-URI is used.
-
-   Default value is "0".
-
-   Example 1.6. Set use_domain parameter
-...
-modparam("alias_db", "use_domain", 1)
-...
-
-1.3.7. domain_prefix (str)
+1.3.6. domain_prefix (str)
 
    Specifies the prefix to be stripped from the domain in R-URI
    before doing the search.
 
    Default value is "NULL".
 
-   Example 1.7. Set domain_prefix parameter
+   Example 1.6. Set domain_prefix parameter
 ...
 modparam("alias_db", "domain_prefix", "sip.")
 ...
 
-1.3.8. append_branches (int)
+1.3.7. append_branches (int)
 
    If the alias resolves to many SIP IDs, the first is replacing
    the R-URI, the rest are added as branches.
@@ -173,14 +163,14 @@ modparam("alias_db", "domain_prefix", "sip.")
    Default value is "0" (0 - don't add branches; 1 - add
    branches).
 
-   Example 1.8. Set append_branches parameter
+   Example 1.7. Set append_branches parameter
 ...
 modparam("alias_db", "append_branches", 1)
 ...
 
 1.4. Exported Functions
 
-1.4.1.  alias_db_lookup(table_name)
+1.4.1.  alias_db_lookup( table_name [,flags] )
 
    The function takes the R-URI and search to see whether it is an
    alias or not. If it is an alias for a local user, the R-URI is
@@ -192,11 +182,79 @@ modparam("alias_db", "append_branches", 1)
    Meaning of the parameters is as follows:
      * table_name - the name of the table where to search for
        alias. It can include pseudo-variables.
+     * flags (optional) - set of flags (char based flags) to
+       control the alias lookup process:
+          + d - do not use domain URI part in the alias lookup
+            query (use only a username-based lookup). By default,
+            both username and domain are used.
+          + r - do revers alias lookup - lookup for the alias
+            mapped to the current URI (URI 2 alias translation);
+            normally, the function looks up for the URI mapped to
+            the alias (alias 2 URI translation).
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
-   Example 1.9. alias_db_lookup() usage
+   Example 1.8. alias_db_lookup() usage
 ...
-alias_db_lookup("dbaliases");
+alias_db_lookup("dbaliases" , "rd");
 alias_db_lookup("dba_$(rU{s.substr,0,1})");
 ...
+
+1.4.2.  alias_db_find( table_name , input, output [,flags] )
+
+   The function is very similar to alias_db_lookup(), but instead
+   of using fixed input (RURI) and output (RURI) is able to get
+   the input SIP URI from a pseudo-variable and place the result
+   back also in a pseudo-variable.
+
+   The function is usefull as the alias lookup does not affect the
+   request it self (no RURI changes), can be used in a reply
+   contect (as it does not work with RURI only) and can be used
+   for others URI than the RURI ( To URI, From URI, custom URI).
+
+   The function returns TRUE any alias mapping was found and
+   returned.
+
+   Meaning of the parameters is as follows:
+     * table_name - the name of the table where to search for
+       alias. It can include pseudo-variables.
+     * input - any PV (pseudo-variable) carrying the SIP URI that
+       needs to be looked up.
+     * outut - PV (AVP or script VAR) where to place the SIP URI
+       resulting from the alias lookup.
+     * flags (optional) - set of flags (char based flags) to
+       control the alias lookup process:
+          + d - do not use domain URI part in the alias lookup
+            query (use only a username-based lookup). By default,
+            both username and domain are used.
+          + r - do revers alias lookup - lookup for the alias
+            mapped to the current URI (URI 2 alias translation);
+            normally, the function looks up for the URI mapped to
+            the alias (alias 2 URI translation).
+
+   This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
+   LOCAL_ROUTE, FAILURE_ROUTE and ONREPLY_ROUTE.
+
+   Example 1.9. alias_db_find() usage
+...
+# do revers alias lookup and find the alias for the FROM URI
+alias_db_find("dbaliases" , "$fu", $avp(s:from_alias) "r");
+...
+
+Chapter 2. Frequently Asked Questions
+
+   2.1.
+
+       What happened with old use_domain parameter
+
+       The global parameter (affecting the entire module) was replaced
+       with a per lookup parameter (affecting only current lookup).
+       See the "d" (do not used domain part) flag in the
+       db_alias_lookup() and db_alias_find() functions.
+
+   2.2.
+
+       How can I report a bug?
+
+       Please follow the guidelines provided at:
+       http://sourceforge.net/tracker/?group_id=232389.
