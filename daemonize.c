@@ -71,6 +71,7 @@ int daemonize(char* name, int * own_pgid)
 	FILE *pid_stream;
 	pid_t pid;
 	int r, p;
+	int pid_items;
 
 	p=-1;
 
@@ -124,9 +125,9 @@ int daemonize(char* name, int * own_pgid)
 	if (pid_file!=0){
 		
 		if ((pid_stream=fopen(pid_file, "r"))!=NULL){
-			fscanf(pid_stream, "%d", &p);
+			pid_items=fscanf(pid_stream, "%d", &p);
 			fclose(pid_stream);
-			if (p==-1){
+			if (p==-1 || pid_items <= 0){
 				LM_WARN("pid file %s exists, but doesn't contain a valid"
 					" pid number, replacing...\n", pid_file);
 			} else 
@@ -156,9 +157,9 @@ int daemonize(char* name, int * own_pgid)
 
 	if (pgid_file!=0){
 		if ((pid_stream=fopen(pgid_file, "r"))!=NULL){
-			fscanf(pid_stream, "%d", &p);
+			pid_items=fscanf(pid_stream, "%d", &p);
 			fclose(pid_stream);
-			if (p==-1){
+			if (p==-1 || pid_items <= 0){
 				LM_WARN("pgid file %s exists, but doesn't contain a valid"
 					" pgid number, replacing...\n", pgid_file);
 			}
