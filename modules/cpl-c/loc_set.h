@@ -57,9 +57,9 @@ static inline void free_location( struct location *loc)
 
 
 
-/* insert a new location into the set maintaining order by the prio val - the
- * list starts with the smallest prio!
- * For locations having the same prio val, the adding order will be kept */
+/* insert a new location into the set maintaining order by the prio val
+ *  - the list starts with the largest prio
+ *  - for locations having the same prio val, the adding order will be kept */
 static inline int add_location(struct location **loc_set, str *uri,
 								str *received, unsigned int prio, int flags)
 {
@@ -108,7 +108,7 @@ static inline int add_location(struct location **loc_set, str *uri,
 	/* find the proper place for the new location */
 	foo = *loc_set;
 	bar = 0;
-	while(foo && foo->addr.priority>prio) {
+	while(foo && foo->addr.priority>=prio) {
 		bar = foo;
 		foo = foo->next;
 	}
