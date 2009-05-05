@@ -24,6 +24,8 @@
  * History:
  * --------
  * 2004-09-01: first version (ramona)
+ * 2009-04-30: alias_db_find() added; NO_DOMAIN and REVERT flags added;
+ *             use_domain param removed (bogdan)
  */
 
 
@@ -32,6 +34,12 @@
 
 #include "../../parser/msg_parser.h"
 
-int alias_db_lookup(struct sip_msg* _msg, char* _table, char* _str2);
+#define ALIAS_REVERT_FLAG      (1<<0)
+#define ALIAS_NO_DOMAIN_FLAG   (1<<1)
+
+int alias_db_lookup(struct sip_msg* _msg, char* _table, char* use_domain);
+
+int alias_db_find(struct sip_msg* _msg, char* _table, char* _in, char* _out,
+		char* use_domain);
 
 #endif /* _ALOOKUP_H_ */

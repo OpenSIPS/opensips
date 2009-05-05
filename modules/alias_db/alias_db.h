@@ -24,6 +24,8 @@
  * History:
  * --------
  * 2004-09-01: first version (ramona)
+ * 2009-04-30: alias_db_find() added; NO_DOMAIN and REVERT flags added;
+ *             use_domain param removed (bogdan)
  */
 
 
@@ -41,7 +43,6 @@ extern str domain_column;   /* 'domain' column name */
 extern str alias_user_column;     /* 'alias_username' column name */
 extern str alias_domain_column;   /* 'alias_domain' column name */
 extern str domain_prefix;
-extern int use_domain;      /* use or not the domain for alias lookup */
 extern int ald_append_branches;  /* append branches after an alias lookup */
 
 extern db_con_t* db_handle;   /* Database connection handle */
