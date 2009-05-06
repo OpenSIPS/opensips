@@ -496,11 +496,16 @@ rt_data_t* dr_load_routing_info( db_func_t *dr_dbf, db_con_t* db_hdl,
 			/* GROUP column */
 			check_val( ROW_VALUES(row)+1, DB_STRING, 1, 1);
 			str_vals[0] = (char*)VAL_STRING(ROW_VALUES(row)+1);
-			/* PREFIX column */
-			check_val( ROW_VALUES(row)+2, DB_STRING, 1, 1);
-			str_vals[1] = (char*)VAL_STRING(ROW_VALUES(row)+2);
-			tmp.s = str_vals[1];
-			tmp.len = strlen(str_vals[1]);
+			/* PREFIX column - it may be null or empty */
+			check_val( ROW_VALUES(row)+2, DB_STRING, 0, 0);
+			if ((ROW_VALUES(row)+2)->nul || VAL_STRING(ROW_VALUES(row)+2)==0){
+				tmp.s = NULL;
+				tmp.len = 0;
+			} else {
+				str_vals[1] = (char*)VAL_STRING(ROW_VALUES(row)+2);
+				tmp.s = str_vals[1];
+				tmp.len = strlen(str_vals[1]);
+			}
 			/* TIME column */
 			check_val( ROW_VALUES(row)+3, DB_STRING, 1, 1);
 			str_vals[2] = (char*)VAL_STRING(ROW_VALUES(row)+3);
