@@ -35,7 +35,7 @@ use Frontier::RPC2;
 use IO::Socket;
 use Socket;
 #use Net::IP;
-use BerkeleyDB;
+#use BerkeleyDB;
 
 ####variables that need to be changed
 
@@ -230,7 +230,7 @@ my @command_list = ('acl'=> ('show','grant','revoke'),
 		    'dr'=>('gateway', 'rules'),
 		    'gateway'=>('add','rm','list'), 
 		    'rules'=>('add','rm','list'),
-		    'help'=>'help'				
+		    'help'=>'help'					
 		    );
   		    
 		    
@@ -509,10 +509,6 @@ if ( $DBROPW  eq "" ) {
 # full privileges SQL user
 if ( $DBROOTUSER  eq ""  ) {
 	$DBROOTUSER = "root";
-}
-
-if ( ! $STORE_PLAINTEXT_PW ) {
-	$STORE_PLAINTEXT_PW = 1; 
 }
 
 
@@ -1340,26 +1336,26 @@ sub check_uri() {
 
 
 # params: user, realm, password
-# output: HA1
+# # output: HA1
 sub gen_ha1(){
-
-	my @fields;
-	@fields = split(":",@_);
-	$HA1 = $fields[0];
-	return;
+	$HA1=`echo -n \"$_[0]:$_[1]:$_[2]\" | $MD5 | $AWK '{ print \$1 }'`;
+	if ( $? != 0 ) {
+		print "HA1 calculation failed!";
+		return;
+	}
+	return $HA1;
 }
-
 
 # params: user, realm, password
 # output: HA1B
 sub gen_ha1b() {
-
-	my @fields;
-	@fields = split("@",@_);
-	$HA1B = $fields[0];
-	return;
+	$HA1B=`echo -n \"$_[0]@$_[1]:$_[1]:$_[2]\" | $MD5 | $AWK '{ print \$1 }'`;
+	if ( $? != 0 ) {
+		print "HA1B calculation failed!";
+		return;
+	}
+	return $HA1B;
 }
-
 
 
 # params: user, realm, password
@@ -1367,7 +1363,7 @@ sub gen_ha1b() {
 sub gen_phplib_id()
 {
 	my $NOW=`date`;
-	my $PHPLIB_ID=`echo -n "$1$2:$3:$NOW" | $MD5 | $AWK '{ print $1 }'`;
+	my $PHPLIB_ID=`echo -n \"$_[0]$_[1]:$_[2]:$NOW\" | $MD5 | $AWK '{ print \$1 }'`;
 }
 
 
@@ -1399,7 +1395,7 @@ sub is_user() {
 		my $res = `\"$DBTEXTCMD\" \"SELECT COUNT(*) FROM $SUB_TABLE WHERE $sub_table{'SUBSCRIBER_COLUMN'} = \"$OSIPSUSER\" AND $sub_table{'REALM_COLUMN'} = \"$OSIPSDOMAIN\"\" 2>&1`;
 		$result = $res;
 	} else {
-		#prepare the query	
+		#prepare the query
 		$sth = $dbh->prepare( "SELECT count(*) 
 				       FROM $SUB_TABLE 
 				       WHERE $sub_table{'SUBSCRIBER_COLUMN'} = \"$OSIPSUSER\" 
@@ -1738,61 +1734,61 @@ sub cmd() {
 
 
 #all
-##### ------------------------------------------------ #####
+##### ------------------------------------------------- ##### 
+#help
 #
 sub opensips_help() {
 
-        &usage_online();
-        print "\n\n";
-        &usage_opensips_monitor();
-        print "\n\n";
-        &usage_ping();
-        print "\n\n";
-        &usage_usrloc();
-        print "\n\n";
-        &usage_base();
-        print "\n\n";
-        &usage_tls();
-        print "\n\n";
-        &usage_acl();
-        print "\n\n";
-        &usage_lcr();
-        print "\n\n";
-        &usage_cr();
-        print "\n\n";
-        &usage_rpid();
-        print "\n\n";
-        &usage_subscriber();
-        print "\n\n";
-        &usage_trusted();
-        print "\n\n";
-        &usage_dispatcher();
-        print "\n\n";
-        &usage_db_ops();
-        print "\n\n";
-        &usage_speeddial();
-        print "\n\n";
-        &usage_avp();
-        print "\n\n";
-        &usage_alias_db();
-        print "\n\n";
-        &usage_domain();
-        print "\n\n";
-        &usage_fifo();
-        print "\n\n";
-        &usage_dialplan;
-        print "\n\n";
-        &usage_unixsock();
-        print "\n\n";
-        &usage_db();
-        print "\n\n";
-        &berkeley_usage();
-        print "\n\n";
-        &usage_dr();
-        print "\n\n";
+	&usage_online();
+	print "\n\n";
+	&usage_opensips_monitor();
+	print "\n\n";
+	&usage_ping();
+	print "\n\n";
+	&usage_usrloc();
+	print "\n\n";
+	&usage_base();
+	print "\n\n";
+	&usage_tls();
+	print "\n\n";
+	&usage_acl();
+	print "\n\n";
+	&usage_lcr();
+	print "\n\n";
+	&usage_cr();
+	print "\n\n";
+	&usage_rpid();
+	print "\n\n";
+	&usage_subscriber();
+	print "\n\n";
+	&usage_trusted();
+	print "\n\n";
+	&usage_dispatcher(); 
+	print "\n\n";
+	&usage_db_ops();
+	print "\n\n";
+	&usage_speeddial();
+	print "\n\n";
+	&usage_avp();
+	print "\n\n";
+	&usage_alias_db();
+	print "\n\n";
+	&usage_domain();
+	print "\n\n";
+	&usage_fifo();
+	print "\n\n";
+	&usage_dialplan;
+	print "\n\n";
+	&usage_unixsock();
+	print "\n\n";
+	&usage_db();
+	print "\n\n";
+	&berkeley_usage();
+	print "\n\n";
+	&usage_dr();
+	print "\n\n";
 }
-
-
+#
 ##### ------------------------------------------------ #####
 ### opensips_start
 #
@@ -2533,7 +2529,7 @@ sub subscriber() {
 				&usage_subscriber();
 				return;
 			}
-			&credentials($cmd[1],$cmd[2]);
+			#&credentials($cmd[1],$cmd[2]);
 			
 			if ( &is_user($cmd[1]) != 0 ) {
 				print "user " . $cmd[1] . " already exists\n";
@@ -2548,7 +2544,18 @@ sub subscriber() {
 			} else {
 				print "Alias $cmd[1] does not exist!\n";
 			}		
-			
+		
+
+                        if ( $STORE_PLAINTEXT_PW eq "1" ) {
+	                        $PASS = $cmd[2];
+				$HA1 = "";
+				$HA1B = "";
+                        } else {
+        	                $PASS = "";
+				&credentials($cmd[1],$cmd[2]);
+	
+                        }
+	
 			if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
 				my $key = join(" ",$OSIPSUSER,$OSIPSDOMAIN);
 				my $value = join(" ", $cmd[2], $HA1, $HA1B);
@@ -2557,13 +2564,14 @@ sub subscriber() {
 				system("$DBTEXTCMD","INSERT INTO $SUB_TABLE 
 					       ($sub_table{'SUBSCRIBER_COLUMN'},$sub_table{'REALM_COLUMN'},$sub_table{'HA1_COLUMN'},
 						$sub_table{'HA1B_COLUMN'},$sub_table{'PASSWORD_COLUMN'},$sub_table{'EMAIL_ADDRESS'} ) 
-						VALUES (\"$OSIPSUSER\",\"$OSIPSDOMAIN\",\"$HA1\",\"$HA1B\",\"$cmd[2]\", null) " );
+						VALUES (\"$OSIPSUSER\",\"$OSIPSDOMAIN\",\"$HA1\",\"$HA1B\",\"$PASS\", null) " );
 			} else {
 				#prepare the query
 				$sth = $dbh->prepare( "INSERT INTO $SUB_TABLE 
 						       ($sub_table{'SUBSCRIBER_COLUMN'},$sub_table{'REALM_COLUMN'},$sub_table{'HA1_COLUMN'},
 							$sub_table{'HA1B_COLUMN'},$sub_table{'PASSWORD_COLUMN'} ) 
-							VALUES (\"$OSIPSUSER\",\"$OSIPSDOMAIN	\",\"$HA1\",\"$HA1B\",\"$cmd[2]\") " );
+							VALUES (\"$OSIPSUSER\",\"$OSIPSDOMAIN\",\"$HA1\",\"$HA1B\",\"$PASS\") " );
+
 	
 				#execute the query
 				$sth->execute( );
@@ -2584,32 +2592,32 @@ sub subscriber() {
 					return;
 				}
 
-				system(&credentials( $cmd[1], $cmd[2] ));
-
-				if ( $STORE_PLAINTEXT_PW == 1 ) {
+				if ( $STORE_PLAINTEXT_PW eq "1" ) {
 					$PASS = $cmd[2];
+	                                $HA1 = " ";
+        	                        $HA1B = " ";
 				} else {
 					$PASS = "";
+					&credentials($cmd[1],$cmd[2]);
 				}
 
 			if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
 				my $key = join(" ",$OSIPSUSER,$OSIPSDOMAIN);
 				&bdb_update($SUB_TABLE, $key);				
-				#
 			} elsif ( $DBENGINE =~ /^DBTEXT$/) {
 					system("$DBTEXTCMD","UPDATE $SUB_TABLE 
-							       SET $sub_table{'HA1_COLUMN'}=\'$HA1\',$sub_table{'HA1B_COLUMN'}=\'$HA1B\',
-							       $sub_table{'PASSWORD_COLUMN'}=\'$PASS\'
-							       WHERE $sub_table{'SUBSCRIBER_COLUMN'}=\'$OSIPSUSER\' 
-		                                               AND $sub_table{'REALM_COLUMN'}=\'$OSIPSDOMAIN\'");
+							       SET $sub_table{'HA1_COLUMN'}=\"$HA1\",$sub_table{'HA1B_COLUMN'}=\"$HA1B\",
+							       $sub_table{'PASSWORD_COLUMN'}=\"$PASS\"
+							       WHERE $sub_table{'SUBSCRIBER_COLUMN'}=\"$OSIPSUSER\" 
+		                                               AND $sub_table{'REALM_COLUMN'}=\"$OSIPSDOMAIN\"");
 
 				} else {
 
 					$sth = $dbh->prepare( "UPDATE $SUB_TABLE 
-							       SET $sub_table{'HA1_COLUMN'}=\'$HA1\',$sub_table{'HA1B_COLUMN'}=\'$HA1B\',
-							       $sub_table{'PASSWORD_COLUMN'}=\'$PASS\'
-							       WHERE $sub_table{'SUBSCRIBER_COLUMN'}=\'$OSIPSUSER\' 
-		                                               AND $sub_table{'REALM_COLUMN'}=\'$OSIPSDOMAIN\'" );
+							       SET $sub_table{'HA1_COLUMN'}=\"$HA1\",$sub_table{'HA1B_COLUMN'}=\"$HA1B\",
+							       $sub_table{'PASSWORD_COLUMN'}=\"$PASS\"
+							       WHERE $sub_table{'SUBSCRIBER_COLUMN'}=\"$OSIPSUSER\" 
+		                                               AND $sub_table{'REALM_COLUMN'}=\"$OSIPSDOMAIN\"" );
 	
 					#execute the query
 					$sth->execute( );
