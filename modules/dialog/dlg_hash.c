@@ -148,6 +148,8 @@ error0:
 
 static inline void free_dlg_dlg(struct dlg_cell *dlg)
 {
+	struct dlg_val *dv;
+
 	if (dlg->cbs.first)
 		destroy_dlg_callbacks_list(dlg->cbs.first);
 
@@ -165,6 +167,12 @@ static inline void free_dlg_dlg(struct dlg_cell *dlg)
 
 	if (dlg->cseq[DLG_CALLEE_LEG].s)
 		shm_free(dlg->cseq[DLG_CALLEE_LEG].s);
+
+	while (dlg->vals) {
+		dv = dlg->vals;
+		dlg->vals = dlg->vals->next;
+		shm_free(dv);
+	}
 
 	shm_free(dlg);
 }
