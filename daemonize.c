@@ -248,7 +248,7 @@ int do_suid(const int uid, const int gid)
 			   -> change the owner and group also
 			*/
 			if (chown( pgid_file , uid?uid:-1, gid?gid:-1)!=0) {
-				LM_ERR("failed to change owner of pif file %s: %s(%d)\n",
+				LM_ERR("failed to change owner of pid file %s: %s(%d)\n",
 					pgid_file, strerror(errno), errno);
 				goto error;
 			}
