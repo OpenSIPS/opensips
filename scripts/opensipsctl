@@ -10,7 +10,7 @@ PATH=$PATH:/usr/local/sbin/
 
 # for testing only, please don't enable this in production environments
 # as this introduce security risks
-TEST="true"
+TEST="false"
 
 ### include config files
 if [ -f /etc/opensips/opensipsctlrc ]; then
@@ -1632,7 +1632,7 @@ opensips_stop() {
 	else
 		echo
 		merr "No PID file found ($PID_FILE)! OpenSIPS probably not running"
-		if [ "$1" != "restart" ]
+		if [ "$1" != "restart" ] ; then
 			minfo "check with 'ps -ef | $EGREP opensips'"
 			exit 1
 		fi
