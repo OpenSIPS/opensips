@@ -1140,13 +1140,38 @@ if (t_was_cancelled()) {
 
 	<section>
 		<title>
-		<function moreinfo="none">t_cancel_branch()</function>
+		<function moreinfo="none">t_cancel_branch([flags])</function>
 		</title>
 		<para>
-		This function is to be call when a reply was received and it will
-		generate a CANCEL (if still suitable) for the branch the reply
-		belongs to
+		This function is to be call when a reply is received for cancelling a
+		set of branches (see flags) of the current call.
 		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>flags</emphasis> - (optional) - set of flags 
+			(char based flags) to control what branches to be cancelled:
+			</para>
+			<itemizedlist>
+			<listitem>
+				<para><emphasis>a</emphasis> - all - cancel all pending 
+				branches
+				</para>
+			</listitem>
+			<listitem>
+				<para><emphasis>o</emphasis> - others - cancel all the other
+				pending branches except the current one
+				</para>
+			</listitem>
+			<listitem>
+				<para><emphasis>empty</emphasis> - current - cancel only the
+				current branch
+				</para>
+			</listitem>
+			</itemizedlist>
+		</listitem>
+		</itemizedlist>
+
 		<para>
 		This function can be used from ONREPLY_ROUTE.
 		</para>
@@ -1158,33 +1183,6 @@ onreply_route[3] {
 	if (t_check_status("183")) {
 		# no support for early media
 		t_cancel_branch();
-	}
-...
-}
-</programlisting>
-		</example>
-	</section>
-
-	<section>
-		<title>
-		<function moreinfo="none">t_cancel_call()</function>
-		</title>
-		<para>
-		This function is to be call when a reply was received and it will
-		generate a CANCEL (if still suitable) for all the ongoing branches of
-		the call.
-		</para>
-		<para>
-		This function can be used from ONREPLY_ROUTE.
-		</para>
-		<example>
-		<title><function>t_cancel_call</function> usage</title>
-		<programlisting format="linespecific">
-onreply_route[3] {
-...
-	if ($hdr(User-Agent)=~"Snom") {
-		# drop calls involving snom UA
-		t_cancel_call();
 	}
 ...
 }

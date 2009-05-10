@@ -5,7 +5,7 @@
 
 <!ENTITY admin SYSTEM "tm_admin.xml">
 <!ENTITY devel SYSTEM "tm_devel.xml">
-<!ENTITY faq SYSTEM "../../../doc/module_faq.xml">
+<!ENTITY faq SYSTEM "tm_faq.xml">
 
 <!-- Include general documentation entities -->
 <!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
