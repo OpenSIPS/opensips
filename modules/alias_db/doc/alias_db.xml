@@ -5,8 +5,6 @@
 <!ENTITY admin SYSTEM "alias_db_admin.xml">
 <!ENTITY faq SYSTEM "alias_db_faq.xml">
 
-<!ENTITY faq SYSTEM "../../../doc/module_faq.xml">
-
 <!ENTITY aliasdbsql SYSTEM "alias_db.sql">
 
 <!-- Include general documentation entities -->
