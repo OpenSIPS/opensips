@@ -1,0 +1,34 @@
+<!-- Module FAQ -->
+
+<chapter>
+	
+	<title>&faqguide;</title>
+	<qandaset defaultlabel="number">
+
+	<qandaentry>
+		<question>
+		<para>What happened with old cancel_call() function</para>
+		</question>
+		<answer>
+		<para>
+			The function was replace (as functionality) by cancel_branch("a") -
+			cancel all braches.
+		</para>
+		</answer>
+	</qandaentry>
+
+	<qandaentry>
+		<question>
+		<para>How can I report a bug?</para>
+		</question>
+		<answer>
+		<para>
+			Please follow the guidelines provided at:
+			&osipsbugslink;.
+		</para>
+		</answer>
+	</qandaentry>
+	</qandaset>
+
+</chapter>
+
