@@ -1297,7 +1297,10 @@ int get_subs_db(str* pres_uri, pres_ev_t* event, str* sender,
 		
 		s.event= event;
 		s.local_cseq = row_vals[cseq_col].val.int_val;
-		s.expires = row_vals[expires_col].val.int_val -(int)time(NULL);
+		if(row_vals[expires_col].val.int_val < (int)time(NULL))
+			s.expires = 0;
+		else
+			s.expires = row_vals[expires_col].val.int_val -(int)time(NULL);
 		s.version = row_vals[version_col].val.int_val;
 
 		s_new= mem_copy_subs(&s, PKG_MEM_TYPE);
