@@ -32,6 +32,8 @@ Anca-Maria Vamanu
               1.3.4. pidf_manipulation (int)
               1.3.5. integrated_xcap_server (int)
               1.3.6. xcap_server (str)
+              1.3.7. pres_rules_auid (str)
+              1.3.8. pres_rules_filename (str)
 
         1.4. Exported Functions
         1.5. Installation
@@ -46,6 +48,8 @@ Anca-Maria Vamanu
    1.4. Set pidf_manipulation parameter
    1.5. Set integrated_xcap_server parameter
    1.6. Set xcap_server parameter
+   1.7. Set pres_rules_auid parameter
+   1.8. Set pres_rules_filename parameter
 
 Chapter 1. Admin Guide
 
@@ -84,7 +88,8 @@ Chapter 1. Admin Guide
 
    The database url.
 
-   Default value is "mysql://opensips:opensipsrw@localhost/osips".
+   Default value is
+   "mysql://opensips:opensipsrw@localhost/opensips".
 
    Example 1.1. Set db_url parameter
 ...
@@ -172,6 +177,29 @@ modparam("presence_xml", "integrated_xcap_server", 1)
 ...
 modparam("presence_xml", "xcap_server", "xcap_server.example.org")
 modparam("presence_xml", "xcap_server", "xcap_server.ag.org")
+...
+
+1.3.7. pres_rules_auid (str)
+
+   This parameter should be configured if you are using the non
+   integrated xcap mode and you need to use another pres-rules
+   auid than the default 'pres-rules'.
+
+   Example 1.7. Set pres_rules_auid parameter
+...
+modparam("presence_xml", "pres_rules_auid", "org.openmobilealliance.pres
+-rules")
+...
+
+1.3.8. pres_rules_filename (str)
+
+   This parameter should be configured if you are using the non
+   integrated xcap mode and you need to configure another filename
+   than the default 'index'.
+
+   Example 1.8. Set pres_rules_filename parameter
+...
+modparam("presence_xml", "pres_rules_filename", "pres-rules")
 ...
 
 1.4. Exported Functions

@@ -206,6 +206,41 @@ modparam("presence_xml", "xcap_server", "xcap_server.ag.org")
 </programlisting>
 		</example>
 	</section>
+	<section>
+		<title><varname>pres_rules_auid</varname> (str)</title>
+		<para>
+		This parameter should be configured if you are using the non integrated xcap
+		mode and you need to use another pres-rules auid than the default 'pres-rules'.
+		</para>
+		<example>
+		<title>Set <varname>pres_rules_auid</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("presence_xml", "pres_rules_auid", "org.openmobilealliance.pres-rules")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>pres_rules_filename</varname> (str)</title>
+		<para>
+		This parameter should be configured if you are using the non integrated xcap
+		mode and you need to configure another filename than the default 'index'.
+		</para>
+		<example>
+		<title>Set <varname>pres_rules_filename</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("presence_xml", "pres_rules_filename", "pres-rules")
+...
+</programlisting>
+		</example>
+	</section>
+
+
+
+
 </section>
 <section>
 	<title>Exported Functions</title>
