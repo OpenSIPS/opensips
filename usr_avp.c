@@ -94,7 +94,7 @@ int add_avp(unsigned short flags, int_str name, int_str val)
 	assert( crt_avps!=0 );
 
 	if ( name.n==0 ) {
-		LM_ERR("0 ID or NULL NAME AVP!");
+		LM_ERR("0 ID or NULL NAME AVP!\n");
 		goto error;
 	}
 
@@ -102,7 +102,7 @@ int add_avp(unsigned short flags, int_str name, int_str val)
 	len = sizeof(struct usr_avp);
 	if (flags&AVP_NAME_STR) {
 		if ( name.s.s==0 || name.s.len==0) {
-			LM_ERR("empty avp name!");
+			LM_ERR("empty avp name!\n");
 			goto error;
 		}
 		if (flags&AVP_VAL_STR)
