@@ -560,13 +560,24 @@ int http_get_rules_doc(str user, str domain, str* rules_doc)
 		goto error;
 	}
 
-	doc_sel.auid.s= "pres-rules";
-	doc_sel.auid.len= strlen("pres-rules");
+	if(pres_rules_auid.s && pres_rules_auid.len)
+		doc_sel.auid = pres_rules_auid;
+	else
+	{
+		doc_sel.auid.s= "pres-rules";
+		doc_sel.auid.len= strlen(doc_sel.auid.s);
+	}
 	doc_sel.doc_type= PRES_RULES;
 	doc_sel.type= USERS_TYPE;
-	doc_sel.xid= uri;
-	doc_sel.filename.s= "index";
-	doc_sel.filename.len= 5;
+	doc_sel.xid= user;
+
+	if(pres_rules_filename.s && pres_rules_filename.len)
+		doc_sel.filename = pres_rules_filename;
+	else
+	{
+		doc_sel.filename.s= "index";
+		doc_sel.filename.len= strlen(doc_sel.filename.s);
+	}
 
 	/* need the whole document so the node selector is NULL */
 	/* don't know which is the authoritative server for the user

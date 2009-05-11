@@ -66,13 +66,14 @@ add_event_t pres_add_event;
 update_watchers_t pres_update_watchers;
 pres_get_sphere_t pres_get_sphere;
 
-
 str xcap_table= str_init("xcap");
 str db_url = str_init(DEFAULT_DB_URL);
 int force_active= 0;
 int pidf_manipulation= 0;
 int integrated_xcap_server= 0;
 xcap_serv_t* xs_list= NULL;
+str pres_rules_auid = {0, 0};
+str pres_rules_filename = {0, 0};
 
 /* SIGNALING bind */
 struct sig_binds xml_sigb;
@@ -86,13 +87,15 @@ db_func_t pxml_dbf;
 xcapGetNewDoc_t xcap_GetNewDoc;
 
 static param_export_t params[]={
-	{ "db_url",					STR_PARAM,                          &db_url.s},
-	{ "xcap_table",				STR_PARAM,                      &xcap_table.s},
-	{ "force_active",			INT_PARAM,                     &force_active },
+	{ "db_url",                 STR_PARAM,                          &db_url.s},
+	{ "xcap_table",             STR_PARAM,                      &xcap_table.s},
+	{ "force_active",           INT_PARAM,                     &force_active },
 	{ "pidf_manipulation",      INT_PARAM,                 &pidf_manipulation}, 
 	{ "integrated_xcap_server", INT_PARAM,            &integrated_xcap_server}, 
 	{ "xcap_server",     STR_PARAM|USE_FUNC_PARAM,(void*)pxml_add_xcap_server},
-	{  0,						0,										    0}
+	{ "pres_rules_auid",        STR_PARAM,                 &pres_rules_auid.s},
+	{ "pres_rules_filename",    STR_PARAM,             &pres_rules_filename.s},
+	{  0,                       0,                                          0}
 };
 
 
@@ -211,6 +214,12 @@ static int mod_init(void)
 			LM_ERR("registering xcap callback function\n");
 			return -1;
 		}
+
+		if(pres_rules_auid.s)
+			pres_rules_auid.len = strlen(pres_rules_auid.s);
+
+		if(pres_rules_filename.s)
+			pres_rules_filename.len = strlen(pres_rules_filename.s);
 	}
 
 	if(shm_copy_xcap_list()< 0)

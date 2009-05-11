@@ -81,10 +81,10 @@ db_func_t xcap_dbf;
 void query_xcap_update(unsigned int ticks, void* param);
 
 static param_export_t params[]={
-	{ "db_url",					STR_PARAM,         &xcap_db_url.s    },
-	{ "xcap_table",				STR_PARAM,         &xcap_db_table.s  },
-	{ "periodical_query",		INT_PARAM,         &periodical_query },
-	{ "query_period",	       	INT_PARAM,         &query_period     },
+	{ "db_url",                 STR_PARAM,         &xcap_db_url.s    },
+	{ "xcap_table",             STR_PARAM,         &xcap_db_table.s  },
+	{ "periodical_query",       INT_PARAM,         &periodical_query },
+	{ "query_period",           INT_PARAM,         &query_period     },
 	{    0,                     0,                      0            }
 };
 
@@ -216,7 +216,7 @@ void query_xcap_update(unsigned int ticks, void* param)
 	query_vals[n_query_cols].nul = 0;
 
 	update_cols[u_doc_col=n_update_cols] = &str_doc_col;
-	update_vals[n_update_cols].type = DB_STRING;
+	update_vals[n_update_cols].type = DB_BLOB;
 	update_vals[n_update_cols].nul = 0;
 	n_update_cols++;
 
