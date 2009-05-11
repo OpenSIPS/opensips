@@ -411,12 +411,26 @@ modparam("presence", "enable_sphere_check", 1)
 
 	<section>
 		<title>
-		<function moreinfo="none">handle_subscribe()</function>
+		<function moreinfo="none">handle_subscribe(char* force_active)</function>
 		</title>
 		<para>
 		The function which handles SUBSCRIBE requests. It stores or 
 		updates information in database and calls functions to send Notify 
 		messages when a Subscribe which initiate a dialog is received
+		</para>
+		<para>
+			It can take one parameter meaningful when you use a configuration
+			with privacy rules enabled (force_active parameter in presence_xml
+			module not set). Supposing that you have a means to tell that the contact
+			the Subscribe message is destined to( the presentity) can not upload 
+			an xcap document with it's privacy rules, you can tell the presence
+			server to consider that subscription allowed(with Subscription-Status:active)
+			by calling handle_subscribe function with the string parameter "1".
+		<programlisting format="linespecific">
+   Ex: 
+	if(uri =~ "kphone@opensips.org")
+		handle_subscribe("1");
+		</programlisting>
 		</para>
 		<para>
 		This function can be used from REQUEST_ROUTE.

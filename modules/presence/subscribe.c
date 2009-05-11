@@ -507,7 +507,7 @@ void msg_watchers_clean(unsigned int ticks,void *param)
  *		- sends a reply in all cases (success or error).
  *	TODO replace -1 return code in error case with 0 ( exit from the script)
  * */
-int handle_subscribe(struct sip_msg* msg, char* str1, char* str2)
+int handle_subscribe(struct sip_msg* msg, char* force_active_param, char* str2)
 {
 	int  init_req = 0;
 	subs_t subs;
@@ -633,7 +633,7 @@ int handle_subscribe(struct sip_msg* msg, char* str1, char* str2)
 	/* if dialog initiation Subscribe - get subscription state */
 	if(init_req)
 	{
-		if(!event->req_auth) 
+		if(!event->req_auth ||(force_active_param && force_active_param[0] == '1'))
 			subs.status = ACTIVE_STATUS;
 		else   
 		{

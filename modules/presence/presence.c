@@ -120,6 +120,7 @@ static cmd_export_t cmds[]=
 	{"handle_publish",  (cmd_function)handle_publish,  0,fixup_presence,0, REQUEST_ROUTE},
 	{"handle_publish",  (cmd_function)handle_publish,  1,fixup_presence, 0, REQUEST_ROUTE},
 	{"handle_subscribe",(cmd_function)handle_subscribe,0,fixup_subscribe,0, REQUEST_ROUTE},
+	{"handle_subscribe",(cmd_function)handle_subscribe,1,fixup_subscribe,0, REQUEST_ROUTE},
 	{"bind_presence",   (cmd_function)bind_presence,   1,     0,         0,  0},
 	{ 0,                    0,                         0,     0,         0,  0}
 };
@@ -155,7 +156,7 @@ struct module_exports exports= {
 	cmds,						/* exported functions */
 	params,						/* exported parameters */
 	0,							/* exported statistics */
-	mi_cmds,   					/* exported MI functions */
+	mi_cmds,					/* exported MI functions */
 	0,							/* exported pseudo-variables */
 	0,							/* extra processes */
 	mod_init,					/* module initialization function */
@@ -405,7 +406,6 @@ static int fixup_presence(void** param, int param_no)
 
 static int fixup_subscribe(void** param, int param_no)
 {
-	
 	if(library_mode)
 	{
 		LM_ERR("Bad config - you can not call 'handle_subscribe' function"

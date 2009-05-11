@@ -44,7 +44,7 @@ Anca-Maria Vamanu
         1.4. Exported Functions
 
               1.4.1. handle_publish(char* sender_uri)
-              1.4.2. handle_subscribe()
+              1.4.2. handle_subscribe(char* force_active)
 
         1.5. Exported MI Functions
 
@@ -351,12 +351,25 @@ modparam("presence", "enable_sphere_check", 1)
         }
 ...
 
-1.4.2.  handle_subscribe()
+1.4.2.  handle_subscribe(char* force_active)
 
    The function which handles SUBSCRIBE requests. It stores or
    updates information in database and calls functions to send
    Notify messages when a Subscribe which initiate a dialog is
    received
+
+   It can take one parameter meaningful when you use a
+   configuration with privacy rules enabled (force_active
+   parameter in presence_xml module not set). Supposing that you
+   have a means to tell that the contact the Subscribe message is
+   destined to( the presentity) can not upload an xcap document
+   with it's privacy rules, you can tell the presence server to
+   consider that subscription allowed(with
+   Subscription-Status:active) by calling handle_subscribe
+   function with the string parameter "1".
+   Ex:
+        if(uri =~ "kphone@opensips.org")
+                handle_subscribe("1");
 
    This function can be used from REQUEST_ROUTE.
 
