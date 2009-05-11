@@ -99,7 +99,8 @@ enum _pv_type {
 	PVT_ERR_INFO,         PVT_ERR_RCODE,         PVT_ERR_RREASON,
 	PVT_SCRIPTVAR,        PVT_PROTO,             PVT_AUTH_USERNAME_WHOLE,
 	PVT_AUTH_DURI,        PVT_DIV_REASON,        PVT_DIV_PRIVACY,
-	PVT_AUTH_DOMAIN,      PVT_EXTRA /* keep it last */
+	PVT_AUTH_DOMAIN,      PVT_AUTH_NONCE,        PVT_AUTH_RESPONSE,
+	PVT_EXTRA /* keep it last */
 };
 
 typedef enum _pv_type pv_type_t;
