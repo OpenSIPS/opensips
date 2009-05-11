@@ -4,7 +4,7 @@
  * dispatcher module -- stateless load balancing
  *
  * Copyright (C) 2004-2005 FhG Fokus
- * Copyright (C) 2006 Voice Sistem SRL
+ * Copyright (C) 2006-2009 Voice Sistem SRL
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -110,12 +110,13 @@ static int w_ds_next_domain(struct sip_msg*, char*, char*);
 static int w_ds_mark_dst0(struct sip_msg*, char*, char*);
 static int w_ds_mark_dst1(struct sip_msg*, char*, char*);
 
-static int w_ds_is_from_list0(struct sip_msg*, char*, char*);
-static int w_ds_is_from_list1(struct sip_msg*, char*, char*);
+static int w_ds_is_in_list2(struct sip_msg*, char*, char*);
+static int w_ds_is_in_list3(struct sip_msg*, char*, char*, char*);
 
 static void destroy(void);
 
 static int ds_warn_fixup(void** param, int param_no);
+static int in_list_fixup(void** param, int param_no);
 
 static struct mi_root* ds_mi_set(struct mi_root* cmd, void* param);
 static struct mi_root* ds_mi_list(struct mi_root* cmd, void* param);
@@ -125,14 +126,22 @@ static int mi_child_init(void);
 static int parse_reply_codes();
 
 static cmd_export_t cmds[]={
-	{"ds_select_dst",    (cmd_function)w_ds_select_dst,    2, fixup_igp_igp, 0, REQUEST_ROUTE},
-	{"ds_select_domain", (cmd_function)w_ds_select_domain, 2, fixup_igp_igp, 0, REQUEST_ROUTE},
-	{"ds_next_dst",      (cmd_function)w_ds_next_dst,      0, ds_warn_fixup, 0, FAILURE_ROUTE},
-	{"ds_next_domain",   (cmd_function)w_ds_next_domain,   0, ds_warn_fixup, 0, FAILURE_ROUTE},
-	{"ds_mark_dst",      (cmd_function)w_ds_mark_dst0,     0, ds_warn_fixup, 0, FAILURE_ROUTE},
-	{"ds_mark_dst",      (cmd_function)w_ds_mark_dst1,     1, ds_warn_fixup, 0, FAILURE_ROUTE},
-	{"ds_is_from_list",  (cmd_function)w_ds_is_from_list0, 0, 0, 0, REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE},
-	{"ds_is_from_list",  (cmd_function)w_ds_is_from_list1, 1, fixup_uint_null, 0, REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE},
+	{"ds_select_dst",    (cmd_function)w_ds_select_dst,    2, fixup_igp_igp, 0,
+		REQUEST_ROUTE},
+	{"ds_select_domain", (cmd_function)w_ds_select_domain, 2, fixup_igp_igp, 0,
+		REQUEST_ROUTE},
+	{"ds_next_dst",      (cmd_function)w_ds_next_dst,      0, ds_warn_fixup, 0,
+		FAILURE_ROUTE},
+	{"ds_next_domain",   (cmd_function)w_ds_next_domain,   0, ds_warn_fixup, 0,
+		FAILURE_ROUTE},
+	{"ds_mark_dst",      (cmd_function)w_ds_mark_dst0,     0, ds_warn_fixup, 0,
+		FAILURE_ROUTE},
+	{"ds_mark_dst",      (cmd_function)w_ds_mark_dst1,     1, ds_warn_fixup, 0,
+		FAILURE_ROUTE},
+	{"ds_is_in_list",    (cmd_function)w_ds_is_in_list2,   2, in_list_fixup, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE},
+	{"ds_is_in_list",    (cmd_function)w_ds_is_in_list3,   3, in_list_fixup, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE},
 	{0,0,0,0,0,0}
 };
 
@@ -484,6 +493,30 @@ static int ds_warn_fixup(void** param, int param_no)
 	return 0;
 }
 
+static int in_list_fixup(void** param, int param_no)
+{
+	if (param_no==1) {
+		/* the ip to test */
+		return fixup_pvar(param);
+	} else if (param_no==2) {
+		/* the port to test */
+		if (*param==NULL) {
+			return 0;
+		} else if ( *((char*)*param)==0 ) {
+			pkg_free(*param);
+			*param = NULL;
+			return 0;
+		}
+		return fixup_pvar(param);
+	} else if (param_no==3) {
+		/* the group to check in */
+		return fixup_uint(param);
+	} else {
+		LM_CRIT("bug - too many params (%d) in is_in_list()\n",param_no);
+		return -1;
+	}
+}
+
 /************************** MI STUFF ************************/
 
 static struct mi_root* ds_mi_set(struct mi_root* cmd_tree, void* param)
@@ -583,15 +616,15 @@ static struct mi_root* ds_mi_reload(struct mi_root* cmd_tree, void* param)
 }
 
 
-static int w_ds_is_from_list0(struct sip_msg *msg, char *str1, char *str2)
+static int w_ds_is_in_list2(struct sip_msg *msg, char *ip, char *port)
 {
-	return ds_is_from_list(msg, -1);
+	return ds_is_in_list(msg, (pv_spec_t*)ip, (pv_spec_t*)port, -1);
 }
 
 
-static int w_ds_is_from_list1(struct sip_msg *msg, char *set, char *str2)
+static int w_ds_is_in_list3(struct sip_msg *msg,char *ip,char *port,char *set)
 {
-	return ds_is_from_list(msg, (int)(long)set);
+	return ds_is_in_list(msg, (pv_spec_t*)ip, (pv_spec_t*)port,(int)(long)set);
 }
 
 static int parse_reply_codes(void)

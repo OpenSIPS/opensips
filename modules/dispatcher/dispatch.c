@@ -74,8 +74,8 @@ typedef struct _ds_dest
 	str uri;
 	int flags;
 	struct ip_addr ip_address; /* IP-Address of the entry */
-    unsigned short int port; /* Port of the request URI */
-    int failure_count;
+	unsigned short int port; /* Port of the request URI */
+	int failure_count;
 	struct _ds_dest *next;
 } ds_dest_t, *ds_dest_p;
 
@@ -1375,32 +1375,58 @@ int ds_print_list(FILE *fout)
 }
 
 
-/* Checks, if the request (sip_msg *_m) comes from a host in a group
- * (group-id or -1 for all groups)
+/* Checks, if the request (sip_msg *_m) comes from a host in a set
+ * (set-id or -1 for all sets)
  */
-int ds_is_from_list(struct sip_msg *_m, int group)
+int ds_is_in_list(struct sip_msg *_m, pv_spec_t *pv_ip, pv_spec_t *pv_port,
+																	int set)
 {
 	pv_value_t val;
 	ds_set_p list;
+	struct ip_addr *ip;
+	int port;
 	int j;
+
+	/* get the address to test */
+	if (pv_get_spec_value( _m, pv_ip, &val)!=0) {
+		LM_ERR("failed to get IP value from PV\n");
+		return -1;
+	}
+	if ( (val.flags&PV_VAL_STR)==0 ) {
+		LM_ERR("IP PV val is not string\n");
+		return -1;
+	}
+	if ( (ip=str2ip( &val.rs ))==NULL ) {
+		LM_ERR("IP val is not IP <%.*s>\n",val.rs.len,val.rs.s);
+		return -1;
+	}
+
+	/* get the port to test */
+	if (pv_port) {
+		if (pv_get_spec_value( _m, pv_port, &val)!=0) {
+			LM_ERR("failed to get PORT value from PV\n");
+			return -1;
+		}
+		if ( (val.flags&PV_VAL_INT)==0 ) {
+			LM_ERR("PORT PV val is not integer\n");
+			return -1;
+		}
+		port = val.ri;
+	} else {
+		port = 0;
+	}
 
 	memset(&val, 0, sizeof(pv_value_t));
 	val.flags = PV_VAL_INT|PV_TYPE_INT;
 
-	for(list = _ds_list; list!= NULL; list= list->next)
-	{
-		// LM_ERR("list id: %d (n: %d)\n", list->id, list->nr);
-		if ((group == -1) || (group == list->id))
-		{
-			for(j=0; j<list->nr; j++)
-			{
-				// LM_ERR("port no: %d (%d)\n", list->dlist[j].port, j);
-				if (ip_addr_cmp(&_m->rcv.src_ip, &list->dlist[j].ip_address)
-						&& (list->dlist[j].port==0
-						|| _m->rcv.src_port == list->dlist[j].port))
-				{
-					if(group==-1 && ds_setid_pvname.s!=0)
-					{
+	for(list = _ds_list; list!= NULL; list= list->next) {
+		if ((set == -1) || (set == list->id)) {
+			for(j=0; j<list->nr; j++) {
+				if ( (list->dlist[j].port==0 || port==0
+				|| port==list->dlist[j].port) &&
+				ip_addr_cmp( ip, &list->dlist[j].ip_address) ) {
+					/* matching destination */
+					if(set==-1 && ds_setid_pvname.s!=0) {
 						val.ri = list->id;
 						if(ds_setid_pv.setf(_m, &ds_setid_pv.pvp,
 								(int)EQ_T, &val)<0)

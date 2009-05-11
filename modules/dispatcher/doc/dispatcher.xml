@@ -15,19 +15,19 @@
 ]>
 
 <book>
-    <bookinfo>
+	<bookinfo>
 	<title>DISPATCHER Module</title>
 	<productname class="trade">&osipsname;</productname>
 	<authorgroup>
 		<author>
 			<firstname>Daniel-Constantin</firstname>
 			<surname>Mierla</surname>
-			<email>miconda@gmail.com</email>
+			<email>team@voice-system.ro</email>
 		</author>
 		<editor>
 			<firstname>Daniel-Constantin</firstname>
 			<surname>Mierla</surname>
-			<email>miconda@gmail.com</email>
+			<email>team@voice-system.ro</email>
 		</editor>
 		<editor>
 			<firstname>Carsten</firstname>
@@ -39,23 +39,23 @@
 		</editor>
 	</authorgroup>
 	<copyright>
-	    <year>2004</year>
-	    <holder>&fhg;</holder>
+		<year>2004</year>
+		<holder>&fhg;</holder>
 	</copyright>
 	<copyright>
-	    <year>2005</year>
-	    <holder>Voice-System.RO</holder>
+		<year>2005-2009</year>
+		<holder>Voice-System.RO</holder>
 	</copyright>
 	<revhistory>
-	    <revision>
+		<revision>
 		<revnumber>$Revision$</revnumber>
 		<date>$Date$</date>
-	    </revision>
+		</revision>
 	</revhistory>
-    </bookinfo>
-    <toc></toc>
-    
-    &admin;
-    &faq;
+	</bookinfo>
+	<toc></toc>
+
+	&admin;
+	&faq;
 
 </book>

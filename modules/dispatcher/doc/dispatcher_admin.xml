@@ -365,7 +365,7 @@ modparam("dispatcher", "force_dst", 1)
  		<title><varname>setid_pvar</varname> (str)</title>
  		<para>
 		The name of the PV where to store the set ID (group ID) when calling
-		ds_is_from_list() with no parameter.
+		ds_is_in_list() without group parameter (third parameter).
  		</para>
  		<para>
  		<emphasis>
@@ -686,29 +686,57 @@ ds_select_dst("1", "0");
 		<para>
 		This function can be used from FAILURE_ROUTE.
 		</para>
- 	</section>
-  	<section>
- 		<title>
- 		<function moreinfo="none">ds_is_from_list()</function>
- 		</title>
- 		<para>
- 		This function returns true, if the current request comes from a host from the dispatcher-list; otherwise false.
- 		</para>
+	</section>
+
+	<section>
+		<title>
+		<function moreinfo="none">ds_is_in_list( ip, port [,set])</function>
+		</title>
 		<para>
-		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, BRANCH_ROUTE and ONREPLY_ROUTE.
+		This function returns true, if the parameters ip and port point to a 
+		host from the dispatcher-list; otherwise false.
 		</para>
- 	</section>
-  	<section>
- 		<title>
- 		<function moreinfo="none">ds_is_from_list("group")</function>
- 		</title>
- 		<para>
- 		This function returns true, if the current request comes from a host in the given group of the dispatcher-list; otherwise false.
- 		</para>
 		<para>
-		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, BRANCH_ROUTE and ONREPLY_ROUTE.
+		Meaning of the parameters:
 		</para>
- 	</section>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>ip</emphasis> - a PV (pseudo-variable) containing 
+			(as string) the IP to test against the dispatcher list. This cannot
+			be empty.</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>port</emphasis> - a PV (pseudo-variable) containing
+			 (as integer) the PORT to test against the dispatcher list. This 
+			 can be empty - in this case the port will excluded from the 
+			 matching of IP against the dispatcher list.</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>set</emphasis> (optional) - the set ID of a 
+			dispatcher list to test agaist - if missing, all the dispatching
+			sets will the checked.</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, 
+		BRANCH_ROUTE and ONREPLY_ROUTE.
+		</para>
+		<example>
+		<title><function>ds_is_in_list</function> usage</title>
+		<programlisting format="linespecific">
+...
+if (ds_is_in_list("$si", "$sp")) {
+	# source IP:PORT is in a dispatcher list
+}
+...
+if (ds_is_in_list("$rd", "$rp", "2")) {
+	# source RURI (ip and port) is in the dispatcher list id "2"
+}
+...
+</programlisting>
+		</example>
+
+	</section>
 	</section>
 
 	<section>
