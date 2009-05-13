@@ -684,7 +684,7 @@ int pres_db_delete_status(subs_t* s)
 
 int update_watchers_status(str pres_uri, pres_ev_t* ev, str* rules_doc)
 {
-	static db_ps_t my_ps = NULL;
+//	static db_ps_t my_ps = NULL;
 	subs_t subs;
 	db_key_t query_cols[6], result_cols[5];
 	db_val_t query_vals[6];
@@ -751,7 +751,7 @@ int update_watchers_status(str pres_uri, pres_ev_t* ev, str* rules_doc)
 		goto done;
 	}
 
-	CON_PS_REFERENCE(pa_db) = &my_ps;
+//	CON_PS_REFERENCE(pa_db) = &my_ps;
 	if(pa_dbf.query(pa_db, query_cols, 0, query_vals, result_cols,n_query_cols,
 				n_result_cols, 0, &result)< 0)
 	{
