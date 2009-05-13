@@ -1297,6 +1297,7 @@ int get_subs_db(str* pres_uri, pres_ev_t* event, str* sender,
 		
 		s.event= event;
 		s.local_cseq = row_vals[cseq_col].val.int_val;
+
 		if(row_vals[expires_col].val.int_val < (int)time(NULL))
 			s.expires = 0;
 		else
@@ -1787,11 +1788,11 @@ int notify(subs_t* subs, subs_t * watcher_subs, str* n_body,int force_null_body)
 
 	}
      
-    if(subs->reason.s && subs->status== ACTIVE_STATUS && 
-        subs->reason.len== 12 && strncmp(subs->reason.s, "polite-block", 12)== 0)
-    {
-        force_null_body = 1;
-    }
+	if(subs->reason.s && subs->status== ACTIVE_STATUS && 
+		subs->reason.len== 12 && strncmp(subs->reason.s, "polite-block", 12)== 0)
+	{
+		force_null_body = 1;
+	}
 
 	if(send_notify_request(subs, watcher_subs, n_body, force_null_body)< 0)
 	{

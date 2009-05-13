@@ -240,7 +240,7 @@ int update_subs_db(subs_t* subs, int type)
 		update_vals[n_update_cols].nul = 0;
 		update_vals[n_update_cols].val.int_val = subs->expires + (int)time(NULL);
 		n_update_cols++;
-	
+
 		update_keys[n_update_cols] = &str_remote_cseq_col;
 		update_vals[n_update_cols].type = DB_INT;
 		update_vals[n_update_cols].nul = 0;
@@ -351,21 +351,19 @@ int update_subscription(struct sip_msg* msg, subs_t* subs, int init_req)
 
 		if(update_shtable(subs_htable, hash_code, subs, REMOTE_TYPE)< 0)
 		{
-			if(fallback2db)
+			LM_DBG("updating subscription record in hash table failed\n");
+			if(!fallback2db)
+				goto error;
+		}
+		if(fallback2db)
+		{
+			if(update_subs_db(subs, REMOTE_TYPE)< 0)
 			{
-				if(update_subs_db(subs, REMOTE_TYPE)< 0)
-				{
-					LM_ERR("updating subscription in database table\n");
-					goto error;
-				}
-			}
-			else
-			{
-				LM_ERR("updating subscription record in hash table\n");
+				LM_ERR("updating subscription in database table\n");
 				goto error;
 			}
-
 		}
+
 		
 		if(send_2XX_reply(msg, reply_code, subs->expires, 0,
 			&subs->local_contact)<0)
@@ -1517,7 +1515,7 @@ void update_db_subs(db_con_t *db,db_func_t dbf, shtable_t hash_table,
 		while(s)
 		{
 			printf_subs(s);
-			if(s->expires < (int)time(NULL)- 50)	
+			if(s->expires < (int)time(NULL)- expires_offset)
 			{
 				LM_DBG("Found expired record\n");
 				del_s= s;
