@@ -64,15 +64,17 @@
 
 #include "dispatch.h"
 
-#define DS_TABLE_VERSION	1
-#define DS_TABLE_VERSION2	3
+#define DS_TABLE_VERSION_NEW	4
+#define DS_TABLE_VERSION_OLD	3
 
-static int _ds_table_version = DS_TABLE_VERSION;
+static int _ds_table_version = DS_TABLE_VERSION_NEW;
 
 typedef struct _ds_dest
 {
 	str uri;
+	str attrs;
 	int flags;
+	int weight;
 	struct ip_addr ip_address; /* IP-Address of the entry */
 	unsigned short int port; /* Port of the request URI */
 	int failure_count;
@@ -84,6 +86,7 @@ typedef struct _ds_set
 	int id;				/* id of dst set */
 	int nr;				/* number of items in dst set */
 	int last;			/* last used item in dst set */
+	int weight_sum;		/* sum of the weights from dst set */
 	ds_dest_p dlist;
 	struct _ds_set *next;
 } ds_set_t, *ds_set_p;
@@ -130,11 +133,12 @@ int init_data(void)
 	return 0;
 }
 
-int add_dest2list(int id, str uri, int flags, int list_idx, int * setn)
+int add_dest2list(int id, str uri, int flags, int weight, str attrs,
+													int list_idx, int * setn)
 {
 	ds_dest_p dp = NULL;
 	ds_set_p  sp = NULL;
-	
+
 	/* For DNS-Lookups */
 	static char hn[256];
 	struct hostent* he;
@@ -146,7 +150,7 @@ int add_dest2list(int id, str uri, int flags, int list_idx, int * setn)
 		LM_ERR("bad uri [%.*s]\n", uri.len, uri.s);
 		goto err;
 	}
-	
+
 	/* get dest set */
 	sp = ds_lists[list_idx];
 	while(sp)
@@ -173,7 +177,6 @@ int add_dest2list(int id, str uri, int flags, int list_idx, int * setn)
 	sp->id = id;
 	sp->nr++;
 
-	/* store uri */
 	dp = (ds_dest_p)shm_malloc(sizeof(ds_dest_t));
 	if(dp==NULL)
 	{
@@ -182,22 +185,32 @@ int add_dest2list(int id, str uri, int flags, int list_idx, int * setn)
 	}
 	memset(dp, 0, sizeof(ds_dest_t));
 
-	dp->uri.s = (char*)shm_malloc((uri.len+1)*sizeof(char));
+	/* store uri and attrs strings */
+	dp->uri.s = (char*)shm_malloc( (uri.len+1+attrs.len+1)*sizeof(char));
 	if(dp->uri.s==NULL)
 	{
-		LM_ERR("no more memory!\n");
+		LM_ERR("no more shm memory!\n");
 		goto err;
 	}
-	strncpy(dp->uri.s, uri.s, uri.len);
+	memcpy(dp->uri.s, uri.s, uri.len);
 	dp->uri.s[uri.len]='\0';
 	dp->uri.len = uri.len;
+	if (attrs.len) {
+		dp->attrs.s = dp->uri.s + dp->uri.len + 1;
+		memcpy(dp->attrs.s, attrs.s, attrs.len);
+		dp->attrs.s[attrs.len]='\0';
+		dp->attrs.len = attrs.len;
+	}
+
+	/* copy flags and weight */
 	dp->flags = flags;
+	dp->weight = weight;
 
 	/* The Hostname needs to be \0 terminated for resolvehost, so we
 	 * make a copy here. */
 	strncpy(hn, puri.host.s, puri.host.len);
 	hn[puri.host.len]='\0';
-		
+
 	/* Do a DNS-Lookup for the Host-Name: */
 	he=resolvehost(hn, 1);
 	if (he==0)
@@ -210,7 +223,7 @@ int add_dest2list(int id, str uri, int flags, int list_idx, int * setn)
 	hostent2ip_addr(&dp->ip_address, he, 0);
 		
 	/* Copy the Port out of the URI: */
-	dp->port = puri.port_no;		
+	dp->port = puri.port_no;
 
 	dp->next = sp->dlist;
 	sp->dlist = dp;
@@ -233,10 +246,11 @@ err:
 int reindex_dests(int list_idx, int setn)
 {
 	int j;
+	int weight;
 	ds_set_p  sp = NULL;
 	ds_dest_p dp = NULL, dp0= NULL;
 
-	for(sp = ds_lists[list_idx]; sp!= NULL;	sp->dlist = dp0, sp = sp->next)
+	for( sp=ds_lists[list_idx] ; sp!= NULL ; sp->dlist=dp0, sp=sp->next )
 	{
 		dp0 = (ds_dest_p)shm_malloc(sp->nr*sizeof(ds_dest_t));
 		if(dp0==NULL)
@@ -261,6 +275,17 @@ int reindex_dests(int list_idx, int setn)
 			shm_free(dp);
 			dp=NULL;
 		}
+
+		/* updated the weights (pre-calculate the weight limits)*/
+		for( j=0,weight=0 ; j<sp->nr ; j++ ) {
+			if (ds_use_default && dp0[j].next==NULL)
+				/* skip the last default record */
+				break;
+			dp0[j].weight += weight;
+			weight = dp0[j].weight;
+		}
+		sp->weight_sum = weight;
+
 	}
 
 	LM_DBG("found [%d] dest sets\n", setn);
@@ -273,11 +298,12 @@ err1:
 /*load groups of destinations from file */
 int ds_load_list(char *lfile)
 {
-	char line[256], *p;
+	char line[512], *p;
 	FILE *f = NULL;
-	int id, setn, flags;
+	int id, setn, flags, weight;
 	str uri;
-	
+	str attrs;
+
 	if( (*crt_idx) != (*next_idx)) {
 		LM_WARN("load command already generated, aborting reload...\n");
 		return 0;
@@ -301,8 +327,8 @@ int ds_load_list(char *lfile)
 
 	*next_idx = (*crt_idx + 1)%2;
 	destroy_list(*next_idx);
-	
-	p = fgets(line, 256, f);
+
+	p = fgets(line, 512, f);
 	while(p)
 	{
 		/* eat all white spaces */
@@ -310,7 +336,7 @@ int ds_load_list(char *lfile)
 			p++;
 		if(*p=='\0' || *p=='#')
 			goto next_line;
-		
+
 		/* get set id */
 		id = 0;
 		while(*p>='0' && *p<='9')
@@ -318,13 +344,13 @@ int ds_load_list(char *lfile)
 			id = id*10+ (*p-'0');
 			p++;
 		}
-		
+
 		/* eat all white spaces */
 		while(*p && (*p==' ' || *p=='\t' || *p=='\r' || *p=='\n'))
 			p++;
 		if(*p=='\0' || *p=='#')
 		{
-			LM_ERR("bad line [%s]\n", line);
+			LM_ERR("bad line (missing uri) [%s]\n", line);
 			goto error;
 		}
 
@@ -334,33 +360,63 @@ int ds_load_list(char *lfile)
 			p++;
 		uri.len = p-uri.s;
 
+		weight = 1;
+		attrs.s = NULL;
+		attrs.len = 0;
+
 		/* eat all white spaces */
 		while(*p && (*p==' ' || *p=='\t' || *p=='\r' || *p=='\n'))
 			p++;
-		
-		/* get flags */
-		flags = 0;
 		if(*p=='\0' || *p=='#')
 		{
-			/* no flags given */
 			goto add_destination;
 		}
 
+		/* get flags */
+		flags = 0;
 		while(*p>='0' && *p<='9')
 		{
 			flags = flags*10+ (*p-'0');
 			p++;
 		}
-		
+
+		/* eat all white spaces */
+		while(*p && (*p==' ' || *p=='\t' || *p=='\r' || *p=='\n'))
+			p++;
+		if(*p=='\0' || *p=='#')
+		{
+			goto add_destination;
+		}
+
+		/* get weight */
+		weight = 0;
+		while(*p>='0' && *p<='9')
+		{
+			weight = weight*10+ (*p-'0');
+			p++;
+		}
+
+		/* eat all white spaces */
+		while(*p && (*p==' ' || *p=='\t' || *p=='\r' || *p=='\n'))
+			p++;
+
+		/* get attrs */
+		attrs.s = p;
+		while (*p && !(*p==' ' || *p=='\t' || *p=='\r' || *p=='\n'))
+			p++;
+		attrs.len = p - attrs.s;
+		if (attrs.len==0)
+			attrs.s = NULL;
+
 add_destination:
-		if(add_dest2list(id, uri, flags, *next_idx, &setn) != 0)
+		if(add_dest2list(id, uri, flags, weight, attrs, *next_idx, &setn) != 0)
 			goto error;
 					
 		
 next_line:
-		p = fgets(line, 256, f);
+		p = fgets(line, 512, f);
 	}
-		
+
 	if(reindex_dests(*next_idx, setn)!=0){
 		LM_ERR("error on reindex\n");
 		goto error;
@@ -437,11 +493,11 @@ int init_ds_db(void)
 	{
 		LM_ERR("failed to query table version\n");
 		return -1;
-	} else if (_ds_table_version != DS_TABLE_VERSION
-			&& _ds_table_version != DS_TABLE_VERSION2) {
+	} else if (_ds_table_version != DS_TABLE_VERSION_NEW
+			&& _ds_table_version != DS_TABLE_VERSION_OLD) {
 		LM_ERR("invalid table version (found %d , required %d or %d)\n"
 			"(use opensipsdbctl reinit)\n",
-			_ds_table_version, DS_TABLE_VERSION, DS_TABLE_VERSION2 );
+			_ds_table_version, DS_TABLE_VERSION_OLD, DS_TABLE_VERSION_NEW );
 		return -1;
 	}
 
@@ -457,18 +513,20 @@ int ds_load_db(void)
 {
 	int i, id, nr_rows, setn;
 	int flags;
+	int weight;
 	int nrcols;
 	str uri;
+	str attrs;
 	db_res_t * res;
 	db_val_t * values;
 	db_row_t * rows;
-	
-	db_key_t query_cols[3] = {&ds_set_id_col, &ds_dest_uri_col,
-								&ds_dest_flags_col};
-	
-	nrcols = 2;
-	if(_ds_table_version == DS_TABLE_VERSION2)
-		nrcols = 3;
+
+	db_key_t query_cols[5] = {&ds_set_id_col, &ds_dest_uri_col,
+			&ds_dest_flags_col, &ds_dest_weight_col, &ds_dest_attrs_col};
+
+	nrcols = 3;
+	if(_ds_table_version == DS_TABLE_VERSION_NEW)
+		nrcols = 5;
 
 	if( (*crt_idx) != (*next_idx))
 	{
@@ -495,7 +553,7 @@ int ds_load_db(void)
 	}
 
 	nr_rows = RES_ROW_N(res);
-	rows 	= RES_ROWS(res);
+	rows = RES_ROWS(res);
 	if(nr_rows == 0)
 	{
 		LM_WARN("no dispatching data in the db -- empty destination set\n");
@@ -506,19 +564,56 @@ int ds_load_db(void)
 	setn = 0;
 	*next_idx = (*crt_idx + 1)%2;
 	destroy_list(*next_idx);
-	
+
 	for(i=0; i<nr_rows; i++)
 	{
 		values = ROW_VALUES(rows+i);
 
+		/* id */
+		if (VAL_NULL(values)) {
+			LM_ERR("ds ID column cannot be NULL\n");
+			goto err2;
+		}
 		id = VAL_INT(values);
+
+		/* uri */
+		if (VAL_NULL(values+1) || VAL_STR(values+1).s==NULL) {
+			LM_ERR("ds URI column cannot be NULL or empty\n");
+			goto err2;
+		}
 		uri.s = VAL_STR(values+1).s;
 		uri.len = strlen(uri.s);
-		flags = 0;
-		if(nrcols==3)
-			flags = VAL_INT(values+2);
 
-		if(add_dest2list(id, uri, flags, *next_idx, &setn) != 0)
+		/* flags */
+		if (VAL_NULL(values+2)) {
+			flags = 0;
+		} else {
+			flags = VAL_INT(values+2);
+		}
+
+		if (nrcols==5) {
+			/* weight */
+			if (VAL_NULL(values+3)) {
+				weight = 1;
+			} else {
+				weight = VAL_INT(values+3);
+			}
+
+			/* attrs */
+			if (VAL_NULL(values+4) || VAL_STR(values+4).s==NULL) {
+				attrs.s = NULL;
+				attrs.len = 0;
+			} else {
+				attrs.s = VAL_STR(values+4).s;
+				attrs.len = strlen(attrs.s);
+			}
+		} else {
+			weight = 1;
+			attrs.s = NULL;
+			attrs.len = 0;
+		}
+
+		if(add_dest2list(id, uri, flags, weight, attrs, *next_idx, &setn) != 0)
 			goto err2;
 
 	}
@@ -988,7 +1083,8 @@ static inline int ds_update_dst(struct sip_msg *msg, str *uri, int mode)
 int ds_select_dst(struct sip_msg *msg, int set, int alg, int mode)
 {
 	int i, cnt;
-	unsigned int hash;
+	unsigned int ds_hash;
+	int ds_id;
 	int_str avp_val;
 	ds_set_p idx = NULL;
 
@@ -1022,43 +1118,44 @@ int ds_select_dst(struct sip_msg *msg, int set, int alg, int mode)
 	
 	LM_DBG("set [%d]\n", set);
 
-	hash = 0;
+	ds_hash = 0;
+	ds_id = -1;
 	switch(alg)
 	{
 		case 0:
-			if(ds_hash_callid(msg, &hash)!=0)
+			if(ds_hash_callid(msg, &ds_hash)!=0)
 			{
 				LM_ERR("can't get callid hash\n");
 				return -1;
 			}
 		break;
 		case 1:
-			if(ds_hash_fromuri(msg, &hash)!=0)
+			if(ds_hash_fromuri(msg, &ds_hash)!=0)
 			{
 				LM_ERR("can't get From uri hash\n");
 				return -1;
 			}
 		break;
 		case 2:
-			if(ds_hash_touri(msg, &hash)!=0)
+			if(ds_hash_touri(msg, &ds_hash)!=0)
 			{
 				LM_ERR("can't get To uri hash\n");
 				return -1;
 			}
 		break;
 		case 3:
-			if (ds_hash_ruri(msg, &hash)!=0)
+			if (ds_hash_ruri(msg, &ds_hash)!=0)
 			{
 				LM_ERR("can't get ruri hash\n");
 				return -1;
 			}
 		break;
 		case 4:
-			hash = idx->last;
+			ds_id = idx->last;
 			idx->last = (idx->last+1) % idx->nr;
 		break;
 		case 5:
-			i = ds_hash_authusername(msg, &hash);
+			i = ds_hash_authusername(msg, &ds_hash);
 			switch (i)
 			{
 				case 0:
@@ -1066,7 +1163,7 @@ int ds_select_dst(struct sip_msg *msg, int set, int alg, int mode)
 				break;
 				case 1:
 					/* No Authorization found: Use round robin */
-					hash = idx->last;
+					ds_id = idx->last;
 					idx->last = (idx->last+1) % idx->nr;
 				break;
 				default:
@@ -1076,28 +1173,33 @@ int ds_select_dst(struct sip_msg *msg, int set, int alg, int mode)
 			}
 		break;
 		case 6:
-			hash = rand() % idx->nr;
+			ds_hash = rand();
 		break;
 		case 7:
-			if (ds_hash_pvar(msg, &hash)!=0)
+			if (ds_hash_pvar(msg, &ds_hash)!=0)
 			{
 				LM_ERR("can't get PV hash\n");
 				return -1;
 			}
-		break;		
+		break;
 		default:
 			LM_WARN("algo %d not implemented - using first entry...\n", alg);
-			hash = 0;
+			ds_id = 0;
 	}
 
-	LM_DBG("alg hash [%u]\n", hash);
+	if (ds_id==-1) {
+		/* no destination yet actually selected -> do it based on hash */
+		ds_hash = ds_hash%idx->weight_sum;
+		/* get the ds id based on weights */
+		for( ds_id=0 ; ds_id<idx->nr ; ds_id++ )
+			if (ds_hash<idx->dlist[ds_id].weight)
+				break;
+	}
+
+	LM_DBG("alg hash [%u], id [%u]\n", ds_hash, ds_id);
 	cnt = 0;
 
-	if(ds_use_default!=0 && idx->nr!=1)
-		hash = hash%(idx->nr-1);
-	else
-		hash = hash%idx->nr;
-	i=hash;
+	i=ds_id;
 	while ((idx->dlist[i].flags & DS_INACTIVE_DST)
 			|| (idx->dlist[i].flags & DS_PROBING_DST))
 	{
@@ -1105,7 +1207,7 @@ int ds_select_dst(struct sip_msg *msg, int set, int alg, int mode)
 			i = (i+1)%(idx->nr-1);
 		else
 			i = (i+1)%idx->nr;
-		if(i==hash)
+		if(i==ds_id)
 		{
 			if(ds_use_default!=0)
 			{
@@ -1115,27 +1217,26 @@ int ds_select_dst(struct sip_msg *msg, int set, int alg, int mode)
 			}
 		}
 	}
+	ds_id = i;
 
-	hash = i;
-
-	if(ds_update_dst(msg, &idx->dlist[hash].uri, mode)!=0)
+	if(ds_update_dst(msg, &idx->dlist[ds_id].uri, mode)!=0)
 	{
 		LM_ERR("cannot set dst addr\n");
 		return -1;
 	}
 	/* if alg is round-robin then update the shortcut to next to be used */
 	if(alg==4)
-		idx->last = (hash+1) % idx->nr;
+		idx->last = (ds_id+1) % idx->nr;
 	
-	LM_DBG("selected [%d-%d/%d] <%.*s>\n", alg, set, hash,
-			idx->dlist[hash].uri.len, idx->dlist[hash].uri.s);
+	LM_DBG("selected [%d-%d/%d] <%.*s>\n", alg, set, ds_id,
+			idx->dlist[ds_id].uri.len, idx->dlist[ds_id].uri.s);
 
 	if(!(ds_flags&DS_FAILOVER_ON))
 		return 1;
 
 	if(dst_avp_name.n!=0)
 	{
-		if(ds_use_default!=0 && hash!=idx->nr-1)
+		if(ds_use_default!=0 && ds_id!=idx->nr-1)
 		{
 			avp_val.s = idx->dlist[idx->nr-1].uri;
 			if(add_avp(AVP_VAL_STR|dst_avp_type, dst_avp_name, avp_val)!=0)
@@ -1145,7 +1246,19 @@ int ds_select_dst(struct sip_msg *msg, int set, int alg, int mode)
 	
 		/* add to avp */
 
-		for(i=hash-1; i>=0; i--)
+		for(i=ds_id-1; i>=0; i--)
+		{
+			if((idx->dlist[i].flags & DS_INACTIVE_DST)
+					|| (ds_use_default!=0 && i==(idx->nr-1)))
+				continue;
+			LM_DBG("using entry [%d/%d]\n", set, i);
+			avp_val.s = idx->dlist[i].uri;
+			if(add_avp(AVP_VAL_STR|dst_avp_type, dst_avp_name, avp_val)!=0)
+				return -1;
+			cnt++;
+		}
+
+		for(i=idx->nr-1; i>ds_id; i--)
 		{	
 			if((idx->dlist[i].flags & DS_INACTIVE_DST)
 					|| (ds_use_default!=0 && i==(idx->nr-1)))
@@ -1157,20 +1270,8 @@ int ds_select_dst(struct sip_msg *msg, int set, int alg, int mode)
 			cnt++;
 		}
 
-		for(i=idx->nr-1; i>hash; i--)
-		{	
-			if((idx->dlist[i].flags & DS_INACTIVE_DST)
-					|| (ds_use_default!=0 && i==(idx->nr-1)))
-				continue;
-			LM_DBG("using entry [%d/%d]\n", set, i);
-			avp_val.s = idx->dlist[i].uri;
-			if(add_avp(AVP_VAL_STR|dst_avp_type, dst_avp_name, avp_val)!=0)
-				return -1;
-			cnt++;
-		}
-	
 		/* add to avp the first used dst */
-		avp_val.s = idx->dlist[hash].uri;
+		avp_val.s = idx->dlist[ds_id].uri;
 		if(add_avp(AVP_VAL_STR|dst_avp_type, dst_avp_name, avp_val)!=0)
 			return -1;
 		cnt++;

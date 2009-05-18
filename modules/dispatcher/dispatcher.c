@@ -57,6 +57,8 @@ MODULE_VERSION
 #define DS_SET_ID_COL		"setid"
 #define DS_DEST_URI_COL		"destination"
 #define DS_DEST_FLAGS_COL	"flags"
+#define DS_DEST_WEIGHT_COL	"weight"
+#define DS_DEST_ATTRS_COL	"attrs"
 #define DS_TABLE_NAME 		"dispatcher"
 
 /** parameters */
@@ -90,6 +92,8 @@ str ds_db_url         = {NULL, 0};
 str ds_set_id_col     = str_init(DS_SET_ID_COL);
 str ds_dest_uri_col   = str_init(DS_DEST_URI_COL);
 str ds_dest_flags_col = str_init(DS_DEST_FLAGS_COL);
+str ds_dest_weight_col= str_init(DS_DEST_WEIGHT_COL);
+str ds_dest_attrs_col = str_init(DS_DEST_ATTRS_COL);
 str ds_table_name     = str_init(DS_TABLE_NAME);
 
 str ds_setid_pvname   = {NULL, 0};
@@ -148,11 +152,13 @@ static cmd_export_t cmds[]={
 
 static param_export_t params[]={
 	{"list_file",       STR_PARAM, &dslistfile},
-	{"db_url",		    STR_PARAM, &ds_db_url.s},
-	{"table_name", 	    STR_PARAM, &ds_table_name.s},
+	{"db_url",          STR_PARAM, &ds_db_url.s},
+	{"table_name",      STR_PARAM, &ds_table_name.s},
 	{"setid_col",       STR_PARAM, &ds_set_id_col.s},
 	{"destination_col", STR_PARAM, &ds_dest_uri_col.s},
 	{"flags_col",       STR_PARAM, &ds_dest_flags_col.s},
+	{"weight_col",      STR_PARAM, &ds_dest_weight_col.s},
+	{"attrs_col",       STR_PARAM, &ds_dest_attrs_col.s},
 	{"force_dst",       INT_PARAM, &ds_force_dst},
 	{"flags",           INT_PARAM, &ds_flags},
 	{"use_default",     INT_PARAM, &ds_use_default},
@@ -162,11 +168,11 @@ static param_export_t params[]={
 	{"hash_pvar",       STR_PARAM, &hash_pvar_param.s},
 	{"setid_pvname",    STR_PARAM, &ds_setid_pvname.s},
 	{"ds_probing_threshhold", INT_PARAM, &probing_threshhold},
-	{"ds_ping_method",     STR_PARAM, &ds_ping_method.s},
-	{"ds_ping_from",       STR_PARAM, &ds_ping_from.s},
-	{"ds_ping_interval",   INT_PARAM, &ds_ping_interval},
-	{"ds_probing_mode",    INT_PARAM, &ds_probing_mode},
-	{"options_reply_codes", STR_PARAM, &options_reply_codes_str.s},
+	{"ds_ping_method",        STR_PARAM, &ds_ping_method.s},
+	{"ds_ping_from",          STR_PARAM, &ds_ping_from.s},
+	{"ds_ping_interval",      INT_PARAM, &ds_ping_interval},
+	{"ds_probing_mode",       INT_PARAM, &ds_probing_mode},
+	{"options_reply_codes",   STR_PARAM, &options_reply_codes_str.s},
 	{0,0,0}
 };
 
@@ -208,7 +214,7 @@ static int mod_init(void)
 	if (grp_avp_param.s)
 		grp_avp_param.len = strlen(grp_avp_param.s);
 	if (cnt_avp_param.s)
-		cnt_avp_param.len = strlen(cnt_avp_param.s);	
+		cnt_avp_param.len = strlen(cnt_avp_param.s);
 	if (hash_pvar_param.s)
 		hash_pvar_param.len = strlen(hash_pvar_param.s);
 	if (ds_setid_pvname.s)
@@ -239,6 +245,8 @@ static int mod_init(void)
 		ds_set_id_col.len     = strlen(ds_set_id_col.s);
 		ds_dest_uri_col.len   = strlen(ds_dest_uri_col.s);
 		ds_dest_flags_col.len = strlen(ds_dest_flags_col.s);
+		ds_dest_weight_col.len= strlen(ds_dest_weight_col.s);
+		ds_dest_attrs_col.len = strlen(ds_dest_attrs_col.s);
 
 		if(init_ds_db()!= 0)
 		{
