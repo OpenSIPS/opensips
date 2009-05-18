@@ -993,7 +993,7 @@ int refresh_send_winfo_notify(watcher_t* watchers, str pres_uri,
 		/* extract notify body */
 		sprintf(version, "%d", s->version);
 		winfo_nbody =  create_winfo_xml(watchers, version, pres_uri,
-			ev->name, PARTIAL_STATE_FLAG);
+			ev->wipeer->name, PARTIAL_STATE_FLAG);
 		if(winfo_nbody== NULL)
 		{
 			LM_ERR("failed to create winfo Notify body\n");
