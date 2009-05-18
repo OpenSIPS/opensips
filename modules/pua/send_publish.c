@@ -183,19 +183,21 @@ void publ_cback_func(struct cell *t, int type, struct tmcb_params *ps)
 		presentity= search_htable( hentity, hash_code);
 		if(presentity)
 		{
+			LM_DBG("Record found in table and deleted\n");
 			delete_htable(presentity, hash_code);
-			lock_release(&HashT->p_records[hash_code].lock);
 		}
 		else
-			lock_release(&HashT->p_records[hash_code].lock);
+		{
+			LM_DBG("Record not found in table\n");
+		}
+		lock_release(&HashT->p_records[hash_code].lock);
 
 		if(ps->code== 412 && hentity->body && hentity->flag!= MI_PUBLISH
 				&& hentity->flag!= MI_ASYN_PUBLISH)
 		{
 			/* sent a PUBLISH within a dialog that no longer exists
 			 * send again an intial PUBLISH */
-			LM_DBG("received a 412 reply- send an INSERT_TYPE"
-					" publish request\n");
+			LM_DBG("received a 412 reply- try again to send PUBLISH\n");
 			publ_info_t publ;
 			memset(&publ, 0, sizeof(publ_info_t));
 			publ.pres_uri= hentity->pres_uri; 
@@ -434,7 +436,10 @@ int send_publish( publ_info_t* publ )
 	}
 
 	if(publ->flag & INSERT_TYPE)
+	{
+		LM_DBG("Insert flag set\n");
 		goto insert;
+	}
 	
 	if(presentity== NULL)
 	{
@@ -461,6 +466,7 @@ insert:
 	}
 	else
 	{
+		LM_DBG("record found in hash_table\n");
 		publ->flag= UPDATE_TYPE;
 		etag.s= (char*)pkg_malloc(presentity->etag.len* sizeof(char));
 		if(etag.s== NULL)
@@ -529,6 +535,8 @@ insert:
 send_publish:
 	
 	/* construct the callback parameter */
+	if(etag.s && etag.len)
+		publ->etag = &etag;
 
 	cb_param= publish_cbparam(publ, body, tuple_id, REQ_OTHER);
 	if(cb_param== NULL)
