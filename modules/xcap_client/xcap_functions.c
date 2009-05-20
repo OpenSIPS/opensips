@@ -357,7 +357,8 @@ int xcapGetNewDoc(xcap_get_req_t req, str user,
 	query_cols[n_query_cols] = &str_doc_col;
 	query_vals[n_query_cols].type = DB_STRING;
 	query_vals[n_query_cols].nul = 0;
-	query_vals[n_query_cols].val.string_val= doc;
+	query_vals[n_query_cols].val.str_val.s= doc;
+	query_vals[n_query_cols].val.str_val.len= strlen(doc);
 	n_query_cols++;
 
 	query_cols[n_query_cols] = &str_etag_col;

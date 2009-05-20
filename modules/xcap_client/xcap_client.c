@@ -264,7 +264,7 @@ void query_xcap_update(unsigned int ticks, void* param)
 	
 		path= (char*)row_vals[doc_uri_col].val.string_val;
 		port= row_vals[port_col].val.int_val;
-		etag= (char*)row_vals[etag_col].val.string_val;	
+		etag= (char*)row_vals[etag_col].val.string_val;
 
 		user.s= (char*)row_vals[user_col].val.string_val;
 		user.len= strlen(user.s);
@@ -286,9 +286,10 @@ void query_xcap_update(unsigned int ticks, void* param)
 			goto error;
 		}
 		/* update in xcap db table */
-		update_vals[u_doc_col].val.string_val= doc;
+		update_vals[u_doc_col].val.str_val.s= doc;
+		update_vals[u_doc_col].val.str_val.len= strlen(doc);
 		update_vals[u_etag_col].val.string_val= etag;
-		
+
 		if(xcap_dbf.update(xcap_db, query_cols, 0, query_vals, update_cols,
 					update_vals, n_query_cols, n_update_cols)< 0)
 		{
