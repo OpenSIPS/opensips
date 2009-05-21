@@ -38,6 +38,9 @@
  * 2007-07-18  removed index stuff 
  * 			   added DB support to load/reload data(ancuta)
  * 2007-09-17  added list-file support for reload data (carstenbock)
+ * 2009-05-18  Added support for weights for the destinations;
+ *             added support for custom "attrs" (opaque string) (bogdan)
+
  */
 
 #include <stdio.h>
@@ -268,7 +271,7 @@ int reindex_dests(int list_idx, int setn)
 				dp0[j].next = NULL;
 			else
 				dp0[j].next = &dp0[j+1];
-	
+
 			dp = sp->dlist;
 			sp->dlist = dp->next;
 			
@@ -1232,7 +1235,7 @@ int ds_select_dst(struct sip_msg *msg, int set, int alg, int mode)
 			idx->dlist[ds_id].uri.len, idx->dlist[ds_id].uri.s);
 
 	if(!(ds_flags&DS_FAILOVER_ON))
-		return 1;
+		goto done;
 
 	if(dst_avp_name.n!=0)
 	{
@@ -1242,6 +1245,11 @@ int ds_select_dst(struct sip_msg *msg, int set, int alg, int mode)
 			if(add_avp(AVP_VAL_STR|dst_avp_type, dst_avp_name, avp_val)!=0)
 				return -1;
 			cnt++;
+			if (attrs_avp_name.n) {
+				avp_val.s = idx->dlist[idx->nr-1].attrs;
+				if(!add_avp(AVP_VAL_STR|attrs_avp_type,attrs_avp_name,avp_val))
+					return -1;
+			}
 		}
 	
 		/* add to avp */
@@ -1256,6 +1264,11 @@ int ds_select_dst(struct sip_msg *msg, int set, int alg, int mode)
 			if(add_avp(AVP_VAL_STR|dst_avp_type, dst_avp_name, avp_val)!=0)
 				return -1;
 			cnt++;
+			if (attrs_avp_name.n) {
+				avp_val.s = idx->dlist[i].attrs;
+				if(!add_avp(AVP_VAL_STR|attrs_avp_type,attrs_avp_name,avp_val))
+					return -1;
+			}
 		}
 
 		for(i=idx->nr-1; i>ds_id; i--)
@@ -1268,6 +1281,11 @@ int ds_select_dst(struct sip_msg *msg, int set, int alg, int mode)
 			if(add_avp(AVP_VAL_STR|dst_avp_type, dst_avp_name, avp_val)!=0)
 				return -1;
 			cnt++;
+			if (attrs_avp_name.n) {
+				avp_val.s = idx->dlist[i].attrs;
+				if(!add_avp(AVP_VAL_STR|attrs_avp_type,attrs_avp_name,avp_val))
+					return -1;
+			}
 		}
 
 		/* add to avp the first used dst */
@@ -1275,6 +1293,13 @@ int ds_select_dst(struct sip_msg *msg, int set, int alg, int mode)
 		if(add_avp(AVP_VAL_STR|dst_avp_type, dst_avp_name, avp_val)!=0)
 			return -1;
 		cnt++;
+	}
+
+done:
+	if (attrs_avp_name.n) {
+		avp_val.s = idx->dlist[ds_id].attrs;
+		if(!add_avp(AVP_VAL_STR|attrs_avp_type,attrs_avp_name,avp_val))
+			return -1;
 	}
 
 	if(grp_avp_name.n!=0)
@@ -1292,7 +1317,7 @@ int ds_select_dst(struct sip_msg *msg, int set, int alg, int mode)
 		if(add_avp(cnt_avp_type, cnt_avp_name, avp_val)!=0)
 			return -1;
 	}
-	
+
 	return 1;
 }
 

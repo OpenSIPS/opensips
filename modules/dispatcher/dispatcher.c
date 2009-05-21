@@ -33,6 +33,8 @@
  *				to ds_is_from_list.  (carsten)
  * 2007-07-18  Added support for load/reload groups from DB 
  * 			   reload triggered from ds_reload MI_Command (ancuta)
+ * 2009-05-18  Added support for weights for the destinations;
+ * 			   added support for custom "attrs" (opaque string) (bogdan)
  */
 
 #include <stdio.h>
@@ -69,6 +71,7 @@ int  ds_use_default = 0;
 static str dst_avp_param = {NULL, 0};
 static str grp_avp_param = {NULL, 0};
 static str cnt_avp_param = {NULL, 0};
+static str attrs_avp_param = {NULL, 0};
 str hash_pvar_param = {NULL, 0};
 
 int_str dst_avp_name;
@@ -77,6 +80,8 @@ int_str grp_avp_name;
 unsigned short grp_avp_type;
 int_str cnt_avp_name;
 unsigned short cnt_avp_type;
+int_str attrs_avp_name;
+unsigned short attrs_avp_type;
 
 pv_elem_t * hash_param_model = NULL;
 
@@ -165,6 +170,7 @@ static param_export_t params[]={
 	{"dst_avp",         STR_PARAM, &dst_avp_param.s},
 	{"grp_avp",         STR_PARAM, &grp_avp_param.s},
 	{"cnt_avp",         STR_PARAM, &cnt_avp_param.s},
+	{"attrs_avp",       STR_PARAM, &attrs_avp_param.s},
 	{"hash_pvar",       STR_PARAM, &hash_pvar_param.s},
 	{"setid_pvname",    STR_PARAM, &ds_setid_pvname.s},
 	{"ds_probing_threshhold", INT_PARAM, &probing_threshhold},
@@ -215,6 +221,8 @@ static int mod_init(void)
 		grp_avp_param.len = strlen(grp_avp_param.s);
 	if (cnt_avp_param.s)
 		cnt_avp_param.len = strlen(cnt_avp_param.s);
+	if (attrs_avp_param.s)
+		attrs_avp_param.len = strlen(attrs_avp_param.s);
 	if (hash_pvar_param.s)
 		hash_pvar_param.len = strlen(hash_pvar_param.s);
 	if (ds_setid_pvname.s)
@@ -321,6 +329,25 @@ static int mod_init(void)
 	} else {
 		cnt_avp_name.n = 0;
 		cnt_avp_type = 0;
+	}
+
+	if (attrs_avp_param.s && attrs_avp_param.len > 0) {
+		if (pv_parse_spec(&attrs_avp_param, &avp_spec)==0
+		|| avp_spec.type!=PVT_AVP) {
+			LM_ERR("malformed or non AVP %.*s AVP definition\n",
+					attrs_avp_param.len, attrs_avp_param.s);
+			return -1;
+		}
+
+		if (pv_get_avp_name(0, &(avp_spec.pvp), &attrs_avp_name,
+		&attrs_avp_type)!=0){
+			LM_ERR("[%.*s]- invalid AVP definition\n", attrs_avp_param.len,
+					attrs_avp_param.s);
+			return -1;
+		}
+	} else {
+		attrs_avp_name.n = 0;
+		attrs_avp_type = 0;
 	}
 
 	if (hash_pvar_param.s && *hash_pvar_param.s) {

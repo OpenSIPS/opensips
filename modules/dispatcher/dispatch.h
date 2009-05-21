@@ -25,11 +25,13 @@
  * -------
  * 2004-07-31  first version, by daniel
  * 2007-01-11  Added a function to check if a specific gateway is in
- *		a group (carsten)
+ *              a group (carsten)
  * 2007-02-09  Added active probing of failed destinations and automatic
- *		re-enabling of destinations
+ *              re-enabling of destinations
  * 2007-05-08  Ported the changes to SVN-Trunk and renamed ds_is_domain
- *		to ds_is_from_list.
+ *              to ds_is_from_list.
+ * 2009-05-18  Added support for weights for the destinations;
+ *              added support for custom "attrs" (opaque string) (bogdan)
  */
 
 #ifndef _DISPATCH_H_
@@ -65,6 +67,8 @@ extern int_str grp_avp_name;
 extern unsigned short grp_avp_type;
 extern int_str cnt_avp_name;
 extern unsigned short cnt_avp_type;
+extern int_str attrs_avp_name;
+extern unsigned short attrs_avp_type;
 
 extern pv_elem_t * hash_param_model;
 
