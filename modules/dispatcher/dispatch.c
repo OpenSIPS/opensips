@@ -1325,24 +1325,29 @@ int ds_next_dst(struct sip_msg *msg, int mode)
 {
 	struct usr_avp *avp;
 	struct usr_avp *prev_avp;
+	struct usr_avp *attr_avp;
 	int_str avp_value;
-	
+
 	if(!(ds_flags&DS_FAILOVER_ON) || dst_avp_name.n==0)
 	{
 		LM_WARN("failover support disabled\n");
 		return -1;
 	}
 
-
-	prev_avp = search_first_avp(dst_avp_type, dst_avp_name, &avp_value, 0);
+	prev_avp = search_first_avp(dst_avp_type, dst_avp_name, NULL, 0);
 	if(prev_avp==NULL)
 		return -1; /* used avp deleted -- strange */
 
 	avp = search_next_avp(prev_avp, &avp_value);
 	destroy_avp(prev_avp);
+
+	attr_avp = search_first_avp(attrs_avp_type, attrs_avp_name, NULL, 0);
+	if (attr_avp)
+		destroy_avp(attr_avp);
+
 	if(avp==NULL || !(avp->flags&AVP_VAL_STR))
 		return -1; /* no more avps or value is int */
-	
+
 	if(ds_update_dst(msg, &avp_value.s, mode)!=0)
 	{
 		LM_ERR("cannot set dst addr\n");
@@ -1352,6 +1357,7 @@ int ds_next_dst(struct sip_msg *msg, int mode)
 	
 	return 1;
 }
+
 
 int ds_mark_dst(struct sip_msg *msg, int mode)
 {
