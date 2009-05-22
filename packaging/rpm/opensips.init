@@ -12,16 +12,45 @@
 # Source function library.
 . /etc/rc.d/init.d/functions
 
-OSIPS=/usr/sbin/opensips
+OSER=/usr/sbin/opensips
 PROG=opensips
 PID_FILE=/var/run/opensips.pid
 LOCK_FILE=/var/lock/subsys/opensips
-OPTIONS="-P $PID_FILE"
 RETVAL=0
+DEFAULTS=/etc/default/opensips
+RUN_OPENSIPS=no
+
+
+# Do not start opensips if fork=no is set in the config file
+# otherwise the boot process will just stop
+check_fork ()
+{
+    if grep -q "^[[:space:]]*fork[[:space:]]*=[[:space:]]*no.*" /etc/opensips/opensips.cfg; then
+        echo "Not starting $DESC: fork=no specified in config file; run /etc/init.d/opensips debug instead"
+        exit 1
+    fi
+}
+
+check_opensips_config ()
+{
+        # Check if opensips configuration is valid before starting the server
+        out=$($OSER -c 2>&1 > /dev/null)
+        retcode=$?
+        if [ "$retcode" != '0' ]; then
+            echo "Not starting $DESC: invalid configuration file!"
+            echo -e "\n$out\n"
+            exit 1
+        fi
+}
+
 
 start() {
+	check_opensips_config
+        if [ "$1" != "debug" ]; then
+            check_fork
+        fi
 	echo -n $"Starting $PROG: "
-	daemon $OSIPS $OPTIONS >/dev/null 2>/dev/null
+	daemon $OSER $OPTIONS >/dev/null 2>/dev/null
 	RETVAL=$?
 	echo
 	[ $RETVAL = 0 ] && touch $LOCK_FILE
@@ -30,22 +59,52 @@ start() {
 
 stop() {
 	echo -n $"Stopping $PROG: "
-	killproc $OSIPS
+	killproc $OSER
 	RETVAL=$?
 	echo
 	[ $RETVAL = 0 ] && rm -f $LOCK_FILE $PID_FILE
 }
 
+# Load startup options if available
+if [ -f $DEFAULTS ]; then
+   . $DEFAULTS || true
+fi
+
+if [ "$RUN_OPENSIPS" != "yes" ]; then
+    echo "OpenSIPS not yet configured. Edit /etc/default/opensips first."
+    exit 0
+fi
+
+
+MEMORY=$((`echo $MEMORY | sed -e 's/[^0-9]//g'`))
+[ -z "$USER" ]  && USER=opensips
+[ -z "$GROUP" ] && GROUP=opensips
+[ $MEMORY -le 0 ] && MEMORY=32
+
+if test "$DUMP_CORE" = "yes" ; then
+    # set proper ulimit
+    ulimit -c unlimited
+
+    # directory for the core dump files
+    # COREDIR=/home/corefiles
+    # [ -d $COREDIR ] || mkdir $COREDIR
+    # chmod 777 $COREDIR
+    # echo "$COREDIR/core.%e.sig%s.%p" > /proc/sys/kernel/core_pattern
+fi
+
+OPTIONS="-P $PID_FILE -m $MEMORY -u $USER -g $GROUP"
+
+
 # See how we were called.
 case "$1" in
-	start)
+	start|debug)
 		start
 		;;
 	stop)
 		stop
 		;;
 	status)
-		status $OSIPS
+		status $OSER
 		RETVAL=$?
 		;;
 	restart)
@@ -59,7 +118,7 @@ case "$1" in
 		fi
 		;;
 	*)
-		echo $"Usage: $PROG {start|stop|restart|condrestart|status|help}"
+		echo $"Usage: $PROG {start|stop|restart|condrestart|status|debug|help}"
 		exit 1
 esac
 
