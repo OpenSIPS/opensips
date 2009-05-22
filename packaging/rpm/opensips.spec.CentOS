@@ -21,8 +21,9 @@ Release:      %rel
 Packager:     Bogdan-Andrei Iancu <bogdan@voice-system.ro>
 License:      GPL
 Group:        System Environment/Daemons
-source:       http://opensips.org/pub/opensips/%{ver}/src/%{name}-%{ver}-tls_src.tar.gz
-Source2:      opensips.init
+Source0:      http://opensips.org/pub/opensips/%{ver}/src/%{name}-%{ver}-tls_src.tar.gz
+Source1:      opensips.init
+Source2:      opensips.default
 URL:          http://opensips.org/
 Vendor:       opensips.org
 BuildRoot:    %{_tmppath}/%{name}-%{ver}-buildroot
@@ -47,7 +48,7 @@ interface.
 %package  snmpstats
 Summary:  SNMP AgentX subagent module for OpenSIPS
 Group:    System Environment/Daemons
-Requires: opensips = %ver
+Requires: opensips = %ver, net-snmp-utils
 BuildPrereq:  lm_sensors-devel
 
 %description snmpstats
@@ -61,7 +62,7 @@ as an AgentX subagent which connects to a master agent.
 Summary:  MySQL connectivity for the OpenSIPS.
 Group:    System Environment/Daemons
 Requires: opensips = %ver
-BuildPrereq:  mysql-devel zlib-devel
+BuildPrereq:  mysql-devel, zlib-devel
 
 %description mysql
 The opensips-mysql package contains MySQL database connectivity that you
@@ -120,7 +121,7 @@ The opensips-pua package contains a sip Presence Agent.
 Summary:  opensips radius authentication, group and uri check modules.
 Group:    System Environment/Daemons
 Requires: opensips = %ver
-BuildPrereq:  radiusclient-devel
+BuildPrereq:  radiusclient-ng-devel
 
 %description radius
 The opensips-radius package contains modules for radius authentication, group
@@ -234,6 +235,9 @@ mkdir -p $RPM_BUILD_ROOT/%{_sysconfdir}/rc.d/init.d
 install -m755 $RPM_SOURCE_DIR/opensips.init \
               $RPM_BUILD_ROOT/%{_sysconfdir}/rc.d/init.d/opensips
 
+mkdir -p $RPM_BUILD_ROOT/%{_sysconfdir}/default
+install -m755 $RPM_SOURCE_DIR/opensips.default \
+              $RPM_BUILD_ROOT/%{_sysconfdir}/default/opensips
 
 
 
@@ -315,6 +319,7 @@ fi
 %dir %{_sysconfdir}/opensips
 %config(noreplace) %{_sysconfdir}/opensips/*
 %config %{_sysconfdir}/rc.d/init.d/*
+%config %{_sysconfdir}/default/*
 
 %dir %{_libdir}/opensips
 %dir %{_libdir}/opensips/modules
@@ -461,6 +466,10 @@ fi
 
 
 %changelog
+* Fri May 22 2009 Marc Leurent <marc.leurent@vtx-telecom.ch>
+- Add /etc/default/opensips file to allow shared memory configuration
+- Modify snmpstats Requires to add net-snmp-utils
+
 * Thu Mar 05 2009 Marc Leurent <marc.leurent@vtx-telecom.ch>
 - Add snmpstats packaging
 - Add snmpstats packaging build requirements
