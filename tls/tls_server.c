@@ -287,7 +287,8 @@ tls_accept(struct tcp_connection *c)
 				return 0;
 		
 			default:
-				LM_ERR("some error in SSL:\n");
+				LM_ERR("some error in SSL (ret=%d, err=%d, errno=%d/%s):\n",
+					ret, err, errno, strerror(errno));
 				c->state = S_CONN_BAD;
 				tls_print_errstack();
 				return -1;
