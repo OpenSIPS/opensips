@@ -102,4 +102,11 @@ unsigned long get_number_of_users(unsigned short);
 int find_domain(str* _d, udomain_t** _p);
 
 
+/*! \brief
+ * Returnes the next udomain, folloing the given one (as param)
+ */
+typedef udomain_t* (*get_next_udomain_t) (udomain_t* _d);
+udomain_t* get_next_udomain(udomain_t *_d);
+
+
 #endif /* UDLIST_H */

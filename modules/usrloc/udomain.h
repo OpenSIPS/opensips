@@ -125,21 +125,31 @@ void mem_delete_urecord(udomain_t* _d, struct urecord* _r);
 
 
 /*! \brief
- * Get lock
+ * Locks the domain hash entrie corresponding to AOR
  */
 typedef void (*lock_udomain_t)(udomain_t* _d, str *_aor);
 void lock_udomain(udomain_t* _d, str *_aor);
 
 
 /*! \brief
- * Release lock
+ *  Unlocks the domain hash entrie corresponding to AOR
  */
 typedef void (*unlock_udomain_t)(udomain_t* _d, str *_aor);
 void unlock_udomain(udomain_t* _d, str *_aor);
 
 
-void lock_ulslot(udomain_t* _d, int i);
-void unlock_ulslot(udomain_t* _d, int i);
+/*! \brief
+ * Locks the specific domain hash entrie
+ */
+typedef void (*lock_ulslot_t)(udomain_t* _d, int slot);
+void lock_ulslot(udomain_t* _d, int slot);
+
+
+/*! \brief
+ * Unlocks the specific domain hash entrie
+ */
+typedef void (*unlock_ulslot_t)(udomain_t* _d, int slot);
+void unlock_ulslot(udomain_t* _d, int slot);
 
 /* ===== module interface ======= */
 
@@ -164,5 +174,12 @@ int get_urecord(udomain_t* _d, str* _aor, struct urecord** _r);
 typedef int  (*delete_urecord_t)(udomain_t* _d, str* _a, struct urecord* _r);
 int delete_urecord(udomain_t* _d, str* _aor, struct urecord* _r);
 
+
+/*
+ * Get pointer to the next urecord from the udomain
+ */
+typedef struct urecord* (*get_next_urecord_t)(udomain_t* _d, int _slot,
+		struct urecord* _r);
+struct urecord* get_next_urecord(udomain_t *_d, int _slot, struct urecord *_r);
 
 #endif /* UDOMAIN_H */

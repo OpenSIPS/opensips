@@ -60,6 +60,8 @@ int bind_usrloc(usrloc_api_t* api)
 	api->get_urecord        = get_urecord;
 	api->lock_udomain       = lock_udomain;
 	api->unlock_udomain     = unlock_udomain;
+	api->lock_ulslot        = lock_ulslot;
+	api->unlock_ulslot      = unlock_ulslot;
 	api->release_urecord    = release_urecord;
 	api->insert_ucontact    = insert_ucontact;
 	api->delete_ucontact    = delete_ucontact;

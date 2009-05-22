@@ -57,6 +57,18 @@ dlist_t* root = 0;
 
 
 /*! \brief
+ * Returned the first udomain if input param in NULL or the next following
+ * udomain after the given udomain
+ */
+udomain_t* get_next_udomain(udomain_t *_d)
+{
+	if (_d==NULL)
+		return root->d;
+	return ((dlist_t*)((char*)(_d)-(unsigned long)(&((dlist_t*)0)->d)))->next->d;
+}
+
+
+/*! \brief
  * Find domain with the given name
  * \return 0 if the domain was found
  * and 1 of not

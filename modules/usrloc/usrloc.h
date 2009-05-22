@@ -59,6 +59,11 @@ typedef struct usrloc_api {
 
 	update_ucontact_t    update_ucontact;
 
+	get_next_udomain_t   get_next_udomain;
+	get_next_urecord_t   get_next_urecord;
+	lock_ulslot_t        lock_ulslot;
+	unlock_ulslot_t      unlock_ulslot;
+
 	register_ulcb_t      register_ulcb;
 } usrloc_api_t;
 

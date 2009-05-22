@@ -849,3 +849,17 @@ int delete_urecord(udomain_t* _d, str* _aor, struct urecord* _r)
 	release_urecord(_r);
 	return 0;
 }
+
+
+urecord_t* get_next_urecord(udomain_t *_d, int _slot, urecord_t *_r)
+{
+	if (_r==NULL) {
+		if (_slot<0 || _slot>=_d->size) {
+			LM_CRIT("BUG - slot %d out of range [0,%d]\n",_slot,_d->size-1);
+			return NULL;
+		}
+		return _d->table[_slot].first;
+	}
+	return _r->next;
+}
+
