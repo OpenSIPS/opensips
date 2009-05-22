@@ -103,7 +103,7 @@ int find_domain(str* _d, udomain_t** _p);
 
 
 /*! \brief
- * Returnes the next udomain, folloing the given one (as param)
+ * Returnes the next udomain, following the given one (as param)
  */
 typedef udomain_t* (*get_next_udomain_t) (udomain_t* _d);
 udomain_t* get_next_udomain(udomain_t *_d);
