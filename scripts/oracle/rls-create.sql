@@ -1,4 +1,4 @@
-INSERT INTO version (table_name, table_version) values ('rls_presentity','0');
+INSERT INTO version (table_name, table_version) values ('rls_presentity','1');
 CREATE TABLE rls_presentity (
     id NUMBER(10) PRIMARY KEY,
     rlsubs_did VARCHAR2(255),
