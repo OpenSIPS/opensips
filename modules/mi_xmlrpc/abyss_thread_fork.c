@@ -174,9 +174,7 @@ ThreadUpdateStatus(TThread * const threadP) {
 
     if (!threadP->useSigchld) {
         if (threadP->pid) {
-            LM_ERR("thread %p with pid %u active\n",threadP,threadP->pid);
             if (kill(threadP->pid, 0) != 0) {
-                LM_ERR("thread %u detected as terminated by kil\n",threadP->pid);
                 if (threadP->threadDone)
                     threadP->threadDone(threadP->userHandle);
                 threadP->pid = 0;
@@ -225,12 +223,10 @@ ThreadCreate(TThread **      const threadPP,
         else if (rc == 0) {
             /* This is the child */
             (*func)(userHandle);
-            LM_ERR("thread %u terminating\n",getpid());
             exit(0);
         } else {
             /* This is the parent */
             threadP->pid = rc;
-            LM_ERR("thread %u created\n",threadP->pid);
 
             addToPool(threadP);
 

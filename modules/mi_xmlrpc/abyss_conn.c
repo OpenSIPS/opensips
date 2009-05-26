@@ -41,7 +41,6 @@ connJob(void * const userHandle) {
            after we exit.
         */
 
-    LM_ERR("thread %u terminating\n",getpid());
     ThreadExit(0);
 }
 
@@ -53,7 +52,6 @@ connDone(TConn * const connectionP) {
     /* In the forked case, this is designed to run in the parent
        process after the child has terminated.
     */
-    LM_ERR("conn %p set as finished (done)\n",connectionP);
     connectionP->finished = TRUE;
 
     if (connectionP->done)
@@ -139,7 +137,6 @@ ConnCreate(TConn **            const connectionPP,
 
     MALLOCVAR(connectionP);
 
-    LM_ERR("conn %p created\n",connectionP);
     if (connectionP == NULL)
         xmlrpc_asprintf(errorP, "Unable to allocate memory for a connection "
                         "descriptor.");
@@ -214,7 +211,6 @@ ConnWaitAndRelease(TConn * const connectionP) {
 
 abyss_bool
 ConnKill(TConn * connectionP) {
-    LM_ERR("conn %p set as finished (kill)\n",connectionP);
     connectionP->finished = TRUE;
     return ThreadKill(connectionP->threadP);
 }
