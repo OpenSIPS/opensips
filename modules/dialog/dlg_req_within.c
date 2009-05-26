@@ -252,7 +252,8 @@ static inline int send_bye(struct dlg_cell * cell, int dir, str *extra_hdrs)
 		NULL,          /* body*/
 		dialog_info,   /* dialog structure*/
 		bye_reply_cb,  /* callback function*/
-		(void*)cell);  /* callback parameter*/
+		(void*)cell,   /* callback parameter*/
+		NULL);         /* release function*/
 
 	if(result < 0){
 		LM_ERR("failed to send the BYE request\n");

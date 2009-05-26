@@ -900,7 +900,8 @@ insert:
 			0,							  /* Message body */
 			subs->outbound_proxy,		  /* Outbound_proxy */	
 			subs_cback_func,		      /* Callback function */
-			(void*)hentity			      /* Callback parameter */
+			(void*)hentity,			      /* Callback parameter */
+			0
 			);
 		if(result< 0)
 		{
@@ -984,7 +985,8 @@ insert:
 			0,
 			td,
 			subs_cback_func,
-			(void*)hentity
+			(void*)hentity,
+			0
 			);
 		if(result< 0)
 		{

@@ -193,7 +193,7 @@ static inline struct sip_msg* buf_to_sip_msg(char *buf, unsigned int len,
  * Send a request using data from the dialog structure
  */
 int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
-												transaction_cb cb, void* cbp)
+				transaction_cb cb, void* cbp,release_tmcb_param release_func)
 {
 	union sockaddr_union to_su;
 	struct cell *new_cell;
@@ -232,7 +232,7 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 		}
 	}
 
-	new_cell = build_cell(0); 
+	new_cell = build_cell(0);
 	if (!new_cell) {
 		ret=E_OUT_OF_MEM;
 		LM_ERR("short of cell shmem\n");
@@ -247,7 +247,7 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 	/* Add also TMCB_LOCAL_RESPONSE_OUT if provisional replies are desired */
 	if (pass_provisional_replies || pass_provisional(new_cell))
 		flags |= TMCB_LOCAL_RESPONSE_OUT;
-	if(cb && insert_tmcb(&(new_cell->tmcb_hl),flags,cb,cbp,0)!=1){
+	if(cb && insert_tmcb(&(new_cell->tmcb_hl),flags,cb,cbp,release_func)!=1){
 		ret=E_OUT_OF_MEM;
 		LM_ERR("short of tmcb shmem\n");
 		goto error2;
@@ -356,7 +356,7 @@ error2:
  * Send a message within a dialog
  */
 int req_within(str* method, str* headers, str* body, dlg_t* dialog,
-									transaction_cb completion_cb, void* cbp)
+		transaction_cb completion_cb,void* cbp,release_tmcb_param release_func)
 {
 	if (!method || !dialog) {
 		LM_ERR("invalid parameter value\n");
@@ -373,7 +373,8 @@ int req_within(str* method, str* headers, str* body, dlg_t* dialog,
 		dialog->loc_seq.value++; /* Increment CSeq */
 	}
 
-	return t_uac(method, headers, body, dialog, completion_cb, cbp);
+	return t_uac(method, headers, body, dialog,
+		completion_cb, cbp, release_func);
 err:
 	return -1;
 }
@@ -382,8 +383,9 @@ err:
 /*
  * Send an initial request that will start a dialog
  */
-int req_outside(str* method, str* to, str* from, str* headers, str* body,
-								dlg_t** dialog, transaction_cb cb, void* cbp)
+int req_outside(str* method, str* to, str* from,
+	str* headers, str* body, dlg_t** dialog,
+	transaction_cb cb, void* cbp,release_tmcb_param release_func)
 {
 	str callid, fromtag;
 
@@ -397,7 +399,7 @@ int req_outside(str* method, str* to, str* from, str* headers, str* body,
 		goto err;
 	}
 
-	return t_uac(method, headers, body, *dialog, cb, cbp);
+	return t_uac(method, headers, body, *dialog, cb, cbp, release_func);
 err:
 	return -1;
 }
@@ -407,7 +409,7 @@ err:
  * Send a transactional request, no dialogs involved
  */
 int request(str* m, str* ruri, str* to, str* from, str* h, str* b, str *oburi,
-											transaction_cb cb, void* cbp)
+				transaction_cb cb, void* cbp,release_tmcb_param release_func)
 {
 	str callid, fromtag;
 	dlg_t* dialog;
@@ -433,7 +435,7 @@ int request(str* m, str* ruri, str* to, str* from, str* h, str* b, str *oburi,
 
 	w_calculate_hooks(dialog);
 
-	res = t_uac(m, h, b, dialog, cb, cbp);
+	res = t_uac(m, h, b, dialog, cb, cbp, release_func);
 	dialog->rem_target.s = 0;
 	free_dlg(dialog);
 	return res;

@@ -818,7 +818,8 @@ static int m_store(struct sip_msg* msg, char* owner, char* s2)
 			&notify_body,     /* Message body */
 			(ms_outbound_proxy.s)?&ms_outbound_proxy:0, /* outbound uri */
 			NULL,             /* Callback function */
-			NULL              /* Callback parameter */
+			NULL,             /* Callback parameter */
+			NULL
 		);
 
 done:
@@ -1038,7 +1039,8 @@ static int m_dump(struct sip_msg* msg, char* owner, char* str2)
 					(ms_outbound_proxy.s)?&ms_outbound_proxy:0,
 									/* outbound uri */
 					m_tm_callback,    /* Callback function */
-					(void*)(long)mid  /* Callback parameter */
+					(void*)(long)mid, /* Callback parameter */
+					NULL
 				);
 	}
 
@@ -1301,7 +1303,8 @@ void m_send_ontimer(unsigned int ticks, void *param)
 					(ms_outbound_proxy.s)?&ms_outbound_proxy:0,
 							/* outbound uri */
 					m_tm_callback,    /* Callback function */
-					(void*)(long)mid  /* Callback parameter */
+					(void*)(long)mid,  /* Callback parameter */
+					NULL
 				);
 	}
 

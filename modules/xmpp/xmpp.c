@@ -274,7 +274,8 @@ int xmpp_send_sip_msg(char *from, char *to, char *msg)
 			&msgstr,						/* Message body */
 	(outbound_proxy.s)?&outbound_proxy:NULL,/* Outbound proxy*/
 			0,								/* Callback function */
-			0								/* Callback parameter */
+			0,								/* Callback parameter */
+			0
 			);
 }
 

@@ -1708,7 +1708,8 @@ jump_over_body:
 		notify_body,        /* body*/
 		td,                 /* dialog structure*/
 		p_tm_callback,      /* callback function*/
-		(void*)cb_param);   /* callback parameter*/
+		(void*)cb_param,    /* callback parameter*/
+		NULL);
 
 	if(result< 0)
 	{

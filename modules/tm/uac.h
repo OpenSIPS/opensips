@@ -41,9 +41,12 @@ extern int pass_provisional_replies;
 /*
  * Function prototypes
  */
-typedef int (*reqwith_t)(str* m, str* h, str* b, dlg_t* d, transaction_cb c, void* cp);
-typedef int (*reqout_t)(str* m, str* t, str* f, str* h, str* b, dlg_t** d, transaction_cb c, void* cp);
-typedef int (*req_t)(str* m, str* ruri, str* t, str* f, str* h, str* b, str *oburi, transaction_cb c, void* cp);
+typedef int (*reqwith_t)(str* m, str* h, str* b, dlg_t* d,
+		transaction_cb c, void* cp, release_tmcb_param release_func);
+typedef int (*reqout_t)(str* m, str* t, str* f, str* h, str* b, dlg_t** d,
+		transaction_cb c, void* cp, release_tmcb_param release_func);
+typedef int (*req_t)(str* m, str* ru, str* t, str* f, str* h, str* b, str *obu,
+		transaction_cb c, void* cp,release_tmcb_param release_func);
 
 
 /*
@@ -61,25 +64,29 @@ int uac_init(void);
 /*
  * Send a request
  */
-int t_uac(str* method, str* headers, str* body, dlg_t* dialog, transaction_cb cb, void* cbp);
+int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
+		transaction_cb cb, void* cbp, release_tmcb_param release_func);
 
 
 /*
  * Send a message within a dialog
  */
-int req_within(str* m, str* h, str* b, dlg_t* d, transaction_cb c, void* cp);
+int req_within(str* m, str* h, str* b, dlg_t* d,
+		transaction_cb c, void* cp, release_tmcb_param release_func);
 
 
 /*
  * Send an initial request that will start a dialog
  */
-int req_outside(str* m, str* t, str* f, str* h, str* b, dlg_t** d, transaction_cb c, void* cp);
+int req_outside(str* m, str* t, str* f, str* h, str* b, dlg_t** d,
+	transaction_cb c, void* cp, release_tmcb_param release_func);
 
 
 /*
  * Send a transactional request, no dialogs involved
  */
-int request(str* m, str* ruri, str* to, str* from, str* h, str* b, str *oburi, transaction_cb c, void* cp);
+int request(str* m, str* ruri, str* to, str* from, str* h, str* b, str *oburi,
+		transaction_cb c, void* cp, release_tmcb_param release_func);
 
 
 #endif

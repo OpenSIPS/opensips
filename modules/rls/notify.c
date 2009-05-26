@@ -756,7 +756,8 @@ int rls_send_notify(subs_t* subs, str* body, str* start_cid,
 		body,
 		td,
 		rls_notify_callback,
-		(void*)cb_param);
+		(void*)cb_param,
+		NULL);
 
 	if(rt < 0)
 	{

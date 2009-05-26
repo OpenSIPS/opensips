@@ -495,7 +495,8 @@ int imc_handle_invite(struct sip_msg* msg, imc_cmd_t *cmd,
 				&body,						            /* Message body */
 				(outbound_proxy.s)?&outbound_proxy:NULL,/* outbound proxy*/
 				imc_inv_callback,						/* callback function*/
-				(void*)(cback_param)					/* callback param*/
+				(void*)(cback_param),					/* callback param*/
+				NULL
 			);				
 	if(result< 0)
 	{
@@ -982,7 +983,8 @@ int imc_handle_help(struct sip_msg* msg, imc_cmd_t *cmd, str *src, str *dst)
 				&body,									/* Body */
 				(outbound_proxy.s)?&outbound_proxy:NULL,/* outbound proxy */
 				NULL,									/* callback function */
-				NULL									/* callback parameter*/
+				NULL,									/* callback parameter*/
+				NULL
 				);
 	return 0;
 }
@@ -1014,7 +1016,8 @@ int imc_handle_unknown(struct sip_msg* msg, imc_cmd_t *cmd, str *src, str *dst)
 				&body,									/* Body */
 				(outbound_proxy.s)?&outbound_proxy:NULL,/* outbound proxy */
 				NULL,									/* callback function */
-				NULL									/* callback parameter*/
+				NULL,									/* callback parameter*/
+				NULL
 			);
 	return 0;
 }
@@ -1120,7 +1123,8 @@ int imc_send_message(str *src, str *dst, str *headers, str *body)
 			body,										/* Body */
 			(outbound_proxy.s)?&outbound_proxy:NULL,	/* outbound proxy */
 			NULL,										/* callback function */
-			NULL										/* callback parameter */
+			NULL,										/* callback parameter */
+			NULL
 		);
 	return 0;
 }
@@ -1213,7 +1217,8 @@ send_message:
 					&body_final,							/* Body */
 					(outbound_proxy.s)?&outbound_proxy:NULL,/* outbound proxy*/
 					NULL,								/* callback function */
-					NULL								/* callback parameter*/
+					NULL,								/* callback parameter*/
+					NULL
 				);
 	if(room!=NULL)
 	{

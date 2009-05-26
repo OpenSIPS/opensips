@@ -569,7 +569,8 @@ send_publish:
 			body,									/* Message body */
 			(publ->outbound_proxy.s)?&publ->outbound_proxy:0,/*Outbound proxy*/
 			publ_cback_func,						/* Callback function */
-			(void*)cb_param							/* Callback parameter */
+			(void*)cb_param,						/* Callback parameter */
+			0
 			);
 
 	if(result< 0)

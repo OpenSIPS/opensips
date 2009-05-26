@@ -297,7 +297,8 @@ int send_sip_msg_request(str *to, str *from_user, str *body)
 			body,                     /* Message body */
 			0,                        /* outbound uri */
 			0,                        /* Callback function */
-			0                         /* Callback parameter */
+			0,                        /* Callback parameter */
+			0
 		);
 	if (from.s) pkg_free(from.s);
 	if (hdrs.s) pkg_free(hdrs.s);

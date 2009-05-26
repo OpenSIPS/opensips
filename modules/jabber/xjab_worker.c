@@ -1184,10 +1184,10 @@ int xj_send_sip_msg(str *proxy, str *to, str *from, str *msg, int *cbp)
 		LM_DBG("uac callback parameter [%p==%d]\n", cbp, *cbp);
 #endif
 		return tmb.t_request(&msg_type, 0, to, &tfrom, &str_hdr, msg, 
-						0, xj_tuac_callback, (void*)cbp);
+						0, xj_tuac_callback, (void*)cbp, 0);
 	}
 	else
-		return tmb.t_request(&msg_type, 0, to, &tfrom, &str_hdr, msg, 0, 0, 0);
+		return tmb.t_request(&msg_type, 0, to, &tfrom, &str_hdr, msg, 0, 0, 0, 0);
 }
 
 /**

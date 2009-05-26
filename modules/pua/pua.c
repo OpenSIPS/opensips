@@ -663,7 +663,8 @@ int update_pua(ua_pres_t* p, unsigned int hash_code)
 				0,										/* Message body */
 				(p->outbound_proxy)?p->outbound_proxy:0,	/* Outbound proxy*/
 				publ_cback_func,						/* Callback function */
-				(void*)cb_param							/* Callback parameter*/
+				(void*)cb_param,						/* Callback parameter*/
+				0
 				);
 		if(result< 0)
 		{
@@ -706,7 +707,8 @@ int update_pua(ua_pres_t* p, unsigned int hash_code)
 				0,
 				td,
 				subs_cback_func,
-				(void*)cb_param	
+				(void*)cb_param,
+				0
 				);
 		if(result< 0)
 		{

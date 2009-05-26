@@ -1071,7 +1071,7 @@ int ac_uac_req(as_p the_as,char *action,int len)
       my_dlg->hooks.next_hop=&fake_uri;
    }
    my_dlg->T_flags=T_NO_AUTOACK_FLAG|T_PASS_PROVISIONAL_FLAG ;
-   ret=seas_f.tmb.t_request_within(&(my_msg->first_line.u.request.method),&headers,&body,my_dlg,uac_cb,(void *)the_param);
+   ret=seas_f.tmb.t_request_within(&(my_msg->first_line.u.request.method),&headers,&body,my_dlg,uac_cb,(void *)the_param,NULL);
    /** now undo all the fakes we have put in my_dlg*/
    /*because my_dlg->route_set should be shm but we fake it (its pkg_mem)*/
    my_dlg->route_set=(rr_t *)0;

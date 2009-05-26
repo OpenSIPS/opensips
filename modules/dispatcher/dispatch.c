@@ -1767,7 +1767,8 @@ void ds_check_timer(unsigned int ticks, void* param)
 							NULL,
 							NULL,
 							ds_options_callback,
-							(void*)(long)list->id) < 0) {
+							(void*)(long)list->id,
+							NULL) < 0) {
 					LM_ERR("unable to execute dialog\n");
 				}
 			}
