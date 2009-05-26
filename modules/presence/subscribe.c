@@ -64,6 +64,10 @@ int send_2XX_reply(struct sip_msg * msg, int reply_code, int lexpire,
 	int len;
 	char *p;
 
+	lexpire -= expires_offset;
+	if(lexpire < 0 )
+		lexpire = 0;
+
 	lexpire_s = int2str((unsigned long)lexpire, &lexpire_len);
 
 	len = 9 /*"Expires: "*/ + lexpire_len + CRLF_LEN
@@ -1515,7 +1519,7 @@ void update_db_subs(db_con_t *db,db_func_t dbf, shtable_t hash_table,
 		while(s)
 		{
 			printf_subs(s);
-			if(s->expires < (int)time(NULL)- expires_offset)
+			if(s->expires < (int)time(NULL))
 			{
 				LM_DBG("Found expired record\n");
 				del_s= s;
@@ -1624,7 +1628,7 @@ void update_db_subs(db_con_t *db,db_func_t dbf, shtable_t hash_table,
 	}
 
 	LM_DBG("delete expired\n");
-	update_vals[0].val.int_val= (int)time(NULL)- expires_offset;
+	update_vals[0].val.int_val= (int)time(NULL);
 	update_ops[0]= OP_LT;
 	CON_PS_REFERENCE(pa_db) = &my_ps_delete;
 	

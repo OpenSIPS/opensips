@@ -118,13 +118,18 @@ int build_str_hdr(subs_t* subs, int is_body, str* hdr)
 	char* lexpire_s;
 	char* p;
 	str status;
+	int lexpire;
 
 	if(hdr == NULL)
 	{
 		LM_ERR("NULL pointer\n");
 		return -1;
 	}
-	lexpire_s = int2str(subs->expires, &lexpire_len);
+	lexpire = subs->expires - expires_offset;
+	if(lexpire < 0 )
+		lexpire = 0;
+
+	lexpire_s = int2str(lexpire, &lexpire_len);
 
 	status.s= get_status_str(subs->status);
 	if(status.s== NULL)

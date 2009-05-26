@@ -192,9 +192,10 @@ modparam("presence", "db_update_period", 100)
 	<section>
 		<title><varname>expires_offset</varname> (int)</title>
 		<para>
-		The value that should be subtracted from the expires value when
-		sending a 200OK for a publish. It is used for forcing the client
-		cu send an update before the old publish expires.
+			The value that should be subtracted from the expires value to be inserted 
+			in the Expires header of 200OK replies for Publish and Subscribe messages
+			and expires parameter for Notifies' Subscription-Status header.
+			It is used for forcing the client cu send an update before the dialog expires.
 		</para>
 		<para>
 		<emphasis>Default value is <quote>0</quote>.
