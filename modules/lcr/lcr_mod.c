@@ -1196,11 +1196,11 @@ static int do_load_gws(struct sip_msg* _m, str *_from_uri, int _grp_id)
 	strip_len, flags_len;
     struct lcr_info lcr_rec;
 
-    /* Find Request-URI user */
-    if (parse_sip_msg_uri(_m) < 0) {
-	    LM_ERR("Error while parsing R-URI\n");
-	    return -1;
-    }
+	/* Find Request-URI user */
+	if ((parse_sip_msg_uri(_m) < 0) || (!_m->parsed_uri.user.s)) {
+		LM_ERR("Error while parsing R-URI\n");
+		return -1;
+	}
     ruri_user = _m->parsed_uri.user;
 
     if (_from_uri) {
