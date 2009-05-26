@@ -1797,11 +1797,16 @@ sub opensips_start(){
 	if ( ($#cmd+1) eq 1 ){
 		print "\nStarting opensips........\n";
 		if ( -r $PID_FILE ) {
+			if ( -d /proc/$(<$PID_FILE) ) {
 				`ps -ef | egrep opensips`;
 				`ls -l $PID_FILE`;
 				print "\nPID file exists ( " . $PID_FILE . " )! OpenSIPS already running?\n";
 				return;
+			} else {
+				print "\nRemoving stale PID file ".$PID_FILE.".";
+				`rm -f $PID_FILE`;
 			}
+		}
 
 		if ( ! -x $OSIPSBIN ) {
 			print "\nOpenSIPS binaries not found at " . $OSIPSBIN . "\n";
@@ -1841,24 +1846,20 @@ sub opensips_start(){
 #
 
 sub opensips_stop(){
-	if ( ($#cmd+1) eq 1 ){
+	if ( ($#cmd+1) eq 1 ) {
 		print "\nStopping OpenSIPS : \n";
 		if ( -r $PID_FILE ) {
 			my $sys = `cat $PID_FILE`;
-			`kill $sys`;			
-		        print "stopped\n";
+			`kill $sys`;
+			print "stopped\n";
+			return;
+		} else {
+			print "\nNo PID file found ( " . $PID_FILE . " )! OpenSIPS probably not running\n";
+			print "check with 'ps -ef | " . $EGREP . " opensips'\n";
 			return;
 		}
-		else {               
-	
-		       print "\nNo PID file found ( " . $PID_FILE . " )! OpenSIPS probably not running\n";
-
-		       print "check with 'ps -ef | " . $EGREP . " opensips'\n";               
-		       
-		       return;	
-		}
-	}elsif ($cmd[1] =~ /h/){		
-		&usage_base();		
+	}elsif ($cmd[1] =~ /h/){
+		&usage_base();
 	}else {
 		print "No parameters required!!! Syntax is not correct\n";
 	}
@@ -1874,7 +1875,7 @@ sub opensips_stop(){
 sub opensips_restart(){
 	&opensips_stop();
 	sleep 2;
-	&opensips_start();			
+	&opensips_start();
 }
 
 
