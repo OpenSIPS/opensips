@@ -123,10 +123,10 @@ my $ALIAS_EXISTS = 0;
 ######-----------------------------------------------#######
 ##database specific variables
 #
-my @STANDARD_TABLES = ('version', 'acc', 'dbaliases', 'lcr', 'domain', 'grp', 'uri', 'speed_dial', 'gw', 'pdt', 'subscriber', 'location', 're_grp', 'trusted', 'address', 'missed_calls', 'usr_preferences', 'aliases', 'silo', 'dialog', 'dispatcher', 'dialplan','drouting');
+my @STANDARD_TABLES = ('version', 'acc', 'dbaliases', 'lcr', 'domain', 'grp', 'uri', 'speed_dial', 'gw', 'pdt', 'subscriber', 'location', 're_grp', 'trusted', 'address', 'missed_calls', 'usr_preferences', 'aliases', 'silo', 'dialog', 'dispatcher', 'dialplan','drouting','nathelper');
 
 my @STANDARD_MODULES = ('standard', 'acc', 'lcr', 'domain', 'group', 'permissions', 'registrar', 'usrloc', 'msilo', 'alias_db', 'uri_db',
-				     'speeddial', 'avpops', 'auth_db', 'pdt', 'dialog', 'dispatcher', 'dialplan','drouting');
+				     'speeddial', 'avpops', 'auth_db', 'pdt', 'dialog', 'dispatcher', 'dialplan','drouting','nathelper' );
 my @EXTRA_TABLES = ('imc_members', 'imc_rooms', 'cpl', 'sip_trace', 'domainpolicy', 'carrierroute',
 		'route_tree', 'carrierfailureroute', 'userblacklist', 'globalblacklist');
 my @EXTRA_MODULES = ('imc', 'cpl', 'siptrace', 'domainpolicy', 'carrierroute', 'userblacklist');
@@ -1189,7 +1189,7 @@ print "usage:create <db name or db_path, optional> .....(creates a new database)
       "\tbackup <file> .................................(dumps current database to file)\n" . 
       "\trestore <file> ................................(restores tables from a file)\n" .
       "\tcopy <new_db> .................................(creates a new db from an existing one)\n" .
-      "\tmigrate <old_db> <new_db> .....................(migrates DB from 1.5 to 1.6, not implemented yet!)\n" .
+      "\tmigrate <old_db> <new_db> .....................(migrates DB from 1.5 to 1.6 not implemented yet)\n" .
       "\tpresence ......................................(adds the presence related tables)\n" . 
       "\textra .........................................(adds the extra tables)\n\n" .
       "\tif you want to manipulate database as other database user than\n" .
@@ -1797,16 +1797,11 @@ sub opensips_start(){
 	if ( ($#cmd+1) eq 1 ){
 		print "\nStarting opensips........\n";
 		if ( -r $PID_FILE ) {
-			if ( -d /proc/$(<$PID_FILE) ) {
 				`ps -ef | egrep opensips`;
 				`ls -l $PID_FILE`;
 				print "\nPID file exists ( " . $PID_FILE . " )! OpenSIPS already running?\n";
 				return;
-			} else {
-				print "\nRemoving stale PID file ".$PID_FILE.".";
-				`rm -f $PID_FILE`;
 			}
-		}
 
 		if ( ! -x $OSIPSBIN ) {
 			print "\nOpenSIPS binaries not found at " . $OSIPSBIN . "\n";
@@ -1846,20 +1841,24 @@ sub opensips_start(){
 #
 
 sub opensips_stop(){
-	if ( ($#cmd+1) eq 1 ) {
+	if ( ($#cmd+1) eq 1 ){
 		print "\nStopping OpenSIPS : \n";
 		if ( -r $PID_FILE ) {
 			my $sys = `cat $PID_FILE`;
-			`kill $sys`;
-			print "stopped\n";
-			return;
-		} else {
-			print "\nNo PID file found ( " . $PID_FILE . " )! OpenSIPS probably not running\n";
-			print "check with 'ps -ef | " . $EGREP . " opensips'\n";
+			`kill $sys`;			
+		        print "stopped\n";
 			return;
 		}
-	}elsif ($cmd[1] =~ /h/){
-		&usage_base();
+		else {               
+	
+		       print "\nNo PID file found ( " . $PID_FILE . " )! OpenSIPS probably not running\n";
+
+		       print "check with 'ps -ef | " . $EGREP . " opensips'\n";               
+		       
+		       return;	
+		}
+	}elsif ($cmd[1] =~ /h/){		
+		&usage_base();		
 	}else {
 		print "No parameters required!!! Syntax is not correct\n";
 	}
@@ -1875,7 +1874,7 @@ sub opensips_stop(){
 sub opensips_restart(){
 	&opensips_stop();
 	sleep 2;
-	&opensips_start();
+	&opensips_start();			
 }
 
 
