@@ -1611,20 +1611,20 @@ void update_db_subs(db_con_t *db,db_func_t dbf, shtable_t hash_table,
 							lock_release(&hash_table[i].lock);
 						return ;
 					}
-					break;										
+					break;
 				}
 
 			}
-			s->db_flag= NO_UPDATEDB_FLAG;	
+			s->db_flag= NO_UPDATEDB_FLAG;
 			prev_s= s;
 			s= s->next;
 		}
 		if(!no_lock)
-			lock_release(&hash_table[i].lock);	
+			lock_release(&hash_table[i].lock);
 	}
 
 	LM_DBG("delete expired\n");
-	update_vals[0].val.int_val= (int)time(NULL)- 10;
+	update_vals[0].val.int_val= (int)time(NULL)- expires_offset;
 	update_ops[0]= OP_LT;
 	CON_PS_REFERENCE(pa_db) = &my_ps_delete;
 	

@@ -432,10 +432,10 @@ int handle_publish(struct sip_msg* msg, char* sender_uri, char* str2)
 		if(sphere_enable && event->evp->parsed == EVENT_PRESENCE &&
 				get_content_type(msg)== SUBTYPE_PIDFXML)
 		{
-			sphere= extract_sphere(body);			
+			sphere= extract_sphere(body);
 		}
+	}
 
-	}	
 	memset(&puri, 0, sizeof(struct sip_uri));
 	if(sender_uri)
 	{
