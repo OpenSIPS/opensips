@@ -15,7 +15,6 @@
 #include "abyss_thread.h"
 
 #include "abyss_conn.h"
-#include "../../dprint.h"
 
 /*********************************************************************
 ** Conn

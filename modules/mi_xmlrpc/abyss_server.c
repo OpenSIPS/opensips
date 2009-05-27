@@ -1353,7 +1353,7 @@ waitForConnectionCapacity(outstandingConnList * const outstandingConnListP) {
 void
 ServerHandleSigchld(pid_t const pid) {
 
-    ThreadHandleSigchld(pid);
+    //ThreadHandleSigchld(pid);
 }
 #endif
 
@@ -1389,7 +1389,6 @@ destroyConnSocket(void * const userHandle) {
 }
 
 
-#include "../../dprint.h"
 static void 
 serverRun2(TServer * const serverP) {
 
@@ -1424,6 +1423,8 @@ serverRun2(TServer * const serverP) {
             if (!error) {
                 addToOutstandingConnList(outstandingConnListP, connectionP);
                 ConnProcess(connectionP);
+                SocketClose(connectedSocketP);
+                
                 /* When connection is done (which could be later, courtesy
                    of a background thread), destroyConnSocket() will
                    destroy *connectedSocketP.
