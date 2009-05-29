@@ -39,6 +39,7 @@
 #include "dlg_hash.h"
 #include "dlg_db_handler.h"
 #include "dlg_cb.h"
+#include "dlg_profile.h"
 
 
 str call_id_column			=	str_init(CALL_ID_COL);
@@ -60,6 +61,9 @@ str to_contact_column		=	str_init(TO_CONTACT_COL);
 str from_contact_column		=	str_init(FROM_CONTACT_COL);
 str to_sock_column			=	str_init(TO_SOCK_COL);
 str from_sock_column		=	str_init(FROM_SOCK_COL);
+str vars_column				=	str_init(VARS_COL);
+str profiles_column			=	str_init(PROFILES_COL);
+str sflags_column			=	str_init(SFLAGS_COL);
 str dialog_table_name		=	str_init(DIALOG_TABLE_NAME);
 int dlg_db_mode				=	DB_MODE_NONE;
 
@@ -209,7 +213,8 @@ static int select_entire_dialog_table(db_res_t ** res)
 			&start_time_column,	&state_column,		&timeout_column,
 			&from_cseq_column,	&to_cseq_column,	&from_route_column,
 			&to_route_column, 	&from_contact_column, &to_contact_column,
-			&from_sock_column,	&to_sock_column};
+			&from_sock_column,	&to_sock_column,	&vars_column,
+			&profiles_column,	&sflags_column};
 
 	if(use_dialog_table() != 0){
 		return -1;
@@ -265,6 +270,100 @@ struct socket_info * create_socket_info(db_val_t * vals, int n){
 
 	return sock;
 }
+
+
+
+static inline char* read_pair(char *b, char *end, str *name, str *val)
+{
+	/* read name */
+	name->s = b;
+	while( b<end && !( (*b=='|'|| *b=='#') && *(b-1)!='\\') )  b++;
+	if (b==end) return NULL;
+	if (*b=='|') goto skip;
+	name->len = b - name->s;
+	if (name->len==0) goto skip;
+	/*LM_DBG("-----read name <%.*s>(%d)\n",name->len,name->s,name->len);*/
+
+	/* read # */
+	b++;
+
+	/* read value */
+	val->s = b;
+	while( b<end && !( (*b=='|'|| *b=='#') && *(b-1)!='\\') )  b++;
+	if (b==end) return NULL;
+	if (*b=='#') goto skip;
+	val->len = b - val->s;
+	if (val->len==0) val->s = 0;
+	/*LM_DBG("-----read value <%.*s>(%d)\n",val->len,val->s,val->len);*/
+
+	/* read | */
+	b++;
+	return b;
+
+skip:
+	while(b<end && *b=='|' && *(b-1)!='\\') b++;
+	if (b!=end) b++;
+	return (b==end)?NULL:b;
+}
+
+
+static void read_dialog_vars(char *b, int l, struct dlg_cell *dlg)
+{
+	str name, val;
+	char *end;
+	char *p;
+
+	end = b + l;
+	p = b;
+	do {
+		/* read a new pair from input string */
+		p = read_pair( p, end, &name, &val);
+		if (p==NULL) break;
+
+		if (val.len==0) continue;
+
+		LM_DBG("new var found  <%.*s>=<%.*s>\n",name.len,name.s,val.len,val.s);
+
+		/* add the variable */
+		if (store_dlg_value( dlg, &name, &val)!=0)
+			LM_ERR("failed to add val, skipping...\n");
+	} while(p!=end);
+
+}
+
+
+static void read_dialog_profiles(char *b, int l, struct dlg_cell *dlg)
+{
+	struct dlg_profile_table *profile;
+	str name, val;
+	char *end;
+	char *p;
+
+	end = b + l;
+	p = b;
+	current_dlg_pointer = dlg;
+
+	do {
+		/* read a new pair from input string */
+		p = read_pair( p, end, &name, &val);
+		if (p==NULL) break;
+
+		LM_DBG("new profile found  <%.*s>=<%.*s>\n",name.len,name.s,val.len,val.s);
+
+		/* add to the profile */
+		profile = search_dlg_profile( &name );
+		if (profile==NULL) {
+			LM_ERR("profile <%.*s> does not exist anymore\n",name.len,name.s);
+			continue;
+		}
+		if (set_dlg_profile( NULL, profile->has_value?&val:NULL, profile) < 0 )
+			LM_ERR("failed to add to profile, skipping....\n");
+
+	} while(p!=end);
+
+	current_dlg_pointer = NULL;
+}
+
 
 
 
@@ -375,6 +474,22 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 
 			dlg->bind_addr[DLG_CALLER_LEG] = create_socket_info(values, 16);
 			dlg->bind_addr[DLG_CALLEE_LEG] = create_socket_info(values, 17);
+
+			/* script variables */
+			if (!VAL_NULL(values+18))
+				read_dialog_vars( VAL_STR(values+18).s,
+					strlen(VAL_STR(values+18).s), dlg);
+
+			/* profiles */
+			if (!VAL_NULL(values+19))
+				read_dialog_profiles( VAL_STR(values+19).s,
+					strlen(VAL_STR(values+19).s), dlg);
+
+
+			/* script flags */
+			if (!VAL_NULL(values+20)) {
+				dlg->user_flags = VAL_INT(values+20);
+			}
 
 			/* calculcate timeout */
 			dlg->tl.timeout = (unsigned int)(VAL_INT(values+9)) + get_ticks();
@@ -596,6 +711,155 @@ error:
 
 
 
+
+static inline unsigned int write_pair( char *b, str *name, str *val)
+{
+	int i,j;
+
+	for( i=0,j=0 ; i<name->len ; i++) {
+		if (name->s[i]=='|' || name->s[i]=='#')
+			b[j++] = '\\';
+		b[j++] = name->s[i];
+	}
+	b[j++] = '#';
+	for( i=0 ; val && i<val->len ; i++) {
+		if (val->s[i]=='|' || val->s[i]=='#')
+			b[j++] = '\\';
+		b[j++] = val->s[i];
+	}
+	b[j++] = '|';
+
+	return j;
+}
+
+
+static str* write_dialog_vars( struct dlg_val *vars)
+{
+	static str o = {NULL,0};
+	static int o_l;
+	struct dlg_val *v;
+	unsigned int l,i;
+	char *p;
+
+	/* compute the required len */
+	for ( v=vars,l=0 ; v ; v=v->next) {
+		l += v->name.len + 1 + v->val.len + 1;
+		for( i=0 ; i<v->name.len ; i++ )
+			if (v->name.s[i]=='|' || v->name.s[i]=='#') l++;
+		for( i=0 ; i<v->val.len ; i++ )
+			if (v->val.s[i]=='|' || v->val.s[i]=='#') l++;
+	}
+
+	/* allocate the string to be stored */
+	if ( o.s==NULL && o_l<l) {
+		if (o.s) pkg_free(o.s);
+		o.s = (char*)malloc(l);
+		if (o.s==NULL) {
+			LM_ERR("not enough pkg mem (req=%d)\n",l);
+			return NULL;
+		}
+		o_l = l;
+	}
+
+	/* write the stuff into it */
+	o.len = l;
+	p = o.s;
+	for ( v=vars ; v ; v=v->next) {
+		p += write_pair( p, &v->name, &v->val);
+	}
+	if (o.len!=p-o.s) {
+		LM_CRIT("BUG - buffer overflow allocated %d, written %d\n",
+			o.len,(int)(p-o.s));
+		return NULL;
+	}
+	LM_DBG("var string is <%.*s>(%d)\n", l,o.s,l);
+
+	return &o;
+}
+
+
+static str* write_dialog_profiles( struct dlg_profile_link *links)
+{
+	static str o = {NULL,0};
+	static int o_l;
+	struct dlg_profile_link *link;
+	unsigned int l,i;
+	char *p;
+
+	/* compute the required len */
+	for ( link=links,l=0 ; link ; link=link->next) {
+		l += link->profile->name.len + 1 + link->hash_linker.value.len + 1;
+		for( i=0 ; i<link->profile->name.len ; i++ )
+			if (link->profile->name.s[i]=='|' || link->profile->name.s[i]=='#') l++;
+		for( i=0 ; i<link->hash_linker.value.len ; i++ )
+			if (link->hash_linker.value.s[i]=='|' ||
+			link->hash_linker.value.s[i]=='#') l++;
+	}
+
+	/* allocate the string to be stored */
+	if ( o.s==NULL && o_l<l) {
+		if (o.s) pkg_free(o.s);
+		o.s = (char*)malloc(l);
+		if (o.s==NULL) {
+			LM_ERR("not enough pkg mem (req=%d)\n",l);
+			return NULL;
+		}
+		o_l = l;
+	}
+
+	/* write the stuff into it */
+	o.len = l;
+	p = o.s;
+	for ( link=links; link ; link=link->next) {
+		p += write_pair( p, &link->profile->name, &link->hash_linker.value);
+	}
+	if (o.len!=p-o.s) {
+		LM_CRIT("BUG - buffer overflow allocated %d, written %d\n",
+			o.len,(int)(p-o.s));
+		return NULL;
+	}
+	LM_DBG("profile string is <%.*s>(%d)\n", l,o.s,l);
+
+	return &o;
+}
+
+
+static inline void set_final_update_cols(db_val_t *vals, struct dlg_cell *cell,
+																	int on_shutdown)
+{
+	str *s;
+
+	if (on_shutdown) {
+		if (cell->vals==NULL) {
+			VAL_NULL(vals) = 1;
+		} else {
+			s = write_dialog_vars( cell->vals );
+			if (s==NULL) {
+				VAL_NULL(vals) = 1;
+			} else {
+				SET_STR_VALUE(vals, *s);
+			}
+		}
+		if (cell->profile_links==NULL) {
+			VAL_NULL(vals+1) = 1;
+		} else {
+			s = write_dialog_profiles( cell->profile_links );
+			if (s==NULL) {
+				VAL_NULL(vals+1) = 1;
+			} else {
+				SET_STR_VALUE(vals+1, *s);
+			}
+		}
+		SET_INT_VALUE(vals+2,  cell->user_flags);
+	} else {
+		VAL_NULL(vals) = 1;
+		VAL_NULL(vals+1) = 1;
+		SET_INT_VALUE(vals+2,  0);
+	}
+}
+
+
+
 void dialog_update_db(unsigned int ticks, void * param)
 {
 	static db_ps_t my_ps_update = NULL;
@@ -604,27 +868,35 @@ void dialog_update_db(unsigned int ticks, void * param)
 	db_val_t values[DIALOG_TABLE_COL_NO];
 	struct dlg_entry entry;
 	struct dlg_cell  * cell; 
+	unsigned char on_shutdown;
 	
 	db_key_t insert_keys[DIALOG_TABLE_COL_NO] = {		&h_entry_column,
 			&h_id_column,		&call_id_column,		&from_uri_column,
 			&from_tag_column,	&to_uri_column,			&to_tag_column,
-			&from_sock_column,	&to_sock_column,
-			&start_time_column,	&state_column,			&timeout_column,
-			&from_cseq_column,	&to_cseq_column,		&from_route_column,
-			&to_route_column, 	&from_contact_column, 	&to_contact_column};
+			&from_sock_column,	&to_sock_column,		&start_time_column,
+			&from_route_column,	&to_route_column, 	&from_contact_column,
+			&to_contact_column,
+			/*update chunk 14 - 20*/
+			&state_column,		&timeout_column,		&from_cseq_column,
+			&to_cseq_column,	&vars_column,			&profiles_column,
+			&sflags_column };
 
 	if(use_dialog_table()!=0)
 		return;
 
+	on_shutdown = (ticks==0);
+
 	/*save the current dialogs information*/
 	VAL_TYPE(values) = VAL_TYPE(values+1) = VAL_TYPE(values+9) = 
-	VAL_TYPE(values+10) = VAL_TYPE(values+11) = DB_INT;
+	VAL_TYPE(values+14) = VAL_TYPE(values+15) = VAL_TYPE(values+20)
+		= DB_INT;
 
 	VAL_TYPE(values+2) = VAL_TYPE(values+3) = VAL_TYPE(values+4) = 
 	VAL_TYPE(values+5) = VAL_TYPE(values+6) = VAL_TYPE(values+7) = 
-	VAL_TYPE(values+8) = VAL_TYPE(values+12) = VAL_TYPE(values+13) = 
-	VAL_TYPE(values+14) = VAL_TYPE(values+15) = VAL_TYPE(values+16) = 
-	VAL_TYPE(values+17) = DB_STR;
+	VAL_TYPE(values+8) = VAL_TYPE(values+10) = VAL_TYPE(values+11) = 
+	VAL_TYPE(values+12) = VAL_TYPE(values+13) = VAL_TYPE(values+16) = 
+	VAL_TYPE(values+17) = VAL_TYPE(values+18) = VAL_TYPE(values+19)
+		= DB_STR;
 
 	for(index = 0; index< d_table->size; index++){
 
@@ -664,17 +936,21 @@ void dialog_update_db(unsigned int ticks, void * param)
 				}
 
 				SET_INT_VALUE(values+9,  cell->start_ts);
-				SET_INT_VALUE(values+10, cell->state);
-				SET_INT_VALUE(values+11, (unsigned int)((unsigned int)time(0)
+
+				SET_STR_VALUE(values+10, cell->route_set[DLG_CALLER_LEG]);
+				SET_STR_VALUE(values+11, cell->route_set[DLG_CALLEE_LEG]);
+				SET_STR_VALUE(values+12, cell->contact[DLG_CALLER_LEG]);
+				SET_STR_VALUE(values+13, cell->contact[DLG_CALLEE_LEG]);
+
+
+				SET_INT_VALUE(values+14, cell->state);
+				SET_INT_VALUE(values+15, (unsigned int)((unsigned int)time(0)
 					+ cell->tl.timeout - get_ticks()) );
 
-				SET_STR_VALUE(values+12, cell->cseq[DLG_CALLER_LEG]);
-				SET_STR_VALUE(values+13, cell->cseq[DLG_CALLEE_LEG]);
+				SET_STR_VALUE(values+16, cell->cseq[DLG_CALLER_LEG]);
+				SET_STR_VALUE(values+17, cell->cseq[DLG_CALLEE_LEG]);
 
-				SET_STR_VALUE(values+14, cell->route_set[DLG_CALLER_LEG]);
-				SET_STR_VALUE(values+15, cell->route_set[DLG_CALLEE_LEG]);
-				SET_STR_VALUE(values+16, cell->contact[DLG_CALLER_LEG]);
-				SET_STR_VALUE(values+17, cell->contact[DLG_CALLEE_LEG]);
+				set_final_update_cols(values+18, cell, on_shutdown);
 
 				CON_PS_REFERENCE(dialog_db_handle) = &my_ps_insert;
 
@@ -689,23 +965,25 @@ void dialog_update_db(unsigned int ticks, void * param)
 
 				cell->flags &= ~(DLG_FLAG_NEW |DLG_FLAG_CHANGED);
 
-			} else if( (cell->flags & DLG_FLAG_CHANGED)!=0 ){
+			} else if ( (cell->flags & DLG_FLAG_CHANGED)!=0 || on_shutdown ){
 
 				LM_DBG("updating existing dialog %p\n",cell);
 
 				SET_INT_VALUE(values, cell->h_entry);
 				SET_INT_VALUE(values+1, cell->h_id);
 
-				SET_INT_VALUE(values+10, cell->state);
-				SET_INT_VALUE(values+11, (unsigned int)((unsigned int)time(0)
+				SET_INT_VALUE(values+14, cell->state);
+				SET_INT_VALUE(values+15, (unsigned int)((unsigned int)time(0)
 					 + cell->tl.timeout - get_ticks()) );
-				SET_STR_VALUE(values+12, cell->cseq[DLG_CALLER_LEG]);
-				SET_STR_VALUE(values+13, cell->cseq[DLG_CALLEE_LEG]);
+				SET_STR_VALUE(values+16, cell->cseq[DLG_CALLER_LEG]);
+				SET_STR_VALUE(values+17, cell->cseq[DLG_CALLEE_LEG]);
+
+				set_final_update_cols(values+18, cell, on_shutdown);
 
 				CON_PS_REFERENCE(dialog_db_handle) = &my_ps_update;
 
 				if((dialog_dbf.update(dialog_db_handle, (insert_keys), 0, 
-				(values), (insert_keys+10), (values+10), 2, 4)) !=0) {
+				(values), (insert_keys+14), (values+14), 2, 7)) !=0) {
 					LM_ERR("could not update database info\n");
 					goto error;
 				}

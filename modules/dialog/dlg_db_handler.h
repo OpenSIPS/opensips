@@ -50,6 +50,9 @@
 #define FROM_CONTACT_COL		"caller_contact"
 #define FROM_SOCK_COL			"caller_sock"
 #define TO_SOCK_COL				"callee_sock"
+#define VARS_COL				"vars"
+#define PROFILES_COL			"profiles"
+#define SFLAGS_COL				"script_flags"
 #define DIALOG_TABLE_NAME		"dialog"
 
 #define DLG_TABLE_VERSION		3
@@ -61,7 +64,7 @@
 #define DB_MODE_DELAYED				2
 #define DB_MODE_SHUTDOWN			3
 
-#define DIALOG_TABLE_COL_NO 		18
+#define DIALOG_TABLE_COL_NO 		21
 
 #define DIALOG_FETCH_SIZE			128
 
