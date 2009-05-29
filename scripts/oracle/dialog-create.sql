@@ -18,7 +18,10 @@ CREATE TABLE dialog (
     callee_sock VARCHAR2(64),
     state NUMBER(10),
     start_time NUMBER(10),
-    timeout NUMBER(10)
+    timeout NUMBER(10),
+    vars CLOB(512) DEFAULT NULL,
+    profiles CLOB(512) DEFAULT NULL,
+    script_flags NUMBER(10) DEFAULT 0 NOT NULL
 );
 
 CREATE OR REPLACE TRIGGER dialog_tr

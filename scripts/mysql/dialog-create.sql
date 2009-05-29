@@ -18,7 +18,10 @@ CREATE TABLE dialog (
     callee_sock CHAR(64) NOT NULL,
     state INT(10) UNSIGNED NOT NULL,
     start_time INT(10) UNSIGNED NOT NULL,
-    timeout INT(10) UNSIGNED NOT NULL
+    timeout INT(10) UNSIGNED NOT NULL,
+    vars TEXT(512) DEFAULT NULL,
+    profiles TEXT(512) DEFAULT NULL,
+    script_flags INT(10) UNSIGNED DEFAULT 0 NOT NULL
 ) ENGINE=MyISAM;
 
 CREATE INDEX hash_idx ON dialog (hash_entry, hash_id);

@@ -9,7 +9,7 @@
 
 <table id="dialog" xmlns:db="http://docbook.org/ns/docbook">
 	<name>dialog</name>
-	<version>3</version>
+	<version>4</version>
 	<type db="mysql">&MYSQL_TABLE_TYPE;</type>
 	<description>
 		<db:para>Persistent dialog information for the dialog module. More 
@@ -165,6 +165,34 @@
 		<description>The timestamp (unix time) when the dialog will expire.
 		</description>
 	</column>
+
+	<column>
+		<name>vars</name>
+		<type>text</type>
+		<size>512</size>
+		<default><null/></default>
+		<null/>
+		<description>Variables attached to this dialog.</description>
+	</column>
+
+	<column>
+		<name>profiles</name>
+		<type>text</type>
+		<size>512</size>
+		<default><null/></default>
+		<null/>
+		<description>Profiles this dialog belongs to.</description>
+	</column>
+
+	<column>
+		<name>script_flags</name>
+		<type>unsigned int</type>
+		<size>10</size>
+		<default>0</default>
+		<description>Variables attached to this dialog.</description>
+	</column>
+
+
 
 	<index>
 		<name>hash_idx</name>
