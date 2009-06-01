@@ -982,7 +982,7 @@ static int is_from_gw_0(struct sip_msg* msg, char* str, char* str2)
 	
 	pgwa = (*rdata)->pgw_addr_l;
 	while(pgwa) {
-		if( pgwa->port==msg->rcv.src_port &&
+		if( (pgwa->port==0 || pgwa->port==msg->rcv.src_port) &&
 		ip_addr_cmp(&pgwa->ip, &msg->rcv.src_ip))
 			return 1;
 		pgwa = pgwa->next;
@@ -1001,7 +1001,8 @@ static int is_from_gw_1(struct sip_msg* msg, char* str, char* str2)
 	
 	pgwa = (*rdata)->pgw_addr_l;
 	while(pgwa) {
-		if( type==pgwa->type && pgwa->port==msg->rcv.src_port &&
+		if( type==pgwa->type && 
+		(pgwa->port==0 || pgwa->port==msg->rcv.src_port) &&
 		ip_addr_cmp(&pgwa->ip, &msg->rcv.src_ip) )
 			return 1;
 		pgwa = pgwa->next;
@@ -1020,7 +1021,8 @@ static int is_from_gw_2(struct sip_msg* msg, char* str1, char* str2)
 	
 	pgwa = (*rdata)->pgw_addr_l;
 	while(pgwa) {
-		if( type==pgwa->type && pgwa->port==msg->rcv.src_port &&
+		if( type==pgwa->type &&
+		(pgwa->port==0 || pgwa->port==msg->rcv.src_port) &&
 		ip_addr_cmp(&pgwa->ip, &msg->rcv.src_ip) ) {
 			if (flags!=0 && pgwa->strip>0)
 				strip_username(msg, pgwa->strip);
