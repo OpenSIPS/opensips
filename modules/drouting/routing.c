@@ -368,8 +368,6 @@ add_dst(
 	}
 	hostent2ip_addr(&ipa, he, 0);
 	tmpa = r->pgw_addr_l;
-	if (uri.port_no==0)
-		uri.port_no = SIP_PORT;
 	while(tmpa) {
 		if(tmpa->type==type && uri.port_no==tmpa->port
 		&& ip_addr_cmp(&ipa, &tmpa->ip)) {
