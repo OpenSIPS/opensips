@@ -60,6 +60,7 @@
 #include "parser/parse_ppi.h"
 #include "parser/parse_pai.h"
 #include "parser/digest/digest.h"
+#include "parser/contact/parse_contact.h"
 
 #define is_in_str(p, in) (p<in->s+in->len && *p)
 
@@ -402,27 +403,144 @@ static int pv_get_ouri_attr(struct sip_msg *msg, pv_param_t *param,
 }	
 
 	
-static int pv_get_contact(struct sip_msg *msg, pv_param_t *param,
+static int pv_get_contact_body(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {
+	struct hdr_field *ct;
+	contact_t *ctb;
+	int idx;
+	int idxf;
+	char *p;
+
 	if(msg==NULL)
 		return -1;
 
-	if(msg->contact==NULL && parse_headers(msg, HDR_CONTACT_F, 0)==-1) 
+	/* get all CONTACT headers */
+	if(msg->contact==NULL && parse_headers(msg, HDR_EOH_F, 0)==-1) 
 	{
 		LM_DBG("no contact header\n");
 		return pv_get_null(msg, param, res);
 	}
 	
 	if(!msg->contact || !msg->contact->body.s || msg->contact->body.len<=0)
-    {
+	{
 		LM_DBG("no contact header!\n");
 		return pv_get_null(msg, param, res);
 	}
-	
-//	res->s = ((struct to_body*)msg->contact->parsed)->uri.s;
-//	res->len = ((struct to_body*)msg->contact->parsed)->uri.len;
-	return pv_get_strval(msg, param, res, &msg->contact->body);
+
+	ct = msg->contact;
+	if (parse_contact( ct )!=0) {
+		LM_ERR("failed to parse contact hdr\n");
+		return -1;
+	}
+	ctb = ((contact_body_t*)ct->parsed)->contacts;
+	if (ctb==NULL)
+		return pv_get_null(msg, param, res);
+
+	/* get the index */
+	if(pv_get_spec_index(msg, param, &idx, &idxf)!=0) {
+		LM_ERR("invalid index\n");
+		return -1;
+	}
+
+	if (idxf==0 && idx==0) {
+		/* no index specified -> return the first contact body */
+		res->rs.s = ctb->name.s?ctb->name.s:ctb->uri.s;
+		res->rs.len = ctb->len;
+		res->flags = PV_VAL_STR;
+		return 0;
+	}
+
+	if(idxf==PV_IDX_ALL) {
+		/* return all contact bodies */
+		p = pv_local_buf;
+		do {
+			if(p!=pv_local_buf) {
+				if (p-pv_local_buf+PV_FIELD_DELIM_LEN+1>PV_LOCAL_BUF_SIZE){
+					LM_ERR("local buffer length exceeded\n");
+					return pv_get_null(msg, param, res);
+				}
+				memcpy(p, PV_FIELD_DELIM, PV_FIELD_DELIM_LEN);
+				p += PV_FIELD_DELIM_LEN;
+			}
+
+			if (p-pv_local_buf+ctb->len+1>PV_LOCAL_BUF_SIZE) {
+				LM_ERR("local buffer length exceeded!\n");
+				return pv_get_null(msg, param, res);
+			}
+			memcpy(p, ctb->name.s?ctb->name.s:ctb->uri.s, ctb->len);
+			p += ctb->len;
+
+			ctb = ctb->next;
+			while (ctb==NULL && ct!=NULL) {
+				ct = ct->sibling;
+				if (ct) {
+					if (parse_contact( ct )!=0) {
+						LM_ERR("failed to parse contact hdr\n");
+						return -1;
+					}
+					ctb = ((contact_body_t*)ct->parsed)->contacts;
+				}
+			}
+		} while (ctb);
+
+		res->rs.s = pv_local_buf;
+		res->rs.len = p - pv_local_buf;
+		res->flags = PV_VAL_STR;
+		return 0;
+	}
+
+	/* numerical index */
+	if (idx<0) {
+		/* index from the end */
+		idxf=0;
+		while(ctb) {
+			idxf++;
+			ctb = ctb->next;
+			while (ctb==NULL && ct!=NULL) {
+				ct = ct->sibling;
+				if (ct) {
+					if (parse_contact( ct )!=0) {
+						LM_ERR("failed to parse contact hdr\n");
+						return -1;
+					}
+					ctb = ((contact_body_t*)ct->parsed)->contacts;
+				}
+			}
+		}
+		if (-idx>idxf)
+			return pv_get_null(msg, param, res);
+
+		idx = idxf +idx;
+		ct = msg->contact;
+		ctb = ((contact_body_t*)ct->parsed)->contacts;
+	}
+
+	while (idx!=0 && ctb) {
+		/* get to the next contact body */
+		idx--;
+		ctb = ctb->next;
+		while (ctb==NULL && ct!=NULL) {
+			ct = ct->sibling;
+			if (ct) {
+				if (parse_contact( ct )!=0) {
+					LM_ERR("failed to parse contact hdr\n");
+					return -1;
+				}
+				ctb = ((contact_body_t*)ct->parsed)->contacts;
+			}
+		}
+	}
+
+	/* nothing found ?*/
+	if (ctb==NULL)
+		return pv_get_null(msg, param, res);
+
+	/* take the current body */
+	res->rs.s = ctb->name.s?ctb->name.s:ctb->uri.s;
+	res->rs.len = ctb->len;
+	res->flags = PV_VAL_STR;
+	return 0;
 }
 
 extern err_info_t _oser_err_info;
@@ -2353,8 +2471,8 @@ static pv_export_t _pv_names_table[] = {
 		PVT_CSEQ, pv_get_cseq, 0,
 		0, 0, 0, 0},
 	{{"ct", (sizeof("ct")-1)}, /* */
-		PVT_CONTACT, pv_get_contact, 0,
-		0, 0, 0, 0},
+		PVT_CONTACT, pv_get_contact_body, 0,
+		0, pv_parse_index, 0, 0},
 	{{"cT", (sizeof("cT")-1)}, /* */
 		PVT_CONTENT_TYPE, pv_get_content_type, 0,
 		0, 0, 0, 0},
