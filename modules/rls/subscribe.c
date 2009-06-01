@@ -72,6 +72,8 @@ xmlNodePtr search_service_uri(xmlDocPtr doc, str* service_uri)
 {
 	xmlNodePtr rl_node, node;
 	char* uri;
+	struct sip_uri sip_uri;
+	str uri_str;
 
 	rl_node= XMLDocGetNodeByName(doc, "rls-services", NULL);
 	if(rl_node== NULL)
@@ -84,13 +86,27 @@ xmlNodePtr search_service_uri(xmlDocPtr doc, str* service_uri)
 		if(xmlStrcasecmp(node->name,(unsigned char*)"service")== 0)
 		{
 			uri= XMLNodeGetAttrContentByName(node, "uri");
-			if(strlen(uri)== service_uri->len && 
-					strncmp(uri, service_uri->s,service_uri->len)== 0)
+			if(parse_uri(uri, strlen(uri), &sip_uri)< 0)
 			{
+				LM_ERR("failed to parse uri\n");
 				xmlFree(uri);
-				return node;
+				return NULL;
+			}
+			if(uandd_to_uri(sip_uri.user, sip_uri.host, &uri_str)< 0)
+			{
+				LM_ERR("failed to construct uri from user and domain\n");
+				xmlFree(uri);
+				return NULL;
 			}
 			xmlFree(uri);
+			if(uri_str.len== service_uri->len && 
+					strncmp(uri_str.s, service_uri->s, uri_str.len) == 0)
+			{
+				pkg_free(uri_str.s);
+				return node;
+			}
+			LM_DBG("match not found, service-uri = [%.*s]\n", uri_str.len, uri_str.s);
+			pkg_free(uri_str.s);
 		}
 	}
 	return NULL;
