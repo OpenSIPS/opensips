@@ -78,12 +78,12 @@ int parse_subs_state(str auth_state, str** reason, int* expires)
 		smc= strchr(auth_state.s, ';');
 		if(smc== NULL)
 		{
-			LM_ERR("terminated state and no reason found");
+			LM_ERR("terminated state and no reason found\n");
 			return -1;
 		}
 		if(strncasecmp(smc+1, "reason=", 7))
 		{
-			LM_ERR("terminated state and no reason found");
+			LM_ERR("terminated state and no reason found\n");
 			return -1;
 		}
 		res= (str*)pkg_malloc(sizeof(str));
