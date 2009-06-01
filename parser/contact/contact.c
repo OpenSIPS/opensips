@@ -182,10 +182,13 @@ static inline int skip_name(str* _s)
 int parse_contacts(str* _s, contact_t** _c)
 {
 	contact_t* c;
+	contact_t* last;
 	param_hooks_t hooks;
 
+	last = NULL;
+
 	while(1) {
-		     /* Allocate and clear contact structure */
+		/* Allocate and clear contact structure */
 		c = (contact_t*)pkg_malloc(sizeof(contact_t));
 		if (c == 0) {
 			LM_ERR("no pkg memory left\n");
@@ -211,10 +214,11 @@ int parse_contacts(str* _s, contact_t** _c)
 		}
 		
 		c->uri.len = _s->s - c->uri.s; /* Calculate URI length */
-		trim_trailing(&(c->uri));      /* Remove any trailing spaces from URI */
+		trim_trailing(&(c->uri));    /* Remove any trailing spaces from URI */
 
 		     /* Remove <> if any */
-		if ((c->uri.len >= 2) && (c->uri.s[0] == '<') && (c->uri.s[c->uri.len - 1] == '>')) {
+		if ((c->uri.len >= 2) && (c->uri.s[0] == '<') &&
+		(c->uri.s[c->uri.len - 1] == '>')) {
 			c->uri.s++;
 			c->uri.len -= 2;
 		}
@@ -257,8 +261,8 @@ int parse_contacts(str* _s, contact_t** _c)
 			goto error;
 		}
 
-		c->next = *_c;
-		*_c = c;
+		if (last) {last->next=c;} else {*_c = c;}
+		last = c;
 	}
 
  error:
@@ -268,8 +272,8 @@ int parse_contacts(str* _s, contact_t** _c)
 
  ok:
 	c->len = _s->s - c->name.s;
-	c->next = *_c;
-	*_c = c;
+	if (last) {last->next=c;} else {*_c = c;}
+	last = c;
 	return 0;
 }
 
