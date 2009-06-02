@@ -511,7 +511,7 @@ static inline int set_contact_body_field(pv_value_t *res ,contact_t *ctb,
 			res->rs = ctb->received->body;
 			break;
 		case CT_PARAMS_ID: /* all param */
-			if (ctb->params)
+			if (!ctb->params)
 				return pv_get_null(NULL, NULL, res);
 			res->rs.s = ctb->params->name.s;
 			for( p=ctb->params ; p->next ; p=p->next);
