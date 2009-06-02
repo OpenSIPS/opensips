@@ -400,9 +400,133 @@ static int pv_get_ouri_attr(struct sip_msg *msg, pv_param_t *param,
 		return pv_get_null(msg, param, res);
 	}
 	return pv_get_xuri_attr(msg, &(msg->parsed_orig_ruri), param, res);
-}	
+}
 
-	
+
+#define CT_NAME_S        "name"
+#define CT_NAME_LEN      (sizeof(CT_NAME_S)-1)
+#define CT_NAME_ID       1
+#define CT_URI_S         "uri"
+#define CT_URI_LEN       (sizeof(CT_URI_S)-1)
+#define CT_URI_ID        2
+#define CT_Q_S           "q"
+#define CT_Q_LEN         (sizeof(CT_Q_S)-1)
+#define CT_Q_ID          3
+#define CT_EXPIRES_S     "expires"
+#define CT_EXPIRES_LEN   (sizeof(CT_EXPIRES_S)-1)
+#define CT_EXPIRES_ID     4
+#define CT_METHODS_S     "methods"
+#define CT_METHODS_LEN   (sizeof(CT_METHODS_S)-1)
+#define CT_METHODS_ID    5
+#define CT_RECEIVED_S    "received"
+#define CT_RECEIVED_LEN  (sizeof(CT_RECEIVED_S)-1)
+#define CT_RECEIVED_ID   6
+#define CT_PARAMS_S      "params"
+#define CT_PARAMS_LEN    (sizeof(CT_PARAMS_S)-1)
+#define CT_PARAMS_ID     7
+
+int pv_parse_ct_name(pv_spec_p sp, str *in)
+{
+	if (sp==NULL)
+		return -1;
+
+	sp->pvp.pvn.type = PV_NAME_INTSTR;
+	sp->pvp.pvn.u.isname.type = 0;
+
+	if (in==NULL || in->s==NULL || in->len==0) {
+		sp->pvp.pvn.u.isname.name.n = 0;
+	} else
+	if (in->len==CT_NAME_LEN &&
+	strncasecmp(in->s, CT_NAME_S, CT_NAME_LEN)==0 ) {
+		sp->pvp.pvn.u.isname.name.n = CT_NAME_ID;
+	} else
+	if (in->len==CT_URI_LEN &&
+	strncasecmp(in->s, CT_URI_S, CT_URI_LEN)==0 ) {
+		sp->pvp.pvn.u.isname.name.n = CT_URI_ID;
+	} else
+	if (in->len==CT_Q_LEN &&
+	strncasecmp(in->s, CT_Q_S, CT_Q_LEN)==0 ) {
+		sp->pvp.pvn.u.isname.name.n = CT_Q_ID;
+	} else
+	if (in->len==CT_EXPIRES_LEN &&
+	strncasecmp(in->s, CT_EXPIRES_S, CT_EXPIRES_LEN)==0 ) {
+		sp->pvp.pvn.u.isname.name.n = CT_EXPIRES_ID;
+	} else
+	if (in->len==CT_METHODS_LEN &&
+	strncasecmp(in->s, CT_METHODS_S, CT_METHODS_LEN)==0 ) {
+		sp->pvp.pvn.u.isname.name.n = CT_METHODS_ID;
+	} else
+	if (in->len==CT_RECEIVED_LEN &&
+	strncasecmp(in->s, CT_RECEIVED_S, CT_RECEIVED_LEN)==0 ) {
+		sp->pvp.pvn.u.isname.name.n = CT_RECEIVED_ID;
+	} else
+	if (in->len==CT_PARAMS_LEN &&
+	strncasecmp(in->s, CT_PARAMS_S, CT_PARAMS_LEN)==0 ) {
+		sp->pvp.pvn.u.isname.name.n = CT_PARAMS_ID;
+	} else {
+		LM_ERR("unsupported CT field <%.*s>\n",in->len,in->s);
+		return -1;
+	}
+
+	return 0;
+}
+
+
+static inline int set_contact_body_field(pv_value_t *res ,contact_t *ctb,
+														pv_name_t *pvn)
+{
+	param_t *p;
+
+	switch (pvn->u.isname.name.n) {
+		case 0: /* all body */
+			res->rs.s = ctb->name.s?ctb->name.s:ctb->uri.s;
+			res->rs.len = ctb->len;
+			break;
+		case CT_NAME_ID: /* name only */
+			if (ctb->name.s==NULL || ctb->name.len==0)
+				return pv_get_null(NULL, NULL, res);
+			res->rs = ctb->name;
+			break;
+		case CT_URI_ID: /* uri only */
+			res->rs = ctb->uri;
+			break;
+		case CT_Q_ID: /* Q param only */
+			if ( !ctb->q || !ctb->q->body.s || !ctb->q->body.len)
+				return pv_get_null(NULL, NULL, res);
+			res->rs = ctb->q->body;
+			break;
+		case CT_EXPIRES_ID: /* EXPIRES param only */
+			if (!ctb->expires||!ctb->expires->body.s||!ctb->expires->body.len)
+				return pv_get_null(NULL, NULL, res);
+			res->rs = ctb->expires->body;
+			break;
+		case CT_METHODS_ID: /* METHODS param only */
+			if (!ctb->methods||!ctb->methods->body.s||!ctb->methods->body.len)
+				return pv_get_null(NULL, NULL, res);
+			res->rs = ctb->methods->body;
+			break;
+		case CT_RECEIVED_ID: /* RECEIVED param only */
+			if(!ctb->received||!ctb->received->body.s||!ctb->received->body.len)
+				return pv_get_null(NULL, NULL, res);
+			res->rs = ctb->received->body;
+			break;
+		case CT_PARAMS_ID: /* all param */
+			if (ctb->params)
+				return pv_get_null(NULL, NULL, res);
+			res->rs.s = ctb->params->name.s;
+			for( p=ctb->params ; p->next ; p=p->next);
+			res->rs.len = (p->body.s+p->body.len) - res->rs.s;
+			break;
+		default:
+			LM_CRIT("BUG - unsupported ID %d\n",pvn->u.isname.type);
+			return pv_get_null(NULL, NULL, res);
+	}
+
+	res->flags = PV_VAL_STR;
+	return 0;
+}
+
+
 static int pv_get_contact_body(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {
@@ -445,10 +569,7 @@ static int pv_get_contact_body(struct sip_msg *msg, pv_param_t *param,
 
 	if (idxf==0 && idx==0) {
 		/* no index specified -> return the first contact body */
-		res->rs.s = ctb->name.s?ctb->name.s:ctb->uri.s;
-		res->rs.len = ctb->len;
-		res->flags = PV_VAL_STR;
-		return 0;
+		return set_contact_body_field( res , ctb, &param->pvn);
 	}
 
 	if(idxf==PV_IDX_ALL) {
@@ -464,12 +585,13 @@ static int pv_get_contact_body(struct sip_msg *msg, pv_param_t *param,
 				p += PV_FIELD_DELIM_LEN;
 			}
 
-			if (p-pv_local_buf+ctb->len+1>PV_LOCAL_BUF_SIZE) {
+			set_contact_body_field( res , ctb, &param->pvn);
+			if (p-pv_local_buf+res->rs.len+1>PV_LOCAL_BUF_SIZE) {
 				LM_ERR("local buffer length exceeded!\n");
 				return pv_get_null(msg, param, res);
 			}
-			memcpy(p, ctb->name.s?ctb->name.s:ctb->uri.s, ctb->len);
-			p += ctb->len;
+			memcpy(p, res->rs.s, res->rs.len);
+			p += res->rs.len;
 
 			ctb = ctb->next;
 			while (ctb==NULL && ct!=NULL) {
@@ -537,10 +659,7 @@ static int pv_get_contact_body(struct sip_msg *msg, pv_param_t *param,
 		return pv_get_null(msg, param, res);
 
 	/* take the current body */
-	res->rs.s = ctb->name.s?ctb->name.s:ctb->uri.s;
-	res->rs.len = ctb->len;
-	res->flags = PV_VAL_STR;
-	return 0;
+	return set_contact_body_field( res , ctb, &param->pvn);
 }
 
 extern err_info_t _oser_err_info;
@@ -2473,6 +2592,9 @@ static pv_export_t _pv_names_table[] = {
 	{{"ct", (sizeof("ct")-1)}, /* */
 		PVT_CONTACT, pv_get_contact_body, 0,
 		0, pv_parse_index, 0, 0},
+	{{"ct.fields", (sizeof("ct.fields")-1)}, /* */
+		PVT_CONTACT, pv_get_contact_body, 0,
+		pv_parse_ct_name, pv_parse_index, 0, 0},
 	{{"cT", (sizeof("cT")-1)}, /* */
 		PVT_CONTENT_TYPE, pv_get_content_type, 0,
 		0, 0, 0, 0},
