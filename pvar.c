@@ -472,7 +472,7 @@ int pv_parse_ct_name(pv_spec_p sp, str *in)
 }
 
 
-static inline int set_contact_body_field(pv_value_t *res ,contact_t *ctb,
+static inline int get_contact_body_field(pv_value_t *res ,contact_t *ctb,
 														pv_name_t *pvn)
 {
 	param_t *p;
@@ -569,7 +569,7 @@ static int pv_get_contact_body(struct sip_msg *msg, pv_param_t *param,
 
 	if (idxf==0 && idx==0) {
 		/* no index specified -> return the first contact body */
-		return set_contact_body_field( res , ctb, &param->pvn);
+		return get_contact_body_field( res , ctb, &param->pvn);
 	}
 
 	if(idxf==PV_IDX_ALL) {
@@ -585,7 +585,7 @@ static int pv_get_contact_body(struct sip_msg *msg, pv_param_t *param,
 				p += PV_FIELD_DELIM_LEN;
 			}
 
-			set_contact_body_field( res , ctb, &param->pvn);
+			get_contact_body_field( res , ctb, &param->pvn);
 			if (p-pv_local_buf+res->rs.len+1>PV_LOCAL_BUF_SIZE) {
 				LM_ERR("local buffer length exceeded!\n");
 				return pv_get_null(msg, param, res);
@@ -659,7 +659,7 @@ static int pv_get_contact_body(struct sip_msg *msg, pv_param_t *param,
 		return pv_get_null(msg, param, res);
 
 	/* take the current body */
-	return set_contact_body_field( res , ctb, &param->pvn);
+	return get_contact_body_field( res , ctb, &param->pvn);
 }
 
 extern err_info_t _oser_err_info;
@@ -871,23 +871,6 @@ static int pv_get_hexflags(struct sip_msg *msg, pv_param_t *param,
 	return pv_get_strintval(msg, param, res, &s, (int)msg->flags);
 }
 
-static int pv_get_bflags(struct sip_msg *msg, pv_param_t *param,
-		pv_value_t *res)
-{
-	return pv_get_uintval(msg, param, res, getb0flags());
-}
-
-static int pv_get_hexbflags(struct sip_msg *msg, pv_param_t *param,
-		pv_value_t *res)
-{
-	str s;
-	if(res==NULL)
-		return -1;
-
-	s.s = int_to_8hex((int)getb0flags());
-	s.len = 8;
-	return pv_get_strintval(msg, param, res, &s, (int)getb0flags());
-}
 
 static int pv_get_sflags(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
@@ -1468,102 +1451,187 @@ static int pv_get_acc_username(struct sip_msg *msg, pv_param_t *param,
 	return pv_get_strval(msg, param, res, &s);
 }
 
-static int pv_get_branch(struct sip_msg *msg, pv_param_t *param,
-		pv_value_t *res)
-{
-	str branch;
-	qvalue_t q;
 
-	if(msg==NULL || res==NULL)
+#define BR_URI_S         "uri"
+#define BR_URI_LEN       (sizeof(BR_URI_S)-1)
+#define BR_URI_ID        1
+#define BR_DURI_S        "duri"
+#define BR_DURI_LEN      (sizeof(BR_DURI_S)-1)
+#define BR_DURI_ID       2
+#define BR_Q_S           "q"
+#define BR_Q_LEN         (sizeof(BR_Q_S)-1)
+#define BR_Q_ID          3
+#define BR_PATH_S        "path"
+#define BR_PATH_LEN      (sizeof(BR_PATH_S)-1)
+#define BR_PATH_ID       4
+#define BR_FLAGS_S       "flags"
+#define BR_FLAGS_LEN     (sizeof(BR_FLAGS_S)-1)
+#define BR_FLAGS_ID       5
+#define BR_SOCKET_S       "socket"
+#define BR_SOCKET_LEN     (sizeof(BR_SOCKET_S)-1)
+#define BR_SOCKET_ID      6
+
+int pv_parse_branch_name(pv_spec_p sp, str *in)
+{
+	if (sp==NULL || in==NULL || in->s==NULL || in->len==0)
 		return -1;
 
-	if(msg->first_line.type == SIP_REPLY)
-		return pv_get_null(msg, param, res);
+	sp->pvp.pvn.type = PV_NAME_INTSTR;
+	sp->pvp.pvn.u.isname.type = 0;
 
-
-	branch.s = get_branch(0, &branch.len, &q, 0, 0, 0, 0);
-	if (!branch.s) {
-		return pv_get_null(msg, param, res);
+	if (in->len==BR_URI_LEN &&
+	strncasecmp(in->s, BR_URI_S, BR_URI_LEN)==0 ) {
+		sp->pvp.pvn.u.isname.name.n = BR_URI_ID;
+	} else
+	if (in->len==BR_DURI_LEN &&
+	strncasecmp(in->s, BR_DURI_S, BR_DURI_LEN)==0 ) {
+		sp->pvp.pvn.u.isname.name.n = BR_DURI_ID;
+	} else
+	if (in->len==BR_Q_LEN &&
+	strncasecmp(in->s, BR_Q_S, BR_Q_LEN)==0 ) {
+		sp->pvp.pvn.u.isname.name.n = BR_Q_ID;
+	} else
+	if (in->len==BR_PATH_LEN &&
+	strncasecmp(in->s, BR_PATH_S, BR_PATH_LEN)==0 ) {
+		sp->pvp.pvn.u.isname.name.n = BR_PATH_ID;
+	} else
+	if (in->len==BR_FLAGS_LEN &&
+	strncasecmp(in->s, BR_FLAGS_S, BR_FLAGS_LEN)==0 ) {
+		sp->pvp.pvn.u.isname.name.n = BR_FLAGS_ID;
+	} else
+	if (in->len==BR_SOCKET_LEN &&
+	strncasecmp(in->s, BR_SOCKET_S, BR_SOCKET_LEN)==0 ) {
+		sp->pvp.pvn.u.isname.name.n = BR_SOCKET_ID;
+	} else {
+		LM_ERR("unsupported BRANCH field <%.*s>\n",in->len,in->s);
+		return -1;
 	}
-	
-	return pv_get_strval(msg, param, res, &branch);
+
+	return 0;
 }
 
-#define Q_PARAM ">;q="
-#define Q_PARAM_LEN (sizeof(Q_PARAM) - 1)
+static inline int get_branch_field( int idx, pv_name_t *pvn, pv_value_t *res)
+{
+	str uri;
+	qvalue_t q;
+	str duri;
+	str path;
+	unsigned int flags;
+	struct socket_info *si;
 
-static int pv_get_branches(struct sip_msg *msg, pv_param_t *param,
+	uri.s = get_branch(idx, &uri.len, &q, &duri, &path, &flags, &si);
+	if (!uri.s)
+		return pv_get_null( NULL, NULL, res);
+
+	/* got a valid branch, return the field */
+	switch (pvn->u.isname.name.n) {
+		case BR_URI_ID: /* return URI */
+			res->rs = uri;
+			res->flags = PV_VAL_STR;
+			break;
+		case BR_Q_ID: /* return Q */
+			res->rs.s = q2str(q, (unsigned int*)&res->rs.len);
+			res->flags = PV_VAL_STR;
+			break;
+		case BR_DURI_ID: /* return DURI */
+			if ( !duri.s || !duri.len)
+				return pv_get_null(NULL, NULL, res);
+			res->rs = duri;
+			res->flags = PV_VAL_STR;
+			break;
+		case BR_PATH_ID: /* return PATH */
+			if ( !path.s || !path.len)
+				return pv_get_null(NULL, NULL, res);
+			res->rs = path;
+			res->flags = PV_VAL_STR;
+			break;
+		case BR_FLAGS_ID: /* return FLAGS */
+			res->rs.s = int2str( flags, &res->rs.len);
+			res->ri = flags;
+			res->flags = PV_VAL_STR|PV_VAL_INT;
+			break;
+		case BR_SOCKET_ID: /* return SOCKET */
+			if ( !si )
+				return pv_get_null(NULL, NULL, res);
+			res->rs = si->sock_str;
+			res->flags = PV_VAL_STR;
+			break;
+		default:
+			LM_CRIT("BUG - unsupported ID %d\n",pvn->u.isname.type);
+			return pv_get_null(NULL, NULL, res);
+	}
+	return 0;
+}
+
+
+static int pv_get_branch_fields(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {
 	str uri;
-	str s;
 	qvalue_t q;
-	int cnt, i;
-	unsigned int qlen;
-	char *p, *qbuf;
+	int idx;
+	int idxf;
+	char *p;
 
 	if(msg==NULL || res==NULL)
 		return -1;
 
-	if(msg->first_line.type == SIP_REPLY)
+	if(msg->first_line.type == SIP_REPLY || nr_branches==0 )
 		return pv_get_null(msg, param, res);
-  
-	cnt = s.len = 0;
 
-	while ((uri.s = get_branch(cnt, &uri.len, &q, 0, 0, 0, 0)))
-	{
-		cnt++;
-		s.len += uri.len;
-		if (q != Q_UNSPECIFIED)
-		{
-			s.len += 1 + Q_PARAM_LEN + len_q(q);
-		}
+	/* get the index */
+	if(pv_get_spec_index(msg, param, &idx, &idxf)!=0) {
+		LM_ERR("invalid index\n");
+		return -1;
 	}
 
-	if (cnt == 0)
-		return pv_get_null(msg, param, res);   
-
-	s.len += (cnt - 1) * PV_FIELD_DELIM_LEN;
-
-	if (s.len + 1 > PV_LOCAL_BUF_SIZE)
-	{
-		LM_ERR("local buffer length exceeded\n");
-		return pv_get_null(msg, param, res);
+	if (idxf==0 && idx==0) {
+		/* no index specified -> return the first branch */
+		return get_branch_field( 0, &param->pvn, res);
 	}
 
-	i = 0;
-	p = pv_local_buf;
+	if(idxf==PV_IDX_ALL) {
+		/* return all branches */
+		p = pv_local_buf;
+		idx = 0;
 
-	while ((uri.s = get_branch(i, &uri.len, &q, 0, 0, 0, 0)))
-	{
-		if (i)
-		{
-			memcpy(p, PV_FIELD_DELIM, PV_FIELD_DELIM_LEN);
-			p += PV_FIELD_DELIM_LEN;
+		while ( (uri.s=get_branch(idx, &uri.len, &q, 0, 0, 0, 0))!=NULL ) {
+
+			if ( pv_local_buf + PV_LOCAL_BUF_SIZE <=
+			p + uri.len + PV_FIELD_DELIM_LEN ) {
+				LM_ERR("local buffer length exceeded\n");
+				return pv_get_null(msg, param, res);
+			}
+
+			if (idx) {
+				memcpy(p, PV_FIELD_DELIM, PV_FIELD_DELIM_LEN);
+				p += PV_FIELD_DELIM_LEN;
+			}
+
+			memcpy(p, uri.s, uri.len);
+			p += uri.len;
+			idx++;
 		}
 
-		if (q != Q_UNSPECIFIED)
-		{
-			*p++ = '<';
-		}
-
-		memcpy(p, uri.s, uri.len);
-		p += uri.len;
-		if (q != Q_UNSPECIFIED)
-		{
-			memcpy(p, Q_PARAM, Q_PARAM_LEN);
-			p += Q_PARAM_LEN;
-
-			qbuf = q2str(q, &qlen);
-			memcpy(p, qbuf, qlen);
-			p += qlen;
-		}
-		i++;
+		res->rs.s = pv_local_buf;
+		res->rs.len = p - pv_local_buf;
+		res->flags = PV_VAL_STR;
+		return 0;
 	}
 
-	s.s = &(pv_local_buf[0]);
-	return pv_get_strval(msg, param, res, &s);
+	/* numerical index */
+	if (idx<0) {
+		/* index from the end */
+		if (-idx > nr_branches)
+			return pv_get_null(msg, param, res);
+		idx = nr_branches - idx;
+	}
+
+	/* return the request branch info */
+	return get_branch_field( idx, &param->pvn, res);
 }
+
+
 
 
 /************************************************************/
@@ -2195,31 +2263,110 @@ error:
 }
 
 
-int pv_set_branch(struct sip_msg* msg, pv_param_t *param,
+int pv_set_branch_fields(struct sip_msg* msg, pv_param_t *param,
 		int op, pv_value_t *val)
 {
-	if(msg==NULL || param==NULL || val==NULL)
-	{
+	int idx;
+	int idxf;
+	str *s;
+	qvalue_t q;
+	unsigned int flags;
+	struct socket_info *si;
+
+	if (msg==NULL || param==NULL) {
 		LM_ERR("bad parameters\n");
 		return -1;
 	}
 
-	if(!(val->flags&PV_VAL_STR) || val->rs.len<=0)
-	{
-		LM_ERR("str value required to set the branch\n");
-		goto error;
-	}
-	
-	if (append_branch( msg, &val->rs, 0, 0, Q_UNSPECIFIED, 0,
-			msg->force_send_socket)!=1 )
-	{
-		LM_ERR("append_branch action failed\n");
-		goto error;
+	if (msg->first_line.type == SIP_REPLY)
+		return -1;
+
+	/* get the index */
+	if (pv_get_spec_index(msg, param, &idx, &idxf)!=0) {
+		LM_ERR("invalid index\n");
+		return -1;
 	}
 
+	if(idxf==PV_IDX_ALL) {
+		LM_ERR("SCRIPT BUG - * not allowed in branch assigment\n");
+		return -1;
+	}
+
+	if (idx>=nr_branches) {
+		LM_ERR("SCRIPT BUG - inexisting branch assigment [%d/%d]\n",
+			nr_branches, idx);
+		return -1;
+	}
+
+	switch (param->pvn.u.isname.name.n) {
+		case BR_URI_ID: /* set URI */
+			if (!val || !(val->flags&PV_VAL_STR) || val->flags&(PV_VAL_NULL) ||
+			val->rs.len==0 ) {
+				LM_ERR("str value required to set the branch URI\n");
+				return -1;
+			}
+			s = &val->rs;
+			return update_branch( idx, &s, NULL,
+				NULL, NULL, NULL, NULL);
+		case BR_Q_ID: /* set Q */
+			if ( val && !(val->flags&PV_VAL_INT) ) {
+				LM_ERR("INT value required to set the branch Q\n");
+				return -1;
+			}
+			q = (!val||val->flags&PV_VAL_NULL)? Q_UNSPECIFIED : val->ri;
+			return update_branch( idx, NULL, NULL, 
+				NULL, &q, NULL, NULL);
+		case BR_DURI_ID: /* set DURI */
+			if ( val && !(val->flags&PV_VAL_STR) ) {
+				LM_ERR("STR value required to set the branch DURI\n");
+				return -1;
+			}
+			s = (!val||val->flags&PV_VAL_NULL)? NULL : &val->rs;
+			return update_branch( idx, NULL, &s,
+				NULL, NULL, NULL, NULL);
+		case BR_PATH_ID: /* set PATH */
+			if ( val && !(val->flags&PV_VAL_STR) ) {
+				LM_ERR("STR value required to set the branch PATH\n");
+				return -1;
+			}
+			s = (!val||val->flags&PV_VAL_NULL)? NULL : &val->rs;
+			return update_branch( idx, NULL, NULL,
+				&s, NULL, NULL, NULL);
+		case BR_FLAGS_ID: /* set FLAGS */
+			if ( val && !(val->flags&PV_VAL_INT) ) {
+				LM_ERR("INT value required to set the branch FLAGS\n");
+				return -1;
+			}
+			flags = (!val||val->flags&PV_VAL_NULL)? 0 : val->ri;
+			return update_branch( idx, NULL, NULL, 
+				NULL, NULL, &flags, NULL);
+		case BR_SOCKET_ID: /* set SOCKET */
+			if ( val && !(val->flags&PV_VAL_STR) ) {
+				LM_ERR("STR value required to set the branch SOCKET\n");
+				return -1;
+			}
+			if (!val || val->flags&PV_VAL_NULL) {
+				si = NULL;
+			} else {
+				str host;
+				int port, proto;
+				if (parse_phostport(val->rs.s, val->rs.len, &host.s, &host.len,
+				&port, &proto) < 0) {
+					LM_ERR("invalid socket specification\n");
+					return -1;
+				}
+				si = grep_sock_info(&host, (unsigned short)port, 
+					(unsigned short)proto);
+				if (si==NULL)
+					return -1;
+			}
+			return update_branch( idx, NULL, NULL,
+				NULL, NULL, NULL, &si);
+		default:
+			LM_CRIT("BUG - unsupported ID %d\n",param->pvn.u.isname.type);
+			return -1;
+	}
 	return 0;
-error:
-	return -1;
 }
 
 int pv_set_force_sock(struct sip_msg* msg, pv_param_t *param,
@@ -2568,18 +2715,9 @@ static pv_export_t _pv_names_table[] = {
 	{{"Au", (sizeof("Au")-1)}, /* */
 		PVT_ACC_USERNAME, pv_get_acc_username, 0,
 		0, 0, pv_init_iname, 1},
-	{{"bf", (sizeof("bf")-1)}, /* */
-		PVT_BFLAGS, pv_get_bflags, pv_set_bflags,
-		0, 0, 0, 0},
-	{{"bF", (sizeof("bF")-1)}, /* */
-		PVT_HEXBFLAGS, pv_get_hexbflags, pv_set_bflags,
-		0, 0, 0, 0},
-	{{"br", (sizeof("br")-1)}, /* */
-		PVT_BRANCH, pv_get_branch, pv_set_branch,
-		0, 0, 0, 0},
-	{{"bR", (sizeof("bR")-1)}, /* */
-		PVT_BRANCHES, pv_get_branches, 0,
-		0, 0, 0, 0},
+	{{"branch", (sizeof("branch")-1)}, /* */
+		PVT_BRANCH, pv_get_branch_fields, pv_set_branch_fields,
+		pv_parse_branch_name, pv_parse_index, 0, 0},
 	{{"ci", (sizeof("ci")-1)}, /* */
 		PVT_CALLID, pv_get_callid, 0,
 		0, 0, 0, 0},
