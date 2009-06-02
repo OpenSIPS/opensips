@@ -1,8 +1,8 @@
 /**
- * $Id: items.c 2715 2007-09-05 15:31:50Z miconda $
+ * $Id$
  *
  * Copyright (C) 2001-2003 FhG Fokus
- * Copyright (C) 2005 Voice Sistem SRL
+ * Copyright (C) 2005-2009 Voice Sistem SRL
  * 
  * This file is part of opensips, a free SIP server.
  *
@@ -27,6 +27,8 @@
  * 2005-06-18 - added color printing support via escape sequesnces
  *              contributed by Ingo Flaschberger (daniel)
  * 2005-06-22 - created this file from modules/xlog/pv_lib.c (daniel)
+ * 2009-04-28 - $ct and $ct.fields() PVs added (bogdan)
+ * 2009-05-02 - $branch() added, $br, $bR, $bf, $bF removed (bogdan)
  */
 
 #include <stdio.h>

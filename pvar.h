@@ -1,5 +1,5 @@
 /*
- * $Id: items.h 2111 2007-05-01 11:18:08Z juhe $
+ * $Id$
  *
  * Copyright (C) 2001-2003 FhG Fokus
  *
