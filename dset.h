@@ -44,6 +44,14 @@ int append_branch(struct sip_msg* msg, str* uri, str* dst_uri, str* path,
 		qvalue_t q, unsigned int flags, struct socket_info* force_socket);
 
 
+
+/* ! \brief
+ * Updates an already created branches
+ */
+int update_branch(unsigned int idx, str** uri, str** dst_uri, str** path,
+		qvalue_t* q, unsigned int* flags, struct socket_info** force_socket);
+
+
 /*! \brief
  * Get the next branch in the current transaction
  */
