@@ -343,6 +343,7 @@ static inline int parse_param_body(str* _s, param_t* _c)
 int parse_params(str* _s, pclass_t _c, param_hooks_t* _h, param_t** _p)
 {
 	param_t* t;
+	param_t* last;
 
 	if (!_s || !_h || !_p) {
 		LM_ERR("invalid parameter value\n");
@@ -350,13 +351,14 @@ int parse_params(str* _s, pclass_t _c, param_hooks_t* _h, param_t** _p)
 	}
 
 	memset(_h, 0, sizeof(param_hooks_t));
+	last = NULL;
 	*_p = 0;
 
 	if (!_s->s) { /* no parameters at all -- we're done */
 		LM_DBG("empty uri params, skipping\n");
 		return 0;
 	}
-			
+
 	while(1) {
 		t = (param_t*)pkg_malloc(sizeof(param_t));
 		if (t == 0) {
@@ -398,8 +400,8 @@ int parse_params(str* _s, pclass_t _c, param_hooks_t* _h, param_t** _p)
 			t->len = t->name.len;
 		}
 
-		if (_s->s[0] == ',') goto ok; /* To be able to parse header parameters */
-		if (_s->s[0] == '>') goto ok; /* To be able to parse URI parameters */
+		if (_s->s[0]==',') goto ok; /* To be able to parse header parameters */
+		if (_s->s[0]=='>') goto ok; /* To be able to parse URI parameters */
 
 		if (_s->s[0] != ';') {
 			LM_ERR("invalid character, ; expected\n");
@@ -415,19 +417,19 @@ int parse_params(str* _s, pclass_t _c, param_hooks_t* _h, param_t** _p)
 			goto error;
 		}
 
-		t->next = *_p;
-		*_p = t;
+		if (last) {last->next=t;} else {*_p = t;}
+		last = t;
 	}
 
- error:
+error:
 	if (t) pkg_free(t);
 	free_params(*_p);
 	*_p = 0;
 	return -2;
 
- ok:
-	t->next = *_p;
-	*_p = t;
+ok:
+	if (last) {last->next=t;} else {*_p = t;}
+	last = t;
 	return 0;
 }
 

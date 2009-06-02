@@ -207,7 +207,7 @@ int parse_contacts(str* _s, contact_t** _c)
 		c->name.len = _s->s - c->name.s;
 		trim_trailing(&c->name);
 		
-		     /* Find the end of the URI */
+		/* Find the end of the URI */
 		if (skip_uri(_s) < 0) {
 			LM_ERR("failed to skip URI\n");
 			goto error;
@@ -216,7 +216,7 @@ int parse_contacts(str* _s, contact_t** _c)
 		c->uri.len = _s->s - c->uri.s; /* Calculate URI length */
 		trim_trailing(&(c->uri));    /* Remove any trailing spaces from URI */
 
-		     /* Remove <> if any */
+		/* Remove <> if any */
 		if ((c->uri.len >= 2) && (c->uri.s[0] == '<') &&
 		(c->uri.s[c->uri.len - 1] == '>')) {
 			c->uri.s++;
@@ -250,7 +250,7 @@ int parse_contacts(str* _s, contact_t** _c)
 			if (_s->len == 0) goto ok;
 		}
 
-		     /* Next character is comma */
+		/* Next character is comma */
 		c->len = _s->s - c->name.s;
 		_s->s++;
 		_s->len--;
