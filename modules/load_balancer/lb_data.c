@@ -330,7 +330,7 @@ void free_lb_data(struct lb_data *data)
 
 
 static unsigned int get_dst_load(struct lb_resource **res, unsigned int res_no,
-														struct lb_dst *dst)
+										struct lb_dst *dst, unsigned int alg)
 {
 	int k,l;
 	unsigned int available;
@@ -347,8 +347,17 @@ static unsigned int get_dst_load(struct lb_resource **res, unsigned int res_no,
 			return 0;
 		}
 
-		av = dst->rmap[l].max_load -
+		if (alg==LB_RELATIVE_LOAD_ALG) {
+			if (dst->rmap[l].max_load) {
+				av = 100 - ( 100*lb_dlg_binds.get_profile_size(res[k]->profile, &dst->profile_id) / dst->rmap[l].max_load );
+			} else {
+				av = 0;
+			}
+		} else {
+			/* LB_ABSOLUTE_LOAD_ALG */
+			av = dst->rmap[l].max_load -
 			lb_dlg_binds.get_profile_size(res[k]->profile, &dst->profile_id);
+		}
 		if (av < 0) {
 			LM_WARN("negative availability for resource in dst\n");
 			av = 0;
@@ -362,7 +371,7 @@ static unsigned int get_dst_load(struct lb_resource **res, unsigned int res_no,
 
 
 int do_load_balance(struct sip_msg *req, int grp, struct lb_res_str_list *rl,
-														struct lb_data *data)
+										unsigned int alg, struct lb_data *data)
 {
 	static struct lb_resource **call_res = NULL;
 	static unsigned int call_res_no = 0;
@@ -433,7 +442,7 @@ int do_load_balance(struct sip_msg *req, int grp, struct lb_res_str_list *rl,
 	for( it=data->dsts,i=0,j=0 ; it ; it=it->next) {
 		if ( (dst_bitmap[i] & (1<<j)) && it->group==grp ) {
 			/* valid destination (resources & group) */
-			if ( (ld = get_dst_load(call_res, call_res_no, it)) > load) {
+			if ( (ld = get_dst_load(call_res, call_res_no, it, alg)) > load) {
 				/* computing a max */
 				load = ld;
 				dst = it;

@@ -66,13 +66,15 @@ static struct mi_root* mi_lb_list(struct mi_root *cmd_tree, void *param);
 
 static int fixup_resources(void** param, int param_no);
 
-static int w_load_balance(struct sip_msg *req, char *grp,  char *rl);
+static int w_load_balance(struct sip_msg *req, char *grp,  char *rl, char* al);
 
 
 
 
 static cmd_export_t cmds[]={
 	{"load_balance", (cmd_function)w_load_balance,      2, fixup_resources,
+			0, REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
+	{"load_balance", (cmd_function)w_load_balance,      3, fixup_resources,
 			0, REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
 	{0,0,0,0,0,0}
 	};
@@ -130,6 +132,11 @@ static int fixup_resources(void** param, int param_no)
 		}
 		pkg_free(*param);
 		*param = (void*)lb_rl;
+
+	} else if (param_no==3) {
+
+		fixup_uint(param);
+
 	}
 
 	return 0;
@@ -275,7 +282,7 @@ static void mod_destroy(void)
 }
 
 
-static int w_load_balance(struct sip_msg *req, char *grp, char *rl)
+static int w_load_balance(struct sip_msg *req, char *grp, char *rl, char *al)
 {
 	int ret;
 
@@ -294,7 +301,7 @@ again:
 
 	/* do lb */
 	ret = do_load_balance(req, (int)(long)grp, (struct lb_res_str_list*)rl,
-				*curr_data);
+				(unsigned int)(long)al, *curr_data);
 
 	/* we are done reading -> unref the data */
 	lock_get( ref_lock );

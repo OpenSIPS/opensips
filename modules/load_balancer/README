@@ -32,7 +32,7 @@ Bogdan-Andrei Iancu
 
         1.5. Exported Functions
 
-              1.5.1. load_balance(grp,resources)
+              1.5.1. load_balance(grp,resources[,alg])
 
         1.6. Exported statistics
         1.7. Exported MI Functions
@@ -121,7 +121,7 @@ modparam("", "db_table", "lb")
 
 1.5. Exported Functions
 
-1.5.1.  load_balance(grp,resources)
+1.5.1.  load_balance(grp,resources[,alg])
 
    The function performs load-balancing over the available
    destinations in order to find the less loaded destination that
@@ -134,6 +134,15 @@ modparam("", "db_table", "lb")
        scenarios.
      * resources - string containing a semi-colon list of
        resources required by the current call.
+     * algorithm - algorithm used for computing the available load
+       on the system:
+          + 0 - Absolute value - the effective available load (
+            maximum_load - current_load) is used in computing the
+            load of each pear/resource.
+          + 1 - Relative value - the relative available load (how
+            many percentages are free) is used in computing the
+            load of each pear/resource.
+       If missing, the default algorithm in 0.
 
    Function returns true is a new destination URI is set pointing
    to the selected destiantion. NOTE that the RURI will not be

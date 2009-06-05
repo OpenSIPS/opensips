@@ -117,7 +117,7 @@ modparam("", "db_table", "lb")
 	<title>Exported Functions</title>
 	<section>
 		<title>
-		<function moreinfo="none">load_balance(grp,resources)</function>
+		<function moreinfo="none">load_balance(grp,resources[,alg])</function>
 		</title>
 		<para>
 		The function performs load-balancing over the available destinations in
@@ -135,6 +135,27 @@ modparam("", "db_table", "lb")
 		<listitem>
 			<para><emphasis>resources</emphasis> - string containing a 
 			semi-colon list of resources required by the current call.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>algorithm</emphasis> - algorithm used for 
+			computing the available load on the system:
+			</para>
+			<itemizedlist>
+			<listitem>
+				<para><emphasis>0</emphasis> - Absolute value - the effective
+				available load ( maximum_load - current_load) is used in
+				computing the load of each pear/resource.
+				</para>
+			</listitem>
+			<listitem>
+				<para><emphasis>1</emphasis> - Relative value - the relative
+				available load (how many percentages are free) is used in
+				computing the load of each pear/resource.
+				</para>
+			</listitem>
+			</itemizedlist>
+			<para>If missing, the default algorithm in 0.
 			</para>
 		</listitem>
 		</itemizedlist>

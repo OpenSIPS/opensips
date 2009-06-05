@@ -37,6 +37,9 @@
 #include "../dialog/dlg_load.h"
 #include "lb_parser.h"
 
+#define LB_ABSOLUTE_LOAD_ALG    0
+#define LB_RELATIVE_LOAD_ALG    1
+
 struct lb_resource {
 	str name;
 	gen_lock_t *lock;
@@ -77,7 +80,7 @@ int add_lb_dsturi( struct lb_data *data, int id, int group, char *uri,
 void free_lb_data(struct lb_data *data);
 
 int do_load_balance(struct sip_msg *req, int grp, struct lb_res_str_list *rl,
-		struct lb_data *data);
+		unsigned int alg, struct lb_data *data);
 
 
 #endif
