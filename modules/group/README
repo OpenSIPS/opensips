@@ -14,8 +14,8 @@ Sergio Gutierrez
 
    Copyright © 2003 FhG FOKUS
    Revision History
-   Revision $Revision$ $Date: 2008-07-29 19:23:00 +0300
-                              (Tue, 29 Jul 2008) $
+   Revision $Revision$ $Date: 2008-12-26 18:51:11 +0200
+                              (Fri, 26 Dec 2008) $
      __________________________________________________________
 
    Table of Contents
@@ -111,7 +111,8 @@ Chapter 1. Admin Guide
 
    URL of the database table to be used.
 
-   Default value is "mysql://opensips:opensipsrw@localhost/opensips".
+   Default value is
+   "mysql://opensips:opensipsrw@localhost/opensips".
 
    Example 1.1. Set db_url parameter
 ...
@@ -243,21 +244,21 @@ modparam("group", "multiple_gid", 0)
           + Credentials - Use digest credentials username.
           + $avp(name) - Use the URI from the AVP specified by
             this pseudo-variable.
-     * group - Name of the group to check. The string may contain a
-       pseudovariable	
+     * group - Name of the group to check. The string may contain
+       a pseudovariable.
 
    This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
    Example 1.11. is_user_in usage
 ...
 if (is_user_in("Request-URI", "ld")) {
-...
+        ...
 };
 ...
 $avp(s:grouptocheck)="offline";
- 
+
 if (is_user_in("Credentials", "$avp(s:grouptocheck)")) {
-...
+        ...
 };
 ...
 
@@ -285,7 +286,7 @@ if (is_user_in("Credentials", "$avp(s:grouptocheck)")) {
    Example 1.12. get_user_group usage
 ...
 if (get_user_group("Request-URI", "$avp(i:10)")) {
-    xgdb("User $ru belongs to $(avp(i:10)[*]) group(s)\n");
+    xdbg("User $ru belongs to $(avp(i:10)[*]) group(s)\n");
     ....
 };
 ...
