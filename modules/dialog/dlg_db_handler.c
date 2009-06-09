@@ -207,7 +207,7 @@ void destroy_dlg_db(void)
 
 static int select_entire_dialog_table(db_res_t ** res)
 {
-	db_key_t query_cols[DIALOG_TABLE_COL_NO] = {	&h_entry_column,
+	db_key_t query_cols[DIALOG_TABLE_TOTAL_COL_NO] = {	&h_entry_column,
 			&h_id_column,		&call_id_column,	&from_uri_column,
 			&from_tag_column,	&to_uri_column,		&to_tag_column,
 			&start_time_column,	&state_column,		&timeout_column,
@@ -223,7 +223,7 @@ static int select_entire_dialog_table(db_res_t ** res)
 	/* select the whole tabel and all the columns */
 	if (DB_CAPABILITY(dialog_dbf, DB_CAP_FETCH)) {
 		if(dialog_dbf.query(dialog_db_handle,0,0,0,query_cols, 0,
-		DIALOG_TABLE_COL_NO, 0, 0) < 0) {
+		DIALOG_TABLE_TOTAL_COL_NO, 0, 0) < 0) {
 			LM_ERR("Error while querying (fetch) database\n");
 			return -1;
 		}
@@ -233,7 +233,7 @@ static int select_entire_dialog_table(db_res_t ** res)
 		}
 	} else {
 		if(dialog_dbf.query(dialog_db_handle,0,0,0,query_cols, 0,
-		DIALOG_TABLE_COL_NO, 0, res) < 0) {
+		DIALOG_TABLE_TOTAL_COL_NO, 0, res) < 0) {
 			LM_ERR("Error while querying database\n");
 			return -1;
 		}
@@ -590,9 +590,9 @@ int update_dialog_dbinfo(struct dlg_cell * cell)
 	static db_ps_t my_ps_insert = NULL;
 	static db_ps_t my_ps_update = NULL;
 	struct dlg_entry entry;
-	db_val_t values[DIALOG_TABLE_COL_NO];
+	db_val_t values[DIALOG_TABLE_FIX_COL_NO];
 
-	db_key_t insert_keys[DIALOG_TABLE_COL_NO] = { &h_entry_column,
+	db_key_t insert_keys[DIALOG_TABLE_FIX_COL_NO] = { &h_entry_column,
 			&h_id_column,        &call_id_column,     &from_uri_column,
 			&from_tag_column,    &to_uri_column,      &to_tag_column,
 			&from_sock_column,   &to_sock_column,
@@ -655,7 +655,7 @@ int update_dialog_dbinfo(struct dlg_cell * cell)
 		CON_PS_REFERENCE(dialog_db_handle) = &my_ps_insert;
 
 		if((dialog_dbf.insert(dialog_db_handle, insert_keys, values, 
-								DIALOG_TABLE_COL_NO)) !=0){
+								DIALOG_TABLE_FIX_COL_NO)) !=0){
 			LM_ERR("could not add another dialog to db\n");
 			goto error;
 		}
@@ -865,12 +865,12 @@ void dialog_update_db(unsigned int ticks, void * param)
 	static db_ps_t my_ps_update = NULL;
 	static db_ps_t my_ps_insert = NULL;
 	int index;
-	db_val_t values[DIALOG_TABLE_COL_NO];
+	db_val_t values[DIALOG_TABLE_TOTAL_COL_NO];
 	struct dlg_entry entry;
 	struct dlg_cell  * cell; 
 	unsigned char on_shutdown;
-	
-	db_key_t insert_keys[DIALOG_TABLE_COL_NO] = {		&h_entry_column,
+
+	db_key_t insert_keys[DIALOG_TABLE_TOTAL_COL_NO] = {	&h_entry_column,
 			&h_id_column,		&call_id_column,		&from_uri_column,
 			&from_tag_column,	&to_uri_column,			&to_tag_column,
 			&from_sock_column,	&to_sock_column,		&start_time_column,
@@ -955,7 +955,7 @@ void dialog_update_db(unsigned int ticks, void * param)
 				CON_PS_REFERENCE(dialog_db_handle) = &my_ps_insert;
 
 				if((dialog_dbf.insert(dialog_db_handle, insert_keys, 
-				values, DIALOG_TABLE_COL_NO)) !=0){
+				values, DIALOG_TABLE_TOTAL_COL_NO)) !=0){
 					LM_ERR("could not add another dialog to db\n");
 					goto error;
 				}
