@@ -40,6 +40,7 @@ Anca-Maria Vamanu
               1.3.12. subs_htable_size (int)
               1.3.13. pres_htable_size (int)
               1.3.14. enable_sphere_check (int)
+              1.3.15. waiting_subs_daysno (int)
 
         1.4. Exported Functions
 
@@ -87,8 +88,9 @@ Anca-Maria Vamanu
    1.12. Set subs_htable_size parameter
    1.13. Set pres_htable_size parameter
    1.14. Set enable_sphere_check parameter
-   1.15. handle_publish usage
-   1.16. handle_subscribe usage
+   1.15. Set waiting_subs_daysno parameter
+   1.16. handle_publish usage
+   1.17. handle_subscribe usage
    2.1. presence_api_t structure
 
 Chapter 1. Admin Guide
@@ -189,8 +191,7 @@ modparam("presence", "watchers_table", "watchers")
 
 1.3.5. clean_period (int)
 
-   The period at which to verify if there are expired messages
-   stored in database.
+   The period at which to clean the expired subscription dialogs.
 
    Default value is "100". A zero or negative value disables this
    activity.
@@ -317,6 +318,21 @@ modparam("presence", "pres_htable_size", 11)
 modparam("presence", "enable_sphere_check", 1)
 ...
 
+1.3.15. waiting_subs_daysno (int)
+
+   The number of days to keep the record of a subscription in
+   server database if the subscription is in pending or waiting
+   state (no authorization policy was defined for it or the target
+   user did not register sice the subscription and was not
+   informed about it).
+
+   Default value is "3" days. Maximum accepted value is 30 days.
+
+   Example 1.15. Set waiting_subs_daysno parameter
+...
+modparam("presence", "waiting_subs_daysno", 2)
+...
+
 1.4. Exported Functions
 
 1.4.1.  handle_publish(char* sender_uri)
@@ -341,7 +357,7 @@ modparam("presence", "enable_sphere_check", 1)
 
    The module sends an appropriate stateless reply in all cases.
 
-   Example 1.15. handle_publish usage
+   Example 1.16. handle_publish usage
 ...
         if(is_method("PUBLISH"))
         {
@@ -381,7 +397,7 @@ modparam("presence", "enable_sphere_check", 1)
 
    The module sends an appropriate stateless reply in all cases.
 
-   Example 1.16. handle_subscribe usage
+   Example 1.17. handle_subscribe usage
 ...
 if(method=="SUBSCRIBE")
     handle_subscribe();

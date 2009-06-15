@@ -66,6 +66,7 @@ MODULE_VERSION
 
 char *log_buf = NULL;
 static int clean_period=100;
+static int watchers_clean_period=3600;
 static int db_update_period=100;
 
 /* database connection */
@@ -114,6 +115,8 @@ int sphere_enable= 0;
 
 int phtable_size= 9;
 phtable_t* pres_htable;
+unsigned int waiting_subs_daysno = 0;
+unsigned long waiting_subs_time = 3*24*3600;
 
 static cmd_export_t cmds[]=
 {
@@ -140,7 +143,9 @@ static param_export_t params[]={
 	{ "pres_htable_size",       INT_PARAM, &phtable_size},
 	{ "fallback2db",            INT_PARAM, &fallback2db},
 	{ "enable_sphere_check",    INT_PARAM, &sphere_enable},
-    {0,0,0}
+	{ "waiting_subs_daysno",    INT_PARAM, &waiting_subs_daysno},
+
+	{0,0,0}
 };
 
 static mi_export_t mi_cmds[] = {
@@ -308,7 +313,7 @@ static int mod_init(void)
 	if(clean_period>0)
 	{
 		register_timer(msg_presentity_clean, 0, clean_period);
-		register_timer(msg_watchers_clean, 0, clean_period);
+		register_timer(msg_watchers_clean, 0, watchers_clean_period);
 	}
 	
 	if(db_update_period>0)
@@ -317,6 +322,15 @@ static int mod_init(void)
 	if(pa_db)
 		pa_dbf.close(pa_db);
 	pa_db = NULL;
+
+	if(waiting_subs_daysno > 30)
+	{
+		LM_INFO("Too greater value for waiting_subs_daysno parameter."
+				" 30 days, the maximum accepted value will be used instead\n");
+		waiting_subs_days_no = 30;
+	}
+	if(waiting_subs_daysno > 0)
+		waiting_subs_time = waiting_subs_daysno*24*3600;
 
 	return 0;
 }

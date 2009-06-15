@@ -68,6 +68,8 @@ extern shtable_t subs_htable;
 extern int phtable_size;
 extern phtable_t* pres_htable;
 
+extern long waiting_subs_time;
+
 int update_watchers_status(str pres_uri, pres_ev_t* ev, str* rules_doc);
 
 #endif /* PA_MOD_H */

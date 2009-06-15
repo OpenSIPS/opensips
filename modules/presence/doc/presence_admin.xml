@@ -153,8 +153,7 @@ modparam("presence", "watchers_table", "watchers")
 	<section>
 		<title><varname>clean_period</varname> (int)</title>
 		<para>
-		The period at which to verify if there are expired messages stored in
-		database.
+		The period at which to clean the expired subscription dialogs.
 		</para>
 		<para>
 		<emphasis>Default value is <quote>100</quote>. A zero or negative value disables this activity.
@@ -344,6 +343,28 @@ modparam("presence", "pres_htable_size", 11)
 		<programlisting format="linespecific">
 ...
 modparam("presence", "enable_sphere_check", 1)
+...
+	</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>waiting_subs_daysno</varname> (int)</title>
+		<para>
+			The number of days to keep the record of a subscription in server database
+			if the subscription is in pending or waiting state (no authorization policy was
+			defined for it or the target user did not register sice the subscription 
+			and was not informed about it).
+		</para>
+		<para>
+			<emphasis>Default value is <quote>3</quote> days. Maximum accepted value is 30 days.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>waiting_subs_daysno</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("presence", "waiting_subs_daysno", 2)
 ...
 	</programlisting>
 		</example>

@@ -521,7 +521,7 @@ after_dialog_check:
 			}
 			
 			if(presentity->event->etag_not_new== 0)
-			{	
+			{
 				/* generate another etag */
 				unsigned int publ_nr;
 				str str_publ_nr= {0, 0};
