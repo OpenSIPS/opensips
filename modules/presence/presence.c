@@ -327,7 +327,7 @@ static int mod_init(void)
 	{
 		LM_INFO("Too greater value for waiting_subs_daysno parameter."
 				" 30 days, the maximum accepted value will be used instead\n");
-		waiting_subs_days_no = 30;
+		waiting_subs_daysno = 30;
 	}
 	if(waiting_subs_daysno > 0)
 		waiting_subs_time = waiting_subs_daysno*24*3600;
