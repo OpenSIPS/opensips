@@ -133,6 +133,7 @@ int register_dlgcb(struct dlg_cell *dlg, int types, dialog_cb f,
 	cb->callback = f;
 	cb->param = param;
 	cb->callback_param_free = ff;
+	cb->next = NULL;
 
 	if ( types==DLGCB_CREATED ) {
 		if (create_cbs==POINTER_CLOSED_MARKER) {
