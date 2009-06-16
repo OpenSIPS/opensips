@@ -353,7 +353,9 @@ add_dst(
 			gwas.len, gwas.s);
 		goto err_exit;
 	}
-	if ( (he=sip_resolvehost( &uri.host, &uri.port_no, &uri.proto,
+	/* note we discard the port discovered by the resolve function - we are
+	interested only in the port that was actually configured. */
+	if ( (he=sip_resolvehost( &uri.host, NULL, &uri.proto,
 	(uri.type==SIPS_URI_T), 0))==0 ) {
 		if(dr_force_dns)
 		{
@@ -371,7 +373,8 @@ add_dst(
 	while(tmpa) {
 		if(tmpa->type==type && uri.port_no==tmpa->port
 		&& ip_addr_cmp(&ipa, &tmpa->ip)) {
-			LM_DBG("gw ip addr [%s] loaded\n", ip);
+			LM_DBG("gw ip addr [%s]:%d loaded\n",
+				ip_addr2a(&ipa), uri.port_no);
 			goto done;
 		}
 		tmpa = tmpa->next;
