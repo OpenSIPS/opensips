@@ -686,7 +686,7 @@ size_t
 tls_blocking_write(struct tcp_connection *c, int fd, const char *buf,
 		size_t len)
 {
-	#define MAX_SSL_RETRIES 32
+	#define MAX_SSL_RETRIES 320
 	int             written, n;
 	int             timeout, retries;
 	struct pollfd   pf;
