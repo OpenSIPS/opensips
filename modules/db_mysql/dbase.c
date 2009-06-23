@@ -132,7 +132,9 @@ static int db_mysql_submit_query(const db_con_t* _h, const str* _s)
 	 */
 	for (i=0; i < (db_mysql_auto_reconnect ? 3 : 1); i++) {
 		if (mysql_real_query(CON_CONNECTION(_h), _s->s, _s->len) == 0) {
-			if (id!=mysql_thread_id(CON_CONNECTION(_h)))
+			/* if we jsut connected (previusly disconnected) or reconect 
+			   on the fly was detected -> reset statements */
+			if ( CON_DISCON(_h) || (id!=mysql_thread_id(CON_CONNECTION(_h))) )
 				reset_all_statements(_h);
 			LM_DBG("discon reset for %ld\n",_h->tail);
 			CON_DISCON(_h) = 0;
@@ -146,7 +148,6 @@ static int db_mysql_submit_query(const db_con_t* _h, const str* _s)
 
 		CON_DISCON(_h) = 1;
 		LM_DBG("discon set for %ld\n",_h->tail);
-		reset_all_statements(_h);
 	}
 	LM_ERR("driver error on query: %s\n", mysql_error(CON_CONNECTION(_h)));
 	return -2;
@@ -385,7 +386,6 @@ static int db_mysql_do_prepared_query(const db_con_t* conn, const str *query,
 	struct prep_stmt *pq_ptr;
 	struct my_stmt_ctx *ctx;
 	MYSQL_BIND *mysql_bind;
-	unsigned long id;
 
 	LM_DBG("conn=%p (tail=%ld) MC=%p\n",conn, conn->tail,CON_CONNECTION(conn));
 
@@ -451,23 +451,18 @@ static int db_mysql_do_prepared_query(const db_con_t* conn, const str *query,
 	 */
 	LM_DBG("discon is %d for %ld\n",CON_DISCON(conn),conn->tail);
 	if (CON_DISCON(conn)) {
-		id = mysql_thread_id(CON_CONNECTION(conn));
 		if (mysql_ping(CON_CONNECTION(conn))) {
 			code = mysql_errno(CON_CONNECTION(conn));
 			LM_ERR("driver error on ping: (%u) %s\n", code,
 				mysql_error(CON_CONNECTION(conn)));
-			if (code==CR_CONNECTION_ERROR || code==CR_CONN_HOST_ERROR) {
-				LM_DBG("discon set for %ld\n",conn->tail);
-				CON_DISCON(conn) = 1;
-			}
+			/* keep the connection in disconnected state */
 			return -1;
 		}
-		if (id!=mysql_thread_id(CON_CONNECTION(conn))) {
-			reset_all_statements(conn);
-			if ( re_init_statement(conn, pq_ptr, ctx)!=0 ) {
-				LM_ERR("failed to re-init statement!\n");
-				return -1;
-			}
+		/* we are connected back ! */
+		reset_all_statements(conn);
+		if ( re_init_statement(conn, pq_ptr, ctx)!=0 ) {
+			LM_ERR("failed to re-init statement!\n");
+			return -1;
 		}
 	}
 
@@ -497,6 +492,10 @@ static int db_mysql_do_prepared_query(const db_con_t* conn, const str *query,
 		if ( mysql_stmt_bind_param(ctx->stmt, mysql_bind) ) {
 			LM_ERR("mysql_stmt_bind_param() failed: %s\n",
 				mysql_stmt_error(ctx->stmt));
+			for(i=0;i<n+un;i++) {
+				LM_ERR("param %d was found as type %d\n",
+					i,mysql_bind[i].buffer_type);
+			}
 			return -1;
 		}
 
@@ -522,6 +521,7 @@ static int db_mysql_do_prepared_query(const db_con_t* conn, const str *query,
 						mysql_stmt_error(ctx->stmt));
 					return -1;
 				}
+				code = CR_SERVER_LOST;
 				/* try reconnect */
 			} else {
 				if (code != CR_SERVER_GONE_ERROR && code != CR_SERVER_LOST
