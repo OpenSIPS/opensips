@@ -56,7 +56,7 @@ static void reset_all_statements(const db_con_t* conn)
 	struct prep_stmt *pq_ptr;
 	struct my_stmt_ctx *ctx;
 
-	LM_DBG("reseting all statements on connection: (%p)%li\n", 
+	LM_INFO("reseting all statements on connection: (%p)%li\n", 
 		conn,conn->tail);
 	for( pq_ptr=CON_PS_LIST(conn); pq_ptr ; pq_ptr=pq_ptr->next ) {
 		for (ctx = pq_ptr->stmts ; ctx ; ctx=ctx->next ) {
@@ -103,6 +103,8 @@ static int db_mysql_submit_query(const db_con_t* _h, const str* _s)
 	if (CON_DISCON(_h) || db_mysql_ping_interval) {
 		t = time(0);
 		if ( CON_DISCON(_h) || ((t - CON_TIMESTAMP(_h)) > db_mysql_ping_interval)) {
+			LM_INFO("doing ping for %ld (discon=%d)\n",
+				_h->tail,CON_DISCON(_h));
 			if (mysql_ping(CON_CONNECTION(_h))) {
 				LM_WARN("driver error on ping: %s\n",
 					mysql_error(CON_CONNECTION(_h)));
@@ -147,7 +149,7 @@ static int db_mysql_submit_query(const db_con_t* _h, const str* _s)
 			break;
 
 		CON_DISCON(_h) = 1;
-		LM_DBG("discon set for %ld\n",_h->tail);
+		LM_INFO("discon set for %ld\n",_h->tail);
 	}
 	LM_ERR("driver error on query: %s\n", mysql_error(CON_CONNECTION(_h)));
 	return -2;
@@ -252,7 +254,7 @@ static struct my_stmt_ctx * get_new_stmt_ctx(const db_con_t* conn,
 			code, mysql_stmt_error(ctx->stmt));
 		if (code==CR_CONNECTION_ERROR||code==CR_CONN_HOST_ERROR||
 		code==CR_SERVER_GONE_ERROR||code==CR_SERVER_LOST) {
-			LM_DBG("discon set for %ld\n",conn->tail);
+			LM_INFO("discon set for %ld\n",conn->tail);
 			CON_DISCON(conn) = 1;
 		}
 		mysql_stmt_close(ctx->stmt);
@@ -327,7 +329,7 @@ static int re_init_statement(const db_con_t* conn, struct prep_stmt *pq_ptr,
 	struct my_stmt_ctx *ctx1, *ctx2;
 	unsigned int code;
 
-	LM_DBG(" query  is <%.*s>, ptr=%p\n",
+	LM_INFO(" query  is <%.*s>, ptr=%p\n",
 		ctx->query.len, ctx->query.s, ctx->stmt);
 	/* re-init the statement */
 	if ( !(ctx->stmt=mysql_stmt_init(CON_CONNECTION(conn))) ) {
@@ -340,7 +342,7 @@ static int re_init_statement(const db_con_t* conn, struct prep_stmt *pq_ptr,
 			code,mysql_stmt_error(ctx->stmt));
 		if (code==CR_CONNECTION_ERROR||code==CR_CONN_HOST_ERROR||
 		code==CR_SERVER_GONE_ERROR||code==CR_SERVER_LOST) {
-			LM_DBG("discon set for %ld\n",conn->tail);
+			LM_INFO("discon set for %ld\n",conn->tail);
 			CON_DISCON(conn) = 1;
 			mysql_stmt_close(ctx->stmt);
 			ctx->stmt = NULL;
@@ -451,6 +453,7 @@ static int db_mysql_do_prepared_query(const db_con_t* conn, const str *query,
 	 */
 	LM_DBG("discon is %d for %ld\n",CON_DISCON(conn),conn->tail);
 	if (CON_DISCON(conn)) {
+		LM_INFO("discon is set for %ld\n",conn->tail);
 		if (mysql_ping(CON_CONNECTION(conn))) {
 			code = mysql_errno(CON_CONNECTION(conn));
 			LM_ERR("driver error on ping: (%u) %s\n", code,
@@ -508,7 +511,7 @@ static int db_mysql_do_prepared_query(const db_con_t* conn, const str *query,
 
 		if ( (code = mysql_stmt_execute(ctx->stmt)!=0 )) {
 			code = mysql_stmt_errno(ctx->stmt);
-			LM_DBG("mysql_stmt_execute => %d\n",code);
+			LM_INFO("mysql_stmt_execute failed with %d\n",code);
 			if (code==0) {
 				/* bug in the libmysqlclient lib */
 				if (memcmp(mysql_stmt_error(ctx->stmt),
@@ -533,7 +536,7 @@ static int db_mysql_do_prepared_query(const db_con_t* conn, const str *query,
 						 * connection as disconnected and the 
 						 * statements will be resert at reconnect 
 						 * time (probably in the mysql_ping) */
-						LM_DBG("discon set for %ld\n",conn->tail);
+						LM_INFO("discon set for %ld\n",conn->tail);
 						CON_DISCON(conn) = 1;
 					}
 					return -1;
@@ -543,7 +546,7 @@ static int db_mysql_do_prepared_query(const db_con_t* conn, const str *query,
 			/* reset all statements from this connection */
 			reset_all_statements(conn);
 			/* re-init current statement/context */
-			LM_DBG("mysql server gone or lost -> re-init the statement\n");
+			LM_INFO("mysql server gone or lost -> re-init the statement\n");
 			if ( re_init_statement(conn, pq_ptr, ctx)!=0 ) {
 				LM_ERR("failed to re-init statement!\n");
 				return -1;
