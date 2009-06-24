@@ -220,7 +220,7 @@ alias_db_lookup("dba_$(rU{s.substr,0,1})");
        alias. It can include pseudo-variables.
      * input - any PV (pseudo-variable) carrying the SIP URI that
        needs to be looked up.
-     * outut - PV (AVP or script VAR) where to place the SIP URI
+     * ouput - PV (AVP or script VAR) where to place the SIP URI
        resulting from the alias lookup.
      * flags (optional) - set of flags (char based flags) to
        control the alias lookup process:
@@ -238,7 +238,7 @@ alias_db_lookup("dba_$(rU{s.substr,0,1})");
    Example 1.9. alias_db_find() usage
 ...
 # do revers alias lookup and find the alias for the FROM URI
-alias_db_find("dbaliases" , "$fu", $avp(s:from_alias) "r");
+alias_db_find("dbaliases" , "$fu", "$avp(s:from_alias)", "r");
 ...
 
 Chapter 2. Frequently Asked Questions

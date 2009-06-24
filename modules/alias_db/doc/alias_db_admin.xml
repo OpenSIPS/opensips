@@ -285,7 +285,7 @@ alias_db_lookup("dba_$(rU{s.substr,0,1})");
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>outut</emphasis> - PV (AVP or script VAR) 
+			<para><emphasis>ouput</emphasis> - PV (AVP or script VAR) 
 			where to place the SIP URI resulting from the alias lookup.
 			</para>
 		</listitem>
@@ -319,7 +319,7 @@ alias_db_lookup("dba_$(rU{s.substr,0,1})");
 		<programlisting format="linespecific">
 ...
 # do revers alias lookup and find the alias for the FROM URI
-alias_db_find("dbaliases" , "$fu", $avp(s:from_alias) "r");
+alias_db_find("dbaliases" , "$fu", "$avp(s:from_alias)", "r");
 ...
 </programlisting>
 		</example>
