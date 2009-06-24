@@ -623,7 +623,7 @@ static int child_init(int rank)
 		if_update_stat(dlg_enable_stats, early_dlgs, early_dlgs_cnt);
 	}
 
-	if ( (dlg_db_mode==DB_MODE_REALTIME && (rank>0 || rank==PROC_TIMER)) ||
+	if ( (dlg_db_mode==DB_MODE_REALTIME && (rank>=0 || rank==PROC_TIMER)) ||
 	(dlg_db_mode==DB_MODE_SHUTDOWN && (rank==(dont_fork?1:PROC_MAIN)) ) ||
 	(dlg_db_mode==DB_MODE_DELAYED && (rank==PROC_MAIN || rank==PROC_TIMER ||
 	rank>0) )){
@@ -639,7 +639,7 @@ static int child_init(int rank)
 
 static void mod_destroy(void)
 {
-	if(dlg_db_mode == DB_MODE_DELAYED || dlg_db_mode == DB_MODE_SHUTDOWN) {
+	if (dlg_db_mode != DB_MODE_NONE) {
 		dialog_update_db(0, 0);
 		destroy_dlg_db();
 	}
