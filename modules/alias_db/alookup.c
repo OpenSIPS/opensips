@@ -287,7 +287,7 @@ int alias_db_find(struct sip_msg* _msg, char* _table, char* _in, char* _out,
 		return -1;
 	}
 	if (parse_uri(val.rs.s, val.rs.len, &puri)<0) {
-		LM_ERR("failed to parse uri %s\n",val.rs.s);
+		LM_ERR("failed to parse uri %.*s\n",val.rs.len,val.rs.s);
 		return -1;
 	}
 
