@@ -38,7 +38,6 @@
 
 unsigned int db_mysql_ping_interval = 5 * 60; /* Default is 5 minutes */
 unsigned int db_mysql_timeout_interval = 2;   /* Default is 6 seconds */
-unsigned int db_mysql_auto_reconnect = 1;     /* Default is enabled   */
 
 static int mysql_mod_init(void);
 
@@ -61,7 +60,6 @@ static cmd_export_t cmds[] = {
 static param_export_t params[] = {
 	{"ping_interval",    INT_PARAM, &db_mysql_ping_interval},
 	{"timeout_interval", INT_PARAM, &db_mysql_timeout_interval},
-	{"auto_reconnect",   INT_PARAM, &db_mysql_auto_reconnect},
 	{0, 0, 0}
 };
 
