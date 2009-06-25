@@ -1579,7 +1579,7 @@ send_keepalive(NAT_Contact *contact)
     }
 
     /* nat_ip.s = strchr(contact->uri, ':') + 1; */
-	if (nat_ip.s==NULL || strlen(nat_ip.s) < 8)
+	if (contact->uri==NULL || strlen(contact->uri) < 8)
 		return;
 	nat_ip.s = &contact->uri[4]; // skip over "sip:"
 	ptr = strchr(nat_ip.s, ':');
