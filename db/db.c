@@ -275,8 +275,9 @@ db_con_t* db_do_init(const str* url, void* (*new_connection)())
 			goto err;
 		}
 		pool_insert((struct pool_con*)con);
+		LM_DBG("connection %p inserted in pool as %p\n", id,con);
 	} else {
-		LM_DBG("connection %p found in pool\n", id);
+		LM_DBG("connection %p found in pool as %p\n", id,con);
 	}
 
 	res->tail = (unsigned long)con;
