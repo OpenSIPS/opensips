@@ -49,7 +49,7 @@ int Notify2Xmpp(struct sip_msg* msg, char* s1, char* s2)
 	struct to_body *pto, TO, *pfrom= NULL;
 	str to_uri;
 	char* uri= NULL;
-	str from_uri;
+	str from_uri={0, 0};
 	struct hdr_field* hdr= NULL;
 	str body;
 	xmlDocPtr doc= NULL;
@@ -82,7 +82,7 @@ int Notify2Xmpp(struct sip_msg* msg, char* s1, char* s2)
 	if(msg->to->parsed != NULL)
 	{
 		pto = (struct to_body*)msg->to->parsed;
-		LM_ERR("'To' header ALREADY PARSED:<%.*s>\n",pto->uri.len,pto->uri.s);
+		LM_DBG("'To' header ALREADY PARSED:<%.*s>\n",pto->uri.len,pto->uri.s);
 	}
 	else
 	{
@@ -90,7 +90,7 @@ int Notify2Xmpp(struct sip_msg* msg, char* s1, char* s2)
 		parse_to(msg->to->body.s,msg->to->body.s + msg->to->body.len + 1, &TO);
 		if(TO.uri.len <= 0) 
 		{
-			LM_ERR("'To' header NOT parsed\n");
+			LM_ERR("Failed to parse 'To' header\n");
 			return -1;
 		}
 		pto = &TO;
@@ -110,6 +110,7 @@ int Notify2Xmpp(struct sip_msg* msg, char* s1, char* s2)
 	if(to_uri.s== NULL)
 	{
 		LM_ERR("while decoding sip uri in xmpp\n");
+		pkg_free(uri);
 		return -1;	
 	}	
 	to_uri.len= strlen(to_uri.s);
@@ -137,7 +138,6 @@ int Notify2Xmpp(struct sip_msg* msg, char* s1, char* s2)
 	}
 	if (msg->from->parsed == NULL)
 	{
-		LM_ERR("'From' header not parsed\n");
 		/* parsing from header */
 		if ( parse_from_header( msg )<0 ) 
 		{
@@ -161,9 +161,11 @@ int Notify2Xmpp(struct sip_msg* msg, char* s1, char* s2)
 	if(from_uri.s== NULL)
 	{
 		LM_ERR("while encoding sip uri in xmpp\n");
+		pkg_free(uri);
 		goto error;
 	}	
 	from_uri.len= strlen(from_uri.s);
+	
 	pkg_free(uri);
 	
 	if( pfrom->tag_value.s ==NULL || pfrom->tag_value.len == 0)
@@ -550,7 +552,7 @@ int winfo2xmpp(str* to_uri, str* body, str* id)
 	xmlAttrPtr attr= NULL;
 	str xmpp_msg;
 	char* watcher= NULL ;
-	str from_uri;
+	str from_uri = {0, 0};
 	xmlDocPtr notify_doc= NULL;
 	xmlDocPtr doc= NULL;
 	xmlNodePtr pidf_root= NULL;
@@ -590,8 +592,9 @@ int winfo2xmpp(str* to_uri, str* body, str* id)
 		{
 			LM_ERR("while encoding sip uri in xmpp\n");
 			goto error;
-		}	
-		from_uri.len= strlen(from_uri.s);
+		}
+		from_uri.len = strlen(from_uri.s);		
+
 		xmlFree(watcher);
 		watcher= NULL;
 
@@ -677,9 +680,8 @@ error:
 		xmlBufferFree(buffer);
 	xmlCleanupParser();
 	xmlMemoryDump();
-
+	
 	return -1;
-
 }
 
 char* get_error_reason(int code, str* reason)
@@ -747,7 +749,7 @@ int Sipreply2Xmpp(ua_pres_t* hentity, struct sip_msg * msg)
 {
 	char* uri;
 	/* named according to the direction of the message in xmpp*/
-	str from_uri;
+	str from_uri= {0, 0};
 	str to_uri;
 	xmlDocPtr doc= NULL;
 	xmlNodePtr root_node= NULL, node = NULL;
@@ -771,6 +773,7 @@ int Sipreply2Xmpp(ua_pres_t* hentity, struct sip_msg * msg)
 	if(to_uri.s== NULL)
 	{
 		LM_ERR("whil decoding sip uri in xmpp\n");
+		pkg_free(uri);
 		goto error;	
 	}	
 
@@ -789,10 +792,11 @@ int Sipreply2Xmpp(ua_pres_t* hentity, struct sip_msg * msg)
 	if(from_uri.s== NULL)
 	{
 		LM_ERR("while encoding sip uri in xmpp\n");
+		pkg_free(uri);
 		goto error;
 	}
-
 	from_uri.len= strlen(from_uri.s);
+
 	pkg_free(uri);
 
 	doc= xmlNewDoc(BAD_CAST "1.0");

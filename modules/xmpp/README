@@ -126,7 +126,7 @@ Chapter 1. Admin Guide
    From a jabber client's point of view, the destination will look
    like:
 
-   "sip_username<delim>opensips_domain@xmpp_domain"
+   "sip_username@opensips_domain"
 
 1.2. Dependencies
 
@@ -162,7 +162,7 @@ Chapter 1. Admin Guide
    client looks like this:
    "sip:username<domain_separator>jabber_server@gateway_domain".
    The address of a SIP client has the following pattern :
-   "sip_username<domain_separator>opensips_domain@xmpp_domain";
+   "sip_username@opensips_domain";
 
    Default value is "*".
 

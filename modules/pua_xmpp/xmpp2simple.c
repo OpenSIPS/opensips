@@ -460,10 +460,9 @@ error:
 int presence_subscribe(xmlNodePtr pres_node, int expires,int  flag)
 {
 	subs_info_t subs;
-	char* to_uri= NULL, *from_uri= NULL;
 	char* uri= NULL;
 	char* type= NULL;
-	str to_uri_str;
+	str to_uri_str = {0, 0};
 	str from_uri_str;
 
 	uri= XMLNodeGetAttrContentByName(pres_node, "to"); 
@@ -472,15 +471,16 @@ int presence_subscribe(xmlNodePtr pres_node, int expires,int  flag)
 		LM_ERR("while getting attribute from xml doc\n");
 		return -1;
 	}
-	to_uri= duri_xmpp_sip(uri);
-	if(to_uri== NULL)
+	to_uri_str.s= duri_xmpp_sip(uri);
+	if(to_uri_str.s == NULL)
 	{
 		LM_ERR("while decoding xmpp--sip uri\n");
+		xmlFree(uri);
 		goto error;
 	}
+	to_uri_str.len = strlen(to_uri_str.s);
+
 	xmlFree(uri);
-	to_uri_str.s= to_uri;
-	to_uri_str.len= strlen(to_uri);
 
 	uri= XMLNodeGetAttrContentByName(pres_node, "from"); 
 	if(uri== NULL)
@@ -488,21 +488,29 @@ int presence_subscribe(xmlNodePtr pres_node, int expires,int  flag)
 		LM_ERR("while getting attribute from xml doc\n");
 		goto error;
 	}
-	from_uri= euri_xmpp_sip(uri);
-	if(from_uri== NULL)
+	from_uri_str.s= euri_xmpp_sip(uri);
+	if(from_uri_str.s== NULL)
 	{
 		LM_ERR("while encoding xmpp-sip uri\n");
+		xmlFree(uri);
 		goto error;	
 	}	
+	from_uri_str.len= strlen(from_uri_str.s);
 	xmlFree(uri);
-	from_uri_str.s= from_uri;
-	from_uri_str.len= strlen(from_uri);
 	
 	memset(&subs, 0, sizeof(subs_info_t));
 
 	subs.pres_uri= &to_uri_str;
 	subs.watcher_uri= &from_uri_str;
-	subs.contact= subs.watcher_uri;
+	subs.remote_target = subs.pres_uri;
+
+	if(presence_server.s)
+	{
+		subs.contact= &presence_server;
+	}
+	else
+		subs.contact = subs.watcher_uri;
+
 	/*
 	type= XMLNodeGetAttrContentByName(pres_node, "type" );
 	if(strcmp(type, "subscribe")==0 ||strcmp(type, "probe")== 0)
@@ -518,9 +526,15 @@ int presence_subscribe(xmlNodePtr pres_node, int expires,int  flag)
 	subs.event= PRESENCE_EVENT;
 	subs.expires= expires;
 	
+	if(presence_server.s && presence_server.len)
+		subs.outbound_proxy = &presence_server;
+
 	LM_DBG("subs:\n");
 	LM_DBG("\tpres_uri= %.*s\n", subs.pres_uri->len,  subs.pres_uri->s);
 	LM_DBG("\twatcher_uri= %.*s\n", subs.watcher_uri->len,  subs.watcher_uri->s);
+	if(subs.outbound_proxy)
+		LM_DBG("\toutbound_proxy= %.*s\n", subs.outbound_proxy->len,  subs.outbound_proxy->s);
+
 	LM_DBG("\texpires= %d\n", subs.expires);
 
 	if(pua_send_subscribe(&subs)< 0)
@@ -533,7 +547,7 @@ int presence_subscribe(xmlNodePtr pres_node, int expires,int  flag)
 error:
 	if(type)
 		xmlFree(type);
-
+	
 	return -1;
 }
 

@@ -81,7 +81,7 @@
 	<para>In both cases, the destination address must have the same pattern:</para>
 	<para>	<quote>sip:username<![CDATA[<]]>delim<![CDATA[>]]>jabber_server@gateway_domain</quote> </para>
 	<para>	From a jabber client's point of view, the destination will look like:</para>
-	<para>	<quote>sip_username<![CDATA[<]]>delim<![CDATA[>]]>opensips_domain@xmpp_domain</quote>	</para>
+	<para>	<quote>sip_username@opensips_domain</quote>	</para>
 	</section>
 	<section>
 	<title>Dependencies</title>
@@ -143,7 +143,7 @@
 			The address of the XMPP(jabber) client looks like this:
 				"sip:username<![CDATA[<]]>domain_separator<![CDATA[>]]>jabber_server@gateway_domain".
 			The address of a SIP client has the following pattern :
-			"sip_username<![CDATA[<]]>domain_separator<![CDATA[>]]>opensips_domain@xmpp_domain";
+			"sip_username@opensips_domain";
 
 		</para>
 		<para>

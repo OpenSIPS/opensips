@@ -129,7 +129,7 @@ char *xmpp_password = "secret";
 str outbound_proxy= {0, 0};
 
 #define DEFAULT_COMPONENT_PORT 5347
-#define DEFAULT_SERVER_PORT 5269
+#define DEFAULT_SERVER_PORT    5269
 
 static proc_export_t procs[] = {
 	{"XMPP receiver",  0,  0, xmpp_process, 1 , 0},

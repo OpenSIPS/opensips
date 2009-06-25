@@ -429,7 +429,8 @@ static void do_send_message_server(struct xmpp_pipe_cmd *cmd)
 	char *domain;
 	xode x;
 
-	LM_DBG("rom=[%s] to=[%s] body=[%s]\n", cmd->from,cmd->to, cmd->body);
+	LM_DBG("from=[%s] to=[%s] body=[%s]\n", encode_uri_sip_xmpp(cmd->from),
+		decode_uri_sip_xmpp(cmd->to), cmd->body);
 
 	x = xode_new_tag("message");
 	xode_put_attrib(x, "xmlns", "jabber:client");

@@ -54,7 +54,7 @@ char *decode_uri_sip_xmpp(char *uri)
 	return buf;
 }
 
-/* encode sip:user@domain -> user*domain@xmpp_domain */
+/* encode sip:user@domain -> user@domain */
 char *encode_uri_sip_xmpp(char *uri)
 {
 	struct sip_uri puri;
@@ -66,33 +66,20 @@ char *encode_uri_sip_xmpp(char *uri)
 		LM_ERR("failed to parse URI\n");
 		return NULL;
 	}
-	snprintf(buf, sizeof(buf), "%.*s%c%.*s@%s",
+	snprintf(buf, sizeof(buf), "%.*s@%.*s",
 		puri.user.len, puri.user.s,
-		domain_separator,
-		puri.host.len, puri.host.s,
-		xmpp_domain);
+		puri.host.len, puri.host.s);
 	return buf;
 }
 
-/* decode user*domain1@domain2 -> sip:user@domain1 */
+/* decode user@domain1 -> sip:user@domain1 */
 char *decode_uri_xmpp_sip(char *jid)
 {
 	static char buf[512];
-	char *p;
 
 	if (!jid)
 		return NULL;
 	snprintf(buf, sizeof(buf), "sip:%s", jid);
-
-	/* strip off resource */
-	if ((p = strchr(buf, '/')))
-		*p = 0;
-	/* strip off domain */
-	if ((p = strchr(buf, '@')))
-		*p = 0;
-	/* replace domain separator */
-	if ((p = strchr(buf, domain_separator)))
-		*p = '@';
 
 	return buf;
 }

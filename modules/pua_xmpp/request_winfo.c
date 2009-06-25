@@ -80,6 +80,9 @@ int request_winfo(struct sip_msg* msg, char* uri, char* expires)
 
 	subs.contact= &server_address;
 	
+	if(presence_server.s && presence_server.len)
+		subs.outbound_proxy = &presence_server;
+
 	if(strncmp(expires, "0", 1 )== 0)
 	{
 		subs.expires= 0;
@@ -94,6 +97,8 @@ int request_winfo(struct sip_msg* msg, char* uri, char* expires)
 
 	subs.source_flag |= XMPP_SUBSCRIBE;
 	subs.event= PWINFO_EVENT;
+	if(presence_server.s && presence_server.len)
+		subs.outbound_proxy = &presence_server;
 
 	if(pua_send_subscribe(&subs)< 0)
 	{
