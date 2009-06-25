@@ -30,6 +30,49 @@
 #include "../../ut.h"
 
 
+int db_mysql_connect(struct my_con* ptr)
+{
+	/* if connection already in use, close it first*/
+	if (ptr->init)
+		mysql_close(ptr->con);
+
+	mysql_init(ptr->con);
+	ptr->init = 1;
+
+	if (ptr->id->port) {
+		LM_DBG("opening connection: mysql://xxxx:xxxx@%s:%d/%s\n",
+			ZSW(ptr->id->host), ptr->id->port, ZSW(ptr->id->database));
+	} else {
+		LM_DBG("opening connection: mysql://xxxx:xxxx@%s/%s\n",
+			ZSW(ptr->id->host), ZSW(ptr->id->database));
+	}
+
+	if (!mysql_real_connect(ptr->con, ptr->id->host, 
+			ptr->id->username, ptr->id->password,
+			ptr->id->database, ptr->id->port, 0,
+#if (MYSQL_VERSION_ID >= 40100)
+			CLIENT_MULTI_STATEMENTS|CLIENT_REMEMBER_OPTIONS
+#else
+			CLIENT_REMEMBER_OPTIONS
+#endif
+	)) {
+		LM_ERR("driver error(%d): %s\n",
+			mysql_errno(ptr->con), mysql_error(ptr->con));
+		mysql_close(ptr->con);
+		return -1;
+	}
+	/* force no auto reconnection */
+	ptr->con->reconnect = 0;
+
+	LM_DBG("connection type is %s\n", mysql_get_host_info(ptr->con));
+	LM_DBG("protocol version is %d\n", mysql_get_proto_info(ptr->con));
+	LM_DBG("server version is %s\n", mysql_get_server_info(ptr->con));
+
+	return 0;
+}
+
+
+
 /**
  * Create a new connection structure,
  * open the MySQL connection and set reference count to 1
@@ -58,48 +101,24 @@ struct my_con* db_mysql_new_connection(const struct db_id* id)
 		goto err;
 	}
 
-	mysql_init(ptr->con);
+	/* set connect, read and write timeout, the value counts three times */
+	mysql_options(ptr->con, MYSQL_OPT_CONNECT_TIMEOUT,
+			(const char *)&db_mysql_timeout_interval);
+	mysql_options(ptr->con, MYSQL_OPT_READ_TIMEOUT,
+			(const char *)&db_mysql_timeout_interval);
+	mysql_options(ptr->con, MYSQL_OPT_WRITE_TIMEOUT,
+			(const char *)&db_mysql_timeout_interval);
 
-	if (id->port) {
-		LM_DBG("opening connection: mysql://xxxx:xxxx@%s:%d/%s\n", ZSW(id->host),
-			id->port, ZSW(id->database));
-	} else {
-		LM_DBG("opening connection: mysql://xxxx:xxxx@%s/%s\n", ZSW(id->host),
-			ZSW(id->database));
-	}
+	ptr->id = (struct db_id*)id;
 
-	// set connect, read and write timeout, the value counts three times
-	mysql_options(ptr->con, MYSQL_OPT_CONNECT_TIMEOUT, (const char *)&db_mysql_timeout_interval);
-	mysql_options(ptr->con, MYSQL_OPT_READ_TIMEOUT, (const char *)&db_mysql_timeout_interval);
-	mysql_options(ptr->con, MYSQL_OPT_WRITE_TIMEOUT, (const char *)&db_mysql_timeout_interval);
-
-#if (MYSQL_VERSION_ID >= 40100)
-	if (!mysql_real_connect(ptr->con, id->host, id->username, id->password,
-				id->database, id->port, 0, CLIENT_MULTI_STATEMENTS)) {
-#else
-	if (!mysql_real_connect(ptr->con, id->host, id->username, id->password,
-				id->database, id->port, 0, 0)) {
-#endif
-		LM_ERR("driver error(%d): %s\n",
-			mysql_errno(ptr->con), mysql_error(ptr->con));
-		mysql_close(ptr->con);
+	if (db_mysql_connect(ptr)!=0) {
+		LM_ERR("initial connect failed\n");
 		goto err;
 	}
-	/* force reconnection if enabled */
-	if (db_mysql_auto_reconnect)
-		ptr->con->reconnect = 1;
-	else 
-		ptr->con->reconnect = 0;
 
-	LM_DBG("connection type is %s\n", mysql_get_host_info(ptr->con));
-	LM_DBG("protocol version is %d\n", mysql_get_proto_info(ptr->con));
-	LM_DBG("server version is %s\n", mysql_get_server_info(ptr->con));
-
-	ptr->timestamp = time(0);
-	ptr->id = (struct db_id*)id;
 	return ptr;
 
- err:
+err:
 	if (ptr && ptr->con) pkg_free(ptr->con);
 	if (ptr) pkg_free(ptr);
 	return 0;

@@ -77,7 +77,7 @@ struct my_con {
 	MYSQL_RES* res;          /* Actual result */
 	MYSQL* con;              /* Connection representation */
 	MYSQL_ROW row;           /* Actual row in the result */
-	time_t timestamp;        /* Timestamp of last query */
+	unsigned int init;       /* If the mysql conn was initialized */
 
 	struct prep_stmt *ps_list; /* list of prepared statements */
 	unsigned int disconnected; /* (CR_CONNECTION_ERROR) was detected */
@@ -91,7 +91,6 @@ struct my_con {
 #define CON_RESULT(db_con)     (((struct my_con*)((db_con)->tail))->res)
 #define CON_CONNECTION(db_con) (((struct my_con*)((db_con)->tail))->con)
 #define CON_ROW(db_con)        (((struct my_con*)((db_con)->tail))->row)
-#define CON_TIMESTAMP(db_con)  (((struct my_con*)((db_con)->tail))->timestamp)
 #define CON_PS_LIST(db_con)    (((struct my_con*)((db_con)->tail))->ps_list)
 #define CON_DISCON(db_con)     (((struct my_con*)((db_con)->tail))->disconnected)
 
@@ -105,6 +104,9 @@ struct my_con {
 	((CON_MYSQL_PS(_db_con)->out_bufs)[_i].len)
 #define CON_PS_OUTCOL_BUF(_db_con, _i) \
 	((CON_MYSQL_PS(_db_con)->out_bufs)[_i].buf)
+
+
+int db_mysql_connect(struct my_con* ptr);
 
 
 /*
