@@ -219,6 +219,7 @@ int replace_from( struct sip_msg *msg, str *from_dsp, str *from_uri)
 	static char buf_s[MAX_URI_SIZE];
 	struct to_body *from;
 	struct lump* l;
+	struct cell *Trans;
 	str replace;
 	char *p;
 	str param;
@@ -233,7 +234,8 @@ int replace_from( struct sip_msg *msg, str *from_dsp, str *from_uri)
 			goto error;
 		}
 		if (get_to(msg)->tag_value.len!=0) {
-			LM_ERR("decline FROM replacing in sequential request in auto mode (has TO tag)\n");
+			LM_ERR("decline FROM replacing in sequential request "
+				"in auto mode (has TO tag)\n");
 			goto error;
 		}
 	}
@@ -260,7 +262,8 @@ int replace_from( struct sip_msg *msg, str *from_dsp, str *from_uri)
 		/* first remove the existing display */
 		if ( from->display.len)
 		{
-			LM_DBG("removing display [%.*s]\n",from->display.len,from->display.s);
+			LM_DBG("removing display [%.*s]\n",
+				from->display.len,from->display.s);
 			/* build del lump */
 			l = del_lump( msg, from->display.s-msg->buf, from->display.len, 0);
 			if (l==0)
@@ -386,6 +389,8 @@ int replace_from( struct sip_msg *msg, str *from_dsp, str *from_uri)
 	if ((msg->msg_flags&FL_USE_UAC_FROM)==0) {
 		/* first time here */
 		msg->msg_flags |= FL_USE_UAC_FROM;
+		if ( (Trans=uac_tmb.t_gett())!=NULL && Trans->uas.request)
+			Trans->uas.request->msg_flags |= FL_USE_UAC_FROM;
 
 		/* add TM callback to restore the FROM hdr in reply */
 		if (uac_tmb.register_tmcb( msg, 0, TMCB_RESPONSE_IN,
