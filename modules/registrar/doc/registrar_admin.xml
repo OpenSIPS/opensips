@@ -240,32 +240,6 @@ modparam("registrar", "realm_prefix", "sip.")
 
 
 	<section>
-		<title><varname>append_branches</varname> (integer)</title>
-		<para>
-		The parameter controls how lookup function processes multiple 
-		contacts.  If there are multiple contacts for the given username in 
-		usrloc and this parameter is set to 1, Request-URI will be 
-		overwritten with the highest-q rated contact and the rest will be 
-		appended to sip_msg structure and can be later used by tm for forking.
-		If the parameter is set to 0, only Request-URI will be overwritten 
-		with the highest-q rated contact and the rest will be left unprocessed.
-		</para>
-		<para>
-		<emphasis>
-			Default value is 1.
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>append_branches</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("registrar", "append_branches", 0)
-...
-</programlisting>
-		</example>
-	</section>
-
-	<section>
 		<title><varname>case_sensitive</varname> (integer)</title>
 		<para>
 		If set to 1 then <acronym>AOR</acronym> comparison will be case 
@@ -391,37 +365,11 @@ modparam("registrar", "retry_after", 30)
 	</section>
 
 	<section>
-		<title><varname>sock_flag</varname> (integer)</title>
-		<para>
-		Message flag to signal to register module to look into REGISTER 
-		request for a header which contains a socket description (IP:port). 
-		This socket info will be stored by register instead of the received 
-		socket info.
-		</para>
-		<para>
-		This make sens only in multiple replicated servers scenarios.
-		</para>
-		<para>
-		<emphasis>
-			Default value is -1 (no flag).
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>sock_flag</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("registrar", "sock_flag", 18)
-...
-		</programlisting>
-		</example>
-	</section>
-
-	<section>
 		<title><varname>sock_hdr_name</varname> (string)</title>
 		<para>
 		Header which contains a socket description (proto:IP:port) to override
-		the received socket info. The header will be read only if the
-		flag sock_flag is set.
+		the received socket info. The header will be search and used only if 
+		the flag 's' (Socket header) is set at "save()" time.
 		</para>
 		<para>
 		This make sens only in multiple replicated servers scenarios.
@@ -436,98 +384,6 @@ modparam("registrar", "sock_flag", 18)
 		<programlisting format="linespecific">
 ...
 modparam("registrar", "sock_hdr_name", "Sock-Info")
-...
-		</programlisting>
-		</example>
-	</section>
-
-	<section>
-		<title><varname>method_filtering</varname> (integer)</title>
-		<para>
-		Tells if the contact filtering based on supported methods should be
-		performed during lookup. It's enabled only if it has a non zero 
-		value.
-		</para>
-		<para>
-		<emphasis>
-			Default value is 0 (disabled).
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>method_filtering</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("registrar", "method_filtering", 1)
-...
-		</programlisting>
-		</example>
-	</section>
-
-	<section>
-		<title><varname>use_path</varname> (integer)</title>
-		<para>
-		If set to 1, the Path header is handled according to the parameter 
-		<quote>path_mode</quote>.
-		</para>
-		<para>
-		<emphasis>
-			Default value is 0 (disabled).
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>use_path</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("registrar", "use_path", 1)
-...
-		</programlisting>
-		</example>
-	</section>
-
-	<section>
-		<title><varname>path_mode</varname> (integer)</title>
-		<para>
-		The registrar module implements three different modes regarding the 
-		response to a registration which includes one or more Path headers:
-		</para>
-		<itemizedlist>
-		<listitem>
-			<para>
-			0 - The Path header is saved into usrloc, but is not included in 
-			the reply.
-			</para>
-		</listitem>
-		<listitem>
-			<para>
-			1 - The Path header is saved into usrloc, but is only included in 
-			the reply if path support is indicated in the registration request 
-			by the <quote>path</quote> option of the 
-			<quote>Supported</quote> header.
-			</para>
-		</listitem>
-		<listitem>
-			<para>
-			2 - The path header is only saved into usrloc, if path support is 
-			indicated in the registration request by the <quote>path</quote> 
-			option of the <quote>Supported</quote> header. If no path support 
-			is indicated, the request is rejected with 
-			<quote>420 - Bad Extension</quote> and the header 
-			<quote>Unsupported: path</quote> is included in the reply along 
-			with the received <quote>Path</quote> header. This mode is the 
-			one recommended by RFC-3327.
-			</para>
-		</listitem>
-		</itemizedlist>
-		<para>
-		<emphasis>
-			Default value is 2.
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>path_mode</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("registrar", "path_mode", 0)
 ...
 		</programlisting>
 		</example>
@@ -563,7 +419,7 @@ modparam("registrar", "path_use_received", 1)
 	<title>Exported Functions</title>
 	<section>
 		<title>
-		<function moreinfo="none">save(domain [,flags] [,aor])</function>
+		<function moreinfo="none">save(domain [,flags ,[aor]])</function>
 		</title>
 		<para>
 		The function processes a REGISTER message. It can add, remove or 
@@ -583,21 +439,65 @@ modparam("registrar", "path_use_received", 1)
 		</listitem>
 		<listitem>
 			<para>
-			<emphasis>flags</emphasis> - the value may be a bitwise OR of 
+			<emphasis>flags</emphasis> (optional)- string of 
 			the following flags:
 			</para>
 			<itemizedlist>
 				<listitem>
-					<para><emphasis>0x01</emphasis> - save the contacts only
-					in memory cache without no DB operation;
+					<para><emphasis>'m' (Memory only)</emphasis> - save the 
+					contacts only in memory cache without no DB operation;
 					</para>
 				</listitem>
 				<listitem>
-					<para><emphasis>0x02</emphasis> - do not generate a SIP 
-						reply to the current REGISTER request.</para>
+					<para><emphasis>'r' (no Reply)</emphasis> - do not 
+					generate a SIP reply to the current REGISTER request.
+					</para>
+				</listitem>
+				<listitem>
+					<para><emphasis>'s' (Socket header)</emphasis> -  look 
+					into REGISTER request for a header which contains a socket
+					description (proto:IP:port). This socket info will be 
+					stored by register instead of the received socket info.
+					</para>
+				</listitem>
+				<listitem>
+					<para><emphasis>'p0' (Path support - 'off' mode)</emphasis>
+					The Path header is saved into usrloc, but is never 
+					included in the reply.
+					</para>
+				</listitem>
+				<listitem>
+					<para><emphasis>'p1' (Path support - lazy mode)</emphasis>
+					The Path header is saved into usrloc, but is only included 
+					in the reply if path support is indicated in the 
+					registration request by the <quote>path</quote> option 
+					of the <quote>Supported</quote> header.
+					</para>
+				</listitem>
+				<listitem>
+					<para><emphasis>'p2' (Path support - strict mode)</emphasis>
+					The path header is only saved into usrloc, if path support 
+					is indicated in the registration request by the 
+					<quote>path</quote> option of the <quote>Supported</quote> 
+					header. If no path support is indicated, the request is 
+					rejected with <quote>420 - Bad Extension</quote> and the 
+					header <quote>Unsupported: path</quote> is included in 
+					the reply along with the received <quote>Path</quote> 
+					header. This mode is the one recommended by RFC-3327.
+					</para>
+				</listitem>
+				<listitem>
+					<para><emphasis>'v' (path receiVed)</emphasis> if set,
+					the <quote>received</quote> parameter of the first Path 
+					URI of a registration is set as received-uri and the NAT 
+					branch flag is set for this contact. This is useful if 
+					the registrar is placed behind a SIP loadbalancer, which 
+					passes the nat'ed UAC address as <quote>received</quote> 
+					parameter in it's Path uri.
+					</para>
 				</listitem>
 			</itemizedlist>
-			<para>The flags may be given in decimal or hexa format.</para>
+			<para>This parameter is a string composed of a set of flags.</para>
 		</listitem>
 		<listitem>
 			<para>
@@ -618,13 +518,13 @@ modparam("registrar", "path_use_received", 1)
 save("location");
 ...
 # save into 'location', do not update DB, use default AOR (TO URI)
-save("location","0x01");
+save("location","m");
 ...
 # save into 'location', no flags, use as AOR the FROM URI
-save("location","$fu");
+save("location","","$fu");
 ...
-# save into 'location', do not send reply, take AOR from AVP
-save("location","0x02", "$avp(i:1)");
+# save into 'location',no DB update, no reply to send, take AOR from AVP
+save("location","mr", "$avp(i:1)");
 ...
 </programlisting>
 		</example>
@@ -632,7 +532,7 @@ save("location","0x02", "$avp(i:1)");
 
 	<section>
 		<title>
-		<function moreinfo="none">lookup(domain)</function>
+		<function moreinfo="none">lookup(domain [, flags [, aor]])</function>
 		</title>
 		<para>
 		The functions extracts username from Request-URI and tries to find 
@@ -653,6 +553,37 @@ save("location","0x02", "$avp(i:1)");
 			<para>
 			<emphasis>domain</emphasis> - Name of table that should be used 
 			for the lookup.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>flags</emphasis>(optional)</para>
+			<itemizedlist>
+			<listitem>
+				<para>
+				<emphasis>'b' (no Branches)</emphasis> - this flag controls how
+				lookup function processes multiple contacts.  If there are 
+				multiple contacts for the given username in usrloc and this 
+				flag is not set, Request-URI will be overwritten with the 
+				highest-q rated contact and the rest will be appended to 
+				sip_msg structure and can be later used by tm for forking. If 
+				the flag is set, only Request-URI will be overwritten 
+				with the highest-q rated contact and the rest will be left 
+				unprocessed.
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis>'m' (Method filtering)</emphasis> - this flag tells 
+				if the contact filtering based on supported methods should be
+				performed during lookup.
+				</para>
+			</listitem>
+			</itemizedlist>
+		</listitem>
+		<listitem>
+			<para>
+			<emphasis>AOR</emphasis> (optional)- AOR to lookup for; if
+			missing, the RURI is used as AOR; This can be a variable.
 			</para>
 		</listitem>
 		</itemizedlist>
@@ -681,7 +612,11 @@ save("location","0x02", "$avp(i:1)");
 		<title><function>lookup</function> usage</title>
 		<programlisting format="linespecific">
 ...
-lookup("location");
+lookup("location");  # simple lookup
+   #or
+lookup("location","m"); # lookup with method filtering
+   #or
+lookup("location","","$var(aor)"); # simple lookup with AOR from PV
 switch ($retcode) {
     case -1:
     case -3:

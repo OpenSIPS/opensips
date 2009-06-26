@@ -6,12 +6,83 @@
 	<qandaset defaultlabel="number">
 
 	<qandaentry>
+
+		<question>
+		<para>What happend with the old <quote>append_branch</quote> module parameter?</para>
+		</question>
+		<answer>
+		<para>
+			It was removed as global option, as the <quote>lookup</quote> 
+			function takes this option via the flag "b" (append Branches) 
+			See the documentation of the <quote>lookup</quote> function.
+		</para>
+		</answer>
+	</qandaentry>
+
+
+	<qandaentry>
+		<question>
+		<para>What happend with the old <quote>method_filtering</quote> module parameter?</para>
+		</question>
+		<answer>
+		<para>
+			It was removed as global option, as the <quote>lookup</quote> 
+			function takes this option via the flag "m" (Method filtering) 
+			See the documentation of the <quote>lookup</quote> function.
+		</para>
+		</answer>
+	</qandaentry>
+
+
+	<qandaentry>
+		<question>
+		<para>What happend with the old <quote>sock_flag</quote> module parameter?</para>
+		</question>
+		<answer>
+		<para>
+			It was removed as global option, as the <quote>save</quote> 
+			function takes this option via the flag "s" (Socket header) 
+			See the documentation of the <quote>save</quote> function.
+		</para>
+		</answer>
+	</qandaentry>
+
+
+	<qandaentry>
+		<question>
+		<para>What happend with the old <quote>use_path</quote> and <quote>path_mode</quote> module parameters?</para>
+		</question>
+		<answer>
+		<para>
+			They were removed as global option, as the <quote>save</quote> 
+			function takes these options via the flag "px" (path support) 
+			See the documentation of the <quote>save</quote> function.
+		</para>
+		</answer>
+	</qandaentry>
+
+
+	<qandaentry>
+		<question>
+		<para>What happend with the old <quote>path_use_received</quote> module parameter?</para>
+		</question>
+		<answer>
+		<para>
+			It was removed as global option, as the <quote>save</quote> 
+			function takes this option via the flag "v" (path receiVed) 
+			See the documentation of the <quote>save</quote> function.
+		</para>
+		</answer>
+	</qandaentry>
+
+
+	<qandaentry>
 		<question>
 		<para>What happend with the old <quote>nat_flag</quote> module parameter?</para>
 		</question>
 		<answer>
 		<para>
-			In was removed, as the module internally loads this value from the
+			It was removed, as the module internally loads this value from the
 			<quote>USRLOC</quote> module (see the <quote>nat_bflag</quote>
 			USRLOC parameter).
 		</para>
@@ -24,7 +95,7 @@
 		</question>
 		<answer>
 		<para>
-			In was removed, as the module internally loads this option from the
+			It was removed, as the module internally loads this option from the
 			<quote>USRLOC</quote> module. This was done in order to simplify the
 			configuration.
 		</para>

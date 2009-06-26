@@ -365,7 +365,7 @@ static int add_unsupported(struct sip_msg* _m, str* _p)
 /*! \brief
  * Send a reply
  */
-int send_reply(struct sip_msg* _m)
+int send_reply(struct sip_msg* _m, unsigned int _flags)
 {
 	str unsup = str_init(SUPPORTED_PATH_STR);
 	long code;
@@ -377,9 +377,9 @@ int send_reply(struct sip_msg* _m)
 		contact.data_len = 0;
 	}
 			
-	if (rerrno == R_FINE && path_enabled && _m->path_vec.s) {
-		if (path_mode != PATH_MODE_OFF) {
-			if (parse_supported(_m)<0 && path_mode == PATH_MODE_STRICT) {
+	if (rerrno == R_FINE && (_flags&REG_SAVE_PATH_FLAG) && _m->path_vec.s) {
+		if ( (_flags&REG_SAVE_PATH_OFF_FLAG)==0 ) {
+			if (parse_supported(_m)<0 && (_flags&REG_SAVE_PATH_STRICT_FLAG)) {
 				rerrno = R_PATH_UNSUP;
 				if (add_unsupported(_m, &unsup) < 0)
 					return -1;
@@ -389,7 +389,7 @@ int send_reply(struct sip_msg* _m)
 			else if (get_supported(_m) & F_SUPPORTED_PATH) {
 				if (add_path(_m, &_m->path_vec) < 0)
 					return -1;
-			} else if (path_mode == PATH_MODE_STRICT) {
+			} else if ((_flags&REG_SAVE_PATH_STRICT_FLAG)) {
 				rerrno = R_PATH_UNSUP;
 				if (add_unsupported(_m, &unsup) < 0)
 					return -1;

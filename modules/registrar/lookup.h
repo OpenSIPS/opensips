@@ -38,7 +38,7 @@
 /*! \brief
  * Lookup a contact in usrloc and rewrite R-URI if found
  */
-int lookup(struct sip_msg* _m, char* _t, char* _s);
+int lookup(struct sip_msg* _m, char* _table, char* _flags, char* _aor);
 
 
 /*! \brief

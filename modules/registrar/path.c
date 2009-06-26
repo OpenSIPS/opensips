@@ -38,7 +38,8 @@
 /*! \brief
  * Combines all Path HF bodies into one string.
  */
-int build_path_vector(struct sip_msg *_m, str *path, str *received)
+int build_path_vector(struct sip_msg *_m, str *path, str *received,
+														unsigned int flags)
 {
 	static char buf[MAX_PATH_SIZE];
 	char *p;
@@ -84,7 +85,7 @@ int build_path_vector(struct sip_msg *_m, str *path, str *received)
 			LM_ERR("first Path URI is not a loose-router, not supported\n");
 			goto error;
 		}
-		if (path_use_params) {
+		if ( flags&REG_SAVE_PATH_RECEIVED_FLAG ) {
 			param_hooks_t hooks;
 			param_t *params;
 

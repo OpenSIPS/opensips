@@ -56,6 +56,7 @@
 #include "../../ut.h"
 #include "../../qvalue.h"
 #include "../../dset.h"
+#include "../../mod_fix.h"
 #ifdef USE_TCP
 #include "../../tcp_server.h"
 #endif
@@ -69,14 +70,13 @@
 #include "path.h"
 #include "save.h"
 
-static int mem_only = 0;
 
 /*! \brief
  * Process request that contained a star, in that case, 
  * we will remove all bindings with the given username 
  * from the usrloc and return 200 OK response
  */
-static inline int star(udomain_t* _d, str* _a)
+static inline int star(udomain_t* _d, str* _a, unsigned int _flags)
 {
 	urecord_t* r;
 	ucontact_t* c;
@@ -86,7 +86,7 @@ static inline int star(udomain_t* _d, str* _a)
 	if (!ul.get_urecord(_d, _a, &r)) {
 		c = r->contacts;
 		while(c) {
-			if (mem_only) {
+			if (_flags&REG_SAVE_MEMORY_FLAG) {
 				c->flags |= FL_MEM;
 			} else {
 				c->flags &= ~FL_MEM;
@@ -190,7 +190,7 @@ static inline int no_contacts(udomain_t* _d, str* _a)
  * Fills the common part (for all contacts) of the info structure
  */
 static inline ucontact_info_t* pack_ci( struct sip_msg* _m, contact_t* _c,
-											unsigned int _e, unsigned int _f)
+						unsigned int _e, unsigned int _f, unsigned int _flags)
 {
 	static ucontact_info_t ci;
 	static str no_ua = str_init("n/a");
@@ -224,7 +224,7 @@ static inline ucontact_info_t* pack_ci( struct sip_msg* _m, contact_t* _c,
 		}
 
 		/* set received socket */
-		if (_m->flags&sock_flag) {
+		if ( _flags&REG_SAVE_SOCKET_FLAG) {
 			ci.sock = get_sock_hdr(_m);
 			if (ci.sock==0)
 				ci.sock = _m->rcv.bind_address;
@@ -241,8 +241,8 @@ static inline ucontact_info_t* pack_ci( struct sip_msg* _m, contact_t* _c,
 		}
 
 		/* extract Path headers */
-		if (path_enabled) {
-			if (build_path_vector(_m, &path, &path_received) < 0) {
+		if ( _flags&REG_SAVE_PATH_FLAG ) {
+			if (build_path_vector(_m, &path, &path_received, _flags) < 0) {
 				rerrno = R_PARSE_PATH;
 				goto error;
 			}
@@ -346,12 +346,12 @@ error:
  * > 0
  */
 static inline int insert_contacts(struct sip_msg* _m, contact_t* _c,
-													udomain_t* _d, str* _a)
+								udomain_t* _d, str* _a, unsigned int _flags)
 {
 	ucontact_info_t* ci;
 	urecord_t* r;
 	ucontact_t* c;
-	unsigned int flags;
+	unsigned int cflags;
 	int num;
 	int e;
 #ifdef USE_TCP
@@ -360,7 +360,7 @@ static inline int insert_contacts(struct sip_msg* _m, contact_t* _c,
 	struct sip_uri uri;
 #endif
 
-	flags = mem_only;
+	cflags = (_flags&REG_SAVE_MEMORY_FLAG)?FL_MEM:FL_NONE;
 #ifdef USE_TCP
 	if ( (_m->flags&tcp_persistent_flag) &&
 	(_m->rcv.proto==PROTO_TCP||_m->rcv.proto==PROTO_TLS)) {
@@ -395,7 +395,7 @@ static inline int insert_contacts(struct sip_msg* _m, contact_t* _c,
 		}
 
 		/* pack the contact_info */
-		if ( (ci=pack_ci( (ci==0)?_m:0, _c, e, flags))==0 ) {
+		if ( (ci=pack_ci( (ci==0)?_m:0, _c, e, cflags, _flags))==0 ) {
 			LM_ERR("failed to extract contact info\n");
 			goto error;
 		}
@@ -514,12 +514,12 @@ static int test_max_contacts(struct sip_msg* _m, urecord_t* _r, contact_t* _c,
  *    == 0, delete contact
  */
 static inline int update_contacts(struct sip_msg* _m, urecord_t* _r,
-																contact_t* _c)
+										contact_t* _c, unsigned int _flags)
 {
 	ucontact_info_t *ci;
 	ucontact_t* c;
 	int e;
-	unsigned int flags;
+	unsigned int cflags;
 	int ret;
 #ifdef USE_TCP
 	int e_max;
@@ -528,10 +528,10 @@ static inline int update_contacts(struct sip_msg* _m, urecord_t* _r,
 #endif
 
 	/* mem flag */
-	flags = mem_only;
+	cflags = (_flags&REG_SAVE_MEMORY_FLAG)?FL_MEM:FL_NONE;
 
 	/* pack the contact_info */
-	if ( (ci=pack_ci( _m, 0, 0, flags))==0 ) {
+	if ( (ci=pack_ci( _m, 0, 0, cflags, _flags))==0 ) {
 		LM_ERR("failed to initial pack contact info\n");
 		goto error;
 	}
@@ -569,7 +569,7 @@ static inline int update_contacts(struct sip_msg* _m, urecord_t* _r,
 				continue;
 
 			/* pack the contact_info */
-			if ( (ci=pack_ci( 0, _c, e, 0))==0 ) {
+			if ( (ci=pack_ci( 0, _c, e, 0, _flags))==0 ) {
 				LM_ERR("failed to extract contact info\n");
 				goto error;
 			}
@@ -583,7 +583,7 @@ static inline int update_contacts(struct sip_msg* _m, urecord_t* _r,
 			/* Contact found */
 			if (e == 0) {
 				/* it's expired */
-				if (mem_only) {
+				if (_flags&REG_SAVE_MEMORY_FLAG) {
 					c->flags |= FL_MEM;
 				} else {
 					c->flags &= ~FL_MEM;
@@ -597,7 +597,7 @@ static inline int update_contacts(struct sip_msg* _m, urecord_t* _r,
 			} else {
 				/* do update */
 				/* pack the contact specific info */
-				if ( (ci=pack_ci( 0, _c, e, 0))==0 ) {
+				if ( (ci=pack_ci( 0, _c, e, 0, _flags))==0 ) {
 					LM_ERR("failed to pack contact specific info\n");
 					goto error;
 				}
@@ -643,7 +643,7 @@ error:
  * contained some contact header fields
  */
 static inline int add_contacts(struct sip_msg* _m, contact_t* _c,
-													udomain_t* _d, str* _a)
+							udomain_t* _d, str* _a, unsigned int _flags)
 {
 	int res;
 	urecord_t* r;
@@ -658,7 +658,7 @@ static inline int add_contacts(struct sip_msg* _m, contact_t* _c,
 	}
 
 	if (res == 0) { /* Contacts found */
-		if (update_contacts(_m, r, _c) < 0) {
+		if (update_contacts(_m, r, _c, _flags) < 0) {
 			build_contact(r->contacts);
 			ul.release_urecord(r);
 			ul.unlock_udomain(_d, _a);
@@ -667,7 +667,7 @@ static inline int add_contacts(struct sip_msg* _m, contact_t* _c,
 		build_contact(r->contacts);
 		ul.release_urecord(r);
 	} else {
-		if (insert_contacts(_m, _c, _d, _a) < 0) {
+		if (insert_contacts(_m, _c, _d, _a, _flags) < 0) {
 			ul.unlock_udomain(_d, _a);
 			return -4;
 		}
@@ -680,16 +680,45 @@ static inline int add_contacts(struct sip_msg* _m, contact_t* _c,
 /*! \brief
  * Process REGISTER request and save it's contacts
  */
-#define is_cflag_set(_name) (((unsigned int)(unsigned long)_cflags)&(_name))
-int save(struct sip_msg* _m, char* _d, char* _cflags, char* _s)
+#define is_cflag_set(_name) ((flags)&(_name))
+int save(struct sip_msg* _m, char* _d, char* _f, char* _s)
 {
+	unsigned int flags;
 	contact_t* c;
 	int st;
 	str aor;
 	str uri;
+	str flags_s;
 	pv_value_t val;
 
 	rerrno = R_FINE;
+
+	flags = 0;
+	if (_f && _f[0]!=0) {
+		if (fixup_get_svalue( _m, (gparam_p)_f, &flags_s)!=0) {
+			LM_ERR("invalid flags parameter");
+			return -1;
+		}
+		for( st=0 ; st< flags_s.len ; st++ ) {
+			switch (flags_s.s[st]) {
+				case 'm': flags |= REG_SAVE_MEMORY_FLAG; break;
+				case 'r': flags |= REG_SAVE_NOREPLY_FLAG; break;
+				case 's': flags |= REG_SAVE_SOCKET_FLAG; break;
+				case 'v': flags |= REG_SAVE_PATH_RECEIVED_FLAG; break;
+				case 'p':
+					if (st<flags_s.len-1) {
+						st++;
+						if (flags_s.s[st]=='0') {
+							flags |= REG_SAVE_PATH_STRICT_FLAG; break; }
+						if (flags_s.s[st]=='1') {
+							flags |= REG_SAVE_PATH_LAZY_FLAG; break; }
+						if (flags_s.s[st]=='0') {
+							flags |= REG_SAVE_PATH_OFF_FLAG; break; }
+					}
+				default: LM_WARN("unsuported flag %c \n",flags_s.s[st]);
+			}
+		}
+	}
 
 	if (parse_message(_m) < 0) {
 		goto error;
@@ -698,7 +727,7 @@ int save(struct sip_msg* _m, char* _d, char* _cflags, char* _s)
 	if (check_contacts(_m, &st) > 0) {
 		goto error;
 	}
-	
+
 	get_act_time();
 	c = get_first_contact(_m);
 
@@ -722,29 +751,27 @@ int save(struct sip_msg* _m, char* _d, char* _cflags, char* _s)
 		goto error;
 	}
 
-	mem_only = is_cflag_set(REG_SAVE_MEM_FL)?FL_MEM:FL_NONE;
-
 	if (c == 0) {
 		if (st) {
-			if (star((udomain_t*)_d, &aor) < 0) goto error;
+			if (star((udomain_t*)_d, &aor, flags) < 0) goto error;
 		} else {
 			if (no_contacts((udomain_t*)_d, &aor) < 0) goto error;
 		}
 	} else {
-		if (add_contacts(_m, c, (udomain_t*)_d, &aor) < 0) goto error;
+		if (add_contacts(_m, c, (udomain_t*)_d, &aor, flags) < 0) goto error;
 	}
 
 	update_stat(accepted_registrations, 1);
 
-	if ( !is_cflag_set(REG_SAVE_NORPL_FL) && (send_reply(_m) < 0))
+	if ( !is_cflag_set(REG_SAVE_NOREPLY_FLAG) && (send_reply(_m,flags) < 0))
 		return -1;
 
 	return 1;
 error:
 	update_stat(rejected_registrations, 1);
 
-	if ( !is_cflag_set(REG_SAVE_NORPL_FL) )
-		send_reply(_m);
+	if ( !is_cflag_set(REG_SAVE_NOREPLY_FLAG) )
+		send_reply(_m,flags);
 
 	return 0;
 }

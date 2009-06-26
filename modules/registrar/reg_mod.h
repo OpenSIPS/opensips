@@ -62,13 +62,21 @@
 #define PATH_MODE_LAZY		1
 #define PATH_MODE_OFF		0
 
-#define REG_SAVE_MEM_FL     (1<<0)
-#define REG_SAVE_NORPL_FL   (1<<1)
-#define REG_SAVE_ALL_FL     ((1<<2)-1)
+#define REG_SAVE_MEMORY_FLAG           (1<<0)
+#define REG_SAVE_NOREPLY_FLAG          (1<<1)
+#define REG_SAVE_SOCKET_FLAG           (1<<2)
+#define REG_SAVE_PATH_STRICT_FLAG      (1<<3)
+#define REG_SAVE_PATH_LAZY_FLAG        (1<<4)
+#define REG_SAVE_PATH_OFF_FLAG         (1<<5)
+#define REG_SAVE_PATH_RECEIVED_FLAG    (1<<6)
+#define REG_SAVE_PATH_FLAG   (REG_SAVE_PATH_STRICT_FLAG|\
+			REG_SAVE_PATH_LAZY_FLAG|REG_SAVE_PATH_OFF_FLAG)
+
+#define REG_LOOKUP_METHODFILTER_FLAG   (1<<0)
+#define REG_LOOKUP_NOBRANCH_FLAG       (1<<1)
 
 extern int default_expires;
 extern qvalue_t default_q;
-extern int append_branches;
 extern int case_sensitive;
 extern int nat_flag;
 extern int tcp_persistent_flag;
@@ -87,13 +95,7 @@ extern int_str rcv_avp_name;
 extern str rcv_param;
 extern int max_contacts;
 extern int retry_after;
-extern int method_filtering;
-extern int path_enabled;
-extern int path_mode;
-extern int path_use_params;
-
 extern str sock_hdr_name;
-extern int sock_flag;
 
 usrloc_api_t ul;  /*!< Structure containing pointers to usrloc functions */
 

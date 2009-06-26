@@ -38,7 +38,7 @@
 /*! \brief
  * Send a reply
  */
-int send_reply(struct sip_msg* _m);
+int send_reply(struct sip_msg* _m, unsigned int _flags);
 
 
 /*! \brief

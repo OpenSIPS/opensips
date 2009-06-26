@@ -38,6 +38,7 @@
 #include "../../str.h"
 #include "../../config.h"
 #include "../../action.h"
+#include "../../mod_fix.h"
 #include "../../parser/parse_rr.h"
 #include "../usrloc/usrloc.h"
 #include "common.h"
@@ -46,9 +47,9 @@
 #include "lookup.h"
 
 
-#define allowed_method(_msg, _c) \
-	( !method_filtering || ((_msg)->REQ_METHOD)&((_c)->methods) )
-
+#define allowed_method(_msg, _c, _f) \
+	( !((_f)&REG_LOOKUP_METHODFILTER_FLAG) || \
+		((_msg)->REQ_METHOD)&((_c)->methods) )
 
 /*! \brief
  * Lookup contact in the database and rewrite Request-URI
@@ -56,15 +57,32 @@
  *          -2 : found but method not allowed
  *          -3 : error
  */
-int lookup(struct sip_msg* _m, char* _t, char* _s)
+int lookup(struct sip_msg* _m, char* _t, char* _f, char* _s)
 {
+	unsigned int flags;
 	urecord_t* r;
 	str aor, uri;
 	ucontact_t* ptr;
 	int res;
 	int ret;
 	str path_dst;
+	str flags_s;
 	pv_value_t val;
+
+	flags = 0;
+	if (_f && _f[0]!=0) {
+		if (fixup_get_svalue( _m, (gparam_p)_f, &flags_s)!=0) {
+			LM_ERR("invalid owner uri parameter");
+			return -1;
+		}
+		for( res=0 ; res< flags_s.len ; res++ ) {
+			switch (flags_s.s[res]) {
+				case 'm': flags |= REG_LOOKUP_METHODFILTER_FLAG; break;
+				case 'b': flags |= REG_LOOKUP_NOBRANCH_FLAG; break;
+				default: LM_WARN("unsuported flag %c \n",flags_s.s[res]);
+			}
+		}
+	}
 
 	if (_s) {
 		if (pv_get_spec_value( _m, (pv_spec_p)_s, &val)!=0) {
@@ -100,7 +118,7 @@ int lookup(struct sip_msg* _m, char* _t, char* _s)
 	ret = -1;
 	/* look first for an un-expired and suported contact */
 	while ( (ptr) &&
-	!(VALID_CONTACT(ptr,act_time) && (ret=-2) && allowed_method(_m,ptr)))
+	!(VALID_CONTACT(ptr,act_time) && (ret=-2) && allowed_method(_m,ptr,flags)))
 		ptr = ptr->next;
 	if (ptr==0) {
 		/* nothing found */
@@ -153,11 +171,11 @@ int lookup(struct sip_msg* _m, char* _t, char* _s)
 	}
 
 	/* Append branches if enabled */
-	if (!append_branches) goto done;
+	if ( flags&REG_LOOKUP_NOBRANCH_FLAG ) goto done;
 	LM_DBG("looking for branches\n");
 
 	for( ; ptr ; ptr = ptr->next ) {
-		if (VALID_CONTACT(ptr, act_time) && allowed_method(_m, ptr)) {
+		if (VALID_CONTACT(ptr, act_time) && allowed_method(_m,ptr,flags)) {
 			path_dst.len = 0;
 			if(ptr->path.s && ptr->path.len 
 			&& get_path_dst_uri(&ptr->path, &path_dst) < 0) {

@@ -80,16 +80,13 @@ static int  mod_init(void);
 static int  child_init(int);
 static void mod_destroy(void);
 /*! \brief Fixup functions */
-static int domain_fixup(void** param, int param_no);
-static int registered_fixup(void** param, int param_no);
-static int save_fixup(void** param, int param_no);
+static int registrar_fixup(void** param, int param_no);
 /*! \brief Functions */
 static int add_sock_hdr(struct sip_msg* msg, char *str, char *foo);
 
 
 int default_expires = 3600; 			/*!< Default expires value in seconds */
 qvalue_t default_q  = Q_UNSPECIFIED;		/*!< Default q value multiplied by 1000 */
-int append_branches = 1;			/*!< If set to 1, lookup will put all contacts found in msg structure */
 int case_sensitive  = 0;			/*!< If set to 1, username in aor will be case sensitive */
 int tcp_persistent_flag = -1;			/*!< if the TCP connection should be kept open */
 int min_expires     = 60;			/*!< Minimum expires the phones are allowed to use in seconds
@@ -98,25 +95,17 @@ int max_expires     = 0;			/*!< Maximum expires the phones are allowed to use in
  						 * use 0 to switch expires checking off */
 int max_contacts = 0;				/*!< Maximum number of contacts per AOR (0=no checking) */
 int retry_after = 0;				/*!< The value of Retry-After HF in 5xx replies */
-int method_filtering = 0;			/*!< if the looked up contacts should be filtered based on supported methods */
-int path_enabled = 0;				/*!< if the Path HF should be handled */
-int path_mode = PATH_MODE_STRICT;		/*!< if the Path HF should be inserted in the reply.
- 			*   - STRICT (2): always insert, error if no support indicated in request
- 			*   - LAZY   (1): insert only if support indicated in request
- 			*   - OFF    (0): never insert */
 
-int path_use_params = 0;			/*!< if the received- and nat-parameters of last Path uri should be used
- 						 * to determine if UAC is nat'ed */
 
 char* rcv_avp_param = 0;
 unsigned short rcv_avp_type = 0;
 int_str rcv_avp_name;
 
 int reg_use_domain = 0;
-char* realm_pref    = "";   			/*!< Realm prefix to be removed */
+/*!< Realm prefix to be removed */
+char* realm_pref    = "";
 str realm_prefix;
 
-int sock_flag = -1;
 str sock_hdr_name = {0,0};
 
 #define RCV_NAME "received"
@@ -136,19 +125,21 @@ struct sig_binds sigb;
  * Exported functions
  */
 static cmd_export_t cmds[] = {
-	{"save",         (cmd_function)save,         1,    save_fixup,     0,
+	{"save",         (cmd_function)save,         1,  registrar_fixup,  0,
 		REQUEST_ROUTE },
-	{"save",         (cmd_function)save,         2,    save_fixup,     0,
+	{"save",         (cmd_function)save,         2,  registrar_fixup,  0,
 		REQUEST_ROUTE },
-	{"save",         (cmd_function)save,         3,    save_fixup,     0,
+	{"save",         (cmd_function)save,         3,  registrar_fixup,  0,
 		REQUEST_ROUTE },
-	{"lookup",       (cmd_function)lookup,       1,  registered_fixup, 0,
+	{"lookup",       (cmd_function)lookup,       1,  registrar_fixup,  0,
 		REQUEST_ROUTE | FAILURE_ROUTE },
-	{"lookup",       (cmd_function)lookup,       2,  registered_fixup, 0,
+	{"lookup",       (cmd_function)lookup,       2,  registrar_fixup,  0,
 		REQUEST_ROUTE | FAILURE_ROUTE },
-	{"registered",   (cmd_function)registered,   1,  registered_fixup, 0,
+	{"lookup",       (cmd_function)lookup,       3,  registrar_fixup,  0,
+		REQUEST_ROUTE | FAILURE_ROUTE },
+	{"registered",   (cmd_function)registered,   1,  registrar_fixup,  0,
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"registered",   (cmd_function)registered,   2,  registered_fixup, 0,
+	{"registered",   (cmd_function)registered,   2,  registrar_fixup, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"add_sock_hdr", (cmd_function)add_sock_hdr, 1,  fixup_str_null,   0,
 		REQUEST_ROUTE },
@@ -162,7 +153,6 @@ static cmd_export_t cmds[] = {
 static param_export_t params[] = {
 	{"default_expires",    INT_PARAM, &default_expires     },
 	{"default_q",          INT_PARAM, &default_q           },
-	{"append_branches",    INT_PARAM, &append_branches     },
 	{"case_sensitive",     INT_PARAM, &case_sensitive      },
 	{"tcp_persistent_flag",INT_PARAM, &tcp_persistent_flag },
 	{"realm_prefix",       STR_PARAM, &realm_pref          },
@@ -172,12 +162,7 @@ static param_export_t params[] = {
 	{"received_avp",       STR_PARAM, &rcv_avp_param       },
 	{"max_contacts",       INT_PARAM, &max_contacts        },
 	{"retry_after",        INT_PARAM, &retry_after         },
-	{"sock_flag",          INT_PARAM, &sock_flag           },
 	{"sock_hdr_name",      STR_PARAM, &sock_hdr_name.s     },
-	{"method_filtering",   INT_PARAM, &method_filtering    },
-	{"use_path",           INT_PARAM, &path_enabled        },
-	{"path_mode",          INT_PARAM, &path_mode           },
-	{"path_use_received",  INT_PARAM, &path_use_params     },
 	{0, 0, 0}
 };
 
@@ -197,7 +182,7 @@ stat_export_t mod_stats[] = {
  * Module exports structure
  */
 struct module_exports exports = {
-	"registrar", 
+	"registrar",
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	cmds,        /* Exported functions */
 	params,      /* Exported parameters */
@@ -279,22 +264,10 @@ static int mod_init(void)
 	 */
 	reg_use_domain = ul.use_domain;
 
-	if (sock_hdr_name.s) {
+	if (sock_hdr_name.s)
 		sock_hdr_name.len = strlen(sock_hdr_name.s);
-		if (sock_hdr_name.len==0 || sock_flag==-1) {
-			LM_WARN("empty sock_hdr_name or sock_flag no set -> reseting\n");
-			pkg_free(sock_hdr_name.s);
-			sock_hdr_name.s = 0;
-			sock_hdr_name.len = 0;
-			sock_flag = -1;
-		}
-	} else if (sock_flag!=-1) {
-		LM_WARN("sock_flag defined but no sock_hdr_name -> reseting flag\n");
-		sock_flag = -1;
-	}
 
 	/* fix the flags */
-	sock_flag = (sock_flag!=-1)?(1<<sock_flag):0;
 	tcp_persistent_flag = (tcp_persistent_flag!=-1)?(1<<tcp_persistent_flag):0;
 
 	return 0;
@@ -317,74 +290,33 @@ static int child_init(int rank)
 /*! \brief
  * Convert char* parameter to udomain_t* pointer
  */
-static int domain_fixup(void** param, int param_no)
+static int domain_fixup(void** param)
 {
 	udomain_t* d;
 
-	if (param_no == 1) {
-		if (ul.register_udomain((char*)*param, &d) < 0) {
-			LM_ERR("failed to register domain\n");
-			return E_UNSPEC;
-		}
-
-		*param = (void*)d;
+	if (ul.register_udomain((char*)*param, &d) < 0) {
+		LM_ERR("failed to register domain\n");
+		return E_UNSPEC;
 	}
+
+	*param = (void*)d;
 	return 0;
 }
 
 
 /*! \brief
- * Fixup for "save" function - both domain and flags
+ * Fixup for "save"+"lookup" functions - domain, flags, AOR params
  */
-static int save_fixup(void** param, int param_no)
-{
-	unsigned int flags;
-	void ** next_param;
-	str s;
-	int ret;
-
-	if (param_no == 1) {
-		return domain_fixup(param,param_no);
-	} else if (param_no == 2) {
-		s.s = (char*)*param;
-		s.len = strlen(s.s);
-		if (s.s[0]==PV_MARKER) {
-			ret = fixup_pvar(param);
-			if (ret!=0)
-				return -1;
-			next_param = (void**)(((char*)param) + sizeof(action_elem_t));
-			if (*next_param) {
-				LM_ERR("invalid param order");
-			}
-			*next_param = *param;
-			*param = 0;
-			return 0;
-		} else {
-			flags = 0;
-			if ( (strno2int(&s, &flags )<0) || (flags>REG_SAVE_ALL_FL) ) {
-				LM_ERR("bad flags <%s>\n", (char *)(*param));
-				return E_CFG;
-			}
-			if (ul.db_mode==DB_ONLY && flags&REG_SAVE_MEM_FL) {
-				LM_ERR("MEM flag set while using the DB_ONLY mode "
-					"in USRLOC\n");
-				return E_CFG;
-			}
-			pkg_free(*param);
-			*param = (void*)(unsigned long int)flags;
-			return 0;
-		}
-	} else {
-		return fixup_pvar(param);
-	}
-}
-
-
-static int registered_fixup(void** param, int param_no)
+static int registrar_fixup(void** param, int param_no)
 {
 	if (param_no == 1) {
-		return domain_fixup(param,param_no);
+		/* name of the table */
+		return domain_fixup(param);
+	} if (param_no == 2) {
+		/* flags */
+		return fixup_spve(param);
 	} else {
+		/* AOR - from PVAR */
 		return fixup_pvar(param);
 	}
 
