@@ -217,7 +217,7 @@ error:
    customers of this function are local ACK and local CANCEL
  */
 char *build_local(struct cell *Trans,unsigned int branch,
-	str *method, str *uas_to, str *extra, unsigned int *len)
+	str *method, str *extra, struct sip_msg* rpl, unsigned int *len)
 {
 	char                *cancel_buf, *p, *via;
 	unsigned int         via_len;
@@ -232,21 +232,29 @@ char *build_local(struct cell *Trans,unsigned int branch,
 	str cseq_n;
 
 	req = Trans->uas.request;
-	from = Trans->from;
 	cseq_n = Trans->cseq_n;
-	to = *uas_to;
 	buf_hdrs = 0;
 
-	if (req && req->msg_flags&(FL_USE_UAC_FROM|FL_USE_UAC_TO|FL_USE_UAC_CSEQ)) {
-		if ( extract_hdrs( Trans->uac[branch].request.buffer.s,
-		Trans->uac[branch].request.buffer.len,
-		(req->msg_flags&FL_USE_UAC_FROM)?&from:0 ,
-		(req->msg_flags&FL_USE_UAC_TO)?&to:0 ,
-		(req->msg_flags&FL_USE_UAC_CSEQ)?&cseq_n:0 )!=0 ) {
-			LM_ERR("build_local: failed to extract UAC hdrs\n");
-			goto error;
+	if (rpl) {
+		/* take from and to hdrs from reply */
+		to.s = rpl->to->name.s;
+		to.len = rpl->to->len;
+		from.s = rpl->from->name.s;
+		from.len = rpl->from->len;
+	} else {
+		to = Trans->to;
+		from = Trans->from;
+		if (req && req->msg_flags&(FL_USE_UAC_FROM|FL_USE_UAC_TO)) {
+			if ( extract_hdrs( Trans->uac[branch].request.buffer.s,
+				Trans->uac[branch].request.buffer.len,
+				(req->msg_flags&FL_USE_UAC_FROM)?&from:0 ,
+				(req->msg_flags&FL_USE_UAC_TO)?&to:0 , 0 )!=0 ) {
+				LM_ERR("build_local: failed to extract UAC hdrs\n");
+				goto error;
+			}
 		}
 	}
+
 	LM_DBG("using FROM=<%.*s>, TO=<%.*s>, CSEQ_N=<%.*s>\n",
 		from.len,from.s , to.len,to.s , cseq_n.len,cseq_n.s);
 

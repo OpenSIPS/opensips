@@ -279,7 +279,7 @@ static int send_ack(struct sip_msg* rpl, struct cell *trans, int branch)
 	char *ack_p;
 	unsigned int  ack_len;
 
-	if (parse_headers( rpl, is_local(trans)?HDR_EOH_F:HDR_TO_F, 0)==-1
+	if(parse_headers(rpl,is_local(trans)?HDR_EOH_F:(HDR_TO_F|HDR_FROM_F),0)==-1
 	|| !rpl->to ) {
 		LM_ERR("failed to generate a HBH ACK if key HFs in reply missing\n");
 		goto error;
@@ -289,7 +289,7 @@ static int send_ack(struct sip_msg* rpl, struct cell *trans, int branch)
 
 	ack_p = is_local(trans)?
 		build_dlg_ack(rpl, trans, branch, &to, &ack_len):
-		build_local( trans, branch, &method, &to, NULL, &ack_len );
+		build_local( trans, branch, &method, NULL, rpl, &ack_len );
 	if (ack_p==0) {
 		LM_ERR("failed to build ACK\n");
 		goto error;

@@ -129,7 +129,8 @@ char *build_cancel(struct cell *Trans,unsigned int branch,
 	/* add any reason hdr, as per RFC 3326 */
 	if (is_invite(Trans) && Trans->uas.status==200)
 		extra = &reason;
-	return build_local( Trans, branch, &method, &Trans->to, extra, len );
+	return build_local( Trans, branch, &method, extra,
+		Trans->uac[branch].reply , len );
 }
 
 
