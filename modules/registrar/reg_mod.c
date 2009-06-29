@@ -93,7 +93,7 @@ int min_expires     = 60;			/*!< Minimum expires the phones are allowed to use i
  						 * use 0 to switch expires checking off */
 int max_expires     = 0;			/*!< Maximum expires the phones are allowed to use in seconds,
  						 * use 0 to switch expires checking off */
-int max_contacts = 0;				/*!< Maximum number of contacts per AOR (0=no checking) */
+int max_contacts = 0;		/*!< Maximum number of contacts per AOR (0=no checking) */
 int retry_after = 0;				/*!< The value of Retry-After HF in 5xx replies */
 
 

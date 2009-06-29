@@ -71,22 +71,29 @@
 #include "save.h"
 
 
+struct save_ctx {
+	unsigned int flags;
+	str aor;
+	unsigned int max_contacts;
+};
+
+
 /*! \brief
  * Process request that contained a star, in that case, 
  * we will remove all bindings with the given username 
  * from the usrloc and return 200 OK response
  */
-static inline int star(udomain_t* _d, str* _a, unsigned int _flags)
+static inline int star(udomain_t* _d, struct save_ctx *_sctx)
 {
 	urecord_t* r;
 	ucontact_t* c;
 	
-	ul.lock_udomain(_d, _a);
+	ul.lock_udomain(_d, &_sctx->aor);
 
-	if (!ul.get_urecord(_d, _a, &r)) {
+	if (!ul.get_urecord(_d, &_sctx->aor, &r)) {
 		c = r->contacts;
 		while(c) {
-			if (_flags&REG_SAVE_MEMORY_FLAG) {
+			if (_sctx->flags&REG_SAVE_MEMORY_FLAG) {
 				c->flags |= FL_MEM;
 			} else {
 				c->flags &= ~FL_MEM;
@@ -95,7 +102,7 @@ static inline int star(udomain_t* _d, str* _a, unsigned int _flags)
 		}
 	}
 
-	if (ul.delete_urecord(_d, _a, 0) < 0) {
+	if (ul.delete_urecord(_d, &_sctx->aor, 0) < 0) {
 		LM_ERR("failed to remove record from usrloc\n");
 		
 		     /* Delete failed, try to get corresponding
@@ -103,13 +110,13 @@ static inline int star(udomain_t* _d, str* _a, unsigned int _flags)
 		      * contacts
 		      */
 		rerrno = R_UL_DEL_R;
-		if (!ul.get_urecord(_d, _a, &r)) {
+		if (!ul.get_urecord(_d, &_sctx->aor, &r)) {
 			build_contact(r->contacts);
 		}
-		ul.unlock_udomain(_d, _a);
+		ul.unlock_udomain(_d, &_sctx->aor);
 		return -1;
 	}
-	ul.unlock_udomain(_d, _a);
+	ul.unlock_udomain(_d, &_sctx->aor);
 	return 0;
 }
 
@@ -346,7 +353,7 @@ error:
  * > 0
  */
 static inline int insert_contacts(struct sip_msg* _m, contact_t* _c,
-								udomain_t* _d, str* _a, unsigned int _flags)
+								udomain_t* _d, str* _a, struct save_ctx *_sctx)
 {
 	ucontact_info_t* ci;
 	urecord_t* r;
@@ -360,7 +367,7 @@ static inline int insert_contacts(struct sip_msg* _m, contact_t* _c,
 	struct sip_uri uri;
 #endif
 
-	cflags = (_flags&REG_SAVE_MEMORY_FLAG)?FL_MEM:FL_NONE;
+	cflags = (_sctx->flags&REG_SAVE_MEMORY_FLAG)?FL_MEM:FL_NONE;
 #ifdef USE_TCP
 	if ( (_m->flags&tcp_persistent_flag) &&
 	(_m->rcv.proto==PROTO_TCP||_m->rcv.proto==PROTO_TLS)) {
@@ -378,9 +385,9 @@ static inline int insert_contacts(struct sip_msg* _m, contact_t* _c,
 		if (e == 0)
 			continue;
 
-		if (max_contacts && (num >= max_contacts)) {
-			LM_INFO("too many contacts (%d) for AOR <%.*s>\n", 
-					num, _a->len, _a->s);
+		if (_sctx->max_contacts && (num >= _sctx->max_contacts)) {
+			LM_INFO("too many contacts (%d) for AOR <%.*s>, max=%d\n", 
+					num, _a->len, _a->s, _sctx->max_contacts);
 			rerrno = R_TOO_MANY;
 			goto error;
 		}
@@ -395,7 +402,7 @@ static inline int insert_contacts(struct sip_msg* _m, contact_t* _c,
 		}
 
 		/* pack the contact_info */
-		if ( (ci=pack_ci( (ci==0)?_m:0, _c, e, cflags, _flags))==0 ) {
+		if ( (ci=pack_ci( (ci==0)?_m:0, _c, e, cflags, _sctx->flags))==0 ) {
 			LM_ERR("failed to extract contact info\n");
 			goto error;
 		}
@@ -454,7 +461,7 @@ error:
 
 
 static int test_max_contacts(struct sip_msg* _m, urecord_t* _r, contact_t* _c,
-														ucontact_info_t *ci)
+										ucontact_info_t *ci, int _max)
 {
 	int num;
 	int e;
@@ -492,8 +499,9 @@ static int test_max_contacts(struct sip_msg* _m, urecord_t* _r, contact_t* _c,
 	}
 	
 	LM_DBG("%d contacts after commit\n", num);
-	if (num > max_contacts) {
-		LM_INFO("too many contacts for AOR <%.*s>\n", _r->aor.len, _r->aor.s);
+	if (num > _max) {
+		LM_INFO("too many contacts for AOR <%.*s>, max=%d\n",
+			_r->aor.len, _r->aor.s, _max);
 		rerrno = R_TOO_MANY;
 		return -1;
 	}
@@ -514,7 +522,7 @@ static int test_max_contacts(struct sip_msg* _m, urecord_t* _r, contact_t* _c,
  *    == 0, delete contact
  */
 static inline int update_contacts(struct sip_msg* _m, urecord_t* _r,
-										contact_t* _c, unsigned int _flags)
+										contact_t* _c, struct save_ctx *_sctx)
 {
 	ucontact_info_t *ci;
 	ucontact_t* c;
@@ -528,15 +536,16 @@ static inline int update_contacts(struct sip_msg* _m, urecord_t* _r,
 #endif
 
 	/* mem flag */
-	cflags = (_flags&REG_SAVE_MEMORY_FLAG)?FL_MEM:FL_NONE;
+	cflags = (_sctx->flags&REG_SAVE_MEMORY_FLAG)?FL_MEM:FL_NONE;
 
 	/* pack the contact_info */
-	if ( (ci=pack_ci( _m, 0, 0, cflags, _flags))==0 ) {
+	if ( (ci=pack_ci( _m, 0, 0, cflags, _sctx->flags))==0 ) {
 		LM_ERR("failed to initial pack contact info\n");
 		goto error;
 	}
 
-	if (max_contacts && test_max_contacts(_m, _r, _c, ci) != 0 )
+	if (_sctx->max_contacts &&
+	test_max_contacts(_m, _r, _c, ci ,_sctx->max_contacts) != 0 )
 		goto error;
 
 #ifdef USE_TCP
@@ -569,7 +578,7 @@ static inline int update_contacts(struct sip_msg* _m, urecord_t* _r,
 				continue;
 
 			/* pack the contact_info */
-			if ( (ci=pack_ci( 0, _c, e, 0, _flags))==0 ) {
+			if ( (ci=pack_ci( 0, _c, e, 0, _sctx->flags))==0 ) {
 				LM_ERR("failed to extract contact info\n");
 				goto error;
 			}
@@ -583,7 +592,7 @@ static inline int update_contacts(struct sip_msg* _m, urecord_t* _r,
 			/* Contact found */
 			if (e == 0) {
 				/* it's expired */
-				if (_flags&REG_SAVE_MEMORY_FLAG) {
+				if (_sctx->flags&REG_SAVE_MEMORY_FLAG) {
 					c->flags |= FL_MEM;
 				} else {
 					c->flags &= ~FL_MEM;
@@ -597,7 +606,7 @@ static inline int update_contacts(struct sip_msg* _m, urecord_t* _r,
 			} else {
 				/* do update */
 				/* pack the contact specific info */
-				if ( (ci=pack_ci( 0, _c, e, 0, _flags))==0 ) {
+				if ( (ci=pack_ci( 0, _c, e, 0, _sctx->flags))==0 ) {
 					LM_ERR("failed to pack contact specific info\n");
 					goto error;
 				}
@@ -643,36 +652,36 @@ error:
  * contained some contact header fields
  */
 static inline int add_contacts(struct sip_msg* _m, contact_t* _c,
-							udomain_t* _d, str* _a, unsigned int _flags)
+							udomain_t* _d, struct save_ctx *_sctx)
 {
 	int res;
 	urecord_t* r;
 
-	ul.lock_udomain(_d, _a);
-	res = ul.get_urecord(_d, _a, &r);
+	ul.lock_udomain(_d, &_sctx->aor);
+	res = ul.get_urecord(_d, &_sctx->aor, &r);
 	if (res < 0) {
 		rerrno = R_UL_GET_R;
 		LM_ERR("failed to retrieve record from usrloc\n");
-		ul.unlock_udomain(_d, _a);
+		ul.unlock_udomain(_d, &_sctx->aor);
 		return -2;
 	}
 
 	if (res == 0) { /* Contacts found */
-		if (update_contacts(_m, r, _c, _flags) < 0) {
+		if (update_contacts(_m, r, _c, _sctx) < 0) {
 			build_contact(r->contacts);
 			ul.release_urecord(r);
-			ul.unlock_udomain(_d, _a);
+			ul.unlock_udomain(_d, &_sctx->aor);
 			return -3;
 		}
 		build_contact(r->contacts);
 		ul.release_urecord(r);
 	} else {
-		if (insert_contacts(_m, _c, _d, _a, _flags) < 0) {
-			ul.unlock_udomain(_d, _a);
+		if (insert_contacts(_m, _c, _d, &_sctx->aor, _sctx) < 0) {
+			ul.unlock_udomain(_d, &_sctx->aor);
 			return -4;
 		}
 	}
-	ul.unlock_udomain(_d, _a);
+	ul.unlock_udomain(_d, &_sctx->aor);
 	return 0;
 }
 
@@ -680,20 +689,21 @@ static inline int add_contacts(struct sip_msg* _m, contact_t* _c,
 /*! \brief
  * Process REGISTER request and save it's contacts
  */
-#define is_cflag_set(_name) ((flags)&(_name))
+#define is_cflag_set(_name) ((sctx.flags)&(_name))
 int save(struct sip_msg* _m, char* _d, char* _f, char* _s)
 {
-	unsigned int flags;
+	struct save_ctx  sctx;
 	contact_t* c;
 	int st;
-	str aor;
 	str uri;
 	str flags_s;
 	pv_value_t val;
 
 	rerrno = R_FINE;
+	memset( &sctx, 0 , sizeof(sctx));
+	sctx.max_contacts = -1;
 
-	flags = 0;
+	sctx.flags = 0;
 	if (_f && _f[0]!=0) {
 		if (fixup_get_svalue( _m, (gparam_p)_f, &flags_s)!=0) {
 			LM_ERR("invalid flags parameter");
@@ -701,24 +711,36 @@ int save(struct sip_msg* _m, char* _d, char* _f, char* _s)
 		}
 		for( st=0 ; st< flags_s.len ; st++ ) {
 			switch (flags_s.s[st]) {
-				case 'm': flags |= REG_SAVE_MEMORY_FLAG; break;
-				case 'r': flags |= REG_SAVE_NOREPLY_FLAG; break;
-				case 's': flags |= REG_SAVE_SOCKET_FLAG; break;
-				case 'v': flags |= REG_SAVE_PATH_RECEIVED_FLAG; break;
+				case 'm': sctx.flags |= REG_SAVE_MEMORY_FLAG; break;
+				case 'r': sctx.flags |= REG_SAVE_NOREPLY_FLAG; break;
+				case 's': sctx.flags |= REG_SAVE_SOCKET_FLAG; break;
+				case 'v': sctx.flags |= REG_SAVE_PATH_RECEIVED_FLAG; break;
+				case 'c':
+					sctx.max_contacts = 0;
+					while (st<flags_s.len-1 && isdigit(flags_s.s[st+1])) {
+						sctx.max_contacts = sctx.max_contacts*10 + 
+							flags_s.s[st+1] - '0';
+						st++;
+					}
+					break;
 				case 'p':
 					if (st<flags_s.len-1) {
 						st++;
 						if (flags_s.s[st]=='0') {
-							flags |= REG_SAVE_PATH_STRICT_FLAG; break; }
+							sctx.flags |= REG_SAVE_PATH_STRICT_FLAG; break; }
 						if (flags_s.s[st]=='1') {
-							flags |= REG_SAVE_PATH_LAZY_FLAG; break; }
+							sctx.flags |= REG_SAVE_PATH_LAZY_FLAG; break; }
 						if (flags_s.s[st]=='0') {
-							flags |= REG_SAVE_PATH_OFF_FLAG; break; }
+							sctx.flags |= REG_SAVE_PATH_OFF_FLAG; break; }
 					}
 				default: LM_WARN("unsuported flag %c \n",flags_s.s[st]);
 			}
 		}
 	}
+
+	/* if no max_contact per AOR is defined, use the global one */
+	if (sctx.max_contacts == -1)
+		sctx.max_contacts = max_contacts;
 
 	if (parse_message(_m) < 0) {
 		goto error;
@@ -746,24 +768,24 @@ int save(struct sip_msg* _m, char* _d, char* _f, char* _s)
 	}
 
 
-	if (extract_aor( &uri, &aor) < 0) {
+	if (extract_aor( &uri, &sctx.aor) < 0) {
 		LM_ERR("failed to extract Address Of Record\n");
 		goto error;
 	}
 
 	if (c == 0) {
 		if (st) {
-			if (star((udomain_t*)_d, &aor, flags) < 0) goto error;
+			if (star((udomain_t*)_d, &sctx) < 0) goto error;
 		} else {
-			if (no_contacts((udomain_t*)_d, &aor) < 0) goto error;
+			if (no_contacts((udomain_t*)_d, &sctx.aor) < 0) goto error;
 		}
 	} else {
-		if (add_contacts(_m, c, (udomain_t*)_d, &aor, flags) < 0) goto error;
+		if (add_contacts(_m, c, (udomain_t*)_d, &sctx) < 0) goto error;
 	}
 
 	update_stat(accepted_registrations, 1);
 
-	if ( !is_cflag_set(REG_SAVE_NOREPLY_FLAG) && (send_reply(_m,flags) < 0))
+	if (!is_cflag_set(REG_SAVE_NOREPLY_FLAG) && (send_reply(_m,sctx.flags)<0))
 		return -1;
 
 	return 1;
@@ -771,7 +793,7 @@ error:
 	update_stat(rejected_registrations, 1);
 
 	if ( !is_cflag_set(REG_SAVE_NOREPLY_FLAG) )
-		send_reply(_m,flags);
+		send_reply(_m,sctx.flags);
 
 	return 0;
 }
