@@ -58,7 +58,7 @@
 		/* error -> get and check the code */ \
 		_ret = mysql_errno(CON_CONNECTION(_con)); \
 		if ( (_ret!=CR_SERVER_GONE_ERROR && _ret!=CR_SERVER_LOST && \
-		_ret!=CR_CONNECTION_ERROR && ret!=CR_CONN_HOST_ERROR && \
+		_ret!=CR_CONNECTION_ERROR && _ret!=CR_CONN_HOST_ERROR && \
 		_ret!=ER_UNKNOWN_STMT_HANDLER) || \
 		(_ret==0 && memcmp(mysql_error(CON_CONNECTION(_con)), \
 		"Lost",4)!=0 && memcmp(mysql_error(CON_CONNECTION(_con)), \
