@@ -338,17 +338,31 @@ static int db_restore(void)
 		LM_ERR("in use table\n");
 		return -1;
 	}
-
-	if(pua_dbf.query(pua_db,0, 0, 0, result_cols,0, n_result_cols, 0,&res)< 0)
-	{
-		LM_ERR("while querrying table\n");
-		if(res)
+	
+	if (DB_CAPABILITY(pua_dbf, DB_CAP_FETCH)) {
+		if(pua_dbf.query(pua_db,0, 0, 0, result_cols,0, n_result_cols, 0,0)< 0)
 		{
-			pua_dbf.free_result(pua_db, res);
-			res = NULL;
+			LM_ERR("while querying table\n");
+			return -1;
 		}
-		return -1;
+		if(pua_dbf.fetch_result(pua_db, &res, 500 /*rows*/)<0)
+		{
+			LM_ERR("Error fetching rows\n");
+			return -1;
+		}
+	} else {
+		if(pua_dbf.query(pua_db,0, 0, 0,result_cols,0,n_result_cols,0,&res)< 0)
+		{
+			LM_ERR("while querrying table\n");
+			if(res)
+			{
+				pua_dbf.free_result(pua_db, res);
+				res = NULL;
+			}
+			return -1;
+		}
 	}
+
 	if(res== NULL)
 		return -1;
 
@@ -362,200 +376,212 @@ static int db_restore(void)
 
 	LM_DBG("found %d db entries\n", res->n);
 
-	for(i =0 ; i< res->n ; i++)
-	{
-		row = &res->rows[i];
-		row_vals = ROW_VALUES(row);
-	
-		pres_uri.s= (char*)row_vals[puri_col].val.string_val;
-		pres_uri.len = strlen(pres_uri.s);
-		
-		LM_DBG("pres_uri= %.*s\n", pres_uri.len, pres_uri.s);
-
-		memset(&etag,			 0, sizeof(str));
-		memset(&tuple_id,		 0, sizeof(str));
-		memset(&watcher_uri,	 0, sizeof(str));
-		memset(&call_id,		 0, sizeof(str));
-		memset(&to_tag,			 0, sizeof(str));
-		memset(&from_tag,		 0, sizeof(str));
-		memset(&record_route,	 0, sizeof(str));
-		memset(&pres_id,         0, sizeof(str));
-		memset(&contact,         0, sizeof(str));
-		memset(&remote_contact,         0, sizeof(str));
-		memset(&extra_headers,   0, sizeof(str));
-		
-		pres_id.s= (char*)row_vals[pid_col].val.string_val;
-		if(pres_id.s)
-			pres_id.len = strlen(pres_id.s);
-
-		if(row_vals[etag_col].val.string_val)
+	do {
+		for(i =0 ; i< res->n ; i++)
 		{
-			etag.s= (char*)row_vals[etag_col].val.string_val;
-			etag.len = strlen(etag.s);
-	
-			tuple_id.s= (char*)row_vals[tuple_col].val.string_val;
-			tuple_id.len = strlen(tuple_id.s);
-		}
+			row = &res->rows[i];
+			row_vals = ROW_VALUES(row);
+			
+			pres_uri.s= (char*)row_vals[puri_col].val.string_val;
+			pres_uri.len = strlen(pres_uri.s);
+			
+			LM_DBG("pres_uri= %.*s\n", pres_uri.len, pres_uri.s);
+			
+			memset(&etag,			 0, sizeof(str));
+			memset(&tuple_id,		 0, sizeof(str));
+			memset(&watcher_uri,	 0, sizeof(str));
+			memset(&call_id,		 0, sizeof(str));
+			memset(&to_tag,			 0, sizeof(str));
+			memset(&from_tag,		 0, sizeof(str));
+			memset(&record_route,	 0, sizeof(str));
+			memset(&pres_id,         0, sizeof(str));
+			memset(&contact,         0, sizeof(str));
+			memset(&remote_contact,         0, sizeof(str));
+			memset(&extra_headers,   0, sizeof(str));
+			
+			pres_id.s= (char*)row_vals[pid_col].val.string_val;
+			if(pres_id.s)
+				pres_id.len = strlen(pres_id.s);
 
-		if(row_vals[watcher_col].val.string_val)
-		{	
-			watcher_uri.s= (char*)row_vals[watcher_col].val.string_val;
-			watcher_uri.len = strlen(watcher_uri.s);
-	
-			call_id.s= (char*)row_vals[callid_col].val.string_val;
-			call_id.len = strlen(call_id.s);
-
-			to_tag.s= (char*)row_vals[totag_col].val.string_val;
-			to_tag.len = strlen(to_tag.s);
-
-			from_tag.s= (char*)row_vals[fromtag_col].val.string_val;
-			from_tag.len = strlen(from_tag.s);
-
-			if(row_vals[record_route_col].val.string_val)
+			if(row_vals[etag_col].val.string_val)
 			{
-				record_route.s= (char*)row_vals[record_route_col].val.string_val;
-				record_route.len= strlen(record_route.s);
-			}	
-			
-			contact.s= (char*)row_vals[contact_col].val.string_val;
-			contact.len = strlen(contact.s);
-			
-            remote_contact.s= (char*)row_vals[remote_contact_col].val.string_val;
-			remote_contact.len = strlen(remote_contact.s);
-
-        }
-		extra_headers.s= (char*)row_vals[extra_headers_col].val.string_val;
-		if(extra_headers.s)
-			extra_headers.len= strlen(extra_headers.s);
-		else
-			extra_headers.len= 0;
-
-		size= sizeof(ua_pres_t)+ sizeof(str)+ (pres_uri.len+ pres_id.len+
-					tuple_id.len)* sizeof(char);
-		if(extra_headers.s)
-				size+= sizeof(str)+ extra_headers.len* sizeof(char);
-
-		if(watcher_uri.s)
-			size+= sizeof(str)+ (watcher_uri.len+ call_id.len+ to_tag.len+
-				from_tag.len+ record_route.len+ contact.len)* sizeof(char);
-		
-		p= (ua_pres_t*)shm_malloc(size);
-		if(p== NULL)
-		{
-			LM_ERR("no more share memmory");
-			goto error;
-		}
-		memset(p, 0, size);
-		size= sizeof(ua_pres_t);
-
-		p->pres_uri= (str*)((char*)p+ size);
-		size+= sizeof(str);
-		p->pres_uri->s= (char*)p + size;
-		memcpy(p->pres_uri->s, pres_uri.s, pres_uri.len);
-		p->pres_uri->len= pres_uri.len;
-		size+= pres_uri.len;
-		
-		if(pres_id.s)
-		{	
-			p->id.s= (char*)p + size;
-			memcpy(p->id.s, pres_id.s, pres_id.len);
-			p->id.len= pres_id.len;
-			size+= pres_id.len;
-		}
-		if(tuple_id.s && tuple_id.len)
-		{
-			p->tuple_id.s= (char*)p + size;
-			memcpy(p->tuple_id.s, tuple_id.s, tuple_id.len);
-			p->tuple_id.len= tuple_id.len;
-			size+= tuple_id.len;
-		}	
-
-		if(watcher_uri.s && watcher_uri.len)
-		{	
-			p->watcher_uri= (str*)((char*)p+ size);
-			size+= sizeof(str);
-
-			p->watcher_uri->s= (char*)p+ size;
-			memcpy(p->watcher_uri->s, watcher_uri.s, watcher_uri.len);
-			p->watcher_uri->len= watcher_uri.len;
-			size+= watcher_uri.len;
-
-			p->to_tag.s= (char*)p+ size;
-			memcpy(p->to_tag.s, to_tag.s, to_tag.len);
-			p->to_tag.len= to_tag.len;
-			size+= to_tag.len;
-
-			p->from_tag.s= (char*)p+ size;
-			memcpy(p->from_tag.s, from_tag.s, from_tag.len);
-			p->from_tag.len= from_tag.len;
-			size+= from_tag.len;
+				etag.s= (char*)row_vals[etag_col].val.string_val;
+				etag.len = strlen(etag.s);
 	
-			p->call_id.s= (char*)p + size;
-			memcpy(p->call_id.s, call_id.s, call_id.len);
-			p->call_id.len= call_id.len;
-			size+= call_id.len;
-			
-			if(record_route.s && record_route.len)
-			{
-				p->record_route.s= (char*)p + size;
-				memcpy(p->record_route.s, record_route.s, record_route.len);
-				p->record_route.len= record_route.len;
-				size+= record_route.len;
+				tuple_id.s= (char*)row_vals[tuple_col].val.string_val;
+				tuple_id.len = strlen(tuple_id.s);
 			}
-			p->contact.s= (char*)p + size;
-			memcpy(p->contact.s, contact.s, contact.len);
-			p->contact.len= contact.len;
-			size+= contact.len;
 
-			p->cseq= row_vals[cseq_col].val.int_val;
-
-			p->remote_contact.s= (char*)shm_malloc(remote_contact.len* sizeof(char));
-			if(p->remote_contact.s== NULL)
+			if(row_vals[watcher_col].val.string_val)
 			{
-				LM_ERR("No more shared memory\n");
+				watcher_uri.s= (char*)row_vals[watcher_col].val.string_val;
+				watcher_uri.len = strlen(watcher_uri.s);
+				
+				call_id.s= (char*)row_vals[callid_col].val.string_val;
+				call_id.len = strlen(call_id.s);
+				
+				to_tag.s= (char*)row_vals[totag_col].val.string_val;
+				to_tag.len = strlen(to_tag.s);
+				
+				from_tag.s= (char*)row_vals[fromtag_col].val.string_val;
+				from_tag.len = strlen(from_tag.s);
+				
+				if(row_vals[record_route_col].val.string_val)
+				{
+					record_route.s= (char*)
+						row_vals[record_route_col].val.string_val;
+					record_route.len= strlen(record_route.s);
+				}
+				
+				contact.s= (char*)row_vals[contact_col].val.string_val;
+				contact.len = strlen(contact.s);
+				
+				remote_contact.s= 
+					(char*)row_vals[remote_contact_col].val.string_val;
+				remote_contact.len = strlen(remote_contact.s);
+			}
+			extra_headers.s= (char*)row_vals[extra_headers_col].val.string_val;
+			if(extra_headers.s)
+				extra_headers.len= strlen(extra_headers.s);
+			else
+				extra_headers.len= 0;
+
+			size= sizeof(ua_pres_t)+ sizeof(str)+ (pres_uri.len+ pres_id.len+
+						tuple_id.len)* sizeof(char);
+			if(extra_headers.s)
+					size+= sizeof(str)+ extra_headers.len* sizeof(char);
+
+			if(watcher_uri.s)
+				size+= sizeof(str)+ (watcher_uri.len+ call_id.len+ to_tag.len+
+					from_tag.len+ record_route.len+ contact.len)* sizeof(char);
+			
+			p= (ua_pres_t*)shm_malloc(size);
+			if(p== NULL)
+			{
+				LM_ERR("no more share memmory");
 				goto error;
 			}
-			memcpy(p->remote_contact.s, remote_contact.s, remote_contact.len);
-			p->remote_contact.len= remote_contact.len;
-	
-			p->version= row_vals[version_col].val.int_val;
-
-		}
-
-		if(extra_headers.s)
-		{
-			p->extra_headers= (str*)((char*)p+ size);
+			memset(p, 0, size);
+			size= sizeof(ua_pres_t);
+			
+			p->pres_uri= (str*)((char*)p+ size);
 			size+= sizeof(str);
-			p->extra_headers->s= (char*)p+ size;
-			memcpy(p->extra_headers->s, extra_headers.s, extra_headers.len);
-			p->extra_headers->len= extra_headers.len;
-			size+= extra_headers.len;
-		}
-
-		LM_DBG("size= %d\n", size);
-		p->event= row_vals[event_col].val.int_val;
-		p->expires= row_vals[expires_col].val.int_val;
-		p->desired_expires= row_vals[desired_expires_col].val.int_val;
-		p->flag|=	row_vals[flag_col].val.int_val;
-
-		memset(&p->etag, 0, sizeof(str));
-		if(etag.s && etag.len)
-		{
-			/* alloc separately */
-			p->etag.s= (char*)shm_malloc(etag.len* sizeof(char));
-			if(p->etag.s==  NULL)
+			p->pres_uri->s= (char*)p + size;
+			memcpy(p->pres_uri->s, pres_uri.s, pres_uri.len);
+			p->pres_uri->len= pres_uri.len;
+			size+= pres_uri.len;
+			
+			if(pres_id.s)
 			{
-				LM_ERR("no more share memory\n");
-				goto error;
-			}	
-			memcpy(p->etag.s, etag.s, etag.len);
-			p->etag.len= etag.len;
-		}
+				p->id.s= (char*)p + size;
+				memcpy(p->id.s, pres_id.s, pres_id.len);
+				p->id.len= pres_id.len;
+				size+= pres_id.len;
+			}
+			if(tuple_id.s && tuple_id.len)
+			{
+				p->tuple_id.s= (char*)p + size;
+				memcpy(p->tuple_id.s, tuple_id.s, tuple_id.len);
+				p->tuple_id.len= tuple_id.len;
+				size+= tuple_id.len;
+			}
 
-		print_ua_pres(p);
-		insert_htable(p);
-	}
-		
+			if(watcher_uri.s && watcher_uri.len)
+			{	
+				p->watcher_uri= (str*)((char*)p+ size);
+				size+= sizeof(str);
+
+				p->watcher_uri->s= (char*)p+ size;
+				memcpy(p->watcher_uri->s, watcher_uri.s, watcher_uri.len);
+				p->watcher_uri->len= watcher_uri.len;
+				size+= watcher_uri.len;
+
+				p->to_tag.s= (char*)p+ size;
+				memcpy(p->to_tag.s, to_tag.s, to_tag.len);
+				p->to_tag.len= to_tag.len;
+				size+= to_tag.len;
+
+				p->from_tag.s= (char*)p+ size;
+				memcpy(p->from_tag.s, from_tag.s, from_tag.len);
+				p->from_tag.len= from_tag.len;
+				size+= from_tag.len;
+				
+				p->call_id.s= (char*)p + size;
+				memcpy(p->call_id.s, call_id.s, call_id.len);
+				p->call_id.len= call_id.len;
+				size+= call_id.len;
+				
+				if(record_route.s && record_route.len)
+				{
+					p->record_route.s= (char*)p + size;
+					memcpy(p->record_route.s, record_route.s, record_route.len);
+					p->record_route.len= record_route.len;
+					size+= record_route.len;
+				}
+				p->contact.s= (char*)p + size;
+				memcpy(p->contact.s, contact.s, contact.len);
+				p->contact.len= contact.len;
+				size+= contact.len;
+
+				p->cseq= row_vals[cseq_col].val.int_val;
+
+				p->remote_contact.s= (char*)
+					shm_malloc(remote_contact.len* sizeof(char));
+				if(p->remote_contact.s== NULL)
+				{
+					LM_ERR("No more shared memory\n");
+					goto error;
+				}
+				memcpy(p->remote_contact.s, remote_contact.s, remote_contact.len);
+				p->remote_contact.len= remote_contact.len;
+				
+				p->version= row_vals[version_col].val.int_val;
+			}
+
+			if(extra_headers.s)
+			{
+				p->extra_headers= (str*)((char*)p+ size);
+				size+= sizeof(str);
+				p->extra_headers->s= (char*)p+ size;
+				memcpy(p->extra_headers->s, extra_headers.s, extra_headers.len);
+				p->extra_headers->len= extra_headers.len;
+				size+= extra_headers.len;
+			}
+
+			LM_DBG("size= %d\n", size);
+			p->event= row_vals[event_col].val.int_val;
+			p->expires= row_vals[expires_col].val.int_val;
+			p->desired_expires= row_vals[desired_expires_col].val.int_val;
+			p->flag|=	row_vals[flag_col].val.int_val;
+
+			memset(&p->etag, 0, sizeof(str));
+			if(etag.s && etag.len)
+			{
+				/* alloc separately */
+				p->etag.s= (char*)shm_malloc(etag.len* sizeof(char));
+				if(p->etag.s==  NULL)
+				{
+					LM_ERR("no more share memory\n");
+					goto error;
+				}	
+				memcpy(p->etag.s, etag.s, etag.len);
+				p->etag.len= etag.len;
+			}
+
+			print_ua_pres(p);
+			insert_htable(p);
+		} /* end for(all rows)*/
+
+		if (DB_CAPABILITY(pua_dbf, DB_CAP_FETCH)) {
+			if(pua_dbf.fetch_result(pua_db, &res, 500/*rows*/)<0) {
+				LM_ERR( "fetching rows (1)\n");
+				goto error;
+			}
+		} else {
+			break;
+		}
+	} while(RES_ROW_N(res)>0);
+
 	pua_dbf.free_result(pua_db, res);
 	res = NULL;
 	
