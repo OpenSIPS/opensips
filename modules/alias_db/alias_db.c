@@ -175,8 +175,8 @@ static int find_fixup(void** param, int param_no)
 		if (fixup_pvar(param))
 			return E_CFG;
 		sp = (pv_spec_t*)*param;
-		if (sp->type!=PVT_AVP && sp->type!=PVT_SCRIPTVAR) {
-			LM_ERR("PVAR <%s> must be AVP or VAR\n", (char*)(*param));
+		if (sp->setf==NULL) {
+			LM_ERR("PV type %d (param 3) cannot be written\n", sp->type);
 			pv_spec_free(sp);
 			return E_CFG;
 		}
