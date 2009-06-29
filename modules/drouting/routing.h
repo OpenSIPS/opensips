@@ -56,8 +56,6 @@ typedef struct hb_ {
 typedef struct rt_data_ {
 	/* list of PSTN gw */
 	pgw_t *pgw_l;
-	/* list of IP addr for PSTN gw */
-	pgw_addr_t *pgw_addr_l;
 	/* default routing list for prefixless rules */
 	ptree_node_t noprefix;
 	/* hash table with routing prefixes */

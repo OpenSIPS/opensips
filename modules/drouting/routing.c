@@ -285,7 +285,6 @@ add_dst(
 	)
 {
 	pgw_t *pgw=NULL, *tmp=NULL;
-	pgw_addr_t *tmpa=NULL;
 	struct hostent* he;
 	struct sip_uri uri;
 	struct ip_addr ipa;
@@ -311,9 +310,9 @@ add_dst(
 	}
 	memset(pgw,0,sizeof(pgw_t));
 
-	pgw->ip.len= l_ip;
-	pgw->ip.s = (char*)(pgw+1);
-	memcpy(pgw->ip.s, ip, l_ip);
+	pgw->ip_str.len= l_ip;
+	pgw->ip_str.s = (char*)(pgw+1);
+	memcpy(pgw->ip_str.s, ip, l_ip);
 
 	if (pri) {
 		pgw->pri.len = l_pri;
@@ -369,31 +368,10 @@ add_dst(
 		}
 	}
 	hostent2ip_addr(&ipa, he, 0);
-	tmpa = r->pgw_addr_l;
-	while(tmpa) {
-		if(tmpa->type==type && uri.port_no==tmpa->port
-		&& ip_addr_cmp(&ipa, &tmpa->ip)) {
-			LM_DBG("gw ip addr [%s]:%d loaded\n",
-				ip_addr2a(&ipa), uri.port_no);
-			goto done;
-		}
-		tmpa = tmpa->next;
-	}
-	
+
 	LM_DBG("new gw ip addr [%s]\n", ip);
-	tmpa = (pgw_addr_t*)shm_malloc(sizeof(pgw_addr_t));
-	if(tmpa==NULL) {
-		LM_ERR("no more shm mem (%u)\n",
-			(unsigned int)sizeof(pgw_addr_t));
-		goto err_exit;
-	}
-	memset(tmpa, 0, sizeof(pgw_addr_t));
-	memcpy(&tmpa->ip, &ipa, sizeof(struct ip_addr));
-	tmpa->port = uri.port_no;
-	tmpa->type = type;
-	tmpa->strip = strip;
-	tmpa->next = r->pgw_addr_l;
-	r->pgw_addr_l = tmpa;
+	memcpy(&pgw->ip, &ipa, sizeof(struct ip_addr));
+	pgw->port = uri.port_no;
 
 done:
 	if(NULL==r->pgw_l)
@@ -425,19 +403,6 @@ del_pgw_list(
 	}
 }
 
-void
-del_pgw_addr_list(
-		pgw_addr_t *pgw_addr_l
-		)
-{
-	pgw_addr_t *t;
-	while(NULL!=pgw_addr_l){
-		t = pgw_addr_l;
-		pgw_addr_l=pgw_addr_l->next;
-		shm_free(t);
-	}
-}
-
 void 
 free_rt_data(
 		rt_data_t* rt_data,
@@ -449,9 +414,6 @@ free_rt_data(
 		/* del GW list */
 		del_pgw_list(rt_data->pgw_l);
 		rt_data->pgw_l = 0 ;
-		/* del GW addr list */
-		del_pgw_addr_list(rt_data->pgw_addr_l);
-		rt_data->pgw_addr_l =0;
 		/* del prefix tree */
 		del_tree(rt_data->pt);
 		/* del prefixless rules */

@@ -162,11 +162,11 @@ void destroy_dr_bls(void)
 }
 
 
-int populate_dr_bls(pgw_addr_t *pgwa)
+int populate_dr_bls(pgw_t *pgwa)
 {
 	unsigned int i;
 	struct dr_bl *drbl;
-	pgw_addr_t *gw;
+	pgw_t *gw;
 	struct bl_rule *drbl_first;
 	struct bl_rule *drbl_last;
 	struct net *gw_net;

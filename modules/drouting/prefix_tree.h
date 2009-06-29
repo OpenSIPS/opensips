@@ -56,23 +56,18 @@ do {\
 
 
 /* list of PSTN gw */
-typedef struct pgw_addr_ {
-	struct ip_addr ip;
-	unsigned short port;
-	int type;
-	int strip;
-	struct pgw_addr_ *next;
-}pgw_addr_t;
-
-/* list of PSTN gw */
 typedef struct pgw_ {
 	/* id matching the one in db */
 	long id;
+	int type;
+	str ip_str;
+	/* strip / pri and attrs */
 	str pri;
 	int strip;
-	str ip;
-	int type;
 	str attrs;
+	/* addres and port */
+	struct ip_addr ip;
+	unsigned short port;
 	struct pgw_ *next;
 }pgw_t;
 

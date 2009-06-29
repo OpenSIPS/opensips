@@ -245,7 +245,7 @@ static inline int dr_reload_data( void )
 		free_rt_data( old_data, 1 );
 
 	/* generate new blacklist from the routing info */
-	populate_dr_bls((*rdata)->pgw_addr_l);
+	populate_dr_bls((*rdata)->pgw_l);
 
 	return 0;
 }
@@ -810,7 +810,7 @@ again:
 		/* build uri*/
 		ruri = build_ruri(&uri, rt_info->pgwl[local_gwlist[j]].pgw->strip,
 				&rt_info->pgwl[local_gwlist[j]].pgw->pri,
-				&rt_info->pgwl[local_gwlist[j]].pgw->ip);
+				&rt_info->pgwl[local_gwlist[j]].pgw->ip_str);
 		if (ruri==0) {
 			LM_ERR("failed to build avp ruri\n");
 			goto error2;
@@ -837,7 +837,7 @@ again:
 	/* use first GW in RURI */
 	ruri = build_ruri(&uri, rt_info->pgwl[local_gwlist[0]].pgw->strip,
 			&rt_info->pgwl[local_gwlist[0]].pgw->pri,
-			&rt_info->pgwl[local_gwlist[0]].pgw->ip);
+			&rt_info->pgwl[local_gwlist[0]].pgw->ip_str);
 
 	/* add attrs avp */
 	val.s = rt_info->pgwl[local_gwlist[0]].pgw->attrs;
@@ -975,12 +975,12 @@ static int strip_username(struct sip_msg* msg, int strip)
 
 static int is_from_gw_0(struct sip_msg* msg, char* str, char* str2)
 {
-	pgw_addr_t *pgwa = NULL;
+	pgw_t *pgwa = NULL;
 
 	if(rdata==NULL || *rdata==NULL || msg==NULL)
 		return -1;
 	
-	pgwa = (*rdata)->pgw_addr_l;
+	pgwa = (*rdata)->pgw_l;
 	while(pgwa) {
 		if( (pgwa->port==0 || pgwa->port==msg->rcv.src_port) &&
 		ip_addr_cmp(&pgwa->ip, &msg->rcv.src_ip))
@@ -993,13 +993,13 @@ static int is_from_gw_0(struct sip_msg* msg, char* str, char* str2)
 
 static int is_from_gw_1(struct sip_msg* msg, char* str, char* str2)
 {
-	pgw_addr_t *pgwa = NULL;
+	pgw_t *pgwa = NULL;
 	int type = (int)(long)str;
 
 	if(rdata==NULL || *rdata==NULL || msg==NULL)
 		return -1;
 	
-	pgwa = (*rdata)->pgw_addr_l;
+	pgwa = (*rdata)->pgw_l;
 	while(pgwa) {
 		if( type==pgwa->type && 
 		(pgwa->port==0 || pgwa->port==msg->rcv.src_port) &&
@@ -1012,14 +1012,14 @@ static int is_from_gw_1(struct sip_msg* msg, char* str, char* str2)
 
 static int is_from_gw_2(struct sip_msg* msg, char* str1, char* str2)
 {
-	pgw_addr_t *pgwa = NULL;
+	pgw_t *pgwa = NULL;
 	int type = (int)(long)str1;
 	int flags = (int)(long)str2;
 
 	if(rdata==NULL || *rdata==NULL || msg==NULL)
 		return -1;
 	
-	pgwa = (*rdata)->pgw_addr_l;
+	pgwa = (*rdata)->pgw_l;
 	while(pgwa) {
 		if( type==pgwa->type &&
 		(pgwa->port==0 || pgwa->port==msg->rcv.src_port) &&
@@ -1036,7 +1036,7 @@ static int is_from_gw_2(struct sip_msg* msg, char* str1, char* str2)
 
 static int goes_to_gw_1(struct sip_msg* msg, char* _type, char* _f2)
 {
-	pgw_addr_t *pgwa = NULL;
+	pgw_t *pgwa = NULL;
 	struct sip_uri puri;
 	struct ip_addr *ip;
 	str *uri;
@@ -1058,7 +1058,7 @@ static int goes_to_gw_1(struct sip_msg* msg, char* _type, char* _f2)
 	|| ((ip=str2ip6(&puri.host))!=0)
 #endif
 	){
-		pgwa = (*rdata)->pgw_addr_l;
+		pgwa = (*rdata)->pgw_l;
 		while(pgwa) {
 			if( (type<0 || type==pgwa->type) && ip_addr_cmp(&pgwa->ip, ip))
 				return 1;

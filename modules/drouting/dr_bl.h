@@ -51,6 +51,6 @@ int init_dr_bls(void);
 
 void destroy_dr_bls(void);
 
-int populate_dr_bls(pgw_addr_t *pgwa);
+int populate_dr_bls(pgw_t *pgwa);
 
 #endif
