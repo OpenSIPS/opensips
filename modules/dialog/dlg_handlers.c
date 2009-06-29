@@ -658,6 +658,12 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 	unsigned int dir;
 	int ret = 0;
 
+	/* as this callback is triggered from loose_route, which can be 
+	   accidentaly called more than once from script, we need to be sure 
+	   we do this only once !*/
+	if (current_dlg_pointer)
+		return;
+
 	/* skip initial requests - they may end up here because of the
 	 * preloaded route */
 	if ( (!req->to && parse_headers(req, HDR_TO_F,0)<0) || !req->to ) {
