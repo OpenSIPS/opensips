@@ -275,6 +275,11 @@ modparam("registrar", "received_param", "rcv")
    AOR (Address of Record) in the user location database. Value 0
    disables the check.
 
+   This is the default value and will be used only if no other
+   value (for max_contacts) is passed as parameter to the save()
+   function. That's it - the function paramter overwride this
+   global parameter.
+
    Default value is 0.
 
    Example 1.10. Set max_contacts parameter
@@ -358,6 +363,11 @@ modparam("registrar", "path_use_received", 1)
             header which contains a socket description
             (proto:IP:port). This socket info will be stored by
             register instead of the received socket info.
+          + 'cnn' (max Contacts) - this flag can be used to limit
+            the number of contacts for this AOR (Address of
+            Record) in the user location database. Value 0
+            disables the check. This parameter overrides the
+            global "max_contacts" module parameter.
           + 'p0' (Path support - 'off' mode) The Path header is
             saved into usrloc, but is never included in the reply.
           + 'p1' (Path support - lazy mode) The Path header is
@@ -391,8 +401,9 @@ modparam("registrar", "path_use_received", 1)
 # save into 'location', no flags, use default AOR (TO URI)
 save("location");
 ...
-# save into 'location', do not update DB, use default AOR (TO URI)
-save("location","m");
+# save into 'location', do not update DB, max 5 contacts per AOR,
+# use default AOR (TO URI)
+save("location","mc5");
 ...
 # save into 'location', no flags, use as AOR the FROM URI
 save("location","","$fu");

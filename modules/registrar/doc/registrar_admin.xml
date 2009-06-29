@@ -318,6 +318,11 @@ modparam("registrar", "received_param", "rcv")
 		The parameter can be used to limit the number of contacts per 
 		AOR (Address of Record) in the user location database. Value 0 
 		disables the check.
+		<para>
+		This is the default value and will be used only if no other value
+		(for max_contacts) is passed as parameter to the save() function.
+		That's it - the function paramter overwride this global parameter.
+		</para>
 		</para>
 		<para>
 		<emphasis>
@@ -461,6 +466,14 @@ modparam("registrar", "path_use_received", 1)
 					</para>
 				</listitem>
 				<listitem>
+					<para><emphasis>'cnn' (max Contacts)</emphasis> -  this 
+					flag can be used to limit the number of contacts for this
+					AOR (Address of Record) in the user location database.
+					Value 0 disables the check. This parameter overrides the 
+					global "max_contacts" module parameter.
+					</para>
+				</listitem>
+				<listitem>
 					<para><emphasis>'p0' (Path support - 'off' mode)</emphasis>
 					The Path header is saved into usrloc, but is never 
 					included in the reply.
@@ -517,8 +530,9 @@ modparam("registrar", "path_use_received", 1)
 # save into 'location', no flags, use default AOR (TO URI)
 save("location");
 ...
-# save into 'location', do not update DB, use default AOR (TO URI)
-save("location","m");
+# save into 'location', do not update DB, max 5 contacts per AOR,
+# use default AOR (TO URI)
+save("location","mc5");
 ...
 # save into 'location', no flags, use as AOR the FROM URI
 save("location","","$fu");
