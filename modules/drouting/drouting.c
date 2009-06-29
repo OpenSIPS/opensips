@@ -46,6 +46,7 @@
 #include "../../error.h"
 #include "../../ut.h"
 #include "../../resolve.h"
+#include "../../mod_fix.h"
 #include "../../parser/parse_from.h"
 #include "../../parser/parse_uri.h"
 #include "../../mi/mi.h"
@@ -937,23 +938,16 @@ static int fixup_do_routing(void** param, int param_no)
 
 static int fixup_from_gw( void** param, int param_no)
 {
-	unsigned long type;
-	int err;
-
-	if (param_no == 1 || param_no == 2) {
-		type = str2s(*param, strlen(*param), &err);
-		if (err == 0) {
-			pkg_free(*param);
-			*param = (void *)type;
-			return 0;
-		} else {
-			LM_ERR( "bad number <%s>\n",
-				(char *)(*param));
-			return E_CFG;
-		}
+	if (param_no == 1) {
+		/* GW type*/
+		return fixup_uint(param);
+	} else if (param_no == 2) {
+		/* GW ops */
+		return fixup_spve(param);
 	}
 	return 0;
 }
+
 
 static int strip_username(struct sip_msg* msg, int strip)
 {
@@ -964,8 +958,24 @@ static int strip_username(struct sip_msg* msg, int strip)
 	act.elem[0].u.number = strip;
 	act.next = 0;
 
-	if (do_action(&act, msg) < 0)
-	{
+	if (do_action(&act, msg) < 0) {
+		LM_ERR( "Error in do_action\n");
+		return -1;
+	}
+	return 0;
+}
+
+
+static int prefix_username(struct sip_msg* msg, str *pri)
+{
+	struct action act;
+ 
+	act.type = PREFIX_T;
+	act.elem[0].type = STR_ST;
+	act.elem[0].u.s = *pri;
+	act.next = 0;
+
+	if (do_action(&act, msg) < 0) {
 		LM_ERR( "Error in do_action\n");
 		return -1;
 	}
@@ -1010,22 +1020,52 @@ static int is_from_gw_1(struct sip_msg* msg, char* str, char* str2)
 	return -1;
 }
 
-static int is_from_gw_2(struct sip_msg* msg, char* str1, char* str2)
+
+#define DR_IFG_STRIP_FLAG      (1<<0)
+#define DR_IFG_PREFIX_FLAG     (1<<1)
+#define DR_IFG_ATTRS_FLAG      (1<<2)
+static int is_from_gw_2(struct sip_msg* msg, char* type_s, char* flags_pv)
 {
 	pgw_t *pgwa = NULL;
-	int type = (int)(long)str1;
-	int flags = (int)(long)str2;
+	int type = (int)(long)type_s;
+	int flags = 0;
+	str flags_s;
+	int_str val;
+	int i;
 
 	if(rdata==NULL || *rdata==NULL || msg==NULL)
 		return -1;
-	
+
+	if (flags_pv && flags_pv[0]) {
+		if (fixup_get_svalue( msg, (gparam_p)flags_pv, &flags_s)!=0) {
+			LM_ERR("invalid flags parameter");
+			return -1;
+		}
+		for( i=0 ; i < flags_s.len ; i++ ) {
+			switch (flags_s.s[i]) {
+				case 's': flags |= DR_IFG_STRIP_FLAG; break;
+				case 'p': flags |= DR_IFG_PREFIX_FLAG; break;
+				case 'a': flags |= DR_IFG_ATTRS_FLAG; break;
+				default: LM_WARN("unsuported flag %c \n",flags_s.s[i]);
+			}
+		}
+	}
+
 	pgwa = (*rdata)->pgw_l;
 	while(pgwa) {
 		if( type==pgwa->type &&
 		(pgwa->port==0 || pgwa->port==msg->rcv.src_port) &&
 		ip_addr_cmp(&pgwa->ip, &msg->rcv.src_ip) ) {
-			if (flags!=0 && pgwa->strip>0)
+			/* strip ? */
+			if ( (flags&DR_IFG_STRIP_FLAG) && pgwa->strip>0)
 				strip_username(msg, pgwa->strip);
+			/* prefix ? */
+			if ( (flags&DR_IFG_PREFIX_FLAG) && pgwa->pri.len>0)
+				prefix_username(msg, &pgwa->pri);
+			/* attrs ? */
+			val.s = pgwa->attrs;
+			if (add_avp( AVP_VAL_STR|(attrs_avp.type),attrs_avp.name, val)!=0)
+				LM_ERR("failed to insert attrs avp\n");
 			return 1;
 		}
 		pgwa = pgwa->next;
