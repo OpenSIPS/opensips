@@ -105,7 +105,7 @@ int db_do_query(const db_con_t* _h, const db_key_t* _k, const db_op_t* _op,
 	if(_r) {
 		int tmp = store_result(_h, _r);
 		if (tmp < 0) {
-			LM_ERR("error while storing result");
+			LM_ERR("error while storing result\n");
 			return tmp;
 		}
 	}
