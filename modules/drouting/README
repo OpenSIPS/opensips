@@ -735,8 +735,14 @@ if (is_from_gw("1") {
 
    The function can take two parameters:
      * type (mandatory) - GW/destination type to be checked
-     * flags (optional) - if message is a request and the GW has a
-       STRIP defined, then apply it if GW is source.
+     * flags (optional) - what operations should be performed when
+       a GW matches:
+          + 's' (Strip) - apply to the username of RURI the strip
+            defined by the GW
+          + 'p' (Prefix) - apply to the username of RURI the
+            prefix defined by the GW
+          + 'a' (Attributes) - return the attributes string
+            defined by the GW
 
    Example 1.20. is_from_gw usage
 ...
