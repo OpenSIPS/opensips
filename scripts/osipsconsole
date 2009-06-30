@@ -89,6 +89,7 @@ my $VERIFY_ACL = 0;
 my @ACL_GROUPS;
 my $DBNAME = "";
 my $DBHOST = "";
+my $DBPORT = "";
 my $DBRWUSER = "";
 my $DBROUSER = "";
 my $DBROPW = "";
@@ -361,6 +362,12 @@ while ( $#content gt -1 ){
 		if ( $DBHOST eq "" ) {
 			if ( $arr[0] =~ /^\s*DBHOST/ ) {
 				$DBHOST = $arr[1];	
+			}
+		}
+
+		if ( $DBPORT eq "" ) {
+			if ( $arr[0] =~ /^\s*DBPORT/ ) {
+				$DBPORT = $arr[1];	
 			}
 		}
 
@@ -1398,8 +1405,8 @@ sub is_user() {
 		#prepare the query
 		$sth = $dbh->prepare( "SELECT count(*) 
 				       FROM $SUB_TABLE 
-				       WHERE $sub_table{'SUBSCRIBER_COLUMN'} = \"$OSIPSUSER\" 
-				       AND $sub_table{'REALM_COLUMN'} = \"$OSIPSDOMAIN\" " );
+				       WHERE $sub_table{'SUBSCRIBER_COLUMN'} = \'$OSIPSUSER\' 
+				       AND $sub_table{'REALM_COLUMN'} = \'$OSIPSDOMAIN\' " );
 		
 		#execute the query
 		$sth->execute( );
@@ -1546,7 +1553,7 @@ sub db_load() {
 				}
 				$DBROOTUSER = "postgres";
 				#Connect to the database.
-				$dbh = DBI->connect("DBI:Pg:database=$DBNAME;host=$DBHOST",
+				$dbh = DBI->connect("DBI:Pg:dbname=$DBNAME;host=$DBHOST;port=$DBPORT",
 				                 "$DBRWUSER", "$DBRWPW",
 						 {'PrintError' => 0} ) or die "Database connection failed.";
 				$DBENGINELOADED = 1;
@@ -1797,16 +1804,11 @@ sub opensips_start(){
 	if ( ($#cmd+1) eq 1 ){
 		print "\nStarting opensips........\n";
 		if ( -r $PID_FILE ) {
-			if ( -d /proc/$(<$PID_FILE) ) {
 				`ps -ef | egrep opensips`;
 				`ls -l $PID_FILE`;
 				print "\nPID file exists ( " . $PID_FILE . " )! OpenSIPS already running?\n";
 				return;
-			} else {
-				print "\nRemoving stale PID file ".$PID_FILE.".";
-				`rm -f $PID_FILE`;
 			}
-		}
 
 		if ( ! -x $OSIPSBIN ) {
 			print "\nOpenSIPS binaries not found at " . $OSIPSBIN . "\n";
@@ -1846,20 +1848,24 @@ sub opensips_start(){
 #
 
 sub opensips_stop(){
-	if ( ($#cmd+1) eq 1 ) {
+	if ( ($#cmd+1) eq 1 ){
 		print "\nStopping OpenSIPS : \n";
 		if ( -r $PID_FILE ) {
 			my $sys = `cat $PID_FILE`;
-			`kill $sys`;
-			print "stopped\n";
-			return;
-		} else {
-			print "\nNo PID file found ( " . $PID_FILE . " )! OpenSIPS probably not running\n";
-			print "check with 'ps -ef | " . $EGREP . " opensips'\n";
+			`kill $sys`;			
+		        print "stopped\n";
 			return;
 		}
-	}elsif ($cmd[1] =~ /h/){
-		&usage_base();
+		else {               
+	
+		       print "\nNo PID file found ( " . $PID_FILE . " )! OpenSIPS probably not running\n";
+
+		       print "check with 'ps -ef | " . $EGREP . " opensips'\n";               
+		       
+		       return;	
+		}
+	}elsif ($cmd[1] =~ /h/){		
+		&usage_base();		
 	}else {
 		print "No parameters required!!! Syntax is not correct\n";
 	}
@@ -1875,7 +1881,7 @@ sub opensips_stop(){
 sub opensips_restart(){
 	&opensips_stop();
 	sleep 2;
-	&opensips_start();
+	&opensips_start();			
 }
 
 
@@ -2023,7 +2029,7 @@ sub opensips_acl() {
 					} else {
 						$sth = $dbh->prepare ("INSERT INTO $ACL_TABLE ($acl_table{'ACL_USER_COLUMN'},$acl_table{'ACL_GROUP_COLUMN'},
 								       $acl_table{'ACL_MODIFIED_COLUMN'},$acl_table{'ACL_DOMAIN_COLUMN'} ) 
-								       VALUES (\"$OSIPSUSER\",\"$cmd[3]\",\'$last_modified\', \"$OSIPSDOMAIN\" ) " );	
+								       VALUES (\'$OSIPSUSER\',\'$cmd[3]\',\'$last_modified\', \'$OSIPSDOMAIN\' ) " );	
 		
 						 ##execute the query
 						 $sth->execute( );
@@ -2180,8 +2186,8 @@ sub opensips_rpid() {
 					} else {
 					 	$sth = $dbh->prepare("UPDATE $SUB_TABLE 
 								      SET $sub_table{'RPID_COLUMN'} = $cmd[3] 
-								      WHERE $sub_table{'SUBSCRIBER_COLUMN'}=\"$OSIPSUSER\" 
-								      AND  $sub_table{'REALM_COLUMN'}= \"$OSIPSDOMAIN\" " );	
+								      WHERE $sub_table{'SUBSCRIBER_COLUMN'}=\'$OSIPSUSER\' 
+								      AND  $sub_table{'REALM_COLUMN'}= \'$OSIPSDOMAIN\' " );	
 
 						 ##execute the query
 						 $sth->execute( );
@@ -2212,8 +2218,8 @@ sub opensips_rpid() {
 					} else {
 					 	$sth = $dbh->prepare("UPDATE $SUB_TABLE 
 								      SET rpid = null  
-	   							      WHERE $sub_table{'SUBSCRIBER_COLUMN'} = \"$OSIPSUSER\" 
-		                                                      AND $sub_table{'REALM_COLUMN'} = \"$OSIPSDOMAIN\" " );	
+	   							      WHERE $sub_table{'SUBSCRIBER_COLUMN'} = \'$OSIPSUSER\' 
+		                                                      AND $sub_table{'REALM_COLUMN'} = \'$OSIPSDOMAIN\' " );	
 
 						 ##execute the query
 						 $sth->execute( );
@@ -2530,7 +2536,7 @@ sub subscriber() {
 				&usage_subscriber();
 				return;
 			}
-			#&credentials($cmd[1],$cmd[2]);
+			&credentials($cmd[1],$cmd[2]);
 			
 			if ( &is_user($cmd[1]) != 0 ) {
 				print "user " . $cmd[1] . " already exists\n";
@@ -2571,7 +2577,7 @@ sub subscriber() {
 				$sth = $dbh->prepare( "INSERT INTO $SUB_TABLE 
 						       ($sub_table{'SUBSCRIBER_COLUMN'},$sub_table{'REALM_COLUMN'},$sub_table{'HA1_COLUMN'},
 							$sub_table{'HA1B_COLUMN'},$sub_table{'PASSWORD_COLUMN'} ) 
-							VALUES (\"$OSIPSUSER\",\"$OSIPSDOMAIN\",\"$HA1\",\"$HA1B\",\"$PASS\") " );
+							VALUES (\'$OSIPSUSER\',\'$OSIPSDOMAIN\',\'$HA1\',\'$HA1B\',\'$PASS\') " );
 
 	
 				#execute the query
@@ -2615,10 +2621,10 @@ sub subscriber() {
 				} else {
 
 					$sth = $dbh->prepare( "UPDATE $SUB_TABLE 
-							       SET $sub_table{'HA1_COLUMN'}=\"$HA1\",$sub_table{'HA1B_COLUMN'}=\"$HA1B\",
-							       $sub_table{'PASSWORD_COLUMN'}=\"$PASS\"
-							       WHERE $sub_table{'SUBSCRIBER_COLUMN'}=\"$OSIPSUSER\" 
-		                                               AND $sub_table{'REALM_COLUMN'}=\"$OSIPSDOMAIN\"" );
+							       SET $sub_table{'HA1_COLUMN'}=\'$HA1\',$sub_table{'HA1B_COLUMN'}=\'$HA1B\',
+							       $sub_table{'PASSWORD_COLUMN'}=\'$PASS\'
+							       WHERE $sub_table{'SUBSCRIBER_COLUMN'}=\'$OSIPSUSER\' 
+		                                               AND $sub_table{'REALM_COLUMN'}=\'$OSIPSDOMAIN\'" );
 	
 					#execute the query
 					$sth->execute( );
@@ -2989,10 +2995,10 @@ sub domain() {
 				&bdb_delete($DOMAIN_TABLE,$cmd[2]);								
 			} elsif ( $DBENGINE =~ /^DBTEXT$/ ) {
 				system ("$DBTEXTCMD","DELETE FROM $DOMAIN_TABLE 
-   					      WHERE domain='$cmd[2]'" );
+   					      WHERE domain=\'$cmd[2]\'" );
 			} else {
 				$sth = $dbh->prepare("DELETE FROM $DOMAIN_TABLE 
-	   					      WHERE domain='$cmd[2]'" );
+	   					      WHERE domain=\'$cmd[2]\'" );
 				#execute the query
 				$sth->execute( );			
 				warn "Deleting domain " . $cmd[2] . " in table $DOMAIN_TABLE failed", $sth->errstr( ), "\n" if $sth->err( );
@@ -3687,8 +3693,8 @@ sub check_db_alias() {
 	} else {
 	 	$sth = $dbh->prepare( "SELECT count(*) 
 				       FROM $DA_TABLE 
-				       WHERE $da_table{'DA_ALIAS_USER_COLUMN'}=\"$OSIPSUSER\" 
-		                       AND $da_table{'DA_ALIAS_DOMAIN_COLUMN'}=\"$OSIPSDOMAIN\"" );
+				       WHERE $da_table{'DA_ALIAS_USER_COLUMN'}=\'$OSIPSUSER\' 
+		                       AND $da_table{'DA_ALIAS_DOMAIN_COLUMN'}=\'$OSIPSDOMAIN\'" );
 	
 		#execute the query
 		$sth->execute( );

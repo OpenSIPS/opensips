@@ -12,22 +12,25 @@
 ## database type: MYSQL, PGSQL, ORACLE, DB_BERKELEY, or DBTEXT, by default none is loaded
 # If you want to setup a database with opensipsdbctl, you must at least specify
 # this parameter.
-# DBENGINE=MYSQL
+ DBENGINE=PGSQL
 
 ## database host
-# DBHOST=localhost
+ DBHOST=localhost
+
+## port number for postgres databasse
+ DBPORT=5433
 
 ## database name (for ORACLE this is TNS name)
-# DBNAME=opensips
+ DBNAME=opensips
 
 # database path used by dbtext or db_berkeley
 # DB_PATH="/usr/local/etc/opensips/dbtext"
 
 ## database read/write user
-# DBRWUSER=opensips
+ DBRWUSER=opensips
 
 ## password for database read/write user
-# DBRWPW="opensipsrw"
+ DBRWPW="opensipsrw"
 
 ## database read only user
 # DBROUSER=opensipsro
@@ -36,7 +39,7 @@
 # DBROPW=opensipsro
 
 ## database super user (for ORACLE this is 'scheme-creator' user)
-# DBROOTUSER="root"
+ DBROOTUSER="postgres"
 
 # Program to calculate a message-digest fingerprint 
 # MD5="md5sum"
@@ -89,7 +92,7 @@
 
 ## do (1) or don't (0) store plaintext passwords
 ## in the subscriber table - default '1'
-# STORE_PLAINTEXT_PW=0
+ STORE_PLAINTEXT_PW=0
 
 ## OPENSIPS START Options
 ## PID file path - default is: /var/run/opensips.pid
