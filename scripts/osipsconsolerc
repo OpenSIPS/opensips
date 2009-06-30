@@ -17,10 +17,13 @@
 ## database host
 # DBHOST=localhost
 
+## database port for PostgreSQL
+# DBPORT=5433
+
 ## database name (for ORACLE this is TNS name)
 # DBNAME=opensips
 
-# database path used by dbtext or db_berkeley
+## database path used by dbtext or db_berkeley
 # DB_PATH="/usr/local/etc/opensips/dbtext"
 
 ## database read/write user
@@ -64,7 +67,7 @@
 # opensips standard modules
 # STANDARD_MODULES="standard acc lcr domain group permissions registrar usrloc msilo
 #                   alias_db uri_db speeddial avpops auth_db pdt dialog dispatcher
-#                   dialplan"
+#                   dialplan,drouting,nathelper"
 
 # opensips extra modules
 # EXTRA_MODULES="imc cpl siptrace domainpolicy carrierroute userblacklist"
@@ -89,7 +92,7 @@
 
 ## do (1) or don't (0) store plaintext passwords
 ## in the subscriber table - default '1'
-# STORE_PLAINTEXT_PW=0
+# STORE_PLAINTEXT_PW=1
 
 ## OPENSIPS START Options
 ## PID file path - default is: /var/run/opensips.pid
