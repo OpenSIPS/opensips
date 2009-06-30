@@ -539,7 +539,7 @@ str* constr_multipart_body(db_res_t* result, str* cid_array, str boundary_string
 		if(length+ add_len > size)
 			REALLOC_BUF;
 
-		length+= sprintf(buf+ length, "--%.*s\r\n\r\n", boundary_string.len, boundary_string.s);
+		length+= sprintf(buf+ length, "--%.*s\r\n", boundary_string.len, boundary_string.s);
 		length+= sprintf(buf+ length, "Content-Transfer-Encoding: binary\r\n");
 
 		length+= sprintf(buf+ length, "Content-ID: <%.*s>\r\n",content_id.len, content_id.s);
