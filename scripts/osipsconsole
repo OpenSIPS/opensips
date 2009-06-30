@@ -46,8 +46,9 @@ use Socket;
 
 my $PATH_BIN = "./";
 my $PATH_CTLRC = "./scripts/";
-my $PATH_ETC = "./etc/";
-
+my $PATH_ETC = "/usr/local/etc/";
+my $PATH_LIBS = "/usr/local/lib";
+my $PATH_SHARE = "/usr/local/share";
 
 my $OSIPSCONSOLERC = "";
 ### include config files
@@ -137,17 +138,17 @@ my $HAS_EXTRA = "NO";
 my $NO_USER_INIT = "NO";
 my $MYSQL = "";
 my $PGSQL = "";
-my $MYLIBDIR = "/usr/local/lib/opensips/opensipsctl";
+my $MYLIBDIR = $PATH_LIBS."/opensips/opensipsctl";
 my $DBTEXTCMD = $MYLIBDIR."/dbtextdb/dbtextdb.py";
 
 # path to the database schemas
 my $DB_SCHEMA = "";
-my $DATA_DIR = "/usr/local/share/opensips";
-my $DBTEXT_PATH = "/usr/local/share/opensips/dbtext/opensips";
+my $DATA_DIR = $PATH_SHARE."/opensips";
+my $DBTEXT_PATH = $PATH_SHARE."/opensips/dbtext/opensips";
 # path to the db_berkeley database
 my $DB_PATH;
 if ( $DB_PATH eq "" ) {
-	$DB_PATH = "/usr/local/etc/opensips/db_berkeley";
+	$DB_PATH = $PATH_ETC."/opensips/db_berkeley";
 }
 my $DUMP_CMD;
 my $LOAD_CMD;
@@ -523,7 +524,7 @@ if ( $DBROOTUSER  eq ""  ) {
 # you better set the variables in ~/.osipsconsolerc
 
 if ( !-z $ETCDIR ) {
-	$ETCDIR="/usr/local/etc/opensips";	
+	$ETCDIR=$PATH_ETC."/opensips";
 }
 
 if ( $EGREP eq "" ) {
