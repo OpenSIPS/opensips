@@ -653,7 +653,7 @@ int sst_check_min(struct sip_msg *msg, char *flag, char *str2)
 			 * to send it.
 			 */
 			if (flag) {
-				char minse_hdr[3+1+2+1+1+11+CRLF_LEN+2];
+				char minse_hdr[3+1+2+1+1+11+CRLF_LEN+2+1];
 				int hdr_len = 3+1+2+1+1+11+CRLF_LEN+2;
 				memset(minse_hdr, 0, hdr_len+1);
 				hdr_len = snprintf(minse_hdr, hdr_len,
