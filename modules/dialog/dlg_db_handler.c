@@ -402,6 +402,7 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 
 			dlg->lifetime = 0;
 			dlg->flags = (dlg_db_mode==DB_MODE_SHUTDOWN)?DLG_FLAG_NEW:0;
+			dlg->flags |= DLG_FLAG_ISINIT;
 			next_dialog:
 			;
 		}
