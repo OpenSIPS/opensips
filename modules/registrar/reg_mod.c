@@ -81,6 +81,7 @@ static int  child_init(int);
 static void mod_destroy(void);
 /*! \brief Fixup functions */
 static int registrar_fixup(void** param, int param_no);
+static int registered_fixup(void** param, int param_no);
 /*! \brief Functions */
 static int add_sock_hdr(struct sip_msg* msg, char *str, char *foo);
 
@@ -137,9 +138,9 @@ static cmd_export_t cmds[] = {
 		REQUEST_ROUTE | FAILURE_ROUTE },
 	{"lookup",       (cmd_function)lookup,       3,  registrar_fixup,  0,
 		REQUEST_ROUTE | FAILURE_ROUTE },
-	{"registered",   (cmd_function)registered,   1,  registrar_fixup,  0,
+	{"registered",   (cmd_function)registered,   1,  registered_fixup, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"registered",   (cmd_function)registered,   2,  registrar_fixup, 0,
+	{"registered",   (cmd_function)registered,   2,  registered_fixup, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"add_sock_hdr", (cmd_function)add_sock_hdr, 1,  fixup_str_null,   0,
 		REQUEST_ROUTE },
@@ -312,14 +313,26 @@ static int registrar_fixup(void** param, int param_no)
 	if (param_no == 1) {
 		/* name of the table */
 		return domain_fixup(param);
-	} if (param_no == 2) {
+	} else if (param_no == 2) {
 		/* flags */
 		return fixup_spve(param);
 	} else {
 		/* AOR - from PVAR */
 		return fixup_pvar(param);
 	}
+}
 
+
+static int registered_fixup(void** param, int param_no)
+{
+	if (param_no == 1) {
+		/* name of the table */
+		return domain_fixup(param);
+	} else if (param_no == 2) {
+		/* AOR - from PVAR */
+		return fixup_pvar(param);
+	}
+	return 0;
 }
 
 
