@@ -807,7 +807,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 			}
 
 			if ((a->elem[3].type==NUMBER_ST)) {
-				expires = (int)a->elem[3].u.data;
+				expires = (int)a->elem[3].u.number;
 			}
 
 			ret = cache_store( &a->elem[0].u.s, &name_s, &val_s, expires);
