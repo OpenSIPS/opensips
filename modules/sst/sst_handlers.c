@@ -314,8 +314,9 @@ void sst_dialog_created_CB(struct dlg_cell *did, int type,
 
 		info->interval = MAX(minfo.min_se, sst_min_se);
 
-		if (minfo.min_se && minfo.min_se < sst_min_se) {
-			remove_minse_header(msg);
+		if (minfo.min_se < sst_min_se) {
+			if (minfo.min_se)
+				remove_minse_header(msg);
 			snprintf(buf, 80, "Min-SE: %d\r\n", info->interval);
 			if (append_header(msg, buf)) {
 				LM_ERR("failed to append modified Min-SE: header\n");
@@ -653,7 +654,7 @@ int sst_check_min(struct sip_msg *msg, char *flag, char *str2)
 			 * to send it.
 			 */
 			if (flag) {
-				char minse_hdr[3+1+2+1+1+11+CRLF_LEN+2];
+				char minse_hdr[3+1+2+1+1+11+CRLF_LEN+2+1];
 				int hdr_len = 3+1+2+1+1+11+CRLF_LEN+2;
 				memset(minse_hdr, 0, hdr_len+1);
 				hdr_len = snprintf(minse_hdr, hdr_len,
