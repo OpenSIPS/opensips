@@ -474,49 +474,60 @@ int pv_parse_ct_name(pv_spec_p sp, str *in)
 }
 
 
-static inline int get_contact_body_field(pv_value_t *res ,contact_t *ctb,
+static inline int get_contact_body_field(pv_value_t *res ,contact_t *ct,
 														pv_name_t *pvn)
 {
 	param_t *p;
 
+	if (ct==NULL) {
+		/*star contact hdr */
+		if (pvn->u.isname.name.n==0) {
+			res->rs.s = "*";
+			res->rs.len = 1;
+			res->flags = PV_VAL_STR;
+			return 0;
+		}
+		return pv_get_null(NULL, NULL, res);
+	}
+
 	switch (pvn->u.isname.name.n) {
 		case 0: /* all body */
-			res->rs.s = ctb->name.s?ctb->name.s:ctb->uri.s;
-			res->rs.len = ctb->len;
+			res->rs.s = ct->name.s?ct->name.s:ct->uri.s;
+			res->rs.len = ct->len;
 			break;
 		case CT_NAME_ID: /* name only */
-			if (ctb->name.s==NULL || ctb->name.len==0)
+			if (ct->name.s==NULL || ct->name.len==0)
 				return pv_get_null(NULL, NULL, res);
-			res->rs = ctb->name;
+			res->rs = ct->name;
 			break;
 		case CT_URI_ID: /* uri only */
-			res->rs = ctb->uri;
+			res->rs = ct->uri;
 			break;
 		case CT_Q_ID: /* Q param only */
-			if ( !ctb->q || !ctb->q->body.s || !ctb->q->body.len)
+			if ( !ct->q || !ct->q->body.s || !ct->q->body.len)
 				return pv_get_null(NULL, NULL, res);
-			res->rs = ctb->q->body;
+			res->rs = ct->q->body;
 			break;
 		case CT_EXPIRES_ID: /* EXPIRES param only */
-			if (!ctb->expires||!ctb->expires->body.s||!ctb->expires->body.len)
+			if (!ct->expires||!ct->expires->body.s||!ct->expires->body.len)
 				return pv_get_null(NULL, NULL, res);
-			res->rs = ctb->expires->body;
+			res->rs = ct->expires->body;
 			break;
 		case CT_METHODS_ID: /* METHODS param only */
-			if (!ctb->methods||!ctb->methods->body.s||!ctb->methods->body.len)
+			if (!ct->methods||!ct->methods->body.s||!ct->methods->body.len)
 				return pv_get_null(NULL, NULL, res);
-			res->rs = ctb->methods->body;
+			res->rs = ct->methods->body;
 			break;
 		case CT_RECEIVED_ID: /* RECEIVED param only */
-			if(!ctb->received||!ctb->received->body.s||!ctb->received->body.len)
+			if(!ct->received||!ct->received->body.s||!ct->received->body.len)
 				return pv_get_null(NULL, NULL, res);
-			res->rs = ctb->received->body;
+			res->rs = ct->received->body;
 			break;
 		case CT_PARAMS_ID: /* all param */
-			if (!ctb->params)
+			if (!ct->params)
 				return pv_get_null(NULL, NULL, res);
-			res->rs.s = ctb->params->name.s;
-			for( p=ctb->params ; p->next ; p=p->next);
+			res->rs.s = ct->params->name.s;
+			for( p=ct->params ; p->next ; p=p->next);
 			res->rs.len = (p->body.s+p->body.len) - res->rs.s;
 			break;
 		default:
@@ -532,8 +543,9 @@ static inline int get_contact_body_field(pv_value_t *res ,contact_t *ctb,
 static int pv_get_contact_body(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {
-	struct hdr_field *ct;
-	contact_t *ctb;
+	struct hdr_field *ct_h;
+	contact_body_t *ct_b;
+	contact_t *ct;
 	int idx;
 	int idxf;
 	char *p;
@@ -554,14 +566,15 @@ static int pv_get_contact_body(struct sip_msg *msg, pv_param_t *param,
 		return pv_get_null(msg, param, res);
 	}
 
-	ct = msg->contact;
-	if (parse_contact( ct )!=0) {
+	ct_h = msg->contact;
+	if (parse_contact( ct_h )!=0) {
 		LM_ERR("failed to parse contact hdr\n");
 		return -1;
 	}
-	ctb = ((contact_body_t*)ct->parsed)->contacts;
-	if (ctb==NULL)
+	ct_b = (contact_body_t*)ct_h->parsed;
+	if (ct_b==NULL)
 		return pv_get_null(msg, param, res);
+	ct = ct_b->contacts;
 
 	/* get the index */
 	if(pv_get_spec_index(msg, param, &idx, &idxf)!=0) {
@@ -571,7 +584,7 @@ static int pv_get_contact_body(struct sip_msg *msg, pv_param_t *param,
 
 	if (idxf==0 && idx==0) {
 		/* no index specified -> return the first contact body */
-		return get_contact_body_field( res , ctb, &param->pvn);
+		return get_contact_body_field( res , ct, &param->pvn);
 	}
 
 	if(idxf==PV_IDX_ALL) {
@@ -587,7 +600,7 @@ static int pv_get_contact_body(struct sip_msg *msg, pv_param_t *param,
 				p += PV_FIELD_DELIM_LEN;
 			}
 
-			get_contact_body_field( res , ctb, &param->pvn);
+			get_contact_body_field( res , ct, &param->pvn);
 			if (p-pv_local_buf+res->rs.len+1>PV_LOCAL_BUF_SIZE) {
 				LM_ERR("local buffer length exceeded!\n");
 				return pv_get_null(msg, param, res);
@@ -595,18 +608,19 @@ static int pv_get_contact_body(struct sip_msg *msg, pv_param_t *param,
 			memcpy(p, res->rs.s, res->rs.len);
 			p += res->rs.len;
 
-			ctb = ctb->next;
-			while (ctb==NULL && ct!=NULL) {
-				ct = ct->sibling;
-				if (ct) {
-					if (parse_contact( ct )!=0) {
+			ct = ct?ct->next:NULL;
+			while (ct==NULL && ct_h!=NULL) {
+				ct_h = ct_h->sibling;
+				if (ct_h) {
+					if (parse_contact( ct_h )!=0) {
 						LM_ERR("failed to parse contact hdr\n");
 						return -1;
 					}
-					ctb = ((contact_body_t*)ct->parsed)->contacts;
+					ct_b = (contact_body_t*)ct_h->parsed;
+					ct = ct_b->contacts;
 				}
 			}
-		} while (ctb);
+		} while (ct_b);
 
 		res->rs.s = pv_local_buf;
 		res->rs.len = p - pv_local_buf;
@@ -618,17 +632,18 @@ static int pv_get_contact_body(struct sip_msg *msg, pv_param_t *param,
 	if (idx<0) {
 		/* index from the end */
 		idxf=0;
-		while(ctb) {
+		while(ct_h) {
 			idxf++;
-			ctb = ctb->next;
-			while (ctb==NULL && ct!=NULL) {
-				ct = ct->sibling;
-				if (ct) {
-					if (parse_contact( ct )!=0) {
+			ct = ct?ct->next:NULL;
+			while (ct==NULL && ct_h!=NULL) {
+				ct_h = ct_h->sibling;
+				if (ct_h) {
+					if (parse_contact( ct_h)!=0) {
 						LM_ERR("failed to parse contact hdr\n");
 						return -1;
 					}
-					ctb = ((contact_body_t*)ct->parsed)->contacts;
+					ct_b = (contact_body_t*)ct_h->parsed;
+					ct = ct_b->contacts;
 				}
 			}
 		}
@@ -636,32 +651,34 @@ static int pv_get_contact_body(struct sip_msg *msg, pv_param_t *param,
 			return pv_get_null(msg, param, res);
 
 		idx = idxf +idx;
-		ct = msg->contact;
-		ctb = ((contact_body_t*)ct->parsed)->contacts;
+		ct_h = msg->contact;
+		ct_b = (contact_body_t*)ct_h->parsed;
+		ct = ct_b->contacts;
 	}
 
-	while (idx!=0 && ctb) {
+	while (idx!=0 && ct_h) {
 		/* get to the next contact body */
 		idx--;
-		ctb = ctb->next;
-		while (ctb==NULL && ct!=NULL) {
-			ct = ct->sibling;
-			if (ct) {
-				if (parse_contact( ct )!=0) {
+		ct = ct?ct->next:NULL;
+		while (ct==NULL && ct_h!=NULL) {
+			ct_h = ct_h->sibling;
+			if (ct_h) {
+				if (parse_contact( ct_h )!=0) {
 					LM_ERR("failed to parse contact hdr\n");
 					return -1;
 				}
-				ctb = ((contact_body_t*)ct->parsed)->contacts;
+				ct_b = (contact_body_t*)ct_h->parsed;
+				ct = ct_b->contacts;
 			}
 		}
 	}
 
 	/* nothing found ?*/
-	if (ctb==NULL)
+	if (ct==NULL)
 		return pv_get_null(msg, param, res);
 
 	/* take the current body */
-	return get_contact_body_field( res , ctb, &param->pvn);
+	return get_contact_body_field( res , ct, &param->pvn);
 }
 
 extern err_info_t _oser_err_info;
