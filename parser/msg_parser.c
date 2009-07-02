@@ -88,14 +88,14 @@ char* get_hdr_field(char* buf, char* end, struct hdr_field* hdr)
 	tmp=parse_hname(buf, end, hdr);
 	if (hdr->type==HDR_ERROR_T){
 		LM_ERR("bad header\n");
-		goto error;
+		goto error_bad_hdr;
 	}
 
 	/* eliminate leading whitespace */
 	tmp=eat_lws_end(tmp, end); 
 	if (tmp>=end) {
 		LM_ERR("hf empty\n");
-		goto error;
+		goto error_bad_hdr;
 	}
 
 	/* if header-field well-known, parse it, find its end otherwise ;
@@ -120,7 +120,6 @@ char* get_hdr_field(char* buf, char* end, struct hdr_field* hdr)
 				set_err_info(OSER_EC_PARSER, OSER_EL_MEDIUM,
 						"error parsing Via");
 				set_err_reply(400, "bad Via header");
-
 				free_via_list(vb);
 				goto error;
 			}
@@ -235,12 +234,8 @@ char* get_hdr_field(char* buf, char* end, struct hdr_field* hdr)
 					match++;
 				}else {
 					LM_ERR("bad body for <%s>(%d)\n", hdr->name.s, hdr->type);
-					/* abort(); */
-					set_err_info(OSER_EC_PARSER, OSER_EL_MEDIUM,
-						"error parsing headers");
-					set_err_reply(400, "bad headers");
 					tmp=end;
-					goto error;
+					goto error_bad_hdr;
 				}
 				tmp=match;
 			}while( match<end &&( (*match==' ')||(*match=='\t') ) );
@@ -255,6 +250,11 @@ char* get_hdr_field(char* buf, char* end, struct hdr_field* hdr)
 	trim_r( hdr->body );
 	hdr->len=tmp-hdr->name.s;
 	return tmp;
+
+error_bad_hdr:
+	set_err_info(OSER_EC_PARSER, OSER_EL_MEDIUM,
+		"error parsing headers");
+	set_err_reply(400, "bad headers");
 error:
 	LM_DBG("error exit\n");
 	update_stat( bad_msg_hdr, 1);
