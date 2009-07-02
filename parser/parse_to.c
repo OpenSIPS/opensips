@@ -657,6 +657,7 @@ char* parse_to(char* buffer, char *end, struct to_body *to_b)
 				switch (status)
 				{
 					case DISPLAY_QUOTED:
+					case DISPLAY_TOKEN:
 					case URI_ENCLOSED:
 						break;
 					case URI_OR_TOKEN:

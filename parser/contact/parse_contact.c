@@ -31,6 +31,7 @@
 #include "../../mem/mem.h"   /* pkg_malloc, pkg_free */
 #include "../../dprint.h"
 #include "../../trim.h"      /* trim_leading */
+#include "../../errinfo.h"      /* trim_leading */
 #include "parse_contact.h"
 
 
@@ -51,10 +52,14 @@ static inline int contact_parser(char* _s, int _l, contact_body_t* _c)
 
 	if (tmp.s[0] == '*') {
 		_c->star = 1;
+		if (tmp.len!=1) {
+			LM_ERR("invalid START Contact header (more than START only)\n");
+			return -2;
+		}
 	} else {
 		if (parse_contacts(&tmp, &(_c->contacts)) < 0) {
 			LM_ERR("failed to parse contacts\n");
-			return -2;
+			return -3;
 		}
 	}
 
@@ -84,6 +89,9 @@ int parse_contact(struct hdr_field* _h)
 	if (contact_parser(_h->body.s, _h->body.len, b) < 0) {
 		LM_ERR("failed to parse contact\n");
 		pkg_free(b);
+		set_err_info(OSER_EC_PARSER, OSER_EL_MEDIUM,
+			"error parsing CONTACT headers");
+		set_err_reply(400, "bad headers");
 		return -2;
 	}
 

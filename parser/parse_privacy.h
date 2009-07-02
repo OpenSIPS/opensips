@@ -54,12 +54,4 @@ enum privacy_value {
 int parse_privacy(struct sip_msg *msg);
 
 
-/*
- * Parse a privacy value pointed by start that can be at most max_len long.
- * Returns length of matched privacy value or NULL otherwise.
- */
-unsigned int parse_priv_value(char* start, unsigned int max_len,
-			      unsigned int* value);
-
-
 #endif /* PARSE_PRIVACY_H */

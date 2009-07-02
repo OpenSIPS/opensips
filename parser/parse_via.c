@@ -51,8 +51,8 @@
 #include <string.h>
 #include "../dprint.h"
 #include "../ut.h"
-#include "../mem/mem.h"
 #include "../ip_addr.h"
+#include "../mem/mem.h"
 #include "parse_via.h"
 #include "parse_def.h"
 
@@ -266,7 +266,7 @@ static /*inline*/ char* parse_via_param(char* p, char* end,
 					case FIN_HIDDEN:
 					case FIN_ALIAS:
 						LM_ERR("invalid char <%c> in state %d\n", *tmp, state);
-						goto error;
+						goto parse_error;
 					case F_CR:
 					case F_LF:
 					case F_CRLF:
@@ -295,7 +295,7 @@ static /*inline*/ char* parse_via_param(char* p, char* end,
 					case FIN_RECEIVED:
 					case FIN_I:
 						LM_ERR("invalid char <%c> in state %d\n", *tmp, state);
-						goto error;
+						goto parse_error;
 					case F_CR:
 					case F_LF:
 					case F_CRLF:
@@ -325,7 +325,7 @@ static /*inline*/ char* parse_via_param(char* p, char* end,
 					case FIN_I:
 						LM_ERR("new via found (',') when '=' expected"
 								"(state %d=)\n", state);
-						goto error; /* or we could ignore this bad param*/
+						goto parse_error; /* or we could ignore this bad param*/
 					case F_CR:
 					case F_LF:
 					case F_CRLF:
@@ -738,7 +738,7 @@ static /*inline*/ char* parse_via_param(char* p, char* end,
 	/* end of packet? => error, no cr/lf,',' found!!!*/
 	saved_state=state;
 	state=END_OF_HEADER;
-	goto error;
+	goto parse_error;
 	
  find_value:
 	tmp++;
@@ -763,7 +763,7 @@ static /*inline*/ char* parse_via_param(char* p, char* end,
 						break;
 					default:
 						LM_ERR("invalid char <%c> in state %d\n", *tmp, state);
-						goto error;
+						goto parse_error;
 				}
 				break;
 			case '\n':
@@ -789,7 +789,7 @@ static /*inline*/ char* parse_via_param(char* p, char* end,
 						break;
 					default:
 						LM_ERR("invalid char <%c> in state %d\n", *tmp, state);
-						goto error;
+						goto parse_error;
 				}
 				break;
 			case '\r':
@@ -813,7 +813,7 @@ static /*inline*/ char* parse_via_param(char* p, char* end,
 						goto end_via;
 					default:
 						LM_ERR("invalid char <%c> in state %d\n", *tmp, state);
-						goto error;
+						goto parse_error;
 				}
 				break;
 
@@ -831,7 +831,7 @@ static /*inline*/ char* parse_via_param(char* p, char* end,
 						goto end_via;
 					default:
 						LM_ERR("invalid char <%c> in state %d\n", *tmp, state);
-						goto error;
+						goto parse_error;
 				}
 				break;
 			case ';':
@@ -861,7 +861,7 @@ static /*inline*/ char* parse_via_param(char* p, char* end,
 						/* no break */
 					default:
 						LM_ERR("invalid char <%c> in state %d\n", *tmp, state);
-						goto error;
+						goto parse_error;
 				}
 				break;
 			case ',':
@@ -886,7 +886,7 @@ static /*inline*/ char* parse_via_param(char* p, char* end,
 						/* no break */
 					default:
 						LM_ERR("invalid char <%c> in state %d\n", *tmp, state);
-						goto error;
+						goto parse_error;
 				}
 				break; /* what to do? */
 			case '"':
@@ -906,7 +906,7 @@ static /*inline*/ char* parse_via_param(char* p, char* end,
 						goto end_via;
 					default:
 						LM_ERR("invalid char <%c> in state %d\n", *tmp, state);
-						goto error;
+						goto parse_error;
 				}
 				break;
 			default:
@@ -925,7 +925,7 @@ static /*inline*/ char* parse_via_param(char* p, char* end,
 						goto end_via;
 					default:
 						LM_ERR("invalid char <%c> in state %d\n", *tmp, state);
-						goto error;
+						goto parse_error;
 				}
 		}
 	} /* for2 tmp*/
@@ -933,7 +933,7 @@ static /*inline*/ char* parse_via_param(char* p, char* end,
 	/* end of buff and no CR/LF =>error*/
 	saved_state=state;
 	state=END_OF_HEADER;
-	goto error;
+	goto parse_error;
 	
  endofparam:
  endofvalue:
@@ -963,7 +963,7 @@ normal_exit:
 	LM_DBG("error on  param type %d, <%.*s>, state=%d, saved_state=%d\n",
 		param->type, param->name.len, ZSW(param->name.s), state, saved_state);
 
- error:
+parse_error:
 	LM_ERR("parse_via_param\n");
 	param->type=PARAM_ERROR;
 	*pstate=PARAM_ERROR;
@@ -1046,7 +1046,7 @@ parse_again:
 						break;
 					default:
 						LM_ERR("bad char <%c> on state %d\n", *tmp, state);
-						goto error;
+						goto parse_error;
 				}
 				break;
 			case '\n':
@@ -1096,7 +1096,7 @@ parse_again:
 						goto endofheader;
 					default:
 						LM_ERR("bad char <%c> on state %d\n", *tmp, state);
-						goto error;
+						goto parse_error;
 				}
 				break;
 			case '\r':
@@ -1144,7 +1144,7 @@ parse_again:
 						goto endofheader;
 					default:
 						LM_ERR("bad char <%c> on state %d\n", *tmp, state);
-						goto error;
+						goto parse_error;
 				}
 				break;
 			
@@ -1166,7 +1166,7 @@ parse_again:
 						break;
 					default:
 						LM_ERR("bad char <%c> on state %d\n", *tmp, state);
-						goto error;
+						goto parse_error;
 				}
 				break;
 				/* match SIP*/
@@ -1186,7 +1186,7 @@ parse_again:
 						break;
 					default:
 						LM_ERR("bad char <%c> on state %d\n", *tmp, state);
-						goto error;
+						goto parse_error;
 				}
 				break;
 			case 'I':
@@ -1197,7 +1197,7 @@ parse_again:
 						break;
 					default:
 						LM_ERR("bad char <%c> on state %d\n", *tmp, state);
-						goto error;
+						goto parse_error;
 				}
 				break;
 			case 'p':
@@ -1218,7 +1218,7 @@ parse_again:
 						break;
 					default:
 						LM_ERR("bad char <%c> on state %d\n", *tmp, state);
-						goto error;
+						goto parse_error;
 				}
 				break;
 			case 'U':
@@ -1230,7 +1230,7 @@ parse_again:
 						break;
 					default:
 						LM_ERR("bad char <%c> on state %d\n", *tmp, state);
-						goto error;
+						goto parse_error;
 				}
 				break;
 			case 'D':
@@ -1241,7 +1241,7 @@ parse_again:
 						break;
 					default:
 						LM_ERR("bad char <%c> on state %d\n", *tmp, state);
-						goto error;
+						goto parse_error;
 				}
 				break;
 			case 'T':
@@ -1256,7 +1256,7 @@ parse_again:
 						break;
 					default:
 						LM_ERR("bad char <%c> on state %d\n", *tmp, state);
-						goto error;
+						goto parse_error;
 				}
 				break;
 			case 'C':
@@ -1270,7 +1270,7 @@ parse_again:
 						break;
 					default:
 						LM_ERR("bad char <%c> on state %d\n", *tmp, state);
-						goto error;
+						goto parse_error;
 				}
 				break;
 			case 'L':
@@ -1281,7 +1281,7 @@ parse_again:
 						break;
 					default:
 						LM_ERR("bad char <%c> on state %d\n", *tmp, state);
-						goto error;
+						goto parse_error;
 				}
 				break;
 			/*match 2.0*/
@@ -1293,7 +1293,7 @@ parse_again:
 						break;
 					default:
 						LM_ERR("bad char <%c> on state %d\n", *tmp, state);
-						goto error;
+						goto parse_error;
 				}
 				break;
 			case '.':
@@ -1303,7 +1303,7 @@ parse_again:
 						break;
 					default:
 						LM_ERR("bad char <%c> on state %d\n", *tmp, state);
-						goto error;
+						goto parse_error;
 				}
 				 break;
 			case '0':
@@ -1313,20 +1313,20 @@ parse_again:
 						break;
 					default:
 						LM_ERR("bad char <%c> on state %d\n", *tmp, state);
-						goto error;
+						goto parse_error;
 				}
 				break;
 			
 			default:
 						LM_ERR("bad char <%c> on state %d\n", *tmp, state);
-						goto error;
+						goto parse_error;
 				break;
 		}
 	} /* for tmp*/
 
 	/* we should not be here! if everything is ok > main_via*/
 	LM_ERR("bad via: end of packet on state=%d\n", state);
-	goto error;
+	goto parse_error;
 
  main_via:
 	/* inc tmp to point to the next char*/
@@ -1369,7 +1369,7 @@ parse_again:
 					case F_IP6HOST: /*no spaces allowed*/
 					case P_IP6HOST:
 						LM_ERR("bad ipv6 reference\n");
-						goto error;
+						goto parse_error;
 					case F_CRLF:
 					case F_LF:
 					case F_CR:
@@ -1378,7 +1378,7 @@ parse_again:
 						break;
 					default:
 						LM_CRIT("on <%c>, state=%d\n",*tmp, state);
-						goto  error;
+						goto parse_error;
 				}
 			break;
 			case '\n':
@@ -1423,7 +1423,7 @@ parse_again:
 						goto endofheader;
 					default:
 						LM_CRIT("BUG on <%c>\n",*tmp);
-						goto  error;
+						goto  parse_error;
 				}
 			break;
 		case '\r':
@@ -1466,7 +1466,7 @@ parse_again:
 						goto endofheader;
 					default:
 						LM_CRIT("on <%c>\n",*tmp);
-						goto  error;
+						goto parse_error;
 				}
 			break;
 			
@@ -1488,17 +1488,17 @@ parse_again:
 						break;
 					case P_PORT:
 						LM_ERR("bad port\n");
-						goto error;
+						goto parse_error;
 					case L_PARAM:
 					case F_PARAM:
 					case P_PARAM:
 						LM_ERR("bad char <%c> in state %d\n",
 							*tmp,state);
-						goto error;
+						goto parse_error;
 					case L_VIA:
 					case F_VIA:
 						LM_ERR("bad char in compact via\n");
-						goto error;
+						goto parse_error;
 					case F_CRLF:
 					case F_LF:
 					case F_CR:
@@ -1512,7 +1512,7 @@ parse_again:
 						break;
 					default:
 						LM_CRIT("on <%c> state %d\n", *tmp, state);
-						goto error;
+						goto parse_error;
 				}
 				break;
 			case ';':
@@ -1520,10 +1520,10 @@ parse_again:
 					case F_HOST:
 					case F_IP6HOST:
 						LM_ERR(" no host found\n");
-						goto error;
+						goto parse_error;
 					case P_IP6HOST:
 						LM_ERR(" bad ipv6 reference\n");
-						goto error;
+						goto parse_error;
 					case P_HOST:
 						vb->host.len=tmp-vb->host.s;
 						state=F_PARAM;
@@ -1540,10 +1540,10 @@ parse_again:
 					case F_PORT:
 						LM_ERR(" bad char <%c> in state %d\n",
 							*tmp,state);
-						goto error;
+						goto parse_error;
 					case F_PARAM:
 						LM_ERR("null param?\n");
-						goto error;
+						goto parse_error;
 					case P_PARAM:
 						/*hmm next, param?*/
 						state=F_PARAM;
@@ -1552,7 +1552,7 @@ parse_again:
 					case L_VIA:
 					case F_VIA:
 						LM_ERR("bad char <%c> in next via\n", *tmp);
-						goto error;
+						goto parse_error;
 					case F_CRLF:
 					case F_LF:
 					case F_CR:
@@ -1567,7 +1567,7 @@ parse_again:
 					
 					default:
 						LM_CRIT("on <%c> state %d\n", *tmp, state);
-						goto  error;
+						goto parse_error;
 				}
 			break;
 			case ',':
@@ -1575,10 +1575,10 @@ parse_again:
 					case F_HOST:
 					case F_IP6HOST:
 						LM_ERR("no host found\n");
-						goto error;
+						goto parse_error;
 					case P_IP6HOST:
 						LM_ERR(" bad ipv6 reference\n");
-						goto error;
+						goto parse_error;
 					case P_HOST:
 						/*mark the end*/
 						vb->host.len=tmp-vb->host.s;
@@ -1598,7 +1598,7 @@ parse_again:
 					case F_PORT:
 					case F_PARAM:
 						LM_ERR("invalid char <%c> in state %d\n", *tmp,state);
-						goto error;
+						goto parse_error;
 					case F_VIA:
 						/* do  nothing,  eat ","*/
 						break;	
@@ -1615,7 +1615,7 @@ parse_again:
 						break;
 					default:
 						LM_CRIT("on <%c> state %d\n",*tmp, state);
-						goto  error;
+						goto  parse_error;
 				}
 			break;
 			case '(':
@@ -1627,7 +1627,7 @@ parse_again:
 					case F_IP6HOST:
 					case P_IP6HOST: /*must be terminated in ']'*/
 						LM_ERR(" on <%c> state %d\n", *tmp, state);
-						goto  error;
+						goto  parse_error;
 					case P_HOST:
 						/*mark the end*/
 						vb->host.len=tmp-vb->host.s;
@@ -1664,7 +1664,7 @@ parse_again:
 						goto endofheader;
 					default:
 						LM_CRIT("on <%c> state %d\n", *tmp, state);
-						goto  error;
+						goto  parse_error;
 				}
 			break;
 			case ')':
@@ -1680,7 +1680,7 @@ parse_again:
 							}
 						}else{
 							LM_ERR(" missing '(' - nesting= %d\n", c_nest);
-							 goto error;
+							 goto parse_error;
 						}
 						break;
 					case F_HOST:
@@ -1696,7 +1696,7 @@ parse_again:
 					case F_IP6HOST:
 					case P_IP6HOST:
 						LM_ERR(" on <%c> state %d\n",*tmp, state);
-						goto  error;
+						goto  parse_error;
 					case F_CRLF:
 					case F_LF:
 					case F_CR:
@@ -1704,7 +1704,7 @@ parse_again:
 						goto endofheader;
 					default:
 						LM_CRIT("on <%c> state %d\n", *tmp, state);
-						goto  error;
+						goto  parse_error;
 				}
 				break;
 			case '[':
@@ -1726,7 +1726,7 @@ parse_again:
 						goto endofheader;
 					default:
 						LM_ERR("on <%c> state %d\n",*tmp, state);
-						goto  error;
+						goto  parse_error;
 				}
 				break;
 			case ']':
@@ -1749,7 +1749,7 @@ parse_again:
 						break;
 					default:
 						LM_ERR("on <%c> state %d\n",*tmp, state);
-						goto  error;
+						goto  parse_error;
 				}
 				break;
 						
@@ -1798,12 +1798,12 @@ parse_again:
 								break;
 							case PARAM_ERROR:
 								pkg_free(param);
-								goto error;
+								goto parse_error;
 							default:
 								pkg_free(param);
-								LM_ERR(" after parse_via_param: invalid"
-										" char <%c> on state %d\n",*tmp, state);
-								goto error;
+								LM_ERR(" after parse_via_param: invalid "
+										"char <%c> on state %d\n",*tmp, state);
+								goto parse_error;
 						}
 						/*add param to the list*/
 						if (vb->last_param)	vb->last_param->next=param;
@@ -1845,7 +1845,7 @@ parse_again:
 					case L_PARAM:
 					case L_VIA:
 						LM_ERR("on <%c> state %d (default)\n",*tmp, state);
-						goto  error;
+						goto  parse_error;
 					case F_COMMENT:
 						state=P_COMMENT;
 						vb->comment.s=tmp;
@@ -1864,7 +1864,7 @@ parse_again:
 						goto endofheader;
 					default:
 						LM_CRIT("invalid char <%c> in state %d\n",*tmp, state);
-						goto error;
+						goto parse_error;
 				}
 
 
@@ -1892,7 +1892,7 @@ endofpacket:
 			break;
 		default:
 			LM_ERR(" invalid via - end of header in state %d\n", state);
-			goto error;
+			goto parse_error;
 	}
 
 
@@ -1913,7 +1913,7 @@ endofpacket:
 		if (err){
 					LM_ERR(" invalid port number <%.*s>\n",
 						vb->port_str.len, ZSW(vb->port_str.s));
-					goto error;
+					goto parse_error;
 		}
 	}
 	return tmp;
@@ -1926,7 +1926,7 @@ nextvia:
 		if (err){
 					LM_ERR(" invalid port number <%.*s>\n",
 						vb->port_str.len, ZSW(vb->port_str.s));
-					goto error;
+					goto parse_error;
 		}
 	}
 	vb->next=pkg_malloc(sizeof(struct via_body));
@@ -1939,7 +1939,7 @@ nextvia:
 	buffer=tmp;
 	goto parse_again;
 
-error:
+parse_error:
 	if (end>buffer){
 		LM_ERR(" <%.*s>\n", (int)(end-buffer), ZSW(buffer));
 	}
@@ -1949,6 +1949,7 @@ error:
 	}else{
 		LM_ERR("via parse failed\n");
 	}
+error:
 	vb->error=PARSE_ERROR;
 	vbody->error=PARSE_ERROR; /* make sure the first via body is marked
 								 as bad also */

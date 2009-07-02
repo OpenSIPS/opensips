@@ -19,14 +19,15 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
  
-#include "parse_from.h"
-#include "parse_to.h"
 #include <stdlib.h>
 #include <string.h>
 #include "../dprint.h"
-#include "msg_parser.h"
 #include "../ut.h"
+#include "../errinfo.h"
 #include "../mem/mem.h"
+#include "msg_parser.h"
+#include "parse_from.h"
+#include "parse_to.h"
 
  
 /*
@@ -40,36 +41,39 @@ int parse_refer_to_header( struct sip_msg *msg )
 {
 	struct to_body* refer_to_b;
 	
- 	if ( !msg->refer_to &&
-	     (parse_headers(msg, HDR_REFER_TO_F,0)==-1 || !msg->refer_to)) {
- 		goto error;
- 	}
- 
- 	/* maybe the header is already parsed! */
- 	if (msg->refer_to->parsed)
- 		return 0;
- 
- 	/* bad luck! :-( - we have to parse it */
- 	/* first, get some memory */
- 	refer_to_b = pkg_malloc(sizeof(struct to_body));
- 	if (refer_to_b == 0) {
- 		LM_ERR("out of pkg_memory\n");
- 		goto error;
- 	}
- 
- 	/* now parse it!! */
- 	memset(refer_to_b, 0, sizeof(struct to_body));
- 	parse_to(msg->refer_to->body.s,
-		 msg->refer_to->body.s + msg->refer_to->body.len+1,
-		 refer_to_b);
- 	if (refer_to_b->error == PARSE_ERROR) {
- 		LM_ERR("bad Refer-To header\n");
- 		pkg_free(refer_to_b);
- 		goto error;
- 	}
- 	msg->refer_to->parsed = refer_to_b;
- 
- 	return 0;
- error:
- 	return -1;
+	if ( !msg->refer_to &&
+	(parse_headers(msg, HDR_REFER_TO_F,0)==-1 || !msg->refer_to)) {
+		goto error;
+	}
+
+	/* maybe the header is already parsed! */
+	if (msg->refer_to->parsed)
+		return 0;
+
+	/* bad luck! :-( - we have to parse it */
+	/* first, get some memory */
+	refer_to_b = pkg_malloc(sizeof(struct to_body));
+	if (refer_to_b == 0) {
+		LM_ERR("out of pkg_memory\n");
+		goto error;
+	}
+
+	/* now parse it!! */
+	memset(refer_to_b, 0, sizeof(struct to_body));
+	parse_to(msg->refer_to->body.s,
+		msg->refer_to->body.s + msg->refer_to->body.len+1,
+		refer_to_b);
+	if (refer_to_b->error == PARSE_ERROR) {
+		LM_ERR("bad Refer-To header\n");
+		pkg_free(refer_to_b);
+		set_err_info(OSER_EC_PARSER, OSER_EL_MEDIUM,
+			"error parsing REFER-TO header");
+		set_err_reply(400, "bad headers");
+		goto error;
+	}
+	msg->refer_to->parsed = refer_to_b;
+
+	return 0;
+error:
+	return -1;
 }

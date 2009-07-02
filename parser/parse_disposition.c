@@ -31,13 +31,15 @@
 #include "../mem/mem.h"
 #include "../dprint.h"
 #include "../ut.h"
+#include "../errinfo.h"
 #include "parse_disposition.h"
 
 
 
 /* parse a string that supposed to be a disposition and fills up the structure
- * Returns: -1 : error
- *           o : success */
+ * Returns: -2 : parse error
+            -1 : error
+ *           0 : success */
 int parse_disposition( str *s, struct disposition *disp)
 {
 	enum { FIND_TYPE, TYPE, END_TYPE, FIND_PARAM, PARAM, END_PARAM, FIND_VAL,
@@ -114,7 +116,7 @@ int parse_disposition( str *s, struct disposition *disp)
 					default:
 						LM_ERR("unexpected char [%c] in status %d: <<%.*s>>"
 								".\n", *tmp,state, (int)(tmp-s->s), s->s);
-						goto error;
+						goto parse_error;
 				}
 				break;
 			case '\r':
@@ -142,13 +144,13 @@ int parse_disposition( str *s, struct disposition *disp)
 					default:
 						LM_ERR("unexpected char [%c] in status %d: <<%.*s>>"
 							".\n", *tmp,state, (int)(tmp-s->s), ZSW(s->s));
-						goto error;
+						goto parse_error;
 				}
 				break;
 			case 0:
 				LM_ERR("unexpected char [%c] in status %d: <<%.*s>> .\n",
 					*tmp,state, (int)(tmp-s->s), ZSW(s->s));
-				goto error;
+				goto parse_error;
 				break;
 			case ';':
 				switch (state) {
@@ -177,7 +179,7 @@ int parse_disposition( str *s, struct disposition *disp)
 					default:
 						LM_ERR("unexpected char [%c] in status %d: <<%.*s>> "
 							".\n", *tmp,state, (int)(tmp-s->s), ZSW(s->s));
-						goto error;
+						goto parse_error;
 				}
 				break;
 			case '=':
@@ -198,7 +200,7 @@ int parse_disposition( str *s, struct disposition *disp)
 					default:
 						LM_ERR("unexpected char [%c] in status %d: <<%.*s>>"
 							".\n", *tmp,state, (int)(tmp-s->s), ZSW(s->s));
-						goto error;
+						goto parse_error;
 				}
 				break;
 			case '\"':
@@ -217,7 +219,7 @@ int parse_disposition( str *s, struct disposition *disp)
 					default:
 						LM_ERR("unexpected char [%c] in status %d: <<%.*s>>"
 							".\n", *tmp,state, (int)(tmp-s->s), ZSW(s->s));
-						goto error;
+						goto parse_error;
 				}
 				break;
 			case '\\':
@@ -235,7 +237,7 @@ int parse_disposition( str *s, struct disposition *disp)
 					default:
 						LM_ERR("unexpected char [%c] in status %d: <<%.*s>>"
 							".\n", *tmp,state, (int)(tmp-s->s), ZSW(s->s));
-						goto error;
+						goto parse_error;
 				}
 				break;
 			case '(':
@@ -263,7 +265,7 @@ int parse_disposition( str *s, struct disposition *disp)
 					default:
 						LM_ERR("unexpected char [%c] in status %d: <<%.*s>>"
 							".\n", *tmp,state, (int)(tmp-s->s), ZSW(s->s));
-						goto error;
+						goto parse_error;
 				}
 				break;
 			default:
@@ -321,9 +323,12 @@ int parse_disposition( str *s, struct disposition *disp)
 			break;
 		default:
 			LM_ERR("wrong final state (%d)\n", state);
-			goto error;
+			goto parse_error;
 	}
 	return 0;
+
+parse_error:
+	return -2;
 error:
 	return -1;
 }
@@ -382,10 +387,15 @@ int parse_content_disposition( struct sip_msg *msg )
 	}
 	memset(disp,0,sizeof(struct disposition));
 
-	if (parse_disposition( &(msg->content_disposition->body), disp)==-1) {
-		/* error when parsing the body */
-		free_disposition( &disp );
-		goto error;
+	switch (parse_disposition( &(msg->content_disposition->body), disp)) {
+		case -2:
+			set_err_info(OSER_EC_PARSER, OSER_EL_MEDIUM,
+				"error parsing DISPOSITION header");
+			set_err_reply(400, "bad headers");
+		case -1:
+			/* error when parsing the body */
+			free_disposition( &disp );
+			goto error;
 	}
 
 	/* attach the parsed form to the header */

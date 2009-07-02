@@ -70,6 +70,9 @@ int parse_ppi_header( struct sip_msg *msg )
     if (ppi_b->error == PARSE_ERROR) {
 	LM_ERR("bad P-Preferred-Identity header\n");
 	pkg_free(ppi_b);
+	set_err_info(OSER_EC_PARSER, OSER_EL_MEDIUM,
+			"error parsing PPI header");
+	set_err_reply(400, "bad header");
 	goto error;
     }
  	msg->ppi->parsed = ppi_b;

@@ -35,6 +35,7 @@
 #include "../dprint.h"
 #include "../trim.h"
 #include "../ut.h"
+#include "../errinfo.h"
 
 /*
  * Parse Route or Record-Route body
@@ -49,8 +50,9 @@ static inline int do_parse_rr_body(char *buf, int len, rr_t **head)
 	if(buf==0 || len<=0)
 	{
 		LM_DBG("no body for record-route\n");
+		r = NULL;
 		*head = 0;
-		return -2;
+		goto parse_error;
 	}
 	s.s = buf;
 	s.len = len;
@@ -59,7 +61,7 @@ static inline int do_parse_rr_body(char *buf, int len, rr_t **head)
 	last = 0;
 
 	while(1) {
-		     /* Allocate and clear rr structure */
+		/* Allocate and clear rr structure */
 		r = (rr_t*)pkg_malloc(sizeof(rr_t));
 		if (!r) {
 			LM_ERR("no pkg memory left\n");
@@ -67,14 +69,14 @@ static inline int do_parse_rr_body(char *buf, int len, rr_t **head)
 		}
 		memset(r, 0, sizeof(rr_t));
 		
-		     /* Parse name-addr part of the header */
+		/* Parse name-addr part of the header */
 		if (parse_nameaddr(&s, &r->nameaddr) < 0) {
 			LM_ERR("failed to parse name-addr\n");
-			goto error;
+			goto parse_error;
 		}
 		r->len = r->nameaddr.len;
 
-		     /* Shift just behind the closing > */
+		/* Shift just behind the closing > */
 		s.s = r->nameaddr.name.s + r->nameaddr.len;  /* Point just behind > */
 		s.len -= r->nameaddr.len;
 
@@ -89,18 +91,18 @@ static inline int do_parse_rr_body(char *buf, int len, rr_t **head)
 			
 			if (s.len == 0) {
 				LM_ERR("failed to parse params\n");
-				goto error;
+				goto parse_error;
 			}
 
-			     /* Parse all parameters */
+			/* Parse all parameters */
 			if (parse_params(&s, CLASS_ANY, &hooks, &r->params) < 0) {
 				LM_ERR("failed to parse params\n");
-				goto error;
+				goto parse_error;
 			}
 			r->len = r->params->name.s + r->params->len - r->nameaddr.name.s;
 
-			     /* Copy hooks */
-			     /*r->r2 = hooks.rr.r2; */
+			/* Copy hooks */
+			/*r->r2 = hooks.rr.r2; */
 
 			trim_leading(&s);
 			if (s.len == 0) goto ok;
@@ -108,25 +110,27 @@ static inline int do_parse_rr_body(char *buf, int len, rr_t **head)
 
 		if (s.s[0] != ',') {
 			LM_ERR("invalid character '%c', comma expected\n", s.s[0]);
-			goto error;
+			goto parse_error;
 		}
 		
-		     /* Next character is comma or end of header*/
+		/* Next character is comma or end of header*/
 		s.s++;
 		s.len--;
 		trim_leading(&s);
 
 		if (s.len == 0) {
 			LM_ERR("text after comma missing\n");
-			goto error;
+			goto parse_error;
 		}
 
-		     /* Append the structure as last parameter of the linked list */
+		/* Append the structure as last parameter of the linked list */
 		if (!*head) *head = r;
 		if (last) last->next = r;
 		last = r;
 	}
 
+ parse_error:
+	LM_ERR("failed to parse RR headers\n");
  error:
 	if (r) pkg_free(r);
 	free_rr(head); /* Free any contacts created so far */
@@ -163,8 +167,12 @@ int parse_rr(struct hdr_field* _h)
 		return 0;
 	}
 
-	if(do_parse_rr_body(_h->body.s, _h->body.len, &r) < 0)
+	if(do_parse_rr_body(_h->body.s, _h->body.len, &r) < 0) {
+		set_err_info(OSER_EC_PARSER, OSER_EL_MEDIUM,
+			"error parsing RR headers");
+		set_err_reply(400, "bad headers");
 		return -1;
+	}
 	_h->parsed = (void*)r;
 	return 0;
 }

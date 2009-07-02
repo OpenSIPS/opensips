@@ -28,6 +28,7 @@
 #include <string.h>
 #include "../dprint.h"
 #include "../trim.h"
+#include "../errinfo.h"
 #include "parse_privacy.h"
 #include "msg_parser.h"
 
@@ -158,64 +159,71 @@ int parse_privacy(struct sip_msg *msg)
 	return 0;
 
     /* parse Privacy HF (there should be only one) */
-    if (!msg->privacy &&
-	(parse_headers(msg, HDR_PRIVACY_F, 0) == -1 || !msg->privacy)) {
-	return -1;
-    }
-
-    next.len = msg->privacy->body.len;
-    next.s = msg->privacy->body.s;
-
-    trim_leading(&next);
-
-    if (next.len == 0) {
-	LM_ERR("no values\n");
-	return -1;
-    }
-
-    values = 0;
-    p = next.s;
-    len = next.len;
-    beyond = p + len;
-
-    while (p < beyond) {
-	if((val_len = parse_priv_value(p, len, &value)) != 0) {
-	    values |= value;
-	    p = p + val_len;
-	    len = len - val_len;
-	} else {
-	    LM_ERR("invalid privacy value\n");
-	    return -1;
+	if (!msg->privacy &&
+		(parse_headers(msg, HDR_PRIVACY_F, 0) == -1 || !msg->privacy)) {
+		goto error;
 	}
 
-	while(p < beyond && (*p == ' ' || *p == '\t'
-			     || *p == '\r' || *p == '\n'))
-	    p++;
+	next.len = msg->privacy->body.len;
+	next.s = msg->privacy->body.s;
 
-	if(p >= beyond) break;
+	trim_leading(&next);
 
-	if (*p == ';') {
-	    p++;
-	    while(p < beyond && (*p == ' ' || *p == '\t'
-				 || *p == '\r' || *p == '\n'))
-		p++;
-	    if(p >= beyond) {
-		LM_ERR("no privacy value after comma\n");
-		return -1;
-	    }		
-	} else {
-	    LM_ERR("semicolon expected\n");
-	    return -1;
+	if (next.len == 0) {
+		LM_ERR("no values\n");
+		goto parse_error;
 	}
-    }
 
-    if ((values & PRIVACY_NONE) && (values ^ PRIVACY_NONE)) {
-	LM_ERR("no other privacy values allowed with 'none'\n");
+	values = 0;
+	p = next.s;
+	len = next.len;
+	beyond = p + len;
+
+	while (p < beyond) {
+		if((val_len = parse_priv_value(p, len, &value)) != 0) {
+			values |= value;
+			p = p + val_len;
+			len = len - val_len;
+		} else {
+			LM_ERR("invalid privacy value\n");
+			goto parse_error;
+		}
+
+		while(p < beyond && (*p == ' ' || *p == '\t'
+		|| *p == '\r' || *p == '\n'))
+			p++;
+
+		if(p >= beyond) break;
+
+		if (*p == ';') {
+			p++;
+			while(p < beyond && (*p == ' ' || *p == '\t'
+					 || *p == '\r' || *p == '\n'))
+				p++;
+			if(p >= beyond) {
+				LM_ERR("no privacy value after comma\n");
+				goto parse_error;
+			}
+		} else {
+			LM_ERR("semicolon expected\n");
+			goto parse_error;
+		}
+	}
+
+	if ((values & PRIVACY_NONE) && (values ^ PRIVACY_NONE)) {
+		LM_ERR("no other privacy values allowed with 'none'\n");
+		goto parse_error;
+	}
+
+	msg->privacy->parsed = (void *)(long)values;
+
+	return 0;
+
+parse_error:
+	set_err_info(OSER_EC_PARSER, OSER_EL_MEDIUM,
+		"error parsing privacy header");
+	set_err_reply(400, "bad headers");
+
+error:
 	return -1;
-    }
-
-    msg->privacy->parsed = (void *)(long)values;
-
-    return 0;
-
 }

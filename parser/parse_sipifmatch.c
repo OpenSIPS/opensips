@@ -27,6 +27,7 @@
 #include "parse_def.h"
 #include "../mem/mem.h"
 #include "../trim.h"
+#include "../errinfo.h"
 
 static inline char* skip_token(char* _b, int _l)
 {
@@ -89,8 +90,11 @@ parse_sipifmatch(struct hdr_field* _h)
         memset(e, 0, sizeof(str));
 
         if (etag_parser(_h->body.s, _h->body.len, e) < 0) {
-                LM_ERR("error in tag_parser\n");
+                LM_ERR("error in etag_parser\n");
                 pkg_free(e);
+				set_err_info(OSER_EC_PARSER, OSER_EL_MEDIUM,
+					"error parsing etag headers");
+				set_err_reply(400, "bad headers");
                 return -2;
         }
 

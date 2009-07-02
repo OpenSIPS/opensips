@@ -35,6 +35,7 @@
 #include "../dprint.h"
 #include "../str.h"
 #include "../ut.h"
+#include "../errinfo.h"
 #include "parse_content.h"
 
 
@@ -393,19 +394,24 @@ int parse_content_type_hdr( struct sip_msg *msg )
 	end = msg->content_type->body.s + msg->content_type->body.len;
 	ret = decode_mime_type(msg->content_type->body.s, end , &mime);
 	if (ret==0)
-		goto error;
+		goto parse_error;
 	if (ret!=end) {
 		LM_ERR("the header CONTENT_TYPE contains "
 			"more then one mime type :-(!\n");
-		goto error;
+		goto parse_error;
 	}
 	if ((mime&0x00ff)==SUBTYPE_ALL || (mime>>16)==TYPE_ALL) {
 		LM_ERR("invalid mime with wildcard '*' in Content-Type hdr!\n");
-		goto error;
+		goto parse_error;
 	}
 
 	msg->content_type->parsed = (void*)(unsigned long)mime;
 	return mime;
+
+parse_error:
+	set_err_info(OSER_EC_PARSER, OSER_EL_MEDIUM,
+		"error parsing CT-TYPE header");
+	set_err_reply(400, "bad headers");
 
 error:
 	return -1;
@@ -446,7 +452,7 @@ int parse_accept_hdr( struct sip_msg *msg )
 	while (1){
 		ret = decode_mime_type(ret, end , &mime);
 		if (ret==0)
-			goto error;
+			goto parse_error;
 		/* a new mime was found  -> put it into array */
 		if (nr_mimes==MAX_MIMES_NR) {
 			LM_ERR("accept hdr contains more than"
@@ -463,7 +469,7 @@ int parse_accept_hdr( struct sip_msg *msg )
 				"char <%x> (offset=%d) in <%.*s>!\n",
 				*ret, (int)(ret-msg->accept->body.s),
 				msg->accept->body.len, msg->accept->body.s);
-			goto error;
+			goto parse_error;
 		}
 		/* skip the ',' */
 		ret++;
@@ -480,6 +486,11 @@ int parse_accept_hdr( struct sip_msg *msg )
 	((int*)msg->accept->parsed)[nr_mimes] = 0;
 
 	return 1;
+
+parse_error:
+	set_err_info(OSER_EC_PARSER, OSER_EL_MEDIUM,
+		"error parsing ACCEPT header");
+	set_err_reply(400, "bad headers");
 error:
 	return -1;
 }

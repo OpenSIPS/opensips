@@ -28,24 +28,24 @@
  */
 
 
-#include "parse_expires.h"
 #include <stdio.h>          /* printf */
+#include <string.h>         /* memset */
 #include "../mem/mem.h"     /* pkg_malloc, pkg_free */
 #include "../dprint.h"
 #include "../trim.h"        /* trim_leading */
-#include <string.h>         /* memset */
 #include "../ut.h"
+#include "../errinfo.h"
+#include "parse_expires.h"
 
 
 static inline int expires_parser(char* _s, int _l, exp_body_t* _e)
 {
-	int i;
 	str tmp;
-	
+
 	tmp.s = _s;
 	tmp.len = _l;
 
-	trim_leading(&tmp);
+	trim(&tmp);
 
 	if (tmp.len == 0) {
 		LM_ERR("empty body\n");
@@ -53,38 +53,15 @@ static inline int expires_parser(char* _s, int _l, exp_body_t* _e)
 		return -1;
 	}
 
-	_e->text.s = tmp.s;
-
-	for(i = 0; i < tmp.len; i++) {
-		if ((tmp.s[i] >= '0') && (tmp.s[i] <= '9')) {
-			_e->val *= 10;
-			_e->val += tmp.s[i] - '0';
-		} else {
-			switch(tmp.s[i]) {
-			case ' ':
-			case '\t':
-			case '\r':
-			case '\n':
-				_e->text.len = i;
-				_e->valid = 1;
-				return 0;
-
-			default:
-				     /* Exit normally here, we want to be backwards compatible with
-				      * RFC2543 entities that can put absolute time here
-				      */
-				     /*
-				LM_ERR("invalid character\n");
-				return -2;
-				     */
-				_e->valid = 0;
-				return 0;
-			}
-		}
+	if ( str2int( &tmp, (unsigned int*)&_e->val)!=0 ) {
+		LM_ERR("body is not a number <%.*s>\n",tmp.len,tmp.s);
+		_e->valid = 0;
+		return -2;
 	}
 
-	_e->text.len = _l;
+	_e->text = tmp;
 	_e->valid = 1;
+
 	return 0;
 }
 
@@ -110,6 +87,9 @@ int parse_expires(struct hdr_field* _h)
 
 	if (expires_parser(_h->body.s, _h->body.len, e) < 0) {
 		LM_ERR("failed to parse\n");
+		set_err_info(OSER_EC_PARSER, OSER_EL_MEDIUM,
+			"error parsing EXPIRE header");
+		set_err_reply(400, "bad headers");
 		pkg_free(e);
 		return -2;
 	}

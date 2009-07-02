@@ -31,13 +31,14 @@
  */
 
 
-#include "parse_event.h"
+#include <string.h>        /* memset */
+#include <stdio.h>         /* printf */
 #include "../mem/mem.h"    /* pkg_malloc, pkg_free */
 #include "../dprint.h"
-#include <string.h>        /* memset */
 #include "../trim.h"       /* trim_leading */
-#include <stdio.h>         /* printf */
 #include "../ut.h"
+#include "../errinfo.h"
+#include "parse_event.h"
 
 
 #define PRES_STR "presence"
@@ -94,7 +95,7 @@ int event_parser(char* _s, int _l, event_t* _e)
 
 	if (tmp.len == 0) {
 		LM_ERR("empty body\n");
-		return -1;
+		goto parse_error;
 	}
 
 	_e->text.s = tmp.s;
@@ -107,7 +108,7 @@ int event_parser(char* _s, int _l, event_t* _e)
 	buf[tmp.len] = 0;
 
 	if ((_e->text.len == PRES_STR_LEN) && 
-	    !strncasecmp(PRES_STR, tmp.s, _e->text.len)) {
+		!strncasecmp(PRES_STR, tmp.s, _e->text.len)) {
 		_e->parsed = EVENT_PRESENCE;
 	} else if ((_e->text.len == PRES_XCAP_CHANGE_STR_LEN) && 
 		   !strncasecmp(PRES_XCAP_CHANGE_STR, tmp.s, _e->text.len)) {
@@ -127,7 +128,6 @@ int event_parser(char* _s, int _l, event_t* _e)
 	} else {
 		_e->parsed = EVENT_OTHER;
 	}
-	
 
 	if( (*end)== ';')
 	{
@@ -138,19 +138,22 @@ int event_parser(char* _s, int _l, event_t* _e)
 		params_str.len= end- params_str.s;
 
 		if (parse_params(&params_str, CLASS_ANY, &phooks, &_e->params)<0)
-			return -1;
+			goto parse_error;
 		
-		if(_e->parsed == EVENT_DIALOG && _e->params!= NULL && _e->params->next== NULL&&
-				_e->params->name.len== 3 && strncasecmp(_e->params->name.s, "sla", 3)== 0 )
+		if(_e->parsed == EVENT_DIALOG && _e->params!= NULL && 
+		_e->params->next== NULL && _e->params->name.len== 3 &&
+		strncasecmp(_e->params->name.s, "sla", 3)== 0 )
 		{
 			_e->parsed = EVENT_DIALOG_SLA;
 		}
-
-	}
-	else
+	} else {
 		_e->params= NULL;
+	}
 
 	return 0;
+
+parse_error:
+	return -1;
 }
 
 
@@ -176,6 +179,9 @@ int parse_event(struct hdr_field* _h)
 	if (event_parser(_h->body.s, _h->body.len, e) < 0) {
 		LM_ERR("event_parser failed\n");
 		pkg_free(e);
+		set_err_info(OSER_EC_PARSER, OSER_EL_MEDIUM,
+			"error parsing EVENT header");
+		set_err_reply(400, "bad headers");
 		return -2;
 	}
 

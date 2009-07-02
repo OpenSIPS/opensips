@@ -28,6 +28,7 @@
 
 #include "../error.h"
 #include "../dprint.h"
+#include "../errinfo.h"
 #include "../mem/mem.h"
 
 
@@ -174,6 +175,11 @@ parse_session_expires( struct sip_msg *msg, struct session_expires *se )
 		if ( msg->session_expires->parsed == 0
 			 && (result = parse_session_expires_body(msg->session_expires))
 				!= parse_sst_success ) {
+			if (result!=parse_sst_out_of_mem) {
+				set_err_info(OSER_EC_PARSER, OSER_EL_MEDIUM,
+					"error parsing SE header");
+				set_err_reply(400, "bad headers");
+			}
 			return result;
 		}
 		if ( se ) {
@@ -222,6 +228,9 @@ parse_min_se( struct sip_msg *msg, unsigned int *min_se )
 		if ( msg->min_se->parsed == 0
 			 && (result = parse_min_se_body(msg->min_se))
 				!= parse_sst_success ) {
+			set_err_info(OSER_EC_PARSER, OSER_EL_MEDIUM,
+				"error parsing MINSE header");
+			set_err_reply(400, "bad headers");
 			return result;
 		}
 		if ( min_se ) {

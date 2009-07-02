@@ -30,11 +30,11 @@
 #include "parse_uri.h"
 #include <stdlib.h>
 #include <string.h>
-#include "../dprint.h"
-#include "msg_parser.h"
-#include "../ut.h"
 #include "../errinfo.h"
+#include "../dprint.h"
+#include "../ut.h"
 #include "../mem/mem.h"
+#include "msg_parser.h"
 
 /*
  * This method is used to parse the from header. It was decided not to parse
@@ -72,8 +72,9 @@ int parse_from_header( struct sip_msg *msg)
 	if (from_b->error == PARSE_ERROR) {
 		LM_ERR("bad from header\n");
 		pkg_free(from_b);
-		set_err_info(OSER_EC_PARSER, OSER_EL_MEDIUM, "error parsing From");
-		set_err_reply(400, "bad From header");
+		set_err_info(OSER_EC_PARSER, OSER_EL_MEDIUM,
+			"error parsing From header");
+		set_err_reply(400, "bad header");
 		goto error;
 	}
 	/* REGISTER doesn't have a from tag :( -bogdan

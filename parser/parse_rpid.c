@@ -27,6 +27,7 @@
 #include "../dprint.h"
 #include "msg_parser.h"
 #include "../ut.h"
+#include "../errinfo.h"
 #include "../mem/mem.h"
 
  
@@ -41,33 +42,36 @@ int parse_rpid_header( struct sip_msg *msg )
 {
 	struct to_body* rpid_b;
 	
- 	if ( !msg->rpid && (parse_headers(msg, HDR_RPID_F, 0)==-1 || !msg->rpid)) {
- 		goto error;
- 	}
- 
- 	/* maybe the header is already parsed! */
- 	if (msg->rpid->parsed)
- 		return 0;
- 
- 	/* bad luck! :-( - we have to parse it */
- 	/* first, get some memory */
- 	rpid_b = pkg_malloc(sizeof(struct to_body));
- 	if (rpid_b == 0) {
- 		LM_ERR("out of pkg_memory\n");
- 		goto error;
- 	}
- 
- 	/* now parse it!! */
- 	memset(rpid_b, 0, sizeof(struct to_body));
- 	parse_to(msg->rpid->body.s,msg->rpid->body.s+msg->rpid->body.len+1,rpid_b);
- 	if (rpid_b->error == PARSE_ERROR) {
- 		LM_ERR("bad rpid header\n");
- 		pkg_free(rpid_b);
- 		goto error;
- 	}
- 	msg->rpid->parsed = rpid_b;
- 
- 	return 0;
- error:
- 	return -1;
+	if ( !msg->rpid && (parse_headers(msg, HDR_RPID_F, 0)==-1 || !msg->rpid)) {
+		goto error;
+	}
+
+	/* maybe the header is already parsed! */
+	if (msg->rpid->parsed)
+		return 0;
+
+	/* bad luck! :-( - we have to parse it */
+	/* first, get some memory */
+	rpid_b = pkg_malloc(sizeof(struct to_body));
+	if (rpid_b == 0) {
+		LM_ERR("out of pkg_memory\n");
+		goto error;
+	}
+
+	/* now parse it!! */
+	memset(rpid_b, 0, sizeof(struct to_body));
+	parse_to(msg->rpid->body.s,msg->rpid->body.s+msg->rpid->body.len+1,rpid_b);
+	if (rpid_b->error == PARSE_ERROR) {
+		LM_ERR("bad rpid header\n");
+		pkg_free(rpid_b);
+		set_err_info(OSER_EC_PARSER, OSER_EL_MEDIUM,
+			"error parsing RPID header");
+		set_err_reply(400, "bad header");
+		goto error;
+	}
+	msg->rpid->parsed = rpid_b;
+
+	return 0;
+error:
+	return -1;
 }

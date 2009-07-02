@@ -117,10 +117,10 @@ char* get_hdr_field(char* buf, char* end, struct hdr_field* hdr)
 			tmp=parse_via(tmp, end, vb);
 			if (vb->error==PARSE_ERROR){
 				LM_ERR("bad via\n");
-				set_err_info(OSER_EC_PARSER, OSER_EL_MEDIUM,
-						"error parsing Via");
-				set_err_reply(400, "bad Via header");
 				free_via_list(vb);
+				set_err_info(OSER_EC_PARSER, OSER_EL_MEDIUM,
+					"error parsing Via");
+				set_err_reply(400, "bad Via header");
 				goto error;
 			}
 			hdr->parsed=vb;
@@ -139,10 +139,10 @@ char* get_hdr_field(char* buf, char* end, struct hdr_field* hdr)
 			tmp=parse_cseq(tmp, end, cseq_b);
 			if (cseq_b->error==PARSE_ERROR){
 				LM_ERR("bad cseq\n");
-				set_err_info(OSER_EC_PARSER, OSER_EL_MEDIUM,
-						"error parsing CSeq`");
-				set_err_reply(400, "bad CSeq header");
 				pkg_free(cseq_b);
+				set_err_info(OSER_EC_PARSER, OSER_EL_MEDIUM,
+					"error parsing CSeq`");
+				set_err_reply(400, "bad CSeq header");
 				goto error;
 			}
 			hdr->parsed=cseq_b;
@@ -163,10 +163,10 @@ char* get_hdr_field(char* buf, char* end, struct hdr_field* hdr)
 			tmp=parse_to(tmp, end,to_b);
 			if (to_b->error==PARSE_ERROR){
 				LM_ERR("bad to header\n");
-				set_err_info(OSER_EC_PARSER, OSER_EL_MEDIUM,
-						"error parsing To header");
-				set_err_reply(400, "bad To header");
 				pkg_free(to_b);
+				set_err_info(OSER_EC_PARSER, OSER_EL_MEDIUM,
+					"error parsing To header");
+				set_err_reply(400, "bad header");
 				goto error;
 			}
 			hdr->parsed=to_b;
@@ -182,7 +182,7 @@ char* get_hdr_field(char* buf, char* end, struct hdr_field* hdr)
 			if (tmp==0){
 				LM_ERR("bad content_length header\n");
 				set_err_info(OSER_EC_PARSER, OSER_EL_MEDIUM,
-						"error parsing Content-Length");
+					"error parsing Content-Length");
 				set_err_reply(400, "bad Content-Length header");
 				goto error;
 			}

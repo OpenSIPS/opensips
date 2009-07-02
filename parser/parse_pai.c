@@ -26,6 +26,7 @@
 #include "../dprint.h"
 #include "msg_parser.h"
 #include "../ut.h"
+#include "../errinfo.h"
 #include "../mem/mem.h"
 
  
@@ -68,6 +69,9 @@ int parse_pai_header( struct sip_msg *msg )
     if (pai_b->error == PARSE_ERROR) {
 	LM_ERR("bad P-Asserted-Identity header\n");
 	pkg_free(pai_b);
+	set_err_info(OSER_EC_PARSER, OSER_EL_MEDIUM,
+		"error parsing PAI header");
+	set_err_reply(400, "bad header");
 	goto error;
     }
  	msg->pai->parsed = pai_b;
