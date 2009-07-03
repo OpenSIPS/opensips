@@ -2984,7 +2984,7 @@ static pv_export_t _pv_names_table[] = {
 	{{0,0}, 0, 0, 0, 0, 0, 0, 0}
 };
 
-pv_export_t* pv_lookup_spec_name(str *pvname, pv_spec_p e)
+pv_export_t* pv_lookup_spec_name(str *pvname, pv_spec_p e, int has_name)
 {
 	int i;
 	pv_extra_p pvi;
@@ -2999,6 +2999,7 @@ pv_export_t* pv_lookup_spec_name(str *pvname, pv_spec_p e)
 	for(i=0; _pv_names_table[i].name.s!=0; i++)
 	{
 		if(_pv_names_table[i].name.len==pvname->len
+			&& !((has_name?1:0) ^ (_pv_names_table[i].parse_name?1:0))
 			&& memcmp(_pv_names_table[i].name.s, pvname->s, pvname->len)==0)
 		{
 			/*LM_DBG("found [%.*s] [%d]\n", pvname->len, pvname->s,
@@ -3056,6 +3057,7 @@ char* pv_parse_spec(str *in, pv_spec_p e)
 	str s;
 	str pvname;
 	int pvstate;
+	int has_inner_name;
 	trans_t *tr = NULL;
 	pv_export_t *pte = NULL;
 	int n=0;
@@ -3129,25 +3131,15 @@ char* pv_parse_spec(str *in, pv_spec_p e)
 	}
 
 done_inm:
-	if((pte = pv_lookup_spec_name(&pvname, e))==NULL)
+	has_inner_name = (pvstate==2||pvstate==5)?1:0;
+	if((pte = pv_lookup_spec_name(&pvname, e, has_inner_name))==NULL)
 	{
-		LM_ERR("error searching pvar \"%.*s\"\n", pvname.len, pvname.s);
-		goto error;
-	}
-	if(pte->parse_name!=NULL && pvstate!=2 && pvstate!=5)
-	{
-		LM_ERR("pvar \"%.*s\" expects an inner name\n",
-				pvname.len, pvname.s);
+		LM_ERR("pvar \"%.*s\"%s not found\n", pvname.len, pvname.s,
+			has_inner_name?"(inner_name)":"");
 		goto error;
 	}
 	if(pvstate==2 || pvstate==5)
 	{
-		if(pte->parse_name==NULL)
-		{
-			LM_ERR("pvar \"%.*s\" does not get name param\n",
-					pvname.len, pvname.s);
-			goto error;
-		}
 		s.s = p;
 		n = 0;
 		while(is_in_str(p, in))
