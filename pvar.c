@@ -1544,6 +1544,7 @@ static inline int get_branch_field( int idx, pv_name_t *pvn, pv_value_t *res)
 
 	/* got a valid branch, return the field */
 	switch (pvn->u.isname.name.n) {
+		case 0:
 		case BR_URI_ID: /* return URI */
 			res->rs = uri;
 			res->flags = PV_VAL_STR;
@@ -1576,7 +1577,7 @@ static inline int get_branch_field( int idx, pv_name_t *pvn, pv_value_t *res)
 			res->flags = PV_VAL_STR;
 			break;
 		default:
-			LM_CRIT("BUG - unsupported ID %d\n",pvn->u.isname.type);
+			LM_CRIT("BUG - unsupported ID %d\n",pvn->u.isname.name.n);
 			return pv_get_null(NULL, NULL, res);
 	}
 	return 0;
@@ -2282,6 +2283,32 @@ error:
 }
 
 
+int pv_set_branch(struct sip_msg* msg, pv_param_t *param,
+		int op, pv_value_t *val)
+{
+	if (msg==NULL || param==NULL) {
+		LM_ERR("bad parameters\n");
+		return -1;
+	}
+
+	if (msg->first_line.type == SIP_REPLY)
+		return -1;
+
+	if (!val || !(val->flags&PV_VAL_STR) || val->flags&(PV_VAL_NULL) ||
+	val->rs.len==0 ) {
+		LM_ERR("str value required to create a new branch\n");
+		return -1;
+	}
+
+	if (append_branch( msg, &val->rs, NULL, NULL, Q_UNSPECIFIED,  0, NULL)!=1){
+		LM_ERR("failed to append new branch\n");
+		return -1;
+	}
+
+	return 0;
+}
+
+
 int pv_set_branch_fields(struct sip_msg* msg, pv_param_t *param,
 		int op, pv_value_t *val)
 {
@@ -2734,6 +2761,9 @@ static pv_export_t _pv_names_table[] = {
 	{{"Au", (sizeof("Au")-1)}, /* */
 		PVT_ACC_USERNAME, pv_get_acc_username, 0,
 		0, 0, pv_init_iname, 1},
+	{{"branch", (sizeof("branch")-1)}, /* */
+		PVT_BRANCH, pv_get_branch_fields, pv_set_branch,
+		0, 0, 0, 0},
 	{{"branch", (sizeof("branch")-1)}, /* */
 		PVT_BRANCH, pv_get_branch_fields, pv_set_branch_fields,
 		pv_parse_branch_name, pv_parse_index, 0, 0},
