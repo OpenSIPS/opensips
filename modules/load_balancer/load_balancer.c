@@ -30,13 +30,16 @@
 #include "../../db/db.h"
 #include "../../dprint.h"
 #include "../../error.h"
+#include "../../timer.h"
 #include "../../ut.h"
 #include "../../mod_fix.h"
 #include "../../locking.h"
 #include "../dialog/dlg_load.h"
+#include "../tm/tm_load.h"
 #include "lb_parser.h"
 #include "lb_db.h"
 #include "lb_data.h"
+#include "lb_prober.h"
 
 MODULE_VERSION
 
@@ -54,6 +57,14 @@ static int* data_refcnt = 0;
 static int* reload_flag = 0;
 static struct lb_data **curr_data = NULL;
 
+/* probing related stuff */
+static unsigned int lb_prob_interval = 30;
+static str lb_probe_replies = {NULL,0};
+struct tm_binds lb_tmb;
+str lb_probe_method = str_init("OPTIONS");
+str lb_probe_from = str_init("sip:prober@localhost");
+static int* probing_reply_codes = NULL;
+static int probing_codes_no = 0;
 
 static int mod_init(void);
 static int child_init(int rank);
@@ -63,10 +74,14 @@ static int mi_child_init();
 static struct mi_root* mi_lb_reload(struct mi_root *cmd_tree, void *param);
 static struct mi_root* mi_lb_resize(struct mi_root *cmd_tree, void *param);
 static struct mi_root* mi_lb_list(struct mi_root *cmd_tree, void *param);
+static struct mi_root* mi_lb_status(struct mi_root *cmd_tree, void *param);
 
 static int fixup_resources(void** param, int param_no);
 
 static int w_load_balance(struct sip_msg *req, char *grp,  char *rl, char* al);
+static int w_lb_disable(struct sip_msg *req);
+
+static void lb_prob_handler(unsigned int ticks, void* param);
 
 
 
@@ -76,6 +91,8 @@ static cmd_export_t cmds[]={
 			0, REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
 	{"load_balance", (cmd_function)w_load_balance,      3, fixup_resources,
 			0, REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
+	{"lb_disable", (cmd_function)w_lb_disable,          0,               0,
+			0, REQUEST_ROUTE|FAILURE_ROUTE},
 	{0,0,0,0,0,0}
 	};
 
@@ -83,6 +100,10 @@ static cmd_export_t cmds[]={
 static param_export_t mod_params[]={
 	{ "db_url",                STR_PARAM, &db_url.s                 },
 	{ "db_table",              STR_PARAM, &table_name               },
+	{ "probing_interval",      INT_PARAM, &lb_prob_interval         },
+	{ "probing_method",        STR_PARAM, &lb_probe_method.s        },
+	{ "probing_from",          STR_PARAM, &lb_probe_from.s          },
+	{ "probing_reply_codes",   STR_PARAM, &lb_probe_replies.s       },
 	{ 0,0,0 }
 };
 
@@ -91,6 +112,7 @@ static mi_export_t mi_cmds[] = {
 	{ "lb_reload",   mi_lb_reload,   MI_NO_INPUT_FLAG,   0,  mi_child_init},
 	{ "lb_resize",   mi_lb_resize,   0,                  0,  0},
 	{ "lb_list",     mi_lb_list,     MI_NO_INPUT_FLAG,   0,  0},
+	{ "lb_status",   mi_lb_status,   0,                  0,  0},
 	{ 0, 0, 0, 0, 0}
 };
 
@@ -236,6 +258,38 @@ static int mod_init(void)
 	/* close DB connection */
 	lb_close_db();
 
+	/* arm a function for probing */
+	if (lb_prob_interval) {
+		/* load TM API */
+		if (load_tm_api(&lb_tmb)!=0) {
+			LM_ERR("can't load TM API\n");
+			return -1;
+		}
+
+		/* probing method */
+		lb_probe_method.len = strlen(lb_probe_method.s);
+		lb_probe_from.len = strlen(lb_probe_from.s);
+		if (lb_probe_replies.s)
+			lb_probe_replies.len = strlen(lb_probe_replies.s);
+
+		/* register pinger function */
+		if (register_timer( lb_prob_handler , NULL, lb_prob_interval)!=0) {
+			LM_ERR("failed to register probing handler\n");
+			return -1;
+		}
+
+		if (lb_probe_replies.s) {
+			lb_probe_replies.len = strlen(lb_probe_replies.s);
+			if(parse_reply_codes( &lb_probe_replies, &probing_reply_codes,
+			&probing_codes_no )< 0) {
+				LM_ERR("Bad format for options_reply_code parameter"
+					" - Need a code list separated by commas\n");
+				return -1;
+			}
+		}
+
+	}
+
 	return 0;
 }
 
@@ -282,35 +336,113 @@ static void mod_destroy(void)
 }
 
 
+#define ref_read_data() \
+ again:\
+	lock_get( ref_lock ); \
+	/* if reload must be done, do un ugly busy waiting \
+	 * until reload is finished */ \
+	if (*reload_flag) { \
+		lock_release( ref_lock ); \
+		usleep(5); \
+		goto again; \
+	} \
+	*data_refcnt = *data_refcnt + 1; \
+	lock_release( ref_lock );
+
+
+#define unref_read_data() \
+	lock_get( ref_lock ); \
+	*data_refcnt = *data_refcnt - 1; \
+	lock_release( ref_lock );
+
+
 static int w_load_balance(struct sip_msg *req, char *grp, char *rl, char *al)
 {
 	int ret;
 
-	/* ref the data for reading */
-again:
-	lock_get( ref_lock );
-	/* if reload must be done, do un ugly busy waiting 
-	 * until reload is finished */
-	if (*reload_flag) {
-		lock_release( ref_lock );
-		usleep(5);
-		goto again;
-	}
-	*data_refcnt = *data_refcnt + 1;
-	lock_release( ref_lock );
+	ref_read_data();
 
 	/* do lb */
 	ret = do_load_balance(req, (int)(long)grp, (struct lb_res_str_list*)rl,
 				(unsigned int)(long)al, *curr_data);
 
-	/* we are done reading -> unref the data */
-	lock_get( ref_lock );
-	*data_refcnt = *data_refcnt - 1;
-	lock_release( ref_lock );
+	unref_read_data();
 
 	if (ret<0)
 		return ret;
 	return 1;
+}
+
+
+
+static int w_lb_disable(struct sip_msg *req)
+{
+	int ret;
+
+	ref_read_data();
+
+	/* do lb */
+	ret = do_lb_disable( req , *curr_data);
+
+	unref_read_data();
+
+	if (ret<0)
+		return ret;
+	return 1;
+}
+
+/******************** PROBING Stuff ***********************/
+
+
+static int check_options_rplcode(int code)
+{
+	int i;
+
+	for (i =0; i< probing_codes_no; i++) {
+		if(probing_reply_codes[i] == code)
+			return 1;
+	}
+
+	return 0;
+}
+
+
+
+void set_dst_state_from_rplcode( int id, int code)
+{
+	struct lb_dst *dst;
+
+	ref_read_data();
+
+	for( dst=(*curr_data)->dsts ; dst && dst->id!=id ; dst=dst->next);
+	if (dst==NULL)
+		return;
+
+	if ((code == 200) || check_options_rplcode(code)) {
+		/* re-enable to DST  (if allowed) */
+		if ( dst->flags&LB_DST_STAT_NOEN_FLAG )
+			return;
+		dst->flags &= ~LB_DST_PING_DSBL_FLAG;
+		return;
+	}
+
+	if (code>=400) {
+		dst->flags |= LB_DST_PING_DSBL_FLAG;
+	}
+
+	unref_read_data();
+}
+
+
+
+static void lb_prob_handler(unsigned int ticks, void* param)
+{
+	ref_read_data();
+
+	/* do probing */
+	lb_do_probing(*curr_data);
+
+	unref_read_data();
 }
 
 
@@ -339,6 +471,7 @@ error:
 
 static struct mi_root* mi_lb_resize(struct mi_root *cmd, void *param)
 {
+	struct mi_root *rpl_tree;
 	struct lb_dst *dst;
 	struct mi_node *node;
 	unsigned int  id, size;
@@ -364,26 +497,116 @@ static struct mi_root* mi_lb_resize(struct mi_root *cmd, void *param)
 	if (str2int( &node->value, &size) < 0)
 		goto bad_syntax;
 
+	ref_read_data();
+
 	/* get destination */
 	for( dst=(*curr_data)->dsts ; dst && dst->id!=id ; dst=dst->next);
-	if (dst==NULL)
-		return init_mi_tree( 404, MI_SSTR("Destination ID not found"));
+	if (dst==NULL) {
+		rpl_tree = init_mi_tree( 404, MI_SSTR("Destination ID not found"));
+	} else {
+		/* get resource */
+		for( n=0 ; n<dst->rmap_no ; n++)
+			if (dst->rmap[n].resource->name.len == name->len &&
+			memcmp( dst->rmap[n].resource->name.s, name->s, name->len)==0)
+				break;
+		if (n==dst->rmap_no) {
+			rpl_tree = init_mi_tree( 404, 
+				MI_SSTR("Destination has no such resource"));
+		} else {
+			dst->rmap[n].max_load = size;
+			rpl_tree = init_mi_tree( 200, MI_SSTR(MI_OK_S));
+		}
+	}
 
-	/* get resource */
-	for( n=0 ; n<dst->rmap_no ; n++)
-		if (dst->rmap[n].resource->name.len == name->len &&
-		memcmp( dst->rmap[n].resource->name.s, name->s, name->len)==0)
-			break;
-	if (n==dst->rmap_no)
-		return init_mi_tree( 404, MI_SSTR("Destination has no such resource"));
+	unref_read_data();
 
-	dst->rmap[n].max_load = size;
-
-	return init_mi_tree( 200, MI_SSTR(MI_OK_S));
+	return rpl_tree;
 bad_syntax:
 	return init_mi_tree( 400, MI_SSTR(MI_BAD_PARM_S));
 
 }
+
+
+/*! \brief
+ * Expects 2 nodes: 
+ *        destination ID (number)
+ *        status (number)
+ */
+
+static struct mi_root* mi_lb_status(struct mi_root *cmd, void *param)
+{
+	struct mi_root *rpl_tree;
+	struct lb_dst *dst;
+	struct mi_node *node;
+	unsigned int  id, stat;
+
+	node = cmd->node.kids;
+	if (node==NULL)
+		return init_mi_tree( 400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
+
+	/* id (param 1) */
+	if (str2int( &node->value, &id) < 0)
+		return init_mi_tree( 400, MI_SSTR(MI_BAD_PARM_S));
+
+	ref_read_data();
+
+	/* status (param 2) */
+	node = node->next;
+	if (node == NULL) {
+		/* return the status */
+		if (node->next) {
+			rpl_tree = init_mi_tree( 400,
+				MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
+		} else {
+			/* find the destination */
+			for(dst=(*curr_data)->dsts; dst && dst->id!=id ;dst=dst->next);
+			if (dst==NULL) {
+				rpl_tree = init_mi_tree( 404,
+					MI_SSTR("Destination ID not found"));
+			} else {
+				rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
+				if (rpl_tree!=NULL) {
+					if (dst->flags&LB_DST_STAT_DSBL_FLAG) {
+						node = add_mi_node_child( node, 0, "enable", 6,
+								"no", 2);
+					} else {
+						node = add_mi_node_child( node, 0, "enable", 6,
+								"yes", 3);
+					}
+					if (node==NULL) {free_mi_tree(rpl_tree); rpl_tree=NULL;}
+				}
+			}
+		}
+	} else {
+		/* set the status */
+		if (str2int( &node->value, &stat) < 0) {
+			rpl_tree = init_mi_tree( 400, MI_SSTR(MI_BAD_PARM_S));
+		} else {
+			/* find the destination */
+			for( dst=(*curr_data)->dsts ; dst && dst->id!=id ; dst=dst->next);
+			if (dst==NULL) {
+				rpl_tree =  init_mi_tree( 404,
+					MI_SSTR("Destination ID not found"));
+			} else {
+				/* set the disable/enable */
+				if (stat) {
+					dst->flags &=
+						~ (LB_DST_STAT_DSBL_FLAG|LB_DST_STAT_NOEN_FLAG);
+				} else {
+					dst->flags |= 
+						LB_DST_STAT_DSBL_FLAG|LB_DST_STAT_NOEN_FLAG;
+				}
+				return init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
+			}
+		}
+	}
+
+	unref_read_data();
+
+	return rpl_tree;
+}
+
+
 
 
 static struct mi_root* mi_lb_list(struct mi_root *cmd_tree, void *param)
@@ -400,6 +623,8 @@ static struct mi_root* mi_lb_list(struct mi_root *cmd_tree, void *param)
 	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
 	if (rpl_tree==NULL)
 		return NULL;
+
+	ref_read_data();
 
 	/* go through all destination */
 	for( dst=(*curr_data)->dsts ; dst ; dst=dst->next) {
@@ -437,8 +662,10 @@ static struct mi_root* mi_lb_list(struct mi_root *cmd_tree, void *param)
 		}
 	}
 
+	unref_read_data();
 	return rpl_tree;
 error:
+	unref_read_data();
 	free_mi_tree(rpl_tree);
 	return 0;
 }

@@ -23,30 +23,14 @@
  *
  * History:
  * --------
- *  2009-02-01 initial version (bogdan)
+ *  2009-07-05 initial version (bogdan)
  */
 
-
-
-#ifndef LB_LB_DB_H_
-#define LB_LB_DB_H_
-
-#define LB_TABLE_NAME    "load_balancer"
-#define LB_ID_COL        "id"
-#define LB_GRP_ID_COL    "group_id"
-#define LB_DST_URI_COL   "dst_uri"
-#define LB_RESOURCES_COL "resources"
-#define LB_PMODE_COL     "ping_mode"
-
-#include "../../str.h"
 #include "lb_data.h"
 
-int init_lb_db(const str *db_url, char *table);
+#ifndef _LB_PROBING_H
+#define _LB_PROBING_H
 
-int lb_connect_db(const str *db_url);
-
-void lb_close_db(void);
-
-int lb_db_load_data( struct lb_data *data);
+void lb_do_probing(struct lb_data *data);
 
 #endif

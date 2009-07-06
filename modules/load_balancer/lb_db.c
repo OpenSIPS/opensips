@@ -32,13 +32,14 @@
 #include "../../db/db.h"
 #include "lb_db.h"
 
-#define LB_TABLE_VERSION  1
+#define LB_TABLE_VERSION  2
 #define LB_FETCH_ROWS     100
 
 str lb_id_column			=	str_init(LB_ID_COL);
 str lb_grpid_column			=	str_init(LB_GRP_ID_COL);
 str lb_dsturi_column		=	str_init(LB_DST_URI_COL);
 str lb_resource_column		=	str_init(LB_RESOURCES_COL);
+str lb_pmode_column			=	str_init(LB_PMODE_COL);
 str lb_table_name			=	str_init(LB_TABLE_NAME);
 
 
@@ -115,12 +116,13 @@ int init_lb_db(const str *db_url, char *table)
 
 int lb_db_load_data( struct lb_data *data)
 {
-	db_key_t columns[4];
+	db_key_t columns[5];
 	db_res_t* res;
 	db_row_t* row;
 	int i, n;
 	char *resource, *uri;
-	int id, group;
+	int id, group, pmode;
+	unsigned int flags;
 
 
 	lb_dbf.use_table( lb_db_handle, &lb_table_name);
@@ -129,9 +131,10 @@ int lb_db_load_data( struct lb_data *data)
 	columns[1] = &lb_grpid_column;
 	columns[2] = &lb_dsturi_column;
 	columns[3] = &lb_resource_column;
+	columns[4] = &lb_pmode_column;
 
 	if (0/*DB_CAPABILITY(lb_dbf, DB_CAP_FETCH))*/) {
-		if ( lb_dbf.query( lb_db_handle, 0, 0, 0, columns, 0, 4, 0, 0 ) < 0) {
+		if ( lb_dbf.query( lb_db_handle, 0, 0, 0, columns, 0, 5, 0, 0 ) < 0) {
 			LM_ERR("DB query failed\n");
 			return -1;
 		}
@@ -140,7 +143,7 @@ int lb_db_load_data( struct lb_data *data)
 			return -1;
 		}
 	} else {
-		if ( lb_dbf.query( lb_db_handle, 0, 0, 0, columns, 0, 4, 0, &res)<0) {
+		if ( lb_dbf.query( lb_db_handle, 0, 0, 0, columns, 0, 5, 0, &res)<0) {
 			LM_ERR("DB query failed\n");
 			return -1;
 		}
@@ -158,21 +161,30 @@ int lb_db_load_data( struct lb_data *data)
 	do {
 		for(i=0; i < RES_ROW_N(res); i++) {
 			row = RES_ROWS(res) + i;
+			flags = 0;
 			/* ID column */
 			check_val( ROW_VALUES(row), DB_INT, 1, 0);
-			id = VAL_INT   (ROW_VALUES(row));
+			id = VAL_INT(ROW_VALUES(row));
 			/* GRP_ID column */
 			check_val( ROW_VALUES(row)+1, DB_INT, 1, 0);
-			group = VAL_INT   (ROW_VALUES(row)+1);
+			group = VAL_INT(ROW_VALUES(row)+1);
 			/* DST_URI column */
 			check_val( ROW_VALUES(row)+2, DB_STRING, 1, 1);
 			uri = (char*)VAL_STRING(ROW_VALUES(row)+2);
 			/* RESOURCES column */
 			check_val( ROW_VALUES(row)+3, DB_STRING, 1, 1);
 			resource = (char*)VAL_STRING(ROW_VALUES(row)+3);
+			/* PROBING_MODE column */
+			check_val( ROW_VALUES(row)+4, DB_INT, 1, 0);
+			pmode = VAL_INT(ROW_VALUES(row)+4);
+			if (pmode==1) {
+				flags |= LB_DST_PING_DSBL_FLAG;
+			} else if (pmode>=2) {
+				flags |= LB_DST_PING_PERM_FLAG;
+			}
 
 			/* add the destinaton definition in */
-			if ( add_lb_dsturi( data, id, group, uri, resource)<0 ) {
+			if ( add_lb_dsturi( data, id, group, uri, resource, flags)<0 ) {
 				LM_ERR("failed to add destination %d -> skipping\n",n);
 				continue;
 			}

@@ -40,6 +40,11 @@
 #define LB_ABSOLUTE_LOAD_ALG    0
 #define LB_RELATIVE_LOAD_ALG    1
 
+#define LB_DST_PING_DSBL_FLAG   (1<<0)
+#define LB_DST_PING_PERM_FLAG   (1<<1)
+#define LB_DST_STAT_DSBL_FLAG   (1<<2)
+#define LB_DST_STAT_NOEN_FLAG   (1<<3)
+
 struct lb_resource {
 	str name;
 	gen_lock_t *lock;
@@ -60,6 +65,7 @@ struct lb_dst {
 	str uri;
 	str profile_id;
 	unsigned int rmap_no;
+	unsigned int flags;
 	struct lb_resource_map *rmap;
 	struct lb_dst *next;
 };
@@ -75,12 +81,14 @@ struct lb_data {
 struct lb_data* load_lb_data(void);
 
 int add_lb_dsturi( struct lb_data *data, int id, int group, char *uri,
-		char* resource);
+		char* resource, unsigned int flags);
 
 void free_lb_data(struct lb_data *data);
 
 int do_load_balance(struct sip_msg *req, int grp, struct lb_res_str_list *rl,
 		unsigned int alg, struct lb_data *data);
+
+int do_lb_disable(struct sip_msg *req, struct lb_data *data);
 
 
 #endif

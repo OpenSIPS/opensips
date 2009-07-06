@@ -38,6 +38,11 @@
 /* dialog stuff */
 extern struct dlg_binds lb_dlg_binds;
 
+/* failover stuff */
+static int_str grp_avp_name = {.n=(int)0xffffdd00};
+static int_str mask_avp_name = {.n=(int)0xffffdd02};
+static int_str id_avp_name = {.n=(int)0xffffdd04};
+
 
 
 struct lb_data* load_lb_data(void)
@@ -211,7 +216,7 @@ static int lb_set_resource_bitmask(struct lb_resource *res, unsigned int bit)
 
 
 int add_lb_dsturi( struct lb_data *data, int id, int group, char *uri,
-															char* resource)
+											char* resource, unsigned int flags)
 {
 	struct lb_res_str_list *lb_rl;
 	struct lb_res_str *r;
@@ -256,6 +261,7 @@ int add_lb_dsturi( struct lb_data *data, int id, int group, char *uri,
 	dst->id = id;
 	dst->group = group;
 	dst->rmap_no = lb_rl->n;
+	dst->flags = flags;
 
 	/* link at the end */
 	if (data->last_dst==NULL) {
@@ -377,12 +383,20 @@ int do_load_balance(struct sip_msg *req, int grp, struct lb_res_str_list *rl,
 	static unsigned int call_res_no = 0;
 	static unsigned int *dst_bitmap = NULL;
 	static unsigned int bitmap_size = 0;
+	unsigned int * used_dst_bitmap;
 	struct lb_resource *res;
 	int size;
 	int i,j;
 	unsigned int load, ld;
 	struct lb_dst *dst;
 	struct lb_dst *it;
+	struct lb_dst *last_dst;
+	struct usr_avp *grp_avp;
+	struct usr_avp *mask_avp;
+	struct usr_avp *id_avp;
+	int_str grp_val;
+	int_str mask_val;
+	int_str id_val;
 
 	/* get references to the resources */
 	if (rl->n>call_res_no) {
@@ -406,31 +420,55 @@ int do_load_balance(struct sip_msg *req, int grp, struct lb_res_str_list *rl,
 		return -1;
 	}
 
-	/* search destinations that fulfill the resources */
-	for( size=(unsigned int)(-1),i=0 ; i<rl->n ; i++) {
-		if (call_res[i]->bitmap_size<size)
-			size = call_res[i]->bitmap_size;
-	}
-	if (size>bitmap_size) {
-		dst_bitmap = (unsigned int*)pkg_realloc
-			( dst_bitmap, size*sizeof(unsigned int) );
-		if (dst_bitmap==NULL) {
-			LM_ERR("no more pkg mem - bitmap realloc\n");
+	/* any previous iteration due failover ? */
+	grp_avp = search_first_avp( 0, grp_avp_name, &grp_val, 0);
+	mask_avp = search_first_avp( 0, mask_avp_name, &mask_val, 0);
+	id_avp = search_first_avp( 0, id_avp_name, &id_val, 0);
+
+	if ( grp_avp && mask_avp && id_avp && ((grp_avp->flags&AVP_VAL_STR)==0) &&
+	(mask_avp->flags&AVP_VAL_STR) && ((id_avp->flags&AVP_VAL_STR)==0) ) {
+		/* not the first iteration -> use data from AVPs */
+		grp = grp_val.n ;
+		used_dst_bitmap = (unsigned int*)grp_val.s.s;
+		/* set the previous dst as used (not selected) */
+		for(last_dst=data->dsts,i=0,j=0 ; last_dst ; last_dst=last_dst->next) {
+			if (last_dst->id==id_val.n) {used_dst_bitmap[i] &= ~(1<<j);}
+			j++;
+			if (j==sizeof(unsigned int)) {i++;j=0;}
+		}
+	} else {
+		/* first iteration for this call */
+		grp_avp = mask_avp = id_avp = NULL;
+		last_dst = NULL;
+
+		/* search destinations that fulfill the resources */
+		for( size=(unsigned int)(-1),i=0 ; i<rl->n ; i++) {
+			if (call_res[i]->bitmap_size<size)
+				size = call_res[i]->bitmap_size;
+		}
+		if (size>bitmap_size) {
+			dst_bitmap = (unsigned int*)pkg_realloc
+				( dst_bitmap, size*sizeof(unsigned int) );
+			if (dst_bitmap==NULL) {
+				LM_ERR("no more pkg mem - bitmap realloc\n");
+				return -1;
+			}
+			bitmap_size = size;
+		}
+		memset( dst_bitmap, 0xff , size*sizeof(unsigned int) );
+		for( i=0 ; i<rl->n ; i++) {
+			for( j=0 ; j<size ; j++)
+				dst_bitmap[j] &= call_res[i]->dst_bitmap[j];
+		}
+		used_dst_bitmap = dst_bitmap;
+
+		/* create dialog */
+		if (lb_dlg_binds.create_dlg( req )!=1 ) {
+			LM_ERR("failed to create dialog\n");
 			return -1;
 		}
-		bitmap_size = size;
-	}
-	memset( dst_bitmap, 0xff , size*sizeof(unsigned int) );
-	for( i=0 ; i<rl->n ; i++) {
-		for( j=0 ; j<size ; j++)
-			dst_bitmap[j] &= call_res[i]->dst_bitmap[j];
-	}
+	} /* end - first LB run */
 
-	/* create dialog */
-	if (lb_dlg_binds.create_dlg( req )!=1 ) {
-		LM_ERR("failed to create dialog\n");
-		return -1;
-	}
 
 	/* lock the resources */
 	for( i=0 ; i<rl->n ; i++)
@@ -440,8 +478,9 @@ int do_load_balance(struct sip_msg *req, int grp, struct lb_res_str_list *rl,
 	load = 0;
 	dst = NULL;
 	for( it=data->dsts,i=0,j=0 ; it ; it=it->next) {
-		if ( (dst_bitmap[i] & (1<<j)) && it->group==grp ) {
-			/* valid destination (resources & group) */
+		if ( (used_dst_bitmap[i] & (1<<j)) && it->group==grp &&
+		(dst->flags&LB_DST_STAT_DSBL_FLAG)==0 ) {
+			/* valid destination (resources & group & status) */
 			if ( (ld = get_dst_load(call_res, call_res_no, it, alg)) > load) {
 				/* computing a max */
 				load = ld;
@@ -457,6 +496,14 @@ int do_load_balance(struct sip_msg *req, int grp, struct lb_res_str_list *rl,
 	if (dst==NULL) {
 		LM_DBG("no destination found\n");
 	} else {
+		/* if re-trying, remove the dialog from previous profiles */
+		if (last_dst) {
+			for( i=0 ; i<rl->n ; i++) {
+				if (lb_dlg_binds.unset_profile( req, &last_dst->profile_id,
+				call_res[i]->profile)!=0)
+					LM_ERR("failed to remove from profile\n");
+			}
+		}
 		/* add to the profiles */
 		for( i=0 ; i<rl->n ; i++) {
 			if (lb_dlg_binds.set_profile( req, &dst->profile_id,
@@ -469,14 +516,57 @@ int do_load_balance(struct sip_msg *req, int grp, struct lb_res_str_list *rl,
 	for( i=0 ; i<rl->n ; i++)
 		release_lock( call_res[i]->lock );
 
+	/* change (add/edit) the AVPs for the next iteration */
+	if (grp_avp==NULL && mask_avp==NULL) {
+		grp_val.n = grp;
+		if (add_avp( 0, grp_avp_name, grp_val)!=0) {
+			LM_ERR("failed to add GRP AVP");
+		}
+		mask_val.s.s = (char*)used_dst_bitmap;
+		mask_val.s.len = bitmap_size*sizeof(unsigned int);
+		if (add_avp( AVP_VAL_STR, mask_avp_name, mask_val)!=0) {
+			LM_ERR("failed to add MASK AVP");
+		}
+	}
+	if (id_avp) {
+		id_avp->data = (void*)(long)dst->id;
+	} else {
+		id_val.n = dst->id;
+		if (add_avp( 0, id_avp_name, id_val)!=0) {
+			LM_ERR("failed to add ID AVP");
+		}
+	}
+
 	/* set dst uri */
 	if (dst && set_dst_uri( req, &dst->uri )!=0) {
 		LM_ERR("failed to set duri\n");
 		return -2;
 	}
 
+	 
+
 	return dst?0:-2;
 }
 
 
+int do_lb_disable(struct sip_msg *req, struct lb_data *data)
+{
+	struct usr_avp *id_avp;
+	int_str id_val;
+	struct lb_dst *dst;
+
+	id_avp = search_first_avp( 0, id_avp_name, &id_val, 0);
+	if (id_avp==NULL) {
+		LM_DBG(" no AVP ID ->nothing to disable\n");
+		return -1;
+	}
+
+	for( dst=data->dsts ; dst ; dst=dst->next) {
+		if (dst->id==id_val.n) {
+			dst->flags |= LB_DST_STAT_DSBL_FLAG;
+		}
+	}
+
+	return -1;
+}
 
