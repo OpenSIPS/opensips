@@ -142,4 +142,6 @@ extern int max_while_loops;
 
 extern int sl_fwd_disabled;
 
+extern time_t startup_time;
+
 #endif

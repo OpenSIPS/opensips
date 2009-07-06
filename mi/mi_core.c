@@ -50,15 +50,13 @@
 #include "mi.h"
 
 
-static time_t up_since;
 static str    up_since_ctime;
 
 static int init_mi_uptime(void)
 {
 	char *p;
 
-	time(&up_since);
-	p = ctime(&up_since);
+	p = ctime(&startup_time);
 	up_since_ctime.len = strlen(p)-1;
 	up_since_ctime.s = (char*)pkg_malloc(up_since_ctime.len);
 	if (up_since_ctime.s==0) {
@@ -96,7 +94,7 @@ static struct mi_root *mi_uptime(struct mi_root *cmd, void *param)
 		goto error;
 
 	node = addf_mi_node_child( rpl, 0, MI_SSTR("Up time"),
-		"%lu [sec]", (unsigned long)difftime(now, up_since) );
+		"%lu [sec]", (unsigned long)difftime(now, startup_time) );
 	if (node==0)
 		goto error;
 

@@ -301,6 +301,9 @@ int process_no = 0;
 /* cfg parsing */
 int cfg_errors=0;
 
+/* start-up time */
+time_t startup_time = 0;
+
 /* shared memory (in MB) */
 unsigned long shm_mem_size=SHM_MEM_SIZE * 1024 * 1024;
 
@@ -1197,6 +1200,8 @@ try_again:
 	}
 
 
+	time(&startup_time);
+
 	/*init shm mallocs
 	 *  this must be here 
 	 *     -to allow setting shm mem size from the command line
@@ -1326,7 +1331,6 @@ try_again:
 		LM_ERR("failed to fix configuration with err code %d\n", r);
 		goto error;
 	};
-
 
 	ret=main_loop();
 
