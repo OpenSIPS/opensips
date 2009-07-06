@@ -132,7 +132,6 @@ static struct mi_root* ds_mi_list(struct mi_root* cmd, void* param);
 static struct mi_root* ds_mi_reload(struct mi_root* cmd_tree, void* param);
 static int mi_child_init(void);
 
-static int parse_reply_codes();
 
 static cmd_export_t cmds[]={
 	{"ds_select_dst",    (cmd_function)w_ds_select_dst,    2, fixup_igp_igp, 0,
@@ -233,7 +232,8 @@ static int mod_init(void)
 	if(options_reply_codes_str.s)
 	{
 		options_reply_codes_str.len = strlen(options_reply_codes_str.s);
-		if(parse_reply_codes()< 0)
+		if(parse_reply_codes( &options_reply_codes_str, &options_reply_codes,
+		&options_codes_no )< 0)
 		{
 			LM_ERR("Bad format for options_reply_code parameter"
 					" - Need a code list separated by commas\n");
@@ -431,8 +431,6 @@ static void destroy(void)
 	ds_destroy_list();
 	if(ds_db_url.s)
 		ds_disconnect_db();
-	if(options_reply_codes)
-		pkg_free(options_reply_codes);
 }
 
 /**
@@ -662,83 +660,6 @@ static int w_ds_is_in_list3(struct sip_msg *msg,char *ip,char *port,char *set)
 	return ds_is_in_list(msg, (pv_spec_t*)ip, (pv_spec_t*)port,(int)(long)set);
 }
 
-static int parse_reply_codes(void)
-{
-	str code_str;
-	unsigned int code;
-	int index= 0;
-	char* sep1, *sep2, *aux;
-
-	options_reply_codes = (int*)pkg_malloc(
-			options_reply_codes_str.len/3 * sizeof(int));
-
-	if(options_reply_codes== NULL)
-	{
-		LM_ERR("no more memory\n");
-		return -1;
-	}
-    
-	sep1 = options_reply_codes_str.s;
-	sep2 = strchr(options_reply_codes_str.s, ',');
-
-	while(sep2 != NULL)
-	{
-
-		aux = sep2;
-		while(*sep1 == ' ')
-			sep1++;
-		
-		sep2--;
-		while(*sep2 == ' ')
-			sep2--;
-
-		code_str.s = sep1;
-		code_str.len = sep2-sep1+1;
-
-		if(str2int(&code_str, &code)< 0)
-		{
-			LM_ERR("Bad format - not am integer [%.*s]\n", 
-					code_str.len, code_str.s);
-			return -1;
-		}
-		if(code<100 ||code > 700)
-		{
-			LM_ERR("Wrong number [%d]- must be a valid SIP reply code\n", code);
-			return -1;
-		}
-		options_reply_codes[index] = code;
-		index++;
-	
-		sep1 = aux +1;
-		sep2 = strchr(sep1, ',');
-	}
-	
-	while(*sep1 == ' ')
-		sep1++;
-	sep2 = options_reply_codes_str.s+options_reply_codes_str.len -1;
-	while(*sep2 == ' ')
-		sep2--;
-
-	code_str.s = sep1;
-	code_str.len = sep2 -sep1 +1;
-	if(str2int(&code_str, &code)< 0)
-	{
-		LM_ERR("Bad format - not am integer [%.*s]\n",
-				code_str.len, code_str.s);
-		return -1;
-	}
-	if(code<100 ||code > 700)
-	{
-		LM_ERR("Wrong number [%d]- must be a valid SIP reply code\n", code);
-		return -1;
-	}
-	options_reply_codes[index] = code;
-	index++;
-
-	options_codes_no = index;
-
-	return 0;
-}
 
 int check_options_rplcode(int code)
 {
