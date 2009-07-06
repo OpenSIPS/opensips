@@ -119,3 +119,87 @@ void seed_child(unsigned int seed)
 {
 	srand(seed);
 }
+
+
+int parse_reply_codes( str *options_reply_codes_str,
+							int **options_reply_codes, int *options_codes_no)
+{
+	str code_str;
+	unsigned int code;
+	int index= 0;
+	char* sep1, *sep2, *aux;
+
+	*options_reply_codes = (int*)pkg_malloc(
+			options_reply_codes_str->len/3 * sizeof(int));
+
+	if(*options_reply_codes== NULL) {
+		LM_ERR("no more memory\n");
+		return -1;
+	}
+
+	sep1 = options_reply_codes_str->s;
+	sep2 = strchr(options_reply_codes_str->s, ',');
+
+	while(sep2 != NULL) {
+
+		aux = sep2;
+		while(*sep1 == ' ')
+			sep1++;
+		
+		sep2--;
+		while(*sep2 == ' ')
+			sep2--;
+
+		code_str.s = sep1;
+		code_str.len = sep2-sep1+1;
+
+		if(str2int(&code_str, &code)< 0) {
+			LM_ERR("Bad format - not am integer [%.*s]\n", 
+					code_str.len, code_str.s);
+			return -1;
+		}
+		if(code<100 ||code > 700) {
+			LM_ERR("Wrong number [%d]- must be a valid SIP reply code\n",code);
+			return -1;
+		}
+		(*options_reply_codes)[index] = code;
+		index++;
+	
+		sep1 = aux +1;
+		sep2 = strchr(sep1, ',');
+	}
+
+	while(*sep1 == ' ')
+		sep1++;
+	sep2 = options_reply_codes_str->s+options_reply_codes_str->len -1;
+	while(*sep2 == ' ')
+		sep2--;
+
+	code_str.s = sep1;
+	code_str.len = sep2 -sep1 +1;
+	if(str2int(&code_str, &code)< 0) {
+		LM_ERR("Bad format - not am integer [%.*s]\n",
+				code_str.len, code_str.s);
+		return -1;
+	}
+	if(code<100 ||code > 700) {
+		LM_ERR("Wrong number [%d]- must be a valid SIP reply code\n", code);
+		return -1;
+	}
+	(*options_reply_codes)[index] = code;
+	index++;
+
+	*options_codes_no = index;
+
+	return 0;
+}
+
+
+
+
+
+
+
+
+
+

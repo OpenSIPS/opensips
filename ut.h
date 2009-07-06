@@ -588,4 +588,8 @@ char * NTcopy_str( str *s );
 /* utility function to give each children a unique seed */
 void seed_child(unsigned int seed);
 
+
+int parse_reply_codes( str *options_reply_codes_str,
+		int **options_reply_codes, int *options_codes_no);
+
 #endif
