@@ -47,6 +47,8 @@ Klaus Darilion
 
         1.4. Exported Functions
 
+              1.4.1. dialoginfo_set()
+
    List of Examples
 
    1.1. Set include_callid parameter
@@ -176,8 +178,10 @@ Chapter 1. Admin Guide
 </dialog-info>
 
 
-   As the dialog module callbacks only address a certain dialog,
-   the pua_dialoginfo always PUBLISHes XML documents with a single
+   To enable dialoginfo notifications for a certain dialog, you
+   must call dialoginfo_set() function for that dialog. As the
+   dialog module callbacks only address a certain dialog, the
+   pua_dialoginfo always PUBLISHes XML documents with a single
    "dialog" element. If an entity has multiple concurrent dialogs,
    the pua_dialoginfo module will send PUBLISH for each dialog.
    These multiple "presenties" can be aggregated by the
@@ -294,3 +298,15 @@ modparam("pua_dialoginfo", "presence_server", "sip:ps@opensips.org:5060"
 ...
 
 1.4. Exported Functions
+
+1.4.1.  dialoginfo_set()
+
+   This function must be called for INVITE messages that
+   initialize a dialog for which dialoginfo information must be
+   published.
+
+...
+        if(is_method("INVITE"))
+                if(uri =~ "opensips.org")
+                        dialoginfo_set();
+...

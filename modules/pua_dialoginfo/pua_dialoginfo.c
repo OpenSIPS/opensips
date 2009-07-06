@@ -77,11 +77,13 @@ str presence_server = {0, 0};
 /** module functions */
 
 static int mod_init(void);
+int dialoginfo_set(struct sip_msg* msg, char* str1, char* str2);
 
 
 static cmd_export_t cmds[]=
 {
-	{0, 0, 0, 0, 0, 0} 
+	{"dialoginfo_set", (cmd_function)dialoginfo_set, 0,0,0, REQUEST_ROUTE},
+	{0,                   0,                         0,0,0, 0}
 };
 
 static param_export_t params[]={
@@ -264,43 +266,6 @@ __dialog_sendpublish(struct dlg_cell *dlg, int type, struct dlg_cb_params *_para
 	}
 }
 
-static void
-__dialog_created(struct dlg_cell *dlg, int type, struct dlg_cb_params *_params)
-{
-	struct sip_msg *request = _params->msg;
-
-	if (request->REQ_METHOD != METHOD_INVITE)
-		return;
-
-	LM_DBG("new INVITE dialog created: from=%.*s\n",
-		dlg->from_uri.len, dlg->from_uri.s);
-
-	/* register dialog callbacks which triggers sending PUBLISH */
-	if (dlg_api.register_dlgcb(dlg,
-		DLGCB_FAILED| DLGCB_CONFIRMED | DLGCB_TERMINATED | DLGCB_EXPIRED |
-		DLGCB_REQ_WITHIN | DLGCB_EARLY,
-		__dialog_sendpublish, 0, 0) != 0) {
-		LM_ERR("cannot register callback for interesting dialog types\n");
-		return;
-	}
-
-#ifdef PUA_DIALOGINFO_DEBUG
-	/* dialog callback testing (registered last to be executed frist) */
-	if (dlg_api.register_dlgcb(dlg,
-		DLGCB_FAILED| DLGCB_CONFIRMED | DLGCB_REQ_WITHIN | DLGCB_TERMINATED |
-		DLGCB_EXPIRED | DLGCB_EARLY | DLGCB_RESPONSE_FWDED |
-		DLGCB_RESPONSE_WITHIN  | DLGCB_MI_CONTEXT | DLGCB_DESTROY,
-		__dialog_cbtest, NULL, NULL) != 0) {
-		LM_ERR("cannot register callback for all dialog types\n");
-		return;
-	}
-#endif
-
-	dialog_publish("Trying", &(dlg->from_uri), &(dlg->to_uri), &(dlg->callid), 1, DEFAULT_CREATED_LIFETIME, 0, 0);
-}
-
-
-
 
 /**
  * init module function
@@ -339,11 +304,6 @@ static int mod_init(void)
 		LM_ERR("failed to find dialog API - is dialog module loaded?\n");
 		return -1;
 	}
-	/* register dialog creation callback */
-	if (dlg_api.register_dlgcb(NULL, DLGCB_CREATED, __dialog_created, NULL, NULL) != 0) {
-		LM_ERR("cannot register callback for dialog creation\n");
-		return -1;
-	}
 	
 	if(presence_server.s)
 		presence_server.len = strlen(presence_server.s);
@@ -351,3 +311,42 @@ static int mod_init(void)
 	return 0;
 }
 
+
+int dialoginfo_set(struct sip_msg* msg, char* str1, char* str2)
+{
+	struct dlg_cell * dlg;
+	dlg_api.create_dlg(msg);
+
+	dlg = dlg_api.get_dlg();
+
+	if (msg->REQ_METHOD != METHOD_INVITE)
+		return 1;
+
+	LM_DBG("new INVITE dialog created: from=%.*s\n",
+		dlg->from_uri.len, dlg->from_uri.s);
+
+	/* register dialog callbacks which triggers sending PUBLISH */
+	if (dlg_api.register_dlgcb(dlg,
+		DLGCB_FAILED| DLGCB_CONFIRMED | DLGCB_TERMINATED | DLGCB_EXPIRED |
+		DLGCB_REQ_WITHIN | DLGCB_EARLY,
+		__dialog_sendpublish, 0, 0) != 0) {
+		LM_ERR("cannot register callback for interesting dialog types\n");
+		return -1;
+	}
+
+#ifdef PUA_DIALOGINFO_DEBUG
+	/* dialog callback testing (registered last to be executed frist) */
+	if (dlg_api.register_dlgcb(dlg,
+		DLGCB_FAILED| DLGCB_CONFIRMED | DLGCB_REQ_WITHIN | DLGCB_TERMINATED |
+		DLGCB_EXPIRED | DLGCB_EARLY | DLGCB_RESPONSE_FWDED |
+		DLGCB_RESPONSE_WITHIN  | DLGCB_MI_CONTEXT | DLGCB_DESTROY,
+		__dialog_cbtest, NULL, NULL) != 0) {
+		LM_ERR("cannot register callback for all dialog types\n");
+		return -1;
+	}
+#endif
+
+	dialog_publish("Trying", &(dlg->from_uri), &(dlg->to_uri), &(dlg->callid), 1, DEFAULT_CREATED_LIFETIME, 0, 0);
+
+	return 0;
+}

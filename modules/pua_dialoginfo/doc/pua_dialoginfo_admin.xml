@@ -137,6 +137,9 @@
 ]]>
 </programlisting>
 
+		To enable dialoginfo notifications for a certain dialog, you must call
+		dialoginfo_set() function for that dialog.
+
 		As the dialog module callbacks only address a certain dialog, the pua_dialoginfo
 		always PUBLISHes XML documents with a single "dialog" element. If an entity
 		has multiple concurrent dialogs, the pua_dialoginfo module will send PUBLISH for
@@ -320,7 +323,26 @@ modparam("pua_dialoginfo", "presence_server", "sip:ps@opensips.org:5060")
 
 	<section>
 	<title>Exported Functions</title>
-	</section>		
+	<section>
+		<title>
+		<function moreinfo="none">dialoginfo_set()</function>
+		</title>
+		<para>
+		This function must be called for INVITE messages that initialize a
+		dialog for which dialoginfo information must be published.
+	</para>
+	<para>
+		<programlisting format="linespecific">
+...
+	if(is_method("INVITE"))
+		if(uri =~ "opensips.org")
+			dialoginfo_set();
+...
+		</programlisting>
+	</para>
+
+	</section>
+	</section>
 
 </chapter>
 
