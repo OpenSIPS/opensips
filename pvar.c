@@ -230,6 +230,15 @@ static int pv_get_times(struct sip_msg *msg, pv_param_t *param,
 	return pv_get_uintval(msg, param, res, (unsigned int)time(NULL));
 }
 
+static int pv_get_start_times(struct sip_msg *msg, pv_param_t *param,
+		pv_value_t *res)
+{
+	if(msg==NULL)
+		return -1;
+
+	return pv_get_uintval(msg, param, res, (unsigned int)startup_time);
+}
+
 static int pv_get_timef(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {
@@ -3001,11 +3010,14 @@ static pv_export_t _pv_names_table[] = {
 	{{"to.user", (sizeof("to.user")-1)}, /* */
 		PVT_TO_USERNAME, pv_get_to_attr, 0,
 		0, 0, pv_init_iname, 2},
-	{{"Tf", (sizeof("tf")-1)}, /* */
+	{{"Tf", (sizeof("Tf")-1)}, /* */
 		PVT_TIMEF, pv_get_timef, 0,
 		0, 0, 0, 0},
-	{{"Ts", (sizeof("ts")-1)}, /* */
+	{{"Ts", (sizeof("Ts")-1)}, /* */
 		PVT_TIMES, pv_get_times, 0,
+		0, 0, 0, 0},
+	{{"TS", (sizeof("TS")-1)}, /* */
+		PVT_TIMES, pv_get_start_times, 0,
 		0, 0, 0, 0},
 	{{"ua", (sizeof("ua")-1)}, /* */
 		PVT_USERAGENT, pv_get_useragent, 0,
