@@ -164,7 +164,8 @@ int db_postgres_str2val(const db_type_t _t, db_val_t* _v, const char* _s, const 
 /*
  * Used when converting result from a query
  */
-int db_postgres_val2str(const db_con_t* _con, const db_val_t* _v, char* _s, int* _len)
+int db_postgres_val2str(const db_con_t* _con, const db_val_t* _v,
+														char* _s, int* _len)
 {
 	int l, ret;
 	int pgret;
@@ -178,7 +179,12 @@ int db_postgres_val2str(const db_con_t* _con, const db_val_t* _v, char* _s, int*
 	}
 
 	if (VAL_NULL(_v)) {
-		*_len = snprintf(_s, *_len, "NULL");
+		if ( *_len < (l=(int)sizeof("NULL"))) {
+			LM_ERR("buffer too short to print NULL\n");
+			return -1;
+		}
+		memcpy(_s, "NULL", l);
+		*_len = l;
 		return 0;
 	}
 	
