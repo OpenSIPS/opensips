@@ -103,7 +103,6 @@ int refresh_send_winfo_notify(watcher_t* watcher, str pres_uri,
 int counter =0;
 int pid = 0;
 char prefix='a';
-int startup_time=0;
 str db_url = {0, 0};
 int expires_offset = 0;
 int max_expires_subscribe= 3600;
@@ -308,8 +307,6 @@ static int mod_init(void)
 		return -1;
 	}
 
-	startup_time = (int) time(NULL);
-	
 	if(clean_period>0)
 	{
 		register_timer(msg_presentity_clean, 0, clean_period);

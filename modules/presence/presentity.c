@@ -64,7 +64,8 @@ char* generate_ETag(int publ_count)
 		ERR_MEM(PKG_MEM_STR);
 	}
 	memset(etag, 0, ETAG_LEN*sizeof(char));
-	size = sprintf (etag, "%c.%d.%d.%d.%d",prefix, startup_time, pid, counter, publ_count);
+	size = sprintf (etag, "%c.%d.%d.%d.%d",
+		prefix, (int)startup_time, pid, counter, publ_count);
 	if( size <0 )
 	{
 		LM_ERR("unsuccessfull sprintf\n ");

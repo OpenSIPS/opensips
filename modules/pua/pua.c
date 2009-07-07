@@ -64,7 +64,6 @@ int default_expires=3600;
 static str db_url = str_init(DEFAULT_DB_URL);
 static str db_table= str_init("pua");
 int update_period= 100;
-int startup_time = 0;
 pua_event_t* pua_evlist= NULL;
 
 /* database connection */
@@ -234,8 +233,6 @@ static int mod_init(void)
 		return -1;
 	}
 
-	startup_time = (int) time(NULL);
-	
 	register_timer(hashT_clean, 0, update_period- 5);
 
 	register_timer(db_update, 0, update_period);

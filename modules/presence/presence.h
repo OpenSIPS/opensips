@@ -54,7 +54,6 @@ extern str watchers_table;
 
 extern int counter;
 extern int pid;
-extern int startup_time;
 extern char *to_tag_pref;
 extern int expires_offset;
 extern str server_address;
