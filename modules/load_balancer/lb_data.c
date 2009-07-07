@@ -479,7 +479,7 @@ int do_load_balance(struct sip_msg *req, int grp, struct lb_res_str_list *rl,
 	dst = NULL;
 	for( it=data->dsts,i=0,j=0 ; it ; it=it->next) {
 		if ( (used_dst_bitmap[i] & (1<<j)) && it->group==grp &&
-		(dst->flags&LB_DST_STAT_DSBL_FLAG)==0 ) {
+		(it->flags&LB_DST_STAT_DSBL_FLAG)==0 ) {
 			/* valid destination (resources & group & status) */
 			if ( (ld = get_dst_load(call_res, call_res_no, it, alg)) > load) {
 				/* computing a max */
