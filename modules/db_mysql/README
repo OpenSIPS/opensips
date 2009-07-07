@@ -30,7 +30,6 @@ Daniel-Constantin Mierla
 
               1.3.1. ping_interval (integer)
               1.3.2. timeout_interval (integer)
-              1.3.3. auto_reconnect (integer)
 
         1.4. Exported Functions
         1.5. Installation
@@ -39,7 +38,6 @@ Daniel-Constantin Mierla
 
    1.1. Set ping_interval parameter
    1.2. Set timeout_interval parameter
-   1.3. Set auto_reconnect parameter
 
 Chapter 1. Admin Guide
 
@@ -92,18 +90,6 @@ modparam("db_mysql", "ping_interval", 600)
    Example 1.2. Set timeout_interval parameter
 ...
 modparam("db_mysql", "timeout_interval", 2)
-...
-
-1.3.3. auto_reconnect (integer)
-
-   Configure the module to auto reconnect to MySQL server if the
-   connection was lost.
-
-   Default value is 1 (1 - on / 0 - off).
-
-   Example 1.3. Set auto_reconnect parameter
-...
-modparam("auto_reconnect", "auto_reconnect", 0)
 ...
 
 1.4. Exported Functions

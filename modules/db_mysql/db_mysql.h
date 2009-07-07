@@ -33,6 +33,5 @@
 
 extern unsigned int db_mysql_ping_interval;
 extern unsigned int db_mysql_timeout_interval;
-extern unsigned int db_mysql_auto_reconnect;
 
 #endif /* DB_MOD_H */
