@@ -36,7 +36,7 @@
 #define LB_GRP_ID_COL    "group_id"
 #define LB_DST_URI_COL   "dst_uri"
 #define LB_RESOURCES_COL "resources"
-#define LB_PMODE_COL     "ping_mode"
+#define LB_PMODE_COL     "probe_mode"
 
 #include "../../str.h"
 #include "lb_data.h"
