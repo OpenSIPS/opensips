@@ -422,12 +422,12 @@ void set_dst_state_from_rplcode( int id, int code)
 		/* re-enable to DST  (if allowed) */
 		if ( dst->flags&LB_DST_STAT_NOEN_FLAG )
 			return;
-		dst->flags &= ~LB_DST_PING_DSBL_FLAG;
+		dst->flags &= ~LB_DST_STAT_DSBL_FLAG;
 		return;
 	}
 
 	if (code>=400) {
-		dst->flags |= LB_DST_PING_DSBL_FLAG;
+		dst->flags |= LB_DST_STAT_DSBL_FLAG;
 	}
 
 	unref_read_data();
@@ -553,33 +553,30 @@ static struct mi_root* mi_lb_status(struct mi_root *cmd, void *param)
 	/* status (param 2) */
 	node = node->next;
 	if (node == NULL) {
-		/* return the status */
-		if (node->next) {
-			rpl_tree = init_mi_tree( 400,
-				MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
+		/* return the status -> find the destination */
+		for(dst=(*curr_data)->dsts; dst && dst->id!=id ;dst=dst->next);
+		if (dst==NULL) {
+			rpl_tree = init_mi_tree( 404,
+				MI_SSTR("Destination ID not found"));
 		} else {
-			/* find the destination */
-			for(dst=(*curr_data)->dsts; dst && dst->id!=id ;dst=dst->next);
-			if (dst==NULL) {
-				rpl_tree = init_mi_tree( 404,
-					MI_SSTR("Destination ID not found"));
-			} else {
-				rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
-				if (rpl_tree!=NULL) {
-					if (dst->flags&LB_DST_STAT_DSBL_FLAG) {
-						node = add_mi_node_child( node, 0, "enable", 6,
-								"no", 2);
-					} else {
-						node = add_mi_node_child( node, 0, "enable", 6,
-								"yes", 3);
-					}
-					if (node==NULL) {free_mi_tree(rpl_tree); rpl_tree=NULL;}
+			rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
+			if (rpl_tree!=NULL) {
+				if (dst->flags&LB_DST_STAT_DSBL_FLAG) {
+					node = add_mi_node_child( &rpl_tree->node, 0, "enable", 6,
+							"no", 2);
+				} else {
+					node = add_mi_node_child( &rpl_tree->node, 0, "enable", 6,
+							"yes", 3);
 				}
+				if (node==NULL) {free_mi_tree(rpl_tree); rpl_tree=NULL;}
 			}
 		}
 	} else {
 		/* set the status */
-		if (str2int( &node->value, &stat) < 0) {
+		if (node->next) {
+			rpl_tree = init_mi_tree( 400,
+				MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
+		} else if (str2int( &node->value, &stat) < 0) {
 			rpl_tree = init_mi_tree( 400, MI_SSTR(MI_BAD_PARM_S));
 		} else {
 			/* find the destination */
@@ -637,6 +634,22 @@ static struct mi_root* mi_lb_list(struct mi_root *cmd_tree, void *param)
 		/* add some attributes to the destination node */
 		p= int2str((unsigned long)dst->id, &len);
 		attr = add_mi_attr( dst_node, MI_DUP_VALUE, "id", 2, p, len);
+		if (attr==0)
+			goto error;
+
+		if (dst->flags&LB_DST_STAT_DSBL_FLAG) {
+			attr = add_mi_attr( dst_node, 0, "enabled", 7, "no", 2);
+		} else {
+			attr = add_mi_attr( dst_node, 0, "enabled", 7, "yes", 3);
+		}
+		if (attr==0)
+			goto error;
+
+		if (dst->flags&LB_DST_STAT_NOEN_FLAG) {
+			attr = add_mi_attr( dst_node, 0, "auto-reenable", 7, "off", 3);
+		} else {
+			attr = add_mi_attr( dst_node, 0, "auto-reenable", 7, "on", 2);
+		}
 		if (attr==0)
 			goto error;
 

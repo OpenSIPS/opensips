@@ -429,7 +429,7 @@ int do_load_balance(struct sip_msg *req, int grp, struct lb_res_str_list *rl,
 	(mask_avp->flags&AVP_VAL_STR) && ((id_avp->flags&AVP_VAL_STR)==0) ) {
 		/* not the first iteration -> use data from AVPs */
 		grp = grp_val.n ;
-		used_dst_bitmap = (unsigned int*)grp_val.s.s;
+		used_dst_bitmap = (unsigned int*)mask_val.s.s;
 		/* set the previous dst as used (not selected) */
 		for(last_dst=data->dsts,i=0,j=0 ; last_dst ; last_dst=last_dst->next) {
 			if (last_dst->id==id_val.n) {used_dst_bitmap[i] &= ~(1<<j);}
@@ -516,34 +516,34 @@ int do_load_balance(struct sip_msg *req, int grp, struct lb_res_str_list *rl,
 	for( i=0 ; i<rl->n ; i++)
 		release_lock( call_res[i]->lock );
 
-	/* change (add/edit) the AVPs for the next iteration */
-	if (grp_avp==NULL && mask_avp==NULL) {
-		grp_val.n = grp;
-		if (add_avp( 0, grp_avp_name, grp_val)!=0) {
-			LM_ERR("failed to add GRP AVP");
+	if (dst) {
+		/* change (add/edit) the AVPs for the next iteration */
+		if (grp_avp==NULL && mask_avp==NULL) {
+			grp_val.n = grp;
+			if (add_avp( 0, grp_avp_name, grp_val)!=0) {
+				LM_ERR("failed to add GRP AVP");
+			}
+			mask_val.s.s = (char*)used_dst_bitmap;
+			mask_val.s.len = bitmap_size*sizeof(unsigned int);
+			if (add_avp( AVP_VAL_STR, mask_avp_name, mask_val)!=0) {
+				LM_ERR("failed to add MASK AVP");
+			}
 		}
-		mask_val.s.s = (char*)used_dst_bitmap;
-		mask_val.s.len = bitmap_size*sizeof(unsigned int);
-		if (add_avp( AVP_VAL_STR, mask_avp_name, mask_val)!=0) {
-			LM_ERR("failed to add MASK AVP");
+		if (id_avp) {
+			id_avp->data = (void*)(long)dst->id;
+		} else {
+			id_val.n = dst->id;
+			if (add_avp( 0, id_avp_name, id_val)!=0) {
+				LM_ERR("failed to add ID AVP");
+			}
 		}
-	}
-	if (id_avp) {
-		id_avp->data = (void*)(long)dst->id;
-	} else {
-		id_val.n = dst->id;
-		if (add_avp( 0, id_avp_name, id_val)!=0) {
-			LM_ERR("failed to add ID AVP");
-		}
-	}
 
-	/* set dst uri */
-	if (dst && set_dst_uri( req, &dst->uri )!=0) {
-		LM_ERR("failed to set duri\n");
-		return -2;
+		/* set dst uri */
+		if (set_dst_uri( req, &dst->uri )!=0) {
+			LM_ERR("failed to set duri\n");
+			return -2;
+		}
 	}
-
-	 
 
 	return dst?0:-2;
 }
