@@ -17,6 +17,13 @@
 	destination with the smallest number of ongoing calls, but the destination 
 	with the largest available slot.
 	</para>
+	<para>
+	Also the module has the capability to do failover (to try a new destination
+	if the selected one done not responde), to keep state of the destinations 
+	(to remember the failed destination and avoid using them agai) and to 
+	check the health of the destination (by doing probing of the destination 
+	and auto re-enabling).
+	</para>
 	</section>
 
 	<section>
@@ -25,6 +32,54 @@
 		Please refer to the Load-Balancer tutorial from the &osips; website:
 		<ulink url='http://www.opensips.org/index.php?n=Resources.DocsTutLoadbalancing'>http://www.opensips.org/index.php?n=Resources.DocsTutLoadbalancing</ulink>.
 		</para>
+	</section>
+
+	<section>
+	<title>Probing and Disabling destinations</title>
+	<para>
+	The module has the capability to monitor the status of the destinations by
+	doing SIP probing (sending SIP requests like OPTIONS).
+	</para>
+	<para>
+	For each destination, you can configure what kind of probing should be 
+	done (probe_mode column):
+	</para>
+	<itemizedlist>
+	<listitem>
+		<para><emphasis>(0)</emphasis> - no probing at all;</para>
+	</listitem>
+	<listitem>
+		<para><emphasis>(1)</emphasis> - probing only when the destination is
+		in disabled mode (disabling via MI command will competely stop the 
+		probing also). The destination will be automatically re-enabled
+		when the probing will succeed next time;</para>
+	</listitem>
+	<listitem>
+		<para><emphasis>(2)</emphasis> - probing all the time. If disabled, 
+		the destination will be automatically re-enabled when the probing 
+		will succeed next time;
+		</para>
+	</listitem>
+	</itemizedlist>
+	<para>
+	A destination can become disabled in two ways:
+	<itemizedlist>
+	<listitem>
+		<emphasis>script detection</emphasis> - by calling from script the
+		lb_disabled() function after try the destination. In this case, if
+		probing mode for the destination is (1) or (2), the destination will
+		be automatically re-enabled when the probing will succeed.
+	</listitem>
+	<listitem>
+		<emphasis>MI command</emphasis> - by calling the lb_status MI
+		command for disabling (on demand) the destination. If so, the probing
+		and re-enabling of this destination will be completly disabled until
+		you re-enable it again via MI command - this is designed to allow 
+		controlled and complete disabling of some destination during 
+		maintenance.
+	</listitem>
+	</itemizedlist>
+	</para>
 	</section>
 
 	<section>
@@ -37,6 +92,11 @@
 			<listitem>
 			<para>
 				<emphasis>Dialog</emphasis> - Dialog module
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>Dialog</emphasis> - TM module (only if probing enabled)
 			</para>
 			</listitem>
 			<listitem>
@@ -104,7 +164,91 @@ modparam("load_balancer", "db_url", "&exampledb;")
 		<title>Set <varname>db_table</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("", "db_table", "lb")
+modparam("load_balancer", "db_table", "lb")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>probing_interval</varname> (integer)</title>
+		<para>
+		How often (in seconds) the probing of a destination should be done. If
+		set to 0, the probing will be disabled as functionality (for all 
+		destinations)
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>30</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>probing_interval</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("load_balancer", "probing_interval", 60)
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>probing_method</varname> (string)</title>
+		<para>
+		The SIP method to be used for the probing requests.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>"OPTIONS"</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>probing_method</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("load_balancer", "probing_method", "INFO")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>probing_from</varname> (string)</title>
+		<para>
+		The FROM SIP URI to be advertised in the SIP probing requests.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>"sip:prober@localhost"</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>probing_from</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("load_balancer", "probing_from", "sip:pinger@192.168.2.10")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>options_reply_codes</varname> (string)</title>
+		<para>
+		A comma separted list of SIP reply codes. The codes defined here 
+		will be considered as valid reply codes for probing messages,
+		apart for 200.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>NULL</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>options_reply_codes</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("load_balancer", "options_reply_codes", "501, 403")
 ...
 </programlisting>
 		</example>
@@ -165,8 +309,8 @@ modparam("", "db_table", "lb")
 		NOTE that the RURI will not be changed by this function.
 		</para>
 		<para>
-		This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
-			REPLY_ROUTE and FAILURE_ROUTE.
+		This function can be used from REQUEST_ROUTE, BRANCH_ROUTE and
+		FAILURE_ROUTE.
 		</para>
 		<example>
 		<title><function>set_dlg_profile</function> usage</title>
@@ -178,6 +322,39 @@ if (load_balance("1","trascoding;conference")) {
 	t_relay();
 	exit;
 }
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title>
+		<function moreinfo="none">lb_disable()</function>
+		</title>
+		<para>
+		Marks as disabled the last destination that was used for the current
+		call. The disabling done via this function will prevent the 
+		destination to be used for usage from now on. The probing mechanism
+		can re-enable this peer (see the probing section in the begining)
+		</para>
+		<para>
+		This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
+		</para>
+		<example>
+		<title><function>lb_disable()</function> usage</title>
+		<programlisting format="linespecific">
+...
+if (t_check_status("(408)|(5[0-9][0-9])")) {
+	lb_disable();
+	if ( load_balance("1","pstn") ) {
+		t_on_failure("1");
+		xlog("-----------new dst is $du\n");
+		t_relay();
+	} else {
+		t_reply("500","Error");
+	}
+}
+
 ...
 </programlisting>
 		</example>
@@ -243,8 +420,52 @@ if (load_balance("1","trascoding;conference")) {
 		:lb_list:_reply_fifo_file_
 		_empty_line_
 		</programlisting>
+		<example>
+		<title><function>lb_list</function> usage</title>
+		<programlisting format="linespecific">
+$ ./opensipsctl fifo lb_list
+Destination:: sip:127.0.0.1:5100 id=1 enabled=yes auto-re=on
+        Resource:: pstn max=3 load=0
+        Resource:: transc max=5 load=1
+        Resource:: vm max=5 load=2
+Destination:: sip:127.0.0.1:5200 id=2 enabled=no auto-re=on
+        Resource:: pstn max=6 load=0
+        Resource:: trans max=57 load=0
+        Resource:: vm max=5 load=0
+</programlisting>
+		</example>
 		</section>
 
+		<section>
+		<title><varname>lb_status</varname></title>
+		<para>
+		Gets or sets the status (enabled or disabled) of a destination. The 
+		function takes 2 parameters, first mandatory, the id of the destiantion
+		and second, optional, the new status. If no new status is given, the
+		function will return the current status. If a new status is given 
+		(0 - disable, 1 - enable), this status will be forced for the 
+		destination.
+		</para>
+		<para>
+		MI FIFO Command Format:
+		</para>
+		<programlisting  format="linespecific">
+		:lb_status:_reply_fifo_file_
+		id
+		status (optional)
+		_empty_line_
+		</programlisting>
+		<example>
+		<title><function>lb_status</function> usage</title>
+		<programlisting format="linespecific">
+$ ./opensipsctl fifo lb_status 2
+enable:: no
+$ ./opensipsctl fifo lb_status 2 1
+$ ./opensipsctl fifo lb_status 2
+enable:: yes
+</programlisting>
+		</example>
+	</section>
 	</section>
 
 
