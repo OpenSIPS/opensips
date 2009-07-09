@@ -41,6 +41,7 @@ int cpl_proxy_to_loc_set( struct sip_msg *msg, struct location **locs,
 {
 	struct location *foo;
 	int bflags;
+	int r;
 
 	if (!*locs) {
 		LM_ERR("empty loc set!!\n");
@@ -94,8 +95,8 @@ int cpl_proxy_to_loc_set( struct sip_msg *msg, struct location **locs,
 	}
 
 	/* do t_forward */
-	if (cpl_fct.tmb.t_relay(msg, 0, 0, 0, 0, 0, 0)==-1) {
-		LM_ERR("t_relay failed !\n");
+	if ((r = cpl_fct.tmb.t_relay(msg, 0, 0, 0, 0, 0, 0)) < 0) {
+		LM_ERR("t_relay failed! error=%d\n",r);
 		goto error;
 	}
 
