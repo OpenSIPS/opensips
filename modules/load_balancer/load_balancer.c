@@ -637,6 +637,11 @@ static struct mi_root* mi_lb_list(struct mi_root *cmd_tree, void *param)
 		if (attr==0)
 			goto error;
 
+		p= int2str((unsigned long)dst->group, &len);
+		attr = add_mi_attr( dst_node, MI_DUP_VALUE, "group", 5, p, len);
+		if (attr==0)
+			goto error;
+
 		if (dst->flags&LB_DST_STAT_DSBL_FLAG) {
 			attr = add_mi_attr( dst_node, 0, "enabled", 7, "no", 2);
 		} else {
