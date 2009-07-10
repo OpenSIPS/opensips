@@ -433,8 +433,17 @@ alias_db() {
 $DA_DOMAIN_COLUMN='$OSIPSDOMAIN'"
 				mecho "Dumping aliases for user=<$2>"
 				echo
-				QUERY="SELECT CONCAT($DA_ALIAS_USER_COLUMN,\
-'@',$DA_ALIAS_DOMAIN_COLUMN) AS ALIAS FROM $DA_TABLE $CLAUSE;"
+				if [ $DBENGINE -eq "MYSQL" ] ; then
+					QUERY="SELECT CONCAT($DA_ALIAS_USER_COLUMN,\
+	'@',$DA_ALIAS_DOMAIN_COLUMN) AS ALIAS FROM $DA_TABLE $CLAUSE;"
+				elif [ $DBENGINE -eq "PGSQL" ] ; then
+					QUERY="SELECT ($DA_ALIAS_USER_COLUMN || \
+	'@' || $DA_ALIAS_DOMAIN_COLUMN) AS ALIAS FROM $DA_TABLE $CLAUSE;"
+				fi
+
+				mecho "Dumping aliases for user=<$2>"
+				echo
+
 				$DBROCMD "$QUERY"
 									# | $AWK 'BEGIN {line=0;}
 									#		/^\+/ { next }
@@ -484,8 +493,14 @@ $DA_USER_COLUMN, $DA_DOMAIN_COLUMN FROM $DA_TABLE;"
 			
 			CLAUSE="WHERE $DA_ALIAS_USER_COLUMN='$OSIPSUSER' AND \
 $DA_ALIAS_DOMAIN_COLUMN='$OSIPSDOMAIN'"
-			QUERY="SELECT CONCAT($DA_USER_COLUMN,'@',$DA_DOMAIN_COLUMN) \
-AS 'SIP-ID' FROM $DA_TABLE $CLAUSE ; "
+			if [ $DBENGINE -eq "MYSQL" ] ; then
+				QUERY="SELECT CONCAT($DA_USER_COLUMN,'@',$DA_DOMAIN_COLUMN) \
+	AS 'SIP-ID' FROM $DA_TABLE $CLAUSE ; "
+			elif [ $DBENGINE -eq "PGSQL" ] ; then
+				QUERY="SELECT ($DA_USER_COLUMN || '@' || $DA_DOMAIN_COLUMN) \
+	AS 'SIP-ID' FROM $DA_TABLE $CLAUSE ; "
+			fi
+	
 			$DBROCMD "$QUERY"
 			#TMP_UUID=`sql_ro_query "$QUERY" | $AWK 'BEGIN {line=0;}
 			#								/^\+/ { next } 
@@ -525,13 +540,20 @@ AS 'SIP-ID' FROM $DA_TABLE $CLAUSE ; "
 			TMP_OSIPSUSER=$OSIPSUSER
 			TMP_OSIPSDOMAIN=$OSIPSDOMAIN
 			set_user $2
-			
-			if is_value_in_db $DA_TABLE "concat($DA_ALIAS_USER_COLUMN,$DA_ALIAS_DOMAIN_COLUMN)" "$TMP_OSIPSUSER$TMP_OSIPSDOMAIN"; then
-				minfo "$TMP_OSIPSUSER alias already in $DA_TABLE table"
-				exit 0
-			fi
+		
+                        if [ $DBENGINE == "MYSQL" ] ; then
+                                if is_value_in_db $DA_TABLE "concat($DA_ALIAS_USER_COLUMN,$DA_ALIAS_DOMAIN_COLUMN)" "$TMP_OSIPSUSER$TMP_OSIPSDOMAIN"; then
+                                        minfo "$TMP_OSIPSUSER alias already in $DA_TABLE table"
+                                        exit 0
+                                fi
+                        elif [ $DBENGINE == "PGSQL" ] ; then
+                                if is_value_in_db $DA_TABLE "$DA_ALIAS_USER_COLUMN || $DA_ALIAS_DOMAIN_COLUMN" "$TMP_OSIPSUSER$TMP_OSIPSDOMAIN"; then
+                                        minfo "$TMP_OSIPSUSER alias already in $DA_TABLE table"
+                                        exit 0
+                                fi
+                        fi
 
-			QUERY="INSERT INTO $DA_TABLE ($DA_USER_COLUMN,$DA_DOMAIN_COLUMN,\
+                        QUERY="INSERT INTO $DA_TABLE ($DA_USER_COLUMN,$DA_DOMAIN_COLUMN,\
 $DA_ALIAS_USER_COLUMN,$DA_ALIAS_DOMAIN_COLUMN) VALUES ('$OSIPSUSER',\
 '$OSIPSDOMAIN','$TMP_OSIPSUSER','$TMP_OSIPSDOMAIN' );"
 			$DBCMD "$QUERY"
@@ -1760,9 +1782,18 @@ speeddial() {
 $SD_DOMAIN_COLUMN='$OSIPSDOMAIN'"
 				mecho "Dumping speed-dials for user=<$2>"
 				echo
+				if [ $DBENGINE -eq "MYSQL" ] ; then
 				QUERY="SELECT CONCAT($SD_SD_USER_COLUMN,'@',\
-$SD_SD_DOMAIN_COLUMN) AS 'Short number', $SD_NEW_URI_COLUMN AS 'New URI',\
-$SD_DESC_COLUMN FROM $SD_TABLE $CLAUSE;"
+	$SD_SD_DOMAIN_COLUMN) AS 'Short number', $SD_NEW_URI_COLUMN AS 'New URI',\
+	$SD_DESC_COLUMN FROM $SD_TABLE $CLAUSE;"
+				elif [ $DBENGINE -eq "PGSQL" ] ; then
+				QUERY="SELECT ($SD_SD_USER_COLUMN || '@' || \
+	$SD_SD_DOMAIN_COLUMN) AS 'Short number', $SD_NEW_URI_COLUMN AS 'New URI',\
+	$SD_DESC_COLUMN FROM $SD_TABLE $CLAUSE;"
+				fi
+				mecho "Dumping speed-dials for user=<$2>"
+				echo
+
 				$DBROCMD "$QUERY"
 					#| $AWK 'BEGIN {line=0;}
 					#	/^\+/ { next }
@@ -1786,10 +1817,17 @@ $SD_DESC_COLUMN FROM $SD_TABLE $CLAUSE;"
 				else
 					exit 1
 				fi
-				QUERY="SELECT CONCAT($SD_SD_USER_COLUMN,'@',\
+				if [ $DBENGINE -eq "MYSQL" ] ; then
+					QUERY="SELECT CONCAT($SD_SD_USER_COLUMN,'@',\
 $SD_SD_DOMAIN_COLUMN) AS 'Short number', CONCAT($SD_USER_COLUMN,'@',\
 $SD_DOMAIN_COLUMN) AS 'Owner', $SD_NEW_URI_COLUMN AS 'New URI',\
 $SD_DESC_COLUMN FROM $SD_TABLE;"
+				elif [ $DBENGINE -eq "PGSQL" ] ; then
+					QUERY="SELECT ($SD_SD_USER_COLUMN||'@'||\
+$SD_SD_DOMAIN_COLUMN) AS 'Short number', ($SD_USER_COLUMN||'@'||\
+$SD_DOMAIN_COLUMN) AS 'Owner', $SD_NEW_URI_COLUMN AS 'New URI',\
+$SD_DESC_COLUMN FROM $SD_TABLE;"
+				fi
 				$DBROCMD "$QUERY"
 				#| $AWK 'BEGIN {line=0;}
 				#	/^\+/ { next }
@@ -1829,9 +1867,15 @@ $SD_DESC_COLUMN FROM $SD_TABLE;"
 			
 			CLAUSE="WHERE $SD_SD_USER_COLUMN='$OSIPSUSER' AND \
 $SD_SD_DOMAIN_COLUMN='$OSIPSDOMAIN'"
-			QUERY="SELECT CONCAT($SD_USER_COLUMN,'@',$SD_DOMAIN_COLUMN) \
-AS 'Owner', $SD_NEW_URI_COLUMN AS 'New URI', $SD_DESC_COLUMN FROM \
-$SD_TABLE $CLAUSE ; "
+			if [ $DBENGINE -eq "MYSQL" ] ; then
+				QUERY="SELECT CONCAT($SD_USER_COLUMN,'@',$SD_DOMAIN_COLUMN) \
+	AS 'Owner', $SD_NEW_URI_COLUMN AS 'New URI', $SD_DESC_COLUMN FROM \
+	$SD_TABLE $CLAUSE ; "
+			elif [ $DBENGINE -eq "PGSQL" ] ; then
+				QUERY="SELECT ($SD_USER_COLUMN || '@' || $SD_DOMAIN_COLUMN) \
+	AS 'Owner', $SD_NEW_URI_COLUMN AS 'New URI', $SD_DESC_COLUMN FROM \
+	$SD_TABLE $CLAUSE ; "
+			fi
 			mecho "Details for speeddial <$2>"
 			$DBROCMD "$QUERY"
 			# | $AWK 'BEGIN {line=0;} /^\+/ { next } 
