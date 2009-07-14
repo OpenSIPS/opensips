@@ -389,7 +389,8 @@ int replace_from( struct sip_msg *msg, str *from_dsp, str *from_uri)
 	if ((msg->msg_flags&FL_USE_UAC_FROM)==0) {
 		/* first time here */
 		msg->msg_flags |= FL_USE_UAC_FROM;
-		if ( (Trans=uac_tmb.t_gett())!=NULL && Trans->uas.request)
+		if ( (Trans=uac_tmb.t_gett())!=NULL && Trans!=T_UNDEFINED && 
+		Trans->uas.request)
 			Trans->uas.request->msg_flags |= FL_USE_UAC_FROM;
 
 		/* add TM callback to restore the FROM hdr in reply */
