@@ -1,3 +1,9 @@
+opensips (1.5.2-0) unstable; urgency=low
+
+  * Minor Release on 1.5 branch - just bug fixing
+
+ -- Bogdan-Andrei Iancu <bogdan@voice-system.ro>  Wed, 15 Jul 2009 22:17:00 +0200
+
 opensips (1.5.1-0) unstable; urgency=low
 
   * Minor Release on 1.5 branch - just bug fixing

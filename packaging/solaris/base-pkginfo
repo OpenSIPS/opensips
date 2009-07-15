@@ -1,6 +1,6 @@
 PKG="OpenSIPS-base-dbg"
 NAME="Programmable SIP Server Base Install - Debugging Symbols"
-VERSION="1.5.0"
+VERSION="1.5.2"
 ARCH="sparc"
 CLASSES="none"
 CATEGORY="utility"
