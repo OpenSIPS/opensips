@@ -125,7 +125,7 @@ my $ALIAS_EXISTS = 0;
 ######-----------------------------------------------#######
 ##database specific variables
 #
-my @STANDARD_TABLES = ('version', 'acc', 'dbaliases', 'lcr', 'domain', 'grp', 'uri', 'speed_dial', 'gw', 'pdt', 'subscriber', 'location', 're_grp', 'trusted', 'address', 'missed_calls', 'usr_preferences', 'aliases', 'silo', 'dialog', 'dispatcher', 'dialplan','drouting','nathelper');
+my @STANDARD_TABLES = ('version', 'acc', 'dbaliases', 'lcr', 'domain', 'grp', 'uri', 'speed_dial', 'gw', 'pdt', 'subscriber', 'location', 're_grp', 'trusted', 'address', 'missed_calls', 'usr_preferences', 'aliases', 'silo', 'dialog', 'dispatcher', 'dialplan','dr_gateways','dr_rules','dr_gw_lists','dr_groups','nh_sockets');
 
 my @STANDARD_MODULES = ('standard', 'acc', 'lcr', 'domain', 'group', 'permissions', 'registrar', 'usrloc', 'msilo', 'alias_db', 'uri_db',
 				     'speeddial', 'avpops', 'auth_db', 'pdt', 'dialog', 'dispatcher', 'dialplan','drouting','nathelper' );
@@ -6116,19 +6116,33 @@ sub pgsql_opensips_create() {	# pars: <database name>
 		#print $TABLE;
 		&pgsql_query ( $db, "GRANT ALL PRIVILEGES ON TABLE $TABLE TO $DBRWUSER;");
 		&pgsql_query ($db, "GRANT SELECT ON TABLE $TABLE TO $DBROUSER;");
-		if ( $TABLE !~ /version/ ) {
-			&pgsql_query ( $db, "GRANT ALL PRIVILEGES ON TABLE " . $TABLE . "_id_seq TO $DBRWUSER;");
-			if ( $? != 0 ) {
-				print "Grant privileges to standard tables failed!\n";
-			} else {
-				print "Privileges to standard tables succeded!\n";
-			}
-	   		&pgsql_query ($db, "GRANT SELECT ON TABLE " . $TABLE . "_id_seq TO $DBROUSER;" );
-			if ( $? != 0 ) {
-				print "Grant privileges to standard tables failed!\n";
-			} else {
-				print "Privileges to standard tables succeded!\n";
-			}
+                if ( $TABLE !~ /version/ ) {
+                        if ( ($TABLE !~ /dr_gateways/) && ($TABLE !~ /nh_sockets/) && ($TABLE !~ /dr_rules/) ) {
+                                &pgsql_query ( $db, "GRANT ALL PRIVILEGES ON TABLE " . $TABLE . "_id_seq TO $DBRWUSER;");
+                                if ( $? != 0 ) {
+                                        print "Grant privileges to standard tables failed!\n";
+                                } else {
+                                        print "Privileges to standard tables succeded!\n";
+                                }
+                                &pgsql_query ($db, "GRANT SELECT ON TABLE " . $TABLE . "_id_seq TO $DBROUSER;" );
+                        } elsif ( $TABLE =~ /dr_gateways/ ) {
+                                &pgsql_query ( $db, "GRANT ALL PRIVILEGES ON TABLE " . $TABLE . "_gwid_seq TO $DBRWUSER;");
+                                if ( $? != 0 ) {
+                                        print "Grant privileges to standard tables failed!\n";
+                                } else {
+                                        print "Privileges to standard tables succeded!\n";
+                                }
+                                &pgsql_query ($db, "GRANT SELECT ON TABLE " . $TABLE . "_gwid_seq TO $DBROUSER;" );
+                        } elsif ( $TABLE =~ /dr_rules/ ) {
+                                &pgsql_query ( $db, "GRANT ALL PRIVILEGES ON TABLE " . $TABLE . "_ruleid_seq TO $DBRWUSER;");
+                                if ( $? != 0 ) {
+                                        print "Grant privileges to standard tables failed!\n";
+                                } else {
+                                        print "Privileges to standard tables succeded!\n";
+                                }
+                                &pgsql_query ($db, "GRANT SELECT ON TABLE " . $TABLE . "_ruleid_seq TO $DBROUSER;" );
+                        }
+
 		}
 	}
 
