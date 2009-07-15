@@ -219,7 +219,6 @@ int pv_free_extra_list(void);
 int pv_parse_index(pv_spec_p sp, str *in);
 
 int pv_get_null(struct sip_msg *msg, pv_param_t *param, pv_value_t *res);
-int pv_update_time(struct sip_msg *msg, time_t *t);
 
 int pv_get_uintval(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res, unsigned int uival);
