@@ -16,6 +16,73 @@
 	</para>
 	</section>
 
+
+	<section>
+	<title>Advantages</title>
+	<para>
+		<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>memory costs are no longer on the server
+				</emphasis>
+			</para>
+			</listitem>
+
+			<listitem>
+			<para>
+				<emphasis>many servers may be used so the memory
+				is virtually unlimited</emphasis>
+			</para>
+			</listitem>
+
+			<listitem>
+			<para>
+				<emphasis>the cache is persistent so a restart
+				of the server will not affect the cache</emphasis>
+			</para>
+			</listitem>
+
+			<listitem>
+			<para>
+				<emphasis>memcached is an open-source project so
+				it can be used to exchange data
+				 with various other applicationsr</emphasis>
+			</para>
+			</listitem>
+
+			<listitem>
+			<para>
+				<emphasis>servers may be grouped together
+				(e.g. for security purposes : some can be
+				 inside a private network, some can be in
+				 a public one)</emphasis>
+			</para>
+			</listitem>
+
+		</itemizedlist>
+	</para>
+	<para>
+	</para>
+	</section>
+
+	<section>
+	<title>Limitations</title>
+	
+		
+		<para>
+			<itemizedlist>
+			<listitem>
+			<para>
+			<emphasis>
+		keys (in key:value pairs) may not contain spaces or control characters
+		</emphasis>
+			</para>
+			</listitem>
+
+		</itemizedlist>
+		</para>
+	</section>
+
 	<section>
 	<title>Dependencies</title>
 	<section>
