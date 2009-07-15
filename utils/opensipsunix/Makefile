@@ -1,4 +1,4 @@
-# $Id: Makefile 882 2006-05-30 15:31:09Z miconda $
+# $Id$
 #
 #  serunix Makefile
 # 
