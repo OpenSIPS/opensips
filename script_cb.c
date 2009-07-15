@@ -24,6 +24,8 @@
  *  2003-03-29  cleaning pkg allocation introduced (jiri)
  *  2003-03-19  replaced all mallocs/frees w/ pkg_malloc/pkg_free (andrei)
  *  2005-02-13  script callbacks devided into request and reply types (bogdan)
+ *  2009-05-21  keep the callback lists in the same order as callbacks 
+                 were registered (bogdan)
  */
 
 /*!
@@ -50,6 +52,7 @@ static unsigned int cb_id=0;
 static inline int add_callback( struct script_cb **list,
 	cb_function f, void *param)
 {
+	struct script_cb *last_cb;
 	struct script_cb *new_cb;
 
 	new_cb=pkg_malloc(sizeof(struct script_cb));
@@ -60,9 +63,16 @@ static inline int add_callback( struct script_cb **list,
 	new_cb->cbf = f;
 	new_cb->id = cb_id++;
 	new_cb->param = param;
-	/* link at the beginning of the list */
-	new_cb->next = *list;
-	*list = new_cb;
+	new_cb->next = NULL;
+	/* link at the end of the list - it is important to keep the order of
+	  register time, as this reflects the order of loading/init the modules 
+	  -bogdan */
+	if (*list==NULL) {
+		*list = new_cb;
+	} else {
+		for( last_cb=*list ; last_cb->next!=NULL ; last_cb=last_cb->next);
+		last_cb->next = new_cb;
+	}
 	return 0;
 }
 
