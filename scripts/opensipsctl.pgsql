@@ -1,5 +1,5 @@
 #
-# $Id: opensipsctl.pgsql 3519 2008-01-10 12:45:43Z henningw $
+# $Id$
 #
 # sc: opensips control; tool for maintaining opensips
 #

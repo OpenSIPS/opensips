@@ -1,4 +1,4 @@
-# $Id: opensipsdbctl.pgsql 4289 2008-06-02 10:28:42Z henningw $
+# $Id$
 #
 # Script for adding and dropping OpenSIPS Postgres tables
 #

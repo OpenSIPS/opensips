@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# $Id: opensipsctl 4448 2008-07-03 16:43:01Z henningw $
+# $Id$
 #
 # opensips control tool for maintaining opensips
 #
