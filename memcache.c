@@ -102,6 +102,7 @@ int register_memcache(memcache_t* cs_entry)
 	cs_node->cs.store = cs_entry->store;
 	cs_node->cs.remove = cs_entry->remove;
 	cs_node->cs.fetch = cs_entry->fetch;
+	cs_node->cs.data = cs_entry -> data;
 
 	cs_node->next = memcache_list;
 	memcache_list = cs_node;
@@ -132,7 +133,7 @@ int cache_store(str* memcache_system, str* attr, str* val,
 		return -1;
 	}
 
-	return cs->store(attr, val, expires);
+	return cs->store(attr, val, expires,cs->data);
 
 }
 
@@ -154,7 +155,7 @@ int cache_remove(str* memcache_system, str* attr)
 				memcache_system->len,memcache_system->s);
 		return -1;
 	}
-	cs->remove(attr);
+	cs->remove(attr,cs->data);
 
 	return 1;
 }
@@ -179,6 +180,6 @@ int cache_fetch(str* memcache_system, str* attr, str* val)
 	}
 	
 
-	return cs->fetch(attr, val);
+	return cs->fetch(attr, val,cs->data);
 }
 

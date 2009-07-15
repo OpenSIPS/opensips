@@ -1,5 +1,5 @@
 /*
- * $Id:$
+ * $Id$
  *
  * Copyright (C) 2009 Anca Vamanu
  *
@@ -29,15 +29,16 @@
 
 #include "str.h"
 
-typedef int (memcache_store_f)(str* name, str* value, unsigned int expires);
-typedef void (memcache_remove_f)(str* name);
-typedef int (memcache_fetch_f)(str* name, str* val);
+typedef int (memcache_store_f)(str* name, str* value, unsigned int expires,void *data);
+typedef void (memcache_remove_f)(str* name,void *data);
+typedef int (memcache_fetch_f)(str* name, str* val,void *data);
 
 typedef struct memcache {
 	str name;
 	memcache_store_f* store;
 	memcache_remove_f* remove;
 	memcache_fetch_f* fetch;
+	void *data;
 }memcache_t;
 
 

@@ -98,9 +98,10 @@ static int mod_init(void)
 	/* register the cache system */
 	ms.name.s = "local";
 	ms.name.len = 5;
-	ms.store = lcache_htable_insert;
+        ms.store = lcache_htable_insert;
 	ms.remove = lcache_htable_remove;
 	ms.fetch = lcache_htable_fetch;
+	ms.data = NULL;
 
 	if( register_memcache(&ms)< 0)
 	{

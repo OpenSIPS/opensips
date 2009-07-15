@@ -51,9 +51,9 @@ typedef struct lcache
 
 int lcache_htable_init(int size);
 void lcache_htable_destroy();
-int lcache_htable_insert(str* attr, str* value, unsigned int expires);
-void lcache_htable_remove(str* attr);
-int lcache_htable_fetch(str* attr, str* val);
+int lcache_htable_insert(str* attr, str* value, unsigned int expires,void *data);
+void lcache_htable_remove(str* attr,void* data);
+int lcache_htable_fetch(str* attr, str* val,void * data);
 
 
 #endif

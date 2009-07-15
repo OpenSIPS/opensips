@@ -95,7 +95,7 @@ void lcache_htable_destroy(void)
 	cache_htable = NULL;
 }
 
-int lcache_htable_insert(str* attr, str* value, unsigned int expires)
+int lcache_htable_insert(str* attr, str* value, unsigned int expires, void* data)
 {
 	lcache_entry_t* me, *it;
 	int hash_code;
@@ -162,7 +162,7 @@ void lcache_htable_remove_safe(str attr, lcache_entry_t** it_p)
 	LM_DBG("entry not found\n");
 }
 
-void lcache_htable_remove(str* attr)
+void lcache_htable_remove(str* attr,void * data)
 {
 	int hash_code;
 
@@ -180,7 +180,7 @@ void lcache_htable_remove(str* attr)
  *		-2 - if not found
  *		-1 - if error
  * */
-int lcache_htable_fetch(str* attr, str* res)
+int lcache_htable_fetch(str* attr, str* res,void * data)
 {
 	int hash_code;
 	lcache_entry_t* it = NULL, *it_aux = NULL;
