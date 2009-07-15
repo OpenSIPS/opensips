@@ -90,7 +90,7 @@
 # opensips standard modules
 # STANDARD_MODULES="standard acc lcr domain group permissions registrar usrloc msilo
 #                   alias_db uri_db speeddial avpops auth_db pdt dialog dispatcher
-#                   dialplan"
+#                   dialplan drouting nathelper load_balancer"
 
 # opensips extra modules
 # EXTRA_MODULES="imc cpl siptrace domainpolicy carrierroute userblacklist"
