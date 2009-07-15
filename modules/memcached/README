@@ -12,8 +12,8 @@ Andrei Dragus
 
    Copyright © 2009 Andrei Dragus
    Revision History
-   Revision $Revision$ $Date: 2009-07-14 00:16:22 +0300
-                              (Tue, 14 Jul 2009) $
+   Revision $Revision$ $Date: 2009-07-15 13:21:26 +0300
+                              (Wed, 15 Jul 2009) $
      __________________________________________________________
 
    Table of Contents
@@ -21,15 +21,17 @@ Andrei Dragus
    1. Admin Guide
 
         1.1. Overview
-        1.2. Dependencies
+        1.2. Advantages
+        1.3. Limitations
+        1.4. Dependencies
 
-              1.2.1. OpenSIPS Modules
-              1.2.2. External Libraries or Applications
+              1.4.1. OpenSIPS Modules
+              1.4.2. External Libraries or Applications
 
-        1.3. Exported Parameters
+        1.5. Exported Parameters
 
-              1.3.1. server (string)
-              1.3.2. Exported Functions
+              1.5.1. server (string)
+              1.5.2. Exported Functions
 
    List of Examples
 
@@ -46,13 +48,31 @@ Chapter 1. Admin Guide
    data. It registers the three functions for storing, fetching
    and removing a value to the core memcache management interface.
 
-1.2. Dependencies
+1.2. Advantages
 
-1.2.1. OpenSIPS Modules
+     * memory costs are no longer on the server
+     * many servers may be used so the memory is virtually
+       unlimited
+     * the cache is persistent so a restart of the server will not
+       affect the cache
+     * memcached is an open-source project so it can be used to
+       exchange data with various other applicationsr
+     * servers may be grouped together (e.g. for security purposes
+       : some can be inside a private network, some can be in a
+       public one)
+
+1.3. Limitations
+
+     * keys (in key:value pairs) may not contain spaces or control
+       characters
+
+1.4. Dependencies
+
+1.4.1. OpenSIPS Modules
 
    None.
 
-1.2.2. External Libraries or Applications
+1.4.2. External Libraries or Applications
 
    The following libraries or applications must be installed
    before running OpenSIPS with this module loaded:
@@ -70,9 +90,9 @@ Chapter 1. Admin Guide
        sudo make install
        ...
 
-1.3. Exported Parameters
+1.5. Exported Parameters
 
-1.3.1. server (string)
+1.5.1. server (string)
 
    The names of the servers to connect to. It can be set more than
    one time. Each value represents a group of servers to connect
@@ -95,7 +115,7 @@ cache_fetch("memcached_y","key",$avp(i:10));
 cache_remove("memcached_group1","key");
 ...
 
-1.3.2. Exported Functions
+1.5.2. Exported Functions
 
    The module does not export functions to be used in
    configuration script.
