@@ -1066,7 +1066,14 @@ int t_newtran( struct sip_msg* p_msg )
 	/* from now on, be careful -- hash table is locked */
 
 	if (lret==-2) { /* was it an e2e ACK ? if so, trigger a callback */
-		LM_DBG("building branch for end2end ACK\n");
+		if (e2eack_T->relaied_reply_branch==-2) {
+			/* if a ACK for a local replied transaction, release the
+			 INVITE transaction and break the script -> simply absorb
+			 the ACK request */
+			t_release_transaction(e2eack_T);
+			return 0;
+		}
+		LM_DBG("building branch for end2end ACK - flags=%X\n",e2eack_T->flags);
 		/* to ensure unigueness acros time and space, compute the ACK 
 		 * branch in the same maner as for INVITE, but put a t->branch 
 		 * value that cannot exist for that INVITE - as it is compute as 
