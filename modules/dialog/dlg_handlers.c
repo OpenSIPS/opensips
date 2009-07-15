@@ -432,6 +432,7 @@ static void unreference_dialog_create(void *dialog)
 {
 	struct tmcb_params params;
 
+	memset(&params, 0, sizeof(struct tmcb_params));
 	params.param = (void*)&dialog;
 	/* just a wapper */
 	dlg_onreply( 0, TMCB_TRANS_DELETED, &params);
