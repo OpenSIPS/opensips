@@ -520,6 +520,8 @@ static int do_t_cleanup( struct sip_msg *foo, void *bar)
 	if (t!=NULL && t!=T_UNDEFINED)
 		t_unref_cell(t);
 
+	reset_e2eack_t();
+
 	return t_unref(foo);
 }
 

@@ -1365,6 +1365,8 @@ int reply_received( struct sip_msg  *p_msg )
 	struct usr_avp **backup_list;
 	unsigned int reply_route;
 
+	set_t(T_UNDEFINED);
+
 	/* make sure we know the associated transaction ... */
 	if (t_check(p_msg, &branch ) == -1) goto not_found;
 
