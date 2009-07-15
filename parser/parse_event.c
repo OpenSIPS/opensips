@@ -132,10 +132,8 @@ int event_parser(char* _s, int _l, event_t* _e)
 	if( (*end)== ';')
 	{
 		str params_str;
-		params_str.s= end+1;
-		end= skip_token(params_str.s, tmp.len- _e->text.len- 1);
-		
-		params_str.len= end- params_str.s;
+		params_str.s = end+1;
+		params_str.len = tmp.len- _e->text.len- 1;
 
 		if (parse_params(&params_str, CLASS_ANY, &phooks, &_e->params)<0)
 			return -1;
