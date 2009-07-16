@@ -1,5 +1,5 @@
 /*
- * $Id: xcap_functions.c 2230 2007-06-06 07:13:20Z anca_vamanu $
+ * $Id$
  *
  * xcap_client module - XCAP client for OpenSIPS
  *

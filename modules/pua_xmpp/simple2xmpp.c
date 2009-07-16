@@ -1,5 +1,5 @@
 /*
- * $Id: simple2xmpp.c 1666 2007-03-02 13:40:09Z anca_vamanu $
+ * $Id$
  *
  * pua_xmpp module - presence SIP - XMPP Gateway
  *

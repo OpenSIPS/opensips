@@ -1,5 +1,5 @@
 /*
- * $Id: presence_dialoginfo.c $
+ * $Id$
  *
  * presence_dialoginfo module - Presence Handling of dialog events
  *

@@ -1,4 +1,4 @@
-# $Id: Makefile 1133 2006-10-02 17:31:13Z bogdan_iancu $
+# $Id$
 #
 # example module makefile
 #

@@ -1,5 +1,5 @@
 /*
- * $Id: notify_body.c 1337 2006-12-07 18:05:05Z bogdan_iancu $
+ * $Id$
  *
  * presence_xml module -  
  *

@@ -1,5 +1,5 @@
 /*
- * $Id: rfc2617.c 2 2005-06-13 16:47:24Z bogdan_iancu $
+ * $Id$
  *
  * Digest response calculation as per RFC2617
  *

@@ -1,5 +1,5 @@
 /*
- * $Id: dr_load.h,v 1.1.1.1 2007/05/09 11:25:33 bogdan Exp $
+ * $Id$
  *
  * Copyright (C) 2005-2008 Voice Sistem SRL
  *

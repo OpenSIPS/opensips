@@ -1,5 +1,5 @@
 /*
- * $Id: benchmark_api.h 944 2007-04-11 12:43:49Z bastian $
+ * $Id$
  *
  * Benchmarking module for OpenSIPS
  *

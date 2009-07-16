@@ -1,5 +1,5 @@
 /*
- * $Id: benchmark.c 941 2007-04-11 12:37:21Z bastian $
+ * $Id$
  *
  * Benchmarking module for OpenSIPS
  *

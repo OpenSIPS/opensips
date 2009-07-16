@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.2 2005/10/25 16:23:28 bogdan_iancu Exp $
+# $Id$
 #
 # PUBLISH
 #

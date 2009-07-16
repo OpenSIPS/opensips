@@ -1,5 +1,5 @@
 /*
- * $Id:$
+ * $Id$
  *
  * Nonce index  related functions
  *

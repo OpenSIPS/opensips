@@ -1,5 +1,5 @@
 /*
- * $Id: bind_presence.h 1979 2007-04-06 13:24:12Z anca_vamanu $
+ * $Id$
  *
  * presence module - presence server implementation
  *

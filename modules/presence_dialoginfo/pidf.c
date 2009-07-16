@@ -1,5 +1,5 @@
 /*
- * $Id: pidf.c $
+ * $Id$
  *
  * presence_dialoginfo module
  *

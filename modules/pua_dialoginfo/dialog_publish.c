@@ -1,5 +1,5 @@
 /*
- * $Id: dialog_publish.c $
+ * $Id$
  *
  * pua_dialoginfo module - sending publish with dialog info from dialog module
  * 

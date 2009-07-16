@@ -1,5 +1,5 @@
 /*
- * $Id: opensipsxs.xs 3557 2008-01-20 19:40:20Z bogdan_iancu $
+ * $Id$
  *
  * Perl module for OpenSIPS
  *

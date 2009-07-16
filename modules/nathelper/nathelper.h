@@ -1,4 +1,4 @@
-/* $Id: nathelper.c 1808 2007-03-10 17:36:19Z bogdan_iancu $
+/* $Id$
  *
  * Copyright (C) 2003-2008 Sippy Software, Inc., http://www.sippysoft.com
  *

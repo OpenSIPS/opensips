@@ -1,4 +1,4 @@
-# $Id: Makefile 1619 2007-02-12 18:17:05Z bogdan_iancu $
+# $Id$
 #
 # PUA_BLA
 #

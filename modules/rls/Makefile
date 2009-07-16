@@ -1,4 +1,4 @@
-# $Id: Makefile 1856 2007-03-15 21:06:00Z  $
+# $Id$
 #
 # Resource List Server
 #

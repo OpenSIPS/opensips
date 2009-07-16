@@ -1,5 +1,5 @@
 /*
- * $Id: event_list.c  2007-05-03 15:05:20Z anca_vamanu $
+ * $Id$
  *
  * pua module - presence user agent module
  *

@@ -1,4 +1,4 @@
-/* $Id: call_control.c 1 2008-12-18 17:15:02Z dan $ *
+/* $Id$ *
  *
  * Copyright (C) 2005-2008 Dan Pascu
  *

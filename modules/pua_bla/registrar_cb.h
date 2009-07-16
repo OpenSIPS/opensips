@@ -1,5 +1,5 @@
 /*
- * $Id: pua_bla.c 1666 2007-03-02 13:40:09Z anca_vamanu $
+ * $Id$
  *
  * pua_bla module - pua Bridged Line Appearance
  *

@@ -1,5 +1,5 @@
 /*
- * $Id: dr_time.c,v 1.2 2007/07/24 17:33:26 bogdan Exp $
+ * $Id$
  *
  * Copyright (C) 2001-2003 FhG Fokus
  *

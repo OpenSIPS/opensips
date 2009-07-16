@@ -1,5 +1,5 @@
 /* 
- * $Id: add_events.c $
+ * $Id$
  *
  * Add "dialog" event to presence module
  *
