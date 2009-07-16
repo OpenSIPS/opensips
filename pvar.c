@@ -1,5 +1,5 @@
 /**
- * $Id: items.c 2715 2007-09-05 15:31:50Z miconda $
+ * $Id$
  *
  * Copyright (C) 2001-2003 FhG Fokus
  * Copyright (C) 2005 Voice Sistem SRL

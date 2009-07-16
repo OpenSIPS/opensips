@@ -1,5 +1,5 @@
 /*
- * $Id: sctp_server.h 1827 2007-03-12 15:22:53Z bogdan_iancu $
+ * $Id$
  *
  * Copyright (C) 2001-2003 FhG Fokus
  *
