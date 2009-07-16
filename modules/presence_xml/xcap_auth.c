@@ -278,9 +278,13 @@ xmlNodePtr get_rule_node(subs_t* subs, xmlDocPtr xcap_tree )
 				xmlFree(attr);
 	
 			}
-				
-			/* if the user has not define a sphere -> 
-			 *						consider the condition true*/
+			else
+			{
+				LM_DBG("Noo sphere definition found\n");
+				continue;
+			}
+			/* if the user has not define a sphere
+			 *						consider the condition false*/
 		}
 
 		identity_node = xmlNodeGetChildByName(cond_node, "identity");
