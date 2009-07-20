@@ -112,6 +112,7 @@ stat_export_t net_stats[] = {
 
 /*************************** PKG statistics *********************************/
 
+#ifdef PKG_MALLOC
 static pkg_status_holder *pkg_status = NULL;
 static time_t *marker_t = NULL;
 static int no_pkg_status = 0;
@@ -237,4 +238,6 @@ int init_pkg_stats(int no_procs)
 
 	return 0;
 }
-#endif
+#endif /* PKG */
+
+#endif /* STATISTICS */

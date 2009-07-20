@@ -80,17 +80,17 @@ int init_pkg_mallocs(void)
 
 
 
+#if defined(PKG_MALLOC) && defined(STATISTICS)
 void set_pkg_stats(pkg_status_holder *status)
 {
-#ifdef STATISTICS
 	status[0][PKG_TOTAL_SIZE_IDX] = MY_PKG_GET_SIZE();
 	status[0][PKG_USED_SIZE_IDX] = MY_PKG_GET_USED();
 	status[0][PKG_REAL_USED_SIZE_IDX] = MY_PKG_GET_RUSED();
 	status[0][PKG_MAX_USED_SIZE_IDX] = MY_PKG_GET_MUSED();
 	status[0][PKG_FREE_SIZE_IDX] = MY_PKG_GET_FREE();
 	status[0][PKG_FRAGMENTS_SIZE_IDX] = MY_PKG_GET_FRAGS();
-#endif
 }
+#endif
 
 
 

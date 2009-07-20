@@ -483,7 +483,9 @@ void handle_sigs(void)
 			break;
 			
 		case SIGUSR2:
+#ifdef PKG_MALLOC
 			set_pkg_stats( get_pkg_status_holder(process_no) );
+#endif
 			break;
 			
 		case SIGCHLD:
@@ -585,7 +587,9 @@ static void sig_usr(int signo)
 					#endif
 					break;
 			case SIGUSR2:
+					#ifdef PKG_MALLOC
 					set_pkg_stats( get_pkg_status_holder(process_no) );
+					#endif
 					break;
 			case SIGHUP:
 					/* ignored*/
@@ -1320,11 +1324,13 @@ try_again:
 		goto error;
 	}
 
+	#ifdef PKG_MALLOC
 	/* init stats support for pkg mem */
 	if (init_pkg_stats(counted_processes)!=0) {
 		LM_ERR("failed to init stats for pkg\n");
 		goto error;
 	}
+	#endif
 
 	/* fix routing lists */
 	if ( (r=fix_rls())!=0){

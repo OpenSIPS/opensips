@@ -71,6 +71,9 @@
 typedef unsigned long pkg_status_holder[6];
 #endif
 
+void set_pkg_stats(pkg_status_holder*);
+
+
 #	ifdef DBG_QM_MALLOC
 #ifdef __SUNPRO_C
 		#define __FUNCTION__ ""  /* gcc specific */
@@ -163,6 +166,5 @@ void sys_free(void *, const char *, const char *, int);
 int init_pkg_mallocs();
 int init_shm_mallocs();
 
-void set_pkg_stats(pkg_status_holder*);
 
 #endif
