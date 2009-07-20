@@ -332,14 +332,15 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 	request->buffer.s = buf;
 	request->buffer.len = buf_len;
 	new_cell->nr_of_outgoings++;
-	
+
 	if (SEND_BUFFER(request) == -1) {
 		LM_ERR("attempt to send to '%.*s' failed\n", 
 			dialog->hooks.next_hop->len,
 			dialog->hooks.next_hop->s);
 	}
-	
-	start_retr(request);
+
+	if (method->len!=ACK_LEN || memcmp(method->s, ACK, ACK_LEN) )
+		start_retr(request);
 	return 1;
 
 error1:
