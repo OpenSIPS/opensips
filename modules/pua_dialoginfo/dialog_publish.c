@@ -52,10 +52,10 @@ void print_publ(publ_info_t* p)
 	LM_DBG("uri= %.*s\n", p->pres_uri->len, p->pres_uri->s);
 	LM_DBG("id= %.*s\n", p->id.len, p->id.s);
 	LM_DBG("expires= %d\n", p->expires);
-}	
+}
 
-str* build_dialoginfo(char *state, str *entity, str *peer, str *callid, 
-	unsigned int initiator, str *localtag, str *remotetag)
+str* build_dialoginfo(char *state, struct to_body *entity, struct to_body *peer,
+		str *callid, unsigned int initiator, str *localtag, str *remotetag)
 {
 	xmlDocPtr  doc = NULL; 
 	xmlNodePtr root_node = NULL;
@@ -67,12 +67,13 @@ str* build_dialoginfo(char *state, str *entity, str *peer, str *callid,
 	str *body= NULL;
 	char buf[MAX_URI_SIZE+1];
 
-	if (entity->len > MAX_URI_SIZE) {
-		LM_ERR("entity URI '%.*s' too long, maximum=%d\n",entity->len, entity->s, MAX_URI_SIZE);
+	if (entity->uri.len > MAX_URI_SIZE) {
+		LM_ERR("entity URI '%.*s' too long, maximum=%d\n",entity->uri.len,
+				entity->uri.s, MAX_URI_SIZE);
 		return NULL;
 	}
-    memcpy(buf, entity->s, entity->len);
-	buf[entity->len]= '\0';
+    memcpy(buf, entity->uri.s, entity->uri.len);
+	buf[entity->uri.len]= '\0';
 
 	/* create the Publish body  */
 	doc = xmlNewDoc(BAD_CAST "1.0");
@@ -168,12 +169,12 @@ str* build_dialoginfo(char *state, str *entity, str *peer, str *callid,
 			goto error;
 		}
 
-		if (peer->len > MAX_URI_SIZE) {
-			LM_ERR("peer '%.*s' too long, maximum=%d\n", peer->len, peer->s, MAX_URI_SIZE);
+		if (peer->uri.len > MAX_URI_SIZE) {
+			LM_ERR("peer '%.*s' too long, maximum=%d\n", peer->uri.len, peer->uri.s, MAX_URI_SIZE);
 			return NULL;
 		}
-    	memcpy(buf, peer->s, peer->len);
-		buf[peer->len]= '\0';
+    	memcpy(buf, peer->uri.s, peer->uri.len);
+		buf[peer->uri.len]= '\0';
 
 		tag_node = xmlNewChild(remote_node, NULL, BAD_CAST "identity", BAD_CAST buf) ;
 		if( tag_node ==NULL)
@@ -181,6 +182,20 @@ str* build_dialoginfo(char *state, str *entity, str *peer, str *callid,
 			LM_ERR("while adding child\n");
 			goto error;
 		}
+		/* if a display name present - add the display name information */
+		if(peer->display.s)
+		{
+			if(peer->display.len > MAX_URI_SIZE)
+			{
+				LM_ERR("display '%.*s' too long, maximum=%d\n", peer->display.len,
+						peer->display.s, MAX_URI_SIZE);
+				return NULL;
+			}
+			memcpy(buf, peer->display.s, peer->display.len);
+			buf[peer->display.len] = '\0';
+			xmlNewProp(tag_node, BAD_CAST "display", BAD_CAST buf);
+		}
+
 		tag_node = xmlNewChild(remote_node, NULL, BAD_CAST "target", NULL) ;
 		if( tag_node ==NULL)
 		{
@@ -189,7 +204,7 @@ str* build_dialoginfo(char *state, str *entity, str *peer, str *callid,
 		}
 		xmlNewProp(tag_node, BAD_CAST "uri", BAD_CAST buf);
 
-		/* local tag*/	
+		/* local tag */
 		local_node = xmlNewChild(dialog_node, NULL, BAD_CAST "local", NULL) ;
 		if( local_node ==NULL)
 		{
@@ -197,12 +212,8 @@ str* build_dialoginfo(char *state, str *entity, str *peer, str *callid,
 			goto error;
 		}
 
-		if (entity->len > MAX_URI_SIZE) {
-			LM_ERR("entity '%.*s' too long, maximum=%d\n", entity->len, entity->s, MAX_URI_SIZE);
-			return NULL;
-		}
-    	memcpy(buf, entity->s, entity->len);
-		buf[entity->len]= '\0';
+		memcpy(buf, entity->uri.s, entity->uri.len);
+		buf[entity->uri.len]= '\0';
 
 		tag_node = xmlNewChild(local_node, NULL, BAD_CAST "identity", BAD_CAST buf) ;
 		if( tag_node ==NULL)
@@ -210,6 +221,20 @@ str* build_dialoginfo(char *state, str *entity, str *peer, str *callid,
 			LM_ERR("while adding child\n");
 			goto error;
 		}
+		/* if a display name present - add the display name information */
+		if(entity->display.s)
+		{
+			if(entity->display.len > MAX_URI_SIZE)
+			{
+				LM_ERR("display '%.*s' too long, maximum=%d\n", entity->display.len,
+						entity->display.s, MAX_URI_SIZE);
+				return NULL;
+			}
+			memcpy(buf, entity->display.s, entity->display.len);
+			buf[entity->display.len] = '\0';
+			xmlNewProp(tag_node, BAD_CAST "display", BAD_CAST buf);
+		}
+
 		tag_node = xmlNewChild(local_node, NULL, BAD_CAST "target", NULL) ;
 		if( tag_node ==NULL)
 		{
@@ -248,22 +273,19 @@ error:
 	if(doc)
 		xmlFreeDoc(doc);
 	return NULL;
-}	
+}
 
-void dialog_publish(char *state, str *entity, str *peer, str *callid, 
+void dialog_publish(char *state, struct to_body* entity, struct to_body *peer, str *callid,
 	unsigned int initiator, unsigned int lifetime, str *localtag, str *remotetag)
 {
 	str* body= NULL;
 	publ_info_t publ;
-    struct sip_uri entity_uri;
 
 	/* send PUBLISH only if the receiver (entity, RURI) is local*/
-	if (parse_uri(entity->s, entity->len, &entity_uri) < 0) {
-		LM_ERR("failed to parse the entity URI\n");
-		return;
-	}
-	if (!check_self(&(entity_uri.host), 0, 0)) {
-		LM_DBG("do not send PUBLISH to external URI %.*s\n",entity->len, entity->s);
+	
+	if (!check_self(&(entity->parsed_uri.host), 0, 0)) {
+		LM_DBG("do not send PUBLISH to external URI %.*s\n",
+				entity->uri.len, entity->uri.s);
 		return;
 	}
 
@@ -276,7 +298,7 @@ void dialog_publish(char *state, str *entity, str *peer, str *callid,
 	
 	memset(&publ, 0, sizeof(publ_info_t));
 
-	publ.pres_uri= entity;
+	publ.pres_uri= &entity->uri;
 	publ.body = body;
 
 	publ.id.s = (char*)pkg_malloc(15/* DIALOG_PUBLISH. */ + callid->len);

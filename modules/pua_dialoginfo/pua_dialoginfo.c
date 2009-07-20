@@ -43,6 +43,7 @@
 #include "../../str.h"
 #include "../../mem/mem.h"
 #include "../../pt.h"
+#include "../../parser/parse_from.h"
 #include "../dialog/dlg_load.h"
 #include "../dialog/dlg_hash.h"
 #include "../pua/pua_bind.h"
@@ -213,20 +214,34 @@ static void
 __dialog_sendpublish(struct dlg_cell *dlg, int type, struct dlg_cb_params *_params)
 {
 	str tag = {0,0};
+	struct to_body to, from;
+
+	if(_params->msg)
+	{
+		to = *get_to(_params->msg);
+		from = *get_from(_params->msg);
+	}
+	else
+	{
+		memset(&to, 0, sizeof(struct to_body));
+		memset(&from, 0, sizeof(struct to_body));
+		to.uri = dlg->to_uri;
+		from.uri = dlg->from_uri;
+	}
 
 	switch (type) {
 	case DLGCB_FAILED:
 	case DLGCB_TERMINATED:
 	case DLGCB_EXPIRED:
 		LM_DBG("dialog over, from=%.*s\n", dlg->from_uri.len, dlg->from_uri.s);
-		dialog_publish("terminated", &(dlg->from_uri), &(dlg->to_uri), &(dlg->callid), 1, dlg->lifetime, 0, 0);
-		dialog_publish("terminated", &(dlg->to_uri), &(dlg->from_uri), &(dlg->callid), 0, dlg->lifetime, 0, 0);
+		dialog_publish("terminated", &from, &to, &(dlg->callid), 1, dlg->lifetime, 0, 0);
+		dialog_publish("terminated", &to, &from, &(dlg->callid), 0, dlg->lifetime, 0, 0);
 		break;
 	case DLGCB_CONFIRMED:
 	case DLGCB_REQ_WITHIN:
 		LM_DBG("dialog confirmed, from=%.*s\n", dlg->from_uri.len, dlg->from_uri.s);
-		dialog_publish("confirmed", &(dlg->from_uri), &(dlg->to_uri), &(dlg->callid), 1, dlg->lifetime, 0, 0);
-		dialog_publish("confirmed", &(dlg->to_uri), &(dlg->from_uri), &(dlg->callid), 0, dlg->lifetime, 0, 0);
+		dialog_publish("confirmed", &from, &to, &(dlg->callid), 1, dlg->lifetime, 0, 0);
+		dialog_publish("confirmed", &to, &from, &(dlg->callid), 0, dlg->lifetime, 0, 0);
 		break;
 	case DLGCB_EARLY:
 		LM_DBG("dialog is early, from=%.*s\n", dlg->from_uri.len, dlg->from_uri.s);
@@ -245,24 +260,24 @@ __dialog_sendpublish(struct dlg_cell *dlg, int type, struct dlg_cb_params *_para
 				}
 			}
 			if (caller_confirmed) {
-				dialog_publish("confirmed", &(dlg->from_uri), &(dlg->to_uri), &(dlg->callid), 1, dlg->lifetime, &(dlg->tag[0]), &tag);
+				dialog_publish("confirmed", &from, &to, &(dlg->callid), 1, dlg->lifetime, &(dlg->tag[0]), &tag);
 			} else {
-				dialog_publish("early", &(dlg->from_uri), &(dlg->to_uri), &(dlg->callid), 1, dlg->lifetime, &(dlg->tag[0]), &tag);
+				dialog_publish("early", &from, &to, &(dlg->callid), 1, dlg->lifetime, &(dlg->tag[0]), &tag);
 			}
-			dialog_publish("early", &(dlg->to_uri), &(dlg->from_uri), &(dlg->callid), 0, dlg->lifetime, &tag, &(dlg->tag[0]));
+			dialog_publish("early", &to, &from, &(dlg->callid), 0, dlg->lifetime, &tag, &(dlg->tag[0]));
 		} else {
 			if (caller_confirmed) {
-				dialog_publish("confirmed", &(dlg->from_uri), &(dlg->to_uri), &(dlg->callid), 1, dlg->lifetime, 0, 0);
+				dialog_publish("confirmed", &from, &to, &(dlg->callid), 1, dlg->lifetime, 0, 0);
 			} else {
-				dialog_publish("early", &(dlg->from_uri), &(dlg->to_uri), &(dlg->callid), 1, dlg->lifetime, 0, 0);
+				dialog_publish("early", &from, &to, &(dlg->callid), 1, dlg->lifetime, 0, 0);
 			}
-			dialog_publish("early", &(dlg->to_uri), &(dlg->from_uri), &(dlg->callid), 0, dlg->lifetime, 0, 0);
+			dialog_publish("early", &to, &from, &(dlg->callid), 0, dlg->lifetime, 0, 0);
 		}
 		break;
 	default:
 		LM_ERR("unhandled dialog callback type %d received, from=%.*s\n", type, dlg->from_uri.len, dlg->from_uri.s);
-		dialog_publish("terminated", &(dlg->from_uri), &(dlg->to_uri), &(dlg->callid), 1, dlg->lifetime, 0, 0);
-		dialog_publish("terminated", &(dlg->to_uri), &(dlg->from_uri), &(dlg->callid), 0, dlg->lifetime, 0, 0);
+		dialog_publish("terminated", &from, &to, &(dlg->callid), 1, dlg->lifetime, 0, 0);
+		dialog_publish("terminated", &to, &from, &(dlg->callid), 0, dlg->lifetime, 0, 0);
 	}
 }
 
@@ -346,7 +361,7 @@ int dialoginfo_set(struct sip_msg* msg, char* str1, char* str2)
 	}
 #endif
 
-	dialog_publish("Trying", &(dlg->from_uri), &(dlg->to_uri), &(dlg->callid), 1, DEFAULT_CREATED_LIFETIME, 0, 0);
+	dialog_publish("Trying", get_from(msg), get_to(msg), &(dlg->callid), 1, DEFAULT_CREATED_LIFETIME, 0, 0);
 
 	return 0;
 }
