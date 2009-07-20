@@ -179,7 +179,7 @@ int db_postgres_val2str(const db_con_t* _con, const db_val_t* _v,
 	}
 
 	if (VAL_NULL(_v)) {
-		if ( *_len < (l=(int)sizeof("NULL"))) {
+		if ( *_len < (l=(int)sizeof("NULL")-1)) {
 			LM_ERR("buffer too short to print NULL\n");
 			return -1;
 		}
