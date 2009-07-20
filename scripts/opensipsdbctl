@@ -1,6 +1,6 @@
 #!/bin/bash 
 #
-# $Id: opensipsdbctl 3997 2008-04-09 15:46:09Z yjh-styx $
+# $Id$
 #
 # opensips control tool for maintaining opensips databases
 #

@@ -1,6 +1,6 @@
 #! /bin/sh
 #
-# $Id: opensips.postinst 1066 2006-08-06 08:12:47Z jblache $
+# $Id$
 
 PKG=opensips
 DEFAULTS=/etc/default/opensips

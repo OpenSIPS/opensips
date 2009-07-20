@@ -1,5 +1,5 @@
 #
-# $Id: opensipsdbctl.db_berkeley 3322 2007-12-12 12:42:13Z henningw $
+# $Id$
 #
 # Script for maintaining OpenSIPS Berkeley DB tables
 # Copyright (C) 2007 Cisco Systems

@@ -1,5 +1,5 @@
 /*
- * $Id: opensipsunix.c 3954 2008-03-27 19:15:18Z osas $
+ * $Id$
  *
  * Copyright (C) 2004 FhG FOKUS
  *
