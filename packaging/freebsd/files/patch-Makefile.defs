@@ -1,6 +1,6 @@
---- Makefile.defs.orig	Thu Dec 13 18:56:53 2007
-+++ Makefile.defs	Thu Dec 13 20:31:40 2007
-@@ -135,7 +135,7 @@
+--- Makefile.defs.orig	Wed Jul 15 21:24:40 2009
++++ Makefile.defs	Sat Jul 18 01:09:50 2009
+@@ -164,7 +164,7 @@
  ifeq ($(ARCH_B),64b)
  	LIBDIR ?= lib64
  else
@@ -9,12 +9,12 @@
  	# assume 32b - it is not really used further
  	ARCH_B=32b
  endif
-@@ -228,13 +228,13 @@
+@@ -257,13 +257,13 @@
  TAR ?= tar
  endif
  
 -INSTALL_TOUCH = touch          # used to create the file first (good to 
-+INSTALL_TOUCH = :          # used to create the file first (good to 
++INSTALL_TOUCH = :              # used to create the file first (good to 
                                 #  make solaris install work)
 -INSTALL_CFG = $(INSTALL) -m 644
 -INSTALL_BIN = $(INSTALL) -m 755
@@ -29,11 +29,92 @@
  
  #set some vars from the environment (and not make builtins)
  CC   := $(shell echo "$${CC}")
-@@ -1254,8 +1254,8 @@
+@@ -636,7 +636,7 @@
+ 		# if gcc 
+ ifeq		($(CC_NAME), gcc)
+ 				#common stuff
+-				CFLAGS+=-O9 -funroll-loops  -Wcast-align $(PROFILE) \
++				CFLAGS+=-funroll-loops  -Wcast-align $(PROFILE) \
+ 					-Wall 
+ 			#if gcc 4.0+
+ ifeq			($(CC_CLASS), 4.x)
+@@ -704,7 +704,7 @@
+ 		# if gcc 
+ ifeq		($(CC_NAME), gcc)
+ 				#common stuff
+-				CFLAGS+=-O9 -funroll-loops  -Wcast-align $(PROFILE) \
++				CFLAGS+=-funroll-loops  -Wcast-align $(PROFILE) \
+ 					-Wall 
+ 			#if gcc 4.0+
+ ifeq			($(CC_CLASS), 4.x)
+@@ -757,7 +757,7 @@
+ 			#if gcc
+ ifeq		($(CC_NAME), gcc)
+ 				#common stuff
+-				CFLAGS+=-O9 -funroll-loops  $(PROFILE) \
++				CFLAGS+=-funroll-loops  $(PROFILE) \
+ 					-Wall\
+ 					#-Wcast-align \
+ 					#-Wmissing-prototypes 
+@@ -898,7 +898,7 @@
+ 		# if gcc 
+ ifeq		($(CC_NAME), gcc)
+ 				#common stuff
+-				CFLAGS+=-O9 -funroll-loops  -Wcast-align $(PROFILE) \
++				CFLAGS+=-funroll-loops  -Wcast-align $(PROFILE) \
+ 					-Wall   
+ 			#if gcc 4.x+
+ ifeq			($(CC_CLASS), 4.x)
+@@ -934,7 +934,7 @@
+ 		# if gcc 
+ ifeq		($(CC_NAME), gcc)
+ 				#common stuff
+-				CFLAGS+=-O9 -funroll-loops  -Wcast-align $(PROFILE) \
++				CFLAGS+=-funroll-loops  -Wcast-align $(PROFILE) \
+ 					-Wall 
+ 			#if gcc 4.0+
+ ifeq			($(CC_CLASS), 4.x)
+@@ -971,7 +971,7 @@
+ 		# if gcc 
+ ifeq		($(CC_NAME), gcc)
+ 				#common stuff
+-				CFLAGS+=-O9 -mips2 -funroll-loops $(PROFILE) \
++				CFLAGS+=-mips2 -funroll-loops $(PROFILE) \
+ 					-Wall 
+ 			#if gcc 4.0+
+ ifeq			($(CC_CLASS), 4.x)
+@@ -1005,7 +1005,7 @@
+ 		# if gcc 
+ ifeq		($(CC_NAME), gcc)
+ 				#common stuff
+-				CFLAGS+=-O9 -funroll-loops $(PROFILE)  -Wall 
++				CFLAGS+=-funroll-loops $(PROFILE)  -Wall 
+ 			#if gcc 4.0+
+ ifeq			($(CC_CLASS), 4.x)
+ 					CFLAGS+=-minline-all-stringops
+@@ -1038,7 +1038,7 @@
+ 		# if gcc 
+ ifeq		($(CC_NAME), gcc)
+ 				#common stuff
+-				CFLAGS+=-O9 -funroll-loops $(PROFILE)  -Wall 
++				CFLAGS+=-funroll-loops $(PROFILE)  -Wall 
+ 			#if gcc 4.0+
+ ifeq			($(CC_CLASS), 4.x)
+ 					CPU_TYPE ?= powerpc
+@@ -1073,7 +1073,7 @@
+ 		# if gcc 
+ ifeq		($(CC_NAME), gcc)
+ 				#common stuff
+-				CFLAGS+=-O9 -funroll-loops $(PROFILE)  -Wall 
++				CFLAGS+=-funroll-loops $(PROFILE)  -Wall 
+ ifeq			($(CC_CLASS), 4.x)
+ 					CPU_TYPE ?= powerpc64
+ 					CFLAGS+=-ftree-vectorize \
+@@ -1397,8 +1397,8 @@
  
  #add libssl if needed
  ifneq ($(TLS),)
--DEFS+= -I$(LOCALBASE)/ssl/include -I$(LOCALBASE)/include
+-DEFS+= -I$(LOCALBASE)/ssl/include -I$(LOCALBASE)/include -I$(SYSBASE)/include/openssl
 -LIBS+= -L$(LOCALBASE)/lib -L$(LOCALBASE)/ssl/lib -lssl  -lcrypto
 +DEFS+= -I$(OPENSSLINC)
 +LIBS+= -L$(OPENSSLLIB) -lssl  -lcrypto

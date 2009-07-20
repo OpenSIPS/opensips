@@ -1,5 +1,5 @@
---- modules/mysql/Makefile.orig	Thu Dec 13 20:15:16 2007
-+++ modules/mysql/Makefile	Thu Dec 13 20:15:20 2007
+--- modules/db_mysql/Makefile.orig	Wed Jul 15 20:51:22 2009
++++ modules/db_mysql/Makefile	Sat Jul 18 00:34:15 2009
 @@ -8,7 +8,7 @@
  
  # set CROSS_COMPILE to true if you want to skip

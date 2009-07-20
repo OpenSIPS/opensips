@@ -6,7 +6,7 @@
 #
 
 PORTNAME=	opensips
-PORTVERSION=	1.3.0
+PORTVERSION=	1.5.2
 CATEGORIES=	net
 MASTER_SITES=	http://opensips.org/pub/opensips/${PORTVERSION}/src/
 DISTNAME=	${PORTNAME}-${PORTVERSION}-tls_src
@@ -34,8 +34,8 @@ PLIST_FILES=	sbin/opensips sbin/opensipsctl sbin/opensipsdbctl sbin/opensipsunix
 PLIST_DIRS=	lib/opensips/modules lib/opensips/opensipsctl lib/opensips
 
 MODULES=	acc alias_db auth auth_db auth_diameter avpops benchmark \
-		cfgutils dbtext dialog dispatcher diversion domain \
-		domainpolicy enum exec flatstore gflags group imc lcr \
+		cfgutils db_text dialog dispatcher diversion domain \
+		domainpolicy enum exec db_flatstore gflags group imc lcr \
 		mangler maxfwd mediaproxy mi_datagram mi_fifo msilo nathelper \
 		options path pdt permissions pike registrar rr seas \
 		siptrace sl sms speeddial sst statistics textops tm uac \
@@ -59,8 +59,9 @@ PORTDOCS=	*
 SUB_FILES=	pkg-install pkg-deinstall
 SUB_LIST=	RC_DIRS="${RC_DIRS}" RC_FILES="${RC_FILES}"
 
-OPTIONS=	MYSQL "MySQL support" on \
+OPTIONS=	MYSQL "MySQL support" off \
 		POSTGRESQL "PostgreSQL support" off \
+		ORACLE "Oracle support" off \
 		UNIXODBC "UnixODBC support" off \
 		CPL "CPL-C support" off \
 		TLS "TLS support" off \
@@ -70,25 +71,33 @@ OPTIONS=	MYSQL "MySQL support" on \
 
 .if defined(WITH_MYSQL)
 USE_MYSQL=	yes
-MODULES+=	mysql
+MODULES+=	db_mysql
 PLIST_FILES+=	lib/opensips/opensipsctl/opensipsdbctl.mysql lib/opensips/opensipsctl/opensipsctl.mysql
 .else
-MAKE_ENV+=	MYSQL=mysql
+MAKE_ENV+=	MYSQL=db_mysql
 .endif
 
 .if defined(WITH_POSTGRESQL)
 USE_PGSQL=	yes
-MODULES+=	postgres
+MODULES+=	db_postgres
 PLIST_FILES+=	lib/opensips/opensipsctl/opensipsdbctl.pgsql lib/opensips/opensipsctl/opensipsctl.pgsql
 .else
-MAKE_ENV+=	POSTGRESQL=postgres
+MAKE_ENV+=	POSTGRESQL=db_postgres
+.endif
+
+.if defined(WITH_ORACLE)
+USE_ORACLE=	yes
+MODULES+=	db_oracle
+PLIST_FILES+=	lib/opensips/opensipsctl/opensipsdbctl.oracle lib/opensips/opensipsctl/opensipsctl.oracle
+.else
+MAKE_ENV+=	ORACLE=db_oracle
 .endif
 
 .if defined(WITH_UNIXODBC)
 LIB_DEPENDS+=	odbc.1:${PORTSDIR}/databases/unixODBC
-MODULES+=	unixodbc
+MODULES+=	db_unixodbc
 .else
-MAKE_ENV+=	UNIXODBC=unixodbc
+MAKE_ENV+=	UNIXODBC=db_unixodbc
 .endif
 
 .if defined(WITH_CPL)
@@ -122,6 +131,7 @@ TLS_RC_DIRS=	tls/user \
 		tls/rootCA \
 		tls
 RC_DIRS+=	${TLS_RC_DIRS}
+MAKE_ARGS+=	TLS="1"
 .else
 MAKE_ENV+=	TLSOPS=tlsops
 MAKE_ARGS+=	TLS=""
@@ -176,7 +186,7 @@ post-patch:
 		${WRKSRC}/modules/seas/README \
 		${WRKSRC}/modules/snmpstats/README \
 		${WRKSRC}/modules/speeddial/README \
-		${WRKSRC}/modules/unixodbc/README
+		${WRKSRC}/modules/db_unixodbc/README
 	@${REINPLACE_CMD} -e 's|/usr/local|${LOCALBASE}|' \
 		${WRKSRC}/modules/acc/etc/radiusclient.conf
 	@${REINPLACE_CMD} -e 's|/usr/local/etc/radiusclient|${PREFIX}/etc/opensips/acc|' \
