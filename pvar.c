@@ -483,16 +483,15 @@ int pv_parse_ct_name(pv_spec_p sp, str *in)
 }
 
 
-static inline int get_contact_body_field(pv_value_t *res ,contact_t *ct,
-														pv_name_t *pvn)
+static inline int get_contact_body_field(pv_value_t *res,struct hdr_field *cth,
+										contact_t *ct, pv_name_t *pvn)
 {
 	param_t *p;
 
 	if (ct==NULL) {
-		/*star contact hdr */
+		/* star contact hdr */
 		if (pvn->u.isname.name.n==0) {
-			res->rs.s = "*";
-			res->rs.len = 1;
+			res->rs = cth->body;
 			res->flags = PV_VAL_STR;
 			return 0;
 		}
@@ -593,7 +592,7 @@ static int pv_get_contact_body(struct sip_msg *msg, pv_param_t *param,
 
 	if (idxf==0 && idx==0) {
 		/* no index specified -> return the first contact body */
-		return get_contact_body_field( res , ct, &param->pvn);
+		return get_contact_body_field( res , ct_h, ct, &param->pvn);
 	}
 
 	if(idxf==PV_IDX_ALL) {
@@ -609,7 +608,7 @@ static int pv_get_contact_body(struct sip_msg *msg, pv_param_t *param,
 				p += PV_FIELD_DELIM_LEN;
 			}
 
-			get_contact_body_field( res , ct, &param->pvn);
+			get_contact_body_field( res , ct_h, ct, &param->pvn);
 			if (p-pv_local_buf+res->rs.len+1>PV_LOCAL_BUF_SIZE) {
 				LM_ERR("local buffer length exceeded!\n");
 				return pv_get_null(msg, param, res);
@@ -687,7 +686,7 @@ static int pv_get_contact_body(struct sip_msg *msg, pv_param_t *param,
 		return pv_get_null(msg, param, res);
 
 	/* take the current body */
-	return get_contact_body_field( res , ct, &param->pvn);
+	return get_contact_body_field( res , ct_h, ct, &param->pvn);
 }
 
 extern err_info_t _oser_err_info;
