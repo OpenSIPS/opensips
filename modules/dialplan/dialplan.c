@@ -461,16 +461,17 @@ error:
 	*data_refcnt = *data_refcnt - 1;
 	lock_release( ref_lock );
 
-	return -1;		
+	return -1;
 }
 
 #define verify_par_type(_par_no, _spec)\
 	do{\
-		if( ((_par_no == 0) \
-			&& ((_spec).type != PVT_AVP) && ((_spec).type!=PVT_SCRIPTVAR) )\
-		  ||((_par_no ==1) \
+		if( ((_par_no == 1) \
+			&& ( ((_spec).type==PVT_NULL) || ((_spec).type==PVT_EMPTY) \
+			|| ((_spec).type==PVT_NONE) ))\
+		  || ((_par_no ==2) \
 			&& ((_spec).type != PVT_AVP) && ((_spec).type!=PVT_SCRIPTVAR) \
-		  	&& ((_spec).type!=PVT_RURI) && (_spec.type!=PVT_RURI_USERNAME))){\
+			&& ((_spec).type!=PVT_RURI) && (_spec.type!=PVT_RURI_USERNAME))){\
 				\
 			LM_ERR("Unsupported Parameter TYPE\n");\
 				return E_UNSPEC;\

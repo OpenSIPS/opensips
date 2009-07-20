@@ -10,7 +10,7 @@ Andreea-Ancuta Onofrei
 
    Copyright © 2007-2008 voice-system.ro
    Revision History
-   Revision $Revision: 1.1 $ $Date: 2007/08/30 13:16:22 $
+   Revision $Revision$ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -359,8 +359,9 @@ modparam("dialplan", "fetch_rows", 4000)
        parameter is missing the default parameter
        "ruri.user/ruri.user" will be used, thus translating the
        request uri.
-       Both src and dest can have the following types:
-          + R-URI
+       The "src" variable can be any type of pseudo-variable.
+       The "dest" variable can have the following types:
+          + $ru / $rU
             - the string is the r-uri or r-uri username
           + avp var
             -At input the function will get the input string from
@@ -431,7 +432,7 @@ xlog("translated to var $var(y) \n");
 Chapter 2. Developer's Guide
 
    Revision History
-   Revision $Revision: 1.1 $ $Date: 2007/08/30 13:16:22 $
+   Revision $Revision$ $Date$
 
    The module does not provide any API to use in other OpenSIPS
    modules.

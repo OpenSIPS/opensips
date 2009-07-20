@@ -558,20 +558,23 @@ modparam("dialplan", "fetch_rows", 4000)
 			-the dialplan id is the value of an existing script variable.</para>
 			</listitem>
 		</itemizedlist>
-  	</listitem>
+	</listitem>
 
 	<listitem>
 		<para>
- 		<emphasis>src/dest</emphasis> - input and output of the function.
+		<emphasis>src/dest</emphasis> - input and output of the function.
 		If this parameter is missing the default parameter 
 		<quote>ruri.user/ruri.user</quote> will be used, thus translating 
-		the request uri. 
- 		</para>
-		<para>Both src and dest can have the following types:
+		the request uri.
+		</para>
+		<para>
+		The <quote>src</quote> variable can be any type of pseudo-variable.
+		</para>
+		<para>The <quote>dest</quote> variable  can have the following types:
 		</para>
 		<itemizedlist>
 			<listitem>
-			<para><emphasis>R-URI</emphasis></para>
+			<para><emphasis>$ru / $rU</emphasis></para>
 			<para>
 			- the string is the r-uri or r-uri username
 			</para>
