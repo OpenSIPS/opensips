@@ -913,7 +913,8 @@ sdp_payload_attr_t * clone_sdp_payload_attr(sdp_payload_attr_t *attr)
 			attr->rtp_enc.len +
 			attr->rtp_clock.len +
 			attr->rtp_params.len +
-			attr->sendrecv_mode.len;
+			attr->sendrecv_mode.len +
+			attr->ptime.len;
 	clone_attr = (sdp_payload_attr_t*)shm_malloc(len);
 	if (clone_attr == NULL) {
 		LM_ERR("no more shm mem (%d)\n",len);
@@ -1064,7 +1065,7 @@ sdp_stream_cell_t * clone_sdp_stream_cell(sdp_stream_cell_t *stream)
 		clone_stream->ip_addr.s = p;
 		clone_stream->ip_addr.len = stream->ip_addr.len;
 		memcpy( p, stream->ip_addr.s, stream->ip_addr.len);
-		//p += stream->payloads.len;
+		p += stream->payloads.len;
 	}
 
 	/* NOTE: we are not cloning RFC4975 attributes:
