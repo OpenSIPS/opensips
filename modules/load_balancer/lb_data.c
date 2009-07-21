@@ -490,7 +490,7 @@ int do_load_balance(struct sip_msg *req, int grp, struct lb_res_str_list *rl,
 				"(max=%d)\n",it->uri.len, it->uri.s,ld, load);
 		}
 		j++;
-		if (j==sizeof(unsigned int)) {i++;j=0;}
+		if (j==8*sizeof(unsigned int)) {i++;j=0;}
 	}
 
 	if (dst==NULL) {
