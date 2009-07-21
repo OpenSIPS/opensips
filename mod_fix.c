@@ -1,5 +1,5 @@
 /*
- *$Id: mod_fix.h 2845 2007-10-04 11:21:22Z miconda $
+ *$Id$
  *
  * Copyright (C) 2001-2003 FhG Fokus
  *

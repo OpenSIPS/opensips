@@ -1,5 +1,5 @@
 /*
- * $Id: sctp_server.c 2007-06-22 11:44:34Z gmarmon $
+ * $Id$
  *
  * Copyright (C) 2001-2003 FhG Fokus
  *
