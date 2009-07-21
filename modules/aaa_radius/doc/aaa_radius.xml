@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding='ISO-8859-1'?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN"
+"http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd" [
+
+
+<!ENTITY admin SYSTEM "aaa_radius_admin.xml">
+
+<!-- Include general documentation entities -->
+<!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
+%docentities;
+
+]>
+
+<book>
+    <bookinfo>
+	<title>AAA RADIUS MODULE</title>
+	<productname class="trade">&osipsname;</productname>
+	<authorgroup>
+	    <author>
+		<firstname>Irina-Maria</firstname>
+		<surname>Stanescu</surname>
+		<affiliation><orgname>&osips;</orgname></affiliation>
+		<address>
+		<email>ironmissy@gmail.com</email>
+		<otheraddr>
+		<ulink url="http://www.opensips.org">http://opensips.org</ulink>
+		</otheraddr>
+		</address>
+	    </author>
+	    <editor>
+		<firstname>Irina-Maria</firstname>
+		<surname>Stanescu</surname>
+		<address>
+		    <email>ironmissy@gmail.com</email>
+		</address>
+	    </editor>
+	  	</authorgroup>
+	<copyright>
+		<year>2009</year>
+		<holder>
+		<firstname>Irina-Maria</firstname>
+		<surname>Stanescu</surname>
+	    </holder>
+	</copyright>
+	<copyright>
+		<year>2009</year>
+		<holder>
+		&voicesystem;
+	    </holder>
+	</copyright>
+	<revhistory>
+	    <revision>
+		<revnumber>$Revision$</revnumber>
+		<date>$Date$</date>
+	    </revision>
+	</revhistory>
+  </bookinfo>
+    <toc></toc>
+    
+    &admin;
+</book>
+
+

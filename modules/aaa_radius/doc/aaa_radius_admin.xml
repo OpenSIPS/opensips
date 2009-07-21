@@ -1,0 +1,93 @@
+<!-- Module User's Guide -->
+
+<chapter>
+	
+	<title>&adminguide;</title>
+	
+	<section>
+	<title>Overview</title>
+	<para>
+		This module is an implementation of the AAA API from the core.
+		It provides the implementation for the callback functions required the API.		
+		
+	</para>
+	<para>
+		Any module that wishes to use it has to do the following:
+	</para>
+	<itemizedlist>
+		<listitem>
+			<para><emphasis>include aaa.h</emphasis>
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>make a bind call with a proper radius specific url</emphasis>
+			</para>
+		</listitem>
+			
+	</itemizedlist>
+	
+	</section>
+
+	<section>
+	<title>Dependencies</title>
+	<section>
+		<title>&osips; Modules</title>
+		<para>
+		None.
+		</para>
+	</section>
+	
+	<section>
+		<title>External Libraries or Applications</title>
+		<para>
+		One of the following libraries must be installed before running
+		&osips; with this module loaded:
+		</para>
+			<itemizedlist>
+			<listitem>
+			<para><emphasis>radiusclient-ng</emphasis> 0.5.0 or higher
+				See <ulink 
+				url='http://developer.berlios.de/projects/radiusclient-ng/'>
+				http://developer.berlios.de/projects/radiusclient-ng/</ulink>.
+			</para>
+			</listitem>
+			<listitem>
+			<para><emphasis>freeradius-client</emphasis> 
+				See <ulink 
+				url='http://freeradius.org/'>
+				http://freeradius.org/</ulink>.
+			</para>
+			</listitem>
+			</itemizedlist>
+			<para>
+				By default, radiusclient-ng is used. To change at compile time
+				to freeradius, uncomment the USE_FREERADIUS=1 line in main Makefile.
+			</para>
+	</section>
+	</section>
+	
+	<section>
+		<title>Exported Parameters</title>
+		<para>
+			The module does not export parameters to be used
+			in the configuration script.
+		</para>
+	</section>
+
+	<section>
+		<title>Exported Functions</title>
+		<section>
+		<title><varname>aaa_bind_api</varname></title>
+		<para>
+			This function binds the aaa modules and fills the structure 
+			with the callback functions implemented by the module.
+		</para>
+		</section>
+		<section>
+		<para>
+		</para>
+		</section>
+</section>
+
+</chapter>
+
