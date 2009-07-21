@@ -1,5 +1,5 @@
 /*
- * $Id: add_events.h 2006-12-07 18:05:05Z anca_vamanu $
+ * $Id$
  *
  * presence_xml module - 
  *

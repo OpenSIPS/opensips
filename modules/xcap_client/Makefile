@@ -1,4 +1,4 @@
-# $Id: Makefile $
+# $Id$
 #
 # XCAP client for OpenSIPs
 #

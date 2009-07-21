@@ -1,5 +1,5 @@
 /*
- * $Id: signaling.c $
+ * $Id$
  *
  * signaling module - interface for sending sip messages
  *

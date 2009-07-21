@@ -1,5 +1,5 @@
 /*
- * $Id:  $
+ * $Id$
  *
  * db_berkeley MI functions
  *

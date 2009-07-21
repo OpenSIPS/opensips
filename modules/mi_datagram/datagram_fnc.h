@@ -1,5 +1,5 @@
 /*
- * $Id: datagram_fnc.h 1133 2007-04-02 17:31:13Z ancuta_onofrei $
+ * $Id$
  *
  * Copyright (C) 2007 Voice Sistem SRL
  *

@@ -1,5 +1,5 @@
 /*
- * $Id: xcap_auth.c $
+ * $Id$
  *
  * presence_xml module - 
  *

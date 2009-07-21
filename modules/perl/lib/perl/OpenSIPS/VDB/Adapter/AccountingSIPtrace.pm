@@ -1,5 +1,5 @@
 #
-# $Id: AccountingSIPtrace.pm 757 2007-01-05 10:56:28Z bastian $
+# $Id$
 #
 # Perl module for OpenSIPS
 #

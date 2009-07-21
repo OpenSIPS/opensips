@@ -1,5 +1,5 @@
 /*
- * $Id: pua_dialoginfo.h $
+ * $Id$
  *
  * pua_dialoginfo module - publish dialog-info from dialog module
  *

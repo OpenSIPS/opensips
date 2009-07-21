@@ -1,5 +1,5 @@
 /*
- * $Id: hash.c 2583 2007-08-08 11:33:25Z anca_vamanu $
+ * $Id$
  *
  * presence module - presence server implementation
  *

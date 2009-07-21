@@ -1,5 +1,5 @@
 /*
- * $Id: mi_datagram_writer.c 1133 2007-04-02 17:31:13Z ancuta_onofrei $
+ * $Id$
  *
  * Copyright (C) 2007 Voice Sistem SRL
  *

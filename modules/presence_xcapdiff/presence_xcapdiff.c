@@ -1,4 +1,4 @@
-/* $Id: presence_xcapdiff.c 1 2008-09-05 08:11:06Z dan_pascu $
+/* $Id$
  *
  * Copyright (C) 2008 AG Projects
  *

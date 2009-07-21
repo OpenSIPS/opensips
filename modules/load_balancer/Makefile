@@ -1,4 +1,4 @@
-# $Id: Makefile 806 2006-04-14 11:00:10Z bogdan_iancu $
+# $Id$
 #
 # WARNING: do not run this directly, it should be run by the master Makefile
 

@@ -1,5 +1,5 @@
 #
-# $Id: Result.pm 852 2007-03-01 20:32:37Z bastian $
+# $Id$
 #
 # Perl module for OpenSIPS
 #

@@ -1,5 +1,5 @@
 /*
- * $Id: notify_body.c $
+ * $Id$
  *
  * presence_dialoginfo module -  
  *

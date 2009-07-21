@@ -1,5 +1,5 @@
 /*
- * $Id: pua_callback.c,v 1.2 2007/02/20 13:40:09 anca_vamanu Exp $
+ * $Id$
  *
  * pua module - presence user agent module
  *

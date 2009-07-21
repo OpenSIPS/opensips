@@ -1,5 +1,5 @@
 /*
- * $Id: dialog.c 5106 2008-12-30 22:05:28Z bogdan_iancu $
+ * $Id$
  *
  * dialog module - basic support for dialog tracking
  *

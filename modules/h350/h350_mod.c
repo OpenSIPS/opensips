@@ -1,5 +1,5 @@
 /* 
- * $Id: $
+ * $Id$
  *
  * OpenSIPS H.350 Module
  *

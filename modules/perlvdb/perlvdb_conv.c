@@ -1,5 +1,5 @@
 /* 
- * $Id: perlvdb_conv.c 842 2007-02-26 08:46:34Z bastian $
+ * $Id$
  *
  * Perl virtual database module interface
  *

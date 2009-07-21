@@ -1,5 +1,5 @@
 /*
- * $Id: dialog.c 5217 2009-01-26 20:41:27Z bogdan_iancu $
+ * $Id$
  *
  * load balancer module - complex call load balancing
  *

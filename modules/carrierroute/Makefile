@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.6 2003/05/23 15:43:43 andrei Exp $
+# $Id$
 #
 # carrierroute Makefile
 #

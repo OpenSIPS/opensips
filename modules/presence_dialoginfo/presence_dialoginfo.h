@@ -1,5 +1,5 @@
 /*
- * $Id: presence_dialoginfo.h $
+ * $Id$
  *
  * presence_dialoginfo module - presence_dialoginfo header file
  *

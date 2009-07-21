@@ -1,4 +1,4 @@
-# $Id: Makefile 769 2007-01-22 09:09:43Z bastian $
+# $Id$
 #
 # WARNING: do not run this directly, it should be run by the master Makefile
 

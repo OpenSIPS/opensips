@@ -1,5 +1,5 @@
 /*
- * $Id: pidf.h 1401 2006-12-14 11:12:42Z anca_vamanu $
+ * $Id$
  *
  * presence module - presence server implementation
  *

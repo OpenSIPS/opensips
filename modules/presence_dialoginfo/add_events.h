@@ -1,5 +1,5 @@
 /*
- * $Id: add_events.h $
+ * $Id$
  *
  * presence_dialoginfo module - add_event header file
  *
