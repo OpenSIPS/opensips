@@ -1,0 +1,394 @@
+# $Id: $
+# 
+
+Generic AAA Protocol Interface
+-------------------------------
+
+Overview
+
+ This is a generic interface for modules that want to use features provided
+ by AAA protocols.
+ The interface is independent of the underlying AAA protocol that implements
+ it and it should be used by all modules that use AAA.
+ 
+ The API architecture is based on the assumption that every AAA protocol uses 
+ messages based on AVPs, since both Radius and Diameter, two of the current 
+ AAA implementations, do that.
+ 
+ 
+ 
+ 
+1 Data types
+
+There are several new data types used by the API. All of them are defined in 
+the header file aaa.h, a client must include the header file to be able to 
+use them.
+
+
+1.1 Type aaa_map
+
+1.1.1 Description
+
+This type represents a generic structure for an AVP.
+
+1.1.2 Definition
+
+typedef struct _aaa_map {
+	char *name;
+	int value;
+} aaa_map;
+
+1.1.3 Macros
+
+There are no macros for this type.
+
+
+1.2 Type aaa_message
+
+1.2.1 Description
+
+This type is a generic structure for a message sent or received by the AAA 
+protocol. 
+The fields of the structure have the following meaning:
+avpair     : the list of AVPs contained by the message
+last_found : a pointer in the list of AVPs used to store the last 
+		element found by a search, this is needed by the 
+		find function in case a AAA_GET_FROM_CURRENT type of 
+		search is wanted
+type 	   : the type of message (AAA_AUTH or AAA_ACCT)
+	
+1.2.2 Definition
+
+typedef struct _aaa_message {
+	void* avpair;
+	void* last_found;
+	int type;
+} aaa_message;
+
+1.2.3 Macros
+
+For this type there are three macro's defined representing the allowed
+types of messages:
+AAA_AUTH : the message will be for authentication
+AAA_ACCT : the message will be for accounting
+AAA_RECV : the message will contain received information
+
+
+1.3 Type aaa_conn
+
+1.3.1 Description
+	
+This is a type definition for a generic AAA connection.
+The implementation for a connection variable is protocol dependent.
+
+1.3.2 Definition
+
+typedef void aaa_conn;
+
+1.3.3 Macros
+
+There are no macros for this type.
+
+
+1.4 Type aaa_prot
+
+1.4.1 Description
+
+This structure is a collection of callbacks provided by the modules
+that implement this generic AAA interface.
+A variable of this type will be filled when a bind call is made, and 
+therefore it cannot be used before aaa_prot_bind.
+	
+1.4.2 Definition
+
+typedef struct _aaa_prot {
+	init_prot_f* 	   init_prot;		/*initializes a protocol implementation*/
+	create_request_f*  create_aaa_request;	/*creates a request*/
+	destroy_message_f* destroy_aaa_message;	/*destroys a message*/
+	send_request_f*    send_aaa_request;	/*sends a request*/
+	find_f* 	   dictionary_find;	/*searches a name in a dictionary*/
+	avp_add_f* 	   avp_add;		/*adds a AVP to a message*/
+	avp_get_f* 	   avp_get		/*gets the value of a AVP in a message*/
+} aaa_prot;
+
+1.4.3 Macros
+
+There are no macros for this type.
+
+
+1.5 Type aaa_prot_config
+
+1.5.1 Description
+
+Thsi type represents the configuration structure for an AAA protocol. 
+
+The structure fields have the following meaning:
+prot_name : the protocol name extracted from the URL
+rest      : a pointer to the location of what is left of the URL string
+
+The "rest" field can be used by the module that implements the
+AAA interface as it pleases.
+
+1.5.2 Definition
+
+typedef struct _aaa_prot_config {
+	str *prot_name;
+	void *rest;
+} aaa_prot_config;
+
+
+1.6 Type aaa_bind_api_f
+
+1.6.1 Description
+
+1.6.2 Definition
+
+typedef int (*aaa_bind_api_f)(aaa_prot*);
+
+
+2 Functions
+
+
+2.1 Callback prot.create_aaa_request
+
+2.1.1 Description
+
+This function creates a structure for a message.
+The message can be a request, or a reply.
+
+2.1.2 Prototype
+typedef aaa_message* (create_request_f)(aaa_conn* ac, int f);
+
+2.1.3 Parameters
+The function takes two parameters:
+ac: pointer to an AAA connection variable
+f:  a flag representing the type of message (for authentication or accounting)
+
+2.1.4 Return Value
+
+The return value is a pointer to the AAA message structure, or NULL if error
+occured.
+
+
+2.2 Callback prot.destroy_aaa_message
+
+2.2.1 Description
+
+This function destroys the AVP list contained by the message, and then
+releases the memory allocated for the message.
+The message can be a request or reply.
+
+2.2.2 Prototype
+
+typedef int (destroy_message_f)(aaa_conn* ac, aaa_message* mess);
+
+2.2.3 Parameters
+
+The function takes two parameters:
+ac   : pointer to an AAA connection variable
+mess : pointer to an AAA message variable
+
+2.2.4 Return Value
+
+The return value is an error code: 0 for succes, -1 for error.
+
+
+2.3 Callback prot.send_aaa_request
+
+2.3.1 Description
+
+This function sends a message on a specified connection.
+
+2.3.2 Prototype
+
+typedef int (send_request_f)(aaa_conn* ac, aaa_message* send, aaa_message* recv);
+
+2.3.3 Parameters
+
+The function takes three parameters:
+ac   : a pointer to an AAA connection variable
+send : the address of a message to be sent
+recv : the address of a message to be received (may be NULL)
+	
+2.3.4 Return Value
+
+The return value is an error code: 0 for succes, -1 for error.
+
+
+2.4 Callback prot.dictionary_find
+
+2.4.1 Description
+
+This function searches a certain value for a name in the dictionary of
+AVPs loaded at protcol intialization.
+The result is returned in the value field of the aaa_map structure.
+
+2.4.2 Prototype
+typedef int (find_f)(aaa_conn* ac, aaa_map* map, int flag);
+
+2.4.3 Parameters
+
+The function takes 3 parameters:
+ac   : a pointer to an AAA connection variable
+map  : a pointer to the aaa_map structure wich contains the name searched
+flag : a flag representing the type of search wanted: for a value, 
+	for an attribute or for a vendor dictionary entry.
+
+The values allowed for the flag are the given by the following definitions:
+AAA_DICT_FIND_VAL  : a value is searched
+AAA_DICT_FIND_ATTR : an attribute is searched
+AAA_DICT_FIND_VEND : a vendor entry is searched
+
+
+2.4.4 Return Value
+
+The return value is an error code: 0 if the name was found, 1 if the name was
+not found, -1 for error.
+
+2.5 Callback prot.avp_add
+
+2.5.1 Description
+
+This function adds a AVP to a specified AAA message.
+
+2.5.2 Prototype
+typedef int (avp_add_f)(aaa_conn* ac, aaa_message* mess, aaa_map* map, 
+			 void* value, int length, int vendor);
+
+2.5.3 Parameters
+ac     : a pointer to an AAA connection variable
+mess   : a pointer to the message where the AVP will be added
+map    : a pointer to a map structure wich contains the name of the AVP to be added
+value  : a pointer to the value to be added
+length : the length of the value added
+vendor : the vendorpec
+
+Depending on the implementation, some of these values may be empty.
+
+2.5.4 Return Value
+
+The return value is an error code: 0 for succes, -1 for error.
+
+
+2.6 Callback prot.avp_get
+
+2.6.1 Description
+
+This function gets a AVP from a specified AAA message.
+
+2.6.2 Prototype
+
+typedef int (avp_get_f)(aaa_conn* ac, aaa_message* mess, aaa_map* map, 
+			 void** value, int* length, int flag);
+
+2.6.3 Parameters
+
+ac     : a pointer to an AAA connection variable
+mess   : a pointer to the message where the AVP will be added
+map    : a pointer to a map structure wich contains the name searched
+value  : a pointer to the location where the value should be placed
+length : a pointer to the location where the value length should be placed
+flag   : a flag specifying the type of search in the AVPs list (from the start 
+	 or from the current position)
+
+There are two possible values for the flag:
+AAA_GET_FROM_START : the search should start from the begining of the AVPs list
+AAA_GET_FROM_CURRENT : the search should start from the current search position
+
+2.6.4 Return Value
+
+The return value is an error code: 0 for succes, -1 for error.
+
+
+2.7 Callback prot.init_prot
+
+2.7.1 Description
+
+This function initializes the protocol and returns a pointer to the
+connection variable that represents it.
+
+2.7.2 Prototype
+
+typedef aaa_conn* (init_prot_f)(str* url);
+
+2.7.3 Parameters
+
+The function receives only one parameter:
+url : a string that contains protocol dependent information needed to identify
+	the module that implements the interface and other useful information
+
+2.7.4 Return Value
+
+The return value is a pointer to a connection variable, or NULL if error
+occured.
+
+
+2.8 Function aaa_prot_bind
+
+2.8.1 Description
+
+This is the function called by a module that wishes to use animplementation 
+for an AAA protocol.
+
+2.8.2 Prototype
+
+int aaa_prot_bind(str* url, aaa_prot* ap);
+
+2.8.3 Parameters
+
+url : the protocol URL.
+ap  : where the structure for the protocol callback functions should be stored.
+
+2.8.4 Return Value
+
+The return value is an error code: 0 for succes, -1 for error.
+
+2.9 Function aaa_parse_url
+
+2.9.1 Description
+This function parses a string representing the URL given through the
+configuration file and returns a configuration structure for the
+protocol implementation.
+
+An example for a URL for an AAA Radius Module is:
+"radius:/etc/radiusclient-ng/radiusclient.conf"
+
+2.9.2 Prototype
+int aaa_parse_url(str* url, aaa_prot_config* protcfg);
+
+2.9.3 Parameters
+url 	: the string for the url
+protcfg : pointer to the configuration structure resulted
+
+2.9.4 Return Value
+The return value is an error code: 0 for succes, -1 for error.
+
+
+3 Other useful information
+
+3.1 Useful Macros
+
+
+3.1.1 INIT_AV Macro
+
+3.1.1.1 Description
+
+This macro initializes two arrays of AVPs with the corresponding
+information from the protocol dictionary.
+The first array needs to be filled with the corresponding information
+for some given attributes, and the second array, for some given values.
+
+3.1.1.2 Prototype
+
+#define INIT_AV(ap, rh, at, nr_at, vl, nr_vl, fn, e1, e2)
+
+3.1.1.2 Parameters
+ap    : the aaa protocol
+rh    : the aaa connection handle
+at    : array of attributes
+nr_at : number of attributes
+vl    : array of values
+nr_vl : number of values
+fn    : the name of the function that calls this macro
+e1    : error code 1
+e2    : error code 2
