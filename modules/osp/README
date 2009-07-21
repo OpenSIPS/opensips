@@ -14,10 +14,10 @@ Di-Shi Sun
 
    <support@transnexus.com>
 
-   Copyright © 2003 FhG FOKUS
+   Copyright � 2003 FhG FOKUS
    Revision History
-   Revision $Revision$ $Date: 2008-07-12 05:16:22 +0800
-   (Sat, 12 Jul 2008) $
+   Revision $Revision$ $Date: 2009-07-21 10:45:05 +0300
+                              (Tue, 21 Jul 2009) $
      __________________________________________________________
 
    Table of Contents
@@ -153,8 +153,7 @@ Chapter 1. Admin Guide
        included.
 
    Example 1.1. Setting the OSP servers
-modparam("osp","sp1_uri","http://osptestserver.transnexus.com:1080/osp"
-)
+modparam("osp","sp1_uri","http://osptestserver.transnexus.com:1080/osp")
 modparam("osp","sp2_uri","https://[1.2.3.4]:1443/osp")
 
 1.3.2. sp1_weight, sp2_weight, ..., sp16_weight
@@ -256,8 +255,8 @@ modparam("osp","token_format",2)
    If the default CFG_DIR value was used at compile time, the
    files will be loaded from:
 modparam("osp","private_key","/usr/local/etc/opensips/pkey.pem")
-modparam("osp","local_certificate","/usr/local/etc/opensips/localcert.p
-em")
+modparam("osp","local_certificate","/usr/local/etc/opensips/localcert.pe
+m")
 modparam("osp","ca_certificates","/usr/local/etc/opensips/cacert.pem")
 
 1.3.8. enable_crypto_hardware_support
@@ -389,7 +388,7 @@ modparam("osp","use_routing_number",1)
    redirection message. If this value is set to 0, the OSP Module
    uses "xxxxxxxxxx@xxx.xxx.xxx.xxx" URI in the SIP redirection
    messages. If this value is set to 1, the OSP Module will use
-   “<xxxxxxxxxx@xxx.xxx.xxx.xxx>” URI in the SIP redirection
+   "<xxxxxxxxxx@xxx.xxx.xxx.xxx>" URI in the SIP redirection
    messages. The default value is 0
 
    Example 1.18. Setting the redirection URI format
@@ -551,8 +550,8 @@ if (checkcallingtranslation()) {
    Example 1.26. prepareallosproute usage
 ...
 if (prepareallosproute()) {
-  log(1,"Routes are prepared, now either forking or redirecting the cal
-l\n");
+  log(1,"Routes are prepared, now either forking or redirecting the call
+\n");
 } else {
   log(1,"Could not prepare the routes. No destination available\n");
 };

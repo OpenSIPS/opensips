@@ -10,7 +10,8 @@ Andreea-Ancuta Onofrei
 
    Copyright © 2007-2008 voice-system.ro
    Revision History
-   Revision $Revision$ $Date$
+   Revision $Revision$ $Date: 2009-07-20 17:11:05 +0300
+                              (Mon, 20 Jul 2009) $
      __________________________________________________________
 
    Table of Contents
@@ -432,7 +433,8 @@ xlog("translated to var $var(y) \n");
 Chapter 2. Developer's Guide
 
    Revision History
-   Revision $Revision$ $Date$
+   Revision $Revision$ $Date: 2009-07-20 17:11:05 +0300
+                              (Mon, 20 Jul 2009) $
 
    The module does not provide any API to use in other OpenSIPS
    modules.

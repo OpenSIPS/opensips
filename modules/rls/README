@@ -10,8 +10,8 @@ Anca-Maria Vamanu
 
    Copyright © 2007 voice-system.ro
    Revision History
-   Revision $Revision$ $Date: 2007-07-20 14:04:13 +0300
-                              (Fri, 20 Jul 2007) $
+   Revision $Revision$ $Date: 2009-07-21 10:45:05 +0300
+                              (Tue, 21 Jul 2009) $
      __________________________________________________________
 
    Table of Contents
@@ -124,7 +124,8 @@ Chapter 1. Admin Guide
 
    The database url.
 
-   Default value is "mysql://opensips:opensipsrw@localhost/osips".
+   Default value is
+   "mysql://opensips:opensipsrw@localhost/opensips".
 
    Example 1.1. Set db_url parameter
 ...

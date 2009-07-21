@@ -10,8 +10,8 @@ Bastian Friedrich
 
    Copyright © 2007 Collax GmbH
    Revision History
-   Revision $Revision$ $Date: 2008-07-12 00:16:22 +0300
-                              (Sat, 12 Jul 2008) $
+   Revision $Revision$ $Date: 2009-07-21 10:45:05 +0300
+                              (Tue, 21 Jul 2009) $
      __________________________________________________________
 
    Table of Contents
@@ -1180,8 +1180,8 @@ Returns or sets the rows of the object.
 Chapter 3. Perl samples
 
    Revision History
-   Revision $Revision$ $Date: 2008-07-12 00:16:22 +0300
-                              (Sat, 12 Jul 2008) $
+   Revision $Revision$ $Date: 2009-07-21 10:45:05 +0300
+                              (Tue, 21 Jul 2009) $
 
 3.1. sample directory
 
