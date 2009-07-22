@@ -235,7 +235,7 @@ char *build_local(struct cell *Trans,unsigned int branch,
 	cseq_n = Trans->cseq_n;
 	buf_hdrs = 0;
 
-	if (rpl) {
+	if (rpl && rpl!=FAKED_REPLY) {
 		/* take from and to hdrs from reply */
 		to.s = rpl->to->name.s;
 		to.len = rpl->to->len;
