@@ -233,7 +233,7 @@ modparam("load_balancer", "probing_from", "sip:pinger@192.168.2.10")
 	</section>
 
 	<section>
-		<title><varname>options_reply_codes</varname> (string)</title>
+		<title><varname>probing_reply_codes</varname> (string)</title>
 		<para>
 		A comma separted list of SIP reply codes. The codes defined here 
 		will be considered as valid reply codes for probing messages,
@@ -245,10 +245,10 @@ modparam("load_balancer", "probing_from", "sip:pinger@192.168.2.10")
 		</emphasis>
 		</para>
 		<example>
-		<title>Set <varname>options_reply_codes</varname> parameter</title>
+		<title>Set <varname>probing_reply_codes</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("load_balancer", "options_reply_codes", "501, 403")
+modparam("load_balancer", "probing_reply_codes", "501, 403")
 ...
 </programlisting>
 		</example>
