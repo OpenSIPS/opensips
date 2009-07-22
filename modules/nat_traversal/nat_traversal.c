@@ -1578,18 +1578,11 @@ send_keepalive(NAT_Contact *contact)
         return;
     }
 
-    /* nat_ip.s = strchr(contact->uri, ':') + 1; */
-	if (nat_ip.s==NULL || strlen(nat_ip.s) < 8)
-		return;
-	nat_ip.s = &contact->uri[4]; // skip over "sip:"
-	ptr = strchr(nat_ip.s, ':');
-	if (ptr) {
-		nat_ip.len = ptr - nat_ip.s;
-		nat_port = strtol(ptr+1, NULL, 10);
-	} else {
-		nat_ip.len = strlen(nat_ip.s);
-		nat_port = SIP_PORT;
-	}
+    //nat_ip.s = strchr(contact->uri, ':') + 1;
+    nat_ip.s = &contact->uri[4]; // skip over "sip:"
+    ptr = strchr(nat_ip.s, ':');
+    nat_ip.len = ptr - nat_ip.s;
+    nat_port = strtol(ptr+1, NULL, 10);
     hostent = sip_resolvehost(&nat_ip, NULL, NULL, False, NULL);
     hostent2su(&to, hostent, 0, nat_port);
     udp_send(contact->socket, buffer, len, &to);
