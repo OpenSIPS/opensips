@@ -44,6 +44,7 @@
  *  2005-07-05  is_method("name") to check method using id (ramona)
  *  2006-03-17  applied patch from Marc Haisenko <haisenko@comdasys.com> 
  *              for adding has_body() function (bogdan)
+ *  2009-07-23  added methods for sdp codec manipulation(andreidragus)
  *
  */
 
@@ -65,6 +66,9 @@
 #include "../../parser/parse_content.h"
 #include "../../parser/parse_privacy.h"
 #include "../../mod_fix.h"
+
+#include"codecs.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -219,6 +223,30 @@ static cmd_export_t cmds[]={
 	{"add_body",         (cmd_function)add_body_f_2,        2, 
 		add_header_fixup, 0,
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"codec_exists",	(cmd_function)codec_find,	1,
+		fixup_codec,0,
+		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"codec_exists",	(cmd_function)codec_find_clock,	2,
+		fixup_codec,0,
+		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"codec_delete",	(cmd_function)codec_delete,	1,
+		fixup_codec,0,
+		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"codec_delete",	(cmd_function)codec_delete_clock, 2,
+		fixup_codec,0,
+		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"codec_move_up",	(cmd_function)codec_move_up, 1,
+		fixup_codec,0,
+		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"codec_move_up",	(cmd_function)codec_move_up_clock, 2,
+		fixup_codec,0,
+		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"codec_move_down",	(cmd_function)codec_move_down,	1,
+		fixup_codec,0,
+		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"codec_move_down",	(cmd_function)codec_move_down_clock,	2,
+		fixup_codec,0,
+		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 
 	{0,0,0,0,0,0}
 };
@@ -243,6 +271,8 @@ struct module_exports exports= {
 static int mod_init(void)
 {
 	LM_INFO("initializing...\n");
+	if(codec_init())
+		return 1;
 	return 0;
 }
 
