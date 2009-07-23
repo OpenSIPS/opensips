@@ -134,14 +134,45 @@ struct module_exports exports= {
 };
 
 
+struct lb_grp_param {
+	int grp_no;
+	pv_spec_t *grp_pv;
+};
+
 
 static int fixup_resources(void** param, int param_no)
 {
 	struct lb_res_str_list *lb_rl;
+	struct lb_grp_param *lbgp;
+	str s;
 
 	if (param_no==1) {
 
-		fixup_uint(param);
+		lbgp = (struct lb_grp_param *)pkg_malloc(sizeof(struct lb_grp_param));
+		if (lbgp==NULL) {
+			LM_ERR("no more pkg mem\n");
+			return E_OUT_OF_MEM;
+		}
+		/* try first as number */
+		s.s = (char*)*param;
+		s.len = strlen(s.s);
+		if (str2int(&s, (unsigned int*)&lbgp->grp_no)==0) {
+			lbgp->grp_pv = NULL;
+			pkg_free(*param);
+		} else {
+			lbgp->grp_pv = (pv_spec_t*)pkg_malloc(sizeof(pv_spec_t));
+			if (lbgp->grp_pv==NULL) {
+				LM_ERR("no pkg memory left\n");
+				return E_OUT_OF_MEM;
+			}
+			if (pv_parse_spec(&s, lbgp->grp_pv)==0 ||
+			lbgp->grp_pv->type==PVT_NULL) {
+				LM_ERR("%s is not interger nor PV !\n", (char*)*param);
+				return E_UNSPEC;
+			}
+		}
+		*param=(void *)(unsigned long)lbgp;
+		return 0;
 
 	} else if (param_no==2) {
 
@@ -359,11 +390,28 @@ static void mod_destroy(void)
 static int w_load_balance(struct sip_msg *req, char *grp, char *rl, char *al)
 {
 	int ret;
+	int grp_no;
+	struct lb_grp_param *lbgp = (struct lb_grp_param *)grp;
+	pv_value_t val;
 
 	ref_read_data();
 
+	if (lbgp->grp_pv) {
+		if (pv_get_spec_value( req, (pv_spec_p)lbgp->grp_pv, &val)!=0) {
+			LM_ERR("failed to get PV value\n");
+			return -1;
+		}
+		if ( (val.flags&PV_VAL_INT)==0 ) {
+			LM_ERR("PV vals is not integer\n");
+			return -1;
+		}
+		grp_no = val.ri;
+	} else {
+		grp_no = lbgp->grp_no;
+	}
+
 	/* do lb */
-	ret = do_load_balance(req, (int)(long)grp, (struct lb_res_str_list*)rl,
+	ret = do_load_balance(req, grp_no, (struct lb_res_str_list*)rl,
 				(unsigned int)(long)al, *curr_data);
 
 	unref_read_data();

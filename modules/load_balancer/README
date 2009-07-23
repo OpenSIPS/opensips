@@ -231,7 +231,8 @@ modparam("load_balancer", "probing_reply_codes", "501, 403")
    Meaning of the parameters is as follows:
      * grp - group id for the destinations; the destination may be
        grouped in several groups you can you for differnet
-       scenarios.
+       scenarios; this can be a number or a variable containing a
+       numerical value.
      * resources - string containing a semi-colon list of
        resources required by the current call.
      * algorithm - algorithm used for computing the available load
