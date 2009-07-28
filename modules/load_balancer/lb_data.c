@@ -432,7 +432,7 @@ int do_load_balance(struct sip_msg *req, int grp, struct lb_res_str_list *rl,
 		used_dst_bitmap = (unsigned int*)mask_val.s.s;
 		/* set the previous dst as used (not selected) */
 		for(last_dst=data->dsts,i=0,j=0 ; last_dst ; last_dst=last_dst->next) {
-			if (last_dst->id==id_val.n) {used_dst_bitmap[i] &= ~(1<<j);}
+			if (last_dst->id==id_val.n) {used_dst_bitmap[i] &= ~(1<<j);break;}
 			j++;
 			if (j==sizeof(unsigned int)) {i++;j=0;}
 		}
@@ -493,17 +493,18 @@ int do_load_balance(struct sip_msg *req, int grp, struct lb_res_str_list *rl,
 		if (j==8*sizeof(unsigned int)) {i++;j=0;}
 	}
 
+	/* if re-trying, remove the dialog from previous profiles */
+	if (last_dst) {
+		for( i=0 ; i<rl->n ; i++) {
+			if (lb_dlg_binds.unset_profile( req, &last_dst->profile_id,
+			call_res[i]->profile)!=0)
+				LM_ERR("failed to remove from profile\n");
+		}
+	}
+
 	if (dst==NULL) {
 		LM_DBG("no destination found\n");
 	} else {
-		/* if re-trying, remove the dialog from previous profiles */
-		if (last_dst) {
-			for( i=0 ; i<rl->n ; i++) {
-				if (lb_dlg_binds.unset_profile( req, &last_dst->profile_id,
-				call_res[i]->profile)!=0)
-					LM_ERR("failed to remove from profile\n");
-			}
-		}
 		/* add to the profiles */
 		for( i=0 ; i<rl->n ; i++) {
 			if (lb_dlg_binds.set_profile( req, &dst->profile_id,
