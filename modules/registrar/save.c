@@ -151,6 +151,7 @@ static struct socket_info *get_sock_hdr(struct sip_msg *msg)
 			socks.len, socks.s);
 		return 0;
 	}
+	set_sip_defaults( port, proto);
 	sock = grep_sock_info(&hosts,(unsigned short)port,(unsigned short)proto);
 	if (sock==0) {
 		LM_ERR("non-local socket <%.*s>\n",	socks.len, socks.s);

@@ -583,6 +583,7 @@ static inline int after_strict(struct sip_msg* _m)
 	) {
 		/* double route may occure due different IP and port, so force as
 		 * send interface the one advertise in second Route */
+		set_sip_defaults( puri.port_no, puri.proto);
 		si = grep_sock_info( &puri.host, puri.port_no, puri.proto);
 		if (si) {
 			_m->force_send_socket = si;
@@ -793,6 +794,7 @@ static inline int after_loose(struct sip_msg* _m, int preloaded)
 				LM_ERR("failed to parse the double route URI\n");
 				return RR_ERROR;
 			}
+			set_sip_defaults( puri.port_no, puri.proto);
 			si = grep_sock_info( &puri.host, puri.port_no, puri.proto);
 			if (si) {
 				_m->force_send_socket = si;
