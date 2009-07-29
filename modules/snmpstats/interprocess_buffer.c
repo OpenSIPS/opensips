@@ -342,34 +342,33 @@ static void executeInterprocessBufferCmd(interprocessBuffer_t *currentBuffer)
 
 void freeInterprocessBuffer(void)
 {
-    interprocessBuffer_t *currentBuffer, *previousBuffer;
+	interprocessBuffer_t *currentBuffer, *previousBuffer;
 
-	if (frontRegUserTableBuffer->next == NULL) {
-        LM_DBG("Nothing to clean\n");
-		return;
+	if(endRegUserTableBuffer) {
+		endRegUserTableBuffer->next = NULL;
+		shm_free(endRegUserTableBuffer);
+		endRegUserTableBuffer = NULL;
 	}
 
-	currentBuffer = frontRegUserTableBuffer->next;
-	
-	frontRegUserTableBuffer->next = NULL;
-	endRegUserTableBuffer->next   = NULL;
+	if(frontRegUserTableBuffer) {
+		if (frontRegUserTableBuffer->next != NULL) {
 
+			currentBuffer = frontRegUserTableBuffer->next;
 
-	while (currentBuffer != NULL) {
+			frontRegUserTableBuffer->next = NULL;
 
-        previousBuffer = currentBuffer;
-        currentBuffer = currentBuffer->next;
-        shm_free(previousBuffer->stringName);
-        shm_free(previousBuffer->stringContact);
-        shm_free(previousBuffer);
-
+			while (currentBuffer != NULL) {
+				previousBuffer = currentBuffer;
+				currentBuffer = currentBuffer->next;
+				shm_free(previousBuffer->stringName);
+				shm_free(previousBuffer->stringContact);
+				shm_free(previousBuffer);
+			}
+		} else {
+			LM_DBG("Nothing to clean\n");
+		}
+		shm_free(frontRegUserTableBuffer);
+		frontRegUserTableBuffer = NULL;
 	}
-    
-    if(frontRegUserTableBuffer)
-        shm_free(frontRegUserTableBuffer);
-
-    if(endRegUserTableBuffer)
-        shm_free(endRegUserTableBuffer);
-
 }
 
