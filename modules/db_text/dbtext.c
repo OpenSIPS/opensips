@@ -48,7 +48,7 @@ static void destroy(void);
  */
 int db_mode = 0;  /* Database usage mode: 0 = cache, 1 = no cache */
 
-int dbt_bind_api(db_func_t *dbb);
+int dbt_bind_api(const str* mod, db_func_t *dbb);
 
 /*
  * Exported functions
@@ -102,7 +102,7 @@ static void destroy(void)
 
 
 
-int dbt_bind_api(db_func_t *dbb)
+int dbt_bind_api(const str* mod, db_func_t *dbb)
 {
 	if(dbb==NULL)
 		return -1;

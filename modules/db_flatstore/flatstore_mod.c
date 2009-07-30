@@ -42,7 +42,7 @@ static int mod_init(void);
 
 static void mod_destroy(void);
 
-int db_flat_bind_api(db_func_t *dbb);
+int db_flat_bind_api(const str* mod, db_func_t *dbb);
 
 /*
  * Process number used in filenames
@@ -146,7 +146,7 @@ static int child_init(int rank)
 	return 0;
 }
 
-int db_flat_bind_api(db_func_t *dbb)
+int db_flat_bind_api(const str* mod, db_func_t *dbb)
 {
 	if(dbb==NULL)
 		return -1;

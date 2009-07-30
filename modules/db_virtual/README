@@ -93,11 +93,20 @@ Chapter 1. Admin Guide
     dbb->raw_query          0           1
     dbb->free_result        0           0
     dbb->insert             1           1
-    dbb->delete             1           1
-    dbb->update             1           1
-    dbb->replace            1           1
+    dbb->delete             1           0
+    dbb->update             1           0
+    dbb->replace            1           0
     dbb->last_inserted_id   0           0
     dbb->insert_update      1           1
+
+   Note 1: The capabilities returned are the minimum common
+   denominator of all the dbs in the set. The capabilities are
+   reduced even more based on the mode of the set (PARALLEL,
+   ROUND).
+
+   Note 2: The capabilities will not be reduced for PARALLEL mode
+   but conceptual not allowed operations will be done on a single
+   db. Ex: query will only query one db.
 
 1.1.3.  Failures
 

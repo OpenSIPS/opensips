@@ -64,7 +64,7 @@ int journal_roll_interval = 0;
 static int mod_init(void);
 static void destroy(void);
 
-int bdb_bind_api(db_func_t *dbb);
+int bdb_bind_api(const str* mod, db_func_t *dbb);
 
 /*
  * Exported functions
@@ -129,7 +129,7 @@ static void destroy(void)
 	bdblib_destroy();
 }
 
-int bdb_bind_api(db_func_t *dbb)
+int bdb_bind_api(const str* mod, db_func_t *dbb)
 {
 	if(dbb==NULL)
 		return -1;

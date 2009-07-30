@@ -39,7 +39,7 @@ int use_escape_common = 0;  /* Enable common escaping */
 
 MODULE_VERSION
 
-int db_unixodbc_bind_api(db_func_t *dbb);
+int db_unixodbc_bind_api(const str* mod, db_func_t *dbb);
 
 /*
  * MySQL database module interface
@@ -76,7 +76,7 @@ struct module_exports exports = {
 	0           /* per-child init function */
 };
 
-int db_unixodbc_bind_api(db_func_t *dbb)
+int db_unixodbc_bind_api(const str* mod, db_func_t *dbb)
 {
 	if(dbb==NULL)
 		return -1;

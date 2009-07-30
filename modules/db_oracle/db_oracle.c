@@ -35,7 +35,7 @@
 
 static int oracle_mod_init(void);
 static void destroy(void);
-static int db_oracle_bind_api(db_func_t *dbb);
+static int db_oracle_bind_api(const str* mod, db_func_t *dbb);
 
 MODULE_VERSION
 
@@ -93,7 +93,7 @@ static void destroy(void)
 }
 
 
-static int db_oracle_bind_api(db_func_t *dbb)
+static int db_oracle_bind_api(const str* mod, db_func_t *dbb)
 {
 	if(dbb==NULL)
 		return -1;

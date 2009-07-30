@@ -51,7 +51,7 @@ int db_max_consec_retrys = 10;
 int db_reconnect_with_timer = 1;        
 
 /* exactly once condition keeper */
-char is_initialized = 0;
+/*char is_initialized = 0;*/
 
 /* dbs state in shared memory seen global */
 db_set_array_t * global_state = NULL;
@@ -68,7 +68,7 @@ MODULE_VERSION
 
 int init_global_state(void);
 static void destroy(void);
-int db_virtual_bind_api(db_func_t *dbb);
+int db_virtual_bind_api(const str* mod, db_func_t *dbb);
 
 
 struct mi_root *db_get_info(struct mi_root *cmd, void *param);
@@ -282,7 +282,7 @@ int init_global_state(void){//str *db_set_mapping){
     for(i=0; i< db_urls_count; i++){
 
         s = db_urls_list[i];
-        LM_ERR("line = %s\n", s);
+        LM_DBG("line = %s\n", s);
 
         if(s && strlen(s) && s[0]!='#'){
 
@@ -292,14 +292,14 @@ int init_global_state(void){//str *db_set_mapping){
                 /* set1=FAILOVER */
                 *p = 0;
                 p++;
-                LM_ERR("set_mode = {%s}, mode = {%s}\n", s, p);
+                LM_DBG("set_mode = {%s}, mode = {%s}\n", s, p);
                 add_set(s, p);
-                //LM_ERR("done\n");
+                /*LM_ERR("done\n"); */
                 count++;
             }
             else{
                 /* mysql:........ */
-                LM_ERR("db = %s\n", s);
+                LM_DBG("db = %s\n", s);
                 add_url(count, s);
             }
         }
@@ -307,6 +307,9 @@ int init_global_state(void){//str *db_set_mapping){
     }
     for(i = 0; i< global_state->size; i++)
         for(j=0; j<global_state->set_a[i].size; j++){
+
+            global_state->set_a[i].db_state_a[j].dbf.cap = 0;
+
             if(db_bind_mod(&global_state->set_a[i].db_state_a[j].db_url,
                     &global_state->set_a[i].db_state_a[j].dbf)){
                 LM_ERR("cant bind db : %.*s", global_state->set_a[i].db_state_a[j].db_url.len,
@@ -316,7 +319,7 @@ int init_global_state(void){//str *db_set_mapping){
         }
 
     LM_DBG("global_state done\n");
-    is_initialized = 1;
+    /*is_initialized = 1; */
     return 0;
 
     error:
@@ -374,7 +377,9 @@ static void reconnect_timer(unsigned int ticks, void *data)
 int virtual_mod_init(void){
 	LM_DBG("VIRTUAL client version is %s\n","1.33");
 
-        if(!is_initialized){
+
+
+        if(!global_state){
             int i,j;
             int rc;
             rc = init_global_state();
@@ -399,9 +404,9 @@ int virtual_mod_init(void){
                 }
             }
 
-
             return rc;
         }
+
         return 0;
 }
 
@@ -429,16 +434,54 @@ static void destroy(void){
         }
 }
 
-int db_virtual_bind_api(db_func_t *dbb)
+int db_virtual_bind_api(const str* mod, db_func_t *dbb)
 {
-    LM_DBG("BINDING API\n");
+    LM_DBG("BINDING API for virtual url: %.*s\n", mod->len, mod->s);
 
+    int i, j;
+    str s;
+    //int len;
+
+    if(!global_state)
+        if(virtual_mod_init())
+            return 1;
+    
     if(dbb==NULL)
             return -1;
 
     memset(dbb, 0, sizeof(db_func_t));
 
 
+    /*  virtual://set5
+     *          p
+     */
+    s.s = strchr(mod->s, '/');
+    s.s +=2;
+
+    
+    for(i=0; i< global_state->size; i++){
+        if(strncmp(s.s, global_state->set_a[i].set_name.s,
+                global_state->set_a[i].set_name.len) == 0)
+            break;
+    }
+
+    LM_DBG("REDUCING capabilities for %.*s\n",
+        global_state->set_a[i].set_name.len, global_state->set_a[i].set_name.s);
+
+    dbb->cap = DB_CAP_FAILOVER;
+    for(j=0; j< global_state->set_a[i].size; j++){
+        dbb->cap &= global_state->set_a[i].db_state_a[j].dbf.cap;
+    }
+
+    if(global_state->set_a[i].set_mode == FAILOVER){
+        dbb->cap &= DB_CAP_FAILOVER;
+    }else if(global_state->set_a[i].set_mode == PARALLEL){
+        dbb->cap &= DB_CAP_PARALLEL;
+    }else if(global_state->set_a[i].set_mode == ROUND){
+        dbb->cap &= DB_CAP_ROUND;
+    }
+    
+    
     dbb->use_table        = db_virtual_use_table;
     dbb->init             = db_virtual_init;
     dbb->close            = db_virtual_close;

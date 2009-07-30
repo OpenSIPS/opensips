@@ -41,13 +41,13 @@
     dbb->close
  *
     dbb->query              0           1
-    dbb->fetch_result       0           0
+    dbb->fetch_result       0           0.5
     dbb->raw_query          0           1
-    dbb->free_result        0           0
+    dbb->free_result        0           0.5
     dbb->insert             1           1
-    dbb->delete             1           1
-    dbb->update             1           1
-    dbb->replace            1           1
+    dbb->delete             1           0
+    dbb->update             1           0
+    dbb->replace            1           0
     dbb->last_inserted_id   0           0
     dbb->insert_update      1           1
  *
@@ -62,7 +62,6 @@ extern db_set_array_t * global_state;
 extern db_handle_array_t * private_handles;
 extern int db_reconnect_with_timer;
 extern int db_max_consec_retrys;
-extern char is_initialized;
 
 str use_table={0,0};
 
@@ -282,7 +281,7 @@ db_con_t* db_virtual_init(const str* _set_url)
     }
 
     /* so that loadmodule order does not matter */
-    if(!is_initialized){
+    if(!global_state){
         if(virtual_mod_init())
             return NULL;
     }
@@ -453,19 +452,19 @@ int db_virtual_insert(const db_con_t* _h, const db_key_t* _k, const db_val_t* _v
 int db_virtual_delete(const db_con_t* _h, const db_key_t* _k, const db_op_t* _o,
 	const db_val_t* _v, const int _n)
 {
-    db_generic_operation2(delete(handle->con, _k, _o, _v, _n), 1, 1, 1);
+    db_generic_operation2(delete(handle->con, _k, _o, _v, _n), 1, 0, 1);
 }
 
 int db_virtual_update(const db_con_t* _h, const db_key_t* _k, const db_op_t* _o,
 	const db_val_t* _v, const db_key_t* _uk, const db_val_t* _uv, const int _n, 
 	const int _un)
 {
-    db_generic_operation2(update(handle->con, _k, _o, _v, _uk, _uv, _n, _un),1, 1, 1);
+    db_generic_operation2(update(handle->con, _k, _o, _v, _uk, _uv, _n, _un),1, 0, 1);
 }
 
 int db_virtual_replace(const db_con_t* _h, const db_key_t* _k, const db_val_t* _v, const int _n)
 {
-    db_generic_operation2(replace(handle->con, _k, _v, _n),1, 1, 1);
+    db_generic_operation2(replace(handle->con, _k, _v, _n),1, 0, 1);
 }
 
 

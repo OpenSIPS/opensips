@@ -36,7 +36,7 @@
 
 MODULE_VERSION
 
-int db_postgres_bind_api(db_func_t *dbb);
+int db_postgres_bind_api(const str* mod, db_func_t *dbb);
 
 static int mod_init(void);
 
@@ -73,7 +73,7 @@ static int mod_init(void)
 	return 0;
 }
 
-int db_postgres_bind_api(db_func_t *dbb)
+int db_postgres_bind_api(const str* mod, db_func_t *dbb)
 {
 	if(dbb==NULL)
 		return -1;

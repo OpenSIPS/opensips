@@ -43,7 +43,7 @@ static int mysql_mod_init(void);
 
 MODULE_VERSION
 
-int db_mysql_bind_api(db_func_t *dbb);
+int db_mysql_bind_api(const str* mod, db_func_t *dbb);
 
 /*
  * MySQL database module interface
@@ -86,7 +86,7 @@ static int mysql_mod_init(void)
 	return 0;
 }
 
-int db_mysql_bind_api(db_func_t *dbb)
+int db_mysql_bind_api(const str* mod, db_func_t *dbb)
 {
 	if(dbb==NULL)
 		return -1;

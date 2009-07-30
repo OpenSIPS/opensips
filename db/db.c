@@ -185,7 +185,7 @@ int db_bind_mod(const str* mod, db_func_t* mydbf)
 	if(dbind != NULL)
 	{
 		LM_DBG("using db bind api for %s\n", tmp);
-		if(dbind(&dbf)<0)
+		if(dbind(mod, &dbf)<0)
 		{
 			LM_ERR("db_bind_api returned error for module %s\n", tmp);
 			goto error;
@@ -402,7 +402,7 @@ int db_check_table_version(db_func_t* dbf, db_con_t* dbh, const str* table, cons
 int db_use_table(db_con_t* _h, const str* _t)
 {
 	if (!_h || !_t || !_t->s) {
-		LM_ERR("invalid parameter value\n");
+		LM_ERR("invalid parameter value %p, %p\n", _h, _t);
 		return -1;
 	}
 

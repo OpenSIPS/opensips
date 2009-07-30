@@ -390,7 +390,7 @@ int db_use_table(db_con_t* _h, const str* _t);
  * \return 0 if everything is ok, otherwise returns -1
  */
 
-typedef int (*db_bind_api_f)(db_func_t *dbb);
+typedef int (*db_bind_api_f)(const str* mod, db_func_t *dbb);
 
 
 #endif /* DB_H */
