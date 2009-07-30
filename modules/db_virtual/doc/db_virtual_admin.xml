@@ -168,11 +168,11 @@
 modparam("group","db_url","virtual://set1")
 modparam("presence|presence_xml", "db_url","virtual://set2")
 
-modparam("db_virtual", "db_urls", "set1=PARALLEL")
+modparam("db_virtual", "db_urls", "define set1 PARALLEL")
 modparam("db_virtual", "db_urls", "mysql://opensips:opensipsrw@localhost/testa")
 modparam("db_virtual", "db_urls", "postgres://opensips:opensipsrw@localhost/opensips")
 
-modparam("db_virtual", "db_urls", "set2=FAILOVER")
+modparam("db_virtual", "db_urls", "define set2 FAILOVER")
 modparam("db_virtual", "db_urls", "mysql://opensips:opensipsrw@localhost/testa")
 ...
                 </programlisting>
