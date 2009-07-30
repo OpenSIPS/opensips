@@ -68,7 +68,7 @@ int pua_add_events(void)
 	
 	return 0;
 
-}	
+}
 
 int pres_process_body(publ_info_t* publ, str** fin_body, int ver, str** tuple_param)
 {
