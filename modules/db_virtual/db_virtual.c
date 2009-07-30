@@ -483,7 +483,11 @@ struct mi_root *db_get_info(struct mi_root *cmd, void *param){
         if (node==0)
             goto error;
 
-        
+        p = int2str((unsigned long)i, &len);
+        attr = add_mi_attr(node, MI_DUP_VALUE, MI_SSTR("i"), p, len);
+        if (attr==0)
+            goto error;
+
         attr = add_mi_attr(node, 0, MI_SSTR("name"), global_state->set_a[i].set_name.s,global_state->set_a[i].set_name.len);
         if (attr==0)
             goto error;
@@ -509,6 +513,11 @@ struct mi_root *db_get_info(struct mi_root *cmd, void *param){
             node2 = add_mi_node_child(node, 0, MI_SSTR("DB"), 0, 0);
             if(node2 == 0)
                 goto error;
+
+            p = int2str((unsigned long)j, &len);
+            attr = add_mi_attr(node2, MI_DUP_VALUE, MI_SSTR("j"), p, len);
+            if (attr==0)
+            goto error;
 
             attr = add_mi_attr(node2, 0, MI_SSTR("name"), global_state->set_a[i].db_state_a[j].db_url.s,global_state->set_a[i].db_state_a[j].db_url.len);
             if (attr==0)
