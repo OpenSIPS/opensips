@@ -339,8 +339,11 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 			dialog->hooks.next_hop->s);
 	}
 
-	if (method->len!=ACK_LEN || memcmp(method->s, ACK, ACK_LEN) )
+	if (method->len==ACK_LEN && memcmp(method->s, ACK, ACK_LEN)==0 ) {
+		t_release_transaction(new_cell);
+	} else {
 		start_retr(request);
+	}
 	return 1;
 
 error1:
