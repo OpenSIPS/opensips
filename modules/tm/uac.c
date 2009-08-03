@@ -74,6 +74,8 @@ static char from_tag[FROM_TAG_LEN + 1];
  /* Enable/disable passing of provisional replies to FIFO applications */
 int pass_provisional_replies = 0;
 
+/* T holder for the last local transaction */
+struct cell** last_localT;
 
 /*
  * Initialize UAC
@@ -333,6 +335,12 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 	request->buffer.len = buf_len;
 	new_cell->nr_of_outgoings++;
 
+	if(last_localT)
+	{
+		*last_localT = new_cell;
+		REF_UNSAFE(new_cell);
+	}
+
 	if (SEND_BUFFER(request) == -1) {
 		LM_ERR("attempt to send to '%.*s' failed\n", 
 			dialog->hooks.next_hop->len,
@@ -344,6 +352,8 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 	} else {
 		start_retr(request);
 	}
+
+
 	return 1;
 
 error1:
@@ -446,4 +456,10 @@ int request(str* m, str* ruri, str* to, str* from, str* h, str* b, str *oburi,
 
 err:
 	return -1;
+}
+
+
+void setlocalTholder(struct cell** holder)
+{
+	last_localT = holder;
 }

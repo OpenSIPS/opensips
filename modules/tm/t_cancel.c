@@ -221,6 +221,7 @@ unsigned int t_uac_cancel( str *headers, str *body,
 	cancel_cell->method.len = 6 /*c-a-n-c-e-l*/;
 
 	/* </prepare_cancel> */
+	UNREF(t_invite);
 
 	/* <strart_sending> */
 	cancel_cell->nr_of_outgoings++;
@@ -232,6 +233,7 @@ unsigned int t_uac_cancel( str *headers, str *body,
 	start_retr(cancel);
 	/* </start_sending> */
 
+
 	return ret;
 
 error1:
@@ -241,6 +243,7 @@ error1:
 error2:
 	free_cell(cancel_cell);
 error3:
+	UNREF(t_invite);
 	return ret;
 }
 

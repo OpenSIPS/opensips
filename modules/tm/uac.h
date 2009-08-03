@@ -48,6 +48,7 @@ typedef int (*reqout_t)(str* m, str* t, str* f, str* h, str* b, dlg_t** d,
 typedef int (*req_t)(str* m, str* ru, str* t, str* f, str* h, str* b, str *obu,
 		transaction_cb c, void* cp,release_tmcb_param release_func);
 
+typedef void (*set_localT_holder_f)(struct cell**);
 
 /*
  * Generate a fromtag based on given Call-ID
@@ -88,5 +89,9 @@ int req_outside(str* m, str* t, str* f, str* h, str* b, dlg_t** d,
 int request(str* m, str* ruri, str* to, str* from, str* h, str* b, str *oburi,
 		transaction_cb c, void* cp, release_tmcb_param release_func);
 
+/*
+ * Set a struct cell holder to get the last local transaction pointer
+ * */
+void setlocalTholder(struct cell** holder);
 
 #endif

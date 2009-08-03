@@ -72,7 +72,8 @@ struct tm_binds {
 	tunrefcell_f       unref_cell;
 	tlookuporiginalt_f t_lookup_original_t;
 	tuaccancel_f       t_cancel_uac;
-	setkr_f t_setkr;
+	setkr_f            t_setkr;
+	set_localT_holder_f setlocalTholder;
 };
 
 

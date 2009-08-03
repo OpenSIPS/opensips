@@ -533,7 +533,7 @@ int load_tm( struct tm_binds *tmb)
 	tmb->dlg_request_uas = dlg_request_uas;
 	tmb->free_dlg = free_dlg;
 	tmb->print_dlg = print_dlg;
-
+	tmb->setlocalTholder = setlocalTholder;
 
 	return 1;
 }
