@@ -1,0 +1,225 @@
+<!-- Module User's Guide -->
+
+<chapter>
+	
+	<title>&adminguide;</title>
+	
+	<section>
+	<title>Overview</title>
+	<para>
+		The B2BUA implementation in OpenSIPS is separated in two layers:
+			<itemizedlist>
+			<listitem>
+		a lower one(coded in b2b_entities module)- which implements the basic functions of a UAS and UAC
+			</listitem>
+			<listitem>
+		an upper one - which represents the logic engine of B2BUA, responsible of actually
+			implementing the B2BUA services using the functions offered by the low level.
+			</listitem>
+	</itemizedlist>
+	This module is a B2BUA upper level implementation that can be used with b2b_entities
+	module to have B2BUA that can be configured to provide some PBX services.
+	The B2B services are coded in an XML scenario document. The b2b_logic module
+	examines this document and uses the functions provided by the b2b_entities
+	module to achieve the actions specified in the document and enable the service.
+	</para>
+	<para>
+		A scenario can be instantiated in two ways:
+		<itemizedlist>
+			<listitem>
+				from the script - at the receipt of a initial message
+			</listitem>
+			<listitem>
+				with a extern command (MI) command - the server will connect two 
+				end points in a session(Third Party Call Control).
+			</listitem>
+		</itemizedlist>
+	</para>
+	</section>
+
+	<section>
+	<title>Dependencies</title>
+	<section>
+		<title>&osips; Modules</title>
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>none</emphasis>
+			</para>
+			</listitem>
+			</itemizedlist>
+	</section>
+	
+	<section>
+		<title>External Libraries or Applications</title>
+		<para>
+		The following libraries or applications must be installed before running
+		&osips; with this module loaded:
+		</para>
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>libxml2-dev</emphasis>
+			</para>
+			</listitem>
+			</itemizedlist>
+	</section>
+	</section>
+
+	<section>
+		<title>Exported Parameters</title>
+	<section>
+		<title><varname>hash_size</varname> (int)</title>
+		<para>
+			The size of the hash table that stores the scenario instatiation entities.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>9</quote>
+		</emphasis>
+		 (512 records).
+		</para>
+		<example>
+		<title>Set <varname>server_hsize</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("b2b_logic", "hash_size", 10)
+...
+	</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>script_scenario</varname> (str)</title>
+		<para>
+			This parameter should be set with the path of a document
+			that contains a scenario that can be instantiated from the
+			script at the receipt of an initial message.
+		</para>
+		<para>
+		This parameter can be set more than once.
+		</para>
+		<example>
+		<title>Set <varname>script_scenario</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("b2b_logic", "script_scenario", "/usr/local/opensips/scripts/b2b_prepaid.xml")
+...
+	</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>extern_scenario</varname> (str)</title>
+		<para>
+			This parameter should be set with the path of a document
+			that contains a scenario that can be instantiated with an MI command.
+		</para>
+		<para>
+		This parameter can be set more than once.
+		</para>
+		<example>
+		<title>Set <varname>script_scenario</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("b2b_logic", "extern_scenario", "/usr/local/opensips/scripts/b2b_marketing.xml")
+...
+	</programlisting>
+		</example>
+	</section>
+	</section>
+
+	<section>
+		<title><varname>cleanup_period</varname> (int)</title>
+		<para>
+			The time interval at which to search for an hanged b2b scenario.
+			A scenario is considered expired if the duration of a session exceeds the
+			lifetime specified in the scenario.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>100</quote>.</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>cleanup_period</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("b2b_logic", "cleanup_period", 60)
+...
+	</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title>Exported Functions</title>
+	<section>
+		<title>
+		<function moreinfo="none">b2b_init_request</function>
+		</title>
+		<para>
+			This is the function that must be called by the script writer
+			when a B2B scenario must be instantiated. It is up to the script
+			writer to decide which are the criteria to decide for which messages
+			certain scenarios must be instantiated.
+		<para>
+			The first parameter is the identifier for the scenario. This is defined in the XML document
+			as an attribute of the root node.
+		</para>
+		<para>
+			Then it can take at most 4 other parameters that represent the parameters for
+			the xml scenario. The expected number of parameters is also specified as an attribute
+			in the root node of the XML scenario.
+		</para>
+		</para>
+		<example>
+			<title><function>b2b_init_request</function> usage</title>
+		<programlisting format="linespecific">
+...
+if(prepaid_user())
+    b2b_init_request("prepaid", "sip:320@opensips.org:5070", "sip:321@opensips.org:5070"));
+...
+</programlisting>
+		</example>
+	</section>
+
+</section>
+
+<section>
+	<title>Exported MI Functions</title>
+	<section>
+		<title>
+		<function moreinfo="none">b2b_trigger_scenario</function>
+		</title>
+		<para>
+		This command instantiated a B2B scenario.
+		</para>
+		<para>
+		Name: <emphasis>b2b_trigger_scenario</emphasis>
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem>
+				<para>senario_id : the id of the scenario to be instantiated.
+				</para>
+			</listitem>
+			<listitem>
+				<para>scenario parameters - it can take 4 more parameters that are scenario parameters</para>
+			</listitem>
+        </itemizedlist>
+
+        <para>
+		MI FIFO Command Format:
+		</para>
+        <programlisting  format="linespecific">
+	:b2b_trigger_scenario:fifo_reply
+	marketing
+	sip:bob@opensips.org
+	sip:322@opensips.org:5070
+	sip:alice@opensips.org
+	_empty_line_
+		</programlisting>
+	</section>
+
+
+</section>
+
+</chapter>
+

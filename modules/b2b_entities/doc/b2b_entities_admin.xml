@@ -1,0 +1,135 @@
+<!-- Module User's Guide -->
+
+<chapter>
+	
+	<title>&adminguide;</title>
+	
+	<section>
+	<title>Overview</title>
+	<para>
+		The B2BUA implementation in OpenSIPS is separated in two layers:
+			<itemizedlist>
+			<listitem>
+		a lower one(coded in this module)- which implements the basic functions of a UAS and UAC
+			</listitem>
+			<listitem>
+		a upper one - which represents the logic engine of B2BUA, responsible of actually
+			implementing the B2BUA services using the functions offered by the low level.
+			</listitem>
+	</itemizedlist>
+
+		This module stores records corresponding to the dialogs in which the B2BUA
+		is involved. It exports an API to be called from other modules which offers functions for
+		creating a new dialog record, for sending requests or replies in one dialog and will also
+		notify the upper level module when a request or reply is received inside one stored dialog.
+
+		The records are separated in two types: b2b server entities and b2b client entities depending
+		on the mode they are created. An entity created for a received initial message will be a server entity,
+		while a entity that will send an initial request(create a new dialog) will be a b2b client entity.
+		The name corresponds to the behavior in the first transaction - if UAS - server entity and if UAC - client entity.
+
+		This module does not implement a B2BUA alone, but needs a B2B logic implementing module.
+	</para>
+	<para>
+	</para>
+	</section>
+
+	<section>
+	<title>Dependencies</title>
+	<section>
+		<title>&osips; Modules</title>
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>tm</emphasis>
+			</para>
+			</listitem>
+			</itemizedlist>
+	</section>
+	
+	<section>
+		<title>External Libraries or Applications</title>
+		<para>
+		The following libraries or applications must be installed before running
+		&osips; with this module loaded:
+		</para>
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>none</emphasis>
+			</para>
+			</listitem>
+			</itemizedlist>
+	</section>
+	</section>
+
+	<section>
+		<title>Exported Parameters</title>
+		<section>
+		<title><varname>server_address</varname> (str)</title>
+		<para>
+			The IP address of the machine that will be used as Contact in
+			the sent messages.
+		</para>
+		<example>
+		<title>Set <varname>server_address</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("b2b_entities", "server_address", "sip:sa@10.10.10.10:5060")
+...
+	</programlisting>
+		</example>
+	</section>
+	<section>
+		<title><varname>server_hsize</varname> (int)</title>
+		<para>
+			The size of the hash table that stores the b2b server entities.
+			It is the 2 logarithmic value of the real size.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>9</quote>
+		</emphasis>
+		 (512 records).
+		</para>
+		<example>
+		<title>Set <varname>server_hsize</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("b2b_entities", "server_hsize", 10)
+...
+	</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>client_hsize</varname> (int)</title>
+		<para>
+			The size of the hash table that stores the b2b client entities.
+			It is the 2 logarithmic value of the real size.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>9</quote>
+		</emphasis>
+		 (512 records).
+		</para>
+		<example>
+		<title>Set <varname>client_hsize</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("b2b_entities", "client_hsize", 10)
+...
+	</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title>Exported Functions</title>
+		<para>The module does not export functions to be used
+		in configuration script.</para>
+	</section>	
+
+
+</section>
+
+</chapter>
+
