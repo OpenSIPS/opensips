@@ -319,7 +319,7 @@ static int mod_init(void)
 		LM_ERR("failed to find dialog API - is dialog module loaded?\n");
 		return -1;
 	}
-	
+
 	if(presence_server.s)
 		presence_server.len = strlen(presence_server.s);
 
@@ -363,5 +363,5 @@ int dialoginfo_set(struct sip_msg* msg, char* str1, char* str2)
 
 	dialog_publish("Trying", get_from(msg), get_to(msg), &(dlg->callid), 1, DEFAULT_CREATED_LIFETIME, 0, 0);
 
-	return 0;
+	return 1;
 }
