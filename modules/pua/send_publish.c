@@ -23,7 +23,7 @@
  *
  * History:
  * --------
- *  2006-11-29  initial version (anca)
+ *  2006-11-29  initial version (Anca Vamanu)
  */
 
 
@@ -161,36 +161,41 @@ void publ_cback_func(struct cell *t, int type, struct tmcb_params *ps)
 		goto error;
 	}
 	hentity= (ua_pres_t*)(*ps->param);
+	hash_code= core_hash(hentity->pres_uri, NULL,HASH_SIZE);
+	lock_get(&HashT->p_records[hash_code].lock);
+	presentity= search_htable( hentity, hash_code);
+	lock_release(&HashT->p_records[hash_code].lock);
+	/* if a record is found, the publish lock is held 
+					and it can not be deleted */
 
 	msg= ps->rpl;
 	if(msg == NULL)
 	{
-		LM_ERR("no reply message found\n ");
-		goto error;
+		LM_ERR("no reply message found\n");
+		goto error1;
 	}
-	
 
 	if(msg== FAKED_REPLY)
 	{
 		LM_DBG("FAKED_REPLY\n");
+		if(presentity)
+			lock_release(&presentity->publ_lock);
 		goto done;
 	}
 
 	if( ps->code>= 300 )
 	{
-		hash_code= core_hash(hentity->pres_uri, NULL,HASH_SIZE);
-		lock_get(&HashT->p_records[hash_code].lock);
-		presentity= search_htable( hentity, hash_code);
 		if(presentity)
 		{
 			LM_DBG("Record found in table and deleted\n");
+			lock_release(&presentity->publ_lock);
+			lock_destroy(&presentity->publ_lock);
 			delete_htable(presentity, hash_code);
 		}
 		else
 		{
 			LM_DBG("Record not found in table\n");
 		}
-		lock_release(&HashT->p_records[hash_code].lock);
 
 		if(ps->code== 412 && hentity->body && hentity->flag!= MI_PUBLISH
 				&& hentity->flag!= MI_ASYN_PUBLISH)
@@ -213,7 +218,7 @@ void publ_cback_func(struct cell *t, int type, struct tmcb_params *ps)
 
 			publ.source_flag|= hentity->flag;
 			publ.event|= hentity->event;
-			publ.content_type= hentity->content_type;	
+			publ.content_type= hentity->content_type;
 			publ.id= hentity->id;
 			publ.extra_headers= hentity->extra_headers;
 			publ.cb_param= hentity->cb_param;
@@ -233,18 +238,17 @@ void publ_cback_func(struct cell *t, int type, struct tmcb_params *ps)
 	if( parse_headers(msg,HDR_EOH_F, 0)==-1 )
 	{
 		LM_ERR("parsing headers\n");
-		goto error;
-	}	
+		goto error1;
+	}
 	if(msg->expires== NULL || msg->expires->body.len<= 0)
 	{
-			LM_ERR("No Expires header found\n");
-			goto error;
-	}	
-	
+		LM_ERR("No Expires header found\n");
+		goto error1;
+	}
 	if (!msg->expires->parsed && (parse_expires(msg->expires) < 0))
 	{
 		LM_ERR("cannot parse Expires header\n");
-		goto error;
+		goto error1;
 	}
 	lexpire = ((exp_body_t*)msg->expires->parsed)->val;
 	LM_DBG("lexpire= %u\n", lexpire);
@@ -253,34 +257,31 @@ void publ_cback_func(struct cell *t, int type, struct tmcb_params *ps)
 	if( hdr==NULL ) /* must find SIP-Etag header field in 200 OK msg*/
 	{
 		LM_ERR("no SIP-ETag header field found\n");
-		goto error;
+		goto error1;
 	}
 	etag= hdr->body;
-		
+
 	LM_DBG("completed with status %d [contact:%.*s]\n",
 			ps->code, hentity->pres_uri->len, hentity->pres_uri->s);
 
-	hash_code= core_hash(hentity->pres_uri, NULL, HASH_SIZE);
-	lock_get(&HashT->p_records[hash_code].lock);
-	
-	presentity= search_htable(hentity, hash_code);
 	if(presentity)
 	{
-			LM_DBG("update record\n");
-			if(lexpire == 0)
-			{
-				LM_DBG("expires= 0- delete from htable\n"); 
-				delete_htable(presentity, hash_code);
-				lock_release(&HashT->p_records[hash_code].lock);
-				goto done;
-			}
-			
-			update_htable(presentity, hentity->desired_expires,
-					lexpire, &etag, hash_code, NULL);
-			lock_release(&HashT->p_records[hash_code].lock);
+		LM_DBG("update record\n");
+		if(lexpire == 0)
+		{
+			LM_DBG("expires= 0- delete from htable\n"); 
+			delete_htable(presentity, hash_code);
+			lock_release(&presentity->publ_lock);
+			lock_destroy(&presentity->publ_lock);
 			goto done;
+		}
+
+		update_htable(presentity, hentity->desired_expires,
+				lexpire, &etag, hash_code, NULL);
+		/* if the record has been updated -> release the Publish lock */
+		lock_release(&presentity->publ_lock);
+		goto done;
 	}
-	lock_release(&HashT->p_records[hash_code].lock);
 
 	if(lexpire== 0)
 	{
@@ -300,9 +301,11 @@ void publ_cback_func(struct cell *t, int type, struct tmcb_params *ps)
 	{
 		LM_ERR("no more share memory\n");
 		goto error;
-	}	
+	}
 	memset(presentity, 0, size);
 	memset(&presentity->etag, 0, sizeof(str));
+
+	lock_init(&presentity->publ_lock);
 
 	size= sizeof(ua_pres_t);
 	presentity->pres_uri= (str*)((char*)presentity+ size);
@@ -377,6 +380,10 @@ done:
 	}
 	return;
 
+error1: /* if an error occured and there is a presentity record, release the lock */
+	if(presentity)
+		lock_release(&presentity->publ_lock);
+
 error:
 	if(*ps->param)
 	{
@@ -387,7 +394,7 @@ error:
 		shm_free(presentity);
 
 	return;
-}	
+}
 
 int send_publish( publ_info_t* publ )
 {
@@ -443,7 +450,7 @@ int send_publish( publ_info_t* publ )
 	
 	if(presentity== NULL)
 	{
-insert:	
+insert:
 		lock_release(&HashT->p_records[hash_code].lock);
 		LM_DBG("insert type\n"); 
 		
@@ -467,12 +474,16 @@ insert:
 	else
 	{
 		LM_DBG("record found in hash_table\n");
+		/* check if the reply for the previous Publish was received */
+		lock_get(&presentity->publ_lock);
+
 		publ->flag= UPDATE_TYPE;
 		etag.s= (char*)pkg_malloc(presentity->etag.len* sizeof(char));
 		if(etag.s== NULL)
 		{
 			LM_ERR("while allocating memory\n");
 			lock_release(&HashT->p_records[hash_code].lock);
+			lock_release(&presentity->publ_lock);
 			return -1;
 		}
 		memcpy(etag.s, presentity->etag.s, presentity->etag.len);
@@ -486,6 +497,7 @@ insert:
 			{
 				LM_ERR("No more memory\n");
 				lock_release(&HashT->p_records[hash_code].lock);
+				lock_release(&presentity->publ_lock);
 				goto error;
 			}	
 			tuple_id->s= (char*)pkg_malloc(presentity->tuple_id.len* sizeof(char));
@@ -493,6 +505,7 @@ insert:
 			{
 				LM_ERR("No more memory\n");
 				lock_release(&HashT->p_records[hash_code].lock);
+				lock_release(&presentity->publ_lock);
 				goto error;
 			}	
 			memcpy(tuple_id->s, presentity->tuple_id.s, presentity->tuple_id.len);
@@ -510,7 +523,7 @@ insert:
 		lock_release(&HashT->p_records[hash_code].lock);
 	}
 
-    /* handle body */
+	/* handle body */
 
 	if(publ->body && publ->body->s)
 	{
@@ -522,6 +535,7 @@ insert:
 				LM_ERR("while processing body\n");
 				if(body== NULL)
 					LM_ERR("NULL body\n");
+				lock_release(&presentity->publ_lock);
 				goto error;
 			}
 		}
@@ -542,6 +556,7 @@ send_publish:
 	if(cb_param== NULL)
 	{
 		LM_ERR("constructing callback parameter\n");
+		lock_release(&presentity->publ_lock);
 		goto error;
 	}
 
@@ -553,6 +568,7 @@ send_publish:
 	if(str_hdr == NULL)
 	{
 		LM_ERR("while building extra_headers\n");
+		lock_release(&presentity->publ_lock);
 		goto error;
 	}
 
@@ -575,8 +591,12 @@ send_publish:
 	if(result< 0)
 	{
 		LM_ERR("in t_request tm module function\n");
+		lock_release(&presentity->publ_lock);
 		goto error;
 	}
+
+	/* The lock for the sent Publish remains taken until the reply is received
+	 * and the record is updated */
 
 	pkg_free(str_hdr);
 

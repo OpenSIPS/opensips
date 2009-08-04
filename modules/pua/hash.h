@@ -79,6 +79,7 @@ typedef struct ua_pres{
 	str tuple_id;
 	str* body;
 	str content_type;
+	gen_lock_t publ_lock;
 
 	/* subscribe */
 	str* watcher_uri;

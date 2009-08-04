@@ -157,7 +157,7 @@ ua_pres_t* search_htable(ua_pres_t* pres, unsigned int hash_code)
 					{
 						if(pres->etag.len== p->etag.len &&
 							strncmp(p->etag.s, pres->etag.s,pres->etag.len)==0)
-							break;		
+							break;
 					}
 					else
 					{
@@ -253,6 +253,9 @@ void delete_htable(ua_pres_t* presentity, unsigned int hash_code)
 	if(p== NULL)
 		return;
 
+	if(p->etag.s)
+		lock_get(&p->publ_lock);
+
 	q=HashT->p_records[hash_code].entity;
 
 	while(q->next!=p)
@@ -260,7 +263,11 @@ void delete_htable(ua_pres_t* presentity, unsigned int hash_code)
 	q->next=p->next;
 	
 	if(p->etag.s)
+	{
 		shm_free(p->etag.s);
+		lock_release(&p->publ_lock);
+		lock_destroy(&p->publ_lock);
+	}
 	else
 		if(p->remote_contact.s)
 			shm_free(p->remote_contact.s);
