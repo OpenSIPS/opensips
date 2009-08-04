@@ -2009,6 +2009,7 @@ int pv_set_force_sock(struct sip_msg* msg, pv_param_t *param,
 		LM_ERR("invalid socket specification\n");
 		goto error;
 	}
+	set_sip_defaults( port, proto);
 	si = grep_sock_info(&host, (unsigned short)port, (unsigned short)proto);
 	if (si!=NULL)
 	{

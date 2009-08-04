@@ -453,6 +453,7 @@ struct mi_root*  mi_tm_uac_dlg(struct mi_root* cmd_tree, void* param)
 		if (parse_phostport( socket->s, socket->len, &s.s, &s.len,
 		&port,&proto)!=0)
 			return init_mi_tree( 404, "Invalid local socket", 20);
+		set_sip_defaults( port, proto);
 		sock = grep_sock_info( &s, (unsigned short)port, proto);
 		if (sock==0)
 			return init_mi_tree( 404, "Local socket not found", 22);

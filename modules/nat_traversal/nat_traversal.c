@@ -1709,6 +1709,7 @@ restore_keepalive_state(void)
             if (parse_phostport(socket, strlen(socket), &host.s, &host.len, &port, &proto) < 0)
                 continue;
 
+            set_sip_defaults( port, proto);
             sock = grep_sock_info(&host, (unsigned short)port, (unsigned short)proto);
             if (!sock)
                 continue; // socket no longer available since last time. ignore.

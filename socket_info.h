@@ -62,6 +62,15 @@ struct socket_info* grep_sock_info(str* host, unsigned short port,
 struct socket_info* find_si(struct ip_addr* ip, unsigned short port,
 												unsigned short proto);
 
+#define set_sip_defaults( _port, _proto) \
+	do { \
+		if (_proto==PROTO_NONE) _proto = PROTO_UDP; \
+		if (_port==0) { \
+			if (_proto==PROTO_TLS) _port = SIPS_PORT; else\
+			_port = SIP_PORT; \
+		} \
+	} while(0)
+
 
 static inline struct socket_info** get_sock_info_list(unsigned short proto)
 {
