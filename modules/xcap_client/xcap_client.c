@@ -90,9 +90,9 @@ static param_export_t params[]={
 
 
 static cmd_export_t  cmds[]=
-{	
-	{"bind_xcap",  (cmd_function)bind_xcap,  1,    0, 0,            0},
-	{    0,                     0,           0,    0, 0,           0}
+{
+	{"bind_xcap",  (cmd_function)bind_xcap,  1,    0, 0,        0},
+	{    0,                     0,           0,    0, 0,        0}
 };
 
 static mi_export_t mi_cmds[] = {
@@ -429,11 +429,17 @@ int get_auid_flag(str auid)
 {
 	static str pres_rules = str_init("pres-rules");
 	static str rls_services = str_init("rls-services");
+	static str pidf_manipulation = str_init("pidf-manipulation");
+	static str resource_list = str_init("resource-list");
 
 	if (STR_MATCH(auid, pres_rules))
 		return PRES_RULES;
 	else if (STR_MATCH(auid, rls_services))
+		return RLS_SERVICES;
+	else if (STR_MATCH(auid, resource_list))
 		return RESOURCE_LIST;
+	else if (STR_MATCH(auid, pidf_manipulation))
+		return PIDF_MANIPULATION;
 
 	return -1;
 }
