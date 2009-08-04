@@ -34,7 +34,7 @@
 #define USERS_TYPE      1
 #define GLOBAL_TYPE     2
 
-#define IF_MATCH    	1
+#define IF_MATCH         1
 #define IF_NONE_MATCH    2
 
 /* macros for the entities responsible for handling a record inserted

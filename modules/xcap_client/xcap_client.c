@@ -81,18 +81,18 @@ db_func_t xcap_dbf;
 void query_xcap_update(unsigned int ticks, void* param);
 
 static param_export_t params[]={
-	{ "db_url",					STR_PARAM,         &xcap_db_url.s    },
-	{ "xcap_table",				STR_PARAM,         &xcap_db_table.s  },
-	{ "periodical_query",		INT_PARAM,         &periodical_query },
-	{ "query_period",	       	INT_PARAM,         &query_period     },
+	{ "db_url",                 STR_PARAM,         &xcap_db_url.s    },
+	{ "xcap_table",             STR_PARAM,         &xcap_db_table.s  },
+	{ "periodical_query",       INT_PARAM,         &periodical_query },
+	{ "query_period",           INT_PARAM,         &query_period     },
 	{    0,                     0,                      0            }
 };
 
 
 static cmd_export_t  cmds[]=
-{	
-	{"bind_xcap",  (cmd_function)bind_xcap,  1,    0, 0,            0},
-	{    0,                     0,           0,    0, 0,           0}
+{
+	{"bind_xcap",  (cmd_function)bind_xcap,  1,    0, 0,        0},
+	{    0,                     0,           0,    0, 0,        0}
 };
 
 static mi_export_t mi_cmds[] = {
@@ -216,7 +216,7 @@ void query_xcap_update(unsigned int ticks, void* param)
 	query_vals[n_query_cols].nul = 0;
 
 	update_cols[u_doc_col=n_update_cols] = &str_doc_col;
-	update_vals[n_update_cols].type = DB_STRING;
+	update_vals[n_update_cols].type = DB_BLOB;
 	update_vals[n_update_cols].nul = 0;
 	n_update_cols++;
 
@@ -429,11 +429,17 @@ int get_auid_flag(str auid)
 {
 	static str pres_rules = str_init("pres-rules");
 	static str rls_services = str_init("rls-services");
+	static str pidf_manipulation = str_init("pidf-manipulation");
+	static str resource_list = str_init("resource-list");
 
 	if (STR_MATCH(auid, pres_rules))
 		return PRES_RULES;
 	else if (STR_MATCH(auid, rls_services))
+		return RLS_SERVICES;
+	else if (STR_MATCH(auid, resource_list))
 		return RESOURCE_LIST;
+	else if (STR_MATCH(auid, pidf_manipulation))
+		return PIDF_MANIPULATION;
 
 	return -1;
 }

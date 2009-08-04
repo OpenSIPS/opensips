@@ -355,7 +355,7 @@ int xcapGetNewDoc(xcap_get_req_t req, str user,
 	n_query_cols++;
 
 	query_cols[n_query_cols] = &str_doc_col;
-	query_vals[n_query_cols].type = DB_STRING;
+	query_vals[n_query_cols].type = DB_BLOB;
 	query_vals[n_query_cols].nul = 0;
 	query_vals[n_query_cols].val.str_val.s= doc;
 	query_vals[n_query_cols].val.str_val.len= strlen(doc);
@@ -507,8 +507,9 @@ size_t get_xcap_etag( void *ptr, size_t size, size_t nmemb, void *stream)
 {
 	int len= 0;
 	char* etag= NULL;
+	char* hdr = (char*)ptr;
 
-	if(strncasecmp(ptr, ETAG_HDR, ETAG_HDR_LEN)== 0)
+	if(strncasecmp(hdr, ETAG_HDR, ETAG_HDR_LEN)== 0)
 	{
 		len= size* nmemb- ETAG_HDR_LEN;
 		etag= (char*)pkg_malloc(len+ 1);
@@ -516,11 +517,11 @@ size_t get_xcap_etag( void *ptr, size_t size, size_t nmemb, void *stream)
 		{
 			ERR_MEM(PKG_MEM_STR);
 		}
-		memcpy(etag, ptr+ETAG_HDR_LEN, len);
+		memcpy(etag, hdr+ETAG_HDR_LEN, len);
 		etag[len]= '\0';
 		*((char**)stream)= etag;
 	}
-	return len;
+	return size* nmemb;
 
 error:
 	return -1;
@@ -534,9 +535,11 @@ char* send_http_get(char* path, unsigned int xcap_port, char* match_etag,
 	CURLcode ret_code;
 	CURL* curl_handle= NULL;
 	static char buf[128];
+	char err_buff[256];
 	char* match_header= NULL;
 	*etag= NULL;
 	long int http_ret_code=-1;
+	struct curl_slist* slist = NULL;
 
 	if(match_etag)
 	{
@@ -547,10 +550,13 @@ char* send_http_get(char* path, unsigned int xcap_port, char* match_etag,
 		
 		hdr_name= (match_type==IF_MATCH)?"If-Match":"If-None-Match"; 
 		
-		len=sprintf(match_header, "%s: %s\n", hdr_name, match_etag);
+		len=sprintf(match_header, "%s: %s", hdr_name, match_etag);
 		
-		match_header[len]= '\0';	
+		match_header[len]= '\0';
+		LM_DBG("match_header = %s\n", match_header);
 	}
+
+	LM_DBG("path = [%s]\n", path);
 
 	curl_handle = curl_easy_init();
 	
@@ -558,9 +564,9 @@ char* send_http_get(char* path, unsigned int xcap_port, char* match_etag,
 	
 	curl_easy_setopt(curl_handle, CURLOPT_PORT, xcap_port);
 
-	curl_easy_setopt(curl_handle, CURLOPT_VERBOSE, 1);	
+	curl_easy_setopt(curl_handle, CURLOPT_VERBOSE, 1);
 
-	curl_easy_setopt(curl_handle,  CURLOPT_STDERR, stdout);	
+	curl_easy_setopt(curl_handle,  CURLOPT_STDERR, stdout);
 	
 	curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, write_function);
 	
@@ -568,10 +574,15 @@ char* send_http_get(char* path, unsigned int xcap_port, char* match_etag,
 
 	curl_easy_setopt(curl_handle, CURLOPT_HEADERFUNCTION, get_xcap_etag);
 	
-	curl_easy_setopt(curl_handle, CURLOPT_WRITEHEADER, &etag);
+	curl_easy_setopt(curl_handle, CURLOPT_WRITEHEADER, etag);
+
+	curl_easy_setopt(curl_handle, CURLOPT_ERRORBUFFER, err_buff);
 
 	if(match_header)
-		curl_easy_setopt(curl_handle, CURLOPT_HEADER, (long)match_header);
+	{
+		slist = curl_slist_append(slist, match_header);
+		curl_easy_setopt(curl_handle, CURLOPT_HTTPHEADER, slist);
+	}
 
 	/* non-2xx => error */
 	curl_easy_setopt(curl_handle, CURLOPT_FAILONERROR, 1);
@@ -579,13 +590,23 @@ char* send_http_get(char* path, unsigned int xcap_port, char* match_etag,
 	ret_code= curl_easy_perform(curl_handle );
 	 
 	if( ret_code!=0) {
-		LM_ERR("Error [%i] while performing curl operation", ret_code);
-		pkg_free(buff.s);
+		LM_ERR("Error [%i] while performing curl operation\n", ret_code);
+		LM_ERR("[%s]\n", err_buff);
+		if(buff.s)
+		{
+			pkg_free(buff.s);
+			buff.s = NULL;
+		}
+//		curl_easy_cleanup(&curl_handle);
 		return NULL;
 	} else {
 		curl_easy_getinfo(curl_handle, CURLINFO_RESPONSE_CODE, &http_ret_code);
 	}
-	LM_DBG("send_http_get return %ld. Content length=%d", http_ret_code, buff.len);
+	LM_DBG("send_http_get return code %ld. Content length=%d\n", http_ret_code, buff.len);
+
+	if(slist)
+		curl_slist_free_all(slist);
+//	curl_easy_cleanup(&curl_handle);
 
 	return buff.s;
 }
@@ -604,16 +625,23 @@ size_t write_function( void *ptr, size_t size, size_t nmemb, void *stream)
 	if (len == 0) 
 		return buff->len;
 
+	if(buff->len + len == 0)
+		return 0;
+
 	newData= (char*)pkg_realloc(buff->s, buff->len + len + 1);
 	if(newData== NULL) 
+	{
+		LM_ERR("No more memory\n");
 		ERR_MEM(PKG_MEM_STR);
+	}
 
-    memcpy(newData+buff->len, s , len);
-    buff->s = newData;
-    buff->len += len;
+	memcpy(newData+buff->len, s , len);
+	buff->s = newData;
+	buff->len += len;
 
-    buff->s[buff->len] = 0;
-    return buff->len;
+	buff->s[buff->len] = 0;
+
+	return len ;
 
 error:
 	return CURLE_WRITE_ERROR;
