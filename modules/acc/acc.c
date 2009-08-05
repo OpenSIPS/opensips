@@ -471,16 +471,16 @@ int init_acc_rad(char *rad_cfg, int srv_type)
 }
 
 
-static inline uint32_t rad_status( struct sip_msg *req, int code )
+static inline struct val *rad_status( struct sip_msg *req, int code )
 {
 	if (req->REQ_METHOD==METHOD_INVITE && get_to(req)->tag_value.len==0
 				&& code>=200 && code<300)
-		return rd_vals[RV_STATUS_START].v;
+		return &rd_vals[RV_STATUS_START];
 	if ((req->REQ_METHOD==METHOD_BYE || req->REQ_METHOD==METHOD_CANCEL))
-		return rd_vals[RV_STATUS_STOP].v;
+		return &rd_vals[RV_STATUS_STOP];
 	if (get_to(req)->tag_value.len)
-		return rd_vals[RV_STATUS_ALIVE].v;
-	return rd_vals[RV_STATUS_FAILED].v;
+		return &rd_vals[RV_STATUS_ALIVE];
+	return &rd_vals[RV_STATUS_FAILED];
 }
 
 #define ADD_RAD_AVPAIR(_attr,_val,_len) \
@@ -497,6 +497,7 @@ int acc_rad_request( struct sip_msg *req, struct sip_msg *rpl)
 	int attr_cnt;
 	VALUE_PAIR *send;
 	uint32_t av_type;
+	struct val *r_stat;
 	int offset;
 	int i;
 
@@ -506,8 +507,8 @@ int acc_rad_request( struct sip_msg *req, struct sip_msg *rpl)
 	/* not interested in the last 2 values */
 	attr_cnt -= 2;
 
-	av_type = rad_status( req, acc_env.code); /* RADIUS status */
-	ADD_RAD_AVPAIR( RA_ACCT_STATUS_TYPE, &av_type, -1);
+	r_stat = rad_status( req, acc_env.code); /* RADIUS status */
+	ADD_RAD_AVPAIR( RA_ACCT_STATUS_TYPE, &(r_stat->v), -1);
 
 	av_type = rd_vals[RV_SIP_SESSION].v; /* session*/
 	ADD_RAD_AVPAIR( RA_SERVICE_TYPE, &av_type, -1);
@@ -542,7 +543,9 @@ int acc_rad_request( struct sip_msg *req, struct sip_msg *rpl)
 	}
 
 	if (rc_acct(rh, SIP_PORT, send)!=OK_RC) {
-		LM_ERR("radius-ing failed\n");
+		LM_ERR("Radius accounting request failed for status: '%s' "
+			"Call-Id: '%.*s' \n",r_stat->n,
+			req->callid->body.len, req->callid->body.s);
 		goto error;
 	}
 	rc_avpair_free(send);
