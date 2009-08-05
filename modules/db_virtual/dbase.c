@@ -393,7 +393,7 @@ int db_virtual_use_table(db_con_t* _h, const str* _t)
 
     int i;
     int rc=0;
-    int rc2=1;
+    int rc2=0;
 
     db_handle_array_t * p = private_handles;
 
@@ -401,8 +401,8 @@ int db_virtual_use_table(db_con_t* _h, const str* _t)
         if(p->hlist[i].flags & CAN_USE){
             rc = global_state->set_a[p->db_set_index].db_state_a[i].dbf.use_table(p->hlist[i].con, _t);
             if(rc)
-                LM_ERR("USE TABLE failed\n");
-            rc2 &=rc;
+                LM_ERR("USE TABLE failed: %.*s\n", _t->len, _t->s);
+            rc2 |=rc;
         }
     }
 
