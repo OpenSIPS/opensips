@@ -182,7 +182,7 @@ int add_set(char * name, char * mode){
     
 
     int nmode = 0;
-    char *c;
+
     if(strncmp(mode, "FAILOVER", strlen("FAILOVER")) == 0)
         nmode = FAILOVER;
     else if(strncmp(mode, "PARALLEL", strlen("PARALLEL")) == 0)
@@ -218,9 +218,6 @@ int add_set(char * name, char * mode){
     }else{
         LM_DBG("alloc %p %i\n", global_state, sizeof(db_set_array_t));
         /* alloc global_state */
-        c = (char *)shm_malloc(8);
-        LM_DBG("alloc %p\n", c);
-        pkg_free(c);
         LM_DBG("alloc %p\n", global_state);
         global_state = (db_set_array_t *) shm_malloc (1 * sizeof(db_set_array_t));
         LM_DBG("alloc %p\n", global_state);
@@ -412,7 +409,7 @@ int virtual_mod_init(void){
 
 
 static void destroy(void){
-	LM_NOTICE("destroy module ...\n");
+	LM_NOTICE("destroy module bla bla...\n");
 
         int i, j;
         

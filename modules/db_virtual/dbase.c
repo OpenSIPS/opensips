@@ -373,16 +373,15 @@ void db_virtual_close(db_con_t* _h)
 
     int i;
     db_handle_array_t * p = private_handles;
-
+  
     if(p){
         if(p->hlist){
             for(i=0; i< p->size; i++){
-                if(p->hlist[i].flags & CAN_USE){
+                if((p->hlist[i].flags & CAN_USE) && !(p->hlist[i].flags & CLOSED)){
+                    p->hlist[i].flags |= CLOSED;
                     global_state->set_a[p->db_set_index].db_state_a[i].dbf.close(p->hlist[i].con);
                 }
             }
-
-            pkg_free(p->hlist);
         }
     }
 }
