@@ -223,7 +223,8 @@ void insert_htable(ua_pres_t* presentity)
 
 	hash_code= core_hash(presentity->pres_uri,presentity->watcher_uri, 
 			HASH_SIZE);
-	
+	presentity->hash_index = hash_code;
+	LM_DBG("start\n");
 	lock_get(&HashT->p_records[hash_code].lock);
 
 /*	
@@ -233,7 +234,7 @@ void insert_htable(ua_pres_t* presentity)
 		LM_DBG("Dialog already found- do not insert\n");
 		return; 
 	}
-*/	
+*/
 	p= HashT->p_records[hash_code].entity;
 
 	presentity->db_flag= INSERTDB_FLAG;
@@ -242,19 +243,25 @@ void insert_htable(ua_pres_t* presentity)
 	p->next= presentity;
 
 	lock_release(&HashT->p_records[hash_code].lock);
+	LM_DBG("end\n");
 
 }
 
-void delete_htable(ua_pres_t* presentity, unsigned int hash_code)
-{ 
+void delete_htable(ua_pres_t* presentity)
+{
 	ua_pres_t* p= NULL, *q= NULL;
+	unsigned int hash_code;
+
+	if(presentity == NULL)
+	{
+		LM_ERR("Entity pointer NULL\n");
+		return;
+	}
+	hash_code = presentity->hash_index;
 
 	p= search_htable(presentity, hash_code);
 	if(p== NULL)
 		return;
-
-	if(p->etag.s)
-		lock_get(&p->publ_lock);
 
 	q=HashT->p_records[hash_code].entity;
 
@@ -276,7 +283,7 @@ void delete_htable(ua_pres_t* presentity, unsigned int hash_code)
 	p= NULL;
 
 }
-	
+
 void destroy_htable(void)
 {
 	ua_pres_t* p= NULL,*q= NULL;

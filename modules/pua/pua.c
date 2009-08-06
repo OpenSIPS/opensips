@@ -614,7 +614,7 @@ static void hashT_clean(unsigned int ticks,void *param)
 		lock_get(&HashT->p_records[i].lock);
 		p= HashT->p_records[i].entity->next;
 		while(p)
-		{	
+		{
 			print_ua_pres(p);
 			if(p->expires- update_period < now )
 			{
@@ -635,12 +635,16 @@ static void hashT_clean(unsigned int ticks,void *param)
 					q= p->next;
 					LM_DBG("Found expired: uri= %.*s\n", p->pres_uri->len,
 							p->pres_uri->s);
-					delete_htable(p, i);
+					if(p->etag.s)
+					{
+						lock_get(&p->publ_lock);
+					}
+					delete_htable(p);
 					p= q;
 				}
 				else
 					p= p->next;
-			}	
+			}
 			else
 				p= p->next;
 		}

@@ -137,11 +137,10 @@ str* publ_build_hdr(int expires, pua_event_t* ev, str* content_type, str* etag,
 	{
 		memcpy(str_hdr->s+str_hdr->len,extra_headers->s , extra_headers->len);
 		str_hdr->len += extra_headers->len;
-	}	
+	}
 	str_hdr->s[str_hdr->len] = '\0';
-	
-	return str_hdr;
 
+	return str_hdr;
 }
 
 void publ_cback_func(struct cell *t, int type, struct tmcb_params *ps)
@@ -153,20 +152,22 @@ void publ_cback_func(struct cell *t, int type, struct tmcb_params *ps)
 	int size= 0;
 	unsigned int lexpire= 0;
 	str etag;
-	unsigned int hash_code;
 
 	if(ps->param== NULL|| *ps->param== NULL)
 	{
 		LM_ERR("NULL callback parameter\n");
-		goto error;
+		return;
 	}
 	hentity= (ua_pres_t*)(*ps->param);
-	hash_code= core_hash(hentity->pres_uri, NULL,HASH_SIZE);
-	lock_get(&HashT->p_records[hash_code].lock);
-	presentity= search_htable( hentity, hash_code);
-	lock_release(&HashT->p_records[hash_code].lock);
-	/* if a record is found, the publish lock is held 
-					and it can not be deleted */
+
+	/* check if an existing record or a new one */
+	if(hentity->db_flag != 0)  /* an exisiting one */
+	{
+		LM_DBG("Existing record\n");
+		presentity = hentity;
+	}
+	else
+		LM_DBG("New record\n");
 
 	msg= ps->rpl;
 	if(msg == NULL)
@@ -185,18 +186,6 @@ void publ_cback_func(struct cell *t, int type, struct tmcb_params *ps)
 
 	if( ps->code>= 300 )
 	{
-		if(presentity)
-		{
-			LM_DBG("Record found in table and deleted\n");
-			lock_release(&presentity->publ_lock);
-			lock_destroy(&presentity->publ_lock);
-			delete_htable(presentity, hash_code);
-		}
-		else
-		{
-			LM_DBG("Record not found in table\n");
-		}
-
 		if(ps->code== 412 && hentity->body && hentity->flag!= MI_PUBLISH
 				&& hentity->flag!= MI_ASYN_PUBLISH)
 		{
@@ -232,9 +221,21 @@ void publ_cback_func(struct cell *t, int type, struct tmcb_params *ps)
 				goto error;
 			}
 		}
+		if(presentity)
+		{
+			LM_DBG("Record found in table and deleted\n");
+			lock_release(&presentity->publ_lock);
+			lock_get(&HashT->p_records[presentity->hash_index].lock);
+			lock_get(&presentity->publ_lock);
+			delete_htable(presentity);
+		}
+		else
+		{
+			LM_DBG("Record not found in table\n");
+		}
 		goto done;
 	}
-	
+
 	if( parse_headers(msg,HDR_EOH_F, 0)==-1 )
 	{
 		LM_ERR("parsing headers\n");
@@ -270,14 +271,15 @@ void publ_cback_func(struct cell *t, int type, struct tmcb_params *ps)
 		if(lexpire == 0)
 		{
 			LM_DBG("expires= 0- delete from htable\n"); 
-			delete_htable(presentity, hash_code);
 			lock_release(&presentity->publ_lock);
-			lock_destroy(&presentity->publ_lock);
+			lock_get(&HashT->p_records[presentity->hash_index].lock);
+			lock_get(&presentity->publ_lock);
+			delete_htable(presentity);
 			goto done;
 		}
 
 		update_htable(presentity, hentity->desired_expires,
-				lexpire, &etag, hash_code, NULL);
+				lexpire, &etag, presentity->hash_index, NULL);
 		/* if the record has been updated -> release the Publish lock */
 		lock_release(&presentity->publ_lock);
 		goto done;
@@ -302,6 +304,7 @@ void publ_cback_func(struct cell *t, int type, struct tmcb_params *ps)
 		LM_ERR("no more share memory\n");
 		goto error;
 	}
+	LM_DBG("Alocated new record\n");
 	memset(presentity, 0, size);
 	memset(&presentity->etag, 0, sizeof(str));
 
@@ -341,7 +344,7 @@ void publ_cback_func(struct cell *t, int type, struct tmcb_params *ps)
 	}
 
 	if(hentity->outbound_proxy)
-	{	
+	{
 		presentity->outbound_proxy= (str*)((char*)presentity+ size);
 		size+= sizeof(str);
 		presentity->outbound_proxy->s= (char*)presentity+ size;
@@ -365,7 +368,7 @@ void publ_cback_func(struct cell *t, int type, struct tmcb_params *ps)
 	memcpy(presentity->etag.s, etag.s, etag.len);
 	presentity->etag.len= etag.len;
 
-	insert_htable( presentity);
+	insert_htable(presentity);
 	LM_DBG("***Inserted in hash table\n");
 
 done:
@@ -373,7 +376,7 @@ done:
 	{
 		run_pua_callbacks(hentity, msg);
 	}
-	if(*ps->param)
+	if(*ps->param && hentity->db_flag== 0)
 	{
 		shm_free(*ps->param);
 		*ps->param= NULL;
@@ -385,12 +388,12 @@ error1: /* if an error occured and there is a presentity record, release the loc
 		lock_release(&presentity->publ_lock);
 
 error:
-	if(*ps->param)
+	if(*ps->param && hentity->db_flag == 0)
 	{
 		shm_free(*ps->param);
 		*ps->param= NULL;
 	}
-	if(presentity)
+	if(hentity->db_flag==0 && presentity)
 		shm_free(presentity);
 
 	return;
@@ -420,7 +423,7 @@ int send_publish( publ_info_t* publ )
 	{
 		LM_ERR("event not found in list\n");
 		goto error;
-	}	
+	}
 
 	memset(&pres, 0, sizeof(ua_pres_t));
 	pres.pres_uri= publ->pres_uri;
@@ -476,13 +479,13 @@ insert:
 		LM_DBG("record found in hash_table\n");
 		/* check if the reply for the previous Publish was received */
 		lock_get(&presentity->publ_lock);
+		lock_release(&HashT->p_records[hash_code].lock);
 
 		publ->flag= UPDATE_TYPE;
 		etag.s= (char*)pkg_malloc(presentity->etag.len* sizeof(char));
 		if(etag.s== NULL)
 		{
 			LM_ERR("while allocating memory\n");
-			lock_release(&HashT->p_records[hash_code].lock);
 			lock_release(&presentity->publ_lock);
 			return -1;
 		}
@@ -490,24 +493,22 @@ insert:
 		etag.len= presentity->etag.len;
 
 		if(presentity->tuple_id.s && presentity->tuple_id.len)
-		{	
+		{
 			/* get tuple_id*/
 			tuple_id=(str*)pkg_malloc(sizeof(str));
 			if(tuple_id== NULL)
 			{
 				LM_ERR("No more memory\n");
-				lock_release(&HashT->p_records[hash_code].lock);
 				lock_release(&presentity->publ_lock);
 				goto error;
-			}	
+			}
 			tuple_id->s= (char*)pkg_malloc(presentity->tuple_id.len* sizeof(char));
 			if(tuple_id->s== NULL)
 			{
 				LM_ERR("No more memory\n");
-				lock_release(&HashT->p_records[hash_code].lock);
 				lock_release(&presentity->publ_lock);
 				goto error;
-			}	
+			}
 			memcpy(tuple_id->s, presentity->tuple_id.s, presentity->tuple_id.len);
 			tuple_id->len= presentity->tuple_id.len;
 		}
@@ -515,16 +516,13 @@ insert:
 		if(publ->expires== 0)
 		{
 			LM_DBG("expires= 0- delete from hash table\n");
-			lock_release(&HashT->p_records[hash_code].lock);
 			goto send_publish;
 		}
 		presentity->version++;
 		ver= presentity->version;
-		lock_release(&HashT->p_records[hash_code].lock);
 	}
 
 	/* handle body */
-
 	if(publ->body && publ->body->s)
 	{
 		if( ev->process_body)
@@ -535,7 +533,8 @@ insert:
 				LM_ERR("while processing body\n");
 				if(body== NULL)
 					LM_ERR("NULL body\n");
-				lock_release(&presentity->publ_lock);
+				if(presentity)
+					lock_release(&presentity->publ_lock);
 				goto error;
 			}
 		}
@@ -547,17 +546,20 @@ insert:
 		LM_DBG("tuple_id= %.*s\n", tuple_id->len, tuple_id->s  );
 	
 send_publish:
-	
 	/* construct the callback parameter */
 	if(etag.s && etag.len)
 		publ->etag = &etag;
 
-	cb_param= publish_cbparam(publ, body, tuple_id, REQ_OTHER);
-	if(cb_param== NULL)
+	if(presentity)
+		cb_param = presentity;
+	else
 	{
-		LM_ERR("constructing callback parameter\n");
-		lock_release(&presentity->publ_lock);
-		goto error;
+		cb_param= publish_cbparam(publ, body, tuple_id, REQ_OTHER);
+		if(cb_param== NULL)
+		{
+			LM_ERR("constructing callback parameter\n");
+			goto error;
+		}
 	}
 
 	if(publ->flag & UPDATE_TYPE)
@@ -568,7 +570,8 @@ send_publish:
 	if(str_hdr == NULL)
 	{
 		LM_ERR("while building extra_headers\n");
-		lock_release(&presentity->publ_lock);
+		if(presentity)
+			lock_release(&presentity->publ_lock);
 		goto error;
 	}
 
@@ -591,7 +594,8 @@ send_publish:
 	if(result< 0)
 	{
 		LM_ERR("in t_request tm module function\n");
-		lock_release(&presentity->publ_lock);
+		if(presentity)
+			lock_release(&presentity->publ_lock);
 		goto error;
 	}
 
@@ -660,7 +664,6 @@ ua_pres_t* publish_cbparam(publ_info_t* publ,str* body,str* tuple_id,
 	if(publ->outbound_proxy.s)
 		size+= sizeof(str) + publ->outbound_proxy.len;
 
-
 	cb_param= (ua_pres_t*)shm_malloc(size);
 	if(cb_param== NULL)
 	{
@@ -681,7 +684,7 @@ ua_pres_t* publish_cbparam(publ_info_t* publ,str* body,str* tuple_id,
 	size+= publ->pres_uri->len;
 
 	if(publ->id.s && publ->id.len)
-	{	
+	{
 		cb_param->id.s = (char*)cb_param+ size;
 		memcpy(cb_param->id.s, publ->id.s, publ->id.len);
 		cb_param->id.len= publ->id.len;
@@ -716,7 +719,7 @@ ua_pres_t* publish_cbparam(publ_info_t* publ,str* body,str* tuple_id,
 			publ->extra_headers->len ) ;
 		cb_param->extra_headers->len= publ->extra_headers->len;
 		size+= publ->extra_headers->len;
-	}	
+	}
 
 	if(publ->content_type.s && publ->content_type.len)
 	{
@@ -724,16 +727,16 @@ ua_pres_t* publish_cbparam(publ_info_t* publ,str* body,str* tuple_id,
 		memcpy(cb_param->content_type.s, publ->content_type.s, publ->content_type.len);
 		cb_param->content_type.len= publ->content_type.len;
 		size+=  publ->content_type.len;
-	}	
+	}
 	if(tuple_id)
-	{	
+	{
 		cb_param->tuple_id.s = (char*)cb_param+ size;
 		memcpy(cb_param->tuple_id.s, tuple_id->s ,tuple_id->len);
 		cb_param->tuple_id.len= tuple_id->len;
 		size+= tuple_id->len;
 	}
 	if(publ->outbound_proxy.s)
-	{	
+	{
 		cb_param->outbound_proxy = (str*)((char*)cb_param+ size);
 		size+= sizeof(str);
 		cb_param->outbound_proxy->s = (char*)cb_param+ size;
