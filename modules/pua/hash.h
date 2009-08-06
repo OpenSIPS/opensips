@@ -61,10 +61,10 @@
 #define MAX_FORWARD  70
 
 typedef struct ua_pres{
- 
-    /* common*/
+	/* common*/
+	unsigned int hash_index;
 	str id;
-    str* pres_uri;
+	str* pres_uri;
 	int event;
 	unsigned int expires;
 	unsigned int desired_expires;
@@ -94,8 +94,6 @@ typedef struct ua_pres{
 	str record_route;
 	str remote_contact;
 	str contact;
-
-	/*?? should this be long? */
 }ua_pres_t;
 
 typedef struct hash_entry
@@ -105,7 +103,7 @@ typedef struct hash_entry
 }hash_entry_t;	
 
 typedef struct htable{
-    hash_entry_t* p_records;        	              
+    hash_entry_t* p_records;
 }htable_t;
 
 htable_t* new_htable(void);
@@ -117,7 +115,7 @@ void insert_htable(ua_pres_t* presentity );
 void update_htable(ua_pres_t* presentity,time_t desired_expires,
 		int expires, str* etag, unsigned int hash_code, str* contact);
 
-void delete_htable(ua_pres_t* presentity, unsigned int hash_code);
+void delete_htable(ua_pres_t* presentity);
 
 void destroy_htable(void);
 int is_dialog(ua_pres_t* dialog);

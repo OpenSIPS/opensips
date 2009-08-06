@@ -264,7 +264,7 @@ void subs_cback_func(struct cell *t, int cb_type, struct tmcb_params *ps)
 			goto done;
 		}
 
-		delete_htable(presentity, hash_code);
+		delete_htable(presentity);
 		lock_release(&HashT->p_records[hash_code].lock);
 		goto done;
 	}
@@ -369,7 +369,7 @@ void subs_cback_func(struct cell *t, int cb_type, struct tmcb_params *ps)
 		{
 			subs_info_t subs;
 			hentity->event= presentity->event;
-			delete_htable(presentity, hash_code);
+			delete_htable(presentity);
 			lock_release(&HashT->p_records[hash_code].lock);
 
 			memset(&subs, 0, sizeof(subs_info_t));
