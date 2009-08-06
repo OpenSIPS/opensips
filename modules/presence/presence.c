@@ -240,7 +240,6 @@ static int mod_init(void)
 		LM_ERR("Database module not found\n");
 		return -1;
 	}
-	
 
 	if (!DB_CAPABILITY(pa_dbf, DB_CAP_ALL))
 	{
@@ -315,6 +314,18 @@ static int mod_init(void)
 	
 	if(db_update_period>0)
 		register_timer(timer_db_update, 0, db_update_period);
+
+	if (pa_dbf.use_table(pa_db, &watchers_table) < 0)
+	{
+		LM_ERR("unsuccessful use table sql operation\n");
+		return -1;
+	}
+
+	if(pa_dbf.delete(pa_db, 0,0,0,0)< 0)
+	{
+		LM_ERR("deleting all records from database table\n");
+		return -1;
+	}
 
 	if(pa_db)
 		pa_dbf.close(pa_db);
@@ -609,7 +620,7 @@ int pres_update_status(subs_t subs, str reason, db_key_t* query_cols,
 
 	if(subs.status!= status || reason.len!= subs.reason.len ||
 		(reason.s && subs.reason.s && strncmp(reason.s, subs.reason.s,
-											  reason.len)))
+											reason.len)))
 	{
 		/* update in watchers_table */
 		query_vals[q_wuser_col].val.str_val= subs.from_user; 
@@ -626,12 +637,26 @@ int pres_update_status(subs_t subs, str reason, db_key_t* query_cols,
 
 		CON_PS_REFERENCE(pa_db) = &my_ps;
 
-		if(pa_dbf.update(pa_db, query_cols, 0, query_vals, update_cols,
-					update_vals, n_query_cols, n_update_cols)< 0)
+		/* if status is terminated and reason="deactivated", delete the record from table */
+		if(subs.status == TERMINATED_STATUS && subs.reason.len==11 &&
+				strncmp(subs.reason.s, "deactivated", 11)==0)
 		{
-			LM_ERR( "in sql update\n");
-			return -1;
+			if(pa_dbf.delete(pa_db, query_cols, 0, query_vals, n_query_cols)< 0)
+			{
+				LM_ERR( "in sql delete\n");
+				return -1;
+			}
 		}
+		else
+		{
+			if(pa_dbf.update(pa_db, query_cols, 0, query_vals, update_cols,
+						update_vals, n_query_cols, n_update_cols)< 0)
+			{
+				LM_ERR( "in sql update\n");
+				return -1;
+			}
+		}
+
 		/* save in the list all affected dialogs */
 		/* if status switches to terminated -> delete dialog */
 		if(update_pw_dialogs(&subs, subs.db_flag, subs_array)< 0)

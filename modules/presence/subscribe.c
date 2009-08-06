@@ -298,6 +298,51 @@ int update_subs_db(subs_t* subs, int type)
 	return 0;
 }
 
+int subs_process_insert_status(subs_t* subs)
+{
+	struct sip_uri uri;
+
+	/*default 'pending' status */
+	subs->status= PENDING_STATUS;
+	subs->reason.s= NULL;
+	subs->reason.len= 0;
+
+	if(parse_uri(subs->pres_uri.s, subs->pres_uri.len, &uri)< 0)
+	{
+		LM_ERR("parsing uri\n");
+		goto error;
+
+	}
+	if(subs->event->get_rules_doc(&uri.user, &uri.host, &subs->auth_rules_doc)< 0)
+	{
+		LM_ERR("getting rules doc\n");
+		goto error;
+	}
+
+	if(subs->event->get_auth_status(subs)< 0)
+	{
+		LM_ERR("in event specific function is_watcher_allowed\n");
+		goto error;
+	}
+	if(get_status_str(subs->status)== NULL)
+	{
+		LM_ERR("wrong status= %d\n", subs->status);
+		goto error;
+	}
+
+	if(insert_db_subs_auth(subs)< 0)
+	{
+		LM_ERR("while inserting record in watchers table\n");
+		goto error;
+	}
+
+	return 0;
+
+error:
+	return -1;
+}
+
+
 int update_subscription(struct sip_msg* msg, subs_t* subs, int init_req)
 {	
 	unsigned int hash_code;
@@ -518,7 +563,6 @@ int handle_subscribe(struct sip_msg* msg, char* force_active_param, char* str2)
 	param_t* ev_param= NULL;
 	int found;
 	str reason= {0, 0};
-	struct sip_uri uri;
 	int reply_code;
 	str reply_str;
 	int ret;
@@ -648,37 +692,9 @@ int handle_subscribe(struct sip_msg* msg, char* force_active_param, char* str2)
 			}
 			if(found== 0)
 			{
-				/*default 'pending' status */
-				subs.status= PENDING_STATUS;
-				subs.reason.s= NULL;
-				subs.reason.len= 0;
-
-				if(parse_uri(subs.pres_uri.s, subs.pres_uri.len, &uri)< 0)
+				if( subs_process_insert_status(&subs) < 0)
 				{
-					LM_ERR("parsing uri\n");
-					goto error;
-
-				}
-				if(subs.event->get_rules_doc(&uri.user, &uri.host, &subs.auth_rules_doc)< 0)
-				{
-					LM_ERR("getting rules doc\n");
-					goto error;
-				}
-
-				if(subs.event->get_auth_status(&subs)< 0)
-				{
-					LM_ERR("in event specific function is_watcher_allowed\n");
-					goto error;
-				}
-				if(get_status_str(subs.status)== NULL)
-				{
-					LM_ERR("wrong status= %d\n", subs.status);
-					goto error;
-				}
-
-				if(insert_db_subs_auth(&subs)< 0)
-				{
-					LM_ERR("while inserting record in watchers table\n");
+					LM_ERR("Failed to extract and insert authorization status\n");
 					goto error;
 				}
 			}
@@ -1332,7 +1348,7 @@ int handle_expired_subs(subs_t* s)
 }
 
 void timer_db_update(unsigned int ticks,void *param)
-{	
+{
 	int no_lock=0;
 
 	if(ticks== 0 && param == NULL)
@@ -1351,7 +1367,7 @@ void timer_db_update(unsigned int ticks,void *param)
 
 void update_db_subs(db_con_t *db,db_func_t dbf, shtable_t hash_table,
 	int htable_size, int no_lock, handle_expired_func_t handle_expired_func)
-{	
+{
 	static db_ps_t my_ps_delete = NULL;
 	static db_ps_t my_ps_update = NULL, my_ps_insert = NULL;
 	db_key_t query_cols[22], update_cols[7];
@@ -1636,7 +1652,6 @@ void update_db_subs(db_con_t *db,db_func_t dbf, shtable_t hash_table,
 	{
 		LM_ERR("deleting expired information from database\n");
 	}
-
 }
 
 int insert_subs_db(subs_t* s)
@@ -1836,6 +1851,7 @@ int restore_db_subs(void)
 		return -1;
 	}
 
+
 	if(pa_dbf.use_table(pa_db, &active_watchers_table)< 0)
 	{
 		LM_ERR("in use table\n");
@@ -1958,7 +1974,18 @@ int restore_db_subs(void)
 			s.version= row_vals[version_col].val.int_val;
 			
 			s.expires= expires- (int)time(NULL);
-			s.status= row_vals[status_col].val.int_val;
+			s.status = row_vals[status_col].val.int_val;
+
+			if(!event->req_auth)
+				s.status = ACTIVE_STATUS;
+			else
+			{
+				if(subs_process_insert_status(&s)< 0)
+				{
+					LM_ERR("Failed to extract and insert status\n");
+					goto error;
+				}
+			}
 
 			s.reason.s= (char*)row_vals[reason_col].val.string_val;
 			if(s.reason.s)

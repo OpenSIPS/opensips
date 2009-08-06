@@ -462,8 +462,9 @@ Chapter 2. Developer Guide
 2.1.  bind_presence(presence_api_t* api)
 
    This function binds the presence modules and fills the
-   structure with one exported function -> add_event, which when
-   called adds a new event to be handled by presence.
+   structure with the exported functions that represent functions
+   adding events in presence module and functions specific for
+   Subscribe processing.
 
    Example 2.1. presence_api_t structure
 ...

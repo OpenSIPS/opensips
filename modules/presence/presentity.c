@@ -945,7 +945,6 @@ char* get_sphere(str* pres_uri)
 	str body;
 	static str query_str = str_init("received_time");
 
-
 	if(!sphere_enable)
 		return NULL;
 

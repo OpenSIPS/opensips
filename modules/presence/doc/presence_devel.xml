@@ -12,8 +12,8 @@
 				</title>
 			<para>
 				This function binds the presence modules and fills the structure 
-				with one exported function -> add_event, which when called adds a 
-				new event to be handled by presence.
+				with the exported functions that represent functions adding events
+				in presence module and functions specific for Subscribe processing.
 			</para>
 		<example>
 		<title><function>presence_api_t</function> structure</title>
