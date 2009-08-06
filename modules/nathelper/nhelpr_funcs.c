@@ -159,7 +159,7 @@ int extract_body(struct sip_msg *msg, str *body )
 	int skip;
 	
 	body->s = get_body(msg);
-	if (body->s==0) {
+	if (body->s==NULL) {
 		LM_ERR("failed to get the message body\n");
 		goto error;
 	}
@@ -169,6 +169,10 @@ int extract_body(struct sip_msg *msg, str *body )
 	 * parcing as get_body() parsed all headers and Conten-Length
 	 * body header is automaticaly parsed when found.
 	 */
+	if (msg->content_length==NULL) {
+		LM_ERR("message has no Content-Len header\n");
+		goto error;
+	}
 	body->len = get_content_length(msg);
 	if (body->len==0) {
 		LM_ERR("message body has length zero\n");
