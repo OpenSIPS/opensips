@@ -77,7 +77,7 @@ int pres_watcher_allowed(subs_t* subs)
 	{
 		/* if no rule node was found and the previous state was active -> set the
 		 * state to terminated with reason deactivated */
-		if(subs->status == ACTIVE_STATUS)
+		if(subs->status != PENDING_STATUS)
 		{
 			subs->status= TERMINATED_STATUS;
 			subs->reason.s= "deactivated";
