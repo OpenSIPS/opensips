@@ -58,9 +58,6 @@ int pres_watcher_allowed(subs_t* subs)
 		subs->reason.len= 0;
 		return 0;
 	}
-	subs->status= PENDING_STATUS;
-	subs->reason.s= NULL;
-	subs->reason.len= 0;
 
 	if(subs->auth_rules_doc== NULL)
 	{
@@ -71,15 +68,29 @@ int pres_watcher_allowed(subs_t* subs)
 			subs->auth_rules_doc->len);
 	if(xcap_tree== NULL)
 	{
-		LM_ERR("parsing xml memory\n");
+		LM_ERR("parsing xml memory\n"); 
 		return -1;
 	}
 
 	node= get_rule_node(subs, xcap_tree);
 	if(node== NULL)
+	{
+		/* if no rule node was found and the previous state was active -> set the
+		 * state to terminated with reason deactivated */
+		if(subs->status == ACTIVE_STATUS)
+		{
+			subs->status= TERMINATED_STATUS;
+			subs->reason.s= "deactivated";
+			subs->reason.len = 11;
+		}
 		return 0;
+	}
 
-	/* process actions */	
+	subs->status= PENDING_STATUS;
+	subs->reason.s= NULL;
+	subs->reason.len= 0;
+
+	/* process actions */
 	actions_node = xmlNodeGetChildByName(node, "actions");
 	if(actions_node == NULL)
 	{	
@@ -141,7 +152,7 @@ int pres_watcher_allowed(subs_t* subs)
 
 	return 0;
 
-}	
+}
 
 xmlNodePtr get_rule_node(subs_t* subs, xmlDocPtr xcap_tree )
 {
