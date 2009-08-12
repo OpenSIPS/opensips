@@ -131,7 +131,7 @@ str* client_new(str* method, str* to_uri, str* from_uri, str* extra_headers,
 		shm_free(dlg);
 		goto error;
 	}
-	DBG("New client - key = %.*s\n", callid->len, callid->s);
+	LM_DBG("New client - key = %.*s\n", callid->len, callid->s);
 
 	/* construct extra headers -> add contact */
 	if(extra_headers && extra_headers->s && extra_headers->len)
