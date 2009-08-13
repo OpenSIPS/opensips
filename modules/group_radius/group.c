@@ -142,6 +142,7 @@ int radius_is_user_in(struct sip_msg* _m, char* _hf, char* _group)
 
 	if (!rc_avpair_add(rh, &send, attrs[A_SIP_GROUP].v, grp->s, grp->len, 0)) {
 		LM_ERR("failed to add Sip-Group attribute\n");
+		rc_avpair_free(send);
 	 	return -8;
 	}
 
@@ -156,11 +157,13 @@ int radius_is_user_in(struct sip_msg* _m, char* _hf, char* _group)
 	if ( _m->callid==NULL && 
 	(parse_headers(_m, HDR_CALLID_F, 0)==-1 || _m->callid==NULL)  ) {
 		LM_ERR("msg parsing failed or callid not present");
+		rc_avpair_free(send);
 		return -10;
 	}
 	if (rc_avpair_add(rh,&send,attrs[A_ACCT_SESSION_ID].v,_m->callid->body.s,
 	_m->callid->body.len, 0) == 0) {
 		LM_ERR("unable to add CALL-ID attribute\n");
+		rc_avpair_free(send);
 		return -11;
 	}
 
