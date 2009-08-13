@@ -33,20 +33,92 @@
 #include "../../db/db_val.h"
 #include "../../str.h"
 
-typedef struct db_handle {
-    db_con_t * con;
-    int flags;
 
-    int no_retrys;
-} db_handle_t;
 
-typedef struct db_handle_array {
-    int db_set_index;               /* which index in global_state */
+/*
+ * private handle
+ *
+ * handle_con
+ *
+ *      con
+ *      flags
+ *      no_retries
+ *
+ *
+ *
+ * handle_set
+ *      curent
+ *
+ *      con_list
+ *      size
+ *
+ *      refcount
+ *
+ *
+ *
+ * handle_private
+ *
+ *      hset_list
+ *      size
+ *
+ */
 
-    int curent;
-    db_handle_t * hlist;
-    int size;
-} db_handle_array_t;
+
+/*
+ * global info
+ *
+ * info_db
+ *      url
+ *      func
+ *      flags
+ *
+ * info_set
+ *      name
+ *      mode
+ *
+ *      db_list
+ *      size
+ *
+ * info_global
+ *
+ *      hset_list
+ *      size
+ */
+
+/*
+ * Each process has "private handle".
+ * There is a global shared "global info".
+ * Each "private handle" coresponds to "global info".
+ *
+ */
+
+typedef struct handle_con {
+
+    db_con_t*       con;        /* handle for using a real database */
+    int             flags;      /* private CAN, MAY flags */
+    int             no_retries; /* failed retries left before giving up */
+} handle_con_t;
+
+
+typedef struct handle_set {
+    /* index in the info_global list; used for the 1 to 1 relationship */
+    int             set_index;  
+
+    /* index in con_list; used for FAILOVER and ROUNDROBIN mode */
+    int             curent_con; 
+    handle_con_t*   con_list;
+    int             size;
+
+    /* used for exactly once call of real init() and close() */
+    int             refcount;   
+} handle_set_t;
+
+
+typedef struct handle_private {
+
+    handle_set_t*   hset_list;
+    int             size;
+} handle_private_t;
 
 
 /*

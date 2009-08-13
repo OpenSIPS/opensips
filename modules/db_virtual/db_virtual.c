@@ -54,10 +54,11 @@ int db_reconnect_with_timer = 1;
 /*char is_initialized = 0;*/
 
 /* dbs state in shared memory seen global */
-db_set_array_t * global_state = NULL;
+info_global_t * global = NULL;
 
 /* dbs handles in private memory local to each process */
-db_handle_array_t * private_handles = NULL;
+//handle_set_t * private_handles = NULL;
+handle_private_t * private = NULL;
 
 /* db_urls pointer older until initialization */
 char*   db_urls_list[100];
@@ -66,13 +67,13 @@ int     db_urls_count=0;
 MODULE_VERSION
 
 
-int init_global_state(void);
+int init_global(void);
 static void destroy(void);
 int db_virtual_bind_api(const str* mod, db_func_t *dbb);
 
 
 struct mi_root *db_get_info(struct mi_root *cmd, void *param);
-struct mi_root* db_set_info(struct mi_root* cmd, void* param);
+struct mi_root* info_set_info(struct mi_root* cmd, void* param);
 //struct mi_root* db_add_url(struct mi_root* cmd, void* param);
 
 static int store_urls( modparam_t type, void* val);
@@ -82,7 +83,7 @@ static int store_urls( modparam_t type, void* val);
  * Virtual database module interface
  */
 static cmd_export_t cmds[] = {
-	{"db_bind_api",         (cmd_function)db_virtual_bind_api,      0, 0, 0, 0},
+	{"db_bind_api",         (cmd_function)db_virtual_bind_api, 0, 0, 0, 0},
 	{0, 0, 0, 0, 0, 0}
 };
 
@@ -101,7 +102,7 @@ static param_export_t params[] = {
  */
 static mi_export_t mi_cmds[] = {
         {"db_get",      db_get_info,       MI_NO_INPUT_FLAG,  0,  0 },
-        {"db_set",      db_set_info,       0,  0,  0 },
+        {"info_set",      info_set_info,       0,  0,  0 },
         //{"db_add",      db_add_url,        0,  0,  0 },
 	{ 0, 0, 0, 0, 0}
 };
@@ -127,23 +128,23 @@ int add_url(int index, char * name){
     LM_DBG("add url (%i . %s)\n", index, name);
 
     int i;
-    if(global_state->set_a[index].size){
-        LM_DBG("add another url %p\n", global_state->set_a[index].db_state_a);
+    if(global->set_list[index].size){
+        LM_DBG("add another url %p\n", global->set_list[index].db_list);
 
         /* realoc */
-        i = global_state->set_a[index].size;
+        i = global->set_list[index].size;
 
-        /* db_state_a realloc */
-        global_state->set_a[index].db_state_a =
-            (db_state_t *) shm_realloc(global_state->set_a[index].db_state_a,
-            (i+1)* sizeof(db_state_t));
-        global_state->set_a[index].size +=1;
+        /* db_list realloc */
+        global->set_list[index].db_list =
+            (info_db_t *) shm_realloc(global->set_list[index].db_list,
+            (i+1)* sizeof(info_db_t));
+        global->set_list[index].size +=1;
 
         /* db_url */
-        global_state->set_a[index].db_state_a[i].db_url.s =
+        global->set_list[index].db_list[i].db_url.s =
                 (char *) shm_malloc(strlen(name) * sizeof(char));
-        global_state->set_a[index].db_state_a[i].db_url.len = strlen(name);
-        memcpy(global_state->set_a[index].db_state_a[i].db_url.s,
+        global->set_list[index].db_list[i].db_url.len = strlen(name);
+        memcpy(global->set_list[index].db_list[i].db_url.s,
                 name, strlen(name));
 
     
@@ -152,26 +153,26 @@ int add_url(int index, char * name){
         LM_DBG("add first set url\n");
 
         i=0;
-        /* alloc set_a index */
-        global_state->set_a[index].db_state_a =
-                (db_state_t *) shm_malloc(1 * sizeof(db_state_t));
-        if(!global_state->set_a[index].db_state_a)
+        /* alloc set_list index */
+        global->set_list[index].db_list =
+                (info_db_t *) shm_malloc(1 * sizeof(info_db_t));
+        if(!global->set_list[index].db_list)
             MEM_ERR(MEM_SHM);
 
-        memset(global_state->set_a[index].db_state_a, 0, sizeof(db_state_t));
+        memset(global->set_list[index].db_list, 0, sizeof(info_db_t));
 
-        global_state->set_a[index].size = 1;
+        global->set_list[index].size = 1;
 
         /* alloc url name */
-        global_state->set_a[index].db_state_a[0].db_url.s =
+        global->set_list[index].db_list[0].db_url.s =
                 (char *) shm_malloc(strlen(name)*sizeof(char));
-        global_state->set_a[index].db_state_a[0].db_url.len = strlen(name);
+        global->set_list[index].db_list[0].db_url.len = strlen(name);
 
-        memcpy(global_state->set_a[index].db_state_a[0].db_url.s,
+        memcpy(global->set_list[index].db_list[0].db_url.s,
                 name, strlen(name));    
     }
 
-    global_state->set_a[index].db_state_a[i].flags = CAN_USE | MAY_USE;
+    global->set_list[index].db_list[i].flags = CAN_USE | MAY_USE;
     return 0;
 
     error:
@@ -192,65 +193,65 @@ int add_set(char * name, char * mode){
 
     LM_DBG("add set=%s mode=%i\n", name, nmode);
 
-    if(global_state){
+    if(global){
         LM_DBG("realloc\n");
-        /* realoc set_a */
-        int i = global_state->size;
-        global_state->set_a = (db_set_t *)shm_realloc(global_state->set_a,
-                                (i+1)*sizeof(db_set_t));
-        if(!global_state->set_a)
+        /* realoc set_list */
+        int i = global->size;
+        global->set_list = (info_set_t *)shm_realloc(global->set_list,
+                                (i+1)*sizeof(info_set_t));
+        if(!global->set_list)
             MEM_ERR(MEM_SHM);
 
-        global_state->size +=1;
+        global->size +=1;
         
-        global_state->set_a[i].set_name.s =
+        global->set_list[i].set_name.s =
                 (char *) shm_malloc(strlen(name)*sizeof(char));
-        global_state->set_a[i].set_name.len = strlen(name);
-        memcpy(global_state->set_a[i].set_name.s, name, strlen(name));
+        global->set_list[i].set_name.len = strlen(name);
+        memcpy(global->set_list[i].set_name.s, name, strlen(name));
 
         /* set mode */
-        global_state->set_a[i].set_mode = nmode;
+        global->set_list[i].set_mode = nmode;
 
-        global_state->set_a[i].size = 0 ;
+        global->set_list[i].size = 0 ;
 
 
 
     }else{
-        LM_DBG("alloc %p %i\n", global_state, sizeof(db_set_array_t));
-        /* alloc global_state */
-        LM_DBG("alloc %p\n", global_state);
-        global_state = (db_set_array_t *) shm_malloc (1 * sizeof(db_set_array_t));
-        LM_DBG("alloc %p\n", global_state);
+        LM_DBG("alloc %p %i\n", global, sizeof(info_global_t));
+        /* alloc global */
+        LM_DBG("alloc %p\n", global);
+        global = (info_global_t *) shm_malloc (1 * sizeof(info_global_t));
+        LM_DBG("alloc %p\n", global);
         
-        if(!global_state)
+        if(!global)
             MEM_ERR(MEM_SHM);
 
-        memset(global_state, 0, 1 * sizeof(db_set_array_t));
+        memset(global, 0, 1 * sizeof(info_global_t));
         LM_DBG("alloc done\n");
 
         /* alloc set array */
-        global_state->set_a = (db_set_t *) shm_malloc (1 * sizeof(db_set_t));
-        if(!global_state->set_a)
+        global->set_list = (info_set_t *) shm_malloc (1 * sizeof(info_set_t));
+        if(!global->set_list)
             MEM_ERR(MEM_SHM);
 
-        memset(global_state->set_a, 0, 1 * sizeof(db_set_t));
+        memset(global->set_list, 0, 1 * sizeof(info_set_t));
 
         /* set array size */
-        global_state->size = 1;
+        global->size = 1;
 
 
         /* alloc set name */
-        global_state->set_a[0].set_name.s =
+        global->set_list[0].set_name.s =
                 (char *) shm_malloc(strlen(name)*sizeof(char));
-        global_state->set_a[0].set_name.len = strlen(name);
+        global->set_list[0].set_name.len = strlen(name);
 
-        memcpy(global_state->set_a[0].set_name.s, name, strlen(name));
+        memcpy(global->set_list[0].set_name.s, name, strlen(name));
 
         /* set mode */
-        global_state->set_a[0].set_mode = nmode;
+        global->set_list[0].set_mode = nmode;
 
         /* set size */
-        global_state->set_a[0].size=0;
+        global->set_list[0].size=0;
     }
 
     return 0;
@@ -268,7 +269,7 @@ static int store_urls( modparam_t type, void* val){
 }
 
 
-int init_global_state(void){//str *db_set_mapping){
+int init_global(void){//str *info_set_mapping){
 
 
     
@@ -302,20 +303,21 @@ int init_global_state(void){//str *db_set_mapping){
         }
  
     }
-    for(i = 0; i< global_state->size; i++)
-        for(j=0; j<global_state->set_a[i].size; j++){
+    for(i = 0; i< global->size; i++)
+        for(j=0; j<global->set_list[i].size; j++){
 
-            global_state->set_a[i].db_state_a[j].dbf.cap = 0;
+            global->set_list[i].db_list[j].dbf.cap = 0;
 
-            if(db_bind_mod(&global_state->set_a[i].db_state_a[j].db_url,
-                    &global_state->set_a[i].db_state_a[j].dbf)){
-                LM_ERR("cant bind db : %.*s", global_state->set_a[i].db_state_a[j].db_url.len,
-                        global_state->set_a[i].db_state_a[j].db_url.s);
+            if(db_bind_mod(&global->set_list[i].db_list[j].db_url,
+                    &global->set_list[i].db_list[j].dbf)){
+                LM_ERR("cant bind db : %.*s",
+			global->set_list[i].db_list[j].db_url.len,
+                        global->set_list[i].db_list[j].db_url.s);
                 goto error;
             }
         }
 
-    LM_DBG("global_state done\n");
+    LM_DBG("global done\n");
     /*is_initialized = 1; */
     return 0;
 
@@ -327,13 +329,25 @@ int init_global_state(void){//str *db_set_mapping){
 
 int init_private_handles(void){
 
-    private_handles = (db_handle_array_t *) pkg_malloc(1 * sizeof(db_handle_array_t));
-    if(!private_handles)
-        MEM_ERR(MEM_PKG);
+    LM_DBG("Init private handles\n");
 
-    memset(private_handles, 0, sizeof(db_handle_array_t));
+
+    private = (handle_private_t* ) pkg_malloc(sizeof(handle_private_t));
+    if(!private)
+	MEM_ERR(MEM_PKG);
+
+    memset(private, 0, sizeof(handle_private_t));
+    
+
+    private->size = global->size;
+    private->hset_list = (handle_set_t*)pkg_malloc(private->size * sizeof(handle_set_t));
+    if(!private->hset_list)
+	MEM_ERR(MEM_PKG);
+
+    memset(private->hset_list, 0, private->size * sizeof(handle_set_t));
+
     return 0;
-
+    
     error:
     return -1;
 }
@@ -345,25 +359,25 @@ static void reconnect_timer(unsigned int ticks, void *data)
 
     db_con_t * con;
     
-    for(i=0; i < global_state-> size; i++){
-        for(j=0; j < global_state->set_a[i].size; j++){
+    for(i=0; i < global-> size; i++){
+        for(j=0; j < global->set_list[i].size; j++){
             /* if CAN DOWN */
-            if(!(global_state->set_a[i].db_state_a[j].flags & CAN_USE)){
+            if(!(global->set_list[i].db_list[j].flags & CAN_USE)){
                 con =
-                    global_state->set_a[i].db_state_a[j].dbf.init(
-                    &global_state->set_a[i].db_state_a[j].db_url);
+                    global->set_list[i].db_list[j].dbf.init(
+                    &global->set_list[i].db_list[j].db_url);
                 if(!con){
                      LM_DBG("Cant reconnect on timer to db %.*s, %i\n",
-                        global_state->set_a[i].db_state_a[j].db_url.len,
-                        global_state->set_a[i].db_state_a[j].db_url.s,
-                             global_state->set_a[i].db_state_a[j].flags);
+                        global->set_list[i].db_list[j].db_url.len,
+                        global->set_list[i].db_list[j].db_url.s,
+                             global->set_list[i].db_list[j].flags);
 
                 }else{
                     LM_DBG("Can reconnect on timer to db %.*s\n",
-                            global_state->set_a[i].db_state_a[j].db_url.len,
-                        global_state->set_a[i].db_state_a[j].db_url.s);
-                    global_state->set_a[i].db_state_a[j].dbf.close(con);
-                    global_state->set_a[i].db_state_a[j].flags |= CAN_USE;
+                            global->set_list[i].db_list[j].db_url.len,
+                        global->set_list[i].db_list[j].db_url.s);
+                    global->set_list[i].db_list[j].dbf.close(con);
+                    global->set_list[i].db_list[j].flags |= CAN_USE;
                 }
             }
         }
@@ -376,21 +390,21 @@ int virtual_mod_init(void){
 
 
 
-        if(!global_state){
+        if(!global){
             int i,j;
             int rc;
-            rc = init_global_state();
+            rc = init_global();
             rc |= init_private_handles();
 
             //print structure
-            for(i = 0; i< global_state->size; i++){
-                LM_DBG("set {%.*s}\n", global_state->set_a[i].set_name.len,
-                global_state->set_a[i].set_name.s);
-                for(j=0; j< global_state->set_a[i].size; j++){
+            for(i = 0; i< global->size; i++){
+                LM_DBG("set {%.*s}\n", global->set_list[i].set_name.len,
+                global->set_list[i].set_name.s);
+                for(j=0; j< global->set_list[i].size; j++){
                     LM_DBG("url \t{%.*s}%p\n",
-                    global_state->set_a[i].db_state_a[j].db_url.len,
-                    global_state->set_a[i].db_state_a[j].db_url.s,
-                    &global_state->set_a[i].db_state_a[j].dbf);
+                    global->set_list[i].db_list[j].db_url.len,
+                    global->set_list[i].db_list[j].db_url.s,
+                    &global->set_list[i].db_list[j].dbf);
                 }
             }
 
@@ -413,21 +427,21 @@ static void destroy(void){
 
         int i, j;
         
-        if(global_state){
-            if(global_state->set_a){
-                for(i=0; i< global_state->size; i++){
-                    if(global_state->set_a[i].db_state_a){
-                        for(j=0; j< global_state->set_a[i].size; j++){
-                            if(global_state->set_a[i].db_state_a[j].db_url.s){
-                                shm_free(global_state->set_a[i].db_state_a[j].db_url.s);
+        if(global){
+            if(global->set_list){
+                for(i=0; i< global->size; i++){
+                    if(global->set_list[i].db_list){
+                        for(j=0; j< global->set_list[i].size; j++){
+                            if(global->set_list[i].db_list[j].db_url.s){
+                                shm_free(global->set_list[i].db_list[j].db_url.s);
                             }
                         }
-                        shm_free(global_state->set_a[i].db_state_a);
+                        shm_free(global->set_list[i].db_list);
                     }
                 }
-                shm_free(global_state->set_a);
+                shm_free(global->set_list);
             }
-            shm_free(global_state);
+            shm_free(global);
         }
 }
 
@@ -439,7 +453,7 @@ int db_virtual_bind_api(const str* mod, db_func_t *dbb)
     str s;
     //int len;
 
-    if(!global_state)
+    if(!global)
         if(virtual_mod_init())
             return 1;
     
@@ -456,25 +470,25 @@ int db_virtual_bind_api(const str* mod, db_func_t *dbb)
     s.s +=2;
 
     
-    for(i=0; i< global_state->size; i++){
-        if(strncmp(s.s, global_state->set_a[i].set_name.s,
-                global_state->set_a[i].set_name.len) == 0)
+    for(i=0; i< global->size; i++){
+        if(strncmp(s.s, global->set_list[i].set_name.s,
+                global->set_list[i].set_name.len) == 0)
             break;
     }
 
     LM_DBG("REDUCING capabilities for %.*s\n",
-        global_state->set_a[i].set_name.len, global_state->set_a[i].set_name.s);
+        global->set_list[i].set_name.len, global->set_list[i].set_name.s);
 
     dbb->cap = DB_CAP_FAILOVER;
-    for(j=0; j< global_state->set_a[i].size; j++){
-        dbb->cap &= global_state->set_a[i].db_state_a[j].dbf.cap;
+    for(j=0; j< global->set_list[i].size; j++){
+        dbb->cap &= global->set_list[i].db_list[j].dbf.cap;
     }
 
-    if(global_state->set_a[i].set_mode == FAILOVER){
+    if(global->set_list[i].set_mode == FAILOVER){
         dbb->cap &= DB_CAP_FAILOVER;
-    }else if(global_state->set_a[i].set_mode == PARALLEL){
+    }else if(global->set_list[i].set_mode == PARALLEL){
         dbb->cap &= DB_CAP_PARALLEL;
-    }else if(global_state->set_a[i].set_mode == ROUND){
+    }else if(global->set_list[i].set_mode == ROUND){
         dbb->cap &= DB_CAP_ROUND;
     }
     
@@ -518,7 +532,7 @@ struct mi_root *db_get_info(struct mi_root *cmd, void *param){
     rpl = &rpl_tree->node;
 
 
-    for(i=0; i < global_state->size; i++ ){
+    for(i=0; i < global->size; i++ ){
         node = add_mi_node_child(rpl, 0, MI_SSTR("SET"), 0, 0 );
         if (node==0)
             goto error;
@@ -528,11 +542,12 @@ struct mi_root *db_get_info(struct mi_root *cmd, void *param){
         if (attr==0)
             goto error;
 
-        attr = add_mi_attr(node, 0, MI_SSTR("name"), global_state->set_a[i].set_name.s,global_state->set_a[i].set_name.len);
+        attr = add_mi_attr(node, 0, MI_SSTR("name"),
+	    global->set_list[i].set_name.s,global->set_list[i].set_name.len);
         if (attr==0)
             goto error;
 
-        switch(global_state->set_a[i].set_mode){
+        switch(global->set_list[i].set_mode){
             case FAILOVER:
                 sprintf(buf, "%s", "FAILOVER");
                 break;
@@ -544,11 +559,12 @@ struct mi_root *db_get_info(struct mi_root *cmd, void *param){
                 break;
         }
 
-        attr = add_mi_attr(node, MI_DUP_VALUE, MI_SSTR("mode"), buf,strlen(buf));
+        attr = add_mi_attr(node, MI_DUP_VALUE, MI_SSTR("mode"),
+		buf,strlen(buf));
         if (attr==0)
             goto error;
         
-        for(j=0; j< global_state->set_a[i].size; j++){
+        for(j=0; j< global->set_list[i].size; j++){
 
             node2 = add_mi_node_child(node, 0, MI_SSTR("DB"), 0, 0);
             if(node2 == 0)
@@ -559,13 +575,15 @@ struct mi_root *db_get_info(struct mi_root *cmd, void *param){
             if (attr==0)
             goto error;
 
-            attr = add_mi_attr(node2, 0, MI_SSTR("name"), global_state->set_a[i].db_state_a[j].db_url.s,global_state->set_a[i].db_state_a[j].db_url.len);
+            attr = add_mi_attr(node2, 0, MI_SSTR("name"), 
+		global->set_list[i].db_list[j].db_url.s,
+		global->set_list[i].db_list[j].db_url.len);
             if (attr==0)
                 goto error;
 
-            can_use = (global_state->set_a[i].db_state_a[j].flags & CAN_USE) ? 1 : 0;
-            may_use = (global_state->set_a[i].db_state_a[j].flags & MAY_USE) ? 1 : 0;
-            recon = (global_state->set_a[i].db_state_a[j].flags & RERECONNECT) ? 1 : 0;
+            can_use = (global->set_list[i].db_list[j].flags & CAN_USE) ? 1 : 0;
+            may_use = (global->set_list[i].db_list[j].flags & MAY_USE) ? 1 : 0;
+            recon = (global->set_list[i].db_list[j].flags & RERECONNECT) ? 1 :0;
 
             p = int2str((unsigned long)can_use, &len);
             LM_DBG("can flag %.*s\n", len, p);
@@ -596,7 +614,7 @@ error:
 };
 
 
-struct mi_root* db_set_info(struct mi_root* cmd, void* param){
+struct mi_root* info_set_info(struct mi_root* cmd, void* param){
     
     struct mi_node* node= NULL;
 
@@ -629,7 +647,7 @@ struct mi_root* db_set_info(struct mi_root* cmd, void* param){
         LM_ERR("invalid index1(not int)\n");
         return 0;
     }
-    if(nindex1 >= global_state->size || nindex1<0){
+    if(nindex1 >= global->size || nindex1<0){
         LM_ERR("invalid index1 value\n");
         // fa un return la rezultat
         return 0;
@@ -651,7 +669,7 @@ struct mi_root* db_set_info(struct mi_root* cmd, void* param){
         LM_ERR("invalid index(not int)\n");
         return 0;
     }
-    if(nindex2 >= global_state->set_a[nindex1].size || nindex2<0){
+    if(nindex2 >= global->set_list[nindex1].size || nindex2<0){
         LM_ERR("invalid index value\n");
         /* fa un return la rezultat */
         return 0;
@@ -678,7 +696,7 @@ struct mi_root* db_set_info(struct mi_root* cmd, void* param){
         return 0;
     }
 
-    flags = global_state->set_a[nindex1].db_state_a[nindex2].flags;
+    flags = global->set_list[nindex1].db_list[nindex2].flags;
 
     /* get possible rerecon state 1=UP 0= DOWN */
     node = node->next;
@@ -710,7 +728,7 @@ struct mi_root* db_set_info(struct mi_root* cmd, void* param){
 
     
     
-    global_state->set_a[nindex1].db_state_a[nindex2].flags = flags;  
+    global->set_list[nindex1].db_list[nindex2].flags = flags;
     /* dont worry about race conditions */
     
     return init_mi_tree( 200, MI_SSTR(MI_OK));

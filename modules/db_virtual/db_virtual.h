@@ -67,26 +67,51 @@ enum DB_MODE {FAILOVER=0, PARALLEL, ROUND};
 				goto error;\
 		} while(0)
 
-typedef struct db_state{
-                    str db_url;
-                    db_func_t dbf;
-                    int flags;
-}db_state_t;
+/*
+ * global info
+ *
+ * info_db
+ *      url
+ *      func
+ *      flags
+ *
+ * info_set
+ *      name
+ *      mode
+ *
+ *      db_list
+ *      size
+ *
+ * info_global
+ *
+ *      hset_list
+ *      size
+ */
 
-typedef struct db_set{
-                    str set_name;
-                    char set_mode;
+typedef struct info_db{
 
-                    db_state_t * db_state_a;
-                    int size;
-}db_set_t;
+    str         db_url;         /* url to real db */
+    db_func_t   dbf;            /* db functions and capabilities */
+    int         flags;          /* global CAN, MAY flags */
+}info_db_t;
 
 
-typedef struct db_set_array{
+typedef struct info_set{
+    
+    str         set_name;       /* name of the set; ex: set1, set2...*/
+    char        set_mode;       /* mode of the set: PARALLEL, FAILOVER, ... */
 
-                    db_set_t * set_a;
-                    int size;
-}db_set_array_t;
+    info_db_t*  db_list;
+    int         size;
+}info_set_t;
+
+
+typedef struct info_global{
+
+    info_set_t* set_list;
+    int         size;
+}info_global_t;
+
 
 int virtual_mod_init(void);
 int init_private_handles(void);
