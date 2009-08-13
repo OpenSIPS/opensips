@@ -307,8 +307,20 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 		return -1;
 	}
 
-	tmb.t_newtran(msg);
-	dlg->tm_tran = tmb.t_gett();
+	if(msg->first_line.u.request.method_value == METHOD_ACK)
+	{
+		if(dlg->last_reply_code > 299)
+		{
+			lock_release(&table[hash_index].lock);
+			return 0;
+		}
+		dlg->tm_tran = 0;
+	}
+	else
+	{
+		tmb.t_newtran(msg);
+		dlg->tm_tran = tmb.t_gett();
+	}
 
 	b2b_cback = dlg->b2b_cback;
 	param = dlg->param;
@@ -616,7 +628,7 @@ int b2b_send_reply(enum b2b_entity_type et, str* b2b_key, int code, str* text,
 		LM_DBG("I was asked to send reply for BYE-> DELETE\n");
 //		b2b_delete_record(dlg, &table, hash_index);
 	}
-
+	dlg->last_reply_code = code;
 	lock_release(&table[hash_index].lock);
 	
 	p = buffer;
@@ -858,7 +870,7 @@ int b2b_send_request(enum b2b_entity_type et, str* b2b_key, str* method,
 			tm_cback,           /* callback function*/
 			b2b_key_shm,        /* callback parameter*/
 			shm_free_param);
-		
+
 		tmb.setlocalTholder(0);
 	}
 

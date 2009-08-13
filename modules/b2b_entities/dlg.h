@@ -85,6 +85,7 @@ typedef struct b2b_dlg
 	b2b_notify_t         b2b_cback;
 	void*                param;
 	struct cell*         tm_tran;
+	unsigned int         last_reply_code;
 }b2b_dlg_t;
 
 typedef struct b2b_entry
