@@ -459,7 +459,6 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 		}
 		else
 		{
-			
 			rule = scenario->request_rules[request_id];
 			while(rule)
 			{

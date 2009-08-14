@@ -344,7 +344,7 @@ error:
 	{
 		int i;
 		b2b_rule_t* prev;
-		for(i = 0; i< 3; i++)
+		for(i = 0; i< B2B_METHODS_NO; i++)
 		{
 			rule_struct = scenario->request_rules[i];
 			while(rule_struct)
@@ -405,7 +405,7 @@ static void mod_destroy(void)
 
 		xmlFreeDoc(scenario->doc);
 		b2b_rule_t* prev;
-		for(i = 0; i< 3; i++)
+		for(i = 0; i< B2B_METHODS_NO; i++)
 		{
 			rule_struct = scenario->request_rules[i];
 			while(rule_struct)

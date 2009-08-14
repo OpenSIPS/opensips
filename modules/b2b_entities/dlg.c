@@ -253,6 +253,8 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 	b2b_notify_t b2b_cback;
 	void* param;
 	b2b_table table = NULL;
+	int method_value;
+	struct to_body TO;
 
 	/* check if a b2b request */
 	if (parse_headers(msg, HDR_EOH_F, 0) < 0)
@@ -260,29 +262,94 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 		LM_ERR("failed to parse message\n");
 		return -1;
 	}
+	method_value = msg->first_line.u.request.method_value;
 
-	/* we are interested only in request inside dialog */
-	b2b_key = get_to(msg)->tag_value;
-	if(b2b_key.s == NULL && b2b_key.len == 0)
+	if( msg->callid==NULL || msg->callid->body.s==NULL)
 	{
-		LM_DBG("Not an inside dialog request - not interested.\n");
-		return 1;
+		LM_ERR("failed to parse callid header\n");
+		return -1;
 	}
 
+	/* if a CANCEL request - search iteratively in the server_htable*/
+	if(method_value == METHOD_CANCEL)
+	{
+		str from_tag;
+		str callid;
+
+		callid = msg->callid->body;
+
+		if(b2b_parse_key(&callid, &hash_index, &local_index) >= 0)
+		{
+			LM_DBG("received a CANCEL message that I sent\n");
+			return 1;
+		}
+
+		/* examine the from header */
+		if (!msg->from || !msg->from->body.s)
+		{
+			LM_ERR("cannot find 'from' header!\n");
+			return -1;
+		}
+		if (msg->from->parsed == NULL)
+		{
+			if ( parse_from_header( msg )<0 ) 
+			{
+				LM_ERR("cannot parse From header\n");
+				return -1;
+			}
+		}
+		from_tag = ((struct to_body*)msg->from->parsed)->tag_value;
+
+		hash_index = core_hash(&callid, &from_tag, server_hsize);
+
+		lock_get(&server_htable[hash_index].lock);
+		dlg = server_htable[hash_index].first;
+		while(dlg)
+		{
+			if(dlg->callid.len == callid.len &&
+					strncmp(dlg->callid.s, callid.s, callid.len)== 0 &&
+					dlg->tag[CALLER_LEG].len == from_tag.len &&
+					strncmp(dlg->tag[CALLER_LEG].s, from_tag.s, from_tag.len)== 0)
+				break;
+			dlg = dlg->next;
+		}
+		if(dlg == NULL)
+		{
+			lock_release(&server_htable[hash_index].lock);
+			LM_DBG("No dialog found\n");
+			return 0;
+		}
+		table = server_htable;
+
+		goto logic_notify;
+	}
+
+	/* we are interested only in request inside dialog */
+		/* examine the to header */
+	if(msg->to->parsed == NULL)
+	{
+		memset( &TO , 0, sizeof(TO) );
+		if( !parse_to(msg->to->body.s,msg->to->body.s + msg->to->body.len + 1, &TO));
+		{
+			LM_DBG("'To' header NOT parsed\n");
+			return 0;
+		}
+	}
+
+	b2b_key = get_to(msg)->tag_value;
+	if(b2b_key.s == NULL && b2b_key.len == 0 && method_value != METHOD_CANCEL)
+	{
+		LM_DBG("Not an inside dialog request- not interested.\n");
+		return 1;
+	}
 	/* check if the to tag has the b2b key format -> meaning that it is a server request */
-	if(b2b_parse_key(&b2b_key, &hash_index, &local_index) >= 0)
+	if(b2b_key.s && b2b_parse_key(&b2b_key, &hash_index, &local_index) >= 0)
 	{
 		LM_DBG("Received a b2b server request\n");
 		table = server_htable;
 	}
 	else
 	{
-		if( msg->callid==NULL || msg->callid->body.s==NULL)
-		{
-			LM_ERR("failed to parse callid header\n");
-			return -1;
-		}
-
 		/* check if the callid is in b2b format -> meaning that this is a client request */
 		b2b_key = msg->callid->body;
 		if(b2b_parse_key(&b2b_key, &hash_index, &local_index) >= 0)
@@ -307,7 +374,7 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 		return -1;
 	}
 
-	if(msg->first_line.u.request.method_value == METHOD_ACK)
+	if(method_value == METHOD_ACK)
 	{
 		if(dlg->last_reply_code > 299)
 		{
@@ -322,6 +389,7 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 		dlg->tm_tran = tmb.t_gett();
 	}
 
+logic_notify:
 	b2b_cback = dlg->b2b_cback;
 	param = dlg->param;
 
@@ -606,6 +674,9 @@ int b2b_send_reply(enum b2b_entity_type et, str* b2b_key, int code, str* text,
 		lock_release(&table[hash_index].lock);
 		return -1;
 	}
+	if(code >= 200)
+		dlg->tm_tran = NULL;
+
 	msg = tm_tran->uas.request;
 	if(msg== NULL)
 	{
@@ -646,7 +717,7 @@ int b2b_send_reply(enum b2b_entity_type et, str* b2b_key, int code, str* text,
 		p = proto2str(msg->rcv.proto, p);
 		if (p==NULL) {
 			LM_ERR("invalid proto\n");
-			return -1;
+			goto error;
 		}
 	}
 	*(p++) = '>';
@@ -659,10 +730,20 @@ int b2b_send_reply(enum b2b_entity_type et, str* b2b_key, int code, str* text,
 	if(tmb.t_reply_with_body(tm_tran, code, text, body, &ehdr, to_tag) < 0)
 	{
 		LM_ERR("failed to send reply with tm\n");
-		return -1;
+		goto error;
 	}
-
+	if(code >= 200)
+	{
+		tmb.unref_cell(tm_tran);
+	}
 	return 0;
+
+error:
+	if(code >= 200)
+	{
+		tmb.unref_cell(tm_tran);
+	}
+	return -1;
 }
 
 void b2b_delete_record(b2b_dlg_t* dlg, b2b_table* htable, unsigned int hash_index)
@@ -809,6 +890,7 @@ int b2b_send_request(enum b2b_entity_type et, str* b2b_key, str* method,
 	/* send request */
 	if(dlg->last_method == METHOD_CANCEL)
 	{
+		LM_DBG("send cancel request\n");
 		if(dlg->tm_tran)
 		{
 			result = tmb.t_cancel_uac(&ehdr, 0, dlg->tm_tran->hash_index, dlg->tm_tran->label, 0, 0);

@@ -107,7 +107,7 @@ str* client_new(str* method, str* to_uri, str* from_uri, str* extra_headers,
 	}
 	memset(dlg, 0, size);
 	size = sizeof(b2b_dlg_t);
-	
+
 	dlg->from_uri.s = (char*)dlg + size;
 	memcpy(dlg->from_uri.s, from_uri->s, from_uri->len);
 	dlg->from_uri.len = from_uri->len;
@@ -200,7 +200,6 @@ str* client_new(str* method, str* to_uri, str* from_uri, str* extra_headers,
 		return 0;
 	}
 	tmb.setlocalTholder(0);
-
 	return callid;
 
 error:

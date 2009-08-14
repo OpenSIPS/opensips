@@ -57,7 +57,7 @@ typedef struct b2b_rule
 	struct b2b_rule* next;
 }b2b_rule_t;
 
-enum {B2B_INVITE, B2B_ACK, B2B_BYE};
+enum {B2B_INVITE, B2B_ACK, B2B_BYE, B2B_CANCEL, B2B_METHODS_NO};
 
 
 typedef struct b2b_scenario
@@ -66,7 +66,7 @@ typedef struct b2b_scenario
 	unsigned int param_no;
 	xmlDocPtr doc;
 	xmlNodePtr init_node;
-	b2b_rule_t* request_rules[3];
+	b2b_rule_t* request_rules[B2B_METHODS_NO];
 	b2b_rule_t* reply_rules;
 
 	struct b2b_scenario* next;
@@ -77,14 +77,17 @@ extern b2b_scenario_t* extern_scenaries;
 
 static inline int b2b_get_request_id(str* request)
 {
-	if(request->len ==6 && strncasecmp(request->s, "invite", 6)==  0)
+	if(request->len ==INVITE_LEN&&strncasecmp(request->s,INVITE,INVITE_LEN)==0)
 		return B2B_INVITE;
 
-	if(request->len ==3 && strncasecmp(request->s, "ack", 3)==  0)
+	if(request->len ==ACK_LEN && strncasecmp(request->s,ACK,ACK_LEN)==0)
 		return B2B_ACK;
 
-	if(request->len ==3 && strncasecmp(request->s, "bye", 3)==  0)
+	if(request->len ==BYE_LEN && strncasecmp(request->s,BYE,BYE_LEN)==0)
 		return B2B_BYE;
+
+	if(request->len==CANCEL_LEN &&strncasecmp(request->s,CANCEL,CANCEL_LEN)==0)
+		return B2B_CANCEL;
 
 	return -1;
 }
