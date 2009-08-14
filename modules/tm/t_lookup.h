@@ -53,6 +53,9 @@ int _add_branch_label( struct cell *trans,
 int add_branch_label( struct cell *trans, 
 	struct sip_msg *p_msg, int branch );
 
+/* references T-context */
+void t_ref_cell(struct cell *c);
+
 /* releases T-context */
 int  t_unref( struct sip_msg *p_msg);
 void t_unref_cell( struct cell *);

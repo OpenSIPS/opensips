@@ -70,6 +70,7 @@ struct tm_binds {
 	tgett_f            t_gett;
 	tget_picked_f      t_get_picked;
 	tunrefcell_f       unref_cell;
+	tunrefcell_f       ref_cell;
 	tlookuporiginalt_f t_lookup_original_t;
 	tuaccancel_f       t_cancel_uac;
 	setkr_f            t_setkr;

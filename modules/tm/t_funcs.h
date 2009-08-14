@@ -101,6 +101,12 @@ int send_pr_buffer( struct retr_buf *rb, void *buf, int len);
 	((_T_cell)->ref_count--);\
 	LM_DBG("UNREF_UNSAFE: after is %d\n",(_T_cell)->ref_count);\
 	}while(0)
+
+#define REF(_T_cell) do{ \
+	LOCK_HASH( (_T_cell)->hash_index ); \
+	REF_UNSAFE(_T_cell); \
+	UNLOCK_HASH( (_T_cell)->hash_index ); }while(0)
+
 #define UNREF(_T_cell) do{ \
 	LOCK_HASH( (_T_cell)->hash_index ); \
 	UNREF_UNSAFE(_T_cell); \
