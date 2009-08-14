@@ -26,6 +26,7 @@
 #define _PEERING_VERIFY_H_
 
 #include "../../parser/msg_parser.h"
+#include "../../aaa/aaa.h"
 
 int verify_destination(struct sip_msg* _msg, char* s1, char* s2);
 

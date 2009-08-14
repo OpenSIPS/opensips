@@ -25,9 +25,8 @@
 	if the request came from a trusted peer.
         </para>
         <para>
-        Verification functions communicate with the broker using Radius
-        protocol.  Sample FreeRADIUS configuration files for broker's
-	Radius server are available from http://www.wirlab.net/tsi/.
+        Verification functions communicate with the broker using an AAA
+        protocol.  
         </para>
 
         <para>
@@ -46,54 +45,33 @@
 			the listed modules must be loaded before this module):
 			<itemizedlist>
 				<listitem>
-				<para><emphasis>none</emphasis></para>
+				<para><emphasis>an AAA implementing module</emphasis></para>
 				</listitem>
 			</itemizedlist>
 			</para>
-		</section>
-		<section>
-			<title>External Libraries or Applications</title>
-			<para>
-			The following libraries or applications must be installed 
-			before compilling &osips; with this module
-				loaded:
-			</para>
-			<itemizedlist>
-				<listitem>
-				<para><emphasis>radiusclient-ng</emphasis>
-				0.5.0 or higher -- 
-				library and development files. See <ulink 
-				url='http://developer.berlios.de/projects/radiusclient-ng/'>
-				http://developer.berlios.de/projects/radiusclient-ng/</ulink>.
-				</para>
-				</listitem>
-			</itemizedlist>
 		</section>
 	</section>
 
 	<section>
 	<title>Exported Parameters</title>
 	<section>
-		<title><varname>radius_config</varname> (string)</title>
+		<title><varname>aaa_url</varname> (string)</title>
 		<para>
-		This is the location of the configuration file of radius client 
-		libraries.
-		</para>
-		<para>
-		Default value is 
-			<quote>/usr/local/etc/radiusclient-ng/radiusclient.conf</quote>.
+		This is the url representing the AAA protocol used and the location of the configuration file of this protocol.
 		</para>
 		<example>
-		<title><varname>radius_config</varname> parameter usage</title>
+		<title>Set <varname>aaa_url</varname> parameter</title>
 		<programlisting format="linespecific">
-modparam("peering", "radius_config", "/etc/broker/radiusclient.conf")
+...
+modparam("peering", "aaa_url", "radius:/etc/radiusclient-ng/radiusclient.conf")
+...
 </programlisting>
 		</example>
 	</section>
 	<section>
 		<title><varname>verify_destination_service_type</varname> (integer)</title>
 		<para>
-		This is the value of the Service-Type Radius attribute to be
+		This is the value of the Service-Type AAA attribute to be
 		used, when sender of SIP Request verifies request's
 	destination using verify_destination() function.
 		</para>
@@ -104,14 +82,16 @@ modparam("peering", "radius_config", "/etc/broker/radiusclient.conf")
 		<example>
 		<title><varname>verify_destination_service_type</varname> parameter usage</title>
 		<programlisting format="linespecific">
+...
 modparam("peering", "verify_destination_service_type", 21)
+...
 </programlisting>
 		</example>
 	</section>
 	<section>
 		<title><varname>verify_source_service_type</varname> (integer)</title>
 		<para>
-		This is the value of the Service-Type Radius attribute to be
+		This is the value of the Service-Type AAA attribute to be
 		used, when receiver of SIP Request verifies request's
 	source using verify_source() function.
 		</para>
@@ -122,7 +102,9 @@ modparam("peering", "verify_destination_service_type", 21)
 		<example>
 		<title><varname>verify_source_service_type</varname> parameter usage</title>
 		<programlisting format="linespecific">
+...
 modparam("peering", "verify_source_service_type", 22)
+...
 </programlisting>
 		</example>
 	</section>
@@ -134,8 +116,8 @@ modparam("peering", "verify_source_service_type", 22)
 		<title><function moreinfo="none">verify_destination()</function></title>
 		<para>
 		Function verify_destination() queries from
-		broker's Radius server if domain (host part) of Request
-	URI is served by a trusted peer.  Radius request contains the
+		broker's AAA server if domain (host part) of Request
+	URI is served by a trusted peer.  AAA request contains the
 	following attributes/values:
 		</para>
 		<itemizedlist>
@@ -158,7 +140,7 @@ modparam("peering", "verify_source_service_type", 22)
 		<para>
 		Function returns value 1 if domain of Request URI is
 	served by a trusted peer and -1 otherwise.  In case of positive
-	result, Radius server returns a set of SIP-AVP reply attributes.
+	result, AAA server returns a set of SIP-AVP reply attributes.
 	Value of each SIP-AVP is of form:
 		 </para>
 		 <para>
@@ -203,8 +185,8 @@ if (verify_destination()) {
 		<title><function moreinfo="none">verify_source()</function></title>
 		<para>
 		Function verify_source() queries from
-		broker's Radius server if SIP request was received from
-	a trusted peer.  Radius request contains the
+		broker's AAA server if SIP request was received from
+	a trusted peer.  AAA request contains the
 	following attributes/values:
 		</para>
 		<itemizedlist>
@@ -230,7 +212,7 @@ if (verify_destination()) {
 		<para>
 		Function returns value 1 if SIP request was received
 	from a trusted peer and -1 otherwise.  In case of positive
-	result, Radius server may return a set of SIP-AVP reply
+	result, AAA server may return a set of SIP-AVP reply
 	attributes.  Value of each SIP-AVP is of form:
 		 </para>
 		 <para>

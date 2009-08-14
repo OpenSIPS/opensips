@@ -24,9 +24,10 @@
 #ifndef _PEERING_H_
 #define _PEERING_H_
 
-extern struct attr attrs[];
-extern struct val vals[];
-extern void *rh;
+extern aaa_map attrs[];
+extern aaa_map vals[];
+extern aaa_conn *conn;
+extern aaa_prot proto;
 
 extern int verify_destination_service_type;
 extern int verify_source_service_type;

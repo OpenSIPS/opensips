@@ -1,7 +1,9 @@
-/* 
- * Radius based peering module
+/* $Id: $
+ * Peering module
  *
  * Copyright (C) 2008 Juha Heinanen
+ * Copyright (C) 2009 Irina Stanescu
+ * Copyright (C) 2009 Voice System
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -25,14 +27,15 @@
 #include "../../sr_module.h"
 #include "../../mem/mem.h"
 #include "../../config.h"
-#include "../../radius.h"
+#include "../../aaa/aaa.h"
 #include "verify.h"
 
 MODULE_VERSION
 
-struct attr attrs[A_MAX];
-struct val vals[V_MAX];
-void *rh;
+aaa_map attrs[A_MAX];
+aaa_map vals[V_MAX];
+aaa_conn *conn;
+aaa_prot proto;
 
 static int mod_init(void);         /* Module initialization function */
 
@@ -40,7 +43,7 @@ static int mod_init(void);         /* Module initialization function */
 /*
  * Module parameter variables
  */
-static char* radius_config = DEFAULT_RADIUSCLIENT_CONF;
+static char* aaa_proto_url = NULL;
 int verify_destination_service_type = -1;
 int verify_source_service_type = -1;
 
@@ -60,7 +63,7 @@ static cmd_export_t cmds[] = {
  * Exported parameters
  */
 static param_export_t params[] = {
-    {"radius_config", STR_PARAM, &radius_config},
+    {"aaa_url", STR_PARAM, &aaa_proto_url},
     {"verify_destination_service_type", INT_PARAM,
      &verify_destination_service_type},
     {"verify_source_service_type", INT_PARAM,
@@ -93,40 +96,42 @@ struct module_exports exports = {
  */
 static int mod_init(void)
 {
-    LM_DBG("initializing\n");
+	str prot_url;
+
+	LM_DBG("initializing\n");
 
     memset(attrs, 0, sizeof(attrs));
     memset(vals, 0, sizeof(vals));
-    attrs[A_USER_NAME].n = "User-Name";
-    attrs[A_SIP_URI_USER].n = "SIP-URI-User";
-    attrs[A_SIP_FROM_TAG].n = "SIP-From-Tag";
-    attrs[A_SIP_CALL_ID].n = "SIP-Call-Id";
-    attrs[A_SIP_REQUEST_HASH].n = "SIP-Request-Hash";
-    attrs[A_SIP_AVP].n = "SIP-AVP";
-    attrs[A_SERVICE_TYPE].n = "Service-Type";
-    vals[V_SIP_VERIFY_DESTINATION].n = "Sip-Verify-Destination";
-    vals[V_SIP_VERIFY_SOURCE].n = "Sip-Verify-Source";
+    attrs[A_USER_NAME].name 			= "User-Name";
+    attrs[A_SIP_URI_USER].name 			= "SIP-URI-User";
+    attrs[A_SIP_FROM_TAG].name 			= "SIP-From-Tag";
+    attrs[A_SIP_CALL_ID].name 			= "SIP-Call-Id";
+    attrs[A_SIP_REQUEST_HASH].name		= "SIP-Request-Hash";
+    attrs[A_SIP_AVP].name	 			= "SIP-AVP";
+    attrs[A_SERVICE_TYPE].name 			= "Service-Type";
+    vals[V_SIP_VERIFY_DESTINATION].name = "Sip-Verify-Destination";
+    vals[V_SIP_VERIFY_SOURCE].name		= "Sip-Verify-Source";
 
-    if ((rh = rc_read_config(radius_config)) == NULL) {
-        LM_ERR("error opening configuration file\n");
-	return -1;
-    }
+	prot_url.s = aaa_proto_url;
+	prot_url.len = strlen(aaa_proto_url);
 
-    if (rc_read_dictionary(rh, rc_conf_str(rh, "dictionary")) != 0) {
-	LM_ERR("error opening dictionary file\n");
-	return -2;
-    }
+	if(aaa_prot_bind(&prot_url, &proto)) {
+		LM_ERR("aaa protocol bind failure\n");
+		return -1;
+	}
 
-    INIT_AV(rh, attrs, A_MAX, vals, V_MAX, "peering", -3, -4);
+	if (!(conn = proto.init_prot(&prot_url))) {
+		LM_ERR("aaa protocol initialization failure\n");
+		return -2;
+	}
 
-    if (verify_destination_service_type != -1) {
-	vals[V_SIP_VERIFY_DESTINATION].v = 
-		verify_destination_service_type;
-    }
+    INIT_AV(proto, conn, attrs, A_MAX, vals, V_MAX, "peering", -3, -4);
 
-    if (verify_source_service_type != -1) {
-	vals[V_SIP_VERIFY_SOURCE].v = verify_source_service_type;
-    }
+    if (verify_destination_service_type != -1)
+		vals[V_SIP_VERIFY_DESTINATION].value = verify_destination_service_type;
+
+    if (verify_source_service_type != -1)
+		vals[V_SIP_VERIFY_SOURCE].value = verify_source_service_type;
 
     return 0;
 }
