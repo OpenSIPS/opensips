@@ -706,9 +706,9 @@ struct mi_root* mi_tm_reply(struct mi_root* cmd_tree, void* param)
 	else
 		body = 0;
 
-	/* it's refcounted now, t_reply_with body unrefs for me -- I can 
-	 * continue but may not use T anymore  */
 	n = t_reply_with_body( trans, rpl_code, reason, body, new_hdrs, totag);
+
+	UNREF(trans);
 
 	if (n<0)
 		return init_mi_tree( 500, "Reply failed", 12);

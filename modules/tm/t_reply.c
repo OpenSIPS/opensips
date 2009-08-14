@@ -1549,9 +1549,6 @@ int t_reply_with_body( struct cell *trans, unsigned int code, str *text,
 	int  ret;
 	struct bookmark bm;
 
-	/* mark the transaction as replied */
-	if (code>=200) set_kr(REQ_RPLD);
-
 	/* add the lumps for new_header and for body (by bogdan) */
 	if (new_header && new_header->len) {
 		hdr_lump = add_lump_rpl( trans->uas.request, new_header->s,
@@ -1601,8 +1598,8 @@ int t_reply_with_body( struct cell *trans, unsigned int code, str *text,
 	ret=_reply_light( trans, rpl.s, rpl.len, code, to_tag->s, to_tag->len,
 			1 /* lock replies */, &bm );
 
-	/* unref since this it's used only internaly */
-	UNREF(trans);
+	/* mark the transaction as replied */
+	if (code>=200) set_kr(REQ_RPLD);
 
 	return ret;
 error_1:

@@ -721,11 +721,14 @@ int ac_reply(as_p the_as,char *action,int len)
    LM_DBG("Trying to construct a SipReply with: ReasonPhrase:[%.*s] body:[%.*s] headers:[%.*s] totag:[%.*s]\n",\
 	 my_msg->first_line.u.reply.reason.len,my_msg->first_line.u.reply.reason.s,\
 	 body.len,body.s,new_header.len,new_header.s,totag.len,totag.s);
-   /* t_reply_with_body un-ref-counts the transaction, so dont use it anymore*/
-   if(seas_f.tmb.t_reply_with_body(c,my_msg->first_line.u.reply.statuscode,&(my_msg->first_line.u.reply.reason),&body,&new_header,&totag)<0){
+
+   if(seas_f.tmb.t_reply_with_body(c,my_msg->first_line.u.reply.statuscode,
+   &(my_msg->first_line.u.reply.reason),&body,&new_header,&totag)<0){
       LM_ERR("Failed to t_reply\n");
       goto error;
    }
+
+   seas_f.tmb.unref_cell(c);
    retval=0;
    goto exit;
 error:
