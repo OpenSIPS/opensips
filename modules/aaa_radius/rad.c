@@ -23,6 +23,7 @@
  * History
  * --------
  * 2009-07-20    First version (Irina Stanescu)
+ * 2009-08-13 	 Second version (Irina Stanescu) - extract_avp added
  */
 
 /*
@@ -41,6 +42,9 @@
 #include "../../dprint.h"
 #include "../../mem/mem.h"
 #include "rad.h"
+#include "../../ut.h"
+#include "../../usr_avp.h"
+
 
 /*
 	Radius implementation for the init_prot callback
@@ -97,7 +101,7 @@ aaa_message* rad_create_message(aaa_conn* rh, int flag) {
 	}
 
 	if (flag != AAA_AUTH && flag != AAA_ACCT) {
-		LM_ERR("rad_create_message: invalid flag\n");
+		LM_ERR("invalid flag\n");
 		return NULL;
 	}
 
@@ -133,10 +137,100 @@ int rad_destroy_message(aaa_conn* rh, aaa_message* message) {
 
 
 /*
+	Exctracts and generates AVPs from the Radius reply
+ */
+int extract_avp(VALUE_PAIR* vp) {
+	static str names, values;
+	unsigned int r;
+	char *p;
+	char *end;
+	int_str name, value;
+	unsigned short flags = 0;
+
+	/* empty? */
+	if (vp->lvalue == 0 || vp->strvalue == 0)
+		return -1;
+
+	p = vp->strvalue;
+	end = vp->strvalue + vp->lvalue;
+
+	/* get name */
+	if (*p != '#') {
+		/* name AVP */
+		flags |= AVP_NAME_STR;
+		names.s = p;
+	} else
+		names.s = ++p;
+
+	names.len = 0;
+	while (p < end && *p != ':' && *p != '#')
+		p++;
+
+	if (names.s == p || p == end) {
+		LM_ERR("empty AVP name\n");
+		return -1;
+	}
+	names.len = p - names.s;
+
+	/* get value */
+	if (*p != '#') {
+		/* string value */
+		flags |= AVP_VAL_STR;
+	}
+
+	values.s = ++p;
+	values.len = end-values.s;
+	if (values.len == 0) {
+		LM_ERR("empty AVP value\n");
+		return -1;
+	}
+
+	if (!(flags&AVP_NAME_STR)) {
+		/* convert name to id*/
+		if (str2int(&names,&r)!=0 ) {
+			LM_ERR("invalid AVP ID '%.*s'\n", names.len,names.s);
+			return -1;
+		}
+		name.n = (int)r;
+	} else
+		name.s = names;
+
+	if (!(flags&AVP_VAL_STR)) {
+		/* convert value to integer */
+		if (str2int(&values,&r) != 0) {
+			LM_ERR("invalid AVP numrical value '%.*s'\n", values.len,values.s);
+			return -1;
+		}
+		value.n = (int)r;
+	} else
+		value.s = values;
+
+	if (add_avp( flags, name, value) < 0) {
+		LM_ERR("unable to create a new AVP\n");
+		return -1;
+	} else {
+		LM_DBG("AVP '%.*s'/%d='%.*s'/%d has been added\n",
+			(flags&AVP_NAME_STR)?name.s.len:4,
+			(flags&AVP_NAME_STR)?name.s.s:"null",
+			(flags&AVP_NAME_STR)?0:name.n,
+			(flags&AVP_VAL_STR)?value.s.len:4,
+			(flags&AVP_VAL_STR)?value.s.s:"null",
+			(flags&AVP_VAL_STR)?0:value.n );
+	}
+
+
+	return 0;
+}
+
+
+/*
 	Radius implementation for the send_message callback
  */
-int rad_send_message(aaa_conn* rh, aaa_message* request, aaa_message* reply) {
-	static char msg[4096];
+int rad_send_message(aaa_conn* rh, aaa_message* request, aaa_message** reply) {
+	char msg[4096];
+	VALUE_PAIR *vp;
+ 	DICT_ATTR *attr;
+	int result;
 
 	if (!rh) {
 		LM_ERR("invalid aaa connection argument\n");
@@ -150,19 +244,28 @@ int rad_send_message(aaa_conn* rh, aaa_message* request, aaa_message* reply) {
 
 	if (request->type == AAA_AUTH) {
 
-		reply = (aaa_message*) pkg_malloc (sizeof(aaa_message));
+		*reply = (aaa_message*) pkg_malloc (sizeof(aaa_message));
 
-		if (!reply) {
+		if (!(*reply)) {
 			LM_ERR("no pkg memory left \n");
 			return -1;
 		}
 
-		reply->type = AAA_RECV;
-		reply->avpair = NULL;
-		reply->last_found = NULL;
+		(*reply)->type = AAA_RECV;
+		(*reply)->avpair = NULL;
+		(*reply)->last_found = NULL;
 
-		return rc_auth(rh, SIP_PORT, (VALUE_PAIR*) request->avpair,
-								(VALUE_PAIR**) &reply->avpair, msg);
+		result = rc_auth(rh, SIP_PORT, (VALUE_PAIR*) request->avpair,
+						(VALUE_PAIR**) &(*reply)->avpair, msg);
+
+		if (result == OK_RC) {
+			attr = rc_dict_findattr(rh, "SIP-AVP");
+			vp = (*reply)->avpair;
+			for(; (vp = rc_avpair_get(vp, attr->value, 0)); vp = vp->next)
+				extract_avp(vp);
+		}
+
+		return result;
 	}
 
 	if (request->type == AAA_ACCT) {
@@ -180,13 +283,13 @@ int rad_send_message(aaa_conn* rh, aaa_message* request, aaa_message* reply) {
 	The return value is:
 	0, if the name is found
 	1, if the name isn't found
-	-1, if an error occured 
+	-1, if an error occured
  */
 int rad_find(aaa_conn* rh, aaa_map *map, int flag) {
 
-	DICT_ATTR* attr_result;
-	DICT_VALUE* val_result;
-	DICT_VENDOR* vend_result;
+	DICT_ATTR *attr_result;
+	DICT_VALUE *val_result;
+	DICT_VENDOR *vend_result;
 
 	if (!rh) {
 		LM_ERR("invalid aaa connection argument\n");
@@ -229,12 +332,12 @@ int rad_find(aaa_conn* rh, aaa_map *map, int flag) {
 
 /*
 	Radius implementation for the avp_get callback
-	
+
 	The last parameter specifies the type of search in the AVPs list.
 	If the flag is AAA_GET_FROM_CURRENT the search is made relative to the
 	last_found field in the aaa_message structure.
   */
-int rad_avp_get(aaa_conn* rh, aaa_message* message, aaa_map* attribute, 
+int rad_avp_get(aaa_conn* rh, aaa_message* message, aaa_map* attribute,
 					void** value, int* val_length, int flag) {
 
 	VALUE_PAIR* vp = NULL;
@@ -296,7 +399,6 @@ int rad_avp_get(aaa_conn* rh, aaa_message* message, aaa_map* attribute,
 	}
 
 	return 0;
-
 }
 
 
@@ -311,11 +413,23 @@ int rad_avp_add(aaa_conn* rh, aaa_message* message, aaa_map* name, void* value,
 		return -1;
 	}
 
-	if (!message || !name || !value) {
-		LM_ERR("invalid argument\n");
+	if (!message) {
+		LM_ERR("invalid message argument\n");
 		return -1;
 	}
 
+	if (!name) {
+		LM_ERR("invalid name argument\n");
+		return -1;
+	}
+
+	if (!value) {
+		LM_ERR("invalid value argument\n");
+		return -1;
+	}
+
+	if (vendor)
+		vendor = VENDOR(vendor);
 
 	if (rc_avpair_add (rh, (VALUE_PAIR**) &message->avpair, name->value,
 							value, val_length, vendor)) {

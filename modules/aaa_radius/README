@@ -13,8 +13,8 @@ Irina-Maria Stanescu
 
    Copyright © 2009 voice-system.ro
    Revision History
-   Revision $Revision: 4473 $ $Date: 2008-07-12 00:16:22 +0300
-                              (Sat, 12 Jul 2008) $
+   Revision $Revision: 5908 $ $Date: 2009-07-21 16:56:23 +0300
+                              (Tue, 21 Jul 2009) $
      __________________________________________________________
 
    Table of Contents
@@ -28,10 +28,23 @@ Irina-Maria Stanescu
               1.2.2. External Libraries or Applications
 
         1.3. Exported Parameters
+
+              1.3.1. sets
+              1.3.2. radius_config
+
         1.4. Exported Functions
 
-              1.4.1. aaa_bind_api
-              1.4.2.
+              1.4.1. radius_does_uri_exist([pvar])
+              1.4.2. aaa_bind_api
+              1.4.3. radius_send_auth([set_name],[set_name])
+              1.4.4. radius_send_acct
+
+   List of Examples
+
+   1.1. Set sets parameter
+   1.2. Set radius_config parameter
+   1.3. radius_does_uri_exist usage
+   1.4. radius_send_auth usage
 
 Chapter 1. Admin Guide
 
@@ -44,6 +57,9 @@ Chapter 1. Admin Guide
    Any module that wishes to use it has to do the following:
      * include aaa.h
      * make a bind call with a proper radius specific url
+
+   The module also provides two functions that can be used
+   directly from the script.
 
 1.2. Dependencies
 
@@ -65,12 +81,91 @@ Chapter 1. Admin Guide
 
 1.3. Exported Parameters
 
-   The module does not export parameters to be used in the
-   configuration script.
+1.3.1. sets
+
+   Sets of AVPs used to customize RADIUS requests and to get
+   information from the RADIUS reply.
+
+   Example 1.1. Set sets parameter
+...
+modparam("aaa_radius","sets","set4  =  (  my_attr  =   $avp(i:10)   ,
+Sip-From-Tag=$si,Sip-To-Tag=$tt      )      ")
+...
+
+...
+modparam("aaa_radius","sets","set1 = (User-Name=$var(usr), Sip-Group = $
+var(grp), Service-Type = $var(type)) ")
+...
+
+...
+modparam("aaa_radius","sets","set2 = (Sip-Group = $var(sipgrup)) ")
+...
+
+1.3.2. radius_config
+
+   Radiusclient configuration file.
+
+   Example 1.2. Set radius_config parameter
+...
+modparam("aaa_radius", "radius_config", "/etc/radiusclient-ng/radiusclie
+nt.conf")
+...
 
 1.4. Exported Functions
 
-1.4.1. aaa_bind_api
+1.4.1.  radius_does_uri_exist([pvar])
+
+   Checks from Radius if user@host in Request-URI or in URI stored
+   in pseudo variable argument belongs to a local user. Can be
+   used to decide if 404 or 480 should be returned after lookup
+   has failed. If yes, loads AVP based on SIP-AVP reply items
+   returned from Radius. Each SIP-AVP reply item must have a
+   string value of form:
+
+     * value = SIP_AVP_NAME SIP_AVP_VALUE
+     * SIP_AVP_NAME = STRING_NAME | '#'ID_NUMBER
+     * SIP_AVP_VALUE = ':'STRING_VALUE | '#'NUMBER_VALUE
+
+   Returns 1 if Radius returns Access-Accept, -1 if Radius returns
+   Access-Reject, and -2 in case of internal error.
+
+   This function can be used from REQUEST_ROUTE.
+
+   Example 1.3. radius_does_uri_exist usage
+...
+if (radius_does_uri_exist()) {
+        ...
+};
+...
+
+1.4.2. aaa_bind_api
 
    This function binds the aaa modules and fills the structure
    with the callback functions implemented by the module.
+
+1.4.3.  radius_send_auth([set_name],[set_name])
+
+   This function can be used from the script to make custom radius
+   authentication request. The function takes two paramethers.
+
+   The first paramether represents the name of the set that
+   contains the list of attributes and pvars that will form the
+   authentication request. The second paramether represents the
+   name of the set that contains the list of attributes and pvars
+   that will be extracted form the authentication reply. The sets
+   must be defined using the "sets" exported paramether.
+
+   Returns 1 if Radius returns Access-Accept, -1 if Radius returns
+   Access-Reject, and -2 in case of internal error.
+
+   This function can be used from REQUEST_ROUTE.
+
+   Example 1.4. radius_send_auth usage
+...
+radius_send_auth("set1","set2");
+...
+
+1.4.4. radius_send_acct
+
+   This function can be used from the script to make custom radius
+   accounting request.

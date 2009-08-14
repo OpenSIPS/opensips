@@ -54,6 +54,7 @@
 #define AAA_GET_FROM_START 7
 #define AAA_GET_FROM_CURRENT 8
 
+
 /* Generic structure for an AVP */
 typedef struct _aaa_map {
 	char *name;
@@ -116,10 +117,10 @@ typedef int (destroy_message_f)(aaa_conn*, aaa_message*);
 	The function takes three parameters:
 	- a pointer to the connection variable
 	- the address of a message to be sent
-	- the address of a message to be received (may be NULL)
+	- pointer to the address of a message to be received (may be NULL)
 	The return value is an error code.
  */
-typedef int (send_request_f)(aaa_conn*, aaa_message*, aaa_message*);
+typedef int (send_request_f)(aaa_conn*, aaa_message*, aaa_message**);
 
 
 /*
