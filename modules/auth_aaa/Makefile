@@ -9,6 +9,6 @@ include ../../Makefile.defs
 auto_gen=
 NAME=auth_aaa.so
 DEFS+=-I$(LOCALBASE)/include
-LIBS=-L$(LOCALBASE)/lib $(RADIUS_LIB)
+LIBS=
 
 include ../../Makefile.modules
