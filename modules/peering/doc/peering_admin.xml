@@ -59,6 +59,13 @@
 		<para>
 		This is the url representing the AAA protocol used and the location of the configuration file of this protocol.
 		</para>
+		<para>
+			If the parameter is set to empty string, the AAA accounting support
+			will be disabled (even if compiled).
+		</para>
+		<para>
+		Default value is <quote>NULL</quote>.
+		</para>
 		<example>
 		<title>Set <varname>aaa_url</varname> parameter</title>
 		<programlisting format="linespecific">
