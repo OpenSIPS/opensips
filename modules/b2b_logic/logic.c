@@ -309,19 +309,18 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 
 	/* extract body if it has one */
 	/* process the body */
-	body.len = get_content_length(msg);
-	if(body.len != 0 )
+	if(msg->content_length)
 	{
-		body.s=get_body(msg);
-		if (body.s== NULL) 
+		body.len = get_content_length(msg);
+		if(body.len != 0 )
 		{
-			LM_ERR("cannot extract body\n");
-			return 0;
+			body.s=get_body(msg);
+			if (body.s== NULL) 
+			{
+				LM_ERR("cannot extract body\n");
+				return 0;
+			}
 		}
-	}
-	else
-	{
-		LM_DBG("Content lenght = 0\n");
 	}
 	
 	/* build extra headers */
@@ -946,20 +945,19 @@ int create_top_hiding_entities(struct sip_msg* msg, str* to_uri, str* from_uri)
 	}
 
 	/* process the body */
-	body.len = get_content_length(msg);
-	if(body.len != 0 )
-	
+	if(msg->content_length)
 	{
-		body.s=get_body(msg);
-		if (body.s== NULL) 
+		body.len = get_content_length(msg);
+		if(body.len != 0 )
+		
 		{
-			LM_ERR("cannot extract body\n");
-			return 0;
+			body.s=get_body(msg);
+			if (body.s== NULL) 
+			{
+				LM_ERR("cannot extract body\n");
+				return 0;
+			}
 		}
-	}
-	else
-	{
-		LM_DBG("Content lenght = 0\n");
 	}
 
 	LM_DBG("body = %.*s - len = %d\n", body.len, body.s, body.len);
@@ -1194,19 +1192,18 @@ int b2b_process_scenario_init(b2b_scenario_t* scenario_struct,struct sip_msg* ms
 
 		/* extract info from the message in case there is a client entity with type message */
 		/* process the body */
-		body.len = get_content_length(msg);
-		if(body.len != 0 )
+		if(msg->content_length)
 		{
-			body.s=get_body(msg);
-			if (body.s== NULL) 
+			body.len = get_content_length(msg);
+			if(body.len != 0 )
 			{
-				LM_ERR("cannot extract body\n");
-				return 0;
+				body.s=get_body(msg);
+				if (body.s== NULL) 
+				{
+					LM_ERR("cannot extract body\n");
+					return 0;
+				}
 			}
-		}
-		else
-		{
-			LM_DBG("Content lenght = 0\n");
 		}
 
 		LM_DBG("body = %.*s - len = %d\n", body.len, body.s, body.len);
