@@ -270,7 +270,7 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 	unsigned int hash_index, local_index;
 	str* b2bl_key = (str*)param;
 	b2bl_tuple_t* tuple;
-	str method, body;
+	str method, body= {0, 0};
 	str extra_headers = {0, 0};
 	b2b_scenario_t* scenario;
 	b2b_rule_t* rule;
@@ -949,7 +949,6 @@ int create_top_hiding_entities(struct sip_msg* msg, str* to_uri, str* from_uri)
 	{
 		body.len = get_content_length(msg);
 		if(body.len != 0 )
-		
 		{
 			body.s=get_body(msg);
 			if (body.s== NULL) 
