@@ -1,9 +1,11 @@
 /*
  * $Id$
  *
- * Digest Authentication - Radius support
+ * Digest Authentication - generic AAA support
  *
  * Copyright (C) 2001-2003 FhG Fokus
+ * Copyright (C) 2009 Irina Stanescu
+ * Copyright (C) 2009 Voice Systems
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -21,24 +23,22 @@
  * along with this program; if not, write to the Free Software 
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * History:
- * -------
- * 2003-03-09: Based on auth_mod.h from radius_authorize (janakj)
  */
 
 
-#ifndef AUTHRAD_MOD_H
-#define AUTHRAD_MOD_H
+#ifndef AUTHAAA_MOD_H
+#define AUTHAAA_MOD_H
 
 #include "../auth/api.h"
-#include "../../radius.h"
+#include "../../aaa/aaa.h"
 
-extern struct attr attrs[];
-extern struct val vals[];
-extern void *rh;
+extern aaa_map attrs[];
+extern aaa_map vals[];
+extern aaa_conn *conn;
+extern aaa_prot proto;
 
 extern int use_ruri_flag;
 
 extern auth_api_t auth_api;
 
-#endif /* AUTHRAD_MOD_H */
+#endif /* AUTHAAA_MOD_H */

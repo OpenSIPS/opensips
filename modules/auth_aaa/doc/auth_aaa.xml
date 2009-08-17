@@ -2,7 +2,7 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN"
 "http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd" [
 
-<!ENTITY admin SYSTEM "auth_radius_admin.xml">
+<!ENTITY admin SYSTEM "auth_aaa_admin.xml">
 <!ENTITY faq SYSTEM "../../../doc/module_faq.xml">
 
 <!-- Include general documentation entities -->
@@ -42,6 +42,11 @@
 		<surname>Janak</surname>
 		<email>jan@iptel.org</email>
 		</editor>
+		<editor>
+		<firstname>Irina-Maria</firstname>
+		<surname>Stanescu</surname>
+		<email>ironmissy@gmail.com</email>
+		</editor>
 	</authorgroup>
 	<copyright>
 		<year>2002</year>
@@ -50,6 +55,7 @@
 	</copyright>
 	<copyright>
 		<year>2005</year>
+		<year>2009</year>
 		<holder>&voicesystem;</holder>
 	</copyright>
 	<revhistory>

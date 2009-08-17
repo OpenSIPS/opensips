@@ -23,9 +23,15 @@ Jan Janak
 
    <jan@iptel.org>
 
+Edited by
+
+Irina-Maria Stanescu
+
+   <ironmissy@gmail.com>
+
    Copyright © 2002, 2003 FhG FOKUS
 
-   Copyright © 2005 voice-system.ro
+   Copyright © 2005, 2009 voice-system.ro
    Revision History
    Revision $Revision$ $Date: 2009-07-21 10:45:05 +0300
                               (Tue, 21 Jul 2009) $
@@ -44,22 +50,22 @@ Jan Janak
 
         1.4. Exported Parameters
 
-              1.4.1. radius_config (string)
+              1.4.1. aaa_url (string)
               1.4.2. service_type (integer)
               1.4.3. use_ruri_flag (integer)
 
         1.5. Exported Functions
 
-              1.5.1. radius_www_authorize(realm)
-              1.5.2. radius_proxy_authorize(realm [, uri_user])
+              1.5.1. aaa_www_authorize(realm)
+              1.5.2. aaa_proxy_authorize(realm [, uri_user])
 
    List of Examples
 
-   1.1. "SIP-AVP" RADIUS AVP exmaples
-   1.2. radius_config parameter usage
+   1.1. "SIP-AVP" AAA AVP examples
+   1.2. aaa_url parameter usage
    1.3. service_type parameter usage
    1.4. use_ruri_flag parameter usage
-   1.5. radius_www_authorize usage
+   1.5. aaa_www_authorize usage
    1.6. proxy_authorize usage
 
 Chapter 1. Admin Guide
@@ -67,26 +73,23 @@ Chapter 1. Admin Guide
 1.1. Overview
 
    This module contains functions that are used to perform
-   authentication using a Radius server. Basically the proxy will
-   pass along the credentials to the radius server which will in
-   turn send a reply containing result of the authentication. So
-   basically the whole authentication is done in the Radius
-   server. Before sending the request to the radius server we
-   perform some sanity checks over the credentials to make sure
-   that only well formed credentials will get to the server. We
-   have implemented radius authentication according to
-   draft-sterman-aaa-sip-00. This module requires radiusclient-ng
-   library version 0.5.0 or higher which is available from
-   http://developer.berlios.de/projects/radiusclient-ng/.
+   authentication using an AAA server. Basically the proxy will
+   pass along the credentials to the AAA server which will in turn
+   send a reply containing result of the authentication. So
+   basically the whole authentication is done in the AAA server.
+   Before sending the request to the AAA server we perform some
+   sanity checks over the credentials to make sure that only well
+   formed credentials will get to the server. We have implemented
+   AAA authentication according to draft-sterman-aaa-sip-00.
 
 1.2. Additional Credentials
 
-   When performing authentification, the RADIUS server may include
-   in the response additional credentials. This scheme is very
-   useful in fetching additional user information from the RADIUS
-   server without making extra queries.
+   When performing authentification, the AAA server may include in
+   the response additional credentials. This scheme is very useful
+   in fetching additional user information from the AAA server
+   without making extra queries.
 
-   The additional credentials are embedded in the RADIUS reply as
+   The additional credentials are embedded in the AAA reply as
    AVPs "SIP-AVP". The syntax of the value is:
      * value = SIP_AVP_NAME SIP_AVP_VALUE
      * SIP_AVP_NAME = STRING_NAME | '#'ID_NUMBER
@@ -97,7 +100,7 @@ Chapter 1. Admin Guide
 
    The RPID value may be fetch via this mechanism.
 
-   Example 1.1. "SIP-AVP" RADIUS AVP exmaples
+   Example 1.1. "SIP-AVP" AAA AVP examples
 ....
 "email:joe@yahoo.com"
     - STRING NAME AVP (email) with STRING VALUE (joe@yahoo.com)
@@ -116,39 +119,39 @@ Chapter 1. Admin Guide
    The module depends on the following modules (in the other words
    the listed modules must be loaded before this module):
      * auth -- Generic authentication functions
+     * an aaa implementing module -- for example aaa_radius
 
 1.3.2. External Libraries or Applications
 
-   The following libraries or applications must be installed
-   before compilling OpenSIPS with this module loaded:
-     * radiusclient-ng 0.5.0 or higher -- library and development
-       files. See
-       http://developer.berlios.de/projects/radiusclient-ng/.
+   This module does not depend on any external library.
 
 1.4. Exported Parameters
 
-1.4.1. radius_config (string)
+1.4.1. aaa_url (string)
 
-   This is the location of the configuration file of radius client
-   libraries.
+   This is the url representing the AAA protocol used and the
+   location of the configuration file of this protocol.
 
-   Default value is
-   "/usr/local/etc/radiusclient-ng/radiusclient.conf".
+   The syntax for the url is the following:
+   "name_of_the_aaa_protocol_used:path_of_the_configuration_file"
 
-   Example 1.2. radius_config parameter usage
-modparam("auth_radius", "radius_config", "/etc/radiusclient.conf")
+   Example 1.2. aaa_url parameter usage
+
+modparam("auth_aaa", "aaa_url", "radius:/etc/radiusclient-ng/radiusclien
+t.conf")
 
 1.4.2. service_type (integer)
 
-   This is the value of the Service-Type radius attribute to be
-   used. The default should be fine for most people. See your
-   radius client include files for numbers to be put in this
-   parameter if you need to change it.
+   This is the value of the Service-Type aaa attribute to be used.
+   The default should be fine for most people. See your aaa client
+   include files for numbers to be put in this parameter if you
+   need to change it.
 
    Default value is "15".
 
    Example 1.3. service_type parameter usage
-modparam("auth_radius", "service_type", 15)
+
+modparam("auth_aaa", "service_type", 15)
 
 1.4.3. use_ruri_flag (integer)
 
@@ -156,8 +159,8 @@ modparam("auth_radius", "service_type", 15)
    request being authenticated has flag with matching number set
    via setflag() function, use Request URI instead of uri
    parameter value from the Authorization / Proxy-Authorization
-   header field to perform RADIUS authentication. This is intended
-   to provide workaround for misbehaving NAT / routers / ALGs that
+   header field to perform AAA authentication. This is intended to
+   provide workaround for misbehaving NAT / routers / ALGs that
    alter request in the transit, breaking authentication. At the
    time of this writing, certain versions of Linksys WRT54GL are
    known to do that.
@@ -165,11 +168,12 @@ modparam("auth_radius", "service_type", 15)
    Default value is "-1".
 
    Example 1.4. use_ruri_flag parameter usage
-modparam("auth_radius", "use_ruri_flag", 22)
+
+modparam("auth_aaa", "use_ruri_flag", 22)
 
 1.5. Exported Functions
 
-1.5.1. radius_www_authorize(realm)
+1.5.1. aaa_www_authorize(realm)
 
    The function verifies credentials according to RFC2617. If the
    credentials are verified successfully then the function will
@@ -187,9 +191,9 @@ modparam("auth_radius", "use_ruri_flag", 22)
      * -3 (stale nonce) - stale nonce;
 
    This function will, in fact, perform sanity checks over the
-   received credentials and then pass them along to the radius
-   server which will verify the credentials and return whether
-   they are valid or not.
+   received credentials and then pass them along to the aaa server
+   which will verify the credentials and return whether they are
+   valid or not.
 
    Meaning of the parameter is as follows:
      * realm - Realm is a opaque string that the user agent should
@@ -205,14 +209,16 @@ modparam("auth_radius", "use_ruri_flag", 22)
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.5. radius_www_authorize usage
+   Example 1.5. aaa_www_authorize usage
+
 ...
-if (!radius_www_authorize("siphub.net")) {
+if (!aaa_www_authorize("siphub.net")) {
         www_challenge("siphub.net", "1");
 };
 ...
 
-1.5.2. radius_proxy_authorize(realm [, uri_user])
+
+1.5.2. aaa_proxy_authorize(realm [, uri_user])
 
    The function verifies credentials according to RFC2617. If the
    credentials are verified successfully then the function will
@@ -224,9 +230,9 @@ if (!radius_www_authorize("siphub.net")) {
    negative return codes, see the above function.
 
    This function will, in fact, perform sanity checks over the
-   received credentials and then pass them along to the radius
-   server which will verify the credentials and return whether
-   they are valid or not.
+   received credentials and then pass them along to the aaa server
+   which will verify the credentials and return whether they are
+   valid or not.
 
    Meaning of the parameters is as follows:
      * realm - Realm is a opaque string that the user agent should
@@ -246,14 +252,14 @@ if (!radius_www_authorize("siphub.net")) {
    This function can be used from REQUEST_ROUTE.
 
    Example 1.6. proxy_authorize usage
+
 ...
-if (!radius_proxy_authorize("")) {   # Realm and URI user will be autoge
-nerated
+if (!aaa_proxy_authorize("")) {   # Realm and URI user will be autogener
+ated
         proxy_challenge("", "1");
 };
 ...
-if (!radius_proxy_authorize("$pd", "$pU")) { # Realm and URI user are ta
-ken
+if (!aaa_proxy_authorize("$pd", "$pU")) { # Realm and URI user are taken
         proxy_challenge("$pd", "1");         # from P-Preferred-Identity
 };                                           # header field
 ...

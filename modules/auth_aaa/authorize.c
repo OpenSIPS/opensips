@@ -1,9 +1,11 @@
 /*
  * $Id$
  *
- * Digest Authentication - Radius support
+ * Digest Authentication - generic AAA support
  *
  * Copyright (C) 2001-2003 FhG Fokus
+ * Copyright (C) 2009 Irina Stanescu
+ * Copyright (C) 2009 Voice Systems
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -20,11 +22,6 @@
  * You should have received a copy of the GNU General Public License 
  * along with this program; if not, write to the Free Software 
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- *
- * History:
- * -------
- * 2003-03-09: Based on authorize.c from radius_auth (janakj)
- * 2006-03-01: pseudo variables support for domain name (bogdan)
  */
 
 
@@ -43,7 +40,7 @@
 #include "../auth/api.h"
 #include "authorize.h"
 #include "sterman.h"
-#include "authrad_mod.h"
+#include "authaaa_mod.h"
 
 
 /* 
@@ -110,7 +107,7 @@ static inline int authorize(struct sip_msg* _msg, pv_elem_t* _realm,
     if (_uri_user) {
 	if (pv_get_spec_value(_msg, _uri_user, &pv_val) == 0) {
 	    if (pv_val.flags & PV_VAL_STR) {
-		res = radius_authorize_sterman(_msg, &cred->digest, 
+		res = aaa_authorize_sterman(_msg, &cred->digest, 
 					       &_msg->first_line.u.request.method,
 					       &pv_val.rs);
 	    } else {
@@ -132,7 +129,7 @@ static inline int authorize(struct sip_msg* _msg, pv_elem_t* _realm,
 	    return AUTH_ERROR;
 	}
 	un_escape(uri_user, &user);
-	res = radius_authorize_sterman(_msg, &cred->digest, 
+	res = aaa_authorize_sterman(_msg, &cred->digest, 
 				       &_msg->first_line.u.request.method,
 				       &user);
 	pkg_free(user.s);
@@ -150,7 +147,7 @@ static inline int authorize(struct sip_msg* _msg, pv_elem_t* _realm,
 /*
  * Authorize using Proxy-Authorize header field (no URI user parameter given)
  */
-int radius_proxy_authorize_1(struct sip_msg* _msg, char* _realm, char* _s2)
+int aaa_proxy_authorize_1(struct sip_msg* _msg, char* _realm, char* _s2)
 {
 	/* realm parameter is converted in fixup */
 	return authorize(_msg, (pv_elem_t*)_realm, (pv_spec_t *)0,
@@ -161,7 +158,7 @@ int radius_proxy_authorize_1(struct sip_msg* _msg, char* _realm, char* _s2)
 /*
  * Authorize using Proxy-Authorize header field (URI user parameter given)
  */
-int radius_proxy_authorize_2(struct sip_msg* _msg, char* _realm,
+int aaa_proxy_authorize_2(struct sip_msg* _msg, char* _realm,
 														char* _uri_user)
 {
 	return authorize(_msg, (pv_elem_t*)_realm, (pv_spec_t *)_uri_user,
@@ -172,7 +169,7 @@ int radius_proxy_authorize_2(struct sip_msg* _msg, char* _realm,
 /*
  * Authorize using WWW-Authorize header field
  */
-int radius_www_authorize(struct sip_msg* _msg, char* _realm, char* _s2)
+int aaa_www_authorize(struct sip_msg* _msg, char* _realm, char* _s2)
 {
 	return authorize(_msg, (pv_elem_t*)_realm, (pv_spec_t *)0,
 			 HDR_AUTHORIZATION_T);

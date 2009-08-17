@@ -1,9 +1,11 @@
 /* 
  * $Id$ 
  *
- * Digest Authentication - Radius support
+ * Digest Authentication - generic AAA support
  *
  * Copyright (C) 2001-2003 FhG Fokus
+ * Copyright (C) 2009 Irina Stanescu
+ * Copyright (C) 2009 Voice Systems
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -21,13 +23,6 @@
  * along with this program; if not, write to the Free Software 
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * History:
- * -------
- *  2003-03-09: Based on auth_mod.c from radius_auth (janakj)
- *  2003-03-11: New module interface (janakj)
- *  2003-03-16: flags export parameter added (janakj)
- *  2003-03-19: all mallocs/frees replaced w/ pkg_malloc/pkg_free (andrei)
- *  2006-03-01: pseudo variables support for domain name (bogdan)
  */
 
 
@@ -40,16 +35,17 @@
 #include "../../dprint.h"
 #include "../../config.h"
 #include "../../pvar.h"
-#include "../../radius.h"
+#include "../../aaa/aaa.h"
 #include "../../mem/mem.h"
-#include "authrad_mod.h"
+#include "authaaa_mod.h"
 #include "authorize.h"
 
 MODULE_VERSION
 
-struct attr attrs[A_MAX];
-struct val vals[V_MAX];
-void *rh;
+aaa_map attrs[A_MAX];
+aaa_map vals[V_MAX];
+aaa_conn *conn;
+aaa_prot proto;
 
 auth_api_t auth_api;
 
@@ -60,7 +56,7 @@ static int auth_fixup(void** param, int param_no); /* char* -> str* */
 /*
  * Module parameter variables
  */
-static char* radius_config = DEFAULT_RADIUSCLIENT_CONF;
+static char* aaa_proto_url = NULL;
 static int service_type = -1;
 
 int use_ruri_flag = -1;
@@ -69,11 +65,11 @@ int use_ruri_flag = -1;
  * Exported functions
  */
 static cmd_export_t cmds[] = {
-	{"radius_www_authorize", (cmd_function)radius_www_authorize,   1, auth_fixup,
+	{"aaa_www_authorize", (cmd_function)aaa_www_authorize,   1, auth_fixup,
 			0, REQUEST_ROUTE},
-	{"radius_proxy_authorize", (cmd_function)radius_proxy_authorize_1, 1, auth_fixup,
+	{"aaa_proxy_authorize", (cmd_function)aaa_proxy_authorize_1, 1, auth_fixup,
 			0, REQUEST_ROUTE},
-	{"radius_proxy_authorize", (cmd_function)radius_proxy_authorize_2, 2, auth_fixup,
+	{"aaa_proxy_authorize", (cmd_function)aaa_proxy_authorize_2, 2, auth_fixup,
 			0, REQUEST_ROUTE},
 	{0, 0, 0, 0, 0, 0}
 };
@@ -83,7 +79,7 @@ static cmd_export_t cmds[] = {
  * Exported parameters
  */
 static param_export_t params[] = {
-	{"radius_config",    STR_PARAM, &radius_config   },
+	{"aaa_url",  	 STR_PARAM, &aaa_proto_url   },
 	{"service_type",     INT_PARAM, &service_type    },
 	{"use_ruri_flag",    INT_PARAM, &use_ruri_flag   },
 	{0, 0, 0}
@@ -94,7 +90,7 @@ static param_export_t params[] = {
  * Module interface
  */
 struct module_exports exports = {
-	"auth_radius", 
+	"auth_aaa", 
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	cmds,       /* Exported functions */
 	params,     /* Exported parameters */
@@ -114,46 +110,51 @@ struct module_exports exports = {
  */
 static int mod_init(void)
 {
-	DICT_VENDOR *vend;
 	bind_auth_t bind_auth;
+	str proto_url;
+
+	aaa_map map;
 
 	LM_INFO("initializing...\n");
 
 	memset(attrs, 0, sizeof(attrs));
 	memset(vals, 0, sizeof(vals));
-	attrs[A_SERVICE_TYPE].n			= "Service-Type";
-	attrs[A_SIP_URI_USER].n			= "Sip-URI-User";
-	attrs[A_DIGEST_RESPONSE].n		= "Digest-Response";
-	attrs[A_DIGEST_ALGORITHM].n		= "Digest-Algorithm";
-	attrs[A_DIGEST_BODY_DIGEST].n		= "Digest-Body-Digest";
-	attrs[A_DIGEST_CNONCE].n		= "Digest-CNonce";
-	attrs[A_DIGEST_NONCE_COUNT].n		= "Digest-Nonce-Count";
-	attrs[A_DIGEST_QOP].n			= "Digest-QOP";
-	attrs[A_DIGEST_METHOD].n		= "Digest-Method";
-	attrs[A_DIGEST_URI].n			= "Digest-URI";
-	attrs[A_DIGEST_NONCE].n			= "Digest-Nonce";
-	attrs[A_DIGEST_REALM].n			= "Digest-Realm";
-	attrs[A_DIGEST_USER_NAME].n		= "Digest-User-Name";
-	attrs[A_USER_NAME].n			= "User-Name";
-	attrs[A_CISCO_AVPAIR].n			= "Cisco-AVPair";
-	attrs[A_SIP_AVP].n				= "SIP-AVP";
-	attrs[A_ACCT_SESSION_ID].n		= "Acct-Session-Id";
-	vals[V_SIP_SESSION].n			= "Sip-Session";
+	attrs[A_SERVICE_TYPE].name			= "Service-Type";
+	attrs[A_SIP_URI_USER].name			= "Sip-URI-User";
+	attrs[A_DIGEST_RESPONSE].name		= "Digest-Response";
+	attrs[A_DIGEST_ALGORITHM].name		= "Digest-Algorithm";
+	attrs[A_DIGEST_BODY_DIGEST].name	= "Digest-Body-Digest";
+	attrs[A_DIGEST_CNONCE].name			= "Digest-CNonce";
+	attrs[A_DIGEST_NONCE_COUNT].name	= "Digest-Nonce-Count";
+	attrs[A_DIGEST_QOP].name			= "Digest-QOP";
+	attrs[A_DIGEST_METHOD].name			= "Digest-Method";
+	attrs[A_DIGEST_URI].name			= "Digest-URI";
+	attrs[A_DIGEST_NONCE].name			= "Digest-Nonce";
+	attrs[A_DIGEST_REALM].name			= "Digest-Realm";
+	attrs[A_DIGEST_USER_NAME].name		= "Digest-User-Name";
+	attrs[A_USER_NAME].name				= "User-Name";
+	attrs[A_CISCO_AVPAIR].name			= "Cisco-AVPair";
+	attrs[A_SIP_AVP].name				= "SIP-AVP";
+	attrs[A_ACCT_SESSION_ID].name		= "Acct-Session-Id";
+	vals[V_SIP_SESSION].name			= "Sip-Session";
 
-	if ((rh = rc_read_config(radius_config)) == NULL) {
-		LM_ERR("failed to open configuration file \n");
+	proto_url.s = aaa_proto_url;
+	proto_url.len = strlen(aaa_proto_url);
+
+	if(aaa_prot_bind(&proto_url, &proto)) {
+		LM_ERR("aaa protocol bind failure\n");
 		return -1;
 	}
 
-	if (rc_read_dictionary(rh, rc_conf_str(rh, "dictionary")) != 0) {
-		LM_ERR("failed to open dictionary file \n");
+	if (!(conn = proto.init_prot(&proto_url))) {
+		LM_ERR("aaa init protocol failure\n");
 		return -2;
 	}
 
-	vend = rc_dict_findvend(rh, "Cisco");
-	if (vend == NULL) {
-		LM_DBG("no `Cisco' vendor in Radius dictionary\n");
-		attrs[A_CISCO_AVPAIR].n = NULL;
+	map.name = "Cisco";
+	if (proto.dictionary_find(conn, &map, AAA_DICT_FIND_VEND)) {
+		LM_DBG("no `Cisco' vendor in AAA protocol dictionary\n");
+		attrs[A_CISCO_AVPAIR].name = NULL;
 	}
 
 	bind_auth = (bind_auth_t)find_export("bind_auth", 0, 0);
@@ -167,10 +168,10 @@ static int mod_init(void)
 		return -4;
 	}
 
-	INIT_AV(rh, attrs, A_MAX, vals, V_MAX, "auth_radius", -5, -6);
+	INIT_AV(proto, conn, attrs, A_MAX, vals, V_MAX, "auth_aaa", -5, -6);
 
 	if (service_type != -1) {
-		vals[V_SIP_SESSION].v = service_type;
+		vals[V_SIP_SESSION].value = service_type;
 	}
 
 	return 0;

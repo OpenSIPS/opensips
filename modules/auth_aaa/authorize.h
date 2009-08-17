@@ -1,9 +1,11 @@
 /*
  * $Id$
  *
- * Digest Authentication - Radius support
+ * Digest Authentication - generic AAA support
  *
  * Copyright (C) 2001-2003 FhG Fokus
+ * Copyright (C) 2009 Irina Stanescu
+ * Copyright (C) 2009 Voice Systems
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -20,10 +22,6 @@
  * You should have received a copy of the GNU General Public License 
  * along with this program; if not, write to the Free Software 
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- *
- * History:
- * -------
- * 2003-03-09: Based on authorize.h from radius_auth (janakj)
  */
 
 #ifndef AUTHORIZE_H
@@ -35,19 +33,19 @@
 /*
  * Authorize using Proxy-Authorize header field (no from parameter given)
  */
-int radius_proxy_authorize_1(struct sip_msg* _msg, char* _realm, char* _s2);
+int aaa_proxy_authorize_1(struct sip_msg* _msg, char* _realm, char* _s2);
 
 
 /*
  * Authorize using Proxy-Authorize header field (from parameter given)
  */
-int radius_proxy_authorize_2(struct sip_msg* _msg, char* _realm, char* _from);
+int aaa_proxy_authorize_2(struct sip_msg* _msg, char* _realm, char* _from);
 
 
 /*
  * Authorize using WWW-Authorization header field
  */
-int radius_www_authorize(struct sip_msg* _msg, char* _realm, char* _s2);
+int aaa_www_authorize(struct sip_msg* _msg, char* _realm, char* _s2);
 
 
 #endif /* AUTHORIZE_H */
