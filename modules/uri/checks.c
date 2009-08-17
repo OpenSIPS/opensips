@@ -36,7 +36,6 @@
 #include "../../parser/parse_from.h"
 #include "../../parser/parse_uri.h"
 #include "../../parser/parse_param.h"
-#include "../../ut.h"                   /* Handy utilities */
 #include "../../db/db.h"                /* Database API */
 #include "../../dset.h"
 #include "../../pvar.h"
@@ -393,3 +392,4 @@ int is_uri_user_e164(struct sip_msg* _m, char* _sp, char* _s2)
 	return -1;
     }
 }
+

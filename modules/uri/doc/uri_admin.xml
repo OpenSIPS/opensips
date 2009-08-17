@@ -7,12 +7,27 @@
 	<section>
 	<title>Overview</title>
 	<para>Various checks related to &sip; &uri;.</para>
+	<para>This module implements some URI related AAA based tests.</para>
 	</section>
 	<section>
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
-		<para>None.</para>
+		<para>
+		At least one of the following modules must be loaded before this module:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>a &osips; database module </emphasis>.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>an aaa protocol module </emphasis>.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
 	</section>
 	<section>
 		<title>External Libraries or Applications</title>
@@ -29,14 +44,321 @@
 		</para>
 	</section>
 	</section>
+	
 	<section>
 	<title>Exported Parameters</title>
-	<para>
-		None.
-	</para>
+	<section>
+		<title><varname>aaa_url</varname> (string)</title>
+		<para>
+		This is the url representing the AAA protocol used and the location of the configuration file of this protocol.
+		</para>
+		<example>
+		<title>Set <varname>aaa_url</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("uri", "aaa_url", "radius:/etc/radiusclient-ng/radiusclient.conf")
+...
+</programlisting>
+		</example>
+	</section>
+	<section>
+		<title><varname>service_type</varname> (integer)</title>
+		<para>
+		AAA service type used in
+	<function>aaa_does_uri_exist</function> and <function>aaa_does_uri_user_exist</function> checks.
+		</para>
+		<para>
+		<emphasis>
+			Default value is 10 (Call-Check).
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>service_type</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("uri", "service_type", 11)
+...
+</programlisting>
+		</example>
+	</section>
+	
+	
+	<section>
+		<title><varname>use_sip_uri_host</varname> (integer)</title>
+		<para>
+		If zero, <function>aaa_does_uri_exist</function>
+	sends to AAA server Request URI user@host in UserName
+	attribute.  If non-zero, <function>aaa_does_uri_exist</function>
+	sends to AAA server Request URI user in UserName attribute
+	and host in SIP-URI-Host attribute.
+		</para>
+		<para>
+		<emphasis>
+			Default value is 0.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>use_sip_uri_host</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("uri", "use_sip_uri_host", 1)
+...
+</programlisting>
+		</example>
+	</section>
+	<section>
+		<title><varname>db_url</varname> (string)</title>
+		<para>
+		&url; of the database to be used.
+		</para>
+		<para>
+		If the db_url string is empty, the default database URL
+		will be used.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>&defaultrodb;</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>db_url</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("uri", "db_url", "mysql://username:password@localhost/opensips")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>db_table</varname> (string)</title>
+		<para>
+		The DB table that should be used. Its possible to use the
+		<quote>subscriber</quote> and <quote>uri</quote> table. If the
+		<quote>uri</quote> table should be used, an additional parameter
+		(<xref linkend="use-uri-table"/>) must be set.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>subscriber</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>uri_table</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("uri", "db_table", "uri")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>user_column</varname> (string)</title>
+		<para>
+		Column holding usernames in the table.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>username</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>user_column</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("uri", "user_column", "username")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>domain_column</varname> (string)</title>
+		<para>
+		Column holding domain in the table.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>domain</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>domain_column</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("uri", "domain_column", "domain")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>uriuser_column</varname> (string)</title>
+		<para>
+		Column holding &uri; username in the table.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>uri_user</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>uriuser_column</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("uri", "uriuser_column", "uri_user")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="use-uri-table">
+		<title><varname>use_uri_table</varname> (integer)</title>
+		<para>
+		Specify if the <quote>uri</quote> table should be used for checkings
+		instead of <quote>subscriber</quote> table. A non-zero value means true.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>0 (false)</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>use_uri_table</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("uri", "use_uri_table", 1)
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>use_domain</varname> (integer)</title>
+		<para>
+		Specify if the domain part of the URI should be used to identify the
+		users (along with username). This is useful in multi domain setups, a 
+		non-zero value means true.
+		</para>
+		<para>This parameter is only evaluated for calls to <quote>does_uri_exist</quote>,
+		all other functions checks the digest username and realm against the 
+		given username, if the <quote>uri</quote> table is used.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>0 (false)</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>use_domain</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("uri", "use_domain", 1)
+...
+</programlisting>
+		</example>
+	</section>
+
 	</section>
 	<section>
 	<title>Exported Functions</title>
+	<section>
+		<title>
+		<function moreinfo="none">check_to()</function>
+		</title>
+		<para>
+		Check To username against &uri; table (if use_uri_table is set) or
+		digest credentials (no DB backend required).
+		</para>
+		<para>
+		This function can be used from REQUEST_ROUTE.
+		</para>
+		<example>
+		<title><function>check_to</function> usage</title>
+		<programlisting format="linespecific">
+...
+if (check_to()) {
+	...
+};
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title>
+		<function moreinfo="none">check_from()</function>
+		</title>
+		<para>
+		Check From username against &uri; table (if use_uri_table is set) or
+		digest credentials (no DB backend required).
+		</para>
+		<para>
+		This function can be used from REQUEST_ROUTE.
+		</para>
+		<example>
+		<title><function>check_from</function> usage</title>
+		<programlisting format="linespecific">
+...
+if (check_from()) {
+	...
+};
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title>
+		<function moreinfo="none">does_uri_exist()</function>
+		</title>
+		<para>
+		Check if username in the request &uri; belongs to an existing user.
+		</para>
+		<para>
+		As the checking is done against &uri; table (if use_uri_table is set) 
+		or subscriber table.
+		</para>
+		<para>
+		This function can be used from REQUEST_ROUTE.
+		</para>
+		<example>
+		<title><function>does_uri_exist</function> usage</title>
+		<programlisting format="linespecific">
+...
+if (does_uri_exist()) {
+	...
+};
+...
+</programlisting>
+		</example>
+	</section>
+	
+	<section>
+		<title>
+		<function moreinfo="none">get_auth_id(string, var, var)</function>
+		</title>
+		<para>
+		Checks given uri-string username against &uri; table (if use_uri_table is set) or
+		subscriber table (database backend required).
+		Returns true if the user exists in the database, and sets the given variables to
+		the authentication id and realm corresponding to the given uri.
+		</para>
+		<para>
+		This function can be used from REQUEST_ROUTE.
+		</para>
+		<example>
+		<title><function>get_auth_id</function> usage</title>
+		<programlisting format="linespecific">
+...
+if (get_auth_id("$ru", "$avp(s:auth_id)", "$avp(s:auth_realm)")) {
+	...
+};
+...
+</programlisting>
+		</example>
+	</section>
 	<section>
 		<title>
 		<function moreinfo="none">is_user(username)</function>
@@ -215,6 +537,75 @@ if (is_uri_user_e164("$fu")) {  # Check From header URI user part
 if (is_uri_user_e164("$avp(i:705)") {
    # Check user part of URI stored in avp i:705
    ...
+};
+...
+</programlisting>
+		</example>
+	</section>
+	
+		<section>
+		<title>
+		<function moreinfo="none">aaa_does_uri_exist([pvar])</function>
+		</title>
+		<para>
+		Checks from Radius if user@host in Request-&uri; or in
+		URI stored in pseudo variable argument belongs
+		to a local user. Can be used to decide if 404 or 480 should
+		be returned after lookup has failed.   If yes, loads AVP
+		based on SIP-AVP reply items returned from Radius.  Each
+		SIP-AVP reply item must have a string value of form:
+		</para>
+		<para>
+		<itemizedlist>
+			<listitem><para><emphasis>
+			value = SIP_AVP_NAME SIP_AVP_VALUE
+			</emphasis></para></listitem>
+			<listitem><para><emphasis>
+			SIP_AVP_NAME = STRING_NAME | '#'ID_NUMBER
+			</emphasis></para></listitem>
+			<listitem><para><emphasis>
+			SIP_AVP_VALUE = ':'STRING_VALUE | '#'NUMBER_VALUE
+			</emphasis></para></listitem>
+		</itemizedlist>
+		</para>
+		<para>
+		Returns 1 if Radius returns Access-Accept, -1 if Radius
+		returns Access-Reject, and -2 in case of internal
+		error.
+		</para>
+		<para>
+		This function can be used from REQUEST_ROUTE.
+		</para>
+		<example>
+		<title><function>aaa_does_uri_exist</function> usage</title>
+		<programlisting format="linespecific">
+...
+if (aaa_does_uri_exist()) {
+	...
+};
+...
+</programlisting>
+		</example>
+	</section>
+	<section>
+		<title>
+		<function moreinfo="none">aaa_does_uri_user_exist([pvar])</function>
+		</title>
+		<para>
+		Similar to aaa_does_uri_exist, but check is done
+		based only on Request-URI user part or user stored in
+		pseudo variable argument.  User should thus
+		be unique among all users, such as an E.164 number.
+		</para>
+		<para>
+		This function can be used from REQUEST_ROUTE.
+		</para>
+		<example>
+		<title><function>aaa_does_uri_user_exist</function> usage</title>
+		<programlisting format="linespecific">
+...
+if (aaa_does_uri_user_exist()) {
+	...
 };
 ...
 </programlisting>
