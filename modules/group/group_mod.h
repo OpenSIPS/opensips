@@ -4,6 +4,8 @@
  * Group membership 
  *
  * Copyright (C) 2001-2003 FhG Fokus
+ * Copyright (C) 2009 Irina Stanescu
+ * Copyright (C) 2009 Voice Systems
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -34,7 +36,7 @@
 #include "../../str.h"
 #include "../../parser/digest/digest.h" /* auth_body_t */
 #include "../../parser/msg_parser.h"    /* struct sip_msg */
-
+#include "../../aaa/aaa.h"
 
 /*
  * Module parameters variables
@@ -53,6 +55,11 @@ extern int multiple_gid;
 /* DB functions and handlers */
 extern db_func_t group_dbf;
 extern db_con_t* group_dbh;
+
+extern aaa_map attrs[];
+extern aaa_map vals[];
+extern aaa_conn *conn;
+extern aaa_prot proto;
 
 
 #endif /* GROUP_MOD_H */

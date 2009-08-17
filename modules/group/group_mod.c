@@ -4,6 +4,8 @@
  * Group membership - module interface
  *
  * Copyright (C) 2001-2003 FhG Fokus
+ * Copyright (C) 2009 Irina Stanescu
+ * Copyright (C) 2009 Voice Systems
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -31,6 +33,8 @@
  *  2004-06-07  updated to the new DB api: calls to group_db_* (andrei)
  *  2005-10-06 - added support for regexp-based groups (bogdan)
  *  2008-12-26  pseudovar argument for group parameter at is_user_in (saguti).
+ *  2009-08-07 - joined with group_radius module to support generic AAA group 
+ *		requests (Irina Stanescu)
  */
 
 
@@ -39,14 +43,13 @@
 #include <string.h>
 #include "../../sr_module.h"
 #include "../../dprint.h"
-#include "../../ut.h"
 #include "../../error.h"
 #include "../../mem/mem.h"
-#include "../../usr_avp.h"
 #include "group_mod.h"
 #include "group.h"
 #include "re_group.h"
 #include "../../mod_fix.h"
+#include "../../aaa/aaa.h"
 
 MODULE_VERSION
 
@@ -72,6 +75,9 @@ static int mod_init(void);
 
 static int get_gid_fixup(void** param, int param_no);
 
+static int aaa_is_user_fixup(void** param, int param_no);
+
+static int db_is_user_fixup(void** param, int param_no);
 
 #define TABLE "grp"
 #define TABLE_LEN (sizeof(TABLE) - 1)
@@ -97,7 +103,9 @@ static int get_gid_fixup(void** param, int param_no);
 /*
  * Module parameter variables
  */
-static str db_url = {DEFAULT_RODB_URL, DEFAULT_RODB_URL_LEN};
+static str db_url = {NULL, 0};
+char* aaa_proto_url = NULL;
+
 /* Table name where group definitions are stored */
 str table         = {TABLE, TABLE_LEN}; 
 str user_column   = {USER_COL, USER_COL_LEN};
@@ -115,14 +123,25 @@ int multiple_gid  = 1;
 db_func_t group_dbf;
 db_con_t* group_dbh = 0;
 
+aaa_conn *conn = NULL;
+aaa_prot proto = {NULL, NULL, NULL, NULL, NULL, NULL, NULL};
+
+aaa_map attrs[A_MAX];
+aaa_map vals[V_MAX];
 
 /*
  * Exported functions
  */
 static cmd_export_t cmds[] = {
-	{"is_user_in",      (cmd_function)is_user_in,      2,  fixup_spve_spve, 0,
+	{"aaa_is_user_in", (cmd_function)aaa_is_user_in,      2,  aaa_is_user_fixup,     0,
+			REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"is_user_in",      (cmd_function)is_user_in,      2,  db_is_user_fixup, 0,
+			REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"db_is_user_in",      (cmd_function)is_user_in,      2,  db_is_user_fixup, 0,
 			REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"get_user_group",  (cmd_function)get_user_group,  2,  get_gid_fixup, 0,
+			REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"db_get_user_group",  (cmd_function)get_user_group,  2,  get_gid_fixup, 0,
 			REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{0, 0, 0, 0, 0, 0}
 };
@@ -132,6 +151,7 @@ static cmd_export_t cmds[] = {
  * Exported parameters
  */
 static param_export_t params[] = {
+	{"aaa_url", 	  STR_PARAM, &aaa_proto_url  },
 	{"db_url",        STR_PARAM, &db_url.s       },
 	{"table",         STR_PARAM, &table.s        },
 	{"user_column",   STR_PARAM, &user_column.s  },
@@ -167,61 +187,97 @@ struct module_exports exports = {
 
 static int child_init(int rank)
 {
-	return group_db_init(&db_url);
+	if (db_url.s)
+		return group_db_init(&db_url);
+	else
+		return 0;
 }
 
 
 static int mod_init(void)
 {
+	str proto_url;
+
 	LM_DBG("group module - initializing\n");
 
-	/* Calculate lengths */
-	db_url.len = strlen(db_url.s);
-	table.len = strlen(table.s);
-	user_column.len = strlen(user_column.s);
-	domain_column.len = strlen(domain_column.s);
-	group_column.len = strlen(group_column.s);
+	/* check for a database module */
+	if (db_url.s) {
 
-	re_table.len = (re_table.s && re_table.s[0])?strlen(re_table.s):0;
-	re_exp_column.len = strlen(re_exp_column.s);
-	re_gid_column.len = strlen(re_gid_column.s);
+		db_url.len = strlen(db_url.s);
+		table.len = strlen(table.s);
+		user_column.len = strlen(user_column.s);
+		domain_column.len = strlen(domain_column.s);
+		group_column.len = strlen(group_column.s);
 
-	/* Find a database module */
-	if (group_db_bind(&db_url)) {
-		return -1;
-	}
+		re_table.len = (re_table.s && re_table.s[0])?strlen(re_table.s):0;
+		re_exp_column.len = strlen(re_exp_column.s);
+		re_gid_column.len = strlen(re_gid_column.s);
 
-	if (group_db_init(&db_url) < 0 ){
-		LM_ERR("unable to open database connection\n");
-		return -1;
-	}
+		if (group_db_bind(&db_url)) {
+			LM_ERR("unable to bind database module\n");
+			return -1;
+		}
 
-	/* check version for group table */
-	if (db_check_table_version(&group_dbf, group_dbh, &table, TABLE_VERSION) < 0) {
+		if (group_db_init(&db_url) < 0 ){
+			LM_ERR("unable to open database connection\n");
+			return -1;
+		}
+
+		/* check version for group table */
+		if (db_check_table_version(&group_dbf, group_dbh, &table, TABLE_VERSION) < 0) {
 			LM_ERR("error during group table version check.\n");
 			return -1;
+		}
+
+		if (re_table.len) {
+			/* check version for group re_group table */
+			if (db_check_table_version(&group_dbf, group_dbh, &re_table, RE_TABLE_VERSION) < 0) {
+				LM_ERR("error during re_group table version check.\n");
+				return -1;
+			}
+			if (load_re( &re_table )!=0 ) {
+				LM_ERR("failed to load <%s> table\n", re_table.s);
+				return -1;
+			}
+		}
+
+		group_db_close();
 	}
 
-	if (re_table.len) {
-		/* check version for group re_group table */
-		if (db_check_table_version(&group_dbf, group_dbh, &re_table, RE_TABLE_VERSION) < 0) {
-			LM_ERR("error during re_group table version check.\n");
+	/* check for an aaa module */
+	if (aaa_proto_url) {
+		memset(attrs, 0, sizeof(attrs));
+		memset(vals, 0, sizeof(vals));
+		attrs[A_SERVICE_TYPE].name		= "Service-Type";
+		attrs[A_USER_NAME].name			= "User-Name";
+		attrs[A_SIP_GROUP].name			= "Sip-Group";
+		attrs[A_ACCT_SESSION_ID].name	= "Acct-Session-Id";
+		vals[V_GROUP_CHECK].name		= "Group-Check";
+
+		proto_url.s = aaa_proto_url;
+		proto_url.len = strlen(aaa_proto_url);
+
+		if (aaa_prot_bind(&proto_url, &proto)) {
+			LM_ERR("unable to bind aaa protocol module\n");
 			return -1;
 		}
-		if (load_re( &re_table )!=0 ) {
-			LM_ERR("failed to load <%s> table\n", re_table.s);
+
+		if (!(conn = proto.init_prot(&proto_url))) {
+			LM_ERR("unable to initialize aaa protocol module\n");
 			return -1;
 		}
+
+		INIT_AV(proto, conn, attrs, A_MAX, vals, V_MAX, "group", -3, -4);
 	}
 
-	group_db_close();
 	return 0;
 }
 
 
 static void destroy(void)
 {
-	group_db_close();
+	if (group_dbh)
+		group_db_close();
 }
 
 
@@ -229,6 +285,9 @@ static int get_gid_fixup(void** param, int param_no)
 {
 	pv_spec_t *sp;
 	str  name;
+
+	if (!db_url.s)
+		return E_CFG;
 
 	if (param_no == 1) {
 		return fixup_spve_spve(param, param_no);
@@ -253,3 +312,61 @@ static int get_gid_fixup(void** param, int param_no)
 	return 0;
 }
 
+
+static int aaa_is_user_fixup(void** param, int param_no)
+{
+	void* ptr;
+	str* s;
+
+	if (!aaa_proto_url) {
+		LM_ERR("no aaa protocol url\n");
+		return E_CFG;
+	}
+
+	if (param_no == 1) {
+		ptr = *param;
+
+		if (!strcasecmp((char*)*param, "Request-URI")) {
+			*param = (void*)1;
+		} else if (!strcasecmp((char*)*param, "To")) {
+			*param = (void*)2;
+		} else if (!strcasecmp((char*)*param, "From")) {
+			*param = (void*)3;
+		} else if (!strcasecmp((char*)*param, "Credentials")) {
+			*param = (void*)4;
+		} else {
+			LM_ERR("unsupported Header Field identifier\n");
+			return E_UNSPEC;
+		}
+
+		pkg_free(ptr);
+	} else if (param_no == 2) {
+
+		s = (str*)pkg_malloc(sizeof(str));
+		if (!s) {
+			LM_ERR("no pkg memory left\n");
+			return E_UNSPEC;
+		}
+
+		s->s = (char*)*param;
+		s->len = strlen(s->s);
+		*param = (void*)s;
+	}
+
+	return 0;
+}
+
+
+static int db_is_user_fixup(void** param, int param_no) {
+
+	if (param_no == 1) {
+		if (db_url.s)
+			fixup_spve_spve(param, param_no);
+		else {
+			LM_ERR("no database url\n");
+			return E_CFG;
+		}
+	}
+
+	return 0;
+}

@@ -46,7 +46,12 @@
 			<itemizedlist>
 			<listitem>
 			<para>
-				A database module, like mysql, postgres or dbtext
+				A database module, like mysql, postgres or dbtext.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				An AAA module, like radius or diameter.
 			</para>
 			</listitem>
 			</itemizedlist>
@@ -70,6 +75,7 @@
 
 	<section>
 	<title>Exported Parameters</title>
+	
 	<section>
 		<title><varname>db_url</varname> (string)</title>
 		<para>
@@ -84,9 +90,11 @@
 		<example>
 		<title>Set <varname>db_url</varname> parameter</title>
 		<programlisting format="linespecific">
+		
 ...
 modparam("group", "db_url", "mysql://username:password@dbhost/opensips")
 ...
+
 </programlisting>
 		</example>
 	</section>
@@ -105,9 +113,11 @@ modparam("group", "db_url", "mysql://username:password@dbhost/opensips")
 		<example>
 		<title>Set <varname>table</varname> parameter</title>
 		<programlisting format="linespecific">
+		
 ...
 modparam("group", "table", "grp_table")
 ...
+
 </programlisting>
 		</example>
 	</section>
@@ -125,9 +135,11 @@ modparam("group", "table", "grp_table")
 		<example>
 		<title>Set <varname>user_column</varname> parameter</title>
 		<programlisting format="linespecific">
+		
 ...
 modparam("group", "user_column", "user")
 ...
+
 </programlisting>
 		</example>
 	</section>
@@ -145,9 +157,11 @@ modparam("group", "user_column", "user")
 		<example>
 		<title>Set <varname>domain_column</varname> parameter</title>
 		<programlisting format="linespecific">
+		
 ...
 modparam("group", "domain_column", "realm")
 ...
+
 </programlisting>
 		</example>
 	</section>
@@ -165,9 +179,11 @@ modparam("group", "domain_column", "realm")
 		<example>
 		<title>Set <varname>group_column</varname> parameter</title>
 		<programlisting format="linespecific">
+		
 ...
 modparam("group", "group_column", "grp")
 ...
+
 </programlisting>
 		</example>
 	</section>
@@ -187,9 +203,11 @@ modparam("group", "group_column", "grp")
 		<example>
 		<title>Set <varname>use_domain</varname> parameter</title>
 		<programlisting format="linespecific">
+		
 ...
 modparam("group", "use_domain", 1)
 ...
+
 </programlisting>
 		</example>
 	</section>
@@ -209,9 +227,11 @@ modparam("group", "use_domain", 1)
 		<example>
 		<title>Set <varname>re_table</varname> parameter</title>
 		<programlisting format="linespecific">
+		
 ...
 modparam("group", "re_table", "re_grp")
 ...
+
 </programlisting>
 		</example>
 	</section>
@@ -230,9 +250,11 @@ modparam("group", "re_table", "re_grp")
 		<example>
 		<title>Set <varname>reg_exp_column</varname> parameter</title>
 		<programlisting format="linespecific">
+		
 ...
 modparam("group", "reg_exp_column", "re")
 ...
+
 </programlisting>
 		</example>
 	</section>
@@ -250,9 +272,11 @@ modparam("group", "reg_exp_column", "re")
 		<example>
 		<title>Set <varname>re_gid_column</varname> parameter</title>
 		<programlisting format="linespecific">
+		
 ...
 modparam("group", "re_gid_column", "grp_id")
 ...
+
 </programlisting>
 		</example>
 	</section>
@@ -272,9 +296,27 @@ modparam("group", "re_gid_column", "grp_id")
 		<example>
 		<title>Set <varname>multiple_gid</varname> parameter</title>
 		<programlisting format="linespecific">
+		
 ...
 modparam("group", "multiple_gid", 0)
 ...
+
+</programlisting>
+		</example>
+	</section>
+	<section>
+		<title><varname>aaa_url</varname> (string)</title>
+		<para>
+			This is the url representing the AAA protocol used and the location of the configuration file of this protocol.
+		</para>
+		<example>
+		<title>Set <varname>aaa_url</varname> parameter</title>
+		<programlisting format="linespecific">
+		
+...
+modparam("group", "aaa_url", "radius:/etc/radiusclient-ng/radiusclient.conf")
+...
+
 </programlisting>
 		</example>
 	</section>
@@ -329,6 +371,7 @@ modparam("group", "multiple_gid", 0)
 		<example>
 		<title><function>is_user_in</function> usage</title>
 		<programlisting format="linespecific">
+		
 ...
 if (is_user_in("Request-URI", "ld")) {
 	...
@@ -340,6 +383,7 @@ if (is_user_in("Credentials", "$avp(s:grouptocheck)")) {
 	...
 };
 ...
+
 </programlisting>
 		</example>
 	</section>
@@ -390,12 +434,65 @@ if (is_user_in("Credentials", "$avp(s:grouptocheck)")) {
 		<example>
 		<title><function>get_user_group</function> usage</title>
 		<programlisting format="linespecific">
+		
 ...
 if (get_user_group("Request-URI", "$avp(i:10)")) {
     xdbg("User $ru belongs to $(avp(i:10)[*]) group(s)\n");
     ....
 };
 ...
+
+</programlisting>
+		</example>
+	</section>
+	<section>
+		<title>
+		<function moreinfo="none">aaa_is_user_in(URI, group)</function>
+		</title>
+		<para>
+		The function returns true if username in the given &uri; is member of 
+		the given group and false if not.
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>&uri;</emphasis> - &uri; whose username and 
+			optionally domain to be used, this can be one of:
+			<itemizedlist>
+				<listitem>
+				<para>Request-URI - Use Request-URI username and 
+				(optionally) domain.</para>
+				</listitem>
+				<listitem>
+				<para>To - Use To username and (optionally) domain.</para>
+				</listitem>
+				<listitem>
+				<para>From - Use From username and (optionally) domain.</para>
+				</listitem>
+				<listitem>
+				<para>Credentials - Use digest credentials username.</para>
+				</listitem>
+			</itemizedlist>
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>group</emphasis> - Name of the group to check.
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from REQUEST_ROUTE.
+		</para>
+		<example>
+		<title><function>aaa_is_user_in</function> usage</title>
+		<programlisting format="linespecific">
+		
+...
+if (aaa_is_user_in("Request-URI", "ld")) {
+	...
+};
+...
+
 </programlisting>
 		</example>
 	</section>

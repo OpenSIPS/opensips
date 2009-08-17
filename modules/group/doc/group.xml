@@ -39,10 +39,21 @@
 		    <email>saguti@gmail.com</email>
 		</address>
 	    </editor>
+	    <editor>
+		<firstname>Irina-Maria</firstname>
+		<surname>Stanescu</surname>
+		<address>
+		    <email>ironmissy@gmail.com</email>
+		</address>
+	    </editor>
 	</authorgroup>
 	<copyright>
 	    <year>2003</year>
 	    <holder>FhG FOKUS</holder>
+	</copyright>
+	<copyright>
+	    <year>2009</year>
+	    <holder>&voicesystem;</holder>
 	</copyright>
 	<revhistory>
 	    <revision>

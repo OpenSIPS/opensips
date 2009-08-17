@@ -4,6 +4,8 @@
  * Group membership
  *
  * Copyright (C) 2001-2003 FhG Fokus
+ * Copyright (C) 2009 Irina Stanescu
+ * Copyright (C) 2009 Voice Systems
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -33,8 +35,6 @@
 
 #include "../../parser/msg_parser.h"
 #include "../../pvar.h"
-#include "../../usr_avp.h"
-
 
 typedef struct _group_check
 {
@@ -55,6 +55,13 @@ int get_username_domain(struct sip_msg *msg, str *hf_s,
  */
 int is_user_in(struct sip_msg* _msg, char* _hf, char* _grp);
 
+/*
+ * Check from AAA if a user belongs to a group. User-Name is digest
+ * username or digest username@realm, SIP-Group is group, and Service-Type
+ * is Group-Check.  SIP-Group is SER specific attribute and Group-Check is
+ * SER specific service type value.
+ */
+int aaa_is_user_in(struct sip_msg* _msg, char* _hf, char* _group);
 
 int group_db_init(const str* db_url);
 int group_db_bind(const str* db_url);

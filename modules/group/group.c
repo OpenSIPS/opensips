@@ -4,6 +4,8 @@
  * Group membership
  *
  * Copyright (C) 2001-2003 FhG Fokus
+ * Copyright (C) 2009 Irina Stanescu
+ * Copyright (C) 2009 Voice Systems
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -34,7 +36,6 @@
 #include <string.h>
 #include "../../dprint.h"               /* Logging */
 #include "../../db/db.h"                /* Generic database API */
-#include "../../ut.h"
 #include "../../parser/digest/digest.h" /* get_authorized_cred */
 #include "../../parser/hf.h"            /* Header Field types */
 #include "../../parser/parse_from.h"    /* From parser */
@@ -42,6 +43,8 @@
 #include "../../mod_fix.h"
 #include "group.h"
 #include "group_mod.h"                   /* Module parameters */
+
+#include "../../aaa/aaa.h"
 
 static unsigned int hf_type( str *str1);
 
@@ -239,3 +242,150 @@ static unsigned int hf_type( str *str1)
 	}
 
 }
+
+
+/*
+ * Check from AAA server if a user belongs to a group. User-Name is digest
+ * username or digest username@realm, SIP-Group is group, and Service-Type
+ * is Group-Check.  SIP-Group is SER specific attribute and Group-Check is
+ * SER specific service type value.
+ */
+int aaa_is_user_in(struct sip_msg* _m, char* _hf, char* _group)
+{
+	str *grp, user_name, user, domain;
+	dig_cred_t* cred = 0;
+	int hf_type;
+	uint32_t service;
+
+	aaa_message *send = NULL, *received = NULL;
+
+	struct hdr_field* h;
+	struct sip_uri *turi;
+
+	grp = (str*)_group; /* via fixup */
+
+	hf_type = (int)(long)_hf;
+
+	turi = 0;
+
+	switch(hf_type) {
+		case 1: /* Request-URI */
+			if(parse_sip_msg_uri(_m)<0) {
+				LM_ERR("failed to get Request-URI\n");
+				return -1;
+			}
+			turi = &_m->parsed_uri;
+			break;
+
+		case 2: /* To */
+			if((turi=parse_to_uri(_m))==NULL) {
+				LM_ERR("failed to get To URI\n");
+				return -1;
+			}
+			break;
+
+		case 3: /* From */
+			if((turi=parse_from_uri(_m))==NULL) {
+				LM_ERR("failed to get From URI\n");
+				return -1;
+			}
+			break;
+
+		case 4: /* Credentials */
+			get_authorized_cred(_m->authorization, &h);
+			if (!h) {
+				get_authorized_cred(_m->proxy_auth, &h);
+				if (!h) {
+				LM_ERR("no authorized"
+							" credentials found (error in scripts)\n");
+					return -4;
+				}
+			}
+			cred = &((auth_body_t*)(h->parsed))->digest;
+			break;
+	}
+
+	if (hf_type != 4) {
+		user = turi->user;
+		domain = turi->host;
+	} else {
+		user = cred->username.user;
+		domain = *GET_REALM(cred);
+	}
+
+	if (user.s == NULL || user.len == 0) {
+		LM_DBG("no username part\n");
+		return -1;
+	}
+
+	if (use_domain) {
+		user_name.len = user.len + domain.len + 1;
+		user_name.s = (char*)pkg_malloc(user_name.len);
+		if (!user_name.s) {
+			LM_ERR("no pkg memory left\n");
+			return -6;
+		}
+
+		memcpy(user_name.s, user.s, user.len);
+		user_name.s[user.len] = '@';
+		memcpy(user_name.s + user.len + 1, domain.s, domain.len);
+	} else {
+		user_name = user;
+	}
+
+	if ((send = proto.create_aaa_message(conn, AAA_AUTH)) == NULL) {
+		LM_ERR("failed to create new aaa message for auth \n");
+		return -1;
+	}
+
+	if (proto.avp_add(conn, send, &attrs[A_USER_NAME], user_name.s, user_name.len, 0)) {
+		proto.destroy_aaa_message(conn, send);
+		if (use_domain) pkg_free(user_name.s);
+		return -7;
+	}
+
+	if (use_domain) pkg_free(user_name.s);
+
+
+	if (proto.avp_add(conn, send, &attrs[A_SIP_GROUP], grp->s, grp->len, 0)) {
+		proto.destroy_aaa_message(conn, send);
+		LM_ERR("failed to add Sip-Group attribute\n");
+		return -8;
+	}
+
+	service = vals[V_GROUP_CHECK].value;
+
+	if (proto.avp_add(conn, send, &attrs[A_SERVICE_TYPE], &service, -1, 0)) {
+		proto.destroy_aaa_message(conn, send);
+		LM_ERR("failed to add Service-Type attribute\n");
+		return -8;
+	}
+
+	/* Add CALL-ID in Acct-Session-Id Attribute */
+	if ((parse_headers(_m, HDR_CALLID_F, 0) == -1 || _m->callid == NULL) &&
+		 _m->callid == NULL) {
+		proto.destroy_aaa_message(conn, send);
+		LM_ERR("msg parsing failed or callid not present");
+		return -10;
+	}
+
+	if (proto.avp_add(conn, send, &attrs[A_ACCT_SESSION_ID], _m->callid->body.s,
+	_m->callid->body.len, 0)) {
+		proto.destroy_aaa_message(conn, send);
+		LM_ERR("unable to add CALL-ID attribute\n");
+		return -11;
+	}
+
+	if (!proto.send_aaa_request(conn, send, &received)) {
+		LM_DBG("Success\n");
+		proto.destroy_aaa_message(conn, send);
+		proto.destroy_aaa_message(conn, received);
+		return 1;
+	} else {
+		LM_ERR("Failure\n");
+		proto.destroy_aaa_message(conn, send);
+		proto.destroy_aaa_message(conn, received);
+		return -12;
+	}
+}
+
