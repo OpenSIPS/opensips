@@ -52,19 +52,18 @@
 #include "../../mem/mem.h"
 #include "../tm/tm_load.h"
 #include "../rr/api.h"
-#include "acc.h"
-#include "acc_mod.h"
-#include "acc_extra.h"
-#include "acc_logic.h"
 
-#ifdef RAD_ACC
-#include "../../radius.h"
-#endif
+#include "../../aaa/aaa.h"
 
 #ifdef DIAM_ACC
 #include "diam_dict.h"
 #include "diam_tcp.h"
 #endif
+
+#include "acc.h"
+#include "acc_mod.h"
+#include "acc_extra.h"
+#include "acc_logic.h"
 
 MODULE_VERSION
 
@@ -108,19 +107,19 @@ static char *log_extra_str = 0;
 struct acc_extra *log_extra = 0;
 
 
-/* ----- RADIUS acc variables ----------- */
+/* ----- AAA PROTOCOL acc variables ----------- */
 
-#ifdef RAD_ACC
-static char *radius_config = 0;
-int radius_flag = -1;
-int radius_missed_flag = -1;
+int aaa_flag = -1;
+int aaa_missed_flag = -1;
 static int service_type = -1;
-void *rh;
-/* rad extra variables */
-static char *rad_extra_str = 0;
-struct acc_extra *rad_extra = 0;
-#endif
+char *aaa_proto_url = NULL;
+aaa_prot proto;
+aaa_conn *conn;
 
+
+/*  aaa extra variables */
+static char *aaa_extra_str = 0;
+struct acc_extra *aaa_extra = 0;
 
 /* ----- DIAMETER acc variables ----------- */
 
@@ -139,7 +138,6 @@ int diameter_client_port=3000;
 
 /* ----- SQL acc variables ----------- */
 
-#ifdef SQL_ACC
 int db_flag = -1;
 int db_missed_flag = -1;
 /* db extra variables */
@@ -158,7 +156,6 @@ str acc_callid_col     = str_init("callid");
 str acc_sipcode_col    = str_init("sip_code");
 str acc_sipreason_col  = str_init("sip_reason");
 str acc_time_col       = str_init("time");
-#endif
 
 /* ------------- fixup function --------------- */
 static int acc_fixup(void** param, int param_no);
@@ -169,16 +166,12 @@ static cmd_export_t cmds[] = {
 	{"acc_log_request", (cmd_function)w_acc_log_request, 1,
 		acc_fixup, free_acc_fixup,
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-#ifdef SQL_ACC
 	{"acc_db_request",  (cmd_function)w_acc_db_request,  2,
 		acc_fixup, free_acc_fixup,
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-#endif
-#ifdef RAD_ACC
-	{"acc_rad_request", (cmd_function)w_acc_rad_request, 1,
+	{"acc_aaa_request", (cmd_function)w_acc_aaa_request, 1,
 		acc_fixup, free_acc_fixup,
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-#endif
 #ifdef DIAM_ACC
 	{"acc_diam_request",(cmd_function)w_acc_diam_request,1,
 		acc_fixup, free_acc_fixup,
@@ -202,13 +195,12 @@ static param_export_t params[] = {
 	{"log_level",            INT_PARAM, &log_level            },
 	{"log_facility",         STR_PARAM, &log_facility_str     },
 	{"log_extra",            STR_PARAM, &log_extra_str        },
-#ifdef RAD_ACC
-	{"radius_config",        STR_PARAM, &radius_config        },
-	{"radius_flag",          INT_PARAM, &radius_flag          },
-	{"radius_missed_flag",   INT_PARAM, &radius_missed_flag   },
+	/* aaa specific */
+	{"aaa_url",   		     STR_PARAM, &aaa_proto_url        },
+	{"aaa_flag",        	 INT_PARAM, &aaa_flag    	      },
+	{"aaa_missed_flag",  	 INT_PARAM, &aaa_missed_flag 	  },
 	{"service_type",         INT_PARAM, &service_type         },
-	{"radius_extra",         STR_PARAM, &rad_extra_str        },
-#endif
+	{"aaa_extra",         STR_PARAM, &aaa_extra_str        },
 	/* DIAMETER specific */
 #ifdef DIAM_ACC
 	{"diameter_flag",        INT_PARAM, &diameter_flag        },
@@ -218,7 +210,6 @@ static param_export_t params[] = {
 	{"diameter_extra",       STR_PARAM, &dia_extra_str        },
 #endif
 	/* db-specific */
-#ifdef SQL_ACC
 	{"db_flag",              INT_PARAM, &db_flag              },
 	{"db_missed_flag",       INT_PARAM, &db_missed_flag       },
 	{"db_extra",             STR_PARAM, &db_extra_str         },
@@ -232,7 +223,6 @@ static param_export_t params[] = {
 	{"acc_sip_code_column",  STR_PARAM, &acc_sipcode_col.s    },
 	{"acc_sip_reason_column",STR_PARAM, &acc_sipreason_col.s  },
 	{"acc_time_column",      STR_PARAM, &acc_time_col.s       },
-#endif
 	{0,0,0}
 };
 
@@ -288,14 +278,12 @@ static int acc_fixup(void** param, int param_no)
 			accp->reason.len = strlen(accp->reason.s);
 		}
 		*param = (void*)accp;
-#ifdef SQL_ACC
 	} else if (param_no == 2) {
 		/* only for db acc - the table name */
 		if (db_url.s==0) {
 			pkg_free(p);
 			*param = 0;
 		}
-#endif
 	}
 	return 0;
 }
@@ -318,7 +306,6 @@ static int mod_init( void )
 {
 	LM_INFO("initializing...\n");
 
-#ifdef SQL_ACC
 	if (db_url.s)
 		db_url.len = strlen(db_url.s);
 	db_table_acc.len = strlen(db_table_acc.s);
@@ -330,7 +317,6 @@ static int mod_init( void )
 	acc_sipcode_col.len = strlen(acc_sipcode_col.s);
 	acc_sipreason_col.len = strlen(acc_sipreason_col.s);
 	acc_time_col.len = strlen(acc_time_col.s);
-#endif
 
 	if (log_facility_str) {
 		int tmp = str2facility(log_facility_str);
@@ -400,7 +386,6 @@ static int mod_init( void )
 
 	/* ------------ SQL INIT SECTION ----------- */
 
-#ifdef SQL_ACC
 	if (db_url.s && db_url.len > 0) {
 		/* parse the extra string, if any */
 		if (db_extra_str && (db_extra=parse_acc_extra(db_extra_str))==0 ) {
@@ -420,33 +405,30 @@ static int mod_init( void )
 		db_flag = 0;
 		db_missed_flag = 0;
 	}
-#endif
 
-	/* ------------ RADIUS INIT SECTION ----------- */
+	/* ------------ AAA PROTOCOL INIT SECTION ----------- */
 
-#ifdef RAD_ACC
-	if (radius_config && radius_config[0]) {
+	if (aaa_proto_url && aaa_proto_url[0]) {
 		/* parse the extra string, if any */
-		if (rad_extra_str && (rad_extra=parse_acc_extra(rad_extra_str))==0 ) {
-			LM_ERR("failed to parse rad_extra param\n");
+		if (aaa_extra_str && (aaa_extra = parse_acc_extra(aaa_extra_str))==0) {
+			LM_ERR("failed to parse aaa_extra param\n");
 			return -1;
 		}
 
 		/* fix the flags */
-		if (flag_idx2mask(&radius_flag)<0)
+		if (flag_idx2mask(&aaa_flag)<0)
 			return -1;
-		if (flag_idx2mask(&radius_missed_flag)<0)
+		if (flag_idx2mask(&aaa_missed_flag)<0)
 			return -1;
-		if (init_acc_rad( radius_config, service_type)!=0 ) {
+		if (init_acc_aaa(aaa_proto_url, service_type)!=0 ) {
 			LM_ERR("failed to init radius\n");
 			return -1;
 		}
 	} else {
-		radius_config = 0;
-		radius_flag = 0;
-		radius_missed_flag = 0;
+		aaa_proto_url = NULL;
+		aaa_flag = 0;
+		aaa_missed_flag = 0;
 	}
-#endif
 
 	/* ------------ DIAMETER INIT SECTION ----------- */
 
@@ -475,13 +457,10 @@ static int mod_init( void )
 
 static int child_init(int rank)
 {
-#ifdef SQL_ACC
 	if(db_url.s && acc_db_init_child(&db_url)<0) {
 		LM_ERR("could not open database connection");
 		return -1;
 	}
-
-#endif
 
 	/* DIAMETER */
 #ifdef DIAM_ACC
@@ -515,15 +494,13 @@ static void destroy(void)
 {
 	if (log_extra)
 		destroy_extras( log_extra);
-#ifdef SQL_ACC
 	acc_db_close();
 	if (db_extra)
 		destroy_extras( db_extra);
-#endif
-#ifdef RAD_ACC
-	if (rad_extra)
-		destroy_extras( rad_extra);
-#endif
+
+	if (aaa_extra)
+		destroy_extras( aaa_extra);
+
 #ifdef DIAM_ACC
 	close_tcp_connection(sockfd);
 	if (dia_extra)

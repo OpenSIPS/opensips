@@ -67,10 +67,7 @@ int legs2strar( struct acc_extra *legs, struct sip_msg *rq,
 
 int extra2int( struct acc_extra *extra, int *attrs );
 
-#ifdef RAD_ACC
-#include "../../radius.h"
-int extra2attrs( struct acc_extra *extra, struct attr *attrs, int offset);
-#endif
-
+#include "../../aaa/aaa.h"
+int extra2attrs( struct acc_extra *extra, aaa_map *attrs, int offset);
 #endif
 

@@ -46,12 +46,11 @@ extern int log_level;
 extern int log_flag;
 extern int log_missed_flag;
 
-
-#ifdef RAD_ACC
-extern int radius_flag;
-extern int radius_missed_flag;
-extern void *rh;
-#endif
+extern int aaa_flag;
+extern int aaa_missed_flag;
+extern aaa_prot proto;
+extern aaa_conn *conn;
+extern char* aaa_proto_url;
 
 #ifdef DIAM_ACC
 #include "diam_tcp.h"
@@ -60,7 +59,6 @@ extern int diameter_flag;
 extern int diameter_missed_flag;
 #endif
 
-#ifdef SQL_ACC
 extern int db_flag;
 extern int db_missed_flag;
 
@@ -77,7 +75,5 @@ extern str acc_cseqno_col;
 extern str acc_sipcode_col;
 extern str acc_sipreason_col;
 extern str acc_time_col;
-#endif /* SQL_ACC */
-
 
 #endif

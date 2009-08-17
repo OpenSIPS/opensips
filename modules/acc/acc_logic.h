@@ -56,13 +56,9 @@ void acc_onreq( struct cell* t, int type, struct tmcb_params *ps );
 
 int w_acc_log_request(struct sip_msg *rq, char *comment, char *foo);
 
-#ifdef SQL_ACC
-int w_acc_db_request(struct sip_msg *rq, char *comment, char *table);
-#endif
+int w_acc_aaa_request(struct sip_msg *rq, char *comment, char *foo);
 
-#ifdef RAD_ACC
-int w_acc_rad_request(struct sip_msg *rq, char *comment, char *foo);
-#endif
+int w_acc_db_request(struct sip_msg *rq, char *comment, char *table);
 
 #ifdef DIAM_ACC
 int w_acc_diam_request(struct sip_msg *rq, char *comment, char *foo);

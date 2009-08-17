@@ -36,6 +36,14 @@
 #include "../../parser/parse_content.h"
 #include "../tm/tm_load.h"
 #include "../rr/api.h"
+
+#include "../../aaa/aaa.h"
+
+#ifdef DIAM_ACC
+#include "diam_dict.h"
+#include "diam_tcp.h"
+#endif
+
 #include "acc.h"
 #include "acc_mod.h"
 #include "acc_logic.h"
@@ -54,22 +62,11 @@ struct acc_enviroment acc_env;
 #define is_log_acc_on(_rq)     is_acc_flag_set(_rq,log_flag)
 #define is_log_mc_on(_rq)      is_acc_flag_set(_rq,log_missed_flag)
 
-#ifdef SQL_ACC
-	#define is_db_acc_on(_rq)     is_acc_flag_set(_rq,db_flag)
-	#define is_db_mc_on(_rq)      is_acc_flag_set(_rq,db_missed_flag)
-#else
-	#define is_db_acc_on(_rq)     (0)
-	#define is_db_mc_on(_rq)      (0)
-#endif
+#define is_aaa_acc_on(_rq)     is_acc_flag_set(_rq,aaa_flag)
+#define is_aaa_mc_on(_rq)      is_acc_flag_set(_rq,aaa_missed_flag)
 
-#ifdef RAD_ACC
-	#define is_rad_acc_on(_rq)     is_acc_flag_set(_rq,radius_flag)
-	#define is_rad_mc_on(_rq)      is_acc_flag_set(_rq,radius_missed_flag)
-#else
-	#define is_rad_acc_on(_rq)     (0)
-	#define is_rad_mc_on(_rq)      (0)
-#endif
-
+#define is_db_acc_on(_rq)     is_acc_flag_set(_rq,db_flag)
+#define is_db_mc_on(_rq)      is_acc_flag_set(_rq,db_missed_flag)
 
 #ifdef DIAM_ACC
 	#define is_diam_acc_on(_rq)     is_acc_flag_set(_rq,diameter_flag)
@@ -79,13 +76,14 @@ struct acc_enviroment acc_env;
 	#define is_diam_mc_on(_rq)      (0)
 #endif
 
+
 #define is_acc_on(_rq) \
 	( (is_log_acc_on(_rq)) || (is_db_acc_on(_rq)) \
-	|| (is_rad_acc_on(_rq)) || (is_diam_acc_on(_rq)) )
+	|| (is_aaa_acc_on(_rq)) || (is_diam_acc_on(_rq)) )
 
 #define is_mc_on(_rq) \
 	( (is_log_mc_on(_rq)) || (is_db_mc_on(_rq)) \
-	|| (is_rad_mc_on(_rq)) || (is_diam_mc_on(_rq)) )
+	|| (is_aaa_mc_on(_rq)) || (is_diam_mc_on(_rq)) )
 
 #define skip_cancel(_rq) \
 	(((_rq)->REQ_METHOD==METHOD_CANCEL) && report_cancels==0)
@@ -169,7 +167,20 @@ int w_acc_log_request(struct sip_msg *rq, char *comment, char *foo)
 }
 
 
-#ifdef SQL_ACC
+int w_acc_aaa_request(struct sip_msg *rq, char *comment, char* foo)
+{
+	if (!aaa_proto_url) {
+		LM_ERR("aaa support not configured\n");
+		return -1;
+	}
+	if (acc_preparse_req(rq)<0)
+		return -1;
+	env_set_to( rq->to );
+	env_set_comment((struct acc_param*)comment);
+	return acc_aaa_request( rq, NULL);
+}
+
+
 int w_acc_db_request(struct sip_msg *rq, char *comment, char *table)
 {
 	if (!table) {
@@ -183,20 +194,6 @@ int w_acc_db_request(struct sip_msg *rq, char *comment, char *table)
 	env_set_text(table, strlen(table));
 	return acc_db_request( rq, NULL);
 }
-#endif
-
-
-#ifdef RAD_ACC
-int w_acc_rad_request(struct sip_msg *rq, char *comment, char *foo)
-{
-	if (acc_preparse_req(rq)<0)
-		return -1;
-	env_set_to( rq->to );
-	env_set_comment((struct acc_param*)comment);
-	return acc_rad_request( rq, NULL);
-}
-#endif
-
 
 #ifdef DIAM_ACC
 int w_acc_diam_request(struct sip_msg *rq, char *comment, char *foo)
@@ -308,19 +305,17 @@ static inline void on_missed(struct cell *t, struct sip_msg *req,
 		acc_log_request( req, reply );
 		flags_to_reset |= log_missed_flag;
 	}
-#ifdef SQL_ACC
+
+	if (is_aaa_mc_on(req)) {
+		acc_aaa_request( req, reply );
+		flags_to_reset |= aaa_missed_flag;
+	}
+
 	if (is_db_mc_on(req)) {
 		env_set_text(db_table_mc.s, db_table_mc.len);
 		acc_db_request( req, reply );
 		flags_to_reset |= db_missed_flag;
 	}
-#endif
-#ifdef RAD_ACC
-	if (is_rad_mc_on(req)) {
-		acc_rad_request( req, reply );
-		flags_to_reset |= radius_missed_flag;
-	}
-#endif
 /* DIAMETER */
 #ifdef DIAM_ACC
 	if (is_diam_mc_on(req)) {
@@ -375,16 +370,14 @@ static inline void acc_onreply( struct cell* t, struct sip_msg *req,
 		env_set_text( ACC_ANSWERED, ACC_ANSWERED_LEN);
 		acc_log_request( req, reply );
 	}
-#ifdef SQL_ACC
+
+	if (is_aaa_acc_on(req))
+		acc_aaa_request( req, reply );
+
 	if (is_db_acc_on(req)) {
 		env_set_text( db_table_acc.s, db_table_acc.len);
 		acc_db_request( req, reply );
 	}
-#endif
-#ifdef RAD_ACC
-	if (is_rad_acc_on(req))
-		acc_rad_request( req, reply );
-#endif
 /* DIAMETER */
 #ifdef DIAM_ACC
 	if (is_diam_acc_on(req))
@@ -413,17 +406,16 @@ static inline void acc_onack( struct cell* t, struct sip_msg *req,
 		env_set_text( ACC_ACKED, ACC_ACKED_LEN);
 		acc_log_request( ack, NULL );
 	}
-#ifdef SQL_ACC
+
+	if (is_aaa_acc_on(req)) {
+		acc_aaa_request( ack, NULL );
+	}
+
 	if (is_db_acc_on(req)) {
 		env_set_text( db_table_acc.s, db_table_acc.len);
 		acc_db_request( ack, NULL );
 	}
-#endif
-#ifdef RAD_ACC
-	if (is_rad_acc_on(req)) {
-		acc_rad_request( ack, NULL );
-	}
-#endif
+
 /* DIAMETER */
 #ifdef DIAM_ACC
 	if (is_diam_acc_on(req)) {

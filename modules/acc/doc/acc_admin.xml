@@ -9,7 +9,7 @@
 	<para>
 		ACC module is used to account transactions information to different
 		backends like syslog, <abbrev>SQL</abbrev>,
-		<acronym>RADIUS</acronym> and <acronym>DIAMETER</acronym> 
+		<acronym>AAA</acronym> and <acronym>DIAMETER</acronym> 
 		(beta version).
 	</para>
 	<para>
@@ -95,29 +95,10 @@
 		</itemizedlist>
 	</para>
 	<para>
-		The SQL backend support is compiled in the module. For RADIUS and
-		DIAMETER you need to enable it by recompiling the module with properly
-		set defines: uncomment the RAD_ACC or DDIAM_ACC lines in
-		modules/acc/Makefile. To compile RADIUS support, 
-		you need to have radiusclient-ng (only versions higher or equal 
-		to 0.5.0) installed on your system which is available from
-		<ulink url='http://developer.berlios.de/projects/radiusclient-ng/'>
-		http://developer.berlios.de/projects/radiusclient-ng/</ulink>.
-		The radius client needs to be configured properly. To do so, use the 
-		template at etc/radiusclient.conf and make sure
-		that module's radius_config parameter points to its location.
-		In particular, accounting secret must match that one configured in
-		server and proper dictionary is used (one is available at 
-		etc/sip_dictionary). Also note that Debian radiusclient-ng uses
-		/var/run/radius.seq as seqfile but OpenSIPS Debian init script expects
-		/var/run/opensips/opensips_radius.seq, so is needed to change it in
-		radiusclient-ng configuration or in OpenSIPS Debian init script (if not,
-		OpenSIPS can't create the seq file when not running as root). Uses along
-		with FreeRadius (<ulink url='http://www.freeradius.org/'>
-		http://www.freeradius.org/</ulink>) and Radiator 
-		(<ulink url='http://www.open.com.au/radiator/'>
-		http://www.open.com.au/radiator/</ulink>) servers have been
-		reported to us.
+		The SQL and AAA backend support are compiled in the module. For DIAMETER 
+		you need to enable it by recompiling the module with properly
+		set defines: uncomment DIAM_ACC line in modules/acc/Makefile.
+		The AAA client needs to be configured properly. 
         </para>
 	<para>
 	NOTE: diameter support was developed for DISC (DIameter Server Client 
@@ -213,11 +194,11 @@ if (uri=~"sip:+40") /* calls to Romania */ {
 				<emphasis>acc</emphasis> table the columns corresponding to 
 				each extra data;
 				</para></listitem>
-				<listitem><para><emphasis>RADIUS accounting</emphasis> - 
+				<listitem><para><emphasis>AAA accounting</emphasis> - 
 				log_name will be the AVP name used for packing the data into 
-				RADIUS message. The log_name will be translated to AVP number 
+				AAA message. The log_name will be translated to AVP number 
 				via the dictionary. <emphasis>IMPORTANT</emphasis>: add in 
-				RADIUS dictionary the <emphasis>log_name</emphasis> attribute.
+				AAA dictionary the <emphasis>log_name</emphasis> attribute.
 				</para></listitem>
 				<listitem><para><emphasis>DIAMETER accounting</emphasis> - 
 				log_name will be the AVP code used for packing the data 
@@ -305,17 +286,17 @@ if (uri=~"sip:+40") /* calls to Romania */ {
 				</para></note>
 				</listitem>
 				<listitem>
-				<para><emphasis>Radius</emphasis> -- all sets will be added
-				to the same Radius accounting message as RADIUS AVPs - for each
-				call-leg a set of RADIUS AVPs will be added (corresponding
+				<para><emphasis>AAA</emphasis> -- all sets will be added
+				to the same AAA accounting message as AAA AVPs - for each
+				call-leg a set of AAA AVPs will be added (corresponding
 				to the per-leg AVP set)
 				</para>
 				<note><para>You will need to add in your dictionary the
-				RADIUS AVPs used in call-leg AVP set definition.
+				AAA AVPs used in call-leg AVP set definition.
 				</para></note>
 				</listitem>
 				<listitem>
-				<para><emphasis>Diameter</emphasis> same as for RADIUS.
+				<para><emphasis>Diameter</emphasis> same as for AAA.
 				</para>
 				</listitem>
 			</itemizedlist>
@@ -343,6 +324,9 @@ if (uri=~"sip:+40") /* calls to Romania */ {
 				<quote>detect_direction</quote> module parameter is enabled.
 				</para>
 				</listitem>
+				<listitem>
+				<para><emphasis>an aaa module</emphasis></para>
+				</listitem>
 			</itemizedlist>
 			</para>
 		</section>
@@ -354,10 +338,8 @@ if (uri=~"sip:+40") /* calls to Romania */ {
 			</para>
 			<itemizedlist>
 				<listitem>
-				<para><emphasis>radiusclient-ng</emphasis> 0.5.0 or higher -- 
-				if compiled with RADIUS support. See <ulink 
-				url='http://developer.berlios.de/projects/radiusclient-ng/'>
-				http://developer.berlios.de/projects/radiusclient-ng/</ulink>.
+				<para>
+				none.
 				</para>
 				</listitem>
 			</itemizedlist>
@@ -477,9 +459,9 @@ modparam("acc", "multi_leg_info",
 # for mysql-based accounting, use the names of the columns
 modparam("acc", "multi_leg_info",
     "leg_src=$avp(src);leg_dst=$avp(dst)")
-# for RADIUS-based accounting, use the names of the RADIUS AVPs
+# for AAA-based accounting, use the names of the AAA AVPs
 modparam("acc", "multi_leg_info",
-    "RAD_LEG_SRC=$avp(src);RAD_LEG_SRC=$avp(dst)")
+    "AAA_LEG_SRC=$avp(src);AAA_LEG_SRC=$avp(dst)")
 # for DIAMETER-based accounting, use the DIAMETER AVP ID (as integer)
 modparam("acc", "multi_leg_info",
     "2345=$avp(src);2346=$avp(dst)")
@@ -566,67 +548,66 @@ modparam("acc", "log_extra",
 </programlisting>
 		</example>
 	</section>
-	<!-- RADIUS specific ACC parameters -->
+	<!-- AAA specific ACC parameters -->
+	
 	<section>
-		<title><varname>radius_config</varname> (string)</title>
+		<title><varname>aaa_url</varname> (string)</title>
 		<para>
-		<emphasis>This parameter is radius specific.</emphasis> Path to 
-		radius client configuration file, set the referred config file 
-		correctly and specify there address of server, shared secret 
-		(should equal that in /usr/local/etc/raddb/clients for
-		freeRadius servers) and dictionary, see etc for an example of 
-		config file and dictionary.
+		This is the url representing the AAA protocol used and the location of the configuration file of this protocol.
 		</para>
 		<para>
-		If the parameter is set to empty string, the RADIUS accounting support
-		will be disabled (even if compiled).
+		If the parameter is set to empty string, the AAA accounting support
+		will be disabled.
 		</para>
 		<para>
-		Default value is <quote>NULL</quote>.
+			Default value is <quote>NULL</quote>.
 		</para>
 		<example>
-		<title>radius_config example</title>
+		<title>Set <varname>aaa_url</varname> parameter</title>
 		<programlisting format="linespecific">
-modparam("acc", "radius_config", "/etc/radiusclient/radiusclient.conf")
+...
+modparam("acc", "aaa_url", "radius:/etc/radiusclient-ng/radiusclient.conf")
+...
 </programlisting>
 		</example>
-	</section>
+	</section>	
+	
 	<section>
-		<title><varname>radius_flag</varname> (integer)</title>
+		<title><varname>aaa_flag</varname> (integer)</title>
 		<para>
 		Request flag which needs to be set to account a 
-		transaction -- RADIUS specific.
+		transaction -- AAA specific.
 		</para>
 		<para>
 		Default value is not-set (no flag).
 		</para>
 		<example>
-		<title>radius_flag example</title>
+		<title>aaa_flag example</title>
 		<programlisting format="linespecific">
-modparam("acc", "radius_flag", 2)
+modparam("acc", "aaa_flag", 2)
 </programlisting>
 		</example>
 	</section>
 	<section>
-		<title><varname>radius_missed_flag</varname> (integer)</title>
+		<title><varname>aaa_missed_flag</varname> (integer)</title>
 		<para>
 		Request flag which needs to be set to account missed 
-		calls -- RADIUS specific.
+		calls -- AAA specific.
 		</para>
 		<para>
 		Default value is not-set (no flag).
 		</para>
 		<example>
-		<title>radius_missed_flag example</title>
+		<title>aaa_missed_flag example</title>
 		<programlisting format="linespecific">
-modparam("acc", "radius_missed_flag", 3)
+modparam("acc", "aaa_missed_flag", 3)
 </programlisting>
 		</example>
 	</section>
 	<section>
 		<title><varname>service_type</varname> (integer)</title>
 		<para>
-		Radius service type used for accounting.
+		AAA service type used for accounting.
 		</para>
 		<para>
 		Default value is not-set.
@@ -640,17 +621,17 @@ modparam("acc", "service_type", 15)
 		</example>
 	</section>
 	<section>
-		<title><varname>radius_extra</varname> (string)</title>
+		<title><varname>aaa_extra</varname> (string)</title>
 		<para>
-		Extra values to be logged via RADIUS - RADIUS specific.
+		Extra values to be logged via AAA - AAA specific.
 		</para>
 		<para>
 		Default value is NULL.
 		</para>
 		<example>
-		<title>radius_extra example</title>
+		<title>aaa_extra example</title>
 		<programlisting format="linespecific">
-modparam("acc", "radius_extra",
+modparam("acc", "aaa_extra",
 	"via=$hdr(Via[*]); email=$avp(s:email); Bcontact=$ct / reply")
 </programlisting>
 		</example>
@@ -1013,8 +994,8 @@ acc_log_request("Some comment", "Some table");
 		<para>
 		Like <function moreinfo="none">acc_log_request</function>, 
 		<function moreinfo="none">acc_rad_request</function> reports on 
-		a request. It reports to radius server as configured in 
-		<quote>radius_config</quote>.
+		a request. It reports to aaa server as configured in 
+		<quote>aaa_url</quote>.
 		</para>
 		<para>
 		Meaning of the parameters is as follows:</para>

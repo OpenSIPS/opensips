@@ -40,6 +40,12 @@
 		<affiliation><orgname>&voicesystem;</orgname></affiliation>
 		<email>bogdan@voice-system.ro</email>
 		</editor>
+		<editor>
+		<firstname>Irina-Maria</firstname>
+		<surname>Stanescu</surname>
+		<affiliation><orgname>&voicesystem;</orgname></affiliation>
+		<email>ironmissy@gmail.com</email>
+		</editor>
 	</authorgroup>
 	<copyright>
 		<year>2002</year>
@@ -49,6 +55,7 @@
 	<copyright>
 		<year>2004</year>
 		<year>2006</year>
+		<year>2009</year>
 		<holder>&voicesystem;</holder>
 	</copyright>
 	<revhistory>

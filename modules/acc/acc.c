@@ -1,8 +1,7 @@
-/*
- * $Id$
+ /* $Id$
  *
  * Copyright (C) 2001-2003 FhG Fokus
- * Copyright (C) 2006 Voice Sistem SRL
+ * Copyright (C) 2006 Voice System SRL
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -49,14 +48,7 @@
 #include "../../parser/parse_from.h"
 #include "../../parser/digest/digest.h"
 #include "../tm/t_funcs.h"
-#include "acc_mod.h"
-#include "acc.h"
-#include "acc_extra.h"
-#include "acc_logic.h"
-
-#ifdef RAD_ACC
-#include "../../radius.h"
-#endif
+#include "../../aaa/aaa.h"
 
 #ifdef DIAM_ACC
 #include "diam_dict.h"
@@ -64,13 +56,16 @@
 #include "diam_tcp.h"
 #endif
 
+#include "acc.h"
+#include "acc_mod.h"
+#include "acc_extra.h"
+#include "acc_logic.h"
+
 extern struct acc_extra *log_extra;
 extern struct acc_extra *leg_info;
 extern struct acc_enviroment acc_env;
 
-#ifdef RAD_ACC
-extern struct acc_extra *rad_extra;
-#endif
+extern struct acc_extra *aaa_extra;
 
 #ifdef DIAM_ACC
 extern char *diameter_client_host;
@@ -78,11 +73,9 @@ extern int diameter_client_port;
 extern struct acc_extra *dia_extra;
 #endif
 
-#ifdef SQL_ACC
 static db_func_t acc_dbf;
 static db_con_t* db_handle=0;
 extern struct acc_extra *db_extra;
-#endif
 
 /* array used to collect the values before being
  * pushed to the storage backend (whatever used) */
@@ -120,7 +113,7 @@ static inline int core2strar( struct sip_msg *req, str *c_vals)
 
 	/* from/to URI and TAG */
 	if (req->msg_flags&FL_REQ_UPSTREAM) {
-		LM_DBG("the flag UPSTREAM is set -> swap F/T\n"); \
+		LM_DBG("the flag UPSTREAM is set -> swproto F/T\n"); \
 		from = acc_env.to;
 		to = req->from;
 	} else {
@@ -149,13 +142,11 @@ static inline int core2strar( struct sip_msg *req, str *c_vals)
 	/* SIP code */
 	c_vals[4] = acc_env.code_s;
 
-	/* SIP status */
 	c_vals[5] = acc_env.reason;
 
 	acc_env.ts = time(NULL);
 	return ACC_CORE_LEN;
 }
-
 
 
 /********************************************
@@ -169,6 +160,7 @@ static str log_attrs[ACC_CORE_LEN+MAX_ACC_EXTRA+MAX_ACC_LEG];
 		log_attrs[_n].len=A_##_atr##_LEN; \
 		n++; \
 	} while(0)
+
 
 void acc_log_init(void)
 {
@@ -210,8 +202,8 @@ int acc_log_request( struct sip_msg *rq, struct sip_msg *rpl)
 	/* get extra values */
 	m += extra2strar( log_extra, rq, rpl, val_arr+m);
 
-	for ( i=0,p=log_msg ; i<m ; i++ ) {
-		if (p+1+log_attrs[i].len+1+val_arr[i].len >= log_msg_end) {
+	for ( i = 0,p = log_msg ; i<m ; i++ ) {
+		if (p + 1 + log_attrs[i].len + 1 + val_arr[i].len >= log_msg_end) {
 			LM_WARN("acc message too long, truncating..\n");
 			p = log_msg_end;
 			break;
@@ -259,8 +251,6 @@ int acc_log_request( struct sip_msg *rq, struct sip_msg *rpl)
  *        SQL  ACCOUNTING
  ********************************************/
 
-#ifdef SQL_ACC
-
 /* caution: keys need to be aligned to core format */
 static db_key_t db_keys[ACC_CORE_LEN+1+MAX_ACC_EXTRA+MAX_ACC_LEG];
 static db_val_t db_vals[ACC_CORE_LEN+1+MAX_ACC_EXTRA+MAX_ACC_LEG];
@@ -294,9 +284,9 @@ static void acc_db_init_keys(void)
 		db_keys[n++] = &extra->name;
 
 	/* init the values */
-	for(i=0; i<n; i++) {
-		VAL_TYPE(db_vals+i)=DB_STR;
-		VAL_NULL(db_vals+i)=0;
+	for(i = 0; i < n; i++) {
+		VAL_TYPE(db_vals + i)=DB_STR;
+		VAL_NULL(db_vals + i)=0;
 	}
 	VAL_TYPE(db_vals+time_idx)=DB_DATETIME;
 }
@@ -311,7 +301,7 @@ int acc_db_init(const str* db_url)
 		return -1;
 	}
 
-	/* Check database capabilities */
+	/* Check database cprotoabilities */
 	if (!DB_CAPABILITY(acc_dbf, DB_CAP_INSERT)) {
 		LM_ERR("database module does not implement insert function\n");
 		return -1;
@@ -354,7 +344,7 @@ int acc_db_request( struct sip_msg *rq, struct sip_msg *rpl)
 	/* formated database columns */
 	m = core2strar( rq, val_arr );
 
-	for(i=0; i<m; i++)
+	for(i = 0; i < m; i++)
 		VAL_STR(db_vals+i) = val_arr[i];
 	/* time value */
 	VAL_TIME(db_vals+(m++)) = acc_env.ts;
@@ -362,7 +352,7 @@ int acc_db_request( struct sip_msg *rq, struct sip_msg *rpl)
 	/* extra columns */
 	m += extra2strar( db_extra, rq, rpl, val_arr+m);
 
-	for( i++ ; i<m; i++)
+	for( i++; i < m; i++)
 		VAL_STR(db_vals+i) = val_arr[i];
 
 	acc_dbf.use_table(db_handle, &acc_env.text/*table*/);
@@ -377,23 +367,20 @@ int acc_db_request( struct sip_msg *rq, struct sip_msg *rpl)
 	} else {
 		n = legs2strar(leg_info,rq,val_arr+m,1);
 		do {
-			for (i=m; i<m+n; i++)
+			for ( i = m; i < m + n; i++)
 				VAL_STR(db_vals+i)=val_arr[i];
 			if (acc_dbf.insert(db_handle, db_keys, db_vals, m+n) < 0) {
 				LM_ERR("failed to insert into database\n");
 				return -1;
 			}
-		}while ( (n=legs2strar(leg_info,rq,val_arr+m,0))!=0 );
+		}while ( (n = legs2strar(leg_info,rq,val_arr+m,0))!=0 );
 	}
 
 	return 1;
 }
 
-#endif
 
-
-/************ RADIUS & DIAMETER helper functions **************/
-#if defined(RAD_ACC) || defined (DIAM_ACC)
+/************ AAA PROTOCOLS helper functions **************/
 inline static uint32_t phrase2code(str *phrase)
 {
 	uint32_t code;
@@ -408,72 +395,76 @@ inline static uint32_t phrase2code(str *phrase)
 	}
 	return code;
 }
-#endif
 
 
 /********************************************
- *        RADIUS  ACCOUNTING
+ *        AAA PROTOCOL  ACCOUNTING
  ********************************************/
-#ifdef RAD_ACC
 enum { RA_ACCT_STATUS_TYPE=0, RA_SERVICE_TYPE, RA_SIP_RESPONSE_CODE,
 	RA_SIP_METHOD, RA_TIME_STAMP, RA_STATIC_MAX};
 enum {RV_STATUS_START=0, RV_STATUS_STOP, RV_STATUS_ALIVE, RV_STATUS_FAILED,
 	RV_SIP_SESSION, RV_STATIC_MAX};
-static struct attr
+static aaa_map
 	rd_attrs[RA_STATIC_MAX+ACC_CORE_LEN-2+MAX_ACC_EXTRA+MAX_ACC_LEG];
-static struct val rd_vals[RV_STATIC_MAX];
+static aaa_map rd_vals[RV_STATIC_MAX];
 
-int init_acc_rad(char *rad_cfg, int srv_type)
+int init_acc_aaa(char* aaa_proto_url, int srv_type) 
 {
 	int n;
+	str prot_url;
 
 	memset(rd_attrs, 0, sizeof(rd_attrs));
 	memset(rd_vals, 0, sizeof(rd_vals));
-	rd_attrs[RA_ACCT_STATUS_TYPE].n  = "Acct-Status-Type";
-	rd_attrs[RA_SERVICE_TYPE].n      = "Service-Type";
-	rd_attrs[RA_SIP_RESPONSE_CODE].n = "Sip-Response-Code";
-	rd_attrs[RA_SIP_METHOD].n        = "Sip-Method";
-	rd_attrs[RA_TIME_STAMP].n        = "Event-Timestamp";
+
+	rd_attrs[RA_ACCT_STATUS_TYPE].name  = "Acct-Status-Type";
+	rd_attrs[RA_SERVICE_TYPE].name      = "Service-Type";
+	rd_attrs[RA_SIP_RESPONSE_CODE].name	= "Sip-Response-Code";
+	rd_attrs[RA_SIP_METHOD].name        = "Sip-Method";
+	rd_attrs[RA_TIME_STAMP].name        = "Event-Timestamp";
 	n = RA_STATIC_MAX;
 	/* caution: keep these aligned to core acc output */
-	rd_attrs[n++].n                  = "Sip-From-Tag";
-	rd_attrs[n++].n                  = "Sip-To-Tag";
-	rd_attrs[n++].n                  = "Acct-Session-Id";
+	rd_attrs[n++].name                  = "Sip-From-Tag";
+	rd_attrs[n++].name                  = "Sip-To-Tag";
+	rd_attrs[n++].name                  = "Acct-Session-Id";
 
-	rd_vals[RV_STATUS_START].n        = "Start";
-	rd_vals[RV_STATUS_STOP].n         = "Stop";
-	rd_vals[RV_STATUS_ALIVE].n        = "Alive";
-	rd_vals[RV_STATUS_FAILED].n       = "Failed";
-	rd_vals[RV_SIP_SESSION].n         = "Sip-Session";
+	rd_vals[RV_STATUS_START].name        = "Start";
+	rd_vals[RV_STATUS_STOP].name         = "Stop";
+	rd_vals[RV_STATUS_ALIVE].name        = "Alive";
+	rd_vals[RV_STATUS_FAILED].name       = "Failed";
+	rd_vals[RV_SIP_SESSION].name         = "Sip-Session";
 
 	/* add and count the extras as attributes */
-	n += extra2attrs( rad_extra, rd_attrs, n);
+	n += extra2attrs( aaa_extra, rd_attrs, n);
 	/* add and count the legs as attributes */
 	n += extra2attrs( leg_info, rd_attrs, n);
 
-	/* read config */
-	if ((rh = rc_read_config(rad_cfg)) == NULL) {
-		LM_ERR("failed to open radius config file: %s\n", rad_cfg );
-		return -1;
-	}
-	/* read dictionary */
-	if (rc_read_dictionary(rh, rc_conf_str(rh, "dictionary"))!=0) {
-		LM_ERR("failed to read radius dictionary\n");
+	prot_url.s = aaa_proto_url;
+	prot_url.len = strlen(aaa_proto_url);
+
+	if(aaa_prot_bind(&prot_url, &proto)) {
+		LM_ERR("AAA protocol bind failure\n");
 		return -1;
 	}
 
-	INIT_AV(rh, rd_attrs, n, rd_vals, RV_STATIC_MAX, "acc", -1, -1);
+	conn = proto.init_prot(&prot_url);
+	if (!conn) {
+		LM_ERR("AAA protocol initialization failure\n");
+		return -1;
+	}
+
+	INIT_AV(proto, conn, rd_attrs, n, rd_vals, RV_STATIC_MAX, "acc", -1, -1);
 
 	if (srv_type != -1)
-		rd_vals[RV_SIP_SESSION].v = srv_type;
+		rd_vals[RV_SIP_SESSION].value = srv_type;
 
+
+	LM_DBG("init_acc_aaa success!\n");
 	return 0;
 }
 
-
-static inline struct val *rad_status( struct sip_msg *req, int code )
+static inline aaa_map *aaa_status( struct sip_msg *req, int code )
 {
-	if (req->REQ_METHOD==METHOD_INVITE && get_to(req)->tag_value.len==0
+	if (req->REQ_METHOD == METHOD_INVITE && get_to(req)->tag_value.len == 0
 				&& code>=200 && code<300)
 		return &rd_vals[RV_STATUS_START];
 	if ((req->REQ_METHOD==METHOD_BYE || req->REQ_METHOD==METHOD_CANCEL))
@@ -483,80 +474,80 @@ static inline struct val *rad_status( struct sip_msg *req, int code )
 	return &rd_vals[RV_STATUS_FAILED];
 }
 
-#define ADD_RAD_AVPAIR(_attr,_val,_len) \
+#define ADD_AAA_AVPAIR(_attr,_val,_len) \
 	do { \
 		if ( (_len)!=0 && \
-		!rc_avpair_add( rh, &send, rd_attrs[_attr].v, _val, _len, 0)) { \
-			LM_ERR("failed to add %s, %d\n", rd_attrs[_attr].n,_attr); \
+		proto.avp_add(conn, send, &rd_attrs[_attr], _val, _len, 0)) { \
+			LM_ERR("failed to add %s, %d\n", rd_attrs[_attr].name,_attr); \
 			goto error; \
 		} \
 	}while(0)
 
-int acc_rad_request( struct sip_msg *req, struct sip_msg *rpl)
+int acc_aaa_request( struct sip_msg *req, struct sip_msg *rpl)
 {
 	int attr_cnt;
-	VALUE_PAIR *send;
-	uint32_t av_type;
-	struct val *r_stat;
-	int offset;
-	int i;
+	aaa_message *send;
+	int offset, i, av_type;
+	aaa_map *r_stat;
 
-	send=NULL;
+	if ((send = proto.create_aaa_message(conn, AAA_ACCT)) == NULL) {
+		LM_ERR("failed to create new aaa message for acct\n");
+		return -1;
+	}
 
 	attr_cnt = core2strar( req, val_arr);
 	/* not interested in the last 2 values */
 	attr_cnt -= 2;
 
-	r_stat = rad_status( req, acc_env.code); /* RADIUS status */
-	ADD_RAD_AVPAIR( RA_ACCT_STATUS_TYPE, &(r_stat->v), -1);
+	r_stat = aaa_status( req, acc_env.code); /* AAA PROTOCOL status */
+	ADD_AAA_AVPAIR( RA_ACCT_STATUS_TYPE, &(r_stat->value), -1);
 
-	av_type = rd_vals[RV_SIP_SESSION].v; /* session*/
-	ADD_RAD_AVPAIR( RA_SERVICE_TYPE, &av_type, -1);
+	av_type = rd_vals[RV_SIP_SESSION].value; /* session*/
+	ADD_AAA_AVPAIR( RA_SERVICE_TYPE, &av_type, -1);
 
 	av_type = (uint32_t)acc_env.code; /* status=integer */
-	ADD_RAD_AVPAIR( RA_SIP_RESPONSE_CODE, &av_type, -1);
+	ADD_AAA_AVPAIR( RA_SIP_RESPONSE_CODE, &av_type, -1);
 
 	av_type = req->REQ_METHOD; /* method */
-	ADD_RAD_AVPAIR( RA_SIP_METHOD, &av_type, -1);
+	ADD_AAA_AVPAIR( RA_SIP_METHOD, &av_type, -1);
 
 	/* unix time */
 	av_type = (uint32_t)acc_env.ts;
-	ADD_RAD_AVPAIR( RA_TIME_STAMP, &av_type, -1);
+	ADD_AAA_AVPAIR( RA_TIME_STAMP, &av_type, -1);
 
 	/* add extra also */
-	attr_cnt += extra2strar( rad_extra, req, rpl, val_arr+attr_cnt);
+	attr_cnt += extra2strar( aaa_extra, req, rpl, val_arr+attr_cnt);
 
 	/* add the values for the vector - start from 1 instead of
 	 * 0 to skip the first value which is the METHOD as string */
 	offset = RA_STATIC_MAX-1;
-	for( i=1; i<attr_cnt; i++)
-		ADD_RAD_AVPAIR( offset+i, val_arr[i].s, val_arr[i].len );
+	for (i = 1; i < attr_cnt; i++)
+		ADD_AAA_AVPAIR( offset + i, val_arr[i].s, val_arr[i].len );
 
 	/* call-legs attributes also get inserted */
-	if ( leg_info ) {
+	if (leg_info) {
 		offset += attr_cnt;
 		attr_cnt = legs2strar(leg_info,req,val_arr,1);
 		do {
-			for (i=0; i<attr_cnt; i++)
-				ADD_RAD_AVPAIR( offset+i, val_arr[i].s, val_arr[i].len );
-		}while ( (attr_cnt=legs2strar(leg_info,req,val_arr,0))!=0 );
+			for (i = 0; i < attr_cnt; i++)
+				ADD_AAA_AVPAIR( offset+i, val_arr[i].s, val_arr[i].len );
+		} while ((attr_cnt = legs2strar(leg_info,req,val_arr,0)) != 0);
 	}
 
-	if (rc_acct(rh, SIP_PORT, send)!=OK_RC) {
+	if (proto.send_aaa_request(conn, send, NULL)) {
 		LM_ERR("Radius accounting request failed for status: '%s' "
-			"Call-Id: '%.*s' \n",r_stat->n,
+			"Call-Id: '%.*s' \n",r_stat->name,
 			req->callid->body.len, req->callid->body.s);
 		goto error;
 	}
-	rc_avpair_free(send);
+
+	proto.destroy_aaa_message(conn, send);
 	return 1;
 
 error:
-	rc_avpair_free(send);
+	proto.destroy_aaa_message(conn, send);
 	return -1;
 }
-
-#endif
 
 
 /********************************************
