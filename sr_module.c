@@ -53,30 +53,30 @@
 struct sr_module* modules=0;
 
 #ifdef STATIC_EXEC
-	extern struct module_exports* exec_exports(void);
+	extern struct module_exports* exec_exports;
 #endif
 #ifdef STATIC_TM
-	extern struct module_exports* tm_exports(void);
+	extern struct module_exports* tm_exports;
 #endif
 
 #ifdef STATIC_MAXFWD
-	extern struct module_exports* maxfwd_exports(void);
+	extern struct module_exports* maxfwd_exports;
 #endif
 
 #ifdef STATIC_AUTH
-        extern struct module_exports* auth_exports(void);
+	extern struct module_exports* auth_exports;
 #endif
 
 #ifdef STATIC_RR
-        extern struct module_exports* rr_exports(void);
+	extern struct module_exports* rr_exports;
 #endif
 
 #ifdef STATIC_USRLOC
-        extern struct module_exports* usrloc_exports(void);
+	extern struct module_exports* usrloc_exports;
 #endif
 
 #ifdef STATIC_SL
-        extern struct module_exports* sl_exports(void);
+	extern struct module_exports* sl_exports;
 #endif
 
 
