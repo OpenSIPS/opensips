@@ -55,7 +55,7 @@ struct tm_binds tmb;
 #endif
 
 
-MODULE_VERSION
+
 
 
 /*
@@ -101,6 +101,7 @@ static cmd_export_t cmds[] =
  */
 struct module_exports exports = {
 	"mangler",
+	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	cmds,			/* Exported functions */
 	params,			/* Exported parameters */

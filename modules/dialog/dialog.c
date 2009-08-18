@@ -65,7 +65,7 @@
 #include "dlg_profile.h"
 #include "dlg_vals.h"
 
-MODULE_VERSION
+
 
 
 static int mod_init(void);
@@ -240,6 +240,7 @@ static pv_export_t mod_items[] = {
 
 struct module_exports exports= {
 	"dialog",        /* module's name */
+	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	cmds,            /* exported functions */
 	mod_params,      /* param exports */

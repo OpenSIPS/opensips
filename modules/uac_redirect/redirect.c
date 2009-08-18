@@ -36,7 +36,7 @@
 #include "rd_funcs.h"
 #include "rd_filter.h"
 
-MODULE_VERSION
+
 
 /* internal global variables */
 struct tm_binds rd_tmb;           /*imported functions from tm */
@@ -91,6 +91,7 @@ static param_export_t params[] = {
 
 struct module_exports exports = {
 	"uac_redirect",
+	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	cmds,     /* Exported functions */
 	params,   /* Exported parameters */

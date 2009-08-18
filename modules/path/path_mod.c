@@ -36,7 +36,7 @@
 #include "path.h"
 #include "path_mod.h"
 
-MODULE_VERSION
+
 
 
 /* If received-param of current Route uri should be used
@@ -94,6 +94,7 @@ static param_export_t params[] = {
  */
 struct module_exports exports = {
 	"path", 
+	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	cmds,       /* Exported functions */
 	params,     /* Exported parameters */

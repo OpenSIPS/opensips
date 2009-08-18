@@ -40,7 +40,6 @@
 #include "authaaa_mod.h"
 #include "authorize.h"
 
-MODULE_VERSION
 
 aaa_map attrs[A_MAX];
 aaa_map vals[V_MAX];
@@ -91,6 +90,7 @@ static param_export_t params[] = {
  */
 struct module_exports exports = {
 	"auth_aaa", 
+	MODULE_VERSION,  /* module version */
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	cmds,       /* Exported functions */
 	params,     /* Exported parameters */

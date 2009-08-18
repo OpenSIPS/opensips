@@ -52,7 +52,6 @@
 #include "../dialog/dlg_hash.h"
 
 
-MODULE_VERSION
 
 #define FL_USE_CALL_CONTROL       (1<<30) // use call control for a dialog
 
@@ -151,6 +150,7 @@ static param_export_t parameters[] = {
 
 struct module_exports exports = {
     "call_control",  // module name
+	MODULE_VERSION,  // module version
     DEFAULT_DLFLAGS, // dlopen flags
     commands,        // exported functions
     parameters,      // exported parameters

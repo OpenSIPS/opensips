@@ -30,7 +30,7 @@
 #include "../../aaa/aaa.h"
 #include "verify.h"
 
-MODULE_VERSION
+
 
 aaa_map attrs[A_MAX];
 aaa_map vals[V_MAX];

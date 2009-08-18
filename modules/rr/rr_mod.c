@@ -71,7 +71,7 @@ int add_username = 0;     /* Do not add username by default */
 
 static unsigned int last_rr_msg;
 
-MODULE_VERSION
+
 
 static int  mod_init(void);
 static void mod_destroy(void);
@@ -143,6 +143,7 @@ static pv_export_t mod_items[] = {
 
 struct module_exports exports = {
 	"rr",
+	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /*!< dlopen flags */
 	cmds,        /*!< Exported functions */
 	params,      /*!< Exported parameters */

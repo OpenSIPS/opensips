@@ -39,7 +39,7 @@
 #include "../../mem/mem.h"
 #include "stats_funcs.h"
 
-MODULE_VERSION
+
 
 static int reg_param_stat( modparam_t type, void* val);
 static int mod_init(void);
@@ -70,6 +70,7 @@ static param_export_t mod_params[]={
 
 struct module_exports exports= {
 	"statistics", /* module's name */
+	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	cmds,         /* exported functions */
 	mod_params,   /* param exports */

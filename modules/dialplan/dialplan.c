@@ -44,7 +44,7 @@
 #include "dialplan.h"
 #include "dp_db.h"
 
-MODULE_VERSION
+
 
 #define DEFAULT_PARAM    "$ruri.user"
 
@@ -105,6 +105,7 @@ static cmd_export_t cmds[]={
 
 struct module_exports exports= {
 	"dialplan",     /* module's name */
+	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	cmds,      	    /* exported functions */
 	mod_params,     /* param exports */

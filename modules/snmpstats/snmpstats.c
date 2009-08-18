@@ -80,7 +80,7 @@
 #include "sub_agent.h"
 
 /* Required in every OpenSIPS Module. */
-MODULE_VERSION
+
 
 /* 
  * The module will fork off a child process to run an snmp command via execve().

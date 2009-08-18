@@ -38,7 +38,7 @@
 #include "sst_handlers.h" /* also includes sr_module.h needed by
                              handlers */
 
-MODULE_VERSION
+
 
 static int mod_init(void);
 
@@ -115,6 +115,7 @@ static stat_export_t mod_stats[] = {
 
 struct module_exports exports= {
 	"sst",        /* module's name */
+	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	cmds,         /* exported functions */
 	mod_params,   /* param exports */

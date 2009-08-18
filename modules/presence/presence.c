@@ -58,7 +58,7 @@
 #include "bind_presence.h"
 #include "notify.h"
 
-MODULE_VERSION
+
 
 #define S_TABLE_VERSION  4
 #define P_TABLE_VERSION  4
@@ -156,6 +156,7 @@ static mi_export_t mi_cmds[] = {
 /** module exports */
 struct module_exports exports= {
 	"presence",					/* module name */
+	MODULE_VERSION,
 	DEFAULT_DLFLAGS,			/* dlopen flags */
 	cmds,						/* exported functions */
 	params,						/* exported parameters */

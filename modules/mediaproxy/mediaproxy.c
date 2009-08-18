@@ -49,7 +49,7 @@
 #include "../dialog/dlg_hash.h"
 
 
-MODULE_VERSION
+
 
 
 #if defined(__GNUC__) && !defined(__STRICT_ANSI__)

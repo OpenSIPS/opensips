@@ -33,7 +33,7 @@
 #include "../../mod_fix.h"
 
 
-MODULE_VERSION
+
 
 #define DIVERSION_HF "Diversion"
 #define DIVERSION_HF_LEN (sizeof(DIVERSION_HF) - 1)
@@ -80,6 +80,7 @@ static param_export_t params[] = {
  */
 struct module_exports exports = {
 	"diversion", 
+	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	cmds,       /* Exported functions */
 	params,     /* Exported parameters */

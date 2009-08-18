@@ -217,7 +217,7 @@
 #include "../../db/db.h"
 #include "../../locking.h"
  
-MODULE_VERSION
+
 
 #define NH_TABLE_VERSION  0
 
@@ -524,6 +524,7 @@ static mi_export_t mi_cmds[] = {
 
 struct module_exports exports = {
 	"nathelper",
+	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	cmds,
 	params,

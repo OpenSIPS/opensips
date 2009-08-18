@@ -97,9 +97,6 @@ struct cpl_functions  cpl_fct;
 static str cpl_ok_rpl = str_init("OK");
 
 
-MODULE_VERSION
-
-
 static int cpl_invoke_script (struct sip_msg* msg, char* str, char* str2);
 static int w_process_register(struct sip_msg* msg, char* str, char* str2);
 static int w_process_register_norpl(struct sip_msg* msg, char* str,char* str2);
@@ -173,6 +170,7 @@ static mi_export_t mi_cmds[] = {
 
 struct module_exports exports = {
 	"cpl-c",
+	MODULE_VERSION,  /* module version */
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	cmds,     /* Exported functions */
 	params,   /* Exported parameters */

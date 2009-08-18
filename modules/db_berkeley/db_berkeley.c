@@ -55,7 +55,7 @@
 #define BDB_KEY   1
 #define BDB_VALUE 0
 
-MODULE_VERSION
+
 
 int auto_reload = 0;
 int log_enable  = 0;
@@ -95,6 +95,7 @@ static mi_export_t mi_cmds[] = {
 
 struct module_exports exports = {	
 	"db_berkeley",
+	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	cmds,     /* Exported functions */
 	params,   /* Exported parameters */

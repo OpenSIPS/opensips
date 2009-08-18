@@ -49,7 +49,7 @@
 #include "simple2xmpp.h"
 #include "request_winfo.h"
 
-MODULE_VERSION
+
 
 struct tm_binds tmb;
 
@@ -101,6 +101,7 @@ static param_export_t params[]={
 /** module exports */
 struct module_exports exports= {
 	"pua_xmpp",					/* module name */
+	MODULE_VERSION,
 	DEFAULT_DLFLAGS,			/* dlopen flags */
 	cmds,						/* exported functions */
 	params,						/* exported  parameters */

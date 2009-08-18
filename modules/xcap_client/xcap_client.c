@@ -48,7 +48,7 @@
 #include "xcap_functions.h"
 #include "xcap_client.h"
 
-MODULE_VERSION
+
 
 #define XCAP_TABLE_VERSION   4
 
@@ -103,6 +103,7 @@ static mi_export_t mi_cmds[] = {
 /** module exports */
 struct module_exports exports= {
 	"xcap_client",				/* module name */
+	MODULE_VERSION,
 	DEFAULT_DLFLAGS,			/* dlopen flags */
 	cmds,  						/* exported functions */
 	params,						/* exported parameters */

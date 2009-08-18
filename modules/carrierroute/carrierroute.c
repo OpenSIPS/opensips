@@ -42,7 +42,6 @@
 #include "carrier_tree.h"
 #include "route_func.h"
 
-MODULE_VERSION
 
 str db_url = str_init(DEFAULT_RODB_URL);
 str db_table = str_init("carrierroute");
@@ -211,6 +210,7 @@ static mi_export_t mi_cmds[] = {
 
 struct module_exports exports = {
 	"carrierroute",
+	MODULE_VERSION,  /* module version*/
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	cmds,       /* Exported functions */
 	params,     /* Export parameters */

@@ -47,7 +47,7 @@
 #include "ha.h"
 #include "cluster.h"
 
-MODULE_VERSION
+
 
 
 /* Exported Functions */

@@ -36,7 +36,7 @@
 
 #include "sdlookup.h"
 
-MODULE_VERSION
+
 
 
 /* Module destroy function prototype */
@@ -94,6 +94,7 @@ static param_export_t params[] = {
 /* Module interface */
 struct module_exports exports = {
 	"speeddial", 
+	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	cmds,       /* Exported functions */
 	params,     /* Exported parameters */

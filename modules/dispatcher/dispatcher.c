@@ -54,7 +54,7 @@
 
 #include "dispatch.h"
 
-MODULE_VERSION
+
 
 #define DS_SET_ID_COL		"setid"
 #define DS_DEST_URI_COL		"destination"
@@ -193,6 +193,7 @@ static mi_export_t mi_cmds[] = {
 /** module exports */
 struct module_exports exports= {
 	"dispatcher",
+	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	cmds,
 	params,

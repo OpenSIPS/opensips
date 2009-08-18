@@ -55,7 +55,7 @@ static void destroy(void);
 static int child_init(int rank);
 static int mi_child_init(void);
 
-MODULE_VERSION
+
 
 /*
  * Version of domain table required by the module,
@@ -132,6 +132,7 @@ static mi_export_t mi_cmds[] = {
  */
 struct module_exports exports = {
 	"domain",
+	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	cmds,      /* Exported functions */
 	params,    /* Exported parameters */

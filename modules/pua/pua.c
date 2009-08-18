@@ -52,7 +52,7 @@
 #include "add_events.h"
 #include "pidf.h"
 
-MODULE_VERSION
+
 #define PUA_TABLE_VERSION 7
 
 struct tm_binds tmb;
@@ -124,6 +124,7 @@ static param_export_t params[]={
 /** module exports */
 struct module_exports exports= {
 	"pua",                      /* module name */
+	MODULE_VERSION,
 	DEFAULT_DLFLAGS,            /* dlopen flags */
 	cmds,                       /* exported functions */
 	params,                     /* exported parameters */

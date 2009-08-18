@@ -44,7 +44,7 @@
 #include "../sl/sl_cb.h"
 #include "../../str.h"
 
-MODULE_VERSION
+
 
 struct tm_binds tmb;
 struct dlg_binds dlgb;
@@ -174,6 +174,7 @@ stat_export_t siptrace_stats[] = {
 /* module exports */
 struct module_exports exports = {
 	"siptrace", 
+	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	cmds,       /* Exported functions */
 	params,     /* Exported parameters */

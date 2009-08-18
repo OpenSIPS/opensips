@@ -47,7 +47,7 @@
 #include "ldap_api_fn.h"
 #include "iniparser.h"
 
-MODULE_VERSION
+
 
 /*
 * Module management function prototypes
@@ -138,6 +138,7 @@ static param_export_t params[] = {
 */
 struct module_exports exports = {
 	"ldap", 
+	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	cmds,       /* Exported functions */
 	params,     /* Exported parameters */

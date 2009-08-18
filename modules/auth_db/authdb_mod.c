@@ -47,7 +47,7 @@
 #include "aaa_avps.h"
 #include "authorize.h"
 
-MODULE_VERSION
+
 
 #define TABLE_VERSION 7
 
@@ -140,6 +140,7 @@ static param_export_t params[] = {
  */
 struct module_exports exports = {
 	"auth_db", 
+	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	cmds,       /* Exported functions */
 	params,     /* Exported parameters */

@@ -41,7 +41,7 @@
 #include "localcache.h"
 #include "hash.h"
 
-MODULE_VERSION
+
 
 
 static int mod_init(void);
@@ -63,6 +63,7 @@ static param_export_t params[]={
 /** module exports */
 struct module_exports exports= {
 	"localcache",               /* module name */
+	MODULE_VERSION,
 	DEFAULT_DLFLAGS,            /* dlopen flags */
 	0,                          /* exported functions */
 	params,                     /* exported parameters */

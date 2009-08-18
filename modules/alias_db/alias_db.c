@@ -41,8 +41,6 @@
 
 #include "alookup.h"
 
-MODULE_VERSION
-
 
 /* Module destroy function prototype */
 static void destroy(void);
@@ -102,6 +100,7 @@ static param_export_t params[] = {
 /* Module interface */
 struct module_exports exports = {
 	"alias_db",
+	MODULE_VERSION,  /* module version */
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	cmds,       /* Exported functions */
 	params,     /* Exported parameters */

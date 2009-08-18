@@ -41,7 +41,7 @@ unsigned int db_mysql_timeout_interval = 2;   /* Default is 6 seconds */
 
 static int mysql_mod_init(void);
 
-MODULE_VERSION
+
 
 int db_mysql_bind_api(const str* mod, db_func_t *dbb);
 
@@ -66,6 +66,7 @@ static param_export_t params[] = {
 
 struct module_exports exports = {	
 	"db_mysql",
+	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	cmds,
 	params,          /*  module parameters */

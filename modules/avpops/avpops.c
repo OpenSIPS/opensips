@@ -48,8 +48,6 @@
 #include "avpops_db.h"
 
 
-MODULE_VERSION
-
 /* modules param variables */
 static str db_table        = str_init("usr_preferences");  /* table */
 static int use_domain      = 0;  /* if domain should be use for avp matching */
@@ -158,6 +156,7 @@ static param_export_t params[] = {
 
 struct module_exports exports = {
 	"avpops",
+	MODULE_VERSION,  /* module version */
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	cmds,       /* Exported functions */
 	params,     /* Exported parameters */

@@ -50,7 +50,7 @@
 #include "pike_mi.h"
 #include "pike_funcs.h"
 
-MODULE_VERSION
+
 
 
 
@@ -92,6 +92,7 @@ static mi_export_t mi_cmds [] = {
 
 struct module_exports exports= {
 	"pike",
+	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	cmds,
 	params,

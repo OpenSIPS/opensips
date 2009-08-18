@@ -40,8 +40,6 @@
 #include "../../mem/shm_mem.h"
 
 
-MODULE_VERSION
-
 /* Exported functions */
 int bm_start_timer(struct sip_msg* _msg, char* timer, char *foobar);
 int bm_log_timer(struct sip_msg* _msg, char* timer, char* mystr);
@@ -149,6 +147,7 @@ static pv_export_t mod_items[] = {
  */
 struct module_exports exports = {
 	"benchmark", 
+	MODULE_VERSION,
 	DEFAULT_DLFLAGS,
 	cmds,       /* Exported functions */
 	params,     /* Exported parameters */

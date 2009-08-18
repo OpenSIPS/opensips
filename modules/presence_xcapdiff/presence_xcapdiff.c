@@ -23,7 +23,7 @@
 #include "../presence/bind_presence.h"
 #include "../pua/pua_bind.h"
 
-MODULE_VERSION
+
 
 str s_event_name = str_init("xcap-diff");
 str s_content_type = str_init("application/xcap-diff+xml");

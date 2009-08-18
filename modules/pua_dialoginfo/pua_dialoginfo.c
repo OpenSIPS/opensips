@@ -49,7 +49,7 @@
 #include "../pua/pua_bind.h"
 #include "pua_dialoginfo.h"
 
-MODULE_VERSION
+
 
 /* Default module parameter values */
 #define DEF_INCLUDE_CALLID 1
@@ -98,6 +98,7 @@ static param_export_t params[]={
 
 struct module_exports exports= {
 	"pua_dialoginfo",		/* module name */
+	MODULE_VERSION,
 	DEFAULT_DLFLAGS,		/* dlopen flags */
 	cmds,					/* exported functions */
 	params,					/* exported parameters */

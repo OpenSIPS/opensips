@@ -44,7 +44,7 @@ static int mod_init(void);
 static void destroy(void);
 static int child_init(int rank);
 
-MODULE_VERSION
+
 
 /*
  * Version of gw and lcr tables required by the module,
@@ -133,6 +133,7 @@ static param_export_t params[] = {
  */
 struct module_exports exports = {
 	"domainpolicy", 
+	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	cmds,      /* exported functions */
 	params,    /* exported parameters */

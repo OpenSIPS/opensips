@@ -37,7 +37,7 @@
 #include "qos_handlers.h" /* also includes sr_module.h needed by
                              handlers */
 
-MODULE_VERSION
+
 
 static int mod_init(void);
 static void mod_destroy(void);
@@ -69,6 +69,7 @@ static param_export_t mod_params[]={
 
 struct module_exports exports= {
 	"qos",           /* module's name */
+	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	cmds,            /* exported functions */
 	mod_params,      /* param exports */

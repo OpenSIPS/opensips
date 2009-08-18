@@ -34,7 +34,6 @@
 
 #include "cdlookup.h"
 
-MODULE_VERSION
 
 
 /* Module destroy function prototype */
@@ -88,6 +87,7 @@ static param_export_t params[] = {
 /* Module interface */
 struct module_exports exports = {
 	"closeddial", 
+	MODULE_VERSION,  /* module version */
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	cmds,       /* Exported functions */
 	params,     /* Exported parameters */

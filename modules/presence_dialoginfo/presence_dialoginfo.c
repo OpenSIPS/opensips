@@ -43,7 +43,7 @@
 #include "add_events.h"
 #include "presence_dialoginfo.h"
 
-MODULE_VERSION
+
 
 /* module functions */
 static int mod_init(void);

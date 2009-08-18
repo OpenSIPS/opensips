@@ -37,7 +37,7 @@
 #include "../../mod_fix.h"
 #include "enum.h"
 
-MODULE_VERSION
+
 
 /*
  * Module initialization function prototype
@@ -116,6 +116,7 @@ static param_export_t params[] = {
  */
 struct module_exports exports = {
 	"enum", 
+	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	cmds,     /* Exported functions */
 	params,   /* Exported parameters */

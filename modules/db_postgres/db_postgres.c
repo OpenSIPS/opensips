@@ -34,7 +34,7 @@
 #include "../../db/db.h"
 #include "dbase.h"
 
-MODULE_VERSION
+
 
 int db_postgres_bind_api(const str* mod, db_func_t *dbb);
 
@@ -53,6 +53,7 @@ static cmd_export_t cmds[]={
 
 struct module_exports exports = {	
 	"db_postgres",
+	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	cmds,
 	0,   /*  module parameters */

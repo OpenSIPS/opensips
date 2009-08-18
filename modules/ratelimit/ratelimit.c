@@ -48,7 +48,7 @@
 #include "../../socket_info.h"
 #include "../signaling/signaling.h"
 
-MODULE_VERSION
+
 
 #define MAX_PIPES       16
 #define MAX_QUEUES      10
@@ -261,6 +261,7 @@ static mi_export_t mi_cmds [] = {
 /** module exports */
 struct module_exports exports= {
 	"ratelimit",
+	MODULE_VERSION,
 	DEFAULT_DLFLAGS,		/* dlopen flags */
 	cmds,
 	params,

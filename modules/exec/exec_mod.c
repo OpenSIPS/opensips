@@ -41,7 +41,7 @@
 #include "kill.h"
 #include "exec_hf.h"
 
-MODULE_VERSION
+
 
 unsigned int time_to_kill=0;
 
@@ -90,6 +90,7 @@ struct module_exports exec_exports = {
 struct module_exports exports= {
 #endif
 	"exec",
+	MODULE_VERSION,
 	DEFAULT_DLFLAGS,/* dlopen flags */
 	cmds,           /* Exported functions */
 	params,         /* Exported parameters */

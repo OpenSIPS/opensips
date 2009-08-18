@@ -41,7 +41,7 @@
 #include "aaa_checks.h"
 #include "db_checks.h"
 
-MODULE_VERSION
+
 
 /*
  * AAA protocol variables
@@ -183,6 +183,7 @@ stat_export_t uridb_stats[] = {
  */
 struct module_exports exports = {
 	"uri", 
+	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	cmds,      /* Exported functions */
 	params,    /* Exported parameters */

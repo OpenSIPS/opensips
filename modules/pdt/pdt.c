@@ -56,7 +56,7 @@
 
 #include "pdtree.h"
 
-MODULE_VERSION
+
 
 
 #define NR_KEYS			3
@@ -140,6 +140,7 @@ static mi_export_t mi_cmds[] = {
 
 struct module_exports exports = {
 	"pdt",
+	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	cmds,
 	params,

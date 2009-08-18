@@ -40,7 +40,7 @@
 #include "../../pvar.h"
 
 
-MODULE_VERSION
+
 
 char *log_buf = NULL;
 
@@ -105,6 +105,7 @@ static param_export_t params[]={
 /** module exports */
 struct module_exports exports= {
 	"xlog",
+	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	cmds,
 	params,

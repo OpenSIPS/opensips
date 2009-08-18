@@ -41,7 +41,7 @@
 #include "lb_data.h"
 #include "lb_prober.h"
 
-MODULE_VERSION
+
 
 
 /* db stuff */
@@ -120,6 +120,7 @@ static mi_export_t mi_cmds[] = {
 
 struct module_exports exports= {
 	"load_balancer",  /* module's name */
+	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	cmds,            /* exported functions */
 	mod_params,      /* param exports */

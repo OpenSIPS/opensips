@@ -47,7 +47,7 @@
 
 /* #include "perlxsi.h" function is in here... */
 
-MODULE_VERSION
+
 
 /* Full path to the script including executed functions */
 char *filename = NULL;

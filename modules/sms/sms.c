@@ -50,7 +50,7 @@
 #include "libsms_modem.h"
 
 
-MODULE_VERSION
+
 
 
 static int sms_init(void);
@@ -109,6 +109,7 @@ static param_export_t params[]={
 
 struct module_exports exports= {
 	"sms",
+	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	cmds,
 	params,

@@ -46,7 +46,7 @@
 #include "../../mem/mem.h"
 #include "mf_funcs.h"
 
-MODULE_VERSION
+
 
 #define MAXFWD_UPPER_LIMIT 256
 
@@ -78,6 +78,7 @@ struct module_exports maxfwd_exports = {
 struct module_exports exports= {
 #endif
 	"maxfwd",
+	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	cmds,
 	params,

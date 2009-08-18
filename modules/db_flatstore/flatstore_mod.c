@@ -34,7 +34,7 @@
 #include "flat_mi.h"
 #include "flatstore_mod.h"
 
-MODULE_VERSION
+
 
 static int child_init(int rank);
 
@@ -96,6 +96,7 @@ static mi_export_t mi_cmds[] = {
 
 struct module_exports exports = {
 	"db_flatstore",
+	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	cmds,
 	params,      /*  module parameters */

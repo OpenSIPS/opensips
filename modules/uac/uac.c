@@ -49,7 +49,7 @@
 #include "auth.h"
 
 
-MODULE_VERSION
+
 
 
 /* local variable used for init */
@@ -113,6 +113,7 @@ static param_export_t params[] = {
 
 struct module_exports exports= {
 	"uac",
+	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	cmds,       /* exported functions */
 	params,     /* param exports */

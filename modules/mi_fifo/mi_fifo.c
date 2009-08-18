@@ -64,7 +64,7 @@ static char *mi_fifo_gid_s = 0;
 static int  mi_fifo_mode = S_IRUSR| S_IWUSR| S_IRGRP| S_IWGRP; /* rw-rw---- */
 static int  read_buf_size = MAX_MI_FIFO_READ;
 
-MODULE_VERSION
+
 
 static param_export_t mi_params[] = {
 	{"fifo_name",        STR_PARAM, &mi_fifo},
@@ -87,6 +87,7 @@ static proc_export_t mi_procs[] = {
 
 struct module_exports exports = {
 	"mi_fifo",                     /* module name */
+	MODULE_VERSION,
 	DEFAULT_DLFLAGS,               /* dlopen flags */
 	0,                             /* exported functions */
 	mi_params,                     /* exported parameters */

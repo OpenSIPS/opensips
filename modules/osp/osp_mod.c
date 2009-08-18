@@ -42,7 +42,7 @@
 #include "tm.h"
 #include "provider.h"
 
-MODULE_VERSION
+
 
 extern unsigned int _osp_sp_number;
 extern char* _osp_sp_uris[];

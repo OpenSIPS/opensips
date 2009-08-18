@@ -37,7 +37,7 @@ int ping_interval = 5 * 60; /* Default is 5 minutes */
 int auto_reconnect = 1;     /* Default is enabled */
 int use_escape_common = 0;  /* Enable common escaping */
 
-MODULE_VERSION
+
 
 int db_unixodbc_bind_api(const str* mod, db_func_t *dbb);
 
@@ -63,6 +63,7 @@ static param_export_t params[] = {
 
 struct module_exports exports = {	
 	"db_unixodbc",
+	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	cmds,
 	params,     /*  module parameters */

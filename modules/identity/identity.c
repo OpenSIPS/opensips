@@ -95,7 +95,7 @@
 #include "../../parser/parse_uri.h" 
 #include "identity.h"
 
-MODULE_VERSION
+
 
 /* parameters */
 
@@ -152,6 +152,7 @@ static param_export_t params[]={
 /** module exports */
 struct module_exports exports= {
 	"identity", /* name */ 
+	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	cmds, /* exported functions */
 	params,	/* parameters to be exportet */

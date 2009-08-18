@@ -55,7 +55,7 @@
 #include "imc_mng.h"
 #include "imc_cmd.h"
 
-MODULE_VERSION
+
 
 /** parameters */
 
@@ -134,6 +134,7 @@ static mi_export_t mi_cmds[] = {
 /** module exports */
 struct module_exports exports= {
 	"imc",      /* module name */
+	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	cmds,       /* exported commands */
 	params,     /* exported parameters */

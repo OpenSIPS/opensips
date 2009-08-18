@@ -66,7 +66,7 @@
 #include "../../mod_fix.h"
 #include "mi.h"
 
-MODULE_VERSION
+
 
 /*
  * Version of gw and lcr tables required by the module,
@@ -346,6 +346,7 @@ static mi_export_t mi_cmds[] = {
  */
 struct module_exports exports = {
 	"lcr", 
+	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	cmds,      /* Exported functions */
 	params,    /* Exported parameters */

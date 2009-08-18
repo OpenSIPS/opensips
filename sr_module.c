@@ -169,45 +169,31 @@ error:
 #define DLSYM_PREFIX
 #endif
 
-static inline int version_control(void *handle, char *path)
+static inline int version_control(struct module_exports* exp, char *path)
 {
-	char **m_ver;
-	char **m_flags;
 	char* error;
 
-	m_ver=(char **)dlsym(handle, DLSYM_PREFIX "module_version");
-	if ((error=(char *)dlerror())!=0) {
-		LM_CRIT("BUG - no version info in module <%s>: %s\n",
-			path, error );
+	if ( !exp->version ) {
+		LM_CRIT("BUG - version not defined in module <%s>\n", path );
 		return 0;
 	}
-	m_flags=(char **)dlsym(handle, DLSYM_PREFIX "module_flags");
-	if ((error=(char *)dlerror())!=0) {
-		LM_CRIT("BUG - no compile flags info in module <%s>: %s\n",
-			path, error );
+	if ( !exp->compile_flags ) {
+		LM_CRIT("BUG - compile flags not defined in module <%s>\n", path );
 		return 0;
 	}
-	if (!m_ver || !(*m_ver)) {
-		LM_CRIT("BUG - no version in module <%s>\n", path );
-		return 0;
-	}
-	if (!m_flags || !(*m_flags)) {
-		LM_CRIT("BUG - no compile flags in module <%s>\n", path );
-		return 0;
-	}
-	
-	if (strcmp(OPENSIPS_FULL_VERSION, *m_ver)==0){
-		if (strcmp(OPENSIPS_COMPILE_FLAGS, *m_flags)==0)
+
+	if (strcmp(OPENSIPS_FULL_VERSION, exp->version)==0){
+		if (strcmp(OPENSIPS_COMPILE_FLAGS, exp->compile_flags)==0)
 			return 1;
 		else {
 			LM_ERR("module compile flags mismatch for %s "
 				" \ncore: %s \nmodule: %s\n",
-				path, OPENSIPS_COMPILE_FLAGS, *m_flags);
+				exp->name, OPENSIPS_COMPILE_FLAGS, exp->compile_flags);
 			return 0;
 		}
 	}
-	LM_ERR("module version mismatch for %s; "
-		"core: %s; module: %s\n", path, OPENSIPS_FULL_VERSION, *m_ver );
+	LM_ERR("module version mismatch for %s; core: %s; module: %s\n",
+		exp->name, OPENSIPS_FULL_VERSION, exp->version );
 	return 0;
 }
 
@@ -221,23 +207,23 @@ int sr_load_module(char* path)
 	char* error;
 	struct module_exports* exp;
 	struct sr_module* t;
-	
+
+	/* load module */
 	handle=dlopen(path, OPENSIPS_DLFLAGS); /* resolve all symbols now */
 	if (handle==0){
 		LM_ERR("could not open module <%s>: %s\n", path, dlerror() );
 		goto error;
 	}
-	
+
+	/* check for duplicates */
 	for(t=modules;t; t=t->next){
 		if (t->handle==handle){
 			LM_WARN("attempting to load the same module twice (%s)\n", path);
 			goto skip;
 		}
 	}
-	/* version control */
-	if (!version_control(handle, path)) {
-		exit(0);
-	}
+
+	/* import module interface */
 	exp = (struct module_exports*)dlsym(handle, DLSYM_PREFIX "exports");
 	if ( (error =(char*)dlerror())!=0 ){
 		LM_ERR("load_module: %s\n", error);
@@ -257,6 +243,11 @@ int sr_load_module(char* path)
 			LM_ERR("failed to load module : %s\n", error);
 			goto error1;
 		}
+	}
+
+	/* version control */
+	if (!version_control(exp, path)) {
+		exit(0);
 	}
 
 	/* launch register */

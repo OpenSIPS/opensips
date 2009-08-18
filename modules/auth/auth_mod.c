@@ -50,7 +50,6 @@
 #include "rpid.h"
 #include "api.h"
 
-MODULE_VERSION
 
 #define RAND_SECRET_LEN 32
 
@@ -167,6 +166,7 @@ static param_export_t params[] = {
  */
 struct module_exports exports = {
 	"auth", 
+	MODULE_VERSION,  /* module version */
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	cmds,
 	params,

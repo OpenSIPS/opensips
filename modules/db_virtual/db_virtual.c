@@ -64,7 +64,7 @@ handle_private_t * private = NULL;
 char*   db_urls_list[100];
 int     db_urls_count=0;
 
-MODULE_VERSION
+
 
 
 int init_global(void);
@@ -109,6 +109,7 @@ static mi_export_t mi_cmds[] = {
 
 struct module_exports exports = {	
 	"db_virtual",
+	MODULE_VERSION,
 	DEFAULT_DLFLAGS,            /* dlopen flags */
 	cmds,
 	params,                     /*  module parameters */

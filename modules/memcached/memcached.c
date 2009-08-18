@@ -42,7 +42,7 @@
 
 
 
-MODULE_VERSION
+
 
 
 typedef struct mem_server_list_t
@@ -74,6 +74,7 @@ static param_export_t params[]={
 /** module exports */
 struct module_exports exports= {
 	"memcached",               /* module name */
+	MODULE_VERSION,
 	DEFAULT_DLFLAGS,            /* dlopen flags */
 	0,                          /* exported functions */
 	params,                     /* exported parameters */

@@ -38,7 +38,7 @@
 #include "dbt_lib.h"
 #include "dbt_api.h"
 
-MODULE_VERSION
+
 
 static int mod_init(void);
 static void destroy(void);
@@ -70,6 +70,7 @@ static param_export_t params[] = {
 
 struct module_exports exports = {	
 	"db_text",
+	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	cmds,     /* Exported functions */
 	params,   /* Exported parameters */

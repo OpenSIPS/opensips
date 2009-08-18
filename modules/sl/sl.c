@@ -47,7 +47,7 @@
 #include "sl_api.h"
 #include "sl_cb.h"
 
-MODULE_VERSION
+
 
 
 static int w_sl_send_reply(struct sip_msg* msg, char* str1, char* str2);
@@ -110,6 +110,7 @@ struct module_exports sl_exports = {
 struct module_exports exports= {
 #endif
 	"sl",         /* module's name */
+	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	cmds,         /* exported functions */
 	mod_params,   /* param exports */

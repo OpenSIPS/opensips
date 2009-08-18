@@ -39,7 +39,7 @@
 #include "dt.h"
 #include "db.h"
 
-MODULE_VERSION
+
 
 
 #define MAXNUMBERLEN 31
@@ -104,6 +104,7 @@ static mi_export_t mi_cmds[] = {
 
 struct module_exports exports= {
 	"userblacklist",
+	MODULE_VERSION,
 	DEFAULT_DLFLAGS,
 	cmds,
 	params,

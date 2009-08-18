@@ -61,7 +61,7 @@
 #include "../../mem/shm_mem.h"
 #include "../../mi/mi.h"
 
-MODULE_VERSION
+
 
 static int set_gflag(struct sip_msg*, char *, char *);
 static int reset_gflag(struct sip_msg*, char *, char *);
@@ -105,6 +105,7 @@ static mi_export_t mi_cmds[] = {
 
 struct module_exports exports = {
 	"gflags",
+	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	cmds,        /* exported functions */
 	params,      /* exported parameters */

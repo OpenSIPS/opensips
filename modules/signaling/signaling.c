@@ -34,7 +34,7 @@
 #include "../sl/sl_api.h"
 #include "signaling.h"
 
-MODULE_VERSION
+
 
 /** global variables*/
 
@@ -63,6 +63,7 @@ static cmd_export_t cmds[]=
 /** module exports */
 struct module_exports exports= {
 	"signaling",				/* module name */
+	MODULE_VERSION,
 	DEFAULT_DLFLAGS,			/* dlopen flags */
 	cmds,						/* exported functions */
 	0,							/* exported parameters */

@@ -98,7 +98,7 @@ static char *mi_reply_indent = DEFAULT_MI_REPLY_IDENT;
 
 
 
-MODULE_VERSION
+
 
 
 static proc_export_t mi_procs[] = {
@@ -124,6 +124,7 @@ static param_export_t mi_params[] = {
 
 struct module_exports exports = {
 	"mi_datagram",                 /* module name */
+	MODULE_VERSION,
 	DEFAULT_DLFLAGS,               /* dlopen flags */
 	0,                             /* exported functions */
 	mi_params,                     /* exported parameters */

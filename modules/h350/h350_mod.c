@@ -35,7 +35,7 @@
 #include "h350_exp_fn.h"
 
 
-MODULE_VERSION
+
 
 /*
  * Module management function prototypes
@@ -109,6 +109,7 @@ static param_export_t params[] = {
  */
 struct module_exports exports = {
 	"h350", 
+	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	cmds,       /* Exported functions */
 	params,     /* Exported parameters */

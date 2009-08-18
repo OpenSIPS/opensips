@@ -43,7 +43,7 @@
 #include "../../mod_fix.h"
 #include "../../ut.h"
 
-MODULE_VERSION
+
 
 static rule_file_t allow[MAX_RULE_FILES]; /* Parsed allow files */
 static rule_file_t deny[MAX_RULE_FILES];  /* Parsed deny files */
@@ -188,6 +188,7 @@ static mi_export_t mi_cmds[] = {
 /* Module interface */
 struct module_exports exports = {
 	"permissions",
+	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	cmds,      /* Exported functions */
 	params,    /* Exported parameters */

@@ -132,7 +132,7 @@ static struct mi_root* dr_reload_cmd(struct mi_root *cmd_tree, void *param);
 #define RELOAD_MI_CMD  "dr_reload"
 
 
-MODULE_VERSION
+
 
 /*
  * Exported functions
@@ -195,6 +195,7 @@ static mi_export_t mi_cmds[] = {
 
 struct module_exports exports = {
 	"drouting",
+	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	cmds,            /* Exported functions */
 	params,          /* Exported parameters */

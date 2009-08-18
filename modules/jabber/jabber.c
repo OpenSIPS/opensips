@@ -70,7 +70,7 @@
 #include "xjab_util.h"
 
 
-MODULE_VERSION
+
 
 /** TM bind */
 struct tm_binds tmb;
@@ -179,6 +179,7 @@ static param_export_t params[] = {
 
 struct module_exports exports= {
 	"jabber",
+	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	cmds,       /* Exported functions */
 	params,     /* Exported parameters */

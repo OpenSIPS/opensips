@@ -106,7 +106,7 @@ static str sc_snd_time = str_init("snd_time");  /* 9 */
 		} \
 	}
 
-MODULE_VERSION
+
 
 #define S_TABLE_VERSION 6
 
@@ -234,6 +234,7 @@ stat_export_t msilo_stats[] = {
 /** module exports */
 struct module_exports exports= {
 	"msilo",    /* module id */
+	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	cmds,       /* module's exported functions */
 	params,     /* module's exported parameters */

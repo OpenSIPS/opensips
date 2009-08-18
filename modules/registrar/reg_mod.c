@@ -72,7 +72,7 @@
 #include "reg_mod.h"
 
 
-MODULE_VERSION
+
 
 
 /*! \brief Module init & destroy function */
@@ -184,6 +184,7 @@ stat_export_t mod_stats[] = {
  */
 struct module_exports exports = {
 	"registrar",
+	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	cmds,        /* Exported functions */
 	params,      /* Exported parameters */

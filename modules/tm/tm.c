@@ -78,7 +78,6 @@
 #include "mi.h"
 #include "tm_load.h"
 
-MODULE_VERSION
 
 /* item functions */
 static int pv_get_tm_branch_idx(struct sip_msg *msg, pv_param_t *param,
@@ -277,6 +276,7 @@ struct module_exports tm_exports = {
 struct module_exports exports= {
 #endif
 	"tm",      /* module name*/
+	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	cmds,      /* exported functions */
 	params,    /* exported variables */

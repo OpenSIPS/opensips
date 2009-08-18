@@ -42,8 +42,6 @@
 #include "pidf.h"
 #include "b2b_logic.h"
 
-MODULE_VERSION
-
 
 /** Functions declarations */
 static int mod_init(void);
@@ -101,6 +99,7 @@ static mi_export_t mi_cmds[] = {
 /** Module interface */
 struct module_exports exports= {
 	"b2b_logic",                    /* module name */
+	MODULE_VERSION,					/* module version */
 	DEFAULT_DLFLAGS,                /* dlopen flags */
 	cmds,                           /* exported functions */
 	params,                         /* exported parameters */

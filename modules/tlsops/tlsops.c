@@ -43,7 +43,7 @@
 #include "../../sr_module.h"
 #include "../../pvar.h"
 
-MODULE_VERSION
+
 
 int tcp_con_lifetime=DEFAULT_TCP_CONNECTION_LIFETIME;
 
@@ -243,6 +243,7 @@ static pv_export_t mod_items[] = {
  */
 struct module_exports exports = {
 	"tlsops", 
+	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	cmds,        /* Exported functions */
 	params,      /* Exported parameters */

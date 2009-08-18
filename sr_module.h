@@ -93,8 +93,8 @@ typedef int (*mod_proc_wrapper)();
 #define OPENSIPS_DLFLAGS	RTLD_NOW
 
 #define MODULE_VERSION \
-	char *module_version=OPENSIPS_FULL_VERSION; \
-	char *module_flags=OPENSIPS_COMPILE_FLAGS;
+	OPENSIPS_FULL_VERSION, \
+	OPENSIPS_COMPILE_FLAGS
 
 
 #define PROC_FLAG_INITCHILD  (1<<0)
@@ -136,6 +136,8 @@ typedef struct proc_export_ proc_export_t;
 
 struct module_exports{
 	char* name;                     /*!< null terminated module name */
+	char *version;                  /*!< module version */
+	char *compile_flags;            /*!< compile flags used on the module */
 	unsigned int dlflags;           /*!< flags for dlopen */
 	
 	cmd_export_t* cmds;             /*!< null terminated array of the exported

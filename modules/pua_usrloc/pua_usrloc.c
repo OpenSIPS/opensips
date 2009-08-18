@@ -47,7 +47,7 @@
 #include "../pua/pua_bind.h"
 #include "pua_usrloc.h"
 
-MODULE_VERSION
+
 
 str default_domain= {NULL, 0};
 int pua_ul_publish= 0;
@@ -82,6 +82,7 @@ static param_export_t params[]={
 
 struct module_exports exports= {
 	"pua_usrloc",				/* module name */
+	MODULE_VERSION,
 	DEFAULT_DLFLAGS,            /* dlopen flags */
 	cmds,						/* exported functions */
 	params,						/* exported parameters */

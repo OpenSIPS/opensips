@@ -44,7 +44,7 @@
 #include "../pua/pua_bind.h"
 #include "mi_func.h"
 
-MODULE_VERSION
+
 
 pua_api_t pua;
 
@@ -78,6 +78,7 @@ static param_export_t params[]={
 /** module exports */
 struct module_exports exports= {
 	"pua_mi",					/* module name */
+	MODULE_VERSION,
 	DEFAULT_DLFLAGS,            /* dlopen flags */
 	 0,							/* exported functions */
 	 params,					/* exported parameters */

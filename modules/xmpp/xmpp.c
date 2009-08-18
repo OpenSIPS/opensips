@@ -104,7 +104,7 @@
 /* XXX hack */
 #define DB_KEY	"this-be-a-random-key"
 
-MODULE_VERSION
+
 
 struct tm_binds tmb;
 
@@ -166,6 +166,7 @@ static param_export_t params[] = {
  */
 struct module_exports exports = {
 	"xmpp",          /* Module name */
+	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	cmds,            /* Exported functions */
 	params,          /* Exported parameters */

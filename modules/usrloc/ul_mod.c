@@ -59,7 +59,7 @@
 #include "ul_callback.h"
 #include "usrloc.h"
 
-MODULE_VERSION
+
 
 #define USER_COL       "username"
 #define DOMAIN_COL     "domain"
@@ -188,6 +188,7 @@ static mi_export_t mi_cmds[] = {
 
 struct module_exports exports = {
 	"usrloc",
+	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /*!< dlopen flags */
 	cmds,       /*!< Exported functions */
 	params,     /*!< Export parameters */

@@ -26,7 +26,7 @@
 
 #include "perlvdb.h"
 
-MODULE_VERSION
+
 
 static int child_init(int rank);
 

@@ -36,7 +36,7 @@
 #include "pua_bla.h"
 #include "registrar_cb.h"
 
-MODULE_VERSION
+
 /* Structure containing pointers to pua functions */
 pua_api_t pua;
 /* Structure containing pointers to usrloc functions */
@@ -77,6 +77,7 @@ static param_export_t params[]=
 /** module exports */
 struct module_exports exports= {
 	"pua_bla",					/* module name */
+	MODULE_VERSION,
 	DEFAULT_DLFLAGS,            /* dlopen flags */
 	 cmds,						/* exported functions */
 	 params,					/* exported parameters */

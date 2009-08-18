@@ -65,7 +65,6 @@
 #include "acc_extra.h"
 #include "acc_logic.h"
 
-MODULE_VERSION
 
 struct tm_binds tmb;
 struct rr_binds rrb;
@@ -229,6 +228,7 @@ static param_export_t params[] = {
 
 struct module_exports exports= {
 	"acc",
+	MODULE_VERSION,  /* module version */
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	cmds,       /* exported functions */
 	params,     /* exported params */

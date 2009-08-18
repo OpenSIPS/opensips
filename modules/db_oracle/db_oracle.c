@@ -37,7 +37,7 @@ static int oracle_mod_init(void);
 static void destroy(void);
 static int db_oracle_bind_api(const str* mod, db_func_t *dbb);
 
-MODULE_VERSION
+
 
 
 /*
@@ -61,6 +61,7 @@ static param_export_t params[] = {
 
 struct module_exports exports = {
 	"oracle",
+	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	cmds,
 	params,          /*  module parameters */

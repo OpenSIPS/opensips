@@ -48,7 +48,6 @@
 #include "authorize.h"
 #include "tcp_comm.h"
 
-MODULE_VERSION
 
 
 /** SIGNALLING bind */
@@ -102,6 +101,7 @@ static param_export_t params[] = {
  */
 struct module_exports exports = {
 	"auth_diameter",
+	MODULE_VERSION,  /* module version */
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	cmds,          /* Exported functions */
 	params,        /* Exported parameters */

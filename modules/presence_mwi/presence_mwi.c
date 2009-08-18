@@ -40,7 +40,7 @@
 #include "add_events.h"
 #include "presence_mwi.h"
 
-MODULE_VERSION
+
 
 /* module functions */
 static int mod_init(void);

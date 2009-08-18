@@ -39,7 +39,7 @@
 #include "../../parser/parse_uri.h"
 #include "../signaling/signaling.h"
 
-MODULE_VERSION
+
 
 char *acpt_c, *acpt_enc_c, *acpt_lan_c, *supt_c;
 str acpt_s, acpt_enc_s, acpt_lan_s, supt_s;
@@ -77,6 +77,7 @@ static param_export_t params[] = {
  */
 struct module_exports exports = {
 	"options",       /* Module name */
+	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	cmds,            /* Exported functions */
 	params,          /* Exported parameters */

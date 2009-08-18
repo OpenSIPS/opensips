@@ -61,7 +61,6 @@
 #include <stdlib.h>
 #include "shvar.h"
 
-MODULE_VERSION
 
 static int set_prob(struct sip_msg*, char *, char *);
 static int reset_prob(struct sip_msg*, char *, char *);
@@ -151,6 +150,7 @@ static pv_export_t mod_items[] = {
 
 struct module_exports exports = {
 	"cfgutils",
+	MODULE_VERSION,  /* module version */
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	cmds,        /* exported functions */
 	params,      /* exported parameters */

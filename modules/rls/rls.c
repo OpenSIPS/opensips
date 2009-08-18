@@ -54,7 +54,7 @@
 #include "notify.h"
 #include "resource_notify.h"
 
-MODULE_VERSION
+
 
 #define P_TABLE_VERSION 1
 #define W_TABLE_VERSION 2
@@ -191,6 +191,7 @@ static param_export_t params[]={
 /** module exports */
 struct module_exports exports= {
 	"rls",                      /* module name */
+	MODULE_VERSION,
 	DEFAULT_DLFLAGS,            /* dlopen flags */
 	cmds,                       /* exported functions */
 	params,                     /* exported parameters */

@@ -43,7 +43,6 @@
 #include "server.h"
 #include "dlg.h"
 
-MODULE_VERSION
 
 /** Functions declarations */
 static int mod_init(void);
@@ -77,6 +76,7 @@ static param_export_t params[]={
 /** Module interface */
 struct module_exports exports= {
 	"b2b_entities",                 /* module name */
+	MODULE_VERSION,					/* module version */
 	DEFAULT_DLFLAGS,                /* dlopen flags */
 	cmds,                           /* exported functions */
 	params,                         /* exported parameters */

@@ -46,7 +46,6 @@
 #include "rad.h"
 #include <ctype.h>
 
-MODULE_VERSION
 
 typedef struct _map_list {
 	pv_spec_p pv;
@@ -99,7 +98,8 @@ static param_export_t params[] = {
 
 struct module_exports exports= {
 	"aaa_radius",				/* module name */
-	0,							/* dlopen flags */
+	MODULE_VERSION,				/* module version */
+	DEFAULT_DLFLAGS,			/* dlopen flags */
 	cmds,						/* exported functions */
 	params,						/* exported parameters */
 	0,							/* exported statistics */
