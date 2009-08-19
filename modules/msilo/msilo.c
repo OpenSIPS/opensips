@@ -221,7 +221,7 @@ stat_var* ms_failed_msgs;
 stat_var* ms_dumped_rmds;
 stat_var* ms_failed_rmds;
 
-stat_export_t msilo_stats[] = {
+static stat_export_t msilo_stats[] = {
 	{"stored_messages" ,  0,  &ms_stored_msgs  },
 	{"dumped_messages" ,  0,  &ms_dumped_msgs  },
 	{"failed_messages" ,  0,  &ms_failed_msgs  },

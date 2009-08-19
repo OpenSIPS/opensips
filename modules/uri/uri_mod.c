@@ -171,10 +171,10 @@ static param_export_t params[] = {
  *  * Module statistics
  *   */
 
-stat_export_t uridb_stats[] = {
-        {"positive checks" ,  0,  &positive_checks  },
-        {"negative_checks"  ,  0,  &negative_checks  },
-        {0,0,0}
+static stat_export_t uridb_stats[] = {
+	{"positive checks" ,  0,  &positive_checks  },
+	{"negative_checks" ,  0,  &negative_checks  },
+	{0,0,0}
 };
 
 

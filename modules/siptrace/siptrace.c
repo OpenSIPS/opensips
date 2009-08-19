@@ -164,7 +164,7 @@ static mi_export_t mi_cmds[] = {
 stat_var* siptrace_req;
 stat_var* siptrace_rpl;
 
-stat_export_t siptrace_stats[] = {
+static stat_export_t siptrace_stats[] = {
 	{"traced_requests" ,  0,  &siptrace_req  },
 	{"traced_replies"  ,  0,  &siptrace_rpl  },
 	{0,0,0}

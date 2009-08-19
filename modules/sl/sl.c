@@ -88,7 +88,7 @@ static param_export_t mod_params[]={
 };
 
 
-stat_export_t mod_stats[] = {
+static stat_export_t mod_stats[] = {
 	{"1xx_replies" ,       0,  &tx_1xx_rpls    },
 	{"2xx_replies" ,       0,  &tx_2xx_rpls    },
 	{"3xx_replies" ,       0,  &tx_3xx_rpls    },

@@ -163,7 +163,7 @@ static param_export_t params[] = {
 };
 
 
-stat_export_t mod_stats[] = {
+static stat_export_t mod_stats[] = {
 	{"registered_users" ,  STAT_IS_FUNC, (stat_var**)get_number_of_users  },
 	{0,0,0}
 };

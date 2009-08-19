@@ -169,7 +169,7 @@ static param_export_t params[] = {
 
 
 /*! \brief We expose internal variables via the statistic framework below.*/
-stat_export_t mod_stats[] = {
+static stat_export_t mod_stats[] = {
 	{"max_expires",       STAT_NO_RESET, &max_expires_stat        },
 	{"max_contacts",      STAT_NO_RESET, &max_contacts_stat       },
 	{"default_expire",    STAT_NO_RESET, &default_expire_stat     },

@@ -116,7 +116,7 @@ static param_export_t params[]={
 
 stat_var* imc_active_rooms;
 
-stat_export_t imc_stats[] = {
+static stat_export_t imc_stats[] = {
 	{"active_rooms" ,  0,  &imc_active_rooms  },
 	{0,0,0}
 };
