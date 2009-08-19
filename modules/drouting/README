@@ -8,8 +8,8 @@ Anca-Maria Vamanu
 
    Copyright © 2005-2008 voice-system.ro
    Revision History
-   Revision $Revision$ $Date: 2008-07-12 00:16:22 +0300
-                              (Sat, 12 Jul 2008) $
+   Revision $Revision$ $Date: 2009-07-16 13:54:34 +0300
+                              (Thu, 16 Jul 2009) $
      __________________________________________________________
 
    Table of Contents
@@ -157,7 +157,7 @@ Chapter 1. Admin Guide
    The time to load was varying between 4 seconds and 8 seconds,
    depending of the caching of the DB client - the first load was
    the slowest (as the DB query hits the disk drive); the
-   following are faster as data in already cached in the DB
+   following are faster as data is already cached in the DB
    client. So technically speaking, the time to load (without the
    time to query which is DB type dependent) is ~4 seconds
 
@@ -229,7 +229,7 @@ Chapter 1. Admin Guide
    prefix      varchar(64)          destination prefix for this route
    timerec     varchar(255)         time recurrence for this rule
    priority    integer      0       priority of the rule
-   routeid     integer      0       route block to be executed
+   routeid     integer      0       route block to be execute
    gwlist      varchar(255)         the list with GWs to be used
    description varchar(128)         description of this rule
 
@@ -373,15 +373,16 @@ Chapter 1. Admin Guide
        priority.
     e. routeid column
        If different than 0, then execute the route with the
-       specified ID. That is, a route which can be used to perform custom
-       operations on message. At this route, no modification is performed
-       at signaling level.
+       specified ID. That is, a route which can be used to perform
+       custom operations on message. At this route, no
+       modification is performed at signaling level.
     f. gwlist column
        A comma separated list of gateway identifiers corresponding
        to a row in table "dr_gateways". The first gateway is tried
        first and if failure the second one, and so one. If no
        gateway is left a negative response is sent back to the
-       user.
+       user. You can use a predefined list from the table
+       "dr_gw_lists" preceded by the character "#".
     g. Routing Rules Examples
        Table 1.5. Sample dr_rules records
 
