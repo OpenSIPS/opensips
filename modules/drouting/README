@@ -381,7 +381,8 @@ Chapter 1. Admin Guide
        to a row in table "dr_gateways". The first gateway is tried
        first and if failure the second one, and so one. If no
        gateway is left a negative response is sent back to the
-       user.
+       user. You can use a predefined list from the table
+       "dr_gw_lists" preceded by the character "#".
     g. Routing Rules Examples
        Table 1.5. Sample dr_rules records
 
