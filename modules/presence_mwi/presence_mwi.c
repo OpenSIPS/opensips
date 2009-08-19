@@ -64,17 +64,18 @@ static param_export_t params[] = {
 /* module exports */
 struct module_exports exports= {
     "presence_mwi",		/* module name */
-    DEFAULT_DLFLAGS,            /* dlopen flags */
+	MODULE_VERSION,		/* module version */
+    DEFAULT_DLFLAGS,	/* dlopen flags */
     cmds,			/* exported functions */
     params,			/* exported parameters */
-    0,			        /* exported statistics */
+    0,				/* exported statistics */
     0,				/* exported MI functions */
     0,				/* exported pseudo-variables */
 	0,				/* extra processes */
-    mod_init,			/* module initialization function */
+    mod_init,				/* module initialization function */
     (response_function) 0,	/* response handling function */
-    destroy,			/* destroy function */
-    child_init                  /* per-child init function */
+    destroy,				/* destroy function */
+    child_init				/* per-child init function */
 };
 	
 /*

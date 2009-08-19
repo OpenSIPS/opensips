@@ -122,6 +122,7 @@ static param_export_t mod_params[] =
 struct module_exports exports = 
 {
 	SNMPSTATS_MODULE_NAME,   /* module's name */
+	MODULE_VERSION,          /* module's version */
 	DEFAULT_DLFLAGS,         /* dlopen flags */
 	0,                       /* exported functions */
 	mod_params,              /* param exports */

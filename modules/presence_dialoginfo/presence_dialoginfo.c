@@ -69,6 +69,7 @@ static param_export_t params[] = {
 /* module exports */
 struct module_exports exports= {
     "presence_dialoginfo",		/* module name */
+    MODULE_VERSION,				/* module version */
     DEFAULT_DLFLAGS,			/* dlopen flags */
     cmds,						/* exported functions */
     params,						/* exported parameters */

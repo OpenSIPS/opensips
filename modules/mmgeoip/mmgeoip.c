@@ -21,7 +21,8 @@
  * --------
  * 080511 -- Initial revision, KE
  *
- * XXX -- todo: Add command variant to pull source/dest IP from current SIP message.
+ * XXX -- todo: Add command variant to pull source/dest IP from 
+ *              current SIP message.
  *
  */
 
@@ -36,7 +37,6 @@
 #include "GeoIP.h"
 #include "GeoIPCity.h"
 
-MODULE_VERSION;
 
 #define MMG_OP_DELIMS ":|,/ "
 static str MMG_city_db_path = {NULL, 0};
@@ -241,6 +241,7 @@ static cmd_export_t cmds[] = {
 
 struct module_exports exports= {
 	"mmgeoip",        /* module's name */
+	MODULE_VERSION,   /* module's name */
 	DEFAULT_DLFLAGS,  /* dlopen flags */
 	cmds,             /* exported functions */
 	mod_params,       /* param exports */

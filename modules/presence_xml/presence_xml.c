@@ -102,6 +102,7 @@ static param_export_t params[]={
 /** module exports */
 struct module_exports exports= {
 	"presence_xml",				/* module name */
+	MODULE_VERSION,				/* module version */
 	 DEFAULT_DLFLAGS,           /* dlopen flags */
 	 0,  						/* exported functions */
 	 params,					/* exported parameters */

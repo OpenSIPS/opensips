@@ -62,7 +62,7 @@ int free_tm_dlg(dlg_t *td)
 
 
 
-dlg_t * build_dlg_t(struct dlg_cell * cell, int dir)
+dlg_t * build_dlg_t(struct dlg_cell * cell, int dst_leg, int src_leg)
 {
 	dlg_t* td = NULL;
 	str cseq;
@@ -76,8 +76,7 @@ dlg_t * build_dlg_t(struct dlg_cell * cell, int dir)
 	memset(td, 0, sizeof(dlg_t));
 
 	/*local sequence number*/
-	cseq = (dir == DLG_CALLER_LEG) ?	cell->cseq[DLG_CALLEE_LEG]:
-										cell->cseq[DLG_CALLER_LEG];
+	cseq = cell->legs[src_leg].cseq;
 	if( !cseq.s || !cseq.len || str2int(&cseq, &loc_seq) != 0){
 		LM_ERR("invalid cseq\n");
 		goto error;
@@ -87,30 +86,29 @@ dlg_t * build_dlg_t(struct dlg_cell * cell, int dir)
 	td->loc_seq.is_set = 1;
 
 	/*route set*/
-	if( cell->route_set[dir].s && cell->route_set[dir].len){
-		if( parse_rr_body(cell->route_set[dir].s, cell->route_set[dir].len, 
-						&td->route_set) !=0){
+	if( cell->legs[dst_leg].route_set.s && cell->legs[dst_leg].route_set.len){
+		if( parse_rr_body(cell->legs[dst_leg].route_set.s,
+			cell->legs[dst_leg].route_set.len, &td->route_set) !=0){
 		 	LM_ERR("failed to parse route set\n");
 			goto error;
 		}
 	} 
 
 	/*remote target--- Request URI*/
-	if (cell->contact[dir].s==0 || cell->contact[dir].len==0) {
+	if (cell->legs[dst_leg].contact.s==0 || cell->legs[dst_leg].contact.len==0){
 		LM_ERR("no contact available\n");
 		goto error;
 	}
-	td->rem_target = cell->contact[dir];
+	td->rem_target = cell->legs[dst_leg].contact;
 
-	td->rem_uri	=   (dir == DLG_CALLER_LEG)?	cell->from_uri: cell->to_uri;
-	td->loc_uri	=	(dir == DLG_CALLER_LEG)?	cell->to_uri: cell->from_uri;
+	td->rem_uri = (dst_leg==DLG_CALLER_LEG)? cell->from_uri: cell->to_uri;
+	td->loc_uri = (dst_leg==DLG_CALLER_LEG)? cell->to_uri: cell->from_uri;
 	td->id.call_id = cell->callid;
-	td->id.rem_tag = cell->tag[dir];
-	td->id.loc_tag = (dir == DLG_CALLER_LEG) ? 	cell->tag[DLG_CALLEE_LEG]:
-												cell->tag[DLG_CALLER_LEG];
+	td->id.rem_tag = cell->legs[dst_leg].tag;
+	td->id.loc_tag = cell->legs[src_leg].tag;
 
 	td->state= DLG_CONFIRMED;
-	td->send_sock = cell->bind_addr[dir];
+	td->send_sock = cell->legs[dst_leg].bind_addr;
 
 	return td;
 
@@ -156,15 +154,15 @@ void bye_reply_cb(struct cell* t, int type, struct tmcb_params* ps){
 				"with clid '%.*s' and tags '%.*s' '%.*s'\n",
 				dlg, dlg->h_entry, dlg->h_id,
 				dlg->callid.len, dlg->callid.s,
-				dlg->tag[DLG_CALLER_LEG].len, dlg->tag[DLG_CALLER_LEG].s,
-				dlg->tag[DLG_CALLEE_LEG].len, ZSW(dlg->tag[DLG_CALLEE_LEG].s));
+				dlg_leg_print_info( dlg, DLG_CALLER_LEG, tag),
+				dlg_leg_print_info( dlg, DLG_FIRST_CALLEE_LEG, tag));
 		} else if (ret > 0) {
 			LM_DBG("dlg already expired (not in timer list) %p [%u:%u] "
 				"with clid '%.*s' and tags '%.*s' '%.*s'\n",
 				dlg, dlg->h_entry, dlg->h_id,
 				dlg->callid.len, dlg->callid.s,
-				dlg->tag[DLG_CALLER_LEG].len, dlg->tag[DLG_CALLER_LEG].s,
-				dlg->tag[DLG_CALLEE_LEG].len, ZSW(dlg->tag[DLG_CALLEE_LEG].s));
+				dlg_leg_print_info( dlg, DLG_CALLER_LEG, tag),
+				dlg_leg_print_info( dlg, DLG_FIRST_CALLEE_LEG, tag));
 		} else {
 			/* successfully removed from timer list */
 			unref++;
@@ -226,23 +224,24 @@ error:
 
 
 /* cell- pointer to a struct dlg_cell
- * dir- direction: the request will be sent to:
- * 		DLG_CALLER_LEG (0): caller
- * 		DLG_CALLEE_LEG (1): callee
+ * leg - a dialog leg to be BYE'ed :
+ *     = 0: caller leg
+ *     > 0: callee legs
  */
-static inline int send_bye(struct dlg_cell * cell, int dir, str *extra_hdrs)
+static inline int send_leg_bye(struct dlg_cell *cell, int dst_leg, int src_leg,
+														str *extra_hdrs)
 {
-	/*verify direction*/
 	dlg_t* dialog_info;
 	str met = {"BYE", 3};
 	int result;
 
-	if ((dialog_info = build_dlg_t(cell, dir)) == 0){
+	if ((dialog_info = build_dlg_t(cell, dst_leg, src_leg)) == 0){
 		LM_ERR("failed to create dlg_t\n");
 		goto err;
 	}
 
-	LM_DBG("sending BYE to %s\n", (dir==0)?"caller":"callee");
+	LM_DBG("sending BYE to %s (%d)\n",
+		(dst_leg==DLG_CALLER_LEG)?"caller":"callee", dst_leg);
 
 	ref_dlg(cell, 1);
 
@@ -262,7 +261,7 @@ static inline int send_bye(struct dlg_cell * cell, int dir, str *extra_hdrs)
 
 	free_tm_dlg(dialog_info);
 
-	LM_DBG("BYE sent to %s\n", (dir==0)?"caller":"callee");
+	LM_DBG("BYE sent to %s\n", (dst_leg==DLG_CALLER_LEG)?"caller":"callee");
 	return 0;
 
 err1:
@@ -279,14 +278,18 @@ int dlg_end_dlg(struct dlg_cell *dlg, str *extra_hdrs)
 {
 	str str_hdr = {NULL,0};
 	int res;
+	int i;
 
 	if ((build_extra_hdr(dlg, extra_hdrs, &str_hdr)) != 0){
 		LM_ERR("failed to create extra headers\n");
 		return -1;
 	}
 
-	res = ( ( (send_bye( dlg, DLG_CALLER_LEG, &str_hdr)!=0) ||
-		(send_bye(dlg, DLG_CALLEE_LEG, &str_hdr)!=0))?-1:0 );
+	/* for all callees, send a caller+callee pair of BYEs */
+	for( res=0, i=1 ; i<dlg->legs_no[DLG_LEGS_USED] ; i++) {
+		if (send_leg_bye( dlg, DLG_CALLER_LEG, i, &str_hdr)!=0) res = -1;
+		if (send_leg_bye( dlg, i, DLG_CALLER_LEG, &str_hdr)!=0) res = -1;
+	}
 
 	pkg_free(str_hdr.s);
 	return res;

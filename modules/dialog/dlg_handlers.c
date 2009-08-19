@@ -155,7 +155,7 @@ static inline int add_dlg_rr_param(struct sip_msg *req, unsigned int entry,
  *				   the proxies' own 
  */
 static int populate_leg_info( struct dlg_cell *dlg, struct sip_msg *msg,
-	struct cell* t, unsigned int leg, str *tag)
+	struct cell* t, str *tag, unsigned int leg)
 {
 	unsigned int skip_recs;
 	str cseq;
@@ -171,8 +171,8 @@ static int populate_leg_info( struct dlg_cell *dlg, struct sip_msg *msg,
 		}
 		cseq = (get_cseq(msg))->number;
 	} else {
-		/* use the same as in request */
-		cseq = dlg->cseq[DLG_CALLER_LEG];
+		/* use the same as in caller part */
+		cseq = dlg->legs[DLG_CALLER_LEG].cseq;
 	}
 
 	/* extract the contact address */
@@ -199,7 +199,7 @@ static int populate_leg_info( struct dlg_cell *dlg, struct sip_msg *msg,
 		rr_set.s = 0;
 		rr_set.len = 0;
 	} else {
-		if (leg==DLG_CALLEE_LEG) {
+		if (leg>=DLG_FIRST_CALLEE_LEG) {
 			/* was the 200 OK received or local generated */
 			skip_recs = dlg->from_rr_nb +
 				((t->relaied_reply_branch>=0)?
@@ -207,7 +207,7 @@ static int populate_leg_info( struct dlg_cell *dlg, struct sip_msg *msg,
 		}
 
 		if(msg->record_route){
-			if( print_rr_body(msg->record_route, &rr_set, leg, 
+			if( print_rr_body(msg->record_route, &rr_set, leg,
 								&skip_recs) != 0 ){
 				LM_ERR("failed to print route records \n");
 				rr_set.s = 0;
@@ -234,7 +234,8 @@ static int populate_leg_info( struct dlg_cell *dlg, struct sip_msg *msg,
 		goto error0;
 	}
 
-	dlg->bind_addr[leg] = msg->rcv.bind_address;
+	dlg->legs[leg].bind_addr = msg->rcv.bind_address;
+
 	if (rr_set.s) pkg_free(rr_set.s);
 
 	return 0;
@@ -304,10 +305,10 @@ static void dlg_onreply(struct cell* t, int type, struct tmcb_params *param)
 			LM_DBG("%p totag in rpl is <%.*s> (%d)\n",
 				dlg, tag.len,tag.s,tag.len);
 
-			/* save callee's tag, cseq, contact and record route*/
+			/* save callee's tag, cseq, contact and record route
 			if (populate_leg_info( dlg, rpl, t, DLG_CALLEE_LEG, &tag) !=0) {
 				LM_ERR("could not add further info to the dialog\n");
-			}
+			} FIXME */
 
 		} else {
 			LM_DBG("dialog replied from script - cannot get callee info\n");
@@ -329,8 +330,10 @@ static void dlg_onreply(struct cell* t, int type, struct tmcb_params *param)
 				"with clid '%.*s' and tags '%.*s' '%.*s'\n",
 				dlg, dlg->h_entry, dlg->h_id, event, old_state, new_state,
 				dlg->callid.len, dlg->callid.s,
-				dlg->tag[DLG_CALLER_LEG].len, dlg->tag[DLG_CALLER_LEG].s,
-				dlg->tag[DLG_CALLEE_LEG].len, ZSW(dlg->tag[DLG_CALLEE_LEG].s));
+				dlg->legs[DLG_CALLER_LEG].tag.len,
+				dlg->legs[DLG_CALLER_LEG].tag.s,
+				dlg->legs[DLG_FIRST_CALLEE_LEG].tag.len,
+				ZSW(dlg->legs[DLG_FIRST_CALLEE_LEG].tag.s));
 		} else {
 			/* reference dialog as kept in timer list */
 			ref_dlg(dlg,1);
@@ -514,8 +517,8 @@ int dlg_create_dialog(struct cell* t, struct sip_msg *req)
 	}
 
 	/* save caller's tag, cseq, contact and record route*/
-	if (populate_leg_info(dlg, req, t, DLG_CALLER_LEG,
-	&(get_from(req)->tag_value)) !=0) {
+	if (populate_leg_info(dlg, req, t, &(get_from(req)->tag_value),
+	DLG_CALLER_LEG) !=0) {
 		LM_ERR("could not add further info to the dialog\n");
 		shm_free(dlg);
 		return -1;
@@ -623,7 +626,7 @@ static inline int pre_match_parse( struct sip_msg *req, str *callid,
 
 
 static inline int update_cseqs(struct dlg_cell *dlg, struct sip_msg *req,
-															unsigned int dir)
+															unsigned int leg)
 {
 	if ( (!req->cseq && parse_headers(req,HDR_CSEQ_F,0)<0) || !req->cseq ||
 	!req->cseq->parsed) {
@@ -631,14 +634,7 @@ static inline int update_cseqs(struct dlg_cell *dlg, struct sip_msg *req,
 		return -1;
 	}
 
-	if ( dir==DLG_DIR_UPSTREAM) {
-		return dlg_update_cseq(dlg, DLG_CALLEE_LEG,&((get_cseq(req))->number));
-	} else if ( dir==DLG_DIR_DOWNSTREAM) {
-		return dlg_update_cseq(dlg, DLG_CALLER_LEG,&((get_cseq(req))->number));
-	} else {
-		LM_CRIT("dir is not set!\n");
-		return -1;
-	}
+	return dlg_update_cseq(dlg, leg, &((get_cseq(req))->number));
 }
 
 
@@ -705,8 +701,8 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 				return;
 			}
 			if (match_dialog( dlg, &callid, &ftag, &ttag, &dir )==0) {
-				LM_WARN("tight matching failed for %.*s with callid='%.*s'/%d, "
-						"ftag='%.*s'/%d, ttag='%.*s'/%d and direction=%d\n",
+				LM_WARN("tight matching failed for %.*s with callid='%.*s'/%d,"
+						" ftag='%.*s'/%d, ttag='%.*s'/%d and direction=%d\n",
 						req->first_line.u.request.method.len,
 						req->first_line.u.request.method.s,
 						callid.len, callid.s, callid.len,
@@ -715,12 +711,12 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 				LM_WARN("dialog identification elements are callid='%.*s'/%d, "
 						"caller tag='%.*s'/%d, callee tag='%.*s'/%d\n",
 						dlg->callid.len, dlg->callid.s, dlg->callid.len,
-						dlg->tag[DLG_CALLER_LEG].len,
-						dlg->tag[DLG_CALLER_LEG].s,
-						dlg->tag[DLG_CALLER_LEG].len,
-						dlg->tag[DLG_CALLEE_LEG].len,
-						ZSW(dlg->tag[DLG_CALLEE_LEG].s),
-						dlg->tag[DLG_CALLEE_LEG].len);
+						dlg->legs[DLG_CALLER_LEG].tag.len,
+						dlg->legs[DLG_CALLER_LEG].tag.s,
+						dlg->legs[DLG_CALLER_LEG].tag.len,
+						dlg->legs[DLG_FIRST_CALLEE_LEG].tag.len,
+						ZSW(dlg->legs[DLG_FIRST_CALLEE_LEG].tag.s),
+						dlg->legs[DLG_FIRST_CALLEE_LEG].tag.len);
 				unref_dlg(dlg, 1);
 				return;
 			}
@@ -768,15 +764,19 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 				"with clid '%.*s' and tags '%.*s' '%.*s'\n",
 				dlg, dlg->h_entry, dlg->h_id,
 				dlg->callid.len, dlg->callid.s,
-				dlg->tag[DLG_CALLER_LEG].len, dlg->tag[DLG_CALLER_LEG].s,
-				dlg->tag[DLG_CALLEE_LEG].len, ZSW(dlg->tag[DLG_CALLEE_LEG].s));
+				dlg->legs[DLG_CALLER_LEG].tag.len,
+				dlg->legs[DLG_CALLER_LEG].tag.s,
+				dlg->legs[DLG_FIRST_CALLEE_LEG].tag.len,
+				ZSW(dlg->legs[DLG_FIRST_CALLEE_LEG].tag.s));
 		} else if (ret > 0) {
 			LM_DBG("dlg expired (not in timer list) on dlg %p [%u:%u] "
 				"with clid '%.*s' and tags '%.*s' '%.*s'\n",
 				dlg, dlg->h_entry, dlg->h_id,
 				dlg->callid.len, dlg->callid.s,
-				dlg->tag[DLG_CALLER_LEG].len, dlg->tag[DLG_CALLER_LEG].s,
-				dlg->tag[DLG_CALLEE_LEG].len, ZSW(dlg->tag[DLG_CALLEE_LEG].s));
+				dlg->legs[DLG_CALLER_LEG].tag.len,
+				dlg->legs[DLG_CALLER_LEG].tag.s,
+				dlg->legs[DLG_FIRST_CALLEE_LEG].tag.len,
+				ZSW(dlg->legs[DLG_FIRST_CALLEE_LEG].tag.s));
 		} else {
 			/* dialog sucessfully removed from timer -> unref */
 			unref++;
@@ -874,8 +874,10 @@ void dlg_ontimeout( struct dlg_tl *tl)
 	if (new_state==DLG_STATE_DELETED && old_state!=DLG_STATE_DELETED) {
 		LM_DBG("timeout for dlg with CallID '%.*s' and tags '%.*s' '%.*s'\n",
 			dlg->callid.len, dlg->callid.s,
-			dlg->tag[DLG_CALLER_LEG].len, dlg->tag[DLG_CALLER_LEG].s,
-			dlg->tag[DLG_CALLEE_LEG].len, ZSW(dlg->tag[DLG_CALLEE_LEG].s));
+			dlg->legs[DLG_CALLER_LEG].tag.len,
+			dlg->legs[DLG_CALLER_LEG].tag.s,
+			dlg->legs[DLG_FIRST_CALLEE_LEG].tag.len,
+			ZSW(dlg->legs[DLG_FIRST_CALLEE_LEG].tag.s));
 
 		/* dialog timeout */
 		run_dlg_callbacks( DLGCB_EXPIRED, dlg, 0, DLG_DIR_NONE, 0);

@@ -77,6 +77,7 @@ static param_export_t params[] = {
  */
 struct module_exports exports = {
     "peering", 
+    MODULE_VERSION,  /* module version */
     DEFAULT_DLFLAGS, /* dlopen flags */
     cmds,       /* Exported functions */
     params,     /* Exported parameters */

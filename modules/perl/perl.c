@@ -152,6 +152,7 @@ static mi_export_t mi_cmds[] = {
  */
 struct module_exports exports = {
 	"perl", 
+	MODULE_VERSION,
 	RTLD_NOW | RTLD_GLOBAL,
 	cmds,       /* Exported functions */
 	params,     /* Exported parameters */

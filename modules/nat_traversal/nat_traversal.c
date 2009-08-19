@@ -263,6 +263,7 @@ static stat_export_t statistics[] = {
 
 struct module_exports exports = {
     "nat_traversal", // module name
+    MODULE_VERSION,  // module version
     DEFAULT_DLFLAGS, // dlopen flags
     commands,        // exported functions
     parameters,      // exported parameters

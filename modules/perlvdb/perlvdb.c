@@ -63,6 +63,7 @@ static param_export_t params[] = {
 
 struct module_exports exports = {
 	"perlvdb",
+	MODULE_VERSION,
 	RTLD_NOW | RTLD_GLOBAL, /* dlopen flags */
 	cmds,
 	params,      /*  module parameters */

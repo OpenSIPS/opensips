@@ -67,14 +67,25 @@
 #define DLG_FLAG_ISINIT        (1<<4)
 
 #define DLG_CALLER_LEG         0
-#define DLG_CALLEE_LEG         1
+#define DLG_FIRST_CALLEE_LEG   1
 
 #define DLG_DIR_NONE           0
 #define DLG_DIR_DOWNSTREAM     1
 #define DLG_DIR_UPSTREAM       2
 
 
+struct dlg_leg {
+	int id;
+	str tag;
+	str cseq;
+	str route_set;
+	str contact;
+	struct socket_info *bind_addr;
+};
 
+
+#define DLG_LEGS_USED      0
+#define DLG_LEGS_ALLOCED   1
 struct dlg_cell
 {
 	volatile int         ref;
@@ -92,11 +103,8 @@ struct dlg_cell
 	str                  callid;
 	str                  from_uri;
 	str                  to_uri;
-	str                  tag[2];
-	str                  cseq[2];
-	str                  route_set[2];
-	str                  contact[2];
-	struct socket_info * bind_addr[2];
+	struct dlg_leg       *legs;
+	unsigned short       legs_no[2];
 	struct dlg_head_cbl  cbs;
 	struct dlg_profile_link *profile_links;
 	struct dlg_val          *vals;
@@ -136,6 +144,11 @@ struct dlg_cell *get_current_dialog();
 #define dlg_unlock(_table, _entry) \
 		lock_set_release( (_table)->locks, (_entry)->lock_idx);
 
+#define dlg_leg_print_info(_dlg, _leg, _field) \
+	((_dlg)->legs_no[DLG_LEGS_USED]>_leg)?(_dlg)->legs[_leg]._field.len:4, \
+	((_dlg)->legs_no[DLG_LEGS_USED]>_leg)?(_dlg)->legs[_leg]._field.s:"NULL"
+
+
 inline void unlink_unsafe_dlg(struct dlg_entry *d_entry, struct dlg_cell *dlg);
 inline void destroy_dlg(struct dlg_cell *dlg);
 
@@ -157,10 +170,8 @@ inline void destroy_dlg(struct dlg_cell *dlg);
 				(_dlg)->ref, _cnt, _dlg,\
 				(_dlg)->h_entry, (_dlg)->h_id,\
 				(_dlg)->callid.len, (_dlg)->callid.s,\
-				(_dlg)->tag[DLG_CALLER_LEG].len,\
-				(_dlg)->tag[DLG_CALLER_LEG].s,\
-				(_dlg)->tag[DLG_CALLEE_LEG].len,\
-				ZSW((_dlg)->tag[DLG_CALLEE_LEG].s)); \
+				dlg_leg_print_info(_dlg, DLG_CALLER_LEG, tag), \
+				dlg_leg_print_info(_dlg, DLG_FIRST_CALLEE_LEG, tag)); \
 		}\
 		if ((_dlg)->ref<=0) { \
 			unlink_unsafe_dlg( _d_entry, _dlg);\
@@ -202,8 +213,46 @@ struct mi_root * mi_print_dlgs_ctx(struct mi_root *cmd, void *param );
 
 static inline int match_dialog(struct dlg_cell *dlg, str *callid,
 							   str *ftag, str *ttag, unsigned int *dir) {
+	str *tag;
+	unsigned int i;
+
+	/* first check dialog callid */
+	if (dlg->callid.len!=callid->len || 
+	strncmp(dlg->callid.s, callid->s, callid->len)!=0 )
+		/* callid not matching */
+		return 0;
+
+	/* check the dialog from tag */
+	if (dlg->legs[DLG_CALLER_LEG].tag.len == ftag->len &&
+	strncmp(dlg->legs[DLG_CALLER_LEG].tag.s, ftag->s, ftag->len)==0 ) {
+		/* from tag = from tag matching */
+		*dir = DLG_DIR_DOWNSTREAM;
+		tag = ttag;
+	} else if (dlg->legs[DLG_CALLER_LEG].tag.len == ttag->len &&
+	strncmp(dlg->legs[DLG_CALLER_LEG].tag.s, ttag->s, ttag->len)==0 ) {
+		/* from tag = to tag matching */
+		*dir = DLG_DIR_UPSTREAM;
+		tag = ftag;
+	} else {
+		/* dialog from tag does not match */
+		return 0;
+	}
+
+	/* check the dialog to tag - interate through all the stored to tags */
+	if (dlg->legs_no[DLG_LEGS_USED] > DLG_FIRST_CALLEE_LEG) {
+		for ( i=DLG_FIRST_CALLEE_LEG ; i<dlg->legs_no[DLG_LEGS_USED] ; i++)
+			if (dlg->legs[i].tag.len == tag->len &&
+			strncmp(dlg->legs[i].tag.s, tag->s, tag->len)==0 )
+				return 0;
+		/* no matching */
+		return -1;
+	}
+
+	/* no to tag -> consider it a match*/
+	return 0;
+
+/*
 	if (dlg->tag[DLG_CALLEE_LEG].len == 0) {
-		/* dialog to tag is undetermined ATM.*/
 		if (*dir==DLG_DIR_DOWNSTREAM) {
 			if (dlg->callid.len == callid->len &&
 			dlg->tag[DLG_CALLER_LEG].len == ftag->len &&
@@ -276,16 +325,16 @@ static inline int match_dialog(struct dlg_cell *dlg, str *callid,
 			}
 		}
 	}
-
-	return 0;
+*/
 }
 
-static inline int match_downstream_dialog(struct dlg_cell *dlg, str *callid, str *ftag)
+static inline int match_downstream_dialog(struct dlg_cell *dlg, 
+													str *callid, str *ftag)
 {
 	if (dlg->callid.len!=callid->len ||
-		dlg->tag[DLG_CALLER_LEG].len!=ftag->len  ||
+		dlg->legs[DLG_CALLER_LEG].tag.len!=ftag->len  ||
 		strncmp(dlg->callid.s,callid->s,callid->len)!=0 ||
-		strncmp(dlg->tag[DLG_CALLER_LEG].s,ftag->s,ftag->len)!=0)
+		strncmp(dlg->legs[DLG_CALLER_LEG].tag.s,ftag->s,ftag->len)!=0)
 		return 0;
 	return 1;
 }
