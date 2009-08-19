@@ -68,7 +68,7 @@ include_modules?=
 # status of the modules
 # the rest is excluded because it depends on external libraries
 #
-static_modules= sl tm
+static_modules=
 static_modules_path=$(addprefix modules/, $(static_modules))
 extra_sources=$(wildcard $(addsuffix /*.c, $(static_modules_path)))
 extra_objs=$(extra_sources:.c=.o)
