@@ -293,8 +293,8 @@ struct dlg_cell* build_new_dlg( str *callid, str *from_uri, str *to_uri,
 /* first time it will called for a CALLER leg - at that time there will
    be no leg allocated, so automatically CALLER gets the first position, while
    the CALLEE legs will follow into the array in the same order they came */
-int dlg_set_leg_info(struct dlg_cell *dlg, str* tag, str *rr, str *contact,
-					str *cseq, unsigned int id)
+int dlg_add_leg_info(struct dlg_cell *dlg, str* tag, str *rr, str *contact,
+										str *cseq, struct socket_info *sock)
 {
 	char *p;
 	struct dlg_leg* leg;
@@ -307,6 +307,8 @@ int dlg_set_leg_info(struct dlg_cell *dlg, str* tag, str *rr, str *contact,
 			LM_ERR("Failed to resize legs array\n");
 			return -1;
 		}
+		memset( dlg->legs+dlg->legs_no[DLG_LEGS_ALLOCED]-2, 0,
+			2*sizeof(struct dlg_leg));
 	}
 	leg = &dlg->legs[dlg->legs_no[DLG_LEGS_USED]++];
 
@@ -342,11 +344,11 @@ int dlg_set_leg_info(struct dlg_cell *dlg, str* tag, str *rr, str *contact,
 	leg->cseq.len = cseq->len;
 	memcpy( leg->cseq.s, cseq->s, cseq->len);
 
-	/* id */
-	leg->id = id;
+	/* socket */
+	leg->bind_addr = sock;
 
 	LM_DBG("set leg %d for %p: tag=<%.*s> rr=<%.*s> ct=<%.*s> cseq=<%.*s>\n",
-		id,dlg,
+		dlg->legs_no[DLG_LEGS_USED]-1, dlg,
 		leg->tag.len,leg->tag.s,
 		leg->route_set.len,leg->route_set.s,
 		leg->contact.len,leg->contact.s,

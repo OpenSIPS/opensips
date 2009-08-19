@@ -464,20 +464,15 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 
 			/* FIXME - alloc mem for callee */
 
-			if ( (dlg_set_leg_info( dlg, &from_tag, &rroute1, &contact1,
-			&cseq1, DLG_CALLER_LEG)!=0) ||
-			(dlg_set_leg_info( dlg, &to_tag, &rroute2, &contact2,
-			&cseq2, DLG_FIRST_CALLEE_LEG)!=0) ) {
+			if ( (dlg_add_leg_info( dlg, &from_tag, &rroute1, &contact1,
+			&cseq1, create_socket_info(values, 16))!=0) ||
+			(dlg_add_leg_info( dlg, &to_tag, &rroute2, &contact2,
+			&cseq2, create_socket_info(values, 17))!=0) ) {
 				LM_ERR("dlg_set_leg_info failed\n");
 				/* destroy the dialog */
 				unref_dlg(dlg,1);
 				continue;
 			}
-
-			dlg->legs[DLG_CALLER_LEG].bind_addr =
-					create_socket_info(values, 16);
-			dlg->legs[DLG_FIRST_CALLEE_LEG].bind_addr =
-					create_socket_info(values, 17);
 
 			/* script variables */
 			if (!VAL_NULL(values+18))

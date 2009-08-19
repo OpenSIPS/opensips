@@ -190,8 +190,8 @@ void destroy_dlg_table();
 struct dlg_cell* build_new_dlg(str *callid, str *from_uri,
 		str *to_uri, str *from_tag);
 
-int dlg_set_leg_info(struct dlg_cell *dlg, str* tag, str *rr, str *contact,
-		str *cseq, unsigned int leg);
+int dlg_add_leg_info(struct dlg_cell *dlg, str* tag, str *rr, str *contact,
+		str *cseq, struct socket_info *sock);
 
 int dlg_update_cseq(struct dlg_cell *dlg, unsigned int leg, str *cseq);
 
@@ -217,7 +217,7 @@ static inline int match_dialog(struct dlg_cell *dlg, str *callid,
 	unsigned int i;
 
 	/* first check dialog callid */
-	if (dlg->callid.len!=callid->len || 
+	if (dlg->callid.len!=callid->len ||
 	strncmp(dlg->callid.s, callid->s, callid->len)!=0 )
 		/* callid not matching */
 		return 0;
@@ -240,16 +240,17 @@ static inline int match_dialog(struct dlg_cell *dlg, str *callid,
 
 	/* check the dialog to tag - interate through all the stored to tags */
 	if (dlg->legs_no[DLG_LEGS_USED] > DLG_FIRST_CALLEE_LEG) {
-		for ( i=DLG_FIRST_CALLEE_LEG ; i<dlg->legs_no[DLG_LEGS_USED] ; i++)
+		for ( i=DLG_FIRST_CALLEE_LEG ; i<dlg->legs_no[DLG_LEGS_USED] ; i++) {
 			if (dlg->legs[i].tag.len == tag->len &&
 			strncmp(dlg->legs[i].tag.s, tag->s, tag->len)==0 )
-				return 0;
+				return 1;
+		}
 		/* no matching */
-		return -1;
+		return 0;
 	}
 
 	/* no to tag -> consider it a match*/
-	return 0;
+	return 1;
 
 /*
 	if (dlg->tag[DLG_CALLEE_LEG].len == 0) {

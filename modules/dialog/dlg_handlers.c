@@ -155,15 +155,18 @@ static inline int add_dlg_rr_param(struct sip_msg *req, unsigned int entry,
  *				   the proxies' own 
  */
 static int populate_leg_info( struct dlg_cell *dlg, struct sip_msg *msg,
-	struct cell* t, str *tag, unsigned int leg)
+													struct cell* t, str *tag)
 {
 	unsigned int skip_recs;
 	str cseq;
 	str contact;
 	str rr_set;
+	int downstream;
+
+	downstream = (msg->first_line.type==SIP_REQUEST)?1:0;
 
 	/* extract the cseq number as string */
-	if (leg==DLG_CALLER_LEG) {
+	if (downstream) {
 		if((!msg->cseq && (parse_headers(msg,HDR_CSEQ_F,0)<0 || !msg->cseq)) ||
 		!msg->cseq->parsed){
 			LM_ERR("bad sip message or missing CSeq hdr :-/\n");
@@ -199,7 +202,7 @@ static int populate_leg_info( struct dlg_cell *dlg, struct sip_msg *msg,
 		rr_set.s = 0;
 		rr_set.len = 0;
 	} else {
-		if (leg>=DLG_FIRST_CALLEE_LEG) {
+		if (!downstream) {
 			/* was the 200 OK received or local generated */
 			skip_recs = dlg->from_rr_nb +
 				((t->relaied_reply_branch>=0)?
@@ -207,7 +210,7 @@ static int populate_leg_info( struct dlg_cell *dlg, struct sip_msg *msg,
 		}
 
 		if(msg->record_route){
-			if( print_rr_body(msg->record_route, &rr_set, leg,
+			if( print_rr_body(msg->record_route, &rr_set, !downstream,
 								&skip_recs) != 0 ){
 				LM_ERR("failed to print route records \n");
 				rr_set.s = 0;
@@ -219,7 +222,7 @@ static int populate_leg_info( struct dlg_cell *dlg, struct sip_msg *msg,
 		}
 	}
 
-	if(leg==DLG_CALLER_LEG)
+	if(downstream)
 		dlg->from_rr_nb = skip_recs;
 
 	LM_DBG("route_set %.*s, contact %.*s, cseq %.*s and bind_addr %.*s\n",
@@ -228,13 +231,12 @@ static int populate_leg_info( struct dlg_cell *dlg, struct sip_msg *msg,
 		msg->rcv.bind_address->sock_str.len,
 		msg->rcv.bind_address->sock_str.s);
 
-	if (dlg_set_leg_info( dlg, tag, &rr_set, &contact, &cseq, leg)!=0) {
-		LM_ERR("dlg_set_leg_info failed\n");
+	if (dlg_add_leg_info( dlg, tag, &rr_set, &contact, &cseq,
+	msg->rcv.bind_address)!=0) {
+		LM_ERR("dlg_add_leg_info failed\n");
 		if (rr_set.s) pkg_free(rr_set.s);
 		goto error0;
 	}
-
-	dlg->legs[leg].bind_addr = msg->rcv.bind_address;
 
 	if (rr_set.s) pkg_free(rr_set.s);
 
@@ -261,6 +263,9 @@ static void dlg_onreply(struct cell* t, int type, struct tmcb_params *param)
 	rpl = param->rpl;
 
 	if (type==TMCB_RESPONSE_FWDED) {
+		/* this callback is under transaction lock (by TM), so it is save
+		   to operate at write level, but we need to take care on write-read
+		   conflicts */
 		/* The state does not change, but the msg is mutable in this callback*/
 		run_dlg_callbacks(DLGCB_RESPONSE_FWDED, dlg, rpl, DLG_DIR_UPSTREAM, 0);
 		return;
@@ -305,10 +310,10 @@ static void dlg_onreply(struct cell* t, int type, struct tmcb_params *param)
 			LM_DBG("%p totag in rpl is <%.*s> (%d)\n",
 				dlg, tag.len,tag.s,tag.len);
 
-			/* save callee's tag, cseq, contact and record route
-			if (populate_leg_info( dlg, rpl, t, DLG_CALLEE_LEG, &tag) !=0) {
+			/* save callee's tag, cseq, contact and record route */
+			if (populate_leg_info( dlg, rpl, t, &tag) !=0) {
 				LM_ERR("could not add further info to the dialog\n");
-			} FIXME */
+			}
 
 		} else {
 			LM_DBG("dialog replied from script - cannot get callee info\n");
@@ -517,8 +522,7 @@ int dlg_create_dialog(struct cell* t, struct sip_msg *req)
 	}
 
 	/* save caller's tag, cseq, contact and record route*/
-	if (populate_leg_info(dlg, req, t, &(get_from(req)->tag_value),
-	DLG_CALLER_LEG) !=0) {
+	if (populate_leg_info(dlg, req, t, &(get_from(req)->tag_value) ) !=0) {
 		LM_ERR("could not add further info to the dialog\n");
 		shm_free(dlg);
 		return -1;
