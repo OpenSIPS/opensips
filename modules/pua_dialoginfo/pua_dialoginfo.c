@@ -285,18 +285,24 @@ __dialog_sendpublish(struct dlg_cell *dlg, int type, struct dlg_cb_params *_para
 				}
 			}
 			if (caller_confirmed) {
-				dialog_publish("confirmed", &from, &to, &(dlg->callid), 1, dlg->lifetime, &(dlg->tag[0]), &tag);
+				dialog_publish("confirmed", &from, &to, &(dlg->callid), 1,
+					dlg->lifetime, &(dlg->legs[DLG_CALLER_LEG].tag), &tag);
 			} else {
-				dialog_publish("early", &from, &to, &(dlg->callid), 1, dlg->lifetime, &(dlg->tag[0]), &tag);
+				dialog_publish("early", &from, &to, &(dlg->callid), 1,
+					dlg->lifetime, &(dlg->legs[DLG_CALLER_LEG].tag), &tag);
 			}
-			dialog_publish("early", &to, &from, &(dlg->callid), 0, dlg->lifetime, &tag, &(dlg->tag[0]));
+			dialog_publish("early", &to, &from, &(dlg->callid), 0,
+				dlg->lifetime, &tag, &(dlg->legs[DLG_CALLER_LEG].tag));
 		} else {
 			if (caller_confirmed) {
-				dialog_publish("confirmed", &from, &to, &(dlg->callid), 1, dlg->lifetime, 0, 0);
+				dialog_publish("confirmed", &from, &to, &(dlg->callid), 1,
+					dlg->lifetime, 0, 0);
 			} else {
-				dialog_publish("early", &from, &to, &(dlg->callid), 1, dlg->lifetime, 0, 0);
+				dialog_publish("early", &from, &to, &(dlg->callid), 1,
+					dlg->lifetime, 0, 0);
 			}
-			dialog_publish("early", &to, &from, &(dlg->callid), 0, dlg->lifetime, 0, 0);
+			dialog_publish("early", &to, &from, &(dlg->callid), 0,
+				dlg->lifetime, 0, 0);
 		}
 		break;
 	default:
