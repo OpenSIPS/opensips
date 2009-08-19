@@ -171,8 +171,6 @@ error:
 
 static inline int version_control(struct module_exports* exp, char *path)
 {
-	char* error;
-
 	if ( !exp->version ) {
 		LM_CRIT("BUG - version not defined in module <%s>\n", path );
 		return 0;
