@@ -214,6 +214,7 @@ int config_check = 0;
 int check_via =  0;
 /* debugging level for memory stats */
 int memlog = L_DBG;
+int memdump = L_DBG;
 /* should replies include extensive warnings? by default yes,
    good for trouble-shooting
 */
@@ -354,7 +355,7 @@ void cleanup(int show_status)
 #endif
 #ifdef PKG_MALLOC
 	if (show_status){
-		LM_GEN1(memlog, "Memory status (pkg):\n");
+		LM_GEN1(memdump, "Memory status (pkg):\n");
 		pkg_status();
 	}
 #endif
@@ -362,7 +363,7 @@ void cleanup(int show_status)
 	if (pt) shm_free(pt);
 	pt=0;
 	if (show_status){
-			LM_GEN1(memlog, "Memory status (shm):\n");
+			LM_GEN1(memdump, "Memory status (shm):\n");
 			shm_status();
 	}
 	/* zero all shmem alloc vars that we still use */
@@ -473,11 +474,11 @@ void handle_sigs(void)
 			
 		case SIGUSR1:
 #ifdef PKG_MALLOC
-			LM_GEN1(memlog, "Memory status (pkg):\n");
+			LM_GEN1(memdump, "Memory status (pkg):\n");
 			pkg_status();
 #endif
 #ifdef SHM_MEM
-			LM_GEN1(memlog, "Memory status (shm):\n");
+			LM_GEN1(memdump, "Memory status (shm):\n");
 			shm_status();
 #endif
 			break;
@@ -574,7 +575,7 @@ static void sig_usr(int signo)
 					LM_INFO("signal %d received\n", signo);
 					/* print memory stats for non-main too */
 					#ifdef PKG_MALLOC
-					LM_GEN1(memlog, "Memory status (pkg):\n");
+					LM_GEN1(memdump, "Memory status (pkg):\n");
 					pkg_status();
 					#endif
 					exit(0);
@@ -582,7 +583,7 @@ static void sig_usr(int signo)
 			case SIGUSR1:
 					/* statistics -> show only pkg mem */
 					#ifdef PKG_MALLOC
-					LM_GEN1(memlog, "Memory status (pkg):\n");
+					LM_GEN1(memdump, "Memory status (pkg):\n");
 					pkg_status();
 					#endif
 					break;

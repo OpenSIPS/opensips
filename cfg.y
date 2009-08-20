@@ -293,6 +293,7 @@ extern int line;
 %token CHILDREN
 %token CHECK_VIA
 %token MEMLOG
+%token MEMDUMP
 %token SIP_WARNING
 %token SOCK_MODE
 %token SOCK_USER
@@ -598,8 +599,10 @@ assign_stm: DEBUG EQUAL snumber {
 		| CHILDREN EQUAL error { yyerror("number expected"); } 
 		| CHECK_VIA EQUAL NUMBER { check_via=$3; }
 		| CHECK_VIA EQUAL error { yyerror("boolean value expected"); }
-		| MEMLOG EQUAL NUMBER { memlog=$3; }
+		| MEMLOG EQUAL NUMBER { memlog=$3; memdump=$3; }
 		| MEMLOG EQUAL error { yyerror("int value expected"); }
+		| MEMDUMP EQUAL NUMBER { memdump=$3; }
+		| MEMDUMP EQUAL error { yyerror("int value expected"); }
 		| SIP_WARNING EQUAL NUMBER { sip_warning=$3; }
 		| SIP_WARNING EQUAL error { yyerror("boolean value expected"); }
 		| USER EQUAL STRING     { user=$3; }

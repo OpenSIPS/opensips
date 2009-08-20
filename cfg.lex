@@ -252,6 +252,7 @@ MAXBUFFER maxbuffer
 CHILDREN children
 CHECK_VIA	check_via
 MEMLOG		"memlog"|"mem_log"
+MEMDUMP		"memdump"|"mem_dump"
 SIP_WARNING sip_warning
 SERVER_SIGNATURE server_signature
 SERVER_HEADER server_header
@@ -480,6 +481,7 @@ WHITESPACE	[ \t\r\n]
 <INITIAL>{CHILDREN}	{ count(); yylval.strval=yytext; return CHILDREN; }
 <INITIAL>{CHECK_VIA}	{ count(); yylval.strval=yytext; return CHECK_VIA; }
 <INITIAL>{MEMLOG}	{ count(); yylval.strval=yytext; return MEMLOG; }
+<INITIAL>{MEMDUMP}	{ count(); yylval.strval=yytext; return MEMDUMP; }
 <INITIAL>{SIP_WARNING}	{ count(); yylval.strval=yytext; return SIP_WARNING; }
 <INITIAL>{USER}		{ count(); yylval.strval=yytext; return USER; }
 <INITIAL>{GROUP}	{ count(); yylval.strval=yytext; return GROUP; }

@@ -484,29 +484,29 @@ void fm_status(struct fm_block* qm)
 	int unused;
 	unsigned long size;
 
-	LM_GEN1(memlog, "fm_status (%p):\n", qm);
+	LM_GEN1(memdump, "fm_status (%p):\n", qm);
 	if (!qm) return;
 
-	LM_GEN1(memlog, " heap size= %ld\n", qm->size);
+	LM_GEN1(memdump, " heap size= %ld\n", qm->size);
 #if defined(DBG_F_MALLOC) || defined(STATISTICS)
-	LM_GEN1(memlog, " used= %lu, used+overhead=%lu, free=%lu\n",
+	LM_GEN1(memdump, " used= %lu, used+overhead=%lu, free=%lu\n",
 			qm->used, qm->real_used, qm->size-qm->real_used);
-	LM_GEN1(memlog, " max used (+overhead)= %lu\n", qm->max_real_used);
+	LM_GEN1(memdump, " max used (+overhead)= %lu\n", qm->max_real_used);
 #endif
 	/*
-	LM_GEN1(memlog, "dumping all fragments:\n");
+	LM_GEN1(memdump, "dumping all fragments:\n");
 	for (f=qm->first_frag, i=0;((char*)f<(char*)qm->last_frag) && (i<10);
 			f=FRAG_NEXT(f), i++){
-		LM_GEN1(memlog, "    %3d. %c  address=%x  size=%d\n", i, 
+		LM_GEN1(memdump, "    %3d. %c  address=%x  size=%d\n", i, 
 				(f->u.reserved)?'a':'N',
 				(char*)f+sizeof(struct fm_frag), f->size);
 #ifdef DBG_F_MALLOC
-		LM_GEN1(memlog, "            %s from %s: %s(%d)\n",
+		LM_GEN1(memdump, "            %s from %s: %s(%d)\n",
 				(f->u.is_free)?"freed":"alloc'd", f->file, f->func, f->line);
 #endif
 	}
 */
-	LM_GEN1(memlog, "dumping free list:\n");
+	LM_GEN1(memdump, "dumping free list:\n");
 	for(h=0,i=0,size=0;h<F_HASH_SIZE;h++){
 		unused=0;
 		for (f=qm->free_hash[h].first,j=0; f;
@@ -514,14 +514,14 @@ void fm_status(struct fm_block* qm)
 			if (!FRAG_WAS_USED(f)){
 				unused++;
 #ifdef DBG_F_MALLOC
-				LM_GEN1(memlog, "unused fragm.: hash = %3d, fragment %p,"
+				LM_GEN1(memdump, "unused fragm.: hash = %3d, fragment %p,"
 							" address %p size %lu, created from %s: %s(%ld)\n",
 						    h, f, (char*)f+sizeof(struct fm_frag), f->size,
 							f->file, f->func, f->line);
 #endif
 			};
 		}
-		if (j) LM_GEN1(memlog,"hash = %3d fragments no.: %5d, unused: %5d\n\t\t"
+		if (j) LM_GEN1(memdump,"hash = %3d fragments no.: %5d, unused: %5d\n\t\t"
 							" bucket size: %9lu - %9lu (first %9lu)\n",
 							h, j, unused, UN_HASH(h),
 						((h<=F_MALLOC_OPTIMIZE/ROUNDTO)?1:2)* UN_HASH(h),
@@ -533,7 +533,7 @@ void fm_status(struct fm_block* qm)
 		}
 		/*
 		{
-			LM_GEN1(memlog, "   %5d.[%3d:%3d] %c  address=%x  size=%d(%x)\n",
+			LM_GEN1(memdump, "   %5d.[%3d:%3d] %c  address=%x  size=%d(%x)\n",
 					i, h, j,
 					(f->u.reserved)?'a':'N',
 					(char*)f+sizeof(struct fm_frag), f->size, f->size);
@@ -544,8 +544,8 @@ void fm_status(struct fm_block* qm)
 		}
 	*/
 	}
-	LM_GEN1(memlog, "TOTAL: %6d free fragments = %6lu free bytes\n", i, size);
-	LM_GEN1(memlog, "-----------------------------\n");
+	LM_GEN1(memdump, "TOTAL: %6d free fragments = %6lu free bytes\n", i, size);
+	LM_GEN1(memdump, "-----------------------------\n");
 }
 
 

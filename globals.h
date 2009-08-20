@@ -120,7 +120,8 @@ extern int reply_to_via;
 
 extern int is_main;
 
-extern int memlog; /*!< debugging level for dumping memory status */
+extern int memlog;  /*!< debugging level for printing memory debugs */
+extern int memdump; /*!< debugging level for dumping memory status */
 
 extern int mhomed; /*!< looking up outbound interface ? */
 
