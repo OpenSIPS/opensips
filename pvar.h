@@ -58,7 +58,7 @@
 #define PV_NAME_INTSTR	0
 #define PV_NAME_PVAR	1
 
-#define PV_IDX_INT	0
+#define PV_IDX_INT	3
 #define PV_IDX_PVAR	1
 #define PV_IDX_ALL	2
 

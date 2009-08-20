@@ -2021,7 +2021,8 @@ int pv_set_avp(struct sip_msg* msg, pv_param_t *param,
 	int_str avp_val;
 	int flags;
 	unsigned short name_type;
-	
+	int idx, idxf;
+
 	if(param==NULL)
 	{
 		LM_ERR("bad parameters\n");
@@ -2033,16 +2034,33 @@ int pv_set_avp(struct sip_msg* msg, pv_param_t *param,
 		LM_ALERT("BUG in getting dst AVP name\n");
 		goto error;
 	}
+
+	/* get the index */
+	if(pv_get_spec_index(msg, param, &idx, &idxf)!=0)
+	{
+		LM_ERR("invalid index\n");
+		return -1;
+	}
+
 	if(val == NULL)
 	{
-		if(op == COLONEQ_T)
+		if(op == COLONEQ_T || idxf == PV_IDX_ALL)
 			destroy_avps(name_type, avp_name, 1);
 		else
-			destroy_avps(name_type, avp_name, 0);
+		{
+			if(idx < 0)
+			{
+				LM_ERR("Index with negative value\n");
+				return -1;
+			}
+			destroy_index_avp(name_type, avp_name, idx);
+		}
 		return 0;
 	}
-	if(op == COLONEQ_T)
+
+	if(op == COLONEQ_T || idxf == PV_IDX_ALL)
 		destroy_avps(name_type, avp_name, 1);
+
 	flags = name_type;
 	if(val->flags&PV_TYPE_INT)
 	{
@@ -2051,11 +2069,23 @@ int pv_set_avp(struct sip_msg* msg, pv_param_t *param,
 		avp_val.s = val->rs;
 		flags |= AVP_VAL_STR;
 	}
-	if (add_avp(flags, avp_name, avp_val)<0)
+
+	if(idxf == PV_IDX_INT || idx == PV_IDX_PVAR) /* if the avp is indexed */
 	{
-		LM_ERR("error - cannot add AVP\n");
-		goto error;
+		if(replace_avp(flags, avp_name, avp_val, idx)< 0)
+		{
+			LM_ERR("Failed to replace avp\n");
+			goto error;
+		}
 	}
+	else {
+		if (add_avp(flags, avp_name, avp_val)<0)
+		{
+			LM_ERR("error - cannot add AVP\n");
+			goto error;
+		}
+	}
+
 	return 0;
 error:
 	return -1;
@@ -2687,6 +2717,7 @@ int pv_parse_index(pv_spec_p sp, str *in)
 			LM_ERR("no more memory\n");
 			return -1;
 		}
+		memset(nsp, 0, sizeof(pv_spec_t));
 		s = pv_parse_spec(in, nsp);
 		if(s==NULL)
 		{
@@ -2722,6 +2753,7 @@ int pv_parse_index(pv_spec_p sp, str *in)
 	}
 	sp->pvp.pvi.u.ival *= sign;
 	sp->pvp.pvi.type = PV_IDX_INT;
+
 	return 0;
 }
 
@@ -3520,10 +3552,12 @@ int pv_get_spec_index(struct sip_msg* msg, pv_param_p ip, int *idx, int *flags)
 		return -1;
 
 	*idx = 0;
-	*flags = 0;
+	*flags = ip->pvi.type;
+
+	if(ip->pvi.type == 0)
+		return 0;
 
 	if(ip->pvi.type == PV_IDX_ALL) {
-		*flags = PV_IDX_ALL;
 		return 0;
 	}
 	
@@ -3539,7 +3573,7 @@ int pv_get_spec_index(struct sip_msg* msg, pv_param_p ip, int *idx, int *flags)
 		LM_ERR("cannot get index value\n");
 		return -1;
 	}
-	if(!(tv.flags&PV_VAL_INT))
+	if(!(tv.flags & PV_VAL_INT))
 	{
 		LM_ERR("invalid index value\n");
 		return -1;

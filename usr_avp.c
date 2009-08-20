@@ -82,8 +82,7 @@ inline static unsigned short compute_ID( str *name )
 	return id;
 }
 
-
-int add_avp(unsigned short flags, int_str name, int_str val)
+struct usr_avp* new_avp(unsigned short flags, int_str name, int_str val)
 {
 	struct usr_avp *avp;
 	str *s;
@@ -122,8 +121,6 @@ int add_avp(unsigned short flags, int_str name, int_str val)
 	avp->flags = flags;
 	avp->id = (flags&AVP_NAME_STR)? compute_ID(&name.s) : name.n ;
 
-	avp->next = *crt_avps;
-	*crt_avps = avp;
 
 	switch ( flags&(AVP_NAME_STR|AVP_VAL_STR) )
 	{
@@ -160,11 +157,75 @@ int add_avp(unsigned short flags, int_str name, int_str val)
 			break;
 	}
 
-	return 0;
+	return avp;
 error:
-	return -1;
+	return NULL;
 }
 
+int add_avp(unsigned short flags, int_str name, int_str val)
+{
+	struct usr_avp* avp;
+
+	avp = new_avp(flags, name, val);
+	if(avp == NULL) {
+		LM_ERR("Failed to create new avp structure\n");
+		return -1;
+	}
+
+	avp->next = *crt_avps;
+	*crt_avps = avp;
+	return 0;
+}
+
+struct usr_avp *search_index_avp(unsigned short flags,
+					int_str name, int_str *val, unsigned int index)
+{
+	struct usr_avp *avp = NULL;
+
+	while ( (avp=search_first_avp( flags, name, 0, avp))!=0 ) {
+		if( index == 0 ){
+			return avp;
+		}
+		index--;
+	}
+	return 0;
+}
+
+int replace_avp(unsigned short flags, int_str name, int_str val, int index)
+{
+	struct usr_avp* avp, *avp_prev;
+	struct usr_avp* avp_new, *avp_del;
+
+	if(index < 0) {
+		LM_ERR("Index with negative value\n");
+		return -1;
+	}
+
+	avp_del = search_index_avp(flags, name, 0, index);
+	if(avp_del == NULL) {
+		LM_DBG("AVP to replace not found\n");
+		return -1;
+	}
+
+	avp_new = new_avp(flags, name, val);
+	if(avp_new == NULL) {
+		LM_ERR("Failed to create new avp structure\n");
+		return -1;
+	}
+
+	for( avp_prev=0,avp=*crt_avps ; avp ; avp_prev=avp,avp=avp->next ) {
+		if (avp==avp_del) {
+			if (avp_prev)
+				avp_prev->next=avp_new;
+			else
+				*crt_avps = avp_new;
+			avp_new->next = avp_del->next;
+			shm_free(avp_del);
+			return 0;
+		}
+	}
+	return 0;
+}
 
 /* get value functions */
 
@@ -355,7 +416,6 @@ void destroy_avp( struct usr_avp *avp_del)
 	}
 }
 
-
 int destroy_avps( unsigned short flags, int_str name, int all)
 {
 	struct usr_avp *avp;
@@ -369,6 +429,19 @@ int destroy_avps( unsigned short flags, int_str name, int all)
 			break;
 	}
 	return n;
+}
+
+void destroy_index_avp( unsigned short flags, int_str name, int index)
+{
+	struct usr_avp *avp = NULL;
+
+	avp = search_index_avp(flags, name, 0, index);
+	if(avp== NULL) {
+		LM_DBG("AVP with the specified index not found\n");
+		return;
+	}
+
+	destroy_avp( avp );
 }
 
 
