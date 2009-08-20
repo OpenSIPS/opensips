@@ -76,6 +76,7 @@ static int fixup_check_avp(void** param, int param_no);
 static int fixup_op_avp(void** param, int param_no);
 static int fixup_subst(void** param, int param_no);
 static int fixup_is_avp_set(void** param, int param_no);
+static int fixup_insert_avp(void** param, int param_no);
 
 static int w_print_avps(struct sip_msg* msg, char* foo, char *bar);
 static int w_dbload_avps(struct sip_msg* msg, char* source,
@@ -131,6 +132,8 @@ static cmd_export_t cmds[] = {
 	{"avp_subst",  (cmd_function)w_subst,   2, fixup_subst, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|ONREPLY_ROUTE|LOCAL_ROUTE},
 	{"is_avp_set", (cmd_function)w_is_avp_set, 1, fixup_is_avp_set, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|ONREPLY_ROUTE|LOCAL_ROUTE},
+	{"avp_insert", (cmd_function)w_insert_avp, 3, fixup_insert_avp, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|ONREPLY_ROUTE|LOCAL_ROUTE},
 	{0, 0, 0, 0, 0, 0}
 };
@@ -1010,6 +1013,62 @@ static int fixup_is_avp_set(void** param, int param_no)
 
 	return 0;
 }
+
+static int fixup_insert_avp(void** param, int param_no)
+{
+	pv_elem_t* pv_elem;
+	str s;
+
+	if(param_no== 0)
+		return 0;
+
+	if(!param)
+	{
+		LM_ERR( "null format\n");
+		return E_UNSPEC;
+	}
+
+	s.s = (char*)(*param); s.len = strlen(s.s);
+
+	if(param_no == 3) /* the third argumet in an integer */
+	{
+		unsigned int* index;
+
+		index = (unsigned int*)pkg_malloc(sizeof(unsigned int*));
+		if(index == NULL)
+		{
+			LM_ERR("No more memory\n");
+			return E_OUT_OF_MEM;
+		}
+
+		if(str2int(&s, index) < 0)
+		{
+			LM_ERR("Bad format for the third argument - must be a positive integer\n");
+			return E_UNSPEC;
+		}
+		*param = (void*)index;
+		return 0;
+	}
+
+	if(pv_parse_format(&s, &pv_elem)<0)
+	{
+		LM_ERR( "wrong format[%s]\n",(char*)(*param));
+		return E_UNSPEC;
+	}
+	*param = (void*)pv_elem;
+
+	/* attr name is mandatory */
+	if (param_no == 1 && pv_elem->spec.type!=PVT_AVP)
+	{
+		LM_ERR("The first parameter must be an AVP name\n");
+		return E_UNSPEC;
+	}
+
+	*param = (void*)pv_elem;
+
+	return 0;
+}
+
 
 static int w_dbload_avps(struct sip_msg* msg, char* source,
 													char* param, char *url)

@@ -1071,6 +1071,26 @@ avp_print();
 				</programlisting>
 			</example>
 		</section>
+		<section>
+			<title>
+				<function moreinfo="none">avp_insert(avp_name, value, index)
+				</function>
+			</title>
+			<para>
+				This function inserts an avp value at a certain position specified 
+				by the last parameter. If the index is greater than the count of values
+				the value will be inserted at the end.
+			</para>
+			<example>
+				<title><function>avp_print</function> usage</title>
+				<programlisting format="linespecific">
+...
+avp_insert("avp(i:20)", "$hdr(From)", 2);
+...
+				</programlisting>
+			</example>
+		</section>
+
 	</section>
 
 </chapter>

@@ -55,6 +55,7 @@ Ramona-Elena Modroiu
               1.5.11. avp_op(name,op_value)
               1.5.12. is_avp_set(name)
               1.5.13. avp_print()
+              1.5.14. avp_insert(avp_name, value, index)
 
    List of Examples
 
@@ -82,6 +83,7 @@ Ramona-Elena Modroiu
    1.22. avp_op usage
    1.23. is_avp_set usage
    1.24. avp_print usage
+   1.25. avp_print usage
 
 Chapter 1. Admin Guide
 
@@ -657,4 +659,15 @@ if(is_avp_set("$avp(i:678)"))
    Example 1.24. avp_print usage
 ...
 avp_print();
+...
+
+1.5.14.  avp_insert(avp_name, value, index)
+
+   This function inserts an avp value at a certain position
+   specified by the last parameter. If the index is greater than
+   the count of values the value will be inserted at the end.
+
+   Example 1.25. avp_print usage
+...
+avp_insert("avp(i:20)", "$hdr(From)", 2);
 ...

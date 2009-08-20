@@ -154,5 +154,7 @@ int ops_is_avp_set(struct sip_msg* msg, struct fis_param *ap);
 
 int ops_print_avp();
 
+int w_insert_avp(struct sip_msg* msg, char* name, char* value,
+		char *index_char);
 #endif
 
