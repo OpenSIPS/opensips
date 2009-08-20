@@ -431,8 +431,15 @@ unsigned int get_profile_size(struct dlg_profile_table *profile, str *value)
 	if (profile->has_value==0 || value==NULL) {
 		/* iterate through the hash and count all records */
 		get_lock( &profile->lock );
-		for( i=0,n=0 ; i<profile->size ; i++ )
-			n += profile->entries[i].content;
+		for( i=0,n=0 ; i<profile->size ; i++ ) {
+			ph=profile->entries[i].first;
+			if (ph) {
+				do {
+					if ( ph->dlg->state!=DLG_STATE_DELETED ) { n++; } ;
+					ph=ph->next;
+				}while( ph!=profile->entries[i].first );
+			}
+		}
 		release_lock( &profile->lock );
 		return n;
 	} else {
@@ -445,7 +452,8 @@ unsigned int get_profile_size(struct dlg_profile_table *profile, str *value)
 		if(ph) {
 			do {
 				/* compare */
-				if ( value->len==ph->value.len &&
+				if ( ph->dlg->state!=DLG_STATE_DELETED &&
+				value->len==ph->value.len &&
 				memcmp(value->s,ph->value.s,value->len)==0 ) {
 					/* found */
 					n++;
