@@ -32,16 +32,19 @@
 #include <osp/ospb64.h>
 #include "../../forward.h"
 #include "../../parser/parse_from.h"
+#include "../../parser/parse_diversion.h"
 #include "../../parser/parse_rpid.h"
 #include "../../parser/parse_rr.h"
 #include "../../parser/parse_uri.h"
 #include "../../data_lump.h"
 #include "../../mem/mem.h"
 #include "osp_mod.h"
+#include "destination.h"
 #include "sipheader.h"
 
 extern int _osp_use_rpid;
-extern int _osp_use_rn;
+extern int _osp_use_np;
+extern int _osp_append_userphone;
 
 static void ospSkipPlus(char* e164);
 static int ospAppendHeader(struct sip_msg* msg, str* header); 
@@ -127,40 +130,92 @@ int ospGetFromUserpart(
 /* 
  * Get calling number from Remote-Party-ID header
  * param msg SIP message
- * param rpiduser User part of Remote-Party-ID header
+ * param user User part of Remote-Party-ID header
  * param buffersize Size of fromuser buffer
- * return 0 success, -1 failure
+ * return 0 success, 1 not use RPID or without RPID, -1 failure
  */
 int ospGetRpidUserpart(
     struct sip_msg* msg, 
-    char* rpiduser, 
+    char* user, 
     int buffersize)
 {
     struct to_body* rpid;
     struct sip_uri uri;
     int result = -1;
 
-    rpiduser[0] = '\0';
-
-    if (_osp_use_rpid != 0) {
-        if (msg->rpid != NULL) {
-            if (parse_rpid_header(msg) == 0) {
-                rpid = get_rpid(msg);
-                if (parse_uri(rpid->uri.s, rpid->uri.len, &uri) == 0) {
-                    ospCopyStrToBuffer(&uri.user, rpiduser, buffersize);
-                    ospSkipPlus(rpiduser);
-                    result = 0;
+    if ((user != NULL) && (buffersize != 0)) {
+        user[0] = '\0';
+        if (_osp_use_rpid != 0) {
+            if (msg->rpid != NULL) {
+                if (parse_rpid_header(msg) == 0) {
+                    rpid = get_rpid(msg);
+                    if (parse_uri(rpid->uri.s, rpid->uri.len, &uri) == 0) {
+                        ospCopyStrToBuffer(&uri.user, user, buffersize);
+                        ospSkipPlus(user);
+                        result = 0;
+                    } else {
+                        LM_ERR("failed to parse RPID uri\n");
+                    }
                 } else {
                     LM_ERR("failed to parse RPID uri\n");
                 }
             } else {
-                LM_ERR("failed to parse RPID header\n");
+                LM_DBG("without RPID header\n");
+                result = 1;
             }
         } else {
-            LM_DBG("without RPID header\n");
+            LM_DBG("do not use RPID header\n");
+            result = 1;
         }
     } else {
-        LM_DBG("do not use RPID header\n");
+        LM_ERR("bad paraneters to parse calling number from RPID\n");
+    }
+
+    return result;
+}
+
+/* 
+ * Get number and domain from Diversion header
+ * param msg SIP message
+ * param user User part of Diversion header
+ * param userbufsize Size of user buffer
+ * param host Host part of Diversion header
+ * param hostbufsize Size of host buffer
+ * return 0 success, 1 without Diversion, -1 failure
+ */
+int ospGetDiversion(
+    struct sip_msg* msg, 
+    char* user, 
+    int userbufsize,
+    char* host, 
+    int hostbufsize)
+{
+    struct to_body* diversion;
+    struct sip_uri uri;
+    int result = -1;
+
+    if (((user != NULL) && (userbufsize != 0)) && ((host != NULL) && (hostbufsize != 0))){
+        user[0] = '\0';
+        host[0] = '\0';
+        if (msg->diversion != NULL) {
+            if (parse_diversion_header(msg) == 0) {
+                diversion = get_diversion(msg);
+                if (parse_uri(diversion->uri.s, diversion->uri.len, &uri) == 0) {
+                    ospCopyStrToBuffer(&uri.user, user, userbufsize);
+                    ospCopyStrToBuffer(&uri.host, host, hostbufsize);
+                    result = 0;
+                } else {
+                    LM_ERR("failed to parse Diversion uri\n");
+                }
+            } else {
+                LM_ERR("failed to parse Diversion header\n");
+            }
+        } else {
+            LM_DBG("without Diversion header\n");
+            result = 1;
+        }
+    } else {
+        LM_ERR("bad paraneters to parse number from Diversion\n");
     }
 
     return result;
@@ -348,7 +403,7 @@ int ospGetOspHeader(
     if (parse_headers(msg, HDR_EOH_F, 0) != 0) {
         LM_ERR("failed to parse all headers");
     } else {
-        hf = get_header_by_name( msg,  OSP_TOKEN_HEADER, OSP_HEADER_SIZE-2 );
+        hf = get_header_by_name(msg, OSP_TOKEN_HEADER, OSP_HEADER_SIZE);
         if (hf) {
             if ((errorcode = OSPPBase64Decode(hf->body.s, hf->body.len, token, tokensize)) == OSPC_ERR_NO_ERROR) {
                 result = 0;
@@ -479,47 +534,52 @@ int ospGetRouteParameters(
 }
 
 /* 
- * Rebuild URI using called number, destination IP, and port
- * param newuri URI to be built
- * param called Called number
- * param dest Destination IP
- * param port Destination port
+ * Rebuild URI
+ * param newuri URI to be built, newuri.len includes buffer size
+ * param dest Destination data structure
  * param format URI format
  * return 0 success, -1 failure
  */
 int ospRebuildDestionationUri(
     str* newuri, 
-    char* called,
-    char* dest, 
-    char* port,
+    osp_dest* dest,
     int format) 
 {
-    static const str TRANS = {";transport=tcp", 14};
+    static const str TRANS = { ";transport=tcp", 14 };
+    static const str USERPHONE = { ";user=phone", 11 };
     char* buffer;
     int calledsize;
-    int destsize;
-    int portsize;
+    int hostsize;
+    int npsize;
+    int count;
 
-    calledsize = strlen(called);
-    destsize = strlen(dest);
-    portsize = strlen(port);
+    calledsize = strlen(dest->called);
+    hostsize = strlen(dest->host);
+    npsize = dest->nprn[0] ? 1 + strlen(dest->nprn) : 0;
+    npsize += dest->npcic[0] ? 1 + strlen(dest->npcic) : 0;
+    npsize += dest->npdi ? 1 + 4 : 0;
 
-    LM_DBG("'%s'(%d) '%s'(%d) '%s'(%d) '%d'\n",
-        called, 
+    LM_DBG("'%s'(%d) '%s'(%d) '%s' '%s' '%d'(%d) '%d'\n",
+        dest->called, 
         calledsize,
-        dest, 
-        destsize, 
-        port, 
-        portsize,
+        dest->host, 
+        hostsize, 
+        dest->nprn, 
+        dest->npcic, 
+        dest->npdi, 
+        npsize, 
         format); 
 
-    /* "sip:" + called + "@" + dest + : + port + " SIP/2.0" for URI format 0 */
-    /* "<sip:" + called + "@" + dest + : + port> + " SIP/2.0" for URI format 1 */
-    newuri->s = (char*)pkg_malloc(1 + 4 + calledsize + 1 + destsize + 1 + portsize + 1 + 1 + 16 + TRANS.len);
-    if (newuri == NULL) {
-        LM_ERR("no pkg memory\n");
+    /* "sip:" + called + NP + "@" + host + " SIP/2.0" for URI format 0 */
+    /* "sip:" + called + NP + "@" + host + ";user=phone SIP/2.0" for URI format 0 with user=phone */
+    /* "<sip:" + called + NP + "@" + host + "> SIP/2.0" for URI format 1 */
+    /* "<sip:" + called + NP + "@" + host + ";user=phone> SIP/2.0" for URI format 1 with user=phone */
+    if (newuri->len < (1 + 4 + calledsize + npsize + 1 + hostsize + USERPHONE.len + 1 + 1 + 7 + TRANS.len)) {
+        LM_ERR("new uri buffer is too small\n");
+        newuri->len = 0;
         return -1;
-    }    
+    }
+
     buffer = newuri->s;
 
     if (format == 1) {
@@ -530,23 +590,44 @@ int ospRebuildDestionationUri(
     *buffer++ = 'p';
     *buffer++ = ':';
 
-    memcpy(buffer, called, calledsize);
+    memcpy(buffer, dest->called, calledsize);
     buffer += calledsize;
-    *buffer++ = '@';
-    
-    if (*dest == '[') {
-        /* leave out annoying [] */
-        memcpy(buffer, dest + 1, destsize - 2);
-        buffer += destsize - 2;
-    } else {
-        memcpy(buffer, dest, destsize);
-        buffer += destsize;
+
+    if (dest->nprn[0]) {
+        count = sprintf(buffer, ";%s", dest->nprn);
+        buffer += count;
+    }
+    if (dest->npcic[0]) {
+        count = sprintf(buffer, ";%s", dest->npcic);
+        buffer += count;
+    }
+    if (dest->npdi) {
+        sprintf(buffer, ";npdi");
+        buffer += 5;
     }
     
+    *buffer++ = '@';
+    
+    if (*dest->host == '[') {
+        /* leave out annoying [] */
+        memcpy(buffer, dest->host + 1, hostsize - 2);
+        buffer += hostsize - 2;
+    } else {
+        memcpy(buffer, dest->host, hostsize);
+        buffer += hostsize;
+    }
+    
+/*
     if (portsize > 0) {
         *buffer++ = ':';
         memcpy(buffer, port, portsize);
         buffer += portsize;
+    }
+*/
+
+    if (_osp_append_userphone != 0) {
+        memcpy(buffer, USERPHONE.s, USERPHONE.len);
+        buffer += USERPHONE.len;
     }
 
     if (format == 1) {
@@ -630,16 +711,22 @@ void ospGetNextHop(
 }
 
 /* 
- * Get routing number from Request-Line
+ * Get number portability parameter from Request-Line
  * param msg SIP message
- * param routingnumber Routing number
- * param buffersize Size of routingnumber
- * return 0 success, -1 failure
+ * param rn Routing number
+ * param rnbufsize Size of rn buffer
+ * param cic Carrier identification code
+ * param cicbufsize Size of cic buffer
+ * param npdi NP database dip indicator
+ * return 0 success, 1 not use NP or without NP parameters, -1 failure
  */
-int ospGetRoutingNumber(
+int ospGetNpParameters(
     struct sip_msg* msg, 
-    char* routingnumber, 
-    int buffersize)
+    char* rn, 
+    int rnbufsize, 
+    char* cic, 
+    int cicbufsize, 
+    int* npdi)
 {
     str sv;
     param_hooks_t phooks;
@@ -647,30 +734,50 @@ int ospGetRoutingNumber(
     param_t* pit;
     int result = -1;
 
-    routingnumber[0] = '\0';
+    if (((rn != NULL) && (rnbufsize != 0)) && ((cic != NULL) && (cicbufsize != 0)) && (npdi != NULL)) {
+        rn[0] = '\0';
+        cic[0] = '\0';
+        *npdi = 0;
 
-    if (_osp_use_rn != 0) {
-        if (parse_sip_msg_uri(msg) >= 0) {
-            sv = msg->parsed_uri.user;
-            parse_params(&sv, CLASS_ANY, &phooks, &params);
-            for (pit = params; pit; pit = pit->next) {
-                if ((pit->name.len == OSP_RN_SIZE) && (strncasecmp(pit->name.s, OSP_RN_NAME, OSP_RN_SIZE) == 0)) {
-                    ospCopyStrToBuffer(&pit->body, routingnumber, buffersize);
-                    result = 0;
-                    break;
+        if (_osp_use_np != 0) {
+            if (parse_sip_msg_uri(msg) >= 0) {
+                sv = msg->parsed_uri.user;
+                parse_params(&sv, CLASS_ANY, &phooks, &params);
+                for (pit = params; pit; pit = pit->next) {
+                    if ((pit->name.len == OSP_RN_SIZE) && 
+                        (strncasecmp(pit->name.s, OSP_RN_NAME, OSP_RN_SIZE) == 0) && 
+                        (rn[0] == '\0')) 
+                    {
+                        ospCopyStrToBuffer(&pit->body, rn, rnbufsize);
+                    } else if ((pit->name.len == OSP_CIC_SIZE) && 
+                        (strncasecmp(pit->name.s, OSP_CIC_NAME, OSP_CIC_SIZE) == 0) &&
+                        (cic[0] == '\0')) 
+                    {
+                        ospCopyStrToBuffer(&pit->body, cic, cicbufsize);
+                    } else if ((pit->name.len == OSP_NPDI_SIZE) && 
+                        (strncasecmp(pit->name.s, OSP_NPDI_NAME, OSP_NPDI_SIZE) == 0)) 
+                    {
+                        *npdi = 1;
+                    }
                 }
-            }
-            if (params != NULL) {
-                free_params(params);
-            }
-            if (result != 0) {
-                LM_DBG("without routing number parameter\n");
+                if (params != NULL) {
+                    free_params(params);
+                }
+                if ((rn[0] != '\0') || (cic[0] != '\0') || (*npdi != 0)) {
+                    result = 0;
+                } else {
+                    LM_DBG("without number portability parameters\n");
+                    result = 1;
+                }
+            } else {
+                LM_ERR("failed to parse Request-Line URI\n");
             }
         } else {
-            LM_ERR("failed to parse Request-Line URI\n");
+            LM_DBG("do not use number portability\n");
+            result = 1;
         }
     } else {
-        LM_DBG("do not use routing number\n");
+        LM_ERR("bad paraneters to parse number portability parameters\n");
     }
 
     return result;

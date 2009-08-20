@@ -30,8 +30,8 @@
 
 #include "osp_mod.h"
 #include "term_transaction.h"
-#include "sipheader.h"
 #include "destination.h"
+#include "sipheader.h"
 #include "osptoolkit.h"
 #include "usage.h"
 
@@ -91,13 +91,9 @@ int ospValidateHeader (
 
     if ((errorcode = OSPPTransactionNew(_osp_provider, &transaction) != OSPC_ERR_NO_ERROR)) {
         LM_ERR("failed to create a new OSP transaction handle (%d)\n", errorcode);
-    } else if ((ospGetRpidUserpart(msg, dest.calling, sizeof(dest.calling)) != 0) && 
-        (ospGetFromUserpart(msg, dest.calling, sizeof(dest.calling)) != 0))
-    {
+    } else if ((ospGetRpidUserpart(msg, dest.calling, sizeof(dest.calling)) != 0) && (ospGetFromUserpart(msg, dest.calling, sizeof(dest.calling)) != 0)) {
         LM_ERR("failed to extract calling number\n");
-    } else if ((ospGetUriUserpart(msg, dest.called, sizeof(dest.called)) != 0) &&
-        (ospGetToUserpart(msg, dest.called, sizeof(dest.called)) != 0))
-    {
+    } else if ((ospGetUriUserpart(msg, dest.called, sizeof(dest.called)) != 0) && (ospGetToUserpart(msg, dest.called, sizeof(dest.called)) != 0)) {
         LM_ERR("failed to extract called number\n");
     } else if (ospGetCallId(msg, &callid) != 0) {
         LM_ERR("failed to extract call id\n");
@@ -106,7 +102,7 @@ int ospValidateHeader (
     } else if (ospGetOspHeader(msg, token, &tokensize) != 0) {
         LM_ERR("failed to extract OSP authorization token\n");
     } else {
-        LM_INFO( "validate token for: "
+        LM_INFO("validate token for: "
             "transaction_handle '%d' "
             "e164_source '%s' "
             "e164_dest '%s' "

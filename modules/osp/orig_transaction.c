@@ -57,7 +57,7 @@ const str OSP_CALLING_NAME = {"_osp_calling_translated_", 24};
 
 static int ospLoadRoutes(OSPTTRANHANDLE transaction, int destcount, char* source, char* sourcedev, char* origcalled, time_t authtime);
 static int ospPrepareDestination(struct sip_msg* msg, int isfirst, int type, int format);
-static int ospSetRpid(struct sip_msg* msg, osp_dest* dest);
+static int ospSetCalling(struct sip_msg* msg, osp_dest* dest);
 
 /*
  * Get routes from AuthRsp
@@ -147,6 +147,14 @@ static int ospLoadRoutes(
             break;
         }
 
+        errorcode = OSPPTransactionGetNumberPortability(transaction, dest->nprn, dest->npcic, &dest->npdi);
+        if (errorcode != OSPC_ERR_NO_ERROR) {
+            LM_DBG("cannot get number portability parameters (%d)\n", errorcode);
+            dest->nprn[0] = '\0';
+            dest->npcic[0] = '\0';
+            dest->npdi = 0;
+        }
+
         errorcode = OSPPTransactionGetDestProtocol(transaction, &protocol);
         if (errorcode != OSPC_ERR_NO_ERROR) {
             /* This does not mean an ERROR. The OSP server may not support OSP 2.1.1 */
@@ -198,6 +206,9 @@ static int ospLoadRoutes(
             "calling '%s' "
             "called '%s' "
             "host '%s' "
+            "rn '%s' "
+            "cic '%s' "
+            "npdi '%d' "
             "supported '%d' "
             "network id '%s' "
             "token size '%d'\n",
@@ -210,6 +221,9 @@ static int ospLoadRoutes(
             dest->calling, 
             dest->called, 
             dest->host, 
+            dest->nprn, 
+            dest->npcic, 
+            dest->npdi, 
             dest->supported,
             dest->networkid, 
             dest->tokensize);
@@ -251,7 +265,9 @@ int ospRequestRouting(
     time_t authtime;
     char calling[OSP_E164BUF_SIZE];
     char called[OSP_E164BUF_SIZE];
-    char routingnumber[OSP_E164BUF_SIZE];
+    char rn[OSP_E164BUF_SIZE];
+    char cic[OSP_E164BUF_SIZE];
+    int npdi;
     char sourcedev[OSP_STRBUF_SIZE];
     char deviceinfo[OSP_STRBUF_SIZE];
     struct usr_avp* snidavp = NULL;
@@ -272,13 +288,9 @@ int ospRequestRouting(
 
     if ((errorcode = OSPPTransactionNew(_osp_provider, &transaction)) != OSPC_ERR_NO_ERROR) {
         LM_ERR("failed to create new OSP transaction (%d)\n", errorcode);
-    } else if ((ospGetRpidUserpart(msg, calling, sizeof(calling)) != 0) &&
-        (ospGetFromUserpart(msg, calling, sizeof(calling)) != 0)) 
-    {
+    } else if ((ospGetRpidUserpart(msg, calling, sizeof(calling)) != 0) && (ospGetFromUserpart(msg, calling, sizeof(calling)) != 0)) {
         LM_ERR("failed to extract calling number\n");
-    } else if ((ospGetUriUserpart(msg, called, sizeof(called)) != 0) &&
-        (ospGetToUserpart(msg, called, sizeof(called)) != 0)) 
-    {
+    } else if ((ospGetUriUserpart(msg, called, sizeof(called)) != 0) && (ospGetToUserpart(msg, called, sizeof(called)) != 0)) {
         LM_ERR("failed to extract called number\n");
     } else if (ospGetCallId(msg, &(callids[0])) != 0) {
         LM_ERR("failed to extract call id\n");
@@ -287,7 +299,7 @@ int ospRequestRouting(
     } else {
         ospConvertAddress(sourcedev, deviceinfo, sizeof(deviceinfo));
 
-        ospGetRoutingNumber(msg, routingnumber, sizeof(routingnumber));
+        ospGetNpParameters(msg, rn, sizeof(rn), cic, sizeof(cic), &npdi);
 
         if ((_osp_snid_avpname.n != 0) &&
             ((snidavp = search_first_avp(_osp_snid_avptype, _osp_snid_avpname, &snidval, 0)) != NULL) &&
@@ -307,6 +319,8 @@ int ospRequestRouting(
             "calling '%s' "
             "called '%s' "
             "routing_number '%s' "
+            "carrier_id_code '%s' "
+            "npdi '%d' "
             "call_id '%.*s' "
             "dest_count '%d'\n",
             _osp_device_ip,
@@ -315,13 +329,14 @@ int ospRequestRouting(
             snid,
             calling,
             called,
-            routingnumber,
+            rn,
+            cic,
+            npdi,
             callids[0]->ospmCallIdLen,
             callids[0]->ospmCallIdVal,
-            destcount
-        );    
+            destcount);
 
-        OSPPTransactionSetRoutingNumber(transaction, routingnumber);
+        OSPPTransactionSetNumberPortability(transaction, rn, cic, npdi);
 
         /* try to request authorization */
         errorcode = OSPPTransactionRequestAuthorisation(
@@ -402,30 +417,27 @@ int ospCheckRoute(
 }
 
 /*
- * Create RPID AVP
+ * Set calling number if translated
  * param msg SIP message
  * param dest Destination structure
- * return 0 success, 1 calling number same, -1 failure
+ * return 0 success, 1 calling number same or not support calling number translation, -1 failure
  */
-static int ospSetRpid(
+static int ospSetCalling(
     struct sip_msg* msg, 
     osp_dest* dest)
 {
     str rpid;
+    int_str val;
     char calling[OSP_STRBUF_SIZE];
     char source[OSP_STRBUF_SIZE];
     char buffer[OSP_STRBUF_SIZE];
-    int result = -1;
+    int result;
 
-    if ((ospGetRpidUserpart(msg, calling, sizeof(calling)) != 0) &&
-        (ospGetFromUserpart(msg, calling, sizeof(calling)) !=0))
-    {
+    if ((ospGetRpidUserpart(msg, calling, sizeof(calling)) != 0) && (ospGetFromUserpart(msg, calling, sizeof(calling)) != 0)) {
         LM_ERR("failed to extract calling number\n");
-        return result;
-    } 
-
-    if (strcmp(calling, dest->calling) == 0) {
-        /* Do nothing for this case */ 
+        result = -1;
+    } else if (strcmp(calling, dest->calling) == 0) {
+        LM_DBG("calling number does not been translated\n");
         result = 1;
     } else if ((osp_auth.rpid_avp.s.s == NULL) || (osp_auth.rpid_avp.s.len == 0)) {
         LM_WARN("rpid_avp is not foune, cannot set rpid avp\n");
@@ -453,6 +465,13 @@ static int ospSetRpid(
         result = 0;
     }
 
+    if (result == 0) {
+        val.n = 1;
+    } else {
+        val.n = 0;
+    }
+    add_avp(AVP_NAME_STR, (int_str)OSP_CALLING_NAME, val);
+
     return result;
 }
 
@@ -464,7 +483,7 @@ static int ospSetRpid(
  * param ignore2
  * return MODULE_RETURNCODE_TRUE calling number translated MODULE_RETURNCODE_FALSE without transaltion
  */
-int ospCheckTranslation(
+int ospCheckCalling(
     struct sip_msg* msg, 
     char* ignore1, 
     char* ignore2)
@@ -500,15 +519,13 @@ static int ospPrepareDestination(
     int type,
     int format)
 {
-    int_str val;
-    int res;
-    str newuri = {NULL, 0};
+    char buffer[OSP_HEADERBUF_SIZE];
+    str newuri = { buffer, sizeof(buffer) };
+    osp_dest* dest = ospGetNextOrigDestination();
     int result = MODULE_RETURNCODE_FALSE;
 
-    osp_dest* dest = ospGetNextOrigDestination();
-
     if (dest != NULL) {
-        ospRebuildDestionationUri(&newuri, dest->called, dest->host, "", format);
+        ospRebuildDestionationUri(&newuri, dest, format);
 
         LM_INFO("prepare route to URI '%.*s' for call_id '%.*s' transaction_id '%llu'\n",
             newuri.len,
@@ -537,23 +554,8 @@ static int ospPrepareDestination(
             /* Add branch-specific OSP Cookie */
             ospRecordOrigTransaction(msg, dest->transid, dest->srcdev, dest->calling, dest->called, dest->authtime, dest->destinationCount);
 
-            /* Add rpid avp for calling number translation */
-            res = ospSetRpid(msg, dest);
-            switch (res) {
-                case 0:
-                    /* Calling number is translated */
-                    val.n = 1;
-                    add_avp(AVP_NAME_STR, (int_str)OSP_CALLING_NAME, val);
-                    break;
-                default:
-                    LM_DBG("cannot set rpid avp\n");
-                    /* Just like without calling translation */
-                case 1:
-                    /* Calling number does not been translated */
-                    val.n = 0;
-                    add_avp(AVP_NAME_STR, (int_str)OSP_CALLING_NAME, val);
-                    break;
-            }
+            /* Handle calling number translation */
+            ospSetCalling(msg, dest);
 
             result = MODULE_RETURNCODE_TRUE;
         } else {
@@ -564,10 +566,6 @@ static int ospPrepareDestination(
         ospReportOrigSetupUsage();
     }
 
-    if (newuri.len > 0) {
-        pkg_free(newuri.s);
-    }
-    
     return result;
 }
 

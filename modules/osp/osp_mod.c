@@ -63,8 +63,9 @@ extern int _osp_retry_limit;
 extern int _osp_timeout;
 extern int _osp_max_dests;
 extern int _osp_use_rpid;
-extern int _osp_use_rn;
+extern int _osp_use_np;
 extern int _osp_redir_uri;
+extern int _osp_append_userphone;
 extern char _osp_PRIVATE_KEY[];
 extern char _osp_LOCAL_CERTIFICATE[];
 extern char _osp_CA_CERTIFICATE[];
@@ -84,77 +85,79 @@ static int  ospVerifyParameters(void);
 static void ospDumpParameters(void);
 
 static cmd_export_t cmds[]={
-    {"checkospheader",          (cmd_function)ospCheckHeader,      0, 0, 0, REQUEST_ROUTE|FAILURE_ROUTE}, 
-    {"validateospheader",       (cmd_function)ospValidateHeader,   0, 0, 0, REQUEST_ROUTE|FAILURE_ROUTE}, 
-    {"requestosprouting",       (cmd_function)ospRequestRouting,   0, 0, 0, REQUEST_ROUTE|FAILURE_ROUTE}, 
-    {"checkosproute",           (cmd_function)ospCheckRoute,       0, 0, 0, REQUEST_ROUTE|FAILURE_ROUTE}, 
-    {"prepareosproute",         (cmd_function)ospPrepareRoute,     0, 0, 0, BRANCH_ROUTE}, 
-    {"prepareallosproutes",     (cmd_function)ospPrepareAllRoutes, 0, 0, 0, REQUEST_ROUTE|FAILURE_ROUTE}, 
-    {"checkcallingtranslation", (cmd_function)ospCheckTranslation, 0, 0, 0, BRANCH_ROUTE}, 
-    {"reportospusage",          (cmd_function)ospReportUsage,      1, 0, 0, REQUEST_ROUTE}, 
-    {0, 0, 0, 0, 0, 0}
+    { "checkospheader",          (cmd_function)ospCheckHeader,      0, 0, 0, REQUEST_ROUTE|FAILURE_ROUTE }, 
+    { "validateospheader",       (cmd_function)ospValidateHeader,   0, 0, 0, REQUEST_ROUTE|FAILURE_ROUTE }, 
+    { "requestosprouting",       (cmd_function)ospRequestRouting,   0, 0, 0, REQUEST_ROUTE|FAILURE_ROUTE }, 
+    { "checkosproute",           (cmd_function)ospCheckRoute,       0, 0, 0, REQUEST_ROUTE|FAILURE_ROUTE }, 
+    { "prepareosproute",         (cmd_function)ospPrepareRoute,     0, 0, 0, BRANCH_ROUTE }, 
+    { "prepareallosproutes",     (cmd_function)ospPrepareAllRoutes, 0, 0, 0, REQUEST_ROUTE|FAILURE_ROUTE }, 
+    { "checkcallingtranslation", (cmd_function)ospCheckCalling,     0, 0, 0, BRANCH_ROUTE }, 
+    { "reportospusage",          (cmd_function)ospReportUsage,      1, 0, 0, REQUEST_ROUTE }, 
+    { 0, 0, 0, 0, 0, 0 }
 };
 
 static param_export_t params[]={
-    {"sp1_uri",                        STR_PARAM, &_osp_sp_uris[0]},
-    {"sp2_uri",                        STR_PARAM, &_osp_sp_uris[1]},
-    {"sp3_uri",                        STR_PARAM, &_osp_sp_uris[2]},
-    {"sp4_uri",                        STR_PARAM, &_osp_sp_uris[3]},
-    {"sp5_uri",                        STR_PARAM, &_osp_sp_uris[4]},
-    {"sp6_uri",                        STR_PARAM, &_osp_sp_uris[5]},
-    {"sp7_uri",                        STR_PARAM, &_osp_sp_uris[6]},
-    {"sp8_uri",                        STR_PARAM, &_osp_sp_uris[7]},
-    {"sp9_uri",                        STR_PARAM, &_osp_sp_uris[8]},
-    {"sp10_uri",                       STR_PARAM, &_osp_sp_uris[9]},
-    {"sp11_uri",                       STR_PARAM, &_osp_sp_uris[10]},
-    {"sp12_uri",                       STR_PARAM, &_osp_sp_uris[11]},
-    {"sp13_uri",                       STR_PARAM, &_osp_sp_uris[12]},
-    {"sp14_uri",                       STR_PARAM, &_osp_sp_uris[13]},
-    {"sp15_uri",                       STR_PARAM, &_osp_sp_uris[14]},
-    {"sp16_uri",                       STR_PARAM, &_osp_sp_uris[15]},
-    {"sp1_weight",                     INT_PARAM, &(_osp_sp_weights[0])},
-    {"sp2_weight",                     INT_PARAM, &(_osp_sp_weights[1])},
-    {"sp3_weight",                     INT_PARAM, &(_osp_sp_weights[2])},
-    {"sp4_weight",                     INT_PARAM, &(_osp_sp_weights[3])},
-    {"sp5_weight",                     INT_PARAM, &(_osp_sp_weights[4])},
-    {"sp6_weight",                     INT_PARAM, &(_osp_sp_weights[5])},
-    {"sp7_weight",                     INT_PARAM, &(_osp_sp_weights[6])},
-    {"sp8_weight",                     INT_PARAM, &(_osp_sp_weights[7])},
-    {"sp9_weight",                     INT_PARAM, &(_osp_sp_weights[8])},
-    {"sp10_weight",                    INT_PARAM, &(_osp_sp_weights[9])},
-    {"sp11_weight",                    INT_PARAM, &(_osp_sp_weights[10])},
-    {"sp12_weight",                    INT_PARAM, &(_osp_sp_weights[11])},
-    {"sp13_weight",                    INT_PARAM, &(_osp_sp_weights[12])},
-    {"sp14_weight",                    INT_PARAM, &(_osp_sp_weights[13])},
-    {"sp15_weight",                    INT_PARAM, &(_osp_sp_weights[14])},
-    {"sp16_weight",                    INT_PARAM, &(_osp_sp_weights[15])},
-    {"device_ip",                      STR_PARAM, &_osp_device_ip},
-    {"device_port",                    STR_PARAM, &_osp_device_port},
-    {"use_security_features",          INT_PARAM, &_osp_use_security},
-    {"private_key",                    STR_PARAM, &_osp_private_key},
-    {"local_certificate",              STR_PARAM, &_osp_local_certificate},
-    {"ca_certificates",                STR_PARAM, &_osp_ca_certificate},
-    {"enable_crypto_hardware_support", INT_PARAM, &_osp_crypto_hw},
-    {"validate_callid",                INT_PARAM, &(_osp_validate_callid)},
-    {"token_format",                   INT_PARAM, &_osp_token_format},
-    {"ssl_lifetime",                   INT_PARAM, &_osp_ssl_lifetime},
-    {"persistence",                    INT_PARAM, &_osp_persistence},
-    {"retry_delay",                    INT_PARAM, &_osp_retry_delay},
-    {"retry_limit",                    INT_PARAM, &_osp_retry_limit},
-    {"timeout",                        INT_PARAM, &_osp_timeout},
-    {"max_destinations",               INT_PARAM, &_osp_max_dests},
-    {"use_rpid_for_calling_number",    INT_PARAM, &_osp_use_rpid},
-    {"use_routing_number",             INT_PARAM, &_osp_use_rn},
-    {"redirection_uri_format",         INT_PARAM, &_osp_redir_uri},
-    {"source_networkid_avp",           STR_PARAM, &_osp_snid_avp},
-    {0,0,0} 
+    { "sp1_uri",                          STR_PARAM, &_osp_sp_uris[0] },
+    { "sp2_uri",                          STR_PARAM, &_osp_sp_uris[1] },
+    { "sp3_uri",                          STR_PARAM, &_osp_sp_uris[2] },
+    { "sp4_uri",                          STR_PARAM, &_osp_sp_uris[3] },
+    { "sp5_uri",                          STR_PARAM, &_osp_sp_uris[4] },
+    { "sp6_uri",                          STR_PARAM, &_osp_sp_uris[5] },
+    { "sp7_uri",                          STR_PARAM, &_osp_sp_uris[6] },
+    { "sp8_uri",                          STR_PARAM, &_osp_sp_uris[7] },
+    { "sp9_uri",                          STR_PARAM, &_osp_sp_uris[8] },
+    { "sp10_uri",                         STR_PARAM, &_osp_sp_uris[9] },
+    { "sp11_uri",                         STR_PARAM, &_osp_sp_uris[10] },
+    { "sp12_uri",                         STR_PARAM, &_osp_sp_uris[11] },
+    { "sp13_uri",                         STR_PARAM, &_osp_sp_uris[12] },
+    { "sp14_uri",                         STR_PARAM, &_osp_sp_uris[13] },
+    { "sp15_uri",                         STR_PARAM, &_osp_sp_uris[14] },
+    { "sp16_uri",                         STR_PARAM, &_osp_sp_uris[15] },
+    { "sp1_weight",                       INT_PARAM, &(_osp_sp_weights[0]) },
+    { "sp2_weight",                       INT_PARAM, &(_osp_sp_weights[1]) },
+    { "sp3_weight",                       INT_PARAM, &(_osp_sp_weights[2]) },
+    { "sp4_weight",                       INT_PARAM, &(_osp_sp_weights[3]) },
+    { "sp5_weight",                       INT_PARAM, &(_osp_sp_weights[4]) },
+    { "sp6_weight",                       INT_PARAM, &(_osp_sp_weights[5]) },
+    { "sp7_weight",                       INT_PARAM, &(_osp_sp_weights[6]) },
+    { "sp8_weight",                       INT_PARAM, &(_osp_sp_weights[7]) },
+    { "sp9_weight",                       INT_PARAM, &(_osp_sp_weights[8]) },
+    { "sp10_weight",                      INT_PARAM, &(_osp_sp_weights[9]) },
+    { "sp11_weight",                      INT_PARAM, &(_osp_sp_weights[10]) },
+    { "sp12_weight",                      INT_PARAM, &(_osp_sp_weights[11]) },
+    { "sp13_weight",                      INT_PARAM, &(_osp_sp_weights[12]) },
+    { "sp14_weight",                      INT_PARAM, &(_osp_sp_weights[13]) },
+    { "sp15_weight",                      INT_PARAM, &(_osp_sp_weights[14]) },
+    { "sp16_weight",                      INT_PARAM, &(_osp_sp_weights[15]) },
+    { "device_ip",                        STR_PARAM, &_osp_device_ip },
+    { "device_port",                      STR_PARAM, &_osp_device_port },
+    { "use_security_features",            INT_PARAM, &_osp_use_security },
+    { "private_key",                      STR_PARAM, &_osp_private_key },
+    { "local_certificate",                STR_PARAM, &_osp_local_certificate },
+    { "ca_certificates",                  STR_PARAM, &_osp_ca_certificate },
+    { "enable_crypto_hardware_support",   INT_PARAM, &_osp_crypto_hw },
+    { "validate_callid",                  INT_PARAM, &(_osp_validate_callid) },
+    { "token_format",                     INT_PARAM, &_osp_token_format },
+    { "ssl_lifetime",                     INT_PARAM, &_osp_ssl_lifetime },
+    { "persistence",                      INT_PARAM, &_osp_persistence },
+    { "retry_delay",                      INT_PARAM, &_osp_retry_delay },
+    { "retry_limit",                      INT_PARAM, &_osp_retry_limit },
+    { "timeout",                          INT_PARAM, &_osp_timeout },
+    { "max_destinations",                 INT_PARAM, &_osp_max_dests },
+    { "use_rpid_for_calling_number",      INT_PARAM, &_osp_use_rpid },
+    { "use_number_portability",           INT_PARAM, &_osp_use_np },
+    { "redirection_uri_format",           INT_PARAM, &_osp_redir_uri },
+    { "append_userphone",                 INT_PARAM, &_osp_append_userphone },
+    { "source_networkid_avp",             STR_PARAM, &_osp_snid_avp },
+    { 0,0,0 } 
 };
 
 struct module_exports exports = {
     "osp",
+    MODULE_VERSION,     /* module version */
     DEFAULT_DLFLAGS,    /* dlopen flags */
-    cmds,
-    params,
+    cmds,               /* exported functions */
+    params,             /* exported params */
     0,                  /* exported statistics */
     0,                  /* exported MI functions */
     0,                  /* exported pseudo-variables */
@@ -344,8 +347,9 @@ static void ospDumpParameters(void)
     LM_INFO("    timeout '%d' ", _osp_timeout);
     LM_INFO("    validate_call_id '%d' ", _osp_validate_callid);
     LM_INFO("    use_rpid_for_calling_number '%d' ", _osp_use_rpid);
-    LM_INFO("    use_routing_number '%d' ", _osp_use_rn);
+    LM_INFO("    use_number_portability '%d' ", _osp_use_np);
     LM_INFO("    redirection_uri_format '%d' ", _osp_redir_uri);
+    LM_INFO("    append_userphone '%d' ", _osp_append_userphone);
     LM_INFO("    max_destinations '%d'\n", _osp_max_dests);
     if (_osp_snid_avpname.n == 0) {
         LM_INFO("    source network ID disabled\n");

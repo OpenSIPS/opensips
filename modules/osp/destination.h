@@ -61,6 +61,9 @@ typedef struct _osp_dest {
     int reported;
     unsigned int destinationCount;
     char origcalled[OSP_STRBUF_SIZE];
+    char nprn[OSP_STRBUF_SIZE];
+    char npcic[OSP_STRBUF_SIZE];
+    int npdi;
 } osp_dest;
 
 osp_dest* ospInitDestination(osp_dest* dest);

@@ -34,15 +34,20 @@
 #include <osp/osp.h>
 #include "../../parser/msg_parser.h"
 
-#define OSP_TOKEN_HEADER    "P-OSP-Auth-Token: "
-#define OSP_HEADER_SIZE     strlen(OSP_TOKEN_HEADER)
+#define OSP_TOKEN_HEADER    "P-OSP-Auth-Token"
+#define OSP_HEADER_SIZE     16
 
 #define OSP_RN_NAME         "rn"
-#define OSP_RN_SIZE         strlen(OSP_RN_NAME)
+#define OSP_RN_SIZE         2
+#define OSP_CIC_NAME        "cic"
+#define OSP_CIC_SIZE        3
+#define OSP_NPDI_NAME       "npdi"
+#define OSP_NPDI_SIZE       4
 
 void ospCopyStrToBuffer(str* source, char* buffer, int buffersize);
 int ospGetFromUserpart(struct sip_msg* msg, char* fromuser, int buffersize);
 int ospGetRpidUserpart(struct sip_msg* msg, char* fromuser, int buffersize);
+int ospGetDiversion(struct sip_msg* msg, char* user, int userbufsize, char* host, int hostbufsize);
 int ospGetToUserpart(struct sip_msg* msg, char* touser, int buffersize);
 int ospGetUriUserpart(struct sip_msg* msg, char* touser, int buffersize);
 int ospAddOspHeader(struct sip_msg* msg, unsigned char* token, unsigned int tokensize);
@@ -50,9 +55,9 @@ int ospGetOspHeader(struct sip_msg* msg, unsigned char* token, unsigned int* tok
 int ospGetSourceAddress(struct sip_msg* msg, char* sourceaddress, int buffersize);
 int ospGetCallId(struct sip_msg* msg, OSPT_CALL_ID** callid);
 int ospGetRouteParameters(struct sip_msg* msg, char* routeparams, int buffersize);
-int ospRebuildDestionationUri(str* newuri, char* called, char* dest, char* port, int format);
+int ospRebuildDestionationUri(str* newuri, osp_dest* dest, int format);
 void ospGetNextHop(struct sip_msg* msg, char* nexthop, int buffersize);
-int ospGetRoutingNumber(struct sip_msg* msg, char* routingnumber, int buffersize);
+int ospGetNpParameters(struct sip_msg* msg, char* rn, int rnbufsize, char* cic, int cicbufsize, int* npdi);
 
 #endif /* _OSP_MOD_SIPHEADER_H_ */
 
