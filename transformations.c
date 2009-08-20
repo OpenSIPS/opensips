@@ -41,7 +41,7 @@
 
 #include "parser/parse_param.h"
 #include "parser/parse_uri.h"
-#include "parser/parse_nameaddr.h"
+#include "parser/parse_to.h"
 
 #include "strcommon.h"
 #include "transformations.h"
@@ -817,66 +817,89 @@ done:
 	return 0;
 }
 
-static str _tr_nameaddr_str = {0, 0};
-static name_addr_t _tr_nameaddr;
+static str nameaddr_str = {0, 0};
+static struct to_body nameaddr_to_body;
 
 int tr_eval_nameaddr(struct sip_msg *msg, tr_param_t *tp, int subtype,
 		pv_value_t *val)
 {
-	str sv;
+	struct to_param* topar;
 
 	if(val==NULL || (!(val->flags&PV_VAL_STR)) || val->rs.len<=0)
 		return -1;
 
-	if(_tr_nameaddr_str.len==0 || _tr_nameaddr_str.len!=val->rs.len ||
-			strncmp(_tr_nameaddr_str.s, val->rs.s, val->rs.len)!=0)
+	LM_DBG("String to transform %.*s\n", val->rs.len, val->rs.s);
+
+	if(nameaddr_str.len==0 || nameaddr_str.len!=val->rs.len ||
+			strncmp(nameaddr_str.s, val->rs.s, val->rs.len)!=0)
 	{
-		if(val->rs.len>_tr_nameaddr_str.len)
+		/* copy the value in the global variable */
+		if(val->rs.len>nameaddr_str.len)
 		{
-			if(_tr_nameaddr_str.s) pkg_free(_tr_nameaddr_str.s);
-			_tr_nameaddr_str.s =
-						(char*)pkg_malloc((val->rs.len+1)*sizeof(char));
-			if(_tr_nameaddr_str.s==NULL)
+			if(nameaddr_str.s) pkg_free(nameaddr_str.s);
+			nameaddr_str.s =
+						(char*)pkg_malloc((val->rs.len+3)*sizeof(char));
+			if(nameaddr_str.s==NULL)
 			{
 				LM_ERR("no more private memory\n");
-				memset(&_tr_nameaddr_str, 0, sizeof(str));
-				memset(&_tr_nameaddr, 0, sizeof(name_addr_t));
+				memset(&nameaddr_str, 0, sizeof(str));
+				memset(&nameaddr_to_body, 0, sizeof(struct to_body));
 				return -1;
 			}
 		}
-		_tr_nameaddr_str.len = val->rs.len;
-		memcpy(_tr_nameaddr_str.s, val->rs.s, val->rs.len);
-		_tr_nameaddr_str.s[_tr_nameaddr_str.len] = '\0';
-		
+		nameaddr_str.len = val->rs.len +2;
+		memcpy(nameaddr_str.s, val->rs.s, val->rs.len);
+		memcpy(nameaddr_str.s + val->rs.len, CRLF, CRLF_LEN);
+		nameaddr_str.s[nameaddr_str.len] = '\0';
+
 		/* reset old values */
-		memset(&_tr_nameaddr, 0, sizeof(name_addr_t));
-		
+		memset(&nameaddr_to_body, 0, sizeof(struct to_body));
+
 		/* parse params */
-		sv = _tr_nameaddr_str;
-		if (parse_nameaddr(&sv, &_tr_nameaddr)<0)
+		if(parse_to(nameaddr_str.s,
+					nameaddr_str.s + nameaddr_str.len, &nameaddr_to_body)< 0)
+		{
+			LM_ERR("Wrong syntax. It must have the To header format\n");
 			return -1;
+		}
 	}
-	
+
 	memset(val, 0, sizeof(pv_value_t));
 	val->flags = PV_VAL_STR;
 
 	switch(subtype)
 	{
 		case TR_NA_URI:
-			val->rs = (_tr_nameaddr.uri.s)?_tr_nameaddr.uri:_tr_empty;
+			val->rs = (nameaddr_to_body.uri.s)?nameaddr_to_body.uri:_tr_empty;
 			break;
 		case TR_NA_LEN:
 			val->flags = PV_TYPE_INT|PV_VAL_INT|PV_VAL_STR;
-			val->ri = _tr_nameaddr.len;
+			val->ri = nameaddr_to_body.body.len;
 			val->rs.s = int2str(val->ri, &val->rs.len);
 			break;
 		case TR_NA_NAME:
-			val->rs = (_tr_nameaddr.name.s)?_tr_nameaddr.name:_tr_empty;
+			val->rs = (nameaddr_to_body.display.s)?nameaddr_to_body.display:_tr_empty;
+			break;
+		case TR_NA_PARAM:
+			if(tp->type != TR_PARAM_STRING)
+			{
+				LM_ERR("Wrong type for parameter, it must string\n");
+				return -1;
+			}
+			topar = nameaddr_to_body.param_lst;
+			/* search the parameter */
+			while(topar)
+			{
+				if(topar->name.len == tp->v.s.len && 
+						strncmp(topar->name.s, tp->v.s.s, topar->name.len)== 0)
+					break;
+				topar = topar->next;
+			}
+			val->rs = (topar)?topar->value:_tr_empty;
 			break;
 
 		default:
-			LM_ERR("unknown subtype %d\n",
-					subtype);
+			LM_ERR("unknown subtype %d\n", subtype);
 			return -1;
 	}
 	return 0;
@@ -1466,6 +1489,12 @@ char* tr_parse_nameaddr(str* in, trans_t *t)
 {
 	char *p;
 	str name;
+	char *p0;
+	char *ps;
+	str s;
+	pv_spec_t *spec = NULL;
+	tr_param_t *tp = NULL;
+
 
 	if(in==NULL || t==NULL)
 		return NULL;
@@ -1495,8 +1524,27 @@ char* tr_parse_nameaddr(str* in, trans_t *t)
 	} else if(name.len==4 && strncasecmp(name.s, "name", 4)==0) {
 		t->subtype = TR_NA_NAME;
 		return p;
+	} else if(name.len==5 && strncasecmp(name.s, "param", 5)==0) {
+		t->subtype = TR_NA_PARAM;
+		if(*p!=TR_PARAM_MARKER)
+		{
+			LM_ERR("invalid value transformation: %.*s\n",
+					in->len, in->s);
+			goto error;
+		}
+		p++;
+		_tr_parse_sparam(p, p0, tp, spec, ps, in, s);
+		t->params = tp;
+		tp = 0;
+		while(*p && (*p==' ' || *p=='\t' || *p=='\n')) p++;
+		if(*p!=TR_RBRACKET)
+		{
+			LM_ERR("invalid value transformation: %.*s!\n",
+					in->len, in->s);
+			goto error;
+		}
+		return p;
 	}
-
 
 	LM_ERR("unknown transformation: %.*s/%.*s/%d!\n", in->len, in->s,
 			name.len, name.s, name.len);
