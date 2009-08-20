@@ -49,6 +49,8 @@ Sergio Gutierrez
               1.4.7. abort()
               1.4.8. pkg_status()
               1.4.9. shm_status()
+              1.4.10. set_count(pseudovarible_name)
+              1.4.11. set_select_weight(pseudovarible_name)
 
         1.5. MI Commands
 
@@ -81,16 +83,18 @@ Sergio Gutierrez
    1.11. abort usage
    1.12. pkg_status usage
    1.13. shm_status usage
-   1.14. rand_set_prob usage
-   1.15. rand_reset_prob usage
-   1.16. rand_get_prob usage
-   1.17. check_config_hash usage
-   1.18. get_config_hash usage
-   1.19. shv_set usage
-   1.20. shv_get usage
-   1.21. RANDOM pseudo-variable usage
-   1.22. time(name) pseudo-variable usage
-   1.23. shv(name) pseudo-variable usage
+   1.14. set_count usage
+   1.15. set_count usage
+   1.16. rand_set_prob usage
+   1.17. rand_reset_prob usage
+   1.18. rand_get_prob usage
+   1.19. check_config_hash usage
+   1.20. get_config_hash usage
+   1.21. shv_set usage
+   1.22. shv_get usage
+   1.23. RANDOM pseudo-variable usage
+   1.24. time(name) pseudo-variable usage
+   1.25. shv(name) pseudo-variable usage
 
 Chapter 1. Admin Guide
 
@@ -334,6 +338,37 @@ pkg_status();
 shm_status();
 ...
 
+1.4.10.  set_count(pseudovarible_name)
+
+   Function that counts the values of a pseudovariable. It makes
+   sence to call this function only for pseudovariables that can
+   take more values (avp, headers).
+
+   This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
+   FAILURE_ROUTE, BRANCH_ROUTE.
+
+   Example 1.14. set_count usage
+...
+$avp(i:11) = set_count("$avp(i:10)");
+...
+
+1.4.11.  set_select_weight(pseudovarible_name)
+
+   This function selects an element from a set formed by the
+   values of the pseudovariable name given as parameter. It
+   applies the genetic algorithm - roulette-wheel selection to
+   choose an element from a set. The probability of selecting a
+   certain element is proportionate with its weight. It will
+   return the index of that selected element.
+
+   This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
+   FAILURE_ROUTE, BRANCH_ROUTE.
+
+   Example 1.15. set_count usage
+...
+$avp(i:21) = set_select_weight("$avp(i:10)");
+...
+
 1.5. MI Commands
 
 1.5.1. rand_set_prop
@@ -343,7 +378,7 @@ shm_status();
 
    The parameter value must be a number from 0 to 99.
 
-   Example 1.14. rand_set_prob usage
+   Example 1.16. rand_set_prob usage
 ...
 $ opensipsctl fifo rand_set_prob 10
 ...
@@ -354,7 +389,7 @@ $ opensipsctl fifo rand_set_prob 10
 
    This command don't need a parameter.
 
-   Example 1.15.  rand_reset_prob usage
+   Example 1.17.  rand_reset_prob usage
 ...
 $ opensipsctl fifo rand_reset_prob
 ...
@@ -365,7 +400,7 @@ $ opensipsctl fifo rand_reset_prob
 
    The function return the actual probability value.
 
-   Example 1.16. rand_get_prob usage
+   Example 1.18. rand_get_prob usage
 ...
 $ opensipsctl fifo get_prob
 The actual probability is 50 percent.
@@ -381,7 +416,7 @@ The actual probability is 50 percent.
    been configured and 500 on errors. Additional a short text
    message is printed.
 
-   Example 1.17. check_config_hash usage
+   Example 1.19. check_config_hash usage
 ...
 $ opensipsctl fifo check_config_hash
 The actual config file hash is identical to the stored one.
@@ -394,7 +429,7 @@ The actual config file hash is identical to the stored one.
    The function returns 200 OK and the hash value on success or
    404 if no file for hashing has been configured.
 
-   Example 1.18. get_config_hash usage
+   Example 1.20. get_config_hash usage
 ...
 $ opensipsctl fifo get_config_hash
 1580a37104eb4de69ab9f31ce8d6e3e0
@@ -418,7 +453,7 @@ $ opensipsctl fifo get_config_hash
                 _value_
                 _empty_line_
 
-   Example 1.19. shv_set usage
+   Example 1.21. shv_set usage
 ...
 $ opensipsctl fifo shv_set debug int 0
 ...
@@ -436,7 +471,7 @@ $ opensipsctl fifo shv_set debug int 0
                 _name_
                 _empty_line_
 
-   Example 1.20. shv_get usage
+   Example 1.22. shv_get usage
 ...
 $ opensipsctl fifo shv_get debug
 $ opensipsctl fifo shv_get
@@ -448,7 +483,7 @@ $ opensipsctl fifo shv_get
 
    Returns a random value from the [0 - 2^31) range.
 
-   Example 1.21. RANDOM pseudo-variable usage
+   Example 1.23. RANDOM pseudo-variable usage
 ...
 if (get_random()) {
   $avp(i:10) = ($RANDOM / 16777216); # 2^24
@@ -478,7 +513,7 @@ if (get_random()) {
      * isdst - return daylight saving time status (int, 0 - DST
        off, >0 DST on)
 
-   Example 1.22. time(name) pseudo-variable usage
+   Example 1.24. time(name) pseudo-variable usage
 ...
 if ($time(year) == 2008) {
         xlog("request: $rm from $fu to $ru in year 2008\n");
@@ -494,7 +529,7 @@ if ($time(year) == 2008) {
    variable. The module exports a set of MI functions to get/set
    the value of shared variables.
 
-   Example 1.23. shv(name) pseudo-variable usage
+   Example 1.25. shv(name) pseudo-variable usage
 ...
 modparam("cfgutils", "shvset", "debug=i:1")
 ...

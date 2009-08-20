@@ -371,6 +371,52 @@ shm_status();
 			</programlisting>
 		</example>
 	</section>
+	<section>
+		<title>
+			<function moreinfo="none">set_count(pseudovarible_name)</function>
+		</title>
+		<para>
+			Function that counts the values of a pseudovariable. It makes sence to 
+			call this function only for pseudovariables that can take more values
+			(avp, headers).
+		</para>
+		<para>
+			This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
+			FAILURE_ROUTE, BRANCH_ROUTE.
+		</para>
+		<example>
+			<title><function>set_count</function> usage</title>
+			<programlisting format="linespecific">
+...
+$avp(i:11) = set_count("$avp(i:10)");
+...
+			</programlisting>
+		</example>
+	</section>
+	<section>
+		<title>
+			<function moreinfo="none">set_select_weight(pseudovarible_name)</function>
+		</title>
+		<para>
+			This function selects an element from a set formed by the values of the
+			pseudovariable name given as parameter. It applies the genetic algorithm
+			- roulette-wheel selection to choose an element from a set. The probability
+			of selecting a certain element is proportionate with its weight. It will
+			return the index of that selected element.
+		</para>
+		<para>
+			This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
+			FAILURE_ROUTE, BRANCH_ROUTE.
+		</para>
+		<example>
+			<title><function>set_count</function> usage</title>
+			<programlisting format="linespecific">
+...
+$avp(i:21) = set_select_weight("$avp(i:10)");
+...
+			</programlisting>
+		</example>
+	</section>
 
 
 </section>

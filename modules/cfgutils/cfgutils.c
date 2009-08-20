@@ -71,6 +71,8 @@ static int m_usleep(struct sip_msg*, char *, char *);
 static int dbg_abort(struct sip_msg*, char*,char*);
 static int dbg_pkg_status(struct sip_msg*, char*,char*);
 static int dbg_shm_status(struct sip_msg*, char*,char*);
+static int pv_set_count(struct sip_msg*, char*,char*);
+static int pv_sel_weight(struct sip_msg*, char*,char*);
 
 static struct mi_root* mi_set_prob(struct mi_root* cmd, void* param );
 static struct mi_root* mi_reset_prob(struct mi_root* cmd, void* param );
@@ -82,6 +84,7 @@ static int pv_get_random_val(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res);
 
 static int fixup_prob( void** param, int param_no);
+static int fixup_pv_set(void** param, int param_no);
 
 static int mod_init(void);
 static void mod_destroy(void);
@@ -114,6 +117,10 @@ static cmd_export_t cmds[]={
 	{"pkg_status", (cmd_function)dbg_pkg_status,   0, 0, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"shm_status", (cmd_function)dbg_shm_status,   0, 0, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"set_count",  (cmd_function)pv_set_count,       1, fixup_pv_set, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"set_select_weight",(cmd_function)pv_sel_weight,1, fixup_pv_set, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{0, 0, 0, 0, 0, 0}
 };
@@ -455,3 +462,145 @@ static void mod_destroy(void)
 	destroy_shvars();
 }
 
+static int fixup_pv_set(void** param, int param_no)
+{
+	pv_elem_t *model;
+	str s;
+
+	if(param_no== 0)
+		return 0;
+
+	if(*param)
+	{
+		s.s = (char*)(*param); s.len = strlen(s.s);
+		if(pv_parse_format(&s, &model)<0)
+		{
+			LM_ERR( "wrong format[%s]\n",(char*)(*param));
+			return E_UNSPEC;
+		}
+		*param = (void*)model;
+		return 0;
+	}
+	LM_ERR( "null format\n");
+	return E_UNSPEC;
+}
+
+
+static int pv_set_count(struct sip_msg* msg, char* pv_name, char* str2)
+{
+	pv_elem_t* pv_elem = (pv_elem_t*)pv_name;
+	pv_value_t pv_val;
+
+	if(pv_elem == NULL)
+	{
+		LM_ERR("NULL parameter\n");
+		return -1;
+	}
+	memset(&pv_val, 0, sizeof(pv_value_t));
+
+	pv_elem->spec.pvp.pvi.type = PV_IDX_INT;
+	pv_elem->spec.pvp.pvi.u.ival = 0;
+
+	while(pv_val.flags != PV_VAL_NULL)
+	{
+		if(pv_elem->spec.getf(msg, &pv_elem->spec.pvp, &pv_val) < 0)
+		{
+			LM_ERR("PV get function failed\n");
+			return -1;
+		}
+		pv_elem->spec.pvp.pvi.u.ival++;
+	}
+
+	LM_DBG("Set count = %d\n", pv_elem->spec.pvp.pvi.u.ival -1);
+	return pv_elem->spec.pvp.pvi.u.ival-1;
+}
+
+/* This function does selection based on the
+ * fitness proportionate selection also known as roulette-wheel selection*/
+static int pv_sel_weight(struct sip_msg* msg, char* pv_name,char* str2)
+{
+	int size;
+	int *vals = NULL;
+	int sum = 0;
+	int rnd_val;
+	int prev_val;
+	pv_elem_t* pv_elem = (pv_elem_t*)pv_name;
+	pv_value_t pv_val;
+	int i;
+
+	/* check the value type - it must be int */
+	if(pv_elem == NULL)
+	{
+		LM_ERR("NULL parameter\n");
+		return -1;
+	}
+	memset(&pv_val, 0, sizeof(pv_value_t));
+
+	pv_elem->spec.pvp.pvi.type = PV_IDX_INT;
+	pv_elem->spec.pvp.pvi.u.ival = 0;
+
+	while(pv_val.flags != PV_VAL_NULL)
+	{
+		if(pv_elem->spec.getf(msg, &pv_elem->spec.pvp, &pv_val) < 0)
+		{
+			LM_ERR("PV get function failed\n");
+			return -1;
+		}
+		if((!(pv_val.flags & PV_VAL_INT)) && (pv_val.flags != PV_VAL_NULL))
+		{
+			LM_ERR("Applied select weight algorithm for a varible set"
+					" containing not only integer values\n");
+			return -1;
+		}
+
+		pv_elem->spec.pvp.pvi.u.ival++;
+	}
+	size = pv_elem->spec.pvp.pvi.u.ival - 1;
+
+	if(size <= 0)
+		return -1;
+
+	if(size == 1)
+		return 0;
+
+	vals = (int*)pkg_malloc(size* sizeof(int));
+	if(vals == NULL)
+	{
+		LM_ERR("No more private memory\n");
+		return -1;
+	}
+	memset(vals, 0, size*sizeof(int));
+
+	for(i= 0; i< size; i++)
+	{
+		pv_elem->spec.pvp.pvi.u.ival = i;
+		if(pv_elem->spec.getf(msg, &pv_elem->spec.pvp, &pv_val) < 0)
+		{
+			LM_ERR("PV get function failed\n");
+			goto error;
+		}
+		vals[i]= sum + pv_val.ri;
+		sum = vals[i];
+	}
+
+	/* generate a random value */
+	rnd_val = random() % sum;
+
+	/* find out which segment it belongs to */
+	prev_val = 0;
+	for(i = 0; i< size; i++)
+	{
+		if(rnd_val >= prev_val && rnd_val < vals[i])
+			break;
+		prev_val = vals[i];
+	}
+	LM_DBG("The interval is %d - %d\n", prev_val, vals[i]);
+	pkg_free(vals);
+
+	return i;
+
+error:
+	if(vals)
+		pkg_free(vals);
+	return -1;
+}
