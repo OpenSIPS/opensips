@@ -4,7 +4,7 @@
  *  cfg grammar
  *
  * Copyright (C) 2001-2003 FhG Fokus
- * Copyright (C) 2005-2006 Voice Sistem S.R.L.
+ * Copyright (C) 2005-2009 Voice Sistem S.R.L.
  * Copyright (C) 2006 enum.at
  *
  * This file is part of opensips, a free SIP server.
@@ -353,6 +353,7 @@ extern int line;
 %token DISABLE_DNS_BLACKLIST
 %token DST_BLACKLIST
 %token DISABLE_STATELESS_FWD
+%token DB_VERSION_TABLE
 
 
 
@@ -1011,7 +1012,6 @@ assign_stm: DEBUG EQUAL snumber {
 										disable_dns_blacklist=$3;
 									}
 		| DISABLE_DNS_BLACKLIST error { yyerror("boolean value expected"); }
-		| error EQUAL { yyerror("unknown config variable"); }
 		| DST_BLACKLIST EQUAL ID COLON LBRACE blst_elem_list RBRACE {
 				s_tmp.s = $3;
 				s_tmp.len = strlen($3);
@@ -1025,6 +1025,9 @@ assign_stm: DEBUG EQUAL snumber {
 		| DISABLE_STATELESS_FWD EQUAL NUMBER {
 				sl_fwd_disabled=$3;
 				}
+		| DB_VERSION_TABLE EQUAL STRING { db_version_table=$3; }
+		| DB_VERSION_TABLE EQUAL error { yyerror("string value expected"); }
+		| error EQUAL { yyerror("unknown config variable"); }
 	;
 
 module_stm:	LOADMODULE STRING	{

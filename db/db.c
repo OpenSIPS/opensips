@@ -52,6 +52,8 @@
 #include "db_pool.h"
 #include "db.h"
 
+char *db_version_table = VERSION_TABLE;
+
 /** maximal length of a SQL URL */
 static unsigned int MAX_URL_LENGTH = 255;
 
@@ -323,14 +325,17 @@ int db_table_version(const db_func_t* dbf, db_con_t* connection, const str* tabl
 	db_val_t val[1];
 	db_res_t* res = NULL;
 	db_val_t* ver = 0;
+	str version;
+	int ret;
+
 
 	if (!dbf||!connection || !table || !table->s) {
 		LM_CRIT("invalid parameter value\n");
 		return -1;
 	}
 
-	str version = str_init(VERSION_TABLE);
-	int ret;
+	version.s = db_version_table;
+	version.len = strlen(version.s);
 
 	if (dbf->use_table(connection, &version) < 0) {
 		LM_ERR("error while changing table\n");

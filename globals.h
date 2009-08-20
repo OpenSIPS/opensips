@@ -145,4 +145,5 @@ extern int sl_fwd_disabled;
 
 extern time_t startup_time;
 
+extern char *db_version_table;
 #endif

@@ -4,7 +4,7 @@
  * scanner for cfg files
  *
  * Copyright (C) 2001-2003 FhG Fokus
- * Copyright (C) 2005-2006 Voice Sistem S.R.L.
+ * Copyright (C) 2005-2009 Voice Sistem S.R.L.
  * Copyright (C) 2006 enum.at
  *
  * This file is part of opensips, a free SIP server.
@@ -299,6 +299,7 @@ DISABLE_DNS_BLACKLIST "disable_dns_blacklist"
 DST_BLACKLIST		"dst_blacklist"
 MAX_WHILE_LOOPS "max_while_loops"
 DISABLE_STATELESS_FWD	"disable_stateless_fwd"
+DB_VERSION_TABLE "db_version_table"
 
 MPATH	mpath
 LOADMODULE	loadmodule
@@ -554,6 +555,8 @@ WHITESPACE	[ \t\r\n]
 									return DST_BLACKLIST; }
 <INITIAL>{DISABLE_STATELESS_FWD}	{	count(); yylval.strval=yytext;
 									return DISABLE_STATELESS_FWD; }
+<INITIAL>{DB_VERSION_TABLE}	{	count(); yylval.strval=yytext;
+									return DB_VERSION_TABLE; }
 
 <INITIAL>{MPATH}	   { count(); yylval.strval=yytext; return MPATH; }
 <INITIAL>{LOADMODULE}  { count(); yylval.strval=yytext; return LOADMODULE; }
