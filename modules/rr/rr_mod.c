@@ -141,7 +141,11 @@ static pv_export_t mod_items[] = {
 };
 
 
+#ifdef STATIC_RR
+struct module_exports rr_exports = {
+#else
 struct module_exports exports = {
+#endif
 	"rr",
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /*!< dlopen flags */
