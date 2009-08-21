@@ -1,4 +1,4 @@
-# $Id: opensipsctlrc 4331 2008-06-06 14:36:01Z anca_vamanu $
+# $Id$
 #
 # The OpenSIPS configuration file for the control tools.
 #
@@ -12,7 +12,8 @@
 ## chrooted directory
 # $CHROOT_DIR="/path/to/chrooted/directory"
 
-## database type: MYSQL, PGSQL, ORACLE, DB_BERKELEY, or DBTEXT, by default none is loaded
+## database type: MYSQL, PGSQL, ORACLE, DB_BERKELEY, or DBTEXT, 
+## by default none is loaded
 # If you want to setup a database with opensipsdbctl, you must at least specify
 # this parameter.
 # DBENGINE=MYSQL
@@ -83,14 +84,14 @@
 # INSTALL_PRESENCE_TABLES=ask
 
 # Define what module tables should be installed.
-# If you use the postgres database and want to change the installed tables, then you
-# must also adjust the STANDARD_TABLES or EXTRA_TABLES variable accordingly in the
-# opensipsdbctl.base script.
+# If you use the postgres database and want to change the installed tables,
+# then you must also adjust the STANDARD_TABLES or EXTRA_TABLES variable 
+# accordingly in the opensipsdbctl.base script.
 
 # opensips standard modules
-# STANDARD_MODULES="standard acc lcr domain group permissions registrar usrloc msilo
-#                   alias_db uri_db speeddial avpops auth_db pdt dialog dispatcher
-#                   dialplan drouting nathelper load_balancer"
+# STANDARD_MODULES="standard acc lcr domain group permissions registrar usrloc 
+#                   msilo alias_db uri_db speeddial avpops auth_db pdt dialog 
+#                   dispatcher dialplan drouting nathelper load_balancer"
 
 # opensips extra modules
 # EXTRA_MODULES="imc cpl siptrace domainpolicy carrierroute userblacklist"
