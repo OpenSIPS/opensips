@@ -555,9 +555,12 @@ int ospRebuildDestionationUri(
 
     calledsize = strlen(dest->called);
     hostsize = strlen(dest->host);
-    npsize = dest->nprn[0] ? 1 + strlen(dest->nprn) : 0;
-    npsize += dest->npcic[0] ? 1 + strlen(dest->npcic) : 0;
-    npsize += dest->npdi ? 1 + 4 : 0;
+    /* ";rn=" + nprn */
+    npsize = dest->nprn[0] ? 4 + strlen(dest->nprn) : 0;
+    /* ";cic=" + npcic */
+    npsize += dest->npcic[0] ? 5 + strlen(dest->npcic) : 0;
+    /* ";npdi" */
+    npsize += dest->npdi ? 5 : 0;
 
     LM_DBG("'%s'(%d) '%s'(%d) '%s' '%s' '%d'(%d) '%d'\n",
         dest->called, 
@@ -594,11 +597,11 @@ int ospRebuildDestionationUri(
     buffer += calledsize;
 
     if (dest->nprn[0]) {
-        count = sprintf(buffer, ";%s", dest->nprn);
+        count = sprintf(buffer, ";rn=%s", dest->nprn);
         buffer += count;
     }
     if (dest->npcic[0]) {
-        count = sprintf(buffer, ";%s", dest->npcic);
+        count = sprintf(buffer, ";cic=%s", dest->npcic);
         buffer += count;
     }
     if (dest->npdi) {
