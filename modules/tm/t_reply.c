@@ -668,10 +668,14 @@ static inline int do_dns_failover(struct cell *t)
 	faked_env( t, &faked_req);
 	ret = -1;
 
-	if (append_branch( &faked_req, &uac->uri, 0, 0, 0, uac->br_flags,
-	shmem_msg->force_send_socket)!=1 )
+	/* set info as current destination */
+	if ( set_ruri( &faked_req, &uac->uri)!= 0)
 		goto done;
 
+	setb0flags( uac->br_flags );
+	faked_req.force_send_socket = shmem_msg->force_send_socket;
+
+	/* send it out */
 	if (t_forward_nonack( t, &faked_req, uac->proxy)==1)
 		ret = 0;
 
