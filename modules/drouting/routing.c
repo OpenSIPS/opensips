@@ -330,7 +330,7 @@ add_dst(
 
 	/* add address in the list */
 	if(pgw->ip.len<5 || (strncasecmp("sip:", ip, 4)
-			&&strncasecmp("sips:", ip, 5)))
+			&& strncasecmp("sips:", ip, 5)))
 	{
 		if(pgw->ip.len+4>=GWABUF_MAX_SIZE) {
 			LM_ERR("GW address (%d) longer "
@@ -338,12 +338,12 @@ add_dst(
 			goto err_exit;
 		}
 		memcpy(gwabuf, "sip:", 4);
-		memcpy(gwabuf+4, ip, pgw->ip.len);
+		memcpy(gwabuf+4, ip, l_ip);
 		gwas.s = gwabuf;
-		gwas.len = 4+pgw->ip.len;
+		gwas.len = 4+l_ip;
 	} else {
 		gwas.s = ip;
-		gwas.len = pgw->ip.len;
+		gwas.len = l_ip;
 	}
 
 	memset(&uri, 0, sizeof(struct sip_uri));
@@ -416,6 +416,7 @@ free_rt_data(
 		rt_data->pgw_l = 0 ;
 		/* del prefix tree */
 		del_tree(rt_data->pt);
+		rt_data->pt = 0 ;
 		/* del prefixless rules */
 		if(NULL!=rt_data->noprefix.rg) {
 			for(j=0;j<rt_data->noprefix.rg_pos;j++) {

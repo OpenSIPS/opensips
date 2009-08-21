@@ -577,5 +577,6 @@ error:
 		dr_dbf->free_result(db_hdl, res);
 	if (rdata)
 		free_rt_data( rdata, 1 );
+	rdata = NULL;
 	return 0;
 }
