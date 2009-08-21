@@ -370,9 +370,9 @@ static int fix_actions(struct action* a)
 								((struct socket_id*)t->elem[0].u.data)->proto);
 				if (si==0){
 					LM_ERR("bad force_send_socket"
-							" argument: %s:%d (ser doesn't listen on it)\n",
-							((struct socket_id*)t->elem[0].u.data)->name,
-							((struct socket_id*)t->elem[0].u.data)->port);
+						" argument: %s:%d (opensips doesn't listen on it)\n",
+						((struct socket_id*)t->elem[0].u.data)->name,
+						((struct socket_id*)t->elem[0].u.data)->port);
 					ret = E_BAD_ADDRESS;
 					goto error;
 				}

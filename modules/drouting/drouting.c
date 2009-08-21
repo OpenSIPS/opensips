@@ -654,7 +654,7 @@ static int do_routing(struct sip_msg* msg, dr_group_t *drg)
 	ret = -1;
 
 	if ( (*rdata)==0 || (*rdata)->pgw_l==0 ) {
-		LM_DBG("empty ruting table\n");
+		LM_DBG("empty routing table\n");
 		goto error1;
 	}
 
