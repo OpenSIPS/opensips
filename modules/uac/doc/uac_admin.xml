@@ -9,7 +9,7 @@
 		<title>Overview</title>
 		<para>
 		UAC (User Agent Client) module provides some basic UAC
-		functionalities like FROM header manipulation (anonymization)
+		functionalities like FROM / TO header manipulation (anonymization)
 		or client authentication.
 		</para>
 		<para>
@@ -69,31 +69,11 @@
 
 	<section>
 		<title>Exported Parameters</title>
+	
 		<section>
-			<title><varname>rr_store_param</varname> (string)</title>
+			<title><varname>uac_restore_mode</varname> (string)</title>
 			<para>
-			Name of Record-Route header parameter that will be used to store 
-			(encoded) the original FROM URI.
-			</para>
-			<para>
-				<emphasis>
-					This parameter is optional, it's default value being 
-					<quote>vsf</quote>.
-				</emphasis>
-			</para>
-			<example>
-				<title>Set <varname>rr_store_param</varname> parameter</title>
-				<programlisting format="linespecific">
-...
-modparam("uac","rr_store_param","my_param")
-...
-				</programlisting>
-			</example>
-		</section>
-		<section>
-			<title><varname>from_restore_mode</varname> (string)</title>
-			<para>
-			There are 3 mode of restoring the original FROM URI:
+			There are 3 mode of restoring the original headers (FROM/TO) URI:
 			<itemizedlist>
 			<listitem>
 				<para>
@@ -123,20 +103,22 @@ modparam("uac","rr_store_param","my_param")
 				</emphasis>
 			</para>
 			<example>
-				<title>Set <varname>from_restore_mode</varname> parameter
+				<title>Set <varname>uac_restore_mode</varname> parameter
 				</title>
 				<programlisting format="linespecific">
 ...
-modparam("uac","from_restore_mode","auto")
+modparam("uac","uac_restore_mode","auto")
 ...
 				</programlisting>
 			</example>
 		</section>
+
 		<section>
-			<title><varname>from_passwd</varname> (string)</title>
+			<title><varname>uac_passwd</varname> (string)</title>
 			<para>
-			String password to be used to encrypt the RR storing paramter. If
-			empty, no encryption will be used.
+			String password to be used to encrypt the RR storing paramter
+			(when replacing the TO/FROM headers). If empty, no encryption 
+			will be used.
 			</para>
 			<para>
 				<emphasis>
@@ -144,14 +126,59 @@ modparam("uac","from_restore_mode","auto")
 				</emphasis>
 			</para>
 			<example>
-				<title>Set <varname>from_passwd</varname> parameter</title>
+				<title>Set <varname>uac_passwd</varname> parameter</title>
 				<programlisting format="linespecific">
 ...
-modparam("uac","from_passwd","my_secret_passwd")
+modparam("uac","uac_passwd","my_secret_passwd")
 ...
 				</programlisting>
 			</example>
 		</section>
+
+		<section>
+			<title><varname>rr_from_store_param</varname> (string)</title>
+			<para>
+			Name of Record-Route header parameter that will be used to store 
+			(encoded) the original FROM URI.
+			</para>
+			<para>
+				<emphasis>
+					This parameter is optional, it's default value being 
+					<quote>vsf</quote>.
+				</emphasis>
+			</para>
+			<example>
+				<title>Set <varname>rr_from_store_param</varname> parameter</title>
+				<programlisting format="linespecific">
+...
+modparam("uac","rr_from_store_param","my_Fparam")
+...
+				</programlisting>
+			</example>
+		</section>
+
+		<section>
+			<title><varname>rr_to_store_param</varname> (string)</title>
+			<para>
+			Name of Record-Route header parameter that will be used to store 
+			(encoded) the original TO URI.
+			</para>
+			<para>
+				<emphasis>
+					This parameter is optional, it's default value being 
+					<quote>vst</quote>.
+				</emphasis>
+			</para>
+			<example>
+				<title>Set <varname>rr_to_store_param</varname> parameter</title>
+				<programlisting format="linespecific">
+...
+modparam("uac","rr_to_store_param","my_Tparam")
+...
+				</programlisting>
+			</example>
+		</section>
+
 		<section>
 			<title><varname>credential</varname> (string)</title>
 			<para>
@@ -172,6 +199,7 @@ modparam("uac","credential","username:domain:password")
 				</programlisting>
 			</example>
 		</section>
+
 		<section id="auth-realm-avp-id">
 			<title><varname>auth_realm_avp</varname> (string)</title>
 			<para>
@@ -194,6 +222,7 @@ modparam("uac","auth_realm_avp","$avp(i:10)")
 				</programlisting>
 			</example>
 		</section>
+
 		<section id="auth-username-avp-id">
 			<title><varname>auth_username_avp</varname> (string)</title>
 			<para>
@@ -216,6 +245,7 @@ modparam("uac","auth_username_avp","$avp(i:11)")
 				</programlisting>
 			</example>
 		</section>
+
 		<section id="auth-password-avp-id">
 			<title><varname>auth_password_avp</varname> (string)</title>
 			<para>
@@ -243,12 +273,14 @@ modparam("uac","auth_password_avp","$avp(i:12)")
 
 	<section>
 		<title>Exported Functions</title>
+
 		<section>
 			<title>
 				<function moreinfo="none">uac_replace_from(display,uri)</function>
+				<function moreinfo="none">uac_replace_to(display,uri)</function>
 			</title>
 			<para>
-			Replace in FROM header the <emphasis>display</emphasis> name and
+			Replace in FROM/TO header the <emphasis>display</emphasis> name and
 			the <emphasis>URI</emphasis> part.
 			</para>
 			<para>
@@ -268,7 +300,7 @@ modparam("uac","auth_password_avp","$avp(i:12)")
 			FAILURE_ROUTE.
 			</para>
 			<example>
-				<title><function>uac_replace_from</function> usage</title>
+				<title><function>uac_replace_from</function>/<function>uac_replace_to</function> usage</title>
 				<programlisting format="linespecific">
 ...
 # replace both display and uri
@@ -283,12 +315,14 @@ uac_replace_from("","");
 				</programlisting>
 			</example>
 		</section>
+
 		<section>
 			<title>
 				<function moreinfo="none">uac_replace_from(uri)</function>
+				<function moreinfo="none">uac_replace_to(uri)</function>
 			</title>
 			<para>
-				Replace in FROM header the <emphasis>URI</emphasis> part
+				Replace in FROM/TO header the <emphasis>URI</emphasis> part
 				without altering the display name.
 			</para>
 			<para>
@@ -298,7 +332,7 @@ uac_replace_from("","");
 			This function can be used from REQUEST_ROUTE.
 			</para>
 			<example>
-				<title><function>uac_replace_from</function> usage</title>
+				<title><function>uac_replace_from</function>/<function>uac_replace_to</function> usage</title>
 				<programlisting format="linespecific">
 ...
 uac_replace_from("sip:batman@gotham.org");
@@ -306,20 +340,27 @@ uac_replace_from("sip:batman@gotham.org");
 				</programlisting>
 			</example>
 		</section>
+
 		<section>
 			<title>
 				<function moreinfo="none">uac_restore_from()</function>
+				<function moreinfo="none">uac_restore_to()</function>
 			</title>
 			<para>
-			This function will check if the FROM URI was modified and will
+			This function will check if the FROM/TO URI was modified and will
 			use the information stored in header parameter to restore
-			the original FROM URI value.
+			the original FROM/TO URI value.
+			</para>
+			<para>
+			NOTE - this function should be used only if you configured MANUAL
+			restoring of the headers (see uac_restore_mode param). For AUTO 
+			and NONE, there is no need to use this function.
 			</para>
 			<para>
 			This function can be used from REQUEST_ROUTE.
 			</para>
 			<example>
-				<title><function>uac_restore_from</function> usage</title>
+				<title><function>uac_restore_from</function>/<function>uac_restore_to</function> usage</title>
 				<programlisting format="linespecific">
 ...
 uac_restore_from();
@@ -327,6 +368,7 @@ uac_restore_from();
 				</programlisting>
 			</example>
 		</section>
+
 		<section>
 			<title>
 				<function moreinfo="none">uac_auth()</function>

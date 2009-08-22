@@ -1,7 +1,7 @@
 /*
  * $Id$
  *
- * Copyright (C) 2005 Voice Sistem SRL
+ * Copyright (C) 2005-2009 Voice Sistem SRL
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -28,6 +28,7 @@
  *  2006-03-02  UAC authentication looks first in AVPs for credential (bogdan)
  *  2006-03-03  the RR parameter is encrypted via XOR with a password
  *              (bogdan)
+ *  2009-08-22  TO header replacement added (bogdan)
 
  */
 
@@ -41,11 +42,12 @@
 #include "../../error.h"
 #include "../../pvar.h"
 #include "../../mem/mem.h"
+#include "../../parser/parse_from.h"
 #include "../tm/tm_load.h"
 #include "../tm/t_hooks.h"
 #include "../rr/api.h"
 
-#include "from.h"
+#include "replace.h"
 #include "auth.h"
 
 
@@ -53,40 +55,53 @@
 
 
 /* local variable used for init */
-static char* from_restore_mode_str = NULL;
+static char* restore_mode_str = NULL;
 static char* auth_username_avp = NULL;
 static char* auth_realm_avp = NULL;
 static char* auth_password_avp = NULL;
 
 /* global param variables */
-str rr_param = str_init("vsf");
+str rr_from_param = str_init("vsf");
+str rr_to_param = str_init("vst");
 str uac_passwd = str_init("");
-int from_restore_mode = FROM_AUTO_RESTORE;
+int restore_mode = UAC_AUTO_RESTORE;
 struct tm_binds uac_tmb;
 struct rr_binds uac_rrb;
 pv_spec_t auth_username_spec;
 pv_spec_t auth_realm_spec;
 pv_spec_t auth_password_spec;
 
-static int w_replace_from1(struct sip_msg* msg, char* str, char* str2);
-static int w_replace_from2(struct sip_msg* msg, char* str, char* str2);
-static int w_restore_from(struct sip_msg* msg,  char* foo, char* bar);
+static int w_replace_from(struct sip_msg* msg, char* p1, char* p2);
+static int w_restore_from(struct sip_msg* msg);
+
+static int w_replace_to(struct sip_msg* msg, char* p1, char* p2);
+static int w_restore_to(struct sip_msg* msg);
+
 static int w_uac_auth(struct sip_msg* msg, char* str, char* str2);
-static int fixup_replace_from1(void** param, int param_no);
-static int fixup_replace_from2(void** param, int param_no);
+static int fixup_replace_uri(void** param, int param_no);
+static int fixup_replace_disp_uri(void** param, int param_no);
 static int mod_init(void);
 static void mod_destroy(void);
 
 
 /* Exported functions */
 static cmd_export_t cmds[]={
-	{"uac_replace_from",  (cmd_function)w_replace_from2,  2,
-			fixup_replace_from2, 0,
+	{"uac_replace_from",  (cmd_function)w_replace_from,  2,
+			fixup_replace_disp_uri, 0,
 			REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE },
-	{"uac_replace_from",  (cmd_function)w_replace_from1,  1,
-			fixup_replace_from1, 0,
+	{"uac_replace_from",  (cmd_function)w_replace_from,  1,
+			fixup_replace_uri, 0,
 			REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE },
 	{"uac_restore_from",  (cmd_function)w_restore_from,   0,
+			0, 0,
+			REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE },
+	{"uac_replace_to",  (cmd_function)w_replace_to,  2,
+			fixup_replace_disp_uri, 0,
+			REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE },
+	{"uac_replace_to",  (cmd_function)w_replace_to,  1,
+			fixup_replace_uri, 0,
+			REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE },
+	{"uac_restore_to",  (cmd_function)w_restore_to,   0,
 			0, 0,
 			REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE },
 	{"uac_auth",          (cmd_function)w_uac_auth,       0,
@@ -99,13 +114,14 @@ static cmd_export_t cmds[]={
 
 /* Exported parameters */
 static param_export_t params[] = {
-	{"rr_store_param",    STR_PARAM,                &rr_param.s            },
-	{"from_restore_mode", STR_PARAM,                &from_restore_mode_str },
-	{"from_passwd",       STR_PARAM,                &uac_passwd.s          },
-	{"credential",        STR_PARAM|USE_FUNC_PARAM, (void*)&add_credential },
-	{"auth_username_avp", STR_PARAM,                &auth_username_avp     },
-	{"auth_realm_avp",    STR_PARAM,                &auth_realm_avp        },
-	{"auth_password_avp", STR_PARAM,                &auth_password_avp     },
+	{"rr_from_store_param", STR_PARAM,                &rr_from_param.s       },
+	{"rr_to_store_param",   STR_PARAM,                &rr_from_param.s       },
+	{"restore_mode",        STR_PARAM,                &restore_mode_str      },
+	{"restore_passwd",      STR_PARAM,                &uac_passwd.s          },
+	{"credential",          STR_PARAM|USE_FUNC_PARAM, (void*)&add_credential },
+	{"auth_username_avp",   STR_PARAM,                &auth_username_avp     },
+	{"auth_realm_avp",      STR_PARAM,                &auth_realm_avp        },
+	{"auth_password_avp",   STR_PARAM,                &auth_password_avp     },
 	{0, 0, 0}
 };
 
@@ -144,21 +160,24 @@ static int mod_init(void)
 {
 	LM_INFO("initializing...\n");
 
-	if (from_restore_mode_str && *from_restore_mode_str) {
-		if (strcasecmp(from_restore_mode_str,"none")==0) {
-			from_restore_mode = FROM_NO_RESTORE;
-		} else if (strcasecmp(from_restore_mode_str,"manual")==0) {
-			from_restore_mode = FROM_MANUAL_RESTORE;
-		} else if (strcasecmp(from_restore_mode_str,"auto")==0) {
-			from_restore_mode = FROM_AUTO_RESTORE;
+	if (restore_mode_str && *restore_mode_str) {
+		if (strcasecmp(restore_mode_str,"none")==0) {
+			restore_mode = UAC_NO_RESTORE;
+		} else if (strcasecmp(restore_mode_str,"manual")==0) {
+			restore_mode = UAC_MANUAL_RESTORE;
+		} else if (strcasecmp(restore_mode_str,"auto")==0) {
+			restore_mode = UAC_AUTO_RESTORE;
 		} else {
-			LM_ERR("unsupported value '%s' for from_restore_mode\n",from_restore_mode_str);
+			LM_ERR("unsupported value '%s' for restore_mode\n",
+				restore_mode_str);
 			goto error;
 		}
 	}
 
-	rr_param.len = strlen(rr_param.s);
-	if (rr_param.len==0 && from_restore_mode!=FROM_NO_RESTORE)
+	rr_from_param.len = strlen(rr_from_param.s);
+	rr_to_param.len = strlen(rr_to_param.s);
+	if ( (rr_from_param.len==0 || rr_to_param.len==0) &&
+	restore_mode!=UAC_NO_RESTORE)
 	{
 		LM_ERR("rr_store_param cannot be empty if FROM is restoreable\n");
 		goto error;
@@ -191,14 +210,14 @@ static int mod_init(void)
 		goto error;
 	}
 
-	if (from_restore_mode!=FROM_NO_RESTORE) {
+	if (restore_mode!=UAC_NO_RESTORE) {
 		/* load the RR API */
 		if (load_rr_api(&uac_rrb)!=0) {
 			LM_ERR("can't load RR API\n");
 			goto error;
 		}
 
-		if (from_restore_mode==FROM_AUTO_RESTORE) {
+		if (restore_mode==UAC_AUTO_RESTORE) {
 			/* we need the append_fromtag on in RR */
 			if (!uac_rrb.append_fromtag) {
 				LM_ERR("'append_fromtag' RR param is not enabled!"
@@ -230,7 +249,7 @@ static void mod_destroy(void)
 
 /************************** fixup functions ******************************/
 
-static int fixup_replace_from1(void** param, int param_no)
+static int fixup_replace_uri(void** param, int param_no)
 {
 	pv_elem_t *model;
 	str s;
@@ -253,7 +272,7 @@ static int fixup_replace_from1(void** param, int param_no)
 }
 
 
-static int fixup_replace_from2(void** param, int param_no)
+static int fixup_replace_disp_uri(void** param, int param_no)
 {
 	pv_elem_t *model;
 	char *p;
@@ -264,34 +283,25 @@ static int fixup_replace_from2(void** param, int param_no)
 	s.len = strlen(s.s);
 
 	model=NULL;
-	if (param_no==1)
-	{
-		if (s.len)
-		{
-			/* put " around display name */
-			p = (char*)pkg_malloc(s.len+3);
-			if (p==0)
-			{
-				LM_CRIT("no more pkg mem\n");
-				return E_OUT_OF_MEM;
-			}
-			p[0] = '\"';
-			memcpy(p+1, s.s, s.len);
-			p[s.len+1] = '\"';
-			p[s.len+2] = '\0';
-			pkg_free(s.s);
-			s.s = p;
-			s.len += 2;
+	if (param_no==1 && s.len) {
+		/* put " around display name */
+		p = (char*)pkg_malloc(s.len+3);
+		if (p==0) {
+			LM_CRIT("no more pkg mem\n");
+			return E_OUT_OF_MEM;
 		}
+		p[0] = '\"';
+		memcpy(p+1, s.s, s.len);
+		p[s.len+1] = '\"';
+		p[s.len+2] = '\0';
+		pkg_free(s.s);
+		s.s = p;
+		s.len += 2;
 	}
-	if(s.len!=0)
-	{
-		if(pv_parse_format(&s ,&model)<0)
-		{
-			LM_ERR("wrong format [%s] for param no %d!\n", s.s, param_no);
-			pkg_free(s.s);
-			return E_UNSPEC;
-		}
+	if(pv_parse_format(&s ,&model)<0) {
+		LM_ERR("wrong format [%s] for param no %d!\n", s.s, param_no);
+		pkg_free(s.s);
+		return E_UNSPEC;
 	}
 	*param = (void*)model;
 
@@ -302,7 +312,7 @@ static int fixup_replace_from2(void** param, int param_no)
 
 /************************** wrapper functions ******************************/
 
-static int w_restore_from(struct sip_msg *msg,  char* foo, char* bar)
+static int w_restore_from(struct sip_msg *msg)
 {
 	/* safety checks - must be a request */
 	if (msg->first_line.type!=SIP_REQUEST) {
@@ -310,43 +320,95 @@ static int w_restore_from(struct sip_msg *msg,  char* foo, char* bar)
 		return -1;
 	}
 
-	return (restore_from(msg,0)==0)?1:-1;
+	return (restore_uri(msg,&rr_from_param,1)==0)?1:-1;
 }
 
 
-static int w_replace_from1(struct sip_msg* msg, char* uri, char* str2)
-{
-	str uri_s;
-
-	if(pv_printf_s( msg, (pv_elem_p)uri, &uri_s)!=0)
-		return -1;
-	return (replace_from(msg, 0, &uri_s)==0)?1:-1;
-}
-
-
-static int w_replace_from2(struct sip_msg* msg, char* dsp, char* uri)
+static int w_replace_from(struct sip_msg* msg, char* p1, char* p2)
 {
 	str uri_s;
 	str dsp_s;
+	str *uri;
+	str *dsp;
 
-	if (dsp!=NULL)
-	{
-		if(dsp!=NULL)
-			if(pv_printf_s( msg, (pv_elem_p)dsp, &dsp_s)!=0)
-				return -1;
-	} else {
-		dsp_s.s = 0;
-		dsp_s.len = 0;
+	if (p2==NULL) {
+		p2 = p1;
+		p1 = NULL;
+		dsp = NULL;
 	}
 
-	if(uri!=NULL)
-	{
-		if(pv_printf_s( msg, (pv_elem_p)uri, &uri_s)!=0)
+	/* p1 dispaly , p2 uri */
+
+	if ( p1!=NULL ) {
+		if(pv_printf_s( msg, (pv_elem_p)p1, &dsp_s)!=0)
 			return -1;
+		dsp = &dsp_s;
 	}
 
-	return (replace_from(msg, &dsp_s, (uri)?&uri_s:0)==0)?1:-1;
+	/* compute the URI string; if empty string -> make it NULL */
+	if (pv_printf_s( msg, (pv_elem_p)p2, &uri_s)!=0)
+		return -1;
+	uri = uri_s.len?&uri_s:NULL;
+
+	if (parse_from_header(msg)<0 ) {
+		LM_ERR("failed to find/parse FROM hdr\n");
+		return -1;
+	}
+
+	LM_DBG("dsp=%p (len=%d) , uri=%p (len=%d)\n",
+		dsp,dsp?dsp->len:0,uri,uri?uri->len:0);
+
+	return (replace_uri(msg, dsp, uri, msg->from, &rr_from_param)==0)?1:-1;
 }
+
+
+static int w_restore_to(struct sip_msg *msg)
+{
+	/* safety checks - must be a request */
+	if (msg->first_line.type!=SIP_REQUEST) {
+		LM_ERR("called for something not request\n");
+		return -1;
+	}
+
+	return (restore_uri(msg,&rr_to_param,0)==0)?1:-1;
+}
+
+
+static int w_replace_to(struct sip_msg* msg, char* p1, char* p2)
+{
+	str uri_s;
+	str dsp_s;
+	str *uri;
+	str *dsp;
+
+	if (p2==NULL) {
+		p2 = p1;
+		p1 = NULL;
+	}
+
+	/* p1 dispaly , p2 uri */
+
+	if ( p1!=NULL ) {
+		if(pv_printf_s( msg, (pv_elem_p)p1, &dsp_s)!=0)
+			return -1;
+		dsp = &dsp_s;
+	}
+
+	/* compute the URI string; if empty string -> make it NULL */
+	if (pv_printf_s( msg, (pv_elem_p)p2, &uri_s)!=0)
+		return -1;
+	uri = uri_s.len?&uri_s:NULL;
+
+	/* parse TO hdr */
+	if ( msg->to==0 && (parse_headers(msg,HDR_TO_F,0)!=0 || msg->to==0) ) {
+		LM_ERR("failed to parse TO hdr\n");
+		return -1;
+	}
+
+	return (replace_uri(msg, dsp, uri, msg->to, &rr_to_param)==0)?1:-1;
+}
+
+
 
 
 static int w_uac_auth(struct sip_msg* msg, char* str, char* str2)

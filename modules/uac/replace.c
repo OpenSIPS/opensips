@@ -1,7 +1,7 @@
 /*
  * $Id$
  *
- * Copyright (C) 2005 Voice Sistem SRL
+ * Copyright (C) 2005-2009 Voice Sistem SRL
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -31,6 +31,7 @@
  *              (bogdan)
  *  2006-03-03  the RR parameter is encrypted via XOR with a password
  *              (bogdan)
+ *  2009-08-22  TO header replacement added (bogdan)
  */
 
 
@@ -43,11 +44,12 @@
 #include "../tm/tm_load.h"
 #include "../rr/api.h"
 
-#include "from.h"
+#include "replace.h"
 
-extern str rr_param;
 extern str uac_passwd;
-extern int from_restore_mode;
+extern int restore_mode;
+extern str rr_from_param;
+extern str rr_to_param;
 extern struct tm_binds uac_tmb;
 extern struct rr_binds uac_rrb;
 
@@ -56,8 +58,7 @@ static char enc_table64[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 static int dec_table64[256];
 
-static void restore_from_reply(struct cell* t, int type, struct tmcb_params *p);
-static void restore_to_reply(struct cell* t, int type, struct tmcb_params *p);
+static void restore_uris_reply(struct cell* c, int t, struct tmcb_params *p);
 
 #define text3B64_len(_l)   ( ( ((_l)+2)/3 ) << 2 )
 
@@ -73,7 +74,7 @@ void init_from_replacer(void)
 	}
 
 
-static inline int encode_from( str *src, str *dst )
+static inline int encode_uri( str *src, str *dst )
 {
 	static char buf[text3B64_len(MAX_URI_SIZE)];
 	int  idx;
@@ -113,7 +114,7 @@ static inline int encode_from( str *src, str *dst )
 }
 
 
-static inline int decode_from( str *src , str *dst)
+static inline int decode_uri( str *src , str *dst)
 {
 	static char buf[MAX_URI_SIZE];
 	int block;
@@ -160,16 +161,16 @@ static inline int decode_from( str *src , str *dst)
 }
 
 
-static inline struct lump* get_fdisplay_anchor(struct sip_msg *msg,
-												struct to_body *from, str *dsp)
+static inline struct lump* get_display_anchor(struct sip_msg *msg,
+						struct hdr_field *hdr, struct to_body *body, str *dsp)
 {
 	struct lump* l;
 	char *p1;
 	char *p2;
 
 	/* is URI quoted or not? */
-	p1 = msg->from->name.s + msg->from->name.len;
-	for( p2=from->uri.s-1 ; p2>=p1 && *p2!='<' ; p2--);
+	p1 = hdr->name.s + hdr->name.len;
+	for( p2=body->uri.s-1 ; p2>=p1 && *p2!='<' ; p2--);
 
 	if (*p2=='<') {
 		/* is quoted */
@@ -183,7 +184,7 @@ static inline struct lump* get_fdisplay_anchor(struct sip_msg *msg,
 	}
 
 	/* not quoted - more complicated....must place the closing bracket */
-	l = anchor_lump( msg, (from->uri.s+from->uri.len) - msg->buf, 0, 0);
+	l = anchor_lump( msg, (body->uri.s+body->uri.len) - msg->buf, 0, 0);
 	if (l==0) {
 		LM_ERR("unable to build lump anchor\n");
 		return 0;
@@ -200,7 +201,7 @@ static inline struct lump* get_fdisplay_anchor(struct sip_msg *msg,
 		return 0;
 	}
 	/* build anchor for display */
-	l = anchor_lump( msg, from->uri.s - msg->buf, 0, 0);
+	l = anchor_lump( msg, body->uri.s - msg->buf, 0, 0);
 	if (l==0) {
 		LM_ERR("unable to build lump anchor\n");
 		return 0;
@@ -212,23 +213,25 @@ static inline struct lump* get_fdisplay_anchor(struct sip_msg *msg,
 
 
 /*
- * relace from uri and/or from display name
+ * relace uri and/or display name in FROM / TO header
  */
-int replace_from( struct sip_msg *msg, str *from_dsp, str *from_uri)
+int replace_uri( struct sip_msg *msg, str *display, str *uri,
+										struct hdr_field *hdr, str *rr_param)
 {
 	static char buf_s[MAX_URI_SIZE];
-	struct to_body *from;
+	struct to_body *body;
 	struct lump* l;
 	struct cell *Trans;
 	str replace;
 	char *p;
 	str param;
 	str buf;
+	int uac_flag;
 	int i;
 
-	/* consistency check! in AUTO mode, do NOT allow FROM changing
+	/* consistency check! in AUTO mode, do NOT allow URI changing
 	 * in sequential request */
-	if (from_restore_mode==FROM_AUTO_RESTORE && from_uri && from_uri->len) {
+	if (restore_mode==UAC_AUTO_RESTORE && uri && uri->len) {
 		if ( msg->to==0 && (parse_headers(msg,HDR_TO_F,0)!=0 || msg->to==0) ) {
 			LM_ERR("failed to parse TO hdr\n");
 			goto error;
@@ -240,51 +243,34 @@ int replace_from( struct sip_msg *msg, str *from_dsp, str *from_uri)
 		}
 	}
 
-	/* parse original from hdr */
-	if (parse_from_header(msg)<0 )
-	{
-		LM_ERR("failed to find/parse FROM hdr\n");
-		goto error;
-	}
-	from = (struct to_body*)msg->from->parsed;
-	/* some validity checks */
-	if (from->param_lst==0)
-	{
-		LM_ERR("broken FROM hdr; no tag param\n");
-		goto error;
-	}
+	body = (struct to_body*)hdr->parsed;
 
 	/* first deal with display name */
-	if (from_dsp)
-	{
+	if (display) {
 		/* must be replaced/ removed */
 		l = 0;
 		/* first remove the existing display */
-		if ( from->display.len)
-		{
+		if ( body->display.len) {
 			LM_DBG("removing display [%.*s]\n",
-				from->display.len,from->display.s);
+				body->display.len,body->display.s);
 			/* build del lump */
-			l = del_lump( msg, from->display.s-msg->buf, from->display.len, 0);
-			if (l==0)
-			{
+			l = del_lump( msg, body->display.s-msg->buf, body->display.len, 0);
+			if (l==0) {
 				LM_ERR("display del lump failed\n");
 				goto error;
 			}
 		}
 		/* some new display to set? */
-		if (from_dsp->len)
-		{
+		if (display->len) {
 			/* add the new display exactly over the deleted one */
-			buf.s = pkg_malloc( from_dsp->len + 2 );
-			if (buf.s==0)
-			{
+			buf.s = pkg_malloc( display->len + 2 );
+			if (buf.s==0) {
 				LM_ERR("no more pkg mem\n");
 				goto error;
 			}
-			memcpy( buf.s, from_dsp->s, from_dsp->len);
-			buf.len =  from_dsp->len;
-			if (l==0 && (l=get_fdisplay_anchor(msg,from,&buf))==0)
+			memcpy( buf.s, display->s, display->len);
+			buf.len =  display->len;
+			if (l==0 && (l=get_display_anchor(msg,hdr,body,&buf))==0)
 			{
 				LM_ERR("failed to insert anchor\n");
 				goto error;
@@ -299,56 +285,53 @@ int replace_from( struct sip_msg *msg, str *from_dsp, str *from_uri)
 	}
 
 	/* now handle the URI */
-	if (from_uri==0 || from_uri->len==0 )
+	if (uri==0 || uri->len==0 )
 		/* do not touch URI part */
 		return 0;
 
-	LM_DBG("uri to replace [%.*s]\n",from->uri.len, from->uri.s);
-	LM_DBG("replacement uri is [%.*s]\n",from_uri->len, from_uri->s);
+	LM_DBG("uri to replace [%.*s]\n",body->uri.len, body->uri.s);
+	LM_DBG("replacement uri is [%.*s]\n",uri->len, uri->s);
 
 	/* build del/add lumps */
-	if ((l=del_lump( msg, from->uri.s-msg->buf, from->uri.len, 0))==0)
-	{
+	if ((l=del_lump( msg, body->uri.s-msg->buf, body->uri.len, 0))==0) {
 		LM_ERR("del lump failed\n");
 		goto error;
 	}
-	p = pkg_malloc( from_uri->len);
-	if (p==0)
-	{
+	p = pkg_malloc( uri->len);
+	if (p==0) {
 		LM_ERR("no more pkg mem\n");
 		goto error;
 	}
-	memcpy( p, from_uri->s, from_uri->len); 
-	if (insert_new_lump_after( l, p, from_uri->len, 0)==0)
-	{
+	memcpy( p, uri->s, uri->len); 
+	if (insert_new_lump_after( l, p, uri->len, 0)==0) {
 		LM_ERR("insert new lump failed\n");
 		pkg_free(p);
 		goto error;
 	}
 
-	if (from_restore_mode==FROM_NO_RESTORE)
+	if (restore_mode==UAC_NO_RESTORE)
 		return 0;
 
 	/* build RR parameter */
 	buf.s = buf_s;
-	if ( from->uri.len>from_uri->len ) {
-		if (from->uri.len>MAX_URI_SIZE) {
-			LM_ERR("old from uri to long\n");
+	if ( body->uri.len>uri->len ) {
+		if (body->uri.len>MAX_URI_SIZE) {
+			LM_ERR("old %.*s uri too long\n",hdr->name.len,hdr->name.s);
 			goto error;
 		}
-		memcpy( buf.s, from->uri.s, from->uri.len);
-		for( i=0 ; i<from_uri->len ; i++ )
-			buf.s[i] ^=from_uri->s[i];
-		buf.len = from->uri.len;
+		memcpy( buf.s, body->uri.s, body->uri.len);
+		for( i=0 ; i<uri->len ; i++ )
+			buf.s[i] ^=uri->s[i];
+		buf.len = body->uri.len;
 	} else {
-		if (from_uri->len>MAX_URI_SIZE) {
-			LM_ERR("new from uri to long\n");
+		if (uri->len>MAX_URI_SIZE) {
+			LM_ERR("new %.*s uri too long\n",hdr->name.len,hdr->name.s);
 			goto error;
 		}
-		memcpy( buf.s, from_uri->s, from_uri->len);
-		for( i=0 ; i<from->uri.len ; i++ )
-			buf.s[i] ^=from->uri.s[i];
-		buf.len = from_uri->len;
+		memcpy( buf.s, uri->s, uri->len);
+		for( i=0 ; i<body->uri.len ; i++ )
+			buf.s[i] ^=body->uri.s[i];
+		buf.len = uri->len;
 	}
 
 	/* encrypt parameter ;) */
@@ -357,7 +340,7 @@ int replace_from( struct sip_msg *msg, str *from_dsp, str *from_uri)
 			buf.s[i] ^= uac_passwd.s[i%uac_passwd.len];
 
 	/* encode the param */
-	if (encode_from( &buf , &replace)<0 )
+	if (encode_uri( &buf , &replace)<0 )
 	{
 		LM_ERR("failed to encode uris\n");
 		goto error;
@@ -365,7 +348,7 @@ int replace_from( struct sip_msg *msg, str *from_dsp, str *from_uri)
 	LM_DBG("encode is=<%.*s> len=%d\n",replace.len,replace.s,replace.len);
 
 	/* add RR parameter */
-	param.len = 1+rr_param.len+1+replace.len;
+	param.len = 1+rr_param->len+1+replace.len;
 	param.s = (char*)pkg_malloc(param.len);
 	if (param.s==0)
 	{
@@ -374,8 +357,8 @@ int replace_from( struct sip_msg *msg, str *from_dsp, str *from_uri)
 	}
 	p = param.s;
 	*(p++) = ';';
-	memcpy( p, rr_param.s, rr_param.len);
-	p += rr_param.len;
+	memcpy( p, rr_param->s, rr_param->len);
+	p += rr_param->len;
 	*(p++) = '=';
 	memcpy( p, replace.s, replace.len);
 	p += replace.len;
@@ -386,16 +369,18 @@ int replace_from( struct sip_msg *msg, str *from_dsp, str *from_uri)
 		goto error1;
 	}
 
-	if ((msg->msg_flags&FL_USE_UAC_FROM)==0) {
+	uac_flag = (hdr==msg->from)?FL_USE_UAC_FROM:FL_USE_UAC_TO;
+
+	if ((msg->msg_flags&uac_flag)==0) {
 		/* first time here */
-		msg->msg_flags |= FL_USE_UAC_FROM;
+		msg->msg_flags |= uac_flag;
 		if ( (Trans=uac_tmb.t_gett())!=NULL && Trans!=T_UNDEFINED && 
 		Trans->uas.request)
-			Trans->uas.request->msg_flags |= FL_USE_UAC_FROM;
+			Trans->uas.request->msg_flags |= uac_flag;
 
-		/* add TM callback to restore the FROM hdr in reply */
+		/* add TM callback to restore the FROM/TO hdr in reply */
 		if (uac_tmb.register_tmcb( msg, 0, TMCB_RESPONSE_IN,
-		restore_from_reply,0,0)!=1) {
+		restore_uris_reply,0,0)!=1) {
 			LM_ERR("failed to install TM callback\n");
 			goto error1;
 		}
@@ -414,7 +399,7 @@ error:
  * return  0 - restored
  *        -1 - not restored or error
  */
-int restore_from( struct sip_msg *msg, int *is_from )
+int restore_uri( struct sip_msg *msg, str *rr_param, int check_from)
 {
 	struct lump* l;
 	str param_val;
@@ -428,18 +413,18 @@ int restore_from( struct sip_msg *msg, int *is_from )
 	 * for Route param, the test is not really required -bogdan */
 
 	LM_DBG("getting '%.*s' Route param\n",
-		rr_param.len,rr_param.s);
+		rr_param->len,rr_param->s);
 	/* is there something to restore ? */
-	if (uac_rrb.get_route_param( msg, &rr_param, &param_val)!=0) {
+	if (uac_rrb.get_route_param( msg, rr_param, &param_val)!=0) {
 		LM_DBG("route param '%.*s' not found\n",
-			rr_param.len,rr_param.s);
+			rr_param->len,rr_param->s);
 		goto failed;
 	}
 	LM_DBG("route param is '%.*s' (len=%d)\n",
 		param_val.len,param_val.s,param_val.len);
 
 	/* decode the parameter val to a URI */
-	if (decode_from( &param_val, &new_uri)<0 ) {
+	if (decode_uri( &param_val, &new_uri)<0 ) {
 		LM_ERR("failed to decode uri\n");
 		goto failed;
 	}
@@ -450,7 +435,8 @@ int restore_from( struct sip_msg *msg, int *is_from )
 			new_uri.s[i] ^= uac_passwd.s[i%uac_passwd.len];
 
 	/* check the request direction */
-	if (uac_rrb.is_direction( msg, RR_FLOW_UPSTREAM)==0) {
+	if ( (check_from && uac_rrb.is_direction( msg, RR_FLOW_UPSTREAM)==0) ||
+	(!check_from && uac_rrb.is_direction( msg, RR_FLOW_DOWNSTREAM)==0)  ) {
 		/* replace the TO URI */
 		if ( msg->to==0 && (parse_headers(msg,HDR_TO_F,0)!=0 || msg->to==0) ) {
 			LM_ERR("failed to parse TO hdr\n");
@@ -458,7 +444,6 @@ int restore_from( struct sip_msg *msg, int *is_from )
 		}
 		old_uri = ((struct to_body*)msg->to->parsed)->uri;
 		flag = FL_USE_UAC_TO;
-		if (is_from) *is_from = 0;
 	} else {
 		/* replace the FROM URI */
 		if ( parse_from_header(msg)<0 ) {
@@ -467,7 +452,6 @@ int restore_from( struct sip_msg *msg, int *is_from )
 		}
 		old_uri = ((struct to_body*)msg->from->parsed)->uri;
 		flag = FL_USE_UAC_FROM;
-		if (is_from) *is_from = 1;
 	}
 
 	/* get new uri */
@@ -524,16 +508,14 @@ failed:
 
 void rr_checker(struct sip_msg *msg, str *r_param, void *cb_param)
 {
-	int is_from;
-
-	is_from = 0;
 	/* check if the request contains the route param */
-	if ( restore_from( msg, &is_from)==0 ) {
+	if ( restore_uri( msg, &rr_from_param, 1/*from*/)==0 ||
+	restore_uri( msg, &rr_to_param, 0/*to*/)==0 ) {
 		/* restore in req performed -> replace in reply */
 		/* in callback we need TO/FROM to be parsed- it's already done 
-		 * by restore_from() function */
+		 * by restore_from_to() function */
 		if ( uac_tmb.register_tmcb( msg, 0, TMCB_RESPONSE_IN,
-		is_from?restore_from_reply:restore_to_reply, 0, 0)!=1 ) {
+		restore_uris_reply, 0, 0)!=1 ) {
 			LM_ERR("failed to install TM callback\n");
 				return;
 		}
@@ -543,61 +525,54 @@ void rr_checker(struct sip_msg *msg, str *r_param, void *cb_param)
 
 /************************** TMCB functions ******************************/
 
-/* replace the entire from HDR with the original FROM request */
-void restore_from_reply(struct cell* t, int type, struct tmcb_params *p)
+
+static inline int restore_uri_reply(struct sip_msg *rpl,
+						struct hdr_field *rpl_hdr, struct hdr_field *req_hdr)
 {
 	struct lump* l;
-	struct sip_msg *req;
-	struct sip_msg *rpl;
+	struct to_body *body;
 	str new_val;
+	int len;
 
-	if ( !t || !t->uas.request || !p->rpl )
-		return;
-
-	req = t->uas.request;
-	rpl = p->rpl;
-
-	/* parse FROM in reply */
-	if (parse_from_header( p->rpl )<0 ) {
-		LM_ERR("failed to find/parse FROM hdr\n");
-		return;
-	}
-
-	/* duplicate the new from value */
-	new_val.s = pkg_malloc( req->from->len );
-	if (p==0) {
+	/* duplicate the new hdr value */
+	body = (struct to_body*)req_hdr->parsed;
+	len =  body->uri.s + body->uri.len - body->body.s;
+	new_val.s = pkg_malloc( len );
+	if (new_val.s==0) {
 		LM_ERR("no more pkg mem\n");
-		return;
+		return -1;
 	}
-	memcpy( new_val.s, req->from->name.s, req->from->len);
-	new_val.len = req->from->len;
+	memcpy( new_val.s, body->body.s, len);
+	new_val.len = len;
 
-
-	LM_DBG("removing <%.*s>\n",
-			rpl->from->len,rpl->from->name.s);
-	l = del_lump( rpl, rpl->from->name.s-rpl->buf, rpl->from->len, 0);
+	body = (struct to_body*)rpl_hdr->parsed;
+	len =  body->uri.s + body->uri.len - body->body.s;
+	LM_DBG("removing <%.*s>\n", len,body->body.s);
+	l = del_lump( rpl, body->body.s-rpl->buf, len, 0);
 	if (l==0) {
 		LM_ERR("del lump failed\n");
-		return;
+		pkg_free( new_val.s );
+		return -1;
 	}
 
 	LM_DBG("inserting <%.*s>\n",
 			new_val.len,new_val.s);
 	if (insert_new_lump_after( l, new_val.s, new_val.len, 0)==0) {
 		LM_ERR("insert new lump failed\n");
-		return;
+		pkg_free( new_val.s );
+		l->len = 0;
+		return -1;
 	}
+
+	return 0;
 }
 
 
-
-/* replace the entire from TO with the original TO request */
-void restore_to_reply(struct cell* t, int type, struct tmcb_params *p)
+/* replace the entire from HDR with the original FROM request */
+void restore_uris_reply(struct cell* t, int type, struct tmcb_params *p)
 {
-	struct lump* l;
 	struct sip_msg *req;
 	struct sip_msg *rpl;
-	str new_val;
 
 	if ( !t || !t->uas.request || !p->rpl )
 		return;
@@ -605,34 +580,26 @@ void restore_to_reply(struct cell* t, int type, struct tmcb_params *p)
 	req = t->uas.request;
 	rpl = p->rpl;
 
-	/* parse TO in reply */
-	if ( rpl->to==0 && (parse_headers(rpl,HDR_TO_F,0)!=0 || rpl->to==0) ) {
-		LM_ERR("failed to parse TO hdr\n");
-		return;
+	if (req->msg_flags & FL_USE_UAC_FROM ) {
+		/* parse FROM in reply */
+		if (parse_from_header( rpl )<0 ) {
+			LM_ERR("failed to find/parse FROM hdr\n");
+			return;
+		}
+		if (restore_uri_reply( rpl, rpl->from, req->from)) {
+			LM_ERR("failed to restore FROM\n");
+		}
 	}
 
-	/* duplicate the new from value */
-	new_val.s = pkg_malloc( req->to->len );
-	if (p==0) {
-		LM_ERR("no more pkg mem\n");
-		return;
-	}
-	memcpy( new_val.s, req->to->name.s, req->to->len);
-	new_val.len = req->to->len;
-
-	LM_DBG("removing <%.*s>\n",
-			rpl->to->len,rpl->to->name.s);
-	l = del_lump( rpl, rpl->to->name.s-rpl->buf, rpl->to->len, 0);
-	if (l==0) {
-		LM_ERR("del lump failed\n");
-		return;
-	}
-
-	LM_DBG("inserting <%.*s>\n",
-		new_val.len, new_val.s);
-	if (insert_new_lump_after( l, new_val.s, new_val.len, 0)==0) {
-		LM_ERR("insert new lump failed\n");
-		return;
+	if (req->msg_flags & FL_USE_UAC_TO ) {
+		/* parse TO in reply */
+		if ( rpl->to==0 && (parse_headers(rpl,HDR_TO_F,0)!=0 || rpl->to==0) ) {
+			LM_ERR("failed to parse TO hdr\n");
+			return;
+		}
+		if (restore_uri_reply( rpl, rpl->to, req->to)) {
+			LM_ERR("failed to restore FROM\n");
+		}
 	}
 }
 

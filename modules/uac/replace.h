@@ -1,7 +1,7 @@
 /*
  * $Id$
  *
- * Copyright (C) 2005 Voice Sistem SRL
+ * Copyright (C) 2005-2009 Voice Sistem SRL
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -23,25 +23,27 @@
  * History:
  * ---------
  *  2005-01-31  first version (ramona)
+ *  2009-08-22  TO header replacement added (bogdan)
  */
 
 
-#ifndef _UAC_FROM_H_
-#define _UAC_FROM_H_
+#ifndef _UAC_REPLACE_H_
+#define _UAC_REPLACE_H_
 
 #include "../../parser/msg_parser.h"
 #include "../../str.h"
 #include "../tm/t_hooks.h"
 
-#define FROM_NO_RESTORE      (0)
-#define FROM_AUTO_RESTORE    (1)
-#define FROM_MANUAL_RESTORE  (2)
+#define UAC_NO_RESTORE      (0)
+#define UAC_AUTO_RESTORE    (1)
+#define UAC_MANUAL_RESTORE  (2)
 
 void init_from_replacer();
 
-int replace_from( struct sip_msg *msg, str *from_dsp, str *from_uri);
+int replace_uri( struct sip_msg *msg, str *display, str *uri,
+		struct hdr_field *hdr, str *rr_param);
 
-int restore_from( struct sip_msg *msg , int *is_from);
+int restore_uri( struct sip_msg *msg, str *rr_param, int check_from);
 
 /* RR callback functions */
 void rr_checker(struct sip_msg *msg, str *r_param, void *cb_param);
