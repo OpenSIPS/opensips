@@ -104,6 +104,7 @@
 /* another helper function, it just creates a socket_info struct */
 static inline struct socket_info* new_sock_info(	char* name,
 								unsigned short port, unsigned short proto,
+								char *adv_name, unsigned short adv_port,
 								enum si_flags flags)
 {
 	struct socket_info* si;
@@ -120,6 +121,26 @@ static inline struct socket_info* new_sock_info(	char* name,
 	si->port_no=port;
 	si->proto=proto;
 	si->flags=flags;
+
+    /* advertised socket information */
+	/* Make sure the adv_sock_string is initialized, because if there is
+	 * no adv_sock_name, no other code will initialize it! 
+	 */
+	si->adv_sock_str.s=NULL;
+	si->adv_sock_str.len=0;
+	if(adv_name) {
+		si->adv_name_str.len=strlen(adv_name);
+		si->adv_name_str.s=(char *)pkg_malloc(si->adv_name_str.len+1);
+		if (si->adv_name_str.s==0) goto error;
+		memcpy(si->adv_name_str.s, adv_name, si->adv_name_str.len+1);
+	}
+	si->adv_port = 0; /* Here to help grep_sock_info along. */
+	if(adv_port) {
+		si->adv_port_str.s=pkg_malloc(10);
+		if (si->adv_port_str.s==0) goto error;
+		si->adv_port_str.len=snprintf(si->adv_port_str.s, 10, "%hu", adv_port);
+		si->adv_port = adv_port;
+	}
 	return si;
 error:
 	LM_ERR("pkg memory allocation error\n");
@@ -136,6 +157,8 @@ static void free_sock_info(struct socket_info* si)
 		if(si->name.s) pkg_free(si->name.s);
 		if(si->address_str.s) pkg_free(si->address_str.s);
 		if(si->port_no_str.s) pkg_free(si->port_no_str.s);
+		if(si->adv_name_str.s) pkg_free(si->adv_name_str.s);
+		if(si->adv_port_str.s) pkg_free(si->adv_port_str.s);
 	}
 }
 
@@ -217,7 +240,7 @@ struct socket_info* grep_sock_info(str* host, unsigned short port,
 			if (port) {
 				LM_DBG("checking if port %d matches port %d\n", 
 						si->port_no, port);
-				if (si->port_no!=port) {
+				if (si->port_no!=port && si->adv_port!=port) {
 					continue;
 				}
 			}
@@ -227,6 +250,14 @@ struct socket_info* grep_sock_info(str* host, unsigned short port,
 				/* comp. must be case insensitive, host names
 				 * can be written in mixed case, it will also match
 				 * ipv6 addresses if we are lucky*/
+				goto found;
+			/* Check if the adv. name of this socket matches */
+			if ( (h_len==si->adv_name_str.len) && 
+				(strncasecmp(hname, si->adv_name_str.s,
+					si->adv_name_str.len)==0) /*slower*/)
+				/* comp. must be case insensitive, host names
+				* can be in mixed case, it will also match
+				* ipv6 addresses if we are lucky*/
 				goto found;
 			/* check if host == ip address */
 #ifdef USE_IPV6
@@ -291,7 +322,7 @@ struct socket_info* find_si(struct ip_addr* ip, unsigned short port,
 					continue;
 				}
 			}
-			if (ip_addr_cmp(ip, &si->address))
+			if (ip_addr_cmp(ip, &si->address) || ip_addr_cmp(ip, &si->adv_address))
 				goto found;
 		}
 	}while( (proto==0) && (c_proto=next_proto(c_proto)) );
@@ -306,11 +337,12 @@ found:
 /* adds a new sock_info structure to the corresponding list
  * return  0 on success, -1 on error */
 int new_sock2list(char* name, unsigned short port, unsigned short proto,
+						char *adv_name, unsigned short adv_port,
 						enum si_flags flags, struct socket_info** list)
 {
 	struct socket_info* si;
 	
-	si=new_sock_info(name, port, proto, flags);
+	si=new_sock_info(name, port, proto, adv_name, adv_port, flags);
 	if (si==0){
 		LM_ERR("new_sock_info failed\n");
 		goto error;
@@ -326,6 +358,7 @@ error:
 /* adds a sock_info structure to the corresponding proto list
  * return  0 on success, -1 on error */
 int add_listen_iface(char* name, unsigned short port, unsigned short proto,
+						char *adv_name, unsigned short adv_port,
 						enum si_flags flags)
 {
 	struct socket_info** list;
@@ -351,7 +384,7 @@ int add_listen_iface(char* name, unsigned short port, unsigned short proto,
 				port++;
 		}
 #endif
-		if (new_sock2list(name, port, c_proto, flags, list)<0){
+		if (new_sock2list(name, port, c_proto, adv_name, adv_port, flags, list)<0){
 			LM_ERR("new_sock2list failed\n");
 			goto error;
 		}
@@ -466,7 +499,7 @@ int add_interfaces(char* if_name, int family, unsigned short port,
 			if (ifrcopy.ifr_flags & IFF_LOOPBACK) 
 				flags|=SI_IS_LO;
 			/* add it to one of the lists */
-			if (new_sock2list(tmp, port, proto, flags, list)!=0){
+			if (new_sock2list(tmp, port, proto, 0, 0, flags, list)!=0){
 				LM_ERR("new_sock2list failed\n");
 				goto error;
 			}
@@ -615,8 +648,50 @@ static int fix_socket_list(struct socket_info **list)
 				}
 		}
 
-		/* build and set string encoding */
-		tmp = socket2str( si, 0, &si->sock_str.len);
+		/* Now build an ip_addr structure for the adv_name, if there is one
+		 * so that find_si can find it later easily.  Doing this so that
+		 * we can force_send_socket() on an advertised name.  Generally there
+		 * is little interest in dealing with an advertised name as anything
+		 * other than an opaque string that we blindly put into the SIP
+		 * message.
+		 */
+        if(si->adv_name_str.len) {
+			/* If adv_name_str is already an IP, this is kinda foolish cus it
+			 * converts it to ip_addr, then to he, then here we go back to
+			 * ip_addr, but it's either that, or we duplicate the logic to
+			 * check for an ip address here, and still we might have to call
+			 * resolvehost().
+			 */
+			he=resolvehost(si->adv_name_str.s,0);
+			if (he==0){
+				LM_ERR("ERROR: fix_socket_list: could not resolve "
+						"advertised name %s\n", si->adv_name_str.s);
+				goto error;
+			}
+			hostent2ip_addr(&si->adv_address, he, 0); /*convert to ip_addr */
+
+			/* build and set string encoding for the adv socket info
+			 * This is usefful for the usrloc module when it's generating
+			 * or updating the socket on a location record, so we'll generate
+			 * it up front just like the regular sock_str so we don't have
+			 * to worry about it later.
+			 */
+			tmp = socket2str( si, 0, &si->adv_sock_str.len, 1);
+			if (tmp==0) {
+				LM_ERR("ERROR: fix_socket_list: failed to convert "
+					    "socket to string (adv)\n");
+				goto error;
+			}
+			si->adv_sock_str.s=(char*)pkg_malloc(si->adv_sock_str.len);
+			if (si->adv_sock_str.s==0) {
+				LM_ERR("ERROR: fix_socket_list: out of memory.\n");
+				goto error;
+			}
+			memcpy(si->adv_sock_str.s, tmp, si->adv_sock_str.len);
+		}
+
+		/* build and set string encoding for the real socket info */
+		tmp = socket2str( si, 0, &si->sock_str.len, 0);
 		if (tmp==0) {
 			LM_ERR("failed to convert socket to string");
 			goto error;
@@ -751,7 +826,7 @@ int fix_all_socket_lists(void)
 				LM_ERR("cannot determine hostname, try -l address\n");
 				goto error;
 			}
-			if (add_listen_iface(myname.nodename, 0, 0, 0)!=0){
+			if (add_listen_iface(myname.nodename, 0, 0, 0, 0, 0)!=0){
 				LM_ERR("add_listen_iface failed \n");
 				goto error;
 			}

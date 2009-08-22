@@ -140,6 +140,7 @@ action_elem_t elems[MAX_ACTION_ELEMS];
 static void warn(char* s);
 #endif
 static struct socket_id* mk_listen_id(char*, int, int);
+static struct socket_id* set_listen_id_adv(struct socket_id *, char *, int);
 
 static char *mpath=NULL;
 static char mpath_buf[256];
@@ -400,6 +401,7 @@ extern int line;
 %token LBRACK
 %token RBRACK
 %token SLASH
+%token AS
 %token DOT
 %token CR
 %token COLON
@@ -518,6 +520,8 @@ phostport:	listen_id				{ $$=mk_listen_id($1, 0, 0); }
 			| listen_id COLON port	{ $$=mk_listen_id($1, 0, $3); }
 			| proto COLON listen_id	{ $$=mk_listen_id($3, $1, 0); }
 			| proto COLON listen_id COLON port	{ $$=mk_listen_id($3, $1, $5);}
+			| phostport AS listen_id { set_listen_id_adv((struct socket_id *)$1, $3, 5060); }
+			| phostport AS listen_id COLON port{ set_listen_id_adv((struct socket_id *)$1, $3, $5); }
 			| listen_id COLON error { $$=0; yyerror(" port number expected"); }
 			;
 
@@ -897,6 +901,8 @@ assign_stm: DEBUG EQUAL snumber {
 								if (add_listen_iface(	lst_tmp->name,
 														lst_tmp->port,
 														lst_tmp->proto,
+														lst_tmp->adv_name,
+														lst_tmp->adv_port,
 														0
 													)!=0){
 									LM_CRIT("cfg. parser: failed"
@@ -2398,8 +2404,18 @@ static struct socket_id* mk_listen_id(char* host, int proto, int port)
 		l->name=host;
 		l->port=port;
 		l->proto=proto;
+		l->adv_name=NULL;
+		l->adv_port=0;
 		l->next=0;
 	}
 	return l;
 }
 
+static struct socket_id* set_listen_id_adv(struct socket_id* sock,
+											char *adv_name,
+											int adv_port)
+{
+	sock->adv_name=adv_name;
+	sock->adv_port=adv_port;
+	return sock;
+}

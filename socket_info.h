@@ -53,6 +53,7 @@ extern struct socket_info* sctp_listen;
 #define NUM_IP_OCTETS	4
 
 int add_listen_iface(char* name, unsigned short port, unsigned short proto,
+							char *adv_name, unsigned short adv_port,
 							enum si_flags flags);
 int fix_all_socket_lists();
 
@@ -402,7 +403,7 @@ static inline char* proto2str(int proto, char *p)
 #define sock_str_len(_sock) ( 3 + 1*((_sock)->proto==PROTO_SCTP) + 1 + \
 		(_sock)->address_str.len + 1 + (_sock)->port_no_str.len)
 
-static inline char* socket2str(struct socket_info *sock, char *s, int* len)
+static inline char* socket2str(struct socket_info *sock, char *s, int* len, int adv)
 {
 	static char buf[MAX_SOCKET_STR];
 	char *p,*p1;
@@ -422,11 +423,19 @@ static inline char* socket2str(struct socket_info *sock, char *s, int* len)
 	if (p==NULL) return 0;
 
 	*(p++) = ':';
-	memcpy( p, sock->address_str.s, sock->address_str.len);
-	p += sock->address_str.len;
-	*(p++) = ':';
-	memcpy( p, sock->port_no_str.s, sock->port_no_str.len);
-	p += sock->port_no_str.len;
+ 	if(adv) {
+ 		memcpy( p, sock->adv_name_str.s, sock->adv_name_str.len);
+ 		p += sock->adv_name_str.len;
+ 		*(p++) = ':';
+ 		memcpy( p, sock->adv_port_str.s, sock->adv_port_str.len);
+ 		p += sock->adv_port_str.len;
+ 	} else {
+ 		memcpy( p, sock->address_str.s, sock->address_str.len);
+ 		p += sock->address_str.len;
+ 		*(p++) = ':';
+ 		memcpy( p, sock->port_no_str.s, sock->port_no_str.len);
+ 		p += sock->port_no_str.len;
+ 	}
 	*len = (int)(long)(p-p1);
 	LM_DBG("<%.*s>\n",*len,p1);
 	return p1;

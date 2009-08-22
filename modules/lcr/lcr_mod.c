@@ -1830,7 +1830,7 @@ static inline int encode_branch_info(str *info, struct contact *con)
     at++;
     if (con->sock) {
 	len = MAX_SOCKET_STR;
-	if (!socket2str(con->sock, at, &len)) {
+	if (!socket2str(con->sock, at, &len, 1)) {
 	    LM_ERR("Failed to convert socket to str\n");
 	    return 0;
 	}

@@ -154,8 +154,10 @@ void print_ucontact(FILE* _f, ucontact_t* _c)
 	fprintf(_f, "State     : %s\n", st);
 	fprintf(_f, "Flags     : %u\n", _c->flags);
 	if (_c->sock) {
-		fprintf(_f, "Sock      : %.*s (%p)\n",
-				_c->sock->sock_str.len,_c->sock->sock_str.s,_c->sock);
+		fprintf(_f, "Sock      : %.*s (as %.*s )(%p)\n",
+				_c->sock->sock_str.len,_c->sock->sock_str.s,
+				_c->sock->adv_sock_str.len,ZSW(_c->sock->adv_sock_str.s),
+				_c->sock);
 	} else {
 		fprintf(_f, "Sock      : none (null)\n");
 	}
@@ -459,7 +461,8 @@ int db_insert_ucontact(ucontact_t* _c)
 
 	vals[11].type = DB_STR;
 	if (_c->sock) {
-		vals[11].val.str_val = _c->sock->sock_str;
+		vals[11].val.str_val =  _c->sock->adv_sock_str.len ?
+								_c->sock->adv_sock_str:  _c->sock->sock_str;
 		vals[11].nul = 0;
 	} else {
 		vals[11].nul = 1;
@@ -596,7 +599,8 @@ int db_update_ucontact(ucontact_t* _c)
 
 	vals2[8].type = DB_STR;
 	if (_c->sock) {
-		vals2[8].val.str_val = _c->sock->sock_str;
+		vals2[8].val.str_val = _c->sock->adv_sock_str.len ?
+								_c->sock->adv_sock_str:  _c->sock->sock_str;
 		vals2[8].nul = 0;
 	} else {
 		vals2[8].nul = 1;

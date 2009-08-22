@@ -334,6 +334,7 @@ IPV6ADDR	({HEX4}":"){7}{HEX4}|({HEX4}":"){1,7}(":"{HEX4}){1,7}|":"(":"{HEX4}){1,
 QUOTES		\"
 TICK		\'
 SLASH		"/"
+AS			{EAT_ABLE}("as"|"AS"){EAT_ABLE}
 SEMICOLON	;
 RPAREN		\)
 LPAREN		\(
@@ -631,6 +632,7 @@ WHITESPACE	[ \t\r\n]
 <INITIAL>{RBRACE}	{ count(); return RBRACE; }
 <INITIAL>{LBRACK}	{ count(); return LBRACK; }
 <INITIAL>{RBRACK}	{ count(); return RBRACK; }
+<INITIAL>{AS}       { count(); return AS; }
 <INITIAL>{DOT}		{ count(); return DOT; }
 <INITIAL>\\{CR}		{count(); } /* eat the escaped CR */
 <INITIAL>{CR}		{ count();/* return CR;*/ }

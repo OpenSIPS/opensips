@@ -354,9 +354,16 @@ static int add_sock_hdr(struct sip_msg* msg, char *name, char *foo)
 	str *hdr_name;
 	str hdr;
 	char *p;
+	str use_sock_str;
 
 	hdr_name = (str*)name;
 	si = msg->rcv.bind_address;
+
+	if(si->adv_sock_str.len) {
+		use_sock_str = si->adv_sock_str;
+	} else {
+		use_sock_str = si->sock_str;
+	}
 
 	if (parse_headers( msg, HDR_EOH_F, 0) == -1) {
 		LM_ERR("failed to parse message\n");
@@ -369,7 +376,7 @@ static int add_sock_hdr(struct sip_msg* msg, char *name, char *foo)
 		goto error;
 	}
 
-	hdr.len = hdr_name->len + 2 + si->sock_str.len + CRLF_LEN;
+	hdr.len = hdr_name->len + 2 + use_sock_str.len + CRLF_LEN;
 	if ( (hdr.s=(char*)pkg_malloc(hdr.len))==0 ) {
 		LM_ERR("no more pkg mem\n");
 		goto error;
@@ -381,8 +388,8 @@ static int add_sock_hdr(struct sip_msg* msg, char *name, char *foo)
 	*(p++) = ':';
 	*(p++) = ' ';
 
-	memcpy( p, si->sock_str.s, si->sock_str.len);
-	p += si->sock_str.len;
+	memcpy( p, use_sock_str.s, use_sock_str.len);
+	p += use_sock_str.len;
 
 	memcpy( p, CRLF, CRLF_LEN);
 	p += CRLF_LEN;

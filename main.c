@@ -962,7 +962,7 @@ int main(int argc, char** argv)
 					}
 					tmp[tmp_len]=0; /* null terminate the host */
 					/* add a new addr. to our address list */
-					if (add_listen_iface(tmp, port, proto, 0)!=0){
+					if (add_listen_iface(tmp, port, proto, 0, 0, 0)!=0){
 						LM_ERR("failed to add new listen address\n");
 						goto error00;
 					}

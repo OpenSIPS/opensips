@@ -94,6 +94,11 @@ struct socket_info {
 	union sockaddr_union su;
 	int proto; /*!< tcp or udp*/
 	str sock_str;
+	str adv_sock_str;
+	str adv_name_str; /* Advertised name of this interface */
+	str adv_port_str; /* Advertised port of this interface */
+	struct ip_addr adv_address; /* Advertised address in ip_addr form (for find_si) */
+	unsigned short adv_port;    /* optimization for grep_sock_info() */
 	struct socket_info* next;
 	struct socket_info* prev;
 };
@@ -123,6 +128,8 @@ struct dest_info {
 
 struct socket_id {
 	char* name;
+	char* adv_name;
+	int adv_port;
 	int proto;
 	int port;
 	struct socket_id* next;

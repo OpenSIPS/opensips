@@ -195,8 +195,13 @@ static inline int mi_add_aor_node(struct mi_node *parent, urecord_t* r, time_t t
 
 		/* socket */
 		if (c->sock) {
-			node = add_mi_node_child( cnode, 0, "Socket", 6,
-				c->sock->sock_str.s, c->sock->sock_str.len);
+			if(c->sock->adv_sock_str.len) {
+				node = add_mi_node_child( cnode, 0, "Socket", 6,
+					c->sock->adv_sock_str.s, c->sock->adv_sock_str.len);
+			} else {
+				node = add_mi_node_child( cnode, 0, "Socket", 6,
+					c->sock->sock_str.s, c->sock->sock_str.len);
+			}
 			if (node==0)
 				return -1;
 		}
@@ -536,6 +541,7 @@ struct mi_root* mi_usrloc_show_contact(struct mi_root *cmd, void *param)
 	ucontact_t* con;
 	str *aor;
 	int ret;
+	str use_sock_str;
 
 	node = cmd->node.kids;
 	if (node==NULL || node->next==NULL || node->next->next!=NULL)
@@ -564,6 +570,17 @@ struct mi_root* mi_usrloc_show_contact(struct mi_root *cmd, void *param)
 	rpl = 0;
 
 	for( con=rec->contacts ; con ; con=con->next) {
+		if(con->sock) {
+			if(con->sock->adv_sock_str.len) {
+				use_sock_str = con->sock->adv_sock_str;
+			} else {
+				use_sock_str = con->sock->sock_str;
+			}
+		} else {
+			use_sock_str.s = "NULL";
+			use_sock_str.len = 4;
+		}
+
 		if (VALID_CONTACT( con, act_time)) {
 			if (rpl_tree==0) {
 				rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
@@ -581,8 +598,7 @@ struct mi_root* mi_usrloc_show_contact(struct mi_root *cmd, void *param)
 				con->c.len, ZSW(con->c.s),
 				q2str(con->q, 0), (int)(con->expires - act_time),
 				con->flags, con->cflags,
-				con->sock?con->sock->sock_str.len:3,
-					con->sock?con->sock->sock_str.s:"NULL",
+				use_sock_str.len,use_sock_str.s,
 				con->methods,
 				con->received.len?";received=<":"",con->received.len,
 					ZSW(con->received.s), con->received.len?">":"",
