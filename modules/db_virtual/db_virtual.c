@@ -734,3 +734,4 @@ struct mi_root* info_set_info(struct mi_root* cmd, void* param){
     
     return init_mi_tree( 200, MI_SSTR(MI_OK));
 }
+
