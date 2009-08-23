@@ -88,14 +88,14 @@ extern stat_var *failed_dlgs;
 
 
 
-void init_dlg_handlers(char *rr_param_p, int dlg_flag_p,
+void init_dlg_handlers(char *rr_param_p, int dlg_flag_idx,
 		pv_spec_t *timeout_avp_p ,int default_timeout_p, 
 		int seq_match_mode_p)
 {
 	rr_param.s = rr_param_p;
 	rr_param.len = strlen(rr_param.s);
 
-	dlg_flag = 1<<dlg_flag_p;
+	dlg_flag = (dlg_flag_idx==-1) ? 0 : (1<<dlg_flag_idx) ;
 
 	timeout_avp = timeout_avp_p;
 	default_timeout = default_timeout_p;
