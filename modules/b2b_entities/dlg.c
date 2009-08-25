@@ -255,6 +255,7 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 	b2b_table table = NULL;
 	int method_value;
 	struct to_body TO;
+	static	str reason = {"Trying", 6};
 
 	/* check if a b2b request */
 	if (parse_headers(msg, HDR_EOH_F, 0) < 0)
@@ -387,6 +388,9 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 	{
 		tmb.t_newtran(msg);
 		dlg->tm_tran = tmb.t_gett();
+
+		if(method_value == METHOD_INVITE) /* send provisional reply 100 Trying */
+			tmb.t_reply(msg, 100, &reason);
 	}
 
 logic_notify:

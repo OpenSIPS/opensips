@@ -54,6 +54,7 @@ str* server_new(struct sip_msg* msg, b2b_notify_t b2b_cback,
 {
 	b2b_dlg_t* dlg;
 	unsigned int hash_index;
+	static	str reason = {"Trying", 6};
 
 	/* create new entry in hash table */
 	dlg = b2b_new_dlg(msg, 0);
@@ -75,6 +76,8 @@ str* server_new(struct sip_msg* msg, b2b_notify_t b2b_cback,
 		dlg->tm_tran = tmb.t_gett();
 	}
 	tmb.ref_cell(dlg->tm_tran);
+	
+	tmb.t_reply(msg, 100, &reason);
 
 	/* add the record in hash table */
 	hash_index = core_hash(&dlg->callid, &dlg->tag[CALLER_LEG], server_hsize);
