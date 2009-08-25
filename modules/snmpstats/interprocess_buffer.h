@@ -81,7 +81,10 @@ extern hashSlot_t           *hashTable;
  * Initialize shared memory used to buffer communication between the usrloc
  * module and the SNMPStats module.  (Specifically, the user and contact tables)
  */
-int  initInterprocessBuffers();
+int  initInterprocessBuffers(void);
+
+
+int setInterprocessBuffersAlarm(void);
 
 /* USRLOC Callback Handler:
  *

@@ -32,6 +32,7 @@
 #include "openserSIPContactTable.h"
 #include "openserSIPRegUserLookupTable.h"
 #include "openserMIBNotifications.h"
+#include "interprocess_buffer.h"
 
 #include "../../dprint.h"
 
@@ -62,7 +63,9 @@ static int initialize_agentx(void)
 {
 	/* We register with a master agent */
 	register_with_master_agent(AGENT_PROCESS_NAME);
-	
+
+	setInterprocessBuffersAlarm();
+
 	/* Initialize all scalars, and let the master agent know we want to
 	 * handle all OID's pertaining to these scalars. */
 	init_openserSIPCommonObjects();
@@ -107,8 +110,8 @@ void agentx_child(int rank)
 	new_sigterm_handler.sa_handler = sigterm_handler;
 	sigaction(SIGTERM, &new_sigterm_handler, NULL);
 
-	/* We don't want OpenSER's normal handlers doing anything when
-	 * we die.  As far as OpenSER knows this process never existed.
+	/* We don't want OpenSIPS's normal handlers doing anything when
+	 * we die.  As far as OpenSIPS knows this process never existed.
 	 * So override all signal handlers to the OS default. */
 	sigemptyset(&default_handlers.sa_mask);
 	default_handlers.sa_flags = 0;

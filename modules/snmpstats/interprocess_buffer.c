@@ -112,6 +112,23 @@ int initInterprocessBuffers(void)
 	return 1;
 }
 
+
+void IBAlarmHandler(unsigned int reg, void *clientarg)
+{
+	consumeInterprocessBuffer();
+}
+
+
+int setInterprocessBuffersAlarm(void)
+{
+	if ( snmp_alarm_register(5/*seconds*/,SA_REPEAT,IBAlarmHandler,NULL)==0){
+		LM_ERR("failed to set consumer snmp alarm\n");
+		return -1;
+	}
+	return 0;
+}
+
+
 /* USRLOC Callback Handler:
  *
  * This function should be registered to receive callbacks from the usrloc
