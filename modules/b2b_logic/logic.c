@@ -123,6 +123,7 @@ b2bl_entity_id_t* b2bl_create_new_entity(enum b2b_entity_type type, str* entity_
 int b2b_extra_headers(struct sip_msg* msg, str* extra_headers)
 {
 	char* p;
+	struct hdr_field* hdr;
 
 	if(msg->content_type)
 		extra_headers->len = msg->content_type->len;
@@ -151,7 +152,7 @@ int b2b_extra_headers(struct sip_msg* msg, str* extra_headers)
 		memcpy(p, ": ", 2);
 		p+= 2;
 		memcpy(p, msg->content_type->body.s, msg->content_type->body.len);
-		/* verific daca nu e adaugat CLRF */
+		/* verify if CLRF is added */
 		p+= msg->content_type->body.len;
 		if((msg->content_type->len - msg->content_type->body.len -2 -msg->content_type->name.len ) == CRLF_LEN)
 		{
@@ -182,9 +183,74 @@ int b2b_extra_headers(struct sip_msg* msg, str* extra_headers)
 		memcpy(p, ": ", 2);
 		p+= 2;
 		memcpy(p, msg->allow->body.s, msg->allow->body.len);
-		/* verific daca nu e adaugat CLRF */
+		/* verify if CRLF is added */
 		p+= msg->allow->body.len;
 		if((msg->allow->len - msg->allow->body.len -2 - msg->allow->name.len) == CRLF_LEN)
+		{
+			memcpy(p, CRLF, CRLF_LEN);
+			p+= CRLF_LEN;
+		}
+	}
+	
+	if(msg->proxy_require)
+	{
+		memcpy(p, msg->proxy_require->name.s, msg->proxy_require->name.len);
+		p+= msg->proxy_require->name.len;
+		memcpy(p, ": ", 2);
+		p+= 2;
+		memcpy(p, msg->proxy_require->body.s, msg->proxy_require->body.len);
+		/* verify if CRLF is added */
+		p+= msg->proxy_require->body.len;
+		if((msg->proxy_require->len - msg->proxy_require->body.len -2 - msg->proxy_require->name.len) == CRLF_LEN)
+		{
+			memcpy(p, CRLF, CRLF_LEN);
+			p+= CRLF_LEN;
+		}
+	}
+
+	hdr = get_header_by_static_name( msg, "Require");
+	if(hdr)
+	{
+		LM_DBG("Require header found\n");
+		memcpy(p, hdr->name.s, hdr->name.len);
+		p+= hdr->name.len;
+		memcpy(p, ": ", 2);
+		p+= 2;
+		memcpy(p, hdr->body.s, hdr->body.len);
+		/* verify if CRLF is added */
+		p+= hdr->body.len;
+		if((hdr->len - hdr->body.len -2 - hdr->name.len) == CRLF_LEN)
+		{
+			memcpy(p, CRLF, CRLF_LEN);
+			p+= CRLF_LEN;
+		}
+	}
+
+	if(msg->session_expires)
+	{
+		memcpy(p, msg->session_expires->name.s, msg->session_expires->name.len);
+		p+= msg->session_expires->name.len;
+		memcpy(p, ": ", 2);
+		p+= 2;
+		memcpy(p, msg->session_expires->body.s, msg->session_expires->body.len);
+		/* verify if CRLF is added */
+		p+= msg->session_expires->body.len;
+		if((msg->session_expires->len - msg->session_expires->body.len -2 - msg->session_expires->name.len) == CRLF_LEN)
+		{
+			memcpy(p, CRLF, CRLF_LEN);
+			p+= CRLF_LEN;
+		}
+	}
+	if(msg->min_se)
+	{
+		memcpy(p, msg->min_se->name.s, msg->min_se->name.len);
+		p+= msg->min_se->name.len;
+		memcpy(p, ": ", 2);
+		p+= 2;
+		memcpy(p, msg->min_se->body.s, msg->min_se->body.len);
+		/* verify if CRLF is added */
+		p+= msg->min_se->body.len;
+		if((msg->min_se->len - msg->min_se->body.len -2 - msg->min_se->name.len) == CRLF_LEN)
 		{
 			memcpy(p, CRLF, CRLF_LEN);
 			p+= CRLF_LEN;
@@ -964,6 +1030,9 @@ int create_top_hiding_entities(struct sip_msg* msg, str* to_uri, str* from_uri)
 	/* insert extra headers : Content-Type: 
                               Allow: 
                               Supported:
+							  Require
+							  Session-Expires
+							  Min-SE
 	*/
 	if(b2b_extra_headers(msg, &extra_headers)< 0)
 	{
@@ -1208,8 +1277,11 @@ int b2b_process_scenario_init(b2b_scenario_t* scenario_struct,struct sip_msg* ms
 		LM_DBG("body = %.*s - len = %d\n", body.len, body.s, body.len);
 
 		/* extract extra headers : Content-Type: 
-								  Allow: 
-								  Supported:
+								   Allow: 
+								   Supported:
+							  	   Require
+							       Session-Expires
+							       Min-SE
 		*/
 		if(b2b_extra_headers(msg, &extra_headers)< 0)
 		{
