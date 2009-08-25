@@ -81,12 +81,7 @@
 		<para>
 		&url; of the database table to be used.
 		</para>
-		<para>
-		<emphasis>
-			Default value is 
-			<quote>&defaultdb;</quote>.
-		</emphasis>
-		</para>
+		
 		<example>
 		<title>Set <varname>db_url</varname> parameter</title>
 		<programlisting format="linespecific">
@@ -326,7 +321,7 @@ modparam("group", "aaa_url", "radius:/etc/radiusclient-ng/radiusclient.conf")
 	<title>Exported Functions</title>
 	<section>
 		<title>
-		<function moreinfo="none">is_user_in(URI, group)</function>
+		<function moreinfo="none">db_is_user_in(URI, group)</function>
 		</title>
 		<para>
 		This function is to be used for script group membership. The function 
@@ -369,17 +364,17 @@ modparam("group", "aaa_url", "radius:/etc/radiusclient-ng/radiusclient.conf")
 		This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 		</para>
 		<example>
-		<title><function>is_user_in</function> usage</title>
+		<title><function>db_is_user_in</function> usage</title>
 		<programlisting format="linespecific">
 		
 ...
-if (is_user_in("Request-URI", "ld")) {
+if (db_is_user_in("Request-URI", "ld")) {
 	...
 };
 ...
 $avp(s:grouptocheck)="offline";
 
-if (is_user_in("Credentials", "$avp(s:grouptocheck)")) {
+if (db_is_user_in("Credentials", "$avp(s:grouptocheck)")) {
 	...
 };
 ...
@@ -388,13 +383,14 @@ if (is_user_in("Credentials", "$avp(s:grouptocheck)")) {
 		</example>
 	</section>
 
+
 	<section>
 		<title>
-		<function moreinfo="none">get_user_group(URI, AVP)</function>
+		<function moreinfo="none">db_get_user_group(URI, AVP)</function>
 		</title>
 		<para>
 		This function is to be used for regular expression based group 
-		membership. The function returns true if username in the given &uri; 
+		membership, using DB support. The function returns true if username in the given &uri; 
 		belongs to at least one group; the group ID(s) are returned as AVPs.
 		</para>
 		<para>Meaning of the parameters is as follows:</para>
@@ -432,11 +428,11 @@ if (is_user_in("Credentials", "$avp(s:grouptocheck)")) {
 		This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 		</para>
 		<example>
-		<title><function>get_user_group</function> usage</title>
+		<title><function>db_get_user_group</function> usage</title>
 		<programlisting format="linespecific">
 		
 ...
-if (get_user_group("Request-URI", "$avp(i:10)")) {
+if (db_get_user_group("Request-URI", "$avp(i:10)")) {
     xdbg("User $ru belongs to $(avp(i:10)[*]) group(s)\n");
     ....
 };
@@ -450,6 +446,7 @@ if (get_user_group("Request-URI", "$avp(i:10)")) {
 		<function moreinfo="none">aaa_is_user_in(URI, group)</function>
 		</title>
 		<para>
+		This function checks group membership, using AAA support.
 		The function returns true if username in the given &uri; is member of 
 		the given group and false if not.
 		</para>

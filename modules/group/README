@@ -12,10 +12,16 @@ Edited by
 
 Sergio Gutierrez
 
+Edited by
+
+Irina-Maria Stanescu
+
    Copyright © 2003 FhG FOKUS
+
+   Copyright © 2009 voice-system.ro
    Revision History
-   Revision $Revision$ $Date: 2009-07-21 10:45:05 +0300
-                              (Tue, 21 Jul 2009) $
+   Revision $Revision$ $Date: 2009-08-17 19:03:14 +0300
+                              (Mon, 17 Aug 2009) $
      __________________________________________________________
 
    Table of Contents
@@ -44,11 +50,13 @@ Sergio Gutierrez
               1.3.8. re_exp_column (string)
               1.3.9. re_gid_column (string)
               1.3.10. multiple_gid (integer)
+              1.3.11. aaa_url (string)
 
         1.4. Exported Functions
 
-              1.4.1. is_user_in(URI, group)
-              1.4.2. get_user_group(URI, AVP)
+              1.4.1. db_is_user_in(URI, group)
+              1.4.2. db_get_user_group(URI, AVP)
+              1.4.3. aaa_is_user_in(URI, group)
 
    List of Examples
 
@@ -62,8 +70,10 @@ Sergio Gutierrez
    1.8. Set reg_exp_column parameter
    1.9. Set re_gid_column parameter
    1.10. Set multiple_gid parameter
-   1.11. is_user_in usage
-   1.12. get_user_group usage
+   1.11. Set aaa_url parameter
+   1.12. db_is_user_in usage
+   1.13. db_get_user_group usage
+   1.14. aaa_is_user_in usage
 
 Chapter 1. Admin Guide
 
@@ -97,7 +107,8 @@ Chapter 1. Admin Guide
 1.2.1. OpenSIPS Modules
 
    The following modules must be loaded before this module:
-     * A database module, like mysql, postgres or dbtext
+     * A database module, like mysql, postgres or dbtext.
+     * An AAA module, like radius or diameter.
 
 1.2.2. External Libraries or Applications
 
@@ -111,13 +122,12 @@ Chapter 1. Admin Guide
 
    URL of the database table to be used.
 
-   Default value is
-   "mysql://opensips:opensipsrw@localhost/opensips".
-
    Example 1.1. Set db_url parameter
+
 ...
 modparam("group", "db_url", "mysql://username:password@dbhost/opensips")
 ...
+
 
 1.3.2. table (string)
 
@@ -127,9 +137,11 @@ modparam("group", "db_url", "mysql://username:password@dbhost/opensips")
    Default value is "grp".
 
    Example 1.2. Set table parameter
+
 ...
 modparam("group", "table", "grp_table")
 ...
+
 
 1.3.3. user_column (string)
 
@@ -138,9 +150,11 @@ modparam("group", "table", "grp_table")
    Default value is "username".
 
    Example 1.3. Set user_column parameter
+
 ...
 modparam("group", "user_column", "user")
 ...
+
 
 1.3.4. domain_column (string)
 
@@ -149,9 +163,11 @@ modparam("group", "user_column", "user")
    Default value is "domain".
 
    Example 1.4. Set domain_column parameter
+
 ...
 modparam("group", "domain_column", "realm")
 ...
+
 
 1.3.5. group_column (string)
 
@@ -160,9 +176,11 @@ modparam("group", "domain_column", "realm")
    Default value is "grp".
 
    Example 1.5. Set group_column parameter
+
 ...
 modparam("group", "group_column", "grp")
 ...
+
 
 1.3.6. use_domain (integer)
 
@@ -173,9 +191,11 @@ modparam("group", "group_column", "grp")
    Default value is 0 (no).
 
    Example 1.6. Set use_domain parameter
+
 ...
 modparam("group", "use_domain", 1)
 ...
+
 
 1.3.7. re_table (string)
 
@@ -186,9 +206,11 @@ modparam("group", "use_domain", 1)
    Default value is "NULL".
 
    Example 1.7. Set re_table parameter
+
 ...
 modparam("group", "re_table", "re_grp")
 ...
+
 
 1.3.8. re_exp_column (string)
 
@@ -198,9 +220,11 @@ modparam("group", "re_table", "re_grp")
    Default value is "reg_exp".
 
    Example 1.8. Set reg_exp_column parameter
+
 ...
 modparam("group", "reg_exp_column", "re")
 ...
+
 
 1.3.9. re_gid_column (string)
 
@@ -209,9 +233,11 @@ modparam("group", "reg_exp_column", "re")
    Default value is "group_id".
 
    Example 1.9. Set re_gid_column parameter
+
 ...
 modparam("group", "re_gid_column", "grp_id")
 ...
+
 
 1.3.10. multiple_gid (integer)
 
@@ -222,13 +248,28 @@ modparam("group", "re_gid_column", "grp_id")
    Default value is "1".
 
    Example 1.10. Set multiple_gid parameter
+
 ...
 modparam("group", "multiple_gid", 0)
 ...
 
+
+1.3.11. aaa_url (string)
+
+   This is the url representing the AAA protocol used and the
+   location of the configuration file of this protocol.
+
+   Example 1.11. Set aaa_url parameter
+
+...
+modparam("group", "aaa_url", "radius:/etc/radiusclient-ng/radiusclient.c
+onf")
+...
+
+
 1.4. Exported Functions
 
-1.4.1.  is_user_in(URI, group)
+1.4.1.  db_is_user_in(URI, group)
 
    This function is to be used for script group membership. The
    function returns true if username in the given URI is member of
@@ -249,25 +290,27 @@ modparam("group", "multiple_gid", 0)
 
    This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
-   Example 1.11. is_user_in usage
+   Example 1.12. db_is_user_in usage
+
 ...
-if (is_user_in("Request-URI", "ld")) {
+if (db_is_user_in("Request-URI", "ld")) {
         ...
 };
 ...
 $avp(s:grouptocheck)="offline";
 
-if (is_user_in("Credentials", "$avp(s:grouptocheck)")) {
+if (db_is_user_in("Credentials", "$avp(s:grouptocheck)")) {
         ...
 };
 ...
 
-1.4.2.  get_user_group(URI, AVP)
+
+1.4.2.  db_get_user_group(URI, AVP)
 
    This function is to be used for regular expression based group
-   membership. The function returns true if username in the given
-   URI belongs to at least one group; the group ID(s) are returned
-   as AVPs.
+   membership, using DB support. The function returns true if
+   username in the given URI belongs to at least one group; the
+   group ID(s) are returned as AVPs.
 
    Meaning of the parameters is as follows:
      * URI - URI to be matched against the regular expressions:
@@ -283,10 +326,38 @@ if (is_user_in("Credentials", "$avp(s:grouptocheck)")) {
 
    This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
-   Example 1.12. get_user_group usage
+   Example 1.13. db_get_user_group usage
+
 ...
-if (get_user_group("Request-URI", "$avp(i:10)")) {
+if (db_get_user_group("Request-URI", "$avp(i:10)")) {
     xdbg("User $ru belongs to $(avp(i:10)[*]) group(s)\n");
     ....
+};
+...
+
+
+1.4.3.  aaa_is_user_in(URI, group)
+
+   This function checks group membership, using AAA support. The
+   function returns true if username in the given URI is member of
+   the given group and false if not.
+
+   Meaning of the parameters is as follows:
+     * URI - URI whose username and optionally domain to be used,
+       this can be one of:
+          + Request-URI - Use Request-URI username and
+            (optionally) domain.
+          + To - Use To username and (optionally) domain.
+          + From - Use From username and (optionally) domain.
+          + Credentials - Use digest credentials username.
+     * group - Name of the group to check.
+
+   This function can be used from REQUEST_ROUTE.
+
+   Example 1.14. aaa_is_user_in usage
+
+...
+if (aaa_is_user_in("Request-URI", "ld")) {
+        ...
 };
 ...

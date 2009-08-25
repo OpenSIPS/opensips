@@ -79,6 +79,9 @@ static int aaa_is_user_fixup(void** param, int param_no);
 
 static int db_is_user_fixup(void** param, int param_no);
 
+static int obsolete_fixup_0(void** param, int param_no);
+static int obsolete_fixup_1(void** param, int param_no);
+
 #define TABLE "grp"
 #define TABLE_LEN (sizeof(TABLE) - 1)
 
@@ -133,13 +136,13 @@ aaa_map vals[V_MAX];
  * Exported functions
  */
 static cmd_export_t cmds[] = {
+	{"is_user_in",      (cmd_function)NULL, 2,  obsolete_fixup_0, 0,
+			REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"get_user_group",  (cmd_function)NULL, 2,  obsolete_fixup_1, 0,
+			REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"aaa_is_user_in", (cmd_function)aaa_is_user_in,      2,  aaa_is_user_fixup,     0,
 			REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"is_user_in",      (cmd_function)is_user_in,      2,  db_is_user_fixup, 0,
-			REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"db_is_user_in",      (cmd_function)is_user_in,      2,  db_is_user_fixup, 0,
-			REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"get_user_group",  (cmd_function)get_user_group,  2,  get_gid_fixup, 0,
 			REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"db_get_user_group",  (cmd_function)get_user_group,  2,  get_gid_fixup, 0,
 			REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
@@ -281,6 +284,23 @@ static void destroy(void)
 		group_db_close();
 }
 
+
+static int obsolete_fixup_0(void** param, int param_no) {
+
+	LM_ERR("You are using is_user_in function that is now obsolete. \
+If you want to use it with DB support, use db_is_user_in. \
+If you want to use it with AAA support, use aaa_is_user_in.\n");
+
+	return E_CFG;
+}
+
+static int obsolete_fixup_1(void** param, int param_no) {
+
+	LM_ERR("You are get_user_group function that has been renamed\
+into db_get_user_group\n");
+
+	return E_CFG;
+}
 
 static int get_gid_fixup(void** param, int param_no)
 {
