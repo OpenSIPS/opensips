@@ -249,9 +249,18 @@ static int load_scenario(b2b_scenario_t** scenario_list,char* filename)
 
 	/* go through the rules */
 	node = xmlDocGetNodeByName(doc, "rules", NULL);
+	if(node == NULL)
+	{
+		LM_DBG("No rules defined\n");
+		goto done;
+	}
 
 	rules_node = xmlNodeGetChildByName(node, "request");
-
+	if(rules_node == NULL)
+	{
+		LM_DBG("No request rules defined\n");
+		goto after_req_rules;
+	}
 	for(request_node= rules_node->children; request_node; request_node = request_node->next)
 	{
 		if(xmlStrcasecmp(request_node->name, (unsigned char*)"text") == 0)
@@ -264,6 +273,7 @@ static int load_scenario(b2b_scenario_t** scenario_list,char* filename)
 		{
 			LM_ERR("Bad scenario document. A rule defined for a not supported"
 					" request type [%s]\n", request_node->name);
+			goto error;
 		}
 
 		for(rule_node= request_node->children; rule_node; rule_node = rule_node->next)
@@ -326,10 +336,11 @@ static int load_scenario(b2b_scenario_t** scenario_list,char* filename)
 
 			rule_struct->action_node = node;
 		}
-		/* TODO - Analyze if there are actions for replies */
 	}
-
+after_req_rules:
+	/* TODO - Analyze if there are actions for replies */
 	LM_DBG("scenario_id = %.*s\n", scenario->id.len, scenario->id.s);
+done:
 	scenario->doc  = doc;
 	scenario->next = *scenario_list;
 	*scenario_list  = scenario;
