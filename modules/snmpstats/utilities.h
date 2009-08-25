@@ -38,16 +38,6 @@
 #include "../../str.h"
 #include "../../sr_module.h"
 
-/*
- * This function copies an OpenSIPS "str" datatype into a '\0' terminated char*
- * string. 
- *
- * NOTE: Make sure to free the memory allocated to *copiedString, when you no
- *       longer have any use for it. (It is allocated with shm_malloc(), so make
- *       sure to deallocate it with shm_free()) 
- */
-int convertStrToCharString(str *strToConvert, char **copiedString);
-
 /* Performs sanity checks on the parameters passed to a string configuration
  * file parameter handler. */
 int stringHandlerSanityCheck( modparam_t type, void *val, char *parameterName);

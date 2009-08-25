@@ -145,29 +145,34 @@ int setInterprocessBuffersAlarm(void)
  */
 void handleContactCallbacks(ucontact_t *contactInfo, int type, void *param) 
 {
-	char *addressOfRecord;
-	char *contact;
+	char *p;
 
 	interprocessBuffer_t *currentBufferElement;
 
-	currentBufferElement = shm_malloc(sizeof(interprocessBuffer_t));
+	currentBufferElement = shm_malloc( sizeof(interprocessBuffer_t) +
+		contactInfo->aor->len+1 + contactInfo->c.len+1 );
 
-	if (currentBufferElement == NULL) 
+	if (currentBufferElement == NULL)
 	{
 		goto error;
 	}
 
+	p = (char*)(currentBufferElement + 1 );
 	/* We need to maintain our own copies of the AOR and contact address to
 	 * prevent the corruption of our internal data structures.  
 	 *
 	 * If we do not maintain our own copies, then the AOR and contact adress
 	 * pointed to could be removed and reallocated to another thread before
 	 * we get a chance to consume our interprocess buffer.  */
-	convertStrToCharString(contactInfo->aor,  &addressOfRecord);
-	convertStrToCharString(&(contactInfo->c), &contact);
+	currentBufferElement->stringName =  p;
+	memcpy( p , contactInfo->aor->s, contactInfo->aor->len );
+	p[contactInfo->aor->len] = 0;  /* make it NULL terminated */
+	p += contactInfo->aor->len + 1;
 
-	currentBufferElement->stringName    = addressOfRecord;
-	currentBufferElement->stringContact = contact;
+	currentBufferElement->stringContact = p;
+	memcpy( p , contactInfo->c.s, contactInfo->c.len );
+	p[contactInfo->c.len] = 0;  /* make it NULL terminated */
+
 	currentBufferElement->contactInfo   = contactInfo;
 	currentBufferElement->callbackType  = type;
 	currentBufferElement->next          = NULL;
@@ -201,8 +206,8 @@ error:
 /* Interprocess Buffer consumption Function.  This function will iterate over
  * every element of the interprocess buffer, and add or remove the specified
  * contacts and users.  Whether the contacts are added or removed is dependent
- * on if the original element was added as a result of a UL_CONTACT_INSERT or
- * UL_CONTACT_EXPIRE callback.
+ * on if the original element was added as a result of a UL_CONTACT_INSERT,
+ * UL_CONTACT_EXPIRE or UL_CONTACT_DELETE callback.
  *
  * The function will free any memory occupied by the interprocess buffer.
  *
@@ -250,8 +255,6 @@ void consumeInterprocessBuffer(void)
 		 * buffer element. */
 		previousBuffer = currentBuffer;
 		currentBuffer = currentBuffer->next;
-		shm_free(previousBuffer->stringName);
-		shm_free(previousBuffer->stringContact);
 		shm_free(previousBuffer);
 
 	}
@@ -276,9 +279,10 @@ static void executeInterprocessBufferCmd(interprocessBuffer_t *currentBuffer)
 		 * contact index otherwise. */
 		updateUser(currentBuffer->stringName);
 	}
-	else if (currentBuffer->callbackType != UL_CONTACT_EXPIRE)
+	else if (currentBuffer->callbackType != UL_CONTACT_EXPIRE &&
+	currentBuffer->callbackType != UL_CONTACT_DELETE)
 	{
-		/* Currently we only support UL_CONTACT_INSERT and
+		/* Currently we only support UL_CONTACT_INSERT, UL_CONTACT_DELETE and
 		 * UL_CONTACT_EXPIRE.  If we receive another callback type, this
 		 * is a bug. */
 		LM_ERR("found a command on the interprocess buffer that"
