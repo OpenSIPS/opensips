@@ -18,10 +18,10 @@ Irina-Maria Stanescu
 
    Copyright © 2003 FhG FOKUS
 
-   Copyright © 2005, 2009 voice-system.ro, voice-system.ro
+   Copyright © 2005, 2009 voice-system.ro
    Revision History
-   Revision $Revision$ $Date: 2009-07-21 10:45:05 +0300
-                              (Tue, 21 Jul 2009) $
+   Revision $Revision$ $Date: 2009-08-17 19:18:52 +0300
+                              (Mon, 17 Aug 2009) $
      __________________________________________________________
 
    Table of Contents
@@ -49,19 +49,19 @@ Irina-Maria Stanescu
 
         1.4. Exported Functions
 
-              1.4.1. check_to()
-              1.4.2. check_from()
-              1.4.3. does_uri_exist()
-              1.4.4. get_auth_id(string, var, var)
-              1.4.5. is_user(username)
-              1.4.6. has_totag()
-              1.4.7. uri_param(param)
-              1.4.8. uri_param(param,value)
-              1.4.9. add_uri_param(param)
-              1.4.10. tel2sip()
-              1.4.11. is_uri_user_e164(pseudo-variable)
-              1.4.12. aaa_does_uri_exist([pvar])
-              1.4.13. aaa_does_uri_user_exist([pvar])
+              1.4.1. db_check_to()
+              1.4.2. db_check_from()
+              1.4.3. db_does_uri_exist()
+              1.4.4. db_get_auth_id(string, var, var)
+              1.4.5. aaa_does_uri_exist([pvar])
+              1.4.6. aaa_does_uri_user_exist([pvar])
+              1.4.7. is_user(username)
+              1.4.8. has_totag()
+              1.4.9. uri_param(param)
+              1.4.10. uri_param(param,value)
+              1.4.11. add_uri_param(param)
+              1.4.12. tel2sip()
+              1.4.13. is_uri_user_e164(pseudo-variable)
 
    List of Examples
 
@@ -75,19 +75,19 @@ Irina-Maria Stanescu
    1.8. Set uriuser_column parameter
    1.9. Set use_uri_table parameter
    1.10. Set use_domain parameter
-   1.11. check_to usage
-   1.12. check_from usage
-   1.13. does_uri_exist usage
-   1.14. get_auth_id usage
-   1.15. is_user usage
-   1.16. has_totag usage
-   1.17. uri_param usage
-   1.18. uri_param usage
-   1.19. add_uri_param usage
-   1.20. tel2sip usage
-   1.21. is_uri_user_e164 usage
-   1.22. aaa_does_uri_exist usage
-   1.23. aaa_does_uri_user_exist usage
+   1.11. db_check_to usage
+   1.12. db_check_from usage
+   1.13. db_does_uri_exist usage
+   1.14. db_get_auth_id usage
+   1.15. aaa_does_uri_exist usage
+   1.16. aaa_does_uri_user_exist usage
+   1.17. is_user usage
+   1.18. has_totag usage
+   1.19. uri_param usage
+   1.20. uri_param usage
+   1.21. add_uri_param usage
+   1.22. tel2sip usage
+   1.23. is_uri_user_e164 usage
 
 Chapter 1. Admin Guide
 
@@ -95,7 +95,7 @@ Chapter 1. Admin Guide
 
    Various checks related to SIP URI.
 
-   This module implements some URI related AAA based tests.
+   This module implements some URI related AAA or DB based tests.
 
 1.2. Dependencies
 
@@ -245,35 +245,35 @@ modparam("uri", "use_domain", 1)
 
 1.4. Exported Functions
 
-1.4.1.  check_to()
+1.4.1.  db_check_to()
 
    Check To username against URI table (if use_uri_table is set)
    or digest credentials (no DB backend required).
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.11. check_to usage
+   Example 1.11. db_check_to usage
 ...
-if (check_to()) {
+if (db_check_to()) {
         ...
 };
 ...
 
-1.4.2.  check_from()
+1.4.2.  db_check_from()
 
    Check From username against URI table (if use_uri_table is set)
    or digest credentials (no DB backend required).
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.12. check_from usage
+   Example 1.12. db_check_from usage
 ...
-if (check_from()) {
+if (db_check_from()) {
         ...
 };
 ...
 
-1.4.3.  does_uri_exist()
+1.4.3.  db_does_uri_exist()
 
    Check if username in the request URI belongs to an existing
    user.
@@ -283,14 +283,14 @@ if (check_from()) {
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.13. does_uri_exist usage
+   Example 1.13. db_does_uri_exist usage
 ...
-if (does_uri_exist()) {
+if (db_does_uri_exist()) {
         ...
 };
 ...
 
-1.4.4.  get_auth_id(string, var, var)
+1.4.4.  db_get_auth_id(string, var, var)
 
    Checks given uri-string username against URI table (if
    use_uri_table is set) or subscriber table (database backend
@@ -300,122 +300,14 @@ if (does_uri_exist()) {
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.14. get_auth_id usage
+   Example 1.14. db_get_auth_id usage
 ...
-if (get_auth_id("$ru", "$avp(s:auth_id)", "$avp(s:auth_realm)")) {
+if (db_get_auth_id("$ru", "$avp(s:auth_id)", "$avp(s:auth_realm)")) {
         ...
 };
 ...
 
-1.4.5.  is_user(username)
-
-   Check if the username in credentials matches the given
-   username.
-
-   Meaning of the parameters is as follows:
-     * username - Username string.
-
-   This function can be used from REQUEST_ROUTE.
-
-   Example 1.15. is_user usage
-...
-if (is_user("john")) {
-        ...
-};
-...
-
-1.4.6.  has_totag()
-
-   Check if To header field uri contains tag parameter.
-
-   This function can be used from REQUEST_ROUTE.
-
-   Example 1.16. has_totag usage
-...
-if (has_totag()) {
-        ...
-};
-...
-
-1.4.7.  uri_param(param)
-
-   Find if Request URI has a given parameter with no value
-
-   Meaning of the parameters is as follows:
-     * param - parameter name to look for.
-
-   This function can be used from REQUEST_ROUTE.
-
-   Example 1.17. uri_param usage
-...
-if (uri_param("param1")) {
-        ...
-};
-...
-
-1.4.8.  uri_param(param,value)
-
-   Find if Request URI has a given parameter with matching value
-
-   Meaning of the parameters is as follows:
-     * param - parameter name to look for.
-     * value - parameter value to match.
-
-   This function can be used from REQUEST_ROUTE.
-
-   Example 1.18. uri_param usage
-...
-if (uri_param("param1","value1")) {
-        ...
-};
-...
-
-1.4.9.  add_uri_param(param)
-
-   Add to RURI a parameter (name=value);
-
-   Meaning of the parameters is as follows:
-     * param - parameter to be appended in "name=value" format.
-
-   This function can be used from REQUEST_ROUTE.
-
-   Example 1.19. add_uri_param usage
-...
-add_uri_param("nat=yes");
-...
-
-1.4.10.  tel2sip()
-
-   Converts RURI, if it is tel URI, to SIP URI. Returns true, only
-   if conversion succeeded or if no conversion was needed (like
-   RURI was not tel URI.
-
-   This function can be used from REQUEST_ROUTE.
-
-   Example 1.20. tel2sip usage
-...
-tel2sip();
-...
-
-1.4.11.  is_uri_user_e164(pseudo-variable)
-
-   Checks if userpart of URI stored in pseudo variable is E164
-   number.
-
-   This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
-
-   Example 1.21. is_uri_user_e164 usage
-...
-if (is_uri_user_e164("$fu")) {  # Check From header URI user part
-   ...
-}
-if (is_uri_user_e164("$avp(i:705)") {
-   # Check user part of URI stored in avp i:705
-   ...
-};
-...
-
-1.4.12.  aaa_does_uri_exist([pvar])
+1.4.5.  aaa_does_uri_exist([pvar])
 
    Checks from Radius if user@host in Request-URI or in URI stored
    in pseudo variable argument belongs to a local user. Can be
@@ -433,14 +325,14 @@ if (is_uri_user_e164("$avp(i:705)") {
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.22. aaa_does_uri_exist usage
+   Example 1.15. aaa_does_uri_exist usage
 ...
 if (aaa_does_uri_exist()) {
         ...
 };
 ...
 
-1.4.13.  aaa_does_uri_user_exist([pvar])
+1.4.6.  aaa_does_uri_user_exist([pvar])
 
    Similar to aaa_does_uri_exist, but check is done based only on
    Request-URI user part or user stored in pseudo variable
@@ -449,9 +341,117 @@ if (aaa_does_uri_exist()) {
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.23. aaa_does_uri_user_exist usage
+   Example 1.16. aaa_does_uri_user_exist usage
 ...
 if (aaa_does_uri_user_exist()) {
         ...
+};
+...
+
+1.4.7.  is_user(username)
+
+   Check if the username in credentials matches the given
+   username.
+
+   Meaning of the parameters is as follows:
+     * username - Username string.
+
+   This function can be used from REQUEST_ROUTE.
+
+   Example 1.17. is_user usage
+...
+if (is_user("john")) {
+        ...
+};
+...
+
+1.4.8.  has_totag()
+
+   Check if To header field uri contains tag parameter.
+
+   This function can be used from REQUEST_ROUTE.
+
+   Example 1.18. has_totag usage
+...
+if (has_totag()) {
+        ...
+};
+...
+
+1.4.9.  uri_param(param)
+
+   Find if Request URI has a given parameter with no value
+
+   Meaning of the parameters is as follows:
+     * param - parameter name to look for.
+
+   This function can be used from REQUEST_ROUTE.
+
+   Example 1.19. uri_param usage
+...
+if (uri_param("param1")) {
+        ...
+};
+...
+
+1.4.10.  uri_param(param,value)
+
+   Find if Request URI has a given parameter with matching value
+
+   Meaning of the parameters is as follows:
+     * param - parameter name to look for.
+     * value - parameter value to match.
+
+   This function can be used from REQUEST_ROUTE.
+
+   Example 1.20. uri_param usage
+...
+if (uri_param("param1","value1")) {
+        ...
+};
+...
+
+1.4.11.  add_uri_param(param)
+
+   Add to RURI a parameter (name=value);
+
+   Meaning of the parameters is as follows:
+     * param - parameter to be appended in "name=value" format.
+
+   This function can be used from REQUEST_ROUTE.
+
+   Example 1.21. add_uri_param usage
+...
+add_uri_param("nat=yes");
+...
+
+1.4.12.  tel2sip()
+
+   Converts RURI, if it is tel URI, to SIP URI. Returns true, only
+   if conversion succeeded or if no conversion was needed (like
+   RURI was not tel URI.
+
+   This function can be used from REQUEST_ROUTE.
+
+   Example 1.22. tel2sip usage
+...
+tel2sip();
+...
+
+1.4.13.  is_uri_user_e164(pseudo-variable)
+
+   Checks if userpart of URI stored in pseudo variable is E164
+   number.
+
+   This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
+
+   Example 1.23. is_uri_user_e164 usage
+...
+if (is_uri_user_e164("$fu")) {  # Check From header URI user part
+   ...
+}
+if (is_uri_user_e164("$avp(i:705)") {
+   # Check user part of URI stored in avp i:705
+   ...
 };
 ...

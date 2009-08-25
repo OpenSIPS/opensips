@@ -99,10 +99,27 @@ static int db_fixup_get_auth_id(void** param, int param_no);
 static int aaa_fixup_0(void** param, int param_no);
 static int aaa_fixup_1(void** param, int param_no);
 
+static int obsolete_fixup_0(void** param, int param_no);
+static int obsolete_fixup_1(void** param, int param_no);
+static int obsolete_fixup_2(void** param, int param_no);
 /*
  * Exported functions
  */
 static cmd_export_t cmds[] = {
+	{"check_to", (cmd_function)NULL, 0, obsolete_fixup_0, 0,
+			REQUEST_ROUTE},
+	{"check_from", (cmd_function)NULL, 0, obsolete_fixup_0, 0,
+			REQUEST_ROUTE},
+	{"does_uri_exist", (cmd_function)NULL, 0, obsolete_fixup_1, 0,
+			REQUEST_ROUTE|LOCAL_ROUTE},
+	{"does_uri_exist", (cmd_function)NULL, 1, obsolete_fixup_1, 0,
+			REQUEST_ROUTE|LOCAL_ROUTE},
+	{"get_auth_id", (cmd_function)NULL, 3, obsolete_fixup_0, 0,
+			REQUEST_ROUTE|LOCAL_ROUTE},
+	{"does_uri_user_exist", (cmd_function)NULL, 0, obsolete_fixup_2, 0,
+			REQUEST_ROUTE|LOCAL_ROUTE},
+	{"does_uri_user_exist", (cmd_function)NULL, 1, obsolete_fixup_2, 0,
+			REQUEST_ROUTE|LOCAL_ROUTE},
 	{"aaa_does_uri_exist", (cmd_function)aaa_does_uri_exist_0, 0,
 			aaa_fixup_0, 0, 
 			REQUEST_ROUTE|LOCAL_ROUTE},
@@ -117,7 +134,7 @@ static cmd_export_t cmds[] = {
 			REQUEST_ROUTE|LOCAL_ROUTE},
 	{"db_check_to", (cmd_function)check_to, 0, 0, 0,
 			REQUEST_ROUTE},
-	{"db_check_from",     (cmd_function)check_from, 0, 0, 0,
+	{"db_check_from", (cmd_function)check_from, 0, 0, 0,
 			REQUEST_ROUTE},
 	{"db_does_uri_exist", (cmd_function)does_uri_exist, 0,
 			db_fixup_exist, 0,
@@ -330,6 +347,32 @@ static int db_fixup_exist(void** param, int param_no)
 	return 0;
 }
 
+
+static int obsolete_fixup_0(void** param, int param_no) {
+
+	LM_ERR("You are using one of these obsolete functions\
+: \"check_to\", \"check_from\", \"does_uri_exist\",\"get_auth_id\".\
+ They have been renamed with the \"db_\" prefix.\n");
+
+	return E_CFG;
+}
+
+static int obsolete_fixup_1(void** param, int param_no) {
+
+	LM_ERR("You are using does_uri_exist function that is now obsolete. \
+If you want to use it with DB support, use db_does_uri_exist. \
+If you want to use it with AAA support, use aaa_does_uri_exist.\n");
+
+	return E_CFG;
+}
+
+static int obsolete_fixup_2(void** param, int param_no) {
+
+	LM_ERR("You are using does_uri_user_exist function that has been renamed\
+into aaa_does_uri_user_exist.\n");
+
+	return E_CFG;
+}
 
 /**
  * Check proper configuration for 'get_auth_id()' and convert function parameters.
