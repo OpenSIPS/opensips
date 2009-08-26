@@ -54,7 +54,7 @@ exclude_modules?= b2b_logic jabber cpl-c xmpp rls mi_xmlrpc xcap_client \
 	osp perl snmpstats perlvdb carrierroute mmgeoip \
 	presence presence_xml presence_mwi presence_dialoginfo \
 	pua pua_bla pua_mi pua_usrloc pua_xmpp pua_dialoginfo \
-	ldap h350 identity regex seas memcached
+	ldap h350 identity regex memcached
 ifeq ($(TLS),)
 	exclude_modules+= tlsops
 endif
