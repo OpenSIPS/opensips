@@ -49,11 +49,11 @@ int encode_content_type(char *hdrstart,int hdrlen,unsigned int bodi,char *where)
    return encode_mime_type(hdrstart,hdrlen,bodi,where);
 }
 
-int print_encoded_content_type(int fd,char *hdr,int hdrlen,unsigned char* payload,int paylen,char *prefix)
+int print_encoded_content_type(FILE *fp,char *hdr,int hdrlen,unsigned char* payload,int paylen,char *prefix)
 {
    unsigned int type;
    memcpy(&type,payload,sizeof(unsigned int));
-   return print_encoded_mime_type(fd,hdr,hdrlen,&type,paylen,prefix);
+   return print_encoded_mime_type(fp,hdr,hdrlen,&type,paylen,prefix);
 }
 
 int encode_accept(char *hdrstart,int hdrlen,unsigned int *bodi,char *where)
@@ -68,13 +68,13 @@ int encode_accept(char *hdrstart,int hdrlen,unsigned int *bodi,char *where)
    return 1+i*sizeof(unsigned int);
 }
 
-int print_encoded_accept(int fd,char *hdr,int hdrlen,unsigned char* payload,int paylen,char *prefix)
+int print_encoded_accept(FILE *fp,char *hdr,int hdrlen,unsigned char* payload,int paylen,char *prefix)
 {
    int i;
    unsigned int type;
    for(i=0;i<payload[0];i++){
       memcpy(&type,&payload[1+i*sizeof(unsigned int)],sizeof(unsigned int));
-      print_encoded_mime_type(fd,hdr,hdrlen,&type,4,prefix);
+      print_encoded_mime_type(fp,hdr,hdrlen,&type,4,prefix);
    }
    return 1;
 
@@ -90,7 +90,7 @@ int encode_mime_type(char *hdrstart,int hdrlen,unsigned int bodi,char *where)
    return sizeof(int);
 }
 
-int print_encoded_mime_type(int fd,char *hdr,int hdrlen,unsigned int* payload,int paylen,char *prefix)
+int print_encoded_mime_type(FILE *fp,char *hdr,int hdrlen,unsigned int* payload,int paylen,char *prefix)
 {
    unsigned int type;
    char *chtype,*chsubtype;
@@ -168,7 +168,7 @@ int print_encoded_mime_type(int fd,char *hdr,int hdrlen,unsigned int* payload,in
 	 chsubtype="(didnt know this subtype existed)";
    }
 
-   dprintf(fd,"%sTYPE:[%s]\n",prefix,chtype);
-   dprintf(fd,"%sSUBTYPE:[%s]\n",prefix,chsubtype);
+   fprintf(fp,"%sTYPE:[%s]\n",prefix,chtype);
+   fprintf(fp,"%sSUBTYPE:[%s]\n",prefix,chsubtype);
    return 0;
 }

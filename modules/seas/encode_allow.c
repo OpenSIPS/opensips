@@ -62,19 +62,19 @@ int encode_allow(char *hdrstart,int hdrlen,unsigned int *bodi,char *where)
    return 4;
 }
 
-int print_encoded_allow(int fd,char *hdr,int hdrlen,unsigned char* payload,int paylen,char *prefix)
+int print_encoded_allow(FILE *fp,char *hdr,int hdrlen,unsigned char* payload,int paylen,char *prefix)
 {
    unsigned int i,j=0,body;
 
    memcpy(&body,payload,4);
    body=ntohl(body);
-   dprintf(fd,"%sMETHODS=",prefix);
+   fprintf(fp,"%sMETHODS=",prefix);
    if(body==0)
-      dprintf(fd,"UNKNOWN");
+      fprintf(fp,"UNKNOWN");
    for(i=0;i<32;j=(0x01<<i),i++){
       if(body & (j<15))
-	 dprintf(fd,",%s",mismetodos[i]);
+	 fprintf(fp,",%s",mismetodos[i]);
    }
-   dprintf(fd,"\n");
+   fprintf(fp,"\n");
    return 1;
 }

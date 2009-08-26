@@ -39,6 +39,7 @@
 
 #define _GNU_SOURCE
 #include <stdio.h>
+#include <unistd.h>
 
 #include "../../parser/parse_rr.h"
 #include "../../parser/parse_uri.h"
@@ -125,15 +126,15 @@ int encode_route(char *hdrstart,int hdrlen,rr_t *body,unsigned char *where)
 }
 
 
-int print_encoded_route_body(int fd,char *hdr,int hdrlen,unsigned char *payload,int paylen,char *prefix)
+int print_encoded_route_body(FILE *fp,char *hdr,int hdrlen,unsigned char *payload,int paylen,char *prefix)
 {
    unsigned char flags, numroutes;
    int i,offset;
 
    flags=payload[0];
-   dprintf(fd,"%s",prefix);
+   fprintf(fp,"%s",prefix);
    for(i=0;i<paylen;i++)
-      dprintf(fd,"%s%d%s",i==0?"ENCODED CONTACT BODY:[":":",payload[i],i==paylen-1?"]\n":"");
+      fprintf(fp,"%s%d%s",i==0?"ENCODED CONTACT BODY:[":":",payload[i],i==paylen-1?"]\n":"");
 
    numroutes=payload[1];
    if(numroutes==0){
@@ -141,37 +142,37 @@ int print_encoded_route_body(int fd,char *hdr,int hdrlen,unsigned char *payload,
       return -1;
    }
    for(i=0,offset=2+numroutes;i<numroutes;i++){
-      print_encoded_route(fd,hdr,hdrlen,&payload[offset],payload[2+i],strcat(prefix,"  "));
+      print_encoded_route(fp,hdr,hdrlen,&payload[offset],payload[2+i],strcat(prefix,"  "));
       offset+=payload[2+i];
       prefix[strlen(prefix)-2]=0;
    }
    return 1;
 }
 
-int print_encoded_route(int fd,char *hdr,int hdrlen,unsigned char* payload,int paylen,char *prefix)
+int print_encoded_route(FILE *fp,char *hdr,int hdrlen,unsigned char* payload,int paylen,char *prefix)
 {
    int i=2;/* flags + urilength */
    unsigned char flags=0;
 
    flags=payload[0];
-   dprintf(fd,"%s",prefix);
+   fprintf(fp,"%s",prefix);
    for(i=0;i<paylen;i++)
-      dprintf(fd,"%s%d%s",i==0?"ENCODED ROUTE=[":":",payload[i],i==paylen-1?"]\n":"");
+      fprintf(fp,"%s%d%s",i==0?"ENCODED ROUTE=[":":",payload[i],i==paylen-1?"]\n":"");
    i=2;
    if(flags & HAS_NAME_F){
-      dprintf(fd,"%sNAME=[%.*s]\n",prefix,payload[i+1],&hdr[payload[i]]);
+      fprintf(fp,"%sNAME=[%.*s]\n",prefix,payload[i+1],&hdr[payload[i]]);
       i+=2;
    }
-   if(print_encoded_uri(fd,&payload[i],payload[1],hdr,hdrlen,strcat(prefix,"  "))<0){
+   if(print_encoded_uri(fp,&payload[i],payload[1],hdr,hdrlen,strcat(prefix,"  "))<0){
       prefix[strlen(prefix)-2]=0;
-      dprintf(fd,"Error parsing URI\n");
+      fprintf(fp,"Error parsing URI\n");
       return -1;
    }
    prefix[strlen(prefix)-2]=0;
-   print_encoded_parameters(fd,&payload[i+payload[1]],hdr,paylen-i-payload[1],prefix);
+   print_encoded_parameters(fp,&payload[i+payload[1]],hdr,paylen-i-payload[1],prefix);
    /* for(i+=payload[1];i<paylen-1;i+=2){
-      dprintf(fd,"%s[PARAMETER[%.*s]",prefix,payload[i+1]-payload[i]-1,&hdr[payload[i]]);
-      dprintf(fd,"VALUE[%.*s]]\n",(payload[i+2]-payload[i+1])==0?0:(payload[i+2]-payload[i+1]-1),&hdr[payload[i+1]]);
+      fprintf(fp,"%s[PARAMETER[%.*s]",prefix,payload[i+1]-payload[i]-1,&hdr[payload[i]]);
+      fprintf(fp,"VALUE[%.*s]]\n",(payload[i+2]-payload[i+1])==0?0:(payload[i+2]-payload[i+1]-1),&hdr[payload[i+1]]);
    }*/
    return 0;
 }
@@ -222,12 +223,14 @@ int dump_route_test(char *hdr,int hdrlen,unsigned char* payload,int paylen,int f
    }
    if(segregationLevel & JUNIT){
       i=2;
-      dprintf(fd,"%sgetAddress.getDisplayName=(S)",prefix);
+      write(fd,prefix,strlen(prefix));
+      write(fd,"getAddress.getDisplayName=(S)",29);
       if(flags & HAS_NAME_F){
-	 dprintf(fd,"%.*s\n",payload[i+1],&hdr[payload[i]]);
-	 i+=2;
+         write(fd,&hdr[payload[i]],payload[i+1]);
+         write(fd,"\n",1);
+         i+=2;
       }else
-	 dprintf(fd,"(null)\n");
+         write(fd,"(null)\n",7);
       return print_uri_junit_tests(hdr,hdrlen,&payload[i],payload[1],fd,0,"getAddress.getURI.");
    }
    return 0;

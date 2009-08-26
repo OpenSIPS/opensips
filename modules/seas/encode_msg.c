@@ -304,7 +304,13 @@ int print_encoded_msg(int fd,char *code,char *prefix)
    unsigned short int i,j,k,l,m,msglen;
    char r,*msg;
    unsigned char *payload;
-   
+   FILE *fp;
+
+   fp = fdopen(fd, "w*");
+
+   if(fp == NULL)
+      return -1;
+
    payload=(unsigned char*)code;
    memcpy(&i,code,2);
    memcpy(&j,&code[MSG_START_IDX],2);
@@ -313,20 +319,20 @@ int print_encoded_msg(int fd,char *code,char *prefix)
    j=ntohs(j);
    msglen=ntohs(msglen);
    for(k=0;k<j;k++)
-      dprintf(fd,"%s%d%s",k==0?"ENCODED-MSG:[":":",payload[k],k==j-1?"]\n":"");
+      fprintf(fp,"%s%d%s",k==0?"ENCODED-MSG:[":":",payload[k],k==j-1?"]\n":"");
    msg=(char*)&payload[j];
-   dprintf(fd,"MESSAGE:\n[%.*s]\n",msglen,msg);
+   fprintf(fp,"MESSAGE:\n[%.*s]\n",msglen,msg);
    r=(i<100)?1:0;
    if(r){
-      dprintf(fd,"%sREQUEST CODE=%d==%.*s,URI=%.*s,VERSION=%*.s\n",prefix,i,
+      fprintf(fp,"%sREQUEST CODE=%d==%.*s,URI=%.*s,VERSION=%*.s\n",prefix,i,
 	    payload[METHOD_CODE_IDX+1],&msg[payload[METHOD_CODE_IDX]],
 	    payload[URI_REASON_IDX+1],&msg[payload[URI_REASON_IDX]],
 	    payload[VERSION_IDX+1],&msg[payload[VERSION_IDX]]);
-      print_encoded_uri(fd,&payload[REQUEST_URI_IDX+1],payload[REQUEST_URI_IDX],msg,50,strcat(prefix,"  "));
+      print_encoded_uri(fp,&payload[REQUEST_URI_IDX+1],payload[REQUEST_URI_IDX],msg,50,strcat(prefix,"  "));
       prefix[strlen(prefix)-2]=0;
       i=REQUEST_URI_IDX+1+payload[REQUEST_URI_IDX];
    }else{
-      dprintf(fd,"%sRESPONSE CODE=%d==%.*s,REASON=%.*s,VERSION=%.*s\n",prefix,i,
+      fprintf(fp,"%sRESPONSE CODE=%d==%.*s,REASON=%.*s,VERSION=%.*s\n",prefix,i,
 	    payload[METHOD_CODE_IDX+1],&msg[payload[METHOD_CODE_IDX]],
 	    payload[URI_REASON_IDX+1],&msg[payload[URI_REASON_IDX]],
 	    payload[VERSION_IDX+1],&msg[payload[VERSION_IDX]]);
@@ -334,19 +340,19 @@ int print_encoded_msg(int fd,char *code,char *prefix)
    }
    k=((payload[CONTENT_IDX]<<8)|payload[CONTENT_IDX+1]);
    j=msglen-k;
-   dprintf(fd,"%sMESSAGE CONTENT:%.*s\n",prefix,j,&msg[k]);
+   fprintf(fp,"%sMESSAGE CONTENT:%.*s\n",prefix,j,&msg[k]);
    j=payload[i];
-   dprintf(fd,"%sHEADERS PRESENT(%d):",prefix,j);
+   fprintf(fp,"%sHEADERS PRESENT(%d):",prefix,j);
    i++;
    for(k=i;k<i+(j*3);k+=3)
-      dprintf(fd,"%c%d%c",k==i?'[':',',payload[k],k==(i+3*j-3)?']':' ');
-   dprintf(fd,"\n");
+      fprintf(fp,"%c%d%c",k==i?'[':',',payload[k],k==(i+3*j-3)?']':' ');
+   fprintf(fp,"\n");
    for(k=i;k<i+(j*3);k+=3){
       memcpy(&l,&payload[k+1],2);
       memcpy(&m,&payload[k+4],2);
       l=ntohs(l);
       m=ntohs(m);
-      print_encoded_header(fd,msg,msglen,&payload[l],m-l,payload[k],prefix);
+      print_encoded_header(fp,msg,msglen,&payload[l],m-l,payload[k],prefix);
    }
    return 1;
 }

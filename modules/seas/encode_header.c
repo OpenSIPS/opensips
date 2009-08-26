@@ -327,7 +327,7 @@ error:
    return -1;
 }
 
-int print_encoded_header(int fd,char *msg,int msglen,unsigned char *payload,int len,char type,char *prefix)
+int print_encoded_header(FILE *fp,char *msg,int msglen,unsigned char *payload,int len,char type,char *prefix)
 {
    char *hdr_start_ptr;
    short int start_idx,i;
@@ -339,11 +339,11 @@ int print_encoded_header(int fd,char *msg,int msglen,unsigned char *payload,int 
    memcpy(&i,payload+HEADER_LEN_IDX,2);
    i=ntohs(i);
 
-   dprintf(fd,"%sHEADER NAME:[%.*s]\n",prefix,payload[HEADER_NAME_LEN_IDX],hdr_start_ptr);
-   dprintf(fd,"%sHEADER:[%.*s]\n",prefix,i-2,hdr_start_ptr);
-   dprintf(fd,"%sHEADER CODE=",prefix);
+   fprintf(fp,"%sHEADER NAME:[%.*s]\n",prefix,payload[HEADER_NAME_LEN_IDX],hdr_start_ptr);
+   fprintf(fp,"%sHEADER:[%.*s]\n",prefix,i-2,hdr_start_ptr);
+   fprintf(fp,"%sHEADER CODE=",prefix);
    for(i=0;i<len;i++)
-      dprintf(fd,"%s%d%s",i==0?"[":":",payload[i],i==len-1?"]\n":"");
+      fprintf(fp,"%s%d%s",i==0?"[":":",payload[i],i==len-1?"]\n":"");
    if(len==4)
       return 1;
    switch(type){
@@ -353,14 +353,14 @@ int print_encoded_header(int fd,char *msg,int msglen,unsigned char *payload,int 
       case HDR_RPID_T:/*rpid= remote parte id*/
 	 memcpy(&i,payload+HEADER_LEN_IDX,2);
 	 i=ntohs(i);
-	 print_encoded_to_body(fd,hdr_start_ptr,i,&payload[HEADER_PAYLOAD_IDX],
+	 print_encoded_to_body(fp,hdr_start_ptr,i,&payload[HEADER_PAYLOAD_IDX],
 	       len-HEADER_PAYLOAD_IDX,strcat(prefix,"  "));
 	 prefix[strlen(prefix)-2]=0;
 	 break;
       case HDR_CONTACT_T:/*contact*/
 	 memcpy(&i,payload+HEADER_LEN_IDX,2);
 	 i=ntohs(i);
-	 print_encoded_contact_body(fd,hdr_start_ptr,i,&payload[HEADER_PAYLOAD_IDX],
+	 print_encoded_contact_body(fp,hdr_start_ptr,i,&payload[HEADER_PAYLOAD_IDX],
 	       len-HEADER_PAYLOAD_IDX,strcat(prefix,"  "));
 	 prefix[strlen(prefix)-2]=0;
 	 break;
@@ -368,14 +368,14 @@ int print_encoded_header(int fd,char *msg,int msglen,unsigned char *payload,int 
       case HDR_RECORDROUTE_T:/*record-route*/
 	 memcpy(&i,payload+HEADER_LEN_IDX,2);
 	 i=ntohs(i);
-	 print_encoded_route_body(fd,hdr_start_ptr,i,&payload[HEADER_PAYLOAD_IDX],
+	 print_encoded_route_body(fp,hdr_start_ptr,i,&payload[HEADER_PAYLOAD_IDX],
 	       len-HEADER_PAYLOAD_IDX,strcat(prefix,"  "));
 	 prefix[strlen(prefix)-2]=0;
 	 break;
       case HDR_CONTENTLENGTH_T:/*contentlength*/
 	 memcpy(&i,payload+HEADER_LEN_IDX,2);
 	 i=ntohs(i);
-	 print_encoded_contentlength(fd,hdr_start_ptr,i,&payload[HEADER_PAYLOAD_IDX],
+	 print_encoded_contentlength(fp,hdr_start_ptr,i,&payload[HEADER_PAYLOAD_IDX],
 	       len-HEADER_PAYLOAD_IDX,strcat(prefix,"  "));
 	 prefix[strlen(prefix)-2]=0;
 	 break;
@@ -383,42 +383,42 @@ int print_encoded_header(int fd,char *msg,int msglen,unsigned char *payload,int 
       case HDR_VIA2_T:/*via*/
 	 memcpy(&i,payload+HEADER_LEN_IDX,2);
 	 i=ntohs(i);
-	 print_encoded_via_body(fd,hdr_start_ptr,i,&payload[HEADER_PAYLOAD_IDX],
+	 print_encoded_via_body(fp,hdr_start_ptr,i,&payload[HEADER_PAYLOAD_IDX],
 	       len-HEADER_PAYLOAD_IDX,strcat(prefix,"  "));
 	 prefix[strlen(prefix)-2]=0;
 	 break;
       case HDR_ACCEPT_T:/*accept*/
 	 memcpy(&i,payload+HEADER_LEN_IDX,2);
 	 i=ntohs(i);
-	 print_encoded_accept(fd,hdr_start_ptr,i,&payload[HEADER_PAYLOAD_IDX],
+	 print_encoded_accept(fp,hdr_start_ptr,i,&payload[HEADER_PAYLOAD_IDX],
 	       len-HEADER_PAYLOAD_IDX,strcat(prefix,"  "));
 	 prefix[strlen(prefix)-2]=0;
 	 break;
       case HDR_CONTENTTYPE_T:/*content-type*/
 	 memcpy(&i,payload+HEADER_LEN_IDX,2);
 	 i=ntohs(i);
-	 print_encoded_content_type(fd,hdr_start_ptr,i,&payload[HEADER_PAYLOAD_IDX],
+	 print_encoded_content_type(fp,hdr_start_ptr,i,&payload[HEADER_PAYLOAD_IDX],
 	       len-HEADER_PAYLOAD_IDX,strcat(prefix,"  "));
 	 prefix[strlen(prefix)-2]=0;
 	 break;
       case HDR_CSEQ_T:/*CSeq*/
 	 memcpy(&i,payload+HEADER_LEN_IDX,2);
 	 i=ntohs(i);
-	 print_encoded_cseq(fd,hdr_start_ptr,i,&payload[HEADER_PAYLOAD_IDX],
+	 print_encoded_cseq(fp,hdr_start_ptr,i,&payload[HEADER_PAYLOAD_IDX],
 	       len-HEADER_PAYLOAD_IDX,strcat(prefix,"  "));
 	 prefix[strlen(prefix)-2]=0;
 	 break;
       case HDR_EXPIRES_T:/*expires*/
 	 memcpy(&i,payload+HEADER_LEN_IDX,2);
 	 i=ntohs(i);
-	 print_encoded_expires(fd,hdr_start_ptr,i,&payload[HEADER_PAYLOAD_IDX],
+	 print_encoded_expires(fp,hdr_start_ptr,i,&payload[HEADER_PAYLOAD_IDX],
 	       len-HEADER_PAYLOAD_IDX,strcat(prefix,"  "));
 	 prefix[strlen(prefix)-2]=0;
 	 break;
       case HDR_ALLOW_T:/*allow*/
 	 memcpy(&i,payload+HEADER_LEN_IDX,2);
 	 i=ntohs(i);
-	 print_encoded_allow(fd,hdr_start_ptr,i,&payload[HEADER_PAYLOAD_IDX],
+	 print_encoded_allow(fp,hdr_start_ptr,i,&payload[HEADER_PAYLOAD_IDX],
 	       len-HEADER_PAYLOAD_IDX,strcat(prefix,"  "));
 	 prefix[strlen(prefix)-2]=0;
 	 break;
@@ -427,7 +427,7 @@ int print_encoded_header(int fd,char *msg,int msglen,unsigned char *payload,int 
       /*case HDR_PROXYAUTHORIZATION_T:proxy-authorization*/
 	 memcpy(&i,payload+HEADER_LEN_IDX,2);
 	 i=ntohs(i);
-	 print_encoded_digest(fd,hdr_start_ptr,i,&payload[HEADER_PAYLOAD_IDX],
+	 print_encoded_digest(fp,hdr_start_ptr,i,&payload[HEADER_PAYLOAD_IDX],
 	       len-HEADER_PAYLOAD_IDX,strcat(prefix,"  "));
 	 prefix[strlen(prefix)-2]=0;
 	 break;

@@ -238,78 +238,78 @@ error:
    return -1;
 }
 
-int print_encoded_uri(int fd,unsigned char *payload,int paylen,char *hdrstart,int hdrlen,char *prefix)
+int print_encoded_uri(FILE *fp,unsigned char *payload,int paylen,char *hdrstart,int hdrlen,char *prefix)
 {
    int i=4,j=0;/*1*pointer+1*len+2*flags*/
    unsigned char uriidx=0,flags1=0,flags2=0,urilen;
    char *ch_uriptr,*uritype=NULL,*secure=NULL;
 
    uriidx=payload[0];
-   dprintf(fd,"%s",prefix);
+   fprintf(fp,"%s",prefix);
    for(j=0;j<paylen;j++)
-      dprintf(fd,"%s%d%s",j==0?"ENCODED-URI:[":":",payload[j],j==paylen-1?"]\n":"");
+      fprintf(fp,"%s%d%s",j==0?"ENCODED-URI:[":":",payload[j],j==paylen-1?"]\n":"");
    if(uriidx>hdrlen){
-      dprintf(fd,"bad index for start of uri: hdrlen=%d uri_index=%d\n",hdrlen,uriidx);
+      fprintf(fp,"bad index for start of uri: hdrlen=%d uri_index=%d\n",hdrlen,uriidx);
       return -1;
    }
    ch_uriptr = hdrstart+uriidx;
    urilen=payload[1];
    flags1=payload[2];
    flags2=payload[3];
-   dprintf(fd,"%sURI:[%.*s]\n",prefix,urilen,ch_uriptr);
+   fprintf(fp,"%sURI:[%.*s]\n",prefix,urilen,ch_uriptr);
    uritype=flags1&SIP_OR_TEL_F?"SIP":"TEL";
    secure=flags1&SECURE_F?"S":"";
-   dprintf(fd,"%s  TYPE:[%s%s]\n",prefix,uritype,secure);
+   fprintf(fp,"%s  TYPE:[%s%s]\n",prefix,uritype,secure);
    if(flags1 & USER_F){
-      dprintf(fd,"%s  USER:[%.*s]\n",prefix,(payload[i+1]-1)-payload[i],&ch_uriptr[payload[i]]);
+      fprintf(fp,"%s  USER:[%.*s]\n",prefix,(payload[i+1]-1)-payload[i],&ch_uriptr[payload[i]]);
       ++i;
    }
    if(flags1 & PASSWORD_F){
-      dprintf(fd,"%s  PASSWORD=[%.*s]\n",prefix,(payload[i+1]-1)-payload[i],&ch_uriptr[payload[i]]);
+      fprintf(fp,"%s  PASSWORD=[%.*s]\n",prefix,(payload[i+1]-1)-payload[i],&ch_uriptr[payload[i]]);
       ++i;
    }
    if(flags1 & HOST_F){
-      dprintf(fd,"%s  HOST=[%.*s]\n",prefix,(payload[i+1]-1)-payload[i],&ch_uriptr[payload[i]]);
+      fprintf(fp,"%s  HOST=[%.*s]\n",prefix,(payload[i+1]-1)-payload[i],&ch_uriptr[payload[i]]);
       ++i;
    }
    if(flags1 & PORT_F){
-      dprintf(fd,"%s  PORT=[%.*s]\n",prefix,(payload[i+1]-1)-payload[i],&ch_uriptr[payload[i]]);
+      fprintf(fp,"%s  PORT=[%.*s]\n",prefix,(payload[i+1]-1)-payload[i],&ch_uriptr[payload[i]]);
       ++i;
    }
    if(flags1 & PARAMETERS_F){
-      dprintf(fd,"%s  PARAMETERS=[%.*s]\n",prefix,(payload[i+1]-1)-payload[i],&ch_uriptr[payload[i]]);
+      fprintf(fp,"%s  PARAMETERS=[%.*s]\n",prefix,(payload[i+1]-1)-payload[i],&ch_uriptr[payload[i]]);
       ++i;
    }
    if(flags1 & HEADERS_F){
-      dprintf(fd,"%s  HEADERS=[%.*s]\n",prefix,(payload[i+1]-1)-payload[i],&ch_uriptr[payload[i]]);
+      fprintf(fp,"%s  HEADERS=[%.*s]\n",prefix,(payload[i+1]-1)-payload[i],&ch_uriptr[payload[i]]);
       ++i;
    }
    ++i;
    if(flags2 & TRANSPORT_F){
-      dprintf(fd,"%s  TRANSPORT=[%.*s]\n",prefix,payload[i+1],&ch_uriptr[payload[i]]);
+      fprintf(fp,"%s  TRANSPORT=[%.*s]\n",prefix,payload[i+1],&ch_uriptr[payload[i]]);
       i+=2;
    }
    if(flags2 & TTL_F){
-      dprintf(fd,"%s  TTL_F=[%.*s]\n",prefix,payload[i+1],&ch_uriptr[payload[i]]);
+      fprintf(fp,"%s  TTL_F=[%.*s]\n",prefix,payload[i+1],&ch_uriptr[payload[i]]);
       i+=2;
    }
    if(flags2 & USER_F){
-      dprintf(fd,"%s  USER_F=[%.*s]\n",prefix,payload[i+1],&ch_uriptr[payload[i]]);
+      fprintf(fp,"%s  USER_F=[%.*s]\n",prefix,payload[i+1],&ch_uriptr[payload[i]]);
       i+=2;
    }
    if(flags2 & METHOD_F){
-      dprintf(fd,"%s  METHOD_F=[%.*s]\n",prefix,payload[i+1],&ch_uriptr[payload[i]]);
+      fprintf(fp,"%s  METHOD_F=[%.*s]\n",prefix,payload[i+1],&ch_uriptr[payload[i]]);
       i+=2;
    }
    if(flags2 & MADDR_F){
-      dprintf(fd,"%s  MADDR_F=[%.*s]\n",prefix,payload[i+1],&ch_uriptr[payload[i]]);
+      fprintf(fp,"%s  MADDR_F=[%.*s]\n",prefix,payload[i+1],&ch_uriptr[payload[i]]);
       i+=2;
    }
    if(flags2 & LR_F){
-      dprintf(fd,"%s  LR_F=[%.*s]\n",prefix,payload[i+1],&ch_uriptr[payload[i]]);
+      fprintf(fp,"%s  LR_F=[%.*s]\n",prefix,payload[i+1],&ch_uriptr[payload[i]]);
       i+=2;
    }
-   print_encoded_parameters(fd,&payload[i],ch_uriptr,paylen-i,prefix);
+   print_encoded_parameters(fp,&payload[i],ch_uriptr,paylen-i,prefix);
    return 0;
 }
 
@@ -319,10 +319,14 @@ int print_uri_junit_tests(char *hdrstart,int hdrlen,unsigned char *payload,int p
    int i=4,k=0,m=0;/*1*pointer+1*len+2*flags*/
    unsigned char uriidx=0,flags1=0,flags2=0,urilen;
    char *ch_uriptr,*aux,*aux2,*aux3,*uritype=NULL,*secure=NULL;
+   FILE *fp;
+
+   if ( (fp = fdopen(fd, "w*")) == NULL) 
+      return -1;
 
    uriidx=payload[0];
    if(uriidx>hdrlen){
-      dprintf(fd,"bad index for start of uri: hdrlen=%d uri_index=%d\n",hdrlen,uriidx);
+      fprintf(fp,"bad index for start of uri: hdrlen=%d uri_index=%d\n",hdrlen,uriidx);
       return -1;
    }
 
@@ -332,51 +336,51 @@ int print_uri_junit_tests(char *hdrstart,int hdrlen,unsigned char *payload,int p
    urilen=payload[1];
    flags1=payload[2];
    flags2=payload[3];
-   dprintf(fd,"%stoString=(S)%.*s\n",prefix,urilen,ch_uriptr);
+   fprintf(fp,"%stoString=(S)%.*s\n",prefix,urilen,ch_uriptr);
    uritype=flags1&SIP_OR_TEL_F?"sip":"tel";
    secure=flags1&SECURE_F?"s":"";
-   dprintf(fd,"%sgetScheme=(S)%s%s\n",prefix,uritype,secure);
-   dprintf(fd,"%sisSecure=(B)%s\n",prefix,flags1&SECURE_F?"true":"false");
-   dprintf(fd,"%sisSipURI=(B)%s\n",prefix,"true");
-   dprintf(fd,"%sgetUser=(S)",prefix);
+   fprintf(fp,"%sgetScheme=(S)%s%s\n",prefix,uritype,secure);
+   fprintf(fp,"%sisSecure=(B)%s\n",prefix,flags1&SECURE_F?"true":"false");
+   fprintf(fp,"%sisSipURI=(B)%s\n",prefix,"true");
+   fprintf(fp,"%sgetUser=(S)",prefix);
    if(flags1 & USER_F){
-      dprintf(fd,"%.*s\n",(payload[i+1]-1)-payload[i],&ch_uriptr[payload[i]]);
+      fprintf(fp,"%.*s\n",(payload[i+1]-1)-payload[i],&ch_uriptr[payload[i]]);
       ++i;
    }else 
-      dprintf(fd,"(null)\n");
-   dprintf(fd,"%sgetUserPassword=(S)",prefix);
+      fprintf(fp,"(null)\n");
+   fprintf(fp,"%sgetUserPassword=(S)",prefix);
    if(flags1 & PASSWORD_F){
-      dprintf(fd,"%.*s\n",(payload[i+1]-1)-payload[i],&ch_uriptr[payload[i]]);
+      fprintf(fp,"%.*s\n",(payload[i+1]-1)-payload[i],&ch_uriptr[payload[i]]);
       ++i;
    }else
-      dprintf(fd,"(null)\n");
-   dprintf(fd,"%sgetHost=(S)",prefix);
+      fprintf(fp,"(null)\n");
+   fprintf(fp,"%sgetHost=(S)",prefix);
    if(flags1 & HOST_F){
-      dprintf(fd,"%.*s\n",(payload[i+1]-1)-payload[i],&ch_uriptr[payload[i]]);
+      fprintf(fp,"%.*s\n",(payload[i+1]-1)-payload[i],&ch_uriptr[payload[i]]);
       ++i;
    }else
-      dprintf(fd,"(null)\n");/*can't happen*/
-   dprintf(fd,"%sgetPort=(I)",prefix);
+      fprintf(fp,"(null)\n");/*can't happen*/
+   fprintf(fp,"%sgetPort=(I)",prefix);
    if(flags1 & PORT_F){
-      dprintf(fd,"%.*s\n",(payload[i+1]-1)-payload[i],&ch_uriptr[payload[i]]);
+      fprintf(fp,"%.*s\n",(payload[i+1]-1)-payload[i],&ch_uriptr[payload[i]]);
       ++i;
    }else
-      dprintf(fd,"(null)\n");
+      fprintf(fp,"(null)\n");
    /*user=phone;transport=udp*/
    if(flags1 & PARAMETERS_F){
       aux=&ch_uriptr[payload[i]];
       aux2=NULL;
       aux3=aux;
       m=(payload[i+1]-1-payload[i]);
-      dprintf(fd,"%sgetParameter=(SAVP)",prefix);/*SVP = Attribute Value Pair*/
+      fprintf(fp,"%sgetParameter=(SAVP)",prefix);/*SVP = Attribute Value Pair*/
       for(k=0;k<=m;k++){
 	 if((aux3[k]==';'||(k==m)) && aux2==NULL){/*no parameterValue was found*/
-	    dprintf(fd,"%.*s=;",(int)(aux3-aux+k),aux);
+	    fprintf(fp,"%.*s=;",(int)(aux3-aux+k),aux);
 	    aux2=NULL;/*resets the parameterValue-start pointer*/
 	    aux=aux3+1+k;/*points to the next parameter*/
 	 }else 
 	    if((aux3[k]==';'||(k==m)) && aux2!=NULL){
-	       dprintf(fd,"%.*s=%.*s;",(int)(aux2-aux),aux,(int)(aux3-aux2-1+k),aux2+1);
+	       fprintf(fp,"%.*s=%.*s;",(int)(aux2-aux),aux,(int)(aux3-aux2-1+k),aux2+1);
 	       aux2=NULL;
 	       aux=aux3+1+k;
 	    } else 
@@ -384,7 +388,7 @@ int print_uri_junit_tests(char *hdrstart,int hdrlen,unsigned char *payload,int p
 		  aux2=aux3+k;
 	       }
       }
-      dprintf(fd,"\n");
+      fprintf(fp,"\n");
       ++i;
    }
    if(flags1 & HEADERS_F){
@@ -392,15 +396,15 @@ int print_uri_junit_tests(char *hdrstart,int hdrlen,unsigned char *payload,int p
       aux2=NULL;
       aux3=aux;
       m=(payload[i+1]-1-payload[i]);
-      dprintf(fd,"%sgetHeader=(SAVP)",prefix);
+      fprintf(fp,"%sgetHeader=(SAVP)",prefix);
       for(k=0;k<=m;k++){
 	 if((aux3[k]==';'||(k==m)) && aux2==NULL){/*no parameterValue was found*/
-	    dprintf(fd,"%.*s=;",(int)(aux3-aux+k),aux);
+	    fprintf(fp,"%.*s=;",(int)(aux3-aux+k),aux);
 	    aux2=NULL;/*resets the parameterValue-start pointer*/
 	    aux=aux3+1+k;/*points to the next parameter*/
 	 }else 
 	    if((aux3[k]==';'||(k==m)) && aux2!=NULL){
-	       dprintf(fd,"%.*s=%.*s;",(int)(aux2-aux),aux,(int)(aux3-aux2-1+k),aux2+1);
+	       fprintf(fp,"%.*s=%.*s;",(int)(aux2-aux),aux,(int)(aux3-aux2-1+k),aux2+1);
 	       aux2=NULL;
 	       aux=aux3+1+k;
 	    } else 
@@ -408,43 +412,43 @@ int print_uri_junit_tests(char *hdrstart,int hdrlen,unsigned char *payload,int p
 		  aux2=aux3+k;
 	       }
       }
-      dprintf(fd,"\n");
+      fprintf(fp,"\n");
       ++i;
    }
    ++i;
-   dprintf(fd,"%sgetTransportParam=(S)",prefix);
+   fprintf(fp,"%sgetTransportParam=(S)",prefix);
    if(flags2 & TRANSPORT_F){
-      dprintf(fd,"%.*s\n",payload[i+1],&ch_uriptr[payload[i]]);
+      fprintf(fp,"%.*s\n",payload[i+1],&ch_uriptr[payload[i]]);
       i+=2;
    }else
-      dprintf(fd,"(null)\n");
-   dprintf(fd,"%sgetTTLparam=(I)",prefix);
+      fprintf(fp,"(null)\n");
+   fprintf(fp,"%sgetTTLparam=(I)",prefix);
    if(flags2 & TTL_F){
-      dprintf(fd,"%.*s\n",payload[i+1],&ch_uriptr[payload[i]]);
+      fprintf(fp,"%.*s\n",payload[i+1],&ch_uriptr[payload[i]]);
       i+=2;
    }else
-      dprintf(fd,"(null)\n");
-   dprintf(fd,"%sgetUserParam=(S)",prefix);
+      fprintf(fp,"(null)\n");
+   fprintf(fp,"%sgetUserParam=(S)",prefix);
    if(flags2 & USER_F){
-      dprintf(fd,"%.*s\n",payload[i+1],&ch_uriptr[payload[i]]);
+      fprintf(fp,"%.*s\n",payload[i+1],&ch_uriptr[payload[i]]);
       i+=2;
    }else
-      dprintf(fd,"(null)\n");
-   dprintf(fd,"%sgetMethodParam=(S)",prefix);
+      fprintf(fp,"(null)\n");
+   fprintf(fp,"%sgetMethodParam=(S)",prefix);
    if(flags2 & METHOD_F){
-      dprintf(fd,"%.*s\n",payload[i+1],&ch_uriptr[payload[i]]);
+      fprintf(fp,"%.*s\n",payload[i+1],&ch_uriptr[payload[i]]);
       i+=2;
    }else
-      dprintf(fd,"(null)\n");
-   dprintf(fd,"%sgetMAddrParam=(S)",prefix);
+      fprintf(fp,"(null)\n");
+   fprintf(fp,"%sgetMAddrParam=(S)",prefix);
    if(flags2 & MADDR_F){
-      dprintf(fd,"%.*s\n",payload[i+1],&ch_uriptr[payload[i]]);
+      fprintf(fp,"%.*s\n",payload[i+1],&ch_uriptr[payload[i]]);
       i+=2;
    }else
-      dprintf(fd,"(null)\n");
+      fprintf(fp,"(null)\n");
    if(flags2 & LR_F){
       i+=2;
    }
-   dprintf(fd,"\n");
+   fprintf(fp,"\n");
    return 0;
 }

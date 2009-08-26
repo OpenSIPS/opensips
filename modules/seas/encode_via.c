@@ -150,76 +150,76 @@ int encode_via(char *hdrstart,int hdrlen,struct via_body *body,unsigned char *wh
    return i;
 }
 
-int print_encoded_via_body(int fd,char *hdr,int hdrlen,unsigned char *payload,int paylen,char *prefix)
+int print_encoded_via_body(FILE *fp,char *hdr,int hdrlen,unsigned char *payload,int paylen,char *prefix)
 {
    unsigned char flags, numvias;
    int i,offset;
 
    flags=payload[0];
-   dprintf(fd,"%s",prefix);
+   fprintf(fp,"%s",prefix);
    for(i=0;i<paylen;i++)
-      dprintf(fd,"%s%d%s",i==0?"ENCODED VIA BODY:[":":",payload[i],i==paylen-1?"]\n":"");
+      fprintf(fp,"%s%d%s",i==0?"ENCODED VIA BODY:[":":",payload[i],i==paylen-1?"]\n":"");
    numvias=payload[1];
-   dprintf(fd,"%s%d","NUMBER OF VIAS:",numvias);
+   fprintf(fp,"%s%d","NUMBER OF VIAS:",numvias);
    if(numvias==0){
       LM_ERR("no vias present?\n");
       return -1;
    }
    for(i=0,offset=2+numvias;i<numvias;i++){
-      print_encoded_via(fd,hdr,hdrlen,&payload[offset],payload[2+i],strcat(prefix,"  "));
+      print_encoded_via(fp,hdr,hdrlen,&payload[offset],payload[2+i],strcat(prefix,"  "));
       offset+=payload[2+i];
       prefix[strlen(prefix)-2]=0;
    }
    return 1;
 }
 
-int print_encoded_via(int fd,char *hdr,int hdrlen,unsigned char* payload,int paylen,char *prefix)
+int print_encoded_via(FILE *fp,char *hdr,int hdrlen,unsigned char* payload,int paylen,char *prefix)
 {
    int i=2;/* flags + urilength */
    unsigned char flags=0;
 
    flags=payload[0];
-   dprintf(fd,"%s",prefix);
+   fprintf(fp,"%s",prefix);
    for(i=0;i<paylen;i++)
-      dprintf(fd,"%s%d%s",i==0?"ENCODED VIA=[":":",payload[i],i==paylen-1?"]\n":"");
+      fprintf(fp,"%s%d%s",i==0?"ENCODED VIA=[":":",payload[i],i==paylen-1?"]\n":"");
 
-   dprintf(fd,"%sPROT=[%.*s]\n",prefix,payload[2]-payload[1]-1,&hdr[payload[1]]);
-   dprintf(fd,"%sVER=[%.*s]\n",prefix,payload[3]-payload[2]-1,&hdr[payload[2]]);
-   dprintf(fd,"%sTRANSP=[%.*s]\n",prefix,payload[4]-payload[3]-1,&hdr[payload[3]]);
+   fprintf(fp,"%sPROT=[%.*s]\n",prefix,payload[2]-payload[1]-1,&hdr[payload[1]]);
+   fprintf(fp,"%sVER=[%.*s]\n",prefix,payload[3]-payload[2]-1,&hdr[payload[2]]);
+   fprintf(fp,"%sTRANSP=[%.*s]\n",prefix,payload[4]-payload[3]-1,&hdr[payload[3]]);
 
-   dprintf(fd,"%sHOST=[%.*s]\n",prefix,payload[6]-payload[5]-1,&hdr[payload[5]]);
+   fprintf(fp,"%sHOST=[%.*s]\n",prefix,payload[6]-payload[5]-1,&hdr[payload[5]]);
    if(flags & HAS_PORT_F){
-      dprintf(fd,"%sPORT=[%.*s]\n",prefix,payload[7]-payload[6]-1,&hdr[payload[6]]);
+      fprintf(fp,"%sPORT=[%.*s]\n",prefix,payload[7]-payload[6]-1,&hdr[payload[6]]);
       i=8;
    }else
       i=7;
    if(flags & HAS_PARAMS_F){
-      dprintf(fd,"%sPARAMS=[%.*s]\n",prefix,payload[i+1],&hdr[payload[i]]);
+      fprintf(fp,"%sPARAMS=[%.*s]\n",prefix,payload[i+1],&hdr[payload[i]]);
       i+=2;
    }
    if(flags & HAS_BRANCH_F){
-      dprintf(fd,"%sBRANCH=[%.*s]\n",prefix,payload[i+1],&hdr[payload[i]]);
+      fprintf(fp,"%sBRANCH=[%.*s]\n",prefix,payload[i+1],&hdr[payload[i]]);
       i+=2;
    }
    if(flags & HAS_RECEIVED_F){
-      dprintf(fd,"%sRECEIVED=[%.*s]\n",prefix,payload[i+1],&hdr[payload[i]]);
+      fprintf(fp,"%sRECEIVED=[%.*s]\n",prefix,payload[i+1],&hdr[payload[i]]);
       i+=2;
    }
    if(flags & HAS_RPORT_F){
-      dprintf(fd,"%sRPORT=[%.*s]\n",prefix,payload[i+1],&hdr[payload[i]]);
+      fprintf(fp,"%sRPORT=[%.*s]\n",prefix,payload[i+1],&hdr[payload[i]]);
       i+=2;
    }
    if(flags & HAS_I_F){
-      dprintf(fd,"%sI=[%.*s]\n",prefix,payload[i+1],&hdr[payload[i]]);
+      fprintf(fp,"%sI=[%.*s]\n",prefix,payload[i+1],&hdr[payload[i]]);
       i+=2;
    }
    if(flags & HAS_ALIAS_F){
-      dprintf(fd,"%sALIAS=[%.*s]\n",prefix,payload[i+1],&hdr[payload[i]]);
+      fprintf(fp,"%sALIAS=[%.*s]\n",prefix,payload[i+1],&hdr[payload[i]]);
       i+=2;
    }
    for(;i<paylen-1;i+=2){
-      dprintf(fd,"%s[PARAMETER[%.*s]",prefix,payload[i+1]-payload[i]-1,&hdr[payload[i]]);
-      dprintf(fd,"VALUE[%.*s]]\n",(payload[i+2]-payload[i+1])==0?0:(payload[i+2]-payload[i+1]-1),&hdr[payload[i+1]]);
+      fprintf(fp,"%s[PARAMETER[%.*s]",prefix,payload[i+1]-payload[i]-1,&hdr[payload[i]]);
+      fprintf(fp,"VALUE[%.*s]]\n",(payload[i+2]-payload[i+1])==0?0:(payload[i+2]-payload[i+1]-1),&hdr[payload[i+1]]);
    }
    return 0;
 }
