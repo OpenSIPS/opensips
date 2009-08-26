@@ -39,29 +39,6 @@
 #include "../../locking.h"
 #include "../../mem/mem.h"
 
-/*
- * This function copies an OpenSIPS "str" datatype into a '\0' terminated char*
- * string. 
- *
- * NOTE: Make sure to free the memory allocated to *copiedString, when you no
- *       longer have any use for it. (It is allocated with shm_malloc(), so make
- *       sure to deallocate it with shm_free()) 
- */
-int convertStrToCharString(str *strToConvert, char **copiedString) 
-{
-	/* We want enough space for the string, plus 1 for the '\0' character. */
-	*copiedString = shm_malloc(sizeof(char) * (strToConvert->len + 1));
-
-	if (*copiedString == NULL)
-	{
-		return 0;
-	}
-
-	memcpy(*copiedString, strToConvert->s, strToConvert->len);
-	(*copiedString)[strToConvert->len] = '\0';
-
-	return 1;
-}
 
 
 /* Silently returns 1 if the supplied parameters are sane.  Otherwise, an error
