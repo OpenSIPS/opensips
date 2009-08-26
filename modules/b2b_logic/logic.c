@@ -38,6 +38,7 @@
 #include "../../mem/mem.h"
 #include "../b2b_entities/dlg.h"
 #include "../presence/hash.h"
+#include "../presence/utils_func.h"
 
 #include "records.h"
 #include "pidf.h"
@@ -1157,11 +1158,12 @@ error:
 int b2b_init_request(struct sip_msg* msg, str* arg1, str* arg2, str* arg3,
 		str* arg4, str* arg5, str* arg6)
 {
-	str to_uri, from_uri;
-	struct to_body *pto, TO, *pfrom;
+	str to_uri={0, 0}, from_uri;
+	struct to_body *pfrom;
 	unsigned int hash_index;
 	str* args[5];
 	b2b_scenario_t* scenario_struct;
+	int ret;
 
 	/* find the b2b_logic key for the tuple */
 	/* it will encode the position in the hash table */
@@ -1174,36 +1176,30 @@ int b2b_init_request(struct sip_msg* msg, str* arg1, str* arg2, str* arg3,
 		return -1;
 	}
 
-	/* examine the to header */
-	if(msg->to->parsed != NULL)
+	if( parse_sip_msg_uri(msg)< 0)
 	{
-		pto = (struct to_body*)msg->to->parsed;
-		LM_DBG("'To' header ALREADY PARSED: <%.*s>\n",pto->uri.len,pto->uri.s);
+		LM_ERR("failed to parse R-URI\n");
+		return -1;
 	}
-	else
+	if(uandd_to_uri(msg->parsed_uri.user, msg->parsed_uri.host,
+			&to_uri)< 0)
 	{
-		memset( &TO , 0, sizeof(TO) );
-		if( !parse_to(msg->to->body.s,msg->to->body.s + msg->to->body.len + 1, &TO));
-		{
-			LM_DBG("'To' header NOT parsed\n");
-			return -1;
-		}
-		pto = &TO;
+		LM_ERR("failed to construct uri from user and domain\n");
+		return -1;
 	}
-	to_uri= pto->uri;
 
 	/* examine the from header */
 	if (!msg->from || !msg->from->body.s)
 	{
 		LM_ERR("cannot find 'from' header!\n");
-		return -1;
+		goto error;
 	}
 	if (msg->from->parsed == NULL)
 	{
 		if ( parse_from_header( msg )<0 ) 
 		{
 			LM_ERR("cannot parse From header\n");
-			return -1;
+			goto error;
 		}
 	}
 	pfrom = (struct to_body*)msg->from->parsed;
@@ -1214,8 +1210,9 @@ int b2b_init_request(struct sip_msg* msg, str* arg1, str* arg2, str* arg3,
 		if(create_top_hiding_entities(msg, &to_uri, &from_uri)< 0)
 		{
 			LM_ERR("failed to create top hinding specific entities");
-			return -1;
+			goto error;
 		}
+		pkg_free(to_uri.s);
 		return 1;
 	}
 
@@ -1231,14 +1228,22 @@ int b2b_init_request(struct sip_msg* msg, str* arg1, str* arg2, str* arg3,
 
 	hash_index = core_hash(&to_uri, &from_uri, b2bl_hsize);
 
-	return b2b_process_scenario_init(scenario_struct, msg, hash_index, args);
+	ret= b2b_process_scenario_init(scenario_struct, msg, hash_index, 
+			args, &to_uri, &from_uri);
+	pkg_free(to_uri.s);
+
+	return ret;
+error:
+	if(to_uri.s)
+		pkg_free(to_uri.s);
+	return -1;
 }
 
 int b2b_process_scenario_init(b2b_scenario_t* scenario_struct,struct sip_msg* msg,
-		unsigned int hash_index, str* args[])
+		unsigned int hash_index, str* args[], str* to_uri, str* from_uri)
 {
 	str* server_id= NULL, *client_id= NULL;
-	str to_uri, from_uri, body= {0, 0};
+	str body= {0, 0};
 	str method = {INVITE, INVITE_LEN};
 	str* b2bl_key = NULL;
 	b2bl_tuple_t* tuple= NULL;
@@ -1255,8 +1260,6 @@ int b2b_process_scenario_init(b2b_scenario_t* scenario_struct,struct sip_msg* ms
 	if(msg)
 	{
 		method = msg->first_line.u.request.method;
-		to_uri= ((struct to_body*)get_to(msg))->uri;
-		from_uri = ((struct to_body*)get_from(msg))->uri;
 
 		/* extract info from the message in case there is a client entity with type message */
 		/* process the body */
@@ -1361,9 +1364,13 @@ int b2b_process_scenario_init(b2b_scenario_t* scenario_struct,struct sip_msg* ms
 			xmlFree(entity_sid.s);
 			goto error;
 		}
-		
-		tuple->server = b2bl_create_new_entity(B2B_SERVER, server_id, &to_uri,
-				&from_uri, &entity_sid);
+		if(to_uri == NULL || from_uri == NULL)
+		{
+			LM_ERR("NULL URIs\n");
+			goto error;
+		}
+		tuple->server = b2bl_create_new_entity(B2B_SERVER, server_id, to_uri,
+				from_uri, &entity_sid);
 		if(tuple->server == NULL)
 		{
 			LM_ERR("failed to create new server entity\n");
@@ -1430,7 +1437,7 @@ int b2b_process_scenario_init(b2b_scenario_t* scenario_struct,struct sip_msg* ms
 
 		if(xmlStrcasecmp((unsigned char*)type, (unsigned char*)"message") == 0)
 		{
-			client_id = b2b_api.client_new(&method, &client_to, &from_uri, &extra_headers,
+			client_id = b2b_api.client_new(&method, &client_to, from_uri, &extra_headers,
 				(body.s?&body:NULL), b2b_client_notify, b2bl_key);
 			if(client_id == NULL)
 			{
@@ -1439,7 +1446,7 @@ int b2b_process_scenario_init(b2b_scenario_t* scenario_struct,struct sip_msg* ms
 			}
 
 			client_entity = b2bl_create_new_entity(B2B_CLIENT, client_id, &client_to,
-					&from_uri, &entity_sid);
+					from_uri, &entity_sid);
 			if(client_entity == NULL)
 			{
 				LM_ERR("failed to create new client entity\n");
