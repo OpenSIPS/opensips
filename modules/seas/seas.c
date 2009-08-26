@@ -107,6 +107,7 @@ static param_export_t params[]=
 struct module_exports exports= 
 {
    "seas",
+   MODULE_VERSION,
    DEFAULT_DLFLAGS,
    cmds,
    params,
