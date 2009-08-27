@@ -43,12 +43,14 @@
 #define ACK		"ACK"
 #define BYE		"BYE"
 #define INFO	"INFO"
+#define PRACK	"PRACK"
 
 #define INVITE_LEN 6
 #define CANCEL_LEN 6
 #define ACK_LEN 3
 #define BYE_LEN 3
 #define INFO_LEN 4
+#define PRACK_LEN 5
 
 
 struct msg_start {

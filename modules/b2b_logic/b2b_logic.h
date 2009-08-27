@@ -57,7 +57,7 @@ typedef struct b2b_rule
 	struct b2b_rule* next;
 }b2b_rule_t;
 
-enum {B2B_INVITE, B2B_ACK, B2B_BYE, B2B_CANCEL, B2B_METHODS_NO};
+enum {B2B_INVITE, B2B_ACK, B2B_BYE, B2B_CANCEL, B2B_PRACK, B2B_METHODS_NO};
 
 
 typedef struct b2b_scenario
@@ -88,6 +88,9 @@ static inline int b2b_get_request_id(str* request)
 
 	if(request->len==CANCEL_LEN &&strncasecmp(request->s,CANCEL,CANCEL_LEN)==0)
 		return B2B_CANCEL;
+
+	if(request->len==PRACK_LEN &&strncasecmp(request->s,PRACK,PRACK_LEN)==0)
+		return B2B_PRACK;
 
 	return -1;
 }
