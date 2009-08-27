@@ -53,7 +53,7 @@ int get_username_domain(struct sip_msg *msg, str *hf_s,
 /*
  * Check if username in specified header field is in a table
  */
-int is_user_in(struct sip_msg* _msg, char* _hf, char* _grp);
+int db_is_user_in(struct sip_msg* _msg, char* _hf, char* _grp);
 
 /*
  * Check from AAA if a user belongs to a group. User-Name is digest

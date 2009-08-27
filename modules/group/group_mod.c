@@ -73,11 +73,9 @@ static int child_init(int rank);
  */
 static int mod_init(void);
 
-static int get_gid_fixup(void** param, int param_no);
-
 static int aaa_is_user_fixup(void** param, int param_no);
-
 static int db_is_user_fixup(void** param, int param_no);
+static int db_get_gid_fixup(void** param, int param_no);
 
 static int obsolete_fixup_0(void** param, int param_no);
 static int obsolete_fixup_1(void** param, int param_no);
@@ -107,7 +105,7 @@ static int obsolete_fixup_1(void** param, int param_no);
  * Module parameter variables
  */
 static str db_url = {NULL, 0};
-char* aaa_proto_url = NULL;
+static str aaa_proto_url = {NULL, 0};
 
 /* Table name where group definitions are stored */
 str table         = {TABLE, TABLE_LEN}; 
@@ -140,11 +138,11 @@ static cmd_export_t cmds[] = {
 			REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"get_user_group",  (cmd_function)NULL, 2,  obsolete_fixup_1, 0,
 			REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"aaa_is_user_in", (cmd_function)aaa_is_user_in,      2,  aaa_is_user_fixup,     0,
+	{"aaa_is_user_in", (cmd_function)aaa_is_user_in, 2, aaa_is_user_fixup,     0,
 			REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"db_is_user_in",      (cmd_function)is_user_in,      2,  db_is_user_fixup, 0,
+	{"db_is_user_in",      (cmd_function)db_is_user_in, 2, db_is_user_fixup, 0,
 			REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"db_get_user_group",  (cmd_function)get_user_group,  2,  get_gid_fixup, 0,
+	{"db_get_user_group",  (cmd_function)get_user_group, 2, db_get_gid_fixup, 0,
 			REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{0, 0, 0, 0, 0, 0}
 };
@@ -154,7 +152,7 @@ static cmd_export_t cmds[] = {
  * Exported parameters
  */
 static param_export_t params[] = {
-	{"aaa_url", 	  STR_PARAM, &aaa_proto_url  },
+	{"aaa_url", 	  STR_PARAM, &aaa_proto_url.s},
 	{"db_url",        STR_PARAM, &db_url.s       },
 	{"table",         STR_PARAM, &table.s        },
 	{"user_column",   STR_PARAM, &user_column.s  },
@@ -193,15 +191,15 @@ static int child_init(int rank)
 {
 	if (db_url.s)
 		return group_db_init(&db_url);
-	else
-		return 0;
+
+	LM_DBG("db_url is null\n");
+	return 0;
+
 }
 
 
 static int mod_init(void)
 {
-	str proto_url;
-
 	LM_DBG("group module - initializing\n");
 
 	/* check for a database module */
@@ -246,10 +244,15 @@ static int mod_init(void)
 		}
 
 		group_db_close();
+
+		LM_DBG("group database loaded\n");
 	}
 
 	/* check for an aaa module */
-	if (aaa_proto_url) {
+	if (aaa_proto_url.s) {
+
+		aaa_proto_url.len = strlen(aaa_proto_url.s);
+
 		memset(attrs, 0, sizeof(attrs));
 		memset(vals, 0, sizeof(vals));
 		attrs[A_SERVICE_TYPE].name		= "Service-Type";
@@ -258,20 +261,19 @@ static int mod_init(void)
 		attrs[A_ACCT_SESSION_ID].name	= "Acct-Session-Id";
 		vals[V_GROUP_CHECK].name		= "Group-Check";
 
-		proto_url.s = aaa_proto_url;
-		proto_url.len = strlen(aaa_proto_url);
-
-		if (aaa_prot_bind(&proto_url, &proto)) {
+		if (aaa_prot_bind(&aaa_proto_url, &proto)) {
 			LM_ERR("unable to bind aaa protocol module\n");
 			return -1;
 		}
 
-		if (!(conn = proto.init_prot(&proto_url))) {
+		if (!(conn = proto.init_prot(&aaa_proto_url))) {
 			LM_ERR("unable to initialize aaa protocol module\n");
 			return -1;
 		}
 
 		INIT_AV(proto, conn, attrs, A_MAX, vals, V_MAX, "group", -3, -4);
+
+		LM_DBG("aaa protocol module loaded\n");
 	}
 
 	return 0;
@@ -280,7 +282,7 @@ static int mod_init(void)
 
 static void destroy(void)
 {
-	if (group_dbh)
+	if (!db_url.s)
 		group_db_close();
 }
 
@@ -302,7 +304,7 @@ into db_get_user_group\n");
 	return E_CFG;
 }
 
-static int get_gid_fixup(void** param, int param_no)
+static int db_get_gid_fixup(void** param, int param_no)
 {
 	pv_spec_t *sp;
 	str  name;
@@ -339,7 +341,7 @@ static int aaa_is_user_fixup(void** param, int param_no)
 	void* ptr;
 	str* s;
 
-	if (!aaa_proto_url) {
+	if (!aaa_proto_url.s) {
 		LM_ERR("no aaa protocol url\n");
 		return E_CFG;
 	}
@@ -380,14 +382,11 @@ static int aaa_is_user_fixup(void** param, int param_no)
 
 static int db_is_user_fixup(void** param, int param_no) {
 
-	if (param_no == 1) {
-		if (db_url.s)
-			fixup_spve_spve(param, param_no);
-		else {
-			LM_ERR("no database url\n");
-			return E_CFG;
-		}
+	if (db_url.s) {
+		fixup_spve_spve(param, param_no);
+		return 0;
 	}
 
-	return 0;
+	LM_ERR("no database url\n");
+	return E_CFG;
 }
