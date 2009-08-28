@@ -592,9 +592,8 @@ int rls_handle_subscribe(struct sip_msg* msg, char* s1, char* s2)
 		{
 			LM_DBG("list not found - search for uri = %.*s\n",subs.pres_uri.len,
 				subs.pres_uri.s);
-			reply_code = 404;
-			reply_str = pu_404_rpl;
-			goto error;
+			pkg_free(subs.pres_uri.s);
+			return to_presence_code;
 		}
 	}
 	else  /* if request inside a dialog */
