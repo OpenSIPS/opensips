@@ -82,3 +82,8 @@
 2009 April 7
    o Fixed the issue caused by without certificate files.
 
+2009 August 28
+   o Added user=phone parameter support.
+   o Added number portability parameters support.
+   o Added Diversion header support.
+
