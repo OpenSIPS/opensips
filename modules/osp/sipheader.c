@@ -361,7 +361,7 @@ int ospAddOspHeader(
         if ((errorcode = OSPPBase64Encode(token, tokensize, encodedtoken, &encodedtokensize)) == OSPC_ERR_NO_ERROR) {
             snprintf(buffer,
                 sizeof(buffer),
-                "%s%.*s\r\n", 
+                "%s: %.*s\r\n", 
                 OSP_TOKEN_HEADER,
                 encodedtokensize,
                 encodedtoken);

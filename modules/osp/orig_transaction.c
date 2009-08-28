@@ -270,6 +270,8 @@ int ospRequestRouting(
     int npdi;
     char sourcedev[OSP_STRBUF_SIZE];
     char deviceinfo[OSP_STRBUF_SIZE];
+    char divuser[OSP_E164BUF_SIZE];
+    char divhost[OSP_STRBUF_SIZE];
     struct usr_avp* snidavp = NULL;
     int_str snidval;
     char snid[OSP_STRBUF_SIZE];
@@ -301,6 +303,8 @@ int ospRequestRouting(
 
         ospGetNpParameters(msg, rn, sizeof(rn), cic, sizeof(cic), &npdi);
 
+        ospGetDiversion(msg, divuser, sizeof(divuser), divhost, sizeof(divhost));
+
         if ((_osp_snid_avpname.n != 0) &&
             ((snidavp = search_first_avp(_osp_snid_avptype, _osp_snid_avpname, &snidval, 0)) != NULL) &&
             (snidavp->flags & AVP_VAL_STR) && (snidval.s.s && snidval.s.len)) 
@@ -321,6 +325,8 @@ int ospRequestRouting(
             "nprn '%s' "
             "npcic '%s' "
             "npdi '%d' "
+            "diversion_user '%s' "
+            "diversion_host '%s' "
             "call_id '%.*s' "
             "dest_count '%d'\n",
             _osp_device_ip,
@@ -332,11 +338,15 @@ int ospRequestRouting(
             rn,
             cic,
             npdi,
+            divuser,
+            divhost,
             callids[0]->ospmCallIdLen,
             callids[0]->ospmCallIdVal,
             destcount);
 
         OSPPTransactionSetNumberPortability(transaction, rn, cic, npdi);
+
+        OSPPTransactionSetDiversion(transaction, divuser, divhost);
 
         /* try to request authorization */
         errorcode = OSPPTransactionRequestAuthorisation(
