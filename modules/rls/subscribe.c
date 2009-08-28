@@ -498,7 +498,7 @@ int rls_handle_subscribe(struct sip_msg* msg, char* s1, char* s2)
 			goto error;
 		}
 		if(! ( ((event_t*)msg->event->parsed)->parsed & rls_events) )
-		{	
+		{
 			return to_presence_code;
 		}
 	}
@@ -526,7 +526,7 @@ int rls_handle_subscribe(struct sip_msg* msg, char* s1, char* s2)
 			break;
 		}
 		ev_param= ev_param->next;
-	}		
+	}
 
 
 	if(msg->to->parsed != NULL)
@@ -544,15 +544,15 @@ int rls_handle_subscribe(struct sip_msg* msg, char* s1, char* s2)
 		}
 		pto = &TO;
 	}
-		
-	if ( parse_from_uri(msg)<0 ) 
+
+	if(parse_from_uri(msg)<0)
 	{
 		LM_ERR("failed to parse From header\n");
 		goto error;
 	}
 
 	pfrom = (struct to_body*)msg->from->parsed;
-	if( pfrom->tag_value.s ==NULL || pfrom->tag_value.len == 0)
+	if(pfrom->tag_value.s ==NULL || pfrom->tag_value.len == 0)
 	{
 		LM_ERR("no from tag value present\n");
 		goto error;
@@ -592,9 +592,8 @@ int rls_handle_subscribe(struct sip_msg* msg, char* s1, char* s2)
 		{
 			LM_DBG("list not found - search for uri = %.*s\n",subs.pres_uri.len,
 				subs.pres_uri.s);
-			reply_code = 404;
-			reply_str = pu_404_rpl;
-			goto error;
+			pkg_free(subs.pres_uri.s);
+			return to_presence_code;
 		}
 	}
 	else  /* if request inside a dialog */
