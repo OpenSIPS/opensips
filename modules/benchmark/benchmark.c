@@ -67,7 +67,7 @@ static int mod_init(void);
  * Copied to mycfg on module initialization
  */
 static int bm_enable_global = 0;
-static int bm_granularity = 1;
+static int bm_granularity = 100;
 static int bm_loglevel = L_INFO;
 
 static int _bm_last_time_diff = 0;
