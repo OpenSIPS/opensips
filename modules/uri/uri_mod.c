@@ -177,7 +177,6 @@ static param_export_t params[] = {
 	{"uriuser_column",           STR_PARAM, &uridb_uriuser_col.s    },
 	{"use_uri_table",            INT_PARAM, &use_uri_table          },
 	{"use_domain",               INT_PARAM, &use_domain             },
-
 	{"service_type", 			 INT_PARAM, &service_type},
 	{"use_sip_uri_host", 		 INT_PARAM, &use_sip_uri_host},
 	{0, 0, 0}

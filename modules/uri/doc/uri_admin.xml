@@ -112,12 +112,12 @@ modparam("uri", "use_sip_uri_host", 1)
 		&url; of the database to be used.
 		</para>
 		<para>
-		If the db_url string is empty, the default database URL
-		will be used.
+		If the db_url string is not set, you will not be able to use
+		the DB related functions.
 		</para>
 		<para>
 		<emphasis>
-			Default value is <quote>&defaultrodb;</quote>.
+			Default value is <quote>>NULL</quote>.
 		</emphasis>
 		</para>
 		<example>

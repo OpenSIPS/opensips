@@ -20,8 +20,8 @@ Irina-Maria Stanescu
 
    Copyright © 2005, 2009 voice-system.ro
    Revision History
-   Revision $Revision$ $Date: 2009-08-17 19:18:52 +0300
-                              (Mon, 17 Aug 2009) $
+   Revision $Revision$ $Date: 2009-08-25 13:26:51 +0300
+                              (Tue, 25 Aug 2009) $
      __________________________________________________________
 
    Table of Contents
@@ -155,11 +155,10 @@ modparam("uri", "use_sip_uri_host", 1)
 
    URL of the database to be used.
 
-   If the db_url string is empty, the default database URL will be
-   used.
+   If the db_url string is not set, you will not be able to use
+   the DB related functions.
 
-   Default value is
-   "mysql://opensipsro:opensipsro@localhost/opensips".
+   Default value is ">NULL".
 
    Example 1.4. Set db_url parameter
 ...
