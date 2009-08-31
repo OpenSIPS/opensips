@@ -71,7 +71,7 @@
 		<title>Exported Parameters</title>
 	
 		<section>
-			<title><varname>uac_restore_mode</varname> (string)</title>
+			<title><varname>restore_mode</varname> (string)</title>
 			<para>
 			There are 3 mode of restoring the original headers (FROM/TO) URI:
 			<itemizedlist>
@@ -103,18 +103,18 @@
 				</emphasis>
 			</para>
 			<example>
-				<title>Set <varname>uac_restore_mode</varname> parameter
+				<title>Set <varname>restore_mode</varname> parameter
 				</title>
 				<programlisting format="linespecific">
 ...
-modparam("uac","uac_restore_mode","auto")
+modparam("uac","restore_mode","auto")
 ...
 				</programlisting>
 			</example>
 		</section>
 
 		<section>
-			<title><varname>uac_passwd</varname> (string)</title>
+			<title><varname>restore_passwd</varname> (string)</title>
 			<para>
 			String password to be used to encrypt the RR storing paramter
 			(when replacing the TO/FROM headers). If empty, no encryption 
@@ -126,10 +126,10 @@ modparam("uac","uac_restore_mode","auto")
 				</emphasis>
 			</para>
 			<example>
-				<title>Set <varname>uac_passwd</varname> parameter</title>
+				<title>Set <varname>restore_passwd</varname> parameter</title>
 				<programlisting format="linespecific">
 ...
-modparam("uac","uac_passwd","my_secret_passwd")
+modparam("uac","restore_passwd","my_secret_passwd")
 ...
 				</programlisting>
 			</example>
@@ -353,7 +353,7 @@ uac_replace_from("sip:batman@gotham.org");
 			</para>
 			<para>
 			NOTE - this function should be used only if you configured MANUAL
-			restoring of the headers (see uac_restore_mode param). For AUTO 
+			restoring of the headers (see restore_mode param). For AUTO 
 			and NONE, there is no need to use this function.
 			</para>
 			<para>

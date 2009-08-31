@@ -989,11 +989,11 @@ acc_log_request("Some comment", "Some table");
 	</section>
 	<section>
 		<title>
-			<function moreinfo="none">acc_rad_request(comment)</function>
+			<function moreinfo="none">acc_aaa_request(comment)</function>
 		</title>
 		<para>
 		Like <function moreinfo="none">acc_log_request</function>, 
-		<function moreinfo="none">acc_rad_request</function> reports on 
+		<function moreinfo="none">acc_aaa_request</function> reports on 
 		a request. It reports to aaa server as configured in 
 		<quote>aaa_url</quote>.
 		</para>
@@ -1009,10 +1009,10 @@ acc_log_request("Some comment", "Some table");
 		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 		</para>
 		<example>
-		<title>acc_rad_request usage</title>
+		<title>acc_aaa_request usage</title>
 		<programlisting format="linespecific">
 ...
-acc_rad_request("Some comment");
+acc_aaa_request("Some comment");
 ...
 </programlisting>
 		</example>
