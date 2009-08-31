@@ -277,7 +277,7 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 		goto error1;
 	}
 
-	if (local_rlist) {
+	if (local_rlist.a) {
 		LM_DBG("building sip_msg from buffer\n");
 		req = buf_to_sip_msg(buf, buf_len, dialog);
 		if (req==NULL) {
@@ -292,7 +292,7 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 
 			/* run the route */
 			swap_route_type( backup_route_type, LOCAL_ROUTE);
-			run_top_route( local_rlist, req);
+			run_top_route( local_rlist.a, req);
 			set_route_type( backup_route_type );
 
 			set_dset_state( 1 /*enable*/);

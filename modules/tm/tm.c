@@ -94,6 +94,9 @@ static int fixup_t_relay1(void** param, int param_no);
 static int fixup_t_relay2(void** param, int param_no);
 static int fixup_t_replicate(void** param, int param_no);
 static int fixup_cancel_branch(void** param, int param_no);
+static int fixup_froute(void** param, int param_no);
+static int fixup_rroute(void** param, int param_no);
+static int fixup_broute(void** param, int param_no);
 
 
 /* init functions */
@@ -158,11 +161,11 @@ static cmd_export_t cmds[]={
 			0, REQUEST_ROUTE | FAILURE_ROUTE },
 	{"t_relay",         (cmd_function)w_t_relay,        2, fixup_t_relay2,
 			0, REQUEST_ROUTE | FAILURE_ROUTE },
-	{"t_on_failure",    (cmd_function)w_t_on_negative,  1, fixup_uint_null,
+	{"t_on_failure",    (cmd_function)w_t_on_negative,  1, fixup_froute,
 			0, REQUEST_ROUTE | FAILURE_ROUTE | ONREPLY_ROUTE | BRANCH_ROUTE },
-	{"t_on_reply",      (cmd_function)w_t_on_reply,     1, fixup_uint_null,
+	{"t_on_reply",      (cmd_function)w_t_on_reply,     1, fixup_rroute,
 			0, REQUEST_ROUTE | FAILURE_ROUTE | ONREPLY_ROUTE | BRANCH_ROUTE },
-	{"t_on_branch",     (cmd_function)w_t_on_branch,    1, fixup_uint_null,
+	{"t_on_branch",     (cmd_function)w_t_on_branch,    1, fixup_broute,
 			0, REQUEST_ROUTE | FAILURE_ROUTE | ONREPLY_ROUTE | BRANCH_ROUTE },
 	{"t_check_status",  (cmd_function)t_check_status,   1, fixup_regexp_null,
 			0, REQUEST_ROUTE | FAILURE_ROUTE | ONREPLY_ROUTE | BRANCH_ROUTE },
@@ -293,6 +296,54 @@ struct module_exports exports= {
 
 
 /**************************** fixup functions ******************************/
+static int fixup_froute(void** param, int param_no)
+{
+	int rt;
+	
+	rt = get_script_route_ID_by_name( (char *)*param,
+			failure_rlist, FAILURE_RT_NO);
+	if (rt==-1) {
+		LM_ERR("failure route <%s> does not exist\n",(char *)*param);
+		return -1;
+	}
+	pkg_free(*param);
+	*param = (void*)(unsigned long int)rt;
+	return 0;
+}
+
+
+static int fixup_rroute(void** param, int param_no)
+{
+	int rt;
+	
+	rt = get_script_route_ID_by_name( (char *)*param,
+		onreply_rlist, ONREPLY_RT_NO);
+	if (rt==-1) {
+		LM_ERR("onreply route <%s> does not exist\n",(char *)*param);
+		return -1;
+	}
+	pkg_free(*param);
+	*param = (void*)(unsigned long int)rt;
+	return 0;
+}
+
+
+static int fixup_broute(void** param, int param_no)
+{
+	int rt;
+	
+	rt = get_script_route_ID_by_name( (char *)*param,
+		branch_rlist, BRANCH_RT_NO);
+	if (rt==-1) {
+		LM_ERR("branch route <%s> does not exist\n",(char *)*param);
+		return -1;
+	}
+	pkg_free(*param);
+	*param = (void*)(unsigned long int)rt;
+	return 0;
+}
+
+
 static int flag_fixup(void** param, int param_no)
 {
 	unsigned int flags;

@@ -730,7 +730,7 @@ again:
 	}
 
 	if (rt_info->route_idx>0 && rt_info->route_idx<RT_NO) {
-		ret = run_top_route( rlist[rt_info->route_idx], msg );
+		ret = run_top_route( rlist[rt_info->route_idx].a, msg );
 		if (ret<1) {
 			/* drop the action */
 			LM_DBG("script route %d drops routing "

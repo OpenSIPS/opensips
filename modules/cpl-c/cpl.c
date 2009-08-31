@@ -76,6 +76,7 @@ static str db_table        = str_init("cpl");  /* database table */
 static char *dtd_file      = 0;  /* name of the DTD file for CPL parser */
 static char *lookup_domain = 0;
 static str  timer_avp      = {NULL, 0};  /* name of variable timer AVP */
+static char* proxy_route   = NULL;
 
 
 struct cpl_enviroment    cpl_env = {
@@ -139,7 +140,7 @@ static param_export_t params[] = {
 	{"db_table",       STR_PARAM, &db_table.s                        },
 	{"cpl_dtd_file",   STR_PARAM, &dtd_file                          },
 	{"proxy_recurse",  INT_PARAM, &cpl_env.proxy_recurse             },
-	{"proxy_route",    INT_PARAM, &cpl_env.proxy_route               },
+	{"proxy_route",    INT_PARAM, &proxy_route                       },
 	{"log_dir",        STR_PARAM, &cpl_env.log_dir                   },
 	{"case_sensitive", INT_PARAM, &cpl_env.case_sensitive            },
 	{"realm_prefix",   STR_PARAM, &cpl_env.realm_prefix.s            },
@@ -235,6 +236,15 @@ static int cpl_init(void)
 	if (timer_avp.s) timer_avp.len = strlen(timer_avp.s);
 
 	LM_INFO("initializing...\n");
+
+	if (proxy_route && proxy_route[0]) {
+		cpl_env.proxy_route = get_script_route_ID_by_name( proxy_route,
+				rlist, RT_NO);
+		if (cpl_env.proxy_route==-1) {
+			LM_ERR("route <%s> does not exist\n",proxy_route);
+			return -1;
+		}
+	}
 
 	if (cpl_env.proxy_recurse>MAX_PROXY_RECURSE) {
 		LM_CRIT("value of proxy_recurse param (%d) exceeds "

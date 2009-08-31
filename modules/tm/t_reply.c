@@ -600,7 +600,7 @@ static inline int run_failure_handlers(struct cell *t)
 		on_failure = t->on_negative;
 		t->on_negative=0;
 		/* run a reply_route action if some was marked */
-		run_top_route(failure_rlist[on_failure], &faked_req);
+		run_top_route(failure_rlist[on_failure].a, &faked_req);
 	}
 
 	/* restore original environment and free the fake msg */
@@ -1442,7 +1442,7 @@ int reply_received( struct sip_msg  *p_msg )
 		p_msg->flags = t->uas.request->flags;
 		setb0flags(t->uac[branch].br_flags);
 		/* run block */
-		if ( (run_top_route(onreply_rlist[reply_route], p_msg)&ACT_FL_DROP) &&
+		if ( (run_top_route(onreply_rlist[reply_route].a,p_msg)&ACT_FL_DROP) &&
 		(msg_status<200) ) {
 			if (onreply_avp_mode) {
 				UNLOCK_REPLIES( t );
