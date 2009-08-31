@@ -162,7 +162,7 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info)
 		}
 
 		/* exec the routing script */
-		run_top_route(rlist[DEFAULT_RT], msg);
+		run_top_route(rlist[DEFAULT_RT].a, msg);
 
 		/* execute post request-script callbacks */
 		exec_post_req_cb(msg);
@@ -192,8 +192,8 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info)
 		}
 
 		/* exec the onreply routing script */
-		if ( onreply_rlist[DEFAULT_RT]!=0 &&
-		(run_top_route(onreply_rlist[DEFAULT_RT],msg)&ACT_FL_DROP)
+		if ( onreply_rlist[DEFAULT_RT].a!=0 &&
+		(run_top_route(onreply_rlist[DEFAULT_RT].a,msg)&ACT_FL_DROP)
 		&& msg->REPLY_STATUS<200 ) {
 			LM_DBG("dropping provisional reply %d\n", msg->REPLY_STATUS);
 			update_stat( drp_rpls, 1);

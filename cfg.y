@@ -427,6 +427,7 @@ extern int line;
 %type <intval> equalop compop matchop strop intop
 %type <intval> assignop
 %type <intval> snumber
+%type <strval> route_name
 
 
 
@@ -1349,105 +1350,95 @@ tls_client_var : TLS_METHOD EQUAL SSLv23 {
 	| TLS_VERIFY_SERVER EQUAL error { yyerror("boolean value expected"); }
 ;
 
+route_name:  ID {
+				$$ = $1;
+				}
+		| NUMBER {
+				tmp=int2str($1, &i_tmp);
+				if (($$=pkg_malloc(i_tmp+1))==0)
+					yyerror("cfg. parser: out of memory.\n");
+				memcpy( $$, tmp, i_tmp);
+				$$[i_tmp] = 0;
+				}
+		|STRING {
+				$$ = $1;
+		}
+;
+
 route_stm:  ROUTE LBRACE actions RBRACE {
-										if (rlist[DEFAULT_RT]!=0) {
-											yyerror("overwritting default "
-													"request routing table");
-											YYABORT;
-										}
-										push($3, &rlist[DEFAULT_RT]);
-										}
-		| ROUTE LBRACK NUMBER RBRACK LBRACE actions RBRACE { 
-										if (($3<RT_NO) && ($3>=0)){
-											if (rlist[$3]!=0) {
-												yyerror("overwritting request "
-													"routing table");
-												YYABORT;
-											}
-											push($6, &rlist[$3]);
-										}else{
-											yyerror("invalid routing "
-													"table number");
-											YYABORT; }
-										}
+						if (rlist[DEFAULT_RT].a!=0) {
+							yyerror("overwritting default "
+								"request routing table");
+							YYABORT;
+						}
+						push($3, &rlist[DEFAULT_RT].a);
+					}
+		| ROUTE LBRACK route_name RBRACK LBRACE actions RBRACE { 
+						i_tmp = get_script_route_idx($3,rlist,RT_NO,1);
+						if (i_tmp==-1) YYABORT;
+						rlist[i_tmp].name = $3;
+						push($6, &rlist[i_tmp].a);
+					}
 		| ROUTE error { yyerror("invalid  route  statement"); }
 	;
 
-failure_route_stm: ROUTE_FAILURE LBRACK NUMBER RBRACK LBRACE actions RBRACE {
-										if (($3<FAILURE_RT_NO)&&($3>=1)){
-											if (failure_rlist[$3]!=0) {
-												yyerror("overwritting failure "
-													"routing table");
-												YYABORT;
-											}
-											push($6, &failure_rlist[$3]);
-										} else {
-											yyerror("invalid reply routing "
-												"table number");
-											YYABORT; }
-										}
+failure_route_stm: ROUTE_FAILURE LBRACK route_name RBRACK LBRACE actions RBRACE {
+						i_tmp = get_script_route_idx($3,failure_rlist,
+								FAILURE_RT_NO,1);
+						if (i_tmp==-1) YYABORT;
+						failure_rlist[i_tmp].name = $3;
+						push($6, &failure_rlist[i_tmp].a);
+					}
 		| ROUTE_FAILURE error { yyerror("invalid failure_route statement"); }
 	;
 
 onreply_route_stm: ROUTE_ONREPLY LBRACE actions RBRACE {
-										if (onreply_rlist[DEFAULT_RT]!=0) {
-											yyerror("overwritting default "
-													"onreply routing table");
-											YYABORT;
-										}
-										push($3, &onreply_rlist[DEFAULT_RT]);
-										}
-		| ROUTE_ONREPLY LBRACK NUMBER RBRACK LBRACE actions RBRACE {
-										if (($3<ONREPLY_RT_NO)&&($3>=1)){
-											if (onreply_rlist[$3]!=0) {
-												yyerror("overwritting onreply "
-													"routing table");
-												YYABORT;
-											}
-											push($6, &onreply_rlist[$3]);
-										} else {
-											yyerror("invalid reply routing "
-												"table number");
-											YYABORT; }
-										}
+						if (onreply_rlist[DEFAULT_RT].a!=0) {
+							yyerror("overwritting default "
+								"onreply routing table");
+							YYABORT;
+						}
+						push($3, &onreply_rlist[DEFAULT_RT].a);
+					}
+		| ROUTE_ONREPLY LBRACK route_name RBRACK LBRACE actions RBRACE {
+						i_tmp = get_script_route_idx($3,onreply_rlist,
+								ONREPLY_RT_NO,1);
+						if (i_tmp==-1) YYABORT;
+						onreply_rlist[i_tmp].name = $3;
+						push($6, &onreply_rlist[i_tmp].a);
+					}
 		| ROUTE_ONREPLY error { yyerror("invalid onreply_route statement"); }
 	;
 
-branch_route_stm: ROUTE_BRANCH LBRACK NUMBER RBRACK LBRACE actions RBRACE {
-										if (($3<BRANCH_RT_NO)&&($3>=1)){
-											if (branch_rlist[$3]!=0) {
-												yyerror("overwritting branch "
-													"routing table");
-												YYABORT;
-											}
-											push($6, &branch_rlist[$3]);
-										} else {
-											yyerror("invalid branch routing "
-												"table number");
-											YYABORT; }
-										}
+branch_route_stm: ROUTE_BRANCH LBRACK route_name RBRACK LBRACE actions RBRACE {
+						i_tmp = get_script_route_idx($3,branch_rlist,
+								BRANCH_RT_NO,1);
+						if (i_tmp==-1) YYABORT;
+						branch_rlist[i_tmp].name = $3;
+						push($6, &branch_rlist[i_tmp].a);
+					}
 		| ROUTE_BRANCH error { yyerror("invalid branch_route statement"); }
 	;
 
 error_route_stm:  ROUTE_ERROR LBRACE actions RBRACE {
-										if (error_rlist!=0) {
-											yyerror("overwritting default "
-													"error routing table");
-											YYABORT;
-										}
-										push($3, &error_rlist);
-										}
+						if (error_rlist.a!=0) {
+							yyerror("overwritting default "
+								"error routing table");
+							YYABORT;
+						}
+						push($3, &error_rlist.a);
+					}
 		| ROUTE_ERROR error { yyerror("invalid error_route statement"); }
 	;
 
 local_route_stm:  ROUTE_LOCAL LBRACE actions RBRACE {
-										if (local_rlist!=0) {
-											yyerror("re-definition of local "
-													"route detected");
-											YYABORT;
-										}
-										push($3, &local_rlist);
-										}
+						if (local_rlist.a!=0) {
+							yyerror("re-definition of local "
+								"route detected");
+							YYABORT;
+						}
+						push($3, &local_rlist.a);
+					}
 		| ROUTE_LOCAL error { yyerror("invalid local_route statement"); }
 	;
 
@@ -2069,9 +2060,12 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 		| ERROR error { $$=0; yyerror("missing '(' or ')' ?"); }
 		| ERROR LPAREN error RPAREN { $$=0; yyerror("bad error"
 														"argument"); }
-		| ROUTE LPAREN NUMBER RPAREN	{ mk_action2( $$, ROUTE_T, NUMBER_ST,
-														0, (void*)$3, 0);
-										}
+		| ROUTE LPAREN ID RPAREN	{ 
+						rt = get_script_route_idx( $3, rlist, RT_NO, 0);
+						if (rt==-1) yyerror("too many script routes");
+						mk_action2( $$, ROUTE_T, NUMBER_ST,
+							0, (void*)rt, 0);
+					}
 		| ROUTE error { $$=0; yyerror("missing '(' or ')' ?"); }
 		| ROUTE LPAREN error RPAREN { $$=0; yyerror("bad route"
 						"argument"); }

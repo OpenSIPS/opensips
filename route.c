@@ -76,13 +76,18 @@
 
 
 /* main routing script table  */
-struct action* rlist[RT_NO];
+struct script_route rlist[RT_NO];
 /* reply routing table */
-struct action* onreply_rlist[ONREPLY_RT_NO];
-struct action* failure_rlist[FAILURE_RT_NO];
-struct action* branch_rlist[BRANCH_RT_NO];
-struct action* local_rlist;
-struct action* error_rlist;
+struct script_route onreply_rlist[ONREPLY_RT_NO];
+/* failure routes */
+struct script_route failure_rlist[FAILURE_RT_NO];
+/* branch routes */
+struct script_route branch_rlist[BRANCH_RT_NO];
+/* local requests route */
+struct script_route local_rlist;
+/* error route */
+struct script_route error_rlist;
+
 
 int route_type = REQUEST_ROUTE;
 
@@ -100,9 +105,49 @@ void init_route_lists(void)
 	memset(onreply_rlist, 0, sizeof(onreply_rlist));
 	memset(failure_rlist, 0, sizeof(failure_rlist));
 	memset(branch_rlist, 0, sizeof(branch_rlist));
-	error_rlist = 0;
-	local_rlist = 0;
+	memset(&local_rlist, 0, sizeof(local_rlist));
+	memset(&error_rlist, 0, sizeof(error_rlist));
+	rlist[DEFAULT_RT].name = "0";
+	onreply_rlist[DEFAULT_RT].name = "0";
 }
+
+
+int get_script_route_idx( char* name,struct script_route *sr, int size,int set)
+{
+	unsigned int i;
+
+	for(i=1;i<size;i++) {
+		if (sr[i].name==NULL) {
+			/* name not found -> allocate it now */
+			return i;
+		}
+		if (strcmp(sr[i].name,name)==0 ) {
+			/* name found */
+			if (sr[i].a && set) {
+				LM_ERR("Script route <%s> is redefined\n",name);
+				return -1;
+			}
+			return i;
+		}
+	}
+	LM_ERR("Too many routes - no socket left for <%s>\n",name);
+	return -1;
+}
+
+
+int get_script_route_ID_by_name(char *name, struct script_route *sr, int size)
+{
+	unsigned int i;
+
+	for(i=1;i<size;i++) {
+		if (sr[i].name==0)
+			return -1;
+		if (strcmp(sr[i].name,name)==0 )
+			return i;
+	}
+	return -1;
+}
+
 
 /*! \brief traverses an expression tree and compiles the REs where necessary) 
  * \return 0 for ok, <0 if errors 
@@ -221,7 +266,7 @@ static int fix_actions(struct action* a)
 					ret = E_CFG;
 					goto error;
 				}
-				if ( rlist[t->elem[0].u.number]==NULL ) {
+				if ( rlist[t->elem[0].u.number].a==NULL ) {
 					LM_ERR("called route %d is not defined\n",
 						(int)t->elem[0].u.number);
 					ret = E_CFG;
@@ -1557,40 +1602,40 @@ int fix_rls(void)
 {
 	int i,ret;
 	for(i=0;i<RT_NO;i++){
-		if(rlist[i]){
-			if ((ret=fix_actions(rlist[i]))!=0){
+		if(rlist[i].a){
+			if ((ret=fix_actions(rlist[i].a))!=0){
 				return ret;
 			}
 		}
 	}
 	for(i=0;i<ONREPLY_RT_NO;i++){
-		if(onreply_rlist[i]){
-			if ((ret=fix_actions(onreply_rlist[i]))!=0){
+		if(onreply_rlist[i].a){
+			if ((ret=fix_actions(onreply_rlist[i].a))!=0){
 				return ret;
 			}
 		}
 	}
 	for(i=0;i<FAILURE_RT_NO;i++){
-		if(failure_rlist[i]){
-			if ((ret=fix_actions(failure_rlist[i]))!=0){
+		if(failure_rlist[i].a){
+			if ((ret=fix_actions(failure_rlist[i].a))!=0){
 				return ret;
 			}
 		}
 	}
 	for(i=0;i<BRANCH_RT_NO;i++){
-		if(branch_rlist[i]){
-			if ((ret=fix_actions(branch_rlist[i]))!=0){
+		if(branch_rlist[i].a){
+			if ((ret=fix_actions(branch_rlist[i].a))!=0){
 				return ret;
 			}
 		}
 	}
-	if(error_rlist){
-		if ((ret=fix_actions(error_rlist))!=0){
+	if(error_rlist.a){
+		if ((ret=fix_actions(error_rlist.a))!=0){
 			return ret;
 		}
 	}
-	if(local_rlist){
-		if ((ret=fix_actions(local_rlist))!=0){
+	if(local_rlist.a){
+		if ((ret=fix_actions(local_rlist.a))!=0){
 			return ret;
 		}
 	}
@@ -1623,7 +1668,7 @@ static int check_actions(struct action *a, int r_type)
 					goto error;
 				}
 				rcheck_stack[rcheck_stack_p] = a->elem[0].u.number;
-				if (check_actions( rlist[a->elem[0].u.number], r_type)!=0)
+				if (check_actions( rlist[a->elem[0].u.number].a, r_type)!=0)
 					goto error;
 				rcheck_stack_p--;
 				break;
@@ -1679,44 +1724,44 @@ int check_rls(void)
 
 	rcheck_status = 0;
 
-	if(rlist[0]){
-		if ((ret=check_actions(rlist[0],REQUEST_ROUTE))!=0){
+	if(rlist[0].a){
+		if ((ret=check_actions(rlist[0].a,REQUEST_ROUTE))!=0){
 			LM_ERR("check failed for main request route\n");
 			return ret;
 		}
 	}
 	for(i=0;i<ONREPLY_RT_NO;i++){
-		if(onreply_rlist[i]){
-			if ((ret=check_actions(onreply_rlist[i],ONREPLY_ROUTE))!=0){
+		if(onreply_rlist[i].a){
+			if ((ret=check_actions(onreply_rlist[i].a,ONREPLY_ROUTE))!=0){
 				LM_ERR("check failed for onreply_route[%d]\n",i);
 				return ret;
 			}
 		}
 	}
 	for(i=0;i<FAILURE_RT_NO;i++){
-		if(failure_rlist[i]){
-			if ((ret=check_actions(failure_rlist[i],FAILURE_ROUTE))!=0){
+		if(failure_rlist[i].a){
+			if ((ret=check_actions(failure_rlist[i].a,FAILURE_ROUTE))!=0){
 				LM_ERR("check failed for failure_route[%d]\n",i);
 				return ret;
 			}
 		}
 	}
 	for(i=0;i<BRANCH_RT_NO;i++){
-		if(branch_rlist[i]){
-			if ((ret=check_actions(branch_rlist[i],BRANCH_ROUTE))!=0){
+		if(branch_rlist[i].a){
+			if ((ret=check_actions(branch_rlist[i].a,BRANCH_ROUTE))!=0){
 				LM_ERR("check failed for branch_route[%d]\n",i);
 				return ret;
 			}
 		}
 	}
-	if(error_rlist){
-		if ((ret=check_actions(error_rlist,ERROR_ROUTE))!=0){
+	if(error_rlist.a){
+		if ((ret=check_actions(error_rlist.a,ERROR_ROUTE))!=0){
 			LM_ERR("check failed for error_route\n");
 			return ret;
 		}
 	}
-	if(local_rlist){
-		if ((ret=check_actions(local_rlist,LOCAL_ROUTE))!=0){
+	if(local_rlist.a){
+		if ((ret=check_actions(local_rlist.a,LOCAL_ROUTE))!=0){
 			LM_ERR("check failed for local_route\n");
 			return ret;
 		}
@@ -1733,36 +1778,36 @@ void print_rl(void)
 	int j;
 
 	for(j=0; j<RT_NO; j++){
-		if (rlist[j]==0){
+		if (rlist[j].a==0){
 			if (j==0) LM_DBG("WARNING: the main routing table is empty\n");
 			continue;
 		}
 		LM_DBG("routing table %d:\n",j);
-		print_actions(rlist[j]);
+		print_actions(rlist[j].a);
 		LM_DBG("\n");
 	}
 	for(j=0; j<ONREPLY_RT_NO; j++){
-		if (onreply_rlist[j]==0){
+		if (onreply_rlist[j].a==0){
 			continue;
 		}
 		LM_DBG("onreply routing table %d:\n",j);
-		print_actions(onreply_rlist[j]);
+		print_actions(onreply_rlist[j].a);
 		LM_DBG("\n");
 	}
 	for(j=0; j<FAILURE_RT_NO; j++){
-		if (failure_rlist[j]==0){
+		if (failure_rlist[j].a==0){
 			continue;
 		}
 		LM_DBG("failure routing table %d:\n",j);
-		print_actions(failure_rlist[j]);
+		print_actions(failure_rlist[j].a);
 		LM_DBG("\n");
 	}
 	for(j=0; j<BRANCH_RT_NO; j++){
-		if (branch_rlist[j]==0){
+		if (branch_rlist[j].a==0){
 			continue;
 		}
 		LM_DBG("T-branch routing table %d:\n",j);
-		print_actions(branch_rlist[j]);
+		print_actions(branch_rlist[j].a);
 		LM_DBG("\n");
 	}
 }

@@ -38,15 +38,22 @@
 #include "route_struct.h"
 #include "parser/msg_parser.h"
 
-/*#include "cfg_parser.h" */
+
+/*
+ * Definition of a script route
+ */
+struct script_route{
+	char *name;            /* name of the route */
+	struct action *a;      /* the actions tree defining the route logic */
+};
 
 
-extern struct action* rlist[RT_NO];			/*!< main "script table" */
-extern struct action* onreply_rlist[ONREPLY_RT_NO];	/*!< main reply route table */
-extern struct action* failure_rlist[FAILURE_RT_NO];	/*!< Failure route table */
-extern struct action* branch_rlist[BRANCH_RT_NO];	/*!< Branch routes table */
-extern struct action* local_rlist;			/*!< Local route table */
-extern struct action* error_rlist;			/*!< Error route table */
+extern struct script_route rlist[RT_NO];			/*!< main "script table" */
+extern struct script_route onreply_rlist[ONREPLY_RT_NO];	/*!< main reply route table */
+extern struct script_route failure_rlist[FAILURE_RT_NO];	/*!< Failure route table */
+extern struct script_route branch_rlist[BRANCH_RT_NO];	/*!< Branch routes table */
+extern struct script_route local_rlist;			/*!< Local route table */
+extern struct script_route error_rlist;			/*!< Error route table */
 
 #define REQUEST_ROUTE 1	 /*!< Request route block */
 #define FAILURE_ROUTE 2  /*!< Negative-reply route block */
@@ -71,10 +78,21 @@ extern int route_type;
 #define is_route_type(_type) (route_type==_type)
 
 void init_route_lists();
+
+int get_script_route_idx( char* name, struct script_route *sr,
+		int size, int set);
+
+int get_script_route_ID_by_name(char *name,
+		struct script_route *sr, int size);
+
 void push(struct action* a, struct action** head);
+
 int add_actions(struct action* a, struct action** head);
+
 void print_rl();
+
 int fix_rls();
+
 int check_rls();
 
 int eval_expr(struct expr* e, struct sip_msg* msg, pv_value_t *val);

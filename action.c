@@ -140,14 +140,14 @@ int run_action_list(struct action* a, struct sip_msg* msg)
 		/* if action returns 0, then stop processing the script */
 		if(ret==0)
 			action_flags |= ACT_FL_EXIT;
-		if(error_rlist!=NULL &&
+		if(error_rlist.a!=NULL &&
 				(route_type&(ERROR_ROUTE|ONREPLY_ROUTE|LOCAL_ROUTE))==0
 				&& _oser_err_info.eclass!=0)
 
 		{
 			LM_DBG("jumping to error route\n");
 			set_route_type( ERROR_ROUTE );
-			run_actions(error_rlist, msg);
+			run_actions(error_rlist.a, msg);
 			/* if don't exit, then reset error info */
 			if(!(action_flags&ACT_FL_EXIT))
 				init_err_info();
@@ -482,7 +482,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 				ret=E_CFG;
 				break;
 			}
-			return_code=run_actions(rlist[a->elem[0].u.number], msg);
+			return_code=run_actions(rlist[a->elem[0].u.number].a, msg);
 			ret=return_code;
 			break;
 		case REVERT_URI_T:
