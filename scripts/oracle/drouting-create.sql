@@ -17,14 +17,14 @@ END dr_gateways_tr;
 /
 BEGIN map2users('dr_gateways'); END;
 /
-INSERT INTO version (table_name, table_version) values ('dr_rules','2');
+INSERT INTO version (table_name, table_version) values ('dr_rules','3');
 CREATE TABLE dr_rules (
     ruleid NUMBER(10) PRIMARY KEY,
     groupid VARCHAR2(255),
     prefix VARCHAR2(64),
     timerec VARCHAR2(255),
     priority NUMBER(10) DEFAULT 0 NOT NULL,
-    routeid NUMBER(10) DEFAULT 0 NOT NULL,
+    routeid VARCHAR2(255),
     gwlist VARCHAR2(255),
     description VARCHAR2(128) DEFAULT ''
 );
