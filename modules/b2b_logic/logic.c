@@ -412,8 +412,8 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 							tuple->bridge_entities[1]->key.s != NULL) /* if a negative reply for the second leg send BYE to the first*/
 						b2b_api.send_request(entity->peer->type,
 								&entity->peer->key, &meth_bye, 0, 0);
-
-					b2bl_delete(tuple, hash_index);
+					if(msg->first_line.u.reply.statuscode != 487)
+						b2bl_delete(tuple, hash_index);
 
 					goto done;
 				}
@@ -441,9 +441,11 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 			b2b_api.send_reply(entity->peer->type, &entity->peer->key, 
 				msg->first_line.u.reply.statuscode,&msg->first_line.u.reply.reason,
 				body.s?&body:0, extra_headers.s?&extra_headers:0);
-			
-			/* if no other scenario rules defined and this is the reply for a BYE */
-			if(method.len == BYE_LEN || strncmp(method.s, BYE, BYE_LEN)==0 )
+
+			/* if no other scenario rules defined and this is the reply
+			 * for BYE or CANCEL */
+			if(method.len == BYE_LEN || strncmp(method.s, BYE, BYE_LEN)==0 ||
+				(method.len == CANCEL_LEN || strncmp(method.s, CANCEL, CANCEL_LEN)==0))
 				b2bl_delete(tuple, hash_index);
 		}
 	}
@@ -732,7 +734,7 @@ int process_bridge_action(b2bl_tuple_t* tuple, xmlNodePtr bridge_node)
 		if(count == 2)
 		{
 			LM_ERR("Bad scenario document. Too many entities defined for"
-				" bridge node. Only two wntities should be defined\n");
+				" bridge node. Only two entities should be defined\n");
 			break;
 		}
 
