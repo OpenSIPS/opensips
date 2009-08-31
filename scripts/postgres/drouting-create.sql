@@ -9,14 +9,14 @@ CREATE TABLE dr_gateways (
     description VARCHAR(128) DEFAULT '' NOT NULL
 );
 
-INSERT INTO version (table_name, table_version) values ('dr_rules','2');
+INSERT INTO version (table_name, table_version) values ('dr_rules','3');
 CREATE TABLE dr_rules (
     ruleid SERIAL PRIMARY KEY NOT NULL,
     groupid VARCHAR(255) NOT NULL,
     prefix VARCHAR(64) NOT NULL,
     timerec VARCHAR(255) NOT NULL,
     priority INTEGER DEFAULT 0 NOT NULL,
-    routeid INTEGER DEFAULT 0 NOT NULL,
+    routeid VARCHAR(255) NOT NULL,
     gwlist VARCHAR(255) NOT NULL,
     description VARCHAR(128) DEFAULT '' NOT NULL
 );

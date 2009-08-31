@@ -9,14 +9,14 @@ CREATE TABLE dr_gateways (
     description CHAR(128) DEFAULT '' NOT NULL
 ) ENGINE=MyISAM;
 
-INSERT INTO version (table_name, table_version) values ('dr_rules','2');
+INSERT INTO version (table_name, table_version) values ('dr_rules','3');
 CREATE TABLE dr_rules (
     ruleid INT(10) UNSIGNED AUTO_INCREMENT PRIMARY KEY NOT NULL,
     groupid CHAR(255) NOT NULL,
     prefix CHAR(64) NOT NULL,
     timerec CHAR(255) NOT NULL,
     priority INT(11) DEFAULT 0 NOT NULL,
-    routeid INT(11) UNSIGNED DEFAULT 0 NOT NULL,
+    routeid CHAR(255) NOT NULL,
     gwlist CHAR(255) NOT NULL,
     description CHAR(128) DEFAULT '' NOT NULL
 ) ENGINE=MyISAM;

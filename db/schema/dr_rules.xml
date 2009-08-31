@@ -9,7 +9,7 @@
 
 <table id="dr_rules" xmlns:db="http://docbook.org/ns/docbook">
 	<name>dr_rules</name>
-	<version>2</version>
+	<version>3</version>
 	<type db="mysql">&MYSQL_TABLE_TYPE;</type>
 	<description>
 		<db:para>This table is used by the Dynamic Routing module to store
@@ -63,9 +63,8 @@
 
 	<column id="routeid">
 		<name>routeid</name>
-		<type>unsigned int</type>
-		<size>11</size>
-		<default>0</default>
+		<type>string</type>
+		<size>255</size>
 		<description>Route block (from cfg script) to be called when rule 
 		matches.</description>
 	</column>
