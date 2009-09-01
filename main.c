@@ -1318,7 +1318,11 @@ try_again:
 		LM_ERR("error while initializing modules\n");
 		goto error;
 	}
-
+	/* check pv context list */
+	if(pv_contextlist_check() != 0) {
+		LM_ERR("used pv context that was not defined\n");
+		goto error;
+	}
 	/* init multi processes support */
 	if (init_multi_proc_support()!=0) {
 		LM_ERR("failed to init multi-proc support\n");

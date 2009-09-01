@@ -120,6 +120,8 @@ inline static int t_check_trans(struct sip_msg* msg, char* , char* );
 inline static int t_was_cancelled(struct sip_msg* msg, char* , char* );
 inline static int w_t_cancel_branch(struct sip_msg* msg, char* );
 
+struct sip_msg* tm_pv_context_request(struct sip_msg* msg);
+struct sip_msg* tm_pv_context_reply(struct sip_msg* msg);
 
 /* strings with avp definition */
 static char *fr_timer_param = NULL;
@@ -722,10 +724,20 @@ static int mod_init(void)
 		LM_ERR("ERROR:tm:mod_init: failed to process timer AVPs\n");
 		return -1;
 	}
+	if(register_pv_context("request", tm_pv_context_request)< 0)
+	{
+		LM_ERR("Failed to register pv contexts\n");
+		return -1;
+	}
+
+	if(register_pv_context("reply", tm_pv_context_reply)< 0)
+	{
+		LM_ERR("Failed to register pv contexts\n");
+		return -1;
+	}
 
 	return 0;
 }
-
 
 static int child_init(int rank)
 {
@@ -1251,4 +1263,38 @@ static int pv_get_tm_ruri(struct sip_msg *msg, pv_param_t *param,
 	return 0;
 }
 
+struct sip_msg* tm_pv_context_reply(struct sip_msg* msg)
+{
+	struct cell* trans = get_t();
+	int branch;
+
+	if(trans == NULL)
+	{
+		LM_ERR("No transaction found\n");
+		return NULL;
+	}
+
+	if ( (branch=t_get_picked_branch())<0 )
+	{
+		LM_CRIT("no picked branch (%d) for a final response\n", branch);
+		return -1;
+	}
+
+	return trans->uac[branch].reply;
+}
+
+
+struct sip_msg* tm_pv_context_request(struct sip_msg* msg)
+{
+	struct cell* trans = get_t();
+
+	LM_DBG("in fct din tm\n");
+	if(trans == NULL)
+	{
+		LM_ERR("No transaction found\n");
+		return NULL;
+	}
+
+	return trans->uas.request;
+}
 

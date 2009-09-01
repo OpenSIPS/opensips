@@ -225,13 +225,13 @@ int do_assign(struct sip_msg* msg, struct action* a)
 		case BXOREQ_T:
 			if(a->elem[1].type == NULLV_ST)
 			{
-				if(dspec->setf(msg, &dspec->pvp, (int)a->type, 0)<0)
+				if(pv_set_value(msg, dspec, (int)a->type, 0)<0)
 				{
 					LM_ERR("setting PV failed\n");
 					goto error;
 				}
 			} else {
-				if(dspec->setf(msg, &dspec->pvp, (int)a->type, &val)<0)
+				if(pv_set_value(msg, dspec, (int)a->type, &val)<0)
 				{
 					LM_ERR("setting PV failed\n");
 					goto error;
@@ -1091,7 +1091,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 				goto error;
 			}
 			val.flags = PV_VAL_STR;
-			if(spec->setf(msg, &spec->pvp, EQ_T, &val)<0)
+			if(pv_set_value(msg, spec, EQ_T, &val)<0)
 			{
 				LM_ERR("setting PV failed\n");
 				goto error;

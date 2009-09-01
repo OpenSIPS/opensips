@@ -46,6 +46,12 @@
 #define PV_RIBRACKET_STR	"]"
 #define PV_RIBRACKET		']'
 
+#define PV_LCBRACKET		'<'
+#define PV_LCBRACKET_STR	"<"
+#define PV_RCBRACKET		'>'
+#define PV_RCBRACKET_STR	">"
+
+
 #define PV_VAL_NONE			0
 #define PV_VAL_NULL			1
 #define PV_VAL_EMPTY		2
@@ -143,13 +149,23 @@ typedef struct _pv_param
 
 typedef int (*pv_getf_t) (struct sip_msg*,  pv_param_t*, pv_value_t*);
 typedef int (*pv_setf_t) (struct sip_msg*,  pv_param_t*, int, pv_value_t*);
+typedef struct sip_msg* (*pv_contextf_t) (struct sip_msg*);
+
+typedef struct pv_context
+{
+	str name;
+	pv_contextf_t contextf;
+	struct pv_context* next;
+}pv_context_t;
+
 
 typedef struct _pv_spec {
-	pv_type_t    type;   /*!< type of PV */
-	pv_getf_t    getf;   /*!< get PV value function */
-	pv_setf_t    setf;   /*!< set PV value function */
-	pv_param_t   pvp;    /*!< parameter to be given to get/set functions */
-	void         *trans; /*!< transformations */
+	pv_type_t        type;   /*!< type of PV */
+	pv_getf_t        getf;   /*!< get PV value function */
+	pv_setf_t        setf;   /*!< set PV value function */
+	pv_param_t       pvp;    /*!< parameter to be given to get/set functions */
+	pv_context_t*    pvc;    /*< get pv context function */
+	void            *trans; /*!< transformations */
 } pv_spec_t, *pv_spec_p;
 
 typedef int (*pv_parse_name_f)(pv_spec_p sp, str *in);
@@ -201,6 +217,9 @@ int pv_parse_format(str *in, pv_elem_p *el);
 int pv_init_iname(pv_spec_p sp, int param);
 int pv_printf_s(struct sip_msg* msg, pv_elem_p list, str *s);
 
+int pv_set_value(struct sip_msg* msg, pv_spec_p sp,
+		int op, pv_value_t *val);
+
 typedef struct _pvname_list {
 	pv_spec_t sname;
 	struct _pvname_list *next;
@@ -231,5 +250,9 @@ int pv_get_strintval(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res, str *sval, int ival);
 int pv_get_intstrval(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res, int ival, str *sval);
+
+int register_pv_context(char* name, pv_contextf_t get_context);
+int pv_contextlist_check(void);
+
 #endif
 

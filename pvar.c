@@ -88,6 +88,12 @@ int _pv_pid = 0;
 #define PV_LOCAL_BUF_SIZE	511
 static char pv_local_buf[PV_LOCAL_BUF_SIZE+1];
 
+/* pv context list */
+pv_context_t* pv_context_lst = NULL;
+
+pv_context_t* pv_get_context(str* name);
+pv_context_t* add_pv_context(str* name, pv_contextf_t get_context);
+static int pvc_before_check = 1;
 
 /********** helper functions ********/
 /**
@@ -2519,7 +2525,7 @@ int pv_set_mflags(struct sip_msg* msg, pv_param_t *param,
 		LM_ERR("assigning non-int value to msg flags\n");
 		return -1;
 	}
-	
+
 	msg->flags = val->ri;
 
 	return 0;
@@ -3131,6 +3137,7 @@ char* pv_parse_spec(str *in, pv_spec_p e)
 	char *p;
 	str s;
 	str pvname;
+	str pvcontext;
 	int pvstate;
 	int has_inner_name;
 	trans_t *tr = NULL;
@@ -3143,7 +3150,7 @@ char* pv_parse_spec(str *in, pv_spec_p e)
 		return NULL;
 	}
 	
-	/* LM_DBG("***** input [%.*s] (%d)\n", in->len, in->s, in->len); */
+	LM_DBG("***** input [%.*s] (%d)\n", in->len, in->s, in->len);
 	tr = 0;
 	pvstate = 0;
 	memset(e, 0, sizeof(pv_spec_t));
@@ -3168,9 +3175,47 @@ char* pv_parse_spec(str *in, pv_spec_p e)
 		pvname.len = 1;
 		goto done_all;
 	}
+
+	if (*p==PV_LCBRACKET) 
+	{ /* context definition*/
+		p++;
+		pvcontext.s = p;
+
+		while(is_in_str(p,in) && is_pv_valid_char(*p))
+			p++;
+
+		if(*p != PV_RCBRACKET)
+		{
+			LM_ERR("Expected to find the end of the context\n");
+			return 0;
+		}
+		pvcontext.len = p - pvcontext.s;
+		LM_DBG("Context name is %.*s\n", pvcontext.len, pvcontext.s);
+		p++;
+		e->pvc = pv_get_context(&pvcontext);
+		if(e->pvc == NULL)
+		{
+			if(!pvc_before_check)
+			{
+				LM_ERR("Requested a non existing pv context\n");
+				return 0;
+			}
+			LM_DBG("No context definition found for [%.*s]\n", pvcontext.len, pvcontext.s);
+			/* create a dummy context strcuture to be filled by the register functions */
+			e->pvc = add_pv_context(&pvcontext, 0);
+			if(e->pvc == NULL )
+			{
+				LM_ERR("Failed to new context\n");
+				return 0;
+			}
+		}
+	}
+
+	pvname.s = p;
 	while(is_in_str(p,in) && is_pv_valid_char(*p))
 		p++;
 	pvname.len = p - pvname.s;
+
 	if(pvstate==1)
 	{
 		if(*p==PV_RNBRACKET)
@@ -3185,7 +3230,8 @@ char* pv_parse_spec(str *in, pv_spec_p e)
 		} else if(*p==TR_LBRACKET) {
 			p++;
 			pvstate = 4;
-		} else {
+		}
+		else {
 			LM_ERR("invalid char '%c' in [%.*s] (%d)\n", *p, in->len, in->s,
 					pvstate);
 			goto error;
@@ -3582,10 +3628,38 @@ int pv_get_spec_index(struct sip_msg* msg, pv_param_p ip, int *idx, int *flags)
 	return 0;
 }
 
+/* function to set pv value */
+int pv_set_value(struct sip_msg* msg, pv_spec_p sp,
+		int op, pv_value_t *value)
+{
+	struct sip_msg* pv_msg;
+
+	if(msg==NULL || sp==NULL || sp->setf==NULL || value==NULL
+			|| sp->type==PVT_NONE)
+	{
+		LM_ERR("bad parameters\n");
+		return -1;
+	}
+
+	if(sp->pvc && sp->pvc->contextf)
+	{
+		pv_msg = sp->pvc->contextf(msg);
+		if(pv_msg == NULL)
+		{
+			LM_ERR("Failed to extract pv context message\n");
+			pv_msg = msg;
+		}
+	}
+	else
+		pv_msg = msg;
+
+	return (*sp->setf)(pv_msg, &(sp->pvp), op, value);
+}
 
 int pv_get_spec_value(struct sip_msg* msg, pv_spec_p sp, pv_value_t *value)
 {
 	int ret = 0;
+	struct sip_msg* pv_msg;
 
 	if(msg==NULL || sp==NULL || sp->getf==NULL || value==NULL
 			|| sp->type==PVT_NONE)
@@ -3593,14 +3667,28 @@ int pv_get_spec_value(struct sip_msg* msg, pv_spec_p sp, pv_value_t *value)
 		LM_ERR("bad parameters\n");
 		return -1;
 	}
-	
+
 	memset(value, 0, sizeof(pv_value_t));
 
-	ret = (*sp->getf)(msg, &(sp->pvp), value);
+	if(sp->pvc && sp->pvc->contextf)
+	{
+		LM_DBG("Found context function %p\n", sp->pvc->contextf);
+		pv_msg = sp->pvc->contextf(msg);
+		if(pv_msg == NULL)
+		{
+			LM_DBG("Failed to extract pv context message\n");
+			pv_msg = msg;
+		}
+	}
+	else
+	{
+		pv_msg = msg;
+	}
+	ret = (*sp->getf)(pv_msg, &(sp->pvp), value);
 	if(ret!=0)
 		return ret;
 	if(sp->trans)
-		return run_transformations(msg, (trans_t*)sp->trans, value);
+		return run_transformations(pv_msg, (trans_t*)sp->trans, value);
 	return ret;
 }
 
@@ -4005,6 +4093,151 @@ int pv_free_extra_list(void)
 		_pv_extra_list = 0;
 	}
 	
+	return 0;
+}
+
+pv_context_t* new_pv_context(str* name, pv_contextf_t get_context)
+{
+	pv_context_t* pvc_new = NULL;
+	int size;
+/*
+	if(get_context == NULL)
+	{
+		LM_ERR("NULL pointer to function\n");
+		return 0;
+	}
+*/
+	size = sizeof(pv_context_t) + name->len;
+	pvc_new = (pv_context_t*)pkg_malloc(size);
+	if(pvc_new == NULL)
+	{
+		LM_ERR("No more memory\n");
+		return 0;
+	}
+	memset(pvc_new, 0, size);
+
+	pvc_new->name.s = (char*)pvc_new + sizeof(pv_context_t);
+	memcpy(pvc_new->name.s, name->s, name->len);
+	pvc_new->name.len = name->len;
+
+	pvc_new->contextf = get_context;
+
+	return pvc_new;
+}
+
+int register_pv_context(char* cname, pv_contextf_t get_context)
+{
+	pv_context_t* pvc = pv_context_lst;
+	str name;
+
+	if(cname == NULL)
+	{
+		LM_DBG("NULL parameter\n");
+		return -1;
+	}
+
+	name.s = cname;
+	name.len = strlen(cname);
+
+	LM_DBG("Registered new context: %.*s / %p\n", name.len, name.s, get_context);
+	pvc = pv_get_context(&name);
+	if(pvc == NULL)
+	{
+		LM_DBG("Context not found\n");
+		if(add_pv_context(&name, get_context) == NULL)
+		{
+			LM_ERR("Failed to add context\n");
+			return -1;
+		}
+		return 1;
+	}
+
+	if(pvc->contextf!=NULL)
+	{
+		LM_ERR("Context already registered [%s]\n", cname);
+		return -1;
+	}
+	if(get_context == NULL)
+	{
+		LM_ERR("NULL context getter function\n");
+		return -1;
+	}
+	pvc->contextf= get_context;
+	return 1;
+}
+
+
+/* function to register a pv context getter */
+pv_context_t* add_pv_context(str* name, pv_contextf_t get_context)
+{
+	pv_context_t* pvc = pv_context_lst;
+	pv_context_t* pvc_new, *pvc_prev;
+
+	if(pvc == NULL)
+	{
+		pvc_new = new_pv_context(name, get_context);
+		if(pvc_new == NULL)
+		{
+			LM_ERR("Failed to allocate context\n");
+			return 0;
+		}
+		pv_context_lst = pvc_new;
+		return pvc_new;
+	}
+
+	while(pvc)
+	{
+		if(pvc->name.len == name->len && strncmp(pvc->name.s, name->s, name->len)==0)
+		{
+			LM_ERR("PV Context already registered [%.*s]\n", name->len, name->s);
+			return 0;
+		}
+		pvc_prev = pvc;
+		pvc = pvc->next;
+	}
+
+	pvc_new = new_pv_context(name, get_context);
+	if(pvc_new == NULL)
+	{
+		LM_ERR("Failed to allocate context\n");
+		return 0;
+	}
+
+	LM_DBG("Registered new context: %.*s\n", name->len, name->s);
+
+	pvc_prev->next = pvc_new;
+
+	return pvc_new;
+}
+
+pv_context_t* pv_get_context(str* name)
+{
+	pv_context_t* pvc = pv_context_lst;
+
+	while(pvc)
+	{
+		if(pvc->name.len == name->len &&
+				strncmp(pvc->name.s, name->s, name->len) == 0)
+		{
+			return pvc;
+		}
+		pvc = pvc->next;
+	}
+	return 0;
+}
+
+int pv_contextlist_check(void)
+{
+	pv_context_t* pvc = pv_context_lst;
+	
+	while(pvc)
+	{
+		if(pvc->contextf == NULL)
+			return -1;
+
+		pvc = pvc->next;
+	}
+	pvc_before_check = 0;
 	return 0;
 }
 

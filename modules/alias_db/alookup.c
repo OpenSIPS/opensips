@@ -263,7 +263,7 @@ inline int set_alias_to_pvar(struct sip_msg* _msg, str *alias, int no, void *p)
 	val.ri = 0;
 	val.rs = *alias;
 
-	if(pvs->setf(_msg, &pvs->pvp, (int)(no?EQ_T:COLONEQ_T), &val)<0) {
+	if(pv_set_value(_msg, pvs, (int)(no?EQ_T:COLONEQ_T), &val)<0) {
 		LM_ERR("setting PV AVP failed\n");
 		return -1;
 	}

@@ -1560,7 +1560,7 @@ int ds_is_in_list(struct sip_msg *_m, pv_spec_t *pv_ip, pv_spec_t *pv_port,
 					/* matching destination */
 					if(set==-1 && ds_setid_pvname.s!=0) {
 						val.ri = list->id;
-						if(ds_setid_pv.setf(_m, &ds_setid_pv.pvp,
+						if(pv_set_value(_m, &ds_setid_pv,
 								(int)EQ_T, &val)<0)
 						{
 							LM_ERR("setting PV failed\n");

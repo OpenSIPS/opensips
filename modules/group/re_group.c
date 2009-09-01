@@ -183,7 +183,7 @@ int get_user_group(struct sip_msg *req, char *user, char *avp)
 
 			/* match -> add the gid as AVP */
 			val.ri = rg->gid.n;
-			if(pvs->setf(req, &pvs->pvp, (int)EQ_T, &val)<0)
+			if(pv_set_value(req, pvs, (int)EQ_T, &val)<0)
 			{
 				LM_ERR("setting PV AVP failed\n");
 				goto error;

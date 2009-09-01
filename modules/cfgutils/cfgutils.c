@@ -503,7 +503,7 @@ static int pv_set_count(struct sip_msg* msg, char* pv_name, char* str2)
 
 	while(pv_val.flags != PV_VAL_NULL)
 	{
-		if(pv_elem->spec.getf(msg, &pv_elem->spec.pvp, &pv_val) < 0)
+		if(pv_get_spec_value(msg, &pv_elem->spec, &pv_val) < 0)
 		{
 			LM_ERR("PV get function failed\n");
 			return -1;
@@ -541,7 +541,7 @@ static int pv_sel_weight(struct sip_msg* msg, char* pv_name,char* str2)
 
 	while(pv_val.flags != PV_VAL_NULL)
 	{
-		if(pv_elem->spec.getf(msg, &pv_elem->spec.pvp, &pv_val) < 0)
+		if(pv_get_spec_value(msg, &pv_elem->spec, &pv_val) < 0)
 		{
 			LM_ERR("PV get function failed\n");
 			return -1;
@@ -574,7 +574,7 @@ static int pv_sel_weight(struct sip_msg* msg, char* pv_name,char* str2)
 	for(i= 0; i< size; i++)
 	{
 		pv_elem->spec.pvp.pvi.u.ival = i;
-		if(pv_elem->spec.getf(msg, &pv_elem->spec.pvp, &pv_val) < 0)
+		if(pv_get_spec_value(msg, &pv_elem->spec, &pv_val) < 0)
 		{
 			LM_ERR("PV get function failed\n");
 			goto error;

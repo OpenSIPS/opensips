@@ -346,7 +346,7 @@ int send_auth_func(struct sip_msg* msg, str* s1, str* s2) {
 				pvt.rs.len = vp->lvalue;
 			}
 
-			if (mp->pv->setf(msg, &mp->pv->pvp, (int)EQ_T, &pvt) < 0) {
+			if (pv_set_value(msg, mp->pv, (int)EQ_T, &pvt) < 0) {
 				LM_ERR("setting avp failed\n");
 				goto error;
 			}
