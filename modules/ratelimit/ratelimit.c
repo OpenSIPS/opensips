@@ -287,7 +287,7 @@ static int str_map_str(const str_map_t * map, const str * key, int * ret)
 			*ret = map->id;
 			return 0;
 		}
-	LM_DBG("str_map_str() failed map=%p key=%.*s\n", map, key->len, key->s);
+	LM_DBG("failed map=%p key=%.*s\n", map, key->len, key->s);
 	return -1;
 }
 
@@ -302,7 +302,7 @@ static int str_map_int(const str_map_t * map, int key, str * ret)
 			*ret = map->str;
 			return 0;
 		}
-	LM_DBG("str_map_str() failed map=%p key=%d\n", map, key);
+	LM_DBG("failed map=%p key=%d\n", map, key);
 	return -1;
 }
 
@@ -1291,7 +1291,7 @@ struct mi_root* mi_set_pipe(struct mi_root* cmd_tree, void* param)
 	if ( !node->value.s || !node->value.len || strno2int(&node->value,&limit)<0)
 		goto bad_syntax;
 
-	LM_DBG("set_pipe: %d:%d:%d\n", pipe_no, algo_id, limit);
+	LM_DBG("set pipe: %d:%d:%d\n", pipe_no, algo_id, limit);
 
 	if (pipe_no >= MAX_PIPES) {
 		LM_ERR("wrong pipe_no: %d\n", pipe_no);
