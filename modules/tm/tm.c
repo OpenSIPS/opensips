@@ -1277,7 +1277,7 @@ struct sip_msg* tm_pv_context_reply(struct sip_msg* msg)
 	if ( (branch=t_get_picked_branch())<0 )
 	{
 		LM_CRIT("no picked branch (%d) for a final response\n", branch);
-		return -1;
+		return 0;
 	}
 
 	return trans->uac[branch].reply;
