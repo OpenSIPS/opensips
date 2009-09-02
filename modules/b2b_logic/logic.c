@@ -444,9 +444,11 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 
 			/* if no other scenario rules defined and this is the reply
 			 * for BYE or CANCEL */
-			if(method.len == BYE_LEN || strncmp(method.s, BYE, BYE_LEN)==0 ||
-				(method.len == CANCEL_LEN || strncmp(method.s, CANCEL, CANCEL_LEN)==0))
+			if((method.len == BYE_LEN && strncmp(method.s, BYE, BYE_LEN)==0) ||
+				(method.len == CANCEL_LEN && strncmp(method.s, CANCEL, CANCEL_LEN)==0))
+			{
 				b2bl_delete(tuple, hash_index);
+			}
 		}
 	}
 	else
