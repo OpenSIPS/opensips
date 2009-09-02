@@ -2057,10 +2057,10 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 		| ERROR LPAREN error RPAREN { $$=0; yyerror("bad error"
 														"argument"); }
 		| ROUTE LPAREN route_name RPAREN	{ 
-						rt = get_script_route_idx( $3, rlist, RT_NO, 0);
-						if (rt==-1) yyerror("too many script routes");
+						i_tmp = get_script_route_idx( $3, rlist, RT_NO, 0);
+						if (i_tmp==-1) yyerror("too many script routes");
 						mk_action2( $$, ROUTE_T, NUMBER_ST,
-							0, (void*)rt, 0);
+							0, (void*)i_tmp, 0);
 					}
 		| ROUTE error { $$=0; yyerror("missing '(' or ')' ?"); }
 		| ROUTE LPAREN error RPAREN { $$=0; yyerror("bad route"
