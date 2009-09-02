@@ -617,7 +617,6 @@ static inline int run_failure_handlers(struct cell *t)
 
 static inline int is_3263_failure(struct cell *t)
 {
-	struct hdr_field *hdr; 
 	/* is is a DNS failover scenario? - according to RFC 3263
 	 * and RFC 3261, this means 503 reply with Retr-After hdr 
 	 * or timeout with no reply */
