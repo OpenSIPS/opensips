@@ -34,32 +34,34 @@ Irina-Maria Stanescu
 
         1.4. Exported Functions
 
-              1.4.1. radius_does_uri_exist([pvar])
-              1.4.2. aaa_bind_api
-              1.4.3. radius_send_auth([set_name],[set_name])
-              1.4.4. radius_send_acct
+              1.4.1.
+                      radius_send_auth(input_set_name,output_set_nam
+                      e)
+
+              1.4.2. radius_send_acct(input_set_name)
 
    List of Examples
 
    1.1. Set sets parameter
    1.2. Set radius_config parameter
-   1.3. radius_does_uri_exist usage
-   1.4. radius_send_auth usage
+   1.3. radius_send_auth usage
+   1.4. radius_send_acct usage
 
 Chapter 1. Admin Guide
 
 1.1. Overview
 
-   This module is an implementation of the AAA API from the core.
-   It provides the implementation for the callback functions
-   required the API.
+   This module provides a Radius implementation for the AAA API
+   from the core.
+
+   It also provides two functions to be used from the script for
+   generating custom Radius acct and auth requests. Detection and
+   handling of SIP-AVPs from Radius replies is automatically and
+   transparently done by the module.
 
    Any module that wishes to use it has to do the following:
      * include aaa.h
      * make a bind call with a proper radius specific url
-
-   The module also provides two functions that can be used
-   directly from the script.
 
 1.2. Dependencies
 
@@ -83,89 +85,96 @@ Chapter 1. Admin Guide
 
 1.3.1. sets
 
-   Sets of AVPs used to customize RADIUS requests and to get
-   information from the RADIUS reply.
+   Sets of Radius AVPs to be used when building custom RADIUS
+   requests (set of input RADIUS AVPs) or when fetching data from
+   the RADIUS reply (set of output RADIUS AVPs).
+
+   The format for a set definition is the following:
+     * " set_name = ( attribute_name1 = var1 [, attribute_name2 =
+       var2 ]* ) "
+
+   The left-hand side of the assignment must be an attribute name
+   known by the RADIUS dictionary.
+
+   The right-hand side of the assignment must be a script pseudo
+   variable or a script AVP. For more information about them see
+   CookBooks - Scripting Variables.
 
    Example 1.1. Set sets parameter
+
 ...
-modparam("aaa_radius","sets","set4  =  (  my_attr  =   $avp(i:10)   ,
-Sip-From-Tag=$si,Sip-To-Tag=$tt      )      ")
+modparam("aaa_radius","sets","set4  =  (  Sip-User-ID  =   $avp(i:10)
+                        ,   Sip-From-Tag=$si,Sip-To-Tag=$tt      )
+")
 ...
 
 ...
 modparam("aaa_radius","sets","set1 = (User-Name=$var(usr), Sip-Group = $
-var(grp), Service-Type = $var(type)) ")
+var(grp),
+                        Service-Type = $var(type)) ")
 ...
 
 ...
 modparam("aaa_radius","sets","set2 = (Sip-Group = $var(sipgrup)) ")
 ...
 
+
 1.3.2. radius_config
 
    Radiusclient configuration file.
 
    Example 1.2. Set radius_config parameter
+
 ...
 modparam("aaa_radius", "radius_config", "/etc/radiusclient-ng/radiusclie
 nt.conf")
 ...
 
+
 1.4. Exported Functions
 
-1.4.1.  radius_does_uri_exist([pvar])
-
-   Checks from Radius if user@host in Request-URI or in URI stored
-   in pseudo variable argument belongs to a local user. Can be
-   used to decide if 404 or 480 should be returned after lookup
-   has failed. If yes, loads AVP based on SIP-AVP reply items
-   returned from Radius. Each SIP-AVP reply item must have a
-   string value of form:
-
-     * value = SIP_AVP_NAME SIP_AVP_VALUE
-     * SIP_AVP_NAME = STRING_NAME | '#'ID_NUMBER
-     * SIP_AVP_VALUE = ':'STRING_VALUE | '#'NUMBER_VALUE
-
-   Returns 1 if Radius returns Access-Accept, -1 if Radius returns
-   Access-Reject, and -2 in case of internal error.
-
-   This function can be used from REQUEST_ROUTE.
-
-   Example 1.3. radius_does_uri_exist usage
-...
-if (radius_does_uri_exist()) {
-        ...
-};
-...
-
-1.4.2. aaa_bind_api
-
-   This function binds the aaa modules and fills the structure
-   with the callback functions implemented by the module.
-
-1.4.3.  radius_send_auth([set_name],[set_name])
+1.4.1.  radius_send_auth(input_set_name,output_set_name)
 
    This function can be used from the script to make custom radius
-   authentication request. The function takes two paramethers.
+   authentication request. The function takes two parameters.
 
-   The first paramether represents the name of the set that
+   The first parameter represents the name of the set that
    contains the list of attributes and pvars that will form the
-   authentication request. The second paramether represents the
-   name of the set that contains the list of attributes and pvars
-   that will be extracted form the authentication reply. The sets
-   must be defined using the "sets" exported paramether.
+   authentication request.
 
-   Returns 1 if Radius returns Access-Accept, -1 if Radius returns
-   Access-Reject, and -2 in case of internal error.
+   The second parameter represents the name of the set that
+   contains the list of attributes and pvars that will be
+   extracted form the authentication reply.
 
-   This function can be used from REQUEST_ROUTE.
+   The sets must be defined using the "sets" exported parameter.
 
-   Example 1.4. radius_send_auth usage
+   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+   ONREPLY_ROUTE, BRANCH_ROUTE, ERROR_ROUTE and LOCAL_ROUTE.
+
+   Example 1.3. radius_send_auth usage
+
 ...
 radius_send_auth("set1","set2");
 ...
 
-1.4.4. radius_send_acct
+
+1.4.2.  radius_send_acct(input_set_name)
 
    This function can be used from the script to make custom radius
-   accounting request.
+   authentication request. The function takes only one parameter
+   that represents the name of the set that contains the list of
+   attributes and pvars that will form the accounting request.
+
+   Only one set is needed as a parameter because no AVPs can be
+   extracted from the accounting replies.
+
+   The set must be defined using the "sets" exported parameter.
+
+   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+   ONREPLY_ROUTE, BRANCH_ROUTE, ERROR_ROUTE and LOCAL_ROUTE.
+
+   Example 1.4. radius_send_acct usage
+
+...
+radius_send_acct("set1");
+...

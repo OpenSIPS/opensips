@@ -1,4 +1,4 @@
-Auth_radius Module
+Auth_aaa Module
 
 Jan Janak
 
@@ -33,8 +33,8 @@ Irina-Maria Stanescu
 
    Copyright © 2005, 2009 voice-system.ro
    Revision History
-   Revision $Revision$ $Date: 2009-07-21 10:45:05 +0300
-                              (Tue, 21 Jul 2009) $
+   Revision $Revision$ $Date: 2009-08-17 17:55:13 +0300
+                              (Mon, 17 Aug 2009) $
      __________________________________________________________
 
    Table of Contents
@@ -84,7 +84,7 @@ Chapter 1. Admin Guide
 
 1.2. Additional Credentials
 
-   When performing authentification, the AAA server may include in
+   When performing authentication, the AAA server may include in
    the response additional credentials. This scheme is very useful
    in fetching additional user information from the AAA server
    without making extra queries.

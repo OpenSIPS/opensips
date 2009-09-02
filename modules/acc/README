@@ -766,7 +766,7 @@ acc_log_request("Some comment");
 
 1.6.2.  acc_db_request(comment, table)
 
-   Like acc_log_request, acc_db_request reports on a request. The
+   Like acc_db_request, acc_db_request reports on a request. The
    report is sent to database at "db_url", in the table referred
    to in the second action parameter.
 

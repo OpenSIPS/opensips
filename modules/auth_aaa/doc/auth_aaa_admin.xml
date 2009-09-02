@@ -21,7 +21,7 @@
 	<section>
 	<title>Additional Credentials</title>
 	<para>
-		When performing authentification, the AAA server may include in the
+		When performing authentication, the AAA server may include in the
 		response additional credentials. This scheme is very useful in fetching
 		additional user information from the AAA server without making
 		extra queries.

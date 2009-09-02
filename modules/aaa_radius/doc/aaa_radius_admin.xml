@@ -147,18 +147,18 @@ modparam("aaa_radius", "radius_config", "/etc/radiusclient-ng/radiusclient.conf"
 		</title>
 		<para>
 			This function can be used from the script to make custom 
-			radius authentication request. The function takes two paramethers.
+			radius authentication request. The function takes two parameters.
 		</para>
 		<para>
-			The first paramether represents the name of the set that contains the 
+			The first parameter represents the name of the set that contains the 
 			list of attributes and pvars that will form the authentication request.
 		</para>
 		<para>
-			The second paramether represents the name of the set that contains the 
+			The second parameter represents the name of the set that contains the 
 			list of attributes and pvars that will be extracted form the authentication reply.
 		</para>
 		<para>	
-			The sets must be defined using the "sets" exported paramether.
+			The sets must be defined using the "sets" exported parameter.
 		</para>
 		<para>
 			This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, ONREPLY_ROUTE, BRANCH_ROUTE, ERROR_ROUTE and LOCAL_ROUTE.
@@ -181,16 +181,16 @@ radius_send_auth("set1","set2");
 		</title>
 		<para>
 			This function can be used from the script to make custom 
-			radius authentication request. The function takes only one paramether
+			radius authentication request. The function takes only one parameter
 			that represents the name of the set that contains the list of attributes 
 			and pvars that will form the accounting request.
 		</para>
 		<para>	
-			Only one set is needed as a paramether because no AVPs can be extracted 
+			Only one set is needed as a parameter because no AVPs can be extracted 
 			from the accounting replies.
 		</para>
 		<para>	
-			The set must be defined using the "sets" exported paramether.
+			The set must be defined using the "sets" exported parameter.
 		</para>
 		<para>
 			This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, ONREPLY_ROUTE, BRANCH_ROUTE, ERROR_ROUTE and LOCAL_ROUTE.

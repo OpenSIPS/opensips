@@ -959,7 +959,7 @@ acc_log_request("Some comment");
 			<function moreinfo="none">acc_db_request(comment, table)</function>
 		</title>
 		<para>
-		Like <function moreinfo="none">acc_log_request</function>, 
+		Like <function moreinfo="none">acc_db_request</function>, 
 		<function moreinfo="none">acc_db_request</function> reports on a 
 		request. The report is sent to database at <quote>db_url</quote>, in 
 		the table referred to in the second action parameter.
