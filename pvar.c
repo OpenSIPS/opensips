@@ -3634,8 +3634,7 @@ int pv_set_value(struct sip_msg* msg, pv_spec_p sp,
 {
 	struct sip_msg* pv_msg;
 
-	if(msg==NULL || sp==NULL || sp->setf==NULL || value==NULL
-			|| sp->type==PVT_NONE)
+	if(msg==NULL || sp==NULL || sp->setf==NULL || sp->type==PVT_NONE)
 	{
 		LM_ERR("bad parameters\n");
 		return -1;
