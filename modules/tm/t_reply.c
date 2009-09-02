@@ -632,13 +632,12 @@ static inline int is_3263_failure(struct cell *t)
 			if (t->uac[picked_branch].reply==NULL ||
 			t->uac[picked_branch].reply==FAKED_REPLY)
 				return 0;
-			/* is the Retry-After header present (if present,
-			 * it should be already parsed) */
-			hdr = t->uac[picked_branch].reply->headers;
-			for( ; hdr ; hdr=hdr->next)
-				if (hdr->type==HDR_RETRY_AFTER_T)
-					return 1;
-			return 0;
+			/* we do not care about the Retry-After header in 503
+			 * as following discussion on sip-implementers list :
+			 * without or without a RA header, a 503 should fire DNS
+			 * based failover - bogdan
+			 */
+			return 1;
 	}
 	return 0;
 }
@@ -1416,13 +1415,6 @@ int reply_received( struct sip_msg  *p_msg )
 	(is_local(t) && !no_autoack(t) && msg_status >= 200) )) {
 		if (send_ack(p_msg, t, branch)!=0)
 			LM_ERR("failed to send ACK (local=%s)\n", is_local(t)?"yes":"no");
-	}
-
-	/* if it is an 503, parse the RETRY-AFTER header - we need
-	 * it later */
-	if ( msg_status==503 && (t->flags&T_NO_DNS_FAILOVER_FLAG)==0 &&
-	parse_headers( p_msg, HDR_RETRY_AFTER_F, 0)==-1) {
-		LM_ERR("failed to parse reply (looking for Retry-After\n");
 	}
 
 	_tm_branch_index = branch;
