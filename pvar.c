@@ -3149,8 +3149,8 @@ char* pv_parse_spec(str *in, pv_spec_p e)
 		LM_ERR("bad parameters\n");
 		return NULL;
 	}
-	
-	LM_DBG("***** input [%.*s] (%d)\n", in->len, in->s, in->len);
+
+//	LM_DBG("***** input [%.*s] (%d)\n", in->len, in->s, in->len);
 	tr = 0;
 	pvstate = 0;
 	memset(e, 0, sizeof(pv_spec_t));
