@@ -119,6 +119,7 @@ int get_script_route_idx( char* name,struct script_route *sr, int size,int set)
 	for(i=1;i<size;i++) {
 		if (sr[i].name==NULL) {
 			/* name not found -> allocate it now */
+			sr[i].name = name;
 			return i;
 		}
 		if (strcmp(sr[i].name,name)==0 ) {

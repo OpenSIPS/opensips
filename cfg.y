@@ -1376,7 +1376,6 @@ route_stm:  ROUTE LBRACE actions RBRACE {
 		| ROUTE LBRACK route_name RBRACK LBRACE actions RBRACE { 
 						i_tmp = get_script_route_idx($3,rlist,RT_NO,1);
 						if (i_tmp==-1) YYABORT;
-						rlist[i_tmp].name = $3;
 						push($6, &rlist[i_tmp].a);
 					}
 		| ROUTE error { yyerror("invalid  route  statement"); }
@@ -1386,7 +1385,6 @@ failure_route_stm: ROUTE_FAILURE LBRACK route_name RBRACK LBRACE actions RBRACE 
 						i_tmp = get_script_route_idx($3,failure_rlist,
 								FAILURE_RT_NO,1);
 						if (i_tmp==-1) YYABORT;
-						failure_rlist[i_tmp].name = $3;
 						push($6, &failure_rlist[i_tmp].a);
 					}
 		| ROUTE_FAILURE error { yyerror("invalid failure_route statement"); }
@@ -1404,7 +1402,6 @@ onreply_route_stm: ROUTE_ONREPLY LBRACE actions RBRACE {
 						i_tmp = get_script_route_idx($3,onreply_rlist,
 								ONREPLY_RT_NO,1);
 						if (i_tmp==-1) YYABORT;
-						onreply_rlist[i_tmp].name = $3;
 						push($6, &onreply_rlist[i_tmp].a);
 					}
 		| ROUTE_ONREPLY error { yyerror("invalid onreply_route statement"); }
@@ -1414,7 +1411,6 @@ branch_route_stm: ROUTE_BRANCH LBRACK route_name RBRACK LBRACE actions RBRACE {
 						i_tmp = get_script_route_idx($3,branch_rlist,
 								BRANCH_RT_NO,1);
 						if (i_tmp==-1) YYABORT;
-						branch_rlist[i_tmp].name = $3;
 						push($6, &branch_rlist[i_tmp].a);
 					}
 		| ROUTE_BRANCH error { yyerror("invalid branch_route statement"); }
