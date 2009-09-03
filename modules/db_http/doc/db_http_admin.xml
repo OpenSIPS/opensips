@@ -1,0 +1,654 @@
+<!-- Module User's Guide -->
+
+<chapter>
+	<title>&adminguide;</title>
+	
+	<section>
+	<title>Overview</title>
+	<para> This module provides access to a database that is implemented
+	as a HTTP server. It may be used in special cases where traversing
+	firewalls is a problem, or where data encryption is required.
+	</para>
+	<para>
+	In order to use this module you must have a server that can communicate
+	via HTTP or HTTPS with this module that follows exactly the format 
+	decribed in the specifications section.
+	</para>
+	<para>
+	The module can provide SSL, authentication, and all the functionalities
+	of an opensips db as long as the server supports them ( except result_fetch).
+	</para>
+	<para>
+	There is a slight difference between the url of db_http and
+	the urls of the other db modules. The url doesn't have to contain
+	the database name. Instead, everything that is after the
+	address is considered to be a path to the db resource, it may be
+	missing.
+	</para>
+	<para>
+		Even if using HTTPS the url must begin with "http://" , and the
+	SSL parameter for the module must be set to 1.
+	</para>
+
+	<example>
+		<title>Setting db_url for a module</title>
+		<programlisting format="linespecific">
+...
+modparam("presence", "db_url","http://user:pass@localhost:13100")
+or
+modparam("presence", "db_url","http://user:pass@www.some.com/some/some")
+...
+</programlisting>
+		</example>
+
+	</section>
+
+	<section>
+	<title>Dependencies</title>
+	<section>
+		<title>&osips; Modules</title>
+		<para>
+		This module does not depend on other modules.
+		</para>
+	</section>
+
+	<section>
+		<title>External Libraries or Applications</title>
+		<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>libcurl</emphasis>.
+			</para>
+			</listitem>
+		</itemizedlist>
+
+		</section>
+	</section>
+	
+	<section>
+	<title>Exported Parameters</title>
+	<section>
+		<title><varname>SSL</varname>(int)</title>
+		<para>
+		Whether or not to use SSL.
+		</para>
+		<para>If value is 1 the module will use https otherwise
+		it will use http.
+		</para>
+		<para>
+		<emphasis>	Default value is <quote> 0 </quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>SSL</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("db_http", "SSL",1)
+...
+</programlisting>
+		</example>
+	</section>
+	<section>
+		<title><varname>cap_raw_quey</varname>(int)</title>
+		<para>
+		Whether or not the server supports raw queries.
+		</para>
+		<para>
+		<emphasis>	Default value is <quote>0</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>cap_raw_quey</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("db_http", "cap_raw_quey", 1)
+...
+</programlisting>
+		</example>
+	</section>
+	<section>
+		<title><varname>cap_replace</varname>(int)</title>
+		<para>
+		Whether or not the server supports replace capabilities.
+		</para>
+		<para>
+		<emphasis>	Default value is <quote>0</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>cap_replace</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("db_http", "cap_replace", 1)
+...
+</programlisting>
+		</example>
+	</section>
+	<section>
+		<title><varname>cap_insert_update</varname>(int)</title>
+		<para>
+		Whether or not the server supports insert_update capabilities.
+		</para>
+		<para>
+		<emphasis>	Default value is <quote>0</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>cap_insert_update</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("db_http", "cap_insert_update", 1)
+...
+</programlisting>
+		</example>
+	</section>
+	<section>
+		<title><varname>cap_last_inserted_id</varname>(int)</title>
+		<para>
+		Whether or not the server supports last_inserted_id capabilities.
+		</para>
+		<para>
+		<emphasis>	Default value is <quote>0</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>cap_last_inserted_id</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("db_http", "cap_last_inserted_id", 1)
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>field_delimiter</varname> (str)</title>
+		<para>
+		Character to be used to delimit fields in the reply.Only
+		one char may be set.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>;</quote>
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>field_delimiter</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("db_http", "field_delimiter",";")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>row_delimiter</varname> (str)</title>
+		<para>
+		Character to be used to delimit rows in the reply.Only
+		one char may be set.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>\n</quote>
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>row_delimiter</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("db_http", "row_delimiter","\n")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>quote_delimiter</varname> (str)</title>
+		<para>
+		Character to be used to quote  fields that require quoting
+		in the reply.Only one char may be set.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>|</quote>
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>quote_delimiter</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("db_http", "quote_delimiter","|")
+...
+</programlisting>
+		</example>
+	</section>
+
+
+</section>
+
+<section>
+	<title>Exported Functions</title>
+
+	This module does not export any functions.
+		
+</section>
+
+
+<section>
+	<title>Server specifications</title>
+
+	<section>
+		<title>Queries</title>
+		<para>
+		The server must accept queries as HTTP queries.
+		</para>
+		<para>
+		The queries are of 2 types : GET and POST.Both
+		set variables that must be interpreted by the server.
+		All values are URL-encoded.
+		</para>
+		<para>
+		There are several types of queries and the server can tell
+		them apart by the query_type variable. Each type of query uses
+		specific variables simillar to those in the opensips db_api.
+		</para>
+		<example>
+		<title>Example query.</title>
+		<programlisting format="linespecific">
+...
+GET /presentity/?c=username,domain,event,expires HTTP/1.1
+...
+</programlisting>
+		</example>
+	</section>
+
+
+	<section>
+		<title>Variables</title>
+		<para>
+		A description of all the variables. Each variable can have
+		either a single value or a comma-separated list of values. Each
+		variable has a special meaning and can be used only with
+		certain queries.
+		</para>
+
+		<para>
+		The table on which operations will take place will be encoded
+		in the url as the end of the url ( www.some.com/users will point
+		to the users table).
+		</para>
+
+		<itemizedlist>
+			<listitem>
+			<para>
+				k=
+			</para>
+			
+			<para>
+				Describes the keys (columns) that will 
+				be used for comparison.Can have multiple values.
+			</para>
+			
+			</listitem>
+			
+			<listitem>
+			<para>
+				op=
+			</para>
+			
+			<para>
+				Describes the operators that will 
+				be used for comparison.Can have multiple values.
+			</para>
+			
+			</listitem>
+			
+			<listitem>
+			<para>
+				v=
+			</para>
+			
+			<para>
+				Describes the values that columns will be 
+				compaired against. Can have multiple values.
+			</para>
+			
+			</listitem>
+
+			<listitem>
+			<para>
+				c=
+			</para>
+
+			<para>
+				Describes the columns that will be selected
+				from the result.Can have multiple values.
+			</para>
+
+			</listitem>
+
+			<listitem>
+			<para>
+				o=
+			</para>
+
+			<para>
+				The column that the result will be ordered by.
+				Has a single value.
+			</para>
+
+			</listitem>
+
+			<listitem>
+			<para>
+				uk=
+			</para>
+
+			<para>
+				The keys(columns) that will be updated.
+				Can have multiple values.
+			</para>
+
+			</listitem>
+
+			<listitem>
+			<para>
+				uv=
+			</para>
+
+			<para>
+				The new values that will be put in the columns.
+				Can have multiple values.
+			</para>
+
+			</listitem>
+
+			<listitem>
+			<para>
+				q=
+			</para>
+
+			<para>
+				Describes a raw query. Will only be used if
+				the server supports raw queries. Has a single
+				value.
+			</para>
+
+			</listitem>
+
+			<listitem>
+			<para>
+				query_type=
+			</para>
+
+			<para>
+				Describes the type of the current query.
+				Can have a single value as described in the
+				Query Types section.Has a single value.
+				Will be present in all queries except the
+				"SELECT" (normal query).
+			</para>
+
+			</listitem>
+			
+			
+		</itemizedlist>
+
+		
+		<example>
+		<title>Example query with variables.</title>
+		<programlisting format="linespecific">
+...
+GET /presentity/?c=username,domain,event,expires HTTP/1.1
+GET /version/?k=table_name&amp;v=xcap&amp;c=table_version HTTP/1.1 
+...
+...
+POST /active_watchers HTTP/1.1
+
+k=id&amp;v=100&amp;query_type=insert
+...
+
+</programlisting>
+		</example>
+	</section>
+	
+
+<section>
+		<title>Query Types</title>
+		<para>
+		The types of the queries are described by the
+		query_type variable. The value of the variable
+		will be set to the exact name of the query.
+		</para>
+		<para>
+		Queries for "SELECT" use GET and the rest use POST
+		(insert, update, delete, replace, insert_update).
+		</para>
+
+		<itemizedlist>
+			<listitem>
+			<para>
+				normal query
+			</para>
+			<para>
+				Uses the k, op, v, c and o variables.
+				This will not set the query_type variable and
+				will use GET.
+			</para>
+			</listitem>
+
+			<listitem>
+			<para>
+				delete
+			</para>
+			<para>
+				Uses the k, op and v variables.
+			</para>
+			</listitem>
+
+			<listitem>
+			<para>
+				insert
+			</para>
+			<para>
+				Uses the k and v variables.
+			</para>
+			</listitem>
+
+
+			<listitem>
+			<para>
+				update
+			</para>
+			<para>
+				Uses the k,op,v,uk and uv  variables.
+			</para>
+			</listitem>
+
+			<listitem>
+			<para>
+				replace
+			</para>
+			<para>
+				Uses the k and v  variables. This is an optional
+				type of query. If the module is not configured to use it
+				it will not.
+			</para>
+			</listitem>
+
+			<listitem>
+			<para>
+				insert_update
+			</para>
+			<para>
+				Uses the k and v  variables. This is an optional
+				type of query. If the module is not configured to use it
+				it will not.
+			</para>
+			</listitem>
+
+			<listitem>
+			<para>
+				custom
+			</para>
+			<para>
+				Uses the q  variable. This is an optional
+				type of query. If the module is not configured to use it
+				it will not.
+			</para>
+			</listitem>
+
+
+
+		</itemizedlist>
+
+		<example>
+		<title>More query examples.</title>
+		<programlisting format="linespecific">
+
+...
+POST /active_watchers HTTP/1.1
+
+k=id&amp;op=%3D&amp;v=100&amp;query_type=delete
+...
+
+...
+POST /active_watchers HTTP/1.1
+
+k=id&amp;op=%3D&amp;v=100&amp;uk=id&amp;uv=101&amp;query_type=update
+...
+
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title>NULL values in queries</title>
+		<para>
+		NULL values in queries are represented as a string of length 1
+		containing a single character with value '\0'.
+		</para>
+		<example>
+		<title>NULL query example.</title>
+		<programlisting format="linespecific">
+
+...
+POST /active_watchers HTTP/1.1
+
+k=id&amp;op=%3D&amp;v=%00&amp;query_type=delete
+...
+
+
+</programlisting>
+		</example>
+
+	</section>
+
+
+	<section>
+		<title>Server Replies</title>
+		<para>
+			If the query is ok (even if the answer is empty)
+			the server must reply with a 200 OK HTTP reply with
+			a body containing the types and values of the columns.
+		</para>
+		<para>
+		The server must reply with a delimiter separated list of
+		values and columns.
+		</para>
+		<para>
+			Each element in the list must be seperated from the
+			one before it by a field delimiter that must be the same 
+			as the one set as a parameter from the script for the module.
+			The last element of each line must not be followed by
+			a field delimiter, but by a	row delimiter.
+		</para>
+
+		<para>
+		The first line of the reply must contain a list of the types
+		of values of each column. The types can be any from the list:
+		integer, string, str, blob, date.
+		</para>
+		<para>
+		Each following line contains the values of each row from the result.
+		</para>
+
+		<para>
+		If the query produced an error the server must reply with a
+		HTTP 500 reply,	or with a corresponding error code (404, 401).
+		</para>
+		<example>
+		<title>Example Reply.</title>
+		<programlisting format="linespecific">
+...
+int;string;blob
+6;something=something;1000
+100;mine;10002030
+...
+</programlisting>
+		</example>
+	</section>
+
+
+	<section>
+		<title>Reply Quoting</title>
+		<para>
+		Because the values may contain delimiters inside,
+		the server must perform quoting when necessary (there is no
+		problem if it does it even when it is not necessary).
+		</para>
+		<para>
+		A quote delimiter must be defined and must be the same as
+		the one set from the script ( by default it is "|" ).
+		</para>
+
+		<para>
+		If a value contains a field ,  row  or a quote delimiter
+		it must be placed under quotes. A quote delimiter inside a value
+		must be preceeded by another quote delimiter.
+		</para>
+		
+		<example>
+		<title>Quoting Example.</title>
+		<programlisting format="linespecific">
+...
+int;string;blob
+6;|ana;maria|;1000
+100;mine;10002030
+3;mine;|some||more;|
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title>Last inserted id</title>
+		<para>
+		This is an optional feature and may be enabled if one wants
+		to use it.
+		</para>
+		<para>
+		In order to use this feature the server must place the id
+		of the last insert in the 200 reply for each insert query.
+		</para>
+
+	</section>
+
+	<section>
+		<title>Authentication and SSL</title>
+		<para>
+		If the server supports authentication and SSL, the module
+		can be enabled to use SSL. Authentication will always be used
+		if needed.
+		</para>
+		<para>
+		The module will try to use the most secure type of
+		authentication that is provided by the server from:
+		Basic, Digest,GSSNEGOTIATE and NTLM.
+		</para>
+
+	</section>
+	
+
+</section>
+
+</chapter>
+
