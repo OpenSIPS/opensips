@@ -1,5 +1,5 @@
 /*
- * $Id: memcached.c 5862 2009-07-15 10:06:05Z andreidragus $
+ * $Id$
  *
  * Copyright (C) 2009 Voice Sistem SRL
  * Copyright (C) 2009 Andrei Dragus
