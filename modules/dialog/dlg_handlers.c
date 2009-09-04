@@ -809,7 +809,7 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 			if (update_dlg_timer( &dlg->tl, dlg->lifetime )==-1)
 				LM_ERR("failed to update dialog lifetime\n");
 		}
-		if (update_cseqs(dlg, req, dir)!=0) {
+		if (update_cseqs(dlg, req, (dir==DLG_DIR_UPSTREAM)?1:0)!=0) {
 			LM_ERR("cseqs update failed\n");
 		} else {
 			dlg->flags |= DLG_FLAG_CHANGED;
