@@ -285,7 +285,7 @@ rt_data_t* dr_load_routing_info( db_func_t *dr_dbf, db_con_t* db_hdl,
 							str *drd_table, str *drl_table, str* drr_table )
 {
 	int    int_vals[4];
-	char * str_vals[4];
+	char * str_vals[5];
 	str tmp;
 	db_key_t columns[7];
 	db_res_t* res;
