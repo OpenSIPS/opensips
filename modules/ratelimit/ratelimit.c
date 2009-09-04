@@ -145,7 +145,8 @@ static double * load_value;     /* actual load, used by PIPE_ALGO_FEEDBACK */
 static double * pid_kp, * pid_ki, * pid_kd, * pid_setpoint; /* PID tuning params */
 static int * drop_rate;         /* updated by PIPE_ALGO_FEEDBACK */
 
-static int * network_load_value;      /* network load */
+static int * network_load_value;	/* network load */
+static int * check_network_load;	/* flag for checking the network_load */
 
 /* where to get the load for feedback. values: cpu, external */
 static int load_source_mp = LOAD_SOURCE_CPU;
@@ -208,6 +209,7 @@ static int w_rl_drop_forced(struct sip_msg*, char *, char *);
 static int w_rl_drop(struct sip_msg*, char *, char *);
 static int add_queue_params(modparam_t, void *);
 static int add_pipe_params(modparam_t, void *);
+static void set_check_network_load(void);
 /* RESERVED for future use
 static int set_load_source(modparam_t, void *);
 */
@@ -455,6 +457,11 @@ static int mod_init(void)
 		LM_ERR("oom for network_load_value\n");
 		return -1;
 	}
+	check_network_load = shm_malloc(sizeof(int));
+	if (check_network_load==NULL) {
+		LM_ERR("oom for check_network_load\n");
+		return -1;
+	}
 
 	load_value = shm_malloc(sizeof(double));
 	if (load_value==NULL) {
@@ -503,6 +510,7 @@ static int mod_init(void)
 	}
 
 	*network_load_value = 0;
+	*check_network_load = 0;
 	*load_value = 0.0;
 	*load_source = load_source_mp;
 	*pid_kp = 0.0;
@@ -573,6 +581,8 @@ static int mod_init(void)
 		queues[i].method_mp.len = 0;
 	}
 
+	set_check_network_load();
+
 	rl_drop_reason.len = strlen(rl_drop_reason.s);
 
 	return 0;
@@ -638,6 +648,10 @@ void destroy(void)
 	if (network_load_value) {
 		shm_free(network_load_value);
 		network_load_value = NULL;
+	}
+	if (check_network_load) {
+		shm_free(check_network_load);
+		check_network_load = NULL;
 	}
 	if (load_value) {
 		shm_free(load_value);
@@ -987,7 +1001,7 @@ static int parse_pipe_params(char * line, pipe_params_t * params)
 		LM_ERR("invalid param tuple: %s\n", line);
 		return -1;
 	}
-	LM_INFO("pipe: [%.*s|%.*s|%.*s]\n",
+	LM_DBG("pipe: [%.*s|%.*s|%.*s]\n",
 		RXLS(m, line, 1), RXLS(m, line, 2), RXLS(m, line, 3));
 	
 	params->no = atoi(RXS(m, line, 1));
@@ -1016,7 +1030,7 @@ static int parse_queue_params(char * line, rl_queue_params_t * params)
 		LM_ERR("invalid param tuple: %s\n", line);
 		return -1;
 	}
-	LM_INFO("queue: [%.*s|%.*s]\n",
+	LM_DBG("queue: [%.*s|%.*s]\n",
 		RXLS(m, line, 1), RXLS(m, line, 2));
 	
 	params->pipe = atoi(RXS(m, line, 1));
@@ -1073,7 +1087,7 @@ static int add_pipe_params(modparam_t type, void * val)
 
 	if (parse_pipe_params(param_line, &params))
 		return -1;
-	
+
 	if (params.no < 0 || params.no >= MAX_PIPES) {
 		LM_ERR("pipe number %d not allowed (MAX_PIPES=%d, 0-based)\n",
 			params.no, MAX_PIPES);
@@ -1112,6 +1126,20 @@ static int add_queue_params(modparam_t type, void * val)
 	return 0;
 }
 
+static void set_check_network_load(void) {
+	int i, net_algo_found = 0;
+	for (i=0; i<MAX_PIPES; i++) {
+		if( *pipes[i].algo == PIPE_ALGO_NETWORK ) {
+			net_algo_found = 1;
+			break;
+		}
+	}
+
+	*check_network_load = net_algo_found;
+	LM_DBG("setting check_network_load -> %d", *check_network_load);
+
+	return;
+}
 
 /* timer housekeeping, invoked each timer interval to reset counters */
 static void rl_timer(unsigned int ticks, void *param)
@@ -1126,7 +1154,9 @@ static void rl_timer(unsigned int ticks, void *param)
 			break;
 	}
 
-	*network_load_value = get_total_bytes_waiting(PROTO_NONE);
+	if (*check_network_load) {
+		*network_load_value = get_total_bytes_waiting(PROTO_NONE);
+	}
 
 	if (rl_dbg_str->s) {
 		c = p = rl_dbg_str->s;
@@ -1286,7 +1316,7 @@ struct mi_root* mi_set_pipe(struct mi_root* cmd_tree, void* param)
 		LM_ERR("unknown algorithm: '%.*s'\n", node->value.len, node->value.s);
 		goto bad_syntax;
 	}
-	
+
 	node = node->next;
 	if ( !node->value.s || !node->value.len || strno2int(&node->value,&limit)<0)
 		goto bad_syntax;
@@ -1309,6 +1339,7 @@ struct mi_root* mi_set_pipe(struct mi_root* cmd_tree, void* param)
 		*pid_setpoint = 0.01 * (double)cfg_setpoint;
 	}
 
+	set_check_network_load();
 	LOCK_RELEASE(rl_lock);
 
 	return init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
