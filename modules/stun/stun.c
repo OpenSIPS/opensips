@@ -48,10 +48,10 @@ struct socket_info* grep3 = NULL;
 struct socket_info* grep4 = NULL;
 int assign_once = FALSE;
 
-int sockfd1;	/* ip1 port1 */
-int sockfd2;	/* ip1 port2 */
-int sockfd3;	/* ip2 port1 */
-int sockfd4;	/* ip2 port2 */
+int sockfd1=-1;	/* ip1 port1 */
+int sockfd2=-1;	/* ip1 port2 */
+int sockfd3=-1;	/* ip2 port1 */
+int sockfd4=-1;	/* ip2 port2 */
 
 int ip1, ip2;
 int port1, port2;
@@ -356,7 +356,7 @@ int receive(int sockfd, struct sockaddr_in * client, char * buffer, int nRecv,
     else if(ctl.sock_outbound == sockfd4)
 	sprintf(s, "%i %s %s", sockfd4, alternate_ip, alternate_port);
     else
-	sprintf(s, "unknown");
+	sprintf(s, "%i unknown", ctl.sock_outbound);
 
     LM_DBG("Sending: from [%s] to [%s %i]\n", s,
 	    inet_ntoa(ctl.dst->sin_addr), ntohs(ctl.dst->sin_port));
@@ -883,6 +883,12 @@ int addTlvAttribute(IN_OUT StunMsg* msg , IN StunMsg* srs_msg,
     return -1;
 }
 
+void swap(IN_OUT int* a, IN_OUT int* b){
+    int t = *a;
+    *a = *b;
+    *b = t;
+}
+
 StunMsg* process(IN StunMsg* msg, IN_OUT StunCtl* ctl){
 
     int	    rc;
@@ -927,6 +933,7 @@ StunMsg* process(IN StunMsg* msg, IN_OUT StunCtl* ctl){
 	    t3 = sockfd3;	/*  1	0   */
 	    t4 = sockfd4;	/*  1	1   */
 
+	    /* LM_DBG("process()1 t1=%i  t2=%i  t3=%i  t4=%i\n", t1, t2, t3, t4); */
 	/* outbound depends on INBOUND and on REQUEST_FLAGS */
 
 	    /* eliminate INBOUND dependency */
@@ -934,33 +941,35 @@ StunMsg* process(IN StunMsg* msg, IN_OUT StunCtl* ctl){
 
 	    }else if(ctl->sock_inbound == t2){
 		/* swap ports - mentain ips */
-		t1 ^= t2 ^= t1;
-		t3 ^= t4 ^= t3;
+		swap(&t1, &t2);
+		swap(&t3, &t4);
 	    }else if(ctl->sock_inbound == t3){
 		/* swap ips -mentain port */
-		t1 ^= t3 ^= t1;
-		t2 ^= t4 ^= t2;
+		swap(&t1, &t3);
+		swap(&t2, &t4);
 	    }else if(ctl->sock_inbound == t4){
 		/* swap ips and ports */
-		t1 ^= t3 ^= t1;
-		t2 ^= t4 ^= t2;
+		swap(&t1, &t2);
+		swap(&t3, &t4);
 
-		t1 ^= t2 ^= t1;
-		t3 ^= t4 ^= t3;
+		swap(&t1, &t3);
+		swap(&t2, &t4);
 	    }
-
+	    /* LM_DBG("process()2 t1=%i  t2=%i  t3=%i  t4=%i\n", t1, t2, t3, t4); */
 	    /* eliminate REQUEST_FLAGS dependency */
 	    if(msg->changeRequestFlags & CHANGE_IP){
 		/* swap ips -mentain port */
-		t1 ^= t3 ^= t1;
-		t2 ^= t4 ^= t2;
+		swap(&t1, &t3);
+		swap(&t2, &t4);
 	    }
 
 	    if(msg->changeRequestFlags & CHANGE_PORT){
 		/* swap ports - mentain ips */
-		t1 ^= t2 ^= t1;
-		t3 ^= t4 ^= t3;
+		swap(&t1, &t2);
+		swap(&t3, &t4);
+		
 	    }
+	    /* LM_DBG("process()3 t1=%i  t2=%i  t3=%i  t4=%i\n", t1, t2, t3, t4); */
 	    ctl->sock_outbound  = t1;
 	}else{
 	    ctl->sock_outbound = ctl->sock_inbound;
