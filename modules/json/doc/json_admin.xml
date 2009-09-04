@@ -430,11 +430,13 @@ Test link :
 
 
 			<example>
-			<title>Creating a  circular reference </title>
+			<title>[LOGICAL ERROR] Creating a  circular reference  </title>
 			<programlisting format="linespecific">
 ...
 
 $json(b) := "[1]";
+
+/* NEVER do this, it is meant only to show where problems might occur  */
 json_link("$json(b[0])","$json(b)"); # replace 1 with a reference to b
 
 xlog("\nTest link :\n$json(stub)\n$json(b)\n\n");

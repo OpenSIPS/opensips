@@ -10,8 +10,8 @@ Andrei Dragus
 
    Copyright © 2009 voice-system.ro
    Revision History
-   Revision $Revision: 6072 $ $Date: 2009-09-03 12:37:19 +0300
-                              (Thu, 03 Sep 2009) $
+   Revision $Revision: 6078 $ $Date: 2009-09-04 15:16:18 +0300
+                              (Fri, 04 Sep 2009) $
      __________________________________________________________
 
    Table of Contents
@@ -48,7 +48,7 @@ Andrei Dragus
    1.7. Setting a boolean or null value
    1.8. Adding a json to another json
    1.9. Creating a reference
-   1.10. Creating a circular reference
+   1.10. [LOGICAL ERROR] Creating a circular reference
 
 Chapter 1. Admin Guide
 
@@ -313,10 +313,13 @@ Test link :
 
 ...
 
-   Example 1.10. Creating a circular reference
+   Example 1.10. [LOGICAL ERROR] Creating a circular reference
 ...
 
 $json(b) := "[1]";
+
+/* NEVER do this, it is meant only to show where problems might occur  *
+/
 json_link("$json(b[0])","$json(b)"); # replace 1 with a reference to b
 
 xlog("\nTest link :\n$json(stub)\n$json(b)\n\n");
