@@ -261,7 +261,7 @@ void ul_publish(ucontact_t* c, int type, void* param)
 
 	if((error = pua_send_publish(&publ))< 0)
 	{
-		if(publ.flag == UPDATE_TYPE && error== ERR_PUBLISH_NO_BODY )
+		if((type & UL_CONTACT_UPDATE) && (error== ERR_PUBLISH_NO_BODY))
 		{
 			LM_DBG("Usrloc Publish for update failed - try Insert\n");
 			publ.body= build_pidf(c);
