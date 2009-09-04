@@ -545,7 +545,13 @@ int pv_set_json (struct sip_msg* msg,  pv_param_t* pvp, int flag ,
 {
 
 	json_t * obj;
-	
+
+
+	if( expand_tag_list( msg, ((json_name *)pvp->pvn.u.dname)->tags ) < 0)
+	{
+		LM_ERR("Cannot expand variables in path\n");
+		return -1;
+	}
 
 	/* delete value */
 	if( val == NULL)
@@ -589,12 +595,7 @@ int pv_set_json (struct sip_msg* msg,  pv_param_t* pvp, int flag ,
 	}
 
 
-	if( expand_tag_list( msg, ((json_name *)pvp->pvn.u.dname)->tags ) < 0)
-	{
-		LM_ERR("Cannot expand variables in path\n");
-		return -1;
-	}
-
+	
 	return pv_add_json(pvp,obj);
 }
 
