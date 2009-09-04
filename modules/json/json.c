@@ -267,7 +267,8 @@ pv_json_t * get_pv_json (pv_param_t* pvp)
 
 
 
-json_t * get_object(pv_json_t * var, pv_param_t* pvp ,  json_tag ** tag, int report_err )
+json_t * get_object(pv_json_t * var, pv_param_t* pvp ,  json_tag ** tag,
+			int report_err )
 {
 	json_name * id = (json_name *) pvp->pvn.u.dname;
 
@@ -291,7 +292,8 @@ json_t * get_object(pv_json_t * var, pv_param_t* pvp ,  json_tag ** tag, int rep
 			memcpy( buff, cur_tag->key.s, cur_tag->key.len );
 			buff[cur_tag->key.len] = 0;
 
-			if( cur_obj == NULL || !json_object_is_type( cur_obj, json_type_object ) )
+			if( cur_obj == NULL ||
+				!json_object_is_type( cur_obj, json_type_object ) )
 				goto error;
 
 			cur_obj = json_object_object_get( cur_obj, buff );
@@ -306,7 +308,8 @@ json_t * get_object(pv_json_t * var, pv_param_t* pvp ,  json_tag ** tag, int rep
 		if( cur_tag->type & TAG_IDX )
 		{
 
-			if( cur_obj == NULL || !json_object_is_type( cur_obj, json_type_array ) )
+			if( cur_obj == NULL ||
+				!json_object_is_type( cur_obj, json_type_array ) )
 				goto error;
 
 
@@ -352,7 +355,8 @@ error:
 	{
 		LM_NOTICE("Trying to get a value from a json of incorrect type\n");
 		if(var->data)
-			LM_NOTICE("Object is:\n%s\n",json_object_to_json_string(var->data));
+			LM_NOTICE("Object is:\n%s\n",
+				json_object_to_json_string(var->data));
 		else
 			LM_NOTICE("Object is null\n");
 		print_tag_list( id->tags, cur_tag->next, 1);
@@ -512,7 +516,8 @@ int pv_add_json ( pv_param_t* pvp, json_t * obj )
 
 		if( poz<0 || poz >= json_object_array_length(dest))
 		{
-			LM_ERR("Attempting to replace at invalid index in array:%d\n",poz);
+			LM_ERR("Attempting to replace at invalid index in array:%d\n",
+				poz);
 			return -1;
 		}
 
@@ -535,7 +540,8 @@ int pv_add_json ( pv_param_t* pvp, json_t * obj )
 }
 
 
-int pv_set_json (struct sip_msg* msg,  pv_param_t* pvp, int flag , pv_value_t* val)
+int pv_set_json (struct sip_msg* msg,  pv_param_t* pvp, int flag ,
+		pv_value_t* val)
 {
 
 	json_t * obj;
