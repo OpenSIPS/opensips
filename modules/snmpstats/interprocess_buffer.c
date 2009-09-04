@@ -296,7 +296,7 @@ static void executeInterprocessBufferCmd(interprocessBuffer_t *currentBuffer)
 
 	/* This should never happen.  This is more of a sanity check. */
 	if (currentUser == NULL) {
-		LM_ERR("Received a request for contact: %s for user: %s who doesn't "
+		LM_NOTICE("Received a request for contact: %s for user: %s who doesn't "
 				"exists\n", currentBuffer->stringName, 
 				currentBuffer->stringContact);
 		return;
