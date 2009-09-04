@@ -57,6 +57,35 @@
 #include "ip_addr.h"
 
 
+static callback_list* cb_list = NULL;
+
+int register_udprecv_cb(callback_f* func, void* param, char a, char b){
+    callback_list* new;
+
+    new = (callback_list*) pkg_malloc(sizeof(callback_list));
+    if(!new){
+	LM_ERR("out of pkg memory\n");
+	return -1;
+    }
+    memset(new, 0, sizeof(callback_list));
+
+    new->func = func;
+    new->param = param;
+    new->a = a;
+    new->b = b;
+    new->next = NULL;
+
+    if(!cb_list){	
+	cb_list = new;
+    }else{
+	new->next = cb_list;
+	cb_list = new;
+    }
+
+    return 0;
+}
+
+
 #ifdef DBG_MSG_QA
 /**
  * Do some message quality assurance.
@@ -384,6 +413,7 @@ int udp_rcv_loop(void)
 	union sockaddr_union* from;
 	unsigned int fromlen;
 	struct receive_info ri;
+	callback_list* p;
 
 	from=(union sockaddr_union*) pkg_malloc(sizeof(union sockaddr_union));
 	if (from==0){
@@ -417,6 +447,25 @@ int udp_rcv_loop(void)
 				continue; /* goto skip;*/
 			else goto error;
 		}
+
+#ifndef NO_ZERO_CHECKS
+		if (len<MIN_UDP_PACKET) {
+			LM_DBG("probing packet received len = %d\n", len);
+			continue;
+		}
+#endif
+
+		if(buf[0] == 0){    /* stun specific */
+		    for(p = cb_list; p; p = p->next){
+			if(p->b == buf[1]){
+			    if(p->func(bind_address->socket, (struct sockaddr_in*)
+				    &from->sin, buf, len, p->param) == 0){
+				break;
+			    }
+			}
+		    }
+		}
+
 		/* we must 0-term the messages, receive_msg expects it */
 		buf[len]=0; /* no need to save the previous char */
 
@@ -424,14 +473,6 @@ int udp_rcv_loop(void)
 		su2ip_addr(&ri.src_ip, from);
 		ri.src_port=su_getport(from);
 
-#ifndef NO_ZERO_CHECKS
-		if (len<MIN_UDP_PACKET) {
-			tmp=ip_addr2a(&ri.src_ip);
-			LM_DBG("probing packet received from %s %d\n",
-					tmp, htons(ri.src_port));
-			continue;
-		}
-#endif
 #ifdef DBG_MSG_QA
 		if (!dbg_msg_qa(buf, len)) {
 			LM_WARN("an incoming message didn't pass test,"

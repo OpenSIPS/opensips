@@ -1,0 +1,198 @@
+<!-- Module User's Guide -->
+
+<chapter>
+	
+    <title>&adminguide;</title>
+	
+    <section>
+        <title>Overview</title>
+
+        <section>
+            <title> The idea</title>
+            <para>
+				A stun server working with the same port as SIP (5060) in order to
+				gain accurate information.
+				The benefit would be an exact external address in the case of NATs translating differently
+				when given different destination ports.
+            </para>
+        </section>
+       
+
+        <section>
+            <title> Basic Operation</title>
+            <para>
+                <programlisting>
+				The stun server will use 4 sockets:
+					socket1 = ip1 : port1
+					socket2 = ip1 : port2
+					socket3 = ip2 : port1
+					socket4 = ip2 : port2
+				</programlisting>
+			</para>
+			<para>
+				The sockets come from existing SIP sockets or are created.
+			</para>
+			<para>
+				socket1 will allways be the the SIP socket.
+            </para>
+			<para>
+				The server will create a separate process.
+				This process will listen for data on created sockets.
+
+				The server will register a callback function to SIP.
+				This function is called when a specific (stun)header is found.
+			</para>
+        </section>
+
+		<section>
+			<title> Supported STUN Attributes </title>
+			<para>
+				This stun implements rfc 3489 (and XOR_MAPPED_ADDRESS from rfc 5389)
+			</para>
+			<para>
+MAPPED_ADDRESS,
+RESPONSE_ADDRESS,
+CHANGE_REQUEST,
+SOURCE_ADDRESS,
+CHANGED_ADDRESS,
+ERROR_CODE,
+UNKNOWN_ATTRIBUTES,
+REFLECTED_FROM,
+XOR_MAPPED_ADDRESS
+			</para>
+			<para> Not supported attributes:</para>
+			<para>
+USERNAME,
+PASSWORD,
+MESSAGE_INTEGRITY,
+and associated ERROR_CODEs
+			</para>
+
+		</section>
+
+    </section>
+
+    <section>
+        <title>Dependencies</title>
+        <section>
+            <title>&osips; Modules</title>
+            <para>
+		The following modules must be loaded before this module:
+                <itemizedlist>
+                    <listitem>
+                        <para>
+                            <emphasis>None</emphasis>.
+                        </para>
+                    </listitem>
+                </itemizedlist>
+            </para>
+        </section>
+
+        <section>
+            <title>External Libraries or Applications</title>
+            <para>
+		The following libraries or applications must be installed before running
+		&osips; with this module loaded:
+                <itemizedlist>
+                    <listitem>
+                        <para>
+                            <emphasis>None</emphasis>.
+                        </para>
+                    </listitem>
+                </itemizedlist>
+            </para>
+        </section>
+    </section>
+
+    <section>
+        <title>Exported Parameters</title>
+        <section>
+            <title>
+                <varname>primary_ip</varname> (str)
+            </title>
+            <para>
+		The ip of the interface SIP is working on.
+            </para>
+            <example>
+                <title>Set
+                    <varname>primary_ip</varname> parameter
+                </title>
+                <programlisting format="linespecific">
+...
+
+modparam("stun","primary_ip","192.168.0.100")
+...
+                </programlisting>
+            </example>
+        </section>
+		
+		<section>
+            <title>
+                <varname>primary_port</varname> (str)
+            </title>
+            <para>
+		The port SIP is working on.
+            </para>
+            <example>
+                <title>Set
+                    <varname>primary_port</varname> parameter
+                </title>
+                <programlisting format="linespecific">
+...
+
+modparam("stun","primary_port","5060")
+...
+                </programlisting>
+            </example>
+        </section>
+		
+		<section>
+            <title>
+                <varname>alternate_ip</varname> (str)
+            </title>
+            <para>
+		Another ip from another interface.
+            </para>
+            <example>
+                <title>Set
+                    <varname>alternate_ip</varname> parameter
+                </title>
+                <programlisting format="linespecific">
+...
+
+modparam("stun","alternate_port","3479")
+...
+                </programlisting>
+            </example>
+        </section>
+		
+		<section>
+            <title>
+                <varname>alternate_port</varname> (str)
+            </title>
+            <para>
+		Another port used by STUN.
+            </para>
+            <example>
+                <title>Set
+                    <varname>alternate_port</varname> parameter
+                </title>
+                <programlisting format="linespecific">
+...
+
+modparam("stun","alternate_port","3479")
+...
+                </programlisting>
+            </example>
+        </section>
+
+        
+
+       
+    </section>
+
+    <section>
+        <title>Exported MI Functions</title>
+    </section>
+
+</chapter>

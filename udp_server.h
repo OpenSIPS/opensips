@@ -28,11 +28,22 @@
 #include <sys/socket.h>
 #include "ip_addr.h"
 
+typedef int (callback_f)(int sockfd, struct sockaddr_in* from,
+                            char* buffer, int size, void* param);
+
+typedef struct cb_list{
+    callback_f* func;       /* function to be called */
+    void* param;            /* extra parameter */
+    char a;                 /* first byte of message */
+    char b;                 /* second byte of message */
+    struct cb_list* next;   /* linked list */
+}callback_list;
 
 int udp_init(struct socket_info* si);
 int udp_send(struct socket_info* source,char *buf, unsigned len,
 				union sockaddr_union*  to);
 int udp_rcv_loop();
 
+int register_udprecv_cb(callback_f func, void* param, char a, char b);
 
 #endif

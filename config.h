@@ -163,7 +163,7 @@
 #define VERSION_COLUMN    "table_version"	/*!< Column name for the version value in version table */
 #define TABLENAME_COLUMN  "table_name"		/*!< Column name of the table name column in the version table */
 
-#define MIN_UDP_PACKET        32		/*!< minimum packet size; smaller packets will be dropped silently */
+#define MIN_UDP_PACKET        20		/*!< minimum packet size; smaller packets will be dropped silently */
 
 #define OPENSER_OID   1,3,6,1,4,1,27483
 

@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding='ISO-8859-1'?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN"
+"http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd" [
+
+
+<!ENTITY admin SYSTEM "stun_admin.xml">
+<!ENTITY faq SYSTEM "../../../doc/module_faq.xml">
+
+<!-- Include general documentation entities -->
+<!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
+%docentities;
+
+]>
+
+<book>
+    <bookinfo>
+	<title>Stun Module</title>
+	<productname class="trade">&osipsname;</productname>
+	<authorgroup>
+	    <author>
+		<firstname>Razvan</firstname>
+		<surname>Pistolea</surname>
+		<email>razvy000@yahoo.com</email>
+	    </author>
+	    <editor>
+		<firstname>Razvan</firstname>
+		<surname>Pistolea</surname>
+		    <email>razvy000@yahoo.com</email>
+	    </editor>
+	</authorgroup>
+	<copyright>
+	    <year>2009</year>
+	    <holder>&voicesystem;</holder>
+	</copyright>
+	<revhistory>
+	    <revision>
+		<revnumber>$Revision:$</revnumber>
+		<date>$Date:$</date>
+	    </revision>
+	</revhistory>
+    </bookinfo>
+    <toc></toc>
+    
+    &admin;
+    &faq;
+    
+</book>
