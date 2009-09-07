@@ -600,11 +600,6 @@ int db_timer_udomain(udomain_t* _d)
 		ops[0] = "<";
 		keys[1] = &expires_col;
 		ops[1] = "!=";
-
-		if (ul_dbf.use_table(ul_dbh, _d->name) < 0) {
-			LM_ERR("use_table failed\n");
-			return -1;
-		}
 	}
 
 	vals[0].type = DB_DATETIME;
@@ -616,6 +611,7 @@ int db_timer_udomain(udomain_t* _d)
 	vals[1].val.time_val = 0;
 
 	CON_PS_REFERENCE(ul_dbh) = &my_ps;
+	ul_dbf.use_table(ul_dbh, _d->name);
 
 	if (ul_dbf.delete(ul_dbh, keys, ops, vals, 2) < 0) {
 		LM_ERR("failed to delete from table %s\n",_d->name->s);
