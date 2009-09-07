@@ -143,7 +143,7 @@ char *build_cancel(struct cell *Trans,unsigned int branch,
  */
 unsigned int t_uac_cancel( str *headers, str *body,
 	unsigned int cancelled_hashIdx, unsigned int cancelled_label,
-	transaction_cb cb, void* cbp)
+	transaction_cb cb, void* cbp,release_tmcb_param release_func)
 {
 	struct cell *t_invite,*cancel_cell;
 	struct retr_buf *cancel,*invite;
@@ -182,7 +182,7 @@ unsigned int t_uac_cancel( str *headers, str *body,
 	}
 	reset_avps();
 	if(cb && insert_tmcb(&(cancel_cell->tmcb_hl),
-	TMCB_RESPONSE_IN|TMCB_LOCAL_COMPLETED,cb,cbp,0)!=1){
+	TMCB_RESPONSE_IN|TMCB_LOCAL_COMPLETED,cb,cbp,release_func)!=1){
 		ret=0;
 		LM_ERR("short of tmcb shmem !\n");
 		goto error2;
