@@ -38,7 +38,7 @@ char* primary_ip    = "192.168.2.134";
 char* primary_port  = "5060";
 
 char* alternate_ip  = "192.168.2.143";
-char* alternate_port= "3479";
+char* alternate_port= "3478";
 
 
 /* Globals */
