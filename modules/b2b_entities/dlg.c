@@ -890,6 +890,29 @@ int b2b_send_request(enum b2b_entity_type et, str* b2b_key, str* method,
 	if(dlg->last_method == METHOD_BYE)
 		dlg->state = B2B_TERMINATED;
 
+	/* construct extra headers -> add contact */
+	if(extra_headers && extra_headers->s && extra_headers->len)
+	{
+		if(extra_headers->len + 13 + server_address.len > BUF_LEN)
+		{
+			LM_ERR("Buffer too small\n");
+			pkg_free(td);
+			return -1;
+		}
+		memcpy(buffer, extra_headers->s, extra_headers->len);
+		ehdr.len = extra_headers->len;
+	}
+	ehdr.len += sprintf(buffer+ ehdr.len, "Contact: <%.*s>\r\n",
+		server_address.len, server_address.s);
+	ehdr.s = buffer;
+
+	b2b_key_shm = b2b_key_copy_shm(b2b_key);
+	if(b2b_key_shm== NULL)
+	{
+		LM_ERR("no more shared memory\n");
+		pkg_free(td);
+		return -1;
+	}
 
 	/* send request */
 	if(dlg->last_method == METHOD_CANCEL)
@@ -897,7 +920,8 @@ int b2b_send_request(enum b2b_entity_type et, str* b2b_key, str* method,
 		LM_DBG("send cancel request\n");
 		if(dlg->tm_tran)
 		{
-			result = tmb.t_cancel_uac(&ehdr, 0, dlg->tm_tran->hash_index, dlg->tm_tran->label, 0, 0);
+			result = tmb.t_cancel_uac(&ehdr, 0, dlg->tm_tran->hash_index,
+					dlg->tm_tran->label,tm_cback,b2b_key_shm,shm_free_param);
 		}
 		else
 		{
@@ -918,30 +942,6 @@ int b2b_send_request(enum b2b_entity_type et, str* b2b_key, str* method,
 			return -1;
 		}
 		lock_release(&table[hash_index].lock);
-
-		/* construct extra headers -> add contact */
-		if(extra_headers && extra_headers->s && extra_headers->len)
-		{
-			if(extra_headers->len + 13 + server_address.len > BUF_LEN)
-			{
-				LM_ERR("Buffer too small\n");
-				pkg_free(td);
-				return -1;
-			}
-			memcpy(buffer, extra_headers->s, extra_headers->len);
-			ehdr.len = extra_headers->len;
-		}
-		ehdr.len += sprintf(buffer+ ehdr.len, "Contact: <%.*s>\r\n",
-			server_address.len, server_address.s);
-		ehdr.s = buffer;
-
-		b2b_key_shm = b2b_key_copy_shm(b2b_key);
-		if(b2b_key_shm== NULL)
-		{
-			LM_ERR("no more shared memory\n");
-			pkg_free(td);
-			return -1;
-		}
 
 		td->T_flags=T_NO_AUTOACK_FLAG|T_PASS_PROVISIONAL_FLAG ;
 
@@ -1081,7 +1081,7 @@ void b2b_tm_cback(b2b_table htable, struct tmcb_params *ps)
 
 		/* update the state of the dialog according to the code of the reply */
 
-		if(dlg->callid.s == NULL && statuscode>= 200 && statuscode< 300 )
+		if(dlg->last_method == METHOD_INVITE && statuscode>= 200 && statuscode< 300 )
 		{
 			b2b_dlg_t* new_dlg;
 
