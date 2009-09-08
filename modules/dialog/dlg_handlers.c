@@ -805,12 +805,14 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 			if (update_dlg_timer( &dlg->tl, dlg->lifetime )==-1)
 				LM_ERR("failed to update dialog lifetime\n");
 		}
-		if (update_cseqs(dlg, req, dir)!=0) {
-			LM_ERR("cseqs update failed\n");
-		} else {
-			dlg->flags |= DLG_FLAG_CHANGED;
-			if ( dlg_db_mode==DB_MODE_REALTIME )
-				update_dialog_dbinfo(dlg);
+		if ( event!=DLG_EVENT_REQACK) {
+			if (update_cseqs(dlg, req, dir)!=0) {
+				LM_ERR("cseqs update failed\n");
+			} else {
+				dlg->flags |= DLG_FLAG_CHANGED;
+				if ( dlg_db_mode==DB_MODE_REALTIME )
+					update_dialog_dbinfo(dlg);
+			}
 		}
 
 		/* within dialog request */
