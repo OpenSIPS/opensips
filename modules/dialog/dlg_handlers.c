@@ -299,7 +299,9 @@ static inline void push_reply_in_dialog(struct sip_msg *rpl, struct cell* t,
 	leg = dlg->legs_no[DLG_LEGS_USED] - 1; /* idx of last created leg */
 
 routing_info:
-	if (rpl->REPLY_STATUS>=200 && rpl->REPLY_STATUS<300) {
+	/* update dlg info only if 2xx reply and if not already done so */
+	if (rpl->REPLY_STATUS>=200 && rpl->REPLY_STATUS<300 &&
+	dlg->legs_no[DLG_LEG_200OK] != leg) {
 		/* set this branch as primary */
 		if (!dlg->legs_no[DLG_LEG_200OK])
 			dlg->legs_no[DLG_LEG_200OK] = leg;

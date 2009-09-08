@@ -406,6 +406,9 @@ int dlg_update_routing(struct dlg_cell *dlg, unsigned int leg,
 		rr->len,rr->s,
 		contact->len,contact->s );
 
+	if (dlg->legs[leg].contact.s)
+		shm_free(dlg->legs[leg].contact.s);
+
 	dlg->legs[leg].contact.s = shm_malloc(rr->len + contact->len);
 	if (dlg->legs[leg].contact.s==NULL) {
 		LM_ERR("no more shm mem\n");
