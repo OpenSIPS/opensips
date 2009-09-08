@@ -1,7 +1,7 @@
 /*
  * $Id$
  *
- * Copyright (C) 2006 Voice System SRL
+ * Copyright (C) 2006-2009 Voice System SRL
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -40,6 +40,8 @@
  *              dialog is destroyed (deleted from memory) (bogdan)
  * 2008-04-17  added new dialog flag to avoid state tranzitions from DELETED to
  *             CONFIRMED_NA due delayed "200 OK" (bogdan)
+ * 2009-09-09  support for early dialogs added; proper handling of cseq
+ *             while PRACK is used (bogdan)
  */
 
 #include <stdlib.h>
@@ -161,8 +163,10 @@ static inline void free_dlg_dlg(struct dlg_cell *dlg)
 
 	if (dlg->legs) {
 		for( i=0 ; i<dlg->legs_no[DLG_LEGS_USED] ; i++) {
-			shm_free(dlg->legs[i].tag.s); /* + contact + route_set */
-			shm_free(dlg->legs[i].cseq.s);
+			shm_free(dlg->legs[i].tag.s);
+			shm_free(dlg->legs[i].r_cseq.s);
+			if (dlg->legs[i].contact.s)
+				shm_free(dlg->legs[i].contact.s); /* + route_set */
 		}
 		shm_free(dlg->legs);
 	}
@@ -190,14 +194,14 @@ inline void destroy_dlg(struct dlg_cell *dlg)
 			dlg, dlg->h_entry, dlg->h_id,
 			dlg->callid.len, dlg->callid.s,
 			dlg_leg_print_info( dlg, DLG_CALLER_LEG, tag),
-			dlg_leg_print_info( dlg, DLG_FIRST_CALLEE_LEG, tag));
+			dlg_leg_print_info( dlg, callee_idx(dlg), tag));
 	} else if (ret > 0) {
 		LM_DBG("dlg expired or not in list - dlg %p [%u:%u] "
 			"with clid '%.*s' and tags '%.*s' '%.*s'\n",
 			dlg, dlg->h_entry, dlg->h_id,
 			dlg->callid.len, dlg->callid.s,
 			dlg_leg_print_info( dlg, DLG_CALLER_LEG, tag),
-			dlg_leg_print_info( dlg, DLG_FIRST_CALLEE_LEG, tag));
+			dlg_leg_print_info( dlg, callee_idx(dlg), tag));
 	}
 
 	run_dlg_callbacks( DLGCB_DESTROY , dlg, 0, DLG_DIR_NONE, 0);
@@ -296,7 +300,6 @@ struct dlg_cell* build_new_dlg( str *callid, str *from_uri, str *to_uri,
 int dlg_add_leg_info(struct dlg_cell *dlg, str* tag, str *rr, str *contact,
 										str *cseq, struct socket_info *sock)
 {
-	char *p;
 	struct dlg_leg* leg;
 
 	if ( (dlg->legs_no[DLG_LEGS_ALLOCED]-dlg->legs_no[DLG_LEGS_USED])==0) {
@@ -310,50 +313,54 @@ int dlg_add_leg_info(struct dlg_cell *dlg, str* tag, str *rr, str *contact,
 		memset( dlg->legs+dlg->legs_no[DLG_LEGS_ALLOCED]-2, 0,
 			2*sizeof(struct dlg_leg));
 	}
-	leg = &dlg->legs[dlg->legs_no[DLG_LEGS_USED]++];
+	leg = &dlg->legs[ dlg->legs_no[DLG_LEGS_USED] ];
 
-	leg->tag.s = (char*)shm_malloc(tag->len + rr->len + contact->len);
-	leg->cseq.s = (char*)shm_malloc( cseq->len );
-	if ( leg->tag.s==NULL || leg->cseq.s==NULL) {
+	leg->tag.s = (char*)shm_malloc(tag->len);
+	leg->r_cseq.s = (char*)shm_malloc( cseq->len );
+	if ( leg->tag.s==NULL || leg->r_cseq.s==NULL) {
 		LM_ERR("no more shm mem\n");
 		if (leg->tag.s) shm_free(leg->tag.s);
-		if (leg->cseq.s) shm_free(leg->cseq.s);
+		if (leg->r_cseq.s) shm_free(leg->r_cseq.s);
 		return -1;
 	}
-	p = leg->tag.s;
+
+	if (contact->len) {
+		/* contact */
+		leg->contact.s = shm_malloc(rr->len + contact->len);
+		if (leg->contact.s==NULL) {
+			LM_ERR("no more shm mem\n");
+			shm_free(leg->tag.s);
+			shm_free(leg->r_cseq.s);
+			return -1;
+		}
+		leg->contact.len = contact->len;
+		memcpy( leg->contact.s, contact->s, contact->len);
+		/* rr */
+		if (rr->len) {
+			leg->route_set.s = leg->contact.s + contact->len;
+			leg->route_set.len = rr->len;
+			memcpy( leg->route_set.s, rr->s, rr->len);
+		}
+	}
 
 	/* tag */
 	leg->tag.len = tag->len;
-	memcpy( p, tag->s, tag->len);
-	p += tag->len;
-	/* contact */
-	if (contact->len) {
-		leg->contact.s = p;
-		leg->contact.len = contact->len;
-		memcpy( p, contact->s, contact->len);
-		p += contact->len;
-	}
-	/* rr */
-	if (rr->len) {
-		leg->route_set.s = p;
-		leg->route_set.len = rr->len;
-		memcpy( p, rr->s, rr->len);
-	}
+	memcpy( leg->tag.s, tag->s, tag->len);
 
 	/* cseq */
-	leg->cseq.len = cseq->len;
-	memcpy( leg->cseq.s, cseq->s, cseq->len);
+	leg->r_cseq.len = cseq->len;
+	memcpy( leg->r_cseq.s, cseq->s, cseq->len);
 
 	/* socket */
 	leg->bind_addr = sock;
 
-	LM_DBG("set leg %d for %p: tag=<%.*s> rr=<%.*s> ct=<%.*s> cseq=<%.*s>\n",
+	/* make leg visible for searchers */
+	dlg->legs_no[DLG_LEGS_USED]++;
+
+	LM_DBG("set leg %d for %p: tag=<%.*s> rcseq=<%.*s>\n",
 		dlg->legs_no[DLG_LEGS_USED]-1, dlg,
 		leg->tag.len,leg->tag.s,
-		leg->route_set.len,leg->route_set.s,
-		leg->contact.len,leg->contact.s,
-		leg->cseq.len,leg->cseq.s
-		);
+		leg->r_cseq.len,leg->r_cseq.s );
 	return 0;
 }
 
@@ -361,27 +368,59 @@ int dlg_add_leg_info(struct dlg_cell *dlg, str* tag, str *rr, str *contact,
 
 int dlg_update_cseq(struct dlg_cell * dlg, unsigned int leg, str *cseq)
 {
-	if ( dlg->legs[leg].cseq.s ) {
-		if (dlg->legs[leg].cseq.len < cseq->len) {
-			shm_free(dlg->legs[leg].cseq.s);
-			dlg->legs[leg].cseq.s = (char*)shm_malloc(cseq->len);
-			if (dlg->legs[leg].cseq.s==NULL)
+	if ( dlg->legs[leg].r_cseq.s ) {
+		if (dlg->legs[leg].r_cseq.len < cseq->len) {
+			shm_free(dlg->legs[leg].r_cseq.s);
+			dlg->legs[leg].r_cseq.s = (char*)shm_malloc(cseq->len);
+			if (dlg->legs[leg].r_cseq.s==NULL) {
+				LM_ERR("no more shm mem for realloc (%d)\n",cseq->len);
 				goto error;
+			}
 		}
 	} else {
-		dlg->legs[leg].cseq.s = (char*)shm_malloc(cseq->len);
-		if (dlg->legs[leg].cseq.s==NULL)
+		dlg->legs[leg].r_cseq.s = (char*)shm_malloc(cseq->len);
+		if (dlg->legs[leg].r_cseq.s==NULL) {
+			LM_ERR("no more shm mem for malloc (%d)\n",cseq->len);
 			goto error;
+		}
 	}
 
-	memcpy( dlg->legs[leg].cseq.s, cseq->s, cseq->len );
-	dlg->legs[leg].cseq.len = cseq->len;
+	memcpy( dlg->legs[leg].r_cseq.s, cseq->s, cseq->len );
+	dlg->legs[leg].r_cseq.len = cseq->len;
 
-	LM_DBG("cseq is %.*s\n", dlg->legs[leg].cseq.len, dlg->legs[leg].cseq.s);
+	LM_DBG("dlg %p[%d]: cseq is %.*s\n", dlg,leg,
+		dlg->legs[leg].r_cseq.len, dlg->legs[leg].r_cseq.s);
 	return 0;
 error:
 	LM_ERR("not more shm mem\n");
 	return -1;
+}
+
+
+
+int dlg_update_routing(struct dlg_cell *dlg, unsigned int leg,
+													str *rr, str *contact )
+{
+	LM_DBG("dialog %p[%d]: rr=<%.*s> contact=<%.*s>\n",
+		dlg, leg,
+		rr->len,rr->s,
+		contact->len,contact->s );
+
+	dlg->legs[leg].contact.s = shm_malloc(rr->len + contact->len);
+	if (dlg->legs[leg].contact.s==NULL) {
+		LM_ERR("no more shm mem\n");
+		return -1;
+	}
+	dlg->legs[leg].contact.len = contact->len;
+	memcpy( dlg->legs[leg].contact.s, contact->s, contact->len);
+	/* rr */
+	if (rr->len) {
+		dlg->legs[leg].route_set.s = dlg->legs[leg].contact.s + contact->len;
+		dlg->legs[leg].route_set.len = rr->len;
+		memcpy( dlg->legs[leg].route_set.s, rr->s, rr->len);
+	}
+
+	return 0;
 }
 
 
@@ -420,12 +459,19 @@ not_found:
 
 
 
-static inline struct dlg_cell* internal_get_dlg(unsigned int h_entry,
-						str *callid, str *ftag, str *ttag, unsigned int *dir)
+/* Get dialog that correspond to CallId, From Tag and To Tag         */
+/* See RFC 3261, paragraph 4. Overview of Operation:                 */
+/* "The combination of the To tag, From tag, and Call-ID completely  */
+/* defines a peer-to-peer SIP relationship between [two UAs] and is  */
+/* referred to as a dialog."*/
+struct dlg_cell* get_dlg( str *callid, str *ftag, str *ttag,
+									unsigned int *dir, unsigned int *dst_leg)
 {
 	struct dlg_cell *dlg;
 	struct dlg_entry *d_entry;
+	unsigned int h_entry;
 
+	h_entry = dlg_hash(callid);
 	d_entry = &(d_table->entries[h_entry]);
 
 	dlg_lock( d_table, d_entry);
@@ -445,7 +491,7 @@ static inline struct dlg_cell* internal_get_dlg(unsigned int h_entry,
 			dlg->tag[1].len,dlg->tag[1].s, dlg->tag[1].len,
 			dlg->contact[0].len,dlg->contact[1].len);
 #endif
-		if (match_dialog( dlg, callid, ftag, ttag, dir)==1) {
+		if (match_dialog( dlg, callid, ftag, ttag, dir, dst_leg)==1) {
 			if (dlg->state==DLG_STATE_DELETED)
 				/* even if matched, skip the deleted dialogs as they may be
 				   a previous unsuccessfull attempt of established call
@@ -465,25 +511,6 @@ static inline struct dlg_cell* internal_get_dlg(unsigned int h_entry,
 
 	LM_DBG("no dialog callid='%.*s' found\n", callid->len, callid->s);
 	return 0;
-}
-
-
-
-/* Get dialog that correspond to CallId, From Tag and To Tag         */
-/* See RFC 3261, paragraph 4. Overview of Operation:                 */
-/* "The combination of the To tag, From tag, and Call-ID completely  */
-/* defines a peer-to-peer SIP relationship between [two UAs] and is  */
-/* referred to as a dialog."*/
-struct dlg_cell* get_dlg( str *callid, str *ftag, str *ttag, unsigned int *dir)
-{
-	struct dlg_cell *dlg;
-
-	if ( (dlg = internal_get_dlg( dlg_hash(callid), callid, ftag, ttag, dir))
-	== NULL ) {
-		LM_DBG("no dialog callid='%.*s' found\n", callid->len, callid->s);
-		return 0;
-	}
-	return dlg;
 }
 
 
@@ -570,7 +597,7 @@ static inline void log_next_state_dlg(const int event,
 		event, dlg->state, dlg, dlg->h_entry, dlg->h_id,
 		dlg->callid.len, dlg->callid.s,
 		dlg_leg_print_info( dlg, DLG_CALLER_LEG, tag),
-		dlg_leg_print_info( dlg, DLG_FIRST_CALLEE_LEG, tag));
+		dlg_leg_print_info( dlg, callee_idx(dlg), tag));
 }
 
 
@@ -701,7 +728,7 @@ void next_state_dlg(struct dlg_cell *dlg, int event,
 				event, dlg->state, dlg, dlg->h_entry, dlg->h_id,
 				dlg->callid.len, dlg->callid.s,
 				dlg_leg_print_info( dlg, DLG_CALLER_LEG, tag),
-				dlg_leg_print_info( dlg, DLG_FIRST_CALLEE_LEG, tag));
+				dlg_leg_print_info( dlg, callee_idx(dlg), tag));
 	}
 	*new_state = dlg->state;
 
@@ -780,9 +807,9 @@ static inline int internal_mi_print_dlg(struct mi_node *rpl,
 		if(node1 == 0)
 			goto error;
 
-		node1 = add_mi_node_child(node, MI_DUP_VALUE, "caller_cseq", 11,
-				dlg->legs[DLG_CALLER_LEG].cseq.s,
-				dlg->legs[DLG_CALLER_LEG].cseq.len);
+		node1 = add_mi_node_child(node, MI_DUP_VALUE, "callee_cseq", 11,
+				dlg->legs[DLG_CALLER_LEG].r_cseq.s,
+				dlg->legs[DLG_CALLER_LEG].r_cseq.len);
 		if(node1 == 0)
 			goto error;
 
@@ -811,8 +838,8 @@ static inline int internal_mi_print_dlg(struct mi_node *rpl,
 		if(node1 == 0)
 			goto error;
 
-		node1 = add_mi_node_child(node, MI_DUP_VALUE, "callee_cseq", 11,
-				dlg->legs[i].cseq.s, dlg->legs[i].cseq.len);
+		node1 = add_mi_node_child(node, MI_DUP_VALUE, "caller_cseq", 11,
+				dlg->legs[i].r_cseq.s, dlg->legs[i].r_cseq.len);
 		if(node1 == 0)
 			goto error;
 

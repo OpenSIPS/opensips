@@ -1,7 +1,7 @@
 /*
  * $Id$
  *
- * Copyright (C) 2007 Voice System SRL
+ * Copyright (C) 2007-2009 Voice System SRL
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -23,7 +23,9 @@
  * --------
  * 2007-05-10  initial version (ancuta)
  * 2007-07-06 additional information saved in the database: cseq, contact, 
- *  		   route set and socket_info for both caller and callee (ancuta)
+ *            route set and socket_info for both caller and callee (ancuta)
+ * 2009-09-09 support for early dialogs added; proper handling of cseq
+ *            while PRACK is used (bogdan)
  */
 
 #include <stdlib.h>
@@ -462,8 +464,7 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 			GET_STR_VALUE(contact1, values, 14, 0, 1);
 			GET_STR_VALUE(contact2, values, 15, 0, 1);
 
-			/* FIXME - alloc mem for callee */
-
+			/* add the 2 legs */
 			if ( (dlg_add_leg_info( dlg, &from_tag, &rroute1, &contact1,
 			&cseq1, create_socket_info(values, 16))!=0) ||
 			(dlg_add_leg_info( dlg, &to_tag, &rroute2, &contact2,
@@ -473,6 +474,7 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 				unref_dlg(dlg,1);
 				continue;
 			}
+			dlg->legs_no[DLG_LEG_200OK] = DLG_FIRST_CALLEE_LEG;
 
 			/* script variables */
 			if (!VAL_NULL(values+18))
@@ -505,8 +507,8 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 					dlg->callid.len, dlg->callid.s,
 					dlg->legs[DLG_CALLER_LEG].tag.len,
 					dlg->legs[DLG_CALLER_LEG].tag.s,
-					dlg->legs[DLG_FIRST_CALLEE_LEG].tag.len,
-					ZSW(dlg->legs[DLG_FIRST_CALLEE_LEG].tag.s));
+					dlg->legs[callee_idx(dlg)].tag.len,
+					ZSW(dlg->legs[callee_idx(dlg)].tag.s));
 				/* destroy the dialog */
 				unref_dlg(dlg,1);
 				continue;
@@ -592,6 +594,7 @@ int update_dialog_dbinfo(struct dlg_cell * cell)
 	static db_ps_t my_ps_update = NULL;
 	struct dlg_entry entry;
 	db_val_t values[DIALOG_TABLE_FIX_COL_NO];
+	int callee_leg;
 
 	db_key_t insert_keys[DIALOG_TABLE_FIX_COL_NO] = { &h_entry_column,
 			&h_id_column,        &call_id_column,     &from_uri_column,
@@ -603,7 +606,9 @@ int update_dialog_dbinfo(struct dlg_cell * cell)
 
 	if(use_dialog_table()!=0)
 		return -1;
-	
+
+	callee_leg= callee_idx(cell);
+
 	if((cell->flags & DLG_FLAG_NEW) != 0){
 		/* save all the current dialogs information*/
 		VAL_TYPE(values) = VAL_TYPE(values+1) = VAL_TYPE(values+9) = 
@@ -626,12 +631,12 @@ int update_dialog_dbinfo(struct dlg_cell * cell)
 		SET_STR_VALUE(values+3, cell->from_uri);
 		SET_STR_VALUE(values+4, cell->legs[DLG_CALLER_LEG].tag);
 		SET_STR_VALUE(values+5, cell->to_uri);
-		SET_STR_VALUE(values+6, cell->legs[DLG_FIRST_CALLEE_LEG].tag);
+		SET_STR_VALUE(values+6, cell->legs[callee_leg].tag);
 
 		SET_STR_VALUE(values+7, cell->legs[DLG_CALLER_LEG].bind_addr->sock_str);
-		if (cell->legs[DLG_FIRST_CALLEE_LEG].bind_addr) {
+		if (cell->legs[callee_leg].bind_addr) {
 			SET_STR_VALUE(values+8, 
-				cell->legs[DLG_FIRST_CALLEE_LEG].bind_addr->sock_str);
+				cell->legs[callee_leg].bind_addr->sock_str);
 		} else {
 			VAL_NULL(values+8) = 1;
 		}
@@ -641,12 +646,12 @@ int update_dialog_dbinfo(struct dlg_cell * cell)
 		SET_INT_VALUE(values+11, (unsigned int)( (unsigned int)time(0) +
 			 cell->tl.timeout - get_ticks()) );
 
-		SET_STR_VALUE(values+12, cell->legs[DLG_CALLER_LEG].cseq);
-		SET_STR_VALUE(values+13, cell->legs[DLG_FIRST_CALLEE_LEG].cseq);
+		SET_STR_VALUE(values+12, cell->legs[DLG_CALLER_LEG].r_cseq);
+		SET_STR_VALUE(values+13, cell->legs[callee_leg].r_cseq);
 		SET_STR_VALUE(values+14, cell->legs[DLG_CALLER_LEG].route_set);
-		SET_STR_VALUE(values+15, cell->legs[DLG_FIRST_CALLEE_LEG].route_set);
+		SET_STR_VALUE(values+15, cell->legs[callee_leg].route_set);
 		SET_STR_VALUE(values+16, cell->legs[DLG_CALLER_LEG].contact);
-		SET_STR_VALUE(values+17, cell->legs[DLG_FIRST_CALLEE_LEG].contact);
+		SET_STR_VALUE(values+17, cell->legs[callee_leg].contact);
 
 		CON_PS_REFERENCE(dialog_db_handle) = &my_ps_insert;
 
@@ -678,8 +683,8 @@ int update_dialog_dbinfo(struct dlg_cell * cell)
 		SET_INT_VALUE(values+11, (unsigned int)( (unsigned int)time(0) +
 				 cell->tl.timeout - get_ticks()) );
 
-		SET_STR_VALUE(values+12, cell->legs[DLG_CALLER_LEG].cseq);
-		SET_STR_VALUE(values+13, cell->legs[DLG_FIRST_CALLEE_LEG].cseq);
+		SET_STR_VALUE(values+12, cell->legs[DLG_CALLER_LEG].r_cseq);
+		SET_STR_VALUE(values+13, cell->legs[callee_leg].r_cseq);
 
 		CON_PS_REFERENCE(dialog_db_handle) = &my_ps_update;
 
@@ -865,6 +870,7 @@ void dialog_update_db(unsigned int ticks, void * param)
 	struct dlg_entry entry;
 	struct dlg_cell  * cell; 
 	unsigned char on_shutdown;
+	int callee_leg;
 
 	db_key_t insert_keys[DIALOG_TABLE_TOTAL_COL_NO] = {	&h_entry_column,
 			&h_id_column,		&call_id_column,		&from_uri_column,
@@ -902,6 +908,8 @@ void dialog_update_db(unsigned int ticks, void * param)
 
 		for(cell = entry.first; cell != NULL; cell = cell->next){
 
+			callee_leg = callee_idx(cell);
+
 			if( (cell->flags & DLG_FLAG_NEW) != 0 ) {
 
 				if ( cell->state == DLG_STATE_DELETED ) {
@@ -917,13 +925,13 @@ void dialog_update_db(unsigned int ticks, void * param)
 
 				SET_STR_VALUE(values+4, cell->legs[DLG_CALLER_LEG].tag);
 				SET_STR_VALUE(values+5, cell->to_uri);
-				SET_STR_VALUE(values+6, cell->legs[DLG_FIRST_CALLEE_LEG].tag);
+				SET_STR_VALUE(values+6, cell->legs[callee_leg].tag);
 
 				SET_STR_VALUE(values+7,
 					cell->legs[DLG_CALLER_LEG].bind_addr->sock_str);
-				if (cell->legs[DLG_FIRST_CALLEE_LEG].bind_addr) {
+				if (cell->legs[callee_leg].bind_addr) {
 					SET_STR_VALUE(values+8, 
-						cell->legs[DLG_FIRST_CALLEE_LEG].bind_addr->sock_str);
+						cell->legs[callee_leg].bind_addr->sock_str);
 				} else {
 					VAL_NULL(values+8) = 1;
 				}
@@ -932,18 +940,18 @@ void dialog_update_db(unsigned int ticks, void * param)
 
 				SET_STR_VALUE(values+10, cell->legs[DLG_CALLER_LEG].route_set);
 				SET_STR_VALUE(values+11,
-					cell->legs[DLG_FIRST_CALLEE_LEG].route_set);
+					cell->legs[callee_leg].route_set);
 				SET_STR_VALUE(values+12, cell->legs[DLG_CALLER_LEG].contact);
 				SET_STR_VALUE(values+13,
-					cell->legs[DLG_FIRST_CALLEE_LEG].contact);
+					cell->legs[callee_leg].contact);
 
 
 				SET_INT_VALUE(values+14, cell->state);
 				SET_INT_VALUE(values+15, (unsigned int)((unsigned int)time(0)
 					+ cell->tl.timeout - get_ticks()) );
 
-				SET_STR_VALUE(values+16, cell->legs[DLG_CALLER_LEG].cseq);
-				SET_STR_VALUE(values+17, cell->legs[DLG_FIRST_CALLEE_LEG].cseq);
+				SET_STR_VALUE(values+16, cell->legs[DLG_CALLER_LEG].r_cseq);
+				SET_STR_VALUE(values+17, cell->legs[callee_leg].r_cseq);
 
 				set_final_update_cols(values+18, cell, on_shutdown);
 
@@ -970,8 +978,8 @@ void dialog_update_db(unsigned int ticks, void * param)
 				SET_INT_VALUE(values+14, cell->state);
 				SET_INT_VALUE(values+15, (unsigned int)((unsigned int)time(0)
 					 + cell->tl.timeout - get_ticks()) );
-				SET_STR_VALUE(values+16, cell->legs[DLG_CALLER_LEG].cseq);
-				SET_STR_VALUE(values+17, cell->legs[DLG_FIRST_CALLEE_LEG].cseq);
+				SET_STR_VALUE(values+16, cell->legs[DLG_CALLER_LEG].r_cseq);
+				SET_STR_VALUE(values+17, cell->legs[callee_leg].r_cseq);
 
 				set_final_update_cols(values+18, cell, on_shutdown);
 

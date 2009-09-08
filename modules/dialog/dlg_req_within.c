@@ -1,7 +1,7 @@
 /*
  * $Id$
  *
- * Copyright (C) 2007 Voice System SRL
+ * Copyright (C) 2007-2009 Voice System SRL
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -23,6 +23,8 @@
  * --------
  * 2007-07-10  initial version (ancuta)
  * 2008-04-04  added direction reporting in dlg callbacks (bogdan)
+ * 2009-09-09  support for early dialogs added; proper handling of cseq
+ *             while PRACK is used (bogdan)
 */
 
 #include <stdlib.h>
@@ -76,7 +78,7 @@ dlg_t * build_dlg_t(struct dlg_cell * cell, int dst_leg, int src_leg)
 	memset(td, 0, sizeof(dlg_t));
 
 	/*local sequence number*/
-	cseq = cell->legs[src_leg].cseq;
+	cseq = cell->legs[dst_leg].r_cseq;
 	if( !cseq.s || !cseq.len || str2int(&cseq, &loc_seq) != 0){
 		LM_ERR("invalid cseq\n");
 		goto error;
@@ -155,14 +157,14 @@ void bye_reply_cb(struct cell* t, int type, struct tmcb_params* ps){
 				dlg, dlg->h_entry, dlg->h_id,
 				dlg->callid.len, dlg->callid.s,
 				dlg_leg_print_info( dlg, DLG_CALLER_LEG, tag),
-				dlg_leg_print_info( dlg, DLG_FIRST_CALLEE_LEG, tag));
+				dlg_leg_print_info( dlg, callee_idx(dlg), tag));
 		} else if (ret > 0) {
 			LM_DBG("dlg already expired (not in timer list) %p [%u:%u] "
 				"with clid '%.*s' and tags '%.*s' '%.*s'\n",
 				dlg, dlg->h_entry, dlg->h_id,
 				dlg->callid.len, dlg->callid.s,
 				dlg_leg_print_info( dlg, DLG_CALLER_LEG, tag),
-				dlg_leg_print_info( dlg, DLG_FIRST_CALLEE_LEG, tag));
+				dlg_leg_print_info( dlg, callee_idx(dlg), tag));
 		} else {
 			/* successfully removed from timer list */
 			unref++;
@@ -277,19 +279,18 @@ err:
 int dlg_end_dlg(struct dlg_cell *dlg, str *extra_hdrs)
 {
 	str str_hdr = {NULL,0};
-	int res;
-	int i;
+	int res = 0;
+	int callee;
 
 	if ((build_extra_hdr(dlg, extra_hdrs, &str_hdr)) != 0){
 		LM_ERR("failed to create extra headers\n");
 		return -1;
 	}
 
-	/* for all callees, send a caller+callee pair of BYEs */
-	for( res=0, i=1 ; i<dlg->legs_no[DLG_LEGS_USED] ; i++) {
-		if (send_leg_bye( dlg, DLG_CALLER_LEG, i, &str_hdr)!=0) res = -1;
-		if (send_leg_bye( dlg, i, DLG_CALLER_LEG, &str_hdr)!=0) res = -1;
-	}
+	callee = callee_idx(dlg);
+	if ( (send_leg_bye( dlg, DLG_CALLER_LEG, callee, &str_hdr)!=0)
+	|| (send_leg_bye( dlg, callee, DLG_CALLER_LEG, &str_hdr)!=0) )
+		res = -1;
 
 	pkg_free(str_hdr.s);
 	return res;

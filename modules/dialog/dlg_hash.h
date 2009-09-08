@@ -1,7 +1,7 @@
 /*
  * $Id$
  *
- * Copyright (C) 2006 Voice System SRL
+ * Copyright (C) 2006-2009 Voice System SRL
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -32,6 +32,8 @@
  *             (ancuta)
  * 2008-04-17  added new dialog flag to avoid state tranzitions from DELETED to
  *             CONFIRMED_NA due delayed "200 OK" (bogdan)
+ * 2009-09-09  support for early dialogs added; proper handling of cseq
+ *             while PRACK is used (bogdan)
  */
 
 
@@ -77,7 +79,7 @@
 struct dlg_leg {
 	int id;
 	str tag;
-	str cseq;
+	str r_cseq;
 	str route_set;
 	str contact;
 	struct socket_info *bind_addr;
@@ -86,6 +88,8 @@ struct dlg_leg {
 
 #define DLG_LEGS_USED      0
 #define DLG_LEGS_ALLOCED   1
+#define DLG_LEG_200OK      2
+
 struct dlg_cell
 {
 	volatile int         ref;
@@ -104,7 +108,7 @@ struct dlg_cell
 	str                  from_uri;
 	str                  to_uri;
 	struct dlg_leg       *legs;
-	unsigned short       legs_no[2];
+	unsigned char        legs_no[4];
 	struct dlg_head_cbl  cbs;
 	struct dlg_profile_link *profile_links;
 	struct dlg_val          *vals;
@@ -133,6 +137,9 @@ struct dlg_table
 extern struct dlg_table *d_table;
 extern struct dlg_cell  *current_dlg_pointer;
 
+#define callee_idx(_dlg) \
+	(((_dlg)->legs_no[DLG_LEG_200OK]==0)? \
+		DLG_FIRST_CALLEE_LEG : (_dlg)->legs_no[DLG_LEG_200OK])
 
 #define set_current_dialog(_dlg) \
 		current_dlg_pointer = _dlg
@@ -171,7 +178,7 @@ inline void destroy_dlg(struct dlg_cell *dlg);
 				(_dlg)->h_entry, (_dlg)->h_id,\
 				(_dlg)->callid.len, (_dlg)->callid.s,\
 				dlg_leg_print_info(_dlg, DLG_CALLER_LEG, tag), \
-				dlg_leg_print_info(_dlg, DLG_FIRST_CALLEE_LEG, tag)); \
+				dlg_leg_print_info(_dlg, callee_idx(_dlg), tag)); \
 		}\
 		if ((_dlg)->ref<=0) { \
 			unlink_unsafe_dlg( _d_entry, _dlg);\
@@ -195,9 +202,13 @@ int dlg_add_leg_info(struct dlg_cell *dlg, str* tag, str *rr, str *contact,
 
 int dlg_update_cseq(struct dlg_cell *dlg, unsigned int leg, str *cseq);
 
+int dlg_update_routing(struct dlg_cell *dlg, unsigned int leg,
+													str *rr, str *contact );
+
 struct dlg_cell* lookup_dlg( unsigned int h_entry, unsigned int h_id);
 
-struct dlg_cell* get_dlg(str *callid, str *ftag, str *ttag, unsigned int *dir);
+struct dlg_cell* get_dlg(str *callid, str *ftag, str *ttag,
+		unsigned int *dir, unsigned int *dst_leg);
 
 void link_dlg(struct dlg_cell *dlg, int n);
 
@@ -212,7 +223,7 @@ struct mi_root * mi_print_dlgs(struct mi_root *cmd, void *param );
 struct mi_root * mi_print_dlgs_ctx(struct mi_root *cmd, void *param );
 
 static inline int match_dialog(struct dlg_cell *dlg, str *callid,
-							   str *ftag, str *ttag, unsigned int *dir) {
+			str *ftag, str *ttag, unsigned int *dir, unsigned int *dst_leg) {
 	str *tag;
 	unsigned int i;
 
@@ -232,18 +243,21 @@ static inline int match_dialog(struct dlg_cell *dlg, str *callid,
 	strncmp(dlg->legs[DLG_CALLER_LEG].tag.s, ttag->s, ttag->len)==0 ) {
 		/* from tag = to tag matching */
 		*dir = DLG_DIR_UPSTREAM;
+		*dst_leg = 0; /* destination is the caller */
 		tag = ftag;
 	} else {
 		/* dialog from tag does not match */
 		return 0;
 	}
 
-	/* check the dialog to tag - interate through all the stored to tags */
+	/* check the dialog to tag - interate through all the stored to-tags */
 	if (dlg->legs_no[DLG_LEGS_USED] > DLG_FIRST_CALLEE_LEG) {
 		for ( i=DLG_FIRST_CALLEE_LEG ; i<dlg->legs_no[DLG_LEGS_USED] ; i++) {
 			if (dlg->legs[i].tag.len == tag->len &&
-			strncmp(dlg->legs[i].tag.s, tag->s, tag->len)==0 )
+			strncmp(dlg->legs[i].tag.s, tag->s, tag->len)==0 ) {
+				if (*dst_leg==-1) *dst_leg = i; /* destination is callee */
 				return 1;
+			}
 		}
 		/* no matching */
 		return 0;
