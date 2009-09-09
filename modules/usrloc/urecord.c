@@ -95,6 +95,8 @@ void free_urecord(urecord_t* _r)
 	if (db_mode!=DB_ONLY) {
 		if (_r->aor.s) shm_free(_r->aor.s);
 		shm_free(_r);
+	} else {
+		_r->contacts = NULL;
 	}
 }
 
