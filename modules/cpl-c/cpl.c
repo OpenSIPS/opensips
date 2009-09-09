@@ -580,8 +580,11 @@ static int cpl_invoke_script(struct sip_msg* msg, char* str1, char* str2)
 			goto error2;
 		if (build_user_AOR( &username, &domain, &loc, 1)!=0 )
 			goto error2;
-		if (add_location( &(cpl_intr->loc_set), &loc, 0, 10, 0/*no dup*/)==-1)
+		if (add_location( &(cpl_intr->loc_set), &loc, 0, 10,CPL_LOC_DUPL)==-1){
+			shm_free(loc.s);
 			goto error2;
+		}
+		shm_free(loc.s);
 	}
 
 	/* run the script */
