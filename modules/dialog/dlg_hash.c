@@ -490,9 +490,12 @@ struct dlg_cell* get_dlg( str *callid, str *ftag, str *ttag,
 		LM_DBG("DLG (%p)(%d): ci=<%.*s>(%d), ft=<%.*s>(%d), tt=<%.*s>(%d),"
 			"ct_er=%d, ct_ee=%d\n",
 			dlg,dlg->state,dlg->callid.len,dlg->callid.s, dlg->callid.len,
-			dlg->tag[0].len,dlg->tag[0].s, dlg->tag[0].len,
-			dlg->tag[1].len,dlg->tag[1].s, dlg->tag[1].len,
-			dlg->contact[0].len,dlg->contact[1].len);
+			dlg->legs[DLG_CALLER_LEG].tag.len,dlg->legs[DLG_CALLER_LEG].tag.s,
+				dlg->legs[DLG_CALLER_LEG].tag.len,
+			dlg->legs[callee_idx(dlg)].tag.len,dlg->legs[callee_idx(dlg)].tag.s,
+				dlg->legs[callee_idx(dlg)].tag.len,
+			dlg->legs[DLG_CALLER_LEG].contact.len,
+				dlg->legs[DLG_CALLER_LEG].contact.len);
 #endif
 		if (match_dialog( dlg, callid, ftag, ttag, dir, dst_leg)==1) {
 			if (dlg->state==DLG_STATE_DELETED)
