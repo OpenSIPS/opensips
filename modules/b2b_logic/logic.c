@@ -412,7 +412,7 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 							tuple->bridge_entities[1]->key.s != NULL) /* if a negative reply for the second leg send BYE to the first*/
 						b2b_api.send_request(entity->peer->type,
 								&entity->peer->key, &meth_bye, 0, 0);
-					if(msg->first_line.u.reply.statuscode != 487)
+				//	if(msg->first_line.u.reply.statuscode != 487)
 						b2bl_delete(tuple, hash_index);
 
 					goto done;
@@ -445,7 +445,7 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 			/* if no other scenario rules defined and this is the reply
 			 * for BYE or CANCEL */
 			if((method.len == BYE_LEN && strncmp(method.s, BYE, BYE_LEN)==0) ||
-				(method.len == CANCEL_LEN && strncmp(method.s, CANCEL, CANCEL_LEN)==0))
+					msg->first_line.u.reply.statuscode >= 300)
 			{
 				b2bl_delete(tuple, hash_index);
 			}

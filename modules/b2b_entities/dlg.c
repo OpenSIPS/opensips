@@ -375,6 +375,7 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 		return -1;
 	}
 
+logic_notify:
 	if(method_value == METHOD_ACK)
 	{
 		if(dlg->last_reply_code > 299)
@@ -387,13 +388,15 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 	else
 	{
 		tmb.t_newtran(msg);
-		dlg->tm_tran = tmb.t_gett();
+		if(method_value == METHOD_CANCEL)
+			dlg->cancel_tm_tran = tmb.t_gett();
+		else
+			dlg->tm_tran = tmb.t_gett();
 
 		if(method_value == METHOD_INVITE) /* send provisional reply 100 Trying */
 			tmb.t_reply(msg, 100, &reason);
 	}
 
-logic_notify:
 	b2b_cback = dlg->b2b_cback;
 	param = dlg->param;
 
@@ -671,15 +674,24 @@ int b2b_send_reply(enum b2b_entity_type et, str* b2b_key, int code, str* text,
 		return 0;
 	}
 
-	tm_tran = dlg->tm_tran;
+	if(dlg->cancel_tm_tran)
+	{
+		LM_DBG("Found cancel transaction\n");
+		tm_tran = dlg->cancel_tm_tran;
+		dlg->cancel_tm_tran = NULL;
+	}else
+	{
+		tm_tran = dlg->tm_tran;
+		if(code >= 200)
+			dlg->tm_tran = NULL;
+	}
+
 	if(tm_tran == NULL)
 	{
 		LM_ERR("Tm transaction not saved!\n");
 		lock_release(&table[hash_index].lock);
 		return -1;
 	}
-	if(code >= 200)
-		dlg->tm_tran = NULL;
 
 	msg = tm_tran->uas.request;
 	if(msg== NULL)
