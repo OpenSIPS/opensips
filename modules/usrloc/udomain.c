@@ -148,6 +148,7 @@ static inline void get_static_urecord(udomain_t* _d, str* _aor,
 {
 	static struct urecord r;
 
+	free_urecord( &r );
 	memset( &r, 0, sizeof(struct urecord) );
 	r.aor = *_aor;
 	r.domain = _d->name;
