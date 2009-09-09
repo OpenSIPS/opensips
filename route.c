@@ -87,7 +87,10 @@ struct script_route branch_rlist[BRANCH_RT_NO];
 struct script_route local_rlist;
 /* error route */
 struct script_route error_rlist;
-
+/* startup route */
+struct script_route startup_rlist;
+/* startup route */
+struct script_timer_route timer_rlist[TIMER_RT_NO];
 
 int route_type = REQUEST_ROUTE;
 
@@ -107,6 +110,8 @@ void init_route_lists(void)
 	memset(branch_rlist, 0, sizeof(branch_rlist));
 	memset(&local_rlist, 0, sizeof(local_rlist));
 	memset(&error_rlist, 0, sizeof(error_rlist));
+	memset(&startup_rlist, 0, sizeof(startup_rlist));
+	memset(timer_rlist, 0, sizeof(timer_rlist));
 	rlist[DEFAULT_RT].name = "0";
 	onreply_rlist[DEFAULT_RT].name = "0";
 }
@@ -1640,7 +1645,22 @@ int fix_rls(void)
 			return ret;
 		}
 	}
-	return 0;
+	if(startup_rlist.a){
+		if ((ret=fix_actions(startup_rlist.a))!=0){
+			return ret;
+		}
+	}
+
+	for(i = 0; i< TIMER_RT_NO; i++) {
+		if(timer_rlist[i].a == NULL)
+			break;
+
+		if ((ret=fix_actions(timer_rlist[i].a))!=0){
+			return ret;
+		}
+	}
+
+return 0;
 }
 
 
@@ -1767,6 +1787,24 @@ int check_rls(void)
 			return ret;
 		}
 	}
+	if(startup_rlist.a){
+		if ((ret=check_actions(startup_rlist.a,STARTUP_ROUTE))!=0){
+			LM_ERR("check failed for startup_route\n");
+			return ret;
+		}
+	}
+
+	for(i = 0; i< TIMER_RT_NO; i++) {
+		if(timer_rlist[i].a == NULL)
+			break;
+
+		if ((ret=check_actions(timer_rlist[i].a,TIMER_ROUTE))!=0){
+			LM_ERR("check failed for startup_route\n");
+			return ret;
+		}
+		
+	}
+
 	return rcheck_status;
 }
 
@@ -1813,4 +1851,18 @@ void print_rl(void)
 	}
 }
 
+int run_startup_route(void)
+{
+	struct sip_msg req;
 
+	memset(&req, 0, sizeof(struct sip_msg));
+	req.first_line.type = SIP_REQUEST;
+
+	req.first_line.u.request.method.s= "DUMMY";
+	req.first_line.u.request.method.len= 5;
+	req.first_line.u.request.uri.s= "user";
+	req.first_line.u.request.uri.len= 4;
+
+	/* run the route */
+	return run_top_route( startup_rlist.a, &req);
+}

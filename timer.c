@@ -38,6 +38,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "action.h"
 #include "timer.h"
 #include "dprint.h"
 #include "error.h"
@@ -167,7 +168,6 @@ static inline struct sr_timer* new_sr_timer(timer_function f,
 }
 
 
-
 /*register a periodic timer;
  * ret: <0 on error
  * Hint: if you need it in a module, register it from mod_init or it 
@@ -200,7 +200,66 @@ int register_utimer(utimer_function f, void* param, unsigned int interval)
 	return t->id;
 }
 
+void route_timer_f(unsigned int ticks, void* param)
+{
+	struct action* a = (struct action*)param;
+	static struct sip_msg* req= NULL;
 
+	if(req == NULL)
+	{
+		req = (struct sip_msg*)pkg_malloc(sizeof(struct sip_msg));
+		if(req == NULL)
+		{
+			LM_ERR("No more memory\n");
+			return;
+		}
+		memset(req, 0, sizeof(struct sip_msg));
+		req->first_line.type = SIP_REQUEST;
+		req->first_line.u.request.method.s= "DUMMY";
+		req->first_line.u.request.method.len= 5;
+		req->first_line.u.request.uri.s= "user";
+		req->first_line.u.request.uri.len= 4;
+	}
+
+	if(a == NULL) {
+		LM_ERR("NULL action\n");
+		return;
+	}
+
+	run_top_route(a, req);
+}
+
+int register_route_timers(void)
+{
+	struct sr_timer* t;
+	struct sr_timer_process* tpl;
+	int i;
+
+	if(timer_rlist[0].a == NULL)
+		return 0;
+
+	/* create new process list */
+	tpl = new_timer_process_list(0); /* TODO - Find out if I need a flag */
+	if (tpl==NULL)
+		return E_OUT_OF_MEM;
+
+	/* register the routes */
+	for(i = 0; i< TIMER_RT_NO; i++)
+	{
+		if(timer_rlist[i].a == NULL)
+			return 0;
+		t = new_sr_timer(route_timer_f, timer_rlist[i].a,
+				timer_rlist[i].interval);
+		if (t==NULL)
+			return E_OUT_OF_MEM;
+
+		/* insert it into the list*/
+		t->next = tpl->timer_list;
+		tpl->timer_list = t;
+	}
+
+	return 1;
+}
 
 int register_timer_process(timer_function f,void* param,unsigned int interval,
 															unsigned int flags)
@@ -281,7 +340,6 @@ static inline void utimer_ticker(struct sr_timer *utimer_list)
 		}
 	}
 }
-
 
 
 static void run_timer_process(struct sr_timer_process *tpl)

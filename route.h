@@ -47,6 +47,10 @@ struct script_route{
 	struct action *a;      /* the actions tree defining the route logic */
 };
 
+struct script_timer_route{
+	unsigned int interval;
+	struct action* a;
+};
 
 extern struct script_route rlist[RT_NO];			/*!< main "script table" */
 extern struct script_route onreply_rlist[ONREPLY_RT_NO];	/*!< main reply route table */
@@ -54,13 +58,17 @@ extern struct script_route failure_rlist[FAILURE_RT_NO];	/*!< Failure route tabl
 extern struct script_route branch_rlist[BRANCH_RT_NO];	/*!< Branch routes table */
 extern struct script_route local_rlist;			/*!< Local route table */
 extern struct script_route error_rlist;			/*!< Error route table */
+extern struct script_route startup_rlist;		/*!< Startup route table */
+extern struct script_timer_route timer_rlist[TIMER_RT_NO];	/*!< Timer route table */
 
-#define REQUEST_ROUTE 1	 /*!< Request route block */
-#define FAILURE_ROUTE 2  /*!< Negative-reply route block */
-#define ONREPLY_ROUTE 4  /*!< Received-reply route block */
-#define BRANCH_ROUTE  8  /*!< Sending-branch route block */
-#define ERROR_ROUTE  16  /*!< Error-handling route block */
-#define LOCAL_ROUTE  32  /*!< Local-requests route block */
+#define REQUEST_ROUTE 1   /*!< Request route block */
+#define FAILURE_ROUTE 2   /*!< Negative-reply route block */
+#define ONREPLY_ROUTE 4   /*!< Received-reply route block */
+#define BRANCH_ROUTE  8   /*!< Sending-branch route block */
+#define ERROR_ROUTE  16   /*!< Error-handling route block */
+#define LOCAL_ROUTE  32   /*!< Local-requests route block */
+#define STARTUP_ROUTE 64  /*!< Startup route block */
+#define TIMER_ROUTE  128  /*!< Timer route block */
 
 extern int route_type;
 
@@ -97,5 +105,6 @@ int check_rls();
 
 int eval_expr(struct expr* e, struct sip_msg* msg, pv_value_t *val);
 
+int run_startup_route(void);
 
 #endif

@@ -52,7 +52,7 @@ struct sr_timer{
 	}u;
 	void* t_param;
 	unsigned int interval;
-	
+
 	utime_t expires;
 	
 	struct sr_timer* next;
@@ -83,5 +83,7 @@ int register_timer_process(timer_function f,void* param,unsigned int interval,
 unsigned int get_ticks(void);
 
 utime_t get_uticks(void);
+
+int register_route_timers(void);
 
 #endif

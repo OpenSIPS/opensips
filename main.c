@@ -658,6 +658,7 @@ static int main_loop(void)
 	int  i;
 	pid_t pid;
 	struct socket_info* si;
+	int* startup_done;
 
 	chd_rank=0;
 
@@ -702,6 +703,8 @@ static int main_loop(void)
 			LM_ERR("init_child failed in don't fork\n");
 			goto error;
 		}
+
+		run_startup_route();
 
 		is_main=1;
 		return udp_rcv_loop();
@@ -774,6 +777,16 @@ static int main_loop(void)
 		 * so we open all first*/
 		if (do_suid(uid, gid)==-1) goto error; /* try to drop privileges */
 
+		if(startup_rlist.a) {/* if a startup route was defined */
+			startup_done = (int*)shm_malloc(sizeof(int));
+			if(startup_done == NULL)
+			{
+				LM_ERR("No more shared memory\n");
+				goto error;
+			}
+			*startup_done = 0;
+		}
+
 		/* udp processes */
 		for(si=udp_listen; si; si=si->next){
 			for(i=0;i<children_no;i++){
@@ -781,18 +794,38 @@ static int main_loop(void)
 				if ( (pid=internal_fork( "UDP receiver"))<0 ) {
 					LM_CRIT("cannot fork UDP process\n");
 					goto error;
-				} else if (pid==0){
-					/* new UDP process */
-					/* set a more detailed description */
-					set_proc_attrs("SIP receiver %.*s ",
-						si->sock_str.len, si->sock_str.s);
-					bind_address=si; /* shortcut */
-					if (init_child(chd_rank) < 0) {
-						LM_ERR("init_child failed for UDP listener\n");
+				} else {
+					if (pid==0) {
+						/* new UDP process */
+						/* set a more detailed description */
+						set_proc_attrs("SIP receiver %.*s ",
+							si->sock_str.len, si->sock_str.s);
+						bind_address=si; /* shortcut */
+						if (init_child(chd_rank) < 0) {
+							LM_ERR("init_child failed for UDP listener\n");
+							exit(-1);
+						}
+
+						if(chd_rank == 1 && startup_rlist.a) {
+							if(run_startup_route()< 0) {
+								LM_ERR("Startup route processing failed\n");
+								exit(-1);
+							}
+							*startup_done = 1;
+						}
+
+						udp_rcv_loop();
 						exit(-1);
 					}
-					udp_rcv_loop();
-					exit(-1);
+					else {
+						/* if the first process that runs startup_route*/
+						if(chd_rank == 1 && startup_rlist.a) {
+							while(!startup_done) {
+								usleep(5);
+							}
+							shm_free(startup_done);
+						}
+					}
 				}
 			}
 			/*parent*/
@@ -1318,6 +1351,13 @@ try_again:
 		LM_ERR("error while initializing modules\n");
 		goto error;
 	}
+
+	/* register route timers */
+	if(register_route_timers() < 0) {
+		LM_ERR("Failed to register timer\n");
+		goto error;
+	}
+
 	/* check pv context list */
 	if(pv_contextlist_check() != 0) {
 		LM_ERR("used pv context that was not defined\n");
@@ -1342,6 +1382,7 @@ try_again:
 		LM_ERR("failed to fix configuration with err code %d\n", r);
 		goto error;
 	};
+
 
 	ret=main_loop();
 

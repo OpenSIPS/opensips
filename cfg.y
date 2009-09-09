@@ -208,6 +208,8 @@ extern int line;
 %token ROUTE_BRANCH
 %token ROUTE_ERROR
 %token ROUTE_LOCAL
+%token ROUTE_STARTUP
+%token ROUTE_TIMER
 %token SET_HOST
 %token SET_HOSTPORT
 %token PREFIX
@@ -450,6 +452,8 @@ statement:	assign_stm
 		| {rt=BRANCH_ROUTE;} branch_route_stm
 		| {rt=ERROR_ROUTE;} error_route_stm
 		| {rt=LOCAL_ROUTE;} local_route_stm
+		| {rt=STARTUP_ROUTE;} startup_route_stm
+		| {rt=TIMER_ROUTE;} timer_route_stm
 
 		| CR	/* null statement*/
 	;
@@ -1438,6 +1442,32 @@ local_route_stm:  ROUTE_LOCAL LBRACE actions RBRACE {
 		| ROUTE_LOCAL error { yyerror("invalid local_route statement"); }
 	;
 
+startup_route_stm:  ROUTE_STARTUP LBRACE actions RBRACE {
+						if (startup_rlist.a!=0) {
+							yyerror("re-definition of startup "
+								"route detected");
+							YYABORT;
+						}
+						push($3, &startup_rlist.a);
+					}
+		| ROUTE_STARTUP error { yyerror("invalid startup_route statement"); }
+	;
+
+timer_route_stm:  ROUTE_TIMER LBRACK route_name COMMA NUMBER RBRACK LBRACE actions RBRACE {
+						i_tmp = 0;
+						while (timer_rlist[i_tmp].a!=0 && i_tmp < TIMER_RT_NO) {
+							i_tmp++;
+						}
+						if(i_tmp == TIMER_RT_NO) {
+							yyerror("Too many timer routes defined\n");
+							YYABORT;
+						}
+						timer_rlist[i_tmp].interval = $5;
+						push($8, &timer_rlist[i_tmp].a);
+					}
+		| ROUTE_TIMER error { yyerror("invalid timer_route statement"); }
+	;
+
 exp:	exp AND exp 	{ $$=mk_exp(AND_OP, $1, $3); }
 	| exp OR  exp		{ $$=mk_exp(OR_OP, $1, $3);  }
 	| NOT exp 			{ $$=mk_exp(NOT_OP, $2, 0);  }
@@ -2337,7 +2367,7 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 									}
 								}
 		| ID LPAREN module_func_param RPAREN		{
-						 			cmd_tmp=(void*)find_cmd_export_t($1, $3, rt);
+									cmd_tmp=(void*)find_cmd_export_t($1, $3, rt);
 									if (cmd_tmp==0){
 										if (find_cmd_export_t($1, $3, 0)) {
 											yyerror("Command cannot be "
