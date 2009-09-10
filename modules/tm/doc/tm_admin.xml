@@ -1240,7 +1240,6 @@ route {
 
 failure_route[1] {
 	seturi("sip:user@voicemail");
-	append_branch();
 	t_relay();
 }
 ...
@@ -1265,8 +1264,17 @@ failure_route[1] {
 		possible server failure.
 		</para>
 		<para>
-		Only one onreply_route can be armed for a request. If you use many
-		times t_on_reply(), only the last one has effect.
+		If called from branch route, the reply route will be set only for the
+		current branch - that's it, it will be called only for relies belonging
+		to that particular branch. Of course, from branch route, you can set
+		different reply routes for each branch.
+		</para>
+		<para>
+		When called from a non-branc route, the reply route will be globally 
+		set for tha current transaction - it will be called for all replies 
+		belonging to that transaction. NOTE that only 
+		<emphasis>one></emphasis> onreply_route can be armed for a transaction.
+		If you use many times t_on_reply(), only the last one has effect.
 		</para>
 		<para>
 		If the processed reply is provisionla reply (1xx code), by calling
@@ -1289,12 +1297,28 @@ failure_route[1] {
 		<title><function>t_on_reply</function> usage</title>
 		<programlisting format="linespecific">
 ...
-route { 
-	t_on_reply("1"); 
-	t_relay();
-} 
+route {
+	seturi("sip:bob@opensips.org");  # first branch
+	append_branch("sip:alice@opensips.org"); # second branch
 
-onreply_route[1] {
+	t_on_reply("global"); # the "global" reply route 
+	                      # is set the whole transaction
+	t_on_branch("1");
+
+	t_relay();
+}
+
+branch_route[1] {
+	if ($rU=="alice")
+		t_on_reply("alice"); # the "alice" reply route
+		                      # is set only for second branch
+}
+
+onreply_route[alice] {
+	xlog("received reply from alice\n");
+}
+
+onreply_route[global] {
 	if (t_check_status("1[0-9][0-9]")) {
 		setflag(1);
 		log("provisional reply received\n");
@@ -1376,10 +1400,11 @@ branch_route[1] {
 		<section>
 		<title>$T_branch_idx</title>
 			<para>
-			<emphasis>$T_branch_idx</emphasis> - the index (starting with 1
-			for the first branch) of the branch for which is executed the
-			branch_route[]. If used outside of branch_route[] block, the value
-			is '0'.
+			<emphasis>$T_branch_idx</emphasis> - the index (starting with 0
+			for the first branch) of the currently proccessed branch. This
+			index makes sense only in BRANCH and REPLY routes (where there is
+			a concept of per branch processing). In all the other types of 
+			routes, the value of this index will be NULL.
 			</para>
 		</section>
 		<section>

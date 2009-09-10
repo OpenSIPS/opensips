@@ -114,6 +114,10 @@ static int goto_on_negative=0;
 /* where to go on receipt of reply */
 static int goto_on_reply=0;
 
+/* currently processed branch */
+extern int _tm_branch_index;
+
+
 
 /* returns the picked branch */
 int t_get_picked_branch(void)
@@ -153,10 +157,15 @@ void t_on_reply( unsigned int go_to )
 	/* in MODE_REPLY and MODE_ONFAILURE T will be set to current transaction;
 	 * in MODE_REQUEST T will be set only if the transaction was already 
 	 * created; if not -> use the static variable */
-	if (!t || t==T_UNDEFINED )
+	if (!t || t==T_UNDEFINED ) {
 		goto_on_reply=go_to;
-	else
-		t->on_reply = go_to;
+	} else {
+		if (route_type==BRANCH_ROUTE) {
+			t->uac[_tm_branch_index].on_reply = go_to;
+		} else {
+			t->on_reply = go_to;
+		}
+	}
 }
 
 
@@ -1345,10 +1354,6 @@ error:
 }
 
 
-
-extern int _tm_branch_index;
-
-
 /*  This function is called whenever a reply for our module is received; 
   * we need to register  this function on module initialization;
   *  Returns :   0 - core router stops
@@ -1366,7 +1371,7 @@ int reply_received( struct sip_msg  *p_msg )
 	struct ua_client *uac;
 	struct cell *t;
 	struct usr_avp **backup_list;
-	unsigned int reply_route;
+	unsigned int has_reply_route;
 
 	set_t(T_UNDEFINED);
 
@@ -1419,8 +1424,8 @@ int reply_received( struct sip_msg  *p_msg )
 	_tm_branch_index = branch;
 
 	/* processing of on_reply block */
-	reply_route = t->on_reply;
-	if (reply_route) {
+	has_reply_route = (t->on_reply) || (t->uac[branch].on_reply);
+	if (has_reply_route) {
 		if (onreply_avp_mode) {
 			/* lock the reply*/
 			LOCK_REPLIES( t );
@@ -1432,15 +1437,24 @@ int reply_received( struct sip_msg  *p_msg )
 		/* transfer transaction flag to branch context */
 		p_msg->flags = t->uas.request->flags;
 		setb0flags(t->uac[branch].br_flags);
-		/* run block */
-		if ( (run_top_route(onreply_rlist[reply_route].a,p_msg)&ACT_FL_DROP) &&
-		(msg_status<200) ) {
+		/* run block - first per branch and then global one */
+		if ( t->uac[branch].on_reply &&
+		(run_top_route(onreply_rlist[t->uac[branch].on_reply].a,p_msg)
+		&ACT_FL_DROP) && (msg_status<200) ) {
 			if (onreply_avp_mode) {
 				UNLOCK_REPLIES( t );
 				set_avp_list( backup_list );
 			}
-			LM_DBG("dropping provisional reply %d\n",
-				msg_status);
+			LM_DBG("dropping provisional reply %d\n", msg_status);
+			goto done;
+		}
+		if ( t->on_reply && (run_top_route(onreply_rlist[t->on_reply].a,p_msg)
+		&ACT_FL_DROP) && (msg_status<200) ) {
+			if (onreply_avp_mode) {
+				UNLOCK_REPLIES( t );
+				set_avp_list( backup_list );
+			}
+			LM_DBG("dropping provisional reply %d\n", msg_status);
 			goto done;
 		}
 		/* transfer current message context back to t */
@@ -1451,7 +1465,7 @@ int reply_received( struct sip_msg  *p_msg )
 			set_avp_list( backup_list );
 	}
 
-	if (!onreply_avp_mode || !reply_route)
+	if (!onreply_avp_mode || !has_reply_route)
 		/* lock the reply*/
 		LOCK_REPLIES( t );
 

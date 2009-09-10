@@ -157,6 +157,8 @@ typedef struct ua_client
 	short            flags;
 	/* script flags, specific to this branch */
 	int              br_flags;
+	/* the onreply_route to be processed only for this branch */
+	unsigned int     on_reply;
 }ua_client_type;
 
 
