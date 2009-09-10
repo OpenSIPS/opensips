@@ -817,7 +817,6 @@ static inline char *run_time_switch( struct cpl_interpreter *intr )
 				if ( flags&(1<<7) )
 					set_TZ(cpl_env.orig_tz.s);
 				/* free structs that I don't need any more */
-				ac_tm_free( &att );
 				tmrec_free( &trt );
 				/* let's see the result ;-) */
 				switch  (j) {
@@ -843,13 +842,11 @@ static inline char *run_time_switch( struct cpl_interpreter *intr )
 
 
 	/* none of the branches of TIME_SWITCH matched -> go for default */
-	ac_tm_free( &att );
 	tmrec_free( &trt );
 	return DEFAULT_ACTION;
 runtime_error:
 	if ( flags&(1<<7) )
 		set_TZ(cpl_env.orig_tz.s);
-	ac_tm_free( &att );
 	tmrec_free( &trt );
 	return CPL_RUNTIME_ERROR;
 parse_err:
@@ -858,7 +855,6 @@ parse_err:
 script_error:
 	if ( flags&(1<<7) )
 		set_TZ(cpl_env.orig_tz.s);
-	ac_tm_free( &att );
 	tmrec_free( &trt );
 	return CPL_SCRIPT_ERROR;
 }

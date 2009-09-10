@@ -202,45 +202,29 @@ int ac_tm_reset(ac_tm_p _atp)
 	return 0;
 }
 
-int ac_tm_free(ac_tm_p _atp)
+static ac_maxval_p ac_get_maxval(ac_tm_p _atp)
 {
-	if(!_atp)
-		return -1;
-	if(_atp->mv)
-		shm_free(_atp->mv);
-	shm_free(_atp);
-	return 0;
-}
-
-ac_maxval_p ac_get_maxval(ac_tm_p _atp)
-{
+	static ac_maxval_t _amp;
 	struct tm _tm;
 	int _v;
-	ac_maxval_p _amp = NULL;
 
-	if(!_atp)
-		return NULL;
-	_amp = (ac_maxval_p)shm_malloc(sizeof(ac_maxval_t));
-	if(!_amp)
-		return NULL;
-	
 	/* the number of the days in the year */
-	_amp->yday = 365 + is_leap_year(_atp->t.tm_year+1900);
+	_amp.yday = 365 + is_leap_year(_atp->t.tm_year+1900);
 
 	/* the number of the days in the month */
 	switch(_atp->t.tm_mon)
 	{
 		case 1:
-			if(_amp->yday == 366)
-				_amp->mday = 29;
+			if(_amp.yday == 366)
+				_amp.mday = 29;
 			else
-				_amp->mday = 28;
+				_amp.mday = 28;
 		break;
 		case 3: case 5: case 8: case 10:
-			_amp->mday = 30;
+			_amp.mday = 30;
 		break;
 		default:
-			_amp->mday = 31;
+			_amp.mday = 31;
 	}
 	
 	/* maximum occurrences of a week day in the year */
@@ -254,24 +238,23 @@ ac_maxval_p ac_get_maxval(ac_tm_p _atp)
 		_v = _atp->t.tm_wday - _tm.tm_wday + 1;
 	else
 		_v = _tm.tm_wday - _atp->t.tm_wday;
-	_amp->ywday = (int)((_tm.tm_yday-_v)/7) + 1;
+	_amp.ywday = (int)((_tm.tm_yday-_v)/7) + 1;
 	
 	/* maximum number of weeks in the year */
-	_amp->yweek = ac_get_yweek(&_tm) + 1;
+	_amp.yweek = ac_get_yweek(&_tm) + 1;
 	
 	/* maximum number of the week day in the month */
-	_amp->mwday=(int)((_amp->mday-1-(_amp->mday-_atp->t.tm_mday)%7)/7)+1;
+	_amp.mwday=(int)((_amp.mday-1-(_amp.mday-_atp->t.tm_mday)%7)/7)+1;
 	
 	/* maximum number of weeks in the month */
-	_v = (_atp->t.tm_wday + (_amp->mday - _atp->t.tm_mday)%7)%7;
+	_v = (_atp->t.tm_wday + (_amp.mday - _atp->t.tm_mday)%7)%7;
 #ifdef USE_YWEEK_U
-	_amp->mweek = (int)((_amp->mday-1)/7+(7-_v+(_amp->mday-1)%7)/7)+1;
+	_amp.mweek = (int)((_amp.mday-1)/7+(7-_v+(_amp.mday-1)%7)/7)+1;
 #else
-	_amp->mweek = (int)((_amp->mday-1)/7+(7-(6+_v)%7+(_amp->mday-1)%7)/7)+1;
+	_amp.mweek = (int)((_amp.mday-1)/7+(7-(6+_v)%7+(_amp.mday-1)%7)/7)+1;
 #endif
 
-	_atp->mv = _amp;
-	return _amp;
+	return &_amp;
 }
 
 
@@ -1062,16 +1045,15 @@ int check_byxxx(tmrec_p _trp, ac_tm_p _atp)
 {
 	int i;
 	ac_maxval_p _amp = NULL;
+
 	if(!_trp || !_atp)
 		return REC_ERR;
 	if(!_trp->byday && !_trp->bymday && !_trp->byyday && !_trp->bymonth 
 			&& !_trp->byweekno)
 		return REC_MATCH;
-	
+
 	_amp = ac_get_maxval(_atp);
-	if(!_amp)
-		return REC_NOMATCH;
-	
+
 	if(_trp->bymonth)
 	{
 		for(i=0; i<_trp->bymonth->nr; i++)
