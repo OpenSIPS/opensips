@@ -1069,7 +1069,12 @@ static int pv_get_tm_branch_idx(struct sip_msg *msg, pv_param_t *param,
 
 	if(msg==NULL || res==NULL)
 		return -1;
-	
+
+	if (route_type!=BRANCH_ROUTE && route_type!=ONREPLY_ROUTE) {
+		res->flags = PV_VAL_NULL;
+		return 0;
+	}
+
 	ch = int2str(_tm_branch_index, &l);
 
 	res->rs.s = ch;

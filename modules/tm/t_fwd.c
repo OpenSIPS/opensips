@@ -146,7 +146,7 @@ static inline int pre_print_uac_request( struct cell *t, int branch,
 		/* run branch route */
 		swap_route_type( backup_route_type, BRANCH_ROUTE);
 
-		_tm_branch_index = branch+1;
+		_tm_branch_index = branch;
 		if (run_top_route(branch_rlist[t->on_branch], request)&ACT_FL_DROP) {
 			LM_DBG("dropping branch <%.*s>\n", request->new_uri.len,
 					request->new_uri.s);
