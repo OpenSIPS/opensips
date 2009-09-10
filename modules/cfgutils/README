@@ -14,15 +14,15 @@ Elena-Ramona Modroiu
    rosdev.ro
    <ramona@rosdev.ro>
 
-Edited by:
-   
-   Sergio Gutierrez
+Sergio Gutierrez
+
+   <saguti@gmail.com>
 
    Copyright © 2007, 2008 1und1 Internet AG, BASIS AudioNet GmbH,
    Elena-Ramona Modroiu
    Revision History
-   Revision $Revision$ $Date: 2008-03-08 01:03:56 +0200
-                              (Sat, 08 Mar 2008) $
+   Revision $Revision$ $Date: 2009-07-16 13:54:34 +0300
+                              (Thu, 16 Jul 2009) $
      __________________________________________________________
 
    Table of Contents
@@ -257,9 +257,9 @@ rand_get_prob();
    Waits "time" seconds.
 
    Meaning of the parameters is as follows:
-     * time - Time to wait in seconds. String may be a pseudovariable.
-     In case that pseudovariable does not contain a numerical value, it
-     is evaluated to zero seconds.
+     * time - Time to wait in seconds. String may be a
+       pseudovariable. In case that variable does not contain a
+       numerical value, it is evaluated to zero seconds.
 
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.
@@ -268,29 +268,26 @@ rand_get_prob();
 ...
 sleep("1");
 ...
-...
 $avp(s:secs)="10";
 sleep("$avp(s:secs)");
 ...
 
-
 1.4.6.  usleep(time)
 
-   Waits "time" milli-seconds. 
+   Waits "time" micro-seconds.
 
    Meaning of the parameters is as follows:
-     * time - Time to wait in milli-seconds. String may be a pseudovariable.
-     In case that pseudovariable does not contain a numerical value, it is
-     evaluated to zero seconds.
+     * time - Time to wait in micro-seconds. The string may
+       contain a pseudovariable. In case that pseudovar does not
+       contain a numerical value, it is evaluated to zero seconds.
 
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.
 
    Example 1.10. usleep usage
 ...
-usleep("500");
+usleep("500000"); # sleep half of sec
 ...
-
 
 1.4.7.  abort()
 
