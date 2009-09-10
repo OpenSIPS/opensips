@@ -242,7 +242,7 @@ modparam("dialog", "dlg_flag", 4)
 		<title>Set <varname>bye_on_timeout_flag</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("dialog", "buy_on_timeout_flag", 6)
+modparam("dialog", "bye_on_timeout_flag", 6)
 ...
 </programlisting>
 		</example>
