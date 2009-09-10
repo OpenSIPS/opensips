@@ -307,7 +307,7 @@ modparam("dialog", "dlg_flag", 4)
 
    Example 1.5. Set bye_on_timeout_flag parameter
 ...
-modparam("dialog", "buy_on_timeout_flag", 6)
+modparam("dialog", "bye_on_timeout_flag", 6)
 ...
 
 1.5.6. timeout_avp (string)
