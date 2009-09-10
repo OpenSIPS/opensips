@@ -278,10 +278,10 @@ sleep("$avp(s:secs)");
 
 1.4.6.  usleep(time)
 
-   Waits "time" milli-seconds.
+   Waits "time" micro-seconds.
 
    Meaning of the parameters is as follows:
-     * time - Time to wait in milli-seconds. The string may
+     * time - Time to wait in micro-seconds. The string may
        contain a pseudovariable. In case that pseudovar does not
        contain a numerical value, it is evaluated to zero seconds.
 
@@ -290,7 +290,7 @@ sleep("$avp(s:secs)");
 
    Example 1.10. usleep usage
 ...
-usleep("500");
+usleep("500000"); # sleep half of sec
 ...
 
 1.4.7.  abort()

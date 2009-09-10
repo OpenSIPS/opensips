@@ -277,12 +277,12 @@ sleep("$avp(s:secs)");
 			<function moreinfo="none">usleep(time)</function>
 		</title>
 		<para>
-			Waits "time" milli-seconds.
+			Waits "time" micro-seconds.
 		</para>
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 			<listitem>
-				<para><emphasis>time</emphasis> - Time to wait in milli-seconds.
+				<para><emphasis>time</emphasis> - Time to wait in micro-seconds.
 				The string may contain a pseudovariable. In case that pseudovar
 				does not contain a numerical value, it is evaluated to zero seconds.
 				</para>
@@ -296,7 +296,7 @@ sleep("$avp(s:secs)");
 			<title><function>usleep</function> usage</title>
 			<programlisting format="linespecific">
 ...
-usleep("500");
+usleep("500000"); # sleep half of sec
 ...
 			</programlisting>
 		</example>
