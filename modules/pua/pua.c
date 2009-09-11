@@ -627,7 +627,7 @@ static void hashT_clean(unsigned int ticks,void *param)
 					}
 					p= p->next;
 					continue;
-				}	
+				}
 			    if(p->expires < now - 10)
 				{
 					q= p->next;
@@ -648,8 +648,6 @@ static void hashT_clean(unsigned int ticks,void *param)
 		}
 		lock_release(&HashT->p_records[i].lock);
 	}
-
-
 }
 
 int update_pua(ua_pres_t* p, unsigned int hash_code)
