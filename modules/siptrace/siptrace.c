@@ -403,7 +403,7 @@ static void trace_transaction(struct dlg_cell* dlg, int type,
 	n = 0;
 	do {
 		name = generate_val_name(n);
-		if (dlgb.fetch_dlg_value( dlg, name, &avp_value.s)!=0)
+		if (dlgb.fetch_dlg_value( dlg, name, &avp_value.s, 0)!=0)
 			break;
 		add_avp( traced_user_avp_type|AVP_VAL_STR, traced_user_avp, avp_value);
 		n++;

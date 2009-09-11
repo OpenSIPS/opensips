@@ -54,11 +54,11 @@ typedef int (*store_dlg_value_f)(struct dlg_cell *dlg,
 		str *name, str *val);
 
 typedef int (*fetch_dlg_value_f)(struct dlg_cell *dlg,
-		str *name, str *val);
+		str *name, str *val, int val_has_buf);
 
 
 int store_dlg_value(struct dlg_cell *dlg, str *name, str *val);
 
-int fetch_dlg_value(struct dlg_cell *dlg, str *name, str *val);
+int fetch_dlg_value(struct dlg_cell *dlg, str *name, str *val,int val_has_buf);
 
 #endif

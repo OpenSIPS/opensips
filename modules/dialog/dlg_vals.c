@@ -96,18 +96,20 @@ int store_dlg_value(struct dlg_cell *dlg, str *name, str *val)
 }
 
 
-static char *val_buf = NULL;
-static int val_buf_len = 0;
+static str val_buf = { NULL, 0};
 
 
-int fetch_dlg_value(struct dlg_cell *dlg, str *name, str *val)
+int fetch_dlg_value(struct dlg_cell *dlg, str *name,str *ival, int val_has_buf)
 {
 	struct dlg_val *dv;
 	unsigned int id;
+	str *val;
 
 	LM_DBG("looking for <%.*s>\n",name->len,name->s);
 
 	id = _get_name_id(name);
+
+	val = val_has_buf ? ival : &val_buf;
 
 	/* lock dialog */
 	dlg_val_lock( dlg );
@@ -118,18 +120,17 @@ int fetch_dlg_value(struct dlg_cell *dlg, str *name, str *val)
 		memcmp(name->s,dv->name.s,name->len)==0 ) {
 			LM_DBG("var found-> <%.*s>!\n",dv->val.len,dv->val.s);
 			/* found -> make a copy of the value under lock */
-			if (dv->val.len > val_buf_len) {
-				val_buf = (char*)pkg_realloc(val_buf,dv->val.len);
-				if (val_buf==NULL) {
+			if (dv->val.len > val->len) {
+				val->s = (char*)pkg_realloc(val->s,dv->val.len);
+				if (val->s==NULL) {
 					dlg_val_unlock( dlg );
 					LM_ERR("failed to do realloc for %d\n",dv->val.len);
 					return -1;
 				}
 			}
-			memcpy( val_buf, dv->val.s, dv->val.len );
-			/* return */
-			val->s = val_buf;
+			memcpy( val->s, dv->val.s, dv->val.len );
 			val->len = dv->val.len;
+			*ival = *val;
 
 			/* unlock dialog */
 			dlg_val_unlock( dlg );
@@ -163,7 +164,6 @@ int pv_parse_name(pv_spec_p sp, str *in)
 int pv_get_dlg_val(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res)
 {
 	struct dlg_cell *dlg;
-	str val;
 
 	if ( (dlg=get_current_dialog())==NULL )
 		return -1;
@@ -175,11 +175,11 @@ int pv_get_dlg_val(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res)
 		return -1;
 	}
 
-	if (fetch_dlg_value( dlg, &param->pvn.u.isname.name.s, &val)!=0)
+	if (fetch_dlg_value( dlg, &param->pvn.u.isname.name.s, &param->pvv, 1)!=0)
 		return pv_get_null(msg, param, res);
 
 	res->flags = PV_VAL_STR|PV_TYPE_INT;
-	res->rs = val;
+	res->rs = param->pvv;
 	return 0;
 }
 

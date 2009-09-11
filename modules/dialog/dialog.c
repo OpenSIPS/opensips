@@ -880,7 +880,7 @@ int w_fetch_dlg_value(struct sip_msg *msg, char *name, char *result)
 	if ( (dlg=get_current_dialog())==NULL )
 		return -1;
 
-	if (fetch_dlg_value( dlg, (str*)name, &val) ) {
+	if (fetch_dlg_value( dlg, (str*)name, &val, 0) ) {
 		LM_ERR("failed to fetch dialog value <%.*s>\n",
 			((str*)name)->len, ((str*)name)->s);
 		return -1;
