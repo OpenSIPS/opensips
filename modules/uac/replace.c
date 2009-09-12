@@ -533,10 +533,12 @@ static inline int restore_uri_reply(struct sip_msg *rpl,
 	struct to_body *body;
 	str new_val;
 	int len;
+	char *p;
 
 	/* duplicate the new hdr value */
 	body = (struct to_body*)req_hdr->parsed;
-	len =  body->uri.s + body->uri.len - body->body.s;
+	for( p = body->uri.s+body->uri.len, len=0; isspace(p[len]) ; len++ );
+	len =  p - body->body.s + ((p[len]=='>') ? (len+1) : 0) ;
 	new_val.s = pkg_malloc( len );
 	if (new_val.s==0) {
 		LM_ERR("no more pkg mem\n");
@@ -546,7 +548,8 @@ static inline int restore_uri_reply(struct sip_msg *rpl,
 	new_val.len = len;
 
 	body = (struct to_body*)rpl_hdr->parsed;
-	len =  body->uri.s + body->uri.len - body->body.s;
+	for( p = body->uri.s+body->uri.len, len=0; isspace(p[len]) ; len++ );
+	len =  p - body->body.s + ((p[len]=='>') ? (len+1) : 0) ;
 	LM_DBG("removing <%.*s>\n", len,body->body.s);
 	l = del_lump( rpl, body->body.s-rpl->buf, len, 0);
 	if (l==0) {
