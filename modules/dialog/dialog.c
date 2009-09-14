@@ -287,14 +287,19 @@ static int fixup_profile(void** param, int param_no)
 }
 
 
+
 static int fixup_get_profile2(void** param, int param_no)
 {
 	pv_spec_t *sp;
 	int ret;
+	action_elem_t * p;
+	
 
 	if (param_no==1) {
 		return fixup_profile(param, 1);
 	} else if (param_no==2) {
+	
+	
 		ret = fixup_pvar(param);
 		if (ret<0) return ret;
 		sp = (pv_spec_t*)(*param);
@@ -302,6 +307,14 @@ static int fixup_get_profile2(void** param, int param_no)
 			LM_ERR("return must be an AVP or SCRIPT VAR!\n");
 			return E_SCRIPT;
 		}
+		
+		p = list_entry(param, action_elem_t, u.data);
+		p++;
+		p->u.data = *param;
+		
+		*param = NULL;
+		
+		
 	}
 	return 0;
 }
@@ -309,12 +322,24 @@ static int fixup_get_profile2(void** param, int param_no)
 
 static int fixup_get_profile3(void** param, int param_no)
 {
+	int ret;
+	pv_spec_t *sp;
+	
 	if (param_no==1) {
 		return fixup_profile(param, 1);
 	} else if (param_no==2) {
 		return fixup_profile(param, 2);
 	} else if (param_no==3) {
-		return fixup_get_profile2( param, 2);
+	
+		ret = fixup_pvar(param);
+		if (ret<0) return ret;
+		sp = (pv_spec_t*)(*param);
+		if (sp->type!=PVT_AVP && sp->type!=PVT_SCRIPTVAR) {
+			LM_ERR("return must be an AVP or SCRIPT VAR!\n");
+			return E_SCRIPT;
+		}
+		
+		
 	}
 	return 0;
 }
