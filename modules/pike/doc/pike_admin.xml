@@ -7,8 +7,10 @@
 	<section>
 	<title>Overview</title>
 	<para>
-		The module keeps trace of all (or selected ones) incoming request's IP
-		source and blocks the ones that exceeded some limit. 
+		The module provides a simple mechanism for DOS protection - DOS based
+		on floods at network level. The module keeps trace of all (or selected 
+		ones) IPs of incoming SIP traffic (as source IP) and blocks the ones 
+		that exceeded some limit.
 		Works simultaneous for IPv4 and IPv6 addresses.
 	</para>
 	<para>
@@ -17,6 +19,41 @@
 		the administator decision (via scripting).
 	</para>
 	</section>
+
+	<section>
+	<title>How to use</title>
+		<para>
+		There are 2 ways of using this module (as detecting flood attacks and
+		as taking the right action to limit the impact on the system):
+		<itemizedlist>
+		<listitem>
+			<para>
+				<emphasis>manual</emphasis> - from routing script you can force
+				the check of the source IP of an incoming requests, using
+				"pike_check_req" function. Note that this checking works only
+				for SIP requests and you can decide (based on scripting logic)
+				what source IPs to be monitored and what action to be taken
+				when a flood is detected.
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+				<emphasis>automatic</emphasis> - the module will install 
+				internal hooks to catch all incoming requests and replies (even
+				if not well formed from SIP point of view) - more or less the
+				module will monitor all incoming packages (from the network) on
+				the SIP sockets. Each time the source IP of a package needs to 
+				be analize (to see if trusted or not), the module will run a
+				scripr route - see "check_route" module parameter -, where, 
+				based on custom logic, you can decide if that IP needs to be
+				monitored for fooding or not. As action, when flood is
+				detected, the module will automatically drop the packages.
+			</para>
+		</listitem>
+		</itemizedlist>
+		</para>
+	</section>
+
 	<section>
 	<title>Dependencies</title>
 	<section>
@@ -118,6 +155,40 @@ modparam("pike", "remove_latency", 130)
 </programlisting>
 		</example>
 	</section>
+
+	<section>
+		<title><varname>check_route</varname> (integer)</title>
+		<para>
+		The name of the script route to be triggers (in automatic way) when a
+		package is received from the network. If you do a "drop" in this route,
+		it will indicate to the module that the source IP of the package does
+		not need to be monitored. Otherwise, the source IP will be
+		automatically monitered.
+		</para>
+		<para>
+		By defining this parameter, the automatic checking mode is enabled.
+		</para>
+		<para>
+		<emphasis>
+			Default value is NONE (no auto mode).
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>check_route</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("pike", "check_route", "pike")
+...
+route[pike]{
+    if (src_ip==111.222.111.222)  /*trusted, do not check it*/
+        drop;
+    /* all other IPs are checked*/
+}
+....
+</programlisting>
+		</example>
+	</section>
+
 	<section>
 		<title><varname>pike_log_level</varname> (integer)</title>
 		<para>

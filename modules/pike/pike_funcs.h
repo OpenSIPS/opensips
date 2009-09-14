@@ -28,7 +28,10 @@
 #include "../../locking.h"
 
 
-int  pike_check_req(struct sip_msg *msg, char *foo, char *bar);
+int  pike_check_req(struct sip_msg *msg);
+int run_pike_route( struct sip_msg *msg, void *param );
+
+
 void clean_routine(unsigned int, void*);
 void swap_routine(unsigned int, void*);
 

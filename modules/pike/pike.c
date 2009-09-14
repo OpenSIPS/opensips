@@ -41,6 +41,7 @@
 #include "../../sr_module.h"
 #include "../../error.h"
 #include "../../dprint.h"
+#include "../../script_cb.h"
 #include "../../ut.h"
 #include "../../mem/shm_mem.h"
 #include "../../timer.h"
@@ -62,6 +63,7 @@ static int pike_exit(void);
 /* parameters */
 static int time_unit = 2;
 static int max_reqs  = 30;
+static char *pike_route_s = NULL;
 int timeout   = 120;
 int pike_log_level = L_WARN;
 
@@ -79,7 +81,8 @@ static param_export_t params[]={
 	{"sampling_time_unit",    INT_PARAM,  &time_unit},
 	{"reqs_density_per_unit", INT_PARAM,  &max_reqs},
 	{"remove_latency",        INT_PARAM,  &timeout},
-	{"pike_log_level",        INT_PARAM, &pike_log_level},
+	{"pike_log_level",        INT_PARAM,  &pike_log_level},
+	{"check_route",           STR_PARAM,  &pike_route_s},
 	{0,0,0}
 };
 
@@ -111,6 +114,8 @@ struct module_exports exports= {
 
 static int pike_init(void)
 {
+	int rt;
+
 	LM_INFO("initializing...\n");
 
 	/* alloc the timer lock */
@@ -142,6 +147,21 @@ static int pike_init(void)
 	/* registering timing functions  */
 	register_timer( clean_routine , 0, 1 );
 	register_timer( swap_routine , 0, time_unit );
+
+	if (pike_route_s && *pike_route_s) {
+		rt = get_script_route_ID_by_name( pike_route_s, rlist, RT_NO);
+		if (rt<1) {
+			LM_ERR("route <%s> does not exist\n",pike_route_s);
+			return -1;
+		}
+
+		/* register the script callback to get all requests and replies */
+		if (register_script_cb( run_pike_route ,
+		PARSE_ERR_CB|REQ_TYPE_CB|RPL_TYPE_CB|PRE_SCRIPT_CB, (void*)rt )!=0 ) {
+			LM_ERR("failed to register script callbacks\n");
+			goto error3;
+		}
+	}
 
 	return 0;
 error3:

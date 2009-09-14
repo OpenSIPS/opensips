@@ -43,6 +43,8 @@
 #include "../../timer.h"
 #include "../../ip_addr.h"
 #include "../../resolve.h"
+#include "../../action.h"
+#include "../../route.h"
 #include "ip_tree.h"
 #include "pike_funcs.h"
 #include "timer.h"
@@ -57,7 +59,7 @@ extern int               pike_log_level;
 
 
 
-int pike_check_req(struct sip_msg *msg, char *foo, char *bar)
+int pike_check_req(struct sip_msg *msg)
 {
 	struct ip_node *node;
 	struct ip_node *father;
@@ -158,6 +160,19 @@ int pike_check_req(struct sip_msg *msg, char *foo, char *bar)
 		}
 		return -1;
 	}
+	return 1;
+}
+
+
+
+int run_pike_route( struct sip_msg *msg, void *rt ) {
+	/* the check was dropped */
+	if ( run_top_route( rlist[(int)(long)rt].a, msg)&ACT_FL_DROP)
+		return 1;
+
+	/* run the check */
+	if (pike_check_req(msg)<0)
+		return 0;
 	return 1;
 }
 
