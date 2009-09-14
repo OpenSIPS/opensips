@@ -12,8 +12,8 @@ Bogdan-Andrei Iancu
 
    Copyright © 2005-2009 voice-system.ro
    Revision History
-   Revision $Revision$ $Date: 2009-07-21 10:45:05 +0300
-                              (Tue, 21 Jul 2009) $
+   Revision $Revision$ $Date: 2009-09-14 22:11:57 +0300
+                              (Mon, 14 Sep 2009) $
      __________________________________________________________
 
    Table of Contents
@@ -85,10 +85,10 @@ Chapter 1. Admin Guide
        from SIP point of view) - more or less the module will
        monitor all incoming packages (from the network) on the SIP
        sockets. Each time the source IP of a package needs to be
-       analize (to see if trusted or not), the module will run a
-       scripr route - see "check_route" module parameter -, where,
+       analyse (to see if trusted or not), the module will run a
+       script route - see "check_route" module parameter -, where,
        based on custom logic, you can decide if that IP needs to
-       be monitored for fooding or not. As action, when flood is
+       be monitored for flooding or not. As action, when flood is
        detected, the module will automatically drop the packages.
 
 1.3. Dependencies

@@ -43,10 +43,10 @@
 				if not well formed from SIP point of view) - more or less the
 				module will monitor all incoming packages (from the network) on
 				the SIP sockets. Each time the source IP of a package needs to 
-				be analize (to see if trusted or not), the module will run a
-				scripr route - see "check_route" module parameter -, where, 
+				be analyse (to see if trusted or not), the module will run a
+				script route - see "check_route" module parameter -, where, 
 				based on custom logic, you can decide if that IP needs to be
-				monitored for fooding or not. As action, when flood is
+				monitored for flooding or not. As action, when flood is
 				detected, the module will automatically drop the packages.
 			</para>
 		</listitem>
