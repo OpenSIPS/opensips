@@ -49,14 +49,16 @@ typedef struct benchmark_timer
 	unsigned int id;
 	int enabled;
 	bm_timeval_t *start;    /* Current timer run */
-	long long calls;		/* Number of runs of this timer */
+	int calls;		/* Number of runs of this timer */
 	long long sum;			/* Accumulated runtime of this timer */
 	long long last_sum;		/* Accumulated runtime since last logging */
 	long long last_max;		/* Minimum in current period (between
 							   granularity) */
 	long long last_min;		/* Maximum ... */
+	long long global_calls;	/* Number of runs of this timer, since start */
 	long long global_max;	/* Global minimum, since start */
 	long long global_min;	/* ...    maximum ... */
+	gen_lock_t* lock;
 	struct benchmark_timer *next;
 } benchmark_timer_t;
 

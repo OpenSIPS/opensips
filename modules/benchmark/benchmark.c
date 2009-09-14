@@ -30,6 +30,7 @@
 #include <sys/time.h>
 #include <stdlib.h>
 
+#include "../../locking.h"
 #include "../../sr_module.h"
 #include "../../mi/mi.h"
 #include "../../mem/mem.h"
@@ -39,10 +40,14 @@
 
 #include "../../mem/shm_mem.h"
 
+#define MI_CALL_INVALID_S              "Call not valid for granularity!=0"
+#define MI_CALL_INVALID_LEN            (sizeof(MI_CALL_INVALID_S)-1)
+
+#define STARTING_MIN_VALUE 0xffffffff
 
 /* Exported functions */
-int bm_start_timer(struct sip_msg* _msg, char* timer, char *foobar);
-int bm_log_timer(struct sip_msg* _msg, char* timer, char* mystr);
+static int bm_start_timer(struct sip_msg* _msg, char* timer, char *foobar);
+static int bm_log_timer(struct sip_msg* _msg, char* timer, char* mystr);
 
 /*
  * Module destroy function prototype
@@ -120,16 +125,18 @@ static param_export_t params[] = {
 /*
  * Exported MI functions
  */
-struct mi_root* mi_bm_enable_global(struct mi_root *cmd, void *param);
-struct mi_root* mi_bm_enable_timer(struct mi_root *cmd, void *param);
-struct mi_root* mi_bm_granularity(struct mi_root *cmd, void *param);
-struct mi_root* mi_bm_loglevel(struct mi_root *cmd, void *param);
+static struct mi_root* mi_bm_enable_global(struct mi_root *cmd, void *param);
+static struct mi_root* mi_bm_enable_timer(struct mi_root *cmd, void *param);
+static struct mi_root* mi_bm_granularity(struct mi_root *cmd, void *param);
+static struct mi_root* mi_bm_loglevel(struct mi_root *cmd, void *param);
+static struct mi_root* mi_bm_poll_results(struct mi_root *cmd, void *param);
 
 static mi_export_t mi_cmds[] = {
 	{ "bm_enable_global", mi_bm_enable_global,  0,  0,  0  },
 	{ "bm_enable_timer",  mi_bm_enable_timer,   0,  0,  0  },
 	{ "bm_granularity",   mi_bm_granularity,    0,  0,  0  },
 	{ "bm_loglevel",      mi_bm_loglevel,       0,  0,  0  },
+	{ "bm_poll_results",  mi_bm_poll_results,   0,  0,  0  },
 	{ 0, 0, 0, 0, 0}
 };
 
@@ -178,6 +185,10 @@ static int mod_init(void) {
 	bm_mycfg = (bm_cfg_t*)shm_malloc(sizeof(bm_cfg_t));
 	memset(bm_mycfg, 0, sizeof(bm_cfg_t));
 	bm_mycfg->enable_global = bm_enable_global;
+	if (bm_granularity<0) {
+		LM_ERR("benchmark granularity cannot be negative\n");
+		return -1;
+	}
 	bm_mycfg->granularity   = bm_granularity;
 	bm_mycfg->loglevel      = bm_loglevel;
 
@@ -213,27 +224,34 @@ static void destroy(void)
 		shm_free(bm_mycfg);
 	}
 }
-void reset_timer(int i)
-{
-	if(bm_mycfg==NULL || bm_mycfg->tindex[i]==NULL)
-		return;
-	bm_mycfg->tindex[i]->calls = 0;
-	bm_mycfg->tindex[i]->sum = 0;
-	bm_mycfg->tindex[i]->last_max = 0;
-	bm_mycfg->tindex[i]->last_min = 0xffffffff;
-	bm_mycfg->tindex[i]->last_sum = 0;
-	bm_mycfg->tindex[i]->global_max = 0;
-	bm_mycfg->tindex[i]->global_min = 0xffffffff;
+
+/* timer should be locked when calling this function */
+static void soft_reset_timer(benchmark_timer_t *timer) {
+	timer->calls = 0;
+	timer->last_sum = 0;
+	timer->last_max = 0;
+	timer->last_min = STARTING_MIN_VALUE; 
 }
 
-void reset_timers(void)
+static void reset_timer(int i)
 {
-	int i;
-	if(bm_mycfg==NULL)
-		return;
+	benchmark_timer_t *timer;
 
-	for (i = 0; i < bm_mycfg->nrtimers; i++)
-		reset_timer(i);
+	if(bm_mycfg==NULL || (timer = bm_mycfg->tindex[i])==NULL)
+		return;
+	
+	lock_get(timer->lock);
+
+	timer->calls = 0;
+	timer->sum = 0;
+	timer->last_max = 0;
+	timer->last_min = STARTING_MIN_VALUE;
+	timer->last_sum = 0;
+	timer->global_calls = 0;
+	timer->global_max = 0;
+	timer->global_min = STARTING_MIN_VALUE;
+	
+	lock_release(timer->lock);
 }
 
 /*
@@ -244,7 +262,7 @@ void reset_timers(void)
  *  1 - Timing enabled for all timers
  */
 
-inline int timer_active(unsigned int id)
+static inline int timer_active(unsigned int id)
 {
 	if (bm_mycfg->enable_global > 0 || bm_mycfg->timers[id].enabled > 0)
 		return 1;
@@ -257,7 +275,7 @@ inline int timer_active(unsigned int id)
  * start_timer()
  */
 
-int _bm_start_timer(unsigned int id)
+static int _bm_start_timer(unsigned int id)
 {
 	if (timer_active(id))
 	{
@@ -271,7 +289,7 @@ int _bm_start_timer(unsigned int id)
 	return 1;
 }
 
-int bm_start_timer(struct sip_msg* _msg, char* timer, char *foobar)
+static int bm_start_timer(struct sip_msg* _msg, char* timer, char *foobar)
 {
 	return _bm_start_timer((unsigned int)(unsigned long)timer);
 }
@@ -281,11 +299,12 @@ int bm_start_timer(struct sip_msg* _msg, char* timer, char *foobar)
  * log_timer()
  */
 
-int _bm_log_timer(unsigned int id)
+static int _bm_log_timer(unsigned int id)
 {
 	/* BM_CLOCK_REALTIME */
 	bm_timeval_t now;
 	unsigned long long tdiff;
+	benchmark_timer_t *timer;
 
 	if (!timer_active(id))
 		return 1;
@@ -296,7 +315,8 @@ int _bm_log_timer(unsigned int id)
 		return -1;
 	}
 	
-	tdiff = bm_diff_time(bm_mycfg->tindex[id]->start, &now);
+	timer = bm_mycfg->tindex[id];
+	tdiff = bm_diff_time(timer->start, &now);
 	_bm_last_time_diff = (int)tdiff;
 
 	/* What to do
@@ -304,56 +324,59 @@ int _bm_log_timer(unsigned int id)
 	 * - if granularity hit: Log, reset min/max
 	 */
 
-	bm_mycfg->tindex[id]->sum += tdiff;
-	bm_mycfg->tindex[id]->last_sum += tdiff;
-	bm_mycfg->tindex[id]->calls++;
+	lock_get(timer->lock);
+
+	timer->sum += tdiff;
+	timer->last_sum += tdiff;
+	timer->calls++;
+	timer->global_calls++;
 	
-	if (tdiff < bm_mycfg->tindex[id]->last_min)
-		bm_mycfg->tindex[id]->last_min = tdiff;
+	if (tdiff < timer->last_min)
+		timer->last_min = tdiff;
 
-	if (tdiff > bm_mycfg->tindex[id]->last_max)
-		bm_mycfg->tindex[id]->last_max = tdiff;
+	if (tdiff > timer->last_max)
+		timer->last_max = tdiff;
 
-	if (tdiff < bm_mycfg->tindex[id]->global_min)
-		bm_mycfg->tindex[id]->global_min = tdiff;
+	if (tdiff < timer->global_min)
+		timer->global_min = tdiff;
 
-	if (tdiff > bm_mycfg->tindex[id]->global_max)
-		bm_mycfg->tindex[id]->global_max = tdiff;
+	if (tdiff > timer->global_max)
+		timer->global_max = tdiff;
 
 
-	if ((bm_mycfg->tindex[id]->calls % bm_mycfg->granularity) == 0)
+	if (bm_mycfg->granularity > 0 && timer->calls == bm_mycfg->granularity)
 	{
 		LM_GEN1(bm_mycfg->loglevel, "benchmark (timer %s [%d]): %llu ["
 			" msgs/total/min/max/avg - LR:"
 			" %i/%lld/%lld/%lld/%f | GB: %lld/%lld/%lld/%lld/%f]\n",
-			bm_mycfg->tindex[id]->name,
+			timer->name,
 			id,
 			tdiff,
-			bm_mycfg->granularity,
-			bm_mycfg->tindex[id]->last_sum,
-			bm_mycfg->tindex[id]->last_min,
-			bm_mycfg->tindex[id]->last_max,
-			((double)bm_mycfg->tindex[id]->last_sum)/bm_mycfg->granularity,
-			bm_mycfg->tindex[id]->calls,
-			bm_mycfg->tindex[id]->sum,
-			bm_mycfg->tindex[id]->global_min,
-			bm_mycfg->tindex[id]->global_max,
-			((double)bm_mycfg->tindex[id]->sum)/bm_mycfg->tindex[id]->calls);
+			timer->calls,
+			timer->last_sum,
+			timer->last_min,
+			timer->last_max,
+			((double)timer->last_sum)/bm_mycfg->granularity,
+			timer->global_calls,
+			timer->sum,
+			timer->global_min,
+			timer->global_max,
+			((double)timer->sum)/timer->calls);
 
-		bm_mycfg->tindex[id]->last_sum = 0;
-		bm_mycfg->tindex[id]->last_max = 0;
-		bm_mycfg->tindex[id]->last_min = 0xffffffff;
+		soft_reset_timer(timer);
 	}
+	
+	lock_release(timer->lock);
 
 	return 1;
 }	
 
-int bm_log_timer(struct sip_msg* _msg, char* timer, char* mystr)
+static int bm_log_timer(struct sip_msg* _msg, char* timer, char* mystr)
 {
 	return _bm_log_timer((unsigned int)(unsigned long)timer);
 }
 
-int _bm_register_timer(char *tname, int mode, unsigned int *id)
+static int _bm_register_timer(char *tname, int mode, unsigned int *id)
 {
 	benchmark_timer_t *bmt = 0;
 	benchmark_timer_t **tidx = 0;
@@ -384,10 +407,18 @@ int _bm_register_timer(char *tname, int mode, unsigned int *id)
 	}
 	memset(bmt, 0, sizeof(benchmark_timer_t));
 
+	bmt->lock = lock_alloc();
+	if(bmt->lock == NULL) {
+		shm_free(bmt);
+		LM_ERR("no more shm\n");
+		return -1;
+	}
+
 	/* private memory, otherwise we have races */
 	bmt->start = (bm_timeval_t*)pkg_malloc(sizeof(bm_timeval_t)); 
 	if(bmt->start == NULL)
 	{
+		lock_dealloc(bmt->lock);
 		shm_free(bmt);
 		LM_ERR("no more pkg\n");
 		return -1;
@@ -468,7 +499,7 @@ static inline char * pkg_strndup( char* _p, int _len)
 /*
  * Expects 1 node: 0 for disable, 1 for enable
  */
-struct mi_root* mi_bm_enable_global(struct mi_root *cmd, void *param)
+static struct mi_root* mi_bm_enable_global(struct mi_root *cmd, void *param)
 {
 	struct mi_node *node;
 
@@ -501,7 +532,7 @@ struct mi_root* mi_bm_enable_global(struct mi_root *cmd, void *param)
 	return init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
 }
 
-struct mi_root* mi_bm_enable_timer(struct mi_root *cmd, void *param)
+static struct mi_root* mi_bm_enable_timer(struct mi_root *cmd, void *param)
 {
 	struct mi_node *node;
 
@@ -541,7 +572,7 @@ struct mi_root* mi_bm_enable_timer(struct mi_root *cmd, void *param)
 	return init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
 }
 
-struct mi_root* mi_bm_granularity(struct mi_root *cmd, void *param)
+static struct mi_root* mi_bm_granularity(struct mi_root *cmd, void *param)
 {
 	struct mi_node *node;
 
@@ -564,7 +595,7 @@ struct mi_root* mi_bm_granularity(struct mi_root *cmd, void *param)
 	if ((*e1 != '\0') || (*p1 == '\0'))
 		return init_mi_tree( 400, MI_BAD_PARM_S, MI_BAD_PARM_LEN);
 
-	if (v1 < 1)
+	if (v1 < 0)
 		return init_mi_tree( 400, MI_BAD_PARM_S, MI_BAD_PARM_LEN);
 
 	bm_mycfg->granularity = v1;
@@ -572,7 +603,7 @@ struct mi_root* mi_bm_granularity(struct mi_root *cmd, void *param)
 	return init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
 }
 
-struct mi_root* mi_bm_loglevel(struct mi_root *cmd, void *param)
+static struct mi_root* mi_bm_loglevel(struct mi_root *cmd, void *param)
 {
 	struct mi_node *node;
 
@@ -601,6 +632,52 @@ struct mi_root* mi_bm_loglevel(struct mi_root *cmd, void *param)
 	bm_mycfg->enable_global = v1;
 
 	return init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
+}
+
+static void add_results_node(struct mi_node *node, benchmark_timer_t *timer) {
+	struct mi_node *timer_node;
+
+	timer_node = addf_mi_node_child(node, 0, 0, 0, "%s", timer->name);
+	addf_mi_node_child(timer_node, 0, 0, 0,
+			"%i/%lld/%lld/%lld/%f",
+			timer->calls,
+			timer->last_sum,
+			timer->last_min==STARTING_MIN_VALUE?0:timer->last_min,
+			timer->last_max,
+			timer->calls?((double)timer->last_sum)/timer->calls:0.);
+	addf_mi_node_child(timer_node, 0, 0, 0,
+			"%lld/%lld/%lld/%lld/%f",
+			timer->global_calls,
+			timer->sum,
+			timer->global_min==STARTING_MIN_VALUE?0:timer->global_min,
+			timer->global_max,
+			timer->global_calls?((double)timer->sum)/timer->global_calls:0.);
+}
+
+static struct mi_root* mi_bm_poll_results(struct mi_root *cmd, void *param)
+{
+	struct mi_root *rpl_tree;
+	benchmark_timer_t *bmt;
+	
+	if (bm_mycfg->granularity!=0)
+		return init_mi_tree( 400, MI_CALL_INVALID_S, MI_CALL_INVALID_LEN);
+
+	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
+	if (rpl_tree==NULL) {
+		LM_ERR("Could not allocate the reply mi tree");
+		return NULL;
+	}
+
+	for(bmt = bm_mycfg->timers; bmt!=NULL; bmt=bmt->next) {
+		lock_get(bmt->lock);
+
+		add_results_node(&rpl_tree->node, bmt);
+		soft_reset_timer(bmt);
+		
+		lock_release(bmt->lock);
+	}
+
+	return rpl_tree;
 }
 
 /* item functions */
