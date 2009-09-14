@@ -46,6 +46,8 @@ static struct script_cb *post_req_cb=0;
 static struct script_cb *pre_rpl_cb=0;
 static struct script_cb *post_rpl_cb=0;
 
+static struct script_cb *parse_err_cb=0;
+
 static unsigned int cb_id=0;
 
 
@@ -80,14 +82,19 @@ static inline int add_callback( struct script_cb **list,
 int register_script_cb( cb_function f, int type, void *param )
 {
 	/* type checkings */
-	if ( (type&(REQ_TYPE_CB|RPL_TYPE_CB))==0 ) {
-		LM_CRIT("request or reply type not specified\n");
+	if ( (type&(REQ_TYPE_CB|RPL_TYPE_CB|PARSE_ERR_CB))==0 ) {
+		LM_CRIT("request / reply / error type not specified\n");
 		goto error;
 	}
-	if ( (type&(PRE_SCRIPT_CB|POST_SCRIPT_CB))==0 ||
+	if ( (type&(PRE_SCRIPT_CB|POST_SCRIPT_CB|PARSE_ERR_CB))==0 ||
 	(type&PRE_SCRIPT_CB && type&POST_SCRIPT_CB) ) {
 		LM_CRIT("callback POST or PRE type must be exactly one\n");
 		goto error;
+	}
+
+	if (type&PARSE_ERR_CB) {
+		if (add_callback( &parse_err_cb, f, param)<0)
+			goto add_error;
 	}
 
 	if (type&REQ_TYPE_CB) {
@@ -137,6 +144,7 @@ void destroy_script_cb(void)
 	destroy_cb_list( &post_req_cb );
 	destroy_cb_list( &pre_rpl_cb  );
 	destroy_cb_list( &post_req_cb );
+	destroy_cb_list( &parse_err_cb );
 }
 
 
@@ -178,5 +186,10 @@ int exec_post_req_cb( struct sip_msg *msg)
 int exec_post_rpl_cb( struct sip_msg *msg)
 {
 	return exec_post_cb( msg, post_rpl_cb);
+}
+
+int exec_parse_err_cb( struct sip_msg *msg)
+{
+	return exec_post_cb( msg, parse_err_cb);
 }
 

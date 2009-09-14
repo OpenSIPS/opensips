@@ -41,6 +41,7 @@ typedef int (cb_function)( struct sip_msg *msg, void *param );
 #define POST_SCRIPT_CB   (1<<1)
 #define REQ_TYPE_CB      (1<<2)
 #define RPL_TYPE_CB      (1<<3)
+#define PARSE_ERR_CB     (1<<4)
 
 
 struct script_cb{
@@ -58,6 +59,8 @@ int exec_post_req_cb( struct sip_msg *msg);
 
 int exec_pre_rpl_cb( struct sip_msg *msg);
 int exec_post_rpl_cb( struct sip_msg *msg);
+
+int exec_parse_err_cb( struct sip_msg *msg);
 
 #endif
 

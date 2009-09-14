@@ -90,7 +90,7 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info)
 	msg=pkg_malloc(sizeof(struct sip_msg));
 	if (msg==0) {
 		LM_ERR("no pkg mem left for sip_msg\n");
-		goto error00;
+		goto error;
 	}
 	msg_no++;
 	/* number of vias parsed -- good for diagnostic info in replies */
@@ -100,9 +100,6 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info)
 	/* fill in msg */
 	msg->buf=buf;
 	msg->len=len;
-	/* zero termination (termination of orig message bellow not that
-	   useful as most of the work is done with scratch-pad; -jiri  */
-	/* buf[len]=0; */ /* WARNING: zero term removed! */
 	msg->rcv=*rcv_info;
 	msg->id=msg_no;
 	msg->set_global_address=default_global_address;
@@ -110,7 +107,7 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info)
 	
 	if (parse_msg(buf,len, msg)!=0){
 		LM_ERR("parse_msg failed\n");
-		goto error02;
+		goto parse_error;
 	}
 	LM_DBG("After parse_msg...\n");
 
@@ -125,7 +122,7 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info)
 			/* no via, send back error ? */
 			LM_ERR("no via found in request\n");
 			update_stat( err_reqs, 1);
-			goto error02;
+			goto parse_error;
 		}
 		/* check if necessary to add receive?->moved to forward_req */
 		/* check for the alias stuff */
@@ -173,7 +170,7 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info)
 			/* no via, send back error ? */
 			LM_ERR("no via found in reply\n");
 			update_stat( err_rpls, 1);
-			goto error02;
+			goto parse_error;
 		}
 
 		/* set reply route type --bogdan*/
@@ -215,10 +212,11 @@ end:
 	free_sip_msg(msg);
 	pkg_free(msg);
 	return 0;
-error02:
+parse_error:
+	exec_parse_err_cb(msg);
 	free_sip_msg(msg);
 	pkg_free(msg);
-error00:
+error:
 	return -1;
 }
 
