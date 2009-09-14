@@ -115,7 +115,7 @@ static cmd_export_t cmds[]={
 /* Exported parameters */
 static param_export_t params[] = {
 	{"rr_from_store_param", STR_PARAM,                &rr_from_param.s       },
-	{"rr_to_store_param",   STR_PARAM,                &rr_from_param.s       },
+	{"rr_to_store_param",   STR_PARAM,                &rr_to_param.s         },
 	{"restore_mode",        STR_PARAM,                &restore_mode_str      },
 	{"restore_passwd",      STR_PARAM,                &uac_passwd.s          },
 	{"credential",          STR_PARAM|USE_FUNC_PARAM, (void*)&add_credential },
