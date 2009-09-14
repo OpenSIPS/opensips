@@ -138,6 +138,7 @@ typedef struct _pv_param
 {
 	pv_name_t    pvn; /*!< PV name */
 	pv_index_t   pvi; /*!< PV index */
+	str          pvv; /*!< PV value buffer */
 } pv_param_t, *pv_param_p;
 
 typedef int (*pv_getf_t) (struct sip_msg*,  pv_param_t*, pv_value_t*);

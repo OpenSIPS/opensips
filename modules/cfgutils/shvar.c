@@ -37,7 +37,6 @@ int shvar_locks_no=16;
 gen_lock_set_t* shvar_locks=0;
 
 static sh_var_t *sh_vars = 0;
-static str shv_cpy = {0, 0};
 static script_var_t *sh_local_vars = 0;
 static pv_spec_list_t *sh_pv_list = 0;
 static int shvar_initialized = 0;
@@ -483,24 +482,24 @@ int pv_get_shvar(struct sip_msg *msg,  pv_param_t *param,
 	lock_shvar(shv);
 	if(shv->v.flags&VAR_VAL_STR)
 	{
-		if(shv_cpy.s==NULL || shv_cpy.len < shv->v.value.s.len)
+		if(param->pvv.s==NULL || param->pvv.len < shv->v.value.s.len)
 		{
-			if(shv_cpy.s!=NULL)
-				pkg_free(shv_cpy.s);
-			shv_cpy.s = (char*)pkg_malloc(shv->v.value.s.len*sizeof(char));
-			if(shv_cpy.s==NULL)
+			if(param->pvv.s!=NULL)
+				pkg_free(param->pvv.s);
+			param->pvv.s = (char*)pkg_malloc(shv->v.value.s.len*sizeof(char));
+			if(param->pvv.s==NULL)
 			{
 				unlock_shvar(shv);
 				LM_ERR("no more pkg mem\n");
 				return pv_get_null(msg, param, res);
 			}
 		}
-		strncpy(shv_cpy.s, shv->v.value.s.s, shv->v.value.s.len);
-		shv_cpy.len = shv->v.value.s.len;
+		strncpy(param->pvv.s, shv->v.value.s.s, shv->v.value.s.len);
+		param->pvv.len = shv->v.value.s.len;
 		
 		unlock_shvar(shv);
 		
-		res->rs = shv_cpy;
+		res->rs = param->pvv;
 		res->flags = PV_VAL_STR;
 	} else {
 		res->ri = shv->v.value.n;
