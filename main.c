@@ -658,7 +658,7 @@ static int main_loop(void)
 	int  i;
 	pid_t pid;
 	struct socket_info* si;
-	int* startup_done;
+	int* startup_done = NULL;
 
 	chd_rank=0;
 
@@ -704,7 +704,8 @@ static int main_loop(void)
 			goto error;
 		}
 
-		run_startup_route();
+		if (startup_rlist.a)
+			run_startup_route();
 
 		is_main=1;
 		return udp_rcv_loop();
