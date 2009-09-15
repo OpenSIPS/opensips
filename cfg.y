@@ -2090,7 +2090,7 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 						i_tmp = get_script_route_idx( $3, rlist, RT_NO, 0);
 						if (i_tmp==-1) yyerror("too many script routes");
 						mk_action2( $$, ROUTE_T, NUMBER_ST,
-							0, (void*)i_tmp, 0);
+							0, (void*)(long)i_tmp, 0);
 					}
 		| ROUTE error { $$=0; yyerror("missing '(' or ')' ?"); }
 		| ROUTE LPAREN error RPAREN { $$=0; yyerror("bad route"
