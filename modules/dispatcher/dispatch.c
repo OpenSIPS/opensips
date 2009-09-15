@@ -215,11 +215,10 @@ int add_dest2list(int id, str uri, int flags, int weight, str attrs,
 	hn[puri.host.len]='\0';
 
 	/* Do a DNS-Lookup for the Host-Name: */
-	he=resolvehost(hn, 1);
+	he=resolvehost(hn, 0);
 	if (he==0)
 	{
-		LM_ERR("could not resolve %.*s\n", puri.host.len, puri.host.s);
-		pkg_free(hn);
+		LM_ERR("could not resolve %s\n", hn);
 		goto err;
 	}
 	/* Free the hostname */
