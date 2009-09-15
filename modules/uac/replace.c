@@ -372,18 +372,20 @@ int replace_uri( struct sip_msg *msg, str *display, str *uri,
 	uac_flag = (hdr==msg->from)?FL_USE_UAC_FROM:FL_USE_UAC_TO;
 
 	if ((msg->msg_flags&uac_flag)==0) {
-		/* first time here */
+		/* first time here ? */
+		if ((msg->msg_flags&(FL_USE_UAC_FROM|FL_USE_UAC_TO))==0){
+			/* add TM callback to restore the FROM/TO hdr in reply */
+			if (uac_tmb.register_tmcb( msg, 0, TMCB_RESPONSE_IN,
+			restore_uris_reply,0,0)!=1) {
+				LM_ERR("failed to install TM callback\n");
+				goto error1;
+			}
+		}
+		/* set TO/ FROM sepcific flags */
 		msg->msg_flags |= uac_flag;
 		if ( (Trans=uac_tmb.t_gett())!=NULL && Trans!=T_UNDEFINED && 
 		Trans->uas.request)
 			Trans->uas.request->msg_flags |= uac_flag;
-
-		/* add TM callback to restore the FROM/TO hdr in reply */
-		if (uac_tmb.register_tmcb( msg, 0, TMCB_RESPONSE_IN,
-		restore_uris_reply,0,0)!=1) {
-			LM_ERR("failed to install TM callback\n");
-			goto error1;
-		}
 	}
 
 	pkg_free(param.s);
