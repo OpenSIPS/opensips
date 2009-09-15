@@ -511,8 +511,8 @@ failed:
 void rr_checker(struct sip_msg *msg, str *r_param, void *cb_param)
 {
 	/* check if the request contains the route param */
-	if ( restore_uri( msg, &rr_from_param, 1/*from*/)==0 ||
-	restore_uri( msg, &rr_to_param, 0/*to*/)==0 ) {
+	if ( (restore_uri( msg, &rr_from_param, 1/*from*/) +
+	restore_uri( msg, &rr_to_param, 0/*to*/) )!= -2 ) {
 		/* restore in req performed -> replace in reply */
 		/* in callback we need TO/FROM to be parsed- it's already done 
 		 * by restore_from_to() function */
