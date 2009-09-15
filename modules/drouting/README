@@ -36,24 +36,22 @@ Anca-Maria Vamanu
               1.3.3. drr_table(str)
               1.3.4. drg_table(str)
               1.3.5. drl_table(str)
-              1.3.6. sort_order (int)
-              1.3.7. ruri_avp (str)
-              1.3.8. attrs_avp (str)
-              1.3.9. define_blacklist (str)
-              1.3.10. use_domain (int)
-              1.3.11. drg_user_col (str)
-              1.3.12. drg_domain_col (str)
-              1.3.13. drg_grpid_col (str)
-              1.3.14. fetch_rows (int)
-              1.3.15. force_dns (int)
+              1.3.6. ruri_avp (str)
+              1.3.7. attrs_avp (str)
+              1.3.8. define_blacklist (str)
+              1.3.9. use_domain (int)
+              1.3.10. drg_user_col (str)
+              1.3.11. drg_domain_col (str)
+              1.3.12. drg_grpid_col (str)
+              1.3.13. fetch_rows (int)
+              1.3.14. force_dns (int)
 
         1.4. Exported Functions
 
-              1.4.1. do_routing("[groupID]")
+              1.4.1. do_routing([[groupID],sort])
               1.4.2. use_next_gw()/next_routing()
-              1.4.3. goes_to_gw([type])
-              1.4.4. is_from_gw([type])
-              1.4.5. is_from_gw( type, [flag])
+              1.4.3. goes_to_gw([[type],flags])
+              1.4.4. is_from_gw( [type, [flag]])
 
         1.5. Exported MI Functions
 
@@ -78,21 +76,19 @@ Anca-Maria Vamanu
    1.3. Set drr_table parameter
    1.4. Set drg_table parameter
    1.5. Set drl_table parameter
-   1.6. Set sort_order parameter
-   1.7. Set ruri_avp parameter
-   1.8. Set attrs_avp parameter
-   1.9. Set define_blacklist parameter
-   1.10. Set use_domain parameter
-   1.11. Set drg_user_col parameter
-   1.12. Set drg_domain_col parameter
-   1.13. Set drg_grpid_col parameter
-   1.14. Set fetch_rows parameter
-   1.15. Set force_dns parameter
-   1.16. do_routing usage
-   1.17. use_next_gw usage
-   1.18. goes_to_gw usage
-   1.19. is_from_gw usage
-   1.20. is_from_gw usage
+   1.6. Set ruri_avp parameter
+   1.7. Set attrs_avp parameter
+   1.8. Set define_blacklist parameter
+   1.9. Set use_domain parameter
+   1.10. Set drg_user_col parameter
+   1.11. Set drg_domain_col parameter
+   1.12. Set drg_grpid_col parameter
+   1.13. Set fetch_rows parameter
+   1.14. Set force_dns parameter
+   1.15. do_routing usage
+   1.16. use_next_gw usage
+   1.17. goes_to_gw usage
+   1.18. is_from_gw usage
 
 Chapter 1. Admin Guide
 
@@ -214,8 +210,8 @@ Chapter 1. Admin Guide
    inside the whole destination list ( like: 2,4;5,78,23;4;7;2 ).
    The destinations from within a group may be act differently
    (like load-balancing, random selection, etc), depending of the
-   "sort_order" module parameter - more about this is available
-   under the module paramters section.
+   "sort_order" parameter - more about this is available under the
+   "do_routing()" function section.
 
 1.1.4.3. Routing Rules
 
@@ -498,45 +494,20 @@ modparam("drouting", "drg_table", "groups")
 modparam("drouting", "drl_table", "my_gw_lists")
 ...
 
-1.3.6. sort_order (int)
-
-   Defines how the destination list should be processed (ordering
-   of the elements). Possible modes are
-     * 0 - destination groups are ignored and all the destinations
-       are tried in the given order; Ex: list 1,2;3,4,5;6 will
-       lead to usage as 1,2,3,4,5,6
-     * 1 - the destinations from each group are randomly arranged
-       (only the two elements are randomly selected); groups do
-       maintain their order (as given); the resulting list is used
-       (with all the defined destinations). Ex: 1,2;3,4,5;6 ->
-       randomizer -> (A) 2,1;4,3,5;6 -> usage 2,1,4,3,5,6 (B)
-       1,2;3,5,4;6 -> usage 1,2,3,5,4,6
-     * 2 - from each destination group, only a single destination
-       is randomly selected; groups do maintain their order (as
-       given); Ex: 1,2;3,4,5;6 -> randomizer -> (A) 2;4;6 -> usage
-       2,4,6 (B) 1;5;6 -> usage 1,5,6
-
-   Default value is "0".
-
-   Example 1.6. Set sort_order parameter
-...
-modparam("drouting", "sort_order", 2)
-...
-
-1.3.7. ruri_avp (str)
+1.3.6. ruri_avp (str)
 
    The name of the avp for storing Request URIs to be later used
    (alternative destiantions for the current one).
 
    Default value is "NULL".
 
-   Example 1.7. Set ruri_avp parameter
+   Example 1.6. Set ruri_avp parameter
 ...
 modparam("drouting", "ruri_avp", '$avp(dr_ruri)')
 modparam("drouting", "ruri_avp", '$avp(i:33)')
 ...
 
-1.3.8. attrs_avp (str)
+1.3.7. attrs_avp (str)
 
    The name of the avp for storing the attribute of the current
    selected destination - once a new destination is selected (via
@@ -545,13 +516,13 @@ modparam("drouting", "ruri_avp", '$avp(i:33)')
 
    Default value is "NULL".
 
-   Example 1.8. Set attrs_avp parameter
+   Example 1.7. Set attrs_avp parameter
 ...
 modparam("drouting", "attrs_avp", '$avp(dr_attrs)')
 modparam("drouting", "atrrs_avp", '$avp(i:67)')
 ...
 
-1.3.9. define_blacklist (str)
+1.3.8. define_blacklist (str)
 
    Defines a backlist based on a list of GW types - the list will
    contain the IPs (no port, all protocols) of the GWs with the
@@ -561,73 +532,73 @@ modparam("drouting", "atrrs_avp", '$avp(i:67)')
 
    Default value is "NULL".
 
-   Example 1.9. Set define_blacklist parameter
+   Example 1.8. Set define_blacklist parameter
 ...
 modparam("drouting", "define_blacklist", 'bl_name= 3,5,25,23')
 modparam("drouting", "define_blacklist", 'list= 4,2')
 ...
 
-1.3.10. use_domain (int)
+1.3.9. use_domain (int)
 
    Flag to configure whether to use domain match when querying
    database for user's routing group.
 
    Default value is "1".
 
-   Example 1.10. Set use_domain parameter
+   Example 1.9. Set use_domain parameter
 ...
 modparam("drouting", "use_domain", 0)
 ...
 
-1.3.11. drg_user_col (str)
+1.3.10. drg_user_col (str)
 
    The name of the column in group db table where the username is
    stored.
 
    Default value is "username".
 
-   Example 1.11. Set drg_user_col parameter
+   Example 1.10. Set drg_user_col parameter
 ...
 modparam("drouting", "drg_user_col", "user")
 ...
 
-1.3.12. drg_domain_col (str)
+1.3.11. drg_domain_col (str)
 
    The name of the column in group db table where the domain is
    stored.
 
    Default value is "domain".
 
-   Example 1.12. Set drg_domain_col parameter
+   Example 1.11. Set drg_domain_col parameter
 ...
 modparam("drouting", "drg_domain_col", "host")
 ...
 
-1.3.13. drg_grpid_col (str)
+1.3.12. drg_grpid_col (str)
 
    The name of the column in group db table where the group id is
    stored.
 
    Default value is "groupid".
 
-   Example 1.13. Set drg_grpid_col parameter
+   Example 1.12. Set drg_grpid_col parameter
 ...
 modparam("drouting", "drg_grpid_col", "grpid")
 ...
 
-1.3.14. fetch_rows (int)
+1.3.13. fetch_rows (int)
 
    The number of rows that should be fetched from the result of a
    query in rules db table.
 
    Default value is "2000".
 
-   Example 1.14. Set fetch_rows parameter
+   Example 1.13. Set fetch_rows parameter
 ...
 modparam("drouting", "fetch_rows", 1500)
 ...
 
-1.3.15. force_dns (int)
+1.3.14. force_dns (int)
 
    Force DNS resolving of GW/destination names (if not IPs) during
    startup. If not enabled, the GW name will be blindly used
@@ -635,33 +606,59 @@ modparam("drouting", "fetch_rows", 1500)
 
    Default value is "1 (enabled)".
 
-   Example 1.15. Set force_dns parameter
+   Example 1.14. Set force_dns parameter
 ...
 modparam("drouting", "force_dns", 0)
 ...
 
 1.4. Exported Functions
 
-1.4.1.  do_routing("[groupID]")
+1.4.1.  do_routing([[groupID],sort])
 
    Function to trigger routing of the message according to the
    rules in the database table and the configured parameters.
 
    This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
-   The module can take one optional parameter: the routing group
-   the caller belongs to - this may be a static numerical value or
-   an AVP specification. If none specified, the function will
-   automatically try to query the dr_group table to get this
-   information.
+   The function can take two optional parameters:
+     * groupID - the routing group the caller belongs to - this
+       may be a static numerical value or an AVP specification. If
+       none specified, the function will automatically try to
+       query the dr_group table to get this information;
+     * sort_order - defines how the destination list should be
+       processed (ordering of the elements). Possible modes are
+          + 0 - destination groups are ignored and all the
+            destinations are tried in the given order; Ex: list
+            1,2;3,4,5;6 will lead to usage as 1,2,3,4,5,6
+          + 1 - the destinations from each group are randomly
+            arranged (only the two elements are randomly
+            selected); groups do maintain their order (as given);
+            the resulting list is used (with all the defined
+            destinations). Ex: 1,2;3,4,5;6 -> randomizer -> (A)
+            2,1;4,3,5;6 -> usage 2,1,4,3,5,6 (B) 1,2;3,5,4;6 ->
+            usage 1,2,3,5,4,6
+          + 2 - from each destination group, only a single
+            destination is randomly selected; groups do maintain
+            their order (as given); Ex: 1,2;3,4,5;6 -> randomizer
+            -> (A) 2;4;6 -> usage 2,4,6 (B) 1;5;6 -> usage 1,5,6
 
-   Example 1.16. do_routing usage
+   Example 1.15. do_routing usage
 ...
+# all groups, sort 0
 do_routing();
 ...
+# group id 0, sort 0
 do_routing("0");
 ...
+# group id from $avp(i:10), sort 0
 do_routing("$avp(i:10)");
+...
+# all groups, sort 1
+do_routing("","1");
+...
+# group id 2, sort 2
+do_routing("2","2");
+...
 
 1.4.2.  use_next_gw()/next_routing()
 
@@ -678,7 +675,7 @@ do_routing("$avp(i:10)");
    returned is no other alternative destinations are found or in
    case of internal processing error.
 
-   Example 1.17. use_next_gw usage
+   Example 1.16. use_next_gw usage
 ...
 if (use_next_gw()) {
         t_relay();
@@ -686,7 +683,7 @@ if (use_next_gw()) {
 }
 ...
 
-1.4.3.  goes_to_gw([type])
+1.4.3.  goes_to_gw([[type],flags])
 
    Function returns true if the destination of the current request
    (destination URI or Request URI) points (as IP) to one of the
@@ -697,10 +694,18 @@ if (use_next_gw()) {
 
    This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
-   The function can take one optional parameter:
+   The function can take two optional parameters:
      * type (optional) - GW/destination type to be checked
+     * flags (optional) - what operations should be performed when
+       a GW matches:
+          + 's' (Strip) - apply to the username of RURI the strip
+            defined by the GW
+          + 'p' (Prefix) - apply to the username of RURI the
+            prefix defined by the GW
+          + 'a' (Attributes) - return the attributes string
+            defined by the GW
 
-   Example 1.18. goes_to_gw usage
+   Example 1.17. goes_to_gw usage
 ...
 if (goes_to_gw("1")) {
         sl_send_reply("403","Forbidden");
@@ -708,33 +713,14 @@ if (goes_to_gw("1")) {
 }
 ...
 
-1.4.4.  is_from_gw([type])
-
-   The function checks if the sender of the message is a gateway
-   from a certain group.
-
-   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE and
-   ONREPLY_ROUTE
-
-   The function can take one optional parameter:
-     * type (optional) - GW/destination type to be checked
-     * flags - if message is a request and the GW has a STRIP
-       defined, then apply it if GW is source.
-
-   Example 1.19. is_from_gw usage
-...
-if (is_from_gw("1") {
-}
-...
-
-1.4.5.  is_from_gw( type, [flag])
+1.4.4.  is_from_gw( [type, [flag]])
 
    The function checks if the sender of the message is a gateway
    from a certain group.
 
    This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
-   The function can take two parameters:
+   The function can take two optional parameters:
      * type (mandatory) - GW/destination type to be checked
      * flags (optional) - what operations should be performed when
        a GW matches:
@@ -745,7 +731,7 @@ if (is_from_gw("1") {
           + 'a' (Attributes) - return the attributes string
             defined by the GW
 
-   Example 1.20. is_from_gw usage
+   Example 1.18. is_from_gw usage
 ...
 if (is_from_gw("3","1") {
 }

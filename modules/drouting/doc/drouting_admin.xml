@@ -272,9 +272,9 @@
 	group of destinations is delimited by semi-colon char. inside the whole
 	destination list ( like: 2,4;5,78,23;4;7;2 ). The destinations from 
 	within a group may be act differently (like load-balancing, random 
-	selection, etc), depending of the <quote>sort_order</quote> module 
-	parameter - more about this is available under the module paramters 
-	section.
+	selection, etc), depending of the <quote>sort_order</quote> 
+	parameter - more about this is available under the 
+	<quote>do_routing()</quote> function section.
 	</para>
 	</section>
 
@@ -917,50 +917,6 @@ modparam("drouting", "drl_table", "my_gw_lists")
 		</example>
 	</section>
 
-	<section>
-		<title><varname>sort_order</varname> (int)</title>
-		<para>
-		Defines how the destination list should be processed (ordering of
-		the elements). Possible modes are
-		<itemizedlist>
-		<listitem>
-			<emphasis>0</emphasis> - destination groups are ignored and all the
-			destinations are tried in the given order; 
-			Ex: list 1,2;3,4,5;6 will lead to usage as 1,2,3,4,5,6 
-		</listitem>
-		<listitem>
-			<emphasis>1</emphasis> - the destinations from each group are
-			randomly arranged (only the two elements are randomly selected);
-			groups do maintain their order (as given); the resulting list is 
-			used (with all the defined destinations).
-			Ex: 1,2;3,4,5;6 -> randomizer -> 
-			(A) 2,1;4,3,5;6  -> usage 2,1,4,3,5,6
-			(B) 1,2;3,5,4;6  -> usage 1,2,3,5,4,6
-		</listitem>
-		<listitem>
-			<emphasis>2</emphasis> - from each destination group, only a 
-			single destination is randomly selected; groups do maintain their
-			order (as given);
-			Ex: 1,2;3,4,5;6 -> randomizer ->
-			(A) 2;4;6  -> usage 2,4,6
-			(B) 1;5;6  -> usage 1,5,6
-		</listitem>
-		</itemizedlist>
-		</para>
-		<para>
-		<emphasis>Default value is <quote>0</quote>.
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>sort_order</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("drouting", "sort_order", 2)
-...
-</programlisting>
-		</example>
-	</section>
-
 <section>
 		<title><varname>ruri_avp</varname> (str)</title>
 		<para>
@@ -1152,7 +1108,7 @@ modparam("drouting", "force_dns", 0)
 	<title>Exported Functions</title>
 	<section>
 		<title>
-		<function moreinfo="none">do_routing("[groupID]")</function>
+		<function moreinfo="none">do_routing([[groupID],sort])</function>
 		</title>
 		<para>
 		Function to trigger routing of the message according to the 
@@ -1162,20 +1118,68 @@ modparam("drouting", "force_dns", 0)
 		This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 		</para>
 		<para>
-		The module can take one optional parameter: the routing group the 
-		caller belongs to - this may be a static numerical value or an AVP
-		specification. If none specified, the function will automatically
-		try to query the dr_group table to get this information.
+			The function can take two optional parameters:
+			<itemizedlist>
+				<listitem>
+					<emphasis>groupID</emphasis> - the routing group the
+					caller belongs to - this may be a static numerical 
+					value or an AVP specification. If none specified, the 
+					function will automatically try to query the dr_group 
+					table to get this information;
+				</listitem>
+				<listitem>
+					<emphasis>sort_order</emphasis> - defines how the 
+					destination list should be processed (ordering of the 
+					elements). Possible modes are
+					<itemizedlist>
+					<listitem>
+						<emphasis>0</emphasis> - destination groups are 
+						ignored and all the destinations are tried in the 
+						given order; Ex: list 1,2;3,4,5;6 will lead to usage 
+						as 1,2,3,4,5,6 
+					</listitem>
+					<listitem>
+						<emphasis>1</emphasis> - the destinations from each 
+						group are randomly arranged (only the two elements are 
+						randomly selected); groups do maintain their order 
+						(as given); the resulting list is used (with all the 
+						defined destinations).
+						Ex: 1,2;3,4,5;6 -> randomizer -> 
+						(A) 2,1;4,3,5;6  -> usage 2,1,4,3,5,6
+						(B) 1,2;3,5,4;6  -> usage 1,2,3,5,4,6
+					</listitem>
+					<listitem>
+						<emphasis>2</emphasis> - from each destination group, 
+						only a single destination is randomly selected; groups 
+						do maintain their order (as given);
+						Ex: 1,2;3,4,5;6 -> randomizer ->
+						(A) 2;4;6  -> usage 2,4,6
+						(B) 1;5;6  -> usage 1,5,6
+					</listitem>
+					</itemizedlist>
+				</listitem>
+			</itemizedlist>
 		</para>
+
 		<example>
 		<title><function>do_routing</function> usage</title>
 		<programlisting format="linespecific">
 ...
+# all groups, sort 0
 do_routing();
 ...
+# group id 0, sort 0
 do_routing("0");
 ...
+# group id from $avp(i:10), sort 0
 do_routing("$avp(i:10)");
+...
+# all groups, sort 1
+do_routing("","1");
+...
+# group id 2, sort 2
+do_routing("2","2");
+...
 </programlisting>
 		</example>
 	</section>
@@ -1216,7 +1220,7 @@ if (use_next_gw()) {
 
 	<section>
 		<title>
-		<function moreinfo="none">goes_to_gw([type])</function>
+		<function moreinfo="none">goes_to_gw([[type],flags])</function>
 		</title>
 		<para>
 		Function returns true if the destination of the current request 
@@ -1230,11 +1234,29 @@ if (use_next_gw()) {
 		This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 		</para>
 		<para>
-			The function can take one optional parameter:
+			The function can take two optional parameters:
 			<itemizedlist>
 				<listitem>
 					<emphasis>type</emphasis> (optional) - GW/destination 
 					type to be checked
+				</listitem>
+				<listitem>
+					<emphasis>flags</emphasis> (optional) - what operations
+					should be performed when a GW matches:
+					<itemizedlist>
+						<listitem>
+							<emphasis>'s'</emphasis> (Strip) - apply to the 
+							username of RURI the strip defined by the GW
+						</listitem>
+						<listitem>
+							<emphasis>'p'</emphasis> (Prefix) - apply to the 
+							username of RURI the prefix defined by the GW
+						</listitem>
+						<listitem>
+							<emphasis>'a'</emphasis> (Attributes) - return
+							the attributes string defined by the GW
+						</listitem>
+					</itemizedlist>
 				</listitem>
 			</itemizedlist>
 		</para>
@@ -1251,46 +1273,9 @@ if (goes_to_gw("1")) {
 		</example>
 	</section>
 
-
 	<section>
 		<title>
-		<function moreinfo="none">is_from_gw([type])</function>
-		</title>
-		<para>
-		The function checks if the sender of the message is a gateway
-		from a certain group.
-		</para>
-		<para>
-		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE and 
-		ONREPLY_ROUTE
-		</para>
-		<para>
-			The function can take one optional parameter:
-			<itemizedlist>
-				<listitem>
-					<emphasis>type</emphasis> (optional) - GW/destination type
-					to be checked
-				</listitem>
-				<listitem>
-					<emphasis>flags</emphasis> - if message is a request and
-					the GW has a STRIP defined, then apply it if GW is source.
-				</listitem>
-			</itemizedlist>
-		</para>
-		<example>
-		<title><function>is_from_gw</function> usage</title>
-		<programlisting format="linespecific">
-...
-if (is_from_gw("1") {
-}
-...
-</programlisting>
-		</example>
-	</section>
-
-	<section>
-		<title>
-		<function moreinfo="none">is_from_gw( type, [flag])</function>
+		<function moreinfo="none">is_from_gw( [type, [flag]])</function>
 		</title>
 		<para>
 		The function checks if the sender of the message is a gateway
@@ -1300,7 +1285,7 @@ if (is_from_gw("1") {
 		This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 		</para>
 		<para>
-			The function can take two parameters:
+			The function can take two optional parameters:
 			<itemizedlist>
 				<listitem>
 					<emphasis>type</emphasis> (mandatory) - GW/destination

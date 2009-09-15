@@ -71,7 +71,6 @@ static int use_domain = 1;
  * - 1 - random order, full set
  * - 2 - random order, one per set
  */
-static int sort_order = 0;
 int dr_fetch_rows = 1000;
 int dr_force_dns = 1;
 
@@ -117,9 +116,9 @@ static int dr_exit(void);
 static int fixup_do_routing(void** param, int param_no);
 static int fixup_from_gw(void** param, int param_no);
 
-static int do_routing(struct sip_msg* msg, dr_group_t *drg);
-static int do_routing_0(struct sip_msg* msg, char* str1, char* str2);
-static int do_routing_1(struct sip_msg* msg, char* str1, char* str2);
+static int do_routing(struct sip_msg* msg, dr_group_t *drg, int sort);
+static int do_routing_0(struct sip_msg* msg);
+static int do_routing_12(struct sip_msg* msg, char* str1, char* str2);
 static int use_next_gw(struct sip_msg* msg);
 static int is_from_gw_0(struct sip_msg* msg, char* str1, char* str2);
 static int is_from_gw_1(struct sip_msg* msg, char* str1, char* str2);
@@ -140,11 +139,13 @@ static struct mi_root* dr_reload_cmd(struct mi_root *cmd_tree, void *param);
 static cmd_export_t cmds[] = {
 	{"do_routing",  (cmd_function)do_routing_0,   0,  0, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE},
-	{"do_routing",  (cmd_function)do_routing_1,   1,  fixup_do_routing, 0,
+	{"do_routing",  (cmd_function)do_routing_12,  1,  fixup_do_routing, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE},
+	{"do_routing",  (cmd_function)do_routing_12,  2,  fixup_do_routing, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE},
 	{"use_next_gw",  (cmd_function)use_next_gw,   0,  0, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE},
-	{"next_routing",  (cmd_function)use_next_gw, 0,  0, 0,
+	{"next_routing",  (cmd_function)use_next_gw,  0,  0, 0,
 		FAILURE_ROUTE},
 	{"is_from_gw",  (cmd_function)is_from_gw_0,   0,  0, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE},
@@ -155,6 +156,8 @@ static cmd_export_t cmds[] = {
 	{"goes_to_gw",  (cmd_function)goes_to_gw_0,   0,  0, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE},
 	{"goes_to_gw",  (cmd_function)goes_to_gw_1,   1,  fixup_from_gw, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE},
+	{"goes_to_gw",  (cmd_function)goes_to_gw_1,   2,  fixup_from_gw, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE},
 	{0, 0, 0, 0, 0, 0}
 };
@@ -175,7 +178,6 @@ static param_export_t params[] = {
 	{"drg_grpid_col",   STR_PARAM, &drg_grpid_col.s },
 	{"ruri_avp",        STR_PARAM, &ruri_avp_spec.s },
 	{"attrs_avp",       STR_PARAM, &attrs_avp_spec.s},
-	{"sort_order",      INT_PARAM, &sort_order      },
 	{"fetch_rows",      INT_PARAM, &dr_fetch_rows   },
 	{"force_dns",       INT_PARAM, &dr_force_dns    },
 	{"define_blacklist",STR_PARAM|USE_FUNC_PARAM, (void*)set_dr_bl },
@@ -594,14 +596,14 @@ static inline str* build_ruri(struct sip_uri *uri, int strip, str *pri,
 }
 
 
-static int do_routing_0(struct sip_msg* msg, char* str1, char* str2)
+static int do_routing_0(struct sip_msg* msg)
 {
-	return do_routing(msg, NULL);
+	return do_routing(msg, NULL,0);
 }
 
-static int do_routing_1(struct sip_msg* msg, char* str1, char* str2)
+static int do_routing_12(struct sip_msg* msg, char* grp, char* order)
 {
-	return do_routing(msg, (dr_group_t*)str1);
+	return do_routing(msg, (dr_group_t*)grp, (int)(long)order);
 }
 
 
@@ -636,7 +638,7 @@ static int use_next_gw(struct sip_msg* msg)
 }
 
 
-static int do_routing(struct sip_msg* msg, dr_group_t *drg)
+static int do_routing(struct sip_msg* msg, dr_group_t *drg, int sort_order)
 {
 	struct to_body  *from;
 	struct sip_uri  uri;
@@ -886,19 +888,19 @@ static int fixup_do_routing(void** param, int param_no)
 
 	s = (char*)*param;
 
-	if (param_no==1)
-	{
+	if (param_no==1) {
+		/* group */
 		drg = (dr_group_t*)pkg_malloc(sizeof(dr_group_t));
-		if(drg==NULL)
-		{
+		if(drg==NULL) {
 			LM_ERR( "no more memory\n");
 			return E_OUT_OF_MEM;
 		}
 		memset(drg, 0, sizeof(dr_group_t));
 
 		if ( s==NULL || s[0]==0 ) {
-			LM_CRIT("empty group id definition");
-			return E_CFG;
+			pkg_free(*param);
+			*param = NULL;
+			return 0;
 		}
 
 		if (s[0]=='$') {
@@ -931,6 +933,10 @@ static int fixup_do_routing(void** param, int param_no)
 			pkg_free(*param);
 		}
 		*param = (void*)drg;
+	} else
+	if (param_no==2) {
+		/* sorting algorithm */
+		return fixup_uint(param);
 	}
 
 	return 0;
@@ -1075,13 +1081,17 @@ static int is_from_gw_2(struct sip_msg* msg, char* type_s, char* flags_pv)
 }
 
 
-static int goes_to_gw_1(struct sip_msg* msg, char* _type, char* _f2)
+static int goes_to_gw_1(struct sip_msg* msg, char* _type, char* flags_pv)
 {
 	pgw_t *pgwa = NULL;
 	struct sip_uri puri;
 	struct ip_addr *ip;
 	str *uri;
 	int type;
+	int flags = 0;
+	str flags_s;
+	int_str val;
+	int i;
 
 	if(rdata==NULL || *rdata==NULL || msg==NULL)
 		return -1;
@@ -1099,10 +1109,39 @@ static int goes_to_gw_1(struct sip_msg* msg, char* _type, char* _f2)
 	|| ((ip=str2ip6(&puri.host))!=0)
 #endif
 	){
+		/* prepare flags */
+		if (flags_pv && flags_pv[0]) {
+			if (fixup_get_svalue( msg, (gparam_p)flags_pv, &flags_s)!=0) {
+				LM_ERR("invalid flags parameter");
+				return -1;
+			}
+			for( i=0 ; i < flags_s.len ; i++ ) {
+				switch (flags_s.s[i]) {
+					case 's': flags |= DR_IFG_STRIP_FLAG; break;
+					case 'p': flags |= DR_IFG_PREFIX_FLAG; break;
+					case 'a': flags |= DR_IFG_ATTRS_FLAG; break;
+					default: LM_WARN("unsuported flag %c \n",flags_s.s[i]);
+				}
+			}
+		}
+
 		pgwa = (*rdata)->pgw_l;
 		while(pgwa) {
-			if( (type<0 || type==pgwa->type) && ip_addr_cmp(&pgwa->ip, ip))
+			if( (type<0 || type==pgwa->type) && ip_addr_cmp(&pgwa->ip, ip)) {
+
+				/* strip ? */
+				if ( (flags&DR_IFG_STRIP_FLAG) && pgwa->strip>0)
+					strip_username(msg, pgwa->strip);
+				/* prefix ? */
+				if ( (flags&DR_IFG_PREFIX_FLAG) && pgwa->pri.len>0)
+					prefix_username(msg, &pgwa->pri);
+				/* attrs ? */
+				val.s = pgwa->attrs;
+				if (add_avp( AVP_VAL_STR|(attrs_avp.type),attrs_avp.name, val))
+					LM_ERR("failed to insert attrs avp\n");
+
 				return 1;
+			}
 			pgwa = pgwa->next;
 		}
 	}
