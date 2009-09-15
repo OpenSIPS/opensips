@@ -52,7 +52,7 @@
 		by the destination and the capacity of each resource</description>
 	</column>
 
-	<column id="group_id">
+	<column id="probe_mode">
 		<name>probe_mode</name>
 		<type>unsigned int</type>
 		<size>11</size>
