@@ -192,9 +192,10 @@ static int populate_leg_info( struct dlg_cell *dlg, struct sip_msg *msg,
 		}
 	}
 
-	/* extract the RR parts */
+	/* extract the RR parts - parse all headers as we can have multiple 
+	   RR headers in the same message  */
 	skip_recs = 0;
-	if(!msg->record_route && (parse_headers(msg,HDR_RECORDROUTE_F,0)<0)  ){
+	if ( parse_headers(msg,HDR_EOH_F,0)<0 ){
 		LM_ERR("failed to parse record route header\n");
 		rr_set.s = 0;
 		rr_set.len = 0;
