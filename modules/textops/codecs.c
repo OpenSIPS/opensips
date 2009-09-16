@@ -33,7 +33,7 @@
 #include "../../parser/sdp/sdp.h"
 #include "codecs.h"
 
-//#include "../../str.h"
+
 
 
 
@@ -196,15 +196,42 @@ static int do_for_all_streams(struct sip_msg* msg, str* str1,str * str2, int op,
 
 
 
+int delete_sdp_line( struct sip_msg * msg, char * s)
+{
+	char * start,*end;
 
+	if( !s )
+		return 1;
+
+	start = s;
+	end  = s;
+
+	while(*start != '\n')
+		start--;
+	start++;
+
+	while(*end != '\n')
+		end++;
+	end++;
+
+	/* delete the entry */
+	if( del_lump(msg, start - msg->buf, end - start,0) == NULL )
+	{
+		return -1;
+	}
+
+	return 0;
+
+	
+};
 
 
 
 /* method that processes a stream and keeps the original order of codecs with the same name */
 static int stream_process(struct sdp_stream_cell *cell,int pos,str * s, str* ss,int op)
 {
-	sdp_payload_attr_t *payload ;
-	char *cur,*tmp,*start,*end;
+	sdp_payload_attr_t *payload;
+	char *cur,*tmp;
 	struct lump * lmp = data.lumps[pos];
 	str found;
 	int ret = 0,i,depl,single;
@@ -217,8 +244,8 @@ static int stream_process(struct sdp_stream_cell *cell,int pos,str * s, str* ss,
 		LM_ERR("Out of memory\n");
 		return -1;
 	}
-
-
+	
+	
 
 	/* go through the 'm=' field to find numbers to be deleted */
 	cur = lmp->u.value;
@@ -241,13 +268,13 @@ static int stream_process(struct sdp_stream_cell *cell,int pos,str * s, str* ss,
 
 		while(payload)
 		{
-
+			
 			/* if we find one of interest delete it */
 			if( s->len == payload->rtp_enc.len &&
-				strncmp( s->s, payload->rtp_enc.s ,payload->rtp_enc.len) == 0
+				strncasecmp( s->s, payload->rtp_enc.s ,payload->rtp_enc.len) == 0
 				&&
 				(ss == NULL || ( ss->len == payload->rtp_clock.len &&
-				strncmp( ss->s, payload->rtp_clock.s ,payload->rtp_clock.len) == 0
+				strncasecmp( ss->s, payload->rtp_clock.s ,payload->rtp_clock.len) == 0
 				) )
 				&&
 				found.len == payload->rtp_payload.len &&
@@ -264,25 +291,22 @@ static int stream_process(struct sdp_stream_cell *cell,int pos,str * s, str* ss,
 				if( op == DELETE)
 				{
 					/* find the full 'a=...' entry */
-					start = payload->rtp_enc.s;
-					end  = payload->rtp_enc.s;
 
-					while(*start != '\n')
-						start--;
-					start++;
-
-					while(*end != '\n')
-						end++;
-					end++;
-
-					/* delete the entry */
-					if( del_lump(data.msg, start - data.msg->buf, end - start,0) == NULL )
+					if( delete_sdp_line( data.msg, payload->rtp_enc.s) < 0 )
 					{
 						LM_ERR("Unable to add delete lump for a=\n");
 						ret = -1;
 						goto end;
+
 					}
 
+					if( delete_sdp_line( data.msg, payload->fmtp_string.s) < 0 )
+					{
+						LM_ERR("Unable to add delete lump for a=\n");
+						ret = -1;
+						goto end;
+
+					}
 
 				}
 
