@@ -344,7 +344,7 @@ static int _bm_log_timer(unsigned int id)
 		timer->global_max = tdiff;
 
 
-	if (bm_mycfg->granularity > 0 && timer->calls == bm_mycfg->granularity)
+	if (bm_mycfg->granularity > 0 && timer->calls >= bm_mycfg->granularity)
 	{
 		LM_GEN1(bm_mycfg->loglevel, "benchmark (timer %s [%d]): %llu ["
 			" msgs/total/min/max/avg - LR:"
