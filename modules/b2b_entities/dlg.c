@@ -34,6 +34,7 @@
 #include "../../parser/parse_methods.h"
 #include "../../parser/parse_content.h"
 #include "../presence/hash.h"
+#include "../../action.h"
 #include "dlg.h"
 #include "b2b_entities.h"
 
@@ -403,6 +404,8 @@ logic_notify:
 	lock_release(&table[hash_index].lock);
 
 	b2b_cback(msg, &b2b_key, B2B_REQUEST, param);
+
+	run_top_route(b2b_rlist.a, msg);
 
 	return 0;
 }
@@ -1133,6 +1136,9 @@ void b2b_tm_cback(b2b_table htable, struct tmcb_params *ps)
 	/* I have to inform the logic that a reply was received */
 done:
 	b2b_cback(msg, b2b_key, B2B_REPLY, param);
+
+	/* run the b2b route */
+	run_top_route(b2b_rlist.a, msg);
 
 	return;
 }

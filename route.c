@@ -92,6 +92,8 @@ struct script_route startup_rlist;
 /* startup route */
 struct script_timer_route timer_rlist[TIMER_RT_NO];
 
+struct script_route b2b_rlist;
+
 int route_type = REQUEST_ROUTE;
 
 
@@ -105,13 +107,14 @@ extern int return_code;
 void init_route_lists(void)
 {
 	memset(rlist, 0, sizeof(rlist));
-	memset(onreply_rlist, 0, sizeof(onreply_rlist));
-	memset(failure_rlist, 0, sizeof(failure_rlist));
-	memset(branch_rlist, 0, sizeof(branch_rlist));
-	memset(&local_rlist, 0, sizeof(local_rlist));
-	memset(&error_rlist, 0, sizeof(error_rlist));
+	memset(onreply_rlist,  0, sizeof(onreply_rlist));
+	memset(failure_rlist,  0, sizeof(failure_rlist));
+	memset(branch_rlist,   0, sizeof(branch_rlist));
+	memset(&local_rlist,   0, sizeof(local_rlist));
+	memset(&error_rlist,   0, sizeof(error_rlist));
 	memset(&startup_rlist, 0, sizeof(startup_rlist));
-	memset(timer_rlist, 0, sizeof(timer_rlist));
+	memset(&b2b_rlist,     0, sizeof(b2b_rlist));
+	memset(timer_rlist,    0, sizeof(timer_rlist));
 	rlist[DEFAULT_RT].name = "0";
 	onreply_rlist[DEFAULT_RT].name = "0";
 }
@@ -1660,6 +1663,12 @@ int fix_rls(void)
 		}
 	}
 
+	if(b2b_rlist.a){
+		if ((ret=fix_actions(b2b_rlist.a))!=0){
+			return ret;
+		}
+	}
+
 return 0;
 }
 
@@ -1799,10 +1808,16 @@ int check_rls(void)
 			break;
 
 		if ((ret=check_actions(timer_rlist[i].a,TIMER_ROUTE))!=0){
-			LM_ERR("check failed for startup_route\n");
+			LM_ERR("check failed for timer_route\n");
 			return ret;
 		}
-		
+	}
+
+	if(b2b_rlist.a){
+		if ((ret=check_actions(b2b_rlist.a, B2B_ROUTE))!=0){
+			LM_ERR("check failed for b2b_route\n");
+			return ret;
+		}
 	}
 
 	return rcheck_status;

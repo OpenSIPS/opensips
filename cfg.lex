@@ -120,6 +120,7 @@ ROUTE_ERROR error_route
 ROUTE_LOCAL local_route
 ROUTE_STARTUP startup_route
 ROUTE_TIMER timer_route
+ROUTE_B2B   b2b_route
 FORCE_RPORT		"force_rport"|"add_rport"
 FORCE_LOCAL_RPORT		"force_local_rport"|"add_local_rport"
 FORCE_TCP_ALIAS		"force_tcp_alias"|"add_tcp_alias"
@@ -392,6 +393,8 @@ WHITESPACE	[ \t\r\n]
 <INITIAL>{ROUTE_LOCAL} { count(); yylval.strval=yytext; return ROUTE_LOCAL; }
 <INITIAL>{ROUTE_STARTUP}	{ count(); yylval.strval=yytext;
 								return ROUTE_STARTUP; }
+<INITIAL>{ROUTE_B2B}	{ count(); yylval.strval=yytext;
+								return ROUTE_B2B; }
 <INITIAL>{ROUTE_TIMER}	{ count(); yylval.strval=yytext;
 								return ROUTE_TIMER; }
 <INITIAL>{SET_HOST}	{ count(); yylval.strval=yytext; return SET_HOST; }
