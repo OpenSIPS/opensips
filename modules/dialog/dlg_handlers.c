@@ -84,6 +84,7 @@ extern stat_var *processed_dlgs;
 extern stat_var *expired_dlgs;
 extern stat_var *failed_dlgs;
 
+int  last_dst_leg = -1;
 
 #define RR_DLG_PARAM_SIZE  (2*2*sizeof(int)+3+MAX_DLG_RR_PARAM_NAME)
 #define DLG_SEPARATOR      '.'
@@ -168,8 +169,9 @@ static inline void get_routing_info(struct sip_msg *msg, int is_req,
 		}
 	}
 
-	/* extract the RR parts */
-	if(!msg->record_route && (parse_headers(msg,HDR_RECORDROUTE_F,0)<0)  ){
+	/* extract the RR parts - parse all headers as we can have multiple 
+	   RR headers in the same message */
+	if( parse_headers(msg,HDR_EOH_F,0)<0 ){
 		LM_ERR("failed to parse record route header\n");
 		rr_set->s = 0;
 		rr_set->len = 0;
@@ -583,6 +585,7 @@ int dlg_create_dialog(struct cell* t, struct sip_msg *req)
 
 	/* set current dialog */
 	set_current_dialog(dlg);
+	last_dst_leg = DLG_FIRST_CALLEE_LEG;
 
 	link_dlg( dlg , 2/* extra ref for the callback and current dlg hook */);
 
@@ -810,6 +813,7 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 
 	/* set current dialog - it will keep a ref! */
 	set_current_dialog(dlg);
+	last_dst_leg = dst_leg;
 
 	/* run actions for the transition */
 	if (event==DLG_EVENT_REQBYE && new_state==DLG_STATE_DELETED &&
@@ -973,5 +977,81 @@ void dlg_ontimeout( struct dlg_tl *tl)
 	return;
 }
 
+
+int dlg_validate_dialog( struct sip_msg* req, struct dlg_cell *dlg)
+{
+	struct dlg_leg *leg;
+	unsigned int n,m;
+	str s;
+
+	if (dlg->state == DLG_STATE_DELETED)
+		return 0;
+
+	if (last_dst_leg<0) {
+		LM_ERR("Script error - validate function before having a dialog\n");
+		return -1;
+	}
+
+	leg = & dlg->legs[ last_dst_leg ];
+
+
+	/* first check the cseq (if it's increasing) */
+	if ( (!req->cseq && parse_headers(req,HDR_CSEQ_F,0)<0) || !req->cseq ||
+	!req->cseq->parsed) {
+		LM_ERR("bad sip message or missing CSeq hdr :-/\n");
+		return -1;
+	}
+
+	n = m = 0;
+	if ( str2int( &((get_cseq(req))->number), &n)!=0 ||
+	str2int( &(leg->r_cseq), &n)!=0 || n<=m ) {
+		LM_DBG("cseq test falied recv=%d, old=%d\n",n,m);
+		return -1;
+	}
+
+	if (dlg->state <= DLG_STATE_EARLY)
+		return 0;
+
+	/* check the RURI - it must be the contact of the destination leg */
+	/* after loose_route() even if the previous hop was a strict router,
+	   opensips will set in RURI the remote contact */
+	s = *GET_RURI(req);
+	if ( s.len!=leg->contact.len || memcmp(leg->contact.s, s.s, s.len)!=0 ) {
+		LM_DBG("RURI/Contact test failed ruri=[%.*s], old=[%.*s]\n",
+			s.len,s.s,leg->contact.len,leg->contact.s);
+		return -1;
+	}
+
+
+	/* check the route set - is the the same as in original request */
+	/* the route set (without the first Route) must be the same as the
+	   one stored in the destination leg */
+	/* extract the RR parts */
+	if( parse_headers( req, HDR_EOH_F, 0)<0 ) {
+		LM_ERR("failed to parse headers when looking after ROUTEs\n");
+		return -1;
+	}
+	if ( req->route==NULL) {
+		if ( leg->route_set.len!=0) {
+			LM_DBG("route check failed (req has no route, but dialog has\n");
+			return -1;
+		}
+	} else {
+		m = 1; /*skip first*/
+		if( print_rr_body( req->route, &s, 0/*normal oder*/, &m/*skip*/)!=0 ) {
+			LM_ERR("failed to print route headers\n");
+			return -1;
+		}
+		if ( s.len!=leg->route_set.len || memcmp(leg->route_set.s,s.s,s.len)){
+			LM_DBG("route check failed req=[%.*s] dlg=[%.*s]\n",
+				s.len,s.s,leg->route_set.len,leg->route_set.s);
+			pkg_free(s.s);
+			return -1;
+		}
+		pkg_free(s.s);
+	}
+
+	return 0;
+}
 
 

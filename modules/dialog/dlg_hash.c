@@ -61,6 +61,7 @@
 
 
 extern struct tm_binds d_tmb;
+extern int last_dst_leg;
 
 
 struct dlg_table *d_table = NULL;
@@ -75,6 +76,7 @@ int dialog_cleanup( struct sip_msg *msg, void *param )
 		unref_dlg( current_dlg_pointer, 1);
 		current_dlg_pointer = NULL;
 	}
+	last_dst_leg = -1;
 
 	/* need to return non-zero - 0 will break the exec of the request */
 	return 1;

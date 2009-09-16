@@ -103,6 +103,8 @@ pv_spec_t timeout_avp;
 static str db_url = str_init(DEFAULT_DB_URL);
 static unsigned int db_update_period = DB_DEFAULT_UPDATE_PERIOD;
 
+extern int last_dst_leg;
+
 static int pv_get_dlg_count( struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res);
 
@@ -111,6 +113,7 @@ static int fixup_profile(void** param, int param_no);
 static int fixup_get_profile2(void** param, int param_no);
 static int fixup_get_profile3(void** param, int param_no);
 static int w_create_dialog(struct sip_msg*);
+static int w_validate_dialog(struct sip_msg*);
 static int w_set_dlg_profile(struct sip_msg*, char*, char*);
 static int w_unset_dlg_profile(struct sip_msg*, char*, char*);
 static int w_is_in_profile(struct sip_msg*, char*, char*);
@@ -128,6 +131,7 @@ static int w_fetch_dlg_value(struct sip_msg*, char*, char*);
 int pv_get_dlg_lifetime(struct sip_msg *msg,pv_param_t *param,pv_value_t *res);
 int pv_get_dlg_status(struct sip_msg *msg, pv_param_t *param, pv_value_t *res);
 int pv_get_dlg_flags(struct sip_msg *msg, pv_param_t *param, pv_value_t *res);
+int pv_get_dlg_dir(struct sip_msg *msg, pv_param_t *param, pv_value_t *res);
 int pv_set_dlg_flags(struct sip_msg *msg, pv_param_t *param, int op,
 		pv_value_t *val);
 
@@ -162,6 +166,8 @@ static cmd_export_t cmds[]={
 			0, REQUEST_ROUTE| FAILURE_ROUTE | ONREPLY_ROUTE | BRANCH_ROUTE },
 	{"fetch_dlg_value",(cmd_function)w_fetch_dlg_value,   2,fixup_dlg_fval,
 			0, REQUEST_ROUTE| FAILURE_ROUTE | ONREPLY_ROUTE | BRANCH_ROUTE },
+	{"validate_dialog",(cmd_function)w_validate_dialog,      0,         NULL,
+			0, REQUEST_ROUTE},
 	{"load_dlg",  (cmd_function)load_dlg,   0, 0, 0, 0},
 	{0,0,0,0,0,0}
 };
@@ -233,6 +239,8 @@ static pv_export_t mod_items[] = {
 		0,                 0, 0, 0, 0 },
 	{ {"DLG_status",  sizeof("DLG_status")-1},   1000, pv_get_dlg_status,
 		0,                 0, 0, 0, 0 },
+	{ {"DLG_dir",     sizeof("DLG_dir")-1},      1000, pv_get_dlg_dir,
+		0,                 0, 0, 0, 0},
 	{ {"DLG_flags",   sizeof("DLG_flags")-1},    1000, pv_get_dlg_flags,
 		pv_set_dlg_flags,  0, 0, 0, 0 },
 	{ {"dlg_val",     sizeof("dlg_val")-1},      1000, pv_get_dlg_val,
@@ -700,6 +708,21 @@ static int w_create_dialog(struct sip_msg *req)
 }
 
 
+static int w_validate_dialog(struct sip_msg *req)
+{
+	struct dlg_cell *dlg;
+
+	dlg = get_current_dialog();
+	if (dlg==NULL)
+		return -1;
+
+	if (dlg_validate_dialog( req, dlg )!=0)
+		return -1;
+
+	return 1;
+}
+
+
 static int w_set_dlg_profile(struct sip_msg *msg, char *profile, char *value)
 {
 	pv_elem_t *pve;
@@ -1034,6 +1057,32 @@ int pv_get_dlg_flags(struct sip_msg *msg, pv_param_t *param,
 
 	return 0;
 }
+
+
+int pv_get_dlg_dir(struct sip_msg *msg, pv_param_t *param,
+		pv_value_t *res)
+{
+	struct dlg_cell *dlg;
+
+	if(msg==NULL || res==NULL)
+		return -1;
+
+	if ( (dlg=get_current_dialog())==NULL || last_dst_leg<0)
+		return pv_get_null( msg, param, res);
+
+	if (last_dst_leg==0) {
+		res->rs.s = "upstream";
+		res->rs.len = 8;
+	} else {
+		res->rs.s = "downstream";
+		res->rs.len = 10;
+	}
+
+	res->flags = PV_VAL_STR|PV_TYPE_INT;
+
+	return 0;
+}
+
 
 
 int pv_set_dlg_flags(struct sip_msg *msg, pv_param_t *param,

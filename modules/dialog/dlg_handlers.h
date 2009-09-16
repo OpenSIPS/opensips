@@ -59,4 +59,6 @@ void dlg_onroute(struct sip_msg* req, str *rr_param, void *param);
 
 void dlg_ontimeout( struct dlg_tl *tl);
 
+int dlg_validate_dialog( struct sip_msg* req, struct dlg_cell *dlg);
+
 #endif
