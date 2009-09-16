@@ -22,10 +22,11 @@
  * History:
  * --------
  * 2008-04-20  initial version (bogdan)
+ * 2008-09-16  speed optimization (andreidragus)
  *
  */
 
-
+#include <stdio.h>
 #include "../../mem/shm_mem.h"
 #include "../../hash_func.h"
 #include "../../dprint.h"
@@ -36,11 +37,91 @@
 #define PROFILE_HASH_SIZE 16
 
 static struct dlg_profile_table *profiles = NULL;
+static struct lock_set_list * all_locks = NULL;
+static struct lock_set_list * cur_lock = NULL;
+static int finished_allocating_locks = 0;
 
+extern int log_profile_hash_size;
 
 static struct dlg_profile_table* new_dlg_profile( str *name,
 		unsigned int size, unsigned int has_value);
 
+
+/* method that tries to get a new lock_set, if one cannot be allocated
+ * an older one is reused */
+static gen_lock_set_t * get_a_lock_set(int no )
+{
+	gen_lock_set_t *ret, *new;
+	struct lock_set_list * node;
+
+	if( ! finished_allocating_locks )
+	{
+		new = lock_set_alloc(no);
+
+		if( new == NULL )
+		{
+			LM_ERR("Unable to allocate locks\n");
+			return NULL;
+		}
+
+		ret =  lock_set_init( new );
+	
+	
+		if( ret == NULL )
+		{
+			lock_set_dealloc( new );
+			finished_allocating_locks = 1;
+		}
+		else
+		{
+			node = (struct lock_set_list *)shm_malloc( sizeof * node);
+
+			if( node == NULL )
+			{
+				LM_ERR("Unable to allocate list\n");
+				return NULL;
+			}
+
+			node->locks = ret;
+			node->next = all_locks;
+			all_locks = node;
+		}
+	}
+
+	if( finished_allocating_locks )
+	{
+		if( all_locks == NULL )
+		{
+			LM_ERR("Unable to init any locks\n");
+			return NULL;
+		}
+
+		if ( !cur_lock )
+			cur_lock = all_locks;
+
+		if ( cur_lock )
+		{
+			ret = cur_lock->locks;
+			cur_lock = cur_lock->next;
+		}
+	}
+
+	return ret;
+}
+
+void destroy_all_locks(void)
+{
+	struct lock_set_list * node;
+
+	while( all_locks )
+	{
+		node = all_locks;
+		all_locks = all_locks -> next;
+		lock_set_destroy( node->locks);
+		lock_set_dealloc( node->locks);
+		shm_free(node);
+	}
+}
 
 int add_profile_definitions( char* profiles, unsigned int has_value)
 {
@@ -84,7 +165,7 @@ int add_profile_definitions( char* profiles, unsigned int has_value)
 		/* name ok -> create the profile */
 		LM_DBG("creating profile <%.*s>\n",name.len,name.s);
 
-		if (new_dlg_profile( &name, PROFILE_HASH_SIZE, has_value)==NULL) {
+		if (new_dlg_profile( &name, 1 << log_profile_hash_size, has_value)==NULL) {
 			LM_ERR("failed to create new profile <%.*s>\n",name.len,name.s);
 			return -1;
 		}
@@ -132,13 +213,13 @@ static struct dlg_profile_table* new_dlg_profile( str *name, unsigned int size,
 
 	profile = search_dlg_profile(name);
 	if (profile!=NULL) {
-		LM_ERR("duplicate dialgo profile registered <%.*s>\n",
+		LM_ERR("duplicate dialog profile registered <%.*s>\n",
 			name->len, name->s);
 		return NULL;
 	}
 
 	len = sizeof(struct dlg_profile_table) +
-		size*sizeof(struct dlg_profile_entry) +
+		size  * ( (has_value == 0 ) ? sizeof( int ) : sizeof( map_t ) ) +
 		name->len + 1;
 	profile = (struct dlg_profile_table *)shm_malloc(len);
 	if (profile==NULL) {
@@ -150,18 +231,49 @@ static struct dlg_profile_table* new_dlg_profile( str *name, unsigned int size,
 	profile->size = size;
 	profile->has_value = (has_value==0)?0:1;
 
-	/* init lock */
-	if (lock_init( &profile->lock )==NULL) {
+
+	/* init locks */
+	profile->locks = get_a_lock_set(size) ;
+
+	
+
+	if( !profile->locks )
+	{
 		LM_ERR("failed to init lock\n");
 		shm_free(profile);
 		return NULL;
 	}
 
-	/* set inner pointers */
-	profile->entries = (struct dlg_profile_entry*)(profile + 1);
-	profile->name.s = ((char*)profile->entries) + 
-		size*sizeof(struct dlg_profile_entry);
+	if( has_value )
+	{
+		
 
+		/* set inner pointers */
+		profile->entries = ( map_t *)(profile + 1);
+
+		for( i= 0; i < size; i++)
+		{
+			profile->entries[i] = map_create(1);
+			if( !profile->entries[i] )
+			{
+				LM_ERR("Unable to create a map\n");
+				shm_free(profile);
+				return NULL;
+			}
+
+		}
+
+		profile->name.s = ((char*)profile->entries) +
+			size*sizeof( map_t );
+	}
+	else
+	{
+		
+		profile->counts = ( int *)(profile + 1);
+		profile->name.s = (char*) (profile->counts) + size*sizeof( int ) ;
+
+	}
+	
 	/* copy the name of the profile */
 	memcpy( profile->name.s, name->s, name->len );
 	profile->name.len = name->len;
@@ -180,10 +292,17 @@ static struct dlg_profile_table* new_dlg_profile( str *name, unsigned int size,
 
 static void destroy_dlg_profile(struct dlg_profile_table *profile)
 {
+	int i;
+	
 	if (profile==NULL)
 		return;
+	if( profile -> has_value)
+	{
+		for( i= 0; i < profile->size; i++)
+			map_destroy( profile->entries[i], NULL );
+	}
+	
 
-	lock_destroy( &profile->lock );
 	shm_free( profile );
 	return;
 }
@@ -198,6 +317,9 @@ void destroy_dlg_profiles(void)
 		profiles = profiles->next;
 		destroy_dlg_profile( profile );
 	}
+
+	destroy_all_locks();
+	
 	return;
 }
 
@@ -205,31 +327,37 @@ void destroy_dlg_profiles(void)
 
 void destroy_linkers(struct dlg_profile_link *linker)
 {
-	struct dlg_profile_entry *p_entry;
+	map_t entry;
 	struct dlg_profile_link *l;
-	struct dlg_profile_hash *lh;
-
+	void ** dest;
+	
 	while(linker) {
 		l = linker;
 		linker = linker->next;
 		/* unlink from profile table */
-		if (l->hash_linker.next) {
-			p_entry = &l->profile->entries[l->hash_linker.hash];
-			get_lock( &l->profile->lock );
-			lh = &l->hash_linker;
-			/* last element on the list? */
-			if (lh==lh->next) {
-				p_entry->first = NULL;
-			} else {
-				if (p_entry->first==lh)
-					p_entry->first = lh->next;
-				lh->next->prev = lh->prev;
-				lh->prev->next = lh->next;
+
+		
+		lock_set_get( l->profile->locks, l->hash_idx);
+
+		if( l->profile->has_value)
+		{
+			entry = l->profile->entries[l->hash_idx];
+			dest = map_find( entry, l->value );
+			if( dest )
+			{
+				(*dest) = (void*) ( (int)(*dest) - 1 );
+
+				if( *dest == 0 )
+				{
+					map_remove( entry,l->value );
+				}
 			}
-			lh->next = lh->prev = NULL;
-			p_entry->content --;
-			release_lock( &l->profile->lock );
 		}
+		else
+			l->profile->counts[l->hash_idx]--;
+		
+		lock_set_release( l->profile->locks, l->hash_idx  );
+
 		/* free memory */
 		shm_free(l);
 	}
@@ -255,8 +383,9 @@ static void link_dlg_profile(struct dlg_profile_link *linker,
 													struct dlg_cell *dlg)
 {
 	unsigned int hash;
-	struct dlg_profile_entry *p_entry;
+	map_t p_entry;
 	struct dlg_entry *d_entry;
+	void ** dest;
 
 	/* add the linker to the dialog */
 	/* FIXME zero h_id is not 100% for testing if the dialog is inserted
@@ -266,32 +395,31 @@ static void link_dlg_profile(struct dlg_profile_link *linker,
 		dlg_lock( d_table, d_entry);
 		linker->next = dlg->profile_links;
 		dlg->profile_links =linker;
-		linker->hash_linker.dlg = dlg;
 		dlg_unlock( d_table, d_entry);
 	} else {
 		linker->next = dlg->profile_links;
 		dlg->profile_links =linker;
-		linker->hash_linker.dlg = dlg;
 	}
 
 	/* calculate the hash position */
-	hash = calc_hash_profile(&linker->hash_linker.value, dlg, linker->profile);
-	linker->hash_linker.hash = hash;
+	hash = calc_hash_profile(&linker->value, dlg, linker->profile);
+	linker->hash_idx = hash;
 
 	/* insert into profile hash table */
-	p_entry = &linker->profile->entries[hash];
-	get_lock( &linker->profile->lock );
-	if (p_entry->first) {
-		linker->hash_linker.prev = p_entry->first->prev;
-		linker->hash_linker.next = p_entry->first;
-		p_entry->first->prev->next = &linker->hash_linker;
-		p_entry->first->prev = &linker->hash_linker;
-	} else {
-		p_entry->first = linker->hash_linker.next 
-			= linker->hash_linker.prev = &linker->hash_linker;
+	
+	lock_set_get( linker->profile->locks, hash );
+
+	LM_DBG("Entered here with hash = %d \n",hash);
+	if( linker->profile->has_value)
+	{
+		p_entry = linker->profile->entries[hash];
+		dest = map_get( p_entry, linker->value );
+		(*dest) = (void*) ( (int)(*dest) + 1 );
 	}
-	p_entry->content ++;
-	release_lock( &linker->profile->lock );
+	else
+		linker->profile->counts[hash]++;
+
+	lock_set_release( linker->profile->locks,hash );
 }
 
 
@@ -323,9 +451,9 @@ int set_dlg_profile(struct sip_msg *msg, str *value,
 
 	/* set the value */
 	if (profile->has_value) {
-		linker->hash_linker.value.s = (char*)(linker+1);
-		memcpy( linker->hash_linker.value.s, value->s, value->len);
-		linker->hash_linker.value.len = value->len;
+		linker->value.s = (char*)(linker+1);
+		memcpy( linker->value.s, value->s, value->len);
+		linker->value.len = value->len;
 	}
 
 	/* add linker to the dialog and profile */
@@ -359,8 +487,8 @@ int unset_dlg_profile(struct sip_msg *msg, str *value,
 		if (linker->profile==profile) {
 			if (profile->has_value==0) {
 				goto found;
-			} else if (value && value->len==linker->hash_linker.value.len &&
-			memcmp(value->s,linker->hash_linker.value.s,value->len)==0){
+			} else if (value && value->len==linker->value.len &&
+			memcmp(value->s,linker->value.s,value->len)==0){
 				goto found;
 			}
 			/* allow further search - maybe the dialog is inserted twice in
@@ -408,8 +536,8 @@ int is_dlg_in_profile(struct sip_msg *msg, struct dlg_profile_table *profile,
 			if (profile->has_value==0) {
 				dlg_unlock( d_table, d_entry);
 				return 1;
-			} else if (value && value->len==linker->hash_linker.value.len &&
-			memcmp(value->s,linker->hash_linker.value.s,value->len)==0){
+			} else if (value && value->len==linker->value.len &&
+			memcmp(value->s,linker->value.s,value->len)==0){
 				dlg_unlock( d_table, d_entry);
 				return 1;
 			}
@@ -426,108 +554,72 @@ int is_dlg_in_profile(struct sip_msg *msg, struct dlg_profile_table *profile,
 unsigned int get_profile_size(struct dlg_profile_table *profile, str *value)
 {
 	unsigned int n,i;
-	struct dlg_profile_hash *ph;
+	map_t entry ;
+	void ** dest;
 
-	if (profile->has_value==0 || value==NULL) {
+
+	if (profile->has_value==0)
+	{
 		/* iterate through the hash and count all records */
-		get_lock( &profile->lock );
-		for( i=0,n=0 ; i<profile->size ; i++ ) {
-			ph=profile->entries[i].first;
-			if (ph) {
-				do {
-					if ( ph->dlg->state!=DLG_STATE_DELETED ) { n++; } ;
-					ph=ph->next;
-				}while( ph!=profile->entries[i].first );
-			}
+
+		n=0;
+
+		for( i=0; i<profile->size; i++ )
+		{
+
+			lock_set_get( profile->locks, i);
+
+			n += profile->counts[i];
+
+			lock_set_release( profile->locks, i);
+			
 		}
-		release_lock( &profile->lock );
+
+
 		return n;
+
 	} else {
-		/* iterate through the hash entry and count only matching */
-		/* calculate the hash position */
-		i = calc_hash_profile( value, NULL, profile);
-		n = 0;
-		get_lock( &profile->lock );
-		ph = profile->entries[i].first;
-		if(ph) {
-			do {
-				/* compare */
-				if ( ph->dlg->state!=DLG_STATE_DELETED &&
-				value->len==ph->value.len &&
-				memcmp(value->s,ph->value.s,value->len)==0 ) {
-					/* found */
-					n++;
-				}
-				/* next */
-				ph=ph->next;
-			}while( ph!=profile->entries[i].first );
+
+		n=0;
+
+		if(  value==NULL )
+		{
+			
+
+			for( i=0; i<profile->size; i++ )
+			{
+
+				lock_set_get( profile->locks, i);
+
+				n += map_size(profile->entries[i]);
+
+				lock_set_release( profile->locks, i);
+
+			}
+
 		}
-		release_lock( &profile->lock );
+		else
+		{
+			/* iterate through the hash entry and count only matching */
+			/* calculate the hash position */
+			i = calc_hash_profile( value, NULL, profile);
+			n = 0;
+			lock_set_get( profile->locks, i);
+			entry = profile->entries[i];
+
+			dest = map_find(entry,*value);
+			if( dest )
+				n = (int) *dest;
+
+			lock_set_release( profile->locks, i);
+		}
+
+		
 		return n;
 	}
 }
 
-void get_value_names(struct dlg_profile_table *profile, struct dlg_profile_value_name* dpvn )
-{
-	struct dlg_profile_hash *hash_anchor,**ph=NULL;
-	int string_anchor;
-	unsigned int i,n,x;
-	unsigned int found,total_entries;
 
-	if (profile->has_value==0) {
-		return;
-	}
-	get_lock( &profile->lock );
-
-	ph = (struct dlg_profile_hash **)shm_malloc( (profile->size)*sizeof(struct dlg_profile_hash *) );
-	memset( ph, 0, (profile->size)*sizeof(struct dlg_profile_hash *) );
-
-        for( i=0,n=0,total_entries=0 ; i<profile->size ; i++ ) {
-        	if( profile->entries[i].content > 0 ) {
-			ph[n] = profile->entries[i].first;
-			n += 1;
-			total_entries+=profile->entries[i].content;
-		}	
-	}
-	if( n == 0 ) {
-		shm_free(ph);
-		release_lock( &profile->lock );
-		return;
-	}
-	dpvn->size = 0;
-	dpvn->values_string = (str **)shm_malloc( (total_entries+1)*sizeof(str *) );
-	dpvn->values_count = (int *)shm_malloc( (total_entries+1)*sizeof(int) );
-	memset( dpvn->values_string, 0, (total_entries+1)*sizeof(str *) );
-	memset( dpvn->values_count, 0, (total_entries+1)*sizeof(int) );
-	for( i=0; i<n; i++ ) { //which profile hash entry are we looking at
-		hash_anchor = ph[i];
-		string_anchor = dpvn->size;
-		do { 
-			found = 0;
-			for( x=string_anchor; x<dpvn->size; x++ ) {
-				if( memcmp(dpvn->values_string[x]->s,ph[i]->value.s,ph[i]->value.len)==0 ) {
-					found = 1;
-					dpvn->values_count[x]++;
-					break;
-				}
-			}
-			if( found ==0 ) {
-				dpvn->values_string[dpvn->size] = (str *)shm_malloc( sizeof(str) );
-				dpvn->values_string[dpvn->size]->s = (char*)shm_malloc((ph[i]->value.len)*sizeof(char));
-				dpvn->values_string[dpvn->size]->len = ph[i]->value.len;
-				dpvn->values_count[dpvn->size] = 1;
-				memset( dpvn->values_string[dpvn->size]->s, 0 , ph[i]->value.len);
-				strncpy( dpvn->values_string[dpvn->size]->s, ph[i]->value.s, ph[i]->value.len );
-				dpvn->size++;
-			}
-			ph[i]=ph[i]->next;
-		} while( ph[i]!=hash_anchor );
-	}
-
-	shm_free(ph);
-	release_lock( &profile->lock );
-	return;
-}
 /****************************** MI commands *********************************/
 
 struct mi_root * mi_get_profile(struct mi_root *cmd_tree, void *param )
@@ -604,19 +696,42 @@ error:
 	return NULL;
 }
 
+
+
+int add_val_to_rpl(void * param, str key, void * val)
+{
+	static char buff[32];
+	struct mi_node* rpl = (struct mi_node* ) param;
+	struct mi_node* node;
+	struct mi_attr* attr;
+
+	sprintf( buff, "%d", (int)val );
+
+	node = add_mi_node_child(rpl, MI_DUP_VALUE, "value", 5, key.s , key.len );
+
+	if( node == NULL )
+		return -1;
+
+	attr = add_mi_attr(node, MI_DUP_VALUE, "count", 5,  buff, strlen(buff) );
+
+	if( attr == NULL )
+		return -1;
+
+	return 0;
+}
+
 struct mi_root * mi_get_profile_values(struct mi_root *cmd_tree, void *param )
 {
 	struct mi_node* node;
 	struct mi_root* rpl_tree= NULL;
 	struct mi_node* rpl = NULL;
-	struct mi_attr* attr;
 	struct dlg_profile_table *profile;
 	str *value;
 	str *profile_name;
-	unsigned int size,combined;
-	int len,i;
-	char *p;
+	unsigned int combined;
+	int i, ret,n;
 	struct dlg_profile_value_name dpvn;
+	str tmp;
 
 	dpvn.values_string=NULL;
 	dpvn.values_count=NULL;
@@ -640,62 +755,45 @@ struct mi_root * mi_get_profile_values(struct mi_root *cmd_tree, void *param )
 	if (profile==NULL)
 		return init_mi_tree( 404, MI_SSTR("Profile not found"));
 	/* gather dialog count for all values in this profile */
-	get_value_names( profile, &dpvn );
 	rpl_tree = init_mi_tree( 200, MI_SSTR(MI_OK));
 	if (rpl_tree==0)
 		goto error;
 	rpl = &rpl_tree->node;
-	for (i = 0; i <= dpvn.size; i++) {
-		if(dpvn.values_string && dpvn.values_string[i]) {
-			value = dpvn.values_string[i];
-			size = dpvn.values_count[i];
-		} else {
-			value = NULL;
-			size = combined;
+
+	ret = 0;
+
+	if( profile->has_value )
+	{
+		for( i=0; i<profile->size; i++ )
+		{
+			lock_set_get( profile->locks, i);
+			ret |= map_for_each( profile->entries[i], add_val_to_rpl, rpl);
+			lock_set_release( profile->locks, i);
 		}
-		node = add_mi_node_child(rpl, MI_DUP_VALUE, "profile", 7, NULL, 0);
-		if (node==0) {
-			goto error;
-		}
-		attr = add_mi_attr(node, MI_DUP_VALUE, "name", 4, 
-			profile->name.s, profile->name.len);
-		if(attr == NULL) {
-			goto error;
+	}
+	else
+	{
+		n = 0;
+		
+		for( i=0; i<profile->size; i++ )
+		{
+			lock_set_get( profile->locks, i);
+			n += profile->counts[i];
+			lock_set_release( profile->locks, i);
 		}
 
-		if (value) {
-			attr = add_mi_attr(node, MI_DUP_VALUE, "value", 5, value->s, value->len);
-		} else {
-			attr = add_mi_attr(node, MI_DUP_VALUE, "value", 5, NULL, 0);
-		}
-		if(attr == NULL) {
-			goto error;
-		}
-		p= int2str((unsigned long)size, &len);
-		attr = add_mi_attr(node, MI_DUP_VALUE, "count", 5, p, len);
-		if(attr == NULL) {
-			goto error;
-		}
-		combined+=size;
-	}//end of for i<=dpvn.size
-	if(dpvn.values_string) {
-		for(i = 0; i < dpvn.size; i++) {
-			shm_free(dpvn.values_string[i]->s);
-			shm_free(dpvn.values_string[i]);
-		}
-		shm_free(dpvn.values_string);
-		shm_free(dpvn.values_count);
+		tmp.s = "WITHOUT VALUE";
+		tmp.len = strlen(tmp.s);
+		ret =  add_val_to_rpl(rpl, tmp , (void *)n );
+
 	}
+
+	if ( ret )
+		goto error;
+	
 	return rpl_tree;
 error:
-        if(dpvn.values_string) {
-                for(i = 0; i < dpvn.size; i++) {
-			shm_free(dpvn.values_string[i]->s);
-                        shm_free(dpvn.values_string[i]);
-                }
-        	shm_free(dpvn.values_string);
-		shm_free(dpvn.values_count);
-        }
+        
 	free_mi_tree(rpl_tree);
 	return NULL;
 }
@@ -706,10 +804,13 @@ struct mi_root * mi_profile_list(struct mi_root *cmd_tree, void *param )
 	struct mi_root* rpl_tree= NULL;
 	struct mi_node* rpl = NULL;
 	struct dlg_profile_table *profile;
-	struct dlg_profile_hash *ph;
+	//struct dlg_profile_hash *ph;
 	str *profile_name;
 	str *value;
-	unsigned int i;
+	unsigned int i,found;
+	struct dlg_entry *d_entry;
+	struct dlg_cell    *cur_dlg;
+	struct dlg_profile_link *cur_link;
 
 	node = cmd_tree->node.kids;
 	if (node==NULL || !node->value.s || !node->value.len)
@@ -738,42 +839,45 @@ struct mi_root * mi_profile_list(struct mi_root *cmd_tree, void *param )
 	rpl = &rpl_tree->node;
 
 	/* go through the hash and print the dialogs */
-	if (profile->has_value==0 || value==NULL) {
-		/* no value */
-		get_lock( &profile->lock );
-		for ( i=0 ; i< profile->size ; i++ ) {
-			ph = profile->entries[i].first;
-			if(ph) {
-				do {
-					/* print dialog */
-					if ( mi_print_dlg( rpl, ph->dlg, 0)!=0 )
-						goto error;
-					/* next */
-					ph=ph->next;
-				}while( ph!=profile->entries[i].first );
+
+	for( i=0; i<d_table->size; i++)
+	{
+		d_entry = &(d_table->entries[i]);
+		lock_set_get(d_table->locks,d_entry->lock_idx);
+
+		
+		cur_dlg = d_entry->first;
+		while( cur_dlg )
+		{
+			found = 0;
+
+			cur_link = cur_dlg ->profile_links;
+
+			while(cur_link)
+			{
+				if( cur_link->profile == profile &&
+					( value == NULL ||
+					( value->len == cur_link->value.len
+					 && !strncmp(value->s,cur_link->value.s, value->len))
+					))
+				{
+					found = 1;
+					break;
+				}
+				cur_link = cur_link->next;
 			}
-			release_lock( &profile->lock );
+
+			if( found )
+
+				if( mi_print_dlg( rpl, cur_dlg, 0) )
+					goto error;
+
+			cur_dlg = cur_dlg->next;
 		}
-	} else {
-		/* check for value also */
-		get_lock( &profile->lock );
-		for ( i=0 ; i< profile->size ; i++ ) {
-			ph = profile->entries[i].first;
-			if(ph) {
-				do {
-					if ( value->len==ph->value.len &&
-					memcmp(value->s,ph->value.s,value->len)==0 ) {
-						/* print dialog */
-						if ( mi_print_dlg( rpl, ph->dlg, 0)!=0 )
-							goto error;
-					}
-					/* next */
-					ph=ph->next;
-				}while( ph!=profile->entries[i].first );
-			}
-			release_lock( &profile->lock );
-		}
+
+		lock_set_release(d_table->locks,d_entry->lock_idx);
 	}
+	
 
 	return rpl_tree;
 error:

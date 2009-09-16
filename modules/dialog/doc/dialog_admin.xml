@@ -181,6 +181,31 @@ modparam("dialog", "hash_size", 1024)
 	</section>
 
 	<section>
+		<title><varname>log_profile_hash_size</varname> (integer)</title>
+		<para>
+		The size of the hash table internally used to store  profile->dialog
+		associations. A larger table can provide more
+		parallel operations but consumes more memory. The hash size
+		is provided as the base 2 logarithm(e.g. log_profile_hash_size =4
+		means the table has 2^4 entries).
+		</para>
+		
+		<para>
+		<emphasis>
+			Default value is <quote>4</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>hash_size</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("dialog", "log_profile_hash_size", 5) #set a table size of 32
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
 		<title><varname>rr_param</varname> (string)</title>
 		<para>
 		Name of the Record-Route parameter to be added with the dialog cookie.
@@ -1461,6 +1486,33 @@ $var(account) = $dlg_val("account_type");
 		</para>
 		<programlisting  format="linespecific">
 		:profile_list_dlgs:_reply_fifo_file_
+		inbound_calls
+		_empty_line_
+		</programlisting>
+		</section>
+
+		<section>
+		<title><varname>profile_get_values</varname></title>
+		<para>
+		Lists all the values belonging to a profile along with their
+		count. If the profile does not support values a total count
+		will be returned.
+		</para>
+		<para>
+		Name: <emphasis>profile_get_values</emphasis>
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>profile</emphasis> - name of the profile to list the
+				dialog for.
+			</para></listitem>
+		</itemizedlist>
+		<para>
+		MI FIFO Command Format:
+		</para>
+		<programlisting  format="linespecific">
+		:profile_get_values:_reply_fifo_file_
 		inbound_calls
 		_empty_line_
 		</programlisting>

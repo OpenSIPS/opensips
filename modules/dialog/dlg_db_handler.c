@@ -789,12 +789,12 @@ static str* write_dialog_profiles( struct dlg_profile_link *links)
 
 	/* compute the required len */
 	for ( link=links,l=0 ; link ; link=link->next) {
-		l += link->profile->name.len + 1 + link->hash_linker.value.len + 1;
+		l += link->profile->name.len + 1 + link->value.len + 1;
 		for( i=0 ; i<link->profile->name.len ; i++ )
 			if (link->profile->name.s[i]=='|' || link->profile->name.s[i]=='#') l++;
-		for( i=0 ; i<link->hash_linker.value.len ; i++ )
-			if (link->hash_linker.value.s[i]=='|' ||
-			link->hash_linker.value.s[i]=='#') l++;
+		for( i=0 ; i<link->value.len ; i++ )
+			if (link->value.s[i]=='|' ||
+			link->value.s[i]=='#') l++;
 	}
 
 	/* allocate the string to be stored */
@@ -812,7 +812,7 @@ static str* write_dialog_profiles( struct dlg_profile_link *links)
 	o.len = l;
 	p = o.s;
 	for ( link=links; link ; link=link->next) {
-		p += write_pair( p, &link->profile->name, &link->hash_linker.value);
+		p += write_pair( p, &link->profile->name, &link->value);
 	}
 	if (o.len!=p-o.s) {
 		LM_CRIT("BUG - buffer overflow allocated %d, written %d\n",

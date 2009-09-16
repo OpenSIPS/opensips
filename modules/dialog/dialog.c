@@ -74,6 +74,7 @@ static void mod_destroy(void);
 
 /* module parameter */
 static int dlg_hash_size = 4096;
+int log_profile_hash_size = 4;
 static char* rr_param = "did";
 static int dlg_flag = -1;
 static str timeout_spec = {NULL, 0};
@@ -168,6 +169,7 @@ static cmd_export_t cmds[]={
 static param_export_t mod_params[]={
 	{ "enable_stats",          INT_PARAM, &dlg_enable_stats         },
 	{ "hash_size",             INT_PARAM, &dlg_hash_size            },
+	{ "log_profile_hash_size", INT_PARAM, &log_profile_hash_size    },
 	{ "rr_param",              STR_PARAM, &rr_param                 },
 	{ "dlg_flag",              INT_PARAM, &dlg_flag                 },
 	{ "bye_on_timeout_flag",   INT_PARAM, &bye_on_timeout_flag      },
@@ -289,19 +291,18 @@ static int fixup_profile(void** param, int param_no)
 
 
 
-
 static int fixup_get_profile2(void** param, int param_no)
 {
 	pv_spec_t *sp;
 	int ret;
 	action_elem_t * p;
-	
+
 
 	if (param_no==1) {
 		return fixup_profile(param, 1);
 	} else if (param_no==2) {
-	
-	
+
+
 		ret = fixup_pvar(param);
 		if (ret<0) return ret;
 		sp = (pv_spec_t*)(*param);
@@ -309,14 +310,14 @@ static int fixup_get_profile2(void** param, int param_no)
 			LM_ERR("return must be an AVP or SCRIPT VAR!\n");
 			return E_SCRIPT;
 		}
-		
+
 		p = list_entry(param, action_elem_t, u.data);
 		p++;
 		p->u.data = *param;
-		
+
 		*param = NULL;
-		
-		
+
+
 	}
 	return 0;
 }
@@ -326,13 +327,13 @@ static int fixup_get_profile3(void** param, int param_no)
 {
 	int ret;
 	pv_spec_t *sp;
-	
+
 	if (param_no==1) {
 		return fixup_profile(param, 1);
 	} else if (param_no==2) {
 		return fixup_profile(param, 2);
 	} else if (param_no==3) {
-	
+
 		ret = fixup_pvar(param);
 		if (ret<0) return ret;
 		sp = (pv_spec_t*)(*param);
@@ -340,8 +341,8 @@ static int fixup_get_profile3(void** param, int param_no)
 			LM_ERR("return must be an AVP or SCRIPT VAR!\n");
 			return E_SCRIPT;
 		}
-		
-		
+
+
 	}
 	return 0;
 }
@@ -494,6 +495,13 @@ static int mod_init(void)
 	/* param checkings */
 	if ( dlg_flag!=-1 && dlg_flag>MAX_FLAG) {
 		LM_ERR("invalid dlg flag %d!!\n",dlg_flag);
+		return -1;
+	}
+
+	if( log_profile_hash_size <= 0)
+	{
+		LM_ERR("invalid value for log_profile_hash_size:%d!!\n",
+			log_profile_hash_size);
 		return -1;
 	}
 
@@ -787,11 +795,9 @@ static int w_get_profile_size(struct sip_msg *msg, char *profile,
 	script_var_t * sc_var;
 
 	
-
 	pve = (pv_elem_t *)value;
 	sp_dest = (pv_spec_t *)result;
-	
-	
+
 
 
 	if ( pve!=NULL && ((struct dlg_profile_table*)profile)->has_value) {

@@ -42,6 +42,8 @@
 #include "dlg_hash.h"
 #include "dlg_req_within.h"
 #include "dlg_db_handler.h"
+#include "dlg_profile.h"
+
 
 
 #define MAX_FWD_HDR        "Max-Forwards: " MAX_FWD CRLF
@@ -145,9 +147,13 @@ void bye_reply_cb(struct cell* t, int type, struct tmcb_params* ps){
 
 
 	if(new_state == DLG_STATE_DELETED && old_state != DLG_STATE_DELETED){
-
-		LM_DBG("removing dialog with h_entry %u and h_id %u\n", 
+		
+		LM_DBG("removing dialog with h_entry %u and h_id %u\n",
 			dlg->h_entry, dlg->h_id);
+
+		/*destroy linkers */
+		destroy_linkers(dlg->profile_links);
+		dlg->profile_links = NULL;
 
 		/* remove from timer */
 		ret = remove_dlg_timer(&dlg->tl);

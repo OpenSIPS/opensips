@@ -403,6 +403,12 @@ static void dlg_onreply(struct cell* t, int type, struct tmcb_params *param)
 
 	if ( old_state!=DLG_STATE_DELETED && new_state==DLG_STATE_DELETED ) {
 		LM_DBG("dialog %p failed (negative reply)\n", dlg);
+		
+
+		/*destroy linkers */
+		destroy_linkers(dlg->profile_links);
+		dlg->profile_links = NULL;
+
 		/* dialog setup not completed (3456XX) */
 		run_dlg_callbacks( DLGCB_FAILED, dlg, rpl, DLG_DIR_UPSTREAM, 0);
 		/* do unref */
@@ -808,6 +814,11 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 	/* run actions for the transition */
 	if (event==DLG_EVENT_REQBYE && new_state==DLG_STATE_DELETED &&
 	old_state!=DLG_STATE_DELETED) {
+		
+		/*destroy linkers */
+		destroy_linkers(dlg->profile_links);
+		dlg->profile_links = NULL;
+
 		LM_DBG("BYE successfully processed\n");
 		/* remove from timer */
 		ret = remove_dlg_timer(&dlg->tl);
@@ -939,6 +950,10 @@ void dlg_ontimeout( struct dlg_tl *tl)
 			dlg->legs[DLG_CALLER_LEG].tag.s,
 			dlg->legs[callee_idx(dlg)].tag.len,
 			ZSW(dlg->legs[callee_idx(dlg)].tag.s));
+
+		/*destroy linkers */
+		destroy_linkers(dlg->profile_links);
+		dlg->profile_links = NULL;
 
 		/* dialog timeout */
 		run_dlg_callbacks( DLGCB_EXPIRED, dlg, 0, DLG_DIR_NONE, 0);

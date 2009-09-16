@@ -22,10 +22,11 @@
  * History:
  * --------
  * 2008-04-20  initial version (bogdan)
+ * 2009-09-16  speed optimization (andreidragus)
  *
  */
 
-
+#include "../../map.h"
 
 #ifndef _DIALOG_DLG_PROFILE_H_
 #define _DIALOG_DLG_PROFILE_H_
@@ -35,34 +36,45 @@
 #include "../../str.h"
 
 
-struct dlg_profile_hash {
-	str value;
-	struct dlg_cell *dlg;
-	struct dlg_profile_hash *next;
-	struct dlg_profile_hash *prev;
-	unsigned int hash;
+
+struct lock_set_list
+{
+	gen_lock_set_t * locks;
+	struct lock_set_list * next;
+	
 };
 
-
 struct dlg_profile_link {
-	struct dlg_profile_hash hash_linker;
+	str value;
+	int hash_idx;
 	struct dlg_profile_link  *next;
 	struct dlg_profile_table *profile;
 };
 
 
-struct dlg_profile_entry {
-	struct dlg_profile_hash *first;
-	unsigned int content;
-};
 
 
 struct dlg_profile_table {
 	str name;
-	unsigned int size;
 	unsigned int has_value;
-	gen_lock_t lock;
-	struct dlg_profile_entry *entries;
+
+
+	unsigned int size;
+	gen_lock_set_t * locks;
+
+	/*
+	 * information for profiles with values
+	 */
+	
+	map_t * entries;
+
+	/*
+	 * information for profiles without values
+	 */
+
+	int * counts;
+
+
 	struct dlg_profile_table *next;
 };
 
