@@ -217,6 +217,18 @@ void set_sdp_payload_attr(sdp_payload_attr_t *payload_attr, str *rtp_enc, str *r
 	return;
 }
 
+void set_sdp_payload_fmtp(sdp_payload_attr_t *payload_attr, str *fmtp_string )
+{
+	if (payload_attr == 0) {
+		LM_ERR("Invalid payload location\n");
+		return;
+	}
+	payload_attr->fmtp_string.s = fmtp_string->s;
+	payload_attr->fmtp_string.len = fmtp_string->len;
+	
+	return;
+}
+
 void set_sdp_ptime_attr(sdp_stream_cell_t *stream, sdp_payload_attr_t *payload_attr, str *ptime)
 {
 	sdp_payload_attr_t *payload;
@@ -399,6 +411,7 @@ static int parse_sdp_session(str *sdp_body, int session_num, str *cnt_disp, sdp_
 	sdp_stream_cell_t *stream;
 	sdp_payload_attr_t *payload_attr;
 	int parse_payload_attr;
+	str fmtp_string;
 
 	/*
 	 * Parsing of SDP body.
@@ -547,7 +560,14 @@ static int parse_sdp_session(str *sdp_body, int session_num, str *cnt_disp, sdp_
 				}
 				payload_attr = (sdp_payload_attr_t*)get_sdp_payload4payload(stream, &rtp_payload);
 				set_sdp_payload_attr(payload_attr, &rtp_enc, &rtp_clock, &rtp_params);
-			} else if (extract_accept_types(&tmpstr1, &stream->accept_types) == 0) {
+			}else if (parse_payload_attr && extract_fmtp(&tmpstr1,&rtp_payload,&fmtp_string) == 0){
+				
+				a1p = fmtp_string.s + fmtp_string.len;
+
+				payload_attr = (sdp_payload_attr_t*)get_sdp_payload4payload(stream, &rtp_payload);
+				set_sdp_payload_fmtp(payload_attr, &fmtp_string);
+
+			}else if (extract_accept_types(&tmpstr1, &stream->accept_types) == 0) {
 				a1p = stream->accept_types.s + stream->accept_types.len;
 			} else if (extract_accept_wrapped_types(&tmpstr1, &stream->accept_wrapped_types) == 0) {
 				a1p = stream->accept_wrapped_types.s + stream->accept_wrapped_types.len;
@@ -804,7 +824,7 @@ void print_sdp_stream(sdp_stream_cell_t *stream)
 		stream->accept_wrapped_types.len, stream->accept_wrapped_types.s);
 	payload = stream->payload_attr;
 	while (payload) {
-		LM_DBG("......payload[%d]:%p=>%p p_payload_attr[%d]:%p '%.*s' '%.*s' '%.*s' '%.*s' '%.*s' '%.*s'\n",
+		LM_DBG("......payload[%d]:%p=>%p p_payload_attr[%d]:%p '%.*s' '%.*s' '%.*s' '%.*s' '%.*s' '%.*s' '%.*s'\n",
 			payload->payload_num, payload, payload->next,
 			payload->payload_num, stream->p_payload_attr[payload->payload_num],
 			payload->rtp_payload.len, payload->rtp_payload.s,
@@ -812,7 +832,9 @@ void print_sdp_stream(sdp_stream_cell_t *stream)
 			payload->rtp_clock.len, payload->rtp_clock.s,
 			payload->rtp_params.len, payload->rtp_params.s,
 			payload->sendrecv_mode.len, payload->sendrecv_mode.s,
-			payload->ptime.len, payload->ptime.s);
+			payload->ptime.len, payload->ptime.s,
+			payload->fmtp_string.len, payload->fmtp_string.s
+			);
 		payload=payload->next;
 	}
 }

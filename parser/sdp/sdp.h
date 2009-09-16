@@ -44,6 +44,7 @@ typedef struct sdp_payload_attr {
 	str rtp_params;
 	str sendrecv_mode;
 	str ptime;
+	str fmtp_string;
 } sdp_payload_attr_t;
 
 typedef struct sdp_stream_cell {
