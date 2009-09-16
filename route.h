@@ -59,18 +59,16 @@ extern struct script_route branch_rlist[BRANCH_RT_NO];	/*!< Branch routes table 
 extern struct script_route local_rlist;			/*!< Local route table */
 extern struct script_route error_rlist;			/*!< Error route table */
 extern struct script_route startup_rlist;		/*!< Startup route table */
-extern struct script_route b2b_rlist;			/*!< B2B route table */
 extern struct script_timer_route timer_rlist[TIMER_RT_NO];	/*!< Timer route table */
 
 #define REQUEST_ROUTE 1   /*!< Request route block */
 #define FAILURE_ROUTE 2   /*!< Negative-reply route block */
 #define ONREPLY_ROUTE 4   /*!< Received-reply route block */
 #define BRANCH_ROUTE  8   /*!< Sending-branch route block */
-#define ERROR_ROUTE   16  /*!< Error-handling route block */
-#define LOCAL_ROUTE   32  /*!< Local-requests route block */
+#define ERROR_ROUTE  16   /*!< Error-handling route block */
+#define LOCAL_ROUTE  32   /*!< Local-requests route block */
 #define STARTUP_ROUTE 64  /*!< Startup route block */
-#define TIMER_ROUTE   128 /*!< Timer route block */
-#define B2B_ROUTE     256 /*!< Timer route block */
+#define TIMER_ROUTE  128  /*!< Timer route block */
 
 extern int route_type;
 

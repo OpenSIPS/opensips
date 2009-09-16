@@ -209,7 +209,6 @@ extern int line;
 %token ROUTE_ERROR
 %token ROUTE_LOCAL
 %token ROUTE_STARTUP
-%token ROUTE_B2B
 %token ROUTE_TIMER
 %token SET_HOST
 %token SET_HOSTPORT
@@ -454,7 +453,6 @@ statement:	assign_stm
 		| {rt=ERROR_ROUTE;} error_route_stm
 		| {rt=LOCAL_ROUTE;} local_route_stm
 		| {rt=STARTUP_ROUTE;} startup_route_stm
-		| {rt=B2B_ROUTE;} b2b_route_stm
 		| {rt=TIMER_ROUTE;} timer_route_stm
 
 		| CR	/* null statement*/
@@ -1453,17 +1451,6 @@ startup_route_stm:  ROUTE_STARTUP LBRACE actions RBRACE {
 						push($3, &startup_rlist.a);
 					}
 		| ROUTE_STARTUP error { yyerror("invalid startup_route statement"); }
-	;
-
-b2b_route_stm:  ROUTE_B2B LBRACE actions RBRACE {
-						if (b2b_rlist.a!=0) {
-							yyerror("re-definition of b2b "
-								"route detected");
-							YYABORT;
-						}
-						push($3, &b2b_rlist.a);
-					}
-		| ROUTE_B2B error { yyerror("invalid b2b_route statement"); }
 	;
 
 timer_route_stm:  ROUTE_TIMER LBRACK route_name COMMA NUMBER RBRACK LBRACE actions RBRACE {

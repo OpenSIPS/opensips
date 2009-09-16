@@ -405,7 +405,8 @@ logic_notify:
 
 	b2b_cback(msg, &b2b_key, B2B_REQUEST, param);
 
-	run_top_route(b2b_rlist.a, msg);
+	if(req_routeid > 0)
+	run_top_route(rlist[req_routeid].a, msg);
 
 	return 0;
 }
@@ -1138,7 +1139,8 @@ done:
 	b2b_cback(msg, b2b_key, B2B_REPLY, param);
 
 	/* run the b2b route */
-	run_top_route(b2b_rlist.a, msg);
+	if(reply_routeid > 0)
+		run_top_route(rlist[reply_routeid].a, msg);
 
 	return;
 }

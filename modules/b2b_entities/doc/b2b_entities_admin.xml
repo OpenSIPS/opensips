@@ -123,6 +123,39 @@ modparam("b2b_entities", "client_hsize", 10)
 	</section>
 
 	<section>
+		<title><varname>script_req_route</varname> (str)</title>
+		<para>
+			The name of the b2b script route that will be called when
+			B2B requests are received.
+		</para>
+		<example>
+		<title>Set <varname>script_req_route</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("b2b_entities", "script_req_route", "b2b_request")
+...
+	</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>script_reply_route</varname> (str)</title>
+		<para>
+			The name of the b2b script route that will be called when
+			B2B replies are received.
+		</para>
+		<example>
+		<title>Set <varname>script_repl_route</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("b2b_entities", "script_reply_route", "b2b_reply")
+...
+	</programlisting>
+		</example>
+	</section>
+
+
+	<section>
 		<title>Exported Functions</title>
 		<para>The module does not export functions to be used
 		in configuration script.</para>

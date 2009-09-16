@@ -54,6 +54,11 @@ int b2b_bind(b2b_api_t* api);
 unsigned int server_hsize = 9;
 unsigned int client_hsize = 9;
 str server_address = {0, 0};
+static char* script_req_route = NULL;
+static char* script_reply_route = NULL;
+int req_routeid  = -1;
+int reply_routeid = -1;
+
 
 /* TM bind */
 struct tm_binds tmb;
@@ -67,10 +72,12 @@ static cmd_export_t cmds[]=
 
 /** Exported parameters */
 static param_export_t params[]={
-	{ "server_address",        STR_PARAM,    &server_address.s},
-	{ "server_hsize",          INT_PARAM,    &server_hsize    },
-	{ "client_hsize",          INT_PARAM,    &client_hsize    },
-	{ 0,                       0,            0                }
+	{ "server_address",        STR_PARAM,    &server_address.s   },
+	{ "server_hsize",          INT_PARAM,    &server_hsize       },
+	{ "client_hsize",          INT_PARAM,    &client_hsize       },
+	{ "script_req_route",      STR_PARAM,    &script_req_route   },
+	{ "script_reply_route",    STR_PARAM,    &script_reply_route  },
+	{ 0,                       0,            0                   }
 };
 
 /** Module interface */
@@ -132,6 +139,26 @@ static int mod_init(void)
 	{
 		LM_ERR("Failed to register prescript function\n");
 		return -1;
+	}
+
+	if (script_req_route)
+	{
+		req_routeid = get_script_route_ID_by_name( script_req_route, rlist, RT_NO);
+		if (req_routeid < 1)
+		{
+			LM_ERR("route <%s> does not exist\n",script_req_route);
+			return -1;
+		}
+	}
+
+	if (script_reply_route)
+	{
+		reply_routeid = get_script_route_ID_by_name( script_reply_route, rlist, RT_NO);
+		if (reply_routeid < 1)
+		{
+			LM_ERR("route <%s> does not exist\n",script_reply_route);
+			return -1;
+		}
 	}
 
 	return 0;

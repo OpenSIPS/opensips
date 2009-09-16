@@ -53,6 +53,9 @@ extern unsigned int server_hsize;
 extern unsigned int client_hsize;
 extern str server_address;
 extern struct tm_binds tmb;
+extern int req_routeid;
+extern int reply_routeid;
+
 
 int b2b_load_api(b2b_api_t* api);
 typedef int(*load_b2b_f) (b2b_api_t* api);
