@@ -309,6 +309,9 @@ error_char:
 }
 
 
+int  check_ip_address(struct ip_addr* ip, str *name,
+		unsigned short port, unsigned short proto, int resolver);
+
 struct hostent* sip_resolvehost(str* name, unsigned short* port,
 		unsigned short *proto, int is_sips, struct dns_node **dn);
 

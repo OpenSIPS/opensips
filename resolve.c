@@ -1,7 +1,7 @@
 /* $Id$
  *
  * Copyright (C) 2001-2003 FhG Fokus
- * Copyright (C) 2005-2007 Voice Sistem S.R.L.
+ * Copyright (C) 2005-2009 Voice Sistem S.R.L.
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -75,6 +75,74 @@ static struct bl_head *failover_bl=0;
 #define DNS_REVOLVER_BL_ID    17
 #define DNS_REVOLVER_BL_NAME  "dns"
 #define DNS_BL_EXPIRE         4*60
+
+
+
+/*! \brief checks if ip is in host(name) and ?host(ip)=name?
+ * ip must be in network byte order!
+ *  resolver = DO_DNS | DO_REV_DNS; if 0 no dns check is made
+ * \return 0 if equal */
+int check_ip_address(struct ip_addr* ip, str *name, 
+				unsigned short port, unsigned short proto, int resolver)
+{
+	struct hostent* he;
+	int i, len;
+	char* s;
+
+	/* maybe we are lucky and name it's an ip */
+	s=ip_addr2a(ip);
+	if (s){
+		LM_DBG("params %s, %.*s, %d\n", s, name->len, name->s, resolver);
+		len=strlen(s);
+
+	#ifdef USE_IPV6
+		/* check if name->s is an ipv6 address or an ipv6 address ref. */
+		if ((ip->af==AF_INET6) &&
+				(	((len==name->len)&&(strncasecmp(name->s, s, name->len)==0))
+					||
+					((len==(name->len-2))&&(name->s[0]=='[')&&
+						(name->s[name->len-1]==']')&&
+						(strncasecmp(name->s+1, s, len)==0))
+				)
+		   )
+			return 0;
+		else
+	#endif
+
+			if (strncmp(name->s, s, name->len)==0) 
+				return 0;
+	}else{
+		LM_CRIT("could not convert ip address\n");
+		return -1;
+	}
+
+	if (port==0) port=SIP_PORT;
+	if (resolver&DO_DNS){
+		LM_DBG("doing dns lookup\n");
+		/* try all names ips */
+		he=sip_resolvehost(name, &port, &proto, 0, 0);
+		if (he && (int)ip->af==he->h_addrtype){
+			for(i=0;he && he->h_addr_list[i];i++){
+				if ( memcmp(&he->h_addr_list[i], ip->u.addr, ip->len)==0)
+					return 0;
+			}
+		}
+	}
+	if (resolver&DO_REV_DNS){
+		LM_DBG("doing rev. dns lookup\n");
+		/* try reverse dns */
+		he=rev_resolvehost(ip);
+		if (he && (strncmp(he->h_name, name->s, name->len)==0))
+			return 0;
+		for (i=0; he && he->h_aliases[i];i++){
+			if (strncmp(he->h_aliases[i],name->s, name->len)==0)
+				return 0;
+		}
+	}
+	return -1;
+}
+
+
 
 /*! \brief Initialize the DNS resolver
  * retr_time  - time before retransmitting (must be >0)
