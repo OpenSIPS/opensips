@@ -316,9 +316,9 @@ static void datagram_process(int rank)
 
 static int post_datagram_process(void)
 {
-	/* close the sockets */
-	close(sockets.rx_sock);
-	close(sockets.tx_sock);
+	/* close the RX sockets, but try to keep the TX socket open (for AYSNC) */
+	if (sockets.rx_sock!=sockets.tx_sock)
+		close(sockets.rx_sock);
 	return 0;
 }
 

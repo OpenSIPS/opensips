@@ -62,8 +62,8 @@ typedef union{
 
 typedef struct{
 	my_sock_address address;
-		unsigned int domain;
 	int address_len;
+	int tx_sock;
 }my_socket_address;
 
 

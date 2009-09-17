@@ -71,22 +71,6 @@ static unsigned int mi_socket_domain;
 
 static int mi_sock_check(int fd, char* fname);
 
-#define mi_create_dtgram_replysocket(_socketfd,_socket_domain, _err) \
-	_socketfd = socket(_socket_domain, SOCK_DGRAM, 0);\
-	if (_socketfd == -1) {\
-		LM_ERR("cannot create socket: %s\n", strerror(errno));\
-		goto _err;\
-	}\
-	/* Turn non-blocking mode on for tx*/\
-	flags = fcntl(_socketfd, F_GETFL);\
-	if (flags == -1){\
-		LM_ERR("fcntl failed: %s\n", strerror(errno));\
-		goto _err;\
-	}\
-	if (fcntl(_socketfd, F_SETFL, flags | O_NONBLOCK) == -1) {\
-		LM_ERR("fcntl: set non-blocking failed: %s\n", strerror(errno));\
-		goto _err;\
-	}
 
 
 int  mi_init_datagram_server(sockaddr_dtgram *addr, unsigned int socket_domain,
@@ -105,9 +89,8 @@ int  mi_init_datagram_server(sockaddr_dtgram *addr, unsigned int socket_domain,
 		return -1;
 	}
 
-	switch(socket_domain)
-	{
-	case AF_LOCAL:
+	switch(socket_domain) {
+		case AF_LOCAL:
 			LM_DBG("we have a unix socket: %s\n", addr->unix_addr.sun_path);
 			socket_name = addr->unix_addr.sun_path;
 			if(bind(socks->rx_sock,(struct sockaddr*)&addr->unix_addr, 
@@ -133,30 +116,47 @@ int  mi_init_datagram_server(sockaddr_dtgram *addr, unsigned int socket_domain,
 					goto err_rx;
 				}
 			}
+			/* create TX socket */
+			socks->tx_sock = socket( socket_domain, SOCK_DGRAM, 0);
+			if (socks->tx_sock == -1) {
+				LM_ERR("cannot create socket: %s\n", strerror(errno));
+				goto err_rx;
+			};
+			/* Turn non-blocking mode on for tx*/
+			flags = fcntl(socks->tx_sock, F_GETFL);
+			if (flags == -1) {
+				LM_ERR("fcntl failed: %s\n", strerror(errno));
+				goto err_both;
+			}
+			if (fcntl(socks->tx_sock, F_SETFL, flags | O_NONBLOCK) == -1) {
+				LM_ERR("fcntl: set non-blocking failed: %s\n",strerror(errno));
+				goto err_both;
+			}
 			break;
 
-	case AF_INET:
+		case AF_INET:
 			if (bind(socks->rx_sock, &addr->udp_addr.s,
 			sockaddru_len(addr->udp_addr))< 0) {
 				LM_ERR("bind: %s\n", strerror(errno));
 				goto err_rx;
 			}
+			socks->tx_sock = socks->rx_sock;
 			break;
 #ifdef USE_IPV6
-	case AF_INET6: 
+		case AF_INET6: 
 			if(bind(socks->rx_sock, (struct sockaddr*)&addr->udp_addr.sin6,
 					sizeof(addr->udp_addr)) < 0) {
 				LM_ERR("bind: %s\n", strerror(errno));
 				goto err_rx;
 			}
+			socks->tx_sock = socks->rx_sock;
 			break;
 #endif
-	default:
+		default:
 			LM_ERR("domain not supported\n");
-			goto err_both;
+			goto err_rx;
 
 	}
-	mi_create_dtgram_replysocket(socks->tx_sock,socket_domain, err_both);
 
 	return 0;
 err_both:
@@ -326,19 +326,13 @@ static void datagram_close_async(struct mi_root *mi_rpl,struct mi_handler *hdl,
 	datagram_stream dtgram;
 	int ret;
 	my_socket_address *p;
-	int reply_sock, flags;
 
 	p = (my_socket_address *)hdl->param;
-
-	LM_DBG("the socket domain is %i and af_local is %i\n", p->domain,AF_LOCAL);
-
-	mi_create_dtgram_replysocket(reply_sock,p->domain, err);
-
 
 	if ( mi_rpl!=0 || done )
 	{
 		if (mi_rpl!=0) {
-			/*allocate the response datagram*/	
+			/*allocate the response datagram*/
 			dtgram.start = pkg_malloc(DATAGRAM_SOCK_BUF_SIZE);
 			if(!dtgram.start){
 				LM_ERR("no more pkg memory\n");
@@ -346,14 +340,13 @@ static void datagram_close_async(struct mi_root *mi_rpl,struct mi_handler *hdl,
 			}
 			/*build the response*/
 			if(mi_datagram_write_tree(&dtgram , mi_rpl) != 0){
-				LM_ERR("failed to build the response \n");	
-
+				LM_ERR("failed to build the response \n");
 				goto err1;
 			}
 			LM_DBG("the response is %s", dtgram.start);
 		
 			/*send the response*/
-			ret = mi_send_dgram(reply_sock, dtgram.start,
+			ret = mi_send_dgram(p->tx_sock, dtgram.start,
 							dtgram.current - dtgram.start, 
 							 (struct sockaddr *)&p->address, 
 							 p->address_len, mi_socket_timeout);
@@ -366,7 +359,7 @@ static void datagram_close_async(struct mi_root *mi_rpl,struct mi_handler *hdl,
 			free_mi_tree( mi_rpl );
 			pkg_free(dtgram.start);
 		} else {
-			mi_send_dgram(reply_sock, MI_COMMAND_FAILED, MI_COMMAND_FAILED_LEN,
+			mi_send_dgram(p->tx_sock, MI_COMMAND_FAILED, MI_COMMAND_FAILED_LEN,
 							(struct sockaddr*)&reply_addr, reply_addr_len, 
 							mi_socket_timeout);
 		}
@@ -375,13 +368,11 @@ static void datagram_close_async(struct mi_root *mi_rpl,struct mi_handler *hdl,
 	if (done)
 		free_async_handler( hdl );
 
-	close(reply_sock);
 	return;
 
 err1:
 	pkg_free(dtgram.start);
 err:
-	close(reply_sock);
 	return;
 }
 
@@ -389,11 +380,11 @@ err:
 
 static inline struct mi_handler* build_async_handler(unsigned int sock_domain,
 								struct sockaddr *reply_addr, 
-								unsigned int reply_addr_len)
+								unsigned int reply_addr_len, int tx_sock)
 {
 	struct mi_handler *hdl;
 	void * p;
-	my_socket_address * repl_address;	
+	my_socket_address * repl_address;
 
 
 	hdl = (struct mi_handler*)shm_malloc( sizeof(struct mi_handler) +
@@ -405,9 +396,9 @@ static inline struct mi_handler* build_async_handler(unsigned int sock_domain,
 
 	p = (void *)((hdl) + 1);
 	repl_address = p;
-	
-	switch(sock_domain)
-	{/*we can have either of these types of sockets*/
+
+	switch(sock_domain) {
+		/*we can have either of these types of sockets*/
 		case AF_LOCAL:	LM_DBG("we have an unix socket\n");
 						memcpy(&repl_address->address.unix_deb, 
 								reply_addr, reply_addr_len);
@@ -423,10 +414,10 @@ static inline struct mi_handler* build_async_handler(unsigned int sock_domain,
 		default:		LM_CRIT("socket_domain has an incorrect value\n");
 						shm_free(hdl);
 						return 0;
-	
 	}
-	repl_address->domain = sock_domain;
+
 	repl_address->address_len  = reply_addr_len;
+	repl_address->tx_sock = tx_sock;
 
 	hdl->handler_f = datagram_close_async;
 	hdl->param = (void*)repl_address;
@@ -501,7 +492,7 @@ void mi_datagram_server(int rx_sock, int tx_sock)
 		/* if asyncron cmd, build the async handler */
 		if (f->flags&MI_ASYNC_RPL_FLAG) {
 			hdl = build_async_handler(mi_socket_domain,
-					(struct sockaddr* )&reply_addr, reply_addr_len);
+					(struct sockaddr* )&reply_addr, reply_addr_len, tx_sock);
 			if (hdl==0) {
 				LM_ERR("failed to build async handler\n");
 				mi_send_dgram(tx_sock, MI_INTERNAL_ERROR,
