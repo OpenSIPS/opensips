@@ -399,6 +399,26 @@ modparam("permissions", "db_url", "&exampledb;")
 		</example>
 	</section>
 	<section>
+		<title><varname>address_table</varname> (string)</title>
+		<para>
+		Name of database table containing matching rules used by
+		<function moreinfo="none">allow_register</function> function.
+		</para>
+		<para>
+		<emphasis>
+		Default value is <quote>address</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>address_table</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("permissions", "address_table", "pbx")
+...
+</programlisting>
+		</example>
+	</section>
+	<section>
 		<title><varname>grp_col</varname> (string)</title>
 		<para>
 		Name of address table column containing group
@@ -419,21 +439,21 @@ modparam("permissions", "grp_col", "group_id")
 		</example>
 	</section>
 	<section>
-		<title><varname>ip_addr_col</varname> (string)</title>
+		<title><varname>ip_col</varname> (string)</title>
 		<para>
 		Name of address table column containing IP address
 		part of the address.
 		</para>
 		<para>
 		<emphasis>
-		Default value is <quote>ip_addr</quote>.
+		Default value is <quote>ip</quote>.
 		</emphasis>
 		</para>
 		<example>
-		<title>Set <varname>ip_addr_col</varname> parameter</title>
+		<title>Set <varname>ip_col</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("permissions", "ip_addr_col", "ip_address")
+modparam("permissions", "ip_col", "ipess")
 ...
 </programlisting>
 		</example>
@@ -478,47 +498,8 @@ modparam("permissions", "port_col", "prt")
 </programlisting>
 		</example>
 	</section>
-	<section>
-		<title><varname>trusted_table</varname> (string)</title>
-		<para>
-		Name of database table containing matching rules used by
-		<function moreinfo="none">allow_register</function> function.
-		</para>
-		<para>
-		<emphasis>
-		Default value is <quote>trusted</quote>.
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>trusted_table</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("permissions", "trusted_table", "pbx")
-...
-</programlisting>
-		</example>
-	</section>
-	<section>
-		<title><varname>source_col</varname> (string)</title>
-		<para>
-		Name of trusted table column containing source IP
-		address that is matched against source IP address of
-		received request.
-		</para>
-		<para>
-		<emphasis>
-		Default value is <quote>src_ip</quote>.
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>source_col</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("permissions", "source_col", "source_ip_address")
-...
-</programlisting>
-		</example>
-	</section>
+
+	
 	<section>
 		<title><varname>proto_col</varname> (string)</title>
 		<para>
@@ -546,27 +527,28 @@ modparam("permissions", "proto_col", "transport")
 		</example>
 	</section>
 	<section>
-		<title><varname>from_col</varname> (string)</title>
+		<title><varname>pattern_col</varname> (string)</title>
 		<para>
-		Name of trusted table column containing regular
-		expression that is matched against From URI.
+		Name of address table column containing regular
+		expression that is matched against the arguments received by 
+		check_address or check_source_address.
 		</para>
 		<para>
 		<emphasis>
-		Default value is <quote>from_pattern</quote>.
+		Default value is <quote>pattern</quote>.
 		</emphasis>
 		</para>
 		<example>
-		<title>Set <varname>from_col</varname> parameter</title>
+		<title>Set <varname>pattern_col</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("permissions", "from_col", "regexp")
+modparam("permissions", "pattern_col", "regexp")
 ...
 </programlisting>
 		</example>
 	</section>
 	<section>
-		<title><varname>tag_col</varname> (string)</title>
+		<title><varname>info_col</varname> (string)</title>
 		<para>
 		Name of trusted table column containing a string
 		that is added as value to peer_tag AVP if peer_tag AVP
@@ -574,14 +556,14 @@ modparam("permissions", "from_col", "regexp")
 		</para>
 		<para>
 		<emphasis>
-		Default value is <quote>tag</quote>.
+		Default value is <quote>context_info</quote>.
 		</emphasis>
 		</para>
 		<example>
-		<title>Set <varname>tag_col</varname> parameter</title>
+		<title>Set <varname>info_col</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("permissions", "tag_col", "peer_tag")
+modparam("permissions", "info_col", "peer_tag")
 ...
 </programlisting>
 		</example>
@@ -856,92 +838,38 @@ if (allow_uri("basename", "$avp(i:705)") {  // Check URI stored in $avp(i:705)
 </programlisting>
 		</example>
 	</section>
+	
 	<section>
 		<title>
-		<function moreinfo="none">allow_address(group_id, ip_addr_pvar, port_pvar)</function>
+		<function moreinfo="none">check_address(group_id, ip, 
+		port, proto, [context_info], [pattern])</function>
 		</title>
 		<para>
-		Returns true if IP address and port given as values of pvar
+		Checks based on the arguments if a request can be allowed without 
+		authentication.
+		
+		Returns true if IP address, port and protocol given as values of pvar
 		arguments belonging to a group given as group_id argument
 		matches an IP subnet found in cached address table.
+		
 		Cached address table entry containing port value 0
 		matches any port.  group_id argument can be an integer
-		string or a pseudo variable. 
+		string or a pseudo variable.
 		</para>
 		<para>
-		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
-		</para>
-		<example>
-		<title><function>allow_address()</function> usage</title>
-		<programlisting format="linespecific">
-...
-
-// Check if source address/port is in group 1
-if (!allow_address("1", "$si", "$sp")) {
-	sl_send_reply("403", "Forbidden");
-};
-// Check IP address/port stored in AVPs i:704/i:705 is in group 2
-if (!allow_address("2", "$avp(i:704)", "$avp(i:705)") {
-	sl_send_reply("403", "Forbidden");
-};
-...
-</programlisting>
-		</example>
-	</section>
-	<section>
-		<title>
-		<function moreinfo="none">allow_source_address(group_id)</function>
-		</title>
-		<para>
-		Equal to allow_address(group_id, "$si", "$sp").
+			Group_ip and port arguments can integer strings or  
+			pseudo variables. Ip and proto can be strings or 
+			pseudo variables. Context_info and pattern arguments
+			must be a pseudo_variable and a string. They are represented
+			in brackets because they are optional.
 		</para>
 		<para>
-		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
-		</para>
-		<example>
-		<title><function>allow_source_address(group_id)</function> usage</title>
-		<programlisting format="linespecific">
-...
-
-// Check source address/port of request
-if (!allow_source_address("0")) {
-	sl_send_reply("403", "Forbidden");
-};
-...
-</programlisting>
-		</example>
-	</section>
-	<section>
-		<title>
-		<function moreinfo="none">allow_source_address_group()</function>
-		</title>
-		<para>
-		Checks if source address/port is found in cached address or
-		subnet table in any group. If yes, returns that group.
-		If not returns -1.  Port value 0 in cached address and
-		group table matches any port.
+		Source address and transport protocol given in pvar
+		arguments must be in string format.  Valid transport
+		protocol values are "UDP, "TCP", "TLS", and "SCTP".
 		</para>
 		<para>
-		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
-		</para>
-		<example>
-		<title><function>allow_source_address_group()</function> usage</title>
-		<programlisting format="linespecific">
-...
-
-$var(group) = allow_source_address_group();
-if ($var(group) != -1) {
-   # do something with $var(group)
-};
-...
-</programlisting>
-		</example>
-	</section>
-	<section>
-		<title>
-		<function moreinfo="none">allow_trusted([src_ip_pvar, proto_pvar])</function>
-		</title>
-		<para>
+		
 		Checks based either on request's source address and transport
 		protocol or source address and transport protocol given
 		in pvar arguments, and From URI of request
@@ -953,26 +881,95 @@ if ($var(group) != -1) {
                 non-NULL tag column value of the
 		matching peer to AVP peer_tag_avp.
 		</para>
+		
 		<para>
-		Source address and transport protocol given in pvar
-		arguments must be in string format.  Valid transport
-		protocol values are "UDP, "TCP", "TLS", and "SCTP".
+		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
+		</para>
+		<example>
+		<title><function>check_address()
+		</function> usage</title>
+		<programlisting format="linespecific">
+...
+
+// Check IP address/port given as strings and source protocol is in group 4
+// stores context information in $avp(i:10), and checks if pattern string 
+// "texttest" matches the regular expression field in the database table
+if (check_address("4","192.168.2.135","5700","$proto","$avp(i:10)", "texttest")) {
+	t_relay();
+	xlog("$avp(i:10)\n");
+}
+...
+if (check_address("4","$si","$sp","$proto")) {
+	t_relay();
+}
+
+...
+// Check IP address/port/protocol stored in AVPs s:ip/s:port/s:proto is in group 4
+// and stores context information in $avp(i:10)
+$avp(s:ip) = "192.168.2.135";
+$avp(s:port) = 5061;
+$avp(s:proto) = "any";
+if (check_address("4","$avp(s:ip)","$avp(s:port)","$avp(s:proto)","$avp(i:10))) {
+	t_relay();
+	xlog("$avp(i:10)\n");
+}
+...    
+
+</programlisting>
+		</example>
+	</section>
+	
+	<section>
+		<title>
+		<function moreinfo="none">check_source_address(group_id_pvar | group_id_int, [context_pvar], [pattern_string])</function>
+		</title>
+		<para>
+		Equivalent to check_address(group_id, "$si", "$sp", "$proto", context_pvar, pattern_string).
 		</para>
 		<para>
 		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 		</para>
 		<example>
-		<title><function>allow_trusted()</function> usage</title>
+		<title><function>check_source_address()</function> usage</title>
 		<programlisting format="linespecific">
 ...
-if (allow_trusted()) {
-	t_relay();
+// Check if source address/port/proto is in group 4 and stores
+// context information in $avp(i:9)
+if (check_source_address("4","$avp(i:9)")) {
+	xlog("$avp(i:9)\n");
+}else {
+	sl_send_reply("403", "Forbidden");
+}
+...
+</programlisting>
+		</example>
+	</section>
+	
+	<section>
+		<title>
+		<function moreinfo="none">get_source_group()</function>
+		</title>
+		<para>
+		Checks if source address/port is found in cached address or
+		subnet table in any group. If yes, returns that group.
+		If not returns -1.  Port value 0 in cached address and
+		group table matches any port.		
+		</para>
+		<para>
+		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
+		</para>
+		<example>
+		<title><function>get_source_group()</function> usage</title>
+		<programlisting format="linespecific">
+
+...
+
+$var(group) = get_source_group();
+if ($var(group) != -1) {
+   # do something with $var(group)
 };
 ...
-if (allow_trusted("$si", "$proto")) {
-	t_relay();
-};
-...
+
 </programlisting>
 		</example>
 	</section>
@@ -980,15 +977,14 @@ if (allow_trusted("$si", "$proto")) {
 	
 	<section>
 	<title>Exported MI Functions</title>
-	<section>
 	
 	<section>
 		<title>
-		<function moreinfo="none">trusted_reload</function>
+		<function moreinfo="none">address_reload</function>
 		</title>
 		<para>
 				Causes permissions module to re-read the contents of
-				trusted database table into cache
+				the address database table into cache
 				memory.  In cache memory the entries are
 				for performance reasons stored in two
                                 different tables:  address table and
@@ -1000,11 +996,11 @@ if (allow_trusted("$si", "$proto")) {
 
 	<section>
 		<title>
-		<function moreinfo="none">trusted_dump</function>
+		<function moreinfo="none">address_dump</function>
 		</title>
 		<para>
-				Causes permissions module to dump contents of trusted
-				table from cache memory.
+				Causes permissions module to dump contents of 
+				the address table from cache memory.
 				</para>
 		<para>Parameters: <emphasis>none</emphasis></para>
 	</section>
@@ -1048,7 +1044,6 @@ if (allow_trusted("$si", "$proto")) {
 		</itemizedlist>
 
 	</section>
-
 	</section>
 
 </chapter>

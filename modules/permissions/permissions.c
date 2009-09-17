@@ -63,10 +63,10 @@ str db_url = {NULL, 0};                    /* Don't connect to the database by d
 
 /* for allow_address function */
 str address_table = str_init("address");	/* Name of address table */
-str ip_col = str_init("ip");				/* Name of address column */
+str ip_col = str_init("ip");				/* Name of ip column */
 str proto_col = str_init("proto");			/* Name of protocol column */
-str pattern_col = str_init("pattern"); 		/* Name of from pattern column */
-str info_col = str_init("context_info");	/* Name of tag column */
+str pattern_col = str_init("pattern"); 		/* Name of pattern column */
+str info_col = str_init("context_info");	/* Name of context info column */
 str grp_col = str_init("grp");				/* Name of address group column */
 str mask_col = str_init("mask");			/* Name of mask column */
 str port_col = str_init("port");			/* Name of port column */
@@ -168,7 +168,7 @@ static param_export_t params[] = {
 	{"deny_suffix",        STR_PARAM, &deny_suffix       },
 	{"db_url",             STR_PARAM, &db_url.s          },
 	{"address_table",      STR_PARAM, &address_table.s   },
-	{"ip_col",         STR_PARAM, &ip_col.s    	 },
+	{"ip_col",		       STR_PARAM, &ip_col.s    	 	 },
 	{"proto_col",          STR_PARAM, &proto_col.s       },
 	{"from_col",           STR_PARAM, &pattern_col.s     },
 	{"info_col",           STR_PARAM, &info_col.s        },
