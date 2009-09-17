@@ -313,6 +313,8 @@ routing_info:
 					(t->uac[t->relaied_reply_branch].added_rr):0);
 		get_routing_info(rpl, 0, &skip_rrs, &contact, &rr_set);
 		dlg_update_routing( dlg, leg, &rr_set, &contact );
+		if( rr_set.s )
+			pkg_free( rr_set.s);
 	}
 }
 
