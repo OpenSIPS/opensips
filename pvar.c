@@ -245,6 +245,42 @@ static int pv_get_start_times(struct sip_msg *msg, pv_param_t *param,
 	return pv_get_uintval(msg, param, res, (unsigned int)startup_time);
 }
 
+static int pv_parse_time_name(pv_spec_p sp, str *in)
+{
+	sp->pvp.pvn.type = PV_NAME_INTSTR;
+	sp->pvp.pvn.u.isname.type = AVP_NAME_STR;
+	sp->pvp.pvn.u.isname.name.s.s = pkg_malloc(in->len + 1);
+	if (sp->pvp.pvn.u.isname.name.s.s==NULL) {
+		LM_ERR("failed to allocated private mem\n");
+		return -1;
+	}
+	memcpy(sp->pvp.pvn.u.isname.name.s.s, in->s, in->len);
+	sp->pvp.pvn.u.isname.name.s.s[in->len] = 0;
+	sp->pvp.pvn.u.isname.name.s.len = in->len;
+	return 0;
+}
+
+static int pv_get_formated_time(struct sip_msg *msg, pv_param_t *param,
+		pv_value_t *res)
+{
+	static char buf[128];
+	time_t t;
+
+	if(msg==NULL)
+		return -1;
+
+	time( &t );
+	res->rs.len = strftime( buf, 127, param->pvn.u.isname.name.s.s,
+			localtime( &t ) );
+
+	if (res->rs.len<=0)
+		return pv_get_null(msg, param, res);
+
+	res->rs.s = buf;
+	res->flags = PV_VAL_STR;
+	return 0;
+}
+
 static int pv_get_timef(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {
@@ -3031,6 +3067,9 @@ static pv_export_t _pv_names_table[] = {
 	{{"to.domain", (sizeof("to.domain")-1)}, /* */
 		PVT_TO_DOMAIN, pv_get_to_attr, 0,
 		0, 0, pv_init_iname, 3},
+	{{"time", (sizeof("time")-1)}, /* */
+		PVT_TIME, pv_get_formated_time, 0,
+		pv_parse_time_name, 0, 0, 0},
 	{{"tn", (sizeof("tn")-1)}, /* */
 		PVT_TO_DISPLAYNAME, pv_get_to_attr, 0,
 		0, 0, pv_init_iname, 5},
