@@ -1046,6 +1046,10 @@ fix_nated_register();
 			<emphasis>16</emphasis> -  test if the source port is different
 			from the port in Via 
 			</para></listitem>
+			<listitem><para>
+			<emphasis>32</emphasis> -  address in Contact is compared against 
+			source IP address of signaling
+			</para></listitem>
 		</itemizedlist>
 		<para>
 		All flags can be bitwise combined, the test returns true if any of 

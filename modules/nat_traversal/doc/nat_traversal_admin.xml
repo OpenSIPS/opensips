@@ -517,6 +517,11 @@ modparam("nat_traversal", "keepalive_state_file", "/var/run/opensips/keepalive_s
           4 - tests if client has a private IP address (as defined by RFC1918)
               in the top Via field of the SIP message.
         </para></listitem>
+        <listitem><para>
+          8 - tests if client has contacted &osips; from an address that
+              is different from the one in the Contact field. Only IP is 
+              compared by this test.
+        </para></listitem>
         </itemizedlist>
       </para>
 

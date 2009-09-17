@@ -90,7 +90,8 @@ typedef enum {
     NTNone=0,
     NTPrivateContact=1,
     NTSourceAddress=2,
-    NTPrivateVia=4
+    NTPrivateVia=4,
+    NTSourceContact=8
 } NatTestType;
 
 typedef struct {
@@ -178,6 +179,7 @@ static int ClientNatTest(struct sip_msg *msg, unsigned int tests);
 static Bool test_private_contact(struct sip_msg *msg);
 static Bool test_source_address(struct sip_msg *msg);
 static Bool test_private_via(struct sip_msg *msg);
+static Bool test_source_contact(struct sip_msg *msg);
 
 static INLINE char* shm_strdup(char *source);
 
@@ -227,6 +229,7 @@ static NatTest NAT_Tests[] = {
     {NTPrivateContact, test_private_contact},
     {NTSourceAddress,  test_source_address},
     {NTPrivateVia,     test_private_via},
+    {NTSourceContact,  test_source_contact},
     {NTNone,           NULL}
 };
 
@@ -839,6 +842,23 @@ test_private_via(struct sip_msg *msg)
 {
     return is_private_address(&(msg->via1->host));
 }
+
+
+// Test if Contact field contains the same IP as the received one
+static Bool
+test_source_contact(struct sip_msg *msg)
+{
+    struct sip_uri uri;
+    contact_t* contact;
+
+    if (!get_contact_uri(msg, &uri, &contact))
+        return False;
+
+    return check_ip_address(&msg->rcv.src_ip,
+        &uri.host, uri.port_no, uri.proto, received_dns);
+}
+
+
 
 
 // return the Expires header value (converted to an UNIX timestamp if > 0)

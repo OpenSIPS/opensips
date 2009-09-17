@@ -230,10 +230,11 @@
 
 /* NAT UAC test constants */
 #define	NAT_UAC_TEST_C_1918	0x01
-#define	NAT_UAC_TEST_RCVD	0x02
+#define	NAT_UAC_TEST_V_RCVD	0x02
 #define	NAT_UAC_TEST_V_1918	0x04
 #define	NAT_UAC_TEST_S_1918	0x08
 #define	NAT_UAC_TEST_RPORT	0x10
+#define	NAT_UAC_TEST_C_RCVD	0x20
 
 
 #define DEFAULT_RTPP_SET_ID		0
@@ -1696,6 +1697,25 @@ via_1918(struct sip_msg* msg)
 	return (is1918addr(&(msg->via1->host)) == 1) ? 1 : 0;
 }
 
+/*
+ * test for Contact IP against received IP
+ */
+static int
+contact_rcv(struct sip_msg* msg)
+{
+	struct sip_uri uri;
+	contact_t* c;
+
+	if (get_contact_uri(msg, &uri, &c) == -1)
+		return -1;
+
+	return check_ip_address(&msg->rcv.src_ip,
+			&uri.host, uri.port_no, uri.proto, received_dns);
+}
+
+
+
+
 static int
 nat_uac_test_f(struct sip_msg* msg, char* str1, char* str2)
 {
@@ -1714,7 +1734,7 @@ nat_uac_test_f(struct sip_msg* msg, char* str1, char* str2)
 	 * test if source address of signaling is different from
 	 * address advertised in Via
 	 */
-	if ((tests & NAT_UAC_TEST_RCVD) && received_test(msg))
+	if ((tests & NAT_UAC_TEST_V_RCVD) && received_test(msg))
 		return 1;
 	/*
 	 * test for occurrences of RFC1918 addresses in Contact
@@ -1731,6 +1751,12 @@ nat_uac_test_f(struct sip_msg* msg, char* str1, char* str2)
 	 * test for occurrences of RFC1918 addresses top Via
 	 */
 	if ((tests & NAT_UAC_TEST_V_1918) && via_1918(msg))
+		return 1;
+	/*
+	 * test if source address of signaling is different from
+	 * address advertised in Contact
+	 */
+	if ((tests & NAT_UAC_TEST_C_RCVD) && contact_rcv(msg))
 		return 1;
 
 	/* no test succeeded */

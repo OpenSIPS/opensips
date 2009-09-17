@@ -781,6 +781,8 @@ fix_nated_register();
      * 8 - SDP is searched for occurrence of RFC1918 addresses
      * 16 - test if the source port is different from the port in
        Via
+     * 32 - address in Contact is compared against source IP
+       address of signaling
 
    All flags can be bitwise combined, the test returns true if any
    of the tests identified a NAT.
