@@ -35,6 +35,7 @@
 #include <stdio.h>
 
 #include <ldap.h>
+#include <stdlib.h>
 
 #include "ldap_connect.h"
 #include "ld_session.h"
@@ -44,13 +45,18 @@
 int ldap_connect(char* _ld_name)
 {
 	int rc;
-	int ldap_bind_result_code;
-	char *ldap_err_str;
 	int ldap_proto_version;
-	int msgid;
-	LDAPMessage *result;
 	struct ld_session* lds;
 	struct berval ldap_cred;
+	struct berval* ldap_credp;
+
+	/*
+	struct berval* serv_cred = (struct berval*)pkg_malloc(sizeof(struct berval));
+	if(!serv_cred){
+	    LM_ERR("Out of mem\n");
+	    return -1;
+	}
+	 */
 
 	/*
 	* get ld session and session config parameters
@@ -144,21 +150,46 @@ int ldap_connect(char* _ld_name)
 		}
 	}
 	
-	/*
-	  * ldap_sasl_bind (LDAP_SASL_SIMPLE)
-	 */
+	
+	/* if timeout == 0 then use default */
+	if ((lds->client_bind_timeout.tv_sec == 0)
+			&& (lds->client_bind_timeout.tv_usec == 0))
+	{
+	    lds->client_bind_timeout.tv_sec =
+		    CFG_DEF_LDAP_CLIENT_BIND_TIMEOUT / 1000;
+	    lds->client_bind_timeout.tv_usec =
+		    (CFG_DEF_LDAP_CLIENT_BIND_TIMEOUT % 1000) * 1000;
+	}
 
+	rc = ldap_set_option(lds->handle, LDAP_OPT_TIMEOUT, &lds->client_bind_timeout);
+	if(rc != LDAP_SUCCESS){
+	    LM_ERR("[%s]: ldap set option LDAP_OPT_TIMEOUT failed\n", _ld_name);
+	    return -1;
+	}
 
+	/* if no "ldap_bind_password" then anonymous */
 	ldap_cred.bv_val = lds->bind_pwd;
 	ldap_cred.bv_len = strlen(lds->bind_pwd);
-	rc = ldap_sasl_bind(
+
+	if(ldap_cred.bv_len == 0 || ldap_cred.bv_val[0]==0){
+	    ldap_credp = NULL;
+	}else{
+	    ldap_credp = &ldap_cred;
+	}
+
+	/*
+	* ldap_sasl_bind (LDAP_SASL_SIMPLE)
+	*/
+
+	rc = ldap_sasl_bind_s(
 		lds->handle,
 		lds->bind_dn,
 		LDAP_SASL_SIMPLE,
-		&ldap_cred,
+		ldap_credp,
 		NULL,
 		NULL,
-		&msgid);
+		NULL   /*&serv_cred */
+		);
 	if (rc != LDAP_SUCCESS)
 	{
 		LM_ERR(	"[%s]: ldap bind failed: %s\n",
@@ -166,65 +197,6 @@ int ldap_connect(char* _ld_name)
 			ldap_err2string(rc));
 		return -1;
 	}
-
-
-
-	
-	if ((lds->client_bind_timeout.tv_sec == 0) 
-			&& (lds->client_bind_timeout.tv_usec == 0))
-	{
-		rc = ldap_result(lds->handle, msgid, 1, NULL, &result);
-	} else
-	{
-		rc = ldap_result(lds->handle, msgid, 1, &lds->client_bind_timeout,
-				&result);
-	}
-
-
-	if (rc == -1)
-	{
-		ldap_get_option(lds->handle, LDAP_OPT_ERROR_NUMBER, &rc);
-		ldap_err_str = ldap_err2string(rc);
-		LM_ERR(	"[%s]: ldap_result failed: %s\n",
-			_ld_name,
-			ldap_err_str);
-		return -1;
-	} 
-	else if (rc == 0)
-	{
-		LM_ERR("[%s]: bind operation timed out\n", _ld_name);
-		return -1;
-	}
-
-
-	rc = ldap_parse_result(
-		lds->handle,
-		result,
-		&ldap_bind_result_code,
-		NULL,
-		NULL,
-		NULL,
-		NULL,
-		1);
-	if (rc != LDAP_SUCCESS)
-	{
-		LM_ERR(	"[%s]: ldap_parse_result failed: %s\n",
-			_ld_name, 
-			ldap_err2string(rc));
-		return -1;
-	}
-	if (ldap_bind_result_code != LDAP_SUCCESS)
-	{
-		LM_ERR(	"[%s]: ldap bind failed: %s\n",
-			_ld_name, 
-			ldap_err2string(ldap_bind_result_code));
-		return -1;
-	}
-
-
-	/* freeing result leads to segfault ... bind result is probably used by openldap lib */
-	/* ldap_msgfree(result); */
-
 
 	LM_DBG(	"[%s]: LDAP bind successful (ldap_host [%s])\n",
 		_ld_name, 

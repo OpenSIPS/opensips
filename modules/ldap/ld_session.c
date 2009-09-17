@@ -136,6 +136,7 @@ int add_ld_session(char* _name, LDAP* _ldh, dictionary* _d)
 		LM_ERR("no memory\n");
 		return -1;
 	}
+	memset(new_lds->bind_pwd, 0, strlen(bind_pwd)+1);
 	strcpy(new_lds->bind_pwd, bind_pwd);
 
 	/* calculate_ha1 */
