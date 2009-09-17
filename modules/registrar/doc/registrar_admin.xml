@@ -622,7 +622,7 @@ switch ($retcode) {
 
 	<section>
 		<title>
-		<function moreinfo="none">registered(domain [,AOR])</function>
+		<function moreinfo="none">registered(domain [,AOR[, callid]])</function>
 		</title>
 		<para>
 		The function returns true if an AOR is registered, false otherwise.
@@ -644,6 +644,15 @@ switch ($retcode) {
 			<para>
 			<emphasis>AOR</emphasis> (optional)- AOR to lookup for; if
 			missing, the RURI is used as AOR; This can be a variable.
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+			<emphasis>callid</emphasis> (optional)- callid to check if a 
+			contact if registered with this callid (this may help you to 
+			make distinction between newly registered contact (callid 
+			not registered so far) and re-registration (callid already 
+			registered).
 			</para>
 		</listitem>
 		</itemizedlist>

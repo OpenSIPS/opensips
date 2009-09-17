@@ -207,21 +207,23 @@ done:
  * it is similar to lookup but registered neither rewrites
  * the Request-URI nor appends branches
  */
-int registered(struct sip_msg* _m, char* _t, char* _s)
+int registered(struct sip_msg* _m, char* _t, char* _s, char *_c)
 {
 	str uri, aor;
 	urecord_t* r;
 	ucontact_t* ptr;
 	pv_value_t val;
+	str callid;
 	int res;
 
+	/* get the AOR */
 	if (_s) {
 		if (pv_get_spec_value( _m, (pv_spec_p)_s, &val)!=0) {
-			LM_ERR("failed to get PV value\n");
+			LM_ERR("failed to getAOR PV value\n");
 			return -1;
 		}
 		if ( (val.flags&PV_VAL_STR)==0 ) {
-			LM_ERR("PV vals is not string\n");
+			LM_ERR("AOR PV vals is not string\n");
 			return -1;
 		}
 		uri = val.rs;
@@ -239,6 +241,22 @@ int registered(struct sip_msg* _m, char* _t, char* _s)
 		return -1;
 	}
 
+	/* get the callid */
+	if (_c) {
+		if (pv_get_spec_value( _m, (pv_spec_p)_c, &val)!=0) {
+			LM_ERR("failed to get callid PV value\n");
+			return -1;
+		}
+		if ( (val.flags&PV_VAL_STR)==0 ) {
+			LM_ERR("callid PV vals is not string\n");
+			return -1;
+		}
+		callid = val.rs;
+	} else {
+		callid.s = NULL;
+		callid.len = 0;
+	}
+
 	ul.lock_udomain((udomain_t*)_t, &aor);
 	res = ul.get_urecord((udomain_t*)_t, &aor, &r);
 
@@ -254,10 +272,13 @@ int registered(struct sip_msg* _m, char* _t, char* _s)
 			ptr = ptr->next;
 		}
 
-		if (ptr) {
-			ul.unlock_udomain((udomain_t*)_t, &aor);
-			LM_DBG("'%.*s' found in usrloc\n", aor.len, ZSW(aor.s));
-			return 1;
+		for( ; ptr ; ptr=ptr->next ) {
+			if (callid.len==0 || (callid.len==ptr->callid.len &&
+			memcmp(callid.s,ptr->callid.s,callid.len)==0 ) ) {
+				ul.unlock_udomain((udomain_t*)_t, &aor);
+				LM_DBG("'%.*s' found in usrloc\n", aor.len, ZSW(aor.s));
+				return 1;
+			}
 		}
 	}
 

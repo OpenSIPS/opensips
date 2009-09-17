@@ -142,6 +142,8 @@ static cmd_export_t cmds[] = {
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"registered",   (cmd_function)registered,   2,  registered_fixup, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"registered",   (cmd_function)registered,   3,  registered_fixup, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"add_sock_hdr", (cmd_function)add_sock_hdr, 1,  fixup_str_null,   0,
 		REQUEST_ROUTE },
 	{0, 0, 0, 0, 0, 0}
@@ -331,6 +333,9 @@ static int registered_fixup(void** param, int param_no)
 		return domain_fixup(param);
 	} else if (param_no == 2) {
 		/* AOR - from PVAR */
+		return fixup_pvar(param);
+	} else if (param_no == 3) {
+		/* CALLID - from PVAR */
 		return fixup_pvar(param);
 	}
 	return 0;

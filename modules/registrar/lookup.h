@@ -46,7 +46,7 @@ int lookup(struct sip_msg* _m, char* _table, char* _flags, char* _aor);
  * it is similar to lookup but registered neither rewrites
  * the Request-URI nor appends branches
  */
-int registered(struct sip_msg* _m, char* _t, char* _s);
+int registered(struct sip_msg* _m, char* _t, char* _s, char* _c);
 
 
 #endif /* LOOKUP_H */
