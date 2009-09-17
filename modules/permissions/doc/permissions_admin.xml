@@ -10,8 +10,8 @@
 		<title>Call Routing</title>
 		<para>
 		The module can be used to determine if a call has appropriate 
-		permission to be established. Permission rules are stored in 
-		plaintext configuration files similar to
+		permission to be established. 
+		Permission rules are stored in plaintext configuration files similar to
 		<filename moreinfo="none">hosts.allow</filename> and <filename
 		moreinfo="none">hosts.deny</filename> files used by tcpd.
 		</para>
@@ -217,11 +217,7 @@
 		</para>
 		<para>
 		Rules are stored in a database table specified by module
-		parameters.  There also exists a module parameter
-	        <varname>dm_mode</varname> that
-		determines if rules are cached into memory for faster
-		matching or if database is consulted for each invocation
-		of allow_trusted function call.
+		parameters.  
 		</para>
 	</section>
 	</section>
@@ -403,28 +399,6 @@ modparam("permissions", "db_url", "&exampledb;")
 		</example>
 	</section>
 	<section>
-		<title><varname>address_table</varname> (string)</title>
-		<para>
-		Name of database table containing IP subnet information used by
-		<function moreinfo="none">allow_address</function> and
-                <function moreinfo="none">allow_source_address</function>
-                functions.
-		</para>
-		<para>
-		<emphasis>
-		Default value is <quote>address</quote>.
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>address_table</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("permissions", "address_table", "addr")
-...
-</programlisting>
-		</example>
-	</section>
-	<section>
 		<title><varname>grp_col</varname> (string)</title>
 		<para>
 		Name of address table column containing group
@@ -500,26 +474,6 @@ modparam("permissions", "mask_col", "subnet_length")
 		<programlisting format="linespecific">
 ...
 modparam("permissions", "port_col", "prt")
-...
-</programlisting>
-		</example>
-	</section>
-	<section>
-		<title><varname>db_mode</varname> (integer)</title>
-		<para>
-		Database mode. 0 means non-caching, 1 means caching.
-		Valid only for allow_trusted function.
-		</para>
-		<para>
-		<emphasis>
-			Default value is 0 (non-caching).
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>db_mode</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("permissions", "db_mode", 1)
 ...
 </programlisting>
 		</example>
@@ -1027,53 +981,19 @@ if (allow_trusted("$si", "$proto")) {
 	<section>
 	<title>Exported MI Functions</title>
 	<section>
-		<title>
-		<function moreinfo="none">address_reload</function>
-		</title>
-		<para>
-				Causes permissions module to re-read the contents of
-				address database table into cache
-				memory.  In cache memory the entries are
-				for performance reasons stored in two
-                                different tables:  address table and
-				subnet table depending on the value of
-				the mask field (32 or smaller).
-
-		</para>
-		<para>Parameters: <emphasis>none</emphasis></para>
-	</section>
 	
-	<section>
-		<title>
-		<function moreinfo="none">address_dump</function>
-		</title>
-		<para>
-				Causes permissions module to dump
-                   contents of cache memory address table.
-
-		</para>
-		<para>Parameters: <emphasis>none</emphasis></para>
-	</section>
-
-	<section>
-		<title>
-		<function moreinfo="none">subnet_dump</function>
-		</title>
-		<para>
-				Causes permissions module to dump
-                   contents of cache memory subnet table.
-
-				</para>
-		<para>Parameters: <emphasis>none</emphasis></para>
-	</section>
-
 	<section>
 		<title>
 		<function moreinfo="none">trusted_reload</function>
 		</title>
 		<para>
 				Causes permissions module to re-read the contents of
-				trusted table into cache memory.
+				trusted database table into cache
+				memory.  In cache memory the entries are
+				for performance reasons stored in two
+                                different tables:  address table and
+				subnet table depending on the value of
+				the mask field (32 or smaller).
 				</para>
 		<para>Parameters: <emphasis>none</emphasis></para>
 	</section>
@@ -1085,6 +1005,17 @@ if (allow_trusted("$si", "$proto")) {
 		<para>
 				Causes permissions module to dump contents of trusted
 				table from cache memory.
+				</para>
+		<para>Parameters: <emphasis>none</emphasis></para>
+	</section>
+	
+	<section>
+		<title>
+		<function moreinfo="none">subnet_dump</function>
+		</title>
+		<para>
+				Causes permissions module to dump
+				contents of cache memory subnet table.
 				</para>
 		<para>Parameters: <emphasis>none</emphasis></para>
 	</section>

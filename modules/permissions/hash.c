@@ -1,7 +1,10 @@
 /*
- * Hash functions for cached trusted and address tables
+ * $Id: $
  *
- * Copyright (C) 2003-2006 Juha Heinanen
+ * Hash table functions
+ *
+ * Copyright (C) 2009 Irina Stanescu
+ * Copyright (C) 2009 Voice System
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -20,444 +23,254 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include <sys/types.h>
-#include <regex.h>
-#include "../../mem/shm_mem.h"
-#include "../../parser/parse_from.h"
-#include "../../ut.h"
-#include "../../hash_func.h"
-#include "../../usr_avp.h"
-#include "../../ip_addr.h"
-#include "../../pvar.h"
+
 #include "hash.h"
-#include "trusted.h"
-#include "address.h"
+#include "../../mem/shm_mem.h"
+#include "../../hash_func.h"
+#include "../../ip_addr.h"
+#include "../../ut.h"
+#include "../../pvar.h"
+#include "../../route_struct.h"
+#include "../../resolve.h"
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <fnmatch.h>
+//#include <regex.h>
 
 #define perm_hash(_s)  core_hash( &(_s), 0, PERM_HASH_SIZE)
 
-
-/* tag AVP specs */
-static int     tag_avp_type;
-static int_str tag_avp;
-
-
-/*
- * Parse and set tag AVP specs
- */
-int init_tag_avp(str *tag_avp_param)
-{
-    pv_spec_t avp_spec;
-    unsigned short avp_flags;
-
-    if (tag_avp_param->s && tag_avp_param->len > 0) {
-	if (pv_parse_spec(tag_avp_param, &avp_spec)==0
-	    || avp_spec.type != PVT_AVP) {
-	    LM_ERR("malformed or non "
-		"AVP %.*s peer_tag_avp definition\n", tag_avp_param->len, tag_avp_param->s);
-	    return -1;
-	}
-	if(pv_get_avp_name(0, &avp_spec.pvp, &tag_avp, &avp_flags)!=0) {
-	    LM_ERR("[%.*s]- invalid "
-		"peer_tag_avp AVP definition\n", tag_avp_param->len, tag_avp_param->s);
-	    return -1;
-	}
-	tag_avp_type = avp_flags;
-    } else {
-	tag_avp.n = 0;
-    }
-    return 0;
-}
-
-
-/*
- * Gets tag avp specs
- */
-void get_tag_avp(int_str *tag_avp_p, int *tag_avp_type_p)
-{
-	*tag_avp_p = tag_avp;
-	*tag_avp_type_p = tag_avp_type;
-}
-
-
-/*
- * Create and initialize a hash table
- */
-struct trusted_list** new_hash_table(void)
-{
-	struct trusted_list** ptr;
+struct address_list** hash_create(void) {
+	struct address_list** ptr;
 
 	/* Initializing hash tables and hash table variable */
-	ptr = (struct trusted_list **)shm_malloc
-		(sizeof(struct trusted_list*) * PERM_HASH_SIZE);
+	ptr = (struct address_list **)shm_malloc
+		(sizeof(struct address_list*) * PERM_HASH_SIZE);
 	if (!ptr) {
 		LM_ERR("no shm memory for hash table\n");
 		return 0;
 	}
 
-	memset(ptr, 0, sizeof(struct trusted_list*) * PERM_HASH_SIZE);
+	memset(ptr, 0, sizeof(struct address_list*) * PERM_HASH_SIZE);
 	return ptr;
 }
 
 
-/*
- * Release all memory allocated for a hash table
- */
-void free_hash_table(struct trusted_list** table)
-{
-	if (!table)
+void hash_destroy(struct address_list** table) {
+	if (!table) {
+		LM_ERR("trying to destroy an empty hash table\n");
 		return;
-
-	empty_hash_table(table);
+	}
+	empty_hash(table);
 	shm_free(table);
 }
 
 
-/* 
- * Add <src_ip, proto, pattern, tag> into hash table, where proto is integer
- * representation of string argument proto.
- */
-int hash_table_insert(struct trusted_list** table, char* src_ip, 
-		      char* proto, char* pattern, char* tag)
-{
-	struct trusted_list *np;
-	unsigned int hash_val;
+int hash_insert(struct address_list** table, struct ip_addr *ip,
+	      unsigned int grp, unsigned int port, char* proto, char* pattern,
+		  char* info) {
 
-	np = (struct trusted_list *) shm_malloc(sizeof(*np));
-	if (np == NULL) {
-		LM_ERR("cannot allocate shm memory for table entry\n");
+	struct address_list *node;
+	unsigned int hash_val;
+	str str_ip;
+
+	node = (struct address_list*) shm_malloc (sizeof(struct address_list));
+	if (!node) {
+		LM_ERR("no shm memory left\n");
 		return -1;
 	}
 
-	if (strcasecmp(proto, "any") == 0) {
-		np->proto = PROTO_NONE;
-	} else if (strcasecmp(proto, "udp") == 0) {
-		np->proto = PROTO_UDP;
-	} else if (strcasecmp(proto, "tcp") == 0) {
-		np->proto = PROTO_TCP;
-	} else if (strcasecmp(proto, "tls") == 0) {
-		np->proto = PROTO_TLS;
-	} else if (strcasecmp(proto, "sctp") == 0) {
-		np->proto = PROTO_SCTP;
-	} else if (strcasecmp(proto, "none") == 0) {
-	        shm_free(np);
+	if (!strcasecmp(proto, "any"))
+		node->proto = PROTO_NONE;
+	else if (!strcasecmp(proto, "udp"))
+		node->proto = PROTO_UDP;
+	else if (!strcasecmp(proto, "tcp"))
+		node->proto = PROTO_TCP;
+	else if (!strcasecmp(proto, "tls"))
+		node->proto = PROTO_TLS;
+	else if (!strcasecmp(proto, "sctp"))
+		node->proto = PROTO_SCTP;
+	else if (!strcasecmp(proto, "none")) {
+	        shm_free(node);
 		return 1;
 	} else {
-		LM_CRIT("unknown protocol\n");
-		shm_free(np);
+		LM_ERR("unknown protocol\n");
+		shm_free(node);
 		return -1;
 	}
 
-	np->src_ip.len = strlen(src_ip);
-	np->src_ip.s = (char *) shm_malloc(np->src_ip.len);
+	node->ip = (struct ip_addr *) shm_malloc (sizeof(struct ip_addr));
 
-	if (np->src_ip.s == NULL) {
-		LM_CRIT("cannot allocate shm memory for src_ip string\n");
-		shm_free(np);
+	if (!node->ip) {
+		LM_ERR("cannot allocate shm memory for ip_addr struct\n");
+		shm_free(node);
 		return -1;
 	}
 
-	(void) strncpy(np->src_ip.s, src_ip, np->src_ip.len);
+    memcpy(node->ip, ip, sizeof(struct ip_addr));
 
 	if (pattern) {
-	    np->pattern = (char *) shm_malloc(strlen(pattern)+1);
-	    if (np->pattern == NULL) {
-		LM_CRIT("cannot allocate shm memory for pattern string\n");
-		shm_free(np->src_ip.s);
-		shm_free(np);
-		return -1;
+	    node->pattern = (char *) shm_malloc(strlen(pattern) + 1);
+	    if (!node->pattern) {
+			LM_ERR("cannot allocate shm memory for pattern string\n");
+			shm_free(node->ip);
+			shm_free(node);
+			return -1;
 	    }
-	    (void) strcpy(np->pattern, pattern);
-	} else {
-	    np->pattern = 0;
+	    memcpy(node->pattern, pattern, strlen(pattern) + 1);
+	} else
+	    node->pattern = 0;
+
+	node->info = NULL;
+	if (info) {
+	    node->info = (char *) shm_malloc(strlen(info) + 1);
+	    if (!node->info) {
+			LM_CRIT("cannot allocate shm memory for context info string\n");
+			shm_free(node->ip);
+			shm_free(node->pattern);
+			shm_free(node);
+			return -1;
+	    }
+	    memcpy(node->info, info, strlen(info));
+		node->info[strlen(info)] = '\0';
 	}
 
-	if (tag) {
-	    np->tag.len = strlen(tag);
-	    np->tag.s = (char *) shm_malloc((np->tag.len) + 1);
-	    if (np->tag.s == NULL) {
-		LM_CRIT("cannot allocate shm memory for pattern string\n");
-		shm_free(np->src_ip.s);
-		shm_free(np->pattern);
-		shm_free(np);
-		return -1;
-	    }
-	    (void) strcpy(np->tag.s, tag);
-	} else {
-	    np->tag.len = 0;
-	    np->tag.s = 0;
-	}
+    node->grp = grp;
+    node->port = port;
 
-	hash_val = perm_hash(np->src_ip);
-	np->next = table[hash_val];
-	table[hash_val] = np;
+	str_ip.len = ip->len;
+	str_ip.s = (char*)ip->u.addr;
+
+	hash_val = perm_hash(str_ip);
+
+	node->next = table[hash_val];
+	table[hash_val] = node;
 
 	return 1;
 }
 
 
-/* 
- * Check if an entry exists in hash table that has given src_ip and protocol
- * value and pattern that matches to From URI.  If, assign 
- */
-int match_hash_table(struct trusted_list** table, struct sip_msg* msg,
-		     char *src_ip_c_str, int proto)
-{
-	str uri;
-	char uri_string[MAX_URI_SIZE + 1];
-	regex_t preg;
-	struct trusted_list *np;
-	str src_ip;
-	int_str val;
+int hash_match(struct sip_msg *msg, struct address_list** table,
+		unsigned int grp, struct ip_addr *ip, unsigned int port, int proto,
+		char *pattern, char *info) {
 
-	src_ip.s = src_ip_c_str;
-	src_ip.len = strlen(src_ip.s);
+	struct address_list *node;
+	str str_ip;
+	pv_spec_t *pvs;
+	pv_value_t pvt;
+	int match_res;
 
-	if (parse_from_header(msg) < 0) return -1;
-	uri = get_from(msg)->uri;
-	if (uri.len > MAX_URI_SIZE) {
-		LM_ERR("from URI too large\n");
-		return -1;
-	}
-	memcpy(uri_string, uri.s, uri.len);
-	uri_string[uri.len] = (char)0;
+	str_ip.len = ip->len;
+	str_ip.s = (char*)ip->u.addr;
 
-	for (np = table[perm_hash(src_ip)]; np != NULL; np = np->next) {
-	    if ((np->src_ip.len == src_ip.len) && 
-		(strncmp(np->src_ip.s, src_ip.s, src_ip.len) == 0) &&
-		((np->proto == PROTO_NONE) || (np->proto == proto))) {
-		if (!(np->pattern)) goto found;
-		if (regcomp(&preg, np->pattern, REG_NOSUB)) {
-		    LM_ERR("invalid regular expression\n");
-		    return -1;
-		}
-		if (regexec(&preg, uri_string, 0, (regmatch_t *)0, 0)) {
-		    regfree(&preg);
-		} else {
-		    regfree(&preg);
-		    goto found;
-		}
+	for (node = table[perm_hash(str_ip)]; node; node = node->next) {
+	 		LM_DBG("Comparing (%s %s) , (%d %d) , (%d %d) , (%d %d)\n",
+				ip_addr2a(node->ip), ip_addr2a(ip), 
+				node->proto, proto,
+				node->port , port,
+				node->grp , grp);
+
+		if	((node->grp == GROUP_ANY || node->grp == grp
+					|| grp == GROUP_ANY) &&
+			(node->proto == PROTO_NONE || node->proto == proto
+			 		|| proto == PROTO_NONE ) &&
+			(node->port == PORT_ANY || node->port == port
+			 		|| port == PORT_ANY)){
+
+				if (!ip_addr_cmp(ip, node->ip)) goto not_found;
+				if (!node->pattern || !pattern) goto found;
+				match_res = fnmatch(node->pattern, pattern, FNM_PERIOD);
+
+				if (!match_res) goto found;
+				if (match_res != FNM_NOMATCH) {
+					LM_ERR("fnmatch failed\n");
+					return -1;
+				}
 	    }
 	}
+
+not_found:
+	LM_DBG("no match in the hash table\n");
 	return -1;
+
 found:
-	if (tag_avp.n && np->tag.s) {
-	    val.s = np->tag;
-	    if (add_avp(tag_avp_type|AVP_VAL_STR, tag_avp, val) != 0) {
-		LM_ERR("setting of tag_avp failed\n");
-		return -1;
+	if (info) {
+		pvs = (pv_spec_t *)info;
+		memset(&pvt, 0, sizeof(pv_value_t));
+		pvt.flags = PV_VAL_STR;
+
+		pvt.rs.s = node->info;
+		pvt.rs.len = node->info ? strlen(node->info) : 0;
+
+		if (pv_set_value(msg, pvs, (int)EQ_T, &pvt) < 0) {
+			LM_ERR("setting of avp failed\n");
+			return -1;
 	    }
 	}
+
+	LM_DBG("match found in the hash table\n");
 	return 1;
 }
 
 
-/* 
- * Print trusted entries stored in hash table 
- */
-int hash_table_mi_print(struct trusted_list** table, struct mi_node* rpl)
-{
-    int i;
-    struct trusted_list *np;
-    
-    for (i = 0; i < PERM_HASH_SIZE; i++) {
-	np = table[i];
-	while (np) {
-	    if (addf_mi_node_child(rpl, 0, 0, 0,
-				   "%4d <%.*s, %d, %s, %s>",
-				   i,
-				   np->src_ip.len, ZSW(np->src_ip.s),
-				   np->proto,
-				   np->pattern?np->pattern:"NULL",
-				   np->tag.len?np->tag.s:"NULL") == 0) {
-		return -1;
-	    }
-	    np = np->next;
-	}
-    }
-    return 0;
-}
-
-
-/* 
- * Free contents of hash table, it doesn't destroy the
- * hash table itself
- */
-void empty_hash_table(struct trusted_list **table)
-{
-    int i;
-    struct trusted_list *np, *next;
-    
-    for (i = 0; i < PERM_HASH_SIZE; i++) {
-	np = table[i];
-	while (np) {
-	    if (np->src_ip.s) shm_free(np->src_ip.s);
-	    if (np->pattern) shm_free(np->pattern);
-	    if (np->tag.s) shm_free(np->tag.s);
-	    next = np->next;
-	    shm_free(np);
-	    np = next;
-	}
-	table[i] = 0;
-    }
-}
-
-
 /*
- * Create and initialize an address hash table
- */
-struct addr_list** new_addr_hash_table(void)
-{
-    struct addr_list** ptr;
-
-    /* Initializing hash tables and hash table variable */
-    ptr = (struct addr_list **)shm_malloc
-	(sizeof(struct addr_list*) * PERM_HASH_SIZE);
-    if (!ptr) {
-	LM_ERR("no shm memory for hash table\n");
-	return 0;
-    }
-
-    memset(ptr, 0, sizeof(struct addr_list*) * PERM_HASH_SIZE);
-    return ptr;
-}
-
-
-/*
- * Release all memory allocated for a hash table
- */
-void free_addr_hash_table(struct addr_list** table)
-{
-    if (!table)
-	return;
-
-    empty_addr_hash_table(table);
-    shm_free(table);
-}
-
-
-/* 
- * Add <grp, ip_addr, port> into hash table
- */
-int addr_hash_table_insert(struct addr_list** table, unsigned int grp,
-			   unsigned int ip_addr, unsigned int port)
-{
-    struct addr_list *np;
-    unsigned int hash_val;
-    str addr_str;
-	
-    np = (struct addr_list *) shm_malloc(sizeof(*np));
-    if (np == NULL) {
-	LM_ERR("no shm memory for table entry\n");
-	return -1;
-    }
-
-    np->grp = grp;
-    np->ip_addr = ip_addr;
-    np->port = port;
-    
-    addr_str.s = (char *)(&ip_addr);
-    addr_str.len = 4;
-    hash_val = perm_hash(addr_str);
-    np->next = table[hash_val];
-    table[hash_val] = np;
-
-    return 1;
-}
-
-
-/* 
- * Check if an entry exists in hash table that has given group, ip_addr, and
- * port.  Port 0 in hash table matches any port.
- */
-int match_addr_hash_table(struct addr_list** table, unsigned int group,
-			  unsigned int ip_addr, unsigned int port)
-{
-	struct addr_list *np;
-	str addr_str;
-
-	addr_str.s = (char *)(&ip_addr);
-	addr_str.len = 4;
-
-	for (np = table[perm_hash(addr_str)]; np != NULL; np = np->next) {
-	    if ((np->ip_addr == ip_addr) && (np->grp == group) &&
-		((np->port == 0) || (np->port == port))) {
-		return 1;
-	    }
-	}
-
-	return -1;
-}
-
-
-/* 
  * Check if an ip_addr/port entry exists in hash table in any group.
  * Returns first group in which ip_addr/port is found.
- * Port 0 in hash table matches any port. 
+ * Port 0 in hash table matches any port.
  */
-int find_group_in_addr_hash_table(struct addr_list** table,
-				  unsigned int ip_addr, unsigned int port)
+int find_group_in_hash_table(struct address_list** table,
+		                  struct ip_addr *ip, unsigned int port)
 {
-	struct addr_list *np;
-	str addr_str;
+	struct address_list *node;
+	str str_ip;
 
-	addr_str.s = (char *)(&ip_addr);
-	addr_str.len = 4;
+	str_ip.len = ip->len;
+	str_ip.s = (char*) ip->u.addr;
 
-	for (np = table[perm_hash(addr_str)]; np != NULL; np = np->next) {
-	    if ((np->ip_addr == ip_addr) &&
-		((np->port == 0) || (np->port == port))) {
-		return np->grp;
-	    }
-	}
-
+	for (node = table[perm_hash(str_ip)]; node; node = node->next)
+			if (node->port == 0 || node->port == port) {
+				if (!ip_addr_cmp(ip, node->ip)) goto not_found;
+				return node->grp;
+			}
+not_found:
 	return -1;
 }
 
 
-/* 
- * Print addresses stored in hash table 
- */
-int addr_hash_table_mi_print(struct addr_list** table, struct mi_node* rpl)
-{
-    int i;
-    struct addr_list *np;
-    struct ip_addr addr;
-    
-    for (i = 0; i < PERM_HASH_SIZE; i++) {
-	np = table[i];
-	while (np) {
-	    addr.af = AF_INET;
-	    addr.len = 4;
-	    addr.u.addr32[0] = np->ip_addr;
-	    if (addf_mi_node_child(rpl, 0, 0, 0,
-				   "%4d <%u, %s, %u>",
-				   i, np->grp, ip_addr2a(&addr),
-				   np->port) == 0)
-		return -1;
-	    np = np->next;
-	}
-    }
+
+
+int hash_mi_print(struct address_list **table, struct mi_node* rpl) {
+	int i;
+    struct address_list *node;
+
+    for (i = 0; i < PERM_HASH_SIZE; i++)
+		for (node = table[i]; node; node=node->next)
+	    	if (addf_mi_node_child(rpl, 0, 0, 0,
+				   "%4d <%s,%u, %u, %d, %s, %s>",
+				   i,
+				   ip_addr2a(node->ip),
+				   node->grp,
+				   node->port,
+				   node->proto,
+				   node->pattern?node->pattern:"NULL",
+				   node->info?node->info:"NULL") == 0)
+					return -1;
     return 0;
 }
 
+void empty_hash(struct address_list** table) {
+	int i;
 
-/* 
- * Free contents of hash table, it doesn't destroy the
- * hash table itself
- */
-void empty_addr_hash_table(struct addr_list **table)
-{
-    int i;
-    struct addr_list *np, *next;
+	struct address_list *node = NULL, *next = NULL;
 
     for (i = 0; i < PERM_HASH_SIZE; i++) {
-	np = table[i];
-	while (np) {
-	    next = np->next;
-	    shm_free(np);
-	    np = next;
-	}
-	table[i] = 0;
+	    for (node = table[i]; node; node = next) {
+	    	next = node->next;
+			if (node->ip) shm_free(node->ip);
+		    if (node->pattern) shm_free(node->pattern);
+		    if (node->info) shm_free(node->info);
+		    shm_free(node);
+		}
+		table[i] = 0;
     }
 }
 
@@ -469,26 +282,28 @@ struct subnet* new_subnet_table(void)
 {
     struct subnet* ptr;
 
-    /* subnet record [PERM_MAX_SUBNETS] contains in its grp field 
+    /* subnet record [PERM_MAX_SUBNETS] contains in its grp field
        the number of subnet records in the subnet table */
     ptr = (struct subnet *)shm_malloc
 	(sizeof(struct subnet) * (PERM_MAX_SUBNETS + 1));
+
     if (!ptr) {
-	LM_ERR("no shm memory for subnet table\n");
-	return 0;
+		LM_ERR("no shm memory for subnet table\n");
+		return 0;
     }
+
     ptr[PERM_MAX_SUBNETS].grp = 0;
     return ptr;
 }
 
-    
-/* 
+
+/*
  * Add <grp, subnet, mask, port> into subnet table so that table is
  * kept in increasing ordered according to grp.
  */
 int subnet_table_insert(struct subnet* table, unsigned int grp,
-			unsigned int subnet, unsigned int mask,
-			unsigned int port)
+			struct net *subnet,
+			unsigned int port, char *info)
 {
     int i;
     unsigned int count;
@@ -496,24 +311,41 @@ int subnet_table_insert(struct subnet* table, unsigned int grp,
     count = table[PERM_MAX_SUBNETS].grp;
 
     if (count == PERM_MAX_SUBNETS) {
-	LM_CRIT("subnet table is full\n");
-	return 0;
+		LM_CRIT("subnet table is full\n");
+		return 0;
     }
-
-    mask = 32 - mask;
-    subnet = htonl(ntohl(subnet) >> mask); //subnet << mask;
 
     i = count - 1;
 
-    while ((i >= 0) && (table[i].grp > grp)) {
-	table[i + 1] = table[i];
-	i--;
+    while (i >= 0 && table[i].grp > grp) {
+		table[i + 1] = table[i];
+		i--;
     }
-    
+
     table[i + 1].grp = grp;
-    table[i + 1].subnet = subnet;
     table[i + 1].port = port;
-    table[i + 1].mask = mask;
+
+	if (subnet) {
+		table[i + 1].subnet = (struct net*) shm_malloc(sizeof(struct net));
+		if (!table[i + 1].subnet) {
+			LM_ERR("cannot allocate shm memory for table subnet\n");
+			return -1;
+		}
+		memcpy(table[i + 1].subnet, subnet, sizeof(struct net));
+	}
+	else
+		table[i + 1].subnet = NULL;
+
+	if (info) {
+		table[i + 1].info = (char*) shm_malloc(strlen(info) + 1);
+		if (!table[i + 1].info) {
+			LM_ERR("cannot allocate shm memory for table info\n");
+			return -1;
+		}
+		memcpy(table[i + 1].info, info, strlen(info) + 1);
+	}
+	else
+		table[i + 1].info = NULL;
 
     table[PERM_MAX_SUBNETS].grp = count + 1;
 
@@ -521,91 +353,135 @@ int subnet_table_insert(struct subnet* table, unsigned int grp,
 }
 
 
-/* 
+/*
  * Check if an entry exists in subnet table that matches given group, ip_addr,
  * and port.  Port 0 in subnet table matches any port.
  */
-int match_subnet_table(struct subnet* table, unsigned int grp,
-		       unsigned int ip_addr, unsigned int port)
+int match_subnet_table(struct sip_msg *msg, struct subnet* table, unsigned int grp,
+		       struct ip_addr *ip, unsigned int port, char *info)
 {
-    unsigned int count, i, subnet;
+   unsigned int count, i;
+	pv_value_t pvt;
+	pv_spec_t *pvs;
+	int match_res;
 
     count = table[PERM_MAX_SUBNETS].grp;
 
-    i = 0;
-    while ((i < count) && (table[i].grp < grp))
-	i++;
-    
-    if (i == count) return -1;
+	if (count == 0) {
+		LM_DBG("subnet table is empty\n");
+		return -1;
+	}
 
-    while ((i < count) && (table[i].grp == grp)) {
-	subnet = htonl(ntohl(ip_addr) >> table[i].mask); //ip_addr << table[i].mask;
-	if ((table[i].subnet == subnet) &&
-	    ((table[i].port == port) || (table[i].port == 0)))
-	    return 1;
-	i++;
-    }
+	i = 0;
+	do {
+		if (table[i].grp == grp || table[i].grp == GROUP_ANY
+				|| grp == GROUP_ANY) {
+			if (table[i].port == port || table[i].port == PORT_ANY
+					|| port == PORT_ANY) {
 
+				match_res = matchnet(ip, table[i].subnet);
+
+				if (match_res != 1)
+					goto not_found;
+
+				if (info) {
+					pvs = (pv_spec_t *)info;
+					memset(&pvt, 0, sizeof(pv_value_t));
+					pvt.flags = PV_VAL_STR;
+					pvt.rs.s = table[i].info;
+					pvt.rs.len = table[i].info ? strlen(table[i].info) : 0;
+
+					if (pv_set_value(msg, pvs, (int)EQ_T, &pvt) < 0) {
+						LM_ERR("setting of avp failed\n");
+						return -1;
+	    			}
+				}
+
+				LM_DBG("match found in the subnet table\n");
+				return 1;
+			}
+		}
+
+		if (table[i].grp > grp && grp != GROUP_ANY)
+			break;
+		i++;
+
+	} while (i < count);
+
+not_found:
+	LM_DBG("no match in the subnet table\n");
     return -1;
 }
 
 
-/* 
- * Check if an entry exists in subnet table that matches given ip_addr,
- * and port.  Port 0 in subnet table matches any port.  Return group of
- * first match or -1 if no match is found.
- */
-int find_group_in_subnet_table(struct subnet* table,
-			       unsigned int ip_addr, unsigned int port)
-{
-    unsigned int count, i, subnet;
-
-    count = table[PERM_MAX_SUBNETS].grp;
-
-    i = 0;
-    while (i < count) {
-	subnet = ip_addr << table[i].mask;
-	if ((table[i].subnet == subnet) &&
-	    ((table[i].port == port) || (table[i].port == 0)))
-	    return table[i].grp;
-	i++;
-    }
-
-    return -1;
-}
-
-
-/* 
- * Print subnets stored in subnet table 
+/*
+ * Print subnets stored in subnet table
  */
 int subnet_table_mi_print(struct subnet* table, struct mi_node* rpl)
 {
     unsigned int count, i;
-    struct ip_addr addr;
-    
+
     count = table[PERM_MAX_SUBNETS].grp;
 
     for (i = 0; i < count; i++) {
-	addr.af = AF_INET;
-	addr.len = 4;
-	addr.u.addr32[0] = htonl(ntohl(table[i].subnet) << table[i].mask); //table[i].subnet >> table[i].mask;
-	if (addf_mi_node_child(rpl, 0, 0, 0,
-			       "%4d <%u, %s, %u, %u>",
-			       i, table[i].grp, ip_addr2a(&addr),
-			       32 - table[i].mask, table[i].port) == 0) {
-	    return -1;
-	}
+		if (addf_mi_node_child(rpl, 0, 0, 0,
+			       "%4d <%u, %s, %s, %u>",
+			       i, table[i].grp, 
+				   ip_addr2a(&table[i].subnet->ip),
+			       ip_addr2a(&table[i].subnet->mask),
+				   table[i].port) == 0)
+	    	return -1;
     }
     return 0;
 }
 
 
-/* 
+/*
+ * Check if an entry exists in subnet table that matches given ip_addr,
+ * and port.  Port 0 in subnet table matches any port.  Return group of
+ * first match or -1 if no match is found.
+ */
+int find_group_in_subnet_table(struct subnet* table,
+		                   struct ip_addr *ip, unsigned int port)
+{
+	unsigned int count, i, match_res;
+
+	count = table[PERM_MAX_SUBNETS].grp;
+
+	i = 0;
+	while (i < count) {
+		if	(table[i].port == port || table[i].port == 0) {
+			match_res = matchnet(ip, table[i].subnet);
+
+			if (match_res == 1)
+		        return table[i].grp;
+
+		}
+	    i++;
+	}
+
+	return -1;
+}
+
+
+/*
  * Empty contents of subnet table
  */
 void empty_subnet_table(struct subnet *table)
 {
-    table[PERM_MAX_SUBNETS].grp = 0;
+	int count, i;
+
+	if (!table)
+		return;
+
+	count = table[PERM_MAX_SUBNETS].grp;
+
+	for (i = 0; i < count; i++) {
+		shm_free(table[i].info);
+		shm_free(table[i].subnet);
+	}
+
+	table[PERM_MAX_SUBNETS].grp = 0;
 }
 
 
@@ -614,8 +490,12 @@ void empty_subnet_table(struct subnet *table)
  */
 void free_subnet_table(struct subnet* table)
 {
-    if (!table)
-	return;
+	empty_subnet_table(table);
 
-    shm_free(table);
+	if (table)
+	    shm_free(table);
 }
+
+
+
+

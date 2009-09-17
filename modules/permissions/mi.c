@@ -28,49 +28,9 @@
 
 #include "../../dprint.h"
 #include "address.h"
-#include "trusted.h"
 #include "hash.h"
 #include "mi.h"
 #include "permissions.h"
-
-
-/*
- * MI function to reload trusted table
- */
-struct mi_root* mi_trusted_reload(struct mi_root *cmd_tree, void *param)
-{
-	if (hash_table==NULL)
-		return init_mi_tree( 200, MI_SSTR(MI_OK));
-
-    if (reload_trusted_table () == 1) {
-	return init_mi_tree( 200, MI_SSTR(MI_OK));
-    } else {
-	return init_mi_tree( 400, MI_SSTR("Trusted table reload failed"));
-    }
-}
-
-
-/*
- * MI function to print trusted entries from current hash table
- */
-struct mi_root* mi_trusted_dump(struct mi_root *cmd_tree, void *param)
-{
-	struct mi_root* rpl_tree;
-
-	if (hash_table==NULL)
-		return init_mi_tree( 500, MI_SSTR("Trusted-module not in use"));
-
-	rpl_tree = init_mi_tree( 200, MI_SSTR(MI_OK));
-	if (rpl_tree==NULL) return 0;
-
-	if(hash_table_mi_print(*hash_table, &rpl_tree->node)< 0) {
-		LM_ERR("failed to add a node\n");
-		free_mi_tree(rpl_tree);
-		return 0;
-	}
-
-	return rpl_tree;
-}
 
 
 /*
@@ -78,11 +38,13 @@ struct mi_root* mi_trusted_dump(struct mi_root *cmd_tree, void *param)
  */
 struct mi_root* mi_address_reload(struct mi_root *cmd_tree, void *param)
 {
-    if (reload_address_table () == 1) {
-	return init_mi_tree( 200, MI_SSTR(MI_OK));
-    } else {
-	return init_mi_tree( 400, MI_SSTR("Address table reload failed"));
-    }
+	if (hash_table == NULL)
+		return init_mi_tree( 200, MI_SSTR(MI_OK));
+
+    if (reload_address_table () == 1)
+		return init_mi_tree( 200, MI_SSTR(MI_OK));
+
+	return init_mi_tree( 400, MI_SSTR("Trusted table reload failed"));
 }
 
 
@@ -91,39 +53,23 @@ struct mi_root* mi_address_reload(struct mi_root *cmd_tree, void *param)
  */
 struct mi_root* mi_address_dump(struct mi_root *cmd_tree, void *param)
 {
-    struct mi_root* rpl_tree;
-    
-    rpl_tree = init_mi_tree( 200, MI_SSTR(MI_OK));
-    if (rpl_tree==NULL) return 0;
-    
-    if(addr_hash_table_mi_print(*addr_hash_table, &rpl_tree->node) <  0) {
-	LM_ERR("failed to add a node\n");
-	free_mi_tree(rpl_tree);
-	return 0;
-    }
+	struct mi_root* rpl_tree;
 
-    return rpl_tree;
+	if (hash_table == NULL)
+		return init_mi_tree( 500, MI_SSTR("Trusted-module not in use"));
+
+	rpl_tree = init_mi_tree( 200, MI_SSTR(MI_OK));
+	if (rpl_tree == NULL) return 0;
+
+	if(hash_mi_print(*hash_table, &rpl_tree->node)< 0) {
+		LM_ERR("failed to add a node\n");
+		free_mi_tree(rpl_tree);
+		return 0;
+	}
+
+	return rpl_tree;
 }
 
-
-/*
- * MI function to print subnets from current subnet table
- */
-struct mi_root* mi_subnet_dump(struct mi_root *cmd_tree, void *param)
-{
-    struct mi_root* rpl_tree;
-    
-    rpl_tree = init_mi_tree( 200, MI_SSTR(MI_OK));
-    if (rpl_tree==NULL) return 0;
-    
-    if(subnet_table_mi_print(*subnet_table, &rpl_tree->node) <  0) {
-	LM_ERR("failed to add a node\n");
-	free_mi_tree(rpl_tree);
-	return 0;
-    }
-
-    return rpl_tree;
-}
 
 #define MAX_FILE_LEN 128
 
@@ -142,7 +88,7 @@ struct mi_root* mi_allow_uri(struct mi_root *cmd, void *param)
     if (node == NULL || node->next == NULL || node->next->next == NULL ||
 	node->next->next->next != NULL)
 	return init_mi_tree(400, MI_SSTR(MI_MISSING_PARM));
-    
+
     /* look for base name */
     basenamep = &node->value;
     if (basenamep == NULL)
@@ -177,4 +123,23 @@ struct mi_root* mi_allow_uri(struct mi_root *cmd, void *param)
     } else {
 	return init_mi_tree(403, MI_SSTR("Forbidden"));
     }
+}
+
+/*
+ * MI function to print subnets from current subnet table
+ */
+struct mi_root* mi_subnet_dump(struct mi_root *cmd_tree, void *param)
+{
+	struct mi_root* rpl_tree;
+
+    rpl_tree = init_mi_tree( 200, MI_SSTR(MI_OK));
+    if (rpl_tree == NULL) return 0;
+
+    if (subnet_table_mi_print(*subnet_table, &rpl_tree->node) <  0) {
+	    LM_ERR("failed to add a node\n");
+	    free_mi_tree(rpl_tree);
+		return 0;
+	}
+
+	return rpl_tree;
 }

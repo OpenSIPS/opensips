@@ -45,6 +45,13 @@
 			<email>jh@tutpro.com</email>
 		</address>
 		</editor>
+		<editor>
+		<firstname>Irina-Maria</firstname>
+		<surname>Stanescu</surname>
+		<address>
+			<email>ironmissy@gmail.com</email>
+		</address>
+		</editor>
 	</authorgroup>
 	<copyright>
 		<year>2003</year>
@@ -53,6 +60,10 @@
 	<copyright>
 		<year>2006-2008</year>
 		<holder>Juha Heinanen</holder>
+	</copyright>	
+	<copyright>
+		<year>2009</year>
+		<holder>Irina-Maria Stanescu</holder>
 	</copyright>
 	<revhistory>
 		<revision>

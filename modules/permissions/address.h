@@ -1,7 +1,9 @@
 /*
+ * $Id$
+ *
  * Header file for address.c implementing allow_address function
  *
- * Copyright (C) 2006 Juha Heinanen
+ * Copyright (C) 2003-2008 Juha Heinanen
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -20,30 +22,39 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef ADDRESS_H
-#define ADDRESS_H
-		
+#ifndef TRUSTED_H
+#define TRUSTED_H
+
 #include "../../parser/msg_parser.h"
 
+/* Pointer to current hash table pointer */
+extern struct address_list ***hash_table;
 
-/* Pointer to current address hash table pointer */
-extern struct addr_list ***addr_hash_table; 
+/* Pointer to hash table 1 */
+extern struct address_list **hash_table_1;
 
+/* Pointer to hash table 2 */
+extern struct address_list **hash_table_2;
 
 /* Pointer to current subnet table */
-extern struct subnet **subnet_table; 
-
+extern struct subnet **subnet_table;
 
 /*
  * Initialize data structures
  */
-int init_addresses(void);
+int init_address(void);
 
 
 /*
- * Open database connection if necessary
+ * Open database connections if necessary
  */
-int mi_init_addresses();
+int init_child_address(int rank);
+
+
+/*
+ * Open database connections if necessary
+ */
+int mi_init_address(void);
 
 
 /*
@@ -56,31 +67,30 @@ int reload_address_table(void);
 /*
  * Close connections and release memory
  */
-void clean_addresses(void);
+void clean_address(void);
+
+int get_source_group(struct sip_msg *msg);
+
+/* Checks based on avp's received as parameter */
+int check_addr_4(struct sip_msg *msg,
+		        char *grp, char *src_ip, char *port, char *proto);
+
+int check_addr_5(struct sip_msg* msg,
+		        char *grp, char *src_ip, char *port, char *proto, char *info);
+
+int check_addr_6(struct sip_msg* msg,
+		        char *grp, char *src_ip, char *port, char  *proto,
+				char *info, char *pattern);
+
+/* Checks based on data from the message */
+int check_src_addr_1(struct sip_msg *msg,
+		                char *grp);
+
+int check_src_addr_2(struct sip_msg *msg,
+		                char *grp, char *info);
+
+int check_src_addr_3(struct sip_msg *msg,
+		                char *grp, char *info, char *pattern);
 
 
-/*
- * Checks if an entry exists in cached address table that belongs to a
- * given address group and has given ip address and port.  Port value
- * 0 in cached address table matches any port.
- */
-int allow_address(struct sip_msg* _msg, char* _addr_group, char* _addr_sp,
-		  char* _port_sp);
-
-
-/*
- * allow_source_address("group") equals to allow_address("group", "$si", "$sp")
- * but is faster.
- */
-int allow_source_address(struct sip_msg* _msg, char* _addr_group, char* _str2);
-
-
-/*
- * Checks if source address/port is found in cached address or
- * subnet table in any group. If yes, returns that group. If not returns -1.
- * Port value 0 in cached address and group table matches any port.
- */
-int allow_source_address_group(struct sip_msg* _msg, char* _str1, char* _str2);
-
-
-#endif /* ADDRESS_H */
+#endif /* TRUSTED_H */

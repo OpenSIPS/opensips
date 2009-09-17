@@ -50,15 +50,12 @@ typedef struct rule_file {
 #define MAX_RULE_FILES 64
 
 extern str db_url;        /* Database URL */
-extern int db_mode;       /* Database usage mode: 0=no cache, 1=cache */
-extern str trusted_table; /* Name of trusted table */
-extern str source_col;    /* Name of source address column */
-extern str proto_col;     /* Name of protocol column */
-extern str from_col;      /* Name of from pattern column */
-extern str tag_col;       /* Name of tag column */
 extern str address_table; /* Name of address table */
+extern str ip_col;    	  /* Name of IP address column */
+extern str proto_col;     /* Name of protocol column */
+extern str pattern_col;   /* Name of pattern column */
+extern str info_col;      /* Name of context_info column */
 extern str grp_col;       /* Name of address group column */
-extern str ip_addr_col;   /* Name of ip address column */
 extern str mask_col;      /* Name of mask column */
 extern str port_col;      /* Name of port column */
 

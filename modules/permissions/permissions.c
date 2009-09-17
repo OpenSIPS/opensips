@@ -24,14 +24,15 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
- 
+
 #include <stdio.h>
 #include "permissions.h"
 #include "parse_config.h"
-#include "trusted.h"
+
 #include "address.h"
 #include "hash.h"
 #include "mi.h"
+
 #include "../../mem/mem.h"
 #include "../../parser/parse_from.h"
 #include "../../parser/parse_uri.h"
@@ -57,33 +58,27 @@ char* allow_suffix = ".allow";
 static char* deny_suffix = ".deny";
 
 
-/* for allow_trusted and allow_address function */
+/* for allow_address and allow_address function */
 str db_url = {NULL, 0};                    /* Don't connect to the database by default */
 
-/* for allow_trusted function */
-int db_mode = DISABLE_CACHE;               /* Database usage mode: 0=no cache, 1=cache */
-str trusted_table = str_init("trusted");   /* Name of trusted table */
-str source_col = str_init("src_ip");       /* Name of source address column */
-str proto_col = str_init("proto");         /* Name of protocol column */
-str from_col = str_init("from_pattern");   /* Name of from pattern column */
-str tag_col = str_init("tag");             /* Name of tag column */
-str tag_avp_param = {NULL, 0};             /* Peer tag AVP spec */
-
 /* for allow_address function */
-str address_table = str_init("address");   /* Name of address table */
-str grp_col = str_init("grp");             /* Name of address group column */
-str ip_addr_col = str_init("ip_addr");     /* Name of ip address column */
-str mask_col = str_init("mask");           /* Name of mask column */
-str port_col = str_init("port");           /* Name of port column */
+str address_table = str_init("address");	/* Name of address table */
+str ip_col = str_init("ip");				/* Name of address column */
+str proto_col = str_init("proto");			/* Name of protocol column */
+str pattern_col = str_init("pattern"); 		/* Name of from pattern column */
+str info_col = str_init("context_info");	/* Name of tag column */
+str grp_col = str_init("grp");				/* Name of address group column */
+str mask_col = str_init("mask");			/* Name of mask column */
+str port_col = str_init("port");			/* Name of port column */
 
 
+str tag_avp_param = {NULL, 0};             /* Peer tag AVP spec */
 /*
  * By default we check all branches
  */
 static int check_all_branches = 1;
 
-
-/*  
+/*
  * Convert the name of the files into table index
  */
 static int load_fixup(void** param, int param_no);
@@ -101,6 +96,9 @@ static int single_fixup(void** param, int param_no);
  */
 static int double_fixup(void** param, int param_no);
 
+static int check_addr_fixup(void** param, int param_no);
+static int check_src_addr_fixup(void** param, int param_no);
+
 static int allow_routing_0(struct sip_msg* msg, char* str1, char* str2);
 static int allow_routing_1(struct sip_msg* msg, char* basename, char* str2);
 static int allow_routing_2(struct sip_msg* msg, char* allow_file, char* deny_file);
@@ -111,30 +109,44 @@ static int allow_uri(struct sip_msg* msg, char* basename, char* uri);
 static int mod_init(void);
 static void mod_exit(void);
 static int child_init(int rank);
-static int mi_trusted_child_init();
-static int mi_addr_child_init();
-
+static int mi_address_child_init();
 
 /* Exported functions */
 static cmd_export_t cmds[] = {
+	{"check_address" , (cmd_function) check_addr_4, 4, check_addr_fixup, 0,
+		REQUEST_ROUTE | FAILURE_ROUTE | LOCAL_ROUTE},
+	{"check_address" , (cmd_function) check_addr_5, 5, check_addr_fixup, 0,
+		REQUEST_ROUTE | FAILURE_ROUTE | LOCAL_ROUTE},
+	{"check_address" , (cmd_function) check_addr_6, 6, check_addr_fixup, 0,
+		REQUEST_ROUTE | FAILURE_ROUTE | LOCAL_ROUTE},
+	{"check_source_address" , (cmd_function) check_src_addr_1, 1, check_src_addr_fixup, 0,
+		REQUEST_ROUTE | FAILURE_ROUTE | LOCAL_ROUTE},
+	{"check_source_address" , (cmd_function) check_src_addr_2, 2, check_src_addr_fixup, 0,
+		REQUEST_ROUTE | FAILURE_ROUTE | LOCAL_ROUTE},
+	{"check_source_address" , (cmd_function) check_src_addr_3, 3, check_src_addr_fixup, 0,
+		REQUEST_ROUTE | FAILURE_ROUTE | LOCAL_ROUTE},
+	{"get_source_group", (cmd_function) get_source_group, 0, 0, 0,
+		REQUEST_ROUTE | FAILURE_ROUTE | LOCAL_ROUTE },
+	 /*--------------------original functions-----------------------*/
 	{"allow_routing",  (cmd_function)allow_routing_0,  0, 0, 0,
-		REQUEST_ROUTE | FAILURE_ROUTE|LOCAL_ROUTE},
+		REQUEST_ROUTE | FAILURE_ROUTE | LOCAL_ROUTE},
 	{"allow_routing",  (cmd_function)allow_routing_1,  1, single_fixup, 0,
-		REQUEST_ROUTE | FAILURE_ROUTE|LOCAL_ROUTE},
+		REQUEST_ROUTE | FAILURE_ROUTE | LOCAL_ROUTE},
 	{"allow_routing",  (cmd_function)allow_routing_2,  2, load_fixup, 0,
-		REQUEST_ROUTE | FAILURE_ROUTE|LOCAL_ROUTE},
+		REQUEST_ROUTE | FAILURE_ROUTE | LOCAL_ROUTE},
 	{"allow_register", (cmd_function)allow_register_1, 1, single_fixup, 0,
 		REQUEST_ROUTE | FAILURE_ROUTE},
 	{"allow_register", (cmd_function)allow_register_2, 2, load_fixup, 0,
 		REQUEST_ROUTE | FAILURE_ROUTE},
-	{"allow_trusted",  (cmd_function)allow_trusted_0,  0, 0, 0,
-		REQUEST_ROUTE | FAILURE_ROUTE | ONREPLY_ROUTE | BRANCH_ROUTE },
-	{"allow_trusted",  (cmd_function)allow_trusted_2,  2,
-		fixup_pvar_pvar, fixup_free_pvar_pvar,
-		REQUEST_ROUTE | FAILURE_ROUTE | ONREPLY_ROUTE | BRANCH_ROUTE},
 	{"allow_uri",      (cmd_function)allow_uri, 2,
 		double_fixup, 0,
 		REQUEST_ROUTE | FAILURE_ROUTE|LOCAL_ROUTE},
+	/*--------------------obsolete functions-----------------------*/
+	/*{"allow_address",  (cmd_function)allow_address_0,  0, 0, 0,
+		REQUEST_ROUTE | FAILURE_ROUTE | ONREPLY_ROUTE | BRANCH_ROUTE },
+	{"allow_address",  (cmd_function)allow_address_2,  2,
+		fixup_pvar_pvar, fixup_free_pvar_pvar,
+		REQUEST_ROUTE | FAILURE_ROUTE | ONREPLY_ROUTE | BRANCH_ROUTE},
 	{"allow_address",  (cmd_function)allow_address, 3,
 		fixup_igp_pvar_pvar, fixup_free_igp_pvar_pvar,
 		REQUEST_ROUTE|FAILURE_ROUTE|LOCAL_ROUTE|ONREPLY_ROUTE | BRANCH_ROUTE},
@@ -143,7 +155,7 @@ static cmd_export_t cmds[] = {
 		REQUEST_ROUTE | FAILURE_ROUTE| ONREPLY_ROUTE | BRANCH_ROUTE},
 	{"allow_source_address_group",(cmd_function)allow_source_address_group, 0,
 		0, 0,
-		REQUEST_ROUTE | FAILURE_ROUTE | ONREPLY_ROUTE | BRANCH_ROUTE},
+		REQUEST_ROUTE | FAILURE_ROUTE | ONREPLY_ROUTE | BRANCH_ROUTE},*/
 	{0, 0, 0, 0, 0, 0}
 };
 
@@ -155,16 +167,13 @@ static param_export_t params[] = {
 	{"allow_suffix",       STR_PARAM, &allow_suffix      },
 	{"deny_suffix",        STR_PARAM, &deny_suffix       },
 	{"db_url",             STR_PARAM, &db_url.s          },
-	{"db_mode",            INT_PARAM, &db_mode           },
-	{"trusted_table",      STR_PARAM, &trusted_table.s   },
-	{"source_col",         STR_PARAM, &source_col.s      },
-	{"proto_col",          STR_PARAM, &proto_col.s       },
-	{"from_col",           STR_PARAM, &from_col.s        },
-	{"tag_col",            STR_PARAM, &tag_col.s         },
-	{"peer_tag_avp",       STR_PARAM, &tag_avp_param.s   },
 	{"address_table",      STR_PARAM, &address_table.s   },
+	{"ip_col",         STR_PARAM, &ip_col.s    	 },
+	{"proto_col",          STR_PARAM, &proto_col.s       },
+	{"from_col",           STR_PARAM, &pattern_col.s     },
+	{"info_col",           STR_PARAM, &info_col.s        },
+	{"peer_tag_avp",       STR_PARAM, &tag_avp_param.s   },
 	{"grp_col",            STR_PARAM, &grp_col.s         },
-	{"ip_addr_col",        STR_PARAM, &ip_addr_col.s     },
 	{"mask_col",           STR_PARAM, &mask_col.s        },
 	{"port_col",           STR_PARAM, &port_col.s        },
 	{0, 0, 0}
@@ -174,12 +183,9 @@ static param_export_t params[] = {
  * Exported MI functions
  */
 static mi_export_t mi_cmds[] = {
-	{ MI_TRUSTED_RELOAD,  mi_trusted_reload,  MI_NO_INPUT_FLAG,  0,
-													mi_trusted_child_init },
-	{ MI_TRUSTED_DUMP,    mi_trusted_dump,    MI_NO_INPUT_FLAG,  0,  0 },
-	{ MI_ADDRESS_RELOAD,  mi_address_reload,  MI_NO_INPUT_FLAG,  0,
-													mi_addr_child_init },
-	{ MI_ADDRESS_DUMP,    mi_address_dump,    MI_NO_INPUT_FLAG,  0,  0 },
+	{ MI_TRUSTED_RELOAD,  mi_address_reload,  MI_NO_INPUT_FLAG,  0,
+													mi_address_child_init },
+	{ MI_TRUSTED_DUMP,    mi_address_dump,    MI_NO_INPUT_FLAG,  0,  0 },
 	{ MI_SUBNET_DUMP,     mi_subnet_dump,     MI_NO_INPUT_FLAG,  0,  0 },
 	{ MI_ALLOW_URI,       mi_allow_uri,       0,  0,  0 },
 	{ 0, 0, 0, 0, 0 }
@@ -212,7 +218,7 @@ static int get_path(char* pathname)
 {
 	char* c;
 	if (!pathname) return 0;
-	
+
 	c = strrchr(pathname, '/');
 	if (!c) return 0;
 
@@ -229,7 +235,7 @@ static char* get_pathname(char* name)
 	int path_len, name_len;
 
 	if (!name) return 0;
-	
+
 	name_len = strlen(name);
 	if (strchr(name, '/')) {
 		buffer = (char*)pkg_malloc(name_len + 1);
@@ -287,7 +293,7 @@ static char* get_plain_uri(const str* uri)
 		LM_ERR("failed to parse URI\n");
 		return 0;
 	}
-	
+
 	if (puri.user.len) {
 		len = puri.user.len + puri.host.len + 5;
 	} else {
@@ -298,7 +304,7 @@ static char* get_plain_uri(const str* uri)
 		LM_ERR("Request-URI is too long: %d chars\n", len);
 		return 0;
 	}
-	
+
 	strcpy(buffer, "sip:");
 	if (puri.user.len) {
 		memcpy(buffer + 4, puri.user.s, puri.user.len);
@@ -319,7 +325,7 @@ static char* get_plain_uri(const str* uri)
  * -1:	deny
  * 1:	allow
  */
-static int check_routing(struct sip_msg* msg, int idx) 
+static int check_routing(struct sip_msg* msg, int idx)
 {
 	struct hdr_field *from;
 	int len, q;
@@ -334,24 +340,24 @@ static int check_routing(struct sip_msg* msg, int idx)
 		LM_DBG("no rules => allow any routing\n");
 		return 1;
 	}
-	
+
 	/* looking for FROM HF */
         if ((!msg->from) && (parse_headers(msg, HDR_FROM_F, 0) == -1)) {
                 LM_ERR("failed to parse message\n");
                 return -1;
         }
-	
+
 	if (!msg->from) {
 		LM_ERR("FROM header field not found\n");
 		return -1;
 	}
-	
+
 	/* we must call parse_from_header explicitly */
         if ((!(msg->from)->parsed) && (parse_from_header(msg) < 0)) {
                 LM_ERR("failed to parse From body\n");
                 return -1;
         }
-	
+
 	from = msg->from;
 	len = ((struct to_body*)from->parsed)->uri.len;
 	if (len > EXPRESSION_LENGTH) {
@@ -360,25 +366,25 @@ static int check_routing(struct sip_msg* msg, int idx)
 	}
 	strncpy(from_str, ((struct to_body*)from->parsed)->uri.s, len);
 	from_str[len] = '\0';
-	
+
 	/* looking for request URI */
 	if (parse_sip_msg_uri(msg) < 0) {
 	        LM_ERR("uri parsing failed\n");
 	        return -1;
 	}
-	
+
 	len = msg->parsed_uri.user.len + msg->parsed_uri.host.len + 5;
 	if (len > EXPRESSION_LENGTH) {
                 LM_ERR("Request URI is too long: %d chars\n", len);
                 return -1;
 	}
-	
+
 	strcpy(ruri_str, "sip:");
 	memcpy(ruri_str + 4, msg->parsed_uri.user.s, msg->parsed_uri.user.len);
 	ruri_str[msg->parsed_uri.user.len + 4] = '@';
 	memcpy(ruri_str + msg->parsed_uri.user.len + 5, msg->parsed_uri.host.s, msg->parsed_uri.host.len);
 	ruri_str[len] = '\0';
-	
+
         LM_DBG("looking for From: %s Request-URI: %s\n", from_str, ruri_str);
 	     /* rule exists in allow file */
 	if (search_rule(allow[idx].rules, from_str, ruri_str)) {
@@ -386,7 +392,7 @@ static int check_routing(struct sip_msg* msg, int idx)
     		LM_DBG("allow rule found => routing is allowed\n");
 		return 1;
 	}
-	
+
 	/* rule exists in deny file */
 	if (search_rule(deny[idx].rules, from_str, ruri_str)) {
 		LM_DBG("deny rule found => routing is denied\n");
@@ -407,24 +413,24 @@ static int check_routing(struct sip_msg* msg, int idx)
 			return -1;
 		}
 		LM_DBG("looking for From: %s Branch: %s\n", from_str, uri_str);
-		
+
 		if (search_rule(allow[idx].rules, from_str, uri_str)) {
 			continue;
 		}
-		
+
 		if (search_rule(deny[idx].rules, from_str, uri_str)) {
 			LM_DBG("deny rule found for one of branches => routing"
 			       "is denied\n");
 			return -1;
 		}
 	}
-	
+
 	LM_DBG("check of branches passed => routing is allowed\n");
 	return 1;
 }
 
 
-/*  
+/*
  * Convert the name of the files into table index
  */
 static int load_fixup(void** param, int param_no)
@@ -584,21 +590,22 @@ static int mod_init(void)
 
 	if (db_url.s)
 		db_url.len = strlen(db_url.s);
-	trusted_table.len = strlen(trusted_table.s);
-	source_col.len = strlen(source_col.s);
-	proto_col.len = strlen(proto_col.s);
-	from_col.len = strlen(from_col.s);
-	tag_col.len = strlen(tag_col.s);
-	if (tag_avp_param.s)
-		tag_avp_param.len = strlen(tag_avp_param.s);
+
 	address_table.len = strlen(address_table.s);
+	ip_col.len = strlen(ip_col.s);
+	proto_col.len = strlen(proto_col.s);
+	pattern_col.len = strlen(pattern_col.s);
+	info_col.len = strlen(info_col.s);
 	grp_col.len = strlen(grp_col.s);
-	ip_addr_col.len = strlen(ip_addr_col.s);
 	mask_col.len = strlen(mask_col.s);
 	port_col.len = strlen(port_col.s);
 
+	if (tag_avp_param.s)
+		tag_avp_param.len = strlen(tag_avp_param.s);
+
 	allow[0].filename = get_pathname(default_allow_file);
 	allow[0].rules = parse_config_file(allow[0].filename);
+
 	if (allow[0].rules) {
 		LM_DBG("default allow file (%s) parsed\n", allow[0].filename);
 	} else {
@@ -608,6 +615,7 @@ static int mod_init(void)
 
 	deny[0].filename = get_pathname(default_deny_file);
 	deny[0].rules = parse_config_file(deny[0].filename);
+
 	if (deny[0].rules) {
 		LM_DBG("default deny file (%s) parsed\n", deny[0].filename);
 	} else {
@@ -615,26 +623,16 @@ static int mod_init(void)
 			deny[0].filename);
 	}
 
-	if (init_trusted() != 0) {
-		LM_ERR("failed to initialize the allow_trusted function\n");
-		return -1;
-	}
-
-	if (init_tag_avp(&tag_avp_param) < 0) {
-		LM_ERR("failed to process peer_tag_avp AVP param\n");
-		return -1;
-	}
-
-	if (init_addresses() != 0) {
+	if (init_address() != 0) {
 		LM_ERR("failed to initialize the allow_address function\n");
 		return -1;
 	}
 
-	if ((db_mode != DISABLE_CACHE) && (db_mode != ENABLE_CACHE)) {
-	        LM_ERR("invalid db_mode value: %d\n", db_mode);
+/*	if (init_tag_avp(&tag_avp_param) < 0) {
+		LM_ERR("failed to process peer_tag_avp AVP param\n");
 		return -1;
 	}
-	    
+*/
 	rules_num = 1;
 	return 0;
 }
@@ -642,23 +640,21 @@ static int mod_init(void)
 
 static int child_init(int rank)
 {
-	if (init_child_trusted(rank) == -1)
-		return -1;
 	return 0;
 }
 
 
-static int mi_trusted_child_init(void)
+static int mi_address_child_init(void)
 {
-    return mi_init_trusted();
+    return mi_init_address();
 }
 
-
+/*
 static int mi_addr_child_init(void)
 {
     return mi_init_addresses();
 }
-
+*/
 
 /* 
  * destroy function 
@@ -675,9 +671,8 @@ static void mod_exit(void)
 		pkg_free(deny[i].filename);
 	}
 
-	clean_trusted();
-
-	clean_addresses();
+	clean_address();
+//	clean_addresses();
 }
 
 
@@ -952,4 +947,38 @@ int allow_test(char *file, char *uri, char *contact)
     LM_DBG("Neither allow or deny rule found => Allowed\n");
     return 1;
 
+}
+
+
+static int check_addr_fixup(void** param, int param_no) {
+
+	/* grp ip port proto info pattern*/
+	switch (param_no) {
+		case 1:
+			return fixup_igp(param);
+		case 2:
+		case 3:
+		case 4:
+			return fixup_spve(param);
+		case 5:
+			return fixup_pvar(param);
+		case 6:
+			return 0;
+	}
+	return E_UNSPEC;
+}
+
+
+static int check_src_addr_fixup(void** param, int param_no) {
+
+	/* grp info pattern */
+	switch (param_no) {
+		case 1:
+			return fixup_igp_null(param, param_no);
+		case 2:
+			return fixup_pvar(param);
+		case 3:
+			return 0;
+	}
+	return E_UNSPEC;
 }

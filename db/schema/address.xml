@@ -9,7 +9,7 @@
 
 <table id="address" xmlns:db="http://docbook.org/ns/docbook">
     <name>address</name>
-    <version>4</version>
+    <version>5</version>
     <type db="mysql">&MYSQL_TABLE_TYPE;</type>
     <description>
         <db:para>This table is used by the permissions module. More information is available at: &OPENSIPS_MOD_DOC;permissions.html
@@ -30,16 +30,16 @@
         <name>grp</name>
         <type>unsigned short</type>
         <size>5</size>
-        <default>0</default>
         <description>Group</description>
         <natural/>
     </column>
 
-    <column>
-        <name>ip_addr</name>
+	<column id="ip">
+        <name>ip</name>
         <type>string</type>
-        <size>15</size>
+        <size>&ip_add_len;</size>
         <description>IP address</description>
+        <natural/>
     </column>
 
     <column>
@@ -55,5 +55,30 @@
         <size>5</size>
         <default>0</default>
         <description>Port</description>
+    </column>
+
+    <column>
+        <name>proto</name>
+        <type>string</type>
+        <size>4</size>
+        <description>Transport protocol is either "any" or equal to transport protocol of request. Possible values that can be stored are "any", "udp", "tcp", "tls", and "sctp".</description>
+    </column>
+
+    <column>
+        <name>pattern</name>
+        <type>string</type>
+        <size>&id_len;</size>
+        <default><null/></default>
+        <null/>
+        <description>Regular expression</description>
+    </column>
+
+    <column>
+        <name>context_info</name>
+        <type>string</type>
+        <size>32</size>
+		<default><null/></default>
+        <null/>
+        <description>Extra context information</description>
     </column>
 </table>
