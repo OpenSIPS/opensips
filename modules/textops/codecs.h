@@ -38,6 +38,11 @@ int codec_delete (struct sip_msg* msg, char* str1 );
 int codec_move_up (struct sip_msg* msg, char* str1 );
 int codec_move_down (struct sip_msg* msg, char* str1 );
 
+int codec_find_re (struct sip_msg* msg, char* str1);
+int codec_delete_re (struct sip_msg* msg, char* str1);
+int codec_move_up_re (struct sip_msg* msg, char* str1 );
+int codec_move_down_re (struct sip_msg* msg, char* str1 );
+
 int codec_find_clock (struct sip_msg* msg, char* str1,char * str2 );
 int codec_delete_clock (struct sip_msg* msg, char* str1,char * str2 );
 int codec_move_up_clock (struct sip_msg* msg, char* str1,char * str2 );

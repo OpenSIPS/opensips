@@ -1074,7 +1074,7 @@ add_body("Hello World!", "text/plain");
 		sdp payload. It will search for the codec inside all streams from all
 		sdp sessions. If it is found anywhere it will return TRUE otherwise
 		it will	return FALSE. The second parameter is optional, if it is not supplied
-		any clockrate will match. Parameters are CASE SENSITIVE.
+		any clockrate will match. Parameters are CASE INSENSITIVE.
 		</para>
    		<para>
 		This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
@@ -1104,7 +1104,7 @@ codec_exists("GSM","8000");
 		Returns TRUE if any deletion occured otherwise
 		it will	return FALSE. The second parameter is optional, 
 		if it is not supplied any clockrate will match and all will be deleted.
-		Parameters are CASE SENSITIVE.
+		Parameters are CASE INSENSITIVE.
 		</para>
    		<para>
 		This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
@@ -1134,7 +1134,7 @@ codec_delete("GSM","8000");
 		it will	return FALSE. The second parameter is optional,
 		if it is not supplied any clockrate will match and all codecs
 		will be moved to the front while preserving their original ordering.
-		Parameters are CASE SENSITIVE.
+		Parameters are CASE INSENSITIVE.
 		</para>
    		<para>
 		This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
@@ -1164,7 +1164,7 @@ codec_move_up("GSM","8000");
 		it will	return FALSE. The second parameter is optional,
 		if it is not supplied any clockrate will match and all codecs
 		will be moved to the back while preserving their original ordering.
-		Parameters are CASE SENSITIVE.
+		Parameters are CASE INSENSITIVE.
 		</para>
    		<para>
 		This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
@@ -1200,13 +1200,132 @@ codec_move_up("speex");
 	</section>
 
 
+	<section>
+		<title>
+		<function moreinfo="none">codec_exists_re ( regexp )</function>
+		</title>
+		<para>
+		This function has the same effect as codec_exists ( without
+		the clock parameter ) the only
+		difference is that it takes a POSIX regular expression
+		as a parameter.
+		</para>
+   		<para>
+		This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
+		FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
+		</para>
+		<example>
+		<title><function>codec_exists_re</function> usage</title>
+		<programlisting format="linespecific">
+...
+codec_exists_re("sp[a-z]*");
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title>
+		<function moreinfo="none">codec_delete_re ( regexp )</function>
+		</title>
+		<para>
+		This function has the same effect as codec_delete ( without
+		the clock parameter ) the only
+		difference is that it takes a POSIX regular expression
+		as a parameter.
+		</para>
+   		<para>
+		This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
+		FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
+		</para>
+		<example>
+		<title><function>codec_delete_re</function> usage</title>
+		<programlisting format="linespecific">
+...
+codec_delete_re("PCMA|PCMU");
+...
+
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title>
+		<function moreinfo="none">codec_move_up_re ( regexp )</function>
+		</title>
+		<para>
+		This function has the same effect as codec_move_up ( without
+		the clock parameter ) the only
+		difference is that it takes a POSIX regular expression
+		as a parameter.
+		</para>
+   		<para>
+		This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
+		FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
+		</para>
+		<example>
+		<title><function>codec_move_up_re</function> usage</title>
+		<programlisting format="linespecific">
+...
+codec_move_up_re("sp[a-z]*");
+...
+</programlisting>
+		</example>
+	</section>
+
+		<section>
+		<title>
+		<function moreinfo="none">codec_move_down_re ( regexp )</function>
+		</title>
+		<para>
+		This function has the same effect as codec_move_down ( without
+		the clock parameter ) the only
+		difference is that it takes a POSIX regular expression
+		as a parameter.
+		</para>
+   		<para>
+		This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
+		FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
+		</para>
+		<example>
+		<title><function>codec_move_down_re</function> usage</title>
+		<programlisting format="linespecific">
+...
+codec_move_down_re("sp[a-z]*");
+...
+</programlisting>
+		</example>
+
+		<example>
+		<title><function>codec_move_down</function> usage</title>
+		<programlisting format="linespecific">
+...
+/*
+  This example will move speex with 8000 codec to the back of the list,
+  then it will erase GSM with 8000 clock, and then it will bring all
+  speex codecs to the front of the list. Speex/8000 will be behind any
+  other speex.
+*/
+codec_move_down("speex","8000");
+codec_delete("GSM","8000");
+codec_move_up("speex");
+...
+</programlisting>
+		</example>
+	</section>
+
+
+
 	</section>
 	<section>
 		<title>Known Limitations</title>
 		<para>
-			Search functions are applied to the original request,
-			i.e., they ignore all changes resulting from message
-			processing in &osips; script.
+			Search functions are applied to the current message so
+			modifications made to the sdp will be visible
+			to the codec_exists functions( e.g. after
+			calling codec_delete("speex") , codec_exists("speex")
+			will return false ).
+
 		</para>
 	</section>
 </chapter>

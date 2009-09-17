@@ -53,7 +53,8 @@ enum{
 };
 
 
-typedef  int (*stream_func)(struct sdp_stream_cell *cell,int pos,str * str1, str* str2,int op);
+typedef  int (*stream_func)(struct sdp_stream_cell *cell, int pos,
+	str * str1, str* str2, regex_t * re, int op);
 
 int codec_init(void)
 {
@@ -79,7 +80,8 @@ int fixup_codec(void** param, int param_no)
 	return 0;
 }
 
-static int do_for_all_streams(struct sip_msg* msg, str* str1,str * str2, int op, stream_func f)
+static int do_for_all_streams(struct sip_msg* msg, str* str1,str * str2,
+				regex_t* re, int op, stream_func f)
 {
 	struct sdp_session_cell * cur_session;
 	int count, rez;
@@ -146,7 +148,8 @@ static int do_for_all_streams(struct sip_msg* msg, str* str1,str * str2, int op,
 				memcpy(text.s,cur_cell->payloads.s,cur_cell->payloads.len);
 
 				
-				data.lumps[count] = insert_new_lump_after( l, text.s, text.len, 0);
+				data.lumps[count] = insert_new_lump_after( l,
+							text.s, text.len, 0);
 
 				if(data.lumps[count] == NULL)
 				{
@@ -177,7 +180,7 @@ static int do_for_all_streams(struct sip_msg* msg, str* str1,str * str2, int op,
 
 		while(cur_cell)
 		{
-			rez |= f(cur_cell,count,str1,str2,op);
+			rez |= f(cur_cell,count,str1,str2,re,op);
 
 			count ++;
 			cur_cell = cur_cell->next;
@@ -227,17 +230,24 @@ int delete_sdp_line( struct sip_msg * msg, char * s)
 
 
 
-/* method that processes a stream and keeps the original order of codecs with the same name */
-static int stream_process(struct sdp_stream_cell *cell,int pos,str * s, str* ss,int op)
+/* method that processes a stream and keeps the original order
+ * of codecs with the same name */
+static int stream_process(struct sdp_stream_cell *cell,int pos,str * s, str* ss,
+				regex_t* re, int op)
 {
 	sdp_payload_attr_t *payload;
-	char *cur,*tmp;
+	char *cur, *tmp, *buff, temp;
 	struct lump * lmp = data.lumps[pos];
 	str found;
-	int ret = 0,i,depl,single;
+	int ret, i, depl, single, match, buff_len;
+	regmatch_t pmatch;
+	
+	
+	buff_len = 0;
+	ret = 0;
 
-	int buff_len = 0;
-	char * buff = pkg_malloc(lmp->len+1);
+
+	buff = pkg_malloc(lmp->len+1);
 
 	if( buff == NULL)
 	{
@@ -268,18 +278,39 @@ static int stream_process(struct sdp_stream_cell *cell,int pos,str * s, str* ss,
 
 		while(payload)
 		{
-			
-			/* if we find one of interest delete it */
-			if( s->len == payload->rtp_enc.len &&
-				strncasecmp( s->s, payload->rtp_enc.s ,payload->rtp_enc.len) == 0
+
+
+			match = 0;
+
+			if( s == NULL )
+			{
+				/* try to match a regexp */
+				temp = payload->rtp_enc.s[payload->rtp_enc.len];
+				payload->rtp_enc.s[payload->rtp_enc.len] = 0;
+				match = regexec( re, payload->rtp_enc.s, 1, &pmatch, 0) == 0;
+				payload->rtp_enc.s[payload->rtp_enc.len] = temp;
+			}
+			else
+			{
+				/* try to match name and clock if there is one */
+				match = s->len == payload->rtp_enc.len &&
+				strncasecmp( s->s, payload->rtp_enc.s ,
+					payload->rtp_enc.len) == 0
 				&&
 				(ss == NULL || ( ss->len == payload->rtp_clock.len &&
-				strncasecmp( ss->s, payload->rtp_clock.s ,payload->rtp_clock.len) == 0
-				) )
-				&&
-				found.len == payload->rtp_payload.len &&
-				strncmp( found.s,payload->rtp_payload.s,found.len) == 0
-				)
+				strncasecmp( ss->s, payload->rtp_clock.s ,
+					payload->rtp_clock.len) == 0
+				) );
+
+			}
+
+			/* try to match payload number */
+			match = match && (found.len == payload->rtp_payload.len &&
+				strncmp( found.s,payload->rtp_payload.s,found.len) == 0);
+
+
+			/* if we find one of interest delete it */
+			if( match )
 			{
 
 				if(op == FIND)
@@ -342,7 +373,8 @@ static int stream_process(struct sdp_stream_cell *cell,int pos,str * s, str* ss,
 					}
 
 
-					memcpy(&buff[buff_len],payload->rtp_payload.s,payload->rtp_payload.len);
+					memcpy(&buff[buff_len],payload->rtp_payload.s,
+						payload->rtp_payload.len);
 
 					buff_len += payload->rtp_payload.len;
 
@@ -416,17 +448,31 @@ end:
 int codec_find (struct sip_msg* msg, char* str1 )
 {
 	
-	if( do_for_all_streams(msg,(str*)str1,NULL,FIND,stream_process) == 0)
+	if( do_for_all_streams( msg, (str*)str1, NULL, NULL,
+		FIND, stream_process) == 0)
 		return -1;
 
 	return 1;
 
 };
 
+int codec_find_re (struct sip_msg* msg, char* str1 )
+{
+
+	if( do_for_all_streams(msg, NULL, NULL, (regex_t*)str1,
+		FIND, stream_process) == 0)
+		return -1;
+
+	return 1;
+
+};
+
+
 int codec_find_clock (struct sip_msg* msg, char* str1,char * str2 )
 {
 
-	if( do_for_all_streams(msg,(str*)str1,(str*)str2,FIND,stream_process) == 0)
+	if( do_for_all_streams( msg, (str*)str1, (str*)str2, NULL,
+		FIND, stream_process) == 0)
 		return -1;
 
 	return 1;
@@ -435,7 +481,17 @@ int codec_find_clock (struct sip_msg* msg, char* str1,char * str2 )
 
 int codec_delete (struct sip_msg* msg, char* str1 )
 {
-	if( do_for_all_streams(msg,(str*)str1,NULL,DELETE,stream_process) == 0)
+	if( do_for_all_streams( msg, (str*)str1, NULL, NULL,
+		DELETE, stream_process) == 0)
+		return -1;
+	return 1;
+
+};
+
+int codec_delete_re (struct sip_msg* msg, char* str1 )
+{
+	if( do_for_all_streams( msg, NULL, NULL, (regex_t*) str1,
+		DELETE, stream_process) == 0)
 		return -1;
 	return 1;
 
@@ -443,7 +499,8 @@ int codec_delete (struct sip_msg* msg, char* str1 )
 
 int codec_delete_clock (struct sip_msg* msg, char* str1 ,char * str2)
 {
-	if( do_for_all_streams(msg,(str*)str1,(str*)str2,DELETE,stream_process) == 0)
+	if( do_for_all_streams( msg, (str*)str1, (str*)str2, NULL,
+		DELETE, stream_process) == 0)
 		return -1;
 	return 1;
 
@@ -451,7 +508,16 @@ int codec_delete_clock (struct sip_msg* msg, char* str1 ,char * str2)
 
 int codec_move_up (struct sip_msg* msg, char* str1)
 {
-	if( do_for_all_streams(msg,(str*)str1,NULL,ADD_TO_FRONT,stream_process) == 0)
+	if( do_for_all_streams( msg, (str*)str1, NULL, NULL,
+		ADD_TO_FRONT, stream_process) == 0)
+		return -1;
+	return 1;
+};
+
+int codec_move_up_re (struct sip_msg* msg, char* str1)
+{
+	if( do_for_all_streams( msg, NULL, NULL, (regex_t*)str1,
+		ADD_TO_FRONT, stream_process) == 0)
 		return -1;
 	return 1;
 };
@@ -459,7 +525,8 @@ int codec_move_up (struct sip_msg* msg, char* str1)
 
 int codec_move_up_clock (struct sip_msg* msg, char* str1 ,char * str2)
 {
-	if( do_for_all_streams(msg,(str*)str1,(str*)str2,ADD_TO_FRONT,stream_process) == 0)
+	if( do_for_all_streams( msg, (str*)str1, (str*)str2, NULL,
+		ADD_TO_FRONT, stream_process) == 0)
 		return -1;
 	return 1;
 
@@ -468,7 +535,17 @@ int codec_move_up_clock (struct sip_msg* msg, char* str1 ,char * str2)
 
 int codec_move_down (struct sip_msg* msg, char* str1)
 {
-	if( do_for_all_streams(msg,(str*)str1,NULL,ADD_TO_BACK,stream_process) == 0)
+	if( do_for_all_streams( msg, (str*)str1, NULL, NULL,
+		ADD_TO_BACK, stream_process) == 0)
+		return -1;
+	return 1;
+};
+
+
+int codec_move_down_re (struct sip_msg* msg, char* str1)
+{
+	if( do_for_all_streams( msg, NULL, NULL, (regex_t*)str1,
+		ADD_TO_BACK, stream_process) == 0)
 		return -1;
 	return 1;
 };
@@ -478,7 +555,8 @@ int codec_move_down (struct sip_msg* msg, char* str1)
 
 int codec_move_down_clock (struct sip_msg* msg, char* str1 ,char * str2)
 {
-	if( do_for_all_streams(msg,(str*)str1,(str*)str2,ADD_TO_BACK,stream_process) == 0)
+	if( do_for_all_streams( msg, (str*)str1, (str*)str2, NULL,
+		ADD_TO_BACK, stream_process) == 0)
 		return -1;
 	return 1;
 
