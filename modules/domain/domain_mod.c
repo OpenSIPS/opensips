@@ -94,12 +94,12 @@ static int is_domain_alias(char* name, int len, unsigned short port,
  */
 static cmd_export_t cmds[] = {
 	{"is_from_local", (cmd_function)is_from_local, 0, 0, 0,
-	 REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE|LOCAL_ROUTE},
+		REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE|LOCAL_ROUTE},
 	{"is_uri_host_local", (cmd_function)is_uri_host_local, 0, 0, 0,
-	 REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE|LOCAL_ROUTE},
+		REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE|LOCAL_ROUTE},
 	{"is_domain_local", (cmd_function)w_is_domain_local, 1, fixup_pvar_null,
-	 fixup_free_pvar_null,
-	 REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+		fixup_free_pvar_null, REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|
+		LOCAL_ROUTE|STARTUP_ROUTE|TIMER_ROUTE},
 	{"bind_domain", (cmd_function)bind_domain, 0, 0, 0, 0},
 	{0, 0, 0, 0, 0, 0}
 };

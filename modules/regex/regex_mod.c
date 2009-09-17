@@ -118,11 +118,14 @@ static struct mi_root* mi_pcres_reload(struct mi_root* cmd, void* param);
 static cmd_export_t cmds[] =
 {
 	{ "pcre_match", (cmd_function)w_pcre_match, 2, fixup_spve_spve, 0,
-		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE },
+		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|
+		STARTUP_ROUTE|TIMER_ROUTE},
 	{ "pcre_match_group", (cmd_function)w_pcre_match_group, 2, fixup_spve_uint, 0,
-		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE },
+		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|
+		STARTUP_ROUTE|TIMER_ROUTE},
 	{ "pcre_match_group", (cmd_function)w_pcre_match_group, 1, fixup_spve_null, 0,
-		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE },
+		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|
+		STARTUP_ROUTE|TIMER_ROUTE},
 	{ 0, 0, 0, 0, 0, 0 }
 };
 

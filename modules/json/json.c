@@ -121,7 +121,8 @@ static int expand_tag_list( struct sip_msg*, json_tag *);
 static cmd_export_t cmds[]={
 	{"json_link",    (cmd_function)json_bind,   2,
 		fixup_json_bind, 0,
-		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|
+		LOCAL_ROUTE|STARTUP_ROUTE|TIMER_ROUTE},
 	{0,0,0,0,0,0}
 };
 
@@ -958,4 +959,5 @@ int child_init(int rank)
 void mod_destroy(void)
 {
 	
-}    
+}
+

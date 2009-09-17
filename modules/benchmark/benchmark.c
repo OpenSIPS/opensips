@@ -103,9 +103,11 @@ static inline int fixup_bm_timer(void** param, int param_no);
  */
 static cmd_export_t cmds[] = {
 	{ "bm_start_timer", (cmd_function)bm_start_timer, 1, fixup_bm_timer, 0,
-		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE },
+		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|
+		STARTUP_ROUTE|TIMER_ROUTE},
 	{ "bm_log_timer",   (cmd_function)bm_log_timer, 1, fixup_bm_timer, 0,
-		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE },
+		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|
+		STARTUP_ROUTE|TIMER_ROUTE},
 	{"load_bm",         (cmd_function)load_bm, 0, 0, 0, 0},
 	{ 0, 0, 0, 0, 0, 0 }
 };
@@ -220,7 +222,8 @@ static void destroy(void)
 			bmt = bmt->next;
 			shm_free(bmp);
 		}
-		shm_free(bm_mycfg->tindex);
+		if(bm_mycfg->tindex)
+			shm_free(bm_mycfg->tindex);
 		shm_free(bm_mycfg);
 	}
 }

@@ -114,11 +114,11 @@ static int mi_address_child_init();
 /* Exported functions */
 static cmd_export_t cmds[] = {
 	{"check_address" , (cmd_function) check_addr_4, 4, check_addr_fixup, 0,
-		REQUEST_ROUTE | FAILURE_ROUTE | LOCAL_ROUTE},
+		REQUEST_ROUTE | FAILURE_ROUTE | LOCAL_ROUTE | STARTUP_ROUTE| TIMER_ROUTE},
 	{"check_address" , (cmd_function) check_addr_5, 5, check_addr_fixup, 0,
-		REQUEST_ROUTE | FAILURE_ROUTE | LOCAL_ROUTE},
+		REQUEST_ROUTE | FAILURE_ROUTE | LOCAL_ROUTE | STARTUP_ROUTE| TIMER_ROUTE},
 	{"check_address" , (cmd_function) check_addr_6, 6, check_addr_fixup, 0,
-		REQUEST_ROUTE | FAILURE_ROUTE | LOCAL_ROUTE},
+		REQUEST_ROUTE | FAILURE_ROUTE | LOCAL_ROUTE | STARTUP_ROUTE| TIMER_ROUTE},
 	{"check_source_address" , (cmd_function) check_src_addr_1, 1, check_src_addr_fixup, 0,
 		REQUEST_ROUTE | FAILURE_ROUTE | LOCAL_ROUTE},
 	{"check_source_address" , (cmd_function) check_src_addr_2, 2, check_src_addr_fixup, 0,
