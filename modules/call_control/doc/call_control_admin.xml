@@ -338,6 +338,138 @@ route {
         </programlisting>
       </example>
     </section>
+    
+    <section>
+    <title><varname>init</varname> (string)</title>
+      <para>
+      This parameter is used to describe custom call control initialize messages. It represents a
+      list of key value pairs and has the following format:
+      </para>
+      <itemizedlist>
+			<listitem>
+			<para>
+			"string1 = var1 [string2 = var2]*"
+			</para>
+			</listitem>
+		</itemizedlist>
+		<para>
+			The left-hand side of the assignment can be any string.
+		</para>
+		<para>
+			The right-hand side of the assignment must be a script pseudo variable or
+			a script AVP. For more information about them see <ulink 
+				url='http://www.opensips.org/Resources/DocsCoreVar15'>
+				CookBooks - Scripting Variables</ulink>.
+		</para>
+      <para>
+      If the parameter is not set, the default initialize message is sent.
+      </para>
+      <para>
+        <emphasis>
+          Default value is <quote>NULL</quote>.
+        </emphasis>
+      </para>
+
+      <example>
+      <title>Setting the <varname>init</varname> parameter</title>
+        <programlisting format="linespecific">
+	
+...
+modparam("call_control", "init", "call-id=$ci to=$tu from=$fu 
+			authruri=$du another_field = $avp(i:10)")
+...
+        </programlisting>
+      </example>
+    </section>
+    
+    <section>
+    <title><varname>start</varname> (string)</title>
+      <para>
+      This parameter is used to describe custom call control start messages. It represents a
+      list of key value pairs and has the following format:
+      </para>
+      <itemizedlist>
+			<listitem>
+			<para>
+			"string1 = var1 [string2 = var2]*"
+			</para>
+			</listitem>
+		</itemizedlist>
+		<para>
+			The left-hand side of the assignment can be any string.
+		</para>
+		<para>
+			The right-hand side of the assignment must be a script pseudo variable or
+			a script AVP. For more information about them see <ulink 
+				url='http://www.opensips.org/Resources/DocsCoreVar15'>
+				CookBooks - Scripting Variables</ulink>.
+		</para>
+      <para>
+      If the parameter is not set, the default start message is sent.
+      </para>
+      <para>
+        <emphasis>
+          Default value is <quote>NULL</quote>.
+        </emphasis>
+      </para>
+
+      <example>
+      <title>Setting the <varname>start</varname> parameter</title>
+        <programlisting format="linespecific">
+	
+...
+modparam("call_control", "start", "call-id=$ci to=$tu from=$fu 
+			authruri=$du another_field = $avp(i:10)")
+...
+        </programlisting>
+      </example>
+    </section>
+    <section>
+    <title><varname>stop</varname> (string)</title>
+      <para>
+      This parameter is used to describe custom call control stop messages. It represents a
+      list of key value pairs and has the following format:
+      </para>
+      <itemizedlist>
+			<listitem>
+			<para>
+			"string1 = var1 [string2 = var2]*"
+			</para>
+			</listitem>
+		</itemizedlist>
+		<para>
+			The left-hand side of the assignment can be any string.
+		</para>
+		<para>
+			The right-hand side of the assignment must be a script pseudo variable or
+			a script AVP. For more information about them see <ulink 
+				url='http://www.opensips.org/Resources/DocsCoreVar15'>
+				CookBooks - Scripting Variables</ulink>.
+		</para>
+      <para>
+      If the parameter is not set, the default stop message is sent.
+      </para>
+      <para>
+        <emphasis>
+          Default value is <quote>NULL</quote>.
+        </emphasis>
+      </para>
+
+      <example>
+      <title>Setting the <varname>stop</varname> parameter</title>
+        <programlisting format="linespecific">
+	
+...
+modparam("call_control", "stop", "call-id=$ci to=$tu from=$fu 
+			authruri=$du another_field = $avp(i:10)")
+...
+        </programlisting>
+      </example>
+    </section>
+    
+    
+    
+    
   </section>
 
   <section>

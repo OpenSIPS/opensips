@@ -10,6 +10,12 @@ Dan Pascu
 
    <dan@ag-projects.com>
 
+Edited by
+
+Irina-Maria Stanescu
+
+   <ironmissy@gmail.com>
+
    Copyright © 2005-2008 Dan Pascu
    Revision History
    Revision $Revision$ $Date: 2009-07-21 10:45:05 +0300
@@ -36,6 +42,9 @@ Dan Pascu
               1.5.4. signaling_ip_avp (string)
               1.5.5. canonical_uri_avp (string)
               1.5.6. diverter_avp_id (string)
+              1.5.7. init (string)
+              1.5.8. start (string)
+              1.5.9. stop (string)
 
         1.6. Exported Functions
 
@@ -49,7 +58,10 @@ Dan Pascu
    1.4. Setting the signaling_ip_avp parameter
    1.5. Setting the canonical_uri_avp parameter
    1.6. Setting the diverter_avp_id parameter
-   1.7. Using the call_control function
+   1.7. Setting the init parameter
+   1.8. Setting the start parameter
+   1.9. Setting the stop parameter
+   1.10. Using the call_control function
 
 Chapter 1. Admin Guide
 
@@ -265,6 +277,79 @@ route {
 }
 ...
 
+1.5.7. init (string)
+
+   This parameter is used to describe custom call control
+   initialize messages. It represents a list of key value pairs
+   and has the following format:
+     * "string1 = var1 [string2 = var2]*"
+
+   The left-hand side of the assignment can be any string.
+
+   The right-hand side of the assignment must be a script pseudo
+   variable or a script AVP. For more information about them see
+   CookBooks - Scripting Variables.
+
+   If the parameter is not set, the default initialize message is
+   sent.
+
+   Default value is "NULL".
+
+   Example 1.7. Setting the init parameter
+
+...
+modparam("call_control", "init", "call-id=$ci to=$tu from=$fu
+                        authruri=$du another_field = $avp(i:10)")
+...
+
+1.5.8. start (string)
+
+   This parameter is used to describe custom call control start
+   messages. It represents a list of key value pairs and has the
+   following format:
+     * "string1 = var1 [string2 = var2]*"
+
+   The left-hand side of the assignment can be any string.
+
+   The right-hand side of the assignment must be a script pseudo
+   variable or a script AVP. For more information about them see
+   CookBooks - Scripting Variables.
+
+   If the parameter is not set, the default start message is sent.
+
+   Default value is "NULL".
+
+   Example 1.8. Setting the start parameter
+
+...
+modparam("call_control", "start", "call-id=$ci to=$tu from=$fu
+                        authruri=$du another_field = $avp(i:10)")
+...
+
+1.5.9. stop (string)
+
+   This parameter is used to describe custom call control stop
+   messages. It represents a list of key value pairs and has the
+   following format:
+     * "string1 = var1 [string2 = var2]*"
+
+   The left-hand side of the assignment can be any string.
+
+   The right-hand side of the assignment must be a script pseudo
+   variable or a script AVP. For more information about them see
+   CookBooks - Scripting Variables.
+
+   If the parameter is not set, the default stop message is sent.
+
+   Default value is "NULL".
+
+   Example 1.9. Setting the stop parameter
+
+...
+modparam("call_control", "stop", "call-id=$ci to=$tu from=$fu
+                        authruri=$du another_field = $avp(i:10)")
+...
+
 1.6. Exported Functions
 
 1.6.1. call_control()
@@ -291,7 +376,7 @@ route {
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.7. Using the call_control function
+   Example 1.10. Using the call_control function
 
 ...
 if (is_avp_set("$avp(i:805)")) {
