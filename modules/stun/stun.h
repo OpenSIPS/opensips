@@ -230,3 +230,4 @@ void printStunAddr(StunAddr* addr);
 void printStunMsg(StunMsg* msg);
 
 #endif	/* _STUFF_H */
+
