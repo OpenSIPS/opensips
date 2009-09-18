@@ -1112,6 +1112,28 @@ error:
 	return -1;
 }
 
+int udh_to_uri(str user, str host, str port, str* uri)
+{
+	int size;
+
+	if(uri==0)
+		return -1;
+	size = user.len + host.len + port.len+7;
+	uri->s = (char*)pkg_malloc(size);
+	if(uri->s == NULL)
+	{
+		LM_ERR("No more memory\n");
+		return -1;
+	}
+
+	uri->len = sprintf(uri->s, "sip:%.*s@%.*s", user.len, user.s,
+			host.len, host.s);
+	if(port.s)
+	{
+		uri->len += sprintf(uri->s+uri->len, ":%.*s", port.len, port.s);
+	}
+	return 0;
+}
 
 int b2b_init_request(struct sip_msg* msg, str* arg1, str* arg2, str* arg3,
 		str* arg4, str* arg5, str* arg6)
@@ -1139,8 +1161,9 @@ int b2b_init_request(struct sip_msg* msg, str* arg1, str* arg2, str* arg3,
 		LM_ERR("failed to parse R-URI\n");
 		return -1;
 	}
-	if(uandd_to_uri(msg->parsed_uri.user, msg->parsed_uri.host,
-			&to_uri)< 0)
+
+	if(udh_to_uri(msg->parsed_uri.user, msg->parsed_uri.host,
+				msg->parsed_uri.port, &to_uri)< 0)
 	{
 		LM_ERR("failed to construct uri from user and domain\n");
 		return -1;

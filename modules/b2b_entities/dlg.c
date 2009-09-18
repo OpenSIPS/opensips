@@ -794,6 +794,7 @@ int b2b_send_reply(enum b2b_entity_type et, str* b2b_key, int code, str* text,
 	}
 	if(code >= 200)
 	{
+		LM_DBG("Sent reply [%d] and unreffed the cell %p\n", code, tm_tran);
 		tmb.unref_cell(tm_tran);
 	}
 	return 0;
@@ -1025,7 +1026,7 @@ int b2b_send_request(enum b2b_entity_type et, str* b2b_key, str* method,
 		td->T_flags=T_NO_AUTOACK_FLAG|T_PASS_PROVISIONAL_FLAG ;
 
 		/* get the transaction in case I need to send cancel */
-		if(method->len == INVITE_LEN && strncmp(method->s, INVITE, INVITE_LEN) == 0)
+		if(dlg->last_method == METHOD_INVITE)
 			tmb.setlocalTholder(&dlg->tm_tran);
 
 		result= tmb.t_request_within
@@ -1224,6 +1225,7 @@ void b2b_tm_cback(b2b_table htable, struct tmcb_params *ps)
 	struct to_body* pto, TO;
 	str to_tag;
 	struct hdr_field* require_hdr;
+	int method_id;
 
 	if(ps == NULL || ps->rpl == NULL)
 	{
@@ -1259,6 +1261,24 @@ void b2b_tm_cback(b2b_table htable, struct tmcb_params *ps)
 	b2b_cback = dlg->b2b_cback;
 	param = dlg->param;
 
+	if(msg)
+	{
+		/* extract the method */
+		if(parse_headers(msg, HDR_EOH_F, 0) < 0)
+		{
+			LM_ERR("Failed to parse headers\n");
+			lock_release(&htable[hash_index].lock);
+			return;
+		}
+
+		if( msg->cseq==NULL || msg->cseq->body.s==NULL)
+		{
+			LM_ERR("failed to parse cseq header\n");
+			return;
+		}
+		method_id = get_cseq(msg)->method_id;
+	}
+
 	if(dlg->last_method == METHOD_BYE)
 	{
 		LM_DBG("I received a reply for BYE-> DELETE\n");
@@ -1273,6 +1293,7 @@ void b2b_tm_cback(b2b_table htable, struct tmcb_params *ps)
 		if(dlg->state == B2B_CONFIRMED)
 		{
 			/* If already confirmed on another leg - ignore the negative reply */
+			LM_DBG("Dialog already confirmed\n");
 			lock_release(&htable[hash_index].lock);
 			return;
 		}
@@ -1297,6 +1318,11 @@ void b2b_tm_cback(b2b_table htable, struct tmcb_params *ps)
 			lock_release(&htable[hash_index].lock);
 			return;
 		}
+		if(method_id != METHOD_INVITE)
+		{
+			lock_release(&htable[hash_index].lock);
+			goto done;
+		}
 
 		if(dlg->tm_tran && statuscode>= 200)
 		{
@@ -1304,7 +1330,7 @@ void b2b_tm_cback(b2b_table htable, struct tmcb_params *ps)
 			dlg->tm_tran = 0;
 		}
 
-		if(dlg->last_method == METHOD_INVITE && dlg->legs == NULL && 
+		if(dlg->legs == NULL && 
 				(dlg->state == B2B_NEW || dlg->state == B2B_EARLY))
 		{
 			b2b_dlg_t* new_dlg;
@@ -1477,25 +1503,18 @@ void b2b_tm_cback(b2b_table htable, struct tmcb_params *ps)
 			}
 		}
 
-		if( dlg->last_method == METHOD_INVITE )
+		LM_DBG("DLG state = %d\n", dlg->state);
+		if(dlg->state== B2B_MODIFIED && statuscode >= 200 && statuscode <300)
 		{
-			LM_DBG("DLG state = %d\n", dlg->state);
-			if(dlg->state == B2B_NEW && msg->first_line.u.reply.statuscode < 200)
-				dlg->state = B2B_EARLY;
-			else
-			if((dlg->state == B2B_NEW || dlg->state== B2B_MODIFIED || dlg->state == B2B_EARLY)
-					&& msg->first_line.u.reply.statuscode == 200)
-			{
-				LM_DBG("switched the state CONFIRMED\n");
-				dlg->state = B2B_CONFIRMED;
-			}
-			else
-			if(dlg->state == B2B_CONFIRMED)
-			{
-				LM_DBG("Retrasmission\n");
-				lock_release(&htable[hash_index].lock);
-				return;
-			}
+			LM_DBG("switched the state CONFIRMED\n");
+			dlg->state = B2B_CONFIRMED;
+		}
+		else
+		if(dlg->state == B2B_CONFIRMED)
+		{
+			LM_DBG("Retrasmission\n");
+			lock_release(&htable[hash_index].lock);
+			return;
 		}
 
 		lock_release(&htable[hash_index].lock);
