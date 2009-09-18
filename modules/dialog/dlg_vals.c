@@ -75,15 +75,47 @@ static inline struct dlg_val *new_dlg_val(str *name, str *val)
 
 int store_dlg_value(struct dlg_cell *dlg, str *name, str *val)
 {
-	struct dlg_val *dv;
+	struct dlg_val *dv=NULL;
+	struct dlg_val *it;
+	struct dlg_val *it_prev;
+	unsigned int id;
 
-	if ( (dv=new_dlg_val(name,val))==NULL) {
+	if ( val && (dv=new_dlg_val(name,val))==NULL) {
 		LM_ERR("failed to create new dialog value\n");
 		return -1;
 	}
 
+	id = _get_name_id(name);
+
 	/* lock dialog */
 	dlg_val_lock( dlg );
+
+	/* iterate the list */
+	for( it_prev=NULL, it=dlg->vals ; it ; it_prev=it,it=it->next) {
+		if (id==it->id && name->len==it->name.len &&
+		memcmp(name->s,it->name.s,name->len)==0 ) {
+			LM_DBG("var found-> <%.*s>!\n",it->val.len,it->val.s);
+			/* found -> replace or delete it */
+			if (val==NULL) {
+				/* delete it */
+				if (it_prev) it_prev->next = it->next;
+				else dlg->vals = it->next;
+			} else {
+				/* replace the current it with dv and free the it */
+				dv->next = it->next;
+				if (it_prev) it_prev->next = dv;
+				else dlg->vals = dv;
+			}
+
+			/* unlock dialog */
+			dlg_val_unlock( dlg );
+
+			shm_free(it);
+			return 0;
+		}
+	}
+
+	/* not found -> simply add a new one */
 
 	/* insert at the beginning of the list */
 	dv->next = dlg->vals;
@@ -199,15 +231,25 @@ int pv_set_dlg_val(struct sip_msg* msg, pv_param_t *param, int op,
 		return -1;
 	}
 
-	if ( !(val->flags&PV_VAL_STR)) {
-		LM_ERR("non-string values are not supported\n");
-		return -1;
-	}
+	if (val==NULL || val->flags&(PV_VAL_NONE|PV_VAL_NULL|PV_VAL_EMPTY)) {
+		/* if NULL, remove the value */
+		if (store_dlg_value( dlg, &param->pvn.u.isname.name.s, NULL)!=0) {
+			LM_ERR("failed to delete dialog values <%.*s>\n",
+				param->pvn.u.isname.name.s.len,param->pvn.u.isname.name.s.s);
+			return -1;
+		}
+	} else {
+		/* if value, must be string */
+		if ( !(val->flags&PV_VAL_STR)) {
+			LM_ERR("non-string values are not supported\n");
+			return -1;
+		}
 
-	if (store_dlg_value( dlg, &param->pvn.u.isname.name.s, &val->rs)!=0) {
-		LM_ERR("failed to store dialog values <%.*s>\n",
-			param->pvn.u.isname.name.s.len,param->pvn.u.isname.name.s.s);
-		return -1;
+		if (store_dlg_value( dlg, &param->pvn.u.isname.name.s, &val->rs)!=0) {
+			LM_ERR("failed to store dialog values <%.*s>\n",
+				param->pvn.u.isname.name.s.len,param->pvn.u.isname.name.s.s);
+			return -1;
+		}
 	}
 
 	return 0;
