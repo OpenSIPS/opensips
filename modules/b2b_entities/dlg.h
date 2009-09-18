@@ -63,6 +63,16 @@ typedef enum b2b_state {
 	B2B_LAST_STATE  /* Just to know the number of states */
 } b2b_state_t;
 
+typedef struct b2b_dlg_leg {
+	int id;
+	str tag;
+	unsigned int cseq;
+	str route_set;
+	str contact;
+	struct socket_info *bind_addr;
+	struct b2b_dlg_leg* next;
+}dlg_leg_t;
+
 
 /** Definitions for structures used for storing dialogs */
 typedef struct b2b_dlg
@@ -75,6 +85,7 @@ typedef struct b2b_dlg
 	str                  to_uri;
 	str                  tag[2];
 	unsigned int         cseq[2];
+	unsigned int         last_invite_cseq;
 	str                  route_set[2];
 	str                  contact[2];
 	struct socket_info*  bind_addr[2];
@@ -86,6 +97,7 @@ typedef struct b2b_dlg
 	void*                param;
 	struct cell*         tm_tran;
 	struct cell*         cancel_tm_tran;
+	dlg_leg_t*           legs;
 	unsigned int         last_reply_code;
 }b2b_dlg_t;
 

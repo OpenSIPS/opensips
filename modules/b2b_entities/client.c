@@ -122,6 +122,7 @@ str* client_new(str* method, str* to_uri, str* from_uri, str* extra_headers,
 	dlg->param = param;
 	dlg->last_method = METHOD_INVITE;
 	dlg->state = B2B_NEW;
+	dlg->cseq[CALLER_LEG] =1;
 
 	/* callid must have the special format */
 	callid = b2b_htable_insert(client_htable, dlg, hash_index, B2B_CLIENT);
@@ -208,7 +209,7 @@ error:
 	return 0;
 }
 
-dlg_t* b2b_client_build_dlg(b2b_dlg_t* dlg)
+dlg_t* b2b_client_build_dlg(b2b_dlg_t* dlg, dlg_leg_t* leg)
 {
 	dlg_t* td =NULL;
 
@@ -219,22 +220,22 @@ dlg_t* b2b_client_build_dlg(b2b_dlg_t* dlg)
 	}
 	memset(td, 0, sizeof(dlg_t));
 
-	td->loc_seq.value = dlg->cseq[CALLER_LEG];
+	td->loc_seq.value   = dlg->cseq[CALLER_LEG];
 	dlg->cseq[CALLER_LEG]++;
-	td->loc_seq.is_set = 1;
+	td->loc_seq.is_set  = 1;
 
 	td->id.call_id = dlg->callid;
 	td->id.loc_tag = dlg->tag[CALLER_LEG];
-	td->id.rem_tag = dlg->tag[CALLEE_LEG];
+	td->id.rem_tag = leg->tag;
 
-	td->rem_target = dlg->contact[CALLEE_LEG];
+	td->rem_target = leg->contact;
 
 	td->loc_uri = dlg->from_uri;
 	td->rem_uri = dlg->to_uri;
 
 	if(dlg->route_set[CALLEE_LEG].s && dlg->route_set[CALLEE_LEG].len)
 	{
-		if(parse_rr_body(dlg->route_set[CALLEE_LEG].s, dlg->route_set[CALLEE_LEG].len,
+		if(parse_rr_body(leg->route_set.s, leg->route_set.len,
 			&td->route_set)< 0)
 		{
 			LM_ERR("failed to parse record route body\n");
@@ -242,7 +243,7 @@ dlg_t* b2b_client_build_dlg(b2b_dlg_t* dlg)
 		}
 	}	
 	td->state= DLG_CONFIRMED ;
-	td->send_sock = dlg->bind_addr[CALLEE_LEG];
+	td->send_sock = leg->bind_addr;
 
 	return td;
 error:

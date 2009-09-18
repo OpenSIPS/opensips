@@ -43,6 +43,7 @@
 #define B2B_MAX_KEY_SIZE     (B2B_KEY_PREFIX_LEN+ 5*3 + 40)
 #define BUF_LEN              256
 
+
 str* b2b_htable_insert(b2b_table table, b2b_dlg_t* dlg, int hash_index, int src)
 {
 	b2b_dlg_t * it, *prev_it= NULL;
@@ -233,6 +234,8 @@ b2b_dlg_t* b2b_dlg_copy(b2b_dlg_t* dlg)
 	new_dlg->param     = dlg->param;
 	new_dlg->b2b_cback = dlg->b2b_cback;
 
+	new_dlg->last_invite_cseq = dlg->last_invite_cseq;
+
 	return new_dlg;
 }
 
@@ -257,6 +260,7 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 	int method_value;
 	struct to_body TO;
 	static	str reason = {"Trying", 6};
+	contact_body_t* b;
 
 	/* check if a b2b request */
 	if (parse_headers(msg, HDR_EOH_F, 0) < 0)
@@ -264,7 +268,41 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 		LM_ERR("failed to parse message\n");
 		return -1;
 	}
+
+	if( msg->contact!=NULL && msg->contact->body.s!=NULL)
+	{
+		if( parse_contact(msg->contact) <0 )
+		{
+			LM_ERR(" cannot parse contact"
+					" header\n");
+			return -1;
+		}
+		b= (contact_body_t* )msg->contact->parsed;
+
+		if(b == NULL)
+		{
+			LM_ERR("cannot parse contact header\n");
+			return -1;
+		}
+		if(b->contacts->uri.len == server_address.len &&
+				strncmp(b->contacts->uri.s, server_address.s, server_address.len)==0)
+		{
+			LM_DBG("Received a request that I sent\n");
+			return 1;
+		}
+	}
+
 	method_value = msg->first_line.u.request.method_value;
+
+	if(method_value == METHOD_PRACK)
+	{
+		LM_DBG("Received a PRACK - send 200 reply\n");
+		str reason={"OK", 2};
+		/* send 200 OK and exit */
+		tmb.t_reply(msg, 200, &reason);
+		tmb.unref_cell(tmb.t_gett());
+		goto done;
+	}
 
 	if( msg->callid==NULL || msg->callid->body.s==NULL)
 	{
@@ -405,6 +443,7 @@ logic_notify:
 
 	b2b_cback(msg, &b2b_key, B2B_REQUEST, param);
 
+done:
 	if(req_routeid > 0)
 	run_top_route(rlist[req_routeid].a, msg);
 
@@ -561,6 +600,7 @@ b2b_dlg_t* b2b_new_dlg(struct sip_msg* msg, int on_reply)
 		LM_ERR("failed to parse cseq number - not an integer\n");
 		return 0;
 	}
+	dlg.last_invite_cseq = dlg.cseq[CALLER_LEG];
 	dlg.cseq[CALLEE_LEG] = 1;
 
 	if( msg->contact==NULL || msg->contact->body.s==NULL)
@@ -842,6 +882,12 @@ void shm_free_param(void* param)
 	shm_free(param);
 }
 
+dlg_t* b2b_client_dlg(b2b_dlg_t* dlg)
+{
+	return b2b_client_build_dlg(dlg, dlg->legs);
+}
+
+
 /*
  *	Function to send a request inside a b2b dialog
  *	et      : entity type - it can be B2B_SEVER or B2B_CLIENT
@@ -875,7 +921,7 @@ int b2b_send_request(enum b2b_entity_type et, str* b2b_key, str* method,
 	{
 		LM_DBG("Send request to a client entity\n");
 		table = client_htable;
-		build_dlg = b2b_client_build_dlg;
+		build_dlg = b2b_client_dlg;
 		tm_cback = b2b_client_tm_cback;
 	}
 
@@ -898,7 +944,10 @@ int b2b_send_request(enum b2b_entity_type et, str* b2b_key, str* method,
 	parse_method(method->s, method->s+method->len, &dlg->last_method);
 
 	if(dlg->last_method== METHOD_INVITE)
+	{
 		dlg->state = B2B_MODIFIED;
+		dlg->last_invite_cseq = dlg->cseq[0];
+	}
 	else
 	if(dlg->last_method == METHOD_ACK)
 		dlg->state = B2B_ESTABLISHED;
@@ -949,8 +998,22 @@ int b2b_send_request(enum b2b_entity_type et, str* b2b_key, str* method,
 	}
 	else
 	{
-		/* build strucuture with dialog information */
+		/* build structure with dialog information */
 		td = build_dlg(dlg);
+		if(dlg->last_method == METHOD_ACK)
+		{
+			td->loc_seq.value = dlg->last_invite_cseq;
+			if(et == B2B_SERVER)
+				dlg->cseq[CALLEE_LEG]--;
+			else
+				dlg->cseq[CALLER_LEG]--;
+		}
+		else
+		if(dlg->last_method == METHOD_INVITE)
+		{
+			dlg->last_invite_cseq = td->loc_seq.value +1;
+		}
+
 		if(td == NULL)
 		{
 			LM_ERR("failed to build tm dlg structure\n");
@@ -961,6 +1024,7 @@ int b2b_send_request(enum b2b_entity_type et, str* b2b_key, str* method,
 
 		td->T_flags=T_NO_AUTOACK_FLAG|T_PASS_PROVISIONAL_FLAG ;
 
+		/* get the transaction in case I need to send cancel */
 		if(method->len == INVITE_LEN && strncmp(method->s, INVITE, INVITE_LEN) == 0)
 			tmb.setlocalTholder(&dlg->tm_tran);
 
@@ -992,6 +1056,161 @@ int b2b_send_request(enum b2b_entity_type et, str* b2b_key, str* method,
 	return 0;
 }
 
+dlg_leg_t* b2b_find_leg(b2b_dlg_t* dlg, str to_tag)
+{
+	dlg_leg_t* leg = dlg->legs;
+
+	while(leg)
+	{
+		/* compare the tag */
+		if(to_tag.len == leg->tag.len &&
+				strncmp(to_tag.s, leg->tag.s, to_tag.len)==0)
+		{
+			LM_DBG("Found existing leg  - Nothing to update\n");
+			/* construct the contact to contain the id */
+			/* I must have the address -> the server_address must be parsed */
+			return leg;
+		}
+		leg = leg->next;
+	}
+	return 0;
+}
+
+dlg_leg_t* b2b_new_leg(struct sip_msg* msg, str* to_tag, int mem_type)
+{
+	str contact = {0, 0};
+	str route_set= {0, 0};
+	dlg_leg_t* new_leg;
+	contact_body_t* b;
+	int size;
+
+	if( msg->contact!=NULL && msg->contact->body.s==NULL)
+	{
+		if(parse_contact(msg->contact) <0 )
+		{
+			LM_ERR("failed to parse contact header\n");
+			goto error;
+		}
+		b= (contact_body_t* )msg->contact->parsed;
+		if(b == NULL)
+		{
+			LM_ERR("contact header not parsed\n");
+			goto error;
+		}
+		contact = b->contacts->uri;
+	}
+
+	if(msg->record_route!=NULL && msg->record_route->body.s!= NULL)
+	{
+		if( print_rr_body(msg->record_route, &route_set, 0, 0)!= 0)
+		{
+			LM_ERR("failed to process record route\n");
+			goto error;
+		}
+	}
+	size = sizeof(dlg_leg_t)+ contact.len + route_set.len + to_tag->len;
+
+	if(mem_type == SHM_MEM_TYPE)
+		new_leg = (dlg_leg_t*)shm_malloc(size);
+	else
+		new_leg = (dlg_leg_t*)pkg_malloc(size);
+
+	if(new_leg == NULL)
+	{
+		LM_ERR("No more shared memory");
+		if(route_set.s)
+			pkg_free(route_set.s);
+		goto error;
+	}
+	memset(new_leg, 0, size);
+	size = sizeof(dlg_leg_t);
+
+	if(contact.s)
+	{
+		new_leg->contact.s = (char*)new_leg + size;
+		memcpy(new_leg->contact.s, contact.s, contact.len);
+		new_leg->contact.len = contact.len;
+		size+= contact.len;
+	}
+
+	if(route_set.s)
+	{
+		new_leg->route_set.s = (char*)new_leg + size;
+		memcpy(new_leg->route_set.s, route_set.s, route_set.len);
+		new_leg->route_set.len = route_set.len;
+		size+= route_set.len;
+		pkg_free(route_set.s);
+	}
+
+	new_leg->tag.s = (char*)new_leg + size;
+	memcpy(new_leg->tag.s, to_tag->s, to_tag->len);
+	new_leg->tag.len = to_tag->len;
+	size += to_tag->len;
+
+	if( msg->cseq==NULL || msg->cseq->body.s==NULL)
+	{
+		LM_ERR("failed to parse cseq header\n");
+		goto error;
+	}
+	if (str2int( &(get_cseq(msg)->number), &new_leg->cseq)!=0 )
+	{
+		LM_ERR("failed to parse cseq number - not an integer\n");
+		goto error;
+	}
+
+	new_leg->bind_addr= msg->rcv.bind_address;
+
+	return new_leg;
+
+error:
+	return 0;
+}
+
+dlg_leg_t* b2b_add_leg(b2b_dlg_t* dlg, struct sip_msg* msg, str* to_tag)
+{
+	dlg_leg_t* new_leg;
+
+	new_leg = b2b_new_leg(msg, to_tag, SHM_MEM_TYPE);
+	if(new_leg == NULL)
+	{
+		LM_ERR("Failed to create new leg\n");
+		return 0;
+	}
+	if(dlg->legs != NULL)
+	{
+		new_leg->next = dlg->legs;
+		new_leg->id = dlg->legs->id + 1;
+	}
+	dlg->legs = new_leg;
+	return new_leg;
+}
+
+int b2b_send_req(b2b_dlg_t* dlg, dlg_leg_t* leg, str* method)
+{
+	dlg_t* td;
+	int result;
+
+	LM_DBG("start\n");
+	td = b2b_client_build_dlg(dlg, leg);
+	if(td == NULL)
+	{
+		LM_ERR("Failed to create dialog info structure\n");
+		return -1;
+	}
+
+	/* send request */
+	result= tmb.t_request_within
+		(method,           /* method*/
+		0,                  /* extra headers*/
+		0,                  /* body*/
+		td,                 /* dialog structure*/
+		0,                  /* callback function*/
+		0,                  /* callback parameter*/
+		0);
+	pkg_free(td);
+	return result;
+}
+
 void b2b_tm_cback(b2b_table htable, struct tmcb_params *ps)
 {
 	struct sip_msg * msg;
@@ -1001,6 +1220,10 @@ void b2b_tm_cback(b2b_table htable, struct tmcb_params *ps)
 	b2b_dlg_t* dlg;
 	void* param = NULL;
 	int statuscode = 0;
+	dlg_leg_t* leg, *confirmed_leg = NULL, *aux_leg;
+	struct to_body* pto, TO;
+	str to_tag;
+	struct hdr_field* require_hdr;
 
 	if(ps == NULL || ps->rpl == NULL)
 	{
@@ -1036,11 +1259,9 @@ void b2b_tm_cback(b2b_table htable, struct tmcb_params *ps)
 	b2b_cback = dlg->b2b_cback;
 	param = dlg->param;
 
-	/* if a reply for Bye -> delete the record */
 	if(dlg->last_method == METHOD_BYE)
 	{
 		LM_DBG("I received a reply for BYE-> DELETE\n");
-//		b2b_delete_record(dlg, &client_htable, hash_index);
 		lock_release(&htable[hash_index].lock);
 		goto done;
 	}
@@ -1048,6 +1269,13 @@ void b2b_tm_cback(b2b_table htable, struct tmcb_params *ps)
 	if(statuscode >= 300)
 	{
 		LM_DBG("Received a negative reply\n");
+		/* check to see for which leg */
+		if(dlg->state == B2B_CONFIRMED)
+		{
+			/* If already confirmed on another leg - ignore the negative reply */
+			lock_release(&htable[hash_index].lock);
+			return;
+		}
 
 		if(dlg->tm_tran)
 		{
@@ -1056,7 +1284,6 @@ void b2b_tm_cback(b2b_table htable, struct tmcb_params *ps)
 		}
 
 		/* delete the record from hash table */
-//		b2b_delete_record(dlg, &client_htable, hash_index);
 		lock_release(&htable[hash_index].lock);
 		if(msg == FAKED_REPLY)
 			return;
@@ -1066,7 +1293,189 @@ void b2b_tm_cback(b2b_table htable, struct tmcb_params *ps)
 		/* if provisional or 200OK reply */
 		LM_DBG("Received a reply with statuscode = %d\n", statuscode);
 		if(msg == FAKED_REPLY)
+		{
+			lock_release(&htable[hash_index].lock);
 			return;
+		}
+
+		if(dlg->tm_tran && statuscode>= 200)
+		{
+			tmb.unref_cell(dlg->tm_tran);
+			dlg->tm_tran = 0;
+		}
+
+		if(dlg->last_method == METHOD_INVITE && dlg->legs == NULL && 
+				(dlg->state == B2B_NEW || dlg->state == B2B_EARLY))
+		{
+			b2b_dlg_t* new_dlg;
+
+			dlg->state = DLG_ESTABLISHED;
+			new_dlg = b2b_new_dlg(msg, 1);
+			if(new_dlg == NULL)
+			{
+				LM_ERR("Failed to create b2b dialog structure\n");
+				lock_release(&htable[hash_index].lock);
+				return;
+			}
+			LM_DBG("Created new dialog structure %p\n", new_dlg);
+			new_dlg->id = dlg->id;
+			new_dlg->state = dlg->state;
+			new_dlg->b2b_cback = dlg->b2b_cback;
+			new_dlg->param = dlg->param;
+			new_dlg->tm_tran = dlg->tm_tran;
+			new_dlg->next = dlg->next;
+			new_dlg->prev = dlg->prev;
+
+			dlg = b2b_search_htable(htable, hash_index, local_index);
+			if(dlg->prev)
+				dlg->prev->next = new_dlg;
+			else
+				htable[hash_index].first = new_dlg;
+
+			if(dlg->next)
+				dlg->next->prev = new_dlg;
+			
+			dlg->next= dlg->prev = NULL;
+			shm_free(dlg);
+			dlg = new_dlg;
+		}
+
+		if(dlg->state == B2B_NEW || dlg->state == B2B_EARLY)
+		{
+			if(msg->to->parsed != NULL)
+			{
+				pto = (struct to_body*)msg->to->parsed;
+			}
+			else
+			{
+				memset( &TO , 0, sizeof(TO) );
+				if( !parse_to(msg->to->body.s,msg->to->body.s + msg->to->body.len + 1, &TO));
+				{
+					LM_ERR("'To' header NOT parsed\n");
+					lock_release(&htable[hash_index].lock);
+					return;
+				}
+				pto = &TO;
+			}
+			if(pto->tag_value.s== 0 && pto->tag_value.len == 0)
+			{
+				LM_ERR("No TO TAG found\n");
+				lock_release(&htable[hash_index].lock);
+				return;
+			}
+			to_tag = pto->tag_value;
+			if(statuscode < 200)
+			{
+				dlg->state = B2B_EARLY;
+				/* search if an existing or a new leg */
+				leg = b2b_find_leg(dlg, to_tag);
+				if(leg)
+				{
+					LM_DBG("Found existing leg  - Nothing to update\n");
+					lock_release(&htable[hash_index].lock);
+					goto done;
+				}
+
+				leg = b2b_add_leg(dlg, msg, &to_tag);
+				if(leg == 0)
+				{
+					LM_ERR("Failed to add dialog leg\n");
+					lock_release(&htable[hash_index].lock);
+					return;
+				}
+				/* PRACK handling */
+				/* if the provisional reply contains a Require: 100rel header -> send PRACK */
+				require_hdr = get_header_by_static_name( msg, "Require");
+				while(require_hdr)
+				{
+					LM_DBG("Found require hdr\n");
+					if((require_hdr->body.len == 6 && strncmp(require_hdr->body.s, "100rel", 6)==0) ||
+						(require_hdr->body.len == 8 && strncmp(require_hdr->body.s, "100rel\r\n", 8)==0))
+					{
+						LM_DBG("Found 100rel header\n");
+						break;
+					}
+					require_hdr = require_hdr->sibling;
+				}
+				if(require_hdr)
+				{
+					str method={"PRACK", 5};
+					if(b2b_send_req(dlg, leg, &method) < 0)
+					{
+						LM_ERR("Failed to send PRACK\n");
+					}
+				}
+
+				lock_release(&htable[hash_index].lock);
+				goto done;
+			}
+			else /* a final success response */
+			{
+				if(dlg->state == B2B_CONFIRMED) /* if the dialog was already confirmed */
+				{
+					str method= {"ACK", 3};
+
+					/* send an ACK followed by BYE */
+					leg = b2b_new_leg(msg, &to_tag, PKG_MEM_TYPE);
+					if(leg == NULL)
+					{
+						LM_ERR("Failed to add dialog leg\n");
+						lock_release(&htable[hash_index].lock);
+						return;
+					}
+					if(b2b_send_req(dlg, leg, &method) < 0)
+					{
+						LM_ERR("Failed to send ACK request\n");
+					}
+					method.s = "BYE";
+					if(b2b_send_req(dlg, leg, &method) < 0)
+					{
+						LM_ERR("Failed to send BYE request\n");
+					}
+					pkg_free(leg);
+
+					lock_release(&htable[hash_index].lock);
+					return;
+				}
+				else
+				{
+					/* keep only this confirmed leg and delete the rest */
+					dlg->state = B2B_CONFIRMED;
+					leg = dlg->legs;
+					while(leg)
+					{
+						aux_leg = leg->next;
+						/* compare the tag */
+						if(!confirmed_leg && (to_tag.len == leg->tag.len &&
+								strncmp(to_tag.s, leg->tag.s, to_tag.len)==0))
+						{
+							confirmed_leg = leg;
+						}else
+						{
+							shm_free(leg);
+						}
+						leg = aux_leg;
+					}
+					if(confirmed_leg == NULL) /* none provisional reply was received */
+					{
+						leg = b2b_add_leg(dlg, msg, &to_tag);
+						if(leg == NULL)
+						{
+							LM_ERR("Failed to add dialog leg\n");
+							lock_release(&htable[hash_index].lock);
+							return;
+						}
+					}
+					else
+					{
+						dlg->legs = confirmed_leg;
+						dlg->legs->next = NULL;
+					}
+					lock_release(&htable[hash_index].lock);
+					goto done;
+				}
+			}
+		}
 
 		if( dlg->last_method == METHOD_INVITE )
 		{
@@ -1089,48 +1498,6 @@ void b2b_tm_cback(b2b_table htable, struct tmcb_params *ps)
 			}
 		}
 
-		if(dlg->tm_tran && statuscode>= 200 && statuscode< 300)
-		{
-			tmb.unref_cell(dlg->tm_tran);
-			dlg->tm_tran = 0;
-		}
-
-		/* update the state of the dialog according to the code of the reply */
-
-		if(dlg->last_method == METHOD_INVITE && statuscode>= 200 && statuscode< 300 )
-		{
-			b2b_dlg_t* new_dlg;
-
-			dlg->state = DLG_ESTABLISHED;
-
-			new_dlg = b2b_new_dlg(msg, 1);
-			if(new_dlg == NULL)
-			{
-				LM_ERR("Failed to create b2b dialog structure\n");
-				lock_release(&htable[hash_index].lock);
-				return;
-			}
-			new_dlg->id = dlg->id;
-			new_dlg->state = dlg->state;
-			new_dlg->b2b_cback = dlg->b2b_cback;
-			new_dlg->param = dlg->param;
-			
-			new_dlg->next = dlg->next;
-			new_dlg->prev = dlg->prev;
-
-			dlg = b2b_search_htable(htable, hash_index, local_index);
-			if(dlg->prev)
-				dlg->prev->next = new_dlg;
-			else
-				htable[hash_index].first = new_dlg;
-
-			if(dlg->next)
-				dlg->next->prev = new_dlg;
-			
-			dlg->next= dlg->prev = NULL;
-			shm_free(dlg);
-		}
-		
 		lock_release(&htable[hash_index].lock);
 	}
 
