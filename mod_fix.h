@@ -101,5 +101,6 @@ int fixup_spve(void** param);
 int fixup_pvar(void **param);
 int fixup_str(void **param);
 int fixup_uint(void** param);
+int fixup_igp(void** param);
 
 #endif
