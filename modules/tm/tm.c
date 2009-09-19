@@ -1249,7 +1249,7 @@ static int pv_get_tm_ruri(struct sip_msg *msg, pv_param_t *param,
 		/* no T */
 		if (msg!=NULL&&msg!=FAKED_REPLY && msg->first_line.type==SIP_REQUEST){
 			res->rs = *GET_RURI(msg);
-			res->flags = PV_VAL_STR|PV_TYPE_INT;
+			res->flags = PV_VAL_STR;
 			return 0;
 		}
 		return pv_get_null(msg, param,res);
@@ -1263,7 +1263,7 @@ static int pv_get_tm_ruri(struct sip_msg *msg, pv_param_t *param,
 
 	res->rs = t->uac[_tm_branch_index].uri;
 
-	res->flags = PV_VAL_STR|PV_TYPE_INT;
+	res->flags = PV_VAL_STR;
 
 	return 0;
 }

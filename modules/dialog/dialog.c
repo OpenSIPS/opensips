@@ -1078,7 +1078,7 @@ int pv_get_dlg_dir(struct sip_msg *msg, pv_param_t *param,
 		res->rs.len = 10;
 	}
 
-	res->flags = PV_VAL_STR|PV_TYPE_INT;
+	res->flags = PV_VAL_STR;
 
 	return 0;
 }
