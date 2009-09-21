@@ -54,6 +54,7 @@ int b2b_bind(b2b_api_t* api);
 unsigned int server_hsize = 9;
 unsigned int client_hsize = 9;
 str server_address = {0, 0};
+struct sip_uri srv_addr_uri;
 static char* script_req_route = NULL;
 static char* script_reply_route = NULL;
 int req_routeid  = -1;
@@ -119,7 +120,11 @@ static int mod_init(void)
 		return -1;
 	}
 	server_address.len = strlen(server_address.s);
-
+	if(parse_uri(server_address.s, server_address.len, &srv_addr_uri) < 0)
+	{
+		LM_ERR("Bad format for server address - not a SIP URI\n");
+		return -1;
+	}
 	/* load all TM stuff */
 	if(load_tm_api(&tmb)==-1)
 	{

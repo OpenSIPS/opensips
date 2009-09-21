@@ -260,7 +260,8 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 	int method_value;
 	struct to_body TO;
 	static	str reason = {"Trying", 6};
-	contact_body_t* b;
+//	contact_body_t* b;
+	char* src_ip;
 
 	/* check if a b2b request */
 	if (parse_headers(msg, HDR_EOH_F, 0) < 0)
@@ -269,6 +270,22 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 		return -1;
 	}
 
+	src_ip = ip_addr2a(&msg->rcv.src_ip);
+	if(src_ip == NULL)
+	{
+		LM_ERR("Failed to convert ipaddr to string\n");
+		return -1;
+	}
+
+	if((strlen(src_ip)==srv_addr_uri.host.len) &&
+			(strncmp(src_ip, srv_addr_uri.host.s, srv_addr_uri.host.len) == 0) &&
+			srv_addr_uri.port_no == msg->rcv.src_port)
+	{
+		LM_DBG("Received a message that I sent\n");
+		return 1;
+	}
+
+#if 0
 	if( msg->contact!=NULL && msg->contact->body.s!=NULL)
 	{
 		if( parse_contact(msg->contact) <0 )
@@ -291,6 +308,7 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 			return 1;
 		}
 	}
+#endif
 
 	method_value = msg->first_line.u.request.method_value;
 
@@ -603,27 +621,24 @@ b2b_dlg_t* b2b_new_dlg(struct sip_msg* msg, int on_reply)
 	dlg.last_invite_cseq = dlg.cseq[CALLER_LEG];
 	dlg.cseq[CALLEE_LEG] = 1;
 
-	if( msg->contact==NULL || msg->contact->body.s==NULL)
+	if( msg->contact!=NULL && msg->contact->body.s!=NULL)
 	{
-		LM_ERR("no Contact header found\n");
-		return 0;
+		if(parse_contact(msg->contact) <0 )
+		{
+			LM_ERR("failed to parse contact header\n");
+			return 0;
+		}
+		b= (contact_body_t* )msg->contact->parsed;
+		if(b == NULL)
+		{
+			LM_ERR("contact header not parsed\n");
+			return 0;
+		}
+		if(on_reply)
+			dlg.contact[CALLEE_LEG] = b->contacts->uri;
+		else
+			dlg.contact[CALLER_LEG] = b->contacts->uri;
 	}
-	
-	if(parse_contact(msg->contact) <0 )
-	{
-		LM_ERR("failed to parse contact header\n");
-		return 0;
-	}
-	b= (contact_body_t* )msg->contact->parsed;
-	if(b == NULL)
-	{
-		LM_ERR("contact header not parsed\n");
-		return 0;
-	}
-	if(on_reply)
-		dlg.contact[CALLEE_LEG] = b->contacts->uri;
-	else
-		dlg.contact[CALLER_LEG] = b->contacts->uri;
 
 	if(msg->record_route!=NULL && msg->record_route->body.s!= NULL)
 	{

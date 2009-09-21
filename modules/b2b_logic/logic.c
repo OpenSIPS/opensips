@@ -376,11 +376,11 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 			}
 			entity = entity->next;
 		}
-		if(entity == NULL)
-		{
-			LM_ERR("No b2b_key match found\n");
-			goto error;
-		}
+	}
+	if(entity == NULL)
+	{
+		LM_ERR("No b2b_key match found\n");
+		goto error;
 	}
 
 	if(type == B2B_REPLY)
@@ -404,7 +404,7 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 						" reply(for method %.*s).\n", method.len, method.s);
 					goto error;
 				}
-				/* if a negative reply -> delete the record */
+				/* if a negative reply */
 				if(msg->first_line.u.reply.statuscode >= 300)
 				{
 					str meth_bye = {BYE, BYE_LEN};
@@ -412,9 +412,7 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 							tuple->bridge_entities[1]->key.s != NULL) /* if a negative reply for the second leg send BYE to the first*/
 						b2b_api.send_request(entity->peer->type,
 								&entity->peer->key, &meth_bye, 0, 0);
-				//	if(msg->first_line.u.reply.statuscode != 487)
-						b2bl_delete(tuple, hash_index);
-
+					tuple->to_del = 1;
 					goto done;
 				}
 				else
@@ -435,6 +433,8 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 			{
 				/* TODO -> process and apply reply rules */
 			}
+			if(msg->first_line.u.reply.statuscode >= 300)
+				tuple->to_del = 1;
 		}
 		else
 		{
@@ -442,13 +442,13 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 				msg->first_line.u.reply.statuscode,&msg->first_line.u.reply.reason,
 				body.s?&body:0, extra_headers.s?&extra_headers:0);
 
-			/* if no other scenario rules defined and this is the reply
-			 * for BYE or CANCEL */
-			if((method.len == BYE_LEN && strncmp(method.s, BYE, BYE_LEN)==0) ||
-					msg->first_line.u.reply.statuscode >= 300)
+			/* if no other scenario rules defined and this is the reply for BYE */
+			if(method.len == BYE_LEN && strncmp(method.s, BYE, BYE_LEN)==0)
 			{
 				b2bl_delete(tuple, hash_index);
 			}
+			if(msg->first_line.u.reply.statuscode >= 300)
+				tuple->to_del = 1;
 		}
 	}
 	else
@@ -480,10 +480,16 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 					&entity->peer->key, &meth_cancel, 0, 0);
 			b2b_api.send_reply(entity->type, &entity->key, 200, &ok, 0, 0);
 			tuple->bridge_entities[1] = NULL;
-//			b2bl_delete(tuple, hash_index);
 			goto done;
 		}
-		
+		/* if the request is an ACK and the tuple is marked to_del -> then delete the record and return */
+		if(request_id == B2B_ACK && tuple->to_del)
+		{
+			LM_DBG("ACK for a negative reply received\n");
+			b2bl_delete(tuple, hash_index);
+			goto done;
+		}
+
 		if(!scenario || !scenario->request_rules[request_id])
 		{
 			goto send_usual_request;

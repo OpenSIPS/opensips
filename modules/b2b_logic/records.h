@@ -57,6 +57,7 @@ typedef struct b2bl_tuple
 	b2bl_entity_id_t* server;
 	b2bl_entity_id_t* clients;
 	b2bl_entity_id_t* bridge_entities[2];
+	int to_del;
 	struct b2bl_tuple* next;
 	struct b2bl_tuple* prev;
 	unsigned int lifetime;

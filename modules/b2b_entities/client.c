@@ -213,6 +213,12 @@ dlg_t* b2b_client_build_dlg(b2b_dlg_t* dlg, dlg_leg_t* leg)
 {
 	dlg_t* td =NULL;
 
+	if(dlg->legs == NULL)
+	{
+		LM_ERR("Tried to send a dialog when no call leg info exists\n");
+		return 0;
+	}
+
 	td = (dlg_t*)pkg_malloc(sizeof(dlg_t));
 	if(td == NULL)
 	{

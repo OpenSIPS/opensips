@@ -125,6 +125,9 @@ void b2bl_delete(b2bl_tuple_t* tuple, unsigned int hash_index)
 	b2bl_entity_id_t* entity, *next_entity;
 	int i;
 
+	LM_DBG("Delete record, hash_index=[%d], local_index=[%d]\n",
+			hash_index, tuple->id);
+
 	if(b2bl_htable[hash_index].first == tuple)
 	{
 		b2bl_htable[hash_index].first = tuple->next;
