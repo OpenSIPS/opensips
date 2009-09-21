@@ -163,11 +163,12 @@ int hash_match(struct sip_msg *msg, struct address_list** table,
 	str_ip.s = (char*)ip->u.addr;
 
 	for (node = table[perm_hash(str_ip)]; node; node = node->next) {
-	 		LM_DBG("Comparing (%s %s) , (%d %d) , (%d %d) , (%d %d)\n",
+/*	 		LM_DBG("Comparing (%s %s) , (%d %d) , (%d %d) , (%d %d)\n",
 				ip_addr2a(node->ip), ip_addr2a(ip), 
 				node->proto, proto,
 				node->port , port,
 				node->grp , grp);
+*/
 
 		if	((node->grp == GROUP_ANY || node->grp == grp
 					|| grp == GROUP_ANY) &&

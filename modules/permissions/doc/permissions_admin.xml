@@ -162,62 +162,23 @@
 		The module can be used to determine if an address (IP
 		address and port) matches any of the IP subnets
 		stored in cached &osips; database table.
-		Port 0 in cached database table matches any port.  IP
-		address and port to be matched can be either taken from
-		the request (allow_source_address) or given as pvar
-		arguments (allow_address).
+		Port 0 in cached database table matches any port.  Group ID, IP
+		address, port and transport protocol values to be matched can be either taken from
+		the request (<function moreinfo="none">check_source_address</function>) or given as pvar
+		arguments or directly as strings(<function moreinfo="none">check_address</function>).
 		</para>
 		<para>
 		Addresses stored in cached database table can be grouped
 		together into one or more groups specified by a group
-		identifier (unsigned integer).  Group
-		identifier is given as argument to allow_address and
-		allow_source_address functions.
+		identifier (unsigned integer). Group identifier is given as 
+		argument to <function moreinfo="none">check_address</function> and
+		<function moreinfo="none">check_source_address</function>.
 		</para>
-	</section>
-	<section id="sec-trusted-requests">
-		<title>Trusted Requests</title>
-		<para>
-		The module can be used to determine if an incoming
-		request can be trusted without authentication.
-		</para>
-		<para>
-		When <function moreinfo="none">allow_trusted</function>
-		function is called, it tries to find a rule that matches
-		the request.  Rules contain the following fields:
-		&lt;source address, transport protocol, regular
-		expression&gt;.
-		</para>
-		<para>
-		A requests is accepted if there exists a rule, where 
-		</para>
-		<itemizedlist>
-		<listitem>
-			<para>
-			source address is equal to source address of
-			request or source address given in pvar,
-			</para>
-		</listitem>
-		<listitem>
-			<para>
-			transport protocol is either "ANY" or equal to
-			transport protocol of request or transport
-			protocol given in pvar, and
-			</para>
-		</listitem>
-		<listitem>
-			<para>
-			regular expression is either empty (NULL in
-			database) or matches From URI of request.
-			</para>
-		</listitem>
-		</itemizedlist>
 		<para>
 		Otherwise the request is rejected.
 		</para>
 		<para>
-		Rules are stored in a database table specified by module
-		parameters.  
+		The address database table is specified by module parameters.  
 		</para>
 	</section>
 	</section>
@@ -531,7 +492,7 @@ modparam("permissions", "proto_col", "transport")
 		<para>
 		Name of address table column containing regular
 		expression that is matched against the arguments received by 
-		check_address or check_source_address.
+		<function moreinfo="none">check_address</function> or <function moreinfo="none">check_source_address</function>.
 		</para>
 		<para>
 		<emphasis>
@@ -564,27 +525,6 @@ modparam("permissions", "pattern_col", "regexp")
 		<programlisting format="linespecific">
 ...
 modparam("permissions", "info_col", "peer_tag")
-...
-</programlisting>
-		</example>
-	</section>
-	<section>
-		<title><varname>peer_tag_avp</varname> (AVP string)</title>
-		<para>
-		If defined, the AVP will be
-                set as side effect of allow_trusted() call to not NULL
-                tag column value of the matching peer.
-		</para>
-		<para>
-		<emphasis>
-		Default value is <quote>undefined</quote>.
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>peer_tag_avp</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("permissions", "peer_tag_avp", "$avp(i:707)")
 ...
 </programlisting>
 		</example>
@@ -845,43 +785,74 @@ if (allow_uri("basename", "$avp(i:705)") {  // Check URI stored in $avp(i:705)
 		port, proto, [context_info], [pattern])</function>
 		</title>
 		<para>
-		Checks based on the arguments if a request can be allowed without 
-		authentication.
-		
-		Returns true if IP address, port and protocol given as values of pvar
-		arguments belonging to a group given as group_id argument
-		matches an IP subnet found in cached address table.
-		
-		Cached address table entry containing port value 0
-		matches any port.  group_id argument can be an integer
-		string or a pseudo variable.
+		Returns 1 if group id, IP address, port and protocol given as
+		arguments match an IP subnet found in cached address table, 
+		as described in <xref linkend="sec-address-permissions"/> .
+		The function takes 4 mandatory arguments and 2 optional ones.
 		</para>
 		<para>
-			Group_ip and port arguments can integer strings or  
-			pseudo variables. Ip and proto can be strings or 
-			pseudo variables. Context_info and pattern arguments
-			must be a pseudo_variable and a string. They are represented
-			in brackets because they are optional.
-		</para>
-		<para>
-		Source address and transport protocol given in pvar
-		arguments must be in string format.  Valid transport
-		protocol values are "UDP, "TCP", "TLS", and "SCTP".
-		</para>
-		<para>
-		
-		Checks based either on request's source address and transport
-		protocol or source address and transport protocol given
-		in pvar arguments, and From URI of request
-		if request can be trusted without
-		authentication.  Returns 1 if a match is found
-		as described in <xref linkend="sec-trusted-requests"/>
-		and -1 otherwise.  If a match is found
-		and peer_tag_avp has been defined, adds a
-                non-NULL tag column value of the
-		matching peer to AVP peer_tag_avp.
+		This function can be useful to check if a request can be allowed 
+		without authentication.
 		</para>
 		
+		<para>Meaning of the parameter is as follows:</para>
+	
+		<itemizedlist>
+		<listitem>
+			group_id
+		<para>
+			This argument represents the group id to be matched.
+			It can be an integer string or a string pvar.
+			If the group_id argument is "0", the query can match any group
+			in the cached address table.
+		</para>
+		</listitem>
+		<listitem>
+			ip
+		<para>
+			This argument represents the ip address to be matched. 
+			It can be an given directly as string or as a string pvar.
+			This argument cannot be null/empty.
+		</para>
+		</listitem>
+		<listitem>
+			port
+		<para>
+			This argument represents the port to be matched.
+			It can be an given as an integer string or as a string pvar.			
+			Cached address table entry containing port value 0
+			matches any port. 
+			Also, a "0" value for the argument can match any port in the 
+			address table.
+			</para>
+		</listitem>
+		<listitem>
+			proto
+		<para>
+			This argument represents the protocol used for transport;
+			it can be an given as string or as string pvar.
+			Transport protocol is either "ANY" or any 
+			valid transport protocol value: "UDP, "TCP", "TLS", and "SCTP".
+		</para>
+		</listitem>
+		<listitem>
+			context_info
+		<para>
+			This argument represents the pvar in wich the context_info field
+			from the cached address table will be stored in case of match.
+			This argument is optional.
+		</para>
+		</listitem>
+		<listitem>
+			pattern
+		<para>
+			This argument is a string to be matched with the regular expression 
+			pattern field from the cached address table.
+			This argument is optional.
+		</para>
+		</listitem>
+		
+		</itemizedlist>
 		<para>
 		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 		</para>
@@ -891,21 +862,27 @@ if (allow_uri("basename", "$avp(i:705)") {  // Check URI stored in $avp(i:705)
 		<programlisting format="linespecific">
 ...
 
-// Check IP address/port given as strings and source protocol is in group 4
-// stores context information in $avp(i:10), and checks if pattern string 
-// "texttest" matches the regular expression field in the database table
+// Checks if the tuple IP address/port (given as strings) and source protocol 
+// (given as pvar), belongs to group 4, verifies if pattern string "texttest" 
+// matches the regular expression field in the database table and stores the 
+// context information in $avp(i:10)
 if (check_address("4","192.168.2.135","5700","$proto","$avp(i:10)", "texttest")) {
 	t_relay();
 	xlog("$avp(i:10)\n");
 }
+
 ...
+
+// Checks if the tuple IP address/port/protocol of the source message is in group
+// 4 and stores context information in $avp(i:10)
 if (check_address("4","$si","$sp","$proto")) {
 	t_relay();
 }
 
 ...
-// Check IP address/port/protocol stored in AVPs s:ip/s:port/s:proto is in group 4
-// and stores context information in $avp(i:10)
+
+// Checks if the tuple IP address/port/protocol stored in AVPs s:ip/s:port/s:proto 
+// is in group 4 and stores context information in $avp(i:10)
 $avp(s:ip) = "192.168.2.135";
 $avp(s:port) = 5061;
 $avp(s:proto) = "any";
@@ -913,7 +890,18 @@ if (check_address("4","$avp(s:ip)","$avp(s:port)","$avp(s:proto)","$avp(i:10))) 
 	t_relay();
 	xlog("$avp(i:10)\n");
 }
+
 ...    
+
+// Checks if the tuple IP address/port (given as strings) and source protocol 
+// (given as pvar) is in group 4, verifies if pattern string  "texttest" matches
+// the regular expression field in the database table, without storing any 
+// context information
+if (check_address("4","$si","5700","$proto","", "texttest")) {
+	t_relay();
+}
+
+...
 
 </programlisting>
 		</example>
@@ -921,10 +909,10 @@ if (check_address("4","$avp(s:ip)","$avp(s:port)","$avp(s:proto)","$avp(i:10))) 
 	
 	<section>
 		<title>
-		<function moreinfo="none">check_source_address(group_id_pvar | group_id_int, [context_pvar], [pattern_string])</function>
+		<function moreinfo="none">check_source_address(group_id, [context_info], [pattern])</function>
 		</title>
 		<para>
-		Equivalent to check_address(group_id, "$si", "$sp", "$proto", context_pvar, pattern_string).
+		Equivalent to check_address(group_id, "$si", "$sp", "$proto", context_info, pattern).
 		</para>
 		<para>
 		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
@@ -950,10 +938,11 @@ if (check_source_address("4","$avp(i:9)")) {
 		<function moreinfo="none">get_source_group()</function>
 		</title>
 		<para>
-		Checks if source address/port is found in cached address or
-		subnet table in any group. If yes, returns that group.
+		Checks if an entry with the source ip/port/protocol is 
+		found in cached address or subnet table in any group. 
+		If yes, returns that group.
 		If not returns -1.  Port value 0 in cached address and
-		group table matches any port.		
+		subnet table matches any port.	
 		</para>
 		<para>
 		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.

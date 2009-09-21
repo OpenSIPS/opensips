@@ -72,7 +72,6 @@ str mask_col = str_init("mask");			/* Name of mask column */
 str port_col = str_init("port");			/* Name of port column */
 
 
-str tag_avp_param = {NULL, 0};             /* Peer tag AVP spec */
 /*
  * By default we check all branches
  */
@@ -127,7 +126,6 @@ static cmd_export_t cmds[] = {
 		REQUEST_ROUTE | FAILURE_ROUTE | LOCAL_ROUTE},
 	{"get_source_group", (cmd_function) get_source_group, 0, 0, 0,
 		REQUEST_ROUTE | FAILURE_ROUTE | LOCAL_ROUTE },
-	 /*--------------------original functions-----------------------*/
 	{"allow_routing",  (cmd_function)allow_routing_0,  0, 0, 0,
 		REQUEST_ROUTE | FAILURE_ROUTE | LOCAL_ROUTE},
 	{"allow_routing",  (cmd_function)allow_routing_1,  1, single_fixup, 0,
@@ -141,21 +139,6 @@ static cmd_export_t cmds[] = {
 	{"allow_uri",      (cmd_function)allow_uri, 2,
 		double_fixup, 0,
 		REQUEST_ROUTE | FAILURE_ROUTE|LOCAL_ROUTE},
-	/*--------------------obsolete functions-----------------------*/
-	/*{"allow_address",  (cmd_function)allow_address_0,  0, 0, 0,
-		REQUEST_ROUTE | FAILURE_ROUTE | ONREPLY_ROUTE | BRANCH_ROUTE },
-	{"allow_address",  (cmd_function)allow_address_2,  2,
-		fixup_pvar_pvar, fixup_free_pvar_pvar,
-		REQUEST_ROUTE | FAILURE_ROUTE | ONREPLY_ROUTE | BRANCH_ROUTE},
-	{"allow_address",  (cmd_function)allow_address, 3,
-		fixup_igp_pvar_pvar, fixup_free_igp_pvar_pvar,
-		REQUEST_ROUTE|FAILURE_ROUTE|LOCAL_ROUTE|ONREPLY_ROUTE | BRANCH_ROUTE},
-	{"allow_source_address", (cmd_function)allow_source_address, 1,
-		fixup_igp_null, 0,
-		REQUEST_ROUTE | FAILURE_ROUTE| ONREPLY_ROUTE | BRANCH_ROUTE},
-	{"allow_source_address_group",(cmd_function)allow_source_address_group, 0,
-		0, 0,
-		REQUEST_ROUTE | FAILURE_ROUTE | ONREPLY_ROUTE | BRANCH_ROUTE},*/
 	{0, 0, 0, 0, 0, 0}
 };
 
@@ -172,7 +155,6 @@ static param_export_t params[] = {
 	{"proto_col",          STR_PARAM, &proto_col.s       },
 	{"from_col",           STR_PARAM, &pattern_col.s     },
 	{"info_col",           STR_PARAM, &info_col.s        },
-	{"peer_tag_avp",       STR_PARAM, &tag_avp_param.s   },
 	{"grp_col",            STR_PARAM, &grp_col.s         },
 	{"mask_col",           STR_PARAM, &mask_col.s        },
 	{"port_col",           STR_PARAM, &port_col.s        },
@@ -600,9 +582,6 @@ static int mod_init(void)
 	mask_col.len = strlen(mask_col.s);
 	port_col.len = strlen(port_col.s);
 
-	if (tag_avp_param.s)
-		tag_avp_param.len = strlen(tag_avp_param.s);
-
 	allow[0].filename = get_pathname(default_allow_file);
 	allow[0].rules = parse_config_file(allow[0].filename);
 
@@ -628,11 +607,6 @@ static int mod_init(void)
 		return -1;
 	}
 
-/*	if (init_tag_avp(&tag_avp_param) < 0) {
-		LM_ERR("failed to process peer_tag_avp AVP param\n");
-		return -1;
-	}
-*/
 	rules_num = 1;
 	return 0;
 }
@@ -961,7 +935,10 @@ static int check_addr_fixup(void** param, int param_no) {
 		case 4:
 			return fixup_spve(param);
 		case 5:
-			return fixup_pvar(param);
+			if (*param && strlen((char*)*param))
+				return fixup_pvar(param);
+			*param = NULL;
+			return 0;
 		case 6:
 			return 0;
 	}
@@ -976,7 +953,10 @@ static int check_src_addr_fixup(void** param, int param_no) {
 		case 1:
 			return fixup_igp_null(param, param_no);
 		case 2:
-			return fixup_pvar(param);
+			if (*param && strlen((char*)*param))
+				return fixup_pvar(param);
+			*param = NULL;
+			return 0;
 		case 3:
 			return 0;
 	}
