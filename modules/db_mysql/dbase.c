@@ -337,6 +337,7 @@ static int re_init_statement(const db_con_t* conn, struct prep_stmt *pq_ptr,
 		}
 		/* if code==1, it means a reconnect happened, so we try once more */
 	}
+	return -1;
 
 error:
 	/* error -> destroy the context only */
