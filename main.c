@@ -213,8 +213,8 @@ int config_check = 0;
 /* check if reply first via host==us */
 int check_via =  0;
 /* debugging level for memory stats */
-int memlog = L_DBG;
-int memdump = L_DBG;
+int memlog = L_DBG + 10;
+int memdump = L_DBG + 10;
 /* should replies include extensive warnings? by default yes,
    good for trouble-shooting
 */
