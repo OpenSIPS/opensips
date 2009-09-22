@@ -1240,7 +1240,7 @@ void b2b_tm_cback(b2b_table htable, struct tmcb_params *ps)
 	struct to_body* pto, TO;
 	str to_tag;
 	struct hdr_field* require_hdr;
-	int method_id;
+	int method_id = -1;
 
 	if(ps == NULL || ps->rpl == NULL)
 	{
