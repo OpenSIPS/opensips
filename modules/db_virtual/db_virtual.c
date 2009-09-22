@@ -218,7 +218,7 @@ int add_set(char * name, char * mode){
 
 
     }else{
-        LM_DBG("alloc %p %i\n", global, sizeof(info_global_t));
+        LM_DBG("alloc %p %i\n", global, (int)sizeof(info_global_t));
         /* alloc global */
         LM_DBG("alloc %p\n", global);
         global = (info_global_t *) shm_malloc (1 * sizeof(info_global_t));

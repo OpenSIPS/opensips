@@ -345,7 +345,7 @@ void destroy_linkers(struct dlg_profile_link *linker)
 			dest = map_find( entry, l->value );
 			if( dest )
 			{
-				(*dest) = (void*) ( (int)(*dest) - 1 );
+				(*dest) = (void*) ( (int)(long)(*dest) - 1 );
 
 				if( *dest == 0 )
 				{
@@ -414,7 +414,7 @@ static void link_dlg_profile(struct dlg_profile_link *linker,
 	{
 		p_entry = linker->profile->entries[hash];
 		dest = map_get( p_entry, linker->value );
-		(*dest) = (void*) ( (int)(*dest) + 1 );
+		(*dest) = (void*) ( (int)(long)(*dest) + 1 );
 	}
 	else
 		linker->profile->counts[hash]++;
@@ -609,7 +609,7 @@ unsigned int get_profile_size(struct dlg_profile_table *profile, str *value)
 
 			dest = map_find(entry,*value);
 			if( dest )
-				n = (int) *dest;
+				n = (int)(long) *dest;
 
 			lock_set_release( profile->locks, i);
 		}
@@ -698,21 +698,21 @@ error:
 
 
 
-int add_val_to_rpl(void * param, str key, void * val)
+static inline int add_val_to_rpl(void * param, str key, void * val)
 {
-	static char buff[32];
 	struct mi_node* rpl = (struct mi_node* ) param;
 	struct mi_node* node;
 	struct mi_attr* attr;
-
-	sprintf( buff, "%d", (int)val );
+	int len;
+	char *p;
 
 	node = add_mi_node_child(rpl, MI_DUP_VALUE, "value", 5, key.s , key.len );
 
 	if( node == NULL )
 		return -1;
 
-	attr = add_mi_attr(node, MI_DUP_VALUE, "count", 5,  buff, strlen(buff) );
+	p= int2str((unsigned long)(int)val, &len);
+	attr = add_mi_attr(node, MI_DUP_VALUE, "count", 5,  p, len );
 
 	if( attr == NULL )
 		return -1;
@@ -783,7 +783,7 @@ struct mi_root * mi_get_profile_values(struct mi_root *cmd_tree, void *param )
 		}
 
 		tmp.s = "WITHOUT VALUE";
-		tmp.len = strlen(tmp.s);
+		tmp.len = sizeof("WITHOUT VALUE")-1;
 		ret =  add_val_to_rpl(rpl, tmp , (void *)n );
 
 	}
@@ -793,7 +793,7 @@ struct mi_root * mi_get_profile_values(struct mi_root *cmd_tree, void *param )
 	
 	return rpl_tree;
 error:
-        
+
 	free_mi_tree(rpl_tree);
 	return NULL;
 }
@@ -804,7 +804,6 @@ struct mi_root * mi_profile_list(struct mi_root *cmd_tree, void *param )
 	struct mi_root* rpl_tree= NULL;
 	struct mi_node* rpl = NULL;
 	struct dlg_profile_table *profile;
-	//struct dlg_profile_hash *ph;
 	str *profile_name;
 	str *value;
 	unsigned int i,found;
