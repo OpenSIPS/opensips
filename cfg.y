@@ -1476,6 +1476,8 @@ uri_type:	URI			{$$=URI_O;}
 
 script_var:	SCRIPTVAR	{ 
 				spec = (pv_spec_t*)pkg_malloc(sizeof(pv_spec_t));
+				if (spec==NULL)
+					yyerror("no more pkg memory\n");
 				memset(spec, 0, sizeof(pv_spec_t));
 				tstr.s = $1;
 				tstr.len = strlen(tstr.s);
