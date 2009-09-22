@@ -1294,13 +1294,6 @@ void b2b_tm_cback(b2b_table htable, struct tmcb_params *ps)
 		method_id = get_cseq(msg)->method_id;
 	}
 
-	if(dlg->last_method == METHOD_BYE)
-	{
-		LM_DBG("I received a reply for BYE-> DELETE\n");
-		lock_release(&htable[hash_index].lock);
-		goto done;
-	}
-
 	if(statuscode >= 300)
 	{
 		LM_DBG("Received a negative reply\n");
