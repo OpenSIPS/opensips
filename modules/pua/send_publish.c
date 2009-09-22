@@ -152,6 +152,7 @@ void publ_cback_func(struct cell *t, int type, struct tmcb_params *ps)
 	int size= 0;
 	unsigned int lexpire= 0;
 	str etag;
+	int to_del = 0;
 
 	if(ps->param== NULL|| *ps->param== NULL)
 	{
@@ -179,8 +180,8 @@ void publ_cback_func(struct cell *t, int type, struct tmcb_params *ps)
 	if(msg== FAKED_REPLY)
 	{
 		LM_DBG("FAKED_REPLY\n");
-		if(presentity)
-			lock_release(&presentity->publ_lock);
+//		if(presentity)
+//			lock_release(&presentity->publ_lock);
 		goto done;
 	}
 
@@ -227,7 +228,8 @@ void publ_cback_func(struct cell *t, int type, struct tmcb_params *ps)
 			lock_release(&presentity->publ_lock);
 			lock_get(&HashT->p_records[presentity->hash_index].lock);
 			lock_get(&presentity->publ_lock);
-			delete_htable(presentity);
+//			delete_htable(presentity);
+			to_del = 1;
 		}
 		else
 		{
@@ -274,14 +276,15 @@ void publ_cback_func(struct cell *t, int type, struct tmcb_params *ps)
 			lock_release(&presentity->publ_lock);
 			lock_get(&HashT->p_records[presentity->hash_index].lock);
 			lock_get(&presentity->publ_lock);
-			delete_htable(presentity);
+//			delete_htable(presentity);
+			to_del = 1;
 			goto done;
 		}
 
 		update_htable(presentity, hentity->desired_expires,
 				lexpire, &etag, presentity->hash_index, NULL);
 		/* if the record has been updated -> release the Publish lock */
-		lock_release(&presentity->publ_lock);
+//		lock_release(&presentity->publ_lock);
 		goto done;
 	}
 
@@ -370,12 +373,27 @@ void publ_cback_func(struct cell *t, int type, struct tmcb_params *ps)
 
 	insert_htable(presentity);
 	LM_DBG("***Inserted in hash table\n");
+	presentity = NULL;
 
 done:
 	if(hentity->ua_flag == REQ_OTHER)
 	{
 		run_pua_callbacks(hentity, msg);
 	}
+	if(presentity)
+	{
+		if(to_del)
+		{
+			int hash_index = presentity->hash_index;
+			delete_htable(presentity);
+			lock_release(&HashT->p_records[hash_index].lock);
+		}
+		else
+		{
+			lock_release(&presentity->publ_lock);
+		}
+	}
+
 	if(*ps->param && hentity->db_flag== 0)
 	{
 		shm_free(*ps->param);
@@ -551,7 +569,10 @@ send_publish:
 		publ->etag = &etag;
 
 	if(presentity)
+	{
 		cb_param = presentity;
+		cb_param->cb_param= publ->cb_param;
+	}
 	else
 	{
 		cb_param= publish_cbparam(publ, body, tuple_id, REQ_OTHER);
