@@ -225,9 +225,14 @@ void publ_cback_func(struct cell *t, int type, struct tmcb_params *ps)
 		if(presentity)
 		{
 			LM_DBG("Record found in table and deleted\n");
+			LM_DBG("Released presentity lock %p\n", presentity);
 			lock_release(&presentity->publ_lock);
+			LM_DBG("Try to get hash lock [%d]\n", presentity->hash_index);
 			lock_get(&HashT->p_records[presentity->hash_index].lock);
+			LM_DBG("Got hash lock [%d]\n", presentity->hash_index);
+			LM_DBG("Try to get presentity lock %p\n", presentity);
 			lock_get(&presentity->publ_lock);
+			LM_DBG("Got presentity lock %p\n", presentity);
 			to_del = 1;
 			//			delete_htable(presentity);
 		}
@@ -275,9 +280,14 @@ void publ_cback_func(struct cell *t, int type, struct tmcb_params *ps)
 		if(lexpire == 0)
 		{
 			LM_DBG("expires= 0- delete from htable\n"); 
+			LM_DBG("Released presentity lock %p\n", presentity);
 			lock_release(&presentity->publ_lock);
+			LM_DBG("Try to get hash lock [%d]\n", presentity->hash_index);
 			lock_get(&HashT->p_records[presentity->hash_index].lock);
+			LM_DBG("Got hash lock [%d]\n", presentity->hash_index);
+			LM_DBG("Try to get presentity lock %p\n", presentity);
 			lock_get(&presentity->publ_lock);
+			LM_DBG("Got presentity lock %p\n", presentity);
 //			delete_htable(presentity);
 			to_del = 1;
 			goto done;
@@ -381,12 +391,20 @@ done:
 	if(hentity->ua_flag == REQ_OTHER)
 	{
 		run_pua_callbacks(hentity, msg);
-		if(presentity)
+	}
+	if(presentity)
+	{
+		if(to_del)
 		{
-			if(to_del)
-				delete_htable(presentity);
-			else
-				lock_release(&presentity->publ_lock);
+			int hash_index = presentity->hash_index;
+			delete_htable(presentity);
+			lock_release(&HashT->p_records[hash_index].lock);
+			LM_DBG("Released hash lock [%d]\n", hash_index);
+		}
+		else
+		{
+			lock_release(&presentity->publ_lock);
+			LM_DBG("Release presentity lock %p\n", presentity);
 		}
 	}
 	if(*ps->param && hentity->db_flag== 0)
@@ -398,8 +416,10 @@ done:
 
 error1: /* if an error occured and there is a presentity record, release the lock */
 	if(presentity)
+	{
 		lock_release(&presentity->publ_lock);
-
+		LM_DBG("Release presentity lock %p\n", presentity);
+	}
 error:
 	if(*ps->param && hentity->db_flag == 0)
 	{
@@ -448,12 +468,16 @@ int send_publish( publ_info_t* publ )
 
 	hash_code= core_hash(publ->pres_uri, NULL, HASH_SIZE);
 
+	LM_DBG("Try to get hash lock [%d]\n", hash_code);
 	lock_get(&HashT->p_records[hash_code].lock);
+	LM_DBG("Got hash lock %d\n", hash_code);
 	
 	presentity= search_htable(&pres, hash_code);
 
 	if(publ->etag && presentity== NULL)
 	{
+		LM_DBG("Release hash lock %d\n", hash_code);
+		LM_DBG("418\n");
 		lock_release(&HashT->p_records[hash_code].lock);
 		return 418;
 	}
@@ -467,6 +491,8 @@ int send_publish( publ_info_t* publ )
 	if(presentity== NULL)
 	{
 insert:
+		LM_DBG("Release hash lock %d\n", hash_code);
+		LM_DBG("insert\n");
 		lock_release(&HashT->p_records[hash_code].lock);
 		LM_DBG("insert type\n"); 
 		
@@ -491,7 +517,10 @@ insert:
 	{
 		LM_DBG("record found in hash_table\n");
 		/* check if the reply for the previous Publish was received */
+		LM_DBG("Try to get presentity lock %p\n", presentity);
 		lock_get(&presentity->publ_lock);
+		LM_DBG("Got presentity lock %p\n", presentity);
+		LM_DBG("Released hash lock %d\n", hash_code);
 		lock_release(&HashT->p_records[hash_code].lock);
 
 		publ->flag= UPDATE_TYPE;
@@ -499,6 +528,7 @@ insert:
 		if(etag.s== NULL)
 		{
 			LM_ERR("while allocating memory\n");
+			LM_DBG("Release presentity lock %p\n", presentity);
 			lock_release(&presentity->publ_lock);
 			return -1;
 		}
@@ -512,6 +542,7 @@ insert:
 			if(tuple_id== NULL)
 			{
 				LM_ERR("No more memory\n");
+				LM_DBG("Release presentity lock %p\n", presentity);
 				lock_release(&presentity->publ_lock);
 				goto error;
 			}
@@ -519,6 +550,7 @@ insert:
 			if(tuple_id->s== NULL)
 			{
 				LM_ERR("No more memory\n");
+				LM_DBG("Release presentity lock %p\n", presentity);
 				lock_release(&presentity->publ_lock);
 				goto error;
 			}
@@ -547,7 +579,10 @@ insert:
 				if(body== NULL)
 					LM_ERR("NULL body\n");
 				if(presentity)
+				{
+					LM_DBG("Release presentity lock %p\n", presentity);
 					lock_release(&presentity->publ_lock);
+				}
 				goto error;
 			}
 		}
@@ -587,7 +622,10 @@ send_publish:
 	{
 		LM_ERR("while building extra_headers\n");
 		if(presentity)
+		{
 			lock_release(&presentity->publ_lock);
+			LM_DBG("Release presentity lock %p\n", presentity);
+		}
 		goto error;
 	}
 
@@ -612,7 +650,10 @@ send_publish:
 	{
 		LM_ERR("in t_request tm module function\n");
 		if(presentity)
+		{
 			lock_release(&presentity->publ_lock);
+			LM_DBG("Release presentity lock %p\n", presentity);
+		}
 		goto error;
 	}
 
