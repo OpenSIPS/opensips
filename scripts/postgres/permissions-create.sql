@@ -1,20 +1,12 @@
-INSERT INTO version (table_name, table_version) values ('trusted','5');
-CREATE TABLE trusted (
-    id SERIAL PRIMARY KEY NOT NULL,
-    src_ip VARCHAR(50) NOT NULL,
-    proto VARCHAR(4) NOT NULL,
-    from_pattern VARCHAR(64) DEFAULT NULL,
-    tag VARCHAR(32)
-);
-
-CREATE INDEX trusted_peer_idx ON trusted (src_ip);
-
-INSERT INTO version (table_name, table_version) values ('address','4');
+INSERT INTO version (table_name, table_version) values ('address','5');
 CREATE TABLE address (
     id SERIAL PRIMARY KEY NOT NULL,
-    grp SMALLINT DEFAULT 0 NOT NULL,
-    ip_addr VARCHAR(15) NOT NULL,
+    grp SMALLINT NOT NULL,
+    ip VARCHAR(50) NOT NULL,
     mask SMALLINT DEFAULT 32 NOT NULL,
-    port SMALLINT DEFAULT 0 NOT NULL
+    port SMALLINT DEFAULT 0 NOT NULL,
+    proto VARCHAR(4) NOT NULL,
+    pattern VARCHAR(64) DEFAULT NULL,
+    context_info VARCHAR(32) DEFAULT NULL
 );
 

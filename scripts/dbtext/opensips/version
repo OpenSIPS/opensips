@@ -1,7 +1,7 @@
 table_name(string) table_version(int) 
 acc:5
 active_watchers:10
-address:4
+address:5
 aliases:1005
 carrierfailureroute:2
 carrierroute:3
@@ -38,7 +38,6 @@ silo:6
 sip_trace:3
 speed_dial:3
 subscriber:7
-trusted:5
 uri:2
 userblacklist:2
 usr_preferences:3
