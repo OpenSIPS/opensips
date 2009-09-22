@@ -482,7 +482,7 @@ modparam("dialplan", "attrs_col", "column_name")
 		<title><varname>attrs_pvar</varname> (string)</title>
 		<para>
 		The pvar to store the rule's attributes, after translation (dp_translate() succeeds).
-		This parameter can be an AVP or a SCRIPT VAR.
+		This parameter can be any PVAR that can be written.
 		</para>
 		<para>
 		<emphasis>
@@ -548,14 +548,10 @@ modparam("dialplan", "fetch_rows", 4000)
 			</listitem>
 			
 			<listitem>
-			<para><emphasis>avp var</emphasis> 
-			-the dialplan id is the value of an existing avp variable
+			<para><emphasis>pvar</emphasis> 
+			-the dialplan id is the value of an existing pseudo-variable
+			(as interger value)
 			</para>
-			</listitem>
-
-			<listitem>
-			<para><emphasis>script var</emphasis> 
-			-the dialplan id is the value of an existing script variable.</para>
 			</listitem>
 		</itemizedlist>
 	</listitem>
@@ -570,35 +566,11 @@ modparam("dialplan", "fetch_rows", 4000)
 		<para>
 		The <quote>src</quote> variable can be any type of pseudo-variable.
 		</para>
-		<para>The <quote>dest</quote> variable  can have the following types:
+		<para>
+		The <quote>dest</quote> variable  can be also any type of 
+		pseudo-variable, but it must be a writtable one.
 		</para>
-		<itemizedlist>
-			<listitem>
-			<para><emphasis>$ru / $rU</emphasis></para>
-			<para>
-			- the string is the r-uri or r-uri username
-			</para>
-			</listitem>
-			
-			<listitem>
-			<para><emphasis>avp var</emphasis> </para>
-			<para>
-			-At input the function will get the input string from an existing 
-			avp variable. At output the function will add an avp with the 
-			value of the output string.
-			</para>
-			</listitem>
-
-			<listitem>
-			<para><emphasis>script var</emphasis> </para>
-			<para>
-			-At input the function will get the input string from an existing 
-			script variable. At output the function will set an script variable
-			with the value of the output string.
-			</para>
-			</listitem>
-        </itemizedlist>
-        </listitem>
+	</listitem>
 	</itemizedlist>
 	<para>
 	This function can be used from REQUEST_ROUTE, BRANCH_ROUTE.

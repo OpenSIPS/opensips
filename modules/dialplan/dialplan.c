@@ -146,11 +146,19 @@ static int mod_init(void)
 		}
 
 		attr_pvar_s.len = strlen(attr_pvar_s.s);
-		if( (pv_parse_spec(&attr_pvar_s, attr_pvar)==NULL) ||
-		((attr_pvar->type != PVT_AVP) && (attr_pvar->type!=PVT_SCRIPTVAR))) {
-				LM_ERR("invalid pvar name\n");
-				return -1;
-			}
+		if (pv_parse_spec(&attr_pvar_s, attr_pvar)==NULL) {
+			LM_ERR("invalid pvar name\n");
+			return E_CFG;
+		}
+		if ( attr_pvar->type==PVT_NULL || attr_pvar->type==PVT_EMPTY
+		|| attr_pvar->type==PVT_NONE ) { 
+			LM_ERR("NULL/EMPTY Parameter TYPE for ATTR PVAR\n");\
+				return E_CFG;
+		}
+		if (attr_pvar->setf==NULL) {
+			LM_ERR("the ATTR PVAR is read-only!!\n");
+			return E_CFG;
+		}
 	}
 
 	default_par2 = (dp_param_p)shm_malloc(sizeof(dp_param_t));
@@ -258,7 +266,7 @@ static int dp_get_ivalue(struct sip_msg* msg, dp_param_p dp, int *val)
 
 	if( pv_get_spec_value( msg, &dp->v.sp[0], &value)!=0
 	|| value.flags&(PV_VAL_NULL|PV_VAL_EMPTY) || !(value.flags&PV_VAL_INT)) {
-		LM_ERR("no AVP or SCRIPTVAR found (error in scripts)\n");
+		LM_ERR("no PV or NULL or non-STR val found (error in scripts)\n");
 		return -1;
 	}
 	*val = value.ri;
@@ -274,7 +282,7 @@ static int dp_get_svalue(struct sip_msg * msg, pv_spec_t spec, str* val)
 
 	if ( pv_get_spec_value(msg,&spec,&value)!=0 || value.flags&PV_VAL_NULL
 	|| value.flags&PV_VAL_EMPTY || !(value.flags&PV_VAL_STR)){
-			LM_ERR("no AVP or SCRIPTVAR found (error in scripts)\n");
+			LM_ERR("no PV or NULL or non-STR val found (error in scripts)\n");
 			return -1;
 	}
 
@@ -286,105 +294,25 @@ static int dp_get_svalue(struct sip_msg * msg, pv_spec_t spec, str* val)
 static int dp_update(struct sip_msg * msg, pv_spec_t * src, pv_spec_t * dest,
 											str * repl, str * attrs)
 {
-	struct action act;
-	int_str value, avp_name, avp_val;
-	int_str attr_value, attr_avp_name, attr_avp_val;
-	unsigned short name_type, attr_name_type;
-	script_var_t * var, * attr_var;
-	int no_change;
+	pv_value_t val;
 
-	no_change = ((!repl->s) || (!repl->len)) && (src->type == dest->type) 
-		&& ((src->type == PVT_RURI) || (src->type == PVT_RURI_USERNAME));
-
-	if (!no_change) {
-
-		switch(dest->type){
-			case PVT_RURI:
-				if (set_ruri(msg,repl)==-1) {
-					LM_ERR("failed to set RURI\n");
-					return -1;
-				}
-				break;
-
-			case PVT_RURI_USERNAME:
-				act.type = SET_USER_T;
-				act.elem[0].type = STR_ST;
-				act.elem[0].u.s = *repl;
-				act.next = 0;
-				if (do_action(&act, msg) < 0) {
-					LM_ERR("failed to set the output\n");
-					return -1;
-				}
-				break;
-
-			case PVT_AVP:
-				if(pv_get_avp_name(msg,&(dest->pvp),&avp_name,&name_type)!=0) {
-					LM_CRIT("BUG in getting dst AVP name\n");
-					return -1;
-				}
-				avp_val.s = *repl;
-				if (add_avp(AVP_VAL_STR|name_type, avp_name, avp_val)<0){
-					LM_ERR("cannot add dest AVP\n");
-					return -1;
-				}
-				break;
-
-			case PVT_SCRIPTVAR:
-				if(dest->pvp.pvn.u.dname == 0){
-					LM_ERR("cannot find dest svar\n");
-					return -1;
-				}
-				value.s = *repl;
-				var = (script_var_t *)dest->pvp.pvn.u.dname;
-				if(!set_var_value(var, &value,VAR_VAL_STR)) {
-					LM_ERR("cannot set dest svar\n");
-					return -1;
-				}
-				break;
-
-			default:
-				LM_ERR("invalid type\n");
-				return -1;
+	if (repl->s && repl->len) {
+		val.flags = PV_VAL_STR;
+		val.rs = *repl;
+		if (pv_set_value( msg, dest, 0, &val)!=0) {
+			LM_ERR("falied to set the output value!\n");
+			return -1;
 		}
 	}
 
 	if(!attr_pvar)
 		return 0;
 
-	switch (attr_pvar->type) {
-		case PVT_AVP:
-			if (pv_get_avp_name( msg, &(attr_pvar->pvp), &attr_avp_name,
-			&attr_name_type)!=0){
-				LM_CRIT("BUG in getting attr AVP name\n");
-				return -1;
-			}
-
-			attr_avp_val.s = *attrs;
-
-			if (add_avp(AVP_VAL_STR|attr_name_type, attr_avp_name, 
-						attr_avp_val)<0){
-				LM_ERR("cannot add attr AVP\n");
-				return -1;
-			}
-			return 0;
-
-		case PVT_SCRIPTVAR:
-			if(attr_pvar->pvp.pvn.u.dname == 0){
-				LM_ERR("cannot find attr svar\n");
-				return -1;
-			}
-			attr_value.s = *attrs;
-			attr_var = (script_var_t *)attr_pvar->pvp.pvn.u.dname;
-			if(!set_var_value(attr_var, &attr_value,VAR_VAL_STR)){
-				LM_ERR("cannot set attr svar\n");
-				return -1;
-			}
-			return 0;
-
-		default:
-			LM_CRIT("BUG: invalid attr pvar type\n");
-			return -1;
-
+	val.flags = PV_VAL_STR;
+	val.rs = *attrs;
+	if (pv_set_value( msg, attr_pvar, 0, &val)!=0) {
+		LM_ERR("falied to set the attr value!\n");
+		return -1;
 	}
 
 	return 0;
@@ -410,6 +338,14 @@ static int dp_translate_f(struct sip_msg* msg, char* str1, char* str2)
 	}
 	LM_DBG("dpid is %i\n", dpid);
 
+	repl_par = (str2!=NULL)? ((dp_param_p)str2):default_par2;
+	if (dp_get_svalue(msg, repl_par->v.sp[0], &input)!=0){
+		LM_ERR("invalid param 2\n");
+		goto error;
+	}
+
+	LM_DBG("input is %.*s\n", input.len, input.s);
+
 	/* ref the data for reading */
 again:
 	lock_get( ref_lock );
@@ -428,14 +364,6 @@ again:
 		goto error;
 	}
 
-	repl_par = (str2!=NULL)? ((dp_param_p)str2):default_par2;
-	if (dp_get_svalue(msg, repl_par->v.sp[0], &input)!=0){
-		LM_ERR("invalid param 2\n");
-		goto error;
-	}
-
-	LM_DBG("input is %.*s\n", input.len, input.s);
-
 	attrs_par = (!attr_pvar)?NULL:&attrs;
 	if (translate(msg, input, &output, idp, attrs_par)!=0){
 		LM_DBG("could not translate %.*s "
@@ -451,6 +379,7 @@ again:
 		LM_ERR("cannot set the output\n");
 		goto error;
 	}
+
 	/* we are done reading -> unref the data */
 	lock_get( ref_lock );
 	*data_refcnt = *data_refcnt - 1;
@@ -467,18 +396,13 @@ error:
 	return -1;
 }
 
-#define verify_par_type(_par_no, _spec)\
+#define verify_par_type(_spec)\
 	do{\
-		if( ((_par_no == 1) \
-			&& ( ((_spec).type==PVT_NULL) || ((_spec).type==PVT_EMPTY) \
-			|| ((_spec).type==PVT_NONE) ))\
-		  || ((_par_no ==2) \
-			&& ((_spec).type != PVT_AVP) && ((_spec).type!=PVT_SCRIPTVAR) \
-			&& ((_spec).type!=PVT_RURI) && (_spec.type!=PVT_RURI_USERNAME))){\
-				\
-			LM_ERR("Unsupported Parameter TYPE\n");\
+		if( ( ((_spec).type==PVT_NULL) || ((_spec).type==PVT_EMPTY) \
+		|| ((_spec).type==PVT_NONE) )) { \
+			LM_ERR("NULL/EMPTY Parameter TYPE\n");\
 				return E_UNSPEC;\
-			}\
+		}\
 	}while(0);
 
 
@@ -528,7 +452,7 @@ static int dp_trans_fixup(void ** param, int param_no){
 			if (pv_parse_spec( &lstr, &dp_par->v.sp[0])==NULL)
 				goto error;
 
-			verify_par_type(param_no, dp_par->v.sp[0]);
+			verify_par_type(dp_par->v.sp[0]);
 			dp_par->type = DP_VAL_SPEC;
 		}
 	} else {
@@ -540,13 +464,17 @@ static int dp_trans_fixup(void ** param, int param_no){
 		if(pv_parse_spec( &lstr, &dp_par->v.sp[0])==NULL)
 			goto error;
 
-		verify_par_type(param_no, dp_par->v.sp[0]);
+		verify_par_type(dp_par->v.sp[0]);
 
 		lstr.s = s; lstr.len = strlen(s);
 		if (pv_parse_spec( &lstr, &dp_par->v.sp[1] )==NULL)
 			goto error;
 
-		verify_par_type(param_no, dp_par->v.sp[1]);
+		verify_par_type(dp_par->v.sp[1]);
+		if (dp_par->v.sp[1].setf==NULL) {
+			LM_ERR("the output PV is read-only!!\n");
+			return E_CFG;
+		}
 
 		dp_par->type = DP_VAL_SPEC;
 	}

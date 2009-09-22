@@ -320,8 +320,8 @@ modparam("dialplan", "attrs_col", "column_name")
 1.6.11. attrs_pvar (string)
 
    The pvar to store the rule's attributes, after translation
-   (dp_translate() succeeds). This parameter can be an AVP or a
-   SCRIPT VAR.
+   (dp_translate() succeeds). This parameter can be any PVAR that
+   can be written.
 
    Default value is "NULL".
 
@@ -352,27 +352,15 @@ modparam("dialplan", "fetch_rows", 4000)
      * id -the dialplan id of the possible matching rules. This
        parameter can have the following types:
           + integer- the dialplan id is statically assigned
-          + avp var -the dialplan id is the value of an existing
-            avp variable
-          + script var -the dialplan id is the value of an
-            existing script variable.
+          + pvar -the dialplan id is the value of an existing
+            pseudo-variable (as interger value)
      * src/dest - input and output of the function. If this
        parameter is missing the default parameter
        "ruri.user/ruri.user" will be used, thus translating the
        request uri.
        The "src" variable can be any type of pseudo-variable.
-       The "dest" variable can have the following types:
-          + $ru / $rU
-            - the string is the r-uri or r-uri username
-          + avp var
-            -At input the function will get the input string from
-            an existing avp variable. At output the function will
-            add an avp with the value of the output string.
-          + script var
-            -At input the function will get the input string from
-            an existing script variable. At output the function
-            will set an script variable with the value of the
-            output string.
+       The "dest" variable can be also any type of
+       pseudo-variable, but it must be a writtable one.
 
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE.
 
