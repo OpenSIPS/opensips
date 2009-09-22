@@ -642,6 +642,7 @@ static struct mi_root* mi_lb_status(struct mi_root *cmd, void *param)
 					dst->flags |= 
 						LB_DST_STAT_DSBL_FLAG|LB_DST_STAT_NOEN_FLAG;
 				}
+				unref_read_data();
 				return init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
 			}
 		}
