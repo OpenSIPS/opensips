@@ -345,7 +345,7 @@ void destroy_linkers(struct dlg_profile_link *linker)
 			dest = map_find( entry, l->value );
 			if( dest )
 			{
-				(*dest) = (void*) ( (int)(long)(*dest) - 1 );
+				(*dest) = (void*) ( (long)(*dest) - 1 );
 
 				if( *dest == 0 )
 				{
@@ -414,7 +414,7 @@ static void link_dlg_profile(struct dlg_profile_link *linker,
 	{
 		p_entry = linker->profile->entries[hash];
 		dest = map_get( p_entry, linker->value );
-		(*dest) = (void*) ( (int)(long)(*dest) + 1 );
+		(*dest) = (void*) ( (long)(*dest) + 1 );
 	}
 	else
 		linker->profile->counts[hash]++;
@@ -711,7 +711,7 @@ static inline int add_val_to_rpl(void * param, str key, void * val)
 	if( node == NULL )
 		return -1;
 
-	p= int2str((unsigned long)(int)val, &len);
+	p= int2str((unsigned long)val, &len);
 	attr = add_mi_attr(node, MI_DUP_VALUE, "count", 5,  p, len );
 
 	if( attr == NULL )
@@ -784,7 +784,7 @@ struct mi_root * mi_get_profile_values(struct mi_root *cmd_tree, void *param )
 
 		tmp.s = "WITHOUT VALUE";
 		tmp.len = sizeof("WITHOUT VALUE")-1;
-		ret =  add_val_to_rpl(rpl, tmp , (void *)n );
+		ret =  add_val_to_rpl(rpl, tmp , (void *)(long)n );
 
 	}
 
