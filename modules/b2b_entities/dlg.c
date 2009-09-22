@@ -1276,7 +1276,7 @@ void b2b_tm_cback(b2b_table htable, struct tmcb_params *ps)
 	b2b_cback = dlg->b2b_cback;
 	param = dlg->param;
 
-	if(msg)
+	if(msg && msg!= FAKED_REPLY)
 	{
 		/* extract the method */
 		if(parse_headers(msg, HDR_EOH_F, 0) < 0)
