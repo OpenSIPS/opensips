@@ -840,6 +840,12 @@ static int rl_check(struct sip_msg * msg, int forced_pipe)
 	int que_id, pipe_id, ret;
 	str method = msg->first_line.u.request.method;
 
+	if (forced_pipe>=MAX_PIPES || *pipes[forced_pipe].algo==PIPE_ALGO_NOP) {
+		LM_ERR("forced pipe %d out of range or not defined "
+			" => defaulting to method type checking\n", forced_pipe);
+		forced_pipe = -1;
+	}
+
 	LOCK_GET(rl_lock);
 	if (forced_pipe < 0) { 
 		if (find_queue(msg, &que_id)) {
@@ -857,9 +863,10 @@ static int rl_check(struct sip_msg * msg, int forced_pipe)
 out_release:
 	LOCK_RELEASE(rl_lock);
 
-	/* no locks here because it's only read and pipes[pipe_id] is always alloc'ed */
-	LM_DBG("meth=%.*s queue=%d pipe=%d algo=%d limit=%d pkg_load=%d counter=%d "
-		"load=%2.1lf => %s\n",
+	/* no locks here because it's only read and pipes[pipe_id] 
+	   is always alloc'ed */
+	LM_DBG("meth=%.*s queue=%d pipe=%d algo=%d limit=%d pkg_load=%d counter=%d"
+		" load=%2.1lf => %s\n",
 		method.len,
 		method.s,
 		que_id,
