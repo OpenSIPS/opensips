@@ -36,11 +36,11 @@
 #include "action.h"
 #include "route.h"
 #include "parser/msg_parser.h"
-
+#include "mem/mem.h"
 
 
 struct serial_contact {
-	str uri;
+	str enc_info;
 	qvalue_t q;
 	unsigned short q_flag;
 	int next;
@@ -76,6 +76,10 @@ int serialize_branches(struct sip_msg *msg, int clean_before )
 	int n, last, first, i;
 	str branch, *ruri;
 	qvalue_t q, ruri_q;
+	char *p;
+	str dst_uri, path, enc_info;
+	unsigned int flags;
+	struct socket_info *sock_info;
 	int_str val;
 	int idx;
 
@@ -87,12 +91,14 @@ int serialize_branches(struct sip_msg *msg, int clean_before )
 
 	ruri = GET_RURI(msg);
 	ruri_q = get_ruri_q();
+	flags = getb0flags();
 
-	for( idx=0 ; (branch.s=get_branch(idx,&branch.len,&q,0,0,0,0))!=0 ; idx++ ) {
+	for (idx = 0; (branch.s = get_branch(idx,&branch.len,&q,0,0,0,0)); idx++) {
 		if (q != ruri_q)
 			break;
 	}
-	if (branch.s==0) {
+
+	if (branch.s == 0) {
 		LM_DBG("nothing to do - all same q!\n");
 		return 0;
 	}
@@ -101,7 +107,38 @@ int serialize_branches(struct sip_msg *msg, int clean_before )
 	n = 0;
 
 	/* Insert Request-URI to contact list */
-	contacts[n].uri = *ruri;
+	enc_info.len = 3 * sizeof(long)
+			+ ruri->len + msg->dst_uri.len + msg->path_vec.len + 3;
+	enc_info.s = (char*) pkg_malloc (enc_info.len);
+
+	if (!enc_info.s) {
+		LM_ERR("no pkg memory left\n");
+		return -1;
+	}
+
+	memset(enc_info.s, 0, enc_info.len);
+	p = enc_info.s;
+
+	LM_DBG("Msg information <%.*s,%.*s,%.*s,%d,%u>\n",
+			ruri->len, ruri->s,
+			msg->dst_uri.len, msg->dst_uri.s,
+			msg->path_vec.len, msg->path_vec.s,
+			ruri_q, flags);
+
+	*((long*) p) = (long)msg->force_send_socket;
+	p += sizeof(long);
+	*((long*) p) = (long)flags;
+	p += sizeof(long);
+	*((long*) p) = (long)ruri_q;
+	p += sizeof(long);
+
+	memcpy(p , ruri->s, ruri->len);
+	p += ruri->len + 1;
+	memcpy(p, msg->dst_uri.s, msg->dst_uri.len);
+	p += msg->dst_uri.len + 1;
+	memcpy(p, msg->path_vec.s, msg->path_vec.len);
+
+	contacts[n].enc_info = enc_info;
 	contacts[n].q = ruri_q;
 	contacts[n].next = -1;
 	last = n;
@@ -109,18 +146,52 @@ int serialize_branches(struct sip_msg *msg, int clean_before )
 	n++;
 
 	/* Insert branch URIs to contact list in increasing q order */
-	for( idx=0 ; (branch.s=get_branch(idx,&branch.len,&q,0,0,0,0))!=0 ; idx++){
-		contacts[n].uri = branch;
+	for (idx = 0;(branch.s = get_branch(idx, &branch.len, &q,
+					&dst_uri, &path, &flags, &sock_info)); idx++){
+
+		enc_info.len = 3 * sizeof(long)
+						+ branch.len + dst_uri.len + path.len + 3;
+		enc_info.s = (char*) pkg_malloc (enc_info.len);
+
+		if (!enc_info.s) {
+			LM_ERR("no pkg memory left\n");
+			return -1;
+		}
+
+		memset(enc_info.s, 0, enc_info.len);
+		p = enc_info.s;
+
+		LM_DBG("Branch information <%.*s,%.*s,%.*s,%d,%u>\n", 
+				branch.len, branch.s,
+				dst_uri.len, dst_uri.s,
+				path.len, path.s,
+				q, flags);
+
+		*((long*) p) = (long)sock_info;
+		p += sizeof(long);
+		*((long*) p) = (long)flags;
+		p += sizeof(long);
+		*((long*) p) = (long)q;
+		p += sizeof(long);
+
+		memcpy(p , branch.s, branch.len);
+		p += branch.len + 1;
+		memcpy(p, dst_uri.s, dst_uri.len);
+		p += dst_uri.len + 1;
+		memcpy(p, path.s, path.len);
+
+		contacts[n].enc_info = enc_info;
 		contacts[n].q = q;
 
 		/* insert based on q */
-		for( i=first ; i!=-1 && contacts[i].q < q ; i=contacts[i].next );
-		if (i==-1) {
+		for (i = first; i != -1 && contacts[i].q < q; i = contacts[i].next);
+
+		if (i == -1) {
 			/* append */
 			last = contacts[last].next = n;
 			contacts[n].next = -1;
 		} else {
-			if (i==first) {
+			if (i == first) {
 				/* first element */
 				contacts[n].next = first;
 				first = n;
@@ -135,7 +206,7 @@ int serialize_branches(struct sip_msg *msg, int clean_before )
 	}
 
 	/* Assign values for q_flags */
-	for( i=first ; contacts[i].next!=-1 ; i=contacts[i].next ) {
+	for (i = first; contacts[i].next != -1; i = contacts[i].next) {
 		if (contacts[i].q < contacts[contacts[i].next].q)
 			contacts[contacts[i].next].q_flag = Q_FLAG;
 		else
@@ -146,15 +217,13 @@ int serialize_branches(struct sip_msg *msg, int clean_before )
 		destroy_avps( 0/*type*/, serial_avp, 1/*all*/);
 
 	/* Add contacts to "contacts" AVP */
-	for ( i=first ; i!=-1; i=contacts[i].next ) {
-		val.s = contacts[i].uri;
-		if (add_avp( AVP_VAL_STR|contacts[i].q_flag, serial_avp,
-		val)!=0 ) {
+	for (i = first; i != -1; i = contacts[i].next) {
+		val.s = contacts[i].enc_info;
+
+		if (add_avp( AVP_VAL_STR|contacts[i].q_flag, serial_avp, val)) {
 			LM_ERR("failed to add avp\n");
 			goto error;
 		}
-		LM_DBG("loaded <%.*s>, q=%d q_flag <%d>\n", val.s.len, val.s.s,
-			contacts[i].q, contacts[i].q_flag);
 	}
 
 	/* Clear all branches */
@@ -178,55 +247,116 @@ int next_branches( struct sip_msg *msg)
 {
 	struct usr_avp *avp, *prev;
 	int_str val;
-	struct action act;
+	struct socket_info *sock_info;
+	qvalue_t q;
+	str uri, dst_uri, path;
+	char *p;
+	unsigned int flags;
 	int rval;
 
-	if ( route_type!=REQUEST_ROUTE && route_type!=FAILURE_ROUTE ) {
+	if (route_type != REQUEST_ROUTE && route_type != FAILURE_ROUTE ) {
 		/* unsupported route type */
 		LM_ERR("called from unsupported route type %d\n", route_type);
 		goto error;
 	}
 
 	/* Find first avp  */
-	avp = search_first_avp( 0, serial_avp, &val, 0);
+	avp = search_first_avp(0, serial_avp, &val, 0);
+
 	if (!avp) {
 		LM_DBG("no AVPs -- we are done!\n");
 		goto error;
 	}
 
+	if (!val.s.s) {
+		LM_ERR("invalid avp value\n");
+		goto error;
+	}
+
+	/* *sock_info, flags, q, uri, 0, dst_uri, 0, path, 0,... */
+
+	p = val.s.s;
+	sock_info = (struct socket_info*) *((long*) p);
+	p += sizeof(long);
+	flags = (unsigned int) *((long*) p);
+	p += sizeof(long);
+	q = (unsigned int) *((long*) p);
+	p += sizeof(long);
+	uri.s = p;
+	uri.len = strlen(p);
+	p += uri.len + 1;
+	dst_uri.s = p;
+	dst_uri.len = strlen(p);
+	p += dst_uri.len + 1;
+	path.s = p;
+	path.len = strlen(p);
+
 	/* Set Request-URI */
-	if (set_ruri(msg, &val.s)==-1)
+	if (set_ruri(msg, &uri) == -1)
 		goto error1;
-	LM_DBG("R-URI is <%.*s>\n", val.s.len, val.s.s);
+
+	LM_DBG("Msg information <%.*s,%.*s,%.*s,%d,%u>\n",
+				uri.len, uri.s,
+				dst_uri.len, dst_uri.s,
+				path.len, path.s,
+				q, flags);
+
+
 	if (avp->flags & Q_FLAG) {
 		destroy_avp(avp);
 		return 0;
 	}
+
 	prev = avp;
 	avp = search_next_avp(prev, &val);
 	destroy_avp(prev);
 
 	/* Append branches until out of branches or Q_FLAG is set */
-	while(avp!=NULL) {
-		act.type = APPEND_BRANCH_T;
-		act.elem[0].type = STR_ST;
-		act.elem[0].u.s = val.s;
-		act.elem[1].type = NUMBER_ST;
-		act.elem[1].u.number = 0;
-		rval = do_action(&act, msg);
-		if (rval != 1) {
-			LM_ERR("do_action failed with return value <%d>\n", rval);
-			goto error1;
-			}
-		LM_DBG("branch is <%s>\n", val.s.s);
+	while (avp != NULL) {
 
-		/* continuu ? */
+		if (!val.s.s) {
+			LM_ERR("invalid avp value\n");
+			continue;
+		}
+
+		p = val.s.s;
+		sock_info = (struct socket_info*) *((long*) p);
+		p += sizeof(long);
+		flags = (unsigned int) *((long*) p);
+		p += sizeof(long);
+		q = (unsigned int) *((long*) p);
+		p += sizeof(long);
+		uri.s = p;
+		uri.len = strlen(p);
+		p += strlen(p) + 1;
+		dst_uri.s = p;
+		dst_uri.len = strlen(p);
+		p += strlen(p) + 1;
+		path.s = p;
+		path.len = strlen(p);
+
+		LM_DBG("Branch information <%.*s,%.*s,%.*s,%d,%u\n>",
+				uri.len, uri.s,
+				dst_uri.len, dst_uri.s,
+				path.len, path.s,
+				q, flags);
+
+
+		rval = append_branch(msg, &uri, &dst_uri, &path,
+				q, flags, sock_info);
+
+		if (rval == -1) {
+			LM_ERR("append_branch failed\n");
+			goto error1;
+		}
+
 		if (avp->flags & Q_FLAG) {
 			destroy_avp(avp);
 			return 0;
 		}
+
 		prev = avp;
-		avp=search_next_avp(prev, &val);
+		avp = search_next_avp(prev, &val);
 		destroy_avp(prev);
 	}
 
