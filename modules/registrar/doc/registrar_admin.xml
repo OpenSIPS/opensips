@@ -311,7 +311,7 @@ modparam("registrar", "received_param", "rcv")
 </programlisting>
 		</example>
 	</section>
-	</section>
+	
 
 	<section>
 		<title><varname>max_contacts</varname> (integer)</title>
@@ -394,7 +394,7 @@ modparam("registrar", "sock_hdr_name", "Sock-Info")
 		</programlisting>
 		</example>
 	</section>
-
+	</section>
 	<section>
 	<title>Exported Functions</title>
 	<section>

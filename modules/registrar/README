@@ -10,7 +10,7 @@ Jan Janak
 
 Edited by
 
-Bogdan-Andre Iancu
+Bogdan-Andrei Iancu
 
    Copyright © 2003 FhG FOKUS
    Revision History
@@ -42,24 +42,24 @@ Bogdan-Andre Iancu
               1.3.7. case_sensitive (integer)
               1.3.8. received_avp (str)
               1.3.9. received_param (string)
+              1.3.10. max_contacts (integer)
+              1.3.11. retry_after (integer)
+              1.3.12. sock_hdr_name (string)
 
-        1.4. max_contacts (integer)
-        1.5. retry_after (integer)
-        1.6. sock_hdr_name (string)
-        1.7. Exported Functions
+        1.4. Exported Functions
 
-              1.7.1. save(domain [,flags ,[aor]])
-              1.7.2. lookup(domain [, flags [, aor]])
-              1.7.3. registered(domain [,AOR[, callid]])
-              1.7.4. add_sock_hdr(hdr_name)
+              1.4.1. save(domain [,flags ,[aor]])
+              1.4.2. lookup(domain [, flags [, aor]])
+              1.4.3. registered(domain [,AOR[, callid]])
+              1.4.4. add_sock_hdr(hdr_name)
 
-        1.8. Exported Statistics
+        1.5. Exported Statistics
 
-              1.8.1. max_expires
-              1.8.2. max_contacts
-              1.8.3. defaults_expires
-              1.8.4. accepted_regs
-              1.8.5. rejected_regs
+              1.5.1. max_expires
+              1.5.2. max_contacts
+              1.5.3. defaults_expires
+              1.5.4. accepted_regs
+              1.5.5. rejected_regs
 
    2. Frequently Asked Questions
 
@@ -267,7 +267,7 @@ modparam("registrar", "received_avp", "$avp(s:rcv)")
 modparam("registrar", "received_param", "rcv")
 ...
 
-1.4. max_contacts (integer)
+1.3.10. max_contacts (integer)
 
    The parameter can be used to limit the number of contacts per
    AOR (Address of Record) in the user location database. Value 0
@@ -286,7 +286,7 @@ modparam("registrar", "received_param", "rcv")
 modparam("registrar", "max_contacts", 10)
 ...
 
-1.5. retry_after (integer)
+1.3.11. retry_after (integer)
 
    The registrar can generate 5xx reply to REGISTER in various
    situations. It can, for example, happen when the max_contacts
@@ -306,7 +306,7 @@ modparam("registrar", "max_contacts", 10)
 modparam("registrar", "retry_after", 30)
 ...
 
-1.6. sock_hdr_name (string)
+1.3.12. sock_hdr_name (string)
 
    Header which contains a socket description (proto:IP:port) to
    override the received socket info. The header will be search
@@ -322,9 +322,9 @@ modparam("registrar", "retry_after", 30)
 modparam("registrar", "sock_hdr_name", "Sock-Info")
 ...
 
-1.7. Exported Functions
+1.4. Exported Functions
 
-1.7.1.  save(domain [,flags ,[aor]])
+1.4.1.  save(domain [,flags ,[aor]])
 
    The function processes a REGISTER message. It can add, remove
    or modify usrloc records depending on Contact and Expires HFs
@@ -395,7 +395,7 @@ save("location","","$fu");
 save("location","mr", "$avp(i:1)");
 ...
 
-1.7.2.  lookup(domain [, flags [, aor]])
+1.4.2.  lookup(domain [, flags [, aor]])
 
    The functions extracts username from Request-URI and tries to
    find all contacts for the username in usrloc. If there are no
@@ -452,7 +452,7 @@ switch ($retcode) {
 };
 ...
 
-1.7.3.  registered(domain [,AOR[, callid]])
+1.4.3.  registered(domain [,AOR[, callid]])
 
    The function returns true if an AOR is registered, false
    otherwise. The function does not modify the message being
@@ -485,7 +485,7 @@ if (registered("location","$fu")) {
 }
 ...
 
-1.7.4.  add_sock_hdr(hdr_name)
+1.4.4.  add_sock_hdr(hdr_name)
 
    Adds to the current REGISTER request a new header with
    "hdr_name" which contains the description of the received
@@ -503,25 +503,25 @@ if (registered("location","$fu")) {
 add_sock_hdr("Sock-Info");
 ...
 
-1.8. Exported Statistics
+1.5. Exported Statistics
 
-1.8.1. max_expires
+1.5.1. max_expires
 
    Value of max_expires parameter.
 
-1.8.2. max_contacts
+1.5.2. max_contacts
 
    The value of max_contacts parameter.
 
-1.8.3. defaults_expires
+1.5.3. defaults_expires
 
    The value of default_expires parameter.
 
-1.8.4. accepted_regs
+1.5.4. accepted_regs
 
    Number of accepted registrations.
 
-1.8.5. rejected_regs
+1.5.5. rejected_regs
 
    Number of rejected registrations.
 

@@ -69,11 +69,11 @@ Irina-Maria Stanescu
               1.4.4. allow_register(basename)
               1.4.5. allow_register(allow_file, deny_file)
               1.4.6. allow_uri(basename, pvar)
-              1.4.7. check_address(group_id, ip, port, proto,
-                      [context_info], [pattern])
+              1.4.7. check_address(group_id, ip, port, proto [,
+                      context_info [, pattern]])
 
-              1.4.8. check_source_address(group_id,
-                      [context_info], [pattern])
+              1.4.8. check_source_address(group_id [, context_info
+                      [, pattern]])
 
               1.4.9. get_source_group()
 
@@ -318,8 +318,7 @@ modparam("permissions", "deny_suffix", ".deny")
 
 1.3.6. db_url (string)
 
-   This is URL of the database to be used to store rules used by
-   allow_trusted function.
+   This is URL of the database to be used.
 
    Default value is "NULL".
 
@@ -391,7 +390,7 @@ modparam("permissions", "port_col", "prt")
 
 1.3.12. proto_col (string)
 
-   Name of trusted table column containing transport protocol that
+   Name of address table column containing transport protocol that
    is matched against transport protocol of received request.
    Possible values that can be stored in proto_col are "any",
    "udp", "tcp", "tls", "sctp", and "none". Value "any" matches
@@ -419,15 +418,15 @@ modparam("permissions", "pattern_col", "regexp")
 
 1.3.14. info_col (string)
 
-   Name of trusted table column containing a string that is added
-   as value to peer_tag AVP if peer_tag AVP has been defined and
-   if the peer matches.
+   Name of address table column containing a string that is added
+   as value to a pvar given as argument to check_address or
+   check_source_address in case the function succedes.
 
    Default value is "context_info".
 
    Example 1.14. Set info_col parameter
 ...
-modparam("permissions", "info_col", "peer_tag")
+modparam("permissions", "info_col", "info_col")
 ...
 
 1.4. Exported Functions
@@ -586,8 +585,8 @@ i:705)
 };
 ...
 
-1.4.7.  check_address(group_id, ip, port, proto, [context_info],
-[pattern])
+1.4.7.  check_address(group_id, ip, port, proto [, context_info [,
+pattern]])
 
    Returns 1 if group id, IP address, port and protocol given as
    arguments match an IP subnet found in cached address table, as
@@ -684,7 +683,7 @@ if (check_address("4","$si","5700","$proto","", "texttest")) {
 ...
 
 
-1.4.8.  check_source_address(group_id, [context_info], [pattern])
+1.4.8.  check_source_address(group_id [, context_info [, pattern]])
 
    Equivalent to check_address(group_id, "$si", "$sp", "$proto",
    context_info, pattern).

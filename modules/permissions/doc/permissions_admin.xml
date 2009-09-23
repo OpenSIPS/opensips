@@ -342,8 +342,7 @@ modparam("permissions", "deny_suffix", ".deny")
 	<section>
 		<title><varname>db_url</varname> (string)</title>
 		<para>
-		This is URL of the database to be used to store rules used by 
-		<function moreinfo="none">allow_trusted</function> function.
+		This is URL of the database to be used.
 		</para>
 		<para>
 		<emphasis>
@@ -464,7 +463,7 @@ modparam("permissions", "port_col", "prt")
 	<section>
 		<title><varname>proto_col</varname> (string)</title>
 		<para>
-		Name of trusted table column containing transport
+		Name of address table column containing transport
 		protocol that is matched against transport protocol of
 		received request.  Possible values that can be stored in
 		proto_col are <quote>any</quote>, <quote>udp</quote>,
@@ -492,7 +491,8 @@ modparam("permissions", "proto_col", "transport")
 		<para>
 		Name of address table column containing regular
 		expression that is matched against the arguments received by 
-		<function moreinfo="none">check_address</function> or <function moreinfo="none">check_source_address</function>.
+		<function moreinfo="none">check_address</function> 
+		or <function moreinfo="none">check_source_address</function>.
 		</para>
 		<para>
 		<emphasis>
@@ -511,9 +511,11 @@ modparam("permissions", "pattern_col", "regexp")
 	<section>
 		<title><varname>info_col</varname> (string)</title>
 		<para>
-		Name of trusted table column containing a string
-		that is added as value to peer_tag AVP if peer_tag AVP
-                has been defined and if the peer matches.
+		Name of address table column containing a string
+		that is added as value to a pvar given as argument
+		to <function moreinfo="none">check_address</function> 
+		or <function moreinfo="none">check_source_address</function> in
+		case the function succedes.
 		</para>
 		<para>
 		<emphasis>
@@ -524,7 +526,7 @@ modparam("permissions", "pattern_col", "regexp")
 		<title>Set <varname>info_col</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("permissions", "info_col", "peer_tag")
+modparam("permissions", "info_col", "info_col")
 ...
 </programlisting>
 		</example>
@@ -782,7 +784,7 @@ if (allow_uri("basename", "$avp(i:705)") {  // Check URI stored in $avp(i:705)
 	<section>
 		<title>
 		<function moreinfo="none">check_address(group_id, ip, 
-		port, proto, [context_info], [pattern])</function>
+		port, proto [, context_info [, pattern]])</function>
 		</title>
 		<para>
 		Returns 1 if group id, IP address, port and protocol given as
@@ -909,7 +911,7 @@ if (check_address("4","$si","5700","$proto","", "texttest")) {
 	
 	<section>
 		<title>
-		<function moreinfo="none">check_source_address(group_id, [context_info], [pattern])</function>
+		<function moreinfo="none">check_source_address(group_id [, context_info [, pattern]])</function>
 		</title>
 		<para>
 		Equivalent to check_address(group_id, "$si", "$sp", "$proto", context_info, pattern).
