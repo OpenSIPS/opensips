@@ -28,7 +28,6 @@
 #use strict;
 #use warnings;
 use Term::ReadLine;
-use Switch;
 use DBI;
 use POSIX;
 use Frontier::RPC2;
@@ -36,7 +35,7 @@ use IO::Socket;
 use Socket;
 #use Net::IP;
 #use BerkeleyDB;
-
+#use Config::General;
 ####variables that need to be changed
 
 ##### ------------------------------------------------ #####
@@ -44,8 +43,8 @@ use Socket;
 
 ####path to the directory where opensips binaries are...
 
-my $PATH_BIN = "./";
-my $PATH_CTLRC = "./scripts/";
+my $PATH_BIN = "/usr/local/opensips_head/sbin/";
+my $PATH_CTLRC = "/usr/local/opensips_head/etc/opensips/";
 my $PATH_ETC = "/usr/local/etc/";
 my $PATH_LIBS = "/usr/local/lib";
 my $PATH_SHARE = "/usr/local/share";
@@ -63,7 +62,8 @@ if ( -e "~/.osipsconsolerc" ) {
 	&include_osipsconsolerc();	
 }
 
-
+#$conf = new Config::General("$OSIPSCONSOLERC");
+#my %config = $conf->getall;
 
 my $OSIPSBIN = $PATH_BIN . "opensips";
 my $HISTORY_FILE = "/tmp/osipsconsole_history";
@@ -305,23 +305,21 @@ while ( $#content gt -1 ){
 				@list = split(":",$arr[1]);								
 			 	$CTLENGINE = $list[0]; 
 				$CTLENGINELOADED = 1;
-				switch ($CTLENGINE) {
-					case (/^FIFO$/) {
-						$OSIPS_FIFO = $list[1];
-					}
-					case(/^UNIXSOCK$/){
-						$OSIPS_UNIXSOCK = $list[1];
-						$OSIPSUNIX = "opensipsunix";
-					}			
-					case(/^UDP$/){			
-						$OSIPSIP = $list[1];
-						$OSIPS_PORT = $list[2];
-					}
-					case(/^XMLRPC$/){
-						$OSIPSIP = $list[1];
-						$OSIPS_PORT = $list[2];
-					}								
+				if ($CTLENGINE =~ /^FIFO$/) {
+					$OSIPS_FIFO = $list[1];
 				}
+				elsif ($CTLENGINE =~ /^UNIXSOCK$/){
+					$OSIPS_UNIXSOCK = $list[1];
+					$OSIPSUNIX = "opensipsunix";
+				}			
+				if ($CTLENGINE =~ /^UDP$/){			
+					$OSIPSIP = $list[1];
+					$OSIPS_PORT = $list[2];
+				}
+				if ($CTLENGINE =~ /^XMLRPC$/){
+					$OSIPSIP = $list[1];
+					$OSIPS_PORT = $list[2];
+				}								
 			}
 		}
 
@@ -1151,6 +1149,27 @@ sub usage_alias_db() {
 		    "\t\t- <sip-id> must be an AoR (username\@domain)\n";
 }
 
+sub usage_avp() {
+        print " -- command 'avp' - manage AVPs\n" .
+                 "avp list [-T table] [-u <sip-id|uuid>]\n" .
+                    "\t[-a attribute] [-v value] [-t type] ... list AVPs\n" .
+                 "avp add [-T table] <sip-id|uuid>\n" .
+                     "\t<attribute> <type> <value> ............ add AVP (*)\n" .
+                 "avp rm [-T table]  [-u <sip-id|uuid>]\n" .
+                     "\t[-a attribute] [-v value] [-t type] ... remove AVP (*)\n" .
+                 "avp help .................................. help message\n" .
+                    "\t- -T - table name\n" .
+                    "\t- -u - SIP id or unique id\n" .
+                    "\t- -a - AVP name\n" .
+                    "\t- -v - AVP value\n" .
+                    "\t- -t - AVP name and type (0 (str:str), 1 (str:int),\n" .
+                                              "\t\t\t\t2 (int:str), 3 (int:int))\n" .
+                    "\t\t- <sip-id> must be an AoR (username\@domain)\n" .
+                    "\t\t- <uuid> must be a string but not AoR\n";
+
+}
+
+
 
 #domain
 sub usage_domain() {
@@ -1513,19 +1532,19 @@ sub prompt_pw() {
 #}
 
 
-sub validate_dbdata($type) {
+sub validate_dbdata() {
 
- if( -d $DATA_DIR."/$type" ) {
+ if( -d $DATA_DIR."/$_[0]" ) {
 
-     $DB_SCHEMA = $DATA_DIR."/$type";
+     $DB_SCHEMA = $DATA_DIR."/$_[0]";
 
      return $DB_SCHEMA;	
 
  } else {
 
-     $DB_SCHEMA = "./$type";	
+     $DB_SCHEMA = "./$_[0]";	
 
-     print "Warn fallback to local workdir ./$type\n";
+     print "Warn fallback to local workdir ./$_[0]\n";
 
      return $DB_SCHEMA;
 
@@ -1541,8 +1560,7 @@ sub db_load() {
 		return;
 	} else {
 	
-		switch ( $DBENGINE ) {
-			case (/(^mysql$)|(^MYSQL$)/) {
+			if ($DBENGINE =~ /(^mysql$)|(^MYSQL$)/) {
 				print "Used database is mysql\n";
 				&validate_dbdata("mysql");
 				#Connect to the database.
@@ -1552,7 +1570,7 @@ sub db_load() {
 				$DBENGINELOADED = 1;
 			}
 
-			case (/^oracle$/) {
+			elsif ($DBENGINE =~ /^oracle$/) {
 				print "Used database is Oracle\n";
 				&validate_dbdata("oracle");
 				#Connect to the database.
@@ -1563,7 +1581,7 @@ sub db_load() {
 
 			}
 
-			case (/^Pg$/) {
+                        elsif ($DBENGINE =~ /^Pg$/) {
 				print "Used database is PostgreSQL\n";
 				&validate_dbdata("postgres");
 				$DBROOTUSER = "postgres";
@@ -1575,22 +1593,20 @@ sub db_load() {
 				$DBENGINELOADED = 1;
 			}
 
-			case (/^DBTEXT$/) {
+                        elsif ($DBENGINE =~ /^DBTEXT$/) {
 				print "Used database is DBTEXT\n";
 				&validate_dbdata("dbtext/opensips");
 				$ENV{DBTEXT_PATH} = $DBTEXT_PATH;
 				$DBENGINELOADED = 1;
 			}
 
-			case (/^DB_BERKELEY$/) {
+                        elsif ($DBENGINE =~ /^DB_BERKELEY$/) {
 				print "Used database is DB_BERKELEY\n";
 				&validate_dbdata("db_berkeley/opensips");
 				$ENV{PATH} = $DB_PATH;
 				$DBENGINELOADED = 1;
 
 			}
-		}
-
 	}
 }
 
@@ -1707,40 +1723,38 @@ sub non_interactively(){
 
 sub cmd() {
 
-	switch ($cmd[0]) {		
-		case (/^acl$/)	 				{ &db_load(); system(&opensips_acl()); }
-		case (/^add$/)  				{ &db_load(); system(&subscriber()); }
-		case (/^avp$/)	 				{ &db_load(); system(&avpops()); }	
-		case (/(^aliasdb$)|(^alias_db$)/)		{ &db_load(); system(&alias_db()); }
-		case (/^cr$/) 					{ &db_load(); system(&opensips_cr()); }
-		case (/^dialplan$/)                     	{ &db_load(); system(&opensips_dialplan()); }
-		case (/^db$/)	 				{ &db_load(); system(&db_ops()); }
-		case (/^dispatcher$/) 				{ &db_load(); system(&opensips_dispatcher()); }
-		case (/^domain$/) 				{ &db_load(); system(&domain()); }
-		case (/(^fifo$)|(^unixsock$)|(^udp$)|(^xmlrpc$)/){ &mi_comm(); } 
-		case (/^lcr$/) 					{ &db_load(); system(&opensips_lcr()); } 
-		case (/(^moni$)|(^monitor$)|(^con$)|(^console$)/){ &mi_comm_monitor(); }
-		case (/^ping$/)		 			{ system(&options_ping()); }
-		case (/^ps$/)					{ system(&opensips_ps()); }
-		case (/^passwd$/)		      		{ &db_load(); system(&subscriber()); }		
-		case (/^online$/)				{ &opensips_online(); }
-		case (/^rpid$/)		 			{ &db_load(); system(&opensips_rpid()); }
-		case (/^restart$/)		   		{ system(&opensips_restart()); }		
-		case (/^rm$/)			      		{ &db_load(); system(&subscriber()); }
-		case (/(^speeddial$)|(^speed_dial$)/)		{ &db_load(); system(&speeddial()); }
-		case (/^start$/)		    		{ system(&opensips_start()); }	
-		case (/^stop$/)			      		{ system(&opensips_stop()); }
-		case (/^tls$/)	 	  			{ &db_load(); system(&tls_ca()); }
-		case (/^trusted$/)		 		{ &db_load(); system(&trusted()); }
-		case (/(^ul$)|(^alias$)|(^usrloc$)/)	  	{ system(&opensips_usrloc()); }		
-		case (/^version$/)				{ system(&opensips_version()); }
-		case (/(^extra$)|(^migrate$)|(^copy$)|(^backup$)|(^restore$)|(^create$)|(^presence$)|(^drop$)|(^reinit$)|(^bdb$)|(^db_berkeley$)|(^cat$)/) {system(&opensips_db()); }
-		case (/^dr$/)				      	{ &db_load(); system(&opensips_dr()); }
-		case (/^help$/)				      	{ system(&opensips_help()); }
-		else 						{ print " unknown command!!!\n"; }
+	if ($cmd[0] =~ /^acl$/)	 					{ &db_load(); system(&opensips_acl()); }
+	elsif ($cmd[0] =~ /^add$/)  					{ &db_load(); system(&subscriber()); }
+	elsif ($cmd[0] =~ /^avp$/)	 				{ &db_load(); system(&avpops()); }	
+	elsif ($cmd[0] =~ /(^aliasdb$)|(^alias_db$)/)			{ &db_load(); system(&alias_db()); }
+	elsif ($cmd[0] =~ /^cr$/) 					{ &db_load(); system(&opensips_cr()); }
+	elsif ($cmd[0] =~ /^dialplan$/)                     		{ &db_load(); system(&opensips_dialplan()); }
+	elsif ($cmd[0] =~ /^db$/)	 				{ &db_load(); system(&db_ops()); }
+	elsif ($cmd[0] =~ /^dispatcher$/) 				{ &db_load(); system(&opensips_dispatcher()); }
+	elsif ($cmd[0] =~ /^domain$/) 					{ &db_load(); system(&domain()); }
+	elsif ($cmd[0] =~ /(^fifo$)|(^unixsock$)|(^udp$)|(^xmlrpc$)/)	{ &mi_comm(); } 
+	elsif ($cmd[0] =~ /^lcr$/) 					{ &db_load(); system(&opensips_lcr()); } 
+	elsif ($cmd[0] =~ /(^moni$)|(^monitor$)|(^con$)|(^console$)/)	{ &mi_comm_monitor(); }
+	elsif ($cmd[0] =~ /^ping$/)		 			{ system(&options_ping()); }
+	elsif ($cmd[0] =~ /^ps$/)					{ system(&opensips_ps()); }
+	elsif ($cmd[0] =~ /^passwd$/)			      		{ &db_load(); system(&subscriber()); }		
+	elsif ($cmd[0] =~ /^online$/)					{ &opensips_online(); }
+	elsif ($cmd[0] =~ /^rpid$/)		 			{ &db_load(); system(&opensips_rpid()); }
+	elsif ($cmd[0] =~ /^restart$/)			   		{ system(&opensips_restart()); }		
+	elsif ($cmd[0] =~ /^rm$/)			      		{ &db_load(); system(&subscriber()); }
+	elsif ($cmd[0] =~ /(^speeddial$)|(^speed_dial$)/)		{ &db_load(); system(&speeddial()); }
+	elsif ($cmd[0] =~ /^start$/)		   	 		{ system(&opensips_start()); }	
+	elsif ($cmd[0] =~ /^stop$/)			      		{ system(&opensips_stop()); }
+	elsif ($cmd[0] =~ /^tls$/)	 	  			{ &db_load(); system(&tls_ca()); }
+	elsif ($cmd[0] =~ /^trusted$/)			 		{ &db_load(); system(&trusted()); }
+	elsif ($cmd[0] =~ /(^ul$)|(^alias$)|(^usrloc$)/)	  	{ system(&opensips_usrloc()); }		
+	elsif ($cmd[0] =~ /^version$/)	 				{ system(&opensips_version()); }
+	elsif ($cmd[0] =~ /(^extra$)|(^migrate$)|(^copy$)|(^backup$)|(^restore$)|(^create$)|(^presence$)|(^drop$)|(^reinit$)|(^bdb$)|(^db_berkeley$)|(^cat$)/) {system(&opensips_db()); }
+	elsif ($cmd[0] =~ /^dr$/)				      	{ &db_load(); system(&opensips_dr()); }
+	elsif ($cmd[0] =~ /^help$/)				      	{ system(&opensips_help()); }
+	else 								{ print " unknown command!!!\n"; }
 
 			
-	}
 	return;
 
 }
@@ -1908,46 +1922,45 @@ sub opensips_acl() {
 		&usage_acl();
 		return;
 	} else {
-		switch ($cmd[1]) {
-			case (/^show$/) {
+		if ($cmd[1] =~ /^show$/) {
+			
+			if ( $#cmd eq 1 ) {
+
+				if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
+					&bdb_select($ACL_TABLE); 
+				} elsif ( $DBENGINE =~ /^DBTEXT$/) {
+					system("$DBTEXTCMD","SELECT * FROM $ACL_TABLE ");
+				} else {												
+					$sth = $dbh->prepare ("SELECT * FROM $ACL_TABLE ");	
+
+					##execute the query
+					$sth->execute( );
+
+			 		## Retrieve the results of a row of data and print
+		 	                print "\tQuery results:\n================================================\n";
+					while (@row = $sth->fetchrow_array( ) )  {
+		     		             	print "@row\n";
+			    	        }		 
+
+					warn "Error retireving data from the database! ", $sth->errstr( ), "\n" if $sth->err( );
+
+					$sth->finish(); 
+				}
+ 				return;
+			}					
 				
-				if ( $#cmd eq 1 ) {
+			if ( $#cmd == 2 ) {			
+			
+				if (  &is_user($cmd[2]) == 0 ) {
+						print "Non-existent user " . $cmd[2] . "\n";						
+						return;
+
+  				 } else {
+
+					&set_user($cmd[2]);
 
 					if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
-						&bdb_select($ACL_TABLE); 
-					} elsif ( $DBENGINE =~ /^DBTEXT$/) {
-						system("$DBTEXTCMD","SELECT * FROM $ACL_TABLE ");
-					} else {												
-						$sth = $dbh->prepare ("SELECT * FROM $ACL_TABLE ");	
-
-						##execute the query
-						$sth->execute( );
-
-				 		## Retrieve the results of a row of data and print
-			 	                print "\tQuery results:\n================================================\n";
-						while (@row = $sth->fetchrow_array( ) )  {
-			     		             	print "@row\n";
-				    	        }		 
-
-						warn "Error retireving data from the database! ", $sth->errstr( ), "\n" if $sth->err( );
-
-						$sth->finish(); 
-					}
-	 				return;
-				}					
-				
-				if ( $#cmd == 2 ) {			
-				
-					if (  &is_user($cmd[2]) == 0 ) {
-							print "Non-existent user " . $cmd[2] . "\n";						
-							return;
-
-	  				 } else {
-
-						&set_user($cmd[2]);
-
-						if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
-							print "For DB BERKELEY, this operation needs 2 params: username\@domain and group\n";
+						print "For DB BERKELEY, this operation needs 2 params: username\@domain and group\n";
 							return;
 						} elsif ( $DBENGINE =~ /^DBTEXT$/) {
 							system("$DBTEXTCMD","SELECT * 
@@ -1972,120 +1985,118 @@ sub opensips_acl() {
 							 warn "Error retireving data from the database! ", $sth->errstr( ), "\n" if $sth->err( );
 							 $sth->finish(); }
 						}
-				} elsif ( $#cmd == 3 ){
-					if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
-						my $key = join(" ",$OSIPSUSER,$OSIPSDOMAIN,$cmd[3]);
-						&bdb_select_where($ACL_TABLE,$key); 
+			} elsif ( $#cmd == 3 ){
+				if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
+					my $key = join(" ",$OSIPSUSER,$OSIPSDOMAIN,$cmd[3]);
+					&bdb_select_where($ACL_TABLE,$key); 
+				} else {
+					print "Too many parameters for $DBENGINE query\n";
+					return;
+				}
+			} else {
+				&usage_acl();
+				return;
+			}
+		}
+		elsif ($cmd[1] =~ /^grant$/) {
+			if ( $#cmd lt 3 ) {
+				&usage_acl();
+				return;
+			}
+
+			my $acl_inserted = 0;
+
+			if ( $#cmd == 3 ) {
+					
+				if ( &is_user($cmd[2]) == 0 ) {  
+					print "Non-existent user " . $cmd[2] . " Still proceeding? [Y|N]:";
+					if ( ( $input = <STDIN>) =~ /[y|Y]/  ) {
+						print "Proceeding with non-local user\n";
 					} else {
-						print "Too many parameters for $DBENGINE query\n";
 						return;
 					}
-				} else {
-					&usage_acl();
-					return;
 				}
-			}
-			case (/^grant$/) {
-				if ( $#cmd lt 3 ) {
-					&usage_acl();
-					return;
-				}
+				&set_user($cmd[2]);			
 
-				my $acl_inserted = 0;
-
-				if ( $#cmd == 3 ) {
-					
-					if ( &is_user($cmd[2]) == 0 ) {  
-						print "Non-existent user " . $cmd[2] . " Still proceeding? [Y|N]:";
-						if ( ( $input = <STDIN>) =~ /[y|Y]/  ) {
-							print "Proceeding with non-local user\n";
-						} else {
-							return;
+				if ( $VERIFY_ACL == 1 ) {
+					my $found = 0;
+					foreach my $i (@ACL_GROUPS) {
+						if ( $cmd[3] =~ /(^$i$)/ ) {
+							print $cmd[3]."...".$i."\n";
+							$found = 1;					
 						}
-					}
-					&set_user($cmd[2]);			
-
-					if ( $VERIFY_ACL == 1 ) {
-						my $found = 0;
-						foreach my $i (@ACL_GROUPS) {
-							if ( $cmd[3] =~ /(^$i$)/ ) {
-								print $cmd[3]."...".$i."\n";
-								$found = 1;					
-							}
-						 }
-						if ( $found == 0 ) {
-							print "Invalid privilege: acl " . $cmd[3] . " ignored\n";
-							return;
-						 }
-				      }
+					 }
+					if ( $found == 0 ) {
+						print "Invalid privilege: acl " . $cmd[3] . " ignored\n";
+						return;
+					 }
+			        }
 
 
-					my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(time);
-					my $date = join("-",$year+1900,$mon+1,$mday+1);
-					my $time = join(":",$hour,$min,$sec);
-					my $last_modified =  join(" ",$date,$time);
+				my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(time);
+				my $date = join("-",$year+1900,$mon+1,$mday+1);
+				my $time = join(":",$hour,$min,$sec);
+				my $last_modified =  join(" ",$date,$time);
+				my $unix_time = time();
 
-					my $unix_time = time();
+				if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
+					my $key = join(" ",$OSIPSUSER,$OSIPSDOMAIN,$cmd[3]);
+					my $value = join(" ",$last_modified);
+					&bdb_insert($ACL_TABLE,$key,$value); 
+				} elsif ( $DBENGINE =~ /^DBTEXT$/) {
 
-					if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
-						my $key = join(" ",$OSIPSUSER,$OSIPSDOMAIN,$cmd[3]);
-						my $value = join(" ",$last_modified);
-						&bdb_insert($ACL_TABLE,$key,$value); 
-					} elsif ( $DBENGINE =~ /^DBTEXT$/) {
-
-						system("$DBTEXTCMD","INSERT INTO $ACL_TABLE ($acl_table{'ACL_USER_COLUMN'},$acl_table{'ACL_GROUP_COLUMN'},$acl_table{'ACL_MODIFIED_COLUMN'},$acl_table{'ACL_DOMAIN_COLUMN'} ) VALUES (\"$OSIPSUSER\",\"$cmd[3]\",$unix_time, \"$OSIPSDOMAIN\" ) ");
-					} else {
-						$sth = $dbh->prepare ("INSERT INTO $ACL_TABLE ($acl_table{'ACL_USER_COLUMN'},$acl_table{'ACL_GROUP_COLUMN'},
-								       $acl_table{'ACL_MODIFIED_COLUMN'},$acl_table{'ACL_DOMAIN_COLUMN'} ) 
-								       VALUES (\'$OSIPSUSER\',\'$cmd[3]\',\'$last_modified\', \'$OSIPSDOMAIN\' ) " );	
+					system("$DBTEXTCMD","INSERT INTO $ACL_TABLE ($acl_table{'ACL_USER_COLUMN'},$acl_table{'ACL_GROUP_COLUMN'},$acl_table{'ACL_MODIFIED_COLUMN'},$acl_table{'ACL_DOMAIN_COLUMN'} ) VALUES (\"$OSIPSUSER\",\"$cmd[3]\",$unix_time, \"$OSIPSDOMAIN\" ) ");
+				} else {
+					$sth = $dbh->prepare ("INSERT INTO $ACL_TABLE ($acl_table{'ACL_USER_COLUMN'},$acl_table{'ACL_GROUP_COLUMN'},
+							       $acl_table{'ACL_MODIFIED_COLUMN'},$acl_table{'ACL_DOMAIN_COLUMN'} ) 
+							       VALUES (\'$OSIPSUSER\',\'$cmd[3]\',\'$last_modified\', \'$OSIPSDOMAIN\' ) " );	
 		
-						 ##execute the query
-						 $sth->execute( );
+					 ##execute the query
+					 $sth->execute( );
 		 
-						 print "Data was not inserted in database!", $sth->errstr( ), "\n" if $sth->err( );
-
-						 $sth->finish();
+					 print "Data was not inserted in database!", $sth->errstr( ), "\n" if $sth->err( );
+					 $sth->finish();
 		
 						 
-						if ( &is_user($cmd[2]) == 0 ) { 
-							print "acl - SQL Error\n";
-							return;
-						}
-						$acl_inserted = 1;
+					if ( &is_user($cmd[2]) == 0 ) { 
+						print "acl - SQL Error\n";
+						return;
 					}
-					
+					$acl_inserted = 1;
 				}
-
-				if ( $acl_inserted == 1 ) {
-
-					if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
-						my $key = join(" ",$OSIPSUSER,$OSIPSDOMAIN,$cmd[3]);
-						&bdb_select_where($ACL_TABLE,$key); 
-					} elsif ( $DBENGINE =~ /^DBTEXT$/) {
-						system("$DBTEXTCMD","SELECT * FROM $ACL_TABLE 
-								       WHERE $acl_table{'ACL_USER_COLUMN'}=\'$OSIPSUSER\' 
-								       AND $acl_table{'ACL_DOMAIN_COLUMN'}=\'$OSIPSDOMAIN\' ");
-					} else {
-						$sth = $dbh->prepare ("SELECT * FROM $ACL_TABLE 
-								       WHERE $acl_table{'ACL_USER_COLUMN'}=\'$OSIPSUSER\' 
-								       AND $acl_table{'ACL_DOMAIN_COLUMN'}=\'$OSIPSDOMAIN\' ");	
 				
-							 ##execute the query
-							 $sth->execute( );
+			}
 
-				 			 ## Retrieve the results of a row of data and print						 
-			 	                         print "\tQuery results:\n================================================\n";
-							 while (@row = $sth->fetchrow_array( ) )  {
-			     		                 	print "@row\n";
-				    	                 }		 
-							 warn "Could not retrieve data! Data was not inserted in database!", $sth->errstr( ), "\n" if $sth->err( );
-							 $sth->finish();
-					} 
+			if ( $acl_inserted == 1 ) {
+
+				if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
+					my $key = join(" ",$OSIPSUSER,$OSIPSDOMAIN,$cmd[3]);
+					&bdb_select_where($ACL_TABLE,$key); 
+				} elsif ( $DBENGINE =~ /^DBTEXT$/) {
+					system("$DBTEXTCMD","SELECT * FROM $ACL_TABLE 
+					       WHERE $acl_table{'ACL_USER_COLUMN'}=\'$OSIPSUSER\' 
+					       AND $acl_table{'ACL_DOMAIN_COLUMN'}=\'$OSIPSDOMAIN\' ");
+				} else {
+					$sth = $dbh->prepare ("SELECT * FROM $ACL_TABLE 
+							       WHERE $acl_table{'ACL_USER_COLUMN'}=\'$OSIPSUSER\' 
+							       AND $acl_table{'ACL_DOMAIN_COLUMN'}=\'$OSIPSDOMAIN\' ");	
+			
+					 ##execute the query
+					 $sth->execute( );
+
+		 			 ## Retrieve the results of a row of data and print						 
+	 	                         print "\tQuery results:\n================================================\n";
+					 while (@row = $sth->fetchrow_array( ) )  {
+       			                 	 print "@row\n";
+		    	                 }		 
+					 warn "Could not retrieve data! Data was not inserted in database!", $sth->errstr( ), "\n" if $sth->err( );
+					 $sth->finish();
+				} 
 	
-				}
+			}
 
 			}
-			case (/^revoke$/) {
+			elsif ($cmd[1] =~ /^revoke$/) {
 
 				 &set_user($cmd[2]);
 
@@ -2141,7 +2152,7 @@ sub opensips_acl() {
 				}			
 			
 			}
-			case (/^h$/) {
+			elsif ($cmd[1] =~ /^h$/) {
 				&usage_acl();
 			}
 
@@ -2150,8 +2161,6 @@ sub opensips_acl() {
 				print "acl -unknown command $cmd[1]\n";
 
 			}
-
-		}
 	
 	}
 	return;
@@ -2169,13 +2178,12 @@ sub opensips_rpid() {
 		&usage_rpid();
 		return;
 	} 
-		switch ( $cmd[1] ) {
-			case /^h/ {
+			if ($cmd[1] =~ /^h/) {
 				&usage_rpid();
 				return;
 			}
 
-			case (/^add$/) {				 
+			elsif ($cmd[1] =~ /^add$/) {				 
 				 if ( $#cmd lt 3 ) {
 					print "Too few arguments!";
 				 } else {
@@ -2206,7 +2214,7 @@ sub opensips_rpid() {
 				 }
 			}
  
-			case (/^rm$/) {
+			elsif ($cmd[1] =~ /^rm$/) {
 				  if ( $#cmd lt 2 ) {
 					print "Too few arguments!";
 				 } else {
@@ -2237,7 +2245,7 @@ sub opensips_rpid() {
 					}
 				 }
 			} 
-			case (/^show$/) {
+			elsif ($cmd[1] =~ /^show$/) {
 				 if ($#cmd lt 2){
 					print "Too few parameters!\n";
 					return;
@@ -2269,8 +2277,6 @@ sub opensips_rpid() {
 				print "rpid -unknown command $cmd[1]\n";
 
 			}
-
-		}
 }
 
 
@@ -2285,9 +2291,7 @@ sub opensips_lcr(){
 		return;
 	}
 
-	switch ($cmd[1]) {
-
-		case (/^show$/) {
+		if ($cmd[1] =~ /^show$/) {
 			print "lcr routes\n";
 			if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
 				&bdb_select($LCR_TABLE); 
@@ -2343,12 +2347,12 @@ sub opensips_lcr(){
 			
 		}
 
-		case (/^reload$/) {
+		elsif ($cmd[1] =~ /^reload$/) {
 			&mi_comm("lcr_reload");			
 			
 		}
 	
-		case (/^addroute$/) {
+		elsif ($cmd[1] =~ /^addroute$/) {
 			if ( $#cmd lt 5 ) {
 				print "lcr - too few parameters\n";
 				&usage_lcr();
@@ -2378,7 +2382,7 @@ sub opensips_lcr(){
 		}
 		
 
-		case (/^rmroute$/){
+		elsif ($cmd[1] =~ /^rmroute$/){
 			if ( $#cmd lt 5 ) {
 				print "too few parameters\n";
 				&usage_lcr();
@@ -2411,7 +2415,7 @@ sub opensips_lcr(){
 			&mi_comm('lcr_reload');			
 		}
 		
-		case (/^addgw$/) {
+		elsif ($cmd[1] =~ /^addgw$/) {
 
 			my ($GW_FLAGS, $GW_TAG, $GW_STRIP, $STRIP, $GW_NAME, $GW_IP, $GW_PORT, $GW_URI_SCHEME, $GW_GRP_ID, $GW_TRANSPORT);
 
@@ -2485,7 +2489,7 @@ sub opensips_lcr(){
 			
 		}
 
-		case (/^rmgw$/) {
+		elsif ($cmd[1] =~ /^rmgw$/) {
 			if ( $#cmd lt 2 ) {
 				print "missing gateway to be removed\n";
 				return;
@@ -2512,7 +2516,7 @@ sub opensips_lcr(){
 			&mi_comm('lcr_reload');			
 		}
 
-		case (/^h$/) {
+		elsif ($cmd[1] =~ /^h$/) {
 			print "Too few parameters\n";
 			&usage_lcr;		
 		}
@@ -2523,8 +2527,6 @@ sub opensips_lcr(){
 
 		}
 
-
-	}
 }
 
 #
@@ -2537,9 +2539,7 @@ sub subscriber() {
 		&usage_subscriber();
 		return;
 	}
-	switch ($cmd[0]) {
-
-		case (/^add$/) {
+		if ($cmd[0] =~ /^add$/) {
 			if  ($#cmd ne 2 ) {
 				&usage_subscriber();
 				return;
@@ -2594,7 +2594,7 @@ sub subscriber() {
 			}
 		}
 
-		case (/^passwd$/) {
+		elsif ($cmd[0] =~ /^passwd$/) {
 			if ( $#cmd lt 2 ) {
 				&usage_subscriber();
 				return;
@@ -2642,7 +2642,7 @@ sub subscriber() {
 			}
  						
 		}
-		case (/^rm$/) {
+		elsif ($cmd[0] =~ /^rm$/) {
 
 			if ( $#cmd ne 1 ) {
 				&usage_subscriber();
@@ -2707,8 +2707,7 @@ sub subscriber() {
 			print "unknown command $cmd[0]\n";
 
 		}
-
-	}
+	
 }
 
 
@@ -2749,12 +2748,11 @@ sub opensips_usrloc() {
 		return;
 	}
 
-	switch ($cmd[1]) {
-		case (/^h$/) {
+		if ($cmd[1] =~ /^h$/) {
 			&usage_usrloc();
 			return;
 		}
-		case (/^show$/) {
+		elsif ($cmd[1] =~ /^show$/) {
 			if (  $#cmd == 2){
 				if ($cmd[2] eq "--brief"){
 					&mi_comm("ul_dump", "brief");					
@@ -2771,7 +2769,7 @@ sub opensips_usrloc() {
 
 		}
 
-		case (/^add$/) {
+		elsif ($cmd[1] =~ /^add$/) {
 			my ($UL_EXPIRES, $UL_FLAGS, $BR_FLAGS);
 			if ( $#cmd == 2 ) {
 				# expires 0 means persistent contact
@@ -2814,7 +2812,7 @@ sub opensips_usrloc() {
 			
 		}
 
-		case (/^rm$/) {
+		elsif ($cmd[1] =~ /^rm$/) {
 			if ( $#cmd == 2 ) {
 				&set_user($cmd[2]);
 				&mi_comm(join(" ","ul_rm",$USRLOC_TABLE, $OSIPSUSER."\@".$OSIPSDOMAIN));
@@ -2842,9 +2840,6 @@ sub opensips_usrloc() {
 
 		}
 	
-	}
-
-
 }
 
 
@@ -2884,8 +2879,7 @@ sub domain() {
 	}	
 
 	
-	switch ( $cmd[1] ) {
-		case (/^reload$/) {
+		if ($cmd[1] =~ /^reload$/) {
 
 			if ( $#cmd gt 1 ) {
 				print "Too many parameters\n!";
@@ -2897,7 +2891,7 @@ sub domain() {
 			&mi_comm('domain_reload');
 		}
 		
-		case (/^show$/) {
+		elsif ($cmd[1] =~ /^show$/) {
 
 			if ( $#cmd gt 1 ) {
 				print "Too many parameters\n!";
@@ -2909,7 +2903,7 @@ sub domain() {
 			&mi_comm('domain_dump');
 		}
 		
-		case (/showdb$/) {
+		elsif ($cmd[1] =~ /showdb$/) {
 			if ( $#cmd gt 1 ) {
 				print "Too many parameters\n!";
 				&usage_domain();
@@ -2940,7 +2934,7 @@ sub domain() {
 
 		}
 
-		case (/^add$/) {
+		elsif ($cmd[1] =~ /^add$/) {
 	
 			if ( $#cmd lt 2 ) {
 				print "Too few parameters\n!";
@@ -2984,7 +2978,7 @@ sub domain() {
 			}
 		}
 		
-		case (/^rm$/) {	
+		elsif ($cmd[1] =~ /^rm$/) {	
 			&require_dbengine();
 			if ( $#cmd lt 2 ) {
 				print "Too few parameters!\n";
@@ -3015,7 +3009,7 @@ sub domain() {
 
 		}
 	
-		case (/^h$/) {
+		elsif ($cmd[1] =~ /^h$/) {
 			&usage_domain();
 		}
 
@@ -3026,7 +3020,6 @@ sub domain() {
 		}
 
 
-	}
 }
 
 
@@ -3048,22 +3041,21 @@ sub trusted() {
 		return;
 	}	
 
-	switch ($cmd[1]) {
-		case (/^reload$/) {
+		if ($cmd[1] =~ /^reload$/) {
 
 			&require_ctlengine();
 			&mi_comm('trusted_reload');
 
 		}
 		
-		case (/^dump$/) {
+		elsif ($cmd[1] =~ /^dump$/) {
 		
 			&require_ctlengine();
 			&mi_comm('trusted_dump');
 
 		}	
 
-		case (/^show$/) {
+		elsif ($cmd[1] =~ /^show$/) {
 		
 			&require_dbengine();
 
@@ -3090,7 +3082,7 @@ sub trusted() {
 	
 		}	
 
-		case (/^add$/) {
+		elsif ($cmd[1] =~ /^add$/) {
 			
 			my $PATTERN;
 
@@ -3150,7 +3142,7 @@ sub trusted() {
 			}
 		}
 
-		case (/^rm$/) {
+		elsif ($cmd[1] =~ /^rm$/) {
 
 			&require_dbengine();
 			if ( $#cmd lt 2 ) {
@@ -3177,7 +3169,7 @@ sub trusted() {
 	
 		}
 
-		case (/^h$/) {
+		elsif ($cmd[1] =~ /^h$/) {
 		
 			&usage_trusted();
 			
@@ -3189,7 +3181,6 @@ sub trusted() {
 
 		}
 
-	}
 }
 
 
@@ -3210,9 +3201,7 @@ sub opensips_dispatcher() {
 	&require_dbengine();
 	&require_ctlengine();
 	
-	switch ($cmd[1]) {
-	
-		case (/^show$/) {
+		if ($cmd[1] =~ /^show$/) {
 	
 			print "dispatcher gateways\n";
 			
@@ -3243,7 +3232,7 @@ sub opensips_dispatcher() {
 
 		}	
 
-		case (/^addgw$/) {
+		elsif ($cmd[1] =~ /^addgw$/) {
 
 			my ( $DISPATCHER_DESCRIPTION, $DISPATCHER_SETID, $DISPATCHER_DESTINATION, $DISPATCHER_FLAGS);
 	
@@ -3296,7 +3285,7 @@ sub opensips_dispatcher() {
 
 		}	
 
-		case (/^rmgw$/) {
+		elsif ($cmd[1] =~ /^rmgw$/) {
 	
 			if ( $#cmd lt 2 ) {
 				print "missing gateway id to be removed\n";
@@ -3325,18 +3314,18 @@ sub opensips_dispatcher() {
 
 		}	
 
-		case (/^reload$/) {
+		elsif ($cmd[1] =~ /^reload$/) {
 	
 			&mi_comm('ds_reload');						
 
 		}	
 
-		case (/^dump$/) {
+		elsif ($cmd[1] =~ /^dump$/) {
 	
 			&mi_comm('ds_list');
 		}	
 
-		case (/^h$/) {
+		elsif ($cmd[1] =~ /^h$/) {
 	
 			&usage_dispatcher();
 
@@ -3347,9 +3336,6 @@ sub opensips_dispatcher() {
 			print "dispatcher - unknown command $cmd[1]\n";
 
 		}
-
-
-	} 
 
 }
 
@@ -3368,9 +3354,7 @@ sub opensips_cr() {
 	&require_dbengine();
 	&require_ctlengine();
 
-	switch ( $cmd[1] ) {
-		
-		case (/^show$/) {
+		if ($cmd[1] =~ /^show$/) {
 
 			print "cr routing tree\n";
 
@@ -3429,19 +3413,19 @@ sub opensips_cr() {
 			}
 		}
 
-		case (/^reload$/) {
+		elsif ($cmd[1] =~ /^reload$/) {
 
 			&mi_comm('cr_reload_routes');
 		
 		}
 
-		case (/^dump$/) {
+		elsif ($cmd[1] =~ /^dump$/) {
 
 			&mi_comm('cr_dump');
 		
 		}
 
-		case (/^addrt$/) {
+		elsif ($cmd[1] =~ /^addrt$/) {
 
 			if ( $#cmd lt 3 ) {
 				print "cr - missing route_tree\n";
@@ -3477,7 +3461,7 @@ sub opensips_cr() {
 		
 		}
 
-		case (/^rmrt$/) {
+		elsif ($cmd[1] =~ /^rmrt$/) {
 
 			if ( $#cmd lt 2 ) {
 				print "cr - missing route_tree to be removed\n";
@@ -3504,7 +3488,7 @@ sub opensips_cr() {
 		
 		}
 
-		case (/^addcarrier$/) {
+		elsif ($cmd[1] =~ /^addcarrier$/) {
 
 			my ($CARRIER, $SCAN_PREFIX, $DOMAIN, $REWRITE_HOST, $PROB, $STRIP, $REWRITE_PREFIX, $REWRITE_SUFFIX, $COMMENT, $FLAGS, $MASK);
 
@@ -3600,7 +3584,7 @@ sub opensips_cr() {
 		
 		}
 
-		case (/^rmcarrier$/) {
+		elsif ($cmd[1] =~ /^rmcarrier$/) {
 
 			if ( $#cmd lt 4 ) {
 				print "cr - too few parameters\n";
@@ -3631,7 +3615,7 @@ sub opensips_cr() {
 
 		}
 
-		case (/^h$/) {
+		elsif ($cmd[1] =~ /^h$/) {
 	
 			&usage_cr();			
 
@@ -3642,9 +3626,6 @@ sub opensips_cr() {
 			print "cr - unknown command $cmd[1]\n";
 
 		}
-
-	}
-
 
 }
 
@@ -3765,12 +3746,11 @@ sub alias_db() {
 
 
 
-	switch ($cmd[1]) {  
-		case (/(^h$)|(^help$)/) {
+		if ($cmd[1] =~ /(^h$)|(^help$)/) {
 			&usage_alias_db();
 			return;
 		}
-		case (/^list$/) {
+		elsif ($cmd[1] =~ /^list$/) {
 			if ( $#cmd eq 2 ) {
 				# print aliases for user				
 				if ( &check_aor ($cmd[2]) ne 0 ) {
@@ -3863,7 +3843,7 @@ sub alias_db() {
 
 		}
 
-		case (/^show$/) {
+		elsif ($cmd[1] =~ /^show$/) {
 			if ( $#cmd ne 2 ) {
 				print "alias_db - wrong number of params for command [show]\n";
 				&usage_alias_db();
@@ -3921,7 +3901,7 @@ sub alias_db() {
 
 		}
 
-		case (/^add$/) {
+		elsif ($cmd[1] =~ /^add$/) {
 			if ( $#cmd ne 3 ) {
 				&usage_alias_db();
 				return;
@@ -3973,7 +3953,7 @@ sub alias_db() {
 			}				
 		}
 		
-		case (/^rm$/) {
+		elsif ($cmd[1] =~ /^rm$/) {
 			if ( $#cmd != 2 ) {
 				print "alias_db - wrong numbers of parameters\n";
 				&usage_alias_db();
@@ -4015,7 +3995,6 @@ sub alias_db() {
 
 		}		
 		
-	}
 } # end db-aliases
 
 
@@ -4027,95 +4006,85 @@ sub alias_db() {
 sub mi_comm(){
 	my $argument = $_[0]; 
 	if ( ($#_ + 1) gt 0) {
-		switch ($CTLENGINE) {
-			case (/^FIFO$/) {
+			if ($CTLENGINE =~ /^FIFO$/) {
 			
 				&fifo_cmd($argument);	
 
 			}
 
-			case (/^UNIXSOCK$/) {
+			elsif ($CTLENGINE =~ /^UNIXSOCK$/) {
 	
 				&unixsock_cmd($argument);
 
 			}
 
-			case (/^UDP$/) {
+			elsif ($CTLENGINE =~ /^UDP$/) {
 	
 				&udp_cmd($argument);
 
 			}
 
-			case (/^XMLRPC$/) {
+			elsif ($CTLENGINE =~ /^XMLRPC$/) {
 	
 				&xmlrpc_cmd($argument);
 
 			}
-
-		}	
 		
 	} else {
-		switch ( $cmd[0] ) {	
-			case (/^fifo$/) {
+			if ($cmd[0] =~ /^fifo$/) {
 			
 				&fifo_cmd();	
 				
 
 			}
 
-			case (/^unixsock$/) {
+			elsif ($cmd[0] =~ /^unixsock$/) {
 	
 				&unixsock_cmd();
 
 			}
 
-			case (/^udp$/) {
+			elsif ($cmd[0] =~ /^udp$/) {
 	
 				&udp_cmd();
 
 			}
 
-			case (/^xmlrpc/) {
+			elsif ($cmd[0] =~ /^xmlrpc/) {
 	
 				&xmlrpc_cmd();
 
 			}
-
-		}	
-
+		
 	}
 	
 }
 
 
 sub mi_comm_monitor(){
-	switch ($CTLENGINE) {
-		case (/^FIFO$/) {
+		if ( $CTLENGINE =~ /^FIFO$/) {
 			
 			&fifo_opensips_monitor();	
 
 		}
 
-		case (/^UNIXSOCK$/) {
+		elsif ( $CTLENGINE =~ /^UNIXSOCK$/) {
 	
 			&unixsock_opensips_monitor();
 
 		}
 
-		case (/^UDP$/) {
+		elsif ( $CTLENGINE =~ /^UDP$/) {
 	
 			&udp_opensips_monitor();
 
 		}
 
-		case (/^XMLRPC$/) {
+		elsif ( $CTLENGINE =~ /^XMLRPC$/) {
 			my $content = "";
 			&xmlrpc_opensips_monitor();
 
 		}
-
-	}
-	
 }
 
 ##### ----------------------------------------------- #####
@@ -4576,9 +4545,7 @@ sub tls_ca() {
 		return;
 	}
 	
-	switch ($cmd[1]) {
-	
-		case (/^rootCA$/) {
+		if ($cmd[1] =~ /^rootCA$/) {
 		
 
 			if ( $#cmd == 1 ) {
@@ -4639,7 +4606,7 @@ sub tls_ca() {
 
 		}	
 
-		case (/^userCERT$/) {
+		elsif ($cmd[1] =~ /^userCERT$/) {
 
 			if ( $#cmd lt 2 ) {
 				print "Missing user name parameter\n";
@@ -4714,7 +4681,7 @@ sub tls_ca() {
 
 		}
 
-		case (/^h$/) {
+		elsif ($cmd[1] =~ /^h$/) {
 
 			&usage_tls();
 		
@@ -4725,8 +4692,6 @@ sub tls_ca() {
 			print "tls -unknown command $cmd[1]\n";
 
 		}
-
-	}
 }
 
 
@@ -4752,9 +4717,8 @@ sub avpops() {
 
 	my $CLAUSE="";
 	my $i;
-	switch ($cmd[1]) {
 	
-		case (/^list$/) {
+		if ($cmd[1] =~ /^list$/) {
 			$CLAUSE = "";
 			if ($#cmd lt 3) {
 				print "avp - too few parameters\n";
@@ -4765,9 +4729,7 @@ sub avpops() {
 			
 			$i=2;
 			while ( $i lt $#cmd  ){
-				switch ($cmd[$i]) {
-			
-					case (/^-T$/) {												
+					if ($cmd[$i] =~ /^-T$/) {												
 						if ($cmd[1] =~ /(\s+)|-[Tuavt]/ ) {
 							print "table name missing\n";							
 							return;
@@ -4776,7 +4738,7 @@ sub avpops() {
 						}					
 					}	
 
-					case (/^-u$/) {
+					elsif ($cmd[$i] =~ /^-u$/) {
 			
 						if ( $cmd[$i+1] =~ /(\s+)|-[Tuavt]/ ){
 							print "avp list - user id or uuid parameter missing or wrong (user\@domain)\n ";
@@ -4800,7 +4762,7 @@ sub avpops() {
 
 					}
 
-					case (/^-a$/) {
+					elsif ($cmd[$i] =~ /^-a$/) {
 
 						if ( $cmd[1] =~ /(\s+)|-[Tuavt]/ ){
 							print "avp list - attribute name parameter missing\n";
@@ -4814,7 +4776,7 @@ sub avpops() {
 
 					}
 
-					case (/^-v$/) {
+					elsif ($cmd[$i] =~ /^-v$/) {
 
 						if ( $cmd[$i+1] =~ /(\s+)|-[Tuavt]/ ){
 							print "avp list - value parameter missing\n";
@@ -4828,7 +4790,7 @@ sub avpops() {
 
 					}
 
-					case (/^-t$/) {
+					elsif ($cmd[$i] =~ /^-t$/) {
 
 						if ( $cmd[$i+1] =~ /(\s+)|-[Tuavt]/ ){
 							print "avp list - type parameter missing\n";
@@ -4846,8 +4808,6 @@ sub avpops() {
 	
 						print "avp list - unknown parameter $cmd[$i]\n";
 					}
-
-				}								
 				$i+=2;
 			}
 
@@ -4880,7 +4840,7 @@ sub avpops() {
 
 		}	
 
-		case (/^add$/) {
+		elsif ($cmd[1] =~ /^add$/) {
 		
 			my $AVP_UUID="";
 
@@ -4937,7 +4897,7 @@ sub avpops() {
 		
 		}	
 
-		case (/^rm$/) {
+		elsif ($cmd[1] =~ /^rm$/) {
 		
 			$CLAUSE = "";
 			if ($#cmd lt 3) {
@@ -4949,9 +4909,7 @@ sub avpops() {
 
 			$i=2;
 			while ( $i lt $#cmd ){
-				switch ($cmd[$i]) {
-	
-					case ( /^-T$/ ) {						
+					if ($cmd[$i] =~  /^-T$/ ) {						
 						if ( $cmd[$i+1] =~ /(\s+)|-[Tuavt]/ ) {
 							print "avp rm - table name parameter missing\n";							
 							return;
@@ -4960,7 +4918,7 @@ sub avpops() {
 						}					
 					}	
 
-					case (/^-u$/) {
+					elsif ($cmd[$i] =~ /^-u$/) {
 			
 						if ( $cmd[$i+1] =~ /(\s+)|-[Tuavt]/ ){
 							print "avp rm - user id uuid or parameter missing\n";
@@ -4984,7 +4942,7 @@ sub avpops() {
 
 					}
 
-					case (/^-a$/) {
+					elsif ($cmd[$i] =~ /^-a$/) {
 
 						if ( $cmd[$i+1] =~ /(\s+)|-[Tuavt]/ ){
 							print "avp rm - attribute name parameter missing\n";
@@ -4998,7 +4956,7 @@ sub avpops() {
 
 					}
 
-					case (/^-v$/) {
+					elsif ($cmd[$i] =~ /^-v$/) {
 
 						if ( $cmd[$i+1] =~ /(\s+)|-[Tuavt]/ ){
 							print "avp rm - value parameter missing\n";
@@ -5012,7 +4970,7 @@ sub avpops() {
 
 					}
 
-					case (/^-t$/) {
+					elsif ($cmd[$i] =~ /^-t$/) {
 
 						if ( $cmd[$i+1] =~ /(\s+)|-[Tuavt]/ ){
 							print "avp rm - type parameter missing\n";
@@ -5031,7 +4989,6 @@ sub avpops() {
 						print "avp list - unknown parameter $cmd[2]\n";
 					}
 
-				}								
 				$i+=2;
 			}
 
@@ -5051,7 +5008,7 @@ sub avpops() {
 			}		
 		}	
 
-		case (/^(help$)|(h$)/) {
+		elsif ($cmd[1] =~ /^(help$)|(h$)/) {
 
 			&usage_avp();
 	
@@ -5062,7 +5019,6 @@ sub avpops() {
 			print "avp -unknown command $cmd[1]\n";
 
 		}
-	}
 }
 
 
@@ -5084,9 +5040,7 @@ sub db_ops() {
 
 	&require_dbengine();
 
-	switch ($cmd[1]) {
-
-		case (/(^exec$)|(^query$)/) {
+		if ($cmd[1] =~ /(^exec$)|(^query$)/) {
 			if ( $#cmd lt 2 ) {
 				print "Missing query parameter\n";
 				return;
@@ -5096,14 +5050,14 @@ sub db_ops() {
 
 		}
 
-		case (/(^roexec$)|(^roquery$)/) {
+		elsif ($cmd[1] =~ /(^roexec$)|(^roquery$)/) {
 			if ( $#cmd lt 2 ) {
 				print "Missing query parameter\n";
 				return;
 			}
 			&db_ro_query($cmd[2]);
 		}
-		case (/^run$/) {
+		elsif ($cmd[1] =~ /^run$/) {
 			
 			my $QUERY;
 
@@ -5120,7 +5074,7 @@ sub db_ops() {
 			&db_query($QUERY);
 			
 		}
-		case (/^rorun$/) {
+		elsif ($cmd[1] =~ /^rorun$/) {
 	
 			my $QUERY;
 	
@@ -5135,7 +5089,7 @@ sub db_ops() {
 			#}
 			&db_ro_query($QUERY);
 		}
-		case (/^show$/) {
+		elsif ($cmd[1] =~ /^show$/) {
 			if ( $#cmd != 2 ) {
 				print "Missing table parameter\n";
 				return;
@@ -5144,13 +5098,12 @@ sub db_ops() {
 			&db_ro_query("SELECT * FROM $cmd[2]");
 			
 		}
-		case (/^h$/) {
+		elsif ($cmd[1] =~ /^h$/) {
 			&usage_db_ops();
 		}
 		else {
 			print "db -unknown command $cmd[1]\n";
 		}
-	}
 }
 
 
@@ -5171,10 +5124,8 @@ sub speeddial() {
 	}
 	
 	&require_dbengine();
-	
-	switch ($cmd[1]) {
 
-		case (/^list$/) {
+		if ($cmd[1] =~ /^list$/) {
 	
 			if ($#cmd == 2) {
 				# print speed-dials for user
@@ -5258,7 +5209,7 @@ sub speeddial() {
 
 		}	
 
-		case (/^show$/) {
+		elsif ($cmd[1] =~ /^show$/) {
 
 			if ( $#cmd lt 2 ) {
 				print "speeddial - wrong number of params for command [show]\n";
@@ -5302,7 +5253,7 @@ sub speeddial() {
 
 		}	
 
-		case (/^add$/) {
+		elsif ($cmd[1] =~ /^add$/) {
 
 			if ( $#cmd != 4 ) {
 				if ( $#cmd != 5 ) {
@@ -5348,7 +5299,7 @@ sub speeddial() {
 			}
 		}	
 
-		case (/^rm$/) {
+		elsif ($cmd[1] =~ /^rm$/) {
 		
 
 			if ($DBENGINE =~ /^DB_BERKELEY$/) {
@@ -5394,7 +5345,7 @@ sub speeddial() {
 			}
 		}	
 
-		case (/^(help$)|(h$)/) {
+		elsif ($cmd[1] =~ /^(help$)|(h$)/) {
 
 			&usage_speeddial();			
 
@@ -5403,9 +5354,6 @@ sub speeddial() {
 		else {
 			print "speeddial -unknown command $cmd[1]\n";
 		}
-
-
-	}
 
 }
 
@@ -5439,9 +5387,7 @@ sub opensips_dialplan() {
 		return;
 	}
 	
-	switch ( $cmd[1] ) {
-	
-		case (/^show$/) {
+		if ($cmd[1] =~ /^show$/) {
 			
 			if ( $#cmd == 2 ) {
 				print "dialplan $cmd[2] tables\n";
@@ -5502,13 +5448,13 @@ sub opensips_dialplan() {
 
 		}
 
-		case (/^reload$/) {
+		elsif ($cmd[1] =~ /^reload$/) {
 
 			&mi_comm('dp_reload');			
 
 		}
 
-		case (/^addrule$/) {
+		elsif ($cmd[1] =~ /^addrule$/) {
 
 			if ( $#cmd lt 9 ) {
 				print "Too few parameters\n";
@@ -5520,18 +5466,16 @@ sub opensips_dialplan() {
 			my $DIALPLAN_PR = $cmd[3];
 			my $DIALPLAN_MATCH_OP = $cmd[4];
 
-			switch ($DIALPLAN_MATCH_OP) {
-				case (/^equal$/) {
+				if ($DIALPLAN_MATCH_OP =~ /^equal$/) {
 					$DIALPLAN_MATCH_OP = 0;
 				}
-				case (/^regexp$/) {
+				elsif ($DIALPLAN_MATCH_OP =~ /^regexp$/) {
 					$DIALPLAN_MATCH_OP = 1;
 				}
 				else {
 					print "dialplan - unexpected $DIALPLAN_MATCH_OP for operating matching. Use 'equal' or 'regexp'!\n";
 					return;
 				}
-			}
 
 			my $DIALPLAN_MATCH_EXP = $cmd[5];
 			my $DIALPLAN_MATCH_LEN = $cmd[6];
@@ -5571,7 +5515,7 @@ sub opensips_dialplan() {
 		}
 
 
-		case (/^rm$/) {
+		elsif ($cmd[1] =~ /^rm$/) {
 			print "rm";
 			if ( $DBENGINE =~ /^DBTEXT$/  ) {
 				system("$DBTEXTCMD"," DELETE FROM $DIALPLAN_TABLE ");
@@ -5587,7 +5531,7 @@ sub opensips_dialplan() {
 			&mi_comm('dp_reload');			
 		}
 
-		case (/^rmpid$/) {
+		elsif ($cmd[1] =~ /^rmpid$/) {
 
 			if ( $#cmd lt 2 ) {
 				print "Too few parameters\n";
@@ -5611,7 +5555,7 @@ sub opensips_dialplan() {
 
 		}
 
-		case (/^rmrule$/) {
+		elsif ($cmd[1] =~ /^rmrule$/) {
 
 			if ( $#cmd lt 3 ) {
 				print "Too few parameters\n";
@@ -5640,7 +5584,7 @@ sub opensips_dialplan() {
 
 		}
 
-		case (/^h$/) {
+		elsif ($cmd[1] =~ /^h$/) {
 			
 			&usage_dialplan();
 		
@@ -5649,7 +5593,6 @@ sub opensips_dialplan() {
 		else {
 			print "dialplan -unknown command $cmd[1]\n";
 		}
-	}
 }
 
 
@@ -5681,9 +5624,7 @@ sub opensips_version() {
 #
 sub opensips_db() {
 
-	switch ($cmd[0]) {
-
-		case /(^migrate$)/{
+		if ($cmd[0] =~ /^migrate$/){
 			
 			if ($cmd[1] =~ /^h$/) {
 				&usage_db();
@@ -5718,7 +5659,7 @@ sub opensips_db() {
 			}
 		}
 
-		case /(^copy$)/{
+		elsif ($cmd[0] =~ /^copy$/) {
 
 			my ( $tmp_file);
 			# copy database to some other name
@@ -5752,7 +5693,7 @@ sub opensips_db() {
 			return;
 		}
 
-		case /(^backup$)/{
+		elsif ($cmd[0] =~ /^backup$/) {
 			if ( ($DBENGINE =~ /^DB_BERKELEY$/) || ( $DBENGINE =~ /^DBTEXT$/ ) ) {
 				print "$DBENGINE doesn't support the backup operation\n";
 				return;
@@ -5769,7 +5710,7 @@ sub opensips_db() {
 
 		}
 
-		case /(^restore$)/{
+		elsif ($cmd[0] =~ /^restore$/) {
 
 			if ( ($DBENGINE =~ /^DB_BERKELEY$/) || ($DBENGINE =~ /^dbtext$/) ) {
 				print "$DBENGINE doesn't support the restore operation\n";
@@ -5786,7 +5727,7 @@ sub opensips_db() {
 			#&opensips_restore($cmd[1],);
 		}
 
-		case /(^create$)/{
+		elsif ($cmd[0] =~ /^create$/) {
 
 			if ($cmd[1] =~ /^h$/) {
 				&usage_db();
@@ -5798,7 +5739,7 @@ sub opensips_db() {
 			&opensips_create($cmd[1]);
 		}
 
-		case /(^presence$)/{
+		elsif ($cmd[0] =~ /^presence$/) {
 
 			if ($cmd[1] =~ /^h$/) {
 				&usage_db();
@@ -5811,7 +5752,7 @@ sub opensips_db() {
 			&presence_create($cmd[1]);
 		}
 
-		case /(^extra$)/ {
+		elsif ($cmd[0] =~ /^extra$/) {
 
 			if ($cmd[1] =~ /^h$/) {
 				&usage_db();
@@ -5824,7 +5765,7 @@ sub opensips_db() {
 			&extra_create($cmd[1]);
 		}
 
-		case /(^drop$)/ {
+		elsif ($cmd[0] =~ /^drop$/) {
 	
 			if ($cmd[1] =~ /^h$/) {
 				&usage_db();
@@ -5836,7 +5777,7 @@ sub opensips_db() {
 			&opensips_drop($cmd[1]);
 		}
 
-		case /(^reinit$)/{
+		elsif ($cmd[0] =~ /^reinit$/) {
 
 			# delete database and create a new one
 			# create new database structures
@@ -5856,115 +5797,101 @@ sub opensips_db() {
 
 		}
 
-		case /(^bdb$)|(^db_berkeley$)/{
+		elsif ($cmd[0] =~ /(^bdb$)|(^db_berkeley$)/){
 			&opensips_berkeley();
 		}
 
 		else {
 			print "Unknown command\n";
 		}
-
-	}
 }
 
 sub opensips_create() {
 
 	my $db = $_[0];
 
-	switch ($DBENGINE) {				
-		case /(^mysql$)/ {	
+		if ($DBENGINE =~ /^mysql$/) {	
 			$PW = &prompt_pw();
 			&mysql_opensips_create($db);
 		}
-		case /(^oracle$)/ {
+		elsif ($DBENGINE =~ /^oracle$/) {
 			#&oracle_opensips_create($db);
 		}
-		case /(^Pg$)/ {
+		elsif ($DBENGINE =~ /^Pg$/) {
 			&pgsql_opensips_create($db);
 		}
-		case /(^DBTEXT$)/ {
+		elsif ($DBENGINE =~ /^DBTEXT$/) {
 			&dbtext_opensips_create($db);
 		}
-		case /(^DB_BERKELEY$)/ {
+		elsif ($DBENGINE =~  /^DB_BERKELEY$/) {
 			&bdb_opensips_create($db);
 		}
-	}
-
 }
 
 sub presence_create() {
 
 	my $db = $_[0];
 
-	switch ($DBENGINE) {
-
-		case /(^mysql$)/ {
+		if ($DBENGINE =~ /^mysql$/) {
 			$PW=&prompt_pw();
 			&mysql_presence_create($db);
 		}
-		case /(^oracle$)/ {
+		elsif ($DBENGINE =~  /^oracle$/) {
 			#&oracle_presence_create($db);
 		}
-		case /(^Pg$)/ {
+		elsif ($DBENGINE =~ /^Pg$/) {
 			&pgsql_presence_create($db);
 		}
-		case /(^DBTEXT$)/ {
+		elsif ($DBENGINE =~ /^DBTEXT$/) {
 			&dbtext_presence_create($db);
 		}
-		case /(^DB_BERKELEY$)/ {
+		elsif ($DBENGINE =~ /^DB_BERKELEY$/) {
 			&bdb_presence_create($db);
 		}
-
-	}
 }
 
 sub extra_create() {
 
 	my $db = $_[0];
 
-	switch ($DBENGINE) {
-		case /(^mysql$)/ {
+		if ($DBENGINE =~ /^mysql$/) {
 			$PW = &prompt_pw();
 			&mysql_extra_create($cmd[1]);
 		}
-		case /(^oracle$)/ {
+		elsif ($DBENGINE =~ /^oracle$/) {
 			#&oracle_extra_create($db);
 		}
-		case /(^Pg$)/ {
+		elsif ($DBENGINE =~ /^Pg$/) {
 			&pgsql_extra_create($db);
 		}
-		case /(^DBTEXT$)/ {
+		elsif ($DBENGINE =~ /^DBTEXT$/) {
 			&dbtext_extra_create($db);
 		}
-		case /(^DB_BERKELEY$)/ {
+		elsif ($DBENGINE =~ /^DB_BERKELEY$/) {
 			&bdb_extra_create($db);
 		}
-
-	}
 }
 
 sub opensips_drop() {
 
 	my $db = $_[0];
 
-	switch ($DBENGINE) {
-		case /(^mysql$)/ {
+		if ($DBENGINE =~ /^mysql$/) {
 			$PW = &prompt_pw();
 			&mysql_opensips_drop($db);
 		}
-		case /(^oracle$)/ {
+		elsif ($DBENGINE =~ /^oracle$/) {
 			#&oracle_opensips_drop($db);
 		}
-		case /(^Pg$)/ {
+		elsif ($DBENGINE =~ /^Pg$/) {
 			&pgsql_opensips_drop($db);
 		}
-		case /(^DBTEXT$)/ {
+		elsif ($DBENGINE =~ /^DBTEXT$/) {
 			&dbtext_opensips_drop($db);
 		}
-		case /(^DB_BERKELEY$)/ {
+		elsif ($DBENGINE =~ /^DB_BERKELEY$/) {
 			&bdb_opensips_drop($db);
 		}
-	}
 }
 
 # pars: <database name>
@@ -6995,18 +6922,15 @@ sub db_query() {
 
 	my $query = $_[0];
 
-	switch ($DBENGINE) {
-		case /(^mysql$)/ {
+		if ($DBENGINE =~  /^mysql$/) {
 			&db_mysql_query($query);
 		}
-		case /(^Pg$)/ {
+		elsif ($DBENGINE =~ /^Pg$/) {
 			&db_pgsql_query($query);
 		}
-		case /(^DBTEXT$)/ {
+		elsif ($DBENGINE =~ /^DBTEXT$/) {
 			&db_dbtext_query($query);
 		}
-	}
-
 }
 
 
@@ -7014,18 +6938,15 @@ sub db_ro_query(){
 
 	my $query = $_[0];	
 
-	switch ($DBENGINE) {
-		case /(^mysql$)/ {
+		if ($DBENGINE =~ /^mysql$/) {
 			&db_mysql_ro_query($query);
 		}
-		case /(^Pg$)/ {
+		elsif ($DBENGINE =~ /^Pg$/) {
 			&db_pgsql_ro_query($query);
 		}
-		case /(^DBTEXT$)/ {
+		elsif ($DBENGINE =~ /^DBTEXT$/) {
 			&db_dbtext_query($query);
 		}
-	}
-
 }
 
 
@@ -7096,38 +7017,37 @@ sub opensips_berkeley()  { # parms: <op> <arg1> <arg2>
 		return;		
 	}
 
-	switch ($cmd[1]) {
-		case /(^list$)|(^ls$)/ {
+		if ($cmd[1] =~  /(^list$)|(^ls$)/) {
 			system("ls -al $DB_PATH");
 		}
 
-		case /(^cat$)/ {
+		elsif ($cmd[1] =~ /^cat$/) {
 			&opensips_cat($cmd[2],$DB_PATH);			
 		}
 
-		case /(^swap$)/ {
+		elsif ($cmd[1] =~ /^swap$/) {
 			&opensips_swap($cmd[2], $DB_PATH);
 		}
 
-		case /(^append$)/ {
+		elsif ($cmd[1] =~ /^append$/) {
 			&opensips_append($cmd[2], $cmd[3], $DB_PATH);
 		}
 
-		case /(^newappend$)/ {
+		elsif ($cmd[1] =~ /^newappend$/) {
 			#shift
 			#opensips_newappend  $1 $2 $DB_PATH
 			#exit $?
 		}
 
-		case /(^export$)/ {
+		elsif ($cmd[1] =~ /^export$/) {
 			&opensips_export($cmd[2],$DB_PATH);
 		}
 
-		case /(^migrate$)/ {
+		elsif ($cmd[1] =~ /^migrate$/) {
 			&opensips_migrate($cmd[2], $DB_PATH);
 		}
 	
-		case /(^import$)/ {
+		elsif ($cmd[1] =~ /^import$/) {
 			#shift
 			#opensips_import  $1 $DB_PATH
 			#exit $?
@@ -7136,7 +7056,6 @@ sub opensips_berkeley()  { # parms: <op> <arg1> <arg2>
 		else {
 			&berkeley_usage();
 		}
-	}
 }
 
 ##
@@ -7601,9 +7520,7 @@ sub opensips_dr() {
 			return;
 		}	  
 	
-		switch ($cmd[2]) {
-
-			case /(^add$)/ {
+			if ($cmd[2] =~ /^add$/) {
 				$type = 0;
 				$strip = 0; 
 				$pri_prefix = 'NULL';
@@ -7618,22 +7535,20 @@ sub opensips_dr() {
 					while ( $i < $#cmd+1 ) {
 						@var = split ("=",$cmd[$i]);
 						print "var[1]".$var[1];
-						switch ($var[0]) {
-							case /(type)/ {
+							if ($var[0] =~ /type/) {
 								print $type . "before\n";
 								$type = $var[1]; 
 								print $type . "after\n";
 							}
-							case /(strip)/ {
+							elsif ($cmd[2] =~ /strip/) {
 								$strip = $var[1];
 							}
-							case /(pri_prefix)/ {
+							elsif ($cmd[2] =~ /pri_prefix/) {
 								$pri_prefix = $var[1];
 							}
-							case /(description)/ {
+							elsif ($cmd[2] =~ /description/) {
 								$description = $var[1];
 							}
-						}	
 						$i++;
 					}
 					print $type . "after loop\n";
@@ -7666,7 +7581,7 @@ sub opensips_dr() {
 	
 			}
 
-			case /(^rm$)/ {
+			elsif ($cmd[2] =~ /^rm$/) {
 
 				@var = split("=",$cmd[3]);
 				$gwid = $var[1];
@@ -7688,7 +7603,7 @@ sub opensips_dr() {
 
 			}
 
-			case /(^list$)/ {
+			elsif ($cmd[2] =~ /^list$/) {
 		
 				if ( $#cmd == 2 ) {
 					if ( $DBENGINE =~ /^DBTEXT$/ )	{
@@ -7711,71 +7626,66 @@ sub opensips_dr() {
 					return;	
 				} elsif ( $#cmd == 3 ) {
 					@var = split("=",$cmd[3]);	
-					switch ( $var[0] ) {
 				
-						case /(^type$)/ {
-							$type = $var[1];
+					if ($var[0] =~ /^type$/) {
+						$type = $var[1];
  
-							#prepare query
-					
-							#if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
-							#	my $key = ;
-							#	&bdb_select_where($DR_GW_TABLE,$key);
-							#} els
-							if ( $DBENGINE =~ /^DBTEXT$/ )	{
-								system("$DBTEXTCMD"," SELECT * FROM $DR_GW_TABLE WHERE $dr_gw_table{'DR_GW_TYPE_COLUMN'}=$var[1] ");
-							} else {
+						#prepare query
+				
+						#if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
+						#	my $key = ;
+						#	&bdb_select_where($DR_GW_TABLE,$key);
+						#} els
+						if ( $DBENGINE =~ /^DBTEXT$/ )	{
+							system("$DBTEXTCMD"," SELECT * FROM $DR_GW_TABLE WHERE $dr_gw_table{'DR_GW_TYPE_COLUMN'}=$var[1] ");
+						} else {
+							$sth = $dbh->prepare( " SELECT * FROM $DR_GW_TABLE WHERE $dr_gw_table{'DR_GW_TYPE_COLUMN'}=$var[1]");	
+							#execute the query
+							$sth->execute( );
+							warn "Retrieving data from table failed", $sth->errstr( ), "\n" if $sth->err( );
+		
+							#Retrieve the results of a row of data and print
+							print "\tQuery results:\n================================================\n";
+							while ( @row = $sth->fetchrow_array( ) )  {
+								print "gwid=$row[0] type=$row[1] address=$row[2] strip=$row[3] ".
+								      " pri_prefix=$row[4] description=$row[5]\n";
+							}	
+							$sth->finish();
+						}		
+					}
+					elsif ($var[0] =~ /^address$/) {
 
-								$sth = $dbh->prepare( " SELECT * FROM $DR_GW_TABLE WHERE $dr_gw_table{'DR_GW_TYPE_COLUMN'}=$var[1]");	
+						#prepare query
+						#if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
+						#	my $key = join(" ",$TMP_OSIPSUSER,$TMP_OSIPSDOMAIN);
+						#	&bdb_select_where($DA_TABLE,$key,$value);
+						#} els
+						if ( $DBENGINE =~ /^DBTEXT$/ )	{
+						    system("$DBTEXTCMD"," SELECT * FROM $DR_GW_TABLE WHERE  $dr_gw_table{'DR_GW_ADDRESS_COLUMN'}=\'$var[1]\' ");		
+						} else {
+						    $sth = $dbh->prepare( " SELECT * FROM $DR_GW_TABLE WHERE $dr_gw_table{'DR_GW_ADDRESS_COLUMN'}=\'$var[1]\' " );
+	
+	 					    #execute the query
+						    $sth->execute( );
+						    warn "Retrieving data from table failed", $sth->errstr( ), "\n" if $sth->err( );
 		
-								#execute the query
-								$sth->execute( );
-								warn "Retrieving data from table failed", $sth->errstr( ), "\n" if $sth->err( );
-			
-								#Retrieve the results of a row of data and print
-								print "\tQuery results:\n================================================\n";
-								while ( @row = $sth->fetchrow_array( ) )  {
-									print "gwid=$row[0] type=$row[1] address=$row[2] strip=$row[3] pri_prefix=$row[4] description=$row[5]\n";
-								}	
-								$sth->finish();
-							}		
-						}
-						case /(^address$)/ {
-
-							#prepare query
-							#if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
-							#	my $key = join(" ",$TMP_OSIPSUSER,$TMP_OSIPSDOMAIN);
-							#	&bdb_select_where($DA_TABLE,$key,$value);
-							#} els
-							if ( $DBENGINE =~ /^DBTEXT$/ )	{
-							    system("$DBTEXTCMD"," SELECT * FROM $DR_GW_TABLE WHERE  $dr_gw_table{'DR_GW_ADDRESS_COLUMN'}=\'$var[1]\' ");		
-							} else {
-							    $sth = $dbh->prepare( " SELECT * FROM $DR_GW_TABLE WHERE $dr_gw_table{'DR_GW_ADDRESS_COLUMN'}=\'$var[1]\' " );
-		
-								#execute the query
-								$sth->execute( );
-								warn "Retrieving data from table failed", $sth->errstr( ), "\n" if $sth->err( );
-		
-								#Retrieve the results of a row of data and print
-								print "\tQuery results:\n================================================\n";
-								while ( @row = $sth->fetchrow_array( ) )  {
-							 		     print "gwid=$row[0] type=$row[1] address=$row[2] strip=$row[3] pri_prefix=$row[4] description=$row[5]\n";
-								}	
-								$sth->finish();
-							}		
-						}
+						    #Retrieve the results of a row of data and print
+						    print "\tQuery results:\n================================================\n";
+						    while ( @row = $sth->fetchrow_array( ) )  {
+						    	print "gwid=$row[0] type=$row[1] address=$row[2] strip=$row[3] ".
+							      " pri_prefix=$row[4] description=$row[5]\n";
+							}	
+						$sth->finish();
+						}		
 					}
 				}
 			}
 
-			case /(^h$)/ {
+			elsif ($cmd[2] =~ /^h$/) {
 				&usage_dr();
 			}
 
 			else {print "Not an droute option!!\n"};
-
-		}
-
 
 		} elsif ( $cmd[1] =~ /(^rules$)/ ) {
 
@@ -7789,9 +7699,7 @@ sub opensips_dr() {
 				return;
 			}
 
-			switch ($cmd[2]) {
-
-				case /(^add$)/ {
+				if ($cmd[2] =~ /^add$/) {
 					$groupid = ' ';
 				    	$prefix = ' ';
 					$timerec = ' ';
@@ -7808,28 +7716,26 @@ sub opensips_dr() {
 						$i += 4;		
 						while ( $i < $#cmd+1 ) {
 							@var = split ("=",$cmd[$i]);				
-							switch ($var[0]) {
-								case /(^groupid$)/ {
+								if ($var[0] =~ /^groupid$/) {
 									$groupid = $var[1]; 
 								}
-								case /(^prefix$)/ {
+								elsif ($var[0] =~ /^prefix$/) {
 									$prefix = $var[1];
 								}
-								case /(^timerec$)/ {
+								elsif ($var[0] =~ /^timerec$/) {
 									$timerec = $var[1];
 								}
-								case /(^priority$)/ {
+								elsif ($var[0] =~ /^priority$/) {
 									$priority = $var[1];
 								}
-								case /(^routeid$)/ {
+								elsif ($var[0] =~ /^routeid$/) {
 									$routeid = $var[1];
 								}
-								case /(^description$)/ {
+								elsif ($var[0] =~ /^description$/) {
 									$description = $var[1];
 								}
 							}	
 							$i++;
-						}
 					}
 
 					#prepare query
@@ -7862,7 +7768,7 @@ sub opensips_dr() {
 						
 				}
 
-				case /(^rm$)/ {
+				elsif ($cmd[2] =~ /^rm$/) {
 
 					@var = split("=",$cmd[3]);
 					$ruleid = $var[1];
@@ -7883,7 +7789,7 @@ sub opensips_dr() {
 					}		
 				}
 
-				case /(^list$)/ {
+				elsif ($cmd[2] =~ /^list$/) {
 					if ( $#cmd == 2 ) {
 						if ( $DBENGINE =~ /^DBTEXT$/ )	{
 							system("$DBTEXTCMD"," SELECT * FROM $DR_RULES_TABLE ");
@@ -7905,9 +7811,8 @@ sub opensips_dr() {
 						return;	
 					} elsif ( $#cmd == 3 ) {
 						@var = split("=",$cmd[3]);	
-						switch ( $var[0] ) {
 				
-							case /(^gwlist$)/ {
+						if ($var[0] =~ /^gwlist$/) {
 								$gwlist = $var[1];
 		 
 								#prepare query
@@ -7930,12 +7835,14 @@ sub opensips_dr() {
 									#Retrieve the results of a row of data and print
 									print "\tQuery results:\n================================================\n";
 									while ( @row = $sth->fetchrow_array( ) )  {
-										print "ruleid=$row[0] groupid=$row[1] prefix=$row[2] timerec=$row[3] priority=$row[4] routeid=$row[5] gwlist=$row[6] description=$row[7]\n";
+										print "ruleid=$row[0] groupid=$row[1] prefix=$row[2] ".
+										      "timerec=$row[3] priority=$row[4] routeid=$row[5] ".
+										      "gwlist=$row[6] description=$row[7]\n";
 									}	
 									$sth->finish();
 								}		
 							}
-							case /(^groupid$)/ {
+							elsif ($var[0] =~ /^groupid$/) {
 								$groupid = $var[1];
 								#prepare query
 								#if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
@@ -7957,24 +7864,22 @@ sub opensips_dr() {
 									#Retrieve the results of a row of data and print
 									print "\tQuery results:\n================================================\n";
 									while ( @row = $sth->fetchrow_array( ) )  {
-										print "ruleid=$row[0] groupid=$row[1] prefix=$row[2] timerec=$row[3] priority=$row[4] routeid=$row[5] gwlist=$row[6] description=$row[7]\n";
+										print "ruleid=$row[0] groupid=$row[1] prefix=$row[2] ".
+										      "timerec=$row[3] priority=$row[4] routeid=$row[5] ".
+										      "gwlist=$row[6] description=$row[7]\n";
 									}	
 									$sth->finish();
 								}		
 							}
-						}
 					}
 
 				}
 
-				case /(^h$)/ {
+				elsif ($cmd[2] =~ /^h$/) {
 					&usage_dr();
 		     	        }
 		 		
 				else {print "Not an dr_rules option!!\n"};
-
-			}
-
 
 		}
 }
