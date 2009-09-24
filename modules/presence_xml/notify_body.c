@@ -137,7 +137,7 @@ int pres_apply_auth(str* notify_body, subs_t* subs, str** final_nbody)
 	*final_nbody= n_body;
 	return 1;
 
-}	
+}
 
 str* get_final_notify_body( subs_t *subs, str* notify_body, xmlNodePtr rule_node)
 {
@@ -161,14 +161,15 @@ str* get_final_notify_body( subs_t *subs, str* notify_body, xmlNodePtr rule_node
 	{
 		LM_ERR("while allocating memory\n");
 		return NULL;
-	}	
+	}
 
 	memset(new_body, 0, sizeof(str));
 
 	doc = xmlParseMemory(notify_body->s, notify_body->len);
-	if(doc== NULL) 
+	if(doc== NULL)
 	{
-		LM_ERR("while parsing the xml body message\n");
+		LM_ERR("while parsing the xml body message\n[%.*s]\n",
+				notify_body->len, notify_body->s);
 		goto error;
 	}
 	doc_root = xmlDocGetNodeByName(doc,"presence", NULL);

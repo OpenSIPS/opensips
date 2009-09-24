@@ -426,7 +426,6 @@ error:
 
 int pres_get_rules_doc(str* user, str* domain, str** rules_doc)
 {
-	
 	return get_rules_doc(user, domain, PRES_RULES, rules_doc);
 }
 
