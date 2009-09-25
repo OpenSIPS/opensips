@@ -337,6 +337,10 @@ static int re_init_statement(const db_con_t* conn, struct prep_stmt *pq_ptr,
 		}
 		/* if code==1, it means a reconnect happened, so we try once more */
 	}
+
+	/* destroy the statement only, but keep the context */
+	mysql_stmt_close(ctx->stmt);
+	ctx->stmt = NULL;
 	return -1;
 
 error:
