@@ -724,7 +724,7 @@ void timer_send_notify(unsigned int ticks,void *param)
 				if(buf_len+ add_len > size)
 					REALLOC_BUF;
 				
-				buf_len+= sprintf(buf+ buf_len, "--%.*s\r\n\r\n", bstr.len, bstr.s);
+				buf_len+= sprintf(buf+ buf_len, "--%.*s\r\n", bstr.len, bstr.s);
 				buf_len+= sprintf(buf+ buf_len, "Content-Transfer-Encoding: binary\r\n");
 				buf_len+= sprintf(buf+ buf_len, "Content-ID: <%.*s>\r\n", cid.len, cid.s);
 				buf_len+= sprintf(buf+ buf_len, "Content-Type: %s\r\n\r\n", content_type.s);
