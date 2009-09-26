@@ -172,10 +172,11 @@ static int datagram_recur_write_tree(datagram_stream *dtgram,
 int mi_datagram_write_tree(datagram_stream * dtgram, struct mi_root *tree)
 {
 	str code;
-	dtgram->current = dtgram->start;
-	dtgram->len = mi_write_buffer_len;
 
 	if (!(tree->node.flags & MI_WRITTEN)) {
+		/* no write so far, so init theoutput  datagram */
+		dtgram->current = dtgram->start;
+		dtgram->len = mi_write_buffer_len;
 		/* write the root node */
 		code.s = int2str((unsigned long)tree->code, &code.len);
 		if (code.len+tree->reason.len+1>dtgram->len) {
@@ -262,6 +263,9 @@ int mi_datagram_flush_tree(datagram_stream * dtgram, struct mi_root *tree)
 	str code;
 
 	if (!(tree->node.flags & MI_WRITTEN)) {
+		/* first writing, so init the tree */
+		dtgram->current = dtgram->start;
+		dtgram->len = mi_write_buffer_len;
 		/* write the root node */
 		code.s = int2str((unsigned long)tree->code, &code.len);
 		if (code.len+tree->reason.len+1>dtgram->len) {
