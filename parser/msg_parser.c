@@ -634,7 +634,7 @@ int parse_msg(char* buf, unsigned int len, struct sip_msg* msg)
 	
 error:
 	/* more debugging, msg->orig is/should be null terminated*/
-	LM_ERR("message=<%.*s>\n", (int)msg->len, ZSW(msg->buf));
+	LM_ERR("message=<%.*s>\n", (int)len, ZSW(buf));
 	return -1;
 }
 
