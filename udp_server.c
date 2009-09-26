@@ -456,14 +456,16 @@ int udp_rcv_loop(void)
 #endif
 
 		if(buf[0] == 0){    /* stun specific */
-		    for(p = cb_list; p; p = p->next){
-			if(p->b == buf[1]){
-			    if(p->func(bind_address->socket, (struct sockaddr_in*)
-				    &from->sin, buf, len, p->param) == 0){
-				break;
-			    }
+			for(p = cb_list; p; p = p->next){
+				if(p->b == buf[1]){
+					if(p->func(bind_address->socket, (struct sockaddr_in*)
+					&from->sin, buf, len, p->param) == 0){
+						/* buffer consumed by callback */
+						break;
+					}
+				}
 			}
-		    }
+			if (p) continue;
 		}
 
 		/* we must 0-term the messages, receive_msg expects it */
