@@ -272,8 +272,6 @@ void stun_loop(int rank){
 }
 
 static int child_init(int rank){
-    LM_NOTICE("init_child [%d]  pid1 [%d]\n", rank, getpid());
-
     sockfd1 = grep1->socket;
     if(grep2)
 	sockfd2 = grep2->socket;
