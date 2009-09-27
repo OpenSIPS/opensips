@@ -393,13 +393,13 @@ int bdb_is_neq_type(db_type_t _t0, db_type_t _t1)
 		case DB_DOUBLE:
 			break;
 		case DB_STRING:
-			if(_t0==DB_STR)
+			if(_t0==DB_STR || _t0==DB_BLOB)
 				return 0;
 		case DB_STR:
 			if(_t0==DB_STRING || _t0==DB_BLOB)
 				return 0;
 		case DB_BLOB:
-			if(_t0==DB_STR)
+			if(_t0==DB_STR || _t0==DB_STRING)
 				return 0;
 		case DB_BITMAP:
 			if (_t0==DB_INT)

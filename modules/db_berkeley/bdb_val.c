@@ -228,14 +228,14 @@ int bdb_val2str(db_val_t* _v, char* _s, int* _len)
 		{	LM_DBG("Converted string to string\n");
 			strncpy(_s, VAL_STRING(_v) , l);
 			_s[l] = 0;
-			*_len = l;
+			*_len = l+1; /* count the 0 also */
 			return 0;
 		}
 		break;
 
 	case DB_STR:
 		l = VAL_STR(_v).len;
-		if (*_len < l) 
+		if (*_len < l)
 		{
 			LM_ERR("Destination buffer too short for str\n");
 			return -5;
@@ -243,8 +243,8 @@ int bdb_val2str(db_val_t* _v, char* _s, int* _len)
 		else 
 		{
 			LM_DBG("Converted str to string\n");
-			strncpy(_s, VAL_STR(_v).s , VAL_STR(_v).len);
-			*_len = VAL_STR(_v).len;
+			strncpy(_s, VAL_STR(_v).s , l);
+			*_len = l;
 			return 0;
 		}
 		break;
@@ -268,9 +268,9 @@ int bdb_val2str(db_val_t* _v, char* _s, int* _len)
 		} 
 		else 
 		{
-			LM_DBG("Converting BLOB [%s]\n", _s);
-			_s = VAL_BLOB(_v).s;
-			*_len = 0;
+			strncpy(_s, VAL_BLOB(_v).s , l);
+			LM_DBG("Converting BLOB [%.*s]\n", l,_s);
+			*_len = l;
 			return -8;
 		}
 		break;
