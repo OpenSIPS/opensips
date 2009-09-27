@@ -282,12 +282,15 @@ static inline void on_missed(struct cell *t, struct sip_msg *req,
 											struct sip_msg *reply, int code)
 {
 	str new_uri_bk={0,0};
+	str dst_uri_bk={0,0};
 	int flags_to_reset = 0;
 
 	if (t->nr_of_outgoings) {
 		/* set as new_uri the last branch */
 		new_uri_bk = req->new_uri;
+		dst_uri_bk = req->dst_uri;
 		req->new_uri = t->uac[t->nr_of_outgoings-1].uri;
+		req->dst_uri = t->uac[t->nr_of_outgoings-1].duri;
 		req->parsed_uri_ok = 0;
 	}
 
@@ -332,6 +335,7 @@ static inline void on_missed(struct cell *t, struct sip_msg *req,
 
 	if (new_uri_bk.s) {
 		req->new_uri = new_uri_bk;
+		req->dst_uri = dst_uri_bk;
 		req->parsed_uri_ok = 0;
 	}
 }
@@ -343,6 +347,7 @@ static inline void acc_onreply( struct cell* t, struct sip_msg *req,
 											struct sip_msg *reply, int code)
 {
 	str new_uri_bk;
+	str dst_uri_bk;
 
 	/* acc_onreply is bound to TMCB_REPLY which may be called
 	   from _reply, like when FR hits; we should not miss this
@@ -356,11 +361,13 @@ static inline void acc_onreply( struct cell* t, struct sip_msg *req,
 	/* for reply processing, set as new_uri the winning branch */
 	if (t->relaied_reply_branch>=0) {
 		new_uri_bk = req->new_uri;
+		new_uri_bk = req->dst_uri;
 		req->new_uri = t->uac[t->relaied_reply_branch].uri;
+		req->dst_uri = t->uac[t->relaied_reply_branch].duri;
 		req->parsed_uri_ok = 0;
 	} else {
-		new_uri_bk.len = -1;
-		new_uri_bk.s = 0;
+		new_uri_bk.len = dst_uri_bk.len = -1;
+		new_uri_bk.s = dst_uri_bk.s = NULL;
 	}
 	/* set env variables */
 	env_set_to( get_rpl_to(t,reply) );
@@ -386,6 +393,7 @@ static inline void acc_onreply( struct cell* t, struct sip_msg *req,
 
 	if (new_uri_bk.len>=0) {
 		req->new_uri = new_uri_bk;
+		req->dst_uri = dst_uri_bk;
 		req->parsed_uri_ok = 0;
 	}
 }
