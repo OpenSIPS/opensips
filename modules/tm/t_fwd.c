@@ -164,6 +164,18 @@ static inline int pre_print_uac_request( struct cell *t, int branch,
 	run_trans_callbacks( TMCB_REQUEST_FWDED, t, request, 0,
 			-request->REQ_METHOD);
 
+	/* copy dst_uri into branch (after branch route possible updated it) */
+	if (request->dst_uri.len) {
+		t->uac[branch].duri.s =
+			shm_resize(t->uac[branch].duri.s, request->dst_uri.len);
+		if (t->uac[branch].duri.s==NULL) {
+			LM_ERR("shm_resize failed\n");
+			goto error;
+		}
+		t->uac[branch].duri.len = request->dst_uri.len;
+		memcpy( t->uac[branch].duri.s,request->dst_uri.s,request->dst_uri.len);
+	}
+
 	return 0;
 error:
 	return -1;

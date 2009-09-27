@@ -535,7 +535,7 @@ static inline int fake_req(struct sip_msg *faked_req, struct sip_msg *shm_msg,
 	faked_req->new_uri.s[faked_req->new_uri.len]=0;
 	faked_req->parsed_uri_ok = 0;
 
-	/* dst_set is imposible to restore (since it's not saved),
+	/* we could also restore dst_uri, but will be confusing from script,
 	 * so let it set to NULL */
 
 	/* set as flags the global flags and the branch flags from the 

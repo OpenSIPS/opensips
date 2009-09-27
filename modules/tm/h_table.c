@@ -160,6 +160,9 @@ void free_cell( struct cell* dead_cell )
 		if (dead_cell->uac[i].path_vec.s) {
 			shm_free_unsafe(dead_cell->uac[i].path_vec.s);
 		}
+		if (dead_cell->uac[i].duri.s) {
+			shm_free_unsafe(dead_cell->uac[i].duri.s);
+		}
 	}
 
 	/* collected to tags */

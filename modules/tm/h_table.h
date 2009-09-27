@@ -145,6 +145,8 @@ typedef struct ua_client
 	/* pointer to retransmission buffer where uri is printed;
 	   good for generating ACK/CANCEL */
 	str              uri;
+	/* destination uri (proxy) - needs to be freed */
+	str              duri;
 	/* the path vector used for this branch */
 	str              path_vec;
 	/* number of RR headers that were locally added for this branch */
