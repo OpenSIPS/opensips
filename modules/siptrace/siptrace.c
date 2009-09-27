@@ -505,6 +505,17 @@ static inline str* siptrace_get_table(void)
 
 static db_ps_t siptrace_ps = NULL;
 
+
+/* trace is completly disabled */
+#define trace_is_off() \
+	(trace_on_flag==NULL || *trace_on_flag==0)
+
+/* flag-based tracing ise set */
+#define flag_trace_is_set(_msg) \
+	(((_msg)->flags&trace_flag)!=0)
+
+
+
 static int sip_trace(struct sip_msg *msg)
 {
 	db_key_t db_keys[NR_KEYS];
@@ -513,10 +524,16 @@ static int sip_trace(struct sip_msg *msg)
 	static char fromip_buff[IP_ADDR_MAX_STR_SIZE+6];
 	int_str         avp_value;
 	struct usr_avp *avp;
-	
+
 	if(msg==NULL)
 	{
 		LM_DBG("no uas request, local transaction\n");
+		return -1;
+	}
+
+	if( trace_is_off() )
+	{
+		LM_DBG("trace off...\n");
 		return -1;
 	}
 
@@ -525,9 +542,9 @@ static int sip_trace(struct sip_msg *msg)
 		avp=search_first_avp(traced_user_avp_type, traced_user_avp,
 				&avp_value, 0);
 
-	if((avp==NULL) && (trace_on_flag==NULL || *trace_on_flag==0))
+	if ( (avp==NULL) && !flag_trace_is_set(msg) )
 	{
-		LM_DBG("trace off...\n");
+		LM_DBG("nothing to trace...\n");
 		return -1;
 	}
 	
@@ -621,7 +638,7 @@ static int sip_trace(struct sip_msg *msg)
 	db_vals[9].type = DB_STR;
 	db_vals[9].nul = 0;
 
-	if(trace_on_flag!=NULL && *trace_on_flag!=0) {
+	if( flag_trace_is_set(msg) ) {
 		db_vals[9].val.str_val.s   = "";
 		db_vals[9].val.str_val.len = 0;
 	
@@ -641,10 +658,10 @@ static int sip_trace(struct sip_msg *msg)
 		}
 #endif
 	}
-	
+
 	if(avp==NULL)
 		goto done;
-	
+
 	trace_send_duplicate(db_vals[0].val.blob_val.s,
 			db_vals[0].val.blob_val.len);
 	
@@ -681,10 +698,6 @@ error:
 	return -1;
 }
 
-#define trace_is_off(_msg) \
-	(trace_on_flag==NULL || *trace_on_flag==0 || \
-		((_msg)->flags&trace_flag)==0)
-
 static void trace_onreq_in(struct cell* t, int type, struct tmcb_params *ps)
 {
 	struct sip_msg* msg;
@@ -696,22 +709,28 @@ static void trace_onreq_in(struct cell* t, int type, struct tmcb_params *ps)
 		LM_DBG("no uas request, local transaction\n");
 		return;
 	}
-	
+
 	msg = ps->req;
 	if(msg==NULL)
 	{
 		LM_DBG("no uas request, local transaction\n");
 		return;
 	}
-	
+
+	if( trace_is_off() )
+	{
+		LM_DBG("trace off...\n");
+		return;
+	}
+
 	avp = NULL;
 	if(traced_user_avp.n!=0)
 		avp=search_first_avp(traced_user_avp_type, traced_user_avp,
 				&avp_value, 0);
 
-	if((avp==NULL) && trace_is_off(msg))
+	if( (avp==NULL) && !flag_trace_is_set(msg))
 	{
-		LM_DBG("trace off...\n");
+		LM_DBG("nothing to trace...\n");
 		return;
 	}
 	
@@ -771,13 +790,19 @@ static void trace_onreq_out(struct cell* t, int type, struct tmcb_params *ps)
 		LM_DBG("no uas msg, local transaction\n");
 		return;
 	}
-	
+
+	if( trace_is_off() )
+	{
+		LM_DBG("trace off...\n");
+		return;
+	}
+
 	avp = NULL;
 	if(traced_user_avp.n!=0)
 		avp=search_first_avp(traced_user_avp_type, traced_user_avp,
 				&avp_value, 0);
 
-	if((avp==NULL) && trace_is_off(msg) )
+	if ( (avp==NULL) && !flag_trace_is_set(msg) )
 	{
 		LM_DBG("trace off...\n");
 		return;
@@ -901,7 +926,7 @@ static void trace_onreq_out(struct cell* t, int type, struct tmcb_params *ps)
 	db_vals[9].type = DB_STR;
 	db_vals[9].nul = 0;
 
-	if( !trace_is_off(msg) ) {
+	if( flag_trace_is_set(msg) ) {
 		db_vals[9].val.str_val.s   = "";
 		db_vals[9].val.str_val.len = 0;
 	
@@ -916,10 +941,10 @@ static void trace_onreq_out(struct cell* t, int type, struct tmcb_params *ps)
 		update_stat(siptrace_req, 1);
 #endif
 	}
-	
+
 	if(avp==NULL)
 		goto done;
-	
+
 	trace_send_duplicate(db_vals[0].val.blob_val.s,
 			db_vals[0].val.blob_val.len);
 	
@@ -982,17 +1007,11 @@ static void trace_onreply_in(struct cell* t, int type, struct tmcb_params *ps)
 		LM_DBG("no reply\n");
 		return;
 	}
-	
+
 	avp = NULL;
 	if(traced_user_avp.n!=0)
 		avp=search_first_avp(traced_user_avp_type, traced_user_avp,
 				&avp_value, 0);
-
-	if((avp==NULL) &&  trace_is_off(req))
-	{
-		LM_DBG("trace off...\n");
-		return;
-	}
 
 	if(parse_from_header(msg)==-1 || msg->from==NULL || get_from(msg)==NULL)
 	{
@@ -1087,7 +1106,7 @@ static void trace_onreply_in(struct cell* t, int type, struct tmcb_params *ps)
 	db_vals[9].type = DB_STR;
 	db_vals[9].nul = 0;
 
-	if( !trace_is_off(req) ) {
+	if( flag_trace_is_set(req) ) {
 		db_vals[9].val.str_val.s   = "";
 		db_vals[9].val.str_val.len = 0;
 	
@@ -1102,10 +1121,10 @@ static void trace_onreply_in(struct cell* t, int type, struct tmcb_params *ps)
 		update_stat(siptrace_rpl, 1);
 #endif
 	}
-	
+
 	if(avp==NULL)
 		goto done;
-	
+
 	trace_send_duplicate(db_vals[0].val.blob_val.s,
 			db_vals[0].val.blob_val.len);
 	
@@ -1164,18 +1183,12 @@ static void trace_onreply_out(struct cell* t, int type, struct tmcb_params *ps)
 		LM_DBG("no uas request, local transaction\n");
 		return;
 	}
-	
+
 	avp = NULL;
 	if(traced_user_avp.n!=0)
 		avp=search_first_avp(traced_user_avp_type, traced_user_avp,
 				&avp_value, 0);
 
-	if((avp==NULL) &&  trace_is_off(t->uas.request))
-	{
-		LM_DBG("trace off...\n");
-		return;
-	}
-	
 	req = ps->req;
 	msg = ps->rpl;
 	if(msg==NULL || msg==FAKED_REPLY)
@@ -1309,7 +1322,7 @@ static void trace_onreply_out(struct cell* t, int type, struct tmcb_params *ps)
 	db_vals[9].type = DB_STR;
 	db_vals[9].nul = 0;
 
-	if( !trace_is_off(req) ) {
+	if( flag_trace_is_set(req) ) {
 		db_vals[9].val.str_val.s   = "";
 		db_vals[9].val.str_val.len = 0;
 	
@@ -1391,21 +1404,27 @@ static void trace_sl_onreply_out( unsigned int types, struct sip_msg* req,
 		LM_ERR("bad parameters\n");
 		goto error;
 	}
-	
+
+	if( trace_is_off() )
+	{
+		LM_DBG("trace off...\n");
+		return;
+	}
+
 	avp = NULL;
 	if(traced_user_avp.n!=0)
 		avp=search_first_avp(traced_user_avp_type, traced_user_avp,
 				&avp_value, 0);
 
-	if((avp==NULL) && trace_is_off(req))
+	if((avp==NULL) && !flag_trace_is_set(req))
 	{
-		LM_DBG("trace off...\n");
+		LM_DBG("nothing to trace...\n");
 		return;
 	}
-	
+
 	msg = req;
 	faked = 1;
-	
+
 	if(parse_from_header(msg)==-1 || msg->from==NULL || get_from(msg)==NULL)
 	{
 		LM_ERR("cannot parse FROM header\n");
@@ -1442,7 +1461,7 @@ static void trace_sl_onreply_out( unsigned int types, struct sip_msg* req,
 	db_vals[2].nul = 0;
 	db_vals[2].val.str_val.s = msg->first_line.u.request.method.s;
 	db_vals[2].val.str_val.len = msg->first_line.u.request.method.len;
-		
+
 	db_keys[4] = &fromip_column;
 	db_vals[4].type = DB_STRING;
 	db_vals[4].nul = 0;
@@ -1504,7 +1523,7 @@ static void trace_sl_onreply_out( unsigned int types, struct sip_msg* req,
 	db_vals[9].type = DB_STR;
 	db_vals[9].nul = 0;
 
-	if( !trace_is_off(msg) ) {
+	if( flag_trace_is_set(msg) ) {
 		db_vals[9].val.str_val.s   = "";
 		db_vals[9].val.str_val.len = 0;
 	
