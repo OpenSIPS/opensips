@@ -234,6 +234,7 @@ static inline int send_bye(struct dlg_cell * cell, int dir, str *extra_hdrs)
 {
 	/*verify direction*/
 	dlg_t* dialog_info;
+	struct dlg_cell *old_cell;
 	str met = {"BYE", 3};
 	int result;
 
@@ -246,6 +247,9 @@ static inline int send_bye(struct dlg_cell * cell, int dir, str *extra_hdrs)
 
 	ref_dlg(cell, 1);
 
+	old_cell = current_dlg_pointer;
+	current_dlg_pointer = cell;
+
 	result = d_tmb.t_request_within
 		(&met,         /* method*/
 		extra_hdrs,    /* extra headers*/
@@ -253,6 +257,8 @@ static inline int send_bye(struct dlg_cell * cell, int dir, str *extra_hdrs)
 		dialog_info,   /* dialog structure*/
 		bye_reply_cb,  /* callback function*/
 		(void*)cell);  /* callback parameter*/
+
+	current_dlg_pointer = old_cell;
 
 	if(result < 0){
 		LM_ERR("failed to send the BYE request\n");
