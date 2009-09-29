@@ -984,6 +984,8 @@ int dlg_validate_dialog( struct sip_msg* req, struct dlg_cell *dlg)
 {
 	struct dlg_leg *leg;
 	unsigned int n,m;
+	struct sip_uri curi;
+	int r_proto, c_proto, r_port, c_port;
 	str s;
 
 	if (dlg->state == DLG_STATE_DELETED)
@@ -1017,13 +1019,41 @@ int dlg_validate_dialog( struct sip_msg* req, struct dlg_cell *dlg)
 	/* check the RURI - it must be the contact of the destination leg */
 	/* after loose_route() even if the previous hop was a strict router,
 	   opensips will set in RURI the remote contact */
-	s = *GET_RURI(req);
-	if ( s.len!=leg->contact.len || memcmp(leg->contact.s, s.s, s.len)!=0 ) {
-		LM_DBG("RURI/Contact test failed ruri=[%.*s], old=[%.*s]\n",
+	if ( parse_sip_msg_uri(req)<0 ||
+	parse_uri( leg->contact.s, leg->contact.len, &curi)!=0 ) {
+		LM_ERR("failed to parse RURI/Contacts\n");
+		return -1;
+	}
+	/* check proto */
+	r_proto = (req->parsed_uri.proto==PROTO_NONE) ?
+		PROTO_UDP : req->parsed_uri.proto;
+	c_proto = (curi.proto==PROTO_NONE) ?
+		PROTO_UDP : curi.proto;
+	if ( r_proto!=c_proto ) {
+		s = *GET_RURI(req);
+		LM_DBG("RURI/Contact PROTO test failed ruri=[%.*s], old=[%.*s]\n",
 			s.len,s.s,leg->contact.len,leg->contact.s);
 		return -1;
 	}
-
+	/* check port */
+	r_port=(req->parsed_uri.port_no==0) ?
+		( (r_proto==PROTO_TLS)?5061:50620) : req->parsed_uri.port_no ;
+	c_port=(curi.port_no==0) ?
+		( (c_proto==PROTO_TLS)?5061:50620) : curi.port_no ;
+	if ( r_port!=c_port ) {
+		s = *GET_RURI(req);
+		LM_DBG("RURI/Contact PORT test failed ruri=[%.*s], old=[%.*s]\n",
+			s.len,s.s,leg->contact.len,leg->contact.s);
+		return -1;
+	}
+	/* host (as string) */
+	if ( curi.host.len!=req->parsed_uri.host.len ||
+	memcmp(req->parsed_uri.host.s, curi.host.s, curi.host.len)!=0 ) {
+		s = *GET_RURI(req);
+		LM_DBG("RURI/Contact HOST test failed ruri=[%.*s], old=[%.*s]\n",
+			s.len,s.s,leg->contact.len,leg->contact.s);
+		return -1;
+	}
 
 	/* check the route set - is the the same as in original request */
 	/* the route set (without the first Route) must be the same as the
