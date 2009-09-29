@@ -88,7 +88,7 @@ struct dlg_cell *get_current_dialog(void)
 {
 	struct cell *trans;
 
-	if (route_type==REQUEST_ROUTE) {
+	if (route_type==REQUEST_ROUTE || route_type==LOCAL_ROUTE) {
 		/* use the per-process static holder */
 		return current_dlg_pointer;
 	} else {

@@ -240,6 +240,7 @@ static inline int send_leg_bye(struct dlg_cell *cell, int dst_leg, int src_leg,
 														str *extra_hdrs)
 {
 	dlg_t* dialog_info;
+	struct dlg_cell *old_cell;
 	str met = {"BYE", 3};
 	int result;
 
@@ -253,6 +254,9 @@ static inline int send_leg_bye(struct dlg_cell *cell, int dst_leg, int src_leg,
 
 	ref_dlg(cell, 1);
 
+	old_cell = current_dlg_pointer;
+	current_dlg_pointer = cell;
+
 	result = d_tmb.t_request_within
 		(&met,         /* method*/
 		extra_hdrs,    /* extra headers*/
@@ -261,6 +265,8 @@ static inline int send_leg_bye(struct dlg_cell *cell, int dst_leg, int src_leg,
 		bye_reply_cb,  /* callback function*/
 		(void*)cell,   /* callback parameter*/
 		NULL);         /* release function*/
+
+	current_dlg_pointer = old_cell;
 
 	if(result < 0){
 		LM_ERR("failed to send the BYE request\n");
