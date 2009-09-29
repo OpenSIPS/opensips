@@ -1250,13 +1250,15 @@ static int pv_get_dset(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {
 	str s;
-    if(msg==NULL)
+
+	if(msg==NULL)
 		return -1;
-    
-    s.s = print_dset(msg, &s.len);
-    if (s.s == NULL)
+
+	s.s = print_dset(msg, &s.len);
+	if (s.s == NULL)
 		return pv_get_null(msg, param, res);
-    s.len -= CRLF_LEN;
+	s.len -= CRLF_LEN;
+
 	return pv_get_strval(msg, param, res, &s);
 }
 
@@ -1264,13 +1266,13 @@ static int pv_get_dset(struct sip_msg *msg, pv_param_t *param,
 static int pv_get_dsturi(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {
-    if(msg==NULL)
+	if(msg==NULL)
 		return -1;
-    
-    if (msg->dst_uri.s == NULL) {
+
+	if (msg->dst_uri.s == NULL) {
 		LM_DBG("no destination URI\n");
 		return pv_get_null(msg, param, res);
-    }
+	}
 
 	return pv_get_strval(msg, param, res, &msg->dst_uri);
 }
@@ -1282,7 +1284,7 @@ static int pv_get_dsturi_attr(struct sip_msg *msg, pv_param_t *param,
 
 	if(msg==NULL)
 		return -1;
-    
+
 	if (msg->dst_uri.s == NULL) {
 		LM_DBG("no destination URI\n");
 		return pv_get_null(msg, param, res);
