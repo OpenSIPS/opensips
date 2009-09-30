@@ -348,6 +348,14 @@ static void dlg_onreply(struct cell* t, int type, struct tmcb_params *param)
 		run_dlg_callbacks(DLGCB_RESPONSE_FWDED, dlg, rpl, DLG_DIR_UPSTREAM, 0);
 		return;
 	}
+	if (type==TMCB_TRANS_CANCELLED) {
+		/* simply attache the dialog to the script
+		   and put one more ref */
+		/* reference and attached to script */
+		ref_dlg(dlg,1);
+		current_dlg_pointer = t->dialog_ctx;
+		return;
+	}
 
 	if (type==TMCB_TRANS_DELETED)
 		event = DLG_EVENT_TDEL;
@@ -504,6 +512,7 @@ static void unreference_dialog_create(void *dialog)
 }
 
 
+
 void dlg_onreq(struct cell* t, int type, struct tmcb_params *param)
 {
 	/* is the dialog already created? */
@@ -598,7 +607,7 @@ int dlg_create_dialog(struct cell* t, struct sip_msg *req)
 	}
 
 	if ( d_tmb.register_tmcb( req, t,
-				TMCB_RESPONSE_PRE_OUT|TMCB_RESPONSE_FWDED,
+				TMCB_RESPONSE_PRE_OUT|TMCB_RESPONSE_FWDED|TMCB_TRANS_CANCELLED,
 				dlg_onreply, (void*)dlg, unreference_dialog_create)<0 ) {
 		LM_ERR("failed to register TMCB\n");
 		goto error;
