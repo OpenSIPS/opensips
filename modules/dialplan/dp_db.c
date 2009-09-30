@@ -243,17 +243,18 @@ int dp_load_db(void)
 
 	do {
 		for(i=0; i<RES_ROW_N(res); i++){
-			rows 	= RES_ROWS(res);
-
+			rows = RES_ROWS(res);
 			values = ROW_VALUES(rows+i);
 
-			if((rule = build_rule(values)) ==0 )
-				goto err2;
+			if ((rule = build_rule(values)) == NULL ) {
+				LM_WARN(" failed to build rule -> skipping\n");
+				continue;
+			}
 
 			if(add_rule2hash(rule , *next_idx) != 0)
 				goto err2;
-
 		}
+
 		if (DB_CAPABILITY(dp_dbf, DB_CAP_FETCH)) {
 			if(dp_dbf.fetch_result(dp_db_handle, &res, dp_fetch_rows)<0) {
 				LM_ERR("failure while fetching!\n");
