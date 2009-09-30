@@ -50,8 +50,9 @@ struct cell;
 #define TMCB_LOCAL_COMPLETED    (1<<9)
 #define TMCB_LOCAL_RESPONSE_OUT (1<<10)
 #define TMCB_REQUEST_BUILT      (1<<11)
-#define TMCB_TRANS_DELETED      (1<<12)
-#define TMCB_MAX                ((1<<13)-1)
+#define TMCB_TRANS_CANCELLED    (1<<12)
+#define TMCB_TRANS_DELETED      (1<<13)
+#define TMCB_MAX                ((1<<14)-1)
 
 /* 
  *  Caution: most of the callbacks work with shmem-ized messages

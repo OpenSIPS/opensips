@@ -680,6 +680,8 @@ found:
 	cancelled_T = p_cell;
 	REF_UNSAFE( p_cell );
 	UNLOCK_HASH(hash_index);
+	/* run callback */
+	run_trans_callbacks( TMCB_TRANS_CANCELLED, cancelled_T, p_msg, 0,0);
 	LM_DBG("t_lookupOriginalT completed\n");
 	return p_cell;
 }
