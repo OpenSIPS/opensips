@@ -89,7 +89,7 @@ modparam("pua_xmpp", "server_address", "sip:sa@opensips.org:5060")
 
    Example 1.2. Set presence_server parameter
 ...
-modparam("pua_usrloc", "presence_server", "sip:pa@opensips.org:5075")
+modparam("pua_xmpp", "presence_server", "sip:pa@opensips.org:5075")
 ...
 
 1.4. Exported Functions

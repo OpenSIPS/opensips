@@ -82,7 +82,7 @@ modparam("pua_xmpp", "server_address", "sip:sa@opensips.org:5060")
 		<title>Set <varname>presence_server</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("pua_usrloc", "presence_server", "sip:pa@opensips.org:5075")
+modparam("pua_xmpp", "presence_server", "sip:pa@opensips.org:5075")
 ...
 	</programlisting>
 		</example>
