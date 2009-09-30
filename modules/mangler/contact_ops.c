@@ -56,9 +56,9 @@ encode_contact (struct sip_msg *msg, char *encoding_prefix,char *public_ip)
 
 
 	/*
-	 * I have a list of contacts in contact->parsed which is of type contact_body_t 
-	 * inside i have a contact->parsed->contact which is the head of the list of contacts
-	 * inside it is a 
+	 * I have a list of contacts in contact->parsed which is of type 
+	 * contact_body_t inside i have a contact->parsed->contact which is the 
+	 * head of the list of contacts inside it is a 
 	 * str uri;
 	 * struct contact *next;
 	 * I just have to visit each uri and encode each uri according to a scheme
@@ -77,7 +77,8 @@ encode_contact (struct sip_msg *msg, char *encoding_prefix,char *public_ip)
 		if (strlen(contact_flds_separator)>=1)
 			separator = contact_flds_separator[0];
 
-	if (msg->contact->parsed == NULL)	parse_contact (msg->contact);
+	if (msg->contact->parsed == NULL)
+		parse_contact (msg->contact);
 	if (msg->contact->parsed != NULL)
 	{
 		cb = (contact_body_t *) msg->contact->parsed;
@@ -86,8 +87,13 @@ encode_contact (struct sip_msg *msg, char *encoding_prefix,char *public_ip)
 		if (c != NULL)
 		{
 			uri = c->uri;
-			res = encode_uri (uri, encoding_prefix, public_ip,separator, &newUri);
-			
+			if ((uri.s < msg->buf) || (uri.s > (msg->buf + msg->len))) {
+				LM_ERR("you can't encode a contact that was aleady "
+					"changed !!!\n");
+				return -1;
+			}
+
+			res = encode_uri(uri, encoding_prefix,public_ip,separator,&newUri);
 			if (res != 0)
 				{
 				LM_ERR("failed encoding contact.Code %d\n", res);
