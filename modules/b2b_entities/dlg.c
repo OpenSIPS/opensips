@@ -526,6 +526,13 @@ void destroy_b2b_htables(void)
 			while(dlg)
 			{
 				aux = dlg->next;
+				if(dlg->legs)
+				{
+					if(dlg->legs->contact.s)
+						shm_free(dlg->legs->contact.s);
+					shm_free(dlg->legs);
+				}
+
 				shm_free(dlg);
 				dlg = aux;
 			}
@@ -839,6 +846,13 @@ void b2b_delete_record(b2b_dlg_t* dlg, b2b_table* htable, unsigned int hash_inde
 	if(*htable == server_htable && dlg->tag[CALLEE_LEG].s)
 		shm_free(dlg->tag[CALLEE_LEG].s);
 
+	if(dlg->legs)
+	{
+		if(dlg->legs->contact.s)
+			shm_free(dlg->legs->contact.s);
+		shm_free(dlg->legs);
+	}
+
 
 	shm_free(dlg);
 }
@@ -1124,7 +1138,7 @@ dlg_leg_t* b2b_new_leg(struct sip_msg* msg, str* to_tag, int mem_type)
 			goto error;
 		}
 	}
-	size = sizeof(dlg_leg_t)+ contact.len + route_set.len + to_tag->len;
+	size = sizeof(dlg_leg_t) + route_set.len + to_tag->len;
 
 	if(mem_type == SHM_MEM_TYPE)
 		new_leg = (dlg_leg_t*)shm_malloc(size);
@@ -1141,12 +1155,20 @@ dlg_leg_t* b2b_new_leg(struct sip_msg* msg, str* to_tag, int mem_type)
 	memset(new_leg, 0, size);
 	size = sizeof(dlg_leg_t);
 
-	if(contact.s)
+	if(contact.s && contact.len)
 	{
-		new_leg->contact.s = (char*)new_leg + size;
+		if(mem_type == SHM_MEM_TYPE)
+			new_leg->contact.s = (char*)shm_malloc(contact.len);
+		else
+			new_leg->contact.s = (char*)pkg_malloc(contact.len);
+
+		if(new_leg->contact.s== NULL)
+		{
+			LM_ERR("No more memory\n");
+			goto error;
+		}
 		memcpy(new_leg->contact.s, contact.s, contact.len);
 		new_leg->contact.len = contact.len;
-		size+= contact.len;
 	}
 
 	if(route_set.s)
@@ -1241,6 +1263,7 @@ void b2b_tm_cback(b2b_table htable, struct tmcb_params *ps)
 	str to_tag;
 	struct hdr_field* require_hdr;
 	int method_id = -1;
+	contact_body_t* b;
 
 	if(ps == NULL || ps->rpl == NULL)
 	{
@@ -1466,6 +1489,8 @@ void b2b_tm_cback(b2b_table htable, struct tmcb_params *ps)
 					{
 						LM_ERR("Failed to send BYE request\n");
 					}
+					if(leg->contact.s)
+						pkg_free(leg->contact.s);
 					pkg_free(leg);
 
 					lock_release(&htable[hash_index].lock);
@@ -1486,6 +1511,8 @@ void b2b_tm_cback(b2b_table htable, struct tmcb_params *ps)
 							confirmed_leg = leg;
 						}else
 						{
+							if(leg->contact.s)
+								shm_free(leg->contact.s);
 							shm_free(leg);
 						}
 						leg = aux_leg;
@@ -1502,8 +1529,41 @@ void b2b_tm_cback(b2b_table htable, struct tmcb_params *ps)
 					}
 					else
 					{
+						str contact;
+
 						dlg->legs = confirmed_leg;
 						dlg->legs->next = NULL;
+						/* update the contact */
+						if( msg->contact==NULL || msg->contact->body.s==NULL)
+						{
+							LM_ERR("NULL contact in final response\n");
+							lock_release(&htable[hash_index].lock);
+							return;
+						}
+						if(parse_contact(msg->contact) <0 )
+						{
+							LM_ERR("failed to parse contact header\n");
+							lock_release(&htable[hash_index].lock);
+							return;
+						}
+						b= (contact_body_t* )msg->contact->parsed;
+						if(b == NULL)
+						{
+							LM_ERR("contact header not parsed\n");
+							lock_release(&htable[hash_index].lock);
+							return;
+						}
+						contact = b->contacts->uri;
+
+						confirmed_leg->contact.s = (char*)shm_malloc(contact.len);
+						if(confirmed_leg->contact.s== NULL)
+						{
+							LM_ERR("No more memory\n");
+							lock_release(&htable[hash_index].lock);
+							return;
+						}
+						memcpy(confirmed_leg->contact.s, contact.s, contact.len);
+						confirmed_leg->contact.len = contact.len;
 					}
 					lock_release(&htable[hash_index].lock);
 					goto done;

@@ -234,6 +234,7 @@ dlg_t* b2b_client_build_dlg(b2b_dlg_t* dlg, dlg_leg_t* leg)
 	td->id.loc_tag = dlg->tag[CALLER_LEG];
 	td->id.rem_tag = leg->tag;
 
+	LM_DBG("*** Rem_target = %.*s\n", leg->contact.len, leg->contact.s);
 	td->rem_target = leg->contact;
 
 	td->loc_uri = dlg->from_uri;
