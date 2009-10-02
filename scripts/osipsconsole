@@ -42,10 +42,9 @@ use Socket;
 #
 
 ####path to the directory where opensips binaries are...
-
-my $PATH_BIN = "/usr/local/opensips_head/sbin/";
-my $PATH_CTLRC = "/usr/local/opensips_head/etc/opensips/";
-my $PATH_ETC = "/usr/local/etc/";
+my $PATH_BIN = "./";
+my $PATH_CTLRC = "./scripts/";
+my $PATH_ETC = "/usr/local/etc";
 my $PATH_LIBS = "/usr/local/lib";
 my $PATH_SHARE = "/usr/local/share";
 
