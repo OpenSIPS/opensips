@@ -71,6 +71,9 @@ my $argnum = $#ARGV + 1;
 ### aliases configuration  ( DB | UL )
 my $ALIASES_TYPE = "DB";
 
+my ($socket, @ACL_GROUPS, @arr, $var_name, @OSIPS, $STORE_PLAINTEXT_PW, $DUMP_CMD, $LOAD_CMD, $HA1, $HA1B, $sth, $dbh, @row, $RET, $RES,
+    $DBENGINELOADED, $cmd_fifo, $CHROOT_DIR, $input, $response, $CHECK_SUB, $USRLOC_TABLE, @content, $line, @list, @cmd, @output, $command);
+
 my $ETCDIR = " ";
 
 my $MI_CONNECTOR = "";
@@ -79,7 +82,6 @@ my $OSIPS_UNIXSOCK = "";
 my $OSIPSUNIX = "";
 my $OSIPSIP = "";
 my $OSIPS_PORT = "";
-my $socket;
 
 my $name = "fifo_reply";
 my $path = "/tmp/" . $name;
@@ -87,7 +89,7 @@ my $PID_FILE = "";
 my $DBENGINE = "";
 my $SIP_DOMAIN = "";
 my $VERIFY_ACL = 0;
-my @ACL_GROUPS;
+
 my $DBNAME = "";
 my $DBHOST = "";
 my $DBPORT = "";
@@ -98,8 +100,6 @@ my $DBROOTUSER = "";
 my $DBRWPW = "";
 my $CTLENGINE = "";
 	
-my @arr;
-my $var_name;
 my $EGREP = "";
 my $SYSLOG = "";
 my $STARTOPTIONS = "";
@@ -117,28 +117,38 @@ my $USERNAME_RE="[-a-zA-Z0-9&=\+\$,;\?/_\.\!~\*'\(\)]+";
 
 my $OSIPSUSER = "";
 my $OSIPSDOMAIN = "";
-my @OSIPS ;
 my $CTLENGINELOADED = 0;
-my $STORE_PLAINTEXT_PW;
 my $ENABLE_ALIASES = 0;
 my $ALIAS_EXISTS = 0;
 ######-----------------------------------------------#######
 ##database specific variables
 #
-my @STANDARD_TABLES = ('version', 'acc', 'dbaliases', 'lcr', 'domain', 'grp', 'uri', 'speed_dial', 'gw', 'pdt', 'subscriber', 'location', 're_grp', 'trusted', 'address', 'missed_calls', 'usr_preferences', 'aliases', 'silo', 'dialog', 'dispatcher', 'dialplan','dr_gateways','dr_rules','dr_gw_lists','dr_groups','nh_sockets','load_balancer');
+my @STANDARD_TABLES = ('version', 'acc', 'dbaliases', 'lcr', 
+			'domain', 'grp', 'uri', 'speed_dial', 
+			'gw', 'pdt', 'subscriber', 'location', 
+			're_grp', 'address', 'missed_calls', 
+			'usr_preferences', 'aliases', 'silo', 
+			'dialog', 'dispatcher', 'dialplan',
+			'dr_gateways','dr_rules','dr_gw_lists',
+			'dr_groups','nh_sockets','load_balancer');
 
 my @STANDARD_MODULES = ('standard', 'acc', 'lcr', 'domain', 'group', 
 	'permissions', 'registrar', 'usrloc', 'msilo', 'alias_db', 'uri_db',
 	'speeddial', 'avpops', 'auth_db', 'pdt', 'dialog', 'dispatcher', 
 	'dialplan','drouting','nathelper','load_balancer' );
+
 my @EXTRA_TABLES = ('imc_members', 'imc_rooms', 'cpl', 'sip_trace', 
 	'domainpolicy', 'carrierroute', 'route_tree', 'carrierfailureroute', 
 	'userblacklist', 'globalblacklist');
+
 my @EXTRA_MODULES = ('imc', 'cpl', 'siptrace', 'domainpolicy', 'carrierroute', 'userblacklist');
+
 my @PRESENCE_TABLES = ('presentity', 'active_watchers', 'watchers', 'xcap', 'pua');
+
 my @PRESENCE_RLS_TABLES = ('rls_presentity', 'rls_watchers');
+
 my $HAS_EXTRA = "NO";
-my $NO_USER_INIT = "NO";
+#my $NO_USER_INIT = "NO";
 my $MYSQL = "";
 my $PGSQL = "";
 my $MYLIBDIR = $PATH_LIBS."/opensips/opensipsctl";
@@ -146,46 +156,27 @@ my $DBTEXTCMD = $MYLIBDIR."/dbtextdb/dbtextdb.py";
 
 # path to the database schemas
 my $DB_SCHEMA = "";
-my $DATA_DIR = $PATH_SHARE."/opensips";
+#my $DATA_DIR = $PATH_SHARE."/opensips";
+my $DATA_DIR = "/usr/local/src/opensips_head/scripts";
 my $DBTEXT_PATH = $PATH_SHARE."/opensips/dbtext/opensips";
 # path to the db_berkeley database
 my $DB_PATH;
 if ( $DB_PATH eq "" ) {
 	$DB_PATH = $PATH_ETC."/opensips/db_berkeley";
 }
-my $DUMP_CMD;
-my $LOAD_CMD;
+
 my $PW = "";
 
 my $ALIAS_DB_EXISTS = "";
 my $ALIAS_UL_EXISTS = "";
  
-my $DBENGINELOADED;
 my $PASS = "";
-my $HA1;
-my $HA1B;
-my $sth;
-my $dbh;
-my @row;
 
-my $RET;
-my $RES;
 my $result = 0;
-my $cmd_fifo;
-
-my $CHROOT_DIR;
-my $input;
-my $response;
-my $CHECK_SUB;
-my $USRLOC_TABLE;
-my @content;	
-my $line;	
-my @list;
 
 ####CLI control variables
 my $term = Term::ReadLine->new("OpenSIPS");
 my $OUT = $term->OUT() ||\*STDOUT;
-my @cmd;
 my @command_list = ('acl'=> ('show','grant','revoke'),
 		    'add'=>'add',
 		    'avp'=>('list','add','rm'),
@@ -197,7 +188,7 @@ my @command_list = ('acl'=> ('show','grant','revoke'),
 		    'alias_db'=> ('list','show','add','rm'),
 		    'aliasdb'=> ('list','show','add','rm'),		   		    
 		    'domain'=> ('reload','show','showdb','add','rm'),	
-		    'trusted'=> ('show','dump','reload','add','rm'),
+		    'address'=> ('show','dump','reload','add','rm'),
 		    'fifo'=>'fifo',		 
 		    'lcr'=> ('show','reload','addgw','rmgw','addroute','rmroute'),	
 		    'cr' => ('show','reload','dump','addrt','rmrt','addcarrier','rmcarrier'),
@@ -220,16 +211,9 @@ my @command_list = ('acl'=> ('show','grant','revoke'),
 		    'udp'=>'udp',
 		    'version'=>'version',
 		    'xmlrpc'=>'xmlrpc',	
-		    'db'=>('exec','roexec','run','rorun','show'),
+		    #'db'=>('exec','roexec','run','rorun','show'),
 		    'dialplan'=>('show','addrule','rm','rmpid','rmrule','reload'),
-		    'migrate'=>'migrate',
-		    'copy'=>'copy',
-		    'backup'=>'backup',
-		    'restore'=>'restore',
-		    'create'=>'create',
-		    'presence'=>'presence',
-		    'extra'=>'extra',
-		    'drop'=>'reinit',
+		    'db'=>('migrate','copy','backup','restore','create','presence','extra','reinit'),
 		    'bdb'=>('list','ls','cat','swap','append','newappend','export','import','migrate'),
 		    'db_berkeley'=>('list','ls','cat','swap','append','newappend','export','import','migrate'),
 		    'dr'=>('gateway', 'rules'),
@@ -237,12 +221,9 @@ my @command_list = ('acl'=> ('show','grant','revoke'),
 		    'rules'=>('add','rm','list'),
 		    'help'=>'help'					
 		    );
-  		    
-		    
-		    
-my @output;
+   
+ 
 my $attribs = $term->Attribs;
-my $command;
 
 
 #
@@ -827,15 +808,19 @@ my %avp_table = ('AVP_UUID_COLUMN' => 'uuid',
 		);
 
 
-# trusted table
-my $TRUSTED_TABLE = " ";
-if ( !-z $TRUSTED_TABLE ) {
-	$TRUSTED_TABLE = 'trusted';
+# address table
+my $ADDRESS_TABLE = " ";
+if ( !-z $ADDRESS_TABLE ) {
+	$ADDRESS_TABLE = 'address';
 }
-my %trusted_table = ('TRUSTED_SRC_IP_COLUMN' => 'src_ip',
-		     'TRUSTED_PROTO_COLUMN' => 'proto',
-		     'TRUSTED_FROM_PATTERN_COLUMN' => 'from_pattern',
-		     'TRUSTED_TAG_COLUMN' => 'tag'
+my %address_table = ('ADDRESS_ID_COLUMN' => 'ip',
+		     'ADDRESS_GRP_COLUMN' => 'grp',
+		     'ADDRESS_IP_COLUMN' => 'ip',
+		     'ADDRESS_MASK_COLUMN' => 'mask',
+		     'ADDRESS_PORT_COLUMN' => 'port',
+		     'ADDRESS_PROTO_COLUMN' => 'proto',
+		     'ADDRESS_PATTERN_COLUMN' => 'pattern',
+		     'ADDRESS_CONTEXT_INFO_COLUMN' => 'context_info'
 		    );
 
 
@@ -1058,16 +1043,16 @@ sub usage_subscriber() {
 }
 
 
-#trusted
-sub usage_trusted() {
-	print " -- command 'add|dump|reload|rm|show' - manage trusted\n" .
-	      "trusted show ...................... show db content\n" .
-	      "trusted dump ...................... show cache content\n" .
-	      "trusted reload .................... reload db table into cache\n" .
-	      "trusted add <src_ip> <proto> <from_pattern> <tag>\n" .
+#address
+sub usage_address() {
+	print " -- command 'add|dump|reload|rm|show' - manage address\n" .
+	      "address show ...................... show db content\n" .
+	      "address dump ...................... show cache content\n" .
+	      "address reload .................... reload db table into cache\n" .
+	      "address add <grp> <ip> <mask> <port> <proto> [<context_info>] [<pattern>]\n" .
 		           "\t\t\t....................... add a new entry\n" .
 		           "\t\t\t....................... (from_pattern and tag are optional arguments)\n" .
-	      "trusted rm <src_ip> ............... remove all entries for the given src_ip\n";
+	      "address rm <grp> <ip> <mask> <port>............... remove all entries for the given grp ip mask and port\n";
 }
 
 
@@ -1219,7 +1204,7 @@ print "usage:create <db name or db_path, optional> .....(creates a new database)
       "\tbackup <file> .................................(dumps current database to file)\n" . 
       "\trestore <file> ................................(restores tables from a file)\n" .
       "\tcopy <new_db> .................................(creates a new db from an existing one)\n" .
-      "\tmigrate <old_db> <new_db> .....................(migrates DB from 1.5 to 1.6 not implemented yet)\n" .
+      "\tmigrate <old_db> <new_db> .....................(migrates DB from 1.5 to 1.6 	)\n" .
       "\tpresence ......................................(adds the presence related tables)\n" . 
       "\textra .........................................(adds the extra tables)\n\n" .
       "\tif you want to manipulate database as other database user than\n" .
@@ -1466,10 +1451,10 @@ sub is_user() {
 # params: table, column, value
 # output: false if exists, true otherwise
 sub is_value_in_db() {
-	my $TABLE=$_[0];
-	my $COL=$_[1];
-	my $VALUE=$_[2];
-	
+	my ($TABLE, $COL, $VALUE);
+	$TABLE=$_[0];
+	$COL=$_[1];
+	$VALUE=$_[2];
 	if ( $DBENGINE =~ /^DB_BERKELEY$/) {
 		&bdb_select_where($TABLE,$VALUE);
 	} elsif ( $DBENGINE =~ /^DBTEXT$/) {
@@ -1478,7 +1463,6 @@ sub is_value_in_db() {
 	} else {
 		#prepare query
 		$sth = $dbh->prepare( "SELECT count(*) FROM $TABLE WHERE $COL=\'$VALUE\'" );
-	
 		#execute the query
 		$sth->execute( );
 		warn "Retrieving data from table failed", $sth->errstr( ), "\n" if $sth->err( );	
@@ -1496,7 +1480,7 @@ sub is_value_in_db() {
 		$response = 1;
 	}		
 
-
+#print $response;
 }
  
 sub prompt_pw() {
@@ -1729,7 +1713,8 @@ sub cmd() {
 	elsif ($cmd[0] =~ /(^aliasdb$)|(^alias_db$)/)			{ &db_load(); system(&alias_db()); }
 	elsif ($cmd[0] =~ /^cr$/) 					{ &db_load(); system(&opensips_cr()); }
 	elsif ($cmd[0] =~ /^dialplan$/)                     		{ &db_load(); system(&opensips_dialplan()); }
-	elsif ($cmd[0] =~ /^db$/)	 				{ &db_load(); system(&db_ops()); }
+	#elsif ($cmd[0] =~ /^db$/)	 				{ &db_load(); system(&db_ops()); }
+	elsif ($cmd[0] =~ /^db$/)	 				{ &db_load(); system(&opensips_db()); }
 	elsif ($cmd[0] =~ /^dispatcher$/) 				{ &db_load(); system(&opensips_dispatcher()); }
 	elsif ($cmd[0] =~ /^domain$/) 					{ &db_load(); system(&domain()); }
 	elsif ($cmd[0] =~ /(^fifo$)|(^unixsock$)|(^udp$)|(^xmlrpc$)/)	{ &mi_comm(); } 
@@ -1746,10 +1731,10 @@ sub cmd() {
 	elsif ($cmd[0] =~ /^start$/)		   	 		{ system(&opensips_start()); }	
 	elsif ($cmd[0] =~ /^stop$/)			      		{ system(&opensips_stop()); }
 	elsif ($cmd[0] =~ /^tls$/)	 	  			{ &db_load(); system(&tls_ca()); }
-	elsif ($cmd[0] =~ /^trusted$/)			 		{ &db_load(); system(&trusted()); }
+	elsif ($cmd[0] =~ /^address$/)			 		{ &db_load(); system(&address()); }
 	elsif ($cmd[0] =~ /(^ul$)|(^alias$)|(^usrloc$)/)	  	{ system(&opensips_usrloc()); }		
 	elsif ($cmd[0] =~ /^version$/)	 				{ system(&opensips_version()); }
-	elsif ($cmd[0] =~ /(^extra$)|(^migrate$)|(^copy$)|(^backup$)|(^restore$)|(^create$)|(^presence$)|(^drop$)|(^reinit$)|(^bdb$)|(^db_berkeley$)|(^cat$)/) {system(&opensips_db()); }
+	#elsif ($cmd[0] =~ /(^extra$)|(^migrate$)|(^copy$)|(^backup$)|(^restore$)|(^create$)|(^presence$)|(^drop$)|(^reinit$)|(^bdb$)|(^db_berkeley$)|(^cat$)/) {system(&opensips_db()); }
 	elsif ($cmd[0] =~ /^dr$/)				      	{ &db_load(); system(&opensips_dr()); }
 	elsif ($cmd[0] =~ /^help$/)				      	{ system(&opensips_help()); }
 	else 								{ print " unknown command!!!\n"; }
@@ -1790,7 +1775,7 @@ sub opensips_help() {
 	print "\n\n";
 	&usage_subscriber();
 	print "\n\n";
-	&usage_trusted();
+	&usage_address();
 	print "\n\n";
 	&usage_dispatcher(); 
 	print "\n\n";
@@ -3026,32 +3011,35 @@ sub domain() {
 
 #
 ##### ------------------------------------------------ #####
-### trusted 
+### address 
 #
-sub trusted() {
+sub address() {
+
+	my ($GRP, $IP, $MASK, $PORT, $PROTO, $PATTERN, $CONTEXT_INFO, $columns, $query);
+
 	if ( $#cmd lt 1 ) {
 		print "Too few parameters!\n";
-		&usage_trusted();
+		&usage_address();
 		return;
 	}	
 	
-	if ( $#cmd gt 5 ) {
+	if ( $#cmd gt 8 ) {
 		print "Too many parameters!\n";
-		&usage_trusted();
+		&usage_address();
 		return;
 	}	
 
 		if ($cmd[1] =~ /^reload$/) {
 
 			&require_ctlengine();
-			&mi_comm('trusted_reload');
+			&mi_comm('address_reload');
 
 		}
 		
 		elsif ($cmd[1] =~ /^dump$/) {
 		
 			&require_ctlengine();
-			&mi_comm('trusted_dump');
+			&mi_comm('address_dump');
 
 		}	
 
@@ -3060,11 +3048,11 @@ sub trusted() {
 			&require_dbengine();
 
 			if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
-				&bdb_select($TRUSTED_TABLE);								
+				&bdb_select($ADDRESS_TABLE);								
 			} elsif ( $DBENGINE =~ /^DBTEXT$/ ) {
-				system ("$DBTEXTCMD","SELECT * FROM $TRUSTED_TABLE");
+				system ("$DBTEXTCMD","SELECT * FROM $ADDRESS_TABLE");
 			} else {
-				$sth = $dbh->prepare ( "SELECT * FROM $TRUSTED_TABLE");	
+				$sth = $dbh->prepare ( "SELECT * FROM $ADDRESS_TABLE");	
 				
 				##execute the query
 				$sth->execute( );
@@ -3084,100 +3072,117 @@ sub trusted() {
 
 		elsif ($cmd[1] =~ /^add$/) {
 			
-			my $PATTERN;
 
 			&require_dbengine();
 
-			if ( $#cmd lt 5 ) {
+			if ( $#cmd lt 6 ) {
 				print "Too few parameters!\n";
-				&usage_trusted();
+				&usage_address();
 				return;
 			}
 
+			$GRP = $cmd[2];
+ 			$columns = " $address_table{'ADDRESS_GRP_COLUMN'}, ";
+			$query = "$GRP, ";
 
-			if ( $#cmd gt 5 ) {
-				print "Too many parameters!\n";
-				&usage_trusted();
-				return;
-			}
-	
-			if ( &is_value_in_db( $TRUSTED_TABLE, $trusted_table{'TRUSTED_SRC_IP_COLUMN'}, $cmd[2] ) != 0 ) {
-				print $cmd[2] . " already in $TRUSTED_TABLE table\n";
-				return;
-			}
+			$IP = $cmd[3];
+			$MASK = $cmd[4];
 
-			if ( $cmd[3] !~ /^any$|udp$|tcp$|tls$|sctp$|none$/ ) {
+			$columns .= "$address_table{'ADDRESS_IP_COLUMN'}, $address_table{'ADDRESS_MASK_COLUMN'}, "; 
+                        $query .= "\'$IP\', \'$MASK\', ";
+
+			if ( $cmd[6] !~ /^any$|^ANY$|^UDP$|^udp$|^tcp$|^TCP$|^tls$|^TLS$|^sctp$|^SCTP$|^NONE$|^none$/ ) {
 				print "unknown protocol\n";
 				return;
 			}
-			
-			if ( ! -z $cmd[4] ) {
-				
-				$PATTERN = $cmd[4];
-						
+
+			if ( (&is_value_in_db( $ADDRESS_TABLE, $address_table{'ADDRESS_IP_COLUMN'}, $IP ) != 0) ) {
+				print "Record having $IP is already in $ADDRESS_TABLE table\n";
+				return;
+			}
+
+	
+			$PORT = $cmd[5];
+			$PROTO = $cmd[6];
+
+                        $columns .= "$address_table{'ADDRESS_PORT_COLUMN'}, $address_table{'ADDRESS_PROTO_COLUMN'} "; 
+                        $query .= "$PORT, \'$PROTO\' ";
+			my $value = join(" ", $MASK,$PORT,$PROTO);	
+
+			if ( $cmd[6] ) {
+				$CONTEXT_INFO = $cmd[7];
+				$columns .= ", " . "$address_table{'ADDRESS_CONTEXT_INFO_COLUMN'}";
+				$query .= ", " . "\'$CONTEXT_INFO\'";
+				$value = join(" ",$CONTEXT_INFO);
+				if ( $cmd[7] ) {
+					$PATTERN = $cmd[8];
+	                                $columns .= ", " . "$address_table{'ADDRESS_PATTERN_COLUMN'}";
+        	                        $query .= ", " . "\'$PATTERN\'";
+					$value = join(" ",$PATTERN);
+				}						
 			}
 
 			if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
-				my $key = $cmd[2];
-				my $value = join(" ",$cmd[3],$PATTERN, $cmd[5]);
-				&bdb_insert($TRUSTED_TABLE,$key,$value);								
+				my $key = join(" ", $GRP, $IP);
+				&bdb_insert($ADDRESS_TABLE, $key, $value);								
 			} elsif ( $DBENGINE =~ /^DBTEXT$/ ) {
-				system ("$DBTEXTCMD", " INSERT INTO $TRUSTED_TABLE 
-						( $trusted_table{'TRUSTED_SRC_IP_COLUMN'}, $trusted_table{'TRUSTED_PROTO_COLUMN'}, 
-						$trusted_table{'TRUSTED_FROM_PATTERN_COLUMN'},$trusted_table{'TRUSTED_TAG_COLUMN'} ) 
-						VALUES (\'$cmd[2]\', \'$cmd[3]\', \'$PATTERN\', \'$cmd[5]\') " );
-			} else {			
-				$sth = $dbh->prepare( " INSERT INTO $TRUSTED_TABLE 
-							( $trusted_table{'TRUSTED_SRC_IP_COLUMN'}, $trusted_table{'TRUSTED_PROTO_COLUMN'}, 
-							$trusted_table{'TRUSTED_FROM_PATTERN_COLUMN'},$trusted_table{'TRUSTED_TAG_COLUMN'} ) 
-							VALUES (\'$cmd[2]\', \'$cmd[3]\', \'$PATTERN\', \'$cmd[5]\') " );
-	
+				system ("$DBTEXTCMD", " INSERT INTO $ADDRESS_TABLE ( $columns ) VALUES ( $query ) " ) ;
+			} else {	
+				$sth = $dbh->prepare( " INSERT INTO $ADDRESS_TABLE ($columns ) VALUES ( $query )" );
 				#execute the query
 				$sth->execute( );
-
-				warn "Introducing the new user " . $cmd[1] . " to the database failed", $sth->errstr( ), "\n" if $sth->err( );
+				warn "Introducing the address rule $cmd[2] $IP $MASK $PORT $PROTO to the database failed \n", $sth->errstr( ), "\n" if $sth->err( );
 				$sth->finish();
 			
-				print "execute 'trusted reload' to synchronize cache and database\n";
+				print "\nExecute 'address reload' to synchronize cache and database\n";
 			}
 		}
 
 		elsif ($cmd[1] =~ /^rm$/) {
-
 			&require_dbengine();
-			if ( $#cmd lt 2 ) {
-				&usage_trusted();
+			if ( $#cmd ne 5 ) {
+				&usage_address();
 				return;
 			}
+			$GRP = $cmd[2];
+			$IP = $cmd[3];
+			$MASK = $cmd[4];
+			$PORT = $cmd[5];
 
 			if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
-				my $key = $cmd[2];
-				&bdb_delete($TRUSTED_TABLE,$key);								
+				my $key = join(" ", $cmd[2], $IP);
+				&bdb_delete($ADDRESS_TABLE,$key);								
 			} elsif ( $DBENGINE =~ /^DBTEXT$/ ) {
-				system ("$DBTEXTCMD", "DELETE FROM $TRUSTED_TABLE 
-					      WHERE $trusted_table{'TRUSTED_SRC_IP_COLUMN'} = \'$cmd[2]\'" );
-			} else {				
-				$sth = $dbh->prepare("DELETE FROM $TRUSTED_TABLE 
-						      WHERE $trusted_table{'TRUSTED_SRC_IP_COLUMN'} = \'$cmd[2]\'" );
+				system ("$DBTEXTCMD", "DELETE FROM $ADDRESS_TABLE 
+					      WHERE $address_table{'ADDRESS_GRP_COLUMN'} = $GRP AND 
+	                             	            $address_table{'ADDRESS_IP_COLUMN'} = \'$IP\' AND 
+						    $address_table{'ADDRESS_MASK_COLUMN'} = \'$MASK\' AND 
+						    $address_table{'ADDRESS_PORT_COLUMN'} = $PORT" );
+			} else {			
+				$sth = $dbh->prepare("DELETE FROM $ADDRESS_TABLE 
+						      WHERE $address_table{'ADDRESS_GRP_COLUMN'} = $GRP AND 
+                                                            $address_table{'ADDRESS_IP_COLUMN'} = \'$IP\' AND 
+                                                            $address_table{'ADDRESS_MASK_COLUMN'} = \'$MASK\' AND 
+                                                            $address_table{'ADDRESS_PORT_COLUMN'} = $PORT" );
 				#execute the query
 				$sth->execute( );			
-				warn "Deleting domain " . $cmd[2] . " in table $DOMAIN_TABLE failed", $sth->errstr( ), "\n" if $sth->err( );
+				warn "Deleting address rule: $GRP $IP $MASK $PORT  in table $DOMAIN_TABLE failed \n", $sth->errstr( ), "\n" if $sth->err( );
 				$sth->finish();
 			}
 
-			print "execute 'trusted reload' to synchronize cache and database\n";
+			print "\nExecute 'address reload' to synchronize cache and database\n";
 	
 		}
 
 		elsif ($cmd[1] =~ /^h$/) {
 		
-			&usage_trusted();
+			&usage_address();
 			
 		}
 
 		else {
 
-			print "trusted -unknown command $cmd[1]\n";
+			print "address -unknown command $cmd[1]\n";
 
 		}
 
@@ -5623,43 +5628,42 @@ sub opensips_version() {
 ### database operations  
 #
 sub opensips_db() {
-
-		if ($cmd[0] =~ /^migrate$/){
+		
+		if ($cmd[1] =~ /^migrate$/){
 			
-			if ($cmd[1] =~ /^h$/) {
+			if ($cmd[2] =~ /^h$/) {
 				&usage_db();
 				return;
-			} elsif ( $#cmd != 1 ) {
+			} elsif ( $#cmd != 2 ) {
 				if ( $DBENGINE !~ /^mysql$/ ) {
 					print $DBENGINE ." doesn't support the migrate operation\n";
 					return;
 				}
 
-				if ( $#cmd != 2 ) {
+				if ( $#cmd != 3 ) {
 					print "Migrate requires 2 parameters: old and new database\n";
 					&usage_db();
 					return;
 				}
 
 				# create new database
-				print "Creating new database $cmd[2]....\n";
-				$NO_USER_INIT="yes";
-				&mysql_opensips_create($cmd[2]);
+				print "Creating new database $cmd[3]....\n";
+				&mysql_opensips_create($cmd[3]);
 				#if ( $? != 0 ) {
 				#	print "Migrate: creating new database failed\n";
 				#	return;
 				#}
 
 				# migrate data
-				print "Migrating data from $cmd[1] to $cmd[2]....\n";
-				&mysql_migrate_db($cmd[1],$cmd[2]);
+				print "Migrating data from $cmd[2] to $cmd[3]....\n";
+				&mysql_migrate_db($cmd[2],$cmd[3]);
 				#if ( $? == 0 ) {
 				print "Migration successfully completed.\n";
 				#}	
 			}
 		}
 
-		elsif ($cmd[0] =~ /^copy$/) {
+		elsif ($cmd[1] =~ /^copy$/) {
 
 			my ( $tmp_file);
 			# copy database to some other name
@@ -5668,12 +5672,12 @@ sub opensips_db() {
 				return;
 			}
 			
-			if ( $#cmd != 1 ) {
+			if ( $#cmd != 2 ) {
 				&usage_db();
 				return;
 			}
 
-			$tmp_file=`mktemp /tmp/opensipsdbctl.XXXXXXXXXX`;
+			$tmp_file=`mktemp /tmp/osipsconsole_db.XXXXXXXXXX`;
 
 			&opensips_dump($DBNAME,$tmp_file);
 			if ( $? != 0 ) {
@@ -5681,123 +5685,122 @@ sub opensips_db() {
 				return;
 			}
 
-			$NO_USER_INIT="yes";
-			&opensips_create($cmd[1]);
+			&opensips_create($cmd[2]);
 			if ( $? != 0 ) {
 				`rm $tmp_file`;
 				return;
 			}
 
-			&opensips_restore($cmd[1],$tmp_file);
+			&opensips_restore($cmd[2],$tmp_file);
 			`rm -f $tmp_file`;
 			return;
 		}
 
-		elsif ($cmd[0] =~ /^backup$/) {
+		elsif ($cmd[1] =~ /^backup$/) {
 			if ( ($DBENGINE =~ /^DB_BERKELEY$/) || ( $DBENGINE =~ /^DBTEXT$/ ) ) {
 				print "$DBENGINE doesn't support the backup operation\n";
 				return;
 			}
 			# backup current database
-			if ($cmd[1] =~ /^h$/) {
+			if ($cmd[2] =~ /^h$/) {
 				&usage_db();
 				return;
-			} elsif ( $#cmd != 1 ) {
+			} elsif ( $#cmd != 2 ) {
 				&usage_db();
 				return;
 			}
-			&opensips_dump($DBNAME, $cmd[1]);
+			&opensips_dump($DBNAME, $cmd[2]);
 
 		}
 
-		elsif ($cmd[0] =~ /^restore$/) {
+		elsif ($cmd[1] =~ /^restore$/) {
 
 			if ( ($DBENGINE =~ /^DB_BERKELEY$/) || ($DBENGINE =~ /^dbtext$/) ) {
 				print "$DBENGINE doesn't support the restore operation\n";
 				return;
 			}
 
-			if ($cmd[1] =~ /^h$/) {
+			if ($cmd[2] =~ /^h$/) {
 				&usage_db();
 				return;
-			} elsif ( $#cmd != 1 ) {
+			} elsif ( $#cmd != 2 ) {
 				&usage_db();
 				return;
 			}
 			#&opensips_restore($cmd[1],);
 		}
 
-		elsif ($cmd[0] =~ /^create$/) {
+		elsif ($cmd[1] =~ /^create$/) {
 
-			if ($cmd[1] =~ /^h$/) {
+			if ($cmd[2] =~ /^h$/) {
 				&usage_db();
 				return;
-			} elsif ( $#cmd != 1 ) {
-				&usage_db();
-				return;
-			}
-			&opensips_create($cmd[1]);
-		}
-
-		elsif ($cmd[0] =~ /^presence$/) {
-
-			if ($cmd[1] =~ /^h$/) {
-				&usage_db();
-				return;
-			} elsif ( $#cmd != 1 ) {
+			} elsif ( $#cmd != 2 ) {
 				&usage_db();
 				return;
 			}
-
-			&presence_create($cmd[1]);
+			&opensips_create($cmd[2]);
 		}
 
-		elsif ($cmd[0] =~ /^extra$/) {
+		elsif ($cmd[1] =~ /^presence$/) {
 
-			if ($cmd[1] =~ /^h$/) {
+			if ($cmd[2] =~ /^h$/) {
 				&usage_db();
 				return;
-			} elsif ( $#cmd != 1 ) {
+			} elsif ( $#cmd != 2 ) {
 				&usage_db();
 				return;
 			}
 
-			&extra_create($cmd[1]);
+			&presence_create($cmd[2]);
 		}
 
-		elsif ($cmd[0] =~ /^drop$/) {
+		elsif ($cmd[1] =~ /^extra$/) {
+
+			if ($cmd[2] =~ /^h$/) {
+				&usage_db();
+				return;
+			} elsif ( $#cmd != 2 ) {
+				&usage_db();
+				return;
+			}
+
+			&extra_create($cmd[2]);
+		}
+
+		elsif ($cmd[1] =~ /^drop$/) {
 	
-			if ($cmd[1] =~ /^h$/) {
+			if ($cmd[2] =~ /^h$/) {
 				&usage_db();
 				return;
-			} elsif ( $#cmd != 1 ) {
+			} elsif ( $#cmd != 2 ) {
 				&usage_db();
 				return;
 			}
-			&opensips_drop($cmd[1]);
+			&opensips_drop($cmd[2]);
 		}
 
-		elsif ($cmd[0] =~ /^reinit$/) {
+		elsif ($cmd[1] =~ /^reinit$/) {
 
 			# delete database and create a new one
 			# create new database structures
-			if ( $#cmd != 1 ) {
+			if ( $#cmd != 2 ) {
 				&usage_db();
 				return;
 			}
 
-			if ( $cmd[1] =~ /^h$/ ) {
+			if ( $cmd[2] =~ /^h$/ ) {
 				&usage_db();
 				return;
 			}
 
-			&opensips_drop($cmd[1]);
+			&opensips_drop($cmd[2]);
 
-			&opensips_create($cmd[1]);
+			&opensips_create($cmd[2]);
 
 		}
 
-		elsif ($cmd[0] =~ /(^bdb$)|(^db_berkeley$)/){
+		elsif ($cmd[1] =~ /(^bdb$)|(^db_berkeley$)/){
 			&opensips_berkeley();
 		}
 
@@ -6385,7 +6388,6 @@ sub mysql_extra_create() { # pars: <database name>
 		print "extra_create function takes one param\n";
 		return;
 	}
-	
 	my $db = $_[0];
 	print "Creating extra tables into $db...\n";
 
@@ -6584,7 +6586,7 @@ sub dbtext_opensips_drop() { # pars: <database name>
 
 sub bdb_opensips_drop() { # pars:  <DB_PATH>
 
-	my $TABLE;
+	my $TABLE;#my $DATA_DIR = $PATH_SHARE."/opensips";
 
 	if ( $#_ != 0 ) {
 		print "opensips_drop function takes one param\n";
@@ -6681,11 +6683,8 @@ sub mysql_migrate_db() { # 2 parameters (src_db, dst_db)
 	&mysql_migrate_table($dst_db . ".usr_preferences", "id,uuid,username,domain,attribute,type,value,last_modified", $src_db . ".usr_preferences", "?id,?uuid,?username,?domain,?attribute,?type,?value,?last_modified" );
 
 
-	### trusted
-	&mysql_migrate_table( $dst_db . ".trusted", "id,src_ip,proto,from_pattern,tag", $src_db . ".trusted", "?id,?src_ip,?proto,?from_pattern,?tag" );
-
 	### address
-	&mysql_migrate_table( $dst_db . ".address", "id,grp,ip_addr,mask,port", $src_db . ".address", "?id,?grp,?ip_addr,?mask,?port" );
+	&mysql_migrate_table( $dst_db . ".address", "id,grp,ip,mask,port", $src_db . ".address", "?id,?grp,?ip_addr,?mask,?port" );
 
 	### speed_dial
 	&mysql_migrate_table( $dst_db . ".speed_dial", "id,username,domain,sd_username,sd_domain,new_uri,fname,lname,description", $src_db . ".speed_dial", "?id,?username,?domain,?sd_username,?sd_domain,?new_uri,?fname,?lname,?description" );
@@ -6705,7 +6704,35 @@ sub mysql_migrate_db() { # 2 parameters (src_db, dst_db)
 	&mysql_migrate_table( $dst_db. ".pdt", "id,sdomain,prefix,domain", $src_db . ".pdt", "?id,?sdomain,?prefix,?domain" );
 
 	### subscriber
-	&mysql_migrate_table( $dst_db . ".subscriber", "id,username,domain,password,ha1,ha1b,rpid", $src_db . ".subscriber", "?id,?username,?domain,?password,?email_address,?ha1,?ha1b,?rpid" );
+	&mysql_migrate_table( $dst_db . ".subscriber", "id,username,domain,password,email_address,ha1,ha1b,rpid", $src_db . ".subscriber", "?id,?username,?domain,?password,?email_address,?ha1,?ha1b,?rpid" );
+
+	### load_balancer
+	&mysql_migrate_table( $dst_db . ".load_balancer", "id,group_id,dst_uri,resources,description", $src_db . ".load_balancer", "?id,?group_id,?dst_uri,?resources,?description" );
+
+	### dialog
+	&mysql_migrate_table( $dst_db . ".dialog", "id,hash_entry,hash_id,callid,from_uri,from_tag,to_uri,to_tag,caller_cseq,callee_cseq,caller_route_set,callee_route_set,caller_contact,callee_contact,caller_sock,callee_sock,state,start_time,timeout", $src_db . ".dialog", "?id,?hash_entry,?hash_id,?callid,?from_uri,?from_tag,?to_uri,?to_tag,?caller_cseq,?callee_cseq,?caller_route_set,?callee_route_set,?caller_contact,?calee_contact,?caller_sock,?callee_sock,?state,?start_time,?timeout" );
+
+	### dispatcher
+	&mysql_migrate_table( $dst_db . ".dispatcher", "id,setid,destination,flags,description", $src_db . ".dispatcher", "?id,?setid,?destination,?flags,?description" );
+
+	### nathelper
+	&mysql_migrate_table( $dst_db . ".nh_sockets", "id,rtpproxy_sock,set_id", $src_db . ".nh_sockets", "?id,?rtpproxy_sock,?set_id" );
+
+	### dialplan
+	&mysql_migrate_table( $dst_db . ".dialplan", "id,dpid,pr,match_op,match_exp,match_len,subst_exp,repl_exp,attrs", $src_db . ".dialplan", "?id,?dpid,?pr,?match_op,?match_exp,?match_len,?subst_exp,?repl_exp,?attrs" );
+
+	### dr_gateways
+	&mysql_migrate_table( $dst_db . ".dr_gateways", "gwid,type,address,strip,pri_prefix,attrs,description", $src_db . ".dr_gateways", "?gwid,?type,?address,?strip,?pri_prefix,?attrs,?description" );
+
+	### dr_rules
+	&mysql_migrate_table( $dst_db . ".dr_rules", "ruleid,groupid,prefix,timerec,priority,routeid,gwlist,description", $src_db . ".dr_rules", "?ruleid,?groupid,?prefix,?timerec,?priority,?routeid,?gwlist,?description" );
+
+	### dr_gw_lists
+	&mysql_migrate_table( $dst_db . ".dr_gw_lists", "id,gwlist,description", $src_db . ".dr_gw_lists", "?id,?gwlist,?description" );
+
+	### dr_groups
+	&mysql_migrate_table( $dst_db . ".dr_groups", "id,username,domain,groupid,description", $src_db . ".dr_groups", "?id,?username,?domain,?groupid,?description" );
+
 
 
 	if ( $HAS_EXTRA eq "yes" ) {
@@ -6720,6 +6747,22 @@ sub mysql_migrate_db() { # 2 parameters (src_db, dst_db)
 
 		### imc_members
 		&mysql_migrate_table(  $dst_db. ".imc_members", "id,username,domain,room,flag", $src_db. ".imc_members", "?id,?username,?domain,?room,?flag" );
+
+		### carrierroute
+		&mysql_migrate_table( $dst_db . ".carrierroute", "id,carrier,domain,scan_prefix,flags,mask,prob,strip,rewrite_host,rewrite_prefix,rewrite_suffix,description", $src_db . ".carrierroute", "?id,?carrier,?domain,?scan_prefix,?flags,?mask,?prob,?strip,?rewrite_host,?rewrite_prefix,?rewrite_suffix,?description" );
+
+		### carrierfailureroute
+		&mysql_migrate_table( $dst_db . ".carrierfailureroute", "id,carrier,domain,scan_prefix,host_name,reply_code,flags,mask,next_domain,description", $src_db . ".carrierfailureroute", "?id,?carrier,?domain,?scan_prefix,?host_name,?reply_code,?flags,?mask,?next_domain,?description" );
+
+		### domainpolicy
+		&mysql_migrate_table(  $dst_db . ".domainpolicy", "id,rule,type,att,val,description", $src_db . ".domainpolicy", "?id,?rule,?type,?att,?val,?description" );
+
+		### userblacklist
+		&mysql_migrate_table(  $dst_db . ".userblacklist", "id,username,domain,prefix,whitelist", $src_db . ".userblacklist", "?id,?username,?domain,?prefix,?whitelist" );
+
+		### globalblacklist
+		&mysql_migrate_table(  $dst_db . ".globalblacklist", "id,prefix,whitelist,description", $src_db . ".globalblacklist", "?id,?prefix,?whitelist,?description" );
+
 	}
 }
 
