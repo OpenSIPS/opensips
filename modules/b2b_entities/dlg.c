@@ -239,6 +239,20 @@ b2b_dlg_t* b2b_dlg_copy(b2b_dlg_t* dlg)
 	return new_dlg;
 }
 
+void b2b_delete_legs(dlg_leg_t** legs)
+{
+	dlg_leg_t* leg, *aux_leg;
+
+	leg = *legs;
+	while(leg)
+	{
+		aux_leg = leg->next;
+		shm_free(leg);
+		leg = aux_leg;
+	}
+	*legs = NULL;
+}
+
 char* DLG_FLAGS_STR(int type)
 {
 	switch(type){
@@ -260,7 +274,6 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 	int method_value;
 	struct to_body TO;
 	static	str reason = {"Trying", 6};
-//	contact_body_t* b;
 	char* src_ip;
 
 	/* check if a b2b request */
@@ -284,32 +297,6 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 		LM_DBG("Received a message that I sent\n");
 		return 1;
 	}
-
-#if 0
-	if( msg->contact!=NULL && msg->contact->body.s!=NULL)
-	{
-		if( parse_contact(msg->contact) <0 )
-		{
-			LM_ERR(" cannot parse contact"
-					" header\n");
-			return -1;
-		}
-		b= (contact_body_t* )msg->contact->parsed;
-
-		if(b == NULL)
-		{
-			LM_ERR("cannot parse contact header\n");
-			return -1;
-		}
-		if(b->contacts->uri.len == server_address.len &&
-				strncmp(b->contacts->uri.s, server_address.s, server_address.len)==0)
-		{
-			LM_DBG("Received a request that I sent\n");
-			return 1;
-		}
-	}
-#endif
-
 	method_value = msg->first_line.u.request.method_value;
 
 	if(method_value == METHOD_PRACK)
@@ -526,13 +513,7 @@ void destroy_b2b_htables(void)
 			while(dlg)
 			{
 				aux = dlg->next;
-				if(dlg->legs)
-				{
-					if(dlg->legs->contact.s)
-						shm_free(dlg->legs->contact.s);
-					shm_free(dlg->legs);
-				}
-
+				b2b_delete_legs(&dlg->legs);
 				shm_free(dlg);
 				dlg = aux;
 			}
@@ -846,13 +827,7 @@ void b2b_delete_record(b2b_dlg_t* dlg, b2b_table* htable, unsigned int hash_inde
 	if(*htable == server_htable && dlg->tag[CALLEE_LEG].s)
 		shm_free(dlg->tag[CALLEE_LEG].s);
 
-	if(dlg->legs)
-	{
-		if(dlg->legs->contact.s)
-			shm_free(dlg->legs->contact.s);
-		shm_free(dlg->legs);
-	}
-
+	b2b_delete_legs(&dlg->legs);
 
 	shm_free(dlg);
 }
@@ -1097,8 +1072,6 @@ dlg_leg_t* b2b_find_leg(b2b_dlg_t* dlg, str to_tag)
 				strncmp(to_tag.s, leg->tag.s, to_tag.len)==0)
 		{
 			LM_DBG("Found existing leg  - Nothing to update\n");
-			/* construct the contact to contain the id */
-			/* I must have the address -> the server_address must be parsed */
 			return leg;
 		}
 		leg = leg->next;
@@ -1138,7 +1111,7 @@ dlg_leg_t* b2b_new_leg(struct sip_msg* msg, str* to_tag, int mem_type)
 			goto error;
 		}
 	}
-	size = sizeof(dlg_leg_t) + route_set.len + to_tag->len;
+	size = sizeof(dlg_leg_t) + route_set.len + to_tag->len + contact.len;
 
 	if(mem_type == SHM_MEM_TYPE)
 		new_leg = (dlg_leg_t*)shm_malloc(size);
@@ -1157,18 +1130,9 @@ dlg_leg_t* b2b_new_leg(struct sip_msg* msg, str* to_tag, int mem_type)
 
 	if(contact.s && contact.len)
 	{
-		if(mem_type == SHM_MEM_TYPE)
-			new_leg->contact.s = (char*)shm_malloc(contact.len);
-		else
-			new_leg->contact.s = (char*)pkg_malloc(contact.len);
-
-		if(new_leg->contact.s== NULL)
-		{
-			LM_ERR("No more memory\n");
-			goto error;
-		}
 		memcpy(new_leg->contact.s, contact.s, contact.len);
 		new_leg->contact.len = contact.len;
+		size+= contact.len;
 	}
 
 	if(route_set.s)
@@ -1258,12 +1222,11 @@ void b2b_tm_cback(b2b_table htable, struct tmcb_params *ps)
 	b2b_dlg_t* dlg;
 	void* param = NULL;
 	int statuscode = 0;
-	dlg_leg_t* leg, *confirmed_leg = NULL, *aux_leg;
+	dlg_leg_t* leg;
 	struct to_body* pto, TO;
 	str to_tag;
 	struct hdr_field* require_hdr;
 	int method_id = -1;
-	contact_body_t* b;
 
 	if(ps == NULL || ps->rpl == NULL)
 	{
@@ -1489,8 +1452,6 @@ void b2b_tm_cback(b2b_table htable, struct tmcb_params *ps)
 					{
 						LM_ERR("Failed to send BYE request\n");
 					}
-					if(leg->contact.s)
-						pkg_free(leg->contact.s);
 					pkg_free(leg);
 
 					lock_release(&htable[hash_index].lock);
@@ -1498,72 +1459,15 @@ void b2b_tm_cback(b2b_table htable, struct tmcb_params *ps)
 				}
 				else
 				{
-					/* keep only this confirmed leg and delete the rest */
+					/* delete all and add the confirmed leg */
 					dlg->state = B2B_CONFIRMED;
-					leg = dlg->legs;
-					while(leg)
+					b2b_delete_legs(&dlg->legs);
+					leg = b2b_add_leg(dlg, msg, &to_tag);
+					if(leg == NULL)
 					{
-						aux_leg = leg->next;
-						/* compare the tag */
-						if(!confirmed_leg && (to_tag.len == leg->tag.len &&
-								strncmp(to_tag.s, leg->tag.s, to_tag.len)==0))
-						{
-							confirmed_leg = leg;
-						}else
-						{
-							if(leg->contact.s)
-								shm_free(leg->contact.s);
-							shm_free(leg);
-						}
-						leg = aux_leg;
-					}
-					if(confirmed_leg == NULL) /* none provisional reply was received */
-					{
-						leg = b2b_add_leg(dlg, msg, &to_tag);
-						if(leg == NULL)
-						{
-							LM_ERR("Failed to add dialog leg\n");
-							lock_release(&htable[hash_index].lock);
-							return;
-						}
-					}
-					else
-					{
-						str contact;
-
-						dlg->legs = confirmed_leg;
-						dlg->legs->next = NULL;
-						/* update the contact */
-						if( msg->contact==NULL || msg->contact->body.s==NULL)
-						{
-							LM_ERR("NULL contact in final response\n");
-							lock_release(&htable[hash_index].lock);
-							return;
-						}
-						if(parse_contact(msg->contact) <0 )
-						{
-							LM_ERR("failed to parse contact header\n");
-							lock_release(&htable[hash_index].lock);
-							return;
-						}
-						b= (contact_body_t* )msg->contact->parsed;
-						if(b == NULL)
-						{
-							LM_ERR("contact header not parsed\n");
-							lock_release(&htable[hash_index].lock);
-							return;
-						}
-						contact = b->contacts->uri;
-
-						confirmed_leg->contact.s = (char*)shm_malloc(contact.len);
-						if(confirmed_leg->contact.s== NULL)
-						{
-							LM_ERR("No more memory\n");
-							lock_release(&htable[hash_index].lock);
-							return;
-						}
-						memcpy(confirmed_leg->contact.s, contact.s, contact.len);
-						confirmed_leg->contact.len = contact.len;
+						LM_ERR("Failed to add dialog leg\n");
+						lock_release(&htable[hash_index].lock);
+						return;
 					}
 					lock_release(&htable[hash_index].lock);
 					goto done;
