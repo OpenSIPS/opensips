@@ -11,7 +11,7 @@ PATH=$PATH:/usr/local/sbin/
 # for testing only, please don't enable this in production environments
 # as this introduce security risks
 TEST="false"
-
+DBENGINE="MYSQL"
 ### include config files
 if [ -f /etc/opensips/opensipsctlrc ]; then
 	. /etc/opensips/opensipsctlrc
@@ -1022,74 +1022,93 @@ domain() {
 
 #
 ##### ------------------------------------------------ #####
-### trusted management
+### address management
 #
-trusted() {
+address() {
 	case $1 in
 		reload)
 			require_ctlengine
-			$CTLCMD trusted_reload
+			$CTLCMD address_reload
 			;;
 		dump)
 			require_ctlengine
-			$CTLCMD trusted_dump
+			$CTLCMD address_dump
 			;;
 		show)
 			require_dbengine
-			QUERY="select * FROM $TRUSTED_TABLE ; "
+			QUERY="select * FROM $ADDRESS_TABLE ; "
 			$DBROCMD "$QUERY"
 			;;
 		add)
 			require_dbengine
 			shift
-			if [ $# -lt 2 ] ; then
-				usage_trusted
+			if [ $# -lt 5 ] ; then
+				usage_address
 				exit 1
 			fi
-			if is_value_in_db $TRUSTED_TABLE src_ip $1; then
-				minfo "$1 already in $TRUSTED_TABLE table"
+			if is_value_in_db $ADDRESS_TABLE ip $2; then
+				minfo "$2 already in $ADDRESS_TABLE table"
 				exit 0
 			fi
-			case $2 in
+			case $5 in
 				any|udp|tcp|tls|sctp|none)
 					;;
 				*)
 					merr "unknown protocol"
 					exit 1
 			esac
-			PATTERN=""
-			if [ ! -z "$3" ]; then
-				PATTERN="$3"
+			
+			QUERY="insert into $ADDRESS_TABLE \
+				($ADDRESS_GRP_COLUMN, $ADDRESS_IP_COLUMN, $ADDRESS_MASK_COLUMN, \
+				$ADDRESS_PORT_COLUMN, $ADDRESS_PROTO_COLUMN) \
+				VALUES ('$1', '$2', '$3', '$4', '$5');"
+
+			CONTEXT_INFO=""
+			if [ ! -z "$6" ]; then
+				CONTEXT_INFO="$6"
+			
+				QUERY="insert into $ADDRESS_TABLE \
+					($ADDRESS_GRP_COLUMN, $ADDRESS_IP_COLUMN, $ADDRESS_MASK_COLUMN, \
+					$ADDRESS_PORT_COLUMN, $ADDRESS_PROTO_COLUMN, $ADDRESS_CONTEXT_INFO_COLUMN) \
+					VALUES ('$1', '$2', '$3', '$4', '$5', CONTEXT_INFO);"
+						
+				PATTERN=""
+				if [ ! -z "$7" ]; then
+					PATTERN="$7"
+				
+					QUERY="insert into $ADDRESS_TABLE \
+						($ADDRESS_GRP_COLUMN, $ADDRESS_IP_COLUMN, $ADDRESS_MASK_COLUMN, \
+						$ADDRESS_PORT_COLUMN, $ADDRESS_PROTO_COLUMN, $ADDRESS_CONTEXT_INFO_COLUMN, $ADDRESS_PATTERN_COLUMN) \
+						VALUES ('$1', '$2', '$3', '$4', '$5', CONTEXT_INFO, PATTERN);"
+				fi
 			fi
 
-			QUERY="insert into $TRUSTED_TABLE \
-				( $TRUSTED_SRC_IP_COLUMN, $TRUSTED_PROTO_COLUMN, \
-				$TRUSTED_FROM_PATTERN_COLUMN, $TRUSTED_TAG_COLUMN) \
-				VALUES ('$1', '$2', '$PATTERN', '$4');"
 			$DBCMD "$QUERY"
 			if [ $? -ne 0 ] ; then
-				merr "trusted - SQL Error"
+				merr "address - SQL Error"
 				exit 1
 			fi
-			minfo "execute '$0 trusted reload' to synchronize cache and database"
+			minfo "execute '$0 address reload' to synchronize cache and database"
 			;;
 		rm)
 			require_dbengine
 			shift
-			if [ $# -ne 1 ] ; then
-				usage_trusted
+			if [ $# -ne 4 ] ; then
+				usage_address
 				exit 1
 			fi
-			QUERY="delete from $TRUSTED_TABLE where $TRUSTED_SRC_IP_COLUMN='$1';"
+			QUERY="delete from $ADDRESS_TABLE where $ADDRESS_GRP_COLUMN='$1' \
+			      AND $ADDRESS_IP_COLUMN='$2' AND $ADDRESS_MASK_COLUMN='$3'\
+			      AND $ADDRESS_PORT_COLUMN='$4';"
 			$DBCMD "$QUERY"
 			if [ $? -ne 0 ] ; then
-				merr "trusted - SQL Error"
+				merr "address - SQL Error"
 				exit 1
 			fi
-			minfo "execute '$0 trusted reload' to synchronize cache and database"
+			minfo "execute '$0 address reload' to synchronize cache and database"
 			;;
 		*)
-			usage_trusted
+			usage_address
 			exit 1
 	esac
 }
@@ -2442,9 +2461,9 @@ case $1 in
 		domain "$@"
 		;;
 
-	trusted)
+	address)
 		shift
-		trusted "$@"
+		address "$@"
 		;;
 
 	fifo|unixsock)
@@ -2461,11 +2480,6 @@ case $1 in
 	cr)
 		shift
 		cr "$@"
-		;;
-
-	trusted)
-		shift
-		trusted "$@"
 		;;
 
 	dispatcher)

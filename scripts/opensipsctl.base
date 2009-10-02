@@ -1,5 +1,5 @@
 #
-# $Id: opensipsctl.base 4448 2008-07-03 16:43:01Z henningw $
+# $Id$
 #
 # sc: opensips control; tool for maintaining opensips
 #
@@ -189,11 +189,6 @@ fi
 DO_DOMAIN_COLUMN=domain
 DO_LAST_MODIFIED_COLUMN=last_modified
 
-# trusted table
-if [ -z "$TRUSTED_TABLE" ] ; then
-	TRUSTED_TABLE=trusted
-fi
-
 # lcr tables
 if [ -z "$LCR_TABLE" ] ; then
 	LCR_TABLE=lcr
@@ -281,15 +276,18 @@ AVP_VALUE_COLUMN=value
 AVP_TYPE_COLUMN=type
 AVP_MODIFIED_COLUMN=last_modified
 
-# trusted table
-if [ -z "$TRUSTED_TABLE" ] ; then
-	TRUSTED_TABLE=trusted
+# address table
+if [ -z "$ADDRESS_TABLE" ] ; then
+	ADDRESS_TABLE=address
 fi
 
-TRUSTED_SRC_IP_COLUMN=src_ip
-TRUSTED_PROTO_COLUMN=proto
-TRUSTED_FROM_PATTERN_COLUMN=from_pattern
-TRUSTED_TAG_COLUMN=tag
+ADDRESS_GRP_COLUMN=grp
+ADDRESS_IP_COLUMN=ip
+ADDRESS_MASK_COLUMN=mask
+ADDRESS_PORT_COLUMN=port
+ADDRESS_PROTO_COLUMN=proto
+ADDRESS_PATTERN_COLUMN=pattern
+ADDRESS_CONTEXT_INFO_COLUMN=context_info
 
 # dispatcher tables  
 if [ -z "$DISPATCHER_TABLE" ] ; then
@@ -428,18 +426,19 @@ EOF
 }
 USAGE_FUNCTIONS="$USAGE_FUNCTIONS usage_subscriber"
 
-usage_trusted() {
+usage_address() {
 	echo
-	mecho " -- command 'add|dump|reload|rm|show' - manage trusted"
+	mecho " -- command 'add|dump|reload|rm|show' - manage address"
 	echo
 cat <<EOF
- trusted show ...................... show db content
- trusted dump ...................... show cache content
- trusted reload .................... reload db table into cache
- trusted add <src_ip> <proto> <from_pattern> <tag>
+ address show ...................... show db content
+ address dump ...................... show cache content
+ address reload .................... reload db table into cache
+ address add <grp> <ip> <mask> <port> <proto> [<context_info>] [<pattern>]
              ....................... add a new entry
 	     ....................... (from_pattern and tag are optional arguments)
- trusted rm <src_ip> ............... remove all entres for the given src_ip
+ address rm <grp> <ip> <mask> <port> ............... remove all entries 
+	     ....................... for the given grp ip mask port
 EOF
 }
 USAGE_FUNCTIONS="$USAGE_FUNCTIONS usage_trusted"
