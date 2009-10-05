@@ -125,7 +125,7 @@ int event_parser(char* _s, int _l, event_t* _e)
 		_e->parsed = EVENT_OTHER;
 	}
 
-	if( ((end - tmp.s) < tmp.len) && (*end)== ';')
+	if( (_e->text.len < tmp.len) && (*end)== ';')
 	{
 		str params_str;
 		params_str.s = end+1;
