@@ -1087,7 +1087,7 @@ dlg_leg_t* b2b_new_leg(struct sip_msg* msg, str* to_tag, int mem_type)
 	contact_body_t* b;
 	int size;
 
-	if( msg->contact!=NULL && msg->contact->body.s==NULL)
+	if( msg->contact!=NULL && msg->contact->body.s!=NULL)
 	{
 		if(parse_contact(msg->contact) <0 )
 		{
@@ -1130,6 +1130,7 @@ dlg_leg_t* b2b_new_leg(struct sip_msg* msg, str* to_tag, int mem_type)
 
 	if(contact.s && contact.len)
 	{
+		new_leg->contact.s = (char*)new_leg + size;
 		memcpy(new_leg->contact.s, contact.s, contact.len);
 		new_leg->contact.len = contact.len;
 		size+= contact.len;
