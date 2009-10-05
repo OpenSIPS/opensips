@@ -1229,19 +1229,21 @@ print "Script for maintaining OpenSIPS Berkeley DB tables\n".
 # droute
 sub usage_dr() {
 	print " -- command 'droute'\n" . 
- 	      "dr gateway add <address> [<type>] [<strip>] [<pri_prefix>] [<description>].....\n" .
+ 	      "dr gateway add <address=address_param> [<type=type_param>] [<strip=strip_param>] \n". 
+			" [<pri_prefix=pri_prefix_param>] [<description=description_param>].....\n" .
  	      		    "\t\t\t\t\t\t\t..........................adds new route\n" .
- 	      "dr gateway rm <gwid>................................removes route\n" . 
- 	      "dr gateway list <type>..............................lists route(s)\n" .
- 	      "dr gateway list <address>...........................lists route(s)\n" .
+ 	      "dr gateway rm <gwid=gwid_param>................................removes route\n" . 
+ 	      "dr gateway list <type=type_param>..............................lists route(s)\n" .
+ 	      "dr gateway list <address=address_param>...........................lists route(s)\n" .
  	      "dr gateway list ....................................lists all routes\n" .
 	      "dr gateway h........................................droute help\n" .
- 	      "dr rules add <gwlist> [<groupid>][<prefix>][<timerec>][<priority>][<routeid>][<description>].....\n" .
+ 	      "dr rules add <gwlist=gwlist_param> [<groupid=groupid_param>][<prefix=prefix_param>] \n".
+		"[<timerec=timerec_param>][<priority=priority_param>][<routeid=routeid_param>][<description=description_param>].....\n" .
 		            "\t\t\t\t\t\t\t\t.............adds new rule(s)\n" .
- 	      "dr rules rm <ruleid> .................................removes rules\n" .
+ 	      "dr rules rm <ruleid=ruleid_param> .................................removes rules\n" .
  	      "dr rules list...............................lists rules(s)\n" .
- 	      "dr rules list <gwlist>...............................lists rules(s)\n" .
- 	      "dr rules list <groupid>...............................lists rules(s)\n" .
+ 	      "dr rules list <gwlist=gwlist_param>...............................lists rules(s)\n" .
+ 	      "dr rules list <groupid=groupid_param>...............................lists rules(s)\n" .
 	      "dr rules h..................................dr rules help\n" .
 	      "dr h........................................dr help\n";
 }
@@ -7570,16 +7572,13 @@ sub opensips_dr() {
 
 				@var = split ("=",$cmd[3]);
 				$address = $var[1];
-			
+		
 				if ( ($#cmd > 3) & ($#cmd <= 7) ) { 
 					$i += 4;
 					while ( $i < $#cmd+1 ) {
 						@var = split ("=",$cmd[$i]);
-						print "var[1]".$var[1];
 							if ($var[0] =~ /type/) {
-								print $type . "before\n";
 								$type = $var[1]; 
-								print $type . "after\n";
 							}
 							elsif ($cmd[2] =~ /strip/) {
 								$strip = $var[1];
@@ -7592,7 +7591,6 @@ sub opensips_dr() {
 							}
 						$i++;
 					}
-					print $type . "after loop\n";
 				}
 
 				#prepare query
@@ -7818,9 +7816,9 @@ sub opensips_dr() {
 						my $key = $ruleid;
 						&bdb_delete($DR_RULES_TABLE,$key);
 					} elsif ( $DBENGINE =~ /^DBTEXT$/ )	{
-						system("$DBTEXTCMD"," DELETE FROM $DR_RULES_TABLE WHERE $dr_rules_table{'DR_RULES_RULEID_COLUMN'}=$ruleid ");
+						system("$DBTEXTCMD"," DELETE FROM $DR_RULES_TABLE WHERE $dr_rules_table{'DR_RULES_RULEID_COLUMN'}=\'$ruleid\' ");
 					} else {
-						$sth = $dbh->prepare(" DELETE FROM $DR_RULES_TABLE WHERE $dr_rules_table{'DR_RULES_RULEID_COLUMN'}=$ruleid ");
+						$sth = $dbh->prepare(" DELETE FROM $DR_RULES_TABLE WHERE $dr_rules_table{'DR_RULES_RULEID_COLUMN'}=\'$ruleid\' ");
 	
 						#execute the query
 						$sth->execute();
