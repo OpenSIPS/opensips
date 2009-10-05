@@ -2114,7 +2114,7 @@ int pv_set_avp(struct sip_msg* msg, pv_param_t *param,
 		flags |= AVP_VAL_STR;
 	}
 
-	if(idxf == PV_IDX_INT || idx == PV_IDX_PVAR) /* if the avp is indexed */
+	if(idxf == PV_IDX_INT || idxf == PV_IDX_PVAR) /* if the avp is indexed */
 	{
 		if(replace_avp(flags, avp_name, avp_val, idx)< 0)
 		{
@@ -3779,7 +3779,7 @@ int pv_printf(struct sip_msg* msg, pv_elem_p list, char *buf, int *len)
 
 	*buf = '\0';
 	cur = buf;
-	
+
 	h = 0;
 	n = 0;
 	for (it=list; it; it=it->next)
