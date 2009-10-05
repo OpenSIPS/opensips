@@ -242,6 +242,7 @@ minfo "Extra tables succesfully created."
 migrate_table () # 4 paremeters (dst_table, dst_cols, src_table, src_cols)
 {
 if [ $# -ne 4 ] ; then
+	echo "param1=$1 param2=$2 param3=$3 param4=$4" 
 	merr "migrate_table function takes 4 params $@"
 	exit 1
 fi
@@ -280,23 +281,21 @@ fi
 
 dst_db=$2
 src_db=$1
-
+       
 migrate_table ${dst_db}.acc \
 	"id,method,from_tag,to_tag,callid,sip_code,sip_reason,time" \
 	${src_db}.acc \
 	"?id,?method,?from_tag,?to_tag,?callid,?sip_code,?sip_reason,?time"
 
 migrate_table ${dst_db}.missed_calls \
-	"id,method,from_tag,to_tag,callid,sip_code,sip_reason,time" \
-	${src_db}.missed_calls \
-	"?id,?method,?from_tag,?to_tag,?callid,?sip_code,?sip_reason,?time"
+	 "id,method,from_tag,to_tag,callid,sip_code,sip_reason,time" \
+ 	 ${src_db}.missed_calls \
+	 "?id,?method,?from_tag,?to_tag,?callid,?sip_code,?sip_reason,?time"
 
 migrate_table ${dst_db}.aliases \
-	"id,username,domain,contact,expires,q,callid,cseq,last_modified,\
-		flags,cflags,user_agent" \
-	${src_db}.aliases \
-	"?id,?username,?domain,?contact,?expires,?q,?callid,?cseq,?last_modified,\
-		?flags,?cflags,?user_agent"
+	 "id,username,domain,contact,expires,q,callid,cseq,last_modified,flags,cflags,user_agent" \
+ 	 ${src_db}.aliases \
+	 "?id,?username,?domain,?contact,?expires,?q,?callid,?cseq,?last_modified,?flags,?cflags,?user_agent"
 
 migrate_table ${dst_db}.dbaliases \
 	"id,alias_username,alias_domain,username,domain" \
@@ -306,61 +305,52 @@ migrate_table ${dst_db}.dbaliases \
 migrate_table ${dst_db}.grp \
 	"id,username,domain,grp,last_modified" \
 	${src_db}.grp \
-	"?id,?username,?domain,?grp,?last_modified"
+	"?id,?username,?domain,?grp,?last_modified" 
 
 migrate_table ${dst_db}.re_grp \
 	"id,reg_exp,group_id" \
 	${src_db}.re_grp \
-	"?id,?reg_exp,?group_id"
+	"?id,?reg_exp,?group_id" 
 
 migrate_table ${dst_db}.silo \
-	"id,src_addr,dst_addr,username,domain,inc_time,exp_time,snd_time,\
-		ctype,body" \
+	"id,src_addr,dst_addr,username,domain,inc_time,exp_time,snd_time,ctype,body" \
 	${src_db}.silo \
-	"?id,?src_addr,?dst_addr,?username,?domain,?inc_time,?exp_time,?snd_time,\
-		?ctype,?body"
-
+	"?id,?src_addr,?dst_addr,?username,?domain,?inc_time,?exp_time,?snd_time,?ctype,?body"
+        
 migrate_table ${dst_db}.domain \
 	"id,domain,last_modified" \
 	${src_db}.domain \
 	"?id,?domain,?last_modified"
 
 migrate_table ${dst_db}.uri \
-	"id,username,domain,uri_user,last_modified" \
-	${src_db}.uri \
-	"?id,?username,?domain,?uri_user,?last_modified"
+	 "id,username,domain,uri_user,last_modified" \
+	 ${src_db}.uri \
+	 "?id,?username,?domain,?uri_user,?last_modified"
 
 migrate_table ${dst_db}.usr_preferences \
 	"id,uuid,username,domain,attribute,type,value,last_modified" \
 	${src_db}.usr_preferences \
 	"?id,?uuid,?username,?domain,?attribute,?type,?value,?last_modified"
 
-migrate_table ${dst_db}.trusted \
-	"id,src_ip,proto,from_pattern,tag" \
-	${src_db}.trusted \
-	"?id,?src_ip,?proto,?from_pattern,?tag"
-
 migrate_table ${dst_db}.address \
-	"id,grp,ip_addr,mask,port" \
+	"id,grp,ip,mask,port" \
 	${src_db}.address \
 	"?id,?grp,?ip_addr,?mask,?port"
 
 migrate_table ${dst_db}.speed_dial \
-	"id,username,domain,sd_username,sd_domain,new_uri,\
-		fname,lname,description" \
+	"id,username,domain,sd_username,sd_domain,new_uri,fname,lname,description" \
 	${src_db}.speed_dial \
-	"?id,?username,?domain,?sd_username,?sd_domain,?new_uri,\
-		?fname,?lname,?description"
+	"?id,?username,?domain,?sd_username,?sd_domain,?new_uri,?fname,?lname,?description"
 
 migrate_table ${dst_db}.gw \
-	"id,gw_name,grp_id,ip_addr,port,uri_scheme,transport,strip,prefix" \
+	"id,gw_name,grp_id,ip_addr,port,uri_scheme,transport,strip,tag,flags" \
 	${src_db}.gw \
-	"?id,?gw_name,?grp_id,?ip_addr,?port,?uri_scheme,?transport,?strip,?prefix"
+	"?id,?gw_name,?grp_id,?ip_addr,?port,?uri_scheme,?transport,?strip,?tag,?flags"
 
 migrate_table ${dst_db}.gw_grp \
-	"grp_id,grp_name" \
-	${src_db}.gw_grp \
-	"?grp_id,?grp_name"
+	"grp_id,grp_name"\
+ 	${src_db}.gw_grp \
+	"?grp_id,?grp_name" 
 
 migrate_table ${dst_db}.lcr \
 	"id,prefix,from_uri,grp_id,priority" \
@@ -372,34 +362,103 @@ migrate_table ${dst_db}.pdt \
 	${src_db}.pdt \
 	"?id,?sdomain,?prefix,?domain"
 
-# migrate subscribers with no serweb support
-migrate_table ${dst_db}.subscriber \
-	"id,username,domain,password,ha1,ha1b,rpid" \
+_migrate_table ${dst_db}.subscriber \
+	"id,username,domain,password,email_address,ha1,ha1b,rpid" \
 	${src_db}.subscriber \
-	"?id,?username,?domain,?password,?ha1,?ha1b,?rpid"
+	"?id,?username,?domain,?password,?email_address,?ha1,?ha1b,?rpid" 
+
+migrate_table ${dst_db}.load_balancer \
+	"id,group_id,dst_uri,resources,description" \
+	${src_db}.load_balancer \
+	"?id,?group_id,?dst_uri,?resources,?description" \
+
+migrate_table ${dst_db}.dialog \
+	"id,hash_entry,hash_id,callid,from_uri,from_tag,to_uri,to_tag,caller_cseq,callee_cseq,caller_route_set,callee_route_set,caller_contact,callee_contact,caller_sock,callee_sock,state,start_time,timeout" \
+	${src_db}.dialog \
+	"?id,?hash_entry,?hash_id,?callid,?from_uri,?from_tag,?to_uri,?to_tag,?caller_cseq,?callee_cseq,?caller_route_set,?callee_route_set,?caller_contact,?callee_contact,?caller_sock,?callee_sock,?state,?start_time,?timeout"
+
+migrate_table ${dst_db}.dispatcher \
+	"id,setid,destination,flags,description" \
+	${src_db}.dispatcher \
+	"?id,?setid,?destination,?flags,?description"
+
+migrate_table ${dst_db}.nh_sockets \
+	"id,rtpproxy_sock,set_id" \
+	${src_db}.nh_sockets \
+	"?id,?rtpproxy_sock,?set_id"
+
+migrate_table ${dst_db}.dialplan \
+	"id,dpid,pr,match_op,match_exp,match_len,subst_exp,repl_exp,attrs" \
+	${src_db}.dialplan \
+	"?id,?dpid,?pr,?match_op,?match_exp,?match_len,?subst_exp,?repl_exp,?attrs" 
+
+migrate_table ${dst_db}.dr_gateways \
+	"gwid,type,address,strip,pri_prefix,attrs,description" \
+	${src_db}.dr_gateways \
+	"?gwid,?type,?address,?strip,?pri_prefix,?attrs,?description"
+
+migrate_table ${dst_db}.dr_rules \
+	"ruleid,groupid,prefix,timerec,priority,routeid,gwlist,description" \
+	$src_db.dr_rules \
+	"?ruleid,?groupid,?prefix,?timerec,?priority,?routeid,?gwlist,?description"
+
+migrate_table ${dst_db}.dr_gw_lists \
+	"id,gwlist,description" \
+	${src_db}.dr_gw_lists \
+	"?id,?gwlist,?description"
+
+migrate_table ${dst_db}.dr_groups \
+	"id,username,domain,groupid,description" \
+	${src_db}.dr_groups \
+	"?id,?username,?domain,?groupid,?description"
 
 if [ "$HAS_EXTRA" = "yes" ] ; then
-	migrate_table ${dst_db}.cpl \
-		"id,username,domain,cpl_xml,cpl_bin" \
-		${src_db}.cpl \
-		"?id,?username,?domain,?cpl_xml,?cpl_bin"
+                
+migrate_table ${dst_db}.cpl \
+	"id,username,domain,cpl_xml,cpl_bin" \
+	${src_db}.cpl \
+	"?id,?username,?domain,?cpl_xml,?cpl_bin"
 
-	migrate_table ${dst_db}.siptrace \
-		"id,date,callid,traced_user,msg,method,status,fromip,toip,\
-		fromtag,direction" \
-		${src_db}.siptrace \
-		"?id,?date,?callid,?traced_user,?msg,?method,?status,?fromip,?toip,\
-		?fromtag,?direction"
+migrate_table ${dst_db}.sip_trace \
+	"id,time_stamp,callid,traced_user,msg,method,status,fromip,toip,fromtag,direction" \
+	${src_db}.sip_trace \
+	"?id,?time_stamp,?callid,?traced_user,?msg,?method,?status,?fromip,?toip, ?fromtag,?direction"
 
-	migrate_table ${dst_db}.imc_rooms \
-		"id,name,domain,flag" \
-		${src_db}.imc_rooms \
-		"?id,?name,?domain,?flag"
+migrate_table ${dst_db}.imc_rooms \
+	"id,name,domain,flag" \
+	${src_db}.imc_rooms \
+	"?id,?name,?domain,?flag"
 
-	migrate_table ${dst_db}.imc_members \
-		"id,username,domain,room,flag" \
-		${src_db}.im_members \
-		"?id,?username,?domain,?room,?flag"
+migrate_table ${dst_db}.imc_members \
+	"id,username,domain,room,flag" \
+	${src_db}.imc_members \
+	"?id,?username,?domain,?room,?flag"
+
+migrate_table ${dst_db}.carrierroute \
+	"id,carrier,domain,scan_prefix,flags,mask,prob,strip,rewrite_host,rewrite_prefix,rewrite_suffix,description" \
+	${src_db}.carrierroute \
+	"?id,?carrier,?domain,?scan_prefix,?flags,?mask,?prob,?strip,?rewrite_host,?rewrite_prefix,?rewrite_suffix,?description"
+
+migrate_table ${dst_db}.carrierfailureroute \
+	"id,carrier,domain,scan_prefix,host_name,reply_code,flags,mask,next_domain,description" \
+	${src_db}.carrierfailureroute \
+	"?id,?carrier,?domain,?scan_prefix,?host_name,?reply_code,?flags,?mask,?next_domain,?description"
+
+migrate_table ${dst_db}.domainpolicy \
+	"id,rule,type,att,val,description" \
+	${src_db}.domainpolicy \
+	"?id,?rule,?type,?att,?val,?description"
+
+migrate_table ${dst_db}.userblacklist \
+	"id,username,domain,prefix,whitelist" \
+	${src_db}.userblacklist \
+	"?id,?username,?domain,?prefix,?whitelist"
+
+migrate_table ${dst_db}.globalblacklist \
+	"id,prefix,whitelist,description" \
+	${src_db}.globalblacklist \
+	"?id,?prefix,?whitelist,?description"
+
 fi
 
 

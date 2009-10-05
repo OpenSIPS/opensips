@@ -33,7 +33,7 @@ INSTALL_PRESENCE_TABLES=${INSTALL_PRESENCE_TABLES:-ask}
 # Used by dbtext and db_berkeley to define tables to be created, used by
 # postgres to do the grants
 STANDARD_TABLES=${STANDARD_TABLES:-version acc dbaliases lcr domain grp
-		uri speed_dial gw pdt subscriber location re_grp trusted
+		uri speed_dial gw pdt subscriber location re_grp address
 		address missed_calls usr_preferences aliases silo dialog
 		dispatcher dialplan dr_gateways dr_rules dr_groups nh_sockets 
 		load_balancer}
@@ -84,7 +84,7 @@ usage: $COMMAND create <db name or db_path, optional> .....(creates a new databa
        $COMMAND backup <file> .................................(dumps current database to file)
        $COMMAND restore <file> ................................(restores tables from a file)
        $COMMAND copy <new_db> .................................(creates a new db from an existing one)
-       $COMMAND migrate <old_db> <new_db> .....................(migrates DB from 1.5 to 1.6, not implemented yet!)
+       $COMMAND migrate <old_db> <new_db> .....................(migrates DB from 1.5 to 1.6)
        $COMMAND presence ......................................(adds the presence related tables)
        $COMMAND extra .........................................(adds the extra tables)
 
