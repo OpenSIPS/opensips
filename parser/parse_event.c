@@ -84,7 +84,6 @@ int event_parser(char* _s, int _l, event_t* _e)
 {
 	str tmp;
 	char* end;
-	char buf[128];
 	param_hooks_t phooks;
 
 	tmp.s = _s;
@@ -102,9 +101,6 @@ int event_parser(char* _s, int _l, event_t* _e)
 	end = skip_token(tmp.s, tmp.len);
 
 	_e->text.len = end - tmp.s;
-
-	strncpy(buf, tmp.s, tmp.len);
-	buf[tmp.len] = 0;
 
 	if ((_e->text.len == PRES_STR_LEN) && 
 	    !strncasecmp(PRES_STR, tmp.s, _e->text.len)) {
@@ -129,7 +125,7 @@ int event_parser(char* _s, int _l, event_t* _e)
 	}
 	
 
-	if( (*end)== ';')
+	if( (_e->text.len < tmp.len) && (*end)== ';')
 	{
 		str params_str;
 		params_str.s = end+1;
