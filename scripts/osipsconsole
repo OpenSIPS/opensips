@@ -98,7 +98,9 @@ my $DBROPW = "";
 my $DBROOTUSER = "";
 my $DBRWPW = "";
 my $CTLENGINE = "";
-	
+
+my $migrate_trusted=1;
+my $migrate_address=1;	
 my $EGREP = "";
 my $SYSLOG = "";
 my $STARTOPTIONS = "";
@@ -6682,19 +6684,29 @@ sub mysql_migrate_db() { # 2 parameters (src_db, dst_db)
 	### usr_preferences
 	&mysql_migrate_table($dst_db . ".usr_preferences", "id,uuid,username,domain,attribute,type,value,last_modified", $src_db . ".usr_preferences", "?id,?uuid,?username,?domain,?attribute,?type,?value,?last_modified" );
 
+	print "In version 1.6, tables \'trusted\' and \'address\' have been joined under the name \'address\'. \n ".
+	      "You have the option to migrate just one of them or both. \n".
+	      "Do you want to migrate \'trusted\' table? (y|n)";
+	if ( ( my $ans = <STDIN> ) =~ /[yY]$/ ) {
+		### address
+		&mysql_migrate_table( $dst_db . ".address", "id,ip,proto,pattern", $src_db . ".trusted", "?id,?src_ip,?proto,?from_pattern" );
+		print "Table \'trusted\' has been migrated to \'address\'.\n";
+	} else {
+		print "Migration of table \'trusted\' to table \'address\' was skipped!"
+	}
 
-	### address
-	&mysql_migrate_table( $dst_db . ".address", "id,grp,ip,mask,port", $src_db . ".address", "?id,?grp,?ip_addr,?mask,?port" );
-
+	print "Do you want to migrate \'address\' table? (y|n)";
+	if ( ( my $ans = <STDIN> ) =~ /[yY]$/ ) {
+		&mysql_migrate_table( $dst_db . ".address", "id,grp,ip,mask,port", $src_db . ".address", "?id,?grp,?ip_addr,?mask,?port" );
+		print "Table \'address\' has been migrated to \'address\'.\n";
+	} else {
+		print "Migration of table \'address\' to table \'address\' was skipped!"
+	}
 	### speed_dial
 	&mysql_migrate_table( $dst_db . ".speed_dial", "id,username,domain,sd_username,sd_domain,new_uri,fname,lname,description", $src_db . ".speed_dial", "?id,?username,?domain,?sd_username,?sd_domain,?new_uri,?fname,?lname,?description" );
 
 	### gw
 	&mysql_migrate_table( $dst_db . ".gw", "id,gw_name,grp_id,ip_addr,port,uri_scheme,transport,strip,tag,flags", $src_db . ".gw", "?id,?gw_name,?grp_id,?ip_addr,?port,?uri_scheme,?transport,?strip,?tag,?flags" );
-
-
-	### gw_grp
-	&mysql_migrate_table( $dst_db . ".gw_grp", "grp_id,grp_name", $src_db . ".gw_grp", "?grp_id,?grp_name" );
 
 	### lcr
 	&mysql_migrate_table( $dst_db . ".lcr", "id,prefix,from_uri,grp_id,priority", $src_db . ".lcr", "?id,?prefix,?from_uri,?grp_id,?priority" );
@@ -6710,7 +6722,7 @@ sub mysql_migrate_db() { # 2 parameters (src_db, dst_db)
 	&mysql_migrate_table( $dst_db . ".load_balancer", "id,group_id,dst_uri,resources,description", $src_db . ".load_balancer", "?id,?group_id,?dst_uri,?resources,?description" );
 
 	### dialog
-	&mysql_migrate_table( $dst_db . ".dialog", "id,hash_entry,hash_id,callid,from_uri,from_tag,to_uri,to_tag,caller_cseq,callee_cseq,caller_route_set,callee_route_set,caller_contact,callee_contact,caller_sock,callee_sock,state,start_time,timeout", $src_db . ".dialog", "?id,?hash_entry,?hash_id,?callid,?from_uri,?from_tag,?to_uri,?to_tag,?caller_cseq,?callee_cseq,?caller_route_set,?callee_route_set,?caller_contact,?calee_contact,?caller_sock,?callee_sock,?state,?start_time,?timeout" );
+	&mysql_migrate_table( $dst_db . ".dialog", "id,hash_entry,hash_id,callid,from_uri,from_tag,to_uri,to_tag,caller_cseq,callee_cseq,caller_route_set,callee_route_set,caller_contact,callee_contact,caller_sock,callee_sock,state,start_time,timeout", $src_db . ".dialog", "?id,?hash_entry,?hash_id,?callid,?from_uri,?from_tag,?to_uri,?to_tag,?caller_cseq,?callee_cseq,?caller_route_set,?callee_route_set,?caller_contact,?callee_contact,?caller_sock,?callee_sock,?state,?start_time,?timeout" );
 
 	### dispatcher
 	&mysql_migrate_table( $dst_db . ".dispatcher", "id,setid,destination,flags,description", $src_db . ".dispatcher", "?id,?setid,?destination,?flags,?description" );
@@ -6753,6 +6765,9 @@ sub mysql_migrate_db() { # 2 parameters (src_db, dst_db)
 
 		### carrierfailureroute
 		&mysql_migrate_table( $dst_db . ".carrierfailureroute", "id,carrier,domain,scan_prefix,host_name,reply_code,flags,mask,next_domain,description", $src_db . ".carrierfailureroute", "?id,?carrier,?domain,?scan_prefix,?host_name,?reply_code,?flags,?mask,?next_domain,?description" );
+
+		### route_tree
+		&mysql_migrate_table( $dst_db . ".route_tree", "id,carrier", $src_db . ".route_tree", "?id,?carrier" );
 
 		### domainpolicy
 		&mysql_migrate_table(  $dst_db . ".domainpolicy", "id,rule,type,att,val,description", $src_db . ".domainpolicy", "?id,?rule,?type,?att,?val,?description" );
@@ -6798,6 +6813,7 @@ sub mysql_migrate_table(){ # 4 paremeters (dst_table, dst_cols, src_table, src_c
 		}
 	
 	} else {
+
                 $X = system("mysql -h $DBHOST -u$DBROOTUSER -p$PW -e \"INSERT INTO $dst_table ($dst_cols) SELECT $src_cols FROM $src_table\"");
 		if ( $? != 0 ) {
 			system("echo $X | $EGREP \"ERROR 1146\" > /dev/null");
