@@ -1759,16 +1759,6 @@ static int pv_get_avp(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res)
 	{
 		p = pv_local_buf;
 		do {
-			if(p!=pv_local_buf)
-			{
-				if(p-pv_local_buf+PV_FIELD_DELIM_LEN+1>PV_LOCAL_BUF_SIZE)
-				{
-					LM_ERR("local buffer length exceeded\n");
-					return pv_get_null(msg, param, res);
-				}
-				memcpy(p, PV_FIELD_DELIM, PV_FIELD_DELIM_LEN);
-				p += PV_FIELD_DELIM_LEN;
-			}
 			if(avp->flags & AVP_VAL_STR)
 			{
 				res->rs = avp_value.s;
@@ -1783,6 +1773,13 @@ static int pv_get_avp(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res)
 			}
 			memcpy(p, res->rs.s, res->rs.len);
 			p += res->rs.len;
+			if(p-pv_local_buf+PV_FIELD_DELIM_LEN+1>PV_LOCAL_BUF_SIZE)
+			{
+				LM_ERR("local buffer length exceeded\n");
+				return pv_get_null(msg, param, res);
+			}
+			memcpy(p, PV_FIELD_DELIM, PV_FIELD_DELIM_LEN);
+			p += PV_FIELD_DELIM_LEN;
 		} while ((avp=search_first_avp(name_type, avp_name,
 						&avp_value, avp))!=0);
 		*p = 0;
