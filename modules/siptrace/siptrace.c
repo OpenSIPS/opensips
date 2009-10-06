@@ -649,14 +649,6 @@ static int sip_trace(struct sip_msg *msg)
 			LM_ERR("error storing trace\n");
 			goto error;
 		}
-#ifdef STATISTICS
-		if(msg->first_line.type==SIP_REPLY)
-		{
-			update_stat(siptrace_rpl, 1);
-		} else {
-			update_stat(siptrace_req, 1);
-		}
-#endif
 	}
 
 	if(avp==NULL)
@@ -693,6 +685,13 @@ static int sip_trace(struct sip_msg *msg)
 	}
 
 done:
+#ifdef STATISTICS
+	if(msg->first_line.type==SIP_REPLY) {
+		update_stat(siptrace_rpl, 1);
+	} else {
+		update_stat(siptrace_req, 1);
+	}
+#endif
 	return 1;
 error:
 	return -1;
@@ -937,9 +936,6 @@ static void trace_onreq_out(struct cell* t, int type, struct tmcb_params *ps)
 			LM_ERR("error storing trace\n");
 			goto error;
 		}
-#ifdef STATISTICS
-		update_stat(siptrace_req, 1);
-#endif
 	}
 
 	if(avp==NULL)
@@ -974,8 +970,11 @@ static void trace_onreq_out(struct cell* t, int type, struct tmcb_params *ps)
 		}
 		avp = search_next_avp( avp, &avp_value);
 	}
-	
-done:	
+
+done:
+#ifdef STATISTICS
+	update_stat(siptrace_req, 1);
+#endif
 	return;
 error:
 	return;
@@ -1117,9 +1116,6 @@ static void trace_onreply_in(struct cell* t, int type, struct tmcb_params *ps)
 			LM_ERR("error storing trace\n");
 			goto error;
 		}
-#ifdef STATISTICS
-		update_stat(siptrace_rpl, 1);
-#endif
 	}
 
 	if(avp==NULL)
@@ -1154,8 +1150,11 @@ static void trace_onreply_in(struct cell* t, int type, struct tmcb_params *ps)
 		}
 		avp = search_next_avp( avp, &avp_value);
 	}
-	
+
 done:
+#ifdef STATISTICS
+	update_stat(siptrace_rpl, 1);
+#endif
 	return;
 error:
 	return;
@@ -1333,9 +1332,6 @@ static void trace_onreply_out(struct cell* t, int type, struct tmcb_params *ps)
 			LM_ERR("error storing trace\n");
 			goto error;
 		}
-#ifdef STATISTICS
-		update_stat(siptrace_rpl, 1);
-#endif
 	}
 	
 	if(avp==NULL)
@@ -1370,8 +1366,11 @@ static void trace_onreply_out(struct cell* t, int type, struct tmcb_params *ps)
 		}
 		avp = search_next_avp( avp, &avp_value);
 	}
-	
+
 done:
+#ifdef STATISTICS
+	update_stat(siptrace_rpl, 1);
+#endif
 	return;
 error:
 	return;
@@ -1534,9 +1533,6 @@ static void trace_sl_onreply_out( unsigned int types, struct sip_msg* req,
 			LM_ERR("error storing trace\n");
 			goto error;
 		}
-#ifdef STATISTICS
-		update_stat(siptrace_rpl, 1);
-#endif
 	}
 	
 	if(avp==NULL)
@@ -1573,6 +1569,9 @@ static void trace_sl_onreply_out( unsigned int types, struct sip_msg* req,
 	}
 	
 done:
+#ifdef STATISTICS
+	update_stat(siptrace_rpl, 1);
+#endif
 	return;
 error:
 	return;
