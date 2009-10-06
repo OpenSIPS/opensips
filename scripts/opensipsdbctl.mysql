@@ -332,10 +332,28 @@ migrate_table ${dst_db}.usr_preferences \
 	${src_db}.usr_preferences \
 	"?id,?uuid,?username,?domain,?attribute,?type,?value,?last_modified"
 
-migrate_table ${dst_db}.address \
-	"id,grp,ip,mask,port" \
-	${src_db}.address \
-	"?id,?grp,?ip_addr,?mask,?port"
+echo -n "In version 1.6, tables trusted and address have been joined under the name address. " \
+     "You have the option to migrate just one of them or both. " \
+     "Do you want to migrate trusted table? (y|n)"
+read INPUT
+if [ "$INPUT" = "y" ] || [ "$INPUT" = "Y" ]
+then
+	migrate_table ${dst_db}.address \
+		"id,ip,proto,pattern" \
+		${src_db}.trusted \
+		"?id,?src_ip,?proto,?from_pattern"
+fi
+
+echo -n "Do you want to migrate address table? (y|n)"
+read INPUT
+if [ "$INPUT" = "y" ] || [ "$INPUT" = "Y" ]
+then
+	migrate_table ${dst_db}.address \
+		"id,grp,ip,mask,port" \
+		${src_db}.address \
+		"?id,?grp,?ip_addr,?mask,?port"
+fi
+
 
 migrate_table ${dst_db}.speed_dial \
 	"id,username,domain,sd_username,sd_domain,new_uri,fname,lname,description" \
@@ -347,11 +365,6 @@ migrate_table ${dst_db}.gw \
 	${src_db}.gw \
 	"?id,?gw_name,?grp_id,?ip_addr,?port,?uri_scheme,?transport,?strip,?tag,?flags"
 
-migrate_table ${dst_db}.gw_grp \
-	"grp_id,grp_name"\
- 	${src_db}.gw_grp \
-	"?grp_id,?grp_name" 
-
 migrate_table ${dst_db}.lcr \
 	"id,prefix,from_uri,grp_id,priority" \
 	${src_db}.lcr \
@@ -362,7 +375,7 @@ migrate_table ${dst_db}.pdt \
 	${src_db}.pdt \
 	"?id,?sdomain,?prefix,?domain"
 
-_migrate_table ${dst_db}.subscriber \
+migrate_table ${dst_db}.subscriber \
 	"id,username,domain,password,email_address,ha1,ha1b,rpid" \
 	${src_db}.subscriber \
 	"?id,?username,?domain,?password,?email_address,?ha1,?ha1b,?rpid" 
