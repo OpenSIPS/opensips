@@ -7656,12 +7656,9 @@ sub opensips_dr() {
 					$i += 4;
 					while ( $i < $#cmd+1 ) {
 						@var = split ("=",$cmd[$i]);
-						print "var[1]".$var[1];
 						switch ($var[0]) {
 							case /(type)/ {
-								print $type . "before\n";
 								$type = $var[1]; 
-								print $type . "after\n";
 							}
 							case /(strip)/ {
 								$strip = $var[1];
@@ -7675,7 +7672,6 @@ sub opensips_dr() {
 						}	
 						$i++;
 					}
-					print $type . "after loop\n";
 				}
 
 				#prepare query
