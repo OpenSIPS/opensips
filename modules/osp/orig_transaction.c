@@ -306,6 +306,8 @@ int ospRequestRouting(
 
         if (ospGetDiversion(msg, divuser, sizeof(divuser), divhost, sizeof(divhost)) == 0) {
             ospConvertAddress(divhost, divdev, sizeof(divdev));
+        } else {
+            divdev[0] = '\0';
         }
 
         if ((_osp_snid_avpname.n != 0) &&
