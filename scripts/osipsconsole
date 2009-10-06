@@ -7728,11 +7728,11 @@ sub opensips_dr() {
 
 		} elsif ( $cmd[1] =~ /(^rules$)/ ) {
 
-			if ( $#cmd < 2 ) {
+			if ( $#cmd lt 2 ) {
 				print "Too few parameters!";
 				&usage_dr();
 				return;
-			} elsif ( $#cmd > 9 ) {
+			} elsif ( $#cmd gt 9 ) {
 				print "Too many parameters!";
 				&usage_dr();
 				return;
@@ -7755,26 +7755,26 @@ sub opensips_dr() {
 						$i += 4;		
 						while ( $i < $#cmd+1 ) {
 							@var = split ("=",$cmd[$i]);				
-								if ($var[0] =~ /^groupid$/) {
-									$groupid = $var[1]; 
-								}
-								elsif ($var[0] =~ /^prefix$/) {
-									$prefix = $var[1];
-								}
-								elsif ($var[0] =~ /^timerec$/) {
-									$timerec = $var[1];
-								}
-								elsif ($var[0] =~ /^priority$/) {
-									$priority = $var[1];
-								}
-								elsif ($var[0] =~ /^routeid$/) {
-									$routeid = $var[1];
-								}
-								elsif ($var[0] =~ /^description$/) {
-									$description = $var[1];
-								}
-							}	
+							if ($var[0] =~ /^groupid$/) {
+								$groupid = $var[1]; 
+							}
+							elsif ($var[0] =~ /^prefix$/) {
+								$prefix = $var[1];
+							}
+							elsif ($var[0] =~ /^timerec$/) {
+								$timerec = $var[1];
+							}
+							elsif ($var[0] =~ /^priority$/) {
+								$priority = $var[1];
+							}
+							elsif ($var[0] =~ /^routeid$/) {
+								$routeid = $var[1];
+							}
+							elsif ($var[0] =~ /^description$/) {
+								$description = $var[1];
+							}
 							$i++;
+						}	
 					}
 
 					#prepare query
