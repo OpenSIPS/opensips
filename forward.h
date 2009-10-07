@@ -156,4 +156,14 @@ error:
 	return -1;
 }
 
+
+/***** forward callbacks *****/
+
+/* callback function prototype */
+typedef void (fwd_cb_t) (struct sip_msg* req, str  *buffer,
+		struct socket_info* send_sock, int proto, union sockaddr_union *to);
+
+/* register a FWD callback */
+int register_fwdcb(fwd_cb_t f);
+
 #endif

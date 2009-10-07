@@ -2,7 +2,7 @@
  * $Id$
  *
  * Copyright (C) 2001-2003 FhG Fokus
- * Copyright (C) 2005-2007 Voice Sistem SRL
+ * Copyright (C) 2005-2009 Voice Sistem SRL
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -76,6 +76,56 @@
 #include "socket_info.h"
 #include "core_stats.h"
 #include "blacklists.h"
+
+
+
+/*************************** callback functions ***************************/
+struct fwd_callback {
+	fwd_cb_t* callback;         /* callback function */
+	struct fwd_callback* next;  /* next callback element*/
+};
+
+static struct fwd_callback* fwdcb_hl = 0;  /* head list */
+
+/* register a FWD callback */
+int register_fwdcb(fwd_cb_t f)
+{
+	struct fwd_callback *cbp;
+
+	/* build a new callback structure */
+	if (!(cbp=pkg_malloc( sizeof( struct fwd_callback)))) {
+		LM_ERR("out of pkg. mem\n");
+		return -1;
+	}
+
+	/* fill it up */
+	cbp->callback = f;
+	/* link it at the beginning of the list */
+	cbp->next = fwdcb_hl;
+	fwdcb_hl = cbp;
+
+	return 0;
+
+}
+
+static inline void run_fwd_callbacks(struct sip_msg *req, char *buf, int len,
+			struct socket_info* send_sock, int proto, union sockaddr_union *to)
+{
+	struct fwd_callback *cbp;
+	str buffer;
+
+	buffer.len = len;
+	buffer.s = buf;
+
+	for ( cbp=fwdcb_hl ; cbp ; cbp=cbp->next ) {
+		LM_DBG("FWD callback entered\n");
+		cbp->callback( req, &buffer, send_sock, proto, to);
+	}
+}
+
+
+/**************************************************************************/
+
 
 
 
@@ -383,6 +433,8 @@ int forward_request( struct sip_msg* msg, struct proxy_l * p)
 			ser_error=E_SEND;
 			continue;
 		}
+
+		run_fwd_callbacks( msg, buf, len, send_sock, p->proto, &to);
 
 		ser_error = 0;
 		break;
