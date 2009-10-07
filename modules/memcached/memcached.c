@@ -151,7 +151,7 @@ int wrap_memcached_get(str* attr, str* res,void * memc)
 		}
 	}
 
-
+	
 	value = pkg_malloc(ret_len);
 	if( value == NULL)
 	{
@@ -162,6 +162,8 @@ int wrap_memcached_get(str* attr, str* res,void * memc)
 	memcpy(value,ret,ret_len);
 	res->s = value;
 	res->len = ret_len;
+
+	free(ret);
 
 	return 1;
 }
