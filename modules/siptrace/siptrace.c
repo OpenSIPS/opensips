@@ -66,9 +66,11 @@ static void trace_onreq_out(struct cell* t, int type, struct tmcb_params *ps);
 static void trace_onreply_in(struct cell* t, int type, struct tmcb_params *ps);
 static void trace_onreply_out(struct cell* t, int type, struct tmcb_params *ps);
 static void trace_sl_onreply_out(unsigned int types, struct sip_msg* req,
-									struct sl_cb_param *sl_param);
+			struct sl_cb_param *sl_param);
 static void trace_sl_ack_in(unsigned int types, struct sip_msg* req,
-									struct sl_cb_param *sl_param);
+			struct sl_cb_param *sl_param);
+static void trace_msg_out(struct sip_msg* req, str  *buffer,
+			struct socket_info* send_sock, int proto, union sockaddr_union *to);
 
 static struct mi_root* sip_trace_mi(struct mi_root* cmd, void* param );
 
@@ -281,6 +283,11 @@ static int mod_init(void)
 		LM_ERR("can't register trace_sl_onreply_out\n");
 		return -1;
 	}
+	if(register_fwdcb(trace_msg_out)!=0)
+	{
+		LM_ERR("can't register trace_sl_ack_out\n");
+		return -1;
+	}
 	if(enable_ack_trace&&register_slcb_f(SLCB_ACK_IN,trace_sl_ack_in,NULL)!=0)
 	{
 		LM_ERR("can't register trace_sl_ack_in\n");
@@ -409,10 +416,10 @@ static void trace_transaction(struct dlg_cell* dlg, int type,
 		n++;
 	}while(1);
 
-	/* trace current request */
-	sip_trace(params->msg);
 	/* set the flag */
 	params->msg->flags |= trace_flag;
+	/* trace current request */
+	sip_trace(params->msg);
 }
 
 
@@ -458,11 +465,11 @@ static int trace_dialog(struct sip_msg *msg)
 		}
 	}
 
-	/* trace current request */
-	sip_trace(msg);
-
 	/* set the flag to trace the rest of the transaction */
 	msg->flags |= trace_flag;
+
+	/* trace current request */
+	sip_trace(msg);
 
 	return 1;
 }
@@ -766,29 +773,37 @@ static void trace_onreq_in(struct cell* t, int type, struct tmcb_params *ps)
 
 static void trace_onreq_out(struct cell* t, int type, struct tmcb_params *ps)
 {
+	if(t==NULL || ps==NULL) {
+		LM_DBG("no uas request, local transaction\n");
+		return;
+	}
+	if(ps->req==NULL) {
+		LM_DBG("no uas msg, local transaction\n");
+		return;
+	}
+
+	if (ps->extra2)
+		return trace_msg_out( ps->req, (str*)ps->extra1,
+			((struct dest_info*)ps->extra2)->send_sock,
+			((struct dest_info*)ps->extra2)->proto,
+			&((struct dest_info*)ps->extra2)->to);
+	else
+		return trace_msg_out( ps->req, (str*)ps->extra1,
+			NULL, PROTO_NONE, NULL);
+}
+
+
+static void trace_msg_out(struct sip_msg* msg, str  *sbuf,
+			struct socket_info* send_sock, int proto, union sockaddr_union *to)
+{
 	db_key_t db_keys[NR_KEYS];
 	db_val_t db_vals[NR_KEYS];
 	static char fromip_buff[IP_ADDR_MAX_STR_SIZE+12];
 	static char toip_buff[IP_ADDR_MAX_STR_SIZE+12];
-	struct sip_msg* msg;
 	int_str        avp_value;
 	struct usr_avp *avp;
 	struct ip_addr to_ip;
 	int len;
-	str *sbuf;
-	struct dest_info *dst;
-	
-	if(t==NULL || ps==NULL)
-	{
-		LM_DBG("no uas request, local transaction\n");
-		return;
-	}
-	msg=ps->req;
-	if(msg==NULL)
-	{
-		LM_DBG("no uas msg, local transaction\n");
-		return;
-	}
 
 	if( trace_is_off() )
 	{
@@ -822,7 +837,6 @@ static void trace_onreq_out(struct cell* t, int type, struct tmcb_params *ps)
 	db_keys[0] = &msg_column;
 	db_vals[0].type = DB_BLOB;
 	db_vals[0].nul = 0;
-	sbuf = (str*)ps->extra1;
 	if(sbuf!=NULL && sbuf->len>0)
 	{
 		db_vals[0].val.blob_val.s   = sbuf->s;
@@ -831,7 +845,7 @@ static void trace_onreq_out(struct cell* t, int type, struct tmcb_params *ps)
 		db_vals[0].val.blob_val.s   = "No request buffer";
 		db_vals[0].val.blob_val.len = sizeof("No request buffer")-1;
 	}
-	
+
 	/* check Call-ID header */
 	if(msg->callid==NULL || msg->callid->body.s==NULL)
 	{
@@ -848,24 +862,21 @@ static void trace_onreq_out(struct cell* t, int type, struct tmcb_params *ps)
 	db_keys[2] = &method_column;
 	db_vals[2].type = DB_STR;
 	db_vals[2].nul = 0;
-	sbuf = (str*)ps->extra1;
 	if(sbuf!=NULL && sbuf->len > 7 && !strncasecmp(sbuf->s, "CANCEL ", 7))
 	{
 		db_vals[2].val.str_val.s = "CANCEL";
 		db_vals[2].val.str_val.len = 6;
 	} else {
-		db_vals[2].val.str_val.s = t->method.s;
-		db_vals[2].val.str_val.len = t->method.len;
+		db_vals[2].val.str_val= REQ_LINE(msg).method;
 	}
-		
+
 	db_keys[3] = &status_column;
 	db_vals[3].type = DB_STR;
 	db_vals[3].nul = 0;
 	db_vals[3].val.str_val.s = "";
 	db_vals[3].val.str_val.len = 0;
-		
+
 	memset(&to_ip, 0, sizeof(struct ip_addr));
-	dst = (struct dest_info*)ps->extra2;
 
 	db_keys[4] = &fromip_column;
 	db_vals[4].type = DB_STRING;
@@ -873,7 +884,7 @@ static void trace_onreq_out(struct cell* t, int type, struct tmcb_params *ps)
 	if (trace_local_ip.s && trace_local_ip.len > 0)
 		db_vals[4].val.string_val = trace_local_ip.s;
 	else {
-		if(dst==0 || dst->send_sock==0 || dst->send_sock->sock_str.s==0)
+		if(send_sock==0 || send_sock->sock_str.s==0)
 		{
 			siptrace_copy_proto(msg->rcv.proto, fromip_buff);
 			strcat(fromip_buff, ip_addr2a(&msg->rcv.dst_ip));
@@ -882,23 +893,23 @@ static void trace_onreq_out(struct cell* t, int type, struct tmcb_params *ps)
 			db_vals[4].val.string_val = fromip_buff;
 		} else {
 			db_vals[4].type = DB_STR;
-			db_vals[4].val.str_val = dst->send_sock->sock_str;
+			db_vals[4].val.str_val = send_sock->sock_str;
 		}
 	}
 	
 	db_keys[5] = &toip_column;
 	db_vals[5].type = DB_STRING;
 	db_vals[5].nul = 0;
-	if(dst==0)
+	if(to==0)
 	{
 		db_vals[5].val.string_val = "any:255.255.255.255";
 	} else {
-		su2ip_addr(&to_ip, &dst->to);
-		siptrace_copy_proto(dst->proto, toip_buff);
+		su2ip_addr(&to_ip, to);
+		siptrace_copy_proto(proto, toip_buff);
 		strcat(toip_buff, ip_addr2a(&to_ip));
 		strcat(toip_buff, ":");
 		strcat(toip_buff,
-				int2str((unsigned long)su_getport(&dst->to), &len));
+				int2str((unsigned long)su_getport(to), &len));
 		LM_DBG("dest [%s]\n", toip_buff);
 		db_vals[5].val.string_val = toip_buff;
 	}
