@@ -1046,9 +1046,9 @@ int dlg_validate_dialog( struct sip_msg* req, struct dlg_cell *dlg)
 	}
 	/* check port */
 	r_port=(req->parsed_uri.port_no==0) ?
-		( (r_proto==PROTO_TLS)?5061:50620) : req->parsed_uri.port_no ;
+		( (r_proto==PROTO_TLS)?5061:5060) : req->parsed_uri.port_no ;
 	c_port=(curi.port_no==0) ?
-		( (c_proto==PROTO_TLS)?5061:50620) : curi.port_no ;
+		( (c_proto==PROTO_TLS)?5061:5060) : curi.port_no ;
 	if ( r_port!=c_port ) {
 		s = *GET_RURI(req);
 		LM_DBG("RURI/Contact PORT test failed ruri=[%.*s], old=[%.*s]\n",
