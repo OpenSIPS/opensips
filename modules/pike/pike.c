@@ -157,7 +157,7 @@ static int pike_init(void)
 
 		/* register the script callback to get all requests and replies */
 		if (register_script_cb( run_pike_route ,
-		PARSE_ERR_CB|REQ_TYPE_CB|RPL_TYPE_CB|PRE_SCRIPT_CB, (void*)rt )!=0 ) {
+		PARSE_ERR_CB|REQ_TYPE_CB|RPL_TYPE_CB|PRE_SCRIPT_CB, (void*)(long)rt )!=0 ) {
 			LM_ERR("failed to register script callbacks\n");
 			goto error3;
 		}
