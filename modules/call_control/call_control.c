@@ -228,17 +228,15 @@ typedef struct CallInfo {
 
 
 void
-destroy_list(AVP_List **list) {
+destroy_list(AVP_List *list) {
 	AVP_List *cur, *next;
 
-	cur = *list;
+	cur = list;
 	while (cur) {
 		next = cur->next;
 		pkg_free(cur);
 		cur = next;
 	}
-	pkg_free(list);
-	*list = NULL;
 }
 
 
@@ -1122,20 +1120,16 @@ child_init(int rank)
 }
 
 
-
-// 
-//
-//
 static void
 destroy(void) {
 	if (init_avps)
-		destroy_list(&init_avps);
+		destroy_list(init_avps);
 
 	if (start_avps)
-		destroy_list(&start_avps);
+		destroy_list(start_avps);
 
 	if (stop_avps)
-		destroy_list(&stop_avps);
+		destroy_list(stop_avps);
 }
 
 
