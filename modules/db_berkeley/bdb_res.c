@@ -100,7 +100,7 @@ int bdb_convert_row(db_res_t* _res, char *bdb_result, int* _lres)
 	/* Save the number of rows in the current fetch */
 	RES_ROW_N(_res) = 1;
 	row = RES_ROWS(_res);
-
+	
 	/* Save the number of columns in the ROW structure */
 	ROW_N(row) = RES_COL_N(_res);
 
@@ -121,7 +121,11 @@ int bdb_convert_row(db_res_t* _res, char *bdb_result, int* _lres)
 
 	/*populate the row_buf with bdb_result*/
 	/*bdb_result is memory from our callers stack so we copy here*/
-	s = strtok(bdb_result, DELIM);
+
+
+	LM_DBG("Found: [%s]\n",bdb_result);
+
+	s = strsep(&bdb_result, DELIM);
 	while( s!=NULL)
 	{
 		if(_lres) {
@@ -132,7 +136,7 @@ int bdb_convert_row(db_res_t* _res, char *bdb_result, int* _lres)
 					row_buf[i] = pkg_malloc(len+1);
 					if (!row_buf[i]) {
 						LM_ERR("no private memory left\n");
-						return -1;
+						goto error;
 					}
 					LM_DBG("allocated %d bytes for row_buf[%d] at %p\n", len, i, row_buf[i]);
 					memset(row_buf[i], 0, len+1);
@@ -142,6 +146,11 @@ int bdb_convert_row(db_res_t* _res, char *bdb_result, int* _lres)
 			}
 		}
 		else {
+
+			/* TODO: TEST */
+			if( col >= RES_COL_N(_res))
+				break;
+
 			len = strlen(s);
 			row_buf[col] = pkg_malloc(len+1);
 			if (!row_buf[col]) {
@@ -152,7 +161,7 @@ int bdb_convert_row(db_res_t* _res, char *bdb_result, int* _lres)
 			memset(row_buf[col], 0, len+1);
 			strncpy(row_buf[col], s, len);
 		}
-		s = strtok(NULL, DELIM);
+		s = strsep(&bdb_result, DELIM);
 		col++;
 	}
 
@@ -165,52 +174,34 @@ int bdb_convert_row(db_res_t* _res, char *bdb_result, int* _lres)
 		if (bdb_str2val(RES_TYPES(_res)[col], &(ROW_VALUES(row)[col])
 				, row_buf[col], strlen(row_buf[col])) < 0) {
 			LM_ERR("while converting value\n");
-			LM_DBG("freeing row at %p\n", row);
-			db_free_row(row);
-			return -3;
+			goto error;
 		}
+
+		if( row->values[col].nul ||
+		    row->values[col].type == DB_INT ||
+		    row->values[col].type == DB_DOUBLE ||
+		    row->values[col].type == DB_DATETIME
+		 )
+			pkg_free(row_buf[col]);
+		
 	}
 
-	/* pkg_free() must be done for the above allocations now that the row has been converted.
-	 * During bdb_convert_row (and subsequent bdb_str2val) processing, data types that don't need to be
-	 * converted (namely STRINGS) have their addresses saved.  These data types should not have
-	 * their pkg_malloc() allocations freed here because they are still needed.  However, some data types
-	 * (ex: INT, DOUBLE) should have their pkg_malloc() allocations freed because during the conversion
-	 * process, their converted values are saved in the union portion of the db_val_t structure.
-	 *
-	 * Warning: when the converted row is no longer needed, the data types whose addresses
-	 * were saved in the db_val_t structure must be freed or a memory leak will happen.
-	 * This processing should happen in the db_free_row() subroutine.  The caller of
-	 * this routine should ensure that db_free_rows(), db_free_row() or db_free_result()
-	 * is eventually called.
-	 */
-	for (col = 0; col < RES_COL_N(_res); col++) {
-		switch (RES_TYPES(_res)[col]) 
-		{
-			case DB_STRING:
-			case DB_STR:
-				break;
-			default:
-			LM_DBG("col[%d] Col[%.*s] Type[%d] Freeing row_buf[%p]\n", col
-				, RES_NAMES(_res)[col]->len, RES_NAMES(_res)[col]->s,
-				  RES_TYPES(_res)[col], row_buf[col]);
-			LM_DBG("freeing row_buf[%d] at %p\n", col, row_buf[col]);
-			pkg_free(row_buf[col]);
-		}
-		/* The following housekeeping may not be technically required, but it is a good practice
-		 * to NULL pointer fields that are no longer valid.  Note that DB_STRING fields have not
-		 * been pkg_free(). NULLing DB_STRING fields would normally not be good to do because a memory
-		 * leak would occur.  However, the pg_convert_row() routine has saved the DB_STRING pointer
-		 * in the db_val_t structure.  The db_val_t structure will eventually be used to pkg_free()
-		 * the DB_STRING storage.
-		 */
-		row_buf[col] = (char *)NULL;
-	}
+	
 	LM_DBG("freeing row buffer at %p\n", row_buf);
-	pkg_free(row_buf);
+	if( row_buf[col])
+		pkg_free(row_buf);
 	row_buf = NULL;
 
 	return 0;
+
+error:
+	for(col = 0; col < ROW_N(row); col++)
+		if( row_buf[col])
+		pkg_free(row_buf[col]);
+
+	if( row_buf )
+		pkg_free(row_buf);
+			return -1;
 
 }
 
@@ -247,9 +238,14 @@ int bdb_append_row(db_res_t* _res, char *bdb_result, int* _lres, int _rx)
 	
 	/*populate the row_buf with bdb_result*/
 	/*bdb_result is memory from our callers stack so we copy here*/
-	s = strtok(bdb_result, DELIM);
+
+	LM_DBG("Found: [%s]\n",bdb_result);
+
+
+	
+	s = strsep(&bdb_result, DELIM);
 	while( s!=NULL)
-	{	
+	{
 		if(_lres) {
 			/*only requested cols (_c was specified)*/
 			for(i=0; i<ROW_N(row); i++) {
@@ -258,7 +254,7 @@ int bdb_append_row(db_res_t* _res, char *bdb_result, int* _lres, int _rx)
 					row_buf[i] = pkg_malloc(len+1);
 					if (!row_buf[i]) {
 						LM_ERR("no private memory left\n");
-						return -1;
+						goto error;
 					}
 					memset(row_buf[i], 0, len+1);
 					strncpy(row_buf[i], s, len);
@@ -266,12 +262,17 @@ int bdb_append_row(db_res_t* _res, char *bdb_result, int* _lres, int _rx)
 			}
 		}
 		else {
+
+			if( col >= RES_COL_N(_res))
+				break;
+
+
 			len = strlen(s);
 
 #ifdef BDB_EXTRA_DEBUG
 		LM_DBG("col[%i] = [%.*s]\n", col , len, s );
 #endif
-
+			LM_ERR("Allocated2 for %d\n",col);
 			row_buf[col] = (char*)pkg_malloc(len+1);
 			if (!row_buf[col]) {
 				LM_ERR("no private memory left\n");
@@ -280,7 +281,7 @@ int bdb_append_row(db_res_t* _res, char *bdb_result, int* _lres, int _rx)
 			memset(row_buf[col], 0, len+1);
 			strncpy(row_buf[col], s, len);
 		}
-		s = strtok(NULL, DELIM);
+		s = strsep(&bdb_result, DELIM);
 		col++;
 	}
 	
@@ -300,50 +301,34 @@ int bdb_append_row(db_res_t* _res, char *bdb_result, int* _lres, int _rx)
 		/* Convert the string representation into the value representation */
 		if (bdb_str2val(RES_TYPES(_res)[col], &(ROW_VALUES(row)[col])
 				, row_buf[col], strlen(row_buf[col])) < 0) {
-			LM_ERR("while converting value\n");
 			LM_DBG("freeing row at %p\n", row);
-			db_free_row(row);
-			return -3;
+			goto error;
 		}
-	}
 
-	/* pkg_free() must be done for the above allocations now that the row has been converted.
-	 * During bdb_convert_row (and subsequent bdb_str2val) processing, data types that don't need to be
-	 * converted (namely STRINGS) have their addresses saved.  These data types should not have
-	 * their pkg_malloc() allocations freed here because they are still needed.  However, some data types
-	 * (ex: INT, DOUBLE) should have their pkg_malloc() allocations freed because during the conversion
-	 * process, their converted values are saved in the union portion of the db_val_t structure.
-	 *
-	 * Warning: when the converted row is no longer needed, the data types whose addresses
-	 * were saved in the db_val_t structure must be freed or a memory leak will happen.
-	 * This processing should happen in the db_free_row() subroutine.  The caller of
-	 * this routine should ensure that db_free_rows(), db_free_row() or db_free_result()
-	 * is eventually called.
-	 */
-	for (col = 0; col < RES_COL_N(_res); col++) {
-		if (RES_TYPES(_res)[col] != DB_STRING) {
-			LM_DBG("col[%d] Col[%.*s] Type[%d] Freeing row_buf[%p]\n", col
-				, RES_NAMES(_res)[col]->len, RES_NAMES(_res)[col]->s,
-				  RES_TYPES(_res)[col], row_buf[col]);
-			LM_DBG("freeing row_buf[%d] at %p\n", col, row_buf[col]);
+		if( row->values[col].nul ||
+		    row->values[col].type == DB_INT ||
+		    row->values[col].type == DB_DOUBLE ||
+		    row->values[col].type == DB_DATETIME
+		 )
 			pkg_free(row_buf[col]);
-		}
-		/* The following housekeeping may not be technically required, but it is a good practice
-		 * to NULL pointer fields that are no longer valid.  Note that DB_STRING fields have not
-		 * been pkg_free(). NULLing DB_STRING fields would normally not be good to do because a memory
-		 * leak would occur.  However, the pg_convert_row() routine has saved the DB_STRING pointer
-		 * in the db_val_t structure.  The db_val_t structure will eventually be used to pkg_free()
-		 * the DB_STRING storage.
-		 */
-		row_buf[col] = (char *)NULL;
 	}
-	LM_DBG("freeing row buffer at %p\n", row_buf);
-	pkg_free(row_buf);
+
+	
+	if( row_buf )
+		pkg_free(row_buf);
 	row_buf = NULL;
+
 	return 0;
+
+error:
+	for(col = 0; col < ROW_N(row); col++)
+		if( row_buf[col])
+		pkg_free(row_buf[col]);
+
+	if( row_buf )
+		pkg_free(row_buf);
+			return -1;
 }
-
-
 
 int* bdb_get_colmap(table_p _dtp, db_key_t* _k, int _n)
 {

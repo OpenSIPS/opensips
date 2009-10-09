@@ -133,27 +133,37 @@ int bdb_str2val(db_type_t _t, db_val_t* _v, char* _s, int _l)
 		break;
 
 	case DB_STRING:
-		VAL_STRING(_v) = _s;
-		VAL_TYPE(_v) = DB_STRING;
-		VAL_FREE(_v) = 1;
-		
 		if( strlen(_s)==4 && !strncasecmp(_s, "NULL", 4) )
 			VAL_NULL(_v) = 1;
+		else
+		{
+			VAL_STRING(_v) = _s;
+			VAL_TYPE(_v) = DB_STRING;
+			VAL_FREE(_v) = 1;
+		}
+			
 		
 		return 0;
 
 	case DB_STR:
-		VAL_STR(_v).s = (char*)_s;
-		VAL_STR(_v).len = _l;
-		VAL_TYPE(_v) = DB_STR;
-		VAL_FREE(_v) = 1;
 
 		if( strlen(_s)==4 && !strncasecmp(_s, "NULL", 4) )
 			VAL_NULL(_v) = 1;
+		else
+		{
+
+			VAL_STR(_v).s = (char*)_s;
+			VAL_STR(_v).len = _l;
+			VAL_TYPE(_v) = DB_STR;
+			VAL_FREE(_v) = 1;
+		}
+		
 
 		return 0;
 
 	case DB_DATETIME:
+		if( *_s == '\'')
+			_s++;
 		if (db_str2time(_s, &VAL_TIME(_v)) < 0) {
 			LM_ERR("Error converting datetime\n");
 			return -5;
@@ -165,7 +175,9 @@ int bdb_str2val(db_type_t _t, db_val_t* _v, char* _s, int _l)
 
 	case DB_BLOB:
 		VAL_BLOB(_v).s = _s;
+		VAL_BLOB(_v).len = _l;
 		VAL_TYPE(_v) = DB_BLOB;
+		VAL_FREE(_v) = 1;
 		LM_DBG("got blob len %d\n", _l);
 		return 0;
 	}
@@ -268,10 +280,10 @@ int bdb_val2str(db_val_t* _v, char* _s, int* _len)
 		} 
 		else 
 		{
+			strncpy(_s, VAL_BLOB(_v).s , l);
 			LM_DBG("Converting BLOB [%s]\n", _s);
-			_s = VAL_BLOB(_v).s;
-			*_len = 0;
-			return -8;
+			*_len = l;
+			return 0;
 		}
 		break;
 

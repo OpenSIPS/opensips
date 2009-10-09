@@ -14,7 +14,7 @@ auto_gen=
 NAME=db_berkeley.so
 
 DEFS +=-I$(LOCALBASE)/include -I$(LOCALBASE)/BerkeleyDB.4.6/include \
-	-I$(SYSBASE)/include
+	-I$(SYSBASE)/include 
 
 LIBS=-L$(LOCALBASE)/lib -L$(SYSBASE)/lib -L$(LOCALBASE)/BerkeleyDB.4.6/lib -ldb
 

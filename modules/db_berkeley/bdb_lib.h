@@ -45,7 +45,7 @@
 #define MAX_NUM_COLS 32
 
 /*max char width of a table row*/
-#define MAX_ROW_SIZE 2048
+#define MAX_ROW_SIZE 4096
 
 /*max char width of a table name*/
 #define MAX_TABLENAME_SIZE 64

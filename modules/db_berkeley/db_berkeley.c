@@ -201,7 +201,7 @@ db_con_t* bdb_init(const str* _sqlurl)
 	memset(_res, 0, sizeof(db_con_t) + sizeof(bdb_con_t));
 	_res->tail = (unsigned long)((char*)_res+sizeof(db_con_t));
 
-	LM_INFO("using database at: %.*s", _s.len, _s.s);
+	LM_INFO("using database at: %.*s\n", _s.len, _s.s);
 	BDB_CON_CONNECTION(_res) = bdblib_get_db(&_s);
 	if (!BDB_CON_CONNECTION(_res))
 	{
@@ -553,7 +553,7 @@ int bdb_query(db_con_t* _con, db_key_t* _k, db_op_t* _op, db_val_t* _v,
 	/*query Berkely DB*/
 	if ((ret = db->get(db, NULL, &key, &data, 0)) == 0) 
 	{
-#ifdef BDB_EXTRA_DEBUG
+		#ifdef BDB_EXTRA_DEBUG
 		LM_DBG("RESULT\nKEY:  [%.*s]\nDATA: [%.*s]\n"
 			, (int)   key.size
 			, (char *)key.data
@@ -781,7 +781,7 @@ int bdb_delete(db_con_t* _h, db_key_t* _k, db_op_t* _op, db_val_t* _v, int _n)
 	char kbuf[MAX_ROW_SIZE];
 	int i, j, ret, klen;
 	int *lkey=NULL;
-	DBT key;
+	DBT key,data;
 	DB *db;
 	DBC *dbcp;
 
@@ -812,6 +812,7 @@ int bdb_delete(db_con_t* _h, db_key_t* _k, db_op_t* _op, db_val_t* _v, int _n)
 
 	db = _tp->db;
 	memset(&key, 0, sizeof(DBT));
+	memset(&data, 0, sizeof(DBT));
 	memset(kbuf, 0, klen);
 
 	if(!_k || !_v || _n<=0)
@@ -822,7 +823,7 @@ int bdb_delete(db_con_t* _h, db_key_t* _k, db_op_t* _op, db_val_t* _v, int _n)
 			goto error;
 		}
 		
-		while ((ret = dbcp->c_get(dbcp, &key, NULL, DB_NEXT)) == 0)
+		while ((ret = dbcp->c_get(dbcp, &key, &data, DB_NEXT)) == 0)
 		{
 			if(!strncasecmp((char*)key.data,"METADATA",8)) 
 				continue;
@@ -970,13 +971,26 @@ int _bdb_delete_cursor(db_con_t* _h, db_key_t* _k, db_op_t* _op, db_val_t* _v, i
 	if ((ret = db->cursor(db, NULL, &dbcp, DB_WRITECURSOR)) != 0) 
 	{	LM_ERR("Error creating cursor\n");
 	}
-	
+
 	while ((ret = dbcp->c_get(dbcp, &key, &data, DB_NEXT)) == 0)
 	{
+
+
+		if (db_allocate_rows(_r, 1)!=0)
+		{
+			LM_ERR("failed to allocated rows\n");
+			goto error;
+		}
+
+		RES_ROW_N(_r) = 1;
+
+
+	
 		if(!strncasecmp((char*)key.data,"METADATA",8))
 			continue;
 		
 		/*fill in the row part of db_res_t */
+		
 		if ((ret=bdb_convert_row( _r, dbuf, 0)) < 0) 
 		{	LM_ERR("Error while converting row\n");
 			goto error;
@@ -1038,6 +1052,7 @@ int bdb_update(db_con_t* _con, db_key_t* _k, db_op_t* _op, db_val_t* _v,
 	char kbuf[MAX_ROW_SIZE];
 	char qbuf[MAX_ROW_SIZE];
 	char ubuf[MAX_ROW_SIZE];
+	char * tmp;
 	DBT key, qdata, udata;
 	DB *db;
 	
@@ -1132,7 +1147,12 @@ int bdb_update(db_con_t* _con, db_key_t* _k, db_op_t* _op, db_val_t* _v,
 	/* loop over each column of the qbuf and copy it to our new ubuf unless
 	   its a field that needs to update
 	*/
-	c = strtok(qbuf, DELIM);
+
+
+	LM_DBG("Found: [%s]\n",qbuf);
+
+	tmp = qbuf;
+	c = strsep(&tmp, DELIM);
 	t = ubuf;
 	while( c!=NULL)
 	{	char* delim = DELIM;
@@ -1152,8 +1172,8 @@ int bdb_update(db_con_t* _con, db_key_t* _k, db_op_t* _op, db_val_t* _v,
 			k = lkey[i];
 			if (qcol == k)
 			{	/* update this col */
-				int j = MAX_ROW_SIZE - sum;
-				if( bdb_val2str( &_uv[i], t, &j) )
+				len = MAX_ROW_SIZE - sum;
+				if( bdb_val2str( &_uv[i], t, &len) )
 				{	LM_ERR("value too long for string \n");
 					ret = -3;
 					goto cleanup;
@@ -1181,7 +1201,7 @@ next:
 		strncpy(t, delim, DELIM_LEN);
 		t += DELIM_LEN;
 		
-		c = strtok(NULL, DELIM);
+		c = strsep(&tmp, DELIM);
 		qcol++;
 	}
 	
