@@ -771,6 +771,7 @@ int load_metadata_columns(table_p _tp)
 {
 	int ret,n,len;
 	char dbuf[MAX_ROW_SIZE];
+	char *tmp;
 	char *s = NULL;
 	char cn[64], ct[16];
 	DB *db = NULL;
@@ -804,8 +805,13 @@ int load_metadata_columns(table_p _tp)
 		return -1;
 	}
 
+	
 	/* eg: dbuf = "table_name(str) table_version(int)" */
-	s = strtok(dbuf, " ");
+
+	LM_DBG("Found: [%s]\n",dbuf);
+
+	tmp = dbuf;
+	s = strsep(&tmp, " ");
 	while(s!=NULL && n<MAX_NUM_COLS) 
 	{
 		/* eg: meta[0]=table_name  meta[1]=str */
@@ -845,7 +851,7 @@ int load_metadata_columns(table_p _tp)
 		_tp->colp[n] = col;
 		n++;
 		_tp->ncols++;
-		s=strtok(NULL, " ");
+		s = strsep(&tmp, " ");
 	}
 
 	return 0;
@@ -855,6 +861,7 @@ int load_metadata_keys(table_p _tp)
 {
 	int ret,n,ci;
 	char dbuf[MAX_ROW_SIZE];
+	char *tmp;
 	char *s = NULL;
 	DB *db = NULL;
 	DBT key, data;
@@ -879,9 +886,12 @@ int load_metadata_keys(table_p _tp)
 		LM_ERR("FAILED to find METADATA in table \n");
 		return ret;
 	}
-	
-	s = strtok(dbuf, " ");
-	while(s!=NULL && n< _tp->ncols) 
+
+	LM_DBG("Found: [%s]\n",dbuf);
+
+	tmp = dbuf;
+	s = strsep(&tmp, " ");
+	while(s!=NULL && strlen(s) && n< _tp->ncols)
 	{	ret = sscanf(s,"%i", &ci);
 		if(ret != 1) return -1;
 		if( _tp->colp[ci] ) 
@@ -889,7 +899,7 @@ int load_metadata_keys(table_p _tp)
 			_tp->nkeys++;
 		}
 		n++;
-		s=strtok(NULL, " ");
+		s = strsep(&tmp, " ");
 	}
 
 	return 0;
@@ -964,8 +974,9 @@ int load_metadata_defaults(table_p _tp)
 {
 	int ret,n,len;
 	char dbuf[MAX_ROW_SIZE];
+	char * tmp;
 	char *s = NULL;
-	char cv[64];
+	char cv[512];
 	DB *db = NULL;
 	DBT key, data;
 	column_p col;
@@ -1009,10 +1020,14 @@ int load_metadata_defaults(table_p _tp)
 	}
 	
 	/* use the defaults provided*/
-	s = strtok(dbuf, DELIM);
+
+	LM_DBG("Found: [%s]\n",dbuf);
+
+	tmp = dbuf;
+	s = strsep(&tmp, DELIM);
 	while(s!=NULL && n< _tp->ncols) 
-	{	ret = sscanf(s,"%s", cv);
-		if(ret != 1) return -1;
+	{
+		strcpy(cv,s);
 		col = _tp->colp[n];
 		if( col ) 
 		{	/*set column default*/
@@ -1029,7 +1044,7 @@ int load_metadata_defaults(table_p _tp)
 
 		}
 		n++;
-		s=strtok(NULL, DELIM);
+		s = strsep( &tmp, DELIM);
 	}
 	
 	return 0;
@@ -1148,7 +1163,7 @@ int bdblib_valtochar(table_p _tp, int* _lres, char* _k, int* _klen, db_val_t* _v
 
 				len = total - sum;
 				if ( bdb_val2str(&_v[j], sk, &len) != 0)
-				{	LM_ERR("Destination buffer too short for subval %s\n",sk);
+				{	LM_ERR("Error while converting to str %s\n",sk);
 					return -4;
 				}
 				
