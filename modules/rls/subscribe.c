@@ -57,7 +57,6 @@ static str pu_500_rpl     = str_init("Server Error");
 static str stale_cseq_rpl = str_init("Stale Cseq Value");
 static str pu_489_rpl     = str_init("Bad Event");
 static str pu_404_rpl     = str_init("Not Found");
-static str pu_481_rpl     = str_init("Call/Transaction Does Not Exist");
 
 #define Stale_cseq_code 401
 
@@ -521,7 +520,6 @@ int rls_handle_subscribe(struct sip_msg* msg, char* s1, char* s2)
 		ev_param= ev_param->next;
 	}		
 
-
 	if(msg->to->parsed != NULL)
 	{
 		pto = (struct to_body*)msg->to->parsed;
@@ -585,9 +583,8 @@ int rls_handle_subscribe(struct sip_msg* msg, char* s1, char* s2)
 		{
 			LM_DBG("list not found - search for uri = %.*s\n",subs.pres_uri.len,
 				subs.pres_uri.s);
-			reply_code = 404;
-			reply_str = pu_404_rpl;
-			goto error;
+			pkg_free(subs.pres_uri.s);
+			return to_presence_code;
 		}
 	}
 	else  /* if request inside a dialog */
@@ -607,14 +604,11 @@ int rls_handle_subscribe(struct sip_msg* msg, char* s1, char* s2)
 		{
 			lock_release(&rls_table[hash_code].lock);
 			/* reply with Call/Transaction Does Not Exist */
-			LM_ERR("No dialog match found\n");
-			reply_code = 481;
-			reply_str = pu_481_rpl;
-			goto error;
+			LM_DBG("No dialog match found\n");
+			return to_presence_code;
 		}
 		lock_release(&rls_table[hash_code].lock);
 	}
-
 
 	/* extract dialog information from message headers */
 	if(pres_extract_sdialog_info(&subs, msg, rls_max_expires, &init_req,
