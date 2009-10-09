@@ -126,14 +126,15 @@ modparam("b2b_logic", "extern_scenario", "/usr/local/opensips/scripts/b2b_market
 	</programlisting>
 		</example>
 	</section>
-	</section>
 
 	<section>
 		<title><varname>cleanup_period</varname> (int)</title>
 		<para>
-			The time interval at which to search for an hanged b2b scenario.
+			The time interval at which to search for an hanged b2b context.
 			A scenario is considered expired if the duration of a session exceeds the
 			lifetime specified in the scenario.
+			At that moment, BYE is sent in all the dialogs from that context and the
+			context is deleted.
 		</para>
 		<para>
 		<emphasis>Default value is <quote>100</quote>.</emphasis>
@@ -146,6 +147,7 @@ modparam("b2b_logic", "cleanup_period", 60)
 ...
 	</programlisting>
 		</example>
+	</section>
 	</section>
 
 	<section>
