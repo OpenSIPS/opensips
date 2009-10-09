@@ -997,9 +997,6 @@ int dlg_validate_dialog( struct sip_msg* req, struct dlg_cell *dlg)
 	int r_proto, c_proto, r_port, c_port;
 	str s;
 
-	if (dlg->state == DLG_STATE_DELETED)
-		return 0;
-
 	if (last_dst_leg<0) {
 		LM_ERR("Script error - validate function before having a dialog\n");
 		return -1;
