@@ -332,16 +332,16 @@ migrate_table ${dst_db}.usr_preferences \
 	${src_db}.usr_preferences \
 	"?id,?uuid,?username,?domain,?attribute,?type,?value,?last_modified"
 
-echo -n "In version 1.6, tables trusted and address have been joined under the name address. " \
+echo -n "In version 1.6, tables 'trusted' and 'address' have been joined under a sigle table name 'address'. " \
      "You have the option to migrate just one of them or both. " \
      "Do you want to migrate trusted table? (y|n)"
 read INPUT
 if [ "$INPUT" = "y" ] || [ "$INPUT" = "Y" ]
 then
 	migrate_table ${dst_db}.address \
-		"id,ip,proto,pattern" \
+		"id,ip,proto,pattern,context_info" \
 		${src_db}.trusted \
-		"?id,?src_ip,?proto,?from_pattern"
+		"?id,?src_ip,?proto,?from_pattern,?tag"
 fi
 
 echo -n "Do you want to migrate address table? (y|n)"
@@ -353,7 +353,6 @@ then
 		${src_db}.address \
 		"?id,?grp,?ip_addr,?mask,?port"
 fi
-
 
 migrate_table ${dst_db}.speed_dial \
 	"id,username,domain,sd_username,sd_domain,new_uri,fname,lname,description" \
@@ -456,6 +455,11 @@ migrate_table ${dst_db}.carrierfailureroute \
 	"id,carrier,domain,scan_prefix,host_name,reply_code,flags,mask,next_domain,description" \
 	${src_db}.carrierfailureroute \
 	"?id,?carrier,?domain,?scan_prefix,?host_name,?reply_code,?flags,?mask,?next_domain,?description"
+
+migrate_table ${dst_db}.route_tree \
+	"id,carrier" \
+	${src_db}.route_tree \
+	"?id,?carrier"
 
 migrate_table ${dst_db}.domainpolicy \
 	"id,rule,type,att,val,description" \
