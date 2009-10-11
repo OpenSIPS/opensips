@@ -41,7 +41,7 @@ struct mi_root* mi_address_reload(struct mi_root *cmd_tree, void *param)
 	if (hash_table == NULL)
 		return init_mi_tree( 200, MI_SSTR(MI_OK));
 
-    if (reload_address_table () == 1)
+	if (reload_address_table () == 1)
 		return init_mi_tree( 200, MI_SSTR(MI_OK));
 
 	return init_mi_tree( 400, MI_SSTR("Trusted table reload failed"));

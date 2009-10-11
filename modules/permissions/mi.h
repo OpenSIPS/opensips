@@ -29,11 +29,9 @@
 #include "../../mi/mi.h"
 
 
-#define MI_TRUSTED_RELOAD "address_reload"
-#define MI_TRUSTED_DUMP "address_dump"
+#define MI_ADDRESS_RELOAD "address_reload"
+#define MI_ADDRESS_DUMP "address_dump"
 
-//#define MI_ADDRESS_RELOAD "address_reload"
-//#define MI_ADDRESS_DUMP "address_dump"
 #define MI_SUBNET_DUMP "subnet_dump"
 
 #define MI_ALLOW_URI "allow_uri"

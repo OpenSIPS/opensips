@@ -158,10 +158,10 @@ int reload_address_table(void)
 					ip_addr,
 					(unsigned int) VAL_INT(val + 1),
 					(unsigned int) VAL_INT(val + 3),
-		          	(char*) VAL_STRING(val + 4),
+					(char*) VAL_STRING(val + 4),
 					pattern,
-				    info) == -1) {
-			    		LM_ERR("hash table insert error\n");
+					info) == -1) {
+					LM_ERR("hash table insert error\n");
 					    perm_dbf.free_result(db_handle, res);
 					    return -1;
 				}
