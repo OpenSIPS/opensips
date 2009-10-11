@@ -2,7 +2,7 @@
 #
 #$Id$
 #
-# Copyright (C) 2008 Voice Sistem S.R.L
+# Copyright (C) 2008-2009 Voice Sistem S.R.L
 #
 # This file is part of opensips, a free SIP server.
 #
@@ -1198,15 +1198,16 @@ sub usage_unixsock() {
 sub usage_db() {
 my $COMMAND=`basename $0`;
 
-print "usage:create <db name or db_path, optional> .....(creates a new database)\n" .
-      "\tdrop <db name or db_path, optional> .......(!entirely deletes tables!)\n" .
-      "\treinit <db name or db_path, optional> .....(!entirely deletes and than re-creates tables!)\n" .
-      "\tbackup <file> .................................(dumps current database to file)\n" . 
-      "\trestore <file> ................................(restores tables from a file)\n" .
-      "\tcopy <new_db> .................................(creates a new db from an existing one)\n" .
-      "\tmigrate <old_db> <new_db> .....................(migrates DB from 1.5 to 1.6 	)\n" .
-      "\tpresence ......................................(adds the presence related tables)\n" . 
-      "\textra .........................................(adds the extra tables)\n\n" .
+	print " -- command 'db' - manage OpenSIPS databases\n".
+	      "db create <db name or db_path, optional> ....(creates a new database)\n".
+	      "db presence .................................(adds the presence related tables)\n".
+	      "db extra ....................................(adds the extra tables)\n".
+	      "db migrate <old_db> <new_db> ................(migrates DB from 1.5 to 1.6)\n".
+	      "db drop <db name or db_path, optional> ......(!entirely deletes tables!)\n".
+	      "db reinit <db name or db_path, optional> ....(!entirely deletes and than re-creates tables!)\n".
+	      "db backup <file> ............................(dumps current database to file)\n".
+	      "db restore <file> ...........................(restores tables from a file)\n".
+	      "db copy <new_db> ............................(creates a new db from an existing one)\n\n".
       "\tif you want to manipulate database as other database user than\n" .
       "\troot, want to change database name from default value \"$DBNAME\",\n" .
       "\tor want to use other values for users and password, edit the\n" .
@@ -1215,7 +1216,6 @@ print "usage:create <db name or db_path, optional> .....(creates a new database)
 
 
 sub berkeley_usage() {
-#COMMAND=`basename $0`
 
 print "Script for maintaining OpenSIPS Berkeley DB tables\n".
        "bdb | db_berkeley list      (lists the underlying db files in DB_PATH)\n".
@@ -1543,7 +1543,7 @@ sub db_load() {
 	if ( $DBENGINE eq "" ) {
 		print "database engine not specified, please setup one in the config script";
 		$DBENGINELOADED = 0;
-		return;
+		return 0;
 	} else {
 	
 			if ($DBENGINE =~ /(^mysql$)|(^MYSQL$)/) {
@@ -1551,8 +1551,13 @@ sub db_load() {
 				&validate_dbdata("mysql");
 				#Connect to the database.
 				$dbh = DBI->connect("DBI:mysql:database=$DBNAME;host=$DBHOST",
-				                 "$DBRWUSER", "$DBRWPW",
-						 {'PrintError' => 0} ) or die "Database connection failed.";
+						"$DBRWUSER", "$DBRWPW", {'PrintError' => 0} );
+				if ($dbh==NULL) {
+					print "Failed to connect the configured Database ".
+						"(database=$DBNAME;host=$DBHOST;user=$DBRWUSER)";
+					$DBENGINELOADED = 0;
+					return 0;
+				}
 				$DBENGINELOADED = 1;
 			}
 
@@ -1561,39 +1566,48 @@ sub db_load() {
 				&validate_dbdata("oracle");
 				#Connect to the database.
 				$dbh = DBI->connect("DBI:Oracle:database=$DBNAME;host=$DBHOST",
-				                 "$DBRWUSER", "$DBRWPW",
-						 {'PrintError' => 0} ) or die "Database connection failed.";
+						"$DBRWUSER", "$DBRWPW", {'PrintError' => 0} );
+				if ($dbh==NULL) {
+					print "Failed to connect the configured Database ".
+						"(database=$DBNAME;host=$DBHOST;user=$DBRWUSER)";
+					$DBENGINELOADED = 0;
+					return 0;
+				}
 				$DBENGINELOADED = 1;
-
 			}
 
-                        elsif ($DBENGINE =~ /^Pg$/) {
+			elsif ($DBENGINE =~ /^Pg$/) {
 				print "Used database is PostgreSQL\n";
 				&validate_dbdata("postgres");
 				$DBROOTUSER = "postgres";
 				#Connect to the database.
-
-				$dbh = DBI->connect("DBI:Pg:database=$DBNAME;host=$DBHOST;port=$DBPORT",
-				                 "$DBRWUSER", "$DBRWPW",
-						 {'PrintError' => 0} ) or die "Database connection failed.";
+				$dbh = DBI->connect("DBI:Pg:database=$DBNAME;host=$DBHOST;".
+					"port=$DBPORT","$DBRWUSER","$DBRWPW", {'PrintError' => 0});
+				if ($dbh==NULL) {
+					print "Failed to connect the configured Database ".
+						"(database=$DBNAME;host=$DBHOST;user=$DBRWUSER)";
+					$DBENGINELOADED = 0;
+					return 0;
+				}
 				$DBENGINELOADED = 1;
 			}
 
-                        elsif ($DBENGINE =~ /^DBTEXT$/) {
+			elsif ($DBENGINE =~ /^DBTEXT$/) {
 				print "Used database is DBTEXT\n";
 				&validate_dbdata("dbtext/opensips");
 				$ENV{DBTEXT_PATH} = $DBTEXT_PATH;
 				$DBENGINELOADED = 1;
 			}
 
-                        elsif ($DBENGINE =~ /^DB_BERKELEY$/) {
+			elsif ($DBENGINE =~ /^DB_BERKELEY$/) {
 				print "Used database is DB_BERKELEY\n";
 				&validate_dbdata("db_berkeley/opensips");
 				$ENV{PATH} = $DB_PATH;
 				$DBENGINELOADED = 1;
-
 			}
 	}
+
+	return 1;
 }
 
 #
@@ -1709,39 +1723,66 @@ sub non_interactively(){
 
 sub cmd() {
 
-	if ($cmd[0] =~ /^acl$/)	 					{ &db_load(); system(&opensips_acl()); }
-	elsif ($cmd[0] =~ /^add$/)  					{ &db_load(); system(&subscriber()); }
-	elsif ($cmd[0] =~ /^avp$/)	 				{ &db_load(); system(&avpops()); }	
-	elsif ($cmd[0] =~ /(^aliasdb$)|(^alias_db$)/)			{ &db_load(); system(&alias_db()); }
-	elsif ($cmd[0] =~ /^cr$/) 					{ &db_load(); system(&opensips_cr()); }
-	elsif ($cmd[0] =~ /^dialplan$/)                     		{ &db_load(); system(&opensips_dialplan()); }
-	#elsif ($cmd[0] =~ /^db$/)	 				{ &db_load(); system(&db_ops()); }
-	elsif ($cmd[0] =~ /^db$/)	 				{ &db_load(); system(&opensips_db()); }
-	elsif ($cmd[0] =~ /^dispatcher$/) 				{ &db_load(); system(&opensips_dispatcher()); }
-	elsif ($cmd[0] =~ /^domain$/) 					{ &db_load(); system(&domain()); }
-	elsif ($cmd[0] =~ /(^fifo$)|(^unixsock$)|(^udp$)|(^xmlrpc$)/)	{ &mi_comm(); } 
-	elsif ($cmd[0] =~ /^lcr$/) 					{ &db_load(); system(&opensips_lcr()); } 
-	elsif ($cmd[0] =~ /(^moni$)|(^monitor$)|(^con$)|(^console$)/)	{ &mi_comm_monitor(); }
-	elsif ($cmd[0] =~ /^ping$/)		 			{ system(&options_ping()); }
-	elsif ($cmd[0] =~ /^ps$/)					{ system(&opensips_ps()); }
-	elsif ($cmd[0] =~ /^passwd$/)			      		{ &db_load(); system(&subscriber()); }		
-	elsif ($cmd[0] =~ /^online$/)					{ &opensips_online(); }
-	elsif ($cmd[0] =~ /^rpid$/)		 			{ &db_load(); system(&opensips_rpid()); }
-	elsif ($cmd[0] =~ /^restart$/)			   		{ system(&opensips_restart()); }		
-	elsif ($cmd[0] =~ /^rm$/)			      		{ &db_load(); system(&subscriber()); }
-	elsif ($cmd[0] =~ /(^speeddial$)|(^speed_dial$)/)		{ &db_load(); system(&speeddial()); }
-	elsif ($cmd[0] =~ /^start$/)		   	 		{ system(&opensips_start()); }	
-	elsif ($cmd[0] =~ /^stop$/)			      		{ system(&opensips_stop()); }
-	elsif ($cmd[0] =~ /^tls$/)	 	  			{ &db_load(); system(&tls_ca()); }
-	elsif ($cmd[0] =~ /^address$/)			 		{ &db_load(); system(&address()); }
-	elsif ($cmd[0] =~ /(^ul$)|(^alias$)|(^usrloc$)/)	  	{ system(&opensips_usrloc()); }		
-	elsif ($cmd[0] =~ /^version$/)	 				{ system(&opensips_version()); }
-	#elsif ($cmd[0] =~ /(^extra$)|(^migrate$)|(^copy$)|(^backup$)|(^restore$)|(^create$)|(^presence$)|(^drop$)|(^reinit$)|(^bdb$)|(^db_berkeley$)|(^cat$)/) {system(&opensips_db()); }
-	elsif ($cmd[0] =~ /^dr$/)				      	{ &db_load(); system(&opensips_dr()); }
-	elsif ($cmd[0] =~ /^help$/)				      	{ system(&opensips_help()); }
-	else 								{ print " unknown command!!!\n"; }
+	if ($cmd[0] =~ /^acl$/) {
+		if (&db_load()) { system(&opensips_acl()); }
+	} elsif ($cmd[0] =~ /^add$/) {
+		if (&db_load()) {system(&subscriber()); }
+	} elsif ($cmd[0] =~ /^avp$/) {
+		if (&db_load()) {system(&avpops()); }
+	} elsif ($cmd[0] =~ /(^aliasdb$)|(^alias_db$)/) {
+		if (&db_load()) {system(&alias_db()); }
+	} elsif ($cmd[0] =~ /^cr$/) {
+		if (&db_load()) {system(&opensips_cr()); }
+	} elsif ($cmd[0] =~ /^dialplan$/) {
+		if (&db_load()) {system(&opensips_dialplan()); }
+	} elsif ($cmd[0] =~ /^db$/) {
+		system(&opensips_db());
+	} elsif ($cmd[0] =~ /^dispatcher$/) {
+		if (&db_load()) {system(&opensips_dispatcher()); }
+	} elsif ($cmd[0] =~ /^domain$/) {
+		if (&db_load()) {system(&domain()); }
+	}elsif ($cmd[0] =~ /(^fifo$)|(^unixsock$)|(^udp$)|(^xmlrpc$)/) {
+		&mi_comm();
+	} elsif ($cmd[0] =~ /^lcr$/) {
+		if (&db_load()) {system(&opensips_lcr()); }
+	} elsif ($cmd[0] =~ /(^moni$)|(^monitor$)|(^con$)|(^console$)/) {
+		&mi_comm_monitor();
+	} elsif ($cmd[0] =~ /^ping$/) {
+		system(&options_ping());
+	} elsif ($cmd[0] =~ /^ps$/) {
+		system(&opensips_ps());
+	} elsif ($cmd[0] =~ /^passwd$/) {
+		if (&db_load()) {system(&subscriber()); }
+	} elsif ($cmd[0] =~ /^online$/) {
+		&opensips_online();
+	} elsif ($cmd[0] =~ /^rpid$/) {
+		if (&db_load()) {system(&opensips_rpid()); }
+	} elsif ($cmd[0] =~ /^restart$/) {
+		system(&opensips_restart());
+	} elsif ($cmd[0] =~ /^rm$/) {
+		if (&db_load()) {system(&subscriber()); }
+	} elsif ($cmd[0] =~ /(^speeddial$)|(^speed_dial$)/) {
+		if (&db_load()) {system(&speeddial()); }
+	} elsif ($cmd[0] =~ /^start$/) {
+		system(&opensips_start());
+	} elsif ($cmd[0] =~ /^stop$/) {
+		system(&opensips_stop());
+	} elsif ($cmd[0] =~ /^tls$/) {
+		system(&tls_ca());
+	} elsif ($cmd[0] =~ /^address$/) {
+		if (&db_load()) {system(&address()); }
+	} elsif ($cmd[0] =~ /(^ul$)|(^alias$)|(^usrloc$)/) {
+		system(&opensips_usrloc());
+	} elsif ($cmd[0] =~ /^version$/) {
+		system(&opensips_version());
+	} elsif ($cmd[0] =~ /^dr$/) {
+		if (&db_load()) {system(&opensips_dr()); }
+	} elsif ($cmd[0] =~ /^help$/) {
+		system(&opensips_help());
+	} else {
+		print " unknown command!!!\n";
+	}
 
-			
 	return;
 
 }
@@ -2900,11 +2941,11 @@ sub domain() {
 			&require_dbengine();
 			
 			if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
-				&bdb_select($DOMAIN_TABLE);								
+				&bdb_select($DOMAIN_TABLE);
 			} elsif ( $DBENGINE =~ /^DBTEXT$/ ) {
 				system ("$DBTEXTCMD","select * FROM $DOMAIN_TABLE");
 			} else {
-				$sth = $dbh->prepare ( "select * FROM $DOMAIN_TABLE");	
+				$sth = $dbh->prepare ( "select * FROM $DOMAIN_TABLE");
 				
 				##execute the query
 				$sth->execute( );
@@ -5630,7 +5671,7 @@ sub opensips_version() {
 ### database operations  
 #
 sub opensips_db() {
-		
+
 		if ($cmd[1] =~ /^migrate$/){
 			
 			if ($cmd[2] =~ /^h$/) {
@@ -5729,7 +5770,7 @@ sub opensips_db() {
 				&usage_db();
 				return;
 			}
-			#&opensips_restore($cmd[1],);
+			&opensips_restore($cmd[1],);
 		}
 
 		elsif ($cmd[1] =~ /^create$/) {
@@ -6689,8 +6730,7 @@ sub mysql_migrate_db() { # 2 parameters (src_db, dst_db)
 	      "Do you want to migrate \'trusted\' table? (y|n)";
 	if ( ( my $ans = <STDIN> ) =~ /[yY]$/ ) {
 		### address
-		&mysql_migrate_table( $dst_db . ".address", "id,ip,proto,pattern", $src_db . ".trusted", "?id,?src_ip,?proto,?from_pattern" );
-		print "Table \'trusted\' has been migrated to \'address\'.\n";
+		&mysql_migrate_table( $dst_db . ".address", "id,ip,proto,pattern,context_info", $src_db . ".trusted", "?id,?src_ip,?proto,?from_pattern,?tag" );
 	} else {
 		print "Migration of table \'trusted\' to table \'address\' was skipped!"
 	}
@@ -6698,7 +6738,6 @@ sub mysql_migrate_db() { # 2 parameters (src_db, dst_db)
 	print "Do you want to migrate \'address\' table? (y|n)";
 	if ( ( my $ans = <STDIN> ) =~ /[yY]$/ ) {
 		&mysql_migrate_table( $dst_db . ".address", "id,grp,ip,mask,port", $src_db . ".address", "?id,?grp,?ip_addr,?mask,?port" );
-		print "Table \'address\' has been migrated to \'address\'.\n";
 	} else {
 		print "Migration of table \'address\' to table \'address\' was skipped!"
 	}
@@ -6803,33 +6842,33 @@ sub mysql_migrate_table(){ # 4 paremeters (dst_table, dst_cols, src_table, src_c
 		if ( $? != 0 ) {
 			system("echo $X | $EGREP \"ERROR 1146\" > /dev/null");
 			if ( $? != 0 ) {
-				print " -- Migrating $_[2] to $_[0].....SKIPPED (no source)\n";				
-			}	 
+				print " -- Migrating $_[2] to $_[0].....SKIPPED (no source)\n";
+				return;
+			}
 			print "ERROR: failed to migrate $src_table to $dst_table!!!";
 			print "Skip it and continue (y/n)? ";
 			if ( ( my $ans = <STDIN> ) =~ /[yY]$/ ) {
 				return;
-			}		
+			}
 		}
-	
 	} else {
-
-                $X = system("mysql -h $DBHOST -u$DBROOTUSER -p$PW -e \"INSERT INTO $dst_table ($dst_cols) SELECT $src_cols FROM $src_table\"");
+		$X = system("mysql -h $DBHOST -u$DBROOTUSER -p$PW -e \"INSERT INTO $dst_table ($dst_cols) SELECT $src_cols FROM $src_table\"");
 		if ( $? != 0 ) {
 			system("echo $X | $EGREP \"ERROR 1146\" > /dev/null");
 			if ( $? != 0 ) {
-				print " -- Migrating $_[2] to $_[0].....SKIPPED (no source)\n";				
-			}	 
+				print " -- Migrating $_[2] to $_[0].....SKIPPED (no source)\n";
+				return;
+			}
 			print "ERROR: failed to migrate $src_table to $dst_table!!!";
 			print "Skip it and continue (y/n)? ";
 			if ( ( my $ans = <STDIN> ) =~ /[yY]$/ ) {
 				return;
-			}		
+			}
+		}
 	}
 
 	print " -- Migrating " . $src_table . " to " . $dst_table . ".....OK\n";
 
-	}
 }  ##migrate functions
 
 
