@@ -388,6 +388,7 @@ extern int line;
 
 /* values */
 %token <intval> NUMBER
+%token <intval> ZERO
 %token <strval> ID
 %token <strval> STRING
 %token <strval> SCRIPTVAR
@@ -1378,9 +1379,19 @@ route_stm:  ROUTE LBRACE actions RBRACE {
 						push($3, &rlist[DEFAULT_RT].a);
 					}
 		| ROUTE LBRACK route_name RBRACK LBRACE actions RBRACE { 
-						i_tmp = get_script_route_idx($3,rlist,RT_NO,1);
-						if (i_tmp==-1) YYABORT;
-						push($6, &rlist[i_tmp].a);
+						if ( strtol($3,&tmp,10)==0 && *tmp==0) {
+							/* route[0] detected */
+							if (rlist[DEFAULT_RT].a!=0) {
+								yyerror("overwritting(2) default "
+									"request routing table");
+								YYABORT;
+							}
+							push($6, &rlist[DEFAULT_RT].a);
+						} else {
+							i_tmp = get_script_route_idx($3,rlist,RT_NO,1);
+							if (i_tmp==-1) YYABORT;
+							push($6, &rlist[i_tmp].a);
+						}
 					}
 		| ROUTE error { yyerror("invalid  route  statement"); }
 	;
