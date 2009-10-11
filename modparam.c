@@ -112,7 +112,7 @@ int set_mod_param_regex(char* regex, char* name, modparam_t type, void* val)
 
 	regfree(&preg);
 	if (!mod_found) {
-		LM_ERR("no module matching %s found\n|", regex);
+		LM_ERR("no module matching %s found\n", regex);
 		pkg_free(reg);
 		return -4;
 	}

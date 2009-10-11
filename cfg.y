@@ -119,6 +119,7 @@
 
 extern int yylex();
 static void yyerror(char* s);
+static void yyerrorf(char* fmt, ...);
 static char* tmp;
 static int i_tmp;
 static void* cmd_tmp;
@@ -1084,12 +1085,14 @@ module_stm:	LOADMODULE STRING	{
 		| LOADMODULE error	{ yyerror("string expected");  }
 		| MODPARAM LPAREN STRING COMMA STRING COMMA STRING RPAREN {
 				if (set_mod_param_regex($3, $5, STR_PARAM, $7) != 0) {
-					yyerror("Can't set module parameter");
+					yyerrorf("Parameter <%s> not found in module <%s> - can't set",
+						$5, $3);
 				}
 			}
 		| MODPARAM LPAREN STRING COMMA STRING COMMA snumber RPAREN {
 				if (set_mod_param_regex($3, $5, INT_PARAM, (void*)$7) != 0) {
-					yyerror("Can't set module parameter");
+					yyerrorf("Parameter <%s> not found in module <%s> - can't set",
+						$5, $3);
 				}
 			}
 		| MODPARAM error { yyerror("Invalid arguments"); }
@@ -1974,6 +1977,14 @@ module_func_param: STRING {
 										elems[$1+1].u.data = $3;
 										$$=$1+1;
 										}
+		| NUMBER {
+										$$=0;
+										yyerror("numbers used as parameters - they should be quoted");
+										}
+		| module_func_param COMMA NUMBER {
+										$$=0;
+										yyerror("numbers used as parameters - they should be quoted");
+										}
 	;
 
 
@@ -2370,8 +2381,8 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 											yyerror("Command cannot be "
 												"used in the block\n");
 										} else {
-											yyerror("unknown command, "
-												"missing loadmodule?\n");
+											yyerrorf("unknown command <%s>, "
+												"missing loadmodule?", $1);
 										}
 										$$=0;
 									}else{
@@ -2387,8 +2398,8 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 											yyerror("Command cannot be "
 												"used in the block\n");
 										} else {
-											yyerror("unknown command, "
-												"missing loadmodule?\n");
+											yyerrorf("unknown command <%s>, "
+												"missing loadmodule?", $1);
 										}
 										$$=0;
 									}else{
@@ -2397,7 +2408,9 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 										$$ = mk_action(MODULE_T, $3+1, elems, line);
 									}
 								}
-		| ID LPAREN error RPAREN { $$=0; yyerror("bad arguments"); }
+		| ID LPAREN error RPAREN { $$=0; yyerrorf("bad arguments for "
+												"command <%s>", $1); }
+		| ID error { $$=0; yyerrorf("bare word <%s> found, command calls need '()'", $1); }
 
 
 
@@ -2425,6 +2438,20 @@ static void yyerror(char* s)
 	LM_CRIT("parse error in config file, line %d, column %d-%d: %s\n", line, startcolumn, 
 			column, s);
 	cfg_errors++;
+}
+
+#define ERROR_MAXLEN 1024
+static void yyerrorf(char *fmt, ...)
+{
+	char *tmp = pkg_malloc(ERROR_MAXLEN);
+	va_list ap;
+	va_start(ap, fmt);
+
+	vsnprintf(tmp, ERROR_MAXLEN, fmt, ap);
+	yyerror(tmp);
+
+	pkg_free(tmp);
+	va_end(ap);
 }
 
 

@@ -331,13 +331,19 @@ static int get_cpuload(double * load)
 	long long o_user, o_nice, o_sys, o_idle, o_iow, o_irq, o_sirq, o_stl;
 	long long n_user, n_nice, n_sys, n_idle, n_iow, n_irq, n_sirq, n_stl;
 	static int first_time = 1;
+	int scan_res;
 	FILE * f = fopen("/proc/stat", "r");
 
 	if (! f)
 		return -1;
-	fscanf(f, "cpu  %lld%lld%lld%lld%lld%lld%lld%lld",
+	scan_res = fscanf(f, "cpu  %lld%lld%lld%lld%lld%lld%lld%lld",
 			&n_user, &n_nice, &n_sys, &n_idle, &n_iow, &n_irq, &n_sirq, &n_stl);
 	fclose(f);
+
+	if (scan_res <= 0) {
+		LM_ERR("/proc/stat didn't contain expected values");
+		return -1;
+	}
 
 	if (first_time) {
 		first_time = 0;
