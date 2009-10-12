@@ -44,6 +44,7 @@
  */
 int get_mixed_part_delimiter(str * body, str * mp_delimiter);
 
+int extract_field(str *body, str *value, str field);
 int extract_rtpmap(str *body, str *rtpmap_payload, str *rtpmap_encoding, str *rtpmap_clockrate, str *rtpmap_parmas);
 int extract_fmtp( str *body, str *fmtp_payload, str *fmtp_string );
 int extract_ptime(str *body, str *ptime);
@@ -60,6 +61,7 @@ int extract_path(str *body, str *path);
 
 char *find_sdp_line(char *p, char *plimit, char linechar);
 char *find_next_sdp_line(char *p, char *plimit, char linechar, char *defptr);
+char *find_sdp_line_complex(char* p, char* plimit, char * name);
 
 char* get_sdp_hdr_field(char* , char* , struct hdr_field* );
 

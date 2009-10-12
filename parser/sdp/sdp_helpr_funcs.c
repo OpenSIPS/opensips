@@ -545,6 +545,43 @@ char *find_sdp_line(char* p, char* plimit, char linechar)
 }
 
 
+
+/*
+ * Auxiliary for some functions.
+ * Returns pointer to first character of found line, or NULL if no such line.
+ */
+
+char *find_sdp_line_complex(char* p, char* plimit, char * name)
+{
+	char *cp, *cp1;
+	int len =  strlen(name);
+	
+	/* Iterate through body */
+	cp = p;
+	for (;;) {
+		if (cp >= plimit)
+			return NULL;
+		cp1 = ser_memmem(cp, name, plimit-cp, len);
+		if (cp1 == NULL)
+			return NULL;
+		/*
+		 * As it is body, we assume it has previous line and we can
+		 * lookup previous character.
+		 */
+		if (cp1[-1] == '\n' || cp1[-1] == '\r')
+			return cp1;
+		/*
+		 * Having such data, but not at line beginning.
+		 * Skip them and reiterate. ser_memmem() will find next
+		 * occurence.
+		 */
+		if (plimit - cp1 < 2)
+			return NULL;
+		cp = cp1 + 2;
+	}
+}
+
+
 /* This function assumes p points to a line of requested type. */
 char * find_next_sdp_line(char* p, char* plimit, char linechar, char* defptr)
 {
