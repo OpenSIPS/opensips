@@ -57,8 +57,8 @@
 hashSlot_t *hashTable;
 
 /* All interprocess communication is stored between these two declarations. */
-interprocessBuffer_t *frontRegUserTableBuffer;
-interprocessBuffer_t *endRegUserTableBuffer;
+interprocessBuffer_t *frontRegUserTableBuffer = NULL;
+interprocessBuffer_t *endRegUserTableBuffer = NULL;
 
 /* This is to protect the potential racecondition in which a command is added to
  * the buffer while it is being consumed */
@@ -148,6 +148,9 @@ void handleContactCallbacks(ucontact_t *contactInfo, int type, void *param)
 	char *p;
 
 	interprocessBuffer_t *currentBufferElement;
+
+	if (frontRegUserTableBuffer==NULL)
+		return;
 
 	currentBufferElement = shm_malloc( sizeof(interprocessBuffer_t) +
 		contactInfo->aor->len+1 + contactInfo->c.len+1 );
