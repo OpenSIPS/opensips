@@ -10,7 +10,8 @@ ALL_PACKAGES = opensips opensips-mysql-module opensips-postgres-module \
 	opensips-perl-modules opensips-snmpstats-module opensips-xmpp-module \
 	opensips-carrierroute-module opensips-berkeley-module \
 	opensips-ldap-modules opensips-geoip-module opensips-regex-module \
-	opensips-identity-module opensips-console
+	opensips-identity-module opensips-b2bua-module opensips-dbhttp-module \
+	opensips-console
 
 DEBVERSION:=$(shell head -n 1 debian/changelog \
                     | sed -e 's/^[^(]*(\([^)]*\)).*/\1/')
@@ -42,7 +43,7 @@ JABBER_MODULES = jabber
 # cpl related modules
 CPL_MODULES = cpl-c
 # module depending on radiusclient
-RADIUS_MODULES = avp_radius auth_radius group_radius uri_radius peering
+RADIUS_MODULES = aaa_radius peering
 # presence related modules
 PRESENCE_MODULES = presence presence_dialoginfo presence_xml presence_mwi presence_xcapdiff pua pua_bla pua_dialoginfo pua_mi pua_usrloc pua_xmpp rls xcap_client
 # XMLRPC module
@@ -65,8 +66,12 @@ GEOIP_MODULES = mmgeoip
 REGEX_MODULES = regex
 # IDENTITY module
 IDENTITY_MODULES = identity
+# B2BUA module
+B2BUA_MODULES = b2b_entities b2b_logic
+# DBHTTP module
+DBHTTP_MODULES = db_http
 
-ALL_MODULES = $(MYSQL_MODULES) $(POSTGRES_MODULES) $(UNIXODBC_MODULES) $(JABBER_MODULES) $(CPL_MODULES) $(RADIUS_MODULES) $(PRESENCE_MODULES) $(XMLRPC_MODULES) $(PERL_MODULES) $(SNMPSTATS_MODULES) $(XMPP_MODULES) $(CROUTE_MODULES) $(BERKELEY_MODULES) $(LDAP_MODULES) $(GEOIP_MODULES) $(REGEX_MODULES) $(IDENTITY_MODULES) 
+ALL_MODULES = $(MYSQL_MODULES) $(POSTGRES_MODULES) $(UNIXODBC_MODULES) $(JABBER_MODULES) $(CPL_MODULES) $(RADIUS_MODULES) $(PRESENCE_MODULES) $(XMLRPC_MODULES) $(PERL_MODULES) $(SNMPSTATS_MODULES) $(XMPP_MODULES) $(CROUTE_MODULES) $(BERKELEY_MODULES) $(LDAP_MODULES) $(GEOIP_MODULES) $(REGEX_MODULES) $(IDENTITY_MODULES) $(B2BUA_MODULES) $(DBHTTP_MODULES)
 
 
 # modules not in the "main" package or unstable modules
@@ -90,6 +95,8 @@ LDAP_MOD_PATH=$(addprefix modules/, $(LDAP_MODULES))
 GEOIP_MOD_PATH=$(addprefix modules/, $(GEOIP_MODULES))
 REGEX_MOD_PATH=$(addprefix modules/, $(REGEX_MODULES))
 IDENTITY_MOD_PATH=$(addprefix modules/, $(IDENTITY_MODULES))
+B2BUA_MOD_PATH=$(addprefix modules/, $(B2BUA_MODULES))
+DBHTTP_MOD_PATH=$(addprefix modules/, $(DBHTTP_MODULES))
 
 ifeq (cc, $(CC))
 	CC = gcc
@@ -141,6 +148,8 @@ build-stamp: patch-stamp configure-stamp
 	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) modules modules="$(GEOIP_MOD_PATH)" cfg-target=/etc/opensips/
 	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) modules modules="$(REGEX_MOD_PATH)" cfg-target=/etc/opensips/
 	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) modules modules="$(IDENTITY_MOD_PATH)" cfg-target=/etc/opensips/
+	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) modules modules="$(B2BUA_MOD_PATH)" cfg-target=/etc/opensips/
+	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) modules modules="$(DBHTTP_MOD_PATH)" cfg-target=/etc/opensips/
 
 	# generate the utils db_berkeley
 	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) utils include_modules="db_berkeley"
@@ -308,8 +317,24 @@ install: build
 		cfg-target=/etc/opensips/ \
 		doc-dir=share/doc/opensips-regex-module
 
-	# install only the geoip modules
+	# install only the identity modules
 	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) install-modules-all modules="$(IDENTITY_MOD_PATH)"  \
+		basedir=$(CURDIR)/debian/opensips-identity-module \
+		prefix=/usr \
+		cfg-prefix=$(CURDIR)/debian/opensips-identity-module \
+		cfg-target=/etc/opensips/ \
+		doc-dir=share/doc/opensips-identity-module
+
+	# install only the b2bua modules
+	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) install-modules-all modules="$(B2BUA_MOD_PATH)"  \
+		basedir=$(CURDIR)/debian/opensips-identity-module \
+		prefix=/usr \
+		cfg-prefix=$(CURDIR)/debian/opensips-identity-module \
+		cfg-target=/etc/opensips/ \
+		doc-dir=share/doc/opensips-identity-module
+
+	# install only the db_http modules
+	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) install-modules-all modules="$(DBHTTP_MOD_PATH)"  \
 		basedir=$(CURDIR)/debian/opensips-identity-module \
 		prefix=/usr \
 		cfg-prefix=$(CURDIR)/debian/opensips-identity-module \
