@@ -8,9 +8,8 @@
 include ../../Makefile.defs
 auto_gen=
 NAME= pua_xmpp.so
-LIBS=
 
 DEFS+=-I/usr/include/libxml2 -I$(LOCALBASE)/include/libxml2 -I$(LOCALBASE)/include
-LIBS+=-L/usr/include/lib  -L$(LOCALBASE)/lib -lxml2
+LIBS=-L/usr/include/lib  -L$(LOCALBASE)/lib -lxml2
 
 include ../../Makefile.modules

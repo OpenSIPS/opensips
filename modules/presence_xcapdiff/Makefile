@@ -3,9 +3,5 @@
 include ../../Makefile.defs
 auto_gen=
 NAME=presence_xcapdiff.so
-LIBS=
-
-DEFS+=-I$(LOCALBASE)/include
-LIBS+=-L$(SYSBASE)/include/lib  -L$(LOCALBASE)/lib
 
 include ../../Makefile.modules

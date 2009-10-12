@@ -8,11 +8,10 @@
 include ../../Makefile.defs
 auto_gen=
 NAME=xcap_client.so
-LIBS=
 
 DEFS+=-I$(SYSBASE)/include/libxml2 -I$(LOCALBASE)/include/libxml2 \
       -I$(LOCALBASE)/include
 
-LIBS+=-L$(SYSBASE)/include/lib  -L$(LOCALBASE)/lib   -lcurl -lxml2 
+LIBS=-L$(SYSBASE)/include/lib  -L$(LOCALBASE)/lib   -lcurl -lxml2 
 
 include ../../Makefile.modules
