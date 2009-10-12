@@ -1,15 +1,17 @@
 %define name    opensips
-%define ver     1.5.0
+%define ver     1.6.0
 %define rel     0
 
-%define EXCLUDED_MODULES	jabber cpl-c xmpp rls mi_xmlrpc xcap_client db_mysql db_postgres db_unixodbc db_oracle db_berkeley avp_radius auth_radius group_radius uri_radius osp perl snmpstats perlvdb peering carrierroute mmgeoip presence presence_xml presence_mwi presence_dialoginfo pua pua_bla pua_mi pua_usrloc pua_xmpp pua_dialoginfo xcap_client ldap h350 identity regex
+%define EXCLUDED_MODULES	aaa_radius b2b_entities b2b_logic db_http json memcached jabber cpl-c xmpp rls mi_xmlrpc xcap_client db_mysql db_postgres db_unixodbc db_oracle db_berkeley osp perl snmpstats perlvdb peering carrierroute mmgeoip presence presence_xml presence_mwi presence_dialoginfo pua pua_bla pua_mi pua_usrloc pua_xmpp pua_dialoginfo xcap_client ldap h350 identity regex
 %define MYSQL_MODULES		modules/db_mysql
-%define POSTGRES_MODULES	modules/db_postgres
 %define UNIXODBC_MODULES	modules/db_unixodbc
+%define POSTGRES_MODULES	modules/db_postgres
 %define XMPP_MODULES		modules/jabber modules/xmpp
 %define CPL_MODULES			modules/cpl-c
+%define SNMPSTATS_MODULES	modules/snmpstats
 %define PRESENCE_MODULES	modules/presence modules/presence_dialoginfo modules/presence_xml modules/presence_mwi modules/presence_xcapdiff modules/pua modules/pua_bla modules/pua_dialoginfo modules/pua_mi modules/pua_usrloc modules/pua_xmpp modules/rls modules/xcap_client
-%define RADIUS_MODULES		modules/avp_radius modules/auth_radius modules/group_radius modules/uri_radius modules/peering
+%define RADIUS_MODULES		modules/aaa_radius
+%define B2BUA_MODULES		modules/b2b_entities modules/b2b_logic
 
 Summary:      OpenSIPS, very fast and flexible SIP server
 Name:         %name
@@ -101,7 +103,7 @@ BuildPrereq:  libxml2-dev
 The opensips-presence package contains a sip Presence Agent.
 
 %package  radius
-Summary:  opensips radius authentication, group and uri check modules.
+Summary:  opensips radius support for AAA API.
 Group:    System Environment/Daemons
 Requires: opensips = %ver
 BuildPrereq:  radiusclient
@@ -122,6 +124,7 @@ make modules modules="%XMPP_MODULES"      cfg-target=/%{_sysconfdir}/opensips/
 make modules modules="%CPL_MODULES"       cfg-target=/%{_sysconfdir}/opensips/
 make modules modules="%PRESENCE_MODULES"  cfg-target=/%{_sysconfdir}/opensips/
 make modules modules="%RADIUS_MODULES"    cfg-target=/%{_sysconfdir}/opensips/
+make modules modules="%B2BUA_MODULES"     cfg-target=/%{_sysconfdir}/opensips/
 
 %install
 [ "$RPM_BUILD_ROOT" != "/" ] && rm -rf "$RPM_BUILD_ROOT"
@@ -182,7 +185,14 @@ make install-modules modules="%RADIUS_MODULES" \
 		cfg-target=/%{_sysconfdir}/opensips/ \
 		doc-prefix=$RPM_BUILD_ROOT \
 		doc-dir=/%{_docdir}/opensips/
-make install-doc modules="XMPP_MODULES %RADIUS_MODULES %MYSQL_MODULES %POSTGRES_MODULES %UNIXODBC_MODULES %CPL_MODULES %PRESENCE_MODULES" \
+make install-modules modules="%B2BUA_MODULES" \
+		basedir=$RPM_BUILD_ROOT \
+		prefix=/usr \
+		cfg-prefix=$RPM_BUILD_ROOT \
+		cfg-target=/%{_sysconfdir}/opensips/ \
+		doc-prefix=$RPM_BUILD_ROOT \
+		doc-dir=/%{_docdir}/opensips/
+make install-doc modules="XMPP_MODULES %RADIUS_MODULES %MYSQL_MODULES %POSTGRES_MODULES %UNIXODBC_MODULES %CPL_MODULES %PRESENCE_MODULES %B2BUA_MODULES" \
 		basedir=$RPM_BUILD_ROOT \
 		prefix=/usr \
 		doc-prefix=$RPM_BUILD_ROOT \
@@ -212,11 +222,13 @@ sbin/insserv etc/init.d/
 %dir %{_docdir}/opensips
 %doc %{_docdir}/opensips/AUTHORS
 %doc %{_docdir}/opensips/INSTALL
-%doc %{_docdir}/opensips/README
+%doc %{_docdir}/opensips/READE
+%doc %{_docdir}/opensips/NEWS
 %doc %{_docdir}/opensips/README-MODULES
 %doc %{_docdir}/opensips/README.acc
 %doc %{_docdir}/opensips/README.alias_db
 %doc %{_docdir}/opensips/README.auth
+%doc %{_docdir}/opensips/README.auth_aaa
 %doc %{_docdir}/opensips/README.auth_db
 %doc %{_docdir}/opensips/README.auth_diameter
 %doc %{_docdir}/opensips/README.avpops
@@ -226,11 +238,13 @@ sbin/insserv etc/init.d/
 %doc %{_docdir}/opensips/README.closeddial
 %doc %{_docdir}/opensips/README.db_flatstore
 %doc %{_docdir}/opensips/README.db_text
+%doc %{_docdir}/opensips/README.db_virtual
 %doc %{_docdir}/opensips/README.dialog
 %doc %{_docdir}/opensips/README.dialplan
 %doc %{_docdir}/opensips/README.dispatcher
 %doc %{_docdir}/opensips/README.diversion
 %doc %{_docdir}/opensips/README.domain
+%doc %{_docdir}/opensips/README.domainpolicy
 %doc %{_docdir}/opensips/README.drouting
 %doc %{_docdir}/opensips/README.enum
 %doc %{_docdir}/opensips/README.exec
@@ -246,8 +260,8 @@ sbin/insserv etc/init.d/
 %doc %{_docdir}/opensips/README.mi_datagram
 %doc %{_docdir}/opensips/README.mi_fifo
 %doc %{_docdir}/opensips/README.msilo
-%doc %{_docdir}/opensips/README.nathelper
 %doc %{_docdir}/opensips/README.nat_traversal
+%doc %{_docdir}/opensips/README.nathelper
 %doc %{_docdir}/opensips/README.options
 %doc %{_docdir}/opensips/README.path
 %doc %{_docdir}/opensips/README.pdt
@@ -265,12 +279,12 @@ sbin/insserv etc/init.d/
 %doc %{_docdir}/opensips/README.speeddial
 %doc %{_docdir}/opensips/README.sst
 %doc %{_docdir}/opensips/README.statistics
+%doc %{_docdir}/opensips/README.stun
 %doc %{_docdir}/opensips/README.textops
 %doc %{_docdir}/opensips/README.tm
 %doc %{_docdir}/opensips/README.uac
 %doc %{_docdir}/opensips/README.uac_redirect
 %doc %{_docdir}/opensips/README.uri
-%doc %{_docdir}/opensips/README.uri_db
 %doc %{_docdir}/opensips/README.userblacklist
 %doc %{_docdir}/opensips/README.usrloc
 %doc %{_docdir}/opensips/README.xlog
@@ -284,6 +298,7 @@ sbin/insserv etc/init.d/
 %{_libdir}/opensips/modules/acc.so
 %{_libdir}/opensips/modules/alias_db.so
 %{_libdir}/opensips/modules/auth.so
+%{_libdir}/opensips/modules/auth_aaa.so
 %{_libdir}/opensips/modules/auth_db.so
 %{_libdir}/opensips/modules/auth_diameter.so
 %{_libdir}/opensips/modules/avpops.so
@@ -293,11 +308,13 @@ sbin/insserv etc/init.d/
 %{_libdir}/opensips/modules/closeddial.so
 %{_libdir}/opensips/modules/db_flatstore.so
 %{_libdir}/opensips/modules/db_text.so
+%{_libdir}/opensips/modules/db_virtual.so
 %{_libdir}/opensips/modules/dialog.so
 %{_libdir}/opensips/modules/dialplan.so
 %{_libdir}/opensips/modules/dispatcher.so
 %{_libdir}/opensips/modules/diversion.so
 %{_libdir}/opensips/modules/domain.so
+%{_libdir}/opensips/modules/domainpolicy.so
 %{_libdir}/opensips/modules/drouting.so
 %{_libdir}/opensips/modules/enum.so
 %{_libdir}/opensips/modules/exec.so
@@ -313,8 +330,8 @@ sbin/insserv etc/init.d/
 %{_libdir}/opensips/modules/mi_datagram.so
 %{_libdir}/opensips/modules/mi_fifo.so
 %{_libdir}/opensips/modules/msilo.so
-%{_libdir}/opensips/modules/nathelper.so
 %{_libdir}/opensips/modules/nat_traversal.so
+%{_libdir}/opensips/modules/nathelper.so
 %{_libdir}/opensips/modules/options.so
 %{_libdir}/opensips/modules/path.so
 %{_libdir}/opensips/modules/pdt.so
@@ -330,13 +347,14 @@ sbin/insserv etc/init.d/
 %{_libdir}/opensips/modules/sl.so
 %{_libdir}/opensips/modules/sms.so
 %{_libdir}/opensips/modules/speeddial.so
+%{_libdir}/opensips/modules/sst.so
 %{_libdir}/opensips/modules/statistics.so
+%{_libdir}/opensips/modules/stun.so
 %{_libdir}/opensips/modules/textops.so
 %{_libdir}/opensips/modules/tm.so
 %{_libdir}/opensips/modules/uac.so
 %{_libdir}/opensips/modules/uac_redirect.so
 %{_libdir}/opensips/modules/uri.so
-%{_libdir}/opensips/modules/uri_db.so
 %{_libdir}/opensips/modules/userblacklist.so
 %{_libdir}/opensips/modules/usrloc.so
 %{_libdir}/opensips/modules/xlog.so
@@ -429,19 +447,23 @@ sbin/insserv etc/init.d/
 
 %files radius
 %defattr(-,root,root)
-%{_libdir}/opensips/modules/avp_radius.so
-%{_libdir}/opensips/modules/auth_radius.so
-%{_libdir}/opensips/modules/group_radius.so
-%{_libdir}/opensips/modules/uri_radius.so
+%{_libdir}/opensips/modules/aaa_radius.so
 %{_libdir}/opensips/modules/peering.so
-%doc %{_docdir}/opensips/README.avp_radius
-%doc %{_docdir}/opensips/README.auth_radius
-%doc %{_docdir}/opensips/README.group_radius
-%doc %{_docdir}/opensips/README.uri_radius
+%doc %{_docdir}/opensips/README.aaa_radius
 %doc %{_docdir}/opensips/README.peering
+
+%files b2bua
+%defattr(-,root,root)
+%{_libdir}/opensips/modules/b2b_entities.so
+%{_libdir}/opensips/modules/b2b_logic.so
+%doc %{_docdir}/opensips/README.b2b_entities
+%doc %{_docdir}/opensips/README.b2b_logic
 
 
 %changelog
+* Mon Oct 12 2009 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+- Update spec to OpenSIPS version 1.6.0.
+
 * Mon Mar 23 2009 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
 - Update spec to OpenSIPS version 1.5.0.
 

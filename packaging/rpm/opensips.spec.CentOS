@@ -1,9 +1,9 @@
 %define name    opensips
-%define ver     1.5.1
+%define ver     1.6.0
 %define rel     0
 %define _sharedir %{_prefix}/share
 
-%define EXCLUDED_MODULES	jabber cpl-c xmpp rls mi_xmlrpc xcap_client db_mysql db_postgres db_unixodbc db_oracle db_berkeley avp_radius auth_radius group_radius uri_radius osp perl snmpstats perlvdb peering carrierroute mmgeoip presence presence_xml presence_mwi presence_dialoginfo pua pua_bla pua_mi pua_usrloc pua_xmpp pua_dialoginfo xcap_client ldap h350 identity regex
+%define EXCLUDED_MODULES	aaa_radius b2b_entities b2b_logic db_http json memcached jabber cpl-c xmpp rls mi_xmlrpc xcap_client db_mysql db_postgres db_unixodbc db_oracle db_berkeley osp perl snmpstats perlvdb peering carrierroute mmgeoip presence presence_xml presence_mwi presence_dialoginfo pua pua_bla pua_mi pua_usrloc pua_xmpp pua_dialoginfo xcap_client ldap h350 identity regex
 %define MYSQL_MODULES		modules/db_mysql
 %define UNIXODBC_MODULES	modules/db_unixodbc
 %define POSTGRES_MODULES	modules/db_postgres
@@ -11,7 +11,8 @@
 %define CPL_MODULES			modules/cpl-c
 %define SNMPSTATS_MODULES	modules/snmpstats
 %define PRESENCE_MODULES	modules/presence modules/presence_dialoginfo modules/presence_xml modules/presence_mwi modules/presence_xcapdiff modules/pua modules/pua_bla modules/pua_dialoginfo modules/pua_mi modules/pua_usrloc modules/pua_xmpp modules/rls modules/xcap_client
-%define RADIUS_MODULES		modules/avp_radius modules/auth_radius modules/group_radius modules/uri_radius modules/peering
+%define RADIUS_MODULES		modules/aaa_radius
+%define B2BUA_MODULES		modules/b2b_entities modules/b2b_logic
 
 Summary:      OpenSIPS, very fast and flexible SIP Server
 Name:         %name
@@ -103,7 +104,7 @@ BuildPrereq:  libxml2-devel, curl-devel
 The opensips-pua package contains a sip Presence Agent.
 
 %package  radius
-Summary:  opensips radius authentication, group and uri check modules.
+Summary:  opensips radius support for AAA API.
 Group:    System Environment/Daemons
 Requires: opensips = %ver
 BuildPrereq:  radiusclient-ng-devel
@@ -111,6 +112,15 @@ BuildPrereq:  radiusclient-ng-devel
 %description radius
 The opensips-radius package contains modules for radius authentication, group
  membership and uri checking.
+
+%package  b2bua
+Summary:  opensips b2bua implementation.
+Group:    System Environment/Daemons
+Requires: opensips = %ver
+BuildPrereq:  libxml2-devel
+
+%description b2bua
+The opensips-b2bua package contains modules implement b2bua scenarios.
 
 %package  snmpstats
 Summary:  SNMP AgentX subagent module for OpenSIPS
@@ -138,6 +148,7 @@ make modules modules="%XMPP_MODULES"      cfg-target=/%{_sysconfdir}/opensips/
 make modules modules="%CPL_MODULES"       cfg-target=/%{_sysconfdir}/opensips/
 make modules modules="%PRESENCE_MODULES"  cfg-target=/%{_sysconfdir}/opensips/
 make modules modules="%RADIUS_MODULES"    cfg-target=/%{_sysconfdir}/opensips/
+make modules modules="%B2BUA_MODULES"     cfg-target=/%{_sysconfdir}/opensips/
 make modules modules="%SNMPSTATS_MODULES" cfg-target=/%{_sysconfdir}/opensips/
 
 
@@ -219,6 +230,16 @@ make install-doc modules="%RADIUS_MODULES" \
 		prefix=/usr \
 		cfg-prefix=$RPM_BUILD_ROOT \
 		cfg-target=/%{_sysconfdir}/opensips/ 
+make install-modules modules="%B2BUA_MODULES" \
+		basedir=$RPM_BUILD_ROOT \
+		prefix=/usr \
+		cfg-prefix=$RPM_BUILD_ROOT \
+		cfg-target=/%{_sysconfdir}/opensips/ 
+make install-doc modules="%B2BUA_MODULES" \
+		basedir=$RPM_BUILD_ROOT \
+		prefix=/usr \
+		cfg-prefix=$RPM_BUILD_ROOT \
+		cfg-target=/%{_sysconfdir}/opensips/ 
 make install-modules modules="%SNMPSTATS_MODULES" \
 		basedir=$RPM_BUILD_ROOT \
 		prefix=/usr \
@@ -263,6 +284,7 @@ fi
 %doc %{_docdir}/opensips/README.acc
 %doc %{_docdir}/opensips/README.alias_db
 %doc %{_docdir}/opensips/README.auth
+%doc %{_docdir}/opensips/README.auth_aaa
 %doc %{_docdir}/opensips/README.auth_db
 %doc %{_docdir}/opensips/README.auth_diameter
 %doc %{_docdir}/opensips/README.avpops
@@ -272,6 +294,7 @@ fi
 %doc %{_docdir}/opensips/README.closeddial
 %doc %{_docdir}/opensips/README.db_flatstore
 %doc %{_docdir}/opensips/README.db_text
+%doc %{_docdir}/opensips/README.db_virtual
 %doc %{_docdir}/opensips/README.dialog
 %doc %{_docdir}/opensips/README.dialplan
 %doc %{_docdir}/opensips/README.dispatcher
@@ -312,12 +335,12 @@ fi
 %doc %{_docdir}/opensips/README.speeddial
 %doc %{_docdir}/opensips/README.sst
 %doc %{_docdir}/opensips/README.statistics
+%doc %{_docdir}/opensips/README.stun
 %doc %{_docdir}/opensips/README.textops
 %doc %{_docdir}/opensips/README.tm
 %doc %{_docdir}/opensips/README.uac
 %doc %{_docdir}/opensips/README.uac_redirect
 %doc %{_docdir}/opensips/README.uri
-%doc %{_docdir}/opensips/README.uri_db
 %doc %{_docdir}/opensips/README.userblacklist
 %doc %{_docdir}/opensips/README.usrloc
 %doc %{_docdir}/opensips/README.xlog
@@ -332,6 +355,7 @@ fi
 %{_libdir}/opensips/modules/acc.so
 %{_libdir}/opensips/modules/alias_db.so
 %{_libdir}/opensips/modules/auth.so
+%{_libdir}/opensips/modules/auth_aaa.so
 %{_libdir}/opensips/modules/auth_db.so
 %{_libdir}/opensips/modules/auth_diameter.so
 %{_libdir}/opensips/modules/avpops.so
@@ -341,6 +365,7 @@ fi
 %{_libdir}/opensips/modules/closeddial.so
 %{_libdir}/opensips/modules/db_flatstore.so
 %{_libdir}/opensips/modules/db_text.so
+%{_libdir}/opensips/modules/db_virtual.so
 %{_libdir}/opensips/modules/dialog.so
 %{_libdir}/opensips/modules/dialplan.so
 %{_libdir}/opensips/modules/dispatcher.so
@@ -381,12 +406,12 @@ fi
 %{_libdir}/opensips/modules/speeddial.so
 %{_libdir}/opensips/modules/sst.so
 %{_libdir}/opensips/modules/statistics.so
+%{_libdir}/opensips/modules/stun.so
 %{_libdir}/opensips/modules/textops.so
 %{_libdir}/opensips/modules/tm.so
 %{_libdir}/opensips/modules/uac.so
 %{_libdir}/opensips/modules/uac_redirect.so
 %{_libdir}/opensips/modules/uri.so
-%{_libdir}/opensips/modules/uri_db.so
 %{_libdir}/opensips/modules/userblacklist.so
 %{_libdir}/opensips/modules/usrloc.so
 %{_libdir}/opensips/modules/xlog.so
@@ -484,16 +509,10 @@ fi
 
 %files radius
 %defattr(-,root,root)
-%doc %{_docdir}/opensips/README.avp_radius
-%doc %{_docdir}/opensips/README.auth_radius
-%doc %{_docdir}/opensips/README.group_radius
-%doc %{_docdir}/opensips/README.uri_radius
+%doc %{_docdir}/opensips/README.aaa_radius
 %doc %{_docdir}/opensips/README.peering
 
-%{_libdir}/opensips/modules/avp_radius.so
-%{_libdir}/opensips/modules/auth_radius.so
-%{_libdir}/opensips/modules/group_radius.so
-%{_libdir}/opensips/modules/uri_radius.so
+%{_libdir}/opensips/modules/aaa_radius.so
 %{_libdir}/opensips/modules/peering.so
 
 
@@ -510,6 +529,10 @@ fi
 
 
 %changelog
+* Mon Oct 12 2009 Bogdan Iancu <bogdan@voice-system.ro>
+- updated packages for 1.6.0 release
+- added b2bua package
+
 * Fri May 22 2009 Marc Leurent <marc.leurent@vtx-telecom.ch>
 - Add /etc/default/opensips file to allow shared memory configuration
 - Modify snmpstats Requires to add net-snmp-utils

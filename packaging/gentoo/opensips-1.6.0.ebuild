@@ -21,6 +21,8 @@ RDEPEND="
 	jabber? ( dev-libs/expat )
 	ssl? ( dev-libs/openssl )
 	cpl? ( dev-libs/libxml2 )
+	b2bua? ( dev-libs/libxml2 )
+	presence? ( dev-libs/libxml2 )
 	unixodbc? ( dev-libs/unixodbc-2.2.6 )"
 
 inc_mod=""
@@ -34,13 +36,19 @@ pkg_setup() {
 		inc_mod="${inc_mod} db_postgres"
 
 	use radius && \
-		inc_mod="${inc_mod} auth_radius group_radius uri_radius avp_radius"
+		inc_mod="${inc_mod} aaa_radius peering"
 
 	use jabber && \
 		inc_mod="${inc_mod} jabber"
 
 	use cpl && \
 		inc_mod="${inc_mod} cpl-c"
+
+	use b2bua && \
+		inc_mod="${inc_mod} b2b_entities b2bua_logic"
+
+	use presence && \
+		inc_mod="${inc_mod} presence presence_dialoginfo presence_mwi presence_xcapdiff presence_xml pua pua_bla pua_dialoginfo pua_mi pua_usrloc pua_xmpp rls xcap_client"
 
 	use unixodbc && \
 		inc_mod="${inc_mod} db_unixodbc"

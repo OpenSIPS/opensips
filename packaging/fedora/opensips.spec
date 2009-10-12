@@ -2,14 +2,13 @@
 
 Summary:	Open Source SIP Server
 Name:		opensips
-Version:	1.5.0
+Version:	1.6.0
 Release:	1%{?dist}
 License:	GPLv2+
 Group:		System Environment/Daemons
 Source0:	http://www.opensips.org/pub/%{name}/%{version}/src/%{name}-%{version}-tls_src.tar.gz
 Source1:	opensips.init
-Patch1:		opensips--acc_radius_enable.diff
-Patch3:		opensips--openssl-paths.diff
+Patch1:		opensips--openssl-paths.diff
 URL:		http://www.opensips.org/
 
 BuildRequires:	expat-devel
@@ -53,21 +52,10 @@ registrar and user location.
 Summary:	Accounts transactions information to different backends
 Group:		System Environment/Daemons
 Requires:	%{name} = %{version}-%{release}
-Conflicts:	acc_radius
 
 %description	acc
 ACC module is used to account transactions information to different backends 
-like syslog, SQL.
-
-%package	acc_radius
-Summary:	Accounts transactions information with radius support
-Group:		System Environment/Daemons
-Requires:	%{name} = %{version}-%{release}
-Conflicts:	acc
-
-%description	acc_radius
-ACC module is used to account transactions information to different backends
-like syslog, SQL, RADIUS, DIAMETER.
+like syslog, SQL, AAA.
 
 %package	auth_diameter
 Summary:	Performs authentication using a Diameter server
@@ -78,27 +66,17 @@ Requires:	%{name} = %{version}-%{release}
 This module implements SIP authentication and authorization with DIAMETER
 server, namely DIameter Server Client (DISC).
 
-%package	auth_radius
+%package	auth_aaa
 Summary:	Performs authentication using a Radius server
 Group:		System Environment/Daemons
 Requires:	%{name} = %{version}-%{release}
 
-%description	auth_radius
+%description	auth_aaa
 This module contains functions that are used to perform authentication using
 a Radius server.  Basically the proxy will pass along the credentials to the
 radius server which will in turn send a reply containing result of the
 authentication. So basically the whole authentication is done in the Radius
 server.
-
-%package	avp_radius
-Summary:	Allows loading of user's attributes into AVPs from Radius
-Group:		System Environment/Daemons
-Requires:	%{name} = %{version}-%{release}
-
-%description	avp_radius
-This module allows loading of user's attributes into AVPs from Radius.
-User's name and domain can be based on From URI, Request URI, or
-authenticated credentials.
 
 %package	carrierroute
 Summary:	Routing extension suitable for carriers
@@ -118,15 +96,14 @@ This module implements a CPL (Call Processing Language) interpreter.
 Support for uploading/downloading/removing scripts via SIP REGISTER method
 is present.
 
-%package	group_radius
-Summary:	Functions necessary for group membership checking over radius
+%package	aaa_radius
+Summary:	RADIUS backend for AAA api
 Group:		System Environment/Daemons
 Requires:	%{name} = %{version}-%{release}
 
-%description	group_radius
-This module export functions necessary for group membership checking over
-radius. There is a database table that contains list of users and groups
-they belong to. The table is used by functions of this module.
+%description	aaa_radius
+This module provides the RADIUS backend for the AAA API - group, auth, uri
+module use the AAA API for performing RADIUS ops.
 
 %package	db_berkeley
 Summary:	Berkley DB backend support
@@ -212,6 +189,15 @@ Requires:	%{name} = %{version}-%{release}
 The %{name}-postgresql package contains the PostgreSQL plugin for %{name},
 which allows a PostgreSQL-Database to be used for persistent storage.
 
+%package	b2bua
+Summary:	Back-2-Back User Agent
+Group:		System Environment/Daemons
+Requires:	%{name} = %{version}-%{release}
+
+%description	b2bua
+This package provides modules for B2BUA suppor in OpenSIPS. Both the 
+implementation and controll (XML based scenario description) are included.
+
 %package	presence
 Summary:	Presence server
 Group:		System Environment/Daemons
@@ -244,8 +230,31 @@ Requires:	%{name}-presence
 Requires:	%{name}-xcap_client
 
 %description	presence_xml
-The module does specific handling for notify-subscribe events using xml bodies. 
+The module does specific handling for notify-subscribe events using xml bodies.
 It is used with the general event handling module, presence.
+
+%package	presence_dialoginfo
+Summary:	SIMPLE Presence extension for dialog info
+Group:		System Environment/Daemons
+Requires:	%{name} = %{version}-%{release}
+Requires:	%{name}-presence
+Requires:	%{name}-xcap_client
+
+%description	presence_dialoginfo
+The module enables the handling of "Event: dialog" (as defined
+in RFC 4235) inside of the presence module. This can be used
+distribute the dialog-info status to the subscribed watchers.
+
+%package	presence_xcapdiff
+Summary:	SIMPLE Presence extension for XCAP diff
+Group:		System Environment/Daemons
+Requires:	%{name} = %{version}-%{release}
+Requires:	%{name}-presence
+Requires:	%{name}-xcap_client
+
+%description	presence_xcapdiff
+The presence_xcapdiff is an OpenSIPS module that adds support
+for the "xcap-diff" event to presence and pua.
 
 %package	pua
 Summary:	Offer the functionality of a presence user agent client
@@ -266,6 +275,18 @@ Requires:	%{name}-presence
 %description	pua_bla
 The pua_bla module enables Bridged Line Appearances support according to the 
 specifications in draft-anil-sipping-bla-03.txt.
+
+%package	pua_dialoginfo
+Summary:	Dialog Info extension for PUA
+Group:		System Environment/Daemons
+Requires:	%{name} = %{version}-%{release}
+Requires:	%{name}-pua
+Requires:	%{name}-presence
+
+%description	pua_dialoginfo
+The pua_dialoginfo retrieves dialog state information from the
+dialog module and PUBLISHes the dialog-information using the
+pua module (RFC 4235)
 
 %package	pua_mi
 Summary:	Connector between usrloc and MI interface
@@ -375,14 +396,6 @@ Requires:	%{name} = %{version}-%{release}
 The %{name}-unixodbc package contains the unixODBC plugin for %{name}, which
 allows a unixODBC to be used for persistent storage
 
-%package	uri_radius
-Summary:	URI check using Radius server
-Group:		System Environment/Daemons
-Requires:	%{name} = %{version}-%{release}
-
-%description	uri_radius
-URI check using Radius server
-
 %package	xcap_client
 Summary:	XCAP client
 Group:		System Environment/Daemons
@@ -406,9 +419,7 @@ clients.
 
 %prep
 %setup -q -n %{name}-%{version}-tls
-cp -pRf modules/acc modules/acc_radius
 %patch1
-%patch3
 
 %build
 LOCALBASE=/usr CFLAGS="%{optflags}" %{__make} all %{?_smp_mflags} TLS=1 \
@@ -422,9 +433,6 @@ rm -rf $RPM_BUILD_ROOT
   basedir=%{buildroot} prefix=%{_prefix} \
   cfg-prefix=%{buildroot} \
   modules-dir=%{_lib}/opensips/modules
-cp -pf modules/acc_radius/acc.so \
-  %{buildroot}/%{_libdir}/opensips/modules/acc_radius.so
-chmod 0755 %{buildroot}/%{_libdir}/opensips/modules/acc_radius.so
 
 # clean some things
 mkdir -p $RPM_BUILD_ROOT/%{perl_vendorlib}
@@ -511,8 +519,8 @@ fi
 
 %{_libdir}/opensips/modules/alias_db.so
 %{_libdir}/opensips/modules/auth.so
+%{_libdir}/opensips/modules/auth_aaa.so
 %{_libdir}/opensips/modules/auth_db.so
-%{_libdir}/opensips/modules/auth_diameter.so
 %{_libdir}/opensips/modules/avpops.so
 %{_libdir}/opensips/modules/benchmark.so
 %{_libdir}/opensips/modules/call_control.so
@@ -520,6 +528,7 @@ fi
 %{_libdir}/opensips/modules/closeddial.so
 %{_libdir}/opensips/modules/db_flatstore.so
 %{_libdir}/opensips/modules/db_text.so
+%{_libdir}/opensips/modules/db_virtual.so
 %{_libdir}/opensips/modules/dialog.so
 %{_libdir}/opensips/modules/dialplan.so
 %{_libdir}/opensips/modules/dispatcher.so
@@ -551,27 +560,26 @@ fi
 %{_libdir}/opensips/modules/ratelimit.so
 %{_libdir}/opensips/modules/registrar.so
 %{_libdir}/opensips/modules/rr.so
-%{_libdir}/opensips/modules/seas.so
 %{_libdir}/opensips/modules/signaling.so
 %{_libdir}/opensips/modules/siptrace.so
 %{_libdir}/opensips/modules/sl.so
-%{_libdir}/opensips/modules/sms.so
 %{_libdir}/opensips/modules/speeddial.so
+%{_libdir}/opensips/modules/sst.so
 %{_libdir}/opensips/modules/statistics.so
 %{_libdir}/opensips/modules/textops.so
+%{_libdir}/opensips/modules/stun.so
 %{_libdir}/opensips/modules/tm.so
 %{_libdir}/opensips/modules/uac.so
 %{_libdir}/opensips/modules/uac_redirect.so
 %{_libdir}/opensips/modules/uri.so
-%{_libdir}/opensips/modules/uri_db.so
 %{_libdir}/opensips/modules/userblacklist.so
 %{_libdir}/opensips/modules/usrloc.so
 %{_libdir}/opensips/modules/xlog.so
 
 %doc docdir/opensips/README.alias_db
 %doc docdir/opensips/README.auth
+%doc docdir/opensips/README.auth_aaa
 %doc docdir/opensips/README.auth_db
-%doc docdir/opensips/README.auth_diameter
 %doc docdir/opensips/README.avpops
 %doc docdir/opensips/README.benchmark
 %doc docdir/opensips/README.call_control
@@ -579,6 +587,7 @@ fi
 %doc docdir/opensips/README.closeddial
 %doc docdir/opensips/README.db_flatstore
 %doc docdir/opensips/README.db_text
+%doc docdir/opensips/README.db_virtual
 %doc docdir/opensips/README.dialog
 %doc docdir/opensips/README.dialplan
 %doc docdir/opensips/README.dispatcher
@@ -610,20 +619,18 @@ fi
 %doc docdir/opensips/README.ratelimit
 %doc docdir/opensips/README.registrar
 %doc docdir/opensips/README.rr
-%doc docdir/opensips/README.seas
 %doc docdir/opensips/README.signaling
 %doc docdir/opensips/README.siptrace
 %doc docdir/opensips/README.sl
-%doc docdir/opensips/README.sms
 %doc docdir/opensips/README.speeddial
 %doc docdir/opensips/README.sst
 %doc docdir/opensips/README.statistics
+%doc docdir/opensips/README.stun
 %doc docdir/opensips/README.textops
 %doc docdir/opensips/README.tm
 %doc docdir/opensips/README.uac
 %doc docdir/opensips/README.uac_redirect
 %doc docdir/opensips/README.uri
-%doc docdir/opensips/README.uri_db
 %doc docdir/opensips/README.userblacklist
 %doc docdir/opensips/README.usrloc
 %doc docdir/opensips/README.xlog
@@ -633,25 +640,15 @@ fi
 %{_libdir}/opensips/modules/acc.so
 %doc docdir/README.acc
 
-%files acc_radius
-%defattr(-,root,root,-)
-%{_libdir}/opensips/modules/acc_radius.so
-%doc docdir/README.acc_radius
-
 %files auth_diameter
 %defattr(-,root,root,-)
 %{_libdir}/opensips/modules/auth_diameter.so
 %doc docdir/README.auth_diameter
 
-%files auth_radius
+%files auth_aaa
 %defattr(-,root,root,-)
-%{_libdir}/opensips/modules/auth_radius.so
-%doc docdir/README.auth_radius
-
-%files avp_radius
-%defattr(-,root,root,-)
-%{_libdir}/opensips/modules/avp_radius.so
-%doc docdir/README.avp_radius
+%{_libdir}/opensips/modules/auth_aaa.so
+%doc docdir/README.auth_aaa
 
 %files carrierroute
 %defattr(-,root,root,-)
@@ -671,10 +668,10 @@ fi
 %{_datadir}/opensips/db_berkeley/opensips/*
 %doc docdir/README.db_berkeley
 
-%files group_radius
+%files aaa_radius
 %defattr(-,root,root,-)
-%{_libdir}/opensips/modules/group_radius.so
-%doc docdir/README.group_radius
+%{_libdir}/opensips/modules/aaa_radius.so
+%doc docdir/README.aaa_radius
 
 %files h350
 %defattr(-,root,root,-)
@@ -740,6 +737,13 @@ fi
 %{_datadir}/opensips/postgres/*.sql
 %doc docdir/README.postgres
 
+%files b2bua
+%defattr(-,root,root,-)
+%{_libdir}/opensips/modules/b2b_entities.so
+%{_libdir}/opensips/modules/b2b_logic.so
+%doc docdir/README.b2b_entities
+%doc docdir/README.b2b_logic
+
 %files presence
 %defattr(-,root,root,-)
 %{_libdir}/opensips/modules/presence.so
@@ -755,6 +759,16 @@ fi
 %{_libdir}/opensips/modules/presence_xml.so
 %doc docdir/README.presence_xml
 
+%files presence_dialoginfo
+%defattr(-,root,root,-)
+%{_libdir}/opensips/modules/presence_dialoginfo.so
+%doc docdir/README.presence_dialoginfo
+
+%files presence_xcapdiff
+%defattr(-,root,root,-)
+%{_libdir}/opensips/modules/presence_xcapdiff.so
+%doc docdir/README.presence_xcapdiff
+
 %files pua
 %defattr(-,root,root,-)
 %{_libdir}/opensips/modules/pua.so
@@ -764,6 +778,11 @@ fi
 %defattr(-,root,root,-)
 %{_libdir}/opensips/modules/pua_bla.so
 %doc docdir/README.pua_bla
+
+%files pua_dialoginfo
+%defattr(-,root,root,-)
+%{_libdir}/opensips/modules/pua_dialoginfo.so
+%doc docdir/README.pua_dialoginfo
 
 %files pua_mi
 %defattr(-,root,root,-)
@@ -810,11 +829,6 @@ fi
 %{_libdir}/opensips/modules/tlsops.so
 %doc docdir/README.tlsops
 
-%files uri_radius
-%defattr(-,root,root,-)
-%{_libdir}/opensips/modules/uri_radius.so
-%doc docdir/README.uri_radius
-
 %files unixodbc
 %defattr(-,root,root,-)
 %{_libdir}/opensips/modules/db_unixodbc.so
@@ -831,6 +845,12 @@ fi
 %doc docdir/README.xmpp
 
 %changelog
+
+* Mon Oct 12 2009 Bogdan-Andrei Iancu <bogdan@voice-system.ro> 1.6.0-1
+- Final ver. 1.6.0
+- fix module renaming
+- added the new modules
+- acc_radius removed as now it is part of acc
 
 * Mon Mar 23 2009 Bogdan-Andrei Iancu <bogdan@voice-system.ro> 1.5.0-1
 - Final ver. 1.5.0
