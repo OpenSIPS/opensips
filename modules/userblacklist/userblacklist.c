@@ -190,7 +190,8 @@ static int check_user_blacklist(struct sip_msg *msg, char* str1, char* str2, cha
 	str number = { .len = 0, .s = NULL};
 
 	char whitelist;
-	char *ptr;
+	char *src;
+    char *dst;
 	char req_number[MAXNUMBERLEN+1];
 
 	/* user */
@@ -254,13 +255,17 @@ static int check_user_blacklist(struct sip_msg *msg, char* str1, char* str2, cha
 		return -1;
 	}
 
-	ptr = req_number;
+	src = dst = req_number;
 	/* Skip over non-digits.  */
-	while (strlen(ptr) > 0 && !isdigit(*ptr)) {
-		ptr = ptr + 1;
+	while (*src) {
+        if (isdigit(*src))
+            *dst++ = *src++;
+        else
+            src++;
 	}
+    *dst = '\0';
 
-	if (dt_longest_match(dt_root, ptr, &whitelist) >= 0) {
+	if (dt_longest_match(dt_root, req_number, &whitelist) >= 0) {
 		if (whitelist) {
 			/* LM_ERR("whitelisted"); */
 			return 1; /* found, but is whitelisted */
@@ -371,7 +376,8 @@ static int check_blacklist_fixup(void **arg, int arg_no)
 static int check_blacklist(struct sip_msg *msg, struct check_blacklist_fs_t *arg1)
 {
 	char whitelist;
-	char *ptr;
+	char *src;
+    char *dst;
 	char req_number[MAXNUMBERLEN+1];
 
 	if (msg->first_line.type != SIP_REQUEST) {
@@ -391,14 +397,19 @@ static int check_blacklist(struct sip_msg *msg, struct check_blacklist_fs_t *arg
 	strncpy(req_number, msg->parsed_uri.user.s, msg->parsed_uri.user.len);
 	req_number[msg->parsed_uri.user.len] = '\0';
 
-	ptr = req_number;
+
+	src = dst = req_number;
 	/* Skip over non-digits.  */
-	while (strlen(ptr) > 0 && !isdigit(*ptr)) {
-		ptr = ptr + 1;
+	while (*src) {
+        if (isdigit(*src))
+            *dst++ = *src++;
+        else
+            src++;
 	}
+    *dst = '\0';
 
 	LM_DBG("check entry %s\n", req_number);
-	if (dt_longest_match(arg1->dt_root, ptr, &whitelist) >= 0) {
+	if (dt_longest_match(arg1->dt_root, req_number, &whitelist) >= 0) {
 		if (whitelist) {
 			/* LM_DBG("whitelisted"); */
 			return 1; /* found, but is whitelisted */
