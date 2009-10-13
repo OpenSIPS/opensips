@@ -1,7 +1,8 @@
 # $Id$
 
-The content here is quite obselete. Please refer to
-http://www.opensips.org/index.php?n=Resources.DocsCookbooks for a actual list.
+The content here is quite obsolete. Please refer to
+	http://www.opensips.org/Resources/DocsModules16
+for a actual list.
 
 
 'Use' tells how deployable a module is. Regular indicates
@@ -17,6 +18,12 @@ beta if it is under test.
 
 List of currently available opensips modules:
 
+Name:       aaa_radius
+Use:        regular
+Maturity:   beta
+Depends on:
+Purpose:    RADIUS implementation for AAA API
+
 Name:       acc
 Use:        regular
 Maturity:   stable
@@ -29,12 +36,17 @@ Maturity:   stable
 Depends on: mysql|postgres|unixodbc|dbtext
 Purpose:    Alias with DB support (no caching).
 
-
 Name:       auth
 Use:        regular
 Maturity:   stable
 Depends on: sl
 Purpose:    Common functions for digest authentication
+
+Name:       auth_aaa
+Use:        regular
+Maturity:   stable
+Depends on: auth
+Purpose:    AAA support for digest authentication
 
 Name:       auth_db
 Use:        regular
@@ -48,23 +60,23 @@ Maturity:   alpha
 Depends on: auth
 Purpose:    Diameter support for digest authentication
 
-Name:       auth_radius
-Use:        regular
-Maturity:   stable
-Depends on: auth
-Purpose:    Radius support for digest authentication
-
 Name:       avpops
 Use:        regular
 Maturity:   stable
 Depends on:
 Purpose:    avp operations, pseudo-variable support
 
-Name:       avp_radius
+Name:       b2b_entities
 Use:        regular
 Maturity:   beta
-Depends on: avp
-Purpose:    Radius support for avps
+Depends on:
+Purpose:    B2BUA framework
+
+Name:       b2b_logic
+Use:        regular
+Maturity:   beta
+Depends on: b2b_entities
+Purpose:    B2BUA controller via XML based scenarios
 
 Name:       benchmark
 Use:        experimental
@@ -114,6 +126,12 @@ Maturity:   beta
 Depends on:
 Purpose:    Very fast accounting in flat text files
 
+Name:       db_http
+Use:        experimental
+Maturity:   alpha
+Depends on:
+Purpose:    DB interaction via HTTP
+
 Name:       db_mysql
 Use:        regular
 Maturity:   stable
@@ -143,6 +161,12 @@ Use:        regular
 Maturity:   beta
 Depends on:
 Purpose:    Unixodbc DB support
+
+Name:       db_virtual
+Use:        regular
+Maturity:   beta
+Depends on:
+Purpose:    Virtual DB URLs based on existing real URL connections
 
 Name:       dialog
 Use:        regular
@@ -208,13 +232,7 @@ Name:       group
 Use:        regular
 Maturity:   stable
 Depends on: database
-Purpose:    Group membership checking using database
-
-Name:       group_radius
-Use:        experimental
-Maturity:   beta
-Depends on: -
-Purpose:    Group membership checking using Radius
+Purpose:    Group membership checking using database and AAA
 
 Name:       h350
 Use:        regular
@@ -240,6 +258,12 @@ Maturity:   beta
 Depends on: database tm
 Purpose:    SIMPLE 2 Jabber gateway
 
+Name:       json
+Use:        experimental
+Maturity:   beta
+Depends on:
+Purpose:    JSON encoder / decoder
+
 Name:       lcr
 Use:        experimental
 Maturity:   beta
@@ -254,13 +278,13 @@ Purpose:    LDAP search interfac (search ops)
 
 Name:       load_blancer
 Use:        experimental
-Maturity:   alpha
+Maturity:   beta
 Depends on: dialog, database
 Purpose:    Load Balancer routing engine
 
 Name:       localcache
 Use:        experimental
-Maturity:   beta
+Maturity:   stable
 Depends on: -
 Purpose:    Implementation of Cache interface (local storage in hash table)
 
@@ -281,6 +305,12 @@ Use:        regular
 Maturity:   stable
 Depends on: mediaproxy media relay
 Purpose:    nat traversal
+
+Name:       memcached
+Use:        experimental
+Maturity:   beta
+Depends on: -
+Purpose:    Implementation of Cache interface via memcached servers
 
 Name:       mi_datagram
 Use:        regular
@@ -414,6 +444,12 @@ Maturity:   stable
 Depends on: tm
 Purpose:    Presence user agent client, sending Subscribe and Publish messages
 
+Name:       pua_bla
+Use:        experimental
+Maturity:   alpha
+Depends on: pua
+Purpose:    Presence user agent client for BLA events
+
 Name:       pua_dialoginfo
 Use:        experimental
 Maturity:   alpha
@@ -528,6 +564,12 @@ Maturity:   stable
 Depends on: -
 Purpose:    Routing script statistics
 
+Name:       stun
+Use:        regular
+Maturity:   alpha
+Depends on: -
+Purpose:    STUN server
+
 Name:       textops
 Use:        regular
 Maturity:   stable
@@ -562,19 +604,7 @@ Name:       uri
 Use:        regular
 Maturity:   stable
 Depends on: database
-Purpose:    Various URI checks
-
-Name:       uri_db
-Use:        regular
-Maturity:   stable
-Depends on: mysql
-Purpose:    URI checking using DB
-
-Name:       uri_radius
-Use:        experimental
-Maturity:   stable
-Depends on: -
-Purpose:    URI checking using Radius
+Purpose:    Various URI checks, including DB and AAA
 
 Name:       userblacklist
 Use:        experimental
