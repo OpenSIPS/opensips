@@ -110,6 +110,8 @@ int find_group_in_hash_table(struct address_list** table,
 struct subnet {
     unsigned int grp;        /* address group, subnet count in last record */
 	struct net *subnet;		 /* IP subnet + mask */
+	int proto;                  /* Protocol -- UDP, TCP, TLS, or SCTP */
+	char *pattern;              /* Pattern matching From header field */
     unsigned int port;       /* port or 0 */
 	char *info;				 /* extra information */
 };
@@ -126,7 +128,8 @@ struct subnet* new_subnet_table(void);
  * and port.  Port 0 in subnet table matches any port.
  */
 int match_subnet_table(struct sip_msg *msg, struct subnet* table, unsigned int group,
-               struct ip_addr *ip, unsigned int port, char* info);
+				struct ip_addr *ip, unsigned int port, int proto,
+				char *pattern, char* info);
 
 
 /* 
@@ -156,7 +159,8 @@ void free_subnet_table(struct subnet* table);
  */
 int subnet_table_insert(struct subnet* table, unsigned int grp,
 	            struct net *subnet,
-	            unsigned int port, char *info);
+	            unsigned int port, char* proto, char* pattern,
+				char *info);
 
 
 /* 

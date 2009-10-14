@@ -65,6 +65,21 @@ void hash_destroy(struct address_list** table) {
 }
 
 
+int proto_char2int(char *proto) {
+	if (!strcasecmp(proto, "any"))
+		return PROTO_NONE;
+	if (!strcasecmp(proto, "udp"))
+		return PROTO_UDP;
+	if (!strcasecmp(proto, "tcp"))
+		return PROTO_TCP;
+	if (!strcasecmp(proto, "tls"))
+		return PROTO_TLS;
+	if (!strcasecmp(proto, "sctp"))
+		return PROTO_SCTP;
+	return -1;
+}
+
+
 int hash_insert(struct address_list** table, struct ip_addr *ip,
 	      unsigned int grp, unsigned int port, char* proto, char* pattern,
 		  char* info) {
@@ -79,20 +94,13 @@ int hash_insert(struct address_list** table, struct ip_addr *ip,
 		return -1;
 	}
 
-	if (!strcasecmp(proto, "any"))
-		node->proto = PROTO_NONE;
-	else if (!strcasecmp(proto, "udp"))
-		node->proto = PROTO_UDP;
-	else if (!strcasecmp(proto, "tcp"))
-		node->proto = PROTO_TCP;
-	else if (!strcasecmp(proto, "tls"))
-		node->proto = PROTO_TLS;
-	else if (!strcasecmp(proto, "sctp"))
-		node->proto = PROTO_SCTP;
-	else if (!strcasecmp(proto, "none")) {
-	        shm_free(node);
+	if (!strcasecmp(proto, "none")) {
+		shm_free(node);
 		return 1;
-	} else {
+	}
+
+	node->proto = proto_char2int(proto);
+	if (node->proto == -1) {
 		LM_ERR("unknown protocol\n");
 		shm_free(node);
 		return -1;
@@ -304,7 +312,7 @@ struct subnet* new_subnet_table(void)
  */
 int subnet_table_insert(struct subnet* table, unsigned int grp,
 			struct net *subnet,
-			unsigned int port, char *info)
+			unsigned int port, char* proto, char* pattern, char *info)
 {
     int i;
     unsigned int count;
@@ -325,6 +333,12 @@ int subnet_table_insert(struct subnet* table, unsigned int grp,
 
     table[i + 1].grp = grp;
     table[i + 1].port = port;
+	table[i + 1].proto = proto_char2int(proto);
+	if (table[i + 1].proto == -1) {
+		LM_ERR("unknown protocol\n");
+		return -1;
+	}
+
 
 	if (subnet) {
 		table[i + 1].subnet = (struct net*) shm_malloc(sizeof(struct net));
@@ -348,6 +362,18 @@ int subnet_table_insert(struct subnet* table, unsigned int grp,
 	else
 		table[i + 1].info = NULL;
 
+	if (pattern) {
+		table[i + 1].pattern = (char*) shm_malloc(strlen(pattern) + 1);
+		if (!table[i + 1].pattern) {
+			LM_ERR("cannot allocate shm memory for table pattern\n");
+			return -1;
+		}
+		memcpy(table[i + 1].pattern, pattern, strlen(pattern) + 1);
+	}
+	else
+		table[i + 1].pattern = NULL;
+
+
     table[PERM_MAX_SUBNETS].grp = count + 1;
 
     return 1;
@@ -359,7 +385,8 @@ int subnet_table_insert(struct subnet* table, unsigned int grp,
  * and port.  Port 0 in subnet table matches any port.
  */
 int match_subnet_table(struct sip_msg *msg, struct subnet* table, unsigned int grp,
-		       struct ip_addr *ip, unsigned int port, char *info)
+			struct ip_addr *ip, unsigned int port, int proto,
+			char *pattern, char *info)
 {
    unsigned int count, i;
 	pv_value_t pvt;
@@ -375,15 +402,29 @@ int match_subnet_table(struct sip_msg *msg, struct subnet* table, unsigned int g
 
 	i = 0;
 	do {
-		if (table[i].grp == grp || table[i].grp == GROUP_ANY
-				|| grp == GROUP_ANY) {
-			if (table[i].port == port || table[i].port == PORT_ANY
-					|| port == PORT_ANY) {
+		if ((table[i].grp == grp || table[i].grp == GROUP_ANY
+				|| grp == GROUP_ANY) &&
+			(table[i].port == port || table[i].port == PORT_ANY
+				|| port == PORT_ANY) &&
+			(table[i].proto == proto || table[i].proto == PROTO_NONE
+			 	|| proto == PROTO_NONE))
+			{
 
 				match_res = matchnet(ip, table[i].subnet);
 
-				if (match_res != 1)
-					goto not_found;
+				if (match_res != 1) {
+					i++;
+					continue;
+				}
+
+				if (table[i].pattern && pattern) {
+					match_res = fnmatch(table[i].pattern, pattern, FNM_PERIOD);
+
+					if (match_res) {
+						i++;
+						continue;
+					}
+				}
 
 				if (info) {
 					pvs = (pv_spec_t *)info;
@@ -401,7 +442,6 @@ int match_subnet_table(struct sip_msg *msg, struct subnet* table, unsigned int g
 				LM_DBG("match found in the subnet table\n");
 				return 1;
 			}
-		}
 
 		if (table[i].grp > grp && grp != GROUP_ANY)
 			break;
@@ -409,7 +449,6 @@ int match_subnet_table(struct sip_msg *msg, struct subnet* table, unsigned int g
 
 	} while (i < count);
 
-not_found:
 	LM_DBG("no match in the subnet table\n");
     return -1;
 }

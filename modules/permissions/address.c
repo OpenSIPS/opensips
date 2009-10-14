@@ -150,10 +150,9 @@ int reload_address_table(void)
 			}
 
 			info = VAL_NULL(val + 6) ? NULL : (char *)VAL_STRING(val + 6);
+			pattern = VAL_NULL(val + 5) ? NULL : (char *)VAL_STRING(val + 5);
 
 			if ((unsigned int) VAL_INT(val + 2) == 32) {
-				pattern = VAL_NULL(val + 5) ? NULL : (char *)VAL_STRING(val + 5);
-
 				if (hash_insert(new_hash_table,
 					ip_addr,
 					(unsigned int) VAL_INT(val + 1),
@@ -171,13 +170,13 @@ int reload_address_table(void)
 				    	VAL_INT(val + 3), VAL_STRING(val + 4), pattern, info);
 
 	    	} else {
-
 				subnet = mk_net_bitlen(ip_addr,(unsigned int) VAL_INT(val + 2));
-
 				if (subnet_table_insert(new_subnet_table,
 					(unsigned int)VAL_INT(val + 1), //group
 					subnet,
 					(unsigned int)VAL_INT(val + 3), // port
+					(char*) VAL_STRING(val + 4),
+					pattern,
 					info) == -1) {
 					    LM_ERR("subnet table problem\n");
 		    			perm_dbf.free_result(db_handle, res);
@@ -426,7 +425,7 @@ int check_addr_6(struct sip_msg* msg,
 	if (hash_match(msg, *hash_table, group, ip, port,
 				proto, pattern, info) == -1)
 		return match_subnet_table(msg, *subnet_table, group,
-				ip, port, info);
+				ip, port, proto, pattern, info);
 	return 1;
 }
 
@@ -488,6 +487,8 @@ int check_src_addr_3(struct sip_msg *msg,
 		return match_subnet_table(msg, *subnet_table, group,
 				ip,
 				msg->rcv.src_port,
+				msg->rcv.proto,
+				pattern,
 				info);
 	return 1;
 }
