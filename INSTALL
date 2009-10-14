@@ -436,51 +436,52 @@ E) osipsconsole installation
 
 2) Debian/Ubuntu Installation
 
-    In order for the script to work, there are listed bellow the modules needed and 
-    their debian package correspondent, a brief description of each package and 
-    whether it is mandatory to install it or not. ( To be mentioned the fact that
-    these packages have been tested in Debian and Ubuntu distros. )
+    In order for the script to work, there are listed bellow the modules 
+    needed and their debian package correspondent, a brief description of each 
+    package and whether it is mandatory to install it or not. ( To be mentioned
+    the fact that these packages have been tested in Debian and Ubuntu 
+    distros. )
 
-Perl module | Debian Package  | Description	       | Use
-------------------------------------------------------------------
-perl	           |perl                    |Practical Extraction and| mandatory
-	           |		            |Report Language         |
+Perl module        | Debian Package         | Description           | Use
+---------------------------------------------------------------------------
+perl               |perl                    |Practical Extraction   | mandatory
+                   |                        |and Report Language    |
 
-DBI                |libdbi-perl             |Perl database interface | mandatory
+DBI                |libdbi-perl             |Perl database interface| mandatory
 
-DBD::mysql         |libdbd-mysql-perl       |MySQL driver for the Perl5|*optional
-	           |	                    |Database Interface (DBI) |
+DBD::mysql         |libdbd-mysql-perl       |MySQL driver for the   |*optional
+                   |                        |Perl5 DBI              |
 
-DBD::Pg            |libdbd-pg-perl          |PostgreSQL database      |*optional	
-	           |                        |driver for the DBI module|	
+DBD::Pg            |libdbd-pg-perl          |PostgreSQL database    |*optional
+                   |                        |driver for DBI module  |
 
-**DBD::Oracle      |       ------           |Oracle database driver for|*optional
-                   |		            |the DBI module  	      |
+**DBD::Oracle      |       ------           |Oracle database driver |*optional
+                   |                        |for the DBI module     |
 
-Frontier::RPC2     |libfrontier-rpc-perl    |encode/decode RPC2       |mandatory
-	           |                        |format XML		      |
+Frontier::RPC2     |libfrontier-rpc-perl    |encode/decode RPC2     | mandatory
+                   |                        |format XML     |
 
-Term::ReadLine::Gnu|libterm-readline-gnu-per|Perl extension for the GNU|mandatory 
-		   |                        |Readline/History Library  |
+Term::ReadLine::Gnu|libterm-readline-gnu-per|Perl extension for the | mandatory
+                   |                        |GNU Readline/History Lib|
 
-BerkeleyDB	   |libberkeleydb-perl      |Perl extension for        |mandatory
-		   |			    |Berkeley database         |
-		   |                        |version 2, 3 or 4 	       |
+BerkeleyDB         |libberkeleydb-perl      |Perl extension for     | mandatory
+                   |                        |Berkeley database      |
+                   |                        |version 2, 3 or 4      |
 
 
    Install these packages using apt-get:
 
     apt-get install perl libdbi-perl libdbd-mysql-perl libdbd-pg-perl
-   		    libfrontier-rpc-perl libterm-readline-gnu-perl 
-		    libberkeleydb-perl        
+		    libfrontier-rpc-perl libterm-readline-gnu-perl 
+		    libberkeleydb-perl
 
    NOTE: * packages are at the user's choice. At least one of them is 
          mandatory, depending on the DB type used by OpenSIPS. The other
          ones have no need of being installed.
          ** For the DBD::Oracle module there is no debian package. This 
          will be installed as follows:
- 	     - Download the .tar.gz archive from: 
-   	   http://search.cpan.org/~pythian/DBD-Oracle-1.22/Oracle.pm	
+         - Download the .tar.gz archive from: 
+	   http://search.cpan.org/~pythian/DBD-Oracle-1.22/Oracle.pm
 	     - Decompress and unpack it 
 	     - cd DBD-Oracle-1.22
 	     - perl Makefile.PL
