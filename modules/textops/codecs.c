@@ -265,7 +265,7 @@ static int stream_process(struct sdp_stream_cell *cell,int pos,str * s, str* ss,
 		/* find the end of the first number */
 		found.s = cur;
 
-		while( *cur != ' ' &&  cur < lmp->u.value + lmp->len)
+		while(  cur < lmp->u.value + lmp->len &&  *cur != ' ' )
 			cur++;
 
 		found.len = cur - found.s;
