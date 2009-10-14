@@ -240,7 +240,7 @@ dlg_t* b2b_client_build_dlg(b2b_dlg_t* dlg, dlg_leg_t* leg)
 	td->loc_uri = dlg->from_uri;
 	td->rem_uri = dlg->to_uri;
 
-	if(dlg->route_set[CALLEE_LEG].s && dlg->route_set[CALLEE_LEG].len)
+	if(leg->route_set.s && leg->route_set.len)
 	{
 		if(parse_rr_body(leg->route_set.s, leg->route_set.len,
 			&td->route_set)< 0)
