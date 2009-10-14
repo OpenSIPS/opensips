@@ -346,7 +346,7 @@ static int stream_process(struct sdp_stream_cell *cell,int pos,str * s, str* ss,
 				{
 
 					/* take the following whitespaces as well */
-					while( *cur == ' ' && cur < lmp->u.value + lmp->len)
+					while( cur < lmp->u.value + lmp->len &&  *cur == ' '  )
 					{
 						cur++;
 						found.len++;
@@ -390,7 +390,7 @@ static int stream_process(struct sdp_stream_cell *cell,int pos,str * s, str* ss,
 		}
 
 		/* skip spaces if there still are any */
-		while(* cur == ' ' && cur < lmp->u.value + lmp->len)
+		while( cur < lmp->u.value + lmp->len && * cur == ' '  )
 			cur++;
 
 	}
