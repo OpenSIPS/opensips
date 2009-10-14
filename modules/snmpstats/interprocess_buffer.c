@@ -384,8 +384,6 @@ void freeInterprocessBuffer(void)
 			while (currentBuffer != NULL) {
 				previousBuffer = currentBuffer;
 				currentBuffer = currentBuffer->next;
-				shm_free(previousBuffer->stringName);
-				shm_free(previousBuffer->stringContact);
 				shm_free(previousBuffer);
 			}
 		} else {
