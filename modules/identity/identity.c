@@ -1249,7 +1249,9 @@ static int checkSign(X509 * cert, char * identityHF, struct sip_msg * msg)
 	int b64len = 0; 
 	EVP_MD_CTX ctx;
 	int result = 0;
-
+	char *p;
+	unsigned long err;
+	
 	if(!cert || !identityHF || !msg)
 	{
 		LM_ERR("cert or identityHF or msg not set\n");
@@ -1284,9 +1286,10 @@ static int checkSign(X509 * cert, char * identityHF, struct sip_msg * msg)
 		LM_ERR("error base64-decoding Identity header field\n");
 		return 0;
 	}
-	/* EVP_DecodeBlock counts the terminating '\0', but this character does not
+	/* EVP_DecodeBlock counts the terminating '=', but this padding character does not
 	belong to the signature.*/
-	siglen--;
+	p=strstr(identityHF , "=");
+	siglen-=strspn(p , "=");
 
 	EVP_VerifyInit(&ctx, EVP_sha1()); 
 	EVP_VerifyUpdate(&ctx, digestString, strlen(digestString)); 
@@ -1312,7 +1315,8 @@ static int checkSign(X509 * cert, char * identityHF, struct sip_msg * msg)
 			LM_ERR("error verifying signature\n");
 			return 0;
 		case 0:
-			LM_ERR("signature not valid\n");
+			err=ERR_get_error();
+			LM_ERR("signature not valid Reason: %s\n",ERR_reason_error_string(err));
 			return 0;
 		case 1:
 			return 1;
