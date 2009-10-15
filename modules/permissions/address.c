@@ -378,6 +378,11 @@ int check_addr_6(struct sip_msg* msg,
 	}
 
 	ip = str2ip(&str_ip);
+	if (!ip) {
+		LM_ERR("source ip is not set!\n");
+		return -1;
+	}
+
 
 	if (proto_sp) {
 		if (fixup_get_svalue(msg, (gparam_p) proto_sp, &str_proto)) {
