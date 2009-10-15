@@ -16,6 +16,12 @@ E: anca@voice-system.ro
 D: Main developer of OpenSIPS
 
 
+N: Andrei Dragus
+C: andreidragus
+E: andreidragus@yahoo.com
+D: Contributor to OpenSIPS
+
+
 N: Andrei Pisau
 C: apisau
 E: andrei.pisau@voice-system.ro
@@ -62,6 +68,12 @@ D: Contributor to OpenSIPS
 N: Iñaki Baz Castillo
 C: ibc_sf
 E: ibc@aliax.net
+D: Contributor to OpenSIPS
+
+
+N: Irina-Maria Stanescu
+C: ironmissy
+E: ironmissy@gmail.com
 D: Contributor to OpenSIPS
 
 
@@ -117,6 +129,12 @@ D: Contributor to OpenSIPS
 N: Peter Nixon
 C: peternixon
 E: peter@peternixon.net
+D: Packager for OpenSIPS
+
+
+N: Razvan Pistolea
+C: rpistolea
+E: razvy000@yahoo.com
 D: Packager for OpenSIPS
 
 

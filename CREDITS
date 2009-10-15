@@ -1,34 +1,35 @@
 #=============#
-#   OpenSER   #
+#   OpenSIPS  #
 #=============#
 
-Current OpenSER core team in alphabetical order as of 12 March 2007:
+Current OpenSIPS core team in alphabetical order as of 12 October 2009:
 
+Anca Vamanu
 Bogdan Andrei Iancu
-Daniel-Constantin Mierla
-Ramona-Elena Modroiu
+Dan Pascu
+
 
 Contributors:
 
-Anca Vamanu
-Andreas Granig
-Bastian Friedrich
-Cesc Santasusana
-Christian Schlatter
-Dan Pascu
+Andrei Dragus
+Andrei Pisau
 Di-Shi Sun
+Denis Bilenko
 Dmitry Isakbayev
 Elias Baixas
 Glenn Marmon
-Henning Westerholt
+Iñaki Baz Castillo
+Irina-Maria Stanescu
 Jeffrey Magder
 Jesus Rodrigues
-Juha Heinanen
-Klaus Darilion
-Lavinia Andrei Spirea
-Marco Lorrai
+Kobi Eshun
+Luci Stanescu
 Norman Brandinger
+Maxim Sobolev
+Ovidiu Sas
+Razvan Pistolea
 Ron Winacott
+Sergio Gutierrez
 William Quan
 
 Credits - patches, bug reporting and documentation improvements
@@ -111,7 +112,6 @@ Hendrik Scholz
 Henri Keski-Sikkila
 Herman Sheremetyev
 H Quintana
-Inaki Baz Castillo
 Ingo Flaschberger
 Jeremie Le Hen
 Jerome Martin
@@ -123,7 +123,6 @@ Juan Carlos Castro y Castro
 Julien Blache
 Kanakatti Mahesh Subramanya
 Khalukhin Alexander
-Kobi Eshun
 Lars Sundqvist
 Laurent Schweizer
 Lenir Santiago
@@ -191,62 +190,3 @@ Walter Schober
 Wolfgang Hottgenroth
 Wouter Schoot
 
-Tutorials
-
-Bogdan-Andrei Iancu
-Daniel-Constantin Mierla
-Dmitry Isakbayev
-Elena-Ramona Modroiu
-Glenn Dalgliesh
-Klaus Darilion
-Mike Williams
-Norman Brandinger
-
-Emeritus documentation contributors:
-
-Edson
-Gerry Jacobsen
-Norman Brandinger
-
-
-
-#=============#
-#     SER     #
-#=============#
-
-Current ser core team in alphabetical order as of 23 November 2004:
-
-Andrei Pelinescu - Onciul
-Bogdan Andrei Iancu
-Daniel-Constantin Mierla
-Jan Janak
-Jiri Kuthan
-
-
-Contributors:
-
-Adrian Georgescu
-Dan Pascu
-Greg Fausak
-Jamey Hicks
-Juha Heinanen
-Maxim Sobolev
-Miklos Tirpak
-Nils Ohlmeier
-Ramona-Elena Modroiu
-Raphael Coeffic
-
-
-Emeritus contributors (old ser contributors now off doing other things):
-
-Gabriel Vasile
-Ricardo Baratto
-Stelios Sidiroglou-Douskos
-
-
-Outstanding email support (ser users which helped a lot other people on 
-                           ser's mailing lists):
-
-Java Rockx
-Klaus Darilion
-Zeus Ng
