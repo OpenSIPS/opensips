@@ -11,7 +11,7 @@
 %define CPL_MODULES			modules/cpl-c
 %define SNMPSTATS_MODULES	modules/snmpstats
 %define PRESENCE_MODULES	modules/presence modules/presence_dialoginfo modules/presence_xml modules/presence_mwi modules/presence_xcapdiff modules/pua modules/pua_bla modules/pua_dialoginfo modules/pua_mi modules/pua_usrloc modules/pua_xmpp modules/rls modules/xcap_client
-%define RADIUS_MODULES		modules/aaa_radius
+%define RADIUS_MODULES		modules/aaa_radius modules/peering
 %define B2BUA_MODULES		modules/b2b_entities modules/b2b_logic
 
 Summary:      OpenSIPS, very fast and flexible SIP Server
@@ -126,7 +126,7 @@ The opensips-b2bua package contains modules implement b2bua scenarios.
 Summary:  SNMP AgentX subagent module for OpenSIPS
 Group:    System Environment/Daemons
 Requires: opensips = %ver, net-snmp-utils
-BuildPrereq:  lm_sensors-devel
+BuildPrereq:  lm_sensors-devel net-snmp-devel
 
 %description snmpstats
 OpenSIPS is a very fast and flexible SIP (RFC3261)
@@ -528,7 +528,20 @@ fi
 %{_sharedir}/snmp/mibs/OPENSER-TC
 
 
+%files b2bua
+%defattr(-,root,root)
+%doc %{_docdir}/opensips/README.b2b_entities
+%doc %{_docdir}/opensips/README.b2b_logic
+
+%{_libdir}/opensips/modules/b2b_entities.so
+%{_libdir}/opensips/modules/b2b_logic.so
+
+
 %changelog
+* Mon Oct 19 2009 Marc Leurent <marc.leurent@vtx-telecom.ch>
+- Add missing config lines for packaging b2b modules
+- Add missing config lines for packaging peering module
+
 * Mon Oct 12 2009 Bogdan Iancu <bogdan@voice-system.ro>
 - updated packages for 1.6.0 release
 - added b2bua package
