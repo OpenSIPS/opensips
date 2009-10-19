@@ -173,7 +173,8 @@ static cmd_export_t cmds[]={
 			0, REQUEST_ROUTE| FAILURE_ROUTE | ONREPLY_ROUTE |
 			BRANCH_ROUTE | LOCAL_ROUTE },
 	{"fetch_dlg_value",(cmd_function)w_fetch_dlg_value,   2,fixup_dlg_fval,
-			0, REQUEST_ROUTE| FAILURE_ROUTE | ONREPLY_ROUTE | BRANCH_ROUTE },
+			0, REQUEST_ROUTE| FAILURE_ROUTE | ONREPLY_ROUTE |
+			BRANCH_ROUTE | LOCAL_ROUTE },
 	{"validate_dialog",(cmd_function)w_validate_dialog,      0,         NULL,
 			0, REQUEST_ROUTE},
 	{"load_dlg",  (cmd_function)load_dlg,   0, 0, 0, 0},
