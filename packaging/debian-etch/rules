@@ -327,19 +327,19 @@ install: build
 
 	# install only the b2bua modules
 	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) install-modules-all modules="$(B2BUA_MOD_PATH)"  \
-		basedir=$(CURDIR)/debian/opensips-identity-module \
+		basedir=$(CURDIR)/debian/opensips-b2bua-module \
 		prefix=/usr \
-		cfg-prefix=$(CURDIR)/debian/opensips-identity-module \
+		cfg-prefix=$(CURDIR)/debian/opensips-b2bua-module \
 		cfg-target=/etc/opensips/ \
-		doc-dir=share/doc/opensips-identity-module
+		doc-dir=share/doc/opensips-b2bua-module
 
 	# install only the db_http modules
 	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) install-modules-all modules="$(DBHTTP_MOD_PATH)"  \
-		basedir=$(CURDIR)/debian/opensips-identity-module \
+		basedir=$(CURDIR)/debian/opensips-dbhttp-module \
 		prefix=/usr \
-		cfg-prefix=$(CURDIR)/debian/opensips-identity-module \
+		cfg-prefix=$(CURDIR)/debian/opensips-dbhttp-module \
 		cfg-target=/etc/opensips/ \
-		doc-dir=share/doc/opensips-identity-module
+		doc-dir=share/doc/opensips-dbhttp-module
 
 	# install only the opensips console tool
 	$(MAKE) install-console \
