@@ -145,6 +145,12 @@ static int do_for_all_streams(struct sip_msg* msg, str* str1,str * str2,
 				text.len = cur_cell->payloads.len;
 				text.s = (char*)pkg_malloc(cur_cell->payloads.len);
 
+				if( text.s == NULL )
+				{
+					LM_ERR("Error alocating lump buffer\n");
+					return -1;
+				}
+
 				memcpy(text.s,cur_cell->payloads.s,cur_cell->payloads.len);
 
 				
@@ -278,6 +284,15 @@ static int stream_process(struct sdp_stream_cell *cell,int pos,str * s, str* ss,
 
 		while(payload)
 		{
+
+			if( payload->rtp_enc.s == NULL
+			 || (payload->rtp_clock.s == NULL && ss != NULL)
+			 || payload->rtp_payload.s == NULL)
+			{
+				payload = payload->next;
+				continue;
+			}
+
 
 
 			match = 0;
