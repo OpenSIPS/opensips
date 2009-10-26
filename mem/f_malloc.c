@@ -35,6 +35,7 @@
 #if !defined(q_malloc) && !(defined VQ_MALLOC)  && (defined F_MALLOC)
 
 #include <string.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 #include "f_malloc.h"
@@ -75,18 +76,37 @@
 							F_MALLOC_OPTIMIZE_FACTOR-1)\
 					)
 
-/* mark/test used/unused frags */
-#define FRAG_MARK_USED(f)
-#define FRAG_CLEAR_USED(f)
-#define FRAG_WAS_USED(f)   (1)
-
-/* other frag related defines:
- * MEM_COALESCE_FRAGS 
- * MEM_FRAG_AVOIDANCE
- */
 #define MEM_FRAG_AVOIDANCE
 
 
+#define F_MALLOC_LARGE_LIMIT    F_MALLOC_OPTIMIZE
+#define F_MALLOC_DEFRAG_LIMIT (F_MALLOC_LARGE_LIMIT * 5)
+#define F_MALLOC_DEFRAG_PERCENT 5
+
+static inline void free_minus(struct fm_block* qm, unsigned long size )
+{
+
+	if( size > F_MALLOC_LARGE_LIMIT )
+		qm->large_space -= size;
+
+	#if defined(DBG_F_MALLOC) || defined(STATISTICS)
+	qm->real_used+=size;
+	qm->used+=size;
+	#endif
+}
+
+
+static inline void free_plus(struct fm_block* qm, unsigned long size )
+{
+
+	if( size > F_MALLOC_LARGE_LIMIT )
+		qm->large_space += size;
+
+	#if defined(DBG_F_MALLOC) || defined(STATISTICS)
+	qm->real_used-=size;
+	qm->used-=size;
+	#endif
+}
 
 
 /* computes hash number for big buckets*/
@@ -127,11 +147,38 @@ static inline void fm_insert_free(struct fm_block* qm, struct fm_frag* frag)
 	}
 	
 	/*insert it here*/
+	frag->prev = f;
 	frag->u.nxt_free=*f;
+	if( *f )
+		(*f)->prev = &(frag->u.nxt_free);
+
 	*f=frag;
 	qm->free_hash[hash].no++;
+	free_plus(qm , frag->size);
+	
 }
 
+static inline void fm_remove_free(struct fm_block* qm, struct fm_frag* n)
+{
+	struct fm_frag** pf;
+	int hash;
+
+	pf = n->prev;
+	hash = GET_HASH( n->size );
+
+	/* detach */
+	*pf=n->u.nxt_free;
+
+	if( n->u.nxt_free )
+		n->u.nxt_free->prev = pf;
+
+	qm->free_hash[hash].no--;
+
+	n->prev = NULL;
+
+	free_minus(qm , n->size);
+	
+};
 
 
  /* size should be already rounded-up */
@@ -147,29 +194,31 @@ void fm_split_frag(struct fm_block* qm, struct fm_frag* frag,
 {
 	unsigned long rest;
 	struct fm_frag* n;
-	
+
 	rest=frag->size-size;
-#ifdef MEM_FRAG_AVOIDANCE
+	#ifdef MEM_FRAG_AVOIDANCE
 	if ((rest> (FRAG_OVERHEAD+F_MALLOC_OPTIMIZE))||
 		(rest>=(FRAG_OVERHEAD+size))){ /* the residue fragm. is big enough*/
-#else
+	#else
 	if (rest>(FRAG_OVERHEAD+MIN_FRAG_SIZE)){
-#endif
+	#endif
 		frag->size=size;
 		/*split the fragment*/
 		n=FRAG_NEXT(frag);
 		n->size=rest-FRAG_OVERHEAD;
-		FRAG_CLEAR_USED(n); /* never used */
-#if defined(DBG_F_MALLOC) || defined(STATISTICS)
+
+		#if defined(DBG_F_MALLOC) || defined(STATISTICS)
 		qm->real_used+=FRAG_OVERHEAD;
-#endif
-#ifdef DBG_F_MALLOC
+		#endif
+
+
+		#ifdef DBG_F_MALLOC
 		/* frag created by malloc, mark it*/
 		n->file=file;
 		n->func="frag. from fm_malloc";
 		n->line=line;
 		n->check=ST_CHECK_PATTERN;
-#endif
+		#endif
 		/* reinsert n in free list*/
 		fm_insert_free(qm, n);
 	}else{
@@ -212,10 +261,14 @@ struct fm_block* fm_malloc_init(char* address, unsigned long size)
 	qm=(struct fm_block*)start;
 	memset(qm, 0, sizeof(struct fm_block));
 	qm->size=size;
-#if defined(DBG_F_MALLOC) || defined(STATISTICS)
-	qm->real_used=init_overhead;
-	qm->max_real_used=qm->real_used;
-#endif
+
+	#if defined(DBG_F_MALLOC) || defined(STATISTICS)
+
+	qm->used = size;
+	qm->real_used= size + init_overhead;
+	qm->max_real_used= init_overhead;
+	#endif
+
 	size-=init_overhead;
 	
 	qm->first_frag=(struct fm_frag*)(start+ROUNDUP(sizeof(struct fm_block)));
@@ -223,14 +276,23 @@ struct fm_block* fm_malloc_init(char* address, unsigned long size)
 	/* init initial fragment*/
 	qm->first_frag->size=size;
 	qm->last_frag->size=0;
+
+	qm->last_frag->prev=NULL;
+	qm->first_frag->prev=NULL;
 	
-#ifdef DBG_F_MALLOC
+	#ifdef DBG_F_MALLOC
 	qm->first_frag->check=ST_CHECK_PATTERN;
 	qm->last_frag->check=END_CHECK_PATTERN1;
-#endif
+	#endif
 	
 	/* link initial fragment into the free list*/
-	
+
+	qm->large_space = 0;
+	qm->large_limit = qm->size * F_MALLOC_DEFRAG_PERCENT / 100;
+
+	if( qm->large_limit < F_MALLOC_DEFRAG_LIMIT )
+		qm->large_limit = F_MALLOC_DEFRAG_LIMIT;
+
 	fm_insert_free(qm, qm->first_frag);
 	
 	
@@ -246,41 +308,75 @@ void* fm_malloc(struct fm_block* qm, unsigned long size,
 void* fm_malloc(struct fm_block* qm, unsigned long size)
 #endif
 {
-	struct fm_frag** f;
-	struct fm_frag* frag;
+	struct fm_frag* frag,*n;
 	unsigned int hash;
-	
-#ifdef DBG_F_MALLOC
+		
+	#ifdef DBG_F_MALLOC
 	LM_DBG("params (%p, %lu), called from %s: %s(%d)\n", qm, size, file, func,
 			line);
-#endif
+	#endif
+	
 	/*size must be a multiple of 8*/
 	size=ROUNDUP(size);
-/*	if (size>(qm->size-qm->real_used)) return 0; */
-
 	
 	/*search for a suitable free frag*/
 
 	for(hash=GET_HASH(size);hash<F_HASH_SIZE;hash++){
-		f=&(qm->free_hash[hash].first);
-		for(;(*f); f=&((*f)->u.nxt_free))
-			if ((*f)->size>=size) goto found;
+		frag=qm->free_hash[hash].first;
+		for( ; frag; frag = frag->u.nxt_free )
+			if ( frag->size >= size ) goto found;
 		/* try in a bigger bucket */
 	}
 	/* not found, bad! */
+
+
+	for( frag = qm->first_frag; (char*)frag < (char*)qm->last_frag;  )
+	{
+		n = FRAG_NEXT(frag);
+
+		if ( ((char*)n < (char*)qm->last_frag) &&  n->prev && frag->prev )
+		{
+			/* detach frag*/
+			fm_remove_free(qm, frag);
+			
+			do
+			{
+				fm_remove_free(qm, n);
+				frag->size += n->size + FRAG_OVERHEAD;
+
+				#if defined(DBG_F_MALLOC) || defined(STATISTICS)
+				qm->real_used -= FRAG_OVERHEAD;
+				#endif
+
+				if( frag->size >size )
+					goto solved;
+				
+				n = FRAG_NEXT(frag);
+			}
+			while
+			( ((char*)n < (char*)qm->last_frag) &&  n->prev);
+
+			fm_insert_free(qm,frag);
+			
+		}
+
+		frag = n;
+	}
+
+
 	return 0;
+
+
+		
 
 found:
 	/* we found it!*/
-	/* detach it from the free list*/
-	frag=*f;
-	*f=frag->u.nxt_free;
-	frag->u.nxt_free=0; /* mark it as 'taken' */
-	qm->free_hash[hash].no--;
+	
+	fm_remove_free(qm,frag);
 	
 	/*see if we'll use full frag, or we'll split it in 2*/
 	
-#ifdef DBG_F_MALLOC
+	#ifdef DBG_F_MALLOC
 	fm_split_frag(qm, frag, size, file, func, line);
 
 	frag->file=file;
@@ -289,16 +385,17 @@ found:
 	frag->check=ST_CHECK_PATTERN;
 	LM_DBG("params(%p, %lu), returns address %p \n", qm, size,
 		(char*)frag+sizeof(struct fm_frag));
-#else
+	#else
 	fm_split_frag(qm, frag, size);
-#endif
-#if defined(DBG_F_MALLOC) || defined(STATISTICS)
-	qm->real_used+=frag->size;
-	qm->used+=frag->size;
+	#endif
+
+solved:
+
+	#if defined(DBG_F_MALLOC) || defined(STATISTICS)
 	if (qm->max_real_used<qm->real_used)
 		qm->max_real_used=qm->real_used;
-#endif
-	FRAG_MARK_USED(frag); /* mark it as used */
+	#endif
+
 	return (char*)frag+sizeof(struct fm_frag);
 }
 
@@ -311,36 +408,52 @@ void fm_free(struct fm_block* qm, void* p, const char* file, const char* func,
 void fm_free(struct fm_block* qm, void* p)
 #endif
 {
-	struct fm_frag* f;
-	unsigned long size;
-
-#ifdef DBG_F_MALLOC
+	struct fm_frag* f,*n;
+	
+	#ifdef DBG_F_MALLOC
 	LM_DBG("params(%p, %p), called from %s: %s(%d)\n", qm, p, file, func, line);
 	if (p>(void*)qm->last_frag || p<(void*)qm->first_frag){
 		LM_CRIT("bad pointer %p (out of memory block!) - aborting\n", p);
 		abort();
 	}
-#endif
+	#endif
 	if (p==0) {
 		LM_WARN("free(0) called\n");
 		return;
 	}
 	f=(struct fm_frag*) ((char*)p-sizeof(struct fm_frag));
-#ifdef DBG_F_MALLOC
+	
+	#ifdef DBG_F_MALLOC
 	LM_DBG("freeing block alloc'ed from %s: %s(%ld)\n", f->file, f->func,
 			f->line);
-#endif
-	size=f->size;
-
-#if defined(DBG_F_MALLOC) || defined(STATISTICS)
-	qm->used-=size;
-	qm->real_used-=size;
-#endif
-#ifdef DBG_F_MALLOC
 	f->file=file;
 	f->func=func;
 	f->line=line;
-#endif
+	#endif
+
+join:
+
+	if( qm->large_limit < qm->large_space )
+		goto no_join;
+
+	n = FRAG_NEXT(f);
+	
+	if (((char*)n < (char*)qm->last_frag) &&  n->prev )
+	{
+
+		fm_remove_free(qm, n);
+		/* join */
+		f->size += n->size + FRAG_OVERHEAD;
+
+		#if defined(DBG_F_MALLOC) || defined(STATISTICS)
+		qm->real_used -= FRAG_OVERHEAD;
+		#endif
+
+		goto join;
+	}
+
+no_join:
+
 	fm_insert_free(qm, f);
 }
 
@@ -353,124 +466,114 @@ void* fm_realloc(struct fm_block* qm, void* p, unsigned long size)
 #endif
 {
 	struct fm_frag *f;
-	struct fm_frag **pf;
 	unsigned long diff;
 	unsigned long orig_size;
 	struct fm_frag *n;
 	void *ptr;
-	int hash;
 	
-#ifdef DBG_F_MALLOC
+	
+	#ifdef DBG_F_MALLOC
 	LM_DBG("params(%p, %p, %lu), called from %s: %s(%d)\n", qm, p, size,
 			file, func, line);
 	if ((p)&&(p>(void*)qm->last_frag || p<(void*)qm->first_frag)){
 		LM_CRIT("bad pointer %p (out of memory block!) - aborting\n", p);
 		abort();
 	}
-#endif
+	#endif
 	if (size==0) {
 		if (p)
-#ifdef DBG_F_MALLOC
+	#ifdef DBG_F_MALLOC
 			fm_free(qm, p, file, func, line);
-#else
+	#else
 			fm_free(qm, p);
-#endif
+	#endif
 		return 0;
 	}
 	if (p==0)
-#ifdef DBG_F_MALLOC
+	#ifdef DBG_F_MALLOC
 		return fm_malloc(qm, size, file, func, line);
-#else
+	#else
 		return fm_malloc(qm, size);
-#endif
+	#endif
 	f=(struct fm_frag*) ((char*)p-sizeof(struct fm_frag));
-#ifdef DBG_F_MALLOC
+	#ifdef DBG_F_MALLOC
 	LM_DBG("realloc'ing frag %p alloc'ed from %s: %s(%ld)\n",
 			f, f->file, f->func, f->line);
-#endif
+	#endif
 	size=ROUNDUP(size);
 	orig_size=f->size;
 	if (f->size > size){
 		/* shrink */
-#ifdef DBG_F_MALLOC
+		#ifdef DBG_F_MALLOC
 		LM_DBG("shrinking from %lu to %lu\n", f->size, size);
 		fm_split_frag(qm, f, size, file, "frag. from fm_realloc", line);
-#else
+		#else
 		fm_split_frag(qm, f, size);
-#endif
-#if defined(DBG_F_MALLOC) || defined(STATISTICS)
-		qm->real_used-=(orig_size-f->size-FRAG_OVERHEAD);
-		qm->used-=(orig_size-f->size);
-#endif
+		#endif
+
 	}else if (f->size<size){
 		/* grow */
-#ifdef DBG_F_MALLOC
+		
+		#ifdef DBG_F_MALLOC
 		LM_DBG("growing from %lu to %lu\n", f->size, size);
-#endif
+		#endif
+		
 		diff=size-f->size;
 		n=FRAG_NEXT(f);
-		if (((char*)n < (char*)qm->last_frag) && 
-				(n->u.nxt_free)&&((n->size+FRAG_OVERHEAD)>=diff)){
-			/* join  */
-			/* detach n from the free list */
-			hash=GET_HASH(n->size);
-			pf=&(qm->free_hash[hash].first);
-			/* find it */
-			for(;(*pf)&&(*pf!=n); pf=&((*pf)->u.nxt_free)); /*FIXME slow */
-			if (*pf==0){
-				/* not found, bad! */
-				LM_CRIT("could not find %p in free "
-						"list (hash=%ld)\n", n, GET_HASH(n->size));
-				abort();
-			}
-			/* detach */
-			*pf=n->u.nxt_free;
-			qm->free_hash[hash].no--;
+		
+		if (((char*)n < (char*)qm->last_frag) &&  n->prev &&
+		 ((n->size+FRAG_OVERHEAD)>=diff)){
+
+			fm_remove_free(qm,n);
 			/* join */
-			f->size+=n->size+FRAG_OVERHEAD;
-		#if defined(DBG_F_MALLOC) || defined(STATISTICS)
-			qm->real_used-=FRAG_OVERHEAD;
-		#endif
+			f->size += n->size + FRAG_OVERHEAD;
+
+			#if defined(DBG_F_MALLOC) || defined(STATISTICS)
+			qm->real_used -= FRAG_OVERHEAD;
+			#endif
+
 			/* split it if necessary */
 			if (f->size > size){
-		#ifdef DBG_F_MALLOC
+				#ifdef DBG_F_MALLOC
 				fm_split_frag(qm, f, size, file, "fragm. from fm_realloc",
 						line);
-		#else
+				#else
 				fm_split_frag(qm, f, size);
-		#endif
+				#endif
 			}
-		#if defined(DBG_F_MALLOC) || defined(STATISTICS)
-			qm->real_used+=(f->size-orig_size);
-			qm->used+=(f->size-orig_size);
-		#endif
 		}else{
 			/* could not join => realloc */
-	#ifdef DBG_F_MALLOC
+			#ifdef DBG_F_MALLOC
 			ptr=fm_malloc(qm, size, file, func, line);
-	#else
-			ptr=fm_malloc(qm, size);
-	#endif
+			#else
+			ptr = fm_malloc(qm, size);
+			#endif
 			if (ptr) {
 				/* copy, need by libssl */
 				memcpy(ptr, p, orig_size);
-	#ifdef DBG_F_MALLOC
+				#ifdef DBG_F_MALLOC
 				fm_free(qm, p, file, func, line);
-	#else
+				#else
 				fm_free(qm, p);
-	#endif
+				#endif
 			}
-			p=ptr;
+			p = ptr;
 		}
 	}else{
 		/* do nothing */
-#ifdef DBG_F_MALLOC
+	#ifdef DBG_F_MALLOC
 		LM_DBG("doing nothing, same size: %lu - %lu\n", f->size, size);
-#endif
+	#endif
 	}
-#ifdef DBG_F_MALLOC
+	#ifdef DBG_F_MALLOC
 	LM_DBG("returning %p\n", p);
-#endif
+	#endif
+
+	#if defined(DBG_F_MALLOC) || defined(STATISTICS)
+	if (qm->max_real_used<qm->real_used)
+		qm->max_real_used=qm->real_used;
+	#endif
+
 	return p;
 }
 
@@ -490,37 +593,15 @@ void fm_status(struct fm_block* qm)
 	LM_GEN1(memdump, " heap size= %ld\n", qm->size);
 #if defined(DBG_F_MALLOC) || defined(STATISTICS)
 	LM_GEN1(memdump, " used= %lu, used+overhead=%lu, free=%lu\n",
-			qm->used, qm->real_used, qm->size-qm->real_used);
+			qm->used, qm->real_used, qm->size-qm->used);
 	LM_GEN1(memdump, " max used (+overhead)= %lu\n", qm->max_real_used);
 #endif
-	/*
-	LM_GEN1(memdump, "dumping all fragments:\n");
-	for (f=qm->first_frag, i=0;((char*)f<(char*)qm->last_frag) && (i<10);
-			f=FRAG_NEXT(f), i++){
-		LM_GEN1(memdump, "    %3d. %c  address=%x  size=%d\n", i, 
-				(f->u.reserved)?'a':'N',
-				(char*)f+sizeof(struct fm_frag), f->size);
-#ifdef DBG_F_MALLOC
-		LM_GEN1(memdump, "            %s from %s: %s(%d)\n",
-				(f->u.is_free)?"freed":"alloc'd", f->file, f->func, f->line);
-#endif
-	}
-*/
+
 	LM_GEN1(memdump, "dumping free list:\n");
 	for(h=0,i=0,size=0;h<F_HASH_SIZE;h++){
 		unused=0;
 		for (f=qm->free_hash[h].first,j=0; f;
-				size+=f->size,f=f->u.nxt_free,i++,j++){
-			if (!FRAG_WAS_USED(f)){
-				unused++;
-#ifdef DBG_F_MALLOC
-				LM_GEN1(memdump, "unused fragm.: hash = %3d, fragment %p,"
-							" address %p size %lu, created from %s: %s(%ld)\n",
-						    h, f, (char*)f+sizeof(struct fm_frag), f->size,
-							f->file, f->func, f->line);
-#endif
-			};
-		}
+				size+=f->size,f=f->u.nxt_free,i++,j++){ }
 		if (j) LM_GEN1(memdump,"hash = %3d fragments no.: %5d, unused: %5d\n\t\t"
 							" bucket size: %9lu - %9lu (first %9lu)\n",
 							h, j, unused, UN_HASH(h),
@@ -531,20 +612,11 @@ void fm_status(struct fm_block* qm)
 			LM_CRIT("different free frag. count: %d!=%ld"
 					" for hash %3d\n", j, qm->free_hash[h].no, h);
 		}
-		/*
-		{
-			LM_GEN1(memdump, "   %5d.[%3d:%3d] %c  address=%x  size=%d(%x)\n",
-					i, h, j,
-					(f->u.reserved)?'a':'N',
-					(char*)f+sizeof(struct fm_frag), f->size, f->size);
-#ifdef DBG_F_MALLOC
-			LM_DBG("            %s from %s: %s(%d)\n", 
-				(f->u.reserved)?"freed":"alloc'd", f->file, f->func, f->line);
-#endif
-		}
-	*/
+
 	}
 	LM_GEN1(memdump, "TOTAL: %6d free fragments = %6lu free bytes\n", i, size);
+	LM_GEN1(memdump, "TOTAL: %ld large bytes\n", qm->large_space );
+	LM_GEN1(memdump, "TOTAL: %d overhead\n", FRAG_OVERHEAD );
 	LM_GEN1(memdump, "-----------------------------\n");
 }
 
