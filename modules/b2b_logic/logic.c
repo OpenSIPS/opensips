@@ -967,7 +967,7 @@ int create_top_hiding_entities(struct sip_msg* msg, str* to_uri, str* from_uri)
 
 	hash_index = core_hash(to_uri, from_uri, b2bl_hsize);
 
-	tuple = b2bl_insert_new(hash_index, 0, 0, &b2bl_key);
+	tuple = b2bl_insert_new(msg, hash_index, 0, 0, &b2bl_key);
 	if(tuple== NULL)
 	{
 		LM_ERR("Failed to insert new scenario instance record\n");
@@ -1309,7 +1309,7 @@ int b2b_process_scenario_init(b2b_scenario_t* scenario_struct,struct sip_msg* ms
 	}
 
 	/* create new scenario instance record */
-	tuple = b2bl_insert_new(hash_index, scenario_struct, args, &b2bl_key);
+	tuple = b2bl_insert_new(msg, hash_index, scenario_struct, args, &b2bl_key);
 	if(tuple== NULL)
 	{
 		LM_ERR("Failed to insert new scenario instance record\n");

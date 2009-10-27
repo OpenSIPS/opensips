@@ -584,7 +584,7 @@ static struct mi_root* mi_trigger_scenario(struct mi_root* cmd, void* param)
 
 	/* apply the init part of the scenario */
 
-	tuple = b2bl_insert_new(hash_index, scenario_struct, args, &b2bl_key);
+	tuple = b2bl_insert_new(0, hash_index, scenario_struct, args, &b2bl_key);
 	if(tuple== NULL)
 	{
 		LM_ERR("Failed to insert new scenario instance record\n");

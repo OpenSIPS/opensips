@@ -35,13 +35,16 @@
 #include "../presence/hash.h"
 #include "records.h"
 
-b2bl_tuple_t* b2bl_insert_new(unsigned int hash_index, b2b_scenario_t* scenario,
+b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg,
+		unsigned int hash_index, b2b_scenario_t* scenario,
 		str* args[], str** b2bl_key_s)
 {
 	b2bl_tuple_t * it, *prev_it;
 	b2bl_tuple_t* tuple;
 	str* b2bl_key;
 	int i;
+	static char buf[256];
+	int buf_len= 255;
 
 	tuple = (b2bl_tuple_t*)shm_malloc(sizeof(b2bl_tuple_t));
 	if(tuple == NULL)
@@ -98,15 +101,37 @@ b2bl_tuple_t* b2bl_insert_new(unsigned int hash_index, b2b_scenario_t* scenario,
 						scenario->param_no);
 				goto error;
 			}
-			
-			tuple->scenario_params[i].s = (char*)shm_malloc(args[i]->len);
-			if(tuple->scenario_params[i].s == NULL)
+			/* must print the value of the argument */
+			if(msg)
 			{
-				LM_ERR("No more shared memory\n");
-				goto error;
+				buf_len= 255;
+				if(pv_printf(msg, (pv_elem_t*)args[i], buf, &buf_len)<0)
+				{
+					LM_ERR("cannot print the format\n");
+					goto error;
+				}
+
+				tuple->scenario_params[i].s = (char*)shm_malloc(buf_len);
+				if(tuple->scenario_params[i].s == NULL)
+				{
+					LM_ERR("No more shared memory\n");
+					goto error;
+				}
+				memcpy(tuple->scenario_params[i].s, buf, buf_len);
+				tuple->scenario_params[i].len = buf_len;
 			}
-			memcpy(tuple->scenario_params[i].s, args[i]->s, args[i]->len);
-			tuple->scenario_params[i].len = args[i]->len;
+			else
+			{
+				tuple->scenario_params[i].s = (char*)shm_malloc(args[i]->len);
+				if(tuple->scenario_params[i].s == NULL)
+				{
+					LM_ERR("No more shared memory\n");
+					goto error;
+				}
+				memcpy(tuple->scenario_params[i].s, args[i]->s, args[i]->len);
+				tuple->scenario_params[i].len = args[i]->len;
+			}
+
 		}
 	}
 
