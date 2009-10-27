@@ -129,38 +129,59 @@ b2bl_entity_id_t* b2bl_create_new_entity(enum b2b_entity_type type, str* entity_
  *	Session-Expires
  *	Min-SE
 */
-
 int b2b_extra_headers(struct sip_msg* msg, str* extra_headers)
 {
 	char* p;
 	struct hdr_field* require_hdr;
 	struct hdr_field* rseq_hdr;
+	struct hdr_field* hdr;
+	struct hdr_field* hdrs[HDR_LST_LEN + HDR_DEFAULT_LEN];
+	int hdrs_no = 0;
+	int len = 0;
+	int i;
 
 	if(msg->content_type)
-		extra_headers->len = msg->content_type->len;
+		hdrs[hdrs_no++] = msg->content_type;
 	if(msg->supported)
-		extra_headers->len += msg->supported->len;
+		hdrs[hdrs_no++] = msg->supported;
 	if(msg->allow)
-		extra_headers->len += msg->allow->len;
+		hdrs[hdrs_no++] = msg->allow;
 	if(msg->proxy_require)
-		extra_headers->len += msg->proxy_require->len;
+		hdrs[hdrs_no++] = msg->proxy_require;
 	if(msg->session_expires)
-		extra_headers->len += msg->session_expires->len;
+		hdrs[hdrs_no++] = msg->session_expires;
 	if(msg->min_se)
-		extra_headers->len += msg->min_se->len;
+		hdrs[hdrs_no++] = msg->min_se;
 
 	require_hdr = get_header_by_static_name( msg, "Require");
 	if(require_hdr)
-		extra_headers->len += require_hdr->len;
+		hdrs[hdrs_no++] = require_hdr;
 
 	rseq_hdr = get_header_by_static_name( msg, "RSeq");
 	if(rseq_hdr)
-		extra_headers->len += rseq_hdr->len;
+		hdrs[hdrs_no++] = rseq_hdr;
 
-	if(extra_headers->len == 0)
+	/* add also the custom headers */
+	for(i = 0; i< custom_headers_lst_len; i++)
+	{
+		hdr = get_header_by_name( msg, custom_headers_lst[i].s,
+				custom_headers_lst[i].len);
+		if(hdr)
+		{
+			hdrs[hdrs_no++] = hdr;
+		}
+	}
+
+	/* calculate the length*/
+	for(i = 0; i< hdrs_no; i++)
+		len += hdrs[i]->len;
+
+	extra_headers->len = len;
+
+	if(len == 0)
 		return 0;
 
-	extra_headers->s = (char*)pkg_malloc(extra_headers->len);
+	extra_headers->s = (char*)pkg_malloc(len);
 	if(extra_headers->s == NULL)
 	{
 		LM_ERR("No more memory\n");
@@ -169,56 +190,12 @@ int b2b_extra_headers(struct sip_msg* msg, str* extra_headers)
 
 	p = extra_headers->s;
 
-	if(msg->content_type)
+	/* construct the headers string */
+	for(i = 0; i< hdrs_no; i++)
 	{
-		memcpy(p, msg->content_type->name.s, msg->content_type->len);
-		p+= msg->content_type->len;
+		memcpy(p, hdrs[i]->name.s, hdrs[i]->len);
+		p += hdrs[i]->len;
 	}
-
-	if(msg->supported)
-	{
-		memcpy(p, msg->supported->name.s, msg->supported->len);
-		p+=  msg->supported->len;
-	}
-
-	if(msg->allow)
-	{
-		memcpy(p, msg->allow->name.s, msg->allow->len);
-		p+= msg->allow->len;
-	}
-	
-	if(msg->proxy_require)
-	{
-		memcpy(p, msg->proxy_require->name.s, msg->proxy_require->len);
-		p+= msg->proxy_require->len;
-	}
-
-	if(require_hdr)
-	{
-		LM_DBG("Require header found\n");
-		memcpy(p, require_hdr->name.s, require_hdr->len);
-		p+= require_hdr->len;
-	}
-
-	if(rseq_hdr)
-	{
-		LM_DBG("Require header found\n");
-		memcpy(p, rseq_hdr->name.s, rseq_hdr->len);
-		p+= rseq_hdr->len;
-	}
-
-	if(msg->session_expires)
-	{
-		memcpy(p, msg->session_expires->name.s, msg->session_expires->len);
-		p+= msg->session_expires->len;
-	}
-
-	if(msg->min_se)
-	{
-		memcpy(p, msg->min_se->name.s, msg->min_se->len);
-		p+= msg->min_se->len;
-	}
-
 	return 0;
 }
 
@@ -967,7 +944,7 @@ int create_top_hiding_entities(struct sip_msg* msg, str* to_uri, str* from_uri)
 
 	hash_index = core_hash(to_uri, from_uri, b2bl_hsize);
 
-	tuple = b2bl_insert_new(hash_index, 0, 0, &b2bl_key);
+	tuple = b2bl_insert_new(msg, hash_index, 0, 0, &b2bl_key);
 	if(tuple== NULL)
 	{
 		LM_ERR("Failed to insert new scenario instance record\n");
@@ -1309,7 +1286,7 @@ int b2b_process_scenario_init(b2b_scenario_t* scenario_struct,struct sip_msg* ms
 	}
 
 	/* create new scenario instance record */
-	tuple = b2bl_insert_new(hash_index, scenario_struct, args, &b2bl_key);
+	tuple = b2bl_insert_new(msg, hash_index, scenario_struct, args, &b2bl_key);
 	if(tuple== NULL)
 	{
 		LM_ERR("Failed to insert new scenario instance record\n");

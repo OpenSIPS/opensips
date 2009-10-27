@@ -71,7 +71,8 @@ typedef struct b2bl_entry
 
 typedef b2bl_entry_t* b2bl_table_t;
 
-b2bl_tuple_t* b2bl_insert_new(unsigned int hash_index, b2b_scenario_t* scenario,
+b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg,
+		unsigned int hash_index, b2b_scenario_t* scenario,
 		str* args[], str** b2bl_key_s);
 
 str* b2bl_generate_key(unsigned int hash_index, unsigned int local_index);

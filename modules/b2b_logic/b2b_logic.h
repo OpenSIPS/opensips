@@ -42,6 +42,9 @@
 
 #define b2b_peer(type) ((type+1)%2)
 
+#define HDR_LST_LEN    10
+#define HDR_DEFAULT_LEN   7
+
 extern b2b_api_t b2b_api;
 
 /*	Requests: Invite, Ack, Bye
@@ -74,6 +77,10 @@ typedef struct b2b_scenario
 
 extern b2b_scenario_t* script_scenaries;
 extern b2b_scenario_t* extern_scenaries;
+
+extern str custom_headers_lst[HDR_LST_LEN];
+int custom_headers_lst_len;
+
 
 static inline int b2b_get_request_id(str* request)
 {
