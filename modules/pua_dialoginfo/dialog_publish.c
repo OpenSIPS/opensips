@@ -64,6 +64,7 @@ str* build_dialoginfo(char *state, struct to_body *entity, struct to_body *peer,
 	xmlNodePtr remote_node = NULL;
 	xmlNodePtr local_node = NULL;
 	xmlNodePtr tag_node = NULL;
+	xmlNodePtr id_node = NULL;
 	str *body= NULL;
 	char buf[MAX_URI_SIZE+1];
 
@@ -173,15 +174,24 @@ str* build_dialoginfo(char *state, struct to_body *entity, struct to_body *peer,
 			LM_ERR("peer '%.*s' too long, maximum=%d\n", peer->uri.len, peer->uri.s, MAX_URI_SIZE);
 			return NULL;
 		}
-    	memcpy(buf, peer->uri.s, peer->uri.len);
+		memcpy(buf, peer->uri.s, peer->uri.len);
 		buf[peer->uri.len]= '\0';
 
-		tag_node = xmlNewChild(remote_node, NULL, BAD_CAST "identity", BAD_CAST buf) ;
+		id_node = xmlNewChild(remote_node, NULL, BAD_CAST "identity", BAD_CAST buf) ;
+		if( id_node ==NULL)
+		{
+			LM_ERR("while adding child\n");
+			goto error;
+		}
+
+		tag_node = xmlNewChild(remote_node, NULL, BAD_CAST "target", NULL) ;
 		if( tag_node ==NULL)
 		{
 			LM_ERR("while adding child\n");
 			goto error;
 		}
+		xmlNewProp(tag_node, BAD_CAST "uri", BAD_CAST buf);
+
 		/* if a display name present - add the display name information */
 		if(peer->display.s)
 		{
@@ -193,16 +203,8 @@ str* build_dialoginfo(char *state, struct to_body *entity, struct to_body *peer,
 			}
 			memcpy(buf, peer->display.s, peer->display.len);
 			buf[peer->display.len] = '\0';
-			xmlNewProp(tag_node, BAD_CAST "display", BAD_CAST buf);
+			xmlNewProp(id_node, BAD_CAST "display", BAD_CAST buf);
 		}
-
-		tag_node = xmlNewChild(remote_node, NULL, BAD_CAST "target", NULL) ;
-		if( tag_node ==NULL)
-		{
-			LM_ERR("while adding child\n");
-			goto error;
-		}
-		xmlNewProp(tag_node, BAD_CAST "uri", BAD_CAST buf);
 
 		/* local tag */
 		local_node = xmlNewChild(dialog_node, NULL, BAD_CAST "local", NULL) ;
@@ -215,12 +217,20 @@ str* build_dialoginfo(char *state, struct to_body *entity, struct to_body *peer,
 		memcpy(buf, entity->uri.s, entity->uri.len);
 		buf[entity->uri.len]= '\0';
 
-		tag_node = xmlNewChild(local_node, NULL, BAD_CAST "identity", BAD_CAST buf) ;
+		id_node = xmlNewChild(local_node, NULL, BAD_CAST "identity", BAD_CAST buf) ;
+		if( id_node ==NULL)
+		{
+			LM_ERR("while adding child\n");
+			goto error;
+		}
+		tag_node = xmlNewChild(local_node, NULL, BAD_CAST "target", NULL) ;
 		if( tag_node ==NULL)
 		{
 			LM_ERR("while adding child\n");
 			goto error;
 		}
+		xmlNewProp(tag_node, BAD_CAST "uri", BAD_CAST buf);
+
 		/* if a display name present - add the display name information */
 		if(entity->display.s)
 		{
@@ -232,16 +242,8 @@ str* build_dialoginfo(char *state, struct to_body *entity, struct to_body *peer,
 			}
 			memcpy(buf, entity->display.s, entity->display.len);
 			buf[entity->display.len] = '\0';
-			xmlNewProp(tag_node, BAD_CAST "display", BAD_CAST buf);
+			xmlNewProp(id_node, BAD_CAST "display", BAD_CAST buf);
 		}
-
-		tag_node = xmlNewChild(local_node, NULL, BAD_CAST "target", NULL) ;
-		if( tag_node ==NULL)
-		{
-			LM_ERR("while adding child\n");
-			goto error;
-		}
-		xmlNewProp(tag_node, BAD_CAST "uri", BAD_CAST buf);
 	}
 
 	/* create the body */
@@ -283,12 +285,12 @@ void dialog_publish(char *state, struct to_body* entity, struct to_body *peer, s
 
 	/* send PUBLISH only if the receiver (entity, RURI) is local*/
 	
-	if (!check_self(&(entity->parsed_uri.host), 0, 0)) {
+/*	if (!check_self(&(entity->parsed_uri.host), 0, 0)) {
 		LM_DBG("do not send PUBLISH to external URI %.*s\n",
 				entity->uri.len, entity->uri.s);
 		return;
 	}
-
+*/
 	body= build_dialoginfo(state, entity, peer, callid, initiator, localtag, remotetag);
 	if(body == NULL || body->s == NULL)
 	{
