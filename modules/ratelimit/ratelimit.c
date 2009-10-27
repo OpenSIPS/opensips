@@ -880,7 +880,7 @@ static int rl_check(struct sip_msg * msg, int forced_pipe)
 	int que_id, pipe_id, ret;
 	str method = msg->first_line.u.request.method;
 
-	if (forced_pipe>=MAX_PIPES || *pipes[forced_pipe].algo==PIPE_ALGO_NOP) {
+	if (forced_pipe >=0 && (forced_pipe>=MAX_PIPES || *pipes[forced_pipe].algo==PIPE_ALGO_NOP)) {
 		LM_ERR("forced pipe %d out of range or not defined "
 			" => defaulting to method type checking\n", forced_pipe);
 		forced_pipe = -1;
