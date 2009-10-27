@@ -119,6 +119,7 @@ b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg,
 				}
 				memcpy(tuple->scenario_params[i].s, buf, buf_len);
 				tuple->scenario_params[i].len = buf_len;
+				LM_DBG("*** Printed parameter [%.*s]\n", buf_len, buf);
 			}
 			else
 			{

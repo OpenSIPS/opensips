@@ -1071,6 +1071,8 @@ int b2b_scenario_parse_uri(xmlNodePtr value_node, char* value_content, b2bl_tupl
 			goto error;
 		}
 		*client_to = tuple->scenario_params[param_no-1];
+		LM_DBG("*** URI value taken from a parameter [%.*s]\n",
+				client_to->len, client_to->s);
 	}
 	else
 	if(xmlStrcasecmp(value_type, (unsigned char*)"initial") == 0)
