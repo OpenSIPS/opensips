@@ -201,8 +201,16 @@ str* build_dialoginfo(char *state, struct to_body *entity, struct to_body *peer,
 						peer->display.s, MAX_URI_SIZE);
 				return NULL;
 			}
-			memcpy(buf, peer->display.s, peer->display.len);
-			buf[peer->display.len] = '\0';
+			if(peer->display.s[0] == '"')
+			{
+				memcpy(buf, peer->display.s+1, peer->display.len-2);
+				buf[peer->display.len-2] = '\0';
+			}
+			else
+			{
+				memcpy(buf, peer->display.s, peer->display.len);
+				buf[peer->display.len] = '\0';
+			}
 			xmlNewProp(id_node, BAD_CAST "display", BAD_CAST buf);
 		}
 
@@ -240,8 +248,17 @@ str* build_dialoginfo(char *state, struct to_body *entity, struct to_body *peer,
 						entity->display.s, MAX_URI_SIZE);
 				return NULL;
 			}
-			memcpy(buf, entity->display.s, entity->display.len);
-			buf[entity->display.len] = '\0';
+			if(entity->display.s[0] == '"')
+			{
+				memcpy(buf, entity->display.s+1, entity->display.len-2);
+				buf[entity->display.len-2] = '\0';
+			}
+			else
+			{
+				memcpy(buf, entity->display.s, entity->display.len);
+				buf[entity->display.len] = '\0';
+			}
+
 			xmlNewProp(id_node, BAD_CAST "display", BAD_CAST buf);
 		}
 	}
