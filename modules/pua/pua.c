@@ -97,7 +97,6 @@ static int child_init(int);
 static void destroy(void);
 
 static int update_pua(ua_pres_t* p, unsigned int hash_code);
-static ua_pres_t* build_uppubl_cbparam(ua_pres_t* p);
 
 static int db_restore(void);
 static void db_update(unsigned int ticks,void *param);
@@ -614,11 +613,15 @@ static void hashT_clean(unsigned int ticks,void *param)
 		while(p)
 		{
 			print_ua_pres(p);
-			if(p->expires- update_period < now )
+			if(p->expires < now )
 			{
-				if((p->desired_expires> p->expires + min_expires) || 
+				if((p->desired_expires> p->expires + min_expires + 5) || 
 						(p->desired_expires== 0 ))
 				{
+					LM_DBG("Desired expires greater than expires -> send a "
+						"refresh PUBLISH desired_expires=%d - expires=%d "
+						"min_expires=%d\n", p->desired_expires, p->expires,
+						min_expires);
 					if(update_pua(p, i)< 0)
 					{
 						LM_ERR("while updating record\n");
@@ -628,20 +631,18 @@ static void hashT_clean(unsigned int ticks,void *param)
 					p= p->next;
 					continue;
 				}
-			    if(p->expires < now - 10)
+				
+				q= p->next;
+				LM_DBG("Found expired: uri= %.*s\n", p->pres_uri->len,
+						p->pres_uri->s);
+				p->desired_expires = p->expires;
+				if(update_pua(p, i)< 0)
 				{
-					q= p->next;
-					LM_DBG("Found expired: uri= %.*s\n", p->pres_uri->len,
-							p->pres_uri->s);
-					if(p->etag.s)
-					{
-						lock_get(&p->publ_lock);
-					}
-					delete_htable(p);
-					p= q;
+					LM_ERR("while updating record\n");
+					lock_release(&HashT->p_records[i].lock);
+					return;
 				}
-				else
-					p= p->next;
+				p= p->next;
 			}
 			else
 				p= p->next;
@@ -674,31 +675,23 @@ int update_pua(ua_pres_t* p, unsigned int hash_code)
 			goto error;
 		}
 		LM_DBG("str_hdr:\n%.*s\n ", str_hdr->len, str_hdr->s);
-		
-		cb_param= build_uppubl_cbparam(p);
-		if(cb_param== NULL)
-		{
-			LM_ERR("while constructing publ callback param\n");
-			goto error;
-		}	
-		result= tmb.t_request(&met,						/* Type of the message*/
-				p->pres_uri,							/* Request-URI */
-				p->pres_uri,							/* To */
-				p->pres_uri,							/* From */
-				str_hdr,								/* Optional headers */
-				0,										/* Message body */
-				(p->outbound_proxy)?p->outbound_proxy:0,	/* Outbound proxy*/
-				publ_cback_func,						/* Callback function */
-				(void*)cb_param,						/* Callback parameter*/
+
+		lock_get(&p->publ_lock);
+		cb_param = p;
+
+		result= tmb.t_request(&met,    /* Type of the message*/
+				p->pres_uri,           /* Request-URI */
+				p->pres_uri,           /* To */
+				p->pres_uri,           /* From */
+				str_hdr,               /* Optional headers */
+				0,                     /* Message body */
+				(p->outbound_proxy)?p->outbound_proxy:0,/* Outbound proxy*/
+				publ_cback_func,       /* Callback function */
+				(void*)cb_param,       /* Callback parameter*/
 				0
 				);
-		if(result< 0)
-		{
-			LM_ERR("in t_request function\n"); 
-			shm_free(cb_param);
-			goto error;
-		}
-		
+		if(result < 0)
+			lock_release(&p->publ_lock);
 	}
 	else
 	{
@@ -709,7 +702,7 @@ int update_pua(ua_pres_t* p, unsigned int hash_code)
 		td= pua_build_dlg_t(p);
 		if(td== NULL)
 		{
-			LM_ERR("while building tm dlg_t structure");		
+			LM_ERR("while building tm dlg_t structure");
 			goto error;
 		};
 	
@@ -1079,30 +1072,5 @@ static void db_update(unsigned int ticks,void *param)
 	}
 
 	return ;
-}
-
-static ua_pres_t* build_uppubl_cbparam(ua_pres_t* p)
-{
-	publ_info_t publ;
-	ua_pres_t* cb_param= NULL;
-
-	memset(&publ, 0, sizeof(publ_info_t));
-	publ.pres_uri= p->pres_uri;
-	publ.content_type= p->content_type;
-	publ.id= p->id;
-	publ.expires= (p->desired_expires== 0) ?-1:p->desired_expires- (int)time(NULL);
-	publ.flag= UPDATE_TYPE; 
-	publ.source_flag= p->flag; 
-	publ.event= p->event;
-	publ.etag= &p->etag;
-	publ.extra_headers= p->extra_headers;
-
-	cb_param= publish_cbparam(&publ, NULL, &p->tuple_id, REQ_ME);
-	if(cb_param== NULL)
-	{
-		LM_ERR("constructing callback parameter\n");
-		return NULL;
-	}
-	return cb_param;
 }
 
