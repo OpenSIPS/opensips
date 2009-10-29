@@ -187,7 +187,7 @@ dlg_t* pua_build_dlg_t(ua_pres_t* presentity)
 			presentity->remote_contact.len) ;
 	td->rem_target.len = presentity->remote_contact.len;
 	size+= td->rem_target.len;
-	
+
 	if(presentity->record_route.s && presentity->record_route.len)
 	{
 		if(parse_rr_body(presentity->record_route.s, presentity->record_route.len,
@@ -203,8 +203,6 @@ dlg_t* pua_build_dlg_t(ua_pres_t* presentity)
 	td->loc_seq.is_set = 1;
 	td->state= DLG_CONFIRMED ;
 	
-	LM_DBG("size = %d\n", size);
-
 	return td;
 }
 
@@ -807,7 +805,7 @@ ua_pres_t* subs_cbparam_indlg(ua_pres_t* subs, int expires, int ua_flag)
 
 	return hentity;
 
-}	
+}
 
 int send_subscribe(subs_info_t* subs)
 {
@@ -852,7 +850,7 @@ int send_subscribe(subs_info_t* subs)
 	pres.event= subs->event;
 	if(subs->remote_target)
 		pres.remote_contact= *subs->remote_target;
-
+		
 	presentity= search_htable(&pres, hash_code);
 
 	/* if flag == INSERT_TYPE insert no matter what the search result is */

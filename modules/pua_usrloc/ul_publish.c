@@ -183,7 +183,7 @@ error:
 	if(doc)
 		xmlFreeDoc(doc);
 	return NULL;
-}	
+}
 
 void ul_publish(ucontact_t* c, int type, void* param)
 {
@@ -193,7 +193,7 @@ void ul_publish(ucontact_t* c, int type, void* param)
 	publ_info_t publ;
 	int error;
 
-	if(pua_ul_publish== 0)
+	if(pua_ul_publish== 0 && !(type & UL_CONTACT_EXPIRE))
 	{
 		return;
 	}
@@ -223,6 +223,8 @@ void ul_publish(ucontact_t* c, int type, void* param)
 	if(uri.s == NULL)
 		goto error;
 
+	LM_DBG("aor = %.*s\n", c->aor->len, c->aor->s);
+
 	memcpy(uri.s, "sip:", 4);
 	uri.len = 4;
 	memcpy(uri.s+ uri.len, c->aor->s, c->aor->len);
@@ -232,7 +234,7 @@ void ul_publish(ucontact_t* c, int type, void* param)
 	{
 		uri.s[uri.len++]= '@';
 		memcpy(uri.s+ uri.len, default_domain.s, default_domain.len);
-		uri.len+= default_domain.len;		
+		uri.len+= default_domain.len;
 	}
 	
 	LM_DBG("uri= %.*s\n", uri.len, uri.s);
