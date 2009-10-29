@@ -17,8 +17,8 @@
 ## database host
 # DBHOST=localhost
 
-## database port for PostgreSQL
-# DBPORT=5433
+## database port (PostgreSQL=5433 mandatory; MYSQL=3306 optional)
+# DBPORT=3306
 
 ## database name (for ORACLE this is TNS name)
 # DBNAME=opensips
@@ -30,7 +30,7 @@
 # DBRWUSER=opensips
 
 ## password for database read/write user
-# DBRWPW="opensipsrw"
+# DBRWPW=opensipsrw
 
 ## database read only user
 # DBROUSER=opensipsro
@@ -39,19 +39,19 @@
 # DBROPW=opensipsro
 
 ## database super user (for ORACLE this is 'scheme-creator' user)
-# DBROOTUSER="root"
+# DBROOTUSER=root
 
 # Program to calculate a message-digest fingerprint 
-# MD5="md5sum"
+# MD5=md5sum
 
 # awk tool
-# AWK="awk"
+# AWK=awk
 
 # grep tool
-# GREP="egrep"
+# GREP=egrep
 
 # sed tool
-# SED="sed"
+# SED=sed
 
 
 # Describe what additional tables to install. Valid values for the variables
@@ -75,7 +75,7 @@
 
 ## type of aliases used: DB - database aliases; UL - usrloc aliases
 ## - default: none
-# ALIASES_TYPE="DB"
+# ALIASES_TYPE=DB
 
 ## MI_CONNECTOR control engine: FIFO, UNIXSOCK, UDP, XMLRPC
 # MI_CONNECTOR=FIFO:/tmp/opensips_fifo
