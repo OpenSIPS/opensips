@@ -87,8 +87,8 @@ static int add_sock_hdr(struct sip_msg* msg, char *str, char *foo);
 
 
 int default_expires = 3600; 			/*!< Default expires value in seconds */
-qvalue_t default_q  = Q_UNSPECIFIED;		/*!< Default q value multiplied by 1000 */
-int case_sensitive  = 0;			/*!< If set to 1, username in aor will be case sensitive */
+qvalue_t default_q  = Q_UNSPECIFIED;	/*!< Default q value multiplied by 1000 */
+int case_sensitive  = 1;			/*!< If set to 0, username in aor will be case insensitive */
 int tcp_persistent_flag = -1;			/*!< if the TCP connection should be kept open */
 int min_expires     = 60;			/*!< Minimum expires the phones are allowed to use in seconds
  						 * use 0 to switch expires checking off */
