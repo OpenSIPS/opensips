@@ -33,7 +33,7 @@ CREATE TABLE dr_groups (
     id SERIAL PRIMARY KEY NOT NULL,
     username VARCHAR(64) NOT NULL,
     domain VARCHAR(128) DEFAULT '' NOT NULL,
-    groupid VARCHAR(255) NOT NULL,
+    groupid INTEGER DEFAULT 0 NOT NULL,
     description VARCHAR(128) DEFAULT '' NOT NULL
 );
 

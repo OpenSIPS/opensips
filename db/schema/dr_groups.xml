@@ -45,8 +45,9 @@
 
 	<column id="groupid">
 		<name>groupid</name>
-		<type>string</type>
-		<size>255</size>
+		<type>unsigned int</type>
+		<size>11</size>
+		<default>0</default>
 		<description>The ID of the routing group the user belongs to.
 		</description>
 	</column>
