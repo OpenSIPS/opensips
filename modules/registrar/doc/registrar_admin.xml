@@ -269,19 +269,19 @@ modparam("registrar", "append_branches", 0)
 		<title><varname>case_sensitive</varname> (integer)</title>
 		<para>
 		If set to 1 then <acronym>AOR</acronym> comparison will be case 
-		sensitive, if set to 0 then <acronym>AOR</acronym> comparison will 
-		be case insensitive--This is recommended.
+		sensitive (as RFC3261 instructs), if set to 0 then 
+		<acronym>AOR</acronym> comparison will be case insensitive.
 		</para>
 		<para>
 		<emphasis>
-			Default value is 0.
+			Default value is 1.
 		</emphasis>
 		</para>
 		<example>
 		<title>Set <varname>case_sensitive</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("registrar", "case_sensitive", 1)
+modparam("registrar", "case_sensitive", 0)
 ...
 </programlisting>
 		</example>
