@@ -123,7 +123,7 @@ static inline int pre_print_uac_request( struct cell *t, int branch,
 	 * to allow to be changed --bogdan */
 	if (t->on_branch) {
 		/* need to pkg_malloc the dst_uri */
-		if ( request->dst_uri.len ) {
+		if ( request->dst_uri.s && request->dst_uri.len>0 ) {
 			if ( (p=pkg_malloc(request->dst_uri.len))==0 ) {
 				LM_ERR("no more pkg mem\n");
 				ser_error=E_OUT_OF_MEM;
