@@ -57,7 +57,7 @@ CREATE TABLE dr_groups (
     id NUMBER(10) PRIMARY KEY,
     username VARCHAR2(64),
     domain VARCHAR2(128) DEFAULT '',
-    groupid VARCHAR2(255),
+    groupid NUMBER(10) DEFAULT 0 NOT NULL,
     description VARCHAR2(128) DEFAULT ''
 );
 
