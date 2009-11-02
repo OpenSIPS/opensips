@@ -239,7 +239,7 @@ int register_route_timers(void)
 		return 0;
 
 	/* create new process list */
-	tpl = new_timer_process_list(0); /* TODO - Find out if I need a flag */
+	tpl = new_timer_process_list(TIMER_PROC_INIT_FLAG);
 	if (tpl==NULL)
 		return E_OUT_OF_MEM;
 
