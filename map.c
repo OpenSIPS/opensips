@@ -31,24 +31,26 @@
 #include <string.h>
 #include "str.h"
 #include "map.h"
+
 #include "mem/mem.h"
 #include "mem/shm_mem.h"
 
-#define avl_malloc(dest,size,shared) do		\
+#define avl_malloc(dest,size,flags) do		\
 {						\
-	if(shared)				\
-		(dest) = shm_malloc(size);		\
+	if(flags & MAP_SHARED)			\
+		(dest) = shm_malloc(size);	\
 	else					\
-		(dest) = pkg_malloc(size);		\
+		(dest) = pkg_malloc(size);	\
 } while(0)
 
-#define avl_free(dest,shared)	do		\
+#define avl_free(dest,flags)	do		\
 {						\
-	if(shared)				\
+	if(flags & MAP_SHARED)			\
 		shm_free(dest);			\
 	else					\
 		pkg_free(dest);			\
 } while(0)
+
 
 #define min(a,b)  ((a)<(b))?(a):(b)
 
@@ -72,17 +74,17 @@ static int str_cmp(str s1, str s2)
    and memory allocator |allocator|.
    Returns |NULL| if memory allocation failed. */
 
-map_t map_create(int shared)
+map_t map_create(int flags)
 {
 	map_t tree;
 
-	avl_malloc(tree, sizeof *tree, shared);
+	avl_malloc(tree, sizeof *tree, flags);
 
 	if (tree == NULL)
 		return NULL;
 
 	tree->avl_root = NULL;
-	tree->shared = shared;
+	tree->flags = flags;
 	tree->avl_count = 0;
 	
 
@@ -112,61 +114,69 @@ void ** map_find( map_t tree, str key)
 /* Inserts |item| into |tree| and returns a pointer to |item|'s address.
    If a duplicate item is found in the tree,
    returns a pointer to the duplicate without inserting |item|.
-   Returns |NULL| in case of memory allocation failure. */
+   Returns |NULL| in case of memory allocation failure.
+ */
+
 void ** map_get( map_t tree, str key)
 {
-	struct avl_node *y, *z; /* Top node to update balance factor, and parent. */
+	struct avl_node *y;     /* Top node to update balance factor, and parent. */
 	struct avl_node *p, *q; /* Iterator, and parent. */
 	struct avl_node *n;	/* Newly inserted node. */
 	struct avl_node *w;	/* New root of rebalanced subtree. */
 	int dir;		/* Direction to descend. */
-
-	unsigned char da[AVL_MAX_HEIGHT];	/* Cached comparison results. */
-	int k = 0;				/* Number of cached results. */
-
 	str key_copy;
 
-	z = (struct avl_node *) & tree->avl_root;
 	y = tree->avl_root;
-	dir = 0;
-	for (q = z, p = y; p != NULL; q = p, p = p->avl_link[dir]) {
+
+	for (q = NULL, p = tree->avl_root; p != NULL; q = p, p = p->avl_link[dir]) {
 		int cmp = str_cmp(key, p->key);
 		if (cmp == 0)
 			return &p->val;
+		dir = cmp > 0;
 
 		if (p->avl_balance != 0)
-			z = q, y = p, k = 0;
-		da[k++] = dir = cmp > 0;
+			y = p;
 	}
 
-
-
-
-	avl_malloc( n, sizeof *n, tree->shared );
-	q->avl_link[dir] = n ;
-		
+	avl_malloc( n, sizeof *n, tree->flags );
+	
 	if (n == NULL)
 		return NULL;
 
 	tree->avl_count++;
-
-	avl_malloc(key_copy.s, key.len, tree->shared );
-	
-	memcpy(key_copy.s,key.s,key.len);
-	key_copy.len = key.len;
-
-	n->key = key_copy;
-	n->val = NULL;
 	n->avl_link[0] = n->avl_link[1] = NULL;
+	n->avl_parent = q;
+
+	if( !( tree->flags & MAP_NO_DUPLICATE ) )
+	{
+		avl_malloc(key_copy.s, key.len, tree->flags );
+
+		memcpy(key_copy.s,key.s,key.len);
+		key_copy.len = key.len;
+		n->key = key_copy;
+	}
+	else
+		n->key = key;
+	
+	n->val = NULL;
+	if (q != NULL)
+		q->avl_link[dir] = n;
+	else
+		tree->avl_root = n;
+
 	n->avl_balance = 0;
-	if (y == NULL)
+
+	if (tree->avl_root == n)
 		return &n->val;
 
-	for (p = y, k = 0; p != n; p = p->avl_link[da[k]], k++)
-		if (da[k] == 0)
-			p->avl_balance--;
+	for (p = n; p != y; p = q) {
+		q = p->avl_parent;
+		dir = q->avl_link[0] != p;
+		if (dir == 0)
+			q->avl_balance--;
 		else
-			p->avl_balance++;
+			q->avl_balance++;
+	}
 
 	if (y->avl_balance == -2) {
 		struct avl_node *x = y->avl_link[0];
@@ -175,6 +185,10 @@ void ** map_get( map_t tree, str key)
 			y->avl_link[0] = x->avl_link[1];
 			x->avl_link[1] = y;
 			x->avl_balance = y->avl_balance = 0;
+			x->avl_parent = y->avl_parent;
+			y->avl_parent = x;
+			if (y->avl_link[0] != NULL)
+				y->avl_link[0]->avl_parent = y;
 		} else {
 			assert(x->avl_balance == +1);
 			w = x->avl_link[1];
@@ -189,6 +203,12 @@ void ** map_get( map_t tree, str key)
 			else /* |w->avl_balance == +1| */
 				x->avl_balance = -1, y->avl_balance = 0;
 			w->avl_balance = 0;
+			w->avl_parent = y->avl_parent;
+			x->avl_parent = y->avl_parent = w;
+			if (x->avl_link[1] != NULL)
+				x->avl_link[1]->avl_parent = x;
+			if (y->avl_link[0] != NULL)
+				y->avl_link[0]->avl_parent = y;
 		}
 	} else if (y->avl_balance == +2) {
 		struct avl_node *x = y->avl_link[1];
@@ -197,6 +217,10 @@ void ** map_get( map_t tree, str key)
 			y->avl_link[1] = x->avl_link[0];
 			x->avl_link[0] = y;
 			x->avl_balance = y->avl_balance = 0;
+			x->avl_parent = y->avl_parent;
+			y->avl_parent = x;
+			if (y->avl_link[1] != NULL)
+				y->avl_link[1]->avl_parent = y;
 		} else {
 			assert(x->avl_balance == -1);
 			w = x->avl_link[0];
@@ -211,14 +235,23 @@ void ** map_get( map_t tree, str key)
 			else /* |w->avl_balance == -1| */
 				x->avl_balance = +1, y->avl_balance = 0;
 			w->avl_balance = 0;
+			w->avl_parent = y->avl_parent;
+			x->avl_parent = y->avl_parent = w;
+			if (x->avl_link[0] != NULL)
+				x->avl_link[0]->avl_parent = x;
+			if (y->avl_link[1] != NULL)
+				y->avl_link[1]->avl_parent = y;
 		}
 	} else
 		return &n->val;
-	z->avl_link[y != z->avl_link[0]] = w;
+	if (w->avl_parent != NULL)
+		w->avl_parent->avl_link[y != w->avl_parent->avl_link[0]] = w;
+	else
+		tree->avl_root = w;
 
-	
 	return &n->val;
 }
+
 
 /* Inserts |item| into |table|.
    Returns |NULL| if |item| was successfully inserted
@@ -239,82 +272,78 @@ void * map_put( map_t table, str key, void *item)
 	return ret == item ? NULL : ret;
 }
 
-
-
-
-/* Deletes from |tree| and returns an item matching |item|.
-   Returns a null pointer if no matching item found. */
-void * map_remove( map_t tree, str key)
+void * delete_node(map_t tree, struct avl_node * p)
 {
-	/* Stack of nodes. */
-	struct avl_node * pa[AVL_MAX_HEIGHT];	/* Nodes. */
-	unsigned char da[AVL_MAX_HEIGHT];	/* |avl_link[]| indexes. */
-	int k;					/* Stack pointer. */
+	struct avl_node *q;		/* Parent of |p|. */
+	int dir;			/* Side of |q| on which |p| is linked. */
 	void * val;
 
-	struct avl_node *p;	/* Traverses tree to find node to delete. */
-	int cmp;		/* Result of comparison between |item| and |p|. */
-
-
-
-	k = 0;
-	p = (struct avl_node *) & tree->avl_root;
-	for (cmp = -1; cmp != 0;
-		cmp = str_cmp(key, p->key)) {
-		int dir = cmp > 0;
-
-		pa[k] = p;
-		da[k++] = dir;
-
-		p = p->avl_link[dir];
-		if (p == NULL)
-			return NULL;
-	}
 	val = p->val;
 
-	if (p->avl_link[1] == NULL)
-		pa[k - 1]->avl_link[da[k - 1]] = p->avl_link[0];
-	else {
+	q = p->avl_parent;
+	if (q == NULL) {
+		q = (struct avl_node *) & tree->avl_root;
+		dir = 0;
+	}
+	else
+	{
+		if( p == q->avl_link[0] )
+			dir = 0;
+		else
+			dir = 1;
+	}
+
+	if (p->avl_link[1] == NULL) {
+		q->avl_link[dir] = p->avl_link[0];
+		if (q->avl_link[dir] != NULL)
+			q->avl_link[dir]->avl_parent = p->avl_parent;
+	} else {
 		struct avl_node *r = p->avl_link[1];
 		if (r->avl_link[0] == NULL) {
 			r->avl_link[0] = p->avl_link[0];
+			q->avl_link[dir] = r;
+			r->avl_parent = p->avl_parent;
+			if (r->avl_link[0] != NULL)
+				r->avl_link[0]->avl_parent = r;
 			r->avl_balance = p->avl_balance;
-			pa[k - 1]->avl_link[da[k - 1]] = r;
-			da[k] = 1;
-			pa[k++] = r;
+			q = r;
+			dir = 1;
 		} else {
-			struct avl_node *s;
-			int j = k++;
-
-			for (;;) {
-				da[k] = 0;
-				pa[k++] = r;
-				s = r->avl_link[0];
-				if (s->avl_link[0] == NULL)
-					break;
-
-				r = s;
-			}
-
-			s->avl_link[0] = p->avl_link[0];
+			struct avl_node *s = r->avl_link[0];
+			while (s->avl_link[0] != NULL)
+				s = s->avl_link[0];
+			r = s->avl_parent;
 			r->avl_link[0] = s->avl_link[1];
+			s->avl_link[0] = p->avl_link[0];
 			s->avl_link[1] = p->avl_link[1];
+			q->avl_link[dir] = s;
+			if (s->avl_link[0] != NULL)
+				s->avl_link[0]->avl_parent = s;
+			s->avl_link[1]->avl_parent = s;
+			s->avl_parent = p->avl_parent;
+			if (r->avl_link[0] != NULL)
+				r->avl_link[0]->avl_parent = r;
 			s->avl_balance = p->avl_balance;
-
-			pa[j - 1]->avl_link[da[j - 1]] = s;
-			da[j] = 1;
-			pa[j] = s;
+			q = r;
+			dir = 0;
 		}
 	}
 
-	avl_free(p->key.s,tree->shared);
-	avl_free(p,tree->shared);
+	if(!( tree->flags & MAP_NO_DUPLICATE ) )
+		avl_free(p->key.s,tree->flags);
 
-	assert(k > 0);
-	while (--k > 0) {
-		struct avl_node *y = pa[k];
+	avl_free(p,tree->flags);
 
-		if (da[k] == 0) {
+	while (q != (struct avl_node *) & tree->avl_root) {
+		struct avl_node *y = q;
+
+		if (y->avl_parent != NULL)
+			q = y->avl_parent;
+		else
+			q = (struct avl_node *) & tree->avl_root;
+
+		if (dir == 0) {
+			dir = q->avl_link[0] != y;
 			y->avl_balance++;
 			if (y->avl_balance == +1)
 				break;
@@ -322,7 +351,7 @@ void * map_remove( map_t tree, str key)
 				struct avl_node *x = y->avl_link[1];
 				if (x->avl_balance == -1) {
 					struct avl_node *w;
-					assert(x->avl_balance == -1);
+
 					w = x->avl_link[0];
 					x->avl_link[0] = w->avl_link[1];
 					w->avl_link[1] = x;
@@ -335,20 +364,33 @@ void * map_remove( map_t tree, str key)
 					else /* |w->avl_balance == -1| */
 						x->avl_balance = +1, y->avl_balance = 0;
 					w->avl_balance = 0;
-					pa[k - 1]->avl_link[da[k - 1]] = w;
+					w->avl_parent = y->avl_parent;
+					x->avl_parent = y->avl_parent = w;
+					if (x->avl_link[0] != NULL)
+						x->avl_link[0]->avl_parent = x;
+					if (y->avl_link[1] != NULL)
+						y->avl_link[1]->avl_parent = y;
+					q->avl_link[dir] = w;
 				} else {
 					y->avl_link[1] = x->avl_link[0];
 					x->avl_link[0] = y;
-					pa[k - 1]->avl_link[da[k - 1]] = x;
+					x->avl_parent = y->avl_parent;
+					y->avl_parent = x;
+					if (y->avl_link[1] != NULL)
+						y->avl_link[1]->avl_parent = y;
+					q->avl_link[dir] = x;
 					if (x->avl_balance == 0) {
 						x->avl_balance = -1;
 						y->avl_balance = +1;
 						break;
-					} else
+					} else {
 						x->avl_balance = y->avl_balance = 0;
+						y = x;
+					}
 				}
 			}
 		} else {
+			dir = q->avl_link[0] != y;
 			y->avl_balance--;
 			if (y->avl_balance == -1)
 				break;
@@ -356,7 +398,6 @@ void * map_remove( map_t tree, str key)
 				struct avl_node *x = y->avl_link[0];
 				if (x->avl_balance == +1) {
 					struct avl_node *w;
-					assert(x->avl_balance == +1);
 					w = x->avl_link[1];
 					x->avl_link[1] = w->avl_link[0];
 					w->avl_link[0] = x;
@@ -369,25 +410,68 @@ void * map_remove( map_t tree, str key)
 					else /* |w->avl_balance == +1| */
 						x->avl_balance = -1, y->avl_balance = 0;
 					w->avl_balance = 0;
-					pa[k - 1]->avl_link[da[k - 1]] = w;
+					w->avl_parent = y->avl_parent;
+					x->avl_parent = y->avl_parent = w;
+					if (x->avl_link[1] != NULL)
+						x->avl_link[1]->avl_parent = x;
+					if (y->avl_link[0] != NULL)
+						y->avl_link[0]->avl_parent = y;
+					q->avl_link[dir] = w;
 				} else {
 					y->avl_link[0] = x->avl_link[1];
 					x->avl_link[1] = y;
-					pa[k - 1]->avl_link[da[k - 1]] = x;
+					x->avl_parent = y->avl_parent;
+					y->avl_parent = x;
+					if (y->avl_link[0] != NULL)
+						y->avl_link[0]->avl_parent = y;
+					q->avl_link[dir] = x;
 					if (x->avl_balance == 0) {
 						x->avl_balance = +1;
 						y->avl_balance = -1;
 						break;
-					} else
+					} else {
 						x->avl_balance = y->avl_balance = 0;
+						y = x;
+					}
 				}
 			}
 		}
 	}
 
 	tree->avl_count--;
-	return (void *) val;
+	return(void *) val;
+
+};
+
+/* Deletes from |tree| and returns an item matching |item|.
+   Returns a null pointer if no matching item found. */
+void * map_remove( map_t tree, str key)
+{
+	struct avl_node *p; /* Traverses tree to find node to delete. */
+	struct avl_node *q; /* Parent of |p|. */
+	int dir; /* Side of |q| on which |p| is linked. */
+	void * val;
+	
+	if (tree->avl_root == NULL)
+		return NULL;
+
+	p = tree->avl_root;
+	for (;;) {
+		int cmp = str_cmp(key, p->key);
+		if (cmp == 0)
+			break;
+
+		dir = cmp > 0;
+		p = p->avl_link[dir];
+		if (p == NULL)
+			return NULL;
+	}
+
+	return delete_node( tree, p );
+	
 }
+
+
 
 
 /* Frees storage allocated for |tree|.
@@ -401,15 +485,16 @@ void map_destroy( map_t tree, value_destroy_func destroy)
 			q = p->avl_link[1];
 			if (destroy != NULL && p->val != NULL)
 				destroy(p->val);
-			avl_free( p->key.s,tree->shared);
-			avl_free( p, tree->shared );
+			if( !(tree->flags & MAP_NO_DUPLICATE ) )
+				avl_free( p->key.s,tree->flags);
+			avl_free( p, tree->flags );
 		} else {
 			q = p->avl_link[0];
 			p->avl_link[0] = q->avl_link[1];
 			q->avl_link[1] = p;
 		}
 
-	avl_free( tree, tree->shared );
+	avl_free( tree, tree->flags );
 }
 
 int map_size( map_t tree )
@@ -446,3 +531,136 @@ int map_for_each( map_t tree, process_each_func f, void * param)
 
 }
 
+int map_first( map_t map, map_iterator_t * it)
+{
+	if( map == NULL || it == NULL )
+		return -1;
+
+	it->map = map;
+
+	it->node = map->avl_root;
+
+	if( it->node )
+	{
+		while( it->node->avl_link[0] )
+			it->node = it->node->avl_link[0];
+	}
+
+	return 0;
+}
+
+
+int map_last( map_t map, map_iterator_t * it)
+{
+	if( map == NULL || it == NULL )
+		return -1;
+
+	it->map = map;
+
+	it->node = map->avl_root;
+
+	if( it->node )
+	{
+		while( it->node->avl_link[1] )
+			it->node = it->node->avl_link[1];
+	}
+
+	return 0;
+}
+
+str *	iterator_key( map_iterator_t * it )
+{
+	if( it == NULL )
+		return NULL;
+	
+	return &it->node->key;
+}
+
+void**	iterator_val( map_iterator_t * it )
+{
+	if( it == NULL )
+		return NULL;
+
+	return &it->node->val;
+}
+
+int iterator_is_valid( map_iterator_t * it )
+{
+	if( it == NULL || it->map ==NULL || it->node == NULL)
+		return 0;
+	
+	return 1;
+}
+
+int iterator_next( map_iterator_t * it  )
+{
+
+	struct avl_node *q, *p;		/* Current node and its child. */
+
+	if( it == NULL || it->map ==NULL || it->node == NULL)
+		return -1;
+
+	if( it->node->avl_link[1] )
+	{
+		it->node = it->node->avl_link[1];
+		while( it->node->avl_link[0] )
+			it->node = it->node->avl_link[0];
+
+	}
+	else
+	{
+
+		for (p = it->node, q = p->avl_parent ; ; p = q, q = q->avl_parent)
+			if (q == NULL || p == q->avl_link[0])
+			{
+				it->node = q;
+				return 0;
+			}
+	}
+
+	return 0;
+}
+
+
+int iterator_prev( map_iterator_t * it  )
+{
+
+	struct avl_node *q, *p;		/* Current node and its child. */
+
+	if( it == NULL || it->map ==NULL || it->node == NULL)
+		return -1;
+
+	if( it->node->avl_link[0] )
+	{
+		it->node = it->node->avl_link[0];
+		while( it->node->avl_link[1] )
+			it->node = it->node->avl_link[1];
+
+	}
+	else
+	{
+
+		for (p = it->node, q = p->avl_parent ; ; p = q, q = q->avl_parent)
+			if (q == NULL || p == q->avl_link[1])
+			{
+				it->node = q;
+				return 0;
+			}
+	}
+
+	return 0;
+}
+
+void * iterator_delete( map_iterator_t * it  )
+{
+	void * ret;
+
+	if( it == NULL || it->map ==NULL || it->node == NULL)
+		return NULL;
+
+	ret = delete_node( it->map, it->node );
+
+	it->node = NULL;
+
+	return ret;
+}
