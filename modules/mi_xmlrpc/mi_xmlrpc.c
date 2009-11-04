@@ -158,6 +158,10 @@ static void xmlrpc_sigchld( int sig )
 			ServerHandleSigchld(pid);
 		#endif
 	}
+#ifdef SIGCLD
+	if (signal(SIGCHLD, xmlrpc_sigchld)==SIG_ERR)
+		LM_ERR("failed to re-install signal handler for SIGCHLD\n");
+#endif
 }
 
 
