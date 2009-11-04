@@ -1219,7 +1219,8 @@ mod_init(void)
 		if (rtpp_strings)
 			pkg_free(rtpp_strings);
 	} else {
-		db_url.len=strlen(db_url.s);
+		db_url.len = strlen(db_url.s);
+		table.len = strlen(table.s);
 		rtpp_sock_col.len = strlen(rtpp_sock_col.s);
 		set_id_col.len = strlen(set_id_col.s);
 
@@ -1235,7 +1236,7 @@ mod_init(void)
 			return -1;
 		}
 
-    	db_connection = db_functions.init(&db_url);
+		db_connection = db_functions.init(&db_url);
 		if(db_connection == NULL) {
 			LM_ERR("Failed to connect to database");
 			return -1;
@@ -1244,17 +1245,17 @@ mod_init(void)
 		/*verify table versions */
 		if(db_check_table_version(&db_functions, db_connection, &table,
 					NH_TABLE_VERSION) < 0){
-	 			LM_ERR("error during table version check\n");
+				LM_ERR("error during table version check\n");
 				return -1;
 		}
 
 		if(_add_proxies_from_database() != 0) {
-				return -1;
+			return -1;
 		}
 		
 		db_functions.close(db_connection);
 		db_connection = NULL;
-	
+
 		nh_lock = lock_alloc();
 
 		if(nh_lock == NULL) {
