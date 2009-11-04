@@ -175,11 +175,6 @@ typedef int  (*delete_urecord_t)(udomain_t* _d, str* _a, struct urecord* _r);
 int delete_urecord(udomain_t* _d, str* _aor, struct urecord* _r);
 
 
-/*
- * Get pointer to the next urecord from the udomain
- */
-typedef struct urecord* (*get_next_urecord_t)(udomain_t* _d, int _slot,
-		struct urecord* _r);
-struct urecord* get_next_urecord(udomain_t *_d, int _slot, struct urecord *_r);
+
 
 #endif /* UDOMAIN_H */
