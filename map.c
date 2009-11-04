@@ -127,7 +127,7 @@ void ** map_get( map_t tree, str key)
 	str key_copy;
 
 	y = tree->avl_root;
-
+	dir = 0;
 	for (q = NULL, p = tree->avl_root; p != NULL; q = p, p = p->avl_link[dir]) {
 		int cmp = str_cmp(key, p->key);
 		if (cmp == 0)
@@ -448,10 +448,8 @@ void * delete_node(map_t tree, struct avl_node * p)
 void * map_remove( map_t tree, str key)
 {
 	struct avl_node *p; /* Traverses tree to find node to delete. */
-	struct avl_node *q; /* Parent of |p|. */
 	int dir; /* Side of |q| on which |p| is linked. */
-	void * val;
-	
+		
 	if (tree->avl_root == NULL)
 		return NULL;
 
