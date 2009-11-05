@@ -721,7 +721,7 @@ int b2b_send_reply(enum b2b_entity_type et, str* b2b_key, int code, str* text,
 		return 0;
 	}
 
-	if(dlg->cancel_tm_tran)
+	if(dlg->cancel_tm_tran && dlg->cancel_tm_tran != T_UNDEFINED)
 	{
 		LM_DBG("Found cancel transaction\n");
 		tm_tran = dlg->cancel_tm_tran;
@@ -950,6 +950,7 @@ int b2b_send_request(enum b2b_entity_type et, str* b2b_key, str* method,
 
 	if(dlg->last_method== METHOD_INVITE)
 	{
+		LM_DBG("Switched state to B2B_MODIFIED - [%p]\n", dlg);
 		dlg->state = B2B_MODIFIED;
 		dlg->last_invite_cseq = dlg->cseq[0];
 	}
@@ -1308,6 +1309,8 @@ void b2b_tm_cback(b2b_table htable, struct tmcb_params *ps)
 	{
 		/* if provisional or 200OK reply */
 		LM_DBG("Received a reply with statuscode = %d\n", statuscode);
+		LM_DBG("status la inceput = %d\n", dlg->state);
+
 		if(msg == FAKED_REPLY)
 		{
 			lock_release(&htable[hash_index].lock);
@@ -1329,8 +1332,12 @@ void b2b_tm_cback(b2b_table htable, struct tmcb_params *ps)
 				(dlg->state == B2B_NEW || dlg->state == B2B_EARLY))
 		{
 			b2b_dlg_t* new_dlg;
-
-			dlg->state = DLG_ESTABLISHED;
+			/*
+			if(statuscode < 200)
+				dlg->state = DLG_EARLY;
+			else
+				dlg->state = DLG_ESTABLISHED;
+			*/
 			new_dlg = b2b_new_dlg(msg, 1);
 			if(new_dlg == NULL)
 			{
@@ -1363,6 +1370,7 @@ void b2b_tm_cback(b2b_table htable, struct tmcb_params *ps)
 
 		if(dlg->state == B2B_NEW || dlg->state == B2B_EARLY)
 		{
+			LM_DBG("state NEW or EARLY\n");
 			if(msg->to->parsed != NULL)
 			{
 				pto = (struct to_body*)msg->to->parsed;
@@ -1426,14 +1434,15 @@ void b2b_tm_cback(b2b_table htable, struct tmcb_params *ps)
 						LM_ERR("Failed to send PRACK\n");
 					}
 				}
-
 				lock_release(&htable[hash_index].lock);
 				goto done;
 			}
 			else /* a final success response */
 			{
+				LM_DBG("A final response\n");
 				if(dlg->state == B2B_CONFIRMED) /* if the dialog was already confirmed */
 				{
+					LM_DBG("The state is already confirmed\n");
 					str method= {"ACK", 3};
 
 					/* send an ACK followed by BYE */
@@ -1460,6 +1469,7 @@ void b2b_tm_cback(b2b_table htable, struct tmcb_params *ps)
 				}
 				else
 				{
+					LM_DBG("The dialog has just been confirmed - delete all legs and add the confirmed leg\n");
 					/* delete all and add the confirmed leg */
 					dlg->state = B2B_CONFIRMED;
 					b2b_delete_legs(&dlg->legs);
@@ -1479,13 +1489,13 @@ void b2b_tm_cback(b2b_table htable, struct tmcb_params *ps)
 		LM_DBG("DLG state = %d\n", dlg->state);
 		if(dlg->state== B2B_MODIFIED && statuscode >= 200 && statuscode <300)
 		{
-			LM_DBG("switched the state CONFIRMED\n");
+			LM_DBG("switched the state CONFIRMED [%p]\n", dlg);
 			dlg->state = B2B_CONFIRMED;
 		}
 		else
 		if(dlg->state == B2B_CONFIRMED)
 		{
-			LM_DBG("Retrasmission\n");
+			LM_DBG("Retrasmission [%p]\n", dlg);
 			lock_release(&htable[hash_index].lock);
 			return;
 		}

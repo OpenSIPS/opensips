@@ -70,7 +70,7 @@ str* server_new(struct sip_msg* msg, b2b_notify_t b2b_cback,
 
 	/* get the pointer to the tm transaction to store it the tuple record */
 	dlg->tm_tran = tmb.t_gett();
-	if(dlg->tm_tran == NULL)
+	if(dlg->tm_tran == NULL || dlg->tm_tran == T_UNDEFINED)
 	{
 		tmb.t_newtran(msg);
 		dlg->tm_tran = tmb.t_gett();

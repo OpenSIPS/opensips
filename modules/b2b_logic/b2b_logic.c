@@ -130,7 +130,7 @@ struct module_exports exports= {
 /** Module init function */
 static int mod_init(void)
 {
-	char* p;
+	char* p = NULL;
 	int i = 0, j;
 
 	/* load b2b_entities api */
@@ -167,40 +167,44 @@ static int mod_init(void)
 
 	memset(custom_headers_lst, 0, HDR_LST_LEN*sizeof(str));
 	custom_headers_lst[i].s = custom_headers.s;
-	p = strchr(custom_headers.s, ';');
-	while(p)
+	if(custom_headers.s)
 	{
-		custom_headers_lst[i].len = p - custom_headers_lst[i].s;
-		/* check if this is among the default headers */
-		for(j = 0; j< HDR_DEFAULT_LEN; j++)
+		p = strchr(custom_headers.s, ';');
+		while(p)
 		{
-			if(custom_headers_lst[i].len == default_headers[j].len &&
-					strncmp(custom_headers_lst[i].s, default_headers[j].s,
-						default_headers[j].len)== 0)
-				goto next_hdr;
-		}
-		/* check if defined twice */
-		for(j = 0; j< i; j++)
-		{
-			if(custom_headers_lst[i].len == custom_headers_lst[j].len &&
-					strncmp(custom_headers_lst[i].s, custom_headers_lst[j].s,
-						custom_headers_lst[j].len)== 0)
-				goto next_hdr;
-		}
-		i++;
-		if(i == HDR_LST_LEN)
-		{
-			LM_ERR("Too many extra headers defined."
-					" The maximum value is %d\n.", HDR_LST_LEN);
-			return -1;
-		}
+			custom_headers_lst[i].len = p - custom_headers_lst[i].s;
+			/* check if this is among the default headers */
+			for(j = 0; j< HDR_DEFAULT_LEN; j++)
+			{
+				if(custom_headers_lst[i].len == default_headers[j].len &&
+						strncmp(custom_headers_lst[i].s, default_headers[j].s,
+							default_headers[j].len)== 0)
+					goto next_hdr;
+			}
+			/* check if defined twice */
+			for(j = 0; j< i; j++)
+			{
+				if(custom_headers_lst[i].len == custom_headers_lst[j].len &&
+						strncmp(custom_headers_lst[i].s, custom_headers_lst[j].s,
+							custom_headers_lst[j].len)== 0)
+					goto next_hdr;
+			}
+			i++;
+			if(i == HDR_LST_LEN)
+			{
+				LM_ERR("Too many extra headers defined."
+						" The maximum value is %d\n.", HDR_LST_LEN);
+				return -1;
+			}
 next_hdr:
-		p++;
-		if(p-custom_headers.s >= custom_headers.len)
-			break;
-		custom_headers_lst[i].s = p;
-		p = strchr(p, ';');
+			p++;
+			if(p-custom_headers.s >= custom_headers.len)
+				break;
+			custom_headers_lst[i].s = p;
+			p = strchr(p, ';');
+		}
 	}
+
 	if(p == NULL)
 	{
 		custom_headers_lst[i].len = custom_headers.s + custom_headers.len
@@ -687,7 +691,7 @@ static struct mi_root* mi_trigger_scenario(struct mi_root* cmd, void* param)
 		return 0;
 	}
 
-	if(process_bridge_action(tuple, xml_node) < 0)
+	if(process_bridge_action(0, 0, tuple, xml_node) < 0)
 	{
 		LM_ERR("Failed to process bridge node");
 		return 0;

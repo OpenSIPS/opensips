@@ -50,8 +50,8 @@
 	dest.len= source->len;\
 	size+= source->len;
 
-int b2b_scenario_parse_uri(xmlNodePtr value_node, char* value_content, b2bl_tuple_t* tuple,
-		str* client_to);
+int b2b_scenario_parse_uri(xmlNodePtr value_node, char* value_content,
+		b2bl_tuple_t* tuple, struct sip_msg* msg, str* client_to);
 
 int b2b_client_notify(struct sip_msg* msg, str* key, int type, void* param);
 
@@ -265,6 +265,9 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 			tuple->scenario_state = tuple->next_scenario_state;
 			tuple->next_scenario_state = 0;
 		}
+		else
+			tuple->scenario_state = B2B_NOTDEF_STATE;
+
 		tuple->bridge_entities[0] = tuple->bridge_entities[1] = NULL;
 	}
 	return 0;
@@ -356,15 +359,26 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 	}
 	if(entity == NULL)
 	{
-		LM_ERR("No b2b_key match found\n");
+		LM_ERR("No b2b_key match found [%.*s]\n", key->len, key->s);
 		goto error;
 	}
+
+	LM_DBG("b2b_entity key = %.*s\n", key->len, key->s);
 
 	if(type == B2B_REPLY)
 	{
 		str method = get_cseq(msg)->method;
+
+		/* if a disconnected entity -> do nothing */
+		if(entity->disconnected)
+		{
+			LM_DBG("This entity is disconnected\n");
+			goto done;
+		}
+
 		/* if a reply from the client side was received, 
 		* tell the server side to send a reply also */
+
 		if(scenario && 
 				(scenario->reply_rules || tuple->scenario_state == B2B_BRIDGING_STATE))
 		{
@@ -415,6 +429,12 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 		}
 		else
 		{
+			if(!entity->peer)
+			{
+				LM_DBG("No peer found\n");
+				goto done;
+			}
+			
 			b2b_api.send_reply(entity->peer->type, &entity->peer->key, 
 				msg->first_line.u.reply.statuscode,&msg->first_line.u.reply.reason,
 				body.s?&body:0, extra_headers.s?&extra_headers:0);
@@ -474,18 +494,21 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 		else
 		{
 			rule = scenario->request_rules[request_id];
-			while(rule)
+			if(tuple->scenario_state != B2B_NOTDEF_STATE)
 			{
-				if(tuple->scenario_state == rule->cond_state)
+				while(rule)
 				{
-					break;
+					if(tuple->scenario_state == rule->cond_state)
+					{
+						break;
+					}
+					else
+					{
+						LM_DBG("State does not match found [%d], required [%d]\n",
+								tuple->scenario_state, rule->cond_state);
+					}
+					rule = rule->next;
 				}
-				else
-				{
-					LM_DBG("State does not match found [%d], required [%d]\n",
-							tuple->scenario_state, rule->cond_state);
-				}
-				rule = rule->next;
 			}
 
 			if(!rule)
@@ -498,66 +521,69 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 				LM_DBG("Found rule with id [%d]\n", rule->id);
 			}
 			/* if a match was found -> check the condition part */
-			node = xmlNodeGetChildByName(rule->cond_node, "sender");
-			if(node)
+			if(rule->cond_node)
 			{
-				LM_DBG("Found a sender condition\n");
-				/* get the sender type */
-
-				attr.s = (char*)xmlNodeGetNodeContentByName(node, "type", NULL);
-				if(attr.s == NULL)
+				node = xmlNodeGetChildByName(rule->cond_node, "sender");
+				if(node)
 				{
-					LM_ERR("Bad scenario document - sender condition node"
-							" without a type child\n");
-					goto error;
-				}
+					LM_DBG("Found a sender condition\n");
+					/* get the sender type */
 
-				if(xmlStrcasecmp((unsigned char*)attr.s,(unsigned char*) "server") == 0)
-				{
-					/* check if it is a server request */
-					if(src != B2B_SERVER)
+					attr.s = (char*)xmlNodeGetNodeContentByName(node, "type", NULL);
+					if(attr.s == NULL)
 					{
-						xmlFree(attr.s);
-						goto send_usual_request;
+						LM_ERR("Bad scenario document - sender condition node"
+								" without a type child\n");
+						goto error;
 					}
-				}
-				else
-				if(xmlStrcasecmp((unsigned char*) attr.s, (unsigned char*)"client") == 0)
-				{
-					if(src != B2B_CLIENT)
-					{
-						xmlFree(attr.s);
-						goto send_usual_request;
-					}
-				}
-				else
-				{
-					LM_ERR("Bad scenario document - sender condition type not"
-							" known\n");
-					xmlFree(attr.s);
-					goto error;
-				}
-				xmlFree(attr.s);
 
-				/* check the id */
-				attr.s = xmlNodeGetNodeContentByName(node, "id", NULL);
-				if(attr.s)
-				{
-					attr.len = strlen(attr.s);
-					if((attr.len != entity->scenario_id.len ||
-							strncmp(attr.s, entity->scenario_id.s, attr.len) != 0))
+					if(xmlStrcasecmp((unsigned char*)attr.s,(unsigned char*) "server") == 0)
 					{
-						LM_DBG("Scenary id did not match - do not apply the rule"
-								" found [%.*s] , required [%s]\n", 
-								entity->scenario_id.len, entity->scenario_id.s, attr.s);
+						/* check if it is a server request */
+						if(src != B2B_SERVER)
+						{
+							xmlFree(attr.s);
+							goto send_usual_request;
+						}
+					}
+					else
+					if(xmlStrcasecmp((unsigned char*) attr.s, (unsigned char*)"client") == 0)
+					{
+						if(src != B2B_CLIENT)
+						{
+							xmlFree(attr.s);
+							goto send_usual_request;
+						}
+					}
+					else
+					{
+						LM_ERR("Bad scenario document - sender condition type not"
+								" known\n");
 						xmlFree(attr.s);
-						goto send_usual_request;
+						goto error;
 					}
 					xmlFree(attr.s);
+
+					/* check the id */
+					attr.s = xmlNodeGetNodeContentByName(node, "id", NULL);
+					if(attr.s)
+					{
+						attr.len = strlen(attr.s);
+						if((attr.len != entity->scenario_id.len ||
+								strncmp(attr.s, entity->scenario_id.s, attr.len) != 0))
+						{
+							LM_DBG("Scenary id did not match - do not apply the rule"
+									" found [%.*s] , required [%s]\n", 
+									entity->scenario_id.len, entity->scenario_id.s, attr.s);
+							xmlFree(attr.s);
+							goto send_usual_request;
+						}
+						xmlFree(attr.s);
+					}
+					LM_DBG("Sender condition match\n");
 				}
-				LM_DBG("Sender condition match\n");
+				/* TODO - process other conditions */
 			}
-			/* TODO - process other conditions */
 
 			/* apply actions */
 			/* handle bridge action */
@@ -657,7 +683,7 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 			{
 				LM_DBG("Found a bridge node\n");
 
-				if(process_bridge_action(tuple, bridge_node) < 0)
+				if(process_bridge_action(msg, entity, tuple, bridge_node) < 0)
 				{
 					LM_ERR("Failed to process bridge action\n");
 					goto error;
@@ -671,6 +697,22 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 				if(state >= 0)
 					tuple->scenario_state = state;
 			}
+
+			/* end_dialog_leg option */
+			node = xmlNodeGetChildByName(rule->action_node, "end_dialog_leg");
+			if(node)
+			{
+				LM_DBG("End dialog\n");
+				entity->disconnected = 1;
+				str meth_bye = {BYE, BYE_LEN};
+				b2b_api.send_request(entity->type, &entity->key,
+						&meth_bye, 0, 0);
+				if(entity->peer)
+					entity->peer->peer = NULL;
+				entity->peer = NULL;
+			}
+
+
 		}
 
 		goto done;
@@ -700,20 +742,27 @@ error:
  *	 that this scenario is currently taking place
  *	*/
 
-int process_bridge_action(b2bl_tuple_t* tuple, xmlNodePtr bridge_node)
+int process_bridge_action(struct sip_msg* msg, b2bl_entity_id_t* curr_entity,
+		b2bl_tuple_t* tuple, xmlNodePtr bridge_node)
 {
-	xmlNodePtr node, dest_node;
-	b2bl_entity_id_t* entity = NULL, *bridge_entities[2], *old_entity= NULL;
+
+	b2bl_entity_id_t* bridge_entities[2];
+	b2bl_entity_id_t* entity = NULL;
+	b2bl_entity_id_t* old_entity= NULL;
 	int count = 0;
+	str attr= {0, 0};
 	str entity_dest;
 	str method = {INVITE, INVITE_LEN};
-	str attr;
-
+	xmlNodePtr clientid_node;
+	xmlNodePtr dest_node;
+	xmlNodePtr client_node;
+	xmlNodePtr lft_node;
 	bridge_entities[0] = bridge_entities[1] = NULL;
 
-	for(node= bridge_node->children; node; node=node->next)
+	for(client_node= bridge_node->children; client_node;
+			client_node=client_node->next)
 	{
-		if(xmlStrcasecmp(node->name, (unsigned char*)"client") !=0 )
+		if(xmlStrcasecmp(client_node->name, (unsigned char*)"client") !=0)
 			continue;
 
 		if(count == 2)
@@ -722,12 +771,47 @@ int process_bridge_action(b2bl_tuple_t* tuple, xmlNodePtr bridge_node)
 				" bridge node. Only two entities should be defined\n");
 			break;
 		}
+		/* there are 3 ways to identify a client: "this", "peer" or "id" */
+		clientid_node = xmlNodeGetChildByName(client_node, "this");
+		if(clientid_node)
+		{
+			LM_DBG("Selected current entity\n");
+			if(curr_entity == NULL)
+			{
+				LM_DBG("You are not allowed to use a 'this' client "
+						"specification for this type of route\n");
+				goto error;
+			}
+			entity = curr_entity;
+			goto entity_search_done;
+		}
+		
+		clientid_node = xmlNodeGetChildByName(client_node, "peer");
+		if(clientid_node)
+		{
+			LM_DBG("Selected peer entity\n");
+			if(curr_entity == NULL)
+			{
+				LM_DBG("You are not allowed to use a 'this' client "
+						"specification for this type of route\n");
+				goto error;
+			}
+
+			if(curr_entity->peer == NULL)
+			{
+				LM_ERR("Requested for the peer entity of the current entity, but it is NULL.\n");
+				goto error;
+			}
+			entity = curr_entity->peer;
+			goto entity_search_done;
+		}
 
 		/* extract entity id */
-		attr.s = (char*)xmlNodeGetNodeContentByName(node, "id", NULL);
+		attr.s = (char*)xmlNodeGetNodeContentByName(client_node, "id", NULL);
 		if(attr.s == NULL)
 		{
-			LM_ERR("No type defined for bridge entity\n");
+			LM_ERR("Entity specification not valid. Accepted values:"
+					" this, peer or id\n");
 			goto error;
 		}
 		attr.len = strlen(attr.s);
@@ -755,40 +839,39 @@ int process_bridge_action(b2bl_tuple_t* tuple, xmlNodePtr bridge_node)
 			}
 		}
 
+entity_search_done:
+
+		/* must create a new client entity */
 		if(entity == NULL)
 		{
 			xmlNodePtr value_node;
 			char* value_content;
 
-			/* must create a new client entity */
 			/* get the destination */
 			LM_DBG("Entity %d for bridge - new client entity\n", count);
-			dest_node = xmlNodeGetChildByName(node, "destination");
+			dest_node = xmlNodeGetChildByName(client_node, "destination");
 			if(dest_node == NULL)
 			{
 				LM_ERR("Bad format for b2b scenario. New entity without a destination\n");
-				xmlFree(attr.s);
 				goto error;
 			}
 			value_node = xmlNodeGetChildByName(dest_node, "value");
 			if(value_node == NULL)
 			{
 				LM_ERR("Bad format for b2b scenario. New entity without a destination\n");
-				xmlFree(attr.s);
 				goto error;
 			}
 			value_content = (char*)xmlNodeGetContent(value_node);
 			if(value_content == NULL)
 			{
 				LM_ERR("Bad formated scenario document. URI value empty\n");
-				xmlFree(attr.s);
 				goto error;
 			}
 
-			if(b2b_scenario_parse_uri(value_node, value_content, tuple, &entity_dest)< 0)
+			if(b2b_scenario_parse_uri(value_node, value_content, tuple, msg,
+						&entity_dest)< 0)
 			{
 				LM_ERR("Failed to parse entity destination specification\n");
-				xmlFree(attr.s);
 				xmlFree(value_content);
 				goto error;
 			}
@@ -798,7 +881,6 @@ int process_bridge_action(b2bl_tuple_t* tuple, xmlNodePtr bridge_node)
 			{
 				LM_ERR("Failed to create new b2b entity\n");
 				xmlFree(value_content);
-				xmlFree(attr.s);
 				goto error;
 			}
 
@@ -807,8 +889,9 @@ int process_bridge_action(b2bl_tuple_t* tuple, xmlNodePtr bridge_node)
 		else
 			old_entity = entity;
 
-		xmlFree(attr.s);
-
+		if(attr.s)
+			xmlFree(attr.s);
+		attr.s = NULL;
 		bridge_entities[count++] = entity;
 	}
 
@@ -818,11 +901,11 @@ int process_bridge_action(b2bl_tuple_t* tuple, xmlNodePtr bridge_node)
 	{
 		LM_DBG("Sent reInvite without a body to old entity\n");
 		count = (old_entity== bridge_entities[0]?0:1);
-		/* TODO -> Do I need some other info here? */
-		b2b_api.send_request(old_entity->type, &old_entity->key, &method, 0, 0);
-		
 		tuple->bridge_entities[0]= bridge_entities[count];
 		tuple->bridge_entities[1]= bridge_entities[(count+1)%2];
+
+		/* TODO -> Do I need some other info here? */
+		b2b_api.send_request(old_entity->type, &old_entity->key, &method, 0, 0);
 	}
 	else
 	{
@@ -862,10 +945,10 @@ int process_bridge_action(b2bl_tuple_t* tuple, xmlNodePtr bridge_node)
 	tuple->scenario_state = B2B_BRIDGING_STATE;
 
 	/* extract the lifetime if one is defined */
-	node = xmlNodeGetChildByName(bridge_node, "lifetime");
-	if(node)
+	lft_node = xmlNodeGetChildByName(bridge_node, "lifetime");
+	if(lft_node)
 	{
-		attr.s = (char*)xmlNodeGetContent(node);
+		attr.s = (char*)xmlNodeGetContent(lft_node);
 		if(attr.s == NULL)
 		{
 			LM_ERR("Failed to extract node content\n");
@@ -879,7 +962,7 @@ int process_bridge_action(b2bl_tuple_t* tuple, xmlNodePtr bridge_node)
 			goto error;
 		}
 		xmlFree(attr.s);
-
+		attr.s = NULL;
 		LM_DBG("Lifetime defined = [%d]\n", tuple->lifetime);
 		tuple->lifetime+= get_ticks();
 	}
@@ -893,6 +976,8 @@ error1:
 	shm_free(bridge_entities[1]);
 
 error:
+	if(attr.s)
+		xmlFree(attr.s);
 	return -1;
 }
 
@@ -1031,17 +1116,23 @@ error:
 	return -1;
 }
 
-int b2b_scenario_parse_uri(xmlNodePtr value_node, char* value_content, b2bl_tuple_t* tuple,
-		str* client_to)
+/* Function that processes destination node.
+ * Accepted value types:
+ *	uri: specified inline
+ *	param: specified as a parameter
+ *	initial: the initial destination(from the initial message)
+ *	header: a header field value
+ **/
+
+int b2b_scenario_parse_uri(xmlNodePtr value_node, char* value_content,
+		b2bl_tuple_t* tuple, struct sip_msg* msg, str* client_to)
 {
+
+	str value= {value_content, strlen(value_content)};
 	unsigned char* value_type= NULL;
-	str value;
 	unsigned int param_no;
+	struct hdr_field * sip_hdr;
 
-	value.s = value_content;
-	value.len = strlen(value_content);
-
-	/* verify how is the destination defined - accepted types: initial, param, list, uri*/
 	value_type = xmlNodeGetAttrContentByName(value_node, "type");
 	if(value_type == NULL)
 	{
@@ -1051,7 +1142,7 @@ int b2b_scenario_parse_uri(xmlNodePtr value_node, char* value_content, b2bl_tupl
 
 	if(xmlStrcasecmp(value_type, (unsigned char*)"uri") == 0)
 	{
-		LM_DBG("To of type uri\n");
+		LM_DBG("URI of type uri\n");
 		*client_to = value;
 	}
 	else
@@ -1071,21 +1162,45 @@ int b2b_scenario_parse_uri(xmlNodePtr value_node, char* value_content, b2bl_tupl
 			goto error;
 		}
 		*client_to = tuple->scenario_params[param_no-1];
-		LM_DBG("*** URI value taken from a parameter [%.*s]\n",
+		LM_DBG("URI value taken from a parameter [%.*s]\n",
 				client_to->len, client_to->s);
 	}
 	else
 	if(xmlStrcasecmp(value_type, (unsigned char*)"initial") == 0)
 	{
-		/* TODO -> take the to from the associated server entity */
 		LM_DBG("URI of type initial\n");
 		*client_to = tuple->server->to_uri;
+	}
+	else
+	if(xmlStrcasecmp(value_type, (unsigned char*)"header") == 0)
+	{
+		LM_DBG("URI of type header value\n");
+		if(msg == NULL)
+		{
+			LM_DBG("You are not allowed to use a header specification for this type of scenario\n");
+			goto error;
+		}
+		sip_hdr = get_header_by_name(msg, value.s, value.len);
+		if(sip_hdr == NULL)
+		{
+			LM_ERR("No header with the name [%.*s] found\n", value.len, value.s);
+			goto error;
+		}
+		client_to->s = sip_hdr->body.s;
+		if(strncmp(sip_hdr->body.s + sip_hdr->body.len - 2, CRLF, CRLF_LEN) ==0)
+		{
+			client_to->len = sip_hdr->body.len - 2;
+		}
+		else
+			client_to->len = sip_hdr->body.len;
 	}
 	else
 	{
 		LM_ERR("Scenary document not well formed. Client to type not valid\n");
 		goto error;
 	}
+
+	LM_DBG("URI value = [%.*s]\n", client_to->len, client_to->s);
 
 	xmlFree(value_type);
 
@@ -1220,9 +1335,8 @@ int b2b_process_scenario_init(b2b_scenario_t* scenario_struct,struct sip_msg* ms
 	str client_to;
 	str extra_headers = {0, 0};
 	b2bl_entity_id_t* client_entity = NULL;
-	unsigned int scenario_state = 0;
-	
-	
+	unsigned int scenario_state = B2B_NOTDEF_STATE;
+
 	if(msg)
 	{
 		method = msg->first_line.u.request.method;
@@ -1270,6 +1384,15 @@ int b2b_process_scenario_init(b2b_scenario_t* scenario_struct,struct sip_msg* ms
 		goto error;
 	}
 
+	/* create new scenario instance record */
+	tuple = b2bl_insert_new(msg, hash_index, scenario_struct, args, &b2bl_key);
+	if(tuple== NULL)
+	{
+		LM_ERR("Failed to insert new scenario instance record\n");
+		return -1;
+	}
+
+
 	/* set the state of the scenario after the init section */
 	node = xmlNodeGetChildByName(scenario_struct->init_node, "state");
 	if(node)
@@ -1285,17 +1408,9 @@ int b2b_process_scenario_init(b2b_scenario_t* scenario_struct,struct sip_msg* ms
 			goto error;
 		}
 		xmlFree(state_attr.s);
+		
+		tuple->scenario_state = scenario_state;
 	}
-
-	/* create new scenario instance record */
-	tuple = b2bl_insert_new(msg, hash_index, scenario_struct, args, &b2bl_key);
-	if(tuple== NULL)
-	{
-		LM_ERR("Failed to insert new scenario instance record\n");
-		return -1;
-	}
-
-	tuple->scenario_state = scenario_state;
 
 	/* go through the document and create the described entities */
 	if(server_node)
@@ -1386,7 +1501,8 @@ int b2b_process_scenario_init(b2b_scenario_t* scenario_struct,struct sip_msg* ms
 			goto error2;
 		}
 
-		if(b2b_scenario_parse_uri(node_aux, value_content, tuple, &client_to) < 0)
+		if(b2b_scenario_parse_uri(node_aux, value_content, tuple, msg,
+					&client_to) < 0)
 		{
 			LM_ERR("Failed to get the value for the b2b client ruri\n");
 			xmlFree(value_content);

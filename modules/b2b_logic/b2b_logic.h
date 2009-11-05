@@ -35,6 +35,7 @@
 
 #define B2B_INIT_MAX_PARAMNO     5
 #define B2B_BRIDGING_STATE      -1
+#define B2B_NOTDEF_STATE        -2
 
 #define B2B_TOP_HIDING_SCENARY "top hiding"
 #define B2B_TOP_HIDING_SCENARY_LEN  strlen("top hiding")
@@ -47,10 +48,6 @@
 
 extern b2b_api_t b2b_api;
 
-/*	Requests: Invite, Ack, Bye
- *  
- * */
-
 typedef struct b2b_rule
 {
 	unsigned int id;
@@ -60,7 +57,17 @@ typedef struct b2b_rule
 	struct b2b_rule* next;
 }b2b_rule_t;
 
-enum {B2B_INVITE, B2B_ACK, B2B_BYE, B2B_CANCEL, B2B_METHODS_NO};
+enum {
+	B2B_INVITE,
+	B2B_ACK,
+	B2B_BYE,
+	B2B_MESSAGE,
+	B2B_SUBSCRIBE,
+	B2B_NOTIFY,
+	B2B_REFER,
+	B2B_CANCEL,
+	B2B_METHODS_NO
+};
 
 
 typedef struct b2b_scenario
@@ -93,8 +100,20 @@ static inline int b2b_get_request_id(str* request)
 	if(request->len ==BYE_LEN && strncasecmp(request->s,BYE,BYE_LEN)==0)
 		return B2B_BYE;
 
-	if(request->len==CANCEL_LEN &&strncasecmp(request->s,CANCEL,CANCEL_LEN)==0)
+	if(request->len==REFER_LEN &&strncasecmp(request->s, REFER, REFER_LEN)==0)
+		return B2B_REFER;
+
+	if(request->len==CANCEL_LEN &&strncasecmp(request->s, CANCEL, CANCEL_LEN)==0)
 		return B2B_CANCEL;
+
+	if(request->len==SUBSCRIBE_LEN &&strncasecmp(request->s, SUBSCRIBE, SUBSCRIBE_LEN)==0)
+		return B2B_SUBSCRIBE;
+
+	if(request->len==NOTIFY_LEN &&strncasecmp(request->s, NOTIFY, NOTIFY_LEN)==0)
+		return B2B_NOTIFY;
+
+	if(request->len==MESSAGE_LEN &&strncasecmp(request->s, MESSAGE, MESSAGE_LEN)==0)
+		return B2B_MESSAGE;
 
 	return -1;
 }

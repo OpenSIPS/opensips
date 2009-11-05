@@ -41,6 +41,7 @@ typedef struct b2bl_entity_id
 	str key;
 	str to_uri;
 	str from_uri;
+	int disconnected;
 	enum b2b_entity_type type;
 	struct b2bl_entity_id* next;
 	struct b2bl_entity_id* peer;
@@ -90,7 +91,8 @@ int init_b2bl_htable(void);
 extern b2bl_table_t b2bl_htable;
 extern unsigned int b2bl_hsize;
 
-int process_bridge_action(b2bl_tuple_t* tuple, xmlNodePtr bridge_node);
+int process_bridge_action(struct sip_msg* msg, b2bl_entity_id_t* curr_entity,
+		b2bl_tuple_t* tuple, xmlNodePtr bridge_node);
 
 void destroy_b2bl_htable(void);
 
