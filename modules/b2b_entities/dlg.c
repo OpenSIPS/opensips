@@ -721,7 +721,7 @@ int b2b_send_reply(enum b2b_entity_type et, str* b2b_key, int code, str* text,
 		return 0;
 	}
 
-	if(dlg->cancel_tm_tran)
+	if(dlg->cancel_tm_tran && dlg->cancel_tm_tran != T_UNDEFINED)
 	{
 		LM_DBG("Found cancel transaction\n");
 		tm_tran = dlg->cancel_tm_tran;
@@ -1330,7 +1330,6 @@ void b2b_tm_cback(b2b_table htable, struct tmcb_params *ps)
 		{
 			b2b_dlg_t* new_dlg;
 
-			dlg->state = DLG_ESTABLISHED;
 			new_dlg = b2b_new_dlg(msg, 1);
 			if(new_dlg == NULL)
 			{

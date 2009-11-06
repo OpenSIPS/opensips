@@ -134,7 +134,7 @@ b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg,
 
 		}
 	}
-
+	tuple->scenario_state = B2B_NOTDEF_STATE;
 	lock_release(&b2bl_htable[hash_index].lock);
 
 	*b2bl_key_s = b2bl_key;

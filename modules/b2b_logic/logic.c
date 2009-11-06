@@ -288,6 +288,9 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 			tuple->scenario_state = tuple->next_scenario_state;
 			tuple->next_scenario_state = 0;
 		}
+		else
+			tuple->scenario_state = B2B_NOTDEF_STATE;
+
 		tuple->bridge_entities[0] = tuple->bridge_entities[1] = NULL;
 	}
 	return 0;
@@ -472,14 +475,16 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 				strncmp(tuple->bridge_entities[0]->key.s, entity->key.s, entity->key.len) == 0 &&
 				tuple->bridge_entities[1]->key.s)
 		{
-		
+			str meth_ack = {ACK, ACK_LEN};
 			str meth_cancel = {CANCEL, CANCEL_LEN};
 			str ok = {"OK", 2};
 
+			b2b_api.send_request(entity->type, &entity->key, &meth_ack, 0, 0);
 			b2b_api.send_request(entity->peer->type,
 					&entity->peer->key, &meth_cancel, 0, 0);
 			b2b_api.send_reply(entity->type, &entity->key, 200, &ok, 0, 0);
 			tuple->bridge_entities[1] = NULL;
+			tuple->scenario_state = B2B_CANCEL_STATE;
 			goto done;
 		}
 		/* if the request is an ACK and the tuple is marked to_del -> then delete the record and return */
@@ -497,6 +502,7 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 		else
 		{
 			rule = scenario->request_rules[request_id];
+			if(tuple->scenario_state != B2B_NOTDEF_STATE)
 			while(rule)
 			{
 				if(tuple->scenario_state == rule->cond_state)
@@ -699,6 +705,9 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 		goto done;
 
 send_usual_request:
+		if(request_id == B2B_CANCEL)
+			tuple->scenario_state = B2B_CANCEL_STATE;
+
 		if(entity->peer && entity->peer->key.s)
 			b2b_api.send_request(entity->peer->type, &entity->peer->key, &method,
 				extra_headers.len?&extra_headers:0, body.len?&body:0);
@@ -1241,7 +1250,7 @@ int b2b_process_scenario_init(b2b_scenario_t* scenario_struct,struct sip_msg* ms
 	str client_to;
 	str extra_headers = {0, 0};
 	b2bl_entity_id_t* client_entity = NULL;
-	unsigned int scenario_state = 0;
+	unsigned int scenario_state = B2B_NOTDEF_STATE;
 	
 	
 	if(msg)
