@@ -471,12 +471,15 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 		{
 		
 			str meth_cancel = {CANCEL, CANCEL_LEN};
+			str meth_ack = {ACK, ACK_LEN};
 			str ok = {"OK", 2};
 
+			b2b_api.send_request(entity->type, &entity->key, &meth_ack, 0, 0);
 			b2b_api.send_request(entity->peer->type,
 					&entity->peer->key, &meth_cancel, 0, 0);
 			b2b_api.send_reply(entity->type, &entity->key, 200, &ok, 0, 0);
 			tuple->bridge_entities[1] = NULL;
+			tuple->scenario_state = B2B_CANCEL_STATE;
 			goto done;
 		}
 		/* if the request is an ACK and the tuple is marked to_del -> then delete the record and return */
@@ -718,6 +721,9 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 		goto done;
 
 send_usual_request:
+		if(request_id == B2B_CANCEL)
+			tuple->scenario_state = B2B_CANCEL_STATE;
+
 		if(entity->peer && entity->peer->key.s)
 			b2b_api.send_request(entity->peer->type, &entity->peer->key, &method,
 				extra_headers.len?&extra_headers:0, body.len?&body:0);

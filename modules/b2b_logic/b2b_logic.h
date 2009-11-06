@@ -35,7 +35,8 @@
 
 #define B2B_INIT_MAX_PARAMNO     5
 #define B2B_BRIDGING_STATE      -1
-#define B2B_NOTDEF_STATE        -2
+#define B2B_CANCEL_STATE        -2
+#define B2B_NOTDEF_STATE        -3
 
 #define B2B_TOP_HIDING_SCENARY "top hiding"
 #define B2B_TOP_HIDING_SCENARY_LEN  strlen("top hiding")
