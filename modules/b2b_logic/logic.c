@@ -33,6 +33,7 @@
 #include "../../error.h"
 #include "../../parser/parse_from.h"
 #include "../../parser/parse_content.h"
+#include "../../parser/parse_hname2.h"
 #include "../../ut.h"
 #include "../../mem/shm_mem.h"
 #include "../../mem/mem.h"
@@ -1137,7 +1138,6 @@ int b2b_scenario_parse_uri(xmlNodePtr value_node, char* value_content,
 	str value= {value_content, strlen(value_content)};
 	unsigned char* value_type= NULL;
 	unsigned int param_no;
-	struct hdr_field * sip_hdr;
 
 	value_type = xmlNodeGetAttrContentByName(value_node, "type");
 	if(value_type == NULL)
@@ -1180,18 +1180,51 @@ int b2b_scenario_parse_uri(xmlNodePtr value_node, char* value_content,
 	else
 	if(xmlStrcasecmp(value_type, (unsigned char*)"header") == 0)
 	{
+		struct hdr_field* sip_hdr, hdr;
+		char buf[128];
+
 		LM_DBG("URI of type header value\n");
 		if(msg == NULL)
 		{
 			LM_DBG("You are not allowed to use a header specification for this type of scenario\n");
 			goto error;
 		}
-		sip_hdr = get_header_by_name(msg, value.s, value.len);
-		if(sip_hdr == NULL)
+		memcpy(buf, value.s, value.len);
+		buf[value.len] = ':';
+
+		if(parse_hname2(buf, buf + value.len+1, &hdr) < 0)
 		{
-			LM_ERR("No header with the name [%.*s] found\n", value.len, value.s);
+			LM_ERR("Failed to parse header name\n");
 			goto error;
 		}
+		if(hdr.type == HDR_OTHER_T)
+		{
+			LM_DBG("Header other\n");
+			sip_hdr = get_header_by_name(msg, value.s, value.len);
+			if(sip_hdr == NULL)
+			{
+				LM_ERR("No header with the name [%.*s] found\n", value.len, value.s);
+				goto error;
+			}
+		}
+		else
+		if(hdr.type == HDR_ERROR_T)
+		{
+			LM_DBG("Failed to parse header name\n");
+			goto error;
+		}
+		else
+		{
+			sip_hdr = msg->headers;
+			while(sip_hdr->type != hdr.type)
+				sip_hdr = sip_hdr->next;
+			if(sip_hdr == NULL)
+			{
+				LM_ERR("Did not find header\n");
+				goto error;
+			}
+		}
+
 		client_to->s = sip_hdr->body.s;
 		if(strncmp(sip_hdr->body.s + sip_hdr->body.len - 2, CRLF, CRLF_LEN) ==0)
 		{
