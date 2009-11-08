@@ -14,8 +14,7 @@
 # Required-Start: $local_fs $network $named
 # Should-Start: mysqld postgresql
 # Short-Description: start, stop OpenSIPS
-# Description: OpenSIPS or OpenSIPS is a very fast and flexible
-# 	SIP (RFC3261) server.
+# Description: OpenSIPS is a very fast and flexible SIP (RFC3261) server.
 ### END INIT INFO
 
 # Source function library.
