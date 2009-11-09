@@ -467,8 +467,8 @@ static int check_for_krb(void)
 	if (xx==NULL)
 		return -1;
 
-	for( j=0 ; j<M_sk_num(xx->cipher_list) ; j++) {
-		SSL_CIPHER *yy = (SSL_CIPHER*)M_sk_value(xx->cipher_list,j);
+	for( j=0 ; j<sk_SSL_CIPHER_num(xx->cipher_list) ; j++) {
+		SSL_CIPHER *yy = sk_SSL_CIPHER_value(xx->cipher_list,j);
 		if ( yy->id>=SSL3_CK_KRB5_DES_64_CBC_SHA &&
 		 yy->id<=SSL3_CK_KRB5_RC4_40_MD5 ) {
 			LM_INFO("KRB5 cipher %s found\n", yy->name);
