@@ -38,20 +38,35 @@
 #define SIP_VERSION "SIP/2.0"
 #define SIP_VERSION_LEN 7
 
-#define INVITE	"INVITE"
-#define CANCEL	"CANCEL"
-#define ACK		"ACK"
-#define BYE		"BYE"
-#define INFO	"INFO"
-#define PRACK	"PRACK"
+#define SUBSCRIBE "SUBSCRIBE"
+#define REGISTER  "REGISTER"
+#define MESSAGE   "MESSAGE"
+#define OPTIONS   "OPTIONS"
+#define PUBLISH   "PUBLISH"
+#define INVITE    "INVITE"
+#define CANCEL    "CANCEL"
+#define UPDATE    "UPDATE"
+#define NOTIFY    "NOTIFY"
+#define PRACK     "PRACK"
+#define REFER     "REFER"
+#define INFO      "INFO"
+#define ACK       "ACK"
+#define BYE       "BYE"
 
-#define INVITE_LEN 6
-#define CANCEL_LEN 6
-#define ACK_LEN 3
-#define BYE_LEN 3
-#define INFO_LEN 4
-#define PRACK_LEN 5
-
+#define SUBSCRIBE_LEN 9
+#define REGISTER_LEN  8
+#define MESSAGE_LEN   7
+#define OPTIONS_LEN   7
+#define PUBLISH_LEN   7
+#define INVITE_LEN    6
+#define CANCEL_LEN    6
+#define UPDATE_LEN    6
+#define NOTIFY_LEN    6
+#define PRACK_LEN     5
+#define REFER_LEN     5
+#define INFO_LEN      4
+#define ACK_LEN       3
+#define BYE_LEN       3
 
 struct msg_start {
 	int type;                 /* Type of the Message - Request/Response */
