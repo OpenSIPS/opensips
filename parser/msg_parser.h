@@ -53,6 +53,7 @@
 #include "parse_cseq.h"
 #include "parse_via.h"
 #include "parse_fline.h"
+#include "parse_multipart.h"
 #include "hf.h"
 #include "sdp/sdp.h"
 
@@ -219,6 +220,8 @@ struct sip_msg {
 	struct hdr_field* privacy;
 
 	struct sdp_info* sdp;
+
+        struct multi_body * multi;
 
 	char* eoh;        /* pointer to the end of header (if found) or null */
 	char* unparsed;   /* here we stopped parsing*/

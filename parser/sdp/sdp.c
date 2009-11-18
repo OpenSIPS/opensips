@@ -629,7 +629,7 @@ static int parse_mixed_content(str *mixed_body, str delimiter, sdp_info_t* _sdp)
 				break;
 			case HDR_CONTENTTYPE_T:
 				end = hf.body.s + hf.body.len;
-				ret = decode_mime_type(hf.body.s, end , &mime);
+				ret = decode_mime_type(hf.body.s, end , &mime,NULL);
 				if (ret==0)
 					return -1;
 				if (ret!=end) {

@@ -262,13 +262,15 @@ error:
 
 
 
-char* decode_mime_type(char *start, char *end, unsigned int *mime_type)
+char* decode_mime_type(char *start, char *end, unsigned int *mime_type, content_t * con)
 {
 	int node;
 	char *mark;
 	char *p;
 
 	p = start;
+
+	LM_DBG("Decoding MIME type for:[%.*s]\n",end-start,start);
 
 	/* search the begining of the type */
 	while ( p<end && (*p==' ' || *p=='\t' ||
@@ -344,7 +346,38 @@ char* decode_mime_type(char *start, char *end, unsigned int *mime_type)
 	/* if there are params, ignore them!! -> eat everything to
 	 * the end or to the first ',' */
 	if ( p<end && *p==';' )
-		for(p++; p<end && *p!=','; p++);
+	{
+		if( con == NULL)
+			for(p++; p<end && *p!=','; p++);
+		else
+		{ 
+			str params_str;
+			param_hooks_t phooks;
+			param_t * cur;
+			
+			params_str.s = p;
+			params_str.len = end - p ;
+
+			if (parse_params(&params_str, CLASS_ANY, &phooks, &con->params) < 0)
+				goto error;
+
+			p = params_str.s;
+		
+			cur = con->params;
+
+			while(cur)
+			{
+				if( cur->name.len == 8 && !strncasecmp(cur->name.s,"boundary",cur->name.len ) )
+					con->boundary = cur->body;
+				
+				if( cur->name.len == 5 && !strncasecmp(cur->name.s,"start",cur->name.len ) )
+					con->start = cur->body;
+
+				cur = cur ->next;
+			}
+
+		}
+	}
 
 	/* is this the correct end? */
 	if (p!=end && *p!=',' )
@@ -374,6 +407,7 @@ int parse_content_type_hdr( struct sip_msg *msg )
 	char *end;
 	char *ret;
 	unsigned int  mime;
+	content_t * rez;
 
 	/* is the header already found? */
 	if ( msg->content_type==0 ) {
@@ -390,9 +424,18 @@ int parse_content_type_hdr( struct sip_msg *msg )
 	if ( msg->content_type->parsed!=0)
 		return get_content_type(msg);
 
+	rez = (content_t*) pkg_malloc(sizeof (content_t));
+	if (rez == NULL)
+	{
+		LM_ERR("Unable to allocate memory\n");
+		goto error;
+	}
+	memset(rez, 0, sizeof (content_t));
+
+
 	/* it seams we have to parse it! :-( */
 	end = msg->content_type->body.s + msg->content_type->body.len;
-	ret = decode_mime_type(msg->content_type->body.s, end , &mime);
+	ret = decode_mime_type(msg->content_type->body.s, end , &mime, rez);
 	if (ret==0)
 		goto parse_error;
 	if (ret!=end) {
@@ -405,10 +448,13 @@ int parse_content_type_hdr( struct sip_msg *msg )
 		goto parse_error;
 	}
 
-	msg->content_type->parsed = (void*)(unsigned long)mime;
+	
+	rez->type = mime;
+	msg->content_type->parsed = rez;
 	return mime;
 
 parse_error:
+	pkg_free(rez);
 	set_err_info(OSER_EC_PARSER, OSER_EL_MEDIUM,
 		"error parsing CT-TYPE header");
 	set_err_reply(400, "bad headers");
@@ -450,7 +496,7 @@ int parse_accept_hdr( struct sip_msg *msg )
 	end = ret + msg->accept->body.len;
 	nr_mimes = 0;
 	while (1){
-		ret = decode_mime_type(ret, end , &mime);
+		ret = decode_mime_type(ret, end , &mime, NULL);
 		if (ret==0)
 			goto parse_error;
 		/* a new mime was found  -> put it into array */
@@ -495,3 +541,15 @@ error:
 	return -1;
 }
 
+void free_contenttype(content_t ** con)
+{
+
+	if (*con)
+	{
+		if((*con)->params)
+			free_params((*con)->params);
+		pkg_free(*con);
+	}
+	*con = 0;
+}
+	

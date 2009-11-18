@@ -1410,7 +1410,7 @@ static int fixup_body_type(void** param, int param_no)
 		if (p==0 || p[0]==0) {
 			type = 0;
 		} else {
-			r = decode_mime_type( p, p+strlen(p) , &type);
+			r = decode_mime_type( p, p+strlen(p) , &type , NULL);
 			if (r==0) {
 				LM_ERR("unsupported mime <%s>\n",p);
 				return E_CFG;
