@@ -217,7 +217,7 @@ __dialog_sendpublish(struct dlg_cell *dlg, int type, struct dlg_cb_params *_para
 	str tag = {0,0};
 	struct to_body to, from;
 
-	if(_params->msg)
+	if(_params->msg && _params->msg != FAKED_REPLY)
 	{
 		struct sip_msg* msg = _params->msg;
 
