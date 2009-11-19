@@ -36,6 +36,7 @@
 #include "../rr/api.h"
 #include "../auth/api.h"
 #include "osp_mod.h"
+#include "destination.h"
 #include "orig_transaction.h"
 #include "term_transaction.h"
 #include "usage.h"
@@ -48,7 +49,8 @@ extern unsigned int _osp_sp_number;
 extern char* _osp_sp_uris[];
 extern unsigned long _osp_sp_weights[];
 extern char* _osp_device_ip;
-extern char* _osp_device_port;
+extern char _osp_in_device[OSP_STRBUF_SIZE];
+extern char _osp_out_device[OSP_STRBUF_SIZE];
 extern int _osp_use_security;
 extern char* _osp_private_key;
 extern char* _osp_local_certificate;
@@ -130,7 +132,6 @@ static param_export_t params[]={
     { "sp15_weight",                      INT_PARAM, &(_osp_sp_weights[14]) },
     { "sp16_weight",                      INT_PARAM, &(_osp_sp_weights[15]) },
     { "device_ip",                        STR_PARAM, &_osp_device_ip },
-    { "device_port",                      STR_PARAM, &_osp_device_port },
     { "use_security_features",            INT_PARAM, &_osp_use_security },
     { "private_key",                      STR_PARAM, &_osp_private_key },
     { "local_certificate",                STR_PARAM, &_osp_local_certificate },
@@ -260,12 +261,12 @@ static int ospVerifyParameters(void)
         }
     }
 
-    if (_osp_device_ip == NULL) {
-        _osp_device_ip = "";
-    }
-
-    if (_osp_device_port == NULL) {
-        _osp_device_port = "";
+    if (_osp_device_ip != NULL) {
+        ospConvertToInAddress(_osp_device_ip, _osp_in_device, sizeof(_osp_in_device));
+        ospConvertToOutAddress(_osp_device_ip, _osp_out_device, sizeof(_osp_out_device));
+    } else {
+        _osp_in_device[0] = '\0';
+        _osp_out_device[0] = '\0';
     }
 
     if (_osp_max_dests > OSP_DEF_DESTS || _osp_max_dests < 1) {
@@ -331,7 +332,7 @@ static void ospDumpParameters(void)
         LM_INFO("    sp%d_uri '%s' sp%d_weight '%ld' ", 
             osp_index[i], _osp_sp_uris[i], osp_index[i], _osp_sp_weights[i]);
     }
-    LM_INFO("    device_ip '%s' device_port '%s' ", _osp_device_ip, _osp_device_port);
+    LM_INFO("    device_ip '%s' ", _osp_device_ip);
     LM_INFO("    use_security_features '%d' ", _osp_use_security);
     if (_osp_use_security != 0) {
         LM_INFO("    private_key '%s' ", _osp_private_key);

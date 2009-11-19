@@ -35,7 +35,7 @@
 #include "osptoolkit.h"
 #include "usage.h"
 
-extern char* _osp_device_ip;
+extern char _osp_in_device[];
 extern int _osp_token_format;
 extern int _osp_validate_callid;
 extern OSPTPROVHANDLE _osp_provider;
@@ -53,9 +53,9 @@ int ospCheckHeader(
     char* ignore2)
 {
     unsigned char buffer[OSP_TOKENBUF_SIZE];
-    unsigned int  buffersize = sizeof(buffer);
+    unsigned int  bufsize = sizeof(buffer);
 
-    if (ospGetOspHeader(msg, buffer, &buffersize) != 0) {
+    if (ospGetOspHeader(msg, buffer, &bufsize) != 0) {
         return MODULE_RETURNCODE_FALSE;
     } else {
         return MODULE_RETURNCODE_TRUE;
@@ -151,7 +151,7 @@ int ospValidateHeader (
             dest.transid = ospGetTransactionId(transaction);
             dest.type = OSPC_ROLE_DESTINATION;
             dest.authtime = time(NULL);
-            strncpy(dest.host, _osp_device_ip, sizeof(dest.host) - 1);
+            strncpy(dest.host, _osp_in_device, sizeof(dest.host) - 1);
             strncpy(dest.origcalled, dest.called, sizeof(dest.origcalled) - 1);
 
             if (ospSaveTermDestination(&dest) == -1) {

@@ -79,21 +79,11 @@ modparam("osp","sp1_weight",1000)
     </section>
     <section>
       <title><varname>device_ip</varname></title>
-      <para>The device_ip (string) is a recommended parameter that explicitly defines the IP address of OpenSIPS in a peering request message (as SourceAlternate type=transport).  The IP address must be in brackets as shown in the example below.</para>
+      <para>The device_ip (string) is a recommended parameter that explicitly defines the IP address of OpenSIPS in a peering request message (as SourceAlternate type=transport).  The dotted-decimal IP address must be in brackets as shown in the example below.</para>
       <example>
         <title>Setting the device IP address</title>
         <programlisting format="linespecific">
-modparam("osp","device_ip","[1.1.1.1]")
-        </programlisting>
-      </example>
-    </section>
-    <section>
-      <title><varname>device_port</varname></title>
-      <para>The device_port (string) parameter is an optional field which includes the SIP port being used by OpenSIPS in the peering request (as SourceAlternate type=network) to the peering server. If is not configured, this information is not included in the peering request. This field is useful if multiple OpenSIPSs are running on the same Linux computer since it enables the peering server to administer different peering policies based on different SIP proxies. This parameter has not been implemented yet.</para>
-      <example>
-        <title>Setting the device port</title>
-        <programlisting format="linespecific">
-modparam("osp","device_port","5060")
+modparam("osp","device_ip","[127.0.0.1]:5060")
         </programlisting>
       </example>
     </section>

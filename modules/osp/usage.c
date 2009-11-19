@@ -64,12 +64,12 @@
 #define OSP_COOKIEHAS_ORIGALL   (OSP_COOKIEHAS_TRANSID | OSP_COOKIEHAS_SRCIP | OSP_COOKIEHAS_AUTHTIME | OSP_COOKIEHAS_DSTCOUNT) 
 #define OSP_COOKIEHAS_TERMALL   (OSP_COOKIEHAS_TRANSID | OSP_COOKIEHAS_SRCIP | OSP_COOKIEHAS_AUTHTIME) 
 
-extern char* _osp_device_ip;
+extern char _osp_out_device[];
 extern OSPTPROVHANDLE _osp_provider;
 extern str OSP_ORIGDEST_NAME;
 extern struct rr_binds osp_rr;
 
-static void ospRecordTransaction(struct sip_msg* msg, unsigned long long transid, char* uac, char* from, char* to, time_t authtime, int isorig, unsigned destinationCount);
+static void ospRecordTransaction(struct sip_msg* msg, unsigned long long transid, char* uac, char* from, char* to, time_t authtime, int isorig, unsigned destcount);
 static int ospBuildUsageFromDestination(OSPTTRANHANDLE transaction, osp_dest* dest, int lastcode);
 static int ospReportUsageFromDestination(OSPTTRANHANDLE transaction, osp_dest* dest);
 static int ospReportUsageFromCookie(struct sip_msg* msg, char* cooky, OSPT_CALL_ID* callid, int release, OSPE_ROLE type);
@@ -83,7 +83,7 @@ static int ospReportUsageFromCookie(struct sip_msg* msg, char* cooky, OSPT_CALL_
  * param to
  * param authtime Request authorization time
  * param isorig Originate / Terminate
- * param destinationCount Destination count
+ * param destcount Destination count
  */
 static void ospRecordTransaction(
     struct sip_msg* msg, 
@@ -93,7 +93,7 @@ static void ospRecordTransaction(
     char* to, 
     time_t authtime, 
     int isorig,
-    unsigned destinationCount)
+    unsigned destcount)
 {
     str cookie;
     char buffer[OSP_STRBUF_SIZE];
@@ -118,7 +118,7 @@ static void ospRecordTransaction(
             OSP_COOKIE_AUTHTIME,
             (unsigned int)authtime,
             OSP_COOKIE_DSTCOUNT,
-            destinationCount);
+            destcount);
     } else {
         cookie.len = snprintf(
             buffer,
@@ -150,7 +150,7 @@ static void ospRecordTransaction(
  * param from
  * param to
  * param authtime Request authorization time
- * param destinationCount Destination count
+ * param destcount Destination count
  */
 void ospRecordOrigTransaction(
     struct sip_msg* msg, 
@@ -159,11 +159,11 @@ void ospRecordOrigTransaction(
     char* from, 
     char* to, 
     time_t authtime,
-    unsigned destinationCount)
+    unsigned destcount)
 {
     int isorig = 1;
 
-    ospRecordTransaction(msg, transid, uac, from, to, authtime, isorig, destinationCount);
+    ospRecordTransaction(msg, transid, uac, from, to, authtime, isorig, destcount);
 }
 
 /*
@@ -184,9 +184,9 @@ void ospRecordTermTransaction(
     time_t authtime)
 {
     int isorig = 0;
-    unsigned destinationCount = 0; /* N/A */
+    unsigned destcount = 0; /* N/A */
 
-    ospRecordTransaction(msg, transid, uac, from, to, authtime, isorig, destinationCount);
+    ospRecordTransaction(msg, transid, uac, from, to, authtime, isorig, destcount);
 }
 
 /*
@@ -211,7 +211,7 @@ static int ospReportUsageFromCookie(
     char* value;
     unsigned long long transid = 0;
     time_t authtime = 0;
-    unsigned destinationCount = 0;
+    unsigned destcount = 0;
     time_t duration = 0;
     time_t endtime = time(NULL);
     int cookieflags = 0;
@@ -224,12 +224,9 @@ static int ospReportUsageFromCookie(
     char* called;
     char* originator = NULL;
     char* terminator;
-    char* source;
-    char srcbuf[OSP_STRBUF_SIZE];
-    char* destination;
-    char dstbuf[OSP_STRBUF_SIZE];
-    char* srcdev;
-    char devbuf[OSP_STRBUF_SIZE];
+    char source[OSP_STRBUF_SIZE];
+    char dest[OSP_STRBUF_SIZE];
+    char srcdev[OSP_STRBUF_SIZE];
     OSPTTRANHANDLE transaction = -1;
     int errorcode;
 
@@ -261,7 +258,7 @@ static int ospReportUsageFromCookie(
                     break;
                 case OSP_COOKIE_DSTCOUNT:
                 case OSP_COOKIE_DSTCOUNTUP:
-                    destinationCount = (unsigned)atoi(value);
+                    destcount = (unsigned)atoi(value);
                     cookieflags |= OSP_COOKIEHAS_DSTCOUNT;
                     break;
                 default:
@@ -296,7 +293,7 @@ static int ospReportUsageFromCookie(
         originator = NULL;
         authtime = 0;
         duration = 0;
-        destinationCount = 0;
+        destcount = 0;
     }
 
     ospGetSourceAddress(msg, firstvia, sizeof(firstvia));
@@ -343,20 +340,19 @@ static int ospReportUsageFromCookie(
 
     switch (type) {
         case OSPC_ROLE_DESTINATION:
-            ospConvertAddress(originator, srcbuf, sizeof(srcbuf));
-            source = srcbuf;
-            destination = _osp_device_ip;
-            srcdev = "";
+            srcdev[0] = '\0';
+            ospConvertToOutAddress(originator, source, sizeof(source));
+            strncpy(dest, _osp_out_device, sizeof(dest));
+            dest[sizeof(dest) - 1] = '\0';
             break;
         case OSPC_ROLE_SOURCE:
         case OSPC_ROLE_OTHER:
         case OSPC_ROLE_UNDEFINED:
         default:
-            source = _osp_device_ip;
-            ospConvertAddress(terminator, dstbuf, sizeof(dstbuf));
-            destination = dstbuf;
-            ospConvertAddress(originator, devbuf, sizeof(devbuf));
-            srcdev = devbuf;
+            ospConvertToOutAddress(originator, srcdev, sizeof(srcdev));
+            strncpy(source, _osp_out_device, sizeof(source));
+            source[sizeof(source) - 1] = '\0';
+            ospConvertToOutAddress(terminator, dest, sizeof(dest));
             break;
     }
 
@@ -365,7 +361,7 @@ static int ospReportUsageFromCookie(
         transid,
         type,
         source,
-        destination,
+        dest,
         srcdev,
         "",
         calling,
@@ -380,10 +376,10 @@ static int ospReportUsageFromCookie(
 
     LM_DBG("built usage handle '%d' (%d)\n", transaction, errorcode);
 
-    if ((errorcode == OSPC_ERR_NO_ERROR) && (destinationCount > 0)) {
+    if ((errorcode == OSPC_ERR_NO_ERROR) && (destcount > 0)) {
         errorcode = OSPPTransactionSetDestinationCount(
             transaction,
-            destinationCount);
+            destcount);
     }
 
     ospReportUsageWrapper(
@@ -484,28 +480,24 @@ static int ospBuildUsageFromDestination(
     int lastcode)
 {
     int errorcode;
-    char addr[OSP_STRBUF_SIZE];
-    char* source;
-    char* srcdev;
+    char srcdev[OSP_STRBUF_SIZE];
+    char source[OSP_STRBUF_SIZE];
+    char host[OSP_STRBUF_SIZE];
+    char destdev[OSP_STRBUF_SIZE];
 
-    if (dest->type == OSPC_ROLE_SOURCE) {
-        ospConvertAddress(dest->srcdev, addr, sizeof(addr));
-        source = dest->source;
-        srcdev = addr;
-    } else {
-        ospConvertAddress(dest->source, addr, sizeof(addr));
-        source = addr;
-        srcdev = dest->srcdev;
-    }
+    ospConvertToOutAddress(dest->srcdev, srcdev, sizeof(srcdev));
+    ospConvertToOutAddress(dest->source, source, sizeof(source));
+    ospConvertToOutAddress(dest->host, host, sizeof(host));
+    ospConvertToOutAddress(dest->destdev, destdev, sizeof(destdev));
 
     errorcode = OSPPTransactionBuildUsageFromScratch(
         transaction,
         dest->transid,
         dest->type,
         source,
-        dest->host,
+        host,
         srcdev,
-        dest->destdev,
+        destdev,
         dest->calling,
         OSPC_NFORMAT_E164,
         dest->origcalled,       /* Report original called number */

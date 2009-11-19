@@ -42,7 +42,8 @@ unsigned long _osp_sp_weights[OSP_DEF_SPS] = {
     OSP_DEF_WEIGHT, OSP_DEF_WEIGHT, OSP_DEF_WEIGHT, OSP_DEF_WEIGHT
 };
 char* _osp_device_ip = NULL;
-char* _osp_device_port = NULL;
+char _osp_in_device[OSP_STRBUF_SIZE];
+char _osp_out_device[OSP_STRBUF_SIZE];
 int _osp_use_security = OSP_DEF_USESEC;
 char* _osp_private_key = NULL;
 char* _osp_local_certificate = NULL;

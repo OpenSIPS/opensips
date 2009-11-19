@@ -34,8 +34,7 @@
 
 static OSPTTHREADRETURN ospReportUsageWork(void* usagearg);
 
-typedef struct _osp_usage
-{
+typedef struct _osp_usage {
     OSPTTRANHANDLE ospvTransaction;     /* Transaction handle */
     unsigned ospvReleaseCode;           /* Release code */
     unsigned ospvDuration;              /* Length of call */

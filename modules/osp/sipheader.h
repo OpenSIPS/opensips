@@ -44,20 +44,20 @@
 #define OSP_NPDI_NAME       "npdi"
 #define OSP_NPDI_SIZE       4
 
-void ospCopyStrToBuffer(str* source, char* buffer, int buffersize);
-int ospGetFromUserpart(struct sip_msg* msg, char* fromuser, int buffersize);
-int ospGetRpidUserpart(struct sip_msg* msg, char* fromuser, int buffersize);
-int ospGetDiversion(struct sip_msg* msg, char* user, int userbufsize, char* host, int hostbufsize);
-int ospGetToUserpart(struct sip_msg* msg, char* touser, int buffersize);
-int ospGetUriUserpart(struct sip_msg* msg, char* touser, int buffersize);
+void ospCopyStrToBuffer(str* source, char* buffer, int bufsize);
+int ospGetFromUserpart(struct sip_msg* msg, char* fromuser, int bufsize);
+int ospGetRpidUserpart(struct sip_msg* msg, char* fromuser, int bufsize);
+int ospGetToUserpart(struct sip_msg* msg, char* touser, int bufsize);
+int ospGetUriUserpart(struct sip_msg* msg, char* touser, int bufsize);
 int ospAddOspHeader(struct sip_msg* msg, unsigned char* token, unsigned int tokensize);
 int ospGetOspHeader(struct sip_msg* msg, unsigned char* token, unsigned int* tokensize);
-int ospGetSourceAddress(struct sip_msg* msg, char* sourceaddress, int buffersize);
+int ospGetSourceAddress(struct sip_msg* msg, char* srcaddr, int bufsize);
 int ospGetCallId(struct sip_msg* msg, OSPT_CALL_ID** callid);
-int ospGetRouteParameters(struct sip_msg* msg, char* routeparams, int buffersize);
+int ospGetRouteParameters(struct sip_msg* msg, char* routeparams, int bufsize);
 int ospRebuildDestionationUri(str* newuri, osp_dest* dest, int format);
-void ospGetNextHop(struct sip_msg* msg, char* nexthop, int buffersize);
+void ospGetNextHop(struct sip_msg* msg, char* nexthop, int bufsize);
 int ospGetNpParameters(struct sip_msg* msg, char* rn, int rnbufsize, char* cic, int cicbufsize, int* npdi);
+int ospGetDiversion(struct sip_msg* msg, char* user, int userbufsize, char* host, int hostbufsize);
 
 #endif /* _OSP_MOD_SIPHEADER_H_ */
 
