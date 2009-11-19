@@ -135,6 +135,9 @@ Chapter 1. Admin Guide
    http://www.cisco.com/en/US/products/sw/iosswrel/ps1839/products
    _feature_guide09186a0080110bf9.html">
 
+   Works with multipart messages that contain an SDP part, but not
+   with multi-layered multipart messages.
+
 1.2. NAT pinging types
 
    Currently, the nathelper module supports two types of NAT

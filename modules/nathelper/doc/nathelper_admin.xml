@@ -20,6 +20,10 @@
 		url="http://www.cisco.com/en/US/products/sw/iosswrel/ps1839/products_feature_guide09186a0080110bf9.html">
 		http://www.cisco.com/en/US/products/sw/iosswrel/ps1839/products_feature_guide09186a0080110bf9.html"></ulink>
 	</para>
+        <para>
+            Works with multipart messages that contain an SDP part,
+            but not with multi-layered multipart messages.
+        </para>
 	</section>
 
 	<section>

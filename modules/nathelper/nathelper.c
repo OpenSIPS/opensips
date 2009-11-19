@@ -217,6 +217,7 @@
 #include "rtpproxy_stream.h"
 #include "../../db/db.h"
 #include "../../locking.h"
+#include "../../parser/parse_content.h"
  
 
 
@@ -2655,9 +2656,66 @@ force_rtp_proxy2_f(struct sip_msg *msg, char *param1, char *param2)
 }
 
 static int
-force_rtp_proxy(struct sip_msg* msg, char* str1, char* str2, int offer)
+force_rtp_proxy_body(struct sip_msg* msg, char* str1, char* str2, int offer, str body);
+
+static int force_rtp_proxy(struct sip_msg* msg, char* str1, char* str2, int offer)
 {
-	str body, body1, oldport, oldip, newport, newip ,nextport;
+	struct multi_body *m;
+	struct part * p;
+	str body;
+	int skip;
+	char c;
+
+	m = get_all_bodies(msg);
+
+	if (m == NULL)
+	{
+		LM_ERR("Unable to parse body\n");
+		return -1;
+	}
+
+	p = m->first;
+
+	while (p)
+	{
+		int ret = 0;
+		if (p->content_type == ((TYPE_APPLICATION << 16) + SUBTYPE_SDP))
+		{
+			body = p->body;
+
+			for (skip = 0; skip < body.len; skip++)
+			{
+				c = body.s[body.len - skip - 1];
+				if (c != '\r' && c != '\n')
+					break;
+			}
+
+			if (skip == body.len)
+			{
+				LM_ERR("empty body");
+				return -1;
+			}
+
+			body.len -= skip;
+
+
+			LM_DBG("Forcing body:\n[%.*s]\n", body.len, body.s);
+			ret = force_rtp_proxy_body(msg, str1, str2, offer, body);
+
+		}
+
+		if (ret < 0)
+			return ret;
+		p = p->next;
+	}
+
+	return 1;
+};
+
+static int
+force_rtp_proxy_body(struct sip_msg* msg, char* str1, char* str2, int offer, str body)
+{
+	str body1, oldport, oldip, newport, newip ,nextport;
 	str callid, from_tag, to_tag, tmp, payload_types;
 	int create, port, len, asymmetric, flookup, argc, proxied, real;
 	int orgip, commip;
@@ -2779,13 +2837,7 @@ force_rtp_proxy(struct sip_msg* msg, char* str1, char* str2, int offer)
 	} else {
 		create = swap?1:0;
 	}
-	/* extract_body will also parse all the headers in the message as
-	 * a side effect => don't move get_callid/get_to_tag in front of it
-	 * -- andrei */
-	if (extract_body(msg, &body) == -1) {
-		LM_ERR("can't extract body from the message\n");
-		return -1;
-	}
+	
 	if (get_callid(msg, &callid) == -1 || callid.len == 0) {
 		LM_ERR("can't get Call-Id field\n");
 		return -1;
