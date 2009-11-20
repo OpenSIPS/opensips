@@ -290,6 +290,8 @@ void destroy_b2bl_htable(void)
 	int i;
 	b2bl_tuple_t* tuple;
 
+	if(!b2bl_htable)
+		return;
 
 	for(i= 0; i< b2bl_hsize; i++)
 	{
