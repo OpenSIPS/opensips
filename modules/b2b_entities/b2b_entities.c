@@ -81,6 +81,7 @@ static param_export_t params[]={
 	{ 0,                       0,            0                   }
 };
 
+
 /** Module interface */
 struct module_exports exports= {
 	"b2b_entities",                 /* module name */
@@ -178,7 +179,7 @@ static int child_init(int rank)
 /** Module destroy function */
 static void mod_destroy(void)
 {
-//	destroy_b2b_htables();
+	destroy_b2b_htables();
 }
 
 int b2b_load_api(b2b_api_t* api)
@@ -199,5 +200,4 @@ int b2b_load_api(b2b_api_t* api)
 
 	return 0;
 }
-
 
