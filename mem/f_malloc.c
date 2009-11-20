@@ -46,6 +46,8 @@
 
 /*useful macros*/
 
+#define max(a,b) ( (a)>(b)?(a):(b))
+
 #define FRAG_NEXT(f) \
 	((struct fm_frag*)((char*)(f)+sizeof(struct fm_frag)+(f)->size ))
 

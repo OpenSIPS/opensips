@@ -170,5 +170,5 @@ static inline unsigned long fm_get_frags(struct fm_block* qm)
 }
 #endif /*STATISTICS*/
 
-#define max(a,b) ( (a)>(b)?(a):(b))
+
 #endif
