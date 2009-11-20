@@ -420,6 +420,7 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 	}
 
 logic_notify:
+	tmb.t_newtran(msg);
 	if(method_value == METHOD_ACK)
 	{
 		if(dlg->last_reply_code > 299)
@@ -431,7 +432,6 @@ logic_notify:
 	}
 	else
 	{
-		tmb.t_newtran(msg);
 		if(method_value == METHOD_CANCEL)
 			dlg->cancel_tm_tran = tmb.t_gett();
 		else
@@ -502,6 +502,7 @@ void destroy_b2b_htables(void)
 				dlg = aux;
 			}
 		}
+		shm_free(server_htable);
 	}
 
 	if(client_htable)
@@ -518,9 +519,8 @@ void destroy_b2b_htables(void)
 				dlg = aux;
 			}
 		}
+		shm_free(client_htable);
 	}
-	shm_free(server_htable);
-	shm_free(client_htable);
 }
 
 
@@ -1006,6 +1006,13 @@ int b2b_send_request(enum b2b_entity_type et, str* b2b_key, str* method,
 	{
 		/* build structure with dialog information */
 		td = build_dlg(dlg);
+		if(td == NULL)
+		{
+			LM_ERR("Failed to build tm dialog structure\n");
+			lock_release(&table[hash_index].lock);
+			return -1;
+		}
+
 		if(dlg->last_method == METHOD_ACK)
 		{
 			td->loc_seq.value = dlg->last_invite_cseq;

@@ -75,7 +75,8 @@ str* server_new(struct sip_msg* msg, b2b_notify_t b2b_cback,
 		tmb.t_newtran(msg);
 		dlg->tm_tran = tmb.t_gett();
 	}
-	tmb.ref_cell(dlg->tm_tran);
+	else
+		tmb.ref_cell(dlg->tm_tran);
 	
 	tmb.t_reply(msg, 100, &reason);
 

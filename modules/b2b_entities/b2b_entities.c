@@ -178,7 +178,7 @@ static int child_init(int rank)
 /** Module destroy function */
 static void mod_destroy(void)
 {
-//	destroy_b2b_htables();
+	destroy_b2b_htables();
 }
 
 int b2b_load_api(b2b_api_t* api)
