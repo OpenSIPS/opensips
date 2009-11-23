@@ -1278,6 +1278,29 @@ codec_delete_re("PCMA|PCMU");
 		</example>
 	</section>
 
+        <section>
+		<title>
+		<function moreinfo="none">codec_delete_except_re ( regexp )</function>
+		</title>
+		<para>
+		This function deletes all the codecs except those specified
+                by the regular expression.
+		</para>
+   		<para>
+		This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
+		FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
+		</para>
+		<example>
+		<title><function>codec_delete_except_re</function> usage</title>
+		<programlisting format="linespecific">
+...
+codec_delete_except_re("PCMA|PCMU");#will delete all codecs except PCMA and PCMU
+...
+
+</programlisting>
+		</example>
+	</section>
+
 	<section>
 		<title>
 		<function moreinfo="none">codec_move_up_re ( regexp )</function>

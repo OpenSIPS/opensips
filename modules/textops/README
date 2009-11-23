@@ -64,7 +64,7 @@ Daniel-Constantin Mierla
               1.3.24. remove_hf(hname)
               1.3.25. has_body(), has_body(mime)
               1.3.26. is_privacy(privacy_type)
-              1.3.27. strip_body() strip_body(mime)
+              1.3.27. strip_body(), strip_body(mime)
               1.3.28. add_body(body_text, new_content_type)
               1.3.29. codec_exists (name [,clock] )
               1.3.30. codec_delete (name [,clock] )
@@ -72,8 +72,9 @@ Daniel-Constantin Mierla
               1.3.32. codec_move_down (name [,clock] )
               1.3.33. codec_exists_re ( regexp )
               1.3.34. codec_delete_re ( regexp )
-              1.3.35. codec_move_up_re ( regexp )
-              1.3.36. codec_move_down_re ( regexp )
+              1.3.35. codec_delete_except_re ( regexp )
+              1.3.36. codec_move_up_re ( regexp )
+              1.3.37. codec_move_down_re ( regexp )
 
         1.4. Known Limitations
 
@@ -105,7 +106,7 @@ Daniel-Constantin Mierla
    1.24. remove_hf usage
    1.25. has_body usage
    1.26. is_privacy usage
-   1.27. is_privacy usage
+   1.27. strip_body usage
    1.28. add_body usage
    1.29. codec_exists usage
    1.30. codec_delete usage
@@ -114,9 +115,10 @@ Daniel-Constantin Mierla
    1.33. codec_move_down usage
    1.34. codec_exists_re usage
    1.35. codec_delete_re usage
-   1.36. codec_move_up_re usage
-   1.37. codec_move_down_re usage
-   1.38. codec_move_down usage
+   1.36. codec_delete_except_re usage
+   1.37. codec_move_up_re usage
+   1.38. codec_move_down_re usage
+   1.39. codec_move_down usage
 
 Chapter 1. Admin Guide
 
@@ -691,7 +693,7 @@ if(is_privacy("id"))
 }
 ...
 
-1.3.27.  strip_body() strip_body(mime)
+1.3.27.  strip_body(), strip_body(mime)
 
    If the message has a body, this function deletes it, correcting
    Content-Length. This function also deletes the Content-Type
@@ -711,7 +713,7 @@ if(is_privacy("id"))
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.27. is_privacy usage
+   Example 1.27. strip_body usage
 ...
 strip_body();   #delete any body
 strip_body("multipart/related") # delete a multipart/related body
@@ -862,7 +864,22 @@ codec_delete_re("PCMA|PCMU");
 ...
 
 
-1.3.35.  codec_move_up_re ( regexp )
+1.3.35.  codec_delete_except_re ( regexp )
+
+   This function deletes all the codecs except those specified by
+   the regular expression.
+
+   This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
+   FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
+
+   Example 1.36. codec_delete_except_re usage
+...
+codec_delete_except_re("PCMA|PCMU");#will delete all codecs except PCMA
+and PCMU
+...
+
+
+1.3.36.  codec_move_up_re ( regexp )
 
    This function has the same effect as codec_move_up ( without
    the clock parameter ) the only difference is that it takes a
@@ -871,12 +888,12 @@ codec_delete_re("PCMA|PCMU");
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.36. codec_move_up_re usage
+   Example 1.37. codec_move_up_re usage
 ...
 codec_move_up_re("sp[a-z]*");
 ...
 
-1.3.36.  codec_move_down_re ( regexp )
+1.3.37.  codec_move_down_re ( regexp )
 
    This function has the same effect as codec_move_down ( without
    the clock parameter ) the only difference is that it takes a
@@ -885,12 +902,12 @@ codec_move_up_re("sp[a-z]*");
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.37. codec_move_down_re usage
+   Example 1.38. codec_move_down_re usage
 ...
 codec_move_down_re("sp[a-z]*");
 ...
 
-   Example 1.38. codec_move_down usage
+   Example 1.39. codec_move_down usage
 ...
 /*
   This example will move speex with 8000 codec to the back of the list,
