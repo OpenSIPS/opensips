@@ -547,6 +547,7 @@ int ospRebuildDestionationUri(
 {
     static const str TRANS = { ";transport=tcp", 14 };
     static const str USERPHONE = { ";user=phone", 11 };
+    char host[OSP_STRBUF_SIZE];
     char* buffer;
     int calledsize;
     int hostsize;
@@ -554,7 +555,8 @@ int ospRebuildDestionationUri(
     int count;
 
     calledsize = strlen(dest->called);
-    hostsize = strlen(dest->host);
+    ospConvertToInAddress(dest->host, host, sizeof(host));
+    hostsize = strlen(host);
     /* ";rn=" + nprn */
     npsize = dest->nprn[0] ? 4 + strlen(dest->nprn) : 0;
     /* ";cic=" + npcic */
@@ -611,22 +613,8 @@ int ospRebuildDestionationUri(
     
     *buffer++ = '@';
     
-    if (*dest->host == '[') {
-        /* leave out annoying [] */
-        memcpy(buffer, dest->host + 1, hostsize - 2);
-        buffer += hostsize - 2;
-    } else {
-        memcpy(buffer, dest->host, hostsize);
-        buffer += hostsize;
-    }
-    
-/*
-    if (portsize > 0) {
-        *buffer++ = ':';
-        memcpy(buffer, port, portsize);
-        buffer += portsize;
-    }
-*/
+    strncpy(buffer, host, newuri->len - (buffer - newuri->s));
+    buffer += hostsize;
 
     if (_osp_append_userphone != 0) {
         memcpy(buffer, USERPHONE.s, USERPHONE.len);

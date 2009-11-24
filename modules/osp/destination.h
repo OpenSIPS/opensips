@@ -77,6 +77,7 @@ void ospRecordEvent(int clientcode, int servercode);
 void ospDumpDestination(osp_dest* dest);
 void ospDumpAllDestination(void);
 void ospConvertAddress(char* src, char* dst, int buffersize);
+void ospConvertToInAddress(const char* src, char* dest, int buffersize);
 
 #endif /* _OSP_MOD_DESTINATION_H_ */
 

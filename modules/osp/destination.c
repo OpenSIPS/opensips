@@ -439,3 +439,48 @@ void ospConvertAddress(
     }
 }
 
+/*
+ * Convert "[x.x.x.x]:port" or "hostname:prot" to "address:port" format
+ * param src Source address string
+ * param dest Destination address string
+ * param bufsize Size of dest buffer
+ */
+void ospConvertToInAddress(
+    const char* src,
+    char* dest,
+    int bufsize)
+{
+    char buffer[OSP_STRBUF_SIZE];
+    char* end;
+    char* port;
+    int size;
+
+    if ((src != NULL) && (*src != '\0')) {
+        size = sizeof(buffer);
+        strncpy(buffer, src, size);
+        buffer[size - 1] = '\0';
+
+        if (buffer[0] == '[') {
+            if((port = strchr(buffer + 1, ':')) != NULL) {
+                *port = '\0';
+                port++;
+            }
+
+            if ((end = strchr(buffer + 1, ']')) != NULL) {
+                *end = '\0';
+            }
+
+            if (port != NULL) {
+                snprintf(dest, bufsize, "%s:%s", buffer + 1, port);
+            } else {
+                strncpy(dest, buffer + 1, bufsize);
+            }
+        } else {
+            strncpy(dest, src, bufsize);
+        }
+        dest[bufsize - 1] = '\0';
+    } else {
+        *dest = '\0';
+    }
+}
+
