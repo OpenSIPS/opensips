@@ -150,7 +150,6 @@ static int ospLoadRoutes(
         }
 
         ospConvertToInAddress(host, dest->host, sizeof(dest->host));
-        ospConvertToInAddress(destdev, dest->destdev, sizeof(dest->destdev));
 
         errorcode = OSPPTransactionGetNumberPortability(transaction, dest->nprn, dest->npcic, &dest->npdi);
         if (errorcode != OSPC_ERR_NO_ERROR) {
@@ -216,7 +215,6 @@ static int ospLoadRoutes(
             "calling '%s' "
             "called '%s' "
             "host '%s' "
-            "destdev '%s' "
             "nprn '%s' "
             "npcic '%s' "
             "npdi '%d' "
@@ -232,7 +230,6 @@ static int ospLoadRoutes(
             dest->calling, 
             dest->called, 
             dest->host, 
-            dest->destdev, 
             dest->nprn, 
             dest->npcic, 
             dest->npdi, 
