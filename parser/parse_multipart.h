@@ -39,3 +39,4 @@ struct multi_body * get_all_bodies(struct sip_msg * msg);
 void free_multi_body(struct multi_body *);
 
 #endif
+
