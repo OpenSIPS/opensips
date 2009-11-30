@@ -669,8 +669,16 @@ int update_pua(ua_pres_t* p, unsigned int hash_code)
 	{
 		str met= {"PUBLISH", 7};
 		ua_pres_t* cb_param;
+		pua_event_t* ev;
 
-		str_hdr = publ_build_hdr(expires, get_event(p->event), NULL,
+		ev = get_event(p->event);
+		if(ev == NULL)
+		{
+			LM_ERR("No event with flag [%d] found\n", p->event);
+			goto error;
+		}
+
+		str_hdr = publ_build_hdr(expires, ev, NULL,
 				&p->etag, p->extra_headers, 0);
 		if(str_hdr == NULL)
 		{
