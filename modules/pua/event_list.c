@@ -139,8 +139,8 @@ pua_event_t* get_event(int ev_flag)
 			return event;
 		}
 		event= event->next;
-	}	
-	return NULL;	
+	}
+	return NULL;
 }
 
 
