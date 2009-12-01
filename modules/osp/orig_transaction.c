@@ -46,6 +46,8 @@ extern int _osp_max_dests;
 extern int _osp_redir_uri;
 extern int_str _osp_snid_avpname;
 extern unsigned short _osp_snid_avptype;
+extern int_str _osp_cinfo_avpname;
+extern unsigned short _osp_cinfo_avptype;
 extern OSPTPROVHANDLE _osp_provider;
 extern auth_api_t osp_auth;
 
@@ -285,6 +287,11 @@ int ospRequestRouting(
     struct usr_avp* snidavp = NULL;
     int_str snidval;
     char snid[OSP_STRBUF_SIZE];
+    struct usr_avp* cinfoavp = NULL;
+    int_str cinfoval;
+    unsigned int cinfonum = 0, i;
+    char cinfo[OSP_DEF_CINFOS][OSP_STRBUF_SIZE];
+    char cinfostr[OSP_STRBUF_SIZE];
     unsigned int callidnumber = 1;
     OSPT_CALL_ID* callids[callidnumber];
     unsigned int logsize = 0;
@@ -330,6 +337,31 @@ int ospRequestRouting(
             snid[0] = '\0';
         }
 
+        if (_osp_cinfo_avpname.n != 0) {
+			for (i = 0, cinfoavp = search_first_avp(_osp_cinfo_avptype, _osp_cinfo_avpname, NULL, 0);
+                ((i < OSP_DEF_CINFOS) && (cinfoavp != NULL));
+				i++, cinfoavp = search_next_avp(cinfoavp, NULL))
+            {
+                get_avp_val(cinfoavp, &cinfoval);
+                if ((cinfoavp->flags & AVP_VAL_STR) && (cinfoval.s.s && cinfoval.s.len)) {
+                    snprintf(cinfo[i], sizeof(cinfo[i]), "%.*s", cinfoval.s.len, cinfoval.s.s);
+                    cinfo[i][sizeof(cinfo[i]) - 1] = '\0';
+                } else {
+                    cinfo[i][0] = '\0';
+                }
+            }
+            cinfonum = i;
+
+            cinfostr[0] = '\0';
+            for (i = 0; i < cinfonum; i++) {
+                if (cinfo[cinfonum - i - 1][0] != '\0') {
+                    OSPPTransactionSetCustomInfo(transaction, i, cinfo[cinfonum - i - 1]);
+                    snprintf(cinfostr + strlen(cinfostr), sizeof(cinfostr) - strlen(cinfostr), "custom_info%d '%s' ", i + 1, cinfo[cinfonum - i - 1]);
+                }
+            }
+            cinfostr[sizeof(cinfostr) - 1] = '\0';
+		}
+
         LM_INFO("request auth and routing for: "
             "source '%s' "
             "source_dev '%s' "
@@ -342,7 +374,8 @@ int ospRequestRouting(
             "diversion_user '%s' "
             "diversion_host '%s' "
             "call_id '%.*s' "
-            "dest_count '%d'\n",
+            "dest_count '%d' "
+            "%s\n",
             _osp_out_device,
             srcdevbuf,
             snid,
@@ -355,7 +388,8 @@ int ospRequestRouting(
             divhostbuf,
             callids[0]->ospmCallIdLen,
             callids[0]->ospmCallIdVal,
-            destcount);
+            destcount,
+            cinfostr);
 
         OSPPTransactionSetNumberPortability(transaction, rn, cic, npdi);
 

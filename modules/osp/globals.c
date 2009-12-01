@@ -67,6 +67,9 @@ char _osp_CA_CERTIFICATE[OSP_STRBUF_SIZE];
 char* _osp_snid_avp = OSP_DEF_SNIDAVP;
 int_str _osp_snid_avpname;
 unsigned short _osp_snid_avptype;
+char* _osp_cinfo_avp = OSP_DEF_CINFOAVP;
+int_str _osp_cinfo_avpname;
+unsigned short _osp_cinfo_avptype;
 
 OSPTPROVHANDLE _osp_provider = -1;
 

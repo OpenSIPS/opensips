@@ -53,6 +53,8 @@
 #define OSP_DEF_REDIRURI                0   /* 0 for "xxxxxxxxxx@xxx.xxx.xxx.xxx", 1 for "<xxxxxxxxxx@xxx.xxx.xxx.xxx>" format */
 #define OSP_DEF_USERPHONE               0
 #define OSP_DEF_SNIDAVP                 "$avp(s:_osp_source_networkid_)"
+#define OSP_DEF_CINFOS                  8
+#define OSP_DEF_CINFOAVP                "$avp(s:_osp_custom_info_)"
 
 #define OSP_STRBUF_SIZE                 256
 #define OSP_KEYBUF_SIZE                 1024

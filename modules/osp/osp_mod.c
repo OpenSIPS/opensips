@@ -74,6 +74,9 @@ extern char _osp_CA_CERTIFICATE[];
 extern char* _osp_snid_avp;
 extern int_str _osp_snid_avpname;
 extern unsigned short _osp_snid_avptype;
+extern char* _osp_cinfo_avp;
+extern int_str _osp_cinfo_avpname;
+extern unsigned short _osp_cinfo_avptype;
 extern OSPTPROVHANDLE _osp_provider;
 
 struct rr_binds osp_rr;
@@ -150,6 +153,7 @@ static param_export_t params[]={
     { "redirection_uri_format",           INT_PARAM, &_osp_redir_uri },
     { "append_userphone",                 INT_PARAM, &_osp_append_userphone },
     { "source_networkid_avp",             STR_PARAM, &_osp_snid_avp },
+    { "custom_info_avp",                  STR_PARAM, &_osp_cinfo_avp },
     { 0,0,0 } 
 };
 
@@ -314,6 +318,22 @@ static int ospVerifyParameters(void)
         _osp_snid_avptype = 0;
     }
 
+    if (_osp_cinfo_avp && *_osp_cinfo_avp) {
+        avp_str.s = _osp_cinfo_avp;
+        avp_str.len = strlen(_osp_cinfo_avp);
+        if (pv_parse_spec(&avp_str, &avp_spec) == NULL ||
+            avp_spec.type != PVT_AVP ||
+            pv_get_avp_name(0, &(avp_spec.pvp), &_osp_cinfo_avpname, &_osp_cinfo_avptype) != 0)
+        {
+            LM_WARN("'%s' invalid AVP definition\n", _osp_cinfo_avp);
+            _osp_cinfo_avpname.n = 0;
+            _osp_cinfo_avptype = 0;
+        }
+    } else {
+        _osp_cinfo_avpname.n = 0;
+        _osp_cinfo_avptype = 0;
+    }
+
     ospDumpParameters();
 
     return result;
@@ -358,6 +378,13 @@ static void ospDumpParameters(void)
         LM_INFO("    source network ID AVP name '%.*s'\n", _osp_snid_avpname.s.len, _osp_snid_avpname.s.s);
     } else {
         LM_INFO("    source network ID AVP ID '%d'\n", _osp_snid_avpname.n);
+    }
+    if (_osp_cinfo_avpname.n == 0) {
+        LM_INFO("    custom info disabled\n");
+    } else if (_osp_cinfo_avptype & AVP_NAME_STR) {
+        LM_INFO("    custom info AVP name '%.*s'\n", _osp_cinfo_avpname.s.len, _osp_cinfo_avpname.s.s);
+    } else {
+        LM_INFO("    custom info AVP ID '%d'\n", _osp_cinfo_avpname.n);
     }
 }
 
