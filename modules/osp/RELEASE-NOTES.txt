@@ -22,7 +22,7 @@
    o Bug 5039 - changed return value for 'preparenextosproute' when there is
      no more routes from 0 - stop routing logic to -1 - false
    o Bug 5039 - changed return value for 'preparenextosproute' when there is
-   o Bug 4893 - sequential routing (in failure_route[1]) now checks for code 
+   o Bug 4893 - sequential routing (in failure_route[1]) now checks for code
      487 (Canceled) before trying the next OSP route.
    o Bug 4892 - removed trailing binary chars from some log messages.
    o Bug 4987 - fixed a compile time error on Solaris
@@ -56,7 +56,7 @@
    o Copied files from cvs.berlios.de:/cvsroot/osp-module
 
 2006 August 3
-   o Using BRAND_ROUTE approach to add route specific header to avoid sending 
+   o Using BRAND_ROUTE approach to add route specific header to avoid sending
      an OSP token to a non-OSP destination.
      For bug 1524046 on OpenSER tracker.
    o Using called number in Request-Line for token validation and auth request.

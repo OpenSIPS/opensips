@@ -1,14 +1,14 @@
 /*
- * opensips osp module. 
+ * opensips osp module.
  *
- * This module enables opensips to communicate with an Open Settlement 
- * Protocol (OSP) server.  The Open Settlement Protocol is an ETSI 
+ * This module enables opensips to communicate with an Open Settlement
+ * Protocol (OSP) server.  The Open Settlement Protocol is an ETSI
  * defined standard for Inter-Domain VoIP pricing, authorization
- * and usage exchange.  The technical specifications for OSP 
+ * and usage exchange.  The technical specifications for OSP
  * (ETSI TS 101 321 V4.1.1) are available at www.etsi.org.
  *
  * Uli Abend was the original contributor to this module.
- * 
+ *
  * Copyright (C) 2001-2005 Fhg Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -90,14 +90,14 @@ static int  ospVerifyParameters(void);
 static void ospDumpParameters(void);
 
 static cmd_export_t cmds[]={
-    { "checkospheader",          (cmd_function)ospCheckHeader,      0, 0, 0, REQUEST_ROUTE|FAILURE_ROUTE }, 
-    { "validateospheader",       (cmd_function)ospValidateHeader,   0, 0, 0, REQUEST_ROUTE|FAILURE_ROUTE }, 
-    { "requestosprouting",       (cmd_function)ospRequestRouting,   0, 0, 0, REQUEST_ROUTE|FAILURE_ROUTE }, 
-    { "checkosproute",           (cmd_function)ospCheckRoute,       0, 0, 0, REQUEST_ROUTE|FAILURE_ROUTE }, 
-    { "prepareosproute",         (cmd_function)ospPrepareRoute,     0, 0, 0, BRANCH_ROUTE }, 
-    { "prepareallosproutes",     (cmd_function)ospPrepareAllRoutes, 0, 0, 0, REQUEST_ROUTE|FAILURE_ROUTE }, 
-    { "checkcallingtranslation", (cmd_function)ospCheckCalling,     0, 0, 0, BRANCH_ROUTE }, 
-    { "reportospusage",          (cmd_function)ospReportUsage,      1, 0, 0, REQUEST_ROUTE }, 
+    { "checkospheader",          (cmd_function)ospCheckHeader,      0, 0, 0, REQUEST_ROUTE|FAILURE_ROUTE },
+    { "validateospheader",       (cmd_function)ospValidateHeader,   0, 0, 0, REQUEST_ROUTE|FAILURE_ROUTE },
+    { "requestosprouting",       (cmd_function)ospRequestRouting,   0, 0, 0, REQUEST_ROUTE|FAILURE_ROUTE },
+    { "checkosproute",           (cmd_function)ospCheckRoute,       0, 0, 0, REQUEST_ROUTE|FAILURE_ROUTE },
+    { "prepareosproute",         (cmd_function)ospPrepareRoute,     0, 0, 0, BRANCH_ROUTE },
+    { "prepareallosproutes",     (cmd_function)ospPrepareAllRoutes, 0, 0, 0, REQUEST_ROUTE|FAILURE_ROUTE },
+    { "checkcallingtranslation", (cmd_function)ospCheckCalling,     0, 0, 0, BRANCH_ROUTE },
+    { "reportospusage",          (cmd_function)ospReportUsage,      1, 0, 0, REQUEST_ROUTE },
     { 0, 0, 0, 0, 0, 0 }
 };
 
@@ -154,7 +154,7 @@ static param_export_t params[]={
     { "append_userphone",                 INT_PARAM, &_osp_append_userphone },
     { "source_networkid_avp",             STR_PARAM, &_osp_snid_avp },
     { "custom_info_avp",                  STR_PARAM, &_osp_cinfo_avp },
-    { 0,0,0 } 
+    { 0,0,0 }
 };
 
 struct module_exports exports = {
@@ -185,7 +185,7 @@ static int ospInitMod(void)
 
     if (ospVerifyParameters() != 0) {
         /* At least one parameter incorrect -> error */
-        return -1;   
+        return -1;
     }
 
     /* Load the RR API */
@@ -252,7 +252,7 @@ static int ospVerifyParameters(void)
         if (_osp_private_key == NULL) {
             sprintf(_osp_PRIVATE_KEY, "%spkey.pem", CFG_DIR);
             _osp_private_key = _osp_PRIVATE_KEY;
-        } 
+        }
 
         if (_osp_local_certificate == NULL) {
             sprintf(_osp_LOCAL_CERTIFICATE, "%slocalcert.pem", CFG_DIR);
@@ -274,8 +274,8 @@ static int ospVerifyParameters(void)
     }
 
     if (_osp_max_dests > OSP_DEF_DESTS || _osp_max_dests < 1) {
-        _osp_max_dests = OSP_DEF_DESTS;    
-        LM_WARN("max_destinations is out of range, reset to %d\n", OSP_DEF_DESTS); 
+        _osp_max_dests = OSP_DEF_DESTS;
+        LM_WARN("max_destinations is out of range, reset to %d\n", OSP_DEF_DESTS);
     }
 
     if (_osp_token_format < 0 || _osp_token_format > 2) {
@@ -342,14 +342,14 @@ static int ospVerifyParameters(void)
 /*
  * Dump OSP module configuration
  */
-static void ospDumpParameters(void) 
+static void ospDumpParameters(void)
 {
     int i;
 
     LM_INFO("module configuration: ");
     LM_INFO("    number of service points '%d'", _osp_sp_number);
     for (i = 0; i < _osp_sp_number; i++) {
-        LM_INFO("    sp%d_uri '%s' sp%d_weight '%ld' ", 
+        LM_INFO("    sp%d_uri '%s' sp%d_weight '%ld' ",
             osp_index[i], _osp_sp_uris[i], osp_index[i], _osp_sp_weights[i]);
     }
     LM_INFO("    device_ip '%s' ", _osp_device_ip);

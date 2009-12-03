@@ -1,14 +1,14 @@
 /*
- * opensips osp module. 
+ * opensips osp module.
  *
- * This module enables opensips to communicate with an Open Settlement 
- * Protocol (OSP) server.  The Open Settlement Protocol is an ETSI 
+ * This module enables opensips to communicate with an Open Settlement
+ * Protocol (OSP) server.  The Open Settlement Protocol is an ETSI
  * defined standard for Inter-Domain VoIP pricing, authorization
- * and usage exchange.  The technical specifications for OSP 
+ * and usage exchange.  The technical specifications for OSP
  * (ETSI TS 101 321 V4.1.1) are available at www.etsi.org.
  *
  * Uli Abend was the original contributor to this module.
- * 
+ *
  * Copyright (C) 2001-2005 Fhg Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -26,7 +26,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- * 
+ *
  * History:
  * ---------
  *  2006-03-13  RR functions are loaded via API function (bogdan)
@@ -61,8 +61,8 @@
 #define OSP_COOKIEHAS_SRCIP     (1 << 1)
 #define OSP_COOKIEHAS_AUTHTIME  (1 << 2)
 #define OSP_COOKIEHAS_DSTCOUNT  (1 << 3)
-#define OSP_COOKIEHAS_ORIGALL   (OSP_COOKIEHAS_TRANSID | OSP_COOKIEHAS_SRCIP | OSP_COOKIEHAS_AUTHTIME | OSP_COOKIEHAS_DSTCOUNT) 
-#define OSP_COOKIEHAS_TERMALL   (OSP_COOKIEHAS_TRANSID | OSP_COOKIEHAS_SRCIP | OSP_COOKIEHAS_AUTHTIME) 
+#define OSP_COOKIEHAS_ORIGALL   (OSP_COOKIEHAS_TRANSID | OSP_COOKIEHAS_SRCIP | OSP_COOKIEHAS_AUTHTIME | OSP_COOKIEHAS_DSTCOUNT)
+#define OSP_COOKIEHAS_TERMALL   (OSP_COOKIEHAS_TRANSID | OSP_COOKIEHAS_SRCIP | OSP_COOKIEHAS_AUTHTIME)
 
 extern char _osp_out_device[];
 extern OSPTPROVHANDLE _osp_provider;
@@ -86,12 +86,12 @@ static int ospReportUsageFromCookie(struct sip_msg* msg, char* cooky, OSPT_CALL_
  * param destcount Destination count
  */
 static void ospRecordTransaction(
-    struct sip_msg* msg, 
+    struct sip_msg* msg,
     unsigned long long transid,
-    char* uac, 
-    char* from, 
-    char* to, 
-    time_t authtime, 
+    char* uac,
+    char* from,
+    char* to,
+    time_t authtime,
     int isorig,
     unsigned destcount)
 {
@@ -153,11 +153,11 @@ static void ospRecordTransaction(
  * param destcount Destination count
  */
 void ospRecordOrigTransaction(
-    struct sip_msg* msg, 
-    unsigned long long transid, 
-    char* uac, 
-    char* from, 
-    char* to, 
+    struct sip_msg* msg,
+    unsigned long long transid,
+    char* uac,
+    char* from,
+    char* to,
     time_t authtime,
     unsigned destcount)
 {
@@ -176,11 +176,11 @@ void ospRecordOrigTransaction(
  * param authtime Request authorization time
  */
 void ospRecordTermTransaction(
-    struct sip_msg* msg, 
-    unsigned long long transid, 
-    char* uac, 
-    char* from, 
-    char* to, 
+    struct sip_msg* msg,
+    unsigned long long transid,
+    char* uac,
+    char* from,
+    char* to,
     time_t authtime)
 {
     int isorig = 0;
@@ -200,8 +200,8 @@ void ospRecordTermTransaction(
  */
 static int ospReportUsageFromCookie(
     struct sip_msg* msg,
-    char* cookie, 
-    OSPT_CALL_ID* callid, 
+    char* cookie,
+    OSPT_CALL_ID* callid,
     int release,
     OSPE_ROLE type)
 {
@@ -405,8 +405,8 @@ static int ospReportUsageFromCookie(
  * return MODULE_RETURNCODE_TRUE success, MODULE_RETURNCODE_FALSE failure
  */
 int ospReportUsage(
-    struct sip_msg* msg, 
-    char* whorelease, 
+    struct sip_msg* msg,
+    char* whorelease,
     char* ignore2)
 {
     int release;
@@ -475,8 +475,8 @@ int ospReportUsage(
  * return 0 success, others failure
  */
 static int ospBuildUsageFromDestination(
-    OSPTTRANHANDLE transaction, 
-    osp_dest* dest, 
+    OSPTTRANHANDLE transaction,
+    osp_dest* dest,
     int lastcode)
 {
     int errorcode;
@@ -518,12 +518,12 @@ static int ospBuildUsageFromDestination(
  * return 0 success
  */
 static int ospReportUsageFromDestination(
-    OSPTTRANHANDLE transaction, 
+    OSPTTRANHANDLE transaction,
     osp_dest* dest)
 {
     ospReportUsageWrapper(
         transaction,                                          /* In - Transaction handle */
-        dest->lastcode,                                       /* In - Release Code */    
+        dest->lastcode,                                       /* In - Release Code */
         0,                                                    /* In - Length of call */
         dest->authtime,                                       /* In - Call start time */
         0,                                                    /* In - Call end time */

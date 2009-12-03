@@ -1,14 +1,14 @@
 /*
- * opensips osp module. 
+ * opensips osp module.
  *
- * This module enables opensips to communicate with an Open Settlement 
- * Protocol (OSP) server.  The Open Settlement Protocol is an ETSI 
+ * This module enables opensips to communicate with an Open Settlement
+ * Protocol (OSP) server.  The Open Settlement Protocol is an ETSI
  * defined standard for Inter-Domain VoIP pricing, authorization
- * and usage exchange.  The technical specifications for OSP 
+ * and usage exchange.  The technical specifications for OSP
  * (ETSI TS 101 321 V4.1.1) are available at www.etsi.org.
  *
  * Uli Abend was the original contributor to this module.
- * 
+ *
  * Copyright (C) 2001-2005 Fhg Fokus
  *
  * This file is part of opensips, a free SIP server.

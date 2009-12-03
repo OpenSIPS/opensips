@@ -1,14 +1,14 @@
 /*
- * opensips osp module. 
+ * opensips osp module.
  *
- * This module enables opensips to communicate with an Open Settlement 
- * Protocol (OSP) server.  The Open Settlement Protocol is an ETSI 
+ * This module enables opensips to communicate with an Open Settlement
+ * Protocol (OSP) server.  The Open Settlement Protocol is an ETSI
  * defined standard for Inter-Domain VoIP pricing, authorization
- * and usage exchange.  The technical specifications for OSP 
+ * and usage exchange.  The technical specifications for OSP
  * (ETSI TS 101 321 V4.1.1) are available at www.etsi.org.
  *
  * Uli Abend was the original contributor to this module.
- * 
+ *
  * Copyright (C) 2001-2005 Fhg Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -47,17 +47,17 @@ extern int _osp_use_np;
 extern int _osp_append_userphone;
 
 static void ospSkipPlus(char* e164);
-static int ospAppendHeader(struct sip_msg* msg, str* header); 
+static int ospAppendHeader(struct sip_msg* msg, str* header);
 
-/* 
- * Copy str to buffer and check overflow 
+/*
+ * Copy str to buffer and check overflow
  * param source Str
  * param buffer Buffer
  * param bufsize Size of buffer
  */
 void ospCopyStrToBuffer(
-    str* source, 
-    char* buffer, 
+    str* source,
+    char* buffer,
     int bufsize)
 {
     int copybytes;
@@ -65,7 +65,7 @@ void ospCopyStrToBuffer(
     if (source->len > bufsize - 1) {
         LM_ERR("buffer for copying '%.*s' is too small, will copy the first '%d' bytes\n",
             source->len,
-            source->s, 
+            source->s,
             bufsize);
         copybytes = bufsize - 1;
     } else {
@@ -76,7 +76,7 @@ void ospCopyStrToBuffer(
     buffer[copybytes] = '\0';
 }
 
-/* 
+/*
  * Remove '+' in E164 string
  * param e164 E164 string
  */
@@ -89,7 +89,7 @@ static void ospSkipPlus(
     }
 }
 
-/* 
+/*
  * Get calling number from From header
  * param msg SIP message
  * param fromuser User part of From header
@@ -97,8 +97,8 @@ static void ospSkipPlus(
  * return 0 success, -1 failure
  */
 int ospGetFromUserpart(
-    struct sip_msg* msg, 
-    char* fromuser, 
+    struct sip_msg* msg,
+    char* fromuser,
     int bufsize)
 {
     struct to_body* from;
@@ -127,7 +127,7 @@ int ospGetFromUserpart(
     return result;
 }
 
-/* 
+/*
  * Get calling number from Remote-Party-ID header
  * param msg SIP message
  * param user User part of Remote-Party-ID header
@@ -135,8 +135,8 @@ int ospGetFromUserpart(
  * return 0 success, 1 not use RPID or without RPID, -1 failure
  */
 int ospGetRpidUserpart(
-    struct sip_msg* msg, 
-    char* user, 
+    struct sip_msg* msg,
+    char* user,
     int bufsize)
 {
     struct to_body* rpid;
@@ -174,7 +174,7 @@ int ospGetRpidUserpart(
     return result;
 }
 
-/* 
+/*
  * Get called number from To header
  * param msg SIP message
  * param touser User part of To header
@@ -182,8 +182,8 @@ int ospGetRpidUserpart(
  * return 0 success, -1 failure
  */
 int ospGetToUserpart(
-    struct sip_msg* msg, 
-    char* touser, 
+    struct sip_msg* msg,
+    char* touser,
     int bufsize)
 {
     struct to_body* to;
@@ -212,7 +212,7 @@ int ospGetToUserpart(
     return result;
 }
 
-/* 
+/*
  * Get called number from Request-Line header
  * param msg SIP message
  * param touser User part of To header
@@ -220,8 +220,8 @@ int ospGetToUserpart(
  * return 0 success, -1 failure
  */
 int ospGetUriUserpart(
-    struct sip_msg* msg, 
-    char* uriuser, 
+    struct sip_msg* msg,
+    char* uriuser,
     int bufsize)
 {
     char* delim = NULL;
@@ -243,19 +243,19 @@ int ospGetUriUserpart(
     return result;
 }
 
-/* 
+/*
  * Append header to SIP message
  * param msg SIP message
  * param header Header to be appended
  * return 0 success, -1 failure
  */
 static int ospAppendHeader(
-    struct sip_msg* msg, 
+    struct sip_msg* msg,
     str* header)
 {
     char* s;
     struct lump* anchor;
-    
+
     if((msg == 0) || (header == 0) || (header->s == 0) || (header->len <= 0)) {
         LM_ERR("bad parameters for appending header\n");
         return -1;
@@ -285,11 +285,11 @@ static int ospAppendHeader(
         pkg_free(s);
         return -1;
     }
-    
+
     return 0;
 }
 
-/* 
+/*
  * Add OSP token header to SIP message
  * param msg SIP message
  * param token OSP authorization token
@@ -297,8 +297,8 @@ static int ospAppendHeader(
  * return 0 success, -1 failure
  */
 int ospAddOspHeader(
-    struct sip_msg* msg, 
-    unsigned char* token, 
+    struct sip_msg* msg,
+    unsigned char* token,
     unsigned int tokensize)
 {
     str headerval;
@@ -314,17 +314,17 @@ int ospAddOspHeader(
         if ((errorcode = OSPPBase64Encode(token, tokensize, encodedtoken, &encodedtokensize)) == OSPC_ERR_NO_ERROR) {
             snprintf(buffer,
                 sizeof(buffer),
-                "%s: %.*s\r\n", 
+                "%s: %.*s\r\n",
                 OSP_TOKEN_HEADER,
                 encodedtokensize,
                 encodedtoken);
             buffer[sizeof(buffer) - 1] = '\0';
-    
+
             headerval.s = buffer;
             headerval.len = strlen(buffer);
-    
+
             LM_DBG("setting osp token header field '%s'\n", buffer);
-    
+
             if (ospAppendHeader(msg, &headerval) == 0) {
                 result = 0;
             } else {
@@ -338,7 +338,7 @@ int ospAddOspHeader(
     return result;
 }
 
-/* 
+/*
  * Get OSP token from SIP message
  * param msg SIP message
  * param token OSP authorization token
@@ -346,8 +346,8 @@ int ospAddOspHeader(
  * return 0 success, -1 failure
  */
 int ospGetOspHeader(
-    struct sip_msg* msg, 
-    unsigned char* token, 
+    struct sip_msg* msg,
+    unsigned char* token,
     unsigned int* tokensize)
 {
     struct hdr_field* hf;
@@ -363,7 +363,7 @@ int ospGetOspHeader(
                 result = 0;
             } else {
                 LM_ERR("failed to base64 decode token (%d)\n", errorcode);
-                LM_ERR("header '%.*s' length %d\n", 
+                LM_ERR("header '%.*s' length %d\n",
                     hf->body.len, hf->body.s, hf->body.len);
             }
         }
@@ -372,7 +372,7 @@ int ospGetOspHeader(
     return result;
 }
 
-/* 
+/*
  * Get first VIA header and use the IP or host name
  * param msg SIP message
  * param srcaddr Source address
@@ -380,22 +380,22 @@ int ospGetOspHeader(
  * return 0 success, -1 failure
  */
 int ospGetSourceAddress(
-    struct sip_msg* msg, 
-    char* srcaddr, 
+    struct sip_msg* msg,
+    char* srcaddr,
     int bufsize)
 {
     struct hdr_field* hf;
     struct via_body* via;
     int result = -1;
 
-    /* 
+    /*
      * No need to call parse_headers, called already and VIA is parsed
-     * anyway by default 
+     * anyway by default
      */
     for (hf = msg->headers; hf; hf = hf->next) {
         if (hf->type == HDR_VIA_T) {
             // found first VIA
-            via = (struct via_body*)hf->parsed;    
+            via = (struct via_body*)hf->parsed;
 
             if (via->port != 0) {
                 snprintf(srcaddr, bufsize, "%.*s:%d", via->host.len, via->host.s, via->port);
@@ -408,20 +408,20 @@ int ospGetSourceAddress(
 
             result = 0;
             break;
-        } 
+        }
     }
 
     return result;
 }
 
-/* 
+/*
  * Get Call-ID header from SIP message
  * param msg SIP message
  * param callid Call ID
  * return 0 success, -1 failure
  */
 int ospGetCallId(
-    struct sip_msg* msg, 
+    struct sip_msg* msg,
     OSPT_CALL_ID** callid)
 {
     struct hdr_field* hf;
@@ -437,12 +437,12 @@ int ospGetCallId(
         }
     } else {
         LM_ERR("failed to find Call-ID header\n");
-    }    
+    }
 
     return result;
 }
 
-/* 
+/*
  * Get route parameters from the 1st Route or Request-Line
  * param msg SIP message
  * param routeparameters Route parameters
@@ -450,8 +450,8 @@ int ospGetCallId(
  * return 0 success, -1 failure
  */
 int ospGetRouteParameters(
-    struct sip_msg* msg, 
-    char* routeparameters, 
+    struct sip_msg* msg,
+    char* routeparameters,
     int bufsize)
 {
     struct hdr_field* hf;
@@ -493,7 +493,7 @@ int ospGetRouteParameters(
     return result;
 }
 
-/* 
+/*
  * Rebuild URI
  * param newuri URI to be built, newuri.len includes buffer size
  * param dest Destination data structure
@@ -501,9 +501,9 @@ int ospGetRouteParameters(
  * return 0 success, -1 failure
  */
 int ospRebuildDestionationUri(
-    str* newuri, 
+    str* newuri,
     osp_dest* dest,
-    int format) 
+    int format)
 {
     static const str TRANS = { ";transport=tcp", 14 };
     static const str USERPHONE = { ";user=phone", 11 };
@@ -523,15 +523,15 @@ int ospRebuildDestionationUri(
     npsize += dest->npdi ? 5 : 0;
 
     LM_DBG("'%s'(%d) '%s'(%d) '%s' '%s' '%d'(%d) '%d'\n",
-        dest->called, 
+        dest->called,
         calledsize,
-        dest->host, 
-        hostsize, 
-        dest->nprn, 
-        dest->npcic, 
-        dest->npdi, 
-        npsize, 
-        format); 
+        dest->host,
+        hostsize,
+        dest->nprn,
+        dest->npcic,
+        dest->npdi,
+        npsize,
+        format);
 
     /* "sip:" + called + NP + "@" + host + " SIP/2.0" for URI format 0 */
     /* "sip:" + called + NP + "@" + host + ";user=phone SIP/2.0" for URI format 0 with user=phone */
@@ -568,9 +568,9 @@ int ospRebuildDestionationUri(
         sprintf(buffer, ";npdi");
         buffer += 5;
     }
-    
+
     *buffer++ = '@';
-    
+
     strncpy(buffer, dest->host, newuri->len - (buffer - newuri->s));
     buffer += hostsize;
 
@@ -583,7 +583,7 @@ int ospRebuildDestionationUri(
       *buffer++ = '>';
     }
 
-/*    
+/*
     *buffer++ = ' ';
     *buffer++ = 'S';
     *buffer++ = 'I';
@@ -605,15 +605,15 @@ int ospRebuildDestionationUri(
     return 0;
 }
 
-/* 
+/*
  * Get next hop using the first Route not generated by this proxy or URI from the Request-Line
  * param msg SIP message
  * param nexthop Next hop IP
  * param bufsize Size of nexthop
  */
 void ospGetNextHop(
-    struct sip_msg* msg, 
-    char* nexthop, 
+    struct sip_msg* msg,
+    char* nexthop,
     int bufsize)
 {
     struct hdr_field* hf;
@@ -642,8 +642,8 @@ void ospGetNextHop(
                         LM_DBG("it IS me, keep looking\n");
                     }
                 } else {
-                    LM_ERR("failed to parse route uri '%.*s'\n",  
-                        rt->nameaddr.uri.len, 
+                    LM_ERR("failed to parse route uri '%.*s'\n",
+                        rt->nameaddr.uri.len,
                         rt->nameaddr.uri.s);
                 }
             }
@@ -669,7 +669,7 @@ void ospGetNextHop(
     }
 }
 
-/* 
+/*
  * Get number portability parameter from Request-Line
  * param msg SIP message
  * param rn Routing number
@@ -680,11 +680,11 @@ void ospGetNextHop(
  * return 0 success, 1 not use NP or without NP parameters, -1 failure
  */
 int ospGetNpParameters(
-    struct sip_msg* msg, 
-    char* rn, 
-    int rnbufsize, 
-    char* cic, 
-    int cicbufsize, 
+    struct sip_msg* msg,
+    char* rn,
+    int rnbufsize,
+    char* cic,
+    int cicbufsize,
     int* npdi)
 {
     str sv;
@@ -703,18 +703,18 @@ int ospGetNpParameters(
                 sv = msg->parsed_uri.user;
                 parse_params(&sv, CLASS_ANY, &phooks, &params);
                 for (pit = params; pit; pit = pit->next) {
-                    if ((pit->name.len == OSP_RN_SIZE) && 
-                        (strncasecmp(pit->name.s, OSP_RN_NAME, OSP_RN_SIZE) == 0) && 
-                        (rn[0] == '\0')) 
+                    if ((pit->name.len == OSP_RN_SIZE) &&
+                        (strncasecmp(pit->name.s, OSP_RN_NAME, OSP_RN_SIZE) == 0) &&
+                        (rn[0] == '\0'))
                     {
                         ospCopyStrToBuffer(&pit->body, rn, rnbufsize);
-                    } else if ((pit->name.len == OSP_CIC_SIZE) && 
+                    } else if ((pit->name.len == OSP_CIC_SIZE) &&
                         (strncasecmp(pit->name.s, OSP_CIC_NAME, OSP_CIC_SIZE) == 0) &&
-                        (cic[0] == '\0')) 
+                        (cic[0] == '\0'))
                     {
                         ospCopyStrToBuffer(&pit->body, cic, cicbufsize);
-                    } else if ((pit->name.len == OSP_NPDI_SIZE) && 
-                        (strncasecmp(pit->name.s, OSP_NPDI_NAME, OSP_NPDI_SIZE) == 0)) 
+                    } else if ((pit->name.len == OSP_NPDI_SIZE) &&
+                        (strncasecmp(pit->name.s, OSP_NPDI_NAME, OSP_NPDI_SIZE) == 0))
                     {
                         *npdi = 1;
                     }
@@ -742,7 +742,7 @@ int ospGetNpParameters(
     return result;
 }
 
-/* 
+/*
  * Get number and domain from Diversion header
  * param msg SIP message
  * param user User part of Diversion header
@@ -752,10 +752,10 @@ int ospGetNpParameters(
  * return 0 success, 1 without Diversion, -1 failure
  */
 int ospGetDiversion(
-    struct sip_msg* msg, 
-    char* user, 
+    struct sip_msg* msg,
+    char* user,
     int userbufsize,
-    char* host, 
+    char* host,
     int hostbufsize)
 {
     struct to_body* diversion;

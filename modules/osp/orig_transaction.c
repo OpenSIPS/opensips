@@ -1,14 +1,14 @@
 /*
- * opensips osp module. 
+ * opensips osp module.
  *
- * This module enables opensips to communicate with an Open Settlement 
- * Protocol (OSP) server.  The Open Settlement Protocol is an ETSI 
+ * This module enables opensips to communicate with an Open Settlement
+ * Protocol (OSP) server.  The Open Settlement Protocol is an ETSI
  * defined standard for Inter-Domain VoIP pricing, authorization
- * and usage exchange.  The technical specifications for OSP 
+ * and usage exchange.  The technical specifications for OSP
  * (ETSI TS 101 321 V4.1.1) are available at www.etsi.org.
  *
  * Uli Abend was the original contributor to this module.
- * 
+ *
  * Copyright (C) 2001-2005 Fhg Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -72,11 +72,11 @@ static int ospSetCalling(struct sip_msg* msg, osp_dest* dest);
  * return 0 success, -1 failure
  */
 static int ospLoadRoutes(
-    OSPTTRANHANDLE transaction, 
-    int destcount, 
-    char* source, 
-    char* srcdev, 
-    char* origcalled, 
+    OSPTTRANHANDLE transaction,
+    int destcount,
+    char* source,
+    char* srcdev,
+    char* origcalled,
     time_t authtime)
 {
     int count;
@@ -88,7 +88,7 @@ static int ospLoadRoutes(
     OSPE_DEST_PROTOCOL protocol;
     OSPE_DEST_OSPENABLED enabled;
     int result = 0;
-    
+
     for (count = 0; count < destcount; count++) {
         /* This is necessary because we will save destinations in reverse order */
         dest = ospInitDestination(&dests[count]);
@@ -141,11 +141,11 @@ static int ospLoadRoutes(
                 &dest->tokensize,
                 dest->token);
         }
-        
+
         if (errorcode != OSPC_ERR_NO_ERROR) {
-            LM_ERR("failed to load routes (%d) expected '%d' current '%d'\n", 
-                errorcode, 
-                destcount, 
+            LM_ERR("failed to load routes (%d) expected '%d' current '%d'\n",
+                errorcode,
+                destcount,
                 count);
             result = -1;
             break;
@@ -153,7 +153,12 @@ static int ospLoadRoutes(
 
         ospConvertToInAddress(host, dest->host, sizeof(dest->host));
 
-        errorcode = OSPPTransactionGetNumberPortability(transaction, dest->nprn, dest->npcic, &dest->npdi);
+        errorcode = OSPPTransactionGetNumberPortabilityParameters(transaction,
+            sizeof(dest->nprn),
+            dest->nprn,
+            sizeof(dest->npcic),
+            dest->npcic,
+            &dest->npdi);
         if (errorcode != OSPC_ERR_NO_ERROR) {
             LM_DBG("cannot get number portability parameters (%d)\n", errorcode);
             dest->nprn[0] = '\0';
@@ -196,7 +201,7 @@ static int ospLoadRoutes(
             dest->tokensize = 0;
         }
 
-        errorcode = OSPPTransactionGetDestNetworkId(transaction, dest->networkid);
+        errorcode = OSPPTransactionGetDestinationNetworkId(transaction, sizeof(dest->networkid), dest->networkid);
         if (errorcode != OSPC_ERR_NO_ERROR) {
             /* This does not mean an ERROR. The OSP server may not support OSP 2.1.1 */
             LM_DBG("cannot get dest network ID (%d)\n", errorcode);
@@ -223,27 +228,27 @@ static int ospLoadRoutes(
             "supported '%d' "
             "network id '%s' "
             "token size '%d'\n",
-            count, 
-            dest->validafter, 
-            dest->validuntil, 
-            dest->timelimit, 
-            dest->callidsize, 
-            dest->callid, 
-            dest->calling, 
-            dest->called, 
-            dest->host, 
-            dest->nprn, 
-            dest->npcic, 
-            dest->npdi, 
+            count,
+            dest->validafter,
+            dest->validuntil,
+            dest->timelimit,
+            dest->callidsize,
+            dest->callid,
+            dest->calling,
+            dest->called,
+            dest->host,
+            dest->nprn,
+            dest->npcic,
+            dest->npdi,
             dest->supported,
-            dest->networkid, 
+            dest->networkid,
             dest->tokensize);
     }
 
-    /* 
+    /*
      * Save destination in reverse order,
      * when we start searching avps the destinations
-     * will be in order 
+     * will be in order
      */
     if (result == 0) {
         for(count = destcount -1; count >= 0; count--) {
@@ -268,8 +273,8 @@ static int ospLoadRoutes(
  * return MODULE_RETURNCODE_TRUE success, MODULE_RETURNCODE_FALSE failure, MODULE_RETURNCODE_ERROR error
  */
 int ospRequestRouting(
-    struct sip_msg* msg, 
-    char* ignore1, 
+    struct sip_msg* msg,
+    char* ignore1,
     char* ignore2)
 {
     int errorcode;
@@ -328,7 +333,7 @@ int ospRequestRouting(
 
         if ((_osp_snid_avpname.n != 0) &&
             ((snidavp = search_first_avp(_osp_snid_avptype, _osp_snid_avpname, &snidval, 0)) != NULL) &&
-            (snidavp->flags & AVP_VAL_STR) && (snidval.s.s && snidval.s.len)) 
+            (snidavp->flags & AVP_VAL_STR) && (snidval.s.s && snidval.s.len))
         {
             snprintf(snid, sizeof(snid), "%.*s", snidval.s.len, snidval.s.s);
             snid[sizeof(snid) - 1] = '\0';
@@ -450,7 +455,7 @@ int ospRequestRouting(
     if (transaction != -1) {
         OSPPTransactionDelete(transaction);
     }
-    
+
     return result;
 }
 
@@ -462,8 +467,8 @@ int ospRequestRouting(
  * return MODULE_RETURNCODE_TRUE success, MODULE_RETURNCODE_FALSE failure
  */
 int ospCheckRoute(
-    struct sip_msg* msg, 
-    char* ignore1, 
+    struct sip_msg* msg,
+    char* ignore1,
     char* ignore2)
 {
     if (ospCheckOrigDestination() == 0) {
@@ -480,7 +485,7 @@ int ospCheckRoute(
  * return 0 success, 1 calling number same or not support calling number translation, -1 failure
  */
 static int ospSetCalling(
-    struct sip_msg* msg, 
+    struct sip_msg* msg,
     osp_dest* dest)
 {
     str rpid;
@@ -500,10 +505,10 @@ static int ospSetCalling(
         result = -1;
     } else {
         snprintf(buffer,
-            sizeof(buffer), 
-            "\"%s\" <sip:%s@%s>", 
-            dest->calling, 
-            dest->calling, 
+            sizeof(buffer),
+            "\"%s\" <sip:%s@%s>",
+            dest->calling,
+            dest->calling,
             dest->source);
         buffer[sizeof(buffer) - 1] = '\0';
 
@@ -533,8 +538,8 @@ static int ospSetCalling(
  * return MODULE_RETURNCODE_TRUE calling number translated MODULE_RETURNCODE_FALSE without transaltion
  */
 int ospCheckCalling(
-    struct sip_msg* msg, 
-    char* ignore1, 
+    struct sip_msg* msg,
+    char* ignore1,
     char* ignore2)
 {
     int_str callingval;
@@ -563,7 +568,7 @@ int ospCheckCalling(
  * return MODULE_RETURNCODE_TRUE success MODULE_RETURNCODE_FALSE failure
  */
 static int ospPrepareDestination(
-    struct sip_msg* msg, 
+    struct sip_msg* msg,
     int isfirst,
     int type,
     int format)
@@ -628,8 +633,8 @@ static int ospPrepareDestination(
  * return MODULE_RETURNCODE_TRUE success, MODULE_RETURNCODE_FALSE failure
  */
 int ospPrepareRoute(
-    struct sip_msg* msg, 
-    char* ignore1, 
+    struct sip_msg* msg,
+    char* ignore1,
     char* ignore2)
 {
     int result = MODULE_RETURNCODE_TRUE;
@@ -649,8 +654,8 @@ int ospPrepareRoute(
  * return MODULE_RETURNCODE_TRUE success, MODULE_RETURNCODE_FALSE failure
  */
 int ospPrepareAllRoutes(
-    struct sip_msg* msg, 
-    char* ignore1, 
+    struct sip_msg* msg,
+    char* ignore1,
     char* ignore2)
 {
     int result = MODULE_RETURNCODE_TRUE;

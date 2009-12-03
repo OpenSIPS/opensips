@@ -1,14 +1,14 @@
 /*
- * opensips osp module. 
+ * opensips osp module.
  *
- * This module enables opensips to communicate with an Open Settlement 
- * Protocol (OSP) server.  The Open Settlement Protocol is an ETSI 
+ * This module enables opensips to communicate with an Open Settlement
+ * Protocol (OSP) server.  The Open Settlement Protocol is an ETSI
  * defined standard for Inter-Domain VoIP pricing, authorization
- * and usage exchange.  The technical specifications for OSP 
+ * and usage exchange.  The technical specifications for OSP
  * (ETSI TS 101 321 V4.1.1) are available at www.etsi.org.
  *
  * Uli Abend was the original contributor to this module.
- * 
+ *
  * Copyright (C) 2001-2005 Fhg Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -58,7 +58,7 @@ const char* B64CACert = "MIIBYDCCAQoCAQEwDQYJKoZIhvcNAQEEBQAwOzElMCMGA1UEAxMcb3N
  * Create a new OSP provider object per process
  * return 0 success, others failure
  */
-int ospSetupProvider(void) 
+int ospSetupProvider(void)
 {
     OSPTPRIVATEKEY privatekey = { NULL, 0 };
     OSPT_CERT localcert = { NULL, 0 };
@@ -88,7 +88,7 @@ int ospSetupProvider(void)
                 LM_ERR("failed to decode private key (%d)\n", errorcode);
             } else if ((errorcode = OSPPBase64Decode(B64LCert, strlen(B64LCert), localcert.CertData, &localcert.CertDataLength)) != OSPC_ERR_NO_ERROR) {
                 LM_ERR("failed to decode local cert (%d)\n", errorcode);
-            } else if ((errorcode = OSPPBase64Decode(B64CACert, strlen(B64CACert), cacert.CertData, &cacert.CertDataLength)) != OSPC_ERR_NO_ERROR) { 
+            } else if ((errorcode = OSPPBase64Decode(B64CACert, strlen(B64CACert), cacert.CertData, &cacert.CertDataLength)) != OSPC_ERR_NO_ERROR) {
                 LM_ERR("failed to decode cacert (%d)\n", errorcode);
             }
         } else {
@@ -129,7 +129,7 @@ int ospSetupProvider(void)
             }
         }
 
-        /* 
+        /*
          * Free space allocated while loading crypto information from PEM-encoded files.
          * There are some problems to free the memory, do not free them
          */
@@ -157,14 +157,14 @@ int ospSetupProvider(void)
  * Erase OSP provider object
  * return 0 success, others failure
  */
-int ospDeleteProvider(void) 
+int ospDeleteProvider(void)
 {
     int errorcode;
 
     if ((errorcode = OSPPProviderDelete(_osp_provider, 0)) != OSPC_ERR_NO_ERROR) {
         LM_ERR("failed to erase provider '%d' (%d)\n", _osp_provider, errorcode);
     }
-    
+
     return errorcode;
 }
 
