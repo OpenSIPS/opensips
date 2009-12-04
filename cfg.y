@@ -2002,7 +2002,7 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 											0);
 										}
 		| FORWARD error { $$=0; yyerror("missing '(' or ')' ?"); }
-		| FORWARD LPAREN error RPAREN { $$=0; yyerror("bad forward"
+		| FORWARD LPAREN error RPAREN { $$=0; yyerror("bad forward "
 										"argument"); }
 		
 		| SEND LPAREN STRING RPAREN { mk_action2( $$, SEND_T,
