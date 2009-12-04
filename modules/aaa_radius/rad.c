@@ -142,7 +142,7 @@ int rad_destroy_message(aaa_conn* rh, aaa_message* message) {
 int extract_avp(VALUE_PAIR* vp) {
 	static str names, values;
 	unsigned int r;
-	char *p;
+	/char *p;
 	char *end;
 	int_str name, value;
 	unsigned short flags = 0;
@@ -260,9 +260,14 @@ int rad_send_message(aaa_conn* rh, aaa_message* request, aaa_message** reply) {
 
 		if (result == OK_RC) {
 			attr = rc_dict_findattr(rh, "SIP-AVP");
-			vp = (*reply)->avpair;
-			for(; (vp = rc_avpair_get(vp, attr->value, 0)); vp = vp->next)
-				extract_avp(vp);
+			if (attr) {
+				vp = (*reply)->avpair;
+				for(; (vp = rc_avpair_get(vp, attr->value, 0)); vp = vp->next)
+					extract_avp(vp);
+			} else {
+				LM_ERR("SIP-AVP was not found in the radius dictionary\n");
+				return -1;
+			}
 		}
 
 		return result;
