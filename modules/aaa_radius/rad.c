@@ -142,7 +142,7 @@ int rad_destroy_message(aaa_conn* rh, aaa_message* message) {
 int extract_avp(VALUE_PAIR* vp) {
 	static str names, values;
 	unsigned int r;
-	/char *p;
+	char *p;
 	char *end;
 	int_str name, value;
 	unsigned short flags = 0;
