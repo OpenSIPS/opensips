@@ -926,6 +926,11 @@ int allow_test(char *file, char *uri, char *contact)
 
 static int check_addr_fixup(void** param, int param_no) {
 
+	if (!db_url.s || db_url.len == 0) {
+		LM_ERR("check_address needs db_url to be set!\n");
+		return E_UNSPEC;
+	}
+
 	/* grp ip port proto info pattern*/
 	switch (param_no) {
 		case 1:
@@ -947,6 +952,11 @@ static int check_addr_fixup(void** param, int param_no) {
 
 
 static int check_src_addr_fixup(void** param, int param_no) {
+
+	if (!db_url.s || db_url.len == 0) {
+		LM_ERR("check_source_address needs db_url to be set!\n");
+		return E_UNSPEC;
+	}
 
 	/* grp info pattern */
 	switch (param_no) {
