@@ -228,7 +228,7 @@ __dialog_sendpublish(struct dlg_cell *dlg, int type, struct dlg_cb_params *_para
 		}
 		else
 		{
-			if(!parse_to(msg->to->body.s,msg->to->body.s + msg->to->body.len + 1, &to));
+			if(!parse_to(msg->to->body.s,msg->to->body.s + msg->to->body.len + 1, &to))
 			{
 				LM_DBG("'To' header NOT parsed\n");
 				return;

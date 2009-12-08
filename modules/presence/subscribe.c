@@ -826,7 +826,7 @@ int extract_sdialog_info(subs_t* subs,struct sip_msg* msg, int mexp, int* init_r
 	else
 	{
 		memset( &TO , 0, sizeof(TO) );
-		if( !parse_to(msg->to->body.s,msg->to->body.s + msg->to->body.len + 1, &TO));
+		if( !parse_to(msg->to->body.s,msg->to->body.s + msg->to->body.len + 1, &TO))
 		{
 			LM_DBG("'To' header NOT parsed\n");
 			goto error;
@@ -1016,17 +1016,17 @@ int get_stored_info(struct sip_msg* msg, subs_t* subs, int* reply_code,
 
 	/* first try to_user== pres_user and to_domain== pres_domain */
 
-    if(subs->pres_uri.s == NULL)
-    {
+	if(subs->pres_uri.s == NULL)
+	{
 		uandd_to_uri(subs->to_user, subs->to_domain, &pres_uri);
 		if(pres_uri.s== NULL)
 		{
 			LM_ERR("creating uri from user and domain\n");
 			return -1;
 		}
-    }
-    else
-        pres_uri = subs->pres_uri;
+	}
+	else
+		pres_uri = subs->pres_uri;
 
 	hash_code= core_hash(&pres_uri, &subs->event->name, shtable_size);
 	lock_get(&subs_htable[hash_code].lock);
