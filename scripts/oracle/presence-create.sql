@@ -35,7 +35,7 @@ CREATE TABLE active_watchers (
     callid VARCHAR2(64),
     local_cseq NUMBER(10),
     remote_cseq NUMBER(10),
-    contact VARCHAR2(64),
+    contact VARCHAR2(128),
     record_route CLOB,
     expires NUMBER(10),
     status NUMBER(10) DEFAULT 2 NOT NULL,
