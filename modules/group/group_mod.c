@@ -309,8 +309,10 @@ static int db_get_gid_fixup(void** param, int param_no)
 	pv_spec_t *sp;
 	str  name;
 
-	if (!db_url.s)
+	if (!db_url.s) {
+		LM_ERR("no database url\n");
 		return E_CFG;
+	}
 
 	if (param_no == 1) {
 		return fixup_spve_spve(param, param_no);
