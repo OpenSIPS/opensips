@@ -93,7 +93,7 @@ str uridb_uriuser_col     = {URI_USER_COL, URI_USER_COL_LEN};
 int use_uri_table = 0;     /* Should uri table be used */
 int use_domain = 0;        /* Should does_uri_exist honor the domain part ? */
 
-static int db_fixup_exist(void** param, int param_no);
+static int db_checks_fixup(void** param, int param_no);
 static int db_fixup_get_auth_id(void** param, int param_no);
 
 static int aaa_fixup_0(void** param, int param_no);
@@ -132,12 +132,12 @@ static cmd_export_t cmds[] = {
 	{"aaa_does_uri_user_exist", (cmd_function)aaa_does_uri_user_exist_1, 1,
 			aaa_fixup_1, fixup_free_pvar_null,
 			REQUEST_ROUTE|LOCAL_ROUTE},
-	{"db_check_to", (cmd_function)check_to, 0, 0, 0,
+	{"db_check_to", (cmd_function)check_to, 0, db_checks_fixup, 0,
 			REQUEST_ROUTE},
-	{"db_check_from", (cmd_function)check_from, 0, 0, 0,
+	{"db_check_from", (cmd_function)check_from, 0, db_checks_fixup, 0,
 			REQUEST_ROUTE},
 	{"db_does_uri_exist", (cmd_function)does_uri_exist, 0,
-			db_fixup_exist, 0,
+			db_checks_fixup, 0,
 			REQUEST_ROUTE|LOCAL_ROUTE},
 	{"db_get_auth_id", (cmd_function) get_auth_id, 3,
 			db_fixup_get_auth_id, 0,
@@ -337,10 +337,10 @@ static void destroy(void)
 }
 
 
-static int db_fixup_exist(void** param, int param_no)
+static int db_checks_fixup(void** param, int param_no)
 {
 	if (db_url.len == 0) {
-		LM_ERR("configuration error - does_uri_exist() called with no database URL!\n");
+		LM_ERR("configuration error - no database URL is configured!\n");
 		return E_CFG;
 	}
 	return 0;
