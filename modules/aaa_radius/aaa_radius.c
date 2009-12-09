@@ -383,29 +383,19 @@ error:
 
 int send_auth_fixup(void** param, int param_no) {
 
-	str *s1, *s2;
+       str *s;
 
-	s1 = (str*) pkg_malloc(sizeof(str));
-	CHECK_ALLOC(s1);
+       s = (str*) pkg_malloc(sizeof(str));
+       CHECK_ALLOC(s);
 
-	s2 = (str*) pkg_malloc(sizeof(str));
-	CHECK_ALLOC(s2);
+       if (param_no == 1 || param_no == 2) {
+               s->s = *param;
+               s->len = strlen(s->s);
+               *param = s;
+               return 0;
+       }
 
-	if (param_no == 1) {
-		s1->s = *param;
-		s1->len = strlen(s1->s);
-		*param = s1;
-		return 0;
-	}
-
-	if (param_no == 2) {
-		s2->s = *param;
-		s2->len = strlen(s2->s);
-		*param = s2;
-		return 0;
-	}
-
-	return E_UNSPEC;
+       return E_UNSPEC;
 }
 
 

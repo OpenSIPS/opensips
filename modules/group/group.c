@@ -382,7 +382,7 @@ int aaa_is_user_in(struct sip_msg* _m, char* _hf, char* _group)
 		proto.destroy_aaa_message(conn, received);
 		return 1;
 	} else {
-		LM_ERR("Failure\n");
+		LM_DBG("Failure\n");
 		proto.destroy_aaa_message(conn, send);
 		proto.destroy_aaa_message(conn, received);
 		return -12;

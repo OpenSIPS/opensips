@@ -260,12 +260,22 @@ int rad_send_message(aaa_conn* rh, aaa_message* request, aaa_message** reply) {
 
 		if (result == OK_RC) {
 			attr = rc_dict_findattr(rh, "SIP-AVP");
-			vp = (*reply)->avpair;
-			for(; (vp = rc_avpair_get(vp, attr->value, 0)); vp = vp->next)
-				extract_avp(vp);
+			if (attr) {
+				vp = (*reply)->avpair;
+				for(; (vp = rc_avpair_get(vp, attr->value, 0)); vp = vp->next)
+					if (extract_avp(vp)) {
+						LM_ERR("extract_avp failed\n");
+						return -1;
+					}
+				return 0;
+			} else {
+				LM_ERR("SIP-AVP was not found in the radius dictionary\n");
+				return -1;
+			}
 		}
 
-		return result;
+		LM_ERR("rc_auth function failed\n");
+		return -1;
 	}
 
 	if (request->type == AAA_ACCT) {
