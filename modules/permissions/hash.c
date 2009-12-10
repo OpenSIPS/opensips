@@ -64,24 +64,8 @@ void hash_destroy(struct address_list** table) {
 	shm_free(table);
 }
 
-
-int proto_char2int(char *proto) {
-	if (!strcasecmp(proto, "any"))
-		return PROTO_NONE;
-	if (!strcasecmp(proto, "udp"))
-		return PROTO_UDP;
-	if (!strcasecmp(proto, "tcp"))
-		return PROTO_TCP;
-	if (!strcasecmp(proto, "tls"))
-		return PROTO_TLS;
-	if (!strcasecmp(proto, "sctp"))
-		return PROTO_SCTP;
-	return -1;
-}
-
-
 int hash_insert(struct address_list** table, struct ip_addr *ip,
-	      unsigned int grp, unsigned int port, char* proto, char* pattern,
+	      unsigned int grp, unsigned int port, int proto, char* pattern,
 		  char* info) {
 
 	struct address_list *node;
@@ -94,18 +78,7 @@ int hash_insert(struct address_list** table, struct ip_addr *ip,
 		return -1;
 	}
 
-	if (!strcasecmp(proto, "none")) {
-		shm_free(node);
-		return 1;
-	}
-
-	node->proto = proto_char2int(proto);
-	if (node->proto == -1) {
-		LM_ERR("unknown protocol\n");
-		shm_free(node);
-		return -1;
-	}
-
+	node->proto = proto;
 	node->ip = (struct ip_addr *) shm_malloc (sizeof(struct ip_addr));
 
 	if (!node->ip) {
@@ -312,7 +285,7 @@ struct subnet* new_subnet_table(void)
  */
 int subnet_table_insert(struct subnet* table, unsigned int grp,
 			struct net *subnet,
-			unsigned int port, char* proto, char* pattern, char *info)
+			unsigned int port, int proto, char* pattern, char *info)
 {
     int i;
     unsigned int count;
@@ -333,12 +306,7 @@ int subnet_table_insert(struct subnet* table, unsigned int grp,
 
     table[i + 1].grp = grp;
     table[i + 1].port = port;
-	table[i + 1].proto = proto_char2int(proto);
-	if (table[i + 1].proto == -1) {
-		LM_ERR("unknown protocol\n");
-		return -1;
-	}
-
+	table[i + 1].proto = proto;
 
 	if (subnet) {
 		table[i + 1].subnet = (struct net*) shm_malloc(sizeof(struct net));

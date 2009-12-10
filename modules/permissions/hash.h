@@ -71,7 +71,7 @@ void hash_destroy(struct address_list** table);
  * Add <ip, group, port, proto, pattern> into hash table
  */
 int hash_insert(struct address_list** table, struct ip_addr *ip,
-	      unsigned int grp, unsigned int port, char* proto, char* pattern,
+	      unsigned int grp, unsigned int port, int proto, char* pattern,
 		  char* info);
 
 
@@ -159,7 +159,7 @@ void free_subnet_table(struct subnet* table);
  */
 int subnet_table_insert(struct subnet* table, unsigned int grp,
 	            struct net *subnet,
-	            unsigned int port, char* proto, char* pattern,
+	            unsigned int port, int proto, char* pattern,
 				char *info);
 
 
