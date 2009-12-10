@@ -38,7 +38,7 @@
 /*
  * Release memory used by row
  */
-inline int db_free_row(db_row_t* _r)
+int db_free_row(db_row_t* _r)
 {
 	int	col;
 	db_val_t* _val;

@@ -84,7 +84,7 @@ typedef struct db_res {
  * \param _r the result that should be released
  * \return zero on success, negative on errors
  */
-inline int db_free_rows(db_res_t* _r);
+int db_free_rows(db_res_t* _r);
 
 
 /**
@@ -94,20 +94,20 @@ inline int db_free_rows(db_res_t* _r);
  * \param _r the result that should be released
  * \return zero on success, negative on errors
  */
-inline int db_free_columns(db_res_t* _r);
+int db_free_columns(db_res_t* _r);
 
 
 /**
  * Create a new result structure and initialize it.
  * \return a pointer to the new result on success, NULL on errors
  */
-inline db_res_t* db_new_result(void);
+db_res_t* db_new_result(void);
 
 /**
  * Release memory used by a result structure.
  * \return zero on success, negative on errors
  */
-inline int db_free_result(db_res_t* _r);
+int db_free_result(db_res_t* _r);
 
 /**
  * Allocate storage for column names and type in existing result structure.
@@ -117,9 +117,9 @@ inline int db_free_result(db_res_t* _r);
  * \param cols number of columns
  * \return zero on success, negative on errors
  */
-inline int db_allocate_columns(db_res_t* _r, const unsigned int cols);
+int db_allocate_columns(db_res_t* _r, const unsigned int cols);
 
 
-inline int db_allocate_rows(db_res_t* _res, const unsigned int rows);
+int db_allocate_rows(db_res_t* _res, const unsigned int rows);
 
 #endif /* DB_RES_H */
