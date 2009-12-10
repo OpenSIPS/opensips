@@ -9,16 +9,18 @@ include ../../Makefile.defs
 auto_gen=
 NAME=carrierroute.so
 
-BUILDER = $(shell which confuse-config)
+HAS_BUILDER = $(shell if which confuse-config >/dev/null 2>/dev/null;then echo YES; fi)
 
-ifeq ($(BUILDER),)
+ifeq ($(HAS_BUILDER),YES)
+	# use autodetection
+	CONFUSEDEFS = $(shell confuse-config --cflags)
+	CONFUSELIBS = $(shell confuse-config --libs)
+else
+	# use standard know paths
 	CONFUSEDEFS=-I$(LOCALBASE)/include -I/usr/local/include -I/opt/include \
 		-I/usr/sfw/include
 	CONFUSELIBS=-L$(LOCALBASE)/lib -L/usr/local/lib -L/usr/sfw/lib \
 		-L/opt/lib -lconfuse
-else
-		CONFUSEDEFS = $(shell confuse-config --cflags)
-		CONFUSELIBS = $(shell confuse-config --libs)
 endif
 
 DEFS+=$(CONFUSEDEFS)

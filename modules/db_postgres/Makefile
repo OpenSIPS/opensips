@@ -12,14 +12,15 @@ NAME=db_postgres.so
 # CROSS_COMPILE=true
 
 ifeq ($(CROSS_COMPILE),)
-PGCFG=$(shell which pg_config)
+HAS_PGCFG=$(shell if which pg_config >/dev/null 2>/dev/null;then echo YES; fi)
 endif
 
-ifneq ($(PGCFG),)
+
+ifeq ($(HAS_PGCFG),YES)
 
 	# use autodetection
-	DEFS += -I$(shell $(PGCFG) --includedir)
-	LIBS = -L$(shell $(PGCFG) --libdir) -lpq
+	DEFS += -I$(shell pg_config --includedir)
+	LIBS = -L$(shell pg_config --libdir) -lpq
 
 else
 
@@ -27,7 +28,7 @@ else
 	# libpq-fe.h locations
 	DEFS +=-I$(LOCALBASE)/include -I$(LOCALBASE)/pgsql/include \
 		 -I$(SYSBASE)/include/pgsql -I$(SYSBASE)/include/postgresql \
-		 -I$(SYSBASE)/include/postgresql/8.0
+		 -I$(SYSBASE)/include/postgresql/8.0 -I$(SYSBASE)/postgres/8.4/include
 	LIBS=-L$(LOCALBASE)/lib -L$(LOCALBASE)/pgsql/lib -L$(LOCALBASE)/lib/pgsql \
 		 -lpq
 

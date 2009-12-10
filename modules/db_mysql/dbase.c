@@ -463,8 +463,8 @@ static int db_mysql_do_prepared_query(const db_con_t* conn, const str *query,
 			LM_ERR("mysql_stmt_bind_param() failed: %s\n",
 				mysql_stmt_error(ctx->stmt));
 			for(i=0;i<n+un;i++) {
-				LM_ERR("param %d was found as type %d\n",
-					i,mysql_bind[i].buffer_type);
+				LM_ERR("param %d was found as type %d (null=%d)\n",
+					i,mysql_bind[i].buffer_type,*(mysql_bind[i].is_null));
 			}
 			return -1;
 		}

@@ -17,16 +17,17 @@ OLD_VERSION_THRESHOLD_DOWN=901         # 0.09.10
 # CROSS_COMPILE=true
 
 ifeq ($(CROSS_COMPILE),)
-XMLRPC-C-CONFIG=$(shell which xmlrpc-c-config)
+HAS_XMLRPC-C-CONFIG=$(shell if which xmlrpc-c-config >/dev/null 2>/dev/null;then echo YES; fi)
 endif
 
-ifneq ($(XMLRPC-C-CONFIG),)
-# get the version
-XMLRPC_VER=$(shell $(XMLRPC-C-CONFIG) --version)
+ifeq ($(HAS_XMLRPC-C-CONFIG),YES)
+	# get the version
+	XMLRPC_VER=$(shell xmlrpc-c-config --version)
 else
-# try new version
-XMLRPC_VER=1.03.10
+	# try new version
+	XMLRPC_VER=1.03.10
 endif
+
 
 XMLRPC_VERSION=$(shell echo $(XMLRPC_VER) | sed  "s/\.\([0-9]\)\./.0\1./g" | sed  "s/\.\([0-9]\)\$$/.0\1/g" | tr -d "." | sed -e "s/^0*//" )
 
@@ -51,13 +52,15 @@ $(warning			You are using an unsupported libxmlrpc-c3 \
 endif
 endif
 
-ifneq ($(XMLRPC-C-CONFIG),)
-MY_DEFS=$(shell $(XMLRPC-C-CONFIG) abyss-server --cflags)
-MY_LIBS=$(shell $(XMLRPC-C-CONFIG) abyss-server --libs)
+ifeq ($(HAS_XMLRPC-C-CONFIG),YES)
+	# use autodetection
+	MY_DEFS=$(shell xmlrpc-c-config abyss-server --cflags)
+	MY_LIBS=$(shell xmlrpc-c-config abyss-server --libs)
 else
-MY_DEFS=-I$(LOCALBASE)/include -I$(LOCALBASE)/include/xmlrpc-c \
+	# use standard know paths
+	MY_DEFS=-I$(LOCALBASE)/include -I$(LOCALBASE)/include/xmlrpc-c \
 		-I$(SYSBASE)/include/xmlrpc-c -D_UNIX
-MY_LIBS=-L$(SYSBASE)/lib  -L$(LOCALBASE)/lib -lxmlrpc -lxmlrpc_xmlparse \
+	MY_LIBS=-L$(SYSBASE)/lib  -L$(LOCALBASE)/lib -lxmlrpc -lxmlrpc_xmlparse \
 		-lxmlrpc_xmltok -lxmlrpc_abyss -lxmlrpc_abyss_server \
 		-lxmlrpc_client -lwwwinit -lwwwstream -lwwwxml \
 		-lwwwapp -lwwwcache -lwwwcore -lwwwdir -lwwwfile \
@@ -79,7 +82,7 @@ endif
 
 
 DEFS+=$(MY_DEFS)
-LIBS+=$(MY_LIBS)
+LIBS=$(MY_LIBS)
 
 
 include ../../Makefile.modules
