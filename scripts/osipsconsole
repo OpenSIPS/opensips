@@ -83,7 +83,7 @@ my $OSIPSIP = "";
 my $OSIPS_PORT = "";
 
 my $fifo_reply_file = "fifo_reply";
-my $path = "/tmp/" . $fifo_reply_file;
+my $fifo_reply_path = "/tmp/" . $fifo_reply_file;
 my $PID_FILE = "";
 my $DBENGINE = "";
 my $SIP_DOMAIN = "";
@@ -4184,7 +4184,7 @@ sub fifo_cmd() {
 	}
 	$cmd_fifo = join("",$cmd_fifo,"\n");
 
-	&write_read_fifo($OSIPS_FIFO,$path,$cmd_fifo);
+	&write_read_fifo($OSIPS_FIFO,$fifo_reply_path,$cmd_fifo);
 
 }
 
@@ -4195,20 +4195,20 @@ sub fifo_opensips_monitor() {
 		
 		$cmd_fifo = ":version:$fifo_reply_file\n\n";
 		print $cmd_fifo."\n";
-		&write_read_fifo($OSIPS_FIFO,$path,$cmd_fifo);
+		&write_read_fifo($OSIPS_FIFO,$fifo_reply_path,$cmd_fifo);
 	
 		$cmd_fifo = ":uptime:$fifo_reply_file\n\n";
 		print $cmd_fifo."\n";
-		&write_read_fifo($OSIPS_FIFO,$path,$cmd_fifo);
+		&write_read_fifo($OSIPS_FIFO,$fifo_reply_path,$cmd_fifo);
 		
 		print "Transaction Statistics: \n";
-		&write_read_fifo($OSIPS_FIFO,$path,":get_statistics:$fifo_reply_file\nUAS_transactions\nUAC_transactions\ninuse_transactions\n\n");
+		&write_read_fifo($OSIPS_FIFO,$fifo_reply_path,":get_statistics:$fifo_reply_file\nUAS_transactions\nUAC_transactions\ninuse_transactions\n\n");
 		
 		print "Stateless Server Statistics: \n";
-		&write_read_fifo($OSIPS_FIFO,$path,":get_statistics:$fifo_reply_file\nsent_replies\nsent_err_replies\nreceived_ACKs\n\n");
+		&write_read_fifo($OSIPS_FIFO,$fifo_reply_path,":get_statistics:$fifo_reply_file\nsent_replies\nsent_err_replies\nreceived_ACKs\n\n");
 		
 		print "UsrLoc Stats: \n";
-		&write_read_fifo($OSIPS_FIFO,$path,":get_statistics:$fifo_reply_file\nusrloc:\n\n");
+		&write_read_fifo($OSIPS_FIFO,$fifo_reply_path,":get_statistics:$fifo_reply_file\nusrloc:\n\n");
 
 		return;
 }
@@ -4217,7 +4217,7 @@ sub fifo_opensips_monitor() {
 sub write_read_fifo() {
 
 	$OSIPS_FIFO = $_[0];
-	$path = $_[1];
+	$fifo_reply_path = $_[1];
 	$cmd_fifo = $_[2];
 	
 	if (!-e $OSIPS_FIFO){
@@ -4238,15 +4238,15 @@ sub write_read_fifo() {
 
 	}
 
-	 unless ( -p $path ) {
+	 unless ( -p $fifo_reply_path ) {
 
-		    unlink $path;
+		    unlink $fifo_reply_path;
 
-		    mkfifo ($path,666) or die "mkfifo $path failed: $!"; 
+		    mkfifo ($fifo_reply_path,666) or die "mkfifo $fifo_reply_path failed: $!"; 
 
 	 }
 	
-	`chmod a+rw $path`;
+	`chmod a+rw $fifo_reply_path`;
 
 	open(ANS,">$OSIPS_FIFO") or die "Could not open $OSIPS_FIFO for writing: $!\n";
 
@@ -4254,7 +4254,7 @@ sub write_read_fifo() {
 	
 	close (ANS);
 	
-	open(FIFO, "< $path") or die "Couldn't open $path for reading: $!\n";
+	open(FIFO, "< $fifo_reply_path") or die "Couldn't open $fifo_reply_path for reading: $!\n";
 	
 	my @fifo_line = <FIFO>;
 
@@ -4262,7 +4262,7 @@ sub write_read_fifo() {
 		
 	close (FIFO);
 	
-	unlink $path;
+	unlink $fifo_reply_path;
 		
 	if ( ( $cmd[0] =~ /^fifo$/ ) && ($fifo_line[0] =~ /^\d+/) ) {
 		shift(@fifo_line);	
