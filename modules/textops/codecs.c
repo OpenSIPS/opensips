@@ -206,8 +206,7 @@ static int do_for_all_streams(struct sip_msg* msg, str* str1,str * str2,
 	if( rez <0 )
 		rez = 0;
 	return rez;
-
-};
+}
 
 
 
@@ -237,9 +236,7 @@ int delete_sdp_line( struct sip_msg * msg, char * s)
 	}
 
 	return 0;
-
-	
-};
+}
 
 
 
@@ -471,7 +468,7 @@ static int stream_process(struct sdp_stream_cell *cell,int pos,str * s, str* ss,
 end:
 	pkg_free(buff);
 	return ret;
-};
+}
 
 
 	
@@ -486,7 +483,7 @@ int codec_find (struct sip_msg* msg, char* str1 )
 
 	return 1;
 
-};
+}
 
 int codec_find_re (struct sip_msg* msg, char* str1 )
 {
@@ -497,7 +494,7 @@ int codec_find_re (struct sip_msg* msg, char* str1 )
 
 	return 1;
 
-};
+}
 
 
 int codec_find_clock (struct sip_msg* msg, char* str1,char * str2 )
@@ -509,7 +506,7 @@ int codec_find_clock (struct sip_msg* msg, char* str1,char * str2 )
 
 	return 1;
 
-};
+}
 
 int codec_delete (struct sip_msg* msg, char* str1 )
 {
@@ -518,7 +515,7 @@ int codec_delete (struct sip_msg* msg, char* str1 )
 		return -1;
 	return 1;
 
-};
+}
 
 int codec_delete_re (struct sip_msg* msg, char* str1 )
 {
@@ -527,7 +524,7 @@ int codec_delete_re (struct sip_msg* msg, char* str1 )
 		return -1;
 	return 1;
 
-};
+}
 
 int codec_delete_except_re (struct sip_msg* msg, char* str1 )
 {
@@ -536,7 +533,7 @@ int codec_delete_except_re (struct sip_msg* msg, char* str1 )
 		return -1;
 	return 1;
 
-};
+}
 
 int codec_delete_clock (struct sip_msg* msg, char* str1 ,char * str2)
 {
@@ -545,7 +542,7 @@ int codec_delete_clock (struct sip_msg* msg, char* str1 ,char * str2)
 		return -1;
 	return 1;
 
-};
+}
 
 int codec_move_up (struct sip_msg* msg, char* str1)
 {
@@ -553,7 +550,7 @@ int codec_move_up (struct sip_msg* msg, char* str1)
 		ADD_TO_FRONT, DESC_NAME, stream_process) == 0)
 		return -1;
 	return 1;
-};
+}
 
 int codec_move_up_re (struct sip_msg* msg, char* str1)
 {
@@ -561,7 +558,7 @@ int codec_move_up_re (struct sip_msg* msg, char* str1)
 		ADD_TO_FRONT, DESC_REGEXP, stream_process) == 0)
 		return -1;
 	return 1;
-};
+}
 
 
 int codec_move_up_clock (struct sip_msg* msg, char* str1 ,char * str2)
@@ -571,7 +568,7 @@ int codec_move_up_clock (struct sip_msg* msg, char* str1 ,char * str2)
 		return -1;
 	return 1;
 
-};
+}
 
 
 int codec_move_down (struct sip_msg* msg, char* str1)
@@ -580,7 +577,7 @@ int codec_move_down (struct sip_msg* msg, char* str1)
 		ADD_TO_BACK, DESC_NAME, stream_process) == 0)
 		return -1;
 	return 1;
-};
+}
 
 
 int codec_move_down_re (struct sip_msg* msg, char* str1)
@@ -589,7 +586,7 @@ int codec_move_down_re (struct sip_msg* msg, char* str1)
 		ADD_TO_BACK, DESC_REGEXP, stream_process) == 0)
 		return -1;
 	return 1;
-};
+}
 
 
 
@@ -601,7 +598,7 @@ int codec_move_down_clock (struct sip_msg* msg, char* str1 ,char * str2)
 		return -1;
 	return 1;
 
-};
+}
 
 
 

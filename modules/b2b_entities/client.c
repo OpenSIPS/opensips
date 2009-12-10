@@ -41,7 +41,7 @@
 
 void b2b_client_tm_cback( struct cell *t, int type, struct tmcb_params *ps)
 {
-	return b2b_tm_cback(client_htable, ps);
+	b2b_tm_cback(client_htable, ps);
 }
 
 #define FROM_TAG_LEN (MD5_LEN + 1 /* - */ + CRC16_LEN) /* length of FROM tags */

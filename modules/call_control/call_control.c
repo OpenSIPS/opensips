@@ -153,15 +153,15 @@ static cmd_export_t commands[] = {
 };
 
 static param_export_t parameters[] = {
-    {"init",                STR_PARAM | USE_FUNC_PARAM, parse_param_init},
-    {"start",               STR_PARAM | USE_FUNC_PARAM, parse_param_start},
-    {"stop",                STR_PARAM | USE_FUNC_PARAM, parse_param_stop},
-    {"disable",             INT_PARAM, &disable},
-    {"socket_name",         STR_PARAM, &(callcontrol_socket.name)},
-    {"socket_timeout",      INT_PARAM, &(callcontrol_socket.timeout)},
-    {"diverter_avp_id",     INT_PARAM, &diverter_avp_id},
-    {"canonical_uri_avp",   STR_PARAM, &(canonical_uri_avp.spec.s)},
-    {"signaling_ip_avp",    STR_PARAM, &(signaling_ip_avp.spec.s)},
+    {"init",              STR_PARAM|USE_FUNC_PARAM, (void*)parse_param_init},
+    {"start",             STR_PARAM|USE_FUNC_PARAM, (void*)parse_param_start},
+    {"stop",              STR_PARAM|USE_FUNC_PARAM, (void*)parse_param_stop},
+    {"disable",           INT_PARAM, &disable},
+    {"socket_name",       STR_PARAM, &(callcontrol_socket.name)},
+    {"socket_timeout",    INT_PARAM, &(callcontrol_socket.timeout)},
+    {"diverter_avp_id",   INT_PARAM, &diverter_avp_id},
+    {"canonical_uri_avp", STR_PARAM, &(canonical_uri_avp.spec.s)},
+    {"signaling_ip_avp",  STR_PARAM, &(signaling_ip_avp.spec.s)},
     {0, 0, 0}
 };
 
