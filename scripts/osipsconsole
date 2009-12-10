@@ -82,8 +82,8 @@ my $OSIPSUNIX = "";
 my $OSIPSIP = "";
 my $OSIPS_PORT = "";
 
-my $name = "fifo_reply";
-my $path = "/tmp/" . $name;
+my $fifo_reply_file = "fifo_reply";
+my $path = "/tmp/" . $fifo_reply_file;
 my $PID_FILE = "";
 my $DBENGINE = "";
 my $SIP_DOMAIN = "";
@@ -99,8 +99,6 @@ my $DBROOTUSER = "";
 my $DBRWPW = "";
 my $CTLENGINE = "";
 
-my $migrate_trusted=1;
-my $migrate_address=1;	
 my $EGREP = "";
 my $SYSLOG = "";
 my $STARTOPTIONS = "";
@@ -4170,7 +4168,7 @@ sub fifo_cmd() {
 	
 	if ( $#fifo_cmd == 0){
 
-		$cmd_fifo = ":" . $fifo_cmd[0] . ":" . $name . "\n";
+		$cmd_fifo = ":" . $fifo_cmd[0] . ":" . $fifo_reply_file . "\n";
 	
 	} elsif ( $#fifo_cmd  gt 0 ){
 
@@ -4181,7 +4179,7 @@ sub fifo_cmd() {
 
 		}
 
-		$cmd_fifo = ":" . $fifo_cmd[0] . ":" . $name . "\n" . $arg_list;
+		$cmd_fifo = ":" . $fifo_cmd[0] . ":" . $fifo_reply_file . "\n" . $arg_list;
 
 	}
 	$cmd_fifo = join("",$cmd_fifo,"\n");
@@ -4195,22 +4193,22 @@ sub fifo_cmd() {
 sub fifo_opensips_monitor() {
 	
 		
-		$cmd_fifo = ":version:$name\n\n";
+		$cmd_fifo = ":version:$fifo_reply_file\n\n";
 		print $cmd_fifo."\n";
 		&write_read_fifo($OSIPS_FIFO,$path,$cmd_fifo);
 	
-		$cmd_fifo = ":uptime:$name\n\n";
+		$cmd_fifo = ":uptime:$fifo_reply_file\n\n";
 		print $cmd_fifo."\n";
 		&write_read_fifo($OSIPS_FIFO,$path,$cmd_fifo);
 		
 		print "Transaction Statistics: \n";
-		&write_read_fifo($OSIPS_FIFO,$path,":get_statistics:$name\nUAS_transactions\nUAC_transactions\ninuse_transactions\n\n");
+		&write_read_fifo($OSIPS_FIFO,$path,":get_statistics:$fifo_reply_file\nUAS_transactions\nUAC_transactions\ninuse_transactions\n\n");
 		
 		print "Stateless Server Statistics: \n";
-		&write_read_fifo($OSIPS_FIFO,$path,":get_statistics:$name\nsent_replies\nsent_err_replies\nreceived_ACKs\n\n");
+		&write_read_fifo($OSIPS_FIFO,$path,":get_statistics:$fifo_reply_file\nsent_replies\nsent_err_replies\nreceived_ACKs\n\n");
 		
 		print "UsrLoc Stats: \n";
-		&write_read_fifo($OSIPS_FIFO,$path,":get_statistics:$name\nusrloc:\n\n");
+		&write_read_fifo($OSIPS_FIFO,$path,":get_statistics:$fifo_reply_file\nusrloc:\n\n");
 
 		return;
 }
