@@ -428,7 +428,6 @@ static void run_timer_process_jif(void)
 			cnt = 0;
 		}
 	}
-	return ;
 }
 
 
