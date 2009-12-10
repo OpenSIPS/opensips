@@ -10,14 +10,22 @@ auto_gen=
 NAME=perl.so
 LIBS=
 
+# define it (or export this) to the dir where xsubpp is on your system (if
+# not on the default path.
+#PERLBINDIR=
+
+ifeq ($(CC_NAME), gcc)
+	DEFS+=-Wno-unused -Wno-redundant-decls
+endif
+
 ifeq ($(PERLLDOPTS),)
-	LIBS+=`perl -MExtUtils::Embed -e ldopts`
+	LIBS+=$(shell perl -MExtUtils::Embed -e ldopts)
 else
 	LIBS+=$(PERLLDOPTS)
 endif
 
 ifeq ($(PERLCCOPTS),)
-	DEFS+=`perl -MExtUtils::Embed -e ccopts`
+	DEFS+=$(shell perl -MExtUtils::Embed -e ccopts)
 else
 	DEFS+=$(PERLCCOPTS)
 endif
@@ -25,11 +33,12 @@ endif
 
 include ../../Makefile.modules
 
-PODFILES=opensipsxs.xs `find lib/perl -name *.pm`
+PODFILES=opensipsxs.xs
+PODFILES+=$(shell find lib/perl -name *.pm)
 
 ifeq ($(TYPEMAP),)
 	ifeq ($(PERLLIBPATH),)
-		PERLLIBPATH=`perl -MConfig -e 'print $$Config{installprivlib}'`
+		PERLLIBPATH=$(shell perl -MConfig -e 'print $$Config{installprivlib}')
 	endif
 	TYPEMAP=$(PERLLIBPATH)/ExtUtils/typemap
 endif
@@ -38,10 +47,10 @@ perl.d: opensipsxs.o
 perl.o: perl.c opensipsxs.o
 
 opensipsxs.o: opensipsxs.c opensipsxs.d
-	$(CC) $(MOD_CFLAGS) -Wno-unused $(DEFS) -c -o opensipsxs.o opensipsxs.c
+	$(CC) $(MOD_CFLAGS) $(DEFS) -c -o opensipsxs.o opensipsxs.c
 
 opensipsxs.c: opensipsxs.xs typemap
-	xsubpp -typemap $(TYPEMAP) -typemap typemap opensipsxs.xs > opensipsxs.c
+	$(PERLBINDIR)xsubpp -typemap $(TYPEMAP) -typemap typemap opensipsxs.xs > opensipsxs.c
 
 clean:	clean-special
 
