@@ -9,14 +9,14 @@ NAME=regex.so
 # CROSS_COMPILE=true
 
 ifeq ($(CROSS_COMPILE),)
-PCRECFG=$(shell which pcre-config)
+HAS_PCRECFG=$(shell if which pcre-config >/dev/null 2>/dev/null;then echo YES; fi)
 endif
 
-ifneq ($(PCRECFG),)
+ifeq ($(HAS_PCRECFG),YES)
 
 	# use autodetection
-	DEFS += $(shell $(PCRECFG) --cflags)
-	LIBS = $(shell $(PCRECFG) --libs)
+	DEFS += $(shell pcre-config --cflags)
+	LIBS = $(shell pcre-config --libs)
 
 else
 

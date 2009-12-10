@@ -42,7 +42,7 @@
 struct tmcb_head_list* req_in_tmcb_hl = 0;
 
 struct tmcb_head_list tmcb_pending_hl = {0,0};
-unsigned int tmcb_pending_id = -1;
+unsigned int tmcb_pending_id = (unsigned int)-1;
 
 
 void empty_tmcb_list(struct tmcb_head_list *head)

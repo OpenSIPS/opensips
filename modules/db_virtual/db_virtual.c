@@ -612,7 +612,7 @@ error:
     LM_ERR("failed to add node\n");
     free_mi_tree(rpl_tree);
     return 0;
-};
+}
 
 
 struct mi_root* info_set_info(struct mi_root* cmd, void* param){

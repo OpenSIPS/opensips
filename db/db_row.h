@@ -60,6 +60,6 @@ typedef struct db_row {
  * \param _r row that should be released
  * \return zero on success, negative on error
  */
-inline int db_free_row(db_row_t* _r);
+int db_free_row(db_row_t* _r);
 
 #endif /* DB_ROW_H */

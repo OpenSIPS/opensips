@@ -11,14 +11,14 @@ NAME=db_mysql.so
 # CROSS_COMPILE=true
 
 ifeq ($(CROSS_COMPILE),)
-MYSQLCFG=$(shell which mysql_config)
+HAS_MYSQLCFG=$(shell if which mysql_config >/dev/null 2>/dev/null;then echo YES; fi)
 endif
 
-ifneq ($(MYSQLCFG),)
+ifeq ($(HAS_MYSQLCFG),YES)
 
 	# use autodetection
-	DEFS += $(shell $(MYSQLCFG) --include | sed 's/\(-I.*\)\/mysql/\1/g' )
-	LIBS = $(shell $(MYSQLCFG) --libs)
+	DEFS += $(shell mysql_config --include | sed 's/\(-I.*\)\/mysql/\1/g' )
+	LIBS = $(shell mysql_config --libs)
 
 else
 

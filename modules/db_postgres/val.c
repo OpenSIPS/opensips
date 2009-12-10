@@ -307,5 +307,5 @@ int db_postgres_val2str(const db_con_t* _con, const db_val_t* _v,
 		LM_DBG("unknown data type\n");
 		return -7;
 	}
-	return -8;
 }
+

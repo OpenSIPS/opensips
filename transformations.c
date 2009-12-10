@@ -856,8 +856,9 @@ int tr_eval_nameaddr(struct sip_msg *msg, tr_param_t *tp, int subtype,
 		memset(&nameaddr_to_body, 0, sizeof(struct to_body));
 
 		/* parse params */
-		if(parse_to(nameaddr_str.s,
-					nameaddr_str.s + nameaddr_str.len, &nameaddr_to_body)< 0)
+		parse_to(nameaddr_str.s, nameaddr_str.s + nameaddr_str.len,
+			&nameaddr_to_body);
+		if (nameaddr_to_body.error == PARSE_ERROR)
 		{
 			LM_ERR("Wrong syntax. It must have the To header format\n");
 			return -1;

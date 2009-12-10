@@ -201,16 +201,24 @@ ifeq ($(OS), darwin)
 	man-dir = man/
 	data-dir = share/$(MAIN_NAME)/
 	LOCALBASE ?= $(SYSBASE)/local
+else
 ifeq ($(OS), gnu_kfreebsd)
 	doc-dir = share/doc/$(MAIN_NAME)/
 	man-dir = share/man/
 	data-dir = share/$(MAIN_NAME)/
 	LOCALBASE = ?= $(SYSBASE)/local
 else
+ifeq ($(OS), solaris)
+	doc-dir = doc/$(MAIN_NAME)/
+	man-dir = man/
+	data-dir = $(MAIN_NAME)/
+	LOCALBASE = $(SYSBASE)
+else
 	doc-dir = doc/$(MAIN_NAME)/
 	man-dir = man/
 	data-dir = $(MAIN_NAME)/
 	LOCALBASE ?= $(SYSBASE)/local
+endif
 endif
 endif
 endif
@@ -379,6 +387,7 @@ ifeq (,$(CC_NAME))
 $(warning	Unknown compiler $(CC)\; supported compilers: \
 			gcc, sun cc, intel icc )
 endif
+export CC_NAME
 
 
 # compile-time options
@@ -746,10 +755,16 @@ ifeq		($(CC_NAME), icc)
 				# optimize for PIII, use PIII instructions & vect.,
 				# mutlithread loops)
 else
+ifeq		($(CC_NAME), suncc)
+			CFLAGS+=-xO5 -fast -native -xCC \
+				-xc99=no_lib # C99 support
+				# -Dinline="" # add this if cc < 5.3 (define inline as null)
+else
 				#other compilers
 $(error 			Unsupported compiler ($(CC):$(CC_NAME)), try gcc)
 endif		#CC_NAME, icc
 endif		#CC_NAME, gcc
+endif		#CC_NAME, suncc
 endif	#ARCH, x86_64
 
 	#if sparc
@@ -1253,7 +1268,7 @@ ifeq  ($(OS), solaris)
 	DEFAULT_YACC=yacc
 
 ifeq ($(CC_NAME), suncc)
-	LIBS= -lfast -ldl -lresolv
+	LIBS= -fast -ldl -lresolv
 endif
 	OLD_SOLARIS= $(shell echo "$(OSREL)" | \
 				sed -e 's/^5\.[0-6][^0-9]*$$/yes/' )

@@ -423,7 +423,6 @@ static const TRexChar *trex_matchnode(TRex* exp,TRexNode *node,const TRexChar *s
 		str++;
 		return str;
 	}
-	return NULL;
 }
 
 /*public api */

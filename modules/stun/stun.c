@@ -192,7 +192,6 @@ static int stun_mod_init(void){
 }
 
 void stun_loop(int rank){
-    int rc;
     fd_set read_set, all_set;
     int maxfd;
     int nready;
@@ -267,8 +266,6 @@ void stun_loop(int rank){
 	    //continue;
 	}
     }
-
-    LM_DBG("rc = %i\n", rc);
 }
 
 static int child_init(int rank){

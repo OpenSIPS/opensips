@@ -783,12 +783,12 @@ static void trace_onreq_out(struct cell* t, int type, struct tmcb_params *ps)
 	}
 
 	if (ps->extra2)
-		return trace_msg_out( ps->req, (str*)ps->extra1,
+		trace_msg_out( ps->req, (str*)ps->extra1,
 			((struct dest_info*)ps->extra2)->send_sock,
 			((struct dest_info*)ps->extra2)->proto,
 			&((struct dest_info*)ps->extra2)->to);
 	else
-		return trace_msg_out( ps->req, (str*)ps->extra1,
+		trace_msg_out( ps->req, (str*)ps->extra1,
 			NULL, PROTO_NONE, NULL);
 }
 

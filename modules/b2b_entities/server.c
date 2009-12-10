@@ -1,5 +1,5 @@
 /*
- * $Id: server.c $
+ * $Id:$
  *
  * back-to-back entities modules
  *
@@ -133,6 +133,6 @@ error:
 
 void b2b_server_tm_cback( struct cell *t, int type, struct tmcb_params *ps)
 {
-	return b2b_tm_cback(server_htable, ps);
+	b2b_tm_cback(server_htable, ps);
 }
 

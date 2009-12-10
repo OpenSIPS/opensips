@@ -179,7 +179,7 @@ db_con_t* db_unixodbc_init(const str* _url)
  */
 void db_unixodbc_close(db_con_t* _h)
 {
-	return db_do_close(_h, db_unixodbc_free_connection);
+	db_do_close(_h, db_unixodbc_free_connection);
 }
 
 /*

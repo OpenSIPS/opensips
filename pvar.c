@@ -756,7 +756,6 @@ static int pv_get_errinfo_attr(struct sip_msg *msg, pv_param_t *param,
 		LM_DBG("invalid attribute!\n");
 		return pv_get_null(msg, param, res);
 	}
-	return 0;
 }
 
 static int pv_get_xto_attr(struct sip_msg *msg, pv_param_t *param,
@@ -2492,7 +2491,6 @@ int pv_set_branch_fields(struct sip_msg* msg, pv_param_t *param,
 			LM_CRIT("BUG - unsupported ID %d\n",param->pvn.u.isname.type);
 			return -1;
 	}
-	return 0;
 }
 
 int pv_set_force_sock(struct sip_msg* msg, pv_param_t *param,

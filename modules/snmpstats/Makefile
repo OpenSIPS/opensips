@@ -4,23 +4,25 @@
 
 include ../../Makefile.defs
 
-BUILDER = $(shell which net-snmp-config)
-ifeq ($(BUILDER),)
+HAS_BUILDER = $(shell if which net-snmp-config >/dev/null 2>/dev/null;then echo YES; fi)
+
+ifeq ($(HAS_BUILDER),YES)
+	# use autodetection
+	DEFS += $(shell net-snmp-config --cflags)
+	LIBS = $(shell net-snmp-config --netsnmp-agent-libs --external-agent-libs)
+	INSTALLMIBDIR = $(cfg-prefix)$(shell net-snmp-config --prefix)/share/snmp/mibs
+else
+	# use standard know paths
 	DEFS +=-I$(LOCALBASE)/include
-	BUILDAGENTLIBS =-L$(LOCALBASE)/lib -lnetsnmpmibs -lnetsnmpagent \
+	LIBS =-L$(LOCALBASE)/lib -lnetsnmpmibs -lnetsnmpagent \
 		-lnetsnmphelpers -lnetsnmp
 	INSTALLMIBDIR = $(cfg-prefix)/share/snmp/mibs
-else
-	DEFS += $(shell net-snmp-config --cflags)
-	BUILDAGENTLIBS = $(shell net-snmp-config --netsnmp-agent-libs --external-agent-libs)
-	INSTALLMIBDIR = $(cfg-prefix)$(shell net-snmp-config --prefix)/share/snmp/mibs
 endif 
 
 
 CFLAGS+=
 auto_gen=
 NAME=snmpstats.so
-LIBS=$(BUILDAGENTLIBS)
 
 
 include ../../Makefile.modules
