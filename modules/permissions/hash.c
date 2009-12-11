@@ -156,13 +156,18 @@ int hash_match(struct sip_msg *msg, struct address_list** table,
 			(node->proto == PROTO_NONE || node->proto == proto
 			 		|| proto == PROTO_NONE ) &&
 			(node->port == PORT_ANY || node->port == port
-			 		|| port == PORT_ANY)){
+			 		|| port == PORT_ANY) &&
+			ip_addr_cmp(ip, node->ip)) {
+				if (!node->pattern || !pattern) {
+					LM_DBG("no pattern to match\n");
+					goto found;
+				}
 
-				if (!ip_addr_cmp(ip, node->ip)) goto not_found;
-				if (!node->pattern || !pattern) goto found;
 				match_res = fnmatch(node->pattern, pattern, FNM_PERIOD);
-
-				if (!match_res) goto found;
+				if (!match_res) {
+					LM_DBG("pattern match\n");
+					goto found;
+				}
 				if (match_res != FNM_NOMATCH) {
 					LM_ERR("fnmatch failed\n");
 					return -1;
@@ -170,7 +175,6 @@ int hash_match(struct sip_msg *msg, struct address_list** table,
 	    }
 	}
 
-not_found:
 	LM_DBG("no match in the hash table\n");
 	return -1;
 

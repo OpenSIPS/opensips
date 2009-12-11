@@ -81,14 +81,14 @@ int proto_char2int(char *proto) {
  */
 int reload_address_table(void)
 {
-	db_key_t cols[7];
+	db_key_t cols[8];
 	db_res_t* res = NULL;
 	db_row_t* row;
 	db_val_t* val;
 
 	struct address_list **new_hash_table;
 	struct subnet *new_subnet_table;
-	int i, mask, proto, group, port;
+	int i, mask, proto, group, port, id;
     struct ip_addr *ip_addr;
 	struct net *subnet;
 	char *pattern, *info, *str_proto;
@@ -101,13 +101,14 @@ int reload_address_table(void)
 	cols[4] = &proto_col;
 	cols[5] = &pattern_col;
 	cols[6] = &info_col;
+	cols[7] = &id_col;
 
 	if (perm_dbf.use_table(db_handle, &address_table) < 0) {
 		LM_ERR("failed to use address table\n");
 		return -1;
 	}
 
-	if (perm_dbf.query(db_handle, NULL, 0, NULL, cols, 0, 7, 0, &res) < 0) {
+	if (perm_dbf.query(db_handle, NULL, 0, NULL, cols, 0, 8, 0, &res) < 0) {
 		LM_ERR("failed to query database\n");
 		return -1;
 	}
@@ -138,7 +139,7 @@ int reload_address_table(void)
 
 		val = ROW_VALUES(row + i);
 
-	    if ((ROW_N(row + i) == 7) &&
+	    if ((ROW_N(row + i) == 8) &&
 			VAL_TYPE(val) == DB_STRING && !VAL_NULL(val) &&
 			VAL_TYPE(val + 1) == DB_INT && !VAL_NULL(val + 1)
 			&& (unsigned int)VAL_INT(val + 1) >= 0 &&
@@ -153,6 +154,8 @@ int reload_address_table(void)
 				 VAL_TYPE(val + 6) == DB_STRING && !VAL_NULL(val + 6)))
 			) {
 
+			id = (unsigned int) VAL_INT(val + 7);
+
 			str_src_ip.s = VAL_NULL(val) ? NULL : (char*) VAL_STRING(val);
 			if (!str_src_ip.s) {
 			    LM_DBG("empty ip field in address table, ignoring entry"
@@ -164,7 +167,7 @@ int reload_address_table(void)
 			ip_addr = str2ip(&str_src_ip);
 
 			if (!ip_addr) {
-				LM_DBG("invalid ip field in address table, ignoring entry %d\n", i);
+				LM_DBG("invalid ip field in address table, ignoring entry with id %d\n", id);
 				continue;
 			}
 
@@ -174,20 +177,20 @@ int reload_address_table(void)
 
 			if (!str_proto) {
 			    LM_DBG("empty protocol field in address table, ignoring entry"
-						" number %d\n", i);
+						" with id %d\n", id);
 				continue;
 		    }
 
 			if (!strcasecmp(str_proto, "none")) {
 			    LM_DBG("protocol field is \"none\" in address table, ignoring"
-						" entry number %d\n", i);
+						" entry with id %d\n", id);
 				continue;
 		    }
 
 			proto = proto_char2int(str_proto);
 			if (proto == -1) {
 			    LM_DBG("unknown protocol field in address table, ignoring"
-						" entry number %d\n", i);
+						" entry with id %d\n", id);
 				continue;
 			}
 
