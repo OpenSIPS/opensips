@@ -3188,7 +3188,7 @@ int pv_printf(struct sip_msg* msg, pv_elem_p list, char *buf, int *len)
 				n += it->text.len;
 				cur += it->text.len;
 			} else {
-				LM_ERR("no more space for text [%d]\n", it->text.len);
+				LM_ERR("no more space for text [%d][%d]\n", n, it->text.len);
 				goto overflow;
 			}
 		}
@@ -3207,7 +3207,8 @@ int pv_printf(struct sip_msg* msg, pv_elem_p list, char *buf, int *len)
 					cur += tok.rs.len;
 				}
 			} else {
-				LM_ERR("no more space for spec value\n");
+				LM_ERR("no more space for spec value  [%d][%d]\n",
+					n, tok.rs.len);
 				goto overflow;
 			}
 		}
@@ -3216,7 +3217,7 @@ int pv_printf(struct sip_msg* msg, pv_elem_p list, char *buf, int *len)
 	goto done;
 	
 overflow:
-	LM_ERR("buffer overflow -- increase the buffer size...\n");
+	LM_ERR("buffer overflow -- increase the buffer size from [%d]...\n",*len);
 	return -1;
 
 done:
