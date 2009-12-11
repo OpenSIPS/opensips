@@ -1,0 +1,107 @@
+.\" $Id: opensipsdbctl.8 5891 2009-11-22 12:53:09Z alerios $
+.TH opensipsdbctl 8 22.11.2009 opensips "OpenSIPS" 
+.\" Process with
+.\" groff -man -Tascii opensipsdbctl.8 
+.\"
+.SH NAME
+opensipsdbctl \- control tool for maintaining OpenSIPS databases
+.SH SYNOPSIS
+.B opensipsdbctl
+
+.B opensipsdbctl
+.BI command
+[
+.BI parameters
+]
+
+.SH DESCRIPTION
+.B opensipsdbctl
+is a control tool for maintaining
+.B OpenSIPS SIP server
+databases.
+It can be used to create, migrate, copy, delete, dump and restore
+the persistance databases for OpenSIPS, on the supported Engines.
+
+.SH FILES
+.PD 0
+.I /etc/opensips/opensipsdbctlrc
+.br
+.I ~/.opensipsdbctlrc
+.br
+
+.SH COMMANDS
+.TP 16
+.I OpenSIPS databases management:
+.TP 12
+.B db create <db name or db_path, optional> 
+creates a new database
+.TP
+.B db presence 
+adds the presence related tables
+.TP
+.B db extra 
+adds the extra tables
+.TP
+.B db migrate <old_db> <new_db> 
+migrates DB from 1.5 to 1.6
+.TP
+.B db drop <db name or db_path, optional> 
+!entirely deletes tables!
+.TP
+.B db reinit <db name or db_path, optional> 
+!entirely deletes and than re-creates tables!
+.TP
+.B db backup <file> 
+dumps current database to file
+.TP
+.B db restore <file> 
+restores tables from a file
+.TP
+.B db copy <new_db> 
+creates a new db from an existing one
+
+.TP 16
+.I OpenSIPS Berkeley DB tables management:
+.TP 12
+.B bdb | db_berkeley list
+lists the underlying db files in DB_PATH
+.TP
+.B bdb | db_berkeley cat       <db>
+db_dump the underlying db file to STDOUT
+.TP
+.B bdb | db_berkeley swap      <db>
+installs db.new by db -> db.old; db.new -> db
+.TP
+.B bdb | db_berkeley append    <db> <datafile>
+appends data to an existing db;output DB_PATH/db.new
+.TP
+.B bdb | db_berkeley newappend <db> <datafile>
+appends data to a new instance of db; output DB_PATH/db.new
+.TP
+.B bdb | db_berkeley export <dump_dir>
+exports table data to plain-txt files in dump_dir
+.TP
+.B bdb | db_berkeley import <dump_dir>
+imports plain-txt table data and creates new db tables in db_path
+
+
+.SH AUTHORS
+
+see 
+.B /usr/share/doc/opensips/AUTHORS
+.PP
+This manual page was written by Alejandro Rios P. <alerios@debian.org>,
+based on opensipsctl manpage by Bogdan-Andrei Iancu <bogdan@voice-system.ro>,
+for the Debian project (and may be used by others).
+
+.SH SEE ALSO
+.BR opensips(8), opensips.cfg(5), opensipsctl(8), osipsconsole(8)
+.PP
+Full documentation on opensips is available at
+.I http://www.opensips.org/.
+.PP
+Mailing lists:
+.nf 
+users@opensips.org - opensips user community
+.nf 
+devel@opensips.org - opensips development, new features and unstable version
