@@ -747,7 +747,12 @@ int do_action(struct action* a, struct sip_msg* msg)
 							if ((a->elem[1].type==ACTIONS_ST)
 									&&a->elem[1].u.data){
 								ret=run_action_list(
-										(struct action*)a->elem[1].u.data,msg );
+									(struct action*)a->elem[1].u.data,msg );
+								/* check if return was done */
+								if ((action_flags&ACT_FL_RETURN)
+								|| (action_flags&ACT_FL_EXIT) ){
+									break;
+								}
 								return_code = ret;
 							} else {
 								/* we should not get here */
