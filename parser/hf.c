@@ -99,7 +99,7 @@ void clean_hdr_field(struct hdr_field* hf)
 			break;
 
 		case HDR_CONTENTTYPE_T:
-			free_contenttype((content_t**)(&hf->parsed));
+			free_contenttype((content_t**)(void*)(&hf->parsed));
 			break;
 
 		case HDR_CONTENTLENGTH_T:

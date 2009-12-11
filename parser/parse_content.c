@@ -270,7 +270,7 @@ char* decode_mime_type(char *start, char *end, unsigned int *mime_type, content_
 
 	p = start;
 
-	LM_DBG("Decoding MIME type for:[%.*s]\n",end-start,start);
+	LM_DBG("Decoding MIME type for:[%.*s]\n",(int)(end-start),start);
 
 	/* search the begining of the type */
 	while ( p<end && (*p==' ' || *p=='\t' ||
