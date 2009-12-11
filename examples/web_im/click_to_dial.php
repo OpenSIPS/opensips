@@ -1,10 +1,10 @@
 <html>
 <!-- $Id$ -->
-<header>
+<head>
 <title>
 Click-To-Dial
 </title>
-</header>
+</head>
 
 <body>
 <h1>
