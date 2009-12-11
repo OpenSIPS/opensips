@@ -1191,11 +1191,15 @@ int ds_select_dst(struct sip_msg *msg, int set, int alg, int mode)
 
 	if (ds_id==-1) {
 		/* no destination yet actually selected -> do it based on hash */
-		ds_hash = ds_hash%idx->weight_sum;
-		/* get the ds id based on weights */
-		for( ds_id=0 ; ds_id<idx->nr ; ds_id++ )
-			if (ds_hash<idx->dlist[ds_id].weight)
-				break;
+		if (idx->weight_sum==0) {
+			ds_id = ds_hash % idx->nr;
+		} else {
+			ds_hash = ds_hash%idx->weight_sum;
+			/* get the ds id based on weights */
+			for( ds_id=0 ; ds_id<idx->nr ; ds_id++ )
+				if (ds_hash<idx->dlist[ds_id].weight)
+					break;
+		}
 	}
 
 	LM_DBG("alg hash [%u], id [%u]\n", ds_hash, ds_id);
