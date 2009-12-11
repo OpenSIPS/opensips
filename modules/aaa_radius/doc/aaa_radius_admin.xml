@@ -124,6 +124,10 @@ modparam("aaa_radius","sets","set2 = (Sip-Group = $var(sipgrup)) ")
 		<para>
 			Radiusclient configuration file.
 		</para>
+		<para>
+			This parameter is optional. It must be set only if the radius_send_acct
+			and radius_send_auth functions are used.
+		</para>
 		<example>
 		<title>Set <varname>radius_config</varname> parameter</title>
 		<programlisting format="linespecific">
