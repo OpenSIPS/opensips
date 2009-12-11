@@ -1,10 +1,10 @@
 <html>
 <!-- $Id$ -->
-<header>
+<head>
 <title>
 Send IM Status
 </title>
-</header>
+</head>
 
 <body>
 <h1>
