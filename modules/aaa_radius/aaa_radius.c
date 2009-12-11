@@ -65,8 +65,9 @@ int set_size = 0;
 char* config_file = NULL;
 rc_handle *rh = NULL;
 
-
 int mod_init(void);
+int init_radius_handle(void);
+
 void destroy(void);
 int aaa_radius_bind_api(aaa_prot *rad_prot);
 
@@ -294,10 +295,11 @@ int send_auth_func(struct sip_msg* msg, str* s1, str* s2) {
 	VALUE_PAIR *send = NULL, *recv = NULL, *vp = NULL;
 	DICT_ATTR *attr;
 
-
 	if (!rh) {
-		LM_ERR("invalid radius handle\n");
-		return -1;
+		if (init_radius_handle()) {
+			LM_ERR("invalid radius handle\n");
+			return -1;
+		}
 	}
 
 //	LM_DBG("*******************************************\n");
@@ -383,19 +385,26 @@ error:
 
 int send_auth_fixup(void** param, int param_no) {
 
-       str *s;
+	str *s;
 
-       s = (str*) pkg_malloc(sizeof(str));
-       CHECK_ALLOC(s);
+	if (!rh) {
+		if (init_radius_handle()) {
+			LM_ERR("invalid radius handle\n");
+    		return E_UNSPEC;
+		}
+    }
 
-       if (param_no == 1 || param_no == 2) {
-               s->s = *param;
-               s->len = strlen(s->s);
-               *param = s;
-               return 0;
-       }
+	s = (str*) pkg_malloc(sizeof(str));
+	CHECK_ALLOC(s);
 
-       return E_UNSPEC;
+	if (param_no == 1 || param_no == 2) {
+		s->s = *param;
+		s->len = strlen(s->s);
+		*param = s;
+		return 0;
+	}
+
+    return E_UNSPEC;
 }
 
 
@@ -405,8 +414,10 @@ int send_acct_func(struct sip_msg* msg, str *s) {
 	VALUE_PAIR *send = NULL;
 
 	if (!rh) {
-		LM_ERR("invalid radius handle\n");
-		return -1;
+		if (init_radius_handle()) {
+			LM_ERR("invalid radius handle\n");
+			return -1;
+		}
 	}
 
 	//LM_DBG("*******************************************\n");
@@ -447,6 +458,13 @@ int send_acct_fixup(void** param, int param_no) {
 	str *s = (str*) pkg_malloc(sizeof(str));
 	CHECK_ALLOC(s);
 
+	if (!rh) {
+		if (init_radius_handle()) {
+			LM_ERR("invalid radius handle\n");
+    		return E_UNSPEC;
+		}
+    }
+
 	if (param_no == 1) {
 		s->s = *param;
 		s->len = strlen(s->s);
@@ -457,15 +475,13 @@ int send_acct_fixup(void** param, int param_no) {
 	return E_UNSPEC;
 }
 
-
-int mod_init(void) {
+int init_radius_handle(void) {
 
 	int i;
 	DICT_ATTR *da;
 	char name[256];
 	map_list *mp;
 
-	LM_DBG("aaa_radius module was initiated\n");
 
 	if (!config_file) {
 		LM_ERR("radius configuration file not set\n");
@@ -497,6 +513,12 @@ int mod_init(void) {
 			mp = mp->next;
 		}
 	}
+
+	return 0;
+}
+
+int mod_init(void) {
+	LM_DBG("aaa_radius module was initiated\n");
 
 	return 0;
 }
