@@ -58,6 +58,7 @@ extern str info_col;      /* Name of context_info column */
 extern str grp_col;       /* Name of address group column */
 extern str mask_col;      /* Name of mask column */
 extern str port_col;      /* Name of port column */
+extern str id_col;        /* Name of id column */
 
 typedef struct int_or_pvar {
     unsigned int i;

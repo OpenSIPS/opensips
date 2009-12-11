@@ -70,7 +70,7 @@ str info_col = str_init("context_info");	/* Name of context info column */
 str grp_col = str_init("grp");				/* Name of address group column */
 str mask_col = str_init("mask");			/* Name of mask column */
 str port_col = str_init("port");			/* Name of port column */
-
+str id_col = str_init("id");				/* Name of id column */
 
 /*
  * By default we check all branches
