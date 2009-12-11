@@ -193,7 +193,7 @@ b2b_dlg_t* b2b_dlg_copy(b2b_dlg_t* dlg)
 
 	size = sizeof(b2b_dlg_t) + dlg->callid.len+ dlg->from_uri.len+ dlg->to_uri.len+
 		dlg->tag[0].len + dlg->tag[1].len+ dlg->route_set[0].len+ dlg->route_set[1].len+
-		dlg->contact[0].len+ dlg->contact[1].len+ dlg->sdp.len;
+		dlg->contact[0].len+ dlg->contact[1].len+ dlg->sdp.len+ dlg->ruri.len;
 
 	new_dlg = (b2b_dlg_t*)shm_malloc(size);
 	if(new_dlg == 0)
@@ -204,6 +204,9 @@ b2b_dlg_t* b2b_dlg_copy(b2b_dlg_t* dlg)
 	memset(new_dlg, 0, size);
 	size = sizeof(b2b_dlg_t);
 
+	if(dlg->ruri.s)
+		CONT_COPY(new_dlg, new_dlg->ruri, dlg->ruri);
+	CONT_COPY(new_dlg, new_dlg->callid, dlg->callid);
 	CONT_COPY(new_dlg, new_dlg->callid, dlg->callid);
 	CONT_COPY(new_dlg, new_dlg->from_uri, dlg->from_uri);
 	CONT_COPY(new_dlg, new_dlg->to_uri, dlg->to_uri);
@@ -283,6 +286,24 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 		return -1;
 	}
 
+	LM_DBG("start - method = %.*s\n", msg->first_line.u.request.method.len,
+		msg->first_line.u.request.method.s);
+	if(msg->record_route)
+	{
+		LM_DBG("Found record route headers\n");
+		return 1;
+	}
+	method_value = msg->first_line.u.request.method_value;
+
+	if(method_value!= METHOD_CANCEL &&
+		!((msg->first_line.u.request.uri.len == server_address.len ) &&
+		strncmp(msg->first_line.u.request.uri.s, server_address.s,
+		server_address.len)== 0))
+	{
+		LM_DBG("RURI does not point to me\n");
+		return 1;
+	}
+
 	src_ip = ip_addr2a(&msg->rcv.src_ip);
 	if(src_ip == NULL)
 	{
@@ -297,7 +318,6 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 		LM_DBG("Received a message that I sent\n");
 		return 1;
 	}
-	method_value = msg->first_line.u.request.method_value;
 
 	if(method_value == METHOD_PRACK)
 	{
@@ -320,7 +340,9 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 	{
 		str from_tag;
 		str callid;
+		str ruri;
 
+		ruri = msg->first_line.u.request.uri;
 		callid = msg->callid->body;
 
 		if(b2b_parse_key(&callid, &hash_index, &local_index) >= 0)
@@ -351,7 +373,8 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 		dlg = server_htable[hash_index].first;
 		while(dlg)
 		{
-			if(dlg->callid.len == callid.len &&
+			if(ruri.len == dlg->ruri.len && strncmp(ruri.s, dlg->ruri.s, ruri.len)== 0
+					&& dlg->callid.len == callid.len &&
 					strncmp(dlg->callid.s, callid.s, callid.len)== 0 &&
 					dlg->tag[CALLER_LEG].len == from_tag.len &&
 					strncmp(dlg->tag[CALLER_LEG].s, from_tag.s, from_tag.len)== 0)
@@ -362,7 +385,7 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 		{
 			lock_release(&server_htable[hash_index].lock);
 			LM_DBG("No dialog found\n");
-			return 0;
+			return 1;
 		}
 		table = server_htable;
 
@@ -541,7 +564,11 @@ b2b_dlg_t* b2b_new_dlg(struct sip_msg* msg, int on_reply)
 
 	/* reject CANCEL messages */
 	if (msg->first_line.u.request.method_value==METHOD_CANCEL)
+	{
+		LM_ERR("Called b2b_init on a Cancel message\n");
 		return 0;
+	}
+	dlg.ruri = msg->first_line.u.request.uri;
 
 	/* examine the to header */
 	if(msg->to->parsed != NULL)
