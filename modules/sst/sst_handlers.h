@@ -72,6 +72,6 @@ int sst_check_min(struct sip_msg *msg, char *str1, char *str2);
  * The handlers initializer function
  */
 void sst_handler_init(pv_spec_t *timeout_avp, unsigned int minSE, 
-		int flag, unsigned int reject);
+		int flag, unsigned int reject, unsigned int interval);
 
 #endif /* _SST_HANDLERS_H_ */

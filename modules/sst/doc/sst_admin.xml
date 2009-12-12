@@ -188,6 +188,30 @@ modparam("sst", "min_se", 2400)
 	</section>
 
 	<section>
+		<title><varname>sst_interval</varname> (integer)</title>
+
+		<para>The sst minimum interval in Session-Expires header if OpenSIPS
+		request the use of session times. The used value will be the
+		maximum value between OpenSIPS minSE, UAS minSE and this value.</para>
+
+		<para>Per default the interval used will be the min_se value</para>
+
+		<para>
+		<emphasis>
+			Default value is <quote>0</quote> seconds.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>sst_interval</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("sst", "sst_interval", 2400)
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
 		<title><varname>timeout_avp</varname> (string)</title>
 
 		<para>This parameter MUST be set to the same value as the
