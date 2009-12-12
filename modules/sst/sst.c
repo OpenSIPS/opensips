@@ -78,6 +78,12 @@ unsigned int sst_reject = 1;
 /* The sst message flag value */
 static int sst_flag = -1;
 
+/* 
+ * The sst minimum interval in Session-Expires header if OpenSIPS
+ * request the use of session times. The used value will be the
+ * maximum value between OpenSIPS minSE, UAS minSE and this value
+*/ 
+unsigned int sst_interval = 0;
 
 /*
  * Binding to the dialog module
@@ -102,6 +108,7 @@ static param_export_t mod_params[]={
 	{ "timeout_avp", STR_PARAM, &timeout_spec			},
 	{ "reject_to_small",		INT_PARAM, &sst_reject 	},
 	{ "sst_flag",				INT_PARAM, &sst_flag	},
+	{ "sst_interval",		INT_PARAM, &sst_interval	},
 	{ 0,0,0 }
 };
 
@@ -180,7 +187,7 @@ static int mod_init(void)
 	 * Init the handlers
 	 */
 	sst_handler_init((timeout_spec?&timeout_avp:0), sst_minSE, 
-			sst_flag, sst_reject);
+			sst_flag, sst_reject,sst_interval);
 
 	/*
 	 * Register the main (static) dialog call back.

@@ -160,6 +160,11 @@ static unsigned int sst_reject = 1;
  */
 static int sst_flag = 0;
 
+/**
+ * Our Session-Expire minimum interval 
+ */
+static unsigned int sst_interval = 0;
+
 
 static str sst_422_rpl = str_init("Session Timer Too Small");
 
@@ -175,14 +180,17 @@ static str sst_422_rpl = str_init("Session Timer Too Small");
  *                PROXY.
  * @param flag - sst flag
  * @param reject - reject state
+ * @param interval - The minimum session expire value used by this
+ *                  PROXY
  */
 void sst_handler_init(pv_spec_t *timeout_avp_p, unsigned int min_se,
-		int flag, unsigned int reject)
+		int flag, unsigned int reject, unsigned int interval)
 {
 	timeout_avp = timeout_avp_p;
 	sst_min_se = min_se;
 	sst_flag = 1 << flag;
 	sst_reject = reject;
+	sst_interval = MAX(interval, sst_min_se);
 }
 
 /**
@@ -263,7 +271,7 @@ void sst_dialog_created_CB(struct dlg_cell *did, int type,
 	memset(info, 0, sizeof(sst_info_t));
 	info->requester = (minfo.se?SST_UAC:SST_UNDF);
 	info->supported = (minfo.supported?SST_UAC:SST_UNDF);
-	info->interval = MAX(sst_min_se, 90); /* For now, will set for real
+	info->interval = MAX(sst_interval, 90); /* For now, will set for real
 										  * later */
 
 	if (minfo.se != 0) {
@@ -323,6 +331,7 @@ void sst_dialog_created_CB(struct dlg_cell *did, int type,
 			}
 		}
 		
+		info->interval = MAX(info->interval, sst_interval);
 		info->requester = SST_PXY;
 		snprintf(buf, 80, "Session-Expires: %d\r\n", info->interval);
 		if (append_header(msg, buf)) {
