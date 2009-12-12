@@ -368,7 +368,8 @@ static const char sbuf[4] = {0, 0, 0, 0};
 static char *force_socket_str = 0;
 static int rtpproxy_disable_tout = 60;
 static int rtpproxy_retr = 5;
-static int rtpproxy_tout = 1;
+static int rtpproxy_tout = -1;
+static char *rtpproxy_timeout = 0;
 static pid_t mypid;
 static unsigned int myseqn = 0;
 static str nortpproxy_str = str_init("a=nortpproxy:yes");
@@ -496,6 +497,7 @@ static param_export_t params[] = {
 	{"rtpproxy_disable_tout", INT_PARAM, &rtpproxy_disable_tout },
 	{"rtpproxy_retr",         INT_PARAM, &rtpproxy_retr         },
 	{"rtpproxy_tout",         INT_PARAM, &rtpproxy_tout         },
+	{"rtpproxy_timeout",      STR_PARAM, &rtpproxy_timeout      },
 	{"received_avp",          STR_PARAM, &rcv_avp_param         },
 	{"force_socket",          STR_PARAM, &force_socket_str      },
 	{"sipping_from",          STR_PARAM, &sipping_from.s        },
@@ -1106,6 +1108,7 @@ mod_init(void)
 	str socket_str;
 	pv_spec_t avp_spec;
 	str s;
+	float timeout;
 
 	if (rcv_avp_param && *rcv_avp_param) {
 		s.s = rcv_avp_param; s.len = strlen(s.s);
@@ -1302,7 +1305,24 @@ mod_init(void)
 	/* any rtpproxy configured? */
 	if(rtpp_set_list)
 		*default_rtpp_set = select_rtpp_set(DEFAULT_RTPP_SET_ID);
-	
+
+	/* configure rtpproxy timeout */
+	if(rtpproxy_timeout && sscanf(rtpproxy_timeout, "%f", &timeout)) {
+		if(rtpproxy_tout != -1) {
+			LM_ERR("you can't use rtpproxy_timeout and rtpproxy_tout : \n"
+				"check your config !\n");
+			return -1;
+		}
+		rtpproxy_tout = (int) (timeout * 1000);
+	} else if(rtpproxy_tout < 0) {
+		/* not defined : set default value */
+		rtpproxy_tout = 1000;
+	} else {
+		LM_WARN("rtpproxy_tout param is obsolete, please replace with \n"
+			"rtpproxy_timeout\n");
+		rtpproxy_tout = rtpproxy_tout * 1000;
+	}
+
 	return 0;
 }
 
@@ -2374,7 +2394,7 @@ send_rtpp_command(struct rtpp_node *node, struct iovec *v, int vcnt)
 				LM_ERR("can't send command to a RTP proxy\n");
 				goto badproxy;
 			}
-			while ((poll(fds, 1, rtpproxy_tout * 1000) == 1) &&
+			while ((poll(fds, 1, rtpproxy_tout) == 1) &&
 			    (fds[0].revents & POLLIN) != 0) {
 				do {
 					len = recv(rtpp_socks[node->idx], buf, sizeof(buf)-1, 0);
