@@ -62,9 +62,8 @@ static db_key_t  store_keys[6];
 static db_val_t  store_vals[6];
 static str      empty={"",0};
 
-
-#define AVP_PRINTBUF_SIZE 1024
-static char printbuf[AVP_PRINTBUF_SIZE];
+extern unsigned buf_size;
+extern char *printbuf;
 
 void init_store_avps(str **db_columns)
 {
@@ -744,7 +743,7 @@ int ops_dbquery_avps(struct sip_msg* msg, pv_elem_t* query,
 		return -1;
 	}
 	
-	printbuf_len = AVP_PRINTBUF_SIZE-1;
+	printbuf_len = buf_size-1;
 	if(pv_printf(msg, query, printbuf, &printbuf_len)<0 || printbuf_len<=0)
 	{
 		LM_ERR("cannot print the query\n");

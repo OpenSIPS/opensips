@@ -47,6 +47,7 @@
 #include "avpops_impl.h"
 #include "avpops_db.h"
 
+char *printbuf = NULL;
 
 /* modules param variables */
 static str db_table        = str_init("usr_preferences");  /* table */
@@ -61,6 +62,7 @@ static str* db_columns[6] = {&uuid_col, &attribute_col, &value_col,
                              &type_col, &username_col, &domain_col};
 
 static struct db_url* default_db_url = NULL;
+unsigned buf_size=1024;
 
 static int avpops_init(void);
 static int avpops_child_init(int rank);
@@ -171,6 +173,7 @@ static param_export_t params[] = {
 	{"username_column",   STR_PARAM, &username_col.s  },
 	{"domain_column",     STR_PARAM, &domain_col.s    },
 	{"db_scheme",         STR_PARAM|USE_FUNC_PARAM, (void*)avp_add_db_scheme },
+	{"buf_size",          INT_PARAM, &buf_size},
 	{0, 0, 0}
 };
 
@@ -213,6 +216,12 @@ static int avpops_init(void)
 	default_db_url = get_default_db_url();
 
 	init_store_avps(db_columns);
+
+	printbuf = (char*)pkg_malloc((buf_size+1)*sizeof(char));
+	if(printbuf==NULL) {
+		LM_ERR("no pkg memory left\n");
+		return -1;
+	}
 
 	return 0;
 error:

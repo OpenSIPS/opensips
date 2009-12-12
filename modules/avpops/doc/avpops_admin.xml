@@ -349,8 +349,26 @@ modparam("avpops","db_scheme",
 				</programlisting>
 			</example>
 		</section>
+		<section>
+			<title><varname>buf_size</varname> (integer)</title>
+			<para>
+				Allocated size for AVP variables.
+			</para>
+			<para>
+				<emphasis>Default value is <quote>1024</quote>.
+				</emphasis>
+			</para>
+			<example>
+				<title>Set <varname>buf_size</varname> parameter
+				</title>
+				<programlisting format="linespecific">
+...
+modparam("avpops", "buf_size", 1024)
+...
+				</programlisting>
+			</example>
+		</section>
 	</section>
-
 
 	<section>
 		<title>Exported Functions</title>
