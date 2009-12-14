@@ -289,7 +289,7 @@ static PyMethodDef msg_methods[] = {
     {"getHeader",     (PyCFunction)msg_getHeader,     METH_VARARGS,
       "Get SIP header field by name."},
     {"call_function", (PyCFunction)msg_call_function, METH_VARARGS,
-      "Get SIP header field by name."},
+      "Invoke function exported by the other module."},
     {NULL, NULL, 0, NULL}                              /* sentinel */
 };
 
