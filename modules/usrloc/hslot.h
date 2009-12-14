@@ -33,7 +33,7 @@
 #define HSLOT_H
 
 #include "../../locking.h"
-
+#include "../../map.h"
 #include "udomain.h"
 #include "urecord.h"
 
@@ -43,9 +43,9 @@ struct urecord;
 
 
 typedef struct hslot {
-	int n;                  /*!< Number of elements in the collision slot */
-	struct urecord* first;  /*!< First element in the list */
-	struct urecord* last;   /*!< Last element in the list */
+
+	map_t records;
+	
 	struct udomain* d;      /*!< Domain we belong to */
 #ifdef GEN_LOCK_T_PREFERED
 	gen_lock_t *lock;       /*!< Lock for hash entry - fastlock */

@@ -161,9 +161,9 @@ static inline void get_static_urecord(udomain_t* _d, str* _aor,
  */
 void print_udomain(FILE* _f, udomain_t* _d)
 {
-	int i;
-	int max=0, slot=0, n=0;
-	struct urecord* r;
+		int i;
+	int max=0, slot=0, n=0,count;
+	map_iterator_t it;
 	fprintf(_f, "---Domain---\n");
 	fprintf(_f, "name : '%.*s'\n", _d->name->len, ZSW(_d->name->s));
 	fprintf(_f, "size : %d\n", _d->size);
@@ -172,17 +172,20 @@ void print_udomain(FILE* _f, udomain_t* _d)
 	fprintf(_f, "\n");
 	for(i=0; i<_d->size; i++)
 	{
-		r = _d->table[i].first;
-		n += _d->table[i].n;
-		if(max<_d->table[i].n){
-			max= _d->table[i].n;
+		count = map_size( _d->table[i].records);
+		n += count;
+		if(max<count){
+			max= count;
 			slot = i;
 		}
-		while(r) {
-			print_urecord(_f, r);
-			r = r->next;
-		}
+
+		for ( map_first( _d->table[i].records, &it);
+			iterator_is_valid(&it);
+			iterator_next(&it) )
+			print_urecord(_f, (struct urecord *)*iterator_val(&it));
+		
 	}
+	
 	fprintf(_f, "\nMax slot: %d (%d/%d)\n", max, slot, n);
 	fprintf(_f, "\n---/Domain---\n");
 }
@@ -661,31 +664,40 @@ void mem_delete_urecord(udomain_t* _d, struct urecord* _r)
 
 int mem_timer_udomain(udomain_t* _d)
 {
-	struct urecord* ptr, *t;
+	struct urecord* ptr;
+	void ** dest;
 	int i;
+	map_iterator_t it,prev;
 
 	for(i=0; i<_d->size; i++)
 	{
 		lock_ulslot(_d, i);
 
-		ptr = _d->table[i].first;
+		map_first(_d->table[i].records,&it);
 
-		while(ptr) {
+		while(iterator_is_valid(&it))
+		{
+
+			dest = iterator_val(&it);
+			if( dest == NULL )
+				return -1;
+
+			ptr = (struct urecord *)*dest;
+
+			prev = it;
+			iterator_next(&it);
+
 			if (timer_urecord(ptr) < 0) {
 				LM_ERR("timer_urecord failed\n");
 				unlock_ulslot(_d, i);
 				return -1;
 			}
-		
+
 			/* Remove the entire record if it is empty */
-			if (ptr->contacts == 0) {
-				t = ptr;
-				ptr = ptr->next;
-				mem_delete_urecord(_d, t);
-			} else {
-				ptr = ptr->next;
-			}
+			if (ptr->contacts == 0) 
+				iterator_delete(&prev);
 		}
+		
 		unlock_ulslot(_d, i);
 	}
 	return 0;
@@ -779,24 +791,27 @@ int insert_urecord(udomain_t* _d, str* _aor, struct urecord** _r)
  */
 int get_urecord(udomain_t* _d, str* _aor, struct urecord** _r)
 {
-	unsigned int sl, i, aorhash;
+	unsigned int sl, aorhash;
 	urecord_t* r;
+	void ** dest;
+
 
 	if (db_mode!=DB_ONLY) {
 		/* search in cache */
 		aorhash = core_hash(_aor, 0, 0);
 		sl = aorhash&(_d->size-1);
-		r = _d->table[sl].first;
+		
 
-		for(i = 0; i < _d->table[sl].n; i++) {
-			if((r->aorhash==aorhash) && (r->aor.len==_aor->len)
-						&& !memcmp(r->aor.s,_aor->s,_aor->len)){
-				*_r = r;
-				return 0;
-			}
+		dest = map_find(_d->table[sl].records, *_aor);
 
-			r = r->next;
-		}
+		if( dest == NULL )
+			return 1;
+
+		*_r = *dest;
+
+		return 0;
+
+		
 	} else {
 		/* search in DB */
 		r = db_load_urecord( ul_dbh, _d, _aor);
@@ -847,16 +862,4 @@ int delete_urecord(udomain_t* _d, str* _aor, struct urecord* _r)
 	return 0;
 }
 
-
-urecord_t* get_next_urecord(udomain_t *_d, int _slot, urecord_t *_r)
-{
-	if (_r==NULL) {
-		if (_slot<0 || _slot>=_d->size) {
-			LM_CRIT("BUG - slot %d out of range [0,%d]\n",_slot,_d->size-1);
-			return NULL;
-		}
-		return _d->table[_slot].first;
-	}
-	return _r->next;
-}
 

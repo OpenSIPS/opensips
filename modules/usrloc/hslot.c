@@ -106,9 +106,11 @@ void ul_release_idx(int idx)
  */
 int init_slot(struct udomain* _d, hslot_t* _s, int n)
 {
-	_s->n = 0;
-	_s->first = 0;
-	_s->last = 0;
+	_s->records = map_create( MAP_SHARED | MAP_NO_DUPLICATE);
+
+	if( _s->records == NULL )
+		return -1;
+
 	_s->d = _d;
 
 #ifdef GEN_LOCK_T_PREFERED
@@ -120,23 +122,19 @@ int init_slot(struct udomain* _d, hslot_t* _s, int n)
 }
 
 
+void free_value_urecord( void * val )
+{
+	free_urecord( (urecord_t *) val);
+}
+
+
 /*! \brief
  * Deinitialize given slot structure
  */
 void deinit_slot(hslot_t* _s)
 {
-	struct urecord* ptr;
-	
-	     /* Remove all elements */
-	while(_s->first) {
-		ptr = _s->first;
-		_s->first = _s->first->next;
-		free_urecord(ptr);
-	}
-	
-	_s->n = 0;
-	_s->last = 0;
-    _s->d = 0;
+	map_destroy(_s->records , free_value_urecord);
+	_s->d = 0;
 }
 
 
@@ -145,14 +143,13 @@ void deinit_slot(hslot_t* _s)
  */
 void slot_add(hslot_t* _s, struct urecord* _r)
 {
-	if (_s->n == 0) {
-		_s->first = _s->last = _r;
-	} else {
-		_r->prev = _s->last;
-		_s->last->next = _r;
-		_s->last = _r;
-	}
-	_s->n++;
+
+	void ** dest;
+
+	dest = map_get( _s->records, _r->aor );
+
+	*dest = _r;
+
 	_r->slot = _s;
 }
 
@@ -162,19 +159,7 @@ void slot_add(hslot_t* _s, struct urecord* _r)
  */
 void slot_rem(hslot_t* _s, struct urecord* _r)
 {
-	if (_r->prev) {
-		_r->prev->next = _r->next;
-	} else {
-		_s->first = _r->next;
-	}
 
-	if (_r->next) {
-		_r->next->prev = _r->prev;
-	} else {
-		_s->last = _r->prev;
-	}
-
-	_r->prev = _r->next = 0;
-	_r->slot = 0;
-	_s->n--;
+	map_remove( _s->records, _r->aor );
+	_r->slot = 0;	
 }

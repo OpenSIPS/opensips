@@ -258,8 +258,11 @@ static inline int get_all_mem_ucontacts(void *buf, int len, unsigned int flags,
 	urecord_t *r;
 	ucontact_t *c;
 	void *cp;
+	void **dest;
+	map_iterator_t it;
 	int shortage;
 	int needed;
+	int count;
 	int i = 0;
 	cp = buf;
 	shortage = 0;
@@ -273,13 +276,27 @@ static inline int get_all_mem_ucontacts(void *buf, int len, unsigned int flags,
 			if ( (i % part_max) != part_idx )
 				continue;
 
-			lock_ulslot(p->d, i);
-			if(p->d->table[i].n<=0)
+			lock_ulslot( p->d, i);
+			count = map_size(p->d->table[i].records);
+
+			if( count <= 0 )
 			{
 				unlock_ulslot(p->d, i);
 				continue;
 			}
-			for (r = p->d->table[i].first; r != NULL; r = r->next) {
+
+			for ( map_first( p->d->table[i].records, &it);
+				iterator_is_valid(&it);
+				iterator_next(&it) ) {
+
+				
+				dest = iterator_val(&it);
+				if( dest == NULL )
+					return -1;
+				r =( urecord_t * ) *dest;
+
+
+
 				for (c = r->contacts; c != NULL; c = c->next) {
 					if (c->c.len <= 0)
 						continue;

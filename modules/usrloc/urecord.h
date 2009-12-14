@@ -55,10 +55,8 @@ typedef struct urecord {
 	unsigned int aorhash;          /*!< Hash over address of record */
 	ucontact_t* contacts;          /*!< One or more contact fields */
 
-	struct hslot* slot;            /*!< Collision slot in the hash table 
+	struct hslot* slot;            /*!< Collision slot in the hash table
                                     * array we belong to */
-	struct urecord* prev;          /*!< Next item in the hash entry */
-	struct urecord* next;          /*!< Previous item in the hash entry */
 } urecord_t;
 
 

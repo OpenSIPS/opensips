@@ -329,7 +329,9 @@ struct mi_root* mi_usrloc_dump(struct mi_root *cmd, void *param)
 	int n;
 	int i;
 	int short_dump;
-
+	map_iterator_t it;
+	void ** dest;
+	
 	node = cmd->node.kids;
 	if (node && node->next)
 		return init_mi_tree( 400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
@@ -365,7 +367,17 @@ struct mi_root* mi_usrloc_dump(struct mi_root *cmd, void *param)
 		for(i=0,n=0; i<dom->size; i++) {
 			lock_ulslot( dom, i);
 
-			for( r = dom->table[i].first ; r ; r=r->next ) {
+
+			for ( map_first( dom->table[i].records, &it);
+				iterator_is_valid(&it);
+				iterator_next(&it) ) {
+
+				dest = iterator_val(&it);
+				if( dest == NULL )
+					goto error;
+				r =( urecord_t * ) *dest;
+
+
 				/* add entry */
 				if (mi_add_aor_node( node, r, t, short_dump)!=0) {
 					unlock_ulslot( dom, i);
