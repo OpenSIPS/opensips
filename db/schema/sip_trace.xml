@@ -47,7 +47,8 @@
         <name>traced_user</name>
         <type>string</type>
         <size>&uri_len;</size>
-        <default/>
+        <null/>
+        <default><null/></default>
         <description>SIP URI of the user being traced</description>
     </column>
 
@@ -69,7 +70,8 @@
         <name>status</name>
         <type>string</type>
         <size>&uri_len;</size>
-        <default/>
+        <null/>
+        <default><null/></default>
         <description>SIP reply status</description>
     </column>
 
