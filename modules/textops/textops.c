@@ -117,6 +117,7 @@ static int is_method_f(struct sip_msg* msg, char* , char *);
 static int has_body_f(struct sip_msg *msg, char *type, char *str2 );
 static int is_privacy_f(struct sip_msg *msg, char *privacy, char *str2 );
 static int strip_body_f(struct sip_msg *msg, char *str1, char *str2 );
+static int strip_body_f2(struct sip_msg *msg, char *str1, char *str2 );
 static int add_body_f_1(struct sip_msg *msg, char *str1, char *str2 );
 static int add_body_f_2(struct sip_msg *msg, char *str1, char *str2 );
 
@@ -217,6 +218,9 @@ static cmd_export_t cmds[]={
 	{"strip_body",      (cmd_function)strip_body_f,     0,
 		0, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE },
+	{"strip_body",      (cmd_function)strip_body_f2,     1,
+		fixup_body_type, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE },
 	{"add_body",         (cmd_function)add_body_f_1,        1, 
 		fixup_spve_null, 0,
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
@@ -236,6 +240,9 @@ static cmd_export_t cmds[]={
 		fixup_codec,0,
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"codec_delete_re",	(cmd_function)codec_delete_re,	1,
+		fixup_regexp_null, 0,
+		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"codec_delete_except_re",	(cmd_function)codec_delete_except_re,	1,
 		fixup_regexp_null, 0,
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"codec_delete",	(cmd_function)codec_delete_clock, 2,
@@ -1410,7 +1417,7 @@ static int fixup_body_type(void** param, int param_no)
 		if (p==0 || p[0]==0) {
 			type = 0;
 		} else {
-			r = decode_mime_type( p, p+strlen(p) , &type);
+			r = decode_mime_type( p, p+strlen(p) , &type , NULL);
 			if (r==0) {
 				LM_ERR("unsupported mime <%s>\n",p);
 				return E_CFG;
@@ -1430,7 +1437,8 @@ static int fixup_body_type(void** param, int param_no)
 
 static int has_body_f(struct sip_msg *msg, char *type, char *str2 )
 {
-	int mime;
+	struct multi_body * m;
+	struct part * p;
 
 	/* parse content len hdr */
 	if ( msg->content_length==NULL &&
@@ -1443,27 +1451,45 @@ static int has_body_f(struct sip_msg *msg, char *type, char *str2 )
 		return -1;
 	}
 
+	if( ( ((int)(long)type )>>16) == TYPE_MULTIPART )
+	{
+		int mime = parse_content_type_hdr(msg);
+
+		if( mime == ((int)(long)type ) )
+			return 1;
+
+		return -1;
+	}
+
 	/* check type also? */
 	if (type==0)
 		return 1;
 
-	/* the function search for and parses the Content-Type hdr */
-	mime = parse_content_type_hdr (msg);
-	if (mime<0) {
-		LM_ERR("failed to extract content type hdr\n");
+	m = get_all_bodies(msg);
+
+	if (m == NULL)
+	{
+		LM_ERR("Failed to get bodies\n");
 		return -1;
 	}
-	if (mime==0) {
-		/* content type hdr not found -> according the RFC3261 we
-		 * assume APPLICATION/SDP  --bogdan */
-		mime = ((TYPE_APPLICATION << 16) + SUBTYPE_SDP);
+
+	/* if there is no multipart and the type is unspecified default to
+	   application/sdp */
+
+	if (m->from_multi_part == 0 && m->part_count == 1 && m->first->content_type == 0)
+	{
+		m->first->content_type = ((TYPE_APPLICATION << 16) + SUBTYPE_SDP);
 	}
-	LM_DBG("content type is %d\n",mime);
 
-	if ( (unsigned int)mime!=(unsigned int)(unsigned long)type )
-		return -1;
-
-	return 1;
+	p = m->first;
+	while (p)
+	{
+		if( p->content_type == ((int)(long)type ) )
+			return 1;
+		p = p->next;
+	}
+	
+	return -1;
 }
 
 
@@ -1520,6 +1546,78 @@ static int strip_body_f(struct sip_msg *msg, char *str1, char *str2 )
 	}
 
 	return 1;
+}
+
+static int strip_body_f2(struct sip_msg *msg, char *type, char *str2 )
+{
+	struct multi_body * m;
+	struct part * p;
+	int deleted = 0,mime;
+	
+
+	/* parse content len hdr */
+	if ( msg->content_length==NULL &&
+	(parse_headers(msg,HDR_CONTENTLENGTH_F, 0)==-1||msg->content_length==NULL))
+		return -1;
+
+	if (get_content_length (msg)==0) {
+		LM_DBG("content length is zero\n");
+		/* Nothing to see here, please move on. */
+		return -1;
+	}
+
+	mime = parse_content_type_hdr(msg);
+
+	if( ( ((int)(long)type )>>16) == TYPE_MULTIPART || (mime >>16) != TYPE_MULTIPART)
+	{
+		
+
+		if( mime == ((int)(long)type ) )
+		{
+			strip_body_f(msg,NULL,NULL);
+		}
+
+		return -1;
+	}
+	
+
+	m = get_all_bodies(msg);
+
+	if (m == NULL)
+	{
+		LM_ERR("Failed to get bodies\n");
+		return -1;
+	}
+
+	/* if there is no multipart and the type is unspecified default to
+	   application/sdp */
+
+	if (m->from_multi_part == 0 && m->part_count == 1 && m->first->content_type == 0)
+	{
+		m->first->content_type = ((TYPE_APPLICATION << 16) + SUBTYPE_SDP);
+	}
+
+	p = m->first;
+
+	deleted = -1;
+	while (p)
+	{
+		if( p->content_type == ((int)(long)type ) )
+		{
+			if( del_lump( msg, p->all_data.s - msg->buf - 4 - m->boundary.len,
+				 p->all_data.len + 6 + m->boundary.len, 0 ) == 0 )
+			{
+				LM_ERR("Failed to add body lump\n");
+				return -1;
+			}
+			
+			deleted =  1;
+		}
+			
+		p = p->next;
+	}
+
+	return deleted;
 }
 
 /*

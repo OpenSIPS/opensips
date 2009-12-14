@@ -961,6 +961,15 @@ if(remove_hf("User-Agent"))
 		If a paramter is given, the mime described will be also checked against
 		the <quote>Content-Type</quote> header.
 		</para>
+
+                <para>
+                If the SIP message has a multipart body and mime is
+                not a multipart type , it will search through
+                all the parts for the given type.
+                </para>
+
+                <para>It will not handle multi-layer multiparts</para>
+                
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
@@ -1018,22 +1027,42 @@ if(is_privacy("id"))
 
 	<section>
 		<title>
-		<function moreinfo="none">strip_body()</function>
-		</title>
+		<function moreinfo="none">strip_body(),</function>
+		<function moreinfo="none">strip_body(mime)</function>
+                </title>
 		<para>
 		If the message has a body, this function deletes it,
 		correcting Content-Length. This function also deletes the 
 		Content-Type header.
 		</para>
+                <para>
+                If a MIME type is specified it will delete the body if it has
+                the same type or, if the message has a multipart body
+                it will go through the parts and delete all those with the specified type.
+                </para>
+                <para>It will not handle multi-layer multiparts</para>
+
+                <para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>mime</emphasis> - mime to be checked against the
+				<quote>Content-Type</quote> header. If not present or 0, this
+				check will be disabled.
+			</para>
+		</listitem>
+		</itemizedlist>
+
    		<para>
 		This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
 		FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 		</para>
 		<example>
-		<title><function>is_privacy</function> usage</title>
+		<title><function>strip_body</function> usage</title>
 		<programlisting format="linespecific">
 ...
-strip_body();
+strip_body();   #delete any body
+strip_body("multipart/related") # delete a multipart/related body
+strip_body("application/sdp") # delete all sdp bodies, even ones enclosed in multipart
 ...
 </programlisting>
 		</example>
@@ -1243,6 +1272,29 @@ codec_exists_re("sp[a-z]*");
 		<programlisting format="linespecific">
 ...
 codec_delete_re("PCMA|PCMU");
+...
+
+</programlisting>
+		</example>
+	</section>
+
+        <section>
+		<title>
+		<function moreinfo="none">codec_delete_except_re ( regexp )</function>
+		</title>
+		<para>
+		This function deletes all the codecs except those specified
+                by the regular expression.
+		</para>
+   		<para>
+		This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
+		FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
+		</para>
+		<example>
+		<title><function>codec_delete_except_re</function> usage</title>
+		<programlisting format="linespecific">
+...
+codec_delete_except_re("PCMA|PCMU");#will delete all codecs except PCMA and PCMU
 ...
 
 </programlisting>

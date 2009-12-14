@@ -52,9 +52,16 @@ enum{
 	ADD_TO_BACK
 };
 
+enum{
+	DESC_NAME,
+	DESC_NAME_AND_CLOCK,
+	DESC_REGEXP,
+	DESC_REGEXP_COMPLEMENT
+};
+
 
 typedef  int (*stream_func)(struct sdp_stream_cell *cell, int pos,
-	str * str1, str* str2, regex_t * re, int op);
+	str * str1, str* str2, regex_t * re, int op,int description);
 
 int codec_init(void)
 {
@@ -81,7 +88,7 @@ int fixup_codec(void** param, int param_no)
 }
 
 static int do_for_all_streams(struct sip_msg* msg, str* str1,str * str2,
-				regex_t* re, int op, stream_func f)
+				regex_t* re, int op,int desc, stream_func f)
 {
 	struct sdp_session_cell * cur_session;
 	int count, rez;
@@ -186,7 +193,7 @@ static int do_for_all_streams(struct sip_msg* msg, str* str1,str * str2,
 
 		while(cur_cell)
 		{
-			rez |= f(cur_cell,count,str1,str2,re,op);
+			rez |= f(cur_cell,count,str1,str2,re,op,desc);
 
 			count ++;
 			cur_cell = cur_cell->next;
@@ -236,7 +243,7 @@ int delete_sdp_line( struct sip_msg * msg, char * s)
 /* method that processes a stream and keeps the original order
  * of codecs with the same name */
 static int stream_process(struct sdp_stream_cell *cell,int pos,str * s, str* ss,
-				regex_t* re, int op)
+				regex_t* re, int op,int description)
 {
 	sdp_payload_attr_t *payload;
 	char *cur, *tmp, *buff, temp;
@@ -294,7 +301,7 @@ static int stream_process(struct sdp_stream_cell *cell,int pos,str * s, str* ss,
 
 			match = 0;
 
-			if( s == NULL )
+			if( description == DESC_REGEXP ||description == DESC_REGEXP_COMPLEMENT )
 			{
 				/* try to match a regexp */
 				temp = payload->rtp_enc.s[payload->rtp_enc.len];
@@ -302,7 +309,17 @@ static int stream_process(struct sdp_stream_cell *cell,int pos,str * s, str* ss,
 				match = regexec( re, payload->rtp_enc.s, 1, &pmatch, 0) == 0;
 				payload->rtp_enc.s[payload->rtp_enc.len] = temp;
 			}
-			else
+
+			if( description == DESC_REGEXP_COMPLEMENT)
+				match = !match;
+
+			if( description == DESC_NAME  )
+			{
+				match = s->len == payload->rtp_enc.len &&
+				strncasecmp( s->s, payload->rtp_enc.s ,	payload->rtp_enc.len) == 0;
+			}
+
+			if( description == DESC_NAME_AND_CLOCK)
 			{
 				/* try to match name and clock if there is one */
 				match = s->len == payload->rtp_enc.len &&
@@ -461,7 +478,7 @@ int codec_find (struct sip_msg* msg, char* str1 )
 {
 	
 	if( do_for_all_streams( msg, (str*)str1, NULL, NULL,
-		FIND, stream_process) == 0)
+		FIND, DESC_NAME, stream_process) == 0)
 		return -1;
 
 	return 1;
@@ -472,7 +489,7 @@ int codec_find_re (struct sip_msg* msg, char* str1 )
 {
 
 	if( do_for_all_streams(msg, NULL, NULL, (regex_t*)str1,
-		FIND, stream_process) == 0)
+		FIND, DESC_REGEXP, stream_process) == 0)
 		return -1;
 
 	return 1;
@@ -484,7 +501,7 @@ int codec_find_clock (struct sip_msg* msg, char* str1,char * str2 )
 {
 
 	if( do_for_all_streams( msg, (str*)str1, (str*)str2, NULL,
-		FIND, stream_process) == 0)
+		FIND, DESC_NAME_AND_CLOCK, stream_process) == 0)
 		return -1;
 
 	return 1;
@@ -494,7 +511,7 @@ int codec_find_clock (struct sip_msg* msg, char* str1,char * str2 )
 int codec_delete (struct sip_msg* msg, char* str1 )
 {
 	if( do_for_all_streams( msg, (str*)str1, NULL, NULL,
-		DELETE, stream_process) == 0)
+		DELETE, DESC_NAME, stream_process) == 0)
 		return -1;
 	return 1;
 
@@ -503,7 +520,16 @@ int codec_delete (struct sip_msg* msg, char* str1 )
 int codec_delete_re (struct sip_msg* msg, char* str1 )
 {
 	if( do_for_all_streams( msg, NULL, NULL, (regex_t*) str1,
-		DELETE, stream_process) == 0)
+		DELETE, DESC_REGEXP, stream_process) == 0)
+		return -1;
+	return 1;
+
+}
+
+int codec_delete_except_re (struct sip_msg* msg, char* str1 )
+{
+	if( do_for_all_streams( msg, NULL, NULL, (regex_t*) str1,
+		DELETE, DESC_REGEXP_COMPLEMENT, stream_process) == 0)
 		return -1;
 	return 1;
 
@@ -512,7 +538,7 @@ int codec_delete_re (struct sip_msg* msg, char* str1 )
 int codec_delete_clock (struct sip_msg* msg, char* str1 ,char * str2)
 {
 	if( do_for_all_streams( msg, (str*)str1, (str*)str2, NULL,
-		DELETE, stream_process) == 0)
+		DELETE, DESC_NAME_AND_CLOCK, stream_process) == 0)
 		return -1;
 	return 1;
 
@@ -521,24 +547,24 @@ int codec_delete_clock (struct sip_msg* msg, char* str1 ,char * str2)
 int codec_move_up (struct sip_msg* msg, char* str1)
 {
 	if( do_for_all_streams( msg, (str*)str1, NULL, NULL,
-		ADD_TO_FRONT, stream_process) == 0)
+		ADD_TO_FRONT, DESC_NAME, stream_process) == 0)
 		return -1;
 	return 1;
-};
+}
 
 int codec_move_up_re (struct sip_msg* msg, char* str1)
 {
 	if( do_for_all_streams( msg, NULL, NULL, (regex_t*)str1,
-		ADD_TO_FRONT, stream_process) == 0)
+		ADD_TO_FRONT, DESC_REGEXP, stream_process) == 0)
 		return -1;
 	return 1;
-};
+}
 
 
 int codec_move_up_clock (struct sip_msg* msg, char* str1 ,char * str2)
 {
 	if( do_for_all_streams( msg, (str*)str1, (str*)str2, NULL,
-		ADD_TO_FRONT, stream_process) == 0)
+		ADD_TO_FRONT, DESC_NAME_AND_CLOCK, stream_process) == 0)
 		return -1;
 	return 1;
 
@@ -548,7 +574,7 @@ int codec_move_up_clock (struct sip_msg* msg, char* str1 ,char * str2)
 int codec_move_down (struct sip_msg* msg, char* str1)
 {
 	if( do_for_all_streams( msg, (str*)str1, NULL, NULL,
-		ADD_TO_BACK, stream_process) == 0)
+		ADD_TO_BACK, DESC_NAME, stream_process) == 0)
 		return -1;
 	return 1;
 }
@@ -557,7 +583,7 @@ int codec_move_down (struct sip_msg* msg, char* str1)
 int codec_move_down_re (struct sip_msg* msg, char* str1)
 {
 	if( do_for_all_streams( msg, NULL, NULL, (regex_t*)str1,
-		ADD_TO_BACK, stream_process) == 0)
+		ADD_TO_BACK, DESC_REGEXP, stream_process) == 0)
 		return -1;
 	return 1;
 }
@@ -568,7 +594,7 @@ int codec_move_down_re (struct sip_msg* msg, char* str1)
 int codec_move_down_clock (struct sip_msg* msg, char* str1 ,char * str2)
 {
 	if( do_for_all_streams( msg, (str*)str1, (str*)str2, NULL,
-		ADD_TO_BACK, stream_process) == 0)
+		ADD_TO_BACK, DESC_NAME_AND_CLOCK, stream_process) == 0)
 		return -1;
 	return 1;
 

@@ -49,6 +49,7 @@
 #include "parse_supported.h"
 #include "parse_allow.h"
 #include "parse_sst.h"
+#include "parse_content.h"
 
 
 /*
@@ -98,6 +99,7 @@ void clean_hdr_field(struct hdr_field* hf)
 			break;
 
 		case HDR_CONTENTTYPE_T:
+			free_contenttype((content_t**)(void*)(&hf->parsed));
 			break;
 
 		case HDR_CONTENTLENGTH_T:

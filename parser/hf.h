@@ -183,7 +183,8 @@ static inline int hdr_allocs_parse(struct hdr_field* hdr)
 		case HDR_EXPIRES_T:
 		case HDR_PROXYAUTH_T:
 		case HDR_EVENT_T:
-		case HDR_ACCEPT_T:
+                case HDR_ACCEPT_T:
+                case HDR_CONTENTTYPE_T:
 		case HDR_CONTENTDISPOSITION_T:
 		case HDR_DIVERSION_T:
 		case HDR_RPID_T:

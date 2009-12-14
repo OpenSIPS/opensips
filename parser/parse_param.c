@@ -359,6 +359,8 @@ int parse_params(str* _s, pclass_t _c, param_hooks_t* _h, param_t** _p)
 		return 0;
 	}
 
+	LM_DBG("Parsing params for:[%.*s]\n",_s->len,_s->s);
+
 	while(1) {
 		t = (param_t*)pkg_malloc(sizeof(param_t));
 		if (t == 0) {
@@ -404,7 +406,7 @@ int parse_params(str* _s, pclass_t _c, param_hooks_t* _h, param_t** _p)
 		if (_s->s[0]=='>') goto ok; /* To be able to parse URI parameters */
 
 		if (_s->s[0] != ';') {
-			LM_ERR("invalid character, ; expected\n");
+			LM_ERR("invalid character, ; expected, found %c \n",_s->s[0]);
 			goto error;
 		}
 

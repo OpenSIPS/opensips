@@ -24,7 +24,16 @@
 #define _PARSE_CONTENT_H
 
 #include "msg_parser.h"
+#include "parse_param.h"
 
+typedef struct content {
+	int type;
+
+        str boundary;
+        str start;
+
+	param_t* params;
+} content_t;
 
 struct mime_type {
 	unsigned short type;
@@ -75,7 +84,7 @@ struct mime_type {
 /*
  * returns the content-type value of a sip_msg as an integer
  */
-#define get_content_type(_msg_)   ((int)(long)((_msg_)->content_type->parsed))
+#define get_content_type(_msg_)   ( ( (content_t *)(_msg_)->content_type->parsed)->type )
 
 
 /*
@@ -114,6 +123,10 @@ char* parse_content_length( char* buffer, char* end, int* len);
 /*
  * parse a string containing a mime description
  */
-char* decode_mime_type(char *start, char *end, unsigned int *mime_type);
+char* decode_mime_type(char *start, char *end, unsigned int *mime_type, content_t * con);
+
+
+
+void free_contenttype(content_t ** con);
 
 #endif
