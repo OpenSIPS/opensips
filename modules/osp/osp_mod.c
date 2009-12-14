@@ -43,8 +43,7 @@
 #include "tm.h"
 #include "provider.h"
 
-
-
+extern int _osp_proxy_type;
 extern unsigned int _osp_sp_number;
 extern char* _osp_sp_uris[];
 extern unsigned long _osp_sp_weights[];
@@ -102,6 +101,7 @@ static cmd_export_t cmds[]={
 };
 
 static param_export_t params[]={
+    { "proxy_type",                       INT_PARAM, &_osp_proxy_type },
     { "sp1_uri",                          STR_PARAM, &_osp_sp_uris[0] },
     { "sp2_uri",                          STR_PARAM, &_osp_sp_uris[1] },
     { "sp3_uri",                          STR_PARAM, &_osp_sp_uris[2] },
@@ -118,29 +118,29 @@ static param_export_t params[]={
     { "sp14_uri",                         STR_PARAM, &_osp_sp_uris[13] },
     { "sp15_uri",                         STR_PARAM, &_osp_sp_uris[14] },
     { "sp16_uri",                         STR_PARAM, &_osp_sp_uris[15] },
-    { "sp1_weight",                       INT_PARAM, &(_osp_sp_weights[0]) },
-    { "sp2_weight",                       INT_PARAM, &(_osp_sp_weights[1]) },
-    { "sp3_weight",                       INT_PARAM, &(_osp_sp_weights[2]) },
-    { "sp4_weight",                       INT_PARAM, &(_osp_sp_weights[3]) },
-    { "sp5_weight",                       INT_PARAM, &(_osp_sp_weights[4]) },
-    { "sp6_weight",                       INT_PARAM, &(_osp_sp_weights[5]) },
-    { "sp7_weight",                       INT_PARAM, &(_osp_sp_weights[6]) },
-    { "sp8_weight",                       INT_PARAM, &(_osp_sp_weights[7]) },
-    { "sp9_weight",                       INT_PARAM, &(_osp_sp_weights[8]) },
-    { "sp10_weight",                      INT_PARAM, &(_osp_sp_weights[9]) },
-    { "sp11_weight",                      INT_PARAM, &(_osp_sp_weights[10]) },
-    { "sp12_weight",                      INT_PARAM, &(_osp_sp_weights[11]) },
-    { "sp13_weight",                      INT_PARAM, &(_osp_sp_weights[12]) },
-    { "sp14_weight",                      INT_PARAM, &(_osp_sp_weights[13]) },
-    { "sp15_weight",                      INT_PARAM, &(_osp_sp_weights[14]) },
-    { "sp16_weight",                      INT_PARAM, &(_osp_sp_weights[15]) },
+    { "sp1_weight",                       INT_PARAM, &_osp_sp_weights[0] },
+    { "sp2_weight",                       INT_PARAM, &_osp_sp_weights[1] },
+    { "sp3_weight",                       INT_PARAM, &_osp_sp_weights[2] },
+    { "sp4_weight",                       INT_PARAM, &_osp_sp_weights[3] },
+    { "sp5_weight",                       INT_PARAM, &_osp_sp_weights[4] },
+    { "sp6_weight",                       INT_PARAM, &_osp_sp_weights[5] },
+    { "sp7_weight",                       INT_PARAM, &_osp_sp_weights[6] },
+    { "sp8_weight",                       INT_PARAM, &_osp_sp_weights[7] },
+    { "sp9_weight",                       INT_PARAM, &_osp_sp_weights[8] },
+    { "sp10_weight",                      INT_PARAM, &_osp_sp_weights[9] },
+    { "sp11_weight",                      INT_PARAM, &_osp_sp_weights[10] },
+    { "sp12_weight",                      INT_PARAM, &_osp_sp_weights[11] },
+    { "sp13_weight",                      INT_PARAM, &_osp_sp_weights[12] },
+    { "sp14_weight",                      INT_PARAM, &_osp_sp_weights[13] },
+    { "sp15_weight",                      INT_PARAM, &_osp_sp_weights[14] },
+    { "sp16_weight",                      INT_PARAM, &_osp_sp_weights[15] },
     { "device_ip",                        STR_PARAM, &_osp_device_ip },
     { "use_security_features",            INT_PARAM, &_osp_use_security },
     { "private_key",                      STR_PARAM, &_osp_private_key },
     { "local_certificate",                STR_PARAM, &_osp_local_certificate },
     { "ca_certificates",                  STR_PARAM, &_osp_ca_certificate },
     { "enable_crypto_hardware_support",   INT_PARAM, &_osp_crypto_hw },
-    { "validate_callid",                  INT_PARAM, &(_osp_validate_callid) },
+    { "validate_callid",                  INT_PARAM, &_osp_validate_callid },
     { "token_format",                     INT_PARAM, &_osp_token_format },
     { "ssl_lifetime",                     INT_PARAM, &_osp_ssl_lifetime },
     { "persistence",                      INT_PARAM, &_osp_persistence },
@@ -246,6 +246,11 @@ static int ospVerifyParameters(void)
     str avp_str;
     int result = 0;
 
+    if (_osp_proxy_type < 0 || _osp_proxy_type > 1) {
+        _osp_proxy_type = OSP_DEF_PROXY;
+        LM_WARN("proxy type is out of range, reset to %d\n", OSP_DEF_PROXY);
+    }
+
     /* If use_security_features is 0, ignroe the certificate files */
     if (_osp_use_security != 0 ) {
         /* Default location for the cert files is in the compile time variable CFG_DIR */
@@ -347,6 +352,7 @@ static void ospDumpParameters(void)
     int i;
 
     LM_INFO("module configuration: ");
+    LM_INFO("    proxy type '%d'", _osp_proxy_type);
     LM_INFO("    number of service points '%d'", _osp_sp_number);
     for (i = 0; i < _osp_sp_number; i++) {
         LM_INFO("    sp%d_uri '%s' sp%d_weight '%ld' ",

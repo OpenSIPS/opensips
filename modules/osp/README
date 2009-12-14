@@ -28,28 +28,29 @@ Di-Shi Sun
         1.2. Dependencies
         1.3. Exported Parameters
 
-              1.3.1. sp1_uri, sp2_uri, ..., sp16_uri
-              1.3.2. sp1_weight, sp2_weight, ..., sp16_weight
-              1.3.3. device_ip
-              1.3.4. use_security_features
-              1.3.5. token_format
-              1.3.6. private_key, local_certificate,
+              1.3.1. proxy_type
+              1.3.2. sp1_uri, sp2_uri, ..., sp16_uri
+              1.3.3. sp1_weight, sp2_weight, ..., sp16_weight
+              1.3.4. device_ip
+              1.3.5. use_security_features
+              1.3.6. token_format
+              1.3.7. private_key, local_certificate,
                       ca_certificates
 
-              1.3.7. enable_crypto_hardware_support
-              1.3.8. ssl_lifetime
-              1.3.9. persistence
-              1.3.10. retry_delay
-              1.3.11. retry_limit
-              1.3.12. timeout
-              1.3.13. max_destinations
-              1.3.14. validate_call_id
-              1.3.15. use_rpid_for_calling_number
-              1.3.16. use_number_portability
-              1.3.17. redirection_uri_format
-              1.3.18. append_userphone
-              1.3.19. source_networkid_avp
-              1.3.20. custom_info_avp
+              1.3.8. enable_crypto_hardware_support
+              1.3.9. ssl_lifetime
+              1.3.10. persistence
+              1.3.11. retry_delay
+              1.3.12. retry_limit
+              1.3.13. timeout
+              1.3.14. max_destinations
+              1.3.15. validate_call_id
+              1.3.16. use_rpid_for_calling_number
+              1.3.17. use_number_portability
+              1.3.18. redirection_uri_format
+              1.3.19. append_userphone
+              1.3.20. source_networkid_avp
+              1.3.21. custom_info_avp
 
         1.4. Exported Functions
 
@@ -66,38 +67,39 @@ Di-Shi Sun
 
    List of Examples
 
-   1.1. Setting the OSP servers
-   1.2. Setting the OSP server weights
-   1.3. Setting the device IP address
-   1.4. Instructing the module not to use OSP security features
-   1.5. Setting the token format
-   1.6. Set authorization files
-   1.7. Setting the hardware support
-   1.8. Setting the ssl lifetime
-   1.9. Setting the persistence
-   1.10. Setting the retry delay
-   1.11. Setting the retry limit
-   1.12. Setting the timeout
-   1.13. Setting the number of destination
-   1.14. Instructing the module to validate call id
-   1.15. Instructing the module to use calling number in
+   1.1. Instructing the module works a SIP proxy
+   1.2. Setting the OSP servers
+   1.3. Setting the OSP server weights
+   1.4. Setting the device IP address
+   1.5. Instructing the module not to use OSP security features
+   1.6. Setting the token format
+   1.7. Set authorization files
+   1.8. Setting the hardware support
+   1.9. Setting the ssl lifetime
+   1.10. Setting the persistence
+   1.11. Setting the retry delay
+   1.12. Setting the retry limit
+   1.13. Setting the timeout
+   1.14. Setting the number of destination
+   1.15. Instructing the module to validate call id
+   1.16. Instructing the module to use calling number in
           Remote-Party-ID
 
-   1.16. Instructing the module to use number portability
+   1.17. Instructing the module to use number portability
           parameters in Request URI
 
-   1.17. Setting the redirection URI format
-   1.18. Append user=phone parameter
-   1.19. Setting the source network ID AVP
-   1.20. Setting the custom info AVP
-   1.21. checkospheader usage
-   1.22. validateospheader usage
-   1.23. requestosprouting usage
-   1.24. checkosproute usage
-   1.25. prepareosproute usage
-   1.26. checkcallingtranslation usage
-   1.27. prepareallosproute usage
-   1.28. reportospusage usage
+   1.18. Setting the redirection URI format
+   1.19. Append user=phone parameter
+   1.20. Setting the source network ID AVP
+   1.21. Setting the custom info AVP
+   1.22. checkospheader usage
+   1.23. validateospheader usage
+   1.24. requestosprouting usage
+   1.25. checkosproute usage
+   1.26. prepareosproute usage
+   1.27. checkcallingtranslation usage
+   1.28. prepareallosproute usage
+   1.29. reportospusage usage
 
 Chapter 1. Admin Guide
 
@@ -122,14 +124,25 @@ Chapter 1. Admin Guide
      * auth -- Remote-Party-ID operattion
      * OSP Toolkit -- The OSP Toolkit, available from
        http://sourceforge.net/projects/osp-toolkit, must be built
-       before building OpenSIPS with the OSP Module. For
+       before building OpenSIPS with the OSP module. For
        instructions on building OpenSIPS with the OSP Toolkit, see
        http://www.transnexus.com/White%20Papers/Multi-Lateral_Peer
-       ing_with_OpenSIPS_V1.4.pdf
+       ing_with_OpenSIPS_V1.6.pdf
 
 1.3. Exported Parameters
 
-1.3.1. sp1_uri, sp2_uri, ..., sp16_uri
+1.3.1. proxy_type
+
+   The proxy_type (integer) parameter instructs the OSP module how
+   to handle SIP INVITE messages. If this value is set to 0, the
+   OSP module works as a normal SIP proxy. If this value is set to
+   1, the OSP module works as a Number Portability proxy. The
+   default value is 0.
+
+   Example 1.1. Instructing the module works a SIP proxy
+modparam("osp","proxy_type",0)
+
+1.3.2. sp1_uri, sp2_uri, ..., sp16_uri
 
    These sp_uri (string) parameters define peering servers to be
    used for requesting peering authorization and routing
@@ -154,12 +167,12 @@ Chapter 1. Admin Guide
        server. This component is not optional and must be
        included.
 
-   Example 1.1. Setting the OSP servers
+   Example 1.2. Setting the OSP servers
 modparam("osp","sp1_uri","http://osptestserver.transnexus.com:1080/osp"
 )
 modparam("osp","sp2_uri","https://[1.2.3.4]:1443/osp")
 
-1.3.2. sp1_weight, sp2_weight, ..., sp16_weight
+1.3.3. sp1_weight, sp2_weight, ..., sp16_weight
 
    These sp_weight (integer) parameters are used for load
    balancing peering requests to peering servers. These parameters
@@ -172,10 +185,10 @@ modparam("osp","sp2_uri","https://[1.2.3.4]:1443/osp")
    a non-zero sp_weight to the back-up server. The default values
    for sp1_weight and sp2_weight are 1000.
 
-   Example 1.2. Setting the OSP server weights
+   Example 1.3. Setting the OSP server weights
 modparam("osp","sp1_weight",1000)
 
-1.3.3. device_ip
+1.3.4. device_ip
 
    The device_ip (string) is a recommended parameter that
    explicitly defines the IP address of OpenSIPS in a peering
@@ -183,25 +196,25 @@ modparam("osp","sp1_weight",1000)
    dotted-decimal IP address must be in brackets as shown in the
    example below.
 
-   Example 1.3. Setting the device IP address
+   Example 1.4. Setting the device IP address
 modparam("osp","device_ip","[127.0.0.1]:5060")
 
-1.3.4. use_security_features
+1.3.5. use_security_features
 
    The use_security_features (integer) parameter instructs the OSP
    module how to use the OSP security features. If this value is
-   set to 1, the OSP Module uses the OSP security features. If
-   this value is set to 0, the OSP Module will not use the OSP
+   set to 1, the OSP module uses the OSP security features. If
+   this value is set to 0, the OSP module will not use the OSP
    security features. The default value is 0.
 
-   Example 1.4. Instructing the module not to use OSP security
+   Example 1.5. Instructing the module not to use OSP security
    features
 modparam("osp","use_security_features",0)
 
-1.3.5. token_format
+1.3.6. token_format
 
    When OpenSIPS receives a SIP INVITE with a peering token, the
-   OSP Module will validate the token to determine whether or not
+   OSP module will validate the token to determine whether or not
    the call has been authorized by a peering server. Peering
    tokens may, or may not, be digitally signed. The token_format
    (integer) parameter defines if OpenSIPS will validate signed or
@@ -220,10 +233,10 @@ modparam("osp","use_security_features",0)
    2 - Validate both signed and unsigned tokens are allowed. Calls
    with valid tokens are allowed.
 
-   Example 1.5. Setting the token format
+   Example 1.6. Setting the token format
 modparam("osp","token_format",2)
 
-1.3.6. private_key, local_certificate, ca_certificates
+1.3.7. private_key, local_certificate, ca_certificates
 
    These parameters identify files are used for validating peering
    authorization tokens and establishing a secure channel between
@@ -239,7 +252,7 @@ modparam("osp","token_format",2)
    If use_security_features parameter is set to 0, these
    parameters will be ignored.
 
-   Example 1.6. Set authorization files
+   Example 1.7. Set authorization files
 
    If the default CFG_DIR value was used at compile time, the
    files will be loaded from:
@@ -248,7 +261,7 @@ modparam("osp","local_certificate","/usr/local/etc/opensips/localcert.p
 em")
 modparam("osp","ca_certificates","/usr/local/etc/opensips/cacert.pem")
 
-1.3.7. enable_crypto_hardware_support
+1.3.8. enable_crypto_hardware_support
 
    The enable_crypto_hardware_support (integer) parameter is used
    to set the cryptographic hardware acceleration engine in the
@@ -256,145 +269,145 @@ modparam("osp","ca_certificates","/usr/local/etc/opensips/cacert.pem")
    present). If crypto hardware is used, the value should be set
    to 1.
 
-   Example 1.7. Setting the hardware support
+   Example 1.8. Setting the hardware support
 modparam("osp","enable_crypto_hardware_support",0)
 
-1.3.8. ssl_lifetime
+1.3.9. ssl_lifetime
 
    The ssl_lifetime (integer) parameter defines the lifetime, in
    seconds, of a single SSL session key. Once this time limit is
-   exceeded, the OSP Module will negotiate a new session key.
+   exceeded, the OSP module will negotiate a new session key.
    Communication exchanges in progress will not be interrupted
    when this time limit expires. This is an optional field with
    default value is 200 seconds.
 
-   Example 1.8. Setting the ssl lifetime
+   Example 1.9. Setting the ssl lifetime
 modparam("osp","ssl_lifetime",200)
 
-1.3.9. persistence
+1.3.10. persistence
 
    The persistence (integer) parameter defines the time, in
    seconds, that an HTTP connection should be maintained after the
-   completion of a communication exchange. The OSP Module will
+   completion of a communication exchange. The OSP module will
    maintain the connection for this time period in anticipation of
    future communication exchanges to the same peering server.
 
-   Example 1.9. Setting the persistence
+   Example 1.10. Setting the persistence
 modparam("osp","persistence",1000)
 
-1.3.10. retry_delay
+1.3.11. retry_delay
 
    The retry_delay (integer) parameter defines the time, in
    seconds, between retrying connection attempts to an OSP peering
-   server. After exhausting all peering servers the OSP Module
+   server. After exhausting all peering servers the OSP module
    will delay for this amount of time before resuming connection
    attempts. This is an optional field with default value is 1
    second.
 
-   Example 1.10. Setting the retry delay
+   Example 1.11. Setting the retry delay
 modparam("osp","retry_delay",1)
 
-1.3.11. retry_limit
+1.3.12. retry_limit
 
    The retry_limit (integer) parameter defines the maximum number
    of retries for connection attempts to a peering server. If no
    connection is established after this many retry attempts to all
-   peering servers, the OSP Module will cease connection attempts
+   peering servers, the OSP module will cease connection attempts
    and return appropriate error codes. This number does not count
    the initial connection attempt, so that a retry_limit of 1 will
    result in a total of two connection attempts to every peering
    server. The default value is 2.
 
-   Example 1.11. Setting the retry limit
+   Example 1.12. Setting the retry limit
 modparam("osp","retry_limit",2)
 
-1.3.12. timeout
+1.3.13. timeout
 
    The timeout (integer) parameter defines the maximum time in
    milliseconds, to wait for a response from a peering server. If
    no response is received within this time, the current
-   connection is aborted and the OSP Module attempts to contact
+   connection is aborted and the OSP module attempts to contact
    the next peering server. The default value is 10 seconds.
 
-   Example 1.12. Setting the timeout
+   Example 1.13. Setting the timeout
 modparam("osp","timeout",10)
 
-1.3.13. max_destinations
+1.3.14. max_destinations
 
    The max_destinations (integer) parameter defines the maximum
    number of destinations that OpenSIPS requests the peering
    server to return in a peering response. The default value is 5.
 
-   Example 1.13. Setting the number of destination
+   Example 1.14. Setting the number of destination
 modparam("osp","max_destinations",5)
 
-1.3.14. validate_call_id
+1.3.15. validate_call_id
 
    The validate_call_id (integer) parameter instructs the OSP
    module to validate call id in the peering token. If this value
-   is set to 1, the OSP Module validates that the call id in the
+   is set to 1, the OSP module validates that the call id in the
    SIP INVITE message matches the call id in the peering token. If
    they do not match the INVITE is rejected. If this value is set
-   to 0, the OSP Module will not validate the call id in the
+   to 0, the OSP module will not validate the call id in the
    peering token. The default value is 1.
 
-   Example 1.14. Instructing the module to validate call id
+   Example 1.15. Instructing the module to validate call id
 modparam("osp","validate_call_id",1)
 
-1.3.15. use_rpid_for_calling_number
+1.3.16. use_rpid_for_calling_number
 
    The use_rpid_for_calling_number (integer) parameter instructs
    the OSP module how to use the calling number in the
    Remote-Party-ID of the SIP INVITE message. If this value is set
-   to 1, the OSP Module uses the calling number in the
+   to 1, the OSP module uses the calling number in the
    Reomte-Party-ID header of the INVITE message when a
    Remote-Party-ID exists. If this value is set to 0, the OSP
-   Module will use the calling number in the From header of the
+   module will use the calling number in the From header of the
    INVITE message. The default value is 1.
 
-   Example 1.15. Instructing the module to use calling number in
+   Example 1.16. Instructing the module to use calling number in
    Remote-Party-ID
 modparam("osp","use_rpid_calling_number",1)
 
-1.3.16. use_number_portability
+1.3.17. use_number_portability
 
    The use_number_portability (integer) parameter instructs the
    OSP module how to use the number portability parameters in the
    Request URI of the SIP INVITE message. If this value is set to
-   1, the OSP Module uses the number portability parameters in the
+   1, the OSP module uses the number portability parameters in the
    Request URI when these parameters exist. If this value is set
-   to 0, the OSP Module will not use the number portability
+   to 0, the OSP module will not use the number portability
    parameters. The default value is 1.
 
-   Example 1.16. Instructing the module to use number portability
+   Example 1.17. Instructing the module to use number portability
    parameters in Request URI
 modparam("osp","use_number_portablity",1)
 
-1.3.17. redirection_uri_format
+1.3.18. redirection_uri_format
 
    The redirection_uri_format (integer) parameter instructs the
    OSP module to use the different URI format in the SIP
-   redirection message. If this value is set to 0, the OSP Module
+   redirection message. If this value is set to 0, the OSP module
    uses "xxxxxxxxxx@xxx.xxx.xxx.xxx" URI in the SIP redirection
-   messages. If this value is set to 1, the OSP Module will use
+   messages. If this value is set to 1, the OSP module will use
    "<xxxxxxxxxx@xxx.xxx.xxx.xxx>" URI in the SIP redirection
    messages. The default value is 0
 
-   Example 1.17. Setting the redirection URI format
+   Example 1.18. Setting the redirection URI format
 modparam("osp","redirection_uri_format",1)
 
-1.3.18. append_userphone
+1.3.19. append_userphone
 
    The append_userphone (integer) parameter instructs the OSP
    module if to append "user=phone" parameter in URI. If this
-   value is set to 0, the OSP Module does not append "user=phone"
-   parameter. If this value is set to 1, the OSP Module will
+   value is set to 0, the OSP module does not append "user=phone"
+   parameter. If this value is set to 1, the OSP module will
    append "user=phone" parameter. The default value is 0
 
-   Example 1.18. Append user=phone parameter
+   Example 1.19. Append user=phone parameter
 modparam("osp","append_userphone",1)
 
-1.3.19. source_networkid_avp
+1.3.20. source_networkid_avp
 
    The source_networkid_avp (string) parameter instructs the OSP
    module to use the defined AVP to pass the source network ID
@@ -404,10 +417,10 @@ modparam("osp","append_userphone",1)
    variables are described in
    http://www.opensips.org/Resources/DocsCoreVar.
 
-   Example 1.19. Setting the source network ID AVP
+   Example 1.20. Setting the source network ID AVP
 modparam("osp","source_networkid_avp","$avp(s:snid)")
 
-1.3.20. custom_info_avp
+1.3.21. custom_info_avp
 
    The custom_info_avp (string) parameter instructs the OSP module
    to use the defined AVP to pass the custom information values.
@@ -416,7 +429,7 @@ modparam("osp","source_networkid_avp","$avp(s:snid)")
    pseudo-variables". All pseudo variables are described in
    http://www.opensips.org/Resources/DocsCoreVar.
 
-   Example 1.20. Setting the custom info AVP
+   Example 1.21. Setting the custom info AVP
 modparam("osp","custom_info_avp","$avp(s:cinfo)")
 
 1.4. Exported Functions
@@ -428,7 +441,7 @@ modparam("osp","custom_info_avp","$avp(s:cinfo)")
 
    This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
-   Example 1.21. checkospheader usage
+   Example 1.22. checkospheader usage
 ...
 if (checkospheader()) {
   log(1,"OSP header field found.\n");
@@ -447,7 +460,7 @@ if (checkospheader()) {
 
    This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
-   Example 1.22. validateospheader usage
+   Example 1.23. validateospheader usage
 ...
 if (validateospheader()) {
   log(1,"valid OSP header found\n");
@@ -476,7 +489,7 @@ if (validateospheader()) {
 
    This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
-   Example 1.23. requestosprouting usage
+   Example 1.24. requestosprouting usage
 ...
 if (requestosprouting()) {
   log(1,"successfully queried OSP server, now relaying call\n");
@@ -492,7 +505,7 @@ if (requestosprouting()) {
 
    This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
-   Example 1.24. checkosproute usage
+   Example 1.25. checkosproute usage
 ...
 if (checkosproute()) {
   log(1,"There is at least one route for the call\n");
@@ -515,7 +528,7 @@ if (checkosproute()) {
 
    This function can be used from BRANCH_ROUTE.
 
-   Example 1.25. prepareosproute usage
+   Example 1.26. prepareosproute usage
 ...
 if (prepareosproute()) {
   log(1,"successfully prepared the route, now relaying call\n");
@@ -537,7 +550,7 @@ if (prepareosproute()) {
 
    This function can be used from BRANCH_ROUTE.
 
-   Example 1.26. checkcallingtranslation usage
+   Example 1.27. checkcallingtranslation usage
 ...
 if (checkcallingtranslation()) {
   # Remove the Remote_Party-ID from the received message
@@ -559,7 +572,7 @@ if (checkcallingtranslation()) {
 
    This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
-   Example 1.27. prepareallosproute usage
+   Example 1.28. prepareallosproute usage
 ...
 if (prepareallosproute()) {
   log(1,"Routes are prepared, now either forking or redirecting the cal
@@ -586,7 +599,7 @@ l\n");
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.28. reportospusage usage
+   Example 1.29. reportospusage usage
 ...
 if (is_direction("downstream")) {
   log(1,"This BYE message is from SOURCE\n");

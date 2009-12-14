@@ -40,6 +40,7 @@
 #include "sipheader.h"
 #include "usage.h"
 
+extern int _osp_proxy_type;
 extern char _osp_in_device[];
 extern char _osp_out_device[];
 extern int _osp_max_dests;
@@ -301,14 +302,12 @@ int ospRequestRouting(
     OSPT_CALL_ID* callids[callidnumber];
     unsigned int logsize = 0;
     char* detaillog = NULL;
-    const char** preferred = NULL;
+    char tohost[OSP_STRBUF_SIZE];
+    char tohostbuf[OSP_STRBUF_SIZE];
+    const char* preferred;
     unsigned int destcount;
     OSPTTRANHANDLE transaction = -1;
     int result = MODULE_RETURNCODE_FALSE;
-
-    authtime = time(NULL);
-
-    destcount = _osp_max_dests;
 
     if ((errorcode = OSPPTransactionNew(_osp_provider, &transaction)) != OSPC_ERR_NO_ERROR) {
         LM_ERR("failed to create new OSP transaction (%d)\n", errorcode);
@@ -321,15 +320,39 @@ int ospRequestRouting(
     } else if (ospGetSourceAddress(msg, srcdev, sizeof(srcdev)) != 0) {
         LM_ERR("failed to extract source deivce address\n");
     } else {
+        authtime = time(NULL);
+
         ospConvertToOutAddress(srcdev, srcdevbuf, sizeof(srcdevbuf));
 
+        switch (_osp_proxy_type) {
+        case 1:
+            OSPPTransactionSetServiceType(transaction, OSPC_SERVICE_NPQUERY);
+
+            ospGetToHostpart(msg, tohost, sizeof(tohost));
+            ospConvertToOutAddress(tohost, tohostbuf, sizeof(tohostbuf));
+            preferred = tohostbuf;
+
+            destcount = 1;
+            break;
+        case 0:
+        default:
+            OSPPTransactionSetServiceType(transaction, OSPC_SERVICE_VOICE);
+
+            preferred = NULL;
+
+            destcount = _osp_max_dests;
+            break;
+        }
+
         ospGetNpParameters(msg, rn, sizeof(rn), cic, sizeof(cic), &npdi);
+        OSPPTransactionSetNumberPortability(transaction, rn, cic, npdi);
 
         if (ospGetDiversion(msg, divuser, sizeof(divuser), divhost, sizeof(divhost)) == 0) {
             ospConvertToOutAddress(divhost, divhostbuf, sizeof(divhostbuf));
         } else {
             divhostbuf[0] = '\0';
         }
+        OSPPTransactionSetDiversion(transaction, divuser, divhostbuf);
 
         if ((_osp_snid_avpname.n != 0) &&
             ((snidavp = search_first_avp(_osp_snid_avptype, _osp_snid_avpname, &snidval, 0)) != NULL) &&
@@ -368,11 +391,13 @@ int ospRequestRouting(
 		}
 
         LM_INFO("request auth and routing for: "
+            "proxy_type '%d' "
             "source '%s' "
             "source_dev '%s' "
             "source_networkid '%s' "
             "calling '%s' "
             "called '%s' "
+            "preferred '%s' "
             "nprn '%s' "
             "npcic '%s' "
             "npdi '%d' "
@@ -381,11 +406,13 @@ int ospRequestRouting(
             "call_id '%.*s' "
             "dest_count '%d' "
             "%s\n",
+            _osp_proxy_type,
             _osp_out_device,
             srcdevbuf,
             snid,
             calling,
             called,
+            (preferred == NULL) ? "" : preferred,
             rn,
             cic,
             npdi,
@@ -395,10 +422,6 @@ int ospRequestRouting(
             callids[0]->ospmCallIdVal,
             destcount,
             cinfostr);
-
-        OSPPTransactionSetNumberPortability(transaction, rn, cic, npdi);
-
-        OSPPTransactionSetDiversion(transaction, divuser, divhostbuf);
 
         /* try to request authorization */
         errorcode = OSPPTransactionRequestAuthorisation(
@@ -412,7 +435,7 @@ int ospRequestRouting(
             "",                /* optional username string, used if no number */
             callidnumber,      /* number of call ids, here always 1 */
             callids,           /* sized-1 array of call ids */
-            preferred,         /* preferred destinations, here always NULL */
+            &preferred,        /* preferred destinations */
             &destcount,        /* max destinations, after call dest_count */
             &logsize,          /* size allocated for detaillog (next param) 0=no log */
             detaillog);        /* memory location for detaillog to be stored */
