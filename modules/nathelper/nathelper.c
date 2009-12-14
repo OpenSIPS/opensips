@@ -217,6 +217,7 @@
 #include "rtpproxy_stream.h"
 #include "../../db/db.h"
 #include "../../locking.h"
+#include "../../parser/parse_content.h"
  
 
 
@@ -368,8 +369,7 @@ static const char sbuf[4] = {0, 0, 0, 0};
 static char *force_socket_str = 0;
 static int rtpproxy_disable_tout = 60;
 static int rtpproxy_retr = 5;
-static int rtpproxy_tout = -1;
-static char *rtpproxy_timeout = 0;
+static int rtpproxy_tout = 1;
 static pid_t mypid;
 static unsigned int myseqn = 0;
 static str nortpproxy_str = str_init("a=nortpproxy:yes");
@@ -497,7 +497,6 @@ static param_export_t params[] = {
 	{"rtpproxy_disable_tout", INT_PARAM, &rtpproxy_disable_tout },
 	{"rtpproxy_retr",         INT_PARAM, &rtpproxy_retr         },
 	{"rtpproxy_tout",         INT_PARAM, &rtpproxy_tout         },
-	{"rtpproxy_timeout",      STR_PARAM, &rtpproxy_timeout      },
 	{"received_avp",          STR_PARAM, &rcv_avp_param         },
 	{"force_socket",          STR_PARAM, &force_socket_str      },
 	{"sipping_from",          STR_PARAM, &sipping_from.s        },
@@ -1108,7 +1107,6 @@ mod_init(void)
 	str socket_str;
 	pv_spec_t avp_spec;
 	str s;
-	float timeout;
 
 	if (rcv_avp_param && *rcv_avp_param) {
 		s.s = rcv_avp_param; s.len = strlen(s.s);
@@ -1305,24 +1303,7 @@ mod_init(void)
 	/* any rtpproxy configured? */
 	if(rtpp_set_list)
 		*default_rtpp_set = select_rtpp_set(DEFAULT_RTPP_SET_ID);
-
-	/* configure rtpproxy timeout */
-	if(rtpproxy_timeout && sscanf(rtpproxy_timeout, "%f", &timeout)) {
-		if(rtpproxy_tout != -1) {
-			LM_ERR("you can't use rtpproxy_timeout and rtpproxy_tout : \n"
-				"check your config !\n");
-			return -1;
-		}
-		rtpproxy_tout = (int) (timeout * 1000);
-	} else if(rtpproxy_tout < 0) {
-		/* not defined : set default value */
-		rtpproxy_tout = 1000;
-	} else {
-		LM_WARN("rtpproxy_tout param is obsolete, please replace with \n"
-			"rtpproxy_timeout\n");
-		rtpproxy_tout = rtpproxy_tout * 1000;
-	}
-
+	
 	return 0;
 }
 
@@ -2394,7 +2375,7 @@ send_rtpp_command(struct rtpp_node *node, struct iovec *v, int vcnt)
 				LM_ERR("can't send command to a RTP proxy\n");
 				goto badproxy;
 			}
-			while ((poll(fds, 1, rtpproxy_tout) == 1) &&
+			while ((poll(fds, 1, rtpproxy_tout * 1000) == 1) &&
 			    (fds[0].revents & POLLIN) != 0) {
 				do {
 					len = recv(rtpp_socks[node->idx], buf, sizeof(buf)-1, 0);
@@ -2675,9 +2656,66 @@ force_rtp_proxy2_f(struct sip_msg *msg, char *param1, char *param2)
 }
 
 static int
-force_rtp_proxy(struct sip_msg* msg, char* str1, char* str2, int offer)
+force_rtp_proxy_body(struct sip_msg* msg, char* str1, char* str2, int offer, str body);
+
+static int force_rtp_proxy(struct sip_msg* msg, char* str1, char* str2, int offer)
 {
-	str body, body1, oldport, oldip, newport, newip ,nextport;
+	struct multi_body *m;
+	struct part * p;
+	str body;
+	int skip;
+	char c;
+
+	m = get_all_bodies(msg);
+
+	if (m == NULL)
+	{
+		LM_ERR("Unable to parse body\n");
+		return -1;
+	}
+
+	p = m->first;
+
+	while (p)
+	{
+		int ret = 0;
+		if (p->content_type == ((TYPE_APPLICATION << 16) + SUBTYPE_SDP))
+		{
+			body = p->body;
+
+			for (skip = 0; skip < body.len; skip++)
+			{
+				c = body.s[body.len - skip - 1];
+				if (c != '\r' && c != '\n')
+					break;
+			}
+
+			if (skip == body.len)
+			{
+				LM_ERR("empty body");
+				return -1;
+			}
+
+			body.len -= skip;
+
+
+			LM_DBG("Forcing body:\n[%.*s]\n", body.len, body.s);
+			ret = force_rtp_proxy_body(msg, str1, str2, offer, body);
+
+		}
+
+		if (ret < 0)
+			return ret;
+		p = p->next;
+	}
+
+	return 1;
+};
+
+static int
+force_rtp_proxy_body(struct sip_msg* msg, char* str1, char* str2, int offer, str body)
+{
+	str body1, oldport, oldip, newport, newip ,nextport;
 	str callid, from_tag, to_tag, tmp, payload_types;
 	int create, port, len, asymmetric, flookup, argc, proxied, real;
 	int orgip, commip;
@@ -2799,13 +2837,7 @@ force_rtp_proxy(struct sip_msg* msg, char* str1, char* str2, int offer)
 	} else {
 		create = swap?1:0;
 	}
-	/* extract_body will also parse all the headers in the message as
-	 * a side effect => don't move get_callid/get_to_tag in front of it
-	 * -- andrei */
-	if (extract_body(msg, &body) == -1) {
-		LM_ERR("can't extract body from the message\n");
-		return -1;
-	}
+	
 	if (get_callid(msg, &callid) == -1 || callid.len == 0) {
 		LM_ERR("can't get Call-Id field\n");
 		return -1;

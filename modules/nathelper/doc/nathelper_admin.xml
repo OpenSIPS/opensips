@@ -20,6 +20,10 @@
 		url="http://www.cisco.com/en/US/products/sw/iosswrel/ps1839/products_feature_guide09186a0080110bf9.html">
 		http://www.cisco.com/en/US/products/sw/iosswrel/ps1839/products_feature_guide09186a0080110bf9.html"></ulink>
 	</para>
+        <para>
+            Works with multipart messages that contain an SDP part,
+            but not with multi-layered multipart messages.
+        </para>
 	</section>
 
 	<section>
@@ -315,7 +319,7 @@ modparam("nathelper", "rtpproxy_disable_tout", 20)
 		</example>
 	</section>
 	<section>
-		<title><varname>rtpproxy_timeout</varname> (string)</title>
+		<title><varname>rtpproxy_tout</varname> (integer)</title>
 		<para>
 		Timeout value in waiting for reply from RTPProxy.
 		</para>
@@ -325,19 +329,13 @@ modparam("nathelper", "rtpproxy_disable_tout", 20)
 		</emphasis>
 		</para>
 		<example>
-		<title>Set <varname>rtpproxy_timeout</varname> parameter to 200ms</title>
+		<title>Set <varname>rtpproxy_tout</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("nathelper", "rtpproxy_timeout", "0.2")
+modparam("nathelper", "rtpproxy_tout", 2)
 ...
 </programlisting>
 		</example>
-	</section>
-	<section>
-		<title><varname>rtpproxy_tout</varname> (integer)</title>
-		<para>
-		Obsolete. see rtpproxy_timeout.
-		</para>
 	</section>
 	<section>
 		<title><varname>rtpproxy_retr</varname> (integer)</title>
