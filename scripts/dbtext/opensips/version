@@ -5,6 +5,7 @@ address:5
 aliases:1005
 carrierfailureroute:2
 carrierroute:3
+closeddial:1
 cpl:2
 dbaliases:2
 dialog:4
@@ -14,6 +15,7 @@ domain:2
 domainpolicy:3
 dr_gateways:3
 dr_groups:2
+dr_gw_lists:1
 dr_rules:3
 globalblacklist:2
 grp:3
