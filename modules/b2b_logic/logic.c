@@ -460,9 +460,8 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 		request_id = b2b_get_request_id(&method);
 		if(request_id < 0)
 		{
-			LM_ERR("Method not supported\n");
-			lock_release(&b2bl_htable[hash_index].lock);
-			return -1;
+			LM_DBG("Not a recognized request\n");
+			goto send_usual_request;
 		}
 
 		if(tuple->scenario_state == B2B_BRIDGING_STATE && request_id == B2B_BYE &&
