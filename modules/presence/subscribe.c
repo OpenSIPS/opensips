@@ -364,7 +364,7 @@ int update_subscription(struct sip_msg* msg, subs_t* subs, int init_req)
 			}
 		}
 
-		
+
 		if(send_2XX_reply(msg, reply_code, subs->expires, 0,
 			&subs->local_contact)<0)
 		{
@@ -597,7 +597,6 @@ int handle_subscribe(struct sip_msg* msg, char* str1, char* str2)
 				reply_code= 400;
 				reply_str= pu_400_rpl;
 				goto error;
-				;
 			}
 			if(uandd_to_uri(msg->parsed_uri.user, msg->parsed_uri.host,
 					&subs.pres_uri)< 0)
@@ -609,7 +608,7 @@ int handle_subscribe(struct sip_msg* msg, char* str1, char* str2)
 	}
 	else
 	{
-		if(get_stored_info(msg, &subs, &reply_code, &reply_str )< 0)
+		if(get_stored_info(msg, &subs, &reply_code, &reply_str)< 0)
 		{
 			LM_ERR("getting stored info\n");
 			goto error;
@@ -625,18 +624,17 @@ int handle_subscribe(struct sip_msg* msg, char* str1, char* str2)
 			LM_ERR("in event specific subscription handling\n");
 			goto error;
 		}
-	}	
-
+	}
 
 	/* if dialog initiation Subscribe - get subscription state */
 	if(init_req)
 	{
-		if(!event->req_auth) 
+		if(!event->req_auth)
 			subs.status = ACTIVE_STATUS;
-		else   
+		else
 		{
 			/* query in watchers_table - if negative reply - server error */
-			
+
 			if(get_db_subs_auth(&subs, &found) < 0)
 			{
 				LM_ERR("getting subscription status from watchers table\n");
@@ -691,9 +689,9 @@ int handle_subscribe(struct sip_msg* msg, char* str1, char* str2)
 		LM_ERR("wrong status\n");
 		goto error;
 	}
-    LM_DBG("subscription status= %s - %s\n", get_status_str(subs.status), 
+	LM_DBG("subscription status= %s - %s\n", get_status_str(subs.status), 
             found==0?"inserted":"found in watcher table");
-	
+
 	if(update_subscription(msg, &subs, init_req) <0)
 	{
 		LM_ERR("in update_subscription\n");
@@ -988,7 +986,7 @@ error:
  * */
 int get_stored_info(struct sip_msg* msg, subs_t* subs, int* reply_code,
 		str* reply_str)
-{	
+{
 	str pres_uri= {0, 0}, reason={0, 0};
 	subs_t* s;
 	int i;
@@ -996,17 +994,17 @@ int get_stored_info(struct sip_msg* msg, subs_t* subs, int* reply_code,
 
 	/* first try to_user== pres_user and to_domain== pres_domain */
 
-    if(subs->pres_uri.s == NULL)
-    {
+	if(subs->pres_uri.s == NULL)
+	{
 		uandd_to_uri(subs->to_user, subs->to_domain, &pres_uri);
 		if(pres_uri.s== NULL)
 		{
 			LM_ERR("creating uri from user and domain\n");
 			return -1;
 		}
-    }
-    else
-        pres_uri = subs->pres_uri;
+	}
+	else
+		pres_uri = subs->pres_uri;
 
 	hash_code= core_hash(&pres_uri, &subs->event->name, shtable_size);
 	lock_get(&subs_htable[hash_code].lock);
@@ -1019,29 +1017,31 @@ int get_stored_info(struct sip_msg* msg, subs_t* subs, int* reply_code,
 	}
 	lock_release(&subs_htable[hash_code].lock);
 
-    if(subs->pres_uri.s)
-        goto not_found;
-	
-    pkg_free(pres_uri.s);
-	pres_uri.s= NULL;
-	
+	if(subs->pres_uri.s)
+		goto not_found;
 
-    LM_DBG("record not found using R-URI search iteratively\n");
+	pkg_free(pres_uri.s);
+	pres_uri.s= NULL;
+
+	LM_DBG("record not found using R-URI search iteratively\n");
 	/* take one row at a time */
 	for(i= 0; i< shtable_size; i++)
 	{
 		lock_get(&subs_htable[i].lock);
 		s= search_shtable(subs_htable, subs->callid,subs->to_tag,subs->from_tag, i);
-		if(s && s->event->evp->parsed!= EVENT_DIALOG_SLA)
+		if(s)
 		{
-			pres_uri.s= (char*)pkg_malloc(s->pres_uri.len* sizeof(char));
-			if(pres_uri.s== NULL)
+			if(s->event->evp->parsed != EVENT_DIALOG_SLA)
 			{
-				lock_release(&subs_htable[i].lock);
-				ERR_MEM(PKG_MEM_STR);
+				pres_uri.s= (char*)pkg_malloc(s->pres_uri.len* sizeof(char));
+				if(pres_uri.s== NULL)
+				{
+					lock_release(&subs_htable[i].lock);
+					ERR_MEM(PKG_MEM_STR);
+				}
+				memcpy(pres_uri.s, s->pres_uri.s, s->pres_uri.len);
+				pres_uri.len= s->pres_uri.len;
 			}
-			memcpy(pres_uri.s, s->pres_uri.s, s->pres_uri.len);
-			pres_uri.len= s->pres_uri.len;
 			goto found_rec;
 		}
 		lock_release(&subs_htable[i].lock);
@@ -1070,7 +1070,7 @@ found_rec:
 	subs->version = s->version;
 	subs->status= s->status;
 	if(s->reason.s && s->reason.len)
-	{	
+	{
 		reason.s= (char*)pkg_malloc(s->reason.len* sizeof(char));
 		if(reason.s== NULL)
 		{
@@ -1272,9 +1272,9 @@ int get_database_info(struct sip_msg* msg, subs_t* subs, int* reply_code, str* r
 	{
 		pres_uri.s= (char*)row_vals[pres_uri_col].val.string_val;
 		pres_uri.len= strlen(pres_uri.s);
-		subs->pres_uri.s= (char*)pkg_malloc(pres_uri.len* sizeof(char));
+		subs->pres_uri.s= (char*)pkg_malloc(pres_uri.len);
 		if(subs->pres_uri.s== NULL)
-		{	
+		{
 			if(subs->reason.s)
 				pkg_free(subs->reason.s);
 			ERR_MEM(PKG_MEM_STR);
@@ -1305,7 +1305,6 @@ error:
 		pa_dbf.free_result(pa_db, result);
 
 	return -1;
-
 }
 
 
