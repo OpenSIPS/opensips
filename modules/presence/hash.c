@@ -125,11 +125,11 @@ subs_t* mem_copy_subs(subs_t* s, int mem_type)
 	int size;
 	subs_t* dest;
 
-	size= sizeof(subs_t)+ (s->pres_uri.len+ s->to_user.len
+	size= sizeof(subs_t)+ s->pres_uri.len+ s->to_user.len
 		+ s->to_domain.len+ s->from_user.len+ s->from_domain.len+ s->callid.len
 		+ s->to_tag.len+ s->from_tag.len+s->event_id.len
 		+ s->local_contact.len+ s->contact.len+ s->record_route.len+
-		+ s->reason.len+ 1)*sizeof(char);
+		+ s->reason.len+ 1;
 
 	if(mem_type & PKG_MEM_TYPE)
 		dest= (subs_t*)pkg_malloc(size);
@@ -187,11 +187,11 @@ subs_t* mem_copy_subs_noc(subs_t* s)
 	int size;
 	subs_t* dest;
 
-	size= sizeof(subs_t)+ (s->pres_uri.len+ s->to_user.len
+	size= sizeof(subs_t)+ s->pres_uri.len+ s->to_user.len
 		+ s->to_domain.len+ s->from_user.len+ s->from_domain.len+ s->callid.len
 		+ s->to_tag.len+ s->from_tag.len+s->event_id.len
 		+ s->local_contact.len + s->record_route.len+
-		+ s->reason.len+ 1)*sizeof(char);
+		+ s->reason.len+ 1;
 
 	dest= (subs_t*)shm_malloc(size);
 	if(dest== NULL)
@@ -225,7 +225,7 @@ subs_t* mem_copy_subs_noc(subs_t* s)
 	dest->db_flag= s->db_flag;
 	dest->sockinfo = s->sockinfo;
 
-	dest->contact.s= (char*)shm_malloc(s->contact.len* sizeof(char));
+	dest->contact.s= (char*)shm_malloc(s->contact.len);
 	if(dest->contact.s== NULL)
 	{
 		ERR_MEM(SHARE_MEM);
@@ -290,9 +290,9 @@ int delete_shtable(shtable_t htable,unsigned int hash_code,str to_tag)
 	
 	ps= htable[hash_code].entries;
 	s= ps->next;
-		
+
 	while(s)
-	{	
+	{
 		if(s->to_tag.len== to_tag.len &&
 				strncmp(s->to_tag.s, to_tag.s, to_tag.len)== 0)
 		{
@@ -363,7 +363,7 @@ int update_shtable(shtable_t htable,unsigned int hash_code,
 	if(strncmp(s->contact.s, subs->contact.s, subs->contact.len))
 	{
 		shm_free(s->contact.s);
-		s->contact.s= (char*)shm_malloc(subs->contact.len* sizeof(char));
+		s->contact.s= (char*)shm_malloc(subs->contact.len);
 		if(s->contact.s== NULL)
 		{
 			lock_release(&htable[hash_code].lock);
@@ -494,7 +494,7 @@ int insert_phtable(str* pres_uri, int event, char* sphere)
 		lock_release(&pres_htable[hash_code].lock);
 		return 0;
 	}
-	size= sizeof(pres_entry_t)+ pres_uri->len* sizeof(char);
+	size= sizeof(pres_entry_t)+ pres_uri->len;
 
 	p= (pres_entry_t*)shm_malloc(size);
 	if(p== NULL)
@@ -511,7 +511,7 @@ int insert_phtable(str* pres_uri, int event, char* sphere)
 	
 	if(sphere)
 	{
-		p->sphere= (char*)shm_malloc((strlen(sphere)+ 1)*sizeof(char));
+		p->sphere= (char*)shm_malloc(strlen(sphere)+ 1);
 		if(p->sphere== NULL)
 		{
 			lock_release(&pres_htable[hash_code].lock);
@@ -625,7 +625,7 @@ int update_phtable(presentity_t* presentity, str pres_uri, str body)
 	}
 
 
-	p->sphere= (char*)shm_malloc((strlen(sphere)+ 1)*sizeof(char));
+	p->sphere= (char*)shm_malloc(strlen(sphere)+ 1);
 	if(p->sphere== NULL)
 	{
 		lock_release(&pres_htable[hash_code].lock);

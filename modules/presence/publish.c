@@ -143,8 +143,7 @@ void msg_presentity_clean(unsigned int ticks,void *param)
 		event.s= (char*)row_vals[event_col].val.string_val;
 		event.len= strlen(event.s);
 		
-		size= sizeof(presentity_t)+ (user.len+ domain.len+ etag.len)*
-			sizeof(char); 
+		size= sizeof(presentity_t) + user.len+ domain.len+ etag.len;
 		pres= (presentity_t*)pkg_malloc(size);
 		if(pres== NULL)
 		{
@@ -342,7 +341,7 @@ int handle_publish(struct sip_msg* msg, char* sender_uri, char* str2)
 	{
 		goto unsupported_event;
 	}
-	
+
 	/* examine the SIP-If-Match header field */
 	hdr = get_header_by_static_name( msg, "SIP-If-Match");
 	if( hdr==NULL )
@@ -363,13 +362,13 @@ int handle_publish(struct sip_msg* msg, char* sender_uri, char* str2)
 	else
 	{
 		LM_DBG("SIP-If-Match header found\n");
-		etag.s = (char*)pkg_malloc((hdr->body.len+ 1)* sizeof(char));
+		etag.s = (char*)pkg_malloc(hdr->body.len+ 1);
 		if(etag.s== NULL)
 		{
 			ERR_MEM(PKG_MEM_STR);
 		}
 		memcpy(etag.s, hdr->body.s, hdr->body.len );
-		etag.len = hdr->body.len; 	 
+		etag.len = hdr->body.len;
 		etag.s[ etag.len] = '\0';
 		LM_DBG("existing etag  = %.*s \n", etag.len, etag.s);
 	}

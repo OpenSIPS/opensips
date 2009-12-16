@@ -413,7 +413,7 @@ int update_subscription(struct sip_msg* msg, subs_t* subs, int init_req)
 			}
 		}
 
-		
+
 		if(send_2XX_reply(msg, reply_code, subs->expires, 0,
 			&subs->local_contact)<0)
 		{
@@ -645,7 +645,6 @@ int handle_subscribe(struct sip_msg* msg, char* force_active_param, char* str2)
 				reply_code= 400;
 				reply_str= pu_400_rpl;
 				goto error;
-				;
 			}
 			if(uandd_to_uri(msg->parsed_uri.user, msg->parsed_uri.host,
 					&subs.pres_uri)< 0)
@@ -673,7 +672,7 @@ int handle_subscribe(struct sip_msg* msg, char* force_active_param, char* str2)
 			LM_ERR("in event specific subscription handling\n");
 			goto error;
 		}
-	}	
+	}
 
 
 	/* if dialog initiation Subscribe - get subscription state */
@@ -713,7 +712,7 @@ int handle_subscribe(struct sip_msg* msg, char* force_active_param, char* str2)
 	}
     LM_DBG("subscription status= %s - %s\n", get_status_str(subs.status), 
             found==0?"inserted":"found in watcher table");
-	
+
 	if(update_subscription(msg, &subs, init_req) <0)
 	{
 		LM_ERR("in update_subscription\n");
@@ -1008,7 +1007,7 @@ error:
  * */
 int get_stored_info(struct sip_msg* msg, subs_t* subs, int* reply_code,
 		str* reply_str)
-{	
+{
 	str pres_uri= {0, 0}, reason={0, 0};
 	subs_t* s;
 	int i;
@@ -1039,29 +1038,31 @@ int get_stored_info(struct sip_msg* msg, subs_t* subs, int* reply_code,
 	}
 	lock_release(&subs_htable[hash_code].lock);
 
-    if(subs->pres_uri.s)
-        goto not_found;
-	
-    pkg_free(pres_uri.s);
-	pres_uri.s= NULL;
-	
+	if(subs->pres_uri.s)
+		goto not_found;
 
-    LM_DBG("record not found using R-URI search iteratively\n");
+	pkg_free(pres_uri.s);
+	pres_uri.s= NULL;
+
+	LM_DBG("record not found using R-URI search iteratively\n");
 	/* take one row at a time */
 	for(i= 0; i< shtable_size; i++)
 	{
 		lock_get(&subs_htable[i].lock);
 		s= search_shtable(subs_htable, subs->callid,subs->to_tag,subs->from_tag, i);
-		if(s && s->event->evp->parsed!= EVENT_DIALOG_SLA)
+		if(s)
 		{
-			pres_uri.s= (char*)pkg_malloc(s->pres_uri.len* sizeof(char));
-			if(pres_uri.s== NULL)
+			if(s->event->evp->parsed != EVENT_DIALOG_SLA)
 			{
-				lock_release(&subs_htable[i].lock);
-				ERR_MEM(PKG_MEM_STR);
+				pres_uri.s= (char*)pkg_malloc(s->pres_uri.len);
+				if(pres_uri.s== NULL)
+				{
+					lock_release(&subs_htable[i].lock);
+					ERR_MEM(PKG_MEM_STR);
+				}
+				memcpy(pres_uri.s, s->pres_uri.s, s->pres_uri.len);
+				pres_uri.len= s->pres_uri.len;
 			}
-			memcpy(pres_uri.s, s->pres_uri.s, s->pres_uri.len);
-			pres_uri.len= s->pres_uri.len;
 			goto found_rec;
 		}
 		lock_release(&subs_htable[i].lock);
@@ -1090,8 +1091,8 @@ found_rec:
 	subs->version = s->version;
 	subs->status= s->status;
 	if(s->reason.s && s->reason.len)
-	{	
-		reason.s= (char*)pkg_malloc(s->reason.len* sizeof(char));
+	{
+		reason.s= (char*)pkg_malloc(s->reason.len);
 		if(reason.s== NULL)
 		{
 			lock_release(&subs_htable[i].lock);
@@ -1104,7 +1105,7 @@ found_rec:
 	if(s->record_route.s && s->record_route.len)
 	{
 		subs->record_route.s= (char*)pkg_malloc
-			(s->record_route.len* sizeof(char));
+			(s->record_route.len);
 		if(subs->record_route.s== NULL)
 		{
 			ERR_MEM(PKG_MEM_STR);
@@ -1276,7 +1277,7 @@ int get_database_info(struct sip_msg* msg, subs_t* subs, int* reply_code, str* r
 	if(reason.s)
 	{
 		reason.len= strlen(reason.s);
-		subs->reason.s= (char*)pkg_malloc(reason.len* sizeof(char));
+		subs->reason.s= (char*)pkg_malloc(reason.len);
 		if(subs->reason.s== NULL)
 		{
 			ERR_MEM(PKG_MEM_STR);
@@ -1292,9 +1293,9 @@ int get_database_info(struct sip_msg* msg, subs_t* subs, int* reply_code, str* r
 	{
 		pres_uri.s= (char*)row_vals[pres_uri_col].val.string_val;
 		pres_uri.len= strlen(pres_uri.s);
-		subs->pres_uri.s= (char*)pkg_malloc(pres_uri.len* sizeof(char));
+		subs->pres_uri.s= (char*)pkg_malloc(pres_uri.len);
 		if(subs->pres_uri.s== NULL)
-		{	
+		{
 			if(subs->reason.s)
 				pkg_free(subs->reason.s);
 			ERR_MEM(PKG_MEM_STR);
@@ -1307,7 +1308,7 @@ int get_database_info(struct sip_msg* msg, subs_t* subs, int* reply_code, str* r
 	if(record_route.s)
 	{
 		record_route.len= strlen(record_route.s);
-		subs->record_route.s= (char*)pkg_malloc(record_route.len*sizeof(char));
+		subs->record_route.s= (char*)pkg_malloc(record_route.len);
 		if(subs->record_route.s== NULL)
 		{
 			ERR_MEM(PKG_MEM_STR);
@@ -1325,7 +1326,6 @@ error:
 		pa_dbf.free_result(pa_db, result);
 
 	return -1;
-
 }
 
 
@@ -1941,7 +1941,7 @@ int restore_db_subs(void)
 					ERR_MEM(SHM_MEM_STR);
 				}
 				memset(event, 0, sizeof(pres_ev_t));
-				event->name.s= (char*)shm_malloc(ev_sname.len* sizeof(char));
+				event->name.s= (char*)shm_malloc(ev_sname.len);
 				if(event->name.s== NULL)
 				{
 					free_event_params(parsed_event.params, PKG_MEM_TYPE);
@@ -2202,7 +2202,7 @@ int get_db_subs_auth(subs_t* subs, int* found)
 			subs->reason.s= NULL;
 		else
 		{
-			subs->reason.s= (char*)pkg_malloc(subs->reason.len*sizeof(char));
+			subs->reason.s= (char*)pkg_malloc(subs->reason.len);
 			if(subs->reason.s== NULL)
 			{
 				pa_dbf.free_result(pa_db, result);
@@ -2216,7 +2216,7 @@ int get_db_subs_auth(subs_t* subs, int* found)
 	return 0;
 error:
 	return -1;
-}	
+}
 
 int insert_db_subs_auth(subs_t* subs)
 {

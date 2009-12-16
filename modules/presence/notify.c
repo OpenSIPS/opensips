@@ -912,7 +912,7 @@ after_sender_check:
 				ERR_MEM(PKG_MEM_STR);	
 			}
 			memset(notify_body, 0, sizeof(str));
-			notify_body->s= (char*)pkg_malloc( len* sizeof(char));
+			notify_body->s= (char*)pkg_malloc(len);
 			if(notify_body->s== NULL)
 			{
 				pkg_free(notify_body);
@@ -960,7 +960,7 @@ after_sender_check:
 					goto error;
 				}
 			
-				size= sizeof(str)+ len* sizeof(char);
+				size= sizeof(str)+ len;
 				body= (str*)pkg_malloc(size);
 				if(body== NULL)
 				{
@@ -989,7 +989,7 @@ after_sender_check:
 					goto error;
 				}
 				
-				size= sizeof(str)+ len* sizeof(char);
+				size= sizeof(str)+ len;
 				body= (str*)pkg_malloc(size);
 				if(body== NULL)
 				{

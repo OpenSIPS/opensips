@@ -58,12 +58,12 @@ char* generate_ETag(int publ_count)
 	char* etag= NULL;
 	int size = 0;
 
-	etag = (char*)pkg_malloc(ETAG_LEN*sizeof(char));
+	etag = (char*)pkg_malloc(ETAG_LEN);
 	if(etag ==NULL)
 	{
 		ERR_MEM(PKG_MEM_STR);
 	}
-	memset(etag, 0, ETAG_LEN*sizeof(char));
+	memset(etag, 0, ETAG_LEN);
 	size = sprintf (etag, "%c.%d.%d.%d.%d",
 		prefix, (int)startup_time, pid, counter, publ_count);
 	if( size <0 )
@@ -120,7 +120,7 @@ int publ_send200ok(struct sip_msg *msg, int lexpire, str etag)
 		goto error;
 	}
 
-	size= sizeof(char)*(20+etag.len) ;
+	size= 20 + etag.len;
 	hdr_append2.s = (char *)pkg_malloc(size);
 	if(hdr_append2.s == NULL)
 	{
@@ -171,7 +171,7 @@ presentity_t* new_presentity( str* domain,str* user,int expires,
 	/* allocating memory for presentity */
 	size = sizeof(presentity_t)+ domain->len+ user->len+ etag->len +1;
 	if(sender)
-		size+= sizeof(str)+ sender->len* sizeof(char);
+		size+= sizeof(str)+ sender->len;
 	
 	init_len= size;
 
@@ -890,7 +890,7 @@ char* extract_sphere(str body)
 			LM_ERR("failed to extract sphere node content\n");
 			goto error;
 		}
-		sphere= (char*)pkg_malloc((strlen(cont)+ 1)*sizeof(char));
+		sphere= (char*)pkg_malloc(strlen(cont)+ 1);
 		if(sphere== NULL)
 		{
 			xmlFree(cont);
@@ -904,7 +904,6 @@ char* extract_sphere(str body)
 
 error:
 	xmlFreeDoc(doc);
-
 	return sphere;
 }
 
@@ -959,7 +958,7 @@ char* get_sphere(str* pres_uri)
 	{
 		if(p->sphere)
 		{
-			sphere= (char*)pkg_malloc(strlen(p->sphere)* sizeof(char));
+			sphere= (char*)pkg_malloc(strlen(p->sphere));
 			if(sphere== NULL)
 			{
 				lock_release(&pres_htable[hash_code].lock);
