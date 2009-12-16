@@ -290,9 +290,9 @@ int delete_shtable(shtable_t htable,unsigned int hash_code,str to_tag)
 	
 	ps= htable[hash_code].entries;
 	s= ps->next;
-		
+
 	while(s)
-	{	
+	{
 		if(s->to_tag.len== to_tag.len &&
 				strncmp(s->to_tag.s, to_tag.s, to_tag.len)== 0)
 		{
