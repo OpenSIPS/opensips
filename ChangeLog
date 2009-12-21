@@ -1,3679 +1,517 @@
-# $Id$
 
-===================== 2009-03-23 OpenSIPS v1.5.0 released =====================
+2009-12-21 19:41:26  Anca Vamanu, <anca at voice-system dot ro> 
+	* [6454] :
 
+	- fixed typo ( ; at the end of if line)
 
-2009-10-12 23:57:01  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6258] :
 
-	- updated package specs
+2009-12-21 19:19:03  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6452] :
 
+	backport from trunk rev #6451.
+	- fixed missing test on mem free
+	  Credits go to Alexander.
 
-2009-10-12 22:30:13  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6257] :
 
-	- updated debian packaging
-	- sarge packaging  droped (obsolete stable release)
+2009-12-21 14:17:24  Anca Vamanu, <anca at voice-system dot ro> 
+	* [6450] :
 
+	-backport from trunk rev 6417
+		- fixed matching of indialog requests - do not capture requests that are not destined for me(Record-Route header or ruri does not point to me)
+		- fixed matching for CANCEL messages - check ruri = ruri of INVITE
 
-2009-10-12 22:08:52  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6254] :
+	--Ths line, and those below, will be ignored--
 
-	- fixed crash when checking a number that contains or ends with non-digit symbol (dash for example) -> then opensips coredumped
-	 
-	 Closes patch #2877122
-	 Credits go to Ruslan Bukin
+	M    b2b_entities/dlg.c
+	M    b2b_entities/dlg.h
 
 
-2009-10-12 22:00:53  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6253] :
+2009-12-21 14:06:25  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6449] :
 
-	- some cleanup and fixes in the libs to compile against
+	backport from trunk (rev #6448):
+	- the default alg "first entry is used" gets an official name of "8" to avoid useless warnings
 
 
-2009-10-12 14:52:35  Andrei Dragus <andreidragus at yahoo dot com> 
-	* [6252] :
+2009-12-17 13:18:51  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6446] :
 
-	Fixed the rtcp line.
+	backport from trunk (rev #6445):
+	- fixed printing the name of the script route triggered by rule matching
+	- fixed hadling of the return code (dropping action) from the script route.
 
 
-2009-10-12 14:46:41  Andrei Dragus <andreidragus at yahoo dot com> 
-	* [6251] :
+2009-12-16 12:44:23  Anca Vamanu, <anca at voice-system dot ro> 
+	* [6443] :
 
-	Added a new function for finding a line.
+	- fixed bug for BLA - error when searching record (always getting to search in database)
 
 
+2009-12-15 17:37:32  Anca Vamanu, <anca at voice-system dot ro> 
+	* [6441] :
 
-2009-10-12 07:56:53  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6250] :
+	- extended the methods accepted to pass through b2b (if not a method for which a scenario rule can be defined, do simple pass through)
 
-	warning elimination / potential bugfix.
 
-	Part of patch 2872048
-	Credits go to Stanislaw Pitucha
+2009-12-14 18:11:45  Andrei Dragus <adragus at opensips dot org> 
+	* [6439] :
 
+	Backported nathelper to work with multipart SDP
 
-2009-10-12 02:16:46  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6249] :
 
-	Trivial cleanup changes:
-	- removed warnings when compiling action and modules/ratelimit
-	- improved error reporting on missing modules
-	- added some syntax error problem guessing
+2009-12-14 18:06:43  Andrei Dragus <adragus at opensips dot org> 
+	* [6438] :
 
-	Closes patch #2872048
-	Credits goto Stanislaw Pitucha.
+	Backported multipart parsing and textops
 
 
+2009-12-14 17:34:42  Andrei Dragus <adragus at opensips dot org> 
+	* [6437] :
 
-2009-10-12 01:53:57  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6248] :
+	Backported usrloc
 
-	- set default values for some fields in address table
 
+2009-12-14 17:32:50  Andrei Dragus <adragus at opensips dot org> 
+	* [6436] :
 
-2009-10-12 01:51:42  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6247] :
+	Backported map used for usrloc
 
-	- various fixes (db handling, help text, db migration, etc)
 
+2009-12-14 14:39:45  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6434] :
 
-2009-10-12 01:50:26  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6246] :
+	backport from trunk (rev #6433):
 
-	- fixed db migration from 1.5 to 1.6
+	- fixed bogus definition of sip_trace table which was incompatible with the db_text engine.
 
 
-2009-10-12 00:31:18  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6245] :
+2009-12-12 15:56:58  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6428] :
 
-	- just cosmetics
+	In case opensips force the use of sst, it add a Session-Expire with
+	interval equal to max(OpenSIPS minSE, UAS minSE).
+	This does not allow to set a minSE of 90s (the minimum allowed) but start
+	with a different interval (say 300s).
 
+	This patch add a sst_interval parameter with a default value of 0 (to stick
+	to the current behavior).
+	The Session-Expire interval is set to the max value of (OpenSIPS minSE, UAS
+	minSE, sst_interval).
 
-2009-10-11 23:46:30  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6244] :
-
-	- fixed backward compatibility - route[0] is recognized as default route
-
-
-2009-10-09 20:07:00  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6243] :
-
-	- fixed crash during shiutdown - the destroy from usrloc can push via callbacks some actions in snmpstats module that may be already destroied.
-
-	  Thansk to Thomas Gelf to report it.
-
-
-2009-10-09 18:57:47  Anca Vamanu, <anca at voice-system dot ro> 
-	* [6242] :
-
-	- improved the documentation for cleanup_period parameter to suggest that BYE is sent before deleting the record(reported by Ovidiu Sas)
-
-
-2009-10-09 14:46:32  Andrei Dragus <andreidragus at yahoo dot com> 
-	* [6239] :
-
-	Fixed problems with db_berkeley.
-
-
-
-2009-10-09 13:51:29  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6238] :
-
-	even if in DELETED stage, keep validating the dialog
-
-
-2009-10-08 17:55:49  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6237] :
-
-	- fixed 64 bits warning
-
-
-2009-10-08 16:49:54  Irina-Maria Stanescu <ironmissy at gmail dot com> 
-	* [6236] :
-
-	- fixed incorrect release of memory
-
-
-2009-10-08 00:07:27  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6235] :
-
-	- fixed typo in the SIP default port (for UDP)
-
-
-2009-10-07 20:20:17  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6234] :
-
-	- siptrace intercepts and traces the outgoing ACK for 200 OK.
-	  Closes bug #2780546
-
-
-2009-10-07 20:18:29  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6233] :
-
-	added support for callbacks to intercept outgoing stateless requests - required for tracing the 200 OK ACK
-
-
-2009-10-07 18:51:38  Andrei Dragus <andreidragus at yahoo dot com> 
-	* [6232] :
-
-	Fixed memory leak in wrap_memcached_get
-
-
-2009-10-07 10:03:38  Iulia Buble <iulia at voice-system dot ro> 
-	* [6231] :
-
-	Fixed bug.
-
-
-2009-10-07 06:06:06  Di-Shi Sun <di-shi at transnexus dot com> 
-	* [6230] :
-
-	Updated OSP sample configuration file.
-
-
-2009-10-06 18:05:22  Anca Vamanu, <anca at voice-system dot ro> 
-	* [6229] :
-
-	- fixed pv_get_avp when requiring all indexes and the first one have empty string
-
-
-2009-10-06 16:20:25  Iulia Buble <iulia at voice-system dot ro> 
-	* [6227] :
-
-	Postgres bug fixed regarding table creation.
-	Bug ID: 2871734.
-
-
-
-2009-10-06 15:25:48  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6226] :
-
-	- fixed statistics for siptrace module - do stats also when you do siptraceing based on AVPs and not on flags.
-	  Bug revealed during Frankfurt Bootcamp
-
-
-2009-10-06 13:19:53  Iulia Buble <iulia at voice-system dot ro> 
-	* [6225] :
-
-	Migration updated with possibility of migrating to new address table either trusted or address table, or both.
-
-
-2009-10-06 13:10:08  Iulia Buble <iulia at voice-system dot ro> 
-	* [6224] :
-
-	Migration updated with possibility of migrating to new address table either trusted or address table, or both.
-
-
-2009-10-06 11:42:11  Iulia Buble <iulia at voice-system dot ro> 
-	* [6222] :
-
-	Bug fixed regardind "dr rules add" command.
-
-
-2009-10-06 08:54:03  Di-Shi Sun <di-shi at transnexus dot com> 
-	* [6220] :
-
-	Fixed un-initialized variable issue.
-
-
-2009-10-05 18:57:36  Anca Vamanu, <anca at voice-system dot ro> 
-	* [6219] :
-
-	- changed a small thing in the previous bug fix following Juha's suggestion 
-
-
-2009-10-05 18:47:06  Anca Vamanu, <anca at voice-system dot ro> 
-	* [6218] :
-
-	- fixed event parser - added check not to go beyond the end of the header value (reported by Juha Heinanen)
-
-
-2009-10-05 18:26:12  Iulia Buble <iulia at voice-system dot ro> 
-	* [6217] :
-
-	Migration function prepared for migrating from 1.5 to 1.6
-
-
-2009-10-05 18:19:10  Anca Vamanu, <anca at voice-system dot ro> 
-	* [6216] :
-
-	- fixed bug in pvar replace with index, problem when index was a pvar (reported by Sergey Okhapkin, bug #2868064)
-
-
-2009-10-05 17:03:33  Iulia Buble <iulia at voice-system dot ro> 
-	* [6215] :
-
-	Help menu changed for dr module.
-
-
-2009-10-05 13:44:19  Anca Vamanu, <anca at voice-system dot ro> 
-	* [6214] :
-
-	- fixed a bug in last commit - not updating the contact.(reported by Sergey Okhapkin)
-
-
-2009-10-02 18:39:17  Anca Vamanu, <anca at voice-system dot ro> 
-	* [6213] :
-
-	- fixed not updating record route with the one from the final response (reported by Sergey Okhapkin)
-
-
-2009-10-02 18:24:45  Iulia Buble <iulia at voice-system dot ro> 
-	* [6212] :
-
-	Fixed bug
-
-
-2009-10-02 18:21:12  Iulia Buble <iulia at voice-system dot ro> 
-	* [6211] :
-
-	Fixed path
-
-
-2009-10-02 18:18:45  Iulia Buble <iulia at voice-system dot ro> 
-	* [6210] :
-
-	Osipsconsole comes with 1 new feature and 1 change:
-	        - trusted table was turned into address table.
-	          Add, rm, reload, show operations point now to the address table.
-
-	        - operations regarding DB (migrate, create drop) are now available in
-	          the following format:
-                * db migrate <old_db> <new_db>
-                * db create <db_name>
-                * db drop <db_name>
-
-
-
-
-2009-10-02 17:23:08  Iulia Buble <iulia at voice-system dot ro> 
-	* [6209] :
-
-	Osipsconsole comes with 1 new feature and 1 change:
-	        - trusted table was turned into address table.
-	          Add, rm, reload, show operations point now to the address table.
-
-
-
-2009-10-01 18:57:57  Anca Vamanu, <anca at voice-system dot ro> 
-	* [6208] :
-
-	- fixed not updating contact with the one in the final response (fixed bug #2870694, reported by Sergey Okhapkin)
-
-
-2009-09-30 16:07:54  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6207] :
-
-	- if the loaded rule is invalid, skip it, do not shutdown the whole server for only a bogus dialplan rule.
-	  Reported by Flavio Goncalves during the OpenSIPS bootcamp :D
-
-
-2009-09-30 15:13:46  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6206] :
-
-	- if the contact was changed, do not attempt to encode it, as this will lead to inconsistent and bogus cases.
-	  
-	  Closes bug #2868113
-	  Many thanks to Sergey Okhapkin for the help with the debugging and troubleshooting.
-
-
-2009-09-30 15:01:04  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6205] :
-
-	- fixed the nmissing dialog context for CANCELs. 
-	  Right now the dialog contect will be available for CANCEL, but only after doing t_check_trans() for CANCEL (after the CANCEL is matched against the INVITE it cancels).
-	  
-	  Closed bug #2849542
-
-
-2009-09-30 14:52:15  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6204] :
-
-	- a new callback was added (TMCB_TRANS_CANCELLED) to fix the mapping of CANCELs to a dialogs 
-	  related to bug 2849542
-
-
-2009-09-30 14:34:24  Anca Vamanu, <anca at voice-system dot ro> 
-	* [6203] :
-
-	-fixed typo in documentation
-
-
-2009-09-29 12:58:45  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6202] :
-
-	cosmetic changes
-
-
-2009-09-29 12:26:42  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6201] :
-
-	fixed the validate_dialog() function when checking RURI against Contat URI - instead of textual matching, do proper matching based on proto, port and destination. (ignore username and irrelevant parameters)
-
-
-2009-09-29 12:02:05  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6199] :
-
-	- fixed dialog context in local route - it seams that the dialog infos were missing in local route for BYE requests generated by the dialog module.
-
-	 Reported by Alex Massover
-
-
-2009-09-27 14:29:12  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6198] :
-
-	fixed bug 2710489
-	- BLOB is also copied in the data buffer
-	- STRING data includes the string terminator
-	- DB_STR, DB_STRING and DB_BLOB the similar type
-
-	Close bug 2710489
-
-
-2009-09-27 13:36:13  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6197] :
-
-	- acc module restore dst uri also before doing accouting.
-	  Closes bug #2778720.
-
-
-2009-09-27 13:32:43  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6196] :
-
-	- dst_uri is saved into uac[] structure of the transaction for later usage. Primary purpose is accounting; for the moment the $du is not restored in failure route as it is a bit dangerous - typically the script router does not expect (and need ) this;
-	  Partial fix of bug #2778720
-
-
-2009-09-27 11:16:28  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6195] :
-
-	- apply patch fixing bug #2858822.
-	  The MI command disable completely the tracing (based on flags or avps)
-	  
-	  Credits for the fi go to Sergio Gutierrez.
-
-
-
-2009-09-27 00:19:57  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6194] :
-
-	fixed error log
-
-
-2009-09-27 00:19:05  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6193] :
-
-	-removed the extra logging in each child
-
-
-2009-09-27 00:15:38  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6192] :
-
-	- fixed the consumming of the STUN packages
-
-
-2009-09-26 20:55:13  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6190] :
-
-	- fixed bug related to flushing (of output MI tree) when using the Datagram backend
-	  Reported by Richard Revels
-
-
-2009-09-25 17:42:48  Anca Vamanu, <anca at voice-system dot ro> 
-	* [6188] :
-
-	- fixed adding an extra CRLF after the boundary string (bug#2859775, reported by Andaleeb Roomy)
-
-
-2009-09-25 10:53:35  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6187] :
-
-	- more fixing in resetting the statements (also related to bug #2860109, folowing commit in rev #6177).
-
-
-2009-09-25 01:22:44  Ovidiu Sas <osas at voipembedded dot com> 
-	* [6186] :
-
-	set svn ignore list for stun module
-
-
-2009-09-24 13:12:20  Anca Vamanu, <anca at voice-system dot ro> 
-	* [6185] :
-
-	- added debug information in case of parse error
-
-
-2009-09-23 19:14:53  Iulia Buble <iulia at voice-system dot ro> 
-	* [6184] :
-
-	- switch module has been deleted from the script.
-	 
-
-
-2009-09-23 18:37:47  Irina-Maria Stanescu <ironmissy at gmail dot com> 
-	* [6183] :
-
-	- serialize_branches() now stores the received and path information
-	(fixes bug #2795294 reported by Mauro Davi and Alex Hermann)
-
-
-2009-09-23 17:34:55  Irina-Maria Stanescu <ironmissy at gmail dot com> 
-	* [6182] :
-
-	- fixed documentation inconsistency
-
-
-2009-09-23 10:49:25  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6180] :
-
-	- added some sanity checks to be sure that the pipe id passed from script does not overflow the internal array of pipes.
-	  Reported by Brett Nemeroff
-
-
-
-2009-09-22 18:32:14  Anca Vamanu, <anca at voice-system dot ro> 
-	* [6178] :
-
-	- fixed deadlock in pua module
-	- added locking debug messages
-
-
-2009-09-22 18:30:29  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6177] :
-
-	- fixed removel of a statement context if mysql_stmt_prepare() fails.
-	  Credits go to Phil D'Amore.
-	  Closes bug #2860109.
-
-
-2009-09-22 17:33:47  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6175] :
-
-	- check if the pkg_malloc() was successful or not!
-
-
-2009-09-22 17:21:35  Anca Vamanu, <anca at voice-system dot ro> 
-	* [6174] :
-
-	- fixed another case when faked reply leads to segmentation fault - reported by Sergey Okhapkin
-
-
-2009-09-22 16:20:39  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6172] :
-
-	- fixed misspelled name for IDENTITY module
-	  Credits go to Norman Brandinger
-
-
-2009-09-22 16:13:39  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6171] :
-
-	more 64bits warnings fixed
-
-
-2009-09-22 16:09:31  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6170] :
-
-	- fixed 64bits compiling warnings
-
-
-2009-09-22 15:48:37  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6169] :
-
-	- memory debugger is by default enabled during the testing period.
-	  Also memlog and memdump set by default on some level over DBG to avoid unwanted logs.
-
-
-2009-09-22 15:42:55  Anca Vamanu, <anca at voice-system dot ro> 
-	* [6168] :
-
-	- fixed compile warning
-
-
-2009-09-22 15:26:16  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6167] :
-
-	- fixed the accepted types of variables as input and output for db_translate()
-	  Reported by Ron McCarthy
-
-
-2009-09-22 14:03:28  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6166] :
-
-	- fixed missing unlock when status is set via the MI function.
-	  Credits for finding and debugging this go to Alec Fett.
-
-
-2009-09-22 13:58:13  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6165] :
-
-	- DB schema updated (trusted->address merging)
-
-
-2009-09-22 11:44:43  Anca Vamanu, <anca at voice-system dot ro> 
-	* [6164] :
-
-	- fixed not checking if faked reply in tm callback (reported by Sergey Okhapkin)
-
-
-2009-09-21 16:53:26  Irina-Maria Stanescu <ironmissy at gmail dot com> 
-	* [6163] :
-
-	- updated documentation and a few minor improvements
-
-
-2009-09-21 15:28:27  Anca Vamanu, <anca at voice-system dot ro> 
-	* [6162] :
-
-	- fixed deleting the b2b record to early and not waiting for ACK for negative reply (reported by Sergey Okhapkin)
-
-
-2009-09-19 23:17:54  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6160] :
-
-	- fixed default type of some PVs - this was leading to copying them as wrong data type (STR -> INT)
-	  Closes bug #2861239
-
-
-2009-09-18 17:46:16  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6159] :
-
-	- fixed assigment of NULL val to a dialog value
-	  Closes bug #2861238
-
-
-2009-09-18 15:50:01  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6158] :
-
-	 - exposed fixup_igp() function needed by permission module
-
-
-2009-09-18 15:47:01  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6157] :
-
-	- EOF line added to avoif compile warnings
-
-
-2009-09-18 15:32:12  Anca Vamanu, <anca at voice-system dot ro> 
-	* [6156] :
-
-	- fixed not taking port from R-URI, reported by Sergey Okhapkin, bug #2858063
-	- took out PRACK from accepted b2b_logic methods
-	- fixed not releasing the transaction for sent invite when it was canceled
-
-
-2009-09-18 10:58:53  Anca Vamanu, <anca at voice-system dot ro> 
-	* [6155] :
-
-	- fixed PRACK issue - sending PRACK when a reply with header Require:100rel is received (reported by Ovidiu Sas)
-	- fixed forking issue - now for the initiated dialogs more legs are stored and only the first confirmed one is kept
-
-
-2009-09-17 23:57:53  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6154] :
-
-	- registered() function takes a third optional parameter - a callid ; in this case, the function will check if a contact eith that callid is already registered or not.
-
-	  Based on a patch from Kobi Eshun, id #2102475.
-
-
-2009-09-17 19:27:34  Anca Vamanu, <anca at voice-system dot ro> 
-	* [6153] :
-
-	- set the startup and timer route flags for module exported commands that can be called from this routes
-
-
-2009-09-17 17:52:05  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6152] :
-
-	-new PV $time(format) to print time is dynamic formatted time string.
-	 Format: see "man strftime"
-
-	 Ex:   
-	   $time(%A %B %Y) -> Thursday September 2009
-
-	 Closes feature request 2163867.
-
-
-2009-09-17 17:21:38  Irina-Maria Stanescu <ironmissy at gmail dot com> 
-	* [6151] :
-
-	- documentation update & coding style improvement
-
-
-2009-09-17 15:53:52  Irina-Maria Stanescu <ironmissy at gmail dot com> 
-	* [6150] :
-
-	- major refactoring
-
-
-2009-09-17 15:45:11  Irina-Maria Stanescu <ironmissy at gmail dot com> 
-	* [6149] :
-
-	- added support for customizing call-control messages from the script
-
-
-2009-09-17 14:29:29  Razvan Pistolea <razvy000 at yahoo dot com> 
-	* [6148] :
-
-	Fixed LDAP bind (from async to sync).
-	Fixed LDAP anonymous password (ommit attribute from config file).
-
-
-2009-09-17 14:13:45  Andrei Dragus <andreidragus at yahoo dot com> 
-	* [6147] :
-
-	Fixed memory leak.
-
-
-
-2009-09-17 13:47:56  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6146] :
-
-	- new NAT test added : check the IP in contact hdr versus the receved IP (from net level)
-	  
-	  Note that even if its the same test, it has different numbers in nathelper and nat_traversal modules.
-
-	  Closes Feature Request #2858736.
-
-
-2009-09-17 13:14:51  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6145] :
-
-	- exposed the check_via_address() as check_ip_addres()
-
-
-2009-09-17 12:39:38  Andrei Dragus <andreidragus at yahoo dot com> 
-	* [6144] :
-
-	Added regular expressions to codec methods.
-
-
-
-2009-09-17 11:02:52  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6143] :
-
-	- the UDP communication is symetric - the UDP reply packages are sent back from the RX socket - this helps when firewalls, nat , etc are in the middle; also from security point of view is a plus to know all the time the ports involved in the communication.
-
-	  Closes feature request #2166279 from Ovidiu Sas.
-
-
-2009-09-16 20:33:54  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6142] :
-
-	new function validate_dialog() for verifying the in-dialog requests against the date stored in dialog internal structure (cseq, rr set, contact) - this is used to discover bogus or malicious sequential requests.
-
-	new PV $DLG_dir to return (as string) the direction of an in-dialog request.
-
-
-2009-09-16 20:30:55  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6141] :
-
-	- patch fixes the situation when granularity is (for example): 200, then 150
-	packets are processed and granularity is changed to 100. (currently stats
-	will not be reported anymore)
-	  Credits go to Stanislaw Pitucha 
-	  Closes patch 2859897
-
-
-2009-09-16 18:58:24  Andrei Dragus <andreidragus at yahoo dot com> 
-	* [6139] :
-
-	Made comparisons case insensitive and added removal of fmtp lines
-
-
-
-2009-09-16 18:56:49  Andrei Dragus <andreidragus at yahoo dot com> 
-	* [6138] :
-
-	Added parsing of fmtp attributes in sdp parser.
-	 
-
-
-2009-09-16 16:24:45  Anca Vamanu, <anca at voice-system dot ro> 
-	* [6137] :
-
-	- rolled back at rev 6135 for files from core and changed the implementation for special routes for B2B server-
-	- now the routes are of type 'route' and have names that have to be given as module parameter; there are different routes for requests and replies.
-
-
-2009-09-16 15:02:12  Anca Vamanu, <anca at voice-system dot ro> 
-	* [6136] :
-
-	- added new script route for B2B server - it will be called for the request and replies received by the B2B server
-
-
-2009-09-16 14:34:55  Andrei Dragus <andreidragus at yahoo dot com> 
-	* [6135] :
-
-	Fixed no new-line warning.
-
-
-
-2009-09-16 14:03:09  Andrei Dragus <andreidragus at yahoo dot com> 
-	* [6134] :
-
-	Fixed new-line warning.
-
-
-
-
-2009-09-16 13:30:24  Andrei Dragus <andreidragus at yahoo dot com> 
-	* [6133] :
-
-	Speed improvements for dialog profile.
-
-
-
-2009-09-16 13:22:21  Andrei Dragus <andreidragus at yahoo dot com> 
-	* [6132] :
-
-	General map structure that provides operations in logarithmic time.
-
-
-
-2009-09-15 23:46:44  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6131] :
-
-	- goes_to_gw() takes a second optional parameter (flags) to control the strip, the prefix and attr when GW matches 
-	  Closes feature request #2858801
-
-	- sort_order module parameter moved as optional parameter to do_routing() to allow my fine control
-
-
-2009-09-15 20:22:00  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6130] :
-
-	- proper testing to see if any of the TO or FROM headers were changed.
-	  Reported by Essobi
-
-
-2009-09-15 18:33:42  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6129] :
-
-	- fixed double registration of reply_restore callbacks when both TO and FROM are changed.
-	  Credits for reporting go to Essobi.
-
-
-2009-09-15 17:31:48  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6127] :
-
-	- fixed detection of IP addresses when DNS resolving the destinations
-
-
-2009-09-15 17:14:08  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6126] :
-
-	- fixed bogus ID in DB definition of lb table.
-	  Reported by Irina Stanescu
-
-
-2009-09-15 09:16:30  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6125] :
-
-	- fixed 64 bits warning on casting
-
-
-2009-09-14 23:34:44  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6124] :
-
-	fixed typo resulted from copy'n'paste...:P
-
-	Credits go to Essobi for reporting it.
-
-
-2009-09-14 22:52:12  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6122] :
-
-	Changes to the benchmark module:
-	- allow granularity == 0 (disables automatic logging)
-	- add bm_poll_results MI command (poll current results and restart local counters)
-	- reject granularity < 0
-	- add per-timer locking where needed (only reset, bm_log_timer and MI really)
-	- cleanup (save the 'timer' value, instead of repeating 'bm_mycfg->tindex[i]')
-	- code nazi (add 'static' to all not exported functions)
-	- remove reset_timers, because it was neither exported in .h, not used internally
-	- updated documentation with new entries
-
-	Closes patch #2858251
-	Credits go to Stanislaw Pitucha.
-
-
-2009-09-14 22:18:03  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6121] :
-
-	- spell checking
-
-
-2009-09-14 22:11:57  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6120] :
-
-	- new "auto" mode for pike module - it will intercept and monitor the ip source of all sip messages, even if they are not valid from SIP syntax pov
-
-
-2009-09-14 18:31:08  Andrei Dragus <andreidragus at yahoo dot com> 
-	* [6118] :
-
-	Fixed fixup for get_profile_size
-
-
-
-2009-09-14 11:54:30  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6117] :
-
-	- new script callback for parse error - to be used by pike module for detecting floods based on junk text
-
-
-2009-09-14 11:05:56  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6116] :
-
-	- fixed warning of uninitialized var (startup done)
-	- fixed check on empty startup route (on no-fork case) 
-	    Closes patch #2858261
-	    Credits go to Stanislaw Pitucha
-
-
-2009-09-12 23:35:47  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6115] :
-
-	- fixed URI replacement when quotes are changed in hdr between rpl and req.
-
-	 Credits goto Thomas Gelf for finding and debugging the problem.
-
-
-2009-09-11 19:53:38  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6114] :
-
-	- fixed overwriting of the values of shvar() when more than one pv is evaluated in the same time. Like:
-	   if ($shvar(testa) == $shvar(testb))
-
-
-
-
-2009-09-11 19:49:34  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6113] :
-
-	- dlg_var() PV has its own value buffer to avoid overriding the value when the 2 dlg_var() s are evaluated in the same time . Like when doing:
-		if ($dlg_val(testa) == $dlg_val(testb))
-
-	  Thanks to Thomas Gelf for finding and reporting this nasty bug.
-
-
-2009-09-11 19:47:17  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6112] :
-
-	- new field to allow some pvar to set a buffer of their own
-
-
-2009-09-11 19:36:41  Anca Vamanu, <anca at voice-system dot ro> 
-	* [6111] :
-
-	- fixed problem with function parameters for callbacks when reply for Publish is received
-
-
-2009-09-10 14:39:45  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6109] :
-
-	- fixed docs for usleep() function  - the param is microsecs and not milisecs
-
-
-2009-09-10 14:04:10  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6107] :
-
-	- fixed documentation typo: I'll buy a BYE  ;-) 
-	  Credits go to Thomas Gelf 
-	  Closes bug #2851073
-
-
-2009-09-10 11:47:18  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6105] :
-
-	- enhanced the t_on_reply() behaviour: two kinds of on-reply route can be set:
-	   1) global - on on-reply route for the entire transaction (the previous behaviour)
-	   2) per-branch - if called from branch route, the reply route is only armed  for that particular branch; each branch can have a different on-reply branch
-
-
-	- fixed $T_branch_idx returned value - in branch route, the index was from 1 to n, while in reply route from 0 to n-1
-	  Changes:
-		-  $T_branch_idx rturned in both branch and reply route values from 0 to n-1
-		- in other routes, it returns NULL value
-		- documented the usage of  $T_branch_idx in onreply route.
-	  Credits for pointing this out go to Thomas Gelf
-
-
-
-
-2009-09-09 19:24:07  Anca Vamanu, <anca at voice-system dot ro> 
-	* [6103] :
-
-	- fixed not sending 487 reply on the other side (reported by Sergey Okhapkin)
-
-
-2009-09-09 17:03:55  Anca Vamanu, <anca at voice-system dot ro> 
-	* [6102] :
-
-	- added 2 new routes:
-		- startup_route : called only once when the server is started (usage example: load some data in cache)
-		- timer_route : a route that will be called at a configured interval of time; there can be more timer_routes defined; 
-			ex: timer_route[minute_route, 60] {
-			.. actions..
-			} - will be called every 60 seconds
-
-
-2009-09-09 15:17:03  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6100] :
-
-	- fixed memory leak on CPL interpreted setup when direction is OUTGOING: if not duplicated, the location values are not freed, so you must do it by hand.
-
-
-2009-09-09 14:46:49  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6099] :
-
-	- fixed memory leaks in time evalution code for DRouting and CPL modules
-
-
-2009-09-09 13:27:38  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6097] :
-
-	- fixed mem leak in DB ONLY mode
-
-
-2009-09-09 12:59:49  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6096] :
-
-	- fixed compile warning when EXTRA_DEBUG compile option is enabled.
-	  Reported by Ovidiu Sas
-
-
-2009-09-08 17:24:20  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6095] :
-
-	- better default values
-
-
-2009-09-08 13:54:54  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6093] :
-
-	- minor fixes related to prev commit
-
-
-2009-09-08 13:44:08  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6092] :
-
-	- added support from early dialogs (and provisional TO-tags).
-	- proper handling of CSEQ while using PRACK
-
-	TODO: handling of dialogs with multiple 200 OKs on different branches
-
-
-2009-09-07 19:29:35  Anca Vamanu, <anca at voice-system dot ro> 
-	* [6091] :
-
-	- updated the seas module to use the new structure of t_cancel_uac function
-
-
-2009-09-07 18:15:22  Razvan Pistolea <razvy000 at yahoo dot com> 
-	* [6090] :
-
-	Set default alternate_port to 3478.
-
-
-2009-09-07 17:13:36  Anca Vamanu, <anca at voice-system dot ro> 
-	* [6089] :
-
-	- fixed not sending forwarding 200 reply to Cancel (reported by Sergey Okhapkin and Ovidiu Sas)
-
-
-2009-09-07 17:11:10  Anca Vamanu, <anca at voice-system dot ro> 
-	* [6088] :
-
-	- extended t_uac_cancel to include de release param function
-
-
-2009-09-07 16:34:54  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6086] :
-
-	- fixed DB ONLY mode when multiple location like tables are used - this is related to the usage of statements from the module.
-
-
-2009-09-04 21:27:57  Razvan Pistolea <razvy000 at yahoo dot com> 
-	* [6085] :
-
-	Fixed socket order.
-
-
-2009-09-04 20:55:14  Ovidiu Sas <osas at voipembedded dot com> 
-	* [6084] :
-
-	Small improvement: check for network load only if there is at least one 'NETWORK' pipe.
-
-
-2009-09-04 15:51:40  Andrei Dragus <andreidragus at yahoo dot com> 
-	* [6083] :
-
-	Fixed minor bug
-
-
-
-2009-09-04 15:27:20  Razvan Pistolea <razvy000 at yahoo dot com> 
-	* [6082] :
-
-	Added new module - STUN server(rfc 3489) implementation.
-
-
-2009-09-04 15:25:22  Andrei Dragus <andreidragus at yahoo dot com> 
-	* [6081] :
-
-	Placed a warning in the doc for circular references.
-
-
-2009-09-04 15:19:34  Andrei Dragus <andreidragus at yahoo dot com> 
-	* [6080] :
-
-	Formated code to 80 chars
-
-
-2009-09-04 15:19:07  Anca Vamanu, <anca at voice-system dot ro> 
-	* [6079] :
-
-	- fixed bug: incremented array size
-
-
-2009-09-04 15:16:18  Andrei Dragus <andreidragus at yahoo dot com> 
-	* [6078] :
-
-	JSON module
-
-
-
-2009-09-04 15:15:18  Andrei Dragus <andreidragus at yahoo dot com> 
-	* [6077] :
-
-	Excluded json module from compilation
-
-
-
-2009-09-04 14:45:29  Anca Vamanu, <anca at voice-system dot ro> 
-	* [6076] :
-
-	- fixed retry if sending an update Publish without a body receives an error (fixed bug #2850025 reported by Angel Marin)
-
-
-2009-09-04 13:41:24  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6074] :
-
-	L_ERR -> L_NOTICE
-
-
-2009-09-04 12:45:16  Anca Vamanu, <anca at voice-system dot ro> 
-	* [6073] :
-
-	- fix bug in updating sequential cseqs (credits and many thnaks to Pazzo/Thomas)
-
-
-2009-09-03 12:37:19  Andrei Dragus <andreidragus at yahoo dot com> 
-	* [6072] :
-
-	Set properties for files.
-
-
-2009-09-03 12:34:07  Andrei Dragus <andreidragus at yahoo dot com> 
-	* [6071] :
-
-	Excluded db_http from list of default modules
-
-
-2009-09-03 12:31:37  Andrei Dragus <andreidragus at yahoo dot com> 
-	* [6070] :
-
-	DB_HTTP module added
-
-
-
-2009-09-02 17:30:06  Anca Vamanu, <anca at voice-system dot ro> 
-	* [6069] :
-
-	- fixed wrong check of not NULL value in pv_set function
-
-
-2009-09-02 16:50:21  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6068] :
-
-	- fix bug - avoid temporary usage of rt var which is use for keeping the  script state 
-
-
-2009-09-02 15:53:09  Irina-Maria Stanescu <ironmissy at gmail dot com> 
-	* [6067] :
-
-	- fixed some misleading typos
-
-
-2009-09-02 15:50:11  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6066] :
-
-	- fixed bug in allocating socket for new named script routes
-
-
-2009-09-02 15:42:08  Anca Vamanu, <anca at voice-system dot ro> 
-	* [6065] :
-
-	- commented out a debug message in pv_parse_spec function
-
-
-2009-09-02 15:37:57  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6063] :
-
-	- removed unused var
-
-
-2009-09-02 14:14:38  Anca Vamanu, <anca at voice-system dot ro> 
-	* [6062] :
-
-	- fixed wrong return value in case of error
-
-
-2009-09-02 13:34:42  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6060] :
-
-	- removed the dependency to Retry-After in 503 in order to do DNS based failure.  This was debeted on the sip-implementers mailing list and as the RFC3261 is a bit ambigous in that area, we prefer to have the common sense taking over.
-
-	See:
-	https://lists.cs.columbia.edu/pipermail/sip-implementors/2008-May/019351.html
-	https://lists.cs.columbia.edu/pipermail/sip-implementors/2008-May/019356.html
-
-	 
-
-
-2009-09-02 10:40:31  Anca Vamanu, <anca at voice-system dot ro> 
-	* [6059] :
-
-	- fixed a bug of wrong logical operators (reported by Ovidiu Sas)
-
-
-2009-09-01 22:45:33  Ovidiu Sas <osas at voipembedded dot com> 
-	* [6058] :
-
-	fix some DBG messages
-
-
-2009-09-01 19:58:22  Anca Vamanu, <anca at voice-system dot ro> 
-	* [6057] :
-
-	- added context meaning to pseudovariables - a new token added in front of the pv type name that specifies the context where the pv should be taken from
-	- the implementation is made general - with a mechanism of registering pv context functions
-	- for now there are 2 pv contexts: reply and request, registered by the tm module
-		- ex: referencing $(<request>ru) from a reply route will get the Request-URI from the request
-			      the <reply> context can be used from failure route to access information from the reply
-				  - changed the pv getf function and added a wrapper function for pv setf function to call the context getter function before
-				  - changed the modules that used the pv set and get functions directly to use the wrappers (all future usages should use this wrappers and not the functions directly)
-
-
-2009-09-01 18:57:56  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6056] :
-
-	- fixed small bug in yacc for named routes
-
-
-2009-09-01 01:45:55  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6055] :
-
-	- oracle scheme updated too :D
-
-
-2009-09-01 01:45:08  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6054] :
-
-	- CPL DB scheme updated as the script route field in the rules field is not a number but a string.
-
-
-2009-09-01 01:42:05  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6053] :
-
-	- module that trigger script routes adapted to the changes for named routes.
-
-
-2009-09-01 01:40:12  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6052] :
-
-	- added support for script routes with string name :
-	    route[relay] {...}
-
-	    route{...; route(relay); ....}
-
-	- the changes are fully backward compatible; routes with number ID can be used as so far, as they perfectly map over the more generic implementation of the routes with names (ID is after all a string name).
-
-	- changes do apply to all types of routes.
-
-	Based on an original patch provided by Stanislaw Pitucha.
-	Closes patch 2846130
-
-
-2009-08-31 13:23:33  Anca Vamanu, <anca at voice-system dot ro> 
-	* [6050] :
-
-	- fixed wrongly deleting the b2b record when a request was canceled and 487 reply was received (reported by Sergey Okhapkin, bug #2846849)
-
-
-2009-08-31 13:12:25  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6049] :
-
-	- fixed docs (some functions and params had wrong names).
-	  Credits go to ASHWINI NAIDU for reporting this.
-
-
-2009-08-30 20:16:50  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6047] :
-
-	- docs updated - "db_url" is by default NULL
-
-
-2009-08-30 20:13:08  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6046] :
-
-	removed the "db_uri" module as now merged with "uri" module
-
-
-2009-08-30 20:09:47  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6045] :
-
-	Trivial fixes:
-	- default bm_granularity changed to 100 (to match documentation)
-	- time difference calculation fix
-
-	Credits go to Stanislaw Pitucha
-	Closes patch 2846288.
-
-
-
-2009-08-28 15:35:59  Anca Vamanu, <anca at voice-system dot ro> 
-	* [6042] :
-
-	- if an indialog Subscribe does not match a known dialog, send the Subscribe to presence server (reported by Juha Heinanen)
-
-
-2009-08-28 14:33:40  Anca Vamanu, <anca at voice-system dot ro> 
-	* [6040] :
-
-	- revert change made in commit rev #4944: return to_presence code for Subscribe messages that contain Supported:eventlist header but for which a list definition is not found
-
-
-2009-08-28 08:50:42  Di-Shi Sun <di-shi at transnexus dot com> 
-	* [6039] :
-
-	Fixed format of diversion host.
-
-
-2009-08-28 07:08:39  Di-Shi Sun <di-shi at transnexus dot com> 
-	* [6038] :
-
-	Updated release notes.
-
-
-2009-08-28 07:05:18  Di-Shi Sun <di-shi at transnexus dot com> 
-	* [6037] :
-
-	1. Fixed OSP token header problem.
-	2. Added Diversion header support.
-
-
-2009-08-27 15:55:28  Irina-Maria Stanescu <ironmissy at gmail dot com> 
-	* [6034] :
-
-	- fixes bug item #2844970 (reported by Flavio Goncalves)
-
-
-2009-08-27 14:47:38  Irina-Maria Stanescu <ironmissy at gmail dot com> 
-	* [6033] :
-
-	remove duplicated module in DB creation list
-
-
-2009-08-27 13:03:31  Anca Vamanu, <anca at voice-system dot ro> 
-	* [6032] :
-
-	- added PRACK in the list of accepted methods (reported by Ovidiu Sas)
-
-
-2009-08-27 12:59:49  Anca Vamanu, <anca at voice-system dot ro> 
-	* [6031] :
-
-	- added one new header to be passed from one side to the other - RSeq and fixed a bug in the implementation(reported by Ovidiu Sas)
-
-
-2009-08-27 01:04:18  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6030] :
-
-	- compile fixes on seas module (related to the previous commit)
-
-
-2009-08-26 23:56:38  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6029] :
-
-	- enable back default compiling of seas module as its code should be compliant with all UNIX distros
-
-
-2009-08-26 23:53:50  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6028] :
-
-	- replaced non-standard dprintf with fprintf.
-	  
-	  Based on a patch submitted by Sergio Gutierrez.
-
-
-2009-08-26 14:10:39  Anca Vamanu, <anca at voice-system dot ro> 
-	* [6027] :
-
-	- take the destination address from RURI (reported by Ovidiu Sas)
-
-
-2009-08-25 17:17:14  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6024] :
-
-	- snmpstats module must also get the UL_DELETE events, otherwise mem leak is generated in the x-agent process.
-
-	- more performant build of the records (only on chunk og shm versus 3 of them).
-
-
-2009-08-25 16:43:48  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6023] :
-
-	- fixed design bug in snmp interface. The USRLOC events (REGISTER and UNREGISTER) are sent to the x-agent process via an interprocess communication list, the consumer being exclusivly the x-agent process, when URLSOC related variables are fetched (via SNMP) - this may lead to shsm meory exhoustion if threre is no SNMP query on opensips -> no consumer on the interprocess communication list, while usrloc keeps pushing events.
-
-
-
-2009-08-25 15:36:15  Anca Vamanu, <anca at voice-system dot ro> 
-	* [6022] :
-
-	- send provisional reply 100 Trying when Invite request is received
-
-
-2009-08-25 15:35:33  Irina-Maria Stanescu <ironmissy at gmail dot com> 
-	* [6021] :
-
-	- temporary additional fixups for obsolete functions added
-	- revised documentation
-
-
-
-2009-08-25 15:20:01  Anca Vamanu, <anca at voice-system dot ro> 
-	* [6020] :
-
-	- copied more headers in the sent out messages: Require, Proxy-Require, Session-Expires, Min-SE (reported by Ovidiu Sas)
-
-
-2009-08-25 13:26:51  Irina-Maria Stanescu <ironmissy at gmail dot com> 
-	* [6019] :
-
-	- temporary additional fixups for obsolete functions
-	- revised readme
-
-
-2009-08-25 11:29:22  Anca Vamanu, <anca at voice-system dot ro> 
-	* [6018] :
-
-	- fixed not checking if the result of node search is different than NULL (reported by Ovidiu Sas)
-
-
-2009-08-24 14:40:56  Iulia Buble <iulia at voice-system dot ro> 
-	* [6017] :
-
-	- osipsconsole: modified code due to 5evra's observation.
-
-	- opensipsdbctl.base added nathelper module to STANDARD_MODULES array
-
-
-
-2009-08-23 15:11:08  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6016] :
-
-	setting the dialog creating flag is no longer mandatory as you can also create the dialog via "create_dialog" function.
-
-
-2009-08-23 00:45:06  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6015] :
-
-	- applied patch to extends the idea of the advertised_address and advertised_port parameters so that it is possible to bind such an address to each listen= statement.
-
-	Syntax-wise, it works like this:
-
-	listen=[proto:]host[:port][ AS host[:port]]
-
-	Close Patch #2706135  (see https://sourceforge.net/tracker/?func=detail&aid=2706135&group_id=232389&atid=1086412)
-
-	Credits go to Phil D'Amore.
-
-
-2009-08-23 00:41:41  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6014] :
-
-	- got rid of the gcc compile warning
-
-
-2009-08-22 23:33:44  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6013] :
-
-	- TO changing support added
-
-
-2009-08-22 23:27:17  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6012] :
-
-	- preparing for TO chaning support
-
-
-2009-08-22 23:26:17  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6011] :
-
-	- adding support for TO changing
-
-
-2009-08-21 18:13:25  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6009] :
-
-	- fixed bogus computation of GW URI.
-	- fixed double alloc.
-
-	Closes bug #2841905.
-
-
-2009-08-21 17:28:33  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6007] :
-
-	- fixed DNS-based failover -> do not add the destination as branh, but directly into the RURI.
-
-
-2009-08-21 15:56:32  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6006] :
-
-	- added nathelper table as default table to be created.
-
-	  Closes 2841503.
-
-
-2009-08-21 15:40:40  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6004] :
-
-	- fixed some text in logs.
-
-
-2009-08-21 12:01:06  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6003] :
-
-	- fixed static compiling
-
-
-2009-08-21 10:17:12  Di-Shi Sun <di-shi at transnexus dot com> 
-	* [6002] :
-
-	Fixed newuri with NP issue.
-
-
-2009-08-20 19:12:48  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6000] :
-
-	- fixed getting the size of dialog profile - do not count dialogs in DELETED state.
-
-
-2009-08-20 18:57:34  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5999] :
-
-	 fixed C code syntax - follow C90!
-
-
-2009-08-20 18:45:34  Ovidiu Sas <osas at voipembedded dot com> 
-	* [5998] :
-
-	remove bogus 'dot' after echo
-
-
-2009-08-20 15:06:21  Anca Vamanu, <anca at voice-system dot ro> 
-	* [5997] :
-
-	- added macro definition needed by nameaddr.param transformation
-
-
-2009-08-20 12:26:04  Anca Vamanu, <anca at voice-system dot ro> 
-	* [5996] :
-
-	- added new function: avp_insert
-		- this function inserts a value to an avp set at a certain position
-
-
-2009-08-20 12:07:07  Anca Vamanu, <anca at voice-system dot ro> 
-	* [5995] :
-
-	- added two new functions to be used on sets of values:
-		- set_count(_pvar_name_): returns the number of values of the pseudovariable
-		- set_select_weight(_pvar_name_): selects an element from the set formed by the values of the pseudovariable; the selection algorithm is the genetic algorith roulette-wheel selection; it return the index of the element
-
-
-
-2009-08-20 11:40:54  Anca Vamanu, <anca at voice-system dot ro> 
-	* [5994] :
-
-	- added 2 new operations
-		- delete the pseudovariable at a certain index:   pvar[_index_]=NULL
-		- overwrite the value of a pseudovariable at a certain index: pvar[_index_]=_value_
-
-
-2009-08-20 11:15:42  Anca Vamanu, <anca at voice-system dot ro> 
-	* [5993] :
-
-	- changed the implementation of nameaddr transformation and added a new operation that extracts a costum parameter
-
-
-2009-08-20 11:02:27  Di-Shi Sun <di-shi at transnexus dot com> 
-	* [5992] :
-
-	1. Added "user=phone" parameter option.
-	2. Added number portability support.
-	3. Added SIP Diversion support.
-	4. Updated module_exports.
-
-
-2009-08-20 10:28:06  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5991] :
-
-	- new core parmeter "db_version_table" added - this allows configuration of the version table.
-	  There are cases when a single DB contains tables from 2 versions of OpenSIPS, so distinct version tables are needed.
-
-
-2009-08-20 09:58:17  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5990] :
-
-	- mem_log split in mem_log (for debug log during mallog/free/realloc ops) and mem_dump (for dumping the mem status at runtime/shutdown).
-	  This will help in debugging memory leaks - you can request only the mem dumping without actually getting all the debugs during mem ops.
-
-	  For backward compatibility, setting mem_leg will automatically set to the same value the mem_dump.
-
-	  To get distinct setting, do:
-
-		mem_log = 6; # do not report mem logs (report them as debugs)
-		mem_dump = 0; # report mem dumps (report on ERR level)
-
-
-2009-08-19 20:57:59  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5989] :
-
-	- updated the usage of TAGS from the dialog structure
-
-
-2009-08-19 20:54:44  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5988] :
-
-	- dialog module put back on floating line :D...ready to extend the early dialog support.
-
-
-2009-08-19 13:29:14  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5987] :
-
-	- fixed non-static decalaration of the module statistics - this produces linking confusion when using static modules.
-
-
-2009-08-19 11:16:33  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5986] :
-
-	- reverted bogus commit
-
-
-2009-08-19 11:08:19  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5985] :
-
-	- more fixing in static linking of some module into opensips core (buit-in modules)
-
-
-2009-08-19 10:23:59  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5984] :
-
-	- updated to reflect last changes on dialog module
-
-
-2009-08-19 10:10:44  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5982] :
-
-	- better docs
-	  Closes bug #2836978.
-	  Credits got to Flavio Goncalves
-
-
-2009-08-19 10:06:54  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5981] :
-
-	- fixed compile warning
-
-
-2009-08-19 10:05:41  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5980] :
-
-	- fixed missing field in the module expot structure
-	  Closes bug 2840020
-	  Credits go to Norm Brandinger
-
-
-2009-08-18 23:10:22  Ovidiu Sas <osas at voipembedded dot com> 
-	* [5979] :
-
-	update props
-
-
-2009-08-18 23:05:06  Ovidiu Sas <osas at voipembedded dot com> 
-	* [5978] :
-
-	Adding triple a files to the list of 'sources'.
-
-
-2009-08-18 17:10:52  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5977] :
-
-	- removed obsoleted modules from the exclude list
-
-
-2009-08-18 16:35:23  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5976] :
-
-	- the MODULE_VERSION moved inside the module_export structure to avoid symbol re-definition when statically linking some modules.
-
-
-2009-08-18 13:59:57  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5975] :
-
-	- fixed static linking of some modules
-
-
-2009-08-18 10:31:15  Irina-Maria Stanescu <ironmissy at gmail dot com> 
-	* [5974] :
-
-	- new header needed by the module
-
-
-2009-08-17 19:20:46  Irina-Maria Stanescu <ironmissy at gmail dot com> 
-	* [5973] :
-
-	- removed obsolete module, functionality is now integrated in the uri module
-
-
-2009-08-17 19:19:53  Irina-Maria Stanescu <ironmissy at gmail dot com> 
-	* [5972] :
-
-	- removed obsolete module, functionality is now integrated in the uri module
-
-
-2009-08-17 19:18:52  Irina-Maria Stanescu <ironmissy at gmail dot com> 
-	* [5971] :
-
-	- integrates functionality of uri_db and uri_radius (both obsolete now)
-
-
-2009-08-17 19:09:26  Irina-Maria Stanescu <ironmissy at gmail dot com> 
-	* [5970] :
-
-	- removed obsolete module, functionality is now integrated in the group module
-
-
-2009-08-17 19:03:14  Irina-Maria Stanescu <ironmissy at gmail dot com> 
-	* [5969] :
-
-	- integrates the functionality of group_radius (now obsolete) ported to the AAA API
-
-
-2009-08-17 18:07:56  Irina-Maria Stanescu <ironmissy at gmail dot com> 
-	* [5968] :
-
-	- removes avp_radius (now obsolete), auth_radius & peering (don't depend of radiusclient library) from the excluded modules
-
-
-2009-08-17 18:05:34  Irina-Maria Stanescu <ironmissy at gmail dot com> 
-	* [5967] :
-
-	-removed obsolete module, the functionality is now integrated in the aaa_radius module
-
-
-2009-08-17 18:00:47  Irina-Maria Stanescu <ironmissy at gmail dot com> 
-	* [5966] :
-
-	-remove radius library dependency
-
-
-2009-08-17 17:57:56  Irina-Maria Stanescu <ironmissy at gmail dot com> 
-	* [5965] :
-
-	-remove radius library dependency
-
-
-2009-08-17 17:55:13  Irina-Maria Stanescu <ironmissy at gmail dot com> 
-	* [5964] :
-
-	- module ported to AAA API
-
-
-2009-08-17 17:44:10  Irina-Maria Stanescu <ironmissy at gmail dot com> 
-	* [5963] :
-
-	radius to AAA API migration
-
-2009-08-17 17:43:04  Irina-Maria Stanescu <ironmissy at gmail dot com> 
-	* [5962] :
-
-	radius to AAA API migration
-
-2009-08-17 17:42:21  Irina-Maria Stanescu <ironmissy at gmail dot com> 
-	* [5961] :
-
-	radius to AAA API migration
-
-2009-08-17 17:40:37  Irina-Maria Stanescu <ironmissy at gmail dot com> 
-	* [5960] :
-
-	radius to AAA API migration
-
-2009-08-17 17:39:59  Irina-Maria Stanescu <ironmissy at gmail dot com> 
-	* [5959] :
-
-	radius to AAA API migration
-
-2009-08-17 17:26:57  Irina-Maria Stanescu <ironmissy at gmail dot com> 
-	* [5958] :
-
-	- acc module adapted for the generic AAA API
-	- new peering README
-
-
-2009-08-17 16:19:47  Anca Vamanu, <anca at voice-system dot ro> 
-	* [5957] :
-
-	- initialized body structure to NULL values, reported by Sergey Okhapkin
-
-
-2009-08-17 09:44:54  Anca Vamanu, <anca at voice-system dot ro> 
-	* [5956] :
-
-	- fixed unsafe access to content_length struct sip_msg access (closes bug #2838142 , reported by Sergey Okhapkin )
-
-
-2009-08-14 17:58:33  Anca Vamanu, <anca at voice-system dot ro> 
-	* [5955] :
-
-	- fixed bug: tm cell remained referenced for received initial requests
-	- fixed problems when CANCEL request was received
-
-
-2009-08-14 17:36:12  Anca Vamanu, <anca at voice-system dot ro> 
-	* [5954] :
-
-	- added function to reference a TM cell to the exported API
-
-
-2009-08-14 13:50:52  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5953] :
-
-	t_reply_with_body() does not unref the transaction internally as the concept is bogus; the trasaaction is received as param and the function has no idea about the number of refs it needs to do
-
-
-2009-08-14 12:58:29  Irina-Maria Stanescu <ironmissy at gmail dot com> 
-	* [5952] :
-
-	adapted for the generic AAA API
-
-
-2009-08-14 11:30:27  Irina-Maria Stanescu <ironmissy at gmail dot com> 
-	* [5951] :
-
-	1. New functions for custom Radius queries
-	2. Automatic handling of SIP-AVPs from Radius replies
-	3. Small changes in the AAA API interface
-
-
-2009-08-14 10:46:51  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5950] :
-
-	- not having a contact is not an error, so do not report on err level.
-
-
-2009-08-13 14:12:07  Razvan Pistolea <razvy000 at yahoo dot com> 
-	* [5948] :
-
-	Fixed big bug.
-	Solution: allocate at most once private data per process.
-
-
-2009-08-13 11:37:25  Anca Vamanu, <anca at voice-system dot ro> 
-	* [5947] :
-
-	- fixed bug when receiving ACK for negative replies (reported by Saúl Ibarra)
-
-
-2009-08-12 16:22:55  Anca Vamanu, <anca at voice-system dot ro> 
-	* [5946] :
-
-	- excluded b2b_logic module from list of modules compiled by default sice it requires library libxml2-dev
-
-
-2009-08-12 12:09:59  Anca Vamanu, <anca at voice-system dot ro> 
-	* [5944] :
-
-	- replaced worng DBG macro usage with LM_DBG(reported by Saul Ibarra )
-
-
-2009-08-07 16:47:52  Anca Vamanu, <anca at voice-system dot ro> 
-	* [5943] :
-
-	- set the same logic for TERMINATED previous status as for ACTIVE previous status, when watchers is deleted from pres-rules, the status will switch to TERMINATED, reason deactivated.
-
-
-2009-08-07 14:55:06  Anca Vamanu, <anca at voice-system dot ro> 
-	* [5942] :
-
-	- changed status to terminated, reason "deactivated" if previous status was active and no rules were found for the watcher
-
-
-2009-08-06 21:39:03  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5940] :
-
-	- fixed bug in extracting the body - the CT hdr may be missing
-
-
-2009-08-06 18:44:52  Anca Vamanu, <anca at voice-system dot ro> 
-	* [5939] :
-
-	- deleted status record from watchers table when status moves to 'terminated' reason 'deactivated' (followed the suggestion of Inaki Bas Castillo give in bug #2822319)
-
-
-2009-08-06 12:05:27  Anca Vamanu, <anca at voice-system dot ro> 
-	* [5937] :
-
-	- fixed some locking problems (reported by Piotr Sobolewski)
-
-
-2009-08-05 14:20:47  Razvan Pistolea <razvy000 at yahoo dot com> 
-	* [5936] :
-
-	corrected return code from use_table
-
-
-2009-08-05 12:45:10  Razvan Pistolea <razvy000 at yahoo dot com> 
-	* [5935] :
-
-	fixed: "db_virtual shutdown issue - ID: 2832223"
-
-
-2009-08-05 12:39:14  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5934] :
-
-	- print Status and Call-Id to failed radius accounting request. The purpose is to be able to track such failed request.
-
-	  Closes patch #2828870
-	  Credits go to Alex Massover & Dror Wald
-
-
-2009-08-04 16:50:27  Anca Vamanu, <anca at voice-system dot ro> 
-	* [5930] :
-
-	- updated the function that parsed auid to include pidf-manipulation and resource-list (reported by Inaki Baz Castillo)
-
-
-2009-08-04 15:52:06  Anca Vamanu, <anca at voice-system dot ro> 
-	* [5929] :
-
-	- fixed considering to and from headers already parsed (crash reported by Piotr Sobolewski)
-
-
-2009-08-04 13:45:10  Anca Vamanu, <anca at voice-system dot ro> 
-	* [5928] :
-
-	- fixed returning 0 from newly added script function(reported by Piotr Sobolewski <sobolewski@gmail.com>)
-
-
-2009-08-03 13:30:18  Anca Vamanu, <anca at voice-system dot ro> 
-	* [5927] :
-
-	- added new feature: a signaling B2BUA implementation
-
-
-2009-08-03 13:14:57  Anca Vamanu, <anca at voice-system dot ro> 
-	* [5926] :
-
-	- fixed bug when sending CANCEL - tm structure remained referenced
-	- added a new function in exported tm api that allows getting the pointer to the last local transaction.
-
-
-2009-07-31 10:29:20  Anca Vamanu, <anca at voice-system dot ro> 
-	* [5925] :
-
-	- don't create a transaction for locally generated ACK
-
-
-2009-07-30 18:54:24  Anca Vamanu, <anca at voice-system dot ro> 
-	* [5924] :
-
-	- introduced a locking mechanism to prevent sending a new Publish before the reply for a previous one is received (thanks to Piotr Sobolewski <sobolewski at gmail dot com> for help with debugging)
-
-
-2009-07-30 16:35:25  Razvan Pistolea <razvy000 at yahoo dot com> 
-	* [5923] :
-
-	Extended DB API to pass the db_url to the bind function.
-	Needed in the db_virtual for building the capability bitmask.
-
-
-2009-07-30 11:53:07  Razvan Pistolea <razvy000 at yahoo dot com> 
-	* [5922] :
-
-	Added url index(j) and set index(i) for MI function: db_get.
-
-
-2009-07-30 10:46:05  Razvan Pistolea <razvy000 at yahoo dot com> 
-	* [5921] :
-
-	Rebuild from db_virtual_admin.xml: "define set1 PARALLEL" 
-
-
-2009-07-30 10:44:49  Razvan Pistolea <razvy000 at yahoo dot com> 
-	* [5920] :
-
-	Corrected db_urls declaration style: "define set1 PARALLEL" 
-
-
-2009-07-29 20:47:19  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5918] :
-
-	- fixed proper free at destroy time of the inter proc buffers.
-	Closes bug #2828969.
+	Closes patch #2887955
 	Credits go to Christophe Sollet.
 
 
-2009-07-29 19:12:14  Razvan Pistolea <razvy000 at yahoo dot com> 
-	* [5917] :
+2009-12-12 12:35:39  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6426] :
 
-	Adding a new module: db_virtual. A virtual db will expose the same front db api however, it will be backed by many real db.
+	backport from trunk (rev #6425):
 
+	fixed mimimum val for rtpproxy_timeout -> secs to milisecs -> allows timeouts less than one sec.
 
-2009-07-28 18:22:25  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5916] :
+	closes patch #2893189
+	credits go to Christophe Sollet.
 
-	- fixed setting default values for SIP port and proto when greaping for a socket; the function ignore the port / proto if zero, but the parsing functions set them to 0 if they do not exist (in uris).
 
-	  Closes bug id #2827960
-	  Credits go to Peter Baer.
+2009-12-12 11:39:19  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6424] :
 
+	backport from trunk (rev 6423):
+	- fixed issue with avp printing buffer being too small -> new config param to control the size:
+		Closes patch #2911666
+		Credits go to Norm Brandinger
 
-2009-07-28 16:32:14  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5915] :
 
-	- fixed bug in removing the dialogs from old profile when doing LB failover
-	  Reported by Alec Fett
+2009-12-11 21:15:07  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6422] :
 
+	- added man pages for debian 
+	  Closes patch 2902164.
+	  Credits go to Alejandro Rios
 
-2009-07-23 12:22:02  Andrei Dragus <andreidragus at yahoo dot com> 
-	* [5914] :
 
-	Added methods for sdp codec manipulation
+2009-12-11 21:02:48  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6419] :
 
+	Backport from trunk (rev #6418):
 
+	The change adds the following to the error messages produced:
 
-2009-07-23 11:37:22  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5913] :
+	1. The size of the message that caused the overflow to happen
+	2. The size of the receiving buffer
 
-	- load_balancer() function accepts the group parameter via PVs also.
+	Closes patch #2911665
+	Credits go to Norm Brandinger
 
 
-2009-07-22 21:09:27  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5912] :
+2009-12-11 16:45:27  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6416] :
 
-	- fixed bogus module paramerter name in docs
-
-
-2009-07-22 14:44:22  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5911] :
-
-	- fixed bug in extracting FROM / TO from received replies.
-	  Reported by Thomas Gelf.
-
-
-2009-07-21 17:20:58  Irina-Maria Stanescu <ironmissy at gmail dot com> 
-	* [5909] :
-
-
-	excludes aaa_radius module
-
-
-
-2009-07-21 16:56:23  Irina-Maria Stanescu <ironmissy at gmail dot com> 
-	* [5908] :
-
-	Radius implementation for AAA API
-
-
-
-2009-07-21 16:11:06  Irina-Maria Stanescu <ironmissy at gmail dot com> 
-	* [5907] :
-
-	Uploading new AAA API
-
-
-
-2009-07-21 12:05:29  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5906] :
-
-	- README files updated (as the REVISION and DATE SVN props are now properly set)
-
-
-2009-07-21 11:58:44  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5904] :
-
-	- fixed bug in iterating through an array of integers for checking the flags.
-	  Reported by Bobby Smith
-
-
-2009-07-21 11:49:04  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5903] :
-
-	- db-api documentation added
-
-
-2009-07-21 10:50:39  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5902] :
-
-	- svn props updated
-
-
-2009-07-21 10:45:05  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5901] :
-
-	-SVN props and IDs updated
-
-
-2009-07-20 19:41:39  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5898] :
-
-	- fixed improper len calculation for postgres NULL token.
-	  Closes bug #2823259
-
-
-2009-07-20 17:52:34  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5897] :
-
-	- fixed compiling with or without PKG_MALLOC definition
-
-
-2009-07-20 17:37:03  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5896] :
-
-	- fixed retransmiassion for local generated ACKs..
-	- more SVN props and IDs updated
-
-
-2009-07-20 17:11:05  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5895] :
-
-	- fixed the types of variables that at accepted as input and output.
-	- svn props updated
-
-
-2009-07-20 16:04:45  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5894] :
-
-	- svn props and Ids updated
-
-
-2009-07-20 15:58:52  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5893] :
-
-	- fixed bogus len calculation of the sdp cloaning -> mem overflow.
-
-
-2009-07-20 15:53:09  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5891] :
-
-	- updating SVN props and IDs
-
-
-2009-07-20 14:41:31  Anca Vamanu, <anca at voice-system dot ro> 
-	* [5890] :
-
-	- added display name information in the dialoginfo body (reported by elm0 at #opensips)
-
-
-2009-07-20 13:12:01  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5889] :
-
-	- fixed bug in $ct[] when value is START. As the regexp comps from script do change the value of a variable (to make it null terminated), the scritp var cannot return a statis string (as $ct did for STAR value so far).
-	  Reported by Thomas Gelf.
-
-
-2009-07-16 12:52:49  Anca Vamanu, <anca at voice-system dot ro> 
-	* [5885] :
-
-	-changed the way sphere condition is procesed, now if no sphere definition is found in the published body, the rule is not matched, as oposed to the way it was until now when it was matched. (Ianki Baz Castillo reported that it did not work with eyebeam)
-
-
-
-2009-07-15 22:48:13  Iulia Buble <iulia at voice-system dot ro> 
-	* [5881] :
-
-	Load Balancer module added to core modules definition.
-
-
-2009-07-15 22:16:34  Iulia Buble <iulia at voice-system dot ro> 
-	* [5878] :
-
-	Bug fixed, regarding id_seq in postgres backend. The id was not being created for dr_gateways and dr_rules tables.
-
-
-2009-07-15 17:22:08  Andrei Dragus <andreidragus at yahoo dot com> 
-	* [5869] :
-
-	doc updated
-
-
-2009-07-15 17:21:08  Andrei Dragus <andreidragus at yahoo dot com> 
-	* [5868] :
-
-	docs update
-
-
-
-2009-07-15 13:23:55  Andrei Dragus <andreidragus at yahoo dot com> 
-	* [5867] :
-
-	removed bogus doc files
-
-
-2009-07-15 13:21:26  Andrei Dragus <andreidragus at yahoo dot com> 
-	* [5866] :
-
-	Documentation for the memcached module.
-
-
-2009-07-15 13:11:14  Andrei Dragus <andreidragus at yahoo dot com> 
-	* [5865] :
-
-	Svn-props updated
-
-
-2009-07-15 13:09:03  Andrei Dragus <andreidragus at yahoo dot com> 
-	* [5864] :
-
-	Exclude memcached module from default compiling.
-
-
-2009-07-15 13:07:16  Andrei Dragus <andreidragus at yahoo dot com> 
-	* [5863] :
-
-	Documentation for the memcached module.
-
-
-2009-07-15 13:06:05  Andrei Dragus <andreidragus at yahoo dot com> 
-	* [5862] :
-
-	This is the memcached module used to connect to memcached servers via 
-	the libmemcached API. It may be used via the memcache system API.
-
-
-2009-07-15 12:51:04  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5860] :
-
-	-in REALTIME mode, we need DB connection in processes created by modules (like the MI processes where the dlg_end_dlg function is run).
-
-
-2009-07-15 12:41:22  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5858] :
-
-	-fixed improper initialization of tmcb_param structure - memset is needed.
-	 Credits go to John Riordan.
-	 Closes patch #2821517
-
-
-2009-07-15 12:27:29  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5856] :
-
-	- fixed parsing the parameters of the event - previous parsing was simply dealing only with the first param, ignoring the rest of them.
-	  Credits go to Tiberius DULUMAN.
-	  Closes bug ID 2820717.
-
-
-2009-07-15 11:30:12  Andrei Dragus <andreidragus at yahoo dot com> 
-	* [5855] :
-
-Added an extra void* pointer in the structure used for registration of 
-	the memcache systems. Also updated all the signatures of the registered 
-	methods (fetch,remove,store) to be called with the extra parameter.
-
-
-2009-07-14 16:18:36  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5853] :
-
-	- fixed bug in testing the val of the found transaction
-
-
-2009-07-10 17:30:58  Iulia Buble <iulia at voice-system dot ro> 
-	* [5852] :
-
-	Postgres bug fixed, regarding concat function.
-
-
-
-2009-07-10 12:11:23  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5850] :
-
-	- lb_list prints the group of each destination
-
-
-2009-07-09 12:01:30  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5848] :
-
-	- fixed teting of return code of t_relay in cpl module.
-	  Patch contributed by John Riordan
-	  Closes patch #2818693
-
-
-2009-07-09 07:11:28  Dan Pascu <dan at ag-projects dot com> 
-	* [5847] :
-
-	Rollback changes made in revisions #5783 and #5784
-
-	Those changes do not solve any problem, they only hide the error by not
-	sending anymore keepalive messages to the affected endpoints. In reality
-	contact->uri should always be sip:IP:port so no extra checks are required.
-	The port is always present even when default and the uri is built from the
-	msg->rcv structure so it doesn't depend on any user setting from the script.
-
-
-
-2009-07-08 22:47:03  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5846] :
-
-	- docs updated
-
-
-2009-07-08 14:42:28  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5845] :
-
-	fixes related to the latest additions
-
-
-2009-07-07 20:38:14  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5844] :
-
-	- fixed how the NULL values are handled - use Postgres dedicated fucntions for this.
-	  Based on a patch sent by Ruslan Bukin.
-	  Closes patch #2817560.
-
-
-2009-07-07 12:53:08  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5843] :
-
-	- fixed bug introduced with the last enhancements
-
-
-2009-07-07 10:50:21  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5841] :
-
-	- fixed test condition in function call
-
-
-2009-07-07 10:25:33  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5840] :
-
-	- updated DB schema for Load-Balancer module (one more column added and version increased)
-
-
-2009-07-07 10:17:49  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5839] :
-
-	- use the global "startup_time" var instead of local ones 
-
-
-2009-07-06 19:28:37  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5838] :
-
-	- added support for destination probing and for disabled for destinations
-	- new lb_disable() script function
-	- new lb_status MI command
-	- new probing_interval, probing_method, probing_from, probing_reply_codes module parameters added
-
-	TODO: testing and docs
-
-
-2009-07-06 19:25:34  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5837] :
-
-	- removed function that was moved into core
-
-
-2009-07-06 19:23:26  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5836] :
-
-	- generic function parse_reply_codes() moved from dispathcer into core
-
-
-2009-07-06 19:06:57  Anca Vamanu, <anca at voice-system dot ro> 
-	* [5835] :
-
-	- changed the was dialoginfo publications are triggered. Now for triggering dialoginfo publications it is needed to call a function - dialoginfo_set for each INVITE which starts a dialog for which you want to have state published. This is better than the old way when the dialog publications were done for each dialog for which dialog_create function from dialog module was called.
-
-
-2009-07-06 16:06:15  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5834] :
-
-	- export also the unset_profile() function
-
-
-2009-07-06 13:19:28  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5833] :
-
-	- new PV - $TS - startup timestamp
-
-
-2009-07-06 13:09:04  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5832] :
-
-	- startup timestamp is global var (need access from other parts of code)
-
-
-2009-07-03 17:53:41  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5831] :
-
-	- $br replaced with $branch 
-
-
-2009-07-03 15:09:00  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5830] :
-
-	- more flexible definition for pvars - you can have 2 pvars, with the same name, but one with and one without inner name, like:
-
-	   $branch   and    $branch(uri)  
-
-
-
-
-2009-07-02 22:05:23  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5829] :
-
-	- fixed STAR Contact header handling in $ct.fields() pvar
-
-
-2009-07-02 21:28:24  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5828] :
-
-	- put back s prototype removef by mistake
-
-
-2009-07-02 21:23:36  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5827] :
-
-	- fixed and extended the parse error reporting.
-
-
-2009-07-02 18:27:49  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5826] :
-
-	- report in error_route all hdr parsing errors
-
-
-2009-07-01 17:41:59  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5825] :
-
-	-fixed usage of improper fixup function for registered() fuction
-	 Reported by Uwe Kastens 
-
-
-2009-07-01 12:55:26  Anca Vamanu, <anca at voice-system dot ro> 
-	* [5823] :
-
-	- fixed union field usage
-
-
-2009-07-01 12:28:34  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5821] :
-
-	- fixed overflow of a static buffer
-	  Reported by Peter Nixon.
-
-
-2009-07-01 12:23:02  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5819] :
-
-	- applied patch #2814800 - The create callbacks are being called again and some reinitialization is being done on dialogs loaded from db upon handling the next in-dialog request.
-	  Credits go to John Riordan
+	backport from trunk (rev #6322):
+	- fixed crash when the all the weights are zero.
 	  
+	  Closes bug ID 2890649.
+	  Reported by Urtho.
 
 
-2009-06-30 16:14:44  Iulia Buble <iulia at voice-system dot ro> 
-	* [5816] :
+2009-12-11 16:39:42  Irina-Maria Stanescu <istanescu at opensips dot org> 
+	* [6415] :
 
-	 - Fixed path problem.
-	 - Issue submitted by sacoo - Feature Requests item #2795297.
+	backport from trunk (rev #6414)
+	- now the radius_config parameter must be set only if custom request functions are used
 
 
-2009-06-30 13:37:11  Iulia Buble <iulia at voice-system dot ro> 
-	* [5814] :
+2009-12-11 13:42:50  Andrei Dragus <adragus at opensips dot org> 
+	* [6409] :
 
-	- port parameter added to postgres database connection string.
-	* to be set in osipsconsolerc
+	Backported new version of memory allocator
 
 
+2009-12-11 13:14:52  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6407] :
 
-2009-06-30 12:55:14  Anca Vamanu, <anca at voice-system dot ro> 
-	* [5811] :
+	backport from trunk (rev 6406):
+	- fixed bogus handling of "return" statement inside a "while" block.
 
-	- fixed body format for rls Notify - removed a blank line separating boundary string from content headers (reported by Shefali Dutta <shefali.dutta at aricent dot com>)
+	Closes bug #2907864.
+	Reproted by Norman Brandinger
 
 
-2009-06-29 21:45:22  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5809] :
+2009-12-11 11:43:07  Irina-Maria Stanescu <istanescu at opensips dot org> 
+	* [6405] :
 
-	docs updated
+	backport from trunk (rev #6404)
+	- added extra debug messages
+	- fixed hashtable match bug (reported by Jai Rangi)
 
 
-2009-06-29 21:40:22  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5808] :
+2009-12-11 10:53:33  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6402] :
 
-	is_from_gw() function take as param flags :
-		- 's' do the strip defined by the mathing GW
-		- 'p' do the prefixing defined by the mathing GW
-		- 'a' return the attrs of the GW
+	Backport from trunk (rev 6401):
 
+	The <header> tags in some examples are not valid html. The attached patch
+	changes them to <head>.
 
-2009-06-29 21:09:13  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5807] :
+	Closes bug #2911705.
+	Credits go to Norm Brandinger
 
-	- merged the list of GWs with the list of GW addresses...-> less memory used
 
+2009-12-10 20:59:19  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6400] :
 
-2009-06-29 20:37:11  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5806] :
+	bulk backport from trunk (rev 6389 + 6390 + 6391 + 6392 + 6397 + 6398 + 6399):
+	- fixed bogus inline declaration - a function prototype cannot be inline -> reported by suncc
+	- varios fixes reported by succ :
+		- useless returns
+		- return val in void functions
+	- fixed include path for unixodbc lib for OpenSolaris.
+	- fixed bug in testing the success of the parse_to() function
+	- fixed all makefiles using autodetection based on "which" -> older version was not working on non-linux systems.
+	- fixed makefiles for the perl modules ; the syntax of makefile (for calling external shell commands) is not like in shell script  :) .
+	- for gcc added some extra compile flags to get rid of the "redundant declaration" warning due auto created C files
+	- fixed solaris and suncc compiling
 
-	- prevent executing twice the onroute callback due bogus call of loose_route (more than once).
+	  Credits go to Michal Bielicki @ Seventh Signal
 
 
-2009-06-29 19:03:15  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5805] :
 
-	- fetch support added loading the pua info at startup
 
+2009-12-10 18:10:58  Irina-Maria Stanescu <istanescu at opensips dot org> 
+	* [6396] :
 
-2009-06-29 18:15:38  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5802] :
+	-backport from trunk (rev #6395)
 
-	- missing EOL added in debug message
 
+2009-12-10 17:36:59  Andrei Dragus <adragus at opensips dot org> 
+	* [6394] :
 
-2009-06-29 17:55:07  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5801] :
+	Backported unreachable code warning
 
-	- fixed test in processing the output param of alias_db_find()
 
+2009-12-10 13:32:06  Iulia Buble <iulia at opensips dot org> 
+	* [6386] :
 
-2009-06-29 15:40:08  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5800] :
+	Fifo reply file renamed from $name to fifo_reply_name
+	Fifo reply path renamed from $path to fifo_reply_path
 
-	- more docs updated
 
+2009-12-09 18:35:02  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6383] :
 
-2009-06-29 14:45:13  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5799] :
+	backport from trunk (rev #6382):
+	- fixed incomatibility between BLOB data type and string format for columns
 
-	- docs updated
 
+2009-12-09 17:46:29  Irina-Maria Stanescu <istanescu at opensips dot org> 
+	* [6381] :
 
-2009-06-29 14:38:23  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5798] :
+	backport from trunk (rev #6377, #6370)
+	- added checks (aaa_radius module)
+	- fixed misleading LM_ERR into LM_DBG (group module)
 
-	- max_contacts can be passed as a per AOR value (not only global)
 
 
-2009-06-29 14:13:07  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5797] :
+2009-12-09 17:33:29  Irina-Maria Stanescu <istanescu at opensips dot org> 
+	* [6380] :
 
-	- one more typo fixed
+	backport from trunk (#rev 6372)
+	- added check for db_url to be set
 
 
-2009-06-29 10:59:07  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5796] :
+2009-12-09 17:30:31  Irina-Maria Stanescu <istanescu at opensips dot org> 
+	* [6379] :
 
-	-fixed syntax error in DB reconnect macro
+	backport from trunk (rev #6378)
+	- added check for db_url to be set (if db backend is used)
 
 
-2009-06-26 16:33:51  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5795] :
+2009-12-08 18:17:14  Anca Vamanu, <anca at voice-system dot ro> 
+	* [6373] :
 
-	default cfg updated
+	- increased the length for contact column in active_watchers table to 128 (reported by Juha Heinanen)
 
 
-2009-06-26 16:28:13  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5794] :
+2009-12-01 02:42:04  Kobi Eshun <kobi at sightspeed dot com> 
+	* [6366] :
 
-	- added CR_CONN_HOST_ERROR also as error indicating a disconnect event.....
+	Add missing reference to libGeoIP.
 
+2009-11-30 11:47:42  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6364] :
 
-2009-06-26 15:18:51  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5793] :
+	backport from trunk (rev #6359):
+	- added check if NULL value returned by get_event function
 
-	More flexibility in handling the options in registrar module (instead of global options, we have per-operation  options):
 
-	- append_branch and method_filtering module params moved as flags to lookup() function;
-	- sock_flag, use_path, path_mode, path_use_received module params moved as flags to save() function;
+2009-11-30 10:55:58  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6363] :
 
+	backport from trunk (rev #6361):
+	- fixed detection of static string (used for string IPs) when UDP is not used.
+	  Closes bug #2904684.
 
-2009-06-26 12:24:12  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5792] :
 
-	fixup_spve() function exposed
+2009-11-24 10:46:26  Di-Shi Sun <di-shi at transnexus dot com> 
+	* [6358] :
 
+	Fixed the bug of generating wrong new ruri.
 
-2009-06-26 11:03:47  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5790] :
 
-	- fixed setting flags for changing FROM / TO when uac_replace_from() called from brnach route
+2009-11-20 18:37:08  Anca Vamanu, <anca at voice-system dot ro> 
+	* [6355] :
 
+	- fixed not checking if variable is null on destroy
 
-2009-06-26 10:45:19  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5789] :
 
-	- optimized the building of local ACKs and CANCELs when FROM/TO hdrs were changed. Instead of parsing the outgoing buffer, fetch the received TO/FROM (inclusing tags) from the received replies (if any - if none, fallback to parsing what was sent out).  This also solves the problem of missing TO tag in local generated CANCELs.
+2009-11-20 18:17:13  Anca Vamanu, <anca at voice-system dot ro> 
+	* [6353] :
 
+	- fixed bug of resending 200OK reply (reported by Jeff Kronlage )
 
-2009-06-25 17:39:10  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5788] :
 
-	- remove obsolete auto_reconnect parameter - it now all the time yes.
+2009-11-19 11:21:11  Anca Vamanu, <anca at voice-system dot ro> 
+	* [6347] :
 
+	- fixed bug when a FAKED_REPLY was received ( reported by elm0 at #opensips)
 
-2009-06-25 17:01:57  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5787] :
 
-	- reworked the entire re-connect mechanism in mysql - as the mysql lib is not relaible in delivering the re-connect events to application (when using both prepared statements and text queries), the auto-reconnect for client lib was disabled and all the re-connect work is done manually at application (db_mysql module) level.
+2009-11-11 19:58:16  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6341] :
 
+	backport from trunk (rev #6340):
+	- fixed bogus test for return code of avp_add()
 
-2009-06-25 16:29:39  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5786] :
 
-	- some old debugs removed, new ones added
 
+2009-11-09 17:43:00  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6338] :
 
-2009-06-25 16:28:19  Anca Vamanu, <anca at voice-system dot ro> 
-	* [5785] :
+	backport from trunk (rev #6337):
 
-	- changed URI format for SIP buddies in XMPP - use the same username and domain as the ones in SIP
-	- made some impovements in pua_xmpp, set the IP address of the presence server as outbound proxy
-	- fix in pua_xmpp, set the contact for sent Subscribes message to the address of the server
+	- upgraded the code to be compatible with the latest openssl version. backward c
+	ompatibility preserved.
+	  Credits goto John Khvatov
 
 
-2009-06-25 12:38:20  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5784] :
+2009-11-08 20:34:52  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6334] :
 
-	- fixed bogus code (added by me) in the yesterday fix
+	backport from trunk (rev #6333):
+	- specs and init updated
+	- credits go to John Khvatov, the opensips maintainer on fedora.
 
 
-2009-06-24 19:44:19  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5783] :
+2009-11-06 13:00:17  Anca Vamanu, <anca at voice-system dot ro> 
+	* [6330] :
 
-	- added the case when the URI does not have a port - as this is a value taken from the script, it is better to check it out!
+	- fixed bug if t_newtran() was not called from the script
+	- fixed some isses when closing a call while in bridging state - send ACK for invite and switch to a new state for the scenario instance
 
 
-2009-06-24 17:05:08  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5782] :
+2009-11-04 16:53:41  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6324] :
 
-	- fixed bogus log
+	backport from trunk (rev #6323):
+	- fixed bug in calculating the length of the table name 
 
 
-2009-06-24 16:46:28  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5781] :
+2009-11-04 10:57:52  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6321] :
 
-	fixed typos in docs
+	backport from trunk #6319
+	- on some systems (following the System V specs), there is different SIGCLD signal, while on POSIX like systems you have SIGCHLD.......The difference is that th
+	e SIGCLD must be rearmed, while SIGCHLD not. On System V  the SIGCHLD is simply 
+	defined as SIGCLD...so you may end up with some confusion....
+	 -> if SIGCLD is defined do explicit re-arming of SIGCLD handler
 
 
-2009-06-24 13:35:35  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5780] :
+2009-11-03 17:56:54  Irina-Maria Stanescu <istanescu at opensips dot org> 
+	* [6318] :
 
-	- fixed the saving of profiles and dialogs in the DB mode 1 (realtime).
-	  Reported by Thomas Gelf
+	backport from trunk (rev 6317)
+	- automatically converts strings from the sets avps into ipaddr when needed
+	- closes patch #2886450 submitted by Alex Massover
 
 
-2009-06-23 20:00:15  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5779] :
+2009-11-02 16:15:08  Anca Vamanu, <anca at voice-system dot ro> 
+	* [6316] :
 
-	- some debugs moved as INFO to hlp with testing
+	- fixed bug: not calling child_init for timer route process ( bug #2890657)
 
 
-2009-06-23 19:05:06  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5778] :
+2009-10-30 12:07:12  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6312] :
 
-	- fixed some ambiguity in setting the disconnected state for a connection -> some connection will miss the reconnect event and will not reset the prepared statements.
+	backport from trunk (rev 6311):
+	 - fixed partial test for dst_uri string
 
 
-2009-06-20 00:52:45  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5776] :
+2009-10-30 11:59:26  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6310] :
 
-	- increased the max number of retryes for SSL ops as on some slower machines it may take a bit of more time.
-	  Credits for the troubleshooting and fixing go to Anil M Pannikode
+	backport from trunk (rev 6308):
+	- fixed bug in handling the AOR - According to RFC 3261, section 19.1.4, userInff o part of Sip URI should be treated as case sensitive.
 
+	The case_sensitive param has now the default value to "yes" - to handle the AORs in a case sensitive way.
 
-2009-06-16 02:14:58  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5773] :
+	Note that using a case insensitive setting in registrar will break other modules like msilo, pua_usrloc when you have upper cases in username part.
 
-	- fixed un-initialized pointer bug.
-	  Reported by Om Bikram Thapa.
 
 
-2009-06-16 01:41:05  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5772] :
+2009-10-30 11:45:50  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6306] :
 
-	- fixed typo in var name.
-	  Credits go to Norm Brandinger
+	backport from trunk (rev #6305)
+	- fixed DB schema for dr_group tabel - group column is numerical, not string
 
-	  Closes bug #2806783
 
+2009-10-29 19:33:35  Iulia Buble <iulia at opensips dot org> 
+	* [6303] :
 
-2009-06-15 13:31:48  Anca Vamanu, <anca at voice-system dot ro> 
-	* [5771] :
+	Bug fixed - removed quotations for password.
 
-	- added module parameter 'waiting_subs_daysno' - to make the time interval to store the pending or waiting subscriptions configurable
-	( reported by Inaki Baz Castillo<ibc at aliax dot net>)
 
+2009-10-29 14:09:19  Anca Vamanu, <anca at voice-system dot ro> 
+	* [6301] :
 
-2009-06-11 13:06:52  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5770] :
+	- fixed bug: not sending Publish with expires 0 when usrloc contact was detected as expired
+	- pua: ajusted the expiration checks in pua
+	- pua: fixed inconsinstency in t_request parameter when sending Publish from timer process
 
-	- avoid auto discovery of port when the GW is specified as name and not IP
 
+2009-10-27 23:46:21  Ovidiu Sas <osas at voipembedded dot com> 
+	* [6299] :
 
-2009-06-09 17:48:52  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5769] :
+	backport rev 6298 from trunk:
+	rl_check does not check if forced_pipe is >=0, can coredump
 
-	typo fixed in docs
+	closes ID: 2887457
+	credits goes to Pawel Pierscionek ( urtho2 )
 
 
-2009-06-09 12:13:19  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5767] :
 
-	- fixed bug in dialog module when updating the DB info (wrong number of columns).
-	  Reported by Thomas Gelf.
+2009-10-27 16:45:54  Anca Vamanu, <anca at voice-system dot ro> 
+	* [6296] :
 
+	- fix: take out the double quotes from display name before writing it in the xml document ( reported by elm0 at #opensips)
 
-2009-06-05 19:59:48  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5766] :
 
-	- new algorithm (relative load, in percentages) added for computin the available load on the pears.
+2009-10-27 15:28:14  Anca Vamanu, <anca at voice-system dot ro> 
+	* [6294] :
 
+	- fixed bug - rewriting the target uri with the display name if one was present (thanks to elmo at #opensips )
 
-2009-06-02 19:11:26  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5765] :
 
-	- ID props added
+2009-10-27 11:07:32  Anca Vamanu, <anca at voice-system dot ro> 
+	* [6292] :
 
+	- fixed bug when arguments to script function are pseudovariables - reported by Daniel Cardoso Alves
+	--Ths line, and those below, will be ignored--
 
-2009-06-02 18:54:32  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5764] :
+	M    b2b_logic/records.c
+	M    b2b_logic/b2b_logic.c
+	M    b2b_logic/records.h
+	M    b2b_logic/logic.c
 
-	PV changes:
-	- new $branch(uri|duri|q|path|flags|socket) added to allow read/write access to all attributes of an already created branch
-	- $br, $bR, $bF, $bf removed as obsoleted  (replaced by more generic $branch)
 
+2009-10-26 14:44:38  Andrei Dragus <adragus at opensips dot org> 
+	* [6289] :
 
-2009-06-02 18:50:59  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5763] :
+Fixed a bug in codec_* functions for SDP with no a=rtpmap line.
+	Credits go to Thomas Gelf.
 
-	- new internal function added "update_branch" for updating an already creaed branch.
-	  Needed by a new set of PVs that allow "read/write" access to the branches.
 
+2009-10-20 01:33:08  Sergio Gutierrez <saguti at gmail dot com> 
+	* [6286] :
 
-2009-06-02 13:42:12  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5762] :
+	- Solaris Package files for MySQL Module Package
 
-	- small fixed related to prev commit
 
 
-2009-06-02 13:36:19  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5761] :
+2009-10-19 23:36:42  Sergio Gutierrez <saguti at gmail dot com> 
+	* [6285] :
 
-	- new pvar ct.fields() used for extracting different firlds form a Contact body. Supported fields are:
-		- name - display name
-		- uri - contact uri
-		- q  - q param
-	    - expires - expires param
-		- methods - methods param
-		- received - received param
-		- params - all params (including names)
+	- Solaris Package files for Base package.
 
 
-2009-06-02 12:02:06  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5760] :
 
-	- keep the list of contact params in the same order as in the header
+2009-10-19 21:18:23  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6283] :
 
+	backport from trunk (#6281 + #6282)
 
-2009-06-01 20:35:34  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5759] :
+	- authservice() allowed from LOCAL and BRANCH routes
 
-	- changed the $ct pvar - instead of returning the Contact hdr body (same as $hdr(contact) ), it returns a contact spec (dispaly name + URI + params).
 
-	As a contact hdr may contain multiple Contact specs and a message may contain multiple contact hdrs, an index was added to the $ct var:
-		$ct, $(ct[1]) , $(ct[-2])
+2009-10-19 15:21:18  Marc Leurent <lftsy at leurent dot eu> 
+	* [6280] :
 
+	* Mon Oct 19 2009 Marc Leurent <marc.leurent@vtx-telecom.ch>
+	- Add missing config lines for packaging b2b modules
+	- Add missing config lines for packaging peering module
+	- Add missing dependencies for SNMPStats module
 
-2009-06-01 20:27:43  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5758] :
 
-	- updated the DB schema (from xml specs)
 
+2009-10-19 07:10:50  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6279] :
 
-2009-06-01 20:25:26  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5757] :
+	Backport from trunk (rev #6278):
+	- fixed creation of B2BUA and DB_HTTP debian packages.
 
-	- keep the list of contacs per header in the same order as in hdr (so far it was in reversed order).
-	  This is required for some new contact related PVars..
+	  Reported by Alex Massover
+	  Closes bug #2881206.
 
 
-2009-06-01 12:52:21  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5755] :
 
-	- if no port is specified in the GW definition, is_from_gw() and goes_to_gw() wil match any port for that GW.
-	  This is needed for asymetric GWs - recevive traffic on 5060 and send traffic from a pool of ports.
+2009-10-19 06:59:26  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6277] :
 
+	backport from trunk (rev #6275):
+	- fixed missing usage of fetch_dlg_value() in LOCAL route.
+	  Reported by Alex Massover
+	  Closes patch #2881294
 
-2009-06-01 12:14:05  Anca Vamanu, <anca at voice-system dot ro> 
-	* [5752] :
-
-	- fixed service-uri match check (didn't work when it has parameters in rls-services document ) , reported by Franz Edler <franz-edler@aon.at>
-
-
-2009-05-29 15:58:39  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5751] :
-
-	- increased table version from 3 to 4
-
-
-2009-05-29 15:57:10  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5750] :
-
-	- extension to dialog table to allow saving of dialog flags, dialog vars and dialog profiles
-
-
-2009-05-29 15:21:08  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5749] :
-
-	- added DB persistency for the dialog profiles, dialog script flags, dialog variables - all this values will survive an OpenSIPS restart now.
-
-
-2009-05-27 16:25:34  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5746] :
-
-	- fixed bug in xmlrpc lib - the signal handler used for getting the SIGCHLD (for the terminated worker processes) contains functions that may trigger a deadlock between the process and the handler (for example because of malloc/free which have an internal lock).
-	  Thannks to Dan Pascu for the support in troubleshooting this blocking.
-
-
-2009-05-27 12:35:08  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5745] :
-
-	removed old include
-
-
-2009-05-26 20:15:10  Iulia Buble <iulia at voice-system dot ro> 
-	* [5744] :
-
-	Fixed bug.
-
-
-2009-05-26 20:03:23  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5743] :
-
-	-removed bug hunting logs - bug was found, fixing follows
-
-
-2009-05-26 19:40:31  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5741] :
-
-	- extends the tm uac functions to support the tmcb release function for tm callback parameter cleanup. This is based on work done earlier which added the infrastructure necessary to do proper cleanup and here we are extending the existing uac functions to use that earlier work done in...
-
-	Credits go to John Riordan .
-	Closes Patch id #2789126.
-
-
-
-2009-05-26 19:05:11  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5739] :
-
-	- fixed bug in processing SIP URIs without username.
-	  Credits go to Andrew < andrew dot pogrebennyk at portaone dot com >
-	  Closes bug ID #2795917.
-
-
-2009-05-26 13:32:28  Anca Vamanu, <anca at voice-system dot ro> 
-	* [5738] :
-
-	- made the usage of expires_offset module parameter consistent - intended to force the clients to renew the subscription/publication by informing them of a smaller expires value that the real one (reported by Inaki Baz Castillo <ibc@aliax.net>)
-
-
-2009-05-26 12:10:58  Anca Vamanu, <anca at voice-system dot ro> 
-	* [5737] :
-
-	- properly setting of end to end ACK transaction marker
-	- resetting transaction marker before reply matching
-
-
-2009-05-26 11:17:04  Anca Vamanu, <anca at voice-system dot ro> 
-	* [5734] :
-
-	- synchronized the moment when subsription dialogs are deleted from database with when dialogs are deleted from hash table
-
-
-2009-05-25 12:17:20  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5732] :
-
-	- fixed bug in version of rls-presentity table (1 instead of 0).
-	  Credits go to Franz Edler.
-
-
-2009-05-22 18:25:09  Iulia Buble <iulia at voice-system dot ro> 
-	* [5730] :
-
-	Fixed bug related to drouting table creation. Reported by sacoo, feature request number #2795305.
-
-
-2009-05-22 17:37:21  Marc Leurent <lftsy at leurent dot eu> 
-	* [5727] :
-
-	* Fri May 22 2009 Marc Leurent <marc.leurent@vtx-telecom.ch>
-	- Add /etc/default/opensips file to allow shared memory configuration
-	- Modify snmpstats Requires to add net-snmp-utils
-
-
-
-2009-05-22 16:56:52  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5726] :
-
-	- fixed typo in comments
-
-
-2009-05-22 14:20:58  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5725] :
-
-	- new internal API functions:
-	lock_ulslot / unlock_ulsloti(udomain*, slot) - to lock a specific slot of the domain hash table
-	get_next_udomain (udomain*) - returns the first udomain in input paramis NULL or the next udomain
-	get_next_urecord (udomain*, slot, urecord*) - returns the next urecord (after given input urecord, or first urecord if input is NULL) from the udomain hash table slot.
-
-
-	This new functions provide a controlled way of accessing (from other modules) the usrloc data structures:
-
-1) use get_next_udomain(udomain *) for iterating through  all the domains; if the param is NULL, it will return the first udomain;  otherwise the next following udomain.
-
-	2) for each udomain, use udomain->size to see the hash table size...and for each hash entry do:
-	       a) lock_ulslot(udomain, slot) 
-       b) get_next_urecord(udomain, entry_id, urecord*) - iterates  through the all urecords from the hash entry
-	       c) unlock_ulslot(udomain, slot)
-
-	This is the ressult of a discussion with John Khvatov  on the devel list
-
-
-2009-05-22 12:00:29  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5723] :
-
-	- more verbous error logs for tls_accept()
-
-
-2009-05-21 20:11:04  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5722] :
-
-	- fixed bogus order of callback in the list - it is critical to preserv the order of registerd callbacks (first registerd, first executed). Otherwise, the dependencies between the modules will be broken.
-
-
-2009-05-21 19:45:25  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5721] :
-
-	- docs updated -> new parameters:
-	  - attrs_avp
-	  - weight_col
-	  - attrs_col
-
-
-2009-05-21 19:15:40  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5720] :
-
-	- fixed detection and absorption of the ACKs for locally replied transactions.
-
-
-2009-05-21 15:50:23  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5719] :
-
-	- finished work on adding attributes support for the destinations.
-
-
-2009-05-20 17:32:07  Anca Vamanu, <anca at voice-system dot ro> 
-	* [5717] :
-
-	- fixed bug when doing database optations with type DB_BLOB (credits for the fix go to Genady , bug #2791758)
-
-
-2009-05-18 16:39:20  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5716] :
-
-	- definition of the dispatcher table updated to include "weight" and "attrs" fields
-
-
-2009-05-18 16:29:28  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5715] :
-
-	- weight support added for dispatcher (destinatinations may have different weights to be considered during the destination selection). The weights do work with all existing dispatching algorithm, except the Round-robin one.
-
-	- first stage in adding support for "destination attributes" (sutom string of properties for the destinations) - work on progress
-
-	Docs not upated yet
-
-
-2009-05-18 13:57:18  Anca Vamanu, <anca at voice-system dot ro> 
-	* [5712] :
-
-	- completion for the fix in rev #5708; added etag restriction when searching for a pua record that received a negative reply ( thanks to Piotr Sobolewski <sobolewski@gmail.com> for help with testing)
-
-
-2009-05-18 12:06:08  Anca Vamanu, <anca at voice-system dot ro> 
-	* [5709] :
-
-	- fixed a bug in constructing watcher info event Notify bodies when refreshWatchers MI command was received (reported by Franz Edler <franz-edler@aon.at>)
-
-
-2009-05-14 18:22:48  Anca Vamanu, <anca at voice-system dot ro> 
-	* [5707] :
-
-	- fixed a race condition that caused using the same E-tag twice (generating a subsequent Publish before the reply for the previous is received) - reported by Piotr Sobolewski <sobolewski@gmail.com>
-
-
-2009-05-13 13:59:12  Anca Vamanu, <anca at voice-system dot ro> 
-	* [5705] :
-
-	- fixed not updating expires value from subscription dialogs in database when refresh Subscribe received ( reported by Inaki Baz Castillo in bug report #2791077)
-
-
-2009-05-13 12:59:20  Anca Vamanu, <anca at voice-system dot ro> 
-	* [5704] :
-
-	- took out a remaining usage of prepare statements when more rows are expected that caused bad behaviour in presence server with integrated xcap server operation mode
-
-
-2009-05-13 12:45:37  Anca Vamanu, <anca at voice-system dot ro> 
-	* [5701] :
-
-	- fixed a bug in pua module that caused memory leak
-
-
-2009-05-11 23:38:25  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5700] :
-
-	- ds_is_from_list() replaced with a more generc function ds_is_in_list("ip","port"). The new function takes as parameters the IP and PORT to test against the dispatcher list, instead of using only the source IP and PORT (as ds_is_from_list()).
-	  ds_is_from_list() == ds_is_in_list("$si","$sp")
-
-	The new function can be used also if the destination is part of a dispatching set :
-	   ds_is_in_list("$rd","$rp")
-
-
-2009-05-11 21:36:08  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5699] :
-
-	new pvars available:
-	$an - authentication nonce
-	$ar - authentication response
-
-
-2009-05-11 21:31:51  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5698] :
-
-- missing \n in logs
-
-
-2009-05-11 20:17:15  Anca Vamanu, <anca at voice-system dot ro> 
-	* [5697] :
-
-	- added documentation for the parameters described in commit comment for rev #5696
-
-
-2009-05-11 19:53:32  Anca Vamanu, <anca at voice-system dot ro> 
-	* [5696] :
-
-	- fixup and improvement in xcap with non integrated xcap server operation mode
-		- fixed HTTP etag retreiving from document 
-		- fixed HTTP request generation to include If-None-Match header so that the document is fetched only when changed
-		- added configuration parameters for XCAP AUID parameter and filename for pres-rules documents in presence_xml module; this way the URL is configurable and and it can be cnstructed according to OMA standard (followed by eyebeam)
-
-
-2009-05-11 14:37:01  Anca Vamanu, <anca at voice-system dot ro> 
-	* [5695] :
-
-	- Improved privacy rules support configuration possbility - it is now possible to force a subscription to be considered allowed from the script.
-		-  "handle_subscribe" function can now take one parameter meaningful when using a configuration with privacy rules enabled (force_active parameter in presence_xml module not set). Supposing that you have a means to tell that the contact the Subscribe message is destined to( the presentity) can not upload an xcap document with it's privacy rules, you can tell the presence server to consider that subscription allowed(with Subscription-Status:active) by calling the handle_subscribe function with the string parameter "1".
-		Ex:
-		if(uri =~ "kphone@opensips.org")
-			handle_subscribe("1");
-		This parameter allows building a presence platform with xcap privacy rules  were normal phones not supporting xcap still can send their presence information.
-
-
-
-2009-05-11 13:18:40  Anca Vamanu, <anca at voice-system dot ro> 
-	* [5693] :
-
-	- fixed bug in computing expires value for subscription dialogs - reported by Inaki Baz Castillo in bug report #2788937
-
-
-2009-05-10 17:11:10  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5692] :
-
-	 FAQ file added
-
-
-2009-05-10 17:07:53  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5691] :
-
-	- cancel_brnach() function now takes flags:
-		"a" - cancel all branches - it obsolets the cancel_call() function
-		"o" - cancel all other branches but not the current one
-		""  - cancel only current branch (backward compatible)
-
-	- cancel_call() function removed
-
-
-
-2009-05-10 17:04:54  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5690] :
-
-	- docs fixing
-
-
-2009-05-10 13:37:26  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5688] :
-
-	- fixed versions in the migration help text
-
-
-
-2009-05-09 12:55:00  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5687] :
-
-	- fixed syntax error introduced with the prev commit
-
-
-2009-05-09 10:56:25  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5686] :
-
-	- fixed start command - if bogus PID file is found, simplt purge it
-	- fixed restart command - do stop but do not exit if stop failed during a restart
-
-	  Credits go to ledda.
-	  Closes patch #2731979
-
-
-2009-05-09 10:37:24  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5684] :
-
-	-typo fixed "pif"->"pid"
-	 Part for patch #2731979, contributed by "ledda".
-
-
-2009-05-09 10:18:56  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5682] :
-
-	- fixed missing 100 Trying when the transaction is internally created by the CPL interpreter.
-
-	  Credits go to John Riordan.
-	  Closes patch #2788216
-
-
-2009-05-09 10:09:59  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5679] :
-
-	- fixed branch flags reseting when creating a new branch - related to the previous fix on this topic
-
-	  Credits go to John Riordan - thanks for pointing out that my changes in the previous patch were bogus.
-	  Closes patch #2785741.
-
-
-2009-05-06 20:51:14  Iulia Buble <iulia at voice-system dot ro> 
-	* [5677] :
-
-	Fixed bogus with password encryption.
-
-
-2009-05-06 18:19:04  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5675] :
-
-	- fixed bug : free shared memory allocated for dialog persistent attributes  when dialog structure is destroyed.
-	  Credits go to John Riordan.
-	  Closes patch #2787654
-
-
-
-2009-05-05 18:51:17  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5673] :
-
-	- fixed bugs: drouting module doesn't accept null prefixes in dr_rules table but there isn't "blank" strings in oracle. So, I'm not able to use drouting with oracle.
-
-	 Closes bug #2786735
-
-
-2009-05-05 13:59:59  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5670] :
-
-	- warning fixed : handle fscanf return value to avoid warning when compiling on Linux x86.
-	  Credits go to Sergio Gutierrez.
-	  Closes patch #2750920
-
-
-2009-05-05 13:52:27  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5667] :
-
-	- bug fixing: When locations having the same priority are added to the CPL location set, the add order is not maintained.
-	  Credits go to John Riordan.
-	  Closes patch #2786822
-
-
-2009-05-05 13:43:24  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5664] :
-
-	- fixed bug - CPL "lookup" is not checking for the possibility that a contact's q-value could be Q_UNSPECIFIED when setting a locations "priority".
-
-	Credits go to John Riordan.
-	Closes patch #2786818.
-
-
-
-2009-05-05 13:06:23  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5663] :
-
-	- added the FAQ file to docs
-
-
-2009-05-05 13:04:58  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5662] :
-
-	- docs updated to reflect the latest changes
-
-
-2009-05-05 12:35:20  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5661] :
-
-	- new function alias_db_find("table","input_var","output_var") to lookup for a DB alias using as input whatever value from a Pseudo-Var and placing the result in a different Pseudo-Var; 
-	Similar to alias_db_lookup(), but it does not use and affect the current SIP mesassge (source and desitnation for alias lookup may be whatsoever).
-
-	Based on the patch 2713792, submited by Vladimir Romanov.
-
-
-	- both alias_db_lookup() and alias_db_find() may take a third param, a list of flags (char based flags):
-	    'd' - do not use domain part in the lookup (by default domain is used)
-	    'r' - do revers lookup - the input is the ID URI and the result is alias URI (normally the input is the alias URI and the result is the ID URI)
-
-
-
-2009-05-04 17:15:28  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5658] :
-
-	- fixed reseting the branch flag for NAT detection is the branch has no NAT is detected
-	  Credits go to John Riordan
-	  Closes bug report #2785741.
-
-
-2009-04-23 11:45:53  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5657] :
-
-	- do not list authors there as we will end up in listing all the developers...make no sense..(either all, either none)
-
-
-
-2009-04-23 10:47:35  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5656] :
-
-	- nh_enable_ping MI command will return the internal natping status if no paramter provided - this is very usefull for opensips-CP nathelper tool integration
-
-
-2009-04-23 02:06:44  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5655] :
-
-	- function for building dynamic names for stat vars moved into core
-	- update to latest stats core changes
-
-
-2009-04-23 02:05:00  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5654] :
-
-	- the statistic functions can take a parameter (context) -> allows functions for dynamic stat vars
-
-	- new statistic classes:
-		NET - how many bytes are pending in the socket buffers (UDP/TCP/TLS)
-	    PKMEM - statistis (per process) about pkg_mem (same info as for shm)
-
-
-
-2009-04-23 02:00:45  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5653] :
-
-	- basic support for PKG stats
-
-
-2009-04-23 01:59:45  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5652] :
-
-	- renamed some macros to make place for PKG mem stats
-
-
-2009-04-22 18:10:28  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5651] :
-
-	- get_total_bytes_waiting() accepts proto parameters (to get all bytes per TCP or UDP, etc)
-	- get_total_bytes_waiting() generates only once the lists of sockets.
-
-
-2009-04-22 16:45:09  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5649] :
-
-	- removed seas module from default compiling as it uses the dprintf function which is not available on Solaris or BSD
-
-
-2009-04-22 16:43:23  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5648] :
-
-	- fixed several compile wornings on BSD
-	  Many thanks to Mark R for providing access to a BSD machine
-
-
-2009-04-20 21:26:42  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5647] :
-
-	- bug fixed - time specific pvar returns the current time all the time and not the time of the first call per message. Time caching (per message) is nonsense as processing of a message may take more than a second.
-
-
-2009-04-20 21:18:14  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5646] :
-
-	- fixed bug - do not store the time per message as the processing of a message may take more than one seconds; We want realtime time, not time of the first call per message :P
-
-
-
-2009-04-16 12:23:25  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5643] :
-
-	- fixed compile warning
-
-
-2009-04-15 19:27:49  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5642] :
-
-	- fixed bug in subst replacement - any pending string after the last token was ignored.
-	  Reported by Dan-Cristian Bogos.
-
-
-2009-04-15 17:53:20  Iulia Buble <iulia at voice-system dot ro> 
-	* [5640] :
-
-	 - osipsconsole installation info added to INSTALL
-
-
-2009-04-15 17:18:26  Iulia Buble <iulia at voice-system dot ro> 
-	* [5638] :
-
-	Bug fixed in osipsconsole. Script works now without the String module. 
-
-
-2009-04-15 13:23:22  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5636] :
-
-	- included more hdr files for "struct iovec" - required on openBSD
-	  
-	  Reported by Mark R.
-
-
-2009-04-15 13:08:51  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5634] :
-
-	- removed the uintptr_t as it is not BSD compliant.
-
-	  Reported by Mark R.
-
-
-2009-04-13 16:27:06  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5630] :
-
-	- increased buffer len of arg 1 as it contains the codec index that may overflow.
-	  Credits go to David Feng (dfeng99) on forum.
-
-
-2009-04-13 14:55:30  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5626] :
-
-	- fixed testing of MIN-SE and when the 422 reply must be sent out.
-	  Based on a report from Jeff Pyle.
-
-
-
-2009-04-11 02:06:18  Sergio Gutierrez <saguti at gmail dot com> 
-	* [5624] :
-
-	- Modify sample configuration file permissions to avoid error when doing make install-cfg after previous install.
-	Closes bug #2745618. Thanks to ledda for reporting.
-
-2009-04-10 13:55:22  Anca Vamanu, <anca at voice-system dot ro> 
-	* [5621] :
-
-	- fix: added check if presence module is loaded before modules wanting to register events
-
-
-2009-04-09 12:12:16  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5620] :
-
-	- readme files regenerated
-
-
-2009-04-09 12:09:51  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5619] :
-
-	-  t_reply() function does not requires anymore a prior create Transaction (as in 1.5). If no transaction is found, it will be automatically created.
-
-
-
-2009-04-09 11:23:23  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5618] :
-
-	- small fixup in C syntax
-
-
-2009-04-08 20:43:55  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5617] :
-
-	- RFC 3326 support (Call Completed Elsewhere) added: 
-
-	   A proxy forks an INVITE request and one of the branches returns a 200
-	   (OK).  The forking proxy includes this status code in a Reason header
-	   field in the CANCEL request that it sends to the rest of the
-	   branches.
-
-	   The same SIP  request can be issued for a variety of reasons.  For
-	   example, a SIP CANCEL request can be issued if the call has completed
-	   on another branch or was abandoned before answer.  While the protocol
-	   and system behavior is the same in both cases, namely, alerting will
-	   cease, the user interface may well differ.  In the second case, the
-	   call may be logged as a missed call, while this would not be
-	   appropriate if the call was picked up elsewhere.
-
-
-2009-04-08 19:20:21  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5614] :
-
-	- if no uid/gid is set, do not try to change it.
-
-	  Closes bug #2732021 .
-
-
-2009-04-08 18:47:00  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5612] :
-
-	 - the availaility of a resource may be negative not necessary because of a bug, but because of a load resize via MI.
-
-	   Closes bug #2739622.
-
-
-2009-04-08 18:39:29  Sergio Gutierrez <saguti at gmail dot com> 
-	* [5611] :
-
-	- New function in uri_db module: get_auth_id()
-	Patch provided by Andreas Westermaier. Closes patch #2687050
-
-
-2009-04-08 18:36:16  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5609] :
-
-	- fixed issue at reload time - the dialog profiles may be already created sue previous data.
-	 Closes bug 2739455.
-
-
-2009-04-08 15:41:42  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5607] :
-
-	fixed bug in working with the list of contexts per statement - the bug poping up only in handling DB erorrs
-
-	Reported by Brett Nemeroff.
-
-
-2009-04-08 10:24:31  Dan Pascu <dan at ag-projects dot com> 
-	* [5602] :
-
-	Changed mediaproxy to silently ignore unknown content types instead of logging errors (closes #2741556)
-
-2009-04-07 18:42:30  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5600] :
-
-	- fixed return code for next_contacts() - return all the time false if no other AVPs are available.
-	  Reported by Amit Sharma 
-
-
-2009-04-07 17:00:00  Dan Pascu <dan at ag-projects dot com> 
-	* [5597] :
-
-	Correctly handle calls under call control after a restart (based on a patch by Mauro Davi')
-
-2009-04-07 16:56:23  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5596] :
-
-	- bogus return (for empty data) fixed (as was leading to a deadlock)
-	  Reported by Dan Bogos
-
-
-2009-04-07 15:48:22  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5594] :
-
-	much better and complete fix for he bug reported in commit #5580 + #5586
-
-	many thanks to Thomas Gelf for helping with testing (again)
-
-
-2009-04-07 09:40:07  Di-Shi Sun <di-shi at transnexus dot com> 
-	* [5593] :
-
-	Fixed the issue caused by without certificate files.
-
-
-2009-04-06 19:14:05  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5591] :
-
-	- fixed deadlock are reload time (because of some newly used debug function).
-	  Reported by Dan Bogos
-
-
-2009-04-06 18:53:33  Sergio Gutierrez <saguti at gmail dot com> 
-	* [5590] :
-
-	- Modified option to detect compiler version. 
-	Credits go to Darren Sessions. Closes patch #2733116
-
-2009-04-06 16:39:41  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5588] :
-
-	- fixed next_branch() function - the first value goes all the time in RURI.
-	  Reported by Jeff Pyle.
-
-
-2009-04-06 13:41:29  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5586] :
-
-	- better fixed (with no performace penalties) for the previous fix (with the "caonnot connect to mysql server" issue) - see comments on rev #5580
-
-
-2009-04-06 12:43:09  Anca Vamanu, <anca at voice-system dot ro> 
-	* [5585] :
-
-	- documented max_expires_publish and max_expires_subscribe parameters (reported by Inaki Baz Castillo)
-
-
-2009-04-06 12:31:12  Anca Vamanu, <anca at voice-system dot ro> 
-	* [5582] :
-
-	- fixed wrong memory free ( reported by JayaPrakash <jp.manchu@gmail.com> )
-
-
-2009-04-06 11:30:24  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5580] :
-
-	- workaround a bug in mysql clinet lib - it looks like the mysql_stmt_execute() crashes if the mysql server is down (on "Can't connect to local MySQL server" error) - see http://bugs.mysql.com/bug.php?id=43560
-	  What I did is to have as screen function the mysql_ping() function - this will detect the error (disconnect state) and prevent executing the bogus mysql_stmt_execute(). It is no the nicest fix, but it fixes the crash.
-
-	 Reported by Thomas Gelf.
-
-
-2009-04-03 17:34:39  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5578] :
-
-	- fixed bug in resetting the prepared statements when a text-based query triggers an auto reconnect - the problem was that both mysql_ping() and mysql_real_query() do not report the reconnect event at all (if auto reconnect is set).
-
-
-2009-04-02 17:37:05  Anca Vamanu, <anca at voice-system dot ro> 
-	* [5575] :
-
-	- added dependency check if module pua is loaded before modules adding events in pua module
-
-
-2009-04-01 21:29:53  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5573] :
-
-	- fixed bogus param type in do_action() (STRING_ST -> STR_ST).
-	  Closes bug 2723978.
-
-
-2009-04-01 21:03:23  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5571] :
-
-	- fixed bug in improper set of the MYSQL bind out structure.
-
-	Many, many thanks to Thomas Gelf for helping with the debug and testing and to Franz Edler for testing this fix
-
-
-2009-04-01 20:33:02  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5568] :
-
-	- fixed bug in extracting the body - do not rely 100% on the content-lenght hdr value as it might be bogus -> do a sanity check to see if the end of the body is not somehow outside the message body.
-
-	  Closes bug 2649267.
-	  Many thanks to Bobby Smith for helping with debugging this!
-
-
-2009-04-01 15:22:33  Anca Vamanu, <anca at voice-system dot ro> 
-	* [5566] :
-
-	-fixed bug: set database table before update ( reported by Visu.M <visumrs@gmail.com> )
-
-
-2009-04-01 12:18:27  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5564] :
-
-	- removed unused function
-
-
-2009-03-31 17:17:25  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5562] :
-
-	- fixed the way the sip URI and group value are processed.
-	  Reported by Carlo Dimaggio 
-
-
-2009-03-30 18:27:05  Sergio Gutierrez <saguti at gmail dot com> 
-	* [5561] :
-
-	- Updated to development version.
-	- Added packaging files for new modules.
-
-2009-03-30 17:43:11  Iulia Buble <iulia at voice-system dot ro> 
-	* [5557] :
-
-	Help command was added. Info on all commands can be obtained by typing ---help--- in the console or by typing ./osipsconsole help.
-
-2009-03-30 05:08:53  Di-Shi Sun <di-shi at transnexus dot com> 
-	* [5555] :
-
-	Fixed the parsing called number issue caused by the number portability parameters in user part of RURI.
-
-
-2009-03-27 15:58:23  Anca Vamanu, <anca at voice-system dot ro> 
-	* [5551] :
-
-	- fixed remote contact match when using pua_bla ( thanks to Zahid Mehmood <zm23@columbia.edu> for detailed report)
-
-
-2009-03-27 14:57:15  Anca Vamanu, <anca at voice-system dot ro> 
-	* [5550] :
-
-	- rolled back file to the last version
-
-
-2009-03-27 14:53:11  Anca Vamanu, <anca at voice-system dot ro> 
-	* [5549] :
-
-	- fixed error in last commit - check for UPDATE_TYPE flag 
-	- reorted by Inaki Baz Castillo
-
-
-2009-03-27 14:34:27  Anca Vamanu, <anca at voice-system dot ro> 
-	* [5548] :
-
-	- fixed error when pua table gets out of sync with location table by loosing records and resulting in Publish update requests to fail
-	- credits go to Inaki Baz Castillo <ibc@aliax.net> for the initial patch
-
-
-2009-03-26 20:45:45  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5546] :
-
-	- fixed bug: push the q value in RURI brannch also
-
-
-2009-03-26 16:59:27  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5545] :
-
-	- packages updated
-
-
-2009-03-25 13:24:36  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [5542] :
-
-	- added control version to libgeoip-dev (>= 1.4.4), required by mmgeoip module
-
-
-
-2009-03-25 12:51:40  Anca Vamanu, <anca at voice-system dot ro> 
-	* [5541] :
-
-	- separate max_expires parameter for Subscribe and Publish 
-	- applied patch from Vasil Kolev(patch #2688810)
-
-
-2009-03-25 05:36:16  Ovidiu Sas <osas at voipembedded dot com> 
-	* [5540] :
-
-	new pipe algorithm: NETWORK
-	   This algorithm relies on information provided by network
-	   interfaces. The total amount of bytes waiting to be consumed on
-	   all the network interfaces is retrieved once every
-	   timer_interval seconds. If the returned amount exceeds the
-	   limit specified in the modparam, rl_check returns an error.
-
-	 - based on patch provided by Arnaud Boussus ( aboussus )
-	 - closes 2694682
-
-
-2009-03-24 19:25:09  Ovidiu Sas <osas at voipembedded dot com> 
-	* [5539] :
-
-	Moving socket related code from snmpstats module into the core:
-	 - other modules will be able to access socket related statistics directly from core
-
-
-2009-03-24 18:49:44  Marc Leurent <lftsy at leurent dot eu> 
-	* [5537] :
-
-	- Fix snmpstats packaging
-	- Fix xmpp packaging
-	- Add some missing README and modules .so files in main package
-
-
-
-2009-03-24 14:11:22  Iñaki Baz Castillo <ibc at aliax dot net> 
-	* [5535] :
-
-	- added control version to libgeoip-dev (>= 1.4.4), required by mmgeoip module
 
 
