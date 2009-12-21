@@ -397,7 +397,7 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 	if(msg->to->parsed == NULL)
 	{
 		memset( &TO , 0, sizeof(TO) );
-		if( !parse_to(msg->to->body.s,msg->to->body.s + msg->to->body.len + 1, &TO));
+		if( !parse_to(msg->to->body.s,msg->to->body.s + msg->to->body.len + 1, &TO))
 		{
 			LM_DBG("'To' header NOT parsed\n");
 			return 0;
@@ -579,7 +579,7 @@ b2b_dlg_t* b2b_new_dlg(struct sip_msg* msg, int on_reply)
 	else
 	{
 		memset( &TO , 0, sizeof(TO) );
-		if( !parse_to(msg->to->body.s,msg->to->body.s + msg->to->body.len + 1, &TO));
+		if( !parse_to(msg->to->body.s,msg->to->body.s + msg->to->body.len + 1, &TO))
 		{
 			LM_DBG("'To' header NOT parsed\n");
 			return 0;
@@ -1404,7 +1404,7 @@ void b2b_tm_cback(b2b_table htable, struct tmcb_params *ps)
 			else
 			{
 				memset( &TO , 0, sizeof(TO) );
-				if( !parse_to(msg->to->body.s,msg->to->body.s + msg->to->body.len + 1, &TO));
+				if( !parse_to(msg->to->body.s,msg->to->body.s + msg->to->body.len + 1, &TO))
 				{
 					LM_ERR("'To' header NOT parsed\n");
 					lock_release(&htable[hash_index].lock);
