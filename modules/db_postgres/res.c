@@ -289,7 +289,7 @@ int db_postgres_convert_rows(const db_con_t* _h, db_res_t* _r)
 					break;
 				default:
 					LM_DBG("freeing row_buf[%d] at %p\n", col, row_buf[col]);
-					pkg_free(row_buf[col]);
+					if (row_buf[col]) pkg_free(row_buf[col]);
 			}
 			/*
 			 * The following housekeeping may not be technically required, but it
