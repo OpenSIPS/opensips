@@ -1,6 +1,6 @@
 PKG="OpenSIPS-ldap"
 NAME="Programmable SIP Server LDAP Support"
-VERSION="1.6.0dev0-notls"
+VERSION="1.6.1dev0-notls"
 ARCH="sparc"
 CLASSES="none"
 CATEGORY="utility"
