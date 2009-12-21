@@ -668,6 +668,11 @@ modparam("dispatcher", "attrs_col", "dstattrs")
 			</listitem>
 			<listitem>
 				<para>
+				<quote>8</quote> - the first entry in set is chosen.
+				</para>
+			</listitem>
+			<listitem>
+				<para>
 				<quote>X</quote> - if the algorithm is not implemented, the
 				first entry in set is chosen.
 				</para>

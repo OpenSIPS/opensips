@@ -502,6 +502,7 @@ modparam("dispatcher", "attrs_col", "dstattrs")
           + "6" - random (using rand()).
           + "7" - hash over the content of PVs string. Note: This
             works only when the parameter hash_pvar is set.
+          + "8" - the first entry in set is chosen.
           + "X" - if the algorithm is not implemented, the first
             entry in set is chosen.
 
