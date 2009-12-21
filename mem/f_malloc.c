@@ -618,7 +618,7 @@ void fm_status(struct fm_block* qm)
 	}
 	LM_GEN1(memdump, "TOTAL: %6d free fragments = %6lu free bytes\n", i, size);
 	LM_GEN1(memdump, "TOTAL: %ld large bytes\n", qm->large_space );
-	LM_GEN1(memdump, "TOTAL: %d overhead\n", FRAG_OVERHEAD );
+	LM_GEN1(memdump, "TOTAL: %d overhead\n", (int)FRAG_OVERHEAD );
 	LM_GEN1(memdump, "-----------------------------\n");
 }
 
