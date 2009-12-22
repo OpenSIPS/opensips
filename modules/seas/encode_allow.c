@@ -20,7 +20,7 @@
  */
 
 /*
- * =====================================================================================
+ * =====================================================================
  * 
  *        Filename:  encode_allow.c
  * 
@@ -34,14 +34,14 @@
  *          Author:  Elias Baixas (EB), elias@conillera.net
  *         Company:  VozTele.com
  * 
- * =====================================================================================
+ * ======================================================================
  */
 
 #define _GNU_SOURCE
 #include <string.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
 #include <stdio.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
 #include "../../parser/parse_allow.h"
 #include "../../parser/msg_parser.h"
 #include "encode_allow.h"
