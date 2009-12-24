@@ -829,8 +829,6 @@ int addTlvAttribute(IN_OUT StunMsg* msg , IN StunMsg* srs_msg,
 
 
 	case UNKNOWN_ATTRIBUTES:
-		/* iterator */
-		b2 = (T16 *) msg->unknownAttributes->buffer;
 		/* allocate unknownAttributes buffer */
 		msg->unknownAttributes = (Buffer*) pkg_malloc(sizeof(Buffer));
 		if(!msg->unknownAttributes){
@@ -839,7 +837,10 @@ int addTlvAttribute(IN_OUT StunMsg* msg , IN StunMsg* srs_msg,
 		}
 		memset(msg->unknownAttributes, 0, sizeof(Buffer));
 
+		/* iterator */
+		b2 = (T16 *) msg->unknownAttributes->buffer;
 		/* the number of unknown attributes must be even */
+
 		/* urmatorul numar mai mare sau egal cu X multiplu de N este
 		 * (X + N -1 ) / N * N
 		 */
@@ -859,7 +860,7 @@ int addTlvAttribute(IN_OUT StunMsg* msg , IN StunMsg* srs_msg,
 		}
 		/* just copy the unknown from the deserialized message */
 		memcpy(msg->unknownAttributes->buffer,
-	srs_msg->unknownAttributes->buffer, srs_msg->unknownAttributes->size);
+		srs_msg->unknownAttributes->buffer, srs_msg->unknownAttributes->size);
 
 		/* if number of unknws is not even; duplicate the last one */
 		if((srs_msg->unknownAttributes->size / sizeof(T16)) % 2 == 1)
