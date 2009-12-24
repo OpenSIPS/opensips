@@ -10,13 +10,11 @@
 Summary:  Open Source SIP Server
 Name:     opensips
 Version:  1.6.1
-Release:  4%{?dist}
+Release:  1%{?dist}
 License:  GPLv2+
 Group:    System Environment/Daemons
 Source0:  http://opensips.org/pub/%{name}/%{version}/src/%{name}-%{version}-tls_src.tar.gz
 Source1:  %{name}.sysconfig
-Patch1:   opensips--init.patch
-Patch2:   opensips--openssl10.patch
 URL:      http://opensips.org
 
 BuildRequires:  expat-devel
@@ -502,8 +500,6 @@ clients.
 
 %prep
 %setup -q -n %{name}-%{version}-tls
-%patch1 -p1
-%patch2 -p1
 
 %build
 LOCALBASE=/usr CFLAGS="%{optflags}" %{__make} all %{?_smp_mflags} TLS=1 \
@@ -990,6 +986,10 @@ fi
 %doc docdir/README.xmpp
 
 %changelog
+* Thu Dec 22 2009 John Khvatov <ivaxer@fedoraproject.org> - 1.6.1-1:
+- Updated to 1.6.1
+- Dropped upstreamed patches
+
 * Wed Nov 04 2009 John Khvatov <ivaxer@fedoraproject.org> - 1.6.0-4:
 - Fixed typo: pia_mi to pua_mi in presence_xcapdiff dependencies
 
