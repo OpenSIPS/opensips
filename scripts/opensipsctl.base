@@ -441,7 +441,7 @@ cat <<EOF
 	     ....................... for the given grp ip mask port
 EOF
 }
-USAGE_FUNCTIONS="$USAGE_FUNCTIONS usage_trusted"
+USAGE_FUNCTIONS="$USAGE_FUNCTIONS usage_address"
 
 usage_dispatcher() {
 	echo
