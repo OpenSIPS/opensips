@@ -837,8 +837,6 @@ int addTlvAttribute(IN_OUT StunMsg* msg , IN StunMsg* srs_msg,
 		}
 		memset(msg->unknownAttributes, 0, sizeof(Buffer));
 
-		/* iterator */
-		b2 = (T16 *) msg->unknownAttributes->buffer;
 		/* the number of unknown attributes must be even */
 
 		/* urmatorul numar mai mare sau egal cu X multiplu de N este
@@ -862,6 +860,9 @@ int addTlvAttribute(IN_OUT StunMsg* msg , IN StunMsg* srs_msg,
 		memcpy(msg->unknownAttributes->buffer,
 		srs_msg->unknownAttributes->buffer, srs_msg->unknownAttributes->size);
 
+		/* iterator */
+		b2 = (T16 *) msg->unknownAttributes->buffer;
+
 		/* if number of unknws is not even; duplicate the last one */
 		if((srs_msg->unknownAttributes->size / sizeof(T16)) % 2 == 1)
 		    b2[msg->unknownAttributes->size/sizeof(T16)-1] = b2[
@@ -869,7 +870,7 @@ int addTlvAttribute(IN_OUT StunMsg* msg , IN StunMsg* srs_msg,
 
 		/* convert to network order */
 		for(i=0; i < msg->unknownAttributes->size/sizeof(T16); i++)
-		    b2[i] = ntohs(b2[i]);		
+			b2[i] = ntohs(b2[i]);
 
 		msg->hasUnknownAttributes = TRUE;
 
