@@ -447,6 +447,7 @@ void mi_datagram_server(int rx_sock, int tx_sock)
 		/* get the client's address */
 		ret = recvfrom(rx_sock, mi_buf, DATAGRAM_SOCK_BUF_SIZE, 0, 
 					(struct sockaddr*)&reply_addr, &reply_addr_len);
+		LM_DBG("ret is %d\n", ret);
 
 		if (ret == -1) {
 			LM_ERR("recvfrom: (%d) %s\n", errno, strerror(errno));

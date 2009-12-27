@@ -210,7 +210,7 @@ modparam("mi_datagram", "socket_timeout", 2000)
 		<title><varname>reply_indent</varname> (string)</title>
 		<para>
 		Strings to be used for line indentation. As the MI data structure 
-		is tree oriendeted, the depth level will printed as identation.
+		is tree oriendeted, the depth level will printed as indentation.
 		</para>
 		<para>
 		<emphasis>
@@ -218,10 +218,10 @@ modparam("mi_datagram", "socket_timeout", 2000)
 		</emphasis>
 		</para>
 		<example>
-		<title>Set <varname>reply_ident</varname> parameter</title>
+		<title>Set <varname>reply_indent</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("mi_datagram", "reply_ident", "    ")
+modparam("mi_datagram", "reply_indent", "    ")
 ...
 </programlisting>
 		</example>
