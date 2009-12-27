@@ -52,7 +52,7 @@ Andreea-Ancuta Onofrei
    1.4. Set unix_socket_group parameter
    1.5. Set unix_socket_user parameter
    1.6. Set socket_timeout parameter
-   1.7. Set reply_ident parameter
+   1.7. Set reply_indent parameter
    1.8. DATAGRAM request
 
 Chapter 1. Admin Guide
@@ -168,13 +168,13 @@ modparam("mi_datagram", "socket_timeout", 2000)
 
    Strings to be used for line indentation. As the MI data
    structure is tree oriendeted, the depth level will printed as
-   identation.
+   indentation.
 
    Default value is ""\t" (TAB)".
 
-   Example 1.7. Set reply_ident parameter
+   Example 1.7. Set reply_indent parameter
 ...
-modparam("mi_datagram", "reply_ident", "    ")
+modparam("mi_datagram", "reply_indent", "    ")
 ...
 
 1.5. Exported Functions
