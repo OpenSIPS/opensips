@@ -384,6 +384,7 @@ static int w_replace_to(struct sip_msg* msg, char* p1, char* p2)
 	if (p2==NULL) {
 		p2 = p1;
 		p1 = NULL;
+		dsp = NULL;
 	}
 
 	/* p1 dispaly , p2 uri */
