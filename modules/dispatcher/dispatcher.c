@@ -171,7 +171,7 @@ static param_export_t params[]={
 	{"cnt_avp",         STR_PARAM, &cnt_avp_param.s},
 	{"attrs_avp",       STR_PARAM, &attrs_avp_param.s},
 	{"hash_pvar",       STR_PARAM, &hash_pvar_param.s},
-	{"setid_pvname",    STR_PARAM, &ds_setid_pvname.s},
+	{"setid_pvar",      STR_PARAM, &ds_setid_pvname.s},
 	{"ds_probing_threshhold", INT_PARAM, &probing_threshhold},
 	{"ds_ping_method",        STR_PARAM, &ds_ping_method.s},
 	{"ds_ping_from",          STR_PARAM, &ds_ping_from.s},
