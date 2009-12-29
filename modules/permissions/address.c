@@ -30,9 +30,9 @@
  */
 
 #include <string.h>
-#include <netinet/in.h>
 #include <sys/types.h>
 #include <arpa/inet.h>
+#include <netinet/in.h>
 
 #include "../../config.h"
 #include "../../db/db.h"
