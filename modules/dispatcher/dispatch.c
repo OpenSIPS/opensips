@@ -1209,8 +1209,7 @@ int ds_select_dst(struct sip_msg *msg, int set, int alg, int mode)
 	cnt = 0;
 
 	i=ds_id;
-	while ((idx->dlist[i].flags & DS_INACTIVE_DST)
-			|| (idx->dlist[i].flags & DS_PROBING_DST))
+	while ( idx->dlist[i].flags&(DS_INACTIVE_DST|DS_PROBING_DST) )
 	{
 		if(ds_use_default!=0)
 			i = (i+1)%(idx->nr-1);
@@ -1221,6 +1220,9 @@ int ds_select_dst(struct sip_msg *msg, int set, int alg, int mode)
 			if(ds_use_default!=0)
 			{
 				i = idx->nr-1;
+				if (idx->dlist[i]&(DS_INACTIVE_DST|DS_PROBING_DST))
+					return -1;
+				break;
 			} else {
 				return -1;
 			}
