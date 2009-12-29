@@ -366,7 +366,7 @@ struct sip_msg*  sip_msg_cloner( struct sip_msg *org_msg, int *sip_msg_len )
 			case HDR_MAXFORWARDS_T:
 			case HDR_ROUTE_T:
 			case HDR_RECORDROUTE_T:
-			case HDR_PATH_F:
+			case HDR_PATH_T:
 			case HDR_CONTENTTYPE_T:
 			case HDR_CONTENTLENGTH_T:
 			case HDR_EXPIRES_T:
@@ -679,7 +679,6 @@ do { \
 			case HDR_CONTENTTYPE_T :
 				if (HOOK_NOT_SET(content_type)) {
 					new_msg->content_type = new_hdr;
-					new_msg->content_type->parsed = hdr->parsed;
 				}
 				break;
 			case HDR_CONTENTLENGTH_T :
