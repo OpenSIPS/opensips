@@ -130,7 +130,7 @@ msg_set_dst_uri(msgobject *self, PyObject *args)
 
     if ((self->msg->first_line).type != SIP_REQUEST) {
         PyErr_SetString(PyExc_RuntimeError, "Not a request message - "
-          "rewrite is not possible.\n");
+          "set destination is not possible.\n");
         Py_INCREF(Py_None);
         return Py_None;
     }
@@ -376,7 +376,7 @@ msg_getRURI(msgobject *self, PyObject *unused)
 
     if ((self->msg->first_line).type != SIP_REQUEST) {
         PyErr_SetString(PyExc_RuntimeError, "Not a request message - "
-          "rewrite is not possible.\n");
+          "RURI is not available.\n");
         Py_INCREF(Py_None);
         return Py_None;
     }
@@ -420,6 +420,41 @@ msg_get_src_address(msgobject *self, PyObject *unused)
     return pyRval;
 }
 
+static PyObject *
+msg_get_dst_address(msgobject *self, PyObject *unused)
+{
+    PyObject *dst_ip, *dst_port, *pyRval;
+
+    if (self->msg == NULL) {
+        PyErr_SetString(PyExc_RuntimeError, "self->msg is NULL");
+        Py_INCREF(Py_None);
+        return Py_None;
+    }
+
+    dst_ip = PyString_FromString(ip_addr2a(&self->msg->rcv.dst_ip));
+    if (dst_ip == NULL) {
+        Py_INCREF(Py_None);
+        return Py_None;
+    }
+
+    dst_port = PyInt_FromLong(self->msg->rcv.dst_port);
+    if (dst_port == NULL) {
+        Py_DECREF(dst_ip);
+        Py_INCREF(Py_None);
+        return Py_None;
+    }
+
+    pyRval = PyTuple_Pack(2, dst_ip, dst_port);
+    Py_DECREF(dst_ip);
+    Py_DECREF(dst_port);
+    if (pyRval == NULL) {
+        Py_INCREF(Py_None);
+        return Py_None;
+    }
+
+    return pyRval;
+}
+
 static PyGetSetDef msg_getseters[] = {
     {"Type",
      (getter)msg_getType, NULL, NULL,
@@ -436,6 +471,9 @@ static PyGetSetDef msg_getseters[] = {
     {"src_address",
      (getter)msg_get_src_address, NULL, NULL,
      "Get (IP, port) tuple representing source address of the message."},
+    {"dst_address",
+     (getter)msg_get_dst_address, NULL, NULL,
+     "Get (IP, port) tuple representing destination address of the message."},
     {NULL, NULL, NULL, NULL, NULL}  /* Sentinel */
 };
 
