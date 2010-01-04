@@ -207,7 +207,6 @@ b2b_dlg_t* b2b_dlg_copy(b2b_dlg_t* dlg)
 	if(dlg->ruri.s)
 		CONT_COPY(new_dlg, new_dlg->ruri, dlg->ruri);
 	CONT_COPY(new_dlg, new_dlg->callid, dlg->callid);
-	CONT_COPY(new_dlg, new_dlg->callid, dlg->callid);
 	CONT_COPY(new_dlg, new_dlg->from_uri, dlg->from_uri);
 	CONT_COPY(new_dlg, new_dlg->to_uri, dlg->to_uri);
 	if(dlg->tag[0].len && dlg->tag[0].s)
@@ -277,7 +276,6 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 	int method_value;
 	struct to_body TO;
 	static	str reason = {"Trying", 6};
-	char* src_ip;
 
 	/* check if a b2b request */
 	if (parse_headers(msg, HDR_EOH_F, 0) < 0)
@@ -288,9 +286,9 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 
 	LM_DBG("start - method = %.*s\n", msg->first_line.u.request.method.len,
 		msg->first_line.u.request.method.s);
-	if(msg->record_route)
+	if(msg->route)
 	{
-		LM_DBG("Found record route headers\n");
+		LM_DBG("Found route headers\n");
 		return 1;
 	}
 	method_value = msg->first_line.u.request.method_value;
@@ -301,21 +299,6 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 		server_address.len)== 0))
 	{
 		LM_DBG("RURI does not point to me\n");
-		return 1;
-	}
-
-	src_ip = ip_addr2a(&msg->rcv.src_ip);
-	if(src_ip == NULL)
-	{
-		LM_ERR("Failed to convert ipaddr to string\n");
-		return -1;
-	}
-
-	if((strlen(src_ip)==srv_addr_uri.host.len) &&
-			(strncmp(src_ip, srv_addr_uri.host.s, srv_addr_uri.host.len) == 0) &&
-			srv_addr_uri.port_no == msg->rcv.src_port)
-	{
-		LM_DBG("Received a message that I sent\n");
 		return 1;
 	}
 
@@ -657,7 +640,7 @@ b2b_dlg_t* b2b_new_dlg(struct sip_msg* msg, int on_reply)
 
 	if(msg->record_route!=NULL && msg->record_route->body.s!= NULL)
 	{
-		if( print_rr_body(msg->record_route, &dlg.route_set[CALLER_LEG], 0, 0)!= 0)
+		if( print_rr_body(msg->record_route, &dlg.route_set[CALLER_LEG], on_reply, 0)!= 0)
 		{
 			LM_ERR("failed to process record route\n");
 		}
@@ -1141,7 +1124,7 @@ dlg_leg_t* b2b_new_leg(struct sip_msg* msg, str* to_tag, int mem_type)
 
 	if(msg->record_route!=NULL && msg->record_route->body.s!= NULL)
 	{
-		if( print_rr_body(msg->record_route, &route_set, 0, 0)!= 0)
+		if( print_rr_body(msg->record_route, &route_set, 1, 0)!= 0)
 		{
 			LM_ERR("failed to process record route\n");
 			goto error;
