@@ -297,7 +297,7 @@ int fixup_t_write( void** param, int param_no)
 	struct tw_info *twi;
 	char *s;
 
-	if (param_no==2) {
+	if (param_no==1) {
 		twi = (struct tw_info*)pkg_malloc( sizeof(struct tw_info) );
 		if (twi==0) {
 			LM_ERR("no more pkg memory\n");
