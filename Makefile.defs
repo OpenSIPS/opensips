@@ -631,8 +631,8 @@ CFLAGS+=$(DEBUGSYM)
 #if i386
 ifeq	($(ARCH), i386)
 	# These CPU optimization assumes that you run a Intel processor.
-	# If you use a AMD CPU, you could ajust the settings here for better performance.
-	# For gcc 4.x use CPU_TYPE ?= athlon-xp
+	# If you use a AMD CPU, you could ajust the settings here for better 
+	# performance. For gcc 4.x use CPU_TYPE ?= athlon-xp
 		# if gcc 
 ifeq		($(CC_NAME), gcc)
 				#common stuff
@@ -640,7 +640,12 @@ ifeq		($(CC_NAME), gcc)
 					-Wall 
 			#if gcc 4.0+
 ifeq			($(CC_CLASS), 4.x)
-					CPU_TYPE ?= prescott
+					ARCH_VER=$(shell $(GETARCH))
+ifeq 				($(ARCH_VER), i386)
+						CPU_TYPE ?= i686
+else
+						CPU_TYPE ?= prescott
+endif
 					CFLAGS+=-minline-all-stringops \
 							-falign-loops \
 							-ftree-vectorize \
@@ -698,8 +703,8 @@ endif	#ARCH, i386
 #x86_64
 ifeq	($(ARCH), x86_64)
 	# These CPU optimization assumes that you run a Intel 64 processor.
-	# If you use a AMD 64 CPU, you could ajust the settings here for better performance.
-	# For gcc 4.x use CPU_TYPE ?= athlon64
+	# If you use a AMD 64 CPU, you could ajust the settings here for better
+	# performance. For gcc 4.x use CPU_TYPE ?= athlon64
 	# Perhaps it makes sense to use '-m64' here?
 		# if gcc 
 ifeq		($(CC_NAME), gcc)
