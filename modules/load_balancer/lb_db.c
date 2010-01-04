@@ -177,7 +177,7 @@ int lb_db_load_data( struct lb_data *data)
 			/* PROBING_MODE column */
 			check_val( ROW_VALUES(row)+4, DB_INT, 1, 0);
 			pmode = VAL_INT(ROW_VALUES(row)+4);
-			if (pmode==1) {
+			if (pmode==0) {
 				flags |= LB_DST_PING_DSBL_FLAG;
 			} else if (pmode>=2) {
 				flags |= LB_DST_PING_PERM_FLAG;
