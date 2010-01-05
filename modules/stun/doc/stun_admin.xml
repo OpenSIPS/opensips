@@ -160,7 +160,7 @@ modparam("stun","primary_port","5060")
                 <programlisting format="linespecific">
 ...
 
-modparam("stun","alternate_port","3479")
+modparam("stun","alternate_ip","11.22.33.44")
 ...
                 </programlisting>
             </example>
