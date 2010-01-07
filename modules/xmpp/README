@@ -33,9 +33,10 @@ Andreea Spirea
               1.3.3. gateway_domain (string)
               1.3.4. xmpp_domain (string)
               1.3.5. xmpp_host (string)
-              1.3.6. xmpp_port (integer)
-              1.3.7. xmpp_password (string)
-              1.3.8. outbound_proxy (string)
+              1.3.6. sip_domain (string)
+              1.3.7. xmpp_port (integer)
+              1.3.8. xmpp_password (string)
+              1.3.9. outbound_proxy (string)
 
         1.4. Exported Functions
 
@@ -50,10 +51,11 @@ Andreea Spirea
    1.3. Set gateway_domain parameter
    1.4. Set xmpp_domain parameter
    1.5. Set xmpp_host parameter
-   1.6. Set xmpp_port parameter
-   1.7. Set xmpp_password parameter
-   1.8. Set outbound_proxy parameter
-   1.9. xmpp_send_message() usage
+   1.6. Set xmpp_host parameter
+   1.7. Set xmpp_port parameter
+   1.8. Set xmpp_password parameter
+   1.9. Set outbound_proxy parameter
+   1.10. xmpp_send_message() usage
 
 Chapter 1. Admin Guide
 
@@ -118,16 +120,6 @@ Chapter 1. Admin Guide
      * the gateway is running on sip-xmpp.opensips.org;
      * the "XMPP server" is running on xmpp-sip.opensips.org.
 
-   In both cases, the destination address must have the same
-   pattern:
-
-   "sip:username<delim>jabber_server@gateway_domain"
-
-   From a jabber client's point of view, the destination will look
-   like:
-
-   "sip_username@opensips_domain"
-
 1.2. Dependencies
 
 1.2.1. OpenSIPS Modules
@@ -173,12 +165,9 @@ Chapter 1. Admin Guide
 
 1.3.3. gateway_domain (string)
 
-   The domain of the gateway, which must resolve. It must be the
-   same with the gateway_domain from the destination address of
-   the XMPP(jabber) client, as seen by the SIP client:
-   "sip:username<delim>jjabber_server@gateway_domain".
+   The domain of the gateway, which must resolve.
 
-   Default value is "sip-xmpp.example.org".
+   Default value is "sip-xmpp.opensips.org".
 
    Example 1.3. Set gateway_domain parameter
 ...
@@ -190,7 +179,7 @@ Chapter 1. Admin Guide
    The xmpp domain of the component or the server, depending on
    the mode we are in. It can be the same as the gateway_domain.
 
-   Default value is "sip-xmpp.example.org".
+   Default value is "sip-xmpp.opensips.org".
 
    Example 1.4. Set xmpp_domain parameter
 ...
@@ -203,14 +192,34 @@ Chapter 1. Admin Guide
    backend is set to "component"; or the address to bind to in the
    server mode.
 
-   Default value is "xmpp.example.org".
+   Default value is "xmpp.opensips.org".
 
    Example 1.5. Set xmpp_host parameter
 ...
  modparam("xmpp", "xmpp_host", "xmpp.opensips.org")
 ...
 
-1.3.6. xmpp_port (integer)
+1.3.6. sip_domain (string)
+
+   If this parameter is set, the value will be used as the SIP
+   domain name in XMPP. So, if the sip domain that the gateway is
+   responsible for is opensips.org and this parameter is set to
+   sip.opensips.org, than in all the requests sent in xmpp the sip
+   users will have the domain translated to sip.opensips.org.
+   Also, in XMPP account the SIP buddies mut have this domain:
+   sip.opensips.org, and it will be translated to the real one
+   opensips.org when traversing the gateway. This parameter is
+   useful when the provider wants to have the same domain name for
+   the SIP service and for the XMPP service.
+
+   Default value is "sip.opensips.org".
+
+   Example 1.6. Set xmpp_host parameter
+...
+ modparam("xmpp", "sip_domain", "sip.opensips.org")
+...
+
+1.3.7. xmpp_port (integer)
 
    In the component mode, this is the port of the jabber router we
    connect to. In the server mode, it is the transport address to
@@ -219,12 +228,12 @@ Chapter 1. Admin Guide
    Default value is "5347", if backend is set to "component" and
    "5269", if backend is set to "server".
 
-   Example 1.6. Set xmpp_port parameter
+   Example 1.7. Set xmpp_port parameter
 ...
  modparam("xmpp", "xmpp_port", 5269)
 ...
 
-1.3.7. xmpp_password (string)
+1.3.8. xmpp_password (string)
 
    The password of the local jabber server.
 
@@ -237,12 +246,12 @@ Chapter 1. Admin Guide
     <user>jabberd</user>;          <!-- default: jabberd -->;
     <pass>secret</pass>;           <!-- default: secret -->;
 
-   Example 1.7. Set xmpp_password parameter
+   Example 1.8. Set xmpp_password parameter
 ...
  modparam("xmpp", "xmpp_password", "secret")
 ...
 
-1.3.8. outbound_proxy (string)
+1.3.9. outbound_proxy (string)
 
    The SIP address used as next hop when sending the message. Very
    useful when using OpenSIPS with a domain name not in DNS, or
@@ -252,7 +261,7 @@ Chapter 1. Admin Guide
 
    Default value is NULL.
 
-   Example 1.8. Set outbound_proxy parameter
+   Example 1.9. Set outbound_proxy parameter
 ...
  modparam("xmpp", "outbound_proxy", "sip:opensips.org;transport=tcp")
 ...
@@ -264,7 +273,7 @@ Chapter 1. Admin Guide
    Converts SIP messages to XMPP(jabber) messages, in order to be
    relayed to a XMPP(jabber) client.
 
-   Example 1.9. xmpp_send_message() usage
+   Example 1.10. xmpp_send_message() usage
 ...
 xmpp_send_message();
 ...

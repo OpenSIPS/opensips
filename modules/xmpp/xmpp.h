@@ -27,6 +27,8 @@
 #ifndef _MOD_XMPP_H
 #define _MOD_XMPP_H
 
+#include "../../str.h"
+
 enum xmpp_pipe_cmd_type {
 	XMPP_PIPE_SEND_PACKET     = 1,
 	XMPP_PIPE_SEND_MESSAGE    = 2,
@@ -47,6 +49,7 @@ extern char *xmpp_domain;
 extern char *xmpp_host;
 extern int xmpp_port;
 extern char *xmpp_password;
+extern str sip_domain;
 
 /* mod_xmpp.c */
 extern int xmpp_send_sip_msg(char *from, char *to, char *msg);
@@ -56,6 +59,8 @@ extern void xmpp_free_pipe_cmd(struct xmpp_pipe_cmd *cmd);
 char *extract_domain(char *jid);
 char *random_secret(void);
 char *db_key(char *secret, char *domain, char *id);
+char* uri_sip2xmpp(str* uri);
+char* uri_xmpp2sip(char* uri, int* len);
  
 
 /* xmpp_server.c */
@@ -66,5 +71,16 @@ int xmpp_component_child_process(int data_pipe);
 
 /* sha.c */
 char *shahash(const char *str);
+
+#define ENC_SIP_URI(dst, buf, src) \
+	do{\
+		char* slash = strchr(src, '/'); \
+		if(slash)\
+			dst.len = slash - src + 4;\
+		else\
+			dst.len = strlen(src) + 4; \
+		dst.s = buf;\
+		sprintf(buf, "sip:%s", src);\
+	}while(0)
 
 #endif

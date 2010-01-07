@@ -23,7 +23,7 @@
  *
  * History:
  * --------
- *  2007-03-29  initial version (anca)
+ *  2007-03-29  initial version (Anca Vamanu)
  */
 #include <stdio.h>
 #include <string.h>
@@ -37,6 +37,7 @@
 #include "../../mem/mem.h"
 #include "../../ut.h"
 #include "../pua/pua.h"
+#include "../xmpp/xmpp.h"
 #include "pua_xmpp.h"
 
 int build_publish(xmlNodePtr pres_node, int expire);
@@ -66,7 +67,6 @@ void pres_Xmpp2Sip(char *msg, int type, void *param)
 		goto error;
 	}
 	pres_type= XMLNodeGetAttrContentByName(pres_node, "type" );
-	
 	if(pres_type== NULL )
 	{
 		LM_DBG("type attribut not present\n");
@@ -77,7 +77,6 @@ void pres_Xmpp2Sip(char *msg, int type, void *param)
 				xmlFree(pres_type);
 				goto error;
 		}
-
 
 		/* send subscribe after publish because in xmpp subscribe message
 		 * comes only when a new contact is inserted in buddy list */
@@ -141,8 +140,7 @@ error:
 	xmlMemoryDump();
 
 	return ;
-
-}	
+}
 
 str* build_pidf(xmlNodePtr pres_node, char* uri, char* resource)
 {
@@ -156,8 +154,6 @@ str* build_pidf(xmlNodePtr pres_node, char* uri, char* resource)
 	char* type= NULL;
 	char* status= NULL;
 
-	LM_DBG("start\n");
-
 	entity=(char*)pkg_malloc(7+ strlen(uri)*sizeof(char));
 	if(entity== NULL)
 	{	
@@ -167,7 +163,6 @@ str* build_pidf(xmlNodePtr pres_node, char* uri, char* resource)
 	strcpy(entity, "pres:");
 	memcpy(entity+5, uri+4, strlen(uri)-4);
 	entity[1+ strlen(uri)]= '\0';
-	LM_DBG("entity: %s\n", entity);
 
 	doc= xmlNewDoc(BAD_CAST "1.0");
 	if(doc== NULL)
@@ -218,10 +213,9 @@ str* build_pidf(xmlNodePtr pres_node, char* uri, char* resource)
 			LM_ERR("while adding child\n");
 			goto error;
 		}
-
 	}
 	else
-	{	
+	{
 		basic_node = xmlNewChild(status_node, NULL, BAD_CAST "basic",
 				BAD_CAST "closed") ;
 		if( basic_node ==NULL)
@@ -229,7 +223,7 @@ str* build_pidf(xmlNodePtr pres_node, char* uri, char* resource)
 			LM_ERR("while adding child\n");
 			goto error;
 		}
-		goto done;		
+		goto done;
 	}
 	/*if no type present search for suplimentary information */
 	status_cont= XMLNodeGetNodeContentByName(pres_node, "status", NULL);
@@ -275,8 +269,8 @@ str* build_pidf(xmlNodePtr pres_node, char* uri, char* resource)
 			{
 				LM_ERR("while adding node\n");
 				goto error;
-			}	
-		}	
+			}
+		}
 
 	if(show_cont)
 	{
@@ -350,34 +344,34 @@ error:
 		xmlFreeDoc(doc);
 
 	return NULL;
-}	
+}
 
 
 int build_publish(xmlNodePtr pres_node, int expires)
 {
 	str* body= NULL;
 	publ_info_t publ;
-	char* uri= NULL, *resource= NULL;
-	char* pres_uri= NULL;
+	char* resource= NULL;
+	str pres_uri= {0, 0};
 	char* slash;
-	int uri_len;
-	str uri_str;
+	char buf[256];
+	char* uri;
 
-	LM_DBG("start... \n");
-	
-	uri= XMLNodeGetAttrContentByName(pres_node, "from");
-	if(uri== NULL)
+	uri = XMLNodeGetAttrContentByName(pres_node, "from");
+	if(uri == NULL)
 	{
 		LM_DBG("getting 'from' attribute\n");
 		return -1;
 	}
-	uri_len= strlen(uri);
 
-	slash= memchr(uri, '/', strlen(uri));
+	ENC_SIP_URI(pres_uri, buf, uri);
+	xmlFree(uri);
+
+	slash= memchr(pres_uri.s, '/', pres_uri.len);
 	if(slash)
 	{
-		uri_len= slash- uri;
-		resource= (char*)pkg_malloc((strlen(uri)-uri_len)*sizeof(char));
+		pres_uri.len= slash- pres_uri.s;
+		resource= (char*)pkg_malloc((strlen(pres_uri.s)-pres_uri.len)*sizeof(char));
 		if(resource== NULL)
 		{
 			LM_ERR("no more memory\n");
@@ -385,18 +379,9 @@ int build_publish(xmlNodePtr pres_node, int expires)
 		}
 		strcpy(resource, slash+1);
 		slash= '\0';
-	}	
-	pres_uri= euri_xmpp_sip(uri);
-	if(pres_uri== NULL)
-	{
-		LM_ERR("while encoding xmpp-sip uri\n");
-		goto error;	
-	}	
-	xmlFree(uri);
-	uri_str.s= pres_uri;
-	uri_str.len= strlen(pres_uri);
+	}
 
-	body= build_pidf(pres_node, pres_uri, resource);
+	body= build_pidf(pres_node, pres_uri.s, resource);
 	if(body== NULL)
 	{
 		LM_ERR("while constructing PUBLISH body\n");
@@ -406,23 +391,18 @@ int build_publish(xmlNodePtr pres_node, int expires)
 	/* construct the publ_info_t structure */
 
 	memset(&publ, 0, sizeof(publ_info_t));
-	
-	publ.pres_uri= &uri_str;
-
-	LM_DBG("publ->pres_uri: %.*s  -  %d\n", publ.pres_uri->len, 
-			publ.pres_uri->s, publ.pres_uri->len );
+	publ.pres_uri= &pres_uri;
 
 	publ.body= body;
-	
-	LM_DBG("publ->notify body: %.*s - %d\n", publ.body->len,
-			publ.body->s,  publ.body->len);
+
+	LM_DBG("Publish for [%s]  body:\n %.*s - %d\n", pres_uri.s, publ.body->len,
+			publ.body->s, publ.body->len);
 
 	publ.source_flag|= XMPP_PUBLISH;
 	publ.expires= expires;
 	publ.event= PRESENCE_EVENT;
 	publ.extra_headers= NULL;
 	publ.outbound_proxy = presence_server;
-
 
 	if( pua_send_publish(&publ)< 0)
 	{
@@ -454,54 +434,39 @@ error:
 	}
 
 	return -1;
-
 }
 
 int presence_subscribe(xmlNodePtr pres_node, int expires,int  flag)
 {
 	subs_info_t subs;
-	char* uri= NULL;
-	char* type= NULL;
-	str to_uri_str = {0, 0};
-	str from_uri_str;
+	char* type= NULL, *uri= NULL;
+	str to_uri= {0, 0};
+	str from_uri= {0, 0};
+	char buf_to[256], buf_from[256];
 
-	uri= XMLNodeGetAttrContentByName(pres_node, "to"); 
-	if(uri== NULL)
+	uri= XMLNodeGetAttrContentByName(pres_node, "to");
+	if(uri == NULL)
 	{
-		LM_ERR("while getting attribute from xml doc\n");
+		LM_ERR("failed to get to attribute from xml doc\n");
 		return -1;
 	}
-	to_uri_str.s= duri_xmpp_sip(uri);
-	if(to_uri_str.s == NULL)
-	{
-		LM_ERR("while decoding xmpp--sip uri\n");
-		xmlFree(uri);
-		goto error;
-	}
-	to_uri_str.len = strlen(to_uri_str.s);
-
+	ENC_SIP_URI(to_uri, buf_to, uri);
 	xmlFree(uri);
 
-	uri= XMLNodeGetAttrContentByName(pres_node, "from"); 
-	if(uri== NULL)
+	uri= XMLNodeGetAttrContentByName(pres_node, "from");
+	if(uri == NULL)
 	{
-		LM_ERR("while getting attribute from xml doc\n");
+		LM_ERR("failed to get from attribute from xml doc\n");
 		goto error;
 	}
-	from_uri_str.s= euri_xmpp_sip(uri);
-	if(from_uri_str.s== NULL)
-	{
-		LM_ERR("while encoding xmpp-sip uri\n");
-		xmlFree(uri);
-		goto error;	
-	}	
-	from_uri_str.len= strlen(from_uri_str.s);
+
+	ENC_SIP_URI(from_uri, buf_from, uri);
 	xmlFree(uri);
-	
+
 	memset(&subs, 0, sizeof(subs_info_t));
 
-	subs.pres_uri= &to_uri_str;
-	subs.watcher_uri= &from_uri_str;
+	subs.pres_uri= &to_uri;
+	subs.watcher_uri= &from_uri;
 	subs.remote_target = subs.pres_uri;
 
 	if(presence_server.s)
@@ -529,13 +494,11 @@ int presence_subscribe(xmlNodePtr pres_node, int expires,int  flag)
 	if(presence_server.s && presence_server.len)
 		subs.outbound_proxy = &presence_server;
 
-	LM_DBG("subs:\n");
-	LM_DBG("\tpres_uri= %.*s\n", subs.pres_uri->len,  subs.pres_uri->s);
-	LM_DBG("\twatcher_uri= %.*s\n", subs.watcher_uri->len,  subs.watcher_uri->s);
+	LM_DBG("XMPP subscription to [%.*s] , from [%.*s], expires= [%d]\n", 
+			subs.pres_uri->len,  subs.pres_uri->s,
+			subs.watcher_uri->len,  subs.watcher_uri->s, expires);
 	if(subs.outbound_proxy)
-		LM_DBG("\toutbound_proxy= %.*s\n", subs.outbound_proxy->len,  subs.outbound_proxy->s);
-
-	LM_DBG("\texpires= %d\n", subs.expires);
+		LM_DBG("outbound_proxy= %.*s\n", subs.outbound_proxy->len,  subs.outbound_proxy->s);
 
 	if(pua_send_subscribe(&subs)< 0)
 	{
@@ -547,7 +510,6 @@ int presence_subscribe(xmlNodePtr pres_node, int expires,int  flag)
 error:
 	if(type)
 		xmlFree(type);
-	
 	return -1;
 }
 

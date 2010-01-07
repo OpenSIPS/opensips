@@ -30,74 +30,88 @@
 
 #include "xmpp.h"
 #include "../../parser/parse_uri.h"
-
-/* dencode sip:user*domain1@domain2 -> user@domain1 */
-char *decode_uri_sip_xmpp(char *uri)
+/*
+ sip_uri:  sip:user@sip_domain ->
+ xmpp_uri: user@xmpp_domain
+*/
+char* uri_sip2xmpp(str* uri)
 {
-	struct sip_uri puri;
-	static char buf[512];
-	char *p;
+	static char buf[256];
+	struct sip_uri suri;
+	int len;
 
-	if (!uri)
-		return NULL;
-	if (parse_uri(uri, strlen(uri), &puri) < 0) {
-		LM_ERR("failed to parse URI\n");
-		return NULL;
+	if(parse_uri(uri->s, uri->len, &suri) < 0)
+	{
+		LM_ERR("Failed to parse SIP uri\n");
+		return 0;
 	}
-	strncpy(buf, puri.user.s, sizeof(buf));
-	buf[puri.user.len] = 0;
 	
-	/* replace domain separator */
-	if ((p = strchr(buf, domain_separator)))
-		*p = '@';
-
-	return buf;
-}
-
-/* encode sip:user@domain -> user@domain */
-char *encode_uri_sip_xmpp(char *uri)
-{
-	struct sip_uri puri;
-	static char buf[512];
-
-	if (!uri)
-		return NULL;
-	if (parse_uri(uri, strlen(uri), &puri) < 0) {
-		LM_ERR("failed to parse URI\n");
-		return NULL;
+	if(suri.user.len + 2 + strlen(xmpp_domain) > 256)
+	{
+		LM_ERR("Buffer overflow\n");
+		return 0;
 	}
-	snprintf(buf, sizeof(buf), "%.*s@%.*s",
-		puri.user.len, puri.user.s,
-		puri.host.len, puri.host.s);
+	
+	len = sprintf(buf, "%.*s@%s", suri.user.len, suri.user.s, xmpp_domain);
+	buf[len] = '\0';
 	return buf;
 }
 
-/* decode user@domain1 -> sip:user@domain1 */
-char *decode_uri_xmpp_sip(char *jid)
+/*
+   xmpp uri: user@xmpp_domain/resource ->
+   sip_uri: user@sip_domain
+*/
+char* uri_xmpp2sip(char* uri, int* len)
 {
-	static char buf[512];
+	static char buf[256];
+	char* arond, *slash;
+	str user;
+	
+	if(sip_domain.s == 0)
+	{
+		user.s = uri;
+		slash = strchr(uri, '/');
+		if(slash)
+		{
+			user.len = slash - uri;
+		}
+		else
+			user.len = strlen(uri);
+	
+		if(5 + user.len > 256)
+		{
+			LM_ERR("Buffer overflow\n");
+			return 0;
+		}
+	
+		*len = sprintf(buf, "sip:%.*s", user.len, user.s);
+		buf[*len] = '\0';
+		return buf;
+	}	
 
-	if (!jid)
-		return NULL;
-	snprintf(buf, sizeof(buf), "sip:%s", jid);
-
-	return buf;
-}
-
-/* encode user@domain -> sip:user*domain@gateway_domain */
-char *encode_uri_xmpp_sip(char *jid)
-{
-	static char buf[512];
-	char *p;
-
-	if (!jid)
-		return NULL;
-	/* TODO: maybe not modify jid? */
-	if ((p = strchr(jid, '/')))
-		*p = 0;
-	if ((p = strchr(jid, '@')))
-		*p = domain_separator;
-	snprintf(buf, sizeof(buf), "sip:%s@%s", jid, gateway_domain);
+	arond = strchr(uri, '@');
+	if(arond == NULL)
+	{
+		LM_ERR("Bad formatted uri %s\n", uri);
+		return 0;
+	}
+	slash = strchr(uri, '/');
+	if(slash && slash < arond)
+	{
+		LM_ERR("Bad formatted uri %s\n", uri);
+		return 0;
+	}
+	user.s = uri;
+	user.len = arond - uri;
+	
+	if(6 + user.len + sip_domain.len > 256)
+	{
+		LM_ERR("Buffer overflow\n");
+		return 0;
+	}
+	
+	*len = sprintf(buf, "sip:%.*s@%s", user.len, user.s, sip_domain.s);
+	buf[*len] = '\0';
 	return buf;
 }
 

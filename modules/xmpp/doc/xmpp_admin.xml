@@ -78,10 +78,6 @@
 			<para>the "XMPP server" is running on xmpp-sip.opensips.org.</para>
 		</listitem>
 	</itemizedlist>	
-	<para>In both cases, the destination address must have the same pattern:</para>
-	<para>	<quote>sip:username<![CDATA[<]]>delim<![CDATA[>]]>jabber_server@gateway_domain</quote> </para>
-	<para>	From a jabber client's point of view, the destination will look like:</para>
-	<para>	<quote>sip_username@opensips_domain</quote>	</para>
 	</section>
 	<section>
 	<title>Dependencies</title>
@@ -163,13 +159,10 @@
 	<section>
 		<title><varname>gateway_domain</varname> (string)</title>
 		<para>
-		 The domain of the gateway, which must resolve. It must be the same with the gateway_domain from the destination address of the
-		 XMPP(jabber) client, as seen by the SIP client:
-			"sip:username<![CDATA[<]]>delim<![CDATA[>]]>jjabber_server@gateway_domain".
-		</para>
+		 The domain of the gateway, which must resolve.</para>
 		<para>
 		<emphasis>
-			Default value is "sip-xmpp.example.org".
+			Default value is "sip-xmpp.opensips.org".
 		</emphasis>
 		</para>
 		<example>
@@ -188,7 +181,7 @@
 		</para>
 		<para>
 		<emphasis>
-			Default value is "sip-xmpp.example.org".
+			Default value is "sip-xmpp.opensips.org".
 		</emphasis>
 		</para>
 		<example>
@@ -207,7 +200,7 @@
 		</para>
 		<para>
 		<emphasis>
-			Default value is "xmpp.example.org".
+			Default value is "xmpp.opensips.org".
 		</emphasis>
 		</para>
 		<example>
@@ -219,6 +212,33 @@
 </programlisting>
 		</example>
 	</section>
+
+	<section>
+		<title><varname>sip_domain</varname> (string)</title>
+		<para>
+		If this parameter is set, the value will be used as the SIP domain name in XMPP. So, if the sip domain
+		that the gateway is responsible for is opensips.org and this parameter is set to sip.opensips.org, than
+		in all the requests sent in xmpp the sip users will have the domain translated to sip.opensips.org.
+		Also, in XMPP account the SIP buddies mut have this domain: sip.opensips.org, and it will be
+		translated to the real one opensips.org when traversing the gateway.
+		This parameter is useful when the provider wants to have the same domain name for the SIP service
+		and for the XMPP service. 
+		</para>
+		<para>
+		<emphasis>
+			Default value is "sip.opensips.org".
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>xmpp_host</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+ modparam("xmpp", "sip_domain", "sip.opensips.org")
+...
+</programlisting>
+		</example>
+	</section>
+
 	<section>
 		<title><varname>xmpp_port</varname> (integer)</title>
 		<para>

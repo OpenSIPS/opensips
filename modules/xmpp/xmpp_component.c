@@ -116,10 +116,7 @@ static void stream_node_callback(int type, xode node, void *arg)
 
 			if (!(msg = xode_get_data(body)))
 				msg = "";
-			xmpp_send_sip_msg(
-				encode_uri_xmpp_sip(from),
-				decode_uri_xmpp_sip(to),
-				msg);
+			xmpp_send_sip_msg(from, to, msg);
 		} else if (!strcmp(tag, "presence")) {
 			/* call presence callbacks */
 			LM_DBG("XMPP Presence received\n");
@@ -154,8 +151,8 @@ static int do_send_message_component(struct xmpp_private_data *priv,
 
 	x = xode_new_tag("message");
 	xode_put_attrib(x, "id", cmd->id); // XXX
-	xode_put_attrib(x, "from", encode_uri_sip_xmpp(cmd->from));
-	xode_put_attrib(x, "to", decode_uri_sip_xmpp(cmd->to));
+	xode_put_attrib(x, "from", cmd->from);
+	xode_put_attrib(x, "to", cmd->to);
 	xode_put_attrib(x, "type", "chat");
 	xode_insert_cdata(xode_insert_tag(x, "body"), cmd->body, -1);
 			

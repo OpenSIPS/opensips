@@ -64,10 +64,6 @@ xmpp_api_t xmpp_api;
 xmpp_send_xsubscribe_f xmpp_subscribe;
 xmpp_send_xnotify_f xmpp_notify;
 xmpp_send_xpacket_f xmpp_packet;
-xmpp_translate_uri_f duri_sip_xmpp;
-xmpp_translate_uri_f euri_sip_xmpp;
-xmpp_translate_uri_f duri_xmpp_sip;
-xmpp_translate_uri_f euri_xmpp_sip;
 
 /* libxml wrapper functions */
 xmlNodeGetAttrContentByName_t XMLNodeGetAttrContentByName;
@@ -95,7 +91,7 @@ static cmd_export_t cmds[]=
 static param_export_t params[]={
 	{"server_address",		STR_PARAM,	&server_address	},
 	{"presence_server",		STR_PARAM,	&presence_server},
-	{0,						0,				0			}
+	{0,						0,			0				}
 };
 
 /** module exports */
@@ -220,37 +216,6 @@ static int mod_init(void)
 				" to xmpp\n");
 		return -1;
 	}
-	if(xmpp_api.decode_uri_sip_xmpp== NULL)
-	{
-		LM_ERR("Could not import decode_uri_sip_xmpp"
-				" from xmpp\n");
-		return -1;
-	}
-	duri_sip_xmpp= xmpp_api.decode_uri_sip_xmpp;
-
-	if(xmpp_api.encode_uri_sip_xmpp== NULL)
-	{
-		LM_ERR("Could not import encode_uri_sip_xmpp"
-				" from xmpp\n");
-		return -1;
-	}
-	euri_sip_xmpp= xmpp_api.encode_uri_sip_xmpp;
-
-	if(xmpp_api.decode_uri_xmpp_sip== NULL)
-	{
-		LM_ERR("Could not import decode_uri_xmpp_sip"
-				" from xmpp\n");
-		return -1;
-	}
-	duri_xmpp_sip= xmpp_api.decode_uri_xmpp_sip;
-
-	if(xmpp_api.encode_uri_xmpp_sip== NULL)
-	{
-		LM_ERR("Could not import encode_uri_xmpp_sip"
-				" from xmpp\n");
-		return -1;
-	}
-	euri_xmpp_sip= xmpp_api.encode_uri_xmpp_sip;
 
 	/* bind pua */
 	bind_pua= (bind_pua_t)find_export("bind_pua", 1,0);
