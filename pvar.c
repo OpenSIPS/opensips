@@ -1964,7 +1964,7 @@ static int pv_get_hdr(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res)
 			}
 		} else {
 			/* it is an un-known header -> use name to find it */
-			for (hf0=hf->next; hf0; hf=hf0->next) {
+			for (hf0=hf->next; hf0; hf0=hf0->next) {
 				if (hf0->type==HDR_OTHER_T && hf0->name.len==tv.rs.len
 				&& strncasecmp(hf0->name.s, tv.rs.s, hf0->name.len)==0)
 					n++;
@@ -1997,7 +1997,7 @@ static int pv_get_hdr(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res)
 			}
 		} else {
 			/* it is an un-known header -> use name to find it */
-			for (hf0=hf->next; hf0; hf=hf0->next) {
+			for (hf0=hf->next; hf0; hf0=hf0->next) {
 				if (hf0->type==HDR_OTHER_T && hf0->name.len==tv.rs.len
 				&& strncasecmp(hf0->name.s, tv.rs.s, hf0->name.len)==0) {
 					n++;
