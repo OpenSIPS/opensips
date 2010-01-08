@@ -43,8 +43,8 @@ int init_twrite_lines();
 
 int init_twrite_sock(void);
 
-int t_write_req(struct sip_msg* msg, char* vm_fifo, char* action);
+int t_write_req(struct sip_msg* msg, char* info, char* vm_fifo);
 
-int t_write_unix(struct sip_msg* msg, char* sock_name, char* action);
+int t_write_unix(struct sip_msg* msg, char* info, char* sock_name);
 
 #endif

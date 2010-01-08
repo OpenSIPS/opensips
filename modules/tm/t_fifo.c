@@ -758,18 +758,18 @@ static int write_to_unixsock(char* sockname, int cnt)
 }
 
 
-int t_write_req(struct sip_msg* msg, char* vm_fifo, char* info)
+int t_write_req(struct sip_msg* msg, char* info, char* vm_fifo)
 {
 	if (assemble_msg(msg, (struct tw_info*)info) < 0) {
 		LM_ERR("failed to assemble_msg\n");
 		return -1;
 	}
-		
+
 	if (write_to_fifo(vm_fifo, TWRITE_PARAMS) == -1) {
 		LM_ERR("write_to_fifo failed\n");
 		return -1;
 	}
-	
+
 	/* make sure that if voicemail does not initiate a reply
 	 * timely, a SIP timeout will be sent out */
 	if (add_blind_uac() == -1) {
@@ -780,7 +780,7 @@ int t_write_req(struct sip_msg* msg, char* vm_fifo, char* info)
 }
 
 
-int t_write_unix(struct sip_msg* msg, char* socket, char* info)
+int t_write_unix(struct sip_msg* msg, char* info, char* socket)
 {
 	if (assemble_msg(msg, (struct tw_info*)info) < 0) {
 		LM_ERR("failed to assemble_msg\n");
