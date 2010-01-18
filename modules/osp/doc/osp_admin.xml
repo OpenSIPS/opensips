@@ -45,12 +45,12 @@
   <section>
     <title>Exported Parameters</title>
     <section>
-      <title><varname>proxy_type</varname></title>
-      <para>The proxy_type (integer) parameter instructs the OSP module how to handle SIP INVITE messages. If this value is set to 0, the OSP module works as a normal SIP proxy. If this value is set to 1, the OSP module works as a Number Portability proxy. The default value is 0.</para>
+      <title><varname>service_type</varname></title>
+      <para>The service_type (integer) parameter instructs the OSP module what services it should provide. If this value is set to 0, the OSP module provides normal voice service. If this value is set to 1, the OSP module provides ported number query service. The default value is 0.</para>
       <example>
-        <title>Instructing the module works a SIP proxy</title>
+        <title>Instructing the module to provide normal voice service</title>
         <programlisting format="linespecific">
-modparam("osp","proxy_type",0)
+modparam("osp","service_type",0)
         </programlisting>
       </example>
     </section>

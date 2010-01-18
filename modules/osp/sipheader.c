@@ -575,8 +575,20 @@ int ospRebuildDestionationUri(
     npsize += dest->npcic[0] ? 5 + strlen(dest->npcic) : 0;
     /* ";npdi" */
     npsize += dest->npdi ? 5 : 0;
+    /* ";spid=" */
+    npsize = dest->opname[OSPC_OPNAME_SPID][0] ? 6 + strlen(dest->opname[OSPC_OPNAME_SPID]) : 0;
+    /* ";ocn=" */
+    npsize = dest->opname[OSPC_OPNAME_OCN][0] ? 5 + strlen(dest->opname[OSPC_OPNAME_OCN]) : 0;
+    /* ";spn=" */
+    npsize = dest->opname[OSPC_OPNAME_SPN][0] ? 5 + strlen(dest->opname[OSPC_OPNAME_SPN]) : 0;
+    /* ";altspn=" */
+    npsize = dest->opname[OSPC_OPNAME_ALTSPN][0] ? 8 + strlen(dest->opname[OSPC_OPNAME_ALTSPN]) : 0;
+    /* ";mcc=" */
+    npsize = dest->opname[OSPC_OPNAME_MCC][0] ? 5 + strlen(dest->opname[OSPC_OPNAME_MCC]) : 0;
+    /* ";mnc=" */
+    npsize = dest->opname[OSPC_OPNAME_MNC][0] ? 5 + strlen(dest->opname[OSPC_OPNAME_MNC]) : 0;
 
-    LM_DBG("'%s'(%d) '%s'(%d) '%s' '%s' '%d'(%d) '%d'\n",
+    LM_DBG("'%s'(%d) '%s'(%d) '%s' '%s' '%d' '%s' '%s' '%s' '%s' '%s' '%s' (%d) '%d'\n",
         dest->called,
         calledsize,
         dest->host,
@@ -584,6 +596,12 @@ int ospRebuildDestionationUri(
         dest->nprn,
         dest->npcic,
         dest->npdi,
+        dest->opname[OSPC_OPNAME_SPID],
+        dest->opname[OSPC_OPNAME_OCN],
+        dest->opname[OSPC_OPNAME_SPN],
+        dest->opname[OSPC_OPNAME_ALTSPN],
+        dest->opname[OSPC_OPNAME_MCC],
+        dest->opname[OSPC_OPNAME_MNC],
         npsize,
         format);
 
@@ -621,6 +639,30 @@ int ospRebuildDestionationUri(
     if (dest->npdi) {
         sprintf(buffer, ";npdi");
         buffer += 5;
+    }
+    if (dest->opname[OSPC_OPNAME_SPID][0]) {
+        count = sprintf(buffer, ";spid=%s", dest->opname[OSPC_OPNAME_SPID]);
+        buffer += count;
+    }
+    if (dest->opname[OSPC_OPNAME_OCN][0]) {
+        count = sprintf(buffer, ";ocn=%s", dest->opname[OSPC_OPNAME_OCN]);
+        buffer += count;
+    }
+    if (dest->opname[OSPC_OPNAME_SPN][0]) {
+        count = sprintf(buffer, ";spn=%s", dest->opname[OSPC_OPNAME_SPN]);
+        buffer += count;
+    }
+    if (dest->opname[OSPC_OPNAME_ALTSPN][0]) {
+        count = sprintf(buffer, ";altspn=%s", dest->opname[OSPC_OPNAME_ALTSPN]);
+        buffer += count;
+    }
+    if (dest->opname[OSPC_OPNAME_MCC][0]) {
+        count = sprintf(buffer, ";mcc=%s", dest->opname[OSPC_OPNAME_MCC]);
+        buffer += count;
+    }
+    if (dest->opname[OSPC_OPNAME_MNC][0]) {
+        count = sprintf(buffer, ";mnc=%s", dest->opname[OSPC_OPNAME_MNC]);
+        buffer += count;
     }
 
     *buffer++ = '@';
@@ -798,7 +840,111 @@ int ospGetNpParameters(
             result = 1;
         }
     } else {
-        LM_ERR("bad paraneters to parse number portability parameters\n");
+        LM_ERR("bad parameters to parse number portability parameters\n");
+    }
+
+    return result;
+}
+
+/*
+ * Get operator name from Request-Line
+ * param msg SIP message
+ * param type Operator name type
+ * param name Operator name buffer
+ * param namebufsize Size of name buffer
+ * return 0 success, 1 not use NP or without operator name, -1 failure
+ */
+int ospGetOperatorName(
+    struct sip_msg* msg,
+    OSPE_OPERATOR_NAME type,
+    char* name,
+    int namebufsize)
+{
+    str sv;
+    param_hooks_t phooks;
+    param_t* params = NULL;
+    param_t* pit;
+    int result = -1;
+
+    if (((name != NULL) && (namebufsize > 0))) {
+        name[0] = '\0';
+
+        if (_osp_use_np != 0) {
+            if (parse_sip_msg_uri(msg) >= 0) {
+                sv = msg->parsed_uri.user;
+                parse_params(&sv, CLASS_ANY, &phooks, &params);
+                for (pit = params; pit; pit = pit->next) {
+                    switch (type) {
+                    case OSPC_OPNAME_SPID:
+                        if ((pit->name.len == OSP_SPID_SIZE) &&
+                            (strncasecmp(pit->name.s, OSP_SPID_NAME, OSP_SPID_SIZE) == 0) &&
+                            (name[0] == '\0'))
+                        {
+                            ospCopyStrToBuffer(&pit->body, name, namebufsize);
+                        }
+                        break;
+                    case OSPC_OPNAME_OCN:
+                        if ((pit->name.len == OSP_OCN_SIZE) &&
+                            (strncasecmp(pit->name.s, OSP_OCN_NAME, OSP_OCN_SIZE) == 0) &&
+                            (name[0] == '\0'))
+                        {
+                            ospCopyStrToBuffer(&pit->body, name, namebufsize);
+                        }
+                        break;
+                    case OSPC_OPNAME_SPN:
+                        if ((pit->name.len == OSP_SPN_SIZE) &&
+                            (strncasecmp(pit->name.s, OSP_SPN_NAME, OSP_SPN_SIZE) == 0) &&
+                            (name[0] == '\0'))
+                        {
+                            ospCopyStrToBuffer(&pit->body, name, namebufsize);
+                        }
+                        break;
+                    case OSPC_OPNAME_ALTSPN:
+                        if ((pit->name.len == OSP_ALTSPN_SIZE) &&
+                            (strncasecmp(pit->name.s, OSP_ALTSPN_NAME, OSP_ALTSPN_SIZE) == 0) &&
+                            (name[0] == '\0'))
+                        {
+                            ospCopyStrToBuffer(&pit->body, name, namebufsize);
+                        }
+                        break;
+                    case OSPC_OPNAME_MCC:
+                        if ((pit->name.len == OSP_MCC_SIZE) &&
+                            (strncasecmp(pit->name.s, OSP_MCC_NAME, OSP_MCC_SIZE) == 0) &&
+                            (name[0] == '\0'))
+                        {
+                            ospCopyStrToBuffer(&pit->body, name, namebufsize);
+                        }
+                        break;
+                    case OSPC_OPNAME_MNC:
+                        if ((pit->name.len == OSP_MNC_SIZE) &&
+                            (strncasecmp(pit->name.s, OSP_MNC_NAME, OSP_MNC_SIZE) == 0) &&
+                            (name[0] == '\0'))
+                        {
+                            ospCopyStrToBuffer(&pit->body, name, namebufsize);
+                        }
+                        break;
+                    default:
+                        break;
+                    }
+                }
+                if (params != NULL) {
+                    free_params(params);
+                }
+                if (name[0] != '\0') {
+                    result = 0;
+                } else {
+                    LM_DBG("without operator name\n");
+                    result = 1;
+                }
+            } else {
+                LM_ERR("failed to parse Request-Line URI\n");
+            }
+        } else {
+            LM_DBG("do not use number portability\n");
+            result = 1;
+        }
+    } else {
+        LM_ERR("bad parameters to parse operator name\n");
     }
 
     return result;

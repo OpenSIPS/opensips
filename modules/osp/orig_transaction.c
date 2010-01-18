@@ -40,7 +40,7 @@
 #include "sipheader.h"
 #include "usage.h"
 
-extern int _osp_proxy_type;
+extern int _osp_service_type;
 extern char _osp_in_device[];
 extern char _osp_out_device[];
 extern int _osp_max_dests;
@@ -86,6 +86,7 @@ static int ospLoadRoutes(
     osp_dest dests[OSP_DEF_DESTS];
     char host[OSP_STRBUF_SIZE];
     char destdev[OSP_STRBUF_SIZE];
+	OSPE_OPERATOR_NAME type;
     OSPE_DEST_PROTOCOL protocol;
     OSPE_DEST_OSPENABLED enabled;
     int result = 0;
@@ -167,6 +168,17 @@ static int ospLoadRoutes(
             dest->npdi = 0;
         }
 
+        for (type = OSPC_OPNAME_START; type < OSPC_OPNAME_NUMBER; type++) {
+            errorcode = OSPPTransactionGetOperatorName(transaction,
+                type,
+                sizeof(dest->opname[type]),
+                dest->opname[type]);
+            if (errorcode != OSPC_ERR_NO_ERROR) {
+                LM_DBG("cannot get operator name '%d' (%d)\n", type, errorcode);
+                dest->opname[type][0] = '\0';
+            }
+        }
+
         errorcode = OSPPTransactionGetDestProtocol(transaction, &protocol);
         if (errorcode != OSPC_ERR_NO_ERROR) {
             /* This does not mean an ERROR. The OSP server may not support OSP 2.1.1 */
@@ -226,6 +238,12 @@ static int ospLoadRoutes(
             "nprn '%s' "
             "npcic '%s' "
             "npdi '%d' "
+            "spid '%s' "
+            "ocn '%s' "
+            "spn '%s' "
+            "altspn '%s' "
+            "mcc '%s' "
+            "mnc '%s' "
             "supported '%d' "
             "network id '%s' "
             "token size '%d'\n",
@@ -237,10 +255,16 @@ static int ospLoadRoutes(
             dest->callid,
             dest->calling,
             dest->called,
-            dest->host,
+            host,
             dest->nprn,
             dest->npcic,
             dest->npdi,
+            dest->opname[OSPC_OPNAME_SPID],
+            dest->opname[OSPC_OPNAME_OCN],
+            dest->opname[OSPC_OPNAME_SPN],
+            dest->opname[OSPC_OPNAME_ALTSPN],
+            dest->opname[OSPC_OPNAME_MCC],
+            dest->opname[OSPC_OPNAME_MNC],
             dest->supported,
             dest->networkid,
             dest->tokensize);
@@ -280,14 +304,16 @@ int ospRequestRouting(
 {
     int errorcode;
     time_t authtime;
-    char calling[OSP_E164BUF_SIZE];
-    char called[OSP_E164BUF_SIZE];
-    char rn[OSP_E164BUF_SIZE];
-    char cic[OSP_E164BUF_SIZE];
+    char calling[OSP_STRBUF_SIZE];
+    char called[OSP_STRBUF_SIZE];
+    char rn[OSP_STRBUF_SIZE];
+    char cic[OSP_STRBUF_SIZE];
     int npdi;
+	OSPE_OPERATOR_NAME type;
+    char opname[OSPC_OPNAME_NUMBER][OSP_STRBUF_SIZE];
     char srcdev[OSP_STRBUF_SIZE];
     char srcdevbuf[OSP_STRBUF_SIZE];
-    char divuser[OSP_E164BUF_SIZE];
+    char divuser[OSP_STRBUF_SIZE];
     char divhost[OSP_STRBUF_SIZE];
     char divhostbuf[OSP_STRBUF_SIZE];
     struct usr_avp* snidavp = NULL;
@@ -304,7 +330,7 @@ int ospRequestRouting(
     char* detaillog = NULL;
     char tohost[OSP_STRBUF_SIZE];
     char tohostbuf[OSP_STRBUF_SIZE];
-    const char* preferred;
+    const char* preferred[2] = { NULL };
     unsigned int destcount;
     OSPTTRANHANDLE transaction = -1;
     int result = MODULE_RETURNCODE_FALSE;
@@ -324,13 +350,13 @@ int ospRequestRouting(
 
         ospConvertToOutAddress(srcdev, srcdevbuf, sizeof(srcdevbuf));
 
-        switch (_osp_proxy_type) {
+        switch (_osp_service_type) {
         case 1:
             OSPPTransactionSetServiceType(transaction, OSPC_SERVICE_NPQUERY);
 
             ospGetToHostpart(msg, tohost, sizeof(tohost));
             ospConvertToOutAddress(tohost, tohostbuf, sizeof(tohostbuf));
-            preferred = tohostbuf;
+            preferred[0] = tohostbuf;
 
             destcount = 1;
             break;
@@ -338,14 +364,19 @@ int ospRequestRouting(
         default:
             OSPPTransactionSetServiceType(transaction, OSPC_SERVICE_VOICE);
 
-            preferred = NULL;
-
             destcount = _osp_max_dests;
             break;
         }
 
-        ospGetNpParameters(msg, rn, sizeof(rn), cic, sizeof(cic), &npdi);
-        OSPPTransactionSetNumberPortability(transaction, rn, cic, npdi);
+        if (ospGetNpParameters(msg, rn, sizeof(rn), cic, sizeof(cic), &npdi) == 0) {
+            OSPPTransactionSetNumberPortability(transaction, rn, cic, npdi);
+        }
+
+        for (type = OSPC_OPNAME_START; type < OSPC_OPNAME_NUMBER; type++) {
+            if (ospGetOperatorName(msg, type, opname[type], sizeof(opname[type])) == 0) {
+                OSPPTransactionSetOperatorName(transaction, type, opname[type]);
+            }
+        }
 
         if (ospGetDiversion(msg, divuser, sizeof(divuser), divhost, sizeof(divhost)) == 0) {
             ospConvertToOutAddress(divhost, divhostbuf, sizeof(divhostbuf));
@@ -391,7 +422,7 @@ int ospRequestRouting(
 		}
 
         LM_INFO("request auth and routing for: "
-            "proxy_type '%d' "
+            "service_type '%d' "
             "source '%s' "
             "source_dev '%s' "
             "source_networkid '%s' "
@@ -401,21 +432,33 @@ int ospRequestRouting(
             "nprn '%s' "
             "npcic '%s' "
             "npdi '%d' "
+            "spid '%s' "
+            "ocn '%s' "
+            "spn '%s' "
+            "altspn '%s' "
+            "mcc '%s' "
+            "mnc '%s' "
             "diversion_user '%s' "
             "diversion_host '%s' "
             "call_id '%.*s' "
             "dest_count '%d' "
             "%s\n",
-            _osp_proxy_type,
+            _osp_service_type,
             _osp_out_device,
             srcdevbuf,
             snid,
             calling,
             called,
-            (preferred == NULL) ? "" : preferred,
+            (preferred[0] == NULL) ? "" : preferred[0],
             rn,
             cic,
             npdi,
+            opname[OSPC_OPNAME_SPID],
+            opname[OSPC_OPNAME_OCN],
+            opname[OSPC_OPNAME_SPN],
+            opname[OSPC_OPNAME_ALTSPN],
+            opname[OSPC_OPNAME_MCC],
+            opname[OSPC_OPNAME_MNC],
             divuser,
             divhostbuf,
             callids[0]->ospmCallIdLen,
@@ -435,7 +478,7 @@ int ospRequestRouting(
             "",                /* optional username string, used if no number */
             callidnumber,      /* number of call ids, here always 1 */
             callids,           /* sized-1 array of call ids */
-            &preferred,        /* preferred destinations */
+            preferred,         /* preferred destinations */
             &destcount,        /* max destinations, after call dest_count */
             &logsize,          /* size allocated for detaillog (next param) 0=no log */
             detaillog);        /* memory location for detaillog to be stored */

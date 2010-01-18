@@ -43,7 +43,7 @@
 #include "tm.h"
 #include "provider.h"
 
-extern int _osp_proxy_type;
+extern int _osp_service_type;
 extern unsigned int _osp_sp_number;
 extern char* _osp_sp_uris[];
 extern unsigned long _osp_sp_weights[];
@@ -101,7 +101,7 @@ static cmd_export_t cmds[]={
 };
 
 static param_export_t params[]={
-    { "proxy_type",                       INT_PARAM, &_osp_proxy_type },
+    { "service_type",                     INT_PARAM, &_osp_service_type },
     { "sp1_uri",                          STR_PARAM, &_osp_sp_uris[0] },
     { "sp2_uri",                          STR_PARAM, &_osp_sp_uris[1] },
     { "sp3_uri",                          STR_PARAM, &_osp_sp_uris[2] },
@@ -246,9 +246,9 @@ static int ospVerifyParameters(void)
     str avp_str;
     int result = 0;
 
-    if (_osp_proxy_type < 0 || _osp_proxy_type > 1) {
-        _osp_proxy_type = OSP_DEF_PROXY;
-        LM_WARN("proxy type is out of range, reset to %d\n", OSP_DEF_PROXY);
+    if (_osp_service_type < 0 || _osp_service_type > 1) {
+        _osp_service_type = OSP_DEF_SERVICE;
+        LM_WARN("proxy type is out of range, reset to %d\n", OSP_DEF_SERVICE);
     }
 
     /* If use_security_features is 0, ignroe the certificate files */
@@ -352,7 +352,7 @@ static void ospDumpParameters(void)
     int i;
 
     LM_INFO("module configuration: ");
-    LM_INFO("    proxy type '%d'", _osp_proxy_type);
+    LM_INFO("    service type '%d'", _osp_service_type);
     LM_INFO("    number of service points '%d'", _osp_sp_number);
     for (i = 0; i < _osp_sp_number; i++) {
         LM_INFO("    sp%d_uri '%s' sp%d_weight '%ld' ",

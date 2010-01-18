@@ -43,6 +43,18 @@
 #define OSP_CIC_SIZE        3
 #define OSP_NPDI_NAME       "npdi"
 #define OSP_NPDI_SIZE       4
+#define OSP_SPID_NAME       "spid"
+#define OSP_SPID_SIZE       4
+#define OSP_OCN_NAME        "ocn"
+#define OSP_OCN_SIZE        3
+#define OSP_SPN_NAME        "spn"
+#define OSP_SPN_SIZE        3
+#define OSP_ALTSPN_NAME     "altspn"
+#define OSP_ALTSPN_SIZE     6
+#define OSP_MCC_NAME        "mcc"
+#define OSP_MCC_SIZE        3
+#define OSP_MNC_NAME        "mnc"
+#define OSP_MNC_SIZE        3
 
 void ospCopyStrToBuffer(str* source, char* buffer, int bufsize);
 int ospGetFromUserpart(struct sip_msg* msg, char* fromuser, int bufsize);
@@ -58,6 +70,7 @@ int ospGetRouteParameters(struct sip_msg* msg, char* routeparams, int bufsize);
 int ospRebuildDestionationUri(str* newuri, osp_dest* dest, int format);
 int ospGetNextHop(struct sip_msg* msg, char* nexthop, int bufsize);
 int ospGetNpParameters(struct sip_msg* msg, char* rn, int rnbufsize, char* cic, int cicbufsize, int* npdi);
+int ospGetOperatorName(struct sip_msg* msg, OSPE_OPERATOR_NAME type, char* name, int namebufsize);
 int ospGetDiversion(struct sip_msg* msg, char* user, int userbufsize, char* host, int hostbufsize);
 
 #endif /* _OSP_MOD_SIPHEADER_H_ */

@@ -36,7 +36,7 @@
 #define MODULE_RETURNCODE_FALSE         -1
 #define MODULE_RETURNCODE_ERROR         -2
 
-#define OSP_DEF_PROXY                   0
+#define OSP_DEF_SERVICE                 0
 #define OSP_DEF_SPS                     16
 #define OSP_DEF_WEIGHT                  1000
 #define OSP_DEF_HW                      0
@@ -59,7 +59,6 @@
 
 #define OSP_STRBUF_SIZE                 256
 #define OSP_KEYBUF_SIZE                 1024
-#define OSP_E164BUF_SIZE                1024
 #define OSP_TOKENBUF_SIZE               2048
 #define OSP_HEADERBUF_SIZE              3072
 

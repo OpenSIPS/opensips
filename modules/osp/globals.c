@@ -33,7 +33,7 @@
 #include "../../usr_avp.h"
 #include "osp_mod.h"
 
-int _osp_proxy_type = OSP_DEF_PROXY;
+int _osp_service_type = OSP_DEF_SERVICE;
 unsigned int _osp_sp_number;
 char* _osp_sp_uris[OSP_DEF_SPS];
 unsigned long _osp_sp_weights[OSP_DEF_SPS] = {

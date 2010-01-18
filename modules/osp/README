@@ -28,7 +28,7 @@ Di-Shi Sun
         1.2. Dependencies
         1.3. Exported Parameters
 
-              1.3.1. proxy_type
+              1.3.1. service_type
               1.3.2. sp1_uri, sp2_uri, ..., sp16_uri
               1.3.3. sp1_weight, sp2_weight, ..., sp16_weight
               1.3.4. device_ip
@@ -67,7 +67,7 @@ Di-Shi Sun
 
    List of Examples
 
-   1.1. Instructing the module works a SIP proxy
+   1.1. Instructing the module to provide normal voice service
    1.2. Setting the OSP servers
    1.3. Setting the OSP server weights
    1.4. Setting the device IP address
@@ -131,16 +131,17 @@ Chapter 1. Admin Guide
 
 1.3. Exported Parameters
 
-1.3.1. proxy_type
+1.3.1. service_type
 
-   The proxy_type (integer) parameter instructs the OSP module how
-   to handle SIP INVITE messages. If this value is set to 0, the
-   OSP module works as a normal SIP proxy. If this value is set to
-   1, the OSP module works as a Number Portability proxy. The
+   The service_type (integer) parameter instructs the OSP module
+   what services it should provide. If this value is set to 0, the
+   OSP module provides normal voice service. If this value is set
+   to 1, the OSP module provides ported number query service. The
    default value is 0.
 
-   Example 1.1. Instructing the module works a SIP proxy
-modparam("osp","proxy_type",0)
+   Example 1.1. Instructing the module to provide normal voice
+   service
+modparam("osp","service_type",0)
 
 1.3.2. sp1_uri, sp2_uri, ..., sp16_uri
 

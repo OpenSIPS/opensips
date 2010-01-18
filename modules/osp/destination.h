@@ -32,6 +32,7 @@
 #define _OSP_MOD_DESTINATION_H_
 
 #include <time.h>
+#include <osp/osp.h>
 #include "osp_mod.h"
 
 typedef struct _osp_dest {
@@ -56,6 +57,7 @@ typedef struct _osp_dest {
     char nprn[OSP_STRBUF_SIZE];
     char npcic[OSP_STRBUF_SIZE];
     int npdi;
+    char opname[OSPC_OPNAME_NUMBER][OSP_STRBUF_SIZE];
     unsigned char token[OSP_TOKENBUF_SIZE];
     unsigned int tokensize;
     unsigned int timelimit;
