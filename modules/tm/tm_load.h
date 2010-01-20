@@ -61,6 +61,7 @@ struct tm_binds {
 	reqout_t         t_request_outside;
 	req_t            t_request;
 	new_dlg_uac_f      new_dlg_uac;
+	new_auto_dlg_uac_f new_auto_dlg_uac;
 	dlg_add_extra_f    dlg_add_extra;
 	dlg_response_uac_f dlg_response_uac;
 	new_dlg_uas_f      new_dlg_uas;

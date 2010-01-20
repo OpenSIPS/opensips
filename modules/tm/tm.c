@@ -581,6 +581,7 @@ int load_tm( struct tm_binds *tmb)
 	tmb->t_request_outside = req_outside;
 	tmb->t_request = request;
 	tmb->new_dlg_uac = new_dlg_uac;
+	tmb->new_auto_dlg_uac = new_auto_dlg_uac;
 	tmb->dlg_add_extra = dlg_add_extra;
 	tmb->dlg_response_uac = dlg_response_uac;
 	tmb->new_dlg_uas = new_dlg_uas;
