@@ -4,7 +4,7 @@
  * dispatcher module -- stateless load balancing
  *
  * Copyright (C) 2004-2005 FhG Fokus
- * Copyright (C) 2006-2009 Voice Sistem SRL
+ * Copyright (C) 2006-2010 Voice Sistem SRL
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -107,6 +107,8 @@ pv_spec_t ds_setid_pv;
 static str options_reply_codes_str= {0, 0};
 static int* options_reply_codes = NULL;
 static int options_codes_no; 
+static char *probing_sock_s = NULL;
+struct socket_info *probing_sock = NULL;
 
 /** module functions */
 static int mod_init(void);
@@ -178,6 +180,7 @@ static param_export_t params[]={
 	{"ds_ping_interval",      INT_PARAM, &ds_ping_interval},
 	{"ds_probing_mode",       INT_PARAM, &ds_probing_mode},
 	{"options_reply_codes",   STR_PARAM, &options_reply_codes_str.s},
+	{"ds_probing_sock",       STR_PARAM, &probing_sock_s},
 	{0,0,0}
 };
 
@@ -215,6 +218,8 @@ static int mod_init(void)
 {
 	pv_spec_t avp_spec;
 
+	LM_DBG("initializing ...\n");
+
 	if (dst_avp_param.s)
 		dst_avp_param.len = strlen(dst_avp_param.s);
 	if (grp_avp_param.s)
@@ -242,8 +247,6 @@ static int mod_init(void)
 		}
 	}
 
-	LM_DBG("initializing ...\n");
-
 	if(init_data()!= 0)
 		return -1;
 
@@ -270,7 +273,7 @@ static int mod_init(void)
 			LM_DBG("loaded dispatching list\n");
 		}
 	}
-	
+
 	if (dst_avp_param.s && dst_avp_param.len > 0)
 	{
 		if (pv_parse_spec(&dst_avp_param, &avp_spec)==0
@@ -281,7 +284,7 @@ static int mod_init(void)
 			return -1;
 		}
 
-		if(pv_get_avp_name(0, &(avp_spec.pvp), &dst_avp_name, &dst_avp_type)!=0)
+		if(pv_get_avp_name(0, &(avp_spec.pvp), &dst_avp_name,&dst_avp_type)!=0)
 		{
 			LM_ERR("[%.*s]- invalid AVP definition\n", dst_avp_param.len,
 					dst_avp_param.s);
@@ -291,6 +294,7 @@ static int mod_init(void)
 		dst_avp_name.n = 0;
 		dst_avp_type = 0;
 	}
+
 	if (grp_avp_param.s && grp_avp_param.len > 0)
 	{
 		if (pv_parse_spec(&grp_avp_param, &avp_spec)==0
@@ -301,7 +305,7 @@ static int mod_init(void)
 			return -1;
 		}
 
-		if(pv_get_avp_name(0, &(avp_spec.pvp), &grp_avp_name, &grp_avp_type)!=0)
+		if(pv_get_avp_name(0, &(avp_spec.pvp), &grp_avp_name,&grp_avp_type)!=0)
 		{
 			LM_ERR("[%.*s]- invalid AVP definition\n", grp_avp_param.len,
 					grp_avp_param.s);
@@ -311,6 +315,7 @@ static int mod_init(void)
 		grp_avp_name.n = 0;
 		grp_avp_type = 0;
 	}
+
 	if (cnt_avp_param.s && cnt_avp_param.len > 0)
 	{
 		if (pv_parse_spec(&cnt_avp_param, &avp_spec)==0
@@ -321,7 +326,7 @@ static int mod_init(void)
 			return -1;
 		}
 
-		if(pv_get_avp_name(0, &(avp_spec.pvp), &cnt_avp_name, &cnt_avp_type)!=0)
+		if(pv_get_avp_name(0, &(avp_spec.pvp), &cnt_avp_name,&cnt_avp_type)!=0)
 		{
 			LM_ERR("[%.*s]- invalid AVP definition\n", cnt_avp_param.len,
 					cnt_avp_param.s);
@@ -360,7 +365,7 @@ static int mod_init(void)
 	} else {
 		hash_param_model = NULL;
 	}
-	
+
 	if(ds_setid_pvname.s!=0)
 	{
 		if(pv_parse_spec(&ds_setid_pvname, &ds_setid_pv)==NULL
@@ -373,28 +378,39 @@ static int mod_init(void)
 	/* Only, if the Probing-Timer is enabled the TM-API needs to be loaded: */
 	if (ds_ping_interval > 0)
 	{
-		/*****************************************************
-		 * TM-Bindings
-	  	 *****************************************************/
 		load_tm_f load_tm;
-		load_tm=(load_tm_f)find_export("load_tm", 0, 0);
-	
-		/* import the TM auto-loading function */
-		if (load_tm)
-		{
-			/* let the auto-loading function load all TM stuff */
-			if (load_tm( &tmb ) == -1)
-			{
-				LM_ERR("could not load the TM-functions - disable DS ping\n");
+		str host;
+		int port,proto;
+
+		if (probing_sock_s && probing_sock_s[0]!=0 ) {
+			if (parse_phostport( probing_sock_s, strlen(probing_sock_s),
+			&host.s, &host.len, &port, &proto)!=0 ) {
+				LM_ERR("socket description <%s> is not valid\n",
+					probing_sock_s);
 				return -1;
 			}
-			/*****************************************************
-			 * Register the PING-Timer
-	    	 *****************************************************/
-			register_timer(ds_check_timer, NULL, ds_ping_interval);
-		} else {
-			LM_WARN("could not bind to the TM-Module, automatic"
-					" re-activation disabled.\n");
+			probing_sock = grep_sock_info( &host, port, proto);
+			if (probing_sock==NULL) {
+				LM_ERR("socket <%s> is not local to opensips (we must listen "
+					"on it\n", probing_sock_s);
+				return -1;
+			}
+		}
+		/* TM-Bindings */
+		load_tm=(load_tm_f)find_export("load_tm", 0, 0);
+		if (load_tm==NULL) {
+			LM_ERR("failed to bind to the TM-Module - required for probing\n");
+			return -1;
+		}
+		/* let the auto-loading function load all TM stuff */
+		if (load_tm( &tmb ) == -1) {
+			LM_ERR("could not load the TM-functions - disable DS ping\n");
+			return -1;
+		}
+		/* Register the PING-Timer */
+		if (register_timer(ds_check_timer, NULL, ds_ping_interval)<0) {
+			LM_ERR("failed to register timer for probing!\n");
+			return -1;
 		}
 	}
 
