@@ -279,5 +279,6 @@ void free_multi_body(struct multi_body * multi)
 		p = p->next;
 		pkg_free(tmp);
 	}
+	pkg_free(multi);
 }
 
