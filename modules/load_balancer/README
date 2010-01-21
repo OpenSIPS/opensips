@@ -64,7 +64,7 @@ Bogdan-Andrei Iancu
    1.4. Set probing_method parameter
    1.5. Set probing_from parameter
    1.6. Set probing_reply_codes parameter
-   1.7. set_dlg_profile usage
+   1.7. load_balance usage
    1.8. lb_disable() usage
    1.9. lb_list usage
    1.10. lb_status usage
@@ -252,7 +252,7 @@ modparam("load_balancer", "probing_reply_codes", "501, 403")
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE and
    FAILURE_ROUTE.
 
-   Example 1.7. set_dlg_profile usage
+   Example 1.7. load_balance usage
 ...
 if (load_balance("1","trascoding;conference")) {
         # dst URI points to the new destination
