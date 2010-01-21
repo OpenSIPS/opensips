@@ -148,7 +148,7 @@ modparam("", "db_table", "lb")
 			REPLY_ROUTE and FAILURE_ROUTE.
 		</para>
 		<example>
-		<title><function>set_dlg_profile</function> usage</title>
+		<title><function>load_balance</function> usage</title>
 		<programlisting format="linespecific">
 ...
 if (load_balance("1","trascoding;conference")) {
