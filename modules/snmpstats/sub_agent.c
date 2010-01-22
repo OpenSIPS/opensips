@@ -121,7 +121,9 @@ void agentx_child(int rank)
 	sigaction(SIGINT,  &default_handlers, NULL);
 	sigaction(SIGHUP,  &default_handlers, NULL);
 	sigaction(SIGUSR1, &default_handlers, NULL);
-	sigaction(SIGUSR2, &default_handlers, NULL);
+	/* SIGUSR2 must be handled by OpenSIPS as it is used for 
+	   collecting info on pkg memory */
+	/*sigaction(SIGUSR2, &default_handlers, NULL);*/
 
 	/* It is possible that the master agent will unregister us if we
 	 * take too long to respond to an SNMP request.  This would
