@@ -113,7 +113,7 @@ int serialize_branches(struct sip_msg *msg, int clean_before )
 
 	if (!enc_info.s) {
 		LM_ERR("no pkg memory left\n");
-		return -1;
+		goto error; /* nothing to free here */
 	}
 
 	memset(enc_info.s, 0, enc_info.len);
@@ -155,7 +155,7 @@ int serialize_branches(struct sip_msg *msg, int clean_before )
 
 		if (!enc_info.s) {
 			LM_ERR("no pkg memory left\n");
-			return -1;
+			goto error_free;
 		}
 
 		memset(enc_info.s, 0, enc_info.len);
@@ -222,14 +222,22 @@ int serialize_branches(struct sip_msg *msg, int clean_before )
 
 		if (add_avp( AVP_VAL_STR|contacts[i].q_flag, serial_avp, val)) {
 			LM_ERR("failed to add avp\n");
-			goto error;
+			goto error_free;
 		}
+
+		pkg_free(contacts[i].enc_info.s);
+		contacts[i].enc_info.s = NULL;
 	}
 
 	/* Clear all branches */
 	clear_branches();
 
 	return 0;
+error_free:
+	for( i=0 ; i<n ; i++) {
+		if (contacts[i].enc_info.s)
+			pkg_free(contacts[i].enc_info.s);
+	}
 error:
 	return -1;
 }
