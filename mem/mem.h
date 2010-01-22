@@ -91,6 +91,7 @@ void set_pkg_stats(pkg_status_holder*);
 				__FUNCTION__, __LINE__)
 #			define pkg_realloc(p, s) fm_realloc(mem_block, (p), (s),__FILE__, \
 				__FUNCTION__, __LINE__)
+#                       define pkg_info(i) fm_info(mem_block,i)
 #		else
 #			define pkg_malloc(s) qm_malloc(mem_block, (s),__FILE__, \
 				__FUNCTION__, __LINE__)
@@ -98,6 +99,7 @@ void set_pkg_stats(pkg_status_holder*);
 				__FUNCTION__, __LINE__)
 #			define pkg_free(p)   qm_free(mem_block, (p), __FILE__,  \
 				__FUNCTION__, __LINE__)
+#                       define pkg_info(i) qm_info(mem_block,i)
 #		endif
 #	else
 #		ifdef VQ_MALLOC
@@ -107,10 +109,12 @@ void set_pkg_stats(pkg_status_holder*);
 #			define pkg_malloc(s) fm_malloc(mem_block, (s))
 #			define pkg_realloc(p, s) fm_realloc(mem_block, (p), (s))
 #			define pkg_free(p)   fm_free(mem_block, (p))
+#                       define pkg_info(i) fm_info(mem_block,i)
 #		else
 #			define pkg_malloc(s) qm_malloc(mem_block, (s))
 #			define pkg_realloc(p, s) qm_realloc(mem_block, (p), (s))
 #			define pkg_free(p)   qm_free(mem_block, (p))
+#                       define pkg_info(i) qm_info(mem_block,i)
 #		endif
 #	endif
 #	ifdef VQ_MALLOC
