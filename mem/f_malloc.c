@@ -290,7 +290,7 @@ struct fm_block* fm_malloc_init(char* address, unsigned long size)
 	/* link initial fragment into the free list*/
 
 	qm->large_space = 0;
-	qm->large_limit = qm->size * F_MALLOC_DEFRAG_PERCENT / 100;
+	qm->large_limit = qm->size / 100 * F_MALLOC_DEFRAG_PERCENT;
 
 	if( qm->large_limit < F_MALLOC_DEFRAG_LIMIT )
 		qm->large_limit = F_MALLOC_DEFRAG_LIMIT;
