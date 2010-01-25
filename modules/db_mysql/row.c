@@ -52,7 +52,8 @@ int db_mysql_convert_row(const db_con_t* _h, db_res_t* _res, db_row_t* _r)
 	if (CON_HAS_PS(_h)) {
 		for(i=0; i < CON_MYSQL_PS(_h)->cols_out; i++) {
 			if (db_mysql_str2val(RES_TYPES(_res)[i], &(ROW_VALUES(_r)[i]),
-			CON_PS_OUTCOL_BUF(_h, i), CON_PS_OUTCOL_LEN(_h,i)) < 0) {
+			CON_PS_OUTCOL(_h, i).null?NULL:CON_PS_OUTCOL(_h, i).buf,
+			CON_PS_OUTCOL(_h,i).len) < 0) {
 				LM_ERR("failed to convert value from stmt\n");
 				db_free_row(_r);
 				return -3;

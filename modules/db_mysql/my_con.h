@@ -100,10 +100,8 @@ struct my_con {
 	(CON_MYSQL_PS(db_con)->ctx->stmt)
 #define CON_PS_STMTS(db_con) \
 	(CON_MYSQL_PS(db_con)->stmts)
-#define CON_PS_OUTCOL_LEN(_db_con, _i) \
-	((CON_MYSQL_PS(_db_con)->out_bufs)[_i].len)
-#define CON_PS_OUTCOL_BUF(_db_con, _i) \
-	((CON_MYSQL_PS(_db_con)->out_bufs)[_i].buf)
+#define CON_PS_OUTCOL(_db_con, _i) \
+	((CON_MYSQL_PS(_db_con)->out_bufs)[_i])
 
 
 int db_mysql_connect(struct my_con* ptr);
