@@ -449,6 +449,15 @@ modparam("registrar", "sock_hdr_name", "Sock-Info")
 					</para>
 				</listitem>
 				<listitem>
+					<para><emphasis>'f' (force registration)</emphasis> - this 
+					flag can be used to force the registration of NEW contacts
+					even if the maximum number of contacts is reached. In such
+					a case, older contacts will be removed to make space to the
+					new ones, without exceeding the maximum allowed number.
+					This flag makes sense only if "cxx" is used.
+					</para>
+				</listitem>
+				<listitem>
 					<para><emphasis>'p0' (Path support - 'off' mode)</emphasis>
 					The Path header is saved into usrloc, but is never 
 					included in the reply.
