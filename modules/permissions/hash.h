@@ -71,8 +71,8 @@ void hash_destroy(struct address_list** table);
  * Add <ip, group, port, proto, pattern> into hash table
  */
 int hash_insert(struct address_list** table, struct ip_addr *ip,
-	      unsigned int grp, unsigned int port, int proto, char* pattern,
-		  char* info);
+		unsigned int grp, unsigned int port, int proto,
+		str* pattern, str* info);
 
 
 /*
@@ -80,8 +80,8 @@ int hash_insert(struct address_list** table, struct ip_addr *ip,
  * port, protocol value and pattern that matches to From URI.
  */
 int hash_match(struct sip_msg *msg, struct address_list** table,
-		     unsigned int grp, struct ip_addr *ip, unsigned int port, int proto,
-			 char *pattern, char* info);
+		unsigned int grp, struct ip_addr *ip, unsigned int port, int proto,
+		char *pattern, char* info);
 
 
 /*
@@ -98,7 +98,7 @@ void empty_hash(struct address_list** table);
 
 
 int find_group_in_hash_table(struct address_list** table,
-		                  struct ip_addr *ip, unsigned int port);
+		struct ip_addr *ip, unsigned int port);
 
 
 
@@ -108,11 +108,11 @@ int find_group_in_hash_table(struct address_list** table,
  * Structure used to store a subnet
  */
 struct subnet {
-    unsigned int grp;        /* address group, subnet count in last record */
+	unsigned int grp;        /* address group, subnet count in last record */
 	struct net *subnet;		 /* IP subnet + mask */
 	int proto;                  /* Protocol -- UDP, TCP, TLS, or SCTP */
 	char *pattern;              /* Pattern matching From header field */
-    unsigned int port;       /* port or 0 */
+	unsigned int port;       /* port or 0 */
 	char *info;				 /* extra information */
 };
 
@@ -127,9 +127,9 @@ struct subnet* new_subnet_table(void);
  * Check if an entry exists in subnet table that matches given group, ip_addr,
  * and port.  Port 0 in subnet table matches any port.
  */
-int match_subnet_table(struct sip_msg *msg, struct subnet* table, unsigned int group,
-				struct ip_addr *ip, unsigned int port, int proto,
-				char *pattern, char* info);
+int match_subnet_table(struct sip_msg *msg, struct subnet* table,
+		unsigned int group, struct ip_addr *ip, unsigned int port, int proto,
+		char *pattern, char* info);
 
 
 /* 
@@ -138,7 +138,7 @@ int match_subnet_table(struct sip_msg *msg, struct subnet* table, unsigned int g
  * the first match or -1 if no match is found.
  */
 int find_group_in_subnet_table(struct subnet* table,
-		                   struct ip_addr *ip, unsigned int port);
+		struct ip_addr *ip, unsigned int port);
 
 /* 
  * Empty contents of subnet table
@@ -158,9 +158,8 @@ void free_subnet_table(struct subnet* table);
  * kept ordered according to subnet, port, grp.
  */
 int subnet_table_insert(struct subnet* table, unsigned int grp,
-	            struct net *subnet,
-	            unsigned int port, int proto, char* pattern,
-				char *info);
+		struct net *subnet, unsigned int port, int proto,
+		str* pattern, str *info);
 
 
 /* 
