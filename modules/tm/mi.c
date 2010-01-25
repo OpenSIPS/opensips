@@ -517,8 +517,10 @@ struct mi_root*  mi_tm_uac_dlg(struct mi_root* cmd_tree, void* param)
 		dlg.loc_seq.value = DEFAULT_CSEQ;
 	dlg.loc_seq.is_set = 1;
 
-	dlg.loc_uri = tmp_msg.from->body;
-	dlg.rem_uri = tmp_msg.to->body;
+	dlg.loc_uri = get_from(&tmp_msg)->uri;
+	dlg.rem_uri = get_to(&tmp_msg)->uri;
+	dlg.loc_dname = get_from(&tmp_msg)->display;
+	dlg.rem_dname = get_to(&tmp_msg)->display;
 	dlg.hooks.request_uri = ruri;
 	dlg.hooks.next_hop = (nexthop ? nexthop : ruri);
 	dlg.send_sock = sock;
