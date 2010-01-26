@@ -61,16 +61,16 @@ struct subnet *subnet_table_2;       /* Ptr to subnet table 2 */
 static db_con_t* db_handle = 0;
 static db_func_t perm_dbf;
 
-int proto_char2int(char *proto) {
-	if (!strcasecmp(proto, "any"))
+static int proto_char2int(str *proto) {
+	if (proto->len==0 || (proto->len==3 && !strcasecmp(proto->s, "any")))
 		return PROTO_NONE;
-	if (!strcasecmp(proto, "udp"))
+	if (proto->len==3 && !strcasecmp(proto->s, "udp"))
 		return PROTO_UDP;
-	if (!strcasecmp(proto, "tcp"))
+	if (proto->len==3 && !strcasecmp(proto->s, "tcp"))
 		return PROTO_TCP;
-	if (!strcasecmp(proto, "tls"))
+	if (proto->len==3 && !strcasecmp(proto->s, "tls"))
 		return PROTO_TLS;
-	if (!strcasecmp(proto, "sctp"))
+	if (proto->len==4 && !strcasecmp(proto->s, "sctp"))
 		return PROTO_SCTP;
 	return -1;
 }
@@ -91,8 +91,8 @@ int reload_address_table(void)
 	int i, mask, proto, group, port, id;
     struct ip_addr *ip_addr;
 	struct net *subnet;
-	char *pattern, *info, *str_proto;
-	str str_src_ip;
+	str str_pattern = {NULL,0}, str_info={NULL,0};
+	str str_src_ip, str_proto;
 
 	cols[0] = &ip_col;
 	cols[1] = &grp_col;
@@ -139,59 +139,83 @@ int reload_address_table(void)
 
 		val = ROW_VALUES(row + i);
 
-	    if ((ROW_N(row + i) == 8) &&
-			VAL_TYPE(val) == DB_STRING && !VAL_NULL(val) &&
-			VAL_TYPE(val + 1) == DB_INT && !VAL_NULL(val + 1)
-			&& (unsigned int)VAL_INT(val + 1) >= 0 &&
+		if ((ROW_N(row + i) == 8) &&
+			(VAL_TYPE(val)==DB_STRING || VAL_TYPE(val)==DB_STR) &&
+				!VAL_NULL(val) &&
+			VAL_TYPE(val + 1) == DB_INT && !VAL_NULL(val + 1) &&
+				(unsigned int)VAL_INT(val + 1) >= 0 &&
 			VAL_TYPE(val + 2) == DB_INT && !VAL_NULL(val + 2) &&
-			(unsigned int)VAL_INT(val + 2) > 0 &&
-	    	(unsigned int)VAL_INT(val + 2) <= 32 &&
-			VAL_TYPE(val + 4) == DB_STRING && !VAL_NULL(val + 4) &&
+				(unsigned int)VAL_INT(val + 2) > 0 &&
+				(unsigned int)VAL_INT(val + 2) <= 32 &&
 			VAL_TYPE(val + 3) == DB_INT && !VAL_NULL(val + 3) &&
-			(VAL_NULL(val + 5) || (
-				VAL_TYPE(val + 5) == DB_STRING && !VAL_NULL(val + 5))) &&
-			(VAL_NULL(val + 6) || (
-				 VAL_TYPE(val + 6) == DB_STRING && !VAL_NULL(val + 6)))
+			(VAL_TYPE(val + 4)==DB_STRING || VAL_TYPE(val + 4)==DB_STR) &&
+				!VAL_NULL(val + 4) &&
+			(VAL_TYPE(val + 5)==DB_STRING || VAL_TYPE(val + 5)==DB_STR) &&
+			(VAL_TYPE(val + 6)==DB_STRING || VAL_TYPE(val + 6)==DB_STR)
 			) {
 
 			id = (unsigned int) VAL_INT(val + 7);
 
-			str_src_ip.s = VAL_NULL(val) ? NULL : (char*) VAL_STRING(val);
-			if (!str_src_ip.s) {
-			    LM_DBG("empty ip field in address table, ignoring entry"
+			/* IP string */
+			if (VAL_TYPE(val)==DB_STRING) {
+				str_src_ip.s = (char*)VAL_STRING(val);
+				str_src_ip.len = strlen(str_src_ip.s);
+			} else {
+				str_src_ip = VAL_STR(val);
+			}
+			if (str_src_ip.len==0) {
+				LM_DBG("empty ip field in address table, ignoring entry"
 						" number %d\n", i);
 				continue;
 			}
 
-			str_src_ip.len = strlen(str_src_ip.s);
 			ip_addr = str2ip(&str_src_ip);
 
 			if (!ip_addr) {
-				LM_DBG("invalid ip field in address table, ignoring entry with id %d\n", id);
+				LM_DBG("invalid ip field in address table, ignoring entry "
+					"with id %d\n", id);
 				continue;
 			}
 
-			info = VAL_NULL(val + 6) ? NULL : (char*) VAL_STRING(val + 6);
-			pattern = VAL_NULL(val + 5) ? NULL : (char*) VAL_STRING(val + 5);
-			str_proto = VAL_NULL(val + 4) ? NULL : (char*) VAL_STRING(val + 4);
+			/* proto string */
+			if (VAL_TYPE(val+4)==DB_STRING) {
+				str_proto.s = (char*)VAL_STRING(val+4);
+				str_proto.len = strlen(str_proto.s);
+			} else {
+				str_proto = VAL_STR(val+4);
+			}
 
-			if (!str_proto) {
-			    LM_DBG("empty protocol field in address table, ignoring entry"
-						" with id %d\n", id);
-				continue;
-		    }
-
-			if (!strcasecmp(str_proto, "none")) {
-			    LM_DBG("protocol field is \"none\" in address table, ignoring"
+			if (str_proto.len==4 && !strncasecmp(str_proto.s, "none",4)) {
+				LM_DBG("protocol field is \"none\" in address table, ignoring"
 						" entry with id %d\n", id);
 				continue;
-		    }
+			}
 
-			proto = proto_char2int(str_proto);
+			proto = proto_char2int(&str_proto);
 			if (proto == -1) {
 			    LM_DBG("unknown protocol field in address table, ignoring"
 						" entry with id %d\n", id);
 				continue;
+			}
+
+			/* pattern string */
+			if (!VAL_NULL(val + 5)) {
+				if (VAL_TYPE(val+5)==DB_STRING) {
+					str_pattern.s = (char*)VAL_STRING(val+5);
+					str_pattern.len = strlen(str_pattern.s);
+				} else {
+					str_pattern = VAL_STR(val+5);
+				}
+			}
+
+			/* info string */
+			if (!VAL_NULL(val + 6)) {
+				if (VAL_TYPE(val+6)==DB_STRING) {
+					str_info.s = (char*)VAL_STRING(val+6);
+					str_info.len = strlen(str_info.s);
+				} else {
+					str_info = VAL_STR(val+6);
+				}
 			}
 
 			group = (unsigned int) VAL_INT(val + 1);
@@ -200,18 +224,19 @@ int reload_address_table(void)
 
 			if (mask == 32) {
 				if (hash_insert(new_hash_table, ip_addr, group, port, proto,
-					pattern, info) == -1) {
+					&str_pattern, &str_info) == -1) {
 						LM_ERR("hash table insert error\n");
 					    perm_dbf.free_result(db_handle, res);
 					    return -1;
 				}
-				LM_DBG("Tuple <%.*s, %u, %u, %u, %s, %s> inserted into "
+				LM_DBG("Tuple <%.*s, %u, %u, %u, %.*s, %.*s> inserted into "
 						"address hash table\n", str_src_ip.len, str_src_ip.s,
-						group, port, proto, pattern, info);
+						group, port, proto, str_pattern.len, str_pattern.s,
+						str_info.len,str_info.s);
 	    	} else {
 				subnet = mk_net_bitlen(ip_addr, mask);
 				if (subnet_table_insert(new_subnet_table, group, subnet,
-					port, proto, pattern, info) == -1) {
+					port, proto, &str_pattern, &str_info) == -1) {
 					    LM_ERR("subnet table problem\n");
 		    			perm_dbf.free_result(db_handle, res);
 					    return -1;

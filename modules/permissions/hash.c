@@ -65,8 +65,8 @@ void hash_destroy(struct address_list** table) {
 }
 
 int hash_insert(struct address_list** table, struct ip_addr *ip,
-	      unsigned int grp, unsigned int port, int proto, char* pattern,
-		  char* info) {
+		  unsigned int grp, unsigned int port, int proto, str* pattern,
+		  str* info) {
 
 	struct address_list *node;
 	unsigned int hash_val;
@@ -87,32 +87,35 @@ int hash_insert(struct address_list** table, struct ip_addr *ip,
 		return -1;
 	}
 
-    memcpy(node->ip, ip, sizeof(struct ip_addr));
+	memcpy(node->ip, ip, sizeof(struct ip_addr));
 
-	if (pattern) {
-	    node->pattern = (char *) shm_malloc(strlen(pattern) + 1);
-	    if (!node->pattern) {
+	if (pattern->len) {
+		node->pattern = (char *) shm_malloc(pattern->len + 1);
+		if (!node->pattern) {
 			LM_ERR("cannot allocate shm memory for pattern string\n");
 			shm_free(node->ip);
 			shm_free(node);
 			return -1;
-	    }
-	    memcpy(node->pattern, pattern, strlen(pattern) + 1);
-	} else
-	    node->pattern = 0;
+		}
+		memcpy(node->pattern, pattern->s, pattern->len);
+		node->pattern[pattern->len] = 0;
+	} else {
+		node->pattern = NULL;
+	}
 
-	node->info = NULL;
-	if (info) {
-	    node->info = (char *) shm_malloc(strlen(info) + 1);
-	    if (!node->info) {
+	if (info->len) {
+		node->info = (char *) shm_malloc(info->len + 1);
+		if (!node->info) {
 			LM_CRIT("cannot allocate shm memory for context info string\n");
 			shm_free(node->ip);
-			shm_free(node->pattern);
+			if (node->pattern) shm_free(node->pattern);
 			shm_free(node);
 			return -1;
-	    }
-	    memcpy(node->info, info, strlen(info));
-		node->info[strlen(info)] = '\0';
+		}
+		memcpy(node->info, info->s, info->len);
+		node->info[info->len] = '\0';
+	} else {
+		node->info = NULL;
 	}
 
     node->grp = grp;
@@ -289,7 +292,7 @@ struct subnet* new_subnet_table(void)
  */
 int subnet_table_insert(struct subnet* table, unsigned int grp,
 			struct net *subnet,
-			unsigned int port, int proto, char* pattern, char *info)
+			unsigned int port, int proto, str* pattern, str *info)
 {
     int i;
     unsigned int count;
@@ -323,24 +326,26 @@ int subnet_table_insert(struct subnet* table, unsigned int grp,
 	else
 		table[i + 1].subnet = NULL;
 
-	if (info) {
-		table[i + 1].info = (char*) shm_malloc(strlen(info) + 1);
+	if (info->len) {
+		table[i + 1].info = (char*) shm_malloc(info->len + 1);
 		if (!table[i + 1].info) {
 			LM_ERR("cannot allocate shm memory for table info\n");
 			return -1;
 		}
-		memcpy(table[i + 1].info, info, strlen(info) + 1);
+		memcpy(table[i + 1].info, info->s, info->len);
+		table[i + 1].info[info->len] = 0;
 	}
 	else
 		table[i + 1].info = NULL;
 
-	if (pattern) {
-		table[i + 1].pattern = (char*) shm_malloc(strlen(pattern) + 1);
+	if (pattern->len) {
+		table[i + 1].pattern = (char*) shm_malloc(pattern->len + 1);
 		if (!table[i + 1].pattern) {
 			LM_ERR("cannot allocate shm memory for table pattern\n");
 			return -1;
 		}
-		memcpy(table[i + 1].pattern, pattern, strlen(pattern) + 1);
+		memcpy(table[i + 1].pattern, pattern->s, pattern->len);
+		table[i + 1].pattern[ pattern->len ] = 0;
 	}
 	else
 		table[i + 1].pattern = NULL;
