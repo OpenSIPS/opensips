@@ -767,18 +767,19 @@ static inline char* print_to(char* w, dlg_t* dialog, struct cell* t)
 	if(dialog->rem_dname.len) {
 		t->to.len += dialog->rem_dname.len;
 		append_string(w, dialog->rem_dname.s, dialog->rem_dname.len);
+		*(w++) = ' ';
 	}
 
 	if(dialog->rem_dname.len || dialog->id.rem_tag.len) {
 		t->to.len +=1;
-		append_string(w, "<", 1);
+		*(w++) = '<';
 	}
 
 	append_string(w, dialog->rem_uri.s, dialog->rem_uri.len);
 
 	if(dialog->rem_dname.len || dialog->id.rem_tag.len) {
 		t->to.len +=1;
-		append_string(w, ">", 1);
+		*(w++) = '>';
 	}
 
 
@@ -806,18 +807,19 @@ static inline char* print_from(char* w, dlg_t* dialog, struct cell* t)
 	if(dialog->loc_dname.len) {
 		t->from.len += dialog->loc_dname.len;
 		append_string(w, dialog->loc_dname.s, dialog->loc_dname.len);
+		*(w++) = ' ';
 	}
 
 	if(dialog->loc_dname.len || dialog->id.loc_tag.len) {
 		t->from.len +=1;
-		append_string(w, "<", 1);
+		*(w++) = '<';
 	}
 	
 	append_string(w, dialog->loc_uri.s, dialog->loc_uri.len);
 
 	if(dialog->loc_dname.len || dialog->id.loc_tag.len) {
 		t->from.len += 1;
-		append_string(w, ">", 1);
+		*(w++) = '>';
 	}
 
 	if (dialog->id.loc_tag.len) {
@@ -908,14 +910,14 @@ char* build_uac_req(str* method, str* headers, str* body, dlg_t* dialog,
 
 	/* To */
 	*len += TO_LEN 
-		+ (dialog->rem_dname.len ? dialog->rem_dname.len : 0)
+		+ (dialog->rem_dname.len ? dialog->rem_dname.len+1 : 0)
 		+ dialog->rem_uri.len
 		+ (dialog->id.rem_tag.len ? TOTAG_LEN + dialog->id.rem_tag.len : 0)
 		+ (dialog->rem_dname.len || dialog->id.rem_tag.len ? 2 : 0)
 		+ CRLF_LEN;
 	/* From */
 	*len += FROM_LEN 
-		+ (dialog->loc_dname.len ? dialog->loc_dname.len : 0)
+		+ (dialog->loc_dname.len ? dialog->loc_dname.len+1 : 0)
 		+ dialog->loc_uri.len
 		+ (dialog->id.loc_tag.len ? FROMTAG_LEN + dialog->id.loc_tag.len : 0)
 		+ (dialog->loc_dname.len || dialog->id.loc_tag.len ? 2 : 0)
