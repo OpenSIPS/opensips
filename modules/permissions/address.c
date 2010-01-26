@@ -62,7 +62,7 @@ static db_con_t* db_handle = 0;
 static db_func_t perm_dbf;
 
 static int proto_char2int(str *proto) {
-	if (proto->len==3 && !strcasecmp(proto->s, "any"))
+	if (proto->len==0 || (proto->len==3 && !strcasecmp(proto->s, "any")))
 		return PROTO_NONE;
 	if (proto->len==3 && !strcasecmp(proto->s, "udp"))
 		return PROTO_UDP;
@@ -163,8 +163,8 @@ int reload_address_table(void)
 			} else {
 				str_src_ip = VAL_STR(val);
 			}
-			if (!str_src_ip.len==0) {
-			    LM_DBG("empty ip field in address table, ignoring entry"
+			if (str_src_ip.len==0) {
+				LM_DBG("empty ip field in address table, ignoring entry"
 						" number %d\n", i);
 				continue;
 			}
@@ -172,7 +172,8 @@ int reload_address_table(void)
 			ip_addr = str2ip(&str_src_ip);
 
 			if (!ip_addr) {
-				LM_DBG("invalid ip field in address table, ignoring entry with id %d\n", id);
+				LM_DBG("invalid ip field in address table, ignoring entry "
+					"with id %d\n", id);
 				continue;
 			}
 
