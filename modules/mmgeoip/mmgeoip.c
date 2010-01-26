@@ -48,13 +48,13 @@ mod_init(void)
 	LM_INFO("MM GeoIP module - initializing\n");
 
 	if (!MMG_city_db_path.s) {
-		LM_ERR("mmgeoip:mod_init: mandatory parameter 'city_db_path' not set.\n");
+		LM_ERR("mandatory parameter 'city_db_path' not set.\n");
 		return -1;
 	}
 
 	MMG_city_db_path.len=strlen(MMG_city_db_path.s);
 	if(0==(MMG_gi = GeoIP_open(MMG_city_db_path.s, GEOIP_MMAP_CACHE))){
-		LM_ERR("mmgeoip:mod_init: Unable to open City DB at path '%.*s'.\n",
+		LM_ERR("Unable to open City DB at path '%.*s'.\n",
 			MMG_city_db_path.len,MMG_city_db_path.s);
 		return -1;
 	}
@@ -97,12 +97,12 @@ fixup_lookup3(void **param, int param_no)
 		if(ret<0) return ret;
 		spec=(pv_spec_t*)(*param);
 		if(spec->type!=PVT_AVP) {
-			LM_ERR("fixup_lookup3:AVP required for return value!\n");
+			LM_ERR("AVP required for return value!\n");
 			return E_CFG;
 		}
 		return 0;
 	} else {
-		LM_ERR("fixup_lookup3:Invalid parameter number: %d.\n", param_no);
+		LM_ERR("Invalid parameter number: %d.\n", param_no);
 		return E_CFG;
 	}
 	return 0;
@@ -115,7 +115,7 @@ fixup_lookup2(void **param, int param_no)
 		return fixup_lookup3(param,2);
 	if(2==param_no)
 		return fixup_lookup3(param,3);
-	LM_ERR("fixup_lookup2:Invalid parameter number: %d.\n", param_no);
+	LM_ERR("Invalid parameter number: %d.\n", param_no);
 	return E_CFG;
 }
 
@@ -135,15 +135,15 @@ mmg_lookup_cmd(struct sip_msg *msg, char *_fields_pv, char *_ipaddr_pv, char *_d
 
 	/* Sanity checks */
 	if(!(ipaddr_pv && fields_pv && dst_spec)) {
-		LM_ERR("mmg_lookup_cmd:Missing argument(s).\n");
+		LM_ERR("Missing argument(s).\n");
 		return -1;
 	}
 	if(dst_spec->type != PVT_AVP) {
-		LM_ERR("mmg_lookup_cmd:Invalid destination spec -- expected AVP.\n");
+		LM_ERR("Invalid destination spec -- expected AVP.\n");
 		return -1;
 	}
 	if(pv_get_avp_name(msg, &(dst_spec->pvp), &dst_name, &dstType)!=0) {
-		LM_ERR("mmg_lookup_cmd:Internal error getting AVP name.\n");
+		LM_ERR("Internal error getting AVP name.\n");
 		return -1;
 	}
 
@@ -152,7 +152,7 @@ mmg_lookup_cmd(struct sip_msg *msg, char *_fields_pv, char *_ipaddr_pv, char *_d
 	ipaddr_str.s=ipaddr_buf;
 	ipaddr_str.len=sizeof ipaddr_buf;
 	if(pv_printf(msg, ipaddr_pv, ipaddr_buf,  &ipaddr_str.len) || ipaddr_str.len==0) {
-		LM_ERR("mmg_lookup_cmd:Internal error parsing IP address.\n");
+		LM_ERR("Internal error parsing IP address.\n");
 		return -1;
 	}
 
@@ -160,13 +160,13 @@ mmg_lookup_cmd(struct sip_msg *msg, char *_fields_pv, char *_ipaddr_pv, char *_d
 	field_str.s=field_buf;
 	field_str.len=sizeof field_buf;
 	if(pv_printf(msg, fields_pv, field_buf,  &field_str.len) || field_str.len==0) {
-		LM_ERR("mmg_lookup_cmd:Internal error parsing lookup fields.\n");
+		LM_ERR("Internal error parsing lookup fields.\n");
 		return -1;
 	}
 
 	/* Attempt lookup */
 	if(!(gir=GeoIP_record_by_name (MMG_gi,ipaddr_buf))){
-		LM_DBG("mmgeoip:mmg_lookup_cmd: '%s'--> 'Unknown'.\n", *ipaddr_buf?ipaddr_buf:"Undefined");
+		LM_DBG("'%s'--> 'Unknown'.\n", *ipaddr_buf?ipaddr_buf:"Undefined");
 		return -1;
 	}
 
@@ -183,7 +183,7 @@ mmg_lookup_cmd(struct sip_msg *msg, char *_fields_pv, char *_ipaddr_pv, char *_d
 
 #define MMG_FAIL_EXIT if(gir) GeoIPRecord_delete(gir); return -1
 
-	LM_DBG("mmgeoip:mmg_lookup_cmd: ipaddr:'%.*s'; fields:'%.*s'.\n",
+	LM_DBG("ipaddr:'%.*s'; fields:'%.*s'.\n",
 		   ipaddr_str.len, ipaddr_str.s, field_str.len, field_str.s);
 	*rslt_buf=0;
 	rslt.s.s=rslt_buf;
@@ -205,14 +205,16 @@ mmg_lookup_cmd(struct sip_msg *msg, char *_fields_pv, char *_ipaddr_pv, char *_d
 			rslt.s.len=snprintf(
 				rslt_buf,sizeof rslt_buf,"%s",GeoIP_time_zone_by_country_and_region(gir->country_code, gir->region));
 		} else {
-			LM_ERR("mmgeoip:mmg_lookup_cmd: unknown field:'%s'\n",token);
+			LM_ERR("unknown field:'%s'\n",token);
 			MMG_FAIL_EXIT;
 		}
-		if(rslt.s.len<0 || rslt.s.len>sizeof rslt_buf || -1==add_avp(dstType,dst_name,rslt)) {
-			LM_ERR("mmgeoip:mmg_lookup_cmd: Internal error processing field/IP '%s/%s'.\n",token,ipaddr_buf);
+		if(rslt.s.len<0 || rslt.s.len>sizeof rslt_buf ||
+		add_avp(dstType|AVP_VAL_STR,dst_name,rslt)==-1 ) {
+			LM_ERR("Internal error processing field/IP '%s/%s'.\n",
+				token,ipaddr_buf);
 			MMG_FAIL_EXIT;
 		}
-		LM_DBG("mmgeoip:mmg_lookup_cmd: %s[%s] %.*s\n",ipaddr_buf,token,rslt.s.len,rslt.s.s);
+		LM_DBG("field %s[%s] %.*s\n",ipaddr_buf,token,rslt.s.len,rslt.s.s);
 		token=strtok_r(0,MMG_OP_DELIMS,&saveptr);
 	}
 	GeoIPRecord_delete(gir);
