@@ -331,7 +331,7 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 		ruri = msg->first_line.u.request.uri;
 		callid = msg->callid->body;
 
-		if(b2b_parse_key(&callid, &hash_index, &local_index) >= 0)
+		if(b2b_parse_key(&callid, &hash_index, &local_index) == 0)
 		{
 			LM_DBG("received a CANCEL message that I sent\n");
 			return 1;
@@ -397,7 +397,7 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 		return 1;
 	}
 	/* check if the to tag has the b2b key format -> meaning that it is a server request */
-	if(b2b_key.s && b2b_parse_key(&b2b_key, &hash_index, &local_index) >= 0)
+	if(b2b_key.s && b2b_parse_key(&b2b_key, &hash_index, &local_index) == 0)
 	{
 		LM_DBG("Received a b2b server request\n");
 		table = server_htable;
@@ -406,7 +406,7 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 	{
 		/* check if the callid is in b2b format -> meaning that this is a client request */
 		b2b_key = msg->callid->body;
-		if(b2b_parse_key(&b2b_key, &hash_index, &local_index) >= 0)
+		if(b2b_parse_key(&b2b_key, &hash_index, &local_index) == 0)
 		{
 			LM_DBG("received a b2b client request\n");
 			table = client_htable;
