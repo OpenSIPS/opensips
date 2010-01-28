@@ -275,7 +275,8 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 	b2b_table table = NULL;
 	int method_value;
 	struct to_body TO;
-	static	str reason = {"Trying", 6};
+	static str reason = {"Trying", 6};
+	struct sip_uri;
 
 	/* check if a b2b request */
 	if (parse_headers(msg, HDR_EOH_F, 0) < 0)
@@ -294,9 +295,11 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 	method_value = msg->first_line.u.request.method_value;
 
 	if(method_value!= METHOD_CANCEL &&
-		!((msg->first_line.u.request.uri.len == server_address.len ) &&
-		strncmp(msg->first_line.u.request.uri.s, server_address.s,
-		server_address.len)== 0))
+		!((msg->parsed_uri.host.len == srv_addr_uri.host.len ) &&
+		strncmp(msg->parsed_uri.host.s, srv_addr_uri.host.s, srv_addr_uri.host.len) == 0
+		&& (msg->parsed_uri.port_no == srv_addr_uri.port_no ||
+		(msg->parsed_uri.port_no==0 && srv_addr_uri.port_no==5060)||
+		(msg->parsed_uri.port_no==5060 && srv_addr_uri.port_no==0))))
 	{
 		LM_DBG("RURI does not point to me\n");
 		return 1;
