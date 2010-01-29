@@ -705,6 +705,7 @@ int b2b_send_reply(enum b2b_entity_type et, str* b2b_key, int code, str* text,
 	char* p;
 	str ehdr;
 	b2b_table table;
+	struct to_body *pto, TO;
 
 	if(et == B2B_SERVER)
 		table = server_htable;
@@ -760,9 +761,32 @@ int b2b_send_reply(enum b2b_entity_type et, str* b2b_key, int code, str* text,
 		lock_release(&table[hash_index].lock);
 		return 0;
 	}
-	
+
+	if(parse_headers(msg, HDR_EOH_F, 0) < 0)
+	{
+		LM_ERR("Failed to parse headers\n");
+		lock_release(&table[hash_index].lock);
+		return -1;
+	}
+
+	if(msg->to->parsed != NULL)
+	{
+		pto = (struct to_body*)msg->to->parsed;
+	}
+	else
+	{
+		memset( &TO , 0, sizeof(TO) );
+		if( !parse_to(msg->to->body.s,msg->to->body.s + msg->to->body.len + 1, &TO))
+		{
+			LM_ERR("'To' header NOT parsed\n");
+			lock_release(&table[hash_index].lock);
+			return -1;
+		}
+		pto = &TO;
+	}
+	to_tag = &pto->tag_value;
+
 	/* only for the server replies to the initial INVITE */
-	to_tag = &get_to(msg)->tag_value;
 	if(to_tag->s == NULL && to_tag->len == 0)
 	{
 		to_tag = b2b_key;
