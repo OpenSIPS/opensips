@@ -29,15 +29,15 @@ Anca-Maria Vamanu
               1.3.1. hash_size (int)
               1.3.2. script_scenario (str)
               1.3.3. extern_scenario (str)
+              1.3.4. cleanup_period (int)
 
-        1.4. cleanup_period (int)
-        1.5. Exported Functions
+        1.4. Exported Functions
 
-              1.5.1. b2b_init_request
+              1.4.1. b2b_init_request
 
-        1.6. Exported MI Functions
+        1.5. Exported MI Functions
 
-              1.6.1. b2b_trigger_scenario
+              1.5.1. b2b_trigger_scenario
 
    List of Examples
 
@@ -127,11 +127,13 @@ modparam("b2b_logic", "extern_scenario", "/usr/local/opensips/scripts/b2
 b_marketing.xml")
 ...
 
-1.4. cleanup_period (int)
+1.3.4. cleanup_period (int)
 
-   The time interval at which to search for an hanged b2b
-   scenario. A scenario is considered expired if the duration of a
-   session exceeds the lifetime specified in the scenario.
+   The time interval at which to search for an hanged b2b context.
+   A scenario is considered expired if the duration of a session
+   exceeds the lifetime specified in the scenario. At that moment,
+   BYE is sent in all the dialogs from that context and the
+   context is deleted.
 
    Default value is "100".
 
@@ -140,9 +142,9 @@ b_marketing.xml")
 modparam("b2b_logic", "cleanup_period", 60)
 ...
 
-1.5. Exported Functions
+1.4. Exported Functions
 
-1.5.1.  b2b_init_request
+1.4.1.  b2b_init_request
 
    This is the function that must be called by the script writer
    when a B2B scenario must be instantiated. It is up to the
@@ -164,9 +166,9 @@ if(prepaid_user())
 ensips.org:5070"));
 ...
 
-1.6. Exported MI Functions
+1.5. Exported MI Functions
 
-1.6.1.  b2b_trigger_scenario
+1.5.1.  b2b_trigger_scenario
 
    This command instantiated a B2B scenario.
 

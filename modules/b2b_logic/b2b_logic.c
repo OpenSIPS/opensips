@@ -84,7 +84,7 @@ static cmd_export_t cmds[]=
 static param_export_t params[]=
 {
 	{"hash_size",       INT_PARAM,                &b2bl_hsize                },
-	{"clean_period",    INT_PARAM,                &b2b_clean_period          },
+	{"cleanup_period",  INT_PARAM,                &b2b_clean_period          },
 	{"script_scenario", STR_PARAM|USE_FUNC_PARAM, (void*)load_script_scenario},
 	{"extern_scenario", STR_PARAM|USE_FUNC_PARAM, (void*)load_extern_scenario},
 	{0,                    0,                          0                     }
