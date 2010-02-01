@@ -40,6 +40,9 @@
 #define RR_FLOW_DOWNSTREAM  (1<<0)
 #define RR_FLOW_UPSTREAM    (1<<1)
 
+extern int removed_routes;
+
+
 /*! \brief
  * Do loose routing as per RFC3261
  */

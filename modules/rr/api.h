@@ -52,6 +52,7 @@ struct rr_binds {
 	get_route_param_t   get_route_param;
 	register_rrcb_t     register_rrcb;
 	int                 append_fromtag;
+	int*                removed_routes;
 };
 
 typedef  int (*load_rr_f)( struct rr_binds* );

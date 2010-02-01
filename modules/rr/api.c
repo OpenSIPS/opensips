@@ -48,6 +48,7 @@ int load_rr( struct rr_binds *rrb )
 	rrb->get_route_param   = get_route_param;
 	rrb->register_rrcb     = register_rrcb;
 	rrb->append_fromtag    = append_fromtag;
+	rrb->removed_routes    = &removed_routes;
 
 	return 1;
 }

@@ -70,6 +70,10 @@
 static unsigned int routed_msg_id;
 static str routed_params = {0,0};
 
+/* this is hooked into rr API and returns the number of removed
+   routes after doing loose_route() */
+int removed_routes;
+
 
 /*
  * Test whether we are processing pre-loaded route set
@@ -590,6 +594,7 @@ static inline int after_strict(struct sip_msg* _m)
 		} else {
 			LM_WARN("no socket found for match second RR\n");
 		}
+		removed_routes++;
 
 		if (!rt->next) {
 			/* No next route in the same header, remove the whole header
@@ -624,6 +629,7 @@ static inline int after_strict(struct sip_msg* _m)
 	 * we just used it without any checking */
 	routed_msg_id = _m->id;
 	routed_params = _m->parsed_uri.params;
+	removed_routes++;
 
 	if (is_strict(&puri.params)) {
 		LM_DBG("Next hop: '%.*s' is strict router\n", uri.len, ZSW(uri.s));
@@ -765,6 +771,7 @@ static inline int after_loose(struct sip_msg* _m, int preloaded)
 		/* set the hooks for the params -bogdan */
 		routed_msg_id = _m->id;
 		routed_params = puri.params;
+		removed_routes++;
 
 		if (!rt->next) {
 			/* No next route in the same header, remove the whole header
@@ -801,6 +808,7 @@ static inline int after_loose(struct sip_msg* _m, int preloaded)
 			} else {
 				LM_WARN("no socket found for match second RR\n");
 			}
+			removed_routes++;
 
 			if (!rt->next) {
 				/* No next route in the same header, remove the whole header
@@ -882,6 +890,8 @@ done:
 int loose_route(struct sip_msg* _m, char* _s1, char* _s2)
 {
 	int ret;
+
+	removed_routes = 0;
 
 	if (find_first_route(_m) != 0) {
 		LM_DBG("There is no Route HF\n");
