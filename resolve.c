@@ -475,7 +475,7 @@ struct rdata* get_record(char* name, int type)
 	struct rdata* rd;
 	struct srv_rdata* srv_rd;
 	struct srv_rdata* crt_srv;
-	
+
 	size=res_search(name, C_IN, type, buff.buff, sizeof(buff));
 	if (size<0) {
 		LM_DBG("lookup(%s, %d) failed\n", name, type);
@@ -782,6 +782,7 @@ static inline void sort_srvs(struct rdata **head)
 			rd2srv(rd)->priority!=rd2srv(rd_next)->priority) {
 				if (tail) {tail->next=rd;tail=rd;}
 				else {*head=tail=rd;}
+				rd->next = NULL;
 			} else {
 				/* multiple nodes with same priority */
 				/* -> calculate running sums (and detect the end) */
@@ -852,7 +853,7 @@ static inline struct hostent* do_srv_lookup(char *name, unsigned short* port, st
 		}
 		he = resolvehost(srv->name, 1);
 		if ( he!=0 ) {
-			LM_DBG("SRV(%s) = %s:%d\n",	name, srv->name, srv->port);
+			LM_DBG("SRV(%s) = %s:%d\n", name, srv->name, srv->port);
 			*port=srv->port;
 			if (dn && rd->next && a2dns_node( rd->next, dn)==-1)
 					*dn = 0;
