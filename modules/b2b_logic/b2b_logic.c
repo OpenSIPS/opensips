@@ -144,7 +144,7 @@ static int mod_init(void)
 		return -1;
 	}
 
-//	register_timer(b2bl_clean, 0, b2b_clean_period);
+	register_timer(b2bl_clean, 0, b2b_clean_period);
 
 	return 0;
 }
@@ -152,7 +152,7 @@ static int mod_init(void)
 void b2bl_clean(unsigned int ticks, void* param)
 {
 	int i;
-	b2bl_tuple_t* tuple;
+	b2bl_tuple_t* tuple, *tuple_next;
 	unsigned int now;
 	str bye = {BYE, BYE_LEN};
 
@@ -164,16 +164,23 @@ void b2bl_clean(unsigned int ticks, void* param)
 		tuple = b2bl_htable[i].first;
 		while(tuple)
 		{
-			if(tuple->lifetime > 0 && tuple->lifetime < now)  /* if an expired dialog */
+			tuple_next = tuple->next;
+			if(tuple->lifetime > 0 && tuple->lifetime < now )  /* if an expired dialog */
 			{
-				LM_DBG("Found an expired dialog. Send BYE in both sides and delete\n");
-				b2b_api.send_request(tuple->bridge_entities[0]->type,
-						&tuple->bridge_entities[0]->key, &bye, 0, 0);
-				b2b_api.send_request(tuple->bridge_entities[1]->type,
-						&tuple->bridge_entities[1]->key, &bye, 0, 0);
+				LM_INFO("Found an expired dialog. Send BYE in both sides and delete\n");
+				if(tuple->bridge_entities[0] && tuple->bridge_entities[1])
+				{
+					b2b_api.send_request(tuple->bridge_entities[0]->type,
+						&tuple->bridge_entities[0]->key, &bye, 0, 0,
+						 tuple->bridge_entities[0]->dlginfo);
+					b2b_api.send_request(tuple->bridge_entities[1]->type,
+						&tuple->bridge_entities[1]->key, &bye, 0, 0,
+						tuple->bridge_entities[1]->dlginfo);
+				}
 				b2bl_delete(tuple, i);
 			}
-			tuple = tuple->next;
+			
+			tuple = tuple_next;
 		}
 		lock_release(&b2bl_htable[i].lock);
 	}
@@ -621,7 +628,7 @@ static struct mi_root* mi_trigger_scenario(struct mi_root* cmd, void* param)
 		return 0;
 	}
 
-	if(process_bridge_action(tuple, xml_node) < 0)
+	if(process_bridge_action(0, tuple, xml_node) < 0)
 	{
 		LM_ERR("Failed to process bridge node");
 		return 0;

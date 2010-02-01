@@ -71,9 +71,10 @@ static void generate_tag(str* tag, str* src, str* callid)
  *
  *	Return value: dialog key allocated in private memory
  *	*/
-
+#define HASH_SIZE 1<<23
 str* client_new(str* method, str* to_uri, str* from_uri, str* extra_headers,
-		str* body, b2b_notify_t b2b_cback, void* param)
+		str* body, str* from_tag_uac,b2b_notify_t b2b_cback,b2b_add_dlginfo_t add_dlginfo,
+		struct socket_info* send_sock, str* param)
 {
 	int result;
 	b2b_dlg_t* dlg;
@@ -84,9 +85,10 @@ str* client_new(str* method, str* to_uri, str* from_uri, str* extra_headers,
 	char buffer[BUF_LEN];
 	str* b2b_key_shm = NULL;
 	dlg_t td;
+	str from_tag;
 
 	if(method == NULL || to_uri == NULL || from_uri == NULL ||
-			b2b_cback == NULL)
+			b2b_cback == NULL || param== NULL)
 	{
 		LM_ERR("Wrong parameters. 'method', 'to_uri', 'from_uri' and"
 				" 'b2b_cback' can not be NULL\n");
@@ -95,8 +97,14 @@ str* client_new(str* method, str* to_uri, str* from_uri, str* extra_headers,
 
 	hash_index = core_hash(from_uri, to_uri, client_hsize);
 
+	if(from_tag_uac)
+		from_tag = *from_tag_uac;
+	else
+		generate_tag(&from_tag, from_uri, extra_headers);
+
 	/* create a dummy b2b dialog structure to be inserted in the hash table*/
-	size = sizeof(b2b_dlg_t) + to_uri->len + from_uri->len;
+	size = sizeof(b2b_dlg_t) + to_uri->len + from_uri->len +
+		from_tag.len + param->len;
 
 	/* create record in hash table */
 	dlg = (b2b_dlg_t*)shm_malloc(size);
@@ -118,11 +126,20 @@ str* client_new(str* method, str* to_uri, str* from_uri, str* extra_headers,
 	dlg->to_uri.len = to_uri->len;
 	size+= to_uri->len;
 
+	CONT_COPY(dlg, dlg->tag[CALLER_LEG], from_tag);
+
+	dlg->param.s = (char*)dlg + size;
+	memcpy(dlg->param.s, param->s, param->len);
+	dlg->param.len = param->len;
+	size+= param->len;
+
 	dlg->b2b_cback = b2b_cback;
-	dlg->param = param;
+	dlg->add_dlginfo = add_dlginfo;
 	dlg->last_method = METHOD_INVITE;
 	dlg->state = B2B_NEW;
 	dlg->cseq[CALLER_LEG] =1;
+
+	dlg->id = core_hash(&from_tag, 0, HASH_SIZE);
 
 	/* callid must have the special format */
 	callid = b2b_htable_insert(client_htable, dlg, hash_index, B2B_CLIENT);
@@ -161,7 +178,6 @@ str* client_new(str* method, str* to_uri, str* from_uri, str* extra_headers,
 		LM_ERR("no more shared memory\n");
 		goto error;
 	}
-
 	/* create the tm dialog structure with the a costum callid */
 	memset(&td, 0, sizeof(dlg_t));
 	td.loc_seq.value = 1;
@@ -169,7 +185,7 @@ str* client_new(str* method, str* to_uri, str* from_uri, str* extra_headers,
 
 	td.id.call_id = *callid;
 
-	generate_tag(&td.id.loc_tag, from_uri, callid);
+	td.id.loc_tag = from_tag;
 	LM_DBG("generated tag = [%.*s]\n", td.id.loc_tag.len, td.id.loc_tag.s);
 
 	td.id.rem_tag.s = 0;
@@ -181,6 +197,8 @@ str* client_new(str* method, str* to_uri, str* from_uri, str* extra_headers,
 
 	td.state= DLG_CONFIRMED;
 	td.T_flags=T_NO_AUTOACK_FLAG|T_PASS_PROVISIONAL_FLAG ;
+
+	td.send_sock = send_sock;
 
 	tmb.setlocalTholder(&dlg->tm_tran);
 	
@@ -201,6 +219,7 @@ str* client_new(str* method, str* to_uri, str* from_uri, str* extra_headers,
 		return 0;
 	}
 	tmb.setlocalTholder(0);
+	
 	return callid;
 
 error:
@@ -215,7 +234,7 @@ dlg_t* b2b_client_build_dlg(b2b_dlg_t* dlg, dlg_leg_t* leg)
 
 	if(dlg->legs == NULL)
 	{
-		LM_ERR("Tried to send a dialog when no call leg info exists\n");
+		LM_ERR("Tried to send a request when no call leg info exists\n");
 		return 0;
 	}
 

@@ -53,6 +53,9 @@ b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg,
 		return NULL;
 	}
 	memset(tuple, 0,sizeof(b2bl_tuple_t) );
+
+	LM_INFO("pointer [%p]\n", tuple);
+
 	tuple->scenario = scenario;
 
 	lock_get(&b2bl_htable[hash_index].lock);
@@ -84,7 +87,7 @@ b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg,
 		lock_release(&b2bl_htable[hash_index].lock);
 		return NULL;
 	}
-
+	tuple->lifetime = 60 + (int)time(NULL);
 	tuple->key = b2bl_key;
 
 	/* copy the function parameters that customize the scenario */
@@ -150,9 +153,9 @@ void b2bl_delete(b2bl_tuple_t* tuple, unsigned int hash_index)
 	b2bl_entity_id_t* entity, *next_entity;
 	int i;
 
-	LM_DBG("Delete record, hash_index=[%d], local_index=[%d]\n",
+	LM_INFO("Delete record, hash_index=[%d], local_index=[%d]\n",
 			hash_index, tuple->id);
-
+	LM_INFO("pointer [%p]", tuple);
 	if(b2bl_htable[hash_index].first == tuple)
 	{
 		b2bl_htable[hash_index].first = tuple->next;
@@ -170,7 +173,10 @@ void b2bl_delete(b2bl_tuple_t* tuple, unsigned int hash_index)
 	if(tuple->server)
 	{
 		if(tuple->server->key.s && tuple->server->key.len)
-			b2b_api.entity_delete(B2B_SERVER, &tuple->server->key);
+			b2b_api.entity_delete(B2B_SERVER, &tuple->server->key,
+			 tuple->server->dlginfo);
+		if(tuple->server->dlginfo)
+			shm_free(tuple->server->dlginfo);
 		shm_free(tuple->server);
 	}
 	entity = tuple->clients;
@@ -178,7 +184,10 @@ void b2bl_delete(b2bl_tuple_t* tuple, unsigned int hash_index)
 	{
 		next_entity = entity->next;
 		if(entity->key.s && entity->key.len)
-			b2b_api.entity_delete(B2B_CLIENT, &entity->key);
+			b2b_api.entity_delete(B2B_CLIENT, &entity->key,
+				entity->dlginfo);
+		if(entity->dlginfo)
+			shm_free(entity->dlginfo);
 		shm_free(entity);
 		entity = next_entity;
 	}

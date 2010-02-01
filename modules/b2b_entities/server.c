@@ -50,23 +50,25 @@
  *	*/
 
 str* server_new(struct sip_msg* msg, b2b_notify_t b2b_cback,
-		void* param)
+		str* param)
 {
 	b2b_dlg_t* dlg;
 	unsigned int hash_index;
 	static	str reason = {"Trying", 6};
 
 	/* create new entry in hash table */
-	dlg = b2b_new_dlg(msg, 0);
+	dlg = b2b_new_dlg(msg, 0, param);
 	if( dlg == NULL )
 	{
 		LM_ERR("failed to create new dialog structure entry\n");
 		return NULL;
 	}
+	hash_index = core_hash(&dlg->callid, &dlg->tag[CALLER_LEG], server_hsize);
+
+	/* check if record does not exist already */	
 
 	dlg->state = B2B_NEW;
 	dlg->b2b_cback = b2b_cback;
-	dlg->param = param;
 
 	/* get the pointer to the tm transaction to store it the tuple record */
 	dlg->tm_tran = tmb.t_gett();
@@ -79,10 +81,11 @@ str* server_new(struct sip_msg* msg, b2b_notify_t b2b_cback,
 		tmb.ref_cell(dlg->tm_tran);
 	
 	tmb.t_reply(msg, 100, &reason);
+//	LM_INFO("****Server entity = %p\n", dlg);
 
 	/* add the record in hash table */
-	hash_index = core_hash(&dlg->callid, &dlg->tag[CALLER_LEG], server_hsize);
-
+	LM_DBG("Inserted record with callid= %.*s, tag= %.*s\n", dlg->callid.len, dlg->callid.s, 
+		dlg->tag[CALLER_LEG].len, dlg->tag[CALLER_LEG].s);
 	return b2b_htable_insert(server_htable, dlg, hash_index, B2B_SERVER);
 }
 
