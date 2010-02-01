@@ -1079,7 +1079,7 @@ int dlg_validate_dialog( struct sip_msg* req, struct dlg_cell *dlg)
 			return -1;
 		}
 	} else {
-		m = 1; /*skip first*/
+		m = *(d_rrb.removed_routes); /*skip the removed routes */
 		if( print_rr_body( req->route, &s, 0/*normal oder*/, &m/*skip*/)!=0 ) {
 			LM_ERR("failed to print route headers\n");
 			return -1;
