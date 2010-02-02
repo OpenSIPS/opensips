@@ -122,29 +122,13 @@ error:
 }
 
 
-
-/*callback function to handle responses to the BYE request */
-void bye_reply_cb(struct cell* t, int type, struct tmcb_params* ps){
-
-	struct dlg_cell* dlg;
+static void dual_bye_event(struct dlg_cell* dlg, struct sip_msg *req, int extra_unref)
+{
 	int event, old_state, new_state, unref, ret;
 
-	if(ps->param == NULL || *ps->param == NULL){
-		LM_ERR("invalid parameter\n");
-		return;
-	}
-
-	if(ps->code < 200){
-		LM_DBG("receiving a provisional reply\n");
-		return;
-	}
-
-	LM_DBG("receiving a final reply %d\n",ps->code);
-
-	dlg = (struct dlg_cell *)(*(ps->param));
 	event = DLG_EVENT_REQBYE;
 	next_state_dlg(dlg, event, &old_state, &new_state, &unref);
-
+	unref += extra_unref;
 
 	if(new_state == DLG_STATE_DELETED && old_state != DLG_STATE_DELETED){
 		
@@ -177,11 +161,11 @@ void bye_reply_cb(struct cell* t, int type, struct tmcb_params* ps){
 		}
 
 		/* dialog terminated (BYE) */
-		run_dlg_callbacks( DLGCB_TERMINATED, dlg, ps->req, DLG_DIR_NONE, 0);
+		run_dlg_callbacks( DLGCB_TERMINATED, dlg, req, DLG_DIR_NONE, 0);
 
 		LM_DBG("first final reply\n");
 		/* derefering the dialog */
-		unref_dlg(dlg, unref+1);
+		unref_dlg(dlg, unref);
 
 		if_update_stat( dlg_enable_stats, active_dlgs, -1);
 	}
@@ -193,10 +177,28 @@ void bye_reply_cb(struct cell* t, int type, struct tmcb_params* ps){
 		if (should_remove_dlg_db())
 			remove_dialog_from_db(dlg);
 		/* force delete from mem */
-		unref_dlg(dlg, 1);
+		unref_dlg(dlg, unref);
 	}
 }
 
+
+/*callback function to handle responses to the BYE request */
+void bye_reply_cb(struct cell* t, int type, struct tmcb_params* ps)
+{
+	if(ps->param == NULL || *ps->param == NULL){
+		LM_ERR("invalid parameter\n");
+		return;
+	}
+
+	if(ps->code < 200){
+		LM_DBG("receiving a provisional reply\n");
+		return;
+	}
+
+	LM_DBG("receiving a final reply %d\n",ps->code);
+
+	dual_bye_event( (struct dlg_cell *)(*(ps->param)), ps->req, 1);
+}
 
 
 static inline int build_extra_hdr(struct dlg_cell * cell, str *extra_hdrs,
@@ -291,7 +293,7 @@ err:
 int dlg_end_dlg(struct dlg_cell *dlg, str *extra_hdrs)
 {
 	str str_hdr = {NULL,0};
-	int res = 0;
+	int i,res = 0;
 	int callee;
 
 	if ((build_extra_hdr(dlg, extra_hdrs, &str_hdr)) != 0){
@@ -300,9 +302,15 @@ int dlg_end_dlg(struct dlg_cell *dlg, str *extra_hdrs)
 	}
 
 	callee = callee_idx(dlg);
-	if ( (send_leg_bye( dlg, DLG_CALLER_LEG, callee, &str_hdr)!=0)
-	|| (send_leg_bye( dlg, callee, DLG_CALLER_LEG, &str_hdr)!=0) )
-		res = -1;
+	if ( send_leg_bye( dlg, DLG_CALLER_LEG, callee, &str_hdr)!=0) {
+		res--;
+	}
+	if (send_leg_bye( dlg, callee, DLG_CALLER_LEG, &str_hdr)!=0 ) {
+		res--;
+	}
+
+	for( i=res ; i<0 ; i++)
+		dual_bye_event( dlg, NULL, 0);
 
 	pkg_free(str_hdr.s);
 	return res;
