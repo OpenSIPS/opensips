@@ -427,6 +427,10 @@ void dlg_onreq(struct cell* t, int type, struct tmcb_params *param)
 
 	req = param->req;
 
+	/* module is stricly designed for dialog calls */
+	if (req->first_line.u.request.method_value!=METHOD_INVITE)
+		return ;
+
 	if ( (!req->to && parse_headers(req, HDR_TO_F,0)<0) || !req->to ) {
 		LM_ERR("bad request or missing TO hdr :-/\n");
 		return;
@@ -435,10 +439,7 @@ void dlg_onreq(struct cell* t, int type, struct tmcb_params *param)
 	if (s.s!=0 && s.len!=0)
 		return;
 
-	if (req->first_line.u.request.method_value==METHOD_CANCEL)
-		return;
-
-	if ( (req->flags & dlg_flag) != dlg_flag)
+	if ( (req->flags & dlg_flag) == 0 )
 		return;
 
 	if ( parse_from_header(req)) {

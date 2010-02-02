@@ -120,29 +120,13 @@ error:
 }
 
 
-
-/*callback function to handle responses to the BYE request */
-void bye_reply_cb(struct cell* t, int type, struct tmcb_params* ps){
-
-	struct dlg_cell* dlg;
+static void dual_bye_event(struct dlg_cell* dlg, struct sip_msg *req, int extra_unref)
+{
 	int event, old_state, new_state, unref, ret;
 
-	if(ps->param == NULL || *ps->param == NULL){
-		LM_ERR("invalid parameter\n");
-		return;
-	}
-
-	if(ps->code < 200){
-		LM_DBG("receiving a provisional reply\n");
-		return;
-	}
-
-	LM_DBG("receiving a final reply %d\n",ps->code);
-
-	dlg = (struct dlg_cell *)(*(ps->param));
 	event = DLG_EVENT_REQBYE;
 	next_state_dlg(dlg, event, &old_state, &new_state, &unref);
-
+	unref += extra_unref;
 
 	if(new_state == DLG_STATE_DELETED && old_state != DLG_STATE_DELETED){
 
@@ -171,11 +155,11 @@ void bye_reply_cb(struct cell* t, int type, struct tmcb_params* ps){
 		}
 
 		/* dialog terminated (BYE) */
-		run_dlg_callbacks( DLGCB_TERMINATED, dlg, ps->req, DLG_DIR_NONE, 0);
+		run_dlg_callbacks( DLGCB_TERMINATED, dlg, req, DLG_DIR_NONE, 0);
 
 		LM_DBG("first final reply\n");
 		/* derefering the dialog */
-		unref_dlg(dlg, unref+1);
+		unref_dlg(dlg, unref);
 
 		if_update_stat( dlg_enable_stats, active_dlgs, -1);
 	}
@@ -187,11 +171,28 @@ void bye_reply_cb(struct cell* t, int type, struct tmcb_params* ps){
 		if (should_remove_dlg_db())
 			remove_dialog_from_db(dlg);
 		/* force delete from mem */
-		unref_dlg(dlg, 1);
+		unref_dlg(dlg, unref);
 	}
-
 }
 
+
+/*callback function to handle responses to the BYE request */
+void bye_reply_cb(struct cell* t, int type, struct tmcb_params* ps)
+{
+	if(ps->param == NULL || *ps->param == NULL){
+		LM_ERR("invalid parameter\n");
+		return;
+	}
+
+	if(ps->code < 200){
+		LM_DBG("receiving a provisional reply\n");
+		return;
+	}
+
+	LM_DBG("receiving a final reply %d\n",ps->code);
+
+	dual_bye_event( (struct dlg_cell *)(*(ps->param)), ps->req, 1);
+}
 
 
 static inline int build_extra_hdr(struct dlg_cell * cell, int dir,
@@ -293,6 +294,7 @@ struct mi_root * mi_terminate_dlg(struct mi_root *cmd_tree, void *param ){
 	str mi_extra_hdrs = {NULL,0};
 	int status, msg_len;
 	char *msg;
+	int i,res = 0;
 
 
 	if( d_table ==NULL)
@@ -324,8 +326,12 @@ struct mi_root * mi_terminate_dlg(struct mi_root *cmd_tree, void *param ){
 	// lookup_dlg has incremented the reference count
 
 	if(dlg){
-		if ( (send_bye(dlg,DLG_CALLER_LEG,&mi_extra_hdrs)!=0) ||
-		(send_bye(dlg,DLG_CALLEE_LEG,&mi_extra_hdrs)!=0)) {
+		res = 0;
+		if (send_bye(dlg,DLG_CALLER_LEG,&mi_extra_hdrs)!=0) res--;
+		if (send_bye(dlg,DLG_CALLEE_LEG,&mi_extra_hdrs)!=0) res--;
+		for( i=res ; i<0 ; i++)
+			dual_bye_event( dlg, NULL, 0);
+		if (res<0) {
 			status = 500;
 			msg = MI_DLG_OPERATION_ERR;
 			msg_len = MI_DLG_OPERATION_ERR_LEN;
