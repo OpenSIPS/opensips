@@ -536,7 +536,7 @@ void dlg_onreq(struct cell* t, int type, struct tmcb_params *param)
 		current_dlg_pointer->flags |= DLG_FLAG_ISINIT;
 	} else {
 		/* should we create dialog? */
-		if ( (param->req->flags & dlg_flag) != dlg_flag)
+		if ( (param->req->flags & dlg_flag) == 0 )
 			return;
 
 		/* create the dialog */
@@ -550,15 +550,16 @@ int dlg_create_dialog(struct cell* t, struct sip_msg *req)
 	struct dlg_cell *dlg;
 	str s;
 
+	/* module is stricly designed for dialog calls */
+	if (req->first_line.u.request.method_value!=METHOD_INVITE)
+		return -1;
+
 	if ( (!req->to && parse_headers(req, HDR_TO_F,0)<0) || !req->to ) {
 		LM_ERR("bad request or missing TO hdr :-/\n");
 		return -1;
 	}
 	s = get_to(req)->tag_value;
 	if (s.s!=0 && s.len!=0)
-		return -1;
-
-	if (req->first_line.u.request.method_value==METHOD_CANCEL)
 		return -1;
 
 	if ( parse_from_header(req)) {
@@ -1029,40 +1030,42 @@ int dlg_validate_dialog( struct sip_msg* req, struct dlg_cell *dlg)
 	/* check the RURI - it must be the contact of the destination leg */
 	/* after loose_route() even if the previous hop was a strict router,
 	   opensips will set in RURI the remote contact */
-	if ( parse_sip_msg_uri(req)<0 ||
-	parse_uri( leg->contact.s, leg->contact.len, &curi)!=0 ) {
-		LM_ERR("failed to parse RURI/Contacts\n");
-		return -1;
-	}
-	/* check proto */
-	r_proto = (req->parsed_uri.proto==PROTO_NONE) ?
-		PROTO_UDP : req->parsed_uri.proto;
-	c_proto = (curi.proto==PROTO_NONE) ?
-		PROTO_UDP : curi.proto;
-	if ( r_proto!=c_proto ) {
-		s = *GET_RURI(req);
-		LM_DBG("RURI/Contact PROTO test failed ruri=[%.*s], old=[%.*s]\n",
-			s.len,s.s,leg->contact.len,leg->contact.s);
-		return -1;
-	}
-	/* check port */
-	r_port=(req->parsed_uri.port_no==0) ?
-		( (r_proto==PROTO_TLS)?5061:5060) : req->parsed_uri.port_no ;
-	c_port=(curi.port_no==0) ?
-		( (c_proto==PROTO_TLS)?5061:5060) : curi.port_no ;
-	if ( r_port!=c_port ) {
-		s = *GET_RURI(req);
-		LM_DBG("RURI/Contact PORT test failed ruri=[%.*s], old=[%.*s]\n",
-			s.len,s.s,leg->contact.len,leg->contact.s);
-		return -1;
-	}
-	/* host (as string) */
-	if ( curi.host.len!=req->parsed_uri.host.len ||
-	memcmp(req->parsed_uri.host.s, curi.host.s, curi.host.len)!=0 ) {
-		s = *GET_RURI(req);
-		LM_DBG("RURI/Contact HOST test failed ruri=[%.*s], old=[%.*s]\n",
-			s.len,s.s,leg->contact.len,leg->contact.s);
-		return -1;
+	if (leg->contact.len) {
+		if ( parse_sip_msg_uri(req)<0 ||
+		parse_uri( leg->contact.s, leg->contact.len, &curi)!=0 ) {
+			LM_ERR("failed to parse RURI/Contacts\n");
+			return -1;
+		}
+		/* check proto */
+		r_proto = (req->parsed_uri.proto==PROTO_NONE) ?
+			PROTO_UDP : req->parsed_uri.proto;
+		c_proto = (curi.proto==PROTO_NONE) ?
+			PROTO_UDP : curi.proto;
+		if ( r_proto!=c_proto ) {
+			s = *GET_RURI(req);
+			LM_DBG("RURI/Contact PROTO test failed ruri=[%.*s], old=[%.*s]\n",
+				s.len,s.s,leg->contact.len,leg->contact.s);
+			return -1;
+		}
+		/* check port */
+		r_port=(req->parsed_uri.port_no==0) ?
+			( (r_proto==PROTO_TLS)?5061:5060) : req->parsed_uri.port_no ;
+		c_port=(curi.port_no==0) ?
+			( (c_proto==PROTO_TLS)?5061:5060) : curi.port_no ;
+		if ( r_port!=c_port ) {
+			s = *GET_RURI(req);
+			LM_DBG("RURI/Contact PORT test failed ruri=[%.*s], old=[%.*s]\n",
+				s.len,s.s,leg->contact.len,leg->contact.s);
+			return -1;
+		}
+		/* host (as string) */
+		if ( curi.host.len!=req->parsed_uri.host.len ||
+		memcmp(req->parsed_uri.host.s, curi.host.s, curi.host.len)!=0 ) {
+			s = *GET_RURI(req);
+			LM_DBG("RURI/Contact HOST test failed ruri=[%.*s], old=[%.*s]\n",
+				s.len,s.s,leg->contact.len,leg->contact.s);
+			return -1;
+		}
 	}
 
 	/* check the route set - is the the same as in original request */
