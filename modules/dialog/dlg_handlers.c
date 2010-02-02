@@ -463,7 +463,7 @@ void dlg_onreq(struct cell* t, int type, struct tmcb_params *param)
 		current_dlg_pointer->flags |= DLG_FLAG_ISINIT;
 	} else {
 		/* should we create dialog? */
-		if ( (param->req->flags & dlg_flag) != dlg_flag)
+		if ( (param->req->flags & dlg_flag) == 0 )
 			return;
 
 		/* create the dialog */
@@ -477,15 +477,16 @@ int dlg_create_dialog(struct cell* t, struct sip_msg *req)
 	struct dlg_cell *dlg;
 	str s;
 
+	/* module is stricly designed for dialog calls */
+	if (req->first_line.u.request.method_value!=METHOD_INVITE)
+		return -1;
+
 	if ( (!req->to && parse_headers(req, HDR_TO_F,0)<0) || !req->to ) {
 		LM_ERR("bad request or missing TO hdr :-/\n");
 		return -1;
 	}
 	s = get_to(req)->tag_value;
 	if (s.s!=0 && s.len!=0)
-		return -1;
-
-	if (req->first_line.u.request.method_value==METHOD_CANCEL)
 		return -1;
 
 	if ( parse_from_header(req)) {
