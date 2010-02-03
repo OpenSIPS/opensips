@@ -477,7 +477,7 @@ search_dialog:
 			lock_release(&server_htable[hash_index].lock);
 			return -1;
 		}
-
+		tmb.unref_cell(tmb.t_gett());
 		goto logic_notify;
 	}
 
@@ -1020,9 +1020,12 @@ void b2b_entity_delete(enum b2b_entity_type et, str* b2b_key,
 	LM_DBG("Deleted %.*s\n", b2b_key->len, b2b_key->s);
 
 	lock_get(&table[hash_index].lock);
-	dlg = b2b_search_htable_dlg(table, hash_index, local_index,
+	if(dlginfo)
+		dlg = b2b_search_htable_dlg(table, hash_index, local_index,
 		dlginfo->totag.s?&dlginfo->totag:0,
-		 dlginfo->fromtag.s?&dlginfo->fromtag:0, &dlginfo->callid);
+		dlginfo->fromtag.s?&dlginfo->fromtag:0, &dlginfo->callid);
+	else
+		dlg = b2b_search_htable(table, hash_index, local_index);
 	if(dlg== NULL)
 	{
 		LM_ERR("No dialog found\n");
