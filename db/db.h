@@ -392,5 +392,17 @@ int db_use_table(db_con_t* _h, const str* _t);
 
 typedef int (*db_bind_api_f)(const str* mod, db_func_t *dbb);
 
+/**
+ *  Method that returns an estimate of how many rows may be allocated in pkg.
+ *  You must use a smaller size than is available to take into account
+ *  memory fragmentation.
+ *  input:
+ *          payload_size: the total size of data that will be stored in a row
+ *          column_count: the column count, used for aproximating the overhead
+ *  return  > 0 : estimate of how many rows may be allocated
+ *          = 0 : allocator does not support statistics. 
+ *          < 0 : allocator internal error when counting. -> you should ignore it
+ */
+int estimate_available_rows( int payload_size, int column_count);
 
 #endif /* DB_H */
