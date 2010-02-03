@@ -32,8 +32,10 @@
 #include "../../str.h"
 #include "../../parser/msg_parser.h"
 #include "dlg.h"
+#include "b2b_entities.h"
 
-str* client_new(str*, str*, str*, str*, str*, b2b_notify_t, void*);
+str* client_new(str*, str*, str*, str*, str*, str*, b2b_notify_t, b2b_add_dlginfo_t,
+		struct socket_info* send_sock, str*);
 
 void b2b_client_tm_cback( struct cell *t, int type, struct tmcb_params *ps);
 

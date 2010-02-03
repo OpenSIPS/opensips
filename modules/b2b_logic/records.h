@@ -41,6 +41,7 @@ typedef struct b2bl_entity_id
 	str key;
 	str to_uri;
 	str from_uri;
+	b2b_dlginfo_t* dlginfo;
 	int disconnected;
 	enum b2b_entity_type type;
 	struct b2bl_entity_id* next;
