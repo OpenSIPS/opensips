@@ -1851,7 +1851,6 @@ int restore_db_subs(void)
 		return -1;
 	}
 
-
 	if(pa_dbf.use_table(pa_db, &active_watchers_table)< 0)
 	{
 		LM_ERR("in use table\n");
@@ -1869,7 +1868,7 @@ int restore_db_subs(void)
 		if(pa_dbf.fetch_result(pa_db,&result,ACTW_FETCH_SIZE)<0)
 		{
 			LM_ERR("fetching rows failed\n");
-			return -1;
+			goto error;
 		}
 	} else 
 	{
@@ -1891,7 +1890,6 @@ int restore_db_subs(void)
 		/* for every row */
 		for(i=0; i<nr_rows; i++)
 		{
-
 			row_vals = ROW_VALUES(rows +i);
 			memset(&s, 0, sizeof(subs_t));
 
@@ -2055,7 +2053,6 @@ error:
 	if(result)
 		pa_dbf.free_result(pa_db, result);
 	return -1;
-
 }
 
 int refresh_watcher(str* pres_uri, str* watcher_uri, str* event, 
