@@ -619,18 +619,15 @@ static int script_init( struct sip_msg *foo, void *bar)
 	/* we primarily reset all private memory here to make sure
 	 * private values left over from previous message will
 	 * not be used again */
-
-	/* make sure the new message will not inherit previous
-	 * message's t_on_negative value
-	 */
-	t_on_negative( 0 );
-	t_on_reply(0);
-	t_on_branch(0);
 	set_t(T_UNDEFINED);
 	reset_cancelled_t();
 	reset_e2eack_t();
 	/* reset the kr status */
 	reset_kr();
+	/* reset the static holders for T routes */
+	t_on_negative( 0 );
+	t_on_reply(0);
+	t_on_branch(0);
 	return 1;
 }
 
