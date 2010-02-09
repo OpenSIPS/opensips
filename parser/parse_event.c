@@ -133,9 +133,9 @@ int event_parser(char* _s, int _l, event_t* _e)
 
 		if (parse_params(&params_str, CLASS_ANY, &phooks, &_e->params)<0)
 			goto parse_error;
-		
-		if(_e->parsed == EVENT_DIALOG && _e->params!= NULL && 
-		_e->params->next== NULL && _e->params->name.len== 3 &&
+
+		if(_e->parsed == EVENT_DIALOG && _e->params!= NULL
+		&& _e->params->name.len== 3 &&
 		strncasecmp(_e->params->name.s, "sla", 3)== 0 )
 		{
 			_e->parsed = EVENT_DIALOG_SLA;
