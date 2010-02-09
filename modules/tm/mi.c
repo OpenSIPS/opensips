@@ -517,6 +517,10 @@ struct mi_root*  mi_tm_uac_dlg(struct mi_root* cmd_tree, void* param)
 		dlg.loc_seq.value = DEFAULT_CSEQ;
 	dlg.loc_seq.is_set = 1;
 
+	if (get_from(&tmp_msg)->tag_value.len!=0)
+		dlg.id.loc_tag = get_from(&tmp_msg)->tag_value;
+	if (get_to(&tmp_msg)->tag_value.len!=0)
+		dlg.id.rem_tag = get_from(&tmp_msg)->tag_value;
 	dlg.loc_uri = get_from(&tmp_msg)->uri;
 	dlg.rem_uri = get_to(&tmp_msg)->uri;
 	dlg.loc_dname = get_from(&tmp_msg)->display;
