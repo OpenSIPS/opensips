@@ -1213,9 +1213,6 @@ static void mod_destroy(void)
 	if (natping_state)
 		shm_free(natping_state);
 
-	if (default_rtpp_set)
-		shm_free(default_rtpp_set);
-
 	if(rtpp_set_list == NULL)
 		return;
 
