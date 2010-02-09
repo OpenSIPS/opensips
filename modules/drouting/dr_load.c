@@ -77,9 +77,9 @@ static str routeid_drr_col = str_init(ROUTEID_DRR_COL);
 static str dstlist_drr_col = str_init(DSTLIST_DRR_COL);
 
 #define ID_DRL_COL     "id"
-#define GWLIST_DRL_CAL "gwlist"
+#define GWLIST_DRL_COL "gwlist"
 static str id_drl_col = str_init(ID_DRL_COL);
-static str gwlist_drl_col = str_init(GWLIST_DRL_CAL);
+static str gwlist_drl_col = str_init(GWLIST_DRL_COL);
 
 struct dr_gwl_tmp {
 	unsigned int id;
@@ -90,18 +90,18 @@ struct dr_gwl_tmp {
 
 static struct dr_gwl_tmp* dr_gw_lists = NULL;
 
-#define check_val( _val, _type, _not_null, _is_empty_str) \
+#define check_val( _col, _val, _type, _not_null, _is_empty_str) \
 	do{\
 		if ((_val)->type!=_type) { \
-			LM_ERR("bad colum type\n");\
+			LM_ERR("column %s has a bad type\n", _col); \
 			goto error;\
 		} \
 		if (_not_null && (_val)->nul) { \
-			LM_ERR("nul column\n");\
+			LM_ERR("column %s is null\n", _col); \
 			goto error;\
 		} \
 		if (_is_empty_str && VAL_STRING(_val)==0) { \
-			LM_ERR("empty str column\n");\
+			LM_ERR("column %s (str) is empty\n", _col); \
 			goto error;\
 		} \
 	}while(0)
@@ -345,22 +345,22 @@ rt_data_t* dr_load_routing_info( db_func_t *dr_dbf, db_con_t* db_hdl,
 		for(i=0; i < RES_ROW_N(res); i++) {
 			row = RES_ROWS(res) + i;
 			/* DST_ID column */
-			check_val( ROW_VALUES(row), DB_INT, 1, 0);
+			check_val(DST_ID_DRD_COL, ROW_VALUES(row), DB_INT, 1, 0);
 			int_vals[0] = VAL_INT   (ROW_VALUES(row));
 			/* ADDRESS column */
-			check_val( ROW_VALUES(row)+1, DB_STRING, 1, 1);
+			check_val(ADDRESS_DRD_COL, ROW_VALUES(row)+1, DB_STRING, 1, 1);
 			str_vals[0] = (char*)VAL_STRING(ROW_VALUES(row)+1);
 			/* STRIP column */
-			check_val( ROW_VALUES(row)+2, DB_INT, 1, 0);
+			check_val(STRIP_DRD_COL, ROW_VALUES(row)+2, DB_INT, 1, 0);
 			int_vals[1] = VAL_INT   (ROW_VALUES(row)+2);
 			/* PREFIX column */
-			check_val( ROW_VALUES(row)+3, DB_STRING, 0, 0);
+			check_val(PREFIX_DRD_COL, ROW_VALUES(row)+3, DB_STRING, 0, 0);
 			str_vals[1] = (char*)VAL_STRING(ROW_VALUES(row)+3);
 			/* TYPE column */
-			check_val( ROW_VALUES(row)+4, DB_INT, 1, 0);
+			check_val(TYPE_DRD_COL, ROW_VALUES(row)+4, DB_INT, 1, 0);
 			int_vals[2] = VAL_INT(ROW_VALUES(row)+4);
 			/* ATTRS column */
-			check_val( ROW_VALUES(row)+5, DB_STRING, 0, 0);
+			check_val(ATTRS_DRD_COL, ROW_VALUES(row)+5, DB_STRING, 0, 0);
 			str_vals[2] = (char*)VAL_STRING(ROW_VALUES(row)+5);
 
 			/* add the destinaton definition in */
@@ -425,10 +425,10 @@ rt_data_t* dr_load_routing_info( db_func_t *dr_dbf, db_con_t* db_hdl,
 			for(i=0; i < RES_ROW_N(res); i++) {
 				row = RES_ROWS(res) + i;
 				/* ID column */
-				check_val( ROW_VALUES(row), DB_INT, 1, 0);
+				check_val(ID_DRL_COL, ROW_VALUES(row), DB_INT, 1, 0);
 				int_vals[0] = VAL_INT   (ROW_VALUES(row));
 				/* GWLIST column */
-				check_val( ROW_VALUES(row)+1, DB_STRING, 1, 1);
+				check_val(GWLIST_DRL_COL, ROW_VALUES(row)+1, DB_STRING, 1, 1);
 				str_vals[0] = (char*)VAL_STRING(ROW_VALUES(row)+1);
 
 				if (add_tmp_gw_list(int_vals[0], str_vals[0])!=0) {
@@ -491,13 +491,13 @@ rt_data_t* dr_load_routing_info( db_func_t *dr_dbf, db_con_t* db_hdl,
 		for(i=0; i < RES_ROW_N(res); i++) {
 			row = RES_ROWS(res) + i;
 			/* RULE_ID column */
-			check_val( ROW_VALUES(row), DB_INT, 1, 0);
+			check_val(RULE_ID_DRR_COL, ROW_VALUES(row), DB_INT, 1, 0);
 			int_vals[0] = VAL_INT (ROW_VALUES(row));
 			/* GROUP column */
-			check_val( ROW_VALUES(row)+1, DB_STRING, 1, 1);
+			check_val(GROUP_DRR_COL, ROW_VALUES(row)+1, DB_STRING, 1, 1);
 			str_vals[0] = (char*)VAL_STRING(ROW_VALUES(row)+1);
 			/* PREFIX column - it may be null or empty */
-			check_val( ROW_VALUES(row)+2, DB_STRING, 0, 0);
+			check_val(PREFIX_DRR_COL, ROW_VALUES(row)+2, DB_STRING, 0, 0);
 			if ((ROW_VALUES(row)+2)->nul || VAL_STRING(ROW_VALUES(row)+2)==0){
 				tmp.s = NULL;
 				tmp.len = 0;
@@ -507,16 +507,16 @@ rt_data_t* dr_load_routing_info( db_func_t *dr_dbf, db_con_t* db_hdl,
 				tmp.len = strlen(str_vals[1]);
 			}
 			/* TIME column */
-			check_val( ROW_VALUES(row)+3, DB_STRING, 1, 1);
+			check_val(TIME_DRR_COL, ROW_VALUES(row)+3, DB_STRING, 1, 1);
 			str_vals[2] = (char*)VAL_STRING(ROW_VALUES(row)+3);
 			/* PRIORITY column */
-			check_val( ROW_VALUES(row)+4, DB_INT, 1, 0);
+			check_val(PRIORITY_DRR_COL, ROW_VALUES(row)+4, DB_INT, 1, 0);
 			int_vals[2] = VAL_INT   (ROW_VALUES(row)+4);
 			/* ROUTE_ID column */
-			check_val( ROW_VALUES(row)+5, DB_INT, 1, 0);
+			check_val(ROUTEID_DRR_COL, ROW_VALUES(row)+5, DB_INT, 1, 0);
 			int_vals[3] = VAL_INT   (ROW_VALUES(row)+5);
 			/* DSTLIST column */
-			check_val( ROW_VALUES(row)+6, DB_STRING, 1, 1);
+			check_val(DSTLIST_DRR_COL, ROW_VALUES(row)+6, DB_STRING, 1, 1);
 			str_vals[3] = (char*)VAL_STRING(ROW_VALUES(row)+6);
 			/* parse the time definition */
 			if ((time_rec=parse_time_def(str_vals[2]))==0) {
