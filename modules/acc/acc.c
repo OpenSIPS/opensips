@@ -84,6 +84,8 @@ static db_con_t* db_handle=0;
 extern struct acc_extra *db_extra;
 #endif
 
+extern int acc_log_facility;
+
 /* array used to collect the values before being
  * pushed to the storage backend (whatever used) */
 static str val_arr[ACC_CORE_LEN+MAX_ACC_EXTRA+MAX_ACC_LEG];
@@ -248,7 +250,7 @@ int acc_log_request( struct sip_msg *rq, struct sip_msg *rpl)
 	*(p++) = '\n';
 	*(p++) = 0;
 
-	LM_GEN2(log_facility, log_level, "%.*stimestamp=%lu%s",
+	LM_GEN2(acc_log_facility, log_level, "%.*stimestamp=%lu%s",
 		acc_env.text.len, acc_env.text.s,(unsigned long) acc_env.ts, log_msg);
 
 	return 1;

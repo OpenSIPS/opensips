@@ -101,7 +101,7 @@ int log_missed_flag = -1;
 /* noisiness level logging facilities are used */
 int log_level = L_NOTICE;
 /* log facility that is used */
-int log_facility = LOG_DAEMON;
+int acc_log_facility = LOG_DAEMON;
 static char * log_facility_str = 0;
 /* log extra variables */
 static char *log_extra_str = 0;
@@ -335,7 +335,7 @@ static int mod_init( void )
 	if (log_facility_str) {
 		int tmp = str2facility(log_facility_str);
 		if (tmp != -1)
-			log_facility = tmp;
+			acc_log_facility = tmp;
 		else {
 			LM_ERR("invalid log facility configured");
 			return -1;
