@@ -75,6 +75,24 @@
 		and -1 if not.
 	</para>
 	<para>
+		In addition to standard ENUM, support for ISN (ITAD Subscriber
+		Numbers) is provided as well. To allow ISN lookups to resolve,
+		a different formatting algorithm is expected by the DNS server.
+		Whereas a ENUM NAPTR record expects a DNS query of the form
+		9.8.7.6.5.4.3.2.1.suffix, ISN method expects a DNS query of
+		the form 6.5.1212.suffix. That is, a valid ISN number includes
+		a prefix of '56' in the example. The rest of the number is a
+		ITAD (Internet Telephony Administrative Domain) as defined
+		in RFCs 3872 and 2871, and as allocated by the IANA in
+		http://www.iana.org/assignments/trip-parameters. The ITAD is
+		left intact and not refersed as ENUM requires. To learn more
+		about ISN please refer to documents at www.freenum.org.
+	</para>
+	<para>
+		To complete a ISN lookup on the user part of the Request-URI,
+		isn_query() is used instead of enum_query().
+	</para>
+	<para>
 		Enum module also implements is_from_user_enum function.
 		This function does an enum lookup on the from user and
 		returns true if found, false otherwise.
@@ -153,6 +171,22 @@ modparam("enum", "i_enum_suffix", "e1234.arpa.")
                 </example>
         </section>
         <section>
+                <title><varname>isn_suffix</varname> (string)</title>
+                <para>
+                The domain suffix to be used for isn_query() lookups. Can
+                be overridden by a parameter to isn_query.
+                </para>
+                <para>
+                Default value is <quote>freenum.org.</quote>
+                </para>
+                <example>
+                <title>Setting isn_suffix module parameter</title>
+                <programlisting format="linespecific">
+modparam("enum", "isn_suffix", "freenum.org.")
+</programlisting>
+                </example>
+        </section>
+        <section>
                 <title><varname>branchlabel</varname> (string)</title>
                 <para>
                 This parameter determines which label i_enum_query() will use
@@ -162,7 +196,7 @@ modparam("enum", "i_enum_suffix", "e1234.arpa.")
                 Default value is <quote>"i"</quote>
                 </para>
                 <example>
-                <title>Setting brachlabel module parameter</title>
+                <title>Setting branchlabel module parameter</title>
                 <programlisting format="linespecific">
 modparam("enum", "branchlabel", "i")
 </programlisting>
@@ -351,6 +385,53 @@ enum_pv_query("$avp(i:100)","e164.arpa.","+sip+voice:sip");
                 for the rationale behind this function.
                 </para>
         </section>
+
+	<section>
+		<title>
+		<function moreinfo="none">isn_query(["suffix"[,"service"]])</function>
+		</title>
+		<para>
+		The function performs a ISN query and rewrites the Request-URI with 
+		the result of the query. See <xref linkend="sec-overview"/> for more 
+		information.
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>suffix</emphasis> - Suffix to be appended to the 
+			domain name.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>service</emphasis> - Service string to be used in 
+			the service field.
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+			This function can be used from REQUEST_ROUTE.
+		</para>
+		<para>
+			See ftp://www.ietf.org/rfc/rfc3872.txt and
+			ftp://www.ietf.org/rfc/rfc2871.txt for information
+			regarding the ITAD part of the ISN string.
+		</para>
+		<example>
+		<title><function moreinfo="none">isn_query</function> usage</title>
+		<programlisting format="linespecific">
+...
+# search for "e2u+sip" in freenum.org 
+isn_query("freenum.org.");
+...
+# search for "e2u+sip" in default tree (configured as parameter)
+isn_query();
+...
+# search for "e2u+voice:sip" in freenum.org
+isn_query("freenum.org.","voice");
+...
+</programlisting>
+		</example>
+	</section>
 
 	<section>
 		<title><function moreinfo="none">is_from_user_enum()</function></title>

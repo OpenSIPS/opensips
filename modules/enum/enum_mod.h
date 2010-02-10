@@ -41,5 +41,7 @@ extern str i_suffix;         /* suffix for infrastructure ENUM */
 extern str i_branchlabel;    /* the label branching off the infrastructure tree */
 extern str i_bl_alg;         /* how to know where to branch off */
 
+extern str isnsuffix;        /* str version of isn_suffix */
+
 
 #endif /* ENUM_MOD_H */

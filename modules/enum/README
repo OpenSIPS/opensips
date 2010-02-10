@@ -10,8 +10,8 @@ Otmar Lendl
 
    Copyright © 2002, 2003 Juha Heinanen
    Revision History
-   Revision $Revision$ $Date: 2009-07-21 10:45:05 +0300
-                              (Tue, 21 Jul 2009) $
+   Revision $Revision$ $Date: 2010-01-18 10:45:05 +0100
+                              (Mon, 18 Jan 2010) $
      __________________________________________________________
 
    Table of Contents
@@ -25,28 +25,32 @@ Otmar Lendl
               1.3.1. domain_suffix (string)
               1.3.2. tel_uri_params (string)
               1.3.3. i_enum_suffix (string)
-              1.3.4. branchlabel (string)
-              1.3.5. bl_algorithm (string)
+              1.3.4. isn_suffix (string)
+              1.3.5. branchlabel (string)
+              1.3.6. bl_algorithm (string)
 
         1.4. Exported Functions
 
               1.4.1. enum_query(["suffix"[,"service"]])
               1.4.2. enum_pv_query("pvar"[,"suffix"[,"service"]])
               1.4.3. i_enum_query(["suffix"[,"service"]])
-              1.4.4. is_from_user_enum()
+              1.4.4. isn_query(["suffix"[,"service"]])
+              1.4.5. is_from_user_enum()
 
    List of Examples
 
    1.1. Setting domain_suffix module parameter
    1.2. Setting tel_uri_params module parameter
    1.3. Setting i_enum_suffix module parameter
-   1.4. Setting brachlabel module parameter
-   1.5. Zone file example
+   1.4. Setting isn_suffix module parameter
+   1.5. Setting branchlabel module parameter
    1.6. Zone file example
-   1.7. Setting the bl_algorithm module parameter
-   1.8. enum_query usage
-   1.9. enum_pv_query usage
-   1.10. is_from_user_enum usage
+   1.7. Zone file example
+   1.8. Setting the bl_algorithm module parameter
+   1.9. enum_query usage
+   1.10. enum_pv_query usage
+   1.11. isn_query usage
+   1.12. is_from_user_enum usage
 
 Chapter 1. Admin Guide
 
@@ -109,6 +113,22 @@ Chapter 1. Admin Guide
    Enum query returns 1 if the current Request URI was replaced
    and -1 if not.
 
+   In addition to standard ENUM, support for ISN (ITAD Subscriber
+   Numbers) is provided as well. To allow ISN lookups to resolve,
+   a different formatting algorithm is expected by the DNS server.
+   Whereas a ENUM NAPTR record expects a DNS query of the form
+   9.8.7.6.5.4.3.2.1.suffix, ISN method expects a DNS query of the
+   form 6.5.1212.suffix. That is, a valid ISN number includes a
+   prefix of '56' in the example. The rest of the number is a ITAD
+   (Internet Telephony Administrative Domain) as defined in RFCs
+   3872 and 2871, and as allocated by the IANA in
+   http://www.iana.org/assignments/trip-parameters. The ITAD is
+   left intact and not refersed as ENUM requires. To learn more
+   about ISN please refer to documents at www.freenum.org.
+
+   To complete a ISN lookup on the user part of the Request-URI,
+   isn_query() is used instead of enum_query().
+
    Enum module also implements is_from_user_enum function. This
    function does an enum lookup on the from user and returns true
    if found, false otherwise.
@@ -158,17 +178,27 @@ modparam("enum", "tel_uri_params", ";npdi")
    Example 1.3. Setting i_enum_suffix module parameter
 modparam("enum", "i_enum_suffix", "e1234.arpa.")
 
-1.3.4. branchlabel (string)
+1.3.4. isn_suffix (string)
+
+   The domain suffix to be used for isn_query() lookups. Can be
+   overridden by a parameter to isn_query.
+
+   Default value is "freenum.org."
+
+   Example 1.4. Setting isn_suffix module parameter
+modparam("enum", "isn_suffix", "freenum.org.")
+
+1.3.5. branchlabel (string)
 
    This parameter determines which label i_enum_query() will use
    to branch off to the infrastructure ENUM tree.
 
    Default value is ""i""
 
-   Example 1.4. Setting brachlabel module parameter
+   Example 1.5. Setting branchlabel module parameter
 modparam("enum", "branchlabel", "i")
 
-1.3.5. bl_algorithm (string)
+1.3.6. bl_algorithm (string)
 
    This parameter determines which algorithm i_enum_query() will
    use to select the position in the DNS tree where the
@@ -182,7 +212,7 @@ modparam("enum", "branchlabel", "i")
    [branchlabel].[reverse-country-code].[i_enum_suffix] to
    indicate after how many digits the label should in inserted.
 
-   Example 1.5. Zone file example
+   Example 1.6. Zone file example
 i.1.e164.arpa.                     IN TXT   "4"
 9.9.9.8.7.6.5.i.4.3.2.1.e164.arpa. IN NAPTR "NAPTR content for  +1 234 5
 678 999"
@@ -196,7 +226,7 @@ i.1.e164.arpa.                     IN TXT   "4"
    allocated yet. This version of the code uses 65300. See
    resolve.h.
 
-   Example 1.6. Zone file example
+   Example 1.7. Zone file example
 i.1.e164.arpa.     TYPE65300  \# 14 (
                               04    ; position
                               01 69 ; separator
@@ -208,7 +238,7 @@ pa
 
    Default value is "cc"
 
-   Example 1.7. Setting the bl_algorithm module parameter
+   Example 1.8. Setting the bl_algorithm module parameter
 modparam("enum", "bl_algorithm", "txt")
 
 1.4. Exported Functions
@@ -225,7 +255,7 @@ modparam("enum", "bl_algorithm", "txt")
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.8. enum_query usage
+   Example 1.9. enum_query usage
 ...
 # search for "e2u+sip" in freenum.org
 enum_query("freenum.org.");
@@ -262,7 +292,7 @@ enum_query("e164.arpa.","+sip+voice:sip");
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.9. enum_pv_query usage
+   Example 1.10. enum_pv_query usage
 ...
 # search for "e2u+sip" in freenum.org
 enum_pv_query("$avp(i:100)", "freenum.org.");
@@ -296,14 +326,42 @@ enum_pv_query("$avp(i:100)","e164.arpa.","+sip+voice:sip");
    ftp://ftp.rfc-editor.org/in-notes/internet-drafts/draft-haberle
    r-carrier-enum-01.txt for the rationale behind this function.
 
-1.4.4. is_from_user_enum()
+1.4.4.  isn_query(["suffix"[,"service"]])
+
+   The function performs a ISN query and rewrites the Request-URI
+   with the result of the query. See Section 1.1, "Overview" for
+   more information.
+
+   Meaning of the parameters is as follows:
+     * suffix - Suffix to be appended to the domain name.
+     * service - Service string to be used in the service field.
+
+   This function can be used from REQUEST_ROUTE.
+
+   See ftp://www.ietf.org/rfc/rfc3872.txt and
+   ftp://www.ietf.org/rfc/rfc2871.txt for information regarding
+   the ITAD part of the ISN string.
+
+   Example 1.11. isn_query usage
+...
+# search for "e2u+sip" in freenum.org
+isn_query("freenum.org.");
+...
+# search for "e2u+sip" in default tree (configured as parameter)
+isn_query();
+...
+# search for "e2u+voice:sip" in freenum.org
+isn_query("freenum.org.","voice");
+...
+
+1.4.5. is_from_user_enum()
 
    Checks if the user part of from URI is found in an enum lookup.
    Returns 1 if yes and -1 if not.
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.10. is_from_user_enum usage
+   Example 1.12. is_from_user_enum usage
 ...
 if (is_from_user_enum()) {
         ....
