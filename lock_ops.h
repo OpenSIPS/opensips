@@ -127,7 +127,7 @@ inline static gen_lock_t* lock_init(gen_lock_t* lock)
 #include <sys/types.h>
 #include <unistd.h>
 #include "dprint.h"
-#include "globals.h" /* uid */
+extern int uid; /* from main.c */
 
 #if ((defined(HAVE_UNION_SEMUN) || defined(__GNU_LIBRARY__) )&& !defined(_SEM_SEMUN_UNDEFINED)) 
 	
