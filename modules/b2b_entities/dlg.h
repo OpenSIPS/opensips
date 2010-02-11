@@ -112,6 +112,19 @@ typedef struct b2b_dlg
 	unsigned int         last_reply_code;
 }b2b_dlg_t;
 
+typedef struct client_info
+{
+	str method;
+	str from_uri;
+	str to_uri;
+	str* extra_headers;
+	str* body;
+	str* from_tag;
+	unsigned int cseq;
+	struct socket_info* send_sock;
+}client_info_t;
+
+
 typedef struct b2b_entry
 {
 	b2b_dlg_t* first;
@@ -142,10 +155,8 @@ b2b_dlg_t* b2b_new_dlg(struct sip_msg* msg, int flag, str* param);
 int b2b_prescript_f(struct sip_msg *msg, void* param);
 
 typedef str* (*b2b_server_new_t) (struct sip_msg* ,b2b_notify_t , str* param);
-typedef str* (*b2b_client_new_t) (str* method, str* to_uri, str* from_uri,
-		str* extra_headers, str* body, str* from_tag,b2b_notify_t b2b_cback,
-		b2b_add_dlginfo_t add_dlginfo_f,struct socket_info* sock_info,
-		str* param);
+typedef str* (*b2b_client_new_t) (client_info_t* , b2b_notify_t b2b_cback,
+		b2b_add_dlginfo_t add_dlginfo_f, str* param);
 
 int b2b_send_reply(enum b2b_entity_type et, str* b2b_key, int code, str* text,
 		str* body, str* extra_headers, b2b_dlginfo_t* dlginfo);

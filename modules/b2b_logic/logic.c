@@ -315,6 +315,7 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 	str* client_id;
 	b2bl_entity_id_t* entity, *bentity0, *bentity1;
 	str method={INVITE, INVITE_LEN};
+	client_info_t ci;
 
 	bentity0 = tuple->bridge_entities[0];
 	bentity1 = tuple->bridge_entities[1];
@@ -322,9 +323,23 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 	if(bentity1->key.s == NULL) /* the first reply -> must send INVITE on the other side  */
 	{
 		LM_DBG("Send invite to %.*s\n", bentity1->to_uri.len, bentity1->to_uri.s);
-		client_id = b2b_api.client_new(&method, &bentity1->to_uri,
-				&bentity0->to_uri, extra_headers, body,0, b2b_client_notify,
-				b2b_add_dlginfo, msg->rcv.bind_address, tuple->key);
+
+		memset(&ci, 0, sizeof(client_info_t));
+		ci.method        = method;
+		ci.to_uri        = bentity1->to_uri;
+		ci.from_uri      = bentity0->to_uri;
+		ci.extra_headers = extra_headers;
+		ci.body          = body;
+		ci.from_tag      = 0;
+		ci.send_sock     = msg->rcv.bind_address;
+		if (str2int( &(get_cseq(msg)->number), &ci.cseq)!=0 )
+		{
+			LM_ERR("cannot parse cseq number\n");
+			return -1;
+		}
+
+		client_id = b2b_api.client_new(&ci, b2b_client_notify,
+				b2b_add_dlginfo, tuple->key);
 		if(client_id == NULL)
 		{
 			LM_ERR("Failed to create new client entity\n");
@@ -924,6 +939,7 @@ int process_bridge_action(struct sip_msg* msg, b2bl_entity_id_t* curr_entity,
 	xmlNodePtr client_node;
 	xmlNodePtr lft_node;
 	bridge_entities[0] = bridge_entities[1] = NULL;
+	client_info_t ci;
 
 	for(client_node= bridge_node->children; client_node;
 			client_node=client_node->next)
@@ -1078,10 +1094,25 @@ entity_search_done:
 	{
 		str* client_id;
 
+		memset(&ci, 0, sizeof(client_info_t));
+		ci.method        = method;
+		ci.to_uri        = bridge_entities[0]->to_uri;
+		ci.from_uri      = bridge_entities[1]->to_uri;
+		ci.extra_headers = 0;
+		ci.body          = 0;
+		ci.from_tag      = 0;
+		ci.send_sock     = msg?msg->rcv.bind_address:0;
+		if(msg)
+		{
+			if (str2int( &(get_cseq(msg)->number), &ci.cseq)!=0 )
+			{
+				LM_ERR("cannot parse cseq number\n");
+				goto error;
+			}
+		}
 		LM_DBG("Send Invite without a body to a new client entity\n");
-		client_id = b2b_api.client_new(&method, &bridge_entities[0]->to_uri,
-				&bridge_entities[1]->to_uri, 0, 0, 0, b2b_client_notify,
-				b2b_add_dlginfo, msg?msg->rcv.bind_address:0, tuple->key);
+		client_id = b2b_api.client_new(&ci, b2b_client_notify,
+				b2b_add_dlginfo, tuple->key);
 		if(client_id == NULL)
 		{
 			LM_ERR("Failed to create new client entity\n");
@@ -1184,7 +1215,6 @@ static inline int b2b_scenario_extract_count(xmlNodePtr entity_node, unsigned in
 
 }
 
-
 int create_top_hiding_entities(struct sip_msg* msg, str* to_uri, str* from_uri)
 {
 	str* server_id = NULL;
@@ -1196,6 +1226,7 @@ int create_top_hiding_entities(struct sip_msg* msg, str* to_uri, str* from_uri)
 	unsigned int hash_index;
 	str from_tag_uac;
 	b2b_dlginfo_t* dlginfo, dlginfo_s;
+	client_info_t ci;
 
 	hash_index = core_hash(to_uri, from_uri, b2bl_hsize);
 
@@ -1262,9 +1293,22 @@ int create_top_hiding_entities(struct sip_msg* msg, str* to_uri, str* from_uri)
 	memcpy(from_tag_uac.s + dlginfo->callid.len,
 		dlginfo->fromtag.s, dlginfo->fromtag.len);
 
-	client_id = b2b_api.client_new(&msg->first_line.u.request.method, to_uri, from_uri, &extra_headers,
-			(body.s?&body:NULL), &from_tag_uac, b2b_client_notify, b2b_add_dlginfo,
-			msg->rcv.bind_address, b2bl_key);
+	memset(&ci, 0, sizeof(client_info_t));
+	ci.method        = msg->first_line.u.request.method;
+	ci.to_uri        = *to_uri;
+	ci.from_uri      = *from_uri;
+	ci.extra_headers = &extra_headers;
+	ci.body          = (body.s?&body:NULL);
+	ci.from_tag      = &from_tag_uac;
+	ci.send_sock     = msg->rcv.bind_address;
+	if (str2int( &(get_cseq(msg)->number), &ci.cseq)!=0 )
+	{
+		LM_ERR("cannot parse cseq number\n");
+		goto error;
+	}
+
+	client_id = b2b_api.client_new(&ci, b2b_client_notify,
+			b2b_add_dlginfo, b2bl_key);
 	if(client_id == NULL)
 	{
 		LM_ERR("failed to create new b2b client instance\n");
@@ -1560,6 +1604,7 @@ int b2b_process_scenario_init(b2b_scenario_t* scenario_struct,struct sip_msg* ms
 	str extra_headers = {0, 0};
 	b2bl_entity_id_t* client_entity = NULL;
 	unsigned int scenario_state = B2B_NOTDEF_STATE;
+	client_info_t ci;
 
 	if(msg)
 	{
@@ -1742,9 +1787,22 @@ int b2b_process_scenario_init(b2b_scenario_t* scenario_struct,struct sip_msg* ms
 
 		if(xmlStrcasecmp((unsigned char*)type, (unsigned char*)"message") == 0)
 		{
-			client_id = b2b_api.client_new(&method, &client_to, from_uri, &extra_headers,
-				(body.s?&body:NULL), 0,b2b_client_notify,b2b_add_dlginfo,
-				msg->rcv.bind_address, b2bl_key);
+			memset(&ci, 0, sizeof(client_info_t));
+			ci.method        = method;
+			ci.to_uri        = client_to;
+			ci.from_uri      = *from_uri;
+			ci.extra_headers = &extra_headers;
+			ci.body          = (body.s?&body:NULL);
+			ci.from_tag      = 0;
+			ci.send_sock     = msg->rcv.bind_address;
+			if (str2int( &(get_cseq(msg)->number), &ci.cseq)!=0 )
+			{
+				LM_ERR("cannot parse cseq number\n");
+				goto error;
+			}
+
+			client_id = b2b_api.client_new(&ci, b2b_client_notify,
+					b2b_add_dlginfo, b2bl_key);
 			if(client_id == NULL)
 			{
 				LM_ERR("failed to create new b2b client instance\n");

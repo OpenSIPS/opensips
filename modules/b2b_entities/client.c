@@ -33,6 +33,7 @@
 #include "../tm/dlg.h"
 #include "../../ut.h"
 #include "../presence/hash.h"
+#include "../../parser/parse_methods.h"
 #include "dlg.h"
 #include "client.h"
 #include "b2b_entities.h"
@@ -72,9 +73,8 @@ static void generate_tag(str* tag, str* src, str* callid)
  *	Return value: dialog key allocated in private memory
  *	*/
 #define HASH_SIZE 1<<23
-str* client_new(str* method, str* to_uri, str* from_uri, str* extra_headers,
-		str* body, str* from_tag_uac,b2b_notify_t b2b_cback,b2b_add_dlginfo_t add_dlginfo,
-		struct socket_info* send_sock, str* param)
+str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
+		b2b_add_dlginfo_t add_dlginfo, str* param)
 {
 	int result;
 	b2b_dlg_t* dlg;
@@ -87,36 +87,21 @@ str* client_new(str* method, str* to_uri, str* from_uri, str* extra_headers,
 	dlg_t td;
 	str from_tag;
 
-	if(param == NULL)
+	if(ci == NULL || b2b_cback == NULL || param== NULL)
 	{
-		LM_ERR("NULL param\n");
-	}
-	if(b2b_cback == NULL)
-	{
-		LM_ERR("cback null\n");
-	}
-	if(from_uri==NULL)
-		LM_ERR("from uri NULL\n");
-
-	if(to_uri==NULL)
-		LM_ERR("to uri NULL\n");
-	if(method == NULL || to_uri == NULL || from_uri == NULL ||
-			b2b_cback == NULL || param== NULL)
-	{
-		LM_ERR("Wrong parameters. 'method', 'to_uri', 'from_uri' and"
-				" 'b2b_cback' can not be NULL\n");
+		LM_ERR("Wrong parameters.\n");
 		return NULL;
 	}
 
-	hash_index = core_hash(from_uri, to_uri, client_hsize);
+	hash_index = core_hash(&ci->from_uri, &ci->to_uri, client_hsize);
 
-	if(from_tag_uac)
-		from_tag = *from_tag_uac;
+	if(ci->from_tag)
+		from_tag = *ci->from_tag;
 	else
-		generate_tag(&from_tag, from_uri, extra_headers);
+		generate_tag(&from_tag, &ci->from_uri, ci->extra_headers);
 
 	/* create a dummy b2b dialog structure to be inserted in the hash table*/
-	size = sizeof(b2b_dlg_t) + to_uri->len + from_uri->len +
+	size = sizeof(b2b_dlg_t) + ci->to_uri.len + ci->from_uri.len +
 		from_tag.len + param->len;
 
 	/* create record in hash table */
@@ -129,16 +114,8 @@ str* client_new(str* method, str* to_uri, str* from_uri, str* extra_headers,
 	memset(dlg, 0, size);
 	size = sizeof(b2b_dlg_t);
 
-	dlg->from_uri.s = (char*)dlg + size;
-	memcpy(dlg->from_uri.s, from_uri->s, from_uri->len);
-	dlg->from_uri.len = from_uri->len;
-	size+= from_uri->len;
-
-	dlg->to_uri.s = (char*)dlg + size;
-	memcpy(dlg->to_uri.s, to_uri->s, to_uri->len);
-	dlg->to_uri.len = to_uri->len;
-	size+= to_uri->len;
-
+	CONT_COPY(dlg, dlg->from_uri, ci->from_uri);
+	CONT_COPY(dlg, dlg->to_uri, ci->to_uri);
 	CONT_COPY(dlg, dlg->tag[CALLER_LEG], from_tag);
 
 	dlg->param.s = (char*)dlg + size;
@@ -148,9 +125,14 @@ str* client_new(str* method, str* to_uri, str* from_uri, str* extra_headers,
 
 	dlg->b2b_cback = b2b_cback;
 	dlg->add_dlginfo = add_dlginfo;
-	dlg->last_method = METHOD_INVITE;
+	if(parse_method(ci->method.s, ci->method.s+ci->method.len, &dlg->last_method)< 0)
+	{
+		LM_ERR("wrong method %.*s\n", ci->method.len, ci->method.s);
+		shm_free(dlg);
+		goto error;
+	}
 	dlg->state = B2B_NEW;
-	dlg->cseq[CALLER_LEG] =1;
+	dlg->cseq[CALLER_LEG] =(ci->cseq?ci->cseq:1);
 
 	dlg->id = core_hash(&from_tag, 0, HASH_SIZE);
 
@@ -165,15 +147,15 @@ str* client_new(str* method, str* to_uri, str* from_uri, str* extra_headers,
 	LM_DBG("New client - key = %.*s\n", callid->len, callid->s);
 
 	/* construct extra headers -> add contact */
-	if(extra_headers && extra_headers->s && extra_headers->len)
+	if(ci->extra_headers && ci->extra_headers->s && ci->extra_headers->len)
 	{
-		if(extra_headers->len + 13 + server_address.len > BUF_LEN)
+		if(ci->extra_headers->len + 13 + server_address.len > BUF_LEN)
 		{
 			LM_ERR("Buffer too small\n");
 			goto error;
 		}
-		memcpy(buffer, extra_headers->s, extra_headers->len);
-		ehdr.len = extra_headers->len;
+		memcpy(buffer, ci->extra_headers->s, ci->extra_headers->len);
+		ehdr.len = ci->extra_headers->len;
 	}
 	ehdr.len += sprintf(buffer+ ehdr.len, "Contact: <%.*s>\r\n",
 		server_address.len, server_address.s);
@@ -181,8 +163,8 @@ str* client_new(str* method, str* to_uri, str* from_uri, str* extra_headers,
 
 	LM_DBG("extra_header = %.*s\n", ehdr.len, ehdr.s);
 	
-	if(body && body->len && body->s)
-		LM_DBG("body = %.*s\n", body->len, body->s);
+	if(ci->body && ci->body->len && ci->body->s)
+		LM_DBG("body = %.*s\n", ci->body->len, ci->body->s);
 
 	/* copy the key in shared memory to transmit it as a parameter to the tm callback */
 	b2b_key_shm = b2b_key_copy_shm(callid);
@@ -193,7 +175,7 @@ str* client_new(str* method, str* to_uri, str* from_uri, str* extra_headers,
 	}
 	/* create the tm dialog structure with the a costum callid */
 	memset(&td, 0, sizeof(dlg_t));
-	td.loc_seq.value = 1;
+	td.loc_seq.value = dlg->cseq[CALLER_LEG];
 	td.loc_seq.is_set = 1;
 
 	td.id.call_id = *callid;
@@ -204,22 +186,22 @@ str* client_new(str* method, str* to_uri, str* from_uri, str* extra_headers,
 	td.id.rem_tag.s = 0;
 	td.id.rem_tag.len = 0;
 
-	td.rem_target = *to_uri;
-	td.loc_uri    = *from_uri;
-	td.rem_uri    = *to_uri;
+	td.rem_target = ci->to_uri;
+	td.loc_uri    = ci->from_uri;
+	td.rem_uri    = ci->to_uri;
 
 	td.state= DLG_CONFIRMED;
 	td.T_flags=T_NO_AUTOACK_FLAG|T_PASS_PROVISIONAL_FLAG ;
 
-	td.send_sock = send_sock;
+	td.send_sock = ci->send_sock;
 
 	tmb.setlocalTholder(&dlg->tm_tran);
 	
 	/* send request */
 	result= tmb.t_request_within
-		(method,               /* method*/
+		(&ci->method,          /* method*/
 		&ehdr,                 /* extra headers*/
-		body,                  /* body*/
+		ci->body,              /* body*/
 		&td,                   /* dialog structure*/
 		b2b_client_tm_cback,   /* callback function*/
 		b2b_key_shm,
