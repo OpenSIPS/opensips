@@ -249,6 +249,26 @@ int db_mysql_val2bind(const db_val_t* v, MYSQL_BIND *binds, unsigned int i)
 	if (VAL_NULL(v)) {
 		*(binds[i].is_null) = 1;
 		*(binds[i].length) = 0;
+		binds[i].buffer= NULL;
+		switch(VAL_TYPE(v)) {
+			case DB_INT:
+				binds[i].buffer_type= MYSQL_TYPE_LONG; break;
+			case DB_BITMAP:
+				binds[i].buffer_type= MYSQL_TYPE_LONG; break;
+			case DB_DOUBLE:
+				binds[i].buffer_type= MYSQL_TYPE_DOUBLE; break;
+			case DB_STRING:
+				binds[i].buffer_type= MYSQL_TYPE_STRING; break;
+			case DB_STR:
+				binds[i].buffer_type= MYSQL_TYPE_STRING; break;
+			case DB_DATETIME:
+				binds[i].buffer_type= MYSQL_TYPE_DATETIME; break;
+			case DB_BLOB:
+				binds[i].buffer_type= MYSQL_TYPE_BLOB; break;
+			default:
+				LM_ERR("unknown NULL data type (%d)\n",VAL_TYPE(v));
+				return -10;
+		}
 		return 0;
 	} else {
 		*(binds[i].is_null) = 0;
