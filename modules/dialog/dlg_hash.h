@@ -280,17 +280,6 @@ static inline int match_dialog(struct dlg_cell *dlg, str *callid,
 	return 0;
 }
 
-static inline int match_downstream_dialog(struct dlg_cell *dlg, str *callid, str *ftag)
-{
-	if (dlg->callid.len!=callid->len ||
-		dlg->tag[DLG_CALLER_LEG].len!=ftag->len  ||
-		strncmp(dlg->callid.s,callid->s,callid->len)!=0 ||
-		strncmp(dlg->tag[DLG_CALLER_LEG].s,ftag->s,ftag->len)!=0)
-		return 0;
-	return 1;
-}
-
-
 int mi_print_dlg(struct mi_node *rpl, struct dlg_cell *dlg, int with_context);
 
 #endif
