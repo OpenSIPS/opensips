@@ -922,6 +922,17 @@ error:
 }
 
 
+static int match_downstream_dialog(struct dlg_cell *dlg, 
+													str *callid, str *ftag)
+{
+	if (dlg->callid.len!=callid->len ||
+		(ftag && dlg->legs[DLG_CALLER_LEG].tag.len!=ftag->len)  ||
+		strncmp(dlg->callid.s,callid->s,callid->len)!=0 ||
+		(ftag && strncmp(dlg->legs[DLG_CALLER_LEG].tag.s,ftag->s,ftag->len)))
+		return 0;
+	return 1;
+}
+
 static inline struct mi_root* process_mi_params(struct mi_root *cmd_tree,
 													struct dlg_cell **dlg_p)
 {
