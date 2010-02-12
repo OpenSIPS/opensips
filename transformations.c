@@ -834,11 +834,11 @@ int tr_eval_nameaddr(struct sip_msg *msg, tr_param_t *tp, int subtype,
 			strncmp(nameaddr_str.s, val->rs.s, val->rs.len)!=0)
 	{
 		/* copy the value in the global variable */
-		if(val->rs.len>nameaddr_str.len)
+		if(val->rs.len+CRLF_LEN > nameaddr_str.len)
 		{
 			if(nameaddr_str.s) pkg_free(nameaddr_str.s);
 			nameaddr_str.s =
-						(char*)pkg_malloc((val->rs.len+3)*sizeof(char));
+					(char*)pkg_malloc((val->rs.len+CRLF_LEN+1)*sizeof(char));
 			if(nameaddr_str.s==NULL)
 			{
 				LM_ERR("no more private memory\n");
@@ -847,7 +847,7 @@ int tr_eval_nameaddr(struct sip_msg *msg, tr_param_t *tp, int subtype,
 				return -1;
 			}
 		}
-		nameaddr_str.len = val->rs.len +2;
+		nameaddr_str.len = val->rs.len + CRLF_LEN;
 		memcpy(nameaddr_str.s, val->rs.s, val->rs.len);
 		memcpy(nameaddr_str.s + val->rs.len, CRLF, CRLF_LEN);
 		nameaddr_str.s[nameaddr_str.len] = '\0';
