@@ -560,7 +560,7 @@ static inline int after_strict(struct sip_msg* _m)
 	int res, rem_len;
 	struct hdr_field* hdr;
 	struct sip_uri puri;
-	rr_t* rt, *prev;
+	rr_t* rt, *prev, *del_rt;
 	char* rem_off;
 	str uri;
 	struct socket_info *si;
@@ -568,6 +568,7 @@ static inline int after_strict(struct sip_msg* _m)
 	hdr = _m->route;
 	rt = (rr_t*)hdr->parsed;
 	uri = rt->nameaddr.uri;
+	del_rt = NULL;
 
 	if (parse_uri(uri.s, uri.len, &puri) < 0) {
 		LM_ERR("failed to parse the first route URI\n");
@@ -682,8 +683,8 @@ static inline int after_strict(struct sip_msg* _m)
 				LM_ERR("failed to remove Route HF\n");
 				return RR_ERROR;
 			}
+			del_rt = (rr_t*)hdr->parsed;
 		}
-
 
 		res = find_rem_target(_m, &hdr, &rt, &prev);
 		if (res < 0) {
@@ -710,7 +711,7 @@ static inline int after_strict(struct sip_msg* _m)
 		LM_DBG("The last route URI: '%.*s'\n", rt->nameaddr.uri.len,
 				ZSW(rt->nameaddr.uri.s));
 
-		if (prev) {
+		if (prev && prev!=del_rt) {
 			rem_off = prev->nameaddr.name.s + prev->len;
 			rem_len = rt->nameaddr.name.s + rt->len - rem_off;
 		} else {
