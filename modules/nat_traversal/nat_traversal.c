@@ -1047,6 +1047,12 @@ __dialog_early(struct dlg_cell *dlg, int type, struct dlg_cb_params *_params)
         return;
     }
 
+    if(_params->msg == FAKED_REPLY)
+    {
+        LM_ERR("FAKED reply - exit\n");
+        lock_release(&param->lock);
+    }
+
     uri = get_source_uri(_params->msg);
     if (!Dialog_Param_has_candidate(param, uri)) {
         if (!Dialog_Param_add_candidate(param, uri)) {
@@ -1091,6 +1097,11 @@ __dialog_confirmed(struct dlg_cell *dlg, int type, struct dlg_cb_params *_params
 
     param->confirmed = True;
 
+    if(_params->msg == FAKED_REPLY)
+    {
+        LM_ERR("FAKED reply - exit\n");
+        lock_release(&param->lock);
+    }
     callee_uri = get_source_uri(_params->msg);
 
     // remove all keepalives on unanswered branches
