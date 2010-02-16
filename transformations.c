@@ -818,7 +818,7 @@ done:
 }
 
 static str nameaddr_str = {0, 0};
-static struct to_body nameaddr_to_body;
+static struct to_body *nameaddr_to_body = NULL;
 
 int tr_eval_nameaddr(struct sip_msg *msg, tr_param_t *tp, int subtype,
 		pv_value_t *val)
@@ -843,7 +843,6 @@ int tr_eval_nameaddr(struct sip_msg *msg, tr_param_t *tp, int subtype,
 			{
 				LM_ERR("no more private memory\n");
 				memset(&nameaddr_str, 0, sizeof(str));
-				memset(&nameaddr_to_body, 0, sizeof(struct to_body));
 				return -1;
 			}
 		}
@@ -853,16 +852,30 @@ int tr_eval_nameaddr(struct sip_msg *msg, tr_param_t *tp, int subtype,
 		nameaddr_str.s[nameaddr_str.len] = '\0';
 
 		/* reset old values */
-		memset(&nameaddr_to_body, 0, sizeof(struct to_body));
+		if (nameaddr_to_body) {
+			free_to(nameaddr_to_body);
+			nameaddr_to_body = NULL;
+		}
 
-		/* parse params */
-		parse_to(nameaddr_str.s, nameaddr_str.s + nameaddr_str.len,
-			&nameaddr_to_body);
-		if (nameaddr_to_body.error == PARSE_ERROR)
+		/* parse TO hdr + params */
+		nameaddr_to_body = (struct to_body*)pkg_malloc(sizeof(struct to_body));
+		if(nameaddr_to_body==NULL)
 		{
-			LM_ERR("Wrong syntax. It must have the To header format\n");
+			LM_ERR("no more private memory\n");
+			/* keep the buffer, but flush the content to force the realloc
+			   next time */
+			nameaddr_str.s[0] = 0;
 			return -1;
 		}
+		memset(nameaddr_to_body, 0, sizeof(struct to_body));
+		parse_to(nameaddr_str.s, nameaddr_str.s + nameaddr_str.len,
+			nameaddr_to_body);
+	}
+
+	if (nameaddr_to_body->error == PARSE_ERROR)
+	{
+		LM_ERR("Wrong syntax. It must have the To header format\n");
+		return -1;
 	}
 
 	memset(val, 0, sizeof(pv_value_t));
@@ -871,15 +884,16 @@ int tr_eval_nameaddr(struct sip_msg *msg, tr_param_t *tp, int subtype,
 	switch(subtype)
 	{
 		case TR_NA_URI:
-			val->rs = (nameaddr_to_body.uri.s)?nameaddr_to_body.uri:_tr_empty;
+			val->rs =(nameaddr_to_body->uri.s)?nameaddr_to_body->uri:_tr_empty;
 			break;
 		case TR_NA_LEN:
 			val->flags = PV_TYPE_INT|PV_VAL_INT|PV_VAL_STR;
-			val->ri = nameaddr_to_body.body.len;
+			val->ri = nameaddr_to_body->body.len;
 			val->rs.s = int2str(val->ri, &val->rs.len);
 			break;
 		case TR_NA_NAME:
-			val->rs = (nameaddr_to_body.display.s)?nameaddr_to_body.display:_tr_empty;
+			val->rs = (nameaddr_to_body->display.s)?
+				nameaddr_to_body->display:_tr_empty;
 			break;
 		case TR_NA_PARAM:
 			if(tp->type != TR_PARAM_STRING)
@@ -887,7 +901,7 @@ int tr_eval_nameaddr(struct sip_msg *msg, tr_param_t *tp, int subtype,
 				LM_ERR("Wrong type for parameter, it must string\n");
 				return -1;
 			}
-			topar = nameaddr_to_body.param_lst;
+			topar = nameaddr_to_body->param_lst;
 			/* search the parameter */
 			while(topar)
 			{
