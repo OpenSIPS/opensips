@@ -387,12 +387,27 @@ static inline int insert_contacts(struct sip_msg* _m, contact_t* _c,
 			continue;
 
 		if (_sctx->max_contacts && (num >= _sctx->max_contacts)) {
-			LM_INFO("too many contacts (%d) for AOR <%.*s>, max=%d\n", 
-					num, _a->len, _a->s, _sctx->max_contacts);
-			rerrno = R_TOO_MANY;
-			goto error;
+			if (_sctx->flags&REG_SAVE_FORCE_REG_FLAG) {
+				/* we are overflowing the number of maximum contacts,
+				   so remove the first (oldest) one to prevent this */
+				if (r==NULL || r->contacts==NULL) {
+					LM_CRIT("BUG - overflow detected with r=%p and "
+						"contacts=%p\n",r,r->contacts);
+					goto error;
+				}
+				if (ul.delete_ucontact( r, r->contacts)!=0) {
+					LM_ERR("failed to remove contact\n");
+					goto error;
+				}
+			} else {
+				LM_INFO("too many contacts (%d) for AOR <%.*s>, max=%d\n", 
+						num, _a->len, _a->s, _sctx->max_contacts);
+				rerrno = R_TOO_MANY;
+				goto error;
+			}
+		} else {
+			num++;
 		}
-		num++;
 
 		if (r==0) {
 			if (ul.insert_urecord(_d, _a, &r) < 0) {
@@ -461,55 +476,6 @@ error:
 }
 
 
-static int test_max_contacts(struct sip_msg* _m, urecord_t* _r, contact_t* _c,
-										ucontact_info_t *ci, int _max)
-{
-	int num;
-	int e;
-	ucontact_t* ptr, *cont;
-	int ret;
-	
-	num = 0;
-	ptr = _r->contacts;
-	while(ptr) {
-		if (VALID_CONTACT(ptr, act_time)) {
-			num++;
-		}
-		ptr = ptr->next;
-	}
-	LM_DBG("%d valid contacts\n", num);
-	
-	for( ; _c ; _c = get_next_contact(_c) ) {
-		/* calculate expires */
-		calc_contact_expires(_m, _c->expires, &e);
-		
-		ret = ul.get_ucontact( _r, &_c->uri, ci->callid, ci->cseq, &cont);
-		if (ret==-1) {
-			LM_ERR("invalid cseq for aor <%.*s>\n",_r->aor.len,_r->aor.s);
-			rerrno = R_INV_CSEQ;
-			return -1;
-		} else if (ret==-2) {
-			continue;
-		}
-		if (ret > 0) {
-			/* Contact not found */
-			if (e != 0) num++;
-		} else {
-			if (e == 0) num--;
-		}
-	}
-	
-	LM_DBG("%d contacts after commit\n", num);
-	if (num > _max) {
-		LM_INFO("too many contacts for AOR <%.*s>, max=%d\n",
-			_r->aor.len, _r->aor.s, _max);
-		rerrno = R_TOO_MANY;
-		return -1;
-	}
-
-	return 0;
-}
-
 
 /*! \brief
  * Message contained some contacts and appropriate
@@ -530,6 +496,7 @@ static inline int update_contacts(struct sip_msg* _m, urecord_t* _r,
 	int e;
 	unsigned int cflags;
 	int ret;
+	int num;
 #ifdef USE_TCP
 	int e_max;
 	int tcp_check;
@@ -545,9 +512,15 @@ static inline int update_contacts(struct sip_msg* _m, urecord_t* _r,
 		goto error;
 	}
 
-	if (_sctx->max_contacts &&
-	test_max_contacts(_m, _r, _c, ci ,_sctx->max_contacts) != 0 )
-		goto error;
+	/* count how many contacts we have right now */
+	num = 0;
+	if (_sctx->max_contacts) {
+		c = _r->contacts;
+		while(c) {
+			if (VALID_CONTACT(c, act_time)) num++;
+			c = c->next;
+		}
+	}
 
 #ifdef USE_TCP
 	if ( (_m->flags&tcp_persistent_flag) &&
@@ -577,6 +550,28 @@ static inline int update_contacts(struct sip_msg* _m, urecord_t* _r,
 			/* Contact not found -> expired? */
 			if (e==0)
 				continue;
+
+			/* we need to add a new contact -> too many ?? */
+			if (_sctx->max_contacts && num>=_sctx->max_contacts) {
+				if (_sctx->flags&REG_SAVE_FORCE_REG_FLAG) {
+					/* we are overflowing the number of maximum contacts,
+					   so remove the first (oldest) one to prevent this */
+					if (_r==NULL || _r->contacts==NULL) {
+						LM_CRIT("BUG - overflow detected with r=%p and "
+							"contacts=%p\n",_r,_r->contacts);
+						goto error;
+					}
+					if (ul.delete_ucontact( _r, _r->contacts)!=0) {
+						LM_ERR("failed to remove contact\n");
+						goto error;
+					}
+				} else {
+					LM_INFO("too many contacts for AOR <%.*s>, max=%d\n",
+						_r->aor.len, _r->aor.s, _sctx->max_contacts);
+					rerrno = R_TOO_MANY;
+					return -1;
+				}
+			}
 
 			/* pack the contact_info */
 			if ( (ci=pack_ci( 0, _c, e, 0, _sctx->flags))==0 ) {
@@ -716,6 +711,7 @@ int save(struct sip_msg* _m, char* _d, char* _f, char* _s)
 				case 'r': sctx.flags |= REG_SAVE_NOREPLY_FLAG; break;
 				case 's': sctx.flags |= REG_SAVE_SOCKET_FLAG; break;
 				case 'v': sctx.flags |= REG_SAVE_PATH_RECEIVED_FLAG; break;
+				case 'f': sctx.flags |= REG_SAVE_FORCE_REG_FLAG; break;
 				case 'c':
 					sctx.max_contacts = 0;
 					while (st<flags_s.len-1 && isdigit(flags_s.s[st+1])) {
