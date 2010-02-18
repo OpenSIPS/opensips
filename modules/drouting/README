@@ -473,6 +473,8 @@ Chapter 1. Admin Guide
    The following modules must be loaded before this module:
      * a database module.
 
+     * tm module.
+
 1.2.2. External Libraries or Applications
 
      * none.
