@@ -13,7 +13,7 @@ dialplan:2
 dispatcher:4
 domain:2
 domainpolicy:3
-dr_gateways:3
+dr_gateways:4
 dr_groups:2
 dr_gw_lists:1
 dr_rules:3

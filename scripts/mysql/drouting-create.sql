@@ -1,4 +1,4 @@
-INSERT INTO version (table_name, table_version) values ('dr_gateways','3');
+INSERT INTO version (table_name, table_version) values ('dr_gateways','4');
 CREATE TABLE dr_gateways (
     gwid INT(10) UNSIGNED AUTO_INCREMENT PRIMARY KEY NOT NULL,
     type INT(11) UNSIGNED DEFAULT 0 NOT NULL,
@@ -6,6 +6,7 @@ CREATE TABLE dr_gateways (
     strip INT(11) UNSIGNED DEFAULT 0 NOT NULL,
     pri_prefix CHAR(16) DEFAULT NULL,
     attrs CHAR(255) DEFAULT NULL,
+    probe_mode INT(11) UNSIGNED DEFAULT 0 NOT NULL,
     description CHAR(128) DEFAULT '' NOT NULL
 ) ENGINE=MyISAM;
 
