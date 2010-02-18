@@ -20,9 +20,10 @@ Anca-Maria Vamanu
 
               1.1.1. Introduction
               1.1.2. Features
-              1.1.3. Performance
-              1.1.4. Routing Rule Definition
-              1.1.5. Routing Rule Processing
+              1.1.3. Probing and Disabling destinations
+              1.1.4. Performance
+              1.1.5. Routing Rule Definition
+              1.1.6. Routing Rule Processing
 
         1.2. Dependencies
 
@@ -45,6 +46,10 @@ Anca-Maria Vamanu
               1.3.12. drg_grpid_col (str)
               1.3.13. fetch_rows (int)
               1.3.14. force_dns (int)
+              1.3.15. probing_interval (integer)
+              1.3.16. probing_method (string)
+              1.3.17. probing_from (string)
+              1.3.18. probing_reply_codes (string)
 
         1.4. Exported Functions
 
@@ -52,10 +57,12 @@ Anca-Maria Vamanu
               1.4.2. use_next_gw()/next_routing()
               1.4.3. goes_to_gw([[type],flags])
               1.4.4. is_from_gw( [type, [flag]])
+              1.4.5. dr_disable()
 
         1.5. Exported MI Functions
 
               1.5.1. dr_reload
+              1.5.2. dr_status
 
         1.6. Installation
 
@@ -85,10 +92,16 @@ Anca-Maria Vamanu
    1.12. Set drg_grpid_col parameter
    1.13. Set fetch_rows parameter
    1.14. Set force_dns parameter
-   1.15. do_routing usage
-   1.16. use_next_gw usage
-   1.17. goes_to_gw usage
-   1.18. is_from_gw usage
+   1.15. Set probing_interval parameter
+   1.16. Set probing_method parameter
+   1.17. Set probing_from parameter
+   1.18. Set probing_reply_codes parameter
+   1.19. do_routing usage
+   1.20. use_next_gw usage
+   1.21. goes_to_gw usage
+   1.22. is_from_gw usage
+   1.23. dr_disable() usage
+   1.24. dr_status usage
 
 Chapter 1. Admin Guide
 
@@ -117,6 +130,7 @@ Chapter 1. Admin Guide
      * serial forking
      * weight based GW selection
      * random GW selection
+     * GW probing for crashes
 
 1.1.2. Features
 
@@ -126,7 +140,7 @@ Chapter 1. Admin Guide
        database and loaded into memory at start up time; reload at
        runtime via MI command
      * load balancing or random selection of the destinations
-       (from a given set)
+       (from a given set), crash detection of gateways
      * able to handle large volume of routing info (300K of rules)
        with minimal speed/time and memory consumption penalties
      * script integration - Pseudo variables support in functions;
@@ -140,7 +154,37 @@ Chapter 1. Admin Guide
        lookups) when the script logic does none-GE forwarding
        (like foreign domains).
 
-1.1.3. Performance
+1.1.3. Probing and Disabling destinations
+
+   The module has the capability to monitor the status of the
+   destinations by doing SIP probing (sending SIP requests like
+   OPTIONS).
+
+   For each destination, you can configure what kind of probing
+   should be done (probe_mode column):
+     * (0) - no probing at all;
+     * (1) - probing only when the destination is in disabled mode
+       (disabling via MI command will competely stop the probing
+       also). The destination will be automatically re-enabled
+       when the probing will succeed next time;
+     * (2) - probing all the time. If disabled, the destination
+       will be automatically re-enabled when the probing will
+       succeed next time;
+
+   A destination can become disabled in two ways:
+     * script detection - by calling from script the dr_disable()
+       function after trying the destination. In this case, if
+       probing mode for the destination is (1) or (2), the
+       destination will be automatically re-enabled when the
+       probing will succeed.
+     * MI command - by calling the dr_status MI command for
+       disabling (on demand) the destination. If so, the probing
+       and re-enabling of this destination will be completly
+       disabled until you re-enable it again via MI command - this
+       is designed to allow controlled and complete disabling of
+       some destination during maintenance.
+
+1.1.4. Performance
 
    There were several tests performed regarding the performance of
    the module when dealing with a large number of routing rules.
@@ -160,7 +204,7 @@ Chapter 1. Admin Guide
    After loading the data into shared memory ~ 96M of memory were
    used exclusively for the DR data.
 
-1.1.4. Routing Rule Definition
+1.1.5. Routing Rule Definition
 
    Dynamic routing rules are stored in a database, in four tables:
      * one for storing the gateway definitions
@@ -169,7 +213,7 @@ Chapter 1. Admin Guide
      * one for storing a list of gateways, so you don't have to
        enter all the elements every time you need it
 
-1.1.4.1. Gateway Addresses
+1.1.5.1. Gateway Addresses
 
    Default name for the table storing gateway addresses is
    "dr_gateways". Gateway addresses are stored in a separate table
@@ -185,6 +229,7 @@ Chapter 1. Admin Guide
    address     varchar(128)                address of the gateway
    strip       unsigned int 0              no of digits to strip
    pri_prefix  varchar(255)                PRI prefix of the gateway
+   probe_mode  unsigned int 0              Probing mode
    description varchar(128)                description of the gateway
 
    Once a rule is matched, the STRIP number of digits are removed
@@ -193,12 +238,12 @@ Chapter 1. Admin Guide
    the gateway.
 
    Table 1.2. Sample dr_gateways records
-   gwid type     address      strip pri_prefix description
-   1    10   10.10.10.10:5080 0     2222       Gateway 1
-   2    10   10.10.10.10      2     3333       Gateway 2
-   3    20   10.10.10.11      0                Gateway 3
+   gwid type     address      strip pri_prefix probe_mode description
+   1    10   10.10.10.10:5080 0     2222       0          Gateway 1
+   2    10   10.10.10.10      2     3333       2          Gateway 2
+   3    20   10.10.10.11      0                1          Gateway 3
 
-1.1.4.2. Destination/GW lists
+1.1.5.2. Destination/GW lists
 
    For each rule, you can set a list of destinations to be used.
    The list is comma or pipe separated enumeration of the
@@ -213,7 +258,7 @@ Chapter 1. Admin Guide
    "sort_order" parameter - more about this is available under the
    "do_routing()" function section.
 
-1.1.4.3. Routing Rules
+1.1.5.3. Routing Rules
 
    Default name for the table storing rule definitions is
    "dr_rules".
@@ -390,7 +435,7 @@ Chapter 1. Admin Guide
        (The time recurrence for first rule is:
        "20040101T083000|10H|weekly|||MO,TU,WE,TH,FR")
 
-1.1.5. Routing Rule Processing
+1.1.6. Routing Rule Processing
 
    The module can be used to find out which is the best gateway to
    use for new calls terminated to PSTN. The algorithm to select
@@ -611,6 +656,54 @@ modparam("drouting", "fetch_rows", 1500)
 modparam("drouting", "force_dns", 0)
 ...
 
+1.3.15. probing_interval (integer)
+
+   How often (in seconds) the probing of a destination should be
+   done. If set to 0, the probing will be disabled as
+   functionality (for all destinations)
+
+   Default value is "30".
+
+   Example 1.15. Set probing_interval parameter
+...
+modparam("drouting", "probing_interval", 60)
+...
+
+1.3.16. probing_method (string)
+
+   The SIP method to be used for the probing requests.
+
+   Default value is ""OPTIONS"".
+
+   Example 1.16. Set probing_method parameter
+...
+modparam("drouting", "probing_method", "INFO")
+...
+
+1.3.17. probing_from (string)
+
+   The FROM SIP URI to be advertised in the SIP probing requests.
+
+   Default value is ""sip:prober@localhost"".
+
+   Example 1.17. Set probing_from parameter
+...
+modparam("drouting", "probing_from", "sip:pinger@192.168.2.10")
+...
+
+1.3.18. probing_reply_codes (string)
+
+   A comma separted list of SIP reply codes. The codes defined
+   here will be considered as valid reply codes for probing
+   messages, apart for 200.
+
+   Default value is "NULL".
+
+   Example 1.18. Set probing_reply_codes parameter
+...
+modparam("drouting", "probing_reply_codes", "501, 403")
+...
+
 1.4. Exported Functions
 
 1.4.1.  do_routing([[groupID],sort])
@@ -642,7 +735,7 @@ modparam("drouting", "force_dns", 0)
             their order (as given); Ex: 1,2;3,4,5;6 -> randomizer
             -> (A) 2;4;6 -> usage 2,4,6 (B) 1;5;6 -> usage 1,5,6
 
-   Example 1.15. do_routing usage
+   Example 1.19. do_routing usage
 ...
 # all groups, sort 0
 do_routing();
@@ -675,7 +768,7 @@ do_routing("2","2");
    returned is no other alternative destinations are found or in
    case of internal processing error.
 
-   Example 1.16. use_next_gw usage
+   Example 1.20. use_next_gw usage
 ...
 if (use_next_gw()) {
         t_relay();
@@ -705,7 +798,7 @@ if (use_next_gw()) {
           + 'a' (Attributes) - return the attributes string
             defined by the GW
 
-   Example 1.17. goes_to_gw usage
+   Example 1.21. goes_to_gw usage
 ...
 if (goes_to_gw("1")) {
         sl_send_reply("403","Forbidden");
@@ -731,10 +824,29 @@ if (goes_to_gw("1")) {
           + 'a' (Attributes) - return the attributes string
             defined by the GW
 
-   Example 1.18. is_from_gw usage
+   Example 1.22. is_from_gw usage
 ...
 if (is_from_gw("3","1") {
 }
+...
+
+1.4.5.  dr_disable()
+
+   Marks as disabled the last destination that was used for the
+   current call. The disabling done via this function will prevent
+   the destination to be used for usage from now on. The probing
+   mechanism can re-enable this peer (see the probing section in
+   the begining)
+
+   This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
+
+   Example 1.23. dr_disable() usage
+...
+if (t_check_status("(408)|(5[0-9][0-9])")) {
+        dr_disable();
+
+}
+
 ...
 
 1.5. Exported MI Functions
@@ -748,6 +860,28 @@ if (is_from_gw("3","1") {
    MI FIFO Command Format:
                 :dr_reload:fifo_reply
                 _empty_line_
+
+1.5.2. dr_status
+
+   Gets or sets the status (enabled or disabled) of a destination.
+   The function takes 2 parameters, first mandatory, the id of the
+   destiantion and second, optional, the new status. If no new
+   status is given, the function will return the current status.
+   If a new status is given (0 - disable, 1 - enable), this status
+   will be forced for the destination.
+
+   MI FIFO Command Format:
+                :dr_status:_reply_fifo_file_
+                id
+                status (optional)
+                _empty_line_
+
+   Example 1.24. dr_status usage
+$ ./opensipsctl fifo dr_status 2
+enable:: no
+$ ./opensipsctl fifo dr_status 2 1
+$ ./opensipsctl fifo dr_status 2
+enable:: yes
 
 1.6. Installation
 
