@@ -55,12 +55,14 @@
 #define PREFIX_DRD_COL   "pri_prefix"
 #define TYPE_DRD_COL     "type"
 #define ATTRS_DRD_COL    "attrs"
+#define PROBE_DRD_COL	 "probe_mode"
 static str dst_id_drd_col = str_init(DST_ID_DRD_COL);
 static str address_drd_col = str_init(ADDRESS_DRD_COL);
 static str strip_drd_col = str_init(STRIP_DRD_COL);
 static str prefix_drd_col = str_init(PREFIX_DRD_COL);
 static str type_drd_col = str_init(TYPE_DRD_COL);
 static str attrs_drd_col = str_init(ATTRS_DRD_COL);
+static str probe_drd_col = str_init(PROBE_DRD_COL);
 
 #define RULE_ID_DRR_COL   "ruleid"
 #define GROUP_DRR_COL     "groupid"
@@ -319,9 +321,10 @@ rt_data_t* dr_load_routing_info( db_func_t *dr_dbf, db_con_t* db_hdl,
 	columns[3] = &prefix_drd_col;
 	columns[4] = &type_drd_col;
 	columns[5] = &attrs_drd_col;
+	columns[6] = &probe_drd_col;
 
 	if (DB_CAPABILITY(*dr_dbf, DB_CAP_FETCH)) {
-		if ( dr_dbf->query( db_hdl, 0, 0, 0, columns, 0, 6, 0, 0 ) < 0) {
+		if ( dr_dbf->query( db_hdl, 0, 0, 0, columns, 0, 7, 0, 0 ) < 0) {
 			LM_ERR("DB query failed\n");
 			goto error;
 		}
@@ -330,7 +333,7 @@ rt_data_t* dr_load_routing_info( db_func_t *dr_dbf, db_con_t* db_hdl,
 			goto error;
 		}
 	} else {
-		if ( dr_dbf->query( db_hdl, 0, 0, 0, columns, 0, 6, 0, &res) < 0) {
+		if ( dr_dbf->query( db_hdl, 0, 0, 0, columns, 0, 7, 0, &res) < 0) {
 			LM_ERR("DB query failed\n");
 			goto error;
 		}
@@ -363,10 +366,13 @@ rt_data_t* dr_load_routing_info( db_func_t *dr_dbf, db_con_t* db_hdl,
 			/* ATTRS column */
 			check_val(ATTRS_DRD_COL, ROW_VALUES(row)+5, DB_STRING, 0, 0);
 			str_vals[2] = (char*)VAL_STRING(ROW_VALUES(row)+5);
+			/*PROBE_MODE column */
+			check_val(PROBE_DRD_COL, ROW_VALUES(row)+6, DB_INT, 1, 0);
+			int_vals[3] = VAL_INT(ROW_VALUES(row)+6);
 
 			/* add the destinaton definition in */
 			if ( add_dst( rdata, int_vals[0], str_vals[0], int_vals[1],
-					str_vals[1], int_vals[2], str_vals[2])<0 ) {
+					str_vals[1], int_vals[2], str_vals[2], int_vals[3])<0 ) {
 				LM_ERR("failed to add destination id %d -> skipping\n",
 					int_vals[0]);
 				continue;

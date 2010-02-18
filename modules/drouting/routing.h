@@ -94,7 +94,9 @@ add_dst(
 	/* dst type*/
 	int,
 	/* dst attrs*/
-	char*
+	char*,
+	/* probe_mode */
+	int
 	);
 
 /* build a routing info list element */

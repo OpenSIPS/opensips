@@ -35,6 +35,8 @@
 		<listitem><para>serial forking</para></listitem>
 		<listitem><para>weight based GW selection</para></listitem>
 		<listitem><para>random GW selection</para></listitem>
+		<listitem><para>GW probing for crashes</para></listitem>
+
 	</itemizedlist>
 	</para>
 </section>
@@ -55,7 +57,8 @@
 
 	<listitem>
 	<para>
-	load balancing or random selection of the destinations (from a given set)
+	load balancing or random selection of the destinations (from a given set),
+	crash detection of gateways
 	</para>
 	</listitem>
 
@@ -90,6 +93,54 @@
 	</listitem>
 
 	</itemizedlist>
+	</section>
+
+	<section>
+	<title>Probing and Disabling destinations</title>
+	<para>
+	The module has the capability to monitor the status of the destinations by
+	doing SIP probing (sending SIP requests like OPTIONS).
+	</para>
+	<para>
+	For each destination, you can configure what kind of probing should be
+	done (probe_mode column):
+	</para>
+	<itemizedlist>
+	<listitem>
+		<para><emphasis>(0)</emphasis> - no probing at all;</para>
+	</listitem>
+	<listitem>
+		<para><emphasis>(1)</emphasis> - probing only when the destination is
+		in disabled mode (disabling via MI command will competely stop the
+		probing also). The destination will be automatically re-enabled
+		when the probing will succeed next time;</para>
+	</listitem>
+	<listitem>
+		<para><emphasis>(2)</emphasis> - probing all the time. If disabled,
+		the destination will be automatically re-enabled when the probing
+		will succeed next time;
+		</para>
+	</listitem>
+	</itemizedlist>
+	<para>
+	A destination can become disabled in two ways:
+	<itemizedlist>
+	<listitem>
+		<emphasis>script detection</emphasis> - by calling from script the
+		dr_disable() function after trying the destination. In this case, if
+		probing mode for the destination is (1) or (2), the destination will
+		be automatically re-enabled when the probing will succeed.
+	</listitem>
+	<listitem>
+		<emphasis>MI command</emphasis> - by calling the dr_status MI
+		command for disabling (on demand) the destination. If so, the probing
+		and re-enabling of this destination will be completly disabled until
+		you re-enable it again via MI command - this is designed to allow
+		controlled and complete disabling of some destination during
+		maintenance.
+	</listitem>
+	</itemizedlist>
+	</para>
 	</section>
 
 	<section>
@@ -197,6 +248,14 @@
 	<entry></entry>
 	<entry>PRI prefix of the gateway</entry>
 	</row>
+
+	<row>
+	<entry>probe_mode</entry>
+	<entry>unsigned int</entry>
+	<entry>0</entry>
+	<entry>Probing mode</entry>
+	</row>
+
 	<row>
 	<entry>description</entry>
 	<entry>varchar(128)</entry>
@@ -217,7 +276,7 @@
 	<para>
 	<table>
 	<title>Sample dr_gateways records</title>
-	<tgroup cols="6">
+	<tgroup cols="7">
 	<thead>
 	<row>
 	<entry>gwid</entry>
@@ -225,6 +284,7 @@
 	<entry>address</entry>
 	<entry>strip</entry>
 	<entry>pri_prefix</entry>
+	<entry>probe_mode</entry>
 	<entry>description</entry>
 	</row>
 	</thead>
@@ -235,6 +295,7 @@
 	<entry>10.10.10.10:5080</entry>
 	<entry>0</entry>
 	<entry>2222</entry>
+	<entry>0</entry>
 	<entry>Gateway 1</entry>
 	</row>
 	<row>
@@ -243,6 +304,7 @@
 	<entry>10.10.10.10</entry>
 	<entry>2</entry>
 	<entry>3333</entry>
+	<entry>2</entry>
 	<entry>Gateway 2</entry>
 	</row>
 	<row>
@@ -251,6 +313,7 @@
 	<entry>10.10.10.11</entry>
 	<entry>0</entry>
 	<entry></entry>
+	<entry>1</entry>
 	<entry>Gateway 3</entry>
 	</row>
 	</tbody>
@@ -1102,6 +1165,90 @@ modparam("drouting", "force_dns", 0)
 		</example>
 	</section>
 
+	<section>
+		<title><varname>probing_interval</varname> (integer)</title>
+		<para>
+		How often (in seconds) the probing of a destination should be done. If
+		set to 0, the probing will be disabled as functionality (for all
+		destinations)
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>30</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>probing_interval</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("drouting", "probing_interval", 60)
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>probing_method</varname> (string)</title>
+		<para>
+		The SIP method to be used for the probing requests.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>"OPTIONS"</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>probing_method</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("drouting", "probing_method", "INFO")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>probing_from</varname> (string)</title>
+		<para>
+		The FROM SIP URI to be advertised in the SIP probing requests.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>"sip:prober@localhost"</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>probing_from</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("drouting", "probing_from", "sip:pinger@192.168.2.10")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>probing_reply_codes</varname> (string)</title>
+		<para>
+		A comma separted list of SIP reply codes. The codes defined here
+		will be considered as valid reply codes for probing messages,
+		apart for 200.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>NULL</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>probing_reply_codes</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("drouting", "probing_reply_codes", "501, 403")
+...
+</programlisting>
+		</example>
+	</section>
+
 </section>
 
 <section>
@@ -1321,6 +1468,33 @@ if (is_from_gw("3","1") {
 </programlisting>
 		</example>
 	</section>
+
+	<section>
+		<title>
+		<function moreinfo="none">dr_disable()</function>
+		</title>
+		<para>
+		Marks as disabled the last destination that was used for the current
+		call. The disabling done via this function will prevent the
+		destination to be used for usage from now on. The probing mechanism
+		can re-enable this peer (see the probing section in the begining)
+		</para>
+		<para>
+		This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
+		</para>
+		<example>
+		<title><function>dr_disable()</function> usage</title>
+		<programlisting format="linespecific">
+...
+if (t_check_status("(408)|(5[0-9][0-9])")) {
+	dr_disable();
+	
+}
+
+...
+</programlisting>
+		</example>
+	</section>
 </section>
 
 
@@ -1346,6 +1520,38 @@ if (is_from_gw("3","1") {
 		_empty_line_
 		</programlisting>
 	</section>
+
+	<section>
+		<title><varname>dr_status</varname></title>
+		<para>
+		Gets or sets the status (enabled or disabled) of a destination. The
+		function takes 2 parameters, first mandatory, the id of the destiantion
+		and second, optional, the new status. If no new status is given, the
+		function will return the current status. If a new status is given
+		(0 - disable, 1 - enable), this status will be forced for the
+		destination.
+		</para>
+		<para>
+		MI FIFO Command Format:
+		</para>
+		<programlisting  format="linespecific">
+		:dr_status:_reply_fifo_file_
+		id
+		status (optional)
+		_empty_line_
+		</programlisting>
+		<example>
+		<title><function>dr_status</function> usage</title>
+		<programlisting format="linespecific">
+$ ./opensipsctl fifo dr_status 2
+enable:: no
+$ ./opensipsctl fifo dr_status 2 1
+$ ./opensipsctl fifo dr_status 2
+enable:: yes
+</programlisting>
+		</example>
+	</section>
+	
 </section>
 
 <section>
