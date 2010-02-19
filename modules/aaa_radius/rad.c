@@ -36,6 +36,9 @@
 	#include <freeradius-client.h>
 #endif
 
+#ifndef REJECT_RC
+	#define REJECT_RC 2
+#endif
 
 #include "../../aaa/aaa.h"
 #include "../../config.h"
@@ -272,10 +275,13 @@ int rad_send_message(aaa_conn* rh, aaa_message* request, aaa_message** reply) {
 				LM_ERR("SIP-AVP was not found in the radius dictionary\n");
 				return -1;
 			}
+		} else if (result == REJECT_RC) {
+			LM_DBG("rc_auth function succeded with result REJECT_RC\n");
+			return result;
+		} else {
+			LM_ERR("rc_auth function failed\n");
+			return -1;
 		}
-
-		LM_ERR("rc_auth function failed\n");
-		return -1;
 	}
 
 	if (request->type == AAA_ACCT) {
