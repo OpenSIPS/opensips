@@ -298,6 +298,8 @@ rt_data_t* dr_load_routing_info( db_func_t *dr_dbf, db_con_t* db_hdl,
 	unsigned int id;
 	str s_id;
 	int i,n;
+	int version;
+	int column_count;
 
 	res = 0;
 	ri = 0;
@@ -309,10 +311,30 @@ rt_data_t* dr_load_routing_info( db_func_t *dr_dbf, db_con_t* db_hdl,
 		goto error;
 	}
 
+	version = db_table_version(dr_dbf, db_hdl, drd_table);
+
+	if( version <= 0)
+	{
+		LM_ERR("cannot get version for [%.*s]\n", drd_table->len, drd_table->s);
+		goto error;
+	}
+
+
 	/* read the destinations */
 	if (dr_dbf->use_table( db_hdl, drd_table) < 0) {
 		LM_ERR("cannot select table \"%.*s\"\n", drd_table->len,drd_table->s);
 		goto error;
+	}
+
+	if( version < 4 )
+	{
+		LM_WARN("using old-style tables for dr_gateways, "
+				"probing will be disabled\n");
+		column_count = 6;
+	}
+	else
+	{
+		column_count = 7;
 	}
 
 	columns[0] = &dst_id_drd_col;
@@ -324,7 +346,7 @@ rt_data_t* dr_load_routing_info( db_func_t *dr_dbf, db_con_t* db_hdl,
 	columns[6] = &probe_drd_col;
 
 	if (DB_CAPABILITY(*dr_dbf, DB_CAP_FETCH)) {
-		if ( dr_dbf->query( db_hdl, 0, 0, 0, columns, 0, 7, 0, 0 ) < 0) {
+		if ( dr_dbf->query( db_hdl, 0, 0, 0, columns, 0, column_count, 0, 0 ) < 0) {
 			LM_ERR("DB query failed\n");
 			goto error;
 		}
@@ -333,7 +355,7 @@ rt_data_t* dr_load_routing_info( db_func_t *dr_dbf, db_con_t* db_hdl,
 			goto error;
 		}
 	} else {
-		if ( dr_dbf->query( db_hdl, 0, 0, 0, columns, 0, 7, 0, &res) < 0) {
+		if ( dr_dbf->query( db_hdl, 0, 0, 0, columns, 0, column_count, 0, &res) < 0) {
 			LM_ERR("DB query failed\n");
 			goto error;
 		}
@@ -366,10 +388,18 @@ rt_data_t* dr_load_routing_info( db_func_t *dr_dbf, db_con_t* db_hdl,
 			/* ATTRS column */
 			check_val(ATTRS_DRD_COL, ROW_VALUES(row)+5, DB_STRING, 0, 0);
 			str_vals[2] = (char*)VAL_STRING(ROW_VALUES(row)+5);
-			/*PROBE_MODE column */
-			check_val(PROBE_DRD_COL, ROW_VALUES(row)+6, DB_INT, 1, 0);
-			int_vals[3] = VAL_INT(ROW_VALUES(row)+6);
 
+			/*PROBE_MODE column */
+			if( column_count > 6)
+			{
+				check_val(PROBE_DRD_COL, ROW_VALUES(row)+6, DB_INT, 1, 0);
+				int_vals[3] = VAL_INT(ROW_VALUES(row)+6);
+			}
+			else
+			{
+				int_vals[3] = 0;
+			}
+			
 			/* add the destinaton definition in */
 			if ( add_dst( rdata, int_vals[0], str_vals[0], int_vals[1],
 					str_vals[1], int_vals[2], str_vals[2], int_vals[3])<0 ) {
