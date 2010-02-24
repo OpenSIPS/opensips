@@ -1051,6 +1051,7 @@ __dialog_early(struct dlg_cell *dlg, int type, struct dlg_cb_params *_params)
     {
         LM_ERR("FAKED reply - exit\n");
         lock_release(&param->lock);
+        return;
     }
 
     uri = get_source_uri(_params->msg);
