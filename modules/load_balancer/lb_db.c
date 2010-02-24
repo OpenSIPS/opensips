@@ -99,15 +99,15 @@ int init_lb_db(const str *db_url, char *table)
 		return -1;
 	}
 
+	if (table) {
+		lb_table_name.s = table;
+		lb_table_name.len = strlen(table);
+	}
+
 	if(db_check_table_version(&lb_dbf, lb_db_handle,
 	&lb_table_name, LB_TABLE_VERSION) < 0) {
 		LM_ERR("error during table version check.\n");
 		return -1;
-	}
-
-	if (table) {
-		lb_table_name.s = table;
-		lb_table_name.len = strlen(table);
 	}
 
 	return 0;
