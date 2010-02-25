@@ -1706,10 +1706,7 @@ void ds_check_timer(unsigned int ticks, void* param)
 
 	/* Check for the list. */
 	if(_ds_list==NULL || _ds_list_nr<=0)
-	{
-		LM_ERR("no destination sets\n");
 		return;
-	}
 
 	/* Iterate over the groups and the entries of each group: */
 	for(list = _ds_list; list!= NULL; list= list->next)
