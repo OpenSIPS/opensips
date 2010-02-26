@@ -138,14 +138,14 @@ error:
 	return NULL;
 }	
 
-dlg_t* pua_build_dlg_t(ua_pres_t* presentity)	
+dlg_t* pua_build_dlg_t(ua_pres_t* presentity)
 {
 	dlg_t* td =NULL;
 	int size;
 
 	size= sizeof(dlg_t)+ presentity->call_id.len+ presentity->to_tag.len+
 		presentity->from_tag.len+ presentity->watcher_uri->len+ 
-		presentity->pres_uri->len+ presentity->remote_contact.len;
+		presentity->to_uri.len+ presentity->remote_contact.len;
 
 	td = (dlg_t*)pkg_malloc(size);
 	if(td == NULL)
@@ -178,8 +178,8 @@ dlg_t* pua_build_dlg_t(ua_pres_t* presentity)
 	size+= td->loc_uri.len;
 	
 	td->rem_uri.s = (char*)td+ size;
-	memcpy(td->rem_uri.s, presentity->pres_uri->s, presentity->pres_uri->len) ;
-	td->rem_uri.len = presentity->pres_uri->len;
+	memcpy(td->rem_uri.s, presentity->to_uri.s, presentity->to_uri.len) ;
+	td->rem_uri.len = presentity->to_uri.len;
 	size+= td->rem_uri.len;
 
 	td->rem_target.s = (char*)td+ size;
@@ -228,7 +228,7 @@ void subs_cback_func(struct cell *t, int cb_type, struct tmcb_params *ps)
 	}
 	LM_DBG("completed with status %d\n",ps->code) ;
 	hentity= (ua_pres_t*)(*ps->param);
-	hash_code= core_hash(hentity->pres_uri,hentity->watcher_uri,
+	hash_code= core_hash(&hentity->to_uri,hentity->watcher_uri,
 				HASH_SIZE);
 	flag= hentity->flag;
 	if(hentity->flag & XMPP_INITIAL_SUBS)
@@ -371,7 +371,8 @@ void subs_cback_func(struct cell *t, int cb_type, struct tmcb_params *ps)
 			lock_release(&HashT->p_records[hash_code].lock);
 
 			memset(&subs, 0, sizeof(subs_info_t));
-			subs.pres_uri= hentity->pres_uri; 
+			subs.pres_uri= hentity->pres_uri;
+			subs.to_uri  = hentity->to_uri;
 			subs.watcher_uri= hentity->watcher_uri;
 			subs.contact= &hentity->contact;
 
@@ -496,7 +497,7 @@ void subs_cback_func(struct cell *t, int cb_type, struct tmcb_params *ps)
 		}
 	}
 
-	size= sizeof(ua_pres_t)+ 2*sizeof(str)+( pto->uri.len+
+	size= sizeof(ua_pres_t)+ 2*sizeof(str)+(hentity->pres_uri->len+ pto->uri.len+
 		pfrom->uri.len+ pto->tag_value.len+ pfrom->tag_value.len
 		+msg->callid->body.len+ record_route.len+ hentity->contact.len+
 		hentity->id.len )*sizeof(char);
@@ -518,8 +519,13 @@ void subs_cback_func(struct cell *t, int cb_type, struct tmcb_params *ps)
 	presentity->pres_uri= (str*)( (char*)presentity+ size);
 	size+= sizeof(str);
 	presentity->pres_uri->s= (char*)presentity+ size;
-	memcpy(presentity->pres_uri->s, pto->uri.s, pto->uri.len);
-	presentity->pres_uri->len= pto->uri.len;
+	memcpy(presentity->pres_uri->s, hentity->pres_uri->s, hentity->pres_uri->len);
+	presentity->pres_uri->len= hentity->pres_uri->len;
+	size+= hentity->pres_uri->len;
+
+	presentity->to_uri.s= (char*)presentity+ size;
+	memcpy(presentity->to_uri.s, pto->uri.s, pto->uri.len);
+	presentity->to_uri.len= pto->uri.len;
 	size+= pto->uri.len;
 
 	presentity->watcher_uri= (str*)( (char*)presentity+ size);
@@ -619,7 +625,6 @@ error:
 		hentity= NULL;
 	}
 	return;
-
 }
 
 ua_pres_t* subscribe_cbparam(subs_info_t* subs, int ua_flag)
@@ -627,10 +632,10 @@ ua_pres_t* subscribe_cbparam(subs_info_t* subs, int ua_flag)
 	ua_pres_t* hentity= NULL;
 	int size;
 
-	size= sizeof(ua_pres_t)+ 2*sizeof(str)+(subs->pres_uri->len+
-		subs->watcher_uri->len+ subs->contact->len+ subs->id.len+ 1)*
-		sizeof(char);
-	
+	size= sizeof(ua_pres_t)+ 2*sizeof(str) + subs->pres_uri->len+
+		subs->to_uri.len+subs->watcher_uri->len+subs->contact->len+
+		subs->id.len+ 1;
+
 	if(subs->outbound_proxy && subs->outbound_proxy->len && subs->outbound_proxy->s )
 		size+= sizeof(str)+ subs->outbound_proxy->len* sizeof(char);
 
@@ -651,7 +656,7 @@ ua_pres_t* subscribe_cbparam(subs_info_t* subs, int ua_flag)
 	size+= sizeof(str);
 
 	hentity->pres_uri->s = (char*)hentity+ size;
-	memcpy(hentity->pres_uri->s, subs->pres_uri->s ,
+	memcpy(hentity->pres_uri->s, subs->pres_uri->s,
 		subs->pres_uri->len ) ;
 	hentity->pres_uri->len= subs->pres_uri->len;
 	size+= subs->pres_uri->len;
@@ -699,23 +704,27 @@ ua_pres_t* subscribe_cbparam(subs_info_t* subs, int ua_flag)
 		hentity->extra_headers->len= subs->extra_headers->len;
 		size+= subs->extra_headers->len;
 	}
+	if(subs->to_uri.s)
+	{
+		CONT_COPY(hentity, hentity->to_uri, subs->to_uri)
+	}
 	hentity->flag= subs->source_flag;
 	hentity->event= subs->event;
 	hentity->ua_flag= hentity->ua_flag;
 	hentity->cb_param= subs->cb_param;
 	return hentity;
 
-}	
+}
 
 ua_pres_t* subs_cbparam_indlg(ua_pres_t* subs, int expires, int ua_flag)
-{	
+{
 	ua_pres_t* hentity= NULL;
 	int size;
 
-	size= sizeof(ua_pres_t)+ 2*sizeof(str)+subs->pres_uri->len+
+	size= sizeof(ua_pres_t)+ 2*sizeof(str)+subs->pres_uri->len+ subs->to_uri.len+
 		subs->watcher_uri->len+ subs->contact.len+ subs->id.len+
 		subs->to_tag.len+ subs->call_id.len+ subs->from_tag.len+ 1;
-	
+
 	if(subs->outbound_proxy && subs->outbound_proxy->len && subs->outbound_proxy->s )
 		size+= sizeof(str)+ subs->outbound_proxy->len;
 
@@ -754,6 +763,7 @@ ua_pres_t* subs_cbparam_indlg(ua_pres_t* subs, int expires, int ua_flag)
 	size+= subs->watcher_uri->len;
 
 	CONT_COPY(hentity, hentity->contact, subs->contact)
+	CONT_COPY(hentity, hentity->to_uri, subs->to_uri)
 
 	if(subs->outbound_proxy)
 	{
@@ -830,7 +840,7 @@ int send_subscribe(subs_info_t* subs)
 	else
 		expires= subs->expires;
 
-	str_hdr= subs_build_hdr(subs->contact, expires, subs->event, 
+	str_hdr= subs_build_hdr(subs->contact, expires, subs->event,
 			subs->extra_headers);
 	if(str_hdr== NULL || str_hdr->s== NULL)
 	{
@@ -838,19 +848,18 @@ int send_subscribe(subs_info_t* subs)
 		return -1;
 	}
 
-	hash_code=core_hash(subs->pres_uri, subs->watcher_uri, HASH_SIZE);
-
-	lock_get(&HashT->p_records[hash_code].lock);
 
 	memset(&pres, 0, sizeof(ua_pres_t));
-	pres.pres_uri= subs->pres_uri;
+	pres.pres_uri   = subs->pres_uri;
 	pres.watcher_uri= subs->watcher_uri;
-	pres.flag= subs->source_flag;
-	pres.id= subs->id;
-	pres.event= subs->event;
-	if(subs->remote_target)
-		pres.remote_contact= *subs->remote_target;
-		
+	pres.to_uri     = (subs->to_uri.s?subs->to_uri:*subs->pres_uri);
+	pres.flag       = subs->source_flag;
+	pres.id         = subs->id;
+	pres.event      = subs->event;
+
+	hash_code=core_hash(&subs->to_uri, subs->watcher_uri, HASH_SIZE);
+	lock_get(&HashT->p_records[hash_code].lock);
+
 	presentity= search_htable(&pres, hash_code);
 
 	/* if flag == INSERT_TYPE insert no matter what the search result is */
@@ -890,15 +899,15 @@ insert:
 		hentity->flag= flag;
 
 		result= tmb.t_request
-			(&met,						  /* Type of the message */
-			subs->remote_target?subs->remote_target:subs->pres_uri,/* Request-URI*/
-			subs->pres_uri,				  /* To */
-			subs->watcher_uri,			  /* From */
-			str_hdr,					  /* Optional headers including CRLF */
-			0,							  /* Message body */
-			subs->outbound_proxy,		  /* Outbound_proxy */	
-			subs_cback_func,		      /* Callback function */
-			(void*)hentity,			      /* Callback parameter */
+			(&met,                       /* Type of the message */
+			pres.pres_uri,               /* Request-URI*/
+			&pres.to_uri,                /* To */
+			pres.watcher_uri,            /* From */
+			str_hdr,                      /* Optional headers including CRLF */
+			0,                            /* Message body */
+			subs->outbound_proxy,         /* Outbound_proxy */
+			subs_cback_func,              /* Callback function */
+			(void*)hentity,               /* Callback parameter */
 			0
 			);
 		if(result< 0)
@@ -963,7 +972,7 @@ insert:
 			lock_release(&HashT->p_records[hash_code].lock);
 			goto done;
 		}
-				
+
 		hentity= subs_cbparam_indlg(presentity, expires, REQ_OTHER);
 		if(hentity== NULL)
 		{

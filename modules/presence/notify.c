@@ -1452,7 +1452,8 @@ int publ_notify(presentity_t* p, str pres_uri, str* body, str* offline_etag, str
 	subs_t* subs_array= NULL, *s= NULL;
 	int ret_code= -1;
 
-	subs_array= get_subs_dialog(&pres_uri, p->event , p->sender);
+//	subs_array= get_subs_dialog(&pres_uri, p->event , p->sender);
+	subs_array= get_subs_dialog(&pres_uri, p->event , NULL);
 	if(subs_array == NULL)
 	{
 		LM_DBG("Could not find subs_dialog\n");

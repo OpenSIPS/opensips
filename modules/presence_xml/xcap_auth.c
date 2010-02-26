@@ -563,10 +563,11 @@ int http_get_rules_doc(str user, str domain, str* rules_doc)
 {
 	str uri;
 	xcap_doc_sel_t doc_sel;
-	char* doc= NULL;
 	xcap_serv_t* xs;
 	xcap_get_req_t req;
 
+	rules_doc->s = NULL;
+	rules_doc->len = 0;
 	memset(&req, 0, sizeof(xcap_get_req_t));
 	if(uandd_to_uri(user, domain, &uri)< 0)
 	{
@@ -603,19 +604,16 @@ int http_get_rules_doc(str user, str domain, str* rules_doc)
 	{
 		req.xcap_root= xs->addr;
 		req.port= xs->port;
-		if( xcap_GetNewDoc(req, user, domain, &doc) < 0)
+		if( xcap_GetNewDoc(req, user, domain, rules_doc) < 0)
 		{
 			LM_ERR("while fetching data from xcap server\n");
 			goto error;
 		}
-		if(doc)    /* if document found, stop searching */
+		if(rules_doc->s)    /* if document found, stop searching */
 			break;
 		xs = xs->next;
 	}
 
-	rules_doc->s= doc;
-	rules_doc->len= doc?strlen(doc):0;
-	
 	return 0;
 
 error:

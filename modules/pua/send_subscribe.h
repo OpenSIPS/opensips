@@ -36,6 +36,7 @@ typedef struct subs_info
 {
 	str id;
 	str* pres_uri;
+	str to_uri;
 	str* watcher_uri;
 	str* contact;
 	str* remote_target;

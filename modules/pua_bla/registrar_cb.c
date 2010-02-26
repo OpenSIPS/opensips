@@ -44,7 +44,7 @@ void bla_cb(ucontact_t* c, int type, void* param)
 	{
 		LM_DBG("Not a recognized BLA AOR\n");
 		return ;
-	}	
+	}
 
 	if(type & UL_CONTACT_INSERT)
 		LM_DBG("type= UL_CONTACT_INSERT\n");
@@ -59,9 +59,9 @@ void bla_cb(ucontact_t* c, int type, void* param)
 		LM_DBG("type= UL_CONTACT_DELETE\n");
 
 	memset(&subs, 0, sizeof(subs_info_t));
-	subs.remote_target= &c->c;
-	
-	subs.pres_uri= &reg_from_uri;
+	subs.pres_uri= &c->c;
+
+	subs.to_uri= reg_from_uri;
 
 	uri.s = (char*)pkg_malloc(sizeof(char)*(c->aor->len+default_domain.len+6));
 	if(uri.s == NULL)
@@ -72,12 +72,15 @@ void bla_cb(ucontact_t* c, int type, void* param)
 
 	memcpy(uri.s+ uri.len, c->aor->s, c->aor->len);
 	uri.len+= c->aor->len;
+//    LM_INFO("aor = %.*s\n", c->aor->len, c->aor->s);
 	at = memchr(c->aor->s, '@', c->aor->len);
 	if(!at)
 	{
+        LM_INFO("domain not found - added default= %.*s\n",
+            default_domain.len, default_domain.s);
 		uri.s[uri.len++]= '@';
 		memcpy(uri.s+ uri.len, default_domain.s, default_domain.len);
-		uri.len+= default_domain.len;		
+		uri.len+= default_domain.len;
 	}
 	
 	subs.watcher_uri= &uri;

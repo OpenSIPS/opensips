@@ -325,9 +325,9 @@ pres_ev_t* search_event(event_t* event)
 			}
 	
 			/* search all parameters in event in ev */
-			if(search_event_params(event, pres_ev->evp)< 0)
+/*			if(search_event_params(event, pres_ev->evp)< 0)
 				goto cont;
-			
+*/
 			/* search all parameters in ev in event */
 			if(search_event_params(pres_ev->evp, event)< 0)
 				goto cont;
