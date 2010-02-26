@@ -131,7 +131,7 @@ int get_resource_list(str* service_uri, str owner_user, str owner_domain,
 	db_res_t *result = 0;
 	db_row_t *row ;
 	db_val_t *row_vals ;
-	str body ;
+	str body= {0, 0}, new_doc={0,0};
 	int n_result_cols= 0;
 	int etag_col, xcap_col;
 	char* etag= NULL;
@@ -139,7 +139,6 @@ int get_resource_list(str* service_uri, str owner_user, str owner_domain,
 	xmlDocPtr doc = NULL;
 	xmlNodePtr snode;
 	xcap_doc_sel_t doc_sel;
-	char* xcap_rl= NULL;
 
 	*rl_doc = NULL;
 
@@ -212,19 +211,18 @@ int get_resource_list(str* service_uri, str owner_user, str owner_domain,
 		req.etag= etag;
 		req.match_type= IF_NONE_MATCH;
 
-		if(xcap_GetNewDoc(req, owner_user, owner_domain, &xcap_rl)< 0)
+		if(xcap_GetNewDoc(req, owner_user, owner_domain, &new_doc)< 0)
 		{
 			LM_ERR("while fetching data from xcap server\n");
 			pkg_free(doc_sel.xid.s);
 			goto error;
 		}
 		pkg_free(doc_sel.xid.s);
-		if(xcap_rl== NULL)  /* if the document was not found */
+		if(new_doc.s== NULL)  /* if the document was not found */
 		{
 			goto done;
 		}
-		body.s = xcap_rl;
-		body.len = strlen(xcap_rl);
+		body = new_doc;
 	}
 	else
 	{
@@ -269,8 +267,8 @@ int get_resource_list(str* service_uri, str owner_user, str owner_domain,
 done:
 	if(result)
 		rls_dbf.free_result(rls_db, result);
-	if(xcap_rl)
-		pkg_free(xcap_rl);
+	if(new_doc.s)
+		pkg_free(new_doc.s);
 	
 	return 0;
 
@@ -279,8 +277,8 @@ error:
 		rls_dbf.free_result(rls_db, result);
 	if(doc)
 		xmlFreeDoc(doc);
-	if(xcap_rl)
-		pkg_free(xcap_rl);
+	if(new_doc.s)
+		pkg_free(new_doc.s);
 
 	return -1;
 }
