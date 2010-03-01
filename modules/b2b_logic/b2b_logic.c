@@ -113,7 +113,7 @@ static mi_export_t mi_cmds[] = {
 /** Module interface */
 struct module_exports exports= {
 	"b2b_logic",                    /* module name */
-	MODULE_VERSION,					/* module version */
+	MODULE_VERSION,                 /* module version */
 	DEFAULT_DLFLAGS,                /* dlopen flags */
 	cmds,                           /* exported functions */
 	params,                         /* exported parameters */

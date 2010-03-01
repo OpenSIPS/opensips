@@ -1312,11 +1312,13 @@ int create_top_hiding_entities(struct sip_msg* msg, str* to_uri, str* from_uri)
 	if(client_id == NULL)
 	{
 		LM_ERR("failed to create new b2b client instance\n");
-		pkg_free(extra_headers.s);
+		if(extra_headers.s)
+			pkg_free(extra_headers.s);
 		pkg_free(from_tag_uac.s);
 		goto error;
 	}
-	pkg_free(extra_headers.s);
+	if(extra_headers.s)
+		pkg_free(extra_headers.s);
 
 	tuple->clients = b2bl_create_new_entity(B2B_CLIENT, client_id, to_uri, from_uri, 0);
 	if(tuple->clients == NULL)
