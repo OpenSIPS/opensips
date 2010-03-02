@@ -26,6 +26,10 @@
 		The module use cache to store presentity list and writes to database
 		on timer to be able to recover upon restart.
 	</para>
+	<para>
+		Notice: This module must not be used in no fork mode (the locking mechanism
+		used may cause deadlock in no fork mode).
+	</para>
 	</section>
 		<section>
 	<title>Dependencies</title>
