@@ -469,9 +469,12 @@ void set_dst_state_from_rplcode( int id, int code)
 
 	if ((code == 200) || check_options_rplcode(code)) {
 		/* re-enable to DST  (if allowed) */
-		if ( dst->flags&LB_DST_STAT_NOEN_FLAG )
+		if ( dst->flags&LB_DST_STAT_NOEN_FLAG ) {
+			unref_read_data();
 			return;
+		}
 		dst->flags &= ~LB_DST_STAT_DSBL_FLAG;
+		unref_read_data();
 		return;
 	}
 
