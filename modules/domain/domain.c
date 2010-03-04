@@ -110,7 +110,7 @@ int is_domain_local(str* _host)
 		
 		if (domain_dbf.use_table(db_handle, &domain_table) < 0) {
 			LM_ERR("Error while trying to use domain table\n");
-			return -1;
+			return -3;
 		}
 
 		VAL_TYPE(vals) = DB_STR;
@@ -122,7 +122,7 @@ int is_domain_local(str* _host)
 		if (domain_dbf.query(db_handle, keys, 0, vals, cols, 1, 1, 0, &res) < 0
 				) {
 			LM_ERR("Error while querying database\n");
-			return -1;
+			return -3;
 		}
 
 		if (RES_ROW_N(res) == 0) {
@@ -239,7 +239,7 @@ int reload_domain_table ( void )
 
 	if (domain_dbf.use_table(db_handle, &domain_table) < 0) {
 		LM_ERR("Error while trying to use domain table\n");
-		return -1;
+		return -3;
 	}
 
 	VAL_TYPE(vals) = DB_STR;
@@ -247,7 +247,7 @@ int reload_domain_table ( void )
 
 	if (domain_dbf.query(db_handle, NULL, 0, NULL, cols, 0, 1, 0, &res) < 0) {
 		LM_ERR("Error while querying database\n");
-		return -1;
+		return -3;
 	}
 
 	/* Choose new hash table and free its old contents */
@@ -272,12 +272,12 @@ int reload_domain_table ( void )
 			if (hash_table_install(new_hash_table,(char*)VAL_STRING(val))==-1){
 				LM_ERR("Hash table problem\n");
 				domain_dbf.free_result(db_handle, res);
-				return -1;
+				return -3;
 			}
 		} else {
 			LM_ERR("Database problem\n");
 			domain_dbf.free_result(db_handle, res);
-			return -1;
+			return -3;
 		}
 	}
 	domain_dbf.free_result(db_handle, res);
