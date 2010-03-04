@@ -110,7 +110,7 @@ int is_domain_local(str* _host)
 		
 		if (domain_dbf.use_table(db_handle, &domain_table) < 0) {
 			LM_ERR("Error while trying to use domain table\n");
-			return -1;
+			return -3;
 		}
 
 		VAL_TYPE(vals) = DB_STR;
@@ -122,7 +122,7 @@ int is_domain_local(str* _host)
 		if (domain_dbf.query(db_handle, keys, 0, vals, cols, 1, 1, 0, &res) < 0
 				) {
 			LM_ERR("Error while querying database\n");
-			return -1;
+			return -3;
 		}
 
 		if (RES_ROW_N(res) == 0) {
@@ -163,32 +163,11 @@ int is_from_local(struct sip_msg* _msg, char* _s1, char* _s2)
  */
 int is_uri_host_local(struct sip_msg* _msg, char* _s1, char* _s2)
 {
-	str branch;
-	qvalue_t q;
-	struct sip_uri puri;
-
-	if ( route_type&(REQUEST_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE) ) {
-		if (parse_sip_msg_uri(_msg) < 0) {
-			LM_ERR("Error while parsing R-URI\n");
-			return -1;
-		}
-		return is_domain_local(&(_msg->parsed_uri.host));
-	} else if (route_type == FAILURE_ROUTE) {
-			branch.s = get_branch(0, &branch.len, &q, 0, 0, 0, 0);
-			if (branch.s) {
-				if (parse_uri(branch.s, branch.len, &puri) < 0) {
-					LM_ERR("Error while parsing branch URI\n");
-					return -1;
-				}
-				return is_domain_local(&(puri.host));
-			} else {
-				LM_ERR("Branch is missing, error in script\n");
-				return -1;
-			}
-	} else {
-		LM_ERR("Unsupported route type\n");
+	if (parse_sip_msg_uri(_msg) < 0) {
+		LM_ERR("Error while parsing R-URI\n");
 		return -1;
 	}
+	return is_domain_local(&(_msg->parsed_uri.host));
 }
 
 
@@ -239,7 +218,7 @@ int reload_domain_table ( void )
 
 	if (domain_dbf.use_table(db_handle, &domain_table) < 0) {
 		LM_ERR("Error while trying to use domain table\n");
-		return -1;
+		return -3;
 	}
 
 	VAL_TYPE(vals) = DB_STR;
@@ -247,7 +226,7 @@ int reload_domain_table ( void )
 
 	if (domain_dbf.query(db_handle, NULL, 0, NULL, cols, 0, 1, 0, &res) < 0) {
 		LM_ERR("Error while querying database\n");
-		return -1;
+		return -3;
 	}
 
 	/* Choose new hash table and free its old contents */
@@ -272,12 +251,12 @@ int reload_domain_table ( void )
 			if (hash_table_install(new_hash_table,(char*)VAL_STRING(val))==-1){
 				LM_ERR("Hash table problem\n");
 				domain_dbf.free_result(db_handle, res);
-				return -1;
+				return -3;
 			}
 		} else {
 			LM_ERR("Database problem\n");
 			domain_dbf.free_result(db_handle, res);
-			return -1;
+			return -3;
 		}
 	}
 	domain_dbf.free_result(db_handle, res);
