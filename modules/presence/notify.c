@@ -779,7 +779,6 @@ str* get_p_notify_body(str pres_uri, pres_ev_t* event, str* etag,
 	int size= 0;
 	struct sip_uri uri;
 	unsigned int hash_code;
-	str sender;
 	static str query_str = str_init("received_time");
 
 	if(parse_uri(pres_uri.s, pres_uri.len, &uri)< 0)
@@ -878,7 +877,7 @@ db_query:
 			
 			/* if event BLA - check if sender is the same as contact */
 			/* if so, send an empty dialog info document */
-			if( event->evp->parsed == EVENT_DIALOG_SLA && contact )
+/*			if( event->evp->parsed == EVENT_DIALOG_SLA && contact )
 			{
 				sender.s = (char*)row_vals[sender_col].val.string_val;
 				if(sender.s== NULL || strlen(sender.s)==0)
@@ -895,6 +894,7 @@ db_query:
 			}
 
 after_sender_check:
+*/
 			if(row_vals[body_col].val.string_val== NULL)
 			{
 				LM_ERR("NULL notify body record\n");
