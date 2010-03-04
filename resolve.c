@@ -1374,7 +1374,7 @@ static inline struct hostent* get_next_he(struct dns_node **node,
 						}
 						n->idx++;
 					} while(n->idx<n->no);
-					if (he==NULL || (he && n->idx+1==n->no) ) {
+					if (he==NULL || (he && n->idx==n->no) ) {
 						/* colapse the SRV node */
 						shm_free(n);
 						*node = dn;
