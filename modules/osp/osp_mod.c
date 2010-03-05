@@ -67,6 +67,7 @@ extern int _osp_use_rpid;
 extern int _osp_use_np;
 extern int _osp_redir_uri;
 extern int _osp_append_userphone;
+extern int _osp_append_networkid;
 extern char _osp_PRIVATE_KEY[];
 extern char _osp_LOCAL_CERTIFICATE[];
 extern char _osp_CA_CERTIFICATE[];
@@ -152,6 +153,7 @@ static param_export_t params[]={
     { "use_number_portability",           INT_PARAM, &_osp_use_np },
     { "redirection_uri_format",           INT_PARAM, &_osp_redir_uri },
     { "append_userphone",                 INT_PARAM, &_osp_append_userphone },
+    { "append_networkid",                 INT_PARAM, &_osp_append_networkid},
     { "source_networkid_avp",             STR_PARAM, &_osp_snid_avp },
     { "custom_info_avp",                  STR_PARAM, &_osp_cinfo_avp },
     { 0,0,0 }
@@ -377,6 +379,7 @@ static void ospDumpParameters(void)
     LM_INFO("    use_number_portability '%d' ", _osp_use_np);
     LM_INFO("    redirection_uri_format '%d' ", _osp_redir_uri);
     LM_INFO("    append_userphone '%d' ", _osp_append_userphone);
+    LM_INFO("    append_networkid '%d' ", _osp_append_networkid);
     LM_INFO("    max_destinations '%d'\n", _osp_max_dests);
     if (_osp_snid_avpname.n == 0) {
         LM_INFO("    source network ID disabled\n");

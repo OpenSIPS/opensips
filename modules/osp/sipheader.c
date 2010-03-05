@@ -45,6 +45,7 @@
 extern int _osp_use_rpid;
 extern int _osp_use_np;
 extern int _osp_append_userphone;
+extern int _osp_append_networkid;
 
 static void ospSkipPlus(char* e164);
 static int ospAppendHeader(struct sip_msg* msg, str* header);
@@ -445,7 +446,7 @@ int ospGetSourceAddress(
          */
         for (hf = msg->headers; hf; hf = hf->next) {
             if (hf->type == HDR_VIA_T) {
-                // found first VIA
+                /* found first VIA */
                 via = (struct via_body*)hf->parsed;
 
                 if (via->port != 0) {
@@ -561,9 +562,11 @@ int ospRebuildDestionationUri(
 {
     static const str TRANS = { ";transport=tcp", 14 };
     static const str USERPHONE = { ";user=phone", 11 };
+    static const str NETWORKID = { ";networkid=", 11 };
     char* buffer;
     int calledsize;
     int hostsize;
+    int uriparamsize;
     int npsize;
     int count;
 
@@ -576,19 +579,23 @@ int ospRebuildDestionationUri(
     /* ";npdi" */
     npsize += dest->npdi ? 5 : 0;
     /* ";spid=" */
-    npsize = dest->opname[OSPC_OPNAME_SPID][0] ? 6 + strlen(dest->opname[OSPC_OPNAME_SPID]) : 0;
+    npsize += dest->opname[OSPC_OPNAME_SPID][0] ? 6 + strlen(dest->opname[OSPC_OPNAME_SPID]) : 0;
     /* ";ocn=" */
-    npsize = dest->opname[OSPC_OPNAME_OCN][0] ? 5 + strlen(dest->opname[OSPC_OPNAME_OCN]) : 0;
+    npsize += dest->opname[OSPC_OPNAME_OCN][0] ? 5 + strlen(dest->opname[OSPC_OPNAME_OCN]) : 0;
     /* ";spn=" */
-    npsize = dest->opname[OSPC_OPNAME_SPN][0] ? 5 + strlen(dest->opname[OSPC_OPNAME_SPN]) : 0;
+    npsize += dest->opname[OSPC_OPNAME_SPN][0] ? 5 + strlen(dest->opname[OSPC_OPNAME_SPN]) : 0;
     /* ";altspn=" */
-    npsize = dest->opname[OSPC_OPNAME_ALTSPN][0] ? 8 + strlen(dest->opname[OSPC_OPNAME_ALTSPN]) : 0;
+    npsize += dest->opname[OSPC_OPNAME_ALTSPN][0] ? 8 + strlen(dest->opname[OSPC_OPNAME_ALTSPN]) : 0;
     /* ";mcc=" */
-    npsize = dest->opname[OSPC_OPNAME_MCC][0] ? 5 + strlen(dest->opname[OSPC_OPNAME_MCC]) : 0;
+    npsize += dest->opname[OSPC_OPNAME_MCC][0] ? 5 + strlen(dest->opname[OSPC_OPNAME_MCC]) : 0;
     /* ";mnc=" */
-    npsize = dest->opname[OSPC_OPNAME_MNC][0] ? 5 + strlen(dest->opname[OSPC_OPNAME_MNC]) : 0;
+    npsize += dest->opname[OSPC_OPNAME_MNC][0] ? 5 + strlen(dest->opname[OSPC_OPNAME_MNC]) : 0;
+    /* ";user=phone" */
+    uriparamsize = _osp_append_userphone ? USERPHONE.len : 0;
+    /* ";networkid=" */
+    uriparamsize += _osp_append_networkid && dest->networkid[0] ? NETWORKID.len + strlen(dest->networkid) : 0;
 
-    LM_DBG("'%s'(%d) '%s'(%d) '%s' '%s' '%d' '%s' '%s' '%s' '%s' '%s' '%s' (%d) '%d'\n",
+    LM_DBG("'%s' (%d) '%s' (%d) '%s' '%s' '%d' '%s' '%s' '%s' '%s' '%s' '%s' (%d) '%s' (%d) '%d'\n",
         dest->called,
         calledsize,
         dest->host,
@@ -603,13 +610,16 @@ int ospRebuildDestionationUri(
         dest->opname[OSPC_OPNAME_MCC],
         dest->opname[OSPC_OPNAME_MNC],
         npsize,
+        dest->networkid,
+        uriparamsize,
         format);
 
     /* "sip:" + called + NP + "@" + host + " SIP/2.0" for URI format 0 */
     /* "sip:" + called + NP + "@" + host + ";user=phone SIP/2.0" for URI format 0 with user=phone */
     /* "<sip:" + called + NP + "@" + host + "> SIP/2.0" for URI format 1 */
     /* "<sip:" + called + NP + "@" + host + ";user=phone> SIP/2.0" for URI format 1 with user=phone */
-    if (newuri->len < (1 + 4 + calledsize + npsize + 1 + hostsize + USERPHONE.len + 1 + 1 + 7 + TRANS.len)) {
+    /* "<sip:" + called + NP + "@" + host + ";user=phone" + ";networkid=" + dnid + "> SIP/2.0" */
+    if (newuri->len < (1 + 4 + calledsize + npsize + 1 + hostsize + uriparamsize + 1 + 1 + 7 + TRANS.len)) {
         LM_ERR("new uri buffer is too small\n");
         newuri->len = 0;
         return -1;
@@ -673,6 +683,11 @@ int ospRebuildDestionationUri(
     if (_osp_append_userphone != 0) {
         memcpy(buffer, USERPHONE.s, USERPHONE.len);
         buffer += USERPHONE.len;
+    }
+
+    if ((_osp_append_networkid != 0) && (dest->networkid[0] != '\0')) {
+        count = sprintf(buffer, "%s%s", NETWORKID.s, dest->networkid);
+        buffer += count;
     }
 
     if (format == 1) {

@@ -62,6 +62,7 @@ int _osp_use_rpid = OSP_DEF_USERPID;
 int _osp_use_np = OSP_DEF_USENP;
 int _osp_redir_uri = OSP_DEF_REDIRURI;
 int _osp_append_userphone = OSP_DEF_USERPHONE;
+int _osp_append_networkid = OSP_DEF_APPENDNID;
 char _osp_PRIVATE_KEY[OSP_STRBUF_SIZE];
 char _osp_LOCAL_CERTIFICATE[OSP_STRBUF_SIZE];
 char _osp_CA_CERTIFICATE[OSP_STRBUF_SIZE];
