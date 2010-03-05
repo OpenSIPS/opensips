@@ -190,6 +190,14 @@ inline struct multi_body * get_all_bodies(struct sip_msg * msg)
 	if (start == NULL)
 		return 0;
 
+	if (msg->buf + msg->len - start < get_content_length(msg))
+	{
+		LM_ERR("Message is shorter than indicated by content length:"
+			" got %d expected %ld\n", msg->buf + msg->len - start,
+			get_content_length(msg));
+		return NULL;
+	}
+
 	type = parse_content_type_hdr(msg);
 
 
@@ -214,7 +222,6 @@ inline struct multi_body * get_all_bodies(struct sip_msg * msg)
 		msg->multi->from_multi_part = 1;
 
 		delimiter = ((content_t*) msg->content_type->parsed)->boundary;
-
 
 		LM_DBG("Starting parsing with boundary = [%.*s]\n", delimiter.len, delimiter.s);
 
