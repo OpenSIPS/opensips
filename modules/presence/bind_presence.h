@@ -52,6 +52,7 @@ typedef struct presence_api {
 	update_db_subs_t update_db_subs;
 	extract_sdialog_info_t extract_sdialog_info;
 	pres_get_sphere_t get_sphere;
+	pres_contains_presence_t contains_presence;
 } presence_api_t;
 
 int bind_presence(presence_api_t* api);

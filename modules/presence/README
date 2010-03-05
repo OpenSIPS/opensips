@@ -71,6 +71,7 @@ Anca-Maria Vamanu
         2.13. get_event_list
         2.14. update_watchers_status
         2.15. get_sphere
+        2.16. contains_presence
 
    List of Examples
 
@@ -491,7 +492,7 @@ typedef struct presence_api {
         extract_sdialog_info_t extract_sdialog_info;
         /* function to request sphere defition for a presentity */
         pres_get_sphere_t get_sphere;
-
+        pres_contains_presence_t contains_presence;
 }presence_api_t;
 ...
 
@@ -732,3 +733,14 @@ typedef char* (*pres_get_sphere_t)(str* pres_uri);
    information if this has type RPID. If not found returns NULL.
    (the return value is allocated in private memory and should be
    freed)
+
+2.16.  contains_presence
+
+   Field type:
+...
+typedef int (*pres_contains_presence_t)(str* pres_uri);
+...
+
+   This function searches is a presence uri has published any
+   presence information. It return 1 if a record is found, -1
+   otherwise.

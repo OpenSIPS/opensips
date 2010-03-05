@@ -32,6 +32,7 @@
 #include <string.h>
 #include "../../parser/parse_content.h"
 #include "../presence/event_list.h"
+#include "../presence/presentity.h"
 #include "presence_dialoginfo.h"
 #include "notify_body.h"
 

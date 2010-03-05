@@ -1459,3 +1459,82 @@ error:
 	return NULL;
 
 }
+
+int contains_presence(str* pres_uri) {
+	unsigned int hash_code;
+	db_key_t query_cols[6];
+	db_val_t query_vals[6];
+	db_key_t result_cols[6];
+	db_res_t *result = NULL;
+	int n_result_cols = 0;
+	int n_query_cols = 0;
+	struct sip_uri uri;
+	static str query_str = str_init("received_time");
+	int ret = -1;
+
+	hash_code= core_hash(pres_uri, NULL, phtable_size);
+
+	lock_get(&pres_htable[hash_code].lock);
+
+	if ( search_phtable(pres_uri, EVENT_PRESENCE, hash_code)!=NULL )
+	{
+		ret = 1;
+	}
+	lock_release(&pres_htable[hash_code].lock);
+	if ( ret== -1 && fallback2db )
+	{
+		if(parse_uri(pres_uri->s, pres_uri->len, &uri)< 0)
+		{
+			LM_ERR("failed to parse presentity uri\n");
+			goto done;
+		}
+		query_cols[n_query_cols] = &str_domain_col;
+		query_vals[n_query_cols].type = DB_STR;
+		query_vals[n_query_cols].nul = 0;
+		query_vals[n_query_cols].val.str_val = uri.host;
+		n_query_cols++;
+
+		query_cols[n_query_cols] = &str_username_col;
+		query_vals[n_query_cols].type = DB_STR;
+		query_vals[n_query_cols].nul = 0;
+		query_vals[n_query_cols].val.str_val = uri.user;
+		n_query_cols++;
+
+		query_cols[n_query_cols] = &str_event_col;
+		query_vals[n_query_cols].type = DB_STR;
+		query_vals[n_query_cols].nul = 0;
+		query_vals[n_query_cols].val.str_val.s= "presence";
+		query_vals[n_query_cols].val.str_val.len= 8;
+		n_query_cols++;
+
+		result_cols[n_result_cols++] = &str_body_col;
+	
+		if (pa_dbf.use_table(pa_db, &presentity_table) < 0) 
+		{
+			LM_ERR("in use_table\n");
+			goto done;
+		}
+		if (pa_dbf.query (pa_db, query_cols, 0, query_vals,
+			 result_cols, n_query_cols, n_result_cols, &query_str ,  &result) < 0) 
+		{
+			LM_ERR("failed to query %.*s table\n", presentity_table.len, presentity_table.s);
+			if(result)
+				pa_dbf.free_result(pa_db, result);
+			goto done;
+		}
+		if(result== NULL)
+			goto done;
+		if (result->n<=0 )
+		{
+			LM_DBG("no published record found in database\n");
+			pa_dbf.free_result(pa_db, result);
+			goto done;
+		}
+		pa_dbf.free_result(pa_db, result);
+		ret = 1;
+	}
+done:
+	if(result)
+		pa_dbf.free_result(pa_db, result);
+	return ret;
+}
