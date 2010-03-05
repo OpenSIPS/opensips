@@ -1713,7 +1713,7 @@ sdp_1918(struct sip_msg* msg)
 		body = p->body;
 		trim_r(body);
 		if( p->content_type != ((TYPE_APPLICATION << 16) + SUBTYPE_SDP) 
-							 && body.len > 0)
+							 || body.len == 0)
 		{
 			p=p->next;
 			continue;
@@ -1908,7 +1908,7 @@ fix_nated_sdp_f(struct sip_msg* msg, char* str1, char* str2)
 		body = p->body;
 		trim_r(body);
 		if( p->content_type != ((TYPE_APPLICATION << 16) + SUBTYPE_SDP)
-							 && body.len > 0)
+							 || body.len == 0)
 		{
 			p=p->next;
 			continue;
