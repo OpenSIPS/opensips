@@ -218,6 +218,8 @@
 #include "../../db/db.h"
 #include "../../locking.h"
 #include "../../parser/parse_content.h"
+#include "../../parser/msg_parser.h"
+#include "../../parser/parse_multipart.h"
  
 
 
@@ -1691,19 +1693,46 @@ sdp_1918(struct sip_msg* msg)
 {
 	str body, ip;
 	int pf;
+	struct multi_body * bodies;
+	struct part *p;
+	int ret = 0;
 
-	if (extract_body(msg, &body) == -1) {
-		LM_ERR("cannot extract body from msg!\n");
+	bodies = get_all_bodies(msg);
+
+	if( bodies == NULL)
+	{
+		LM_ERR("Unable to get bodies from message\n");
 		return 0;
 	}
-	if (extract_mediaip(&body, &ip, &pf,"c=") == -1) {
-		LM_ERR("can't extract media IP from the SDP\n");
-		return 0;
-	}
-	if (pf != AF_INET || isnulladdr(&ip, pf))
-		return 0;
 
-	return (is1918addr(&ip) == 1) ? 1 : 0;
+	p = bodies->first;
+
+	while(p)
+	{
+
+		body = p->body;
+		trim_r(body);
+		if( p->content_type != ((TYPE_APPLICATION << 16) + SUBTYPE_SDP) 
+							 && body.len > 0)
+		{
+			p=p->next;
+			continue;
+		}
+		
+		
+		if (extract_mediaip(&body, &ip, &pf, "c=") == -1)
+		{
+			LM_ERR("can't extract media IP from the SDP\n");
+			return 0;
+		}
+		if (pf != AF_INET || isnulladdr(&ip, pf))
+			return 0;
+
+		ret |= (is1918addr(&ip) == 1) ? 1 : 0;
+		p= p->next;
+	}
+
+	return ret;
 }
 
 /*
@@ -1857,63 +1886,82 @@ fix_nated_sdp_f(struct sip_msg* msg, char* str1, char* str2)
 	int level;
 	char *buf;
 	struct lump* anchor;
+	struct multi_body * bodies;
+	struct part * p;
 
 	level = (int)(long)str1;
 	if (str2 && pv_printf_s( msg, (pv_elem_p)str2, &ip)!=0)
 		return -1;
 
-	if (extract_body(msg, &body) == -1) {
-		LM_ERR("cannot extract body from msg!\n");
+	bodies = get_all_bodies(msg);
+	
+	if( bodies == NULL)
+	{
+		LM_ERR("Unable to get bodies from message\n");
 		return -1;
 	}
 
-	if (level & (ADD_ADIRECTION | ADD_ANORTPPROXY)) {
-		msg->msg_flags |= FL_FORCE_ACTIVE;
-		anchor = anchor_lump(msg, body.s + body.len - msg->buf, 0, 0);
-		if (anchor == NULL) {
-			LM_ERR("anchor_lump failed\n");
-			return -1;
-		}
-		if (level & ADD_ADIRECTION) {
-			buf = pkg_malloc((ADIRECTION_LEN + CRLF_LEN) * sizeof(char));
-			if (buf == NULL) {
-				LM_ERR("out of pkg memory\n");
-				return -1;
-			}
-			memcpy(buf, CRLF, CRLF_LEN);
-			memcpy(buf + CRLF_LEN, ADIRECTION, ADIRECTION_LEN);
-			if (insert_new_lump_after(anchor, buf, ADIRECTION_LEN + CRLF_LEN, 0) == NULL) {
-				LM_ERR("insert_new_lump_after failed\n");
-				pkg_free(buf);
-				return -1;
-			}
-		}
-		if ((level & ADD_ANORTPPROXY) && nortpproxy_str.len) {
-			buf = pkg_malloc((nortpproxy_str.len + CRLF_LEN) * sizeof(char));
-			if (buf == NULL) {
-				LM_ERR("out of pkg memory\n");
-				return -1;
-			}
-			memcpy(buf, CRLF, CRLF_LEN);
-			memcpy(buf + CRLF_LEN, nortpproxy_str.s, nortpproxy_str.len);
-			if (insert_new_lump_after(anchor, buf, nortpproxy_str.len + CRLF_LEN, 0) == NULL) {
-				LM_ERR("insert_new_lump_after failed\n");
-				pkg_free(buf);
-				return -1;
-			}
-		}
-	}
+	p = bodies->first;
 
-	if (level & FIX_MEDIP) {
-		/* Iterate all c= and replace ips in them. */
-		if (replace_sdp_ip(msg, &body, "c=", str2?&ip:0)==-1)
-			return -1;
-	}
+	while(p)
+	{
+		body = p->body;
+		trim_r(body);
+		if( p->content_type != ((TYPE_APPLICATION << 16) + SUBTYPE_SDP)
+							 && body.len > 0)
+		{
+			p=p->next;
+			continue;
+		}
+		if (level & (ADD_ADIRECTION | ADD_ANORTPPROXY)) {
+			msg->msg_flags |= FL_FORCE_ACTIVE;
+			anchor = anchor_lump(msg, body.s + body.len - msg->buf, 0, 0);
+			if (anchor == NULL) {
+				LM_ERR("anchor_lump failed\n");
+				return -1;
+			}
+			if (level & ADD_ADIRECTION) {
+				buf = pkg_malloc((ADIRECTION_LEN + CRLF_LEN) * sizeof(char));
+				if (buf == NULL) {
+					LM_ERR("out of pkg memory\n");
+					return -1;
+				}
+				memcpy(buf, CRLF, CRLF_LEN);
+				memcpy(buf + CRLF_LEN, ADIRECTION, ADIRECTION_LEN);
+				if (insert_new_lump_after(anchor, buf, ADIRECTION_LEN + CRLF_LEN, 0) == NULL) {
+					LM_ERR("insert_new_lump_after failed 1\n");
+					pkg_free(buf);
+					return -1;
+				}
+			}
+			if ((level & ADD_ANORTPPROXY) && nortpproxy_str.len) {
+				buf = pkg_malloc((nortpproxy_str.len + CRLF_LEN) * sizeof(char));
+				if (buf == NULL) {
+					LM_ERR("out of pkg memory\n");
+					return -1;
+				}
+				memcpy(buf, CRLF, CRLF_LEN);
+				memcpy(buf + CRLF_LEN, nortpproxy_str.s, nortpproxy_str.len);
+				if (insert_new_lump_after(anchor, buf, nortpproxy_str.len + CRLF_LEN, 0) == NULL) {
+					LM_ERR("insert_new_lump_after failed 2\n");
+					pkg_free(buf);
+					return -1;
+				}
+			}
+		}
 
-	if (level & FIX_ORGIP) {
-		/* Iterate all o= and replace ips in them. */
-		if (replace_sdp_ip(msg, &body, "o=", str2?&ip:0)==-1)
-			return -1;
+		if (level & FIX_MEDIP) {
+			/* Iterate all c= and replace ips in them. */
+			if (replace_sdp_ip(msg, &body, "c=", str2?&ip:0)==-1)
+				return -1;
+		}
+
+		if (level & FIX_ORGIP) {
+			/* Iterate all o= and replace ips in them. */
+			if (replace_sdp_ip(msg, &body, "o=", str2?&ip:0)==-1)
+				return -1;
+		}
+		p= p->next;
 	}
 
 	return 1;
@@ -2007,9 +2055,9 @@ extract_mediainfo(str *body, str *mediaport, str *payload_types)
 	return -1;
 }
 
-static int alter_rtcp(struct sip_msg *msg,str *newip, int newpf ,str* newport,
+static int alter_rtcp(struct sip_msg *msg,str * body1, str *newip, int newpf ,str* newport,
 			char * line_start )
-{
+{	
 
 	static const  str field = str_init("a=rtcp:");
 
@@ -2020,7 +2068,7 @@ static int alter_rtcp(struct sip_msg *msg,str *newip, int newpf ,str* newport,
 	str body, value;
 	
 	body.s = line_start;
-	body.len = msg->buf + msg->len - line_start;
+	body.len = body1->s + body1->len - line_start;
 
 
 	if( extract_field( &body, &value, field) < 0 )
@@ -2683,9 +2731,7 @@ static int force_rtp_proxy(struct sip_msg* msg, char* str1, char* str2, int offe
 	struct multi_body *m;
 	struct part * p;
 	str body;
-	int skip;
-	char c;
-
+	
 	m = get_all_bodies(msg);
 
 	if (m == NULL)
@@ -2702,26 +2748,17 @@ static int force_rtp_proxy(struct sip_msg* msg, char* str1, char* str2, int offe
 		if (p->content_type == ((TYPE_APPLICATION << 16) + SUBTYPE_SDP))
 		{
 			body = p->body;
+			trim_r(body);
 
-			for (skip = 0; skip < body.len; skip++)
+			if (body.len == 0)
 			{
-				c = body.s[body.len - skip - 1];
-				if (c != '\r' && c != '\n')
-					break;
-			}
+				LM_WARN("empty body\n");
 
-			if (skip == body.len)
+			} else
 			{
-				LM_ERR("empty body");
-				return -1;
+				LM_DBG("Forcing body:\n[%.*s]\n", body.len, body.s);
+				ret = force_rtp_proxy_body(msg, str1, str2, offer, body);
 			}
-
-			body.len -= skip;
-
-
-			LM_DBG("Forcing body:\n[%.*s]\n", body.len, body.s);
-			ret = force_rtp_proxy_body(msg, str1, str2, offer, body);
-
 		}
 
 		if (ret < 0)
@@ -3150,7 +3187,7 @@ again:
 			nextport.s = int2str(port+1, &nextport.len);
 
 			if( r2p )
-				if (alter_rtcp(msg, &newip, pf1, &nextport, r2p) < 0 )
+				if (alter_rtcp(msg, &body1, &newip, pf1, &nextport, r2p) < 0 )
 					goto error;
 			
 			/*
