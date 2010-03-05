@@ -464,8 +464,10 @@ void set_dst_state_from_rplcode( int id, int code)
 	ref_read_data();
 
 	for( dst=(*curr_data)->dsts ; dst && dst->id!=id ; dst=dst->next);
-	if (dst==NULL)
+	if (dst==NULL) {
+		unref_read_data();
 		return;
+	}
 
 	if ((code == 200) || check_options_rplcode(code)) {
 		/* re-enable to DST  (if allowed) */
