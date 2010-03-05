@@ -510,7 +510,8 @@ int bla_aggregate_state(str* old_body, str* new_body,
 			dlg_node = aux_dlg_node;
 			continue;
 		}
-		/* if state is confirmed -> check if on hold */
+#if 0	
+	/* if state is confirmed -> check if on hold */
 		if(xmlStrcasecmp(state, (unsigned char*)"confirmed")== 0)
 		{
 			/* check if on hold */
@@ -558,16 +559,32 @@ int bla_aggregate_state(str* old_body, str* new_body,
 					LM_ERR("New body:\n%.*s\n", new_body->len, new_body->s);
 					LM_ERR("Old body:\n%.*s\n", old_body->len, old_body->s);
 					xmlFree(attr);
-					bla_update_publish = 0;
-					*allocated = 1;
-					xmlDocDumpFormatMemory(old_doc,(xmlChar**)(void*)&fin_body->s,
-						&fin_body->len, 1);
-					goto done;
+					if(n_node_state == DLG_DESTROYED)
+					{
+						bla_update_publish = 0;
+						*allocated = 1;
+						xmlDocDumpFormatMemory(old_doc,(xmlChar**)(void*)&fin_body->s,
+							&fin_body->len, 1);
+						goto done;
+					}
+						
+					to_delete = 1; 
+					break;
 //					goto error;
 				}
 				xmlFree(attr);
 			}
+			if(to_delete)
+			{
+				xmlFree(state);
+				aux_dlg_node= dlg_node->next;
+				xmlUnlinkNode(dlg_node);
+				xmlFreeNode(dlg_node);
+				dlg_node = aux_dlg_node;
+				continue;
+			}
 		}
+#endif
 		xmlFree(state);
 		state = NULL;
 		dlg_node = dlg_node->next;

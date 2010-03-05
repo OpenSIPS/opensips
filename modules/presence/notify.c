@@ -779,6 +779,7 @@ str* get_p_notify_body(str pres_uri, pres_ev_t* event, str* etag,
 	int size= 0;
 	struct sip_uri uri;
 	unsigned int hash_code;
+	
 	static str query_str = str_init("received_time");
 
 	if(parse_uri(pres_uri.s, pres_uri.len, &uri)< 0)
@@ -892,7 +893,6 @@ db_query:
 					return notify_body;
 				}
 			}
-
 after_sender_check:
 */
 			if(row_vals[body_col].val.string_val== NULL)
@@ -1825,7 +1825,7 @@ void p_tm_callback( struct cell *t, int type, struct tmcb_params *ps)
 	LM_DBG("completed with status %d [to_tag:%.*s]\n",
 			ps->code,((c_back_param*)(*ps->param))->to_tag.len,
 			((c_back_param*)(*ps->param))->to_tag.s);
-
+/*
 	if(ps->code >= 300)
 	{
 		unsigned int hash_code;
@@ -1837,7 +1837,7 @@ void p_tm_callback( struct cell *t, int type, struct tmcb_params *ps)
 
 		delete_db_subs(cb->pres_uri, cb->ev_name, cb->to_tag);
 	}
-
+*/
 	if(*ps->param !=NULL  )
 		free_cbparam((c_back_param*)(*ps->param));
 	return ;
