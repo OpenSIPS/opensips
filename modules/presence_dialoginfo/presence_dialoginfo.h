@@ -31,5 +31,6 @@
 #define _PRES_DLGINFO_H_
 
 extern add_event_t pres_add_event;
+extern pres_contains_presence_t pres_contains_presence;
 
 #endif

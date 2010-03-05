@@ -68,6 +68,8 @@ char* extract_sphere(str body);
 char* get_sphere(str* pres_uri);
 typedef char* (*pres_get_sphere_t)(str* pres_uri);
 
+int contains_presence(str* pres_uri);
+typedef int (*pres_contains_presence_t)(str* pres_uri);
 
 #endif
 

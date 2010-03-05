@@ -39,10 +39,12 @@
 #include "../presence/event_list.h"
 #include "../presence/presence.h"
 #include "../presence/presentity.h"
+#include "presence_dialoginfo.h"
 #include "notify_body.h"
 #include "pidf.h"
 
 str* agregate_xmls(str* pres_user, str* pres_domain, str** body_array, int n);
+str* build_dialoginfo(str* pres_user, str* pres_domain);
 extern int force_single_dialog;
 
 void free_xml_body(char* body)
@@ -63,7 +65,7 @@ str* dlginfo_agg_nbody(str* pres_user, str* pres_domain, str** body_array, int n
 			pres_user->len, pres_user->s, pres_domain->len, pres_domain->s, n);
 
 	if(body_array== NULL)
-		return NULL;
+		return build_dialoginfo(pres_user, pres_domain);
 
 	n_body= agregate_xmls(pres_user, pres_domain, body_array, n);
 	LM_DBG("[n_body]=%p\n", n_body);
@@ -79,6 +81,8 @@ str* dlginfo_agg_nbody(str* pres_user, str* pres_domain, str** body_array, int n
 	xmlCleanupParser();
     xmlMemoryDump();
 
+	if (n_body== NULL)
+		n_body= build_dialoginfo(pres_user, pres_domain);
 	return n_body;
 }	
 
@@ -325,5 +329,115 @@ str *dlginfo_body_setversion(subs_t *subs, str *body) {
 	memcpy(version_start, version, version_len);
 	memset(version_start + version_len, ' ', 12 - version_len);
 
+	return NULL;
+}
+
+str* build_dialoginfo(str* pres_user, str* pres_domain)
+{
+	xmlDocPtr  doc = NULL;
+	xmlNodePtr root_node = NULL;
+	xmlNodePtr dialog_node = NULL;
+	xmlNodePtr state_node = NULL;
+
+	str *body= NULL;
+	str *pres_uri= NULL;
+	char buf[MAX_URI_SIZE+1];
+
+	if ( (pres_user->len + pres_domain->len + 1) > MAX_URI_SIZE) {
+		LM_ERR("entity URI too long, maximum=%d\n", MAX_URI_SIZE);
+		return NULL;
+	}
+	memcpy(buf, "sip:", 4);
+	memcpy(buf+4, pres_user->s, pres_user->len);
+	buf[pres_user->len+4] = '@';
+	memcpy(buf + pres_user->len + 5, pres_domain->s, pres_domain->len);
+	buf[pres_user->len + 5 + pres_domain->len]= '\0';
+
+	pres_uri = (str*)pkg_malloc(sizeof(str));
+	if(pres_uri == NULL)
+	{
+		LM_ERR("while allocating memory\n");
+		return NULL;
+	}
+	memset(pres_uri, 0, sizeof(str));
+	pres_uri->s = buf;
+	pres_uri->len = pres_user->len + 5 + pres_domain->len;
+
+	LM_DBG("[pres_uri] %.*s\n", pres_uri->len, pres_uri->s);
+
+	if ( pres_contains_presence(pres_uri)<0 ) {
+		LM_DBG("No record exists in hash_table\n");
+		goto error;
+	}
+
+	/* create the Publish body  */
+	doc = xmlNewDoc(BAD_CAST "1.0");
+	if(doc==0)
+		goto error;
+
+	root_node = xmlNewNode(NULL, BAD_CAST "dialog-info");
+	if(root_node==0)
+		goto error;
+
+	xmlDocSetRootElement(doc, root_node);
+
+	xmlNewProp(root_node, BAD_CAST "xmlns",
+			BAD_CAST "urn:ietf:params:xml:ns:dialog-info");
+	/* we set the version to 0 but it should be set to the correct value
+       in the pua module */
+	xmlNewProp(root_node, BAD_CAST "version",
+			BAD_CAST "0");
+	xmlNewProp(root_node, BAD_CAST  "state",
+			BAD_CAST "full" );
+	xmlNewProp(root_node, BAD_CAST "entity", 
+			BAD_CAST buf);
+	/* dialog tag */
+	dialog_node =xmlNewChild(root_node, NULL, BAD_CAST "dialog", NULL) ;
+	if( dialog_node ==NULL)
+	{
+		LM_ERR("while adding child [dialog]\n");
+		goto error;
+	}
+	memcpy(buf, pres_user->s, pres_user->len);
+	buf[pres_user->len]= '\0';
+
+	xmlNewProp(dialog_node, BAD_CAST "id", BAD_CAST buf);
+
+	/* state tag */
+	state_node = xmlNewChild(dialog_node, NULL, BAD_CAST "state", BAD_CAST "terminated");
+	if( state_node ==NULL)
+	{
+		LM_ERR("while adding child [state]\n");
+		goto error;
+	}
+	/* create the body */
+	body = (str*)pkg_malloc(sizeof(str));
+	if(body == NULL)
+	{
+		LM_ERR("while allocating memory\n");
+		return NULL;
+	}
+	memset(body, 0, sizeof(str));
+
+	xmlDocDumpFormatMemory(doc,(unsigned char**)(void*)&body->s,&body->len,1);
+
+	LM_DBG("new_body:\n%.*s\n",body->len, body->s);
+	/*free the document */
+	xmlFreeDoc(doc);
+	xmlCleanupParser();
+	return body;
+error:
+	if ( pres_uri )
+	{
+		pkg_free(pres_uri);
+	}
+	if(body)
+	{
+		if(body->s)
+			xmlFree(body->s);
+		pkg_free(body);
+	}
+	if(doc)
+		xmlFreeDoc(doc);
 	return NULL;
 }

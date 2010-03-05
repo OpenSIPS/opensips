@@ -50,6 +50,7 @@ static int mod_init(void);
 
 /* module variables */
 add_event_t pres_add_event;
+pres_contains_presence_t pres_contains_presence;
 
 /* module parameters */
 int force_single_dialog = 0;
@@ -104,6 +105,11 @@ static int mod_init(void)
 	pres_add_event = pres.add_event;
 	if (add_event == NULL) {
 		LM_ERR("could not import add_event\n");
+		return -1;
+	}
+	pres_contains_presence = pres.contains_presence;
+	if ( pres_contains_presence == NULL ) {
+		LM_ERR("could not import contains_presence\n");
 		return -1;
 	}
 	if(dlginfo_add_events() < 0) {
