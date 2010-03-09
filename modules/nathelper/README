@@ -41,17 +41,18 @@ Bogdan-Andrei Iancu
               1.5.5. received_avp (str)
               1.5.6. rtpproxy_sock (string)
               1.5.7. rtpproxy_disable_tout (integer)
-              1.5.8. rtpproxy_tout (integer)
-              1.5.9. rtpproxy_retr (integer)
-              1.5.10. force_socket (string)
-              1.5.11. sipping_bflag (integer)
-              1.5.12. sipping_from (string)
-              1.5.13. sipping_method (string)
-              1.5.14. nortpproxy_str (string)
-              1.5.15. db_url (string)
-              1.5.16. db_table (string)
-              1.5.17. rtpp_socket_col (string)
-              1.5.18. set_id_col (string)
+              1.5.8. rtpproxy_timeout (string)
+              1.5.9. rtpproxy_tout (integer)
+              1.5.10. rtpproxy_retr (integer)
+              1.5.11. force_socket (string)
+              1.5.12. sipping_bflag (integer)
+              1.5.13. sipping_from (string)
+              1.5.14. sipping_method (string)
+              1.5.15. nortpproxy_str (string)
+              1.5.16. db_url (string)
+              1.5.17. db_table (string)
+              1.5.18. rtpp_socket_col (string)
+              1.5.19. set_id_col (string)
 
         1.6. Exported Functions
 
@@ -91,7 +92,7 @@ Bogdan-Andrei Iancu
    1.5. Set received_avp parameter
    1.6. Set rtpproxy_sock parameter
    1.7. Set rtpproxy_disable_tout parameter
-   1.8. Set rtpproxy_tout parameter
+   1.8. Set rtpproxy_timeout parameter to 200ms
    1.9. Set rtpproxy_retr parameter
    1.10. Set force_socket parameter
    1.11. Set sipping_bflag parameter
@@ -315,18 +316,22 @@ modparam("nathelper", "rtpproxy_sock",
 modparam("nathelper", "rtpproxy_disable_tout", 20)
 ...
 
-1.5.8. rtpproxy_tout (integer)
+1.5.8. rtpproxy_timeout (string)
 
    Timeout value in waiting for reply from RTPProxy.
 
    Default value is "1".
 
-   Example 1.8. Set rtpproxy_tout parameter
+   Example 1.8. Set rtpproxy_timeout parameter to 200ms
 ...
-modparam("nathelper", "rtpproxy_tout", 2)
+modparam("nathelper", "rtpproxy_timeout", "0.2")
 ...
 
-1.5.9. rtpproxy_retr (integer)
+1.5.9. rtpproxy_tout (integer)
+
+   Obsolete. see rtpproxy_timeout.
+
+1.5.10. rtpproxy_retr (integer)
 
    How many times nathelper should retry to send and receive after
    timeout was generated.
@@ -338,7 +343,7 @@ modparam("nathelper", "rtpproxy_tout", 2)
 modparam("nathelper", "rtpproxy_retr", 2)
 ...
 
-1.5.10. force_socket (string)
+1.5.11. force_socket (string)
 
    Socket to be forced in communicating to RTPProxy. It makes
    sense only for UDP communication. If no one specified, the OS
@@ -351,7 +356,7 @@ modparam("nathelper", "rtpproxy_retr", 2)
 modparam("nathelper", "force_socket", "localhost:33333")
 ...
 
-1.5.11. sipping_bflag (integer)
+1.5.12. sipping_bflag (integer)
 
    What branch flag should be used by the module to identify NATed
    contacts for which it should perform NAT ping via a SIP request
@@ -364,7 +369,7 @@ modparam("nathelper", "force_socket", "localhost:33333")
 modparam("nathelper", "sipping_bflag", 7)
 ...
 
-1.5.12. sipping_from (string)
+1.5.13. sipping_from (string)
 
    The parameter sets the SIP URI to be used in generating the SIP
    requests for NAT ping purposes. To enable the SIP request
@@ -378,7 +383,7 @@ modparam("nathelper", "sipping_bflag", 7)
 modparam("nathelper", "sipping_from", "sip:pinger@siphub.net")
 ...
 
-1.5.13. sipping_method (string)
+1.5.14. sipping_method (string)
 
    The parameter sets the SIP method to be used in generating the
    SIP requests for NAT ping purposes.
@@ -390,7 +395,7 @@ modparam("nathelper", "sipping_from", "sip:pinger@siphub.net")
 modparam("nathelper", "sipping_method", "INFO")
 ...
 
-1.5.14. nortpproxy_str (string)
+1.5.15. nortpproxy_str (string)
 
    The parameter sets the SDP attribute used by nathelper to mark
    the packet SDP informations have already been mangled.
@@ -409,7 +414,7 @@ Note
 modparam("nathelper", "nortpproxy_str", "a=sdpmangled:yes\r\n")
 ...
 
-1.5.15. db_url (string)
+1.5.16. db_url (string)
 
    The database url. This parameter should be set if you want to
    use a database table from where to load or reload definitions
@@ -428,7 +433,7 @@ modparam("nathelper", "db_url",
 ...
 
 
-1.5.16. db_table (string)
+1.5.17. db_table (string)
 
    The name of the database table containing definitions of
    socket(s) used to connect to (a set) RTPProxy.
@@ -441,7 +446,7 @@ modparam("nathelper", "db_table", "nh_rtpp")
 ...
 
 
-1.5.17. rtpp_socket_col (string)
+1.5.18. rtpp_socket_col (string)
 
    The name rtpp socket column in the database table.
 
@@ -453,7 +458,7 @@ modparam("nathelper", "rtpp_socket_col", "rtpp_socket")
 ...
 
 
-1.5.18. set_id_col (string)
+1.5.19. set_id_col (string)
 
    The name set id column in the database table.
 
