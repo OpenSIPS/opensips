@@ -65,7 +65,7 @@ osp_dest* ospInitDestination(
     return dest;
 }
 
-/* 
+/*
  * Save destination as an AVP
  *     name - OSP_ORIGDEST_NAME / OSP_TERMDEST_NAME
  *     value - osp_dest wrapped in a string
@@ -74,7 +74,7 @@ osp_dest* ospInitDestination(
  * return 0 success, -1 failure
  */
 static int ospSaveDestination(
-    osp_dest* dest, 
+    osp_dest* dest,
     const str* name)
 {
     str wrapper;
@@ -83,8 +83,8 @@ static int ospSaveDestination(
     wrapper.s = (char*)dest;
     wrapper.len = sizeof(osp_dest);
 
-    /* 
-     * add_avp will make a private copy of both the name and value in shared memory 
+    /*
+     * add_avp will make a private copy of both the name and value in shared memory
      * which will be released by TM at the end of the transaction
      */
     if (add_avp(AVP_NAME_STR | AVP_VAL_STR, (int_str)*name, (int_str)wrapper) == 0) {
@@ -119,7 +119,7 @@ int ospSaveTermDestination(
     return ospSaveDestination(dest, &OSP_TERMDEST_NAME);
 }
 
-/* 
+/*
  * Check if there is an unused and supported originate destination from an AVP
  *     name - OSP_ORIGDEST_NAME
  *     value - osp_dest wrapped in a string
@@ -162,11 +162,11 @@ int ospCheckOrigDestination(void)
     return result;
 }
 
-/* 
+/*
  * Retrieved an unused and supported originate destination from an AVP
  *     name - OSP_ORIGDEST_NAME
  *     value - osp_dest wrapped in a string
- *     There can be 0, 1 or more originate destinations. 
+ *     There can be 0, 1 or more originate destinations.
  *     Find the 1st unused destination (used==0) & supported (support==1),
  *     return it, and mark it as used (used==1).
  * return NULL on failure
@@ -216,7 +216,7 @@ osp_dest* ospGetNextOrigDestination(void)
  * Retrieved the last used originate destination from an AVP
  *    name - OSP_ORIGDEST_NAME
  *    value - osp_dest wrapped in a string
- *    There can be 0, 1 or more destinations. 
+ *    There can be 0, 1 or more destinations.
  *    Find the last used destination (used==1) & supported (support==1),
  *    and return it.
  *    In normal condition, this one is the current destination. But it may
@@ -252,7 +252,7 @@ osp_dest* ospGetLastOrigDestination(void)
     return lastdest;
 }
 
-/* 
+/*
  * Retrieved the terminate destination from an AVP
  *     name - OSP_TERMDEST_NAME
  *     value - osp_dest wrapped in a string
@@ -280,7 +280,7 @@ osp_dest* ospGetTermDestination(void)
  * param dest Destination
  */
 static void ospRecordCode(
-    int code, 
+    int code,
     osp_dest* dest)
 {
     LM_DBG("code '%d'\n", code);
@@ -341,7 +341,7 @@ static int ospIsToReportUsage(
  * param servercode Server status
  */
 void ospRecordEvent(
-    int clientcode, 
+    int clientcode,
     int servercode)
 {
     osp_dest* dest;
@@ -420,22 +420,43 @@ void ospDumpAllDestination(void)
 }
 
 /*
- * Convert address to "[x.x.x.x]" or "host.domain" format
- * param src Source address
- * param dst Destination address
- * param buffersize Size of dst buffer
+ * Convert "address:port" to "[x.x.x.x]:port" or "hostname:port" format
+ * param src Source address string
+ * param dest Destination address string
+ * param bufsize Size of dest buffer
  */
-void ospConvertAddress(
-    char* src,
-    char* dst,
-    int buffersize)
+void ospConvertToOutAddress(
+    const char* src,
+    char* dest,
+    int bufsize)
 {
     struct in_addr inp;
+    char buffer[OSP_STRBUF_SIZE];
+    char* port;
+    int size;
 
-    if (inet_aton(src, &inp) != 0) {
-        snprintf(dst, buffersize, "[%s]", src);
+    if ((src != NULL) && (*src != '\0')) {
+        size = sizeof(buffer);
+        strncpy(buffer, src, size);
+        buffer[size - 1] = '\0';
+
+        if((port = strchr(buffer, ':')) != NULL) {
+            *port = '\0';
+            port++;
+        }
+
+        if (inet_pton(AF_INET, buffer, &inp) == 1) {
+            if (port != NULL) {
+                snprintf(dest, bufsize, "[%s]:%s", buffer, port);
+            } else {
+                snprintf(dest, bufsize, "[%s]", buffer);
+            }
+        } else {
+            strncpy(dest, src, bufsize);
+        }
+        dest[bufsize - 1] = '\0';
     } else {
-        snprintf(dst, buffersize, "%s", src);
+        *dest = '\0';
     }
 }
 

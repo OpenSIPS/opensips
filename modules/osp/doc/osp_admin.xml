@@ -1,7 +1,7 @@
 <!-- OSP Module User's Guide -->
 
 <chapter>
-  
+
   <title>&adminguide;</title>
   <section>
     <title>Overview</title>
@@ -38,12 +38,22 @@
         <para><emphasis>auth</emphasis> -- Remote-Party-ID operattion</para>
       </listitem>
       <listitem>
-        <para><emphasis>OSP Toolkit</emphasis> -- The OSP Toolkit, available from http://sourceforge.net/projects/osp-toolkit, must be built before building OpenSIPS with the OSP Module.  For instructions on building OpenSIPS with the OSP Toolkit, see http://www.transnexus.com/White%20Papers/Multi-Lateral_Peering_with_OpenSIPS_V1.4.pdf</para>
+        <para><emphasis>OSP Toolkit</emphasis> -- The OSP Toolkit, available from http://sourceforge.net/projects/osp-toolkit, must be built before building OpenSIPS with the OSP module.  For instructions on building OpenSIPS with the OSP Toolkit, see http://www.transnexus.com/White%20Papers/Multi-Lateral_Peering_with_OpenSIPS_V1.6.pdf</para>
       </listitem>
     </itemizedlist>
   </section>
   <section>
     <title>Exported Parameters</title>
+    <section>
+      <title><varname>service_type</varname></title>
+      <para>The service_type (integer) parameter instructs the OSP module what services it should provide. If this value is set to 0, the OSP module provides normal voice service. If this value is set to 1, the OSP module provides ported number query service. The default value is 0.</para>
+      <example>
+        <title>Instructing the module to provide normal voice service</title>
+        <programlisting format="linespecific">
+modparam("osp","service_type",0)
+        </programlisting>
+      </example>
+    </section>
     <section>
       <title><varname>sp1_uri</varname>, <varname>sp2_uri</varname>, ..., <varname>sp16_uri</varname></title>
       <para>These sp_uri (string) parameters define peering servers to be used for requesting peering authorization and routing information. At least one peering server must be configured. Others are required only if there are more than one peering servers. Each peering server address takes the form of a standard URL, and consists of up to four components:</para>
@@ -79,27 +89,17 @@ modparam("osp","sp1_weight",1000)
     </section>
     <section>
       <title><varname>device_ip</varname></title>
-      <para>The device_ip (string) is a recommended parameter that explicitly defines the IP address of OpenSIPS in a peering request message (as SourceAlternate type=transport).  The IP address must be in brackets as shown in the example below.</para>
+      <para>The device_ip (string) is a recommended parameter that explicitly defines the IP address of OpenSIPS in a peering request message (as SourceAlternate type=transport).  The dotted-decimal IP address must be in brackets as shown in the example below.</para>
       <example>
         <title>Setting the device IP address</title>
         <programlisting format="linespecific">
-modparam("osp","device_ip","[1.1.1.1]")
-        </programlisting>
-      </example>
-    </section>
-    <section>
-      <title><varname>device_port</varname></title>
-      <para>The device_port (string) parameter is an optional field which includes the SIP port being used by OpenSIPS in the peering request (as SourceAlternate type=network) to the peering server. If is not configured, this information is not included in the peering request. This field is useful if multiple OpenSIPSs are running on the same Linux computer since it enables the peering server to administer different peering policies based on different SIP proxies. This parameter has not been implemented yet.</para>
-      <example>
-        <title>Setting the device port</title>
-        <programlisting format="linespecific">
-modparam("osp","device_port","5060")
+modparam("osp","device_ip","[127.0.0.1]:5060")
         </programlisting>
       </example>
     </section>
     <section>
       <title><varname>use_security_features</varname></title>
-      <para>The use_security_features (integer) parameter instructs the OSP module how to use the OSP security features. If this value is set to 1, the OSP Module uses the OSP security features. If this value is set to 0, the OSP Module will not use the OSP security features. The default value is 0.</para>
+      <para>The use_security_features (integer) parameter instructs the OSP module how to use the OSP security features. If this value is set to 1, the OSP module uses the OSP security features. If this value is set to 0, the OSP module will not use the OSP security features. The default value is 0.</para>
       <example>
         <title>Instructing the module not to use OSP security features</title>
         <programlisting format="linespecific">
@@ -109,7 +109,7 @@ modparam("osp","use_security_features",0)
     </section>
     <section>
       <title><varname>token_format</varname></title>
-      <para>When OpenSIPS receives a SIP INVITE with a peering token, the OSP Module will validate the token to determine whether or not the call has been authorized by a peering server. Peering tokens may, or may not, be digitally signed. The token_format (integer) parameter defines if OpenSIPS will validate signed or unsigned tokens or both. The values for token format are defined below. The default value is 2.</para>
+      <para>When OpenSIPS receives a SIP INVITE with a peering token, the OSP module will validate the token to determine whether or not the call has been authorized by a peering server. Peering tokens may, or may not, be digitally signed. The token_format (integer) parameter defines if OpenSIPS will validate signed or unsigned tokens or both. The values for token format are defined below. The default value is 2.</para>
       <para>If use_security_features parameter is set to 0, signed tokens cannot be validated.</para>
       <para>0 - Validate only signed tokens. Calls with valid signed tokens are allowed.</para>
       <para>1 - Validate only unsigned tokens. Calls with valid unsigned tokens are allowed.</para>
@@ -147,7 +147,7 @@ modparam("osp","enable_crypto_hardware_support",0)
     </section>
     <section>
       <title><varname>ssl_lifetime</varname></title>
-      <para>The ssl_lifetime (integer) parameter defines the lifetime, in seconds, of a single SSL session key. Once this time limit is exceeded, the OSP Module will negotiate a new session key. Communication exchanges in progress will not be interrupted when this time limit expires. This is an optional field with default value is 200 seconds.</para>
+      <para>The ssl_lifetime (integer) parameter defines the lifetime, in seconds, of a single SSL session key. Once this time limit is exceeded, the OSP module will negotiate a new session key. Communication exchanges in progress will not be interrupted when this time limit expires. This is an optional field with default value is 200 seconds.</para>
       <example>
         <title>Setting the ssl lifetime</title>
         <programlisting format="linespecific">
@@ -157,7 +157,7 @@ modparam("osp","ssl_lifetime",200)
     </section>
     <section>
       <title><varname>persistence</varname></title>
-      <para>The persistence (integer) parameter defines the time, in seconds, that an HTTP connection should be maintained after the completion of a communication exchange. The OSP Module will maintain the connection for this time period in anticipation of future communication exchanges to the same peering server.</para>
+      <para>The persistence (integer) parameter defines the time, in seconds, that an HTTP connection should be maintained after the completion of a communication exchange. The OSP module will maintain the connection for this time period in anticipation of future communication exchanges to the same peering server.</para>
       <example>
         <title>Setting the persistence</title>
         <programlisting format="linespecific">
@@ -167,7 +167,7 @@ modparam("osp","persistence",1000)
     </section>
     <section>
       <title><varname>retry_delay</varname></title>
-      <para>The retry_delay (integer) parameter defines the time, in seconds, between retrying connection attempts to an OSP peering server. After exhausting all peering servers the OSP Module will delay for this amount of time before resuming connection attempts. This is an optional field with default value is 1 second.</para> 
+      <para>The retry_delay (integer) parameter defines the time, in seconds, between retrying connection attempts to an OSP peering server. After exhausting all peering servers the OSP module will delay for this amount of time before resuming connection attempts. This is an optional field with default value is 1 second.</para>
       <example>
         <title>Setting the retry delay</title>
         <programlisting format="linespecific">
@@ -177,7 +177,7 @@ modparam("osp","retry_delay",1)
     </section>
     <section>
       <title><varname>retry_limit</varname></title>
-      <para>The retry_limit (integer) parameter defines the maximum number of retries for connection attempts to a peering server. If no connection is established after this many retry attempts to all peering servers, the OSP Module will cease connection attempts and return appropriate error codes. This number does not count the initial connection attempt, so that a retry_limit of 1 will result in a total of two connection attempts to every peering server. The default value is 2.</para> 
+      <para>The retry_limit (integer) parameter defines the maximum number of retries for connection attempts to a peering server. If no connection is established after this many retry attempts to all peering servers, the OSP module will cease connection attempts and return appropriate error codes. This number does not count the initial connection attempt, so that a retry_limit of 1 will result in a total of two connection attempts to every peering server. The default value is 2.</para>
       <example>
         <title>Setting the retry limit</title>
         <programlisting format="linespecific">
@@ -187,7 +187,7 @@ modparam("osp","retry_limit",2)
     </section>
     <section>
       <title><varname>timeout</varname></title>
-      <para>The timeout (integer) parameter defines the maximum time in milliseconds, to wait for a response from a peering server. If no response is received within this time, the current connection is aborted and the OSP Module attempts to contact the next peering server. The default value is 10 seconds.</para>
+      <para>The timeout (integer) parameter defines the maximum time in milliseconds, to wait for a response from a peering server. If no response is received within this time, the current connection is aborted and the OSP module attempts to contact the next peering server. The default value is 10 seconds.</para>
       <example>
         <title>Setting the timeout</title>
         <programlisting format="linespecific">
@@ -207,7 +207,7 @@ modparam("osp","max_destinations",5)
     </section>
     <section>
       <title><varname>validate_call_id</varname></title>
-      <para>The validate_call_id (integer) parameter instructs the OSP module to validate call id in the peering token. If this value is set to 1, the OSP Module validates that the call id in the SIP INVITE message matches the call id in the peering token. If they do not match the INVITE is rejected. If this value is set to 0, the OSP Module will not validate the call id in the peering token. The default value is 1.</para>
+      <para>The validate_call_id (integer) parameter instructs the OSP module to validate call id in the peering token. If this value is set to 1, the OSP module validates that the call id in the SIP INVITE message matches the call id in the peering token. If they do not match the INVITE is rejected. If this value is set to 0, the OSP module will not validate the call id in the peering token. The default value is 1.</para>
       <example>
         <title>Instructing the module to validate call id</title>
         <programlisting format="linespecific">
@@ -217,7 +217,7 @@ modparam("osp","validate_call_id",1)
     </section>
     <section>
       <title><varname>use_rpid_for_calling_number</varname></title>
-      <para>The use_rpid_for_calling_number (integer) parameter instructs the OSP module how to use the calling number in the Remote-Party-ID of the SIP INVITE message. If this value is set to 1, the OSP Module uses the calling number in the Reomte-Party-ID header of the INVITE message when a Remote-Party-ID exists. If this value is set to 0, the OSP Module will use the calling number in the From header of the INVITE message. The default value is 1.</para>
+      <para>The use_rpid_for_calling_number (integer) parameter instructs the OSP module how to use the calling number in the Remote-Party-ID of the SIP INVITE message. If this value is set to 1, the OSP module uses the calling number in the Reomte-Party-ID header of the INVITE message when a Remote-Party-ID exists. If this value is set to 0, the OSP module will use the calling number in the From header of the INVITE message. The default value is 1.</para>
       <example>
         <title>Instructing the module to use calling number in Remote-Party-ID</title>
         <programlisting format="linespecific">
@@ -227,7 +227,7 @@ modparam("osp","use_rpid_calling_number",1)
     </section>
     <section>
       <title><varname>use_number_portability</varname></title>
-      <para>The use_number_portability (integer) parameter instructs the OSP module how to use the number portability parameters in the Request URI of the SIP INVITE message. If this value is set to 1, the OSP Module uses the number portability parameters in the Request URI when these parameters exist. If this value is set to 0, the OSP Module will not use the number portability parameters. The default value is 1.</para>
+      <para>The use_number_portability (integer) parameter instructs the OSP module how to use the number portability parameters in the Request URI of the SIP INVITE message. If this value is set to 1, the OSP module uses the number portability parameters in the Request URI when these parameters exist. If this value is set to 0, the OSP module will not use the number portability parameters. The default value is 1.</para>
       <example>
         <title>Instructing the module to use number portability parameters in Request URI</title>
         <programlisting format="linespecific">
@@ -237,7 +237,7 @@ modparam("osp","use_number_portablity",1)
     </section>
     <section>
       <title><varname>redirection_uri_format</varname></title>
-      <para>The redirection_uri_format (integer) parameter instructs the OSP module to use the different URI format in the SIP redirection message. If this value is set to 0, the OSP Module uses "xxxxxxxxxx@xxx.xxx.xxx.xxx" URI in the SIP redirection messages. If this value is set to 1, the OSP Module will use "&lt;xxxxxxxxxx@xxx.xxx.xxx.xxx&gt;" URI in the SIP redirection messages. The default value is 0</para>
+      <para>The redirection_uri_format (integer) parameter instructs the OSP module to use the different URI format in the SIP redirection message. If this value is set to 0, the OSP module uses "xxxxxxxxxx@xxx.xxx.xxx.xxx" URI in the SIP redirection messages. If this value is set to 1, the OSP module will use "&lt;xxxxxxxxxx@xxx.xxx.xxx.xxx&gt;" URI in the SIP redirection messages. The default value is 0</para>
       <example>
         <title>Setting the redirection URI format</title>
         <programlisting format="linespecific">
@@ -247,7 +247,7 @@ modparam("osp","redirection_uri_format",1)
     </section>
     <section>
       <title><varname>append_userphone</varname></title>
-      <para>The append_userphone (integer) parameter instructs the OSP module if to append "user=phone" parameter in URI. If this value is set to 0, the OSP Module does not append "user=phone" parameter. If this value is set to 1, the OSP Module will append "user=phone" parameter. The default value is 0</para>
+      <para>The append_userphone (integer) parameter instructs the OSP module if to append "user=phone" parameter in URI. If this value is set to 0, the OSP module does not append "user=phone" parameter. If this value is set to 1, the OSP module will append "user=phone" parameter. The default value is 0</para>
       <example>
         <title>Append user=phone parameter</title>
         <programlisting format="linespecific">
@@ -256,12 +256,32 @@ modparam("osp","append_userphone",1)
       </example>
     </section>
     <section>
+      <title><varname>append_networkid</varname></title>
+      <para>The append_networkid (integer) parameter instructs the OSP module if to append networkid parameter in URI. If this value is set to 0, the OSP module does not append networkid parameter. If this value is set to 1, the OSP module will append networkid parameter. The default value is 0</para>
+      <example>
+        <title>Append networkid parameter</title>
+        <programlisting format="linespecific">
+modparam("osp","append_networkid",1)
+        </programlisting>
+      </example>
+    </section>
+    <section>
       <title><varname>source_networkid_avp</varname></title>
-      <para>The source_networkid_avp (string) parameter instructs the OSP module to use the defined AVP to pass the source network ID value. The default value is "$avp(s:_osp_source_networkid_)".  Then the source network ID can be set by "$avp(s:_osp_source_networkid_) = pseudo-variables".  All pseudo variables are described in http://opensips.org/dokuwiki/doku.php/pseudovariables:1.3.x.</para>
+      <para>The source_networkid_avp (string) parameter instructs the OSP module to use the defined AVP to pass the source network ID value. The default value is "$avp(s:_osp_source_networkid_)".  Then the source network ID can be set by "$avp(s:_osp_source_networkid_) = pseudo-variables".  All pseudo variables are described in http://www.opensips.org/Resources/DocsCoreVar.</para>
       <example>
         <title>Setting the source network ID AVP</title>
         <programlisting format="linespecific">
 modparam("osp","source_networkid_avp","$avp(s:snid)")
+        </programlisting>
+      </example>
+    </section>
+    <section>
+      <title><varname>custom_info_avp</varname></title>
+      <para>The custom_info_avp (string) parameter instructs the OSP module to use the defined AVP to pass the custom information values. The default value is "$avp(s:_osp_custom_info_)".  Then the custom information can be set by "$avp(s:_osp_custom_info_) = pseudo-variables".  All pseudo variables are described in http://www.opensips.org/Resources/DocsCoreVar.</para>
+      <example>
+        <title>Setting the custom info AVP</title>
+        <programlisting format="linespecific">
+modparam("osp","custom_info_avp","$avp(s:cinfo)")
         </programlisting>
       </example>
     </section>
@@ -271,7 +291,7 @@ modparam("osp","source_networkid_avp","$avp(s:snid)")
     <section>
       <title><function moreinfo="none">checkospheader()</function></title>
       <para>This function checks for the existence of the OSP-Auth-Token header field.</para>
-      <para>This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.</para> 
+      <para>This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.</para>
       <example>
         <title>checkospheader usage</title>
         <programlisting format="linespecific">
@@ -288,7 +308,7 @@ if (checkospheader()) {
     <section>
       <title><function moreinfo="none">validateospheader()</function></title>
       <para>This function validates an OSP-Token specified in the OSP-Auth-Tokenheader field of the SIP message. If a peering token is present, it will be validated locally. If no OSP header is found or the header token is invalid or expired, -1 is returned; on successful validation 1 is returned.</para>
-      <para>This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.</para> 
+      <para>This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.</para>
       <example>
         <title>validateospheader usage</title>
         <programlisting format="linespecific">
@@ -306,7 +326,7 @@ if (validateospheader()) {
       <title><function moreinfo="none">requestosprouting()</function></title>
       <para>This function launches a query to the peering server requesting the IP address of one or more destination peers serving the called party. If destination peers are available, the peering server will return the IP address and a peering authorization token for each destination peer. The OSP-Auth-Token Header field is inserted into the SIP message and the SIP uri is rewritten to the IP address of destination peer provided by the peering server.</para>
       <para>The address of the called party must be a valid E164 number, otherwise this function returns -1. If the transaction was accepted by the peering server, the uri is being rewritten and 1 returned, on errors (peering servers are not available, authentication failed or there is no route to destination or the route is blocked) -1 is returned.</para>
-      <para>This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.</para> 
+      <para>This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.</para>
       <example>
         <title>requestosprouting usage</title>
         <programlisting format="linespecific">
@@ -323,7 +343,7 @@ if (requestosprouting()) {
     <section>
       <title><function moreinfo="none">checkosproute()</function></title>
       <para>This function is used to check if there is any route for the call.</para>
-      <para>This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.</para> 
+      <para>This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.</para>
       <example>
         <title>checkosproute usage</title>
         <programlisting format="linespecific">
@@ -340,7 +360,7 @@ if (checkosproute()) {
     <section>
       <title><function moreinfo="none">prepareosproute()</function></title>
       <para>This function tries to prepare the INVITE to be forwarded using the destination in the list returned by the peering server. If the calling number is translated, a RPID value for the RPID AVP will be set. If the route could not be prepared, the function returns 'FALSE' back to the script, which can then decide how to handle the failure. Note, if checkosproute has been called and returns 'TRUE' before calling prepareosproute, prepareosproute should not return 'FALSE' because checkosproute has confirmed that there is at least one route.</para>
-      <para>This function can be used from BRANCH_ROUTE.</para> 
+      <para>This function can be used from BRANCH_ROUTE.</para>
       <example>
         <title>prepareosproute usage</title>
         <programlisting format="linespecific">
@@ -357,7 +377,7 @@ if (prepareosproute()) {
     <section>
       <title><function moreinfo="none">checkcallingtranslation()</function></title>
       <para>This function is used to check if the calling number is translated. Before calling checkcallingtranslation, prepareosproute should be called. If the calling number does been translated, the original Remote-Party-ID, if it exists, should be removed from the INVITE message. And a new Remote-Party-ID header should be added (a RPID value for the RPID AVP has been set by prepareosproute). If the calling number is not translated, nothing should be done.</para>
-      <para>This function can be used from BRANCH_ROUTE.</para> 
+      <para>This function can be used from BRANCH_ROUTE.</para>
       <example>
         <title>checkcallingtranslation usage</title>
         <programlisting format="linespecific">
@@ -377,7 +397,7 @@ if (checkcallingtranslation()) {
     <section>
       <title><function moreinfo="none">prepareallosproute()</function></title>
       <para>This function tries to prepare all the routes in the list returned by the peering server. The message is then either forked off or redirected to the destination. If unsuccessful in preparing the routes a SIP 500 is sent back and a trace message is logged.</para>
-      <para>This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.</para> 
+      <para>This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.</para>
       <example>
         <title>prepareallosproute usage</title>
         <programlisting format="linespecific">
@@ -403,8 +423,8 @@ if (prepareallosproute()) {
             <para>"1" - Destination device releases the call.</para>
           </listitem>
         </itemizedlist>
-      </para> 
-      <para>This function can be used from REQUEST_ROUTE.</para> 
+      </para>
+      <para>This function can be used from REQUEST_ROUTE.</para>
       <example>
         <title>reportospusage usage</title>
         <programlisting format="linespecific">

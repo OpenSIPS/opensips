@@ -1,14 +1,14 @@
 /*
- * opensips osp module. 
+ * opensips osp module.
  *
- * This module enables opensips to communicate with an Open Settlement 
- * Protocol (OSP) server.  The Open Settlement Protocol is an ETSI 
+ * This module enables opensips to communicate with an Open Settlement
+ * Protocol (OSP) server.  The Open Settlement Protocol is an ETSI
  * defined standard for Inter-Domain VoIP pricing, authorization
- * and usage exchange.  The technical specifications for OSP 
+ * and usage exchange.  The technical specifications for OSP
  * (ETSI TS 101 321 V4.1.1) are available at www.etsi.org.
  *
  * Uli Abend was the original contributor to this module.
- * 
+ *
  * Copyright (C) 2001-2005 Fhg Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -33,6 +33,7 @@
 #include "../../usr_avp.h"
 #include "osp_mod.h"
 
+int _osp_service_type = OSP_DEF_SERVICE;
 unsigned int _osp_sp_number;
 char* _osp_sp_uris[OSP_DEF_SPS];
 unsigned long _osp_sp_weights[OSP_DEF_SPS] = {
@@ -42,7 +43,8 @@ unsigned long _osp_sp_weights[OSP_DEF_SPS] = {
     OSP_DEF_WEIGHT, OSP_DEF_WEIGHT, OSP_DEF_WEIGHT, OSP_DEF_WEIGHT
 };
 char* _osp_device_ip = NULL;
-char* _osp_device_port = NULL;
+char _osp_in_device[OSP_STRBUF_SIZE];
+char _osp_out_device[OSP_STRBUF_SIZE];
 int _osp_use_security = OSP_DEF_USESEC;
 char* _osp_private_key = NULL;
 char* _osp_local_certificate = NULL;
@@ -60,12 +62,16 @@ int _osp_use_rpid = OSP_DEF_USERPID;
 int _osp_use_np = OSP_DEF_USENP;
 int _osp_redir_uri = OSP_DEF_REDIRURI;
 int _osp_append_userphone = OSP_DEF_USERPHONE;
+int _osp_append_networkid = OSP_DEF_APPENDNID;
 char _osp_PRIVATE_KEY[OSP_STRBUF_SIZE];
 char _osp_LOCAL_CERTIFICATE[OSP_STRBUF_SIZE];
 char _osp_CA_CERTIFICATE[OSP_STRBUF_SIZE];
 char* _osp_snid_avp = OSP_DEF_SNIDAVP;
 int_str _osp_snid_avpname;
 unsigned short _osp_snid_avptype;
+char* _osp_cinfo_avp = OSP_DEF_CINFOAVP;
+int_str _osp_cinfo_avpname;
+unsigned short _osp_cinfo_avptype;
 
 OSPTPROVHANDLE _osp_provider = -1;
 

@@ -1,14 +1,14 @@
 /*
- * opensips osp module. 
+ * opensips osp module.
  *
- * This module enables opensips to communicate with an Open Settlement 
- * Protocol (OSP) server.  The Open Settlement Protocol is an ETSI 
+ * This module enables opensips to communicate with an Open Settlement
+ * Protocol (OSP) server.  The Open Settlement Protocol is an ETSI
  * defined standard for Inter-Domain VoIP pricing, authorization
- * and usage exchange.  The technical specifications for OSP 
+ * and usage exchange.  The technical specifications for OSP
  * (ETSI TS 101 321 V4.1.1) are available at www.etsi.org.
  *
  * Uli Abend was the original contributor to this module.
- * 
+ *
  * Copyright (C) 2001-2005 Fhg Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -40,12 +40,15 @@
 #include "sipheader.h"
 #include "usage.h"
 
-extern char* _osp_device_ip;
-extern char* _osp_device_port;
+extern int _osp_service_type;
+extern char _osp_in_device[];
+extern char _osp_out_device[];
 extern int _osp_max_dests;
 extern int _osp_redir_uri;
 extern int_str _osp_snid_avpname;
 extern unsigned short _osp_snid_avptype;
+extern int_str _osp_cinfo_avpname;
+extern unsigned short _osp_cinfo_avptype;
 extern OSPTPROVHANDLE _osp_provider;
 extern auth_api_t osp_auth;
 
@@ -55,7 +58,7 @@ const int OSP_MAIN_ROUTE = 1;
 const int OSP_BRANCH_ROUTE = 0;
 const str OSP_CALLING_NAME = {"_osp_calling_translated_", 24};
 
-static int ospLoadRoutes(OSPTTRANHANDLE transaction, int destcount, char* source, char* sourcedev, char* origcalled, time_t authtime);
+static int ospLoadRoutes(OSPTTRANHANDLE transaction, int destcount, char* source, char* srcdev, char* origcalled, time_t authtime);
 static int ospPrepareDestination(struct sip_msg* msg, int isfirst, int type, int format);
 static int ospSetCalling(struct sip_msg* msg, osp_dest* dest);
 
@@ -64,27 +67,30 @@ static int ospSetCalling(struct sip_msg* msg, osp_dest* dest);
  * param transaction Transaction handle
  * param destcount Expected destination count
  * param source Source IP
- * param sourcedev Source device IP
+ * param srcdev Source device IP
  * param origcalled Original called number
  * param authtime Request authorization time
  * return 0 success, -1 failure
  */
 static int ospLoadRoutes(
-    OSPTTRANHANDLE transaction, 
-    int destcount, 
-    char* source, 
-    char* sourcedev, 
-    char* origcalled, 
+    OSPTTRANHANDLE transaction,
+    int destcount,
+    char* source,
+    char* srcdev,
+    char* origcalled,
     time_t authtime)
 {
     int count;
     int errorcode;
     osp_dest* dest;
     osp_dest dests[OSP_DEF_DESTS];
+    char host[OSP_STRBUF_SIZE];
+    char destdev[OSP_STRBUF_SIZE];
+	OSPE_OPERATOR_NAME type;
     OSPE_DEST_PROTOCOL protocol;
     OSPE_DEST_OSPENABLED enabled;
     int result = 0;
-    
+
     for (count = 0; count < destcount; count++) {
         /* This is necessary because we will save destinations in reverse order */
         dest = ospInitDestination(&dests[count]);
@@ -94,7 +100,7 @@ static int ospLoadRoutes(
             break;
         }
 
-        dest->destinationCount = count + 1;
+        dest->destcount = count + 1;
         strncpy(dest->origcalled, origcalled, sizeof(dest->origcalled) - 1);
 
         if (count == 0) {
@@ -110,10 +116,10 @@ static int ospLoadRoutes(
                 dest->called,
                 sizeof(dest->calling),
                 dest->calling,
-                sizeof(dest->host),
-                dest->host,
-                sizeof(dest->destdev),
-                dest->destdev,
+                sizeof(host),
+                host,
+                sizeof(destdev),
+                destdev,
                 &dest->tokensize,
                 dest->token);
         } else {
@@ -130,29 +136,47 @@ static int ospLoadRoutes(
                 dest->called,
                 sizeof(dest->calling),
                 dest->calling,
-                sizeof(dest->host),
-                dest->host,
-                sizeof(dest->destdev),
-                dest->destdev,
+                sizeof(host),
+                host,
+                sizeof(destdev),
+                destdev,
                 &dest->tokensize,
                 dest->token);
         }
-        
+
         if (errorcode != OSPC_ERR_NO_ERROR) {
-            LM_ERR("failed to load routes (%d) expected '%d' current '%d'\n", 
-                errorcode, 
-                destcount, 
+            LM_ERR("failed to load routes (%d) expected '%d' current '%d'\n",
+                errorcode,
+                destcount,
                 count);
             result = -1;
             break;
         }
 
-        errorcode = OSPPTransactionGetNumberPortability(transaction, dest->nprn, dest->npcic, &dest->npdi);
+        ospConvertToInAddress(host, dest->host, sizeof(dest->host));
+
+        errorcode = OSPPTransactionGetNumberPortabilityParameters(transaction,
+            sizeof(dest->nprn),
+            dest->nprn,
+            sizeof(dest->npcic),
+            dest->npcic,
+            &dest->npdi);
         if (errorcode != OSPC_ERR_NO_ERROR) {
             LM_DBG("cannot get number portability parameters (%d)\n", errorcode);
             dest->nprn[0] = '\0';
             dest->npcic[0] = '\0';
             dest->npdi = 0;
+        }
+
+        for (type = OSPC_OPNAME_START; type < OSPC_OPNAME_NUMBER; type++) {
+            errorcode = OSPPTransactionGetOperatorName(transaction,
+                type,
+                sizeof(dest->opname[type]),
+                dest->opname[type]);
+            if (errorcode != OSPC_ERR_NO_ERROR) {
+                LM_DBG("cannot get operator name '%d' (%d)\n", type, errorcode);
+                dest->opname[type][0] = '\0';
+            }
         }
 
         errorcode = OSPPTransactionGetDestProtocol(transaction, &protocol);
@@ -162,9 +186,14 @@ static int ospLoadRoutes(
             protocol = OSPC_DPROT_SIP;
         }
         switch (protocol) {
-            case OSPC_DPROT_LRQ:
             case OSPC_DPROT_Q931:
+            case OSPC_DPROT_LRQ:
             case OSPC_DPROT_IAX:
+            case OSPC_DPROT_T37:
+            case OSPC_DPROT_T38:
+            case OSPC_DPROT_SKYPE:
+            case OSPC_DPROT_SMPP:
+            case OSPC_DPROT_XMPP:
                 dest->supported = 0;
                 break;
             case OSPC_DPROT_SIP:
@@ -185,7 +214,7 @@ static int ospLoadRoutes(
             dest->tokensize = 0;
         }
 
-        errorcode = OSPPTransactionGetDestNetworkId(transaction, dest->networkid);
+        errorcode = OSPPTransactionGetDestinationNetworkId(transaction, sizeof(dest->networkid), dest->networkid);
         if (errorcode != OSPC_ERR_NO_ERROR) {
             /* This does not mean an ERROR. The OSP server may not support OSP 2.1.1 */
             LM_DBG("cannot get dest network ID (%d)\n", errorcode);
@@ -193,7 +222,7 @@ static int ospLoadRoutes(
         }
 
         strncpy(dest->source, source, sizeof(dest->source) - 1);
-        strncpy(dest->srcdev, sourcedev, sizeof(dest->srcdev) - 1);
+        strncpy(dest->srcdev, srcdev, sizeof(dest->srcdev) - 1);
         dest->type = OSPC_ROLE_SOURCE;
         dest->transid = ospGetTransactionId(transaction);
         dest->authtime = authtime;
@@ -209,30 +238,42 @@ static int ospLoadRoutes(
             "nprn '%s' "
             "npcic '%s' "
             "npdi '%d' "
+            "spid '%s' "
+            "ocn '%s' "
+            "spn '%s' "
+            "altspn '%s' "
+            "mcc '%s' "
+            "mnc '%s' "
             "supported '%d' "
             "network id '%s' "
             "token size '%d'\n",
-            count, 
-            dest->validafter, 
-            dest->validuntil, 
-            dest->timelimit, 
-            dest->callidsize, 
-            dest->callid, 
-            dest->calling, 
-            dest->called, 
-            dest->host, 
-            dest->nprn, 
-            dest->npcic, 
-            dest->npdi, 
+            count,
+            dest->validafter,
+            dest->validuntil,
+            dest->timelimit,
+            dest->callidsize,
+            dest->callid,
+            dest->calling,
+            dest->called,
+            host,
+            dest->nprn,
+            dest->npcic,
+            dest->npdi,
+            dest->opname[OSPC_OPNAME_SPID],
+            dest->opname[OSPC_OPNAME_OCN],
+            dest->opname[OSPC_OPNAME_SPN],
+            dest->opname[OSPC_OPNAME_ALTSPN],
+            dest->opname[OSPC_OPNAME_MCC],
+            dest->opname[OSPC_OPNAME_MNC],
             dest->supported,
-            dest->networkid, 
+            dest->networkid,
             dest->tokensize);
     }
 
-    /* 
+    /*
      * Save destination in reverse order,
      * when we start searching avps the destinations
-     * will be in order 
+     * will be in order
      */
     if (result == 0) {
         for(count = destcount -1; count >= 0; count--) {
@@ -257,37 +298,42 @@ static int ospLoadRoutes(
  * return MODULE_RETURNCODE_TRUE success, MODULE_RETURNCODE_FALSE failure, MODULE_RETURNCODE_ERROR error
  */
 int ospRequestRouting(
-    struct sip_msg* msg, 
-    char* ignore1, 
+    struct sip_msg* msg,
+    char* ignore1,
     char* ignore2)
 {
     int errorcode;
     time_t authtime;
-    char calling[OSP_E164BUF_SIZE];
-    char called[OSP_E164BUF_SIZE];
-    char rn[OSP_E164BUF_SIZE];
-    char cic[OSP_E164BUF_SIZE];
+    char calling[OSP_STRBUF_SIZE];
+    char called[OSP_STRBUF_SIZE];
+    char rn[OSP_STRBUF_SIZE];
+    char cic[OSP_STRBUF_SIZE];
     int npdi;
-    char sourcedev[OSP_STRBUF_SIZE];
-    char deviceinfo[OSP_STRBUF_SIZE];
-    char divuser[OSP_E164BUF_SIZE];
+	OSPE_OPERATOR_NAME type;
+    char opname[OSPC_OPNAME_NUMBER][OSP_STRBUF_SIZE];
+    char srcdev[OSP_STRBUF_SIZE];
+    char srcdevbuf[OSP_STRBUF_SIZE];
+    char divuser[OSP_STRBUF_SIZE];
     char divhost[OSP_STRBUF_SIZE];
-    char divdev[OSP_STRBUF_SIZE];
+    char divhostbuf[OSP_STRBUF_SIZE];
     struct usr_avp* snidavp = NULL;
     int_str snidval;
     char snid[OSP_STRBUF_SIZE];
+    struct usr_avp* cinfoavp = NULL;
+    int_str cinfoval;
+    unsigned int cinfonum = 0, i;
+    char cinfo[OSP_DEF_CINFOS][OSP_STRBUF_SIZE];
+    char cinfostr[OSP_STRBUF_SIZE];
     unsigned int callidnumber = 1;
     OSPT_CALL_ID* callids[callidnumber];
     unsigned int logsize = 0;
     char* detaillog = NULL;
-    const char** preferred = NULL;
+    char tohost[OSP_STRBUF_SIZE];
+    char tohostbuf[OSP_STRBUF_SIZE];
+    const char* preferred[2] = { NULL };
     unsigned int destcount;
     OSPTTRANHANDLE transaction = -1;
     int result = MODULE_RETURNCODE_FALSE;
-
-    authtime = time(NULL);
-
-    destcount = _osp_max_dests;
 
     if ((errorcode = OSPPTransactionNew(_osp_provider, &transaction)) != OSPC_ERR_NO_ERROR) {
         LM_ERR("failed to create new OSP transaction (%d)\n", errorcode);
@@ -297,67 +343,134 @@ int ospRequestRouting(
         LM_ERR("failed to extract called number\n");
     } else if (ospGetCallId(msg, &(callids[0])) != 0) {
         LM_ERR("failed to extract call id\n");
-    } else if (ospGetSourceAddress(msg, sourcedev, sizeof(sourcedev)) != 0) {
+    } else if (ospGetSourceAddress(msg, srcdev, sizeof(srcdev)) != 0) {
         LM_ERR("failed to extract source deivce address\n");
     } else {
-        ospConvertAddress(sourcedev, deviceinfo, sizeof(deviceinfo));
+        authtime = time(NULL);
 
-        ospGetNpParameters(msg, rn, sizeof(rn), cic, sizeof(cic), &npdi);
+        ospConvertToOutAddress(srcdev, srcdevbuf, sizeof(srcdevbuf));
+
+        switch (_osp_service_type) {
+        case 1:
+            OSPPTransactionSetServiceType(transaction, OSPC_SERVICE_NPQUERY);
+
+            ospGetToHostpart(msg, tohost, sizeof(tohost));
+            ospConvertToOutAddress(tohost, tohostbuf, sizeof(tohostbuf));
+            preferred[0] = tohostbuf;
+
+            destcount = 1;
+            break;
+        case 0:
+        default:
+            OSPPTransactionSetServiceType(transaction, OSPC_SERVICE_VOICE);
+
+            destcount = _osp_max_dests;
+            break;
+        }
+
+        if (ospGetNpParameters(msg, rn, sizeof(rn), cic, sizeof(cic), &npdi) == 0) {
+            OSPPTransactionSetNumberPortability(transaction, rn, cic, npdi);
+        }
+
+        for (type = OSPC_OPNAME_START; type < OSPC_OPNAME_NUMBER; type++) {
+            if (ospGetOperatorName(msg, type, opname[type], sizeof(opname[type])) == 0) {
+                OSPPTransactionSetOperatorName(transaction, type, opname[type]);
+            }
+        }
 
         if (ospGetDiversion(msg, divuser, sizeof(divuser), divhost, sizeof(divhost)) == 0) {
-            ospConvertAddress(divhost, divdev, sizeof(divdev));
+            ospConvertToOutAddress(divhost, divhostbuf, sizeof(divhostbuf));
         } else {
-            divdev[0] = '\0';
+            divhostbuf[0] = '\0';
         }
+        OSPPTransactionSetDiversion(transaction, divuser, divhostbuf);
 
         if ((_osp_snid_avpname.n != 0) &&
             ((snidavp = search_first_avp(_osp_snid_avptype, _osp_snid_avpname, &snidval, 0)) != NULL) &&
-            (snidavp->flags & AVP_VAL_STR) && (snidval.s.s && snidval.s.len)) 
+            (snidavp->flags & AVP_VAL_STR) && (snidval.s.s && snidval.s.len))
         {
             snprintf(snid, sizeof(snid), "%.*s", snidval.s.len, snidval.s.s);
+            snid[sizeof(snid) - 1] = '\0';
             OSPPTransactionSetNetworkIds(transaction, snid, "");
         } else {
             snid[0] = '\0';
         }
 
+        if (_osp_cinfo_avpname.n != 0) {
+			for (i = 0, cinfoavp = search_first_avp(_osp_cinfo_avptype, _osp_cinfo_avpname, NULL, 0);
+                ((i < OSP_DEF_CINFOS) && (cinfoavp != NULL));
+				i++, cinfoavp = search_next_avp(cinfoavp, NULL))
+            {
+                get_avp_val(cinfoavp, &cinfoval);
+                if ((cinfoavp->flags & AVP_VAL_STR) && (cinfoval.s.s && cinfoval.s.len)) {
+                    snprintf(cinfo[i], sizeof(cinfo[i]), "%.*s", cinfoval.s.len, cinfoval.s.s);
+                    cinfo[i][sizeof(cinfo[i]) - 1] = '\0';
+                } else {
+                    cinfo[i][0] = '\0';
+                }
+            }
+            cinfonum = i;
+
+            cinfostr[0] = '\0';
+            for (i = 0; i < cinfonum; i++) {
+                if (cinfo[cinfonum - i - 1][0] != '\0') {
+                    OSPPTransactionSetCustomInfo(transaction, i, cinfo[cinfonum - i - 1]);
+                    snprintf(cinfostr + strlen(cinfostr), sizeof(cinfostr) - strlen(cinfostr), "custom_info%d '%s' ", i + 1, cinfo[cinfonum - i - 1]);
+                }
+            }
+            cinfostr[sizeof(cinfostr) - 1] = '\0';
+		}
+
         LM_INFO("request auth and routing for: "
-            "source_ip '%s' "
-            "source_port '%s' "
+            "service_type '%d' "
+            "source '%s' "
             "source_dev '%s' "
             "source_networkid '%s' "
             "calling '%s' "
             "called '%s' "
+            "preferred '%s' "
             "nprn '%s' "
             "npcic '%s' "
             "npdi '%d' "
+            "spid '%s' "
+            "ocn '%s' "
+            "spn '%s' "
+            "altspn '%s' "
+            "mcc '%s' "
+            "mnc '%s' "
             "diversion_user '%s' "
             "diversion_host '%s' "
             "call_id '%.*s' "
-            "dest_count '%d'\n",
-            _osp_device_ip,
-            _osp_device_port,
-            deviceinfo,         /* in "[x.x.x.x]" or host.domain format */
+            "dest_count '%d' "
+            "%s\n",
+            _osp_service_type,
+            _osp_out_device,
+            srcdevbuf,
             snid,
             calling,
             called,
+            (preferred[0] == NULL) ? "" : preferred[0],
             rn,
             cic,
             npdi,
+            opname[OSPC_OPNAME_SPID],
+            opname[OSPC_OPNAME_OCN],
+            opname[OSPC_OPNAME_SPN],
+            opname[OSPC_OPNAME_ALTSPN],
+            opname[OSPC_OPNAME_MCC],
+            opname[OSPC_OPNAME_MNC],
             divuser,
-            divdev,
+            divhostbuf,
             callids[0]->ospmCallIdLen,
             callids[0]->ospmCallIdVal,
-            destcount);
-
-        OSPPTransactionSetNumberPortability(transaction, rn, cic, npdi);
-
-        OSPPTransactionSetDiversion(transaction, divuser, divdev);
+            destcount,
+            cinfostr);
 
         /* try to request authorization */
         errorcode = OSPPTransactionRequestAuthorisation(
             transaction,       /* transaction handle */
-            _osp_device_ip,    /* from the configuration file */
-            deviceinfo,        /* source device of call, protocol specific, in OSP format */
+            _osp_out_device,   /* from the configuration file */
+            srcdevbuf,         /* source device of call, protocol specific, in OSP format */
             calling,           /* calling number in nodotted e164 notation */
             OSPC_NFORMAT_E164, /* calling number format */
             called,            /* called number */
@@ -365,13 +478,13 @@ int ospRequestRouting(
             "",                /* optional username string, used if no number */
             callidnumber,      /* number of call ids, here always 1 */
             callids,           /* sized-1 array of call ids */
-            preferred,         /* preferred destinations, here always NULL */
+            preferred,         /* preferred destinations */
             &destcount,        /* max destinations, after call dest_count */
             &logsize,          /* size allocated for detaillog (next param) 0=no log */
             detaillog);        /* memory location for detaillog to be stored */
 
         if ((errorcode == OSPC_ERR_NO_ERROR) &&
-            (ospLoadRoutes(transaction, destcount, _osp_device_ip, sourcedev, called, authtime) == 0))
+            (ospLoadRoutes(transaction, destcount, _osp_in_device, srcdev, called, authtime) == 0))
         {
             LM_INFO("there are '%d' OSP routes, call_id '%.*s'\n",
                 destcount,
@@ -408,7 +521,7 @@ int ospRequestRouting(
     if (transaction != -1) {
         OSPPTransactionDelete(transaction);
     }
-    
+
     return result;
 }
 
@@ -420,8 +533,8 @@ int ospRequestRouting(
  * return MODULE_RETURNCODE_TRUE success, MODULE_RETURNCODE_FALSE failure
  */
 int ospCheckRoute(
-    struct sip_msg* msg, 
-    char* ignore1, 
+    struct sip_msg* msg,
+    char* ignore1,
     char* ignore2)
 {
     if (ospCheckOrigDestination() == 0) {
@@ -438,13 +551,12 @@ int ospCheckRoute(
  * return 0 success, 1 calling number same or not support calling number translation, -1 failure
  */
 static int ospSetCalling(
-    struct sip_msg* msg, 
+    struct sip_msg* msg,
     osp_dest* dest)
 {
     str rpid;
     int_str val;
     char calling[OSP_STRBUF_SIZE];
-    char source[OSP_STRBUF_SIZE];
     char buffer[OSP_STRBUF_SIZE];
     int result;
 
@@ -458,20 +570,13 @@ static int ospSetCalling(
         LM_WARN("rpid_avp is not foune, cannot set rpid avp\n");
         result = -1;
     } else {
-        if (dest->source[0] == '[') {
-            /* Strip "[]" */
-            memset(source, 0, sizeof(source));
-            strncpy(source, &dest->source[1], sizeof(source) - 1);
-            source[strlen(source) - 1] = '\0';
-        }
-    
-        snprintf(
-            buffer, 
-            sizeof(buffer), 
-            "\"%s\" <sip:%s@%s>", 
-            dest->calling, 
-            dest->calling, 
-            source);
+        snprintf(buffer,
+            sizeof(buffer),
+            "\"%s\" <sip:%s@%s>",
+            dest->calling,
+            dest->calling,
+            dest->source);
+        buffer[sizeof(buffer) - 1] = '\0';
 
         rpid.s = buffer;
         rpid.len = strlen(buffer);
@@ -499,8 +604,8 @@ static int ospSetCalling(
  * return MODULE_RETURNCODE_TRUE calling number translated MODULE_RETURNCODE_FALSE without transaltion
  */
 int ospCheckCalling(
-    struct sip_msg* msg, 
-    char* ignore1, 
+    struct sip_msg* msg,
+    char* ignore1,
     char* ignore2)
 {
     int_str callingval;
@@ -529,7 +634,7 @@ int ospCheckCalling(
  * return MODULE_RETURNCODE_TRUE success MODULE_RETURNCODE_FALSE failure
  */
 static int ospPrepareDestination(
-    struct sip_msg* msg, 
+    struct sip_msg* msg,
     int isfirst,
     int type,
     int format)
@@ -567,7 +672,7 @@ static int ospPrepareDestination(
             ospAddOspHeader(msg, dest->token, dest->tokensize);
 
             /* Add branch-specific OSP Cookie */
-            ospRecordOrigTransaction(msg, dest->transid, dest->srcdev, dest->calling, dest->called, dest->authtime, dest->destinationCount);
+            ospRecordOrigTransaction(msg, dest->transid, dest->srcdev, dest->calling, dest->called, dest->authtime, dest->destcount);
 
             /* Handle calling number translation */
             ospSetCalling(msg, dest);
@@ -594,8 +699,8 @@ static int ospPrepareDestination(
  * return MODULE_RETURNCODE_TRUE success, MODULE_RETURNCODE_FALSE failure
  */
 int ospPrepareRoute(
-    struct sip_msg* msg, 
-    char* ignore1, 
+    struct sip_msg* msg,
+    char* ignore1,
     char* ignore2)
 {
     int result = MODULE_RETURNCODE_TRUE;
@@ -615,8 +720,8 @@ int ospPrepareRoute(
  * return MODULE_RETURNCODE_TRUE success, MODULE_RETURNCODE_FALSE failure
  */
 int ospPrepareAllRoutes(
-    struct sip_msg* msg, 
-    char* ignore1, 
+    struct sip_msg* msg,
+    char* ignore1,
     char* ignore2)
 {
     int result = MODULE_RETURNCODE_TRUE;

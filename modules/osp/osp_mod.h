@@ -1,14 +1,14 @@
 /*
- * opensips osp module. 
+ * opensips osp module.
  *
- * This module enables opensips to communicate with an Open Settlement 
- * Protocol (OSP) server.  The Open Settlement Protocol is an ETSI 
+ * This module enables opensips to communicate with an Open Settlement
+ * Protocol (OSP) server.  The Open Settlement Protocol is an ETSI
  * defined standard for Inter-Domain VoIP pricing, authorization
- * and usage exchange.  The technical specifications for OSP 
+ * and usage exchange.  The technical specifications for OSP
  * (ETSI TS 101 321 V4.1.1) are available at www.etsi.org.
  *
  * Uli Abend was the original contributor to this module.
- * 
+ *
  * Copyright (C) 2001-2005 Fhg Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -36,6 +36,7 @@
 #define MODULE_RETURNCODE_FALSE         -1
 #define MODULE_RETURNCODE_ERROR         -2
 
+#define OSP_DEF_SERVICE                 0
 #define OSP_DEF_SPS                     16
 #define OSP_DEF_WEIGHT                  1000
 #define OSP_DEF_HW                      0
@@ -52,11 +53,13 @@
 #define OSP_DEF_USENP                   1
 #define OSP_DEF_REDIRURI                0   /* 0 for "xxxxxxxxxx@xxx.xxx.xxx.xxx", 1 for "<xxxxxxxxxx@xxx.xxx.xxx.xxx>" format */
 #define OSP_DEF_USERPHONE               0
+#define OSP_DEF_APPENDNID               0
 #define OSP_DEF_SNIDAVP                 "$avp(s:_osp_source_networkid_)"
+#define OSP_DEF_CINFOS                  8
+#define OSP_DEF_CINFOAVP                "$avp(s:_osp_custom_info_)"
 
 #define OSP_STRBUF_SIZE                 256
 #define OSP_KEYBUF_SIZE                 1024
-#define OSP_E164BUF_SIZE                1024
 #define OSP_TOKENBUF_SIZE               2048
 #define OSP_HEADERBUF_SIZE              3072
 

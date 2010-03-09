@@ -1,14 +1,14 @@
 /*
  * opensips osp module.
  *
- * This module enables opensips to communicate with an Open Settlement 
- * Protocol (OSP) server.  The Open Settlement Protocol is an ETSI 
+ * This module enables opensips to communicate with an Open Settlement
+ * Protocol (OSP) server.  The Open Settlement Protocol is an ETSI
  * defined standard for Inter-Domain VoIP pricing, authorization
- * and usage exchange.  The technical specifications for OSP 
+ * and usage exchange.  The technical specifications for OSP
  * (ETSI TS 101 321 V4.1.1) are available at www.etsi.org.
  *
  * Uli Abend was the original contributor to this module.
- * 
+ *
  * Copyright (C) 2001-2005 Fhg Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -32,21 +32,33 @@
 #define _OSP_MOD_DESTINATION_H_
 
 #include <time.h>
+#include <osp/osp.h>
 #include "osp_mod.h"
 
 typedef struct _osp_dest {
+    int type;
+    unsigned int destcount;
+    int supported;
+    int used;
+    int reported;
+    unsigned long long transid;
     char validafter[OSP_STRBUF_SIZE];
     char validuntil[OSP_STRBUF_SIZE];
     char callid[OSP_STRBUF_SIZE];
-    char called[OSP_STRBUF_SIZE];
+    unsigned int callidsize;
     char calling[OSP_STRBUF_SIZE];
-    char source[OSP_STRBUF_SIZE];
+    char called[OSP_STRBUF_SIZE];
+    char origcalled[OSP_STRBUF_SIZE];
     char srcdev[OSP_STRBUF_SIZE];
+    char source[OSP_STRBUF_SIZE];
     char host[OSP_STRBUF_SIZE];
     char destdev[OSP_STRBUF_SIZE];
     char networkid[OSP_STRBUF_SIZE];
+    char nprn[OSP_STRBUF_SIZE];
+    char npcic[OSP_STRBUF_SIZE];
+    int npdi;
+    char opname[OSPC_OPNAME_NUMBER][OSP_STRBUF_SIZE];
     unsigned char token[OSP_TOKENBUF_SIZE];
-    unsigned int callidsize;
     unsigned int tokensize;
     unsigned int timelimit;
     int lastcode;
@@ -54,16 +66,6 @@ typedef struct _osp_dest {
     time_t time100;
     time_t time180;
     time_t time200;
-    int type;
-    unsigned long long transid;
-    int supported;
-    int used;
-    int reported;
-    unsigned int destinationCount;
-    char origcalled[OSP_STRBUF_SIZE];
-    char nprn[OSP_STRBUF_SIZE];
-    char npcic[OSP_STRBUF_SIZE];
-    int npdi;
 } osp_dest;
 
 osp_dest* ospInitDestination(osp_dest* dest);
@@ -76,8 +78,8 @@ osp_dest* ospGetTermDestination(void);
 void ospRecordEvent(int clientcode, int servercode);
 void ospDumpDestination(osp_dest* dest);
 void ospDumpAllDestination(void);
-void ospConvertAddress(char* src, char* dst, int buffersize);
-void ospConvertToInAddress(const char* src, char* dest, int buffersize);
+void ospConvertToOutAddress(const char* src, char* dest, int bufsize);
+void ospConvertToInAddress(const char* src, char* dest, int bufsize);
 
 #endif /* _OSP_MOD_DESTINATION_H_ */
 

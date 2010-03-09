@@ -1,14 +1,14 @@
 /*
- * opensips osp module. 
+ * opensips osp module.
  *
- * This module enables opensips to communicate with an Open Settlement 
- * Protocol (OSP) server.  The Open Settlement Protocol is an ETSI 
+ * This module enables opensips to communicate with an Open Settlement
+ * Protocol (OSP) server.  The Open Settlement Protocol is an ETSI
  * defined standard for Inter-Domain VoIP pricing, authorization
- * and usage exchange.  The technical specifications for OSP 
+ * and usage exchange.  The technical specifications for OSP
  * (ETSI TS 101 321 V4.1.1) are available at www.etsi.org.
  *
  * Uli Abend was the original contributor to this module.
- * 
+ *
  * Copyright (C) 2001-2005 Fhg Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -36,19 +36,20 @@
 #include "../rr/api.h"
 #include "../auth/api.h"
 #include "osp_mod.h"
+#include "destination.h"
 #include "orig_transaction.h"
 #include "term_transaction.h"
 #include "usage.h"
 #include "tm.h"
 #include "provider.h"
 
-
-
+extern int _osp_service_type;
 extern unsigned int _osp_sp_number;
 extern char* _osp_sp_uris[];
 extern unsigned long _osp_sp_weights[];
 extern char* _osp_device_ip;
-extern char* _osp_device_port;
+extern char _osp_in_device[OSP_STRBUF_SIZE];
+extern char _osp_out_device[OSP_STRBUF_SIZE];
 extern int _osp_use_security;
 extern char* _osp_private_key;
 extern char* _osp_local_certificate;
@@ -66,12 +67,16 @@ extern int _osp_use_rpid;
 extern int _osp_use_np;
 extern int _osp_redir_uri;
 extern int _osp_append_userphone;
+extern int _osp_append_networkid;
 extern char _osp_PRIVATE_KEY[];
 extern char _osp_LOCAL_CERTIFICATE[];
 extern char _osp_CA_CERTIFICATE[];
 extern char* _osp_snid_avp;
 extern int_str _osp_snid_avpname;
 extern unsigned short _osp_snid_avptype;
+extern char* _osp_cinfo_avp;
+extern int_str _osp_cinfo_avpname;
+extern unsigned short _osp_cinfo_avptype;
 extern OSPTPROVHANDLE _osp_provider;
 
 struct rr_binds osp_rr;
@@ -85,18 +90,19 @@ static int  ospVerifyParameters(void);
 static void ospDumpParameters(void);
 
 static cmd_export_t cmds[]={
-    { "checkospheader",          (cmd_function)ospCheckHeader,      0, 0, 0, REQUEST_ROUTE|FAILURE_ROUTE }, 
-    { "validateospheader",       (cmd_function)ospValidateHeader,   0, 0, 0, REQUEST_ROUTE|FAILURE_ROUTE }, 
-    { "requestosprouting",       (cmd_function)ospRequestRouting,   0, 0, 0, REQUEST_ROUTE|FAILURE_ROUTE }, 
-    { "checkosproute",           (cmd_function)ospCheckRoute,       0, 0, 0, REQUEST_ROUTE|FAILURE_ROUTE }, 
-    { "prepareosproute",         (cmd_function)ospPrepareRoute,     0, 0, 0, BRANCH_ROUTE }, 
-    { "prepareallosproutes",     (cmd_function)ospPrepareAllRoutes, 0, 0, 0, REQUEST_ROUTE|FAILURE_ROUTE }, 
-    { "checkcallingtranslation", (cmd_function)ospCheckCalling,     0, 0, 0, BRANCH_ROUTE }, 
-    { "reportospusage",          (cmd_function)ospReportUsage,      1, 0, 0, REQUEST_ROUTE }, 
+    { "checkospheader",          (cmd_function)ospCheckHeader,      0, 0, 0, REQUEST_ROUTE|FAILURE_ROUTE },
+    { "validateospheader",       (cmd_function)ospValidateHeader,   0, 0, 0, REQUEST_ROUTE|FAILURE_ROUTE },
+    { "requestosprouting",       (cmd_function)ospRequestRouting,   0, 0, 0, REQUEST_ROUTE|FAILURE_ROUTE },
+    { "checkosproute",           (cmd_function)ospCheckRoute,       0, 0, 0, REQUEST_ROUTE|FAILURE_ROUTE },
+    { "prepareosproute",         (cmd_function)ospPrepareRoute,     0, 0, 0, BRANCH_ROUTE },
+    { "prepareallosproutes",     (cmd_function)ospPrepareAllRoutes, 0, 0, 0, REQUEST_ROUTE|FAILURE_ROUTE },
+    { "checkcallingtranslation", (cmd_function)ospCheckCalling,     0, 0, 0, BRANCH_ROUTE },
+    { "reportospusage",          (cmd_function)ospReportUsage,      1, 0, 0, REQUEST_ROUTE },
     { 0, 0, 0, 0, 0, 0 }
 };
 
 static param_export_t params[]={
+    { "service_type",                     INT_PARAM, &_osp_service_type },
     { "sp1_uri",                          STR_PARAM, &_osp_sp_uris[0] },
     { "sp2_uri",                          STR_PARAM, &_osp_sp_uris[1] },
     { "sp3_uri",                          STR_PARAM, &_osp_sp_uris[2] },
@@ -113,30 +119,29 @@ static param_export_t params[]={
     { "sp14_uri",                         STR_PARAM, &_osp_sp_uris[13] },
     { "sp15_uri",                         STR_PARAM, &_osp_sp_uris[14] },
     { "sp16_uri",                         STR_PARAM, &_osp_sp_uris[15] },
-    { "sp1_weight",                       INT_PARAM, &(_osp_sp_weights[0]) },
-    { "sp2_weight",                       INT_PARAM, &(_osp_sp_weights[1]) },
-    { "sp3_weight",                       INT_PARAM, &(_osp_sp_weights[2]) },
-    { "sp4_weight",                       INT_PARAM, &(_osp_sp_weights[3]) },
-    { "sp5_weight",                       INT_PARAM, &(_osp_sp_weights[4]) },
-    { "sp6_weight",                       INT_PARAM, &(_osp_sp_weights[5]) },
-    { "sp7_weight",                       INT_PARAM, &(_osp_sp_weights[6]) },
-    { "sp8_weight",                       INT_PARAM, &(_osp_sp_weights[7]) },
-    { "sp9_weight",                       INT_PARAM, &(_osp_sp_weights[8]) },
-    { "sp10_weight",                      INT_PARAM, &(_osp_sp_weights[9]) },
-    { "sp11_weight",                      INT_PARAM, &(_osp_sp_weights[10]) },
-    { "sp12_weight",                      INT_PARAM, &(_osp_sp_weights[11]) },
-    { "sp13_weight",                      INT_PARAM, &(_osp_sp_weights[12]) },
-    { "sp14_weight",                      INT_PARAM, &(_osp_sp_weights[13]) },
-    { "sp15_weight",                      INT_PARAM, &(_osp_sp_weights[14]) },
-    { "sp16_weight",                      INT_PARAM, &(_osp_sp_weights[15]) },
+    { "sp1_weight",                       INT_PARAM, &_osp_sp_weights[0] },
+    { "sp2_weight",                       INT_PARAM, &_osp_sp_weights[1] },
+    { "sp3_weight",                       INT_PARAM, &_osp_sp_weights[2] },
+    { "sp4_weight",                       INT_PARAM, &_osp_sp_weights[3] },
+    { "sp5_weight",                       INT_PARAM, &_osp_sp_weights[4] },
+    { "sp6_weight",                       INT_PARAM, &_osp_sp_weights[5] },
+    { "sp7_weight",                       INT_PARAM, &_osp_sp_weights[6] },
+    { "sp8_weight",                       INT_PARAM, &_osp_sp_weights[7] },
+    { "sp9_weight",                       INT_PARAM, &_osp_sp_weights[8] },
+    { "sp10_weight",                      INT_PARAM, &_osp_sp_weights[9] },
+    { "sp11_weight",                      INT_PARAM, &_osp_sp_weights[10] },
+    { "sp12_weight",                      INT_PARAM, &_osp_sp_weights[11] },
+    { "sp13_weight",                      INT_PARAM, &_osp_sp_weights[12] },
+    { "sp14_weight",                      INT_PARAM, &_osp_sp_weights[13] },
+    { "sp15_weight",                      INT_PARAM, &_osp_sp_weights[14] },
+    { "sp16_weight",                      INT_PARAM, &_osp_sp_weights[15] },
     { "device_ip",                        STR_PARAM, &_osp_device_ip },
-    { "device_port",                      STR_PARAM, &_osp_device_port },
     { "use_security_features",            INT_PARAM, &_osp_use_security },
     { "private_key",                      STR_PARAM, &_osp_private_key },
     { "local_certificate",                STR_PARAM, &_osp_local_certificate },
     { "ca_certificates",                  STR_PARAM, &_osp_ca_certificate },
     { "enable_crypto_hardware_support",   INT_PARAM, &_osp_crypto_hw },
-    { "validate_callid",                  INT_PARAM, &(_osp_validate_callid) },
+    { "validate_callid",                  INT_PARAM, &_osp_validate_callid },
     { "token_format",                     INT_PARAM, &_osp_token_format },
     { "ssl_lifetime",                     INT_PARAM, &_osp_ssl_lifetime },
     { "persistence",                      INT_PARAM, &_osp_persistence },
@@ -148,8 +153,10 @@ static param_export_t params[]={
     { "use_number_portability",           INT_PARAM, &_osp_use_np },
     { "redirection_uri_format",           INT_PARAM, &_osp_redir_uri },
     { "append_userphone",                 INT_PARAM, &_osp_append_userphone },
+    { "append_networkid",                 INT_PARAM, &_osp_append_networkid},
     { "source_networkid_avp",             STR_PARAM, &_osp_snid_avp },
-    { 0,0,0 } 
+    { "custom_info_avp",                  STR_PARAM, &_osp_cinfo_avp },
+    { 0,0,0 }
 };
 
 struct module_exports exports = {
@@ -180,7 +187,7 @@ static int ospInitMod(void)
 
     if (ospVerifyParameters() != 0) {
         /* At least one parameter incorrect -> error */
-        return -1;   
+        return -1;
     }
 
     /* Load the RR API */
@@ -241,13 +248,18 @@ static int ospVerifyParameters(void)
     str avp_str;
     int result = 0;
 
+    if (_osp_service_type < 0 || _osp_service_type > 1) {
+        _osp_service_type = OSP_DEF_SERVICE;
+        LM_WARN("proxy type is out of range, reset to %d\n", OSP_DEF_SERVICE);
+    }
+
     /* If use_security_features is 0, ignroe the certificate files */
     if (_osp_use_security != 0 ) {
         /* Default location for the cert files is in the compile time variable CFG_DIR */
         if (_osp_private_key == NULL) {
             sprintf(_osp_PRIVATE_KEY, "%spkey.pem", CFG_DIR);
             _osp_private_key = _osp_PRIVATE_KEY;
-        } 
+        }
 
         if (_osp_local_certificate == NULL) {
             sprintf(_osp_LOCAL_CERTIFICATE, "%slocalcert.pem", CFG_DIR);
@@ -260,17 +272,17 @@ static int ospVerifyParameters(void)
         }
     }
 
-    if (_osp_device_ip == NULL) {
-        _osp_device_ip = "";
-    }
-
-    if (_osp_device_port == NULL) {
-        _osp_device_port = "";
+    if (_osp_device_ip != NULL) {
+        ospConvertToInAddress(_osp_device_ip, _osp_in_device, sizeof(_osp_in_device));
+        ospConvertToOutAddress(_osp_device_ip, _osp_out_device, sizeof(_osp_out_device));
+    } else {
+        _osp_in_device[0] = '\0';
+        _osp_out_device[0] = '\0';
     }
 
     if (_osp_max_dests > OSP_DEF_DESTS || _osp_max_dests < 1) {
-        _osp_max_dests = OSP_DEF_DESTS;    
-        LM_WARN("max_destinations is out of range, reset to %d\n", OSP_DEF_DESTS); 
+        _osp_max_dests = OSP_DEF_DESTS;
+        LM_WARN("max_destinations is out of range, reset to %d\n", OSP_DEF_DESTS);
     }
 
     if (_osp_token_format < 0 || _osp_token_format > 2) {
@@ -313,6 +325,22 @@ static int ospVerifyParameters(void)
         _osp_snid_avptype = 0;
     }
 
+    if (_osp_cinfo_avp && *_osp_cinfo_avp) {
+        avp_str.s = _osp_cinfo_avp;
+        avp_str.len = strlen(_osp_cinfo_avp);
+        if (pv_parse_spec(&avp_str, &avp_spec) == NULL ||
+            avp_spec.type != PVT_AVP ||
+            pv_get_avp_name(0, &(avp_spec.pvp), &_osp_cinfo_avpname, &_osp_cinfo_avptype) != 0)
+        {
+            LM_WARN("'%s' invalid AVP definition\n", _osp_cinfo_avp);
+            _osp_cinfo_avpname.n = 0;
+            _osp_cinfo_avptype = 0;
+        }
+    } else {
+        _osp_cinfo_avpname.n = 0;
+        _osp_cinfo_avptype = 0;
+    }
+
     ospDumpParameters();
 
     return result;
@@ -321,17 +349,18 @@ static int ospVerifyParameters(void)
 /*
  * Dump OSP module configuration
  */
-static void ospDumpParameters(void) 
+static void ospDumpParameters(void)
 {
     int i;
 
     LM_INFO("module configuration: ");
+    LM_INFO("    service type '%d'", _osp_service_type);
     LM_INFO("    number of service points '%d'", _osp_sp_number);
     for (i = 0; i < _osp_sp_number; i++) {
-        LM_INFO("    sp%d_uri '%s' sp%d_weight '%ld' ", 
+        LM_INFO("    sp%d_uri '%s' sp%d_weight '%ld' ",
             osp_index[i], _osp_sp_uris[i], osp_index[i], _osp_sp_weights[i]);
     }
-    LM_INFO("    device_ip '%s' device_port '%s' ", _osp_device_ip, _osp_device_port);
+    LM_INFO("    device_ip '%s' ", _osp_device_ip);
     LM_INFO("    use_security_features '%d' ", _osp_use_security);
     if (_osp_use_security != 0) {
         LM_INFO("    private_key '%s' ", _osp_private_key);
@@ -350,6 +379,7 @@ static void ospDumpParameters(void)
     LM_INFO("    use_number_portability '%d' ", _osp_use_np);
     LM_INFO("    redirection_uri_format '%d' ", _osp_redir_uri);
     LM_INFO("    append_userphone '%d' ", _osp_append_userphone);
+    LM_INFO("    append_networkid '%d' ", _osp_append_networkid);
     LM_INFO("    max_destinations '%d'\n", _osp_max_dests);
     if (_osp_snid_avpname.n == 0) {
         LM_INFO("    source network ID disabled\n");
@@ -357,6 +387,13 @@ static void ospDumpParameters(void)
         LM_INFO("    source network ID AVP name '%.*s'\n", _osp_snid_avpname.s.len, _osp_snid_avpname.s.s);
     } else {
         LM_INFO("    source network ID AVP ID '%d'\n", _osp_snid_avpname.n);
+    }
+    if (_osp_cinfo_avpname.n == 0) {
+        LM_INFO("    custom info disabled\n");
+    } else if (_osp_cinfo_avptype & AVP_NAME_STR) {
+        LM_INFO("    custom info AVP name '%.*s'\n", _osp_cinfo_avpname.s.len, _osp_cinfo_avpname.s.s);
+    } else {
+        LM_INFO("    custom info AVP ID '%d'\n", _osp_cinfo_avpname.n);
     }
 }
 

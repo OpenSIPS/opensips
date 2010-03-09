@@ -1,14 +1,14 @@
 /*
- * opensips osp module. 
+ * opensips osp module.
  *
- * This module enables opensips to communicate with an Open Settlement 
- * Protocol (OSP) server.  The Open Settlement Protocol is an ETSI 
+ * This module enables opensips to communicate with an Open Settlement
+ * Protocol (OSP) server.  The Open Settlement Protocol is an ETSI
  * defined standard for Inter-Domain VoIP pricing, authorization
- * and usage exchange.  The technical specifications for OSP 
+ * and usage exchange.  The technical specifications for OSP
  * (ETSI TS 101 321 V4.1.1) are available at www.etsi.org.
  *
  * Uli Abend was the original contributor to this module.
- * 
+ *
  * Copyright (C) 2001-2005 Fhg Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -35,7 +35,7 @@
 #include "osptoolkit.h"
 #include "usage.h"
 
-extern char* _osp_device_ip;
+extern char _osp_in_device[];
 extern int _osp_token_format;
 extern int _osp_validate_callid;
 extern OSPTPROVHANDLE _osp_provider;
@@ -48,14 +48,14 @@ extern OSPTPROVHANDLE _osp_provider;
  * return  MODULE_RETURNCODE_TRUE success, MODULE_RETURNCODE_FALSE failure
  */
 int ospCheckHeader(
-    struct sip_msg* msg, 
-    char* ignore1, 
+    struct sip_msg* msg,
+    char* ignore1,
     char* ignore2)
 {
     unsigned char buffer[OSP_TOKENBUF_SIZE];
-    unsigned int  buffersize = sizeof(buffer);
+    unsigned int  bufsize = sizeof(buffer);
 
-    if (ospGetOspHeader(msg, buffer, &buffersize) != 0) {
+    if (ospGetOspHeader(msg, buffer, &bufsize) != 0) {
         return MODULE_RETURNCODE_FALSE;
     } else {
         return MODULE_RETURNCODE_TRUE;
@@ -69,11 +69,11 @@ int ospCheckHeader(
  * return  MODULE_RETURNCODE_TRUE success, MODULE_RETURNCODE_FALSE failure MODULE_RETURNCODE_ERROR error
  */
 int ospValidateHeader (
-    struct sip_msg* msg, 
-    char* ignore1, 
+    struct sip_msg* msg,
+    char* ignore1,
     char* ignore2)
 {
-    int errorcode; 
+    int errorcode;
     OSPTTRANHANDLE transaction = -1;
     unsigned int authorized = 0;
     unsigned int timelimit = 0;
@@ -139,7 +139,7 @@ int ospValidateHeader (
             &logsize,
             detaillog,
             _osp_token_format);
-    
+
         if ((errorcode == OSPC_ERR_NO_ERROR) && (authorized == 1)) {
             if (callid->ospmCallIdLen > sizeof(dest.callid) - 1) {
                 dest.callidsize = sizeof(dest.callid) - 1;
@@ -151,7 +151,7 @@ int ospValidateHeader (
             dest.transid = ospGetTransactionId(transaction);
             dest.type = OSPC_ROLE_DESTINATION;
             dest.authtime = time(NULL);
-            strncpy(dest.host, _osp_device_ip, sizeof(dest.host) - 1);
+            strncpy(dest.host, _osp_in_device, sizeof(dest.host) - 1);
             strncpy(dest.origcalled, dest.called, sizeof(dest.origcalled) - 1);
 
             if (ospSaveTermDestination(&dest) == -1) {
@@ -159,7 +159,7 @@ int ospValidateHeader (
                 ospRecordEvent(0, 500);
                 result = MODULE_RETURNCODE_ERROR;
             } else {
-                LM_DBG("call is authorized for %d seconds, call_id '%.*s' transaction_id '%llu'", 
+                LM_DBG("call is authorized for %d seconds, call_id '%.*s' transaction_id '%llu'",
                     timelimit,
                     dest.callidsize,
                     dest.callid,
@@ -170,7 +170,7 @@ int ospValidateHeader (
         } else {
             LM_ERR("token is invalid (%d)\n", errorcode);
 
-            /* 
+            /*
              * Update terminating status code to 401 and report terminating setup usage.
              * We may need to make 401 configurable, just in case a user decides to reply with
              * a different code.  Other options - trigger call setup usage reporting from the cpl
@@ -188,7 +188,7 @@ int ospValidateHeader (
     if (callid != NULL) {
         OSPPCallIdDelete(&callid);
     }
-    
+
     return result;
 }
 

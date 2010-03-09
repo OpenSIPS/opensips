@@ -1,14 +1,14 @@
 /*
- * opensips osp module. 
+ * opensips osp module.
  *
- * This module enables opensips to communicate with an Open Settlement 
- * Protocol (OSP) server.  The Open Settlement Protocol is an ETSI 
+ * This module enables opensips to communicate with an Open Settlement
+ * Protocol (OSP) server.  The Open Settlement Protocol is an ETSI
  * defined standard for Inter-Domain VoIP pricing, authorization
- * and usage exchange.  The technical specifications for OSP 
+ * and usage exchange.  The technical specifications for OSP
  * (ETSI TS 101 321 V4.1.1) are available at www.etsi.org.
  *
  * Uli Abend was the original contributor to this module.
- * 
+ *
  * Copyright (C) 2001-2005 Fhg Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -43,21 +43,35 @@
 #define OSP_CIC_SIZE        3
 #define OSP_NPDI_NAME       "npdi"
 #define OSP_NPDI_SIZE       4
+#define OSP_SPID_NAME       "spid"
+#define OSP_SPID_SIZE       4
+#define OSP_OCN_NAME        "ocn"
+#define OSP_OCN_SIZE        3
+#define OSP_SPN_NAME        "spn"
+#define OSP_SPN_SIZE        3
+#define OSP_ALTSPN_NAME     "altspn"
+#define OSP_ALTSPN_SIZE     6
+#define OSP_MCC_NAME        "mcc"
+#define OSP_MCC_SIZE        3
+#define OSP_MNC_NAME        "mnc"
+#define OSP_MNC_SIZE        3
 
-void ospCopyStrToBuffer(str* source, char* buffer, int buffersize);
-int ospGetFromUserpart(struct sip_msg* msg, char* fromuser, int buffersize);
-int ospGetRpidUserpart(struct sip_msg* msg, char* fromuser, int buffersize);
-int ospGetDiversion(struct sip_msg* msg, char* user, int userbufsize, char* host, int hostbufsize);
-int ospGetToUserpart(struct sip_msg* msg, char* touser, int buffersize);
-int ospGetUriUserpart(struct sip_msg* msg, char* touser, int buffersize);
+void ospCopyStrToBuffer(str* source, char* buffer, int bufsize);
+int ospGetFromUserpart(struct sip_msg* msg, char* fromuser, int bufsize);
+int ospGetRpidUserpart(struct sip_msg* msg, char* fromuser, int bufsize);
+int ospGetToUserpart(struct sip_msg* msg, char* touser, int bufsize);
+int ospGetToHostpart(struct sip_msg* msg, char* tohost, int bufsize);
+int ospGetUriUserpart(struct sip_msg* msg, char* touser, int bufsize);
 int ospAddOspHeader(struct sip_msg* msg, unsigned char* token, unsigned int tokensize);
 int ospGetOspHeader(struct sip_msg* msg, unsigned char* token, unsigned int* tokensize);
-int ospGetSourceAddress(struct sip_msg* msg, char* sourceaddress, int buffersize);
+int ospGetSourceAddress(struct sip_msg* msg, char* srcaddr, int bufsize);
 int ospGetCallId(struct sip_msg* msg, OSPT_CALL_ID** callid);
-int ospGetRouteParameters(struct sip_msg* msg, char* routeparams, int buffersize);
+int ospGetRouteParameters(struct sip_msg* msg, char* routeparams, int bufsize);
 int ospRebuildDestionationUri(str* newuri, osp_dest* dest, int format);
-void ospGetNextHop(struct sip_msg* msg, char* nexthop, int buffersize);
+int ospGetNextHop(struct sip_msg* msg, char* nexthop, int bufsize);
 int ospGetNpParameters(struct sip_msg* msg, char* rn, int rnbufsize, char* cic, int cicbufsize, int* npdi);
+int ospGetOperatorName(struct sip_msg* msg, OSPE_OPERATOR_NAME type, char* name, int namebufsize);
+int ospGetDiversion(struct sip_msg* msg, char* user, int userbufsize, char* host, int hostbufsize);
 
 #endif /* _OSP_MOD_SIPHEADER_H_ */
 

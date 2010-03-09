@@ -1,14 +1,14 @@
 /*
- * opensips osp module. 
+ * opensips osp module.
  *
- * This module enables opensips to communicate with an Open Settlement 
- * Protocol (OSP) server.  The Open Settlement Protocol is an ETSI 
+ * This module enables opensips to communicate with an Open Settlement
+ * Protocol (OSP) server.  The Open Settlement Protocol is an ETSI
  * defined standard for Inter-Domain VoIP pricing, authorization
- * and usage exchange.  The technical specifications for OSP 
+ * and usage exchange.  The technical specifications for OSP
  * (ETSI TS 101 321 V4.1.1) are available at www.etsi.org.
  *
  * Uli Abend was the original contributor to this module.
- * 
+ *
  * Copyright (C) 2001-2005 Fhg Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -34,8 +34,7 @@
 
 static OSPTTHREADRETURN ospReportUsageWork(void* usagearg);
 
-typedef struct _osp_usage
-{
+typedef struct _osp_usage {
     OSPTTRANHANDLE ospvTransaction;     /* Transaction handle */
     unsigned ospvReleaseCode;           /* Release code */
     unsigned ospvDuration;              /* Length of call */
@@ -160,12 +159,12 @@ static OSPTTHREADRETURN ospReportUsageWork(
             NULL, -1, -1, -1, -1, NULL, NULL);
 
         if (errorcode == OSPC_ERR_NO_ERROR) {
-            LM_DBG("reporte usage for '%llu'\n", 
+            LM_DBG("reporte usage for '%llu'\n",
                 ospGetTransactionId(usage->ospvTransaction));
             break;
         } else {
             LM_ERR("failed to report usage for '%llu' (%d) attempt '%d' of '%d'\n",
-                ospGetTransactionId(usage->ospvTransaction), 
+                ospGetTransactionId(usage->ospvTransaction),
                 errorcode,
                 i,
                 MAX_RETRIES);
