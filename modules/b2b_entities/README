@@ -173,7 +173,9 @@ typedef struct b2b_api {
 
         b2b_send_request_t        send_request;
         b2b_send_reply_t          send_reply;
-}presence_api_t;
+
+        b2b_entity_delete_t       entity_delete;
+}b2b_api_t;
 ...
 
 2.2.  server_new
@@ -216,17 +218,24 @@ typedef int (*b2b_notify_t)(struct sip_msg* msg, str* id, int type, void
 
    Field type:
 ...
-typedef str* (*b2b_client_new_t) (str* method, str* to_uri, str* from_ur
-i,
-                str* extra_headers, str* body, b2b_notify_t b2b_cback, v
-oid* param);
+typedef str* (*b2b_client_new_t) (client_info_t* , b2b_notify_t b2b_cbac
+k,
+                b2b_add_dlginfo_t add_dlginfo_f, str* param);
 ...
 
    This function asks the b2b_entities modules to create a new
    client entity record and also create a new dialog by sending an
    initial message. The parameters are all the values needed for
    the initial request to which the notify function and parameter
-   are added.
+   are added. The b2b_cback parameter is a pointer to the callback
+   that must be called when an event happens(receiving a reply or
+   request) in the dialog created with this function. The
+   add_dlginfo_f parameter is also a function pointer to a
+   callback that will be called when a final success response will
+   be received for the created dialog. The callback will receive
+   as parameter the complete dialog information for the record. It
+   should be stored and used when calling send_request or
+   send_reply functions.
 
    The return value is an identifier for the record that will be
    mentioned when calling other functions that represent actions
@@ -236,9 +245,9 @@ oid* param);
 
    Field type:
 ...
-typedef int (*b2b_send_request_t)(enum b2b_entity_type et, str* b2b_key,
- str* method,
-                str* extra_headers, str* body)
+typedef int (*b2b_send_request_t)(enum b2b_entity_type ,str* b2b_key, st
+r* method,
+                str* extra_headers, str* body, b2b_dlginfo_t*);
 ...
 
    This function asks the b2b_entities modules to send a request
@@ -247,7 +256,10 @@ typedef int (*b2b_send_request_t)(enum b2b_entity_type et, str* b2b_key,
    B2B_CLIENT. The second is the identifier returned by the create
    function(server_new or client_new) and the next are the
    informations needed for the new request: method, extra_headers,
-   body.
+   body. The last parameter contains the dialog information -
+   callid, to tag, from tag. These are needed to make a perfect
+   match to of b2b_entities record for which a new request must be
+   sent.
 
    The return value is 0 for success and a negative value for
    error.
@@ -258,7 +270,7 @@ typedef int (*b2b_send_request_t)(enum b2b_entity_type et, str* b2b_key,
 ...
 typedef int (*b2b_send_reply_t)(enum b2b_entity_type et, str* b2b_key, i
 nt code, str* text,
-                str* body, str* extra_headers);
+                str* body, str* extra_headers, b2b_dlginfo_t* dlginfo);
 ...
 
    This function asks the b2b_entities modules to send a reply
@@ -267,7 +279,8 @@ nt code, str* text,
    B2B_CLIENT. The second is the identifier returned by the create
    function(server_new or client_new) and the next are the
    informations needed for the new reply: code, text, body,
-   extra_headers.
+   extra_headers. The last parameter contains the dialog
+   information used for matching the right record.
 
    The return value is 0 for success and a negative value for
    error.

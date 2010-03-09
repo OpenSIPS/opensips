@@ -136,7 +136,7 @@ str* b2b_htable_insert(b2b_table table, b2b_dlg_t* dlg, int hash_index, int src)
 	str* b2b_key;
 
 	lock_get(&table[hash_index].lock);
-
+	
 	dlg->prev = dlg->next = NULL;
 	it = table[hash_index].first;
 
@@ -470,7 +470,7 @@ search_dialog:
 		}
 		table = server_htable;
 		/* send 200 canceling */
-		tmb.t_newtran(msg);	
+		tmb.t_newtran(msg);
 		if(tmb.t_reply(msg, 200, &reply_text) < 0)
 		{
 			LM_ERR("failed to send reply for CANCEL\n");
@@ -478,6 +478,7 @@ search_dialog:
 			return -1;
 		}
 		tmb.unref_cell(tmb.t_gett());
+
 		goto logic_notify;
 	}
 
@@ -486,7 +487,7 @@ search_dialog:
 	if(msg->to->parsed == NULL)
 	{
 		memset( &TO , 0, sizeof(TO) );
-		if( !parse_to(msg->to->body.s,msg->to->body.s + msg->to->body.len + 1, &TO))
+		if(!parse_to(msg->to->body.s,msg->to->body.s + msg->to->body.len + 1, &TO))
 		{
 			LM_DBG("'To' header NOT parsed\n");
 			return 0;
@@ -1026,6 +1027,7 @@ void b2b_entity_delete(enum b2b_entity_type et, str* b2b_key,
 		dlginfo->fromtag.s?&dlginfo->fromtag:0, &dlginfo->callid);
 	else
 		dlg = b2b_search_htable(table, hash_index, local_index);
+
 	if(dlg== NULL)
 	{
 		LM_ERR("No dialog found\n");
@@ -1127,6 +1129,7 @@ int b2b_send_request(enum b2b_entity_type et, str* b2b_key, str* method,
 
 	if(dlg->last_method== METHOD_INVITE)
 	{
+		LM_DBG("Switched state to B2B_MODIFIED - [%p]\n", dlg);
 		dlg->state = B2B_MODIFIED;
 		dlg->last_invite_cseq = dlg->cseq[0];
 	}
@@ -1601,6 +1604,8 @@ void b2b_tm_cback( b2b_table htable, struct tmcb_params *ps)
 	{
 		/* if provisional or 200OK reply */
 		LM_DBG("Received a reply with statuscode = %d\n", statuscode);
+		LM_DBG("status la inceput = %d\n", dlg->state);
+
 		if(msg == FAKED_REPLY)
 		{
 			lock_release(&htable[hash_index].lock);
@@ -1634,10 +1639,10 @@ void b2b_tm_cback( b2b_table htable, struct tmcb_params *ps)
 			new_dlg->id = dlg->id;
 			new_dlg->state = dlg->state;
 			new_dlg->b2b_cback = dlg->b2b_cback;
-			new_dlg->add_dlginfo = dlg->add_dlginfo;
 			new_dlg->tm_tran = dlg->tm_tran;
 			new_dlg->next = dlg->next;
 			new_dlg->prev = dlg->prev;
+			new_dlg->add_dlginfo = dlg->add_dlginfo;
 
 //			dlg = b2b_search_htable(htable, hash_index, local_index);
 			if(dlg->prev)
@@ -1696,14 +1701,15 @@ void b2b_tm_cback( b2b_table htable, struct tmcb_params *ps)
 						LM_ERR("Failed to send PRACK\n");
 					}
 				}
-
 				lock_release(&htable[hash_index].lock);
 				goto done;
 			}
 			else /* a final success response */
 			{
+				LM_DBG("A final response\n");
 				if(dlg->state == B2B_CONFIRMED) /* if the dialog was already confirmed */
 				{
+					LM_DBG("The state is already confirmed\n");
 					str method= {"ACK", 3};
 
 					/* send an ACK followed by BYE */
@@ -1726,7 +1732,7 @@ void b2b_tm_cback( b2b_table htable, struct tmcb_params *ps)
 					pkg_free(leg);
 
 					lock_release(&htable[hash_index].lock);
-					goto error;
+					return;
 				}
 				else
 				{
@@ -1734,6 +1740,7 @@ void b2b_tm_cback( b2b_table htable, struct tmcb_params *ps)
 					b2b_add_dlginfo_t add_infof= dlg->add_dlginfo;
 
 					/* delete all and add the confirmed leg */
+					dlg->state = B2B_CONFIRMED;
 					b2b_delete_legs(&dlg->legs);
 					leg = b2b_add_leg(dlg, msg, &to_tag);
 					if(leg == NULL)
@@ -1749,7 +1756,7 @@ void b2b_tm_cback( b2b_table htable, struct tmcb_params *ps)
 					lock_release(&htable[hash_index].lock);
 
 					if(add_infof && add_infof(&param, b2b_key,
-					(htable==server_htable?B2B_SERVER:B2B_CLIENT),&dlginfo)< 0)	
+					(htable==server_htable?B2B_SERVER:B2B_CLIENT),&dlginfo)< 0)
 					{
 						LM_ERR("Failed to add dialoginfo\n");
 						goto error;
@@ -1762,13 +1769,13 @@ void b2b_tm_cback( b2b_table htable, struct tmcb_params *ps)
 		LM_DBG("DLG state = %d\n", dlg->state);
 		if(dlg->state== B2B_MODIFIED && statuscode >= 200 && statuscode <300)
 		{
-			LM_DBG("switched the state CONFIRMED\n");
+			LM_DBG("switched the state CONFIRMED [%p]\n", dlg);
 			dlg->state = B2B_CONFIRMED;
 		}
 		else
 		if(dlg->state == B2B_CONFIRMED)
 		{
-			LM_DBG("Retrasmission\n");
+			LM_DBG("Retrasmission [%p]\n", dlg);
 			lock_release(&htable[hash_index].lock);
 			goto error;
 		}
@@ -1791,3 +1798,5 @@ error:
 	if(param.s)
 		pkg_free(param.s);
 }
+
+

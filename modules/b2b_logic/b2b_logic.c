@@ -67,6 +67,19 @@ unsigned int b2bl_hsize = 10;
 b2b_scenario_t* script_scenaries = NULL;
 b2b_scenario_t* extern_scenaries = NULL;
 unsigned int b2b_clean_period = 100;
+str custom_headers = {0, 0};
+str custom_headers_lst[HDR_LST_LEN];
+int custom_headers_lst_len =0;
+/* The list of the headers that are passed on the other side by default */
+static str default_headers[]={{"Content-Type",12},
+                               {"Supported", 9},
+                               {"Allow", 5},
+                               {"Proxy-Require", 13},
+                               {"Session-Expires", 15},
+                               {"Min-SE", 6},
+                               {"Require", 7},
+                               {"RSeq", 4}};
+
 
 /** Exported functions */
 static cmd_export_t cmds[]=
@@ -87,6 +100,7 @@ static param_export_t params[]=
 	{"cleanup_period",  INT_PARAM,                &b2b_clean_period          },
 	{"script_scenario", STR_PARAM|USE_FUNC_PARAM, (void*)load_script_scenario},
 	{"extern_scenario", STR_PARAM|USE_FUNC_PARAM, (void*)load_extern_scenario},
+	{"custom_headers",  STR_PARAM,                &custom_headers.s          },
 	{0,                    0,                          0                     }
 };
 
@@ -99,7 +113,7 @@ static mi_export_t mi_cmds[] = {
 /** Module interface */
 struct module_exports exports= {
 	"b2b_logic",                    /* module name */
-	MODULE_VERSION,					/* module version */
+	MODULE_VERSION,                 /* module version */
 	DEFAULT_DLFLAGS,                /* dlopen flags */
 	cmds,                           /* exported functions */
 	params,                         /* exported parameters */
@@ -116,6 +130,9 @@ struct module_exports exports= {
 /** Module init function */
 static int mod_init(void)
 {
+	char* p = NULL;
+	int i = 0, j;
+
 	/* load b2b_entities api */
 	if(load_b2b_api(&b2b_api)< 0)
 	{
@@ -143,6 +160,59 @@ static int mod_init(void)
 		LM_ERR("Wrong parameter - b2b_clean_period [%d]\n", b2b_clean_period);
 		return -1;
 	}
+
+	/* parse extra headers */
+	if(custom_headers.s)
+		custom_headers.len = strlen(custom_headers.s);
+
+	memset(custom_headers_lst, 0, HDR_LST_LEN*sizeof(str));
+	custom_headers_lst[i].s = custom_headers.s;
+	if(custom_headers.s)
+	{
+		p = strchr(custom_headers.s, ';');
+		while(p)
+		{
+			custom_headers_lst[i].len = p - custom_headers_lst[i].s;
+			/* check if this is among the default headers */
+			for(j = 0; j< HDR_DEFAULT_LEN; j++)
+			{
+				if(custom_headers_lst[i].len == default_headers[j].len &&
+						strncmp(custom_headers_lst[i].s, default_headers[j].s,
+							default_headers[j].len)== 0)
+					goto next_hdr;
+			}
+			/* check if defined twice */
+			for(j = 0; j< i; j++)
+			{
+				if(custom_headers_lst[i].len == custom_headers_lst[j].len &&
+						strncmp(custom_headers_lst[i].s, custom_headers_lst[j].s,
+							custom_headers_lst[j].len)== 0)
+					goto next_hdr;
+			}
+			i++;
+			if(i == HDR_LST_LEN)
+			{
+				LM_ERR("Too many extra headers defined."
+						" The maximum value is %d\n.", HDR_LST_LEN);
+				return -1;
+			}
+next_hdr:
+			p++;
+			if(p-custom_headers.s >= custom_headers.len)
+				break;
+			custom_headers_lst[i].s = p;
+			p = strchr(p, ';');
+		}
+	}
+
+	if(p == NULL)
+	{
+		custom_headers_lst[i].len = custom_headers.s + custom_headers.len
+			- custom_headers_lst[i].s;
+		if(custom_headers_lst[i].len == 0)
+			i--;
+	}
+	custom_headers_lst_len = i +1;
 
 	register_timer(b2bl_clean, 0, b2b_clean_period);
 
@@ -179,7 +249,6 @@ void b2bl_clean(unsigned int ticks, void* param)
 				}
 				b2bl_delete(tuple, i);
 			}
-			
 			tuple = tuple_next;
 		}
 		lock_release(&b2bl_htable[i].lock);
@@ -628,7 +697,7 @@ static struct mi_root* mi_trigger_scenario(struct mi_root* cmd, void* param)
 		return 0;
 	}
 
-	if(process_bridge_action(0, tuple, xml_node) < 0)
+	if(process_bridge_action(0, 0, tuple, xml_node) < 0)
 	{
 		LM_ERR("Failed to process bridge node");
 		return 0;

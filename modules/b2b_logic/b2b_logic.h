@@ -44,6 +44,9 @@
 
 #define b2b_peer(type) ((type+1)%2)
 
+#define HDR_LST_LEN    10
+#define HDR_DEFAULT_LEN   7
+
 extern b2b_api_t b2b_api;
 
 typedef struct b2b_rule
@@ -57,11 +60,16 @@ typedef struct b2b_rule
 
 enum {
 	B2B_INVITE,
-	B2B_CANCEL,
 	B2B_ACK,
 	B2B_BYE,
+	B2B_MESSAGE,
+	B2B_SUBSCRIBE,
+	B2B_NOTIFY,
+	B2B_REFER,
+	B2B_CANCEL,
 	B2B_METHODS_NO
 };
+
 
 typedef struct b2b_scenario
 {
@@ -78,6 +86,10 @@ typedef struct b2b_scenario
 extern b2b_scenario_t* script_scenaries;
 extern b2b_scenario_t* extern_scenaries;
 
+extern str custom_headers_lst[HDR_LST_LEN];
+int custom_headers_lst_len;
+
+
 static inline int b2b_get_request_id(str* request)
 {
 	if(request->len ==INVITE_LEN&&strncasecmp(request->s,INVITE,INVITE_LEN)==0)
@@ -89,8 +101,20 @@ static inline int b2b_get_request_id(str* request)
 	if(request->len ==BYE_LEN && strncasecmp(request->s,BYE,BYE_LEN)==0)
 		return B2B_BYE;
 
-	if(request->len==CANCEL_LEN &&strncasecmp(request->s,CANCEL,CANCEL_LEN)==0)
+	if(request->len==REFER_LEN &&strncasecmp(request->s, REFER, REFER_LEN)==0)
+		return B2B_REFER;
+
+	if(request->len==CANCEL_LEN &&strncasecmp(request->s, CANCEL, CANCEL_LEN)==0)
 		return B2B_CANCEL;
+
+	if(request->len==SUBSCRIBE_LEN &&strncasecmp(request->s, SUBSCRIBE, SUBSCRIBE_LEN)==0)
+		return B2B_SUBSCRIBE;
+
+	if(request->len==NOTIFY_LEN &&strncasecmp(request->s, NOTIFY, NOTIFY_LEN)==0)
+		return B2B_NOTIFY;
+
+	if(request->len==MESSAGE_LEN &&strncasecmp(request->s, MESSAGE, MESSAGE_LEN)==0)
+		return B2B_MESSAGE;
 
 	return -1;
 }
@@ -101,7 +125,6 @@ b2b_scenario_t* b2b_find_scenario(b2b_scenario_t* scenario,
 
 int b2b_process_scenario_init(b2b_scenario_t* scenario_struct,struct sip_msg* msg,
 		unsigned int hash_index, str* args[], str* to, str* from);
-
 int b2b_add_dlginfo(str* key, str* entity_key,int src, b2b_dlginfo_t* info);
 
 #endif

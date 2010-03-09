@@ -54,7 +54,7 @@ b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg,
 	}
 	memset(tuple, 0,sizeof(b2bl_tuple_t) );
 
-	LM_INFO("pointer [%p]\n", tuple);
+	LM_DBG("pointer [%p]\n", tuple);
 
 	tuple->scenario = scenario;
 
@@ -122,6 +122,7 @@ b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg,
 				}
 				memcpy(tuple->scenario_params[i].s, buf, buf_len);
 				tuple->scenario_params[i].len = buf_len;
+				LM_DBG("Printed parameter [%.*s]\n", buf_len, buf);
 			}
 			else
 			{
@@ -153,9 +154,9 @@ void b2bl_delete(b2bl_tuple_t* tuple, unsigned int hash_index)
 	b2bl_entity_id_t* entity, *next_entity;
 	int i;
 
-	LM_INFO("Delete record, hash_index=[%d], local_index=[%d]\n",
+	LM_DBG("Delete record, hash_index=[%d], local_index=[%d]\n",
 			hash_index, tuple->id);
-	LM_INFO("pointer [%p]", tuple);
+	LM_DBG("pointer [%p]\n", tuple);
 	if(b2bl_htable[hash_index].first == tuple)
 	{
 		b2bl_htable[hash_index].first = tuple->next;

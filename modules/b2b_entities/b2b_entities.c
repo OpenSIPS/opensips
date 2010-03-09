@@ -81,7 +81,6 @@ static param_export_t params[]={
 	{ 0,                       0,            0                   }
 };
 
-
 /** Module interface */
 struct module_exports exports= {
 	"b2b_entities",                 /* module name */
@@ -200,4 +199,5 @@ int b2b_load_api(b2b_api_t* api)
 
 	return 0;
 }
+
 

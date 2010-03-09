@@ -81,7 +81,7 @@ str* server_new(struct sip_msg* msg, b2b_notify_t b2b_cback,
 		tmb.ref_cell(dlg->tm_tran);
 	
 	tmb.t_reply(msg, 100, &reason);
-//	LM_INFO("****Server entity = %p\n", dlg);
+	LM_DBG("****Server entity = %p\n", dlg);
 
 	/* add the record in hash table */
 	LM_DBG("Inserted record with callid= %.*s, tag= %.*s\n", dlg->callid.len, dlg->callid.s, 

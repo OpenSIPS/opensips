@@ -27,7 +27,9 @@ typedef struct b2b_api {
 
 	b2b_send_request_t        send_request;
 	b2b_send_reply_t          send_reply;
-}presence_api_t;
+
+	b2b_entity_delete_t       entity_delete;
+}b2b_api_t;
 ...
 </programlisting>
 		</example>
@@ -86,8 +88,8 @@ typedef int (*b2b_notify_t)(struct sip_msg* msg, str* id, int type, void* param)
 		</para>
 			<programlisting format="linespecific">
 ...
-typedef str* (*b2b_client_new_t) (str* method, str* to_uri, str* from_uri,
-		str* extra_headers, str* body, b2b_notify_t b2b_cback, void* param);
+typedef str* (*b2b_client_new_t) (client_info_t* , b2b_notify_t b2b_cback,
+		b2b_add_dlginfo_t add_dlginfo_f, str* param);
 ...
 </programlisting>
 		<para>
@@ -95,6 +97,13 @@ typedef str* (*b2b_client_new_t) (str* method, str* to_uri, str* from_uri,
 			entity record and also create a new dialog by sending an initial message. 
 			The parameters are all the values needed for the initial request to which
 			the notify function and parameter are added.
+			The b2b_cback parameter is a pointer to the callback that must be called when
+			an event happens(receiving a reply or request) in the dialog created with
+			this function.
+			The add_dlginfo_f parameter is also a function pointer to a callback that will
+			be called when a final success response will be received for the created dialog.
+			The callback will receive as parameter the complete dialog information for the
+			record. It should be stored and used when calling send_request or send_reply functions.
 		</para>
 		<para>
 			The return value is an identifier for the record that will be mentioned when 
@@ -112,8 +121,8 @@ typedef str* (*b2b_client_new_t) (str* method, str* to_uri, str* from_uri,
 		</para>
 			<programlisting format="linespecific">
 ...
-typedef int (*b2b_send_request_t)(enum b2b_entity_type et, str* b2b_key, str* method,
-		str* extra_headers, str* body)
+typedef int (*b2b_send_request_t)(enum b2b_entity_type ,str* b2b_key, str* method,
+		str* extra_headers, str* body, b2b_dlginfo_t*);
 ...
 </programlisting>
 		<para>
@@ -122,6 +131,9 @@ typedef int (*b2b_send_request_t)(enum b2b_entity_type et, str* b2b_key, str* me
 			B2B_SERVER and B2B_CLIENT. The second is the identifier returned by the create 
 			function(server_new or client_new) and the next are the informations needed for
 			the new request: method, extra_headers, body.
+			The last parameter contains the dialog information - callid, to tag, from tag. These
+			are needed to make a perfect match to of b2b_entities record for which a new request
+			must be sent.
 		</para>
 		<para>
 			The return value is 0 for success and a negative value for error.
@@ -138,7 +150,7 @@ typedef int (*b2b_send_request_t)(enum b2b_entity_type et, str* b2b_key, str* me
 			<programlisting format="linespecific">
 ...
 typedef int (*b2b_send_reply_t)(enum b2b_entity_type et, str* b2b_key, int code, str* text,
-		str* body, str* extra_headers);
+		str* body, str* extra_headers, b2b_dlginfo_t* dlginfo);
 ...
 </programlisting>
 		<para>
@@ -146,7 +158,8 @@ typedef int (*b2b_send_reply_t)(enum b2b_entity_type et, str* b2b_key, int code,
 			identified by b2b_key. The first parameter is the entity type and can have two values:
 			B2B_SERVER and B2B_CLIENT. The second is the identifier returned by the create 
 			function(server_new or client_new) and the next are the informations needed for
-			the new reply: code, text, body, extra_headers.
+			the new reply: code, text, body, extra_headers. The last parameter contains the
+			dialog information used for matching the right record.
 		</para>
 		<para>
 			The return value is 0 for success and a negative value for error.
