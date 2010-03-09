@@ -180,7 +180,7 @@ int extract_body(struct sip_msg *msg, str *body )
 	}
 	/* sanity check to be sure we do not overflow if CT is bogus */
 	if (body->s + body->len > msg->buf+msg->len) {
-		LM_ERR("bogus cotent type (%d) pointing outside the message %p %p\n",
+		LM_ERR("bogus content type (%d) pointing outside the message %p %p\n",
 			body->len,body->s + body->len,msg->buf+msg->len );
 		goto error;
 	}

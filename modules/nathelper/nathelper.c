@@ -775,22 +775,62 @@ static int fixup_set_id(void ** param, int param_no)
 {
 	int int_val, err;
 	struct rtpp_set* rtpp_list;
+	nh_set_param_t * pset;
+	char *p;
 
-	int_val = str2s(*param, strlen(*param), &err);
-	if (err == 0) {
-		pkg_free(*param);
-		if((rtpp_list = select_rtpp_set(int_val)) ==0){
-			LM_ERR("rtpp_proxy set %i not configured\n", int_val);
-			return E_CFG;
-		}
-		*param = (void *)rtpp_list;
-	
-		return 0;
-	} else {
-		LM_ERR("bad number <%s>\n",	(char *)(*param));
+	pset = (nh_set_param_t *) pkg_malloc(sizeof(nh_set_param_t));
+	if(pset == NULL){
+		LM_ERR("no more pkg memory to allocate set parameter\n");
+		return E_OUT_OF_MEM;
+	}
+	memset(pset, 0, sizeof(nh_set_param_t));
+
+	if (param_no > 1) {
+		LM_ERR("set_rtp_proxy_set() takes only one parameter.\n");
+		pkg_free(pset);
 		return E_CFG;
 	}
+
+	p = (char*) *param;
+	if(*p != '$')
+	{
+		/* Fixed value specifed for RTP rpoxy set */
+		int_val = str2s(p, strlen(p), &err);
+		if (err == 0) {
+			pkg_free(*param);
+			rtpp_list = select_rtpp_set(int_val);
+			if(rtpp_list ==0){
+				LM_ERR("rtpp_proxy set %i not configured\n", int_val);
+				return E_CFG;
+			}
+			pset->t = NH_VAL_SET_FIXED ;
+			pset->v.fixed_set = rtpp_list;
+			*param = (void *) pset;
+			return 0;
+		} else {
+			LM_ERR("bad rtp set number <%s> specified\n", p);
+			pkg_free(pset);
+			return E_CFG;
+		}
+	} else {
+		/* proxyset is specified as an AVP */
+		str lstr;
+		
+		lstr.s = p;
+		lstr.len = strlen(p);
+		if ( pv_parse_spec( &lstr, &pset->v.var_set) == NULL ) {
+			LM_ERR("bad rtp set variable <%s> specified\n",   p);
+			pkg_free(pset);
+			return E_CFG;
+		}
+
+		pset->t = NH_VAL_SET_SPEC;
+		*param = (void *) pset;
+		return 0;
+	}
 }
+
+
 
 static int
 fixup_fix_sdp(void** param, int param_no)
@@ -2657,10 +2697,54 @@ error:
 static int
 set_rtp_proxy_set_f(struct sip_msg * msg, char * str1, char * str2)
 {
+	nh_set_param_t * pset;
+	pv_value_t value;
+	int int_val;
+	int err;
+	struct rtpp_set * rtpp_list;
+
 	current_msg_id = msg->id;
-	selected_rtpp_set = (struct rtpp_set *)str1;
-	return 1;
+	pset = (nh_set_param_t *) str1;
+
+	if (pset->t == NH_VAL_SET_FIXED) {
+		selected_rtpp_set = pset->v.fixed_set;
+		return 1;
+	}
+
+	if ( pv_get_spec_value(msg,&pset->v.var_set,&value)!=0 || 
+	value.flags & PV_VAL_NULL || value.flags&PV_VAL_EMPTY ) {
+		LM_ERR("no PV or NULL value specified for proxy set "
+			"(error in scripts)\n");
+		return -1;
+	}
+
+	if ( value.flags & PV_VAL_STR ) {
+		int_val = str2s(value.rs.s, value.rs.len, &err);
+		if (err != 0) {
+			LM_ERR("Invalid value %s specified in PV as RTP proxy set.\n",
+				value.rs.s );
+			return -1;
+		}
+	} else if ( value.flags & PV_VAL_INT ) {
+		int_val = value.ri;
+	} else {
+		LM_ERR("Unsupported PV value type for RTP ptoxy set.i\n");
+		return -1;
+	}
+
+	LM_DBG("Variable proxy set %d specified.\n", int_val);
+
+	rtpp_list = select_rtpp_set(int_val);
+
+	if (rtpp_list != NULL) {
+		selected_rtpp_set = rtpp_list;
+		return 0;
+	} else {
+		LM_ERR("RTP Proxy set ID %d is not configured.\n", int_val);
+		return -2;
+	}
 }
+
 
 static int
 rtpproxy_offer1_f(struct sip_msg *msg, char *str1, char *str2)
