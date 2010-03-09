@@ -92,7 +92,7 @@ int xml_add_events(void)
 	event.name.s= "dialog;sla";
 	event.name.len= 10;
 
-	event.etag_not_new= 1;
+//	event.etag_not_new= 1;
 	event.evs_publ_handl= xml_publ_handl;
 	event.content_type.s= "application/dialog-info+xml";
 	event.content_type.len= 27;

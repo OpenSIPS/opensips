@@ -53,7 +53,7 @@
 #include "pidf.h"
 
 
-#define PUA_TABLE_VERSION 7
+#define PUA_TABLE_VERSION 8
 
 struct tm_binds tmb;
 htable_t* HashT= NULL;
@@ -72,6 +72,7 @@ db_func_t pua_dbf;
 
 /* database colums */
 static str str_pres_uri_col = str_init("pres_uri");
+static str str_to_uri_col   = str_init("to_uri");
 static str str_pres_id_col = str_init("pres_id");
 static str str_expires_col= str_init("expires");
 static str str_flag_col= str_init("flag");
@@ -289,23 +290,24 @@ static void destroy(void)
 static int db_restore(void)
 {
 	ua_pres_t* p= NULL;
-	db_key_t result_cols[19]; 
+	db_key_t result_cols[20];
 	db_res_t *res= NULL;
 	db_row_t *row = NULL;	
 	db_val_t *row_vals= NULL;
-	str pres_uri, pres_id;
+	str pres_uri, pres_id, to_uri;
 	str etag, tuple_id;
 	str watcher_uri, call_id;
 	str to_tag, from_tag, remote_contact;
 	str record_route, contact, extra_headers;
 	int size= 0, i;
 	int n_result_cols= 0;
-	int puri_col,pid_col,expires_col,flag_col,etag_col, desired_expires_col;
+	int puri_col,touri_col,pid_col,expires_col,flag_col,etag_col, desired_expires_col;
 	int watcher_col,callid_col,totag_col,fromtag_col,cseq_col,remote_contact_col;
 	int event_col,contact_col,tuple_col,record_route_col, extra_headers_col;
 	int version_col;
 
 	result_cols[puri_col=n_result_cols++]	= &str_pres_uri_col;
+	result_cols[touri_col=n_result_cols++]	= &str_to_uri_col;
 	result_cols[pid_col=n_result_cols++]	= &str_pres_id_col;
 	result_cols[expires_col=n_result_cols++]= &str_expires_col;
 	result_cols[flag_col=n_result_cols++]	= &str_flag_col;
@@ -378,7 +380,9 @@ static int db_restore(void)
 		{
 			row = &res->rows[i];
 			row_vals = ROW_VALUES(row);
-			
+            if(row_vals[expires_col].val.int_val < time(NULL))	
+                continue;	
+	
 			pres_uri.s= (char*)row_vals[puri_col].val.string_val;
 			pres_uri.len = strlen(pres_uri.s);
 			
@@ -387,6 +391,7 @@ static int db_restore(void)
 			memset(&etag,			 0, sizeof(str));
 			memset(&tuple_id,		 0, sizeof(str));
 			memset(&watcher_uri,	 0, sizeof(str));
+			memset(&to_uri,          0, sizeof(str));
 			memset(&call_id,		 0, sizeof(str));
 			memset(&to_tag,			 0, sizeof(str));
 			memset(&from_tag,		 0, sizeof(str));
@@ -413,7 +418,13 @@ static int db_restore(void)
 			{
 				watcher_uri.s= (char*)row_vals[watcher_col].val.string_val;
 				watcher_uri.len = strlen(watcher_uri.s);
-				
+
+				to_uri.s= (char*)row_vals[touri_col].val.string_val;
+				if(to_uri.s == NULL)
+                    to_uri = pres_uri;
+                else
+                    to_uri.len = strlen(to_uri.s);
+				LM_DBG("to_uri= %.*s\n", to_uri.len, to_uri.s);
 				call_id.s= (char*)row_vals[callid_col].val.string_val;
 				call_id.len = strlen(call_id.s);
 				
@@ -449,7 +460,7 @@ static int db_restore(void)
 					size+= sizeof(str)+ extra_headers.len* sizeof(char);
 
 			if(watcher_uri.s)
-				size+= sizeof(str)+ (watcher_uri.len+ call_id.len+ to_tag.len+
+				size+= sizeof(str)+ (to_uri.len + watcher_uri.len+ call_id.len+ to_tag.len+
 					from_tag.len+ record_route.len+ contact.len)* sizeof(char);
 			
 			p= (ua_pres_t*)shm_malloc(size);
@@ -492,6 +503,11 @@ static int db_restore(void)
 				memcpy(p->watcher_uri->s, watcher_uri.s, watcher_uri.len);
 				p->watcher_uri->len= watcher_uri.len;
 				size+= watcher_uri.len;
+
+				p->to_uri.s = (char*)p + size;
+				memcpy(p->to_uri.s, to_uri.s, to_uri.len);
+				p->to_uri.len = to_uri.len;
+				size+= to_uri.len;
 
 				p->to_tag.s= (char*)p+ size;
 				memcpy(p->to_tag.s, to_tag.s, to_tag.len);
@@ -613,7 +629,8 @@ static void hashT_clean(unsigned int ticks,void *param)
 		while(p)
 		{
 			print_ua_pres(p);
-			if(p->expires < now )
+			LM_DBG("---\n");
+			if(p->expires -update_period < now )
 			{
 				if((p->desired_expires> p->expires + min_expires + 5) || 
 						(p->desired_expires== 0 ))
@@ -712,8 +729,8 @@ int update_pua(ua_pres_t* p, unsigned int hash_code)
 		{
 			LM_ERR("while building tm dlg_t structure");
 			goto error;
-		};
-	
+		}
+		LM_DBG("td->rem_uri= %.*s\n", td->rem_uri.len, td->rem_uri.s);
 		str_hdr= subs_build_hdr(&p->contact, expires,p->event,p->extra_headers);
 		if(str_hdr== NULL || str_hdr->s== NULL)
 		{
@@ -727,7 +744,7 @@ int update_pua(ua_pres_t* p, unsigned int hash_code)
 			LM_ERR("while constructing subs callback param\n");
 			goto error;
 
-		}	
+		}
 		result= tmb.t_request_within
 				(&met,
 				str_hdr,
@@ -763,14 +780,13 @@ static void db_update(unsigned int ticks,void *param)
 {
 	ua_pres_t* p= NULL;
 	db_key_t q_cols[20], result_cols[1];
-	db_res_t *res= NULL;
 	db_key_t db_cols[5];
-	db_val_t q_vals[20], db_vals[5];
+	db_val_t q_vals[21], db_vals[5];
 	db_op_t  db_ops[1] ;
 	int n_query_cols= 0, n_query_update= 0;
 	int n_update_cols= 0;
 	int i;
-	int puri_col,pid_col,expires_col,flag_col,etag_col,tuple_col,event_col;
+	int puri_col,touri_col,pid_col,expires_col,flag_col,etag_col,tuple_col,event_col;
 	int watcher_col,callid_col,totag_col,fromtag_col,record_route_col,cseq_col;
 	int no_lock= 0, contact_col, desired_expires_col, extra_headers_col;
 	int remote_contact_col, version_col;
@@ -784,7 +800,7 @@ static void db_update(unsigned int ticks,void *param)
 	q_vals[puri_col].nul = 0;
 	n_query_cols++;
 	
-	q_cols[pid_col= n_query_cols] = &str_pres_id_col;	
+	q_cols[pid_col= n_query_cols] = &str_pres_id_col;
 	q_vals[pid_col].type = DB_STR;
 	q_vals[pid_col].nul = 0;
 	n_query_cols++;
@@ -864,6 +880,11 @@ static void db_update(unsigned int ticks,void *param)
 	q_vals[version_col].nul = 0;
 	n_query_cols++;
 
+	q_cols[touri_col= n_query_cols] = &str_to_uri_col;
+	q_vals[touri_col].type = DB_STR;
+	q_vals[touri_col].nul = 0;
+	n_query_cols++;
+
 	/* must keep this the last  column to be inserted */
 	q_cols[extra_headers_col= n_query_cols] = &str_extra_headers_col;
 	q_vals[extra_headers_col].type = DB_STR;
@@ -901,6 +922,13 @@ static void db_update(unsigned int ticks,void *param)
 		return ;
 	}
 
+	db_vals[0].val.int_val= (int)time(NULL)- 10;
+	db_ops[0]= OP_LT;
+	if(pua_dbf.delete(pua_db, db_cols, db_ops, db_vals, 1) < 0)
+	{
+		LM_ERR("while deleting from db table pua\n");
+	}
+
 	for(i=0; i<HASH_SIZE; i++) 
 	{
 		if(!no_lock)
@@ -909,11 +937,14 @@ static void db_update(unsigned int ticks,void *param)
 		p = HashT->p_records[i].entity->next;
 		while(p)
 		{
-			if(p->expires - (int)time(NULL)< 0)	
+			if(p->expires - (int)time(NULL) < 0)	
 			{
 				p= p->next;
 				continue;
 			}
+			print_ua_pres(p);
+			LM_DBG("--------\n");
+
 
 			switch(p->db_flag)
 			{
@@ -967,44 +998,18 @@ static void db_update(unsigned int ticks,void *param)
 
 					db_vals[3].val.int_val= p->desired_expires;
 					n_update_cols++;
-					
+
 					LM_DBG("Updating:n_query_update= %d\tn_update_cols= %d\n",
 							n_query_update, n_update_cols);
+					p->db_flag= NO_UPDATEDB_FLAG;
 
-					if(pua_dbf.query(pua_db, q_cols, 0, q_vals,
-								 result_cols, n_query_update, 1, 0, &res)< 0)
+					if(pua_dbf.update(pua_db, q_cols, 0, q_vals, db_cols, 
+							db_vals, n_query_update, n_update_cols)<0)
 					{
-						LM_ERR("while querying db table pua\n");
+						LM_ERR("while updating in database\n");
 						if(!no_lock)
 							lock_release(&HashT->p_records[i].lock);
-						if(res)
-							pua_dbf.free_result(pua_db, res);	
 						return ;
-					}
-					if(res && res->n> 0)
-					{
-						if(pua_dbf.update(pua_db, q_cols, 0, q_vals, db_cols, 
-								db_vals, n_query_update, n_update_cols)<0)
-						{
-							LM_ERR("while updating in database\n");
-							if(!no_lock)
-								lock_release(&HashT->p_records[i].lock);	
-							pua_dbf.free_result(pua_db, res);
-							res= NULL;
-							return ;
-						}
-						pua_dbf.free_result(pua_db, res);
-						res= NULL;
-					}
-					else
-					{
-						if(res)
-						{
-							pua_dbf.free_result(pua_db, res);
-							res= NULL;
-						}
-						LM_DBG("UPDATEDB_FLAG and no record found\n");
-					//	p->db_flag= INSERTDB_FLAG;
 					}
 					break;
 				}
@@ -1028,7 +1033,9 @@ static void db_update(unsigned int ticks,void *param)
 					q_vals[desired_expires_col].val.int_val = p->desired_expires;
 					q_vals[event_col].val.int_val = p->event;
 					q_vals[version_col].val.int_val = p->version;
-					
+
+					q_vals[touri_col].val.str_val = p->to_uri;
+
 					if(p->record_route.s== NULL)
 					{
 						q_vals[record_route_col].val.str_val.s= "";
@@ -1070,13 +1077,6 @@ static void db_update(unsigned int ticks,void *param)
 		}
 		if(!no_lock)
 			lock_release(&HashT->p_records[i].lock);
-	}
-
-	db_vals[0].val.int_val= (int)time(NULL)- 10;
-	db_ops[0]= OP_LT;
-	if(pua_dbf.delete(pua_db, db_cols, db_ops, db_vals, 1) < 0)
-	{
-		LM_ERR("while deleting from db table pua\n");
 	}
 
 	return ;

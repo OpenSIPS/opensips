@@ -43,6 +43,7 @@ void print_ua_pres(ua_pres_t* p)
 	if(p->watcher_uri)
 	{	
 		LM_DBG("\twatcher_uri= %.*s  len= %d\n", p->watcher_uri->len, p->watcher_uri->s, p->watcher_uri->len);
+		LM_DBG("\tto_uri= %.*s  len= %d\n", p->to_uri.len, p->to_uri.s, p->to_uri.len);
 		LM_DBG("\tcall_id= %.*s   len= %d\n", p->call_id.len, p->call_id.s, p->call_id.len);
 		LM_DBG("\tfrom_tag= %.*s   len= %d\n", p->from_tag.len, p->from_tag.s, p->from_tag.len);
 		LM_DBG("\tto_tag= %.*s  len= %d\n", p->to_tag.len, p->to_tag.s, p->to_tag.len);
@@ -120,15 +121,21 @@ ua_pres_t* search_htable(ua_pres_t* pres, unsigned int hash_code)
 	L= HashT->p_records[hash_code].entity;
 	LM_DBG("core_hash= %u\n", hash_code);
 
+	LM_DBG("Searched:\n");
+	print_ua_pres(pres);
+	LM_DBG("\n");
 	for(p= L->next; p; p=p->next)
 	{
+		LM_DBG("Found\n");
+		print_ua_pres(p);
+		LM_DBG("\n");
 		if((p->flag & pres->flag) && (p->event & pres->event))
 		{
 			if((p->pres_uri->len==pres->pres_uri->len) &&
 					(strncmp(p->pres_uri->s, pres->pres_uri->s,pres->pres_uri->len)==0))
 			{
-				if(pres->id.s && pres->id.len) 
-				{	
+				if(pres->id.s && pres->id.len)
+				{
 					if(!(pres->id.len== p->id.len &&
 						strncmp(p->id.s, pres->id.s,pres->id.len)==0))
 							continue;
@@ -140,12 +147,12 @@ ua_pres_t* search_htable(ua_pres_t* pres, unsigned int hash_code)
 						(strncmp(p->watcher_uri->s, pres->watcher_uri->s,
 								  pres->watcher_uri->len )==0))
 					{
-						if(pres->remote_contact.s)
+						/* if to_uri defined check it also */
+						if(pres->to_uri.s)
 						{
-							if(pres->remote_contact.len== p->remote_contact.len &&
-								strncmp(pres->remote_contact.s, p->remote_contact.s,
-										 p->remote_contact.len)== 0)
-								break;
+							if(pres->to_uri.len == p->to_uri.len &&
+									strncmp(pres->to_uri.s, p->to_uri.s, p->to_uri.len) == 0)
+									break;
 						}
 						else
 							break;
@@ -157,7 +164,7 @@ ua_pres_t* search_htable(ua_pres_t* pres, unsigned int hash_code)
 					{
 						if(pres->etag.len== p->etag.len &&
 							strncmp(p->etag.s, pres->etag.s,pres->etag.len)==0)
-							break;		
+							break;
 					}
 					else
 					{
@@ -190,8 +197,8 @@ void update_htable(ua_pres_t* p, time_t desired_expires, int expires,
 
 	p->expires= expires+ (int)time(NULL);
 	p->desired_expires= desired_expires;
-		
-	if(p->db_flag & NO_UPDATEDB_FLAG)
+
+	if(p->db_flag == NO_UPDATEDB_FLAG)
 		p->db_flag= UPDATEDB_FLAG;
 
 	if(p->watcher_uri)
@@ -220,8 +227,14 @@ void insert_htable(ua_pres_t* presentity)
 {
 	ua_pres_t* p= NULL;
 	unsigned int hash_code;
+    str* s1;
 
-	hash_code= core_hash(presentity->pres_uri,presentity->watcher_uri, 
+    if(presentity->to_uri.s)
+        s1 = &presentity->to_uri;
+    else
+        s1 = presentity->pres_uri;
+
+	hash_code= core_hash(s1, presentity->watcher_uri, 
 			HASH_SIZE);
 	presentity->hash_index = hash_code;
 	LM_DBG("start\n");
@@ -334,21 +347,23 @@ ua_pres_t* get_dialog(ua_pres_t* dialog, unsigned int hash_code)
 			LM_DBG("searched to_tag= %.*s\tfrom_tag= %.*s\n",
 				 p->to_tag.len, p->to_tag.s, p->from_tag.len, p->from_tag.s);
 	    
-			if((p->pres_uri->len== dialog->pres_uri->len) &&
-				(strncmp(p->pres_uri->s, dialog->pres_uri->s,p->pres_uri->len)==0)&&
-				(p->watcher_uri->len== dialog->watcher_uri->len) &&
+				if((p->watcher_uri->len== dialog->watcher_uri->len) &&
  	    		(strncmp(p->watcher_uri->s,dialog->watcher_uri->s,p->watcher_uri->len )==0)&&
 				(strncmp(p->call_id.s, dialog->call_id.s, p->call_id.len)== 0) &&
 				(strncmp(p->to_tag.s, dialog->to_tag.s, p->to_tag.len)== 0) &&
 				(strncmp(p->from_tag.s, dialog->from_tag.s, p->from_tag.len)== 0) )
-				{	
-					LM_DBG("FOUND dialog\n");
-					break;
+				{
+					if(p->to_uri.s && dialog->to_uri.s)
+					{
+						if((p->to_uri.len== dialog->to_uri.len) &&
+						(strncmp(p->to_uri.s, dialog->to_uri.s,p->to_uri.len)==0))
+							break;
+					}
+					else
+                        break;
 				}
-		}	
-	
+		}
 	}
-		
 	return p;
 }
 
@@ -357,10 +372,15 @@ int get_record_id(ua_pres_t* dialog, str** rec_id)
 	unsigned int hash_code;
 	ua_pres_t* rec;
 	str* id;
+    str* s1;
 
+    if(dialog->to_uri.s)
+        s1 = &dialog->to_uri;
+    else
+        s1 = dialog->pres_uri;
+        
 	*rec_id= NULL;
-
-	hash_code= core_hash(dialog->pres_uri, dialog->watcher_uri, HASH_SIZE);
+	hash_code= core_hash(s1, dialog->watcher_uri, HASH_SIZE);
 	lock_get(&HashT->p_records[hash_code].lock);
 
 	rec= get_dialog(dialog, hash_code);
@@ -401,8 +421,14 @@ int is_dialog(ua_pres_t* dialog)
 {
 	int ret_code= 0;
 	unsigned int hash_code;
-	
-	hash_code= core_hash(dialog->pres_uri, dialog->watcher_uri, HASH_SIZE);
+	str* s1;
+
+    if(dialog->to_uri.s)
+        s1 = &dialog->to_uri;
+    else
+        s1 = dialog->pres_uri;
+
+	hash_code= core_hash(s1, dialog->watcher_uri, HASH_SIZE);
 	lock_get(&HashT->p_records[hash_code].lock);
 
 	if(get_dialog(dialog, hash_code)== NULL)
@@ -486,12 +512,12 @@ int update_contact(struct sip_msg* msg, char* str1, char* str2)
 		return -1;
 	}
 	hentity.watcher_uri= &pto->uri;
-	hentity.pres_uri= &pfrom->uri; 
+	hentity.to_uri= pfrom->uri; 
 	hentity.call_id=  msg->callid->body;
 	hentity.to_tag= pto->tag_value;
 	hentity.from_tag= pfrom->tag_value;
 	
-	hash_code= core_hash(hentity.pres_uri,hentity.watcher_uri,
+	hash_code= core_hash(&hentity.to_uri,hentity.watcher_uri,
 				HASH_SIZE);
 
 	/* extract the contact */

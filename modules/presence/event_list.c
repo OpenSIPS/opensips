@@ -54,7 +54,7 @@ event_t* shm_copy_event(event_t* e)
 	}
 	memset(ev, 0, sizeof(event_t));
 
-	ev->text.s= (char*)shm_malloc(e->text.len* sizeof(char));
+	ev->text.s= (char*)shm_malloc(e->text.len);
 	if(ev->text.s== NULL)
 	{
 		ERR_MEM(SHARE_MEM);
@@ -65,7 +65,7 @@ event_t* shm_copy_event(event_t* e)
 	p1= e->params;
 	while(p1)
 	{
-		size= sizeof(param_t)+ (p1->name.len+ p1->body.len)* sizeof(char);
+		size= sizeof(param_t)+ p1->name.len+ p1->body.len;
 		p2= (param_t*)shm_malloc(size);
 		if(p2== NULL)
 		{
@@ -145,7 +145,7 @@ int add_event(pres_ev_t* event)
 			ERR_MEM(SHARE_MEM);
 		}
 		memset(ev, 0, sizeof(pres_ev_t));
-		ev->name.s= (char*)shm_malloc(event->name.len* sizeof(char));
+		ev->name.s= (char*)shm_malloc(event->name.len);
 		if(ev->name.s== NULL)
 		{
 			free_event_params(parsed_event.params, PKG_MEM_TYPE);
@@ -173,11 +173,11 @@ int add_event(pres_ev_t* event)
 		}
 	}
 
-	ev->content_type.s=(char*)shm_malloc(event->content_type.len* sizeof(char)) ;
+	ev->content_type.s = (char*)shm_malloc(event->content_type.len);
 	if(ev->content_type.s== NULL)
 	{
 		ERR_MEM(SHARE_MEM);
-	}	
+	}
 	ev->content_type.len= event->content_type.len;
 	memcpy(ev->content_type.s, event->content_type.s, event->content_type.len);
 
@@ -325,9 +325,9 @@ pres_ev_t* search_event(event_t* event)
 			}
 	
 			/* search all parameters in event in ev */
-			if(search_event_params(event, pres_ev->evp)< 0)
+/*			if(search_event_params(event, pres_ev->evp)< 0)
 				goto cont;
-			
+*/
 			/* search all parameters in ev in event */
 			if(search_event_params(pres_ev->evp, event)< 0)
 				goto cont;

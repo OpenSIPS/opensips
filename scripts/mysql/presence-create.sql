@@ -67,7 +67,7 @@ CREATE TABLE xcap (
 
 CREATE INDEX source_idx ON xcap (source);
 
-INSERT INTO version (table_name, table_version) values ('pua','7');
+INSERT INTO version (table_name, table_version) values ('pua','8');
 CREATE TABLE pua (
     id INT(10) UNSIGNED AUTO_INCREMENT PRIMARY KEY NOT NULL,
     pres_uri CHAR(128) NOT NULL,
@@ -79,6 +79,7 @@ CREATE TABLE pua (
     etag CHAR(64) NOT NULL,
     tuple_id CHAR(64),
     watcher_uri CHAR(128) NOT NULL,
+    to_uri CHAR(128) NOT NULL,
     call_id CHAR(64) NOT NULL,
     to_tag CHAR(64) NOT NULL,
     from_tag CHAR(64) NOT NULL,

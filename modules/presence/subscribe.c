@@ -1054,7 +1054,7 @@ int get_stored_info(struct sip_msg* msg, subs_t* subs, int* reply_code,
 		{
 			if(s->event->evp->parsed != EVENT_DIALOG_SLA)
 			{
-				pres_uri.s= (char*)pkg_malloc(s->pres_uri.len* sizeof(char));
+				pres_uri.s= (char*)pkg_malloc(s->pres_uri.len);
 				if(pres_uri.s== NULL)
 				{
 					lock_release(&subs_htable[i].lock);
@@ -1092,7 +1092,7 @@ found_rec:
 	subs->status= s->status;
 	if(s->reason.s && s->reason.len)
 	{
-		reason.s= (char*)pkg_malloc(s->reason.len* sizeof(char));
+		reason.s= (char*)pkg_malloc(s->reason.len);
 		if(reason.s== NULL)
 		{
 			lock_release(&subs_htable[i].lock);
@@ -1105,7 +1105,7 @@ found_rec:
 	if(s->record_route.s && s->record_route.len)
 	{
 		subs->record_route.s= (char*)pkg_malloc
-			(s->record_route.len* sizeof(char));
+			(s->record_route.len);
 		if(subs->record_route.s== NULL)
 		{
 			ERR_MEM(PKG_MEM_STR);
@@ -1277,7 +1277,7 @@ int get_database_info(struct sip_msg* msg, subs_t* subs, int* reply_code, str* r
 	if(reason.s)
 	{
 		reason.len= strlen(reason.s);
-		subs->reason.s= (char*)pkg_malloc(reason.len* sizeof(char));
+		subs->reason.s= (char*)pkg_malloc(reason.len);
 		if(subs->reason.s== NULL)
 		{
 			ERR_MEM(PKG_MEM_STR);
@@ -1308,7 +1308,7 @@ int get_database_info(struct sip_msg* msg, subs_t* subs, int* reply_code, str* r
 	if(record_route.s)
 	{
 		record_route.len= strlen(record_route.s);
-		subs->record_route.s= (char*)pkg_malloc(record_route.len*sizeof(char));
+		subs->record_route.s= (char*)pkg_malloc(record_route.len);
 		if(subs->record_route.s== NULL)
 		{
 			ERR_MEM(PKG_MEM_STR);
@@ -1524,6 +1524,21 @@ void update_db_subs(db_con_t *db,db_func_t dbf, shtable_t hash_table,
 		LM_ERR("null database connection\n");
 		return;
 	}
+
+	LM_DBG("delete expired\n");
+	update_vals[0].val.int_val= (int)time(NULL);
+	update_ops[0]= OP_LT;
+	CON_PS_REFERENCE(pa_db) = &my_ps_delete;
+	if(dbf.use_table(db, &active_watchers_table) < 0)
+	{
+		LM_ERR("deleting expired information from database\n");
+	}
+
+	if(dbf.delete(db, update_cols, update_ops, update_vals, 1) < 0)
+	{
+		LM_ERR("deleting expired information from database\n");
+	}
+
 	for(i=0; i<htable_size; i++) 
 	{
 		if(!no_lock)
@@ -1641,16 +1656,6 @@ void update_db_subs(db_con_t *db,db_func_t dbf, shtable_t hash_table,
 		}
 		if(!no_lock)
 			lock_release(&hash_table[i].lock);
-	}
-
-	LM_DBG("delete expired\n");
-	update_vals[0].val.int_val= (int)time(NULL);
-	update_ops[0]= OP_LT;
-	CON_PS_REFERENCE(pa_db) = &my_ps_delete;
-	
-	if(dbf.delete(db, update_cols, update_ops, update_vals, 1) < 0)
-	{
-		LM_ERR("deleting expired information from database\n");
 	}
 }
 
@@ -1851,7 +1856,6 @@ int restore_db_subs(void)
 		return -1;
 	}
 
-
 	if(pa_dbf.use_table(pa_db, &active_watchers_table)< 0)
 	{
 		LM_ERR("in use table\n");
@@ -1869,7 +1873,7 @@ int restore_db_subs(void)
 		if(pa_dbf.fetch_result(pa_db,&result,ACTW_FETCH_SIZE)<0)
 		{
 			LM_ERR("fetching rows failed\n");
-			return -1;
+			goto error;
 		}
 	} else 
 	{
@@ -1891,7 +1895,6 @@ int restore_db_subs(void)
 		/* for every row */
 		for(i=0; i<nr_rows; i++)
 		{
-
 			row_vals = ROW_VALUES(rows +i);
 			memset(&s, 0, sizeof(subs_t));
 
@@ -1941,7 +1944,7 @@ int restore_db_subs(void)
 					ERR_MEM(SHM_MEM_STR);
 				}
 				memset(event, 0, sizeof(pres_ev_t));
-				event->name.s= (char*)shm_malloc(ev_sname.len* sizeof(char));
+				event->name.s= (char*)shm_malloc(ev_sname.len);
 				if(event->name.s== NULL)
 				{
 					free_event_params(parsed_event.params, PKG_MEM_TYPE);
@@ -2055,7 +2058,6 @@ error:
 	if(result)
 		pa_dbf.free_result(pa_db, result);
 	return -1;
-
 }
 
 int refresh_watcher(str* pres_uri, str* watcher_uri, str* event, 
@@ -2202,7 +2204,7 @@ int get_db_subs_auth(subs_t* subs, int* found)
 			subs->reason.s= NULL;
 		else
 		{
-			subs->reason.s= (char*)pkg_malloc(subs->reason.len*sizeof(char));
+			subs->reason.s= (char*)pkg_malloc(subs->reason.len);
 			if(subs->reason.s== NULL)
 			{
 				pa_dbf.free_result(pa_db, result);
@@ -2216,7 +2218,7 @@ int get_db_subs_auth(subs_t* subs, int* found)
 	return 0;
 error:
 	return -1;
-}	
+}
 
 int insert_db_subs_auth(subs_t* subs)
 {

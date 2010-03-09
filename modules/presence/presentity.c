@@ -46,6 +46,7 @@
 
 #define PRESENTITY_FETCH_SIZE			128
 
+unsigned char *xmlNodeGetAttrContentByName(xmlNodePtr node, const char *name);
 xmlNodePtr xmlNodeGetNodeByName(xmlNodePtr node, const char *name,
 													const char *ns);
 static str pu_200_rpl  = str_init("OK");
@@ -58,12 +59,12 @@ char* generate_ETag(int publ_count)
 	char* etag= NULL;
 	int size = 0;
 
-	etag = (char*)pkg_malloc(ETAG_LEN*sizeof(char));
+	etag = (char*)pkg_malloc(ETAG_LEN);
 	if(etag ==NULL)
 	{
 		ERR_MEM(PKG_MEM_STR);
 	}
-	memset(etag, 0, ETAG_LEN*sizeof(char));
+	memset(etag, 0, ETAG_LEN);
 	size = sprintf (etag, "%c.%d.%d.%d.%d",
 		prefix, (int)startup_time, pid, counter, publ_count);
 	if( size <0 )
@@ -120,7 +121,7 @@ int publ_send200ok(struct sip_msg *msg, int lexpire, str etag)
 		goto error;
 	}
 
-	size= sizeof(char)*(20+etag.len) ;
+	size= 20 + etag.len;
 	hdr_append2.s = (char *)pkg_malloc(size);
 	if(hdr_append2.s == NULL)
 	{
@@ -171,7 +172,7 @@ presentity_t* new_presentity( str* domain,str* user,int expires,
 	/* allocating memory for presentity */
 	size = sizeof(presentity_t)+ domain->len+ user->len+ etag->len +1;
 	if(sender)
-		size+= sizeof(str)+ sender->len* sizeof(char);
+		size+= sizeof(str)+ sender->len;
 	
 	init_len= size;
 
@@ -226,6 +227,28 @@ error:
 	return NULL;
 }
 
+xmlAttrPtr xmlNodeGetAttrByName(xmlNodePtr node, const char *name)
+{
+	xmlAttrPtr attr = node->properties;
+	while (attr) {
+		if (xmlStrcasecmp(attr->name, (unsigned char*)name) == 0)
+			return attr;
+		attr = attr->next;
+	}
+	return NULL;
+}
+
+
+unsigned char *xmlNodeGetAttrContentByName(xmlNodePtr node, const char *name)
+{
+	xmlAttrPtr attr = xmlNodeGetAttrByName(node, name);
+	if (attr)
+		return xmlNodeGetContent(attr->children);
+	else
+		return NULL;
+}
+
+
 xmlNodePtr xmlNodeGetChildByName(xmlNodePtr node, const char *name)
 {
 	xmlNodePtr cur = node->children;
@@ -236,6 +259,419 @@ xmlNodePtr xmlNodeGetChildByName(xmlNodePtr node, const char *name)
 	}
 	return NULL;
 }
+
+#define bla_extract_dlginfo(node, callid, fromtag, totag) \
+	do {\
+	callid  = xmlNodeGetAttrContentByName(node, "call-id");\
+	dir     = xmlNodeGetAttrContentByName(node, "direction");\
+	if(dir == NULL) {\
+		LM_ERR("Dialog direction not specified\n");\
+		LM_INFO("new:\n%.*s\n", new_body->len, new_body->s);\
+		LM_INFO("old:\n%.*s\n", old_body->len, old_body->s);\
+		goto error;\
+	}\
+	if(xmlStrcasecmp(dir, (unsigned char*)"initiator") == 0) {\
+		fromtag = xmlNodeGetAttrContentByName(node, "local-tag");\
+		totag   = xmlNodeGetAttrContentByName(node, "remote-tag");\
+	} else {\
+		totag   = xmlNodeGetAttrContentByName(node, "local-tag");\
+		fromtag = xmlNodeGetAttrContentByName(node, "remote-tag");\
+	}\
+	xmlFree(dir);\
+	dir = NULL;\
+	}while(0)
+
+int bla_same_dialog(unsigned char* n_callid, unsigned char* n_fromtag, unsigned char* n_totag,
+		unsigned char* o_callid, unsigned char* o_fromtag, unsigned char* o_totag)
+{
+	if(n_callid && o_callid && xmlStrcasecmp(n_callid, o_callid))
+		return 0;
+	if(n_fromtag && o_fromtag && xmlStrcasecmp(n_fromtag, o_fromtag))
+		return 0;
+	if(n_totag && o_totag && xmlStrcasecmp(n_totag, o_totag))
+		return 0;
+	return 1;
+}
+
+int bla_aggregate_state(str* old_body, str* new_body,
+		int* bla_update_publish, int* allocated, str* fin_body)
+{
+	xmlDocPtr old_doc= NULL, new_doc= NULL;
+	xmlNodePtr dlg_node, n_dlg_node;
+	xmlNodePtr aux_dlg_node, state_node, node;
+	xmlNodePtr identity_node, remote_node;
+	unsigned char* state = NULL;
+	unsigned char* attr;
+	int dialog_found = 0;
+	unsigned char* n_callid= NULL,*n_totag= NULL,*n_fromtag= NULL,*dir= NULL;
+	unsigned char* o_callid= NULL,*o_totag= NULL,*o_fromtag= NULL;
+
+	*allocated = 0;
+	*bla_update_publish = 0;
+
+	/* check if the old body has a dialog */
+	old_doc = xmlParseMemory(old_body->s, old_body->len);
+	if(old_doc== NULL)
+	{
+		LM_ERR("failed to parse old body xml document\n");
+		goto error;
+	}
+
+	new_doc = xmlParseMemory(new_body->s, new_body->len);
+	if(new_doc== NULL)
+	{
+		LM_ERR("failed to parse new body xml document\n");
+		goto error;
+	}
+	/* if no body in new body, do not update */
+	n_dlg_node  = xmlNodeGetChildByName(new_doc->children, "dialog");
+	if(n_dlg_node == NULL)
+	{
+		*allocated = 1;
+		LM_INFO("No dialog found in new body, so Notify with the old one\n");
+		xmlDocDumpFormatMemory(old_doc,(xmlChar**)(void*)&fin_body->s,
+			&fin_body->len, 1);
+		xmlFreeDoc(new_doc);
+		xmlFreeDoc(old_doc);
+		return 0;
+	}
+	/* change the state to full*/
+	if(xmlUnsetProp(new_doc->children, BAD_CAST "state") < 0)
+	{
+		LM_ERR("Failed to remove attribute state");
+		goto error;
+	}
+	if(xmlNewProp(new_doc->children, BAD_CAST "state", BAD_CAST "full")== 0)
+	{
+		LM_ERR("Failed to add attribute state=full\n");
+		goto error;
+	}
+
+/* if there are more dialog nodes-> check for one with state != terminated */
+	for(dlg_node= n_dlg_node; dlg_node; dlg_node=dlg_node->next)
+	{
+		if(xmlStrcasecmp(dlg_node->name, (unsigned char*)"dialog")!= 0)
+		{
+			continue;
+		}
+
+		state_node = xmlNodeGetChildByName(dlg_node, "state");
+		if(state_node == NULL) /* no state node found */
+		{
+			LM_ERR("No state node found in new body\n");
+			goto error;
+		}
+		state = xmlNodeGetContent(state_node);
+		if(state == NULL)
+		{
+			LM_ERR("No state defined for new body dialog\n");
+			goto error;
+		}
+		if(xmlStrcasecmp(state, (unsigned char*)"terminated")== 0)
+		{
+			xmlFree(state);
+			state = NULL;
+			continue;
+		}
+		xmlFree(state);
+		state = NULL;
+		n_dlg_node = dlg_node;
+		break;
+	}
+	/* extract dialog information from the new body */
+	bla_extract_dlginfo(n_dlg_node, n_callid, n_fromtag, n_totag);
+	LM_INFO("Extracted callid, from_tag, to_tag");
+	/* change the remote target - don't let it pass contact on the other side */
+	remote_node = xmlNodeGetChildByName(n_dlg_node, "remote");
+	if(remote_node)
+	{
+		node = xmlNodeGetChildByName(remote_node, "target");
+		if(node)
+		{
+			xmlUnlinkNode(node);
+			xmlFreeNode(node);
+			/* add another target node */
+			identity_node = xmlNodeGetChildByName(remote_node, "identity");
+			if(identity_node == NULL)
+			{
+				LM_ERR("No remote identity node found\n");
+				goto error;
+			}
+			attr = xmlNodeGetContent(identity_node);
+			if(attr == NULL)
+			{
+				LM_ERR("No identity node content\n");
+				goto error;
+			}
+			node = xmlNewChild(remote_node, 0, (unsigned char*)"target", 0);
+			if(node == NULL)
+			{
+				LM_ERR("Failed to add new node target\n");
+				xmlFree(attr);
+				goto error;
+			}
+			xmlNewProp(node, BAD_CAST "uri", attr);
+			xmlFree(attr);
+		}
+	}
+
+	dlg_node = xmlNodeGetChildByName(old_doc->children, "dialog");
+	if(dlg_node == NULL) /* if no previous record of a dialog, the new body should be written */
+	{
+		/* if the state in the new body is terminated - do not update */
+		state_node = xmlNodeGetChildByName(n_dlg_node, "state");
+		if(state_node == NULL) /* no state node found */
+		{
+			LM_ERR("No state node found in new body\n");
+			goto error;
+		}
+		state = xmlNodeGetContent(state_node);
+		if(state == NULL)
+		{
+			LM_ERR("No state defined for new body dialog\n");
+			goto error;
+		}
+		if(xmlStrcasecmp(state, (unsigned char*)"terminated")== 0)
+		{
+			*allocated = 1;
+			xmlDocDumpFormatMemory(old_doc,(xmlChar**)(void*)&fin_body->s,
+				&fin_body->len, 1);
+		}
+		else
+		{
+			*fin_body= *new_body;
+			*allocated = 0;
+			*bla_update_publish = 1;
+		}
+		xmlFree(state);
+		state = NULL;
+		goto done;
+	}
+	/* check the dialogs*/
+	/* the only case when a new dialog notification can arrive is when all the others are on hold */
+	/* if we find a terminated dialog, delete it */
+	while(dlg_node)
+	{
+		if(xmlStrcasecmp(dlg_node->name, (unsigned char*)"dialog")!= 0)
+		{
+			dlg_node = dlg_node->next;
+			continue;
+		}
+		bla_extract_dlginfo(dlg_node, o_callid, o_fromtag, o_totag);
+
+		/* if it is the same dialog*/
+		if(bla_same_dialog(n_callid, n_fromtag, n_totag,
+					o_callid, o_fromtag, o_totag))
+		{
+			/* rewrite the node with the new one */
+			xmlUnlinkNode(dlg_node);
+			xmlFreeNode(dlg_node);
+			LM_DBG("Found the same dialog - replace the node with the new one\n");
+			dialog_found= 1;
+			if(o_callid)
+				xmlFree(o_callid);
+			if(o_fromtag)
+				xmlFree(o_fromtag);
+			if(o_totag)
+				xmlFree(o_totag);
+			o_callid= o_fromtag= o_totag= NULL;
+			break;
+		}
+		if(o_callid)
+			xmlFree(o_callid);
+		if(o_fromtag)
+			xmlFree(o_fromtag);
+		if(o_totag)
+			xmlFree(o_totag);
+		o_callid= o_fromtag= o_totag= NULL;
+		/* if a different one, check the state */
+		state_node = xmlNodeGetChildByName(dlg_node, "state");
+		if(state_node== NULL)
+		{
+			LM_ERR("No state defined for dialog\n");
+			goto error;
+		}
+		/* if state is terminated -> delete the node */
+		state = xmlNodeGetContent(state_node) ;
+		if(state == NULL)
+		{
+			LM_ERR("Wrong formated document - no dialog state\n");
+			goto error;
+		}
+		LM_DBG("Found a different dialog state = %s\n", state);
+		
+		if(xmlStrcasecmp(state, (unsigned char*)"terminated")== 0)
+		{
+			aux_dlg_node = dlg_node->next;
+			xmlFree(state);
+			state = NULL;
+			xmlUnlinkNode(dlg_node);
+			xmlFreeNode(dlg_node);
+			dlg_node = aux_dlg_node;
+			continue;
+		}
+#if 0	
+	/* if state is confirmed -> check if on hold */
+		if(xmlStrcasecmp(state, (unsigned char*)"confirmed")== 0)
+		{
+			/* check if on hold */
+			node = xmlNodeGetChildByName(dlg_node, "local");
+			if(node == NULL)
+			{
+				LM_ERR("local node not found\n");
+				goto error;
+			}
+			node = xmlNodeGetChildByName(node, "target");
+			if(node == NULL)
+			{
+				LM_ERR("local node not found\n");
+				goto error;
+			}
+			for(node= node->children; node; node=node->next)
+			{
+				if(xmlStrcasecmp(node->name, (unsigned char*)"param") != 0)
+				{
+					continue;
+				}
+				attr = xmlNodeGetAttrContentByName(node, "pname");
+				if(attr == NULL)
+				{
+					LM_ERR("pname attribute not found for param node\n");
+					goto error;
+				}
+				if(xmlStrcasecmp(attr, (unsigned char*)"+sip.rendering") != 0)
+				{
+					xmlFree(attr);
+					continue;
+				}
+				xmlFree(attr);
+				attr = xmlNodeGetAttrContentByName(node, "pval");
+				if(attr == NULL)
+				{
+					LM_ERR("pval attribute not found for param node\n");
+					goto error;
+				}
+				/* the call is on hold when <param pname="+sip.rendering" pval="no"/> */
+				if(xmlStrcasecmp(attr, (unsigned char*) "no") != 0)
+				{
+					/* the last call was not on hold -> return error*/
+					LM_ERR("Found another call that was not on hold\n");
+					LM_ERR("New body:\n%.*s\n", new_body->len, new_body->s);
+					LM_ERR("Old body:\n%.*s\n", old_body->len, old_body->s);
+					xmlFree(attr);
+					if(n_node_state == DLG_DESTROYED)
+					{
+						bla_update_publish = 0;
+						*allocated = 1;
+						xmlDocDumpFormatMemory(old_doc,(xmlChar**)(void*)&fin_body->s,
+							&fin_body->len, 1);
+						goto done;
+					}
+						
+					to_delete = 1; 
+					break;
+//					goto error;
+				}
+				xmlFree(attr);
+			}
+			if(to_delete)
+			{
+				xmlFree(state);
+				aux_dlg_node= dlg_node->next;
+				xmlUnlinkNode(dlg_node);
+				xmlFreeNode(dlg_node);
+				dlg_node = aux_dlg_node;
+				continue;
+			}
+		}
+#endif
+		xmlFree(state);
+		state = NULL;
+		dlg_node = dlg_node->next;
+	}
+
+	if(!dialog_found)
+	{
+		/* if the new body has a dialog with state terminated - do not update */
+		state_node = xmlNodeGetChildByName(n_dlg_node, "state");
+		if(state_node == NULL) /* no state node found */
+		{
+			LM_ERR("No state node found in new body\n");
+			goto error;
+		}
+		state = xmlNodeGetContent(state_node);
+		if(state == NULL)
+		{
+			LM_ERR("No state defined for new body dialog\n");
+			goto error;
+		}
+		if(xmlStrcasecmp(state, (unsigned char*)"terminated")== 0)
+		{
+			*allocated = 1;
+			xmlDocDumpFormatMemory(old_doc,(xmlChar**)(void*)&fin_body->s,
+				&fin_body->len, 1);
+			xmlFree(state);
+			goto done;
+		}
+	}
+
+	dlg_node = xmlNodeGetChildByName(old_doc->children, "dialog");
+	while(dlg_node)
+	{
+		if(xmlStrcasecmp(dlg_node->name, (unsigned char*)"dialog")!= 0)
+		{
+			dlg_node= dlg_node->next;
+			continue;
+		}
+		n_dlg_node= xmlCopyNode(dlg_node, 1);
+		if(n_dlg_node== NULL)
+		{
+			LM_ERR("failed to copy dialog node\n");
+			goto error;
+		}
+		if(xmlAddChild(new_doc->children, n_dlg_node)== NULL)
+		{
+			LM_ERR("while adding child\n");
+			goto error;
+		}
+		dlg_node = dlg_node->next;
+	}
+	xmlDocDumpFormatMemory(new_doc,(xmlChar**)(void*)&fin_body->s,
+		&fin_body->len, 1);
+	*bla_update_publish = 1;
+	*allocated = 1;
+
+done:
+	xmlFreeDoc(new_doc);
+	xmlFreeDoc(old_doc);
+	xmlCleanupParser();
+	xmlMemoryDump();
+	if(n_callid)
+		xmlFree(n_callid);
+	if(n_totag)
+		xmlFree(n_totag);
+	if(n_fromtag)
+		xmlFree(n_fromtag);
+	return 0;
+
+error:
+	if(new_doc)
+		xmlFreeDoc(new_doc);
+	if(old_doc)
+		xmlFreeDoc(old_doc);
+	if(state)
+		xmlFree(state);
+	if(n_callid)
+		xmlFree(n_callid);
+	if(n_totag)
+		xmlFree(n_totag);
+	if(n_fromtag)
+		xmlFree(n_fromtag);
+	xmlCleanupParser();
+    xmlMemoryDump();
+	return -1;
+}
+
 
 int check_if_dialog(str body, int *is_dialog)
 {
@@ -282,8 +718,11 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, str* body,
 	int rez_body_col, rez_sender_col, n_result_cols= 0;
 	db_row_t *row = NULL ;
 	db_val_t *row_vals = NULL;
-	str old_body, sender;
-	int is_dialog= 0, bla_update_publish= 1;
+	str old_body;
+//	str sender;
+	int bla_update_publish= 1;
+	str fin_body={0, 0};
+	int allocated = 0;
 
 	*sent_reply= 0;
 	if(presentity->event->req_auth)
@@ -309,7 +748,7 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, str* body,
 	query_vals[n_query_cols].nul = 0;
 	query_vals[n_query_cols].val.str_val = presentity->domain;
 	n_query_cols++;
-	
+
 	query_cols[n_query_cols] = &str_username_col;
 	query_ops[n_query_cols] = OP_EQ;
 	query_vals[n_query_cols].type = DB_STR;
@@ -431,37 +870,27 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, str* body,
 
 				old_body.s = (char*)row_vals[rez_body_col].val.string_val;
 				old_body.len = strlen(old_body.s);
-				if(check_if_dialog(*body, &is_dialog)< 0)
+
+			/* the meaning of the parameters
+				* bla_update_publish - if what is now in database should be changed 
+				* allocated - if fin_body has a pointer to an dynamic allocated memory */
+
+				if(bla_aggregate_state(&old_body, body, &bla_update_publish,
+							&allocated, &fin_body) < 0)
 				{
-					LM_ERR("failed to check if dialog stored\n");
-					goto error;
+					LM_ERR("Failed to aggregate bla state\n");
+					/* I should not update - but send 200 OK */
+					bla_update_publish = 0;
+					allocated = 0;
+					//	goto error;
 				}
 
-				if(is_dialog== 1)  /* if the new body has a dialog - overwrite */
-					goto after_dialog_check;
-
-				if(check_if_dialog(old_body, &is_dialog)< 0)
+				if(bla_update_publish ||  allocated) /* if an aggregated body */
 				{
-					LM_ERR("failed to check if dialog stored\n");
-					goto error;
-				}
-
-				if(is_dialog==0 ) /* if the old body has no dialog - overwrite */
-					goto after_dialog_check;
-
-				sender.s = (char*)row_vals[rez_sender_col].val.string_val;
-				sender.len= strlen(sender.s);
-
-				LM_DBG("old_sender = %.*s\n", sender.len, sender.s );
-				if(presentity->sender)
-				{
-					if(!(presentity->sender->len == sender.len && 
-					strncmp(presentity->sender->s, sender.s, sender.len)== 0))
-						 bla_update_publish= 0;
+					body->s = fin_body.s;
+					body->len = fin_body.len;
 				}
 			}
-after_dialog_check:
-
 			pa_dbf.free_result(pa_db, result);
 			result= NULL;
 			if(presentity->expires == 0) 
@@ -505,22 +934,7 @@ after_dialog_check:
 			}
 
 			n_update_cols= 0;
-			/* if event dialog and is_dialog -> if sender not the same as
-			 * old sender do not overwrite */
-			if( (presentity->event->evp->parsed == EVENT_DIALOG_SLA) &&  bla_update_publish==0)
-			{
-				LM_DBG("drop Publish for BLA from a different sender that"
-						" wants to overwrite an existing dialog\n");
-				LM_DBG("sender = %.*s\n",  presentity->sender->len, presentity->sender->s );
-				if( publ_send200ok(msg, presentity->expires, presentity->etag)< 0)
-				{
-					LM_ERR("sending 200OK reply\n");
-					goto error;
-				}
-				*sent_reply= 1;
-				goto done;
-			}
-			
+
 			if(presentity->event->etag_not_new== 0)
 			{
 				/* generate another etag */
@@ -595,7 +1009,7 @@ after_dialog_check:
 			}
 			n_update_cols++;
 
-			if(body && body->s)
+			if(body && body->s && bla_update_publish)
 			{
 				update_keys[n_update_cols] = &str_body_col;
 				update_vals[n_update_cols].type = DB_BLOB;
@@ -683,6 +1097,8 @@ done:
 	}
 	if(pres_uri.s)
 		pkg_free(pres_uri.s);
+	if(allocated && fin_body.s)
+		xmlFree(fin_body.s);
 
 	return 0;
 
@@ -699,7 +1115,8 @@ error:
 	}
 	if(pres_uri.s)
 		pkg_free(pres_uri.s);
-
+	if(allocated && fin_body.s)
+		xmlFree(fin_body.s);
 	return -1;
 
 }
@@ -890,7 +1307,7 @@ char* extract_sphere(str body)
 			LM_ERR("failed to extract sphere node content\n");
 			goto error;
 		}
-		sphere= (char*)pkg_malloc((strlen(cont)+ 1)*sizeof(char));
+		sphere= (char*)pkg_malloc(strlen(cont)+ 1);
 		if(sphere== NULL)
 		{
 			xmlFree(cont);
@@ -904,7 +1321,6 @@ char* extract_sphere(str body)
 
 error:
 	xmlFreeDoc(doc);
-
 	return sphere;
 }
 
@@ -959,7 +1375,7 @@ char* get_sphere(str* pres_uri)
 	{
 		if(p->sphere)
 		{
-			sphere= (char*)pkg_malloc(strlen(p->sphere)* sizeof(char));
+			sphere= (char*)pkg_malloc(strlen(p->sphere));
 			if(sphere== NULL)
 			{
 				lock_release(&pres_htable[hash_code].lock);

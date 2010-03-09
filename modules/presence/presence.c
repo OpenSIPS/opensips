@@ -838,7 +838,7 @@ int update_watchers_status(str pres_uri, pres_ev_t* ev, str* rules_doc)
 
 			if(reason.len)
 			{
-				ws_list[i].reason.s = (char*)pkg_malloc(reason.len* sizeof(char));
+				ws_list[i].reason.s = (char*)pkg_malloc(reason.len);
 				if(ws_list[i].reason.s== NULL)
 				{  
 					LM_ERR("No more private memory\n");
@@ -850,7 +850,7 @@ int update_watchers_status(str pres_uri, pres_ev_t* ev, str* rules_doc)
 			else
 				ws_list[i].reason.s= NULL;
             
-			ws_list[i].w_user.s = (char*)pkg_malloc(w_user.len* sizeof(char));
+			ws_list[i].w_user.s = (char*)pkg_malloc(w_user.len);
 			if(ws_list[i].w_user.s== NULL)
 			{
 				LM_ERR("No more private memory\n");
@@ -860,7 +860,7 @@ int update_watchers_status(str pres_uri, pres_ev_t* ev, str* rules_doc)
 			memcpy(ws_list[i].w_user.s, w_user.s, w_user.len);
 			ws_list[i].w_user.len= w_user.len;
 		
-			 ws_list[i].w_domain.s = (char*)pkg_malloc(w_domain.len* sizeof(char));
+			 ws_list[i].w_domain.s = (char*)pkg_malloc(w_domain.len);
 			if(ws_list[i].w_domain.s== NULL)
 			{
 				LM_ERR("No more private memory\n");

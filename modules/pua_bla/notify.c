@@ -114,13 +114,46 @@ int bla_handle_notify(struct sip_msg* msg, char* s1, char* s2)
 		}
 	}
 	pfrom = (struct to_body*)msg->from->parsed;
-	dialog.pres_uri= &pfrom->uri;
+	dialog.to_uri= pfrom->uri;
 
 	if( pfrom->tag_value.s ==NULL || pfrom->tag_value.len == 0)
 	{
 		LM_ERR("no from tag value present\n");
 		return -1;
 	}
+	if ( get_content_length(msg) == 0 )
+	{
+		LM_DBG("content length= 0\n");
+		return 1;
+	}
+	else
+	{
+		body.s=get_body(msg);
+		if (body.s== NULL)
+		{
+			LM_ERR("cannot extract body from msg\n");
+			return -1;
+		}
+		body.len = get_content_length( msg );
+	}
+   	
+	if(msg->contact== NULL || msg->contact->body.s== NULL)
+	{
+		LM_ERR("no contact header found");
+		return -1;
+	}
+	if( parse_contact(msg->contact) <0 )
+	{
+		LM_ERR(" cannot parse contact header\n");
+		return -1;
+	}
+
+	if(msg->contact->parsed == NULL)
+	{
+		LM_ERR("cannot parse contact header\n");
+		return -1;
+	}
+	contact = ((contact_body_t* )msg->contact->parsed)->contacts->uri;
 
 	dialog.to_tag= pfrom->tag_value;
 	dialog.event= BLA_EVENT;
@@ -176,39 +209,6 @@ int bla_handle_notify(struct sip_msg* msg, char* s1, char* s2)
 		}
 	}
 
-	if ( get_content_length(msg) == 0 )
-	{
-		LM_ERR("content length= 0\n");
-		return -1;
-	}
-	else
-	{
-		body.s=get_body(msg);
-		if (body.s== NULL)
-		{
-			LM_ERR("cannot extract body from msg\n");
-			return -1;
-		}
-		body.len = get_content_length( msg );
-	}
-   	
-	if(msg->contact== NULL || msg->contact->body.s== NULL)
-	{
-		LM_ERR("no contact header found");
-		return -1;
-	}
-	if( parse_contact(msg->contact) <0 )
-	{
-		LM_ERR(" cannot parse contact header\n");
-		return -1;
-	}
-
-	if(msg->contact->parsed == NULL)
-	{
-		LM_ERR("cannot parse contact header\n");
-		return -1;
-	}
-	contact = ((contact_body_t* )msg->contact->parsed)->contacts->uri;
 
 	/* build extra_headers with Sender*/
 	extra_headers.s= buf;

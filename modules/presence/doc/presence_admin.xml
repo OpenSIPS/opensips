@@ -424,8 +424,7 @@ modparam("presence", "waiting_subs_daysno", 2)
 			handle_publish("$hdr(Sender)");
 		else
 			handle_publish();
-		t_release();
-	} 
+	}
 ...
 </programlisting>
 		</example>

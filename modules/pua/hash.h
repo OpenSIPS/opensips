@@ -73,7 +73,7 @@ typedef struct ua_pres{
 	void* cb_param;
 	struct ua_pres* next;
 	int ua_flag;
-	
+
 	/* publish */
 	str etag;
 	str tuple_id;
@@ -82,6 +82,7 @@ typedef struct ua_pres{
 	gen_lock_t publ_lock;
 
 	/* subscribe */
+	str to_uri;
 	str* watcher_uri;
 	str call_id;
 	str to_tag;

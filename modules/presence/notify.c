@@ -779,7 +779,7 @@ str* get_p_notify_body(str pres_uri, pres_ev_t* event, str* etag,
 	int size= 0;
 	struct sip_uri uri;
 	unsigned int hash_code;
-	str sender;
+	
 	static str query_str = str_init("received_time");
 
 	if(parse_uri(pres_uri.s, pres_uri.len, &uri)< 0)
@@ -878,7 +878,7 @@ db_query:
 			
 			/* if event BLA - check if sender is the same as contact */
 			/* if so, send an empty dialog info document */
-			if( event->evp->parsed == EVENT_DIALOG_SLA && contact )
+/*			if( event->evp->parsed == EVENT_DIALOG_SLA && contact )
 			{
 				sender.s = (char*)row_vals[sender_col].val.string_val;
 				if(sender.s== NULL || strlen(sender.s)==0)
@@ -893,8 +893,8 @@ db_query:
 					return notify_body;
 				}
 			}
-
 after_sender_check:
+*/
 			if(row_vals[body_col].val.string_val== NULL)
 			{
 				LM_ERR("NULL notify body record\n");
@@ -912,7 +912,7 @@ after_sender_check:
 				ERR_MEM(PKG_MEM_STR);	
 			}
 			memset(notify_body, 0, sizeof(str));
-			notify_body->s= (char*)pkg_malloc( len* sizeof(char));
+			notify_body->s= (char*)pkg_malloc(len);
 			if(notify_body->s== NULL)
 			{
 				pkg_free(notify_body);
@@ -960,7 +960,7 @@ after_sender_check:
 					goto error;
 				}
 			
-				size= sizeof(str)+ len* sizeof(char);
+				size= sizeof(str)+ len;
 				body= (str*)pkg_malloc(size);
 				if(body== NULL)
 				{
@@ -989,7 +989,7 @@ after_sender_check:
 					goto error;
 				}
 				
-				size= sizeof(str)+ len* sizeof(char);
+				size= sizeof(str)+ len;
 				body= (str*)pkg_malloc(size);
 				if(body== NULL)
 				{
@@ -1452,7 +1452,8 @@ int publ_notify(presentity_t* p, str pres_uri, str* body, str* offline_etag, str
 	subs_t* subs_array= NULL, *s= NULL;
 	int ret_code= -1;
 
-	subs_array= get_subs_dialog(&pres_uri, p->event , p->sender);
+//	subs_array= get_subs_dialog(&pres_uri, p->event , p->sender);
+	subs_array= get_subs_dialog(&pres_uri, p->event , NULL);
 	if(subs_array == NULL)
 	{
 		LM_DBG("Could not find subs_dialog\n");
@@ -1824,7 +1825,7 @@ void p_tm_callback( struct cell *t, int type, struct tmcb_params *ps)
 	LM_DBG("completed with status %d [to_tag:%.*s]\n",
 			ps->code,((c_back_param*)(*ps->param))->to_tag.len,
 			((c_back_param*)(*ps->param))->to_tag.s);
-
+/*
 	if(ps->code >= 300)
 	{
 		unsigned int hash_code;
@@ -1836,7 +1837,7 @@ void p_tm_callback( struct cell *t, int type, struct tmcb_params *ps)
 
 		delete_db_subs(cb->pres_uri, cb->ev_name, cb->to_tag);
 	}
-
+*/
 	if(*ps->param !=NULL  )
 		free_cbparam((c_back_param*)(*ps->param));
 	return ;
