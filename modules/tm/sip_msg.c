@@ -676,11 +676,6 @@ do { \
 					LINK_SIBLING_HEADER(path, new_hdr);
 				}
 				break;
-			case HDR_CONTENTTYPE_T :
-				if (HOOK_NOT_SET(content_type)) {
-					new_msg->content_type = new_hdr;
-				}
-				break;
 			case HDR_CONTENTLENGTH_T :
 				if (HOOK_NOT_SET(content_length)) {
 					new_msg->content_length = new_hdr;
@@ -749,6 +744,15 @@ do { \
 					LINK_SIBLING_HEADER(event, new_hdr);
 				}
 				break;
+
+			case HDR_CONTENTTYPE_T:
+				if (HOOK_NOT_SET(content_type)) {
+					new_msg->content_type = new_hdr;
+				} else {
+					LINK_SIBLING_HEADER(content_type, new_hdr);
+				}
+				break;
+				
 			case HDR_ACCEPT_T:
 				if (HOOK_NOT_SET(accept)) {
 					new_msg->accept = new_hdr;

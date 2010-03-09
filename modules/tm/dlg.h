@@ -113,6 +113,12 @@ int new_dlg_uac(str* _cid, str* _ltag, unsigned int _lseq, str* _luri, str* _rur
 typedef int (*new_dlg_uac_f)(str* _cid, str* _ltag, unsigned int _lseq, str* _luri, str* _ruri, dlg_t** _d);
 
 /*
+ * Create a auto new dialog (callid, from tag and CSEQ are auto generated)
+ */
+int new_auto_dlg_uac( str* _luri, str* _ruri, struct socket_info* sock, dlg_t** _d);
+typedef int (*new_auto_dlg_uac_f)(str* _luri, str* _ruri, struct socket_info *sock, dlg_t** _d);
+
+/*
  * Function which adds Display Names to an existing dialog
  */
 int dlg_add_extra(dlg_t* _d, str* _ldname, str* _rdname);

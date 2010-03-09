@@ -40,6 +40,8 @@
 #include "../../config.h"
 #include "dlg.h"
 #include "t_reply.h"
+#include "callid.h"
+#include "uac.h"
 #include "../../parser/parser_f.h"
 
 
@@ -136,9 +138,9 @@ int w_calculate_hooks(dlg_t* _d)
 }
 
 /*
- * Create a new dialog
+ * Create a new dialog - internal function
  */
-int new_dlg_uac(str* _cid, str* _ltag, unsigned int _lseq, str* _luri, str* _ruri, dlg_t** _d)
+static int _internal_new_dlg_uac(str* _cid, str* _ltag, unsigned int _lseq, str* _luri, str* _ruri, struct socket_info* sock, dlg_t** _d)
 {
 	dlg_t* res;
 
@@ -168,6 +170,8 @@ int new_dlg_uac(str* _cid, str* _ltag, unsigned int _lseq, str* _luri, str* _rur
 	res->loc_seq.value = _lseq;
 	     /* And mark it as set */
 	res->loc_seq.is_set = 1;
+	/* set socket */
+	res->send_sock = sock;
 
 	*_d = res;
 
@@ -179,6 +183,30 @@ int new_dlg_uac(str* _cid, str* _ltag, unsigned int _lseq, str* _luri, str* _rur
 	}
 	
 	return 0;
+}
+
+
+/*
+ * Create a new dialog
+ */
+int new_dlg_uac(str* _cid, str* _ltag, unsigned int _lseq, str* _luri, str* _ruri, dlg_t** _d)
+{
+	return _internal_new_dlg_uac(_cid,_ltag,_lseq,_luri,_ruri,NULL,_d);
+}
+
+
+/*
+ * Create a new dialog (auto mode)
+ */
+int new_auto_dlg_uac( str* _luri, str* _ruri, struct socket_info* _sock, dlg_t** _d)
+{
+	str callid, fromtag;
+
+	generate_callid(&callid);
+	generate_fromtag(&fromtag, &callid);
+
+	return _internal_new_dlg_uac(&callid, &fromtag, 13/*cseq*/,_luri,
+		_ruri,_sock,_d);
 }
 
 
