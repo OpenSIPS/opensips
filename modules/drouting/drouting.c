@@ -50,11 +50,25 @@
 #include "../../parser/parse_from.h"
 #include "../../parser/parse_uri.h"
 #include "../../mi/mi.h"
+#include "../tm/tm_load.h"
 
 #include "dr_load.h"
 #include "prefix_tree.h"
 #include "routing.h"
 #include "dr_bl.h"
+
+
+/* probing related stuff */
+static unsigned int dr_prob_interval = 30;
+static str dr_probe_replies = {NULL,0};
+struct tm_binds dr_tmb;
+str dr_probe_method = str_init("OPTIONS");
+str dr_probe_from = str_init("sip:prober@localhost");
+static int* probing_reply_codes = NULL;
+static int probing_codes_no = 0;
+
+static int dr_disable(struct sip_msg *req);
+int_str id_avp_name;
 
 
 /*** DB relatede stuff ***/
@@ -127,6 +141,7 @@ static int goes_to_gw_0(struct sip_msg* msg, char* f1, char* f2);
 static int goes_to_gw_1(struct sip_msg* msg, char* f1, char* f2);
 
 static struct mi_root* dr_reload_cmd(struct mi_root *cmd_tree, void *param);
+static struct mi_root* mi_dr_status(struct mi_root *cmd, void *param);
 
 #define RELOAD_MI_CMD  "dr_reload"
 
@@ -159,6 +174,8 @@ static cmd_export_t cmds[] = {
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE},
 	{"goes_to_gw",  (cmd_function)goes_to_gw_1,   2,  fixup_from_gw, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE},
+	{"dr_disable", (cmd_function)dr_disable,          0,               0,
+			0, REQUEST_ROUTE|FAILURE_ROUTE},
 	{0, 0, 0, 0, 0, 0}
 };
 
@@ -181,6 +198,10 @@ static param_export_t params[] = {
 	{"fetch_rows",      INT_PARAM, &dr_fetch_rows   },
 	{"force_dns",       INT_PARAM, &dr_force_dns    },
 	{"define_blacklist",STR_PARAM|USE_FUNC_PARAM, (void*)set_dr_bl },
+	{ "probing_interval",      INT_PARAM, &dr_prob_interval         },
+	{ "probing_method",        STR_PARAM, &dr_probe_method.s        },
+	{ "probing_from",          STR_PARAM, &dr_probe_from.s          },
+	{ "probing_reply_codes",   STR_PARAM, &dr_probe_replies.s       },
 	{0, 0, 0}
 };
 
@@ -190,6 +211,7 @@ static param_export_t params[] = {
  */
 static mi_export_t mi_cmds[] = {
 	{ RELOAD_MI_CMD, dr_reload_cmd, MI_NO_INPUT_FLAG, 0, 0 },
+	{ "dr_status",   mi_dr_status,   0,               0,  0},
 	{ 0, 0, 0, 0, 0}
 };
 
@@ -212,6 +234,143 @@ struct module_exports exports = {
 };
 
 
+#define ref_read_data() \
+ again:\
+	lock_get( ref_lock ); \
+	/* if reload must be done, do un ugly busy waiting \
+	 * until reload is finished */ \
+	if (*reload_flag) { \
+		lock_release( ref_lock ); \
+		usleep(5); \
+		goto again; \
+	} \
+	*data_refcnt = *data_refcnt + 1; \
+	lock_release( ref_lock );
+
+
+#define unref_read_data() \
+	lock_get( ref_lock ); \
+	*data_refcnt = *data_refcnt - 1; \
+	lock_release( ref_lock );
+
+/** Probing Section **/
+
+static int check_options_rplcode(int code)
+{
+	int i;
+
+	for (i =0; i< probing_codes_no; i++) {
+		if(probing_reply_codes[i] == code)
+			return 1;
+	}
+
+	return 0;
+}
+
+static int dr_disable(struct sip_msg *req)
+{
+
+	struct usr_avp *id_avp;
+	int_str id_val;
+	pgw_t *dst;
+
+	ref_read_data();
+	
+	id_avp = search_first_avp( 0, id_avp_name, &id_val, 0);
+	if (id_avp==NULL) {
+		LM_DBG(" no AVP ID ->nothing to disable\n");
+		unref_read_data();
+		return -1;
+	}
+
+	for( dst=(*rdata)->pgw_l ; dst ; dst=dst->next) {
+		if (dst->id==id_val.n) {
+			dst->flags |= DR_DST_STAT_DSBL_FLAG;
+		}
+	}
+
+		
+	unref_read_data();
+	
+	return 1;
+}
+
+static void dr_probing_callback( struct cell *t, int type,
+		struct tmcb_params *ps )
+{
+	int id;
+	int code = ps->code;
+	pgw_t *dst;
+
+	if (!*ps->param) {
+		LM_CRIT("BUG - reply to a DR probe with no ID (code=%d)\n", ps->code);
+		return;
+	}
+	id = (int)(long)(*ps->param);
+
+	ref_read_data();
+
+	for( dst=(*rdata)->pgw_l ; dst && dst->id!=id ; dst=dst->next);
+	if (dst==NULL)
+		goto end;
+
+	if ((code == 200) || check_options_rplcode(code)) {
+		/* re-enable to DST  (if allowed) */
+		if ( dst->flags&DR_DST_STAT_NOEN_FLAG )
+			goto end;
+		dst->flags &= ~DR_DST_STAT_DSBL_FLAG;
+		goto end;
+	}
+
+	if (code>=400) {
+		dst->flags |= DR_DST_STAT_DSBL_FLAG;
+	}
+
+
+end:
+	unref_read_data();
+
+	return;
+}
+
+
+static void dr_prob_handler(unsigned int ticks, void* param)
+{
+	static char buff[1000] = {"sip:"};
+	str uri;
+
+	ref_read_data();
+
+	/* do probing */
+	pgw_t *dst;
+
+	/* go through all destinations */
+	for( dst = (*rdata)->pgw_l ; dst ; dst=dst->next ) {
+		/* dst requires probing ? */
+		if ( dst->flags&DR_DST_STAT_NOEN_FLAG
+			|| !( (dst->flags&DR_DST_PING_PERM_FLAG)  ||  /*permanent probing*/
+					( dst->flags&DR_DST_PING_DSBL_FLAG 
+					&& dst->flags&DR_DST_STAT_DSBL_FLAG  /*probing on disable*/
+					)
+				)
+			)
+			continue;
+
+		memcpy(buff + 4, dst->ip_str.s, dst->ip_str.len);
+		uri.s = buff;
+		uri.len = dst->ip_str.len + 4;
+		
+		if (dr_tmb.t_request( &dr_probe_method, &uri, &uri,
+		&dr_probe_from, NULL, NULL, NULL, dr_probing_callback,
+		(void*)(long)dst->id, NULL) < 0) {
+			LM_ERR("probing failed\n");
+		}
+
+	}
+
+
+	unref_read_data();
+}
 
 static inline int dr_reload_data( void )
 {
@@ -268,6 +427,9 @@ static int dr_init(void)
 		goto error;
 	}
 	db_url.len = strlen(db_url.s);
+
+	id_avp_name.s.s =  "dr_id_avp_INTERNAL_USE_ONLY";
+	id_avp_name.s.len = strlen(id_avp_name.s.s);
 
 	drd_table.len = strlen(drd_table.s);
 	if (drd_table.s[0]==0) {
@@ -376,6 +538,39 @@ static int dr_init(void)
 		LM_CRIT( "database modules does not "
 			"provide QUERY functions needed by DRounting module\n");
 		return -1;
+	}
+
+
+	/* arm a function for probing */
+	if (dr_prob_interval) {
+		/* load TM API */
+		if (load_tm_api(&dr_tmb)!=0) {
+			LM_ERR("can't load TM API\n");
+			return -1;
+		}
+
+		/* probing method */
+		dr_probe_method.len = strlen(dr_probe_method.s);
+		dr_probe_from.len = strlen(dr_probe_from.s);
+		if (dr_probe_replies.s)
+			dr_probe_replies.len = strlen(dr_probe_replies.s);
+
+		/* register pinger function */
+		if (register_timer( dr_prob_handler , NULL, dr_prob_interval)<0) {
+			LM_ERR("failed to register probing handler\n");
+			return -1;
+		}
+
+		if (dr_probe_replies.s) {
+			dr_probe_replies.len = strlen(dr_probe_replies.s);
+			if(parse_reply_codes( &dr_probe_replies, &probing_reply_codes,
+			&probing_codes_no )< 0) {
+				LM_ERR("Bad format for options_reply_code parameter"
+					" - Need a code list separated by commas\n");
+				return -1;
+			}
+		}
+
 	}
 
 	return 0;
@@ -609,30 +804,83 @@ static int do_routing_12(struct sip_msg* msg, char* grp, char* order)
 
 static int use_next_gw(struct sip_msg* msg)
 {
-	struct usr_avp *avp;
+	struct usr_avp *avp,*avp2;
 	int_str val;
+	
+	
+	str ruri;
+	int ok;
+	pgw_t * dst;
 
-	/* search for the first RURI AVP containing a string */
-	do {
-		avp = search_first_avp(ruri_avp.type, ruri_avp.name, &val, 0);
-	}while (avp && (avp->flags&AVP_VAL_STR)==0 );
+	while(1)
+	{
+		/* search for the first RURI AVP containing a string */
+		do {
+			avp = search_first_avp(ruri_avp.type, ruri_avp.name, &val, 0);
+		}while (avp && (avp->flags&AVP_VAL_STR)==0 );
 
-	if (!avp) return -1;
+		if (!avp) return -1;
 
-	if (set_ruri( msg, &val.s)==-1) {
+		ruri = val.s;
+
+		destroy_avp(avp);
+		LM_DBG("new RURI set to <%.*s>\n", val.s.len,val.s.s);
+
+		/* remove the old attrs */
+		avp = NULL;
+		do {
+			if (avp) destroy_avp(avp);
+			avp = search_first_avp(attrs_avp.type, attrs_avp.name, NULL, 0);
+		}while (avp && (avp->flags&AVP_VAL_STR)==0 );
+		if (avp) destroy_avp(avp);
+
+		/* search old ID */
+		avp = NULL;
+		do {
+			if (avp) destroy_avp(avp);
+			avp = search_first_avp(0, id_avp_name, NULL, 0);
+		}while (avp && (avp->flags&AVP_VAL_STR)!=0 );
+
+
+		/* get value for next gw ID from avp,
+		 * remove old gw ID
+		 */
+		avp2 = NULL;
+		if (avp)
+		{
+			avp2 = search_next_avp(avp,&val);
+			destroy_avp(avp);
+		}
+
+		if( avp2 != NULL)
+		{
+			ref_read_data();
+
+			ok = 0;
+			for(dst=(*rdata)->pgw_l; dst ;dst=dst->next)
+			{
+				if( dst->id == val.n && (dst->flags & DR_DST_STAT_DSBL_FLAG)  == 0 )
+					ok = 1;
+			}
+		
+			unref_read_data();
+
+			if( ok )
+				break;
+
+		}
+		else
+		{
+			break;
+		}
+
+	}
+
+	if (set_ruri( msg, &ruri)==-1) {
 		LM_ERR("failed to rewite RURI\n");
 		return -1;
 	}
-	destroy_avp(avp);
-	LM_DBG("new RURI set to <%.*s>\n", val.s.len,val.s.s);
 
-	/* remove the old attrs */
-	avp = NULL;
-	do {
-		if (avp) destroy_avp(avp);
-		avp = search_first_avp(attrs_avp.type, attrs_avp.name, NULL, 0);
-	}while (avp && (avp->flags&AVP_VAL_STR)==0 );
-	if (avp) destroy_avp(avp);
 
 	return 1;
 }
@@ -650,6 +898,8 @@ static int do_routing(struct sip_msg* msg, dr_group_t *drg, int sort_order)
 	struct usr_avp *avp;
 #define DR_MAX_GWLIST	32
 	static int local_gwlist[DR_MAX_GWLIST];
+	static pgw_list_t alive[DR_MAX_GWLIST];
+	int alive_size;
 	int gwlist_size;
 	int ret;
 
@@ -705,17 +955,7 @@ static int do_routing(struct sip_msg* msg, dr_group_t *drg, int sort_order)
 	}
 
 	/* ref the data for reading */
-again:
-	lock_get( ref_lock );
-	/* if reload must be done, do un ugly busy waiting 
-	 * until reload is finished */
-	if (*reload_flag) {
-		lock_release( ref_lock );
-		usleep(5);
-		goto again;
-	}
-	*data_refcnt = *data_refcnt + 1;
-	lock_release( ref_lock );
+	ref_read_data();
 
 	/* search a prefix */
 	rt_info = get_prefix( (*rdata)->pt, &uri.user , (unsigned int)grp_id);
@@ -745,7 +985,18 @@ again:
 
 	gwlist_size
 		= (rt_info->pgwa_len>DR_MAX_GWLIST)?DR_MAX_GWLIST:rt_info->pgwa_len;
-	
+
+	alive_size = 0;
+	for (i = 0; i < gwlist_size; i++)
+	{
+		if( (rt_info->pgwl[i].pgw->flags & DR_DST_STAT_DSBL_FLAG)  == 0 )
+		{
+			alive[alive_size++] = rt_info->pgwl[i];
+		}
+	}
+
+	gwlist_size = alive_size;
+
 	/* set gw order */
 	if(sort_order>=1&&gwlist_size>1)
 	{
@@ -755,7 +1006,7 @@ again:
 		{
 			/* identify the group: [j..i) */
 			for(i=j+1; i<gwlist_size; i++)
-				if(rt_info->pgwl[j].grpid!=rt_info->pgwl[i].grpid)
+				if(alive[j].grpid!=alive[i].grpid)
 					break;
 			if(i-j==1)
 			{
@@ -807,15 +1058,21 @@ again:
 		t = i;
 	}
 
+	if( t < 1)
+	{
+		LM_ERR("All the gateways are disabled\n");
+		goto error2;
+	}
+
 	/* do some cleanup first */
 	destroy_avps( ruri_avp.type, ruri_avp.name, 1);
 
 	/* push gwlist into avps in reverse order */
 	for( j=t-1 ; j>=1 ; j-- ) {
 		/* build uri*/
-		ruri = build_ruri(&uri, rt_info->pgwl[local_gwlist[j]].pgw->strip,
-				&rt_info->pgwl[local_gwlist[j]].pgw->pri,
-				&rt_info->pgwl[local_gwlist[j]].pgw->ip_str);
+		ruri = build_ruri(&uri, alive[local_gwlist[j]].pgw->strip,
+				&alive[local_gwlist[j]].pgw->pri,
+				&alive[local_gwlist[j]].pgw->ip_str);
 		if (ruri==0) {
 			LM_ERR("failed to build avp ruri\n");
 			goto error2;
@@ -831,31 +1088,43 @@ again:
 		}
 		pkg_free(ruri->s);
 		/* add attrs avp */
-		val.s = rt_info->pgwl[local_gwlist[j]].pgw->attrs;
+		val.s = alive[local_gwlist[j]].pgw->attrs;
 		LM_DBG("setting attr [%.*s] as avp\n",val.s.len,val.s.s);
 		if (add_avp( AVP_VAL_STR|(attrs_avp.type),attrs_avp.name, val)!=0 ) {
 			LM_ERR("failed to insert attrs avp\n");
 			goto error2;
 		}
+
+		val.n = (int) alive[local_gwlist[j]].pgw->id;
+		LM_DBG("setting id [%d] as avp\n",val.n);
+		if (add_avp( 0,id_avp_name, val)!=0 ) {
+			LM_ERR("failed to insert ids avp\n");
+			goto error2;
+		}
 	}
 
 	/* use first GW in RURI */
-	ruri = build_ruri(&uri, rt_info->pgwl[local_gwlist[0]].pgw->strip,
-			&rt_info->pgwl[local_gwlist[0]].pgw->pri,
-			&rt_info->pgwl[local_gwlist[0]].pgw->ip_str);
+	ruri = build_ruri(&uri, alive[local_gwlist[0]].pgw->strip,
+			&alive[local_gwlist[0]].pgw->pri,
+			&alive[local_gwlist[0]].pgw->ip_str);
 
 	/* add attrs avp */
-	val.s = rt_info->pgwl[local_gwlist[0]].pgw->attrs;
+	val.s = alive[local_gwlist[0]].pgw->attrs;
 	LM_DBG("setting attr [%.*s] as for ruri\n",val.s.len,val.s.s);
 	if (add_avp( AVP_VAL_STR|(attrs_avp.type),attrs_avp.name, val)!=0 ) {
 		LM_ERR("failed to insert attrs avp\n");
 		goto error2;
 	}
 
+	val.n = (int) alive[local_gwlist[0]].pgw->id;
+	LM_DBG("setting id [%d] as avp\n",val.n);
+	if (add_avp( 0,id_avp_name, val)!=0 ) {
+		LM_ERR("failed to insert ids avp\n");
+		goto error2;
+	}
+
 	/* we are done reading -> unref the data */
-	lock_get( ref_lock );
-	*data_refcnt = *data_refcnt - 1;
-	lock_release( ref_lock );
+	unref_read_data();
 
 	/* what hev we get here?? */
 	if (ruri==0) {
@@ -872,9 +1141,7 @@ again:
 	return 1;
 error2:
 	/* we are done reading -> unref the data */
-	lock_get( ref_lock );
-	*data_refcnt = *data_refcnt - 1;
-	lock_release( ref_lock );
+	unref_read_data();
 error1:
 	return ret;
 }
@@ -1156,3 +1423,73 @@ static int goes_to_gw_0(struct sip_msg* msg, char* _type, char* _f2)
 	return goes_to_gw_1(msg, (char*)(long)-1, _f2);
 }
 
+static struct mi_root* mi_dr_status(struct mi_root *cmd, void *param)
+{
+	struct mi_root *rpl_tree;
+	pgw_t *dst;
+	struct mi_node *node;
+	unsigned int  id, stat;
+
+	node = cmd->node.kids;
+	if (node==NULL)
+		return init_mi_tree( 400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
+
+	/* id (param 1) */
+	if (str2int( &node->value, &id) < 0)
+		return init_mi_tree( 400, MI_SSTR(MI_BAD_PARM_S));
+
+	ref_read_data();
+
+	/* status (param 2) */
+	node = node->next;
+	if (node == NULL) {
+		/* return the status -> find the destination */
+		for(dst=(*rdata)->pgw_l; dst && dst->id!=id ;dst=dst->next);
+		if (dst==NULL) {
+			rpl_tree = init_mi_tree( 404,
+				MI_SSTR("Destination ID not found"));
+		} else {
+			rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
+			if (rpl_tree!=NULL) {
+				if (dst->flags&DR_DST_STAT_DSBL_FLAG) {
+					node = add_mi_node_child( &rpl_tree->node, 0, "enable", 6,
+							"no", 2);
+				} else {
+					node = add_mi_node_child( &rpl_tree->node, 0, "enable", 6,
+							"yes", 3);
+				}
+				if (node==NULL) {free_mi_tree(rpl_tree); rpl_tree=NULL;}
+			}
+		}
+	} else {
+		/* set the status */
+		if (node->next) {
+			rpl_tree = init_mi_tree( 400,
+				MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
+		} else if (str2int( &node->value, &stat) < 0) {
+			rpl_tree = init_mi_tree( 400, MI_SSTR(MI_BAD_PARM_S));
+		} else {
+			/* find the destination */
+			for( dst=(*rdata)->pgw_l ; dst && dst->id!=id ; dst=dst->next);
+			if (dst==NULL) {
+				rpl_tree =  init_mi_tree( 404,
+					MI_SSTR("Destination ID not found"));
+			} else {
+				/* set the disable/enable */
+				if (stat) {
+					dst->flags &=
+						~ (DR_DST_STAT_DSBL_FLAG|DR_DST_STAT_NOEN_FLAG);
+				} else {
+					dst->flags |=
+						DR_DST_STAT_DSBL_FLAG|DR_DST_STAT_NOEN_FLAG;
+				}
+				unref_read_data();
+				return init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
+			}
+		}
+	}
+
+	unref_read_data();
+
+	return rpl_tree;
+}

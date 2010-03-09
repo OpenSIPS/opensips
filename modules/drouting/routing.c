@@ -281,7 +281,10 @@ add_dst(
 	/* dst type*/
 	int type,
 	/* dst attrs*/
-	char* attrs
+	char* attrs,
+	/* probe_mode */
+	int probing
+
 	)
 {
 	pgw_t *pgw=NULL, *tmp=NULL;
@@ -309,6 +312,24 @@ add_dst(
 		goto err_exit;
 	}
 	memset(pgw,0,sizeof(pgw_t));
+
+
+	switch(probing)
+	{
+	case 0:
+		pgw->flags = 0;
+		break;
+	case 1:
+		pgw->flags =  DR_DST_PING_DSBL_FLAG;
+		break;
+	case 2:
+		pgw->flags =  DR_DST_PING_PERM_FLAG;
+		break;
+	default:
+		goto err_exit;
+	
+	}
+	
 
 	pgw->ip_str.len= l_ip;
 	pgw->ip_str.s = (char*)(pgw+1);

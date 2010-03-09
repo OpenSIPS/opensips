@@ -55,6 +55,12 @@ do {\
 }while(0);
 
 
+#define DR_DST_PING_DSBL_FLAG   (1<<0)
+#define DR_DST_PING_PERM_FLAG   (1<<1)
+#define DR_DST_STAT_DSBL_FLAG   (1<<2)
+#define DR_DST_STAT_NOEN_FLAG   (1<<3)
+
+
 /* list of PSTN gw */
 typedef struct pgw_ {
 	/* id matching the one in db */
@@ -69,6 +75,7 @@ typedef struct pgw_ {
 	struct ip_addr ip;
 	unsigned short port;
 	struct pgw_ *next;
+	int flags;
 }pgw_t;
 
 /**/
