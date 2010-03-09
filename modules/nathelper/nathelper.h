@@ -64,6 +64,19 @@ struct rtpp_set_head{
 	struct rtpp_set		*rset_last;
 };
 
+/* parameter type for set_rtp_proxy_set() */
+
+#define NH_VAL_SET_FIXED              0
+#define NH_VAL_SET_SPEC             1
+
+typedef struct rtpp_set_param{
+        int t;
+        union {
+                struct rtpp_set * fixed_set;
+                pv_spec_t var_set;
+        } v;
+} nh_set_param_t;
+
 /* Functions from nathelper */
 struct rtpp_node *select_rtpp_node(str, int);
 char *send_rtpp_command(struct rtpp_node *, struct iovec *, int);

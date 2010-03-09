@@ -667,6 +667,10 @@ if (search("User-Agent: Cisco ATA.*") {fix_nated_sdp("3");};
 		command.
 		</para>
 		<para>
+		Paramter can also be a pseudo-variable that contain (as string
+		or integer) the ID of the rtpproxy set to be used.
+		</para>
+		<para>
 		This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
 		BRANCH_ROUTE.
 		</para>
