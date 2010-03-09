@@ -1281,7 +1281,10 @@ static int eval_elem(struct expr* e, struct sip_msg* msg, pv_value_t *val)
 			
 				if(lval.flags&PV_TYPE_INT)
 				{
-					if(!(rval.flags&PV_VAL_INT))
+					if( (rval.flags&PV_VAL_NULL) )
+					{
+						rval.ri = 0;
+					} else if(!(rval.flags&PV_VAL_INT))
 					{
 						LM_ERR("invalid numeric operands\n");
 						pv_value_destroy(&lval);
@@ -1349,13 +1352,6 @@ static int eval_elem(struct expr* e, struct sip_msg* msg, pv_value_t *val)
 					if(val!=NULL) val->ri = ival;
 					return (ival)?1:0;
 				} else {
-					if(!(rval.flags&PV_VAL_STR))
-					{
-						LM_ERR("invalid string operands\n");
-						pv_value_destroy(&lval);
-						pv_value_destroy(&rval);
-						return 0;
-					}
 					if(e->op != PLUS_OP)
 					{
 						LM_ERR("invalid string operator %d\n", e->op);
@@ -1363,12 +1359,19 @@ static int eval_elem(struct expr* e, struct sip_msg* msg, pv_value_t *val)
 						pv_value_destroy(&rval);
 						return 0;
 					}
-					if(val==NULL)
-					{
+					if( (rval.flags&PV_VAL_NULL) || (val==NULL)) {
+						if (val) val->flags|=PV_VAL_STR;
 						ret = (lval.rs.len>0 || rval.rs.len>0);
 						pv_value_destroy(&lval);
 						pv_value_destroy(&rval);
 						return ret;
+					}
+					if(!(rval.flags&PV_VAL_STR))
+					{
+						LM_ERR("invalid string operands\n");
+						pv_value_destroy(&lval);
+						pv_value_destroy(&rval);
+						return 0;
 					}
 					val->rs.s=(char*)pkg_malloc((lval.rs.len+rval.rs.len+1)
 							*sizeof(char));
