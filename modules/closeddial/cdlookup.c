@@ -107,7 +107,7 @@ int cd_lookup(struct sip_msg* _msg, char* _table, char* _group)
 
 	/* No group_id found; keeps uri */
 	if(group.len == 0) {
-		return 0;
+		return -2;
 	}
 
 	/* ... where cd_username ... */
