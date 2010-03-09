@@ -62,9 +62,14 @@ dlist_t* root = 0;
  */
 udomain_t* get_next_udomain(udomain_t *_d)
 {
+	dlist_t *it;
+
 	if (_d==NULL)
 		return root->d;
-	return ((dlist_t*)((char*)(_d)-(unsigned long)(&((dlist_t*)0)->d)))->next->d;
+
+	for( it=root ; it ; it=it->next)
+		if (it->d == _d) return (it->next==NULL)?NULL:it->next->d ;
+	return NULL;
 }
 
 
