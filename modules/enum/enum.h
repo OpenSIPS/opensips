@@ -66,5 +66,13 @@ int i_enum_query_0(struct sip_msg* _msg, char* _str1, char* _str2);
 int i_enum_query_1(struct sip_msg* _msg, char* _suffix, char* _str2);
 int i_enum_query_2(struct sip_msg* _msg, char* _suffix, char* _service);
 
+/*
+ * Make ISN query and if query succeeds, replace current uri with the
+ * result of the query
+ */
+int isn_query_0(struct sip_msg* _msg, char* _str1, char* _str2);
+int isn_query_1(struct sip_msg* _msg, char* _suffix, char* _str2);
+int isn_query_2(struct sip_msg* _msg, char* _suffix, char* _service);
+
 
 #endif /* ENUM_H */

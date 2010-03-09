@@ -736,6 +736,84 @@ int enum_query_2(struct sip_msg* _msg, char* _suffix, char* _service)
 }
 
 
+/*
+ * Call isn_query_2 with module parameter suffix and default service.
+ */
+int isn_query_0(struct sip_msg* _msg, char* _str1, char* _str2)
+{
+	return isn_query_2(_msg, (char *)(&isnsuffix), (char *)(&service));
+}
+
+
+/*
+ * Call isn_query_2 with given suffix and default service.
+ */
+int isn_query_1(struct sip_msg* _msg, char* _suffix, char* _str2)
+{
+	return isn_query_2(_msg, _suffix, (char *)(&service));
+}
+
+
+/*
+ * See documentation in README file.
+ */
+int isn_query_2(struct sip_msg* _msg, char* _suffix, char* _service)
+{
+	char *user_s = NULL;
+	int user_len, i, j;
+	char name[MAX_DOMAIN_SIZE] = {0};
+	char string[17] = {0};
+	char szItad[17] = {0};
+	size_t nItlen = 0;
+
+	str *suffix, *service;
+
+	suffix = (str*)_suffix;
+	service = (str*)_service;
+
+	if (parse_sip_msg_uri(_msg) < 0) {
+		LM_ERR("Parsing of R-URI failed\n");
+		return -1;
+	}
+
+	user_s = _msg->parsed_uri.user.s;
+	user_len = _msg->parsed_uri.user.len;
+
+	memcpy(&(string[0]), user_s, user_len);
+	string[user_len] = (char)0;
+
+	/* Do primitive test for correct ISN format, */
+	/* and set szItad to the ISN ITAD (RFC 3872/2871). */
+	/* Correct ISN format guessed from freenum.org and IANA */
+	/* doc http://www.iana.org/assignments/trip-parameters/ */
+	{
+		char *pAster = strchr(string, '*');
+		if (pAster && (nItlen = strspn(pAster + sizeof(char), "0123456789")))
+			strncpy(szItad, pAster + sizeof(char), nItlen);
+		else {
+			LM_ERR("R-URI user does not contain a valid ISN\n");
+			return -1;
+		}
+	}
+
+	/* Ammend the original ENUM E.164 string logic to process */
+	/* ISN numbers instead, which include a nonreversed ITAD. */
+	i = user_len - nItlen - sizeof(char); /* Ex: *1212 */
+	j = 0;
+	while (i--) {
+		name[j] = user_s[i];
+		name[j + 1] = '.';
+		j = j + 2;
+	}
+
+	strcat(name + j, szItad);  /* Copy the unreversed ITAD, */
+	name[j + nItlen] = '.';    /* and append a trailing dot. */
+	memcpy(name + j + nItlen + sizeof(char), suffix->s, suffix->len + 1);
+
+	return do_query(_msg, string, name, service);
+}
+
+
 /*********** INFRASTRUCTURE ENUM ***************/
 
 /*

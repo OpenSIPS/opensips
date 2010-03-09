@@ -55,6 +55,8 @@ char* branchlabel = "i";
 char* i_enum_suffix = "e164.arpa.";
 char* bl_algorithm = "cc";
 
+char* isn_suffix = "freenum.org.";
+
 
 /*
  * Internal module variables
@@ -66,6 +68,8 @@ str service;
 str i_suffix;
 str i_branchlabel;
 str i_bl_alg;
+
+str isnsuffix;
 
 
 /*
@@ -94,6 +98,11 @@ static cmd_export_t cmds[] = {
 	 REQUEST_ROUTE},
 	{"i_enum_query", (cmd_function)i_enum_query_2, 2, fixup_str_str, 0,
 	 REQUEST_ROUTE},
+	{"isn_query", (cmd_function)isn_query_0, 0, 0, 0, REQUEST_ROUTE},
+	{"isn_query", (cmd_function)isn_query_1, 1, fixup_str_null,
+	 fixup_free_str_null, REQUEST_ROUTE},
+	{"isn_query", (cmd_function)isn_query_2, 2, fixup_str_str, 
+	 fixup_free_str_str, REQUEST_ROUTE},
 	{0, 0, 0, 0, 0, 0}
 };
 
@@ -107,6 +116,7 @@ static param_export_t params[] = {
 	{"branchlabel", STR_PARAM, &branchlabel},
 	{"i_enum_suffix", STR_PARAM, &i_enum_suffix},
 	{"bl_algorithm", STR_PARAM, &bl_algorithm},
+	{"isn_suffix", STR_PARAM, &isn_suffix},
 	{0, 0, 0}
 };
 
@@ -151,6 +161,9 @@ static int mod_init(void)
 
 	i_bl_alg.s = bl_algorithm;
 	i_bl_alg.len = strlen(bl_algorithm);
+
+	isnsuffix.s = isn_suffix;
+	isnsuffix.len = strlen(isn_suffix);
 
 	return 0;
 }
