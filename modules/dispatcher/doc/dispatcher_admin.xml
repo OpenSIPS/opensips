@@ -403,7 +403,29 @@ modparam("dispatcher", "ds_ping_interval", 30)
 </programlisting>
 		</example>
 	</section> 	
-	
+
+	<section>
+		<title><varname>ds_ping_sock</varname> (str)</title>
+		<para>
+		A socket description [proto:]host[:port] of the local socket (which
+		is used by OpenSIPS for SIP traffic) to be used (if multiple) for 
+		sending the probing messages from.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>NULL(none)</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set the <quote>ds_ping_sock</quote> parameter</title>
+<programlisting format="linespecific">
+...
+modparam("dispatcher", "ds_ping_sock", "udps:192.168.1.100:5077")
+...
+</programlisting>
+		</example>
+	</section> 	
+
 	<section>
 		<title><varname>ds_probing_threshhold</varname> (int)</title>
 		<para>

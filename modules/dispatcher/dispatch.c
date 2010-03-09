@@ -4,7 +4,7 @@
  * dispatcher module
  *
  * Copyright (C) 2004-2006 FhG Fokus
- * Copyright (C) 2005 Voice-System.ro
+ * Copyright (C) 2005-2010 Voice-System.ro
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -70,6 +70,7 @@
 #define DS_TABLE_VERSION_NEW	4
 #define DS_TABLE_VERSION_OLD	3
 
+extern struct socket_info *probing_sock;
 static int _ds_table_version = DS_TABLE_VERSION_NEW;
 
 typedef struct _ds_dest
@@ -1694,13 +1695,7 @@ static void ds_options_callback( struct cell *t, int type,
  */
 void ds_check_timer(unsigned int ticks, void* param)
 {
-#ifdef USELESS_CODE
-	struct socket_info* send_sock = 0;
-	struct sip_uri curi;
-	union sockaddr_union to;
-	struct hostent* he;
-	unsigned short proto;
-#endif
+	dlg_t *dlg;
 	ds_set_p list;
 	int j;
 
@@ -1719,61 +1714,27 @@ void ds_check_timer(unsigned int ticks, void* param)
 			{
 				LM_DBG("probing set #%d, URI %.*s\n", list->id,
 						list->dlist[j].uri.len, list->dlist[j].uri.s);
-#ifdef USELESS_CODE
-				/* Parse the URI of the destination, we want to probe (we need
-				 * more information about the destination) */
-				if (parse_uri(list->dlist[j].uri.s,
-							list->dlist[j].uri.len, &curi) < 0)
-				{
-					LM_ERR("unable to parse URI (%.*s)\n",
-							list->dlist[j].uri.len, list->dlist[j].uri.s);
-					continue;
-				}
-				
-				/* If the port is not set, we use the default-SIP-Port.*/
-				if (curi.port_no == 0)
-					curi.port_no = SIP_PORT;
 
-				/* Resolve the Hostnamme */
-				proto = curi.proto;
-				he = sip_resolvehost(&curi.host, &curi.port_no, &proto, 
-						(curi.type==SIPS_URI_T)?1:0 , 0);
-				if (he == NULL)
-				{
-					LM_ERR("can't resolve_host\n");
-					continue;
-				}
-				
-				/* Determine the sending-socket for sending the OPTIONS-Request
-				 * Maybe, later, provide the possibility to use a specific
-				 * socket */
-				hostent2su(&to, he, 0, curi.port_no);
-				if (send_sock==0) {
-					/* send_sock=force_socket ? force_socket : 
-						get_send_socket(0, &to, PROTO_UDP); */
-					send_sock=get_send_socket(0, &to, PROTO_UDP);
-				}
-				if (send_sock == NULL) {
-					LM_ERR("can't get sending socket\n");
-					continue;
-				}
-#endif
 				/* Execute the Dialog using the "request"-Method of the
-				 * TM-Module.
-				 * request(str* m, str* ruri, str* t, str* f, str* h, str* b,
-				 *		str* oburi, transaction_cb c, void* cp); */
-				if (tmb.t_request(&ds_ping_method,
+				 * TM-Module.*/
+				if (tmb.new_auto_dlg_uac(&ds_ping_from,
 							&list->dlist[j].uri,
-							&list->dlist[j].uri,
-							&ds_ping_from,
+							probing_sock,
+							&dlg) != 0 ) {
+					LM_ERR("failed to create new TM dlg\n");
+					continue;
+				}
+				dlg->state = DLG_CONFIRMED;
+				if (tmb.t_request_within(&ds_ping_method,
 							NULL,
 							NULL,
-							NULL,
+							dlg,
 							ds_options_callback,
 							(void*)(long)list->id,
 							NULL) < 0) {
 					LM_ERR("unable to execute dialog\n");
 				}
+				tmb.free_dlg(dlg);
 			}
 		}
 	}
