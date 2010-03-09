@@ -53,7 +53,6 @@ typedef struct b2b_dlginfo
 	str totag;
 }b2b_dlginfo_t;
 
-
 typedef int (*b2b_notify_t)(struct sip_msg* , str* , int , void* );
 typedef int (*b2b_add_dlginfo_t)(str* key, str* entity_key, int src,
 	 b2b_dlginfo_t* info);
@@ -123,7 +122,6 @@ typedef struct client_info
 	unsigned int cseq;
 	struct socket_info* send_sock;
 }client_info_t;
-
 
 typedef struct b2b_entry
 {
