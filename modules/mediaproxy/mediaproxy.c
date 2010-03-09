@@ -910,6 +910,27 @@ get_session_direction(str *sdp)
 }
 
 
+// will return the method ID for a reply by inspecting the Cseq header
+static int
+get_method_from_reply(struct sip_msg *reply)
+{
+    struct cseq_body *cseq;
+
+    if (reply->first_line.type != SIP_REPLY)
+        return -1;
+
+    if (!reply->cseq && parse_headers(reply, HDR_CSEQ_F, 0) < 0) {
+        LM_ERR("failed to parse the CSeq header\n");
+        return -1;
+    }
+    if (!reply->cseq) {
+        LM_ERR("missing CSeq header\n");
+        return -1;
+    }
+    cseq = reply->cseq->parsed;
+    return cseq->method_id;
+}
+
 static Bool
 supported_transport(str transport)
 {
@@ -1307,7 +1328,7 @@ use_media_proxy(struct sip_msg *msg, char *dialog_id)
     str signaling_ip, media_relay, sdp, str_buf, tokens[MAX_STREAMS+1];
     char request[8192], media_str[4096], buf[64], *result, *type;
     int i, j, port, len, status;
-    Bool removed_session_ip;
+    Bool removed_session_ip, have_sdp;
     SessionInfo session;
     StreamInfo stream;
 
@@ -1334,36 +1355,45 @@ use_media_proxy(struct sip_msg *msg, char *dialog_id)
 
     status = get_sdp_message(msg, &sdp);
     // status = -1 is error, -2 is missing SDP body
-    if (status < 0)
+    if (status == -1 || (status == -2 && msg->first_line.type == SIP_REQUEST)) {
         return status;
-
-    status = get_session_info(&sdp, &session);
-    if (status < 0) {
-        LM_ERR("can't extract media streams from the SDP message\n");
-        return -1;
+    } else if (status == -2 && !(msg->REPLY_STATUS == 200 && get_method_from_reply(msg) == METHOD_INVITE)) {
+        return -2;
     }
+    have_sdp = (status == 1);
 
-    if (session.supported_count == 0)
-        return 1; // there are no supported media streams. we have nothing to do.
-
-    for (i=0, str_buf.len=sizeof(media_str), str_buf.s=media_str; i<session.stream_count; i++) {
-        stream = session.streams[i];
-        if (stream.transport != TSupported)
-            continue; // skip streams with unsupported transports
-        if (stream.type.len + stream.ip.len + stream.port.len + stream.direction.len + 4 > str_buf.len) {
-            LM_ERR("media stream description is longer than %lu bytes\n", (unsigned long)sizeof(media_str));
+    if (have_sdp) {
+        status = get_session_info(&sdp, &session);
+        if (status < 0) {
+            LM_ERR("can't extract media streams from the SDP message\n");
             return -1;
         }
-        len = sprintf(str_buf.s, "%.*s:%.*s:%.*s:%.*s,",
-                      stream.type.len, stream.type.s,
-                      stream.ip.len, stream.ip.s,
-                      stream.port.len, stream.port.s,
-                      stream.direction.len, stream.direction.s);
-        str_buf.s   += len;
-        str_buf.len -= len;
-    }
 
-    *(str_buf.s-1) = 0; // remove the last comma
+        if (session.supported_count == 0)
+            return 1; // there are no supported media streams. we have nothing to do.
+
+        len = sprintf(media_str, "%s", "media: ");
+        for (i=0, str_buf.len=sizeof(media_str)-len-2, str_buf.s=media_str+len; i<session.stream_count; i++) {
+            stream = session.streams[i];
+            if (stream.transport != TSupported)
+                continue; // skip streams with unsupported transports
+            if (stream.type.len + stream.ip.len + stream.port.len + stream.direction.len + 4 > str_buf.len) {
+                LM_ERR("media stream description is longer than %lu bytes\n", (unsigned long)sizeof(media_str));
+                return -1;
+            }
+            len = sprintf(str_buf.s, "%.*s:%.*s:%.*s:%.*s,",
+                          stream.type.len, stream.type.s,
+                          stream.ip.len, stream.ip.s,
+                          stream.port.len, stream.port.s,
+                          stream.direction.len, stream.direction.s);
+            str_buf.s   += len;
+            str_buf.len -= len;
+        }
+        *(str_buf.s-1) = 0; // remove the last comma
+        sprintf(str_buf.s-1, "%s", "\r\n");
+    } else {
+        media_str[0] = 0;
+    }
 
     from_uri     = get_from_uri(msg);
     to_uri       = get_to_uri(msg);
@@ -1384,16 +1414,16 @@ use_media_proxy(struct sip_msg *msg, char *dialog_id)
                    "from_tag: %.*s\r\n"
                    "to_tag: %.*s\r\n"
                    "user_agent: %.*s\r\n"
-                   "media: %s\r\n"
                    "signaling_ip: %.*s\r\n"
                    "media_relay: %.*s\r\n"
+                   "%s"
                    "\r\n",
                    type, dialog_id, callid.len, callid.s, cseq.len, cseq.s,
                    from_uri.len, from_uri.s, to_uri.len, to_uri.s,
                    from_tag.len, from_tag.s, to_tag.len, to_tag.s,
-                   user_agent.len, user_agent.s, media_str,
+                   user_agent.len, user_agent.s,
                    signaling_ip.len, signaling_ip.s,
-                   media_relay.len, media_relay.s);
+                   media_relay.len, media_relay.s, media_str);
 
     if (len >= sizeof(request)) {
         LM_ERR("mediaproxy request is longer than %lu bytes\n", (unsigned long)sizeof(request));
@@ -1404,6 +1434,12 @@ use_media_proxy(struct sip_msg *msg, char *dialog_id)
 
     if (result == NULL)
         return -1;
+
+    if (!have_sdp) {
+        // we updated the dispatcher, we can't do anything else as
+        // there is no SDP
+        return 1;
+    }
 
     len = get_tokens(result, tokens, sizeof(tokens)/sizeof(str));
 
