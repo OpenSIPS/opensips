@@ -35,6 +35,8 @@ Dan Pascu
               1.5.3. mediaproxy_timeout (int)
               1.5.4. signaling_ip_avp (string)
               1.5.5. media_relay_avp (string)
+              1.5.6. ice_candidate (string)
+              1.5.7. ice_candidate_avp (string)
 
         1.6. Exported Functions
 
@@ -49,9 +51,11 @@ Dan Pascu
    1.3. Setting the mediaproxy_timeout parameter
    1.4. Setting the signaling_ip_avp parameter
    1.5. Setting the media_relay_avp parameter
-   1.6. Using the engage_media_proxy function
-   1.7. Using the use_media_proxy function
-   1.8. Using the end_media_session function
+   1.6. Setting the ice_candidate parameter
+   1.7. Setting the ice_candidate_avp parameter
+   1.8. Using the engage_media_proxy function
+   1.9. Using the use_media_proxy function
+   1.10. Using the end_media_session function
 
 Chapter 1. Admin Guide
 
@@ -217,6 +221,39 @@ modparam("mediaproxy", "signaling_ip_avp", "$avp(s:nat_ip)")
 modparam("mediaproxy", "media_relay_avp", "$avp(s:media_relay)")
 ...
 
+1.5.6. ice_candidate (string)
+
+   Indicates the type of ICE candidate that will be added to the SDP. 
+   It can take 3 values: 'none', 'low-priority' or 'high-priority'. 
+   If 'none' is selected no candidate will be adeed to the SDP. If 
+   'low-priority' is selected then a low priority candidate will be 
+   added and if 'high-priority' is selected a high priority one.
+
+   Default value is "none".
+
+   Example 1.6. Setting the ice_candidate parameter
+...
+modparam("mediaproxy", "ice_candidate", "low-priority")
+...
+
+1.5.7. ice_candidate_avp (string)
+
+   Specification of the AVP which holds the ICE candidate that will be 
+   inserted in the SDP. The value specified in this AVP will override 
+   the value in ice_candidate module parameter.
+
+   Note that if use_media_proxy() and end_media_session() functions are
+   being used, the AVP will not be available in the reply route unless 
+   you set onreply_avp_mode from the tm module to '1', and if the AVP 
+   is not set, the default value will be used.
+
+   Default value is "$avp(s:ice_candidate)".
+
+   Example 1.7. Setting the ice_candidate_avp parameter
+...
+modparam("mediaproxy", "ice_candidate_avp", "$avp(s:ice_candidate)")
+...
+
 1.6. Exported Functions
 
 1.6.1. engage_media_proxy()
@@ -248,7 +285,7 @@ modparam("mediaproxy", "media_relay_avp", "$avp(s:media_relay)")
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.6. Using the engage_media_proxy function
+   Example 1.8. Using the engage_media_proxy function
 ...
 if (method==INVITE && !has_totag()) {
     # We can also use a specific media relay if we need to
@@ -278,7 +315,7 @@ if (method==INVITE && !has_totag()) {
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.
 
-   Example 1.7. Using the use_media_proxy function
+   Example 1.9. Using the use_media_proxy function
 ...
 if (method==INVITE) {
     # We can also use a specific media relay if we need to
@@ -300,7 +337,7 @@ if (method==INVITE) {
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.
 
-   Example 1.8. Using the end_media_session function
+   Example 1.10. Using the end_media_session function
 ...
 if (method==BYE) {
     end_media_session();
