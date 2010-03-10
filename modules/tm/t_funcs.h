@@ -71,6 +71,7 @@ extern int noisy_ctimer;
 #define TM_T_REPLY_no100_FLAG    (1<<1)
 #define TM_T_REPLY_noerr_FLAG    (1<<2)
 #define TM_T_REPLY_nodnsfo_FLAG  (1<<3)
+#define TM_T_REPLY_reason_FLAG   (1<<4)
 
 
 /* send a private buffer: utilize a retransmission structure

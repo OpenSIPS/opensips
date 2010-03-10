@@ -190,6 +190,8 @@ struct totag_elem {
 #define T_NO_DNS_FAILOVER_FLAG  (1<<7)
 /* transaction must not create new branches  */
 #define T_NO_NEW_BRANCHES_FLAG  (1<<8)
+/* transaction must forward the REASON header (for CANCEL)  */
+#define T_CANCEL_REASON_FLAG    (1<<9)
 
 /* transaction UAC's flags */
 /* is the UAC pending for CANCEL ?  */

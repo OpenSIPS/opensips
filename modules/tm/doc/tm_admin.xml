@@ -793,6 +793,12 @@ if (t_newtran()) {
 				the failover both at transaport and transaction level.
 				</para>
 			</listitem>
+			<listitem>
+				<para><emphasis>0x08</emphasis> - If the request is a CANCEL,
+				trust and pass further the Reason header from the received
+				CANCEL - shortly, will propagate the Reason header.
+				</para>
+			</listitem>
 		</itemizedlist>
 		<para>
 		In case of error, the function returns the following codes:

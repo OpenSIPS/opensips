@@ -238,6 +238,7 @@ int t_relay_to( struct sip_msg  *p_msg , struct proxy_l *proxy, int flags)
 	t=get_t();
 	if (flags&TM_T_REPLY_repl_FLAG) t->flags|=T_IS_LOCAL_FLAG;
 	if (flags&TM_T_REPLY_nodnsfo_FLAG) t->flags|=T_NO_DNS_FAILOVER_FLAG;
+	if (flags&TM_T_REPLY_reason_FLAG) t->flags|=T_CANCEL_REASON_FLAG;
 
 	/* INVITE processing might take long, particularly because of DNS
 	   look-ups -- let upstream know we're working on it */

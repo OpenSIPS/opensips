@@ -77,5 +77,13 @@ inline static short should_cancel_branch( struct cell *t, int b )
 	return 0;
 }
 
+extern str _extra_cancel_hdrs;
+
+static inline void set_cancel_extra_hdrs( char *s, int l)
+{
+	_extra_cancel_hdrs.s = s;
+	_extra_cancel_hdrs.len = l;
+}
+
 
 #endif

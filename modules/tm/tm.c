@@ -1095,6 +1095,8 @@ inline static int w_t_relay( struct sip_msg  *p_msg , char *proxy, char *flags)
 
 		if (((int)(long)flags)&TM_T_REPLY_nodnsfo_FLAG)
 			t->flags|=T_NO_DNS_FAILOVER_FLAG;
+		if (((int)(long)flags)&TM_T_REPLY_reason_FLAG)
+			t->flags|=T_CANCEL_REASON_FLAG;
 
 		ret = t_forward_nonack( t, p_msg, (struct proxy_l *)proxy);
 		if (ret<=0 ) {
