@@ -1125,7 +1125,7 @@ int b2b_send_request(enum b2b_entity_type et, str* b2b_key, str* method,
 
 	LM_DBG("Send request method[%.*s] for dialog[%p]\n", method->len, method->s, dlg);
 	parse_method(method->s, method->s+method->len,
-		(unsigned int *)&dlg->last_method);
+		(unsigned int*)(void*)&dlg->last_method);
 
 	if(dlg->last_method== METHOD_INVITE)
 	{
