@@ -1,7 +1,7 @@
 METADATA_COLUMNS
 id(int) group_id(int) dst_uri(str) resources(str) description(str)
 METADATA_KEY
-
+2 
 METADATA_READONLY
 0
 METADATA_LOGFLAGS
