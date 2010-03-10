@@ -43,8 +43,6 @@ struct xmpp_pipe_cmd {
 
 
 /* configuration parameters */
-extern char domain_separator;
-extern char *gateway_domain;
 extern char *xmpp_domain;
 extern char *xmpp_host;
 extern int xmpp_port;

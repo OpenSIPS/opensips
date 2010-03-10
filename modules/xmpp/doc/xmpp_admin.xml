@@ -19,12 +19,11 @@
 			<para>	<emphasis role='bold'>the server-mode</emphasis> - the module acts itself as a XMPP server, no requirement for another XMPP server in the system. NOTE: this is limited implementation of a XMPP server, it does not support SRV or TLS so far. This mode is in beta stage for the moment.</para>
 		</listitem>
 	</itemizedlist>
-	<para>	In the component mode, you need a local XMPP server (recommended Jabberd2); the xmpp module will relay all your connections to a tcp connection to the local jabber server. The documentation and the source for a Jabber server are located at the following link:
-<ulink url="http://jabberd.jabberstudio.org/2/#download">http://jabberd.jabberstudio.org/2/#download</ulink>	</para>
+	<para>	In the component mode, you need a local XMPP server (recommended jabberd2 or ejabberd); the xmpp module will relay all your connections to a tcp connection to the local jabber server.</para>
 	<para> After you have a running XMPP server, what you need to do is set the following parameters in the OpenSIPS configuration file:</para>
 	<itemizedlist>
 		<listitem>
-			<para>gateway_domain, xmpp_domain (which can be the same as gateway_domain) and xmpp_host, which are explained in the Exported Parameters section;
+			<para>xmpp_domain and xmpp_host, which are explained in the Exported Parameters section;
 			</para>
 		</listitem>
 		<listitem>
@@ -35,16 +34,6 @@
 	alias=gateway domain;</para>
 		</listitem>
 		<listitem>
-			<para>in the following section of the configuration file, change to your gateway domain:</para>
-		</listitem>	
-	</itemizedlist>
-	<programlisting format="linespecific"> <emphasis>	<![CDATA[ ### ---8<--- cut here ---8<--- ###
-	if (avp_check("$rd", "eq/s:sip-xmpp.opensips.org")) {
-		if (!t_newtran()) {
-			sl_reply_error();
-	...........]]>	</emphasis> </programlisting> 	
-	<itemizedlist>
-		<listitem>
 			<para>you can also change the jabber server password, which must be the same as the xmpp_password parameter.</para>
 		</listitem>
 	</itemizedlist>
@@ -53,9 +42,6 @@
 		<listitem>
 			<para>OpenSIPS is running on sip-server.opensips.org;</para>
 		</listitem>
-		<listitem>
-			<para>the gateway is running on sip-xmpp.opensips.org;</para>
-		</listitem>	
 		<listitem>
 			<para>the jabber server is running on xmpp.opensips.org;</para>
 		</listitem>	
@@ -71,9 +57,6 @@
 		<listitem>
 			<para>OpenSIPS is running on sip-server.opensips.org; </para>
 		</listitem>
-		<listitem>
-			<para>the gateway is running on sip-xmpp.opensips.org;</para>
-		</listitem>	
 		<listitem>
 			<para>the "XMPP server" is running on xmpp-sip.opensips.org.</para>
 		</listitem>
@@ -110,7 +93,6 @@
 	</section>
 	</section>
 
-
 	<section>
 	<title>Exported Parameters</title>
 	<section>
@@ -133,62 +115,20 @@
 		</example>
 	</section>
 	<section>
-		<title><varname>domain_separator</varname> (string)</title>
-		<para>
-			In the destination address we need an extra character as a domain separator, apart from @.
-			The address of the XMPP(jabber) client looks like this:
-				"sip:username<![CDATA[<]]>domain_separator<![CDATA[>]]>jabber_server@gateway_domain".
-			The address of a SIP client has the following pattern :
-			"sip_username@opensips_domain";
-
-		</para>
-		<para>
-		<emphasis>
-			Default value is "*".
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>domain_separator</varname> parameter</title>
-		<programlisting format="linespecific">
-...
- modparam("xmpp", "domain_separator", "*")
-...
-</programlisting>
-		</example>
-	</section>
-	<section>
-		<title><varname>gateway_domain</varname> (string)</title>
-		<para>
-		 The domain of the gateway, which must resolve.</para>
-		<para>
-		<emphasis>
-			Default value is "sip-xmpp.opensips.org".
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>gateway_domain</varname> parameter</title>
-		<programlisting format="linespecific">
-...
- modparam("xmpp", "gateway_domain", "sip-xmpp.opensips.org")
-...
-</programlisting>
-		</example>
-	</section>
-	<section>
 		<title><varname>xmpp_domain</varname> (string)</title>
 		<para>
-			The xmpp domain of the component or the server, depending on the mode we are in. It can be the same as the gateway_domain.
+			The xmpp domain of the component or the server, depending on the mode we are in.
 		</para>
 		<para>
 		<emphasis>
-			Default value is "sip-xmpp.opensips.org".
+			Default value is "127.0.0.1".
 		</emphasis>
 		</para>
 		<example>
 		<title>Set <varname>xmpp_domain</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
- modparam("xmpp", "xmpp_domain", "xmpp-sip.opensips.org")
+ modparam("xmpp", "xmpp_domain", "xmpp.opensips.org")
 ...
 </programlisting>
 		</example>
@@ -200,7 +140,7 @@
 		</para>
 		<para>
 		<emphasis>
-			Default value is "xmpp.opensips.org".
+			Default value is "127.0.0.1".
 		</emphasis>
 		</para>
 		<example>
@@ -226,7 +166,7 @@
 		</para>
 		<para>
 		<emphasis>
-			Default value is "sip.opensips.org".
+			Default value is NULL.
 		</emphasis>
 		</para>
 		<example>

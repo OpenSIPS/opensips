@@ -25,21 +25,6 @@
  */
 
 /*
- * An inbound SIP message:
- *   from sip:user1@domain1 to sip:user2*domain2@gateway_domain
- * is translated to an XMPP message:
- *   from user1*domain1@xmpp_domain to user2@domain2
- *
- * An inbound XMPP message:
- *   from user1@domain1 to user2*domain2@xmpp_domain
- * is translated to a SIP message:
- *   from sip:user1*domain1@gateway_domain to sip:user2@domain2
- *
- * Where '*' is the domain_separator, and gateway_domain and
- * xmpp_domain are defined below.
- */
-
-/*
  * 2-way dialback sequence with xmppd2:
  *
  *  Originating server (us)         Receiving server (them)      Authoritative server (us)

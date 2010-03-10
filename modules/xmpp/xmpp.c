@@ -104,10 +104,8 @@ static int pipe_fds[2] = {-1,-1};
  */
 char *backend = "component";
 char *domain_sep_str = NULL;
-char domain_separator = '*';
-char *gateway_domain = "sip2xmpp.example.net";
-char *xmpp_domain = "xmpp2sip.example.net";
-char *xmpp_host = "xmpp.example.com";
+char *xmpp_domain = "127.0.0.1";
+char *xmpp_host = "127.0.0.1";
 str sip_domain= {0, 0};
 int xmpp_port = 0;
 char *xmpp_password = "secret";
@@ -136,8 +134,6 @@ static cmd_export_t cmds[] = {
  */
 static param_export_t params[] = {
 	{ "backend",            STR_PARAM, &backend         },
-	{ "domain_separator",   STR_PARAM, &domain_sep_str  },
-	{ "gateway_domain",     STR_PARAM, &gateway_domain  },
 	{ "xmpp_domain",        STR_PARAM, &xmpp_domain     },
 	{ "xmpp_host",          STR_PARAM, &xmpp_host       },
 	{ "xmpp_port",          INT_PARAM, &xmpp_port       },
@@ -190,14 +186,10 @@ static int mod_init(void) {
 			xmpp_port = DEFAULT_SERVER_PORT;
 	}
 
-	/* fix up the domain separator -- we only need 1 char */
-	if (domain_sep_str && *domain_sep_str)
-		domain_separator = *domain_sep_str;
-
 	if(outbound_proxy.s)
 		outbound_proxy.len= strlen(outbound_proxy.s);
 	if(sip_domain.s)
-		sip_domain.len = strlen(sip_domain.s);	
+		sip_domain.len = strlen(sip_domain.s);
 
 	if(init_xmpp_cb_list()<0){
 		LM_ERR("failed to init callback list\n");
@@ -211,7 +203,6 @@ static int mod_init(void) {
 
 	return 0;
 }
-
 
 static void xmpp_process(int rank)
 {
