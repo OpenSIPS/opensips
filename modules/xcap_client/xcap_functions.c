@@ -304,16 +304,14 @@ error:
 }
 
 int xcapGetNewDoc(xcap_get_req_t req, str user, 
-		str domain, char** xcap_doc)
+		str domain, str* xcap_doc)
 {
 	char* etag= NULL;
-	char* doc= NULL;
+	str doc= {0, 0};
 	db_key_t query_cols[9];
 	db_val_t query_vals[9];
 	int n_query_cols = 0;
 	char* path= NULL;
-
-	*xcap_doc = NULL;
 
 	path= get_xcap_path(req);
 	if(path== NULL)
@@ -322,13 +320,14 @@ int xcapGetNewDoc(xcap_get_req_t req, str user,
 		return -1;
 	}
 	/* send HTTP request */
-	doc= send_http_get(path, req.port, NULL, 0, &etag);
-	if(doc== NULL)
+	doc.s= send_http_get(path, req.port, NULL, 0, &etag, &doc.len);
+	if(doc.s== NULL)
 	{
 		LM_DBG("the searched document was not found\n");
 		pkg_free(path);
 		return 0;
 	}
+	LM_DBG("doc size = %d\n", doc.len);
 
 	if(etag== NULL)
 	{
@@ -357,8 +356,7 @@ int xcapGetNewDoc(xcap_get_req_t req, str user,
 	query_cols[n_query_cols] = &str_doc_col;
 	query_vals[n_query_cols].type = DB_BLOB;
 	query_vals[n_query_cols].nul = 0;
-	query_vals[n_query_cols].val.str_val.s= doc;
-	query_vals[n_query_cols].val.str_val.len= strlen(doc);
+	query_vals[n_query_cols].val.blob_val= doc;
 	n_query_cols++;
 
 	query_cols[n_query_cols] = &str_etag_col;
@@ -402,8 +400,8 @@ int xcapGetNewDoc(xcap_get_req_t req, str user,
 
 error:
 	pkg_free(path);
-	if(doc)
-		pkg_free(doc); 
+	if(doc.s)
+		pkg_free(doc.s); 
 	return -1;
 }
 
@@ -475,7 +473,7 @@ error:
 char* xcapGetElem(xcap_get_req_t req, char** etag)
 {
 	char* path= NULL;
-	char* stream= NULL;
+	str stream= {0, 0};
 	
 	path= get_xcap_path(req);
 	if(path== NULL)
@@ -484,8 +482,8 @@ char* xcapGetElem(xcap_get_req_t req, char** etag)
 		return NULL;
 	}
 
-	stream= send_http_get(path, req.port, req.etag, req.match_type, etag);
-	if(stream== NULL)
+	stream.s= send_http_get(path, req.port, req.etag, req.match_type, etag, &stream.len);
+	if(stream.s== NULL)
 	{
 		LM_DBG("the serched element was not found\n");
 	}
@@ -493,14 +491,14 @@ char* xcapGetElem(xcap_get_req_t req, char** etag)
 	if(etag== NULL)
 	{
 		LM_ERR("no etag found\n");
-		pkg_free(stream);
-		stream= NULL;
+		pkg_free(stream.s);
+		stream.s= NULL;
 	}
 
 	if(path)
 		pkg_free(path);
 	
-	return stream;
+	return stream.s;
 }
 
 size_t get_xcap_etag( void *ptr, size_t size, size_t nmemb, void *stream)
@@ -528,7 +526,7 @@ error:
 }
 
 char* send_http_get(char* path, unsigned int xcap_port, char* match_etag,
-		int match_type, char** etag)
+		int match_type, char** etag, int* doc_len)
 {
 	int len;
 	str buff= {0, 0};
@@ -545,7 +543,7 @@ char* send_http_get(char* path, unsigned int xcap_port, char* match_etag,
 	{
 		char* hdr_name= NULL;
 		
-		memset(buf, 128* sizeof(char), 0);
+		memset(buf, 0, 128);
 		match_header= buf;
 		
 		hdr_name= (match_type==IF_MATCH)?"If-Match":"If-None-Match"; 
@@ -607,7 +605,7 @@ char* send_http_get(char* path, unsigned int xcap_port, char* match_etag,
 	if(slist)
 		curl_slist_free_all(slist);
 //	curl_easy_cleanup(&curl_handle);
-
+	*doc_len = buff.len;
 	return buff.s;
 }
 
@@ -639,7 +637,7 @@ size_t write_function( void *ptr, size_t size, size_t nmemb, void *stream)
 	buff->s = newData;
 	buff->len += len;
 
-	buff->s[buff->len] = 0;
+	buff->s[buff->len] = '\0';
 
 	return len ;
 

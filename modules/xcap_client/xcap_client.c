@@ -200,7 +200,8 @@ void query_xcap_update(unsigned int ticks, void* param)
 	db_row_t *row ;	
 	db_val_t *row_vals ;
 	unsigned int port;
-	char* etag, *path, *new_etag= NULL, *doc= NULL;
+	char* etag, *path, *new_etag= NULL;
+	str doc= {0, 0};
 	int u_doc_col, u_etag_col;
 	str user, domain, uri;
 	int i;
@@ -274,8 +275,8 @@ void query_xcap_update(unsigned int ticks, void* param)
 		domain.len= strlen(domain.s);
 
 		/* send HTTP request */
-		doc= send_http_get(path, port, etag, IF_NONE_MATCH, &new_etag);
-		if(doc== NULL)
+		doc.s= send_http_get(path, port, etag, IF_NONE_MATCH, &new_etag, &doc.len);
+		if(doc.s == NULL)
 		{
 			LM_DBG("document not update\n");
 			continue;
@@ -283,30 +284,29 @@ void query_xcap_update(unsigned int ticks, void* param)
 		if(new_etag== NULL)
 		{
 			LM_ERR("etag not found\n");
-			pkg_free(doc);
+			pkg_free(doc.s);
 			goto error;
 		}
 		/* update in xcap db table */
-		update_vals[u_doc_col].val.str_val.s= doc;
-		update_vals[u_doc_col].val.str_val.len= strlen(doc);
+		update_vals[u_doc_col].val.blob_val= doc;
 		update_vals[u_etag_col].val.string_val= etag;
 
 		if(xcap_dbf.update(xcap_db, query_cols, 0, query_vals, update_cols,
 					update_vals, n_query_cols, n_update_cols)< 0)
 		{
 			LM_ERR("in sql update\n");
-			pkg_free(doc);
+			pkg_free(doc.s);
 			goto error;
 		}
 		/* call registered callbacks */
 		if(uandd_to_uri(user, domain, &uri)< 0)
 		{
 			LM_ERR("converting user and domain to uri\n");
-			pkg_free(doc);
+			pkg_free(doc.s);
 			goto error;
 		}
-		run_xcap_update_cb(row_vals[doc_type_col].val.int_val, uri, doc);
-		pkg_free(doc);
+		run_xcap_update_cb(row_vals[doc_type_col].val.int_val, uri, doc.s);
+		pkg_free(doc.s);
 
 	}
 
@@ -359,7 +359,7 @@ struct mi_root* refreshXcapDoc(struct mi_root* cmd, void* param)
 	str doc_url;
 	xcap_doc_sel_t doc_sel;
 	char* serv_addr;
-	char* stream= NULL;
+	str stream= {0, 0};
 	int type;
 	unsigned int xcap_port;
 	char* etag= NULL;
@@ -392,8 +392,8 @@ struct mi_root* refreshXcapDoc(struct mi_root* cmd, void* param)
 		return 0;
 
 	/* send GET HTTP request to the server */
-	stream=	send_http_get(doc_url.s, xcap_port, NULL, 0, &etag);
-	if(stream== NULL)
+	stream.s = send_http_get(doc_url.s, xcap_port, NULL, 0, &etag, &stream.len);
+	if(stream.s== NULL)
 	{
 		LM_ERR("in http get\n");
 		return 0;
@@ -414,13 +414,14 @@ struct mi_root* refreshXcapDoc(struct mi_root* cmd, void* param)
 		goto error;
 	}
 
-	run_xcap_update_cb(type, doc_sel.xid, stream);
+	run_xcap_update_cb(type, doc_sel.xid, stream.s);
+	pkg_free(stream.s);
 
 	return init_mi_tree(200, "OK", 2);
 
 error:
-	if(stream)
-		pkg_free(stream);
+	if(stream.s)
+		pkg_free(stream.s);
 	return 0;
 }
 

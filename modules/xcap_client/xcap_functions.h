@@ -119,10 +119,8 @@ typedef void (*xcap_nodeSel_free_t)(xcap_node_sel_t* node);
 
 /* specifical function to get a new document, not present in xcap table 
  * to be updated and handled by the xcap_client module*/
-int xcapGetNewDoc(xcap_get_req_t req, str user, 
-		str domain, char** xcap_doc);
 typedef int (*xcapGetNewDoc_t)(xcap_get_req_t req, str user, str domain,
-		char** xcap_doc);
+		str* xcap_doc);
 
 typedef struct xcap_api {
 	xcap_get_elem_t get_elem;
@@ -139,5 +137,8 @@ int bind_xcap(xcap_api_t* api);
 typedef int (*bind_xcap_t)(xcap_api_t* api);
 
 char* send_http_get(char* path, unsigned int xcap_port, char* match_etag,
-		int match_type, char** etag);
+		int match_type, char** etag, int* doc_len);
+
+int xcapGetNewDoc(xcap_get_req_t req, str user, 
+		str domain, str* xcap_doc);
 #endif
