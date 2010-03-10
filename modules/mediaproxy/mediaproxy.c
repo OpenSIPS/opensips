@@ -27,6 +27,7 @@
 #include <time.h>
 #include <ctype.h>
 #include <errno.h>
+#include <arpa/inet.h>
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -60,7 +61,9 @@
 
 #define SIGNALING_IP_AVP_SPEC  "$avp(s:signaling_ip)"
 #define MEDIA_RELAY_AVP_SPEC   "$avp(s:media_relay)"
+#define ICE_CANDIDATE_AVP_SPEC "$avp(s:ice_candidate)"
 
+#define NO_CANDIDATE -1
 
 // Although `AF_LOCAL' is mandated by POSIX.1g, `AF_UNIX' is portable to
 // more systems.  `AF_UNIX' was the traditional name stemming from BSD, so
@@ -126,9 +129,11 @@ typedef struct {
     str rtcp_port; // pointer to the rtcp port if explicitly specified by stream
     str direction;
     Bool local_ip; // true if the IP is locally defined inside this media stream
+    Bool has_ice;
     TransportType transport;
     char *start_line;
     char *next_line;
+    char *first_ice_candidate;
 } StreamInfo;
 
 #define MAX_STREAMS 32
@@ -148,6 +153,10 @@ typedef struct AVP_Param {
     unsigned short type;
 } AVP_Param;
 
+typedef struct ice_candidate_data {
+    unsigned int priority;
+    Bool skip_next_reply;
+} ice_candidate_data;
 
 // Function prototypes
 //
@@ -162,6 +171,7 @@ static int child_init(int rank);
 // Module global variables and state
 //
 static int mediaproxy_disabled = False;
+static str ice_candidate = str_init("none");
 
 static MediaproxySocket mediaproxy_socket = {
     "/var/run/mediaproxy/dispatcher.sock", // name
@@ -182,6 +192,9 @@ static AVP_Param signaling_ip_avp = {str_init(SIGNALING_IP_AVP_SPEC), {0}, 0};
 // The AVP where the application-defined media relay IP is stored
 static AVP_Param media_relay_avp = {str_init(MEDIA_RELAY_AVP_SPEC), {0}, 0};
 
+// The AVP where the ICE candidate priority is stored (if defined)
+static AVP_Param ice_candidate_avp = {str_init(ICE_CANDIDATE_AVP_SPEC), {0}, 0};
+
 static cmd_export_t commands[] = {
     {"engage_media_proxy", (cmd_function)EngageMediaProxy, 0, 0, 0, REQUEST_ROUTE},
     {"use_media_proxy",    (cmd_function)UseMediaProxy,    0, 0, 0, REQUEST_ROUTE | ONREPLY_ROUTE | FAILURE_ROUTE | BRANCH_ROUTE | LOCAL_ROUTE},
@@ -195,6 +208,8 @@ static param_export_t parameters[] = {
     {"mediaproxy_timeout", INT_PARAM, &(mediaproxy_socket.timeout)},
     {"signaling_ip_avp",   STR_PARAM, &(signaling_ip_avp.spec.s)},
     {"media_relay_avp",    STR_PARAM, &(media_relay_avp.spec.s)},
+    {"ice_candidate",      STR_PARAM, &(ice_candidate.s)},
+    {"ice_candidate_avp",  STR_PARAM, &(ice_candidate_avp.spec.s)},
     {0, 0, 0}
 };
 
@@ -814,6 +829,64 @@ get_rtcp_ip_attribute(str *block)
 }
 
 
+// will return true if the stream in the given block
+// has ice proposal/answer, false otherwise
+static Bool
+has_ice_proposal(str *block)
+{
+    char *ptr;
+    ptr = find_line_starting_with(block, "a=ice-pwd:", False);
+    if (ptr) {
+        ptr = find_line_starting_with(block, "a=ice-ufrag:", False);
+        if (ptr) {
+            ptr = find_line_starting_with(block, "a=candidate:", False);
+            if (ptr) {
+                return True;
+            }
+        }
+    }
+    return False;
+}
+
+
+// will return the priority (string value) that will be used
+// for the candidate(s) inserted
+static str
+get_ice_candidate(void)
+{
+    int_str value;
+
+    if (!search_first_avp(ice_candidate_avp.type | AVP_VAL_STR,
+                          ice_candidate_avp.name, &value, NULL) || value.s.s==NULL || value.s.len==0) {
+        // if AVP is not set use global module parameter
+        return ice_candidate;
+    } else {
+        return value.s;
+    }
+}
+
+
+// will return the priority (integer value) that will be used
+// for the candidate(s) inserted
+static unsigned int
+get_ice_candidate_priority(str priority)
+{
+    int type_pref;
+
+    if (STR_IMATCH(priority, "high-priority")) {
+        // Use type preference even higher than host candidates
+        type_pref = 130;
+    } else if (STR_IMATCH(priority, "low-priority")) {
+        type_pref = 0;
+    } else {
+        return NO_CANDIDATE;
+    }
+    // This will return the priority for the RTP component, the RTCP
+    // component is RTP - 1
+    return ((type_pref << 24) + 16777215);
+}
+
+
 // will return the ip address present in a `c=' line in the given block
 // returns: -1 on error, 0 if not found, 1 if found
 static int
@@ -1084,6 +1157,8 @@ get_session_info(str *sdp, SessionInfo *session)
         session->streams[i].rtcp_ip = get_rtcp_ip_attribute(&block);
         session->streams[i].rtcp_port = get_rtcp_port_attribute(&block);
         session->streams[i].direction = get_direction_attribute(&block, &session->direction);
+        session->streams[i].has_ice = has_ice_proposal(&block);
+        session->streams[i].first_ice_candidate = find_line_starting_with(&block, "a=candidate:", False);
     }
 
     return session->stream_count;
@@ -1321,11 +1396,18 @@ send_command(char *command)
 // Exported API implementation
 //
 
+// ice_candidate_data: it carries data across the dialog when using engage_media_proxy:
+//   - priority: the priority that should be used for the ICE candidate
+//      * -1: no candidate should be added.
+//      * other: the specified type preference should be used for calculating 
+//   - skip_next_reply: flag for knowing the fact that the next reply with SDP must be skipped
+//     because it is a reply to a re-INVITE or UPDATE *after* the ICE negotiation
 static int
-use_media_proxy(struct sip_msg *msg, char *dialog_id)
+use_media_proxy(struct sip_msg *msg, char *dialog_id, ice_candidate_data *ice_data)
 {
     str callid, cseq, from_uri, to_uri, from_tag, to_tag, user_agent;
     str signaling_ip, media_relay, sdp, str_buf, tokens[MAX_STREAMS+1];
+    str priority_str, candidate;
     char request[8192], media_str[4096], buf[64], *result, *type;
     int i, j, port, len, status;
     Bool removed_session_ip, have_sdp;
@@ -1338,6 +1420,12 @@ use_media_proxy(struct sip_msg *msg, char *dialog_id)
     if (msg->first_line.type == SIP_REQUEST) {
         type = "request";
     } else if (msg->first_line.type == SIP_REPLY) {
+        if (ice_data != NULL && ice_data->skip_next_reply) {
+            // we don't process replies to ICE negotiation end requests 
+            // (those containing a=remote-candidates)
+            ice_data->skip_next_reply = False;
+            return -1;
+        }
         type = "reply";
     } else {
         return -1;
@@ -1363,6 +1451,15 @@ use_media_proxy(struct sip_msg *msg, char *dialog_id)
     have_sdp = (status == 1);
 
     if (have_sdp) {
+        if (msg->first_line.type == SIP_REQUEST && find_line_starting_with(&sdp, "a=remote-candidates", False)) {
+            // we don't process requests with a=remote-candidates, this indicates the end of an ICE
+            // negotiation and we must not mangle the SDP.
+            if (ice_data != NULL) {
+                ice_data->skip_next_reply = True;
+            }
+            return -1;
+        }
+       
         status = get_session_info(&sdp, &session);
         if (status < 0) {
             LM_ERR("can't extract media streams from the SDP message\n");
@@ -1381,11 +1478,12 @@ use_media_proxy(struct sip_msg *msg, char *dialog_id)
                 LM_ERR("media stream description is longer than %lu bytes\n", (unsigned long)sizeof(media_str));
                 return -1;
             }
-            len = sprintf(str_buf.s, "%.*s:%.*s:%.*s:%.*s,",
+            len = sprintf(str_buf.s, "%.*s:%.*s:%.*s:%.*s:%s,",
                           stream.type.len, stream.type.s,
                           stream.ip.len, stream.ip.s,
                           stream.port.len, stream.port.s,
-                          stream.direction.len, stream.direction.s);
+                          stream.direction.len, stream.direction.s,
+                          stream.has_ice?"ice=yes":"ice=no");
             str_buf.s   += len;
             str_buf.len -= len;
         }
@@ -1535,6 +1633,52 @@ use_media_proxy(struct sip_msg *msg, char *dialog_id)
             }
         }
 
+        if (ice_data == NULL) {
+            priority_str = get_ice_candidate();
+        } else if (ice_data->priority == NO_CANDIDATE) {
+            priority_str.s = "none";
+        } else {
+            // we don't need the string value, we'll use the number
+            priority_str.s = "";
+        }
+        priority_str.len = strlen(priority_str.s);
+
+        if (stream.has_ice && stream.first_ice_candidate && !STR_IMATCH(priority_str, "none")) {
+            // add some pseudo-random string to the foundation
+            struct in_addr hexip;
+            inet_aton(tokens[0].s, &hexip);
+
+            unsigned int priority = (ice_data == NULL)?get_ice_candidate_priority(priority_str):ice_data->priority;
+            port = strtoint(&tokens[j]);
+            candidate.s = buf;
+            candidate.len = sprintf(candidate.s, "a=candidate:R%x 1 UDP %u %.*s %i typ relay%.*s",
+                                    hexip.s_addr,
+                                    priority,
+                                    tokens[0].len, tokens[0].s, 
+                                    port,
+                                    session.separator.len, session.separator.s);
+
+            if (!insert_element(msg, stream.first_ice_candidate, candidate.s)) {
+                LM_ERR("failed to insert ICE candidate in media stream number %d\n", i+1);
+                return -1;
+            }
+
+            if (stream.rtcp_port.len>0 && !isnullport(stream.rtcp_port)) {
+                candidate.s = buf;
+                candidate.len = sprintf(candidate.s, "a=candidate:R%x 2 UDP %u %.*s %i typ relay%.*s",
+                                        hexip.s_addr,
+                                        priority-1,
+                                        tokens[0].len, tokens[0].s, 
+                                        port+1,
+                                        session.separator.len, session.separator.s);
+
+                if (!insert_element(msg, stream.first_ice_candidate, candidate.s)) {
+                    LM_ERR("failed to insert ICE candidate in media stream number %d\n", i+1);
+                    return -1;
+                }
+            }
+        }
+
         j++;
     }
 
@@ -1590,9 +1734,16 @@ get_dialog_id(struct dlg_cell *dlg)
 
 
 static void
+__free_dialog_data(void *data)
+{
+    shm_free((ice_candidate_data*)data);
+}
+
+
+static void
 __dialog_requests(struct dlg_cell *dlg, int type, struct dlg_cb_params *_params)
 {
-    use_media_proxy(_params->msg, get_dialog_id(dlg));
+    use_media_proxy(_params->msg, get_dialog_id(dlg), (ice_candidate_data*)*_params->param);
 }
 
 
@@ -1605,7 +1756,7 @@ __dialog_replies(struct dlg_cell *dlg, int type, struct dlg_cb_params *_params)
         return;
 
     if (reply->REPLY_STATUS>100 && reply->REPLY_STATUS<300) {
-        use_media_proxy(reply, get_dialog_id(dlg));
+        use_media_proxy(reply, get_dialog_id(dlg), (ice_candidate_data*)*_params->param);
     }
 }
 
@@ -1624,6 +1775,7 @@ static void
 __dialog_created(struct dlg_cell *dlg, int type, struct dlg_cb_params *_params)
 {
     struct sip_msg *request = _params->msg;
+    ice_candidate_data *ice_data;
 
     if (request->REQ_METHOD != METHOD_INVITE)
         return;
@@ -1631,14 +1783,23 @@ __dialog_created(struct dlg_cell *dlg, int type, struct dlg_cb_params *_params)
     if ((request->msg_flags & FL_USE_MEDIA_PROXY) == 0)
         return;
 
-    if (dlg_api.register_dlgcb(dlg, DLGCB_REQ_WITHIN, __dialog_requests, NULL, NULL) != 0)
+    ice_data = (ice_candidate_data*)shm_malloc(sizeof(ice_candidate_data));
+    if (!ice_data) {
+        LM_ERR("failed to allocate shm memory for ice_candidate_data\n");
+        return;
+    }
+
+    ice_data->priority = get_ice_candidate_priority(get_ice_candidate());
+    ice_data->skip_next_reply = False;
+
+    if (dlg_api.register_dlgcb(dlg, DLGCB_REQ_WITHIN, __dialog_requests, (void*)ice_data, __free_dialog_data) != 0)
         LM_ERR("cannot register callback for in-dialog requests\n");
-    if (dlg_api.register_dlgcb(dlg, DLGCB_RESPONSE_FWDED | DLGCB_RESPONSE_WITHIN, __dialog_replies, NULL, NULL) != 0)
+    if (dlg_api.register_dlgcb(dlg, DLGCB_RESPONSE_FWDED | DLGCB_RESPONSE_WITHIN, __dialog_replies, (void*)ice_data, NULL) != 0)
         LM_ERR("cannot register callback for dialog and in-dialog replies\n");
     if (dlg_api.register_dlgcb(dlg, DLGCB_TERMINATED | DLGCB_FAILED | DLGCB_EXPIRED | DLGCB_DESTROY, __dialog_ended, (void*)MPActive, NULL) != 0)
         LM_ERR("cannot register callback for dialog termination\n");
 
-    use_media_proxy(request, get_dialog_id(dlg));
+    use_media_proxy(request, get_dialog_id(dlg), ice_data);
 }
 
 
@@ -1669,7 +1830,7 @@ UseMediaProxy(struct sip_msg *msg)
     if (mediaproxy_disabled)
         return -1;
 
-    return use_media_proxy(msg, "");
+    return use_media_proxy(msg, "", NULL);
 }
 
 
@@ -1731,6 +1892,28 @@ mod_init(void)
     }
     if (pv_get_avp_name(0, &(avp_spec.pvp), &(media_relay_avp.name), &(media_relay_avp.type))!=0) {
         LM_CRIT("invalid AVP specification for media_relay_avp: `%s'\n", media_relay_avp.spec.s);
+        return -1;
+    }
+
+    // initialize the ice_candidate_avp structure
+    if (ice_candidate_avp.spec.s==NULL || *(ice_candidate_avp.spec.s)==0) {
+        LM_WARN("missing/empty ice_candidate_avp parameter. will use default.\n");
+        ice_candidate_avp.spec.s = ICE_CANDIDATE_AVP_SPEC;
+    }
+    ice_candidate_avp.spec.len = strlen(ice_candidate_avp.spec.s);
+    if (pv_parse_spec(&(ice_candidate_avp.spec), &avp_spec)==0 || avp_spec.type!=PVT_AVP) {
+        LM_CRIT("invalid AVP specification for ice_candidate_avp: `%s'\n", ice_candidate_avp.spec.s);
+        return -1;
+    }
+    if (pv_get_avp_name(0, &(avp_spec.pvp), &(ice_candidate_avp.name), &(ice_candidate_avp.type))!=0) {
+        LM_CRIT("invalid AVP specification for ice_candidate_avp: `%s'\n", ice_candidate_avp.spec.s);
+        return -1;
+    }
+
+    // initialize ice_candidate module parameter
+    ice_candidate.len = strlen(ice_candidate.s);
+    if (!STR_IMATCH(ice_candidate, "none") && !STR_IMATCH(ice_candidate, "low-priority") && !STR_IMATCH(ice_candidate, "high-priority")) {
+        LM_CRIT("invalid value specified for ice_candidate: `%s'\n", ice_candidate.s);
         return -1;
     }
 
