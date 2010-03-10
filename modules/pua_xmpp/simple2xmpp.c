@@ -69,10 +69,10 @@ int Notify2Xmpp(struct sip_msg* msg, char* s1, char* s2)
 	str id;
 	ua_pres_t dialog;
 	int event_flag= 0;
-	char buf_to[256], buf_from[256];
+	char buf_to[256];
 
 	memset(&dialog, 0, sizeof(ua_pres_t));
-
+	
 	LM_DBG("start...\n\n");
 
 	if( parse_headers(msg,HDR_EOH_F, 0)==-1 )
@@ -145,7 +145,14 @@ int Notify2Xmpp(struct sip_msg* msg, char* s1, char* s2)
 	pfrom = (struct to_body*)msg->from->parsed;
 	dialog.pres_uri= &pfrom->uri;
 
-	URI_ADD_NULL_TERM(from_uri, buf_from, dialog.pres_uri);
+	from_uri.s = xmpp_uri_sip2xmpp(dialog.pres_uri);
+	if(from_uri.s == 0)
+	{
+		LM_ERR("Failed to translate uri from sip to xmpp [%.*s]\n",
+				dialog.pres_uri->len, dialog.pres_uri->s);
+		goto error;
+	}
+	from_uri.len= strlen(from_uri.s);
 
 	if( pfrom->tag_value.s ==NULL || pfrom->tag_value.len == 0)
 	{
@@ -538,6 +545,7 @@ int winfo2xmpp(str* to_uri, str* body, str* id)
 	xmlNodePtr root_node= NULL;
 	xmlNodePtr node= NULL;
 	xmlBufferPtr buffer= NULL;
+	str watcher_str;
 
 	LM_DBG("start...\n");
 	notify_doc= xmlParseMemory(body->s, body->len);
@@ -556,7 +564,7 @@ int winfo2xmpp(str* to_uri, str* body, str* id)
 	node = XMLNodeGetNodeByName(pidf_root, "watcher", NULL);
 
 	for (; node!=NULL; node = node->next)
-	{
+	{		
 		if( xmlStrcasecmp(node->name,(unsigned char*)"watcher"))
 			continue;
 
@@ -566,8 +574,18 @@ int winfo2xmpp(str* to_uri, str* body, str* id)
 			LM_ERR("while extracting watcher node content\n");
 			goto error;
 		}
-		from_uri.s= watcher;
+		watcher_str.s = watcher;
+		watcher_str.len = strlen(watcher);
+
+		from_uri.s = xmpp_uri_sip2xmpp(&watcher_str);
+		if(from_uri.s == NULL)
+		{
+			LM_ERR("Failed to transform uri from sip to xmpp\n");
+			goto error;
+		}
 		from_uri.len = strlen(from_uri.s);
+		xmlFree(watcher);
+		watcher= NULL;
 
 		doc= xmlNewDoc( 0 );
 		if(doc== NULL)
@@ -628,8 +646,6 @@ int winfo2xmpp(str* to_uri, str* body, str* id)
 			LM_ERR("while sending xmpp_subscribe\n");
 			goto error;
 		}
-		xmlFree(watcher);
-		watcher= NULL;
 		xmlBufferFree(buffer);
 		buffer= NULL;
 		xmlFreeDoc(doc);
@@ -720,7 +736,7 @@ char* get_error_reason(int code, str* reason)
 
 int Sipreply2Xmpp(ua_pres_t* hentity, struct sip_msg * msg) 
 {
-	char buf_to[URI_BUF_LEN], buf_from[URI_BUF_LEN];
+	/* named according to the direction of the message in xmpp*/
 	str from_uri;
 	str to_uri;
 	xmlDocPtr doc= NULL;
@@ -731,34 +747,36 @@ int Sipreply2Xmpp(ua_pres_t* hentity, struct sip_msg * msg)
 	str reason;
 	char* err_reason= NULL;
 	xmlBufferPtr buffer= NULL;
+	char buf_to[256];	
 
-	LM_DBG("start..\n");
+	LM_DBG("*** Entered the callback\n");
 
 	URI_ADD_NULL_TERM(to_uri, buf_to, hentity->watcher_uri);
-	URI_ADD_NULL_TERM(from_uri, buf_from, hentity->pres_uri);
+ 	from_uri.s = xmpp_uri_sip2xmpp(hentity->pres_uri);
+	if(from_uri.s == NULL)
+	{
+		LM_ERR("Failed to traslate sip uri to xmpp uri\n");
+		return -1;
+	}
+	from_uri.len= strlen(from_uri.s);
 
 	doc= xmlNewDoc(BAD_CAST "1.0");
 	if(doc==0)
-	{
-		LM_ERR("Failed to create new xml document\n");
 		goto error;
-	}
-
+    	
 	root_node = xmlNewNode(NULL, BAD_CAST "presence");
+	
 	if(root_node==0)
-	{
-		LM_ERR("Failed to create new xml node\n");
 		goto error;
-	}
-	xmlDocSetRootElement(doc, root_node);
+    	xmlDocSetRootElement(doc, root_node);
 
-	attr= xmlNewProp(root_node, BAD_CAST "to", BAD_CAST buf_to);
+	attr= xmlNewProp(root_node, BAD_CAST "to", BAD_CAST to_uri.s);
 	if(attr== NULL)
 	{
 		LM_ERR("while adding attribute to\n");
 		goto error;
 	}
-	attr= xmlNewProp(root_node, BAD_CAST "from", BAD_CAST buf_from);
+	attr= xmlNewProp(root_node, BAD_CAST "from", BAD_CAST from_uri.s);
 	if(attr== NULL)
 	{
 		LM_ERR("while adding attribute from\n");

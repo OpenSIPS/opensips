@@ -43,6 +43,8 @@ extern query_dialog_t pua_is_dialog;
 extern xmpp_send_xsubscribe_f xmpp_subscribe;
 extern xmpp_send_xnotify_f xmpp_notify;
 extern xmpp_send_xpacket_f xmpp_packet;
+extern uri_xmpp2sip_f xmpp_uri_xmpp2sip;
+extern uri_sip2xmpp_f xmpp_uri_sip2xmpp;
 
 extern xmlNodeGetAttrContentByName_t XMLNodeGetAttrContentByName;
 extern xmlDocGetNodeByName_t XMLDocGetNodeByName;
