@@ -64,6 +64,8 @@ xmpp_api_t xmpp_api;
 xmpp_send_xsubscribe_f xmpp_subscribe;
 xmpp_send_xnotify_f xmpp_notify;
 xmpp_send_xpacket_f xmpp_packet;
+uri_xmpp2sip_f xmpp_uri_xmpp2sip;
+uri_sip2xmpp_f xmpp_uri_sip2xmpp;
 
 /* libxml wrapper functions */
 xmlNodeGetAttrContentByName_t XMLNodeGetAttrContentByName;
@@ -204,6 +206,9 @@ static int mod_init(void)
 	}
 	xmpp_packet= xmpp_api.xpacket;
 
+	xmpp_uri_xmpp2sip = xmpp_api.uri_xmpp2sip;
+	xmpp_uri_sip2xmpp = xmpp_api.uri_sip2xmpp;
+	
 	if(xmpp_api.register_callback== NULL)
 	{
 		LM_ERR("Could not import register_callback"

@@ -434,48 +434,48 @@ error:
 	}
 
 	return -1;
+
 }
 
 int presence_subscribe(xmlNodePtr pres_node, int expires,int  flag)
 {
 	subs_info_t subs;
 	char* type= NULL, *uri= NULL;
-	str to_uri= {0, 0};
-	str from_uri= {0, 0};
-	char buf_to[256], buf_from[256];
+ 	str to_uri= {0, 0};
+ 	str from_uri= {0, 0};
+ 	char buf_from[256];
 
-	uri= XMLNodeGetAttrContentByName(pres_node, "to");
-	if(uri == NULL)
+	uri= XMLNodeGetAttrContentByName(pres_node, "to"); 
+	if(uri== NULL)
 	{
 		LM_ERR("failed to get to attribute from xml doc\n");
 		return -1;
 	}
-	ENC_SIP_URI(to_uri, buf_to, uri);
-	xmlFree(uri);
-
-	uri= XMLNodeGetAttrContentByName(pres_node, "from");
-	if(uri == NULL)
+	to_uri.s = xmpp_uri_xmpp2sip(uri, &to_uri.len);
+	if(to_uri.s == 0)
 	{
 		LM_ERR("failed to get from attribute from xml doc\n");
 		goto error;
 	}
-
-	ENC_SIP_URI(from_uri, buf_from, uri);
-	xmlFree(uri);
-
+ 	xmlFree(uri);
+ 
+ 	uri= XMLNodeGetAttrContentByName(pres_node, "from");
+ 	if(uri == NULL)
+ 	{
+ 		LM_ERR("failed to get from attribute from xml doc\n");
+ 		goto error;
+ 	}
+ 
+ 	ENC_SIP_URI(from_uri, buf_from, uri);
+ 	xmlFree(uri);
+	
 	memset(&subs, 0, sizeof(subs_info_t));
 
 	subs.pres_uri= &to_uri;
 	subs.watcher_uri= &from_uri;
-	subs.remote_target = subs.pres_uri;
-
+	subs.contact= &server_address;
 	if(presence_server.s)
-	{
-		subs.contact= &presence_server;
-	}
-	else
-		subs.contact = subs.watcher_uri;
-
+		subs.outbound_proxy = &presence_server;
 	/*
 	type= XMLNodeGetAttrContentByName(pres_node, "type" );
 	if(strcmp(type, "subscribe")==0 ||strcmp(type, "probe")== 0)
