@@ -84,6 +84,9 @@ Chapter 1. Admin Guide
    The module use cache to store presentity list and writes to
    database on timer to be able to recover upon restart.
 
+   Notice: This module must not be used in no fork mode (the
+   locking mechanism used may cause deadlock in no fork mode).
+
 1.2. Dependencies
 
 1.2.1. OpenSIPS Modules

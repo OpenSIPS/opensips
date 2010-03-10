@@ -6,8 +6,8 @@
     <para>
 		The module provides the following functions that can be used
 		in other &osips; modules.
-   </para>
- 		<section>
+	</para>
+		<section>
 				<title>
 				<function moreinfo="none">bind_pua(pua_api_t* api)</function>
 				</title>
