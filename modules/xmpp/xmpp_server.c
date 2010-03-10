@@ -25,21 +25,6 @@
  */
 
 /*
- * An inbound SIP message:
- *   from sip:user1@domain1 to sip:user2*domain2@gateway_domain
- * is translated to an XMPP message:
- *   from user1*domain1@xmpp_domain to user2@domain2
- *
- * An inbound XMPP message:
- *   from user1@domain1 to user2*domain2@xmpp_domain
- * is translated to a SIP message:
- *   from sip:user1*domain1@gateway_domain to sip:user2@domain2
- *
- * Where '*' is the domain_separator, and gateway_domain and
- * xmpp_domain are defined below.
- */
-
-/*
  * 2-way dialback sequence with xmppd2:
  *
  *  Originating server (us)         Receiving server (them)      Authoritative server (us)
@@ -403,10 +388,7 @@ static void in_stream_node_callback(int type, xode node, void *arg)
 
 			if (!(msg = xode_get_data(body)))
 				msg = "";
-			xmpp_send_sip_msg(
-				encode_uri_xmpp_sip(from),
-				decode_uri_xmpp_sip(to),
-				msg);
+			xmpp_send_sip_msg(from, to, msg);
 		} else if (!strcmp(tag, "presence")) {
 			/* run presence callbacks */
 		}
@@ -429,18 +411,17 @@ static void do_send_message_server(struct xmpp_pipe_cmd *cmd)
 	char *domain;
 	xode x;
 
-	LM_DBG("from=[%s] to=[%s] body=[%s]\n", encode_uri_sip_xmpp(cmd->from),
-		decode_uri_sip_xmpp(cmd->to), cmd->body);
+	LM_DBG("from=[%s] to=[%s] body=[%s]\n", cmd->from, cmd->to, cmd->body);
 
 	x = xode_new_tag("message");
 	xode_put_attrib(x, "xmlns", "jabber:client");
 	xode_put_attrib(x, "id", cmd->id); // XXX
-	xode_put_attrib(x, "from", encode_uri_sip_xmpp(cmd->from));
-	xode_put_attrib(x, "to", decode_uri_sip_xmpp(cmd->to));
+	xode_put_attrib(x, "from", cmd->from);
+	xode_put_attrib(x, "to", cmd->to);
 	xode_put_attrib(x, "type", "chat");
 	xode_insert_cdata(xode_insert_tag(x, "body"), cmd->body, -1);
 
-	domain = extract_domain(decode_uri_sip_xmpp(cmd->to));
+	domain = extract_domain(cmd->to);
 	xode_send_domain(domain, x);
 }
 

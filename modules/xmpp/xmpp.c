@@ -24,20 +24,6 @@
  *
  */
 
-/*
- * An inbound SIP message:
- *   from sip:user1@domain1 to sip:user2*domain2@gateway_domain
- * is translated to an XMPP message:
- *   from user1*domain1@xmpp_domain to user2@domain2
- *
- * An inbound XMPP message:
- *   from user1@domain1 to user2*domain2@xmpp_domain
- * is translated to a SIP message:
- *   from sip:user1*domain1@gateway_domain to sip:user2@domain2
- *
- * Where '*' is the domain_separator, and gateway_domain and
- * xmpp_domain are defined below.
- */
 
 /*
  * 2-way dialback sequence with xmppd2:
@@ -104,8 +90,6 @@
 /* XXX hack */
 #define DB_KEY	"this-be-a-random-key"
 
-
-
 struct tm_binds tmb;
 
 static int  mod_init(void);
@@ -120,19 +104,18 @@ static int pipe_fds[2] = {-1,-1};
  */
 char *backend = "component";
 char *domain_sep_str = NULL;
-char domain_separator = '*';
-char *gateway_domain = "sip2xmpp.example.net";
-char *xmpp_domain = "xmpp2sip.example.net";
-char *xmpp_host = "xmpp.example.com";
+char *xmpp_domain = "127.0.0.1";
+char *xmpp_host = "127.0.0.1";
+str sip_domain= {0, 0};
 int xmpp_port = 0;
 char *xmpp_password = "secret";
 str outbound_proxy= {0, 0};
 
 #define DEFAULT_COMPONENT_PORT 5347
-#define DEFAULT_SERVER_PORT    5269
+#define DEFAULT_SERVER_PORT 5269
 
 static proc_export_t procs[] = {
-	{"XMPP receiver",  0,  0, xmpp_process, 1 , 0},
+	{"XMPP receiver",  0,  0, xmpp_process, 1, 0},
 	{0,0,0,0,0,0}
 };
 
@@ -150,14 +133,13 @@ static cmd_export_t cmds[] = {
  * Exported parameters
  */
 static param_export_t params[] = {
-	{ "backend",			STR_PARAM, &backend },
-	{ "domain_separator",	STR_PARAM, &domain_sep_str },
-	{ "gateway_domain",		STR_PARAM, &gateway_domain },
-	{ "xmpp_domain",		STR_PARAM, &xmpp_domain },
-	{ "xmpp_host",			STR_PARAM, &xmpp_host },
-	{ "xmpp_port",			INT_PARAM, &xmpp_port },
-	{ "xmpp_password",		STR_PARAM, &xmpp_password },
-	{ "outbound_proxy",		STR_PARAM, &outbound_proxy.s},
+	{ "backend",            STR_PARAM, &backend         },
+	{ "xmpp_domain",        STR_PARAM, &xmpp_domain     },
+	{ "xmpp_host",          STR_PARAM, &xmpp_host       },
+	{ "xmpp_port",          INT_PARAM, &xmpp_port       },
+	{ "xmpp_password",      STR_PARAM, &xmpp_password   },
+	{ "outbound_proxy",     STR_PARAM, &outbound_proxy.s},
+	{ "sip_domain",         STR_PARAM, &sip_domain.s    },
 	{0, 0, 0}
 };
 
@@ -204,12 +186,10 @@ static int mod_init(void) {
 			xmpp_port = DEFAULT_SERVER_PORT;
 	}
 
-	/* fix up the domain separator -- we only need 1 char */
-	if (domain_sep_str && *domain_sep_str)
-		domain_separator = *domain_sep_str;
-
 	if(outbound_proxy.s)
 		outbound_proxy.len= strlen(outbound_proxy.s);
+	if(sip_domain.s)
+		sip_domain.len = strlen(sip_domain.s);
 
 	if(init_xmpp_cb_list()<0){
 		LM_ERR("failed to init callback list\n");
@@ -223,7 +203,6 @@ static int mod_init(void) {
 
 	return 0;
 }
-
 
 static void xmpp_process(int rank)
 {
@@ -254,29 +233,34 @@ int xmpp_send_sip_msg(char *from, char *to, char *msg)
 	str msg_type = { "MESSAGE", 7 };
 	str hdr, fromstr, tostr, msgstr;
 	char buf[512];
+	char buf_from[256];
+
+	ENC_SIP_URI(fromstr, buf_from, from);
 	
 	hdr.s = buf;
 	hdr.len = snprintf(buf, sizeof(buf),
 			"Content-type: text/plain" CRLF "Contact: %s" CRLF, from);
 
-	fromstr.s = from;
-	fromstr.len = strlen(from);
-	tostr.s = to;
-	tostr.len = strlen(to);
+	tostr.s = uri_xmpp2sip(to, &tostr.len);
+	if(tostr.s == NULL) {
+		LM_ERR("Failed to translate xmpp uri to sip uri\n");
+		return -1;
+	}
+
 	msgstr.s = msg;
 	msgstr.len = strlen(msg);
 
 	return tmb.t_request(
-			&msg_type,						/* Type of the message */
-			0,								/* Request-URI */
-			&tostr,							/* To */
-			&fromstr,						/* From */
-			&hdr,							/* Optional headers */
-			&msgstr,						/* Message body */
+			&msg_type,                      /* Type of the message */
+			0,                              /* Request-URI */
+			&tostr,                         /* To */
+			&fromstr,                       /* From */
+			&hdr,                           /* Optional headers */
+			&msgstr,                        /* Message body */
 	(outbound_proxy.s)?&outbound_proxy:NULL,/* Outbound proxy*/
-			0,								/* Callback function */
-			0,								/* Callback parameter */
-			0
+			0,                              /* Callback function */
+			0,
+			0                               /* Callback parameter */
 			);
 }
 
@@ -369,7 +353,10 @@ static int cmd_send_message(struct sip_msg* msg, char* _foo, char* _bar)
 		LM_ERR("failed to parse From header\n");
 		return -1;
 	}
-	from_uri = ((struct to_body *) msg->from->parsed)->uri;
+	
+	from_uri.s = uri_sip2xmpp(&((struct to_body *) msg->from->parsed)->uri);
+	from_uri.len = strlen(from_uri.s);
+
 	tagid = ((struct to_body *) msg->from->parsed)->tag_value;
 	LM_DBG("message from <%.*s>\n", from_uri.len, from_uri.s);
 
@@ -389,6 +376,8 @@ static int cmd_send_message(struct sip_msg* msg, char* _foo, char* _bar)
 		LM_ERR("failed to find a valid destination\n");
 		return -1;
 	}
+	dst.s = dst.s + 4;
+	dst.len = dst.len - 4;
 	
 	if (!xmpp_send_pipe_cmd(XMPP_PIPE_SEND_MESSAGE, &from_uri, &dst, &body,
 				&tagid))

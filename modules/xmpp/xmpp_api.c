@@ -32,7 +32,7 @@
 #include "../../error.h"
 #include "../../mem/shm_mem.h"
 #include "xmpp_api.h"
-
+#include "xmpp.h"
 
 xmpp_cb_list_t *_xmpp_cb_list = 0;
 
@@ -114,14 +114,12 @@ int bind_xmpp(xmpp_api_t* api)
 		return -1;
 	}
 	api->register_callback = register_xmpp_cb;
+	api->uri_xmpp2sip= uri_xmpp2sip;
+	api->uri_sip2xmpp= uri_sip2xmpp;
 	api->xpacket    = xmpp_send_xpacket;
 	api->xmessage   = xmpp_send_xmessage;
 	api->xsubscribe = xmpp_send_xsubscribe;
 	api->xnotify    = xmpp_send_xnotify;
-	api->decode_uri_sip_xmpp = decode_uri_sip_xmpp;
-	api->encode_uri_sip_xmpp = encode_uri_sip_xmpp;
-	api->decode_uri_xmpp_sip = decode_uri_xmpp_sip;
-	api->encode_uri_xmpp_sip = encode_uri_xmpp_sip;
 
 	return 0;
 }

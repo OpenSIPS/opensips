@@ -24,21 +24,6 @@
  *
  */
 
-/*
- * An inbound SIP message:
- *   from sip:user1@domain1 to sip:user2*domain2@gateway_domain
- * is translated to an XMPP message:
- *   from user1*domain1@xmpp_domain to user2@domain2
- *
- * An inbound XMPP message:
- *   from user1@domain1 to user2*domain2@xmpp_domain
- * is translated to a SIP message:
- *   from sip:user1*domain1@gateway_domain to sip:user2@domain2
- *
- * Where '*' is the domain_separator, and gateway_domain and
- * xmpp_domain are defined below.
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
@@ -116,10 +101,7 @@ static void stream_node_callback(int type, xode node, void *arg)
 
 			if (!(msg = xode_get_data(body)))
 				msg = "";
-			xmpp_send_sip_msg(
-				encode_uri_xmpp_sip(from),
-				decode_uri_xmpp_sip(to),
-				msg);
+			xmpp_send_sip_msg(from, to, msg);
 		} else if (!strcmp(tag, "presence")) {
 			/* call presence callbacks */
 			LM_DBG("XMPP Presence received\n");
@@ -154,8 +136,8 @@ static int do_send_message_component(struct xmpp_private_data *priv,
 
 	x = xode_new_tag("message");
 	xode_put_attrib(x, "id", cmd->id); // XXX
-	xode_put_attrib(x, "from", encode_uri_sip_xmpp(cmd->from));
-	xode_put_attrib(x, "to", decode_uri_sip_xmpp(cmd->to));
+	xode_put_attrib(x, "from", cmd->from);
+	xode_put_attrib(x, "to", cmd->to);
 	xode_put_attrib(x, "type", "chat");
 	xode_insert_cdata(xode_insert_tag(x, "body"), cmd->body, -1);
 			

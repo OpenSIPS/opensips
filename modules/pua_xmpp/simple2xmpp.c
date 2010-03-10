@@ -41,6 +41,19 @@
 #include "pua_xmpp.h"
 #include "simple2xmpp.h"
 
+#define URI_BUF_LEN  256
+#define URI_ADD_NULL_TERM(dst, buf, src) \
+	do{\
+		if(src->len+1 > URI_BUF_LEN) {\
+			LM_ERR("Length exceeds buffer len [%d]\n", URI_BUF_LEN);\
+			goto error;\
+		}\
+		memcpy(buf, src->s+4, src->len-4);\
+		buf[src->len-4]= '\0';\
+		dst.s = buf;\
+		dst.len= src->len-4;\
+	}while(0)
+
 int winfo2xmpp(str* to_uri, str* body, str* id);
 int build_xmpp_content(str* to_uri, str* from_uri, str* body, str* id, int is_terminated);
 
@@ -48,7 +61,6 @@ int Notify2Xmpp(struct sip_msg* msg, char* s1, char* s2)
 {
 	struct to_body *pto, TO, *pfrom= NULL;
 	str to_uri;
-	char* uri= NULL;
 	str from_uri={0, 0};
 	struct hdr_field* hdr= NULL;
 	str body;
@@ -57,9 +69,10 @@ int Notify2Xmpp(struct sip_msg* msg, char* s1, char* s2)
 	str id;
 	ua_pres_t dialog;
 	int event_flag= 0;
+	char buf_to[256], buf_from[256];
 
 	memset(&dialog, 0, sizeof(ua_pres_t));
-	
+
 	LM_DBG("start...\n\n");
 
 	if( parse_headers(msg,HDR_EOH_F, 0)==-1 )
@@ -97,26 +110,10 @@ int Notify2Xmpp(struct sip_msg* msg, char* s1, char* s2)
 	}
 
 	dialog.watcher_uri= &pto->uri;
-	
-	uri=(char*)pkg_malloc(sizeof(char)*( pto->uri.len+1));
-	if(uri== NULL)
-	{
-		LM_ERR("no more memory\n");
-		return -1;
-	}
-	memcpy(uri, pto->uri.s, pto->uri.len);
-	uri[pto->uri.len]= '\0';
-	to_uri.s= duri_sip_xmpp(uri);
-	if(to_uri.s== NULL)
-	{
-		LM_ERR("while decoding sip uri in xmpp\n");
-		pkg_free(uri);
-		return -1;	
-	}	
-	to_uri.len= strlen(to_uri.s);
-	pkg_free(uri);
 
-    if (pto->tag_value.s==NULL || pto->tag_value.len==0 )
+	URI_ADD_NULL_TERM(to_uri, buf_to, dialog.watcher_uri);
+
+	if (pto->tag_value.s==NULL || pto->tag_value.len==0 )
 	{  
 		LM_ERR("to tag value not parsed\n");
 		goto error;
@@ -147,27 +144,9 @@ int Notify2Xmpp(struct sip_msg* msg, char* s1, char* s2)
 	}
 	pfrom = (struct to_body*)msg->from->parsed;
 	dialog.pres_uri= &pfrom->uri;
-	
-	uri=(char*)pkg_malloc(sizeof(char)*( pfrom->uri.len+1));
-	if(uri== NULL)
-	{
-		LM_ERR("no more memory\n");
-		goto error;
-	}
-	memcpy(uri, pfrom->uri.s, pfrom->uri.len);
-	uri[pfrom->uri.len]= '\0';
-	
-	from_uri.s= euri_sip_xmpp(uri);
-	if(from_uri.s== NULL)
-	{
-		LM_ERR("while encoding sip uri in xmpp\n");
-		pkg_free(uri);
-		goto error;
-	}	
-	from_uri.len= strlen(from_uri.s);
-	
-	pkg_free(uri);
-	
+
+	URI_ADD_NULL_TERM(from_uri, buf_from, dialog.pres_uri);
+
 	if( pfrom->tag_value.s ==NULL || pfrom->tag_value.len == 0)
 	{
 		LM_ERR("no from tag value present\n");
@@ -577,26 +556,18 @@ int winfo2xmpp(str* to_uri, str* body, str* id)
 	node = XMLNodeGetNodeByName(pidf_root, "watcher", NULL);
 
 	for (; node!=NULL; node = node->next)
-	{		
+	{
 		if( xmlStrcasecmp(node->name,(unsigned char*)"watcher"))
 			continue;
 
-		watcher= (char*)xmlNodeGetContent(node->children);	
+		watcher= (char*)xmlNodeGetContent(node->children);
 		if(watcher== NULL)
 		{
 			LM_ERR("while extracting watcher node content\n");
 			goto error;
 		}
-		from_uri.s= euri_sip_xmpp(watcher);
-		if(from_uri.s== NULL)
-		{
-			LM_ERR("while encoding sip uri in xmpp\n");
-			goto error;
-		}
-		from_uri.len = strlen(from_uri.s);		
-
-		xmlFree(watcher);
-		watcher= NULL;
+		from_uri.s= watcher;
+		from_uri.len = strlen(from_uri.s);
 
 		doc= xmlNewDoc( 0 );
 		if(doc== NULL)
@@ -657,6 +628,8 @@ int winfo2xmpp(str* to_uri, str* body, str* id)
 			LM_ERR("while sending xmpp_subscribe\n");
 			goto error;
 		}
+		xmlFree(watcher);
+		watcher= NULL;
 		xmlBufferFree(buffer);
 		buffer= NULL;
 		xmlFreeDoc(doc);
@@ -747,9 +720,8 @@ char* get_error_reason(int code, str* reason)
 
 int Sipreply2Xmpp(ua_pres_t* hentity, struct sip_msg * msg) 
 {
-	char* uri;
-	/* named according to the direction of the message in xmpp*/
-	str from_uri= {0, 0};
+	char buf_to[URI_BUF_LEN], buf_from[URI_BUF_LEN];
+	str from_uri;
 	str to_uri;
 	xmlDocPtr doc= NULL;
 	xmlNodePtr root_node= NULL, node = NULL;
@@ -759,62 +731,34 @@ int Sipreply2Xmpp(ua_pres_t* hentity, struct sip_msg * msg)
 	str reason;
 	char* err_reason= NULL;
 	xmlBufferPtr buffer= NULL;
-	
+
 	LM_DBG("start..\n");
-	uri=(char*)pkg_malloc(sizeof(char)*( hentity->watcher_uri->len+1));
-	if(uri== NULL)
-	{
-		LM_ERR("no more memory\n");
-		goto error;
-	}
-	memcpy(uri, hentity->watcher_uri->s, hentity->watcher_uri->len);
-	uri[hentity->watcher_uri->len]= '\0';
-	to_uri.s= duri_sip_xmpp(uri);
-	if(to_uri.s== NULL)
-	{
-		LM_ERR("whil decoding sip uri in xmpp\n");
-		pkg_free(uri);
-		goto error;	
-	}	
 
-	to_uri.len= strlen(to_uri.s);
-	pkg_free(uri);
-	
-	uri=(char*)pkg_malloc(sizeof(char)*( hentity->pres_uri->len+1));
-	if(uri== NULL)
-	{
-		LM_ERR("no more memory\n");
-		goto error;
-	}
-	memcpy(uri, hentity->pres_uri->s, hentity->pres_uri->len);
-	uri[hentity->pres_uri->len]= '\0';
-	from_uri.s= euri_sip_xmpp(uri);
-	if(from_uri.s== NULL)
-	{
-		LM_ERR("while encoding sip uri in xmpp\n");
-		pkg_free(uri);
-		goto error;
-	}
-	from_uri.len= strlen(from_uri.s);
-
-	pkg_free(uri);
+	URI_ADD_NULL_TERM(to_uri, buf_to, hentity->watcher_uri);
+	URI_ADD_NULL_TERM(from_uri, buf_from, hentity->pres_uri);
 
 	doc= xmlNewDoc(BAD_CAST "1.0");
 	if(doc==0)
+	{
+		LM_ERR("Failed to create new xml document\n");
 		goto error;
-    root_node = xmlNewNode(NULL, BAD_CAST "presence");
-	
-	if(root_node==0)
-		goto error;
-    xmlDocSetRootElement(doc, root_node);
+	}
 
-	attr= xmlNewProp(root_node, BAD_CAST "to", BAD_CAST to_uri.s);
+	root_node = xmlNewNode(NULL, BAD_CAST "presence");
+	if(root_node==0)
+	{
+		LM_ERR("Failed to create new xml node\n");
+		goto error;
+	}
+	xmlDocSetRootElement(doc, root_node);
+
+	attr= xmlNewProp(root_node, BAD_CAST "to", BAD_CAST buf_to);
 	if(attr== NULL)
 	{
 		LM_ERR("while adding attribute to\n");
 		goto error;
 	}
-	attr= xmlNewProp(root_node, BAD_CAST "from", BAD_CAST from_uri.s);
+	attr= xmlNewProp(root_node, BAD_CAST "from", BAD_CAST buf_from);
 	if(attr== NULL)
 	{
 		LM_ERR("while adding attribute from\n");
@@ -833,12 +777,11 @@ int Sipreply2Xmpp(ua_pres_t* hentity, struct sip_msg * msg)
 		reason= msg->first_line.u.reply.reason;
 	}
 
-	LM_DBG(" to_uri= %s\n\t from_uri= %s\n",
-			to_uri.s, from_uri.s);
+	LM_DBG("SIP reply code=%d ; to_uri= %s ; from_uri= %s\n",
+			code, to_uri.s, from_uri.s);
 
 	if(code>=300)
 	{
-		LM_DBG(" error code(>= 300)\n");
 		err_reason= get_error_reason(code, &reason);
 		if(err_reason== NULL)
 		{
@@ -872,12 +815,10 @@ int Sipreply2Xmpp(ua_pres_t* hentity, struct sip_msg * msg)
 			LM_ERR("while adding new attribute\n");
 			goto error;
 		}
-
 	}
 	else
 		if(code>=200 )
 		{
-			LM_DBG(" 2xx code\n");
 			attr= xmlNewProp(root_node, BAD_CAST "type", BAD_CAST "subscribed");
 			if(attr== NULL)
 			{
