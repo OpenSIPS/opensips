@@ -40,6 +40,7 @@
 	<column id="dst_uri">
 		<name>dst_uri</name>
 		<type>string</type>
+		<natural/>
 		<size>128</size>
 		<description>Destination address as a SIP URI</description>
 	</column>
@@ -67,4 +68,10 @@
 		<default></default>
 		<description>Text description of the destination</description>
 	</column>
+
+	<index>
+		<name>dsturi_idx</name>
+		<colref linkend="dst_uri"/>
+	</index>
+
 </table>

@@ -16,3 +16,5 @@ END load_balancer_tr;
 /
 BEGIN map2users('load_balancer'); END;
 /
+CREATE INDEX load_balancer_dsturi_idx  ON load_balancer (dst_uri);
+
