@@ -1,4 +1,4 @@
-INSERT INTO version (table_name, table_version) values ('dr_gateways','3');
+INSERT INTO version (table_name, table_version) values ('dr_gateways','4');
 CREATE TABLE dr_gateways (
     gwid NUMBER(10) PRIMARY KEY,
     type NUMBER(10) DEFAULT 0 NOT NULL,
@@ -6,6 +6,7 @@ CREATE TABLE dr_gateways (
     strip NUMBER(10) DEFAULT 0 NOT NULL,
     pri_prefix VARCHAR2(16) DEFAULT NULL,
     attrs VARCHAR2(255) DEFAULT NULL,
+    probe_mode NUMBER(10) DEFAULT 0 NOT NULL,
     description VARCHAR2(128) DEFAULT ''
 );
 

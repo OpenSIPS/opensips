@@ -8,3 +8,5 @@ CREATE TABLE load_balancer (
     description VARCHAR(128) DEFAULT '' NOT NULL
 );
 
+CREATE INDEX load_balancer_dsturi_idx ON load_balancer (dst_uri);
+
