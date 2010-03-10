@@ -156,13 +156,17 @@
 	<section>
 		<title><varname>sip_domain</varname> (string)</title>
 		<para>
-		If this parameter is set, the value will be used as the SIP domain name in XMPP. So, if the sip domain
-		that the gateway is responsible for is opensips.org and this parameter is set to sip.opensips.org, than
-		in all the requests sent in xmpp the sip users will have the domain translated to sip.opensips.org.
-		Also, in XMPP account the SIP buddies mut have this domain: sip.opensips.org, and it will be
+		This parameter must be set only if the xmpp module is used in component mode and the domain
+		that is the host for the jabber server is the same as the domain of the sip server(when using
+		the same domain name for the SIP service and for the XMPP service). In this case,
+		if we were to add buddies in xmpp accounts with that domain, then all the messages that will
+		reach the jabber server will be considered to be for local xmpp users. It is necessary therefore
+		to make a translate the sip domain name into another domain when sending messages in xmpp.
+		This parameter is exactly the name that should be used as the SIP domain name in XMPP.
+		Usage example: If the sip and xmpp domain is opensips.org and this parameter is set to sip.opensips.org,
+		than in all the requests sent in xmpp the sip users will have the domain translated to sip.opensips.org.
+		Also, in XMPP account the SIP buddies must have this domain: sip.opensips.org, and it will be
 		translated to the real one opensips.org when traversing the gateway.
-		This parameter is useful when the provider wants to have the same domain name for the SIP service
-		and for the XMPP service. 
 		</para>
 		<para>
 		<emphasis>
@@ -246,8 +250,6 @@
 </programlisting>
 		</example>
 	</section>
-
-
 	</section>
 
 	<section>

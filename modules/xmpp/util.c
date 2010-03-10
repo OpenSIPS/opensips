@@ -31,8 +31,10 @@
 #include "xmpp.h"
 #include "../../parser/parse_uri.h"
 /*
- sip_uri:  sip:user@sip_domain ->
- xmpp_uri: user@xmpp_domain
+ sip_uri:  sip:user@xmpp_domain ->
+ xmpp_uri: user@sip_domain
+ ( it is assumed that the domain in sip = xmpp_domain, only then
+ the sip_domain parameter has utility )
 */
 char* uri_sip2xmpp(str* uri)
 {
@@ -45,28 +47,28 @@ char* uri_sip2xmpp(str* uri)
 		LM_ERR("Failed to parse SIP uri\n");
 		return 0;
 	}
-	
-	if(suri.user.len + 2 + strlen(xmpp_domain) > 256)
+
+	if(suri.user.len + 2 + sip_domain.len > 256)
 	{
 		LM_ERR("Buffer overflow\n");
 		return 0;
 	}
-	
-	len = sprintf(buf, "%.*s@%s", suri.user.len, suri.user.s, xmpp_domain);
+
+	len = sprintf(buf, "%.*s@%s", suri.user.len, suri.user.s, sip_domain.s);
 	buf[len] = '\0';
 	return buf;
 }
 
 /*
-   xmpp uri: user@xmpp_domain/resource ->
-   sip_uri: user@sip_domain
+   xmpp uri: user@sip_domain/resource ->
+   sip_uri: sip:user@xmpp_domain
 */
 char* uri_xmpp2sip(char* uri, int* len)
 {
 	static char buf[256];
 	char* arond, *slash;
 	str user;
-	
+
 	if(sip_domain.s == 0)
 	{
 		user.s = uri;
@@ -83,11 +85,11 @@ char* uri_xmpp2sip(char* uri, int* len)
 			LM_ERR("Buffer overflow\n");
 			return 0;
 		}
-	
+
 		*len = sprintf(buf, "sip:%.*s", user.len, user.s);
 		buf[*len] = '\0';
 		return buf;
-	}	
+	}
 
 	arond = strchr(uri, '@');
 	if(arond == NULL)
@@ -103,14 +105,14 @@ char* uri_xmpp2sip(char* uri, int* len)
 	}
 	user.s = uri;
 	user.len = arond - uri;
-	
-	if(6 + user.len + sip_domain.len > 256)
+
+	if(6 + user.len + strlen(xmpp_domain) > 256)
 	{
 		LM_ERR("Buffer overflow\n");
 		return 0;
 	}
-	
-	*len = sprintf(buf, "sip:%.*s@%s", user.len, user.s, sip_domain.s);
+
+	*len = sprintf(buf, "sip:%.*s@%s", user.len, user.s, xmpp_domain);
 	buf[*len] = '\0';
 	return buf;
 }
