@@ -659,6 +659,9 @@ if (t_newtran()) {
      * 0x04 - disable the DNS failover for the transaction. Only
        first IP will be used. It disable the failover both at
        transaport and transaction level.
+     * 0x08 - If the request is a CANCEL, trust and pass further
+       the Reason header from the received CANCEL - shortly, will
+       propagate the Reason header.
 
    In case of error, the function returns the following codes:
      * -1 - generic internal error

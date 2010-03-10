@@ -41,6 +41,8 @@
 	"Reason: SIP ;cause=200 ;text=\"Call completed elsewhere\""
 
 
+str _extra_cancel_hdrs = {NULL,0};
+
 
 /* determine which branches should be canceled; do it
    only from within REPLY_LOCK, otherwise collisions
@@ -126,9 +128,12 @@ char *build_cancel(struct cell *Trans,unsigned int branch,
 	str reason = str_init(CANCEL_REASON CRLF);
 	str *extra = NULL;
 
-	/* add any reason hdr, as per RFC 3326 */
-	if (is_invite(Trans) && Trans->uas.status==200)
+	/* add the reason hdr, as per RFC 3326 */
+	if (is_invite(Trans) && Trans->uas.status==200) {
 		extra = &reason;
+	} else if (_extra_cancel_hdrs.s) {
+		extra = &_extra_cancel_hdrs;
+	}
 	return build_local( Trans, branch, &method, extra,
 		Trans->uac[branch].reply , len );
 }

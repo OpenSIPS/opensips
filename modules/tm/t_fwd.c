@@ -533,6 +533,7 @@ void cancel_invite(struct sip_msg *cancel_msg,
 	str reason;
 	unsigned int i;
 	int lowest_error;
+	struct hdr_field *hdr;
 
 	lowest_error=0;
 	cancel_bitmap=0;
@@ -542,9 +543,28 @@ void cancel_invite(struct sip_msg *cancel_msg,
 	reason.len = sizeof(CANCELING)-1;
 	t_reply( t_cancel, cancel_msg, 200, &reason );
 
+	reason.s = NULL;
+	reason.len = 0;
+	/* propagate the REASON flag ? */
+	if ( t_cancel->flags&T_CANCEL_REASON_FLAG ) {
+		/* look for the Reason header */
+		if (parse_headers(cancel_msg, HDR_EOH_F, 0)<0) {
+			LM_ERR("failed to parse all hdrs - ignoring Reason hdr\n");
+		} else {
+			hdr = get_header_by_static_name(cancel_msg, "Reason");
+			if (hdr!=NULL) {
+				reason.s = hdr->name.s;
+				reason.len = hdr->len;
+			}
+		}
+	}
+
 	/* generate local cancels for all branches */
 	which_cancel(t_invite, &cancel_bitmap );
+
+	set_cancel_extra_hdrs( reason.s, reason.len);
 	cancel_uacs(t_invite, cancel_bitmap );
+	set_cancel_extra_hdrs( NULL, 0);
 
 	/* internally cancel branches with no received reply */
 	for (i=t_invite->first_branch; i<t_invite->nr_of_outgoings; i++) {
