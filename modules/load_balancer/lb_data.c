@@ -251,7 +251,7 @@ int add_lb_dsturi( struct lb_data *data, int id, int group, char *uri,
 
 	dst->profile_id.s = dst->uri.s + len;
 	dst->profile_id.len = snprintf(dst->profile_id.s, 
-		2+2*sizeof(struct lb_dst*), "%p", dst);
+		2+2*sizeof(struct lb_dst*), "%X", id);
 
 	dst->id = id;
 	dst->group = group;
