@@ -1,7 +1,7 @@
 METADATA_COLUMNS
 id(int) dpid(int) pr(int) match_op(int) match_exp(str) match_len(int) subst_exp(str) repl_exp(str) attrs(str)
 METADATA_KEY
-
+0 
 METADATA_READONLY
 0
 METADATA_LOGFLAGS
