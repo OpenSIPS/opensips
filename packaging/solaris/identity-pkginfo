@@ -1,6 +1,6 @@
 PKG="OpenSIPS-identity"
 NAME="Programmable SIP Server Identity Module"
-VERSION="1.6.1dev0-notls"
+VERSION="1.6.2dev0-notls"
 ARCH="sparc"
 CLASSES="none"
 CATEGORY="utility"
