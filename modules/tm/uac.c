@@ -205,6 +205,7 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 	int ret, flags, sflag_bk;
 	int backup_route_type;
 	unsigned int hi;
+	struct socket_info* send_sock;
 
 	ret=-1;
 	
@@ -216,20 +217,25 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 
 	LM_DBG("next_hop=<%.*s>\n",dialog->hooks.next_hop->len,
 			dialog->hooks.next_hop->s);
-	/* it's a new message, so we will take the default socket */
-	if (dialog->send_sock) {
-		if (uri2su( dialog->hooks.next_hop, &to_su,
-		dialog->send_sock->proto)==-1) {
-			goto error2;
-		}
-	} else {
-		dialog->send_sock = uri2sock(0, dialog->hooks.next_hop, &to_su,
+
+	/* calculate the socket corresponding to next hop */
+	send_sock = uri2sock(0, dialog->hooks.next_hop, &to_su,
 			PROTO_NONE);
-		if (dialog->send_sock==0) {
-			ret=ser_error;
-			LM_ERR("no socket found\n");
-			goto error2;
+	if (send_sock==0) {
+		ret=ser_error;
+		LM_ERR("no socket found\n");
+		goto error2;
+	}
+	/* if a send socket defined verify if the same protocol */
+	if(dialog->send_sock) {
+		if(send_sock->proto != dialog->send_sock->proto)
+		{
+			dialog->send_sock = send_sock;
 		}
+	}
+	else
+	{
+		dialog->send_sock = send_sock;
 	}
 
 	new_cell = build_cell(0); 
