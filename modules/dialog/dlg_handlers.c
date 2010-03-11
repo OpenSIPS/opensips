@@ -439,14 +439,35 @@ static void unreference_dialog_create(void *dialog)
 	dlg_onreply( 0, TMCB_TRANS_DELETED, &params);
 }
 
+static void tmcb_unreference_dialog(struct cell* t, int type,
+													struct tmcb_params *param)
+{
+	unref_dlg((struct dlg_cell*)*param->param, 1);
+}
+
 
 void dlg_onreq(struct cell* t, int type, struct tmcb_params *param)
 {
 	/* is the dialog already created? */
 	if (current_dlg_pointer!=NULL) {
 		/* new, un-initialized dialog ? */
-		if ( current_dlg_pointer->flags & DLG_FLAG_ISINIT )
+		if ( current_dlg_pointer->flags & DLG_FLAG_ISINIT ) {
+			/* fully init dialog -> check if attached to the transaction */
+			if (t->dialog_ctx==NULL) {
+				/* set a callback to remove the ref when transaction 
+				 * is destroied */
+				if ( d_tmb.register_tmcb( NULL, t, TMCB_TRANS_DELETED,
+				tmcb_unreference_dialog, (void*)current_dlg_pointer, NULL)<0){
+					LM_ERR("failed to register TMCB\n");
+					return;
+				}
+				/* and attached the dialog to the transaction */
+				t->dialog_ctx = (void*)current_dlg_pointer;
+				/* and keep a reference on it */
+				ref_dlg( current_dlg_pointer , 1);
+			}
 			return;
+		}
 
 		/* dialog was previously created by create_dialog() 
 		   -> just do the last settings */
