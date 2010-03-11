@@ -1,111 +1,165 @@
 
-2009-12-21 19:41:26  Anca Vamanu, <anca at voice-system dot ro> 
-	* [6454] :
+2010-03-11 18:18:42  Anca Vamanu, <anca at voice-system dot ro> 
+	* [6717] :
 
-	- fixed typo ( ; at the end of if line)
-
-
-2009-12-21 19:19:03  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6452] :
-
-	backport from trunk rev #6451.
-	- fixed missing test on mem free
-	  Credits go to Alexander.
-
-
-2009-12-21 14:17:24  Anca Vamanu, <anca at voice-system dot ro> 
-	* [6450] :
-
-	-backport from trunk rev 6417
-		- fixed matching of indialog requests - do not capture requests that are not destined for me(Record-Route header or ruri does not point to me)
-		- fixed matching for CANCEL messages - check ruri = ruri of INVITE
-
+	- fixed always using the preferred socket to send requests if defined, it was not correct in the case when the next hop required another protocol  (see discussion http://lists.opensips.org/pipermail/users/2010-March/011325.html)
 	--Ths line, and those below, will be ignored--
 
-	M    b2b_entities/dlg.c
-	M    b2b_entities/dlg.h
+	M    tm/uac.c
 
 
-2009-12-21 14:06:25  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6449] :
+2010-03-11 18:17:11  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6715] :
 
-	backport from trunk (rev #6448):
-	- the default alg "first entry is used" gets an official name of "8" to avoid useless warnings
-
-
-2009-12-17 13:18:51  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6446] :
-
-	backport from trunk (rev #6445):
-	- fixed printing the name of the script route triggered by rule matching
-	- fixed hadling of the return code (dropping action) from the script route.
+	backport from trunk (rev #6713):
+	- fixed bug in reloading lb data - generate the profile_id (of each destination) in such a way to depend only on DB info (and not runtime/load info)
 
 
-2009-12-16 12:44:23  Anca Vamanu, <anca at voice-system dot ro> 
-	* [6443] :
+2010-03-11 14:49:07  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6711] :
 
-	- fixed bug for BLA - error when searching record (always getting to search in database)
-
-
-2009-12-15 17:37:32  Anca Vamanu, <anca at voice-system dot ro> 
-	* [6441] :
-
-	- extended the methods accepted to pass through b2b (if not a method for which a scenario rule can be defined, do simple pass through)
+	backport from trunk (rev #6710):
+	- fixed DB schema for berkeley backend
 
 
-2009-12-14 18:11:45  Andrei Dragus <adragus at opensips dot org> 
-	* [6439] :
+2010-03-11 14:34:46  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6708] :
 
-	Backported nathelper to work with multipart SDP
-
-
-2009-12-14 18:06:43  Andrei Dragus <adragus at opensips dot org> 
-	* [6438] :
-
-	Backported multipart parsing and textops
+	backport from trunk (rev #6707):
+	- fixed the missing dlg info in reply route for the sequential requests
+	  Closes bug #2941492
 
 
-2009-12-14 17:34:42  Andrei Dragus <adragus at opensips dot org> 
-	* [6437] :
+2010-03-10 18:39:43  Anca Vamanu, <anca at voice-system dot ro> 
+	* [6706] :
 
-	Backported usrloc
-
-
-2009-12-14 17:32:50  Andrei Dragus <adragus at opensips dot org> 
-	* [6436] :
-
-	Backported map used for usrloc
+	- updated pua_xmpp modules to use the new functions that take into consideration sip_domain parameter
 
 
-2009-12-14 14:39:45  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6434] :
+2010-03-10 17:59:31  Saúl Ibarra Corretgé <saul at ag-projects dot com>
+ 
+	* [6704] :
 
-	backport from trunk (rev #6433):
+	Added support for ICE negotiation.
 
-	- fixed bogus definition of sip_trace table which was incompatible with the db_text engine.
-
-
-2009-12-12 15:56:58  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6428] :
-
-	In case opensips force the use of sst, it add a Session-Expire with
-	interval equal to max(OpenSIPS minSE, UAS minSE).
-	This does not allow to set a minSE of 90s (the minimum allowed) but start
-	with a different interval (say 300s).
-
-	This patch add a sst_interval parameter with a default value of 0 (to stick
-	to the current behavior).
-	The Session-Expire interval is set to the max value of (OpenSIPS minSE, UAS
-	minSE, sst_interval).
-
-	Closes patch #2887955
-	Credits go to Christophe Sollet.
+	MediaProxy module will add necessary candidates so that ICE
+	negotiation isn't broken when the SDP is mangled.
+	Solution design: http://mediaproxy-ng.org/wiki/ICE
 
 
-2009-12-12 12:35:39  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6426] :
 
-	backport from trunk (rev #6425):
+2010-03-10 16:57:13  Anca Vamanu, <anca at voice-system dot ro> 
+	* [6702] :
+
+	- fixed meaning of sip_domain parameter
+
+
+2010-03-10 13:44:50  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6699] :
+
+	backport from trunk (rev #6698):
+	- fixed load-balacer DB schema for berkeley backend
+
+
+2010-03-10 13:00:45  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6697] :
+
+	backport from trunk (rev #6688)
+	- added new flag (8) to t_relay() to control the propagation of the Reason hdr in the CANCEL requests.
+
+
+2010-03-10 12:24:13  Anca Vamanu, <anca at voice-system dot ro> 
+	* [6695] :
+
+	- backport from trunk:  updated documentation - mention that this module can not be used in no fork mode
+
+
+2010-03-10 12:08:54  Anca Vamanu, <anca at voice-system dot ro> 
+	* [6694] :
+
+	- backport from trunk
+		fixed some issues with document manipulation for non integrated mode; updated rls module to the new function prototypes.
+
+
+2010-03-10 12:06:38  Anca Vamanu, <anca at voice-system dot ro> 
+	* [6693] :
+
+	- backport from trunk
+		- removed the URI encoding mechanism from the XMPP gateway(now the gateway is transparent)
+		- added a parameter: sip_domain representing the SIP domain advertised in XMPP)
+
+
+2010-03-10 12:06:03  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6692] :
+
+	- compile warning fixed
+
+
+2010-03-09 20:06:57  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6687] :
+
+	DB schema updated
+
+
+2010-03-09 19:58:24  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6686] :
+
+	backport from trunk (rev #6685):
+	bug fixed - do not return 0 as this will break the script execution
+	Credits goto Emmanuel BUU
+	Closes patch #2910271
+
+
+2010-03-09 19:53:32  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6684] :
+
+	backport from trunk (rev #6682):
+	applied patch from Emmanuel BUU :
+	 Enhancement of set_rtp_proxy_set function tu support AVP so proxy sets can
+	be choosen dynamically
+	 Closes patch #2925069
+
+
+2010-03-09 19:28:50  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6681] :
+
+	backport from trunk (rev #6605):
+	- fixed bug in getting the next udomain. The computing of the back reference to the main structure is broken 
+	  Credits go to  John Khvatov
+	- fixed proper initalizing of get_next_udomain() in the usrloc API
+
+
+2010-03-09 19:26:58  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6680] :
+
+	- bacnkported some improved error logging
+
+
+2010-03-09 18:55:59  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6679] :
+
+	backport from trunk (rev #6346 , #6367, #6368, #6429, #6511, #6647 ) -new addition
+
+	Added IP port support for inbound/outbound IP addresses.
+
+	Added custom info support.
+
+	1. Replaced two deprecated functions of OSP Toolkit.
+	2. Removed useless white char.
+
+	1. Added buffer size check.
+	2. Added proxy_type for number portability.
+
+	1. Changed configuration option proxy_type to service_type.
+	2. Added operator name support in AuthReq and AuthRsp.
+
+	Added destination network ID in outbound URI.
+
+
+2010-03-09 18:31:20  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6678] :
+
+	backport from trunk (rev #6425) - new addition
 
 	fixed mimimum val for rtpproxy_timeout -> secs to milisecs -> allows timeouts less than one sec.
 
@@ -113,405 +167,672 @@
 	credits go to Christophe Sollet.
 
 
-2009-12-12 11:39:19  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6424] :
+2010-03-09 18:21:30  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6677] :
 
-	backport from trunk (rev 6423):
-	- fixed issue with avp printing buffer being too small -> new config param to control the size:
-		Closes patch #2911666
-		Credits go to Norm Brandinger
+	- just text beautification
 
 
-2009-12-11 21:15:07  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6422] :
+2010-03-09 18:19:51  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6676] :
 
-	- added man pages for debian 
-	  Closes patch 2902164.
-	  Credits go to Alejandro Rios
+	backport from trunk (rev #6590) - new addition
+	- added ISN lookup for enum
+	  References:
+		http://www.freenum.org/
+		ftp://ftp.ietf.org/rfc/rfc3872.txt
+		ftp://ftp.ietf.org/rfc/rfc2871.txt
+	 	http://www.iana.org/assignments/trip-parameters/
 
+	  Contribution from Michael Schloh von Bennewitz
 
-2009-12-11 21:02:48  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6419] :
 
-	Backport from trunk (rev #6418):
+2010-03-09 18:09:10  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6675] :
 
-	The change adds the following to the error messages produced:
+	backport from trunk (rev #6612 , #6613 , #6614, #6615) - new addition
 
-	1. The size of the message that caused the overflow to happen
-	2. The size of the receiving buffer
+	Added probing to drouting
+	Updated readme for drouting module
+	Added tm dependency in docs
+	Added backward database compatibility
 
-	Closes patch #2911665
-	Credits go to Norm Brandinger
 
+2010-03-09 18:07:59  Anca Vamanu, <anca at voice-system dot ro> 
+	* [6674] :
 
-2009-12-11 16:45:27  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6416] :
+	- updated documentation (mention the new added parameter - custom_headers)
 
-	backport from trunk (rev #6322):
-	- fixed crash when the all the weights are zero.
-	  
-	  Closes bug ID 2890649.
-	  Reported by Urtho.
 
+2010-03-09 18:02:29  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6673] :
 
-2009-12-11 16:39:42  Irina-Maria Stanescu <istanescu at opensips dot org> 
-	* [6415] :
+	backport from trunk (rev #6513) - new addition
+	- new parameter added "ds_probing_sock" to allow setting a specific socket to be used for sending the probing requests.
 
-	backport from trunk (rev #6414)
-	- now the radius_config parameter must be set only if custom request functions are used
 
+2010-03-09 17:59:45  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6672] :
 
-2009-12-11 13:42:50  Andrei Dragus <adragus at opensips dot org> 
-	* [6409] :
+	backport from trunk (rev #6512) - new addition
+	new TM API function new_auto_dlg_uac() - an extension of new_dlg_uac() that takes care by itself to generate callid, from_tag, and cseq
 
-	Backported new version of memory allocator
 
+2010-03-09 17:45:45  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6671] :
 
-2009-12-11 13:14:52  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6407] :
+	backport from trunk (rev #6580):
+	- fixed improper behaviour of script assigments. Instead of failing the assigment if a NULL var is found in the right side, the NULL vars will be "casted" to "" or 0 (str/int) and force the assigment.
 
-	backport from trunk (rev 6406):
-	- fixed bogus handling of "return" statement inside a "while" block.
 
-	Closes bug #2907864.
-	Reproted by Norman Brandinger
+2010-03-09 17:44:21  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6670] :
 
+	backport from trunk (rev #6314) - addition
+	- Microtimer support in pvar.c for exact to the millisecond
+	  Provides $Tsm variable to return the milliseconds
 
-2009-12-11 11:43:07  Irina-Maria Stanescu <istanescu at opensips dot org> 
-	* [6405] :
+	  Closes patch #2887907.
 
-	backport from trunk (rev #6404)
-	- added extra debug messages
-	- fixed hashtable match bug (reported by Jai Rangi)
 
+2010-03-09 14:52:28  Anca Vamanu, <anca at voice-system dot ro> 
+	* [6669] :
 
-2009-12-11 10:53:33  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6402] :
+	- backport from trunk : fixes for BLA (including also modifying the structure of the database table pua)
 
-	Backport from trunk (rev 6401):
 
-	The <header> tags in some examples are not valid html. The attached patch
-	changes them to <head>.
+2010-03-09 13:35:11  Anca Vamanu, <anca at voice-system dot ro> 
+	* [6668] :
 
-	Closes bug #2911705.
-	Credits go to Norm Brandinger
+	- backport from trunk
+		- new feature - possibility to define costum headers to be passed from the dialog of one side to the other (module parameter) (suggestion made by Saul Ibarra)
+		- added support for handling refer at server ( extended the configuration possibility for the b2bua scenarios)
+		- improved the correlation between the received and the generated SIP message - use also the cseq (reported by Brian, fix to work with authentification)
+		- updated documentation for devel api 
 
 
-2009-12-10 20:59:19  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6400] :
+2010-03-09 13:28:40  Saúl Ibarra Corretgé <saul at ag-projects dot com>
+ 
+	* [6665] :
 
-	bulk backport from trunk (rev 6389 + 6390 + 6391 + 6392 + 6397 + 6398 + 6399):
-	- fixed bogus inline declaration - a function prototype cannot be inline -> reported by suncc
-	- varios fixes reported by succ :
-		- useless returns
-		- return val in void functions
-	- fixed include path for unixodbc lib for OpenSolaris.
-	- fixed bug in testing the success of the parse_to() function
-	- fixed all makefiles using autodetection based on "which" -> older version was not working on non-linux systems.
-	- fixed makefiles for the perl modules ; the syntax of makefile (for calling external shell commands) is not like in shell script  :) .
-	- for gcc added some extra compile flags to get rid of the "redundant declaration" warning due auto created C files
-	- fixed solaris and suncc compiling
+	Backport from trunk (rev #6664):
+	- Update session information when a 200 OK for an INVITE is received
+	without SDP.
 
-	  Credits go to Michal Bielicki @ Seventh Signal
+	This may happen when using 100rel (RFC3262) or with some buggy
+	user-agents which send the SDP only in 18X responsed even when they
+	don't use 100rel.
 
 
+2010-03-09 13:01:44  Saúl Ibarra Corretgé <saul at ag-projects dot com>
+ 
+	* [6660] :
 
+	Backport from trunk (rev #6659)
+	- Fix the IP in the RTCP line.
 
-2009-12-10 18:10:58  Irina-Maria Stanescu <istanescu at opensips dot org> 
-	* [6396] :
+	The IP in the RTCP line also needs to be mangled when MediaProxy
+	is to be used.
 
-	-backport from trunk (rev #6395)
 
+2010-03-05 14:05:40  Andrei Dragus <adragus at opensips dot org> 
+	* [6656] :
 
-2009-12-10 17:36:59  Andrei Dragus <adragus at opensips dot org> 
-	* [6394] :
+	Backported some fixes
 
-	Backported unreachable code warning
 
+2010-03-05 13:32:34  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6652] :
 
-2009-12-10 13:32:06  Iulia Buble <iulia at opensips dot org> 
-	* [6386] :
+	backport from trunk (rev #6550)
+	- one more missing data unref.
 
-	Fifo reply file renamed from $name to fifo_reply_name
-	Fifo reply path renamed from $path to fifo_reply_path
 
+2010-03-05 12:12:48  Anca Vamanu, <anca at voice-system dot ro> 
+	* [6648] :
 
-2009-12-09 18:35:02  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6383] :
+	- appplied patch #2847397( Better blf support for linksys phones ), thanks to Angel Marin.
 
-	backport from trunk (rev #6382):
-	- fixed incomatibility between BLOB data type and string format for columns
 
+2010-03-04 18:56:08  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6646] :
 
-2009-12-09 17:46:29  Irina-Maria Stanescu <istanescu at opensips dot org> 
-	* [6381] :
+	backport from trunk (rev #6644 + #6645)
 
-	backport from trunk (rev #6377, #6370)
-	- added checks (aaa_radius module)
-	- fixed misleading LM_ERR into LM_DBG (group module)
+	- return a different code if the failure is because of DB error
+	  Applied patch from coxx (SF id coxx)
+	  Closes patch 2951523.
 
+	- fixed bug when using the is_host_uri_local() from failure route -> first destination is in RURI not in branches.
 
 
-2009-12-09 17:33:29  Irina-Maria Stanescu <istanescu at opensips dot org> 
-	* [6380] :
+2010-03-04 18:37:56  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6641] :
 
-	backport from trunk (#rev 6372)
-	- added check for db_url to be set
+	backport from trunk (rev #6640):
+	- applayed patch for fixing pointer math bug when parsing To header parameter values enclosed in quotes : the last char of the value is getting chopped off.
+	  Credits go to John Riordan.
+	  Closes patch #2958879
 
 
-2009-12-09 17:30:31  Irina-Maria Stanescu <istanescu at opensips dot org> 
-	* [6379] :
+2010-03-04 18:28:30  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6639] :
 
-	backport from trunk (rev #6378)
-	- added check for db_url to be set (if db backend is used)
+	Backport from trunk (rev #6638):
+	- bug fixed in unlocking the read ops whe processing the probing replies.
+	  Credits goto James Van Vleet 
+	  Closes patch 2962767
 
 
-2009-12-08 18:17:14  Anca Vamanu, <anca at voice-system dot ro> 
-	* [6373] :
+2010-03-04 17:37:20  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6636] :
 
-	- increased the length for contact column in active_watchers table to 128 (reported by Juha Heinanen)
+	backport from trunk (rev #6635):
+	- proper handling of index 0 in pseudo-variables
+	  Reported by Roman Shpount 
+	  Closes bug #2958257
 
 
-2009-12-01 02:42:04  Kobi Eshun <kobi at sightspeed dot com> 
-	* [6366] :
+2010-03-04 14:09:07  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6633] :
 
-	Add missing reference to libGeoIP.
+	backport from trunk (rev #6631 + #6632):
+	- fixed iteration in the SRV records
+	  Credits go to Byron Clark
+	  Closes bug #2956739
 
-2009-11-30 11:47:42  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6364] :
+	- fixed iteration in the NAPTR records
 
-	backport from trunk (rev #6359):
-	- added check if NULL value returned by get_event function
 
+2010-02-25 09:38:41  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6624] :
 
-2009-11-30 10:55:58  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6363] :
+	backport from trunk (rev #6623):
+	- removed bogus message -> module allow starting with no destinations, so why reporting as error on timer :P
 
-	backport from trunk (rev #6361):
-	- fixed detection of static string (used for string IPs) when UDP is not used.
-	  Closes bug #2904684.
 
+2010-02-24 12:22:39  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6622] :
 
-2009-11-24 10:46:26  Di-Shi Sun <di-shi at transnexus dot com> 
-	* [6358] :
+	backport from trunk (rev #6621):
+	-fixed missing "return" - related to fix 6603.
+	 Reported by Richard Revels
+	 Closes bug 2955731..
 
-	Fixed the bug of generating wrong new ruri.
 
+2010-02-24 11:47:28  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6619] :
 
-2009-11-20 18:37:08  Anca Vamanu, <anca at voice-system dot ro> 
-	* [6355] :
+	backport from trunk (rev #6618):
+	- fixed imporper table init - must be before checkig table version
+	  Credits go to  Walter Doekes ( SF id wdoekes).
+	  Closes bug report #2956632
 
-	- fixed not checking if variable is null on destroy
 
 
-2009-11-20 18:17:13  Anca Vamanu, <anca at voice-system dot ro> 
-	* [6353] :
+2010-02-19 18:49:59  Irina-Maria Stanescu <istanescu at opensips dot org> 
+	* [6617] :
 
-	- fixed bug of resending 200OK reply (reported by Jeff Kronlage )
+	- fixed misplaced radius error message (Thanks to Michael Schloh von Bennewitz)
+	- backport from trunk (rev #6616)
 
 
-2009-11-19 11:21:11  Anca Vamanu, <anca at voice-system dot ro> 
-	* [6347] :
+2010-02-16 13:02:34  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6608] :
 
-	- fixed bug when a FAKED_REPLY was received ( reported by elm0 at #opensips)
+	backport from trunk (rev 6604 + 6607) - bug fixing
+	- fixed mem leak (pkg mem) when the nameaddr transformation is applied to an URI with params
+	  Credits for finding and fixing this go to Eugene (evereta on SF).
+	  Closes bug 2950939
 
 
-2009-11-11 19:58:16  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6341] :
+2010-02-16 12:38:55  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6606] :
 
-	backport from trunk (rev #6340):
-	- fixed bogus test for return code of avp_add()
+	backport from trunk (rev #6527) - not a fix, but an add-on
+	-  new "f" flag added to save() to force overwriting of old contacts with the new ones when max_contacts is reached.
 
 
+2010-02-15 11:42:13  Anca Vamanu, <anca at voice-system dot ro> 
+	* [6603] :
 
-2009-11-09 17:43:00  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6338] :
+	-  added some checks to prevent crash when reply is FAKED_REPLY
 
-	backport from trunk (rev #6337):
 
-	- upgraded the code to be compatible with the latest openssl version. backward c
-	ompatibility preserved.
-	  Credits goto John Khvatov
+2010-02-12 12:31:53  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6600] :
 
+	backport from trunk (rev 6599):
+	- fixed bogus removel of Route bodys when switching from SR to LR. If local Route and final Route are on the same Route hdr, you were ending up with an empty Route hdr.
+	  Thanks to Ovidiu Sas for reporting and helping with debug info.
 
-2009-11-08 20:34:52  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6334] :
 
-	backport from trunk (rev #6333):
-	- specs and init updated
-	- credits go to John Khvatov, the opensips maintainer on fedora.
+2010-02-12 12:03:11  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6598] :
 
+	backport from trunk rev #6597:
+	- fixed buffer overflow.
+	  Thanks to Jeff Pyle for reporting and providing logs.
 
-2009-11-06 13:00:17  Anca Vamanu, <anca at voice-system dot ro> 
-	* [6330] :
 
-	- fixed bug if t_newtran() was not called from the script
-	- fixed some isses when closing a call while in bridging state - send ACK for invite and switch to a new state for the scenario instance
+2010-02-11 19:49:42  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6594] :
 
+	backport from trunk (rev #6579):
+	- fixed crash when the dlg_list gets a callid param without a from_tag param.
+	  Closes bug 2947827
 
-2009-11-04 16:53:41  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6324] :
 
-	backport from trunk (rev #6323):
-	- fixed bug in calculating the length of the table name 
+2010-02-11 17:58:25  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6592] :
 
+	backport from trunk (rev #6591):
+	- fixed bug - even if NULL value is send, you still need to set the data type (this is required by some versions of libmysqlclient
+	  Closes bug 2948054 and 2903579
 
-2009-11-04 10:57:52  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6321] :
 
-	backport from trunk #6319
-	- on some systems (following the System V specs), there is different SIGCLD signal, while on POSIX like systems you have SIGCHLD.......The difference is that th
-	e SIGCLD must be rearmed, while SIGCHLD not. On System V  the SIGCHLD is simply 
-	defined as SIGCLD...so you may end up with some confusion....
-	 -> if SIGCLD is defined do explicit re-arming of SIGCLD handler
+2010-02-10 15:51:24  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6588] :
 
+	backport from trunk (rev 6587):
+	-fixed overlapping between log_facility in ACC module and the global (core) log_facility
+	 Credits go to Norman Brandinger
 
-2009-11-03 17:56:54  Irina-Maria Stanescu <istanescu at opensips dot org> 
-	* [6318] :
 
-	backport from trunk (rev 6317)
-	- automatically converts strings from the sets avps into ipaddr when needed
-	- closes patch #2886450 submitted by Alex Massover
+2010-02-10 15:03:43  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6586] :
 
+	- fixed compile bug (removed an # by mistake) introduced with the last commit
 
-2009-11-02 16:15:08  Anca Vamanu, <anca at voice-system dot ro> 
-	* [6316] :
 
-	- fixed bug: not calling child_init for timer route process ( bug #2890657)
+2010-02-10 15:02:02  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6585] :
 
+	- fixed compile bug (removed an # by mistake) introduced with the last commit
 
-2009-10-30 12:07:12  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6312] :
 
-	backport from trunk (rev 6311):
-	 - fixed partial test for dst_uri string
+2010-02-10 13:35:49  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6582] :
 
+	backport from trunk (rev 6581):
+	- fixed compiling error (missing var) when systemV locks are used.
 
-2009-10-30 11:59:26  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6310] :
 
-	backport from trunk (rev 6308):
-	- fixed bug in handling the AOR - According to RFC 3261, section 19.1.4, userInff o part of Sip URI should be treated as case sensitive.
+2010-02-09 20:06:25  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6577] :
 
-	The case_sensitive param has now the default value to "yes" - to handle the AORs in a case sensitive way.
+	backport from trunk (rev #6576):
+	- better error reporting on load (DB issues).
+	  Closes bug #2946724.
 
-	Note that using a case insensitive setting in registrar will break other modules like msilo, pua_usrloc when you have upper cases in username part.
 
+2010-02-09 14:56:22  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6572] :
 
+	backport from trunk (rev 6570 + 6571):
+	- eliminate possible bug in resetting the TM routes (branch, reply and branch).
+	  To be 100% sure that we do not inherite some valid T from the previous processing, better resert first T and later the attached routes, otherwise we risk to reset the routes from the previous transaction
 
-2009-10-30 11:45:50  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6306] :
+	-fixed usage of TAGs (from and to) from the given headers (via MI command) - this got broken after the commit #6528
 
-	backport from trunk (rev #6305)
-	- fixed DB schema for dr_group tabel - group column is numerical, not string
 
+2010-02-03 16:50:14  Anca Vamanu, <anca at voice-system dot ro> 
+	* [6568] :
 
-2009-10-29 19:33:35  Iulia Buble <iulia at opensips dot org> 
-	* [6303] :
+	- fixed not releasing the CANCEL transaction
+	- fixed wrong search when deleting entity
 
-	Bug fixed - removed quotations for password.
 
+2010-02-03 14:47:15  Andrei Dragus <adragus at opensips dot org> 
+	* [6566] :
 
-2009-10-29 14:09:19  Anca Vamanu, <anca at voice-system dot ro> 
-	* [6301] :
+	Backported fix for leak in usrloc
 
-	- fixed bug: not sending Publish with expires 0 when usrloc contact was detected as expired
-	- pua: ajusted the expiration checks in pua
-	- pua: fixed inconsinstency in t_request parameter when sending Publish from timer process
 
+2010-02-03 12:36:18  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6562] :
 
-2009-10-27 23:46:21  Ovidiu Sas <osas at voipembedded dot com> 
-	* [6299] :
+	backport from trunk (rev #6561):
+	History behind this change (WARN -> INFO):
+	The messages you are seeing means that the TCP MANAGER process sees that all the TCP WORKER processes are already processing other messages, so  no one is free (idle), so , it will queue the current active connection to one of the TCP WORKERs...
+	There is nothing wrong with this, it is the normal way it works - of course, if you have too few TCP workers, the probability to have queuing is higher.
 
-	backport rev 6298 from trunk:
-	rl_check does not check if forced_pipe is >=0, can coredump
+	In UDP the queueing is not visible at application level as it is done by the kernel in the receive buffer that is assigned to the socket.
 
-	closes ID: 2887457
-	credits goes to Pawel Pierscionek ( urtho2 )
+	In TCP the queueing is visible as there is a single TCP MANAGER process managing the connections (detecting the reads, connects, etc) which is quite fast (not doing any processing) -> the queueing is moved between the TCP MANAGER and TCP WORKERS.
 
+	Also, to be sure you got it right, there is no relation between the TCP WORKER and a connection. A TCP WORKER process is just reading and processing a SIP message at a certain time. Next SIP message from the same connection may end up in a different TCP WORKER proc.
 
 
-2009-10-27 16:45:54  Anca Vamanu, <anca at voice-system dot ro> 
-	* [6296] :
+2010-02-02 13:45:38  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6558] :
 
-	- fix: take out the double quotes from display name before writing it in the xml document ( reported by elm0 at #opensips)
+	backport from trunk (rev #6557):
+	- fixed check of the dialog flag - if flag was not set, it was triggering dialog creation all the time
+	- fixed creation of dialog for non-INVITE dialogs
+	- fixed dialog validation when leg has no contact stored (skip contact<>ruri check)
+	- fixed dialog termination - if we fail to send BYE, trigger dialog termination directly
 
 
-2009-10-27 15:28:14  Anca Vamanu, <anca at voice-system dot ro> 
-	* [6294] :
 
-	- fixed bug - rewriting the target uri with the display name if one was present (thanks to elmo at #opensips )
+2010-02-01 16:49:11  Anca Vamanu, <anca at voice-system dot ro> 
+	* [6556] :
 
+	- fixed some issues: memory leaks, bad pointer connection between b2b_logic and b2b_entities, not strict enough checks for dialogs in b2b_entities
 
-2009-10-27 11:07:32  Anca Vamanu, <anca at voice-system dot ro> 
-	* [6292] :
 
-	- fixed bug when arguments to script function are pseudovariables - reported by Daniel Cardoso Alves
-	--Ths line, and those below, will be ignored--
+2010-02-01 15:52:53  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6555] :
 
-	M    b2b_logic/records.c
-	M    b2b_logic/b2b_logic.c
-	M    b2b_logic/records.h
-	M    b2b_logic/logic.c
+	backport from trunk (rev #6550):
+	- fixed dialog checking (route part) when double RR is done (due proto/port/ip changing).
+	- RR API extended to export also the number of removed Routes after doing loose_roue().
 
 
-2009-10-26 14:44:38  Andrei Dragus <adragus at opensips dot org> 
-	* [6289] :
+2010-02-01 15:17:54  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6552] :
 
-Fixed a bug in codec_* functions for SDP with no a=rtpmap line.
-	Credits go to Thomas Gelf.
+	backport from trunk (rev #6551):
+	- fixed double free due bogus link of DNS records - if there are multiple SRV records returned and the last has non-SRV type, the SRV sorting alg will forget to reset a linking pointer
 
 
-2009-10-20 01:33:08  Sergio Gutierrez <saguti at gmail dot com> 
-	* [6286] :
+2010-01-29 13:05:17  Anca Vamanu, <anca at voice-system dot ro> 
+	* [6549] :
 
-	- Solaris Package files for MySQL Module Package
+	- fixed the name for the exported parameter - "cleanup_period" (reported by Jayesh Nambiar)
 
 
+2010-01-29 12:26:42  Anca Vamanu, <anca at voice-system dot ro> 
+	* [6548] :
 
-2009-10-19 23:36:42  Sergio Gutierrez <saguti at gmail dot com> 
-	* [6285] :
+	- fix for the crash reported in bug #2937441
 
-	- Solaris Package files for Base package.
 
+2010-01-28 14:15:00  Anca Vamanu, <anca at voice-system dot ro> 
+	* [6545] :
 
+	- changed >= with == for return code checking (bug #2940274)
 
-2009-10-19 21:18:23  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6283] :
 
-	backport from trunk (#6281 + #6282)
+2010-01-28 13:59:08  Anca Vamanu, <anca at voice-system dot ro> 
+	* [6544] :
 
-	- authservice() allowed from LOCAL and BRANCH routes
+	- fixed wrong strncmp of ruri with server address ( the port must be ignored if one is 5060 and the other not set), reported by Olivier Detour)
 
 
-2009-10-19 15:21:18  Marc Leurent <lftsy at leurent dot eu> 
-	* [6280] :
+2010-01-26 13:46:32  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6541] :
 
-	* Mon Oct 19 2009 Marc Leurent <marc.leurent@vtx-telecom.ch>
-	- Add missing config lines for packaging b2b modules
-	- Add missing config lines for packaging peering module
-	- Add missing dependencies for SNMPStats module
+	backport from trunk (rev #6540):
+	- fixed bogus addition of AVP - the value must be marked as STR
+	- remove extr log info - the module and function names are automatically added by opensips logging function
 
 
+2010-01-26 11:29:34  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6539] :
 
-2009-10-19 07:10:50  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6279] :
+	backport from trunk (#6534 + #6538):
+	- fixed DB_STR / DB_STRING incompatibility when loading from DB
+	  Reported by Leonid
+	- accept "" emotry string as "any" protocol.
+	- fixed check in IP validity
 
-	Backport from trunk (rev #6278):
-	- fixed creation of B2BUA and DB_HTTP debian packages.
 
-	  Reported by Alex Massover
-	  Closes bug #2881206.
 
+2010-01-26 10:22:21  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6536] :
 
+	backport from trunk (rev #6535):
+	- added an extra space between the display name and URI name in t_uac_dlg.
 
-2009-10-19 06:59:26  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
-	* [6277] :
 
-	backport from trunk (rev #6275):
-	- fixed missing usage of fetch_dlg_value() in LOCAL route.
-	  Reported by Alex Massover
-	  Closes patch #2881294
+2010-01-25 18:07:14  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6532] :
 
+	backport from truk (rev #6531):
+	- fixed bogus handling of NULL flag in return data after queries.
+	  Reported by Alan Frisch
+
+
+2010-01-25 17:06:37  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6529] :
+
+	backport from trunk (rev #6528)
+	- fixed extraction of URI and display part of FROM / TO headers in t_uac_dlg() MI function.
+	  Reported by Chris Maciejewski.
+
+
+2010-01-22 18:47:24  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6526] :
+
+	backport from trunk (rev #6525):
+	- fixed bug in signal handler -> the extra proc must use the SIGUSR2 handler from the core, otherwise it will die when core will try to collect pkg mem stats (via SIGUSR2). NOTE the SIGUSR2 terminates the proc if not handled.
+	  Reported by Alex Massover.
+	  Thanks to Richard Revels for the hints
+	  Closes bug 2936343
+
+
+2010-01-22 18:35:07  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6524] :
+
+	backport from trunk (rev 6523):
+	- fixed memory leak in serialize function.
+	  Reported by Richard Revels
+	  Closes bug 2934618
+
+
+2010-01-22 12:46:08  Andrei Dragus <adragus at opensips dot org> 
+	* [6522] :
+
+	 backport from trunk
+
+
+2010-01-22 12:34:54  Andrei Dragus <adragus at opensips dot org> 
+	* [6520] :
+
+	Backported warning to f_malloc
+
+
+2010-01-21 19:39:33  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6516] :
+
+	- fixed typo in docs.
+	  Closes bug report 2936420
+
+
+2010-01-20 17:22:56  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6515] :
+
+	backport from trunk (rev #6514)
+	- fixed memory leak in multibody parser
+
+
+2010-01-08 19:46:55  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6509] :
+
+	backport from trunk (rev #6508)
+	-fixed infinit loop doe bogus iteration.
+	 Credits go to Walter Doekes
+	 Closes bug #2928267.
+
+
+
+2010-01-08 11:52:59  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6506] :
+
+	backport from trunk (rev #6505):
+	- fixed wrong order of param for t_write_req() and t_write_unix()
+	  Credits go to Richard Revels 
+	  Closes bug #2927295
+
+
+2010-01-05 16:12:03  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6503] :
+
+	backport from trunk (rev 6502):
+	-fixed bogus example in docs for alternate_ip param.
+	 Credits go to Ha Do
+
+
+2010-01-04 20:51:13  Anca Vamanu, <anca at voice-system dot ro> 
+	* [6501] :
+
+	- fixed copy paste error
+	- fixed not printing the record route in reverse order when learned from reply
+	- fixed wrong check when matching b2b requests( checked the source ip)
+
+
+2010-01-04 18:00:55  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6498] :
+
+	backport from trunk (rev #6497)
+	- fixed detection for gcc params on OSX (arch related)
+	  Reported by Norman Brandinger
+	  Closes bug #2911660
+
+
+2010-01-04 17:46:51  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6496] :
+
+	-just spacing
+
+
+2010-01-04 17:28:13  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6494] :
+
+	- added some more info in error report.
+
+
+2010-01-04 17:25:42  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6492] :
+
+	backport from trunk (rev #6491):
+	- fixed bug in improper handling of probing mode 1.
+	  Reported by Bill W.
+
+
+
+2010-01-04 17:11:34  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6490] :
+
+	backport from trunk (rev #6488):
+	- fixed documentation (t_write_fifo -> t_write_req )
+	- fixed fixup function for t_write_XXX  (wrong param no).
+
+	Closes bug #2925298
+	Credits go to Richard Revels
+
+
+
+2009-12-29 22:00:28  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6486] :
+
+	- include order fixed (on OpenBSD)
+
+
+2009-12-29 21:58:03  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6485] :
+
+	- include order fixed (o OpenBSD)
+
+
+2009-12-29 21:55:21  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6484] :
+
+	- fixed typo in header spec (type versus flag).
+	- fixed bogus linking of content-type hdr during msg cloning
+	  Credits go to Kristian Borgen (kriborgen)
+	  Closes bug #2921180
+
+
+2009-12-29 15:50:27  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6482] :
+
+	backport from trunk (rev #6481):
+	- fixed un-initalized variable when display part was not changed via uac_replace_to() function.
+	  Closes bug #2922548
+	  Credits go to Antonio Souza.
+
+
+
+2009-12-29 15:23:52  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6479] :
+
+	backport from trunk (rev #6478)
+	- fixed bogus name of module paramter: setid_pvname -> setid_pvar
+	  Closes bug #2921387
+	  Credits go to Kristian Borgen
+
+
+2009-12-29 14:43:35  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6477] :
+
+	backport from trunk ( rev #6475 + #6476)
+	-fixed infinte loop if all destinations are disabled and if use_default is enabl
+	ed.
+
+
+
+2009-12-27 11:33:05  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6473] :
+
+	- fixing bogus doc
+	  Credits go to Norman Brandinger
+	  Closes bug #2920838
+
+
+
+2009-12-27 11:25:50  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6471] :
+
+	backport from trunk (rev #6470)
+	- fixed another bogus related to init of iterator.
+	  Credits goto Alexander
+
+
+
+2009-12-24 21:10:52  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6469] :
+
+	backport from trunk (rev #6468)
+	- fixed bogus init of iterator.
+	  Credits goto Alexander
+
+
+
+2009-12-24 10:33:43  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6467] :
+
+	- fedora specs updated.
+	  Credits go to John Khvatov 
+
+
+2009-12-24 10:07:31  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6466] :
+
+	backport from trunk (rev #6465)
+
+	- fixed improper function call in printing help message
+	  Credits go to Yar Tikhiy
+	  Closes bug #2919881
+
+
+
+2009-12-24 10:00:54  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6464] :
+
+	backport from trunk (rev 6463)
+	- fixed naming of obsoleted function check_from|to => db_check_from|to
+	  Reported by Yar Tikhiy
+	  Closes bug #2920423
+
+
+2009-12-24 09:56:05  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
+	* [6462] :
+
+	backport from trunk (rev #6461)
+	- removed dependence to DB URL for db_check_from|to if the use_uri_table param i
+	s not set!
+	  Reported by Daniel Goepp
 
 
