@@ -62,7 +62,7 @@ extern int bind_pua(pua_api_t* api);
 int min_expires= 0;
 int default_expires=3600;
 static str db_url = str_init(DEFAULT_DB_URL);
-static str db_table= str_init("pua");
+str db_table= str_init("pua");
 int update_period= 100;
 pua_event_t* pua_evlist= NULL;
 
@@ -648,18 +648,21 @@ static void hashT_clean(unsigned int ticks,void *param)
 					p= p->next;
 					continue;
 				}
-				
-				q= p->next;
+
 				LM_DBG("Found expired: uri= %.*s\n", p->pres_uri->len,
 						p->pres_uri->s);
 				p->desired_expires = p->expires;
 				if(update_pua(p, i)< 0)
 				{
-					LM_ERR("while updating record\n");
-					lock_release(&HashT->p_records[i].lock);
-					return;
+					LM_ERR("failed to update record\n");
+					/* delete it */
+					q = p->next;
+					delete_htable(p);
+					pua_db_delete(p);
+					p = q;
 				}
-				p= p->next;
+				else
+					p = p->next;
 			}
 			else
 				p= p->next;
