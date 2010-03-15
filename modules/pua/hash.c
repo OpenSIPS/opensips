@@ -33,9 +33,19 @@
 #include "../../hash_func.h"
 #include "../../parser/msg_parser.h"
 #include "../../parser/parse_from.h"
+#include "../../db/db.h"
 #include "hash.h" 
 #include "pua.h"
 #include "send_publish.h"
+
+/* database colums */
+static str str_pres_uri_col = str_init("pres_uri");
+static str str_etag_col = str_init("etag");
+static str str_pres_id_col = str_init("pres_id");
+static str str_flag_col= str_init("flag");
+static str str_watcher_uri_col= str_init("watcher_uri");
+static str str_event_col= str_init("event");
+static str str_remote_contact_col= str_init("remote_contact");
 
 void print_ua_pres(ua_pres_t* p)
 {
@@ -561,4 +571,84 @@ int update_contact(struct sip_msg* msg, char* str1, char* str2)
 	return 1;
 
 }
+
+void pua_db_delete(ua_pres_t* pres)
+{	
+	db_key_t cols[6];
+	db_val_t vals[6];
+	int n_query_cols= 0;
+
+	cols[n_query_cols] = &str_pres_uri_col;
+	vals[n_query_cols].type = DB_STR;
+	vals[n_query_cols].nul = 0;
+	vals[n_query_cols].val.str_val = *pres->pres_uri;
+	n_query_cols++;
+
+	if(pres->flag)	
+	{
+		cols[n_query_cols] = &str_flag_col;
+		vals[n_query_cols].type = DB_INT;
+		vals[n_query_cols].nul = 0;
+		vals[n_query_cols].val.int_val = pres->flag;
+		n_query_cols++;
+	}
+
+	cols[n_query_cols] = &str_event_col;
+	vals[n_query_cols].type = DB_INT;
+	vals[n_query_cols].nul = 0;
+	vals[n_query_cols].val.int_val = pres->event;
+	n_query_cols++;
+
+	if(pres->id.s && pres->id.len)
+	{
+		cols[n_query_cols] = &str_pres_id_col;
+		vals[n_query_cols].type = DB_STR;
+		vals[n_query_cols].nul = 0;
+		vals[n_query_cols].val.str_val = pres->id;
+		n_query_cols++;
+	}
+
+	if(pres->watcher_uri)
+	{
+		cols[n_query_cols] = &str_watcher_uri_col;
+		vals[n_query_cols].type = DB_STR;
+		vals[n_query_cols].nul = 0;
+		vals[n_query_cols].val.str_val = *pres->watcher_uri;
+		n_query_cols++;
+	
+		if(pres->remote_contact.s)
+		{
+			cols[n_query_cols] = &str_remote_contact_col;
+			vals[n_query_cols].type = DB_STR;
+			vals[n_query_cols].nul = 0;
+			vals[n_query_cols].val.str_val = pres->remote_contact;
+			n_query_cols++;
+		}
+	}
+	else
+	{
+		if(pres->etag.s)
+		{
+			cols[n_query_cols] = &str_etag_col;
+			vals[n_query_cols].type = DB_STR;
+			vals[n_query_cols].nul = 0;
+			vals[n_query_cols].val.str_val = pres->etag;
+			n_query_cols++;
+		}
+	}
+	/* should not search after etag because I don't know if it has been updated */	
+
+	if(pua_dbf.use_table(pua_db, &db_table)< 0)
+	{
+		LM_ERR("in use table\n");
+		return;
+	}
+
+	if(pua_dbf.delete(pua_db, cols, 0, vals, n_query_cols)< 0)
+	{
+		LM_ERR("Sql delete failed\n");
+		return;
+	}
+}
+
 

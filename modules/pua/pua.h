@@ -27,6 +27,7 @@
 
 #include "../../str.h"
 #include "hash.h"
+#include "../../db/db.h"
 
 #define INSERT_TYPE      1<<1
 #define UPDATE_TYPE      1<<2
@@ -41,5 +42,7 @@ extern int HASH_SIZE;
 extern int min_expires;
 extern int pua_ul_publish;
 extern int default_expires;
-
+extern db_con_t *pua_db;
+extern db_func_t pua_dbf;
+extern str db_table;
 #endif

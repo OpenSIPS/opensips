@@ -398,8 +398,7 @@ done:
 		{
 			int hash_index = presentity->hash_index;
 			/* delete also from database */
-		//	db_delete_uapres(presentity);
-
+			pua_db_delete(presentity);
 			delete_htable(presentity);
 			lock_release(&HashT->p_records[hash_index].lock);
 			LM_DBG("Released hash lock [%d]\n", hash_index);
@@ -820,39 +819,3 @@ ua_pres_t* publish_cbparam(publ_info_t* publ,str* body,str* tuple_id,
 	return cb_param;
 }
 
-/*
-void db_delete_uapres(ua_pres_t* pres)
-{
-	db_key_t q_cols[5];
-	db_val_t q_vals[5];
-	int cond_cols = 0;
-
-	q_cols[cond_cols] = &str_pres_uri_col;
-	q_vals[cond_cols].type = DB_STR;
-	q_vals[cond_cols].nul = 0;
-	q_vals[cond_cols].val.str_val = pres->pres_uri;
-	cond_cols++;
-
-	if(pres->pres_id.s && pres->pres_id.len)
-	{
-		q_cols[cond_cols] = &str_pres_id_col;
-		q_vals[cond_cols].type = DB_STR;
-		q_vals[cond_cols].nul = 0;
-		q_vals[cond_cols].val.str_val = pres->pres_id;
-		cond_cols++;
-	}
-
-	q_cols[cond_cols] = &str_flag_col;
-	q_vals[cond_cols].type = DB_INT;
-	q_vals[cond_cols].nul = 0;
-	q_vals[cond_cols].val.int_val = pres->flag;
-	cond_cols++;
-
-	q_cols[event_col= n_query_cols] = &str_event_col;
-	q_vals[event_col].type = DB_INT;
-	q_vals[event_col].nul = 0;
-	q_vals[event_col].val.int_val = pres->flag;
-	n_query_cols++;
-
-}
-*/
