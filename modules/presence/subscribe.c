@@ -413,7 +413,6 @@ int update_subscription(struct sip_msg* msg, subs_t* subs, int init_req)
 			}
 		}
 
-
 		if(send_2XX_reply(msg, reply_code, subs->expires, 0,
 			&subs->local_contact)<0)
 		{
