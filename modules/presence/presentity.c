@@ -412,6 +412,7 @@ int bla_aggregate_state(str* old_body, str* new_body,
 			}
 			xmlNewProp(node, BAD_CAST "uri", attr);
 			xmlFree(attr);
+			*allocated= 1;
 		}
 	}
 
@@ -439,8 +440,12 @@ int bla_aggregate_state(str* old_body, str* new_body,
 		}
 		else
 		{
-			*fin_body= *new_body;
-			*allocated = 0;
+			/* maybe I changed the target */
+			if(*allocated)
+			{
+				xmlDocDumpFormatMemory(new_doc,(xmlChar**)(void*)&fin_body->s,
+					&fin_body->len, 1);
+			}
 			*bla_update_publish = 1;
 		}
 		xmlFree(state);
