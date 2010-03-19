@@ -55,7 +55,7 @@ static int mod_init(void);
 static cmd_export_t cmds[]=
 {
 	{"send_reply",(cmd_function)sig_send_reply,	2,	fixup_sig_send_reply,
-		0, REQUEST_ROUTE | ERROR_ROUTE},
+		0, REQUEST_ROUTE | ERROR_ROUTE | FAILURE_ROUTE},
 	{"load_sig",	(cmd_function)load_sig,				1,	0,	0,			0},
 	{0,						0,	0,						0,	0,				0}
 };
