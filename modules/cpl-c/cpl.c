@@ -140,7 +140,7 @@ static param_export_t params[] = {
 	{"db_table",       STR_PARAM, &db_table.s                        },
 	{"cpl_dtd_file",   STR_PARAM, &dtd_file                          },
 	{"proxy_recurse",  INT_PARAM, &cpl_env.proxy_recurse             },
-	{"proxy_route",    INT_PARAM, &proxy_route                       },
+	{"proxy_route",    STR_PARAM, &proxy_route                       },
 	{"log_dir",        STR_PARAM, &cpl_env.log_dir                   },
 	{"case_sensitive", INT_PARAM, &cpl_env.case_sensitive            },
 	{"realm_prefix",   STR_PARAM, &cpl_env.realm_prefix.s            },
