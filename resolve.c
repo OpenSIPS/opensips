@@ -1370,6 +1370,7 @@ static inline struct hostent* get_next_he(struct dns_node **node,
 						he = do_srv_lookup( n->vals[n->idx].sval, port, &dn);
 						if (he) {
 							*proto = n->vals[n->idx].ival;
+							n->idx++;
 							break;
 						}
 						n->idx++;
@@ -1392,6 +1393,7 @@ static inline struct hostent* get_next_he(struct dns_node **node,
 					he = resolvehost(n->vals[n->idx].sval,1);
 					if (he) {
 						*port = n->vals[n->idx].ival;
+						n->idx++;
 						break;
 					}
 					n->idx++;
