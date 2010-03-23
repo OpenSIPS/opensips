@@ -515,7 +515,8 @@ static void unreference_dialog_create(void *dialog)
 static void tmcb_unreference_dialog(struct cell* t, int type,
 													struct tmcb_params *param)
 {
-	unref_dlg((struct dlg_cell*)*param->param, 1);
+	if (d_table)
+		unref_dlg((struct dlg_cell*)*param->param, 1);
 }
 
 
