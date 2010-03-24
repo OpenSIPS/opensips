@@ -1026,7 +1026,7 @@ modparam("drouting", "ruri_avp", '$avp(i:33)')
 		<programlisting format="linespecific">
 ...
 modparam("drouting", "attrs_avp", '$avp(dr_attrs)')
-modparam("drouting", "atrrs_avp", '$avp(i:67)')
+modparam("drouting", "attrs_avp", '$avp(i:67)')
 ...
 	</programlisting>
 		</example>
