@@ -566,7 +566,7 @@ modparam("drouting", "ruri_avp", '$avp(i:33)')
    Example 1.7. Set attrs_avp parameter
 ...
 modparam("drouting", "attrs_avp", '$avp(dr_attrs)')
-modparam("drouting", "atrrs_avp", '$avp(i:67)')
+modparam("drouting", "attrs_avp", '$avp(i:67)')
 ...
 
 1.3.8. define_blacklist (str)
