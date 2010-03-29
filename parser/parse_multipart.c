@@ -185,6 +185,10 @@ inline struct multi_body * get_all_bodies(struct sip_msg * msg)
 	struct part ** cur, * temp;
 	str delimiter;
 
+	/* is body already parsed ? */
+	if (msg->multi)
+		return msg->multi;
+
 	start = get_body(msg);
 
 	if (start == NULL)
