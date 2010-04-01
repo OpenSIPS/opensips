@@ -692,7 +692,7 @@ ua_pres_t* subscribe_cbparam(subs_info_t* subs, int ua_flag)
 
 	if(subs->id.s)
 	{
-		CONT_COPY(hentity, hentity->id, subs->id)
+		CONT_COPY(hentity, hentity->id, subs->id);
 	}
 	if(subs->extra_headers)
 	{
@@ -706,7 +706,7 @@ ua_pres_t* subscribe_cbparam(subs_info_t* subs, int ua_flag)
 	}
 	if(subs->to_uri.s)
 	{
-		CONT_COPY(hentity, hentity->to_uri, subs->to_uri)
+		CONT_COPY(hentity, hentity->to_uri, subs->to_uri);
 	}
 	hentity->flag= subs->source_flag;
 	hentity->event= subs->event;
@@ -762,8 +762,8 @@ ua_pres_t* subs_cbparam_indlg(ua_pres_t* subs, int expires, int ua_flag)
 	hentity->watcher_uri->len= subs->watcher_uri->len;
 	size+= subs->watcher_uri->len;
 
-	CONT_COPY(hentity, hentity->contact, subs->contact)
-	CONT_COPY(hentity, hentity->to_uri, subs->to_uri)
+	CONT_COPY(hentity, hentity->contact, subs->contact);
+	CONT_COPY(hentity, hentity->to_uri, subs->to_uri);
 
 	if(subs->outbound_proxy)
 	{
@@ -777,12 +777,12 @@ ua_pres_t* subs_cbparam_indlg(ua_pres_t* subs, int expires, int ua_flag)
 
 	if(subs->id.s)
 	{
-		CONT_COPY(hentity, hentity->id, subs->id)
+		CONT_COPY(hentity, hentity->id, subs->id);
 	}
 	
 	if(subs->remote_contact.s)
 	{
-		CONT_COPY(hentity, hentity->remote_contact, subs->remote_contact)
+		CONT_COPY(hentity, hentity->remote_contact, subs->remote_contact);
 	}
 
 	if(subs->extra_headers)
@@ -797,9 +797,9 @@ ua_pres_t* subs_cbparam_indlg(ua_pres_t* subs, int expires, int ua_flag)
 	}
 	/* copy dialog information */
 	
-	CONT_COPY(hentity, hentity->to_tag, subs->to_tag)
-	CONT_COPY(hentity, hentity->from_tag, subs->from_tag)
-	CONT_COPY(hentity, hentity->call_id, subs->call_id)
+	CONT_COPY(hentity, hentity->to_tag, subs->to_tag);
+	CONT_COPY(hentity, hentity->from_tag, subs->from_tag);
+	CONT_COPY(hentity, hentity->call_id, subs->call_id);
 	
 	if(expires< 0)
 		hentity->desired_expires= 0;
