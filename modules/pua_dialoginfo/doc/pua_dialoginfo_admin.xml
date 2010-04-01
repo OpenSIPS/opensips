@@ -139,7 +139,23 @@
 
 		To enable dialoginfo notifications for a certain dialog, you must call
 		dialoginfo_set() function for that dialog.
+		This function can take one parameter which through which you can tell the
+		module to publish dialoginfo only for one side of the call. This is useful
+		because you want to store dialoginfo only for the local users, and you can
+		decide from the script if the call parties are local users and give the correct
+		parameter to this function to tell it to send generate dialoginfo only for the
+		local users. The possible values are : "A" - corresponding to generate dialoginfo
+		only for the caller and "B" - generate dialoginfo only for the callee. If no parameter
+		is given, the module will generate dialoginfo for both parties.
 
+		It is possible to specify what URIs should be used for caller and callee by setting the
+		the pseudovariables with the names defined as module parameter "caller_spec_param" and
+		"callee_spec_param" before calling dialoginfo_set function.
+		Please read the description of this parameters in Exported Parameters section.
+		If this parameters are not set, the default sources will be used, From header for the caller
+		and display name in To header + RURI for the callee.
+	</para>
+	<para>
 		As the dialog module callbacks only address a certain dialog, the pua_dialoginfo
 		always PUBLISHes XML documents with a single "dialog" element. If an entity
 		has multiple concurrent dialogs, the pua_dialoginfo module will send PUBLISH for
@@ -318,6 +334,44 @@ modparam("pua_dialoginfo", "presence_server", "sip:ps@opensips.org:5060")
 		</example>
 		</section>
 
+	<section>
+		<title><varname>caller_spec_param</varname> (string)</title>
+		<para>
+		The name of the pseudovariable that will hold a costum caller URI.
+		If this variable is not set, the information in From header is used.
+		If you want to use another caller definition, you have to fill in this
+		pseudovariable before calling dialoginfo_set() function. The format of the string
+		resemples the format of To/From SIP headers:
+		"display_name&lt;sip_uri&gt;"  or "sip_uri".
+		</para>
+		<example>
+			<title>Set <varname>caller_spec_param</varname> parameter</title>
+			<programlisting format="linespecific">
+...
+modparam("pua_dialoginfo", "caller_spec_param", "$avp(i:10)")
+...
+		</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>callee_spec_param</varname> (string)</title>
+		<para>
+		The name of the pseudovariable that will hold the callee URI.
+		If this variable will not be set, the callee information used
+		will be made of To display uri + RURI.
+		the. The format of the string to set this pseudovariable to is
+		the same as described in caller_spec_param section.
+		</para>
+		<example>
+			<title>Set <varname>caller_spec_param</varname> parameter</title>
+			<programlisting format="linespecific">
+...
+modparam("pua_dialoginfo", "caller_spec_param", "$avp(i:10)")
+...
+		</programlisting>
+		</example>
+	</section>
 
 	</section>
 
