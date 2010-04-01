@@ -38,8 +38,6 @@
 #include "client.h"
 #include "b2b_entities.h"
 
-#define BUF_LEN   256
-
 void b2b_client_tm_cback( struct cell *t, int type, struct tmcb_params *ps)
 {
 	b2b_tm_cback(client_htable, ps);
@@ -82,7 +80,7 @@ str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 	str* callid = NULL;
 	int size;
 	str ehdr = {0, 0};
-	char buffer[BUF_LEN];
+	int len = 0;
 	str* b2b_key_shm = NULL;
 	dlg_t td;
 	str from_tag;
@@ -147,21 +145,27 @@ str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 	LM_DBG("New client - key = %.*s\n", callid->len, callid->s);
 
 	/* construct extra headers -> add contact */
+	len = 14 + server_address.len;
 	if(ci->extra_headers && ci->extra_headers->s && ci->extra_headers->len)
 	{
-		if(ci->extra_headers->len + 13 + server_address.len > BUF_LEN)
-		{
-			LM_ERR("Buffer too small\n");
-			goto error;
-		}
-		memcpy(buffer, ci->extra_headers->s, ci->extra_headers->len);
+		len+= ci->extra_headers->len;
+	}
+	ehdr.s = (char*)pkg_malloc(len);
+	if(ehdr.s == NULL)
+	{
+		LM_ERR("No more memory\n");
+		goto error;
+	}
+
+	if(ci->extra_headers && ci->extra_headers->s && ci->extra_headers->len)
+	{
+		memcpy(ehdr.s, ci->extra_headers->s, ci->extra_headers->len);
 		ehdr.len = ci->extra_headers->len;
 	}
-	ehdr.len += sprintf(buffer+ ehdr.len, "Contact: <%.*s>\r\n",
+	ehdr.len += sprintf(ehdr.s+ ehdr.len, "Contact: <%.*s>\r\n",
 		server_address.len, server_address.s);
-	ehdr.s = buffer;
 
-	LM_DBG("extra_header = %.*s\n", ehdr.len, ehdr.s);
+	LM_DBG("extra_headers = %.*s\n", ehdr.len, ehdr.s);
 	
 	if(ci->body && ci->body->len && ci->body->s)
 		LM_DBG("body = %.*s\n", ci->body->len, ci->body->s);
@@ -214,12 +218,15 @@ str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 		return 0;
 	}
 	tmb.setlocalTholder(0);
-	
+
+	pkg_free(ehdr.s);
 	return callid;
 
 error:
 	if(callid)
 		pkg_free(callid);
+	if(ehdr.s)
+		pkg_free(ehdr.s);
 	return 0;
 }
 
