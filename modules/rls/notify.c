@@ -469,8 +469,8 @@ str* constr_rlmi_doc(db_res_t *result, str* rl_uri, int version,
 	{
 		ERR_MEM(PKG_MEM_STR);
 	}
-	xmlDocDumpFormatMemory(doc,(xmlChar**)(void*)&rlmi_cont->s,
-			&rlmi_cont->len, 1);
+	xmlDocDumpMemory(doc,(xmlChar**)(void*)&rlmi_cont->s,
+			&rlmi_cont->len);
 
 	*rlmi_cid_array= cid_array;
 	

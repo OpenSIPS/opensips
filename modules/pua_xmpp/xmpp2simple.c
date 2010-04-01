@@ -311,7 +311,7 @@ done:
 		LM_ERR("no more memory\n");
 		goto error;
 	}
-	xmlDocDumpFormatMemory(doc,(xmlChar**)(void*)&body->s, &body->len, 1);
+	xmlDocDumpMemory(doc,(xmlChar**)(void*)&body->s, &body->len);
 
 	if(entity)
 		pkg_free(entity);

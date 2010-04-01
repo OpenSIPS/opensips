@@ -548,8 +548,8 @@ void timer_send_notify(unsigned int ticks,void *param)
 		/* 'buf' must contain the body */
 		if(prev_did!= NULL && strcmp(prev_did, curr_did)) 
 		{
-			xmlDocDumpFormatMemory(rlmi_doc,(xmlChar**)(void*)&rlmi_cont.s,
-				&rlmi_cont.len, 1);
+			xmlDocDumpMemory(rlmi_doc,(xmlChar**)(void*)&rlmi_cont.s,
+				&rlmi_cont.len);
 		
 			multi_cont.s= buf;
 			multi_cont.len= buf_len;
@@ -749,8 +749,8 @@ void timer_send_notify(unsigned int ticks,void *param)
 
 	if(rlmi_doc)
 	{
-		xmlDocDumpFormatMemory( rlmi_doc,(xmlChar**)(void*)&rlmi_cont.s,
-		&rlmi_cont.len, 1);
+		xmlDocDumpMemory( rlmi_doc,(xmlChar**)(void*)&rlmi_cont.s,
+		&rlmi_cont.len);
 		
 		multi_cont.s= buf;
 		multi_cont.len= buf_len;

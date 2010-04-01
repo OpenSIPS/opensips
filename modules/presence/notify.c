@@ -732,7 +732,7 @@ str* build_empty_bla_body(str pres_uri)
 		goto error;
 	}
 
-	xmlDocDumpFormatMemory(doc,(xmlChar**)(void*)&text, &len, 1);
+	xmlDocDumpMemory(doc,(xmlChar**)(void*)&text, &len);
 	body->s = (char*) pkg_malloc(len);
 	if(body->s == NULL)
 	{
@@ -1977,7 +1977,7 @@ str* create_winfo_xml(watcher_t* watchers, char* version,
 	}
 	memset(body, 0, sizeof(str));
 
-	xmlDocDumpFormatMemory(doc,(xmlChar**)(void*)&body->s, &body->len, 1);
+	xmlDocDumpMemory(doc,(xmlChar**)(void*)&body->s, &body->len);
 
 	xmlFreeDoc(doc);
 

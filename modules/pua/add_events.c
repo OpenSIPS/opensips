@@ -196,7 +196,7 @@ int pres_process_body(publ_info_t* publ, str** fin_body, int ver, str** tuple_pa
 		goto error;
 	}
 	memset(body, 0, sizeof(str));
-	xmlDocDumpFormatMemory(doc,(xmlChar**)(void*)&body->s, &body->len, 1);	
+	xmlDocDumpMemory(doc,(xmlChar**)(void*)&body->s, &body->len);
 	if(body->s== NULL || body->len== 0)
 	{
 		LM_ERR("while dumping xml format\n");
@@ -265,7 +265,7 @@ int bla_process_body(publ_info_t* publ, str** fin_body, int ver, str** tuple)
 		goto error;
 	}
 	memset(body, 0, sizeof(str));
-	xmlDocDumpFormatMemory(doc, (xmlChar**)(void*)&body->s, &body->len, 1);	
+	xmlDocDumpMemory(doc, (xmlChar**)(void*)&body->s, &body->len);
 
 	xmlFreeDoc(doc);
 	doc= NULL;
