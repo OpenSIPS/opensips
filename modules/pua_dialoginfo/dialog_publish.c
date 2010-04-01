@@ -300,14 +300,6 @@ void dialog_publish(char *state, struct to_body* entity, struct to_body *peer, s
 	str* body= NULL;
 	publ_info_t publ;
 
-	/* send PUBLISH only if the receiver (entity, RURI) is local*/
-	
-/*	if (!check_self(&(entity->parsed_uri.host), 0, 0)) {
-		LM_DBG("do not send PUBLISH to external URI %.*s\n",
-				entity->uri.len, entity->uri.s);
-		return;
-	}
-*/
 	body= build_dialoginfo(state, entity, peer, callid, initiator, localtag, remotetag);
 	if(body == NULL || body->s == NULL)
 	{
@@ -320,7 +312,7 @@ void dialog_publish(char *state, struct to_body* entity, struct to_body *peer, s
 	publ.pres_uri= &entity->uri;
 	publ.body = body;
 
-	publ.id.s = (char*)pkg_malloc(15/* DIALOG_PUBLISH. */ + callid->len);
+	publ.id.s = (char*)pkg_malloc(15/* DIALOG_PUBLISH. */ + callid->len + 1);
 	if(publ.id.s== NULL) {
 		LM_ERR("no more memory\n");
 		goto error;
