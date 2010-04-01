@@ -143,21 +143,21 @@ subs_t* mem_copy_subs(subs_t* s, int mem_type)
 	memset(dest, 0, size);
 	size= sizeof(subs_t);
 
-	CONT_COPY(dest, dest->pres_uri, s->pres_uri)
-	CONT_COPY(dest, dest->to_user, s->to_user)
-	CONT_COPY(dest, dest->to_domain, s->to_domain)
-	CONT_COPY(dest, dest->from_user, s->from_user)
-	CONT_COPY(dest, dest->from_domain, s->from_domain)
-	CONT_COPY(dest, dest->to_tag, s->to_tag)
-	CONT_COPY(dest, dest->from_tag, s->from_tag)
-	CONT_COPY(dest, dest->callid, s->callid)
-	CONT_COPY(dest, dest->local_contact, s->local_contact)
-	CONT_COPY(dest, dest->contact, s->contact)
-	CONT_COPY(dest, dest->record_route, s->record_route)
+	CONT_COPY(dest, dest->pres_uri, s->pres_uri);
+	CONT_COPY(dest, dest->to_user, s->to_user);
+	CONT_COPY(dest, dest->to_domain, s->to_domain);
+	CONT_COPY(dest, dest->from_user, s->from_user);
+	CONT_COPY(dest, dest->from_domain, s->from_domain);
+	CONT_COPY(dest, dest->to_tag, s->to_tag);
+	CONT_COPY(dest, dest->from_tag, s->from_tag);
+	CONT_COPY(dest, dest->callid, s->callid);
+	CONT_COPY(dest, dest->local_contact, s->local_contact);
+	CONT_COPY(dest, dest->contact, s->contact);
+	CONT_COPY(dest, dest->record_route, s->record_route);
 	if(s->event_id.s)
-		CONT_COPY(dest, dest->event_id, s->event_id)
+		CONT_COPY(dest, dest->event_id, s->event_id);
 	if(s->reason.s)
-		CONT_COPY(dest, dest->reason, s->reason)
+		CONT_COPY(dest, dest->reason, s->reason);
 
 	dest->event= s->event;
 	dest->local_cseq= s->local_cseq;
@@ -201,20 +201,20 @@ subs_t* mem_copy_subs_noc(subs_t* s)
 	memset(dest, 0, size);
 	size= sizeof(subs_t);
 
-	CONT_COPY(dest, dest->pres_uri, s->pres_uri)
-	CONT_COPY(dest, dest->to_user, s->to_user)
-	CONT_COPY(dest, dest->to_domain, s->to_domain)
-	CONT_COPY(dest, dest->from_user, s->from_user)
-	CONT_COPY(dest, dest->from_domain, s->from_domain)
-	CONT_COPY(dest, dest->to_tag, s->to_tag)
-	CONT_COPY(dest, dest->from_tag, s->from_tag)
-	CONT_COPY(dest, dest->callid, s->callid)
-	CONT_COPY(dest, dest->local_contact, s->local_contact)
-	CONT_COPY(dest, dest->record_route, s->record_route)
+	CONT_COPY(dest, dest->pres_uri, s->pres_uri);
+	CONT_COPY(dest, dest->to_user, s->to_user);
+	CONT_COPY(dest, dest->to_domain, s->to_domain);
+	CONT_COPY(dest, dest->from_user, s->from_user);
+	CONT_COPY(dest, dest->from_domain, s->from_domain);
+	CONT_COPY(dest, dest->to_tag, s->to_tag);
+	CONT_COPY(dest, dest->from_tag, s->from_tag);
+	CONT_COPY(dest, dest->callid, s->callid);
+	CONT_COPY(dest, dest->local_contact, s->local_contact);
+	CONT_COPY(dest, dest->record_route, s->record_route);
 	if(s->event_id.s)
-		CONT_COPY(dest, dest->event_id, s->event_id)
+		CONT_COPY(dest, dest->event_id, s->event_id);
 	if(s->reason.s)
-		CONT_COPY(dest, dest->reason, s->reason)
+		CONT_COPY(dest, dest->reason, s->reason);
 
 	dest->event= s->event;
 	dest->local_cseq= s->local_cseq;
