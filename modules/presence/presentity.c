@@ -329,8 +329,8 @@ int bla_aggregate_state(str* old_body, str* new_body,
 	{
 		*allocated = 1;
 		LM_INFO("No dialog found in new body, so Notify with the old one\n");
-		xmlDocDumpFormatMemory(old_doc,(xmlChar**)(void*)&fin_body->s,
-			&fin_body->len, 1);
+		xmlDocDumpMemory(old_doc,(xmlChar**)(void*)&fin_body->s,
+				&fin_body->len);
 		xmlFreeDoc(new_doc);
 		xmlFreeDoc(old_doc);
 		return 0;
@@ -435,16 +435,16 @@ int bla_aggregate_state(str* old_body, str* new_body,
 		if(xmlStrcasecmp(state, (unsigned char*)"terminated")== 0)
 		{
 			*allocated = 1;
-			xmlDocDumpFormatMemory(old_doc,(xmlChar**)(void*)&fin_body->s,
-				&fin_body->len, 1);
+			xmlDocDumpMemory(old_doc,(xmlChar**)(void*)&fin_body->s,
+				&fin_body->len);
 		}
 		else
 		{
 			/* maybe I changed the target */
 			if(*allocated)
 			{
-				xmlDocDumpFormatMemory(new_doc,(xmlChar**)(void*)&fin_body->s,
-					&fin_body->len, 1);
+				xmlDocDumpMemory(new_doc,(xmlChar**)(void*)&fin_body->s,
+					&fin_body->len);
 			}
 			*bla_update_publish = 1;
 		}
@@ -568,8 +568,8 @@ int bla_aggregate_state(str* old_body, str* new_body,
 					{
 						bla_update_publish = 0;
 						*allocated = 1;
-						xmlDocDumpFormatMemory(old_doc,(xmlChar**)(void*)&fin_body->s,
-							&fin_body->len, 1);
+						xmlDocDumpMemory(old_doc,(xmlChar**)(void*)&fin_body->s,
+							&fin_body->len);
 						goto done;
 					}
 						
@@ -613,8 +613,8 @@ int bla_aggregate_state(str* old_body, str* new_body,
 		if(xmlStrcasecmp(state, (unsigned char*)"terminated")== 0)
 		{
 			*allocated = 1;
-			xmlDocDumpFormatMemory(old_doc,(xmlChar**)(void*)&fin_body->s,
-				&fin_body->len, 1);
+			xmlDocDumpMemory(old_doc,(xmlChar**)(void*)&fin_body->s,
+				&fin_body->len);
 			xmlFree(state);
 			goto done;
 		}
@@ -641,8 +641,8 @@ int bla_aggregate_state(str* old_body, str* new_body,
 		}
 		dlg_node = dlg_node->next;
 	}
-	xmlDocDumpFormatMemory(new_doc,(xmlChar**)(void*)&fin_body->s,
-		&fin_body->len, 1);
+	xmlDocDumpMemory(new_doc,(xmlChar**)(void*)&fin_body->s,
+		&fin_body->len);
 	*bla_update_publish = 1;
 	*allocated = 1;
 

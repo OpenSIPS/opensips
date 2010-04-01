@@ -272,7 +272,7 @@ str* build_dialoginfo(char *state, struct to_body *entity, struct to_body *peer,
 	}
 	memset(body, 0, sizeof(str));
 
-	xmlDocDumpFormatMemory(doc,(unsigned char**)(void*)&body->s,&body->len,1);
+	xmlDocDumpMemory(doc,(unsigned char**)(void*)&body->s,&body->len);
 
 	LM_DBG("new_body:\n%.*s\n",body->len, body->s);
 

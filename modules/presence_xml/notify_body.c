@@ -408,8 +408,8 @@ str* get_final_notify_body( subs_t *subs, str* notify_body, xmlNodePtr rule_node
 		}
 	}
 done:
-	xmlDocDumpFormatMemory(doc,(xmlChar**)(void*)&new_body->s,
-			&new_body->len, 1);
+	xmlDocDumpMemory(doc,(xmlChar**)(void*)&new_body->s,
+			&new_body->len);
 	LM_DBG("body = \n%.*s\n", new_body->len,
 			new_body->s);
 
@@ -610,8 +610,8 @@ append_label:
 		ERR_MEM(PKG_MEM_STR);
 	}
 
-	xmlDocDumpFormatMemory(xml_array[j],(xmlChar**)(void*)&body->s, 
-			&body->len, 1);	
+	xmlDocDumpMemory(xml_array[j],(xmlChar**)(void*)&body->s, 
+			&body->len);
 
 	LM_DBG("body = %.*s\n", body->len, body->s);
 
@@ -722,8 +722,8 @@ str* offline_nbody(str* body)
 	}
 	memset(new_body, 0, sizeof(str));
 
-	xmlDocDumpFormatMemory(new_doc,(xmlChar**)(void*)&new_body->s,
-		&new_body->len, 1);
+	xmlDocDumpMemory(new_doc,(xmlChar**)(void*)&new_body->s,
+		&new_body->len);
 
 	xmlFreeDoc(doc);
 	xmlFreeDoc(new_doc);
