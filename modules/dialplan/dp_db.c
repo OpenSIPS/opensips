@@ -361,13 +361,13 @@ dpl_node_t * build_rule(db_val_t * values)
 	GET_STR_VALUE(subst_exp, values, 5);
 	if(subst_exp.s && subst_exp.len){
 		subst_comp = trex_compile(subst_exp.s, &error);
-		if(!subst_comp){
+		if(subst_comp == NULL){
 			LM_ERR("failed to compile subst expression\n");
 			goto err;
 		}
 	}
 
-	if ( repl_comp &&
+	if ( repl_comp && 
 	(trex_getsubexpcount(subst_comp)<=repl_comp->max_pmatch) && 
 	repl_comp->max_pmatch != 0){
 		LM_ERR("repl_exp uses a non existing subexpression\n");
