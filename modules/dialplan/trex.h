@@ -43,34 +43,33 @@
 #include "../../dprint.h"
 #include "../../str.h"
 
-#ifndef TREX_API
-#define TREX_API extern
-#endif
-
 #define TRex_True 1
 #define TRex_False 0
 
 
-#define OP_GREEDY		MAX_CHAR+1 // * + ? {n}
-#define OP_OR			MAX_CHAR+2
-#define OP_EXPR			MAX_CHAR+3 //parentesis ()
-#define OP_DOT			MAX_CHAR+4
-#define OP_CLASS		MAX_CHAR+5
-#define OP_CCLASS		MAX_CHAR+6
-#define OP_NCLASS		MAX_CHAR+7 //negates class the [^
-#define OP_RANGE		MAX_CHAR+8
-#define OP_CHAR			MAX_CHAR+9
-#define OP_EOL			MAX_CHAR+10
-#define OP_BOL			MAX_CHAR+11
+#define OP_GREEDY		(MAX_CHAR+1) // * + ? {n}
+#define OP_OR			(MAX_CHAR+2)
+#define OP_EXPR			(MAX_CHAR+3) //parentesis ()
+#define OP_NOCAPEXPR	(MAX_CHAR+4) //parentesis (?:)
+#define OP_DOT			(MAX_CHAR+5)
+#define OP_CLASS		(MAX_CHAR+6)
+#define OP_CCLASS		(MAX_CHAR+7)
+#define OP_NCLASS		(MAX_CHAR+8) //negates class the [^
+#define OP_RANGE		(MAX_CHAR+9)
+#define OP_CHAR			(MAX_CHAR+10)
+#define OP_EOL			(MAX_CHAR+11)
+#define OP_BOL			(MAX_CHAR+12)
+#define OP_WB			(MAX_CHAR+13)
 
-#define TREX_SYMBOL_ANY_CHAR '.'
-#define TREX_SYMBOL_GREEDY_ONE_OR_MORE '+'
-#define TREX_SYMBOL_GREEDY_ZERO_OR_MORE '*'
-#define TREX_SYMBOL_GREEDY_ZERO_OR_ONE '?'
-#define TREX_SYMBOL_BRANCH '|'
-#define TREX_SYMBOL_END_OF_STRING '$'
-#define TREX_SYMBOL_BEGINNING_OF_STRING '^'
-#define TREX_SYMBOL_ESCAPE_CHAR '\\'
+#define TREX_SYMBOL_ANY_CHAR ('.')
+#define TREX_SYMBOL_GREEDY_ONE_OR_MORE ('+')
+#define TREX_SYMBOL_GREEDY_ZERO_OR_MORE ('*')
+#define TREX_SYMBOL_GREEDY_ZERO_OR_ONE ('?')
+#define TREX_SYMBOL_BRANCH ('|')
+#define TREX_SYMBOL_END_OF_STRING ('$')
+#define TREX_SYMBOL_BEGINNING_OF_STRING ('^')
+#define TREX_SYMBOL_ESCAPE_CHAR ('\\')
+
 
 
 #define trex_shm_alloc 		shm_malloc
@@ -111,8 +110,8 @@ typedef int TRexNodeType;
 
 typedef struct tagTRexNode{
 	TRexNodeType type;
-	long left;
-	long right;
+	int left;
+	int right;
 	int next;
 }TRexNode;
 
@@ -132,13 +131,13 @@ struct TRex{
 	const TRexChar **_error;
 };
 
-TREX_API TRex *trex_compile(const TRexChar *pattern,const TRexChar **error);
-TREX_API TRexBool trex_match(TRex* exp,const TRexChar* text);
-TREX_API TRexBool trex_search(TRex* exp,const TRexChar* text, const TRexChar** out_begin, const TRexChar** out_end);
-TREX_API TRexBool trex_searchrange(TRex* exp,const TRexChar* text_begin,const TRexChar* text_end,const TRexChar** out_begin, const TRexChar** out_end);
-TREX_API int trex_getsubexpcount(TRex* exp);
-TREX_API TRexBool trex_getsubexp(TRex* exp, int n, TRexMatch *subexp);
+ TRex *trex_compile(const TRexChar *pattern,const TRexChar **error);
+ TRexBool trex_match(TRex* exp,const TRexChar* text);
+ TRexBool trex_search(TRex* exp,const TRexChar* text, const TRexChar** out_begin, const TRexChar** out_end);
+ TRexBool trex_searchrange(TRex* exp,const TRexChar* text_begin,const TRexChar* text_end,const TRexChar** out_begin, const TRexChar** out_end);
+ int trex_getsubexpcount(TRex* exp);
+ TRexBool trex_getsubexp(TRex* exp, int n, TRexMatch *subexp);
 
-TREX_API void trex_destroy(TRex *exp);
+ void trex_destroy(TRex *exp);
 #endif
 
