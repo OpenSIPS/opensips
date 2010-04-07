@@ -371,8 +371,7 @@ inline static struct hdr_field *get_header_by_name( struct sip_msg *msg,
 	struct hdr_field *hdr;
 
 	for( hdr=msg->headers ; hdr ; hdr=hdr->next ) {
-		if (hdr->type==HDR_OTHER_T && len==hdr->name.len
-		&& strncasecmp(hdr->name.s,s,len)==0)
+		if(len==hdr->name.len && strncasecmp(hdr->name.s,s,len)==0)
 			return hdr;
 	}
 	return NULL;
