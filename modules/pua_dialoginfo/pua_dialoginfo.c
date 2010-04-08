@@ -532,12 +532,12 @@ int dialoginfo_set(struct sip_msg* msg, char* flag_pv, char* str2)
 	char caller_buf[256], callee_buf[256];
 	pv_value_t tok;
 
+	if (msg->REQ_METHOD != METHOD_INVITE)
+		return 1;
+
 	dlg_api.create_dlg(msg);
 
 	dlg = dlg_api.get_dlg();
-
-	if (msg->REQ_METHOD != METHOD_INVITE)
-		return 1;
 
 	LM_DBG("new INVITE dialog created: from=%.*s\n",
 		dlg->from_uri.len, dlg->from_uri.s);
@@ -706,6 +706,9 @@ default_callee:
 
 	if(flag == DLG_PUB_A || flag == DLG_PUB_AB)
 		dialog_publish("Trying", from, &peer_to_body, &(dlg->callid), 1, DEFAULT_CREATED_LIFETIME, 0, 0);
+
+	if(flag == DLG_PUB_B || flag == DLG_PUB_AB)
+		dialog_publish("Trying", &peer_to_body, from, &(dlg->callid), 0, DEFAULT_CREATED_LIFETIME, 0, 0);
 
 	return 1;
 }
