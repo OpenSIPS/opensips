@@ -598,10 +598,16 @@ static int cpl_invoke_script(struct sip_msg* msg, char* str1, char* str2)
 	/* run the script */
 	switch (cpl_run_script( cpl_intr )) {
 		case SCRIPT_DEFAULT:
-			free_cpl_interpreter( cpl_intr );
+			if ( cpl_intr->flags&CPL_DO_NOT_FREE )
+				cpl_intr->flags |= CPL_ENDED;
+			else
+				free_cpl_interpreter( cpl_intr );
 			return 1; /* execution of ser's script will continue */
 		case SCRIPT_END:
-			free_cpl_interpreter( cpl_intr );
+			if ( cpl_intr->flags&CPL_DO_NOT_FREE )
+				cpl_intr->flags |= CPL_ENDED;
+			else
+				free_cpl_interpreter( cpl_intr );
 		case SCRIPT_TO_BE_CONTINUED:
 			return 0; /* break the SER script */
 		case SCRIPT_RUN_ERROR:
@@ -611,7 +617,10 @@ static int cpl_invoke_script(struct sip_msg* msg, char* str1, char* str2)
 
 	return 1;
 error2:
-	free_cpl_interpreter( cpl_intr );
+	if ( cpl_intr->flags&CPL_DO_NOT_FREE )
+		cpl_intr->flags |= CPL_ENDED;
+	else
+		free_cpl_interpreter( cpl_intr );
 	return -1;
 error1:
 	shm_free(script.s);

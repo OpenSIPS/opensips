@@ -46,6 +46,8 @@
 #define CPL_USERAGENT_DUPLICATED       (1<<15)
 #define CPL_ACCEPTLANG_DUPLICATED      (1<<16)
 #define CPL_PRIORITY_DUPLICATED        (1<<17)
+#define CPL_DO_NOT_FREE                (1<<18)
+#define CPL_ENDED                      (1<<19)
 
 #define STR_NOT_FOUND           ((str*)0xffffffff)
 
