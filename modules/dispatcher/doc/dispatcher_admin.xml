@@ -709,7 +709,7 @@ modparam("dispatcher", "attrs_col", "dstattrs")
 		destinations.
 		</para>
 		<para>
-		This function can be used from REQUEST_ROUTE.
+		This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 		</para>
 		<example>
 		<title><function>ds_select_dst</function> usage</title>
@@ -736,7 +736,7 @@ ds_select_dst("1", "0");
 		destinations.
 		</para>
 		<para>
-		This function can be used from REQUEST_ROUTE.
+		This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 		</para>
 	</section>
 	<section>
@@ -748,7 +748,7 @@ ds_select_dst("1", "0");
 		and sets the dst_uri (outbound proxy address).
 		</para>
 		<para>
-		This function can be used from FAILURE_ROUTE.
+		This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 		</para>
 	</section>
 	<section>
@@ -760,7 +760,7 @@ ds_select_dst("1", "0");
 		and sets the domain part of the request uri.
 		</para>
 		<para>
-		This function can be used from FAILURE_ROUTE.
+		This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 		</para>
 	</section>
 	<section>
@@ -774,7 +774,7 @@ ds_select_dst("1", "0");
 		inactive, it will be ignored by 'ds_select_dst' and 'ds_select_domain'.
 		</para>
 		<para>
-		This function can be used from FAILURE_ROUTE.
+		This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 		</para>
 	</section>
 	<section>
@@ -799,7 +799,7 @@ ds_select_dst("1", "0");
 		</listitem>
 		</itemizedlist>
 		<para>
-		This function can be used from FAILURE_ROUTE.
+		This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 		</para>
 	</section>
 
