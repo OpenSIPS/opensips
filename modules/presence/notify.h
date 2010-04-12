@@ -96,7 +96,7 @@ void printf_subs(subs_t* subs);
 int query_db_notify(str* pres_uri,pres_ev_t* event, subs_t* watcher_subs );
 
 int publ_notify(presentity_t* p, str pres_uri, str* body, str* offline_etag,
-		str* rules_doc);
+		str* rules_doc, str* dialog_publish);
 
 int notify(subs_t* subs, subs_t* watcher_subs, str* n_body,int force_null_body);
 
@@ -109,5 +109,6 @@ int add_watcher_list(subs_t* s, watcher_t* watchers);
 subs_t* get_subs_dialog(str* pres_uri, pres_ev_t* event, str* sender);
 str* create_winfo_xml(watcher_t* watchers, char* version,
 		str resource, str event, int STATE_FLAG );
+str* xml_dialog2presence(str* pres_uri, str* body);
 
 #endif

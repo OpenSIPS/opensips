@@ -344,7 +344,7 @@ error:
 
 
 int update_subscription(struct sip_msg* msg, subs_t* subs, int init_req)
-{	
+{
 	unsigned int hash_code;
 	int reply_code= 200;
 
@@ -357,45 +357,26 @@ int update_subscription(struct sip_msg* msg, subs_t* subs, int init_req)
 	{
 		if(subs->expires == 0)
 		{
-			LM_DBG("expires =0 -> deleting record\n");
-		
-			if( delete_db_subs(subs->pres_uri, 
-						subs->event->name, subs->to_tag)< 0)
+			LM_DBG("expires=0, deleting subscription from [%.*s@%.*s] to [%.*s]\n",
+					subs->from_user.len, subs->from_user.s, subs->from_domain.len,
+					subs->from_domain.s, subs->pres_uri.len, subs->pres_uri.s);
+
+			if(delete_db_subs(subs->pres_uri,subs->event->name,subs->to_tag)<0)
 			{
 				LM_ERR("deleting subscription record from database\n");
 				goto error;
 			}
 			/* delete record from hash table also */
-			
 			subs->local_cseq= delete_shtable(subs_htable,hash_code,
 					subs->to_tag);
-		
+
 			if( send_2XX_reply(msg, reply_code, subs->expires, 0,
 						&subs->local_contact) <0)
 			{
 				LM_ERR("sending %d OK\n", reply_code);
 				goto error;
 			}
-
-			if(subs->event->type & PUBL_TYPE)
-			{
-				if(subs->event->wipeer)
-				{
-					if(query_db_notify(&subs->pres_uri,
-								subs->event->wipeer, NULL)< 0)
-					{
-						LM_ERR("Could not send notify for winfo\n");
-						goto error;
-					}
-				}
-			}
-		
-			if(notify(subs, NULL, NULL, 0)< 0)
-			{
-				LM_ERR("Could not send notify\n");
-				goto error;
-			}
-			return 1;
+			goto send_notify;
 		}
 
 		if(update_shtable(subs_htable, hash_code, subs, REMOTE_TYPE)< 0)
@@ -419,7 +400,7 @@ int update_subscription(struct sip_msg* msg, subs_t* subs, int init_req)
 			LM_ERR("sending 2XX reply\n");
 			goto error;
 		}
-	} 
+	}
 	else
 	{
 		if(send_2XX_reply(msg, reply_code, subs->expires, &subs->to_tag,
@@ -430,7 +411,7 @@ int update_subscription(struct sip_msg* msg, subs_t* subs, int init_req)
 		}
 
 		if(subs->expires!= 0)
-		{	
+		{
 			if(insert_shtable(subs_htable,hash_code,subs)< 0)
 			{
 				LM_ERR("inserting new record in subs_htable\n");
@@ -450,47 +431,28 @@ int update_subscription(struct sip_msg* msg, subs_t* subs, int init_req)
 		 * no update in database, but should try to send Notify */
 	}
 
-/* send notify  */
-	if(subs->event->type & PUBL_TYPE)
+	/* send Notifies */
+send_notify:
+	if((subs->event->type & PUBL_TYPE) && subs->event->wipeer)
 	{
-		if(subs->expires!= 0 && subs->event->wipeer)
-		{	
-			LM_DBG("send Notify with winfo\n");
-			if(query_db_notify(&subs->pres_uri, subs->event->wipeer, subs)< 0)
-			{
-				LM_ERR("Could not send notify winfo\n");
-				goto error;
-			}
-			
-			/* send Notify for presence */
-			if(notify(subs, NULL, NULL, 0)< 0)
-			{
-				LM_ERR("Could not send notify\n");
-				goto error;
-			}
-		}
-		else
+		LM_DBG("send Notify with winfo\n");
+		if(query_db_notify(&subs->pres_uri, subs->event->wipeer, (subs->expires==0)?NULL:subs)< 0)
 		{
-			if(notify(subs, NULL, NULL, 0)< 0)
-			{
-				LM_ERR("Could not send notify\n");
-				goto error;
-			}
-		}
-	}
-	else
-	{
-		if(notify(subs, NULL, NULL, 0 )< 0)
-		{
-			LM_ERR("sending notify request\n");
+			LM_ERR("Could not send notify winfo\n");
 			goto error;
 		}
 	}
+
+	if(notify(subs, NULL, NULL, 0 )< 0)
+	{
+		LM_ERR("Failed to send notify request\n");
+		goto error;
+	}
+
 	return 0;
-	
+
 error:
 	return -1;
-
 }
 
 void msg_watchers_clean(unsigned int ticks,void *param)
@@ -673,7 +635,6 @@ int handle_subscribe(struct sip_msg* msg, char* force_active_param, char* str2)
 		}
 	}
 
-
 	/* if dialog initiation Subscribe - get subscription state */
 	if(init_req)
 	{
@@ -709,7 +670,7 @@ int handle_subscribe(struct sip_msg* msg, char* force_active_param, char* str2)
 		LM_ERR("wrong status\n");
 		goto error;
 	}
-    LM_DBG("subscription status= %s - %s\n", get_status_str(subs.status), 
+	LM_DBG("subscription status= %s - %s\n", get_status_str(subs.status), 
             found==0?"inserted":"found in watcher table");
 
 	if(update_subscription(msg, &subs, init_req) <0)

@@ -369,6 +369,28 @@ modparam("presence", "waiting_subs_daysno", 2)
 	</programlisting>
 		</example>
 	</section>
+	<section>
+		<title><varname>mix_dialog_presence</varname> (int)</title>
+		<para>
+		This module parameter enables a very nice feature in the presence server -
+		generating presence information from dialogs state. If this parameter is set,
+		the presence server will tell you if a buddy is in a call even if his phone
+		did not send a presence Publish with this information.
+		You will need to load the dialoginfo modules, presence_dialoginfo, pua_dialoginfo, dialog and pua.
+		</para>
+		<para>
+			<emphasis>Default value is <quote>0</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>mix_dialog_presence</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("presence", "mix_dialog_presence", 1)
+...
+	</programlisting>
+		</example>
+	</section>
 
 </section>
 

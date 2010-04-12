@@ -111,6 +111,10 @@ int shtable_size= 9;
 shtable_t subs_htable= NULL;
 int fallback2db= 0;
 int sphere_enable= 0;
+int mix_dialog_presence= 0;
+/* holder for the pointer to presence event */
+pres_ev_t** pres_event_p= NULL;
+pres_ev_t** dialog_event_p= NULL;
 
 int phtable_size= 9;
 phtable_t* pres_htable;
@@ -143,7 +147,7 @@ static param_export_t params[]={
 	{ "fallback2db",            INT_PARAM, &fallback2db},
 	{ "enable_sphere_check",    INT_PARAM, &sphere_enable},
 	{ "waiting_subs_daysno",    INT_PARAM, &waiting_subs_daysno},
-
+	{ "mix_dialog_presence",    INT_PARAM, &mix_dialog_presence},
 	{0,0,0}
 };
 
@@ -341,6 +345,14 @@ static int mod_init(void)
 	if(waiting_subs_daysno > 0)
 		waiting_subs_time = waiting_subs_daysno*24*3600;
 
+	pres_event_p = (pres_ev_t**)shm_malloc(sizeof(pres_ev_t*));
+	dialog_event_p = (pres_ev_t**)shm_malloc(sizeof(pres_ev_t*));
+	if(pres_event_p == NULL || dialog_event_p == NULL)
+	{
+		LM_ERR("No more shared memory\n");
+		return -1;
+	}
+
 	return 0;
 }
 
@@ -367,7 +379,6 @@ static int child_init(int rank)
 		LM_ERR("child %d: unsuccessful connecting to database\n", rank);
 		return -1;
 	}
-
 	LM_DBG("child %d: Database connection opened successfully\n", rank);
 
 	return 0;
@@ -393,7 +404,12 @@ static void destroy(void)
 
 	if(pa_db && pa_dbf.close)
 		pa_dbf.close(pa_db);
-	
+
+	if(pres_event_p)
+		shm_free(pres_event_p);
+	if(dialog_event_p)
+		shm_free(dialog_event_p);
+
 	destroy_evlist();
 }
 
