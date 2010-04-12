@@ -119,7 +119,7 @@ int add_event(pres_ev_t* event)
 		LM_ERR("'presence' modules must be loaded before this module\n");
 		return -1;
 	}
-	
+
 	memset(&parsed_event, 0, sizeof(event_t));
 
 	if(event->name.s== NULL || event->name.len== 0)
@@ -190,7 +190,7 @@ int add_event(pres_ev_t* event)
 		ev->wipeer= contains_event(&wipeer_name, NULL);
 	}
 	else
-	{	
+	{
 		ev->type= PUBL_TYPE;
 		wipeer_name.s= buf;
 		memcpy(wipeer_name.s, event->name.s, event->name.len);
@@ -200,7 +200,7 @@ int add_event(pres_ev_t* event)
 		ev->wipeer= contains_event(&wipeer_name, NULL);
 	}
 	
-	if(ev->wipeer)	
+	if(ev->wipeer)
 		ev->wipeer->wipeer= ev;
 
 	if(event->req_auth && 
@@ -230,11 +230,19 @@ int add_event(pres_ev_t* event)
 	
 	LM_DBG("succesfully added event: %.*s - len= %d\n",ev->name.len,
 			ev->name.s, ev->name.len);
+
+	/* if event 'presence' set the pointer */
+	if(ev->evp->parsed == EVENT_PRESENCE)
+		*pres_event_p = ev;
+	/* if event 'dialog' set the pointer */
+	if(ev->evp->parsed == EVENT_DIALOG)
+		*dialog_event_p = ev;
+
 	return 0;
 error:
 	if(ev && not_in_list)
 	{
-		free_pres_event(ev);	
+		free_pres_event(ev);
 	}
 	return -1;
 }

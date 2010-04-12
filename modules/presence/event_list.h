@@ -116,11 +116,15 @@ struct pres_ev
 	 */
 	aux_body_processing_t* aux_body_processing;
 	free_body_t* aux_free_body;
-	struct pres_ev* wipeer;			
+	struct pres_ev* wipeer;
 	struct pres_ev* next;
-	
 };
 typedef struct pres_ev pres_ev_t;
+
+/* pointer holders for 'dialog' and 'presence_event',
+ * they need fast access */
+extern pres_ev_t** pres_event_p;
+extern pres_ev_t** dialog_event_p;
 
 typedef struct evlist
 {

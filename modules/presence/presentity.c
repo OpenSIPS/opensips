@@ -778,16 +778,22 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, str* body,
 	result_cols[rez_body_col= n_result_cols++] = &str_body_col;
 	result_cols[rez_sender_col= n_result_cols++] = &str_sender_col;
 
-	if(new_t) 
+	if(new_t)
 	{
+		if( publ_send200ok(msg, presentity->expires, presentity->etag)< 0)
+		{
+			LM_ERR("sending 200OK\n");
+			goto error;
+		}
+		*sent_reply= 1;
+
 		/* insert new record in hash_table */
-	
 		if(insert_phtable(&pres_uri, presentity->event->evp->parsed, sphere)< 0)
 		{
 			LM_ERR("inserting record in hash table\n");
 			goto error;
 		}
-		
+
 		/* insert new record into database */	
 		query_cols[n_query_cols] = &str_expires_col;
 		query_vals[n_query_cols].type = DB_INT;
@@ -795,7 +801,7 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, str* body,
 		query_vals[n_query_cols].val.int_val = presentity->expires+
 				(int)time(NULL);
 		n_query_cols++;
-	
+
 		query_cols[n_query_cols] = &str_sender_col;
 		query_vals[n_query_cols].type = DB_STR;
 		query_vals[n_query_cols].nul = 0;
@@ -822,7 +828,7 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, str* body,
 		query_vals[n_query_cols].nul = 0;
 		query_vals[n_query_cols].val.int_val = presentity->received_time;
 		n_query_cols++;
-		
+
 		if (pa_dbf.use_table(pa_db, &presentity_table) < 0) 
 		{
 			LM_ERR("unsuccessful use_table\n");
@@ -837,16 +843,10 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, str* body,
 			LM_ERR("inserting new record in database\n");
 			goto error;
 		}
-		if( publ_send200ok(msg, presentity->expires, presentity->etag)< 0)
-		{
-			LM_ERR("sending 200OK\n");
-			goto error;
-		}
-		*sent_reply= 1;
 		goto send_notify;
 	}
 	else
-	{	
+	{
 		if (pa_dbf.use_table(pa_db, &presentity_table) < 0) 
 		{
 			LM_ERR("unsuccessful sql use table\n");
@@ -865,7 +865,6 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, str* body,
 
 		if (result->n > 0)
 		{
-
 			if(presentity->event->evp->parsed == EVENT_DIALOG_SLA
 					&& body && body->s)
 			{
@@ -906,7 +905,8 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, str* body,
 					goto error;
 				}
 				*sent_reply= 1;
-				if( publ_notify( presentity, pres_uri, body, &presentity->etag, rules_doc)< 0 )
+				if( publ_notify(presentity, pres_uri, body, &presentity->etag,
+							rules_doc, 0)< 0 )
 				{
 					LM_ERR("while sending notify\n");
 					goto error;
@@ -956,10 +956,10 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, str* body,
 				{
 					LM_ERR("wrong etag\n");
 					goto error;
-				}	
+				}
 				str_publ_nr.s= dot+1;
 				str_publ_nr.len--;
-	
+
 				if( str2int(&str_publ_nr, &publ_nr)< 0)
 				{
 					LM_ERR("converting string to int\n");
@@ -985,7 +985,7 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, str* body,
 			update_vals[n_update_cols].nul = 0;
 			update_vals[n_update_cols].val.str_val = cur_etag;
 			n_update_cols++;
-			
+
 			update_keys[n_update_cols] = &str_expires_col;
 			update_vals[n_update_cols].type = DB_INT;
 			update_vals[n_update_cols].nul = 0;
@@ -1085,12 +1085,37 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, str* body,
 	}
 
 send_notify:
-			
-	/* send notify with presence information */
-	if (publ_notify(presentity, pres_uri, body, NULL, rules_doc)<0)
+
+	/* send notify with state information */
+	if (publ_notify(presentity, pres_uri, body, NULL, rules_doc, 0)<0)
 	{
 		LM_ERR("while sending Notify requests to watchers\n");
 		goto error;
+	}
+
+	/* if event dialog -> send Notify for presence also */
+	if(mix_dialog_presence && *pres_event_p &&
+			presentity->event->evp->parsed == EVENT_DIALOG)
+	{
+		str* dialog_body= NULL;
+
+		LM_DBG("Publish for event dialog - try to send Notify for presence\n");
+
+		dialog_body = xml_dialog2presence(&pres_uri, body);
+		if(dialog_body)
+		{
+			/* send Notify for presence */
+			presentity->event = *pres_event_p;
+			if (publ_notify(presentity, pres_uri, 0, NULL, 0, dialog_body)<0)
+			{
+				LM_ERR("while sending Notify requests to watchers\n");
+				xmlFree(dialog_body->s);
+				pkg_free(dialog_body);
+				goto error;
+			}
+			xmlFree(dialog_body->s);
+			pkg_free(dialog_body);
+		}
 	}
 
 done:
@@ -1560,3 +1585,178 @@ done:
 		pa_dbf.free_result(pa_db, result);
 	return ret;
 }
+
+
+#define DLG_STATES_NO  4
+char* dialog_states[]= {  "trying",
+                           "early",
+                       "confirmed",
+                     "terminated"};
+char* presence_notes[]={ "Calling",
+                         "Calling",
+                    "On the phone",
+                               ""};
+
+str* xml_dialog2presence(str* pres_uri, str* body)
+{
+	xmlDocPtr dlg_doc = NULL;
+	xmlDocPtr pres_doc = NULL;
+	xmlNodePtr node, root_node, dialog_node;
+	xmlNodePtr tuple_node, person_node;
+	str* dialog_body = NULL;
+	unsigned char* state;
+	char* pres_note= NULL;
+	int i;
+	char* entity;
+
+	if(body->len == 0)
+		return NULL;
+
+	dlg_doc = xmlParseMemory(body->s, body->len);
+	if(dlg_doc == NULL)
+	{
+		LM_ERR("Wrong formated xml document\n");
+		return NULL;
+	}
+	dialog_node = xmlNodeGetNodeByName(dlg_doc->children, "dialog", 0);
+	if(!dialog_node)
+		goto done;
+
+	node = xmlNodeGetNodeByName(dialog_node, "state", 0);
+	if(!node)
+		goto done;
+
+	state = xmlNodeGetContent(node);
+	if(!state)
+		goto done;
+
+	for(i = 0; i< DLG_STATES_NO; i++)
+	{
+		if(xmlStrcasecmp(state, BAD_CAST dialog_states[i])==0)
+		{
+			pres_note = presence_notes[i];
+			break;
+		}
+	}
+	xmlFree(state);
+	pres_doc= xmlNewDoc(BAD_CAST "1.0");
+	if(pres_doc== NULL)
+	{
+		LM_ERR("allocating new xml doc\n");
+		goto error;
+	}
+
+	root_node = xmlNewNode(NULL, BAD_CAST "presence");
+	if(root_node== NULL)
+	{
+		LM_ERR("Failed to create xml node\n");
+		goto error;
+	}
+	xmlDocSetRootElement(pres_doc, root_node);
+
+	xmlNewProp(root_node, BAD_CAST "xmlns",
+			BAD_CAST "urn:ietf:params:xml:ns:pidf");
+	xmlNewProp(root_node, BAD_CAST "xmlns:dm",
+			BAD_CAST "urn:ietf:params:xml:ns:pidf:data-model");
+	xmlNewProp(root_node, BAD_CAST  "xmlns:rpid",
+			BAD_CAST "urn:ietf:params:xml:ns:pidf:rpid" );
+	xmlNewProp(root_node, BAD_CAST "xmlns:c",
+			BAD_CAST "urn:ietf:params:xml:ns:pidf:cipid");
+
+	entity= (char*)pkg_malloc(pres_uri->len + 1);
+	if(entity == NULL)
+	{
+		LM_ERR("No more memory\n");
+		goto error;
+	}
+	memcpy(entity, pres_uri->s, pres_uri->len);
+	entity[pres_uri->len] = '\0';
+	xmlNewProp(root_node, BAD_CAST "entity", BAD_CAST entity);
+	pkg_free(entity);
+
+	tuple_node =xmlNewChild(root_node, NULL, BAD_CAST "tuple", NULL) ;
+	if(tuple_node == NULL)
+	{
+		LM_ERR("while adding child\n");
+		goto error;
+	}
+
+	xmlNewProp(tuple_node, BAD_CAST "id", BAD_CAST "tuple_mixingid");
+
+	node = xmlNewChild(tuple_node, NULL, BAD_CAST "status", NULL) ;
+	if(node == NULL)
+	{
+		LM_ERR("while adding child\n");
+		goto error;
+	}
+	node = xmlNewChild(node, NULL, BAD_CAST "basic",
+			BAD_CAST "open") ;
+	if(node ==NULL)
+	{
+		LM_ERR("while adding child\n");
+		goto error;
+	}
+
+	if(pres_note && strlen(pres_note))
+	{
+		node = xmlNewChild(root_node, NULL, BAD_CAST "note",
+			BAD_CAST pres_note) ;
+		if(node ==NULL)
+		{
+			LM_ERR("while adding child\n");
+			goto error;
+		}
+		/* put also the person node - to get status indication */
+		person_node = xmlNewChild(root_node, 0, BAD_CAST "dm:person", NULL) ;
+		if(person_node == NULL)
+		{
+			LM_ERR("while adding child\n");
+			goto error;
+		}
+		/* now put the id for tuple and person */
+		xmlNewProp(person_node, BAD_CAST "id", BAD_CAST "pers_mixingid");
+
+		node = xmlNewChild(person_node, 0, BAD_CAST "rpid:activities", NULL) ;
+		if(node == NULL)
+		{
+			LM_ERR("Failed to add person activities node\n");
+			goto error;
+		}
+
+		if(xmlNewChild(node, 0, BAD_CAST "rpid:on-the-phone", NULL) == NULL)
+		{
+			LM_ERR("Failed to add activities child\n");
+			goto error;
+		}
+
+		if(xmlNewChild(person_node, 0, BAD_CAST "dm:note",
+					BAD_CAST pres_note) == NULL)
+		{
+			LM_ERR("Failed to add activities child\n");
+			goto error;
+		}
+	}
+
+	dialog_body = (str*)pkg_malloc(sizeof(str));
+	if(dialog_body == NULL)
+	{
+		LM_ERR("No more memory\n");
+		goto error;
+	}
+	xmlDocDumpMemory(pres_doc,(xmlChar**)(void*)&dialog_body->s,
+			&dialog_body->len);
+
+	LM_DBG("Generated dialog body: %.*s\n", dialog_body->len, dialog_body->s);
+
+error:
+done:
+	if(dlg_doc)
+		xmlFreeDoc(dlg_doc);
+	if(pres_doc)
+		xmlFreeDoc(pres_doc);
+	xmlCleanupParser();
+	xmlMemoryDump();
+
+	return dialog_body;
+}
+

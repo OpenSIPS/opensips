@@ -814,88 +814,58 @@ error:
 	return 0;
 }
 
-
-str* get_p_notify_body(str pres_uri, pres_ev_t* event, str* etag,
-		str* contact)
+static inline db_res_t* pres_search_db(struct sip_uri* uri,str* ev_name, int* body_col,
+		int* expires_col, int* etag_col)
 {
-//	static db_ps_t my_ps = NULL;
-	db_key_t query_cols[6];
-	db_val_t query_vals[6];
-	db_key_t result_cols[6];
+/*	static db_ps_t my_ps = NULL; */
+	db_key_t query_cols[3];
+	db_val_t query_vals[3];
+	db_key_t result_cols[3];
 	db_res_t *result = NULL;
-	int body_col, expires_col, etag_col= 0, sender_col;
-	str** body_array= NULL;
-	str* notify_body= NULL;	
-	db_row_t *row= NULL ;	
-	db_val_t *row_vals;
 	int n_result_cols = 0;
 	int n_query_cols = 0;
-	int i, n= 0, len;
-	int build_off_n= -1; 
-	str etags;
-	str* body;
-	int size= 0;
-	struct sip_uri uri;
-	unsigned int hash_code;
-	
+	int i;
+
 	static str query_str = str_init("received_time");
-
-	if(parse_uri(pres_uri.s, pres_uri.len, &uri)< 0)
-	{
-		LM_ERR("while parsing uri\n");
-		return NULL;
-	}
-
-	/* search in hash table if any record exists */
-	hash_code= core_hash(&pres_uri, NULL, phtable_size);
-	if(search_phtable(&pres_uri, event->evp->parsed, hash_code)== NULL)
-	{
-		LM_DBG("No record exists in hash_table\n");
-		if(fallback2db)
-			goto db_query;
-
-		/* for pidf manipulation */
-		if(event->agg_nbody)
-		{
-			notify_body = event->agg_nbody(&uri.user, &uri.host, NULL, 0, -1);
-			if(notify_body)
-				goto done;
-		}			
-		return NULL;
-	}
-
-db_query:
 
 	query_cols[n_query_cols] = &str_domain_col;
 	query_vals[n_query_cols].type = DB_STR;
 	query_vals[n_query_cols].nul = 0;
-	query_vals[n_query_cols].val.str_val = uri.host;
+	query_vals[n_query_cols].val.str_val = uri->host;
 	n_query_cols++;
 
 	query_cols[n_query_cols] = &str_username_col;
 	query_vals[n_query_cols].type = DB_STR;
 	query_vals[n_query_cols].nul = 0;
-	query_vals[n_query_cols].val.str_val = uri.user;
+	query_vals[n_query_cols].val.str_val = uri->user;
 	n_query_cols++;
 
 	query_cols[n_query_cols] = &str_event_col;
 	query_vals[n_query_cols].type = DB_STR;
 	query_vals[n_query_cols].nul = 0;
-	query_vals[n_query_cols].val.str_val= event->name;
+	query_vals[n_query_cols].val.str_val= *ev_name;
 	n_query_cols++;
 
-	result_cols[body_col=n_result_cols++] = &str_body_col;
-	result_cols[expires_col=n_result_cols++] = &str_expires_col;
-	result_cols[etag_col=n_result_cols++] = &str_etag_col;
-	result_cols[sender_col=n_result_cols++] = &str_sender_col;
-	
+	result_cols[n_result_cols] = &str_body_col;
+	*body_col=n_result_cols++;
+	result_cols[n_result_cols] = &str_expires_col;
+	*expires_col=n_result_cols++;
+	result_cols[n_result_cols] = &str_etag_col;
+	*etag_col=n_result_cols++;
+
 	if (pa_dbf.use_table(pa_db, &presentity_table) < 0) 
 	{
 		LM_ERR("in use_table\n");
 		return NULL;
 	}
 
-//	CON_PS_REFERENCE(pa_db) = &my_ps;
+	for(i= 0; i< n_query_cols; i++)
+	{
+		LM_DBG("qval [%i] = %.*s\n",i, query_vals[i].val.str_val.len,
+				query_vals[i].val.str_val.s);
+	}
+
+/*	CON_PS_REFERENCE(pa_db) = &my_ps; */
 	if (pa_dbf.query (pa_db, query_cols, 0, query_vals,
 		 result_cols, n_query_cols, n_result_cols, &query_str, &result) < 0)
 	{
@@ -904,22 +874,157 @@ db_query:
 			pa_dbf.free_result(pa_db, result);
 		return NULL;
 	}
-	
+	return result;
+}
+
+str* get_presence_from_dialog(str* pres_uri, struct sip_uri* uri,
+		unsigned int hash_code)
+{
+	db_res_t *result = NULL;
+	int body_col, expires_col, etag_col;
+	str body;
+	str* dialog_body;
+	db_row_t *row= NULL ;
+	db_val_t *row_vals;
+
+	/* search for dialog event publications */
+
+
+	if(search_phtable(pres_uri, (*dialog_event_p)->evp->parsed, hash_code)== NULL)
+	{
+		LM_DBG("No record exists in hashtable, pres_uri=[%.*s] event=[dialog]\n",
+				pres_uri->len, pres_uri->s);
+		if(!fallback2db)
+			return NULL;
+	}
+
+	result = pres_search_db(uri, &((*dialog_event_p)->name),
+			&body_col, &expires_col, &etag_col);
 	if(result== NULL)
 		return NULL;
 
 	if (result->n<=0 )
 	{
+		LM_DBG("The query returned no result, pres_uri=[%.*s] event=[dialog]\n",
+				pres_uri->len, pres_uri->s);
+		pa_dbf.free_result(pa_db, result);
+		return NULL;
+	}
+
+	/* what if I have more records with dialoginfo; for now I will take the most recent */
+	row = &result->rows[result->n-1];
+	row_vals = ROW_VALUES(row);
+
+	body.s = (char*)row_vals[body_col].val.string_val;
+	if(body.s == NULL)
+	{
+		LM_ERR("NULL notify body record\n");
+		goto error;
+	}
+	body.len= strlen(body.s);
+
+	dialog_body = xml_dialog2presence(pres_uri, &body);
+	pa_dbf.free_result(pa_db, result);
+
+	return dialog_body;
+
+error:
+	if(result)
+		pa_dbf.free_result(pa_db, result);
+	return NULL;
+}
+
+str* get_p_notify_body(str pres_uri, pres_ev_t* event, str* etag,
+		str* contact, str* dbody)
+{
+	int body_col, expires_col, etag_col= 0;
+	db_res_t *result = NULL;
+	db_row_t *row= NULL ;
+	db_val_t *row_vals;
+	str** body_array= NULL;
+	str* notify_body= NULL;
+	int i, n= 0, len;
+	int build_off_n= -1;
+	str etags;
+	str* body;
+	int size= 0;
+	struct sip_uri uri;
+	unsigned int hash_code;
+	int body_cnt = 0;
+	str* dialog_body= NULL, *local_dialog_body = NULL;
+	int del_i = 0;
+
+	if(parse_uri(pres_uri.s, pres_uri.len, &uri)< 0)
+	{
+		LM_ERR("while parsing uri\n");
+		return NULL;
+	}
+	hash_code= core_hash(&pres_uri, NULL, phtable_size);
+
+	if(mix_dialog_presence && event->evp->parsed == EVENT_PRESENCE)
+	{
+		if(!dbody)
+		{
+			if(*dialog_event_p == NULL)
+			{
+				LM_ERR("You required mixing dialog and presence but you have"
+						" not loaded 'dialog' event module (presence_dialoginfo)\n");
+				return NULL;
+			}
+			if(!event->agg_nbody)
+			{
+				LM_ERR("Conflict - If you want to mix dialog info with presence"
+						" you have to keep the default 'presence' event configuration"
+						" with aggregation enabled\n");
+				return NULL;
+			}
+			/* search also for 'dialog' event publications */
+			local_dialog_body = get_presence_from_dialog(&pres_uri, &uri, hash_code);
+			dialog_body = local_dialog_body;
+		}
+		else
+			dialog_body = dbody;
+
+		if(dialog_body)
+		{
+			LM_DBG("Presence from 'dialog': %.*s\n", dialog_body->len, dialog_body->s);
+			body_array = &dialog_body; /* only for the case no other presence info is found */
+			body_cnt = 1;
+		}
+	}
+
+	/* search in hash table if any record exists */
+	if(search_phtable(&pres_uri, event->evp->parsed, hash_code)== NULL)
+	{
+		LM_DBG("No record exists in hash_table\n");
+		if(!fallback2db)
+		{
+			/* for pidf manipulation && dialog-presence mixing */
+			if(event->agg_nbody)
+			{
+				notify_body = event->agg_nbody(&uri.user, &uri.host, body_array, body_cnt, -1);
+				if(notify_body)
+					goto done;
+			}
+			return NULL;
+		}
+	}
+
+	result = pres_search_db(&uri,&event->name,&body_col,&expires_col,&etag_col);
+	if(result== NULL)
+		return NULL;
+	if (result->n<=0 )
+	{
 		LM_DBG("The query returned no result\n[username]= %.*s"
 			"\t[domain]= %.*s\t[event]= %.*s\n",uri.user.len, uri.user.s,
 			uri.host.len, uri.host.s, event->name.len, event->name.s);
-		
+
 		pa_dbf.free_result(pa_db, result);
 		result= NULL;
 
 		if(event->agg_nbody)
 		{
-			notify_body = event->agg_nbody(&uri.user, &uri.host, NULL, 0, -1);
+			notify_body = event->agg_nbody(&uri.user, &uri.host, body_array, body_cnt, -1);
 			if(notify_body)
 				goto done;
 		}
@@ -944,26 +1049,7 @@ db_query:
 			LM_DBG("Event does not require aggregation\n");
 			row = &result->rows[n-1];
 			row_vals = ROW_VALUES(row);
-			
-			/* if event BLA - check if sender is the same as contact */
-			/* if so, send an empty dialog info document */
-/*			if( event->evp->parsed == EVENT_DIALOG_SLA && contact )
-			{
-				sender.s = (char*)row_vals[sender_col].val.string_val;
-				if(sender.s== NULL || strlen(sender.s)==0)
-					goto after_sender_check;
-				sender.len= strlen(sender.s);
-			
-				if(sender.len== contact->len &&
-						strncmp(sender.s, contact->s, sender.len)== 0)
-				{
-					notify_body= build_empty_bla_body(pres_uri);
-					pa_dbf.free_result(pa_db, result);
-					return notify_body;
-				}
-			}
-after_sender_check:
-*/
+
 			if(row_vals[body_col].val.string_val== NULL)
 			{
 				LM_ERR("NULL notify body record\n");
@@ -978,7 +1064,7 @@ after_sender_check:
 			notify_body= (str*)pkg_malloc(sizeof(str));
 			if(notify_body== NULL)
 			{
-				ERR_MEM(PKG_MEM_STR);	
+				ERR_MEM(PKG_MEM_STR);
 			}
 			memset(notify_body, 0, sizeof(str));
 			notify_body->s= (char*)pkg_malloc(len);
@@ -990,18 +1076,23 @@ after_sender_check:
 			memcpy(notify_body->s, row_vals[body_col].val.string_val, len);
 			notify_body->len= len;
 			pa_dbf.free_result(pa_db, result);
-			
+
 			return notify_body;
 		}
-		
-		LM_DBG("Event requires aggregation\n");
-		
-		body_array =(str**)pkg_malloc( (n+2) *sizeof(str*));
+
+		body_array =(str**)pkg_malloc( (n+3) *sizeof(str*));
 		if(body_array == NULL)
 		{
 			ERR_MEM(PKG_MEM_STR);
 		}
-		memset(body_array, 0, (n+2) *sizeof(str*));
+		memset(body_array, 0, (n+3) *sizeof(str*));
+
+		/* put first the dialog info extracted body if present */
+		if(dialog_body)
+		{
+			body_array[0] = dialog_body;
+			del_i = 1;
+		}
 
 		if(etag!= NULL)
 		{
@@ -1020,7 +1111,7 @@ after_sender_check:
 								etag->s,etags.len)==0 ) )
 				{
 					LM_DBG("found etag\n");
-					build_off_n= i;
+					build_off_n= body_cnt;
 				}
 				len= strlen((char*)row_vals[body_col].val.string_val);
 				if(len== 0)
@@ -1028,7 +1119,7 @@ after_sender_check:
 					LM_ERR("Empty notify body record\n");
 					goto error;
 				}
-			
+
 				size= sizeof(str)+ len;
 				body= (str*)pkg_malloc(size);
 				if(body== NULL)
@@ -1041,11 +1132,11 @@ after_sender_check:
 				memcpy(body->s, (char*)row_vals[body_col].val.string_val, len);
 				body->len= len;
 
-				body_array[i]= body;
+				body_array[body_cnt++]= body;
 			}
-		}	
+		}
 		else
-		{	
+		{
 			for(i=0; i< n; i++)
 			{
 				row = &result->rows[i];
@@ -1070,19 +1161,25 @@ after_sender_check:
 				memcpy(body->s, row_vals[body_col].val.string_val, len);
 				body->len= len;
 
-				body_array[i]= body;
-			}			
+				body_array[body_cnt++]= body;
+			}
 		}
 		pa_dbf.free_result(pa_db, result);
 		result= NULL;
-		
-		notify_body = event->agg_nbody(&uri.user, &uri.host, body_array, n, build_off_n);
+
+		notify_body = event->agg_nbody(&uri.user, &uri.host, body_array, body_cnt, build_off_n);
 	}
 
-done:	
-	if(body_array!=NULL)
+done:
+	if(local_dialog_body && local_dialog_body->s)
 	{
-		for(i= 0; i< n; i++)
+		xmlFree(local_dialog_body->s);
+		pkg_free(local_dialog_body);
+	}
+
+	if(body_array!=NULL && body_array!=&dialog_body)
+	{
+		for(i= del_i; i< body_cnt; i++)
 		{
 			if(body_array[i])
 				pkg_free(body_array[i]);
@@ -1095,18 +1192,23 @@ error:
 	if(result!=NULL)
 		pa_dbf.free_result(pa_db, result);
 
-	if(body_array!=NULL)
+	if(local_dialog_body && local_dialog_body->s)
 	{
-		for(i= 0; i< n; i++)
+		xmlFree(local_dialog_body->s);
+		pkg_free(local_dialog_body);
+	}
+
+	if(body_array!=NULL && body_array!=&dialog_body)
+	{
+		for(i= del_i; i< body_cnt; i++)
 		{
 			if(body_array[i])
 				pkg_free(body_array[i]);
 			else
 				break;
-
 		}
-	
-		pkg_free(body_array);
+		if(body_array != &dialog_body)
+			pkg_free(body_array);
 	}
 	return NULL;
 }
@@ -1512,16 +1614,15 @@ subs_t* get_subs_dialog(str* pres_uri, pres_ev_t* event, str* sender)
 error:
 	free_subs_list(s_array, PKG_MEM_TYPE, 0);
 	return NULL;
-	
 }
 
-int publ_notify(presentity_t* p, str pres_uri, str* body, str* offline_etag, str* rules_doc)
+int publ_notify(presentity_t* p, str pres_uri, str* body, str* offline_etag,
+		str* rules_doc, str* dialog_body)
 {
 	str *notify_body = NULL, *aux_body = NULL;
 	subs_t* subs_array= NULL, *s= NULL;
 	int ret_code= -1;
 
-//	subs_array= get_subs_dialog(&pres_uri, p->event , p->sender);
 	subs_array= get_subs_dialog(&pres_uri, p->event , NULL);
 	if(subs_array == NULL)
 	{
@@ -1532,8 +1633,9 @@ int publ_notify(presentity_t* p, str pres_uri, str* body, str* offline_etag, str
 
 	/* if the event does not require aggregation - we have the final body */
 	if(p->event->agg_nbody)
-	{	
-		notify_body = get_p_notify_body(pres_uri, p->event , offline_etag, NULL);
+	{
+		notify_body = get_p_notify_body(pres_uri, p->event , offline_etag,
+				NULL, dialog_body);
 		if(notify_body == NULL)
 		{
 			LM_DBG("Could not get the notify_body\n");
@@ -1597,7 +1699,7 @@ int query_db_notify(str* pres_uri, pres_ev_t* event, subs_t* watcher_subs)
 	
 	if(event->type & PUBL_TYPE)
 	{
-		notify_body = get_p_notify_body(*pres_uri, event, NULL, NULL);
+		notify_body = get_p_notify_body(*pres_uri, event, NULL, NULL, NULL);
 		if(notify_body == NULL)
 		{
 			LM_DBG("Could not get the notify_body\n");
@@ -1660,13 +1762,13 @@ int send_notify_request(subs_t* subs, subs_t * watcher_subs,
 	str str_hdr = {0, 0};
 	str* notify_body = NULL;
 	int result= 0;
-    c_back_param *cb_param= NULL;
+	c_back_param *cb_param= NULL;
 	str* final_body= NULL;
-	
+
 	LM_DBG("dialog info:\n");
 	printf_subs(subs);
 
-    /* getting the status of the subscription */
+	/* getting the status of the subscription */
 
 	if(force_null_body)
 	{
@@ -1690,19 +1792,19 @@ int send_notify_request(subs_t* subs, subs_t * watcher_subs,
 		}
 		else
 			notify_body= n_body;
-	}	
+	}
 	else
-	{	
+	{
 		if(subs->status== TERMINATED_STATUS || 
 				subs->status== PENDING_STATUS) 
 		{
 			LM_DBG("state terminated or pending- notify body NULL\n");
 			notify_body = NULL;
 		}
-		else  
-		{		
-			if(subs->event->type & WINFO_TYPE)	
-			{	
+		else
+		{
+			if(subs->event->type & WINFO_TYPE)
+			{
 				notify_body = get_wi_notify_body(subs, watcher_subs);
 				if(notify_body == NULL)
 				{
@@ -1713,7 +1815,7 @@ int send_notify_request(subs_t* subs, subs_t * watcher_subs,
 			else
 			{
 				notify_body = get_p_notify_body(subs->pres_uri,
-						subs->event, NULL, (subs->contact.s)?&subs->contact:NULL);
+						subs->event, NULL, (subs->contact.s)?&subs->contact:NULL, NULL);
 				if(notify_body == NULL || notify_body->s== NULL)
 				{
 					LM_DBG("Could not get the notify_body\n");
@@ -1721,7 +1823,6 @@ int send_notify_request(subs_t* subs, subs_t * watcher_subs,
 				else		/* apply authorization rules if exists */
 				if(subs->event->req_auth)
 				{
-					 
 					if(subs->auth_rules_doc && subs->event->apply_auth_nbody &&
 					subs->event->apply_auth_nbody(notify_body,subs,&final_body)<0)
 					{
@@ -1738,7 +1839,7 @@ int send_notify_request(subs_t* subs, subs_t * watcher_subs,
 			}
 		}
 	}
-	
+
 jump_over_body:
 
 	if(subs->expires<= 0)
@@ -1762,7 +1863,7 @@ jump_over_body:
 	if(td ==NULL)
 	{
 		LM_ERR("while building dlg_t structure\n");
-		goto error;	
+		goto error;
 	}
 
 	cb_param = shm_dup_cbparam(subs);
@@ -1812,7 +1913,7 @@ jump_over_body:
 			}
 			pkg_free(notify_body);
 		}
-	}	
+	}
 	return 0;
 
 error:
@@ -1836,7 +1937,7 @@ error:
 			}
 			pkg_free(notify_body);
 		}
-	}	
+	}
 	return -1;
 }
 
@@ -1861,9 +1962,8 @@ int notify(subs_t* subs, subs_t * watcher_subs, str* n_body,int force_null_body)
 				return -1;
 			}
 		}
-
 	}
-     
+
 	if(subs->reason.s && subs->status== ACTIVE_STATUS && 
 		subs->reason.len== 12 && strncmp(subs->reason.s, "polite-block", 12)== 0)
 	{
@@ -1894,8 +1994,8 @@ void p_tm_callback( struct cell *t, int type, struct tmcb_params *ps)
 	LM_DBG("completed with status %d [to_tag:%.*s]\n",
 			ps->code,((c_back_param*)(*ps->param))->to_tag.len,
 			((c_back_param*)(*ps->param))->to_tag.s);
-/*
-	if(ps->code >= 300)
+
+	if(ps->code == 481)
 	{
 		unsigned int hash_code;
 
@@ -1906,7 +2006,7 @@ void p_tm_callback( struct cell *t, int type, struct tmcb_params *ps)
 
 		delete_db_subs(cb->pres_uri, cb->ev_name, cb->to_tag);
 	}
-*/
+	
 	if(*ps->param !=NULL  )
 		free_cbparam((c_back_param*)(*ps->param));
 	return ;
