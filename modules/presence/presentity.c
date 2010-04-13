@@ -1109,12 +1109,18 @@ send_notify:
 			if (publ_notify(presentity, pres_uri, 0, NULL, 0, dialog_body)<0)
 			{
 				LM_ERR("while sending Notify requests to watchers\n");
-				xmlFree(dialog_body->s);
-				pkg_free(dialog_body);
+				if(dialog_body && dialog_body!=FAKED_BODY)
+				{
+					xmlFree(dialog_body->s);
+					pkg_free(dialog_body);
+				}
 				goto error;
 			}
-			xmlFree(dialog_body->s);
-			pkg_free(dialog_body);
+			if(dialog_body && dialog_body!=FAKED_BODY)
+			{
+				xmlFree(dialog_body->s);
+				pkg_free(dialog_body);
+			}
 		}
 	}
 
@@ -1639,6 +1645,14 @@ str* xml_dialog2presence(str* pres_uri, str* body)
 		}
 	}
 	xmlFree(state);
+
+	/* if state is terminated, do not add anything */
+	if(pres_note && strlen(pres_note) == 0)
+	{
+		xmlFreeDoc(dlg_doc);
+		return FAKED_BODY;
+	}
+
 	pres_doc= xmlNewDoc(BAD_CAST "1.0");
 	if(pres_doc== NULL)
 	{
@@ -1758,5 +1772,91 @@ done:
 	xmlMemoryDump();
 
 	return dialog_body;
+}
+
+
+str* build_offline_presence(str* pres_uri)
+{
+	xmlDocPtr pres_doc = NULL;
+	xmlNodePtr root_node, tuple_node, node;
+	char* entity;
+	str* body = NULL;
+
+	pres_doc= xmlNewDoc(BAD_CAST "1.0");
+	if(pres_doc== NULL)
+	{
+		LM_ERR("allocating new xml doc\n");
+		goto error;
+	}
+
+	root_node = xmlNewNode(NULL, BAD_CAST "presence");
+	if(root_node== NULL)
+	{
+		LM_ERR("Failed to create xml node\n");
+		goto error;
+	}
+	xmlDocSetRootElement(pres_doc, root_node);
+
+	xmlNewProp(root_node, BAD_CAST "xmlns",
+			BAD_CAST "urn:ietf:params:xml:ns:pidf");
+	xmlNewProp(root_node, BAD_CAST "xmlns:dm",
+			BAD_CAST "urn:ietf:params:xml:ns:pidf:data-model");
+	xmlNewProp(root_node, BAD_CAST  "xmlns:rpid",
+			BAD_CAST "urn:ietf:params:xml:ns:pidf:rpid" );
+	xmlNewProp(root_node, BAD_CAST "xmlns:c",
+			BAD_CAST "urn:ietf:params:xml:ns:pidf:cipid");
+
+	entity= (char*)pkg_malloc(pres_uri->len + 1);
+	if(entity == NULL)
+	{
+		LM_ERR("No more memory\n");
+		goto error;
+	}
+	memcpy(entity, pres_uri->s, pres_uri->len);
+	entity[pres_uri->len] = '\0';
+	xmlNewProp(root_node, BAD_CAST "entity", BAD_CAST entity);
+	pkg_free(entity);
+
+	tuple_node =xmlNewChild(root_node, NULL, BAD_CAST "tuple", NULL) ;
+	if(tuple_node == NULL)
+	{
+		LM_ERR("while adding child\n");
+		goto error;
+	}
+
+	xmlNewProp(tuple_node, BAD_CAST "id", BAD_CAST "tuple_mixingid");
+
+	node = xmlNewChild(tuple_node, NULL, BAD_CAST "status", NULL) ;
+	if(node == NULL)
+	{
+		LM_ERR("while adding child\n");
+		goto error;
+	}
+	node = xmlNewChild(node, NULL, BAD_CAST "basic",
+			BAD_CAST "closed") ;
+	if(node ==NULL)
+	{
+		LM_ERR("while adding child\n");
+		goto error;
+	}
+
+	body = (str*)pkg_malloc(sizeof(str));
+	if(body == NULL)
+	{
+		LM_ERR("No more memory\n");
+		goto error;
+	}
+	xmlDocDumpMemory(pres_doc,(xmlChar**)(void*)&body->s,
+			&body->len);
+
+	LM_DBG("Generated dialog body: %.*s\n", body->len, body->s);
+
+error:
+	if(pres_doc)
+		xmlFreeDoc(pres_doc);
+	xmlCleanupParser();
+	xmlMemoryDump();
+
+	return body;
 }
 
