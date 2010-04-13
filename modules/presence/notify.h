@@ -41,6 +41,8 @@
 #define PWINFO_LEN 14
 #define BLA_LEN 10
 
+#define FAKED_BODY   ((str *) -1)
+
 
 typedef struct watcher
 {
@@ -110,5 +112,6 @@ subs_t* get_subs_dialog(str* pres_uri, pres_ev_t* event, str* sender);
 str* create_winfo_xml(watcher_t* watchers, char* version,
 		str resource, str event, int STATE_FLAG );
 str* xml_dialog2presence(str* pres_uri, str* body);
+str* build_offline_presence(str* pres_uri);
 
 #endif

@@ -980,10 +980,10 @@ str* get_p_notify_body(str pres_uri, pres_ev_t* event, str* etag,
 			}
 			/* search also for 'dialog' event publications */
 			local_dialog_body = get_presence_from_dialog(&pres_uri, &uri, hash_code);
-			dialog_body = local_dialog_body;
+			dialog_body = (local_dialog_body==FAKED_BODY)?NULL:dbody;
 		}
 		else
-			dialog_body = dbody;
+			dialog_body = (dbody==FAKED_BODY)?NULL:dbody;
 
 		if(dialog_body)
 		{
@@ -1002,6 +1002,19 @@ str* get_p_notify_body(str pres_uri, pres_ev_t* event, str* etag,
 			/* for pidf manipulation && dialog-presence mixing */
 			if(event->agg_nbody)
 			{
+				/* broken - it will not work with pidf manipulation */
+				if(body_cnt == 0 && mix_dialog_presence && event->evp->parsed == EVENT_PRESENCE)
+				{
+					local_dialog_body = build_offline_presence(&pres_uri);
+					if(local_dialog_body == NULL)
+					{
+						LM_ERR("Failed to build offline presence body\n");
+						goto error;
+					}
+					dialog_body= local_dialog_body;
+					body_array = &dialog_body; /* only for the case no other presence info is found */
+					body_cnt = 1;
+				}
 				notify_body = event->agg_nbody(&uri.user, &uri.host, body_array, body_cnt, -1);
 				if(notify_body)
 					goto done;
@@ -1024,6 +1037,20 @@ str* get_p_notify_body(str pres_uri, pres_ev_t* event, str* etag,
 
 		if(event->agg_nbody)
 		{
+			/* broken - it will not work with pidf manipulation */
+			if(body_cnt == 0 && mix_dialog_presence && event->evp->parsed == EVENT_PRESENCE)
+			{
+				local_dialog_body = build_offline_presence(&pres_uri);
+				if(local_dialog_body == NULL)
+				{
+					LM_ERR("Failed to build offline presence body\n");
+					goto error;
+				}
+				dialog_body= local_dialog_body;
+				body_array = &dialog_body; /* only for the case no other presence info is found */
+				body_cnt = 1;
+			}
+
 			notify_body = event->agg_nbody(&uri.user, &uri.host, body_array, body_cnt, -1);
 			if(notify_body)
 				goto done;
@@ -1171,7 +1198,8 @@ str* get_p_notify_body(str pres_uri, pres_ev_t* event, str* etag,
 	}
 
 done:
-	if(local_dialog_body && local_dialog_body->s)
+	if(local_dialog_body && local_dialog_body!=FAKED_BODY
+			&& local_dialog_body->s)
 	{
 		xmlFree(local_dialog_body->s);
 		pkg_free(local_dialog_body);
@@ -1192,7 +1220,8 @@ error:
 	if(result!=NULL)
 		pa_dbf.free_result(pa_db, result);
 
-	if(local_dialog_body && local_dialog_body->s)
+	if(local_dialog_body && local_dialog_body!=FAKED_BODY
+			&& local_dialog_body->s)
 	{
 		xmlFree(local_dialog_body->s);
 		pkg_free(local_dialog_body);
