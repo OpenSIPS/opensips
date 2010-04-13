@@ -289,7 +289,7 @@ static int send_ack(struct sip_msg* rpl, struct cell *trans, int branch)
 	unsigned int  ack_len;
 
 	if(parse_headers(rpl,is_local(trans)?HDR_EOH_F:(HDR_TO_F|HDR_FROM_F),0)==-1
-	|| !rpl->to ) {
+	|| !rpl->to || !rpl->from ) {
 		LM_ERR("failed to generate a HBH ACK if key HFs in reply missing\n");
 		goto error;
 	}
