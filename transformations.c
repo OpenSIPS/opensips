@@ -1364,6 +1364,9 @@ char* tr_parse_uri(str* in, trans_t *t)
 	} else if(name.len==9 && strncasecmp(name.s, "transport", 9)==0) {
 		t->subtype = TR_URI_TRANSPORT;
 		return p;
+	} else if(name.len==7 && strncasecmp(name.s, "headers", 7)==0) {
+		t->subtype = TR_URI_HEADERS;
+		return p;
 	} else if(name.len==3 && strncasecmp(name.s, "ttl", 3)==0) {
 		t->subtype = TR_URI_TTL;
 		return p;
