@@ -58,7 +58,7 @@ int b2b_client_notify(struct sip_msg* msg, str* key, int type, void* param);
 b2bl_entity_id_t* b2bl_search_entity(b2bl_tuple_t* tuple, str* key, int src);
 
 int entity_add_dlginfo(b2bl_entity_id_t* entity, b2b_dlginfo_t* dlginfo)
-{	
+{
 	b2b_dlginfo_t* new_dlginfo= NULL;
 	int size;
 
@@ -1227,6 +1227,8 @@ int create_top_hiding_entities(struct sip_msg* msg, str* to_uri, str* from_uri)
 	str from_tag_uac;
 	b2b_dlginfo_t* dlginfo, dlginfo_s;
 	client_info_t ci;
+	char buf[MD5_LEN];
+	str src[2];
 
 	hash_index = core_hash(to_uri, from_uri, b2bl_hsize);
 
@@ -1282,16 +1284,12 @@ int create_top_hiding_entities(struct sip_msg* msg, str* to_uri, str* from_uri)
 	}
 	/* create new client */
 	dlginfo = tuple->server->dlginfo;
-	from_tag_uac.len = dlginfo->callid.len + dlginfo->fromtag.len;
-	from_tag_uac.s = (char*)pkg_malloc(from_tag_uac.len);
-	if(from_tag_uac.s == NULL)
-	{
-		LM_ERR("No more memory\n");
-		goto error;
-	}
-	memcpy(from_tag_uac.s, dlginfo->callid.s, dlginfo->callid.len);
-	memcpy(from_tag_uac.s + dlginfo->callid.len,
-		dlginfo->fromtag.s, dlginfo->fromtag.len);
+
+	from_tag_uac.len = MD5_LEN;
+	from_tag_uac.s = buf;
+	src[0] =  dlginfo->callid;
+	src[1] =  dlginfo->fromtag;
+	MD5StringArray(from_tag_uac.s, src, 2);
 
 	memset(&ci, 0, sizeof(client_info_t));
 	ci.method        = msg->first_line.u.request.method;
@@ -1314,7 +1312,6 @@ int create_top_hiding_entities(struct sip_msg* msg, str* to_uri, str* from_uri)
 		LM_ERR("failed to create new b2b client instance\n");
 		if(extra_headers.s)
 			pkg_free(extra_headers.s);
-		pkg_free(from_tag_uac.s);
 		goto error;
 	}
 	if(extra_headers.s)
@@ -1324,7 +1321,6 @@ int create_top_hiding_entities(struct sip_msg* msg, str* to_uri, str* from_uri)
 	if(tuple->clients == NULL)
 	{
 		LM_ERR("Failed to create server entity\n");
-		pkg_free(from_tag_uac.s);
 		goto error;
 	}
 	memset(&dlginfo_s, 0, sizeof(b2b_dlginfo_t));
@@ -1333,10 +1329,8 @@ int create_top_hiding_entities(struct sip_msg* msg, str* to_uri, str* from_uri)
 	if(entity_add_dlginfo(tuple->clients, &dlginfo_s)< 0)
 	{
 		LM_ERR("Failed to add dialoginfo\n");
-		pkg_free(from_tag_uac.s);
 		goto error;
 	}
-	pkg_free(from_tag_uac.s);
 
 	tuple->clients->type = B2B_CLIENT;
 	tuple->server->peer = tuple->clients;
