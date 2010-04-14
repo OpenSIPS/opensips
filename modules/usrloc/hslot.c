@@ -141,16 +141,25 @@ void deinit_slot(hslot_t* _s)
 /*! \brief
  * Add an element to an slot's linked list
  */
-void slot_add(hslot_t* _s, struct urecord* _r)
+int slot_add(hslot_t* _s, struct urecord* _r)
 {
 
 	void ** dest;
 
 	dest = map_get( _s->records, _r->aor );
 
+	if( dest == NULL )
+	{
+		LM_ERR("inserting into map\n");
+		return -1;
+	}
+	 
+	
 	*dest = _r;
 
 	_r->slot = _s;
+
+	return 0;
 }
 
 
