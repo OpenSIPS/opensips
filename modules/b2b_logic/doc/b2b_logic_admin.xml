@@ -192,12 +192,12 @@ modparam("b2b_logic", "custom_headers", "User-Agent;Date")
 		</title>
 		<para>
 			This is the function that must be called by the script writer
-			when a B2B scenario must be instantiated. It is up to the script
-			writer to decide which are the criteria to decide for which messages
-			certain scenarios must be instantiated.
+			on an initial INVITE for which a B2B scenario must be instantiated.
+			It is up to the script writer to decide which are the criteria to decide
+			for which messages certain scenarios must be instantiated.
 		<para>
-			The first parameter is the identifier for the scenario. This is defined in the XML document
-			as an attribute of the root node.
+			The first parameter is the identifier for the scenario. This is defined
+			in the XML document as an attribute of the root node.
 		</para>
 		<para>
 			Then it can take at most 4 other parameters that represent the parameters for
@@ -209,8 +209,9 @@ modparam("b2b_logic", "custom_headers", "User-Agent;Date")
 			<title><function>b2b_init_request</function> usage</title>
 		<programlisting format="linespecific">
 ...
-if(prepaid_user())
-    b2b_init_request("prepaid", "sip:320@opensips.org:5070", "sip:321@opensips.org:5070"));
+if(is_method("INVITE") &amp;&amp; !has_totag() &amp;&amp; prepaid_user())
+   b2b_init_request("prepaid", "sip:320@opensips.org:5070",
+      "sip:321@opensips.org:5070"));
 ...
 </programlisting>
 		</example>
