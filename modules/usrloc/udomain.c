@@ -645,7 +645,14 @@ int mem_insert_urecord(udomain_t* _d, str* _aor, struct urecord** _r)
 	}
 
 	sl = ((*_r)->aorhash)&(_d->size-1);
-	slot_add(&_d->table[sl], *_r);
+
+	if( slot_add(&_d->table[sl], *_r) < 0)
+	{
+		LM_ERR("adding slot\n");
+		free_urecord(*_r);
+		return -1;
+	}
+
 	update_stat( _d->users, 1);
 	return 0;
 }

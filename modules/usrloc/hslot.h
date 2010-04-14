@@ -69,7 +69,7 @@ void deinit_slot(hslot_t* _s);
 /*! \brief
  * Add an element to slot linked list
  */
-void slot_add(hslot_t* _s, struct urecord* _r);
+int slot_add(hslot_t* _s, struct urecord* _r);
 
 
 /*! \brief
