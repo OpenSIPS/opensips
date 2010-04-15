@@ -952,7 +952,6 @@ str* get_p_notify_body(str pres_uri, pres_ev_t* event, str* etag,
 	unsigned int hash_code;
 	int body_cnt = 0;
 	str* dialog_body= NULL, *local_dialog_body = NULL;
-	int del_i = 0;
 
 	if(parse_uri(pres_uri.s, pres_uri.len, &uri)< 0)
 	{
@@ -1114,13 +1113,6 @@ str* get_p_notify_body(str pres_uri, pres_ev_t* event, str* etag,
 		}
 		memset(body_array, 0, (n+3) *sizeof(str*));
 
-		/* put first the dialog info extracted body if present */
-		if(dialog_body)
-		{
-			body_array[0] = dialog_body;
-			del_i = 1;
-		}
-
 		if(etag!= NULL)
 		{
 			LM_DBG("searched etag = %.*s len= %d\n", 
@@ -1191,10 +1183,22 @@ str* get_p_notify_body(str pres_uri, pres_ev_t* event, str* etag,
 				body_array[body_cnt++]= body;
 			}
 		}
+
 		pa_dbf.free_result(pa_db, result);
 		result= NULL;
 
+		/* put the dialog info extracted body if present */
+		if(dialog_body)
+		{
+			body_array[body_cnt++] = dialog_body;
+		}
+
 		notify_body = event->agg_nbody(&uri.user, &uri.host, body_array, body_cnt, build_off_n);
+		if(notify_body == NULL)
+		{
+			LM_ERR("Failed to aggregate notify body\n");
+			goto error;
+		}
 	}
 
 done:
@@ -1207,7 +1211,7 @@ done:
 
 	if(body_array!=NULL && body_array!=&dialog_body)
 	{
-		for(i= del_i; i< body_cnt; i++)
+		for(i= 0; i< n; i++)
 		{
 			if(body_array[i])
 				pkg_free(body_array[i]);
@@ -1229,15 +1233,14 @@ error:
 
 	if(body_array!=NULL && body_array!=&dialog_body)
 	{
-		for(i= del_i; i< body_cnt; i++)
+		for(i= 0; i< n; i++)
 		{
 			if(body_array[i])
 				pkg_free(body_array[i]);
 			else
 				break;
 		}
-		if(body_array != &dialog_body)
-			pkg_free(body_array);
+		pkg_free(body_array);
 	}
 	return NULL;
 }
