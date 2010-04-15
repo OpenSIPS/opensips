@@ -5,12 +5,12 @@
 %endif
 %endif
 
-%define	EXCLUDE_MODULES	mi_xmlrpc osp json %{?disable_snmpstats} %{!?_with_oracle:db_oracle}
+%define EXCLUDE_MODULES mi_xmlrpc osp json %{?disable_snmpstats} %{!?_with_oracle:db_oracle} %{?rhel:memcached}
 
 Summary:  Open Source SIP Server
 Name:     opensips
 Version:  1.6.2
-Release:  1%{?dist}
+Release:  2%{?dist}
 License:  GPLv2+
 Group:    System Environment/Daemons
 Source0:  http://opensips.org/pub/%{name}/%{version}/src/%{name}-%{version}-tls_src.tar.gz
@@ -40,7 +40,6 @@ BuildRequires:  libconfuse-devel
 BuildRequires:  db4-devel
 BuildRequires:  openldap-devel
 BuildRequires:  curl-devel
-BuildRequires:  libmemcached-devel
 BuildRequires:  GeoIP-devel
 BuildRequires:  pcre-devel
 
@@ -173,14 +172,17 @@ Requires: %{name} = %{version}-%{release}
 %description  ldap
 The LDAP module implements an LDAP search interface for OpenSIPS.
 
+%if %{undefined rhel}
 %package  memcached
 Summary:  Memcached connector
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
+BuildRequires:  libmemcached-devel
 
 %description  memcached
 Memcached module is an implementation of a cache system designed to
 work with a memcached server.
+%endif
 
 %package  mmgeoip
 Summary:  Wrapper for the MaxMind GeoIP API
@@ -801,10 +803,12 @@ fi
 %{_libdir}/opensips/modules/ldap.so
 %doc docdir/README.ldap
 
+%if %{undefined rhel}
 %files memcached
 %defattr(-,root,root,-)
 %{_libdir}/opensips/modules/memcached.so
 %doc docdir/README.memcached
+%endif
 
 %files mmgeoip
 %defattr(-,root,root,-)
@@ -986,11 +990,20 @@ fi
 %doc docdir/README.xmpp
 
 %changelog
-* Thu Dec 22 2009 John Khvatov <ivaxer@fedoraproject.org> - 1.6.1-1:
+* Thu Apr 15 2010 John Khvatov <ivaxer@fedoraproject.org> - 1.6.2-2
+- Disabled build of the memcached subpackage for EPEL
+
+* Thu Apr 15 2010 John Khvatov <ivaxer@fedoraproject.org> - 1.6.2-1
+- Updated to 1.6.2
+
+* Sun Feb 07 2010 Remi Collet <fedora@famillecollet.com> - 1.6.1-2
+- rebuilt against new libmemcached
+
+* Thu Dec 22 2009 John Khvatov <ivaxer@fedoraproject.org> - 1.6.1-1
 - Updated to 1.6.1
 - Dropped upstreamed patches
 
-* Wed Nov 04 2009 John Khvatov <ivaxer@fedoraproject.org> - 1.6.0-4:
+* Wed Nov 04 2009 John Khvatov <ivaxer@fedoraproject.org> - 1.6.0-4
 - Fixed typo: pia_mi to pua_mi in presence_xcapdiff dependencies
 
 * Thu Nov 03 2009 John Khvatov <ivaxer@fedoraproject.org> - 1.6.0-3
