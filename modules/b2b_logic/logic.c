@@ -327,7 +327,14 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 		memset(&ci, 0, sizeof(client_info_t));
 		ci.method        = method;
 		ci.to_uri        = bentity1->to_uri;
-		ci.from_uri      = bentity0->to_uri;
+
+		/* it matters if the entity is server or client */
+		if(bentity0->type == B2B_CLIENT)
+			ci.from_uri      = bentity0->to_uri;
+		else
+		if(bentity0->type == B2B_SERVER)
+			ci.from_uri      = bentity0->from_uri;
+
 		ci.extra_headers = extra_headers;
 		ci.body          = body;
 		ci.from_tag      = 0;
@@ -346,8 +353,8 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 			return -1;
 		}
 		/* save the client_id in the structure */
-		entity = b2bl_create_new_entity(B2B_CLIENT, client_id, &bentity1->to_uri,
-				&bentity0->to_uri, &bentity1->scenario_id);
+		entity = b2bl_create_new_entity(B2B_CLIENT, client_id, &ci.to_uri,
+				&ci.from_uri, &bentity1->scenario_id);
 		if(entity == NULL)
 		{
 			LM_ERR("failed to create new client entity\n");
@@ -882,8 +889,6 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 					entity->peer->peer = NULL;
 				entity->peer = NULL;
 			}
-
-
 		}
 
 		goto done;
