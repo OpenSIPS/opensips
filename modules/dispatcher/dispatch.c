@@ -1348,9 +1348,11 @@ int ds_next_dst(struct sip_msg *msg, int mode)
 	avp = search_next_avp(prev_avp, &avp_value);
 	destroy_avp(prev_avp);
 
-	attr_avp = search_first_avp(attrs_avp_type, attrs_avp_name, NULL, 0);
-	if (attr_avp)
-		destroy_avp(attr_avp);
+	if (attrs_avp_name.n) {
+		attr_avp = search_first_avp(attrs_avp_type, attrs_avp_name, NULL, 0);
+		if (attr_avp)
+			destroy_avp(attr_avp);
+	}
 
 	if(avp==NULL || !(avp->flags&AVP_VAL_STR))
 		return -1; /* no more avps or value is int */
