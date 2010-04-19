@@ -889,7 +889,7 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, str* body,
 					//	goto error;
 				}
 
-				if(bla_update_publish ||  allocated) /* if an aggregated body */
+				if(allocated) /* if an aggregated body */
 				{
 					body->s = fin_body.s;
 					body->len = fin_body.len;
