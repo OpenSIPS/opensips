@@ -710,7 +710,7 @@ static int w_create_dialog(struct sip_msg *req)
 	if (current_dlg_pointer!=NULL)
 		return 1;
 
-	if (dlg_create_dialog( 0, req)!=0)
+	if (dlg_create_dialog( d_tmb.t_gett(), req)!=0)
 		return -1;
 
 	return 1;
