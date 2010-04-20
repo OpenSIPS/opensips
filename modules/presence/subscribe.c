@@ -898,16 +898,45 @@ int extract_sdialog_info(subs_t* subs,struct sip_msg* msg, int mexp, int* init_r
 
 	if(subs->event->evp->parsed== EVENT_DIALOG_SLA)
 	{
-		/* user_contact@from_domain */
-		if(parse_uri(subs->contact.s, subs->contact.len, &uri)< 0)
+		pv_value_t tok;
+		/* if pseudovaraible set use that value */
+		if(bla_presentity_spec_param.s) /* if parameter defined */
 		{
-			LM_ERR("failed to parse contact uri\n");
-			goto error;
+			memset(&tok, 0, sizeof(pv_value_t));
+			if(pv_get_spec_value(msg, &bla_presentity_spec, &tok) < 0)  /* if value set */
+			{
+				LM_ERR("Failed to get bla_presentity value\n");
+				goto error;
+			}
+			if(!(tok.flags&PV_VAL_STR))
+			{
+				LM_ERR("Wrong value in bla_presentity pvar\n");
+				goto error;
+			}
+			if(parse_uri(tok.rs.s, tok.rs.len, &uri)< 0)
+			{
+				LM_ERR("Not a valid value, must be a uri [%.*s]\n", tok.rs.len, tok.rs.s);
+				goto error;
+			}
+			if(uandd_to_uri(uri.user, uri.host, &subs->pres_uri)< 0)
+			{
+				LM_ERR("failed to construct uri\n");
+				goto error;
+			}
 		}
-		if(uandd_to_uri(uri.user, subs->from_domain, &subs->pres_uri)< 0)
+		else
 		{
-			LM_ERR("failed to construct uri\n");
-			goto error;
+			/* user_contact@from_domain */
+			if(parse_uri(subs->contact.s, subs->contact.len, &uri)< 0)
+			{
+				LM_ERR("failed to parse contact uri\n");
+				goto error;
+			}
+			if(uandd_to_uri(uri.user, subs->from_domain, &subs->pres_uri)< 0)
+			{
+				LM_ERR("failed to construct uri\n");
+				goto error;
+			}
 		}
 	}
 

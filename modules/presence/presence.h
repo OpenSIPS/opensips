@@ -72,4 +72,7 @@ extern long waiting_subs_time;
 
 int update_watchers_status(str pres_uri, pres_ev_t* ev, str* rules_doc);
 
+extern str bla_presentity_spec_param;
+extern pv_spec_t bla_presentity_spec;
+
 #endif /* PA_MOD_H */

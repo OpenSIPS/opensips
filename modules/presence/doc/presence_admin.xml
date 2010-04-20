@@ -391,6 +391,31 @@ modparam("presence", "mix_dialog_presence", 1)
 	</programlisting>
 		</example>
 	</section>
+	<section>
+		<title><varname>bla_presentity_spec</varname> (str)</title>
+		<para>
+			By default the presentity uri for BLA subscribes (event=dialog;sla)
+			is computed from contact username + from domain. In some cases though,
+			this way of computing the presentity might not be right ( for example if you
+			have a SBC in front that masquerades the contact). So we added this parameter
+			that allows defining a custom uri to be used as presentity uri for BLA 
+			subscribes. You should set this parameter to the name of a pseudovariable
+			and then set this pseudovariable to the desired URI before calling the function
+			handle_subscribe.
+		</para>
+		<para>
+			<emphasis>Default value is <quote>NULL</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>bla_presentity_spec</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("presence", "bla_presentity_spec", "$var(bla_pres)")
+...
+	</programlisting>
+		</example>
+	</section>
 
 </section>
 

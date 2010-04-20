@@ -120,6 +120,8 @@ int phtable_size= 9;
 phtable_t* pres_htable;
 unsigned int waiting_subs_daysno = 0;
 unsigned long waiting_subs_time = 3*24*3600;
+str bla_presentity_spec_param = {0, 0};
+pv_spec_t bla_presentity_spec;
 
 static cmd_export_t cmds[]=
 {
@@ -148,6 +150,7 @@ static param_export_t params[]={
 	{ "enable_sphere_check",    INT_PARAM, &sphere_enable},
 	{ "waiting_subs_daysno",    INT_PARAM, &waiting_subs_daysno},
 	{ "mix_dialog_presence",    INT_PARAM, &mix_dialog_presence},
+	{ "bla_presentity_spec",    STR_PARAM, &bla_presentity_spec_param},
 	{0,0,0}
 };
 
@@ -351,6 +354,26 @@ static int mod_init(void)
 	{
 		LM_ERR("No more shared memory\n");
 		return -1;
+	}
+
+	if(bla_presentity_spec_param.s)
+	{
+		bla_presentity_spec_param.len = strlen(bla_presentity_spec_param.s);
+		if(pv_parse_spec(&bla_presentity_spec_param, &bla_presentity_spec)==NULL)
+		{
+			LM_ERR("failed to parse bla_presentity spec\n");
+			return -2;
+		}
+		switch(bla_presentity_spec.type) {
+			case PVT_NONE:
+			case PVT_EMPTY:
+			case PVT_NULL:
+			case PVT_MARKER:
+			case PVT_COLOR:
+				LM_ERR("invalid bla_presentity spec\n");
+				return -3;
+			default: ;
+		}
 	}
 
 	return 0;
