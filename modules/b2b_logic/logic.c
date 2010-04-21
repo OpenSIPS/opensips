@@ -50,6 +50,7 @@
 	memcpy(dest.s, source->s, source->len);\
 	dest.len= source->len;\
 	size+= source->len;
+#define BUF_LEN  128
 
 int b2b_scenario_parse_uri(xmlNodePtr value_node, char* value_content,
 		b2bl_tuple_t* tuple, struct sip_msg* msg, str* client_to);
@@ -864,7 +865,7 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 				if(process_bridge_action(msg, entity, tuple, bridge_node) < 0)
 				{
 					LM_ERR("Failed to process bridge action\n");
-					goto error;
+					goto send_usual_request;
 				}
 				/* save next state */
 				tuple->next_scenario_state = state;
@@ -972,7 +973,7 @@ int process_bridge_action(struct sip_msg* msg, b2bl_entity_id_t* curr_entity,
 			entity = curr_entity;
 			goto entity_search_done;
 		}
-		
+
 		clientid_node = xmlNodeGetChildByName(client_node, "peer");
 		if(clientid_node)
 		{
@@ -1054,11 +1055,10 @@ entity_search_done:
 				LM_ERR("Bad formated scenario document. URI value empty\n");
 				goto error;
 			}
-
 			if(b2b_scenario_parse_uri(value_node, value_content, tuple, msg,
-						&entity_dest)< 0)
+						&entity_dest) < 0)
 			{
-				LM_ERR("Failed to parse entity destination specification\n");
+				LM_DBG("Failed to parse entity destination specification\n");
 				xmlFree(value_content);
 				goto error;
 			}
@@ -1411,12 +1411,17 @@ int b2b_scenario_parse_uri(xmlNodePtr value_node, char* value_content,
 	if(xmlStrcasecmp(value_type, (unsigned char*)"header") == 0)
 	{
 		struct hdr_field* sip_hdr, hdr;
-		char buf[128];
+		char buf[BUF_LEN];
 
 		LM_DBG("URI of type header value\n");
 		if(msg == NULL)
 		{
 			LM_DBG("You are not allowed to use a header specification for this type of scenario\n");
+			goto error;
+		}
+		if(BUF_LEN < value.len + 1)
+		{
+			LM_ERR("Buffer overflow\n");
 			goto error;
 		}
 		memcpy(buf, value.s, value.len);
@@ -1433,7 +1438,7 @@ int b2b_scenario_parse_uri(xmlNodePtr value_node, char* value_content,
 			sip_hdr = get_header_by_name(msg, value.s, value.len);
 			if(sip_hdr == NULL)
 			{
-				LM_ERR("No header with the name [%.*s] found\n", value.len, value.s);
+				LM_DBG("No header with the name [%.*s] found\n", value.len, value.s);
 				goto error;
 			}
 		}
@@ -1446,11 +1451,11 @@ int b2b_scenario_parse_uri(xmlNodePtr value_node, char* value_content,
 		else
 		{
 			sip_hdr = msg->headers;
-			while(sip_hdr->type != hdr.type)
+			while(sip_hdr && sip_hdr->type != hdr.type)
 				sip_hdr = sip_hdr->next;
 			if(sip_hdr == NULL)
 			{
-				LM_ERR("Did not find header\n");
+				LM_DBG("Did not find header\n");
 				goto error;
 			}
 		}
