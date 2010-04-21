@@ -442,7 +442,7 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 	str extra_headers = {0, 0};
 	b2b_scenario_t* scenario;
 	b2b_rule_t* rule;
-	b2bl_entity_id_t* entity;
+	b2bl_entity_id_t* entity, *peer;
 	xmlNodePtr bridge_node, node;
 	int state = -1;
 	str attr;
@@ -508,6 +508,7 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 		LM_ERR("No b2b_key match found [%.*s]\n", key->len, key->s);
 		goto error;
 	}
+	peer = entity->peer;
 
 	LM_DBG("b2b_entity key = %.*s\n", key->len, key->s);
 
@@ -549,9 +550,8 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 					if(tuple->bridge_entities[1] &&
 							tuple->bridge_entities[1]->key.s != NULL) /* if a negative reply for the second leg send BYE to the first*/
 					{
-						b2b_api.send_request(entity->peer->type,
-								&entity->peer->key, &meth_bye, 0, 0,
-								entity->peer->dlginfo);
+						b2b_api.send_request(peer->type,
+							&peer->key, &meth_bye, 0, 0, peer->dlginfo);
 					}
 					LM_DBG("Received negative reply - marked for del,"
 						" waiting for ACK for it [%p]\n", tuple);
@@ -585,15 +585,15 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 		}
 		else
 		{
-			if(!entity->peer)
+			if(!peer)
 			{
 				LM_DBG("No peer found\n");
 				goto done;
 			}
-			if(b2b_api.send_reply(entity->peer->type, &entity->peer->key, 
+			if(b2b_api.send_reply(peer->type, &peer->key, 
 				statuscode,&msg->first_line.u.reply.reason,
 				body.s?&body:0, extra_headers.s?&extra_headers:0,
-				entity->peer->dlginfo) < 0)
+				peer->dlginfo) < 0)
 			{
 				LM_ERR("Sending reply failed - delete record\n");
 				b2bl_delete(tuple, hash_index);
@@ -642,9 +642,9 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 
 			b2b_api.send_request(entity->type, &entity->key, &meth_ack, 0, 0, 
 					entity->dlginfo);
-			b2b_api.send_request(entity->peer->type,
-					&entity->peer->key, &meth_cancel, 0, 0,
-					entity->peer->dlginfo);
+			b2b_api.send_request(peer->type,
+					&peer->key, &meth_cancel, 0, 0,
+					peer->dlginfo);
 			b2b_api.send_reply(entity->type, &entity->key, 200, &ok, 0, 0,
 					entity->dlginfo);
 			tuple->bridge_entities[1] = NULL;
@@ -688,7 +688,6 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 					rule = rule->next;
 				}
 			}
-
 			if(!rule)
 			{
 				LM_DBG("Did not find a rule to apply for this request -> do normal pass through\n");
@@ -765,6 +764,28 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 
 			/* apply actions */
 			/* handle bridge action */
+
+			bridge_node = xmlNodeGetChildByName(rule->action_node, "bridge");
+			if(bridge_node)
+			{
+				LM_DBG("Found a bridge node\n");
+
+				if(process_bridge_action(msg, entity, tuple, bridge_node) < 0)
+				{
+					LM_ERR("Failed to process bridge action\n");
+					goto send_usual_request;
+				}
+				/* save next state */
+				tuple->next_scenario_state = state;
+			}
+			else
+			{
+				/* set the next state now because the action has only one step */
+				if(state >= 0)
+					tuple->scenario_state = state;
+			}
+
+
 			node = xmlNodeGetChildByName(rule->action_node, "send_reply");
 			if(node)
 			{
@@ -801,7 +822,20 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 
 				xmlFree(attr.s);
 			}
-			
+			/* end_dialog_leg option */
+			node = xmlNodeGetChildByName(rule->action_node, "end_dialog_leg");
+			if(node)
+			{
+				LM_DBG("End dialog\n");
+				entity->disconnected = 1;
+				str meth_bye = {BYE, BYE_LEN};
+				b2b_api.send_request(entity->type, &entity->key,
+						&meth_bye, 0, 0, entity->dlginfo);
+				if(entity->peer)
+					entity->peer->peer = NULL;
+				peer = entity->peer = NULL;
+			}
+
 			node = xmlNodeGetChildByName(rule->action_node, "delete_entity");
 			if(node)
 			{
@@ -856,40 +890,6 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 				xmlFree(attr.s);
 			}
 
-			bridge_node = xmlNodeGetChildByName(rule->action_node, "bridge");
-
-			if(bridge_node)
-			{
-				LM_DBG("Found a bridge node\n");
-
-				if(process_bridge_action(msg, entity, tuple, bridge_node) < 0)
-				{
-					LM_ERR("Failed to process bridge action\n");
-					goto send_usual_request;
-				}
-				/* save next state */
-				tuple->next_scenario_state = state;
-			}
-			else
-			{
-				/* set the next state now because the action has only one step */
-				if(state >= 0)
-					tuple->scenario_state = state;
-			}
-
-			/* end_dialog_leg option */
-			node = xmlNodeGetChildByName(rule->action_node, "end_dialog_leg");
-			if(node)
-			{
-				LM_DBG("End dialog\n");
-				entity->disconnected = 1;
-				str meth_bye = {BYE, BYE_LEN};
-				b2b_api.send_request(entity->type, &entity->key,
-						&meth_bye, 0, 0, entity->dlginfo);
-				if(entity->peer)
-					entity->peer->peer = NULL;
-				entity->peer = NULL;
-			}
 		}
 
 		goto done;
@@ -898,11 +898,11 @@ send_usual_request:
 		if(request_id == B2B_CANCEL)
 			tuple->scenario_state = B2B_CANCEL_STATE;
 
-		if(entity->peer && entity->peer->key.s)
+		if(peer && peer->key.s)
 		{
-			if(b2b_api.send_request(entity->peer->type, &entity->peer->key, &method,
+			if(b2b_api.send_request(peer->type, &peer->key, &method,
 				extra_headers.len?&extra_headers:0, body.len?&body:0,
-				entity->peer->dlginfo) < 0)
+				peer->dlginfo) < 0)
 			{
 				LM_ERR("Sending request failed - delete record\n");
 				b2bl_delete(tuple, hash_index);
