@@ -1451,7 +1451,7 @@ int b2b_scenario_parse_uri(xmlNodePtr value_node, char* value_content,
 		else
 		{
 			sip_hdr = msg->headers;
-			while(sip_hdr->type != hdr.type)
+			while(sip_hdr && sip_hdr->type != hdr.type)
 				sip_hdr = sip_hdr->next;
 			if(sip_hdr == NULL)
 			{
