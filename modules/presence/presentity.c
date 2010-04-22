@@ -46,6 +46,16 @@
 
 #define PRESENTITY_FETCH_SIZE			128
 
+#define DLG_STATES_NO  4
+char* dialog_states[]= {  "trying",
+                           "early",
+                       "confirmed",
+                     "terminated"};
+char* presence_notes[]={ "Calling",
+                         "Calling",
+                    "On the phone",
+                               ""};
+
 unsigned char *xmlNodeGetAttrContentByName(xmlNodePtr node, const char *name);
 xmlNodePtr xmlNodeGetNodeByName(xmlNodePtr node, const char *name,
 													const char *ns);
@@ -677,6 +687,68 @@ error:
 	return -1;
 }
 
+int get_dialog_state(str body, int *dialog_state)
+{
+	xmlDocPtr doc;
+	xmlNodePtr node;
+	unsigned char* state = NULL;
+	int i;
+
+	doc = xmlParseMemory(body.s, body.len);
+	if(doc== NULL)
+	{
+		LM_ERR("failed to parse xml document\n");
+		return -1;
+	}
+
+	node = doc->children;
+	node = xmlNodeGetChildByName(node, "dialog");
+
+	if(node == NULL)
+	{
+		*dialog_state = DLG_DESTROYED;
+		xmlFreeDoc(doc);
+		return 0;
+	}
+
+	node = xmlNodeGetChildByName(node, "state");
+	if(node == NULL)
+	{
+		LM_ERR("Malformed document - no state found\n");
+		goto error;
+	}
+	state = xmlNodeGetContent(node);
+	if(state == NULL)
+	{
+		LM_ERR("Malformed document - null state\n");
+		goto error;
+	}
+	LM_DBG("state = %s\n", state);
+	for(i = 0; i< DLG_STATES_NO; i++)
+	{
+		if(xmlStrcasecmp(state, BAD_CAST dialog_states[i])==0)
+		{
+			break;
+		}
+	}
+	xmlFree(state);
+	xmlFreeDoc(doc);
+	xmlCleanupParser();
+	xmlMemoryDump();
+
+	if(i == DLG_STATES_NO)
+	{
+		LM_ERR("Wrong dialog state\n");
+		return -1;
+	}
+
+	*dialog_state = i;
+
+	return 0;
+error:
+	xmlFreeDoc(doc);
+	return -1;
+}
 
 int check_if_dialog(str body, int *is_dialog)
 {
@@ -1592,64 +1664,23 @@ done:
 	return ret;
 }
 
-
-#define DLG_STATES_NO  4
-char* dialog_states[]= {  "trying",
-                           "early",
-                       "confirmed",
-                     "terminated"};
-char* presence_notes[]={ "Calling",
-                         "Calling",
-                    "On the phone",
-                               ""};
-
-str* xml_dialog2presence(str* pres_uri, str* body)
+str* xml_dialog_gen_presence(str* pres_uri, int dlg_state)
 {
-	xmlDocPtr dlg_doc = NULL;
-	xmlDocPtr pres_doc = NULL;
-	xmlNodePtr node, root_node, dialog_node;
+	char* pres_note;
+	xmlDocPtr pres_doc;
+	xmlNodePtr node, root_node;
 	xmlNodePtr tuple_node, person_node;
 	str* dialog_body = NULL;
-	unsigned char* state;
-	char* pres_note= NULL;
-	int i;
 	char* entity;
 
-	if(body->len == 0)
-		return NULL;
+	LM_DBG("dlg_state = %d\n", dlg_state);
 
-	dlg_doc = xmlParseMemory(body->s, body->len);
-	if(dlg_doc == NULL)
-	{
-		LM_ERR("Wrong formated xml document\n");
-		return NULL;
-	}
-	dialog_node = xmlNodeGetNodeByName(dlg_doc->children, "dialog", 0);
-	if(!dialog_node)
-		goto done;
-
-	node = xmlNodeGetNodeByName(dialog_node, "state", 0);
-	if(!node)
-		goto done;
-
-	state = xmlNodeGetContent(node);
-	if(!state)
-		goto done;
-
-	for(i = 0; i< DLG_STATES_NO; i++)
-	{
-		if(xmlStrcasecmp(state, BAD_CAST dialog_states[i])==0)
-		{
-			pres_note = presence_notes[i];
-			break;
-		}
-	}
-	xmlFree(state);
+	pres_note = presence_notes[dlg_state];
 
 	/* if state is terminated, do not add anything */
 	if(pres_note && strlen(pres_note) == 0)
 	{
-		xmlFreeDoc(dlg_doc);
+		LM_DBG("NULL pres note\n");
 		return FAKED_BODY;
 	}
 
@@ -1763,9 +1794,6 @@ str* xml_dialog2presence(str* pres_uri, str* body)
 	LM_DBG("Generated dialog body: %.*s\n", dialog_body->len, dialog_body->s);
 
 error:
-done:
-	if(dlg_doc)
-		xmlFreeDoc(dlg_doc);
 	if(pres_doc)
 		xmlFreeDoc(pres_doc);
 	xmlCleanupParser();
@@ -1773,6 +1801,62 @@ done:
 
 	return dialog_body;
 }
+
+str* xml_dialog2presence(str* pres_uri, str* body)
+{
+	xmlDocPtr dlg_doc = NULL;
+	xmlNodePtr node, dialog_node;
+	unsigned char* state;
+	int i;
+
+	if(body->len == 0)
+		return NULL;
+
+	dlg_doc = xmlParseMemory(body->s, body->len);
+	if(dlg_doc == NULL)
+	{
+		LM_ERR("Wrong formated xml document\n");
+		return NULL;
+	}
+	dialog_node = xmlNodeGetNodeByName(dlg_doc->children, "dialog", 0);
+	if(!dialog_node)
+	{
+		goto done;
+	}
+
+	node = xmlNodeGetNodeByName(dialog_node, "state", 0);
+	if(!node)
+		goto done;
+
+	state = xmlNodeGetContent(node);
+	if(!state)
+		goto done;
+
+	for(i = 0; i< DLG_STATES_NO; i++)
+	{
+		if(xmlStrcasecmp(state, BAD_CAST dialog_states[i])==0)
+		{
+			break;
+		}
+	}
+	xmlFree(state);
+	xmlFreeDoc(dlg_doc);
+	xmlCleanupParser();
+	xmlMemoryDump();
+
+	if(i == DLG_STATES_NO)
+	{
+		LM_ERR("Unknown dialog state\n");
+		return 0;
+	}
+
+	return xml_dialog_gen_presence(pres_uri, i);
+
+done:
+	xmlFreeDoc(dlg_doc);
+	return 0;
+}
+
 
 
 str* build_offline_presence(str* pres_uri)

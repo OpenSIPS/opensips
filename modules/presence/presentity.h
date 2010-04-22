@@ -71,5 +71,8 @@ typedef char* (*pres_get_sphere_t)(str* pres_uri);
 int contains_presence(str* pres_uri);
 typedef int (*pres_contains_presence_t)(str* pres_uri);
 
+int get_dialog_state(str body, int *dialog_state);
+str* xml_dialog_gen_presence(str* pres_uri, int dlg_state);
+
 #endif
 

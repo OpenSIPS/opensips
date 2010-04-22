@@ -886,10 +886,13 @@ str* get_presence_from_dialog(str* pres_uri, struct sip_uri* uri,
 	str* dialog_body;
 	db_row_t *row= NULL ;
 	db_val_t *row_vals;
+	int i;
+	int ringing_index = -1;
+	int ringing_state = 0;
+	int dlg_state;
+	int state;
 
 	/* search for dialog event publications */
-
-
 	if(search_phtable(pres_uri, (*dialog_event_p)->evp->parsed, hash_code)== NULL)
 	{
 		LM_DBG("No record exists in hashtable, pres_uri=[%.*s] event=[dialog]\n",
@@ -911,20 +914,51 @@ str* get_presence_from_dialog(str* pres_uri, struct sip_uri* uri,
 		return NULL;
 	}
 
-	/* what if I have more records with dialoginfo; for now I will take the most recent */
-	row = &result->rows[result->n-1];
-	row_vals = ROW_VALUES(row);
-
-	body.s = (char*)row_vals[body_col].val.string_val;
-	if(body.s == NULL)
+	/* if there are more records - go through them until you find one with a dialog */
+	for(i = result->n -1; i>=0 ; i--)
 	{
-		LM_ERR("NULL notify body record\n");
-		goto error;
+		row = &result->rows[i];
+		row_vals = ROW_VALUES(row);
+		body.s = (char*)row_vals[body_col].val.string_val;
+		if(body.s == NULL)
+		{
+			LM_ERR("NULL notify body record\n");
+			goto error;
+		}
+		body.len= strlen(body.s);
+		if(get_dialog_state(body, &dlg_state) < 0)
+		{
+			LM_ERR("get dialog state failed\n");
+			goto error;
+		}
+		LM_DBG("dlg_state = %d = DLG_CONFIRMED= %d\n", dlg_state, DLG_CONFIRMED);
+		if(dlg_state == DLG_CONFIRMED)
+			break;
+		if(dlg_state == DLG_DESTROYED)
+			continue;
+		if(ringing_index < 0)
+		{
+			ringing_index = i;
+			ringing_state = dlg_state;
+		}
 	}
-	body.len= strlen(body.s);
-
-	dialog_body = xml_dialog2presence(pres_uri, &body);
 	pa_dbf.free_result(pa_db, result);
+
+	LM_DBG("i = %d, ringing_inde = %d\n", i, ringing_index);
+
+	if(i >= 0) /* if a confirmed index was found */
+	{
+		state = dlg_state;
+	}
+	else
+	{
+		if(ringing_index > 0)  /* if a ringind dialog was found */
+			state = ringing_state;
+		else
+			return FAKED_BODY;
+	}
+
+	dialog_body = xml_dialog_gen_presence(pres_uri, state);
 
 	return dialog_body;
 
@@ -962,7 +996,7 @@ str* get_p_notify_body(str pres_uri, pres_ev_t* event, str* etag,
 
 	if(mix_dialog_presence && event->evp->parsed == EVENT_PRESENCE)
 	{
-		if(!dbody)
+		if(!dbody || dbody==FAKED_BODY)
 		{
 			if(*dialog_event_p == NULL)
 			{
@@ -979,7 +1013,7 @@ str* get_p_notify_body(str pres_uri, pres_ev_t* event, str* etag,
 			}
 			/* search also for 'dialog' event publications */
 			local_dialog_body = get_presence_from_dialog(&pres_uri, &uri, hash_code);
-			dialog_body = (local_dialog_body==FAKED_BODY)?NULL:dbody;
+			dialog_body = (local_dialog_body==FAKED_BODY)?NULL:local_dialog_body;
 		}
 		else
 			dialog_body = (dbody==FAKED_BODY)?NULL:dbody;
