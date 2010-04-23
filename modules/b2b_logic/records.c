@@ -37,7 +37,7 @@
 
 b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg,
 		unsigned int hash_index, b2b_scenario_t* scenario,
-		str* args[], str** b2bl_key_s)
+		str* args[], str* extra_headers, str** b2bl_key_s)
 {
 	b2bl_tuple_t * it, *prev_it;
 	b2bl_tuple_t* tuple;
@@ -58,42 +58,23 @@ b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg,
 
 	tuple->scenario = scenario;
 
-	lock_get(&b2bl_htable[hash_index].lock);
-	
-	it = b2bl_htable[hash_index].first;
-
-	if(it == NULL)
-	{
-		b2bl_htable[hash_index].first = tuple;
-		tuple->prev = tuple->next = NULL;
-		tuple->id = 0;
-	}
-	else
-	{
-		while(it)
-		{
-			prev_it = it;
-			it = it->next;
-		}
-		prev_it->next = tuple;
-		tuple->prev = prev_it;
-		tuple->id = prev_it->id +1;
-	}
-
-	b2bl_key = b2bl_generate_key(hash_index, tuple->id);
-	if(b2bl_key == NULL)
-	{
-		LM_ERR("failed to generate b2b logic key\n");
-		lock_release(&b2bl_htable[hash_index].lock);
-		return NULL;
-	}
 	tuple->lifetime = 60 + (int)time(NULL);
-	tuple->key = b2bl_key;
+
+	if(extra_headers && extra_headers->s)
+	{
+		tuple->extra_headers = (str*)shm_malloc(sizeof(str) + extra_headers->len);
+		if(tuple->extra_headers == NULL)
+		{
+			LM_ERR("No more shared memory\n");
+			goto error;
+		}
+		tuple->extra_headers->s = (char*)tuple->extra_headers + sizeof(str);
+		memcpy(tuple->extra_headers->s, extra_headers->s, extra_headers->len);
+		tuple->extra_headers->len = extra_headers->len;
+	}
 
 	/* copy the function parameters that customize the scenario */
-
 	memset(tuple->scenario_params, 0, 5* sizeof(str));
-
 	if(scenario && args)
 	{
 		for(i = 0; i< scenario->param_no; i++)
@@ -135,10 +116,40 @@ b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg,
 				memcpy(tuple->scenario_params[i].s, args[i]->s, args[i]->len);
 				tuple->scenario_params[i].len = args[i]->len;
 			}
-
 		}
 	}
 	tuple->scenario_state = B2B_NOTDEF_STATE;
+
+	lock_get(&b2bl_htable[hash_index].lock);
+
+	it = b2bl_htable[hash_index].first;
+	if(it == NULL)
+	{
+		b2bl_htable[hash_index].first = tuple;
+		tuple->prev = tuple->next = NULL;
+		tuple->id = 0;
+	}
+	else
+	{
+		while(it)
+		{
+			prev_it = it;
+			it = it->next;
+		}
+		prev_it->next = tuple;
+		tuple->prev = prev_it;
+		tuple->id = prev_it->id +1;
+	}
+
+	b2bl_key = b2bl_generate_key(hash_index, tuple->id);
+	if(b2bl_key == NULL)
+	{
+		LM_ERR("failed to generate b2b logic key\n");
+		lock_release(&b2bl_htable[hash_index].lock);
+		return NULL;
+	}
+	tuple->key = b2bl_key;
+
 	lock_release(&b2bl_htable[hash_index].lock);
 
 	*b2bl_key_s = b2bl_key;
@@ -204,6 +215,9 @@ void b2bl_delete(b2bl_tuple_t* tuple, unsigned int hash_index)
 
 	if(tuple->key)
 		shm_free(tuple->key);
+
+	if(tuple->extra_headers)
+		shm_free(tuple->extra_headers);
 
 	shm_free(tuple);
 }
