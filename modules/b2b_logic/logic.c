@@ -119,14 +119,22 @@ int b2b_add_dlginfo(str* key, str* entity_key, int src, b2b_dlginfo_t* dlginfo)
 	}
 
 	if(entity->dlginfo)
-		shm_free(entity->dlginfo);	
+		shm_free(entity->dlginfo);
 	if(entity_add_dlginfo(entity, dlginfo) < 0)
 	{
 		LM_ERR("Failed to add dialoginfo\n");
 		lock_release(&b2bl_htable[hash_index].lock);
 		return -1;
 	}
-		
+
+	/* log the dialog pair */
+	if(entity->peer && entity->peer->dlginfo)
+	{
+		LM_INFO("Dialog pair: [%.*s] - [%.*s]\n",
+				entity->peer->dlginfo->callid.len, entity->peer->dlginfo->callid.s,
+				dlginfo->callid.len, dlginfo->callid.s);
+	}
+
 	lock_release(&b2bl_htable[hash_index].lock);
 
 	return 0;
@@ -566,8 +574,8 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 				}
 
 				/* if a reply with 200 OK -> we have two possibilities- either the first 200OK or the final */
-				if(process_bridge_200OK(msg, (extra_headers.s?&extra_headers:0),
-						(body.s?&body:0), tuple)< 0)
+				if(process_bridge_200OK(msg, tuple->extra_headers,
+							(body.s?&body:0), tuple)< 0)
 				{
 					LM_ERR("Failed to process bridging 200OK for Invite\n");
 					goto error;
@@ -1103,7 +1111,7 @@ entity_search_done:
 		ci.method        = method;
 		ci.to_uri        = bridge_entities[0]->to_uri;
 		ci.from_uri      = bridge_entities[1]->to_uri;
-		ci.extra_headers = 0;
+		ci.extra_headers = tuple->extra_headers;
 		ci.body          = 0;
 		ci.from_tag      = 0;
 		ci.send_sock     = msg?msg->rcv.bind_address:0;
@@ -1237,7 +1245,7 @@ int create_top_hiding_entities(struct sip_msg* msg, str* to_uri, str* from_uri)
 
 	hash_index = core_hash(to_uri, from_uri, b2bl_hsize);
 
-	tuple = b2bl_insert_new(msg, hash_index, 0, 0, &b2bl_key);
+	tuple = b2bl_insert_new(msg, hash_index, 0, 0, 0, &b2bl_key);
 	if(tuple== NULL)
 	{
 		LM_ERR("Failed to insert new scenario instance record\n");
@@ -1660,7 +1668,8 @@ int b2b_process_scenario_init(b2b_scenario_t* scenario_struct,struct sip_msg* ms
 	}
 
 	/* create new scenario instance record */
-	tuple = b2bl_insert_new(msg, hash_index, scenario_struct, args, &b2bl_key);
+	tuple = b2bl_insert_new(msg, hash_index, scenario_struct,
+			args, extra_headers.s?&extra_headers:NULL, &b2bl_key);
 	if(tuple== NULL)
 	{
 		LM_ERR("Failed to insert new scenario instance record\n");

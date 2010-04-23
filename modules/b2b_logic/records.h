@@ -60,6 +60,7 @@ typedef struct b2bl_tuple
 	b2bl_entity_id_t* clients;
 	b2bl_entity_id_t* bridge_entities[2];
 	int to_del;
+	str* extra_headers;
 	struct b2bl_tuple* next;
 	struct b2bl_tuple* prev;
 	unsigned int lifetime;
@@ -75,7 +76,7 @@ typedef b2bl_entry_t* b2bl_table_t;
 
 b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg,
 		unsigned int hash_index, b2b_scenario_t* scenario,
-		str* args[], str** b2bl_key_s);
+		str* args[], str* ehdr, str** b2bl_key_s);
 
 str* b2bl_generate_key(unsigned int hash_index, unsigned int local_index);
 
@@ -96,5 +97,8 @@ int process_bridge_action(struct sip_msg* msg, b2bl_entity_id_t* curr_entity,
 		b2bl_tuple_t* tuple, xmlNodePtr bridge_node);
 
 void destroy_b2bl_htable(void);
+
+b2bl_entity_id_t* b2bl_create_new_entity(enum b2b_entity_type type, str* entity_id,
+		str* to_uri,str* from_uri, str* ssid);
 
 #endif
