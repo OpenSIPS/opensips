@@ -138,6 +138,11 @@ static int mod_init(void)
 	attrs[A_ACCT_SESSION_ID].name		= "Acct-Session-Id";
 	vals[V_SIP_SESSION].name			= "Sip-Session";
 
+	if (!aaa_proto_url) {
+		LM_ERR("aaa_url is empty\n");
+		return -1;
+	}
+
 	proto_url.s = aaa_proto_url;
 	proto_url.len = strlen(aaa_proto_url);
 

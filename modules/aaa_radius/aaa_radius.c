@@ -271,7 +271,7 @@ int make_send_message(struct sip_msg* msg, int index, VALUE_PAIR **send) {
 			//LM_DBG("%.*s----->%.*s---->%d---->%d---->%d\n",mp->name.len, 
 			//		mp->name.s, pt.rs.len, pt.rs.s, mp->value, pt.flags, pt.rs.len);
 			if (rc_dict_getattr(rh,mp->value)->type == PW_TYPE_IPADDR) {
-				UINT4 ipaddr=rc_get_ipaddr(pt.rs.s);
+				uint32_t ipaddr=rc_get_ipaddr(pt.rs.s);
 				if (!rc_avpair_add(rh, send, mp->value, &ipaddr, -1, 0))
 					return -1;
 			} else {
