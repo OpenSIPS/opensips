@@ -28,6 +28,7 @@
 #define _NATHELPER_NATHELPER_H
 
 #include "../../str.h"
+#include "../../pvar.h"
 
 /* Handy macros */
 #define STR2IOVEC(sx, ix)       do {(ix).iov_base = (sx).s; (ix).iov_len = (sx).len;} while(0)
@@ -43,6 +44,7 @@ struct rtpp_node {
 	unsigned int		rn_recheck_ticks;
 	int			rn_rep_supported;
 	int			rn_ptl_supported;
+	int			abr_supported;
 	struct rtpp_node	*rn_next;
 };
 
@@ -64,6 +66,16 @@ struct rtpp_set_head{
 	struct rtpp_set		*rset_last;
 };
 
+struct force_rtpp_args {
+    char *arg1;
+    char *arg2;
+    int offer;
+    str body;
+    str callid;
+    struct rtpp_node *node;
+    str raddr;
+};
+
 /* parameter type for set_rtp_proxy_set() */
 
 #define NH_VAL_SET_FIXED              0
@@ -80,5 +92,6 @@ typedef struct rtpp_set_param{
 /* Functions from nathelper */
 struct rtpp_node *select_rtpp_node(str, int);
 char *send_rtpp_command(struct rtpp_node *, struct iovec *, int);
+int force_rtp_proxy_body(struct sip_msg *, struct force_rtpp_args *);
 
 #endif
