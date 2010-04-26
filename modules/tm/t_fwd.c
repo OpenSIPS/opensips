@@ -60,6 +60,7 @@
 #include "t_fwd.h"
 #include "fix_lumps.h"
 #include "config.h"
+#include "../../msg_callbacks.h"
 
 /* route to execute for the branches */
 static int goto_on_branch;
@@ -624,6 +625,18 @@ int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 		LM_ERR("discarding fwd for a cancelled/6xx transaction\n");
 		ser_error = E_NO_DESTINATION;
 		return -1;
+	}
+
+	if (proxy == NULL) {
+		proxy = uri2proxy(p_msg->dst_uri.len ? &p_msg->dst_uri : \
+		    &p_msg->new_uri, PROTO_NONE);
+		if (proxy != NULL) {
+			msg_callback_process(p_msg, REQ_PRE_FORWARD, (void *)proxy);
+			pkg_free(proxy);
+			proxy = NULL;
+		}
+	} else {
+		msg_callback_process(p_msg, REQ_PRE_FORWARD, (void *)proxy);
 	}
 
 	/* backup current uri, sock and flags... add_uac changes it */

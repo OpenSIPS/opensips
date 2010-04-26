@@ -167,6 +167,9 @@ struct sip_uri {
 
 #include "parse_to.h"
 
+/* Forward declaration */
+struct msg_callback;
+
 struct sip_msg {
 	unsigned int id;               /* message id, unique/process*/
 	struct msg_start first_line;   /* Message first line */
@@ -276,6 +279,8 @@ struct sip_msg {
 
 	/* create a route HF out of this path vector */
 	str path_vec;
+
+	struct msg_callback *msg_cb;
 };
 
 

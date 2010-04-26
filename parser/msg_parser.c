@@ -55,6 +55,7 @@
 #include "parse_hname2.h"
 #include "parse_uri.h"
 #include "parse_content.h"
+#include "../msg_callbacks.h"
 
 #ifdef DEBUG_DMALLOC
 #include <mem/dmalloc.h>
@@ -655,6 +656,7 @@ void free_reply_lump( struct lump_rpl *lump)
 /*only the content*/
 void free_sip_msg(struct sip_msg* msg)
 {
+	if (msg->msg_cb) { msg_callback_process(msg, MSG_DESTROY, NULL); }
 	if (msg->new_uri.s) { pkg_free(msg->new_uri.s); msg->new_uri.len=0; }
 	if (msg->dst_uri.s) { pkg_free(msg->dst_uri.s); msg->dst_uri.len=0; }
 	if (msg->path_vec.s) { pkg_free(msg->path_vec.s); msg->path_vec.len=0; }

@@ -76,7 +76,7 @@
 #include "socket_info.h"
 #include "core_stats.h"
 #include "blacklists.h"
-
+#include "msg_callbacks.h"
 
 
 /*************************** callback functions ***************************/
@@ -391,6 +391,8 @@ int forward_request( struct sip_msg* msg, struct proxy_l * p)
 		msg->add_to_branch_len = branch->len;
 		memcpy( msg->add_to_branch_s, branch->s, branch->len);
 	}
+
+	msg_callback_process(msg, REQ_PRE_FORWARD, (void *)p);
 
 	hostent2su( &to, &p->host, p->addr_idx, (p->port)?p->port:SIP_PORT);
 	last_sock = 0;
