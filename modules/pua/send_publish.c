@@ -55,7 +55,6 @@ str* publ_build_hdr(int expires, pua_event_t* ev, str* content_type, str* etag,
 	str* str_hdr = NULL;	
 	char* expires_s = NULL;
 	int len = 0;
-	int t= 0;
 	str ctype;
 
 	str_hdr =(str*)pkg_malloc(sizeof(str));
@@ -81,22 +80,15 @@ str* publ_build_hdr(int expires, pua_event_t* ev, str* content_type, str* etag,
 	str_hdr->len+= ev->name.len;
 	memcpy(str_hdr->s+str_hdr->len, CRLF, CRLF_LEN);
 	str_hdr->len += CRLF_LEN;
-	
 
 	memcpy(str_hdr->s+str_hdr->len ,"Expires: ", 9);
 	str_hdr->len += 9;
 
-	t= expires; 
-
-	if( t<=0 )
+	if( expires != 0 )
 	{
-		t= min_expires;
+		expires++;
 	}
-	else
-	{
-		t++;
-	}
-	expires_s = int2str(t, &len);
+	expires_s = int2str(expires, &len);
 
 	memcpy(str_hdr->s+str_hdr->len, expires_s, len);
 	str_hdr->len+= len;
@@ -481,6 +473,9 @@ int send_publish( publ_info_t* publ )
 		lock_release(&HashT->p_records[hash_code].lock);
 		return 418;
 	}
+
+	if(publ->expires!= 0 && publ->expires< min_expires)
+		publ->expires = min_expires;
 
 	if(publ->flag & INSERT_TYPE)
 	{

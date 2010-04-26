@@ -59,7 +59,7 @@ struct tm_binds tmb;
 htable_t* HashT= NULL;
 int HASH_SIZE= -1;
 extern int bind_pua(pua_api_t* api);
-int min_expires= 0;
+int min_expires= 300;
 int default_expires=3600;
 static str db_url = str_init(DEFAULT_DB_URL);
 str db_table= str_init("pua");
@@ -632,13 +632,13 @@ static void hashT_clean(unsigned int ticks,void *param)
 			LM_DBG("---\n");
 			if(p->expires -update_period < now )
 			{
-				if((p->desired_expires> p->expires + min_expires + 5) || 
+				if((p->desired_expires> p->expires + 5) || 
 						(p->desired_expires== 0 ))
 				{
 					LM_DBG("Desired expires greater than expires -> send a "
-						"refresh PUBLISH desired_expires=%d - expires=%d "
-						"min_expires=%d\n", p->desired_expires, p->expires,
-						min_expires);
+						"refresh PUBLISH desired_expires=%d - expires=%d\n",
+						p->desired_expires, p->expires);
+
 					if(update_pua(p, i)< 0)
 					{
 						LM_ERR("while updating record\n");
@@ -681,6 +681,9 @@ int update_pua(ua_pres_t* p, unsigned int hash_code)
 		expires= 3600;
 	else
 		expires= p->desired_expires- (int)time(NULL);
+
+	if(expires < min_expires)
+		expires = min_expires;
 
 	if(p->watcher_uri== NULL)
 	{

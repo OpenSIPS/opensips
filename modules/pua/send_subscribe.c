@@ -106,11 +106,8 @@ str* subs_build_hdr(str* contact, int expires, int event, str* extra_headers)
 	memcpy(str_hdr->s+ str_hdr->len ,"Expires: ", 9);
 	str_hdr->len += 9;
 
-	if( expires<= min_expires)
-		subs_expires= int2str(min_expires, &len);  
-	else
-		subs_expires= int2str(expires+ 10, &len);
-		
+	subs_expires= int2str(expires+ 10, &len);
+
 	if(subs_expires == NULL || len == 0)
 	{
 		LM_ERR("while converting int to str\n");
@@ -836,9 +833,12 @@ int send_subscribe(subs_info_t* subs)
 		subs->source_flag= XMPP_SUBSCRIBE;
 
 	if(subs->expires< 0)
-		expires= 3600;
+		subs->expires = default_expires;
 	else
-		expires= subs->expires;
+		if(subs->expires!= 0 && subs->expires < min_expires)
+			subs->expires = min_expires;
+
+	expires = subs->expires;
 
 	str_hdr= subs_build_hdr(subs->contact, expires, subs->event,
 			subs->extra_headers);
