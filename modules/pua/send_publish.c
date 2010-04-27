@@ -208,11 +208,19 @@ void publ_cback_func(struct cell *t, int type, struct tmcb_params *ps)
 			{
 				publ.outbound_proxy = *hentity->outbound_proxy;
 			}
+
+			if(presentity)
+			{
+				lock_release(&presentity->publ_lock);
+			}
+
 			if(send_publish(&publ)< 0)
 			{
 				LM_ERR("when trying to send PUBLISH\n");
 				goto error;
 			}
+			presentity = NULL;
+			goto done;
 		}
 		if(presentity)
 		{
