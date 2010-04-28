@@ -969,46 +969,6 @@ create_dialog();
 		</example>
 	</section>
 
-
-	<section>
-		<title>
-		<function moreinfo="none">validate_dialog()</function>
-		</title>
-		<para>
-		The function checks the current received requests against the dialog 
-		(internal data) it belongs to.
-		Performing several tests, the function will help to detect the bogus
-		injected in-dialog requests (like malicious BYEs).
-		</para>
-		<para>
-		The performed tests are related to CSEQ sequance checking and routing
-		information checking (contact and route set).
-		</para>
-		<para>
-		The function returns true if a dialog exists for the request and if 
-		the request is valid (according to dialog data).
-		</para>
-		<para>
-		This function can be used from REQUEST_ROUTE.
-		</para>
-		<example>
-		<title><function>validate_dialog()</function> usage</title>
-		<programlisting format="linespecific">
-...
-    if (has_totag()) {
-        loose_route();
-        if ($DLG_status!=NULL &amp;&amp; !validate_dialog() ) {
-            xlog(" in-dialog bogus request \n");
-        } else {
-            xlog(" in-dialog valid request - $DLG_dir !\n");
-        }
-    }
-...
-</programlisting>
-		</example>
-	</section>
-
-
 	<section>
 		<title>
 		<function moreinfo="none">get_dialog_info(attr,var,key,key_val)</function>
