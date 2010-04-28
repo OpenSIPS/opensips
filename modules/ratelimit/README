@@ -516,7 +516,7 @@ modparam("ratelimit", "reply_reason", "Limiting")
 
 1.8.8.  rl_push_load
 
-   Force the value of the load parameter. This methos is usefull
+   Force the value of the load parameter. This method is useful
    for testing the Feedback algorithm.
 
    Name: rl_push_load

@@ -74,7 +74,7 @@
 	<para>
 
         The dialog element can contain optional "local" and "remote" elements which
-        decsribes the local and the remote party in more detail, for example:
+        describes the local and the remote party in more detail, for example:
 
         <programlisting format="linespecific">
 <![CDATA[
@@ -319,10 +319,10 @@ modparam("pua_dialoginfo", "caller_confirmed", 1)
 		</section>
 
 		<section>
-		<title><varname>presence_sever</varname> (string)</title>
+		<title><varname>presence_server</varname> (string)</title>
 		<para>
 		The address of the presence server, where the PUBLISH messages
-		should be sent ( not compulsory).
+		should be sent (not compulsory).
 		</para>
 		<example>
 			<title>Set <varname>presence_server</varname> parameter</title>
@@ -379,13 +379,24 @@ modparam("pua_dialoginfo", "caller_spec_param", "$avp(i:10)")
 	<title>Exported Functions</title>
 	<section>
 		<title>
-		<function moreinfo="none">dialoginfo_set()</function>
+		<function moreinfo="none">dialoginfo_set([side])</function>
 		</title>
 		<para>
 		This function must be called for INVITE messages that initialize a
 		dialog for which dialoginfo information must be published.
-	</para>
-	<para>
+		</para>
+		<para>
+		Meaning of the parameters:
+		</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>side</emphasis> (optional) - can be "A" or "B"
+			for caller or callee PUBLISH only - if missing, both sides will
+			be published.</para>
+		</listitem>
+		</itemizedlist>
+		<example>
+		<title><function>dialoginfo_set</function> usage</title>
 		<programlisting format="linespecific">
 ...
 	if(is_method("INVITE"))
@@ -393,7 +404,7 @@ modparam("pua_dialoginfo", "caller_spec_param", "$avp(i:10)")
 			dialoginfo_set();
 ...
 		</programlisting>
-	</para>
+		</example>
 
 	</section>
 	</section>

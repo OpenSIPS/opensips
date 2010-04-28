@@ -10,10 +10,16 @@ Juha Heinanen
 
    <jh@tutpro.com>
 
+Edited by
+
+Irina-Maria Stanescu
+
+   <ironmissy@gmail.com>
+
    Copyright © 2008 Juha Heinanen
    Revision History
-   Revision $Revision$ $Date: 2009-07-21 10:45:05 +0300
-                              (Tue, 21 Jul 2009) $
+   Revision $Revision$ $Date: 2009-08-14 12:58:29 +0300
+                              (Fri, 14 Aug 2009) $
      __________________________________________________________
 
    Table of Contents
@@ -24,11 +30,10 @@ Juha Heinanen
         1.2. Dependencies
 
               1.2.1. OpenSIPS Modules
-              1.2.2. External Libraries or Applications
 
         1.3. Exported Parameters
 
-              1.3.1. radius_config (string)
+              1.3.1. aaa_url (string)
               1.3.2. verify_destination_service_type (integer)
               1.3.3. verify_source_service_type (integer)
 
@@ -39,7 +44,7 @@ Juha Heinanen
 
    List of Examples
 
-   1.1. radius_config parameter usage
+   1.1. Set aaa_url parameter
    1.2. verify_destination_service_type parameter usage
    1.3. verify_source_service_type parameter usage
    1.4. verify_destination() usage
@@ -66,9 +71,8 @@ Chapter 1. Admin Guide
    broker using verify_source() function if the request came from
    a trusted peer.
 
-   Verification functions communicate with the broker using Radius
-   protocol. Sample FreeRADIUS configuration files for broker's
-   Radius server are available from http://www.wirlab.net/tsi/.
+   Verification functions communicate with the broker using an AAA
+   protocol.
 
    Comments and suggestions for improvements are welcome.
 
@@ -78,61 +82,61 @@ Chapter 1. Admin Guide
 
    The module depends on the following modules (in the other words
    the listed modules must be loaded before this module):
-     * none
-
-1.2.2. External Libraries or Applications
-
-   The following libraries or applications must be installed
-   before compilling OpenSIPS with this module loaded:
-     * radiusclient-ng 0.5.0 or higher -- library and development
-       files. See
-       http://developer.berlios.de/projects/radiusclient-ng/.
+     * an AAA implementing module
 
 1.3. Exported Parameters
 
-1.3.1. radius_config (string)
+1.3.1. aaa_url (string)
 
-   This is the location of the configuration file of radius client
-   libraries.
+   This is the url representing the AAA protocol used and the
+   location of the configuration file of this protocol.
 
-   Default value is
-   "/usr/local/etc/radiusclient-ng/radiusclient.conf".
+   If the parameter is set to empty string, the AAA accounting
+   support will be disabled (even if compiled).
 
-   Example 1.1. radius_config parameter usage
-modparam("peering", "radius_config", "/etc/broker/radiusclient.conf")
+   Default value is "NULL".
+
+   Example 1.1. Set aaa_url parameter
+...
+modparam("peering", "aaa_url", "radius:/etc/radiusclient-ng/radiusclient
+.conf")
+...
 
 1.3.2. verify_destination_service_type (integer)
 
-   This is the value of the Service-Type Radius attribute to be
-   used, when sender of SIP Request verifies request's destination
-   using verify_destination() function.
+   This is the value of the Service-Type AAA attribute to be used,
+   when sender of SIP Request verifies request's destination using
+   verify_destination() function.
 
    Default value is dictionary value of "Sip-Verify-Destination"
    Service-Type.
 
    Example 1.2. verify_destination_service_type parameter usage
+...
 modparam("peering", "verify_destination_service_type", 21)
+...
 
 1.3.3. verify_source_service_type (integer)
 
-   This is the value of the Service-Type Radius attribute to be
-   used, when receiver of SIP Request verifies request's source
-   using verify_source() function.
+   This is the value of the Service-Type AAA attribute to be used,
+   when receiver of SIP Request verifies request's source using
+   verify_source() function.
 
    Default value is dictionary value of "Sip-Verify-Source"
    Service-Type.
 
    Example 1.3. verify_source_service_type parameter usage
+...
 modparam("peering", "verify_source_service_type", 22)
+...
 
 1.4. Exported Functions
 
 1.4.1. verify_destination()
 
-   Function verify_destination() queries from broker's Radius
-   server if domain (host part) of Request URI is served by a
-   trusted peer. Radius request contains the following
-   attributes/values:
+   Function verify_destination() queries from broker's AAA server
+   if domain (host part) of Request URI is served by a trusted
+   peer. AAA request contains the following attributes/values:
      * User-Name - Request-URI host
      * SIP-URI-User - Request-URI user
      * SIP-From-Tag - From tag
@@ -141,8 +145,8 @@ modparam("peering", "verify_source_service_type", 22)
 
    Function returns value 1 if domain of Request URI is served by
    a trusted peer and -1 otherwise. In case of positive result,
-   Radius server returns a set of SIP-AVP reply attributes. Value
-   of each SIP-AVP is of form:
+   AAA server returns a set of SIP-AVP reply attributes. Value of
+   each SIP-AVP is of form:
 
    [#]name(:|#)value
 
@@ -171,8 +175,8 @@ if (verify_destination()) {
 
 1.4.2. verify_source()
 
-   Function verify_source() queries from broker's Radius server if
-   SIP request was received from a trusted peer. Radius request
+   Function verify_source() queries from broker's AAA server if
+   SIP request was received from a trusted peer. AAA request
    contains the following attributes/values:
      * User-Name - Request-URI host
      * SIP-URI-User - Request-URI user
@@ -182,9 +186,9 @@ if (verify_destination()) {
      * Service-Type - verify_source_service_type
 
    Function returns value 1 if SIP request was received from a
-   trusted peer and -1 otherwise. In case of positive result,
-   Radius server may return a set of SIP-AVP reply attributes.
-   Value of each SIP-AVP is of form:
+   trusted peer and -1 otherwise. In case of positive result, AAA
+   server may return a set of SIP-AVP reply attributes. Value of
+   each SIP-AVP is of form:
 
    [#]name(:|#)value
 

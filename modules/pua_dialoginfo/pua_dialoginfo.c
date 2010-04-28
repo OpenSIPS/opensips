@@ -705,10 +705,10 @@ default_callee:
 #endif
 
 	if(flag == DLG_PUB_A || flag == DLG_PUB_AB)
-		dialog_publish("Trying", from, &peer_to_body, &(dlg->callid), 1, DEFAULT_CREATED_LIFETIME, 0, 0);
+		dialog_publish("trying", from, &peer_to_body, &(dlg->callid), 1, DEFAULT_CREATED_LIFETIME, 0, 0);
 
 	if(flag == DLG_PUB_B || flag == DLG_PUB_AB)
-		dialog_publish("Trying", &peer_to_body, from, &(dlg->callid), 0, DEFAULT_CREATED_LIFETIME, 0, 0);
+		dialog_publish("trying", &peer_to_body, from, &(dlg->callid), 0, DEFAULT_CREATED_LIFETIME, 0, 0);
 
 	return 1;
 }

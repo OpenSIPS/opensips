@@ -54,6 +54,7 @@ Bastian Friedrich
               1.6.2. bm_enable_timer
               1.6.3. bm_granularity
               1.6.4. bm_loglevel
+              1.6.5. bm_poll_results
 
         1.7. Example of usage
 
@@ -75,7 +76,8 @@ Bastian Friedrich
    1.4. bm_start_timer usage
    1.5. bm_log_timer usage
    1.6. Enabling a timer
-   1.7. benchmark usage
+   1.7. Getting the results via FIFO interface
+   1.8. benchmark usage
    2.1. Using the benchmark module's API from another module
 
 Chapter 1. Admin Guide
@@ -129,6 +131,10 @@ modparam("benchmark", "enable", 1)
    Logging normally is not done for every reference to the
    log_timer() function, but only every n'th call. n is defined
    through this variable. A sensible granularity seems to be 100.
+
+   If granularity is set to 0, then nothing will be logged
+   automatically. Instead bm_poll_results MI command can be used
+   to retrieve the results and clean the local values.
 
    Default value is "100".
 
@@ -239,11 +245,38 @@ opensipsctl fifo bm_enable_timer test 1
 
    Modifies the module log level. See "loglevel" variable.
 
+1.6.5. bm_poll_results
+
+   Returns the current and global results for each timer. This
+   command is only available if the "granularity" variable is set
+   to 0. It can be used to get results in stable time intervals
+   instead of every N messages. Each timer will have 2 nodes - the
+   local and the global values. Format of the values is the same
+   as the one normally used in logfile. This way of getting the
+   results allows to interface with external graphing applications
+   like Munin.
+
+   If there were no new calls to bm_log_timer since last check,
+   then all current values of a timer will be equal 0. Each call
+   to bm_poll_results will reset current values (but not global
+   ones).
+
+   Example 1.7. Getting the results via FIFO interface
+...
+opensipsctl fifo bm_poll_results
+register_timer
+        3/40/12/14/13.333333
+        9/204/12/97/22.666667
+security_check_timer
+        3/21/7/7/7.000000
+        9/98/7/41/10.888889
+...
+
 1.7. Example of usage
 
    Measure the duration of user location lookup.
 
-   Example 1.7. benchmark usage
+   Example 1.8. benchmark usage
 ...
 bm_start_timer("usrloc-lookup");
 lookup("location");
