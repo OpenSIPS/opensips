@@ -210,6 +210,8 @@ struct dlg_cell* lookup_dlg( unsigned int h_entry, unsigned int h_id);
 struct dlg_cell* get_dlg(str *callid, str *ftag, str *ttag,
 		unsigned int *dir, unsigned int *dst_leg);
 
+struct dlg_cell* get_dlg_by_val(str *attr, str *val);
+
 void link_dlg(struct dlg_cell *dlg, int n);
 
 void unref_dlg(struct dlg_cell *dlg, unsigned int cnt);

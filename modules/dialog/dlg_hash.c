@@ -522,6 +522,37 @@ struct dlg_cell* get_dlg( str *callid, str *ftag, str *ttag,
 }
 
 
+struct dlg_cell* get_dlg_by_val(str *attr, str *val)
+{
+	struct dlg_entry *d_entry;
+	struct dlg_cell  *dlg;
+	unsigned int h;
+
+	/* go through all hash entries (entire table) */
+	for ( h=0 ; h<d_table->size ; h++ ) {
+
+		d_entry = &(d_table->entries[h]);
+		dlg_lock( d_table, d_entry);
+
+		/* go through all dialogs on entry */
+		for( dlg = d_entry->first ; dlg ; dlg = dlg->next ) {
+			LM_DBG("dlg in state %d to check\n",dlg->state);
+			if (dlg->state!=DLG_STATE_CONFIRMED_NA &&
+			dlg->state!=DLG_STATE_CONFIRMED)
+				continue;
+			if (check_dlg_value_unsafe( dlg, attr, val)==0) {
+				ref_dlg_unsafe( dlg, 1);
+				dlg_unlock( d_table, d_entry);
+				return dlg;
+			}
+		}
+
+		dlg_unlock( d_table, d_entry);
+	}
+
+	return NULL;
+}
+
 
 void link_dlg(struct dlg_cell *dlg, int n)
 {

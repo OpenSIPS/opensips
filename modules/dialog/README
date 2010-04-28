@@ -67,15 +67,16 @@ Bogdan-Andrei Iancu
 
               1.6.1. create_dialog()
               1.6.2. validate_dialog()
-              1.6.3. set_dlg_profile(profile,[value])
-              1.6.4. unset_dlg_profile(profile,[value])
-              1.6.5. is_in_profile(profile,[value])
-              1.6.6. get_profile_size(profile,[value],size)
-              1.6.7. set_dlg_flag(idx)
-              1.6.8. reset_dlg_flag(idx)
-              1.6.9. is_dlg_flag_set(idx)
-              1.6.10. store_dlg_value(name,val)
-              1.6.11. fetch_dlg_value(name,pvar)
+              1.6.3. validate_dialog()
+              1.6.4. get_dialog_info(attr,var,key,key_val)
+              1.6.5. unset_dlg_profile(profile,[value])
+              1.6.6. is_in_profile(profile,[value])
+              1.6.7. get_profile_size(profile,[value],size)
+              1.6.8. set_dlg_flag(idx)
+              1.6.9. reset_dlg_flag(idx)
+              1.6.10. is_dlg_flag_set(idx)
+              1.6.11. store_dlg_value(name,val)
+              1.6.12. fetch_dlg_value(name,pvar)
 
         1.7. Exported statistics
 
@@ -150,15 +151,16 @@ Bogdan-Andrei Iancu
    1.34. Set profiles_no_value parameter
    1.35. create_dialog() usage
    1.36. validate_dialog() usage
-   1.37. set_dlg_profile usage
-   1.38. unset_dlg_profile usage
-   1.39. is_in_profile usage
-   1.40. get_profile_size usage
-   1.41. set_dlg_flag usage
-   1.42. reset_dlg_flag usage
-   1.43. is_dlg_flag_set usage
-   1.44. store_dlg_value usage
-   1.45. fetch_dlg_value usage
+   1.37. validate_dialog() usage
+   1.38. get_dialog_info usage
+   1.39. unset_dlg_profile usage
+   1.40. is_in_profile usage
+   1.41. get_profile_size usage
+   1.42. set_dlg_flag usage
+   1.43. reset_dlg_flag usage
+   1.44. is_dlg_flag_set usage
+   1.45. store_dlg_value usage
+   1.46. fetch_dlg_value usage
 
 Chapter 1. Admin Guide
 
@@ -732,32 +734,74 @@ create_dialog();
     }
 ...
 
-1.6.3.  set_dlg_profile(profile,[value])
+1.6.3.  validate_dialog()
 
-   Inserts the current dialog into a profile. Note that the
-   profile does not supports values, this will be silently
-   discarded. Also, there is no check for inserting the same
-   dialog in the same profile for multiple times.
+   The function checks the current received requests against the
+   dialog (internal data) it belongs to. Performing several tests,
+   the function will help to detect the bogus injected in-dialog
+   requests (like malicious BYEs).
 
-   NOTE: the dialog must be created before using this function
-   (use create_dialog() function before).
+   The performed tests are related to CSEQ sequance checking and
+   routing information checking (contact and route set).
+
+   The function returns true if a dialog exists for the request
+   and if the request is valid (according to dialog data).
+
+   This function can be used from REQUEST_ROUTE.
+
+   Example 1.37. validate_dialog() usage
+...
+    if (has_totag()) {
+        loose_route();
+        if ($DLG_status!=NULL && !validate_dialog() ) {
+            xlog(" in-dialog bogus request \n");
+        } else {
+            xlog(" in-dialog valid request - $DLG_dir !\n");
+        }
+    }
+...
+
+1.6.4.  get_dialog_info(attr,var,key,key_val)
+
+   The function extracts a dialog value from another dialog - it
+   search through all existing (ongoing) dialogs for a dialog that
+   has a dialog variable named "key" with the value "key_val" (so
+   a dialog where $dlg_val(key)=="key_val") - once found, it
+   return in pvar "var" the value of the the dialog variable
+   "attr" from the found dialog.
+
+   NOTE: the function does not require to be called in the context
+   of a dialog - you can use it whenever / whereever for searching
+   for other dialogs.
 
    Meaning of the parameters is as follows:
-     * profile - name of the profile to be added to;
-     * value (optional) - string value to define the belonging of
-       the dialog to the profile - note that the profile must
-       support values. Pseudo-variables are supported.
+     * attr - the name of the dialog variable (from the found
+       dialog) to be returned;
+     * var - a pvar where to store the value of the "attr" dialog
+       variable
+     * key - name of a dialog variable to be used a search key
+       (when looking after the target dialog)
+     * key_val - the value of the dialog variable that is used as
+       key in searching the target dialog.
 
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
-   REPLY_ROUTE and FAILURE_ROUTE.
+   REPLY_ROUTE, FAILURE_ROUTE and LOCAL_ROUTE.
 
-   Example 1.37. set_dlg_profile usage
+   Example 1.38. get_dialog_info usage
 ...
-set_dlg_profile("inbound_call");
-set_dlg_profile("caller","$fu");
+if ( get_dialog_info("callee","$var(x)","caller","$fu") ) {
+        xlog("caller $fU has another ongoing, talking to callee $var(x)\
+n")
+}
+
+# create dialog for current call and place the caller and callee attribu
+tes
+create_dialog();
+$dlg_val(caller) = $fu;
+$dlg_val(callee) = $ru;
 ...
 
-1.6.4.  unset_dlg_profile(profile,[value])
+1.6.5.  unset_dlg_profile(profile,[value])
 
    Removes the current dialog from a profile.
 
@@ -773,13 +817,13 @@ set_dlg_profile("caller","$fu");
    This function can be used from BRANCH_ROUTE, REPLY_ROUTE and
    FAILURE_ROUTE.
 
-   Example 1.38. unset_dlg_profile usage
+   Example 1.39. unset_dlg_profile usage
 ...
 unset_dlg_profile("inbound_call");
 unset_dlg_profile("caller","$fu");
 ...
 
-1.6.5.  is_in_profile(profile,[value])
+1.6.6.  is_in_profile(profile,[value])
 
    Checks if the current dialog belongs to a profile. If the
    profile supports values, the check can be reinforced to take
@@ -800,7 +844,7 @@ unset_dlg_profile("caller","$fu");
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.39. is_in_profile usage
+   Example 1.40. is_in_profile usage
 ...
 if (is_in_profile("inbound_call")) {
         log("this request belongs to a inbound call\n");
@@ -811,7 +855,7 @@ if (is_in_profile("caller","XX")) {
 }
 ...
 
-1.6.6.  get_profile_size(profile,[value],size)
+1.6.7.  get_profile_size(profile,[value],size)
 
    Returns the number of dialogs belonging to a profile. If the
    profile supports values, the check can be reinforced to take
@@ -831,7 +875,7 @@ if (is_in_profile("caller","XX")) {
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.40. get_profile_size usage
+   Example 1.41. get_profile_size usage
 ...
 get_profile_size("inbound_call","$avp(size)");
 xlog("currently there are $avp(size) inbound calls\n");
@@ -840,7 +884,7 @@ get_profile_size("caller","$fu");
 xlog("currently, the user %fu has $avp(size) active outgoing calls\n");
 ...
 
-1.6.7.  set_dlg_flag(idx)
+1.6.8.  set_dlg_flag(idx)
 
    Sets the dialog flag index idx to true. The dialog flags are
    dialog persistent and they can be accessed (set and test) for
@@ -854,12 +898,12 @@ xlog("currently, the user %fu has $avp(size) active outgoing calls\n");
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.41. set_dlg_flag usage
+   Example 1.42. set_dlg_flag usage
 ...
 set_dlg_flag("3");
 ...
 
-1.6.8.  reset_dlg_flag(idx)
+1.6.9.  reset_dlg_flag(idx)
 
    Resets the dialog flag index idx to false. The dialog flags are
    dialog persistent and they can be accessed (set and test) for
@@ -873,12 +917,12 @@ set_dlg_flag("3");
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.42. reset_dlg_flag usage
+   Example 1.43. reset_dlg_flag usage
 ...
 reset_dlg_flag("16");
 ...
 
-1.6.9.  is_dlg_flag_set(idx)
+1.6.10.  is_dlg_flag_set(idx)
 
    Returns true if the dialog flag index idx is set. The dialog
    flags are dialog persistent and they can be accessed (set and
@@ -892,14 +936,14 @@ reset_dlg_flag("16");
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.43. is_dlg_flag_set usage
+   Example 1.44. is_dlg_flag_set usage
 ...
 if (is_dlg_flag_set("16")) {
         xlog("dialog flag 16 is set\n");
 }
 ...
 
-1.6.10.  store_dlg_value(name,val)
+1.6.11.  store_dlg_value(name,val)
 
    Attaches to the dialog the value val under the name name. The
    values attached to dialogs are dialog persistent and they can
@@ -917,7 +961,7 @@ if (is_dlg_flag_set("16")) {
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.44. store_dlg_value usage
+   Example 1.45. store_dlg_value usage
 ...
 store_dlg_value("inv_src_ip","$si");
 store_dlg_value("account type","prepaid");
@@ -925,7 +969,7 @@ store_dlg_value("account type","prepaid");
 $dlg_val("account_type") = "prepaid";
 ...
 
-1.6.11.  fetch_dlg_value(name,pvar)
+1.6.12.  fetch_dlg_value(name,pvar)
 
    Fetches from the dialog the value of attribute named name. The
    values attached to dialogs are dialog persistent and they can
@@ -943,7 +987,7 @@ $dlg_val("account_type") = "prepaid";
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.45. fetch_dlg_value usage
+   Example 1.46. fetch_dlg_value usage
 ...
 fetch_dlg_value("inv_src_ip","$avp(i:2)");
 fetch_dlg_value("account type","$var(account)");
