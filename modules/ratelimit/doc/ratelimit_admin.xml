@@ -624,7 +624,7 @@ modparam("ratelimit", "reply_reason", "Limiting")
 		<function moreinfo="none">rl_push_load</function>
 		</title>
 		<para>
-		Force the value of the load parameter.  This methos is usefull
+		Force the value of the load parameter.  This method is useful
 		for testing the Feedback algorithm.
 		</para>
 		<para>

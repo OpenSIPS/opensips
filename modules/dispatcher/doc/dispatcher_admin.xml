@@ -9,7 +9,7 @@
 	<para>
 		This modules implements a dispatcher for destination addresses. It 
 		computes hashes over parts of the request and selects an address from
-		a destination set. The selected address is used then as outbound
+		a destination set. The selected address is then used as outbound
 		proxy.
 	</para>
 	<para>
@@ -18,7 +18,7 @@
 	</para>
 	<para>
 		For the distribution algotrithm, the module allows the definition of
-		weights for the destination. This is usefull in order to get different
+		weights for the destination. This is useful in order to get a different
 		ratio of traffic between destinations.
 	</para>
 	</section>

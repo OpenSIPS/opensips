@@ -10,8 +10,8 @@ Bogdan-Andrei Iancu
 
    Copyright © 2006-2009 voice-system.ro
    Revision History
-   Revision $Revision$ $Date: 2009-07-21 10:45:05 +0300
-                              (Tue, 21 Jul 2009) $
+   Revision $Revision$ $Date: 2009-09-16 20:33:54 +0300
+                              (Wed, 16 Sep 2009) $
      __________________________________________________________
 
    Table of Contents
@@ -206,7 +206,7 @@ Chapter 1. Admin Guide
    type of calls, etc). Dialogs can be dynamically added in
    different (and several) profile tables - logically, each
    profile table can have a special meaning (like dialogs outside
-   the doamin, dialogs terminated to PSTN, etc).
+   the domain, dialogs terminated to PSTN, etc).
 
    There are two types of profiles:
      * with no value - a dialog simply belongs to a profile. (like

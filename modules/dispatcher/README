@@ -18,10 +18,10 @@ Carsten Bock
 
    Copyright © 2004 FhG FOKUS
 
-   Copyright © 2005-2009 Voice-System.RO
+   Copyright © 2005-2010 Voice-System.RO
    Revision History
-   Revision $Revision$ $Date: 2009-07-21 10:45:05 +0300
-                              (Tue, 21 Jul 2009) $
+   Revision $Revision$ $Date: 2010-04-12 16:04:54 +0300
+                              (Mon, 12 Apr 2010) $
      __________________________________________________________
 
    Table of Contents
@@ -122,15 +122,15 @@ Chapter 1. Admin Guide
 
    This modules implements a dispatcher for destination addresses.
    It computes hashes over parts of the request and selects an
-   address from a destination set. The selected address is used
-   then as outbound proxy.
+   address from a destination set. The selected address is then
+   used as outbound proxy.
 
    The module can be used as a stateless load balancer, having no
    guarantee of fair distribution.
 
    For the distribution algotrithm, the module allows the
-   definition of weights for the destination. This is usefull in
-   order to get different ratio of traffic between destinations.
+   definition of weights for the destination. This is useful in
+   order to get a different ratio of traffic between destinations.
 
 1.2. Dependencies
 
@@ -526,7 +526,7 @@ modparam("dispatcher", "attrs_col", "dstattrs")
    'ds_next_dst()' to use next address to achieve serial forking
    to all possible destinations.
 
-   This function can be used from REQUEST_ROUTE.
+   This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
    Example 1.26. ds_select_dst usage
 ...
@@ -544,21 +544,21 @@ ds_select_dst("1", "0");
    'ds_next_domain()' to use next address to achieve serial
    forking to all possible destinations.
 
-   This function can be used from REQUEST_ROUTE.
+   This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
 1.4.3.  ds_next_dst()
 
    Takes the next destination address from the AVPs with id
    'dst_avp_id' and sets the dst_uri (outbound proxy address).
 
-   This function can be used from FAILURE_ROUTE.
+   This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
 1.4.4.  ds_next_domain()
 
    Takes the next destination address from the AVPs with id
    'dst_avp_id' and sets the domain part of the request uri.
 
-   This function can be used from FAILURE_ROUTE.
+   This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
 1.4.5.  ds_mark_dst()
 
@@ -568,7 +568,7 @@ ds_select_dst("1", "0");
    address is marked as inactive, it will be ignored by
    'ds_select_dst' and 'ds_select_domain'.
 
-   This function can be used from FAILURE_ROUTE.
+   This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
 1.4.6.  ds_mark_dst("s")
 
@@ -589,7 +589,7 @@ ds_select_dst("1", "0");
        "threshhold"-times, before it will be actually set to
        probing.
 
-   This function can be used from FAILURE_ROUTE.
+   This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
 1.4.7.  ds_is_in_list( ip, port [,set])
 

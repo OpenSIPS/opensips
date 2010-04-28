@@ -492,6 +492,9 @@ palive_state")
        IP and port are compared by this test.
      * 4 - tests if client has a private IP address (as defined by
        RFC1918) in the top Via field of the SIP message.
+     * 8 - tests if client has contacted OpenSIPS from an address
+       that is different from the one in the Contact field. Only
+       IP is compared by this test.
 
    For example calling client_nat_test("3") will perform test 1
    and test 2 and return true if at least one succeeds, otherwise

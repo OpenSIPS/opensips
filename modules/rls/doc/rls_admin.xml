@@ -336,7 +336,7 @@ modparam("rls", "rls_event", "dialog;sla")
 		<title><varname>presence_server</varname> (str)</title>
 		<para>
 		The address of the presence server. It will be used as outbound proxy for
-		Subscribes requests sent by the RLS server to bouncing on and off the
+		Subscribe requests sent by the RLS server to bouncing on and off the
 		proxy and having to include special processing for this messages
 		in the proxy's configuration file.
 		</para>
@@ -354,8 +354,8 @@ modparam("rls", "presence_server", "sip:pres@opensips.org:5060")
 		<title><varname>server_address</varname> (str)</title>
 		<para>
 		The address of the server that will be used as a contact in sent
-		Subscribe request and 200Ok replies for Subscribe messages for RLS.
-		It is compulosy.
+		Subscribe requests and 200 OK replies for Subscribe messages for RLS.
+		It is compulsory.
 		</para>
 		<example>
 		<title>Set <varname>server_address</varname> parameter</title>

@@ -207,12 +207,12 @@ alias_db_lookup("dba_$(rU{s.substr,0,1})");
    the input SIP URI from a pseudo-variable and place the result
    back also in a pseudo-variable.
 
-   The function is usefull as the alias lookup does not affect the
-   request it self (no RURI changes), can be used in a reply
-   contect (as it does not work with RURI only) and can be used
-   for others URI than the RURI ( To URI, From URI, custom URI).
+   The function is useful as the alias lookup does not affect the
+   request itself (no RURI changes), can be used in a reply
+   context (as it does not work with RURI only) and can be used
+   for others URI than the RURI (To URI, From URI, custom URI).
 
-   The function returns TRUE any alias mapping was found and
+   The function returns TRUE if any alias mapping was found and
    returned.
 
    Meaning of the parameters is as follows:
