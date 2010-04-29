@@ -1383,14 +1383,17 @@ $var(account) = $dlg_val("account_type");
 		<section>
 		<title><varname>dlg_list</varname></title>
 		<para>
-		Lists the description of a dialog or of all dialogs (calls). If only
-		one dialogs is to be listed, the dialog identifiers are to be passed
-		as paramter (callid and fromtag).
+		Lists the description of the dialogs (calls). If no paramter is given,
+		all dialogs will be listed. If a dialog identifier is passed
+		as paramter (callid and fromtag), only that dialog will be listed. If
+		a index and conter parameter is passed, it will list only a number of
+		"counter" dialogs starting with index (as offset) - this is used to
+		get only section of dialogs.
 		</para>
 		<para>
 		Name: <emphasis>dlg_list</emphasis>
 		</para>
-		<para>Parameters:</para>
+		<para>Parameters (with dialog idetification):</para>
 		<itemizedlist>
 			<listitem><para>
 				<emphasis>callid</emphasis> (optional) - callid if a single
@@ -1401,6 +1404,17 @@ $var(account) = $dlg_val("account_type");
 				without the callid paramter) - fromtag (as per initial request)
 				of the dialog to be listed.
 				entry
+			</para></listitem>
+		</itemizedlist>
+		<para>Parameters (with dialog counting):</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>index</emphasis> - offset where the dialog listing
+				should start.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>counter</emphasis> - how many dialogs should be 
+				listed (starting from the offset)
 			</para></listitem>
 		</itemizedlist>
 		<para>
@@ -1414,6 +1428,11 @@ $var(account) = $dlg_val("account_type");
 		:dlg_list:_reply_fifo_file_
 		abcdrssfrs122444@192.168.1.1
 		AAdfeEFF33
+		</programlisting>
+		<programlisting  format="linespecific">
+		:dlg_list:_reply_fifo_file_
+		40
+		10
 		</programlisting>
 		</section>
 

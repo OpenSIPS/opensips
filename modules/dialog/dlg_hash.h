@@ -120,7 +120,8 @@ struct dlg_entry
 	struct dlg_cell    *first;
 	struct dlg_cell    *last;
 	unsigned int        next_id;
-	unsigned int       lock_idx;
+	unsigned int        cnt;
+	unsigned int        lock_idx;
 };
 
 

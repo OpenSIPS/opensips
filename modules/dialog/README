@@ -994,17 +994,25 @@ $var(account) = $dlg_val("account_type");
 
 1.8.1. dlg_list
 
-   Lists the description of a dialog or of all dialogs (calls). If
-   only one dialogs is to be listed, the dialog identifiers are to
-   be passed as paramter (callid and fromtag).
+   Lists the description of the dialogs (calls). If no paramter is
+   given, all dialogs will be listed. If a dialog identifier is
+   passed as paramter (callid and fromtag), only that dialog will
+   be listed. If a index and conter parameter is passed, it will
+   list only a number of "counter" dialogs starting with index (as
+   offset) - this is used to get only section of dialogs.
 
    Name: dlg_list
 
-   Parameters:
+   Parameters (with dialog idetification):
      * callid (optional) - callid if a single dialog to be listed.
      * from_tag (optional, but cannot be present without the
        callid paramter) - fromtag (as per initial request) of the
        dialog to be listed. entry
+
+   Parameters (with dialog counting):
+     * index - offset where the dialog listing should start.
+     * counter - how many dialogs should be listed (starting from
+       the offset)
 
    MI FIFO Command Format:
                 :dlg_list:_reply_fifo_file_
@@ -1013,6 +1021,10 @@ $var(account) = $dlg_val("account_type");
                 :dlg_list:_reply_fifo_file_
                 abcdrssfrs122444@192.168.1.1
                 AAdfeEFF33
+
+                :dlg_list:_reply_fifo_file_
+                40
+                10
 
 1.8.2. dlg_list_ctx
 
