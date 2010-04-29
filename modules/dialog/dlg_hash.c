@@ -952,7 +952,10 @@ static int internal_mi_print_dlgs(struct mi_root *rpl_tree,struct mi_node *rpl,
 			if (internal_mi_print_dlg(rpl, dlg, with_context)!=0)
 				goto error;
 			n++;
-			if (cnt && n>=idx+cnt) {break;}
+			if (cnt && n>=idx+cnt) {
+				dlg_unlock( d_table, &(d_table->entries[i]) );
+				return 0;
+			}
 			if ( (n % 50) == 0 )
 				flush_mi_tree(rpl_tree);
 		}
