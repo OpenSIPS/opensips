@@ -541,6 +541,7 @@ void link_dlg(struct dlg_cell *dlg, int n)
 	}
 
 	dlg->ref += 1 + n;
+	d_entry->cnt++;
 
 	LM_DBG("ref dlg %p with %d -> %d\n", dlg, n+1, dlg->ref);
 
@@ -563,6 +564,7 @@ inline void unlink_unsafe_dlg(struct dlg_entry *d_entry,
 		d_entry->first = dlg->next;
 
 	dlg->next = dlg->prev = 0;
+	d_entry->cnt--;
 
 	return;
 }
@@ -892,22 +894,37 @@ int mi_print_dlg(struct mi_node *rpl, struct dlg_cell *dlg, int with_context)
 
 
 static int internal_mi_print_dlgs(struct mi_root *rpl_tree,struct mi_node *rpl,
-															int with_context)
+						int with_context, unsigned int idx, unsigned int cnt)
 {
 	struct dlg_cell *dlg;
 	unsigned int i;
 	unsigned int n;
+	unsigned int total;
+	char *p;
 
-	LM_DBG("printing %i dialogs\n", d_table->size);
+	total = 0;
+	if (cnt) {
+		for(i=0;i<d_table->size ; total+=d_table->entries[i++].cnt );
+		p = int2str((unsigned long)total, (int*)&n);
+		if (add_mi_node_child(rpl,MI_DUP_VALUE,"dlg_counter",11,p,n)==0)
+			return -1;
+	}
+
+	LM_DBG("printing %i dialogs, idx=%d, cnt=%d\n", total,idx,cnt);
 	rpl->flags |= MI_NOT_COMPLETED;
 
 	for( i=0,n=0 ; i<d_table->size ; i++ ) {
 		dlg_lock( d_table, &(d_table->entries[i]) );
 
 		for( dlg=d_table->entries[i].first ; dlg ; dlg=dlg->next ) {
+			if (cnt && n<idx) {n++;continue;}
 			if (internal_mi_print_dlg(rpl, dlg, with_context)!=0)
 				goto error;
 			n++;
+			if (cnt && n>=idx+cnt) {
+				dlg_unlock( d_table, &(d_table->entries[i]) );
+				return 0;
+			}
 			if ( (n % 50) == 0 )
 				flush_mi_tree(rpl_tree);
 		}
@@ -934,43 +951,53 @@ static int match_downstream_dialog(struct dlg_cell *dlg,
 }
 
 static inline struct mi_root* process_mi_params(struct mi_root *cmd_tree,
-													struct dlg_cell **dlg_p)
+			struct dlg_cell **dlg_p, unsigned int *idx, unsigned int *cnt)
 {
 	struct mi_node* node;
 	struct dlg_entry *d_entry;
 	struct dlg_cell *dlg;
-	str *callid;
-	str *from_tag;
+	str *p1;
+	str *p2;
 	unsigned int h_entry;
 
 	node = cmd_tree->node.kids;
 	if (node == NULL) {
 		/* no parameters at all */
 		*dlg_p = NULL;
+		*idx = *cnt = 0;
 		return NULL;
 	}
 
-	/* we have params -> get callid and fromtag */
-	callid = &node->value;
-	LM_DBG("callid='%.*s'\n", callid->len, callid->s);
+	/* we have params -> get p1 and p2 */
+	p1 = &node->value;
+	LM_DBG("p1='%.*s'\n", p1->len, p1->s);
 
 	node = node->next;
 	if ( !node || !node->value.s || !node->value.len) {
-		from_tag = NULL;
+		p2 = NULL;
 	} else {
-		from_tag = &node->value;
-		LM_DBG("from_tag='%.*s'\n", from_tag->len, from_tag->s);
+		p2 = &node->value;
+		LM_DBG("p2='%.*s'\n", p2->len, p2->s);
 		if ( node->next!=NULL )
 			return init_mi_tree( 400, MI_SSTR(MI_MISSING_PARM));
 	}
 
-	h_entry = dlg_hash( callid);
+	/* check the params */
+	if (p2 && str2int(p1,idx)==0 && str2int(p2,cnt)==0) {
+		/* 2 numerical params -> index and counter */
+		*dlg_p = NULL;
+		return NULL;
+	}
+
+	*idx = *cnt = 0;
+
+	h_entry = dlg_hash( p1/*callid*/ );
 
 	d_entry = &(d_table->entries[h_entry]);
 	dlg_lock( d_table, d_entry);
 
 	for( dlg = d_entry->first ; dlg ; dlg = dlg->next ) {
-		if (match_downstream_dialog( dlg, callid, from_tag)==1) {
+		if (match_downstream_dialog( dlg, p1/*callid*/, p2/*from_tag*/)==1) {
 			if (dlg->state==DLG_STATE_DELETED) {
 				*dlg_p = NULL;
 				break;
@@ -992,8 +1019,9 @@ struct mi_root * mi_print_dlgs(struct mi_root *cmd_tree, void *param )
 	struct mi_root* rpl_tree= NULL;
 	struct mi_node* rpl = NULL;
 	struct dlg_cell* dlg = NULL;
+	unsigned int idx,cnt;
 
-	rpl_tree = process_mi_params( cmd_tree, &dlg);
+	rpl_tree = process_mi_params( cmd_tree, &dlg, &idx, &cnt);
 	if (rpl_tree)
 		/* param error */
 		return rpl_tree;
@@ -1004,7 +1032,7 @@ struct mi_root * mi_print_dlgs(struct mi_root *cmd_tree, void *param )
 	rpl = &rpl_tree->node;
 
 	if (dlg==NULL) {
-		if ( internal_mi_print_dlgs(rpl_tree, rpl,0)!=0 )
+		if ( internal_mi_print_dlgs(rpl_tree, rpl, 0, idx, cnt)!=0 )
 			goto error;
 	} else {
 		if ( internal_mi_print_dlg(rpl,dlg,0)!=0 )
@@ -1023,8 +1051,9 @@ struct mi_root * mi_print_dlgs_ctx(struct mi_root *cmd_tree, void *param )
 	struct mi_root* rpl_tree= NULL;
 	struct mi_node* rpl = NULL;
 	struct dlg_cell* dlg = NULL;
+	unsigned int idx,cnt;
 
-	rpl_tree = process_mi_params( cmd_tree, &dlg);
+	rpl_tree = process_mi_params( cmd_tree, &dlg, &idx, &cnt);
 	if (rpl_tree)
 		/* param error */
 		return rpl_tree;
@@ -1035,7 +1064,7 @@ struct mi_root * mi_print_dlgs_ctx(struct mi_root *cmd_tree, void *param )
 	rpl = &rpl_tree->node;
 
 	if (dlg==NULL) {
-		if ( internal_mi_print_dlgs(rpl_tree, rpl,1)!=0 )
+		if ( internal_mi_print_dlgs(rpl_tree, rpl, 1, idx, cnt)!=0 )
 			goto error;
 	} else {
 		if ( internal_mi_print_dlg(rpl,dlg,1)!=0 )
