@@ -188,4 +188,6 @@ void b2b_tm_cback(b2b_table htable, struct tmcb_params *ps);
 
 void print_b2b_entities(void);
 
+int b2breq_complete_ehdr(str* extra_headers, str* ehdr_out, str* body);
+
 #endif

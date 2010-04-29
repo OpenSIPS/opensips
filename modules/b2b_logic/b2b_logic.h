@@ -89,7 +89,6 @@ extern b2b_scenario_t* extern_scenaries;
 extern str custom_headers_lst[HDR_LST_LEN];
 int custom_headers_lst_len;
 
-
 static inline int b2b_get_request_id(str* request)
 {
 	if(request->len ==INVITE_LEN&&strncasecmp(request->s,INVITE,INVITE_LEN)==0)

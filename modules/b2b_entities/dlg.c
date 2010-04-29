@@ -42,7 +42,7 @@
 #define B2B_KEY_PREFIX       "B2B"
 #define B2B_KEY_PREFIX_LEN   strlen("B2B")
 #define B2B_MAX_KEY_SIZE     (B2B_KEY_PREFIX_LEN+ 5*3 + 40)
-#define BUF_LEN              256
+#define BUF_LEN              1024
 
 b2b_dlg_t* b2b_search_htable_dlg(b2b_table table, unsigned int hash_index,
 		unsigned int local_index, str* to_tag, str* from_tag, str* callid)
@@ -78,6 +78,7 @@ b2b_dlg_t* b2b_search_htable_dlg(b2b_table table, unsigned int hash_index,
 		}
 		else
 		{
+			LM_DBG("dialog totag = %.*s\n", dlg->tag[CALLER_LEG].len, dlg->tag[CALLER_LEG].s);
 			/* it is an UAC dialog (callid is the key)*/
 			if(dlg->tag[CALLER_LEG].len == to_tag->len &&
 				strncmp(dlg->tag[CALLER_LEG].s, to_tag->s, to_tag->len)== 0)
@@ -531,6 +532,7 @@ search_dialog:
 		&to_tag, &from_tag, &callid);
 	if(dlg== NULL)
 	{
+		LM_DBG("No dialog found\n");
 		if(method_value != METHOD_ACK)
 		{
 			LM_ERR("No dialog found, callid= [%.*s], method=%.*s\n",
@@ -933,6 +935,11 @@ int b2b_send_reply(enum b2b_entity_type et, str* b2b_key, int code, str* text,
 	dlg->last_reply_code = code;
 	lock_release(&table[hash_index].lock);
 	
+	if((extra_headers?extra_headers->len:0) + 14 + server_address.len + 20 + CRLF_LEN > BUF_LEN)
+	{
+		LM_ERR("Buffer overflow!\n");
+		goto error;
+	}
 	p = buffer;
 
 	if(extra_headers && extra_headers->s && extra_headers->len)
@@ -1065,7 +1072,6 @@ int b2b_send_request(enum b2b_entity_type et, str* b2b_key, str* method,
 	b2b_dlg_t* dlg;
 	dlg_t* td = NULL;
 	int result = 0;
-	char buffer[256];
 	str ehdr = {0, 0};
 	str* b2b_key_shm= NULL;
 	b2b_table table;
@@ -1123,6 +1129,13 @@ int b2b_send_request(enum b2b_entity_type et, str* b2b_key, str* method,
 		return -1;
 	}
 
+	if(dlg->state == B2B_TERMINATED)
+	{
+		LM_ERR("Can not send request in terminated state\n");
+		lock_release(&table[hash_index].lock);
+		return 0;
+	}
+
 	LM_DBG("Send request method[%.*s] for dialog[%p]\n", method->len, method->s, dlg);
 	parse_method(method->s, method->s+method->len,
 		(unsigned int*)(void*)&dlg->last_method);
@@ -1140,21 +1153,12 @@ int b2b_send_request(enum b2b_entity_type et, str* b2b_key, str* method,
 	if(dlg->last_method == METHOD_BYE)
 		dlg->state = B2B_TERMINATED;
 
-	/* construct extra headers -> add contact */
-	if(extra_headers && extra_headers->s && extra_headers->len)
+	if(b2breq_complete_ehdr(extra_headers, &ehdr, body)< 0)
 	{
-		if(extra_headers->len + 13 + server_address.len > BUF_LEN)
-		{
-			LM_ERR("Buffer too small\n");
-			lock_release(&table[hash_index].lock);
-			return -1;
-		}
-		memcpy(buffer, extra_headers->s, extra_headers->len);
-		ehdr.len = extra_headers->len;
+		LM_ERR("Failed to complete extra headers\n");
+		lock_release(&table[hash_index].lock);
+		return -1;
 	}
-	ehdr.len += sprintf(buffer+ ehdr.len, "Contact: <%.*s>\r\n",
-		server_address.len, server_address.s);
-	ehdr.s = buffer;
 
 	/* send request */
 	if(dlg->last_method == METHOD_CANCEL)
@@ -1595,7 +1599,20 @@ void b2b_tm_cback( b2b_table htable, struct tmcb_params *ps)
 			dlg->tm_tran = 0;
 		}
 
-		/* delete the record from hash table */
+		/* delete all and add the confirmed leg */
+		dlg->state = B2B_TERMINATED;
+
+		if(msg != FAKED_REPLY)
+		{
+			b2b_delete_legs(&dlg->legs);
+			leg = b2b_add_leg(dlg, msg, &to_tag);
+			if(leg == NULL)
+			{
+				LM_ERR("Failed to add dialog leg\n");
+				lock_release(&htable[hash_index].lock);
+				goto error;
+			}
+		}
 		lock_release(&htable[hash_index].lock);
 		if(msg == FAKED_REPLY)
 			goto error;
@@ -1740,7 +1757,6 @@ void b2b_tm_cback( b2b_table htable, struct tmcb_params *ps)
 					b2b_add_dlginfo_t add_infof= dlg->add_dlginfo;
 
 					/* delete all and add the confirmed leg */
-					dlg->state = B2B_CONFIRMED;
 					b2b_delete_legs(&dlg->legs);
 					leg = b2b_add_leg(dlg, msg, &to_tag);
 					if(leg == NULL)
@@ -1800,3 +1816,40 @@ error:
 }
 
 
+int b2breq_complete_ehdr(str* extra_headers, str* ehdr_out, str* body)
+{
+	static char buf[BUF_LEN];
+	str ehdr= {0,0};
+
+	if((extra_headers?extra_headers->len:0) + 14 + server_address.len > BUF_LEN)
+	{
+		LM_ERR("Buffer too small\n");
+		return -1;
+	}
+
+	ehdr.s = buf;
+	if(extra_headers && extra_headers->s && extra_headers->len)
+	{
+		memcpy(ehdr.s, extra_headers->s, extra_headers->len);
+		ehdr.len = extra_headers->len;
+	}
+	ehdr.len += sprintf(ehdr.s+ ehdr.len, "Contact: <%.*s>\r\n",
+		server_address.len, server_address.s);
+
+	/* if not present and body present add content type */
+	if(body && !strstr(ehdr.s, "Content-Type: "))
+	{
+		/* add content type header */
+		if(ehdr.len + 32 > BUF_LEN)
+		{
+			LM_ERR("Buffer too small, can not add Content-Type header\n");
+			return -1;
+		}
+		memcpy(ehdr.s+ ehdr.len, "Content-Type: application/sdp\r\n", 31);
+		ehdr.len += 31;
+		ehdr.s[ehdr.len]= '\0';
+	}
+	*ehdr_out = ehdr;
+
+	return 0;
+}
