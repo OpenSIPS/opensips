@@ -299,7 +299,8 @@ b2b_dlg_t* b2b_dlg_copy(b2b_dlg_t* dlg)
 		CONT_COPY(new_dlg, new_dlg->contact[1], dlg->contact[1]);
 	if(dlg->sdp.s && dlg->sdp.len)
 		CONT_COPY(new_dlg, new_dlg->sdp, dlg->sdp);
-	CONT_COPY(new_dlg, new_dlg->param, dlg->param);
+	if(dlg->param.s)
+		CONT_COPY(new_dlg, new_dlg->param, dlg->param);
 
 	new_dlg->bind_addr[0] = dlg->bind_addr[0];
 	new_dlg->bind_addr[1] = dlg->bind_addr[1];
@@ -348,7 +349,7 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 	b2b_dlg_t* dlg;
 	unsigned int hash_index, local_index;
 	b2b_notify_t b2b_cback;
-	str param;
+	str param= {0,0};
 	b2b_table table = NULL;
 	int method_value;
 	struct to_body TO;
@@ -563,19 +564,24 @@ logic_notify:
 	}
 
 	b2b_cback = dlg->b2b_cback;
-	param.s = (char*)pkg_malloc(dlg->param.len);
-	if(param.s == NULL)
+	if(dlg->param.s)
 	{
-		LM_ERR("No more private memory\n");
-		return -1;
+		param.s = (char*)pkg_malloc(dlg->param.len);
+		if(param.s == NULL)
+		{
+			LM_ERR("No more private memory\n");
+			return -1;
+		}
+		memcpy(param.s, dlg->param.s, dlg->param.len);
+		param.len = dlg->param.len;
 	}
-	memcpy(param.s, dlg->param.s, dlg->param.len);
-	param.len = dlg->param.len;
 
 	lock_release(&table[hash_index].lock);
 
-	b2b_cback(msg, &b2b_key, B2B_REQUEST, &param);
-	pkg_free(param.s);
+	b2b_cback(msg, &b2b_key, B2B_REQUEST, param.s?&param:0);
+
+	if(param.s)
+		pkg_free(param.s);
 
 done:
 	if(req_routeid > 0)
@@ -792,7 +798,8 @@ b2b_dlg_t* b2b_new_dlg(struct sip_msg* msg, int on_reply, str* param)
 	}
 
 	dlg.id = core_hash(&dlg.tag[CALLER_LEG], 0, server_hsize);
-	dlg.param = *param;
+	if(param)
+		dlg.param = *param;
 
 	shm_dlg = b2b_dlg_copy(&dlg);
 	if(shm_dlg == NULL)
@@ -1562,15 +1569,18 @@ void b2b_tm_cback( b2b_table htable, struct tmcb_params *ps)
 		return;
 	}
 	b2b_cback = dlg->b2b_cback;
-	param.s = (char*)pkg_malloc(dlg->param.len);
-	if(param.s == NULL)
+	if(dlg->param.s)
 	{
-		LM_ERR("No more private memory\n");
-		lock_release(&htable[hash_index].lock);
-		return;
+		param.s = (char*)pkg_malloc(dlg->param.len);
+		if(param.s == NULL)
+		{
+			LM_ERR("No more private memory\n");
+			lock_release(&htable[hash_index].lock);
+			return;
+		}
+		memcpy(param.s, dlg->param.s, dlg->param.len);
+		param.len = dlg->param.len;
 	}
-	memcpy(param.s, dlg->param.s, dlg->param.len);
-	param.len = dlg->param.len;
 
 	LM_DBG("Received reply [%d] for dialog[%p]\n", statuscode, dlg);
 	if(callid.s)
@@ -1755,7 +1765,7 @@ void b2b_tm_cback( b2b_table htable, struct tmcb_params *ps)
 					dlg->state = B2B_CONFIRMED;
 					lock_release(&htable[hash_index].lock);
 
-					if(add_infof && add_infof(&param, b2b_key,
+					if(add_infof && add_infof(param.s?&param:0, b2b_key,
 					(htable==server_htable?B2B_SERVER:B2B_CLIENT),&dlginfo)< 0)
 					{
 						LM_ERR("Failed to add dialoginfo\n");
@@ -1785,9 +1795,12 @@ void b2b_tm_cback( b2b_table htable, struct tmcb_params *ps)
 
 	/* I have to inform the logic that a reply was received */
 done:
-	b2b_cback(msg, b2b_key, B2B_REPLY, &param);
-	pkg_free(param.s);
-	param.s = NULL;
+	b2b_cback(msg, b2b_key, B2B_REPLY, param.s?&param:0);
+	if(param.s)
+	{
+		pkg_free(param.s);
+		param.s = NULL;
+	}
 
 	/* run the b2b route */
 	if(reply_routeid > 0)
