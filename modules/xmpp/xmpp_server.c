@@ -87,13 +87,6 @@
 #define CONN_INBOUND	1
 #define CONN_OUTBOUND	2
 
-struct xmpp_private_data {
-	int fd;		/* outgoing stream socket */
-	int listen_fd;	/* listening socket */
-	int in_fd;	/* incoming stream socket */
-	int running;
-};
-
 struct xmpp_connection {
 	struct xmpp_connection *next;
 
@@ -425,6 +418,21 @@ static void do_send_message_server(struct xmpp_pipe_cmd *cmd)
 	xode_send_domain(domain, x);
 }
 
+void xmpp_server_net_send(struct xmpp_pipe_cmd *cmd)
+{
+	LM_DBG("got pipe cmd %d\n", cmd->type);
+	switch (cmd->type) {
+	case XMPP_PIPE_SEND_MESSAGE:
+		do_send_message_server(cmd);
+		break;
+	case XMPP_PIPE_SEND_PACKET:
+	case XMPP_PIPE_SEND_PSUBSCRIBE:
+	case XMPP_PIPE_SEND_PNOTIFY:
+		break;
+	}
+	xmpp_free_pipe_cmd(cmd);
+}
+
 int xmpp_server_child_process(int data_pipe)
 {
 	int rv;
@@ -514,21 +522,12 @@ int xmpp_server_child_process(int data_pipe)
 					LM_ERR("failed to read from command pipe: %s\n",
 							strerror(errno));
 				} else {
-					LM_DBG("got pipe cmd %d\n", cmd->type);
-					switch (cmd->type) {
-					case XMPP_PIPE_SEND_MESSAGE:
-						do_send_message_server(cmd);
-						break;
-					case XMPP_PIPE_SEND_PACKET:
-					case XMPP_PIPE_SEND_PSUBSCRIBE:
-					case XMPP_PIPE_SEND_PNOTIFY:
-						break;
-					}
-					xmpp_free_pipe_cmd(cmd);
+					xmpp_server_net_send(cmd);
 				}
 			}
 		}
 	}
 	return 0;
 }
+
 

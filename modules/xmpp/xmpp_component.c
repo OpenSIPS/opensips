@@ -36,10 +36,7 @@
 #include "network.h"
 #include "xode.h"
 
-struct xmpp_private_data {
-	int fd;		/* socket */
-	int running;
-};
+int curr_fd = 0;
 
 static int xode_send(int fd, xode x)
 {
@@ -163,6 +160,22 @@ static int do_send_bulk_message_component(struct xmpp_private_data *priv,
 	return 0;
 }
 
+void xmpp_component_net_send(struct xmpp_pipe_cmd *cmd,
+		struct xmpp_private_data* priv)
+{
+	LM_DBG("got pipe cmd %d\n", cmd->type);
+	switch (cmd->type) {
+	case XMPP_PIPE_SEND_MESSAGE:
+		do_send_message_component(priv, cmd);
+		break;
+	case XMPP_PIPE_SEND_PACKET:
+	case XMPP_PIPE_SEND_PSUBSCRIBE:
+	case XMPP_PIPE_SEND_PNOTIFY:
+		do_send_bulk_message_component(priv, cmd);
+		break;
+	}
+	xmpp_free_pipe_cmd(cmd);
+}
 
 int xmpp_component_child_process(int data_pipe)
 {
@@ -179,7 +192,8 @@ int xmpp_component_child_process(int data_pipe)
 			sleep(3);
 			continue;
 		}
-		
+		curr_fd = fd;
+
 		priv.fd = fd;
 		priv.running = 1;
 		
@@ -217,18 +231,7 @@ int xmpp_component_child_process(int data_pipe)
 					LM_ERR("failed to read from command pipe: %s\n",
 							strerror(errno));
 				} else {
-					LM_DBG("got pipe cmd %d\n", cmd->type);
-					switch (cmd->type) {
-					case XMPP_PIPE_SEND_MESSAGE:
-						do_send_message_component(&priv, cmd);
-						break;
-					case XMPP_PIPE_SEND_PACKET:
-					case XMPP_PIPE_SEND_PSUBSCRIBE:
-					case XMPP_PIPE_SEND_PNOTIFY:
-						do_send_bulk_message_component(&priv, cmd);
-						break;
-					}
-					xmpp_free_pipe_cmd(cmd);
+					xmpp_component_net_send(cmd, &priv);
 				}
 			}
 		}
@@ -239,4 +242,5 @@ int xmpp_component_child_process(int data_pipe)
 	}
 	return 0;
 }
+
 

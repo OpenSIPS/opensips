@@ -49,6 +49,8 @@ extern int xmpp_port;
 extern char *xmpp_password;
 extern str sip_domain;
 
+extern int curr_fd;
+
 /* mod_xmpp.c */
 extern int xmpp_send_sip_msg(char *from, char *to, char *msg);
 extern void xmpp_free_pipe_cmd(struct xmpp_pipe_cmd *cmd);
@@ -80,5 +82,16 @@ char *shahash(const char *str);
 		dst.s = buf;\
 		sprintf(buf, "sip:%s", src);\
 	}while(0)
+
+struct xmpp_private_data {
+	int fd;		/* outgoing stream socket */
+	int listen_fd;	/* listening socket */
+	int in_fd;	/* incoming stream socket */
+	int running;
+};
+
+void xmpp_server_net_send(struct xmpp_pipe_cmd *cmd);
+void xmpp_component_net_send(struct xmpp_pipe_cmd *cmd,
+		struct xmpp_private_data* priv);
 
 #endif
