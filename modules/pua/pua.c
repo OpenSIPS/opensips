@@ -762,7 +762,7 @@ int update_pua(ua_pres_t* p, unsigned int hash_code)
 				);
 		if(result< 0)
 		{
-			LM_ERR("in t_request function\n"); 
+			LM_ERR("in t_request function\n");
 			shm_free(cb_param);
 			pkg_free(td);
 			goto error;
