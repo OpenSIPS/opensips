@@ -857,7 +857,7 @@ int send_subscribe(subs_info_t* subs)
 	pres.id         = subs->id;
 	pres.event      = subs->event;
 
-	hash_code=core_hash(&subs->to_uri, subs->watcher_uri, HASH_SIZE);
+	hash_code=core_hash(&pres.to_uri, pres.watcher_uri, HASH_SIZE);
 	lock_get(&HashT->p_records[hash_code].lock);
 
 	presentity= search_htable(&pres, hash_code);
