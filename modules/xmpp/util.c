@@ -48,13 +48,26 @@ char* uri_sip2xmpp(str* uri)
 		return 0;
 	}
 
-	if(suri.user.len + 2 + sip_domain.len > 256)
+	if(sip_domain.s)
 	{
-		LM_ERR("Buffer overflow\n");
-		return 0;
+		len = sprintf(buf, "%.*s@%s", suri.user.len, suri.user.s, sip_domain.s);
+		if(suri.user.len + 2 + sip_domain.len > 256)
+		{
+			LM_ERR("Buffer overflow\n");
+			return 0;
+		}
+	}
+	else
+	{
+		if(uri->len > 256)
+		{
+			LM_ERR("Buffer overflow\n");
+			return 0;
+		}
+
+		len = sprintf(buf, "%.*s@%.*s", suri.user.len, suri.user.s, suri.host.len, suri.host.s);
 	}
 
-	len = sprintf(buf, "%.*s@%s", suri.user.len, suri.user.s, sip_domain.s);
 	buf[len] = '\0';
 	return buf;
 }

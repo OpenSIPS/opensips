@@ -79,6 +79,7 @@
 #include "../../parser/parse_content.h"
 #include "../../parser/parse_from.h"
 #include "../tm/tm_load.h"
+#include "../../pt.h"
 
 #include "xode.h"
 #include "xmpp.h"
@@ -96,8 +97,13 @@ static int  mod_init(void);
 static void xmpp_process(int rank);
 static int  cmd_send_message(struct sip_msg* msg, char* _foo, char* _bar);
 void destroy(void);
+static int child_init(int);
 
 static int pipe_fds[2] = {-1,-1};
+
+#define XMPP_COMP 1
+#define XMPP_SERV 2
+int backend_mode = XMPP_COMP;
 
 /*
  * Configuration
@@ -110,6 +116,8 @@ str sip_domain= {0, 0};
 int xmpp_port = 0;
 char *xmpp_password = "secret";
 str outbound_proxy= {0, 0};
+int pid = 0;
+int* xmpp_pid;
 
 #define DEFAULT_COMPONENT_PORT 5347
 #define DEFAULT_SERVER_PORT 5269
@@ -159,7 +167,7 @@ struct module_exports exports = {
 	mod_init,        /* Initialization function */
 	0,               /* Response function */
 	destroy,         /* Destroy function */
-	0,               /* Child init function */
+	child_init,      /* Child init function */
 };
 
 /*
@@ -200,6 +208,20 @@ static int mod_init(void) {
 		LM_ERR("pipe() failed\n");
 		return -1;
 	}
+	
+	xmpp_pid = (int*)shm_malloc(sizeof(int));
+	if(xmpp_pid == NULL) {
+		LM_ERR("No more shared memory\n");
+		return -1;
+	}
+
+	return 0;
+}
+static int child_init(int rank)
+{
+	LM_NOTICE("init_child [%d]  pid [%d]\n", rank, getpid());
+
+	pid = my_pid();
 
 	return 0;
 }
@@ -211,11 +233,18 @@ static void xmpp_process(int rank)
 	 */
 	close(pipe_fds[1]);
 
+	pid = my_pid();
+	*xmpp_pid = pid;
+
 	LM_DBG("started child connection process\n");
-	if (!strcmp(backend, "component"))
+	if (!strcmp(backend, "component")) {
+		backend_mode = XMPP_COMP;
 		xmpp_component_child_process(pipe_fds[0]);
-	else if (!strcmp(backend, "server"))
+	}
+	else if (!strcmp(backend, "server")) {
+		backend_mode = XMPP_SERV;
 		xmpp_server_child_process(pipe_fds[0]);
+	}
 }
 
 
@@ -223,6 +252,7 @@ static void xmpp_process(int rank)
 void destroy(void)
 {
 	LM_DBG("cleaning up...\n");
+	shm_free(xmpp_pid);
 }
 
 /*********************************************************************************/
@@ -308,10 +338,26 @@ static int xmpp_send_pipe_cmd(enum xmpp_pipe_cmd_type type, str *from, str *to,
 	cmd->body = shm_strdup(body);
 	cmd->id = shm_strdup(id);
 
-	if (write(pipe_fds[1], &cmd, sizeof(cmd)) != sizeof(cmd)) {
-		LM_ERR("failed to write to command pipe: %s\n", strerror(errno));
-		xmpp_free_pipe_cmd(cmd);
-		return -1;
+	if(pid == *xmpp_pid) /* if attempting to send from the xmpp extra process */
+	{
+		LM_DBG("I am the XMPP extra process\n");
+		if(backend_mode == XMPP_COMP) {
+			struct xmpp_private_data priv;
+			priv.fd = curr_fd;
+			priv.running = 1;
+			xmpp_component_net_send(cmd, &priv);
+		}
+		else {
+			xmpp_server_net_send(cmd);
+		}
+	}
+	else
+	{
+		if (write(pipe_fds[1], &cmd, sizeof(cmd)) != sizeof(cmd)) {
+			LM_ERR("failed to write to command pipe: %s\n", strerror(errno));
+			xmpp_free_pipe_cmd(cmd);
+			return -1;
+		}
 	}
 	return 0;
 }
