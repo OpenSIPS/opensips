@@ -31,20 +31,20 @@ fi
 
 ### force values for variables in this section
 # you better set the variables in ~/.opensipsctlrc
-if [ -z "$ETCDIR" ] ; then
+if [ -z $ETCDIR ] ; then
 	ETCDIR="/usr/local/etc/opensips"
 fi
 
 ### version for this script
 VERSION='$Revision: 4448 $'
 
-if [ -z "$MYDIR" ] ; then
+if [ -z $MYDIR ] ; then
 	MYDIR=`dirname $0`
 fi
 
-if [ -z "$MYLIBDIR" ] ; then
+if [ -z $MYLIBDIR ] ; then
 	MYLIBDIR="/usr/local/lib/opensips/opensipsctl"
-	if [ ! -d "$MYLIBDIR" ]; then
+	if [ ! -d $MYLIBDIR ]; then
 		MYLIBDIR=$MYDIR
 	fi
 fi
@@ -110,7 +110,7 @@ fi
 ### CTLENGINE
 #
 CTLENGINELOADED=0
-if [ -z "$CTLENGINE" ] ; then
+if [ -z $CTLENGINE ] ; then
 	CTLENGINE="FIFO"
 fi
 case $CTLENGINE in
@@ -233,7 +233,7 @@ acl() {
 				if [ $? -ne 0 ] ; then
 					mecho "Non-existent user '$2'. Still proceeding? [Y|N] "
 					read answer
-					if [ "$answer" = "y" -o "$answer" = "Y" ] ; then
+					if [ $answer = "y" -o $answer = "Y" ] ; then
 						minfo "Proceeding with non-local user"
 					else
 						exit 1
@@ -260,7 +260,7 @@ acl() {
 			if [ $? -ne 0 ] ; then
 				mecho "Non-existent user '$2'. Still proceeding? [Y|N] "
 				read answer
-				if [ "$answer" = "y" -o "$answer" = "Y" ] ; then
+				if [ $answer = "y" -o $answer = "Y" ] ; then
 					minfo "Proceeding with non-local user"
 				else
 					exit 1
@@ -340,7 +340,7 @@ $CLAUSE;"
 check_ul_alias() {
 	require_ctlengine
 	RES=`$CTLCMD ul_show_contact "$ALS_TABLE" "$1@$2"`
-	RET="$?"
+	RET=$?
 	ALIAS_UL_EXISTS=0
 	if [ $RET -ne 0 ] ; then
 		merr "OpenSIPS $CTLENGINE not accessible: $RET"
@@ -386,16 +386,16 @@ and $DA_ALIAS_DOMAIN_COLUMN='$2';"
 check_alias() {
 	ALIAS_EXISTS=0
 
-	if [ "$ENABLE_ALIASES" = "1" ] ; then
+	if [ $ENABLE_ALIASES -eq 1 ] ; then
 		check_ul_alias "$1" "$2"
-		if [ "$ALIAS_UL_EXISTS" = "0" ] ; then
+		if [ $ALIAS_UL_EXISTS -eq 0 ] ; then
 			ALIAS_EXISTS=0
 		else
 			ALIAS_EXISTS=1
 		fi
-	elif  [ "$ENABLE_ALIASES" = "2" ] ; then
+	elif  [ $ENABLE_ALIASES -eq 2 ] ; then
 		check_db_alias "$1" "$2"
-		if [ "$ALIAS_DB_EXISTS" = "0" ] ; then
+		if [ $ALIAS_DB_EXISTS -eq 0 ] ; then
 			ALIAS_EXISTS=0
 		else
 			ALIAS_EXISTS=1
@@ -405,7 +405,7 @@ check_alias() {
 
 # db-based aliases
 alias_db() {
-	if [ "$#" -lt 2 ] ; then
+	if [ $# -lt 2 ] ; then
 		merr "alias_db - too few parameters"
 		echo
 		usage_alias_db
@@ -421,7 +421,7 @@ alias_db() {
 			if [ $# -eq 2 ] ; then
 				# print aliases for user
 				check_aor "$2"
-				if [ "$?" -ne "0" ] ; then
+				if [ $? -ne 0 ] ; then
 					merr "alias_db - <$2> is not a valid AoR (user@domain)"
 					exit 1
 				fi
@@ -432,10 +432,10 @@ alias_db() {
 $DA_DOMAIN_COLUMN='$OSIPSDOMAIN'"
 				mecho "Dumping aliases for user=<$2>"
 				echo
-				if [ $DBENGINE -eq "MYSQL" ] ; then
+				if [ $DBENGINE == "MYSQL" ] ; then
 					QUERY="SELECT CONCAT($DA_ALIAS_USER_COLUMN,\
 	'@',$DA_ALIAS_DOMAIN_COLUMN) AS ALIAS FROM $DA_TABLE $CLAUSE;"
-				elif [ $DBENGINE -eq "PGSQL" ] ; then
+				elif [ $DBENGINE == "PGSQL" ] ; then
 					QUERY="SELECT ($DA_ALIAS_USER_COLUMN || \
 	'@' || $DA_ALIAS_DOMAIN_COLUMN) AS ALIAS FROM $DA_TABLE $CLAUSE;"
 				fi
@@ -452,7 +452,7 @@ $DA_DOMAIN_COLUMN='$OSIPSDOMAIN'"
 			elif [ $# -eq 1 ] ; then
 				mecho "Dumping all aliases may take long: do you want to proceed? [Y|N] "
 				read answer
-				if [ "$answer" = "y" -o "$answer" = "Y" ] ; then
+				if [ $answer = "y" -o $answer = "Y" ] ; then
 					mecho "Dumping all aliases..."
 					echo
 				else
@@ -483,7 +483,7 @@ $DA_USER_COLUMN, $DA_DOMAIN_COLUMN FROM $DA_TABLE;"
 			fi
 			
 			check_aor "$2"
-			if [ "$?" -ne "0" ] ; then
+			if [ $? -ne 0 ] ; then
 				merr "alias_db - $2 is not a valid AoR (user@domain)"
 				exit 1
 			fi
@@ -492,10 +492,10 @@ $DA_USER_COLUMN, $DA_DOMAIN_COLUMN FROM $DA_TABLE;"
 			
 			CLAUSE="WHERE $DA_ALIAS_USER_COLUMN='$OSIPSUSER' AND \
 $DA_ALIAS_DOMAIN_COLUMN='$OSIPSDOMAIN'"
-			if [ $DBENGINE -eq "MYSQL" ] ; then
+			if [ $DBENGINE == "MYSQL" ] ; then
 				QUERY="SELECT CONCAT($DA_USER_COLUMN,'@',$DA_DOMAIN_COLUMN) \
 	AS 'SIP-ID' FROM $DA_TABLE $CLAUSE ; "
-			elif [ $DBENGINE -eq "PGSQL" ] ; then
+			elif [ $DBENGINE == "PGSQL" ] ; then
 				QUERY="SELECT ($DA_USER_COLUMN || '@' || $DA_DOMAIN_COLUMN) \
 	AS 'SIP-ID' FROM $DA_TABLE $CLAUSE ; "
 			fi
@@ -524,13 +524,13 @@ $DA_ALIAS_DOMAIN_COLUMN='$OSIPSDOMAIN'"
 			fi
 			shift
 			check_aor "$1"
-			if [ "$?" -ne "0" ] ; then
+			if [ $? -ne 0 ] ; then
 				err "alias_db - $1 is not a valid AoR (user@domain)"
 				exit 1
 			fi
 
 			check_aor "$2"
-			if [ "$?" -ne "0" ] ; then
+			if [ $? -ne 0 ] ; then
 				err "alias_db - $2 is not a valid AoR (user@domain)"
 				exit 1
 			fi
@@ -540,21 +540,21 @@ $DA_ALIAS_DOMAIN_COLUMN='$OSIPSDOMAIN'"
 			TMP_OSIPSDOMAIN=$OSIPSDOMAIN
 			set_user $2
 		
-                        if [ $DBENGINE == "MYSQL" ] ; then
-                                if is_value_in_db $DA_TABLE "concat($DA_ALIAS_USER_COLUMN,$DA_ALIAS_DOMAIN_COLUMN)" "$TMP_OSIPSUSER$TMP_OSIPSDOMAIN"; then
-                                        minfo "$TMP_OSIPSUSER alias already in $DA_TABLE table"
-                                        exit 0
-                                fi
-                        elif [ $DBENGINE == "PGSQL" ] ; then
-                                if is_value_in_db $DA_TABLE "$DA_ALIAS_USER_COLUMN || $DA_ALIAS_DOMAIN_COLUMN" "$TMP_OSIPSUSER$TMP_OSIPSDOMAIN"; then
-                                        minfo "$TMP_OSIPSUSER alias already in $DA_TABLE table"
-                                        exit 0
-                                fi
-                        fi
+			if [ $DBENGINE == "MYSQL" ] ; then
+				if is_value_in_db $DA_TABLE "concat($DA_ALIAS_USER_COLUMN,$DA_ALIAS_DOMAIN_COLUMN)" "$TMP_OSIPSUSER$TMP_OSIPSDOMAIN"; then
+					minfo "$TMP_OSIPSUSER alias already in $DA_TABLE table"
+					exit 0
+				fi
+			elif [ $DBENGINE == "PGSQL" ] ; then
+				if is_value_in_db $DA_TABLE "$DA_ALIAS_USER_COLUMN || $DA_ALIAS_DOMAIN_COLUMN" "$TMP_OSIPSUSER$TMP_OSIPSDOMAIN"; then
+					minfo "$TMP_OSIPSUSER alias already in $DA_TABLE table"
+					exit 0
+				fi
+			fi
 
-                        QUERY="INSERT INTO $DA_TABLE ($DA_USER_COLUMN,$DA_DOMAIN_COLUMN,\
-$DA_ALIAS_USER_COLUMN,$DA_ALIAS_DOMAIN_COLUMN) VALUES ('$OSIPSUSER',\
-'$OSIPSDOMAIN','$TMP_OSIPSUSER','$TMP_OSIPSDOMAIN' );"
+			QUERY="INSERT INTO $DA_TABLE ($DA_USER_COLUMN,$DA_DOMAIN_COLUMN,\
+			$DA_ALIAS_USER_COLUMN,$DA_ALIAS_DOMAIN_COLUMN) VALUES (\
+			'$OSIPSUSER','$OSIPSDOMAIN','$TMP_OSIPSUSER','$TMP_OSIPSDOMAIN' );"
 			$DBCMD "$QUERY"
 			if [ $? -ne 0 ] ; then
 				merr "alias_db - SQL Error"
@@ -573,7 +573,7 @@ $DA_ALIAS_USER_COLUMN,$DA_ALIAS_DOMAIN_COLUMN) VALUES ('$OSIPSUSER',\
 			shift
 			
 			check_aor "$1"
-			if [ "$?" -ne "0" ] ; then
+			if [ $? -ne 0 ] ; then
 				merr "alias_db - $1 is not a valid URI"
 				exit 1
 			fi
@@ -616,12 +616,12 @@ $DA_ALIAS_DOMAIN_COLUMN='$OSIPSDOMAIN'"
 
 avpops() {
 	require_dbengine
-	if [ "$#" -lt 2 ] ; then
+	if [ $# -lt 2 ] ; then
 		merr "avp - too few parameters"
 		minfo "see '$0 avp help'"
 		exit 1
 	fi
-	if [ "$1" = "avp" ] ; then
+	if [ $1 = "avp" ] ; then
 		shift
 	else
 		merr "avp - unknown command $1"
@@ -633,7 +633,7 @@ avpops() {
 		list)
 			shift
 			CLAUSE=""
-			while [ "$#" != "0" ] 
+			while [ $# -ne 0 ] 
 			do
 				TMP_ARG=$1
 				shift
@@ -651,7 +651,7 @@ avpops() {
 							exit 1
 						fi
 						is_aor "$1"
-						if [ "$?" -eq "0" ] ; then
+						if [ $? -eq 0 ] ; then
 							set_user $1
 							if [ "$CLAUSE" = "" ] ; then
 								CLAUSE=" WHERE $AVP_USER_COLUMN='$OSIPSUSER' \
@@ -661,7 +661,7 @@ AND $AVP_DOMAIN_COLUMN='$OSIPSDOMAIN'"
 $AVP_USER_COLUMN='$OSIPSUSER' AND $AVP_DOMAIN_COLUMN='$OSIPSDOMAIN'"
 							fi
 						else
-							if [ "$CLAUSE" = "" ] ; then
+							if [ "$CLAUSE" == "" ] ; then
 								CLAUSE=" WHERE $AVP_UUID_COLUMN='$1'"
 							else
 								CLAUSE="$CLAUSE AND $AVP_UUID_COLUMN='$1'"
@@ -673,7 +673,7 @@ $AVP_USER_COLUMN='$OSIPSUSER' AND $AVP_DOMAIN_COLUMN='$OSIPSDOMAIN'"
 							merr "avp list - attribute name parameter missing"
 							exit 1
 						fi
-						if [ "$CLAUSE" = "" ] ; then
+						if [ "$CLAUSE" == "" ] ; then
 							CLAUSE=" WHERE $AVP_ATTRIBUTE_COLUMN='$1'"
 						else
 							CLAUSE="$CLAUSE AND $AVP_ATTRIBUTE_COLUMN='$1'"
@@ -753,7 +753,7 @@ FROM $AVP_TABLE $CLAUSE;"
 			fi
 						
 			is_aor "$1"
-			if [ "$?" -eq "0" ] ; then
+			if [ $? -eq 0 ] ; then
 				set_user $1
 			else
 				AVP_UUID=$1
@@ -779,7 +779,7 @@ VALUES ('$AVP_UUID','$OSIPSUSER','$OSIPSDOMAIN','$2',$3,'$4',NOW());"
 		rm)
 			shift
 			CLAUSE=""
-			while [ "$#" != "0" ] 
+			while [ $# -ne 0 ] 
 			do
 				TMP_ARG=$1
 				shift
@@ -797,9 +797,9 @@ VALUES ('$AVP_UUID','$OSIPSUSER','$OSIPSDOMAIN','$2',$3,'$4',NOW());"
 							exit 1
 						fi
 						is_aor "$1"
-						if [ "$?" -eq "0" ] ; then
+						if [ $? -eq 0 ] ; then
 							set_user $1
-							if [ "$CLAUSE" = "" ] ; then
+							if [ "$CLAUSE" == "" ] ; then
 								CLAUSE="WHERE $AVP_USER_COLUMN='$OSIPSUSER' \
 AND $AVP_DOMAIN_COLUMN='$OSIPSDOMAIN'"
 							else
@@ -807,7 +807,7 @@ AND $AVP_DOMAIN_COLUMN='$OSIPSDOMAIN'"
 $AVP_USER_COLUMN='$OSIPSUSER' AND $AVP_DOMAIN_COLUMN='$OSIPSDOMAIN'"
 							fi
 						else
-							if [ "$CLAUSE" = "" ] ; then
+							if [ "$CLAUSE" == "" ] ; then
 								CLAUSE="WHERE $AVP_UUID_COLUMN='$1'"
 							else
 								CLAUSE="$CLAUSE AND $AVP_UUID_COLUMN='$1'"
@@ -1789,7 +1789,7 @@ speeddial() {
 			if [ $# -eq 2 ] ; then
 				# print speed-dials for user
 				check_aor "$2"
-				if [ "$?" -ne "0" ] ; then
+				if [ $? -ne 0 ] ; then
 					merr "speeddial - <$2> is not a valid AoR (user@domain)"
 					exit 1
 				fi
@@ -1800,11 +1800,11 @@ speeddial() {
 $SD_DOMAIN_COLUMN='$OSIPSDOMAIN'"
 				mecho "Dumping speed-dials for user=<$2>"
 				echo
-				if [ $DBENGINE -eq "MYSQL" ] ; then
+				if [ $DBENGINE == "MYSQL" ] ; then
 				QUERY="SELECT CONCAT($SD_SD_USER_COLUMN,'@',\
 	$SD_SD_DOMAIN_COLUMN) AS 'Short number', $SD_NEW_URI_COLUMN AS 'New URI',\
 	$SD_DESC_COLUMN FROM $SD_TABLE $CLAUSE;"
-				elif [ $DBENGINE -eq "PGSQL" ] ; then
+				elif [ $DBENGINE == "PGSQL" ] ; then
 				QUERY="SELECT ($SD_SD_USER_COLUMN || '@' || \
 	$SD_SD_DOMAIN_COLUMN) AS 'Short number', $SD_NEW_URI_COLUMN AS 'New URI',\
 	$SD_DESC_COLUMN FROM $SD_TABLE $CLAUSE;"
@@ -1835,12 +1835,12 @@ $SD_DOMAIN_COLUMN='$OSIPSDOMAIN'"
 				else
 					exit 1
 				fi
-				if [ $DBENGINE -eq "MYSQL" ] ; then
+				if [ $DBENGINE == "MYSQL" ] ; then
 					QUERY="SELECT CONCAT($SD_SD_USER_COLUMN,'@',\
 $SD_SD_DOMAIN_COLUMN) AS 'Short number', CONCAT($SD_USER_COLUMN,'@',\
 $SD_DOMAIN_COLUMN) AS 'Owner', $SD_NEW_URI_COLUMN AS 'New URI',\
 $SD_DESC_COLUMN FROM $SD_TABLE;"
-				elif [ $DBENGINE -eq "PGSQL" ] ; then
+				elif [ $DBENGINE == "PGSQL" ] ; then
 					QUERY="SELECT ($SD_SD_USER_COLUMN||'@'||\
 $SD_SD_DOMAIN_COLUMN) AS 'Short number', ($SD_USER_COLUMN||'@'||\
 $SD_DOMAIN_COLUMN) AS 'Owner', $SD_NEW_URI_COLUMN AS 'New URI',\
@@ -1876,7 +1876,7 @@ $SD_DESC_COLUMN FROM $SD_TABLE;"
 			fi
 			
 			check_aor "$2"
-			if [ "$?" -ne "0" ] ; then
+			if [ $? -ne 0 ] ; then
 				merr "speeddial - $2 is not a valid AoR (user@domain)"
 				exit 1
 			fi
@@ -1885,11 +1885,11 @@ $SD_DESC_COLUMN FROM $SD_TABLE;"
 			
 			CLAUSE="WHERE $SD_SD_USER_COLUMN='$OSIPSUSER' AND \
 $SD_SD_DOMAIN_COLUMN='$OSIPSDOMAIN'"
-			if [ $DBENGINE -eq "MYSQL" ] ; then
+			if [ $DBENGINE == "MYSQL" ] ; then
 				QUERY="SELECT CONCAT($SD_USER_COLUMN,'@',$SD_DOMAIN_COLUMN) \
 	AS 'Owner', $SD_NEW_URI_COLUMN AS 'New URI', $SD_DESC_COLUMN FROM \
 	$SD_TABLE $CLAUSE ; "
-			elif [ $DBENGINE -eq "PGSQL" ] ; then
+			elif [ $DBENGINE == "PGSQL" ] ; then
 				QUERY="SELECT ($SD_USER_COLUMN || '@' || $SD_DOMAIN_COLUMN) \
 	AS 'Owner', $SD_NEW_URI_COLUMN AS 'New URI', $SD_DESC_COLUMN FROM \
 	$SD_TABLE $CLAUSE ; "
@@ -1922,19 +1922,19 @@ $SD_SD_DOMAIN_COLUMN='$OSIPSDOMAIN'"
 			fi
 			shift
 			check_aor "$1"
-			if [ "$?" -ne "0" ] ; then
+			if [ $? -ne 0 ] ; then
 				merr "speeddial - $1 is not a valid AoR (user@domain)"
 				exit 1
 			fi
 
 			check_aor "$2"
-			if [ "$?" -ne "0" ] ; then
+			if [ $? -ne 0 ] ; then
 				merr "speeddial - $2 is not a valid AoR (user@domain)"
 				exit 1
 			fi
 			
 			check_sipaor "$3"
-			if [ "$?" -ne "0" ] ; then
+			if [ $? -ne 0 ] ; then
 				merr "speeddial - $3 is not a valid SIP AoR (sip:user@domain)"
 				exit 1
 			fi
@@ -1966,13 +1966,13 @@ VALUES ('$TMP_OSIPSUSER','$TMP_OSIPSDOMAIN','$OSIPSUSER','$OSIPSDOMAIN','$3','$4
 			shift
 			
 			check_aor "$1"
-			if [ "$?" -ne "0" ] ; then
+			if [ $? -ne 0 ] ; then
 				merr "speeddial - $1 is not a valid AoR (user@domain)"
 				exit 1
 			fi
 			
 			check_aor "$2"
-			if [ "$?" -ne "0" ] ; then
+			if [ $? -ne 0 ] ; then
 				merr "speeddial - $2 is not a valid AoR (user@domain)"
 				exit 1
 			fi
@@ -2014,7 +2014,7 @@ $SD_SD_DOMAIN_COLUMN='$OSIPSDOMAIN'"
 ### subscriber management
 #
 subscriber() {
-	if [ "$#" -lt 2 ] ; then
+	if [ $# -lt 2 ] ; then
 		merr "too few parameters"
 		usage_subscriber
 		exit 1
@@ -2037,12 +2037,12 @@ subscriber() {
 			fi
 			set_user $1
 			check_alias $OSIPSUSER $OSIPSDOMAIN
-			if [ "$ALIAS_EXISTS" = "1" ] ; then
+			if [ $ALIAS_EXISTS -eq 1 ] ; then
 				minfo "user '$1' already exists as alias"
 				exit 1
 			fi
 
-			if [ "$STORE_PLAINTEXT_PW" = "1" ] ; then
+			if [ $STORE_PLAINTEXT_PW -eq 1 ] ; then
 				PASS="$2"
 			else
 				PASS=""
@@ -2073,7 +2073,7 @@ subscriber() {
 				exit 1
 			fi
 
-			if [ "$STORE_PLAINTEXT_PW" = "1" ] ; then
+			if [ $STORE_PLAINTEXT_PW -eq 1 ] ; then
 				PASS="$2"
 			else
 				PASS=""
@@ -2131,7 +2131,7 @@ and $REALM_COLUMN='$OSIPSDOMAIN';"
 ### USRLOC management
 #
 usrloc() {
-	if [ "$#" -lt 2 ] ; then
+	if [ $# -lt 2 ] ; then
 		merr "usrloc - too few parameters"
 		usage_usrloc
 		exit 1
@@ -2139,21 +2139,21 @@ usrloc() {
 
 	require_ctlengine
 
-	if [ "$1" = "alias" ] ; then
+	if [ $1 == "alias" ] ; then
 		USRLOC_TABLE="$ALS_TABLE"
 		if [ -z "$USRLOC_TABLE" ] ; then
 			USRLOC_TABLE=aliases
 		fi
 		CHECK_SUB=1
-	elif [ "$1" = "ul" ] ; then
+	elif [ $1 == "ul" ] ; then
 		USRLOC_TABLE="$UL_TABLE"
-		if [ -z "$USRLOC_TABLE" ] ; then
+		if [ -z $USRLOC_TABLE ] ; then
 			USRLOC_TABLE=location
 		fi
 		CHECK_SUB=0
-	elif [ "$1" = "usrloc" ] ; then
+	elif [ $1 == "usrloc" ] ; then
 		USRLOC_TABLE="$UL_TABLE"
-		if [ -z "$USRLOC_TABLE" ] ; then
+		if [ -z $USRLOC_TABLE ] ; then
 			USRLOC_TABLE=location
 		fi
 		CHECK_SUB=0
@@ -2167,7 +2167,7 @@ usrloc() {
 	case $1 in 
 		show)
 			if [ $# -eq 2 ] ; then
-				if [ "$2" = "--brief" ] ; then
+				if [ $2 == "--brief" ] ; then
 					$CTLCMD ul_dump brief
 				else
 					set_user $2
@@ -2200,13 +2200,13 @@ usrloc() {
 			shift
 			check_uri "$2"
 				
-			if [ "$?" -ne "0" ] ; then
+			if [ $? -ne 0 ] ; then
 				merr "$2 is not a valid URI"
 				exit 1
 			fi
 
 			set_user $1
-			if [ "$CHECK_SUB" -ne 0 ] ; then
+			if [ $CHECK_SUB -ne 0 ] ; then
 				is_user $1 
 				if [ $? -eq 0 ] ; then
 					merr "overlap of alias with an existing subscriber name"
@@ -2215,8 +2215,8 @@ usrloc() {
 			fi
 
 			check_alias $OSIPSUSER $OSIPSDOMAIN
-			if [ "$ALIAS_EXISTS" = "1" ] ; then
-				if [ "$CHECK_SUB" -ne 0 ] ; then
+			if [ $ALIAS_EXISTS -eq 1 ] ; then
+				if [ $CHECK_SUB -ne 0 ] ; then
 					minfo "alias already defined"
 				else
 					merr "AOR is an alias"
@@ -2238,7 +2238,7 @@ usrloc() {
 				shift
 				set_user $1
 				check_uri "$2"
-				if [ "$?" -ne "0" ] ; then
+				if [ $? -ne 0 ] ; then
 					merr "$2 is not a valid SIP URI (sip:[user@]domain)"
 					exit 1
 				fi
@@ -2265,7 +2265,7 @@ usrloc() {
 
 tls_ca() {
 
-	if [ "$1" = "rootCA" ] ; then
+	if [ $1 = "rootCA" ] ; then
 		if [ -z $2 ] ; then
 			# use default
 			CA_BASE=$ETCDIR/tls
@@ -2320,7 +2320,7 @@ tls_ca() {
 		minfo "Private key can be found in $CA_PATH/private/cakey.pem"
 		minfo "Certificate can be found in $CA_PATH/cacert.pem"
 
-	elif [ "$1" = "userCERT" ] ; then
+	elif [ $1 == "userCERT" ] ; then
 
 		if [ -z $2 ] ; then
 			merr "Missing user name parameter"
@@ -2438,7 +2438,7 @@ case $1 in
 		;;
 
 	cisco_restart)
-		if [ "$#" -ne 2 ] ; then	
+		if [ $# -ne 2 ] ; then	
 			usage_cisco_restart
 			exit 1
 		fi
@@ -2506,7 +2506,7 @@ case $1 in
 		# error handling is hacked -- filter_fl should not
 		# consume positive status -- that should be done by
 		# calling app
-		if [ "$#" -ne 2 ] ; then
+		if [ $# -ne 2 ] ; then
 			usage_ping
 			exit 1
 		fi
