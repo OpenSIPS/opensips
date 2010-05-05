@@ -1520,7 +1520,7 @@ int ds_print_list(FILE *fout)
  * (set-id or -1 for all sets)
  */
 int ds_is_in_list(struct sip_msg *_m, pv_spec_t *pv_ip, pv_spec_t *pv_port,
-																	int set)
+													int set, int active_only)
 {
 	pv_value_t val;
 	ds_set_p list;
@@ -1567,6 +1567,9 @@ int ds_is_in_list(struct sip_msg *_m, pv_spec_t *pv_ip, pv_spec_t *pv_port,
 				|| port==list->dlist[j].port) &&
 				ip_addr_cmp( ip, &list->dlist[j].ip_address) ) {
 					/* matching destination */
+					if (active_only &&
+					(list->dlist[j].flags&(DS_INACTIVE_DST|DS_PROBING_DST)) )
+						continue;
 					if(set==-1 && ds_setid_pvname.s!=0) {
 						val.ri = list->id;
 						if(pv_set_value(_m, &ds_setid_pv,
@@ -1711,8 +1714,8 @@ void ds_check_timer(unsigned int ticks, void* param)
 		for(j=0; j<list->nr; j++) 
 		{
 			/* If the Flag of the entry has "Probing set, send a probe:	*/
-			if (ds_probing_mode==1 ||
-					(list->dlist[j].flags&DS_PROBING_DST) != 0)
+			if ( ((list->dlist[j].flags&DS_INACTIVE_DST)==0) &&
+			(ds_probing_mode==1 || (list->dlist[j].flags&DS_PROBING_DST)!=0) )
 			{
 				LM_DBG("probing set #%d, URI %.*s\n", list->id,
 						list->dlist[j].uri.len, list->dlist[j].uri.s);

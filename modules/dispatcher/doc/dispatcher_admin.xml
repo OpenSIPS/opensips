@@ -805,7 +805,7 @@ ds_select_dst("1", "0");
 
 	<section>
 		<title>
-		<function moreinfo="none">ds_is_in_list( ip, port [,set])</function>
+		<function moreinfo="none">ds_is_in_list( ip, port [,set [,active_only]])</function>
 		</title>
 		<para>
 		This function returns true, if the parameters ip and port point to a 
@@ -830,6 +830,11 @@ ds_select_dst("1", "0");
 			<para><emphasis>set</emphasis> (optional) - the set ID of a 
 			dispatcher list to test agaist - if missing, all the dispatching
 			sets will the checked.</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>active_only</emphasis> (optional) - search only 
+			through the active destinations (ignore the ones in probing 
+			and inactive mode).</para>
 		</listitem>
 		</itemizedlist>
 		<para>

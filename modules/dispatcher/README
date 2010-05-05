@@ -69,7 +69,8 @@ Carsten Bock
               1.4.4. ds_next_domain()
               1.4.5. ds_mark_dst()
               1.4.6. ds_mark_dst("s")
-              1.4.7. ds_is_in_list( ip, port [,set])
+              1.4.7. ds_is_in_list( ip, port [,set
+                      [,active_only]])
 
         1.5. Exported MI Functions
 
@@ -591,7 +592,7 @@ ds_select_dst("1", "0");
 
    This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
-1.4.7.  ds_is_in_list( ip, port [,set])
+1.4.7.  ds_is_in_list( ip, port [,set [,active_only]])
 
    This function returns true, if the parameters ip and port point
    to a host from the dispatcher-list; otherwise false.
@@ -606,6 +607,9 @@ ds_select_dst("1", "0");
      * set (optional) - the set ID of a dispatcher list to test
        agaist - if missing, all the dispatching sets will the
        checked.
+     * active_only (optional) - search only through the active
+       destinations (ignore the ones in probing and inactive
+       mode).
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE and ONREPLY_ROUTE.

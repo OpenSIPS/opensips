@@ -98,7 +98,7 @@ int ds_print_list(FILE *fout);
 int ds_print_mi_list(struct mi_node* rpl);
 
 int ds_is_in_list(struct sip_msg *_m, pv_spec_t *addr, pv_spec_t *port,
-		int set);
+		int set, int active_only);
 /*
  * Timer for checking inactive destinations
  */

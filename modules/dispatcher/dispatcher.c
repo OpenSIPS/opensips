@@ -123,6 +123,7 @@ static int w_ds_mark_dst1(struct sip_msg*, char*, char*);
 
 static int w_ds_is_in_list2(struct sip_msg*, char*, char*);
 static int w_ds_is_in_list3(struct sip_msg*, char*, char*, char*);
+static int w_ds_is_in_list4(struct sip_msg*, char*, char*, char*, char*);
 
 static void destroy(void);
 
@@ -151,6 +152,8 @@ static cmd_export_t cmds[]={
 	{"ds_is_in_list",    (cmd_function)w_ds_is_in_list2,   2, in_list_fixup, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE},
 	{"ds_is_in_list",    (cmd_function)w_ds_is_in_list3,   3, in_list_fixup, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE},
+	{"ds_is_in_list",    (cmd_function)w_ds_is_in_list4,   4, in_list_fixup, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE},
 	{0,0,0,0,0,0}
 };
@@ -561,6 +564,9 @@ static int in_list_fixup(void** param, int param_no)
 	} else if (param_no==3) {
 		/* the group to check in */
 		return fixup_uint(param);
+	} else if (param_no==4) {
+		/*  active only check ? */
+		return fixup_uint(param);
 	} else {
 		LM_CRIT("bug - too many params (%d) in is_in_list()\n",param_no);
 		return -1;
@@ -668,13 +674,21 @@ static struct mi_root* ds_mi_reload(struct mi_root* cmd_tree, void* param)
 
 static int w_ds_is_in_list2(struct sip_msg *msg, char *ip, char *port)
 {
-	return ds_is_in_list(msg, (pv_spec_t*)ip, (pv_spec_t*)port, -1);
+	return ds_is_in_list(msg, (pv_spec_t*)ip, (pv_spec_t*)port, -1, 0);
 }
 
 
 static int w_ds_is_in_list3(struct sip_msg *msg,char *ip,char *port,char *set)
 {
-	return ds_is_in_list(msg, (pv_spec_t*)ip, (pv_spec_t*)port,(int)(long)set);
+	return ds_is_in_list(msg,(pv_spec_t*)ip,(pv_spec_t*)port,(int)(long)set,0);
+}
+
+
+static int w_ds_is_in_list4(struct sip_msg *msg,char *ip,char *port,char *set,
+															char *active_only)
+{
+	return ds_is_in_list(msg,(pv_spec_t*)ip,(pv_spec_t*)port,
+		(int)(long)set, (int)(long)active_only);
 }
 
 
