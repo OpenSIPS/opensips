@@ -58,7 +58,8 @@ struct p_modif
 
 void msg_presentity_clean(unsigned int ticks,void *param)
 {
-	static db_ps_t my_ps_delete = NULL, my_ps_query = NULL;
+//	static db_ps_t my_ps_delete = NULL, my_ps_query = NULL;
+	static db_ps_t my_ps_delete = NULL;
 	db_key_t db_keys[2];
 	db_val_t db_vals[2];
 	db_op_t  db_ops[2] ;
@@ -97,7 +98,7 @@ void msg_presentity_clean(unsigned int ticks,void *param)
 	result_cols[etag_col=n_result_cols++] = &str_etag_col;
 	result_cols[event_col=n_result_cols++] = &str_event_col;
 
-	CON_PS_REFERENCE(pa_db) = &my_ps_query;
+//	CON_PS_REFERENCE(pa_db) = &my_ps_query;
 
 	if(pa_dbf.query(pa_db, db_keys, db_ops, db_vals, result_cols,
 						1, n_result_cols, &query_str, &result )< 0)
@@ -115,25 +116,25 @@ void msg_presentity_clean(unsigned int ticks,void *param)
 		pa_dbf.free_result(pa_db, result);	
 		return;
 	}
-	LM_DBG("found n= %d expires messages\n ",result->n);
+	LM_DBG("found n= %d expires messages\n",result->n);
 
 	n= result->n;
-	
+
 	p= (struct p_modif*)pkg_malloc(n* sizeof(struct p_modif));
 	if(p== NULL)
 	{
-		ERR_MEM(PKG_MEM_STR);	
+		ERR_MEM(PKG_MEM_STR);
 	}
 	memset(p, 0, n* sizeof(struct p_modif));
 
 	for(i = 0; i< n; i++)
-	{	
+	{
 		row = &result->rows[i];
-		row_vals = ROW_VALUES(row);	
-	
+		row_vals = ROW_VALUES(row);
+
 		user.s= (char*)row_vals[user_col].val.string_val;
 		user.len= strlen(user.s);
-		
+
 		domain.s= (char*)row_vals[domain_col].val.string_val;
 		domain.len= strlen(domain.s);
 
@@ -173,8 +174,8 @@ void msg_presentity_clean(unsigned int ticks,void *param)
 			LM_DBG("event not found\n");
 			p[i].p = 0;
 			goto no_notify;
-		}	
-		
+		}
+
 		p[i].p= pres;
 
 no_notify:
@@ -184,7 +185,7 @@ no_notify:
 			free_event_params(ev.params, PKG_MEM_TYPE);
 			goto error;
 		}
-		
+
 		/* delete from hash table */
 		if(delete_phtable(&p[i].uri, ev.parsed)< 0)
 		{
@@ -197,7 +198,7 @@ no_notify:
 	}
 	pa_dbf.free_result(pa_db, result);
 	result= NULL;
-	
+
 	for(i= 0; i<n ; i++)
 	{
 		if(p[i].p == 0)
@@ -205,9 +206,9 @@ no_notify:
 
 		LM_DBG("found expired publish for [user]=%.*s  [domanin]=%.*s\n",
 			p[i].p->user.len,p[i].p->user.s, p[i].p->domain.len, p[i].p->domain.s);
-		
+
 		rules_doc= NULL;
-		
+
 		if(p[i].p->event->get_rules_doc && 
 		p[i].p->event->get_rules_doc(&p[i].p->user, &p[i].p->domain, &rules_doc)< 0)
 		{
@@ -442,7 +443,7 @@ int handle_publish(struct sip_msg* msg, char* sender_uri, char* str2)
 		if(sender== NULL)
 		{
 			ERR_MEM(PKG_MEM_STR);
-		}	
+		}
 		if(pv_printf(msg, (pv_elem_t*)sender_uri, buf, &buf_len)<0)
 		{
 			LM_ERR("cannot print the format\n");

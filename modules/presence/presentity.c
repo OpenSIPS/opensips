@@ -1253,8 +1253,6 @@ int pres_htable_restore(void)
 	if(sphere_enable)
 		result_cols[body_col= n_result_cols++]= &str_body_col;
 
-
-
 	if (pa_dbf.use_table(pa_db, &presentity_table) < 0)
 	{
 		LM_ERR("unsuccessful use table sql operation\n");
