@@ -457,14 +457,12 @@ error:
 
 void msg_watchers_clean(unsigned int ticks,void *param)
 {
-	static db_ps_t my_ps = NULL;
-	db_key_t db_keys[3], result_cols[1];
+	db_key_t db_keys[3];
 	db_val_t db_vals[3];
 	db_op_t  db_ops[3] ;
-	db_res_t *result= NULL;
 
 	LM_DBG("cleaning pending subscriptions\n");
-	
+
 	db_keys[0] = &str_inserted_time_col;
 	db_ops[0] = OP_LT;
 	db_vals[0].type = DB_INT;
@@ -476,32 +474,6 @@ void msg_watchers_clean(unsigned int ticks,void *param)
 	db_vals[1].type = DB_INT;
 	db_vals[1].nul = 0;
 	db_vals[1].val.int_val = PENDING_STATUS;
-	
-	result_cols[0]= &str_id_col;
-
-	if (pa_dbf.use_table(pa_db, &watchers_table) < 0) 
-	{
-		LM_ERR("unsuccessful use table sql operation\n");
-		return ;
-	}
-
-	CON_PS_REFERENCE(pa_db) = &my_ps;
-
-	if(pa_dbf.query(pa_db, db_keys, db_ops, db_vals, result_cols, 2, 1, 0, &result )< 0)
-	{
-		LM_ERR("querying database for expired messages\n");
-		if(result)
-			pa_dbf.free_result(pa_db, result);
-		return;
-	}
-	if(result == NULL)
-		return;
-	if(result->n <= 0)
-	{
-		pa_dbf.free_result(pa_db, result);
-		return;
-	}
-	pa_dbf.free_result(pa_db, result);
 
 	if (pa_dbf.delete(pa_db, db_keys, db_ops, db_vals, 2) < 0) 
 		LM_ERR("cleaning pending subscriptions\n");
@@ -716,7 +688,6 @@ error:
 error_free:
 	if(subs.pres_uri.s)
 		pkg_free(subs.pres_uri.s);
-
 	if(subs.auth_rules_doc)
 	{
 		if(subs.auth_rules_doc->s)
@@ -726,10 +697,11 @@ error_free:
 	if(reason.s)
 		pkg_free(reason.s);
 
-	if(((!server_address.s) ||(server_address.len== 0))&& subs.local_contact.s)
+	if(((!server_address.s) || (server_address.len== 0)) && subs.local_contact.s)
 	{
 		pkg_free(subs.local_contact.s);
 	}
+
 	if(subs.record_route.s)
 		pkg_free(subs.record_route.s);
 
