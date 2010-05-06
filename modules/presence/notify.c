@@ -1504,7 +1504,7 @@ done:
 		pkg_free(notify_body);
 	}
 	return ret_code;
-}	
+}
 
 int query_db_notify(str* pres_uri, pres_ev_t* event, subs_t* watcher_subs)
 {
@@ -1598,7 +1598,7 @@ int send_notify_request(subs_t* subs, subs_t * watcher_subs,
 		goto jump_over_body;
 	}
 
-	if(n_body!= NULL && subs->status== ACTIVE_STATUS)
+	if(n_body!= 0 && n_body->s!= 0 && subs->status== ACTIVE_STATUS)
 	{
 		if( subs->event->req_auth)
 		{
@@ -1740,7 +1740,8 @@ jump_over_body:
 	return 0;
 
 error:
-	free_tm_dlg(td);
+	if(td)
+		free_tm_dlg(td);
 	if(str_hdr.s)
 		pkg_free(str_hdr.s);
 	
@@ -1854,6 +1855,7 @@ c_back_param* shm_dup_cbparam(subs_t* subs)
 	if(cb_param== NULL)
 	{
 		LM_ERR("no more shared memory");
+		return 0;
 	}
 	memset(cb_param, 0, size);
 

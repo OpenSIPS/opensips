@@ -35,7 +35,7 @@
 #include "subscribe.h"
 
 #define WINFO_TYPE			1<< 0
-#define PUBL_TYPE		    1<< 1
+#define PUBL_TYPE			1<< 1
 
 struct subscription;
 

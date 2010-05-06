@@ -465,13 +465,15 @@ pres_entry_t* search_phtable(str* pres_uri,int event, unsigned int hash_code)
 {
 	pres_entry_t* p;
 
-	LM_DBG("pres_uri= %.*s\n", pres_uri->len,  pres_uri->s);
+	LM_DBG("pres_uri= %.*s, event=%d\n", pres_uri->len,  pres_uri->s, event);
 	p= pres_htable[hash_code].entries->next;
 	while(p)
 	{
 		if(p->event== event && p->pres_uri.len== pres_uri->len &&
 				strncmp(p->pres_uri.s, pres_uri->s, pres_uri->len)== 0 )
+		{
 			return p;
+		}
 		p= p->next;
 	}
 	return NULL;
@@ -486,7 +488,7 @@ int insert_phtable(str* pres_uri, int event, char* sphere)
 	hash_code= core_hash(pres_uri, NULL, phtable_size);
 
 	lock_get(&pres_htable[hash_code].lock);
-	
+
 	p= search_phtable(pres_uri, event, hash_code);
 	if(p)
 	{
@@ -508,7 +510,7 @@ int insert_phtable(str* pres_uri, int event, char* sphere)
 	p->pres_uri.s= (char*)p+ size;
 	memcpy(p->pres_uri.s, pres_uri->s, pres_uri->len);
 	p->pres_uri.len= pres_uri->len;
-	
+
 	if(sphere)
 	{
 		p->sphere= (char*)shm_malloc((strlen(sphere)+ 1)*sizeof(char));
@@ -521,8 +523,7 @@ int insert_phtable(str* pres_uri, int event, char* sphere)
 	}
 
 	p->event= event;
-	
-
+	p->publ_count = 1;
 	p->next= pres_htable[hash_code].entries->next;
 	pres_htable[hash_code].entries->next= p;
 
@@ -542,7 +543,7 @@ int delete_phtable(str* pres_uri, int event)
 	hash_code= core_hash(pres_uri, NULL, phtable_size);
 
 	lock_get(&pres_htable[hash_code].lock);
-	
+
 	p= search_phtable(pres_uri, event, hash_code);
 	if(p== NULL)
 	{
@@ -550,10 +551,11 @@ int delete_phtable(str* pres_uri, int event)
 		lock_release(&pres_htable[hash_code].lock);
 		return 0;
 	}
-	
+
 	p->publ_count--;
 	if(p->publ_count== 0)
 	{
+		LM_DBG("Count = 0, delete\n");
 		/* delete record */	
 		prev_p= pres_htable[hash_code].entries;
 		while(prev_p->next)
@@ -576,7 +578,7 @@ int delete_phtable(str* pres_uri, int event)
 	}
 	lock_release(&pres_htable[hash_code].lock);
 
-	return 0;	
+	return 0;
 }
 
 int update_phtable(presentity_t* presentity, str pres_uri, str body)

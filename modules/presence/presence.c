@@ -501,7 +501,7 @@ static struct mi_root* mi_refreshWatchers(struct mi_root* cmd, void* param)
 			LM_ERR( "no rules doc found for the user\n");
 			goto error;
 		}
-	
+
 		if(update_watchers_status(pres_uri, ev, rules_doc)< 0)
 		{
 			LM_ERR("failed to update watchers\n");
@@ -916,16 +916,16 @@ send_notify:
 			goto done;
 		}
 
-        /* delete from database also */
-        if(s->status== TERMINATED_STATUS)
-        {
-            if(pres_db_delete_status(s)<0)
-            {
-                err_ret= -1;
-                LM_ERR("failed to delete terminated dialog from database\n");
-                goto done;
-            }
-        }
+		/* delete from database also */
+		if(s->status== TERMINATED_STATUS)
+		{
+			if(pres_db_delete_status(s)<0)
+			{
+				err_ret= -1;
+				LM_ERR("failed to delete terminated dialog from database\n");
+				goto done;
+			}
+		}
 		if(add_watcher_list(s, watchers)< 0)
 		{
 			LM_ERR("failed to add watcher to list\n");
@@ -1064,8 +1064,8 @@ static int update_pw_dialogs(subs_t* subs, unsigned int hash_code, subs_t** subs
 			{
 				ps->next= s->next;
 				shm_free(s->contact.s);
-                shm_free(s);
-                LM_DBG(" deleted terminated dialog from hash table\n");
+				shm_free(s);
+				LM_DBG(" deleted terminated dialog from hash table\n");
 				/* delete from database also */
 				if( delete_db_subs(cs->pres_uri, 
 							cs->event->name, cs->to_tag)< 0)
