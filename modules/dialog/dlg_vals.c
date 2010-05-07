@@ -178,6 +178,34 @@ int fetch_dlg_value(struct dlg_cell *dlg, str *name,str *ival, int val_has_buf)
 }
 
 
+int check_dlg_value_unsafe(struct dlg_cell *dlg, str *name, str *val)
+{
+	struct dlg_val *dv;
+	unsigned int id;
+
+	LM_DBG("looking for <%.*s> with <%.*s>\n",
+		name->len, name->s, val->len, val->s);
+
+	id = _get_name_id(name);
+
+	/* iterate the list */
+	for( dv=dlg->vals ; dv ; dv=dv->next) {
+		if (id==dv->id && name->len==dv->name.len &&
+		memcmp(name->s,dv->name.s,name->len)==0 ) {
+			LM_DBG("var found with val <%.*s>!\n",dv->val.len,dv->val.s);
+			if ( val->len==dv->val.len && 
+			memcmp(val->s,dv->val.s,val->len)==0) {
+				LM_DBG("var found!\n");
+				return 0;
+			}
+			break;
+		}
+	}
+
+	LM_DBG("var NOT found!\n");
+	return -1;
+}
+
 
 int pv_parse_name(pv_spec_p sp, str *in)
 {

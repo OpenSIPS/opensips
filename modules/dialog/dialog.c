@@ -126,6 +126,8 @@ static int fixup_dlg_sval(void** param, int param_no);
 static int fixup_dlg_fval(void** param, int param_no);
 static int w_store_dlg_value(struct sip_msg*, char*, char*);
 static int w_fetch_dlg_value(struct sip_msg*, char*, char*);
+static int fixup_get_info(void** param, int param_no);
+static int w_get_dlg_info(struct sip_msg*, char*, char*, char*, char*);
 
 /* item/pseudo-variables functions */
 int pv_get_dlg_lifetime(struct sip_msg *msg,pv_param_t *param,pv_value_t *res);
@@ -175,8 +177,11 @@ static cmd_export_t cmds[]={
 	{"fetch_dlg_value",(cmd_function)w_fetch_dlg_value,   2,fixup_dlg_fval,
 			0, REQUEST_ROUTE| FAILURE_ROUTE | ONREPLY_ROUTE |
 			BRANCH_ROUTE | LOCAL_ROUTE },
-	{"validate_dialog",(cmd_function)w_validate_dialog,      0,         NULL,
+	{"validate_dialog",(cmd_function)w_validate_dialog,   0,         NULL,
 			0, REQUEST_ROUTE},
+	{"get_dialog_info",(cmd_function)w_get_dlg_info,      4,fixup_get_info,
+			0, REQUEST_ROUTE| FAILURE_ROUTE | ONREPLY_ROUTE |
+			BRANCH_ROUTE | LOCAL_ROUTE },
 	{"load_dlg",  (cmd_function)load_dlg,   0, 0, 0, 0},
 	{0,0,0,0,0,0}
 };
@@ -431,6 +436,44 @@ static int fixup_dlg_fval(void** param, int param_no)
 
 	return 0;
 }
+
+
+static int fixup_get_info(void** param, int param_no)
+{
+	pv_elem_t *model=NULL;
+	pv_spec_t *sp;
+	str s;
+	int ret;
+
+	if (param_no==1) {
+		/* name of the dlg val to be returned  */
+		return fixup_str(param);
+	} else if (param_no==2) {
+		/* var to store the dlg_val value */
+		ret = fixup_pvar(param);
+		if (ret<0) return ret;
+		sp = (pv_spec_t*)(*param);
+		if (sp->type!=PVT_AVP && sp->type!=PVT_SCRIPTVAR) {
+			LM_ERR("return must be an AVP or SCRIPT VAR!\n");
+			return E_SCRIPT;
+		}
+	} else if (param_no==3) {
+		/* name of the dlg val to identify the dialog */
+		return fixup_str(param);
+	} else if (param_no==4) {
+		/* var to hold the value of the indeification dlg val */
+		s.s = (char*)*param;
+		s.len = strlen(s.s);
+		if(pv_parse_format(&s ,&model) || model==NULL) {
+			LM_ERR("wrong format [%s] for value param!\n", s.s);
+			return E_CFG;
+		}
+		*param = (void*)model;
+	}
+
+	return 0;
+}
+
 
 
 static struct dlg_cell *w_get_dlg(void)
@@ -952,7 +995,7 @@ int w_fetch_dlg_value(struct sip_msg *msg, char *name, char *result)
 		return -1;
 
 	if (fetch_dlg_value( dlg, (str*)name, &val, 0) ) {
-		LM_ERR("failed to fetch dialog value <%.*s>\n",
+		LM_DBG("failed to fetch dialog value <%.*s>\n",
 			((str*)name)->len, ((str*)name)->s);
 		return -1;
 	}
@@ -992,6 +1035,47 @@ int w_fetch_dlg_value(struct sip_msg *msg, char *name, char *result)
 	return 1;
 }
 
+
+static int w_get_dlg_info(struct sip_msg *msg, char *attr, char *attr_val,
+													char *key, char *key_val)
+{
+	struct dlg_cell *dlg;
+	pv_elem_t *pve = (pv_elem_t *)key_val;
+	pv_spec_t *dst = (pv_spec_t *)attr_val;
+	pv_value_t val;
+	str val_s;
+	int n;
+
+	if ( pve==NULL || pv_printf_s(msg, pve, &val_s)!=0 || 
+	val_s.len == 0 || val_s.s == NULL) {
+		LM_WARN("cannot get string for value\n");
+		return -1;
+	}
+
+	dlg = get_dlg_by_val( (str*)key, &val_s);
+
+	if (dlg==NULL) {
+		/* nothing found */
+		LM_DBG("no dialog found\n");
+		return -1;
+	}
+
+	/* dlg found - NOTE you have a ref! */
+	LM_DBG("dialog found, fetching variable\n");
+
+	if (fetch_dlg_value( dlg, (str*)attr, &val.rs, 0) ) {
+		LM_DBG("failed to fetch dialog value <%.*s>\n",
+			((str*)attr)->len, ((str*)attr)->s);
+		n = -1 ;
+	} else {
+		val.flags = PV_VAL_STR;
+		n = (dst->setf( msg, &dst->pvp, 0, &val )==0)?1:-1;
+	}
+
+	unref_dlg(dlg, 1);
+
+	return n;
+}
 
 
 /* item/pseudo-variables functions */
@@ -1118,4 +1202,6 @@ int pv_set_dlg_flags(struct sip_msg *msg, pv_param_t *param,
 
 	return 0;
 }
+
+
 

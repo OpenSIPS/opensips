@@ -61,4 +61,7 @@ int store_dlg_value(struct dlg_cell *dlg, str *name, str *val);
 
 int fetch_dlg_value(struct dlg_cell *dlg, str *name, str *val,int val_has_buf);
 
+int check_dlg_value_unsafe(struct dlg_cell *dlg, str *name, str *val);
+
+
 #endif

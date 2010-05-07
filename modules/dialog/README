@@ -67,7 +67,7 @@ Bogdan-Andrei Iancu
 
               1.6.1. create_dialog()
               1.6.2. validate_dialog()
-              1.6.3. set_dlg_profile(profile,[value])
+              1.6.3. get_dialog_info(attr,var,key,key_val)
               1.6.4. unset_dlg_profile(profile,[value])
               1.6.5. is_in_profile(profile,[value])
               1.6.6. get_profile_size(profile,[value],size)
@@ -150,7 +150,7 @@ Bogdan-Andrei Iancu
    1.34. Set profiles_no_value parameter
    1.35. create_dialog() usage
    1.36. validate_dialog() usage
-   1.37. set_dlg_profile usage
+   1.37. get_dialog_info usage
    1.38. unset_dlg_profile usage
    1.39. is_in_profile usage
    1.40. get_profile_size usage
@@ -732,29 +732,44 @@ create_dialog();
     }
 ...
 
-1.6.3.  set_dlg_profile(profile,[value])
+1.6.3.  get_dialog_info(attr,var,key,key_val)
 
-   Inserts the current dialog into a profile. Note that the
-   profile does not supports values, this will be silently
-   discarded. Also, there is no check for inserting the same
-   dialog in the same profile for multiple times.
+   The function extracts a dialog value from another dialog - it
+   search through all existing (ongoing) dialogs for a dialog that
+   has a dialog variable named "key" with the value "key_val" (so
+   a dialog where $dlg_val(key)=="key_val") - once found, it
+   return in pvar "var" the value of the the dialog variable
+   "attr" from the found dialog.
 
-   NOTE: the dialog must be created before using this function
-   (use create_dialog() function before).
+   NOTE: the function does not require to be called in the context
+   of a dialog - you can use it whenever / whereever for searching
+   for other dialogs.
 
    Meaning of the parameters is as follows:
-     * profile - name of the profile to be added to;
-     * value (optional) - string value to define the belonging of
-       the dialog to the profile - note that the profile must
-       support values. Pseudo-variables are supported.
+     * attr - the name of the dialog variable (from the found
+       dialog) to be returned;
+     * var - a pvar where to store the value of the "attr" dialog
+       variable
+     * key - name of a dialog variable to be used a search key
+       (when looking after the target dialog)
+     * key_val - the value of the dialog variable that is used as
+       key in searching the target dialog.
 
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
-   REPLY_ROUTE and FAILURE_ROUTE.
+   REPLY_ROUTE, FAILURE_ROUTE and LOCAL_ROUTE.
 
-   Example 1.37. set_dlg_profile usage
+   Example 1.37. get_dialog_info usage
 ...
-set_dlg_profile("inbound_call");
-set_dlg_profile("caller","$fu");
+if ( get_dialog_info("callee","$var(x)","caller","$fu") ) {
+        xlog("caller $fU has another ongoing, talking to callee $var(x)\
+n")
+}
+
+# create dialog for current call and place the caller and callee attribu
+tes
+create_dialog();
+$dlg_val(caller) = $fu;
+$dlg_val(callee) = $ru;
 ...
 
 1.6.4.  unset_dlg_profile(profile,[value])
