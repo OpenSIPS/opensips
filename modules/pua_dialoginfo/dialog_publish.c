@@ -39,6 +39,8 @@
 #include "../pua/pua.h"
 #include "pua_dialoginfo.h"
 
+#define PRES_ID_LEN  64
+
 /* global modul parameters */
 extern int include_callid;
 extern int include_localremote;
@@ -299,6 +301,7 @@ void dialog_publish(char *state, struct to_body* entity, struct to_body *peer, s
 {
 	str* body= NULL;
 	publ_info_t publ;
+	static char buf[PRES_ID_LEN];
 
 	body= build_dialoginfo(state, entity, peer, callid, initiator, localtag, remotetag);
 	if(body == NULL || body->s == NULL)
@@ -312,16 +315,12 @@ void dialog_publish(char *state, struct to_body* entity, struct to_body *peer, s
 	publ.pres_uri= &entity->uri;
 	publ.body = body;
 
-	publ.id.s = (char*)pkg_malloc(15/* DIALOG_PUBLISH. */ + callid->len + 1);
-	if(publ.id.s== NULL) {
-		LM_ERR("no more memory\n");
-		goto error;
-	}
-	publ.id.len = sprintf(publ.id.s, "DIALOG_PUBLISH.%.*s", callid->len, callid->s);
+	publ.id.s = buf;
+	publ.id.len = snprintf(publ.id.s, PRES_ID_LEN, "DIALOG_PUBLISH.%.*s", callid->len, callid->s);
 	
 	publ.content_type.s= "application/dialog-info+xml";
 	publ.content_type.len= 27;
-		
+
 	publ.expires= lifetime;
 	
 	/* make UPDATE_TYPE, as if this "publish dialog" is not found 
@@ -347,9 +346,6 @@ error:
 			xmlFree(body->s);
 		pkg_free(body);
 	}
-	
-	if(publ.id.s)
-		pkg_free(publ.id.s);
 
 	return;
 }
