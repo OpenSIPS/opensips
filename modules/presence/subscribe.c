@@ -475,6 +475,12 @@ void msg_watchers_clean(unsigned int ticks,void *param)
 	db_vals[1].nul = 0;
 	db_vals[1].val.int_val = PENDING_STATUS;
 
+	if (pa_dbf.use_table(pa_db, &active_watchers_table) < 0) 
+	{
+		LM_ERR("unsuccessful use_table sql operation\n");
+		return;
+	}
+
 	if (pa_dbf.delete(pa_db, db_keys, db_ops, db_vals, 2) < 0) 
 		LM_ERR("cleaning pending subscriptions\n");
 }
@@ -1188,7 +1194,7 @@ int get_database_info(struct sip_msg* msg, subs_t* subs, int* reply_code, str* r
 	result_cols[reason_col=n_result_cols++] = &str_reason_col;
 	result_cols[record_route_col=n_result_cols++] = &str_record_route_col;
 	result_cols[version_col=n_result_cols++] = &str_version_col;
-	
+
 	if (pa_dbf.use_table(pa_db, &active_watchers_table) < 0) 
 	{
 		LM_ERR("unsuccessful use_table sql operation\n");
