@@ -785,29 +785,28 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 
 			dlg = lookup_dlg( h_entry, h_id);
 			if (dlg==0) {
-				LM_WARN("unable to find dialog for %.*s "
+				LM_DBG("unable to find dialog for %.*s "
 					"with route param '%.*s'\n",
 					req->first_line.u.request.method.len,
 					req->first_line.u.request.method.s,
 					val.len,val.s);
-				return;
-			}
-
-			/* lookup_dlg has incremented the ref count by 1 */
-
-			if (pre_match_parse( req, &callid, &ftag, &ttag)<0) {
-				unref_dlg(dlg, 1);
-				return;
-			}
-			if (match_dialog( dlg, &callid, &ftag, &ttag, &dir, &dst_leg )==0){
-				LM_WARN("tight matching failed for %.*s with callid='%.*s'/%d,"
+			} else {
+				/* lookup_dlg has incremented the ref count by 1 */
+				if (pre_match_parse( req, &callid, &ftag, &ttag)<0) {
+					unref_dlg(dlg, 1);
+					return;
+				}
+				if (match_dialog(dlg,&callid,&ftag,&ttag,&dir, &dst_leg )==0){
+					LM_WARN("tight matching failed for %.*s with "
+						"callid='%.*s'/%d,"
 						" ftag='%.*s'/%d, ttag='%.*s'/%d and direction=%d\n",
 						req->first_line.u.request.method.len,
 						req->first_line.u.request.method.s,
 						callid.len, callid.s, callid.len,
 						ftag.len, ftag.s, ftag.len,
 						ttag.len, ttag.s, ttag.len, dir);
-				LM_WARN("dialog identification elements are callid='%.*s'/%d, "
+					LM_WARN("dialog identification elements are "
+						"callid='%.*s'/%d, "
 						"caller tag='%.*s'/%d, callee tag='%.*s'/%d\n",
 						dlg->callid.len, dlg->callid.s, dlg->callid.len,
 						dlg->legs[DLG_CALLER_LEG].tag.len,
@@ -816,9 +815,12 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 						dlg->legs[callee_idx(dlg)].tag.len,
 						ZSW(dlg->legs[callee_idx(dlg)].tag.s),
 						dlg->legs[callee_idx(dlg)].tag.len);
-				unref_dlg(dlg, 1);
-				return;
+					unref_dlg(dlg, 1);
+					dlg = NULL;
+				}
 			}
+			if (dlg==NULL && seq_match_mode==SEQ_MATCH_STRICT_ID )
+				return;
 		}
 	}
 

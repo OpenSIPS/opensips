@@ -969,6 +969,7 @@ create_dialog();
 		</example>
 	</section>
 
+
 	<section>
 		<title>
 		<function moreinfo="none">get_dialog_info(attr,var,key,key_val)</function>
@@ -1029,6 +1030,52 @@ $dlg_val(callee) = $ru;
 </programlisting>
 		</example>
 	</section>
+
+
+	<section>
+		<title>
+		<function moreinfo="none">set_dlg_profile(profile,[value])</function>
+		</title>
+		<para>
+		Inserts the current dialog into a profile. Note that the profile does
+		not supports values, this will be silently discarded. Also, there is
+		no check for inserting the same dialog in the same profile for multiple
+		times.
+		</para>
+		<para>
+		NOTE: the dialog must be created before using this function (use 
+		create_dialog() function before).
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>profile</emphasis> - name of the profile to be 
+			added to;
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>value</emphasis> (optional) - string value to 
+			define the belonging of the dialog to the profile - note that the
+			profile must support values.
+			Pseudo-variables are supported.
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
+			REPLY_ROUTE and FAILURE_ROUTE.
+		</para>
+		<example>
+		<title><function>set_dlg_profile</function> usage</title>
+		<programlisting format="linespecific">
+...
+set_dlg_profile("inbound_call");
+set_dlg_profile("caller","$fu");
+...
+</programlisting>
+		</example>
+	</section>
+
 
 	<section>
 		<title>
