@@ -86,7 +86,7 @@ CREATE TABLE pua (
     cseq INTEGER NOT NULL,
     record_route TEXT,
     contact VARCHAR(128) NOT NULL,
-    remote_contact VARCHAR(128) NOT NULL,
+    remote_contact VARCHAR(128),
     version INTEGER NOT NULL,
     extra_headers TEXT NOT NULL
 );
