@@ -3694,10 +3694,10 @@ int pv_set_value(struct sip_msg* msg, pv_spec_p sp,
 	if(sp->pvc && sp->pvc->contextf)
 	{
 		pv_msg = sp->pvc->contextf(msg);
-		if(pv_msg == NULL)
+		if(pv_msg == NULL || pv_msg==FAKED_REPLY)
 		{
-			LM_ERR("Failed to extract pv context message\n");
-			pv_msg = msg;
+			LM_DBG("Invalid %p pv context message\n",pv_msg);
+			return -1;
 		}
 	}
 	else
@@ -3724,14 +3724,12 @@ int pv_get_spec_value(struct sip_msg* msg, pv_spec_p sp, pv_value_t *value)
 	{
 		LM_DBG("Found context function %p\n", sp->pvc->contextf);
 		pv_msg = sp->pvc->contextf(msg);
-		if(pv_msg == NULL)
+		if(pv_msg == NULL || pv_msg==FAKED_REPLY)
 		{
-			LM_DBG("Failed to extract pv context message\n");
-			pv_msg = msg;
+			LM_DBG("Invalid %p pv context message\n",pv_msg);
+			return pv_get_null( NULL, NULL, value);
 		}
-	}
-	else
-	{
+	} else {
 		pv_msg = msg;
 	}
 	ret = (*sp->getf)(pv_msg, &(sp->pvp), value);
