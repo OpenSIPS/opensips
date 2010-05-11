@@ -86,7 +86,7 @@ CREATE TABLE pua (
     cseq INT(11) NOT NULL,
     record_route TEXT,
     contact CHAR(128) NOT NULL,
-    remote_contact CHAR(128) NOT NULL,
+    remote_contact CHAR(128),
     version INT(11) NOT NULL,
     extra_headers TEXT NOT NULL
 ) ENGINE=MyISAM;

@@ -145,6 +145,7 @@
         <name>remote_contact</name>
         <type>string</type>
         <size>&uri_len;</size>
+        <null/>
         <description>Remote contact</description>
     </column>
 
