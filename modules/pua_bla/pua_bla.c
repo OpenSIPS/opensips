@@ -60,14 +60,14 @@ str presence_server= {0, 0};
 
 static cmd_export_t cmds[]=
 {
-	{"bla_set_flag", (cmd_function)bla_set_flag,		 0, 0, 0, REQUEST_ROUTE},
-	{"bla_handle_notify", (cmd_function)bla_handle_notify,   0, 0, 0, REQUEST_ROUTE},
+	{"bla_set_flag", (cmd_function)bla_set_flag,           0, 0, 0, REQUEST_ROUTE},
+	{"bla_handle_notify", (cmd_function)bla_handle_notify, 0, 0, 0, REQUEST_ROUTE},
 	{0, 0, 0, 0, 0, 0}
 };
 static param_export_t params[]=
 {
-	{"server_address",	 STR_PARAM, &server_address.s	 },
-	{"default_domain",	 STR_PARAM, &default_domain.s	 },
+	{"server_address",	 STR_PARAM, &server_address.s    },
+	{"default_domain",	 STR_PARAM, &default_domain.s    },
 	{"header_name",      STR_PARAM, &header_name.s       },
 	{"outbound_proxy",   STR_PARAM, &bla_outbound_proxy.s},
 	{"presence_server",  STR_PARAM, &presence_server.s   },
@@ -112,12 +112,10 @@ static int mod_init(void)
 		presence_server.len= strlen(presence_server.s);
 	}
 
-	if(default_domain.s == NULL )
-	{	
-		LM_ERR("default domain not found\n");
-		return -1;
+	if(default_domain.s)
+	{
+		default_domain.len= strlen(default_domain.s);
 	}
-	default_domain.len= strlen(default_domain.s);
 
 	if(header_name.s == NULL )
 	{	

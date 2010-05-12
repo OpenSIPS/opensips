@@ -75,6 +75,15 @@ void bla_cb(ucontact_t* c, int type, void* param)
 	at = memchr(c->aor->s, '@', c->aor->len);
 	if(!at)
 	{
+		if(default_domain.s == NULL)
+		{
+			LM_ERR("No domain found in register and default_domain module"
+					" parameter not set\n");
+			goto error;
+		}
+		LM_DBG("domain not found - added default= %.*s\n",
+			default_domain.len, default_domain.s);
+
 		uri.s[uri.len++]= '@';
 		memcpy(uri.s+ uri.len, default_domain.s, default_domain.len);
 		uri.len+= default_domain.len;		
