@@ -475,7 +475,7 @@ void msg_watchers_clean(unsigned int ticks,void *param)
 	db_vals[1].nul = 0;
 	db_vals[1].val.int_val = PENDING_STATUS;
 
-	if (pa_dbf.use_table(pa_db, &active_watchers_table) < 0) 
+	if (pa_dbf.use_table(pa_db, &watchers_table) < 0) 
 	{
 		LM_ERR("unsuccessful use_table sql operation\n");
 		return;

@@ -76,18 +76,18 @@ CREATE TABLE pua (
     expires INT(11) NOT NULL,
     desired_expires INT(11) NOT NULL,
     flag INT(11) NOT NULL,
-    etag CHAR(64) NOT NULL,
+    etag CHAR(64),
     tuple_id CHAR(64),
-    watcher_uri CHAR(128) NOT NULL,
-    to_uri CHAR(128) NOT NULL,
-    call_id CHAR(64) NOT NULL,
-    to_tag CHAR(64) NOT NULL,
-    from_tag CHAR(64) NOT NULL,
-    cseq INT(11) NOT NULL,
+    watcher_uri CHAR(128),
+    to_uri CHAR(128),
+    call_id CHAR(64),
+    to_tag CHAR(64),
+    from_tag CHAR(64),
+    cseq INT(11),
     record_route TEXT,
-    contact CHAR(128) NOT NULL,
+    contact CHAR(128),
     remote_contact CHAR(128),
-    version INT(11) NOT NULL,
-    extra_headers TEXT NOT NULL
+    version INT(11),
+    extra_headers TEXT
 ) ENGINE=MyISAM;
 

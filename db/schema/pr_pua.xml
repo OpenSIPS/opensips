@@ -75,6 +75,7 @@
         <type>string</type>
         <size>&domain_len;</size>
         <description>Etag</description>
+        <null/>
     </column>
 
     <column>
@@ -89,6 +90,7 @@
         <name>watcher_uri</name>
         <type>string</type>
         <size>&uri_len;</size>
+        <null/>
         <description>Watcher URI</description>
     </column>
 
@@ -96,14 +98,15 @@
         <name>to_uri</name>
         <type>string</type>
         <size>&uri_len;</size>
+        <null/>
         <description>URI</description>
-        <natural/>
     </column>
 
     <column>
         <name>call_id</name>
         <type>string</type>
         <size>&domain_len;</size>
+        <null/>
         <description>Call ID</description>
     </column>
 
@@ -111,6 +114,7 @@
         <name>to_tag</name>
         <type>string</type>
         <size>&domain_len;</size>
+        <null/>
         <description>To tag</description>
     </column>
 
@@ -118,13 +122,15 @@
         <name>from_tag</name>
         <type>string</type>
         <size>&domain_len;</size>
-        <description>To tag</description>
+        <null/>
+        <description>From tag</description>
     </column>
 
     <column>
         <name>cseq</name>
         <type>int</type>
         <size>&cseq_len;</size>
+        <null/>
     </column>
 
     <column>
@@ -138,6 +144,7 @@
         <name>contact</name>
         <type>string</type>
         <size>&uri_len;</size>
+        <null/>
         <description>Contact</description>
     </column>
 
@@ -153,10 +160,13 @@
         <name>version</name>
         <type>int</type>
         <size>11</size>
-        </column>
-        <column>
+        <null/>
+    </column>
+
+    <column>
         <name>extra_headers</name>
         <type>text</type>
+        <null/>
         <description>Extra Headers</description>
     </column>
 

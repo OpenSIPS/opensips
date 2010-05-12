@@ -76,18 +76,18 @@ CREATE TABLE pua (
     expires INTEGER NOT NULL,
     desired_expires INTEGER NOT NULL,
     flag INTEGER NOT NULL,
-    etag VARCHAR(64) NOT NULL,
+    etag VARCHAR(64),
     tuple_id VARCHAR(64),
-    watcher_uri VARCHAR(128) NOT NULL,
-    to_uri VARCHAR(128) NOT NULL,
-    call_id VARCHAR(64) NOT NULL,
-    to_tag VARCHAR(64) NOT NULL,
-    from_tag VARCHAR(64) NOT NULL,
-    cseq INTEGER NOT NULL,
+    watcher_uri VARCHAR(128),
+    to_uri VARCHAR(128),
+    call_id VARCHAR(64),
+    to_tag VARCHAR(64),
+    from_tag VARCHAR(64),
+    cseq INTEGER,
     record_route TEXT,
-    contact VARCHAR(128) NOT NULL,
+    contact VARCHAR(128),
     remote_contact VARCHAR(128),
-    version INTEGER NOT NULL,
-    extra_headers TEXT NOT NULL
+    version INTEGER,
+    extra_headers TEXT
 );
 
