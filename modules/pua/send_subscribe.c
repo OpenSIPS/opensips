@@ -341,7 +341,7 @@ void subs_cback_func(struct cell *t, int cb_type, struct tmcb_params *ps)
 	
 	}
 
-	/* extract the other necesary information for inserting a new record */		
+	/* extract the other necesary information for inserting a new record */
 	if(ps->rpl->expires && msg->expires->body.len > 0)
 	{
 		if (!msg->expires->parsed && (parse_expires(msg->expires) < 0))
@@ -351,7 +351,7 @@ void subs_cback_func(struct cell *t, int cb_type, struct tmcb_params *ps)
 		}
 		lexpire = ((exp_body_t*)msg->expires->parsed)->val;
 		LM_DBG("lexpire= %d\n", lexpire);
-	}		
+	}
 
 	lock_get(&HashT->p_records[hash_code].lock);
 
@@ -445,8 +445,7 @@ void subs_cback_func(struct cell *t, int cb_type, struct tmcb_params *ps)
 		}
 
 		LM_DBG("*** Update expires\n");
-		update_htable(presentity, hentity->desired_expires, lexpire, NULL,
-				hash_code, &contact);
+		update_htable(presentity, lexpire, NULL, hash_code, &contact);
 		lock_release(&HashT->p_records[hash_code].lock);
 		goto done;
 	}
@@ -982,6 +981,7 @@ insert:
 			pkg_free(td);
 			goto done;
 		}
+		presentity->desired_expires = hentity->desired_expires;
 		lock_release(&HashT->p_records[hash_code].lock);
 
 	//	hentity->flag= flag;

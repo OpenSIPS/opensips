@@ -194,20 +194,17 @@ ua_pres_t* search_htable(ua_pres_t* pres, unsigned int hash_code)
 	return p;
 }
 
-void update_htable(ua_pres_t* p, time_t desired_expires, int expires,
-		str* etag, unsigned int hash_code, str* contact)
+void update_htable(ua_pres_t* p, int expires, str* etag,
+		unsigned int hash_code, str* contact)
 {
 	if(etag)
-	{	
+	{
 		shm_free(p->etag.s);
 		p->etag.s= (char*)shm_malloc(etag->len);
 		memcpy(p->etag.s, etag->s, etag->len);
 		p->etag.len= etag->len;
 	}
-
 	p->expires= expires+ (int)time(NULL);
-	p->desired_expires= desired_expires;
-
 	if(p->db_flag == NO_UPDATEDB_FLAG)
 		p->db_flag= UPDATEDB_FLAG;
 
@@ -356,9 +353,9 @@ ua_pres_t* get_dialog(ua_pres_t* dialog, unsigned int hash_code)
 
 			LM_DBG("searched to_tag= %.*s\tfrom_tag= %.*s\n",
 				 p->to_tag.len, p->to_tag.s, p->from_tag.len, p->from_tag.s);
-	    
+
 				if((p->watcher_uri->len== dialog->watcher_uri->len) &&
- 	    		(strncmp(p->watcher_uri->s,dialog->watcher_uri->s,p->watcher_uri->len )==0)&&
+				(strncmp(p->watcher_uri->s,dialog->watcher_uri->s,p->watcher_uri->len )==0)&&
 				(strncmp(p->call_id.s, dialog->call_id.s, p->call_id.len)== 0) &&
 				(strncmp(p->to_tag.s, dialog->to_tag.s, p->to_tag.len)== 0) &&
 				(strncmp(p->from_tag.s, dialog->from_tag.s, p->from_tag.len)== 0) )
@@ -384,11 +381,11 @@ int get_record_id(ua_pres_t* dialog, str** rec_id)
 	str* id;
     str* s1;
 
-    if(dialog->to_uri.s)
-        s1 = &dialog->to_uri;
-    else
-        s1 = dialog->pres_uri;
-        
+	if(dialog->to_uri.s)
+		s1 = &dialog->to_uri;
+	else
+		s1 = dialog->pres_uri;
+
 	*rec_id= NULL;
 	hash_code= core_hash(s1, dialog->watcher_uri, HASH_SIZE);
 	lock_get(&HashT->p_records[hash_code].lock);
@@ -573,7 +570,7 @@ int update_contact(struct sip_msg* msg, char* str1, char* str2)
 }
 
 void pua_db_delete(ua_pres_t* pres)
-{	
+{
 	db_key_t cols[6];
 	db_val_t vals[6];
 	int n_query_cols= 0;
@@ -584,7 +581,7 @@ void pua_db_delete(ua_pres_t* pres)
 	vals[n_query_cols].val.str_val = *pres->pres_uri;
 	n_query_cols++;
 
-	if(pres->flag)	
+	if(pres->flag)
 	{
 		cols[n_query_cols] = &str_flag_col;
 		vals[n_query_cols].type = DB_INT;
