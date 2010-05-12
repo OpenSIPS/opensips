@@ -288,15 +288,11 @@ void publ_cback_func(struct cell *t, int type, struct tmcb_params *ps)
 			LM_DBG("Try to get presentity lock %p\n", presentity);
 			lock_get(&presentity->publ_lock);
 			LM_DBG("Got presentity lock %p\n", presentity);
-//			delete_htable(presentity);
 			to_del = 1;
 			goto done;
 		}
 
-		update_htable(presentity, hentity->desired_expires,
-				lexpire, &etag, presentity->hash_index, NULL);
-		/* if the record has been updated -> release the Publish lock */
-//		lock_release(&presentity->publ_lock);
+		update_htable(presentity, lexpire, &etag, presentity->hash_index, NULL);
 		goto done;
 	}
 
@@ -450,7 +446,7 @@ int send_publish( publ_info_t* publ )
 	pua_event_t* ev= NULL;
 
 	LM_DBG("pres_uri=%.*s\n", publ->pres_uri->len, publ->pres_uri->s );
-	
+
 	/* get event from list */
 
 	ev= get_event(publ->event);
@@ -607,6 +603,11 @@ send_publish:
 	{
 		cb_param = presentity;
 		cb_param->cb_param= publ->cb_param;
+
+		if(publ->expires< 0)
+			cb_param->desired_expires= 0;
+		else
+			cb_param->desired_expires=publ->expires+ (int)time(NULL);
 	}
 	else
 	{
