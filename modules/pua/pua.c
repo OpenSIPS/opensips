@@ -772,7 +772,6 @@ static void db_update(unsigned int ticks,void *param)
 {
 	ua_pres_t* p= NULL;
 	db_key_t q_cols[20], result_cols[1];
-	db_res_t *res= NULL;
 	db_key_t db_cols[5];
 	db_val_t q_vals[20], db_vals[5];
 	db_op_t  db_ops[1] ;
@@ -913,12 +912,12 @@ static void db_update(unsigned int ticks,void *param)
 	for(i=0; i<HASH_SIZE; i++) 
 	{
 		if(!no_lock)
-			lock_get(&HashT->p_records[i].lock);	
+			lock_get(&HashT->p_records[i].lock);
 
 		p = HashT->p_records[i].entity->next;
 		while(p)
 		{
-			if(p->expires - (int)time(NULL)< 0)	
+			if(p->expires - (int)time(NULL)< 0)
 			{
 				p= p->next;
 				continue;
@@ -929,7 +928,7 @@ static void db_update(unsigned int ticks,void *param)
 				case NO_UPDATEDB_FLAG:
 				{
 					LM_DBG("NO_UPDATEDB_FLAG\n");
-					break;			  
+					break;
 				}
 
 				case UPDATEDB_FLAG:
@@ -939,81 +938,37 @@ static void db_update(unsigned int ticks,void *param)
 					n_query_update= 0;
 
 					q_vals[puri_col].val.str_val = *(p->pres_uri);
-					n_query_update++;
-					
 					q_vals[pid_col].val.str_val = p->id;
-					n_query_update++;
-					
 					q_vals[flag_col].val.int_val = p->flag;
-					n_query_update++;
-
 					q_vals[event_col].val.int_val = p->event;
-					n_query_update++;
+					n_query_update = event_col;
 
 					if(p->watcher_uri)
 					{
 						q_vals[watcher_col].val.str_val = *(p->watcher_uri);
-						n_query_update++;
-
 						q_vals[callid_col].val.str_val = p->call_id;
-						n_query_update++;
-
 						q_vals[totag_col].val.str_val = p->to_tag;
-						n_query_update++;
-
 						q_vals[fromtag_col].val.str_val = p->from_tag;
-						n_query_update++;
+						n_query_update = fromtag_col;
 					}
 
 					db_vals[0].val.int_val= p->expires;
-					n_update_cols++;
-
-					db_vals[1].val.int_val= p->cseq	;
-					n_update_cols++;
-
-					db_vals[2].val.str_val= p->etag	;
-					n_update_cols++;
-
+					db_vals[1].val.int_val= p->cseq;
+					db_vals[2].val.str_val= p->etag;
 					db_vals[3].val.int_val= p->desired_expires;
-					n_update_cols++;
-					
+					n_update_cols= 4;
+
 					LM_DBG("Updating:n_query_update= %d\tn_update_cols= %d\n",
 							n_query_update, n_update_cols);
+					p->db_flag= NO_UPDATEDB_FLAG;
 
-					if(pua_dbf.query(pua_db, q_cols, 0, q_vals,
-								 result_cols, n_query_update, 1, 0, &res)< 0)
+					if(pua_dbf.update(pua_db, q_cols, 0, q_vals, db_cols,
+							db_vals, n_query_update, n_update_cols)<0)
 					{
-						LM_ERR("while querying db table pua\n");
+						LM_ERR("while updating in database\n");
 						if(!no_lock)
 							lock_release(&HashT->p_records[i].lock);
-						if(res)
-							pua_dbf.free_result(pua_db, res);	
 						return ;
-					}
-					if(res && res->n> 0)
-					{
-						if(pua_dbf.update(pua_db, q_cols, 0, q_vals, db_cols, 
-								db_vals, n_query_update, n_update_cols)<0)
-						{
-							LM_ERR("while updating in database\n");
-							if(!no_lock)
-								lock_release(&HashT->p_records[i].lock);	
-							pua_dbf.free_result(pua_db, res);
-							res= NULL;
-							return ;
-						}
-						pua_dbf.free_result(pua_db, res);
-						res= NULL;
-					}
-					else
-					{
-						if(res)
-						{
-							pua_dbf.free_result(pua_db, res);
-							res= NULL;
-						}
-						LM_DBG("UPDATEDB_FLAG and no record found\n");
-					//	p->db_flag= INSERTDB_FLAG;
 					}
 					break;
 				}
@@ -1023,47 +978,31 @@ static void db_update(unsigned int ticks,void *param)
 					q_vals[puri_col].val.str_val = *(p->pres_uri);
 					q_vals[pid_col].val.str_val = p->id;
 					q_vals[flag_col].val.int_val = p->flag;
-					if((p->watcher_uri))
+					if(p->watcher_uri)
 						q_vals[watcher_col].val.str_val = *(p->watcher_uri);
 					else
-						memset(& q_vals[watcher_col].val.str_val ,0, sizeof(str));
-					q_vals[tuple_col].val.str_val = p->tuple_id;
-					q_vals[etag_col].val.str_val = p->etag;
+						memset(&q_vals[watcher_col].val.str_val, 0, sizeof(str));
+
 					q_vals[callid_col].val.str_val = p->call_id;
 					q_vals[totag_col].val.str_val = p->to_tag;
 					q_vals[fromtag_col].val.str_val = p->from_tag;
 					q_vals[cseq_col].val.int_val= p->cseq;
+					q_vals[tuple_col].val.str_val = p->tuple_id;
+					q_vals[etag_col].val.str_val = p->etag;
 					q_vals[expires_col].val.int_val = p->expires;
 					q_vals[desired_expires_col].val.int_val = p->desired_expires;
 					q_vals[event_col].val.int_val = p->event;
 					q_vals[version_col].val.int_val = p->version;
-					
-					if(p->record_route.s== NULL)
-					{
-						q_vals[record_route_col].val.str_val.s= "";
-						q_vals[record_route_col].val.str_val.len = 0;
-					}
-					else
-						q_vals[record_route_col].val.str_val = p->record_route;
-					
+					q_vals[record_route_col].val.str_val = p->record_route;
 					q_vals[contact_col].val.str_val = p->contact;
-					if(p->remote_contact.s)
-					{
-						q_vals[remote_contact_col].val.str_val = p->remote_contact;
-						LM_DBG("p->remote_contact = %.*s\n", p->remote_contact.len, p->remote_contact.s);
-					}
-					else
-					{
-						q_vals[remote_contact_col].val.str_val.s = "";
-						q_vals[remote_contact_col].val.str_val.len = 0;
-					}
+					q_vals[remote_contact_col].val.str_val = p->remote_contact;
 
 					if(p->extra_headers)
 						q_vals[extra_headers_col].val.str_val = *(p->extra_headers);
 					else
-						n_query_cols--;
-						
-					if(pua_dbf.insert(pua_db, q_cols, q_vals,n_query_cols )<0)
+						memset(&q_vals[extra_headers_col].val.str_val, 0, sizeof(str));
+
+					if(pua_dbf.insert(pua_db, q_cols, q_vals, n_query_cols)< 0)
 					{
 						LM_ERR("while inserting in db table pua\n");
 						if(!no_lock)
