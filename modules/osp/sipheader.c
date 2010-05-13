@@ -84,9 +84,12 @@ void ospCopyStrToBuffer(
 static void ospSkipPlus(
     char* e164)
 {
+    int size;
+
     if (*e164 == '+') {
-        strncpy(e164, e164 + 1, strlen(e164));
-        e164[strlen(e164) - 1] = '\0';
+        size = strlen(e164);
+        strncpy(e164, e164 + 1, size);
+        e164[size - 1] = '\0';
     }
 }
 
