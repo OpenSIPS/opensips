@@ -199,7 +199,7 @@ Chapter 1. Admin Guide
 
    The following libraries or applications must be installed
    before running OpenSIPS with this module loaded:
-     * None.
+     * libpcre-dev - the development libraries of PCRE.
 
 1.6. Exported Parameters
 

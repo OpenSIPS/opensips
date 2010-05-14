@@ -265,7 +265,7 @@
 			<itemizedlist>
 			<listitem>
 			<para>
-				<emphasis>None</emphasis>.
+				<emphasis>libpcre-dev - the development libraries of <ulink url="http://www.pcre.org/">PCRE</ulink></emphasis>.
 			</para>
 			</listitem>
 			</itemizedlist>
