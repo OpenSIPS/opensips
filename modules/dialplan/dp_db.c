@@ -318,12 +318,14 @@ int str_to_shm(str src, str * dest)
 /*compile the expressions, and if ok, build the rule */
 dpl_node_t * build_rule(db_val_t * values)
 {
-	TRex * match_comp, *subst_comp;
+	pcre * match_comp, *subst_comp;
 	struct subst_expr * repl_comp;
-	const TRexChar * error;
 	dpl_node_t * new_rule;
 	str match_exp, subst_exp, repl_exp, attrs;
 	int matchop;
+	int namecount;
+
+	
 
 	matchop = VAL_INT(values+2);
 
@@ -335,12 +337,12 @@ dpl_node_t * build_rule(db_val_t * values)
 	match_comp = subst_comp =0;
 	repl_comp = 0;
 	new_rule = 0;
-	error = NULL;
 
 	GET_STR_VALUE(match_exp, values, 3);
 	if(matchop == REGEX_OP){
 
-		match_comp = trex_compile(match_exp.s, &error);
+		match_comp = wrap_pcre_compile(match_exp.s);
+
 		if(!match_comp){
 			LM_ERR("failed to compile match expression %.*s\n",
 				match_exp.len, match_exp.s);
@@ -361,16 +363,26 @@ dpl_node_t * build_rule(db_val_t * values)
 
 	GET_STR_VALUE(subst_exp, values, 5);
 	if(subst_exp.s && subst_exp.len){
-		subst_comp = trex_compile(subst_exp.s, &error);
+
+		subst_comp = wrap_pcre_compile(	subst_exp.s);
+
 		if(subst_comp == NULL){
 			LM_ERR("failed to compile subst expression\n");
 			goto err;
 		}
+
 	}
 
-	if ( repl_comp && 
-	(trex_getsubexpcount(subst_comp)<=repl_comp->max_pmatch) && 
-	repl_comp->max_pmatch != 0){
+	pcre_fullinfo(
+		subst_comp, /* the compiled pattern */
+		NULL, /* no extra data - we didn't study the pattern */
+		PCRE_INFO_CAPTURECOUNT, /* number of named substrings */
+		&namecount); /* where to put the answer */
+
+	LM_DBG("references:%d , max:%d\n",namecount,repl_comp->max_pmatch);
+
+	if ( repl_comp && (namecount<repl_comp->max_pmatch) &&
+		repl_comp->max_pmatch != 0){
 		LM_ERR("repl_exp uses a non existing subexpression\n");
 			goto err;
 	}
@@ -404,12 +416,10 @@ dpl_node_t * build_rule(db_val_t * values)
 		new_rule->attrs.len, new_rule->attrs.s);
 
 	if(match_comp){
-		match_comp->_p = new_rule->match_exp.s;
 		new_rule->match_comp = match_comp;
 	}
 
 	if(subst_comp){
-		subst_comp->_p = new_rule->subst_exp.s;
 		new_rule->subst_comp = subst_comp;
 	}
 
@@ -418,8 +428,8 @@ dpl_node_t * build_rule(db_val_t * values)
 	return new_rule;
 
 err:
-	if(match_comp)	trex_destroy(match_comp);
-	if(subst_comp)	trex_destroy(subst_comp);
+	if(match_comp)	wrap_pcre_free(match_comp);
+	if(subst_comp)	wrap_pcre_free(subst_comp);
 	if(repl_comp)	repl_expr_free(repl_comp);
 	if(new_rule)	destroy_rule(new_rule);
 	return NULL;
@@ -563,10 +573,10 @@ void destroy_rule(dpl_node_t * rule){
 		rule->pr);
 
 	if(rule->match_comp)
-		trex_destroy(rule->match_comp);
+		wrap_pcre_free(rule->match_comp);
 
 	if(rule->subst_comp)
-		trex_destroy(rule->subst_comp);
+		wrap_pcre_free(rule->subst_comp);
 
 	/*destroy repl_exp*/
 	if(rule->repl_comp)

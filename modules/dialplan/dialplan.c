@@ -614,3 +614,49 @@ error:
 	return 0;
 }
 
+
+
+void * wrap_shm_malloc(size_t size)
+{
+	return shm_malloc(size);
+}
+
+void  wrap_shm_free(void * p )
+{
+	shm_free(p);
+}
+
+
+pcre * wrap_pcre_compile(char *  pattern)
+{
+		pcre * ret ;
+		func_malloc old_malloc ;
+		func_free old_free;
+		const char * error;
+		int erroffset;
+
+
+		old_malloc = pcre_malloc;
+		old_free = pcre_free;
+
+		pcre_malloc = wrap_shm_malloc;
+		pcre_free = wrap_shm_free;
+
+		ret = pcre_compile(
+				pattern ,              /* the pattern */
+				0,                    /* default options */
+				&error,               /* for error message */
+				&erroffset,           /* for error offset */
+				NULL);
+
+		pcre_malloc = old_malloc;
+		pcre_free = old_free;
+
+		return ret;
+}
+
+void wrap_pcre_free( pcre* re)
+{
+	shm_free(re);
+	
+}
