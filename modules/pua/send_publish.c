@@ -687,7 +687,7 @@ error:
 	if(etag.s)
 		pkg_free(etag.s);
 
-	if(cb_param)
+	if(cb_param && presentity==NULL)
 		shm_free(cb_param);
 
 	if(body&& ret_code && ev->process_body)
