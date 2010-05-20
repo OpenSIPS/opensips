@@ -218,7 +218,7 @@ void subs_cback_func(struct cell *t, int cb_type, struct tmcb_params *ps)
 	str contact;
 	int initial_request = 0;
 
-	if( ps->param== NULL || *ps->param== NULL )
+	if(ps==NULL || ps->param== NULL || *ps->param== NULL )
 	{
 		LM_ERR("null callback parameter\n");
 		return;
@@ -855,6 +855,7 @@ int send_subscribe(subs_info_t* subs)
 	pres.flag       = subs->source_flag;
 	pres.id         = subs->id;
 	pres.event      = subs->event;
+	subs->to_uri    = pres.to_uri;
 
 	hash_code=core_hash(&pres.to_uri, pres.watcher_uri, HASH_SIZE);
 	lock_get(&HashT->p_records[hash_code].lock);
@@ -985,7 +986,7 @@ insert:
 		lock_release(&HashT->p_records[hash_code].lock);
 
 	//	hentity->flag= flag;
-		LM_DBG("event parameter: %d\n", hentity->event);	
+		LM_DBG("event parameter: %d\n", hentity->event);
 		result= tmb.t_request_within
 			(&met,
 			str_hdr,

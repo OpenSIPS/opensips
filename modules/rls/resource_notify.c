@@ -175,6 +175,7 @@ int rls_handle_notify(struct sip_msg* msg, char* c1, char* c2)
 		}
 		pto = &TO;
 	}
+	memset(&dialog, 0, sizeof(ua_pres_t));
 	dialog.watcher_uri= &pto->uri;
     if (pto->tag_value.s==NULL || pto->tag_value.len==0 )
 	{  
