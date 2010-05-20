@@ -241,10 +241,15 @@ void insert_htable(ua_pres_t* presentity)
     else
         s1 = presentity->pres_uri;
 
+	LM_DBG("to_uri= %.*s, watcher_uri= %.*s\n", s1->len, s1->s,
+		(presentity->watcher_uri?presentity->watcher_uri->len:0),
+		(presentity->watcher_uri?presentity->watcher_uri->s:0));
+
 	hash_code= core_hash(s1, presentity->watcher_uri, 
 			HASH_SIZE);
 	presentity->hash_index = hash_code;
-	LM_DBG("start\n");
+	LM_DBG("hash_code = %d\n", hash_code);
+
 	lock_get(&HashT->p_records[hash_code].lock);
 
 /*	
@@ -263,7 +268,6 @@ void insert_htable(ua_pres_t* presentity)
 	p->next= presentity;
 
 	lock_release(&HashT->p_records[hash_code].lock);
-	LM_DBG("end\n");
 
 }
 
@@ -387,9 +391,13 @@ int get_record_id(ua_pres_t* dialog, str** rec_id)
 		s1 = dialog->pres_uri;
 
 	*rec_id= NULL;
+	LM_DBG("to_uri= %.*s, watcher_uri= %.*s\n", s1->len, s1->s,
+		(dialog->watcher_uri?dialog->watcher_uri->len:0),
+		(dialog->watcher_uri?dialog->watcher_uri->s:0));
 	hash_code= core_hash(s1, dialog->watcher_uri, HASH_SIZE);
 	lock_get(&HashT->p_records[hash_code].lock);
 
+	LM_DBG("hash_code = %d\n", hash_code);
 	rec= get_dialog(dialog, hash_code);
 	if(rec== NULL)
 	{

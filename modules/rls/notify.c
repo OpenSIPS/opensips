@@ -448,7 +448,7 @@ str* constr_rlmi_doc(db_res_t *result, str* rl_uri, int version,
 
 	xmlNewProp(list_node, BAD_CAST "xmlns",
 			BAD_CAST "urn:ietf:params:xml:ns:rlmi");
-	xmlNewProp(list_node, BAD_CAST "version", BAD_CAST int2str(version, &len));
+	xmlNewProp(list_node, BAD_CAST "version", BAD_CAST int2str(version-1, &len));
 	xmlNewProp(list_node, BAD_CAST "fullState", BAD_CAST "true");
 
 	xmlDocSetRootElement(doc, list_node);
