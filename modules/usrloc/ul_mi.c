@@ -80,7 +80,6 @@ static inline int mi_fix_aor(str *aor)
 		if (p)
 			aor->len = p - aor->s;
 	}
-	strlower(aor);
 
 	return 0;
 }
