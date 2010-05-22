@@ -173,6 +173,7 @@ extern str str_doc_col;
 #define DID_INIT_LEN  (2* sizeof(DID_SEP))
 
 /* did_str= *callid*DID_SEP*from_tag*DID_SEP*to_tag* */
+#define MAX_DID_LEN    255 /* not to exceed db field length */
 
 static inline int CONSTR_RLSUBS_DID(subs_t* subs, str *did)
 {
@@ -180,6 +181,11 @@ static inline int CONSTR_RLSUBS_DID(subs_t* subs, str *did)
 
 	len= (DID_INIT_LEN+ subs->callid.len+ subs->to_tag.len+
 			subs->from_tag.len+ 10)* sizeof(char);
+	if(len > MAX_DID_LEN)
+	{
+		LM_ERR("Max length exceeded [%d]\n", len);
+		return -1;
+	}
 	did->s= (char*)pkg_malloc(len);
 	if(did->s== NULL) 
 	{

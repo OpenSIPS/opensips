@@ -71,7 +71,7 @@ INSERT INTO version (table_name, table_version) values ('pua','8');
 CREATE TABLE pua (
     id INT(10) UNSIGNED AUTO_INCREMENT PRIMARY KEY NOT NULL,
     pres_uri CHAR(128) NOT NULL,
-    pres_id CHAR(64) NOT NULL,
+    pres_id CHAR(255) NOT NULL,
     event INT(11) NOT NULL,
     expires INT(11) NOT NULL,
     desired_expires INT(11) NOT NULL,

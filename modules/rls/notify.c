@@ -80,10 +80,13 @@ int send_full_notify(subs_t* subs, xmlNodePtr service_node, int version, str* rl
 	str rlsubs_did= {0, 0};
 
 	LM_DBG("start\n");
-	/* query in alfabetical order */
-	
-	CONSTR_RLSUBS_DID(subs, &rlsubs_did);
+	if(CONSTR_RLSUBS_DID(subs, &rlsubs_did) < 0)
+	{
+		LM_ERR("Failed to create did\n");
+		return -1;
+	}
 
+	/* query in alfabetical order */
 	query_cols[0]= &str_rlsubs_did_col;
 	query_vals[0].type = DB_STR;
 	query_vals[0].nul = 0;
