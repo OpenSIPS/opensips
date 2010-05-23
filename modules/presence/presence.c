@@ -496,7 +496,7 @@ static struct mi_root* mi_refreshWatchers(struct mi_root* cmd, void* param)
 	unsigned int refresh_type;
 
 	LM_DBG("start\n");
-	
+
 	node = cmd->node.kids;
 	if(node == NULL)
 		return 0;
@@ -589,8 +589,8 @@ static struct mi_root* mi_refreshWatchers(struct mi_root* cmd, void* param)
 		}
 
 	}
-		
-	return init_mi_tree(200, "OK", 2);
+
+	return init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
 
 error:
 	if(rules_doc)
