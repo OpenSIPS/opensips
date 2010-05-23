@@ -2356,8 +2356,20 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 								elems[3].type = NUMBER_ST; 
 								elems[3].u.number = $9;
 								$$ = mk_action(CACHE_STORE_T, 4, elems, line); 
-
 							}
+		| CACHE_STORE LPAREN STRING COMMA STRING COMMA STRING COMMA script_var
+								RPAREN { 
+								elems[0].type = STR_ST; 
+								elems[0].u.data = $3; 
+								elems[1].type = STR_ST; 
+								elems[1].u.data = $5; 
+								elems[2].type = STR_ST; 
+								elems[2].u.data = $7; 
+								elems[3].type = SCRIPTVAR_ST; 
+								elems[3].u.data = $9;
+								$$ = mk_action(CACHE_STORE_T, 4, elems, line); 
+							}
+
 		| CACHE_REMOVE LPAREN STRING COMMA STRING RPAREN { 
 									mk_action2( $$, CACHE_REMOVE_T,
 													STR_ST,
