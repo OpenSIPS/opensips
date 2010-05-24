@@ -43,6 +43,7 @@
 #include "tm.h"
 #include "provider.h"
 
+extern int _osp_work_mode;
 extern int _osp_service_type;
 extern unsigned int _osp_sp_number;
 extern char* _osp_sp_uris[];
@@ -71,6 +72,9 @@ extern int _osp_append_networkid;
 extern char _osp_PRIVATE_KEY[];
 extern char _osp_LOCAL_CERTIFICATE[];
 extern char _osp_CA_CERTIFICATE[];
+extern char* _osp_srcdev_avp;
+extern int_str _osp_srcdev_avpname;
+extern unsigned short _osp_srcdev_avptype;
 extern char* _osp_snid_avp;
 extern int_str _osp_snid_avpname;
 extern unsigned short _osp_snid_avptype;
@@ -102,6 +106,7 @@ static cmd_export_t cmds[]={
 };
 
 static param_export_t params[]={
+    { "work_mode",                        INT_PARAM, &_osp_work_mode },
     { "service_type",                     INT_PARAM, &_osp_service_type },
     { "sp1_uri",                          STR_PARAM, &_osp_sp_uris[0] },
     { "sp2_uri",                          STR_PARAM, &_osp_sp_uris[1] },
@@ -153,7 +158,8 @@ static param_export_t params[]={
     { "use_number_portability",           INT_PARAM, &_osp_use_np },
     { "redirection_uri_format",           INT_PARAM, &_osp_redir_uri },
     { "append_userphone",                 INT_PARAM, &_osp_append_userphone },
-    { "append_networkid",                 INT_PARAM, &_osp_append_networkid},
+    { "append_networkid",                 INT_PARAM, &_osp_append_networkid },
+    { "source_device_avp",                STR_PARAM, &_osp_srcdev_avp },
     { "source_networkid_avp",             STR_PARAM, &_osp_snid_avp },
     { "custom_info_avp",                  STR_PARAM, &_osp_cinfo_avp },
     { 0,0,0 }
@@ -248,13 +254,18 @@ static int ospVerifyParameters(void)
     str avp_str;
     int result = 0;
 
-    if (_osp_service_type < 0 || _osp_service_type > 1) {
+    if ((_osp_work_mode < 0) || (_osp_work_mode > 1)) {
+        _osp_work_mode = OSP_DEF_MODE;
+        LM_WARN("work mode is out of range, reset to %d\n", OSP_DEF_MODE);
+    }
+
+    if ((_osp_service_type < 0) || (_osp_service_type > 1)) {
         _osp_service_type = OSP_DEF_SERVICE;
-        LM_WARN("proxy type is out of range, reset to %d\n", OSP_DEF_SERVICE);
+        LM_WARN("service type is out of range, reset to %d\n", OSP_DEF_SERVICE);
     }
 
     /* If use_security_features is 0, ignroe the certificate files */
-    if (_osp_use_security != 0 ) {
+    if (_osp_use_security != 0) {
         /* Default location for the cert files is in the compile time variable CFG_DIR */
         if (_osp_private_key == NULL) {
             sprintf(_osp_PRIVATE_KEY, "%spkey.pem", CFG_DIR);
@@ -309,6 +320,22 @@ static int ospVerifyParameters(void)
         result = -1;
     }
 
+    if ((_osp_work_mode == 1) && _osp_srcdev_avp && *_osp_srcdev_avp) {
+        avp_str.s = _osp_srcdev_avp;
+        avp_str.len = strlen(_osp_srcdev_avp);
+        if ((pv_parse_spec(&avp_str, &avp_spec) == NULL) ||
+            avp_spec.type != PVT_AVP ||
+            pv_get_avp_name(0, &(avp_spec.pvp), &_osp_srcdev_avpname, &_osp_srcdev_avptype) != 0)
+        {
+            LM_WARN("'%s' invalid AVP definition\n", _osp_srcdev_avp);
+            _osp_srcdev_avpname.n = 0;
+            _osp_srcdev_avptype = 0;
+        }
+    } else {
+        _osp_srcdev_avpname.n = 0;
+        _osp_srcdev_avptype = 0;
+    }
+
     if (_osp_snid_avp && *_osp_snid_avp) {
         avp_str.s = _osp_snid_avp;
         avp_str.len = strlen(_osp_snid_avp);
@@ -354,6 +381,7 @@ static void ospDumpParameters(void)
     int i;
 
     LM_INFO("module configuration: ");
+    LM_INFO("    work mode '%d'", _osp_work_mode);
     LM_INFO("    service type '%d'", _osp_service_type);
     LM_INFO("    number of service points '%d'", _osp_sp_number);
     for (i = 0; i < _osp_sp_number; i++) {
@@ -381,6 +409,13 @@ static void ospDumpParameters(void)
     LM_INFO("    append_userphone '%d' ", _osp_append_userphone);
     LM_INFO("    append_networkid '%d' ", _osp_append_networkid);
     LM_INFO("    max_destinations '%d'\n", _osp_max_dests);
+    if (_osp_srcdev_avpname.n == 0) {
+        LM_INFO("    source device IP disabled\n");
+    } else if (_osp_srcdev_avptype & AVP_NAME_STR) {
+        LM_INFO("    source device IP AVP name '%.*s'\n", _osp_srcdev_avpname.s.len, _osp_srcdev_avpname.s.s);
+    } else {
+        LM_INFO("    source device IP AVP ID '%d'\n", _osp_srcdev_avpname.n);
+    }
     if (_osp_snid_avpname.n == 0) {
         LM_INFO("    source network ID disabled\n");
     } else if (_osp_snid_avptype & AVP_NAME_STR) {

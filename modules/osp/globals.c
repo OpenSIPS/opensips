@@ -33,6 +33,7 @@
 #include "../../usr_avp.h"
 #include "osp_mod.h"
 
+int _osp_work_mode = OSP_DEF_MODE;
 int _osp_service_type = OSP_DEF_SERVICE;
 unsigned int _osp_sp_number;
 char* _osp_sp_uris[OSP_DEF_SPS];
@@ -66,6 +67,9 @@ int _osp_append_networkid = OSP_DEF_APPENDNID;
 char _osp_PRIVATE_KEY[OSP_STRBUF_SIZE];
 char _osp_LOCAL_CERTIFICATE[OSP_STRBUF_SIZE];
 char _osp_CA_CERTIFICATE[OSP_STRBUF_SIZE];
+char* _osp_srcdev_avp = OSP_DEF_SNIDAVP;
+int_str _osp_srcdev_avpname;
+unsigned short _osp_srcdev_avptype;
 char* _osp_snid_avp = OSP_DEF_SNIDAVP;
 int_str _osp_snid_avpname;
 unsigned short _osp_snid_avptype;

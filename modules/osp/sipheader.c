@@ -42,10 +42,14 @@
 #include "destination.h"
 #include "sipheader.h"
 
+extern int _osp_work_mode;
+extern char _osp_in_device[];
 extern int _osp_use_rpid;
 extern int _osp_use_np;
 extern int _osp_append_userphone;
 extern int _osp_append_networkid;
+extern int_str _osp_srcdev_avpname;
+extern unsigned short _osp_srcdev_avptype;
 
 static void ospSkipPlus(char* e164);
 static int ospAppendHeader(struct sip_msg* msg, str* header);
@@ -429,13 +433,13 @@ int ospGetOspHeader(
 /*
  * Get first VIA header and use the IP or host name
  * param msg SIP message
- * param srcaddr Source address
- * param bufsize Size of srcaddr
+ * param viaaddr Via header IP address
+ * param bufsize Size of viaaddr
  * return 0 success, -1 failure
  */
-int ospGetSourceAddress(
+int ospGetViaAddress(
     struct sip_msg* msg,
-    char* srcaddr,
+    char* viaaddr,
     int bufsize)
 {
     struct hdr_field* hf;
@@ -453,17 +457,87 @@ int ospGetSourceAddress(
                 via = (struct via_body*)hf->parsed;
 
                 if (via->port != 0) {
-                    snprintf(srcaddr, bufsize, "%.*s:%d", via->host.len, via->host.s, via->port);
-                    srcaddr[bufsize - 1] = '\0';
+                    snprintf(viaaddr, bufsize, "%.*s:%d", via->host.len, via->host.s, via->port);
+                    viaaddr[bufsize - 1] = '\0';
                 } else {
-                    ospCopyStrToBuffer(&via->host, srcaddr, bufsize);
+                    ospCopyStrToBuffer(&via->host, viaaddr, bufsize);
                 }
 
-                LM_DBG("source address '%s'\n", srcaddr);
+                LM_DBG("via address '%s'\n", viaaddr);
 
                 result = 0;
                 break;
             }
+        }
+    }
+
+    return result;
+}
+
+/*
+ * Get source device IP address
+ * param msg SIP message
+ * param srcdev Source device address
+ * param bufsize Size of srcdev
+ * return 0 success, -1 failure
+ */
+int ospGetSourceDevice(
+    struct sip_msg* msg,
+    char* srcdev,
+    int bufsize)
+{
+    struct usr_avp* avp = NULL;
+    int_str value;
+    int result = -1;
+
+    if (bufsize > 0) {
+        switch (_osp_work_mode) {
+        case 1:
+            if ((_osp_srcdev_avpname.n != 0) &&
+                ((avp = search_first_avp(_osp_srcdev_avptype, _osp_srcdev_avpname, &value, 0)) != NULL) &&
+                (avp->flags & AVP_VAL_STR) && (value.s.s && value.s.len))
+            {
+                snprintf(srcdev, bufsize, "%.*s", value.s.len, value.s.s);
+                srcdev[bufsize - 1] = '\0';
+            } else {
+                srcdev[0] = '\0';
+            }
+            result = 0;
+            break;
+        case 0:
+        default:
+            result = ospGetViaAddress(msg, srcdev, bufsize);
+            break;
+        }
+    }
+
+    return result;
+}
+
+/*
+ * Get source IP address
+ * param msg SIP message
+ * param source Source IP address
+ * param bufsize Size of source
+ * return 0 success, -1 failure
+ */
+int ospGetSource(
+    struct sip_msg* msg,
+    char* source,
+    int bufsize)
+{
+    int result = -1;
+
+    if (bufsize > 0) {
+        switch (_osp_work_mode) {
+        case 1:
+            result = ospGetViaAddress(msg, source, bufsize);
+            break;
+        case 0:
+        default:
+            strncpy(source, _osp_in_device, bufsize - 1);
+            result = 0;
+            break;
         }
     }
 
