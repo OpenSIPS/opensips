@@ -628,8 +628,7 @@ int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 	}
 
 	if (proxy == NULL) {
-		proxy = uri2proxy(p_msg->dst_uri.len ? &p_msg->dst_uri : \
-		    &p_msg->new_uri, PROTO_NONE);
+		proxy = uri2proxy( GET_NEXT_HOP(p_msg), PROTO_NONE );
 		if (proxy != NULL) {
 			msg_callback_process(p_msg, REQ_PRE_FORWARD, (void *)proxy);
 			pkg_free(proxy);
