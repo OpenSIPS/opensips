@@ -34,6 +34,7 @@ void *ser_memmem(const void *, const void *, size_t, size_t);
 int get_callid(struct sip_msg *, str *);
 int get_to_tag(struct sip_msg *, str *);
 int get_from_tag(struct sip_msg *, str *);
-int get_contact_uri(struct sip_msg *, struct sip_uri *, contact_t **);
+int get_contact_uri(struct sip_msg *, struct sip_uri *,
+		contact_t **,struct hdr_field **);
 
 #endif
