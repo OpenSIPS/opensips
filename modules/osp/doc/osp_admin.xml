@@ -45,6 +45,16 @@
   <section>
     <title>Exported Parameters</title>
     <section>
+      <title><varname>work_mode</varname></title>
+      <para>The work_mode (integer) parameter instructs the OSP module what mode it should work in. If this value is set to 0, the OSP module wokes in direct mode. If this value is set to 1, the OSP module works in indirect mode. The default value is 0.</para>
+      <example>
+        <title>Instructing the module to work in direct mode</title>
+        <programlisting format="linespecific">
+modparam("osp","work_mode",0)
+        </programlisting>
+      </example>
+    </section>
+    <section>
       <title><varname>service_type</varname></title>
       <para>The service_type (integer) parameter instructs the OSP module what services it should provide. If this value is set to 0, the OSP module provides normal voice service. If this value is set to 1, the OSP module provides ported number query service. The default value is 0.</para>
       <example>
@@ -257,11 +267,21 @@ modparam("osp","append_userphone",1)
     </section>
     <section>
       <title><varname>append_networkid</varname></title>
-      <para>The append_networkid (integer) parameter instructs the OSP module if to append networkid parameter in URI. If this value is set to 0, the OSP module does not append networkid parameter. If this value is set to 1, the OSP module will append networkid parameter. The default value is 0</para>
+      <para>The append_networkid (integer) parameter instructs the OSP module if to append networkid parameter in outbound destination URIs. If this value is set to 0, the OSP module does not append networkid parameter. If this value is set to 1, the OSP module will append networkid parameter. The default value is 1</para>
       <example>
         <title>Append networkid parameter</title>
         <programlisting format="linespecific">
 modparam("osp","append_networkid",1)
+        </programlisting>
+      </example>
+    </section>
+    <section>
+      <title><varname>source_device_avp</varname></title>
+      <para>The source_device_avp (string) parameter instructs the OSP module to use the defined AVP to pass the source device IP value in the indirect work mode. The default value is "$avp(s:_osp_source_device_)".  Then the source device IP can be set by "$avp(s:_osp_source_device_) = pseudo-variables".  All pseudo variables are described in http://www.opensips.org/Resources/DocsCoreVar.</para>
+      <example>
+        <title>Setting the source device IP AVP</title>
+        <programlisting format="linespecific">
+modparam("osp","source_device_avp","$avp(s:srcdev)")
         </programlisting>
       </example>
     </section>

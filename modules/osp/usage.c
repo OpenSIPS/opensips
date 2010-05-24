@@ -296,7 +296,7 @@ static int ospReportUsageFromCookie(
         destcount = 0;
     }
 
-    ospGetSourceAddress(msg, firstvia, sizeof(firstvia));
+    ospGetViaAddress(msg, firstvia, sizeof(firstvia));
     ospGetFromUserpart(msg, from, sizeof(from));
     ospGetToUserpart(msg, to, sizeof(to));
     ospGetNextHop(msg, nexthop, sizeof(nexthop));

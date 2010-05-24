@@ -97,8 +97,8 @@ int ospValidateHeader (
         LM_ERR("failed to extract called number\n");
     } else if (ospGetCallId(msg, &callid) != 0) {
         LM_ERR("failed to extract call id\n");
-    } else if (ospGetSourceAddress(msg, dest.source, sizeof(dest.source)) != 0) {
-        LM_ERR("failed to extract source address\n");
+    } else if (ospGetViaAddress(msg, dest.source, sizeof(dest.source)) != 0) {
+        LM_ERR("failed to extract source device address\n");
     } else if (ospGetOspHeader(msg, token, &tokensize) != 0) {
         LM_ERR("failed to extract OSP authorization token\n");
     } else {

@@ -86,7 +86,7 @@ static int ospLoadRoutes(
     osp_dest dests[OSP_DEF_DESTS];
     char host[OSP_STRBUF_SIZE];
     char destdev[OSP_STRBUF_SIZE];
-	OSPE_OPERATOR_NAME type;
+    OSPE_OPERATOR_NAME type;
     OSPE_DEST_PROTOCOL protocol;
     OSPE_DEST_OSPENABLED enabled;
     int result = 0;
@@ -309,8 +309,10 @@ int ospRequestRouting(
     char rn[OSP_STRBUF_SIZE];
     char cic[OSP_STRBUF_SIZE];
     int npdi;
-	OSPE_OPERATOR_NAME type;
+    OSPE_OPERATOR_NAME type;
     char opname[OSPC_OPNAME_NUMBER][OSP_STRBUF_SIZE];
+    char source[OSP_STRBUF_SIZE];
+    char sourcebuf[OSP_STRBUF_SIZE];
     char srcdev[OSP_STRBUF_SIZE];
     char srcdevbuf[OSP_STRBUF_SIZE];
     char divuser[OSP_STRBUF_SIZE];
@@ -343,11 +345,14 @@ int ospRequestRouting(
         LM_ERR("failed to extract called number\n");
     } else if (ospGetCallId(msg, &(callids[0])) != 0) {
         LM_ERR("failed to extract call id\n");
-    } else if (ospGetSourceAddress(msg, srcdev, sizeof(srcdev)) != 0) {
+    } else if (ospGetSource(msg, source, sizeof(source)) != 0) {
+        LM_ERR("failed to extract source address\n");
+    } else if (ospGetSourceDevice(msg, srcdev, sizeof(srcdev)) != 0) {
         LM_ERR("failed to extract source deivce address\n");
     } else {
         authtime = time(NULL);
 
+        ospConvertToOutAddress(source, sourcebuf, sizeof(sourcebuf));
         ospConvertToOutAddress(srcdev, srcdevbuf, sizeof(srcdevbuf));
 
         switch (_osp_service_type) {
@@ -397,9 +402,9 @@ int ospRequestRouting(
         }
 
         if (_osp_cinfo_avpname.n != 0) {
-			for (i = 0, cinfoavp = search_first_avp(_osp_cinfo_avptype, _osp_cinfo_avpname, NULL, 0);
+            for (i = 0, cinfoavp = search_first_avp(_osp_cinfo_avptype, _osp_cinfo_avpname, NULL, 0);
                 ((i < OSP_DEF_CINFOS) && (cinfoavp != NULL));
-				i++, cinfoavp = search_next_avp(cinfoavp, NULL))
+                i++, cinfoavp = search_next_avp(cinfoavp, NULL))
             {
                 get_avp_val(cinfoavp, &cinfoval);
                 if ((cinfoavp->flags & AVP_VAL_STR) && (cinfoval.s.s && cinfoval.s.len)) {
@@ -419,7 +424,7 @@ int ospRequestRouting(
                 }
             }
             cinfostr[sizeof(cinfostr) - 1] = '\0';
-		}
+        }
 
         LM_INFO("request auth and routing for: "
             "service_type '%d' "
@@ -444,7 +449,7 @@ int ospRequestRouting(
             "dest_count '%d' "
             "%s\n",
             _osp_service_type,
-            _osp_out_device,
+            sourcebuf,
             srcdevbuf,
             snid,
             calling,
@@ -469,7 +474,7 @@ int ospRequestRouting(
         /* try to request authorization */
         errorcode = OSPPTransactionRequestAuthorisation(
             transaction,       /* transaction handle */
-            _osp_out_device,   /* from the configuration file */
+            sourcebuf,         /* from the configuration file */
             srcdevbuf,         /* source device of call, protocol specific, in OSP format */
             calling,           /* calling number in nodotted e164 notation */
             OSPC_NFORMAT_E164, /* calling number format */
@@ -484,7 +489,7 @@ int ospRequestRouting(
             detaillog);        /* memory location for detaillog to be stored */
 
         if ((errorcode == OSPC_ERR_NO_ERROR) &&
-            (ospLoadRoutes(transaction, destcount, _osp_in_device, srcdev, called, authtime) == 0))
+            (ospLoadRoutes(transaction, destcount, source, srcdev, called, authtime) == 0))
         {
             LM_INFO("there are '%d' OSP routes, call_id '%.*s'\n",
                 destcount,
