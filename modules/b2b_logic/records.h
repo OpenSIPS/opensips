@@ -43,6 +43,7 @@ typedef struct b2bl_entity_id
 	str from_uri;
 	b2b_dlginfo_t* dlginfo;
 	int disconnected;
+	int state;
 	enum b2b_entity_type type;
 	struct b2bl_entity_id* next;
 	struct b2bl_entity_id* peer;
@@ -58,7 +59,7 @@ typedef struct b2bl_tuple
 	int next_scenario_state;
 	b2bl_entity_id_t* server;
 	b2bl_entity_id_t* clients;
-	b2bl_entity_id_t* bridge_entities[2];
+	b2bl_entity_id_t* bridge_entities[3];
 	int to_del;
 	str* extra_headers;
 	struct b2bl_tuple* next;
@@ -100,5 +101,7 @@ void destroy_b2bl_htable(void);
 
 b2bl_entity_id_t* b2bl_create_new_entity(enum b2b_entity_type type, str* entity_id,
 		str* to_uri,str* from_uri, str* ssid);
+
+void b2bl_delete_entity(b2bl_entity_id_t* entity, b2bl_tuple_t* tuple);
 
 #endif

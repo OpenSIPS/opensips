@@ -592,7 +592,7 @@ static struct mi_root* mi_trigger_scenario(struct mi_root* cmd, void* param)
 	unsigned int hash_index = 0;
 	xmlNodePtr xml_node;
 	unsigned int state = 0;
-	b2bl_tuple_t* tuple;
+	b2bl_tuple_t* tuple= NULL;
 	str* b2bl_key;
 
 	node = cmd->node.kids;
@@ -675,7 +675,7 @@ static struct mi_root* mi_trigger_scenario(struct mi_root* cmd, void* param)
 		if(attr.s == NULL)
 		{
 			LM_ERR("No state node content found\n");
-			return 0;
+			goto error;
 		}
 		attr.len = strlen(attr.s);
 
@@ -683,7 +683,7 @@ static struct mi_root* mi_trigger_scenario(struct mi_root* cmd, void* param)
 		{
 			LM_ERR("Bad scenario. Scenary state not an integer\n");
 			xmlFree(attr.s);
-			return 0;
+			goto error;
 		}
 		LM_DBG("Next scenario state is [%d]\n", state);
 		xmlFree(attr.s);
@@ -694,14 +694,19 @@ static struct mi_root* mi_trigger_scenario(struct mi_root* cmd, void* param)
 	if(xml_node == NULL)
 	{
 		LM_ERR("No bridge node found\n");
-		return 0;
+		goto error;
 	}
 
 	if(process_bridge_action(0, 0, tuple, xml_node) < 0)
 	{
 		LM_ERR("Failed to process bridge node");
-		return 0;
+		goto error;
 	}
-
+	lock_release(&b2bl_htable[hash_index].lock);
 	return init_mi_tree(200, "OK", 2);
+
+error:
+	if(tuple)
+		lock_release(&b2bl_htable[hash_index].lock);
+	return 0;
 }

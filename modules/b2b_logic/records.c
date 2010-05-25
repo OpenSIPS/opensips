@@ -35,6 +35,8 @@
 #include "../presence/hash.h"
 #include "records.h"
 
+
+/* Function that inserts a new b2b_logic record - the lock remains taken */
 b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg,
 		unsigned int hash_index, b2b_scenario_t* scenario,
 		str* args[], str* extra_headers, str** b2bl_key_s)
@@ -150,14 +152,44 @@ b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg,
 	}
 	tuple->key = b2bl_key;
 
-	lock_release(&b2bl_htable[hash_index].lock);
-
 	*b2bl_key_s = b2bl_key;
 
 	return tuple;
 error:
 	lock_release(&b2bl_htable[hash_index].lock);
 	return 0;
+}
+
+void b2bl_delete_entity(b2bl_entity_id_t* entity, b2bl_tuple_t* tuple)
+{
+	b2bl_entity_id_t* prev;
+
+	LM_DBG("Delete entity = %p\n", entity);
+
+	LM_DBG("Found a delete entity node\n");
+	if(entity->type == B2B_SERVER)
+	{
+		tuple->server = NULL;
+	}
+	else
+	{
+		/* search the entity to delete */
+		if(tuple->clients == entity)
+		{
+			tuple->clients = tuple->clients->next;
+		}
+		else
+		{
+			prev = tuple->clients;
+			while(prev->next != entity)
+				prev = prev->next;
+			
+			prev->next = entity->next;
+		}
+	}
+	b2b_api.entity_delete(entity->type, &entity->key, entity->dlginfo);
+	shm_free(entity);
+	LM_DBG("tuple->clients = %p\n", tuple->clients);
 }
 
 void b2bl_delete(b2bl_tuple_t* tuple, unsigned int hash_index)

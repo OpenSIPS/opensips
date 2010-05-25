@@ -84,7 +84,7 @@ b2b_dlg_t* b2b_search_htable_dlg(b2b_table table, unsigned int hash_index,
 			{
 				
 				leg = dlg->legs;
-				if(dlg->state < B2B_CONFIRMED)
+				if(dlg->state < B2B_CONFIRMED || dlg->state>=B2B_DESTROYED)
 				{
 					if(from_tag == 0 || from_tag->len==0 || leg==0)
 					{
@@ -92,6 +92,11 @@ b2b_dlg_t* b2b_search_htable_dlg(b2b_table table, unsigned int hash_index,
 						return dlg;
 					}
 					
+				}
+				if(from_tag == 0)
+				{
+					dlg = dlg->next;
+					continue;
 				}
 				/* if it is an already confirmed dialog match the to_tag also*/
 				while(leg)
@@ -1055,7 +1060,6 @@ dlg_t* b2b_client_dlg(b2b_dlg_t* dlg)
 {
 	return b2b_client_build_dlg(dlg, dlg->legs);
 }
-
 
 /*
  *	Function to send a request inside a b2b dialog
