@@ -544,7 +544,7 @@ rt_data_t* dr_load_routing_info( db_func_t *dr_dbf, db_con_t* db_hdl,
 				tmp.len = strlen(str_vals[1]);
 			}
 			/* TIME column */
-			check_val(TIME_DRR_COL, ROW_VALUES(row)+3, DB_STRING, 1, 1);
+			check_val(TIME_DRR_COL, ROW_VALUES(row)+3, DB_STRING, 0, 0);
 			str_vals[2] = (char*)VAL_STRING(ROW_VALUES(row)+3);
 			/* PRIORITY column */
 			check_val(PRIORITY_DRR_COL, ROW_VALUES(row)+4, DB_INT, 1, 0);
