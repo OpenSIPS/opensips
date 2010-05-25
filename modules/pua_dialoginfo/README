@@ -43,13 +43,13 @@ Klaus Darilion
               1.3.2. include_tags (int)
               1.3.3. include_localremote (int)
               1.3.4. caller_confirmed (int)
-              1.3.5. presence_sever (string)
+              1.3.5. presence_server (string)
               1.3.6. caller_spec_param (string)
               1.3.7. callee_spec_param (string)
 
         1.4. Exported Functions
 
-              1.4.1. dialoginfo_set()
+              1.4.1. dialoginfo_set([side])
 
    List of Examples
 
@@ -60,6 +60,7 @@ Klaus Darilion
    1.5. Set presence_server parameter
    1.6. Set caller_spec_param parameter
    1.7. Set caller_spec_param parameter
+   1.8. dialoginfo_set usage
 
 Chapter 1. Admin Guide
 
@@ -123,7 +124,7 @@ Chapter 1. Admin Guide
    confirmed or terminated.
 
    The dialog element can contain optional "local" and "remote"
-   elements which decsribes the local and the remote party in more
+   elements which describes the local and the remote party in more
    detail, for example:
 
 <?xml version="1.0" encoding="UTF-8"?>
@@ -309,10 +310,10 @@ modparam("pua_dialoginfo", "include_localremote", 0)
 modparam("pua_dialoginfo", "caller_confirmed", 1)
 ...
 
-1.3.5. presence_sever (string)
+1.3.5. presence_server (string)
 
    The address of the presence server, where the PUBLISH messages
-   should be sent ( not compulsory).
+   should be sent (not compulsory).
 
    Example 1.5. Set presence_server parameter
 ...
@@ -350,12 +351,17 @@ modparam("pua_dialoginfo", "caller_spec_param", "$avp(i:10)")
 
 1.4. Exported Functions
 
-1.4.1.  dialoginfo_set()
+1.4.1.  dialoginfo_set([side])
 
    This function must be called for INVITE messages that
    initialize a dialog for which dialoginfo information must be
    published.
 
+   Meaning of the parameters:
+     * side (optional) - can be "A" or "B" for caller or callee
+       PUBLISH only - if missing, both sides will be published.
+
+   Example 1.8. dialoginfo_set usage
 ...
         if(is_method("INVITE"))
                 if(uri =~ "opensips.org")

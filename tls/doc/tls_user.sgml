@@ -994,7 +994,7 @@ route{
               proxy_challenge("domA.net","0"/*no-qop*/);
               break;
           };
-          if (!check_from()) {
+          if (!db_check_from()) {
               log("LOG: From Cheating attempt in INVITE\n");
               sl_send_reply("403",
                   "That is ugly -- use From=id next time (OB)");
@@ -1052,7 +1052,7 @@ route{
               "0" /* no qop -- some phones can't deal with it */);
           break;
       };
-      if (!check_to()) {
+      if (!db_check_to()) {
           log("LOG: To Cheating attempt\n");
           sl_send_reply("403", "That is ugly -- use To=id in REGISTERs");
           break;

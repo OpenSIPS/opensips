@@ -744,7 +744,7 @@ if (method=="REGISTER") {
     if (!www_authorize("", "subscriber")) {
         www_challenge("", "0");
         return;
-    } else if (!check_to()) {
+    } else if (!db_check_to()) {
         sl_send_reply("403", "Username!=To not allowed ($au!=$tU)");
         return;
     }
