@@ -1151,7 +1151,7 @@ static int get_used_waiting_queue(
 	fp = fopen(fileToOpen, "r");
 
 	if (fp == NULL) {
-		LM_ERR("Could not open %s. openserMsgQueu eDepth and its related"
+		LM_DBG("Could not open %s. openserMsgQueu eDepth and its related"
 				" alarms will not be available.\n", fileToOpen);
 		return 0;
 	}
