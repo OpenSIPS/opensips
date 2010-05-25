@@ -173,6 +173,7 @@ mmg_lookup_cmd(struct sip_msg *msg, char *_fields_pv, char *_ipaddr_pv, char *_d
 	/* Construct return data. Know fields are: */
 	/* 	   lat		- latitude */
 	/* 	   lon		- longitude */
+	/* 	   cont		- continent  */
 	/* 	   cc		- country code */
 	/* 	   reg		- region */
 	/* 	   city		- city */
@@ -191,6 +192,7 @@ mmg_lookup_cmd(struct sip_msg *msg, char *_fields_pv, char *_ipaddr_pv, char *_d
 	while (token) {
 		if(!strcmp(token,"lat")) { rslt.s.len=snprintf(rslt_buf,sizeof rslt_buf,"%f",gir->latitude); }
 		else if(!strcmp(token,"lon"))  { rslt.s.len=snprintf(rslt_buf,sizeof rslt_buf,"%f",gir->longitude); } 
+		else if(!strcmp(token,"cont")) { rslt.s.len=snprintf(rslt_buf,sizeof rslt_buf,"%s",gir->continent_code); } 
 		else if(!strcmp(token,"cc"))   { rslt.s.len=snprintf(rslt_buf,sizeof rslt_buf,"%s",gir->country_code); } 
 		else if(!strcmp(token,"reg"))  { rslt.s.len=snprintf(rslt_buf,sizeof rslt_buf,"%s",gir->region); } 
 		else if(!strcmp(token,"city")) { rslt.s.len=snprintf(rslt_buf,sizeof rslt_buf,"%s",gir->city); } 
