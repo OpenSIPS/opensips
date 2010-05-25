@@ -80,8 +80,8 @@ Chapter 1. Admin Guide
    document with multiple "dialog" elements. This is perfectly
    valid, but unfortunately not supported by all SIP phones, e.g.
    Linksys SPA962 crashes when it receives dialog-info with
-   multiple dialog elements. In this case use the ..... module
-   parameter.
+   multiple dialog elements. In this case use the
+   force_single_dialog module parameter.
 
    To get better understanding how all the module works together
    please take a look at the follwing figure:

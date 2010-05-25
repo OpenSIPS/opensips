@@ -231,7 +231,7 @@ if (uri=~"sip:+40") /* calls to Romania */ {
         exit;
     }
 
-    if (method=="INVITE" && !check_from()) {
+    if (is_method("INVITE") && !db_check_from()) {
         log("from!=digest\n");
         sl_send_reply("403","Forbidden");
     }
