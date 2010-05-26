@@ -622,11 +622,12 @@ CFLAGS=$(shell echo "$${CFLAGS}")
 LDFLAGS+=
 
 ifeq (,$(CFLAGS))
-# setting CFLAGS
-ifeq ($(mode), release)
 
 #common stuff
 CFLAGS+=$(DEBUGSYM)
+
+# setting more CFLAGS
+ifeq ($(mode), release)
 
 #if i386
 ifeq	($(ARCH), i386)
