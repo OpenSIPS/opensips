@@ -34,6 +34,7 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include "../../sr_module.h"
 #include "../signaling/signaling.h"
 #include "sst_handlers.h" /* also includes sr_module.h needed by
                              handlers */

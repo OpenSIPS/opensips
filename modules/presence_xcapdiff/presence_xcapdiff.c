@@ -20,6 +20,7 @@
  *
  */
 
+#include "../../sr_module.h"
 #include "../presence/bind_presence.h"
 #include "../pua/pua_bind.h"
 

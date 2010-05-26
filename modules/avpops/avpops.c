@@ -35,10 +35,10 @@
 #include <sys/types.h> /* for regex */
 #include <regex.h>
 
+#include "../../sr_module.h"
 #include "../../mem/shm_mem.h"
 #include "../../mem/mem.h"
 #include "../../parser/parse_hname2.h"
-#include "../../sr_module.h"
 #include "../../str.h"
 #include "../../dprint.h"
 #include "../../error.h"

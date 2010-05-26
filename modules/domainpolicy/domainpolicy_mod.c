@@ -30,10 +30,10 @@
  */
 
 
-#include "domainpolicy_mod.h"
 #include <stdio.h>
-#include "../../mem/shm_mem.h"
 #include "../../sr_module.h"
+#include "domainpolicy_mod.h"
+#include "../../mem/shm_mem.h"
 #include "../../ut.h"
 #include "domainpolicy.h"
 

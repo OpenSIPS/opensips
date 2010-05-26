@@ -29,9 +29,9 @@
  *  2005-02-27  ported to 0.9.0 (bogdan)
  */
 
-#include "stdlib.h"
-#include "stdio.h"
-#include "assert.h"
+#include <stdlib.h>
+#include <stdio.h>
+#include <assert.h>
 #include <unistd.h>
 
 #include "../../sr_module.h"

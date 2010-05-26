@@ -25,9 +25,9 @@
 
 #include <string.h>
 
+#include "../../sr_module.h"
 #include "../../parser/parse_uri.h"
 #include "../../mem/shm_mem.h"
-#include "../../sr_module.h"
 #include "../../mi/mi.h"
 #include "../../mem/mem.h"
 #include "../../usr_avp.h"

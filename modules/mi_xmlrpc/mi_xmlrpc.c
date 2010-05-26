@@ -37,6 +37,7 @@
 #include <sys/wait.h>
 #include <grp.h>
 #include <stdlib.h>
+#include "../../sr_module.h"
 #include "mi_xmlrpc.h"
 #include "xr_writer.h"
 #include "xr_parser.h"

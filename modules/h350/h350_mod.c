@@ -29,8 +29,8 @@
  * 2007-03-12: Initial version
  */
 
-#include "../../ut.h"
 #include "../../sr_module.h"
+#include "../../ut.h"
 #include "h350_mod.h"
 #include "h350_exp_fn.h"
 

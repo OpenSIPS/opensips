@@ -48,8 +48,8 @@
  */
 
 
-#include "../../action.h"
 #include "../../sr_module.h"
+#include "../../action.h"
 #include "../../dprint.h"
 #include "../../data_lump.h"
 #include "../../data_lump_rpl.h"

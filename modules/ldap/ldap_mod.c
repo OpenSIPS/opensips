@@ -34,9 +34,9 @@
 #include <string.h>
 #include <sys/time.h>
 
+#include "../../sr_module.h"
 #include "../../ut.h"
 #include "../../parser/hf.h"
-#include "../../sr_module.h"
 #include "../../pvar.h"
 #include "../../mem/mem.h"
 
