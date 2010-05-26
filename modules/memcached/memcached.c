@@ -30,11 +30,11 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include "../../sr_module.h"
 #include "../../dprint.h"
 #include "../../timer.h"
 #include "../../error.h"
 #include "../../ut.h"
-#include "../../sr_module.h"
 #include "../../mem/mem.h"
 #include "../../mem/shm_mem.h"
 #include "../../memcache.h"

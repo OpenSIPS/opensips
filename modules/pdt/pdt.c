@@ -40,8 +40,8 @@
 #include <unistd.h>
 #include <stdlib.h>
 
-#include "../../db/db_op.h"
 #include "../../sr_module.h"
+#include "../../db/db_op.h"
 #include "../../db/db.h"
 #include "../../mem/shm_mem.h"
 #include "../../mem/mem.h"

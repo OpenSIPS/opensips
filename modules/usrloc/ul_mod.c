@@ -45,8 +45,8 @@
  */
 
 #include <stdio.h>
-#include "ul_mod.h"
 #include "../../sr_module.h"
+#include "ul_mod.h"
 #include "../../dprint.h"
 #include "../../timer.h"     /* register_timer */
 #include "../../globals.h"   /* is_main */

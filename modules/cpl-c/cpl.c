@@ -42,9 +42,9 @@
 #include <fcntl.h>
 #include <signal.h>
 
+#include "../../sr_module.h"
 #include "../../mem/shm_mem.h"
 #include "../../mem/mem.h"
-#include "../../sr_module.h"
 #include "../../str.h"
 #include "../../ut.h"
 #include "../../dprint.h"

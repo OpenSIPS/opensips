@@ -31,12 +31,11 @@
 #include <unistd.h>
 #include <sys/stat.h>
 
-
+#include "../../sr_module.h"
 #include "../../str.h"
 #include "../../ut.h"
 #include "../../mem/mem.h"
 
-#include "../../sr_module.h"
 #include "../../db/db_res.h"
 #include "../../db/db.h"
 #include "db_berkeley.h"

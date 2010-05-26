@@ -30,8 +30,8 @@
 #include <sys/time.h>
 #include <stdlib.h>
 
-#include "../../locking.h"
 #include "../../sr_module.h"
+#include "../../locking.h"
 #include "../../mi/mi.h"
 #include "../../mem/mem.h"
 #include "../../ut.h"

@@ -186,8 +186,8 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "../../flags.h"
 #include "../../sr_module.h"
+#include "../../flags.h"
 #include "../../dprint.h"
 #include "../../data_lump.h"
 #include "../../data_lump_rpl.h"
