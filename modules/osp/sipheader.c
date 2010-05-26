@@ -499,10 +499,10 @@ int ospGetSourceDevice(
             {
                 snprintf(srcdev, bufsize, "%.*s", value.s.len, value.s.s);
                 srcdev[bufsize - 1] = '\0';
+                result = 0;
             } else {
-                srcdev[0] = '\0';
+                result = ospGetViaAddress(msg, srcdev, bufsize);
             }
-            result = 0;
             break;
         case 0:
         default:
