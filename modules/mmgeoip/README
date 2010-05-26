@@ -93,6 +93,7 @@ modparam("mmgeoip", "mmgeoip_city_db_path",
    these elements:
      * lat Latitude
      * lon Longitude
+     * cont Continent
      * cc Country Code
      * reg Region
      * city City
@@ -106,7 +107,7 @@ modparam("mmgeoip", "mmgeoip_city_db_path",
 
    Example 1.2. mmg_lookup usage
 ...
-if(mmg_lookup("lon:lat",$si,$avp(lat_lon))) {
+if(mmg_lookup("lon:lat","$si","$avp(lat_lon)")) {
   xlog("L_INFO","Source IP latitude:$(avp(lat_lon)[0])\n");
   xlog("L_INFO","Source IP longitude:$(avp(lat_lon)[1])\n");
 };
