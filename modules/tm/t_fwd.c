@@ -750,6 +750,7 @@ int t_replicate(struct sip_msg *p_msg, str *dst, int flags)
 		if we want later to make it thoroughly, we need to
 		introduce delete lumps for all the header fields above
 	*/
+	struct cell *t;
 
 	if ( set_dst_uri( p_msg, dst)!=0 ) {
 		LM_ERR("failed to set dst uri\n");
@@ -761,5 +762,24 @@ int t_replicate(struct sip_msg *p_msg, str *dst, int flags)
 		return -1;
 	}
 
-	return t_relay_to( p_msg, 0, flags|TM_T_REPLY_repl_FLAG);
+	t=get_t();
+
+	if (!t || t==T_UNDEFINED) {
+		/* no transaction yet */
+		if (route_type==FAILURE_ROUTE) {
+			LM_CRIT(" BUG - undefined transaction in failure route\n");
+			return -1;
+		}
+		return t_relay_to( p_msg, NULL, flags|TM_T_REPLY_repl_FLAG);
+	} else {
+		/* transaction already created */
+		if (p_msg->REQ_METHOD==METHOD_ACK)
+			/* local ACK */
+			return -1;
+
+		t->flags|=T_IS_LOCAL_FLAG;
+
+		return t_forward_nonack( t, p_msg, NULL );
+	}
 }
+
