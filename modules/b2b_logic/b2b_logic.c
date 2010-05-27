@@ -771,7 +771,7 @@ static struct mi_root* mi_b2b_bridge(struct mi_root* cmd, void* param)
 		return 0;
 	}
 
-	entity = b2bl_create_new_entity(B2B_CLIENT, 0, &new_dest, 0, 0);
+	entity = b2bl_create_new_entity(B2B_CLIENT, 0, &new_dest, 0, 0, 0);
 	if(entity == NULL)
 	{
 		LM_ERR("Failed to create new b2b entity\n");
