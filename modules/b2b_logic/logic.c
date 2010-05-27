@@ -362,6 +362,8 @@ void b2b_end_dialog(b2bl_entity_id_t* bentity)
 
 		b2b_api.send_request(bentity->type, &bentity->key, &method,
 			0, 0, bentity->dlginfo);
+
+		bentity->disconnected = 1;
 	}
 
 }
@@ -370,6 +372,7 @@ void b2b_mark_todel( b2bl_tuple_t* tuple)
 {
 	tuple->to_del = 1;
 	tuple->lifetime = 30 + get_ticks();
+	tuple->scenario_state = B2B_CANCEL_STATE;
 }
 
 int process_bridge_dialog_end(b2bl_tuple_t* tuple, int entity_no,
@@ -389,7 +392,7 @@ int process_bridge_dialog_end(b2bl_tuple_t* tuple, int entity_no,
 		if(tuple->bridge_entities[2])
 		{
 			/* media server did not reply with success */
-			shm_free(bentity);
+			b2bl_delete_entity(bentity, tuple);
 
 			tuple->bridge_entities[1] = tuple->bridge_entities[0];
 			tuple->bridge_entities[0] = tuple->bridge_entities[2];
@@ -412,7 +415,6 @@ int process_bridge_dialog_end(b2bl_tuple_t* tuple, int entity_no,
 		b2b_end_dialog(tuple->bridge_entities[1]);
 		b2b_mark_todel(tuple);
 	}
-	tuple->scenario_state = B2B_CANCEL_STATE;
 
 	return 1;
 }
@@ -596,23 +598,7 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 		/* check if media already connected */
 		if(bentity1->key.s)
 		{
-			if(bentity1->state == DLG_CONFIRMED)
-			{
-				method.s = BYE;
-				method.len = BYE_LEN;
-			}
-			else
-			{
-				method.s = CANCEL;
-				method.len = CANCEL_LEN;
-			}
-			if(b2b_api.send_request(bentity1->type, &bentity1->key, &method,
-				 0, 0, bentity1->dlginfo)< 0)
-			{
-				LM_ERR("Failed to send second ACK in bridging scenario\n");
-				return -1;
-			}
-			bentity1->disconnected = 1;
+			b2b_end_dialog(bentity1);
 		}
 		else
 		{
