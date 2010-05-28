@@ -155,7 +155,6 @@ int hostent_cpy(struct hostent *dst, struct hostent* src)
 		ser_error=ret=E_OUT_OF_MEM;
 		pkg_free(dst->h_name);
 		for(r=0; dst->h_aliases[r]; r++)	pkg_free(dst->h_aliases[r]);
-		pkg_free(dst->h_aliases[r]);
 		pkg_free(dst->h_aliases);
 		goto error;
 	}
@@ -166,7 +165,6 @@ int hostent_cpy(struct hostent *dst, struct hostent* src)
 			ser_error=ret=E_OUT_OF_MEM;
 			pkg_free(dst->h_name);
 			for(r=0; dst->h_aliases[r]; r++)	pkg_free(dst->h_aliases[r]);
-			pkg_free(dst->h_aliases[r]);
 			pkg_free(dst->h_aliases);
 			for (r=0; r<i;r++) pkg_free(dst->h_addr_list[r]);
 			pkg_free(dst->h_addr_list);
