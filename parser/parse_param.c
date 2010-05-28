@@ -431,7 +431,7 @@ error:
 
 ok:
 	if (last) {last->next=t;} else {*_p = t;}
-	last = t;
+	_h->last_param = last = t;
 	return 0;
 }
 
