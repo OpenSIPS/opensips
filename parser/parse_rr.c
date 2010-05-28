@@ -99,7 +99,8 @@ static inline int do_parse_rr_body(char *buf, int len, rr_t **head)
 				LM_ERR("failed to parse params\n");
 				goto parse_error;
 			}
-			r->len = r->params->name.s + r->params->len - r->nameaddr.name.s;
+			r->len = hooks.last_param->name.s + hooks.last_param->len
+				 - r->nameaddr.name.s;
 
 			/* Copy hooks */
 			/*r->r2 = hooks.rr.r2; */

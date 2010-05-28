@@ -106,6 +106,7 @@ struct uri_hooks {
 typedef union param_hooks {
 	struct contact_hooks contact; /* Contact hooks */
 	struct uri_hooks uri;         /* URI hooks */
+	param_t *last_param;          /* last param */
 } param_hooks_t;
 
 
