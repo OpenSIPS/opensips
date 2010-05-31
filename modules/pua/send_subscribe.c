@@ -53,7 +53,8 @@ void print_subs(subs_info_t* subs)
 	LM_DBG("watcher_uri= %.*s - len: %d\n",
 			subs->watcher_uri->len,  subs->watcher_uri->s,
 			subs->watcher_uri->len);
-
+	if(subs->to_uri.s)
+		LM_DBG("to_uri= %.*s\n", subs->to_uri.len, subs->to_uri.s);
 }
 
 str* subs_build_hdr(str* contact, int expires, int event, str* extra_headers)
@@ -627,9 +628,12 @@ ua_pres_t* subscribe_cbparam(subs_info_t* subs, int ua_flag)
 {	
 	ua_pres_t* hentity= NULL;
 	int size;
+	str to_uri;
+
+	to_uri = subs->to_uri.s?subs->to_uri:*subs->pres_uri;
 
 	size= sizeof(ua_pres_t)+ 2*sizeof(str) + subs->pres_uri->len+
-		subs->to_uri.len+subs->watcher_uri->len+subs->contact->len+
+		to_uri.len+subs->watcher_uri->len+subs->contact->len+
 		subs->id.len+ 1;
 
 	if(subs->outbound_proxy && subs->outbound_proxy->len && subs->outbound_proxy->s )
@@ -700,10 +704,7 @@ ua_pres_t* subscribe_cbparam(subs_info_t* subs, int ua_flag)
 		hentity->extra_headers->len= subs->extra_headers->len;
 		size+= subs->extra_headers->len;
 	}
-	if(subs->to_uri.s)
-	{
-		CONT_COPY(hentity, hentity->to_uri, subs->to_uri);
-	}
+	CONT_COPY(hentity, hentity->to_uri, to_uri);
 	hentity->flag= subs->source_flag;
 	hentity->event= subs->event;
 	hentity->ua_flag= hentity->ua_flag;
@@ -839,6 +840,9 @@ int send_subscribe(subs_info_t* subs)
 
 	expires = subs->expires;
 
+	if(subs->extra_headers)
+		LM_DBG("received extra_headers = %.*s\n",
+				subs->extra_headers->len, subs->extra_headers->s);
 	str_hdr= subs_build_hdr(subs->contact, expires, subs->event,
 			subs->extra_headers);
 	if(str_hdr== NULL || str_hdr->s== NULL)
@@ -851,11 +855,17 @@ int send_subscribe(subs_info_t* subs)
 	memset(&pres, 0, sizeof(ua_pres_t));
 	pres.pres_uri   = subs->pres_uri;
 	pres.watcher_uri= subs->watcher_uri;
-	pres.to_uri     = (subs->to_uri.s?subs->to_uri:*subs->pres_uri);
+	if(subs->to_uri.s)
+		pres.to_uri = subs->to_uri;
+	else
+	{
+		pres.to_uri.s = subs->pres_uri->s;
+		pres.to_uri.len = subs->pres_uri->len;
+	}
+
 	pres.flag       = subs->source_flag;
 	pres.id         = subs->id;
 	pres.event      = subs->event;
-	subs->to_uri    = pres.to_uri;
 
 	hash_code=core_hash(&pres.to_uri, pres.watcher_uri, HASH_SIZE);
 	lock_get(&HashT->p_records[hash_code].lock);

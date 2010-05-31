@@ -59,6 +59,8 @@ static str pu_489_rpl     = str_init("Bad Event");
 static str pu_404_rpl     = str_init("Not Found");
 
 #define Stale_cseq_code 401
+#define SUBS_EXTRA_HDRS  "Supported: eventlist\r\nAccept: application/pidf+xml, application/rlmi+xml, application/watcherinfo+xml, multipart/related, application/xcap-diff+xml\r\n"
+#define SUBS_EXTRA_HDRS_LEN  sizeof(SUBS_EXTRA_HDRS) -1
 
 subs_t* constr_new_subs(struct sip_msg* msg, struct to_body *pto, 
 		pres_ev_t* event);
@@ -845,7 +847,8 @@ int resource_subscriptions(subs_t* subs, xmlNodePtr rl_node)
 	str wuri= {0, 0};
 	str did_str= {0, 0};
 	int cont_no= 0;
-		
+	static str ehdr= {SUBS_EXTRA_HDRS, SUBS_EXTRA_HDRS_LEN};
+
 	/* if is initial send an initial Subscribe 
 	 * else search in hash table for a previous subscription */
 
@@ -860,6 +863,7 @@ int resource_subscriptions(subs_t* subs, xmlNodePtr rl_node)
 	}
 	s.id= did_str;
 	s.watcher_uri= &wuri;
+	s.to_uri.s=0;
 	s.contact= &server_address;
 	s.event= get_event_flag(&subs->event->name);
 	if(presence_server.s)
@@ -871,7 +875,8 @@ int resource_subscriptions(subs_t* subs, xmlNodePtr rl_node)
 	}
 	s.expires= subs->expires;
 	s.source_flag= RLS_SUBSCRIBE;
-	
+	s.extra_headers= &ehdr;
+
 	if(process_list_and_exec(rl_node, send_resource_subs,(void*)(&s), 
 				&cont_no)< 0)
 	{
