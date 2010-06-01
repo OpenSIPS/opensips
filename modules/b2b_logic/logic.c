@@ -245,85 +245,6 @@ b2bl_entity_id_t* b2bl_create_new_entity(enum b2b_entity_type type, str* entity_
 	return entity;
 }
 
-/* Take headers to pass on the other side:
- *	Content-Type: 
- *	Allow: 
- *	Supported:
- *	Require
- *	RSeq
- *	Session-Expires
- *	Min-SE
-*/
-int b2b_extra_headers(struct sip_msg* msg, str* extra_headers)
-{
-	char* p;
-	struct hdr_field* require_hdr;
-	struct hdr_field* rseq_hdr;
-	struct hdr_field* hdr;
-	struct hdr_field* hdrs[HDR_LST_LEN + HDR_DEFAULT_LEN];
-	int hdrs_no = 0;
-	int len = 0;
-	int i;
-
-	if(msg->content_type)
-		hdrs[hdrs_no++] = msg->content_type;
-	if(msg->supported)
-		hdrs[hdrs_no++] = msg->supported;
-	if(msg->allow)
-		hdrs[hdrs_no++] = msg->allow;
-	if(msg->proxy_require)
-		hdrs[hdrs_no++] = msg->proxy_require;
-	if(msg->session_expires)
-		hdrs[hdrs_no++] = msg->session_expires;
-	if(msg->min_se)
-		hdrs[hdrs_no++] = msg->min_se;
-
-	require_hdr = get_header_by_static_name( msg, "Require");
-	if(require_hdr)
-		hdrs[hdrs_no++] = require_hdr;
-
-	rseq_hdr = get_header_by_static_name( msg, "RSeq");
-	if(rseq_hdr)
-		hdrs[hdrs_no++] = rseq_hdr;
-
-	/* add also the custom headers */
-	for(i = 0; i< custom_headers_lst_len; i++)
-	{
-		hdr = get_header_by_name( msg, custom_headers_lst[i].s,
-				custom_headers_lst[i].len);
-		if(hdr)
-		{
-			hdrs[hdrs_no++] = hdr;
-		}
-	}
-
-	/* calculate the length*/
-	for(i = 0; i< hdrs_no; i++)
-		len += hdrs[i]->len;
-
-	extra_headers->len = len;
-
-	if(len == 0)
-		return 0;
-
-	extra_headers->s = (char*)pkg_malloc(len);
-	if(extra_headers->s == NULL)
-	{
-		LM_ERR("No more memory\n");
-		return -1;
-	}
-
-	p = extra_headers->s;
-
-	/* construct the headers string */
-	for(i = 0; i< hdrs_no; i++)
-	{
-		memcpy(p, hdrs[i]->name.s, hdrs[i]->len);
-		p += hdrs[i]->len;
-	}
-	return 0;
-}
-
 static inline int bridge_get_entityno(b2bl_tuple_t* tuple, b2bl_entity_id_t* entity)
 {
 	int i;
@@ -548,14 +469,21 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 	else
 	if(entity_no == 1) /* from provisional media server */
 	{
+		str* ack_body= 0;
 		/* the second -> send ACK with body to the first entity
 		and ACK without a body to the second entity*/
 		method.s = ACK;
 		method.len = ACK_LEN;
 
 		bentity1->state = DLG_CONFIRMED;
+
+		/* a complicated combination of conditions that tell us if we need 
+		 * to send body in ACK */
+		if(!(tuple->sdp.s && bentity0->type == B2B_CLIENT))
+			ack_body = body;
+
 		if(b2b_api.send_request(bentity0->type, &bentity0->key, &method,
-				extra_headers, body, bentity0->dlginfo) < 0)
+				extra_headers, ack_body, bentity0->dlginfo) < 0)
 		{
 			LM_ERR("Failed to send first ACK in bridging scenario\n");
 			return -1;
@@ -701,17 +629,16 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 			}
 		}
 	}
-
 	entity = b2bl_search_entity(tuple, key, src);
 	if(entity == NULL)
 	{
-		LM_ERR("No b2b_key match found [%.*s]\n", key->len, key->s);
+		LM_ERR("No b2b_key match found [%.*s], src=%d\n", key->len, key->s, src);
 		goto error;
 	}
 	peer = entity->peer;
 
 	/* build extra headers */
-	if(b2b_extra_headers(msg, &extra_headers)< 0)
+	if(b2b_extra_headers(msg, 0, &extra_headers)< 0)
 	{
 		LM_ERR("Failed to construct extra headers\n");
 		goto error;
@@ -735,8 +662,8 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 		/* if a reply from the client side was received, 
 		* tell the server side to send a reply also */
 
-		if(scenario && 
-				(scenario->reply_rules || tuple->scenario_state == B2B_BRIDGING_STATE))
+		if((scenario && 
+				scenario->reply_rules) || tuple->scenario_state == B2B_BRIDGING_STATE)
 		{
 			if(tuple->scenario_state == B2B_BRIDGING_STATE) /* if in a predefined state */
 			{
@@ -775,7 +702,7 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 					goto error;
 				}
 			}
-			if(scenario->reply_rules)
+			if(scenario && scenario->reply_rules)
 			{
 				/* TODO -> process and apply reply rules */
 			}
@@ -973,7 +900,30 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 			}
 
 			/* apply actions */
-			/* handle bridge action */
+
+			/* get next state */
+			node = xmlNodeGetChildByName(rule->action_node, "state");
+			if(node)
+			{
+				attr.s = (char*)xmlNodeGetContent(node);
+				if(attr.s == NULL)
+				{
+					LM_ERR("No state node content found\n");
+					goto error;
+				}
+				attr.len = strlen(attr.s);
+
+				if(str2int(&attr, (unsigned int*)&state)< 0)
+				{
+					LM_ERR("Bad scenario. Scenary state not an integer\n");
+					xmlFree(attr.s);
+					goto error;
+				}
+				LM_DBG("Next scenario state is [%d]\n", state);
+				xmlFree(attr.s);
+			}
+
+		/* handle bridge action */
 
 			bridge_node = xmlNodeGetChildByName(rule->action_node, "bridge");
 			if(bridge_node)
@@ -994,7 +944,6 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 				if(state >= 0)
 					tuple->scenario_state = state;
 			}
-
 
 			node = xmlNodeGetChildByName(rule->action_node, "send_reply");
 			if(node)
@@ -1055,29 +1004,6 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 				entity = NULL;
 				LM_DBG("Deleted current entity\n");
 			}
-
-			/* get next state */
-			node = xmlNodeGetChildByName(rule->action_node, "state");
-			if(node)
-			{
-				attr.s = (char*)xmlNodeGetContent(node);
-				if(attr.s == NULL)
-				{
-					LM_ERR("No state node content found\n");
-					goto error;
-				}
-				attr.len = strlen(attr.s);
-
-				if(str2int(&attr, (unsigned int*)&state)< 0)
-				{
-					LM_ERR("Bad scenario. Scenary state not an integer\n");
-					xmlFree(attr.s);
-					goto error;
-				}
-				LM_DBG("Next scenario state is [%d]\n", state);
-				xmlFree(attr.s);
-			}
-
 		}
 
 		goto done;
@@ -1126,7 +1052,7 @@ b2bl_entity_id_t* b2bl_new_client(str* to_uri, str* from_uri,
 	ci.to_uri        = *to_uri;
 	ci.from_uri      = *from_uri;
 	ci.extra_headers = tuple->extra_headers;
-	ci.body          = 0;
+	ci.body          = (tuple->sdp.s?&tuple->sdp:0);
 	ci.from_tag      = 0;
 	ci.send_sock     = msg?msg->rcv.bind_address:0;
 	if(msg)
@@ -1565,7 +1491,7 @@ int create_top_hiding_entities(struct sip_msg* msg, str* to_uri, str* from_uri)
 
 	LM_DBG("body = %.*s - len = %d\n", body.len, body.s, body.len);
 
-	if(b2b_extra_headers(msg, &extra_headers)< 0)
+	if(b2b_extra_headers(msg, b2bl_key, &extra_headers)< 0)
 	{
 		LM_ERR("Failed to create extra headers\n");
 		goto error;
@@ -1893,7 +1819,6 @@ int b2b_process_scenario_init(b2b_scenario_t* scenario_struct,struct sip_msg* ms
 	str entity_sid;
 	char* type= NULL;
 	str client_to;
-	str extra_headers = {0, 0};
 	b2bl_entity_id_t* client_entity = NULL;
 	unsigned int scenario_state = B2B_NOTDEF_STATE;
 	client_info_t ci;
@@ -1916,14 +1841,7 @@ int b2b_process_scenario_init(b2b_scenario_t* scenario_struct,struct sip_msg* ms
 					return 0;
 				}
 			}
-		}
-
-		LM_DBG("body = %.*s - len = %d\n", body.len, body.s, body.len);
-
-		if(b2b_extra_headers(msg, &extra_headers)< 0)
-		{
-			LM_ERR("Failed to create extra headers\n");
-			goto error;
+			LM_DBG("body = %.*s - len = %d\n", body.len, body.s, body.len);
 		}
 	}
 
@@ -1947,7 +1865,7 @@ int b2b_process_scenario_init(b2b_scenario_t* scenario_struct,struct sip_msg* ms
 
 	/* create new scenario instance record */
 	tuple = b2bl_insert_new(msg, hash_index, scenario_struct,
-			args, extra_headers.s?&extra_headers:NULL, &b2bl_key);
+			args, body.s?&body:0, &b2bl_key);
 	if(tuple== NULL)
 	{
 		LM_ERR("Failed to insert new scenario instance record\n");
@@ -1969,8 +1887,9 @@ int b2b_process_scenario_init(b2b_scenario_t* scenario_struct,struct sip_msg* ms
 			goto error;
 		}
 		xmlFree(state_attr.s);
-		
+
 		tuple->scenario_state = scenario_state;
+		tuple->next_scenario_state = scenario_state;
 	}
 
 	/* go through the document and create the described entities */
@@ -2078,7 +1997,7 @@ int b2b_process_scenario_init(b2b_scenario_t* scenario_struct,struct sip_msg* ms
 			ci.method        = method;
 			ci.to_uri        = client_to;
 			ci.from_uri      = *from_uri;
-			ci.extra_headers = &extra_headers;
+			ci.extra_headers = tuple->extra_headers;
 			ci.body          = (body.s?&body:NULL);
 			ci.from_tag      = 0;
 			ci.send_sock     = msg->rcv.bind_address;
@@ -2119,8 +2038,6 @@ int b2b_process_scenario_init(b2b_scenario_t* scenario_struct,struct sip_msg* ms
 	}
 	lock_release(&b2bl_htable[hash_index].lock);
 
-	if(extra_headers.s)
-		pkg_free(extra_headers.s);
 	return 1;
 
 error2:
@@ -2131,11 +2048,10 @@ error1:
 error:
 	if(b2bl_key)
 		shm_free(b2bl_key);
-	if(extra_headers.s)
-		pkg_free(extra_headers.s);
 	if(tuple)
 		lock_release(&b2bl_htable[hash_index].lock);
 	return -1;
 }
+
 
 

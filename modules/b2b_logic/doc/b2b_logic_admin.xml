@@ -181,6 +181,30 @@ modparam("b2b_logic", "custom_headers", "User-Agent;Date")
 		</example>
 	</section>
 
+	<section>
+		<title><varname>use_init_sdp</varname> (int)</title>
+		<para>
+		This parameter modifies the behaviour of the B2BUA when bridging
+		and a provisional media uri is set. For playing media while the callee
+		answers (that is connecting the caller to a media server), the bridging
+		with the callee must start by sending an Invite to it. The correct way
+		is to send an Invite without a body in this case, but it has been observed
+		that not many gateways support this. So, the solution is to use the sdp
+		received in the first Invite from the caller and put it as the body for this
+		invite. By setting this parameter, this behavior is enabled.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>0</quote>.</emphasis>
+		</para>
+		<example>
+		<title>Set <varname></varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("b2b_logic", "use_init_sdp", 1)
+...
+	</programlisting>
+		</example>
+	</section>
 
 	</section>
 
@@ -240,12 +264,11 @@ if(is_method("INVITE") &amp;&amp; !has_totag() &amp;&amp; prepaid_user())
 			<listitem>
 				<para>scenario parameters - it can take 4 more parameters that are scenario parameters</para>
 			</listitem>
-        </itemizedlist>
-
-        <para>
+		</itemizedlist>
+		<para>
 		MI FIFO Command Format:
 		</para>
-        <programlisting  format="linespecific">
+	<programlisting  format="linespecific">
 	:b2b_trigger_scenario:fifo_reply
 	marketing
 	sip:bob@opensips.org
@@ -255,7 +278,42 @@ if(is_method("INVITE") &amp;&amp; !has_totag() &amp;&amp; prepaid_user())
 		</programlisting>
 	</section>
 
-
+	<section>
+		<title>
+		<function moreinfo="none">b2b_bridge</function>
+		</title>
+		<para>
+			This command can be used by an external application to tell B2BUA to bridge a
+			call party from an on going dialog to another destination. By default the caller
+			is bridged to the new uri and BYE is set to the callee. You can instead bridge
+			the callee if you send 1 as the third parameter.
+		</para>
+		<para>
+		Name: <emphasis>b2b_trigger_scenario</emphasis>
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem>
+				<para>dialog-id : the id of the dialog. If you set the module parameter dialog-id
+				the server will include the dialogid in the generated Invites as the content of a
+				header with name 'Dialog-ID'.
+				</para>
+			</listitem>
+			<listitem>
+				<para>new uri - the uri of the new destination</para>
+			</listitem>
+			<listitem>
+				<para>flag to specify that the callee must be bridged to the new destination.
+					It is optional. If not present the caller will be bridged.</para>
+			</listitem>
+		</itemizedlist>
+		<para>
+		MI FIFO Command Format:
+		</para>
+	<programlisting  format="linespecific">
+		opensipsctl fifo b2b_bridge 1020.30 sip:alice@opensips.org
+	</programlisting>
+	</section>
 </section>
 
 </chapter>

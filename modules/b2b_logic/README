@@ -31,6 +31,7 @@ Anca-Maria Vamanu
               1.3.3. extern_scenario (str)
               1.3.4. cleanup_period (int)
               1.3.5. custom_headers (str)
+              1.3.6. use_init_sdp (int)
 
         1.4. Exported Functions
 
@@ -39,6 +40,7 @@ Anca-Maria Vamanu
         1.5. Exported MI Functions
 
               1.5.1. b2b_trigger_scenario
+              1.5.2. b2b_bridge
 
    List of Examples
 
@@ -47,7 +49,8 @@ Anca-Maria Vamanu
    1.3. Set script_scenario parameter
    1.4. Set cleanup_period parameter
    1.5. Set parameter
-   1.6. b2b_init_request usage
+   1.6. Set parameter
+   1.7. b2b_init_request usage
 
 Chapter 1. Admin Guide
 
@@ -168,6 +171,26 @@ modparam("b2b_logic", "cleanup_period", 60)
 modparam("b2b_logic", "custom_headers", "User-Agent;Date")
 ...
 
+1.3.6. use_init_sdp (int)
+
+   This parameter modifies the behaviour of the B2BUA when
+   bridging and a provisional media uri is set. For playing media
+   while the callee answers (that is connecting the caller to a
+   media server), the bridging with the callee must start by
+   sending an Invite to it. The correct way is to send an Invite
+   without a body in this case, but it has been observed that not
+   many gateways support this. So, the solution is to use the sdp
+   received in the first Invite from the caller and put it as the
+   body for this invite. By setting this parameter, this behavior
+   is enabled.
+
+   Default value is "0".
+
+   Example 1.6. Set parameter
+...
+modparam("b2b_logic", "use_init_sdp", 1)
+...
+
 1.4. Exported Functions
 
 1.4.1.  b2b_init_request
@@ -186,7 +209,7 @@ modparam("b2b_logic", "custom_headers", "User-Agent;Date")
    parameters is also specified as an attribute in the root node
    of the XML scenario.
 
-   Example 1.6. b2b_init_request usage
+   Example 1.7. b2b_init_request usage
 ...
 if(is_method("INVITE") && !has_totag() && prepaid_user())
    b2b_init_request("prepaid", "sip:320@opensips.org:5070",
@@ -213,3 +236,27 @@ if(is_method("INVITE") && !has_totag() && prepaid_user())
         sip:322@opensips.org:5070
         sip:alice@opensips.org
         _empty_line_
+
+1.5.2.  b2b_bridge
+
+   This command can be used by an external application to tell
+   B2BUA to bridge a call party from an on going dialog to another
+   destination. By default the caller is bridged to the new uri
+   and BYE is set to the callee. You can instead bridge the callee
+   if you send 1 as the third parameter.
+
+   Name: b2b_trigger_scenario
+
+   Parameters:
+     * dialog-id : the id of the dialog. If you set the module
+       parameter dialog-id the server will include the dialogid in
+       the generated Invites as the content of a header with name
+       'Dialog-ID'.
+     * new uri - the uri of the new destination
+     * flag to specify that the callee must be bridged to the new
+       destination. It is optional. If not present the caller will
+       be bridged.
+
+   MI FIFO Command Format:
+                opensipsctl fifo b2b_bridge 1020.30 sip:alice@opensips.o
+rg

@@ -55,6 +55,8 @@ static int fixup_b2b_logic(void** param, int param_no);
 
 static struct mi_root* mi_trigger_scenario(struct mi_root* cmd, void* param);
 
+static struct mi_root* mi_b2b_bridge(struct mi_root* cmd, void* param);
+
 void b2bl_clean(unsigned int ticks, void* param);
 
 int b2b_init_request(struct sip_msg* msg, str* arg1, str* arg2, str* arg3,
@@ -79,7 +81,7 @@ static str default_headers[]={{"Content-Type",12},
                                {"Min-SE", 6},
                                {"Require", 7},
                                {"RSeq", 4}};
-
+int use_init_sdp = 0;
 
 /** Exported functions */
 static cmd_export_t cmds[]=
@@ -101,12 +103,14 @@ static param_export_t params[]=
 	{"script_scenario", STR_PARAM|USE_FUNC_PARAM, (void*)load_script_scenario},
 	{"extern_scenario", STR_PARAM|USE_FUNC_PARAM, (void*)load_extern_scenario},
 	{"custom_headers",  STR_PARAM,                &custom_headers.s          },
+	{"use_init_sdp",    INT_PARAM,                &use_init_sdp              },
 	{0,                    0,                          0                     }
 };
 
 /** MI commands */
 static mi_export_t mi_cmds[] = {
 	{ "b2b_trigger_scenario", mi_trigger_scenario, 0,  0,  0},
+	{ "b2b_bridge",           mi_b2b_bridge,       0,  0,  0},
 	{  0,                  0,                      0,  0,  0}
 };
 
@@ -238,12 +242,14 @@ void b2bl_clean(unsigned int ticks, void* param)
 			if(tuple->lifetime > 0 && tuple->lifetime < now )  /* if an expired dialog */
 			{
 				LM_INFO("Found an expired dialog. Send BYE in both sides and delete\n");
-				if(tuple->bridge_entities[0] && tuple->bridge_entities[1])
+				if(tuple->bridge_entities[0] && tuple->bridge_entities[1] && !tuple->to_del)
 				{
-					b2b_api.send_request(tuple->bridge_entities[0]->type,
-						&tuple->bridge_entities[0]->key, &bye, 0, 0,
-						 tuple->bridge_entities[0]->dlginfo);
-					b2b_api.send_request(tuple->bridge_entities[1]->type,
+					if(tuple->bridge_entities[0]->dlginfo && tuple->bridge_entities[0]->dlginfo->totag.s)
+						b2b_api.send_request(tuple->bridge_entities[0]->type,
+							&tuple->bridge_entities[0]->key, &bye, 0, 0,
+							 tuple->bridge_entities[0]->dlginfo);
+					if(tuple->bridge_entities[1]->dlginfo && tuple->bridge_entities[1]->dlginfo->totag.s)
+						b2b_api.send_request(tuple->bridge_entities[1]->type,
 						&tuple->bridge_entities[1]->key, &bye, 0, 0,
 						tuple->bridge_entities[1]->dlginfo);
 				}
@@ -708,5 +714,110 @@ static struct mi_root* mi_trigger_scenario(struct mi_root* cmd, void* param)
 error:
 	if(tuple)
 		lock_release(&b2bl_htable[hash_index].lock);
+	return 0;
+}
+
+/*
+ * arguments: b2bl_key, new_dest, entity (1 - client)
+ * */
+static struct mi_root* mi_b2b_bridge(struct mi_root* cmd, void* param)
+{
+	struct mi_node* node= NULL;
+	str key;
+	b2bl_tuple_t* tuple;
+	str new_dest;
+	b2bl_entity_id_t* entity, *old_entity;
+	struct sip_uri uri;
+	str meth_inv = {INVITE, INVITE_LEN};
+	str meth_bye = {BYE, BYE_LEN};
+	unsigned int hash_index, local_index;
+
+	node = cmd->node.kids;
+	if(node == NULL)
+		return 0;
+
+	/* scenario ID */
+	key = node->value;
+	if(key.s == NULL || key.len== 0)
+	{
+		LM_ERR("Wrong dialog id parameter\n");
+		return init_mi_tree(404, "Empty dialog ID", 15);
+	}
+
+	/* new destination- must be a valid SIP URI */
+	node = node->next;
+	new_dest = node->value;
+	if(new_dest.s == NULL || new_dest.len == 0)
+	{
+		LM_ERR("Empty new dest parameter\n");
+		return init_mi_tree(404, "Empty parameter", 15);
+	}
+
+	if(parse_uri(new_dest.s, new_dest.len, &uri)< 0)
+	{
+		LM_ERR("Bad argument. Not a valid uri [%.*s]\n", new_dest.len, new_dest.s);
+		return init_mi_tree(404, "Bad parameter", 13);
+	}
+
+	/* the last parameter is optional, if present and 1 - >
+	 * means that destination from the current call must be
+	 * bridged to the new destination */
+	node = node->next;
+	if(node)
+	{
+		
+	}
+	if(b2bl_parse_key(&key, &hash_index, &local_index) < 0)
+	{
+		LM_ERR("Failed to parse key\n");
+		return 0;
+	}
+
+	entity = b2bl_create_new_entity(B2B_CLIENT, 0, &new_dest, 0, 0, 0);
+	if(entity == NULL)
+	{
+		LM_ERR("Failed to create new b2b entity\n");
+		return 0;
+	}
+
+	lock_get(&b2bl_htable[hash_index].lock);
+
+	tuple = b2bl_search_tuple_safe(hash_index, local_index);
+	if(tuple == NULL)
+	{
+		LM_ERR("No entity found\n");
+		goto error;
+	}
+
+	/* send BYE to old client */
+	old_entity = tuple->clients;
+	if(old_entity == NULL)
+	{
+		LM_ERR("Wrong dialog id\n");
+		goto error;
+	}
+	old_entity->disconnected = 1;
+	b2b_api.send_request(old_entity->type, &old_entity->key,
+			&meth_bye, 0, 0, old_entity->dlginfo);
+	old_entity->peer = NULL;
+
+	tuple->bridge_entities[0]= tuple->server;
+	tuple->bridge_entities[1]= entity;
+
+	tuple->server->peer = entity;
+	entity->peer = tuple->server;
+
+	tuple->scenario_state = B2B_BRIDGING_STATE;
+
+
+	b2b_api.send_request(B2B_SERVER, &tuple->server->key, &meth_inv,
+				 0, 0, tuple->server->dlginfo);
+
+	lock_release(&b2bl_htable[hash_index].lock);
+
+	return init_mi_tree(200, "OK", 2);
+
+error:
+	lock_release(&b2bl_htable[hash_index].lock);
 	return 0;
 }

@@ -39,7 +39,7 @@
 /* Function that inserts a new b2b_logic record - the lock remains taken */
 b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg,
 		unsigned int hash_index, b2b_scenario_t* scenario,
-		str* args[], str* extra_headers, str** b2bl_key_s)
+		str* args[], str* body, str** b2bl_key_s)
 {
 	b2bl_tuple_t * it, *prev_it;
 	b2bl_tuple_t* tuple;
@@ -47,8 +47,16 @@ b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg,
 	int i;
 	static char buf[256];
 	int buf_len= 255;
+	int size;
+	str extra_headers={0, 0};
 
-	tuple = (b2bl_tuple_t*)shm_malloc(sizeof(b2bl_tuple_t));
+	size = sizeof(b2bl_tuple_t);
+	if(body && use_init_sdp)
+	{
+		size+= body->len;
+	}
+
+	tuple = (b2bl_tuple_t*)shm_malloc(size);
 	if(tuple == NULL)
 	{
 		LM_ERR("No more shared memory\n");
@@ -56,23 +64,39 @@ b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg,
 	}
 	memset(tuple, 0,sizeof(b2bl_tuple_t) );
 
+	if(body && use_init_sdp)
+	{
+		tuple->sdp.s = (char*)tuple + sizeof(b2bl_tuple_t);
+		memcpy(tuple->sdp.s, body->s, body->len);
+		tuple->sdp.len =  body->len;
+	}
+
 	LM_DBG("pointer [%p]\n", tuple);
 
 	tuple->scenario = scenario;
 
 	tuple->lifetime = 60 + (int)time(NULL);
 
-	if(extra_headers && extra_headers->s)
+	if(msg)
 	{
-		tuple->extra_headers = (str*)shm_malloc(sizeof(str) + extra_headers->len);
-		if(tuple->extra_headers == NULL)
+		if(b2b_extra_headers(msg, 0, &extra_headers)< 0)
 		{
-			LM_ERR("No more shared memory\n");
+			LM_ERR("Failed to create extra headers\n");
 			goto error;
 		}
-		tuple->extra_headers->s = (char*)tuple->extra_headers + sizeof(str);
-		memcpy(tuple->extra_headers->s, extra_headers->s, extra_headers->len);
-		tuple->extra_headers->len = extra_headers->len;
+		if(extra_headers.s)
+		{
+			tuple->extra_headers = (str*)shm_malloc(sizeof(str) + extra_headers.len);
+			if(tuple->extra_headers == NULL)
+			{
+				LM_ERR("No more shared memory\n");
+				goto error;
+			}
+			tuple->extra_headers->s = (char*)tuple->extra_headers + sizeof(str);
+			memcpy(tuple->extra_headers->s, extra_headers.s, extra_headers.len);
+			tuple->extra_headers->len = extra_headers.len;
+			pkg_free(extra_headers.s);
+		}
 	}
 
 	/* copy the function parameters that customize the scenario */
@@ -362,3 +386,84 @@ void destroy_b2bl_htable(void)
 	}
 	shm_free(b2bl_htable);
 }
+
+/* Take headers to pass on the other side:
+ *	Content-Type: 
+ *	Allow: 
+ *	Supported:
+ *	Require
+ *	RSeq
+ *	Session-Expires
+ *	Min-SE
+*/
+int b2b_extra_headers(struct sip_msg* msg, str* b2bl_key, str* extra_headers)
+{
+	char* p;
+	struct hdr_field* require_hdr;
+	struct hdr_field* rseq_hdr;
+	struct hdr_field* hdr;
+	struct hdr_field* hdrs[HDR_LST_LEN + HDR_DEFAULT_LEN];
+	int hdrs_no = 0;
+	int len = 0;
+	int i;
+
+	if(msg->content_type)
+		hdrs[hdrs_no++] = msg->content_type;
+	if(msg->supported)
+		hdrs[hdrs_no++] = msg->supported;
+	if(msg->allow)
+		hdrs[hdrs_no++] = msg->allow;
+	if(msg->proxy_require)
+		hdrs[hdrs_no++] = msg->proxy_require;
+	if(msg->session_expires)
+		hdrs[hdrs_no++] = msg->session_expires;
+	if(msg->min_se)
+		hdrs[hdrs_no++] = msg->min_se;
+
+	require_hdr = get_header_by_static_name( msg, "Require");
+	if(require_hdr)
+		hdrs[hdrs_no++] = require_hdr;
+
+	rseq_hdr = get_header_by_static_name( msg, "RSeq");
+	if(rseq_hdr)
+		hdrs[hdrs_no++] = rseq_hdr;
+
+
+	/* add also the custom headers */
+	for(i = 0; i< custom_headers_lst_len; i++)
+	{
+		hdr = get_header_by_name( msg, custom_headers_lst[i].s,
+				custom_headers_lst[i].len);
+		if(hdr)
+		{
+			hdrs[hdrs_no++] = hdr;
+		}
+	}
+
+	/* calculate the length*/
+	for(i = 0; i< hdrs_no; i++)
+		len += hdrs[i]->len;
+
+	if(len == 0)
+		return 0;
+
+	extra_headers->s = (char*)pkg_malloc(len);
+	if(extra_headers->s == NULL)
+	{
+		LM_ERR("No more memory\n");
+		return -1;
+	}
+
+	p = extra_headers->s;
+
+	/* construct the headers string */
+	for(i = 0; i< hdrs_no; i++)
+	{
+		memcpy(p, hdrs[i]->name.s, hdrs[i]->len);
+		p += hdrs[i]->len;
+	}
+	extra_headers->len = p - extra_headers->s;
+
+	return 0;
+}
+
