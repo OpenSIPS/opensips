@@ -81,6 +81,7 @@ static str default_headers[]={{"Content-Type",12},
                                {"Min-SE", 6},
                                {"Require", 7},
                                {"RSeq", 4}};
+int use_init_sdp = 0;
 
 /** Exported functions */
 static cmd_export_t cmds[]=
@@ -102,6 +103,7 @@ static param_export_t params[]=
 	{"script_scenario", STR_PARAM|USE_FUNC_PARAM, (void*)load_script_scenario},
 	{"extern_scenario", STR_PARAM|USE_FUNC_PARAM, (void*)load_extern_scenario},
 	{"custom_headers",  STR_PARAM,                &custom_headers.s          },
+	{"use_init_sdp",    INT_PARAM,                &use_init_sdp              },
 	{0,                    0,                          0                     }
 };
 

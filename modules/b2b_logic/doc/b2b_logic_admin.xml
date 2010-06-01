@@ -182,11 +182,16 @@ modparam("b2b_logic", "custom_headers", "User-Agent;Date")
 	</section>
 
 	<section>
-		<title><varname>include_dialogid</varname> (str)</title>
+		<title><varname>use_init_sdp</varname> (int)</title>
 		<para>
-			If this parameter is set, the identifier for the dialog in b2b_logic
-			will be included in the generated Invite messages in a header with name
-			Dialog-ID.
+		This parameter modifies the behaviour of the B2BUA when bridging
+		and a provisional media uri is set. For playing media while the callee
+		answers (that is connecting the caller to a media server), the bridging
+		with the callee must start by sending an Invite to it. The correct way
+		is to send an Invite without a body in this case, but it has been observed
+		that not many gateways support this. So, the solution is to use the sdp
+		received in the first Invite from the caller and put it as the body for this
+		invite. By setting this parameter, this behavior is enabled.
 		</para>
 		<para>
 		<emphasis>Default value is <quote>0</quote>.</emphasis>
@@ -195,7 +200,7 @@ modparam("b2b_logic", "custom_headers", "User-Agent;Date")
 		<title>Set <varname></varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("b2b_logic", "include_dialogid", 1)
+modparam("b2b_logic", "use_init_sdp", 1)
 ...
 	</programlisting>
 		</example>
