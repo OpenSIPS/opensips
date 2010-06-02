@@ -101,16 +101,13 @@ error:
 
 
 /* returns the number of contacts put in the sorted array */
-static int sort_contacts(contact_t *ct_list, contact_t **ct_array,
-														qvalue_t *q_array)
+static void sort_contacts(contact_t *ct_list, str *ct_array,
+													qvalue_t *q_array, int *n)
 {
 	param_t *q_para;
 	qvalue_t q;
-	int n;
 	int i,j;
 	char backup;
-
-	n = 0; /* number of sorted contacts */
 
 	for( ; ct_list ; ct_list = ct_list->next ) {
 		/* check the filters first */
@@ -135,7 +132,7 @@ static int sort_contacts(contact_t *ct_list, contact_t **ct_array,
 		LM_DBG("sort_contacts: <%.*s> q=%d\n",
 				ct_list->uri.len,ct_list->uri.s,q);
 		/*insert the contact into the sorted array */
-		for(i=0;i<n;i++) {
+		for(i=0;i<*n;i++) {
 			/* keep in mind that the contact list is reversts */
 			if (q_array[i]<=q)
 				continue;
@@ -143,17 +140,16 @@ static int sort_contacts(contact_t *ct_list, contact_t **ct_array,
 		}
 		if (i!=MAX_CONTACTS_PER_REPLY) {
 			/* insert the contact at this position */
-			for( j=n-1-1*(n==MAX_CONTACTS_PER_REPLY) ; j>=i ; j-- ) {
+			for( j=(*n)-1-1*((*n)==MAX_CONTACTS_PER_REPLY) ; j>=i ; j-- ) {
 				ct_array[j+1] = ct_array[j];
 				q_array[j+1] = q_array[j];
 			}
-			ct_array[j+1] = ct_list;
+			ct_array[j+1] = ct_list->uri;
 			q_array[j+1] = q;
-			if (n!=MAX_CONTACTS_PER_REPLY)
-				n++;
+			if ((*n)!=MAX_CONTACTS_PER_REPLY)
+				(*n)++;
 		}
 	}
-	return n;
 }
 
 
@@ -166,7 +162,7 @@ static int shmcontact2dset(struct sip_msg *req, struct sip_msg *sh_rpl,
 											long max, struct acc_param *reason)
 {
 	static struct sip_msg  dup_rpl;
-	static contact_t *scontacts[MAX_CONTACTS_PER_REPLY];
+	static str scontacts[MAX_CONTACTS_PER_REPLY];
 	static qvalue_t  sqvalues[MAX_CONTACTS_PER_REPLY];
 	struct hdr_field *hdr;
 	struct hdr_field *contact_hdr;
@@ -177,75 +173,72 @@ static int shmcontact2dset(struct sip_msg *req, struct sip_msg *sh_rpl,
 	int dup;
 	int ret;
 
-	/* dup can be:
-	 *    0 - sh reply but nothing duplicated 
-	 *    1 - sh reply but only contact body parsed
-	 *    2 - sh reply and contact header and body parsed
-	 *    3 - private reply
-	 */
 	dup = 0; /* sh_rpl not duplicated */
 	ret = 0; /* success and no contact added */
-	contact_hdr = 0;
+	contact_hdr = NULL;
+	hdr = NULL;
 
 	if (sh_rpl==0 || sh_rpl==FAKED_REPLY)
 		return 0;
 
-	if (sh_rpl->contact==0) {
-		/* contact header is not parsed */
-		if ( sh_rpl->msg_flags&FL_SHM_CLONE ) {
-			/* duplicate the reply into private memory to be able 
-			 * to parse it and after words to free the parsed mems */
-			memcpy( &dup_rpl, sh_rpl, sizeof(struct sip_msg) );
-			dup = 2;
-			/* ok -> force the parsing of contact header */
-			if ( parse_headers( &dup_rpl, HDR_CONTACT_T, 0)<0 ) {
-				LM_ERR("dup_rpl parse failed\n");
-				ret = -1;
-				goto restore;
-			}
-			if (dup_rpl.contact==0) {
-				LM_DBG("contact hdr not found in dup_rpl\n");
-				goto restore;
-			}
-			contact_hdr = dup_rpl.contact;
-		} else {
-			dup = 3;
-			/* force the parsing of contact header */
-			if ( parse_headers( sh_rpl, HDR_CONTACT_T, 0)<0 ) {
-				LM_ERR("sh_rpl parse failed\n");
-				ret = -1;
-				goto restore;
-			}
-			if (sh_rpl->contact==0) {
-				LM_DBG("contact hdr not found in sh_rpl\n");
-				goto restore;
-			}
-			contact_hdr = sh_rpl->contact;
-		}
-	} else {
-		contact_hdr = sh_rpl->contact;
-	}
-
-	/* parse the body of contact header */
-	if (contact_hdr->parsed==0) {
-		if ( parse_contact(contact_hdr)<0 ) {
-			LM_ERR("contact hdr parse failed\n");
+	if ( sh_rpl->msg_flags&FL_SHM_CLONE ) {
+		/* duplicate the reply into private memory to be able 
+		 * to parse it and after words to free the parsed mems */
+		memcpy( &dup_rpl, sh_rpl, sizeof(struct sip_msg) );
+		LM_DBG("duplicating shm reply\n");
+		dup = 1;
+		/* ok -> force the parsing of contact header */
+		if ( parse_headers( &dup_rpl, HDR_EOH_F, 0)<0 ) {
+			LM_ERR("dup_rpl parse failed\n");
 			ret = -1;
 			goto restore;
 		}
-		if (dup==0)
-			dup = 1;
+		if (dup_rpl.contact==0) {
+			LM_DBG("contact hdr not found in dup_rpl\n");
+			goto restore;
+		}
+		contact_hdr = dup_rpl.contact;
+	} else {
+		/* parse directly the current copy */
+		/* force the parsing of contact header */
+		if ( parse_headers( sh_rpl, HDR_EOH_F, 0)<0 ) {
+			LM_ERR("sh_rpl parse failed\n");
+			ret = -1;
+			goto restore;
+		}
+		if (sh_rpl->contact==0) {
+			LM_DBG("contact hdr not found in sh_rpl\n");
+			goto restore;
+		}
+		contact_hdr = sh_rpl->contact;
 	}
 
+	/* iterate through all contact headers and extract the URIs */
+	for( n=0,hdr=contact_hdr ; hdr ; hdr=hdr->sibling ) {
 
-	/* we have the contact header and its body parsed -> sort the contacts
-	 * based on the q value */
-	contacts = ((contact_body_t*)contact_hdr->parsed)->contacts;
-	if (contacts==0) {
-		LM_DBG("contact hdr has no contacts\n");
-		goto restore;
+		/* parse the body of contact header */
+		if (hdr->parsed==0) {
+			if ( parse_contact(hdr)<0 ) {
+				LM_ERR("contact hdr parse failed\n");
+				ret = -1;
+				goto restore;
+			}
+		}
+
+		/* we have the contact header and its body parsed -> sort the contacts
+		 * based on the q value */
+		contacts = ((contact_body_t*)hdr->parsed)->contacts;
+		if (contacts==0) {
+			LM_DBG("contact hdr has no contacts\n");
+		} else {
+			sort_contacts( contacts, scontacts, sqvalues, &n);
+		}
+
+		/* clean currently added contact */
+		if (dup)
+			free_contact( (contact_body_t**)(void*)(&hdr->parsed) );
 	}
-	n = sort_contacts( contacts, scontacts, sqvalues);
+
 	if (n==0) {
 		LM_DBG("no contacts left after filtering\n");
 		goto restore;
@@ -255,21 +248,23 @@ static int shmcontact2dset(struct sip_msg *req, struct sip_msg *sh_rpl,
 	if (max!=-1 && n>max)
 		n = max;
 
+	LM_DBG("%d contacts remaining after filtering and sorting\n",n);
+
 	added = 0;
 
 	/* add the sorted contacts as branches in dset and log this! */
 	for ( i=0 ; i<n ; i++ ) {
 		LM_DBG("adding contact <%.*s>\n",
-			scontacts[i]->uri.len, scontacts[i]->uri.s);
+			scontacts[i].len, scontacts[i].s);
 		if (i==0) {
 			/* set RURI*/
-			if ( set_ruri( req, &scontacts[i]->uri)==-1 ) {
+			if ( set_ruri( req, &scontacts[i])==-1 ) {
 				LM_ERR("failed to set new RURI\n");
 				goto restore;
 			}
 			set_ruri_q(sqvalues[i]);
 		} else {
-			if (append_branch(0,&scontacts[i]->uri,0,0,sqvalues[i],0,0)<0) {
+			if (append_branch(0,&scontacts[i],0,0,sqvalues[i],0,0)<0) {
 				LM_ERR("failed to add contact to dset\n");
 				continue;
 			}
@@ -278,7 +273,7 @@ static int shmcontact2dset(struct sip_msg *req, struct sip_msg *sh_rpl,
 		if (rd_acc_fct!=0 && reason) {
 			/* log the redirect */
 			backup_uri = req->new_uri;
-			req->new_uri =  scontacts[i]->uri;
+			req->new_uri =  scontacts[i];
 			//FIXME
 			rd_acc_fct( req, (char*)reason, acc_db_table, 
 					NULL, NULL, NULL, NULL);
@@ -289,8 +284,9 @@ static int shmcontact2dset(struct sip_msg *req, struct sip_msg *sh_rpl,
 	ret = (added==0)?-1:added;
 restore:
 	if (dup==1) {
-		free_contact( (contact_body_t**)(void*)(&contact_hdr->parsed) );
-	} else if (dup==2) {
+		/* free current parsed contact header */
+		if (hdr && hdr->parsed)
+			free_contact( (contact_body_t**)(void*)(&hdr->parsed) );
 		/* are any new headers found? */
 		if (dup_rpl.last_header!=sh_rpl->last_header) {
 			/* identify in the new headere list (from dup_rpl) 
@@ -301,6 +297,5 @@ restore:
 		}
 	}
 	return ret;
-
 }
 
