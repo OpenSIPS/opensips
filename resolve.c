@@ -922,7 +922,7 @@ static inline struct hostent* do_srv_lookup(char *name, unsigned short* port, st
 		he = resolvehost(srv->name, 1);
 		if ( he!=0 ) {
 			LM_DBG("SRV(%s) = %s:%d\n",     name, srv->name, srv->port);
-			*port=srv->port;
+			if (port) *port=srv->port;
 			if (dn && rd->next && a2dns_node( rd->next, dn)==-1)
 					*dn = 0;
 			free_rdata_list(head);
@@ -1214,7 +1214,7 @@ struct hostent* sip_resolvehost( str* name, unsigned short* port,
 	}
 
 	/* do we have a port? */
-	if ( !port || (*port)!=0 ) {
+	if ( port && (*port)!=0 ) {
 		/* have port -> no NAPTR, no SRV lookup, just A record lookup */
 		LM_DBG("has port -> do A record lookup!\n");
 		/* set default PROTO if not set */
@@ -1224,7 +1224,7 @@ struct hostent* sip_resolvehost( str* name, unsigned short* port,
 	}
 
 	/* no port... what about proto? */
-	if ( !proto || (*proto)!=PROTO_NONE ) {
+	if ( proto && (*proto)!=PROTO_NONE ) {
 		/* have proto, but no port -> do SRV lookup */
 		LM_DBG("no port, has proto -> do SRV lookup!\n");
 		if (is_sips && (*proto)!=PROTO_TLS) {
