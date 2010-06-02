@@ -140,7 +140,7 @@ int rls_handle_notify(struct sip_msg* msg, char* c1, char* c2)
 	int auth_flag;
 	struct hdr_field* hdr= NULL;
 	int n, expires= -1;
-	str content_type= {0, 0};
+	str ctype= {0, 0};
 	int err_ret = -1;
 
 	LM_DBG("start\n");
@@ -255,7 +255,7 @@ int rls_handle_notify(struct sip_msg* msg, char* c1, char* c2)
 		LM_DBG("cannot find content type header\n");
 	}
 	else
-		content_type= msg->content_type->body;
+		ctype= msg->content_type->body;
 
 	LM_DBG("NOTIFY for [user]= %.*s\n",dialog.pres_uri->len,
 			dialog.pres_uri->s);
@@ -267,7 +267,7 @@ int rls_handle_notify(struct sip_msg* msg, char* c1, char* c2)
 	}	
 	else
 	{
-		if(content_type.s== 0)
+		if(ctype.s== 0)
 		{
 			LM_ERR("content length != 0 and no content type header found\n");
 			goto error;
@@ -319,7 +319,7 @@ int rls_handle_notify(struct sip_msg* msg, char* c1, char* c2)
 	query_cols[n_query_cols]= &str_content_type_col;
 	query_vals[n_query_cols].type = DB_STR;
 	query_vals[n_query_cols].nul = 0;
-	query_vals[n_query_cols].val.str_val= content_type;
+	query_vals[n_query_cols].val.str_val= ctype;
 	n_query_cols++;
 
 	query_cols[n_query_cols]= &str_presence_state_col;
@@ -442,13 +442,14 @@ void timer_send_notify(unsigned int ticks,void *param)
 	db_key_t query_cols[2], update_cols[1], result_cols[7];
 	db_val_t query_vals[2], update_vals[1];
 	int did_col, resource_uri_col, auth_state_col, reason_col,
-		pres_state_col, content_type_col;
+		body_col, ctype_col;
 	int n_result_cols= 0, i;
 	db_res_t *result= NULL;
 	char* prev_did= NULL, * curr_did= NULL;
 	db_row_t *row;	
 	db_val_t *row_vals;
-	char* resource_uri, *pres_state;
+	char* resource_uri;
+	str body;
 	str callid, to_tag, from_tag;
 	xmlDocPtr rlmi_doc= NULL;
 	xmlNodePtr list_node= NULL, instance_node= NULL, resource_node;
@@ -462,7 +463,7 @@ void timer_send_notify(unsigned int ticks,void *param)
 	subs_t* s, *dialog= NULL;
 	char* rl_uri= NULL;
 	char* str_aux = NULL;
-	str content_type, cid;
+	str ctype, cid;
 	int add_len;
 
 	query_cols[0]= &str_updated_col;
@@ -473,9 +474,9 @@ void timer_send_notify(unsigned int ticks,void *param)
 	result_cols[did_col= n_result_cols++]= &str_rlsubs_did_col;
 	result_cols[resource_uri_col= n_result_cols++]= &str_resource_uri_col;
 	result_cols[auth_state_col= n_result_cols++]= &str_auth_state_col;
-	result_cols[content_type_col= n_result_cols++]= &str_content_type_col;
+	result_cols[ctype_col= n_result_cols++]= &str_content_type_col;
 	result_cols[reason_col= n_result_cols++]= &str_reason_col;
-	result_cols[pres_state_col= n_result_cols++]= &str_presence_state_col;
+	result_cols[body_col= n_result_cols++]= &str_presence_state_col;
 
 	/* query in alfabetical order after rlsusbs_did 
 	 * (resource list Subscribe dialog indentifier)*/
@@ -540,9 +541,10 @@ void timer_send_notify(unsigned int ticks,void *param)
 		curr_did=     (char*)row_vals[did_col].val.string_val;
 		resource_uri= (char*)row_vals[resource_uri_col].val.string_val;
 		auth_state_flag=     row_vals[auth_state_col].val.int_val;
-		pres_state=   (char*)row_vals[pres_state_col].val.string_val;
-		content_type.s = (char*)row_vals[content_type_col].val.string_val;
-		content_type.len = strlen(content_type.s);
+		body.s=   (char*)row_vals[body_col].val.string_val;
+		body.len= strlen(body.s);
+		ctype.s = (char*)row_vals[ctype_col].val.string_val;
+		ctype.len = strlen(ctype.s);
 
 		/* if all the info for one dialog have been collected -> send notify */
 		/* the 'dialog' variable must be filled with the dialog info */
@@ -705,19 +707,7 @@ void timer_send_notify(unsigned int ticks,void *param)
 			/* add in the multipart buffer */
 			if(cid.s)
 			{
-				/* calculate the length of the new content that will be written
-				 * in buf */
-				add_len = 6 + bstr.len + 35 + 16 + cid.len + 18 +  content_type.len+ 
-					 strlen(pres_state)+ 4;
-				if(buf_len+ add_len > size)
-					REALLOC_BUF;
-				
-				buf_len+= sprintf(buf+ buf_len, "--%.*s\r\n", bstr.len, bstr.s);
-				buf_len+= sprintf(buf+ buf_len, "Content-Transfer-Encoding: binary\r\n");
-				buf_len+= sprintf(buf+ buf_len, "Content-ID: <%.*s>\r\n", cid.len, cid.s);
-				buf_len+= sprintf(buf+ buf_len, "Content-Type: %s\r\n\r\n", content_type.s);
-				buf_len+= sprintf(buf+ buf_len, "%s\r\n\r\n", pres_state);
-				
+				APPEND_MULTIPART_BODY();
 				pkg_free(cid.s);
 				cid.s = NULL;
 			}
@@ -736,13 +726,13 @@ void timer_send_notify(unsigned int ticks,void *param)
 					strlen(resource_uri)) || strncmp(curr_did, 
 					row_vals[did_col].val.string_val, strlen(curr_did)))
 			{
-				LM_DBG("in while(1) dar am iesit\n");
 				i--;
 				break;
 			}
 			resource_uri= (char*)row_vals[resource_uri_col].val.string_val;
 			auth_state_flag=     row_vals[auth_state_col].val.int_val;
-			pres_state=   (char*)row_vals[pres_state_col].val.string_val;
+			body.s=   (char*)row_vals[body_col].val.string_val;
+			body.len = strlen(body.s);
 		}
 
 		prev_did= curr_did;

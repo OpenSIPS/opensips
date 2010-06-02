@@ -46,6 +46,22 @@
 		{	ERR_MEM("constr_multipart_body");} \
 		}while(0)
 
+#define APPEND_MULTIPART_BODY() do {\
+		add_len = bstr.len+cid.len+ctype.len+body.len +79;\
+		if(buf_len+ add_len > size)\
+			REALLOC_BUF;\
+		buf_len+= sprintf(buf+ buf_len, "--%.*s\r\n", bstr.len, bstr.s);\
+		buf_len+= sprintf(buf+ buf_len, "Content-Transfer-Encoding: binary\r\n");\
+		buf_len+= sprintf(buf+ buf_len, "Content-ID: <%.*s>\r\n",cid.len, cid.s);\
+		buf_len+= sprintf(buf+ buf_len, "Content-Type: %s\r\n\r\n",ctype.s);\
+		LM_DBG("last char is %d\n", body.s[body.len-1]);\
+		if(body.s[body.len -1] == '\n')\
+			body.len--;\
+		if(body.s[body.len -1] == '\r')\
+			body.len--;\
+		buf_len+= sprintf(buf+ buf_len,"%.*s\r\n\r\n", body.len, body.s);\
+}while(0)
+
 int send_full_notify(subs_t* subs, xmlNodePtr rl_node, 
 		int version, str* rl_uri, unsigned int hash_code);
 

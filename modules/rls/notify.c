@@ -54,7 +54,7 @@ typedef struct res_param
 	str* cid_array;
 }res_param_t;
 
-int resource_uri_col=0, content_type_col, pres_state_col= 0,
+int resource_uri_col=0, ctype_col, pres_state_col= 0,
 	auth_state_col= 0, reason_col= 0;
 
 str* constr_rlmi_doc(db_res_t* result, str* rl_uri, int version,
@@ -90,7 +90,7 @@ int send_full_notify(subs_t* subs, xmlNodePtr service_node, int version, str* rl
 	query_vals[0].val.str_val= rlsubs_did; 
 
 	result_cols[resource_uri_col= n_result_cols++]= &str_resource_uri_col;
-	result_cols[content_type_col= n_result_cols++]= &str_content_type_col;
+	result_cols[ctype_col= n_result_cols++]= &str_content_type_col;
 	result_cols[pres_state_col= n_result_cols++]= &str_presence_state_col;
 	result_cols[auth_state_col= n_result_cols++]= &str_auth_state_col;
 	result_cols[reason_col= n_result_cols++]= &str_reason_col;
@@ -213,13 +213,14 @@ error:
 	return -1;
 }
 
-int agg_body_sendn_update(str* rl_uri, str boundary_string, str* rlmi_body,
+int agg_body_sendn_update(str* rl_uri, str bstr, str* rlmi_body,
 		str* multipart_body, subs_t* subs, unsigned int hash_code)
 {
 	str cid;
 	int len;
 	str body= {0, 0};
 	int init_len;
+	int body_len;
 
 	cid.s= generate_cid(rl_uri->s, rl_uri->len);
 	if(cid.s == NULL)
@@ -229,7 +230,7 @@ int agg_body_sendn_update(str* rl_uri, str boundary_string, str* rlmi_body,
 	}
 	cid.len = strlen(cid.s);
 
-	len= 2*boundary_string.len+ 4+ 102+ cid.len+ 2+ rlmi_body->len+50+1;
+	len= 2*bstr.len+ 4+ 102+ cid.len+ 2+ rlmi_body->len+50+1;
 	if(multipart_body)
 		len+= multipart_body->len;
 	
@@ -240,22 +241,27 @@ int agg_body_sendn_update(str* rl_uri, str boundary_string, str* rlmi_body,
 	{
 		ERR_MEM(PKG_MEM_STR);
 	}
-	len=  sprintf(body.s, "--%.*s\r\n", boundary_string.len, boundary_string.s);
+	len=  sprintf(body.s, "--%.*s\r\n", bstr.len, bstr.s);
 	len+= sprintf(body.s+ len , "Content-Transfer-Encoding: binary\r\n");
 	len+= sprintf(body.s+ len , "Content-ID: <%.*s>\r\n", cid.len, cid.s);	
 	len+= sprintf(body.s+ len , 
 			"Content-Type: application/rlmi+xml;charset=\"UTF-8r\"\r\n");
 	len+= sprintf(body.s+ len, "\r\n"); /*blank line*/
-	memcpy(body.s+ len, rlmi_body->s, rlmi_body->len);
-	len+= rlmi_body->len;
-	len+= sprintf(body.s+ len, "\r\n"); /*blank line*/
+	body_len = rlmi_body->len;
+	if(rlmi_body->s[rlmi_body->len-1]== '\n')
+		body_len--;
+	if(rlmi_body->s[rlmi_body->len-1]== '\r')
+		body_len--;
+	memcpy(body.s+ len, rlmi_body->s, body_len);
+	len+= body_len;
+	len+= sprintf(body.s+ len, "\r\n\r\n"); /*blank line*/
 
 	if(multipart_body)
 	{
 		memcpy(body.s+ len, multipart_body->s, multipart_body->len);
 		len+= multipart_body->len;
 	}
-	len+= sprintf(body.s+ len, "--%.*s--\r\n", boundary_string.len, boundary_string.s);
+	len+= sprintf(body.s+ len, "--%.*s--\r\n", bstr.len, bstr.s);
 
 	if(init_len< len)
 	{
@@ -266,7 +272,7 @@ int agg_body_sendn_update(str* rl_uri, str boundary_string, str* rlmi_body,
 	body.len= len;
 
 	/* send Notify */
-	if(rls_send_notify(subs, &body, &cid, &boundary_string)< 0)
+	if(rls_send_notify(subs, &body, &cid, &bstr)< 0)
 	{
 		LM_ERR("when sending Notify\n");
 		goto error;
@@ -485,18 +491,18 @@ error:
 }
 
 
-str* constr_multipart_body(db_res_t* result, str* cid_array, str boundary_string)
+str* constr_multipart_body(db_res_t* result, str* cid_array, str bstr)
 {
 	char* buf= NULL;
 	int size= BUF_REALLOC_SIZE;
-	int i, length= 0;
+	int i, buf_len= 0;
 	db_row_t *row;	
 	db_val_t *row_vals;
-	str content_id={0, 0};
+	str cid={0, 0};
 	str body= {0, 0};
 	int add_len;
 	str* multi_body= NULL;
-	str content_type;
+	str ctype;
 	
 	LM_DBG("start\n");
 	buf= pkg_malloc(size);
@@ -513,45 +519,30 @@ str* constr_multipart_body(db_res_t* result, str* cid_array, str boundary_string
 		if(row_vals[auth_state_col].val.int_val!= ACTIVE_STATE)
 			continue;
 
-		content_type.s = (char*)row_vals[content_type_col].val.string_val;
-		if(content_type.s == NULL)
+		ctype.s = (char*)row_vals[ctype_col].val.string_val;
+		if(ctype.s == NULL)
 		{
 			LM_ERR("empty content type column\n");
 			goto error;
 		}
-		content_type.len = strlen(content_type.s);
+		ctype.len = strlen(ctype.s);
 		body.s= (char*)row_vals[pres_state_col].val.string_val;
 		body.len= strlen(body.s);
 
-		content_id= cid_array[i];
-		if(content_id.s== NULL)
+		cid= cid_array[i];
+		if(cid.s== NULL)
 		{
 			LM_ERR("No cid found in array for uri= %s\n",
 					row_vals[resource_uri_col].val.string_val);
 			goto error;
 		}
-
-		add_len = 2 + boundary_string.len + 4 /*"--%s\r\n\r\n"*/ + 
-					35 + 16 + content_id.len + 18 + content_type.len + 
-					body.len + 4;
-
-		if(length+ add_len > size)
-			REALLOC_BUF;
-
-		length+= sprintf(buf+ length, "--%.*s\r\n", boundary_string.len, boundary_string.s);
-		length+= sprintf(buf+ length, "Content-Transfer-Encoding: binary\r\n");
-
-		length+= sprintf(buf+ length, "Content-ID: <%.*s>\r\n",content_id.len, content_id.s);
-		length+= sprintf(buf+ length, "Content-Type: %s\r\n\r\n",
-				content_type.s);
-
-		length+= sprintf(buf+length,"%s\r\n\r\n", body.s);
+		APPEND_MULTIPART_BODY();
 	}
 
-	if(length+ boundary_string.len+ 7> size )
+	if(buf_len+ bstr.len+ 7> size )
 		REALLOC_BUF;
 	
-	buf[length]= '\0';
+	buf[buf_len]= '\0';
 	
 	multi_body= (str*)pkg_malloc(sizeof(str));
 	if(multi_body== NULL)
@@ -560,7 +551,7 @@ str* constr_multipart_body(db_res_t* result, str* cid_array, str boundary_string
 	}
 
 	multi_body->s= buf;
-	multi_body->len= length;
+	multi_body->len= buf_len;
 
 	return multi_body;
 
@@ -571,7 +562,7 @@ error:
 	return NULL;
 }
 
-int rls_notify_extra_hdr(subs_t* subs, str* start_cid, str* boundary_string,
+int rls_notify_extra_hdr(subs_t* subs, str* start_cid, str* bstr,
 		str *hdr)
 {
 	int len;
@@ -587,9 +578,9 @@ int rls_notify_extra_hdr(subs_t* subs, str* start_cid, str* boundary_string,
 		((subs->sockinfo && subs->sockinfo->proto!=PROTO_UDP)?
 		 15/*";transport=xxxx"*/:0) + CRLF_LEN +/*Subscription-State:*/ 20 +
 		((subs->expires>0)?(15+lexpire_len):25) + CRLF_LEN + /*Require: */ 18
-		+ CRLF_LEN + ((start_cid && boundary_string)?(/*Content-Type*/59 +
+		+ CRLF_LEN + ((start_cid && bstr)?(/*Content-Type*/59 +
 		/*start*/12 + start_cid->len + /*boundary*/12 + 
-		boundary_string->len + CRLF_LEN):0);
+		bstr->len + CRLF_LEN):0);
 
 	hdr->s = (char*)pkg_malloc(len);
 	if(hdr->s== NULL)
@@ -671,7 +662,7 @@ int rls_notify_extra_hdr(subs_t* subs, str* start_cid, str* boundary_string,
 	memcpy(p, CRLF, CRLF_LEN);
 	p += CRLF_LEN;
 
-	if(start_cid && boundary_string)
+	if(start_cid && bstr)
 	{
 		memcpy(p,"Content-Type: multipart/related;type=\"application/rlmi+xml\"", 59 );
 		p += 59;
@@ -681,8 +672,8 @@ int rls_notify_extra_hdr(subs_t* subs, str* start_cid, str* boundary_string,
 		p += start_cid->len;
 		memcpy(p, ">\";boundary=\"", 13);
 		p += 13;
-		memcpy(p, boundary_string->s, boundary_string->len);
-		p += boundary_string->len;
+		memcpy(p, bstr->s, bstr->len);
+		p += bstr->len;
 		*(p++) = '"';
 		memcpy(p, CRLF, CRLF_LEN);
 		p += CRLF_LEN;
@@ -700,7 +691,7 @@ void rls_free_td(dlg_t* td)
 }
 
 int rls_send_notify(subs_t* subs, str* body, str* start_cid,
-		str* boundary_string)
+		str* bstr)
 {
 	dlg_t* td= NULL;
 	str met= {"NOTIFY", 6};
@@ -744,7 +735,7 @@ int rls_send_notify(subs_t* subs, str* body, str* start_cid,
 	
 	LM_DBG("constructed cb_param\n");
 
-	if(rls_notify_extra_hdr(subs, start_cid, boundary_string, &str_hdr) < 0)
+	if(rls_notify_extra_hdr(subs, start_cid, bstr, &str_hdr) < 0)
 	{
 		LM_ERR("while building extra headers\n");
 		goto error;
