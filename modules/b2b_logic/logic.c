@@ -719,13 +719,14 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 				LM_DBG("No peer found\n");
 				goto done;
 			}
-			if(b2b_api.send_reply(peer->type, &peer->key, 
+			if(b2b_api.send_reply(peer->type, &peer->key,
 				statuscode,&msg->first_line.u.reply.reason,
 				body.s?&body:0, extra_headers.s?&extra_headers:0,
 				peer->dlginfo) < 0)
 			{
-				LM_ERR("Sending reply failed - delete record\n");
-				b2bl_delete(tuple, hash_index);
+				LM_ERR("Sending reply failed - %d\n", statuscode);
+				if(statuscode >= 200)
+					b2bl_delete(tuple, hash_index);
 				goto done;
 			}
 
@@ -1040,7 +1041,7 @@ error:
 }
 
 b2bl_entity_id_t* b2bl_new_client(str* to_uri, str* from_uri,
-		b2bl_tuple_t* tuple, struct sip_msg* msg)
+		b2bl_tuple_t* tuple, str* ssid, struct sip_msg* msg)
 {
 	client_info_t ci;
 	str method = {INVITE, INVITE_LEN};
@@ -1073,7 +1074,7 @@ b2bl_entity_id_t* b2bl_new_client(str* to_uri, str* from_uri,
 	}
 	/* save the client_id in the structure */
 	entity = b2bl_create_new_entity(B2B_CLIENT, client_id, &ci.to_uri,
-			&ci.from_uri, 0, 0);
+			&ci.from_uri, ssid, 0);
 	if(entity == NULL)
 	{
 		LM_ERR("failed to create new client entity\n");
@@ -1279,7 +1280,8 @@ entity_search_done:
 			str from_uri = bridge_entities[0]->from_uri;
 
 			/* contact the real destination */
-			entity =  b2bl_new_client(&to_uri, &from_uri, tuple, msg);
+			entity =  b2bl_new_client(&to_uri, &from_uri, tuple,
+					&bridge_entities[1]->scenario_id, msg);
 			if(entity == NULL)
 			{
 				LM_ERR("Failed to generate new client\n");
