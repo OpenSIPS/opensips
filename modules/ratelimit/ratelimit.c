@@ -35,9 +35,9 @@
 #include <regex.h>
 #include <math.h>
 
+#include "../../sr_module.h"
 #include "../../mem/mem.h"
 #include "../../mem/shm_mem.h"
-#include "../../sr_module.h"
 #include "../../dprint.h"
 #include "../../timer.h"
 #include "../../ut.h"

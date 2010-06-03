@@ -24,6 +24,7 @@
  *
  */
 
+#include "../../sr_module.h"
 #include "perlvdb.h"
 
 
