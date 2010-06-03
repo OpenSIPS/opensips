@@ -29,10 +29,10 @@
  */
 
 
-#include "enum_mod.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include "../../sr_module.h"
+#include "enum_mod.h"
 #include "../../error.h"
 #include "../../mod_fix.h"
 #include "enum.h"

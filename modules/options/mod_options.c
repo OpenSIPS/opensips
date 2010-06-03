@@ -29,8 +29,8 @@
 #ifdef EXTRA_DEBUG
 #include <stdlib.h>   /* required by abort() */
 #endif
-#include "mod_options.h"
 #include "../../sr_module.h"
+#include "mod_options.h"
 #include "../../str.h"
 #include "../../ut.h"
 #include "../../mem/mem.h"

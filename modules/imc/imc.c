@@ -34,9 +34,9 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <time.h>
+#include "../../sr_module.h"
 #include "../../db/db.h"
 #include "../../db/db_res.h"
-#include "../../sr_module.h"
 #include "../../dprint.h"
 #include "../../ut.h"
 #include "../../timer.h"

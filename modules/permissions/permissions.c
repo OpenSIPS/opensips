@@ -26,6 +26,7 @@
  */
  
 #include <stdio.h>
+#include "../../sr_module.h"
 #include "permissions.h"
 #include "parse_config.h"
 #include "trusted.h"

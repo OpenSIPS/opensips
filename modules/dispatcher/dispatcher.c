@@ -41,8 +41,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "../../mi/mi.h"
 #include "../../sr_module.h"
+#include "../../mi/mi.h"
 #include "../../dprint.h"
 #include "../../error.h"
 #include "../../ut.h"

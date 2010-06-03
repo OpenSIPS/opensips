@@ -30,9 +30,9 @@
 
 #include <stdio.h>
 
+#include "../../sr_module.h"
 #include "../../parser/msg_parser.h"
 #include "../../str.h"
-#include "../../sr_module.h"
 #include "../../dprint.h"
 #include "../../mod_fix.h"
 #include "../../parser/parse_uri.h"
