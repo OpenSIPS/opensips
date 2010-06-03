@@ -890,6 +890,13 @@ int b2b_send_reply(enum b2b_entity_type et, str* b2b_key, int code, str* text,
 		return -1;
 	}
 
+	if(dlg->state==B2B_CONFIRMED || dlg->state==B2B_ESTABLISHED)
+	{
+		LM_DBG("A retransmission of the reply\n");
+		lock_release(&table[hash_index].lock);
+		return 0;
+	}
+
 	LM_DBG("Send reply [%d], for dialog[%p]\n", code, dlg);
 	if(dlg->callid.s == NULL)
 	{
