@@ -349,6 +349,25 @@ char* DLG_FLAGS_STR(int type)
 	return "Flag not known";
 }
 
+void set_dlg_state(b2b_dlg_t* dlg, int meth)
+{
+	switch(meth)
+	{
+		case METHOD_INVITE: 
+			dlg->state= B2B_MODIFIED;
+			break;
+		case METHOD_CANCEL:
+		case METHOD_BYE:
+			dlg->state= B2B_TERMINATED;
+			break;
+		case METHOD_ACK:
+			dlg->state= B2B_ESTABLISHED;
+			break;
+		default:
+			break;
+	}
+}
+
 int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 {
 	str b2b_key;
@@ -562,13 +581,17 @@ search_dialog:
 logic_notify:
 	if(method_value != METHOD_CANCEL)
 	{
-		tmb.t_newtran(msg);	
+		tmb.t_newtran(msg);
 		if(method_value != METHOD_ACK)
 			dlg->tm_tran = tmb.t_gett();
 
 		if(method_value == METHOD_INVITE) /* send provisional reply 100 Trying */
+		{
 			tmb.t_reply(msg, 100, &reason);
+		}
 	}
+
+	set_dlg_state( dlg, method_value);
 
 	b2b_cback = dlg->b2b_cback;
 	if(dlg->param.s)
