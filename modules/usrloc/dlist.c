@@ -214,7 +214,7 @@ static inline int get_all_db_ucontacts(void *buf, int len, unsigned int flags,
 				} else {
 					sock = grep_sock_info( &host, (unsigned short)port, proto);
 					if (sock==0) {
-						LM_WARN("non-local socket <%s>...ignoring\n", p);
+						LM_DBG("non-local socket <%s>...ignoring\n", p);
 					}
 				}
 			}
