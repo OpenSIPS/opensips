@@ -38,8 +38,6 @@
 #include "client.h"
 #include "b2b_entities.h"
 
-#define BUF_LEN   256
-
 void b2b_client_tm_cback( struct cell *t, int type, struct tmcb_params *ps)
 {
 	b2b_tm_cback(client_htable, ps);
@@ -51,14 +49,21 @@ static char from_tag[FROM_TAG_LEN + 1];
 
 static void generate_tag(str* tag, str* src, str* callid)
 {
+	int len;
+
 	MD5StringArray(from_tag, src, 1);
-	from_tag[MD5_LEN] = '-';
+	len = MD5_LEN;
 
 	/* calculate from tag from callid */
-	crcitt_string_array(&from_tag[MD5_LEN + 1], callid, 1);
+	if(callid)
+	{
+		from_tag[len++] = '-';
+		crcitt_string_array(&from_tag[MD5_LEN + 1], callid, 1);
+		len+= CRC16_LEN;
+	}
 	tag->s = from_tag;
-	tag->len = FROM_TAG_LEN;
-	LM_DBG("from_tag = %s\n", from_tag);
+	tag->len = len;
+	LM_DBG("from_tag = %.*s\n", tag->len, tag->s);
 }
 
 /** 
@@ -82,10 +87,10 @@ str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 	str* callid = NULL;
 	int size;
 	str ehdr = {0, 0};
-	char buffer[BUF_LEN];
 	str* b2b_key_shm = NULL;
 	dlg_t td;
 	str from_tag;
+	str random_info = {0, 0};
 
 	if(ci == NULL || b2b_cback == NULL || param== NULL)
 	{
@@ -134,7 +139,12 @@ str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 	dlg->state = B2B_NEW;
 	dlg->cseq[CALLER_LEG] =(ci->cseq?ci->cseq:1);
 
-	dlg->id = core_hash(&from_tag, 0, HASH_SIZE);
+	/* if the callid should be the same in more instances running at the same time (replication)*/
+	if(!replication_mode)
+	{
+		random_info.s = int2str(time(NULL), &random_info.len);
+	}
+	dlg->id = core_hash(&from_tag, random_info.s?&random_info:0, HASH_SIZE);
 
 	/* callid must have the special format */
 	callid = b2b_htable_insert(client_htable, dlg, hash_index, B2B_CLIENT);
@@ -146,25 +156,11 @@ str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 	}
 	LM_DBG("New client - key = %.*s\n", callid->len, callid->s);
 
-	/* construct extra headers -> add contact */
-	if(ci->extra_headers && ci->extra_headers->s && ci->extra_headers->len)
+	if(b2breq_complete_ehdr(ci->extra_headers, &ehdr, ci->body)< 0)
 	{
-		if(ci->extra_headers->len + 13 + server_address.len > BUF_LEN)
-		{
-			LM_ERR("Buffer too small\n");
-			goto error;
-		}
-		memcpy(buffer, ci->extra_headers->s, ci->extra_headers->len);
-		ehdr.len = ci->extra_headers->len;
+		LM_ERR("Failed to complete extra headers\n");
+		goto error;
 	}
-	ehdr.len += sprintf(buffer+ ehdr.len, "Contact: <%.*s>\r\n",
-		server_address.len, server_address.s);
-	ehdr.s = buffer;
-
-	LM_DBG("extra_header = %.*s\n", ehdr.len, ehdr.s);
-	
-	if(ci->body && ci->body->len && ci->body->s)
-		LM_DBG("body = %.*s\n", ci->body->len, ci->body->s);
 
 	/* copy the key in shared memory to transmit it as a parameter to the tm callback */
 	b2b_key_shm = b2b_key_copy_shm(callid);
@@ -214,7 +210,7 @@ str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 		return 0;
 	}
 	tmb.setlocalTholder(0);
-	
+
 	return callid;
 
 error:

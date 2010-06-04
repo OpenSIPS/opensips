@@ -59,7 +59,7 @@ static char* script_req_route = NULL;
 static char* script_reply_route = NULL;
 int req_routeid  = -1;
 int reply_routeid = -1;
-
+int replication_mode= 0;
 
 /* TM bind */
 struct tm_binds tmb;
@@ -77,7 +77,8 @@ static param_export_t params[]={
 	{ "server_hsize",          INT_PARAM,    &server_hsize       },
 	{ "client_hsize",          INT_PARAM,    &client_hsize       },
 	{ "script_req_route",      STR_PARAM,    &script_req_route   },
-	{ "script_reply_route",    STR_PARAM,    &script_reply_route  },
+	{ "script_reply_route",    STR_PARAM,    &script_reply_route },
+	{ "replication_mode",      INT_PARAM,    &replication_mode   },
 	{ 0,                       0,            0                   }
 };
 

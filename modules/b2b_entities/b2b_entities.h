@@ -56,7 +56,7 @@ extern struct sip_uri srv_addr_uri;
 extern struct tm_binds tmb;
 extern int req_routeid;
 extern int reply_routeid;
-
+extern int replication_mode;
 
 int b2b_load_api(b2b_api_t* api);
 typedef int(*load_b2b_f) (b2b_api_t* api);

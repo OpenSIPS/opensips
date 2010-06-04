@@ -42,7 +42,10 @@
 #define B2B_KEY_PREFIX       "B2B"
 #define B2B_KEY_PREFIX_LEN   strlen("B2B")
 #define B2B_MAX_KEY_SIZE     (B2B_KEY_PREFIX_LEN+ 5*3 + 40)
-#define BUF_LEN              256
+#define BUF_LEN              1024
+
+str ack = str_init(ACK);
+str bye = str_init(BYE);
 
 b2b_dlg_t* b2b_search_htable_dlg(b2b_table table, unsigned int hash_index,
 		unsigned int local_index, str* to_tag, str* from_tag, str* callid)
@@ -78,6 +81,7 @@ b2b_dlg_t* b2b_search_htable_dlg(b2b_table table, unsigned int hash_index,
 		}
 		else
 		{
+			LM_DBG("dialog totag = %.*s\n", dlg->tag[CALLER_LEG].len, dlg->tag[CALLER_LEG].s);
 			/* it is an UAC dialog (callid is the key)*/
 			if(dlg->tag[CALLER_LEG].len == to_tag->len &&
 				strncmp(dlg->tag[CALLER_LEG].s, to_tag->s, to_tag->len)== 0)
@@ -348,6 +352,37 @@ char* DLG_FLAGS_STR(int type)
 	return "Flag not known";
 }
 
+void set_dlg_state(b2b_dlg_t* dlg, int meth)
+{	if(dlg->last_method== METHOD_INVITE)
+	{
+		LM_DBG("Switched state to B2B_MODIFIED - [%p]\n", dlg);
+		dlg->state = B2B_MODIFIED;
+	}
+	else
+	if(dlg->last_method == METHOD_ACK)
+		dlg->state = B2B_ESTABLISHED;
+	else
+	if(dlg->last_method == METHOD_BYE)
+		dlg->state = B2B_TERMINATED;
+
+
+	switch(meth)
+	{
+		case METHOD_INVITE: 
+			dlg->state= B2B_MODIFIED;
+			break;
+		case METHOD_CANCEL:
+		case METHOD_BYE:
+			dlg->state= B2B_TERMINATED;
+			break;
+		case METHOD_ACK:
+			dlg->state= B2B_ESTABLISHED;
+			break;
+		default:
+			break;
+	}
+}
+
 int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 {
 	str b2b_key;
@@ -537,12 +572,12 @@ search_dialog:
 		&to_tag, &from_tag, &callid);
 	if(dlg== NULL)
 	{
+		LM_DBG("No dialog found\n");
 		if(method_value != METHOD_ACK)
 		{
 			LM_ERR("No dialog found, callid= [%.*s], method=%.*s\n",
-			 callid.len, callid.s,
-			msg->first_line.u.request.method.len,
-                        msg->first_line.u.request.method.s);
+				callid.len, callid.s,msg->first_line.u.request.method.len,
+				msg->first_line.u.request.method.s);
 		}
 		lock_release(&table[hash_index].lock);
 		return -1;
@@ -560,13 +595,17 @@ search_dialog:
 logic_notify:
 	if(method_value != METHOD_CANCEL)
 	{
-		tmb.t_newtran(msg);	
+		tmb.t_newtran(msg);
 		if(method_value != METHOD_ACK)
 			dlg->tm_tran = tmb.t_gett();
 
 		if(method_value == METHOD_INVITE) /* send provisional reply 100 Trying */
+		{
 			tmb.t_reply(msg, 100, &reason);
+		}
 	}
+
+	set_dlg_state( dlg, method_value);
 
 	b2b_cback = dlg->b2b_cback;
 	if(dlg->param.s)
@@ -603,7 +642,7 @@ int init_b2b_htables(void)
 	client_htable = (b2b_table)shm_malloc(client_hsize* sizeof(b2b_entry_t));
 	if(!server_htable || !client_htable)
 		ERR_MEM(SHARE_MEM);
-	
+
 	memset(server_htable, 0, server_hsize* sizeof(b2b_entry_t));
 	memset(client_htable, 0, client_hsize* sizeof(b2b_entry_t));
 	for(i= 0; i< server_hsize; i++)
@@ -888,6 +927,13 @@ int b2b_send_reply(enum b2b_entity_type et, str* b2b_key, int code, str* text,
 		return -1;
 	}
 
+	if(dlg->state==B2B_CONFIRMED || dlg->state==B2B_ESTABLISHED)
+	{
+		LM_DBG("A retransmission of the reply\n");
+		lock_release(&table[hash_index].lock);
+		return 0;
+	}
+
 	LM_DBG("Send reply [%d], for dialog[%p]\n", code, dlg);
 	if(dlg->callid.s == NULL)
 	{
@@ -945,6 +991,11 @@ int b2b_send_reply(enum b2b_entity_type et, str* b2b_key, int code, str* text,
 	dlg->last_reply_code = code;
 	lock_release(&table[hash_index].lock);
 	
+	if((extra_headers?extra_headers->len:0) + 14 + server_address.len + 20 + CRLF_LEN > BUF_LEN)
+	{
+		LM_ERR("Buffer overflow!\n");
+		goto error;
+	}
 	p = buffer;
 
 	if(extra_headers && extra_headers->s && extra_headers->len)
@@ -1061,6 +1112,85 @@ dlg_t* b2b_client_dlg(b2b_dlg_t* dlg)
 	return b2b_client_build_dlg(dlg, dlg->legs);
 }
 
+int b2b_send_indlg_req(b2b_dlg_t* dlg, enum b2b_entity_type et,
+		str* b2b_key, str* method, str* ehdr, str* body)
+{
+	str* b2b_key_shm;
+	dlg_t* td = NULL;
+	transaction_cb* tm_cback;
+	build_dlg_f build_dlg;
+	int method_value = dlg->last_method;
+	int result;
+
+	b2b_key_shm= b2b_key_copy_shm(b2b_key);
+	if(b2b_key_shm== NULL)
+	{
+		LM_ERR("no more shared memory\n");
+		return -1;
+	}
+	if(et == B2B_SERVER)
+	{
+		build_dlg = b2b_server_build_dlg;
+		tm_cback = b2b_server_tm_cback;
+	}
+	else
+	{
+		build_dlg = b2b_client_dlg;
+		tm_cback = b2b_client_tm_cback;
+	}
+
+	/* build structure with dialog information */
+	td = build_dlg(dlg);
+	if(td == NULL)
+	{
+		LM_ERR("Failed to build tm dialog structure, was asked to send [%.*s]"
+				" request\n", method->len, method->s);
+		shm_free(b2b_key_shm);
+		return -1;
+	}
+
+	if(method_value == METHOD_ACK)
+	{
+		td->loc_seq.value = dlg->last_invite_cseq;
+		if(et == B2B_SERVER)
+			dlg->cseq[CALLEE_LEG]--;
+		else
+			dlg->cseq[CALLER_LEG]--;
+	}
+	else
+	if(method_value == METHOD_INVITE)
+	{
+		dlg->last_invite_cseq = td->loc_seq.value +1;
+		tmb.setlocalTholder(&dlg->tm_tran);
+	}
+
+	td->T_flags=T_NO_AUTOACK_FLAG|T_PASS_PROVISIONAL_FLAG ;
+
+	result= tmb.t_request_within
+		(method,            /* method*/
+		ehdr,               /* extra headers*/
+		body,               /* body*/
+		td,                 /* dialog structure*/
+		tm_cback,           /* callback function*/
+		b2b_key_shm,        /* callback parameter*/
+		shm_free_param);
+
+	tmb.setlocalTholder(0);
+
+	LM_DBG("Request sent\n");
+	if(result < 0)
+	{
+		LM_ERR("failed to send request [%.*s]\n", method->len, method->s);
+		pkg_free(td);
+		shm_free(b2b_key_shm);
+		return -1;
+	}
+	pkg_free(td);
+
+	return 0;
+}
+
+
 /*
  *	Function to send a request inside a b2b dialog
  *	et      : entity type - it can be B2B_SEVER or B2B_CLIENT
@@ -1074,40 +1204,28 @@ int b2b_send_request(enum b2b_entity_type et, str* b2b_key, str* method,
 {
 	unsigned int hash_index, local_index;
 	b2b_dlg_t* dlg;
-	dlg_t* td = NULL;
-	int result = 0;
-	char buffer[256];
 	str ehdr = {0, 0};
-	str* b2b_key_shm= NULL;
 	b2b_table table;
-	transaction_cb* tm_cback;
-	build_dlg_f build_dlg;
 	str totag={0,0}, fromtag={0, 0};
+	unsigned int method_value;
+	int ret;
 
-	LM_DBG("method = %.*s\n", method->len, method->s);
 	if(et == B2B_SERVER)
 	{
 		LM_DBG("Send request to a server entity\n");
 		table = server_htable;
-		build_dlg = b2b_server_build_dlg;
-		tm_cback = b2b_server_tm_cback;
-		if(dlginfo)
-		{
-			totag = dlginfo->totag;
-			fromtag = dlginfo->fromtag;
-		}
 	}
 	else
 	{
 		LM_DBG("Send request to a client entity\n");
 		table = client_htable;
-		build_dlg = b2b_client_dlg;
-		tm_cback = b2b_client_tm_cback;
-		if(dlginfo)
-		{
-			totag = dlginfo->totag;
-			fromtag = dlginfo->fromtag;
-		}
+	}
+	LM_DBG("Method = %.*s\n", method->len, method->s);
+
+	if(dlginfo)
+	{
+		totag = dlginfo->totag;
+		fromtag = dlginfo->fromtag;
 	}
 
 	/* parse the key and find the position in hash table */
@@ -1130,159 +1248,86 @@ int b2b_send_request(enum b2b_entity_type et, str* b2b_key, str* method,
 	if(dlg== NULL)
 	{
 		LM_ERR("No dialog found\n");
+		goto error;
+	}
+
+	if(dlg->state == B2B_TERMINATED)
+	{
+		LM_ERR("Can not send request in terminated state\n");
 		lock_release(&table[hash_index].lock);
-		return -1;
+		return 0;
+	}
+
+	if(b2breq_complete_ehdr(extra_headers, &ehdr, body)< 0)
+	{
+		LM_ERR("Failed to complete extra headers\n");
+		goto error;
 	}
 
 	LM_DBG("Send request method[%.*s] for dialog[%p]\n", method->len, method->s, dlg);
-	parse_method(method->s, method->s+method->len,
-		(unsigned int*)(void*)&dlg->last_method);
+	parse_method(method->s, method->s+method->len, &method_value);
 
-	if(dlg->last_method== METHOD_INVITE)
+	if((method_value == METHOD_INVITE || method_value == METHOD_BYE) && dlg->state!= B2B_ESTABLISHED)
 	{
-		LM_DBG("Switched state to B2B_MODIFIED - [%p]\n", dlg);
-		dlg->state = B2B_MODIFIED;
-		dlg->last_invite_cseq = dlg->cseq[0];
-	}
-	else
-	if(dlg->last_method == METHOD_ACK)
-		dlg->state = B2B_ESTABLISHED;
-	else
-	if(dlg->last_method == METHOD_BYE)
-		dlg->state = B2B_TERMINATED;
-
-	/* construct extra headers -> add contact */
-	if(extra_headers && extra_headers->s && extra_headers->len)
-	{
-		if(extra_headers->len + 13 + server_address.len > BUF_LEN)
+		LM_DBG("last_method= %d\n", dlg->last_method);
+		if(dlg->state==B2B_CONFIRMED && dlg->last_method == METHOD_INVITE)
 		{
-			LM_ERR("Buffer too small\n");
-			lock_release(&table[hash_index].lock);
-			return -1;
-		}
-		memcpy(buffer, extra_headers->s, extra_headers->len);
-		ehdr.len = extra_headers->len;
-	}
-	ehdr.len += sprintf(buffer+ ehdr.len, "Contact: <%.*s>\r\n",
-		server_address.len, server_address.s);
-	ehdr.s = buffer;
-
-	/* send request */
-	if(dlg->last_method == METHOD_CANCEL)
-	{
-		LM_DBG("send cancel request\n");
-		if(dlg->tm_tran)
-		{
-			result = tmb.t_cancel_uac(&ehdr, 0, dlg->tm_tran->hash_index,
-					dlg->tm_tran->label,0,0,0);
+			b2b_send_indlg_req(dlg, et, b2b_key, &ack, &ehdr, body); 
+			dlg->state= B2B_CONFIRMED;
 		}
 		else
 		{
-			if(dlg->state ==  B2B_CONFIRMED) /* the dialog might already be confirmed */
-			{
-				LM_DBG("Asked to send CANCEL but dialog is already confirmed\n");
-				/* send BYE */	
-				method->s = "BYE";
-				method->len = 3;
-				/* do not register a callback */
-				td = build_dlg(dlg);
-				if(td == NULL)
-				{
-					LM_ERR("Failed to build tm dialog structure, was"
-						" asked to send [%.*s] request\n", method->len, method->s);
-					lock_release(&table[hash_index].lock);
-					return -1;
-				}
+			LM_ERR("State not established, can not send request %.*s\n", method->len, method->s);
+			lock_release(&table[hash_index].lock);
+			return -1;
+		}
+	}
+	dlg->last_method = method_value;
 
-				lock_release(&table[hash_index].lock);
-				
-				tmb.t_request_within
-					(method,            /* method*/
-					&ehdr,              /* extra headers*/
-					0,                  /* body*/
-					td,                 /* dialog structure*/
-					0,                  /* callback function*/
-					0,                  /* callback parameter*/
-					0);
-				goto done;
+	/* send request */
+	if(method_value == METHOD_CANCEL)
+	{
+		if(dlg->state < B2B_CONFIRMED)
+		{
+			if(dlg->tm_tran)
+			{
+				LM_DBG("send cancel request\n");
+				ret = tmb.t_cancel_uac(&ehdr, 0, dlg->tm_tran->hash_index,
+					dlg->tm_tran->label,0,0,0);
 			}
 			else
 			{
 				LM_ERR("No transaction saved. Cannot send CANCEL\n");
-				lock_release(&table[hash_index].lock);
-				return -1;
-			}		
+				goto error;
+			}
 		}
-		lock_release(&table[hash_index].lock);
+		else
+		{
+			if(dlg->state == B2B_CONFIRMED)
+			{
+				b2b_send_indlg_req(dlg, et, b2b_key, &ack, &ehdr, 0);
+			}
+			ret = b2b_send_indlg_req(dlg, et, b2b_key, &bye, &ehdr, body);
+			method_value = METHOD_BYE;
+		}
 	}
 	else
 	{
-		b2b_key_shm = b2b_key_copy_shm(b2b_key);
-		if(b2b_key_shm== NULL)
-		{
-			LM_ERR("no more shared memory\n");
-			lock_release(&table[hash_index].lock);
-			return -1;
-		}
-		/* build structure with dialog information */
-		td = build_dlg(dlg);
-		if(td == NULL)
-		{
-			LM_ERR("Failed to build tm dialog structure, was"
-				" asked to send [%.*s] request\n", method->len, method->s);
-			lock_release(&table[hash_index].lock);
-			shm_free(b2b_key_shm);
-			return -1;
-		}
-
-		if(dlg->last_method == METHOD_ACK)
-		{
-			td->loc_seq.value = dlg->last_invite_cseq;
-			if(et == B2B_SERVER)
-				dlg->cseq[CALLEE_LEG]--;
-			else
-				dlg->cseq[CALLER_LEG]--;
-		}
-		else
-		if(dlg->last_method == METHOD_INVITE)
-		{
-			dlg->last_invite_cseq = td->loc_seq.value +1;
-		}
-
-		lock_release(&table[hash_index].lock);
-
-		td->T_flags=T_NO_AUTOACK_FLAG|T_PASS_PROVISIONAL_FLAG ;
-
-		/* get the transaction in case I need to send cancel */
-		if(dlg->last_method == METHOD_INVITE)
-			tmb.setlocalTholder(&dlg->tm_tran);
-
-		result= tmb.t_request_within
-			(method,            /* method*/
-			&ehdr,              /* extra headers*/
-			body,               /* body*/
-			td,                 /* dialog structure*/
-			tm_cback,           /* callback function*/
-			b2b_key_shm,        /* callback parameter*/
-			shm_free_param);
-
-		tmb.setlocalTholder(0);
+		ret = b2b_send_indlg_req(dlg, et, b2b_key, method, &ehdr, body);
 	}
 
-	LM_DBG("Request sent\n");
-	if(result < 0)
+	if(ret < 0)
 	{
-		LM_ERR("failed to send request [%.*s]\n", method->len, method->s);
-		if(td)
-			pkg_free(td);
-		if(b2b_key_shm)
-			shm_free(b2b_key_shm);
-		return -1;
+		LM_ERR("Failed to send request\n");
+		goto error;
 	}
-done:
-	if(td)
-		pkg_free(td);
+	set_dlg_state(dlg, method_value);
+	lock_release(&table[hash_index].lock);
+
 	return 0;
+error:
+	lock_release(&table[hash_index].lock);
+	return -1;
 }
 
 dlg_leg_t* b2b_find_leg(b2b_dlg_t* dlg, str to_tag)
@@ -1609,7 +1654,20 @@ void b2b_tm_cback( b2b_table htable, struct tmcb_params *ps)
 			dlg->tm_tran = 0;
 		}
 
-		/* delete the record from hash table */
+		/* delete all and add the confirmed leg */
+		dlg->state = B2B_TERMINATED;
+
+		if(msg != FAKED_REPLY)
+		{
+			b2b_delete_legs(&dlg->legs);
+			leg = b2b_add_leg(dlg, msg, &to_tag);
+			if(leg == NULL)
+			{
+				LM_ERR("Failed to add dialog leg\n");
+				lock_release(&htable[hash_index].lock);
+				goto error;
+			}
+		}
 		lock_release(&htable[hash_index].lock);
 		if(msg == FAKED_REPLY)
 			goto error;
@@ -1754,7 +1812,6 @@ void b2b_tm_cback( b2b_table htable, struct tmcb_params *ps)
 					b2b_add_dlginfo_t add_infof= dlg->add_dlginfo;
 
 					/* delete all and add the confirmed leg */
-					dlg->state = B2B_CONFIRMED;
 					b2b_delete_legs(&dlg->legs);
 					leg = b2b_add_leg(dlg, msg, &to_tag);
 					if(leg == NULL)
@@ -1817,3 +1874,40 @@ error:
 }
 
 
+int b2breq_complete_ehdr(str* extra_headers, str* ehdr_out, str* body)
+{
+	static char buf[BUF_LEN];
+	str ehdr= {0,0};
+
+	if((extra_headers?extra_headers->len:0) + 14 + server_address.len > BUF_LEN)
+	{
+		LM_ERR("Buffer too small\n");
+		return -1;
+	}
+
+	ehdr.s = buf;
+	if(extra_headers && extra_headers->s && extra_headers->len)
+	{
+		memcpy(ehdr.s, extra_headers->s, extra_headers->len);
+		ehdr.len = extra_headers->len;
+	}
+	ehdr.len += sprintf(ehdr.s+ ehdr.len, "Contact: <%.*s>\r\n",
+		server_address.len, server_address.s);
+
+	/* if not present and body present add content type */
+	if(body && !strstr(ehdr.s, "Content-Type: "))
+	{
+		/* add content type header */
+		if(ehdr.len + 32 > BUF_LEN)
+		{
+			LM_ERR("Buffer too small, can not add Content-Type header\n");
+			return -1;
+		}
+		memcpy(ehdr.s+ ehdr.len, "Content-Type: application/sdp\r\n", 31);
+		ehdr.len += 31;
+		ehdr.s[ehdr.len]= '\0';
+	}
+	*ehdr_out = ehdr;
+
+	return 0;
+}

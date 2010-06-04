@@ -53,7 +53,6 @@ typedef struct b2b_dlginfo
 	str totag;
 }b2b_dlginfo_t;
 
-
 typedef int (*b2b_notify_t)(struct sip_msg* , str* , int , void* );
 typedef int (*b2b_add_dlginfo_t)(str* key, str* entity_key, int src,
 	 b2b_dlginfo_t* info);
@@ -188,5 +187,7 @@ b2b_dlg_t* b2b_search_htable(b2b_table table,
 void b2b_tm_cback(b2b_table htable, struct tmcb_params *ps);
 
 void print_b2b_entities(void);
+
+int b2breq_complete_ehdr(str* extra_headers, str* ehdr_out, str* body);
 
 #endif

@@ -379,6 +379,52 @@ int process_bridge_negreply(struct sip_msg* msg, b2bl_tuple_t* tuple,
 	return process_bridge_dialog_end(tuple, entity_no, entity);
 }
 
+b2bl_entity_id_t* b2bl_new_client(str* to_uri, str* from_uri,
+		b2bl_tuple_t* tuple, str* ssid, struct sip_msg* msg)
+{
+	client_info_t ci;
+	str method = {INVITE, INVITE_LEN};
+	str* client_id;
+	b2bl_entity_id_t* entity;
+
+	memset(&ci, 0, sizeof(client_info_t));
+	ci.method        = method;
+	ci.to_uri        = *to_uri;
+	ci.from_uri      = *from_uri;
+	ci.extra_headers = tuple->extra_headers;
+	ci.body          = (tuple->sdp.s?&tuple->sdp:0);
+	ci.from_tag      = 0;
+	ci.send_sock     = msg?msg->rcv.bind_address:0;
+	if(msg)
+	{
+		if (str2int( &(get_cseq(msg)->number), &ci.cseq)!=0 )
+		{
+			LM_ERR("cannot parse cseq number\n");
+			return 0;
+		}
+	}
+	LM_DBG("Send Invite without a body to a new client entity\n");
+	client_id = b2b_api.client_new(&ci, b2b_client_notify,
+			b2b_add_dlginfo, tuple->key);
+	if(client_id == NULL)
+	{
+		LM_ERR("Failed to create client id\n");
+		return 0;
+	}
+	/* save the client_id in the structure */
+	entity = b2bl_create_new_entity(B2B_CLIENT, client_id, &ci.to_uri,
+			&ci.from_uri, ssid, 0);
+	if(entity == NULL)
+	{
+		LM_ERR("failed to create new client entity\n");
+		pkg_free(client_id);
+		return 0;
+	}
+	pkg_free(client_id);
+	entity->type = B2B_CLIENT;
+
+	return entity;
+}
 int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 		str* body, b2bl_tuple_t* tuple, b2bl_entity_id_t* entity)
 {
@@ -509,8 +555,24 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 			else
 				tuple->scenario_state = B2B_NOTDEF_STATE;
 			tuple->bridge_entities[0] = tuple->bridge_entities[1] = NULL;
+			LM_DBG("Finished the bridging\n");
 		}
-		LM_DBG("Finished the bridging\n");
+		else
+		{
+			/* contact the real destination */
+			entity =  b2bl_new_client(&tuple->bridge_entities[2]->to_uri, &bentity0->from_uri,
+					tuple, &tuple->bridge_entities[2]->scenario_id, msg);
+			if(entity == NULL)
+			{
+				LM_ERR("Failed to generate new client\n");
+				return -1;
+			}
+			entity->next = tuple->clients;
+			tuple->clients = entity;
+			/* original destination connected in the second step */
+			shm_free(tuple->bridge_entities[2]);
+			tuple->bridge_entities[2]= entity;
+		}
 	}
 	else /* if a 200 OK from the final destination */
 	{
@@ -1040,52 +1102,6 @@ error:
 	return -1;
 }
 
-b2bl_entity_id_t* b2bl_new_client(str* to_uri, str* from_uri,
-		b2bl_tuple_t* tuple, str* ssid, struct sip_msg* msg)
-{
-	client_info_t ci;
-	str method = {INVITE, INVITE_LEN};
-	str* client_id;
-	b2bl_entity_id_t* entity;
-
-	memset(&ci, 0, sizeof(client_info_t));
-	ci.method        = method;
-	ci.to_uri        = *to_uri;
-	ci.from_uri      = *from_uri;
-	ci.extra_headers = tuple->extra_headers;
-	ci.body          = (tuple->sdp.s?&tuple->sdp:0);
-	ci.from_tag      = 0;
-	ci.send_sock     = msg?msg->rcv.bind_address:0;
-	if(msg)
-	{
-		if (str2int( &(get_cseq(msg)->number), &ci.cseq)!=0 )
-		{
-			LM_ERR("cannot parse cseq number\n");
-			return 0;
-		}
-	}
-	LM_DBG("Send Invite without a body to a new client entity\n");
-	client_id = b2b_api.client_new(&ci, b2b_client_notify,
-			b2b_add_dlginfo, tuple->key);
-	if(client_id == NULL)
-	{
-		LM_ERR("Failed to create client id\n");
-		return 0;
-	}
-	/* save the client_id in the structure */
-	entity = b2bl_create_new_entity(B2B_CLIENT, client_id, &ci.to_uri,
-			&ci.from_uri, ssid, 0);
-	if(entity == NULL)
-	{
-		LM_ERR("failed to create new client entity\n");
-		pkg_free(client_id);
-		return 0;
-	}
-	pkg_free(client_id);
-	entity->type = B2B_CLIENT;
-
-	return entity;
-}
 
 /* This function does the following actions:
  *	- extract the entities description from the scenario document 
@@ -1276,31 +1292,14 @@ entity_search_done:
 
 		if(provmedia_uri.s)
 		{
-			str to_uri   = bridge_entities[1]->to_uri;
-			str from_uri = bridge_entities[0]->from_uri;
+			tuple->bridge_entities[2]= bridge_entities[1];
 
-			/* contact the real destination */
-			entity =  b2bl_new_client(&to_uri, &from_uri, tuple,
-					&bridge_entities[1]->scenario_id, msg);
-			if(entity == NULL)
-			{
-				LM_ERR("Failed to generate new client\n");
-				goto error1;
-			}
-
-			/* original destination connected in the second step */
-			shm_free(bridge_entities[1]);
-			tuple->bridge_entities[2]= entity;
 			tuple->bridge_entities[1] = b2bl_create_new_entity(B2B_CLIENT, 0, &provmedia_uri, 0, 0, 0);
 			if(tuple->bridge_entities[1] == NULL)
 			{
 				LM_ERR("Failed to create new b2b entity\n");
 				goto error;
 			}
-
-			entity->next = tuple->clients;
-			tuple->clients = entity;
-			LM_DBG("tuple->clients->next = %p\n", tuple->clients->next);
 		}
 		/* TODO -> Do I need some other info here? */
 		b2b_api.send_request(old_entity->type, &old_entity->key, &method,
