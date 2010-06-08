@@ -245,44 +245,7 @@ __dialog_sendpublish(struct dlg_cell *dlg, int type, struct dlg_cb_params *_para
 	flag_str.len = 1;
 
 	memset(&from, 0, sizeof(struct to_body));
-	if(_params->msg && _params->msg != FAKED_REPLY)
-	{
-		struct sip_msg* msg = _params->msg;
-		if(msg->to->parsed != NULL)
-		{
-			to = *((struct to_body*)msg->to->parsed);
-			LM_DBG("'To' header ALREADY PARSED: <%.*s>\n",to.uri.len,to.uri.s);
-		}
-		else
-		{
-			if(!parse_to(msg->to->body.s,msg->to->body.s + msg->to->body.len + 1, &to))
-			{
-				LM_DBG("'To' header NOT parsed\n");
-				return;
-			}
-		}
-		if (msg->from->parsed == NULL)
-		{
-			LM_DBG("'From' header not parsed\n");
-			/* parsing from header */
-			if ( parse_from_header( msg )<0 ) 
-			{
-				LM_ERR("cannot parse From header\n");
-				return;
-			}
-		}
-		from = *((struct to_body*)msg->from->parsed);
-		/* check if the direction is the same */
-		if(!(from.uri.len == dlg->from_uri.len &&
-				strncmp(from.uri.s, dlg->from_uri.s, from.uri.len)==0))
-		{
-			from = to;
-		}
-	}
-	else
-	{
-		from.uri = dlg->from_uri;
-	}
+	from.uri = dlg->from_uri;
 
 	peer_uri.len = buf_len;
 	peer_uri.s = (char*)pkg_malloc(buf_len);

@@ -45,7 +45,7 @@
 extern int include_callid;
 extern int include_localremote;
 extern int include_tags;
-
+str dlginfo_id=str_init("DIALOG_PUBLISH");
 
 /* for debug purpose only */
 void print_publ(publ_info_t* p)
@@ -301,7 +301,6 @@ void dialog_publish(char *state, struct to_body* entity, struct to_body *peer, s
 {
 	str* body= NULL;
 	publ_info_t publ;
-	static char buf[PRES_ID_LEN];
 
 	body= build_dialoginfo(state, entity, peer, callid, initiator, localtag, remotetag);
 	if(body == NULL || body->s == NULL)
@@ -315,9 +314,8 @@ void dialog_publish(char *state, struct to_body* entity, struct to_body *peer, s
 	publ.pres_uri= &entity->uri;
 	publ.body = body;
 
-	publ.id.s = buf;
-	publ.id.len = snprintf(publ.id.s, PRES_ID_LEN, "DIALOG_PUBLISH.%.*s", callid->len, callid->s);
-	
+	publ.id = dlginfo_id;
+
 	publ.content_type.s= "application/dialog-info+xml";
 	publ.content_type.len= 27;
 
