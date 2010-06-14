@@ -44,8 +44,8 @@
     <column>
         <name>content_type</name>
         <type>string</type>
-        <size>&domain_len;</size>
-        <description>Event</description>
+        <size>255</size>
+        <description>Content type</description>
     </column>
 
     <column>
