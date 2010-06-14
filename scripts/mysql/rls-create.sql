@@ -3,7 +3,7 @@ CREATE TABLE rls_presentity (
     id INT(10) UNSIGNED AUTO_INCREMENT PRIMARY KEY NOT NULL,
     rlsubs_did CHAR(255) NOT NULL,
     resource_uri CHAR(128) NOT NULL,
-    content_type CHAR(64) NOT NULL,
+    content_type CHAR(255) NOT NULL,
     presence_state BLOB NOT NULL,
     expires INT(11) NOT NULL,
     updated INT(11) NOT NULL,
