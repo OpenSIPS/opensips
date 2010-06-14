@@ -97,7 +97,7 @@ b2b_dlg_t* b2b_search_htable_dlg(b2b_table table, unsigned int hash_index,
 					}
 					
 				}
-				if(from_tag == 0)
+				if(from_tag == 0 || from_tag->s==0)
 				{
 					dlg = dlg->next;
 					continue;
@@ -1568,11 +1568,6 @@ void b2b_tm_cback( b2b_table htable, struct tmcb_params *ps)
 				return;
 			}
 			pto = &TO;
-		}
-		if(pto->tag_value.s== 0 && pto->tag_value.len == 0)
-		{
-			LM_ERR("No TO TAG found\n");
-			return;
 		}
 		to_tag = pto->tag_value;
 		callid = msg->callid->body;
