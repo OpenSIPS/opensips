@@ -168,31 +168,6 @@
 		
 		If there are problems with the callbacks from dialog module and you want to 
 		debug them you define PUA_DIALOGINFO_DEBUG in pua_dialoginfo.c and recompile.
-
-	</para>
-	<para>
-		Known issues:
-		<itemizedlist>
-			<listitem><para>
-				The module tries to find out if the entity is a local user. Only PUBLISH to
-				local user are sent. Therefore, the module needs to find out if the domain is
-				a local one or not. It uses the same mechanism as the "==myself" mechanism. Thus,
-				all domains have to be declared with the "alias=..." option in &osips;.cfg. 
-				DB-based multidomain support as offered by "domain" module is not supported yet.
-				Conclusion: The module has the same "domain" problems as the "rr" module.
-			</para></listitem>
-			<listitem><para>
-				The module puts the call-id of the dialog into an XML parameter. Thus, if the 
-				call-id contains quotes, they should be escaped. This is not yet implemented. Thus,
-				if the call-id contains quotes the XML document will be invalid.
-			</para></listitem>
-			<listitem><para>
-				The module derives the AoR of the callee from the To: header. Thus, if the To
-				header does not contain the canonical AoR the PUBLISH might have the wrong
-				SIP URI in the RURI and the entity parameter.
-			</para></listitem>
-		</itemizedlist>
-
 	</para>
 	</section>
 		<section>
