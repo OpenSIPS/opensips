@@ -208,9 +208,6 @@ void update_htable(ua_pres_t* p, int expires, str* etag,
 	if(p->db_flag == NO_UPDATEDB_FLAG)
 		p->db_flag= UPDATEDB_FLAG;
 
-	if(p->watcher_uri)
-		p->cseq ++;
-
 	if(contact)
 	{
 		if(!(p->remote_contact.len== contact->len && 
