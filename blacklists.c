@@ -543,7 +543,7 @@ int add_list_to_head( struct bl_head *head,
 		head->last  = last;
 		head->first = first;
 	} else
-	if (!head->flags&BL_DO_EXPIRE) {
+	if ( !(head->flags&BL_DO_EXPIRE) ) {
 		head->last->next = first;
 		head->last = last;
 	} else
