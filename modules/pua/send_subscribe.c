@@ -134,7 +134,7 @@ error:
 	if(str_hdr)
 		pkg_free(str_hdr);
 	return NULL;
-}	
+}
 
 dlg_t* pua_build_dlg_t(ua_pres_t* presentity)
 {
@@ -163,18 +163,18 @@ dlg_t* pua_build_dlg_t(ua_pres_t* presentity)
 	memcpy(td->id.rem_tag.s, presentity->to_tag.s, presentity->to_tag.len);
 	td->id.rem_tag.len = presentity->to_tag.len;
 	size+= presentity->to_tag.len;
-	
+
 	td->id.loc_tag.s = (char*)td+ size;
 	memcpy(td->id.loc_tag.s, presentity->from_tag.s, presentity->from_tag.len);
 	td->id.loc_tag.len =presentity->from_tag.len;
 	size+= presentity->from_tag.len;
-	
+
 	td->loc_uri.s = (char*)td+ size;
 	memcpy(td->loc_uri.s, presentity->watcher_uri->s,
 			presentity->watcher_uri->len) ;
 	td->loc_uri.len = presentity->watcher_uri->len;
 	size+= td->loc_uri.len;
-	
+
 	td->rem_uri.s = (char*)td+ size;
 	memcpy(td->rem_uri.s, presentity->to_uri.s, presentity->to_uri.len) ;
 	td->rem_uri.len = presentity->to_uri.len;
@@ -195,9 +195,9 @@ dlg_t* pua_build_dlg_t(ua_pres_t* presentity)
 			pkg_free(td);
 			return NULL;
 		}
-	}	
+	}
 
-	td->loc_seq.value = presentity->cseq;
+	td->loc_seq.value = presentity->cseq++;
 	td->loc_seq.is_set = 1;
 	td->state= DLG_CONFIRMED ;
 	
@@ -850,7 +850,6 @@ int send_subscribe(subs_info_t* subs)
 		LM_ERR("while building extra headers\n");
 		return -1;
 	}
-
 
 	memset(&pres, 0, sizeof(ua_pres_t));
 	pres.pres_uri   = subs->pres_uri;
