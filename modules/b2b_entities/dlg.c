@@ -623,6 +623,10 @@ logic_notify:
 	lock_release(&table[hash_index].lock);
 
 	b2b_cback(msg, &b2b_key, B2B_REQUEST, param.s?&param:0);
+	if(method_value == METHOD_INVITE || method_value == METHOD_BYE)
+	{
+		tmb.t_setkr(REQ_FWDED);
+	}
 
 	if(param.s)
 		pkg_free(param.s);

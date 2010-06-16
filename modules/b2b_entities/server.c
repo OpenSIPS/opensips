@@ -81,6 +81,7 @@ str* server_new(struct sip_msg* msg, b2b_notify_t b2b_cback,
 		tmb.ref_cell(dlg->tm_tran);
 	
 	tmb.t_reply(msg, 100, &reason);
+	tmb.t_setkr(REQ_FWDED);
 	LM_DBG("****Server entity = %p\n", dlg);
 
 	/* add the record in hash table */
