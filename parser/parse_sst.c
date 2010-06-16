@@ -171,6 +171,12 @@ parse_session_expires( struct sip_msg *msg, struct session_expires *se )
 {
 	enum parse_sst_result result;
 
+	if (msg->session_expires==NULL &&
+	parse_headers(msg,HDR_SESSION_EXPIRES_F,0)!=0 ) {
+		LM_ERR("failed to parse message when looking for Session-Expires \n");
+		return parse_sst_header_not_found;
+	}
+
 	if ( msg->session_expires ) {
 		if ( msg->session_expires->parsed == 0
 			 && (result = parse_session_expires_body(msg->session_expires))
@@ -223,6 +229,11 @@ enum parse_sst_result
 parse_min_se( struct sip_msg *msg, unsigned int *min_se )
 {
 	enum parse_sst_result result;
+
+	if (msg->min_se==NULL && parse_headers(msg,HDR_MIN_SE_F,0)!=0 ) {
+		LM_ERR("failed to parse message when looking for MIN-SE \n");
+		return parse_sst_header_not_found;
+	}
 
 	if ( msg->min_se ) {
 		if ( msg->min_se->parsed == 0
