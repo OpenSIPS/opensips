@@ -421,7 +421,6 @@ b2bl_entity_id_t* b2bl_new_client(str* to_uri, str* from_uri,
 		return 0;
 	}
 	pkg_free(client_id);
-	entity->type = B2B_CLIENT;
 
 	return entity;
 }
@@ -494,7 +493,7 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 			entity->next = tuple->clients;
 			tuple->clients = entity;
 			pkg_free(client_id);
-			shm_free(bentity1);
+			b2bl_delete_entity(bentity1, tuple);
 		}
 		else
 		{
@@ -576,17 +575,8 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 	}
 	else /* if a 200 OK from the final destination */
 	{
-		/* end the call leg with the media server */
-		/* check if media already connected */
-		if(bentity1->key.s)
-		{
-			b2b_end_dialog(bentity1);
-		}
-		else
-		{
-			/* means that the server entity did not reply to the reinvite */
-			shm_free(bentity1);
-		}
+		b2b_end_dialog(bentity1);
+
 		/* send reinvite to the initial server*/
 		method.s = INVITE;
 		method.len = INVITE_LEN;

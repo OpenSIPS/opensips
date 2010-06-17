@@ -62,7 +62,7 @@ b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg,
 		LM_ERR("No more shared memory\n");
 		return NULL;
 	}
-	memset(tuple, 0,sizeof(b2bl_tuple_t) );
+	memset(tuple, 0, size);
 
 	if(body && use_init_sdp)
 	{
@@ -187,33 +187,43 @@ error:
 void b2bl_delete_entity(b2bl_entity_id_t* entity, b2bl_tuple_t* tuple)
 {
 	b2bl_entity_id_t* prev;
+	int found = 0;
 
 	LM_DBG("Delete entity = %p\n", entity);
 
-	LM_DBG("Found a delete entity node\n");
-	if(entity->type == B2B_SERVER)
+	if(tuple->server == entity)
 	{
 		tuple->server = NULL;
+		found = 1;
 	}
 	else
 	{
 		/* search the entity to delete */
 		if(tuple->clients == entity)
 		{
-			tuple->clients = tuple->clients->next;
+			tuple->clients = entity->next;
+			found = 1;
 		}
 		else
 		{
 			prev = tuple->clients;
-			while(prev->next != entity)
+			while(prev && prev->next != entity)
+			{
 				prev = prev->next;
-			
-			prev->next = entity->next;
+			}
+			if(prev)
+			{
+				prev->next = entity->next;
+				found= 1;
+			}
 		}
 	}
-	b2b_api.entity_delete(entity->type, &entity->key, entity->dlginfo);
+	if(found)
+		b2b_api.entity_delete(entity->type, &entity->key, entity->dlginfo);
+
+	if(entity->dlginfo)
+		shm_free(entity->dlginfo);
 	shm_free(entity);
-	LM_DBG("tuple->clients = %p\n", tuple->clients);
 }
 
 void b2bl_delete(b2bl_tuple_t* tuple, unsigned int hash_index)
