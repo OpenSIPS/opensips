@@ -179,12 +179,12 @@ then
 fi
 
 get_answer $INSTALL_PRESENCE_TABLES "Install presence related tables? (y/n): "
-if [ "$ANSWER" = "y" ]; then
+if [ $ANSWER == "y" ]; then
 	presence_create $1
 fi
 
 get_answer $INSTALL_EXTRA_TABLES "Install tables for $EXTRA_MODULES? (y/n): "
-if [ "$ANSWER" = "y" ]; then
+if [ $ANSWER == "y" ]; then
 	HAS_EXTRA="yes"
 	extra_create $1
 fi
@@ -259,7 +259,7 @@ if [ $? -ne 0 ] ; then
 	echo "ERROR: failed to migrate $3 to $1!!!"
 	echo -n "Skip it and continue (y/n)? "
 	read INPUT
-	if [ "$INPUT" = "y" ] || [ "$INPUT" = "Y" ]
+	if [ $INPUT == "y" ] || [ $INPUT == "Y" ]
 	then
 		return 0
 	fi
@@ -378,7 +378,7 @@ migrate_table ${dst_db}.subscriber \
 	${src_db}.subscriber \
 	"?id,?username,?domain,?password,?ha1,?ha1b,?rpid"
 
-if [ "$HAS_EXTRA" = "yes" ] ; then
+if [ $HAS_EXTRA == "yes" ] ; then
 	migrate_table ${dst_db}.cpl \
 		"id,username,domain,cpl_xml,cpl_bin" \
 		${src_db}.cpl \
@@ -407,6 +407,6 @@ fi
 
 
 export PW
-if [ "$#" -ne 0 ] && [ "$PW" = "" ]; then
+if [ "$#" -ne 0 ] && [ $PW == "" ]; then
 	prompt_pw
 fi
