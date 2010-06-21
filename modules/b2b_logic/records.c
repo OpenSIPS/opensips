@@ -36,6 +36,22 @@
 #include "records.h"
 
 
+void b2bl_print_clients_list(b2bl_tuple_t* tuple)
+{
+	if(tuple)
+	{
+		/* parcurg lista de clienti */
+		b2bl_entity_id_t* c;
+		c = tuple->clients;
+		while(c)
+		{
+			LM_INFO("[%p]->\n", c);
+			c = c->next;
+		}
+		LM_INFO("0\n");
+	}
+}
+
 /* Function that inserts a new b2b_logic record - the lock remains taken */
 b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg,
 		unsigned int hash_index, b2b_scenario_t* scenario,
@@ -224,7 +240,20 @@ void b2bl_delete_entity(b2bl_entity_id_t* entity, b2bl_tuple_t* tuple)
 	if(entity->dlginfo)
 		shm_free(entity->dlginfo);
 	shm_free(entity);
+
+	/* for debuging */
+	LM_INFO("delete [%.*s]\n", tuple->key->len, tuple->key->s);
+	b2bl_print_clients_list(tuple);
 }
+
+void b2bl_add_client_list(b2bl_tuple_t* tuple, b2bl_entity_id_t* entity)
+{
+	entity->next = tuple->clients;
+	tuple->clients= entity;
+	LM_INFO("add [%.*s]\n", tuple->key->len, tuple->key->s);
+	b2bl_print_clients_list(tuple);
+}
+
 
 void b2bl_delete(b2bl_tuple_t* tuple, unsigned int hash_index)
 {
@@ -352,6 +381,7 @@ b2bl_tuple_t* b2bl_search_tuple_safe(unsigned int hash_index, unsigned int local
 	tuple = b2bl_htable[hash_index].first;
 	while(tuple && tuple->id != local_index)
 		tuple = tuple->next;
+
 
 	return tuple;
 }

@@ -106,4 +106,7 @@ b2bl_entity_id_t* b2bl_create_new_entity(enum b2b_entity_type type, str* entity_
 void b2bl_delete_entity(b2bl_entity_id_t* entity, b2bl_tuple_t* tuple);
 
 int b2b_extra_headers(struct sip_msg* msg, str* b2bl_key, str* extra_headers);
+
+void b2bl_add_client_list(b2bl_tuple_t* tuple, b2bl_entity_id_t* entity);
+
 #endif

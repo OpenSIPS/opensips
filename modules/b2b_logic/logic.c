@@ -489,11 +489,11 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 				pkg_free(client_id);
 				return -1;
 			}
-			tuple->bridge_entities[1] = entity;
-			entity->next = tuple->clients;
-			tuple->clients = entity;
 			pkg_free(client_id);
 			b2bl_delete_entity(bentity1, tuple);
+
+			tuple->bridge_entities[1] = entity;
+			b2bl_add_client_list(tuple, entity);
 		}
 		else
 		{
@@ -512,7 +512,7 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 		tuple->bridge_entities[0]->peer = tuple->bridge_entities[1];
 	}
 	else
-	if(entity_no == 1) /* from provisional media server */
+	if(entity_no == 1) /* from provisional media server or from final destination */
 	{
 		str* ack_body= 0;
 		/* the second -> send ACK with body to the first entity
@@ -566,10 +566,9 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 				LM_ERR("Failed to generate new client\n");
 				return -1;
 			}
-			entity->next = tuple->clients;
-			tuple->clients = entity;
-			/* original destination connected in the second step */
 			shm_free(tuple->bridge_entities[2]);
+			b2bl_add_client_list(tuple, entity);
+			/* original destination connected in the second step */
 			tuple->bridge_entities[2]= entity;
 		}
 	}
@@ -1341,8 +1340,7 @@ entity_search_done:
 		tuple->bridge_entities[0] = entity;
 		tuple->bridge_entities[1]= bridge_entities[1];
 
-		entity->next = tuple->clients;
-		tuple->clients = entity;
+		b2bl_add_client_list(tuple, entity);
 	}
 	/* save the pointers to the bridged entities ;
 	 * the first (index 0) is the one we sent the first message ( reInvite or Invite)*/
@@ -2021,8 +2019,7 @@ int b2b_process_scenario_init(b2b_scenario_t* scenario_struct,struct sip_msg* ms
 			client_entity->peer = tuple->server;
 			tuple->server->peer = client_entity;
 
-			client_entity->next = tuple->clients;
-			tuple->clients = client_entity;
+			b2bl_add_client_list(tuple, client_entity);
 		}
 		xmlFree(type);
 		xmlFree(entity_sid.s);

@@ -95,7 +95,6 @@ b2b_dlg_t* b2b_search_htable_dlg(b2b_table table, unsigned int hash_index,
 						LM_DBG("Found match\n");
 						return dlg;
 					}
-					
 				}
 				if(from_tag == 0 || from_tag->s==0)
 				{
@@ -113,6 +112,8 @@ b2b_dlg_t* b2b_search_htable_dlg(b2b_table table, unsigned int hash_index,
 					}
 					leg = leg->next;
 				}
+				if(dlg->state < B2B_CONFIRMED || dlg->state>=B2B_DESTROYED) /* state not confirmed yet and a new leg */
+					return dlg;
 			}
 		}
 		dlg = dlg->next;
@@ -1063,6 +1064,9 @@ void b2b_delete_record(b2b_dlg_t* dlg, b2b_table* htable, unsigned int hash_inde
 		shm_free(dlg->tag[CALLEE_LEG].s);
 
 	b2b_delete_legs(&dlg->legs);
+
+	if(dlg->tm_tran)
+		tmb.unref_cell(dlg->tm_tran);
 
 	shm_free(dlg);
 }
