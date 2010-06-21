@@ -483,6 +483,6 @@ fi
 
 
 export PW
-if [ "$#" -ne 0 ] && [ "$PW" = "" ]; then
+if [ "$#" -ne 0 ] && [ $PW == "" ]; then
 	prompt_pw
 fi
