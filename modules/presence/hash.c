@@ -329,7 +329,6 @@ void free_subs_list(subs_t* s_array, int mem_type, int ic)
 			shm_free(s);
 		}
 	}
-	
 }
 
 int update_shtable(shtable_t htable,unsigned int hash_code, 
@@ -355,8 +354,7 @@ int update_shtable(shtable_t htable,unsigned int hash_code,
 	}
 	else
 	{
-		subs->local_cseq= s->local_cseq;
-		s->local_cseq++;	
+		subs->local_cseq= s->local_cseq++;
 		s->version= subs->version+ 1;
 	}
 	

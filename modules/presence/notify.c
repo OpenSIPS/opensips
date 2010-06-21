@@ -986,6 +986,7 @@ str* get_p_notify_body(str pres_uri, pres_ev_t* event, str* etag,
 	unsigned int hash_code;
 	int body_cnt = 0;
 	str* dialog_body= NULL, *local_dialog_body = NULL;
+	int init_i = 0;
 
 	if(parse_uri(pres_uri.s, pres_uri.len, &uri)< 0)
 	{
@@ -1147,6 +1148,7 @@ str* get_p_notify_body(str pres_uri, pres_ev_t* event, str* etag,
 		}
 		memset(body_array, 0, (n+3) *sizeof(str*));
 
+		init_i = body_cnt;
 		if(etag!= NULL)
 		{
 			LM_DBG("searched etag = %.*s len= %d\n", 
@@ -1194,14 +1196,14 @@ str* get_p_notify_body(str pres_uri, pres_ev_t* event, str* etag,
 			{
 				row = &result->rows[i];
 				row_vals = ROW_VALUES(row);
-				
+
 				len= strlen((char*)row_vals[body_col].val.string_val);
 				if(len== 0)
 				{
 					LM_ERR("Empty notify body record\n");
 					goto error;
 				}
-				
+
 				size= sizeof(str)+ len;
 				body= (str*)pkg_malloc(size);
 				if(body== NULL)
@@ -1236,6 +1238,16 @@ str* get_p_notify_body(str pres_uri, pres_ev_t* event, str* etag,
 	}
 
 done:
+	if(body_array!=NULL && body_array!=&dialog_body)
+	{
+		for(i= init_i; i< init_i + n; i++)
+		{
+			if(body_array[i])
+				pkg_free(body_array[i]);
+		}
+		pkg_free(body_array);
+	}
+
 	if(local_dialog_body && local_dialog_body!=FAKED_BODY
 			&& local_dialog_body->s)
 	{
@@ -1243,15 +1255,7 @@ done:
 		pkg_free(local_dialog_body);
 	}
 
-	if(body_array!=NULL && body_array!=&dialog_body)
-	{
-		for(i= 0; i< n; i++)
-		{
-			if(body_array[i])
-				pkg_free(body_array[i]);
-		}
-		pkg_free(body_array);
-	}
+
 	return notify_body;
 
 error:
@@ -1267,7 +1271,7 @@ error:
 
 	if(body_array!=NULL && body_array!=&dialog_body)
 	{
-		for(i= 0; i< n; i++)
+		for(i= init_i; i< init_i + n; i++)
 		{
 			if(body_array[i])
 				pkg_free(body_array[i]);

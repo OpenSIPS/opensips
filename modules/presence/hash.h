@@ -53,8 +53,8 @@ struct presentity;
 	size+= source.len;\
 	} while(0)
 
-#define PKG_MEM_TYPE     1<< 1
-#define SHM_MEM_TYPE     1<< 2
+#define PKG_MEM_TYPE     0
+#define SHM_MEM_TYPE     1
 
 /* subscribe hash entry */
 struct subscription;
