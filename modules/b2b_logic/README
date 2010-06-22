@@ -8,7 +8,7 @@ Edited by
 
 Anca-Maria Vamanu
 
-   Copyright � 2009 Anca-Maria
+   Copyright © 2009 Anca-Maria
    Vamanu
    Revision History
    Revision $Revision: $ $Date: $
@@ -97,7 +97,7 @@ Chapter 1. Admin Guide
    The size of the hash table that stores the scenario
    instatiation entities.
 
-   Default value is "9" (512 records).
+   Default value is “9” (512 records).
 
    Example 1.1. Set server_hsize parameter
 ...
@@ -140,7 +140,7 @@ b_marketing.xml")
    BYE is sent in all the dialogs from that context and the
    context is deleted.
 
-   Default value is "100".
+   Default value is “100”.
 
    Example 1.4. Set cleanup_period parameter
 ...
@@ -164,7 +164,7 @@ modparam("b2b_logic", "cleanup_period", 60)
    If you wish some other headers to be passed also you should
    define them by setting this parameter.
 
-   Default value is "NULL".
+   Default value is “NULL”.
 
    Example 1.5. Set parameter
 ...
@@ -184,7 +184,7 @@ modparam("b2b_logic", "custom_headers", "User-Agent;Date")
    body for this invite. By setting this parameter, this behavior
    is enabled.
 
-   Default value is "0".
+   Default value is “0”.
 
    Example 1.6. Set parameter
 ...
@@ -208,6 +208,11 @@ modparam("b2b_logic", "use_init_sdp", 1)
    parameters for the xml scenario. The expected number of
    parameters is also specified as an attribute in the root node
    of the XML scenario.
+
+   NOTE: Do not call t_newtran() from the script on this request.
+   It will be called internally by the function. Calling
+   t_newtran() from the script will result in the transaction
+   remaining in memory for ever.
 
    Example 1.7. b2b_init_request usage
 ...

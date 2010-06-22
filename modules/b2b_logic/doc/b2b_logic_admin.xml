@@ -228,7 +228,12 @@ modparam("b2b_logic", "use_init_sdp", 1)
 			the xml scenario. The expected number of parameters is also specified as an attribute
 			in the root node of the XML scenario.
 		</para>
-		</para>
+	</para>
+	<para>
+		NOTE: Do not call t_newtran() from the script on this request. It will be called internally
+		by the function. Calling t_newtran() from the script will result in the transaction remaining
+		in memory for ever.
+	</para>
 		<example>
 			<title><function>b2b_init_request</function> usage</title>
 		<programlisting format="linespecific">
