@@ -379,7 +379,8 @@ dpl_node_t * build_rule(db_val_t * values)
 		PCRE_INFO_CAPTURECOUNT, /* number of named substrings */
 		&namecount); /* where to put the answer */
 
-	LM_DBG("references:%d , max:%d\n",namecount,repl_comp->max_pmatch);
+	if(repl_comp)
+		LM_DBG("references:%d , max:%d\n",namecount,repl_comp->max_pmatch);
 
 	if ( repl_comp && (namecount<repl_comp->max_pmatch) &&
 		repl_comp->max_pmatch != 0){
