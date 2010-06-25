@@ -398,7 +398,7 @@ static int db_restore(void)
 			memset(&record_route,	 0, sizeof(str));
 			memset(&pres_id,         0, sizeof(str));
 			memset(&contact,         0, sizeof(str));
-			memset(&remote_contact,         0, sizeof(str));
+			memset(&remote_contact,  0, sizeof(str));
 			memset(&extra_headers,   0, sizeof(str));
 			
 			pres_id.s= (char*)row_vals[pid_col].val.string_val;
@@ -446,7 +446,8 @@ static int db_restore(void)
 				
 				remote_contact.s= 
 					(char*)row_vals[remote_contact_col].val.string_val;
-				remote_contact.len = strlen(remote_contact.s);
+				if(remote_contact.s)
+					remote_contact.len = strlen(remote_contact.s);
 			}
 			extra_headers.s= (char*)row_vals[extra_headers_col].val.string_val;
 			if(extra_headers.s)
