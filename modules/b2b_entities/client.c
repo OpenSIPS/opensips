@@ -28,6 +28,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <utime.h>
 
 #include "../../crc.h"
 #include "../tm/dlg.h"
@@ -40,7 +41,7 @@
 
 void b2b_client_tm_cback( struct cell *t, int type, struct tmcb_params *ps)
 {
-	b2b_tm_cback(client_htable, ps);
+	b2b_tm_cback(t, client_htable, ps);
 }
 
 #define FROM_TAG_LEN (MD5_LEN + 1 /* - */ + CRC16_LEN) /* length of FROM tags */
@@ -142,8 +143,12 @@ str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 	/* if the callid should be the same in more instances running at the same time (replication)*/
 	if(!replication_mode)
 	{
-		random_info.s = int2str(time(NULL), &random_info.len);
+		srand(get_uticks());
+		random_info.s = int2str(rand(), &random_info.len);
 	}
+
+	LM_DBG("Random info = %.*s\n", random_info.len, random_info.s);
+
 	dlg->id = core_hash(&from_tag, random_info.s?&random_info:0, HASH_SIZE);
 
 	/* callid must have the special format */
@@ -154,7 +159,8 @@ str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 		shm_free(dlg);
 		goto error;
 	}
-	LM_DBG("New client - key = %.*s\n", callid->len, callid->s);
+	LM_DBG("New client [%p] - key = %.*s, last method=%d\n", dlg,
+			callid->len, callid->s, dlg->last_method);
 
 	if(b2breq_complete_ehdr(ci->extra_headers, &ehdr, ci->body)< 0)
 	{
@@ -191,7 +197,7 @@ str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 
 	td.send_sock = ci->send_sock;
 
-	tmb.setlocalTholder(&dlg->tm_tran);
+	tmb.setlocalTholder(&dlg->uac_tran);
 	
 	/* send request */
 	result= tmb.t_request_within

@@ -45,11 +45,6 @@
 #include "pidf.h"
 #include "b2b_logic.h"
 
-#define CONT_COPY_P(buf, dest, source)\
-	dest.s= (char*)buf+ size;\
-	memcpy(dest.s, source->s, source->len);\
-	dest.len= source->len;\
-	size+= source->len;
 #define BUF_LEN  128
 
 int b2b_scenario_parse_uri(xmlNodePtr value_node, char* value_content,
