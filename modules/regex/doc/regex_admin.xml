@@ -324,7 +324,7 @@ if (pcre_match("$rU", "^user[1234]$$")) {  # Will be converted to "^user[1234]$"
 				</title>
 <programlisting format="linespecific">
 ...
-if (pcre_match_group("$rU", 2)) {
+if (pcre_match_group("$rU", "2")) {
     xlog("L_INFO", "RURI username matches group 2\n");
 }
 ...
