@@ -71,14 +71,14 @@ str* server_new(struct sip_msg* msg, b2b_notify_t b2b_cback,
 	dlg->b2b_cback = b2b_cback;
 
 	/* get the pointer to the tm transaction to store it the tuple record */
-	dlg->tm_tran = tmb.t_gett();
-	if(dlg->tm_tran == NULL || dlg->tm_tran == T_UNDEFINED)
+	dlg->uas_tran = tmb.t_gett();
+	if(dlg->uas_tran == NULL || dlg->uas_tran == T_UNDEFINED)
 	{
 		tmb.t_newtran(msg);
-		dlg->tm_tran = tmb.t_gett();
+		dlg->uas_tran = tmb.t_gett();
 	}
 	else
-		tmb.ref_cell(dlg->tm_tran);
+		tmb.ref_cell(dlg->uas_tran);
 	
 	tmb.t_reply(msg, 100, &reason);
 	tmb.t_setkr(REQ_FWDED);
@@ -137,6 +137,6 @@ error:
 
 void b2b_server_tm_cback( struct cell *t, int type, struct tmcb_params *ps)
 {
-	b2b_tm_cback(server_htable, ps);
+	b2b_tm_cback(t, server_htable, ps);
 }
 

@@ -45,7 +45,7 @@ void b2bl_print_clients_list(b2bl_tuple_t* tuple)
 		c = tuple->clients;
 		while(c)
 		{
-			LM_INFO("[%p]->\n", c);
+			LM_INFO("[%p] %.*s->\n", c, c->key.len, c->key.s);
 			c = c->next;
 		}
 		LM_INFO("0\n");
@@ -381,7 +381,6 @@ b2bl_tuple_t* b2bl_search_tuple_safe(unsigned int hash_index, unsigned int local
 	tuple = b2bl_htable[hash_index].first;
 	while(tuple && tuple->id != local_index)
 		tuple = tuple->next;
-
 
 	return tuple;
 }

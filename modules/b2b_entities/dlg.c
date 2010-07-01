@@ -163,6 +163,8 @@ str* b2b_htable_insert(b2b_table table, b2b_dlg_t* dlg, int hash_index, int src)
 		}
 		prev_it->next = dlg;
 		dlg->prev = prev_it;
+		if(!replication_mode)
+			dlg->id = prev_it->id + 1;
 	}
 	/* if an insert in server_htable -> copy the b2b_key in the to_tag */
 	b2b_key = b2b_generate_key(hash_index, dlg->id);
@@ -398,6 +400,7 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 	str from_tag;
 	str to_tag;
 	str callid;
+	struct cell* tm_tran;
 
 	/* check if a b2b request */
 	if (parse_headers(msg, HDR_EOH_F, 0) < 0)
@@ -597,8 +600,31 @@ logic_notify:
 	if(method_value != METHOD_CANCEL)
 	{
 		tmb.t_newtran(msg);
+		tm_tran = tmb.t_gett();
+		if(tm_tran && tm_tran!=T_UNDEFINED && tm_tran->ref_count > 1) /* this request was already processed */
+		{
+			LM_DBG("This transaction is already in process ( probably a retransmission)\n");
+			tmb.unref_cell(tm_tran);
+			lock_release(&table[hash_index].lock);
+			return 0;
+		}
+
 		if(method_value != METHOD_ACK)
-			dlg->tm_tran = tmb.t_gett();
+		{
+			if(dlg->uas_tran) /* there is another transaction for which no reply was sent out */
+			{
+				/* send reply */
+				LM_DBG("Received another request when the previous one was in process\n");
+				str text = str_init("Request Pending");
+				if(tmb.t_reply_with_body(dlg->uas_tran, 481, &text, 0, 0, &to_tag) < 0)
+				{
+					LM_ERR("failed to send reply with tm\n");
+				}
+				LM_DBG("Sent reply [481] and unreffed the cell %p\n", tm_tran);
+				tmb.unref_cell(tm_tran);
+			}
+			dlg->uas_tran = tmb.t_gett();
+		}
 
 		if(method_value == METHOD_INVITE) /* send provisional reply 100 Trying */
 		{
@@ -615,6 +641,7 @@ logic_notify:
 		if(param.s == NULL)
 		{
 			LM_ERR("No more private memory\n");
+			lock_release(&table[hash_index].lock);
 			return -1;
 		}
 		memcpy(param.s, dlg->param.s, dlg->param.len);
@@ -947,7 +974,7 @@ int b2b_send_reply(enum b2b_entity_type et, str* b2b_key, int code, str* text,
 		return 0;
 	}
 
-	tm_tran = dlg->tm_tran;
+	tm_tran = dlg->uas_tran;
 	if(code >= 200)
 	{
 		if(code < 300)
@@ -955,7 +982,7 @@ int b2b_send_reply(enum b2b_entity_type et, str* b2b_key, int code, str* text,
 		else
 			dlg->state= B2B_TERMINATED;
 		LM_DBG("Reseted transaction- send final reply [%p]\n", dlg);
-		dlg->tm_tran = NULL;
+		dlg->uas_tran = NULL;
 	}
 
 	if(tm_tran == NULL)
@@ -1065,8 +1092,11 @@ void b2b_delete_record(b2b_dlg_t* dlg, b2b_table* htable, unsigned int hash_inde
 
 	b2b_delete_legs(&dlg->legs);
 
-	if(dlg->tm_tran)
-		tmb.unref_cell(dlg->tm_tran);
+	if(dlg->uac_tran)
+		tmb.unref_cell(dlg->uac_tran);
+
+	if(dlg->uas_tran)
+		tmb.unref_cell(dlg->uas_tran);
 
 	shm_free(dlg);
 }
@@ -1169,7 +1199,9 @@ int b2b_send_indlg_req(b2b_dlg_t* dlg, enum b2b_entity_type et,
 	if(method_value == METHOD_INVITE)
 	{
 		dlg->last_invite_cseq = td->loc_seq.value +1;
-		tmb.setlocalTholder(&dlg->tm_tran);
+		if(dlg->uac_tran)
+			tmb.unref_cell(dlg->uac_tran);
+		tmb.setlocalTholder(&dlg->uac_tran);
 	}
 
 	td->T_flags=T_NO_AUTOACK_FLAG|T_PASS_PROVISIONAL_FLAG ;
@@ -1291,17 +1323,18 @@ int b2b_send_request(enum b2b_entity_type et, str* b2b_key, str* method,
 		}
 	}
 	dlg->last_method = method_value;
+	LM_DBG("[%p] last_method= %d\n",dlg, dlg->last_method);
 
 	/* send request */
 	if(method_value == METHOD_CANCEL)
 	{
 		if(dlg->state < B2B_CONFIRMED)
 		{
-			if(dlg->tm_tran)
+			if(dlg->uac_tran)
 			{
 				LM_DBG("send cancel request\n");
-				ret = tmb.t_cancel_uac(&ehdr, 0, dlg->tm_tran->hash_index,
-					dlg->tm_tran->label,0,0,0);
+				ret = tmb.t_cancel_uac(&ehdr, 0, dlg->uac_tran->hash_index,
+					dlg->uac_tran->label,0,0,0);
 			}
 			else
 			{
@@ -1491,7 +1524,7 @@ int b2b_send_req(b2b_dlg_t* dlg, dlg_leg_t* leg, str* method)
 	return result;
 }
 
-void b2b_tm_cback( b2b_table htable, struct tmcb_params *ps)
+void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 {
 	struct sip_msg * msg;
 	str* b2b_key;
@@ -1504,7 +1537,7 @@ void b2b_tm_cback( b2b_table htable, struct tmcb_params *ps)
 	struct to_body* pto, TO;
 	str to_tag, callid, from_tag;
 	struct hdr_field* require_hdr;
-	int method_id = -1;
+	unsigned int method_id = 0;
 
 	if(ps == NULL || ps->rpl == NULL)
 	{
@@ -1528,6 +1561,12 @@ void b2b_tm_cback( b2b_table htable, struct tmcb_params *ps)
 		return;
 	}
 
+	if(parse_method(t->method.s, t->method.s + t->method.len, &method_id) < 0)
+	{
+		LM_ERR("Failed to parse method [%.*s\n]\n", t->method.len, t->method.s);
+		return;
+	}
+
 	if(msg && msg!= FAKED_REPLY)
 	{
 		/* extract the method */
@@ -1542,7 +1581,6 @@ void b2b_tm_cback( b2b_table htable, struct tmcb_params *ps)
 			LM_ERR("failed to parse cseq header\n");
 			return;
 		}
-		method_id = get_cseq(msg)->method_id;
 	
 		if( msg->callid==NULL || msg->callid->body.s==NULL)
 		{
@@ -1584,7 +1622,6 @@ void b2b_tm_cback( b2b_table htable, struct tmcb_params *ps)
 		from_tag = ((struct to_body*)ps->req->from->parsed)->tag_value;
 		to_tag = ((struct to_body*)ps->req->to->parsed)->tag_value;
 		callid = ps->req->callid->body;
-		method_id = get_cseq(ps->req)->method_id;
 	} else {
 		to_tag.s = NULL;
 		to_tag.len = 0;
@@ -1620,6 +1657,16 @@ void b2b_tm_cback( b2b_table htable, struct tmcb_params *ps)
 		lock_release(&htable[hash_index].lock);
 		return;
 	}
+	/* if the transaction is no longer saved or is not the same as the one that the reply belongs to
+	 * exit*/
+	if(method_id==METHOD_INVITE && dlg->uac_tran != t)
+	{
+		LM_DBG("I don't care anymore about this transaction[%p] last_method=%d method_id=%d [%p]\n",
+				dlg, dlg->last_method, method_id, t);
+		lock_release(&htable[hash_index].lock);
+		return;
+	}
+
 	b2b_cback = dlg->b2b_cback;
 	if(dlg->param.s)
 	{
@@ -1651,10 +1698,10 @@ void b2b_tm_cback( b2b_table htable, struct tmcb_params *ps)
 			goto error;
 		}
 
-		if(dlg->tm_tran)
+		if(dlg->uac_tran)
 		{
-			tmb.unref_cell(dlg->tm_tran);
-			dlg->tm_tran = 0;
+			tmb.unref_cell(dlg->uac_tran);
+			dlg->uac_tran = 0;
 		}
 
 		/* delete all and add the confirmed leg */
@@ -1692,10 +1739,10 @@ void b2b_tm_cback( b2b_table htable, struct tmcb_params *ps)
 			goto done;
 		}
 
-		if(dlg->tm_tran && statuscode>= 200)
+		if(dlg->uac_tran && statuscode>= 200)
 		{
-			tmb.unref_cell(dlg->tm_tran);
-			dlg->tm_tran = 0;
+			tmb.unref_cell(dlg->uac_tran);
+			dlg->uac_tran = 0;
 		}
 
 		if(dlg->legs == NULL && 
@@ -1714,10 +1761,11 @@ void b2b_tm_cback( b2b_table htable, struct tmcb_params *ps)
 			new_dlg->id = dlg->id;
 			new_dlg->state = dlg->state;
 			new_dlg->b2b_cback = dlg->b2b_cback;
-			new_dlg->tm_tran = dlg->tm_tran;
+			new_dlg->uac_tran = dlg->uac_tran;
 			new_dlg->next = dlg->next;
 			new_dlg->prev = dlg->prev;
 			new_dlg->add_dlginfo = dlg->add_dlginfo;
+			new_dlg->last_method = dlg->last_method;
 
 //			dlg = b2b_search_htable(htable, hash_index, local_index);
 			if(dlg->prev)

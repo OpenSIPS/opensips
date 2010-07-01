@@ -105,7 +105,8 @@ typedef struct b2b_dlg
 	b2b_notify_t         b2b_cback;
 	b2b_add_dlginfo_t    add_dlginfo;
 	str                  param;
-	struct cell*         tm_tran;
+	struct cell*         uac_tran;
+	struct cell*         uas_tran;
 	struct cell*         cancel_tm_tran;
 	dlg_leg_t*           legs;
 	unsigned int         last_reply_code;
@@ -184,7 +185,7 @@ typedef void (*b2b_entity_delete_t)(enum b2b_entity_type et, str* b2b_key,
 b2b_dlg_t* b2b_search_htable(b2b_table table, 
 		unsigned int hash_index, unsigned int local_index);
 
-void b2b_tm_cback(b2b_table htable, struct tmcb_params *ps);
+void b2b_tm_cback(struct cell* t, b2b_table htable, struct tmcb_params *ps);
 
 void print_b2b_entities(void);
 
