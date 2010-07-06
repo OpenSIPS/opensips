@@ -16,8 +16,8 @@ Bogdan-Andrei Iancu
 
    Copyright © 2005 voice-system.ro
    Revision History
-   Revision $Revision$ $Date: 2008-11-08 04:38:31 +0200
-                              (Sat, 08 Nov 2008) $
+   Revision $Revision$ $Date: 2009-07-16 13:54:34 +0300
+                              (Thu, 16 Jul 2009) $
      __________________________________________________________
 
    Table of Contents
@@ -709,7 +709,7 @@ rtpproxy_stream2uas(prompt_name, count)
 ...
     if (is_method("INVITE")) {
         rtpproxy_offer();
-        if (detect_hold()) {
+        if ($rb=~ "0\.0\.0\.0") {
             rtpproxy_stream2uas("/var/rtpproxy/prompts/music_on_hold", "
 -1");
         } else {
