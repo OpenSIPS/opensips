@@ -116,6 +116,16 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 			val->rs.s = _tr_buffer;
 			val->rs.len = MD5_LEN;
 			break;
+    case TR_S_CRC32:
+      if(!(val->flags&PV_VAL_STR))
+              val->rs.s = int2str(val->ri, &val->rs.len);
+      unsigned int crc_val;
+      int length = 10;
+      crc32_uint(&val->rs,&crc_val);
+      val->rs.len = length;
+      val->rs.s = int2str(crc_val,&length);
+      val->flags = PV_VAL_STR;
+      break;
 		case TR_S_ENCODEHEXA:
 			if(!(val->flags&PV_VAL_STR))
 				val->rs.s = int2str(val->ri, &val->rs.len);
@@ -1182,6 +1192,9 @@ char* tr_parse_string(str* in, trans_t *t)
 		return p;
 	} else if(name.len==3 && strncasecmp(name.s, "md5", 3)==0) {
 		t->subtype = TR_S_MD5;
+		return p;
+	} else if(name.len==5 && strncasecmp(name.s, "crc32", 5)==0) {
+		t->subtype = TR_S_CRC32;
 		return p;
 	} else if(name.len==7 && strncasecmp(name.s, "tolower", 7)==0) {
 		t->subtype = TR_S_TOLOWER;
