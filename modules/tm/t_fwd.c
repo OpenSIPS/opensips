@@ -630,7 +630,10 @@ int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 	if (proxy == NULL) {
 		proxy = uri2proxy( GET_NEXT_HOP(p_msg), PROTO_NONE );
 		if (proxy != NULL) {
+			/* FIXME - this is a bit ugly and need some fixing - do
+			 the uri2proxy only if some callbacks are present */
 			msg_callback_process(p_msg, REQ_PRE_FORWARD, (void *)proxy);
+			free_proxy( proxy );
 			pkg_free(proxy);
 			proxy = NULL;
 		}
