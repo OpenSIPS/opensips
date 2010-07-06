@@ -611,16 +611,19 @@ logic_notify:
 
 		if(method_value != METHOD_ACK)
 		{
-			if(dlg->uas_tran) /* there is another transaction for which no reply was sent out */
+			if(dlg->uas_tran)
 			{
-				/* send reply */
-				LM_DBG("Received another request when the previous one was in process\n");
-				str text = str_init("Request Pending");
-				if(tmb.t_reply_with_body(dlg->uas_tran, 481, &text, 0, 0, &to_tag) < 0)
+				if(dlg->uas_tran->uas.request) /* there is another transaction for which no reply was sent out */
 				{
-					LM_ERR("failed to send reply with tm\n");
+					/* send reply */
+					LM_DBG("Received another request when the previous one was in process\n");
+					str text = str_init("Request Pending");
+					if(tmb.t_reply_with_body(dlg->uas_tran, 481, &text, 0, 0, &to_tag) < 0)
+					{
+						LM_ERR("failed to send reply with tm\n");
+					}
+					LM_DBG("Sent reply [481] and unreffed the cell %p\n", tm_tran);
 				}
-				LM_DBG("Sent reply [481] and unreffed the cell %p\n", tm_tran);
 				tmb.unref_cell(tm_tran);
 			}
 			dlg->uas_tran = tmb.t_gett();
