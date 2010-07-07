@@ -75,14 +75,14 @@ modparam("osp","service_type",0)
           <para>The Internet domain name for the peering server. An IP address may also be used, provided it is enclosed in square brackets such as [172.16.1.1].</para>
         </listitem>
         <listitem>
-          <para>An optional TCP port number for communicating with the peering server. If the port number is omitted, the OpenSIPS defaults to port 1080 (for HTTP) or port 1443 (for HTTP secured with SSL).</para>
+          <para>An optional TCP port number for communicating with the peering server. If the port number is omitted, the OpenSIPS defaults to port 5045 (for HTTP) or port 1443 (for HTTP secured with SSL).</para>
           <para>The uniform resource identifier for requests to the peering server. This component is not optional and must be included.</para>
         </listitem>
       </itemizedlist>
       <example>
         <title>Setting the OSP servers</title>
         <programlisting format="linespecific">
-modparam("osp","sp1_uri","http://osptestserver.transnexus.com:1080/osp")
+modparam("osp","sp1_uri","http://osptestserver.transnexus.com:5045/osp")
 modparam("osp","sp2_uri","https://[1.2.3.4]:1443/osp")
         </programlisting>
       </example>
