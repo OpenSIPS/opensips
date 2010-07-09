@@ -79,6 +79,7 @@ typedef struct param {
  * Hooks to well known parameters for contact class of parameters
  */
 struct contact_hooks {
+	struct param* last_param;/* last param  - MUST be first field */
 	struct param* expires;  /* expires parameter */
 	struct param* q;        /* q parameter */
 	struct param* methods;  /* methods parameter (RFC 3840) */
@@ -90,6 +91,7 @@ struct contact_hooks {
  * Hooks to well known parameter for URI class of parameters
  */
 struct uri_hooks {
+	struct param* last_param;/* last param  - MUST be first field */
 	struct param* transport; /* transport parameter */
 	struct param* lr;        /* lr parameter */
 	struct param* r2;        /* r2 parameter */
@@ -106,7 +108,7 @@ struct uri_hooks {
 typedef union param_hooks {
 	struct contact_hooks contact; /* Contact hooks */
 	struct uri_hooks uri;         /* URI hooks */
-	param_t *last_param;          /* last param */
+	struct param* last_param;     /* last param */
 } param_hooks_t;
 
 
