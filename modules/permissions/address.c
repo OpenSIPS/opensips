@@ -567,14 +567,15 @@ int check_src_addr_1(struct sip_msg* msg,
 
 
 
-int get_source_group(struct sip_msg* msg) {
+int get_source_group(struct sip_msg* msg, char *pvar) {
 	int group = -1;
 	struct in_addr in;
 	struct ip_addr *ip;
 	str str_ip;
+	pv_value_t pvt;
 
-    LM_DBG("Looking for <%x, %u> in address table\n",
-			       msg->rcv.src_ip.u.addr32[0], msg->rcv.src_port);
+	LM_DBG("Looking for <%x, %u> in address table\n",
+			msg->rcv.src_ip.u.addr32[0], msg->rcv.src_port);
 
 	in.s_addr = msg->rcv.src_ip.u.addr32[0];
 	str_ip.s = inet_ntoa(in);
@@ -588,16 +589,27 @@ int get_source_group(struct sip_msg* msg) {
 
 	LM_DBG("Found <%d>\n", group);
 
-	if (group != -1) return group;
+	if (group == -1) {
 
-	LM_DBG("Looking for <%x, %u> in subnet table\n",
+		LM_DBG("Looking for <%x, %u> in subnet table\n",
 			msg->rcv.src_ip.u.addr32[0], msg->rcv.src_port);
 
-	group = find_group_in_subnet_table(*subnet_table,
+		group = find_group_in_subnet_table(*subnet_table,
 			ip,
 			msg->rcv.src_port);
 
-	LM_DBG("Found <%d>\n", group);
+		LM_DBG("Found <%d>\n", group);
+	}
 
-	return group;
+	pvt.flags = PV_VAL_INT;
+	pvt.rs.s = NULL;
+	pvt.rs.len = 0;
+	pvt.ri = group;
+
+	if (pv_set_value(msg, (pv_spec_t *)pvar, (int)EQ_T, &pvt) < 0) {
+		LM_ERR("setting of pvar failed\n");
+		return -1;
+	}
+
+	return 1;
 }
