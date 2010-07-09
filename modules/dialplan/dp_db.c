@@ -51,6 +51,10 @@ static db_func_t dp_dbf;
 
 #define GET_STR_VALUE(_res, _values, _index)\
 	do{\
+		if ( VAL_NULL((_values)+ (_index)) ) { \
+			LM_ERR(" values %d is NULL - not allowed\n",_index);\
+			goto err;\
+		} \
 		(_res).s = VAL_STR((_values)+ (_index)).s;\
 		(_res).len = strlen(VAL_STR((_values)+ (_index)).s);\
 	}while(0);
@@ -251,8 +255,10 @@ int dp_load_db(void)
 				continue;
 			}
 
-			if(add_rule2hash(rule , *next_idx) != 0)
+			if(add_rule2hash(rule , *next_idx) != 0) {
+				LM_ERR("add_rule2hash failed\n");
 				goto err2;
+			}
 		}
 
 		if (DB_CAPABILITY(dp_dbf, DB_CAP_FETCH)) {
@@ -325,8 +331,6 @@ dpl_node_t * build_rule(db_val_t * values)
 	int matchop;
 	int namecount;
 
-	
-
 	matchop = VAL_INT(values+2);
 
 	if((matchop != REGEX_OP) && (matchop!=EQUAL_OP)){
@@ -350,42 +354,41 @@ dpl_node_t * build_rule(db_val_t * values)
 		}
 	}
 
-	LM_DBG("build_rule\n");
-	GET_STR_VALUE(repl_exp, values, 6);
-	if(repl_exp.len && repl_exp.s){
-		repl_comp = repl_exp_parse(repl_exp);
-		if(!repl_comp){
-			LM_ERR("failed to compile replacing expression %.*s\n",
-				repl_exp.len, repl_exp.s);
-			goto err;
-		}
-	}
-
+	LM_DBG("building subst rule\n");
 	GET_STR_VALUE(subst_exp, values, 5);
 	if(subst_exp.s && subst_exp.len){
-
-		subst_comp = wrap_pcre_compile(	subst_exp.s);
-
+		/* subst regexp */
+		subst_comp = wrap_pcre_compile(subst_exp.s);
 		if(subst_comp == NULL){
 			LM_ERR("failed to compile subst expression\n");
 			goto err;
 		}
 
-	}
+		/* replace exp */
+		GET_STR_VALUE(repl_exp, values, 6);
+		if(repl_exp.len && repl_exp.s){
+			repl_comp = repl_exp_parse(repl_exp);
+			if(!repl_comp){
+				LM_ERR("failed to compile replacing expression %.*s\n",
+					repl_exp.len, repl_exp.s);
+				goto err;
+			}
+		}
 
-	pcre_fullinfo(
-		subst_comp, /* the compiled pattern */
-		NULL, /* no extra data - we didn't study the pattern */
-		PCRE_INFO_CAPTURECOUNT, /* number of named substrings */
-		&namecount); /* where to put the answer */
+		pcre_fullinfo(
+			subst_comp, /* the compiled pattern */
+			NULL, /* no extra data - we didn't study the pattern */
+			PCRE_INFO_CAPTURECOUNT, /* number of named substrings */
+			&namecount); /* where to put the answer */
 
-	if(repl_comp)
-		LM_DBG("references:%d , max:%d\n",namecount,repl_comp->max_pmatch);
+		LM_DBG("references:%d , max:%d\n",namecount,
+			repl_comp?repl_comp->max_pmatch:0);
 
-	if ( repl_comp && (namecount<repl_comp->max_pmatch) &&
-		repl_comp->max_pmatch != 0){
-		LM_ERR("repl_exp uses a non existing subexpression\n");
-			goto err;
+		if ( (repl_comp!=NULL) && (namecount<repl_comp->max_pmatch) &&
+		(repl_comp->max_pmatch!=0) ){
+			LM_ERR("repl_exp uses a non existing subexpression\n");
+				goto err;
+		}
 	}
 
 	new_rule = (dpl_node_t *)shm_malloc(sizeof(dpl_node_t));
@@ -398,11 +401,12 @@ dpl_node_t * build_rule(db_val_t * values)
 	if(str_to_shm(match_exp, &new_rule->match_exp)!=0)
 		goto err;
 
-	if(str_to_shm(subst_exp, &new_rule->subst_exp)!=0)
-		goto err;
-
-	if(str_to_shm(repl_exp, &new_rule->repl_exp)!=0)
-		goto err;
+	if (subst_comp) {
+		if(str_to_shm(subst_exp, &new_rule->subst_exp)!=0)
+			goto err;
+		if(str_to_shm(repl_exp, &new_rule->repl_exp)!=0)
+			goto err;
+	}
 
 	/*set the rest of the rule fields*/
 	new_rule->dpid		=	VAL_INT(values);
@@ -416,20 +420,18 @@ dpl_node_t * build_rule(db_val_t * values)
 	LM_DBG("attrs are %.*s\n", 
 		new_rule->attrs.len, new_rule->attrs.s);
 
-	if(match_comp){
+	if (match_comp) {
 		new_rule->match_comp = match_comp;
 	}
 
-	if(subst_comp){
+	if (subst_comp) {
 		new_rule->subst_comp = subst_comp;
+		new_rule->repl_comp  = repl_comp;
 	}
-
-	new_rule->repl_comp  = repl_comp;
 
 	return new_rule;
 
 err:
-	if(match_comp)	wrap_pcre_free(match_comp);
 	if(subst_comp)	wrap_pcre_free(subst_comp);
 	if(repl_comp)	repl_expr_free(repl_comp);
 	if(new_rule)	destroy_rule(new_rule);
