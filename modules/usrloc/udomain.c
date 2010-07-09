@@ -704,7 +704,7 @@ int mem_timer_udomain(udomain_t* _d)
 			if (ptr->contacts == 0)
 			{
 				iterator_delete(&prev);
-				free_urecord(ptr);
+				mem_delete_urecord(_d,ptr);
 			}
 		}
 		
