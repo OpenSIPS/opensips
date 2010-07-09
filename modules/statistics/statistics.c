@@ -47,6 +47,12 @@ static int w_update_stat(struct sip_msg* msg, char* stat, char* n);
 static int w_reset_stat(struct sip_msg* msg, char* stat, char* foo);
 static int fixup_stat(void** param, int param_no);
 
+int pv_parse_name(pv_spec_p sp, str *in);
+int pv_set_stat(struct sip_msg* msg, pv_param_t *param, int op,
+													pv_value_t *val);
+int pv_get_stat(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res);
+
+
 struct stat_or_pv {
 	stat_var   *stat;
 	pv_spec_t  *pv;
@@ -70,20 +76,28 @@ static param_export_t mod_params[]={
 };
 
 
+static pv_export_t mod_items[] = {
+	{ {"stat",     sizeof("stat")-1},      1100, pv_get_stat,
+		pv_set_stat,    pv_parse_name, 0, 0, 0},
+	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
+};
+
+
+
 struct module_exports exports= {
-	"statistics", /* module's name */
-	MODULE_VERSION,
-	DEFAULT_DLFLAGS, /* dlopen flags */
-	cmds,         /* exported functions */
-	mod_params,   /* param exports */
-	0,            /* exported statistics */
-	0,            /* exported MI functions */
-	0,            /* exported pseudo-variables */
-	0,            /* extra processes */
-	mod_init,     /* module initialization function */
-	0,            /* reply processing function */
-	0,            /* module destroy function */
-	0             /* per-child init function */
+	"statistics",		/* module's name */
+	MODULE_VERSION,	
+	DEFAULT_DLFLAGS,	/* dlopen flags */
+	cmds,				/* exported functions */
+	mod_params,			/* param exports */
+	0,					/* exported statistics */
+	0,					/* exported MI functions */
+	mod_items,			/* exported pseudo-variables */
+	0,					/* extra processes */
+	mod_init,			/* module initialization function */
+	0,					/* reply processing function */
+	0,					/* module destroy function */
+	0					/* per-child init function */
 };
 
 
@@ -223,4 +237,108 @@ static int w_reset_stat(struct sip_msg *msg, char* stat_p, char *foo)
 	return 1;
 }
 
+stat_var* get_stat_p(pv_param_t *param)
+{
+	stat_var *stat = NULL;
 
+	if (param==NULL || param->pvn.u.isname.name.s.s == NULL)
+	{
+		LM_CRIT("BUG - bad parameters\n");
+		return NULL;
+	}
+
+	if (param->pvn.type == PV_NAME_INTSTR)
+	{
+		if (param->pvn.u.isname.type == AVP_NAME_STR)
+		{
+			/* if this is the first call of the function */
+			stat = get_stat( &param->pvn.u.isname.name.s );
+
+			if (stat == NULL)
+			{
+				param->pvn.u.dname = NULL;
+				param->pvn.u.isname.type = AVP_VAL_STR;
+				LM_ERR("%.*s doesn't exist\n", param->pvn.u.isname.name.s.len,
+						param->pvn.u.isname.name.s.s );
+				return NULL;
+			}
+
+			param->pvn.u.dname = stat;
+			param->pvn.type = PV_NAME_PVAR;
+		}
+		else
+		if (param->pvn.u.isname.type == AVP_VAL_STR)
+		{
+			/* if stat wasn't found */
+			LM_ERR("%.*s doesn't exist\n", param->pvn.u.isname.name.s.len,
+					param->pvn.u.isname.name.s.s );
+			return NULL;
+		}
+		else
+		{
+			LM_ERR("BUG - error in getting stat value\n");
+			return NULL;
+		}
+	}
+	else
+	if (param->pvn.type == PV_NAME_PVAR)
+	{
+		/* if stat was already found */
+		stat = (stat_var *)param->pvn.u.dname;
+
+		if (stat == NULL)
+		{
+			LM_CRIT("BUG - error in setting stat value\n");
+			return NULL;
+		}
+	}
+	else
+	{
+		LM_ERR("BUG - error in getting stat value\n");
+		return NULL;
+	}
+
+	return stat;
+}
+
+int pv_parse_name(pv_spec_p sp, str *in)
+{
+	
+	sp->pvp.pvn.type = PV_NAME_INTSTR;
+	sp->pvp.pvn.u.isname.type = AVP_NAME_STR;
+	sp->pvp.pvn.u.isname.name.s = *in;
+
+	return 0;
+}
+
+int pv_set_stat(struct sip_msg* msg, pv_param_t *param, int op,
+													pv_value_t *val)
+{
+	stat_var *stat = get_stat_p(param);
+
+	if (stat == NULL)
+		return -1;
+
+	if (val != 0)
+		LM_WARN("non-zero value - setting value to 0\n");
+	
+	reset_stat( stat );
+
+	return 0;
+}
+
+
+int pv_get_stat(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res)
+{
+
+	stat_var *stat = get_stat_p(param);
+
+	if (stat == NULL)
+		return -1;
+
+	res->ri = get_stat_val( stat );
+	res->rs.s = int2str( (unsigned long)res->ri, &res->rs.len);
+	res->flags = PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT;
+
+	return 0;
+}
