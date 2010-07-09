@@ -73,6 +73,7 @@
 #include "parser/parse_from.h"
 #include "parser/parse_to.h"
 #include "mem/mem.h"
+#include "xlog.h"
 
 
 /* main routing script table  */
@@ -252,6 +253,7 @@ static int fix_actions(struct action* a)
 	int i;
 	str s;
 	pv_elem_t *model=NULL;
+	xl_level_p xlp;
 
 	if (a==0){
 		LM_CRIT("null pointer\n");
@@ -571,6 +573,89 @@ static int fix_actions(struct action* a)
 					t->elem[2].u.data = (void*)model;
 				}
 
+				break;
+			case XDBG_T:
+			case XLOG_T:
+				s.s = (char*)t->elem[1].u.data;
+				if (s.s == NULL)
+				{
+					/* commands have only one parameter */
+					s.s = (char *)t->elem[0].u.data;
+					s.len = strlen(s.s);
+					if(s.len==0)
+					{
+						LM_ERR("param is empty string!\n");
+						return E_CFG;
+					}
+
+					if(pv_parse_format(&s ,&model) || model==NULL)
+					{
+						LM_ERR("wrong format [%s] for value param!\n", s.s);
+						ret=E_BUG;
+						goto error;
+					}
+					
+					t->elem[0].u.data = (void*)model;
+					t->elem[0].type = SCRIPTVAR_ELEM_ST;
+				}
+				else
+				{
+					/* there are two parameters */
+					s.s = (char *)t->elem[0].u.data;
+					s.len = strlen(s.s);
+					if (s.len == 0)
+					{
+						LM_ERR("param is empty string\n");
+						return E_CFG;
+					}
+					xlp = (xl_level_p)pkg_malloc(sizeof(xl_level_t));
+					if(xlp == NULL)
+					{
+						LM_ERR("no more memory\n");
+						return E_UNSPEC;
+					}
+
+					memset(xlp, 0, sizeof(xl_level_t));
+					if(s.s[0]==PV_MARKER)
+					{
+						xlp->type = 1;
+						if(pv_parse_spec(&s, &xlp->v.sp)==NULL)
+						{
+							LM_ERR("invalid level param\n");
+							return E_UNSPEC;
+						}
+					} 
+					else 
+					{
+						xlp->type = 0;
+						switch(s.s[2])
+						{
+							case 'A': xlp->v.level = L_ALERT; break;
+							case 'C': xlp->v.level = L_CRIT; break;
+							case 'E': xlp->v.level = L_ERR; break;
+							case 'W': xlp->v.level = L_WARN; break;
+							case 'N': xlp->v.level = L_NOTICE; break;
+							case 'I': xlp->v.level = L_INFO; break;
+							case 'D': xlp->v.level = L_DBG; break;
+							default:
+								LM_ERR("unknown log level\n");
+								return E_UNSPEC;
+						}
+					}
+					t->elem[0].u.data = xlp;
+
+					s.s = t->elem[1].u.data;
+					s.len = strlen(s.s);
+					if (pv_parse_format(&s, &model) || model == NULL)
+					{
+						LM_ERR("wrong fomat [%s] for value param\n",s.s);
+						ret=E_BUG;
+						goto error;
+					}
+
+					t->elem[1].u.data = model;
+					t->elem[1].type = SCRIPTVAR_ELEM_ST;
+				}
 				break;
 		}
 	}
