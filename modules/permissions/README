@@ -75,7 +75,7 @@ Irina-Maria Stanescu
               1.4.8. check_source_address(group_id [, context_info
                       [, pattern]])
 
-              1.4.9. get_source_group()
+              1.4.9. get_source_group(pvar)
 
         1.5. Exported MI Functions
 
@@ -701,12 +701,12 @@ if (check_source_address("4","$avp(i:9)")) {
 }
 ...
 
-1.4.9.  get_source_group()
+1.4.9.  get_source_group(pvar)
 
    Checks if an entry with the source ip/port/protocol is found in
    cached address or subnet table in any group. If yes, returns
-   that group. If not returns -1. Port value 0 in cached address
-   and subnet table matches any port.
+   that group in the pvar parameter. If not returns -1. Port value
+   0 in cached address and subnet table matches any port.
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
@@ -714,9 +714,9 @@ if (check_source_address("4","$avp(i:9)")) {
 
 ...
 
-$var(group) = get_source_group();
-if ($var(group) != -1) {
+if ( get_source_group("$var(group)") ) {
    # do something with $var(group)
+   xlog("group is $var(group)\n");
 };
 ...
 
