@@ -601,7 +601,7 @@ int get_source_group(struct sip_msg* msg, char *pvar) {
 		LM_DBG("Found <%d>\n", group);
 	}
 
-	pvt.flags = PV_VAL_INT;
+	pvt.flags = PV_VAL_INT|PV_TYPE_INT;
 	pvt.rs.s = NULL;
 	pvt.rs.len = 0;
 	pvt.ri = group;
