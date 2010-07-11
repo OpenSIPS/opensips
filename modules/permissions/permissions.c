@@ -131,7 +131,7 @@ static cmd_export_t cmds[] = {
 	{"check_source_address" , (cmd_function) check_src_addr_3, 3,
 		check_src_addr_fixup, 0,
 		REQUEST_ROUTE| FAILURE_ROUTE|LOCAL_ROUTE},
-	{"get_source_group", (cmd_function) get_source_group, 0,
+	{"get_source_group", (cmd_function) get_source_group, 1,
 		fixup_pvar_null, 0,
 		REQUEST_ROUTE | FAILURE_ROUTE | LOCAL_ROUTE },
 	{"allow_routing",  (cmd_function)allow_routing_0,  0,
