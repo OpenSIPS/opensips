@@ -35,8 +35,8 @@
 #include <fcntl.h>
 #include <time.h>
 
-#include "../../db/db.h"
 #include "../../sr_module.h"
+#include "../../db/db.h"
 #include "../../dprint.h"
 #include "../../error.h"
 #include "../../ut.h"

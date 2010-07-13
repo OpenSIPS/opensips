@@ -1631,18 +1631,14 @@ int contains_presence(str* pres_uri) {
 		n_query_cols++;
 
 		result_cols[n_result_cols++] = &str_body_col;
-	
-		if (pa_dbf.use_table(pa_db, &presentity_table) < 0) 
-		{
-			LM_ERR("in use_table\n");
-			goto done;
-		}
+
+		pa_dbf.use_table(pa_db, &presentity_table);
+
 		if (pa_dbf.query (pa_db, query_cols, 0, query_vals,
-			 result_cols, n_query_cols, n_result_cols, &query_str ,  &result) < 0) 
+			 result_cols, n_query_cols, n_result_cols, &query_str, &result)<0)
 		{
-			LM_ERR("failed to query %.*s table\n", presentity_table.len, presentity_table.s);
-			if(result)
-				pa_dbf.free_result(pa_db, result);
+			LM_ERR("failed to query %.*s table\n",
+				presentity_table.len, presentity_table.s);
 			goto done;
 		}
 		if(result== NULL)
@@ -1650,10 +1646,8 @@ int contains_presence(str* pres_uri) {
 		if (result->n<=0 )
 		{
 			LM_DBG("no published record found in database\n");
-			pa_dbf.free_result(pa_db, result);
 			goto done;
 		}
-		pa_dbf.free_result(pa_db, result);
 		ret = 1;
 	}
 done:
