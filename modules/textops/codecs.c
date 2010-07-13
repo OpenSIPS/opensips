@@ -93,6 +93,8 @@ static int do_for_all_streams(struct sip_msg* msg, str* str1,str * str2,
 	struct sdp_session_cell * cur_session;
 	int count, rez;
 
+	if (msg==NULL || msg==FAKED_REPLY)
+		return -1;
 
 	if(parse_sdp(msg))
 	{
