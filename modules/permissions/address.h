@@ -69,7 +69,7 @@ int reload_address_table(void);
  */
 void clean_address(void);
 
-int get_source_group(struct sip_msg *msg);
+int get_source_group(struct sip_msg *msg, char *pvar);
 
 /* Checks based on avp's received as parameter */
 int check_addr_4(struct sip_msg *msg,
