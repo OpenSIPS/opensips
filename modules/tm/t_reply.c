@@ -78,6 +78,7 @@
 #include "../../data_lump.h"
 #include "../../data_lump_rpl.h"
 #include "../../usr_avp.h"
+#include "../../receive.h"
 
 #include "h_table.h"
 #include "t_hooks.h"
@@ -519,7 +520,7 @@ static inline int fake_req(struct sip_msg *faked_req, struct sip_msg *shm_msg,
 
 	/* if we set msg_id to something different from current's message
 	 * id, the first t_fork will properly clean new branch URIs */
-	faked_req->id=shm_msg->id-1;
+	faked_req->id = get_next_msg_no();
 	/* msg->parsed_uri_ok must be reset since msg_parsed_uri is
 	 * not cloned (and cannot be cloned) */
 	faked_req->parsed_uri_ok = 0;
