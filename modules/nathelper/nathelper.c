@@ -1630,49 +1630,50 @@ fix_nated_contact_f(struct sip_msg* msg, char* str1, char* str2)
 	int offset, len, len1;
 	char *cp, *buf, temp[2];
 	contact_t *c;
+	struct hdr_field *hdr;
 	struct lump *anchor;
 	struct sip_uri uri;
 	str hostport;
 
-	if (get_contact_uri(msg, &uri, &c) == -1)
-		return -1;
-	if ((c->uri.s < msg->buf) || (c->uri.s > (msg->buf + msg->len))) {
-		LM_ERR("you can't call fix_nated_contact twice, "
-		    "check your config!\n");
-		return -1;
-	}
+	for ( c=NULL,hdr=NULL ; get_contact_uri(msg, &uri, &c, &hdr)==0 ; ) {
+		if ((c->uri.s < msg->buf) || (c->uri.s > (msg->buf + msg->len))) {
+			LM_ERR("you can't call fix_nated_contact twice, "
+			    "check your config!\n");
+			return -1;
+		}
 
-	offset = c->uri.s - msg->buf;
-	anchor = del_lump(msg, offset, c->uri.len, HDR_CONTACT_T);
-	if (anchor == 0)
-		return -1;
+		offset = c->uri.s - msg->buf;
+		anchor = del_lump(msg, offset, c->uri.len, HDR_CONTACT_T);
+		if (anchor == 0)
+			return -1;
 
-	hostport = uri.host;
-	if (uri.port.len > 0)
-		hostport.len = uri.port.s + uri.port.len - uri.host.s;
+		hostport = uri.host;
+		if (uri.port.len > 0)
+			hostport.len = uri.port.s + uri.port.len - uri.host.s;
 
-	cp = ip_addr2a(&msg->rcv.src_ip);
-	len = c->uri.len + strlen(cp) + 6 /* :port */ - hostport.len + 1;
-	buf = pkg_malloc(len);
-	if (buf == NULL) {
-		LM_ERR("out of pkg memory\n");
-		return -1;
+		cp = ip_addr2a(&msg->rcv.src_ip);
+		len = c->uri.len + strlen(cp) + 6 /* :port */ - hostport.len + 1;
+		buf = pkg_malloc(len);
+		if (buf == NULL) {
+			LM_ERR("out of pkg memory\n");
+			return -1;
+		}
+		temp[0] = hostport.s[0];
+		temp[1] = c->uri.s[c->uri.len];
+		c->uri.s[c->uri.len] = hostport.s[0] = '\0';
+		len1 = snprintf(buf, len, "%s%s:%d%s", c->uri.s, cp, msg->rcv.src_port,
+		    hostport.s + hostport.len);
+		if (len1 < len)
+			len = len1;
+		hostport.s[0] = temp[0];
+		c->uri.s[c->uri.len] = temp[1];
+		if (insert_new_lump_after(anchor, buf, len, HDR_CONTACT_T) == 0) {
+			pkg_free(buf);
+			return -1;
+		}
+		c->uri.s = buf;
+		c->uri.len = len;
 	}
-	temp[0] = hostport.s[0];
-	temp[1] = c->uri.s[c->uri.len];
-	c->uri.s[c->uri.len] = hostport.s[0] = '\0';
-	len1 = snprintf(buf, len, "%s%s:%d%s", c->uri.s, cp, msg->rcv.src_port,
-	    hostport.s + hostport.len);
-	if (len1 < len)
-		len = len1;
-	hostport.s[0] = temp[0];
-	c->uri.s[c->uri.len] = temp[1];
-	if (insert_new_lump_after(anchor, buf, len, HDR_CONTACT_T) == 0) {
-		pkg_free(buf);
-		return -1;
-	}
-	c->uri.s = buf;
-	c->uri.len = len;
 
 	return 1;
 }
@@ -1715,12 +1716,13 @@ static int
 contact_1918(struct sip_msg* msg)
 {
 	struct sip_uri uri;
+	struct hdr_field *hdr;
 	contact_t* c;
 
-	if (get_contact_uri(msg, &uri, &c) == -1)
-		return -1;
+	for( hdr=NULL,c=NULL ; get_contact_uri(msg, &uri, &c, &hdr)==0 ; )
+		if ( is1918addr(&(uri.host)) == 1) return 1;
 
-	return (is1918addr(&(uri.host)) == 1) ? 1 : 0;
+	return 0;
 }
 
 /*
@@ -1764,12 +1766,14 @@ contact_rcv(struct sip_msg* msg)
 {
 	struct sip_uri uri;
 	contact_t* c;
+	struct hdr_field *hdr;
 
-	if (get_contact_uri(msg, &uri, &c) == -1)
-		return -1;
+	for( hdr=NULL,c=NULL ; get_contact_uri(msg, &uri, &c, &hdr)==0 ; )
+		if ( check_ip_address(&msg->rcv.src_ip,
+		&uri.host, uri.port_no, uri.proto, received_dns)!=0 ) return 1;
 
-	return check_ip_address(&msg->rcv.src_ip,
-			&uri.host, uri.port_no, uri.proto, received_dns);
+	return 0;
+
 }
 
 
