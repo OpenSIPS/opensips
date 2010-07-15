@@ -191,7 +191,7 @@ inline struct multi_body * get_all_bodies(struct sip_msg * msg)
 
 	start = get_body(msg);
 
-	if (start == NULL)
+	if (start == NULL || msg->content_length == NULL )
 		return 0;
 
 	if (msg->buf + msg->len - start < get_content_length(msg))
