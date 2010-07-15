@@ -165,6 +165,10 @@ UNUSE_BLACKLIST	"unuse_blacklist"
 CACHE_STORE		"cache_store"
 CACHE_FETCH		"cache_fetch"
 CACHE_REMOVE	"cache_remove"
+XDBG			"xdbg"
+XLOG_BUF_SIZE	"xlog_buf_size"
+XLOG_FORCE_COLOR	"xlog_force_color"
+XLOG			"xlog"
 
 /*ACTION LVALUES*/
 URIHOST			"uri:host"
@@ -446,6 +450,14 @@ WHITESPACE	[ \t\r\n]
 <INITIAL>{CACHE_REMOVE}		{	count(); yylval.strval=yytext;
 									return CACHE_REMOVE; }
 
+<INITIAL>{XDBG}				{	count(); yylval.strval=yytext;
+									return XDBG; }
+<INITIAL>{XLOG}				{	count(); yylval.strval=yytext;
+									return XLOG; }
+<INITIAL>{XLOG_BUF_SIZE}	{	count(); yylval.strval=yytext;
+									return XLOG_BUF_SIZE; }
+<INITIAL>{XLOG_FORCE_COLOR}	{	count(); yylval.strval=yytext;
+									return XLOG_FORCE_COLOR;}
 
 <INITIAL>{MAX_LEN}	{ count(); yylval.strval=yytext; return MAX_LEN; }
 

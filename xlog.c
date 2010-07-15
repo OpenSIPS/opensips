@@ -1,5 +1,5 @@
 /**
- * $Id$
+ * $Id: xlog.c 6153 2009-09-17 16:27:34Z anca_vamanu $
  *
  * Copyright (C) 2001-2003 FhG Fokus
  *
@@ -30,102 +30,24 @@
 #include <time.h>
 #include <ctype.h>
 
-#include "../../sr_module.h"
-#include "../../dprint.h"
-#include "../../error.h"
-#include "../../mem/mem.h"
+#include "sr_module.h"
+#include "dprint.h"
+#include "error.h"
+#include "mem/mem.h"
+#include "xlog.h"
 
-#include "xl_lib.h"
-
-#include "../../pvar.h"
-
-
+#include "pvar.h"
 
 
 char *log_buf = NULL;
 
-/** parameters */
-int buf_size=4096;
-int force_color=0;
+int xlog_buf_size = 4096;
+int xlog_force_color = 0;
 
-/** module functions */
-static int mod_init(void);
-static int child_init(int);
-
-static int xlog_1(struct sip_msg*, char*, char*);
-static int xlog_2(struct sip_msg*, char*, char*);
-static int xdbg(struct sip_msg*, char*, char*);
-
-static int xlog_fixup(void** param, int param_no); 
-static int xdbg_fixup(void** param, int param_no); 
-
-void destroy(void);
-
-int pv_parse_color_name(pv_spec_p sp, str *in);
-static int pv_get_color(struct sip_msg *msg, pv_param_t *param, 
-		pv_value_t *res);
-
-typedef struct _xl_level
-{
-	int type;
-	union {
-		long level;
-		pv_spec_t sp;
-	} v;
-} xl_level_t, *xl_level_p;
-
-static pv_export_t mod_items[] = {
-	{ {"C", sizeof("C")-1}, 101, pv_get_color, 0,
-		pv_parse_color_name, 0, 0, 0 },
-	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
-};
-
-
-static cmd_export_t cmds[]={
-	{"xlog",  (cmd_function)xlog_1,  1, xdbg_fixup, 0, 
-		TIMER_ROUTE | STARTUP_ROUTE | REQUEST_ROUTE | FAILURE_ROUTE |
-		ONREPLY_ROUTE | BRANCH_ROUTE | ERROR_ROUTE | LOCAL_ROUTE},
-	{"xlog",  (cmd_function)xlog_2,  2, xlog_fixup, 0, 
-		REQUEST_ROUTE | FAILURE_ROUTE | TIMER_ROUTE | STARTUP_ROUTE |
-		ONREPLY_ROUTE | BRANCH_ROUTE | ERROR_ROUTE | LOCAL_ROUTE},
-	{"xdbg",  (cmd_function)xdbg,    1, xdbg_fixup, 0, 
-		REQUEST_ROUTE | FAILURE_ROUTE | TIMER_ROUTE | STARTUP_ROUTE | 
-		ONREPLY_ROUTE | BRANCH_ROUTE | ERROR_ROUTE | LOCAL_ROUTE},
-	{0,0,0,0,0,0}
-};
-
-
-static param_export_t params[]={
-	{"buf_size",     INT_PARAM, &buf_size},
-	{"force_color",  INT_PARAM, &force_color},
-	{0,0,0}
-};
-
-
-/** module exports */
-struct module_exports exports= {
-	"xlog",
-	MODULE_VERSION,
-	DEFAULT_DLFLAGS, /* dlopen flags */
-	cmds,
-	params,
-	0,          /* exported statistics */
-	0  ,        /* exported MI functions */
-	mod_items,  /* exported pseudo-variables */
-	0,          /* extra processes */
-	mod_init,   /* module initialization function */
-	(response_function) 0,
-	(destroy_function) destroy,
-	child_init  /* per-child init function */
-};
-
-/**
- * init module function
- */
-static int mod_init(void)
+static int buf_init(void)
 {
 	LM_INFO("initializing...\n");
-	log_buf = (char*)pkg_malloc((buf_size+1)*sizeof(char));
+	log_buf = (char*)pkg_malloc((xlog_buf_size+1)*sizeof(char));
 	if(log_buf==NULL)
 	{
 		LM_ERR("no pkg memory left\n");
@@ -134,38 +56,19 @@ static int mod_init(void)
 	return 0;
 }
 
-/**
- * Initialize children
- */
-static int child_init(int rank)
+int xl_print_log(struct sip_msg* msg, pv_elem_p list, int *len)
 {
-	LM_DBG("init_child [%d]  pid [%d]\n", rank, getpid());
-	return 0;
+	if (log_buf == NULL)
+		if (buf_init())
+		{
+			LM_ERR("Cannot print message\n");
+			return -1;
+		}
+	return pv_printf(msg, list, log_buf, len);
 }
 
-/**
- */
-static int xlog_1(struct sip_msg* msg, char* frm, char* str2)
-{
-	int log_len;
 
-	if(!is_printable(L_ERR))
-		return 1;
-
-	log_len = buf_size;
-
-	if(xl_print_log(msg, (pv_elem_t*)frm, log_buf, &log_len)<0)
-		return -1;
-
-	/* log_buf[log_len] = '\0'; */
-	LM_GEN1(L_ERR, "%.*s", log_len, log_buf);
-
-	return 1;
-}
-
-/**
- */
-static int xlog_2(struct sip_msg* msg, char* lev, char* frm)
+int xlog_2(struct sip_msg* msg, char* lev, char* frm)
 {
 	int log_len;
 	long level;
@@ -189,9 +92,9 @@ static int xlog_2(struct sip_msg* msg, char* lev, char* frm)
 	if(!is_printable((int)level))
 		return 1;
 
-	log_len = buf_size;
+	log_len = xlog_buf_size;
 
-	if(xl_print_log(msg, (pv_elem_t*)frm, log_buf, &log_len)<0)
+	if(xl_print_log(msg, (pv_elem_t*)frm, &log_len)<0)
 		return -1;
 
 	/* log_buf[log_len] = '\0'; */
@@ -200,18 +103,37 @@ static int xlog_2(struct sip_msg* msg, char* lev, char* frm)
 	return 1;
 }
 
+
+int xlog_1(struct sip_msg* msg, char* frm, char* str2)
+{
+	int log_len;
+
+	if(!is_printable(L_ERR))
+		return 1;
+
+	log_len = xlog_buf_size;
+
+	if(xl_print_log(msg, (pv_elem_t*)frm, &log_len)<0)
+		return -1;
+
+	/* log_buf[log_len] = '\0'; */
+	LM_GEN1(L_ERR, "%.*s", log_len, log_buf);
+
+	return 1;
+}
+
 /**
  */
-static int xdbg(struct sip_msg* msg, char* frm, char* str2)
+int xdbg(struct sip_msg* msg, char* frm, char* str2)
 {
 	int log_len;
 
 	if(!is_printable(L_DBG))
 		return 1;
 
-	log_len = buf_size;
+	log_len = xlog_buf_size;
 
-	if(xl_print_log(msg, (pv_elem_t*)frm, log_buf, &log_len)<0)
+	if(xl_print_log(msg, (pv_elem_t*)frm, &log_len)<0)
 		return -1;
 
 	/* log_buf[log_len] = '\0'; */
@@ -219,114 +141,6 @@ static int xdbg(struct sip_msg* msg, char* frm, char* str2)
 
 	return 1;
 }
-
-/**
- * destroy function
- */
-void destroy(void)
-{
-	LM_DBG("destroy module...\n");
-	if(log_buf)
-		pkg_free(log_buf);
-}
-
-static int xlog_fixup(void** param, int param_no)
-{
-	xl_level_p xlp;
-	str s;
-	
-	if(param_no==1)
-	{
-		s.s = (char*)(*param);
-		if(s.s==NULL || strlen(s.s)<2)
-		{
-			LM_ERR("wrong log level\n");
-			return E_UNSPEC;
-		}
-
-		xlp = (xl_level_p)pkg_malloc(sizeof(xl_level_t));
-		if(xlp == NULL)
-		{
-			LM_ERR("no more memory\n");
-			return E_UNSPEC;
-		}
-		memset(xlp, 0, sizeof(xl_level_t));
-		if(s.s[0]==PV_MARKER)
-		{
-			xlp->type = 1;
-			s.len = strlen(s.s);
-			if(pv_parse_spec(&s, &xlp->v.sp)==NULL)
-			{
-				LM_ERR("invalid level param\n");
-				return E_UNSPEC;
-			}
-		} else {
-			xlp->type = 0;
-			switch(((char*)(*param))[2])
-			{
-				case 'A': xlp->v.level = L_ALERT; break;
-				case 'C': xlp->v.level = L_CRIT; break;
-				case 'E': xlp->v.level = L_ERR; break;
-				case 'W': xlp->v.level = L_WARN; break;
-				case 'N': xlp->v.level = L_NOTICE; break;
-				case 'I': xlp->v.level = L_INFO; break;
-				case 'D': xlp->v.level = L_DBG; break;
-				default:
-					LM_ERR("unknown log level\n");
-					return E_UNSPEC;
-			}
-		}
-		pkg_free(*param);
-		*param = (void*)xlp;
-		return 0;
-	}
-
-	if(param_no==2)
-		return xdbg_fixup(param, 1);
-
-	return 0;
-}
-
-static int xdbg_fixup(void** param, int param_no)
-{
-	pv_elem_t *model;
-	str s;
-
-	if(param_no==1)
-	{
-		if(*param)
-		{
-			s.s = (char*)(*param); s.len = strlen(s.s);
-			if(log_stderr!=0 || (log_stderr==0 && force_color!=0))
-			{
-				if(pv_parse_format(&s, &model)<0)
-				{
-					LM_ERR("ERROR: wrong format[%s]\n",
-						(char*)(*param));
-					return E_UNSPEC;
-				}
-			} else {
-				if(pv_parse_format(&s, &model)<0)
-				{
-					LM_ERR("ERROR: wrong format[%s]!\n",
-						(char*)(*param));
-					return E_UNSPEC;
-				}
-			}
-			
-			*param = (void*)model;
-			return 0;
-		}
-		else
-		{
-			LM_ERR("ERROR: null format\n");
-			return E_UNSPEC;
-		}
-	}
-
-	return 0;
-}
-
 
 int pv_parse_color_name(pv_spec_p sp, str *in)
 {
@@ -396,7 +210,7 @@ error:
         } while(0) 
 
 
-static int pv_get_color(struct sip_msg *msg, pv_param_t *param,
+int pv_get_color(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {
 	static char color[COL_BUF];
@@ -404,7 +218,7 @@ static int pv_get_color(struct sip_msg *msg, pv_param_t *param,
 	char* end;
 	str s;
 
-	if(log_stderr==0 && force_color==0)
+	if(log_stderr==0 && xlog_force_color==0)
 	{
 		s.s = "";
 		s.len = 0;

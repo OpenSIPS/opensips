@@ -46,7 +46,6 @@
  * \brief OpenSIPS Generic functions
  */
 
-
 #include "action.h"
 #include "config.h"
 #include "error.h"
@@ -72,6 +71,7 @@
 #endif
 
 #include "script_var.h"
+#include "xlog.h"
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -912,6 +912,59 @@ int do_action(struct action* a, struct sip_msg* msg)
 				pkg_free(aux.s);
 			}
 			
+			break;
+
+		case XDBG_T:
+			if (a->elem[0].type == SCRIPTVAR_ELEM_ST)
+			{
+				if (xdbg(msg, a->elem[0].u.data, val.rs.s) < 0)
+				{
+					LM_ALERT("Cannot print message");
+					break;
+				}
+			}
+			else
+			{
+				LM_ALERT("BUG in xdbg() type %d\n", a->elem[0].type);
+				ret=E_BUG;
+			}
+			break;
+		case XLOG_T:
+			if (a->elem[1].u.data != NULL)
+			{
+				if (a->elem[1].type != SCRIPTVAR_ELEM_ST)
+				{
+					LM_ALERT("BUG in xlog() type %d\n", a->elem[1].type);
+					ret=E_BUG;
+					break;
+				}
+				if (a->elem[0].type != STR_ST)
+				{
+					LM_ALERT("BUG in xlog() type %d\n", a->elem[0].type);
+					ret=E_BUG;
+					break;
+				}
+				if (xlog_2(msg,a->elem[0].u.data, a->elem[1].u.data) < 0)
+				{
+					LM_ALERT("Cannot print xlog debug message");
+					break;
+				}
+			}
+			else
+			{
+				if (a->elem[0].type != SCRIPTVAR_ELEM_ST)
+				{
+					LM_ALERT("BUG in xlog() type %d\n", a->elem[0].type);
+					ret=E_BUG;
+					break;
+				}
+				if (xlog_1(msg,a->elem[0].u.data, val.rs.s) < 0)
+				{
+					LM_ALERT("Cannot print xlog debug message");
+					break;
+				}
+			}
+
 			break;
 
 		case SWITCH_T:

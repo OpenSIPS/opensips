@@ -51,6 +51,7 @@
 #include "transformations.h"
 #include "script_var.h"
 #include "pvar.h"
+#include "xlog.h"
 
 #include "parser/parse_from.h"
 #include "parser/parse_uri.h"
@@ -3112,7 +3113,8 @@ static pv_export_t _pv_names_table[] = {
 	{{"ua", (sizeof("ua")-1)}, /* */
 		PVT_USERAGENT, pv_get_useragent, 0,
 		0, 0, 0, 0},
-
+	{{"C", sizeof("C")-1}, PVT_COLOR, pv_get_color, 0,
+		pv_parse_color_name, 0, 0, 0 },
 	{{0,0}, 0, 0, 0, 0, 0, 0, 0}
 };
 

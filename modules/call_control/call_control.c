@@ -51,7 +51,6 @@
 #include "../dialog/dlg_load.h"
 #include "../dialog/dlg_hash.h"
 
-#include "../xlog/xl_lib.h"
 
 
 #define FL_USE_CALL_CONTROL       (1<<30) // use call control for a dialog

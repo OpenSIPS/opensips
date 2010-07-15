@@ -1,11 +1,8 @@
-/**
- * $Id$
- *
- * XLOG module
+/*
+ * $Id: xl_lib.h 5901 2009-07-21 07:45:05Z bogdan_iancu $
  *
  * Copyright (C) 2001-2003 FhG Fokus
- * Copyright (C) 2005 Voice Sistem SRL
- * 
+ *
  * This file is part of opensips, a free SIP server.
  *
  * opensips is free software; you can redistribute it and/or modify
@@ -21,22 +18,32 @@
  * You should have received a copy of the GNU General Public License 
  * along with this program; if not, write to the Free Software 
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- *
- * History:
- * --------
- * 2004-10-20 - added header name specifier (ramona)
- * 2005-06-14 - added avp name specifier (ramona)
- * 2005-06-18 - added color printing support via escape sequesnces
- *              contributed by Ingo Flaschberger (daniel)
- * 2005-06-22 - moved item methods to "items.{c,h}" (daniel)
- * 
  */
 
-#include "xl_lib.h"
+#ifndef _XLOG_H_
+#define _XLOG_H_
 
-int xl_print_log(struct sip_msg* msg, pv_elem_p list, char *buf, int *len)
+#include "pvar.h"
+
+typedef struct _xl_level
 {
-	return pv_printf(msg, list, buf, len);
-}
+	int type;
+	union {
+		long level;
+		pv_spec_t sp;
+	} v;
+} xl_level_t, *xl_level_p;
 
+extern int xlog_buf_size;
+extern int xlog_force_color;
+
+int xlog_1(struct sip_msg*, char*, char*);
+int xlog_2(struct sip_msg*, char*, char*);
+int xdbg(struct sip_msg*, char*, char*);
+
+int pv_parse_color_name(pv_spec_p sp, str *in);
+int pv_get_color(struct sip_msg *msg, pv_param_t *param,
+		pv_value_t *res);
+
+#endif
 

@@ -100,6 +100,7 @@
 #include "dset.h"
 #include "pvar.h"
 #include "blacklists.h"
+#include "xlog.h"
 
 
 #include "config.h"
@@ -153,13 +154,13 @@ extern int line;
 	do { \
 		_res = mk_action(_type, 0, 0, line); \
 	} while(0)
-#define mk_action1(_res, _type, _p1_type, _p2_type, _p1, _p2) \
+#define mk_action1(_res, _type, _p1_type, _p1) \
 	do { \
 		elems[0].type = _p1_type; \
 		elems[0].u.data = _p1; \
 		_res = mk_action(_type, 1, elems, line); \
 	} while(0)
-#define mk_action2(_res, _type, _p1_type, _p2_type, _p1, _p2) \
+#define	mk_action2(_res, _type, _p1_type, _p2_type, _p1, _p2) \
 	do { \
 		elems[0].type = _p1_type; \
 		elems[0].u.data = _p1; \
@@ -274,6 +275,10 @@ extern int line;
 %token CACHE_STORE
 %token CACHE_FETCH
 %token CACHE_REMOVE
+%token XDBG
+%token XLOG
+%token XLOG_BUF_SIZE
+%token XLOG_FORCE_COLOR
 
 /* config vars. */
 %token DEBUG
@@ -903,6 +908,11 @@ assign_stm: DEBUG EQUAL snumber {
 									user_agent_header.len=strlen($3);
 									}
 		| USER_AGENT_HEADER EQUAL error { yyerror("string value expected"); }
+		| XLOG_BUF_SIZE EQUAL NUMBER { xlog_buf_size = $3; }
+		| XLOG_FORCE_COLOR EQUAL NUMBER { xlog_force_color = $3; } 
+		| XLOG_BUF_SIZE EQUAL error { yyerror("number expected"); }
+		| XLOG_FORCE_COLOR EQUAL error { yyerror("boolean value expected"); }
+			
 		| LISTEN EQUAL id_lst {
 							for(lst_tmp=$3; lst_tmp; lst_tmp=lst_tmp->next){
 								if (add_listen_iface(	lst_tmp->name,
@@ -2424,6 +2434,12 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 												"command <%s>", $1); }
 		| ID error { $$=0; yyerrorf("bare word <%s> found, command calls need '()'", $1); }
 
+		| XDBG LPAREN STRING RPAREN {
+				mk_action1($$, XDBG_T, STR_ST, $3);	}
+		| XLOG LPAREN STRING RPAREN {
+				mk_action1($$, XLOG_T, STR_ST, $3); }
+		| XLOG LPAREN STRING COMMA STRING RPAREN {
+				mk_action2($$, XLOG_T, STR_ST, STR_ST, $3, $5); }
 
 
 
