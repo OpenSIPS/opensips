@@ -64,6 +64,7 @@ rad_set_elem **sets = NULL;
 int set_size = 0;
 char* config_file = NULL;
 rc_handle *rh = NULL;
+DICT_ATTR *attr;
 
 int mod_init(void);
 int init_radius_handle(void);
@@ -293,7 +294,6 @@ int send_auth_func(struct sip_msg* msg, str* s1, str* s2) {
 	char mess[1024];
 
 	VALUE_PAIR *send = NULL, *recv = NULL, *vp = NULL;
-	DICT_ATTR *attr;
 
 	if (!rh) {
 		if (init_radius_handle()) {
@@ -364,10 +364,10 @@ int send_auth_func(struct sip_msg* msg, str* s1, str* s2) {
 		}
 	}
 
-	attr = rc_dict_findattr(rh, "SIP-AVP");
 	vp = recv;
-	for(; (vp = rc_avpair_get(vp, attr->value, 0)); vp = vp->next)
-		extract_avp(vp);
+	if (attr)
+		for(; (vp = rc_avpair_get(vp, attr->value, 0)); vp = vp->next)
+			extract_avp(vp);
 
 	if (send) rc_avpair_free(send);
 	if (recv) rc_avpair_free(recv);
@@ -497,6 +497,8 @@ int init_radius_handle(void) {
 		LM_ERR("failed to read radius dictionary\n");
 		return -1;
 	}
+
+	attr = rc_dict_findattr(rh, "SIP-AVP");
 
 	/* initialize values for the attributes in sets */
 	for (i = 0; i < set_size; i++) {
