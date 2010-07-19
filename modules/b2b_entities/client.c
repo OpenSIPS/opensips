@@ -92,7 +92,6 @@ str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 	dlg_t td;
 	str from_tag;
 	str random_info = {0, 0};
-	struct to_body TO;
 
 	if(ci == NULL || b2b_cback == NULL || param== NULL)
 	{
@@ -194,24 +193,14 @@ str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 	td.id.rem_tag.s = 0;
 	td.id.rem_tag.len = 0;
 
-	if(parse_to(ci->to_uri.s, ci->to_uri.s + ci->to_uri.len, &TO)< 0)
-	{
-		LM_ERR("Wrong format for to=[%.*s]\n", ci->to_uri.len, ci->to_uri.s);
-		goto error;
-	}
-	td.rem_uri = TO.uri;
+	td.rem_uri = ci->to_uri;
 	if(ci->req_uri.s)
 		td.rem_target    = ci->req_uri;
 	else
-		td.rem_target    = TO.uri;
+		td.rem_target    = ci->to_uri;
 	td.rem_dname  = ci->to_dname;
 
-	if(parse_to(ci->from_uri.s, ci->from_uri.s + ci->from_uri.len, &TO)< 0)
-	{
-		LM_ERR("Wrong format for to=[%.*s]\n", ci->from_uri.len, ci->from_uri.s);
-		goto error;
-	}
-	td.loc_uri    = TO.uri;
+	td.loc_uri    = ci->from_uri;
 	td.loc_dname  = ci->from_dname;
 
 	td.state= DLG_CONFIRMED;
