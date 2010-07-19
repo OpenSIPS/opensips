@@ -91,7 +91,9 @@ typedef struct b2b_dlg
 	str                  ruri;
 	str                  callid;
 	str                  from_uri;
+	str                  from_dname;
 	str                  to_uri;
+	str                  to_dname;
 	str                  tag[2];
 	unsigned int         cseq[2];
 	unsigned int         last_invite_cseq;
@@ -116,7 +118,10 @@ typedef struct client_info
 {
 	str method;
 	str from_uri;
+	str from_dname;
+	str req_uri;
 	str to_uri;
+	str to_dname;
 	str* extra_headers;
 	str* body;
 	str* from_tag;
