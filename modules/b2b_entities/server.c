@@ -114,6 +114,8 @@ dlg_t* b2b_server_build_dlg(b2b_dlg_t* dlg)
 
 	td->loc_uri = dlg->to_uri;
 	td->rem_uri = dlg->from_uri;
+	td->loc_dname = dlg->to_dname;
+	td->rem_dname = dlg->from_dname;
 
 	if(dlg->route_set[CALLER_LEG].s && dlg->route_set[CALLER_LEG].len)
 	{

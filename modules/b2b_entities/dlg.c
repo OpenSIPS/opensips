@@ -281,7 +281,8 @@ b2b_dlg_t* b2b_dlg_copy(b2b_dlg_t* dlg)
 
 	size = sizeof(b2b_dlg_t) + dlg->callid.len+ dlg->from_uri.len+ dlg->to_uri.len+
 		dlg->tag[0].len + dlg->tag[1].len+ dlg->route_set[0].len+ dlg->route_set[1].len+
-		dlg->contact[0].len+ dlg->contact[1].len+ dlg->sdp.len+ dlg->ruri.len+ dlg->param.len;
+		dlg->contact[0].len+ dlg->contact[1].len+ dlg->sdp.len+ dlg->ruri.len+ dlg->param.len+
+		dlg->from_dname.len + dlg->to_dname.len;
 
 	new_dlg = (b2b_dlg_t*)shm_malloc(size);
 	if(new_dlg == 0)
@@ -313,6 +314,11 @@ b2b_dlg_t* b2b_dlg_copy(b2b_dlg_t* dlg)
 		CONT_COPY(new_dlg, new_dlg->sdp, dlg->sdp);
 	if(dlg->param.s)
 		CONT_COPY(new_dlg, new_dlg->param, dlg->param);
+
+	if(dlg->from_dname.s)
+		CONT_COPY(new_dlg, new_dlg->from_dname, dlg->from_dname);
+	if(dlg->to_dname.s)
+		CONT_COPY(new_dlg, new_dlg->to_dname, dlg->to_dname);
 
 	new_dlg->bind_addr[0] = dlg->bind_addr[0];
 	new_dlg->bind_addr[1] = dlg->bind_addr[1];
@@ -784,6 +790,7 @@ b2b_dlg_t* b2b_new_dlg(struct sip_msg* msg, int on_reply, str* param)
 		dlg.tag[CALLEE_LEG] = pto->tag_value;
 	}
 	dlg.to_uri= pto->uri;
+	dlg.to_dname= pto->display;
 
 	/* examine the from header */
 	if (!msg->from || !msg->from->body.s)
@@ -801,6 +808,7 @@ b2b_dlg_t* b2b_new_dlg(struct sip_msg* msg, int on_reply, str* param)
 	}
 	pfrom = (struct to_body*)msg->from->parsed;
 	dlg.from_uri = pfrom->uri;
+	dlg.from_dname = pfrom->display;
 	if( pfrom->tag_value.s ==NULL || pfrom->tag_value.len == 0)
 	{
 		LM_ERR("no from tag value present\n");

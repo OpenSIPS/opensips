@@ -107,7 +107,8 @@ str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 		generate_tag(&from_tag, &ci->from_uri, ci->extra_headers);
 
 	/* create a dummy b2b dialog structure to be inserted in the hash table*/
-	size = sizeof(b2b_dlg_t) + ci->to_uri.len + ci->from_uri.len +
+	size = sizeof(b2b_dlg_t) + ci->to_uri.len + ci->from_uri.len
+		+ ci->from_dname.len + ci->to_dname.len +
 		from_tag.len + param->len;
 
 	/* create record in hash table */
@@ -122,6 +123,10 @@ str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 
 	CONT_COPY(dlg, dlg->from_uri, ci->from_uri);
 	CONT_COPY(dlg, dlg->to_uri, ci->to_uri);
+	if(ci->to_dname.s)
+		CONT_COPY(dlg, dlg->to_dname, ci->to_dname);
+	if(ci->from_dname.s)
+		CONT_COPY(dlg, dlg->from_dname, ci->from_dname);
 	CONT_COPY(dlg, dlg->tag[CALLER_LEG], from_tag);
 
 	dlg->param.s = (char*)dlg + size;
@@ -188,9 +193,15 @@ str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 	td.id.rem_tag.s = 0;
 	td.id.rem_tag.len = 0;
 
-	td.rem_target = ci->to_uri;
+	td.rem_uri = ci->to_uri;
+	if(ci->req_uri.s)
+		td.rem_target    = ci->req_uri;
+	else
+		td.rem_target    = ci->to_uri;
+	td.rem_dname  = ci->to_dname;
+
 	td.loc_uri    = ci->from_uri;
-	td.rem_uri    = ci->to_uri;
+	td.loc_dname  = ci->from_dname;
 
 	td.state= DLG_CONFIRMED;
 	td.T_flags=T_NO_AUTOACK_FLAG|T_PASS_PROVISIONAL_FLAG ;
@@ -255,6 +266,8 @@ dlg_t* b2b_client_build_dlg(b2b_dlg_t* dlg, dlg_leg_t* leg)
 
 	td->loc_uri = dlg->from_uri;
 	td->rem_uri = dlg->to_uri;
+	td->loc_dname = dlg->from_dname;
+	td->rem_dname = dlg->to_dname;
 
 	if(leg->route_set.s && leg->route_set.len)
 	{
