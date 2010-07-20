@@ -273,6 +273,7 @@ struct cell*  build_cell( struct sip_msg* p_msg )
 			new_cell->tmcb_hl = tmcb_pending_hl;
 			tmcb_pending_hl.first = 0;
 		}
+		set_t(new_cell);
 
 		/* enter callback, which may potentially want to parse some stuff,
 		 * before the request is shmem-ized */
