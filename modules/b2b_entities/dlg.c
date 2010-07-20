@@ -617,7 +617,7 @@ logic_notify:
 
 		if(method_value != METHOD_ACK)
 		{
-			if(dlg->uas_tran)
+			if(dlg->uas_tran && dlg->uas_tran!=T_UNDEFINED)
 			{
 				if(dlg->uas_tran->uas.request) /* there is another transaction for which no reply was sent out */
 				{
@@ -628,11 +628,11 @@ logic_notify:
 					{
 						LM_ERR("failed to send reply with tm\n");
 					}
-					LM_DBG("Sent reply [481] and unreffed the cell %p\n", tm_tran);
+					LM_DBG("Sent reply [481] and unreffed the cell %p\n", dlg->uas_tran);
 				}
-				tmb.unref_cell(tm_tran);
+				tmb.unref_cell(dlg->uas_tran);
 			}
-			dlg->uas_tran = tmb.t_gett();
+			dlg->uas_tran = tm_tran;
 		}
 
 		if(method_value == METHOD_INVITE) /* send provisional reply 100 Trying */
