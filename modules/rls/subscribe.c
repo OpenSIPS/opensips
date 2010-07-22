@@ -534,7 +534,6 @@ int rls_handle_subscribe(struct sip_msg* msg, char* s1, char* s2)
 	}
 	else
 	{
-		memset( &TO , 0, sizeof(TO) );
 		if( !parse_to(msg->to->body.s,msg->to->body.s+msg->to->body.len+1,&TO))
 		{
 			LM_ERR("parsing 'To' header failed\n");

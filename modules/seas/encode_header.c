@@ -131,7 +131,6 @@ int encode_header(struct sip_msg *sipmsg,struct hdr_field *hdr,unsigned char *pa
 	       myerror="Out of memory !!\n";
 	       goto error;
 	    }
-	    memset(tobody,0,sizeof(struct to_body));
 	    parse_to(hdr->body.s,hdr->body.s+hdr->body.len+1,tobody);
 	    if (tobody->error == PARSE_ERROR) {
 	       myerror="bad (REFER,TO,FROM,RPID) header\n";

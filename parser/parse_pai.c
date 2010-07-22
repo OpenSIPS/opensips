@@ -62,7 +62,6 @@ int parse_pai_header( struct sip_msg *msg )
     }
  
     /* now parse it!! */
-    memset(pai_b, 0, sizeof(struct to_body));
     parse_to(msg->pai->body.s,
 	     msg->pai->body.s + msg->pai->body.len+1,
 	     pai_b);

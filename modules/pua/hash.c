@@ -508,7 +508,6 @@ int update_contact(struct sip_msg* msg, char* str1, char* str2)
 	}
 	else
 	{
-		memset( &TO , 0, sizeof(TO) );
 		parse_to(msg->to->body.s,msg->to->body.s +
 			msg->to->body.len + 1, &TO);
 		if(TO.uri.len <= 0) 

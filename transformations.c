@@ -867,7 +867,6 @@ int tr_eval_nameaddr(struct sip_msg *msg, tr_param_t *tp, int subtype,
 			nameaddr_str.s[0] = 0;
 			return -1;
 		}
-		memset(nameaddr_to_body, 0, sizeof(struct to_body));
 		parse_to(nameaddr_str.s, nameaddr_str.s + nameaddr_str.len,
 			nameaddr_to_body);
 	}

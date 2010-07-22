@@ -478,11 +478,8 @@ char* parse_to(char* buffer, char *end, struct to_body *to_b)
 
 	status=START_TO;
 	saved_status=START_TO;
+	memset(to_b, 0, sizeof(struct to_body));
 	to_b->error=PARSE_OK;
-	to_b->uri.len = 0;
-	to_b->uri.s= 0;
-	to_b->display.len = 0;
-	to_b->display.s = 0;
 	end_mark=0;
 
 	for( tmp=buffer; tmp<end; tmp++)

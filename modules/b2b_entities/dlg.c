@@ -537,7 +537,6 @@ search_dialog:
 	/* examine the to header */
 	if(msg->to->parsed == NULL)
 	{
-		memset( &TO , 0, sizeof(TO) );
 		if(!parse_to(msg->to->body.s,msg->to->body.s + msg->to->body.len + 1, &TO))
 		{
 			LM_DBG("'To' header NOT parsed\n");
@@ -776,7 +775,6 @@ b2b_dlg_t* b2b_new_dlg(struct sip_msg* msg, int on_reply, str* param)
 	}
 	else
 	{
-		memset( &TO , 0, sizeof(TO) );
 		if( !parse_to(msg->to->body.s,msg->to->body.s + msg->to->body.len + 1, &TO))
 		{
 			LM_DBG("'To' header NOT parsed\n");
@@ -1618,7 +1616,6 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 		}
 		else
 		{
-			memset( &TO , 0, sizeof(TO) );
 			if( !parse_to(msg->to->body.s,msg->to->body.s + msg->to->body.len + 1, &TO))
 			{
 				LM_ERR("'To' header NOT parsed\n");
