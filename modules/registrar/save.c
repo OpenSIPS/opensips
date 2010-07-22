@@ -723,7 +723,7 @@ int save(struct sip_msg* _m, char* _d, char* _f, char* _s)
 				case 'p':
 					if (st<flags_s.len-1) {
 						st++;
-						if (flags_s.s[st]=='0') {
+						if (flags_s.s[st]=='2') {
 							sctx.flags |= REG_SAVE_PATH_STRICT_FLAG; break; }
 						if (flags_s.s[st]=='1') {
 							sctx.flags |= REG_SAVE_PATH_LAZY_FLAG; break; }
