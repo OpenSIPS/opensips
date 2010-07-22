@@ -263,7 +263,8 @@ __dialog_sendpublish(struct dlg_cell *dlg, int type, struct dlg_cb_params *_para
 
 	LM_DBG("peer_uri = %.*s\n", peer_uri.len, peer_uri.s);
 
-	if(parse_to(peer_uri.s, peer_uri.s+peer_uri.len, &peer_to_body)< 0)
+	parse_to(peer_uri.s, peer_uri.s+peer_uri.len, &peer_to_body);
+	if(peer_to_body.error != PARSE_OK)
 	{
 		LM_ERR("Failed to peer uri [%.*s]\n", peer_uri.len, peer_uri.s);
 		goto error;
@@ -284,7 +285,8 @@ __dialog_sendpublish(struct dlg_cell *dlg, int type, struct dlg_cb_params *_para
 	if(dlg_api.fetch_dlg_value(dlg, &entity_dlg_var, &entity_uri, 1) == 0)
 	{
 		/* overwrite from with this value */
-		if(parse_to(entity_uri.s, entity_uri.s + entity_uri.len, &from)< 0)
+		parse_to(entity_uri.s, entity_uri.s + entity_uri.len, &from);
+		if(from.error != PARSE_OK)
 		{
 			LM_ERR("Wrong format for entity body\n");
 			goto error;
@@ -531,7 +533,8 @@ int dialoginfo_set(struct sip_msg* msg, char* flag_pv, char* str2)
 				len+= CRLF_LEN;
 			}
 
-			if(parse_to(caller_buf, caller_buf+len , &FROM)< 0)
+			parse_to(caller_buf, caller_buf+len , &FROM);
+			if(FROM.error != PARSE_OK)
 			{
 				LM_ERR("Failed to parse caller specification - not a valid uri\n");
 				return -1;
@@ -608,7 +611,8 @@ default_callee:
 	}
 	LM_DBG("Peer uri = %.*s\n", peer_uri.len, peer_uri.s);
 
-	if(parse_to(peer_uri.s, peer_uri.s+peer_uri.len, &peer_to_body)< 0)
+	parse_to(peer_uri.s, peer_uri.s+peer_uri.len, &peer_to_body);
+	if(peer_to_body.error != PARSE_OK)
 	{
 		LM_ERR("Failed to peer uri [%.*s]\n", peer_uri.len, peer_uri.s);
 		return -1;
