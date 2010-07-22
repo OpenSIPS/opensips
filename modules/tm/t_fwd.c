@@ -429,7 +429,7 @@ static int add_uac( struct cell *t, struct sip_msg *request, str *uri,
 	t->uac[branch].request.dst.proto = proxy->proto;
 
 	if ( update_uac_dst( request, &t->uac[branch] )!=0) {
-		ret = E_OUT_OF_MEM;
+		ret = ser_error;
 		goto error02;
 	}
 
