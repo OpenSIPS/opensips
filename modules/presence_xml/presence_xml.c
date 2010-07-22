@@ -115,19 +115,9 @@ struct module_exports exports= {
  	 destroy,					/* destroy function */
 	 child_init                 /* per-child init function */
 };
-	
-/**
- * init module function
- */
-static int mod_init(void)
+
+static int verify_db(void)
 {
-	bind_presence_t bind_presence;
-	presence_api_t pres;
-		
-	db_url.len = db_url.s ? strlen(db_url.s) : 0;
-	LM_DBG("db_url=%s/%d/%p\n",ZSW(db_url.s),db_url.len, db_url.s);
-	xcap_table.len = xcap_table.s ? strlen(xcap_table.s) : 0;
-	
 	/* binding to mysql module  */
 	if (db_bind_mod(&db_url, &pxml_dbf))
 	{
@@ -152,6 +142,29 @@ static int mod_init(void)
 		LM_ERR("error during table version check.\n");
 		return -1;
 	}
+	/* pxml_db is free'd by caller later, not sure if safe to do now */
+	return 0;
+}
+	
+/**
+ * init module function
+ */
+static int mod_init(void)
+{
+	bind_presence_t bind_presence;
+	presence_api_t pres;
+		
+	db_url.len = db_url.s ? strlen(db_url.s) : 0;
+	LM_DBG("db_url=%s/%d/%p\n",ZSW(db_url.s),db_url.len, db_url.s);
+	xcap_table.len = xcap_table.s ? strlen(xcap_table.s) : 0;
+
+	if(force_active==0)
+	{
+		if ( verify_db() < 0 )
+			return -1;
+	}
+
+	
 	/* load SL API */
 	if(load_sig_api(&xml_sigb)==-1)
 	{
@@ -241,19 +254,22 @@ static int child_init(int rank)
 {
 	LM_DBG("[%d]  pid [%d]\n", rank, getpid());
 	
-	if (pxml_dbf.init==0)
+	if(force_active==0)
 	{
-		LM_CRIT("database not bound\n");
-		return -1;
+		if (pxml_dbf.init==0)
+		{
+			LM_CRIT("database not bound\n");
+			return -1;
+		}
+		pxml_db = pxml_dbf.init(&db_url);
+		if (pxml_db== NULL)
+		{
+			LM_ERR("child %d: ERROR while connecting database\n",rank);
+			return -1;
+		}
+		
+		LM_DBG("child %d: Database connection opened successfully\n",rank);
 	}
-	pxml_db = pxml_dbf.init(&db_url);
-	if (pxml_db== NULL)
-	{
-		LM_ERR("child %d: ERROR while connecting database\n",rank);
-		return -1;
-	}
-	
-	LM_DBG("child %d: Database connection opened successfully\n",rank);
 
 	return 0;
 }	
