@@ -58,7 +58,6 @@ int parse_diversion_header(struct sip_msg *msg)
 	}
 
 	/* now parse it!! */
-	memset(diversion_b, 0, sizeof(struct to_body));
 	parse_to(msg->diversion->body.s, 
 		msg->diversion->body.s + msg->diversion->body.len + 1, diversion_b);
 	if (diversion_b->error == PARSE_ERROR) {

@@ -59,7 +59,6 @@ int parse_refer_to_header( struct sip_msg *msg )
 	}
 
 	/* now parse it!! */
-	memset(refer_to_b, 0, sizeof(struct to_body));
 	parse_to(msg->refer_to->body.s,
 		msg->refer_to->body.s + msg->refer_to->body.len+1,
 		refer_to_b);

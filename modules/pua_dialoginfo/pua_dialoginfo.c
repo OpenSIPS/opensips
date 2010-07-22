@@ -283,7 +283,6 @@ __dialog_sendpublish(struct dlg_cell *dlg, int type, struct dlg_cb_params *_para
 	/* check if entity is also custom */
 	if(dlg_api.fetch_dlg_value(dlg, &entity_dlg_var, &entity_uri, 1) == 0)
 	{
-		memset(&from, 0, sizeof(struct to_body));
 		/* overwrite from with this value */
 		if(parse_to(entity_uri.s, entity_uri.s + entity_uri.len, &from)< 0)
 		{

@@ -59,7 +59,6 @@ int parse_rpid_header( struct sip_msg *msg )
 	}
 
 	/* now parse it!! */
-	memset(rpid_b, 0, sizeof(struct to_body));
 	parse_to(msg->rpid->body.s,msg->rpid->body.s+msg->rpid->body.len+1,rpid_b);
 	if (rpid_b->error == PARSE_ERROR) {
 		LM_ERR("bad rpid header\n");

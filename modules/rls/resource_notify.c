@@ -166,7 +166,6 @@ int rls_handle_notify(struct sip_msg* msg, char* c1, char* c2)
 	}
 	else
 	{
-		memset( &TO , 0, sizeof(TO) );
 		parse_to(msg->to->body.s,msg->to->body.s + msg->to->body.len + 1, &TO);
 		if(TO.uri.len <= 0) 
 		{

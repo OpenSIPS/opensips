@@ -517,7 +517,6 @@ static int m_store(struct sip_msg* msg, char* owner, char* s2)
 	else
 	{
 		LM_DBG("the 'To' header NOT PARSED ->parsing ...\n");
-		memset( &to , 0, sizeof(to) );
 		parse_to(msg->to->body.s, msg->to->body.s+msg->to->body.len+1, &to);
 		if(to.uri.len > 0) /* && to.error == PARSE_OK) */
 		{
@@ -891,7 +890,6 @@ static int m_dump(struct sip_msg* msg, char* owner, char* str2)
 	}
 	else
 	{
-		memset( &to , 0, sizeof(to) );
 		parse_to(msg->to->body.s,
 			msg->to->body.s + msg->to->body.len + 1, &to);
 		if(to.uri.len <= 0) /* || to.error != PARSE_OK) */

@@ -63,7 +63,6 @@ int parse_ppi_header( struct sip_msg *msg )
     }
  
     /* now parse it!! */
-    memset(ppi_b, 0, sizeof(struct to_body));
     parse_to(msg->ppi->body.s,
 	     msg->ppi->body.s + msg->ppi->body.len+1,
 	     ppi_b);

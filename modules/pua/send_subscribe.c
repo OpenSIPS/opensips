@@ -321,7 +321,6 @@ void subs_cback_func(struct cell *t, int cb_type, struct tmcb_params *ps)
 		}
 		else
 		{
-			memset( &TO , 0, sizeof(TO) );
 			parse_to(msg->to->body.s,msg->to->body.s +
 				msg->to->body.len + 1, &TO);
 			if(TO.uri.len <= 0) 

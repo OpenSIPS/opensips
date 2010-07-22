@@ -99,7 +99,6 @@ int Notify2Xmpp(struct sip_msg* msg, char* s1, char* s2)
 	}
 	else
 	{
-		memset( &TO , 0, sizeof(TO) );
 		parse_to(msg->to->body.s,msg->to->body.s + msg->to->body.len + 1, &TO);
 		if(TO.uri.len <= 0) 
 		{
