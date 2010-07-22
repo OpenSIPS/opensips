@@ -36,6 +36,7 @@
 #include <string.h>
 #include <openssl/ssl.h>
 
+#include "../../sr_module.h"
 #include "tlsops.h"
 #include "tls_select.h"
 #include "../../tcp_conn.h"    /* struct tcp_connection */

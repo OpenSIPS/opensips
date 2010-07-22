@@ -35,9 +35,9 @@
 
 
 #include <stdio.h>
+#include "../../sr_module.h"
 #include "../../mem/shm_mem.h"
 #include "../../mem/mem.h"
-#include "../../sr_module.h"
 #include "../../pvar.h"
 #include "../../mod_fix.h"
 #include "../../name_alias.h"

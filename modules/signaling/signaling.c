@@ -30,6 +30,7 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include "../../sr_module.h"
 #include "../tm/tm_load.h"
 #include "../sl/sl_api.h"
 #include "signaling.h"
