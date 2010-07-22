@@ -185,8 +185,8 @@ get_answer ()
     else
         ANSWER=${value}
     fi
-    ANSWER=${ANSWER:0:1}
-    ANSWER=${ANSWER/Y/y}
-    ANSWER=${ANSWER/N/n}
+	ANSWER="`echo $ANSWER | sed 's/^\(.\).*/\1/g'`"
+	ANSWER="`echo $ANSWER | sed 's/Y/y/g'`"
+	ANSWER="`echo $ANSWER | sed 's/N/n/g'`"
 }
 
