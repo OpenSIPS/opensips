@@ -72,7 +72,8 @@ enum lump_conditions {	COND_FALSE,         /*!< always false */
  * Flags for lumps, mainly used from the tm module.
  */
 enum lump_flag { LUMPFLAG_NONE=0, LUMPFLAG_DUPED=1,
-		LUMPFLAG_SHMEM=2 , LUMPFLAG_BRANCH=4, LUMPFLAG_COND_TRUE=8};
+		LUMPFLAG_SHMEM=2 , LUMPFLAG_BRANCH=4, LUMPFLAG_COND_TRUE=8,
+		LUMPFLAG_CODEC=16};
 
 
 /*! \brief
