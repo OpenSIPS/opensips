@@ -1,0 +1,234 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE table PUBLIC "-//opensips.org//DTD DBSchema V1.1//EN" 
+  "http://opensips.org/pub/opensips/dbschema/dtd/1.1/dbschema.dtd" [
+
+<!ENTITY % entities SYSTEM "entities.xml">
+%entities;
+
+]>
+
+<table id="b2b_entities" xmlns:db="http://docbook.org/ns/docbook">
+    <name>b2b_entities</name>
+    <version>1</version>
+    <type db="mysql">&MYSQL_TABLE_TYPE;</type>
+    <description>
+        <db:para>Table for the b2b_entities module. More information can be found at: &OPENSIPS_MOD_DOC;b2b_entities.html
+        </db:para>
+    </description>
+
+    <column id="id">
+        <name>id</name>
+        <type>unsigned int</type>
+        <size>&table_id_len;</size>
+        <autoincrement/>
+        <primary/>
+        <type db="dbtext">int,auto</type>
+        <description>Unique ID</description>
+    </column>
+
+    <column id="type">
+        <name>type</name>
+        <type>int</type>
+        <size>2</size>
+        <description>Entity type: 0-server, 1-client</description>
+        <natural/>
+    </column>
+
+    <column>
+        <name>state</name>
+        <type>int</type>
+        <size>2</size>
+        <description>Dialog state</description>
+    </column>
+
+    <column>
+        <name>ruri</name>
+        <type>string</type>
+        <size>&uri_len;</size>
+        <null/>
+        <description>RURI(stored only for server entities to correctly match CANCEL)</description>
+    </column>
+
+    <column>
+        <name>from_uri</name>
+        <type>string</type>
+        <size>&uri_len;</size>
+        <description>From URI</description>
+    </column>
+
+    <column>
+        <name>to_uri</name>
+        <type>string</type>
+        <size>&uri_len;</size>
+        <description>To URI</description>
+    </column>
+
+    <column>
+        <name>from_dname</name>
+        <type>string</type>
+        <size>&user_len;</size>
+        <null/>
+        <description>From display name</description>
+    </column>
+
+    <column>
+        <name>to_dname</name>
+        <type>string</type>
+        <size>&user_len;</size>
+        <null/>
+        <description>To display name</description>
+    </column>
+
+    <column id="tag0">
+        <name>tag0</name>
+        <type>string</type>
+        <size>&domain_len;</size>
+        <description>TO tag</description>
+    </column>
+
+    <column id="tag1">
+        <name>tag1</name>
+        <type>string</type>
+        <size>&domain_len;</size>
+        <null/>
+        <description>From tag</description>
+    </column>
+
+    <column id="callid">
+        <name>callid</name>
+        <type>string</type>
+        <size>&domain_len;</size>
+        <description>Call ID</description>
+    </column>
+
+    <column>
+        <name>cseq0</name>
+        <type>int</type>
+        <size>&cseq_len;</size>
+        <description>Cseq0</description>
+    </column>
+
+    <column>
+        <name>cseq1</name>
+        <type>int</type>
+        <size>&cseq_len;</size>
+        <null/>
+        <description>Cseq1</description>
+    </column>
+
+    <column>
+        <name>contact0</name>
+        <type>string</type>
+        <size>&uri_len;</size>
+        <description>Contact0</description>
+    </column>
+
+    <column>
+        <name>contact1</name>
+        <type>string</type>
+        <size>&uri_len;</size>
+        <null/>
+        <description>Contact1</description>
+    </column>
+
+    <column>
+        <name>route0</name>
+        <type>text</type>
+        <null/>
+        <description>Record route 0</description>
+    </column>
+
+    <column>
+        <name>route1</name>
+        <type>text</type>
+        <null/>
+        <description>Record route 1</description>
+    </column>
+
+    <column>
+        <name>sockinfo_srv</name>
+        <type>string</type>
+        <size>&domain_len;</size>
+        <null/>
+        <description>Socket Info</description>
+    </column>
+
+    <column>
+        <name>param</name>
+        <type>string</type>
+        <size>&uri_len;</size>
+        <description>Logic parameter</description>
+    </column>
+
+    <column>
+        <name>lm</name>
+        <type>int</type>
+        <size>&cseq_len;</size>
+        <description>Last method</description>
+    </column>
+
+    <column>
+        <name>lrc</name>
+        <type>int</type>
+        <size>&cseq_len;</size>
+        <null/>
+        <description>Last reply code</description>
+    </column>
+
+    <column>
+        <name>lic</name>
+        <type>int</type>
+        <size>&cseq_len;</size>
+        <null/>
+        <description>Last invite cseq</description>
+    </column>
+
+    <column>
+        <name>leg_cseq</name>
+        <type>int</type>
+        <size>&cseq_len;</size>
+        <null/>
+        <description>Leg cseq</description>
+    </column>
+
+    <column>
+        <name>leg_route</name>
+        <type>text</type>
+        <null/>
+        <description>Leg route</description>
+    </column>
+
+    <column>
+        <name>leg_tag</name>
+        <type>string</type>
+        <size>&domain_len;</size>
+        <null/>
+        <description>Leg tag</description>
+    </column>
+
+    <column>
+        <name>leg_contact</name>
+        <type>string</type>
+        <size>&uri_len;</size>
+        <null/>
+        <description>Leg contact</description>
+    </column>
+
+    <column>
+        <name>leg_sockinfo</name>
+        <type>string</type>
+        <size>&uri_len;</size>
+        <null/>
+        <description>Leg sockinfo</description>
+    </column>
+
+     <index>
+        <name>b2b_entities_idx</name>
+        <colref linkend="type"/>
+        <colref linkend="tag0"/>
+        <colref linkend="tag1"/>
+        <colref linkend="callid"/>
+        <unique/>
+    </index>
+
+</table>

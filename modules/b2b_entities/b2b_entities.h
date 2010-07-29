@@ -37,15 +37,17 @@
 #include "client.h"
 #include "server.h"
 
+typedef int (*b2b_restore_linfo_t)(enum b2b_entity_type type, str* key,
+		b2b_notify_t cback);
+
 typedef struct b2b_api
 {
 	b2b_server_new_t          server_new;
 	b2b_client_new_t          client_new;
-
 	b2b_send_request_t        send_request;
 	b2b_send_reply_t          send_reply;
-
 	b2b_entity_delete_t       entity_delete;
+	b2b_restore_linfo_t       restore_logic_info;
 }b2b_api_t;
 
 

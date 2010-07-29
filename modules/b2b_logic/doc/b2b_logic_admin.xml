@@ -205,6 +205,37 @@ modparam("b2b_logic", "use_init_sdp", 1)
 	</programlisting>
 		</example>
 	</section>
+	<section>
+		<title><varname>db_url</varname> (str)</title>
+		<para>
+			Database URL.
+		</para>
+		<example>
+		<title>Set <varname>db_url</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("b2b_logic", "db_url", "mysql://opensips:opensipsrw@127.0.0.1/opensips")
+...
+	</programlisting>
+		</example>
+	</section>
+	<section>
+		<title><varname>update_period</varname> (int)</title>
+		<para>
+			The time interval at which to update the info in database.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>100</quote>.</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>update_period</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("b2b_logic", "update_period", 60)
+...
+	</programlisting>
+		</example>
+	</section>
 
 	</section>
 

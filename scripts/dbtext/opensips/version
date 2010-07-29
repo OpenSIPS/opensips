@@ -3,6 +3,8 @@ acc:5
 active_watchers:10
 address:5
 aliases:1005
+b2b_entities:1
+b2b_logic:1
 carrierfailureroute:2
 carrierroute:3
 closeddial:1

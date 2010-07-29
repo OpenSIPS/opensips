@@ -30,6 +30,8 @@
 #include <string.h>
 #include <stdlib.h>
 #include <libxml/parser.h>
+
+#include "../../db/db.h"
 #include "../../sr_module.h"
 #include "../../dprint.h"
 #include "../../error.h"
@@ -42,33 +44,33 @@
 #include "pidf.h"
 #include "b2b_logic.h"
 
+#define TABLE_VERSION 1
+#define B2BL_FETCH_SIZE  128
 
 /** Functions declarations */
 static int mod_init(void);
 static void mod_destroy(void);
 static int child_init(int rank);
-
+static int  b2b_logic_restore(void);
+static void b2b_logic_dump(int no_lock);
 static int load_script_scenario(modparam_t type, void* val);
 static int load_extern_scenario(modparam_t type, void* val);
-
 static int fixup_b2b_logic(void** param, int param_no);
-
 static struct mi_root* mi_trigger_scenario(struct mi_root* cmd, void* param);
-
 static struct mi_root* mi_b2b_bridge(struct mi_root* cmd, void* param);
-
 void b2bl_clean(unsigned int ticks, void* param);
-
-int b2b_init_request(struct sip_msg* msg, str* arg1, str* arg2, str* arg3,
+void b2bl_db_update(unsigned int ticks, void* param);
+int  b2b_init_request(struct sip_msg* msg, str* arg1, str* arg2, str* arg3,
 		str* arg4, str* arg5, str* arg6);
 
 /** Global variables */
 b2b_api_t b2b_api;
 b2bl_table_t b2bl_htable;
 unsigned int b2bl_hsize = 10;
-b2b_scenario_t* script_scenaries = NULL;
-b2b_scenario_t* extern_scenaries = NULL;
+b2b_scenario_t* script_scenarios = NULL;
+b2b_scenario_t* extern_scenarios = NULL;
 unsigned int b2b_clean_period = 100;
+unsigned int b2b_update_period = 100;
 str custom_headers = {0, 0};
 str custom_headers_lst[HDR_LST_LEN];
 int custom_headers_lst_len =0;
@@ -82,6 +84,39 @@ static str default_headers[]={{"Content-Type",12},
                                {"Require", 7},
                                {"RSeq", 4}};
 int use_init_sdp = 0;
+
+static str db_url= {0, 0};
+static db_con_t *b2bl_db = NULL;
+static db_func_t b2bl_dbf;
+static str dbtable= str_init("b2b_logic");
+
+static str str_key_col         = str_init("si_key");
+static str str_scenario_col    = str_init("scenario");
+static str str_sstate_col      = str_init("sstate");
+static str str_next_sstate_col = str_init("next_sstate");
+static str str_sparam0_col     = str_init("sparam0");
+static str str_sparam1_col     = str_init("sparam1");
+static str str_sparam2_col     = str_init("sparam2");
+static str str_sparam3_col     = str_init("sparam3");
+static str str_sparam4_col     = str_init("sparam4");
+static str str_sdp_col         = str_init("sdp");
+static str str_e1_type_col     = str_init("e1_type");
+static str str_e1_sid_col      = str_init("e1_sid");
+static str str_e1_to_col       = str_init("e1_to");
+static str str_e1_from_col     = str_init("e1_from");
+static str str_e1_key_col      = str_init("e1_key");
+static str str_e2_type_col     = str_init("e2_type");
+static str str_e2_sid_col      = str_init("e2_sid");
+static str str_e2_to_col       = str_init("e2_to");
+static str str_e2_from_col     = str_init("e2_from");
+static str str_e2_key_col      = str_init("e2_key");
+static str str_e3_type_col     = str_init("e3_type");
+static str str_e3_sid_col      = str_init("e3_sid");
+static str str_e3_to_col       = str_init("e3_to");
+static str str_e3_from_col     = str_init("e3_from");
+static str str_e3_key_col      = str_init("e3_key");
+
+#define DB_COLS_NO  25
 
 /** Exported functions */
 static cmd_export_t cmds[]=
@@ -100,10 +135,13 @@ static param_export_t params[]=
 {
 	{"hash_size",       INT_PARAM,                &b2bl_hsize                },
 	{"cleanup_period",  INT_PARAM,                &b2b_clean_period          },
+	{"update_period",   INT_PARAM,                &b2b_update_period         },
 	{"script_scenario", STR_PARAM|USE_FUNC_PARAM, (void*)load_script_scenario},
 	{"extern_scenario", STR_PARAM|USE_FUNC_PARAM, (void*)load_extern_scenario},
 	{"custom_headers",  STR_PARAM,                &custom_headers.s          },
 	{"use_init_sdp",    INT_PARAM,                &use_init_sdp              },
+	{ "db_url",         STR_PARAM,                &db_url.s                  },
+	{ "dbtable",        STR_PARAM,                &dbtable.s                 },
 	{0,                    0,                          0                     }
 };
 
@@ -164,6 +202,57 @@ static int mod_init(void)
 		LM_ERR("Wrong parameter - b2b_clean_period [%d]\n", b2b_clean_period);
 		return -1;
 	}
+	if(b2b_update_period < 0)
+	{
+		LM_ERR("Wrong parameter - b2b_update_period [%d]\n", b2b_update_period);
+		return -1;
+	}
+
+	if(db_url.s)
+		db_url.len = strlen(db_url.s);
+	else
+	{
+		LM_ERR("DB_URL parameter not set\n");
+		return -1;
+	}
+	/* binding to database module  */
+	if (db_bind_mod(&db_url, &b2bl_dbf))
+	{
+		LM_ERR("Database module not found\n");
+		return -1;
+	}
+
+	if (!DB_CAPABILITY(b2bl_dbf, DB_CAP_ALL))
+	{
+		LM_ERR("Database module does not implement all functions"
+				" needed by b2b_entities module\n");
+		return -1;
+	}
+
+	b2bl_db = b2bl_dbf.init(&db_url);
+	if(!b2bl_db)
+	{
+		LM_ERR("connecting to database failed\n");
+		return -1;
+	}
+
+	/*verify table versions */
+	if(db_check_table_version(&b2bl_dbf, b2bl_db, &dbtable, TABLE_VERSION) < 0)
+	{
+		LM_ERR("error during table version check\n");
+		return -1;
+	}
+
+	/* reload data */
+	if(b2b_logic_restore() < 0)
+	{
+		LM_ERR("Failed to restore data from database\n");
+		return -1;
+	}
+
+	if(b2bl_db)
+		b2bl_dbf.close(b2bl_db);
+	b2bl_db = NULL;
 
 	/* parse extra headers */
 	if(custom_headers.s)
@@ -219,10 +308,15 @@ next_hdr:
 	custom_headers_lst_len = i +1;
 
 	register_timer(b2bl_clean, 0, b2b_clean_period);
+	register_timer(b2bl_db_update, 0, b2b_update_period);
 
 	return 0;
 }
 
+void b2bl_db_update(unsigned int ticks, void* param)
+{
+	b2b_logic_dump(0);
+}
 void b2bl_clean(unsigned int ticks, void* param)
 {
 	int i;
@@ -253,7 +347,7 @@ void b2bl_clean(unsigned int ticks, void* param)
 						&tuple->bridge_entities[1]->key, &bye, 0, 0,
 						tuple->bridge_entities[1]->dlginfo);
 				}
-				b2bl_delete(tuple, i);
+				b2bl_delete(tuple, i, 0);
 			}
 			tuple = tuple_next;
 		}
@@ -464,13 +558,14 @@ error:
 
 static int load_script_scenario(modparam_t type, void* val)
 {
-	return load_scenario(&script_scenaries, (char*)val);
+	return load_scenario(&script_scenarios, (char*)val);
 }
 
 static int load_extern_scenario(modparam_t type, void* val)
 {
-	return load_scenario(&extern_scenaries, (char*)val);
+	return load_scenario(&extern_scenarios, (char*)val);
 }
+
 
 static void mod_destroy(void)
 {
@@ -479,7 +574,10 @@ static void mod_destroy(void)
 
 	b2b_scenario_t* scenario, *next;
 
-	scenario = extern_scenaries;
+	if(b2bl_db)
+		b2b_logic_dump(1);
+
+	scenario = extern_scenarios;
 	while(scenario)
 	{
 		next = scenario->next;
@@ -490,7 +588,7 @@ static void mod_destroy(void)
 		scenario = next;
 	}
 
-	scenario = script_scenaries;
+	scenario = script_scenarios;
 	while(scenario)
 	{
 		next = scenario->next;
@@ -526,9 +624,40 @@ static void mod_destroy(void)
 
 static int child_init(int rank)
 {
+	if (b2bl_dbf.init==0)
+	{
+		LM_CRIT("child_init: database not bound\n");
+		return -1;
+	}
+
+	b2bl_db = b2bl_dbf.init(&db_url);
+	if(!b2bl_db)
+	{
+		LM_ERR("connecting to database failed\n");
+		return -1;
+	}
+	LM_DBG("child %d: Database connection opened successfully\n", rank);
+
 	return 0;
 }
+b2b_scenario_t* get_scenario_id_list(str* sid, b2b_scenario_t* list)
+{
+	b2b_scenario_t* scenario;
 
+	/*search first in script_scenarios */
+	scenario = list;
+	while(scenario)
+	{
+		LM_DBG("scenario id = %.*s\n", scenario->id.len, scenario->id.s);
+		if(scenario->id.len == sid->len &&
+				strncmp(scenario->id.s, sid->s, sid->len) == 0)
+		{
+			return scenario;
+		}
+		scenario = scenario->next;
+	}
+	return 0;
+}
 
 static int fixup_b2b_logic(void** param, int param_no)
 {
@@ -552,7 +681,6 @@ static int fixup_b2b_logic(void** param, int param_no)
 		/* the first parameter must be the scenario id and must be a string */
 		if(param_no == 1)
 		{
-			b2b_scenario_t* scenario = script_scenaries;
 			if(model->spec.type != PVT_NONE )
 			{
 				LM_ERR("The first parameter is not a string\n");
@@ -564,18 +692,9 @@ static int fixup_b2b_logic(void** param, int param_no)
 				*param = NULL;
 				return 0;
 			}
-			while(scenario)
-			{
-				LM_DBG("scenario id = %.*s\n", scenario->id.len, scenario->id.s);
-				if(scenario->id.len == s.len &&
-						strncmp(scenario->id.s, s.s, s.len) == 0)
-				{
-					*param = (void*)scenario;
-					LM_DBG("Fixup parameter for scenario id = %.*s\n", s.len, s.s);
-					return 0;
-				}
-				scenario = scenario->next;
-			}
+			*param = get_scenario_id_list(&s, script_scenarios);
+			if(*param)
+				return 0;
 			LM_ERR("Wrong Scenary ID. No scenario with this ID [%.*s]\n", s.len, s.s);
 			return E_UNSPEC;
 		}
@@ -587,6 +706,24 @@ static int fixup_b2b_logic(void** param, int param_no)
 	return E_UNSPEC;
 }
 
+b2b_scenario_t* get_scenario_id(str* sid)
+{
+	b2b_scenario_t* scenario;
+
+	if(sid->s== 0 || sid->len== 0)
+		return 0;
+
+	if(sid->len == B2B_TOP_HIDING_SCENARY_LEN &&
+		strncmp(sid->s,B2B_TOP_HIDING_SCENARY,B2B_TOP_HIDING_SCENARY_LEN)==0)
+	{
+		return 0;
+	}
+	scenario = get_scenario_id_list(sid, script_scenarios);
+	if(scenario)
+		return scenario;
+
+	return get_scenario_id_list(sid, extern_scenarios);
+}
 
 static struct mi_root* mi_trigger_scenario(struct mi_root* cmd, void* param)
 {
@@ -615,7 +752,7 @@ static struct mi_root* mi_trigger_scenario(struct mi_root* cmd, void* param)
 	node = node->next;
 
 	/* find the scenario with the corresponding id */
-	scenario_struct = extern_scenaries;
+	scenario_struct = extern_scenarios;
 	while(scenario_struct)
 	{
 		if(scenario_struct->id.len == attr.len && 
@@ -820,4 +957,507 @@ static struct mi_root* mi_b2b_bridge(struct mi_root* cmd, void* param)
 error:
 	lock_release(&b2bl_htable[hash_index].lock);
 	return 0;
+}
+
+void b2bl_db_delete(b2bl_tuple_t* tuple)
+{
+	static db_key_t qcols[1];
+	db_val_t qvals[1];
+
+	if(!tuple || !tuple->key|| tuple->db_flag==INSERTDB_FLAG)
+		return;
+
+	LM_DBG("Delete key = %.*s\n", tuple->key->len, tuple->key->s);
+
+	if(b2bl_dbf.use_table(b2bl_db, &dbtable)< 0)
+	{
+		LM_ERR("sql use table failed\n");
+		return;
+	}
+	memset(qvals, 0, sizeof(db_val_t));
+
+	qcols[0]             = &str_key_col;
+	qvals[0].type        = DB_STR;
+	qvals[0].val.str_val = *tuple->key;
+
+	if(b2bl_dbf.delete(b2bl_db, qcols, 0, qvals, 1) < 0)
+	{
+		LM_ERR("Failed to delete from database table\n");
+	}
+}
+
+void b2b_logic_dump(int no_lock)
+{
+	b2bl_tuple_t* tuple;
+	static db_key_t qcols[DB_COLS_NO];
+	db_val_t qvals[DB_COLS_NO];
+	int key_col, scenario_col, sstate_col, next_sstate_col, sparam0_col;
+	int sparam1_col, sparam2_col, sparam3_col, sparam4_col, sdp_col;
+	int e1_type_col, e1_sid_col, e1_to_col, e1_from_col, e1_key_col;
+	int e2_type_col, e2_sid_col, e2_to_col, e2_from_col, e2_key_col;
+	int e3_type_col, e3_sid_col, e3_to_col, e3_from_col, e3_key_col;
+	int n_query_cols= 0;
+	int n_insert_cols;
+	int i;
+
+	if(b2bl_dbf.use_table(b2bl_db, &dbtable)< 0)
+	{
+		LM_ERR("sql use table failed\n");
+		return;
+	}
+	memset(qvals, 0, DB_COLS_NO* sizeof(db_val_t));
+
+	qcols[key_col= n_query_cols++]         = &str_key_col;
+	qvals[key_col].type                    = DB_STR;
+	qcols[scenario_col= n_query_cols++]    = &str_scenario_col;
+	qvals[scenario_col].type               = DB_STR;
+	qcols[sstate_col= n_query_cols++]      = &str_sstate_col;
+	qvals[sstate_col].type                 = DB_INT;
+	qcols[next_sstate_col= n_query_cols++] = &str_next_sstate_col;
+	qvals[next_sstate_col].type            = DB_INT;
+	qcols[sparam0_col= n_query_cols++]     = &str_sparam0_col;
+	qvals[sparam0_col].type                = DB_STR;
+	qcols[sparam1_col= n_query_cols++]     = &str_sparam1_col;
+	qvals[sparam1_col].type                = DB_STR;
+	qcols[sparam2_col= n_query_cols++]     = &str_sparam2_col;
+	qvals[sparam2_col].type                = DB_STR;
+	qcols[sparam3_col= n_query_cols++]     = &str_sparam3_col;
+	qvals[sparam3_col].type                = DB_STR;
+	qcols[sparam4_col= n_query_cols++]     = &str_sparam4_col;
+	qvals[sparam4_col].type                = DB_STR;
+	qcols[sdp_col= n_query_cols++]         = &str_sdp_col;
+	qvals[sdp_col].type                    = DB_STR;
+	qcols[e1_type_col= n_query_cols++]     = &str_e1_type_col;
+	qvals[e1_type_col].type                = DB_INT;
+	qcols[e1_sid_col= n_query_cols++]      = &str_e1_sid_col;
+	qvals[e1_sid_col].type                 = DB_STR;
+	qcols[e1_to_col= n_query_cols++]       = &str_e1_to_col;
+	qvals[e1_to_col].type                  = DB_STR;
+	qcols[e1_from_col= n_query_cols++]     = &str_e1_from_col;
+	qvals[e1_from_col].type                = DB_STR;
+	qcols[e1_key_col= n_query_cols++]      = &str_e1_key_col;
+	qvals[e1_key_col].type                 = DB_STR;
+	qcols[e2_type_col= n_query_cols++]     = &str_e2_type_col;
+	qvals[e2_type_col].type                = DB_INT;
+	qcols[e2_sid_col= n_query_cols++]      = &str_e2_sid_col;
+	qvals[e2_sid_col].type                 = DB_STR;
+	qcols[e2_to_col= n_query_cols++]       = &str_e2_to_col;
+	qvals[e2_to_col].type                  = DB_STR;
+	qcols[e2_from_col= n_query_cols++]     = &str_e2_from_col;
+	qvals[e2_from_col].type                = DB_STR;
+	qcols[e2_key_col= n_query_cols++]      = &str_e2_key_col;
+	qvals[e2_key_col].type                 = DB_STR;
+	qcols[e3_type_col= n_query_cols++]     = &str_e3_type_col;
+	qvals[e3_type_col].type                = DB_INT;
+	qcols[e3_sid_col= n_query_cols++]      = &str_e3_sid_col;
+	qvals[e3_sid_col].type                 = DB_STR;
+	qcols[e3_to_col= n_query_cols++]       = &str_e3_to_col;
+	qvals[e3_to_col].type                  = DB_STR;
+	qcols[e3_from_col= n_query_cols++]     = &str_e3_from_col;
+	qvals[e3_from_col].type                = DB_STR;
+	qcols[e3_key_col= n_query_cols++]      = &str_e3_key_col;
+	qvals[e3_key_col].type                 = DB_STR;
+
+	for(i = 0; i< b2bl_hsize; i++)
+	{
+		if(!no_lock)
+			lock_get(&b2bl_htable[i].lock);
+		tuple = b2bl_htable[i].first;
+		while(tuple)
+		{
+			/* check the state of the scenario instantiation */
+			if(tuple->db_flag == NO_UPDATEDB_FLAG)
+				goto next;
+
+			LM_DBG("Found one tuple\n");
+			if(tuple->key == NULL)
+			{
+				LM_ERR("No key stored\n");
+				goto next;
+			}
+			if(tuple->bridge_entities[0]==NULL || tuple->bridge_entities[1]== NULL)
+			{
+				LM_ERR("Bridge entities is NULL\n");
+				if(tuple->bridge_entities[0]==NULL)
+					LM_DBG("0 NULL\n");
+				else
+					LM_DBG("1 NULL\n");
+				goto next;
+			}
+
+			qvals[key_col].val.str_val           = *tuple->key;
+			if(tuple->db_flag == INSERTDB_FLAG)
+			{
+				if(tuple->scenario)
+					qvals[scenario_col].val.str_val  = tuple->scenario->id;
+				qvals[sstate_col].val.int_val        = tuple->scenario_state;
+				qvals[next_sstate_col].val.int_val   = tuple->next_scenario_state;
+				qvals[sparam0_col].val.str_val       = tuple->scenario_params[0];
+				qvals[sparam1_col].val.str_val       = tuple->scenario_params[1];
+				qvals[sparam2_col].val.str_val       = tuple->scenario_params[2];
+				qvals[sparam3_col].val.str_val       = tuple->scenario_params[3];
+				qvals[sparam4_col].val.str_val       = tuple->scenario_params[4];
+				qvals[sdp_col].val.str_val           = tuple->sdp;
+			}
+			qvals[e1_type_col].val.int_val       = tuple->bridge_entities[0]->type;
+			qvals[e1_sid_col].val.str_val        = tuple->bridge_entities[0]->scenario_id;
+			qvals[e1_to_col].val.str_val         = tuple->bridge_entities[0]->to_uri;
+			qvals[e1_from_col].val.str_val       = tuple->bridge_entities[0]->from_uri;
+			qvals[e1_key_col].val.str_val        = tuple->bridge_entities[0]->key;
+			qvals[e2_type_col].val.int_val       = tuple->bridge_entities[1]->type;
+			qvals[e2_sid_col].val.str_val        = tuple->bridge_entities[1]->scenario_id;
+			qvals[e2_to_col].val.str_val         = tuple->bridge_entities[1]->to_uri;
+			qvals[e2_from_col].val.str_val       = tuple->bridge_entities[1]->from_uri;
+			qvals[e2_key_col].val.str_val        = tuple->bridge_entities[1]->key;
+
+			n_insert_cols = e2_key_col+1;
+
+			if(tuple->bridge_entities[2])
+			{
+				qvals[e3_type_col].val.int_val       = tuple->bridge_entities[2]->type;
+				qvals[e3_sid_col].val.str_val        = tuple->bridge_entities[2]->scenario_id;
+				qvals[e3_to_col].val.str_val         = tuple->bridge_entities[2]->to_uri;
+				qvals[e3_from_col].val.str_val       = tuple->bridge_entities[2]->from_uri;
+				qvals[e3_key_col].val.str_val        = tuple->bridge_entities[2]->key;
+				n_insert_cols = n_query_cols;
+			}
+
+			/* insert into database */
+			if(tuple->db_flag == INSERTDB_FLAG)
+			{
+				if(b2bl_dbf.insert(b2bl_db, qcols, qvals, n_insert_cols)< 0)
+				{
+					LM_ERR("Sql insert failed\n");
+					if(!no_lock)
+						lock_release(&b2bl_htable[i].lock);
+					return;
+				}
+			}
+			else
+			{
+				/*do update */
+				if(b2bl_dbf.update(b2bl_db, qcols, 0, qvals, qcols+e1_type_col,
+					qvals+e1_type_col, 1, n_insert_cols - e1_type_col)< 0)
+				{
+					LM_ERR("Sql update failed\n");
+					if(!no_lock)
+						lock_release(&b2bl_htable[i].lock);
+					return;
+				}
+			}
+			tuple->db_flag = NO_UPDATEDB_FLAG;
+next:
+			tuple = tuple->next;
+		}
+		if(!no_lock)
+			lock_release(&b2bl_htable[i].lock);
+	}
+}
+
+int b2bl_add_tuple(b2bl_tuple_t* tuple, str* params[])
+{
+	b2bl_tuple_t* shm_tuple= NULL;
+	unsigned int hash_index, local_index;
+	str* b2bl_key;
+	b2bl_entity_id_t* entity;
+	int i;
+	b2b_notify_t cback;
+	str* client_id = NULL;
+
+	LM_DBG("Add tuple key [%.*s]\n", tuple->key->len, tuple->key->s);
+	if(b2bl_parse_key(tuple->key, &hash_index, &local_index)< 0)
+	{
+		LM_ERR("Wrong formatted b2b logic key\n");
+		return -1;
+	}
+	shm_tuple = b2bl_insert_new(0, hash_index, tuple->scenario, params,
+			(tuple->sdp.s?&tuple->sdp:0), &b2bl_key);
+	if(shm_tuple == NULL)
+	{
+		LM_ERR("Failed to insert new tuple\n");
+		return -1;
+	}
+	lock_release(&b2bl_htable[hash_index].lock);
+	shm_tuple->scenario_state= tuple->scenario_state;
+	shm_tuple->next_scenario_state= tuple->next_scenario_state;
+
+	/* add entities */
+	for(i=0; i< 3; i++)
+	{
+		if(!tuple->bridge_entities[i]->to_uri.len)
+			continue;
+		LM_DBG("Restore logic info i=%d\n", i);
+
+		if(tuple->bridge_entities[i]->type == B2B_SERVER)
+			cback = b2b_server_notify;
+		else
+			cback = b2b_client_notify;
+
+		/* restore to the entities from b2b_entities module the parameter and callback function */
+		if(b2b_api.restore_logic_info(tuple->bridge_entities[i]->type,
+			&tuple->bridge_entities[i]->key, cback)< 0)
+		{
+			LM_DBG("Failed to restore logic info for entity %d\n", i);
+		}
+		entity= b2bl_create_new_entity(tuple->bridge_entities[i]->type,
+			&tuple->bridge_entities[i]->key,&tuple->bridge_entities[i]->to_uri,
+			&tuple->bridge_entities[i]->from_uri,&tuple->bridge_entities[i]->scenario_id, 0);
+		if(client_id)
+			pkg_free(client_id);
+		if(entity == NULL)
+		{
+			LM_ERR("Failed to create entity %d\n", i);
+			goto error;
+		}
+		shm_tuple->bridge_entities[i]= entity;
+		/* put the pointer in clients or servers array */
+		if(tuple->bridge_entities[i]->type == B2B_SERVER)
+		{
+			shm_tuple->server = entity;
+		}
+		else
+		{
+			entity->next = shm_tuple->clients;
+			shm_tuple->clients = entity;
+		}
+	}
+	if(shm_tuple->bridge_entities[1])
+		shm_tuple->bridge_entities[1]->peer = shm_tuple->bridge_entities[0];
+	if(shm_tuple->bridge_entities[0])
+		shm_tuple->bridge_entities[0]->peer = shm_tuple->bridge_entities[1];
+
+	return 0;
+error:
+	shm_free(shm_tuple);
+	return -1;
+}
+
+int b2b_logic_restore(void)
+{
+	static db_key_t result_cols[DB_COLS_NO];
+	int key_col, scenario_col, sstate_col, next_sstate_col, sdp_col;
+	int sparam0_col, sparam1_col, sparam2_col, sparam3_col, sparam4_col;
+	int e1_type_col, e1_sid_col, e1_to_col, e1_from_col, e1_key_col;
+	int e2_type_col, e2_sid_col, e2_to_col, e2_from_col, e2_key_col;
+	int e3_type_col, e3_sid_col, e3_to_col, e3_from_col, e3_key_col;
+	int n_result_cols= 0;
+	int i;
+	int nr_rows;
+	db_res_t *result= NULL;
+	db_row_t *rows = NULL;
+	db_val_t *row_vals= NULL;
+	b2bl_tuple_t tuple;
+	str b2bl_key;
+	str scenario_id;
+	b2bl_entity_id_t bridge_entities[3];
+	str* params[5];
+
+	if(b2bl_db == NULL)
+	{
+		LM_DBG("NULL database connection\n");
+		return 0;
+	}
+	if(b2bl_dbf.use_table(b2bl_db, &dbtable)< 0)
+	{
+		LM_ERR("sql use table failed\n");
+		return -1;
+	}
+
+	result_cols[key_col        = n_result_cols++] =&str_key_col;
+	result_cols[scenario_col   = n_result_cols++] =&str_scenario_col;
+	result_cols[sstate_col     = n_result_cols++] =&str_sstate_col;
+	result_cols[next_sstate_col= n_result_cols++] =&str_next_sstate_col;
+	result_cols[sparam0_col    = n_result_cols++] =&str_sparam0_col;
+	result_cols[sparam1_col    = n_result_cols++] =&str_sparam1_col;
+	result_cols[sparam2_col    = n_result_cols++] =&str_sparam2_col;
+	result_cols[sparam3_col    = n_result_cols++] =&str_sparam3_col;
+	result_cols[sparam4_col    = n_result_cols++] =&str_sparam4_col;
+	result_cols[sdp_col        = n_result_cols++] =&str_sdp_col;
+	result_cols[e1_type_col    = n_result_cols++] =&str_e1_type_col;
+	result_cols[e1_sid_col     = n_result_cols++] =&str_e1_sid_col;
+	result_cols[e1_to_col      = n_result_cols++] =&str_e1_to_col;
+	result_cols[e1_from_col    = n_result_cols++] =&str_e1_from_col;
+	result_cols[e1_key_col     = n_result_cols++] =&str_e1_key_col;
+	result_cols[e2_type_col    = n_result_cols++] =&str_e2_type_col;
+	result_cols[e2_sid_col     = n_result_cols++] =&str_e2_sid_col;
+	result_cols[e2_to_col      = n_result_cols++] =&str_e2_to_col;
+	result_cols[e2_from_col    = n_result_cols++] =&str_e2_from_col;
+	result_cols[e2_key_col     = n_result_cols++] =&str_e2_key_col;
+	result_cols[e3_type_col    = n_result_cols++] =&str_e3_type_col;
+	result_cols[e3_sid_col     = n_result_cols++] =&str_e3_sid_col;
+	result_cols[e3_to_col      = n_result_cols++] =&str_e3_to_col;
+	result_cols[e3_from_col    = n_result_cols++] =&str_e3_from_col;
+	result_cols[e3_key_col     = n_result_cols++] =&str_e3_key_col;
+
+	if (DB_CAPABILITY(b2bl_dbf, DB_CAP_FETCH))
+	{
+		if(b2bl_dbf.query(b2bl_db,0,0,0,result_cols, 0,
+			n_result_cols, 0, 0) < 0) 
+		{
+			LM_ERR("Error while querying (fetch) database\n");
+			return -1;
+		}
+		if(b2bl_dbf.fetch_result(b2bl_db,&result,B2BL_FETCH_SIZE)<0)
+		{
+			LM_ERR("fetching rows failed\n");
+			return -1;
+		}
+	}
+	else
+	{
+		if (b2bl_dbf.query (b2bl_db, 0, 0, 0,result_cols,0, n_result_cols,
+					0, &result) < 0)
+		{
+			LM_ERR("querying presentity\n");
+			return -1;
+		}
+	}
+
+	nr_rows = RES_ROW_N(result);
+
+	do {
+		LM_DBG("loading information from database %i records\n", nr_rows);
+
+		rows = RES_ROWS(result);
+
+		/* for every row */
+		for(i=0; i<nr_rows; i++)
+		{
+			row_vals = ROW_VALUES(rows +i);
+			memset(&tuple, 0, sizeof(b2bl_tuple_t));
+
+			b2bl_key.s = (char*)row_vals[key_col].val.string_val;
+			b2bl_key.len = b2bl_key.s?strlen(b2bl_key.s):0;
+
+			tuple.key = &b2bl_key;
+			if(row_vals[scenario_col].val.string_val)
+			{
+				scenario_id.s = (char*)row_vals[scenario_col].val.string_val;
+				scenario_id.len = strlen(scenario_id.s);
+				tuple.scenario = get_scenario_id(&scenario_id);
+			}
+			memset(bridge_entities, 0, 3*sizeof(b2bl_entity_id_t));
+			tuple.scenario_state     =row_vals[sstate_col].val.int_val;
+			tuple.next_scenario_state=row_vals[next_sstate_col].val.int_val;
+			memset(params, 0, 5* sizeof(str*));
+			if(row_vals[sparam0_col].val.string_val)
+			{
+				tuple.scenario_params[0].s =(char*)row_vals[sparam0_col].val.string_val;
+				tuple.scenario_params[0].len = strlen(tuple.scenario_params[0].s);
+				params[0] = &tuple.scenario_params[0];
+			}
+			if(row_vals[sparam1_col].val.string_val)
+			{
+				tuple.scenario_params[1].s =(char*)row_vals[sparam1_col].val.string_val;
+				tuple.scenario_params[1].len = strlen(tuple.scenario_params[1].s);
+				params[1] = &tuple.scenario_params[1];
+			}
+			if(row_vals[sparam2_col].val.string_val)
+			{
+				tuple.scenario_params[2].s =(char*)row_vals[sparam2_col].val.string_val;
+				tuple.scenario_params[2].len = strlen(tuple.scenario_params[2].s);
+				params[2] = &tuple.scenario_params[2];
+			}
+			if(row_vals[sparam3_col].val.string_val)
+			{
+				tuple.scenario_params[3].s =(char*)row_vals[sparam3_col].val.string_val;
+				tuple.scenario_params[3].len = strlen(tuple.scenario_params[3].s);
+				params[3] = &tuple.scenario_params[3];
+			}
+			if(row_vals[sparam4_col].val.string_val)
+			{
+				tuple.scenario_params[4].s =(char*)row_vals[sparam4_col].val.string_val;
+				tuple.scenario_params[4].len = strlen(tuple.scenario_params[4].s);
+				params[4] = &tuple.scenario_params[4];
+			}
+
+			bridge_entities[0].type  = row_vals[e1_type_col].val.int_val;
+			bridge_entities[0].scenario_id.s =(char*)row_vals[e1_sid_col].val.string_val;
+			bridge_entities[0].scenario_id.len=
+				bridge_entities[0].scenario_id.s?strlen(bridge_entities[0].scenario_id.s):0;
+			bridge_entities[0].to_uri.s  =(char*)row_vals[e1_to_col].val.string_val;
+			bridge_entities[0].to_uri.len=
+				bridge_entities[0].to_uri.s?strlen(bridge_entities[0].to_uri.s):0;
+			bridge_entities[0].from_uri.s=(char*)row_vals[e1_from_col].val.string_val;
+			bridge_entities[0].from_uri.len=
+				bridge_entities[0].from_uri.s?strlen(bridge_entities[0].from_uri.s):0;
+			bridge_entities[0].key.s  =(char*)row_vals[e1_key_col].val.string_val;
+			bridge_entities[0].key.len=
+				bridge_entities[0].key.s?strlen(bridge_entities[0].key.s):0;
+
+			bridge_entities[1].type = row_vals[e2_type_col].val.int_val;
+			bridge_entities[1].scenario_id.s  = (char*)row_vals[e2_sid_col].val.string_val;
+			bridge_entities[1].scenario_id.len=
+				bridge_entities[1].scenario_id.s?strlen(bridge_entities[1].scenario_id.s):0;
+			bridge_entities[1].to_uri.s  = (char*)row_vals[e2_to_col].val.string_val;
+			bridge_entities[1].to_uri.len=
+				bridge_entities[1].to_uri.s?strlen(bridge_entities[1].to_uri.s):0;
+			bridge_entities[1].from_uri.s  = (char*)row_vals[e2_from_col].val.string_val;
+			bridge_entities[1].from_uri.len=
+				bridge_entities[1].from_uri.s?strlen(bridge_entities[1].from_uri.s):0;
+			bridge_entities[1].key.s  = (char*)row_vals[e2_key_col].val.string_val;
+			bridge_entities[1].key.len=
+				bridge_entities[1].key.s?strlen(bridge_entities[1].key.s):0;
+
+			if(row_vals[e3_to_col].val.string_val)
+			{
+				bridge_entities[2].type = row_vals[e3_type_col].val.int_val;
+				bridge_entities[2].scenario_id.s  = (char*)row_vals[e3_sid_col].val.string_val;
+				bridge_entities[2].scenario_id.len=
+					bridge_entities[2].scenario_id.s?strlen(bridge_entities[2].scenario_id.s):0;
+				bridge_entities[2].to_uri.s  = (char*)row_vals[e3_to_col].val.string_val;
+				bridge_entities[2].to_uri.len=
+					bridge_entities[2].to_uri.s?strlen(bridge_entities[2].to_uri.s):0;
+				bridge_entities[2].from_uri.s  = (char*)row_vals[e3_from_col].val.string_val;
+				bridge_entities[2].from_uri.len=
+					bridge_entities[2].from_uri.s?strlen(bridge_entities[2].from_uri.s):0;
+				bridge_entities[2].key.s  = (char*)row_vals[e3_key_col].val.string_val;
+				bridge_entities[2].key.len=
+					bridge_entities[2].key.s?strlen(bridge_entities[2].key.s):0;
+			}
+
+			tuple.sdp.s   = (char*)row_vals[sdp_col].val.string_val;
+			tuple.sdp.len = (tuple.sdp.s?strlen(tuple.sdp.s):0);
+
+			tuple.bridge_entities[0] = &bridge_entities[0];
+			tuple.bridge_entities[1] = &bridge_entities[1];
+			tuple.bridge_entities[2] = &bridge_entities[2];
+
+			if(b2bl_add_tuple(&tuple, params) < 0)
+			{
+				LM_ERR("Failed to add new tuple\n");
+				goto error;
+			}
+		}
+		/* any more data to be fetched ?*/
+		if (DB_CAPABILITY(b2bl_dbf, DB_CAP_FETCH)) {
+			if (b2bl_dbf.fetch_result( b2bl_db, &result,
+				B2BL_FETCH_SIZE ) < 0) 
+			{
+				LM_ERR("fetching more rows failed\n");
+				goto error;
+			}
+			nr_rows = RES_ROW_N(result);
+		} else {
+			nr_rows = 0;
+		}
+	}while (nr_rows>0);
+
+	b2bl_dbf.free_result(b2bl_db, result);
+	LM_DBG("Finished\n");
+
+	/* delete all from database */
+	if(b2bl_dbf.delete(b2bl_db, 0, 0, 0, 0) < 0)
+	{
+		LM_ERR("Failed to delete from database table\n");
+		return -1;
+	}
+
+	return 0;
+
+
+error:
+	if(result)
+		b2bl_dbf.free_result(b2bl_db, result);
+	return -1;
 }

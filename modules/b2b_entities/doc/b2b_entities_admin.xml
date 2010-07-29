@@ -154,15 +154,46 @@ modparam("b2b_entities", "script_reply_route", "b2b_reply")
 		</example>
 	</section>
 
+	<section>
+		<title><varname>db_url</varname> (str)</title>
+		<para>
+			Database URL.
+		</para>
+		<example>
+		<title>Set <varname>db_url</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("b2b_entities", "db_url", "mysql://opensips:opensipsrw@127.0.0.1/opensips")
+...
+	</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>update_period</varname> (int)</title>
+		<para>
+			The time interval at which to update the info in database.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>100</quote>.</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>update_period</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("b2b_logic", "update_period", 60)
+...
+	</programlisting>
+		</example>
+	</section>
+</section>
+
 
 	<section>
 		<title>Exported Functions</title>
 		<para>The module does not export functions to be used
 		in configuration script.</para>
-	</section>	
-
-
-</section>
+	</section>
 
 </chapter>
 

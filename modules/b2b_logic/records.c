@@ -193,6 +193,7 @@ b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg,
 	tuple->key = b2bl_key;
 
 	*b2bl_key_s = b2bl_key;
+	tuple->db_flag = INSERTDB_FLAG;
 
 	return tuple;
 error:
@@ -239,6 +240,10 @@ void b2bl_delete_entity(b2bl_entity_id_t* entity, b2bl_tuple_t* tuple)
 
 	if(entity->dlginfo)
 		shm_free(entity->dlginfo);
+
+	if(entity->peer && entity->peer->peer==entity)
+		entity->peer->peer = NULL;
+
 	shm_free(entity);
 
 	/* for debuging */
@@ -255,7 +260,8 @@ void b2bl_add_client_list(b2bl_tuple_t* tuple, b2bl_entity_id_t* entity)
 }
 
 
-void b2bl_delete(b2bl_tuple_t* tuple, unsigned int hash_index)
+void b2bl_delete(b2bl_tuple_t* tuple, unsigned int hash_index,
+		int not_del_b2be)
 {
 	b2bl_entity_id_t* entity, *next_entity;
 	int i;
@@ -263,6 +269,9 @@ void b2bl_delete(b2bl_tuple_t* tuple, unsigned int hash_index)
 	LM_DBG("Delete record, hash_index=[%d], local_index=[%d]\n",
 			hash_index, tuple->id);
 	LM_DBG("pointer [%p]\n", tuple);
+
+	if(!not_del_b2be)
+		b2bl_db_delete(tuple);
 	if(b2bl_htable[hash_index].first == tuple)
 	{
 		b2bl_htable[hash_index].first = tuple->next;
@@ -279,9 +288,9 @@ void b2bl_delete(b2bl_tuple_t* tuple, unsigned int hash_index)
 
 	if(tuple->server)
 	{
-		if(tuple->server->key.s && tuple->server->key.len)
+		if(tuple->server->key.s && tuple->server->key.len && !not_del_b2be)
 			b2b_api.entity_delete(B2B_SERVER, &tuple->server->key,
-			 tuple->server->dlginfo);
+					tuple->server->dlginfo);
 		if(tuple->server->dlginfo)
 			shm_free(tuple->server->dlginfo);
 		shm_free(tuple->server);
@@ -290,7 +299,7 @@ void b2bl_delete(b2bl_tuple_t* tuple, unsigned int hash_index)
 	while(entity)
 	{
 		next_entity = entity->next;
-		if(entity->key.s && entity->key.len)
+		if(entity->key.s && entity->key.len && !not_del_b2be)
 			b2b_api.entity_delete(B2B_CLIENT, &entity->key,
 				entity->dlginfo);
 		if(entity->dlginfo)
@@ -419,7 +428,7 @@ void destroy_b2bl_htable(void)
 
 		while(tuple)
 		{
-			b2bl_delete(tuple, i);
+			b2bl_delete(tuple, i, 1);
 			tuple = b2bl_htable[i].first;
 		}
 	}

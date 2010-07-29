@@ -47,6 +47,12 @@
 str ack = str_init(ACK);
 str bye = str_init(BYE);
 
+#define UPDATE_DBFLAG(dlg, flag) do{ \
+	if(dlg->db_flag==NO_UPDATEDB_FLAG) \
+		dlg->db_flag = UPDATEDB_FLAG; \
+}while(0)
+
+
 b2b_dlg_t* b2b_search_htable_dlg(b2b_table table, unsigned int hash_index,
 		unsigned int local_index, str* to_tag, str* from_tag, str* callid)
 {
@@ -320,19 +326,16 @@ b2b_dlg_t* b2b_dlg_copy(b2b_dlg_t* dlg)
 	if(dlg->to_dname.s)
 		CONT_COPY(new_dlg, new_dlg->to_dname, dlg->to_dname);
 
-	new_dlg->bind_addr[0] = dlg->bind_addr[0];
-	new_dlg->bind_addr[1] = dlg->bind_addr[1];
-
-	new_dlg->cseq[0] = dlg->cseq[0];
-	new_dlg->cseq[1] = dlg->cseq[1];
-
-	new_dlg->id       = dlg->id;
-	new_dlg->state    = dlg->state;
-
-	new_dlg->b2b_cback = dlg->b2b_cback;
-	new_dlg->add_dlginfo = dlg->add_dlginfo;
-
+	new_dlg->bind_addr[0]     = dlg->bind_addr[0];
+	new_dlg->bind_addr[1]     = dlg->bind_addr[1];
+	new_dlg->cseq[0]          = dlg->cseq[0];
+	new_dlg->cseq[1]          = dlg->cseq[1];
+	new_dlg->id               = dlg->id;
+	new_dlg->state            = dlg->state;
+	new_dlg->b2b_cback        = dlg->b2b_cback;
+	new_dlg->add_dlginfo      = dlg->add_dlginfo;
 	new_dlg->last_invite_cseq = dlg->last_invite_cseq;
+	new_dlg->db_flag          = dlg->db_flag;
 
 	return new_dlg;
 }
@@ -642,6 +645,7 @@ logic_notify:
 	}
 
 	set_dlg_state( dlg, method_value);
+	UPDATE_DBFLAG(dlg, dlg->db_flag);
 
 	b2b_cback = dlg->b2b_cback;
 	if(dlg->param.s)
@@ -760,13 +764,15 @@ b2b_dlg_t* b2b_new_dlg(struct sip_msg* msg, int on_reply, str* param)
 	}
 
 	/* reject CANCEL messages */
-	if (msg->first_line.u.request.method_value==METHOD_CANCEL)
+	if (msg->first_line.type == SIP_REQUEST)
 	{
-		LM_ERR("Called b2b_init on a Cancel message\n");
-		return 0;
+		if(msg->first_line.u.request.method_value != METHOD_INVITE)
+		{
+			LM_ERR("Called b2b_init on a Cancel message\n");
+			return 0;
+		}
+		dlg.ruri = msg->first_line.u.request.uri;
 	}
-
-	dlg.ruri = msg->first_line.u.request.uri;
 
 	/* examine the to header */
 	if(msg->to->parsed != NULL)
@@ -887,6 +893,7 @@ b2b_dlg_t* b2b_new_dlg(struct sip_msg* msg, int on_reply, str* param)
 	dlg.id = core_hash(&dlg.tag[CALLER_LEG], 0, server_hsize);
 	if(param)
 		dlg.param = *param;
+	dlg.db_flag = INSERTDB_FLAG;
 
 	shm_dlg = b2b_dlg_copy(&dlg);
 	if(shm_dlg == NULL)
@@ -994,6 +1001,7 @@ int b2b_send_reply(enum b2b_entity_type et, str* b2b_key, int code, str* text,
 			dlg->state= B2B_TERMINATED;
 		LM_DBG("Reseted transaction- send final reply [%p]\n", dlg);
 		dlg->uas_tran = NULL;
+		UPDATE_DBFLAG(dlg, dlg->db_flag);
 	}
 
 	if(tm_tran == NULL)
@@ -1032,6 +1040,7 @@ int b2b_send_reply(enum b2b_entity_type et, str* b2b_key, int code, str* text,
 		dlg->state = B2B_TERMINATED;
 	}
 	dlg->last_reply_code = code;
+	UPDATE_DBFLAG(dlg, dlg->flag);
 	lock_release(&table[hash_index].lock);
 	
 	if((extra_headers?extra_headers->len:0) + 14 + server_address.len + 20 + CRLF_LEN > BUF_LEN)
@@ -1084,11 +1093,11 @@ error:
 	return -1;
 }
 
-void b2b_delete_record(b2b_dlg_t* dlg, b2b_table* htable, unsigned int hash_index)
+void b2b_delete_record(b2b_dlg_t* dlg, b2b_table htable, unsigned int hash_index)
 {
 	if(dlg->prev == NULL)
 	{
-		(*htable)[hash_index].first = dlg->next;
+		htable[hash_index].first = dlg->next;
 	}
 	else
 	{
@@ -1098,7 +1107,7 @@ void b2b_delete_record(b2b_dlg_t* dlg, b2b_table* htable, unsigned int hash_inde
 	if(dlg->next)
 		dlg->next->prev = dlg->prev;
 
-	if(*htable == server_htable && dlg->tag[CALLEE_LEG].s)
+	if(htable == server_htable && dlg->tag[CALLEE_LEG].s)
 		shm_free(dlg->tag[CALLEE_LEG].s);
 
 	b2b_delete_legs(&dlg->legs);
@@ -1147,7 +1156,8 @@ void b2b_entity_delete(enum b2b_entity_type et, str* b2b_key,
 		return;
 	}
 
-	b2b_delete_record(dlg, &table, hash_index);
+	b2b_db_delete(dlg, et);
+	b2b_delete_record(dlg, table, hash_index);
 	lock_release(&table[hash_index].lock);
 }
 
@@ -1335,6 +1345,7 @@ int b2b_send_request(enum b2b_entity_type et, str* b2b_key, str* method,
 	}
 	dlg->last_method = method_value;
 	LM_DBG("[%p] last_method= %d\n",dlg, dlg->last_method);
+	UPDATE_DBFLAG(dlg, dlg->flag);
 
 	/* send request */
 	if(method_value == METHOD_CANCEL)
@@ -1679,6 +1690,7 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 	}
 
 	b2b_cback = dlg->b2b_cback;
+	UPDATE_DBFLAG(dlg, dlg->db_flag);
 	if(dlg->param.s)
 	{
 		param.s = (char*)pkg_malloc(dlg->param.len);
@@ -1729,6 +1741,7 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 				goto error;
 			}
 		}
+		UPDATE_DBFLAG(dlg, dlg->db_flag);
 		lock_release(&htable[hash_index].lock);
 		if(msg == FAKED_REPLY)
 			goto error;

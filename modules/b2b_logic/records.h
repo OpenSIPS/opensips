@@ -49,6 +49,10 @@ typedef struct b2bl_entity_id
 	struct b2bl_entity_id* peer;
 }b2bl_entity_id_t;
 
+#define NO_UPDATEDB_FLAG    0
+#define UPDATEDB_FLAG       1
+#define INSERTDB_FLAG       2
+
 typedef struct b2bl_tuple
 {
 	unsigned int id;
@@ -66,6 +70,7 @@ typedef struct b2bl_tuple
 	struct b2bl_tuple* prev;
 	unsigned int lifetime;
 	str sdp;
+	int db_flag;
 }b2bl_tuple_t;
 
 typedef struct b2bl_entry
@@ -88,7 +93,8 @@ int b2bl_parse_key(str* key, unsigned int* hash_index,
 b2bl_tuple_t* b2bl_search_tuple_safe(unsigned int hash_index,
 		unsigned int local_index);
 
-void b2bl_delete(b2bl_tuple_t* tuple, unsigned int hash_index);
+void b2bl_delete(b2bl_tuple_t* tuple, unsigned int hash_index,
+		int not_del_b2be);
 
 int init_b2bl_htable(void);
 
@@ -108,5 +114,7 @@ void b2bl_delete_entity(b2bl_entity_id_t* entity, b2bl_tuple_t* tuple);
 int b2b_extra_headers(struct sip_msg* msg, str* b2bl_key, str* extra_headers);
 
 void b2bl_add_client_list(b2bl_tuple_t* tuple, b2bl_entity_id_t* entity);
+
+void b2bl_db_delete(b2bl_tuple_t* tuple);
 
 #endif

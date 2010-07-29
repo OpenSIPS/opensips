@@ -157,6 +157,7 @@ str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 	dlg->id = core_hash(&from_tag, random_info.s?&random_info:0, HASH_SIZE);
 
 	/* callid must have the special format */
+	dlg->db_flag = NO_UPDATEDB_FLAG;
 	callid = b2b_htable_insert(client_htable, dlg, hash_index, B2B_CLIENT);
 	if(callid == NULL)
 	{
@@ -166,7 +167,6 @@ str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 	}
 	LM_DBG("New client [%p] - key = %.*s, last method=%d\n", dlg,
 			callid->len, callid->s, dlg->last_method);
-
 	if(b2breq_complete_ehdr(ci->extra_headers, &ehdr, ci->body)< 0)
 	{
 		LM_ERR("Failed to complete extra headers\n");

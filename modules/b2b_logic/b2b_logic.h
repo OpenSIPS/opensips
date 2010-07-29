@@ -127,4 +127,7 @@ int b2b_process_scenario_init(b2b_scenario_t* scenario_struct,struct sip_msg* ms
 		unsigned int hash_index, str* args[], str* to, str* from);
 int b2b_add_dlginfo(str* key, str* entity_key,int src, b2b_dlginfo_t* info);
 
+int b2b_server_notify(struct sip_msg* msg, str* key, int type, void* param);
+int b2b_client_notify(struct sip_msg* msg, str* key, int type, void* param);
+
 #endif
