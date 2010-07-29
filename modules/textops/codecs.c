@@ -32,18 +32,23 @@
 #include "../../data_lump.h"
 #include "../../parser/sdp/sdp.h"
 #include "codecs.h"
+#include "../../script_cb.h"
+#include"../../route.h"
 
 
-
-
-
-static struct _static_data_t
+typedef struct _lump_arr
 {
-	unsigned int last_id;
-	struct lump ** lumps;
+	str * v;
 	int len;
-	struct sip_msg * msg;
-}data;
+}lump_arr_t;
+
+
+struct lump ** lumps;
+int lumps_len;
+
+static lump_arr_t stack[3];
+static int idx;
+
 
 enum{
 	FIND,
@@ -60,13 +65,111 @@ enum{
 };
 
 
-typedef  int (*stream_func)(struct sdp_stream_cell *cell, int pos,
-	str * str1, str* str2, regex_t * re, int op,int description);
+static int stream_process(struct sip_msg* msg, struct sdp_stream_cell *cell,
+						  str* s, str* ss, regex_t* re, int op, int description);
+
+/* reset the global array of lumps*/
+void clear_global_data(void)
+{
+	if( lumps )
+	{
+		pkg_free(lumps);
+	}
+	
+	lumps = NULL;
+	lumps_len = -1;
+};
+
+/* save the lumps that need to be restored later */
+int backup(void)
+{
+	int len = lumps_len;
+	int i = 0;
+
+	stack[idx].len = len;
+
+	if( len>0)
+	{
+		stack[idx].v = pkg_malloc(len * sizeof(str));
+
+		for( i=0; i<len; i++)
+		{
+			str * l = & stack[idx].v[i];
+			struct lump * old = lumps[i]->after;
+			int n = old->len;
+
+			l->s = pkg_malloc(n);
+			memcpy(l->s, old->u.value, n);
+			l->len = n;
+		}
+
+	}
+
+	idx++;
+
+	return 0;
+};
+
+void restore(void)
+{
+	int len = lumps_len;
+	int i = 0;
+
+	idx--;
+
+	if( stack[i].len > 0)
+	{
+		for( i=0; i<len; i++)
+		{
+			str* l = &stack[idx].v[i];
+			struct lump * old = lumps[i]->after;
+			int n = l->len;
+
+			memcpy(old->u.value, l->s, n);
+			old->len = n;
+
+			pkg_free(l->s);
+
+		}
+
+		pkg_free(stack[idx].v);
+	}
+
+};
+
+int pre_route_callback( struct sip_msg *msg, void *param )
+{
+	if( route_type & (FAILURE_ROUTE | BRANCH_ROUTE)  )
+	{
+		backup();
+	}
+
+	return 0;
+};
+
+
+int post_route_callback( struct sip_msg *msg, void *param )
+{
+	if( route_type & (FAILURE_ROUTE | BRANCH_ROUTE)  )
+	{
+		restore();
+	}
+
+	clear_global_data();
+
+	return 0;
+};
+
+
 
 int codec_init(void)
 {
-	data.last_id = (unsigned int)-1;
-	data.lumps = NULL;
+	register_route_cb( pre_route_callback, PRE_SCRIPT_CB, NULL );
+	register_route_cb( post_route_callback, POST_SCRIPT_CB, NULL );
+
+	clear_global_data();
+
+	idx = 0;
 
 	return 0;
 }
@@ -87,11 +190,169 @@ int fixup_codec(void** param, int param_no)
 	return 0;
 }
 
+/*
+ * Create the necessary lumps from the message
+ */
+int create_lumps(struct sip_msg * msg)
+{
+
+	struct sdp_session_cell * cur_session;
+	int count;
+	struct lump * tmp;
+
+	/* get the number of streams */
+	count = 0;
+	cur_session = msg->sdp->sessions;
+
+	while(cur_session)
+	{
+		count += cur_session->streams_num;
+		cur_session = cur_session->next;
+	}
+
+	lumps = pkg_malloc(count * sizeof(struct lump*));
+	lumps_len = count;
+
+	if( lumps == NULL)
+	{
+		LM_ERR("Out of memory\n");
+		return -1;
+	}
+
+
+	/* for each stream create a specific lump for deletion and one for
+	 *  insertion */
+
+	count = 0;
+	cur_session = msg->sdp->sessions;
+
+	while(cur_session)
+	{
+		struct sdp_stream_cell * cur_cell = cur_session->streams;
+		struct lump* l;
+		str text;
+
+		while(cur_cell)
+		{
+			l = del_lump(msg, cur_cell->payloads.s - msg->buf,
+					cur_cell->payloads.len,0);
+
+			lumps[count] = l;
+			
+			if( l == NULL)
+			{
+				LM_ERR("Error adding delete lump for m=\n");
+				return -1;
+			}
+
+			l->flags |= LUMPFLAG_CODEC;
+
+			text.len = cur_cell->payloads.len;
+			text.s = (char*)pkg_malloc(cur_cell->payloads.len);
+
+			if( text.s == NULL )
+			{
+				LM_ERR("Error alocating lump buffer\n");
+				return -1;
+			}
+
+			memcpy(text.s,cur_cell->payloads.s,cur_cell->payloads.len);
+
+
+			tmp = insert_new_lump_after( l,	text.s, text.len, 0);
+
+			if(tmp == NULL)
+			{
+				LM_ERR("Error adding insert lump for m=\n");
+				return -1;
+
+			}
+
+			count ++;
+			cur_cell = cur_cell->next;
+		}
+
+		cur_session = cur_session->next;
+
+	}
+
+	return 0;
+
+};
+/*
+ * Find the flagged lumps and save them in the global lump array
+ */
+int find_flagged_lumps(struct sip_msg * msg)
+{
+	struct lump *cur = msg->body_lumps;
+	int count = 0;
+
+	while( cur)
+	{
+		if( cur->flags & LUMPFLAG_CODEC && cur->after )
+			count++;
+			
+		cur = cur->next;
+	}
+
+	if( count > 0)
+	{
+
+		lumps_len = 0;
+		lumps = pkg_malloc(count * sizeof(struct lump*));
+
+		if( lumps == NULL)
+		{
+			LM_ERR("Out of memory\n");
+			return -1;
+		}
+
+		cur = msg->body_lumps;
+		
+		while( cur)
+		{
+			if( cur->flags & LUMPFLAG_CODEC && cur->after)
+			{
+				lumps[lumps_len] = cur;
+				lumps_len++;
+			}
+			cur = cur->next;
+		}
+
+	}
+
+	return 0;
+
+};
+/*
+ * Associate a lump with a given cell
+ */
+struct lump * get_associated_lump(struct sip_msg * msg,
+								  struct sdp_stream_cell * cell)
+{
+	int i;
+
+	LM_DBG("Have %d lumps\n",lumps_len);
+	
+	for( i =0 ; i< lumps_len; i++)
+	{
+		int have = lumps[i]->u.offset;
+		int want = cell->payloads.s - msg->buf;
+
+		LM_DBG("have lump at %d want at %d\n", have, want );
+		if( have == want )
+			return lumps[i];
+	}
+
+	return NULL;
+};
+
+
 static int do_for_all_streams(struct sip_msg* msg, str* str1,str * str2,
-				regex_t* re, int op,int desc, stream_func f)
+				regex_t* re, int op,int desc)
 {
 	struct sdp_session_cell * cur_session;
-	int count, rez;
+	int rez;
 
 	if (msg==NULL || msg==FAKED_REPLY)
 		return -1;
@@ -102,89 +363,17 @@ static int do_for_all_streams(struct sip_msg* msg, str* str1,str * str2,
 		return -1;
 	}
 
-	if( data.last_id  != msg->id )
+
+	if( lumps == NULL)
 	{
-		
-
-		/* get the number of streams */
-		count = 0;
-		cur_session = msg->sdp->sessions;
-
-		while(cur_session)
-		{
-			count += cur_session->streams_num;
-			cur_session = cur_session->next;
-		}
-
-
-		
-		data.lumps = pkg_realloc(data.lumps,count * sizeof(struct lump*));
-		
-
-		if( data.lumps == NULL)
-		{
-			LM_ERR("Out of memory\n");
+		if( find_flagged_lumps(msg) )
 			return -1;
-		}
 
-
-		/* for each stream create a specific lump for deletion an one for
-		 *  insertion */
-
-		count = 0;
-		cur_session = msg->sdp->sessions;
-
-		while(cur_session)
-		{
-			struct sdp_stream_cell * cur_cell = cur_session->streams;
-			struct lump* l;
-			str text;
-
-			while(cur_cell)
-			{
-				l = del_lump(msg, cur_cell->payloads.s - msg->buf,
-						cur_cell->payloads.len,0);
-
-				if( l == NULL)
-				{
-					LM_ERR("Error adding delete lump for m=\n");
-					return -1;
-				}
-
-				text.len = cur_cell->payloads.len;
-				text.s = (char*)pkg_malloc(cur_cell->payloads.len);
-
-				if( text.s == NULL )
-				{
-					LM_ERR("Error alocating lump buffer\n");
-					return -1;
-				}
-
-				memcpy(text.s,cur_cell->payloads.s,cur_cell->payloads.len);
-
-				
-				data.lumps[count] = insert_new_lump_after( l,
-							text.s, text.len, 0);
-
-				if(data.lumps[count] == NULL)
-				{
-					LM_ERR("Error adding insert lump for m=\n");
-
-				}
-
-				count ++;
-				cur_cell = cur_cell->next;
-			}
-
-			cur_session = cur_session->next;
-
-		}
-
-		data.last_id = msg->id;
-		data.msg = msg;
+		if( lumps == NULL)
+			if( create_lumps(msg) )
+				return -1;
 	}
 
-	count = 0 ;
 	cur_session = msg->sdp->sessions;
 	rez = 0;
 
@@ -195,9 +384,7 @@ static int do_for_all_streams(struct sip_msg* msg, str* str1,str * str2,
 
 		while(cur_cell)
 		{
-			rez |= f(cur_cell,count,str1,str2,re,op,desc);
-
-			count ++;
+			rez |= stream_process(msg,cur_cell,str1,str2,re,op,desc);
 			cur_cell = cur_cell->next;
 		}
 
@@ -244,17 +431,26 @@ int delete_sdp_line( struct sip_msg * msg, char * s)
 
 /* method that processes a stream and keeps the original order
  * of codecs with the same name */
-static int stream_process(struct sdp_stream_cell *cell,int pos,str * s, str* ss,
-				regex_t* re, int op,int description)
+int stream_process(struct sip_msg * msg, struct sdp_stream_cell *cell,
+			str * s, str* ss, regex_t* re, int op,int description)
 {
 	sdp_payload_attr_t *payload;
 	char *cur, *tmp, *buff, temp;
-	struct lump * lmp = data.lumps[pos];
+	struct lump * lmp;
 	str found;
 	int ret, i, depl, single, match, buff_len;
 	regmatch_t pmatch;
 	
 	
+	lmp = get_associated_lump(msg, cell);
+
+	if( lmp == NULL)
+	{
+		LM_ERR("There is no lump for this sdp cell\n");
+		return -1;
+	}
+
+	lmp = lmp->after;
 	buff_len = 0;
 	ret = 0;
 
@@ -298,8 +494,6 @@ static int stream_process(struct sdp_stream_cell *cell,int pos,str * s, str* ss,
 				payload = payload->next;
 				continue;
 			}
-
-
 
 			match = 0;
 
@@ -354,7 +548,7 @@ static int stream_process(struct sdp_stream_cell *cell,int pos,str * s, str* ss,
 				{
 					/* find the full 'a=...' entry */
 
-					if( delete_sdp_line( data.msg, payload->rtp_enc.s) < 0 )
+					if( delete_sdp_line( msg, payload->rtp_enc.s) < 0 )
 					{
 						LM_ERR("Unable to add delete lump for a=\n");
 						ret = -1;
@@ -362,7 +556,7 @@ static int stream_process(struct sdp_stream_cell *cell,int pos,str * s, str* ss,
 
 					}
 
-					if( delete_sdp_line( data.msg, payload->fmtp_string.s) < 0 )
+					if( delete_sdp_line( msg, payload->fmtp_string.s) < 0 )
 					{
 						LM_ERR("Unable to add delete lump for a=\n");
 						ret = -1;
@@ -480,7 +674,7 @@ int codec_find (struct sip_msg* msg, char* str1 )
 {
 	
 	if( do_for_all_streams( msg, (str*)str1, NULL, NULL,
-		FIND, DESC_NAME, stream_process) == 0)
+		FIND, DESC_NAME) == 0)
 		return -1;
 
 	return 1;
@@ -491,7 +685,7 @@ int codec_find_re (struct sip_msg* msg, char* str1 )
 {
 
 	if( do_for_all_streams(msg, NULL, NULL, (regex_t*)str1,
-		FIND, DESC_REGEXP, stream_process) == 0)
+		FIND, DESC_REGEXP) == 0)
 		return -1;
 
 	return 1;
@@ -503,7 +697,7 @@ int codec_find_clock (struct sip_msg* msg, char* str1,char * str2 )
 {
 
 	if( do_for_all_streams( msg, (str*)str1, (str*)str2, NULL,
-		FIND, DESC_NAME_AND_CLOCK, stream_process) == 0)
+		FIND, DESC_NAME_AND_CLOCK) == 0)
 		return -1;
 
 	return 1;
@@ -513,7 +707,7 @@ int codec_find_clock (struct sip_msg* msg, char* str1,char * str2 )
 int codec_delete (struct sip_msg* msg, char* str1 )
 {
 	if( do_for_all_streams( msg, (str*)str1, NULL, NULL,
-		DELETE, DESC_NAME, stream_process) == 0)
+		DELETE, DESC_NAME) == 0)
 		return -1;
 	return 1;
 
@@ -522,7 +716,7 @@ int codec_delete (struct sip_msg* msg, char* str1 )
 int codec_delete_re (struct sip_msg* msg, char* str1 )
 {
 	if( do_for_all_streams( msg, NULL, NULL, (regex_t*) str1,
-		DELETE, DESC_REGEXP, stream_process) == 0)
+		DELETE, DESC_REGEXP) == 0)
 		return -1;
 	return 1;
 
@@ -531,7 +725,7 @@ int codec_delete_re (struct sip_msg* msg, char* str1 )
 int codec_delete_except_re (struct sip_msg* msg, char* str1 )
 {
 	if( do_for_all_streams( msg, NULL, NULL, (regex_t*) str1,
-		DELETE, DESC_REGEXP_COMPLEMENT, stream_process) == 0)
+		DELETE, DESC_REGEXP_COMPLEMENT) == 0)
 		return -1;
 	return 1;
 
@@ -540,7 +734,7 @@ int codec_delete_except_re (struct sip_msg* msg, char* str1 )
 int codec_delete_clock (struct sip_msg* msg, char* str1 ,char * str2)
 {
 	if( do_for_all_streams( msg, (str*)str1, (str*)str2, NULL,
-		DELETE, DESC_NAME_AND_CLOCK, stream_process) == 0)
+		DELETE, DESC_NAME_AND_CLOCK) == 0)
 		return -1;
 	return 1;
 
@@ -549,7 +743,7 @@ int codec_delete_clock (struct sip_msg* msg, char* str1 ,char * str2)
 int codec_move_up (struct sip_msg* msg, char* str1)
 {
 	if( do_for_all_streams( msg, (str*)str1, NULL, NULL,
-		ADD_TO_FRONT, DESC_NAME, stream_process) == 0)
+		ADD_TO_FRONT, DESC_NAME) == 0)
 		return -1;
 	return 1;
 }
@@ -557,7 +751,7 @@ int codec_move_up (struct sip_msg* msg, char* str1)
 int codec_move_up_re (struct sip_msg* msg, char* str1)
 {
 	if( do_for_all_streams( msg, NULL, NULL, (regex_t*)str1,
-		ADD_TO_FRONT, DESC_REGEXP, stream_process) == 0)
+		ADD_TO_FRONT, DESC_REGEXP) == 0)
 		return -1;
 	return 1;
 }
@@ -566,7 +760,7 @@ int codec_move_up_re (struct sip_msg* msg, char* str1)
 int codec_move_up_clock (struct sip_msg* msg, char* str1 ,char * str2)
 {
 	if( do_for_all_streams( msg, (str*)str1, (str*)str2, NULL,
-		ADD_TO_FRONT, DESC_NAME_AND_CLOCK, stream_process) == 0)
+		ADD_TO_FRONT, DESC_NAME_AND_CLOCK) == 0)
 		return -1;
 	return 1;
 
@@ -576,7 +770,7 @@ int codec_move_up_clock (struct sip_msg* msg, char* str1 ,char * str2)
 int codec_move_down (struct sip_msg* msg, char* str1)
 {
 	if( do_for_all_streams( msg, (str*)str1, NULL, NULL,
-		ADD_TO_BACK, DESC_NAME, stream_process) == 0)
+		ADD_TO_BACK, DESC_NAME) == 0)
 		return -1;
 	return 1;
 }
@@ -585,7 +779,7 @@ int codec_move_down (struct sip_msg* msg, char* str1)
 int codec_move_down_re (struct sip_msg* msg, char* str1)
 {
 	if( do_for_all_streams( msg, NULL, NULL, (regex_t*)str1,
-		ADD_TO_BACK, DESC_REGEXP, stream_process) == 0)
+		ADD_TO_BACK, DESC_REGEXP) == 0)
 		return -1;
 	return 1;
 }
@@ -596,7 +790,7 @@ int codec_move_down_re (struct sip_msg* msg, char* str1)
 int codec_move_down_clock (struct sip_msg* msg, char* str1 ,char * str2)
 {
 	if( do_for_all_streams( msg, (str*)str1, (str*)str2, NULL,
-		ADD_TO_BACK, DESC_NAME_AND_CLOCK, stream_process) == 0)
+		ADD_TO_BACK, DESC_NAME_AND_CLOCK) == 0)
 		return -1;
 	return 1;
 
