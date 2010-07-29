@@ -68,7 +68,6 @@ static int* probing_reply_codes = NULL;
 static int probing_codes_no = 0;
 
 static int dr_disable(struct sip_msg *req);
-int_str id_avp_name;
 
 
 /*** DB relatede stuff ***/
@@ -112,6 +111,13 @@ static struct _attrs_avp{
 	int_str name; /* AVP name*/
 }attrs_avp = { 0, {.n=(int)0xad346b30} };
 static str attrs_avp_spec = {0,0};
+
+/* AVP used to store serial IDs */
+static struct _id_avp{
+        unsigned short type; /* AVP ID */
+        int_str name; /* AVP name */
+}id_avp = { 0, {.n=(int)0xad346b31} };
+static str id_avp_spec = {0,0};
 
 /* statistic data */
 int tree_size = 0;
@@ -195,6 +201,7 @@ static param_export_t params[] = {
 	{"drg_grpid_col",   STR_PARAM, &drg_grpid_col.s },
 	{"ruri_avp",        STR_PARAM, &ruri_avp_spec.s },
 	{"attrs_avp",       STR_PARAM, &attrs_avp_spec.s},
+        {"id_avp",          STR_PARAM, &id_avp_spec.s   },
 	{"fetch_rows",      INT_PARAM, &dr_fetch_rows   },
 	{"force_dns",       INT_PARAM, &dr_force_dns    },
 	{"define_blacklist",STR_PARAM|USE_FUNC_PARAM, (void*)set_dr_bl },
@@ -270,14 +277,14 @@ static int check_options_rplcode(int code)
 static int dr_disable(struct sip_msg *req)
 {
 
-	struct usr_avp *id_avp;
+	struct usr_avp *id_avp_;
 	int_str id_val;
 	pgw_t *dst;
 
 	ref_read_data();
 	
-	id_avp = search_first_avp( 0, id_avp_name, &id_val, 0);
-	if (id_avp==NULL) {
+	id_avp_ = search_first_avp( id_avp.type, id_avp.name, &id_val, 0);
+	if (id_avp_==NULL) {
 		LM_DBG(" no AVP ID ->nothing to disable\n");
 		unref_read_data();
 		return -1;
@@ -428,9 +435,6 @@ static int dr_init(void)
 	}
 	db_url.len = strlen(db_url.s);
 
-	id_avp_name.s.s =  "dr_id_avp_INTERNAL_USE_ONLY";
-	id_avp_name.s.len = strlen(id_avp_name.s.s);
-
 	drd_table.len = strlen(drd_table.s);
 	if (drd_table.s[0]==0) {
 		LM_CRIT("mandatory parameter \"DRD_TABLE\" found empty\n");
@@ -491,6 +495,23 @@ static int dr_init(void)
 		&(attrs_avp.type) )!=0) {
 			LM_ERR("[%.*s]- invalid AVP definition for ATTRS AVP\n",
 				attrs_avp_spec.len, attrs_avp_spec.s);
+			return E_CFG;
+		}
+	}
+	if (id_avp_spec.s) {
+		id_avp_spec.len = strlen(id_avp_spec.s);
+
+		if (pv_parse_spec( &id_avp_spec, &avp_spec)==0
+		|| avp_spec.type!=PVT_AVP) {
+			LM_ERR("malformed or non AVP [%.*s] for ID AVP definition\n",
+				id_avp_spec.len, id_avp_spec.s);
+			return E_CFG;
+		}
+
+		if( pv_get_avp_name(0, &(avp_spec.pvp), &(id_avp.name),
+		&(attrs_avp.type) )!=0) {
+			LM_ERR("[%.*s]- invalid AVP definition for ID AVP\n",
+				id_avp_spec.len, id_avp_spec.s);
 			return E_CFG;
 		}
 	}
@@ -838,7 +859,7 @@ static int use_next_gw(struct sip_msg* msg)
 		avp = NULL;
 		do {
 			if (avp) destroy_avp(avp);
-			avp = search_first_avp(0, id_avp_name, NULL, 0);
+			avp = search_first_avp(id_avp.type, id_avp.name, NULL, 0);
 		}while (avp && (avp->flags&AVP_VAL_STR)!=0 );
 
 
@@ -1097,7 +1118,7 @@ static int do_routing(struct sip_msg* msg, dr_group_t *drg, int sort_order)
 
 		val.n = (int) alive[local_gwlist[j]].pgw->id;
 		LM_DBG("setting id [%d] as avp\n",val.n);
-		if (add_avp( 0,id_avp_name, val)!=0 ) {
+		if (add_avp( id_avp.type,id_avp.name, val)!=0 ) {
 			LM_ERR("failed to insert ids avp\n");
 			goto error2;
 		}
@@ -1118,7 +1139,7 @@ static int do_routing(struct sip_msg* msg, dr_group_t *drg, int sort_order)
 
 	val.n = (int) alive[local_gwlist[0]].pgw->id;
 	LM_DBG("setting id [%d] as avp\n",val.n);
-	if (add_avp( 0,id_avp_name, val)!=0 ) {
+	if (add_avp( id_avp.type,id_avp.name, val)!=0 ) {
 		LM_ERR("failed to insert ids avp\n");
 		goto error2;
 	}
