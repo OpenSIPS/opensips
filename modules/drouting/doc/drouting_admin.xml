@@ -1033,6 +1033,30 @@ modparam("drouting", "attrs_avp", '$avp(i:67)')
 	</section>
 
 	<section>
+		<title><varname>id_avp</varname> (str)</title>
+		<para>
+		The name of the avp for storing the id of the current selected
+		gateway/destination - once a new destination is selected (via the 
+		use_next_gw() function), the AVP will be updated with the ID of the
+		new selected gateway/destination.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>NULL</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>id_avp</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("drouting", "id_avp", '$avp(s:gw_id)')
+modparam("drouting", "id_avp", '$avp(i:334)')
+...
+	</programlisting>
+		</example>
+	</section>
+
+
+	<section>
 		<title><varname>define_blacklist</varname> (str)</title>
 		<para>
 		Defines a backlist based on a list of GW types - the list will contain
