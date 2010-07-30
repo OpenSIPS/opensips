@@ -67,6 +67,8 @@ enum{
 
 static int stream_process(struct sip_msg* msg, struct sdp_stream_cell *cell,
 						  str* s, str* ss, regex_t* re, int op, int description);
+int create_lumps(struct sip_msg * msg);
+int find_flagged_lumps(struct sip_msg * msg);
 
 /* reset the global array of lumps*/
 void clear_global_data(void)
@@ -88,7 +90,10 @@ int backup(void)
 
 	stack[idx].len = len;
 
-	if( len>0)
+	LM_ERR(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n");
+	LM_ERR("Saving %d\n", len );
+
+	if( len > 0)
 	{
 		stack[idx].v = pkg_malloc(len * sizeof(str));
 
@@ -101,6 +106,8 @@ int backup(void)
 			l->s = pkg_malloc(n);
 			memcpy(l->s, old->u.value, n);
 			l->len = n;
+
+			LM_ERR("Saving [%.*s]\n", n, l->s);
 		}
 
 	}
@@ -112,18 +119,23 @@ int backup(void)
 
 void restore(void)
 {
-	int len = lumps_len;
+	int len;
 	int i = 0;
 
 	idx--;
+	len = stack[idx].len;
 
-	if( stack[i].len > 0)
+	LM_ERR("Restoring %d\n", len );
+
+	if( len > 0)
 	{
 		for( i=0; i<len; i++)
 		{
 			str* l = &stack[idx].v[i];
 			struct lump * old = lumps[i]->after;
 			int n = l->len;
+
+			LM_ERR("Restoring [%.*s]to [%.*s]\n",old->len, old->u.value, n, l->s);
 
 			memcpy(old->u.value, l->s, n);
 			old->len = n;
@@ -135,10 +147,23 @@ void restore(void)
 		pkg_free(stack[idx].v);
 	}
 
+	LM_ERR("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n");
+
 };
 
 int pre_route_callback( struct sip_msg *msg, void *param )
 {
+	if( route_type & (REQUEST_ROUTE | ONREPLY_ROUTE)  )
+	{
+		if( create_lumps(msg) )
+			return 0;
+	}
+
+	if( route_type & FAILURE_ROUTE )
+	{
+		find_flagged_lumps(msg);
+	}
+
 	if( route_type & (FAILURE_ROUTE | BRANCH_ROUTE)  )
 	{
 		backup();
@@ -154,8 +179,6 @@ int post_route_callback( struct sip_msg *msg, void *param )
 	{
 		restore();
 	}
-
-	clear_global_data();
 
 	return 0;
 };
@@ -200,6 +223,12 @@ int create_lumps(struct sip_msg * msg)
 	int count;
 	struct lump * tmp;
 
+	if(parse_sdp(msg))
+	{
+		LM_DBG("Message has no SDP\n");
+		return -1;
+	}
+
 	/* get the number of streams */
 	count = 0;
 	cur_session = msg->sdp->sessions;
@@ -210,7 +239,7 @@ int create_lumps(struct sip_msg * msg)
 		cur_session = cur_session->next;
 	}
 
-	lumps = pkg_malloc(count * sizeof(struct lump*));
+	lumps = pkg_realloc(lumps, count * sizeof(struct lump*));
 	lumps_len = count;
 
 	if( lumps == NULL)
@@ -324,6 +353,7 @@ int find_flagged_lumps(struct sip_msg * msg)
 	return 0;
 
 };
+
 /*
  * Associate a lump with a given cell
  */
@@ -364,19 +394,8 @@ static int do_for_all_streams(struct sip_msg* msg, str* str1,str * str2,
 	}
 
 
-	if( lumps == NULL)
-	{
-		if( find_flagged_lumps(msg) )
-			return -1;
-
-		if( lumps == NULL)
-			if( create_lumps(msg) )
-				return -1;
-	}
-
 	cur_session = msg->sdp->sessions;
 	rez = 0;
-
 
 	while(cur_session)
 	{
