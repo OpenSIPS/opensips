@@ -90,8 +90,8 @@ int backup(void)
 
 	stack[idx].len = len;
 
-	LM_ERR(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n");
-	LM_ERR("Saving %d\n", len );
+	LM_DBG(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n");
+	LM_DBG("Saving %d\n", len );
 
 	if( len > 0)
 	{
@@ -107,7 +107,7 @@ int backup(void)
 			memcpy(l->s, old->u.value, n);
 			l->len = n;
 
-			LM_ERR("Saving [%.*s]\n", n, l->s);
+			LM_DBG("Saving [%.*s]\n", n, l->s);
 		}
 
 	}
@@ -125,7 +125,7 @@ void restore(void)
 	idx--;
 	len = stack[idx].len;
 
-	LM_ERR("Restoring %d\n", len );
+	LM_DBG("Restoring %d\n", len );
 
 	if( len > 0)
 	{
@@ -135,7 +135,7 @@ void restore(void)
 			struct lump * old = lumps[i]->after;
 			int n = l->len;
 
-			LM_ERR("Restoring [%.*s]to [%.*s]\n",old->len, old->u.value, n, l->s);
+			LM_DBG("Restoring [%.*s]to [%.*s]\n",old->len, old->u.value, n, l->s);
 
 			memcpy(old->u.value, l->s, n);
 			old->len = n;
@@ -147,7 +147,7 @@ void restore(void)
 		pkg_free(stack[idx].v);
 	}
 
-	LM_ERR("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n");
+	LM_DBG("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n");
 
 };
 
