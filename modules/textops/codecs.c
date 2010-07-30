@@ -43,8 +43,8 @@ typedef struct _lump_arr
 }lump_arr_t;
 
 
-struct lump ** lumps;
-int lumps_len;
+static struct lump ** lumps;
+static int lumps_len;
 
 static lump_arr_t stack[3];
 static int idx;
@@ -67,8 +67,8 @@ enum{
 
 static int stream_process(struct sip_msg* msg, struct sdp_stream_cell *cell,
 						  str* s, str* ss, regex_t* re, int op, int description);
-int create_lumps(struct sip_msg * msg);
-int find_flagged_lumps(struct sip_msg * msg);
+static int create_lumps(struct sip_msg * msg);
+static int find_flagged_lumps(struct sip_msg * msg);
 
 /* reset the global array of lumps*/
 void clear_global_data(void)
