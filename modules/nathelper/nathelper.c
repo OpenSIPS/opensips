@@ -2981,7 +2981,8 @@ force_rtp_proxy_body(struct sip_msg* msg, char* str1, char* str2, int offer, str
 			from_tag = to_tag;
 			to_tag = tmp;
 		}
-	} else if (swap != 0 || (msg->first_line.type == SIP_REPLY && offer != 0)) {
+	} else if (swap != 0 || (msg->first_line.type==SIP_REPLY && offer != 0) ||
+	(msg->first_line.type == SIP_REQUEST && offer == 0) ) {
 		if (to_tag.len == 0)
 			return -1;
 		tmp = from_tag;
