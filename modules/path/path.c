@@ -46,16 +46,21 @@
 #define	PATH_CRLF		">\r\n"
 #define PATH_CRLF_LEN		(sizeof(PATH_CRLF)-1)
 
-static int prepend_path(struct sip_msg* _m, str *user, int recv)
+#define PATH_R2 ";r2=on"
+#define PATH_R2_LEN (sizeof(PATH_R2)-1)
+
+#define INBOUND  1  /* Insert inbound Path */
+#define OUTBOUND 0  /* Insert outbound Path */
+
+static int build_path(struct sip_msg* _m, struct lump* l, struct lump* l2,
+					str* user, int recv, int _inbound)
 {
-	struct lump *l;
-	char *prefix, *suffix, *crlf;
+	char *prefix, *suffix, *crlf, *r2;
 	int prefix_len, suffix_len;
-	struct hdr_field *hf;
 	str rcv_addr = {0, 0};
 	char *src_ip;
 		
-	prefix = suffix = crlf = 0;
+	prefix = suffix = crlf = r2 = 0;
 
 	prefix_len = PATH_PREFIX_LEN + (user->len ? (user->len+1) : 0);
 	prefix = pkg_malloc(prefix_len);
@@ -86,61 +91,128 @@ static int prepend_path(struct sip_msg* _m, str *user, int recv)
 	}
 	memcpy(crlf, PATH_CRLF, PATH_CRLF_LEN);
 
-	if (parse_headers(_m, HDR_PATH_F, 0) < 0) {
-		LM_ERR("failed to parse message for Path header\n");
+	r2 = pkg_malloc(PATH_R2_LEN);
+	if (!r2) {
+		LM_ERR("no pkg memory left for r2\n");
 		goto out1;
 	}
-	for (hf = _m->headers; hf; hf = hf->next) {
-		if (hf->type == HDR_PATH_T) {
-			break;
-		} 
-	}
-	if (hf)
-		/* path found, add ours in front of that */
-		l = anchor_lump(_m, hf->name.s - _m->buf, 0, 0);
-	else
-		/* no path, append to message */
-		l = anchor_lump(_m, _m->unparsed - _m->buf, 0, 0);
-	if (!l) {
-		LM_ERR("failed to get anchor\n");
-		goto out1;
-	}
+	memcpy(r2, PATH_R2, PATH_R2_LEN);
 
-	l = insert_new_lump_before(l, prefix, prefix_len, 0);
+	l = insert_new_lump_after(l, prefix, prefix_len, 0);
 	if (!l) goto out1;
-	l = insert_subst_lump_before(l, SUBST_SND_ALL, 0);
+	l = insert_subst_lump_after(l, _inbound?SUBST_RCV_ALL:SUBST_SND_ALL, 0);
 	if (!l) goto out2;
-	l = insert_new_lump_before(l, suffix, suffix_len, 0);
-	if (!l) goto out2;
+	if (enable_double_path) {
+		if (!(l = insert_cond_lump_after(l, COND_IF_DIFF_REALMS, 0)))
+			goto out2;
+		if (!(l = insert_new_lump_after(l, r2, PATH_R2_LEN, 0)))
+			goto out2;
+                r2 = 0;
+	} else {
+		pkg_free(r2);
+		r2 = 0;
+	}
+	l2 = insert_new_lump_before(l2, suffix, suffix_len, 0);
+	if (!l) goto out3;
 	if (recv) {
 		/* TODO: agranig: optimize this one! */
 		src_ip = ip_addr2a(&_m->rcv.src_ip);
 		rcv_addr.s = pkg_malloc(4 + IP_ADDR_MAX_STR_SIZE + 7); /* sip:<ip>:<port>\0 */
 		if(!rcv_addr.s) {
 			LM_ERR("no pkg memory left for receive-address\n");
-			goto out3;
+			goto out4;
 		}
 		rcv_addr.len = snprintf(rcv_addr.s, 4 + IP_ADDR_MAX_STR_SIZE + 6, "sip:%s:%u", src_ip, _m->rcv.src_port);
-		l = insert_new_lump_before(l, rcv_addr.s, rcv_addr.len, 0);
-		if (!l) goto out3;
+		l2 = insert_new_lump_before(l2, rcv_addr.s, rcv_addr.len, 0);
+		if (!l2) goto out4;
 	}
-	l = insert_new_lump_before(l, crlf, CRLF_LEN+1, 0);
-	if (!l) goto out4;
+	l2 = insert_new_lump_before(l2, crlf, CRLF_LEN+1, 0);
+	if (!l2) goto out5;
 	
 	return 1;
 	
 out1:
 	if (prefix) pkg_free(prefix);
 out2:
-	if (suffix) pkg_free(suffix);
+	if (r2)	pkg_free(r2);
 out3:
-	if (rcv_addr.s) pkg_free(rcv_addr.s);
+	if (suffix) pkg_free(suffix);
 out4:
+	if (rcv_addr.s) pkg_free(rcv_addr.s);
+out5:
 	if (crlf) pkg_free(crlf);
 
 	LM_ERR("failed to insert prefix lump\n");
 
 	return -1;
+}
+
+static int prepend_path(struct sip_msg* _m, str *user, int recv)
+{
+	struct lump* l, *l2;
+	struct hdr_field *hf;
+
+	if (parse_headers(_m, HDR_PATH_F, 0) < 0) {
+		LM_ERR("failed to parse message for Path header\n");
+		return -1;
+	}
+
+	for (hf = _m->headers; hf; hf = hf->next) {
+		if (hf->type == HDR_PATH_T) {
+			break;
+		} 
+	}
+
+	if (hf) {
+		/* path found, add ours in front of that */
+		l = anchor_lump(_m, hf->name.s - _m->buf, 0, 0);
+		l2 = anchor_lump(_m, hf->name.s - _m->buf, 0, 0);
+	} else {
+		/* no path, append to message */
+		l = anchor_lump(_m, _m->unparsed - _m->buf, 0, 0);
+		l2 = anchor_lump(_m, _m->unparsed - _m->buf, 0, 0);
+	}
+
+	if (!l || !l2) {
+		LM_ERR("failed to get anchor\n");
+		return -2;
+	}
+
+	if (build_path(_m, l, l2, user, recv, OUTBOUND) < 0) {
+		LM_ERR("failed to insert outbound Path");
+		return -3;
+	}
+
+	if (enable_double_path) {
+		if (hf) {
+			/* path found, add ours in front of that */
+			l = anchor_lump(_m, hf->name.s - _m->buf, 0, 0);
+			l2 = anchor_lump(_m, hf->name.s - _m->buf, 0, 0);
+		} else {
+			/* no path, append to message */
+			l = anchor_lump(_m, _m->unparsed - _m->buf, 0, 0);
+			l2 = anchor_lump(_m, _m->unparsed - _m->buf, 0, 0);
+		}
+
+		if (!l || !l2) {
+			LM_ERR("failed to get anchor\n");
+			return -4;
+		}
+
+		l = insert_cond_lump_after(l, COND_IF_DIFF_REALMS, 0);
+		l2 = insert_cond_lump_before(l2, COND_IF_DIFF_REALMS, 0);
+
+		if (!l || !l2) {
+			LM_ERR("failed to insert conditional lump\n");
+			return -5;
+		}
+		if (build_path(_m, l, l2, user, 0, INBOUND) < 0) {
+			LM_ERR("failed to insert inbound Path");
+			return -6;
+		}
+	}
+
+	return 1;
 }
 
 /*

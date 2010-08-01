@@ -37,6 +37,7 @@
 #include "path_mod.h"
 
 
+int enable_double_path = 1; /* Enable using of 2 Path by default */
 
 
 /* If received-param of current Route uri should be used
@@ -85,6 +86,7 @@ static cmd_export_t cmds[] = {
  */
 static param_export_t params[] = {
 	{"use_received", INT_PARAM, &use_received },
+	{"enable_double_path", INT_PARAM, &enable_double_path },
 	{ 0, 0, 0 }
 };
 
