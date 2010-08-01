@@ -341,7 +341,7 @@ static int dp_translate_f(struct sip_msg* msg, char* str1, char* str2)
 	repl_par = (str2!=NULL)? ((dp_param_p)str2):default_par2;
 	if (dp_get_svalue(msg, repl_par->v.sp[0], &input)!=0){
 		LM_ERR("invalid param 2\n");
-		goto error;
+		return -1;
 	}
 
 	LM_DBG("input is %.*s\n", input.len, input.s);
@@ -614,3 +614,49 @@ error:
 	return 0;
 }
 
+
+
+void * wrap_shm_malloc(size_t size)
+{
+	return shm_malloc(size);
+}
+
+void  wrap_shm_free(void * p )
+{
+	shm_free(p);
+}
+
+
+pcre * wrap_pcre_compile(char *  pattern)
+{
+		pcre * ret ;
+		func_malloc old_malloc ;
+		func_free old_free;
+		const char * error;
+		int erroffset;
+
+
+		old_malloc = pcre_malloc;
+		old_free = pcre_free;
+
+		pcre_malloc = wrap_shm_malloc;
+		pcre_free = wrap_shm_free;
+
+		ret = pcre_compile(
+				pattern ,              /* the pattern */
+				0,                    /* default options */
+				&error,               /* for error message */
+				&erroffset,           /* for error offset */
+				NULL);
+
+		pcre_malloc = old_malloc;
+		pcre_free = old_free;
+
+		return ret;
+}
+
+void wrap_pcre_free( pcre* re)
+{
+	shm_free(re);
+	
+}

@@ -31,8 +31,8 @@
 #include "../../parser/msg_parser.h"
 #include "../../locking.h"
 
-/*see copyright in trex.h*/
-#include "trex.h"
+#include "../../re.h"
+#include <pcre.h>
 
 #define REGEX_OP	1
 #define EQUAL_OP	0
@@ -43,7 +43,7 @@ typedef struct dpl_node{
 	int matchop;
 	int matchlen;
 	str match_exp, subst_exp, repl_exp; /*keeping the original strings*/
-	TRex * match_comp, * subst_comp; /*compiled patterns*/
+	pcre * match_comp, * subst_comp; /*compiled patterns*/
 	struct subst_expr * repl_comp; 
 	str attrs;
 
@@ -88,7 +88,19 @@ struct subst_expr* repl_exp_parse(str subst);
 void repl_expr_free(struct subst_expr *se);
 int translate(struct sip_msg *msg, str user_name, str* repl_user, dpl_id_p idp, str *);
 int rule_translate(struct sip_msg *msg, str , dpl_node_t * rule,  str *);
-int test_match(str string, TRex *);
+int test_match(str string, pcre * exp, int * out, int out_max);
+
+
+typedef void * (*func_malloc)(size_t );
+typedef void  (*func_free)(void * );
+
+void * wrap_shm_malloc(size_t size);
+void  wrap_shm_free(void *);
+
+
+pcre * wrap_pcre_compile(char *  pattern);
+void wrap_pcre_free( pcre*);
+
 
 extern gen_lock_t *ref_lock;
 extern int* data_refcnt;

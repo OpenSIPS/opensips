@@ -102,17 +102,23 @@ error:
 
 
 #define MAX_PHONE_NB_DIGITS		127
+#define MAX_MATCHES (100 * 3)
+
 static char dp_output_buf[MAX_PHONE_NB_DIGITS+1];
+static int matches[MAX_MATCHES];
+
 int rule_translate(struct sip_msg *msg, str string, dpl_node_t * rule,
 		str * result)
 {
 	int repl_nb, offset, match_nb;
 	struct replace_with token;
-	TRex * subst_comp;
+	pcre * subst_comp;
 	struct subst_expr * repl_comp;
-	TRexMatch match;
 	pv_value_t sv;
 	str* uri;
+	int capturecount;
+	char *match_begin;
+	int match_len;
 
 	dp_output_buf[0] = '\0';
 	result->s = dp_output_buf;
@@ -126,16 +132,25 @@ int rule_translate(struct sip_msg *msg, str string, dpl_node_t * rule,
 		return 0;
 	}
 
+
 	if(subst_comp){
+
+		pcre_fullinfo(
+		subst_comp,                   /* the compiled pattern */
+		NULL,                 /* no extra data - we didn't study the pattern */
+		PCRE_INFO_CAPTURECOUNT ,  /* number of named substrings */
+		&capturecount);          /* where to put the answer */
+
+
 		/*just in case something went wrong at load time*/
-		if((repl_comp->max_pmatch > trex_getsubexpcount(subst_comp))){
+		if(repl_comp->max_pmatch > capturecount){
 			LM_ERR("illegal access to the "
 				"%i-th subexpr of the subst expr\n", repl_comp->max_pmatch);
 			return -1;
 		}
 
 		/*search for the pattern from the compiled subst_exp*/
-		if(test_match(string, rule->subst_comp) != 0){
+		if(test_match(string, rule->subst_comp,matches,MAX_MATCHES) <= 0){
 			LM_ERR("the string %.*s "
 				"matched the match_exp %.*s but not the subst_exp %.*s!\n", 
 				string.len, string.s, 
@@ -182,15 +197,17 @@ int rule_translate(struct sip_msg *msg, str string, dpl_node_t * rule,
 			case REPLACE_NMATCH:
 				/*copy from the match subexpression*/	
 				match_nb = token.u.nmatch;
-				trex_getsubexp(subst_comp, match_nb, &match);
 
-				if(result->len + match.len >= MAX_PHONE_NB_DIGITS){
+				match_begin = string.s + matches[2*match_nb];
+				match_len = matches[2*match_nb+1] - matches[2*match_nb];
+
+				if(result->len + match_len >= MAX_PHONE_NB_DIGITS){
 					LM_ERR("overflow\n");
 					goto error;
 				}
 
-				memcpy(result->s + result->len, match.begin, match.len);
-				result->len += match.len;
+				memcpy(result->s + result->len, match_begin, match_len);
+				result->len += match_len;
 				offset += token.size; /*update the offset*/
 				break;
 
@@ -289,7 +306,7 @@ search_rule:
 
 			case REGEX_OP:
 				LM_DBG("regex operator testing\n");
-				rez = test_match(input, rulep->match_comp);
+				rez = ( test_match(input, rulep->match_comp, matches, MAX_MATCHES) > 0 ) ? 0 : -1;
 				break;
 
 			case EQUAL_OP:
@@ -352,35 +369,43 @@ repl:
 }
 
 
-int test_match(str string, TRex * exp)
+int test_match(str string, pcre * exp, int * out, int out_max)
 {
-	const TRexChar *begin,*end;
-	TRexMatch match;
-	int i, n;
+	int i, result_count;
 	
 	if(!exp){
 		LM_ERR("invalid compiled expression\n");
 		return -1;
 	}
 
-	LM_DBG("test string %.*s against a pattern %s\n", 
-		string.len, string.s, exp->_p);
+	result_count = pcre_exec(
+							exp, /* the compiled pattern */
+							NULL, /* no extra data - we didn't study the pattern */
+							string.s, /* the subject string */
+							string.len, /* the length of the subject */
+							0, /* start at offset 0 in the subject */
+							0, /* default options */
+							out, /* output vector for substring information */
+							out_max); /* number of elements in the output vector */
 
-	if(!trex_searchrange(exp, string.s, string.s+ string.len, &begin,&end))
-		return -1;
-		
-	/*if(begin!= string.s || (end != (string.s+string.len)) ){
-		LOG(L_ERR, "ERROR:dialplan: test_match:not a perfect match\n");
-		return -1;
-	}*/
+	if( result_count < 0 )
+		return result_count;
 
-	n = trex_getsubexpcount(exp);
-
-	for(i = 0; i < n; i++){
-		trex_getsubexp(exp,i,&match);
-		LM_DBG("test_match:[%d] %.*s\n",i,match.len, match.begin);
+	if( result_count == 0)
+	{
+		LM_ERR("Not enough space for mathing\n");
+		return result_count;
 	}
 
-	return 0;
+
+	for (i = 0; i < result_count; i++)
+	{
+		char *substring_start = string.s + out[2 * i];
+		int substring_length = out[2 * i + 1] - out[2 * i];
+		LM_DBG("test_match:[%d] %.*s\n",i, substring_length, substring_start);
+	}
+
+
+	return result_count;
 }
 
