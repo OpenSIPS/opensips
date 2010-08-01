@@ -150,7 +150,7 @@ int get_resource_list(str* service_uri, str owner_user, str owner_domain,
 	query_vals[n_query_cols].nul = 0;
 	query_vals[n_query_cols].val.str_val = owner_user;
 	n_query_cols++;
-	
+
 	query_cols[n_query_cols] = &str_domain_col;
 	query_vals[n_query_cols].type = DB_STR;
 	query_vals[n_query_cols].nul = 0;
@@ -852,8 +852,12 @@ int resource_subscriptions(subs_t* subs, xmlNodePtr rl_node)
 	/* if is initial send an initial Subscribe 
 	 * else search in hash table for a previous subscription */
 
-	CONSTR_RLSUBS_DID(subs, &did_str);
-	
+	if(CONSTR_RLSUBS_DID(subs, &did_str)< 0)
+	{
+		LM_ERR("Failed to create did\n");
+		return -1;
+	}
+
 	memset(&s, 0, sizeof(subs_info_t));
 
 	if( uandd_to_uri(subs->from_user, subs->from_domain, &wuri)< 0)
