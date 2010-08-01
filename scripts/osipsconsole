@@ -424,7 +424,7 @@ if ( !-z $PID_FILE){
 }
 
 if ( $SYSLOG eq "" ) {
-	$SYSLOG = 0; # 0=output to console, 1=output to syslog
+	$SYSLOG = 1; # 0=output to console, 1=output to syslog
 }
 
 if ( $STARTOPTIONS eq "" ) {
@@ -1868,10 +1868,10 @@ sub opensips_start(){
 
 		if ( $SYSLOG == 1 ) {
 			`$OSIPSBIN -P $PID_FILE $STARTOPTIONS 1>/dev/null 2>/dev/null`;
-			return;0
+			return;
 		} else {
-			`$OSIPSBIN -f $PATH_ETC/opensips.cfg -P $PID_FILE -E $STARTOPTIONS`;	
-			return;			
+			`$OSIPSBIN -P $PID_FILE -f $PATH_ETC/opensips.cfg -E $STARTOPTIONS`;
+			return;
 		}
 
 		sleep 3;

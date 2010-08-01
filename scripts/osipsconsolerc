@@ -98,6 +98,10 @@
 ## PID file path - default is: /var/run/opensips.pid
 # PID_FILE=/var/run/opensips.pid
 
+## OUTPUT control - default output is to SYSLOG
+## 0=output to console, 1=output to syslog
+# SYSLOG=0
+
 ## Extra start options - default is: not set
 # example: start opensips with 64MB share memory: STARTOPTIONS="-m 64"
 # STARTOPTIONS=
