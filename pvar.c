@@ -468,6 +468,18 @@ static int pv_get_ouri_attr(struct sip_msg *msg, pv_param_t *param,
 	return pv_get_xuri_attr(msg, &(msg->parsed_orig_ruri), param, res);
 }
 
+static int pv_get_path(struct sip_msg *msg, pv_param_t *param,
+		pv_value_t *res)
+{
+	if(msg==NULL)
+		return -1;
+
+	if(!msg->path_vec.s)
+	{
+		return pv_get_null(msg, param, res);
+	}
+	return pv_get_strval(msg, param, res, &msg->path_vec);
+}
 
 #define CT_NAME_S        "name"
 #define CT_NAME_LEN      (sizeof(CT_NAME_S)-1)
@@ -3004,6 +3016,9 @@ static pv_export_t _pv_names_table[] = {
 	{{"oU", (sizeof("oU")-1)}, /* */
 		PVT_OURI_USERNAME, pv_get_ouri_attr, 0,
 		0, 0, pv_init_iname, 1},
+	{{"path", (sizeof("path")-1)}, /* */
+		PVT_PATH, pv_get_path, 0,
+		0, 0, 0, 0},
 	{{"pd", (sizeof("pd")-1)}, /* */
 		PVT_PPI_DOMAIN, pv_get_ppi_attr, 0,
 		0, 0, pv_init_iname, 3},
