@@ -146,26 +146,9 @@ static void reply_callback( struct cell* t, int type, struct tmcb_params* ps)
 	struct location        *loc  = 0;
 	int rez;
 
-	if (intr==0) {
-		LM_WARN("param=0 for callback %d, transaction=%p \n",type,t);
+	if (intr==0 || (intr->flags&CPL_ENDED) ) {
+		LM_DBG("param=0 for callback %d, transaction=%p \n",type,t);
 		return;
-	}
-
-	if (type&TMCB_RESPONSE_OUT) {
-		/* the purpose of the final reply is to trash down the interpreter
-		 * structure! it's the safest place to do that, since this callback
-		 * it's called only once per transaction for final codes (>=200) ;-) */
-		if (ps->code>=200) {
-			LM_DBG("code=%d, final reply received\n", ps->code);
-			/* CPL interpretation done, call established -> destroy */
-			free_cpl_interpreter( intr );
-			/* set to zero the param callback*/
-			*(ps->param) = 0;
-		}
-		return;
-	} else if (!(type&TMCB_ON_FAILURE)) {
-		LM_ERR("unknown type %d\n",type);
-		goto exit;
 	}
 
 	LM_DBG("negativ reply received\n");
@@ -287,12 +270,23 @@ static void reply_callback( struct cell* t, int type, struct tmcb_params* ps)
 exit:
 	/* in case of error the default response chosen by ser at the last
 	 * proxying will be forwarded to the UAC */
-	free_cpl_interpreter( intr );
+	if ( intr->flags&CPL_DO_NOT_FREE )
+		intr->flags |= CPL_ENDED;
+	else
+		free_cpl_interpreter( intr );
 	/* set to zero the param callback*/
 	*(ps->param) = 0;
 	return;
 }
 
+
+/* if hooked to a transaction (via callbacks), this is the only place where
+   we actually destroy the interpreter -> when callback is destroied */
+static void destroy_cpl_intr(void *param)
+{
+	struct cpl_interpreter *intr = (struct cpl_interpreter*)(param);
+	free_cpl_interpreter( intr );
+}
 
 
 static inline char *run_proxy( struct cpl_interpreter *intr )
@@ -490,10 +484,11 @@ static inline char *run_proxy( struct cpl_interpreter *intr )
 		/* as I am interested in getting the responses back - I need to install
 		 * some callback functions for replies  */
 		if (cpl_fct.tmb.register_tmcb(intr->msg,0,
-		TMCB_ON_FAILURE|TMCB_RESPONSE_OUT,reply_callback,(void*)intr,0) <= 0 ) {
+		TMCB_ON_FAILURE,reply_callback,(void*)intr,destroy_cpl_intr) <= 0 ) {
 			LM_ERR("failed to register TMCB_RESPONSE_OUT callback\n");
 			goto runtime_error;
 		}
+		intr->flags |= CPL_DO_NOT_FREE;
 	}
 
 	switch (intr->proxy.ordering) {
