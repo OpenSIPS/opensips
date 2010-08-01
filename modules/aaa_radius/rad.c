@@ -259,7 +259,7 @@ int rad_send_message(aaa_conn* rh, aaa_message* request, aaa_message** reply) {
 		(*reply)->last_found = NULL;
 
 		result = rc_auth(rh, SIP_PORT, (VALUE_PAIR*) request->avpair,
-						(VALUE_PAIR**) &(*reply)->avpair, msg);
+						(VALUE_PAIR**)(void*)&(*reply)->avpair, msg);
 
 		if (result == OK_RC) {
 			attr = rc_dict_findattr(rh, "SIP-AVP");
@@ -447,7 +447,7 @@ int rad_avp_add(aaa_conn* rh, aaa_message* message, aaa_map* name, void* value,
 	if (vendor)
 		vendor = VENDOR(vendor);
 
-	if (rc_avpair_add (rh, (VALUE_PAIR**) &message->avpair, name->value,
+	if (rc_avpair_add (rh, (VALUE_PAIR**)(void*)&message->avpair, name->value,
 							value, val_length, vendor)) {
 		return 0;
 	}

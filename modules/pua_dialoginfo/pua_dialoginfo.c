@@ -233,7 +233,7 @@ static void
 __dialog_sendpublish(struct dlg_cell *dlg, int type, struct dlg_cb_params *_params)
 {
 	str tag = {0,0};
-	struct to_body from, to;
+	struct to_body from;
 	str peer_uri= {0, 0};
 	char flag = DLG_PUB_AB;
 	str flag_str;

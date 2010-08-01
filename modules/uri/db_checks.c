@@ -276,9 +276,8 @@ int get_auth_id(struct sip_msg* _msg, char* _uri, char* _auth_user, char* _auth_
 	// already substituted with their proper values)
 	if (_uri == NULL || pv_printf_s(_msg, (pv_elem_t *) _uri, &uri) != 0 ||
 	uri.len == 0 || uri.s == NULL) {
-			LM_WARN("cannot get string for value\n");
-			return -1;
-		}
+		LM_WARN("cannot get string for value\n");
+		return -1;
 	}
 
 	// check if we really have a valid uri as parameter
