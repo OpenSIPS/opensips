@@ -59,6 +59,7 @@
 typedef struct _aaa_map {
 	char *name;
 	int value;
+	int type;
 } aaa_map;
 
 /*
