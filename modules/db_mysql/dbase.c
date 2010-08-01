@@ -693,10 +693,10 @@ int db_mysql_query(const db_con_t* _h, const db_key_t* _k, const db_op_t* _op,
 		if (CON_HAS_UNINIT_PS(_h)||!has_stmt_ctx(_h,&(CON_MYSQL_PS(_h)->ctx))){
 			ret = db_do_query(_h, _k, _op, _v, _c, _n, _nc, _o, NULL,
 				db_mysql_val2str, db_mysql_submit_dummy_query, NULL);
-			if (ret!=0) return ret;
+			if (ret!=0) {CON_RESET_CURR_PS(_h);return ret;}
 		}
 		ret = db_mysql_do_prepared_query(_h, &query_holder, _v, _n, NULL, 0);
-		if (ret!=0) return ret;
+		if (ret!=0) {CON_RESET_CURR_PS(_h);return ret;}
 		ret = db_mysql_store_result(_h, _r);
 		CON_RESET_CURR_PS(_h);
 		return ret;
@@ -858,7 +858,7 @@ int db_mysql_insert(const db_con_t* _h, const db_key_t* _k, const db_val_t* _v, 
 		if (CON_HAS_UNINIT_PS(_h)||!has_stmt_ctx(_h,&(CON_MYSQL_PS(_h)->ctx))){
 			ret = db_do_insert(_h, _k, _v, _n, db_mysql_val2str,
 				db_mysql_submit_dummy_query);
-			if (ret!=0) return ret;
+			if (ret!=0) {CON_RESET_CURR_PS(_h);return ret;}
 		}
 		ret = db_mysql_do_prepared_query(_h, &query_holder, _v, _n, NULL, 0);
 		CON_RESET_CURR_PS(_h);
@@ -887,7 +887,7 @@ int db_mysql_delete(const db_con_t* _h, const db_key_t* _k, const db_op_t* _o,
 		if (CON_HAS_UNINIT_PS(_h)||!has_stmt_ctx(_h,&(CON_MYSQL_PS(_h)->ctx))){
 			ret = db_do_delete(_h, _k, _o, _v, _n, db_mysql_val2str,
 				db_mysql_submit_dummy_query);
-			if (ret!=0) return ret;
+			if (ret!=0) {CON_RESET_CURR_PS(_h);return ret;}
 		}
 		ret = db_mysql_do_prepared_query(_h, &query_holder, _v, _n, NULL, 0);
 		CON_RESET_CURR_PS(_h);
@@ -920,7 +920,7 @@ int db_mysql_update(const db_con_t* _h, const db_key_t* _k, const db_op_t* _o,
 		if (CON_HAS_UNINIT_PS(_h)||!has_stmt_ctx(_h,&(CON_MYSQL_PS(_h)->ctx))){
 			ret = db_do_update(_h, _k, _o, _v, _uk, _uv, _n, _un,
 				db_mysql_val2str, db_mysql_submit_dummy_query);
-			if (ret!=0) return ret;
+			if (ret!=0) {CON_RESET_CURR_PS(_h);return ret;}
 		}
 		ret = db_mysql_do_prepared_query(_h, &query_holder, _uv, _un, _v, _n);
 		CON_RESET_CURR_PS(_h);
@@ -947,7 +947,7 @@ int db_mysql_replace(const db_con_t* _h, const db_key_t* _k, const db_val_t* _v,
 		if (CON_HAS_UNINIT_PS(_h)||!has_stmt_ctx(_h,&(CON_MYSQL_PS(_h)->ctx))){
 			ret = db_do_replace(_h, _k, _v, _n, db_mysql_val2str,
 				db_mysql_submit_dummy_query);
-			if (ret!=0) return ret;
+			if (ret!=0) {CON_RESET_CURR_PS(_h);return ret;}
 		}
 		ret = db_mysql_do_prepared_query(_h, &query_holder, _v, _n, NULL, 0);
 		CON_RESET_CURR_PS(_h);
