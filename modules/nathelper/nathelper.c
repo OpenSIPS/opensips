@@ -376,6 +376,7 @@ static int rtpproxy_disable_tout = 60;
 static int rtpproxy_retr = 5;
 static int rtpproxy_tout = -1;
 static char *rtpproxy_timeout = 0;
+static int rtpproxy_autobridge = 0;
 static pid_t mypid;
 static unsigned int myseqn = 0;
 static str nortpproxy_str = str_init("a=nortpproxy:yes");
@@ -504,6 +505,7 @@ static param_export_t params[] = {
 	{"rtpproxy_retr",         INT_PARAM, &rtpproxy_retr         },
 	{"rtpproxy_tout",         INT_PARAM, &rtpproxy_tout         },
 	{"rtpproxy_timeout",      STR_PARAM, &rtpproxy_timeout      },
+	{"rtpproxy_autobridge",   INT_PARAM, &rtpproxy_autobridge   },
 	{"received_avp",          STR_PARAM, &rcv_avp_param         },
 	{"force_socket",          STR_PARAM, &force_socket_str      },
 	{"sipping_from",          STR_PARAM, &sipping_from.s        },
@@ -2948,7 +2950,7 @@ force_rtp_proxy(struct sip_msg* msg, char* str1, char* str2, int offer)
 				LM_WARN("empty body\n");
 
 			} else {
-				if (args.node->abr_supported && msg->first_line.type == SIP_REQUEST) {
+				if (rtpproxy_autobridge && args.node->abr_supported && msg->first_line.type == SIP_REQUEST) {
 					ap = pkg_malloc(sizeof(*ap));
 					if (ap == NULL) {
 						LM_ERR("can't allocate memory\n");
@@ -2977,7 +2979,7 @@ force_rtp_proxy(struct sip_msg* msg, char* str1, char* str2, int offer)
 					msg_callback_add(msg, MSG_DESTROY, rtpproxy_pre_fwd_free, ap);
 					continue;
 				}
-				if (args.node->abr_supported && msg->first_line.type == SIP_REPLY) {
+				if (rtpproxy_autobridge && args.node->abr_supported && msg->first_line.type == SIP_REPLY) {
 					if (parse_headers(msg, HDR_VIA2_F, 0) != -1 &&
 					    (msg->via2 != NULL) && (msg->via2->error == PARSE_OK) &&
 					    update_sock_struct_from_via(&to, msg, msg->via2) != -1) {
