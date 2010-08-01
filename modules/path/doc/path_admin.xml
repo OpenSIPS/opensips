@@ -119,6 +119,30 @@ modparam("path", "use_received", 1)
 </programlisting>
 		</example>
 	</section>
+	<section>
+		<title><varname>enable_double_path</varname> (integer)</title>
+		<para>
+		There are some situations when the server needs to insert two 
+		Path header fields instead of one. For example when using 
+		two disconnected networks or doing cross-protocol forwarding from 
+		UDP->TCP. This parameter enables inserting of 2
+		Paths.
+		</para>
+		<para>
+		<emphasis>
+			Default value is 1 (yes).
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>enable_double_path</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("path", "enable_double_path", 0)
+...
+</programlisting>
+		</example>
+	</section>
+
 	</section>
 
 	<section>

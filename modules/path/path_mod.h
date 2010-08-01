@@ -28,6 +28,6 @@
 #define PATH_MOD_H
 
 extern int use_received;
-
+extern int enable_double_path;
 
 #endif /* PATH_MOD_H */
