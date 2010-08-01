@@ -30,6 +30,7 @@
 
 #include "str.h"
 #include "md5.h"
+#include "crc.h"
 
 /*
  * add backslashes to special characters
