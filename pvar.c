@@ -952,6 +952,23 @@ static int pv_get_hexflags(struct sip_msg *msg, pv_param_t *param,
 	return pv_get_strintval(msg, param, res, &s, (int)msg->flags);
 }
 
+static int pv_get_bflags(struct sip_msg *msg, pv_param_t *param,
+		pv_value_t *res)
+{
+	return pv_get_uintval(msg, param, res, getb0flags());
+}
+
+static int pv_get_hexbflags(struct sip_msg *msg, pv_param_t *param,
+		pv_value_t *res)
+{
+	str s;
+	if(res==NULL)
+		return -1;
+
+	s.s = int_to_8hex((int)getb0flags());
+	s.len = 8;
+	return pv_get_strintval(msg, param, res, &s, (int)getb0flags());
+}
 
 static int pv_get_sflags(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
@@ -2855,6 +2872,12 @@ static pv_export_t _pv_names_table[] = {
 	{{"Au", (sizeof("Au")-1)}, /* */
 		PVT_ACC_USERNAME, pv_get_acc_username, 0,
 		0, 0, pv_init_iname, 1},
+	{{"bf", (sizeof("bf")-1)}, /* */
+		PVT_BFLAGS, pv_get_bflags, pv_set_bflags,
+		0, 0, 0, 0},
+	{{"bF", (sizeof("bF")-1)}, /* */
+		PVT_HEXBFLAGS, pv_get_hexbflags, pv_set_bflags,
+		0, 0, 0, 0},
 	{{"branch", (sizeof("branch")-1)}, /* */
 		PVT_BRANCH, pv_get_branch_fields, pv_set_branch,
 		0, 0, 0, 0},
