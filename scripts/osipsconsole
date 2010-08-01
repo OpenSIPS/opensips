@@ -249,16 +249,16 @@ while ( $#content gt -1 ){
 
 		#initializing global vars
 
-		if ( !-z $PID_FILE){
-			if ( $arr[0] =~ /^\s*PID_FILE/ ){				
-				$PID_FILE = $arr[1];	
+		if ( -z $PID_FILE){
+			if ( $arr[0] =~ /^\s*PID_FILE/ ){
+				$PID_FILE = $arr[1];
 			}
 		}
 
 		if ( $SYSLOG eq "" ) {
 			if ( $arr[0] =~ /^\s*SYSLOG/ ) {
 			 	$SYSLOG = $arr[1]; 
-			} 			
+			}
 		}
 
 		if ( $STARTOPTIONS eq "" ) {
@@ -281,7 +281,7 @@ while ( $#content gt -1 ){
 		if ( $MI_CONNECTOR eq "" ) {
 			if (   $arr[0] =~ /^\s*MI_CONNECTOR$/ ) {
 				$MI_CONNECTOR = $arr[1];
-				@list = split(":",$arr[1]);								
+				@list = split(":",$arr[1]);
 			 	$CTLENGINE = $list[0]; 
 				$CTLENGINELOADED = 1;
 				if ($CTLENGINE =~ /^FIFO$/) {
@@ -291,17 +291,16 @@ while ( $#content gt -1 ){
 					$OSIPS_UNIXSOCK = $list[1];
 					$OSIPSUNIX = "opensipsunix";
 				}			
-				if ($CTLENGINE =~ /^UDP$/){			
+				if ($CTLENGINE =~ /^UDP$/){
 					$OSIPSIP = $list[1];
 					$OSIPS_PORT = $list[2];
 				}
 				if ($CTLENGINE =~ /^XMLRPC$/){
 					$OSIPSIP = $list[1];
 					$OSIPS_PORT = $list[2];
-				}								
+				}
 			}
 		}
-
 
 		##### ------------------------------------------------ #####
 		### ACL name verification
@@ -309,11 +308,10 @@ while ( $#content gt -1 ){
 			if ( $arr[0] =~ /^\s*VERIFY_ACL/ ) {
 			 	$VERIFY_ACL = $arr[1]; 
 			}
-
-		}					
+		}
 
 		if ( $#ACL_GROUPS lt 0 ) {
-			if ( $arr[0] =~ /^\s*ACL_GROUPS/ ) {				
+			if ( $arr[0] =~ /^\s*ACL_GROUPS/ ) {
 			 	@ACL_GROUPS = split(" ",$arr[1]); 
 			}
 		}
@@ -414,10 +412,9 @@ while ( $#content gt -1 ){
 			}		
 		}
 
-} 	
-	
+}
 
-if ( !-z $PID_FILE){
+if ( -z $PID_FILE){
 	$PID_FILE = "/var/run/opensips.pid";
 }
 
@@ -449,7 +446,7 @@ if ( $MI_CONNECTOR eq "" ) {
 	$CTLENGINELOADED = 1;	
 }
 
-if ( !-z $OSIPSUNIX ) {
+if ( -z $OSIPSUNIX ) {
 	$OSIPSUNIX = "opensipsunix";
 }
 
@@ -503,7 +500,7 @@ if ( $DBROOTUSER  eq ""  ) {
 ### force values for variables in this section
 # you better set the variables in ~/.osipsconsolerc
 
-if ( !-z $ETCDIR ) {
+if ( -z $ETCDIR ) {
 	$ETCDIR=$PATH_ETC."/opensips";
 }
 
@@ -639,7 +636,7 @@ if ( -z $WATCH_PERIOD ) {
 
 # UsrLoc Table
 my $UL_TABLE = " ";
-if ( !-z $UL_TABLE ) {
+if ( -z $UL_TABLE ) {
 	$UL_TABLE="location";
 }
 my %ul_table = ('USER_COLUMN' => 'username',
@@ -650,7 +647,7 @@ my %ul_table = ('USER_COLUMN' => 'username',
 
 # subscriber table
 my $SUB_TABLE = " ";
-if ( !-z $SUB_TABLE ) {
+if ( -z $SUB_TABLE ) {
 	$SUB_TABLE='subscriber';
 }
 my %sub_table = ('REALM_COLUMN' => 'domain',
@@ -666,7 +663,7 @@ my %sub_table = ('REALM_COLUMN' => 'domain',
 
 # acl table
 my $ACL_TABLE = " ";
-if ( !-z $ACL_TABLE ) {
+if ( -z $ACL_TABLE ) {
 	$ACL_TABLE = 'grp';
 }
 my %acl_table = ( 'ACL_USER_COLUMN' => 'username',
@@ -679,7 +676,7 @@ my %acl_table = ( 'ACL_USER_COLUMN' => 'username',
 
 # aliases table
 my $ALS_TABLE = " ";
-if ( !-z $ALS_TABLE ) {
+if ( -z $ALS_TABLE ) {
 	$ALS_TABLE = 'aliases';
 }
 my %als_table = ('A_USER_COLUMN' => 'username',
@@ -693,7 +690,7 @@ my %als_table = ('A_USER_COLUMN' => 'username',
 
 # domain table
 my $DOMAIN_TABLE = " ";
-if ( !-z $DOMAIN_TABLE ) {
+if ( -z $DOMAIN_TABLE ) {
 	$DOMAIN_TABLE = 'domain';
 }
 my %domain_table = ('DO_DOMAIN_COLUMN' => 'domain',
@@ -702,7 +699,7 @@ my %domain_table = ('DO_DOMAIN_COLUMN' => 'domain',
 
 # lcr tables
 my $LCR_TABLE = " ";
-if ( !-z $LCR_TABLE ) { 
+if ( -z $LCR_TABLE ) { 
 	$LCR_TABLE = 'lcr';
 }
 
@@ -714,7 +711,7 @@ my %lcr_table = ('LCR_PREFIX_COLUMN' => 'prefix',
 
 # gw table
 my $GW_TABLE = " ";
-if ( !-z $GW_TABLE ) {
+if ( -z $GW_TABLE ) {
 	$GW_TABLE = 'gw';
 }
 my %gw_table = ('LCR_GW_GWNAME_COLUMN' => 'gw_name',
@@ -730,7 +727,7 @@ my %gw_table = ('LCR_GW_GWNAME_COLUMN' => 'gw_name',
 
 # route_tree table
 my $ROUTE_TREE_TABLE = " ";
-if ( !-z $ROUTE_TREE_TABLE ) {
+if ( -z $ROUTE_TREE_TABLE ) {
 	$ROUTE_TREE_TABLE = 'route_tree';
 }
 my %route_tree_table = ('CARRIERROUTE_ROUTE_TREE_PREFIX_COLUMN' =>'id',
@@ -740,7 +737,7 @@ my %route_tree_table = ('CARRIERROUTE_ROUTE_TREE_PREFIX_COLUMN' =>'id',
 
 # carrierroute table
 my $CARRIERROUTE_TABLE = " ";
-if ( !-z $CARRIERROUTE_TABLE ) {
+if ( -z $CARRIERROUTE_TABLE ) {
 	$CARRIERROUTE_TABLE = 'carrierroute';
 }
 
@@ -760,7 +757,7 @@ my %carrierroute_table = ('CARRIERROUTE_CARRIERROUTE_PREFIX_COLUMN' => 'id',
 
 # URI table
 my $URI_TABLE = " ";
-if ( !-z $URI_TABLE ) {
+if ( -z $URI_TABLE ) {
 	$URI_TABLE = 'uri'
 }
 my %uri_table = ('URIUSER_COLUMN' => 'uri_user',
@@ -769,7 +766,7 @@ my %uri_table = ('URIUSER_COLUMN' => 'uri_user',
 
 # dbaliases table
 my $DA_TABLE = " ";
-if ( !-z $DA_TABLE ) {
+if ( -z $DA_TABLE ) {
 	$DA_TABLE = 'dbaliases';
 }
 my %da_table = ('DA_USER_COLUMN' => 'username',
@@ -780,7 +777,7 @@ my %da_table = ('DA_USER_COLUMN' => 'username',
 
 # speeddial table
 my $SD_TABLE = " ";
-if ( !-z $SD_TABLE ) {
+if ( -z $SD_TABLE ) {
 	$SD_TABLE = 'speed_dial'
 }
 my %sd_table = ('SD_USER_COLUMN' => 'username',
@@ -793,7 +790,7 @@ my %sd_table = ('SD_USER_COLUMN' => 'username',
 
 # avp table
 my $AVP_TABLE = " ";
-if ( !-z $AVP_TABLE ) {
+if ( -z $AVP_TABLE ) {
 	$AVP_TABLE = 'usr_preferences';
 }
 my %avp_table = ('AVP_UUID_COLUMN' => 'uuid',
@@ -808,7 +805,7 @@ my %avp_table = ('AVP_UUID_COLUMN' => 'uuid',
 
 # address table
 my $ADDRESS_TABLE = " ";
-if ( !-z $ADDRESS_TABLE ) {
+if ( -z $ADDRESS_TABLE ) {
 	$ADDRESS_TABLE = 'address';
 }
 my %address_table = ('ADDRESS_ID_COLUMN' => 'ip',
@@ -824,7 +821,7 @@ my %address_table = ('ADDRESS_ID_COLUMN' => 'ip',
 
 # dispatcher tables  
 my $DISPATCHER_TABLE = " ";
-if ( !-z $DISPATCHER_TABLE ){
+if ( -z $DISPATCHER_TABLE ){
 	$DISPATCHER_TABLE = 'dispatcher';
 }
 my %dispatcher_table = ('DISPATCHER_ID_COLUMN' => 'id',
@@ -838,7 +835,7 @@ my %dispatcher_table = ('DISPATCHER_ID_COLUMN' => 'id',
 
 # dialplan tables
 my $DIALPLAN_TABLE = " ";
-if ( !-z $DIALPLAN_TABLE ) {
+if ( -z $DIALPLAN_TABLE ) {
 	$DIALPLAN_TABLE = 'dialplan';
 }
 my %dialplan_table = ('DIALPLAN_ID_COLUMN' => 'id',
@@ -854,7 +851,7 @@ my %dialplan_table = ('DIALPLAN_ID_COLUMN' => 'id',
 
 #drouting tables
 my $DR_GW_TABLE = " ";
-if ( !-z $DR_GW_TABLE ) {
+if ( -z $DR_GW_TABLE ) {
 	$DR_GW_TABLE = 'dr_gateways';
 }
 my %dr_gw_table = ('DR_GW_GWID_COLUMN' => 'gwid',
@@ -868,7 +865,7 @@ my %dr_gw_table = ('DR_GW_GWID_COLUMN' => 'gwid',
 
 # dr_rules table
 my $DR_RULES_TABLE = " ";
-if ( !-z $DR_RULES_TABLE ) {
+if ( -z $DR_RULES_TABLE ) {
 	$DR_RULES_TABLE = 'dr_rules';
 }
 my %dr_rules_table = (  'DR_RULES_RULEID_COLUMN' => 'ruleid',
