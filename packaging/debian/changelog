@@ -1,3 +1,10 @@
+opensips (1.6.3-0) unstable; urgency=low
+
+  * Minor Public Release.
+
+ -- Bogdan-Andrei Iancu <bogdan@voice-system.ro>  Mon, 02 Aug 2010 09:00:00 +0200
+
+
 opensips (1.6.2-0) unstable; urgency=low
 
   * Minor Public Release.

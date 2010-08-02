@@ -1,6 +1,6 @@
 PKG="OpenSIPS-geoip"
 NAME="Programmable SIP Server Address Location Support"
-VERSION="1.6.2dev0-notls"
+VERSION="1.6.3dev0-notls"
 ARCH="sparc"
 CLASSES="none"
 CATEGORY="utility"
