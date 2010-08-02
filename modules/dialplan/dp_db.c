@@ -363,32 +363,32 @@ dpl_node_t * build_rule(db_val_t * values)
 			LM_ERR("failed to compile subst expression\n");
 			goto err;
 		}
+	}
 
-		/* replace exp */
-		GET_STR_VALUE(repl_exp, values, 6);
-		if(repl_exp.len && repl_exp.s){
-			repl_comp = repl_exp_parse(repl_exp);
-			if(!repl_comp){
-				LM_ERR("failed to compile replacing expression %.*s\n",
-					repl_exp.len, repl_exp.s);
-				goto err;
-			}
+	/* replace exp */
+	GET_STR_VALUE(repl_exp, values, 6);
+	if(repl_exp.len && repl_exp.s){
+		repl_comp = repl_exp_parse(repl_exp);
+		if(!repl_comp){
+			LM_ERR("failed to compile replacing expression %.*s\n",
+				repl_exp.len, repl_exp.s);
+			goto err;
 		}
+	}
 
-		pcre_fullinfo(
-			subst_comp, /* the compiled pattern */
-			NULL, /* no extra data - we didn't study the pattern */
-			PCRE_INFO_CAPTURECOUNT, /* number of named substrings */
-			&namecount); /* where to put the answer */
+	pcre_fullinfo(
+		subst_comp, /* the compiled pattern */
+		NULL, /* no extra data - we didn't study the pattern */
+		PCRE_INFO_CAPTURECOUNT, /* number of named substrings */
+		&namecount); /* where to put the answer */
 
-		LM_DBG("references:%d , max:%d\n",namecount,
-			repl_comp?repl_comp->max_pmatch:0);
+	LM_DBG("references:%d , max:%d\n",namecount,
+		repl_comp?repl_comp->max_pmatch:0);
 
-		if ( (repl_comp!=NULL) && (namecount<repl_comp->max_pmatch) &&
-		(repl_comp->max_pmatch!=0) ){
-			LM_ERR("repl_exp uses a non existing subexpression\n");
-				goto err;
-		}
+	if ( (repl_comp!=NULL) && (namecount<repl_comp->max_pmatch) &&
+	(repl_comp->max_pmatch!=0) ){
+		LM_ERR("repl_exp uses a non existing subexpression\n");
+			goto err;
 	}
 
 	new_rule = (dpl_node_t *)shm_malloc(sizeof(dpl_node_t));
@@ -401,12 +401,12 @@ dpl_node_t * build_rule(db_val_t * values)
 	if(str_to_shm(match_exp, &new_rule->match_exp)!=0)
 		goto err;
 
-	if (subst_comp) {
+	if (subst_comp)
 		if(str_to_shm(subst_exp, &new_rule->subst_exp)!=0)
 			goto err;
+	if (repl_comp)
 		if(str_to_shm(repl_exp, &new_rule->repl_exp)!=0)
 			goto err;
-	}
 
 	/*set the rest of the rule fields*/
 	new_rule->dpid		=	VAL_INT(values);
@@ -420,14 +420,14 @@ dpl_node_t * build_rule(db_val_t * values)
 	LM_DBG("attrs are %.*s\n", 
 		new_rule->attrs.len, new_rule->attrs.s);
 
-	if (match_comp) {
+	if (match_comp)
 		new_rule->match_comp = match_comp;
-	}
 
-	if (subst_comp) {
+	if (subst_comp)
 		new_rule->subst_comp = subst_comp;
+
+	if (repl_comp)
 		new_rule->repl_comp  = repl_comp;
-	}
 
 	return new_rule;
 
