@@ -883,7 +883,7 @@ void dialog_update_db(unsigned int ticks, void * param)
 			&to_cseq_column,	&vars_column,			&profiles_column,
 			&sflags_column };
 
-	if(use_dialog_table()!=0)
+	if (dialog_db_handle && use_dialog_table()!=0)
 		return;
 
 	on_shutdown = (ticks==0);
