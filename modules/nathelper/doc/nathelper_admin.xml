@@ -131,6 +131,13 @@
 			</para>
 			</listitem>
 
+			<listitem>
+			<para>
+				<emphasis>dialog</emphasis> module - if using the engage_rtp_proxy
+				functions
+			</para>
+			</listitem>
+
 			</itemizedlist>
 		</para>
 	</section>
@@ -812,6 +819,34 @@ if (search("User-Agent: Cisco ATA.*") {force_rtp_proxy("","1.2.3.4");};
 </programlisting>
 		</example>
 	</section>
+		<section>
+				<title>
+				<function moreinfo="none">engage_rtp_proxy([flags [, ip_address]])</function>
+				</title>
+
+				<para>
+                Rewrites &sdp; body to ensure that media is passed through
+				an &rtp; proxy. More advanced version of force_rtp_proxy(), that uses the
+				dialog module facilities. Function must only be called for the initial INVITE
+				and internally takes care of rewriting the body of 200 OKs and ACKs.
+				</para>
+				<para>Meaning of the function's arguments are the same as in the case of the
+					force_rtp_proxy functions
+				</para>
+				<para>
+				This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, BRANCH_ROUTE.
+				</para>
+				<example>
+				<title><function>engage_rtp_proxy</function> usage</title>
+				<programlisting format="linespecific">
+		...
+		if (is_method("INVITE") &amp;&amp;
+		has_totag()) {engage_rtp_proxy();};
+		...
+		</programlisting>
+				</example>
+			</section>
+
         <section>
                 <title>
                 <function moreinfo="none">rtpproxy_offer([flags [, ip_address]])</function>

@@ -223,6 +223,7 @@
 #include "../../parser/parse_multipart.h"
 #include "../../msg_callbacks.h"
 
+#include "../dialog/dlg_load.h"
 
 #define NH_TABLE_VERSION  0
 
@@ -283,6 +284,11 @@
 #define	ABR_CPROTOVER	"20090810"
 
 #define	CPORT		"22222"
+
+/* param names to be stored in the dialog */
+static str param1_name = str_init("nathelper_1");
+static str param2_name = str_init("nathelper_2");
+
 static int nat_uac_test_f(struct sip_msg* msg, char* str1, char* str2);
 static int fix_nated_contact_f(struct sip_msg *, char *, char *);
 static int fix_nated_sdp_f(struct sip_msg *, char *, char *);
@@ -294,6 +300,9 @@ static int unforce_rtp_proxy_f(struct sip_msg *, char *, char *);
 static int force_rtp_proxy0_f(struct sip_msg *, char *, char *);
 static int force_rtp_proxy1_f(struct sip_msg *, char *, char *);
 static int force_rtp_proxy2_f(struct sip_msg *, char *, char *);
+static int engage_rtp_proxy0_f(struct sip_msg *, char *, char *);
+static int engage_rtp_proxy1_f(struct sip_msg *, char *, char *);
+static int engage_rtp_proxy2_f(struct sip_msg *, char *, char *);
 static int force_rtp_proxy(struct sip_msg *, char *, char *, int);
 static int fix_nated_register_f(struct sip_msg *, char *, char *);
 static int fixup_fix_nated_register(void** param, int param_no);
@@ -333,6 +342,7 @@ static struct mi_root* mi_reload_rtpproxies(struct mi_root* cmd_tree,
 void free_rtpp_sets();
 
 static usrloc_api_t ul;
+static struct dlg_binds dlg_api;
 
 static int cblen = 0;
 static int natping_interval = 0;
@@ -447,6 +457,15 @@ static cmd_export_t cmds[] = {
 	{"force_rtp_proxy",    (cmd_function)force_rtp_proxy2_f,     2,
 		0, 0,
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"engage_rtp_proxy",    (cmd_function)engage_rtp_proxy0_f,     0,
+		0, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"engage_rtp_proxy",    (cmd_function)engage_rtp_proxy1_f,     1,
+		0, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"engage_rtp_proxy",    (cmd_function)engage_rtp_proxy2_f,     2,
+		0, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"nat_uac_test",       (cmd_function)nat_uac_test_f,         1,
 		fixup_uint_null, 0,
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
@@ -1369,6 +1388,13 @@ mod_init(void)
 		LM_WARN("rtpproxy_tout param is obsolete, please replace with \n"
 			"rtpproxy_timeout\n");
 		rtpproxy_tout = rtpproxy_tout * 1000;
+	}
+
+	/* load dlg api */
+	memset(&dlg_api, 0, sizeof(struct dlg_binds));
+	if (load_dlg_api(&dlg_api)!=0) {
+		LM_ERR("error loading dlg api");
+		return -1;
 	}
 
 	return 0;
@@ -2836,6 +2862,129 @@ force_rtp_proxy2_f(struct sip_msg *msg, char *param1, char *param2)
 	return force_rtp_proxy(msg, param1, param2, offer);
 }
 
+static void engage_callback(struct dlg_cell *dlg, int type,
+		struct dlg_cb_params *_params)
+{
+	int offer = 0;
+	str param1_val,param2_val,value;
+	int method_id;
+
+	/* parse cseq header */
+	if(parse_headers(_params->msg,HDR_CSEQ_F,0) < 0) {
+		LM_ERR("cannot parse cseq header");
+		return;
+	}
+
+	if( _params->msg->cseq==NULL || _params->msg->cseq->body.s==NULL) {
+		LM_ERR("cseq header empty");
+		return;
+	}
+
+	method_id = get_cseq(_params->msg)->method_id;
+
+	if (!(method_id==METHOD_INVITE || method_id==METHOD_ACK))
+		return;
+	if (_params->msg->content_length==NULL ||
+			get_content_length (_params->msg)==0)
+		return;
+
+	if (type & DLGCB_REQ_WITHIN)
+		offer = 1;
+	else if (type & DLGCB_RESPONSE_WITHIN)
+		offer = 0;
+
+	if (dlg_api.fetch_dlg_value(dlg, &param1_name, &value, 0) < 0) {
+		LM_ERR("cannot fetch first parameter\n");
+		return ;
+	}
+	
+	param1_val.s = pkg_malloc(value.len);
+	memcpy(param1_val.s,value.s,value.len);
+
+	if (dlg_api.fetch_dlg_value(dlg, &param2_name, &value, 0) < 0) {
+		LM_ERR("cannot fetch second parameter\n");
+		return ;
+	}
+
+	param2_val.s = pkg_malloc(value.len);
+	memcpy(param2_val.s,value.s,value.len);
+	
+	force_rtp_proxy(_params->msg, param1_val.s, param2_val.s, offer);
+
+	pkg_free(param1_val.s);
+	pkg_free(param2_val.s);
+}
+
+
+static int 
+engage_rtp_proxy2_f(struct sip_msg *msg, char *param1, char *param2)
+{
+	str param1_val,param2_val;
+	struct to_body *pto, TO;
+	struct dlg_cell *dlg;
+
+	if (!dlg_api.create_dlg)
+	{
+		LM_ERR("dialog module not loaded. use force_rtp_proxy functions instead");
+		return -1;
+	}
+
+	if (!(msg->first_line.type == SIP_REQUEST &&
+	    msg->first_line.u.request.method_value == METHOD_INVITE)) {
+		LM_ERR("this function can only be called from invite");
+		return -1;
+	}
+
+	parse_to(msg->to->body.s,msg->to->body.s + msg->to->body.len + 1, &TO);
+	if(TO.error != PARSE_OK)
+	{
+		LM_DBG("'To' header NOT parsed\n");
+		return -1;
+	}
+	pto = &TO;
+
+	/* totag field is empty*/
+	if (!( pto->tag_value.s==NULL || pto->tag_value.len==0) ) {
+		LM_ERR("function can only be called from the initial invite");
+		return -1;
+	}
+		
+	if(force_rtp_proxy(msg,param1,param2,1) < 0) {
+		LM_ERR("error forcing rtp proxy");
+		return -1;
+	}
+
+	if (dlg_api.create_dlg(msg) < 0) {
+		LM_ERR("error creating dialog");
+		return -1;
+	}
+
+	dlg = dlg_api.get_dlg();
+
+	param1_val.s = param1;
+	param1_val.len = strlen(param1);
+
+	param2_val.s = param2;
+	param2_val.len = strlen(param2);
+
+	if ( dlg_api.store_dlg_value(dlg, &param1_name, &param1_val) < 0) {
+		LM_ERR("cannot store first param into dialog\n");
+		return -1;
+	}	
+	if ( dlg_api.store_dlg_value(dlg, &param2_name, &param2_val) < 0) {
+		LM_ERR("cannot store second param into dialog\n");
+		return -1;
+	}
+
+	if (dlg_api.register_dlgcb(dlg, DLGCB_RESPONSE_WITHIN | DLGCB_REQ_WITHIN, 
+				engage_callback, msg, 0) != 0) {
+		LM_ERR("cannot register callback\n");
+		return -1;
+	}
+
+	return 1;
+}
+
 struct options {
 	str s;
 	int oidx;
@@ -3573,6 +3722,26 @@ force_rtp_proxy0_f(struct sip_msg* msg, char* str1, char* str2)
 
 	return force_rtp_proxy1_f(msg, arg, NULL);
 }
+
+static int engage_rtp_proxy1_f(struct sip_msg* msg,char* str1,char* str2)
+{
+	char *cp;
+	char newip[IP_ADDR_MAX_STR_SIZE];
+
+	cp = ip_addr2a(&msg->rcv.dst_ip);
+	strcpy(newip, cp);
+	
+	return engage_rtp_proxy2_f(msg,str1,newip);
+}
+
+static int engage_rtp_proxy0_f(struct sip_msg* msg,char *str1,char* str2)
+{
+	char arg[1] = {'\0'};
+
+	return engage_rtp_proxy1_f(msg,arg,NULL);
+}
+
+
 
 
 static u_short raw_checksum(unsigned char *buffer, int len)
