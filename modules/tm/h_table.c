@@ -55,6 +55,7 @@
 #include "fix_lumps.h" /* free_via_clen_lump */
 #include "t_hooks.h"
 #include "t_fwd.h"
+#include "t_lookup.h"
 
 static enum kill_reason kr;
 
