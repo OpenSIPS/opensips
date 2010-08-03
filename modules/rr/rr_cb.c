@@ -51,9 +51,9 @@ void destroy_rrcb_lists(void)
 }
 
 
-int register_rrcb( rr_cb_t f, void *param )
+int register_rrcb( rr_cb_t f, void *param, short prior )
 {
-	struct rr_callback *cbp;
+	struct rr_callback *cbp, *rcbp;
 
 	/* build a new callback structure */
 	if (!(cbp=pkg_malloc( sizeof( struct rr_callback)))) {
@@ -61,17 +61,27 @@ int register_rrcb( rr_cb_t f, void *param )
 		return -1;
 	}
 
+	if (prior < 0) {
+		LM_ERR("negative priority not allowed\n");
+		return -1;
+	}
+
 	/* fill it up */
 	cbp->callback = f;
 	cbp->param = param;
-	/* link it at the beginning of the list */
-	cbp->next = rrcb_hl;
-	rrcb_hl = cbp;
-	/* set next id */
-	if (cbp->next)
-		cbp->id = cbp->next->id+1;
-	else
-		cbp->id = 0;
+	cbp->id = prior;
+
+	if (!rrcb_hl || !prior || (prior < rrcb_hl->id)) {
+		/* link it at the beginning of the list */
+		cbp->next = rrcb_hl;
+		rrcb_hl = cbp;
+	} else {
+		rcbp = rrcb_hl;
+		while (rcbp->next && rcbp->next->id < prior)
+			rcbp = rcbp->next;
+		cbp->next = rcbp->next;
+		rcbp->next = cbp;
+	}
 
 	return 0;
 }

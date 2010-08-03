@@ -126,7 +126,7 @@ static int mod_init(void)
 			LM_ERR("failed to load rr-API\n");
 			return -1;
 		}
-		if (path_rrb.register_rrcb(path_rr_callback, 0) != 0) {
+		if (path_rrb.register_rrcb(path_rr_callback, 0, 0) != 0) {
 			LM_ERR("failed to register rr callback\n");
 			return -1;
 		}

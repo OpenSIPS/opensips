@@ -146,7 +146,7 @@
 
 	<section>
 		<title>
-		<function moreinfo="none">register_rrcb( callback, param)</function>
+		<function moreinfo="none">register_rrcb( callback, param, prior)</function>
 		</title>
 		<para>
 		The function register a new callback (along with its parameter). The
@@ -166,6 +166,12 @@
 			<listitem>
 				<para><emphasis>void *param</emphasis> - parameter to be passed
 				to the callback function.
+				</para>
+			</listitem>
+			<listitem>
+				<para><emphasis>short prior</emphasis> - parameter to set the priority. 
+				If the callback depends on another module, this parameter should be greater
+				than that module's priority. Otherwise, it should be 0.
 				</para>
 			</listitem>
 		</itemizedlist>
@@ -191,7 +197,7 @@ if (load_rr_api( &amp;my_rrb )!=0) {
 ...
 ...
 /* register a RR callback */
-if (my_rrb.register_rrcb(my_callback,0))!=0) {
+if (my_rrb.register_rrcb(my_callback,0,0))!=0) {
     LM_ERR("can't register RR callback\n");
     goto error;
 }
