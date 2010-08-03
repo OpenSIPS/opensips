@@ -43,6 +43,7 @@
 #include "../tm/h_table.h"
 #include "../tm/tm_load.h"
 #include "../rr/api.h"
+#include "../dialog/dlg_load.h"
 
 #include "replace.h"
 
@@ -52,6 +53,8 @@ extern str rr_from_param;
 extern str rr_to_param;
 extern struct tm_binds uac_tmb;
 extern struct rr_binds uac_rrb;
+extern struct dlg_binds dlg_api;
+extern int force_dialog;
 
 static char enc_table64[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 		"abcdefghijklmnopqrstuvwxyz0123456789+/";
@@ -228,6 +231,7 @@ int replace_uri( struct sip_msg *msg, str *display, str *uri,
 	str buf;
 	int uac_flag;
 	int i;
+	struct dlg_cell *dlg = NULL;
 
 	/* consistency check! in AUTO mode, do NOT allow URI changing
 	 * in sequential request */
@@ -334,39 +338,68 @@ int replace_uri( struct sip_msg *msg, str *display, str *uri,
 		buf.len = uri->len;
 	}
 
-	/* encrypt parameter ;) */
-	if (uac_passwd.len)
-		for( i=0 ; i<buf.len ; i++)
-			buf.s[i] ^= uac_passwd.s[i%uac_passwd.len];
+	/* trying to create/get dialog */
+	if (dlg_api.get_dlg) {
+		dlg = dlg_api.get_dlg();
+		/* if the dialog doesn't already exist */
+		if (!dlg && force_dialog && dlg_api.create_dlg(msg) < 0) {
+			LM_ERR("cannot create dialog\n");
+			goto error;
+		} else {
+			/* dialog should be created */
+			dlg = dlg_api.get_dlg();
+			if (!dlg) {
+				LM_ERR("error getting dlg after created\n");
+				goto error;
+			}
+		}
 
-	/* encode the param */
-	if (encode_uri( &buf , &replace)<0 )
-	{
-		LM_ERR("failed to encode uris\n");
-		goto error;
+		LM_DBG("Dialog got: %p\n", dlg);
 	}
-	LM_DBG("encode is=<%.*s> len=%d\n",replace.len,replace.s,replace.len);
 
-	/* add RR parameter */
-	param.len = 1+rr_param->len+1+replace.len;
-	param.s = (char*)pkg_malloc(param.len);
-	if (param.s==0)
-	{
-		LM_ERR("no more pkg mem\n");
-		goto error;
-	}
-	p = param.s;
-	*(p++) = ';';
-	memcpy( p, rr_param->s, rr_param->len);
-	p += rr_param->len;
-	*(p++) = '=';
-	memcpy( p, replace.s, replace.len);
-	p += replace.len;
+	/* if using dialog, store the result */
+	if (dlg) {
+		/* store string in dlg */
+		if (dlg_api.store_dlg_value(dlg, rr_param, &buf) < 0) {
+			LM_ERR("cannot store value\n");
+			goto error;
+		}
+	} else {
+		/* encrypt parameter ;) */
+		if (uac_passwd.len)
+			for( i=0 ; i<buf.len ; i++)
+				buf.s[i] ^= uac_passwd.s[i%uac_passwd.len];
 
-	if (uac_rrb.add_rr_param( msg, &param)!=0)
-	{
-		LM_ERR("add_RR_param failed\n");
-		goto error1;
+		/* encode the param */
+		if (encode_uri( &buf , &replace)<0 )
+		{
+			LM_ERR("failed to encode uris\n");
+			goto error;
+		}
+		LM_DBG("encode is=<%.*s> len=%d\n",replace.len,replace.s,replace.len);
+
+		/* add RR parameter */
+		param.len = 1+rr_param->len+1+replace.len;
+		param.s = (char*)pkg_malloc(param.len);
+		if (param.s==0)
+		{
+			LM_ERR("no more pkg mem\n");
+			goto error;
+		}
+		p = param.s;
+		*(p++) = ';';
+		memcpy( p, rr_param->s, rr_param->len);
+		p += rr_param->len;
+		*(p++) = '=';
+		memcpy( p, replace.s, replace.len);
+		p += replace.len;
+
+		if (uac_rrb.add_rr_param( msg, &param)!=0)
+		{
+			LM_ERR("add_RR_param failed\n");
+			goto error1;
+		}
+		pkg_free(param.s);
 	}
 
 	uac_flag = (hdr==msg->from)?FL_USE_UAC_FROM:FL_USE_UAC_TO;
@@ -378,7 +411,7 @@ int replace_uri( struct sip_msg *msg, str *display, str *uri,
 			if (uac_tmb.register_tmcb( msg, 0, TMCB_RESPONSE_IN,
 			restore_uris_reply,0,0)!=1) {
 				LM_ERR("failed to install TM callback\n");
-				goto error1;
+				goto error;
 			}
 		}
 		/* set TO/ FROM sepcific flags */
@@ -388,7 +421,6 @@ int replace_uri( struct sip_msg *msg, str *display, str *uri,
 			Trans->uas.request->msg_flags |= uac_flag;
 	}
 
-	pkg_free(param.s);
 	return 0;
 error1:
 	pkg_free(param.s);
@@ -410,31 +442,50 @@ int restore_uri( struct sip_msg *msg, str *rr_param, int check_from)
 	char *p;
 	int i;
 	int flag;
+	struct dlg_cell *dlg = NULL;
 
 	/* we should process only sequntial request, but since we are looking
 	 * for Route param, the test is not really required -bogdan */
 
-	LM_DBG("getting '%.*s' Route param\n",
-		rr_param->len,rr_param->s);
-	/* is there something to restore ? */
-	if (uac_rrb.get_route_param( msg, rr_param, &param_val)!=0) {
-		LM_DBG("route param '%.*s' not found\n",
+	if (dlg_api.get_dlg) {
+		dlg = dlg_api.get_dlg();
+		if (!dlg && force_dialog) {
+			LM_ERR("cannot get dialog\n");
+			goto failed;
+		}
+		LM_DBG("Dialog found: %p\n", dlg);
+	}
+
+	/* check if dialog was used */
+	if (dlg) {
+		/* fetch dlg value */
+		if (dlg_api.fetch_dlg_value(dlg, rr_param, &new_uri, 0) < 0) {
+			LM_ERR("cannot fetch dlg value %.*s\n", rr_param->len, rr_param->s);
+			goto failed;
+		}
+	} else {
+		LM_DBG("getting '%.*s' Route param\n",
 			rr_param->len,rr_param->s);
-		goto failed;
-	}
-	LM_DBG("route param is '%.*s' (len=%d)\n",
-		param_val.len,param_val.s,param_val.len);
+		/* is there something to restore ? */
+		if (uac_rrb.get_route_param( msg, rr_param, &param_val)!=0) {
+			LM_DBG("route param '%.*s' not found\n",
+				rr_param->len,rr_param->s);
+			goto failed;
+		}
+		LM_DBG("route param is '%.*s' (len=%d)\n",
+			param_val.len,param_val.s,param_val.len);
 
-	/* decode the parameter val to a URI */
-	if (decode_uri( &param_val, &new_uri)<0 ) {
-		LM_ERR("failed to decode uri\n");
-		goto failed;
-	}
+		/* decode the parameter val to a URI */
+		if (decode_uri( &param_val, &new_uri)<0 ) {
+			LM_ERR("failed to decode uri\n");
+			goto failed;
+		}
 
-	/* dencrypt parameter ;) */
-	if (uac_passwd.len)
-		for( i=0 ; i<new_uri.len ; i++)
-			new_uri.s[i] ^= uac_passwd.s[i%uac_passwd.len];
+		/* dencrypt parameter ;) */
+		if (uac_passwd.len)
+			for( i=0 ; i<new_uri.len ; i++)
+				new_uri.s[i] ^= uac_passwd.s[i%uac_passwd.len];
+	}
 
 	/* check the request direction */
 	if ( (check_from && uac_rrb.is_direction( msg, RR_FLOW_UPSTREAM)==0) ||

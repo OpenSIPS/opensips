@@ -13,6 +13,10 @@
 		or client authentication.
 		</para>
 		<para>
+		If the dialog module is loaded and a dialog can be created, 
+		then the auto mode can be done more efficiently.
+		</para>
+		<para>
 		Known limitations in this version:
 		</para>
 		<itemizedlist>
@@ -46,6 +50,13 @@
 			<para>
 				<emphasis>RR - Record-Route Module</emphasis>, but only if
 				restore mode for FROM URI is set to <quote>auto</quote>.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>Dialog Module</emphasis>, if <quote>force_dialog</quote>
+				module parameter is enabled, or a dialog is created from the
+				configuration script.
 			</para>
 			</listitem>
 			</itemizedlist>
@@ -154,7 +165,7 @@ modparam("uac","restore_passwd","my_secret_passwd")
 modparam("uac","rr_from_store_param","my_Fparam")
 ...
 				</programlisting>
-			</example>
+				</example>
 		</section>
 
 		<section>
@@ -264,6 +275,24 @@ modparam("uac","auth_username_avp","$avp(i:11)")
 				<programlisting format="linespecific">
 ...
 modparam("uac","auth_password_avp","$avp(i:12)")
+...
+				</programlisting>
+			</example>
+		</section>
+
+		<section id="force_dialog">
+			<title><varname>force_dialog</varname> (int)</title>
+			<para>
+				Force create dialog if it is not created from the configuration script.
+			</para>
+			<para>
+				Default value is no.
+			</para>
+			<example>
+				<title>Set <varname>force_dialog</varname> parameter</title>
+				<programlisting format="linespecific">
+...
+modparam("uac", "force_dialog", yes)
 ...
 				</programlisting>
 			</example>

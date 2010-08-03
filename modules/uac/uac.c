@@ -47,6 +47,8 @@
 #include "../tm/t_hooks.h"
 #include "../rr/api.h"
 
+#include "../dialog/dlg_load.h"
+
 #include "replace.h"
 #include "auth.h"
 
@@ -70,6 +72,8 @@ struct rr_binds uac_rrb;
 pv_spec_t auth_username_spec;
 pv_spec_t auth_realm_spec;
 pv_spec_t auth_password_spec;
+int force_dialog = 0;
+struct dlg_binds dlg_api;
 
 static int w_replace_from(struct sip_msg* msg, char* p1, char* p2);
 static int w_restore_from(struct sip_msg* msg);
@@ -122,6 +126,7 @@ static param_export_t params[] = {
 	{"auth_username_avp",   STR_PARAM,                &auth_username_avp     },
 	{"auth_realm_avp",      STR_PARAM,                &auth_realm_avp        },
 	{"auth_password_avp",   STR_PARAM,                &auth_password_avp     },
+	{"force_dialog",        INT_PARAM,                &force_dialog          },
 	{0, 0, 0}
 };
 
@@ -224,15 +229,28 @@ static int mod_init(void)
 					" - required by AUTO restore mode\n");
 				goto error;
 			}
+
+			/* trying to load dialog module */
+			memset(&dlg_api, 0, sizeof(struct dlg_binds));
+			if (load_dlg_api(&dlg_api)!=0) {
+				if (force_dialog) {
+					LM_ERR("cannot force dialog. dialog module not loaded\n");
+					return -1;
+				}
+				LM_DBG("failed to find dialog API - is dialog module loaded?\n");
+			}
+
 			/* get all requests doing loose route */
-			if (uac_rrb.register_rrcb( rr_checker, 0)!=0) {
+			if (uac_rrb.register_rrcb( rr_checker, 0, 2)!=0) {
 				LM_ERR("failed to install RR callback\n");
 				goto error;
 			}
 		}
 	}
 
-	init_from_replacer();
+	/* init from replacer only if cannot use dialog module */
+	if (!force_dialog)
+		init_from_replacer();
 
 	return 0;
 error:
