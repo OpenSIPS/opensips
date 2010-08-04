@@ -574,6 +574,7 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 					case 'R':
 						b=p;
 						state=PR2_R;
+						break;
 					default:
 						state=URI_PARAM_P;
 				}
@@ -1020,7 +1021,10 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 	LM_DBG("   maddr=<%.*s>, val=<%.*s>\n",
 			uri->maddr.len, ZSW(uri->maddr.s), 
 			uri->maddr_val.len, ZSW(uri->maddr_val.s));
-	LM_DBG("   lr=<%.*s>\n", uri->lr.len, ZSW(uri->lr.s)); 
+	LM_DBG("   lr=<%.*s>, val=<%.*s>\n", uri->lr.len, ZSW(uri->lr.s),
+			uri->lr_val.len, ZSW(uri->lr_val.s)); 
+	LM_DBG("   r2=<%.*s>, val=<%.*s>\n", uri->r2.len, ZSW(uri->r2.s),
+			uri->r2_val.len, ZSW(uri->r2_val.s)); 
 #endif
 	return 0;
 	
