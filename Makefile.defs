@@ -67,6 +67,10 @@ SUBLEVEL = 3
 EXTRAVERSION =
 
 RELEASE=$(VERSION).$(PATCHLEVEL).$(SUBLEVEL)$(EXTRAVERSION)
+ifneq ($(OPENSIPS_RELEASE),)	# allow override thru environment
+RELEASE=$(OPENSIPS_RELEASE)
+endif
+
 OS = $(shell uname -s | sed -e s/SunOS/solaris/ | tr "[A-Z/]" "[a-z_]")
 
 ifeq ($(OS),solaris)

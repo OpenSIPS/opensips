@@ -186,6 +186,9 @@ cfg.tab.c cfg.tab.h: cfg.y  $(ALLDEP)
 .PHONY: all
 all: $(NAME) modules utils
 
+.PHONY: app
+app: $(NAME)
+
 
 .PHONY: modules
 modules:
@@ -425,9 +428,17 @@ sunpkg:
 	rm -rf tmp/$(NAME)_sun_pkg
 
 
-.PHONY: install
-install: all mk-install-dirs install-cfg install-bin install-console install-modules \
-	install-doc install-man
+.PHONY: install-app install-modules-all install
+# Install app only, excluding console, modules and module docs
+install-app: app mk-install-dirs install-cfg install-bin \
+	install-app-doc install-man
+
+# Install all module stuff (except modules-docbook?)
+install-modules-all: install-modules install-modules-doc
+
+# Install everything (except modules-docbook?)
+install: install-app install-console install-modules
+
 
 .PHONY: dbschema
 dbschema:
@@ -614,7 +625,6 @@ install-modules: modules install-modules-tools $(modules-prefix)/$(modules-dir)
 	done 
 
 
-install-modules-all: install-modules install-modules-doc
 
 install-modules-tools: $(bin-prefix)/$(bin-dir)
 		# install MySQL stuff
@@ -762,7 +772,10 @@ install-modules-tools: $(bin-prefix)/$(bin-dir)
 		fi
 
 
-install-doc: $(doc-prefix)/$(doc-dir) install-modules-doc
+.PHONY: install-doc install-app-doc install-modules-doc
+install-doc: install-app-doc install-modules-doc
+
+install-app-doc: $(doc-prefix)/$(doc-dir)
 	$(INSTALL_TOUCH) $(doc-prefix)/$(doc-dir)/INSTALL 
 	$(INSTALL_DOC) INSTALL $(doc-prefix)/$(doc-dir)
 	$(INSTALL_TOUCH) $(doc-prefix)/$(doc-dir)/README-MODULES 
