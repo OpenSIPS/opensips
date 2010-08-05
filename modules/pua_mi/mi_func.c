@@ -319,6 +319,7 @@ done:
 	{
 		mi_hdl->handler_f( rpl_tree, mi_hdl, 0 );
 	}
+	hentity->cb_param = 0;
 	return 0;
 
 error:
