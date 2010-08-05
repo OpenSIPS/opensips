@@ -345,19 +345,8 @@ int bla_aggregate_state(str* old_body, str* new_body,
 		xmlFreeDoc(old_doc);
 		return 0;
 	}
-	/* change the state to full*/
-	if(xmlUnsetProp(new_doc->children, BAD_CAST "state") < 0)
-	{
-		LM_ERR("Failed to remove attribute state");
-		goto error;
-	}
-	if(xmlNewProp(new_doc->children, BAD_CAST "state", BAD_CAST "full")== 0)
-	{
-		LM_ERR("Failed to add attribute state=full\n");
-		goto error;
-	}
 
-/* if there are more dialog nodes-> check for one with state != terminated */
+	/* if there are more dialog nodes-> check for one with state != terminated */
 	for(dlg_node= n_dlg_node; dlg_node; dlg_node=dlg_node->next)
 	{
 		if(xmlStrcasecmp(dlg_node->name, (unsigned char*)"dialog")!= 0)
@@ -423,7 +412,21 @@ int bla_aggregate_state(str* old_body, str* new_body,
 			xmlNewProp(node, BAD_CAST "uri", attr);
 			xmlFree(attr);
 			*allocated= 1;
+			xmlDocDumpMemory(new_doc,(xmlChar**)(void*)&new_body->s,
+					&new_body->len);
 		}
+	}
+
+	/* change the state to full*/
+	if(xmlUnsetProp(new_doc->children, BAD_CAST "state") < 0)
+	{
+		LM_ERR("Failed to remove attribute state");
+		goto error;
+	}
+	if(xmlNewProp(new_doc->children, BAD_CAST "state", BAD_CAST "full")== 0)
+	{
+		LM_ERR("Failed to add attribute state=full\n");
+		goto error;
 	}
 
 	dlg_node = xmlNodeGetChildByName(old_doc->children, "dialog");
@@ -798,7 +801,7 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, str* body,
 	str old_body;
 //	str sender;
 	int bla_update_publish= 1;
-	str fin_body={0, 0};
+	str update_body={0, 0}, notify_body={0, 0};
 	int allocated = 0;
 
 	*sent_reply= 0;
@@ -850,6 +853,11 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, str* body,
 	result_cols[rez_body_col= n_result_cols++] = &str_body_col;
 	result_cols[rez_sender_col= n_result_cols++] = &str_sender_col;
 
+	if(body)
+	{
+		update_body = *body;
+		notify_body = *body;
+	}
 	if(new_t)
 	{
 		if( publ_send200ok(msg, presentity->expires, presentity->etag)< 0)
@@ -894,7 +902,7 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, str* body,
 		query_vals[n_query_cols].nul = 0;
 		query_vals[n_query_cols].val.str_val = *body;
 		n_query_cols++;
-		
+
 		query_cols[n_query_cols] = &str_received_time_col;
 		query_vals[n_query_cols].type = DB_INT;
 		query_vals[n_query_cols].nul = 0;
@@ -951,20 +959,14 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, str* body,
 				* bla_update_publish - if what is now in database should be changed 
 				* allocated - if fin_body has a pointer to an dynamic allocated memory */
 
-				if(bla_aggregate_state(&old_body, body, &bla_update_publish,
-							&allocated, &fin_body) < 0)
+				if(bla_aggregate_state(&old_body, &notify_body, &bla_update_publish,
+							&allocated, &update_body) < 0)
 				{
 					LM_ERR("Failed to aggregate bla state\n");
 					/* I should not update - but send 200 OK */
 					bla_update_publish = 0;
 					allocated = 0;
 					//	goto error;
-				}
-
-				if(allocated) /* if an aggregated body */
-				{
-					body->s = fin_body.s;
-					body->len = fin_body.len;
 				}
 			}
 			pa_dbf.free_result(pa_db, result);
@@ -977,7 +979,7 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, str* body,
 					goto error;
 				}
 				*sent_reply= 1;
-				if( publ_notify(presentity, pres_uri, body, &presentity->etag,
+				if( publ_notify(presentity, pres_uri, notify_body.s?&notify_body:0, &presentity->etag,
 							rules_doc, 0)< 0 )
 				{
 					LM_ERR("while sending notify\n");
@@ -1091,14 +1093,14 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, str* body,
 				update_keys[n_update_cols] = &str_body_col;
 				update_vals[n_update_cols].type = DB_BLOB;
 				update_vals[n_update_cols].nul = 0;
-				update_vals[n_update_cols].val.str_val = *body;
+				update_vals[n_update_cols].val.str_val = update_body;
 				n_update_cols++;
 
 				/* updated stored sphere */
 				if(sphere_enable && 
 						presentity->event->evp->parsed== EVENT_PRESENCE)
 				{
-					if(update_phtable(presentity, pres_uri, *body)< 0)
+					if(update_phtable(presentity, pres_uri, update_body)< 0)
 					{
 						LM_ERR("failed to update sphere for presentity\n");
 						goto error;
@@ -1138,9 +1140,9 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, str* body,
 			
 			if(!body)
 				goto done;
-		
+
 			goto send_notify;
-		}  
+		}
 		else  /* if there isn't no registration with those 3 values */
 		{
 			pa_dbf.free_result(pa_db, result);
@@ -1159,7 +1161,8 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, str* body,
 send_notify:
 
 	/* send notify with state information */
-	if (publ_notify(presentity, pres_uri, body, NULL, rules_doc, 0)<0)
+	if (publ_notify(presentity, pres_uri, notify_body.s?&notify_body:0,
+				NULL, rules_doc, 0)<0)
 	{
 		LM_ERR("while sending Notify requests to watchers\n");
 		goto error;
@@ -1205,8 +1208,10 @@ done:
 	}
 	if(pres_uri.s)
 		pkg_free(pres_uri.s);
-	if(allocated && fin_body.s)
-		xmlFree(fin_body.s);
+	if(allocated && update_body.s)
+		xmlFree(update_body.s);
+	if(notify_body.s && (!body || notify_body.s != body->s))
+		xmlFree(notify_body.s);
 
 	return 0;
 
@@ -1223,10 +1228,11 @@ error:
 	}
 	if(pres_uri.s)
 		pkg_free(pres_uri.s);
-	if(allocated && fin_body.s)
-		xmlFree(fin_body.s);
+	if(allocated && update_body.s)
+		xmlFree(update_body.s);
+	if(notify_body.s && (!body || notify_body.s != body->s))
+		xmlFree(notify_body.s);
 	return -1;
-
 }
 
 int pres_htable_restore(void)

@@ -59,7 +59,6 @@ struct p_modif
 void msg_presentity_clean(unsigned int ticks,void *param)
 {
 //	static db_ps_t my_ps_delete = NULL, my_ps_query = NULL;
-	static db_ps_t my_ps_delete = NULL;
 	db_key_t db_keys[2];
 	db_val_t db_vals[2];
 	db_op_t  db_ops[2] ;
@@ -235,7 +234,7 @@ no_notify:
 		goto error;
 	}
 	
-	CON_PS_REFERENCE(pa_db) = &my_ps_delete;
+//	CON_PS_REFERENCE(pa_db) = &my_ps_delete;
 
 	if (pa_dbf.delete(pa_db, db_keys, db_ops, db_vals, 1) < 0) 
 		LM_ERR("cleaning expired messages\n");
