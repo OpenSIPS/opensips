@@ -563,6 +563,7 @@ insert:
 			goto send_publish;
 		}
 		presentity->version++;
+		presentity->cb_param = publ->cb_param;
 		ver= presentity->version;
 	}
 
