@@ -342,16 +342,12 @@ int replace_uri( struct sip_msg *msg, str *display, str *uri,
 	if (dlg_api.get_dlg) {
 		dlg = dlg_api.get_dlg();
 		/* if the dialog doesn't already exist */
-		if (!dlg && force_dialog && dlg_api.create_dlg(msg) < 0) {
-			LM_ERR("cannot create dialog\n");
-			goto error;
-		} else {
-			/* dialog should be created */
-			dlg = dlg_api.get_dlg();
-			if (!dlg) {
-				LM_ERR("error getting dlg after created\n");
+		if (!dlg && force_dialog) {
+			if (dlg_api.create_dlg(msg) < 0) {
+				LM_ERR("cannot create dialog\n");
 				goto error;
 			}
+			dlg = dlg_api.get_dlg();
 		}
 
 		LM_DBG("Dialog got: %p\n", dlg);
@@ -457,13 +453,7 @@ int restore_uri( struct sip_msg *msg, str *rr_param, int check_from)
 	}
 
 	/* check if dialog was used */
-	if (dlg) {
-		/* fetch dlg value */
-		if (dlg_api.fetch_dlg_value(dlg, rr_param, &new_uri, 0) < 0) {
-			LM_ERR("cannot fetch dlg value %.*s\n", rr_param->len, rr_param->s);
-			goto failed;
-		}
-	} else {
+	if (!dlg || dlg_api.fetch_dlg_value(dlg, rr_param, &new_uri, 0) < 0) {
 		LM_DBG("getting '%.*s' Route param\n",
 			rr_param->len,rr_param->s);
 		/* is there something to restore ? */
