@@ -87,3 +87,54 @@
    o Added number portability parameters support.
    o Added Diversion header support.
 
+2009 October 06
+   o Fixed un-initialized variable issue.
+
+2009 October 07
+   o Updated OSP sample configuration file.
+
+2009 November 18
+   o Fixed a running error message by adding null string check.
+
+2009 November 19
+   o Added IP port support for inbound/outbound IP addresses.
+
+2009 November 24
+   o Removed an unused variable.
+
+2009 December 01
+   o Added custom info support.
+
+2009 December 03
+   o Replaced two deprecated functions of OSP Toolkit.
+   o Removed useless white char.
+
+2009 December 14
+   o Added buffer size check.
+   o Added proxy_type for number portability.
+
+2010 January 18
+   o Changed configuration option proxy_type to service_type.
+   o Added operator name support in AuthReq and AuthRsp.
+
+2010 March 05
+   o Added destination network ID in outbound URI.
+
+2010 May 13
+   o Fixed bug of removing '+' in numbers.
+
+2010 May 24
+   o Added indirect work mode.
+   o Changed append network ID default value.
+   o Updated sample configuration file.
+   o Updated doc.
+
+2010 May 26 11:35:25 +0800 (Wed, 26 May 2010) | 2 lines
+   o Added DeviceInfo=<SBC IP> in AuthReq if there is not P-Source-Device in indirect work mode.
+
+2010 July 07
+   o Changed OSP TCP port from 1080 to 5045.
+
+2010 August 06
+   o Removed loading xlog module from sample configuration.
+
