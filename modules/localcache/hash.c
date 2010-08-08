@@ -82,7 +82,7 @@ void lcache_htable_destroy(void)
 
 	for(i = 0; i< cache_htable_size; i++)
 	{
-		lock_destroy(&cache_htable[i].lock)
+		lock_destroy(&cache_htable[i].lock);
 		me1 = cache_htable[i].entries;
 		while(me1)
 		{
