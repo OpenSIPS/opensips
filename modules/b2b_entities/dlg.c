@@ -36,6 +36,7 @@
 #include "../../locking.h"
 #include "../presence/hash.h"
 #include "../../action.h"
+#include "../../trim.h"
 #include "dlg.h"
 #include "b2b_entities.h"
 
@@ -1509,7 +1510,8 @@ dlg_leg_t* b2b_add_leg(b2b_dlg_t* dlg, struct sip_msg* msg, str* to_tag)
 	return new_leg;
 }
 
-int b2b_send_req(b2b_dlg_t* dlg, dlg_leg_t* leg, str* method)
+int b2b_send_req(b2b_dlg_t* dlg, dlg_leg_t* leg,
+		str* method, str* extra_headers)
 {
 	dlg_t* td;
 	int result;
@@ -1524,8 +1526,8 @@ int b2b_send_req(b2b_dlg_t* dlg, dlg_leg_t* leg, str* method)
 
 	/* send request */
 	result= tmb.t_request_within
-		(method,           /* method*/
-		0,                  /* extra headers*/
+		(method,            /* method*/
+		extra_headers,      /* extra headers*/
 		0,                  /* body*/
 		td,                 /* dialog structure*/
 		0,                  /* callback function*/
@@ -1547,7 +1549,7 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 	dlg_leg_t* leg;
 	struct to_body* pto, TO;
 	str to_tag, callid, from_tag;
-	struct hdr_field* require_hdr;
+	struct hdr_field* hdr;
 	unsigned int method_id = 0;
 
 	if(ps == NULL || ps->rpl == NULL)
@@ -1815,22 +1817,41 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 				}
 				/* PRACK handling */
 				/* if the provisional reply contains a Require: 100rel header -> send PRACK */
-				require_hdr = get_header_by_static_name( msg, "Require");
-				while(require_hdr)
+				hdr = get_header_by_static_name( msg, "Require");
+				while(hdr)
 				{
 					LM_DBG("Found require hdr\n");
-					if((require_hdr->body.len == 6 && strncmp(require_hdr->body.s, "100rel", 6)==0) ||
-						(require_hdr->body.len == 8 && strncmp(require_hdr->body.s, "100rel\r\n", 8)==0))
+					if((hdr->body.len == 6 && strncmp(hdr->body.s, "100rel", 6)==0) ||
+						(hdr->body.len == 8 && strncmp(hdr->body.s, "100rel\r\n", 8)==0))
 					{
 						LM_DBG("Found 100rel header\n");
 						break;
 					}
-					require_hdr = require_hdr->sibling;
+					hdr = hdr->sibling;
 				}
-				if(require_hdr)
+				if(hdr)
 				{
 					str method={"PRACK", 5};
-					if(b2b_send_req(dlg, leg, &method) < 0)
+					str extra_headers;
+					char buf[32];
+					str rseq, cseq;
+
+					hdr = get_header_by_static_name( msg, "RSeq");
+					if(!hdr)
+					{
+						LM_ERR("RSeq header not found\n");
+						lock_release(&htable[hash_index].lock);
+						goto error;
+					}
+					rseq = hdr->body;
+					cseq = msg->cseq->body;
+					trim_trailing(&rseq);
+					trim_trailing(&cseq);
+					sprintf(buf, "RAck: %.*s %.*s\n", rseq.len, rseq.s,
+							cseq.len, cseq.s);
+					extra_headers.s = buf;
+					extra_headers.len = strlen(buf);
+					if(b2b_send_req(dlg, leg, &method, &extra_headers) < 0)
 					{
 						LM_ERR("Failed to send PRACK\n");
 					}
@@ -1854,12 +1875,12 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 						lock_release(&htable[hash_index].lock);
 						goto error;
 					}
-					if(b2b_send_req(dlg, leg, &method) < 0)
+					if(b2b_send_req(dlg, leg, &method, 0) < 0)
 					{
 						LM_ERR("Failed to send ACK request\n");
 					}
 					method.s = "BYE";
-					if(b2b_send_req(dlg, leg, &method) < 0)
+					if(b2b_send_req(dlg, leg, &method, 0) < 0)
 					{
 						LM_ERR("Failed to send BYE request\n");
 					}
