@@ -41,9 +41,9 @@ typedef struct publ_info
 	int expires;
 	int flag;
 	int source_flag;
-	int event;   
+	int event;
 	str content_type;  /*the content_type of the body if present(optional if the
-					   *	 same as the default value for that event) */	 
+						* same as the default value for that event) */
 	str* etag;
 	str* extra_headers;
 	str outbound_proxy;
@@ -59,7 +59,5 @@ int send_publish( publ_info_t* publ );
 void publ_cback_func(struct cell *t, int type, struct tmcb_params *ps);
 str* publ_build_hdr(int expires, pua_event_t* event, str* content_type, str* etag,
 		str* extra_headers, int is_body);
-ua_pres_t* publish_cbparam(publ_info_t* publ, str* body, str* tuple_id,
-		int ua_flag);
 
 #endif

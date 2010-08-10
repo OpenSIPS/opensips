@@ -32,12 +32,12 @@
 
 struct publ_info;
 
-typedef int (evs_process_body_t)(struct publ_info* , str** final_body, 
-		 int ver, str** tuple);
+typedef int (evs_process_body_t)(struct publ_info* , str** final_body,
+		int ver, str* tuple);
 
 typedef struct pua_event
 {
-	int ev_flag;                   
+	int ev_flag;
 	str name;
 	str content_type;         /* default content type for that event*/	
 	evs_process_body_t* process_body;

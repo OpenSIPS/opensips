@@ -27,7 +27,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <libxml/parser.h>
-
+#include "../../str.h"
 #include "event_list.h"
 #include "add_events.h"
 #include "pua.h"
@@ -70,17 +70,14 @@ int pua_add_events(void)
 
 }
 
-int pres_process_body(publ_info_t* publ, str** fin_body, int ver, str** tuple_param)
+int pres_process_body(publ_info_t* publ, str** fin_body, int ver, str* tuple)
 {
 
 	xmlDocPtr doc= NULL;
 	xmlNodePtr node= NULL;
 	char* tuple_id= NULL, *person_id= NULL;
-	int tuple_id_len= 0;
-	char buf[50];
+	static char buf[128];
 	str* body= NULL;
-	int alloc_tuple= 0;
-	str* tuple= NULL;
 
 	doc= xmlParseMemory(publ->body->s, publ->body->len );
 	if(doc== NULL)
@@ -95,78 +92,31 @@ int pres_process_body(publ_info_t* publ, str** fin_body, int ver, str** tuple_pa
 		LM_ERR("while extracting tuple node\n");
 		goto error;
 	}
-	tuple= *(tuple_param);
 
 	tuple_id= xmlNodeGetAttrContentByName(node, "id");
 	if(tuple_id== NULL)
 	{
-
-		if(tuple== NULL)	// generate a tuple_id
+		/* must be null terminated */
+		if(tuple->s == 0)   /* generate a tuple_id */
 		{
-			tuple_id= buf;
-			tuple_id_len= sprintf(tuple_id, "%p", publ);
-			tuple_id[tuple_id_len]= '\0'; 
-
-			tuple=(str*)pkg_malloc(sizeof(str));
-			if(tuple== NULL)
-			{
-				LM_ERR("No more memory\n");
-				goto error;
-			}
-			tuple->s= (char*)pkg_malloc(tuple_id_len* sizeof(char));
-			if(tuple->s== NULL)
-			{
-				LM_ERR("NO more memory\n");
-				goto error;
-			}
-			memcpy(tuple->s, tuple_id, tuple_id_len);
-			tuple->len= tuple_id_len;
-
-			*tuple_param= tuple;
-			alloc_tuple= 1;
-
-			LM_DBG("allocated tuple_id\n\n");
+			tuple->s= buf;
+			tuple->len= sprintf(tuple->s, "%p", publ);
 		}
-		else
-		{
-			tuple_id= buf;
-			tuple_id_len= tuple->len;
-			memcpy(tuple_id, tuple->s, tuple_id_len);
-			tuple_id[tuple_id_len]= '\0';
-		}
+		tuple_id = buf;
+
 		/* add tuple id */
 		if(!xmlNewProp(node, BAD_CAST "id", BAD_CAST tuple_id))
 		{
-			LM_ERR("while extracting xml"
-						" node\n");
+			LM_ERR("Failed to add xml node attribute\n");
 			goto error;
 		}
 	}
 	else
 	{
-		if(tuple== NULL)
+		if(tuple->s == 0)   /* generate a tuple_id */
 		{
-			strcpy(buf, tuple_id);
-			xmlFree(tuple_id);
-			tuple_id= buf;
-			tuple_id_len= strlen(tuple_id);
-		
-			tuple=(str*)pkg_malloc(sizeof(str));
-			if(tuple== NULL)
-			{
-				LM_ERR("No more memory\n");
-				goto error;
-			}
-			tuple->s= (char*)pkg_malloc(tuple_id_len* sizeof(char));
-			if(tuple->s== NULL)
-			{
-				LM_ERR("NO more memory\n");
-				goto error;
-			}
-			memcpy(tuple->s, tuple_id, tuple_id_len);
-			tuple->len= tuple_id_len;
-			*tuple_param= tuple;
-			alloc_tuple= 1;
+			tuple->s= buf;
+			tuple->len= sprintf(tuple->s, "%s", tuple_id);
 		}
 	}
 
@@ -176,7 +126,7 @@ int pres_process_body(publ_info_t* publ, str** fin_body, int ver, str** tuple_pa
 		LM_DBG("found person node\n");
 		person_id= xmlNodeGetAttrContentByName(node, "id");
 		if(person_id== NULL)
-		{	
+		{
 			if(!xmlNewProp(node, BAD_CAST "id", BAD_CAST tuple_id))
 			{
 				LM_ERR("while extracting xml"
@@ -201,7 +151,7 @@ int pres_process_body(publ_info_t* publ, str** fin_body, int ver, str** tuple_pa
 	{
 		LM_ERR("while dumping xml format\n");
 		goto error;
-	}	
+	}
 	xmlFreeDoc(doc);
 	doc= NULL;
 	
@@ -215,18 +165,10 @@ error:
 		xmlFreeDoc(doc);
 	if(body)
 		pkg_free(body);
-	if(tuple && alloc_tuple)
-	{
-		if(tuple->s)
-			pkg_free(tuple->s);
-		pkg_free(tuple);
-		tuple= NULL;
-	}
 	return -1;
+}
 
-}	
-
-int bla_process_body(publ_info_t* publ, str** fin_body, int ver, str** tuple)
+int bla_process_body(publ_info_t* publ, str** fin_body, int ver, str* tuple)
 {
 	xmlNodePtr node= NULL;
 	xmlDocPtr doc= NULL;
@@ -289,7 +231,7 @@ error:
 	return -1;
 }
 
-int mwi_process_body(publ_info_t* publ, str** fin_body, int ver, str** tuple)
+int mwi_process_body(publ_info_t* publ, str** fin_body, int ver, str* tuple)
 {
 	*fin_body= publ->body;
 	return 0;

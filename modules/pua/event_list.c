@@ -51,7 +51,6 @@ pua_event_t* init_pua_evlist(void)
 int add_pua_event(int ev_flag, char* name, char* content_type,
 		evs_process_body_t* process_body)
 {
-		
 	pua_event_t* event= NULL;
 	int size;
 	int name_len;

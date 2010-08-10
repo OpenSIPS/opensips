@@ -43,6 +43,7 @@
 #include "../../pt.h"
 #include "../../db/db.h"
 #include "../tm/tm_load.h"
+#include "../presence/hash.h"
 #include "pua.h"
 #include "send_publish.h"
 #include "send_subscribe.h"
@@ -292,7 +293,7 @@ static int db_restore(void)
 	ua_pres_t* p= NULL;
 	db_key_t result_cols[20];
 	db_res_t *res= NULL;
-	db_row_t *row = NULL;	
+	db_row_t *row = NULL;
 	db_val_t *row_vals= NULL;
 	str pres_uri, pres_id, to_uri;
 	str etag, tuple_id;
@@ -325,7 +326,7 @@ static int db_restore(void)
 	result_cols[extra_headers_col= n_result_cols++]	= &str_extra_headers_col;
 	result_cols[desired_expires_col= n_result_cols++]	= &str_desired_expires_col;
 	result_cols[version_col= n_result_cols++]	= &str_version_col;
-	
+
 	if(!pua_db)
 	{
 		LM_ERR("null database connection\n");
@@ -380,14 +381,14 @@ static int db_restore(void)
 		{
 			row = &res->rows[i];
 			row_vals = ROW_VALUES(row);
-            if(row_vals[expires_col].val.int_val < time(NULL))	
-                continue;	
-	
+			if(row_vals[expires_col].val.int_val < time(NULL))
+				continue;
+
 			pres_uri.s= (char*)row_vals[puri_col].val.string_val;
 			pres_uri.len = strlen(pres_uri.s);
-			
+
 			LM_DBG("pres_uri= %.*s\n", pres_uri.len, pres_uri.s);
-			
+
 			memset(&etag,			 0, sizeof(str));
 			memset(&tuple_id,		 0, sizeof(str));
 			memset(&watcher_uri,	 0, sizeof(str));
@@ -398,9 +399,9 @@ static int db_restore(void)
 			memset(&record_route,	 0, sizeof(str));
 			memset(&pres_id,         0, sizeof(str));
 			memset(&contact,         0, sizeof(str));
-			memset(&remote_contact,         0, sizeof(str));
+			memset(&remote_contact,  0, sizeof(str));
 			memset(&extra_headers,   0, sizeof(str));
-			
+
 			pres_id.s= (char*)row_vals[pid_col].val.string_val;
 			if(pres_id.s)
 				pres_id.len = strlen(pres_id.s);
@@ -409,7 +410,7 @@ static int db_restore(void)
 			{
 				etag.s= (char*)row_vals[etag_col].val.string_val;
 				etag.len = strlen(etag.s);
-	
+
 				tuple_id.s= (char*)row_vals[tuple_col].val.string_val;
 				tuple_id.len = strlen(tuple_id.s);
 			}
@@ -421,9 +422,9 @@ static int db_restore(void)
 
 				to_uri.s= (char*)row_vals[touri_col].val.string_val;
 				if(to_uri.s == NULL)
-                    to_uri = pres_uri;
-                else
-                    to_uri.len = strlen(to_uri.s);
+					to_uri = pres_uri;
+				else
+					to_uri.len = strlen(to_uri.s);
 				LM_DBG("to_uri= %.*s\n", to_uri.len, to_uri.s);
 				call_id.s= (char*)row_vals[callid_col].val.string_val;
 				call_id.len = strlen(call_id.s);
@@ -461,13 +462,13 @@ static int db_restore(void)
 					size+= sizeof(str)+ extra_headers.len* sizeof(char);
 
 			if(watcher_uri.s)
-				size+= sizeof(str)+ (to_uri.len + watcher_uri.len+ call_id.len+ to_tag.len+
-					from_tag.len+ record_route.len+ contact.len)* sizeof(char);
+				size+= sizeof(str)+ to_uri.len + watcher_uri.len+ call_id.len+ to_tag.len+
+					from_tag.len+ record_route.len+ contact.len;
 			
 			p= (ua_pres_t*)shm_malloc(size);
 			if(p== NULL)
 			{
-				LM_ERR("no more share memmory");
+				LM_ERR("no more shared memmory");
 				goto error;
 			}
 			memset(p, 0, size);
@@ -482,21 +483,11 @@ static int db_restore(void)
 			
 			if(pres_id.s)
 			{
-				p->id.s= (char*)p + size;
-				memcpy(p->id.s, pres_id.s, pres_id.len);
-				p->id.len= pres_id.len;
-				size+= pres_id.len;
-			}
-			if(tuple_id.s && tuple_id.len)
-			{
-				p->tuple_id.s= (char*)p + size;
-				memcpy(p->tuple_id.s, tuple_id.s, tuple_id.len);
-				p->tuple_id.len= tuple_id.len;
-				size+= tuple_id.len;
+				CONT_COPY(p, p->id, pres_id);
 			}
 
 			if(watcher_uri.s && watcher_uri.len)
-			{	
+			{
 				p->watcher_uri= (str*)((char*)p+ size);
 				size+= sizeof(str);
 
@@ -505,42 +496,20 @@ static int db_restore(void)
 				p->watcher_uri->len= watcher_uri.len;
 				size+= watcher_uri.len;
 
-				p->to_uri.s = (char*)p + size;
-				memcpy(p->to_uri.s, to_uri.s, to_uri.len);
-				p->to_uri.len = to_uri.len;
-				size+= to_uri.len;
+				CONT_COPY(p, p->to_uri, to_uri);
+				CONT_COPY(p, p->to_tag, to_tag);
+				CONT_COPY(p, p->from_tag, from_tag);
+				CONT_COPY(p, p->call_id, call_id);
 
-				p->to_tag.s= (char*)p+ size;
-				memcpy(p->to_tag.s, to_tag.s, to_tag.len);
-				p->to_tag.len= to_tag.len;
-				size+= to_tag.len;
-
-				p->from_tag.s= (char*)p+ size;
-				memcpy(p->from_tag.s, from_tag.s, from_tag.len);
-				p->from_tag.len= from_tag.len;
-				size+= from_tag.len;
-				
-				p->call_id.s= (char*)p + size;
-				memcpy(p->call_id.s, call_id.s, call_id.len);
-				p->call_id.len= call_id.len;
-				size+= call_id.len;
-				
 				if(record_route.s && record_route.len)
 				{
-					p->record_route.s= (char*)p + size;
-					memcpy(p->record_route.s, record_route.s, record_route.len);
-					p->record_route.len= record_route.len;
-					size+= record_route.len;
+					CONT_COPY(p, p->record_route, record_route);
 				}
-				p->contact.s= (char*)p + size;
-				memcpy(p->contact.s, contact.s, contact.len);
-				p->contact.len= contact.len;
-				size+= contact.len;
+				CONT_COPY(p, p->contact, contact);
 
 				p->cseq= row_vals[cseq_col].val.int_val;
 
-				p->remote_contact.s= (char*)
-					shm_malloc(remote_contact.len* sizeof(char));
+				p->remote_contact.s= (char*)shm_malloc(remote_contact.len);
 				if(p->remote_contact.s== NULL)
 				{
 					LM_ERR("No more shared memory\n");
@@ -548,7 +517,7 @@ static int db_restore(void)
 				}
 				memcpy(p->remote_contact.s, remote_contact.s, remote_contact.len);
 				p->remote_contact.len= remote_contact.len;
-				
+
 				p->version= row_vals[version_col].val.int_val;
 			}
 
@@ -572,7 +541,7 @@ static int db_restore(void)
 			if(etag.s && etag.len)
 			{
 				/* alloc separately */
-				p->etag.s= (char*)shm_malloc(etag.len* sizeof(char));
+				p->etag.s= (char*)shm_malloc(etag.len);
 				if(p->etag.s==  NULL)
 				{
 					LM_ERR("no more share memory\n");
@@ -622,6 +591,7 @@ static void hashT_clean(unsigned int ticks,void *param)
 	time_t now;
 	ua_pres_t* p= NULL, *q= NULL;
 
+	return;
 	now = time(NULL);
 	for(i= 0;i< HASH_SIZE; i++)
 	{
@@ -658,7 +628,7 @@ static void hashT_clean(unsigned int ticks,void *param)
 					LM_ERR("failed to update record\n");
 					/* delete it */
 					q = p->next;
-					delete_htable(p);
+					delete_htable(p->hash_index, p->local_index);
 					pua_db_delete(p);
 					p = q;
 				}
@@ -708,7 +678,6 @@ int update_pua(ua_pres_t* p, unsigned int hash_code)
 		}
 		LM_DBG("str_hdr:\n%.*s\n ", str_hdr->len, str_hdr->s);
 
-		lock_get(&p->publ_lock);
 		cb_param = p;
 
 		result= tmb.t_request(&met,    /* Type of the message*/
@@ -722,8 +691,6 @@ int update_pua(ua_pres_t* p, unsigned int hash_code)
 				(void*)cb_param,       /* Callback parameter*/
 				0
 				);
-		if(result < 0)
-			lock_release(&p->publ_lock);
 	}
 	else
 	{
