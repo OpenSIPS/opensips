@@ -29,20 +29,26 @@
  *
  */
 
+
 #include "../../ut.h"
 #include "../msg_parser.h"
 #include "../parser_f.h"
 #include "../parse_hname2.h"
 
 
-static str sup_ptypes[] = {
-	str_init("udp"),
-	str_init("udptl"),
-	str_init("rtp/avp"),
-	str_init("rtp/savpf"),
-	str_init("TCP/MSRP"),
-	str_init("TCP/TLS/MSRP"),
-	{ NULL, 0}
+static struct {
+	const char *s;
+	int len;
+	int is_rtp;
+} sup_ptypes[] = {
+	{.s = "rtp/avp",   .len = 7, .is_rtp = 1},
+	{.s = "udptl",     .len = 5, .is_rtp = 0},
+	{.s = "rtp/avpf",  .len = 8, .is_rtp = 1},
+	{.s = "rtp/savp",  .len = 8, .is_rtp = 1},
+	{.s = "rtp/savpf", .len = 9, .is_rtp = 1},
+	{.s = "udp",       .len = 3, .is_rtp = 0},
+	{.s = "udp/bfcp",  .len = 8, .is_rtp = 0},
+	{.s = NULL,        .len = 0, .is_rtp = 0}
 };
 
 
@@ -225,15 +231,15 @@ int extract_fmtp( str *body, str *fmtp_payload, str *fmtp_string )
 	int len;
 
 	if (strncasecmp(body->s, "a=fmtp:", 7) !=0) {
-		/*LM_DBG("We are not pointing to an a=rtpmap: attribute =>`%.*s'\n", body->len, body->s); */
+		/*LM_DBG("We are not pointing to an a=fmtp: attribute =>`%.*s'\n", body->len, body->s); */
 		return -1;
 	}
 
 	cp1 = body->s;
 
-	fmtp_payload->s = cp1 + 7; /* skip `a=rtpmap:' */
+	fmtp_payload->s = cp1 + 7; /* skip `a=fmtp:' */
 	fmtp_payload->len = eat_line(fmtp_payload->s, body->s + body->len -
-	          fmtp_payload->s) - fmtp_payload->s;
+		fmtp_payload->s) - fmtp_payload->s;
 	trim_len(fmtp_payload->len, fmtp_payload->s, *fmtp_payload);
 	len = fmtp_payload->len;
 
@@ -241,7 +247,7 @@ int extract_fmtp( str *body, str *fmtp_payload, str *fmtp_string )
 	cp = eat_token_end(fmtp_payload->s, fmtp_payload->s + fmtp_payload->len);
 	fmtp_payload->len = cp - fmtp_payload->s;
 	if (fmtp_payload->len <= 0 || cp == fmtp_payload->s) {
-		LM_ERR("no encoding in `a=rtpmap'\n");
+		LM_ERR("no encoding in `a=fmtp:'\n");
 		return -1;
 	}
 	len -= fmtp_payload->len;
@@ -249,20 +255,18 @@ int extract_fmtp( str *body, str *fmtp_payload, str *fmtp_string )
 	cp = eat_space_end(fmtp_string->s, fmtp_string->s + len);
 	len -= cp - fmtp_string->s;
 	if (len <= 0 || cp == fmtp_string->s) {
-		LM_ERR("no encoding in `a=rtpmap:'\n");
+		LM_ERR("no encoding in `a=fmtp:'\n");
 		return -1;
 	}
 
 	fmtp_string->s = cp;
-		
+
 	fmtp_string->len = eat_line(fmtp_string->s, body->s + body->len -
-	          fmtp_string->s) - fmtp_string->s;
+		fmtp_string->s) - fmtp_string->s;
 	trim_len(fmtp_string->len, fmtp_string->s, *fmtp_string);
 
 	return 0;
 }
-
-
 
 /* generic method for attribute extraction
  * field must has format "a=attrname:" */
@@ -312,6 +316,11 @@ int extract_path(str *body, str *path)
 	return extract_field(body, path, field);
 }
 
+int extract_rtcp(str *body, str *rtcp)
+{
+	static const str field = str_init("a=rtcp:");
+	return extract_field(body, rtcp, field);
+}
 
 int extract_sendrecv_mode(str *body, str *sendrecv_mode)
 {
@@ -425,7 +434,7 @@ int extract_mediaip(str *body, str *mediaip, int *pf, char *line)
 	return 1;
 }
 
-int extract_media_attr(str *body, str *mediamedia, str *mediaport, str *mediatransport, str *mediapayload)
+int extract_media_attr(str *body, str *mediamedia, str *mediaport, str *mediatransport, str *mediapayload, int *is_rtp)
 {
 	char *cp, *cp1;
 	int len, i;
@@ -502,10 +511,12 @@ int extract_media_attr(str *body, str *mediamedia, str *mediaport, str *mediatra
 
 	for (i = 0; sup_ptypes[i].s != NULL; i++)
 		if (mediatransport->len == sup_ptypes[i].len &&
-		    strncasecmp(mediatransport->s, sup_ptypes[i].s, mediatransport->len) == 0)
+		    strncasecmp(mediatransport->s, sup_ptypes[i].s, mediatransport->len) == 0) {
+			*is_rtp = sup_ptypes[i].is_rtp;
 			return 0;
+		}
 	/* Unproxyable protocol type. Generally it isn't error. */
-	return -1;
+	return 0;
 }
 
 

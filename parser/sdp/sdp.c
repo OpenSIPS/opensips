@@ -48,7 +48,7 @@ static inline int new_sdp(struct sip_msg* _m)
 	sdp_info_t* sdp;
 
 	sdp = (sdp_info_t*)pkg_malloc(sizeof(sdp_info_t));
-	if (sdp == 0) {
+	if (sdp == NULL) {
 		LM_ERR("No memory left\n");
 		return -1;
 	}
@@ -69,9 +69,9 @@ static inline sdp_session_cell_t *add_sdp_session(sdp_info_t* _sdp, int session_
 
 	len = sizeof(sdp_session_cell_t);
 	session = (sdp_session_cell_t*)pkg_malloc(len);
-	if (session == 0) {
+	if (session == NULL) {
 		LM_ERR("No memory left\n");
-		return 0;
+		return NULL;
 	}
 	memset( session, 0, len);
 
@@ -93,16 +93,16 @@ static inline sdp_session_cell_t *add_sdp_session(sdp_info_t* _sdp, int session_
  * Allocate a new stream cell.
  */
 static inline sdp_stream_cell_t *add_sdp_stream(sdp_session_cell_t* _session, int stream_num,
-		str* media, str* port, str* transport, str* payloads, int pf, str* sdp_ip)
+		str* media, str* port, str* transport, str* payloads, int is_rtp, int pf, str* sdp_ip)
 {
 	sdp_stream_cell_t *stream;
 	int len;
 
 	len = sizeof(sdp_stream_cell_t);
 	stream = (sdp_stream_cell_t*)pkg_malloc(len);
-	if (stream == 0) {
+	if (stream == NULL) {
 		LM_ERR("No memory left\n");
-		return 0;
+		return NULL;
 	}
 	memset( stream, 0, len);
 
@@ -116,6 +116,8 @@ static inline sdp_stream_cell_t *add_sdp_stream(sdp_session_cell_t* _session, in
 	stream->transport.len = transport->len;
 	stream->payloads.s = payloads->s;
 	stream->payloads.len = payloads->len;
+
+	stream->is_rtp = is_rtp;
 
 	stream->pf = pf;
 	stream->ip_addr.s = sdp_ip->s;
@@ -139,9 +141,9 @@ static inline sdp_payload_attr_t *add_sdp_payload(sdp_stream_cell_t* _stream, in
 
 	len = sizeof(sdp_payload_attr_t);
 	payload_attr = (sdp_payload_attr_t*)pkg_malloc(len);
-	if (payload_attr == 0) {
+	if (payload_attr == NULL) {
 		LM_ERR("No memory left\n");
-		return 0;
+		return NULL;
 	}
 	memset( payload_attr, 0, len);
 
@@ -165,14 +167,14 @@ static inline sdp_payload_attr_t** init_p_payload_attr(sdp_stream_cell_t* _strea
 	int payloads_num, i;
 	sdp_payload_attr_t *payload;
 
-	if (_stream == 0) {
+	if (_stream == NULL) {
 		LM_ERR("Invalid stream\n");
-		return 0;
+		return NULL;
 	}
 	payloads_num = _stream->payloads_num;
 	if (payloads_num == 0) {
 		LM_ERR("Invalid number of payloads\n");
-		return 0;
+		return NULL;
 	}
 	if (pkg == USE_PKG_MEM) {
 		_stream->p_payload_attr = (sdp_payload_attr_t**)pkg_malloc(payloads_num * sizeof(sdp_payload_attr_t*));
@@ -180,11 +182,11 @@ static inline sdp_payload_attr_t** init_p_payload_attr(sdp_stream_cell_t* _strea
 		_stream->p_payload_attr = (sdp_payload_attr_t**)shm_malloc(payloads_num * sizeof(sdp_payload_attr_t*));
 	} else {
 		LM_ERR("undefined memory type\n");
-		return 0;
+		return NULL;
 	}
-	if (_stream->p_payload_attr == 0) {
+	if (_stream->p_payload_attr == NULL) {
 		LM_ERR("No memory left\n");
-		return 0;
+		return NULL;
 	}
 
 	--payloads_num;
@@ -203,7 +205,7 @@ static inline sdp_payload_attr_t** init_p_payload_attr(sdp_stream_cell_t* _strea
 
 void set_sdp_payload_attr(sdp_payload_attr_t *payload_attr, str *rtp_enc, str *rtp_clock, str *rtp_params)
 {
-	if (payload_attr == 0) {
+	if (payload_attr == NULL) {
 		LM_ERR("Invalid payload location\n");
 		return;
 	}
@@ -219,53 +221,12 @@ void set_sdp_payload_attr(sdp_payload_attr_t *payload_attr, str *rtp_enc, str *r
 
 void set_sdp_payload_fmtp(sdp_payload_attr_t *payload_attr, str *fmtp_string )
 {
-	if (payload_attr == 0) {
+	if (payload_attr == NULL) {
 		LM_ERR("Invalid payload location\n");
 		return;
 	}
 	payload_attr->fmtp_string.s = fmtp_string->s;
 	payload_attr->fmtp_string.len = fmtp_string->len;
-	
-	return;
-}
-
-void set_sdp_ptime_attr(sdp_stream_cell_t *stream, sdp_payload_attr_t *payload_attr, str *ptime)
-{
-	sdp_payload_attr_t *payload;
-	int i;
-
-	if (payload_attr == 0) {
-		/* This is a generic attribute
-		 * Let's update all payloads */
-		for (i=0;i<stream->payloads_num;i++) {
-			payload = stream->p_payload_attr[i];
-			payload->ptime.s = ptime->s;
-			payload->ptime.len = ptime->len;
-		}
-	} else {
-		payload_attr->ptime.s = ptime->s;
-		payload_attr->ptime.len = ptime->len;
-	}
-	return;
-}
-
-void set_sdp_sendrecv_mode_attr(sdp_stream_cell_t *stream, sdp_payload_attr_t *payload_attr, str *sendrecv_mode)
-{
-	sdp_payload_attr_t *payload;
-	int i;
-
-	if (payload_attr == 0) {
-		/* This is a generic attribute
-		 * Let's update all payloads */
-		for (i=0;i<stream->payloads_num;i++) {
-			payload = stream->p_payload_attr[i];
-			payload->sendrecv_mode.s = sendrecv_mode->s;
-			payload->sendrecv_mode.len = sendrecv_mode->len;
-		}
-	} else {
-		payload_attr->sendrecv_mode.s = sendrecv_mode->s;
-		payload_attr->sendrecv_mode.len = sendrecv_mode->len;
-	}
 
 	return;
 }
@@ -273,20 +234,27 @@ void set_sdp_sendrecv_mode_attr(sdp_stream_cell_t *stream, sdp_payload_attr_t *p
 /*
  * Getters ....
  */
+int get_sdp_session_num(struct sip_msg* _m)
+{
+	if (_m->sdp == NULL) return 0;
+	return _m->sdp->sessions_num;
+}
+
+int get_sdp_stream_num(struct sip_msg* _m)
+{
+	if (_m->sdp == NULL) return 0;
+	return _m->sdp->streams_num;
+}
 
 sdp_session_cell_t* get_sdp_session_sdp(struct sdp_info* sdp, int session_num)
 {
 	sdp_session_cell_t *session;
 
 	session = sdp->sessions;
-	if (session_num > sdp->sessions_num)
-		return NULL;
+	if (session_num >= sdp->sessions_num) return NULL;
 	while (session) {
-		if (session->session_num == session_num) {
-			return session;
-		} else {
-			session = session->next;
-		}
+		if (session->session_num == session_num) return session;
+		session = session->next;
 	}
 	return NULL;
 }
@@ -303,18 +271,18 @@ sdp_stream_cell_t* get_sdp_stream_sdp(struct sdp_info* sdp, int session_num, int
 	sdp_session_cell_t *session;
 	sdp_stream_cell_t *stream;
 
-	if (sdp==NULL) 
-		return NULL;
-	if (session_num > sdp->sessions_num)
-		return NULL;
+	if (sdp==NULL) return NULL;
+	if (session_num >= sdp->sessions_num) return NULL;
 	session = sdp->sessions;
 	while (session) {
 		if (session->session_num == session_num) {
+			if (stream_num >= session->streams_num) return NULL;
 			stream = session->streams;
 			while (stream) {
 				if (stream->stream_num == stream_num) return stream;
 				stream = stream->next;
 			}
+			break;
 		} else {
 			session = session->next;
 		}
@@ -381,9 +349,11 @@ sdp_payload_attr_t* get_sdp_payload4index(sdp_stream_cell_t *stream, int index)
 static int parse_sdp_session(str *sdp_body, int session_num, str *cnt_disp, sdp_info_t* _sdp)
 {
 	str body = *sdp_body;
-	str sdp_ip, sdp_media, sdp_port, sdp_transport, sdp_payload;
+	str sdp_ip = {NULL,0};
+	str sdp_media, sdp_port, sdp_transport, sdp_payload;
 	str payload;
-	str rtp_payload, rtp_enc, rtp_clock, rtp_params, ptime, sendrecv_mode;
+	str rtp_payload, rtp_enc, rtp_clock, rtp_params;
+	int is_rtp;
 	char *bodylimit;
 	char *v1p, *o1p, *m1p, *m2p, *c1p, *c2p, *a1p, *a2p, *b1p;
 	str tmpstr1;
@@ -413,7 +383,7 @@ static int parse_sdp_session(str *sdp_body, int session_num, str *cnt_disp, sdp_
 	}
 	/* get session origin */
 	o1p = find_sdp_line(v1p, bodylimit, 'o');
-	if (o1p==0) {
+	if (o1p == NULL) {
 		LM_ERR("no o= in session\n");
 		return -1;
 	}
@@ -425,11 +395,29 @@ static int parse_sdp_session(str *sdp_body, int session_num, str *cnt_disp, sdp_
 	}
 	/* Allocate a session cell */
 	session = add_sdp_session(_sdp, session_num, cnt_disp);
-	if (session == 0) return -1;
+	if (session == NULL) return -1;
+
+	/* Get origin IP */
+	tmpstr1.s = o1p;
+	tmpstr1.len = bodylimit - tmpstr1.s; /* limit is session limit text */
+	if (extract_mediaip(&tmpstr1, &session->o_ip_addr, &session->o_pf,"o=") == -1) {
+		LM_ERR("can't extract origin media IP from the message\n");
+		return -1;
+	}
 
 	/* Find c1p only between session begin and first media.
 	 * c1p will give common c= for all medias. */
 	c1p = find_sdp_line(o1p, m1p, 'c');
+
+	if (c1p) {
+		/* Extract session address */
+		tmpstr1.s = c1p;
+		tmpstr1.len = bodylimit - tmpstr1.s; /* limit is session limit text */
+		if (extract_mediaip(&tmpstr1, &session->ip_addr, &session->pf,"c=") == -1) {
+			LM_ERR("can't extract common media IP from the message\n");
+			return -1;
+		}
+	}
 
 	/* Find b1p only between session begin and first media.
 	 * b1p will give common b= for all medias. */
@@ -451,32 +439,36 @@ static int parse_sdp_session(str *sdp_body, int session_num, str *cnt_disp, sdp_
 		/* c2p will point to per-media "c=" */
 		c2p = find_sdp_line(m1p, m2p, 'c');
 
-		/* Extract address and port */
-		tmpstr1.s = c2p ? c2p : c1p;
-		if (tmpstr1.s == NULL) {
-			/* No "c=" */
-			LM_ERR("can't find media IP in the message\n");
-			return -1;
-		}
-
-		/* Extract the IP on sdp_ip */
-		tmpstr1.len = bodylimit - tmpstr1.s; /* limit is session limit text */
-		if (extract_mediaip(&tmpstr1, &sdp_ip, &pf,"c=") == -1) {
-			LM_ERR("can't extract media IP from the message\n");
-			return -1;
+		if (c2p) {
+			/* Extract stream address */
+			tmpstr1.s = c2p;
+			tmpstr1.len = bodylimit - tmpstr1.s; /* limit is session limit text */
+			if (extract_mediaip(&tmpstr1, &sdp_ip, &pf,"c=") == -1) {
+				LM_ERR("can't extract media IP from the message\n");
+				return -1;
+			}
+		} else {
+			if (!c1p) {
+				/* No "c=" */
+				LM_ERR("can't find media IP in the message\n");
+				return -1;
+			}
 		}
 
 		/* Extract the port on sdp_port */
 		tmpstr1.s = m1p;
 		tmpstr1.len = m2p - m1p;
-		if (extract_media_attr(&tmpstr1, &sdp_media, &sdp_port, &sdp_transport, &sdp_payload) == -1) {
+		if (extract_media_attr(&tmpstr1, &sdp_media, &sdp_port, &sdp_transport, &sdp_payload, &is_rtp) == -1) {
 			LM_ERR("can't extract media attr from the message\n");
 			return -1;
 		}
 
 		/* Allocate a stream cell */
-		stream = add_sdp_stream(session, stream_num, &sdp_media, &sdp_port, &sdp_transport, &sdp_payload, pf, &sdp_ip);
+		stream = add_sdp_stream(session, stream_num, &sdp_media, &sdp_port, &sdp_transport, &sdp_payload, is_rtp, pf, &sdp_ip);
 		if (stream == 0) return -1;
+
+		/* increment total number of streams */
+		_sdp->streams_num++;
 
 		/* b1p will point to per-media "b=" */
 		b1p = find_sdp_line(m1p, m2p, 'b');
@@ -496,7 +488,7 @@ static int parse_sdp_session(str *sdp_body, int session_num, str *cnt_disp, sdp_
 				payload.s = tmpstr1.s;
 				payload.len = a1p - tmpstr1.s;
 				payload_attr = add_sdp_payload(stream, payloadnum, &payload);
-				if (payload_attr == 0) return -1;
+				if (payload_attr == NULL) return -1;
 				tmpstr1.len -= payload.len;
 				tmpstr1.s = a1p;
 				a2p = eat_space_end(tmpstr1.s, tmpstr1.s + tmpstr1.len);
@@ -508,7 +500,7 @@ static int parse_sdp_session(str *sdp_body, int session_num, str *cnt_disp, sdp_
 			}
 
 			/* Initialize fast access pointers */
-			if (0 == init_p_payload_attr(stream, USE_PKG_MEM)) {
+			if (NULL == init_p_payload_attr(stream, USE_PKG_MEM)) {
 				return -1;
 			}
 			parse_payload_attr = 1;
@@ -527,12 +519,10 @@ static int parse_sdp_session(str *sdp_body, int session_num, str *cnt_disp, sdp_
 			tmpstr1.s = a2p;
 			tmpstr1.len = m2p - a2p;
 
-			if (parse_payload_attr && extract_ptime(&tmpstr1, &ptime) == 0) {
-				a1p = ptime.s + ptime.len;
-				set_sdp_ptime_attr(stream, payload_attr, &ptime);
-			} else if (parse_payload_attr && extract_sendrecv_mode(&tmpstr1, &sendrecv_mode) == 0) {
-				a1p = sendrecv_mode.s + sendrecv_mode.len;
-				set_sdp_sendrecv_mode_attr(stream, payload_attr, &sendrecv_mode);
+			if (parse_payload_attr && extract_ptime(&tmpstr1, &stream->ptime) == 0) {
+				a1p = stream->ptime.s + stream->ptime.len;
+			} else if (parse_payload_attr && extract_sendrecv_mode(&tmpstr1, &stream->sendrecv_mode) == 0) {
+				a1p = stream->sendrecv_mode.s + stream->sendrecv_mode.len;
 			} else if (parse_payload_attr && extract_rtpmap(&tmpstr1, &rtp_payload, &rtp_enc, &rtp_clock, &rtp_params) == 0) {
 				if (rtp_params.len != 0 && rtp_params.s != NULL) {
 					a1p = rtp_params.s + rtp_params.len;
@@ -541,14 +531,13 @@ static int parse_sdp_session(str *sdp_body, int session_num, str *cnt_disp, sdp_
 				}
 				payload_attr = (sdp_payload_attr_t*)get_sdp_payload4payload(stream, &rtp_payload);
 				set_sdp_payload_attr(payload_attr, &rtp_enc, &rtp_clock, &rtp_params);
-			}else if (parse_payload_attr && extract_fmtp(&tmpstr1,&rtp_payload,&fmtp_string) == 0){
-				
+			} else if (extract_rtcp(&tmpstr1, &stream->rtcp_port) == 0) {
+				a1p = stream->rtcp_port.s + stream->rtcp_port.len;
+			} else if (parse_payload_attr && extract_fmtp(&tmpstr1,&rtp_payload,&fmtp_string) == 0){
 				a1p = fmtp_string.s + fmtp_string.len;
-
 				payload_attr = (sdp_payload_attr_t*)get_sdp_payload4payload(stream, &rtp_payload);
 				set_sdp_payload_fmtp(payload_attr, &fmtp_string);
-
-			}else if (extract_accept_types(&tmpstr1, &stream->accept_types) == 0) {
+			} else if (extract_accept_types(&tmpstr1, &stream->accept_types) == 0) {
 				a1p = stream->accept_types.s + stream->accept_types.len;
 			} else if (extract_accept_wrapped_types(&tmpstr1, &stream->accept_wrapped_types) == 0) {
 				a1p = stream->accept_wrapped_types.s + stream->accept_wrapped_types.len;
@@ -610,7 +599,7 @@ static int parse_mixed_content(str *mixed_body, str delimiter, sdp_info_t* _sdp)
 				break;
 			case HDR_CONTENTTYPE_T:
 				end = hf.body.s + hf.body.len;
-				ret = decode_mime_type(hf.body.s, end , &mime,NULL);
+				ret = decode_mime_type(hf.body.s, end , &mime, NULL);
 				if (ret==0)
 					return -1;
 				if (ret!=end) {
@@ -674,7 +663,7 @@ int parse_sdp(struct sip_msg* _m)
 	}
 
 	body.s = get_body(_m);
-	if (body.s==0) {
+	if (body.s==NULL) {
 		LM_ERR("failed to get the message body\n");
 		return -1;
 	}
@@ -757,7 +746,7 @@ void free_sdp(sdp_info_t** _sdp)
 	sdp_payload_attr_t *payload, *l_payload;
 
 	LM_DBG("_sdp = %p\n", _sdp);
-	if (sdp == 0) return;
+	if (sdp == NULL) return;
 	LM_DBG("sdp = %p\n", sdp);
 	session = sdp->sessions;
 	LM_DBG("session = %p\n", session);
@@ -786,41 +775,41 @@ void free_sdp(sdp_info_t** _sdp)
 }
 
 
-void print_sdp_stream(sdp_stream_cell_t *stream)
+void print_sdp_stream(sdp_stream_cell_t *stream, int log_level)
 {
 	sdp_payload_attr_t *payload;
 
-	LM_DBG("....stream[%d]:%p=>%p {%p} '%.*s' '%.*s:%.*s' '%.*s' '%.*s' '%.*s:%.*s' (%d)=>%p '%.*s' '%.*s' '%.*s' '%.*s'\n",
+	LM_GEN1(log_level, "....stream[%d]:%p=>%p {%p} '%.*s' '%.*s:%.*s:%.*s' '%.*s' [%d] '%.*s' '%.*s:%.*s' (%d)=>%p '%.*s' '%.*s' '%.*s' '%.*s' '%.*s' '%.*s'\n",
 		stream->stream_num, stream, stream->next,
 		stream->p_payload_attr,
 		stream->media.len, stream->media.s,
 		stream->ip_addr.len, stream->ip_addr.s, stream->port.len, stream->port.s,
-		stream->transport.len, stream->transport.s,
+		stream->rtcp_port.len, stream->rtcp_port.s,
+		stream->transport.len, stream->transport.s, stream->is_rtp,
 		stream->payloads.len, stream->payloads.s,
 		stream->bw_type.len, stream->bw_type.s, stream->bw_width.len, stream->bw_width.s,
 		stream->payloads_num, stream->payload_attr,
+		stream->sendrecv_mode.len, stream->sendrecv_mode.s,
+		stream->ptime.len, stream->ptime.s,
 		stream->path.len, stream->path.s,
 		stream->max_size.len, stream->max_size.s,
 		stream->accept_types.len, stream->accept_types.s,
 		stream->accept_wrapped_types.len, stream->accept_wrapped_types.s);
 	payload = stream->payload_attr;
 	while (payload) {
-		LM_DBG("......payload[%d]:%p=>%p p_payload_attr[%d]:%p '%.*s' '%.*s' '%.*s' '%.*s' '%.*s' '%.*s' '%.*s'\n",
+		LM_GEN1(log_level, "......payload[%d]:%p=>%p p_payload_attr[%d]:%p '%.*s' '%.*s' '%.*s' '%.*s' '%.*s'\n",
 			payload->payload_num, payload, payload->next,
 			payload->payload_num, stream->p_payload_attr[payload->payload_num],
 			payload->rtp_payload.len, payload->rtp_payload.s,
 			payload->rtp_enc.len, payload->rtp_enc.s,
 			payload->rtp_clock.len, payload->rtp_clock.s,
 			payload->rtp_params.len, payload->rtp_params.s,
-			payload->sendrecv_mode.len, payload->sendrecv_mode.s,
-			payload->ptime.len, payload->ptime.s,
-			payload->fmtp_string.len, payload->fmtp_string.s
-			);
+			payload->fmtp_string.len, payload->fmtp_string.s);
 		payload=payload->next;
 	}
 }
 
-void print_sdp_session(sdp_session_cell_t *session)
+void print_sdp_session(sdp_session_cell_t *session, int log_level)
 {
 	sdp_stream_cell_t *stream = session->streams;
 
@@ -829,26 +818,28 @@ void print_sdp_session(sdp_session_cell_t *session)
 		return;
 	}
 
-	LM_DBG("..session[%d]:%p=>%p '%.*s' '%.*s:%.*s' (%d)=>%p\n",
+	LM_GEN1(log_level, "..session[%d]:%p=>%p '%.*s' '%.*s' '%.*s' '%.*s:%.*s' (%d)=>%p\n",
 		session->session_num, session, session->next,
 		session->cnt_disp.len, session->cnt_disp.s,
+		session->ip_addr.len, session->ip_addr.s,
+		session->o_ip_addr.len, session->o_ip_addr.s,
 		session->bw_type.len, session->bw_type.s, session->bw_width.len, session->bw_width.s,
 		session->streams_num, session->streams);
 	while (stream) {
-		print_sdp_stream(stream);
+		print_sdp_stream(stream, log_level);
 		stream=stream->next;
 	}
 }
 
 
-void print_sdp(sdp_info_t* sdp)
+void print_sdp(sdp_info_t* sdp, int log_level)
 {
 	sdp_session_cell_t *session;
 
-	LM_DBG("sdp:%p=>%p (%d)\n", sdp, sdp->sessions, sdp->sessions_num);
+	LM_GEN1(log_level, "sdp:%p=>%p (%d:%d)\n", sdp, sdp->sessions, sdp->sessions_num, sdp->streams_num);
 	session = sdp->sessions;
 	while (session) {
-		print_sdp_session(session);
+		print_sdp_session(session, log_level);
 		session = session->next;
 	}
 }
@@ -916,8 +907,7 @@ sdp_payload_attr_t * clone_sdp_payload_attr(sdp_payload_attr_t *attr)
 			attr->rtp_enc.len +
 			attr->rtp_clock.len +
 			attr->rtp_params.len +
-			attr->sendrecv_mode.len +
-			attr->ptime.len;
+			attr->fmtp_string.len;
 	clone_attr = (sdp_payload_attr_t*)shm_malloc(len);
 	if (clone_attr == NULL) {
 		LM_ERR("no more shm mem (%d)\n",len);
@@ -956,18 +946,11 @@ sdp_payload_attr_t * clone_sdp_payload_attr(sdp_payload_attr_t *attr)
 		p += attr->rtp_params.len;
 	}
 
-	if (attr->sendrecv_mode.len) {
-		clone_attr->sendrecv_mode.s = p;
-		clone_attr->sendrecv_mode.len = attr->sendrecv_mode.len;
-		memcpy( p, attr->sendrecv_mode.s, attr->sendrecv_mode.len);
-		p += attr->sendrecv_mode.len;
-	}
-
-	if (attr->ptime.len) {
-		clone_attr->ptime.s = p;
-		clone_attr->ptime.len = attr->ptime.len;
-		memcpy( p, attr->ptime.s, attr->ptime.len);
-		p += attr->ptime.len;
+	if (attr->fmtp_string.len) {
+		clone_attr->fmtp_string.s = p;
+		clone_attr->fmtp_string.len = attr->fmtp_string.len;
+		memcpy( p, attr->fmtp_string.s, attr->fmtp_string.len);
+		p += attr->fmtp_string.len;
 	}
 
 	return clone_attr;
@@ -987,13 +970,16 @@ sdp_stream_cell_t * clone_sdp_stream_cell(sdp_stream_cell_t *stream)
 
 	/* NOTE: we are not cloning RFC4975 attributes */
 	len = sizeof(sdp_stream_cell_t) +
+			stream->ip_addr.len +
 			stream->media.len +
 			stream->port.len +
 			stream->transport.len +
+			stream->sendrecv_mode.len +
+			stream->ptime.len +
 			stream->payloads.len +
 			stream->bw_type.len +
 			stream->bw_width.len +
-			stream->ip_addr.len;
+			stream->rtcp_port.len;
 	clone_stream = (sdp_stream_cell_t*)shm_malloc(len);
 	if (clone_stream == NULL) {
 		LM_ERR("no more shm mem (%d)\n",len);
@@ -1016,13 +1002,22 @@ sdp_stream_cell_t * clone_sdp_stream_cell(sdp_stream_cell_t *stream)
 
 	clone_stream->payloads_num = stream->payloads_num;
 	if (clone_stream->payloads_num) {
-		if (0 == init_p_payload_attr(clone_stream, USE_SHM_MEM)) {
+		if (NULL == init_p_payload_attr(clone_stream, USE_SHM_MEM)) {
 			goto error;
 		}
 	}
 
 	clone_stream->stream_num = stream->stream_num;
 	clone_stream->pf = stream->pf;
+
+	if (stream->ip_addr.len) {
+		clone_stream->ip_addr.s = p;
+		clone_stream->ip_addr.len = stream->ip_addr.len;
+		memcpy( p, stream->ip_addr.s, stream->ip_addr.len);
+		p += stream->ip_addr.len;
+	}
+
+	clone_stream->is_rtp = stream->is_rtp;
 
 	if (stream->media.len) {
 		clone_stream->media.s = p;
@@ -1045,6 +1040,20 @@ sdp_stream_cell_t * clone_sdp_stream_cell(sdp_stream_cell_t *stream)
 		p += stream->transport.len;
 	}
 
+	if (stream->sendrecv_mode.len) {
+		clone_stream->sendrecv_mode.s = p;
+		clone_stream->sendrecv_mode.len = stream->sendrecv_mode.len;
+		memcpy( p, stream->sendrecv_mode.s, stream->sendrecv_mode.len);
+		p += stream->sendrecv_mode.len;
+	}
+
+	if (stream->ptime.len) {
+		clone_stream->ptime.s = p;
+		clone_stream->ptime.len = stream->ptime.len;
+		memcpy( p, stream->ptime.s, stream->ptime.len);
+		p += stream->ptime.len;
+	}
+
 	if (stream->payloads.len) {
 		clone_stream->payloads.s = p;
 		clone_stream->payloads.len = stream->payloads.len;
@@ -1064,11 +1073,11 @@ sdp_stream_cell_t * clone_sdp_stream_cell(sdp_stream_cell_t *stream)
 		p += stream->bw_width.len;
 	}
 
-	if (stream->ip_addr.len) {
-		clone_stream->ip_addr.s = p;
-		clone_stream->ip_addr.len = stream->ip_addr.len;
-		memcpy( p, stream->ip_addr.s, stream->ip_addr.len);
-		p += stream->payloads.len;
+	if (stream->rtcp_port.len) {
+		clone_stream->rtcp_port.s = p;
+		clone_stream->rtcp_port.len = stream->rtcp_port.len;
+		memcpy( p, stream->rtcp_port.s, stream->rtcp_port.len);
+		p += stream->rtcp_port.len;
 	}
 
 	/* NOTE: we are not cloning RFC4975 attributes:
@@ -1095,8 +1104,12 @@ sdp_session_cell_t * clone_sdp_session_cell(sdp_session_cell_t *session)
 		LM_ERR("arg:NULL\n");
 		return NULL;
 	}
-	len = sizeof(sdp_session_cell_t) + session->cnt_disp.len +
-		session->bw_type.len + session->bw_width.len;
+	len = sizeof(sdp_session_cell_t) +
+		session->cnt_disp.len +
+		session->ip_addr.len +
+		session->o_ip_addr.len +
+		session->bw_type.len +
+		session->bw_width.len;
 	clone_session = (sdp_session_cell_t*)shm_malloc(len);
 	if (clone_session == NULL) {
 		LM_ERR("no more shm mem (%d)\n",len);
@@ -1126,6 +1139,8 @@ sdp_session_cell_t * clone_sdp_session_cell(sdp_session_cell_t *session)
 	}
 
 	clone_session->session_num = session->session_num;
+	clone_session->pf = session->pf;
+	clone_session->o_pf = session->o_pf;
 	clone_session->streams_num = session->streams_num;
 
 	if (session->cnt_disp.len) {
@@ -1133,6 +1148,20 @@ sdp_session_cell_t * clone_sdp_session_cell(sdp_session_cell_t *session)
 		clone_session->cnt_disp.len = session->cnt_disp.len;
 		memcpy( p, session->cnt_disp.s, session->cnt_disp.len);
 		p += session->cnt_disp.len;
+	}
+
+	if (session->ip_addr.len) {
+		clone_session->ip_addr.s = p;
+		clone_session->ip_addr.len = session->ip_addr.len;
+		memcpy( p, session->ip_addr.s, session->ip_addr.len);
+		p += session->ip_addr.len;
+	}
+
+	if (session->o_ip_addr.len) {
+		clone_session->o_ip_addr.s = p;
+		clone_session->o_ip_addr.len = session->o_ip_addr.len;
+		memcpy( p, session->o_ip_addr.s, session->o_ip_addr.len);
+		p += session->o_ip_addr.len;
 	}
 
 	if (session->bw_type.len) {
@@ -1146,7 +1175,7 @@ sdp_session_cell_t * clone_sdp_session_cell(sdp_session_cell_t *session)
 		clone_session->bw_width.s = p;
 		clone_session->bw_width.len = session->bw_width.len;
 		memcpy( p, session->bw_width.s, session->bw_width.len);
-		//p += session->bw_type.len;
+		p += session->bw_width.len;
 	}
 
 	return clone_session;
@@ -1180,6 +1209,7 @@ sdp_info_t * clone_sdp_info(struct sip_msg* _m)
 	memset( clone_sdp_info, 0, len);
 	LM_DBG("we have %d sessions\n", sdp_info->sessions_num);
 	clone_sdp_info->sessions_num = sdp_info->sessions_num;
+	clone_sdp_info->streams_num = sdp_info->streams_num;
 
 	session=sdp_info->sessions;
 	clone_session=clone_sdp_session_cell(session);
