@@ -303,6 +303,7 @@ static int force_rtp_proxy2_f(struct sip_msg *, char *, char *);
 static int engage_rtp_proxy0_f(struct sip_msg *, char *, char *);
 static int engage_rtp_proxy1_f(struct sip_msg *, char *, char *);
 static int engage_rtp_proxy2_f(struct sip_msg *, char *, char *);
+static int fixup_engage(void **param,int param_no);
 static int force_rtp_proxy(struct sip_msg *, char *, char *, int);
 static int fix_nated_register_f(struct sip_msg *, char *, char *);
 static int fixup_fix_nated_register(void** param, int param_no);
@@ -458,13 +459,13 @@ static cmd_export_t cmds[] = {
 		0, 0,
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"engage_rtp_proxy",    (cmd_function)engage_rtp_proxy0_f,     0,
-		0, 0,
+		fixup_engage, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"engage_rtp_proxy",    (cmd_function)engage_rtp_proxy1_f,     1,
-		0, 0,
+		fixup_engage, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"engage_rtp_proxy",    (cmd_function)engage_rtp_proxy2_f,     2,
-		0, 0,
+		fixup_engage, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"nat_uac_test",       (cmd_function)nat_uac_test_f,         1,
 		fixup_uint_null, 0,
@@ -888,6 +889,17 @@ static int fixup_fix_nated_register(void** param, int param_no)
 				" parameter 'received_avp' of registrar module\n");
 		return -1;
 	}
+	return 0;
+}
+
+static int fixup_engage(void** param, int param_no)
+{
+	if (!dlg_api.create_dlg)
+	{
+		LM_ERR("Dialog module not loaded. Can't use engage_rtp_proxy function\n");
+		return -1;
+	}
+
 	return 0;
 }
 
@@ -1392,10 +1404,8 @@ mod_init(void)
 
 	/* load dlg api */
 	memset(&dlg_api, 0, sizeof(struct dlg_binds));
-	if (load_dlg_api(&dlg_api)!=0) {
-		LM_ERR("error loading dlg api");
-		return -1;
-	}
+	if (load_dlg_api(&dlg_api)!=0)
+		LM_DBG("dialog module not loaded.\n");
 
 	return 0;
 }
@@ -2922,12 +2932,6 @@ engage_rtp_proxy2_f(struct sip_msg *msg, char *param1, char *param2)
 	str param1_val,param2_val;
 	struct to_body *pto, TO;
 	struct dlg_cell *dlg;
-
-	if (!dlg_api.create_dlg)
-	{
-		LM_ERR("dialog module not loaded. use force_rtp_proxy functions instead");
-		return -1;
-	}
 
 	if (!(msg->first_line.type == SIP_REQUEST &&
 	    msg->first_line.u.request.method_value == METHOD_INVITE)) {
