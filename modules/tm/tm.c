@@ -119,6 +119,7 @@ inline static int t_local_replied(struct sip_msg* msg, char *type, char* );
 inline static int t_check_trans(struct sip_msg* msg, char* , char* );
 inline static int t_was_cancelled(struct sip_msg* msg, char* , char* );
 inline static int w_t_cancel_branch(struct sip_msg* msg, char* );
+inline static int w_t_add_hdrs(struct sip_msg* msg, char* );
 
 struct sip_msg* tm_pv_context_request(struct sip_msg* msg);
 struct sip_msg* tm_pv_context_reply(struct sip_msg* msg);
@@ -187,6 +188,8 @@ static cmd_export_t cmds[]={
 			0, ONREPLY_ROUTE },
 	{"t_cancel_branch", (cmd_function)w_t_cancel_branch,1, fixup_cancel_branch,
 			0, ONREPLY_ROUTE },
+	{"t_add_hdrs",      (cmd_function)w_t_add_hdrs,     1, fixup_spve_null,
+			0, REQUEST_ROUTE },
 	{"load_tm",         (cmd_function)load_tm,          0, 0,
 			0, 0},
 	{0,0,0,0,0,0}
@@ -1157,6 +1160,33 @@ inline static int w_t_cancel_branch(struct sip_msg *msg, char *sflags)
 	return 1;
 }
 
+
+inline static int w_t_add_hdrs(struct sip_msg* msg, char *p_val )
+{
+	struct cell *t;
+	str val;
+
+	t=get_t();
+
+	if (t==NULL || t==T_UNDEFINED) {
+		/* no transaction */
+		return -1;
+	}
+	if (fixup_get_svalue(msg, (gparam_p)p_val, &val)!=0) {
+		LM_ERR("invalid value\n");
+		return -1;
+	}
+	if (t->extra_hdrs.s) shm_free(t->extra_hdrs.s);
+	t->extra_hdrs.s = (char*)shm_malloc(val.len);
+	if (t->extra_hdrs.s==NULL) {
+		LM_ERR("no more shm mem\n");
+		return -1;
+	}
+	t->extra_hdrs.len = val.len;
+	memcpy( t->extra_hdrs.s , val.s, val.len );
+
+	return 1;
+}
 
 
 /* pseudo-variable functions */

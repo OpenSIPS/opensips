@@ -285,6 +285,9 @@ typedef struct cell
 
 	/* holders for higher contexts */
 	void *dialog_ctx;
+
+	/* extra T headers */
+	str extra_hdrs;
 }cell_type;
 
 

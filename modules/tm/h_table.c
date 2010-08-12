@@ -179,6 +179,10 @@ void free_cell( struct cell* dead_cell )
 	if (dead_cell->user_avps)
 		destroy_avp_list_unsafe( &dead_cell->user_avps );
 
+	/* extra hdrs */
+	if ( dead_cell->extra_hdrs.s )
+		shm_free_unsafe( dead_cell->extra_hdrs.s );
+
 	/* the cell's body */
 	shm_free_unsafe( dead_cell );
 
