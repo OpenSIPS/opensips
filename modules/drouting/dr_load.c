@@ -287,9 +287,9 @@ rt_data_t* dr_load_routing_info( db_func_t *dr_dbf, db_con_t* db_hdl,
 							str *drd_table, str *drl_table, str* drr_table )
 {
 	int    int_vals[4];
-	char * str_vals[5];
+	char * str_vals[6];
 	str tmp;
-	db_key_t columns[7];
+	db_key_t columns[8];
 	db_res_t* res;
 	db_row_t* row;
 	rt_info_t *ri;
@@ -499,9 +499,10 @@ rt_data_t* dr_load_routing_info( db_func_t *dr_dbf, db_con_t* db_hdl,
 	columns[4] = &priority_drr_col;
 	columns[5] = &routeid_drr_col;
 	columns[6] = &dstlist_drr_col;
+	columns[7] = &attrs_drd_col;
 
 	if (DB_CAPABILITY(*dr_dbf, DB_CAP_FETCH)) {
-		if ( dr_dbf->query( db_hdl, 0, 0, 0, columns, 0, 7, 0, 0) < 0) {
+		if ( dr_dbf->query( db_hdl, 0, 0, 0, columns, 0, 8, 0, 0) < 0) {
 			LM_ERR("DB query failed\n");
 			goto error;
 		}
@@ -510,7 +511,7 @@ rt_data_t* dr_load_routing_info( db_func_t *dr_dbf, db_con_t* db_hdl,
 			goto error;
 		}
 	} else {
-		if ( dr_dbf->query( db_hdl, 0, 0, 0, columns, 0, 7, 0, &res) < 0) {
+		if ( dr_dbf->query( db_hdl, 0, 0, 0, columns, 0, 8, 0, &res) < 0) {
 			LM_ERR("DB query failed\n");
 			goto error;
 		}
@@ -555,6 +556,9 @@ rt_data_t* dr_load_routing_info( db_func_t *dr_dbf, db_con_t* db_hdl,
 			/* DSTLIST column */
 			check_val(DSTLIST_DRR_COL, ROW_VALUES(row)+6, DB_STRING, 1, 1);
 			str_vals[4] = (char*)VAL_STRING(ROW_VALUES(row)+6);
+			/* ATTRS column */
+			check_val(ATTRS_DRD_COL, ROW_VALUES(row)+7, DB_STRING, 0, 0);
+			str_vals[5] = (char*)VAL_STRING(ROW_VALUES(row)+7);
 			/* parse the time definition */
 			if ((time_rec=parse_time_def(str_vals[2]))==0) {
 				LM_ERR("bad time definition <%s> for rule id %d -> skipping\n",
@@ -584,8 +588,8 @@ rt_data_t* dr_load_routing_info( db_func_t *dr_dbf, db_con_t* db_hdl,
 				}
 			}
 			/* build the routing rule */
-			if ((ri = build_rt_info( int_vals[2], time_rec, int_vals[3],
-					str_vals[4], rdata->pgw_l))== 0 ) {
+			if ((ri = build_rt_info( int_vals[0], int_vals[2], time_rec,
+			int_vals[3], str_vals[4], str_vals[5], rdata->pgw_l))== 0 ) {
 				LM_ERR("failed to add routing info for rule id %d -> "
 					"skipping\n", int_vals[0]);
 				tmrec_free( time_rec );

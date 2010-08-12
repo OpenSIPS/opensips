@@ -317,7 +317,7 @@ print_rt(
 	printf("priority:%d list of gw:\n", rt->priority);
 	for(i=0;i<rt->pgwa_len;i++)
 		if(NULL!=rt->pgwl[i].pgw) 
-			printf("  id:%ld pri:%.*s ip:%.*s \n",
+			printf("  id:%u pri:%.*s ip:%.*s \n",
 				rt->pgwl[i].pgw->id, 
 				rt->pgwl[i].pgw->pri.len, rt->pgwl[i].pgw->pri.s,
 				rt->pgwl[i].pgw->ip.len, rt->pgwl[i].pgw->ip_str.s);

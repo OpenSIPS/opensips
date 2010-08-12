@@ -64,7 +64,7 @@ do {\
 /* list of PSTN gw */
 typedef struct pgw_ {
 	/* id matching the one in db */
-	long id;
+	unsigned int id;
 	int type;
 	str ip_str;
 	/* strip / pri and attrs */
@@ -86,6 +86,8 @@ typedef struct pgw_list_ {
 
 /* element containing routing information */
 typedef struct rt_info_ {
+	/* id matching the one in db */
+	unsigned int id;
 	unsigned int priority;
 	tmrec_t *time_rec;
 	/* array of pointers into the PSTN gw list */
@@ -96,6 +98,7 @@ typedef struct rt_info_ {
 	unsigned short ref_cnt;
 	/* script route to be executed */
 	int route_idx;
+	str attrs;
 } rt_info_t;
 
 typedef struct rt_info_wrp_ {

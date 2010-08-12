@@ -69,12 +69,14 @@ err_exit:
 
 rt_info_t*
 build_rt_info(
+	int id,
 	int priority,
 	tmrec_t *trec,
 	/* script routing table index */
 	int route_idx,
 	/* list of destinations indexes */
 	char* dstlst,
+	char* attrs,
 	pgw_t* pgw_l
 	) 
 {
@@ -86,7 +88,8 @@ build_rt_info(
 	long t=0;
 	pgw_t *pgw=NULL;
 
-	if(NULL == (rt = (rt_info_t*)shm_malloc(sizeof(rt_info_t)))) {
+	rt = (rt_info_t*)shm_malloc(sizeof(rt_info_t)+(attrs?strlen(attrs):0));
+	if (rt==NULL) {
 		LM_ERR("no more shm mem(1)\n");
 		goto err_exit;
 	}
@@ -99,9 +102,14 @@ build_rt_info(
 	}
 	memset(idx, 0, 2*idx_size*sizeof(int));
 
+	rt->id = id;
 	rt->priority = priority;
 	rt->time_rec = trec;
 	rt->route_idx = route_idx;
+	if (attrs && strlen(attrs)) {
+		rt->attrs.s = (char*)(rt+1);
+		rt->attrs.len = strlen(attrs);
+	}
 	tmp=dstlst;
 	n=0;
 	/* parse the dstlst */
