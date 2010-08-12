@@ -363,6 +363,7 @@ extern int line;
 %token DST_BLACKLIST
 %token DISABLE_STATELESS_FWD
 %token DB_VERSION_TABLE
+%token DISABLE_503_TRANSLATION
 
 
 
@@ -1050,6 +1051,10 @@ assign_stm: DEBUG EQUAL snumber {
 				}
 		| DB_VERSION_TABLE EQUAL STRING { db_version_table=$3; }
 		| DB_VERSION_TABLE EQUAL error { yyerror("string value expected"); }
+		| DISABLE_503_TRANSLATION EQUAL NUMBER { disable_503_translation=$3; }
+		| DISABLE_503_TRANSLATION EQUAL error {
+				yyerror("string value expected");
+				}
 		| error EQUAL { yyerror("unknown config variable"); }
 	;
 

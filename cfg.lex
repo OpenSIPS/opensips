@@ -306,6 +306,7 @@ DST_BLACKLIST		"dst_blacklist"
 MAX_WHILE_LOOPS "max_while_loops"
 DISABLE_STATELESS_FWD	"disable_stateless_fwd"
 DB_VERSION_TABLE "db_version_table"
+DISABLE_503_TRANSLATION "disable_503_translation"
 
 MPATH	mpath
 LOADMODULE	loadmodule
@@ -576,6 +577,8 @@ WHITESPACE	[ \t\r\n]
 									return DISABLE_STATELESS_FWD; }
 <INITIAL>{DB_VERSION_TABLE}	{	count(); yylval.strval=yytext;
 									return DB_VERSION_TABLE; }
+<INITIAL>{DISABLE_503_TRANSLATION}	{	count(); yylval.strval=yytext;
+									return DISABLE_503_TRANSLATION; }
 
 <INITIAL>{MPATH}	   { count(); yylval.strval=yytext; return MPATH; }
 <INITIAL>{LOADMODULE}  { count(); yylval.strval=yytext; return LOADMODULE; }
