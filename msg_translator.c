@@ -127,6 +127,7 @@
 #include "ut.h"
 #include "pt.h"
 
+int disable_503_translation = 0;
 
 #define append_str(_dest,_src,_len) \
 	do{\
@@ -1534,7 +1535,7 @@ char * build_res_buf_from_sip_res( struct sip_msg* msg,
 		buf+s_offset, 
 		len-s_offset);
 	/* as it is a relaied reply, if 503, make it 500 (just reply code) */
-	if ( msg->first_line.u.reply.statuscode==503 )
+	if ( !disable_503_translation && msg->first_line.u.reply.statuscode==503 )
 		new_buf[(int)(msg->first_line.u.reply.status.s-msg->buf)+2] = '0'; 
 	/* send it! */
 	LM_DBG("copied size: orig:%d, new: %d, rest: %d"
