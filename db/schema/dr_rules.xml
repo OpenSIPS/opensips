@@ -78,6 +78,16 @@
 		rule matches.</description>
 	</column>
 
+	<column id="attrs">
+		<name>attrs</name>
+		<type>string</type>
+		<size>255</size>
+		<null/>
+		<default><null/></default>
+		<description>Generic string describing RULE attributes - this string is
+			to be interpreted from the script</description>
+	</column>
+
 	<column id="description">
 		<name>description</name>
 		<type>string</type>

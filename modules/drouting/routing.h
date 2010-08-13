@@ -102,12 +102,14 @@ add_dst(
 /* build a routing info list element */
 rt_info_t*
 build_rt_info(
+	int id,
 	int priority,
 	tmrec_t* time,
 	/* ser routing table id */
 	int route_id,
 	/* list of destinations indexes */
 	char* dstlst,
+	char* attr,
 	pgw_t* pgw_l
 );
 

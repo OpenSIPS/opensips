@@ -27,6 +27,7 @@ CREATE TABLE dr_rules (
     priority NUMBER(10) DEFAULT 0 NOT NULL,
     routeid VARCHAR2(255),
     gwlist VARCHAR2(255),
+    attrs VARCHAR2(255) DEFAULT NULL,
     description VARCHAR2(128) DEFAULT ''
 );
 
