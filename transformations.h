@@ -38,7 +38,9 @@
 #define TR_CLASS_MARKER		'.'
 #define TR_PARAM_MARKER		','
 
-enum _tr_type { TR_NONE=0, TR_STRING, TR_URI, TR_PARAMLIST, TR_NAMEADDR };
+enum _tr_type { TR_NONE=0, TR_STRING, TR_URI, TR_PARAMLIST, TR_NAMEADDR, TR_CSV,
+	TR_SDP,TR_IP
+};
 enum _tr_s_subtype { 
 	TR_S_NONE=0, TR_S_LEN, TR_S_INT, TR_S_MD5, TR_S_SUBSTR,
 	TR_S_SELECT, TR_S_ENCODEHEXA, TR_S_DECODEHEXA,
@@ -59,6 +61,10 @@ enum _tr_nameaddr_subtype {
 };
 enum _tr_param_type { TR_PARAM_NONE=0, TR_PARAM_STRING, TR_PARAM_NUMBER,
 	TR_PARAM_SPEC };
+enum _tr_csv_subtype {TR_CSV_NONE=0, TR_CSV_COUNT,TR_CSV_VALUEAT};
+enum _tr_sdp_subtype {TR_SDP_NONE=0, TR_SDP_LINEAT};
+enum _tr_ip_subtype  {TR_IP_NONE=0,TR_IP_FAMILY,TR_IP_NTOP,TR_IP_RESOLVE,
+	TR_IP_ISIP,TR_IP_PTON};
 
 typedef struct tr_param_ {
 	int type;
@@ -87,6 +93,9 @@ char* tr_parse_string(str* in, trans_t *t);
 char* tr_parse_uri(str* in, trans_t *t);
 char* tr_parse_paramlist(str* in, trans_t *t);
 char* tr_parse_nameaddr(str* in, trans_t *t);
+char* tr_parse_csv(str *in,trans_t *t);
+char* tr_parse_sdp(str *in,trans_t *t);
+char* tr_parse_ip(str *in,trans_t *t);
 void destroy_transformation(trans_t *t);
 void free_transformation(trans_t *t);
 void free_tr_param(tr_param_t *tp);

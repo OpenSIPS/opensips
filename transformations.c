@@ -38,15 +38,25 @@
 #include "dset.h"
 #include "usr_avp.h"
 #include "errinfo.h"
+#include "resolve.h"
+#include "ip_addr.h"
 
 #include "parser/parse_param.h"
 #include "parser/parse_uri.h"
 #include "parser/parse_to.h"
+#include "parser/sdp/sdp_helpr_funcs.h"
 
 #include "strcommon.h"
 #include "transformations.h"
 
 #define TR_BUFFER_SIZE 65536
+
+/* structure for CSV transformation */
+
+typedef struct csv {
+	str body;
+	struct csv* next;
+} csv_t;
 
 static char _tr_buffer[TR_BUFFER_SIZE];
 
@@ -432,7 +442,6 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 			val->flags = PV_VAL_STR;
 			val->rs = st;
 			break;
-
 		default:
 			LM_ERR("unknown subtype %d\n",
 					subtype);
@@ -609,6 +618,467 @@ done:
 	return 0;
 }
 
+static str _tr_csv_str = {0,0};
+static csv_t* _tr_csv_list = NULL;
+
+static int init_csv(csv_t **t,char *s,int len)
+{
+	*t = (csv_t *)pkg_malloc(sizeof(csv_t));
+	if (*t == NULL)
+	{
+		return -1;
+	}
+
+	memset(*t,0,sizeof(csv_t));
+	(*t)->body.s = s;
+	(*t)->body.len = len;
+
+	return 0;
+}
+
+void free_csv_list(csv_t *list)
+{
+	csv_t *cit;
+	for (cit=list;cit;cit=cit->next)
+		pkg_free(cit);
+}
+
+static int parse_csv(str *s,csv_t **list)
+{
+	csv_t *t = NULL;
+	csv_t *last = NULL;
+	char *string,*limit,*aux;
+	int len;
+
+	if (!s || !list)
+	{
+		LM_ERR("Invalid parameter values\n");
+		return -1;
+	}
+
+	last = NULL;
+	*list = 0;
+
+	if (!s->s)
+	{
+		LM_DBG("empty csv params, skipping\n");
+		return 0;
+	}
+
+	LM_DBG("Parsing csv for : [%.*s]\n",s->len,s->s);
+
+	string = s->s;
+	limit = string+s->len;
+
+	while (*string)
+	{
+		t = NULL;
+		/* quoted token */
+		if (*string == '\"')
+		{
+			aux = string+1;
+search:
+			/* find coresponding quote */
+			while (*aux != '\"') aux++;
+			if ( *(aux+1) != '\"')
+			{
+				/* end of current token, also skip the following comma */
+				len = aux-string+1;
+				if (init_csv(&t,string,len) < 0)
+				{
+					LM_ERR("no more memory");
+					goto error;
+				}
+				string +=len+1;
+				if (string > limit)
+				{
+					/* again, end of string */
+					if (last) { last->next = t;} else {*list = t;}
+					return 0;
+				}
+			}
+			else
+			{
+				/* quoted string inside token */
+				aux +=2;
+				/* keep searching for final double quote*/
+				goto search;
+			}
+		}
+		else
+		{
+			/* non quoted csv , find comma */
+			aux = strchr(string,',');
+			if (aux == NULL)
+			{
+				len = strlen(string);
+				if (init_csv(&t,string,len) < 0)
+				{
+					LM_ERR("no more memory");
+					goto error;
+				}
+				
+				/* should be end of string ! */
+				if (last) { last->next = t;} else {*list = t;}
+				return 0;
+			}
+			else
+			{
+				len = aux - string;
+				if (init_csv(&t,string,len) < 0)
+				{
+					LM_ERR("no more memory");
+					goto error;
+				}
+				string +=len+1;
+			}
+		}
+		
+		if (last) { last->next = t;} else {*list = t;}
+		last = t;
+	}
+
+	return 0;
+
+error:
+	if (t) pkg_free(t);
+	free_csv_list(*list);
+	*list = NULL;
+	return -1;
+}
+
+
+int tr_eval_csv(struct sip_msg *msg, tr_param_t *tp,int subtype,
+		pv_value_t *val)
+{
+	str sv;
+	csv_t *cit=NULL;
+	int n,i,list_size=0;
+	pv_value_t v;
+
+	if(val==NULL || (!(val->flags&PV_VAL_STR)) || val->rs.len<=0)
+	{
+		return -1;
+	}
+
+	if(_tr_csv_str.len==0 || _tr_csv_str.len!=val->rs.len ||
+			strncmp(_tr_csv_str.s, val->rs.s, val->rs.len)!=0)
+	{
+		if(val->rs.len>_tr_csv_str.len)
+		{
+			if(_tr_csv_str.s) pkg_free(_tr_csv_str.s);
+				_tr_csv_str.s = (char*)pkg_malloc((val->rs.len+1));
+			if(_tr_csv_str.s==NULL)
+			{
+				LM_ERR("no more private memory\n");
+				memset(&_tr_csv_str, 0, sizeof(str));
+				if(_tr_csv_list != NULL)
+				{
+					free_csv_list(_tr_csv_list);
+					_tr_csv_list = 0;
+				}
+				return -1;
+			}
+		}
+		_tr_csv_str.len = val->rs.len;
+		memcpy(_tr_csv_str.s, val->rs.s, val->rs.len);
+		_tr_csv_str.s[_tr_csv_str.len] = '\0';
+		
+		/* reset old values */
+		if(_tr_csv_list != NULL)
+		{
+			free_csv_list(_tr_csv_list);
+			_tr_csv_list = 0;
+		}
+		
+		/* parse csv */
+		sv = _tr_csv_str;
+		if (parse_csv(&sv,&_tr_csv_list)<0)
+			return -1;
+	}
+
+	if (_tr_csv_list == NULL)
+		return -1;
+
+	switch(subtype)
+	{
+		case TR_CSV_COUNT:
+			val->ri = 0;
+			for (cit=_tr_csv_list;cit;cit=cit->next)
+				val->ri++;
+
+			val->rs.s = int2str(val->ri, &val->rs.len);
+			val->flags = PV_VAL_INT | PV_VAL_STR | PV_TYPE_INT;
+			break;
+		case TR_CSV_VALUEAT:
+			if(tp==NULL)
+			{
+				LM_ERR("csv invalid parameters\n");
+				return -1;
+			}
+			if(tp->type==TR_PARAM_NUMBER)
+			{
+				n = tp->v.n;
+			} else {
+				if(pv_get_spec_value(msg, (pv_spec_p)tp->v.data, &v)!=0
+						|| (!(v.flags&PV_VAL_INT)))
+				{
+					LM_ERR("cannot get parameter\n");
+					return -1;
+				}
+				n = v.ri;
+			}
+
+			if (n<0)
+			{
+				for (cit=_tr_csv_list;cit;cit=cit->next)
+					list_size++;
+				n = list_size + n;
+				if (n<0)
+				{
+					LM_ERR("Too large negative index\n");
+					return -1;
+				}
+			}
+
+			cit = _tr_csv_list;
+			for (i=0;i<n;i++)
+			{
+				cit=cit->next;
+				if (!cit)
+				{
+					LM_ERR("Index out of bounds\n");
+					return -1;
+				}
+			}
+
+			val->rs = cit->body;
+			val->flags =  PV_VAL_STR;
+			break;
+
+		default:
+			LM_ERR("unknown subtype %d\n",subtype);
+			return -1;
+	}
+
+	return 0;
+}
+
+static str _tr_sdp_str = {0,0};
+
+int tr_eval_sdp(struct sip_msg *msg, tr_param_t *tp,int subtype,
+		pv_value_t *val)
+{
+	char *bodylimit;
+	char *answer;
+	char *answerEnd;
+	char searchLine;
+	int entryNo,i;
+	pv_value_t v;
+
+	if(val==NULL || (!(val->flags&PV_VAL_STR)) || val->rs.len<=0)
+		return -1;
+
+	if (!tp || !tp->next)
+		return -1;
+
+	if(_tr_sdp_str.len==0 || _tr_sdp_str.len!=val->rs.len ||
+			strncmp(_tr_sdp_str.s, val->rs.s, val->rs.len)!=0)
+	{
+		if(val->rs.len>_tr_sdp_str.len)
+		{
+			if(_tr_sdp_str.s) pkg_free(_tr_sdp_str.s);
+				_tr_sdp_str.s = (char*)pkg_malloc((val->rs.len+1));
+			if(_tr_sdp_str.s==NULL)
+			{
+				LM_ERR("no more private memory\n");
+				memset(&_tr_sdp_str, 0, sizeof(str));
+				return -1;
+			}
+		}
+
+		_tr_sdp_str.len = val->rs.len;
+		memcpy(_tr_sdp_str.s, val->rs.s, val->rs.len);
+		_tr_sdp_str.s[_tr_sdp_str.len] = '\0';
+		
+	}
+
+	switch (subtype)
+	{
+		case TR_SDP_LINEAT:
+			bodylimit = _tr_sdp_str.s + _tr_sdp_str.len;
+			searchLine = *(tp->v.s.s);
+			if(tp->next->type==TR_PARAM_NUMBER)
+				entryNo = tp->next->v.n;
+			else 
+			{
+				if(pv_get_spec_value(msg, (pv_spec_p)tp->next->v.data, &v)!=0
+						|| (!(v.flags&PV_VAL_INT)))
+				{
+					LM_ERR("cannot get parameter\n");
+					return -1;
+				}
+				entryNo = v.ri;
+			}
+			if (entryNo < 0)
+			{
+				LM_ERR("negative index provided for sdp.lineat\n");
+				return -1;
+			}
+
+			answer = tp->v.s.s;
+			for (i=0;i<=entryNo;i++)
+			{
+				answer = find_next_sdp_line(answer,bodylimit,searchLine,bodylimit);
+				if (!answer || answer == bodylimit)
+				{
+					LM_ERR("No such line [%c] nr %d in SDP body. Max fields = %d\n",
+							searchLine,entryNo,i);
+					return -1;
+				}
+			}
+
+			/* find CR */
+			answerEnd = strchr(answer,13);
+			if (answerEnd == NULL)
+			{
+				LM_ERR("malformed SDP body\n");
+				return -1;
+			}
+
+			val->flags = PV_VAL_STR;
+			val->rs.s = answer;
+			val->rs.len = answerEnd - answer;
+
+			break;
+		default:
+			LM_ERR("unknown subtype %d\n",subtype);
+			return -1;
+	}
+
+	return 0;
+}
+
+int tr_eval_ip(struct sip_msg *msg, tr_param_t *tp,int subtype,
+		pv_value_t *val)
+{
+	char *buffer;
+	struct ip_addr *binary_ip;
+	str inet = str_init("INET");
+	str inet6 = str_init("INET6");
+	struct hostent *server;
+	struct ip_addr ip;
+
+	if(val==NULL || (!(val->flags&PV_VAL_STR)) || val->rs.len<=0)
+		return -1;
+
+	switch (subtype)
+	{
+		case TR_IP_FAMILY:
+			if (val->rs.len == 4)
+			{
+				memcpy(val->rs.s,inet.s,inet.len);
+				val->rs.len = inet.len;
+			}
+			else if (val->rs.len == 16)
+			{
+				memcpy(val->rs.s,inet6.s,inet6.len);
+				val->rs.len = inet6.len;
+			}
+			else
+			{
+				LM_ERR("Invalid ip address provided for ip.family. Binary format expected !\n");
+				return -1;
+			}
+
+			val->flags = PV_VAL_STR;
+			break;
+		case TR_IP_NTOP:
+			if (val->rs.len == 4)
+				ip.af = AF_INET;
+			else if (val->rs.len == 16)
+				ip.af = AF_INET6;
+			else
+			{
+				LM_ERR("Invalid ip address provided for ip.ntop. Binary format expected !\n");
+				return -1;
+			}
+			
+			memcpy(ip.u.addr,val->rs.s,val->rs.len);
+			ip.len = val->rs.len;
+			buffer = ip_addr2a(&ip);
+			val->rs.s = buffer;
+			val->rs.len = strlen(buffer);
+			val->flags = PV_VAL_STR;
+			break;
+		case TR_IP_ISIP:
+			if(!(val->flags&PV_VAL_STR))
+				val->rs.s = int2str(val->ri, &val->rs.len);
+
+			if ( str2ip(&(val->rs)) || str2ip6(&(val->rs)) )
+				val->ri = 1;
+			else
+				val->ri = 0;
+
+			val->flags = PV_TYPE_INT|PV_VAL_INT|PV_VAL_STR;
+			val->rs.s = int2str(val->ri, &val->rs.len);
+			break;
+		case TR_IP_PTON:
+			binary_ip = str2ip(&(val->rs));
+			if (!binary_ip)
+			{
+				binary_ip = str2ip6(&(val->rs));
+				if (!binary_ip)
+				{
+					LM_ERR("pton transformation applied to invalid IP\n");
+					return -1;
+				}
+			}
+			val->rs.s = (char *)binary_ip->u.addr;
+			val->rs.len = binary_ip->len;
+			val->flags = PV_VAL_STR;
+			break;
+		case TR_IP_RESOLVE:
+			server = resolvehost(val->rs.s,0);
+			if (!server || !server->h_addr)
+			{
+				LM_ERR("Could not resolve hostname %.*s\n",
+						val->rs.len,val->rs.s);
+				return -1;
+			}
+
+			if (server->h_addrtype == AF_INET)
+			{
+				memcpy(ip.u.addr,server->h_addr,4);
+				ip.len = 4;
+				ip.af = AF_INET;
+			}
+			else if (val->rs.len == AF_INET6)
+			{
+				memcpy(ip.u.addr,server->h_addr,16);
+				ip.len = 16;
+				ip.af = AF_INET6;
+			}
+			else
+			{
+				LM_ERR("Unexpected IP address type \n");
+				return -1;
+			}
+			
+			buffer = ip_addr2a(&ip);
+			val->rs.s = buffer;
+			val->rs.len = strlen(buffer);
+			val->flags = PV_VAL_STR;
+			break;
+
+		default:
+			LM_ERR("unknown subtype %d\n",subtype);
+			return -1;
+	}
+
+	return 0;
+	}
+
 static str _tr_params_str = {0, 0};
 static param_t* _tr_params_list = NULL;
 
@@ -627,6 +1097,7 @@ int tr_eval_paramlist(struct sip_msg *msg, tr_param_t *tp, int subtype,
 	if(_tr_params_str.len==0 || _tr_params_str.len!=val->rs.len ||
 			strncmp(_tr_params_str.s, val->rs.s, val->rs.len)!=0)
 	{
+
 		if(val->rs.len>_tr_params_str.len)
 		{
 			if(_tr_params_str.s) pkg_free(_tr_params_str.s);
@@ -658,6 +1129,7 @@ int tr_eval_paramlist(struct sip_msg *msg, tr_param_t *tp, int subtype,
 		sv = _tr_params_str;
 		if (parse_params(&sv, CLASS_ANY, &phooks, &_tr_params_list)<0)
 			return -1;
+
 	}
 	
 	if(_tr_params_list==NULL)
@@ -1002,14 +1474,42 @@ char* parse_transformation(str *in, trans_t **tr)
 				goto error;
 			p = p0;
 		} else if(tclass.len==8 && strncasecmp(tclass.s, "nameaddr", 8)==0) {
-			t->type = TR_PARAMLIST;
+			t->type = TR_NAMEADDR;
 			t->trf = tr_eval_nameaddr;
 			s.s = p; s.len = in->s + in->len - p;
 			p0 = tr_parse_nameaddr(&s, t);
 			if(p0==NULL)
 				goto error;
 			p = p0;
-		} else {
+		}
+		else if (tclass.len==3 && strncasecmp(tclass.s, "csv", 3) == 0) {
+			t->type = TR_CSV;
+			t->trf = tr_eval_csv;
+			s.s = p; s.len = in->s + in->len - p;
+			p0 = tr_parse_csv(&s,t);
+			if (p0==NULL)
+				goto error;
+			p = p0;
+		}
+		else if (tclass.len==3 && strncasecmp(tclass.s,"sdp",3) == 0) {
+			t->type = TR_SDP;
+			t->trf = tr_eval_sdp;
+			s.s = p; s.len = in->s + in->len - p;
+			p0 = tr_parse_sdp(&s,t);
+			if (p0==NULL)
+				goto error;
+			p = p0;
+		}
+		else if (tclass.len==2 && strncasecmp(tclass.s,"ip",2) == 0) {
+			t->type = TR_IP;
+			t->trf = tr_eval_ip;
+			s.s = p; s.len = in->s + in->len - p;
+			p0 = tr_parse_ip(&s,t);
+			if (p0==NULL)
+				goto error;
+			p = p0;
+		}
+		else {
 			LM_ERR("unknown transformation: [%.*s] in [%.*s]\n",
 				tclass.len, tclass.s, in->len, in->s);
 			goto error;
@@ -1300,8 +1800,7 @@ char* tr_parse_string(str* in, trans_t *t)
 			goto error;
 		}
 		return p;
-	}
-
+	} 
 
 	LM_ERR("unknown transformation: %.*s/%.*s/%d!\n", in->len, in->s,
 			name.len, name.s, name.len);
@@ -1582,7 +2081,209 @@ error:
 	return NULL;
 }
 
+char * tr_parse_csv(str *in, trans_t *t)
+{
+	char *p;
+	str name;
+	pv_spec_t *spec = NULL;
+	tr_param_t *tp = NULL;
+	char *p0;
+	str s;
+	int n;
+	int sign;
 
+	if (in == NULL || t == NULL)
+		return NULL;
+
+	p = in->s;
+	name.s = in->s;
+
+	/* find next token */
+	while (is_in_str(p,in) && *p!=TR_PARAM_MARKER && *p!=TR_RBRACKET) p++;
+	if (*p == '\0')
+	{
+		LM_ERR("invalid transformation: %.*s\n",in->len,in->s);
+		return NULL;
+	}
+
+	name.len = p - name.s;
+	trim(&name);
+
+	if (name.len==5 && strncasecmp(name.s,"count",5)==0)
+	{
+		t->subtype = TR_CSV_COUNT;
+		return p;
+	}
+	else if (name.len==5 && strncasecmp(name.s,"value",5)==0)
+	{
+		t->subtype = TR_CSV_VALUEAT;
+		if(*p!=TR_PARAM_MARKER)
+		{
+			LM_ERR("invalid name transformation: %.*s\n",
+					in->len, in->s);
+			goto error;
+		}
+		p++;
+		_tr_parse_nparam(p, p0, tp, spec, n, sign, in, s)
+		t->params = tp;
+		tp = 0;
+		while(is_in_str(p, in) && (*p==' ' || *p=='\t' || *p=='\n')) p++;
+		if(*p!=TR_RBRACKET)
+		{
+			LM_ERR("invalid name transformation: %.*s!\n",
+					in->len, in->s);
+			goto error;
+		}
+		return p;
+	}
+	
+	LM_ERR("unknown transformation: %.*s/%.*s/%d!\n", in->len, in->s,
+			name.len, name.s, name.len);
+error:
+	return NULL;
+	
+}
+
+char * tr_parse_sdp(str *in, trans_t *t)
+{
+	char *p;
+	char *p0;
+	char *ps;
+	str name;
+	pv_spec_t *spec = NULL;
+	tr_param_t *tp = NULL;
+	str s;
+	int n;
+	int sign;
+
+	if (in == NULL || t == NULL)
+		return NULL;
+
+	p = in->s;
+	name.s = in->s;
+
+	/* find next token */
+	while (is_in_str(p,in) && *p!=TR_PARAM_MARKER && *p!=TR_RBRACKET) p++;
+	if (*p == '\0')
+	{
+		LM_ERR("invalid transformation: %.*s\n",in->len,in->s);
+		return NULL;
+	}
+
+	name.len = p - name.s;
+	trim(&name);
+
+	if (name.len==4 && strncasecmp(name.s,"line",4)==0)
+	{
+		t->subtype = TR_SDP_LINEAT;
+		if(*p!=TR_PARAM_MARKER)
+		{
+			LM_ERR("invalid lineat transformation: %.*s!\n", in->len, in->s);
+			goto error;
+		}
+		p++;
+		_tr_parse_sparam(p, p0, tp, spec,ps, in, s);
+		t->params = tp;
+		tp = 0;
+		while(*p && (*p==' ' || *p=='\t' || *p=='\n')) p++;
+		if(*p!=TR_PARAM_MARKER)
+		{
+			/* lineat has only one parameter */
+			tp = (tr_param_t*)pkg_malloc(sizeof(tr_param_t));
+			if (!tp)
+			{
+				LM_ERR("no more pkg memory\n");
+				goto error;
+			}
+			memset(tp, 0, sizeof(tr_param_t));
+			tp->type = TR_PARAM_NUMBER;
+			tp->v.n = 0;
+			t->params->next = tp;
+			LM_DBG("sdp.lineat with only one parameter. default = 1\n");
+			return p;
+		}
+		p++;
+		if (spec)
+		{
+			pkg_free(spec);
+			spec = NULL;
+		}
+		
+		_tr_parse_nparam(p, p0, tp, spec,n,sign, in, s);
+		if(tp->type==TR_PARAM_NUMBER && tp->v.n<0)
+		{
+			LM_ERR("lineat negative argument\n");
+			goto error;
+		}
+		t->params->next = tp;
+		tp = 0;
+		while(is_in_str(p, in) && (*p==' ' || *p=='\t' || *p=='\n')) p++;
+		if(*p!=TR_RBRACKET)
+		{
+			LM_ERR("invalid lineat transformation: %.*s!!\n",
+				in->len, in->s);
+			goto error;
+		}
+		
+		return p;
+	}
+
+	LM_ERR("unknown transformation: %.*s/%.*s/%d!\n", in->len, in->s,
+			name.len, name.s, name.len);
+error:
+	return NULL;
+}
+
+char * tr_parse_ip(str *in, trans_t *t)
+{
+	char *p;
+	str name;
+
+	if (in == NULL || t == NULL)
+		return NULL;
+
+	p = in->s;
+	name.s = in->s;
+
+	/* find next token */
+	while (is_in_str(p,in) && *p!=TR_PARAM_MARKER && *p!=TR_RBRACKET) p++;
+	if (*p == '\0')
+	{
+		LM_ERR("invalid transformation: %.*s\n",in->len,in->s);
+		goto error;
+	}
+
+	name.len = p - name.s;
+	trim(&name);
+
+	if (name.len==6 && strncasecmp(name.s,"family",6)==0)
+	{
+		t->subtype = TR_IP_FAMILY;
+		return p;
+	}
+	else if (name.len==4 && strncasecmp(name.s,"ntop",4)==0)
+	{
+		t->subtype = TR_IP_NTOP;
+		return p;
+	}
+	else if (name.len == 4 && strncasecmp(name.s,"isip",4) == 0) {
+		t->subtype = TR_IP_ISIP;
+		return p;
+	} else if (name.len == 4 && strncasecmp(name.s,"pton",4) == 0) {
+		t->subtype = TR_IP_PTON;
+		return p;
+	} else if (name.len == 7 && strncasecmp(name.s,"resolve",7) == 0) {
+		t->subtype = TR_IP_RESOLVE;
+		return p;
+	}
+
+
+	LM_ERR("unknown transformation: %.*s/%.*s/%d!\n", in->len, in->s,
+			name.len, name.s, name.len);
+error:
+	return NULL;
+	
+}
 void destroy_transformation(trans_t *t)
 {
 	tr_param_t *tp;
