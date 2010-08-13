@@ -109,6 +109,7 @@ build_rt_info(
 	if (attrs && strlen(attrs)) {
 		rt->attrs.s = (char*)(rt+1);
 		rt->attrs.len = strlen(attrs);
+		memcpy(rt->attrs.s,attrs,rt->attrs.len);
 	}
 	tmp=dstlst;
 	n=0;
