@@ -499,7 +499,11 @@ int dialoginfo_set(struct sip_msg* msg, char* flag_pv, char* str2)
 	if (msg->REQ_METHOD != METHOD_INVITE)
 		return 1;
 
-	dlg_api.create_dlg(msg);
+	if(dlg_api.create_dlg(msg)< 0)
+	{
+		LM_ERR("Failed to create dialog\n");
+		return -1;
+	}
 
 	dlg = dlg_api.get_dlg();
 
