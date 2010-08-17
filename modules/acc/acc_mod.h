@@ -52,6 +52,8 @@ extern aaa_prot proto;
 extern aaa_conn *conn;
 extern char* aaa_proto_url;
 
+extern int cdr_flag;
+
 #ifdef DIAM_ACC
 #include "diam_tcp.h"
 extern rd_buf_t *rb;
@@ -75,5 +77,8 @@ extern str acc_cseqno_col;
 extern str acc_sipcode_col;
 extern str acc_sipreason_col;
 extern str acc_time_col;
+extern str acc_duration_col;
+extern str acc_setuptime_col;
+extern str acc_created_col;
 
 #endif
