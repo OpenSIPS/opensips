@@ -445,10 +445,6 @@ int restore_uri( struct sip_msg *msg, str *rr_param, int check_from)
 
 	if (dlg_api.get_dlg) {
 		dlg = dlg_api.get_dlg();
-		if (!dlg && force_dialog) {
-			LM_ERR("cannot get dialog\n");
-			goto failed;
-		}
 		LM_DBG("Dialog found: %p\n", dlg);
 	}
 
