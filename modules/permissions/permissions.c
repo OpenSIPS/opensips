@@ -98,6 +98,7 @@ static int double_fixup(void** param, int param_no);
 
 static int check_addr_fixup(void** param, int param_no);
 static int check_src_addr_fixup(void** param, int param_no);
+static int get_src_grp_fixup(void** param, int param_no);
 
 static int allow_routing_0(struct sip_msg* msg, char* str1, char* str2);
 static int allow_routing_1(struct sip_msg* msg, char* basename, char* str2);
@@ -132,7 +133,7 @@ static cmd_export_t cmds[] = {
 		check_src_addr_fixup, 0,
 		REQUEST_ROUTE| FAILURE_ROUTE|LOCAL_ROUTE},
 	{"get_source_group", (cmd_function) get_source_group, 1,
-		fixup_pvar_null, 0,
+		get_src_grp_fixup, 0,
 		REQUEST_ROUTE | FAILURE_ROUTE | LOCAL_ROUTE },
 	{"allow_routing",  (cmd_function)allow_routing_0,  0,
 		0, 0,
@@ -202,6 +203,20 @@ struct module_exports exports = {
 	mod_exit,  /* destroy function */
 	child_init /* child initialization function */
 };
+
+
+static int get_src_grp_fixup(void** param, int param_no)
+{
+	if (!db_url.s || db_url.len == 0) {
+		LM_ERR("get_source_group() needs db_url to be set!\n");
+		return E_UNSPEC;
+	}
+
+	if(param_no==1)
+		return fixup_pvar(param);
+
+	return E_UNSPEC;
+}
 
 
 /*
