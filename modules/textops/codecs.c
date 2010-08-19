@@ -33,7 +33,8 @@
 #include "../../parser/sdp/sdp.h"
 #include "codecs.h"
 #include "../../script_cb.h"
-#include"../../route.h"
+#include "../../route.h"
+#include "../../mod_fix.h"
 
 
 typedef struct _lump_arr
@@ -48,6 +49,7 @@ static int lumps_len;
 
 static lump_arr_t stack[3];
 static int idx;
+static int used = 0;
 
 
 enum{
@@ -154,20 +156,23 @@ void restore(void)
 
 int pre_route_callback( struct sip_msg *msg, void *param )
 {
-	if( route_type & (REQUEST_ROUTE | ONREPLY_ROUTE)  )
+	if( used )
 	{
-		if( create_lumps(msg) )
-			return 0;
-	}
+		if( route_type & (REQUEST_ROUTE | ONREPLY_ROUTE)  )
+		{
+			if( create_lumps(msg) )
+				return 0;
+		}
 
-	if( route_type & FAILURE_ROUTE )
-	{
-		find_flagged_lumps(msg);
-	}
+		if( route_type & (FAILURE_ROUTE | BRANCH_ROUTE) )
+		{
+			find_flagged_lumps(msg);
+		}
 
-	if( route_type & (FAILURE_ROUTE | BRANCH_ROUTE)  )
-	{
-		backup();
+		if( route_type & (FAILURE_ROUTE | BRANCH_ROUTE)  )
+		{
+			backup();
+		}
 	}
 
 	return 0;
@@ -176,9 +181,12 @@ int pre_route_callback( struct sip_msg *msg, void *param )
 
 int post_route_callback( struct sip_msg *msg, void *param )
 {
-	if( route_type & (FAILURE_ROUTE | BRANCH_ROUTE)  )
+	if( used )
 	{
-		restore();
+		if( route_type & (FAILURE_ROUTE | BRANCH_ROUTE)  )
+		{
+			restore();
+		}
 	}
 
 	return 0;
@@ -201,6 +209,9 @@ int codec_init(void)
 int fixup_codec(void** param, int param_no)
 {
 	str * s = pkg_malloc(sizeof(str));
+
+	used = 1;
+
 	if( s == NULL)
 	{
 		LM_ERR("Out of memory\n");
@@ -212,6 +223,13 @@ int fixup_codec(void** param, int param_no)
 	*param = s;
 
 	return 0;
+}
+
+int fixup_codec_regexp(void** param, int param_no)
+{
+	used = 1;
+
+	return fixup_regexp_null(param, param_no);
 }
 
 /*

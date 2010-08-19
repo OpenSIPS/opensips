@@ -32,7 +32,10 @@
 
 
 int codec_init();
+
 int fixup_codec(void** param, int param_no);
+int fixup_codec_regexp(void** param, int param_no);
+
 int codec_find (struct sip_msg* msg, char* str1 );
 int codec_delete (struct sip_msg* msg, char* str1 );
 int codec_move_up (struct sip_msg* msg, char* str1 );
