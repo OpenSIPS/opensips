@@ -90,9 +90,6 @@ int backup(void)
 
 	stack[idx].len = len;
 
-	LM_DBG(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n");
-	LM_DBG("Saving %d\n", len );
-
 	if( len > 0)
 	{
 		stack[idx].v = pkg_malloc(len * sizeof(str));
@@ -104,10 +101,16 @@ int backup(void)
 			int n = old->len;
 
 			l->s = pkg_malloc(n);
+
+			if( l->s == NULL)
+			{
+				LM_ERR("Not enough memory n=%d\n",n);
+				return -1;
+			}
+			
 			memcpy(l->s, old->u.value, n);
 			l->len = n;
 
-			LM_DBG("Saving [%.*s]\n", n, l->s);
 		}
 
 	}
@@ -122,32 +125,30 @@ void restore(void)
 	int len;
 	int i = 0;
 
-	idx--;
-	len = stack[idx].len;
-
-	LM_DBG("Restoring %d\n", len );
-
-	if( len > 0)
+	if (idx > 0)
 	{
-		for( i=0; i<len; i++)
+		idx--;
+		len = stack[idx].len;
+
+
+		if (len > 0)
 		{
-			str* l = &stack[idx].v[i];
-			struct lump * old = lumps[i]->after;
-			int n = l->len;
+			for (i = 0; i < len; i++)
+			{
+				str* l = &stack[idx].v[i];
+				struct lump * old = lumps[i]->after;
+				int n = l->len;
 
-			LM_DBG("Restoring [%.*s]to [%.*s]\n",old->len, old->u.value, n, l->s);
+				memcpy(old->u.value, l->s, n);
+				old->len = n;
 
-			memcpy(old->u.value, l->s, n);
-			old->len = n;
+				pkg_free(l->s);
 
-			pkg_free(l->s);
+			}
 
+			pkg_free(stack[idx].v);
 		}
-
-		pkg_free(stack[idx].v);
 	}
-
-	LM_DBG("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n");
 
 };
 
