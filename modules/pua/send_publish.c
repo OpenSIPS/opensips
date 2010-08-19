@@ -148,7 +148,6 @@ publ_info_t* construct_pending_publ(ua_pres_t* presentity)
 	publ_info_t* p;
 	publ_t* pending_publ;
 	int size;
-	str aux;
 
 	pending_publ = presentity->pending_publ;
 
@@ -266,6 +265,7 @@ void publ_cback_func(struct cell *t, int type, struct tmcb_params *ps)
 	if( ps->code>= 300 )
 	{
 		delete_htable(hash_index, local_index);
+		goto done;
 	}
 
 	if( parse_headers(msg,HDR_EOH_F, 0)==-1 )
@@ -287,8 +287,10 @@ void publ_cback_func(struct cell *t, int type, struct tmcb_params *ps)
 	LM_DBG("lexpire= %u\n", lexpire);
 
 	if(lexpire == 0)
+	{
 		delete_htable(hash_index, local_index);
-
+		goto done;
+	}
 	hdr = get_header_by_static_name( msg, "SIP-ETag");
 	if( hdr==NULL ) /* must find SIP-Etag header field in 200 OK msg*/
 	{
@@ -314,7 +316,8 @@ done:
 		run_pua_callbacks(presentity, msg);
 		presentity->cb_param = NULL;
 	}
-	if(presentity->pending_publ)
+	presentity->waiting_reply = 0;
+	while(presentity->pending_publ)
 	{
 		publ_t* pending_publ = presentity->pending_publ;
 		publ_info_t* publ = construct_pending_publ(presentity);
@@ -322,17 +325,20 @@ done:
 		{
 			LM_ERR("Failed to create publish record\n");
 			lock_release(&HashT->p_records[hash_index].lock);
-			return;
+			presentity->pending_publ = pending_publ->next;
+			shm_free(pending_publ);
+			continue;
 		}
 		LM_DBG("Found pending publish\n");
-		presentity->pending_publ = 0;
+		presentity->pending_publ  = 0;
+		presentity->waiting_reply = 1;
 		send_publish_int(presentity, publ, get_event(presentity->event),
 				presentity->hash_index);
 		pkg_free(publ);
+		presentity->pending_publ = pending_publ->next;
 		shm_free(pending_publ);
+		break;
 	}
-	else
-		presentity->waiting_reply = 0;
 
 	lock_release(&HashT->p_records[hash_index].lock);
 }
@@ -342,7 +348,7 @@ publ_t* build_pending_publ(publ_info_t* publ)
 	publ_t* p;
 	int size;
 
-	size = sizeof(publ_t) + (publ->body)?publ->body->len:0+
+	size = sizeof(publ_t) + ((publ->body)?publ->body->len:0) +
 		publ->content_type.len;
 	p = (publ_t*)shm_malloc(size);
 	if(p == NULL)
@@ -455,8 +461,8 @@ int send_publish_int(ua_pres_t* presentity, publ_info_t* publ, pua_event_t* ev,
 
 send_publish:
 
-	str_hdr = publ_build_hdr((publ->expires< 0)?3600:publ->expires, ev, &publ->content_type, 
-				etag.s?&etag:NULL, publ->extra_headers, (body)?1:0);
+	str_hdr = publ_build_hdr(((publ->expires< 0)?3600:publ->expires), ev, &publ->content_type, 
+				(etag.s?&etag:NULL), publ->extra_headers, ((body)?1:0));
 	if(str_hdr == NULL)
 	{
 		LM_ERR("while building extra_headers\n");
@@ -476,7 +482,7 @@ send_publish:
 			publ->pres_uri,							/* From */
 			str_hdr,								/* Optional headers */
 			body,									/* Message body */
-			(publ->outbound_proxy.s)?&publ->outbound_proxy:0,/*Outbound proxy*/
+			((publ->outbound_proxy.s)?&publ->outbound_proxy:0),/*Outbound proxy*/
 			publ_cback_func,						/* Callback function */
 			(void*)pres_id,								/* Callback parameter */
 			0
@@ -510,6 +516,7 @@ int send_publish( publ_info_t* publ )
 	ua_pres_t pres;
 	unsigned int hash_code;
 	pua_event_t* ev= NULL;
+	publ_t **last;
 
 	LM_DBG("pres_uri=%.*s\n", publ->pres_uri->len, publ->pres_uri->s );
 
@@ -546,10 +553,12 @@ int send_publish( publ_info_t* publ )
 	}
 	if(presentity && presentity->waiting_reply)
 	{
-		if(presentity->pending_publ)
-			shm_free(presentity->pending_publ);
-		presentity->pending_publ = build_pending_publ(publ);
-		if(presentity->pending_publ == NULL)
+		LM_DBG("Presentity is waiting for reply, queue this PUBLISH\n");
+		last = &presentity->pending_publ;
+		while (*last)
+			last = &((*last)->next);
+		*last = build_pending_publ(publ);
+		if(! *last)
 		{
 			LM_ERR("Failed to create pending publ record\n");
 			lock_release(&HashT->p_records[hash_code].lock);

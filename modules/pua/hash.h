@@ -69,6 +69,7 @@ typedef struct publ
 	str body;
 	int expires;
 	void* cb_param;
+	struct publ* next;
 }publ_t;
 
 typedef struct ua_pres{
