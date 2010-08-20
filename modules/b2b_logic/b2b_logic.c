@@ -997,7 +997,7 @@ void b2b_logic_dump(int no_lock)
 	int e2_type_col, e2_sid_col, e2_to_col, e2_from_col, e2_key_col;
 	int e3_type_col, e3_sid_col, e3_to_col, e3_from_col, e3_key_col;
 	int n_query_cols= 0;
-	int n_insert_cols;
+	int n_insert_cols, n_query_update;
 	int i;
 
 	if(b2bl_dbf.use_table(b2bl_db, &dbtable)< 0)
@@ -1011,10 +1011,6 @@ void b2b_logic_dump(int no_lock)
 	qvals[key_col].type                    = DB_STR;
 	qcols[scenario_col= n_query_cols++]    = &str_scenario_col;
 	qvals[scenario_col].type               = DB_STR;
-	qcols[sstate_col= n_query_cols++]      = &str_sstate_col;
-	qvals[sstate_col].type                 = DB_INT;
-	qcols[next_sstate_col= n_query_cols++] = &str_next_sstate_col;
-	qvals[next_sstate_col].type            = DB_INT;
 	qcols[sparam0_col= n_query_cols++]     = &str_sparam0_col;
 	qvals[sparam0_col].type                = DB_STR;
 	qcols[sparam1_col= n_query_cols++]     = &str_sparam1_col;
@@ -1027,6 +1023,11 @@ void b2b_logic_dump(int no_lock)
 	qvals[sparam4_col].type                = DB_STR;
 	qcols[sdp_col= n_query_cols++]         = &str_sdp_col;
 	qvals[sdp_col].type                    = DB_STR;
+	n_query_update                         = n_query_cols;
+	qcols[sstate_col= n_query_cols++]      = &str_sstate_col;
+	qvals[sstate_col].type                 = DB_INT;
+	qcols[next_sstate_col= n_query_cols++] = &str_next_sstate_col;
+	qvals[next_sstate_col].type            = DB_INT;
 	qcols[e1_type_col= n_query_cols++]     = &str_e1_type_col;
 	qvals[e1_type_col].type                = DB_INT;
 	qcols[e1_sid_col= n_query_cols++]      = &str_e1_sid_col;
@@ -1090,8 +1091,6 @@ void b2b_logic_dump(int no_lock)
 			{
 				if(tuple->scenario)
 					qvals[scenario_col].val.str_val  = tuple->scenario->id;
-				qvals[sstate_col].val.int_val        = tuple->scenario_state;
-				qvals[next_sstate_col].val.int_val   = tuple->next_scenario_state;
 				qvals[sparam0_col].val.str_val       = tuple->scenario_params[0];
 				qvals[sparam1_col].val.str_val       = tuple->scenario_params[1];
 				qvals[sparam2_col].val.str_val       = tuple->scenario_params[2];
@@ -1099,6 +1098,9 @@ void b2b_logic_dump(int no_lock)
 				qvals[sparam4_col].val.str_val       = tuple->scenario_params[4];
 				qvals[sdp_col].val.str_val           = tuple->sdp;
 			}
+
+			qvals[sstate_col].val.int_val        = tuple->scenario_state;
+			qvals[next_sstate_col].val.int_val   = tuple->next_scenario_state;
 			qvals[e1_type_col].val.int_val       = tuple->bridge_entities[0]->type;
 			qvals[e1_sid_col].val.str_val        = tuple->bridge_entities[0]->scenario_id;
 			qvals[e1_to_col].val.str_val         = tuple->bridge_entities[0]->to_uri;
@@ -1136,8 +1138,8 @@ void b2b_logic_dump(int no_lock)
 			else
 			{
 				/*do update */
-				if(b2bl_dbf.update(b2bl_db, qcols, 0, qvals, qcols+e1_type_col,
-					qvals+e1_type_col, 1, n_insert_cols - e1_type_col)< 0)
+				if(b2bl_dbf.update(b2bl_db, qcols, 0, qvals, qcols+n_query_update,
+					qvals+n_query_update, 1, n_insert_cols - n_query_update)< 0)
 				{
 					LM_ERR("Sql update failed\n");
 					if(!no_lock)

@@ -207,6 +207,9 @@ int b2b_parse_key(str* key, unsigned int* hash_index, unsigned int* local_index)
 	char* p;
 	str s;
 
+	if(!key || !key->s)
+		return -1;
+
 	if(strncmp(key->s, B2B_KEY_PREFIX, B2B_KEY_PREFIX_LEN) != 0 || 
 			key->len<( B2B_KEY_PREFIX_LEN +4) || key->s[B2B_KEY_PREFIX_LEN]!='.')
 	{
@@ -1916,6 +1919,7 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 						lock_release(&htable[hash_index].lock);
 						goto error;
 					}
+					dlg->tag[CALLEE_LEG] = leg->tag;
 					dlginfo.fromtag = to_tag;
 					dlginfo.callid = dlg->callid;
 					dlginfo.totag = dlg->tag[CALLER_LEG];

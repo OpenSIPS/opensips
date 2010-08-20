@@ -51,7 +51,7 @@
 static int mod_init(void);
 static void mod_destroy(void);
 static int child_init(int rank);
-int b2b_bind(b2b_api_t* api);
+int b2b_entities_bind(b2b_api_t* api);
 void b2b_entities_dump(int no_lock);
 int b2b_entities_restore(void);
 void b2be_db_update(unsigned int ticks, void* param);
@@ -107,8 +107,8 @@ struct tm_binds tmb;
 /** Exported functions */
 static cmd_export_t cmds[]=
 {
-	{"load_b2b",  (cmd_function)b2b_load_api,    1,  0,  0,  0},
-	{ 0,               0,                        0,  0,  0,  0}
+	{"load_b2b",  (cmd_function)b2b_entities_bind, 1,  0,  0,  0},
+	{ 0,               0,                          0,  0,  0,  0}
 };
 
 /** Exported parameters */
@@ -364,7 +364,7 @@ int b2b_restore_logic_info(enum b2b_entity_type type, str* key,
 	return 0;
 }
 
-int b2b_load_api(b2b_api_t* api)
+int b2b_entities_bind(b2b_api_t* api)
 {
 	if (!api)
 	{
@@ -414,7 +414,7 @@ void store_b2b_dlg(b2b_table htable, unsigned int hsize, int type, int no_lock)
 	qvals[tag1_col].type                  = DB_STR;
 	qcols[callid_col=n_query_cols++]      = &str_callid_col;
 	qvals[callid_col].type                = DB_STR;
-	n_query_update = n_query_cols;
+	n_query_update                        = n_query_cols;
 
 	qcols[ruri_col=n_query_cols++]        = &str_ruri_col;
 	qvals[ruri_col].type                  = DB_STR;
@@ -473,7 +473,7 @@ void store_b2b_dlg(b2b_table htable, unsigned int hsize, int type, int no_lock)
 			LM_DBG("state = %d\n", dlg->state);
 			if(dlg->state == B2B_EARLY || dlg->db_flag == NO_UPDATEDB_FLAG)
 			{
-				LM_DBG("Early state\n");
+				LM_DBG("Early state or no update state\n");
 				dlg = dlg->next;
 				continue;
 			}
@@ -779,7 +779,7 @@ int b2b_entities_restore(void)
 							(unsigned short) proto);
 				}
 			}
-
+			dlg.db_flag = INSERTDB_FLAG;
 			shm_dlg = b2b_dlg_copy(&dlg);
 			if(shm_dlg == NULL)
 			{
@@ -888,7 +888,6 @@ void b2b_db_delete(b2b_dlg_t* dlg, int type)
 	if(dlg->db_flag== INSERTDB_FLAG)
 		return;
 
-	LM_DBG("delete cid=[%.*s]\n", dlg->callid.len, dlg->callid.s);
 
 	memset(qvals, 0, 4* sizeof(db_val_t));
 
@@ -904,6 +903,9 @@ void b2b_db_delete(b2b_dlg_t* dlg, int type)
 	qcols[callid_col=n_query_cols++]      = &str_callid_col;
 	qvals[callid_col].type                = DB_STR;
 	qvals[callid_col].val.str_val         = dlg->callid;
+
+	LM_DBG("Deleted cid=[%.*s], local_index=[%d]\n",
+			dlg->callid.len, dlg->callid.s, dlg->id);
 
 	if(b2be_dbf.use_table(b2be_db, &dbtable)< 0)
 	{
