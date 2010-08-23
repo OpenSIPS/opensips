@@ -319,14 +319,6 @@ int bla_aggregate_state(str* old_body, str* new_body,
 	*allocated = 0;
 	*bla_update_publish = 0;
 
-	/* check if the old body has a dialog */
-	old_doc = xmlParseMemory(old_body->s, old_body->len);
-	if(old_doc== NULL)
-	{
-		LM_ERR("failed to parse old body xml document\n");
-		goto error;
-	}
-
 	new_doc = xmlParseMemory(new_body->s, new_body->len);
 	if(new_doc== NULL)
 	{
@@ -337,13 +329,18 @@ int bla_aggregate_state(str* old_body, str* new_body,
 	n_dlg_node  = xmlNodeGetChildByName(new_doc->children, "dialog");
 	if(n_dlg_node == NULL)
 	{
-		*allocated = 1;
 		LM_INFO("No dialog found in new body, so Notify with the old one\n");
-		xmlDocDumpMemory(old_doc,(xmlChar**)(void*)&fin_body->s,
-			&fin_body->len);
+		*new_body = *old_body;
 		xmlFreeDoc(new_doc);
-		xmlFreeDoc(old_doc);
 		return 0;
+	}
+
+	/* check if the old body has a dialog */
+	old_doc = xmlParseMemory(old_body->s, old_body->len);
+	if(old_doc== NULL)
+	{
+		LM_ERR("failed to parse old body xml document\n");
+		goto error;
 	}
 
 	/* if there are more dialog nodes-> check for one with state != terminated */
@@ -379,7 +376,7 @@ int bla_aggregate_state(str* old_body, str* new_body,
 	}
 	/* extract dialog information from the new body */
 	bla_extract_dlginfo(n_dlg_node, n_callid, n_fromtag, n_totag);
-	LM_INFO("Extracted callid, from_tag, to_tag");
+
 	/* change the remote target - don't let it pass contact on the other side */
 	remote_node = xmlNodeGetChildByName(n_dlg_node, "remote");
 	if(remote_node)
@@ -447,17 +444,19 @@ int bla_aggregate_state(str* old_body, str* new_body,
 		}
 		if(xmlStrcasecmp(state, (unsigned char*)"terminated")== 0)
 		{
-			*allocated = 1;
-			xmlDocDumpMemory(old_doc,(xmlChar**)(void*)&fin_body->s,
-				&fin_body->len);
+			if(*allocated)
+			{
+				xmlFree(new_body->s);
+				*allocated = 0;
+			}
+			*new_body = *old_body;
 		}
 		else
 		{
 			/* maybe I changed the target */
 			if(*allocated)
 			{
-				xmlDocDumpMemory(new_doc,(xmlChar**)(void*)&fin_body->s,
-					&fin_body->len);
+				*fin_body = *new_body;
 			}
 			*bla_update_publish = 1;
 		}
@@ -625,10 +624,12 @@ int bla_aggregate_state(str* old_body, str* new_body,
 		}
 		if(xmlStrcasecmp(state, (unsigned char*)"terminated")== 0)
 		{
-			*allocated = 1;
-			xmlDocDumpMemory(old_doc,(xmlChar**)(void*)&fin_body->s,
-				&fin_body->len);
-			xmlFree(state);
+			if(*allocated)
+			{
+				xmlFree(new_body->s);
+				*allocated = 0;
+			}
+			*new_body = *old_body;
 			goto done;
 		}
 	}
@@ -957,7 +958,11 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, str* body,
 
 			/* the meaning of the parameters
 				* bla_update_publish - if what is now in database should be changed 
-				* allocated - if fin_body has a pointer to an dynamic allocated memory */
+				* allocated -	if bla_update_publish
+				*					fin_body has a pointer to an dynamic allocated memory
+				*				else
+				*					notify_body has a pointer to an dynamic allocated memory
+				*	*/
 
 				if(bla_aggregate_state(&old_body, &notify_body, &bla_update_publish,
 							&allocated, &update_body) < 0)
@@ -1147,7 +1152,8 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, str* body,
 		{
 			pa_dbf.free_result(pa_db, result);
 			result= NULL;
-			LM_ERR("No E_Tag match\n");
+			LM_ERR("No E_Tag match [%.*s]\n", presentity->etag.len,
+					presentity->etag.s);
 			if (sigb.reply(msg, 412, &pu_412_rpl, 0) == -1)
 			{
 				LM_ERR("sending '412 Conditional request failed' reply\n");
@@ -1208,10 +1214,14 @@ done:
 	}
 	if(pres_uri.s)
 		pkg_free(pres_uri.s);
-	if(allocated && update_body.s)
-		xmlFree(update_body.s);
-	if(notify_body.s && (!body || notify_body.s != body->s))
-		xmlFree(notify_body.s);
+	if(allocated)
+	{
+		if(bla_update_publish && update_body.s)
+			xmlFree(update_body.s);
+		else
+		if(notify_body.s &&  (!body || notify_body.s != body->s))
+			xmlFree(notify_body.s);
+	}
 
 	return 0;
 
@@ -1228,10 +1238,14 @@ error:
 	}
 	if(pres_uri.s)
 		pkg_free(pres_uri.s);
-	if(allocated && update_body.s)
-		xmlFree(update_body.s);
-	if(notify_body.s && (!body || notify_body.s != body->s))
-		xmlFree(notify_body.s);
+	if(allocated)
+	{
+		if(bla_update_publish && update_body.s)
+			xmlFree(update_body.s);
+		else
+		if(notify_body.s &&  (!body || notify_body.s != body->s))
+			xmlFree(notify_body.s);
+	}
 	return -1;
 }
 

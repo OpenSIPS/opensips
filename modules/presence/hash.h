@@ -46,8 +46,8 @@ struct presentity;
 				goto error;\
 		} while(0)
 
-#define CONT_COPY_P(buf, dest, source)\
-	do{	dest= (str*)buf+ size;\
+#define CONT_COPY_P_x(buf, dest, source)\
+	do{	dest= (str*)((char*)buf+ size);\
 		size+= sizeof(str);\
 		dest->s = (char*)buf + size;\
 		memcpy(dest->s, source->s, source->len);\
