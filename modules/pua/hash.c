@@ -274,7 +274,9 @@ int find_htable(unsigned int hash_index, unsigned int local_index)
 	p = get_htable_safe(hash_index, local_index);
 	lock_release(&HashT->p_records[hash_index].lock);
 
-	return (p==0?0:1);
+	if(p == NULL)
+		return 0;
+	return 1;
 }
 
 ua_pres_t* new_ua_pres(publ_info_t* publ, str* tuple_id)

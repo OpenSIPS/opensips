@@ -183,6 +183,7 @@ publ_info_t* construct_pending_publ(ua_pres_t* presentity)
 		memcpy(p->body->s, pending_publ->body.s, pending_publ->body.len);
 		p->body->len = pending_publ->body.len;
 		size+= pending_publ->body.len;
+		LM_DBG("Copied body\n");
 	}
 
 	p->content_type.s = (char*)p + size;
@@ -201,7 +202,7 @@ publ_info_t* construct_pending_publ(ua_pres_t* presentity)
 	{
 		p->extra_headers = (str*)((char*)p + size);
 		size+= sizeof(str);
-		p->body->s = (char*)p + size;
+		p->extra_headers->s = (char*)p + size;
 		memcpy(p->extra_headers->s, presentity->extra_headers->s, presentity->extra_headers->len);
 		p->extra_headers->len = presentity->extra_headers->len;
 		size+= presentity->extra_headers->len;

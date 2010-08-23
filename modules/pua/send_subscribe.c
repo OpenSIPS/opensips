@@ -349,7 +349,7 @@ void subs_cback_func(struct cell *t, int cb_type, struct tmcb_params *ps)
 	{	/* if an error code and a stored dialog delete it and try to send 
 		   a subscription with type= INSERT_TYPE, else return*/	
 		
-		if(hentity->call_id.s != NULL)
+		if(!initial_request)
 		{
 			subs_info_t subs;
 
@@ -418,7 +418,7 @@ void subs_cback_func(struct cell *t, int cb_type, struct tmcb_params *ps)
 	}
 	contact = ((contact_body_t* )msg->contact->parsed)->contacts->uri;
 
-	if(hentity->call_id.s)
+	if(!initial_request)
 	{
 		/* do not delete the dialog - allow Notifies to be recognized as
 		 * inside a known dialog */
