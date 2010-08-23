@@ -62,18 +62,22 @@ void clean_hdr_field(struct hdr_field* hf)
 		switch(hf->type){
 		case HDR_VIA_T:
 			free_via_list(hf->parsed);
+			hf->parsed = NULL;
 			break;
 
 		case HDR_TO_T:
 			free_to(hf->parsed);
+			hf->parsed = NULL;
 			break;
 
 		case HDR_FROM_T:
 			free_to(hf->parsed);
+			hf->parsed = NULL;
 			break;
 
 		case HDR_CSEQ_T:
 			free_cseq(hf->parsed);
+			hf->parsed = NULL;
 			break;
 
 		case HDR_CALLID_T:
@@ -137,6 +141,7 @@ void clean_hdr_field(struct hdr_field* hf)
 
 		case HDR_ACCEPT_T:
 			pkg_free(hf->parsed);
+			hf->parsed = NULL;
 			break;
 
 		case HDR_ACCEPTLANGUAGE_T:
@@ -163,18 +168,22 @@ void clean_hdr_field(struct hdr_field* hf)
 
 		case HDR_DIVERSION_T:
 			free_to(hf->parsed);
+			hf->parsed = NULL;
 			break;
 
 		case HDR_RPID_T:
 			free_to(hf->parsed);
+			hf->parsed = NULL;
 			break;
 
 		case HDR_REFER_TO_T:
 			free_to(hf->parsed);
+			hf->parsed = NULL;
 			break;
 
 		case HDR_SESSION_EXPIRES_T:
 			free_session_expires((struct session_expires*)hf->parsed );
+			hf->parsed = NULL;
 			break;
 
 		case HDR_MIN_SE_T:
@@ -182,10 +191,12 @@ void clean_hdr_field(struct hdr_field* hf)
 
 		case HDR_PPI_T:
 			free_to(hf->parsed);
+			hf->parsed = NULL;
 			break;
 
 		case HDR_PAI_T:
 			free_to(hf->parsed);
+			hf->parsed = NULL;
 			break;
 
 		case HDR_PRIVACY_T:
