@@ -203,6 +203,7 @@ error:
 void b2bl_delete_entity(b2bl_entity_id_t* entity, b2bl_tuple_t* tuple)
 {
 	b2bl_entity_id_t* prev;
+	unsigned int i;
 	int found = 0;
 
 	LM_DBG("Delete entity = %p\n", entity);
@@ -239,10 +240,19 @@ void b2bl_delete_entity(b2bl_entity_id_t* entity, b2bl_tuple_t* tuple)
 
 	if(entity->dlginfo)
 		shm_free(entity->dlginfo);
+
+	if(entity->peer && entity->peer->peer==entity)
+		entity->peer->peer = NULL;
+
+	for(i = 0; i< 3; i++)
+		if(tuple->bridge_entities[i] == entity)
+			tuple->bridge_entities[i] = NULL;
+
+	LM_INFO("delete tuple [%.*s], entity [%.*s]\n",
+			tuple->key->len, tuple->key->s, entity->key.len, entity->key.s);
+
 	shm_free(entity);
 
-	/* for debuging */
-	LM_INFO("delete [%.*s]\n", tuple->key->len, tuple->key->s);
 	b2bl_print_clients_list(tuple);
 }
 
