@@ -122,6 +122,7 @@ unsigned int waiting_subs_daysno = 0;
 unsigned long waiting_subs_time = 3*24*3600;
 str bla_presentity_spec_param = {0, 0};
 pv_spec_t bla_presentity_spec;
+int fix_remote_target=1;
 
 static cmd_export_t cmds[]=
 {
@@ -151,6 +152,7 @@ static param_export_t params[]={
 	{ "waiting_subs_daysno",    INT_PARAM, &waiting_subs_daysno},
 	{ "mix_dialog_presence",    INT_PARAM, &mix_dialog_presence},
 	{ "bla_presentity_spec",    STR_PARAM, &bla_presentity_spec_param},
+	{ "bla_fix_remote_target",  INT_PARAM, &fix_remote_target},
 	{0,0,0}
 };
 

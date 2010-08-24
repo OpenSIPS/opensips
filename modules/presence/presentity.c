@@ -377,40 +377,43 @@ int bla_aggregate_state(str* old_body, str* new_body,
 	/* extract dialog information from the new body */
 	bla_extract_dlginfo(n_dlg_node, n_callid, n_fromtag, n_totag);
 
-	/* change the remote target - don't let it pass contact on the other side */
-	remote_node = xmlNodeGetChildByName(n_dlg_node, "remote");
-	if(remote_node)
+	if(fix_remote_target)
 	{
-		node = xmlNodeGetChildByName(remote_node, "target");
-		if(node)
+		/* change the remote target - don't let it pass contact on the other side */
+		remote_node = xmlNodeGetChildByName(n_dlg_node, "remote");
+		if(remote_node)
 		{
-			xmlUnlinkNode(node);
-			xmlFreeNode(node);
-			/* add another target node */
-			identity_node = xmlNodeGetChildByName(remote_node, "identity");
-			if(identity_node == NULL)
+			node = xmlNodeGetChildByName(remote_node, "target");
+			if(node)
 			{
-				LM_ERR("No remote identity node found\n");
-				goto error;
-			}
-			attr = xmlNodeGetContent(identity_node);
-			if(attr == NULL)
-			{
-				LM_ERR("No identity node content\n");
-				goto error;
-			}
-			node = xmlNewChild(remote_node, 0, (unsigned char*)"target", 0);
-			if(node == NULL)
-			{
-				LM_ERR("Failed to add new node target\n");
+				xmlUnlinkNode(node);
+				xmlFreeNode(node);
+				/* add another target node */
+				identity_node = xmlNodeGetChildByName(remote_node, "identity");
+				if(identity_node == NULL)
+				{
+					LM_ERR("No remote identity node found\n");
+					goto error;
+				}
+				attr = xmlNodeGetContent(identity_node);
+				if(attr == NULL)
+				{
+					LM_ERR("No identity node content\n");
+					goto error;
+				}
+				node = xmlNewChild(remote_node, 0, (unsigned char*)"target", 0);
+				if(node == NULL)
+				{
+					LM_ERR("Failed to add new node target\n");
+					xmlFree(attr);
+					goto error;
+				}
+				xmlNewProp(node, BAD_CAST "uri", attr);
 				xmlFree(attr);
-				goto error;
+				*allocated= 1;
+				xmlDocDumpMemory(new_doc,(xmlChar**)(void*)&new_body->s,
+						&new_body->len);
 			}
-			xmlNewProp(node, BAD_CAST "uri", attr);
-			xmlFree(attr);
-			*allocated= 1;
-			xmlDocDumpMemory(new_doc,(xmlChar**)(void*)&new_body->s,
-					&new_body->len);
 		}
 	}
 

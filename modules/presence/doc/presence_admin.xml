@@ -417,6 +417,35 @@ modparam("presence", "bla_presentity_spec", "$var(bla_pres)")
 		</example>
 	</section>
 
+	<section>
+		<title><varname>bla_fix_remote_target</varname> (int)</title>
+		<para>
+			Polycom has a bug in the bla implementation. It inserts the remote IP contact
+			in the Notify body and when a phone picks up a call put on hold by another
+			phone in the same BLA group, it sends an Invite directly to the remote IP.
+			OpenSIPS BLA server tries to prevent this by replacing the IP contact with the
+			domain, when this is possible.
+		</para>
+		<para>
+			In some cases(configurations) however this is not desirable, so this parameter
+			was introduced to disable this behaviour when needed.
+		</para>
+		<para>
+			<emphasis>Default value is <quote>1</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>bla_fix_remote_target</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("presence", "bla_fix_remote_target", 0)
+...
+	</programlisting>
+		</example>
+	</section>
+
+
+
 </section>
 
 <section>
