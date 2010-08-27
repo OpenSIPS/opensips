@@ -201,6 +201,9 @@ int b2b_parse_key(str* key, unsigned int* hash_index, unsigned int* local_index)
 	char* p;
 	str s;
 
+	if(!key || !key->s)
+		return -1;
+
 	if(strncmp(key->s, B2B_KEY_PREFIX, B2B_KEY_PREFIX_LEN) != 0 || 
 			key->len<( B2B_KEY_PREFIX_LEN +4) || key->s[B2B_KEY_PREFIX_LEN]!='.')
 	{
@@ -408,6 +411,7 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 	str to_tag;
 	str callid;
 	struct cell* tm_tran;
+	int ret;
 
 	/* check if a b2b request */
 	if (parse_headers(msg, HDR_EOH_F, 0) < 0)
@@ -522,7 +526,19 @@ search_dialog:
 		}
 		table = server_htable;
 		/* send 200 canceling */
-		tmb.t_newtran(msg);
+		ret = tmb.t_newtran(msg);
+		if(ret < 1)
+		{
+			if(ret== 0)
+			{
+				LM_DBG("It is a retransmission, drop\n");
+			}
+			else
+				LM_DBG("Error when creating tm transaction\n");
+			lock_release(&server_htable[hash_index].lock);
+			return 0;
+		}
+
 		if(tmb.t_reply(msg, 200, &reply_text) < 0)
 		{
 			LM_ERR("failed to send reply for CANCEL\n");
@@ -606,16 +622,20 @@ search_dialog:
 logic_notify:
 	if(method_value != METHOD_CANCEL)
 	{
-		tmb.t_newtran(msg);
-		tm_tran = tmb.t_gett();
-		if(tm_tran && tm_tran!=T_UNDEFINED && tm_tran->ref_count > 1) /* this request was already processed */
+		ret = tmb.t_newtran(msg);
+		if(ret < 1 && method_value != METHOD_ACK)
 		{
-			LM_DBG("This transaction is already in process ( probably a retransmission)\n");
-			tmb.unref_cell(tm_tran);
+			if(ret== 0)
+			{
+				LM_DBG("It is a retransmission, drop\n");
+			}
+			else
+				LM_DBG("Error when creating tm transaction\n");
 			lock_release(&table[hash_index].lock);
 			return 0;
 		}
 
+		tm_tran = tmb.t_gett();
 		if(method_value != METHOD_ACK)
 		{
 			if(dlg->uas_tran && dlg->uas_tran!=T_UNDEFINED)
@@ -925,6 +945,7 @@ int b2b_send_reply(enum b2b_entity_type et, str* b2b_key, int code, str* text,
 	str ehdr;
 	b2b_table table;
 	str totag, fromtag;
+	struct to_body *pto, TO;
 
 	if(et == B2B_SERVER)
 	{
@@ -1018,13 +1039,34 @@ int b2b_send_reply(enum b2b_entity_type et, str* b2b_key, int code, str* text,
 		lock_release(&table[hash_index].lock);
 		return 0;
 	}
-	
+
+	if(parse_headers(msg, HDR_EOH_F, 0) < 0)
+	{
+		LM_ERR("Failed to parse headers\n");
+		return 0;
+	}
+	if(msg->to->parsed != NULL)
+	{
+		pto = (struct to_body*)msg->to->parsed;
+	}
+	else
+	{
+		parse_to(msg->to->body.s,msg->to->body.s + msg->to->body.len + 1, &TO);
+		if(TO.error != PARSE_OK)
+		{
+			LM_ERR("'To' header NOT parsed\n");
+			return 0;
+		}
+		pto = &TO;
+	}
+
 	/* only for the server replies to the initial INVITE */
-	to_tag = &get_to(msg)->tag_value;
-	if(to_tag->s == NULL && to_tag->len == 0)
+	if(!pto || !pto->tag_value.s || !pto->tag_value.len)
 	{
 		to_tag = b2b_key;
 	}
+	else
+		to_tag = &pto->tag_value;
 
 	/* if sent reply for bye, delete the record */
 	if((tm_tran->method.len == BYE_LEN && strncmp(tm_tran->method.s, BYE, BYE_LEN) == 0) ||
@@ -1903,6 +1945,7 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 						lock_release(&htable[hash_index].lock);
 						goto error;
 					}
+					dlg->tag[CALLEE_LEG] = leg->tag;
 					dlginfo.fromtag = to_tag;
 					dlginfo.callid = dlg->callid;
 					dlginfo.totag = dlg->tag[CALLER_LEG];

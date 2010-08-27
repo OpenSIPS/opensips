@@ -65,13 +65,13 @@ static inline int load_b2b_api( struct b2b_api *b2b_api)
 {
 	load_b2b_f load_b2b;
 
-	/* import the SL auto-loading function */
+	/* import the b2b_entities auto-loading function */
 	if ( !(load_b2b=(load_b2b_f)find_export("load_b2b", 1, 0))) {
 		LM_ERR("can't import load_b2b\n");
 		return -1;
 	}
 
-	/* let the auto-loading function load all TM stuff */
+	/* let the auto-loading function load all B2B entities stuff */
 	return load_b2b( b2b_api );
 }
 

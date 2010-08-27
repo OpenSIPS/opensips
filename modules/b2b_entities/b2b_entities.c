@@ -48,7 +48,7 @@
 static int mod_init(void);
 static void mod_destroy(void);
 static int child_init(int rank);
-int b2b_bind(b2b_api_t* api);
+int b2b_entities_bind(b2b_api_t* api);
 
 /** Global variables */
 unsigned int server_hsize = 9;
@@ -67,8 +67,8 @@ struct tm_binds tmb;
 /** Exported functions */
 static cmd_export_t cmds[]=
 {
-	{"load_b2b",  (cmd_function)b2b_load_api,    1,  0,  0,  0},
-	{ 0,               0,                        0,  0,  0,  0}
+	{"load_b2b",  (cmd_function)b2b_entities_bind, 1,  0,  0,  0},
+	{ 0,               0,                          0,  0,  0,  0}
 };
 
 /** Exported parameters */
@@ -182,7 +182,7 @@ static void mod_destroy(void)
 	destroy_b2b_htables();
 }
 
-int b2b_load_api(b2b_api_t* api)
+int b2b_entities_bind(b2b_api_t* api)
 {
 	if (!api)
 	{
