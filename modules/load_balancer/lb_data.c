@@ -206,10 +206,10 @@ static int lb_set_resource_bitmask(struct lb_resource *res, unsigned int bit)
 		res->bitmap_size = size;
 	}
 	/* set the bit */
-	size = bit / (8*sizeof(&res->dst_bitmap));
+	size = bit / (8*sizeof(unsigned int));
 	LM_DBG("setting bit %u in unit %u , pos %d\n", bit, size,
-		bit % ((unsigned int)(8*sizeof(&res->dst_bitmap))));
-	res->dst_bitmap[size] |= 1<<( bit % (8*sizeof(&res->dst_bitmap)) );
+		bit % ((unsigned int)(8*sizeof(unsigned int))));
+	res->dst_bitmap[size] |= 1<<( bit % (8*sizeof(unsigned int)) );
 
 	return 0;
 }
