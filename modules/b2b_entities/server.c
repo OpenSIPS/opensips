@@ -54,7 +54,8 @@ str* server_new(struct sip_msg* msg, b2b_notify_t b2b_cback,
 {
 	b2b_dlg_t* dlg;
 	unsigned int hash_index;
-	static	str reason = {"Trying", 6};
+	static str reason = {"Trying", 6};
+	int ret;
 
 	/* create new entry in hash table */
 	dlg = b2b_new_dlg(msg, 0, param);
@@ -74,7 +75,17 @@ str* server_new(struct sip_msg* msg, b2b_notify_t b2b_cback,
 	dlg->uas_tran = tmb.t_gett();
 	if(dlg->uas_tran == NULL || dlg->uas_tran == T_UNDEFINED)
 	{
-		tmb.t_newtran(msg);
+		ret = tmb.t_newtran(msg);
+		if(ret < 1)
+		{
+			if(ret== 0)
+			{
+				LM_DBG("It is a retransmission, drop\n");
+			}
+			else
+				LM_DBG("Error when creating tm transaction\n");
+			goto error;
+		}
 		dlg->uas_tran = tmb.t_gett();
 	}
 	else
@@ -82,13 +93,17 @@ str* server_new(struct sip_msg* msg, b2b_notify_t b2b_cback,
 	
 	tmb.t_reply(msg, 100, &reason);
 	tmb.t_setkr(REQ_FWDED);
-	LM_DBG("****Server entity = %p\n", dlg);
+	LM_DBG("Server entity = %p\n", dlg);
 
 	/* add the record in hash table */
 	LM_DBG("Inserted record with callid= %.*s, tag= %.*s\n", dlg->callid.len, dlg->callid.s, 
 		dlg->tag[CALLER_LEG].len, dlg->tag[CALLER_LEG].s);
 	dlg->db_flag = INSERTDB_FLAG;
 	return b2b_htable_insert(server_htable, dlg, hash_index, B2B_SERVER);
+error:
+	if(dlg)
+		shm_free(dlg);
+	return 0;
 }
 
 
