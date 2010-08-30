@@ -172,7 +172,8 @@ error:
 		pkg_free(hdr_append2.s);
 
 	return -1;
-}	
+}
+
 presentity_t* new_presentity( str* domain,str* user,int expires, 
 		pres_ev_t* event, str* etag, str* sender)
 {
@@ -304,7 +305,7 @@ int bla_same_dialog(unsigned char* n_callid, unsigned char* n_fromtag, unsigned 
 }
 
 int bla_aggregate_state(str* old_body, str* new_body,
-		int* bla_update_publish, int* allocated, str* fin_body)
+		int* bla_update_publish, int* allocated,str* fin_body, int* send_notify)
 {
 	xmlDocPtr old_doc= NULL, new_doc= NULL;
 	xmlNodePtr dlg_node, n_dlg_node;
@@ -330,7 +331,7 @@ int bla_aggregate_state(str* old_body, str* new_body,
 	if(n_dlg_node == NULL)
 	{
 		LM_INFO("No dialog found in new body, so Notify with the old one\n");
-		*new_body = *old_body;
+		*send_notify = 0;
 		xmlFreeDoc(new_doc);
 		return 0;
 	}
@@ -807,6 +808,7 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, str* body,
 	int bla_update_publish= 1;
 	str update_body={0, 0}, notify_body={0, 0};
 	int allocated = 0;
+	int send_notify = 1;
 
 	*sent_reply= 0;
 	if(presentity->event->req_auth)
@@ -968,7 +970,7 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, str* body,
 				*	*/
 
 				if(bla_aggregate_state(&old_body, &notify_body, &bla_update_publish,
-							&allocated, &update_body) < 0)
+							&allocated, &update_body, &send_notify) < 0)
 				{
 					LM_ERR("Failed to aggregate bla state\n");
 					/* I should not update - but send 200 OK */
@@ -987,13 +989,15 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, str* body,
 					goto error;
 				}
 				*sent_reply= 1;
-				if( publ_notify(presentity, pres_uri, notify_body.s?&notify_body:0, &presentity->etag,
-							rules_doc, 0)< 0 )
+				if(send_notify)
 				{
-					LM_ERR("while sending notify\n");
-					goto error;
+					if( publ_notify(presentity, pres_uri, notify_body.s?&notify_body:0, &presentity->etag,
+							rules_doc, 0)< 0 )
+					{
+						LM_ERR("while sending notify\n");
+						goto error;
+					}
 				}
-				
 				if (pa_dbf.use_table(pa_db, &presentity_table) < 0) 
 				{
 					LM_ERR("unsuccessful sql use table\n");
@@ -1170,11 +1174,14 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, str* body,
 send_notify:
 
 	/* send notify with state information */
-	if (publ_notify(presentity, pres_uri, notify_body.s?&notify_body:0,
-				NULL, rules_doc, 0)<0)
+	if(send_notify)
 	{
-		LM_ERR("while sending Notify requests to watchers\n");
-		goto error;
+		if (publ_notify(presentity, pres_uri, notify_body.s?&notify_body:0,
+					NULL, rules_doc, 0)<0)
+		{
+			LM_ERR("while sending Notify requests to watchers\n");
+			goto error;
+		}
 	}
 
 	/* if event dialog -> send Notify for presence also */
