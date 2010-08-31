@@ -224,7 +224,7 @@ static int mod_init(void)
 
 		if (restore_mode==UAC_AUTO_RESTORE) {
 			/* we need the append_fromtag on in RR */
-			if (!uac_rrb.append_fromtag) {
+			if (!force_dialog && !uac_rrb.append_fromtag) {
 				LM_ERR("'append_fromtag' RR param is not enabled!"
 					" - required by AUTO restore mode\n");
 				goto error;
@@ -235,7 +235,7 @@ static int mod_init(void)
 			if (load_dlg_api(&dlg_api)!=0) {
 				if (force_dialog) {
 					LM_ERR("cannot force dialog. dialog module not loaded\n");
-					return -1;
+					goto error;
 				}
 				LM_DBG("failed to find dialog API - is dialog module loaded?\n");
 			}
