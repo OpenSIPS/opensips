@@ -823,6 +823,9 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 				str msg = str_init("OK");
 				b2b_api.send_reply(entity->type, &entity->key, 200, &msg, 0, 0,
 						entity->dlginfo);
+				if(entity->peer)
+					b2b_api.send_reply(entity->peer->type, &entity->key, 200, &msg, 0, 0,
+							entity->peer->dlginfo);
 			}
 			else
 			{
@@ -1270,6 +1273,7 @@ entity_search_done:
 	 * -> send reInvite or Invite to one of the parties */
 	if(old_entity)
 	{
+		str extra_headers={"Max-Forwards: 70\r\n", 18};
 		LM_DBG("Sent reInvite without a body to old entity\n");
 		tuple->bridge_entities[0]= bridge_entities[0];
 		tuple->bridge_entities[1]= bridge_entities[1];
@@ -1287,7 +1291,7 @@ entity_search_done:
 		}
 		/* TODO -> Do I need some other info here? */
 		b2b_api.send_request(old_entity->type, &old_entity->key, &method,
-				 0, 0, old_entity->dlginfo);
+				 &extra_headers, 0, old_entity->dlginfo);
 	}
 	else
 	{
