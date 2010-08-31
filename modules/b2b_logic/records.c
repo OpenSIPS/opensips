@@ -473,6 +473,8 @@ int b2b_extra_headers(struct sip_msg* msg, str* b2bl_key, str* extra_headers)
 		hdrs[hdrs_no++] = msg->session_expires;
 	if(msg->min_se)
 		hdrs[hdrs_no++] = msg->min_se;
+	if(msg->maxforwards)
+		hdrs[hdrs_no++] = msg->maxforwards;
 
 	require_hdr = get_header_by_static_name( msg, "Require");
 	if(require_hdr)

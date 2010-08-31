@@ -44,8 +44,8 @@
 
 #define b2b_peer(type) ((type+1)%2)
 
-#define HDR_LST_LEN    32
-#define HDR_DEFAULT_LEN   7
+#define HDR_LST_LEN       32
+#define HDR_DEFAULT_LEN   9
 
 extern b2b_api_t b2b_api;
 

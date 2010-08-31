@@ -1888,7 +1888,7 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 				{
 					str method={"PRACK", 5};
 					str extra_headers;
-					char buf[32];
+					char buf[128];
 					str rseq, cseq;
 
 					hdr = get_header_by_static_name( msg, "RSeq");
@@ -1902,8 +1902,8 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 					cseq = msg->cseq->body;
 					trim_trailing(&rseq);
 					trim_trailing(&cseq);
-					sprintf(buf, "RAck: %.*s %.*s\n", rseq.len, rseq.s,
-							cseq.len, cseq.s);
+					sprintf(buf, "Max-Forwards: 70\r\nRAck: %.*s %.*s\r\n",
+							rseq.len, rseq.s, cseq.len, cseq.s);
 					extra_headers.s = buf;
 					extra_headers.len = strlen(buf);
 					if(b2b_send_req(dlg, leg, &method, &extra_headers) < 0)
