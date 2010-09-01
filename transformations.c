@@ -1053,7 +1053,7 @@ int tr_eval_ip(struct sip_msg *msg, tr_param_t *tp,int subtype,
 				ip.len = 4;
 				ip.af = AF_INET;
 			}
-			else if (val->rs.len == AF_INET6)
+			else if (server->h_addrtype == AF_INET6)
 			{
 				memcpy(ip.u.addr,server->h_addr,16);
 				ip.len = 16;
