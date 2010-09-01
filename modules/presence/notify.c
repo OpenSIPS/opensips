@@ -1940,8 +1940,8 @@ jump_over_body:
 	if(cb_param == NULL)
 	{
 		LM_ERR("failed to duplicate cb_param in share memory\n");
-		goto error;	
-	}	
+		goto error;
+	}
 
 	result = tmb.t_request_within
 		(&met,              /* method*/
@@ -1956,7 +1956,7 @@ jump_over_body:
 	{
 		LM_ERR("tmb.t_request_within failed\n");
 		free_cbparam(cb_param);
-		goto error;	
+		goto error;
 	}
 
 	LM_INFO("NOTIFY %.*s via %.*s on behalf of %.*s for event %.*s\n",
