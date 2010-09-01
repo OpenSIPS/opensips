@@ -1337,8 +1337,8 @@ void update_db_subs(db_con_t *db,db_func_t dbf, shtable_t hash_table,
 {
 	static db_ps_t my_ps_delete = NULL;
 	static db_ps_t my_ps_update = NULL, my_ps_insert = NULL;
-	db_key_t query_cols[22], update_cols[7];
-	db_val_t query_vals[22], update_vals[7];
+	db_key_t query_cols[22], update_cols[8];
+	db_val_t query_vals[22], update_vals[8];
 	db_op_t update_ops[1];
 	subs_t* del_s;
 	int pres_uri_col, to_user_col, to_domain_col, from_user_col, from_domain_col,
@@ -1346,7 +1346,7 @@ void update_db_subs(db_con_t *db,db_func_t dbf, shtable_t hash_table,
 		local_cseq_col, remote_cseq_col, expires_col, record_route_col, 
 		contact_col, local_contact_col, version_col,socket_info_col,reason_col;
 	int u_expires_col, u_local_cseq_col, u_remote_cseq_col, u_version_col, 
-		u_reason_col, u_status_col; 
+		u_reason_col, u_status_col, u_contact_col;
 	int i;
 	subs_t* s= NULL, *prev_s= NULL;
 	int n_query_cols= 0, n_update_cols= 0;
@@ -1479,12 +1479,16 @@ void update_db_subs(db_con_t *db,db_func_t dbf, shtable_t hash_table,
 	update_vals[u_local_cseq_col].type = DB_INT;
 	update_vals[u_local_cseq_col].nul = 0;
 	n_update_cols++;
-	
+
+	update_cols[u_contact_col= n_update_cols]= &str_contact_col;
+	update_vals[u_contact_col].type = DB_STR;
+	update_vals[u_contact_col].nul = 0;
+	n_update_cols++;
+
 	update_cols[u_version_col= n_update_cols]= &str_version_col;
 	update_vals[u_version_col].type = DB_INT;
 	update_vals[u_version_col].nul = 0;
 	n_update_cols++;
-
 
 	if(db== NULL)
 	{
@@ -1509,7 +1513,7 @@ void update_db_subs(db_con_t *db,db_func_t dbf, shtable_t hash_table,
 	for(i=0; i<htable_size; i++) 
 	{
 		if(!no_lock)
-			lock_get(&hash_table[i].lock);	
+			lock_get(&hash_table[i].lock);
 
 		prev_s= hash_table[i].entries;
 		s= prev_s->next;
@@ -1545,7 +1549,7 @@ void update_db_subs(db_con_t *db,db_func_t dbf, shtable_t hash_table,
 				case NO_UPDATEDB_FLAG:
 				{
 					LM_DBG("NO_UPDATEDB_FLAG\n");
-					break;			  
+					break;
 				}
 				case UPDATEDB_FLAG:
 				{
@@ -1555,16 +1559,17 @@ void update_db_subs(db_con_t *db,db_func_t dbf, shtable_t hash_table,
 					query_vals[callid_col].val.str_val= s->callid;
 					query_vals[totag_col].val.str_val= s->to_tag;
 					query_vals[fromtag_col].val.str_val= s->from_tag;
-				
+
 					update_vals[u_expires_col].val.int_val= s->expires;
 					update_vals[u_local_cseq_col].val.int_val= s->local_cseq;
 					update_vals[u_remote_cseq_col].val.int_val= s->remote_cseq;
 					update_vals[u_version_col].val.int_val= s->version;
 					update_vals[u_status_col].val.int_val= s->status;
 					update_vals[u_reason_col].val.str_val= s->reason;
+					update_vals[u_contact_col].val.str_val= s->contact;
 
 					CON_PS_REFERENCE(db) = &my_ps_update;
-					if(dbf.update(db, query_cols, 0, query_vals, update_cols, 
+					if(dbf.update(db, query_cols, 0, query_vals, update_cols,
 								update_vals, n_query_update, n_update_cols)< 0)
 					{
 						LM_ERR("updating in database\n");
@@ -1604,7 +1609,7 @@ void update_db_subs(db_con_t *db,db_func_t dbf, shtable_t hash_table,
 						query_vals[socket_info_col].val.str_val.s = 0;
 						query_vals[socket_info_col].val.str_val.len = 0;
 					}
-				
+
 					CON_PS_REFERENCE(db) = &my_ps_insert;
 					if(dbf.insert(db,query_cols,query_vals,n_query_cols )<0)
 					{
