@@ -452,6 +452,19 @@ int bla_aggregate_state(str* old_body, str* new_body,
 	dlg_node = xmlNodeGetChildByName(old_doc->children, "dialog");
 	if(dlg_node == NULL) /* if no previous record of a dialog, the new body should be written */
 	{
+		state_node = xmlNodeGetChildByName(n_dlg_node, "state");
+		if(state_node == NULL) /* no state node found */
+		{
+			LM_ERR("No state node found in new body\n");
+			goto error;
+		}
+		state = xmlNodeGetContent(state_node);
+		if(state == NULL)
+		{
+			LM_ERR("No state defined for new body dialog\n");
+			goto error;
+		}
+
 		/* if the state in the new body is terminated - do not update */
 		if(xmlStrcasecmp(state, (unsigned char*)"terminated")== 0)
 		{
@@ -620,19 +633,6 @@ int bla_aggregate_state(str* old_body, str* new_body,
 
 	if(!dialog_found)
 	{
-		state_node = xmlNodeGetChildByName(n_dlg_node, "state");
-		if(state_node == NULL) /* no state node found */
-		{
-			LM_ERR("No state node found in new body\n");
-			goto error;
-		}
-		state = xmlNodeGetContent(state_node);
-		if(state == NULL)
-		{
-			LM_ERR("No state defined for new body dialog\n");
-			goto error;
-		}
-
 		/* if the new body has a dialog with state terminated - do not update */
 		state_node = xmlNodeGetChildByName(n_dlg_node, "state");
 		if(state_node == NULL) /* no state node found */
