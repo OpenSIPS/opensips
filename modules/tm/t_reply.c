@@ -382,7 +382,7 @@ static int _reply_light( struct cell *trans, char* buf, unsigned int len,
 				cb_s.s = buf;
 				cb_s.len = len;
 				set_extra_tmcb_params( &cb_s, &rb->dst);
-				run_trans_callbacks( TMCB_RESPONSE_PRE_OUT, trans,
+				run_trans_callbacks_locked( TMCB_RESPONSE_PRE_OUT, trans,
 					trans->uas.request, FAKED_REPLY, code);
 			}
 		}
@@ -408,7 +408,7 @@ static int _reply_light( struct cell *trans, char* buf, unsigned int len,
 		cb_s.s = buf;
 		cb_s.len = len;
 		set_extra_tmcb_params( &cb_s, &rb->dst);
-		run_trans_callbacks( TMCB_RESPONSE_OUT, trans,
+		run_trans_callbacks_locked( TMCB_RESPONSE_OUT, trans,
 			trans->uas.request, FAKED_REPLY, code);
 	}
 
@@ -1235,7 +1235,7 @@ enum rps relay_reply( struct cell *t, struct sip_msg *p_msg, int branch,
 			cb_s.s = buf;
 			cb_s.len = res_len;
 			set_extra_tmcb_params( &cb_s, &uas_rb->dst);
-			run_trans_callbacks( TMCB_RESPONSE_PRE_OUT, t, t->uas.request,
+			run_trans_callbacks_locked(TMCB_RESPONSE_PRE_OUT,t,t->uas.request,
 				relayed_msg, relayed_code);
 		}
 		SEND_PR_BUFFER( uas_rb, buf, res_len );
@@ -1246,7 +1246,7 @@ enum rps relay_reply( struct cell *t, struct sip_msg *p_msg, int branch,
 			cb_s.s = buf;
 			cb_s.len = res_len;
 			set_extra_tmcb_params( &cb_s, &uas_rb->dst);
-			run_trans_callbacks( TMCB_RESPONSE_OUT, t, t->uas.request,
+			run_trans_callbacks_locked( TMCB_RESPONSE_OUT, t, t->uas.request,
 				relayed_msg, relayed_code);
 		}
 		pkg_free( buf );
