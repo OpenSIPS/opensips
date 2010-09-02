@@ -229,6 +229,9 @@ void set_extra_tmcb_params(void *extra1, void *extra2);
 void run_trans_callbacks( int type , struct cell *trans,
 						struct sip_msg *req, struct sip_msg *rpl, int code );
 
+void run_trans_callbacks_locked( int type , struct cell *trans,
+						struct sip_msg *req, struct sip_msg *rpl, int code );
+
 /* run all REQUEST_IN callbacks */
 void run_reqin_callbacks( struct cell *trans, struct sip_msg *req, int code );
 

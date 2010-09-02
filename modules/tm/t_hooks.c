@@ -208,10 +208,6 @@ void run_trans_callbacks( int type , struct cell *trans,
 			cbp->callback( trans, type, &params );
 		}
 	}
-	/* SHM message cleanup */
-	if (type&(TMCB_RESPONSE_OUT|TMCB_RESPONSE_PRE_OUT) &&
-	trans->uas.request && trans->uas.request->msg_flags&FL_SHM_CLONE)
-		clean_msg_clone( trans->uas.request, trans->uas.request, trans->uas.end_request);
 	/* env cleanup */
 	set_avp_list( backup );
 	params.extra1 = params.extra2 = 0;
@@ -244,4 +240,25 @@ void run_reqin_callbacks( struct cell *trans, struct sip_msg *req, int code )
 	params.extra1 = params.extra2 = 0;
 	set_t(trans_backup);
 }
+
+
+void run_trans_callbacks_locked( int type , struct cell *trans,
+						struct sip_msg *req, struct sip_msg *rpl, int code )
+{
+	if (trans->tmcb_hl.first==0 || ((trans->tmcb_hl.reg_types)&type)==0 )
+		return;
+
+	LOCK_REPLIES(trans);
+
+	/* run callbacks */
+	run_trans_callbacks( type , trans, req, rpl, code );
+	/* SHM message cleanup */
+	if (trans->uas.request && trans->uas.request->msg_flags&FL_SHM_CLONE)
+		clean_msg_clone( trans->uas.request, trans->uas.request,
+			trans->uas.end_request);
+
+	UNLOCK_REPLIES(trans);
+}
+
+
 
