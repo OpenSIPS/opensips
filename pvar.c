@@ -2355,6 +2355,89 @@ error:
 	return -1;
 }
 
+int pv_set_dsturi_host(struct sip_msg* msg, pv_param_t *param,
+		int op, pv_value_t *val)
+{
+	struct action act;
+
+	if(msg==NULL || param==NULL || val==NULL)
+	{
+		LM_ERR("bad parameters\n");
+		return -1;
+	}
+
+	if(!(val->flags&PV_VAL_STR))
+	{
+		LM_ERR("str value required to set DST-URI hostname\n");
+		goto error;
+	}
+	
+	memset(&act, 0, sizeof(act));
+	act.elem[0].type = STR_ST;
+	act.elem[0].u.s = val->rs;
+	act.type = SET_DSTHOST_T;
+
+	if (do_action(&act, msg)<0)
+	{
+		LM_ERR("do action failed\n");
+		goto error;
+	}
+
+	return 0;
+error:
+	return -1;
+}
+
+int pv_set_dsturi_port(struct sip_msg* msg, pv_param_t *param,
+		int op, pv_value_t *val)
+{
+	struct action  act;
+
+	if(msg==NULL || param==NULL)
+	{
+		LM_ERR("bad parameters\n");
+		return -1;
+	}
+					
+	if(val == NULL)
+	{
+		memset(&act, 0, sizeof(act));
+		act.type = SET_DSTPORT_T;
+		act.elem[0].type = STR_ST;
+		act.elem[0].u.s.s = "";
+		act.elem[0].u.s.len = 0;
+		if (do_action(&act, msg)<0)
+		{
+			LM_ERR("do action failed)\n");
+			goto error;
+		}
+		return 0;
+	}
+
+	if(!(val->flags&PV_VAL_STR))
+	{
+		val->rs.s = int2str(val->ri, &val->rs.len);
+		val->flags |= PV_VAL_STR;
+	}
+	
+	memset(&act, 0, sizeof(act));
+	act.elem[0].type = STR_ST;
+	act.elem[0].u.s = val->rs;
+	act.type = SET_DSTPORT_T;
+	if (do_action(&act, msg)<0)
+	{
+		LM_ERR("do action failed\n");
+		goto error;
+	}
+
+	return 0;
+error:
+	return -1;
+}
+
+
+
+
 int pv_set_ruri_port(struct sip_msg* msg, pv_param_t *param,
 		int op, pv_value_t *val)
 {
@@ -2915,7 +2998,7 @@ static pv_export_t _pv_names_table[] = {
 		PVT_CONTENT_TYPE, pv_get_content_type, 0,
 		0, 0, 0, 0},
 	{{"dd", (sizeof("dd")-1)}, /* */
-		PVT_DSTURI_DOMAIN, pv_get_dsturi_attr, 0,
+		PVT_DSTURI_DOMAIN, pv_get_dsturi_attr, pv_set_dsturi_host,
 		0, 0, pv_init_iname, 1},
 	{{"di", (sizeof("di")-1)}, /* */
 		PVT_DIVERSION_URI, pv_get_diversion, 0,
@@ -2927,7 +3010,7 @@ static pv_export_t _pv_names_table[] = {
 		PVT_DIV_PRIVACY, pv_get_diversion, 0,
 		0, 0, pv_init_iname, 3},
 	{{"dp", (sizeof("dp")-1)}, /* */
-		PVT_DSTURI_PORT, pv_get_dsturi_attr, 0,
+		PVT_DSTURI_PORT, pv_get_dsturi_attr, pv_set_dsturi_port,
 		0, 0, pv_init_iname, 2},
 	{{"dP", (sizeof("dP")-1)}, /* */
 		PVT_DSTURI_PROTOCOL, pv_get_dsturi_attr, 0,
