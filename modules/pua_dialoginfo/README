@@ -59,7 +59,7 @@ Klaus Darilion
    1.4. Set caller_confirmed parameter
    1.5. Set presence_server parameter
    1.6. Set caller_spec_param parameter
-   1.7. Set caller_spec_param parameter
+   1.7. Set callee_spec_param parameter
    1.8. dialoginfo_set usage
 
 Chapter 1. Admin Guide
@@ -325,9 +325,9 @@ modparam("pua_dialoginfo", "caller_spec_param", "$avp(i:10)")
    string to set this pseudovariable to is the same as described
    in caller_spec_param section.
 
-   Example 1.7. Set caller_spec_param parameter
+   Example 1.7. Set callee_spec_param parameter
 ...
-modparam("pua_dialoginfo", "caller_spec_param", "$avp(i:10)")
+modparam("pua_dialoginfo", "callee_spec_param", "$avp(i:11)")
 ...
 
 1.4. Exported Functions
