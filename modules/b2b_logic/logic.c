@@ -1450,7 +1450,8 @@ int create_top_hiding_entities(struct sip_msg* msg, str* to_uri, str* from_uri)
 	LM_DBG("b2blogic_key = %.*s\n", b2bl_key->len, b2bl_key->s);
 
 	/* if it will not be confirmed -> delete */
-//	tuple->lifetime = 30 + get_ticks();
+	tuple->lifetime = 60 + get_ticks();
+
 	/* create new server */
 	server_id = b2b_api.server_new(msg, b2b_server_notify, b2bl_key);
 	if(server_id == NULL)
@@ -1867,6 +1868,7 @@ int b2b_process_scenario_init(b2b_scenario_t* scenario_struct,struct sip_msg* ms
 		LM_ERR("Failed to insert new scenario instance record\n");
 		goto error;
 	}
+	tuple->lifetime = 60 + get_ticks();
 
 	/* set the state of the scenario after the init section */
 	node = xmlNodeGetChildByName(scenario_struct->init_node, "state");

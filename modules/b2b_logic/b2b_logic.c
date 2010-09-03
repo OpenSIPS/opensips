@@ -87,6 +87,7 @@ static str default_headers[HDR_DEFAULT_LEN]=
    {"Max-Forwards", 12}
 };
 int use_init_sdp = 0;
+static unsigned int max_duration = 12*3600;
 
 static str db_url= {0, 0};
 static db_con_t *b2bl_db = NULL;
@@ -143,8 +144,9 @@ static param_export_t params[]=
 	{"extern_scenario", STR_PARAM|USE_FUNC_PARAM, (void*)load_extern_scenario},
 	{"custom_headers",  STR_PARAM,                &custom_headers.s          },
 	{"use_init_sdp",    INT_PARAM,                &use_init_sdp              },
-	{ "db_url",         STR_PARAM,                &db_url.s                  },
-	{ "dbtable",        STR_PARAM,                &dbtable.s                 },
+	{"db_url",          STR_PARAM,                &db_url.s                  },
+	{"dbtable",         STR_PARAM,                &dbtable.s                 },
+	{"max_duration",    INT_PARAM,                &max_duration              },
 	{0,                    0,                          0                     }
 };
 
@@ -336,7 +338,8 @@ void b2bl_clean(unsigned int ticks, void* param)
 		while(tuple)
 		{
 			tuple_next = tuple->next;
-			if(tuple->lifetime > 0 && tuple->lifetime < now )  /* if an expired dialog */
+			if((tuple->lifetime > 0 && tuple->lifetime < now)
+					|| ((now - tuple->insert_time) > max_duration))  /* if an expired dialog */
 			{
 				LM_INFO("Found an expired dialog. Send BYE in both sides and delete\n");
 				if(tuple->bridge_entities[0] && tuple->bridge_entities[1] && !tuple->to_del)
@@ -812,6 +815,7 @@ static struct mi_root* mi_trigger_scenario(struct mi_root* cmd, void* param)
 		LM_ERR("Failed to insert new scenario instance record\n");
 		return 0;
 	}
+	tuple->lifetime = 60 + get_ticks();
 
 	/* need to get the next action */
 	xml_node = xmlNodeGetChildByName(scenario_struct->init_node, "state");
@@ -1159,7 +1163,7 @@ next:
 	}
 }
 
-int b2bl_add_tuple(b2bl_tuple_t* tuple, str* params[])
+static int b2bl_add_tuple(b2bl_tuple_t* tuple, str* params[])
 {
 	b2bl_tuple_t* shm_tuple= NULL;
 	unsigned int hash_index, local_index;

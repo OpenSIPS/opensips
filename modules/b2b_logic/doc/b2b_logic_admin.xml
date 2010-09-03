@@ -237,6 +237,23 @@ modparam("b2b_logic", "update_period", 60)
 	</programlisting>
 		</example>
 	</section>
+	<section>
+		<title><varname>max_duration</varname> (int)</title>
+		<para>
+			The maximum duration of a call.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>12 * 3600 (12 hours)</quote>.</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>update_period</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("b2b_logic", "max_duration", 7200)
+...
+	</programlisting>
+		</example>
+	</section>
 
 	</section>
 

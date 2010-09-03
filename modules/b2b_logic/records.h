@@ -68,6 +68,7 @@ typedef struct b2bl_tuple
 	str* extra_headers;
 	struct b2bl_tuple* next;
 	struct b2bl_tuple* prev;
+	unsigned int insert_time;
 	unsigned int lifetime;
 	str sdp;
 	int db_flag;
