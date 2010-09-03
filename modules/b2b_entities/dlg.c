@@ -1214,6 +1214,15 @@ dlg_t* b2b_client_dlg(b2b_dlg_t* dlg)
 	return b2b_client_build_dlg(dlg, dlg->legs);
 }
 
+void free_tm_dlg(dlg_t* td)
+{
+	if(!td)
+		return;
+	if(td->route_set)
+		free_rr(&td->route_set);
+	pkg_free(td);
+}
+
 int b2b_send_indlg_req(b2b_dlg_t* dlg, enum b2b_entity_type et,
 		str* b2b_key, str* method, str* ehdr, str* body)
 {
@@ -1285,14 +1294,15 @@ int b2b_send_indlg_req(b2b_dlg_t* dlg, enum b2b_entity_type et,
 	if(result < 0)
 	{
 		LM_ERR("failed to send request [%.*s]\n", method->len, method->s);
-		pkg_free(td);
+		free_tm_dlg(td);
 		shm_free(b2b_key_shm);
 		return -1;
 	}
-	pkg_free(td);
+	free_tm_dlg(td);
 
 	return 0;
 }
+
 
 
 /*
@@ -1845,6 +1855,7 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 				dlg->next->prev = new_dlg;
 			
 			dlg->next= dlg->prev = NULL;
+			b2b_delete_legs(&dlg->legs);
 			shm_free(dlg);
 			dlg = new_dlg;
 		}

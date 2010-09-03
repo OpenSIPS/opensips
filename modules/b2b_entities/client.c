@@ -277,7 +277,7 @@ dlg_t* b2b_client_build_dlg(b2b_dlg_t* dlg, dlg_leg_t* leg)
 			LM_ERR("failed to parse record route body\n");
 			goto error;
 		}
-	}	
+	}
 	td->state= DLG_CONFIRMED ;
 	td->send_sock = leg->bind_addr;
 
