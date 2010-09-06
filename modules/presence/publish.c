@@ -83,7 +83,7 @@ void msg_presentity_clean(unsigned int ticks,void *param)
 		LM_ERR("in use_table\n");
 		return ;
 	}
-	
+
 	LM_DBG("cleaning expired presentity information\n");
 
 	db_keys[0] = &str_expires_col;
@@ -91,7 +91,7 @@ void msg_presentity_clean(unsigned int ticks,void *param)
 	db_vals[0].type = DB_INT;
 	db_vals[0].nul = 0;
 	db_vals[0].val.int_val = (int)time(NULL);
-		
+
 	result_cols[user_col= n_result_cols++] = &str_username_col;
 	result_cols[domain_col=n_result_cols++] = &str_domain_col;
 	result_cols[etag_col=n_result_cols++] = &str_etag_col;
@@ -112,7 +112,7 @@ void msg_presentity_clean(unsigned int ticks,void *param)
 
 	if(result && result->n<= 0)
 	{
-		pa_dbf.free_result(pa_db, result);	
+		pa_dbf.free_result(pa_db, result);
 		return;
 	}
 	LM_DBG("found n= %d expires messages\n",result->n);
@@ -152,7 +152,7 @@ void msg_presentity_clean(unsigned int ticks,void *param)
 		memset(pres, 0, size);
 		size= sizeof(presentity_t);
 		
-		pres->user.s= (char*)pres+ size;	
+		pres->user.s= (char*)pres+ size;
 		memcpy(pres->user.s, user.s, user.len);
 		pres->user.len= user.len;
 		size+= user.len;
@@ -166,7 +166,7 @@ void msg_presentity_clean(unsigned int ticks,void *param)
 		memcpy(pres->etag.s, etag.s, etag.len);
 		pres->etag.len= etag.len;
 		size+= etag.len;
-			
+
 		pres->event= contains_event(&event, &ev);
 		if(pres->event== NULL)
 		{
@@ -184,16 +184,7 @@ no_notify:
 			free_event_params(ev.params, PKG_MEM_TYPE);
 			goto error;
 		}
-
-		/* delete from hash table */
-		if(delete_phtable(&p[i].uri, ev.parsed)< 0)
-		{
-			LM_ERR("deleting from pres hash table\n");
-			free_event_params(ev.params, PKG_MEM_TYPE);
-			goto error;
-		}
 		free_event_params(ev.params, PKG_MEM_TYPE);
-
 	}
 	pa_dbf.free_result(pa_db, result);
 	result= NULL;
@@ -226,6 +217,13 @@ no_notify:
 			pkg_free(rules_doc);
 		}
 		rules_doc= NULL;
+		/* delete from hash table */
+		if(delete_phtable(&p[i].uri, ev.parsed)< 0)
+		{
+			LM_ERR("deleting from pres hash table\n");
+			free_event_params(ev.params, PKG_MEM_TYPE);
+			goto error;
+		}
 	}
 
 	if (pa_dbf.use_table(pa_db, &presentity_table) < 0) 

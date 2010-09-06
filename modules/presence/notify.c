@@ -1037,7 +1037,7 @@ str* get_p_notify_body(str pres_uri, pres_ev_t* event, str* etag,
 			if(event->agg_nbody)
 			{
 				/* broken - it will not work with pidf manipulation */
-				if(body_cnt == 0 && mix_dialog_presence && event->evp->parsed == EVENT_PRESENCE)
+				if(body_cnt == 0 && (mix_dialog_presence||notify_offline_body) && event->evp->parsed == EVENT_PRESENCE)
 				{
 					local_dialog_body = build_offline_presence(&pres_uri);
 					if(local_dialog_body == NULL)
@@ -1072,7 +1072,7 @@ str* get_p_notify_body(str pres_uri, pres_ev_t* event, str* etag,
 		if(event->agg_nbody)
 		{
 			/* broken - it will not work with pidf manipulation */
-			if(body_cnt == 0 && mix_dialog_presence && event->evp->parsed == EVENT_PRESENCE)
+			if(body_cnt == 0 && (mix_dialog_presence||notify_offline_body) && event->evp->parsed == EVENT_PRESENCE)
 			{
 				local_dialog_body = build_offline_presence(&pres_uri);
 				if(local_dialog_body == NULL)
@@ -1835,7 +1835,8 @@ int send_notify_request(subs_t* subs, subs_t * watcher_subs,
 	c_back_param *cb_param= NULL;
 	str* final_body= NULL;
 
-	LM_DBG("dialog info:\n");
+	LM_DBG("enter: have_body=%d force_null=%d dialog info:\n",
+	  (n_body!=0&&n_body->s!=0)?1:0, force_null_body);
 	printf_subs(subs);
 
 	/* getting the status of the subscription */
