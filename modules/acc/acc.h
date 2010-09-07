@@ -95,7 +95,7 @@ int  store_db_extra_values(struct dlg_cell *dlg, struct sip_msg *req,
 
 int  init_acc_aaa(char* aaa_proto_url, int srv_type);
 int  acc_aaa_request( struct sip_msg *req, struct sip_msg *rpl);
-int  acc_aaa_cdrs_request(struct dlg_cell *dlg, struct sip_msg *req);
+int  acc_aaa_cdrs_request(struct dlg_cell *dlg);
 int  store_aaa_extra_values(struct dlg_cell *dlg, struct sip_msg *req,
 		struct sip_msg *reply);
 

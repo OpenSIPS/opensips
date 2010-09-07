@@ -468,7 +468,7 @@ static void acc_dlg_callback(struct dlg_cell *dlg, int type,
 		}
 	}
 
-	if ((flags & aaa_flag) && acc_aaa_cdrs_request(dlg, _params->msg) < 0) {
+	if ((flags & aaa_flag) && acc_aaa_cdrs_request(dlg) < 0) {
 		LM_ERR("Cannot create radius accounting\n");
 		return;
 	}

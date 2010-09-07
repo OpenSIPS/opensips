@@ -773,7 +773,7 @@ error:
 	return -1;
 }
 
-int acc_aaa_cdrs_request( struct dlg_cell *dlg, struct sip_msg *req)
+int acc_aaa_cdrs_request( struct dlg_cell *dlg)
 {
 	aaa_message *send = NULL;
 	int offset, i, j, av_type;
@@ -797,7 +797,7 @@ int acc_aaa_cdrs_request( struct dlg_cell *dlg, struct sip_msg *req)
 		goto error;
 	}
 
-	r_stat = aaa_status( req, acc_env.code); /* AAA PROTOCOL status */
+	r_stat = &rd_vals[RV_STATUS_STOP]; /* AAA PROTOCOL status */
 	ADD_AAA_AVPAIR(RA_ACCT_STATUS_TYPE,&(r_stat->value),-1);
 
 	av_type = rd_vals[RV_SIP_SESSION].value; /* session*/
