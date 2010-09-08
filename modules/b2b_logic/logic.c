@@ -2073,10 +2073,8 @@ error2:
 	xmlFree(type);
 error1:
 	xmlFree(entity_sid.s);
-	
+
 error:
-	if(b2bl_key)
-		shm_free(b2bl_key);
 	if(tuple)
 	{
 		b2bl_delete(tuple, hash_index, 0);
