@@ -2033,8 +2033,6 @@ error1:
 	xmlFree(entity_sid.s);
 	
 error:
-	if(b2bl_key)
-		shm_free(b2bl_key);
 	if(tuple)
 		lock_release(&b2bl_htable[hash_index].lock);
 	return -1;
