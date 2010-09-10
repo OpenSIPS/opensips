@@ -474,7 +474,7 @@ int form_result(var_str buff, db_res_t** r)
 	while( cur < end )
 	{
 
-		next = next_state[ state ][ (int)*cur ];
+		next = next_state[ state ][ (int)((unsigned char)*cur) ];
 		consume = 1;
 
 		if( state == OUT )
@@ -554,7 +554,7 @@ int form_result(var_str buff, db_res_t** r)
 	{
 		
 
-		next = next_state[ state ][ (int)*cur ];
+		next = next_state[ state ][ (int)((unsigned char)*cur) ];
 		consume =  1;
 		if( state == OUT )
 		{
