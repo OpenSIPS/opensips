@@ -697,7 +697,7 @@ str* offline_nbody(str* body)
 		LM_ERR("while copying root node\n");
 		goto error;
 	}
-    xmlDocSetRootElement(new_doc, root_node);
+	xmlDocSetRootElement(new_doc, root_node);
 
 	tuple_node= xmlCopyNode(tuple_node, 2);
 	if(tuple_node== NULL)

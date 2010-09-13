@@ -465,7 +465,7 @@ int handle_publish(struct sip_msg* msg, char* sender_uri, char* str2)
 	/* call event specific handling function*/
 	if(event->evs_publ_handl)
 	{
-		if(event->evs_publ_handl(msg)< 0)
+		if(event->evs_publ_handl(msg, &sent_reply)< 0)
 		{
 			LM_ERR("in event specific publish handling\n");
 			reply_code = 500;
