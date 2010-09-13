@@ -1280,7 +1280,7 @@ do_srv:
 		LM_WARN("domain name too long (%d),"
 			" unable to perform SRV lookup\n", name->len);
 		/* set defaults */
-		*port = (is_sips)?SIPS_PORT:SIP_PORT;
+		if (port) *port = (is_sips)?SIPS_PORT:SIP_PORT;
 		goto do_a;
 	}
 
@@ -1325,7 +1325,7 @@ do_srv:
 	LM_DBG("no valid SRV record found for %s, trying A record lookup...\n",
 		tmp);
 	/* set default port */
-	*port = (is_sips||((*proto)==PROTO_TLS))?SIPS_PORT:SIP_PORT;
+	if (port) *port = (is_sips||((*proto)==PROTO_TLS))?SIPS_PORT:SIP_PORT;
 
 do_a:
 	/* do A record lookup */
