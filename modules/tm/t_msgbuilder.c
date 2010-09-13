@@ -808,7 +808,7 @@ static inline char* print_from(char* w, dlg_t* dialog, struct cell* t)
 	append_string(w, FROM, FROM_LEN);
 
 	if(dialog->loc_dname.len) {
-		t->from.len += dialog->loc_dname.len;
+		t->from.len += dialog->loc_dname.len + 1;
 		append_string(w, dialog->loc_dname.s, dialog->loc_dname.len);
 		*(w++) = ' ';
 	}
