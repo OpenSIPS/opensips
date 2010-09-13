@@ -259,11 +259,6 @@ static void fake_reply(struct cell *t, int branch, int code )
 		reply_status=relay_reply( t, FAKED_REPLY, branch, code,
 			&cancel_bitmap );
 	}
-	/* now when out-of-lock do the cancel I/O */
-	if (do_cancel_branch) cancel_branch(t, branch );
-	/* it's cleaned up on error; if no error occurred and transaction
-	   completed regularly, I have to clean-up myself
-	*/
 }
 
 
@@ -290,11 +285,12 @@ inline static void retransmission_handler( struct timer_link *retr_tl )
 		|| r_buf->activ_type==TYPE_REQUEST ) {
 			LM_DBG("retransmission_handler : request resending"
 				" (t=%p, %.9s ... )\n", r_buf->my_T, r_buf->buffer.s);
-			if (SEND_BUFFER( r_buf )==-1) {
+			SEND_BUFFER( r_buf );
+			/*if (SEND_BUFFER( r_buf )==-1) {
 				reset_timer( &r_buf->fr_timer );
 				fake_reply(r_buf->my_T, r_buf->branch, 503 );
 				return;
-			}
+			}*/
 	} else {
 			LM_DBG("retransmission_handler : reply resending "
 				"(t=%p, %.9s ... )\n", r_buf->my_T, r_buf->buffer.s);
@@ -359,9 +355,12 @@ inline static void final_response_handler( struct timer_link *fr_tl )
 		return;
 	};
 
+	/* out-of-lock do the cancel I/O */
+	if (is_invite(t) && should_cancel_branch(t, r_buf->branch) )
+		cancel_branch(t, r_buf->branch );
 	/* lock reply processing to determine how to proceed reliably */
 	LOCK_REPLIES( t );
-	LM_DBG("stop retr. and send CANCEL (%p)\n", t);
+	LM_DBG("Cancel sent out, sending 408 (%p)\n", t);
 	fake_reply(t, r_buf->branch, 408 );
 
 	LM_DBG("done\n");
