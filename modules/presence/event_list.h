@@ -41,7 +41,7 @@ struct subscription;
 
 typedef int (apply_auth_t)(str* , struct subscription*, str** );
 
-typedef int (publ_handling_t)(struct sip_msg*);
+typedef int (publ_handling_t)(struct sip_msg*, int* sent_event);
 
 typedef int (subs_handling_t)(struct sip_msg*);
 

@@ -52,9 +52,10 @@ inline char *eat_printable(char *at, char *over)
 /*
  * event specific publish handling - check if body format is ok
  */
-int mwi_publ_handl(struct sip_msg* msg)
+int mwi_publ_handl(struct sip_msg* msg, int *sent_reply)
 {	
-    str body;
+    return 1;
+	str body;
     char *at, *over;
 
     if (get_content_length(msg) == 0)

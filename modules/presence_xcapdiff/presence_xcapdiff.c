@@ -57,12 +57,11 @@ struct module_exports exports= {
 
 
 int
-xcapdiff_process_body(publ_info_t *publ, str **fin_body, int ver, str **tuple)
+xcapdiff_process_body(publ_info_t *publ, str **fin_body, int ver, str *tuple)
 {
     *fin_body = publ->body;
     return 0;
 }
-
 
 static int
 mod_init(void)

@@ -43,6 +43,50 @@
 
 static str pu_415_rpl  = str_init("Unsupported media type");
 
+/*
+ * in event specific publish handling - only check is good body format
+ */
+int	xml_publ_handl(struct sip_msg* msg, int* sent_reply)
+{	
+	str body= {0, 0};
+	xmlDocPtr doc= NULL;
+
+	*sent_reply= 0;
+	if ( get_content_length(msg) == 0 )
+		return 1;
+	
+	body.s=get_body(msg);
+	if (body.s== NULL) 
+	{
+		LM_ERR("cannot extract body from msg\n");
+		goto error;
+	}
+	/* content-length (if present) must be already parsed */
+
+	body.len = get_content_length( msg );
+	doc= xmlParseMemory( body.s, body.len );
+	if(doc== NULL)
+	{
+		LM_ERR("bad body format\n");
+		if( xml_sigb.reply( msg, 415, &pu_415_rpl, 0)== -1)
+		{
+			LM_ERR("while sending '415 Unsupported media type' reply\n");
+		}
+		*sent_reply = 1;
+		goto error;
+	}
+	xmlFreeDoc(doc);
+	xmlCleanupParser();
+	xmlMemoryDump();
+	return 1;
+
+error:
+	xmlFreeDoc(doc);
+	xmlCleanupParser();
+	xmlMemoryDump();
+	return -1;
+
+}	
 int xml_add_events(void)
 {
 	pres_ev_t event;
@@ -68,7 +112,7 @@ int xml_add_events(void)
 	{
 		LM_ERR("while adding event presence\n");
 		return -1;
-	}		
+	}
 
 	/* constructing presence.winfo event */
 	memset(&event, 0, sizeof(pres_ev_t));
@@ -107,45 +151,4 @@ int xml_add_events(void)
 	
 	return 0;
 }
-/*
- * in event specific publish handling - only check is good body format
- */
-int	xml_publ_handl(struct sip_msg* msg)
-{	
-	str body= {0, 0};
-	xmlDocPtr doc= NULL;
 
-	if ( get_content_length(msg) == 0 )
-		return 1;
-	
-	body.s=get_body(msg);
-	if (body.s== NULL) 
-	{
-		LM_ERR("cannot extract body from msg\n");
-		goto error;
-	}
-	/* content-length (if present) must be already parsed */
-
-	body.len = get_content_length( msg );
-	doc= xmlParseMemory( body.s, body.len );
-	if(doc== NULL)
-	{
-		LM_ERR("bad body format\n");
-		if( xml_sigb.reply( msg, 415, &pu_415_rpl, 0)== -1)
-		{
-			LM_ERR("while sending '415 Unsupported media type' reply\n");
-		}
-		goto error;
-	}
-	xmlFreeDoc(doc);
-	xmlCleanupParser();
-	xmlMemoryDump();
-	return 1;
-
-error:
-	xmlFreeDoc(doc);
-	xmlCleanupParser();
-	xmlMemoryDump();
-	return -1;
-
-}	
