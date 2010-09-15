@@ -465,7 +465,7 @@ static int load_fixup(void** param, int param_no)
 		if (table[rules_num].rules) {
 			LM_DBG("file (%s) parsed\n", pathname);
 		} else {
-			LM_WARN("file (%s) not found => empty rule set\n", pathname);
+			LM_INFO("file (%s) not found => empty rule set\n", pathname);
 		}
 		*param = (void*)(long)rules_num;
 		if (param_no == 2) rules_num++;
@@ -616,7 +616,7 @@ static int mod_init(void)
 	if (allow[0].rules) {
 		LM_DBG("default allow file (%s) parsed\n", allow[0].filename);
 	} else {
-		LM_WARN("default allow file (%s) not found => empty rule set\n",
+		LM_INFO("default allow file (%s) not found => empty rule set\n",
 			allow[0].filename);
 	}
 
@@ -626,7 +626,7 @@ static int mod_init(void)
 	if (deny[0].rules) {
 		LM_DBG("default deny file (%s) parsed\n", deny[0].filename);
 	} else {
-		LM_WARN("default deny file (%s) not found => empty rule set\n",
+		LM_INFO("default deny file (%s) not found => empty rule set\n",
 			deny[0].filename);
 	}
 
