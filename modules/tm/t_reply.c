@@ -382,8 +382,12 @@ static int _reply_light( struct cell *trans, char* buf, unsigned int len,
 				cb_s.s = buf;
 				cb_s.len = len;
 				set_extra_tmcb_params( &cb_s, &rb->dst);
-				run_trans_callbacks_locked( TMCB_RESPONSE_PRE_OUT, trans,
-					trans->uas.request, FAKED_REPLY, code);
+				if (lock)
+					run_trans_callbacks_locked( TMCB_RESPONSE_PRE_OUT, trans,
+						trans->uas.request, FAKED_REPLY, code);
+				else
+					run_trans_callbacks( TMCB_RESPONSE_PRE_OUT, trans,
+						trans->uas.request, FAKED_REPLY, code);
 			}
 		}
 
