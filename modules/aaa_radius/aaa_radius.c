@@ -328,7 +328,7 @@ int send_auth_func(struct sip_msg* msg, str* s1, str* s2) {
 		return -1;
 	}
 
-	if (rc_auth(rh, SIP_PORT, send, &recv, mess) < 0) {
+	if (rc_auth(rh, SIP_PORT, send, &recv, mess) != OK_RC) {
 		LM_ERR("radius authentication message failed to send\n");
 		goto error;
 	}
