@@ -145,11 +145,19 @@ db_charset_test
 minfo "creating database $1 ..."
 
 # Users: opensips is the regular user, opensipsro only for reading
-sql_query "" "create database $1 character set $CHARSET;
+sql_query "" "create database $1 character set $CHARSET;"
+    
+if [ "$DBROOTUSER" != "$DBRWUSER" ] ; then
+sql_query "" "
 	GRANT ALL PRIVILEGES ON $1.* TO '$DBRWUSER' IDENTIFIED  BY '$DBRWPW';
 	GRANT ALL PRIVILEGES ON $1.* TO '${DBRWUSER}'@'$DBHOST' IDENTIFIED BY '$DBRWPW';
+"
+fi
+if [ "$DBROOTUSER" != "$DBROUSER" ] ; then
+sql_query "" "
 	GRANT SELECT ON $1.* TO '$DBROUSER' IDENTIFIED BY '$DBROPW';
 	GRANT SELECT ON $1.* TO '${DBROUSER}'@'$DBHOST' IDENTIFIED BY '$DBROPW';"
+fi
 
 
 if [ $? -ne 0 ] ; then
