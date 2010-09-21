@@ -484,6 +484,9 @@ int xmpp_server_child_process(int data_pipe)
 
 		rv = select(FD_SETSIZE, &fdset, NULL, NULL, NULL);
 		if (rv < 0) {
+			if (errno == EINTR) {
+				continue;
+			}
 			LM_ERR("select() failed: %s\n", strerror(errno));
 		} else if (!rv) {
 			/* timeout */
