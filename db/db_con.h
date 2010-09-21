@@ -40,7 +40,7 @@
 typedef struct {
 	const str* table;   /**< Default table that should be used        */
 	db_ps_t* curr_ps;   /**< Prepared statement to be used for next query */
-	unsigned long tail; /**< Variable length tail, database module specific */
+	unsigned long tail; /**< Hook to implementation-specific database state */
 } db_con_t;
 
 
