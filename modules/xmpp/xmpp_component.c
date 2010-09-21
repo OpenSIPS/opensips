@@ -212,8 +212,11 @@ int xmpp_component_child_process(int data_pipe)
 			FD_SET(fd, &fdset);
 			maxfd = fd > data_pipe ? fd : data_pipe;
 			rv = select(maxfd + 1, &fdset, NULL, NULL, NULL);
-			
+
 			if (rv < 0) {
+				if (errno == EINTR) {
+					continue;
+				}
 				LM_ERR("select() failed: %s\n", strerror(errno));
 			} else if (!rv) {
 				/* timeout */
