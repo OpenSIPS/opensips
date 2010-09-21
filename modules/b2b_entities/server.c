@@ -88,9 +88,8 @@ str* server_new(struct sip_msg* msg, b2b_notify_t b2b_cback,
 		}
 		dlg->uas_tran = tmb.t_gett();
 	}
-	else
-		tmb.ref_cell(dlg->uas_tran);
-	
+	tmb.ref_cell(dlg->uas_tran);
+
 	tmb.t_reply(msg, 100, &reason);
 	tmb.t_setkr(REQ_FWDED);
 	LM_DBG("Server entity = %p\n", dlg);

@@ -535,6 +535,7 @@ search_dialog:
 			if(ret== 0)
 			{
 				LM_DBG("It is a retransmission, drop\n");
+				tmb.unref_cell(tmb.t_gett());
 			}
 			else
 				LM_DBG("Error when creating tm transaction\n");
@@ -622,6 +623,13 @@ search_dialog:
 			msg->first_line.u.request.method.len,
 			msg->first_line.u.request.method.s,  dlg);
 
+	if(method_value == METHOD_ACK && dlg->state == B2B_ESTABLISHED)
+	{
+		LM_DBG("It is a ACK retransmission, drop\n");
+		lock_release(&table[hash_index].lock);
+		return 0;
+	}
+
 logic_notify:
 	if(method_value != METHOD_CANCEL)
 	{
@@ -631,6 +639,7 @@ logic_notify:
 			if(ret== 0)
 			{
 				LM_DBG("It is a retransmission, drop\n");
+				tmb.unref_cell(tmb.t_gett());
 			}
 			else
 				LM_DBG("Error when creating tm transaction\n");
@@ -657,6 +666,14 @@ logic_notify:
 				tmb.unref_cell(dlg->uas_tran);
 			}
 			dlg->uas_tran = tm_tran;
+		}
+		else
+		{
+			if(!tm_tran || tm_tran==T_UNDEFINED)
+				tm_tran = tmb.t_get_e2eackt();
+
+			if(tm_tran && tm_tran!=T_UNDEFINED)
+				tmb.unref_cell(tm_tran);
 		}
 
 		if(method_value == METHOD_INVITE) /* send provisional reply 100 Trying */
@@ -999,13 +1016,6 @@ int b2b_send_reply(enum b2b_entity_type et, str* b2b_key, int code, str* text,
 		return -1;
 	}
 
-	if(dlg->state==B2B_CONFIRMED || dlg->state==B2B_ESTABLISHED)
-	{
-		LM_DBG("A retransmission of the reply\n");
-		lock_release(&table[hash_index].lock);
-		return 0;
-	}
-
 	LM_DBG("Send reply [%d], for dialog[%p]\n", code, dlg);
 	if(dlg->callid.s == NULL)
 	{
@@ -1015,17 +1025,6 @@ int b2b_send_reply(enum b2b_entity_type et, str* b2b_key, int code, str* text,
 	}
 
 	tm_tran = dlg->uas_tran;
-	if(code >= 200)
-	{
-		if(code < 300)
-			dlg->state = B2B_CONFIRMED;
-		else
-			dlg->state= B2B_TERMINATED;
-		LM_DBG("Reseted transaction- send final reply [%p]\n", dlg);
-		dlg->uas_tran = NULL;
-		UPDATE_DBFLAG(dlg, dlg->db_flag);
-	}
-
 	if(tm_tran == NULL)
 	{
 		LM_DBG("code = %d, last_method= %d\n", code, dlg->last_method);
@@ -1038,6 +1037,25 @@ int b2b_send_reply(enum b2b_entity_type et, str* b2b_key, int code, str* text,
 		LM_ERR("Tm transaction not saved!\n");
 		lock_release(&table[hash_index].lock);
 		return -1;
+	}
+
+	if((tm_tran->method.len == INVITE_LEN && strncmp(tm_tran->method.s, INVITE, INVITE_LEN)==0)
+			&& (dlg->state==B2B_CONFIRMED || dlg->state==B2B_ESTABLISHED))
+	{
+		LM_DBG("A retransmission of the reply\n");
+		lock_release(&table[hash_index].lock);
+		return 0;
+	}
+
+	if(code >= 200)
+	{
+		if(code < 300)
+			dlg->state = B2B_CONFIRMED;
+		else
+			dlg->state= B2B_TERMINATED;
+		LM_DBG("Reseted transaction- send final reply [%p]\n", dlg);
+		dlg->uas_tran = NULL;
+		UPDATE_DBFLAG(dlg, dlg->db_flag);
 	}
 
 	msg = tm_tran->uas.request;
@@ -1125,6 +1143,10 @@ int b2b_send_reply(enum b2b_entity_type et, str* b2b_key, int code, str* text,
 	{
 		LM_DBG("Sent reply [%d] and unreffed the cell %p\n", code, tm_tran);
 		tmb.unref_cell(tm_tran);
+	}
+	else
+	{
+		LM_DBG("code not >= 200\n");
 	}
 	return 0;
 

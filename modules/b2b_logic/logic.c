@@ -137,6 +137,7 @@ int b2b_add_dlginfo(str* key, str* entity_key, int src, b2b_dlginfo_t* dlginfo)
 	lock_release(&b2bl_htable[hash_index].lock);
 	return 0;
 }
+
 int msg_add_dlginfo(b2bl_entity_id_t* entity, struct sip_msg* msg, str* totag)
 {
 	str callid, fromtag;
@@ -565,7 +566,7 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 				LM_ERR("Failed to generate new client\n");
 				return -1;
 			}
-			shm_free(tuple->bridge_entities[2]);
+			b2bl_delete_entity(tuple->bridge_entities[2], tuple);
 			b2bl_add_client_list(tuple, entity);
 			/* original destination connected in the second step */
 			tuple->bridge_entities[2]= entity;
@@ -787,15 +788,17 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 				b2bl_delete(tuple, hash_index, 0);
 				goto done;
 			}
-			if(statuscode >= 300)
+			if(method.len == INVITE_LEN &&
+						strncmp(method.s, INVITE, INVITE_LEN)==0)
 			{
-				LM_DBG("Negative reply [%d] - delete[%p]\n", statuscode, tuple);
-				b2b_mark_todel(tuple);
-			}
-			else
-			if(statuscode >= 200 && statuscode < 300)
-			{
-				entity->state = DLG_CONFIRMED;
+				if(statuscode >= 300)
+				{
+					LM_DBG("Negative reply [%d] - delete[%p]\n", statuscode, tuple);
+					b2b_mark_todel(tuple);
+				}
+				else
+				if(statuscode >= 200 && statuscode < 300)
+					entity->state = DLG_CONFIRMED;
 			}
 		}
 	}

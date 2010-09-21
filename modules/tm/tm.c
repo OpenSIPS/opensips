@@ -570,6 +570,7 @@ int load_tm( struct tm_binds *tmb)
 	tmb->t_get_trans_ident = t_get_trans_ident;
 	tmb->t_lookup_ident = t_lookup_ident;
 	tmb->t_gett = get_t;
+	tmb->t_get_e2eackt = get_e2eack_t;
 	tmb->t_get_picked = t_get_picked_branch;
 
 	tmb->t_lookup_original_t = t_lookupOriginalT;
