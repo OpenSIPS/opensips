@@ -890,6 +890,9 @@ static struct mi_root* mi_b2b_bridge(struct mi_root* cmd, void* param)
 
 	/* new destination- must be a valid SIP URI */
 	node = node->next;
+	if(node == NULL)
+		return 0;
+	
 	new_dest = node->value;
 	if(new_dest.s == NULL || new_dest.len == 0)
 	{
