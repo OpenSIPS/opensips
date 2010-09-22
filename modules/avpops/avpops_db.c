@@ -416,7 +416,10 @@ int db_query_avp(struct db_url *url, struct sip_msg *msg, char *query,
 	
 	if(url->dbf.raw_query( url->hdl, &query_str, &db_res)!=0)
 	{
-		LM_ERR("cannot do the query\n");
+		const str *t = url->hdl&&url->hdl->table&&url->hdl->table->s
+			? url->hdl->table : 0;
+		LM_ERR("raw_query failed: db%d(%.*s) %.40s...\n", 
+		  url->idx, t?t->len:0, t?t->s:"", query);
 		return -1;
 	}
 
