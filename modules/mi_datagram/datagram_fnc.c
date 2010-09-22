@@ -59,10 +59,19 @@
 int flags;
 static char *mi_buf = 0;
 
-static union {
+typedef union {
 	struct sockaddr_un un;
 	struct sockaddr_in in;
-} reply_addr;
+} reply_addr_t;
+
+
+typedef struct{
+	reply_addr_t address;
+	int address_len;
+	int tx_sock;
+}my_socket_address;
+
+static reply_addr_t reply_addr;
 static unsigned int reply_addr_len;
 
 /* Timeout for sending replies in milliseconds */
@@ -379,7 +388,7 @@ err:
 
 
 static inline struct mi_handler* build_async_handler(unsigned int sock_domain,
-								struct sockaddr *reply_addr, 
+								reply_addr_t *reply_addr,
 								unsigned int reply_addr_len, int tx_sock)
 {
 	struct mi_handler *hdl;
@@ -397,24 +406,7 @@ static inline struct mi_handler* build_async_handler(unsigned int sock_domain,
 	p = (void *)((hdl) + 1);
 	repl_address = p;
 
-	switch(sock_domain) {
-		/*we can have either of these types of sockets*/
-		case AF_LOCAL:	LM_DBG("we have an unix socket\n");
-						memcpy(&repl_address->address.unix_deb, 
-								reply_addr, reply_addr_len);
-						break;
-		case AF_INET:	LM_DBG("we have an IPv4 socket\n");
-						memcpy(&repl_address->address.inet_v4, 
-								reply_addr, reply_addr_len);
-						break;
-		case AF_INET6:	LM_DBG("we have an IPv6 socket\n");
-						memcpy(&repl_address->address.inet_v6, 
-								reply_addr, reply_addr_len);
-						break;
-		default:		LM_CRIT("socket_domain has an incorrect value\n");
-						shm_free(hdl);
-						return 0;
-	}
+	memcpy( &repl_address->address, reply_addr, sizeof(reply_addr_t));
 
 	repl_address->address_len  = reply_addr_len;
 	repl_address->tx_sock = tx_sock;
@@ -493,7 +485,7 @@ void mi_datagram_server(int rx_sock, int tx_sock)
 		/* if asyncron cmd, build the async handler */
 		if (f->flags&MI_ASYNC_RPL_FLAG) {
 			hdl = build_async_handler(mi_socket_domain,
-					(struct sockaddr* )&reply_addr, reply_addr_len, tx_sock);
+					&reply_addr, reply_addr_len, tx_sock);
 			if (hdl==0) {
 				LM_ERR("failed to build async handler\n");
 				mi_send_dgram(tx_sock, MI_INTERNAL_ERROR,

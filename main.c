@@ -681,14 +681,14 @@ static int main_loop(void)
 		if (do_suid(uid, gid)==-1)
 			goto error;
 
-		/* we need another process to act as the timer*/
-		if (start_timer_processes()!=0) {
-			LM_CRIT("cannot start timer process(es)\n");
+		if (start_module_procs()!=0) {
+			LM_ERR("failed to fork module processes\n");
 			goto error;
 		}
 
-		if (start_module_procs()!=0) {
-			LM_ERR("failed to fork module processes\n");
+		/* we need another process to act as the timer*/
+		if (start_timer_processes()!=0) {
+			LM_CRIT("cannot start timer process(es)\n");
 			goto error;
 		}
 
@@ -778,6 +778,11 @@ static int main_loop(void)
 		 * so we open all first*/
 		if (do_suid(uid, gid)==-1) goto error; /* try to drop privileges */
 
+		if (start_module_procs()!=0) {
+			LM_ERR("failed to fork module processes\n");
+			goto error;
+		}
+
 		if(startup_rlist.a) {/* if a startup route was defined */
 			startup_done = (int*)shm_malloc(sizeof(int));
 			if(startup_done == NULL)
@@ -866,11 +871,6 @@ static int main_loop(void)
 	/* fork for the timer process*/
 	if (start_timer_processes()!=0) {
 		LM_CRIT("cannot start timer process(es)\n");
-		goto error;
-	}
-
-	if (start_module_procs()!=0) {
-		LM_ERR("failed to fork module processes\n");
 		goto error;
 	}
 

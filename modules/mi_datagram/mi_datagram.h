@@ -51,20 +51,6 @@ typedef union{
 	union sockaddr_union udp_addr;
 	struct sockaddr_un   unix_addr;
 }sockaddr_dtgram;
-/*union because we support 3 types of sockaddr : 
-	UNIX, IPv4 and IPv6*/
-
-typedef union{
-		struct sockaddr_un unix_deb;
-		struct sockaddr_in inet_v4;
-		struct sockaddr_in6 inet_v6;
-}my_sock_address;
-
-typedef struct{
-	my_sock_address address;
-	int address_len;
-	int tx_sock;
-}my_socket_address;
 
 
 #endif /* _MI_DATAGRAM */
