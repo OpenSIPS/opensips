@@ -585,13 +585,6 @@ rtpproxy_offer();
           + c - flags to change the session-level SDP connection
             (c=) IP if media-description also includes connection
             information.
-          + s - flags to swap creation with confirmation between
-            requests and replies. By default, a request creates
-            the RTP session and a reply confirms it. If swapped, a
-            reply will create the RTP session and a request will
-            confirm it. The flag is considered depreciated and
-            provided for the compatibility purposes. Use
-            rtpproxy_offer() or rtpproxy_answer() instead.
           + w - flags that for the UA from which message is
             received, support symmetric RTP must be forced.
           + zNN - requests the RTPproxy to perform
