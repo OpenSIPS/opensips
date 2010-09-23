@@ -95,18 +95,18 @@
 	</para>
 	<para>
 		The selection of the set is done from script prior using 
-		[un]force_rtp_proxy(), rtpproxy_offer() or rtpproxy_answer()
+		unforce_rtp_proxy(), rtpproxy_offer() or rtpproxy_answer()
 		functions - see the set_rtp_proxy_set() function.
 	</para>
 	<para>
 		For backward compatibility reasons, a set with no id take by default 
 		the id 0. Also if no set is explicitly set before 
-		[un]force_rtp_proxy(), rtpproxy_offer() or rtpproxy_answer()
+		unforce_rtp_proxy(), rtpproxy_offer() or rtpproxy_answer()
 		the 0 id set will be used.
 	</para>
 	<para>
 		IMPORTANT: if you use nultiple sets, take care and use the same set for
-		both force_ and unforce_rtpproxy()!!
+		both rtpproxy_offer()/rtpproxy_answer() and unforce_rtpproxy()!!
 	</para>
 	</section>
 
@@ -689,7 +689,7 @@ if (search("User-Agent: Cisco ATA.*") {fix_nated_sdp("3");};
 		</title>
 		<para>
 		Sets the Id of the rtpproxy set to be used for the next 
-		[un]force_rtp_proxy(), rtpproxy_offer() or rtpproxy_answer()
+		unforce_rtp_proxy(), rtpproxy_offer() or rtpproxy_answer()
 		command.
 		</para>
 		<para>
@@ -705,25 +705,23 @@ if (search("User-Agent: Cisco ATA.*") {fix_nated_sdp("3");};
 		<programlisting format="linespecific">
 ...
 set_rtp_proxy_set("2");
-force_rtp_proxy();
+rtpproxy_offer();
 ...
 </programlisting>
 		</example>
 	</section>
-	<section>
-		<title>
-		<function moreinfo="none">force_rtp_proxy([flags [, ip_address]])</function>
-		</title>
-		<para>
-		Rewrites &sdp; body to ensure that media is passed through 
-		an &rtp; proxy. It can have optional parameters to force additional
-		features. If ip_address is provided, it will be used to replace the
-		one in SDP.
-		</para>
-		<para>
-		The function is considered depreciated and provided for the compatibility
-		purposes.  Use rtpproxy_offer() or rtpproxy_answer() instead.
-		</para>
+		<section>
+				<title>
+				<function moreinfo="none">engage_rtp_proxy([flags [, ip_address]])</function>
+				</title>
+
+				<para>
+                Rewrites &sdp; body to ensure that media is passed through
+				an &rtp; proxy. It uses the dialog module facilities to keep track
+				when the rtpproxy session must be updated. Function must only be
+				called for the initial INVITE
+				and internally takes care of rewriting the body of 200 OKs and ACKs.
+				</para>
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
@@ -804,35 +802,6 @@ force_rtp_proxy();
 		<emphasis>ip_address</emphasis> - new SDP IP address.
 		</para></listitem>
 		</itemizedlist>
-		<para>
-		This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
-		FAILURE_ROUTE, BRANCH_ROUTE.
-		</para>
-		<example>
-		<title><function>force_rtp_proxy</function> usage</title>
-		<programlisting format="linespecific">
-...
-if (search("User-Agent: Cisco ATA.*") {force_rtp_proxy();};
-if (src_ip=1.2.3.4) {force_rtp_proxy("i");};
-if (search("User-Agent: Cisco ATA.*") {force_rtp_proxy("","1.2.3.4");};
-...
-</programlisting>
-		</example>
-	</section>
-		<section>
-				<title>
-				<function moreinfo="none">engage_rtp_proxy([flags [, ip_address]])</function>
-				</title>
-
-				<para>
-                Rewrites &sdp; body to ensure that media is passed through
-				an &rtp; proxy. More advanced version of force_rtp_proxy(), that uses the
-				dialog module facilities. Function must only be called for the initial INVITE
-				and internally takes care of rewriting the body of 200 OKs and ACKs.
-				</para>
-				<para>Meaning of the function's arguments are the same as in the case of the
-					force_rtp_proxy functions
-				</para>
 				<para>
 				This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, BRANCH_ROUTE.
 				</para>
@@ -853,12 +822,12 @@ if (search("User-Agent: Cisco ATA.*") {force_rtp_proxy("","1.2.3.4");};
                 </title>
                 <para>
                 Rewrites &sdp; body to ensure that media is passed through
-                an &rtp; proxy. Equivalent of force_rtp_proxy() function to be invoked
+                an &rtp; proxy. To be invoked
 		on INVITE for the cases the SDPs are in INVITE and 200 OK and on 200 OK
 		when SDPs are in 200 OK and ACK.
                 </para>
                 <para>
-		See force_rtp_proxy() function description above for the meaning of the
+		See engage_rtp_proxy() function description above for the meaning of the
 		parameters.
 		</para>
 		<para>
@@ -907,12 +876,12 @@ onreply_route[2]
                 </title>
 		<para>
 		Rewrites &sdp; body to ensure that media is passed through
-		an &rtp; proxy. Equivalent of force_rtp_proxy() function to be invoked
+		an &rtp; proxy. To be invoked
 		on 200 OK for the cases the SDPs are in INVITE and 200 OK and on ACK
 		when SDPs are in 200 OK and ACK.
 		</para>
 		<para>
-		See force_rtp_proxy() function description above for the meaning of the
+		See engage_rtp_proxy() function description above for the meaning of the
 		parameters.
 		</para>
 		<para>
@@ -920,6 +889,7 @@ onreply_route[2]
 		FAILURE_ROUTE, BRANCH_ROUTE.
 		</para>
 		<example>
+		<title><function>rtpproxy_answer</function> usage</title>
 		<para>
 		See rtpproxy_offer() function example above for example.
 		</para>
@@ -969,9 +939,8 @@ unforce_rtp_proxy();
 	<para>
 	    In order to work correctly, functions require that the session in the
 	    RTPproxy already exists. Also those functions don't alted SDP, so that
-	    they are not substitute for calling <function>rtpproxy_offer</function>,
-	    <function>rtpproxy_answer</function> or
-	    <function>force_rtp_proxy</function>.
+	    they are not substitute for calling <function>rtpproxy_offer</function>
+	    or <function>rtpproxy_answer</function>.
 	</para>
 	<para>
 	    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE.

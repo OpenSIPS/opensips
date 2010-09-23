@@ -159,6 +159,9 @@
  *             session in the RTP proxy (Carsten Bock - ported from SER)
  * 2007-09-11 Separate timer process and support for multiple timer processes
  *             (bogdan)
+ * 2010-09-23 Remove force-rt-proxy funxtion
+ *             - obsolete by rtpproxy_offer/rtpproxy_answer
+ *            (osas)
  */
 
 #include <sys/types.h>
@@ -297,9 +300,6 @@ static int alter_mediaip(struct sip_msg *, str *, str *, int, str *, int, int);
 static char *gencookie();
 static int rtpp_test(struct rtpp_node*, int, int);
 static int unforce_rtp_proxy_f(struct sip_msg *, char *, char *);
-static int force_rtp_proxy0_f(struct sip_msg *, char *, char *);
-static int force_rtp_proxy1_f(struct sip_msg *, char *, char *);
-static int force_rtp_proxy2_f(struct sip_msg *, char *, char *);
 static int engage_rtp_proxy0_f(struct sip_msg *, char *, char *);
 static int engage_rtp_proxy1_f(struct sip_msg *, char *, char *);
 static int engage_rtp_proxy2_f(struct sip_msg *, char *, char *);
@@ -447,15 +447,6 @@ static cmd_export_t cmds[] = {
 		fixup_set_id, 0,
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"unforce_rtp_proxy",  (cmd_function)unforce_rtp_proxy_f,    0,
-		0, 0,
-		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"force_rtp_proxy",    (cmd_function)force_rtp_proxy0_f,     0,
-		0, 0,
-		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"force_rtp_proxy",    (cmd_function)force_rtp_proxy1_f,     1,
-		0, 0,
-		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"force_rtp_proxy",    (cmd_function)force_rtp_proxy2_f,     2,
 		0, 0,
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"engage_rtp_proxy",    (cmd_function)engage_rtp_proxy0_f,     0,
@@ -2850,22 +2841,6 @@ rtpproxy_answer2_f(struct sip_msg *msg, char *param1, char *param2)
 	return force_rtp_proxy(msg, param1, param2, 0);
 }
 
-static int
-force_rtp_proxy2_f(struct sip_msg *msg, char *param1, char *param2)
-{
-	int offer;
-
-	if (msg->first_line.type == SIP_REQUEST) {
-		offer = 1;
-	} else if (msg->first_line.type == SIP_REPLY) {
-		offer = 0;
-	} else {
-		return -1;
-	}
-
-	return force_rtp_proxy(msg, param1, param2, offer);
-}
-
 static void engage_callback(struct dlg_cell *dlg, int type,
 		struct dlg_cb_params *_params)
 {
@@ -3701,25 +3676,6 @@ error:
 	FORCE_RTP_PROXY_RET (-1);
 }
 
-static int
-force_rtp_proxy1_f(struct sip_msg* msg, char* str1, char* str2)
-{
-	char *cp;
-	char newip[IP_ADDR_MAX_STR_SIZE];
-
-	cp = ip_addr2a(&msg->rcv.dst_ip);
-	strcpy(newip, cp);
-
-	return force_rtp_proxy2_f(msg, str1, newip);
-}
-
-static int
-force_rtp_proxy0_f(struct sip_msg* msg, char* str1, char* str2)
-{
-	char arg[1] = {'\0'};
-
-	return force_rtp_proxy1_f(msg, arg, NULL);
-}
 
 static int engage_rtp_proxy1_f(struct sip_msg* msg,char* str1,char* str2)
 {
