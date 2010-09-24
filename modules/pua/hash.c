@@ -37,6 +37,7 @@
 #include "hash.h" 
 #include "pua.h"
 #include "send_publish.h"
+#include "../presence/hash.h"
 
 /* database colums */
 static str str_pres_uri_col = str_init("pres_uri");
@@ -57,8 +58,6 @@ void print_ua_pres(ua_pres_t* p)
 		LM_DBG("\tcall_id= %.*s   len= %d\n", p->call_id.len, p->call_id.s, p->call_id.len);
 		LM_DBG("\tfrom_tag= %.*s   len= %d\n", p->from_tag.len, p->from_tag.s, p->from_tag.len);
 		LM_DBG("\tto_tag= %.*s  len= %d\n", p->to_tag.len, p->to_tag.s, p->to_tag.len);
-		LM_DBG("\tflag= %d\n", p->flag);
-		LM_DBG("\tevent= %d\n", p->event);
 	}	
 	else
 	{
@@ -66,7 +65,12 @@ void print_ua_pres(ua_pres_t* p)
 		if(p->id.s)
 			LM_DBG("\tid= %.*s\n", p->id.len, p->id.s);
 	}
-	LM_DBG("\texpires= %d\n", p->expires- (int)time(NULL));
+	LM_DBG("\tflag= %d\n", p->flag);
+	LM_DBG("\tevent= %d\n", p->event);
+	if(p->expires > (int)time(NULL))
+		LM_DBG("\texpires= %d\n", p->expires- (int)time(NULL));
+	else
+		LM_DBG("\texpires= %d\n", p->expires);
 }
 
 htable_t* new_htable(void)
@@ -86,7 +90,7 @@ htable_t* new_htable(void)
 	if(H->p_records== NULL)
 	{
 		LM_ERR("No more share memory\n");
-		goto error;		
+		goto error;
 	}
 
 	for(i=0; i<HASH_SIZE; i++)
@@ -194,13 +198,42 @@ ua_pres_t* search_htable(ua_pres_t* pres, unsigned int hash_code)
 	return p;
 }
 
-void update_htable(ua_pres_t* p, int expires, str* etag,
-		unsigned int hash_code, str* contact)
+ua_pres_t* get_htable_safe(unsigned int hash_index, unsigned int local_index)
 {
+	ua_pres_t* p;
+
+	for(p= HashT->p_records[hash_index].entity->next; p; p=p->next)
+	{
+		if(p->local_index == local_index)
+			break;
+	}
+	return p;
+}
+
+
+int update_htable(unsigned int hash_index, unsigned int local_index,
+		int expires, str* etag, str* contact)
+{
+	ua_pres_t* p;
+
+	lock_get(&HashT->p_records[hash_index].lock);
+	p = get_htable_safe(hash_index, local_index);
+	if(p == NULL)
+	{
+		LM_ERR("Record not found\n");
+		goto error;
+	}
+
 	if(etag)
 	{
-		shm_free(p->etag.s);
+		if(p->etag.s)
+			shm_free(p->etag.s);
 		p->etag.s= (char*)shm_malloc(etag->len);
+		if(p->etag.s == NULL)
+		{
+			LM_ERR("No more shared memory\n");
+			goto error;
+		}
 		memcpy(p->etag.s, etag->s, etag->len);
 		p->etag.len= etag->len;
 	}
@@ -215,28 +248,128 @@ void update_htable(ua_pres_t* p, int expires, str* etag,
 		{
 			/* update remote contact */
 			shm_free(p->remote_contact.s);
-			p->remote_contact.s= (char*)shm_malloc(contact->len* sizeof(char));
+			p->remote_contact.s= (char*)shm_malloc(contact->len);
 			if(p->remote_contact.s== NULL)
 			{
 				LM_ERR("no more shared memory\n");
-				return;
+				goto error;
 			}
 			memcpy(p->remote_contact.s, contact->s, contact->len);
 			p->remote_contact.len= contact->len;
 		}
 	}
-}
-/* insert in front; so when searching the most recent result is returned*/
-void insert_htable(ua_pres_t* presentity)
-{
-	ua_pres_t* p= NULL;
-	unsigned int hash_code;
-    str* s1;
+	lock_release(&HashT->p_records[hash_index].lock);
+	return 0;
 
-    if(presentity->to_uri.s)
-        s1 = &presentity->to_uri;
-    else
-        s1 = presentity->pres_uri;
+error:
+	lock_release(&HashT->p_records[hash_index].lock);
+	return -1;
+}
+
+int find_htable(unsigned int hash_index, unsigned int local_index)
+{
+	ua_pres_t* p;
+
+	lock_get(&HashT->p_records[hash_index].lock);
+	p = get_htable_safe(hash_index, local_index);
+	lock_release(&HashT->p_records[hash_index].lock);
+
+	if(p == NULL)
+		return 0;
+	return 1;
+}
+
+ua_pres_t* new_ua_pres(publ_info_t* publ, str* tuple_id)
+{
+	unsigned int size;
+	ua_pres_t* presentity;
+
+	size= sizeof(ua_pres_t) + sizeof(str)+
+		publ->pres_uri->len+ publ->id.len;
+	if(publ->extra_headers)
+		size+= sizeof(str)+ publ->extra_headers->len;
+	if(publ->outbound_proxy.s)
+		size+= sizeof(str)+ publ->outbound_proxy.len;
+	if(tuple_id->s)
+		size+= tuple_id->len;
+
+	presentity= (ua_pres_t*)shm_malloc(size);
+	if(presentity== NULL)
+	{
+		LM_ERR("no more share memory\n");
+		return 0;
+	}
+	memset(presentity, 0, size);
+
+	size= sizeof(ua_pres_t);
+	presentity->pres_uri= (str*)((char*)presentity+ size);
+	size+= sizeof(str);
+	presentity->pres_uri->s= (char*)presentity+ size;
+	memcpy(presentity->pres_uri->s, publ->pres_uri->s, 
+			publ->pres_uri->len);
+	presentity->pres_uri->len= publ->pres_uri->len;
+	size+= publ->pres_uri->len;
+
+//	presentity->id.s=(char*)presentity+ size;
+	CONT_COPY(presentity, presentity->id, publ->id);
+
+	if(publ->extra_headers)
+	{
+		presentity->extra_headers = (str*)((char*)presentity + size);
+		size+= sizeof(str);
+		presentity->extra_headers->s = (char*)presentity + size;
+		memcpy(presentity->extra_headers->s, publ->extra_headers->s, publ->extra_headers->len);
+		presentity->extra_headers->len = publ->extra_headers->len;
+		size+= publ->extra_headers->len;
+	}
+
+	if(publ->outbound_proxy.s)
+	{
+		presentity->outbound_proxy= (str*)((char*)presentity+ size);
+		size+= sizeof(str);
+		presentity->outbound_proxy->s= (char*)presentity+ size;
+		memcpy(presentity->outbound_proxy->s, publ->outbound_proxy.s,
+			publ->outbound_proxy.len);
+		presentity->outbound_proxy->len= publ->outbound_proxy.len;
+		size+= publ->outbound_proxy.len;
+	}
+
+	presentity->desired_expires= publ->expires + (int)time(NULL);
+	presentity->flag  = publ->source_flag;
+	presentity->event = publ->event;
+	presentity->cb_param = publ->cb_param;
+	presentity->waiting_reply = 1;
+
+	return presentity;
+}
+
+/* insert in front; so when searching the most recent result is returned*/
+unsigned long new_publ_record(publ_info_t* publ, pua_event_t* ev, str* tuple_id)
+{
+	ua_pres_t* presentity;
+
+	presentity = new_ua_pres(publ, tuple_id);
+	if(presentity == NULL)
+	{
+		LM_ERR("Failed to construct new publish record\n");
+		return -1;
+	}
+
+	LM_DBG("cb_param = %p\n", publ->cb_param);
+	return insert_htable(presentity);
+}
+
+unsigned long insert_htable(ua_pres_t* presentity)
+{
+	unsigned int hash_code;
+	str* s1;
+	unsigned long pres_id;
+	ua_pres_t* p;
+
+	if(presentity->to_uri.s)
+		s1 = &presentity->to_uri;
+	else
+		s1 = presentity->pres_uri;
 
 	LM_DBG("to_uri= %.*s, watcher_uri= %.*s\n", s1->len, s1->s,
 		(presentity->watcher_uri?presentity->watcher_uri->len:0),
@@ -249,59 +382,51 @@ void insert_htable(ua_pres_t* presentity)
 
 	lock_get(&HashT->p_records[hash_code].lock);
 
-/*	
- *	useless since always checking before calling insert
-	if(get_dialog(presentity, hash_code)!= NULL )
-	{
-		LM_DBG("Dialog already found- do not insert\n");
-		return; 
-	}
-*/
 	p= HashT->p_records[hash_code].entity;
 
 	presentity->db_flag= INSERTDB_FLAG;
 	presentity->next= p->next;
-	
+	if(p->next)
+	{
+		presentity->local_index = p->next->local_index + 1;
+	}
+	else
+		presentity->local_index = 0;
+
 	p->next= presentity;
+
+	pres_id = PRES_HASH_ID(presentity);
 
 	lock_release(&HashT->p_records[hash_code].lock);
 
+	return pres_id;
 }
 
-void delete_htable(ua_pres_t* presentity)
+void delete_htable(unsigned int hash_index, unsigned int local_index)
 {
 	ua_pres_t* p= NULL, *q= NULL;
-	unsigned int hash_code;
 
-	if(presentity == NULL)
+	lock_get(&HashT->p_records[hash_index].lock);
+
+	q = HashT->p_records[hash_index].entity;
+	for(p= HashT->p_records[hash_index].entity->next; p; p=p->next)
 	{
-		LM_ERR("Entity pointer NULL\n");
-		return;
+		if(p->local_index == local_index)
+		{
+			q->next = p->next;
+			if(p->etag.s)
+			{
+				shm_free(p->etag.s);
+			}
+			else
+			if(p->remote_contact.s)
+				shm_free(p->remote_contact.s);
+			shm_free(p);
+			break;
+		}
+		q = p;
 	}
-	hash_code = presentity->hash_index;
-
-	p= search_htable(presentity, hash_code);
-	if(p== NULL)
-		return;
-
-	q=HashT->p_records[hash_code].entity;
-
-	while(q->next!=p)
-		q= q->next;
-	q->next=p->next;
-
-	if(p->etag.s)
-	{
-		shm_free(p->etag.s);
-		lock_release(&p->publ_lock);
-		lock_destroy(&p->publ_lock);
-	}
-	else
-		if(p->remote_contact.s)
-			shm_free(p->remote_contact.s);
-
-	shm_free(p);
-	p= NULL;
+	lock_release(&HashT->p_records[hash_index].lock);
 }
 
 void destroy_htable(void)
@@ -310,7 +435,7 @@ void destroy_htable(void)
 	int i;
 
 	for(i=0; i<HASH_SIZE; i++)
-	{	
+	{
 		lock_destroy(&HashT->p_records[i].lock);
 		p=HashT->p_records[i].entity;
 		while(p->next)
@@ -322,16 +447,15 @@ void destroy_htable(void)
 			else
 				if(q->remote_contact.s)
 					shm_free(q->remote_contact.s);
-
 			shm_free(q);
 			q= NULL;
 		}
 		shm_free(p);
 	}
-    shm_free(HashT->p_records);
+	shm_free(HashT->p_records);
 	shm_free(HashT);
-  
-  return;
+
+	return;
 }
 
 /* must lock the record line before calling this function*/
@@ -409,7 +533,7 @@ int get_record_id(ua_pres_t* dialog, str** rec_id)
 		lock_release(&HashT->p_records[hash_code].lock);
 		return -1;
 	}
-	id->s= (char*)pkg_malloc(rec->id.len* sizeof(char));
+	id->s= (char*)pkg_malloc(rec->id.len);
 	if(id->s== NULL)
 	{
 		LM_ERR("No more memory\n");
@@ -435,10 +559,10 @@ int is_dialog(ua_pres_t* dialog)
 	unsigned int hash_code;
 	str* s1;
 
-    if(dialog->to_uri.s)
-        s1 = &dialog->to_uri;
-    else
-        s1 = dialog->pres_uri;
+	if(dialog->to_uri.s)
+		s1 = &dialog->to_uri;
+	else
+		s1 = dialog->pres_uri;
 
 	hash_code= core_hash(s1, dialog->watcher_uri, HASH_SIZE);
 	lock_get(&HashT->p_records[hash_code].lock);
@@ -556,7 +680,7 @@ int update_contact(struct sip_msg* msg, char* str1, char* str2)
 	{
 		/* update remote contact */
 		shm_free(p->remote_contact.s);
-		p->remote_contact.s= (char*)shm_malloc(contact.len* sizeof(char));
+		p->remote_contact.s= (char*)shm_malloc(contact.len);
 		if(p->remote_contact.s== NULL)
 		{
 			LM_ERR("no more shared memory\n");

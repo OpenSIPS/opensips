@@ -212,7 +212,6 @@ void subs_cback_func(struct cell *t, int cb_type, struct tmcb_params *ps)
 	ua_pres_t* presentity= NULL, *hentity= NULL;
 	struct to_body *pto= NULL, *pfrom = NULL, TO;
 	int size= 0;
-	unsigned int hash_code;
 	int flag ;
 	str record_route= {0, 0};
 	int rt;
@@ -226,8 +225,6 @@ void subs_cback_func(struct cell *t, int cb_type, struct tmcb_params *ps)
 	}
 	LM_DBG("completed with status %d\n",ps->code) ;
 	hentity= (ua_pres_t*)(*ps->param);
-	hash_code= core_hash(&hentity->to_uri,hentity->watcher_uri,
-				HASH_SIZE);
 	flag= hentity->flag;
 	if(hentity->flag & XMPP_INITIAL_SUBS)
 		hentity->flag= XMPP_SUBSCRIBE;
@@ -249,20 +246,15 @@ void subs_cback_func(struct cell *t, int cb_type, struct tmcb_params *ps)
 			LM_DBG("initial Subscribe request failed\n");
 			goto done;
 		}
-		
-		lock_get(&HashT->p_records[hash_code].lock);
-		
-		presentity= get_dialog(hentity, hash_code);
-		if(presentity== NULL)
+		lock_get(&HashT->p_records[hentity->hash_index].lock);
+		presentity = get_htable_safe(hentity->hash_index, hentity->local_index);
+		if(presentity)
 		{
-			LM_ERR("no record found in hash table\n");
-			lock_release(&HashT->p_records[hash_code].lock);
-			goto done;
+			pua_db_delete(presentity);
+			lock_release(&HashT->p_records[hentity->hash_index].lock);
+			delete_htable(hentity->hash_index, hentity->local_index);
 		}
-
-		pua_db_delete(presentity);
-		delete_htable(presentity);
-		lock_release(&HashT->p_records[hash_code].lock);
+		lock_release(&HashT->p_records[hentity->hash_index].lock);
 		goto done;
 	}
 	
@@ -353,21 +345,24 @@ void subs_cback_func(struct cell *t, int cb_type, struct tmcb_params *ps)
 		LM_DBG("lexpire= %d\n", lexpire);
 	}
 
-	lock_get(&HashT->p_records[hash_code].lock);
-
-	presentity= get_dialog(hentity, hash_code);
-
 	if(ps->code >= 300 )
 	{	/* if an error code and a stored dialog delete it and try to send 
 		   a subscription with type= INSERT_TYPE, else return*/	
 		
-		if(presentity)
+		if(!initial_request)
 		{
 			subs_info_t subs;
-			hentity->event= presentity->event;
-			pua_db_delete(presentity);
-			delete_htable(presentity);
-			lock_release(&HashT->p_records[hash_code].lock);
+
+			lock_get(&HashT->p_records[hentity->hash_index].lock);
+			presentity = get_htable_safe(hentity->hash_index, hentity->local_index);
+			if(presentity)
+			{
+				hentity->event= presentity->event;
+				pua_db_delete(presentity);
+				lock_release(&HashT->p_records[hentity->hash_index].lock);
+				delete_htable(hentity->hash_index, hentity->local_index);
+			}
+			lock_release(&HashT->p_records[hentity->hash_index].lock);
 
 			memset(&subs, 0, sizeof(subs_info_t));
 			subs.pres_uri= hentity->pres_uri;
@@ -400,67 +395,52 @@ void subs_cback_func(struct cell *t, int cb_type, struct tmcb_params *ps)
 				goto done;
 			}
 		}
-		else 
-		{
-			LM_DBG("No dialog found\n");			
-			lock_release(&HashT->p_records[hash_code].lock);
-		}
 		goto done;
 	}
 	/*if a 2XX reply handle the two cases- an existing dialog and a new one*/
-	
+
 	/* extract the contact */
 	if(msg->contact== NULL || msg->contact->body.s== NULL)
 	{
 		LM_ERR("no contact header found");
-		lock_release(&HashT->p_records[hash_code].lock);
 		goto error;
 	}
 	if( parse_contact(msg->contact) <0 )
 	{
 		LM_ERR(" cannot parse contact header\n");
-		lock_release(&HashT->p_records[hash_code].lock);
 		goto error;
 	}
 
 	if(msg->contact->parsed == NULL)
 	{
 		LM_ERR("cannot parse contact header\n");
-		lock_release(&HashT->p_records[hash_code].lock);
 		goto error;
 	}
 	contact = ((contact_body_t* )msg->contact->parsed)->contacts->uri;
 
-	if(presentity)
+	if(!initial_request)
 	{
 		/* do not delete the dialog - allow Notifies to be recognized as
 		 * inside a known dialog */
 		if(lexpire== 0 )
 		{
 			LM_DBG("lexpire= 0 Delete from hash table");
-			pua_db_delete(presentity);
-			delete_htable(presentity);
-			lock_release(&HashT->p_records[hash_code].lock);
+			lock_get(&HashT->p_records[hentity->hash_index].lock);
+			presentity = get_htable_safe(hentity->hash_index, hentity->local_index);
+			if(presentity)
+			{
+				pua_db_delete(presentity);
+				lock_release(&HashT->p_records[hentity->hash_index].lock);
+				delete_htable(hentity->hash_index, hentity->local_index);
+			}
+			lock_release(&HashT->p_records[hentity->hash_index].lock);
 			goto done;
 		}
 
 		LM_DBG("*** Update expires\n");
-		update_htable(presentity, lexpire, NULL, hash_code, &contact);
-		lock_release(&HashT->p_records[hash_code].lock);
+		update_htable(hentity->hash_index, hentity->local_index, lexpire, NULL, &contact);
 		goto done;
 	}
-	else
-	{
-		/* if no record found, but not an initial request -> return erorr */
-		if(initial_request == 0)
-		{
-			LM_ERR("Not an initial request and no record found in hashtable\n");
-			lock_release(&HashT->p_records[hash_code].lock);
-			goto error;
-		}
-	}
-
-	lock_release(&HashT->p_records[hash_code].lock);
 
 	/* if a new dialog -> insert */
 	if(lexpire== 0)
@@ -806,8 +786,8 @@ ua_pres_t* subs_cbparam_indlg(ua_pres_t* subs, int expires, int ua_flag)
 	hentity->event= subs->event;
 	hentity->ua_flag= hentity->ua_flag;
 	hentity->cb_param= subs->cb_param;
-
-    LM_DBG("size= %d\n", size);
+	hentity->hash_index = subs->hash_index;
+	hentity->local_index = subs->local_index;
 
 	return hentity;
 
@@ -819,7 +799,7 @@ int send_subscribe(subs_info_t* subs)
 	str met= {"SUBSCRIBE", 9};
 	str* str_hdr= NULL;
 	int ret= 0;
-	unsigned int hash_code;
+	unsigned int hash_index;
 	ua_pres_t* hentity= NULL, pres;
 	int expires;
 	int flag;
@@ -865,22 +845,15 @@ int send_subscribe(subs_info_t* subs)
 	pres.id         = subs->id;
 	pres.event      = subs->event;
 
-	hash_code=core_hash(&pres.to_uri, pres.watcher_uri, HASH_SIZE);
-	lock_get(&HashT->p_records[hash_code].lock);
+	hash_index=core_hash(&pres.to_uri, pres.watcher_uri, HASH_SIZE);
+	lock_get(&HashT->p_records[hash_index].lock);
 
-	presentity= search_htable(&pres, hash_code);
+	if(subs->flag != INSERT_TYPE)
+		presentity= search_htable(&pres, hash_index);
 
-	/* if flag == INSERT_TYPE insert no matter what the search result is */
-	if(subs->flag & INSERT_TYPE)
-	{
-		LM_DBG("A subscription request with insert type\n");
-		goto insert;
-	}
-	
 	if(presentity== NULL )
 	{
-insert:
-		lock_release(&HashT->p_records[hash_code].lock); 
+		lock_release(&HashT->p_records[hash_index].lock); 
 		if(subs->flag & UPDATE_TYPE)
 		{
 			/*
@@ -895,7 +868,7 @@ insert:
 					" and no record found\n");
 			subs->flag= INSERT_TYPE;
 
-		}	
+		}
 		hentity= subscribe_cbparam(subs, REQ_OTHER);
 		if(hentity== NULL)
 		{
@@ -904,6 +877,7 @@ insert:
 			ret= -1;
 			goto done;
 		}
+		hentity->hash_index = hash_index;
 		hentity->flag= flag;
 
 		result= tmb.t_request
@@ -940,7 +914,7 @@ insert:
 				{	
 					presentity->watcher_count++;
 				}
-				lock_release(&HashT->p_records[hash_code].lock);
+				lock_release(&HashT->p_records[hash_index].lock);
 			    goto done;
             
 			}
@@ -953,7 +927,7 @@ insert:
 					presentity->watcher_count--;
 					if(	presentity->watcher_count> 0)
 					{
-						lock_release(&HashT->p_records[hash_code].lock);
+						lock_release(&HashT->p_records[hash_index].lock);
 						goto done;
 					}
 				}
@@ -962,7 +936,7 @@ insert:
 					presentity->watcher_count++;
 					if(presentity->watcher_count> 1)
 					{
-						lock_release(&HashT->p_records[hash_code].lock);
+						lock_release(&HashT->p_records[hash_index].lock);
 						goto done;
 					}
 				}
@@ -977,7 +951,7 @@ insert:
 		{
 			LM_ERR("while building tm dlg_t structure");
 			ret= -1;
-			lock_release(&HashT->p_records[hash_code].lock);
+			lock_release(&HashT->p_records[hash_index].lock);
 			goto done;
 		}
 
@@ -985,13 +959,13 @@ insert:
 		if(hentity== NULL)
 		{
 			LM_ERR("while building callback param\n");
-			lock_release(&HashT->p_records[hash_code].lock);
+			lock_release(&HashT->p_records[hash_index].lock);
 			ret= -1;
 			pkg_free(td);
 			goto done;
 		}
 		presentity->desired_expires = hentity->desired_expires;
-		lock_release(&HashT->p_records[hash_code].lock);
+		lock_release(&HashT->p_records[hash_index].lock);
 
 	//	hentity->flag= flag;
 		LM_DBG("event parameter: %d\n", hentity->event);

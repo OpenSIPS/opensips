@@ -41,18 +41,21 @@
 #include "../../parser/msg_parser.h"
 #include "../../str.h"
 #include "../tm/tm_load.h"
+#include "../presence/hash.h"
 #include "pua.h"
 #include "hash.h"
 #include "send_publish.h"
 #include "pua_callback.h"
 #include "event_list.h"
 
+int send_publish_int(ua_pres_t* presentity, publ_info_t* publ,
+		pua_event_t* ev, int hash_index);
 
 str* publ_build_hdr(int expires, pua_event_t* ev, str* content_type, str* etag,
 		str* extra_headers, int is_body)
 {
 	static char buf[3000];
-	str* str_hdr = NULL;	
+	str* str_hdr = NULL;
 	char* expires_s = NULL;
 	int len = 0;
 	str ctype;
@@ -135,313 +138,383 @@ str* publ_build_hdr(int expires, pua_event_t* ev, str* content_type, str* etag,
 	return str_hdr;
 }
 
+#define PUA_PARSE_PRES_ID(id, hi, li) do { \
+	li = id / HASH_SIZE;\
+	hi = id % HASH_SIZE;\
+} while(0)
+
+publ_info_t* construct_pending_publ(ua_pres_t* presentity)
+{
+	publ_info_t* p;
+	publ_t* pending_publ;
+	int size;
+
+	pending_publ = presentity->pending_publ;
+
+	if(!presentity->pres_uri)
+	{
+		LM_ERR("Wrong parameter - empty pres_uri or content_type filed\n");
+		return 0;
+	}
+	size = sizeof(publ_info_t) + sizeof(str) + presentity->pres_uri->len+
+		pending_publ->content_type.len;
+	if(pending_publ->body.s)
+		size+= sizeof(str) + pending_publ->body.len;
+	if(presentity->extra_headers)
+		size+= sizeof(str) + presentity->extra_headers->len;
+	if(presentity->outbound_proxy)
+		size+= presentity->outbound_proxy->len;
+
+	p = (publ_info_t*)pkg_malloc(size);
+	if(p == NULL)
+	{
+		LM_ERR("No more memory\n");
+		return 0;
+	}
+	memset(p, 0, size);
+	size = sizeof(publ_info_t);
+
+	if(pending_publ->body.s)
+	{
+		p->body = (str*)((char*)p + size);
+		size+= sizeof(str);
+		p->body->s = (char*)p + size;
+		memcpy(p->body->s, pending_publ->body.s, pending_publ->body.len);
+		p->body->len = pending_publ->body.len;
+		size+= pending_publ->body.len;
+	}
+
+	p->content_type.s = (char*)p + size;
+	memcpy(p->content_type.s, pending_publ->content_type.s, pending_publ->content_type.len);
+	p->content_type.len = pending_publ->content_type.len;
+	size+= pending_publ->content_type.len;
+
+	p->pres_uri = (str*)((char*)p + size);
+	size+= sizeof(str);
+	p->pres_uri->s = (char*)p + size;
+	memcpy(p->pres_uri->s, presentity->pres_uri->s, presentity->pres_uri->len);
+	p->pres_uri->len = presentity->pres_uri->len;
+	size+= presentity->pres_uri->len;
+
+	if(presentity->extra_headers)
+	{
+		p->extra_headers = (str*)((char*)p + size);
+		size+= sizeof(str);
+		p->extra_headers->s = (char*)p + size;
+		memcpy(p->extra_headers->s, presentity->extra_headers->s, presentity->extra_headers->len);
+		p->extra_headers->len = presentity->extra_headers->len;
+		size+= presentity->extra_headers->len;
+	}
+	if(presentity->outbound_proxy)
+	{
+		p->outbound_proxy.s = (char*)p + size;
+		memcpy(p->outbound_proxy.s, presentity->outbound_proxy->s, presentity->outbound_proxy->len);
+		p->outbound_proxy.len = presentity->outbound_proxy->len;
+		size+= presentity->outbound_proxy->len;
+	}
+
+	p->expires = pending_publ->expires;
+	p->cb_param = pending_publ->cb_param;
+
+	return p;
+}
+
+
 void publ_cback_func(struct cell *t, int type, struct tmcb_params *ps)
 {
 	struct hdr_field* hdr= NULL;
 	struct sip_msg* msg= NULL;
 	ua_pres_t* presentity= NULL;
-	ua_pres_t* hentity= NULL;
-	int size= 0;
 	unsigned int lexpire= 0;
 	str etag;
-	int to_del = 0;
+	unsigned int hash_index, local_index;
+	unsigned long pres_id;
 
-	if(ps->param== NULL|| *ps->param== NULL)
+	if(ps->param == NULL)
 	{
-		LM_ERR("NULL callback parameter\n");
+		LM_ERR("NULL parameter\n");
 		return;
 	}
-	hentity= (ua_pres_t*)(*ps->param);
-
-	/* check if an existing record or a new one */
-	if(hentity->db_flag != 0)  /* an exisiting one */
-	{
-		LM_DBG("Existing record\n");
-		presentity = hentity;
-	}
-	else
-		LM_DBG("New record\n");
 
 	msg= ps->rpl;
 	if(msg == NULL)
 	{
 		LM_ERR("no reply message found\n");
-		goto error1;
+		return;
+	}
+	LM_DBG("cback param = %ld\n", (long)*ps->param);
+
+	pres_id = (long)*ps->param;
+	PUA_PARSE_PRES_ID(pres_id, hash_index, local_index);
+	LM_DBG("hash_index= %d, local_index= %d\n", hash_index, local_index);
+
+	if(!find_htable(hash_index, local_index))
+	{
+		LM_ERR("No record found\n");
+		return;
 	}
 
 	if(msg== FAKED_REPLY)
 	{
 		LM_DBG("FAKED_REPLY\n");
-//		if(presentity)
-//			lock_release(&presentity->publ_lock);
 		goto done;
 	}
 
 	if( ps->code>= 300 )
 	{
-		if(ps->code== 412 && hentity->body && hentity->flag!= MI_PUBLISH
-				&& hentity->flag!= MI_ASYN_PUBLISH)
-		{
-			/* sent a PUBLISH within a dialog that no longer exists
-			 * send again an intial PUBLISH */
-			LM_DBG("received a 412 reply- try again to send PUBLISH\n");
-			publ_info_t publ;
-			memset(&publ, 0, sizeof(publ_info_t));
-			publ.pres_uri= hentity->pres_uri; 
-			publ.body= hentity->body;
-			
-			if(hentity->desired_expires== 0)
-				publ.expires= -1;
-			else
-			if(hentity->desired_expires<= (int)time(NULL))
-				publ.expires= 0;
-			else
-				publ.expires= hentity->desired_expires- (int)time(NULL)+ 3;
-
-			publ.source_flag|= hentity->flag;
-			publ.event|= hentity->event;
-			publ.content_type= hentity->content_type;
-			publ.id= hentity->id;
-			publ.extra_headers= hentity->extra_headers;
-			publ.cb_param= hentity->cb_param;
-			if(hentity->outbound_proxy)
-			{
-				publ.outbound_proxy = *hentity->outbound_proxy;
-			}
-
-			if(presentity)
-			{
-				lock_release(&presentity->publ_lock);
-			}
-
-			if(send_publish(&publ)< 0)
-			{
-				LM_ERR("when trying to send PUBLISH\n");
-				goto error;
-			}
-			presentity = NULL;
-			goto done;
-		}
-		if(presentity)
-		{
-			LM_DBG("Record found in table and deleted\n");
-			LM_DBG("Released presentity lock %p\n", presentity);
-			lock_release(&presentity->publ_lock);
-			LM_DBG("Try to get hash lock [%d]\n", presentity->hash_index);
-			lock_get(&HashT->p_records[presentity->hash_index].lock);
-			LM_DBG("Got hash lock [%d]\n", presentity->hash_index);
-			LM_DBG("Try to get presentity lock %p\n", presentity);
-			lock_get(&presentity->publ_lock);
-			LM_DBG("Got presentity lock %p\n", presentity);
-			to_del = 1;
-			//			delete_htable(presentity);
-		}
-		else
-		{
-			LM_DBG("Record not found in table\n");
-		}
+		delete_htable(hash_index, local_index);
 		goto done;
 	}
 
 	if( parse_headers(msg,HDR_EOH_F, 0)==-1 )
 	{
 		LM_ERR("parsing headers\n");
-		goto error1;
+		return;
 	}
 	if(msg->expires== NULL || msg->expires->body.len<= 0)
 	{
 		LM_ERR("No Expires header found\n");
-		goto error1;
+		return;
 	}
 	if (!msg->expires->parsed && (parse_expires(msg->expires) < 0))
 	{
 		LM_ERR("cannot parse Expires header\n");
-		goto error1;
+		return;
 	}
 	lexpire = ((exp_body_t*)msg->expires->parsed)->val;
 	LM_DBG("lexpire= %u\n", lexpire);
 
+	if(lexpire == 0)
+	{
+		delete_htable(hash_index, local_index);
+		goto done;
+	}
 	hdr = get_header_by_static_name( msg, "SIP-ETag");
 	if( hdr==NULL ) /* must find SIP-Etag header field in 200 OK msg*/
 	{
 		LM_ERR("no SIP-ETag header field found\n");
-		goto error1;
+		return;
 	}
 	etag= hdr->body;
 
-	LM_DBG("completed with status %d [contact:%.*s]\n",
-			ps->code, hentity->pres_uri->len, hentity->pres_uri->s);
-
-	if(presentity)
-	{
-		/* must do a copy of the parameter since it has to be passed
-		 * to the callback function */
-		LM_DBG("update record\n");
-		if(lexpire == 0)
-		{
-			LM_DBG("expires= 0- delete from htable\n"); 
-			LM_DBG("Released presentity lock %p\n", presentity);
-			lock_release(&presentity->publ_lock);
-			LM_DBG("Try to get hash lock [%d]\n", presentity->hash_index);
-			lock_get(&HashT->p_records[presentity->hash_index].lock);
-			LM_DBG("Got hash lock [%d]\n", presentity->hash_index);
-			LM_DBG("Try to get presentity lock %p\n", presentity);
-			lock_get(&presentity->publ_lock);
-			LM_DBG("Got presentity lock %p\n", presentity);
-			to_del = 1;
-			goto done;
-		}
-
-		update_htable(presentity, lexpire, &etag, presentity->hash_index, NULL);
-		goto done;
-	}
-
-	if(lexpire== 0)
-	{
-		LM_DBG("expires= 0: no not insert\n");
-		goto done;
-	}
-	size= sizeof(ua_pres_t)+ sizeof(str)+ 
-		hentity->pres_uri->len+ hentity->tuple_id.len + 
-		 hentity->id.len;
-	if(hentity->extra_headers)
-		size+= sizeof(str)+ hentity->extra_headers->len* sizeof(char);
-	if(hentity->outbound_proxy)
-		size+=  sizeof(str)+ hentity->outbound_proxy->len;
-
-	presentity= (ua_pres_t*)shm_malloc(size);
-	if(presentity== NULL)
-	{
-		LM_ERR("no more share memory\n");
-		goto error;
-	}
-	LM_DBG("Alocated new record\n");
-	memset(presentity, 0, size);
-	memset(&presentity->etag, 0, sizeof(str));
-
-	lock_init(&presentity->publ_lock);
-
-	size= sizeof(ua_pres_t);
-	presentity->pres_uri= (str*)((char*)presentity+ size);
-	size+= sizeof(str);
-
-	presentity->pres_uri->s= (char*)presentity+ size;
-	memcpy(presentity->pres_uri->s, hentity->pres_uri->s, 
-			hentity->pres_uri->len);
-	presentity->pres_uri->len= hentity->pres_uri->len;
-	size+= hentity->pres_uri->len;
-	
-	presentity->tuple_id.s= (char*)presentity+ size;
-	memcpy(presentity->tuple_id.s, hentity->tuple_id.s,
-			hentity->tuple_id.len);
-	presentity->tuple_id.len= hentity->tuple_id.len;
-	size+= presentity->tuple_id.len;
-
-	presentity->id.s=(char*)presentity+ size;
-	memcpy(presentity->id.s, hentity->id.s, 
-			hentity->id.len);
-	presentity->id.len= hentity->id.len; 
-	size+= presentity->id.len;
-		
-	if(hentity->extra_headers)
-	{
-		presentity->extra_headers= (str*)((char*)presentity+ size);
-		size+= sizeof(str);
-		presentity->extra_headers->s= (char*)presentity+ size;
-		memcpy(presentity->extra_headers->s, hentity->extra_headers->s, 
-				hentity->extra_headers->len);
-		presentity->extra_headers->len= hentity->extra_headers->len;
-		size+= hentity->extra_headers->len;
-	}
-
-	if(hentity->outbound_proxy)
-	{
-		presentity->outbound_proxy= (str*)((char*)presentity+ size);
-		size+= sizeof(str);
-		presentity->outbound_proxy->s= (char*)presentity+ size;
-		memcpy(presentity->outbound_proxy->s, hentity->outbound_proxy->s,
-			hentity->outbound_proxy->len);
-		presentity->outbound_proxy->len= hentity->outbound_proxy->len;
-		size+= hentity->outbound_proxy->len;
-	}
-
-	presentity->desired_expires= hentity->desired_expires;
-	presentity->expires= lexpire+ (int)time(NULL);
-	presentity->flag|= hentity->flag;
-	presentity->event|= hentity->event;
-
-	presentity->etag.s= (char*)shm_malloc(etag.len);
-	if(presentity->etag.s== NULL)
-	{
-		LM_ERR("No more share memory\n");
-		goto error;
-	}
-	memcpy(presentity->etag.s, etag.s, etag.len);
-	presentity->etag.len= etag.len;
-
-	insert_htable(presentity);
-	LM_DBG("***Inserted in hash table\n");
-	presentity = NULL;
+	update_htable(hash_index, local_index, lexpire, &etag, 0);
 
 done:
-	if(hentity->ua_flag == REQ_OTHER)
+	lock_get(&HashT->p_records[hash_index].lock);
+	presentity = get_htable_safe(hash_index, local_index);
+	if(!presentity)
 	{
-		run_pua_callbacks(hentity, msg);
+		LM_DBG("Record not found\n");
+		lock_release(&HashT->p_records[hash_index].lock);
+		return;
 	}
+
+	if(presentity->ua_flag == REQ_OTHER)
+	{
+		run_pua_callbacks(presentity, msg);
+		presentity->cb_param = NULL;
+	}
+	presentity->waiting_reply = 0;
+	while(presentity->pending_publ)
+	{
+		publ_t* pending_publ = presentity->pending_publ;
+		publ_info_t* publ = construct_pending_publ(presentity);
+		if(publ == NULL)
+		{
+			LM_ERR("Failed to create publish record\n");
+			lock_release(&HashT->p_records[hash_index].lock);
+			presentity->pending_publ = pending_publ->next;
+			shm_free(pending_publ);
+			continue;
+		}
+		LM_DBG("Found pending publish\n");
+		presentity->pending_publ  = 0;
+		presentity->waiting_reply = 1;
+		send_publish_int(presentity, publ, get_event(presentity->event),
+				presentity->hash_index);
+		pkg_free(publ);
+		presentity->pending_publ = pending_publ->next;
+		shm_free(pending_publ);
+		break;
+	}
+
+	lock_release(&HashT->p_records[hash_index].lock);
+}
+
+publ_t* build_pending_publ(publ_info_t* publ)
+{
+	publ_t* p;
+	int size;
+
+	size = sizeof(publ_t) + ((publ->body)?publ->body->len:0) +
+		publ->content_type.len;
+	p = (publ_t*)shm_malloc(size);
+	if(p == NULL)
+	{
+		LM_ERR("No more share memory\n");
+		return 0;
+	}
+	memset(p, 0, size);
+	size = sizeof(publ_t);
+	if(publ->body && publ->body->s)
+	{
+		p->body.s = (char*)p + size;
+		memcpy(p->body.s, publ->body->s, publ->body->len);
+		p->body.len = publ->body->len;
+		size+= publ->body->len;
+	}
+	CONT_COPY(p, p->content_type, publ->content_type);
+	p->expires = publ->expires;
+	p->cb_param = publ->cb_param;
+
+	return p;
+}
+
+
+int send_publish_int(ua_pres_t* presentity, publ_info_t* publ, pua_event_t* ev,
+		int hash_index)
+{
+	unsigned long pres_id= 0;
+	int ret = -1;
+	char etag_buf[256];
+	char tuple_buf[128];
+	str tuple_id= {0, 0};
+	str etag= {0, 0};
+	int ver= 0;
+	str* body= NULL;
+	str* str_hdr = NULL;
+	int result;
+	str met = {"PUBLISH", 7};
+
+	LM_DBG("start\n");
+
 	if(presentity)
 	{
-		if(to_del)
+		LM_DBG("presentity exists\n");
+		pres_id = PRES_HASH_ID(presentity);
+		ver= ++presentity->version;
+
+		/* copy etag */
+		if(presentity->etag.s)
 		{
-			int hash_index = presentity->hash_index;
-			delete_htable(presentity);
+			etag.s = etag_buf;
+			memcpy(etag.s, presentity->etag.s, presentity->etag.len);
+			etag.len = presentity->etag.len;
+		}
+		/* tuple id */
+		if(presentity->tuple_id.s)
+		{
+			tuple_id.s = tuple_buf;
+			memcpy(tuple_id.s, presentity->tuple_id.s, presentity->tuple_id.len);
+			tuple_id.len = presentity->tuple_id.len;
+		}
+
+		presentity->waiting_reply = 1;
+		presentity->cb_param = publ->cb_param;
+
+		if(publ->expires== 0)
+		{
+			LM_DBG("expires= 0- delete from hash table\n");
 			lock_release(&HashT->p_records[hash_index].lock);
-			LM_DBG("Released hash lock [%d]\n", hash_index);
+			goto send_publish;
+		}
+	}
+	lock_release(&HashT->p_records[hash_index].lock);
+
+	/* handle body */
+	if(publ->body && publ->body->s)
+	{
+		if(ev->process_body)
+		{
+			if(ev->process_body(publ, &body, ver, &tuple_id)< 0 || body== NULL)
+			{
+				LM_ERR("while processing body\n");
+				goto error;
+			}
 		}
 		else
+			body = publ->body;
+		LM_DBG("Handled body [%.*s]\n", body->len, body->s);
+	}
+
+	if(publ->expires!= 0 && publ->expires< min_expires)
+		publ->expires = min_expires;
+
+	if(presentity== NULL)
+	{
+		if(publ->expires== 0)
 		{
-			lock_release(&presentity->publ_lock);
-			LM_DBG("Release presentity lock %p\n", presentity);
+			LM_DBG("request for a publish with expires 0 and"
+					" no record found\n");
+			goto error;
 		}
+		if(publ->body== NULL)
+		{
+			LM_ERR("New PUBLISH and no body found- invalid request\n");
+			ret = ERR_PUBLISH_NO_BODY;
+			goto error;
+		}
+		pres_id = new_publ_record(publ, ev, &tuple_id);
 	}
-	if(*ps->param && hentity->db_flag== 0)
-	{
-		shm_free(*ps->param);
-		*ps->param= NULL;
-	}
-	return;
 
-error1: /* if an error occured and there is a presentity record, release the lock */
-	if(presentity)
+send_publish:
+
+	str_hdr = publ_build_hdr(((publ->expires< 0)?3600:publ->expires), ev, &publ->content_type, 
+				(etag.s?&etag:NULL), publ->extra_headers, ((body)?1:0));
+	if(str_hdr == NULL)
 	{
-		lock_release(&presentity->publ_lock);
-		LM_DBG("Release presentity lock %p\n", presentity);
+		LM_ERR("while building extra_headers\n");
+		goto error;
 	}
+
+	LM_DBG("publ->pres_uri:\n%.*s\n ", publ->pres_uri->len, publ->pres_uri->s);
+	LM_DBG("str_hdr:\n%.*s %d\n ", str_hdr->len, str_hdr->s, str_hdr->len);
+	if(body && body->len && body->s )
+		LM_DBG("body:\n%.*s\n ", body->len, body->s);
+
+	LM_DBG("cback param = %ld\n", pres_id);
+
+	result= tmb.t_request(&met,						/* Type of the message */
+			publ->pres_uri,							/* Request-URI */
+			publ->pres_uri,							/* To */
+			publ->pres_uri,							/* From */
+			str_hdr,								/* Optional headers */
+			body,									/* Message body */
+			((publ->outbound_proxy.s)?&publ->outbound_proxy:0),/*Outbound proxy*/
+			publ_cback_func,						/* Callback function */
+			(void*)pres_id,								/* Callback parameter */
+			0
+			);
+	pkg_free(str_hdr);
+
+	if(body && ev->process_body)
+	{
+		if(body->s)
+			free(body->s);
+		pkg_free(body);
+	}
+
+	return 0;
+
 error:
-	if(*ps->param && hentity->db_flag == 0)
+	if(body && ev->process_body)
 	{
-		shm_free(*ps->param);
-		*ps->param= NULL;
+		if(body->s)
+			free(body->s);
+		pkg_free(body);
 	}
-	if(hentity->db_flag==0 && presentity)
-		shm_free(presentity);
-
-	return;
+	if(str_hdr)
+		pkg_free(str_hdr);
+	return ret;
 }
 
 int send_publish( publ_info_t* publ )
 {
-	str met = {"PUBLISH", 7};
-	str* str_hdr = NULL;
 	ua_pres_t* presentity= NULL;
-	str* body= NULL;
-	str* tuple_id= NULL;
-	ua_pres_t* cb_param= NULL, pres;
+	ua_pres_t pres;
 	unsigned int hash_code;
-	str etag= {0, 0};
-	int ver= 0;
-	int result;
-	int ret_code= 0;
 	pua_event_t* ev= NULL;
+	publ_t **last;
 
 	LM_DBG("pres_uri=%.*s\n", publ->pres_uri->len, publ->pres_uri->s );
 
@@ -451,7 +524,7 @@ int send_publish( publ_info_t* publ )
 	if(ev== NULL)
 	{
 		LM_ERR("event not found in list\n");
-		goto error;
+		return -1;
 	}
 
 	memset(&pres, 0, sizeof(ua_pres_t));
@@ -467,357 +540,32 @@ int send_publish( publ_info_t* publ )
 	LM_DBG("Try to get hash lock [%d]\n", hash_code);
 	lock_get(&HashT->p_records[hash_code].lock);
 	LM_DBG("Got hash lock %d\n", hash_code);
-	
-	presentity= search_htable(&pres, hash_code);
 
+	if(publ->flag != INSERT_TYPE)
+		presentity= search_htable(&pres, hash_code);
 	if(publ->etag && presentity== NULL)
 	{
-		LM_DBG("Release hash lock %d\n", hash_code);
-		LM_DBG("418\n");
+		LM_DBG("Etag restriction and no record found\n");
 		lock_release(&HashT->p_records[hash_code].lock);
 		return 418;
 	}
-
-	if(publ->expires!= 0 && publ->expires< min_expires)
-		publ->expires = min_expires;
-
-	if(publ->flag & INSERT_TYPE)
+	if(presentity && presentity->waiting_reply)
 	{
-		LM_DBG("Insert flag set\n");
-		goto insert;
-	}
-	
-	if(presentity== NULL)
-	{
-insert:
-		LM_DBG("Release hash lock %d\n", hash_code);
-		LM_DBG("insert\n");
-		lock_release(&HashT->p_records[hash_code].lock);
-		LM_DBG("insert type\n"); 
-		
-		if(publ->flag & UPDATE_TYPE )
+		LM_DBG("Presentity is waiting for reply, queue this PUBLISH\n");
+		last = &presentity->pending_publ;
+		while (*last)
+			last = &((*last)->next);
+		*last = build_pending_publ(publ);
+		if(! *last)
 		{
-			LM_DBG("UPDATE_TYPE and no record found \n");
-			publ->flag= INSERT_TYPE;
-		}
-		if(publ->expires== 0)
-		{
-			LM_DBG("request for a publish with expires 0 and"
-					" no record found\n");
-			return 0;
-		}
-		if(publ->body== NULL)
-		{
-			LM_ERR("New PUBLISH and no body found- invalid request\n");
-			return ERR_PUBLISH_NO_BODY;
-		}
-	}
-	else
-	{
-		LM_DBG("record found in hash_table\n");
-		/* check if the reply for the previous Publish was received */
-		LM_DBG("Try to get presentity lock %p\n", presentity);
-		lock_get(&presentity->publ_lock);
-		LM_DBG("Got presentity lock %p\n", presentity);
-		LM_DBG("Released hash lock %d\n", hash_code);
-		lock_release(&HashT->p_records[hash_code].lock);
-
-		publ->flag= UPDATE_TYPE;
-		etag.s= (char*)pkg_malloc(presentity->etag.len* sizeof(char));
-		if(etag.s== NULL)
-		{
-			LM_ERR("while allocating memory\n");
-			LM_DBG("Release presentity lock %p\n", presentity);
-			lock_release(&presentity->publ_lock);
+			LM_ERR("Failed to create pending publ record\n");
+			lock_release(&HashT->p_records[hash_code].lock);
 			return -1;
 		}
-		memcpy(etag.s, presentity->etag.s, presentity->etag.len);
-		etag.len= presentity->etag.len;
-
-		if(presentity->tuple_id.s && presentity->tuple_id.len)
-		{
-			/* get tuple_id*/
-			tuple_id=(str*)pkg_malloc(sizeof(str));
-			if(tuple_id== NULL)
-			{
-				LM_ERR("No more memory\n");
-				LM_DBG("Release presentity lock %p\n", presentity);
-				lock_release(&presentity->publ_lock);
-				goto error;
-			}
-			tuple_id->s= (char*)pkg_malloc(presentity->tuple_id.len* sizeof(char));
-			if(tuple_id->s== NULL)
-			{
-				LM_ERR("No more memory\n");
-				LM_DBG("Release presentity lock %p\n", presentity);
-				lock_release(&presentity->publ_lock);
-				goto error;
-			}
-			memcpy(tuple_id->s, presentity->tuple_id.s, presentity->tuple_id.len);
-			tuple_id->len= presentity->tuple_id.len;
-		}
-
-		if(publ->expires== 0)
-		{
-			LM_DBG("expires= 0- delete from hash table\n");
-			goto send_publish;
-		}
-		presentity->version++;
-		presentity->cb_param = publ->cb_param;
-		ver= presentity->version;
+		lock_release(&HashT->p_records[hash_code].lock);
+		return 0;
 	}
 
-	/* handle body */
-	if(publ->body && publ->body->s)
-	{
-		if( ev->process_body)
-		{
-			ret_code= ev->process_body(publ, &body, ver, &tuple_id );
-			if( ret_code< 0 || body== NULL)
-			{
-				LM_ERR("while processing body\n");
-				if(body== NULL)
-					LM_ERR("NULL body\n");
-				if(presentity)
-				{
-					LM_DBG("Release presentity lock %p\n", presentity);
-					lock_release(&presentity->publ_lock);
-				}
-				goto error;
-			}
-		}
-		else
-			body = publ->body;
-	}
-
-	if(tuple_id)
-		LM_DBG("tuple_id= %.*s\n", tuple_id->len, tuple_id->s  );
-	
-send_publish:
-	/* construct the callback parameter */
-	if(etag.s && etag.len)
-		publ->etag = &etag;
-
-	if(presentity)
-	{
-		cb_param = presentity;
-		cb_param->cb_param= publ->cb_param;
-
-		if(publ->expires< 0)
-			cb_param->desired_expires= 0;
-		else
-			cb_param->desired_expires=publ->expires+ (int)time(NULL);
-	}
-	else
-	{
-		cb_param= publish_cbparam(publ, body, tuple_id, REQ_OTHER);
-		if(cb_param== NULL)
-		{
-			LM_ERR("constructing callback parameter\n");
-			goto error;
-		}
-	}
-
-	if(publ->flag & UPDATE_TYPE)
-		LM_DBG("etag:%.*s\n", etag.len, etag.s);
-	str_hdr = publ_build_hdr((publ->expires< 0)?3600:publ->expires, ev, &publ->content_type, 
-				(publ->flag & UPDATE_TYPE)?&etag:NULL, publ->extra_headers, (body)?1:0);
-
-	if(str_hdr == NULL)
-	{
-		LM_ERR("while building extra_headers\n");
-		if(presentity)
-		{
-			lock_release(&presentity->publ_lock);
-			LM_DBG("Release presentity lock %p\n", presentity);
-		}
-		goto error;
-	}
-
-	LM_DBG("publ->pres_uri:\n%.*s\n ", publ->pres_uri->len, publ->pres_uri->s);
-	LM_DBG("str_hdr:\n%.*s %d\n ", str_hdr->len, str_hdr->s, str_hdr->len);
-	if(body && body->len && body->s )
-		LM_DBG("body:\n%.*s\n ", body->len, body->s);
-
-	result= tmb.t_request(&met,						/* Type of the message */
-			publ->pres_uri,							/* Request-URI */
-			publ->pres_uri,							/* To */
-			publ->pres_uri,							/* From */
-			str_hdr,								/* Optional headers */
-			body,									/* Message body */
-			(publ->outbound_proxy.s)?&publ->outbound_proxy:0,/*Outbound proxy*/
-			publ_cback_func,						/* Callback function */
-			(void*)cb_param,						/* Callback parameter */
-			0
-			);
-
-	if(result< 0)
-	{
-		LM_ERR("in t_request tm module function\n");
-		if(presentity)
-		{
-			lock_release(&presentity->publ_lock);
-			LM_DBG("Release presentity lock %p\n", presentity);
-		}
-		goto error;
-	}
-
-	/* The lock for the sent Publish remains taken until the reply is received
-	 * and the record is updated */
-
-	pkg_free(str_hdr);
-
-	if( body && ret_code && ev->process_body)
-	{
-		if(body->s)
-			free(body->s);
-		pkg_free(body);
-	}	
-	if(etag.s)
-		pkg_free(etag.s);
-	if(tuple_id)
-	{
-		if(tuple_id->s)
-			pkg_free(tuple_id->s);
-		pkg_free(tuple_id);
-	}
-
-	return 0;
-
-error:
-	if(etag.s)
-		pkg_free(etag.s);
-
-	if(cb_param && presentity==NULL)
-		shm_free(cb_param);
-
-	if(body&& ret_code && ev->process_body)
-	{
-		if(body->s)
-			free(body->s);
-		pkg_free(body);
-	}	
-	if(str_hdr)
-		pkg_free(str_hdr);
-	if(tuple_id)
-	{
-		if(tuple_id->s)
-			pkg_free(tuple_id->s);
-		pkg_free(tuple_id);
-	}
-	return -1;
+	return send_publish_int(presentity, publ, ev, hash_code);
 }
 
-ua_pres_t* publish_cbparam(publ_info_t* publ,str* body,str* tuple_id,
-		int ua_flag)
-{
-	int size;
-	ua_pres_t* cb_param= NULL;
-
-	size= sizeof(ua_pres_t)+ sizeof(str)+ publ->pres_uri->len+ 
-		+ publ->content_type.len+ publ->id.len+ 1;
-	if(body && body->s && body->len)
-		size+= sizeof(str)+ body->len;
-	if(publ->etag)
-		size+= publ->etag->len;
-	if(publ->extra_headers)
-		size+= sizeof(str)+ publ->extra_headers->len* sizeof(char);
-	if(tuple_id )
-		size+= tuple_id->len;
-	if(publ->outbound_proxy.s)
-		size+= sizeof(str) + publ->outbound_proxy.len;
-
-	cb_param= (ua_pres_t*)shm_malloc(size);
-	if(cb_param== NULL)
-	{
-		LM_ERR("ERROR no more share memory while allocating cb_param"
-				" - size= %d\n", size);
-		return NULL;
-	}
-	memset(cb_param, 0, size);
-	
-	size =  sizeof(ua_pres_t);
-
-	cb_param->pres_uri = (str*)((char*)cb_param + size);
-	size+= sizeof(str);
-	cb_param->pres_uri->s = (char*)cb_param + size;
-	memcpy(cb_param->pres_uri->s, publ->pres_uri->s ,
-			publ->pres_uri->len ) ;
-	cb_param->pres_uri->len= publ->pres_uri->len;
-	size+= publ->pres_uri->len;
-
-	if(publ->id.s && publ->id.len)
-	{
-		cb_param->id.s = (char*)cb_param+ size;
-		memcpy(cb_param->id.s, publ->id.s, publ->id.len);
-		cb_param->id.len= publ->id.len;
-		size+= publ->id.len;
-	}
-
-	if(body && body->s && body->len)
-	{
-		cb_param->body = (str*)((char*)cb_param  + size);
-		size+= sizeof(str);
-		
-		cb_param->body->s = (char*)cb_param + size;
-		memcpy(cb_param->body->s, body->s ,
-			body->len ) ;
-		cb_param->body->len= body->len;
-		size+= body->len;
-	}
-	if(publ->etag)
-	{
-		cb_param->etag.s = (char*)cb_param + size;
-		memcpy(cb_param->etag.s, publ->etag->s ,
-			publ->etag->len ) ;
-		cb_param->etag.len= publ->etag->len;
-		size+= publ->etag->len;
-	}
-	if(publ->extra_headers)
-	{
-		cb_param->extra_headers = (str*)((char*)cb_param  + size);
-		size+= sizeof(str);
-		cb_param->extra_headers->s = (char*)cb_param + size;
-		memcpy(cb_param->extra_headers->s, publ->extra_headers->s ,
-			publ->extra_headers->len ) ;
-		cb_param->extra_headers->len= publ->extra_headers->len;
-		size+= publ->extra_headers->len;
-	}
-
-	if(publ->content_type.s && publ->content_type.len)
-	{
-		cb_param->content_type.s= (char*)cb_param + size;
-		memcpy(cb_param->content_type.s, publ->content_type.s, publ->content_type.len);
-		cb_param->content_type.len= publ->content_type.len;
-		size+=  publ->content_type.len;
-	}
-	if(tuple_id)
-	{
-		cb_param->tuple_id.s = (char*)cb_param+ size;
-		memcpy(cb_param->tuple_id.s, tuple_id->s ,tuple_id->len);
-		cb_param->tuple_id.len= tuple_id->len;
-		size+= tuple_id->len;
-	}
-	if(publ->outbound_proxy.s)
-	{
-		cb_param->outbound_proxy = (str*)((char*)cb_param+ size);
-		size+= sizeof(str);
-		cb_param->outbound_proxy->s = (char*)cb_param+ size;
-		memcpy(cb_param->outbound_proxy->s, 
-				publ->outbound_proxy.s, publ->outbound_proxy.len);
-		cb_param->outbound_proxy->len= publ->outbound_proxy.len;
-		size+= publ->outbound_proxy.len;
-	}
-
-	cb_param->event= publ->event;
-	cb_param->flag|= publ->source_flag;
-	cb_param->cb_param= publ->cb_param;
-	cb_param->ua_flag= ua_flag;
-
-	if(publ->expires< 0)
-		cb_param->desired_expires= 0;
-	else
-		cb_param->desired_expires=publ->expires+ (int)time(NULL);
-
-	return cb_param;
-}

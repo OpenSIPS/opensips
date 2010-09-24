@@ -33,6 +33,7 @@
 #include "../../lock_ops.h"
 #include "../../dprint.h"
 #include "../../parser/msg_parser.h"
+#include "event_list.h"
 
 #define PRESENCE_EVENT      1<<0
 #define PWINFO_EVENT        1<<1
@@ -54,15 +55,27 @@
 #define RLS_SUBSCRIBE       1<<9
 #define DIALOG_PUBLISH      1<<10
 
-#define NO_UPDATEDB_FLAG    1<<0
-#define UPDATEDB_FLAG       1<<1
-#define INSERTDB_FLAG       1<<2
+#define NO_UPDATEDB_FLAG    0
+#define UPDATEDB_FLAG       1
+#define INSERTDB_FLAG       2
 
 #define MAX_FORWARD  70
+
+#define PRES_HASH_ID(presentity)(HASH_SIZE*presentity->local_index + presentity->hash_index)
+
+typedef struct publ
+{
+	str content_type;
+	str body;
+	int expires;
+	void* cb_param;
+	struct publ* next;
+}publ_t;
 
 typedef struct ua_pres{
 	/* common*/
 	unsigned int hash_index;
+	unsigned int local_index;
 	str id;
 	str* pres_uri;
 	int event;
@@ -70,16 +83,14 @@ typedef struct ua_pres{
 	unsigned int desired_expires;
 	int flag;
 	int db_flag;
-	void* cb_param;
 	struct ua_pres* next;
 	int ua_flag;
 
 	/* publish */
 	str etag;
 	str tuple_id;
-	str* body;
-	str content_type;
-	gen_lock_t publ_lock;
+	int waiting_reply;
+	publ_t* pending_publ;
 
 	/* subscribe */
 	str to_uri;
@@ -95,6 +106,7 @@ typedef struct ua_pres{
 	str record_route;
 	str remote_contact;
 	str contact;
+	void* cb_param;
 }ua_pres_t;
 
 typedef struct hash_entry
@@ -111,12 +123,16 @@ htable_t* new_htable(void);
 
 ua_pres_t* search_htable(ua_pres_t* pres, unsigned int hash_code);
 
-void insert_htable(ua_pres_t* presentity );
+struct publ_info;
 
-void update_htable(ua_pres_t* presentity, int expires,
-		str* etag, unsigned int hash_code, str* contact);
+unsigned long insert_htable(ua_pres_t* presentity);
+unsigned long new_publ_record(struct publ_info* publ, pua_event_t* ev, str* tuple);
 
-void delete_htable(ua_pres_t* presentity);
+int update_htable(unsigned int hash_index, unsigned int local_index,
+		int expires, str* etag, str* contact);
+int find_htable(unsigned int hash_index, unsigned int local_index);
+void delete_htable(unsigned int hash_index, unsigned int local_index);
+ua_pres_t* get_htable_safe(unsigned int hash_index, unsigned int local_index);
 
 void destroy_htable(void);
 int is_dialog(ua_pres_t* dialog);
