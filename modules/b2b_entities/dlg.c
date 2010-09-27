@@ -1795,7 +1795,6 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 	if(statuscode >= 300)
 	{
 		LM_DBG("Received a negative reply\n");
-		/* check to see for which leg */
 		if(dlg->state == B2B_CONFIRMED)
 		{
 			/* If already confirmed on another leg - ignore the negative reply */
@@ -1810,10 +1809,11 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 			dlg->uac_tran = 0;
 		}
 
-		/* delete all and add the confirmed leg */
 		if(method_id != METHOD_INVITE)
 		{
 			lock_release(&htable[hash_index].lock);
+			if(msg == FAKED_REPLY)
+				goto error;
 			goto done;
 		}
 
