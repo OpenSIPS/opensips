@@ -789,7 +789,7 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 				goto done;
 			}
 			if(method.len == INVITE_LEN &&
-						strncmp(method.s, INVITE, INVITE_LEN)==0)
+				strncmp(method.s, INVITE, INVITE_LEN)==0 && entity->state!=DLG_CONFIRMED)
 			{
 				if(statuscode >= 300)
 				{
