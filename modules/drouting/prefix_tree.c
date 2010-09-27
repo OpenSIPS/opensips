@@ -320,5 +320,5 @@ print_rt(
 			printf("  id:%u pri:%.*s ip:%.*s \n",
 				rt->pgwl[i].pgw->id, 
 				rt->pgwl[i].pgw->pri.len, rt->pgwl[i].pgw->pri.s,
-				rt->pgwl[i].pgw->ip.len, rt->pgwl[i].pgw->ip_str.s);
+				rt->pgwl[i].pgw->ip_str.len, rt->pgwl[i].pgw->ip_str.s);
 }

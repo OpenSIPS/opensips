@@ -164,7 +164,7 @@ void destroy_dr_bls(void)
 
 int populate_dr_bls(pgw_t *pgwa)
 {
-	unsigned int i;
+	unsigned int i,j;
 	struct dr_bl *drbl;
 	pgw_t *gw;
 	struct bl_rule *drbl_first;
@@ -179,19 +179,21 @@ int populate_dr_bls(pgw_t *pgwa)
 			/* search in the GW list all GWs of this type */
 			for( gw=pgwa ; gw ; gw=gw->next ) {
 				if (gw->type==drbl->types[i]) {
-					gw_net = mk_net_bitlen( &gw->ip, gw->ip.len*8);
-					if (gw_net==NULL) {
-						LM_ERR("failed to build net mask\n");
-						continue;
+					for ( j=0 ; j<gw->ips_no ; j++ ) {
+						gw_net = mk_net_bitlen( &gw->ips[j], gw->ips[j].len*8);
+						if (gw_net==NULL) {
+							LM_ERR("failed to build net mask\n");
+							continue;
+						}
+						/* add this destination to the BL */
+						add_rule_to_list( &drbl_first, &drbl_last,
+							gw_net,
+							NULL/*body*/,
+							0/*port*/,
+							PROTO_NONE/*proto*/,
+							0/*flags*/);
+						pkg_free(gw_net);
 					}
-					/* add this destination to the BL */
-					add_rule_to_list( &drbl_first, &drbl_last,
-						gw_net,
-						NULL/*body*/,
-						0/*port*/,
-						PROTO_NONE/*proto*/,
-						0/*flags*/);
-					pkg_free(gw_net);
 				}
 			}
 		}

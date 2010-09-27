@@ -1343,6 +1343,15 @@ static int prefix_username(struct sip_msg* msg, str *pri)
 }
 
 
+static int gw_matches_ip(pgw_t *pgwa, struct ip_addr *ip)
+{
+	unsigned short j;
+	for ( j=0 ; j<pgwa->ips_no ; j++)
+		if (ip_addr_cmp( &pgwa->ips[j], ip)) return 1;
+	return 0;
+}
+
+
 static int is_from_gw_0(struct sip_msg* msg, char* str, char* str2)
 {
 	pgw_t *pgwa = NULL;
@@ -1353,7 +1362,7 @@ static int is_from_gw_0(struct sip_msg* msg, char* str, char* str2)
 	pgwa = (*rdata)->pgw_l;
 	while(pgwa) {
 		if( (pgwa->port==0 || pgwa->port==msg->rcv.src_port) &&
-		ip_addr_cmp(&pgwa->ip, &msg->rcv.src_ip))
+		gw_matches_ip( pgwa, &msg->rcv.src_ip))
 			return 1;
 		pgwa = pgwa->next;
 	}
@@ -1373,7 +1382,7 @@ static int is_from_gw_1(struct sip_msg* msg, char* str, char* str2)
 	while(pgwa) {
 		if( type==pgwa->type && 
 		(pgwa->port==0 || pgwa->port==msg->rcv.src_port) &&
-		ip_addr_cmp(&pgwa->ip, &msg->rcv.src_ip) )
+		gw_matches_ip( pgwa, &msg->rcv.src_ip))
 			return 1;
 		pgwa = pgwa->next;
 	}
@@ -1415,7 +1424,7 @@ static int is_from_gw_2(struct sip_msg* msg, char* type_s, char* flags_pv)
 	while(pgwa) {
 		if( type==pgwa->type &&
 		(pgwa->port==0 || pgwa->port==msg->rcv.src_port) &&
-		ip_addr_cmp(&pgwa->ip, &msg->rcv.src_ip) ) {
+		gw_matches_ip( pgwa, &msg->rcv.src_ip) ) {
 			/* strip ? */
 			if ( (flags&DR_IFG_STRIP_FLAG) && pgwa->strip>0)
 				strip_username(msg, pgwa->strip);
@@ -1480,7 +1489,7 @@ static int goes_to_gw_1(struct sip_msg* msg, char* _type, char* flags_pv)
 
 		pgwa = (*rdata)->pgw_l;
 		while(pgwa) {
-			if( (type<0 || type==pgwa->type) && ip_addr_cmp(&pgwa->ip, ip)) {
+			if( (type<0 || type==pgwa->type) && gw_matches_ip( pgwa, ip) ) {
 
 				/* strip ? */
 				if ( (flags&DR_IFG_STRIP_FLAG) && pgwa->strip>0)

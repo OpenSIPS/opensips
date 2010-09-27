@@ -60,6 +60,7 @@ do {\
 #define DR_DST_STAT_DSBL_FLAG   (1<<2)
 #define DR_DST_STAT_NOEN_FLAG   (1<<3)
 
+#define DR_MAX_IPS  32
 
 /* list of PSTN gw */
 typedef struct pgw_ {
@@ -72,7 +73,8 @@ typedef struct pgw_ {
 	int strip;
 	str attrs;
 	/* addres and port */
-	struct ip_addr ip;
+	struct ip_addr ips[DR_MAX_IPS];
+	unsigned short ips_no;
 	unsigned short port;
 	struct pgw_ *next;
 	int flags;
