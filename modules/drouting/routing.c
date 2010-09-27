@@ -297,12 +297,12 @@ add_dst(
 	)
 {
 	pgw_t *pgw=NULL, *tmp=NULL;
-	struct hostent* he;
 	struct sip_uri uri;
-	struct ip_addr ipa;
 	int l_ip,l_pri,l_attrs;
 #define GWABUF_MAX_SIZE	512
 	char gwabuf[GWABUF_MAX_SIZE];
+	union sockaddr_union sau;
+	struct proxy_l *proxy;
 	str gwas;
 
 	if (NULL==r || NULL==ip) {
@@ -359,12 +359,12 @@ add_dst(
 	pgw->type = type;
 
 	/* add address in the list */
-	if(pgw->ip.len<5 || (strncasecmp("sip:", ip, 4)
+	if(pgw->ip_str.len<5 || (strncasecmp("sip:", ip, 4)
 			&& strncasecmp("sips:", ip, 5)))
 	{
-		if(pgw->ip.len+4>=GWABUF_MAX_SIZE) {
+		if(pgw->ip_str.len+4>=GWABUF_MAX_SIZE) {
 			LM_ERR("GW address (%d) longer "
-				"than %d\n",pgw->ip.len+4,GWABUF_MAX_SIZE);
+				"than %d\n",pgw->ip_str.len+4,GWABUF_MAX_SIZE);
 			goto err_exit;
 		}
 		memcpy(gwabuf, "sip:", 4);
@@ -382,12 +382,10 @@ add_dst(
 			gwas.len, gwas.s);
 		goto err_exit;
 	}
-	/* note we discard the port discovered by the resolve function - we are
-	interested only in the port that was actually configured. */
-	if ( (he=sip_resolvehost( &uri.host, NULL, &uri.proto,
-	(uri.type==SIPS_URI_T), 0))==0 ) {
-		if(dr_force_dns)
-		{
+
+	proxy = mk_proxy(&uri.host,uri.port_no,uri.proto,(uri.type==SIPS_URI_T));
+	if (proxy==NULL) {
+		if(dr_force_dns) {
 			LM_ERR("cannot resolve <%.*s>\n",
 				uri.host.len, uri.host.s);
 			goto err_exit;
@@ -397,11 +395,20 @@ add_dst(
 			goto done;
 		}
 	}
-	hostent2ip_addr(&ipa, he, 0);
-
-	LM_DBG("new gw ip addr [%s]\n", ip);
-	memcpy(&pgw->ip, &ipa, sizeof(struct ip_addr));
+	hostent2ip_addr( &pgw->ips[0], &proxy->host, proxy->addr_idx);
 	pgw->port = uri.port_no;
+	LM_DBG("first gw ip addr [%s]\n", ip_addr2a(&pgw->ips[0]));
+
+	pgw->ips_no = 1;
+
+	while (pgw->ips_no<DR_MAX_IPS && (get_next_su( proxy, &sau, 0)==0) ) {
+		su2ip_addr( &pgw->ips[pgw->ips_no], &sau);
+		LM_DBG("additional gw ip addr [%s]\n",
+			ip_addr2a( &pgw->ips[pgw->ips_no] ) );
+		pgw->ips_no++;
+	}
+
+	free_proxy(proxy);
 
 done:
 	if(NULL==r->pgw_l)
