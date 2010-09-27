@@ -1053,6 +1053,17 @@ str* get_p_notify_body(str pres_uri, pres_ev_t* event, str* etag,
 				if(notify_body)
 					goto done;
 			}
+			/* if event dialog - create a dummy body with no dialog (to work with Linksys) */
+			if(event->evp->parsed == EVENT_DIALOG)
+			{
+				notify_body = build_empty_dialoginfo(&pres_uri);
+				if(notify_body == NULL)
+				{
+					LM_ERR("Failed to construct body\n");
+					return NULL;
+				}
+				goto done;
+			}
 			return NULL;
 		}
 	}
