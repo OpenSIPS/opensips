@@ -38,10 +38,10 @@
 #include "../../resolve.h"
 #include "../../mem/shm_mem.h"
 #include "../../parser/parse_uri.h"
+#include "../../time_rec.h"
 
 #include "routing.h"
 #include "prefix_tree.h"
-#include "dr_time.h"
 #include "parse.h"
 
 #define IDX_SIZE 32

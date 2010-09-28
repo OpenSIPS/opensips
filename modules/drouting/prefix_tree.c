@@ -35,10 +35,10 @@
 
 #include "../../str.h"
 #include "../../mem/shm_mem.h"
+#include "../../time_rec.h"
 
 #include "prefix_tree.h"
 #include "routing.h"
-#include "dr_time.h"
 
 extern int inode;
 extern int unode;

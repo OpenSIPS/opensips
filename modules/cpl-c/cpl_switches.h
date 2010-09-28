@@ -24,7 +24,7 @@
  * 2003-06-27: file created (bogdan)
  */
 
-#include "cpl_time.h"
+#include "../../time_rec.h"
 #include "../../parser/parse_from.h"
 #include "../../parser/parse_uri.h"
 
@@ -686,7 +686,7 @@ static inline char *run_time_switch( struct cpl_interpreter *intr )
 	int i,j;
 	str user_tz = {0,0};
 	ac_tm_t att;
-	tmrec_t trt;
+	tmrec_p trt = 0;
 
 	LM_DBG("checking recv. time stamp <%d>\n",
 		intr->recv_time);
@@ -732,8 +732,11 @@ static inline char *run_time_switch( struct cpl_interpreter *intr )
 				return get_first_child(kid);
 			case TIME_NODE :
 				/* init structures */
-				memset( &att, 0, sizeof(att));
-				memset( &trt, 0, sizeof(trt));
+				trt = tmrec_new(PKG_ALLOC);
+				if (!trt) {
+					LM_ERR("no more pkg error\n");
+					goto script_error;
+				}
 				if(ac_tm_set_time( &att, intr->recv_time))
 					goto runtime_error;
 				/* let's see how many attributes we have */
@@ -749,54 +752,54 @@ static inline char *run_time_switch( struct cpl_interpreter *intr )
 						"[%s]\n",attr_name, attr_str);
 					switch (attr_name) {
 						case DTSTART_ATTR:
-							if( !attr_str || tr_parse_dtstart(&trt, attr_str))
+							if( !attr_str || tr_parse_dtstart(trt, attr_str))
 								goto parse_err;
 							flags ^= (1<<0);
 							break;
 						case DTEND_ATTR:
-							if( !attr_str || tr_parse_dtend(&trt, attr_str))
+							if( !attr_str || tr_parse_dtend(trt, attr_str))
 								goto parse_err;
 							flags ^= (1<<1);
 							break;
 						case DURATION_ATTR:
-							if( !attr_str || tr_parse_duration(&trt, attr_str))
+							if( !attr_str || tr_parse_duration(trt, attr_str))
 								goto parse_err;
 							flags ^= (1<<1);
 							break;
 						case FREQ_ATTR:
-							if( attr_str && tr_parse_freq(&trt, attr_str))
+							if( attr_str && tr_parse_freq(trt, attr_str))
 								goto parse_err;
 							break;
 						case UNTIL_ATTR:
-							if( attr_str && tr_parse_until(&trt, attr_str))
+							if( attr_str && tr_parse_until(trt, attr_str))
 								goto parse_err;
 							break;
 						case INTERVAL_ATTR:
-							if( attr_str && tr_parse_interval(&trt, attr_str))
+							if( attr_str && tr_parse_interval(trt, attr_str))
 								goto parse_err;
 							break;
 						case BYDAY_ATTR:
-							if( attr_str && tr_parse_byday(&trt, attr_str))
+							if( attr_str && tr_parse_byday(trt, attr_str))
 								goto parse_err;
 							break;
 						case BYMONTHDAY_ATTR:
-							if( attr_str && tr_parse_bymday(&trt, attr_str))
+							if( attr_str && tr_parse_bymday(trt, attr_str))
 								goto parse_err;
 							break;
 						case BYYEARDAY_ATTR:
-							if( attr_str && tr_parse_byyday(&trt, attr_str))
+							if( attr_str && tr_parse_byyday(trt, attr_str))
 								goto parse_err;
 							break;
 						case BYMONTH_ATTR:
-							if( attr_str && tr_parse_bymonth(&trt, attr_str))
+							if( attr_str && tr_parse_bymonth(trt, attr_str))
 								goto parse_err;
 							break;
 						case BYWEEKNO_ATTR:
-							if( attr_str && tr_parse_byweekno(&trt, attr_str))
+							if( attr_str && tr_parse_byweekno(trt, attr_str))
 								goto parse_err;
 							break;
 						case WKST_ATTR:
-							if( attr_str && tr_parse_wkst(&trt, attr_str))
+							if( attr_str && tr_parse_wkst(trt, attr_str))
 								goto parse_err;
 							break;
 						default:
@@ -812,12 +815,12 @@ static inline char *run_time_switch( struct cpl_interpreter *intr )
 					goto script_error;
 				}
 				/* does the recv_time match the specified interval?  */
-				j = check_tmrec( &trt, &att, 0);
+				j = check_tmrec( trt, &att, 0);
 				/* restore the orig TZ */
 				if ( flags&(1<<7) )
 					set_TZ(cpl_env.orig_tz.s);
 				/* free structs that I don't need any more */
-				tmrec_free( &trt );
+				tmrec_free( trt );
 				/* let's see the result ;-) */
 				switch  (j) {
 					case 0:
@@ -842,12 +845,12 @@ static inline char *run_time_switch( struct cpl_interpreter *intr )
 
 
 	/* none of the branches of TIME_SWITCH matched -> go for default */
-	tmrec_free( &trt );
+	tmrec_free( trt );
 	return DEFAULT_ACTION;
 runtime_error:
 	if ( flags&(1<<7) )
 		set_TZ(cpl_env.orig_tz.s);
-	tmrec_free( &trt );
+	tmrec_free( trt );
 	return CPL_RUNTIME_ERROR;
 parse_err:
 	LM_ERR("error parsing attr [%d][%s]\n",
@@ -855,7 +858,7 @@ parse_err:
 script_error:
 	if ( flags&(1<<7) )
 		set_TZ(cpl_env.orig_tz.s);
-	tmrec_free( &trt );
+	tmrec_free( trt );
 	return CPL_SCRIPT_ERROR;
 }
 
