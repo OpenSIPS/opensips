@@ -48,7 +48,7 @@
 str ack = str_init(ACK);
 str bye = str_init(BYE);
 
-#define UPDATE_DBFLAG(dlg, flag) do{ \
+#define UPDATE_DBFLAG(dlg) do{ \
 	if(dlg->db_flag==NO_UPDATEDB_FLAG) \
 		dlg->db_flag = UPDATEDB_FLAG; \
 }while(0)
@@ -662,11 +662,11 @@ logic_notify:
 					/* send reply */
 					LM_DBG("Received another request when the previous one was in process\n");
 					str text = str_init("Request Pending");
-					if(tmb.t_reply_with_body(dlg->uas_tran, 481, &text, 0, 0, &to_tag) < 0)
+					if(tmb.t_reply_with_body(dlg->uas_tran, 491, &text, 0, 0, &to_tag) < 0)
 					{
 						LM_ERR("failed to send reply with tm\n");
 					}
-					LM_DBG("Sent reply [481] and unreffed the cell %p\n", dlg->uas_tran);
+					LM_DBG("Sent reply [491] and unreffed the cell %p\n", dlg->uas_tran);
 				}
 				tmb.unref_cell(dlg->uas_tran);
 			}
@@ -689,7 +689,7 @@ logic_notify:
 	}
 
 	set_dlg_state( dlg, method_value);
-	UPDATE_DBFLAG(dlg, dlg->db_flag);
+	UPDATE_DBFLAG(dlg);
 
 	b2b_cback = dlg->b2b_cback;
 	if(dlg->param.s)
@@ -1061,7 +1061,7 @@ int b2b_send_reply(enum b2b_entity_type et, str* b2b_key, int code, str* text,
 				dlg->state = B2B_CONFIRMED;
 			else
 				dlg->state= B2B_TERMINATED;
-			UPDATE_DBFLAG(dlg, dlg->db_flag);
+			UPDATE_DBFLAG(dlg);
 		}
 		LM_DBG("Reseted transaction- send final reply [%p], uas_tran=0\n", dlg);
 		dlg->uas_tran = NULL;
@@ -1108,7 +1108,7 @@ int b2b_send_reply(enum b2b_entity_type et, str* b2b_key, int code, str* text,
 		dlg->state = B2B_TERMINATED;
 
 	dlg->last_reply_code = code;
-	UPDATE_DBFLAG(dlg, dlg->flag);
+	UPDATE_DBFLAG(dlg);
 	lock_release(&table[hash_index].lock);
 	
 	if((extra_headers?extra_headers->len:0) + 14 + server_address.len + 20 + CRLF_LEN > BUF_LEN)
@@ -1410,7 +1410,7 @@ int b2b_send_request(enum b2b_entity_type et, str* b2b_key, str* method,
 	LM_DBG("Send request method[%.*s] for dialog[%p]\n", method->len, method->s, dlg);
 	parse_method(method->s, method->s+method->len, &method_value);
 
-	if((method_value == METHOD_INVITE || method_value == METHOD_BYE) && dlg->state!= B2B_ESTABLISHED)
+	if((method_value == METHOD_INVITE || method_value == METHOD_BYE) && dlg->state < B2B_ESTABLISHED)
 	{
 		LM_DBG("last_method= %d\n", dlg->last_method);
 		if(dlg->state==B2B_CONFIRMED && dlg->last_method == METHOD_INVITE)
@@ -1427,7 +1427,7 @@ int b2b_send_request(enum b2b_entity_type et, str* b2b_key, str* method,
 	}
 	dlg->last_method = method_value;
 	LM_DBG("[%p] last_method= %d\n",dlg, dlg->last_method);
-	UPDATE_DBFLAG(dlg, dlg->flag);
+	UPDATE_DBFLAG(dlg);
 
 	/* send request */
 	if(method_value == METHOD_CANCEL)
@@ -1773,7 +1773,7 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 	}
 
 	b2b_cback = dlg->b2b_cback;
-	UPDATE_DBFLAG(dlg, dlg->db_flag);
+	UPDATE_DBFLAG(dlg);
 	if(dlg->param.s)
 	{
 		param.s = (char*)pkg_malloc(dlg->param.len);
@@ -1795,14 +1795,6 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 	if(statuscode >= 300)
 	{
 		LM_DBG("Received a negative reply\n");
-		if(dlg->state == B2B_CONFIRMED)
-		{
-			/* If already confirmed on another leg - ignore the negative reply */
-			LM_DBG("Dialog already confirmed\n");
-			lock_release(&htable[hash_index].lock);
-			goto error;
-		}
-
 		if(dlg->uac_tran)
 		{
 			tmb.unref_cell(dlg->uac_tran);
@@ -1817,20 +1809,35 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 			goto done;
 		}
 
-		dlg->state = B2B_TERMINATED;
-
-		if(msg != FAKED_REPLY)
+		if(dlg->state >= B2B_CONFIRMED)
 		{
-			b2b_delete_legs(&dlg->legs);
-			leg = b2b_add_leg(dlg, msg, &to_tag);
-			if(leg == NULL)
+			if(statuscode!=481 && statuscode!=408)
 			{
-				LM_ERR("Failed to add dialog leg\n");
+				/* if reinvite */
+				LM_DBG("Non final negative reply for reINVITE\n");
 				lock_release(&htable[hash_index].lock);
-				goto error;
+				if(msg == FAKED_REPLY)
+					goto error;
+				goto done;
 			}
 		}
-		UPDATE_DBFLAG(dlg, dlg->db_flag);
+		else
+		{
+			if(msg != FAKED_REPLY)
+			{
+				b2b_delete_legs(&dlg->legs);
+				leg = b2b_add_leg(dlg, msg, &to_tag);
+				if(leg == NULL)
+				{
+					LM_ERR("Failed to add dialog leg\n");
+					lock_release(&htable[hash_index].lock);
+					goto error;
+				}
+			}
+		}
+
+		dlg->state = B2B_TERMINATED;
+		UPDATE_DBFLAG(dlg);
 		lock_release(&htable[hash_index].lock);
 		if(msg == FAKED_REPLY)
 			goto error;

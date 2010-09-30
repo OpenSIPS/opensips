@@ -344,11 +344,15 @@ void b2bl_clean(unsigned int ticks, void* param)
 				LM_INFO("Found an expired dialog. Send BYE in both sides and delete\n");
 				if(tuple->bridge_entities[0] && tuple->bridge_entities[1] && !tuple->to_del)
 				{
-					if(tuple->bridge_entities[0]->dlginfo && tuple->bridge_entities[0]->dlginfo->totag.s)
+					if(tuple->bridge_entities[0]->dlginfo &&
+							tuple->bridge_entities[0]->dlginfo->totag.s &&
+							!tuple->bridge_entities[0]->disconnected)
 						b2b_api.send_request(tuple->bridge_entities[0]->type,
 							&tuple->bridge_entities[0]->key, &bye, 0, 0,
 							 tuple->bridge_entities[0]->dlginfo);
-					if(tuple->bridge_entities[1]->dlginfo && tuple->bridge_entities[1]->dlginfo->totag.s)
+					if(tuple->bridge_entities[1]->dlginfo &&
+							tuple->bridge_entities[1]->dlginfo->totag.s &&
+							!tuple->bridge_entities[1]->disconnected)
 						b2b_api.send_request(tuple->bridge_entities[1]->type,
 						&tuple->bridge_entities[1]->key, &bye, 0, 0,
 						tuple->bridge_entities[1]->dlginfo);

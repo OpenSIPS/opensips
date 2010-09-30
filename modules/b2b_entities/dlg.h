@@ -44,7 +44,7 @@
 
 #define DLG_ESTABLISHED   1
 
-enum b2b_entity_type {B2B_SERVER=0, B2B_CLIENT};
+enum b2b_entity_type {B2B_SERVER=0, B2B_CLIENT, B2B_NONE};
 
 typedef struct b2b_dlginfo
 {

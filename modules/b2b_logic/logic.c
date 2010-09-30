@@ -788,17 +788,30 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 				b2bl_delete(tuple, hash_index, 0);
 				goto done;
 			}
-			if(method.len == INVITE_LEN &&
-				strncmp(method.s, INVITE, INVITE_LEN)==0 && entity->state!=DLG_CONFIRMED)
+			if(method.len == INVITE_LEN &&strncmp(method.s, INVITE, INVITE_LEN)==0)
 			{
-				if(statuscode >= 300)
+				if(entity->state!=DLG_CONFIRMED)
 				{
-					LM_DBG("Negative reply [%d] - delete[%p]\n", statuscode, tuple);
-					b2b_mark_todel(tuple);
+					if(statuscode >= 300)
+					{
+						LM_DBG("Negative reply [%d] - delete[%p]\n", statuscode, tuple);
+						b2b_mark_todel(tuple);
+					}
+					else
+					if(statuscode >= 200 && statuscode < 300)
+						entity->state = DLG_CONFIRMED;
 				}
 				else
-				if(statuscode >= 200 && statuscode < 300)
-					entity->state = DLG_CONFIRMED;
+				{
+					/* if reINVITE and 481 or 404 reply */
+					if(statuscode==481 || statuscode==408)
+					{
+						LM_DBG("Received terminate dialog reply for reINVITE\n");
+						b2b_mark_todel(tuple);
+						entity->disconnected= 1;
+						peer->disconnected= 1;
+					}
+				}
 			}
 		}
 	}
