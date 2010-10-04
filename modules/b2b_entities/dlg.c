@@ -1410,7 +1410,7 @@ int b2b_send_request(enum b2b_entity_type et, str* b2b_key, str* method,
 	LM_DBG("Send request method[%.*s] for dialog[%p]\n", method->len, method->s, dlg);
 	parse_method(method->s, method->s+method->len, &method_value);
 
-	if((method_value == METHOD_INVITE || method_value == METHOD_BYE) && dlg->state < B2B_ESTABLISHED)
+	if((method_value == METHOD_INVITE || method_value == METHOD_BYE) && dlg->state < B2B_CONFIRMED)
 	{
 		LM_DBG("last_method= %d\n", dlg->last_method);
 		if(dlg->state==B2B_CONFIRMED && dlg->last_method == METHOD_INVITE)
@@ -1811,15 +1811,12 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 
 		if(dlg->state >= B2B_CONFIRMED)
 		{
-			if(statuscode!=481 && statuscode!=408)
-			{
-				/* if reinvite */
-				LM_DBG("Non final negative reply for reINVITE\n");
-				lock_release(&htable[hash_index].lock);
-				if(msg == FAKED_REPLY)
-					goto error;
-				goto done;
-			}
+			/* if reinvite */
+			LM_DBG("Non final negative reply for reINVITE\n");
+			lock_release(&htable[hash_index].lock);
+			if(msg == FAKED_REPLY)
+				goto error;
+			goto done;
 		}
 		else
 		{
@@ -1834,9 +1831,9 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 					goto error;
 				}
 			}
+			dlg->state = B2B_TERMINATED;
 		}
 
-		dlg->state = B2B_TERMINATED;
 		UPDATE_DBFLAG(dlg);
 		lock_release(&htable[hash_index].lock);
 		if(msg == FAKED_REPLY)

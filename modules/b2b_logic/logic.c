@@ -807,9 +807,7 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 					if(statuscode==481 || statuscode==408)
 					{
 						LM_DBG("Received terminate dialog reply for reINVITE\n");
-						b2b_mark_todel(tuple);
-						entity->disconnected= 1;
-						peer->disconnected= 1;
+						tuple->lifetime = 30 + get_ticks();
 					}
 				}
 			}
