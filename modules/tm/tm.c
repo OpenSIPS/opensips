@@ -370,18 +370,20 @@ static int flag_fixup(void** param, int param_no)
 
 static int fixup_t_replicate(void** param, int param_no)
 {
-	str *s;
+	str s;
+	pv_elem_t *model;
 
 	if (param_no == 1) {
-		/* string */
-		s = (str*)pkg_malloc( sizeof(str) );
-		if (s==0) {
-			LM_ERR("no more pkg mem\n");
-			return E_OUT_OF_MEM;
+		s.s = (char*)*param;
+		s.len = strlen(s.s);
+		model = NULL;
+		
+		if(pv_parse_format(&s ,&model) || model==NULL) {
+			LM_ERR("wrong format [%s] for param no %d!\n", s.s, param_no);
+			return E_CFG;
 		}
-		s->s = (char*)*param;
-		s->len = strlen(s->s);
-		*param = (void*)s;
+
+		*param = (void*)model;
 	} else {
 		/* flags */
 		if (flag_fixup( param, 1)!=0) {
@@ -1035,7 +1037,16 @@ inline static int w_t_on_branch( struct sip_msg* msg, char *go_to, char *foo )
 
 inline static int w_t_replicate(struct sip_msg *p_msg, char *dst, char *flags)
 {
-	return t_replicate( p_msg, (str*)dst, (int)(long)flags);
+	str dest;
+
+	if(((pv_elem_p)dst)->spec.getf!=NULL) {
+		if(pv_printf_s(p_msg, (pv_elem_p)dst, &dest)!=0 || dest.len <=0)
+			return -1;
+	} else {
+		dest = ((pv_elem_p)dst)->text;
+	}
+
+	return t_replicate( p_msg, &dest, (int)(long)flags);
 }
 
 static inline int t_relay_inerr2scripterr(void)
