@@ -225,15 +225,15 @@ int pv_get_dlg_val(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res)
 {
 	struct dlg_cell *dlg;
 
-	if ( (dlg=get_current_dialog())==NULL )
-		return -1;
-
 	if (param==NULL || param->pvn.type!=PV_NAME_INTSTR ||
 	param->pvn.u.isname.type!=AVP_NAME_STR ||
 	param->pvn.u.isname.name.s.s==NULL ) {
 		LM_CRIT("BUG - bad parameters\n");
 		return -1;
 	}
+
+	if ( (dlg=get_current_dialog())==NULL )
+		return pv_get_null(msg, param, res);
 
 	if (fetch_dlg_value( dlg, &param->pvn.u.isname.name.s, &param->pvv, 1)!=0)
 		return pv_get_null(msg, param, res);
