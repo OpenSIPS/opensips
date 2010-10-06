@@ -351,6 +351,9 @@ static void dr_prob_handler(unsigned int ticks, void* param)
 	static char buff[1000] = {"sip:"};
 	str uri;
 
+	if (rdata==NULL || *rdata==NULL)
+		return;
+
 	ref_read_data();
 
 	/* do probing */
