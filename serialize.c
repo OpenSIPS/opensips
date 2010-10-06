@@ -312,7 +312,7 @@ int next_branches( struct sip_msg *msg)
 
 	if (avp->flags & Q_FLAG) {
 		destroy_avp(avp);
-		return 0;
+		goto done;
 	}
 
 	prev = avp;
@@ -360,7 +360,7 @@ int next_branches( struct sip_msg *msg)
 
 		if (avp->flags & Q_FLAG) {
 			destroy_avp(avp);
-			return 0;
+			goto done;
 		}
 
 		prev = avp;
@@ -368,7 +368,9 @@ int next_branches( struct sip_msg *msg)
 		destroy_avp(prev);
 	}
 
-	return 0;
+	return 2;
+done:
+	return (search_next_avp(avp, NULL)==NULL)?2:1;
 error1:
 	destroy_avp(avp);
 error:
