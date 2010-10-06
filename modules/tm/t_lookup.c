@@ -837,7 +837,8 @@ int t_reply_matching( struct sip_msg *p_msg , int *p_branch )
 				LM_ERR("to parsing failed\n");
 			}
 		}
-		if (!is_local(p_cell)) {
+		if (!is_local(p_cell) &&
+		!(cseq->method_id==METHOD_CANCEL && is_invite(p_cell)) ) {
 			run_trans_callbacks( TMCB_RESPONSE_IN, T, T->uas.request, p_msg,
 				p_msg->REPLY_STATUS);
 		}
