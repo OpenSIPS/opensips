@@ -16,7 +16,7 @@ Bogdan-Andrei Iancu
 
    Copyright © 2005 voice-system.ro
    Revision History
-   Revision $Revision$ $Date: 2009-07-21 03:45:05 -0400
+   Revision $Revision$ $Date: 2009-07-21 10:45:05 +0300
                               (Tue, 21 Jul 2009) $
      __________________________________________________________
 
@@ -57,7 +57,7 @@ Bogdan-Andrei Iancu
 
         1.6. Exported Functions
 
-              1.6.1. fix_nated_contact()
+              1.6.1. fix_nated_contact([uri_params])
               1.6.2. fix_nated_sdp(flags [, ip_address])
               1.6.3. set_rtp_proxy_set()
               1.6.4. engage_rtp_proxy([flags [, ip_address]])
@@ -132,11 +132,6 @@ Chapter 1. Admin Guide
    source address:port pair. fix_nated_sdp adds the active
    direction indication to SDP (flag 0x01) and updates source IP
    address too (flag 0x02).
-
-   Known devices that get along over NATs with nathelper are ATAs
-   (as clients) and Cisco Gateways (since 12.2(T)) as servers. See
-   http://www.cisco.com/en/US/products/sw/iosswrel/ps1839/products
-   _feature_guide09186a0080110bf9.html">
 
    Works with multipart messages that contain an SDP part, but not
    with multi-layered multipart messages.
@@ -487,16 +482,22 @@ modparam("nathelper", "set_id_col", "rtpp_set_id")
 
 1.6. Exported Functions
 
-1.6.1.  fix_nated_contact()
+1.6.1.  fix_nated_contact([uri_params])
 
-   Rewrites Contact HF to contain request's source address:port.
+   Rewrites the URI Contact HF to contain request's source
+   address:port. If a list of URI parameter is provided, it will
+   be added to the modified contact;
 
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    BRANCH_ROUTE.
 
    Example 1.20. fix_nated_contact usage
 ...
-if (search("User-Agent: Cisco ATA.*") {fix_nated_contact();};
+if (search("User-Agent: Cisco ATA.*") {
+    fix_nated_contact(";ata=cisco");
+} else {
+    fix_nated_contact();
+}
 ...
 
 1.6.2.  fix_nated_sdp(flags [, ip_address])
