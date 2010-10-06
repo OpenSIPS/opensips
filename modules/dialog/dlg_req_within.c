@@ -226,6 +226,10 @@ static inline int build_extra_hdr(struct dlg_cell * cell, str *extra_hdrs,
 		p += extra_hdrs->len;
 	}
 
+	if (str_hdr->len != p-str_hdr->s )
+		LM_CRIT("BUG in computing extra hdrs: computed len = %d ;"
+			" build len = %d",str_hdr->len,(int)(long)(p-str_hdr->s) );
+
 	return 0;
 
 error: 
