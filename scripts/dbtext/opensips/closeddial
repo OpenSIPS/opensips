@@ -1,0 +1,1 @@
+id(int,auto) username(string) domain(string) cd_username(string) cd_domain(string) group_id(string) new_uri(string) 

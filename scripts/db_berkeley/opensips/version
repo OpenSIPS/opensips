@@ -24,6 +24,8 @@ carrierfailureroute|
 carrierfailureroute|2
 carrierroute|
 carrierroute|3
+closeddial|
+closeddial|1
 cpl|
 cpl|2
 dbaliases|
@@ -42,6 +44,8 @@ dr_gateways|
 dr_gateways|4
 dr_groups|
 dr_groups|2
+dr_gw_lists|
+dr_gw_lists|1
 dr_rules|
 dr_rules|3
 globalblacklist|
