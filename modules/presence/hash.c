@@ -376,7 +376,7 @@ int update_shtable(shtable_t htable,unsigned int hash_code,
 	s->event= subs->event;
 	subs->db_flag= s->db_flag;
 
-	if(s->db_flag & NO_UPDATEDB_FLAG)
+	if(s->db_flag == NO_UPDATEDB_FLAG)
 		s->db_flag= UPDATEDB_FLAG;
 	if(fallback2db && type == LOCAL_TYPE)
 		s->db_flag = NO_UPDATEDB_FLAG;

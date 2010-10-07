@@ -84,7 +84,7 @@ str* dlginfo_agg_nbody(str* pres_user, str* pres_domain, str** body_array, int n
 	if (n_body== NULL)
 		n_body= build_dialoginfo(pres_user, pres_domain);
 	return n_body;
-}	
+}
 
 str* agregate_xmls(str* pres_user, str* pres_domain, str** body_array, int n)
 {
@@ -181,7 +181,7 @@ str* agregate_xmls(str* pres_user, str* pres_domain, str** body_array, int n)
 	   signed int) has max. 10 characters + 1 character for the sign
 	*/
     xmlNewProp(root_node, BAD_CAST "version", BAD_CAST "00000000000");
-    xmlNewProp(root_node, BAD_CAST  "state",  BAD_CAST "full" );
+    xmlNewProp(root_node, BAD_CAST "state",  BAD_CAST "partial" );
     xmlNewProp(root_node, BAD_CAST "entity",  BAD_CAST buf);
 
 	/* loop over all bodies and create the aggregated body */
@@ -303,6 +303,7 @@ str *dlginfo_body_setversion(subs_t *subs, str *body) {
 		return NULL;
 	}
 
+	LM_DBG("set version\n");
 	/* xmlDocDumpFormatMemory creates \0 terminated string */
 	/* version parameters starts at minimum at character 34 */
 	if (body->len < 41) {
@@ -386,9 +387,9 @@ str* build_dialoginfo(str* pres_user, str* pres_domain)
 	/* we set the version to 0 but it should be set to the correct value
        in the pua module */
 	xmlNewProp(root_node, BAD_CAST "version",
-			BAD_CAST "0");
+			BAD_CAST "00000000000");
 	xmlNewProp(root_node, BAD_CAST  "state",
-			BAD_CAST "full" );
+			BAD_CAST "partial" );
 	xmlNewProp(root_node, BAD_CAST "entity", 
 			BAD_CAST buf);
 	/* dialog tag */

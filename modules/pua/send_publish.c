@@ -179,11 +179,9 @@ publ_info_t* construct_pending_publ(ua_pres_t* presentity)
 		p->body = (str*)((char*)p + size);
 		size+= sizeof(str);
 		p->body->s = (char*)p + size;
-		LM_DBG("Asta care nu mai e bun %p\n", p->body->s);
 		memcpy(p->body->s, pending_publ->body.s, pending_publ->body.len);
 		p->body->len = pending_publ->body.len;
 		size+= pending_publ->body.len;
-		LM_DBG("Copied body\n");
 	}
 
 	p->content_type.s = (char*)p + size;
@@ -217,7 +215,6 @@ publ_info_t* construct_pending_publ(ua_pres_t* presentity)
 
 	p->expires = pending_publ->expires;
 	p->cb_param = pending_publ->cb_param;
-	LM_DBG("la sfarsit: Asta care nu mai e bun %p\n", p->body->s);
 
 	return p;
 }
