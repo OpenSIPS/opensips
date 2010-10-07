@@ -36,11 +36,6 @@ if [ "$ret" -eq 0 ] ; then
 	ret=$?
 fi ;
 
-if [ "$ret" -eq 0 ] ; then
-	./opensipsctl lcr show > /dev/null
-	ret=$?
-fi ;
-
 # cleanup
 mv opensipsctlrc.bak opensipsctlrc
 mv opensipsctl.bak opensipsctl
