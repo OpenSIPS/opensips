@@ -307,7 +307,6 @@ fi
 %doc %{_docdir}/opensips/README.gflags
 %doc %{_docdir}/opensips/README.group
 %doc %{_docdir}/opensips/README.imc
-%doc %{_docdir}/opensips/README.lcr
 %doc %{_docdir}/opensips/README.load_balancer
 %doc %{_docdir}/opensips/README.localcache
 %doc %{_docdir}/opensips/README.mangler
@@ -378,7 +377,6 @@ fi
 %{_libdir}/opensips/modules/gflags.so
 %{_libdir}/opensips/modules/group.so
 %{_libdir}/opensips/modules/imc.so
-%{_libdir}/opensips/modules/lcr.so
 %{_libdir}/opensips/modules/load_balancer.so
 %{_libdir}/opensips/modules/localcache.so
 %{_libdir}/opensips/modules/mangler.so

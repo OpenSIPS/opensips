@@ -28,7 +28,6 @@ f none lib/opensips/modules/exec.so 0755 bin bin
 f none lib/opensips/modules/flatstore.so 0755 bin bin
 f none lib/opensips/modules/gflags.so 0755 bin bin
 f none lib/opensips/modules/group.so 0755 bin bin
-f none lib/opensips/modules/lcr.so 0755 bin bin
 f none lib/opensips/modules/jabber.so 0755 bin bin
 f none lib/opensips/modules/mangler.so 0755 bin bin
 f none lib/opensips/modules/maxfwd.so 0755 bin bin
@@ -92,7 +91,6 @@ f none doc/opensips/README.flatstore 0644 bin bin
 f none doc/opensips/README.gflags 0644 bin bin
 f none doc/opensips/README.group 0644 bin bin
 f none doc/opensips/README.jabber 0644 bin bin
-f none doc/opensips/README.lcr 0644 bin bin
 f none doc/opensips/README.mangler 0644 bin bin
 f none doc/opensips/README.maxfwd 0644 bin bin
 f none doc/opensips/README.mediaproxy 0644 bin bin

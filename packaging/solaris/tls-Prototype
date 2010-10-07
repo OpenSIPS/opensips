@@ -22,10 +22,8 @@ f none /opt/opensips/dbtext/opensips/dr_groups 0644 root root
 f none /opt/opensips/dbtext/opensips/dr_rules 0644 root root
 f none /opt/opensips/dbtext/opensips/globalblacklist 0644 root root
 f none /opt/opensips/dbtext/opensips/grp 0644 root root
-f none /opt/opensips/dbtext/opensips/gw 0644 root root
 f none /opt/opensips/dbtext/opensips/imc_members 0644 root root
 f none /opt/opensips/dbtext/opensips/imc_rooms 0644 root root
-f none /opt/opensips/dbtext/opensips/lcr 0644 root root
 f none /opt/opensips/dbtext/opensips/load_balancer 0644 root root
 f none /opt/opensips/dbtext/opensips/location 0644 root root
 f none /opt/opensips/dbtext/opensips/missed_calls 0644 root root
@@ -101,7 +99,6 @@ f none /opt/opensips/lib64/opensips/modules/group.so 0755 root root
 f none /opt/opensips/lib64/opensips/modules/h350.so 0755 root root
 f none /opt/opensips/lib64/opensips/modules/identity.so 0755 root root
 f none /opt/opensips/lib64/opensips/modules/imc.so 0755 root root
-f none /opt/opensips/lib64/opensips/modules/lcr.so 0755 root root
 f none /opt/opensips/lib64/opensips/modules/load_balancer.so 0755 root root
 f none /opt/opensips/lib64/opensips/modules/localcache.so 0755 root root
 f none /opt/opensips/lib64/opensips/modules/mangler.so 0755 root root
@@ -197,7 +194,6 @@ f none /opt/opensips/README.group 0644 root root
 f none /opt/opensips/README.h350 0644 root root
 f none /opt/opensips/README.identity 0644 root root
 f none /opt/opensips/README.imc 0644 root root
-f none /opt/opensips/README.lcr 0644 root root
 f none /opt/opensips/README.load_balancer 0644 root root
 f none /opt/opensips/README.localcache 0644 root root
 f none /opt/opensips/README.mangler 0644 root root

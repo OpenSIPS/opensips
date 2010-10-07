@@ -264,12 +264,6 @@ Maturity:   beta
 Depends on:
 Purpose:    JSON encoder / decoder
 
-Name:       lcr
-Use:        experimental
-Maturity:   beta
-Depends on: database
-Purpose:    Least Cost Routing engine
-
 Name:       ldap
 Use:        regular
 Maturity:   stable

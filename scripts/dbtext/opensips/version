@@ -7,7 +7,6 @@ b2b_entities:1
 b2b_logic:1
 carrierfailureroute:2
 carrierroute:3
-closeddial:1
 cpl:2
 dbaliases:2
 dialog:4
@@ -17,14 +16,11 @@ domain:2
 domainpolicy:3
 dr_gateways:4
 dr_groups:2
-dr_gw_lists:1
 dr_rules:3
 globalblacklist:2
 grp:3
-gw:8
 imc_members:2
 imc_rooms:2
-lcr:3
 load_balancer:2
 location:1005
 missed_calls:4

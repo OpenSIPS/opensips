@@ -509,7 +509,6 @@ INPUT                  = ./ \
                          modules/h350 \
                          modules/imc \
                          modules/jabber \
-                         modules/lcr \
                          modules/ldap \
                          modules/mangler \
                          modules/maxfwd \

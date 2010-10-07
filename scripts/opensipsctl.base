@@ -189,29 +189,6 @@ fi
 DO_DOMAIN_COLUMN=domain
 DO_LAST_MODIFIED_COLUMN=last_modified
 
-# lcr tables
-if [ -z "$LCR_TABLE" ] ; then
-	LCR_TABLE=lcr
-fi
-LCR_PREFIX_COLUMN=prefix
-LCR_FROMURI_COLUMN=from_uri
-LCR_GRPID_COLUMN=grp_id
-LCR_PRIO_COLUMN=priority
-
-# gw table
-if [ -z "$GW_TABLE" ] ; then
-	GW_TABLE=gw
-fi
-LCR_GW_GWNAME_COLUMN=gw_name
-LCR_GW_GRPID_COLUMN=grp_id
-LCR_GW_IP_COLUMN=ip_addr
-LCR_GW_PORT_COLUMN=port
-LCR_GW_URIS_COLUMN=uri_scheme
-LCR_GW_PROTO_COLUMN=transport
-LCR_GW_STRIP_COLUMN=strip
-LCR_GW_TAG_COLUMN=tag
-LCR_GW_FLAGS_COLUMN=flags
-
 # route_tree table
 if [ -z "$ROUTE_TREE_TABLE" ] ; then
 	ROUTE_TREE_TABLE=route_tree
@@ -353,34 +330,6 @@ cat <<EOF
 EOF
 }
 USAGE_FUNCTIONS="$USAGE_FUNCTIONS usage_acl"
-
-usage_lcr() {
-	echo
-	mecho " -- command 'lcr' - manage least cost routes (lcr)"
-	echo
-cat <<EOF
-   * IP addresses must be entered in dotted quad format e.g. 1.2.3.4 *
-   * <uri_scheme> and <transport> must be entered in integer or text,*
-   * e.g. transport '2' is identical to transport 'tcp'.             *
-   *   scheme: 1=sip, 2=sips;   transport: 1=udp, 2=tcp, 3=tls       *
-   * Examples:  lcr addgw level3 1.2.3.4 5080 sip tcp 1              *
-   *            lcr addroute +1 '' 1 1                               *
- lcr show .....................................................................
-           ............. show routes, gateways and groups
- lcr reload ...................................................................
-           ............. reload lcr gateways
- lcr addgw <gw_name> <ip> <port> <scheme> <transport> <grp_id> <flags> <tag> <strip>
-           ............... add a gateway with flags, tag and strip ............
-           ................(flags, tag, and strip are optional arguments) .....
- lcr rmgw  <gw_name> ..........................................................
-           ............... delete a gateway
- lcr addroute <prefix> <from> <grp_id> <prio> .................................
-           .............. add a route ( use '' to match anything in <from> )
- lcr rmroute  <prefix> <from> <grp_id> <prio> .................................
-           .............. delete a route
-EOF
-}
-USAGE_FUNCTIONS="$USAGE_FUNCTIONS usage_lcr"
 
 usage_cr() {
 	echo

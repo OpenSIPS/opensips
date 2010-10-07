@@ -367,16 +367,6 @@ migrate_table ${dst_db}.speed_dial \
 	${src_db}.speed_dial \
 	"?id,?username,?domain,?sd_username,?sd_domain,?new_uri,?fname,?lname,?description"
 
-migrate_table ${dst_db}.gw \
-	"id,gw_name,grp_id,ip_addr,port,uri_scheme,transport,strip,tag,flags" \
-	${src_db}.gw \
-	"?id,?gw_name,?grp_id,?ip_addr,?port,?uri_scheme,?transport,?strip,?tag,?flags"
-
-migrate_table ${dst_db}.lcr \
-	"id,prefix,from_uri,grp_id,priority" \
-	${src_db}.lcr \
-	"?id,?prefix,?from_uri,?grp_id,?priority"
-
 migrate_table ${dst_db}.pdt \
 	"id,sdomain,prefix,domain" \
 	${src_db}.pdt \

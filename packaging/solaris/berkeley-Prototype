@@ -23,10 +23,8 @@ f none /opt/opensips/db_berkeley/opensips/dr_groups 0644 root root
 f none /opt/opensips/db_berkeley/opensips/dr_rules 0644 root root
 f none /opt/opensips/db_berkeley/opensips/globalblacklist 0644 root root
 f none /opt/opensips/db_berkeley/opensips/grp 0644 root root
-f none /opt/opensips/db_berkeley/opensips/gw 0644 root root
 f none /opt/opensips/db_berkeley/opensips/imc_members 0644 root root
 f none /opt/opensips/db_berkeley/opensips/imc_rooms 0644 root root
-f none /opt/opensips/db_berkeley/opensips/lcr 0644 root root
 f none /opt/opensips/db_berkeley/opensips/load_balancer 0644 root root
 f none /opt/opensips/db_berkeley/opensips/location 0644 root root
 f none /opt/opensips/db_berkeley/opensips/missed_calls 0644 root root

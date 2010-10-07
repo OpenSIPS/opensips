@@ -653,7 +653,6 @@ fi
 %{_libdir}/opensips/modules/group.so
 %{_libdir}/opensips/modules/identity.so
 %{_libdir}/opensips/modules/imc.so
-%{_libdir}/opensips/modules/lcr.so
 %{_libdir}/opensips/modules/load_balancer.so
 %{_libdir}/opensips/modules/localcache.so
 %{_libdir}/opensips/modules/mangler.so
@@ -710,7 +709,6 @@ fi
 %doc docdir/README.gflags
 %doc docdir/README.group
 %doc docdir/README.imc
-%doc docdir/README.lcr
 %doc docdir/README.mangler
 %doc docdir/README.maxfwd
 %doc docdir/README.mediaproxy

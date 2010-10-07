@@ -31,7 +31,6 @@ lib/opensips/modules/gflags.so
 lib/opensips/modules/group.so
 lib/opensips/modules/imc.so
 lib/opensips/modules/jabber.so
-lib/opensips/modules/lcr.so
 lib/opensips/modules/load_balancer.so
 lib/opensips/modules/localcache.so
 lib/opensips/modules/mangler.so
@@ -105,7 +104,6 @@ share/doc/opensips/README.gflags
 share/doc/opensips/README.group
 share/doc/opensips/README.imc
 share/doc/opensips/README.jabber
-share/doc/opensips/README.lcr
 share/doc/opensips/README.load_balancer
 share/doc/opensips/README.localcache
 share/doc/opensips/README.mangler

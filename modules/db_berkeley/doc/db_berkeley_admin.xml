@@ -348,10 +348,6 @@ HEADER=END
  dbaliases|1
  domain|
  domain|1
- gw_grp|
- gw_grp|1
- gw|
- gw|4
  speed_dial|
  speed_dial|2
  subscriber|
@@ -366,8 +362,6 @@ HEADER=END
  acc|4
  grp|
  grp|2
- lcr|
- lcr|2
  location|
  location|1004
  missed_calls|

@@ -24,7 +24,6 @@ f none /opt/opensips/postgres/domainpolicy-create.sql 0644 root root
 f none /opt/opensips/postgres/drouting-create.sql 0644 root root
 f none /opt/opensips/postgres/group-create.sql 0644 root root
 f none /opt/opensips/postgres/imc-create.sql 0644 root root
-f none /opt/opensips/postgres/lcr-create.sql 0644 root root
 f none /opt/opensips/postgres/load_balancer-create.sql 0644 root root
 f none /opt/opensips/postgres/msilo-create.sql 0644 root root
 f none /opt/opensips/postgres/nathelper-create.sql 0644 root root

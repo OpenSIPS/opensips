@@ -1,1 +1,0 @@
-id(int,auto) gw_name(string) grp_id(int) ip_addr(string) port(int,null) uri_scheme(int,null) transport(int,null) strip(int,null) tag(string,null) flags(int) 

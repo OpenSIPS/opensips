@@ -122,7 +122,7 @@ my $ALIAS_EXISTS = 0;
 ######-----------------------------------------------#######
 ##database specific variables
 #
-my @STANDARD_TABLES = ('version', 'acc', 'dbaliases', 'lcr', 
+my @STANDARD_TABLES = ('version', 'acc', 'dbaliases',
 			'domain', 'grp', 'uri', 'speed_dial', 
 			'gw', 'pdt', 'subscriber', 'location', 
 			're_grp', 'address', 'missed_calls', 
@@ -131,7 +131,7 @@ my @STANDARD_TABLES = ('version', 'acc', 'dbaliases', 'lcr',
 			'dr_gateways','dr_rules','dr_gw_lists',
 			'dr_groups','nh_sockets','load_balancer');
 
-my @STANDARD_MODULES = ('standard', 'acc', 'lcr', 'domain', 'group', 
+my @STANDARD_MODULES = ('standard', 'acc', 'domain', 'group', 
 	'permissions', 'registrar', 'usrloc', 'msilo', 'alias_db', 'uri_db',
 	'speeddial', 'avpops', 'auth_db', 'pdt', 'dialog', 'dispatcher', 
 	'dialplan','drouting','nathelper','load_balancer' );
@@ -188,7 +188,6 @@ my @command_list = ('acl'=> ('show','grant','revoke'),
 		    'domain'=> ('reload','show','showdb','add','rm'),	
 		    'address'=> ('show','dump','reload','add','rm'),
 		    'fifo'=>'fifo',		 
-		    'lcr'=> ('show','reload','addgw','rmgw','addroute','rmroute'),	
 		    'cr' => ('show','reload','dump','addrt','rmrt','addcarrier','rmcarrier'),
 		    'dispatcher'=>('show','addgw','rmgw','reload','dump'),
 		    'monitor'=>'monitor',
@@ -697,34 +696,6 @@ my %domain_table = ('DO_DOMAIN_COLUMN' => 'domain',
 		    'DO_LAST_MODIFIED_COLUMN' => 'last_modified',
 		    );
 
-# lcr tables
-my $LCR_TABLE = " ";
-if ( -z $LCR_TABLE ) { 
-	$LCR_TABLE = 'lcr';
-}
-
-my %lcr_table = ('LCR_PREFIX_COLUMN' => 'prefix',
-		 'LCR_FROMURI_COLUMN' => 'from_uri',
-		 'LCR_GRPID_COLUMN' => 'grp_id',
-		 'LCR_PRIO_COLUMN' => 'priority'
-		);
-
-# gw table
-my $GW_TABLE = " ";
-if ( -z $GW_TABLE ) {
-	$GW_TABLE = 'gw';
-}
-my %gw_table = ('LCR_GW_GWNAME_COLUMN' => 'gw_name',
-		'LCR_GW_GRPID_COLUMN' => 'grp_id',
-		'LCR_GW_IP_COLUMN' => 'ip_addr',
-		'LCR_GW_PORT_COLUMN' => 'port',
-		'LCR_GW_URIS_COLUMN' => 'uri_scheme',
-		'LCR_GW_PROTO_COLUMN' => 'transport',
-		'LCR_GW_STRIP_COLUMN' => 'strip',
-		'LCR_GW_TAG_COLUMN' => 'tag',
-		'LCR_GW_FLAGS_COLUMN' => 'flags'
-		);
-
 # route_tree table
 my $ROUTE_TREE_TABLE = " ";
 if ( -z $ROUTE_TREE_TABLE ) {
@@ -975,31 +946,6 @@ sub usage_acl() {
 	      "acl show [<username>] .............. show user membership\n" .
               "acl grant <username> <group> ....... grant user membership (*)\n" .
               "acl revoke <username> [<group>] .... revoke user membership(s) (*)\n";
-}
-
-
-#lcr
-sub usage_lcr() {
-	print " -- command 'lcr' - manage least cost routes (lcr)\n" .
-	      "* IP addresses must be entered in dotted quad format e.g. 1.2.3.4 *\n" .
-	      "* <uri_scheme> and <transport> must be entered in integer or text,*\n" .
-              "* e.g. transport '2' is identical to transport 'tcp'.             *\n" .
-   	      "*   scheme: 1=sip, 2=sips;   transport: 1=udp, 2=tcp, 3=tls       *\n" .
-   	      "* Examples:  lcr addgw level3 1.2.3.4 5080 sip tcp 1              *\n" .
-   	      "*            lcr addroute +1 '' 1 1                               *\n" .
-	      "lcr show .....................................................................\n" .
-           		"............. show routes, gateways and groups\n" .
-	      "lcr reload ...................................................................\n" .
-	           "............. reload lcr gateways\n" .
-  	      "lcr addgw <gw_name> <ip> <port> <scheme> <transport> <grp_id> <flags> <tag> <strip>\n" .
-              "............... add a gateway with flags, tag and strip ............\n" .
-              "................(flags, tag, and strip are optional arguments) .....\n" .
-              "lcr rmgw  <gw_name> ..........................................................\n" .
-              "............... delete a gateway\n" .
-              "lcr addroute <prefix> <from> <grp_id> <prio> .................................\n" .
-              ".............. add a route ( use '' to match anything in <from> )\n" .
-              "lcr rmroute  <prefix> <from> <grp_id> <prio> .................................\n" .
-              ".............. delete a route\n";
 }
 
 
@@ -1738,8 +1684,6 @@ sub cmd() {
 		if (&db_load()) {system(&domain()); }
 	}elsif ($cmd[0] =~ /(^fifo$)|(^unixsock$)|(^udp$)|(^xmlrpc$)/) {
 		&mi_comm();
-	} elsif ($cmd[0] =~ /^lcr$/) {
-		if (&db_load()) {system(&opensips_lcr()); }
 	} elsif ($cmd[0] =~ /(^moni$)|(^monitor$)|(^con$)|(^console$)/) {
 		&mi_comm_monitor();
 	} elsif ($cmd[0] =~ /^ping$/) {
@@ -1804,8 +1748,6 @@ sub opensips_help() {
 	&usage_tls();
 	print "\n\n";
 	&usage_acl();
-	print "\n\n";
-	&usage_lcr();
 	print "\n\n";
 	&usage_cr();
 	print "\n\n";
@@ -2302,255 +2244,6 @@ sub opensips_rpid() {
 			}
 }
 
-
-#
-##### ------------------------------------------------ #####
-### opensips_lcr
-#
-sub opensips_lcr(){
-	if ( $#cmd lt 1 ) {
-		print "Too few parameters!\n";
-		&usage_lcr();
-		return;
-	}
-
-		if ($cmd[1] =~ /^show$/) {
-			print "lcr routes\n";
-			if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
-				&bdb_select($LCR_TABLE); 
-			} elsif ( $DBENGINE =~ /^DBTEXT$/) {
-				system("$DBTEXTCMD","SELECT * 
-							FROM $LCR_TABLE 
-							ORDER BY $lcr_table{'LCR_PREFIX_COLUMN'} ");
-			} else {
-				$sth = $dbh->prepare ( "SELECT * 
-							FROM $LCR_TABLE 
-							ORDER BY $lcr_table{'LCR_PREFIX_COLUMN'} ");	
-				
-				 ##execute the query
-				 $sth->execute( );
-	 			 
-				 ## Retrieve the results of a row of data and print
-				 print "\tQuery results:\n================================================\n";
-
-				 while (@row = $sth->fetchrow_array( ) )  {
-	     		                 	print "@row\n";
-	    	                 }		 
-				 warn "Could not retrieve data! Data was not inserted in database!", $sth->errstr( ), "\n" if $sth->err( );
-				 $sth->finish(); 
-			}
-	
-			 #retrieve lcr gateways	
-			 print "lcr gateways\n";
-
-			if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
-				&bdb_select($GW_TABLE); 
-			} elsif ( $DBENGINE =~ /^DBTEXT$/) {
-				system("$DBTEXTCMD","SELECT $gw_table{'LCR_GW_GWNAME_COLUMN'}, $gw_table{'LCR_GW_IP_COLUMN'},$gw_table{'LCR_GW_PORT_COLUMN'}, 							 $gw_table{'LCR_GW_URIS_COLUMN'}, $gw_table{'LCR_GW_PROTO_COLUMN'},$gw_table{'LCR_GW_GRPID_COLUMN'}, 							 $gw_table{'LCR_GW_STRIP_COLUMN'}, $gw_table{'LCR_GW_TAG_COLUMN'},$gw_table{'LCR_GW_FLAGS_COLUMN'} 
-							 FROM $GW_TABLE 
-							 ORDER BY $gw_table{'LCR_GW_GRPID_COLUMN'}");
-			} else {			 
-				 $sth = $dbh->prepare ( "SELECT $gw_table{'LCR_GW_GWNAME_COLUMN'}, $gw_table{'LCR_GW_IP_COLUMN'},$gw_table{'LCR_GW_PORT_COLUMN'}, 							 $gw_table{'LCR_GW_URIS_COLUMN'}, $gw_table{'LCR_GW_PROTO_COLUMN'},$gw_table{'LCR_GW_GRPID_COLUMN'}, 							 $gw_table{'LCR_GW_STRIP_COLUMN'}, $gw_table{'LCR_GW_TAG_COLUMN'},$gw_table{'LCR_GW_FLAGS_COLUMN'} 
-							 FROM $GW_TABLE 
-							 ORDER BY $gw_table{'LCR_GW_GRPID_COLUMN'}");	
-				
-				 ##execute the query
-				 $sth->execute( );
-
-	 			 ## Retrieve the results of a row of data and print						 
-		                 print "\tQuery results:\n================================================\n";
-
-				 while (@row = $sth->fetchrow_array( ) )  {
-	     		                 	print "@row\n";
-	    	                 }		 
-				 warn "Could not retrieve data! Data was not inserted in database!", $sth->errstr( ), "\n" if $sth->err( );
-				 $sth->finish(); 
-
-			}
-			
-		}
-
-		elsif ($cmd[1] =~ /^reload$/) {
-			&mi_comm("lcr_reload");			
-			
-		}
-	
-		elsif ($cmd[1] =~ /^addroute$/) {
-			if ( $#cmd lt 5 ) {
-				print "lcr - too few parameters\n";
-				&usage_lcr();
-				return;
-			}
-
-			if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
-				my $key = $cmd[2];
-				my $value = join(" ", $cmd[3],$cmd[4],$cmd[5]); 
-				&bdb_insert($LCR_TABLE,$key,$value); 
-			} elsif ( $DBENGINE =~ /^DBTEXT$/) {
-				system("$DBTEXTCMD","INSERT INTO $LCR_TABLE ($lcr_table{'LCR_PREFIX_COLUMN'}, $lcr_table{'LCR_FROMURI_COLUMN'}, $lcr_table{'LCR_GRPID_COLUMN'}, $lcr_table{'LCR_PRIO_COLUMN'}) VALUES (" . $cmd[2] . "," . $cmd[3] . "," . $cmd[4] . "," . $cmd[5] . ")");
-			} else {
-				$sth = $dbh->prepare (
-				"INSERT INTO $LCR_TABLE 
-				 ($lcr_table{'LCR_PREFIX_COLUMN'}, $lcr_table{'LCR_FROMURI_COLUMN'}, $lcr_table{'LCR_GRPID_COLUMN'}, $lcr_table{'LCR_PRIO_COLUMN'}) 				 VALUES (" . $cmd[2] . "," . $cmd[3] . "," . $cmd[4] . "," . $cmd[5] . ")" );	
-	 
-				 ##execute the query
-				 $sth->execute( );
-
-		 		 print "Data was not inserted in database!", $sth->errstr( ), "\n" if $sth->err( );
-
-				 $sth->finish();
-			}
-			
-			&mi_comm('lcr_reload');			
-		}
-		
-
-		elsif ($cmd[1] =~ /^rmroute$/){
-			if ( $#cmd lt 5 ) {
-				print "too few parameters\n";
-				&usage_lcr();
-				return;
-			}
-
-			if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
-				&bdb_delete($LCR_TABLE,$cmd[2]); 
-			} elsif ( $DBENGINE =~ /^DBTEXT$/) {
-				system("$DBTEXTCMD","DELETE FROM $LCR_TABLE 
-						       WHERE $lcr_table{'LCR_PREFIX_COLUMN'}=$cmd[2] 
-						       AND $lcr_table{'LCR_FROMURI_COLUMN'}=$cmd[3] 
-						       AND $lcr_table{'LCR_GRPID_COLUMN'}=$cmd[4] 
-		                                       AND $lcr_table{'LCR_PRIO_COLUMN'}=$cmd[5]");
-			} else {
-				$sth = $dbh->prepare ("DELETE FROM $LCR_TABLE 
-						       WHERE $lcr_table{'LCR_PREFIX_COLUMN'}=$cmd[2] 
-						       AND $lcr_table{'LCR_FROMURI_COLUMN'}=$cmd[3] 
-						       AND $lcr_table{'LCR_GRPID_COLUMN'}=$cmd[4] 
-		                                       AND $lcr_table{'LCR_PRIO_COLUMN'}=$cmd[5]");	
-				
-				##execute the query
-				$sth->execute( );
-
-			 	## Retrieve the results of a row of data and print
-				warn "Could not delete entry!", $sth->errstr( ), "\n" if $sth->err( );
-				$sth->finish(); 
-			}
-
-			&mi_comm('lcr_reload');			
-		}
-		
-		elsif ($cmd[1] =~ /^addgw$/) {
-
-			my ($GW_FLAGS, $GW_TAG, $GW_STRIP, $STRIP, $GW_NAME, $GW_IP, $GW_PORT, $GW_URI_SCHEME, $GW_GRP_ID, $GW_TRANSPORT);
-
-			if ( $#cmd < 7 ) {
-				print "Too few parameters!\n";
-				&usage_lcr();
-				return;
-			}
-			
-			if ( $#cmd gt 7 ) {
-				$GW_FLAGS = $cmd[8];
-				if ( $#cmd gt 8 ) {
-					$GW_TAG = $cmd[9];
-				} else {
-					$GW_TAG = "";
-					$GW_STRIP = 0;
-				}
-				if ( $#cmd gt 9 ) {
-					$STRIP = $cmd[10];
-				} else {
-					$STRIP = 0;
-				}
-				if ( $#cmd gt 10 ) {
-					print "Too many parameters!\n";
-					&usage_lcr();
-					return;
-				}
-			} else {
-				$GW_FLAGS = 0;
-				$GW_TAG = "";
-				$STRIP = 0;
-			}
-			
-			$GW_NAME = $cmd[2];
-			$GW_IP = $cmd[3];
-			$GW_PORT = $cmd[4];
-			$GW_URI_SCHEME = $cmd[5];
-			if   ( $GW_URI_SCHEME =~ /^sip$/ ) {
-				$GW_URI_SCHEME = 1;
-			} elsif ( $GW_URI_SCHEME =~ /^sips$/ ) {
-				$GW_URI_SCHEME = 2;
-			}
-			$GW_TRANSPORT = $cmd[6];
-			if   ( $GW_TRANSPORT =~ /^udp$/ ) {
-				$GW_TRANSPORT = 1;
-			} elsif ( $GW_TRANSPORT =~ /^tcp$/ ) {
-				$GW_TRANSPORT = 2;
-			} elsif ( $GW_TRANSPORT =~ /^tls$/ ) {
-				$GW_TRANSPORT = 3;
-			}
-			$GW_GRP_ID=$cmd[7];
-
-			if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
-				my $key = $GW_NAME;
-				my $value = join(" ",$GW_GRP_ID,$GW_IP,$GW_PORT,$GW_URI_SCHEME,$GW_TRANSPORT,$STRIP,$GW_TAG, $GW_FLAGS);
-				&bdb_insert($GW_TABLE,$key,$value); 
-			} elsif ( $DBENGINE =~ /^DBTEXT$/) {
-				system("$DBTEXTCMD","INSERT INTO $GW_TABLE ( $gw_table{'LCR_GW_GWNAME_COLUMN'}, $gw_table{'LCR_GW_GRPID_COLUMN'},$gw_table{'LCR_GW_IP_COLUMN'},$gw_table{'LCR_GW_PORT_COLUMN'},$gw_table{'LCR_GW_URIS_COLUMN'},$gw_table{'LCR_GW_PROTO_COLUMN'},$gw_table{'LCR_GW_STRIP_COLUMN'},$gw_table{'LCR_GW_TAG_COLUMN'},$gw_table{'LCR_GW_FLAGS_COLUMN'} ) VALUES (\'$GW_NAME\', $GW_GRP_ID,\'$GW_IP\', $GW_PORT, $GW_URI_SCHEME,	$GW_TRANSPORT, $STRIP, \'$GW_TAG\', $GW_FLAGS)");
-			} else {
-				$sth = $dbh->prepare ("INSERT INTO $GW_TABLE ( $gw_table{'LCR_GW_GWNAME_COLUMN'}, $gw_table{'LCR_GW_GRPID_COLUMN'},$gw_table{'LCR_GW_IP_COLUMN'},$gw_table{'LCR_GW_PORT_COLUMN'},$gw_table{'LCR_GW_URIS_COLUMN'},$gw_table{'LCR_GW_PROTO_COLUMN'},$gw_table{'LCR_GW_STRIP_COLUMN'},$gw_table{'LCR_GW_TAG_COLUMN'},$gw_table{'LCR_GW_FLAGS_COLUMN'} ) VALUES (\'$GW_NAME\', $GW_GRP_ID,\'$GW_IP\', $GW_PORT, $GW_URI_SCHEME,	$GW_TRANSPORT, $STRIP, \'$GW_TAG\', $GW_FLAGS)" );	
- 
-				 ##execute the query
-				 $sth->execute( );
-
-		 		 print "Data was not inserted in database!", $sth->errstr( ), "\n" if $sth->err( );
-
-				 $sth->finish();
-			}
-			
-			&mi_comm('lcr_reload');		
-			
-		}
-
-		elsif ($cmd[1] =~ /^rmgw$/) {
-			if ( $#cmd lt 2 ) {
-				print "missing gateway to be removed\n";
-				return;
-			}
-
-			if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
-				&bdb_delete($GW_TABLE,$cmd[2]); 
-			} elsif ( $DBENGINE =~ /^DBTEXT$/) {
-				system("$DBTEXTCMD","DELETE FROM $GW_TABLE 
-						       WHERE $gw_table{'LCR_GW_GWNAME_COLUMN'}=$cmd[2]");
-			} else {
-
-				$sth = $dbh->prepare ("DELETE FROM $GW_TABLE 
-						       WHERE $gw_table{'LCR_GW_GWNAME_COLUMN'}=$cmd[2]");	
-				
-				##execute the query
-				$sth->execute( );
-			 	## Retrieve the results of a row of data and print
-			
-				warn "Could not delete entry!", $sth->errstr( ), "\n" if $sth->err( );
-				$sth->finish();
-			} 
-			
-			&mi_comm('lcr_reload');			
-		}
-
-		elsif ($cmd[1] =~ /^h$/) {
-			print "Too few parameters\n";
-			&usage_lcr;		
-		}
-
-		else {
-
-			print "lcr -unknown command $cmd[1]\n";
-
-		}
-
-}
 
 #
 ##### ------------------------------------------------ #####
@@ -6041,8 +5734,6 @@ sub pgsql_opensips_create() {	# pars: <database name>
 	#&pgsql_query ($db, "CREATE FUNCTION \"concat\" (text,text) RETURNS text AS \"SELECT \$1 || \$2;\" LANGUAGE \'sql\';
 	 #       CREATE FUNCTION \"rand\" () RETURNS double precision AS \'SELECT random();\' LANGUAGE \'sql\';");
 
-	# emulate mysql proprietary functions used by the lcr module in postgresql
-
 	#if ( $? != 0 ) {
 	#	print "Creating pgsql emulation functions failed!";
 	#	return;
@@ -6741,10 +6432,6 @@ sub mysql_migrate_db() { # 2 parameters (src_db, dst_db)
 
 	### gw
 	&mysql_migrate_table( $dst_db . ".gw", "id,gw_name,grp_id,ip_addr,port,uri_scheme,transport,strip,tag,flags", $src_db . ".gw", "?id,?gw_name,?grp_id,?ip_addr,?port,?uri_scheme,?transport,?strip,?tag,?flags" );
-
-	### lcr
-	&mysql_migrate_table( $dst_db . ".lcr", "id,prefix,from_uri,grp_id,priority", $src_db . ".lcr", "?id,?prefix,?from_uri,?grp_id,?priority" );
-	
 
 	### pdt
 	&mysql_migrate_table( $dst_db. ".pdt", "id,sdomain,prefix,domain", $src_db . ".pdt", "?id,?sdomain,?prefix,?domain" );

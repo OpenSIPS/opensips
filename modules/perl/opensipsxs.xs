@@ -889,12 +889,6 @@ completeness):
  * i_enum_query (without parameters)
  * imc_manager
  * jab_* (all functions from the jabber module)
- * load_gws (without parameters)
- * next_gw
- * from_gw (without parameters)
- * to_gw (without parameters)
- * load_contacts
- * next_contacts
  * sdp_mangle_ip
  * sdp_mangle_port
  * encode_contact

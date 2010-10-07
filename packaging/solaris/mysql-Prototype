@@ -27,7 +27,6 @@ f none /opt/opensips/mysql/domainpolicy-create.sql 0644 root root
 f none /opt/opensips/mysql/drouting-create.sql 0644 root root
 f none /opt/opensips/mysql/group-create.sql 0644 root root
 f none /opt/opensips/mysql/imc-create.sql 0644 root root
-f none /opt/opensips/mysql/lcr-create.sql 0644 root root
 f none /opt/opensips/mysql/load_balancer-create.sql 0644 root root
 f none /opt/opensips/mysql/msilo-create.sql 0644 root root
 f none /opt/opensips/mysql/nathelper-create.sql 0644 root root

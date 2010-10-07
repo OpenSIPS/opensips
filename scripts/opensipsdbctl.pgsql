@@ -115,7 +115,6 @@ fi
 
 sql_query "$1" "CREATE FUNCTION "concat" (text,text) RETURNS text AS 'SELECT \$1 || \$2;' LANGUAGE 'sql';
 	        CREATE FUNCTION "rand" () RETURNS double precision AS 'SELECT random();' LANGUAGE 'sql';"
-# emulate mysql proprietary functions used by the lcr module in postgresql
 
 if [ $? -ne 0 ] ; then
 	merr "Creating mysql emulation functions failed!"

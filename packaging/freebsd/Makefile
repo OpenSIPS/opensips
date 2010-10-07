@@ -35,7 +35,7 @@ PLIST_DIRS=	lib/opensips/modules lib/opensips/opensipsctl lib/opensips
 
 MODULES=	acc alias_db auth auth_db auth_diameter avpops benchmark \
 		cfgutils dbtext dialog dispatcher diversion domain \
-		domainpolicy enum exec flatstore gflags group imc lcr \
+		domainpolicy enum exec flatstore gflags group imc \
 		mangler maxfwd mediaproxy mi_datagram mi_fifo msilo nathelper \
 		options path pdt permissions pike registrar rr seas \
 		siptrace sl sms speeddial sst statistics textops tm uac \
