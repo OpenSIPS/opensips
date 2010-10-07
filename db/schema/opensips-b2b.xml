@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE database PUBLIC "-//opensips.org//DTD DBSchema V1.1//EN"
+  "http://opensips.org/pub/opensips/dbschema/dtd/1.1/dbschema.dtd" [
+
+  <!ENTITY % entities SYSTEM "entities.xml">
+  %entities;
+
+]>
+
+<database xmlns:xi="http://www.w3.org/2001/XInclude">
+    <name>B2BUA</name>
+    <xi:include href="b2b_entities.xml"/>
+    <xi:include href="b2b_logic.xml"/>
+</database>

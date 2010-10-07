@@ -90,7 +90,6 @@ extern str custom_headers_lst[HDR_LST_LEN];
 int custom_headers_lst_len;
 extern int use_init_sdp;
 
-
 static inline int b2b_get_request_id(str* request)
 {
 	if(request->len ==INVITE_LEN&&strncasecmp(request->s,INVITE,INVITE_LEN)==0)
@@ -127,5 +126,8 @@ b2b_scenario_t* b2b_find_scenario(b2b_scenario_t* scenario,
 int b2b_process_scenario_init(b2b_scenario_t* scenario_struct,struct sip_msg* msg,
 		unsigned int hash_index, str* args[], str* to, str* from);
 int b2b_add_dlginfo(str* key, str* entity_key,int src, b2b_dlginfo_t* info);
+
+int b2b_server_notify(struct sip_msg* msg, str* key, int type, void* param);
+int b2b_client_notify(struct sip_msg* msg, str* key, int type, void* param);
 
 #endif

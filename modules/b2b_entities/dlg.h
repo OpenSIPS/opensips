@@ -44,7 +44,7 @@
 
 #define DLG_ESTABLISHED   1
 
-enum b2b_entity_type {B2B_SERVER=0, B2B_CLIENT};
+enum b2b_entity_type {B2B_SERVER=0, B2B_CLIENT, B2B_NONE};
 
 typedef struct b2b_dlginfo
 {
@@ -83,6 +83,11 @@ typedef struct b2b_dlg_leg {
 }dlg_leg_t;
 
 
+#define NO_UPDATEDB_FLAG    0
+#define UPDATEDB_FLAG       1
+#define INSERTDB_FLAG       2
+
+
 /** Definitions for structures used for storing dialogs */
 typedef struct b2b_dlg
 {
@@ -112,6 +117,7 @@ typedef struct b2b_dlg
 	struct cell*         cancel_tm_tran;
 	dlg_leg_t*           legs;
 	unsigned int         last_reply_code;
+	int                  db_flag;
 }b2b_dlg_t;
 
 typedef struct client_info
@@ -133,6 +139,7 @@ typedef struct b2b_entry
 {
 	b2b_dlg_t* first;
 	gen_lock_t lock;
+	int checked;
 }b2b_entry_t;
 
 typedef b2b_entry_t* b2b_table;
@@ -174,7 +181,7 @@ typedef int (*b2b_send_request_t)(enum b2b_entity_type , str* , str* ,
 int b2b_send_request(enum b2b_entity_type et, str* b2b_key, str* method,
 		str* extra_headers, str* body, b2b_dlginfo_t*);
 
-void b2b_delete_record(b2b_dlg_t* dlg, b2b_table* htable, unsigned int hash_index);
+void b2b_delete_record(b2b_dlg_t* dlg, b2b_table htable, unsigned int hash_index);
 
 typedef dlg_t* (*build_dlg_f)(b2b_dlg_t* dlg);
 
@@ -195,5 +202,7 @@ void b2b_tm_cback(struct cell* t, b2b_table htable, struct tmcb_params *ps);
 void print_b2b_entities(void);
 
 int b2breq_complete_ehdr(str* extra_headers, str* ehdr_out, str* body);
+
+void b2b_db_delete(b2b_dlg_t* dlg, int type);
 
 #endif

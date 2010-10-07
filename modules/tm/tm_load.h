@@ -69,6 +69,7 @@ struct tm_binds {
 	free_dlg_f         free_dlg;
 	print_dlg_f        print_dlg;
 	tgett_f            t_gett;
+	tgett_f            t_get_e2eackt;
 	tget_picked_f      t_get_picked;
 	tunrefcell_f       unref_cell;
 	tunrefcell_f       ref_cell;

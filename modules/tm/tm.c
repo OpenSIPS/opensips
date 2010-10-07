@@ -187,6 +187,8 @@ static cmd_export_t cmds[]={
 			0, ONREPLY_ROUTE },
 	{"t_cancel_branch", (cmd_function)w_t_cancel_branch,1, fixup_cancel_branch,
 			0, ONREPLY_ROUTE },
+	{"t_reply_with_body",(cmd_function)w_t_reply_with_body,3, fixup_t_send_reply,
+			0, REQUEST_ROUTE },
 	{"load_tm",         (cmd_function)load_tm,          0, 0,
 			0, 0},
 	{0,0,0,0,0,0}
@@ -471,7 +473,7 @@ static int fixup_t_send_reply(void** param, int param_no)
 	}
 
 	model=NULL;
-	if (param_no==1 || param_no==2) {
+	if (param_no>0 && param_no<4) {
 		if(pv_parse_format(&s ,&model) || model==NULL) {
 			LM_ERR("wrong format [%s] for param no %d!\n", s.s, param_no);
 			return E_CFG;
@@ -569,6 +571,7 @@ int load_tm( struct tm_binds *tmb)
 	tmb->t_get_trans_ident = t_get_trans_ident;
 	tmb->t_lookup_ident = t_lookup_ident;
 	tmb->t_gett = get_t;
+	tmb->t_get_e2eackt = get_e2eack_t;
 	tmb->t_get_picked = t_get_picked_branch;
 
 	tmb->t_lookup_original_t = t_lookupOriginalT;
