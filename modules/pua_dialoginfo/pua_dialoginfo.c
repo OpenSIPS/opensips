@@ -378,6 +378,66 @@ error:
 }
 
 
+int dialoginfo_process_body(struct publ_info* publ, str** fin_body,
+					int ver, str* tuple)
+{
+	xmlNodePtr node= NULL;
+	xmlDocPtr doc= NULL;
+	char* version;
+	str* body= NULL;
+	int len;
+
+	doc= xmlParseMemory(publ->body->s, publ->body->len );
+	if(doc== NULL)
+	{
+		LM_ERR("while parsing xml memory\n");
+		goto error;
+	}
+	/* change version */
+	node= doc->children;
+	if(node == NULL)
+	{
+		LM_ERR("while extracting dialog-info node\n");
+		goto error;
+	}
+	version= int2str(ver,&len);
+	version[len]= '\0';
+
+	if(!xmlNewProp(node, BAD_CAST "version", BAD_CAST version))
+	{
+		LM_ERR("while setting version attribute\n");
+		goto error;
+	}
+	body= (str*)pkg_malloc(sizeof(str));
+	if(body== NULL)
+	{
+		LM_ERR("NO more memory left\n");
+		goto error;
+	}
+	memset(body, 0, sizeof(str));
+	xmlDocDumpMemory(doc, (xmlChar**)(void*)&body->s, &body->len);
+
+	xmlFreeDoc(doc);
+	*fin_body= body;
+	if(*fin_body== NULL)
+		LM_DBG("NULL fin_body\n");
+
+	xmlMemoryDump();
+	xmlCleanupParser();
+	return 1;
+
+error:
+	if(doc)
+		xmlFreeDoc(doc);
+	if(body)
+		pkg_free(body);
+	xmlMemoryDump();
+	xmlCleanupParser();
+	return -1;
+}
+
+
+
 /**
  * init module function
  */
@@ -405,7 +465,7 @@ static int mod_init(void)
 	pua_send_publish= pua.send_publish;
 
 	/* add event in pua module */
-	if(pua.add_event(DIALOG_EVENT, "dialog", "application/dialog-info+xml", NULL) < 0) {
+	if(pua.add_event(DIALOG_EVENT, "dialog", "application/dialog-info+xml", dialoginfo_process_body) < 0) {
 		LM_ERR("failed to add 'dialog' event to pua module\n");
 		return -1;
 	}
