@@ -102,6 +102,9 @@ static cmd_export_t cmds[] = {
 	{"record_route_preset",  (cmd_function)w_record_route_preset, 1,
 			it_list_fixup, 0,
 			REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
+	{"record_route_preset",  (cmd_function)w_record_route_preset, 2,
+			it_list_fixup, 0,
+			REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
 	{"add_rr_param",         (cmd_function)w_add_rr_param,        1,
 			it_list_fixup, 0,
 			REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
@@ -164,7 +167,7 @@ struct module_exports exports = {
 
 static int mod_init(void)
 {
-	LM_DBG("rr - initializing\n");
+	LM_INFO("rr - initializing\n");
 #ifdef ENABLE_USER_CHECK
 	if(ignore_user)
 	{
@@ -277,12 +280,17 @@ static int w_record_route(struct sip_msg *msg, char *key, char *bar)
 }
 
 
-static int w_record_route_preset(struct sip_msg *msg, char *key, char *bar)
+static int w_record_route_preset(struct sip_msg *msg, char *key, char *key2)
 {
 	str s;
 
 	if (msg->id == last_rr_msg) {
 		LM_ERR("Duble attempt to record-route\n");
+		return -1;
+	}
+	if (key2 && !enable_double_rr) {
+		LM_ERR("Attempt to double record-route while 'enable_double_rr' "
+			"param is disabled\n");
 		return -1;
 	}
 
@@ -293,6 +301,17 @@ static int w_record_route_preset(struct sip_msg *msg, char *key, char *bar)
 	if ( record_route_preset( msg, &s)<0 )
 		return -1;
 
+	if (!key2)
+		goto done;
+
+	if (pv_printf_s(msg, (pv_elem_t*)key2, &s)<0) {
+		LM_ERR("failed to print the format\n");
+		return -1;
+	}
+	if ( record_route_preset( msg, &s)<0 )
+		return -1;
+
+done:
 	last_rr_msg = msg->id;
 	return 1;
 }
