@@ -1556,6 +1556,58 @@ not_found:
 	return 1;
 }
 
+int w_t_reply_with_body(struct sip_msg* msg, str* code, str *text,
+								str *body)
+{
+	struct cell *t;
+	int r;
+	str code_s;
+	unsigned int code_i;
+	str body_s;
+
+	if(body==0)
+	{
+		LM_ERR("Wrong argument, body must not be NULL\n");
+		return -1;
+	}
+
+	if(((pv_elem_p)code)->spec.getf!=NULL) {
+		if(pv_printf_s(msg, (pv_elem_p)code, &code_s)!=0)
+			return -1;
+		if(str2int(&code_s, &code_i)!=0 || code_i<100 || code_i>699)
+			return -1;
+	} else {
+		code_i = ((pv_elem_p)code)->spec.pvp.pvn.u.isname.name.n;
+	}
+
+	if(((pv_elem_p)text)->spec.getf!=NULL) {
+		if(pv_printf_s(msg, (pv_elem_p)text, &code_s)!=0 || code_s.len <=0)
+			return -1;
+	} else {
+		code_s = ((pv_elem_p)text)->text;
+	}
+
+	if(((pv_elem_p)body)->spec.getf!=NULL) {
+		if(pv_printf_s(msg, (pv_elem_p)body, &body_s)!=0 || body_s.len <=0)
+			return -1;
+	} else {
+		body_s = ((pv_elem_p)body)->text;
+	}
+
+	t=get_t();
+	if ( t==0 || t==T_UNDEFINED ) {
+		r = t_newtran( msg );
+		if (r==0) {
+			/* retransmission -> break the script */
+			return 0;
+		} else if (r<0) {
+			LM_ERR("could not create a new transaction\n");
+			return -1;
+		}
+		t=get_t();
+	}
+	return t_reply_with_body(t, code_i, &code_s, &body_s, 0, 0);
+}
 
 
 int t_reply_with_body( struct cell *trans, unsigned int code, str *text,
@@ -1566,10 +1618,12 @@ int t_reply_with_body( struct cell *trans, unsigned int code, str *text,
 	str  rpl;
 	int  ret;
 	struct bookmark bm;
+	struct sip_msg* p_msg = trans->uas.request;
+	str to_tag_rpl= {0, 0};
 
 	/* add the lumps for new_header and for body (by bogdan) */
 	if (new_header && new_header->len) {
-		hdr_lump = add_lump_rpl( trans->uas.request, new_header->s,
+		hdr_lump = add_lump_rpl( p_msg, new_header->s,
 			new_header->len, LUMP_RPL_HDR );
 		if ( !hdr_lump ) {
 			LM_ERR("failed to add hdr lump\n");
@@ -1581,7 +1635,7 @@ int t_reply_with_body( struct cell *trans, unsigned int code, str *text,
 
 	/* body lump */
 	if(body && body->len) {
-		body_lump = add_lump_rpl( trans->uas.request, body->s, body->len,
+		body_lump = add_lump_rpl( p_msg, body->s, body->len,
 			LUMP_RPL_BODY );
 		if (body_lump==0) {
 			LM_ERR("failed add body lump\n");
@@ -1591,19 +1645,33 @@ int t_reply_with_body( struct cell *trans, unsigned int code, str *text,
 		body_lump = 0;
 	}
 
-	rpl.s = build_res_buf_from_sip_req(
-			code, text, to_tag,
-			trans->uas.request, (unsigned int*)&rpl.len, &bm);
+	if(to_tag && to_tag->len) {
+		rpl.s = build_res_buf_from_sip_req(code, text, to_tag, p_msg,
+		 	(unsigned int*)&rpl.len, &bm);
+		to_tag_rpl = *to_tag;
+	}
+	else
+	if (code>=180 && p_msg->to && (get_to(p_msg)->tag_value.s==0 
+			|| get_to(p_msg)->tag_value.len==0)) {
+		calc_crc_suffix( p_msg, tm_tag_suffix );
+		rpl.s = build_res_buf_from_sip_req(code,text, &tm_tag, p_msg,
+				(unsigned int*)&rpl.len, &bm);
+		to_tag_rpl.s = tm_tag.s;
+		to_tag_rpl.len = TOTAG_VALUE_LEN;
+	} else {
+		rpl.s = build_res_buf_from_sip_req(code,text, 0 /*no to-tag*/,
+			p_msg, (unsigned int*)&rpl.len, &bm);
+	}
 
 	/* since the msg (trans->uas.request) is a clone into shm memory, to avoid
 	 * memory leak or crashing (lumps are create in private memory) I will
 	 * remove the lumps by myself here (bogdan) */
 	if ( hdr_lump ) {
-		unlink_lump_rpl( trans->uas.request, hdr_lump);
+		unlink_lump_rpl( p_msg, hdr_lump);
 		free_lump_rpl( hdr_lump );
 	}
 	if( body_lump ) {
-		unlink_lump_rpl( trans->uas.request, body_lump);
+		unlink_lump_rpl( p_msg, body_lump);
 		free_lump_rpl( body_lump );
 	}
 
@@ -1611,9 +1679,7 @@ int t_reply_with_body( struct cell *trans, unsigned int code, str *text,
 		LM_ERR("failed in doing build_res_buf_from_sip_req()\n");
 		goto error;
 	}
-
-	LM_DBG("buffer computed\n");
-	ret=_reply_light( trans, rpl.s, rpl.len, code, to_tag->s, to_tag->len,
+	ret=_reply_light( trans, rpl.s, rpl.len, code, to_tag_rpl.s, to_tag_rpl.len,
 			1 /* lock replies */, &bm );
 
 	/* mark the transaction as replied */
@@ -1622,7 +1688,7 @@ int t_reply_with_body( struct cell *trans, unsigned int code, str *text,
 	return ret;
 error_1:
 	if ( hdr_lump ) {
-		unlink_lump_rpl( trans->uas.request, hdr_lump);
+		unlink_lump_rpl( p_msg, hdr_lump);
 		free_lump_rpl( hdr_lump );
 	}
 error:

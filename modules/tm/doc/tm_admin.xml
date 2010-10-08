@@ -914,6 +914,52 @@ t_reply("404", "Use $rU not found");
 		</example>
 	</section>
 
+	<section>
+		<title>
+		<function moreinfo="none">t_reply_with_body(code, reason_phrase, body)</function>
+		</title>
+		<para>
+		Sends a stateful reply with a body after a transaction has been established. See
+		<function>t_newtran</function> for usage.
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>code</emphasis> - Reply code number.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>reason_phrase</emphasis> - Reason string.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>body</emphasis> - Reply body.
+			</para>
+		</listitem>
+		</itemizedlist>
+
+		<para>
+		All parameters accept any kind of pseudo-variables.
+		</para>
+		<para>
+		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
+		</para>
+		<example>
+		<title><function>t_reply_with_body</function> usage</title>
+		<programlisting format="linespecific">
+...
+	if(is_method("INVITE"))
+	{
+		append_to_reply("Contact: $var(contact)\r\nContent-Type: application/sdp\r\n");
+		t_reply_with_body("200", "Ok", "$var(body)");
+		exit;
+	}
+...
+</programlisting>
+		</example>
+	</section>
+
+
 	<section id="treplicate">
 		<title>
 		<function moreinfo="none">t_replicate(URI,[flags])</function>

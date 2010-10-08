@@ -190,6 +190,8 @@ static cmd_export_t cmds[]={
 			0, ONREPLY_ROUTE },
 	{"t_add_hdrs",      (cmd_function)w_t_add_hdrs,     1, fixup_spve_null,
 			0, REQUEST_ROUTE },
+	{"t_reply_with_body",(cmd_function)w_t_reply_with_body,3, fixup_t_send_reply,
+			0, REQUEST_ROUTE },
 	{"load_tm",         (cmd_function)load_tm,          0, 0,
 			0, 0},
 	{0,0,0,0,0,0}
@@ -474,7 +476,7 @@ static int fixup_t_send_reply(void** param, int param_no)
 	}
 
 	model=NULL;
-	if (param_no==1 || param_no==2) {
+	if (param_no>0 && param_no<4) {
 		if(pv_parse_format(&s ,&model) || model==NULL) {
 			LM_ERR("wrong format [%s] for param no %d!\n", s.s, param_no);
 			return E_CFG;
