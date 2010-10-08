@@ -200,7 +200,7 @@ auth_result_t pre_auth(struct sip_msg* _m, str* _realm, hdr_types_t _hftype,
 
 	/* Check credentials correctness here */
 	if (check_dig_cred(&(c->digest)) != E_DIG_OK) {
-		LM_ERR("received credentials are not filled properly\n");
+		LM_DBG("received credentials are not filled properly\n");
 		if (send_resp(_m, 400, &auth_400_err, 0, 0) == -1) {
 			LM_ERR("failed to send 400 reply\n");
 		}
