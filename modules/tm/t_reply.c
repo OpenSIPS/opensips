@@ -1619,6 +1619,7 @@ int t_reply_with_body( struct cell *trans, unsigned int code, str *text,
 	int  ret;
 	struct bookmark bm;
 	struct sip_msg* p_msg = trans->uas.request;
+	str to_tag_rpl= {0, 0};
 
 	/* add the lumps for new_header and for body (by bogdan) */
 	if (new_header && new_header->len) {
@@ -1644,18 +1645,22 @@ int t_reply_with_body( struct cell *trans, unsigned int code, str *text,
 		body_lump = 0;
 	}
 
+	if(to_tag && to_tag->len) {
+		rpl.s = build_res_buf_from_sip_req(code, text, to_tag, p_msg,
+		 	(unsigned int*)&rpl.len, &bm);
+		to_tag_rpl = *to_tag;
+	}
+	else
 	if (code>=180 && p_msg->to && (get_to(p_msg)->tag_value.s==0 
 			|| get_to(p_msg)->tag_value.len==0)) {
 		calc_crc_suffix( p_msg, tm_tag_suffix );
 		rpl.s = build_res_buf_from_sip_req(code,text, &tm_tag, p_msg,
 				(unsigned int*)&rpl.len, &bm);
-		ret= _reply_light( trans,rpl.s,rpl.len,code,
-			tm_tag.s, TOTAG_VALUE_LEN, 1, &bm);
+		to_tag_rpl.s = tm_tag.s;
+		to_tag_rpl.len = TOTAG_VALUE_LEN;
 	} else {
 		rpl.s = build_res_buf_from_sip_req(code,text, 0 /*no to-tag*/,
 			p_msg, (unsigned int*)&rpl.len, &bm);
-		ret= _reply_light(trans,rpl.s,rpl.len,code, 0, 0 /* no to-tag */,
-			1, &bm);
 	}
 
 	/* since the msg (trans->uas.request) is a clone into shm memory, to avoid
@@ -1669,6 +1674,13 @@ int t_reply_with_body( struct cell *trans, unsigned int code, str *text,
 		unlink_lump_rpl( p_msg, body_lump);
 		free_lump_rpl( body_lump );
 	}
+
+	if (rpl.s==0) {
+		LM_ERR("failed in doing build_res_buf_from_sip_req()\n");
+		goto error;
+	}
+	ret=_reply_light( trans, rpl.s, rpl.len, code, to_tag_rpl.s, to_tag_rpl.len,
+			1 /* lock replies */, &bm );
 
 	/* mark the transaction as replied */
 	if (code>=200) set_kr(REQ_RPLD);

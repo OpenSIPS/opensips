@@ -16,9 +16,9 @@ Edited by
 
 Bogdan-Andrei Iancu
 
-   Copyright � 2003 FhG FOKUS
+   Copyright © 2003 FhG FOKUS
 
-   Copyright � 2005-2008 voice-system.ro
+   Copyright © 2005-2008 voice-system.ro
    Revision History
    Revision $Revision$ $Date: 2009-07-20 17:37:03 +0300
                               (Mon, 20 Jul 2009) $
@@ -67,19 +67,20 @@ Bogdan-Andrei Iancu
               1.4.2. t_relay([flags])
               1.4.3. t_relay(proto:host:port,[flags])
               1.4.4. t_reply(code, reason_phrase)
-              1.4.5. t_replicate(URI,[flags])
-              1.4.6. t_check_status(re)
-              1.4.7. t_flush_flags()
-              1.4.8. t_local_replied(reply)
-              1.4.9. t_write_req(info,fifo)
+              1.4.5. t_reply_with_body(code, reason_phrase, body)
+              1.4.6. t_replicate(URI,[flags])
+              1.4.7. t_check_status(re)
+              1.4.8. t_flush_flags()
+              1.4.9. t_local_replied(reply)
+              1.4.10. t_write_req(info,fifo)
                       t_write_unix(info,sock)
 
-              1.4.10. t_check_trans()
-              1.4.11. t_was_cancelled()
-              1.4.12. t_cancel_branch([flags])
-              1.4.13. t_on_failure(failure_route)
-              1.4.14. t_on_reply(reply_route)
-              1.4.15. t_on_branch(branch_route)
+              1.4.11. t_check_trans()
+              1.4.12. t_was_cancelled()
+              1.4.13. t_cancel_branch([flags])
+              1.4.14. t_on_failure(failure_route)
+              1.4.15. t_on_reply(reply_route)
+              1.4.16. t_on_branch(branch_route)
 
         1.5. Exported pseudo-variables
 
@@ -141,17 +142,18 @@ Bogdan-Andrei Iancu
    1.21. t_relay usage
    1.22. t_relay usage
    1.23. t_reply usage
-   1.24. t_replicate usage
-   1.25. t_check_status usage
-   1.26. t_flush_flags usage
-   1.27. t_local_replied usage
-   1.28. t_write_req/unix usage
-   1.29. t_check_trans usage
-   1.30. t_was_cancelled usage
-   1.31. t_cancel_branch usage
-   1.32. t_on_failure usage
-   1.33. t_on_reply usage
-   1.34. t_on_branch usage
+   1.24. t_reply_with_body usage
+   1.25. t_replicate usage
+   1.26. t_check_status usage
+   1.27. t_flush_flags usage
+   1.28. t_local_replied usage
+   1.29. t_write_req/unix usage
+   1.30. t_check_trans usage
+   1.31. t_was_cancelled usage
+   1.32. t_cancel_branch usage
+   1.33. t_on_failure usage
+   1.34. t_on_reply usage
+   1.35. t_on_branch usage
 
 Chapter 1. Admin Guide
 
@@ -234,7 +236,7 @@ Chapter 1. Admin Guide
    executing replies from the other branch).
 
    For how to define branch flags and use via script, see
-   Section 1.4.15, " t_on_branch(branch_route) " and the
+   Section 1.4.16, “ t_on_branch(branch_route) ” and the
    setbflag(), resetbflag() and isbflagset() script functions.
 
    Also, modules may set branch flags before transaction creation
@@ -494,8 +496,8 @@ modparam("tm", "fr_inv_timer_avp", "$avp(i:25)")
    availabe at:
    http://opensips.org/docs/pseudo-variables-1.1.x.html
 
-   Each element will be appended per line in "name: value" format.
-   Element "$rb (message body)" is the only one which does not
+   Each element will be appended per line in “name: value” format.
+   Element “$rb (message body)” is the only one which does not
    accept name; the body it will be printed all the time at the
    end, disregarding its position in the definition string.
 
@@ -685,14 +687,14 @@ if (!t_relay()) {
 1.4.3.  t_relay(proto:host:port,[flags])
 
    Relay a message statefully to a fixed destination. The
-   destination is specified as "[proto:]host[:port]". If a
-   destination URI "$du" for this message was set before the
+   destination is specified as “[proto:]host[:port]”. If a
+   destination URI “$du” for this message was set before the
    function is called then this value will be used as destination
    instead of the function parameter.
 
    The function may take as parameter an optional set of flags for
    controlling the internal behaviour - for details see the above
-   "t_relay([flags])" function.
+   “t_relay([flags])” function.
 
    This functions can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
@@ -721,7 +723,32 @@ t_relay("udp:mydomain.com");
 t_reply("404", "Use $rU not found");
 ...
 
-1.4.5.  t_replicate(URI,[flags])
+1.4.5.  t_reply_with_body(code, reason_phrase, body)
+
+   Sends a stateful reply with a body after a transaction has been
+   established. See t_newtran for usage.
+
+   Meaning of the parameters is as follows:
+     * code - Reply code number.
+     * reason_phrase - Reason string.
+     * body - Reply body.
+
+   All parameters accept any kind of pseudo-variables.
+
+   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
+
+   Example 1.24. t_reply_with_body usage
+...
+        if(is_method("INVITE"))
+        {
+                append_to_reply("Contact: $var(contact)\r\nContent-Type:
+ application/sdp\r\n");
+                t_reply_with_body("200", "Ok", "$var(body)");
+                exit;
+        }
+...
+
+1.4.6.  t_replicate(URI,[flags])
 
    Replicates a request to another destination. No information due
    the replicated request (like reply code) will be forwarded to
@@ -733,21 +760,21 @@ t_reply("404", "Use $rU not found");
 
    The function may take as parameter an optional set of flags for
    controlling the internal behaviour - for description see the
-   above "t_relay([flags])" function. Note that only 0x4 is
+   above “t_relay([flags])” function. Note that only 0x4 is
    applicable here.
 
    This functions can be used from REQUEST_ROUTE.
 
-   Example 1.24. t_replicate usage
+   Example 1.25. t_replicate usage
 ...
 t_replicate("sip:1.2.3.4:5060");
 t_replicate("sip:1.2.3.4:5060;transport=tcp");
 t_replicate("sip:1.2.3.4","0x4");
 ...
 
-1.4.6.  t_check_status(re)
+1.4.7.  t_check_status(re)
 
-   Returns true if the regualr expresion "re" match the reply code
+   Returns true if the regualr expresion “re” match the reply code
    of the response message as follows:
      * in routing block - the code of the last sent reply.
      * in on_reply block - the code of the current received reply.
@@ -757,14 +784,14 @@ t_replicate("sip:1.2.3.4","0x4");
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE and BRANCH_ROUTE .
 
-   Example 1.25. t_check_status usage
+   Example 1.26. t_check_status usage
 ...
 if (t_check_status("(487)|(408)")) {
     log("487 or 408 negative reply\n");
 }
 ...
 
-1.4.7.  t_flush_flags()
+1.4.8.  t_flush_flags()
 
    Flush the flags from current request into the already created
    transaction. It make sense only in routing block if the
@@ -773,38 +800,38 @@ if (t_check_status("(487)|(408)")) {
 
    This function can be used from REQUEST_ROUTE and BRANCH_ROUTE .
 
-   Example 1.26. t_flush_flags usage
+   Example 1.27. t_flush_flags usage
 ...
 t_flush_flags();
 ...
 
-1.4.8.  t_local_replied(reply)
+1.4.9.  t_local_replied(reply)
 
    Returns true if all or last (depending of the parameter)
    reply(es) were local generated (and not received).
 
-   Parameter may be "all" or "last".
+   Parameter may be “all” or “last”.
 
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    FAILURE_ROUTE and ONREPLY_ROUTE.
 
-   Example 1.27. t_local_replied usage
+   Example 1.28. t_local_replied usage
 ...
 if (t_local_replied("all")) {
         log ("no reply received\n");
 }
 ...
 
-1.4.9.  t_write_req(info,fifo) t_write_unix(info,sock)
+1.4.10.  t_write_req(info,fifo) t_write_unix(info,sock)
 
    Write via FIFO file or UNIX socket a lot of information
    regarding the request. Which information should be written may
-   be control via the "tw_append" parameter.
+   be control via the “tw_append” parameter.
 
    This functions can be used from REQUEST_ROUTE, FAILURE_ROUTE
    and BRANCH_ROUTE.
 
-   Example 1.28. t_write_req/unix usage
+   Example 1.29. t_write_req/unix usage
 ...
 modparam("tm","tw_append","append1:Email=avp[i:12];UA=hdr[User-Agent]")
 modparam("tm","tw_append","append2:body=msg[body]")
@@ -814,7 +841,7 @@ t_write_req("voicemail/append1","/tmp/appx_fifo");
 t_write_unix("logger/append2","/var/run/logger.sock");
 ...
 
-1.4.10.  t_check_trans()
+1.4.11.  t_check_trans()
 
    Returns true if the current request is associated to a
    transaction. The relationship between the request and
@@ -838,7 +865,7 @@ t_write_unix("logger/append2","/var/run/logger.sock");
 
    This function can be used from REQUEST_ROUTE and BRANCH_ROUTE.
 
-   Example 1.29. t_check_trans usage
+   Example 1.30. t_check_trans usage
 ...
 if ( is_method("CANCEL") ) {
         if ( t_check_trans() )
@@ -847,21 +874,21 @@ if ( is_method("CANCEL") ) {
 }
 ...
 
-1.4.11.  t_was_cancelled()
+1.4.12.  t_was_cancelled()
 
    Retuns true if called for an INVITE transaction that was
    explicitly cancelled by UAC side via a CANCEL request.
 
    This function can be used from ONREPLY_ROUTE, FAILURE_ROUTE.
 
-   Example 1.30. t_was_cancelled usage
+   Example 1.31. t_was_cancelled usage
 ...
 if (t_was_cancelled()) {
     log("transaction was cancelled by UAC\n");
 }
 ...
 
-1.4.12.  t_cancel_branch([flags])
+1.4.13.  t_cancel_branch([flags])
 
    This function is to be call when a reply is received for
    cancelling a set of branches (see flags) of the current call.
@@ -876,7 +903,7 @@ if (t_was_cancelled()) {
 
    This function can be used from ONREPLY_ROUTE.
 
-   Example 1.31. t_cancel_branch usage
+   Example 1.32. t_cancel_branch usage
 onreply_route[3] {
 ...
         if (t_check_status("183")) {
@@ -886,7 +913,7 @@ onreply_route[3] {
 ...
 }
 
-1.4.13.  t_on_failure(failure_route)
+1.4.14.  t_on_failure(failure_route)
 
    Sets reply routing block, to which control is passed after a
    transaction completed with a negative result but before sending
@@ -894,7 +921,7 @@ onreply_route[3] {
    new branch (good for services such as forward_on_no_reply) or
    send a final reply on your own (good for example for message
    silo, which received a negative reply from upstream and wants
-   to tell upstream "202 I will take care of it").
+   to tell upstream “202 I will take care of it”).
 
    As not all functions are available from failure route, please
    check the documentation for each function to see the
@@ -913,7 +940,7 @@ onreply_route[3] {
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    ONREPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.32. t_on_failure usage
+   Example 1.33. t_on_failure usage
 ...
 route {
         t_on_failure("1");
@@ -926,7 +953,7 @@ failure_route[1] {
 }
 ...
 
-1.4.14.  t_on_reply(reply_route)
+1.4.15.  t_on_reply(reply_route)
 
    Sets reply routing block, to which control is passed each time
    a reply (provisional or final) for the transaction is received.
@@ -962,7 +989,7 @@ failure_route[1] {
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    ONREPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.33. t_on_reply usage
+   Example 1.34. t_on_reply usage
 ...
 route {
         seturi("sip:bob@opensips.org");  # first branch
@@ -995,7 +1022,7 @@ onreply_route[global] {
 }
 ...
 
-1.4.15.  t_on_branch(branch_route)
+1.4.16.  t_on_branch(branch_route)
 
    Sets a branch route to be execute separately for each branch of
    the transaction before being sent out - changes in that route
@@ -1019,7 +1046,7 @@ onreply_route[global] {
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    ONREPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.34. t_on_branch usage
+   Example 1.35. t_on_branch usage
 ...
 route {
         t_on_branch("1");
@@ -1073,13 +1100,13 @@ branch_route[1] {
    Parameters:
      * method - request method
      * RURI - request SIP URI
-     * NEXT HOP - next hop SIP URI (OBP); use "." if no value.
+     * NEXT HOP - next hop SIP URI (OBP); use “.” if no value.
      * socket - local socket to be used for sending the request;
-       use "." if no value.
+       use “.” if no value.
      * headers - set of additional headers to be added to the
-       request; at least "From" and "To" headers must be specify)
+       request; at least “From” and “To” headers must be specify)
      * body - (optional, may not be present) request body (if
-       present, requires the "Content-Type" and "Content-length"
+       present, requires the “Content-Type” and “Content-length”
        headers)
 
 1.6.2.  t_uac_cancel
@@ -1109,15 +1136,15 @@ branch_route[1] {
        format)
      * to_tag - To tag to be added to TO header
      * new_headers - extra headers to be appended to the reply;
-       use a dot (".") char only if there are no headers;
+       use a dot (“.”) char only if there are no headers;
      * body - (optional, may not be present) reply body (if
-       present, requires the "Content-Type" and "Content-length"
+       present, requires the “Content-Type” and “Content-length”
        headers)
 
 1.7. Exported statistics
 
    Exported statistics are listed in the next sections. All
-   statistics except "inuse_transactions" can be reset.
+   statistics except “inuse_transactions” can be reset.
 
 1.7.1. received_replies
 
@@ -1175,7 +1202,7 @@ Chapter 2. Developer Guide
 
    Meaning of the parameters is as follows:
      * import_structure - Pointer to the import structure - see
-       "struct tm_binds" in modules/tm/tm_load.h
+       “struct tm_binds” in modules/tm/tm_load.h
 
 Chapter 3. Frequently Asked Questions
 
