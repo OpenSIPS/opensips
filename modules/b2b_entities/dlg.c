@@ -2085,7 +2085,7 @@ int b2breq_complete_ehdr(str* extra_headers, str* ehdr_out, str* body)
 		server_address.len, server_address.s);
 
 	/* if not present and body present add content type */
-	if(body && !strstr(ehdr.s, "Content-Type: "))
+	if(body && !strstr(ehdr.s, "Content-Type:"))
 	{
 		/* add content type header */
 		if(ehdr.len + 32 > BUF_LEN)
