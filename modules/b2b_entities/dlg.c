@@ -83,7 +83,7 @@ b2b_dlg_t* b2b_search_htable_dlg(b2b_table table, unsigned int hash_index,
 			/* check from tag and callid */
 			 if(dlg_from_tag.len==from_tag->len &&
 				strncmp(dlg_from_tag.s, from_tag->s, dlg_from_tag.len)==0
-				&& dlg->callid.len==callid->len &&strncmp(dlg->callid.s, callid->s, callid->len)==0)
+				&& dlg->callid.len==callid->len && strncmp(dlg->callid.s, callid->s, callid->len)==0)
 			{
 				LM_DBG("Complete match for the server dialog %p!\n", dlg);
 				return dlg;
@@ -1743,10 +1743,8 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 	}
 	else
 	{
-		
 		dlg = b2b_search_htable_dlg(htable, hash_index, local_index,
 			&from_tag, (method_id==METHOD_CANCEL)?0:&to_tag, &callid);
-
 	}
 
 	if(dlg== NULL)
@@ -2085,7 +2083,7 @@ int b2breq_complete_ehdr(str* extra_headers, str* ehdr_out, str* body)
 		server_address.len, server_address.s);
 
 	/* if not present and body present add content type */
-	if(body && !strstr(ehdr.s, "Content-Type: "))
+	if(body && !strstr(ehdr.s, "Content-Type:"))
 	{
 		/* add content type header */
 		if(ehdr.len + 32 > BUF_LEN)
