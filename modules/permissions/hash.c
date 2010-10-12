@@ -215,12 +215,11 @@ int find_group_in_hash_table(struct address_list** table,
 	str_ip.len = ip->len;
 	str_ip.s = (char*) ip->u.addr;
 
-	for (node = table[perm_hash(str_ip)]; node; node = node->next)
-			if (node->port == 0 || node->port == port) {
-				if (!ip_addr_cmp(ip, node->ip)) goto not_found;
+	for (node = table[perm_hash(str_ip)]; node; node = node->next) {
+			if ( (node->port == 0 || node->port == port) &&
+			ip_addr_cmp(ip, node->ip) )
 				return node->grp;
-			}
-not_found:
+	}
 	return -1;
 }
 
