@@ -61,7 +61,7 @@ Bogdan-Andrei Iancu
               2.1.2. check_route_param( msg, re)
               2.1.3. is_direction( msg, dir)
               2.1.4. get_route_param( msg, name, val)
-              2.1.5. register_rrcb( callback, param)
+              2.1.5. register_rrcb( callback, param, prior)
 
         2.2. Examples
 
@@ -460,7 +460,7 @@ Chapter 2. Developer Guide
        parameter if found. It might be empty string if the
        parameter had no value.
 
-2.1.5.  register_rrcb( callback, param)
+2.1.5.  register_rrcb( callback, param, prior)
 
    The function register a new callback (along with its
    parameter). The callback will be called when a loose route will
@@ -472,6 +472,10 @@ Chapter 2. Developer Guide
      * rr_cb_t callback - callback function to be registered.
      * void *param - parameter to be passed to the callback
        function.
+     * short prior - parameter to set the priority. If the
+       callback depends on another module, this parameter should
+       be greater than that module's priority. Otherwise, it
+       should be 0.
 
 2.2. Examples
 
@@ -490,7 +494,7 @@ if (load_rr_api( &my_rrb )!=0) {
 ...
 ...
 /* register a RR callback */
-if (my_rrb.register_rrcb(my_callback,0))!=0) {
+if (my_rrb.register_rrcb(my_callback,0,0))!=0) {
     LM_ERR("can't register RR callback\n");
     goto error;
 }
