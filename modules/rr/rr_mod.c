@@ -68,6 +68,7 @@ int append_fromtag = 1;
 int enable_double_rr = 1; /* Enable using of 2 RR by default */
 int enable_full_lr = 0;   /* Disabled by default */
 int add_username = 0;     /* Do not add username by default */
+int enable_socket_mismatch_warning = 1; /* Enable socket mismatch warning */
 
 static unsigned int last_rr_msg;
 
@@ -123,13 +124,14 @@ static cmd_export_t cmds[] = {
  * Exported parameters
  */
 static param_export_t params[] ={ 
-	{"append_fromtag",   INT_PARAM, &append_fromtag  },
-	{"enable_double_rr", INT_PARAM, &enable_double_rr},
-	{"enable_full_lr",   INT_PARAM, &enable_full_lr  },
+	{"append_fromtag",                 INT_PARAM, &append_fromtag                },
+	{"enable_double_rr",               INT_PARAM, &enable_double_rr              },
+	{"enable_full_lr",                 INT_PARAM, &enable_full_lr                },
 #ifdef ENABLE_USER_CHECK
-	{"ignore_user",      STR_PARAM, &ignore_user     },
+	{"ignore_user",                    STR_PARAM, &ignore_user                   },
 #endif
-	{"add_username",     INT_PARAM, &add_username    },
+	{"add_username",                   INT_PARAM, &add_username                  },
+	{"enable_socket_mismatch_warning", INT_PARAM, &enable_socket_mismatch_warning},
 	{0, 0, 0 }
 };
 

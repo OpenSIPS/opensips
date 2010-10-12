@@ -593,7 +593,8 @@ static inline int after_strict(struct sip_msg* _m)
 		if (si) {
 			_m->force_send_socket = si;
 		} else {
-			LM_WARN("no socket found for match second RR\n");
+			if (enable_socket_mismatch_warning)
+				LM_WARN("no socket found for match second RR\n");
 		}
 		removed_routes++;
 
@@ -807,7 +808,8 @@ static inline int after_loose(struct sip_msg* _m, int preloaded)
 			if (si) {
 				_m->force_send_socket = si;
 			} else {
-				LM_WARN("no socket found for match second RR\n");
+				if (enable_socket_mismatch_warning)
+					LM_WARN("no socket found for match second RR\n");
 			}
 			removed_routes++;
 
