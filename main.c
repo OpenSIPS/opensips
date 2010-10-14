@@ -344,6 +344,7 @@ void cleanup(int show_status)
 	destroy_stats_collector();
 	destroy_script_cb();
 	pv_free_extra_list();
+	destroy_argv_list();
 	destroy_black_lists();
 #ifdef CHANGEABLE_DEBUG_LEVEL
 	if (debug!=&debug_init) {
@@ -958,7 +959,7 @@ int main(int argc, char** argv)
 	init_route_lists();
 	/* process command line (get port no, cfg. file path etc) */
 	opterr=0;
-	options="f:cCm:b:l:n:N:rRvdDETSVhw:t:u:g:P:G:W:";
+	options="f:cCm:b:l:n:N:rRvdDETSVhw:t:u:g:P:G:W:o:";
 
 	while((c=getopt(argc,argv,options))!=-1){
 		switch(c){
@@ -1098,6 +1099,10 @@ int main(int argc, char** argv)
 					break;
 			case 'G':
 					pgid_file=optarg;
+					break;
+			case 'o':
+					if (add_arg_var(optarg) < 0)
+						LM_ERR("cannot add option %s\n", optarg);
 					break;
 			case '?':
 					if (isprint(optopt))

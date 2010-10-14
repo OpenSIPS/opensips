@@ -3236,6 +3236,8 @@ static pv_export_t _pv_names_table[] = {
 		0, 0, 0, 0},
 	{{"C", sizeof("C")-1}, PVT_COLOR, pv_get_color, 0,
 		pv_parse_color_name, 0, 0, 0 },
+	{{"argv", sizeof("argv")-1}, PVT_ARGV, pv_get_argv, 0,
+		pv_parse_argv_name, 0, 0, 0 },
 	{{0,0}, 0, 0, 0, 0, 0, 0, 0}
 };
 
@@ -4413,3 +4415,115 @@ int pv_contextlist_check(void)
 	return 0;
 }
 
+/* argument options '-o' */
+argv_p argv_vars = NULL;
+
+argv_p search_argv(str *name)
+{
+	argv_p it;
+	
+	for (it = argv_vars; it; it = it->next) {
+		if (it->name.len == name->len &&
+				!strncmp(it->name.s, name->s, name->len))
+			return it;
+	}
+	return 0;
+}
+
+int add_arg_var(char *opt)
+{
+	char *eq;
+	str name;
+	argv_p new = NULL;
+	
+	if (!opt) {
+		LM_ERR("cannot receive null option\n");
+		return -1;
+	}
+
+	eq = strchr(opt, '=');
+	if (!eq) {
+		LM_ERR("invalid option format - '=' char cannot be found\n");
+		return -1;
+	}
+	if (eq <= opt) {
+		LM_ERR("no option name specified\n");
+		return -1;
+	}
+
+	name.s = opt;
+	name.len = eq - name.s;
+
+	/* check for duplicate option name */
+	if (search_argv(&name)) {
+		LM_ERR("duplicate option name <%.*s>\n", name.len, name.s);
+		return -1;
+	}
+
+	new = (argv_p)pkg_malloc(sizeof(argv_t));
+	if (!new) {
+		LM_ERR("no more pkg memory\n");
+		return -1;
+	}
+	memset(new, 0, sizeof(argv_t));
+
+	new->name.s = name.s;
+	new->name.len = name.len;
+
+	new->value.s = eq+1;
+	new->value.len = strlen(opt) + opt - new->value.s;
+
+	if (!new->value.len)
+		new->value.s = 0;
+
+	new->next = argv_vars;
+	argv_vars = new;
+
+	LM_DBG("added argument name <%.*s> = <%.*s>\n",
+			name.len, name.s, new->value.len, new->value.s);
+	return 0;
+
+}
+
+int pv_parse_argv_name(pv_spec_p sp, str *in)
+{
+	argv_p v_arg;
+
+	if(in==NULL || in->s==NULL || sp==NULL)
+		return -1;
+
+	v_arg = search_argv(in);
+	if (!v_arg) {
+		return -1;
+	}
+
+	sp->pvp.pvn.type = PV_NAME_PVAR;
+	sp->pvp.pvn.u.isname.name.s = v_arg->name;
+	sp->pvp.pvv = v_arg->value;
+
+	return 0;
+}
+
+int pv_get_argv(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res)
+{
+	if (!param) {
+		LM_ERR("null parameter received\n");
+		return -1;
+	}
+
+	if (param->pvv.len == 0 || !param->pvv.s)
+		return pv_get_null(msg, param, res);
+
+	return pv_get_strval(msg, param, res, &param->pvv);
+}
+
+void destroy_argv_list(void)
+{
+	argv_p arg;
+
+	while (argv_vars) {
+		arg = argv_vars;
+		argv_vars = argv_vars->next;
+		pkg_free(arg);
+	}
+}

@@ -106,7 +106,8 @@ enum _pv_type {
 	PVT_SCRIPTVAR,        PVT_PROTO,             PVT_AUTH_USERNAME_WHOLE,
 	PVT_AUTH_DURI,        PVT_DIV_REASON,        PVT_DIV_PRIVACY,
 	PVT_AUTH_DOMAIN,      PVT_AUTH_NONCE,        PVT_AUTH_RESPONSE,
-	PVT_TIME,             PVT_PATH,              PVT_EXTRA /* keep it last */
+	PVT_TIME,             PVT_PATH,              PVT_ARGV,
+	PVT_EXTRA /* keep it last */
 };
 
 typedef enum _pv_type pv_type_t;
@@ -254,6 +255,18 @@ int pv_get_intstrval(struct sip_msg *msg, pv_param_t *param,
 
 int register_pv_context(char* name, pv_contextf_t get_context);
 int pv_contextlist_check(void);
+
+/* command line arguments specified with '-o' */
+typedef struct argv {
+	str name;
+	str value;
+	struct argv *next;
+} argv_t, *argv_p;
+
+int add_arg_var(char *opt);
+int pv_parse_argv_name(pv_spec_p sp, str *in);
+int pv_get_argv(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res);
+void destroy_argv_list(void);
 
 #endif
 
