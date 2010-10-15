@@ -169,6 +169,7 @@ XDBG			"xdbg"
 XLOG_BUF_SIZE	"xlog_buf_size"
 XLOG_FORCE_COLOR	"xlog_force_color"
 XLOG			"xlog"
+CONSTRUCT_URI	"construct_uri"
 
 /*ACTION LVALUES*/
 URIHOST			"uri:host"
@@ -459,7 +460,8 @@ WHITESPACE	[ \t\r\n]
 									return XLOG_BUF_SIZE; }
 <INITIAL>{XLOG_FORCE_COLOR}	{	count(); yylval.strval=yytext;
 									return XLOG_FORCE_COLOR;}
-
+<INITIAL>{CONSTRUCT_URI}	{	count(); yylval.strval=yytext;
+									return CONSTRUCT_URI;}
 <INITIAL>{MAX_LEN}	{ count(); yylval.strval=yytext; return MAX_LEN; }
 
 <INITIAL>{METHOD}	{ count(); yylval.strval=yytext; return METHOD; }

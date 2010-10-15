@@ -4055,7 +4055,7 @@ void pv_value_destroy(pv_value_t *val)
 }
 
 #define PV_PRINT_BUF_SIZE  1024
-#define PV_PRINT_BUF_NO    3
+#define PV_PRINT_BUF_NO    5
 /*IMPORTANT NOTE - even if the function prints and returns a static buffer, it
  * has built-in support for 3 levels of nesting (or concurrent usage).
  * If you think it's not enough for you, either use pv_printf() directly,

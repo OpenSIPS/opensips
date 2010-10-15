@@ -253,6 +253,7 @@ static int fix_actions(struct action* a)
 	int i;
 	str s;
 	pv_elem_t *model=NULL;
+	pv_elem_t *models[5]; 
 	xl_level_p xlp;
 
 	if (a==0){
@@ -656,6 +657,33 @@ static int fix_actions(struct action* a)
 					t->elem[1].u.data = model;
 					t->elem[1].type = SCRIPTVAR_ELEM_ST;
 				}
+				break;
+			case CONSTRUCT_URI_T:
+				for (i=0;i<5;i++)
+				{	
+					s.s = (char*)t->elem[i].u.data;
+					s.len = strlen(s.s);
+					if(s.len==0) 
+						continue;
+
+					if(pv_parse_format(&s ,&(models[i])) || models[i]==NULL) 
+					{
+						LM_ERR("wrong format [%s] for value param!\n",s.s);
+						ret=E_BUG;
+						goto error;
+					}
+
+					t->elem[i].u.data = (void*)models[i];
+				}
+				
+				if (((pv_spec_p)t->elem[5].u.data)->type != PVT_AVP)
+				{
+					LM_ERR("Wrong type for the third argument - "
+						"must be an AVP\n");
+					ret=E_BUG;
+					goto error;
+				}
+
 				break;
 		}
 	}

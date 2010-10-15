@@ -67,6 +67,7 @@
 #include "blacklists.h"
 #include "memcache.h"
 #include "script_cb.h"
+#include "msg_translator.h"
 #ifdef USE_TCP
 #include "tcp_server.h"
 #endif
@@ -269,8 +270,10 @@ int do_action(struct action* a, struct sip_msg* msg)
 	struct proxy_l* p;
 	char* tmp;
 	char *new_uri, *end, *crt;
-	int len;
+	int len,i;
 	int user;
+	str vals[5];
+	str result;
 	struct sip_uri uri, next_hop;
 	struct sip_uri *u;
 	unsigned short port;
@@ -1081,7 +1084,49 @@ int do_action(struct action* a, struct sip_msg* msg)
 			}
 
 			break;
+		case CONSTRUCT_URI_T:
+			for (i=0;i<5;i++)
+			{
+				pve = (pv_elem_t *)a->elem[i].u.data;
+				if (pve->spec.getf)
+				{
+					if ( pv_printf_s(msg, pve, &vals[i])!=0 || 
+						vals[i].len == 0 || vals[i].s == NULL) 
+					{
+						LM_WARN("cannot get string for value\n");
+						ret=E_BUG;
+						return -1;
+					}
+				}
+				else
+					vals[i] = pve->text;
+			}
+			
+			result.s = construct_uri(&vals[0],&vals[1],&vals[2],&vals[3],&vals[4],
+					&result.len);
 
+			if (result.s)
+			{
+				int_str res;
+				int_str avp_name;
+				unsigned short avp_type;
+
+				spec = (pv_spec_t*)a->elem[5].u.data;
+				if (pv_get_avp_name( msg, &(spec->pvp), &avp_name,
+						&avp_type)!=0){
+					LM_CRIT("BUG in getting AVP name\n");
+					return -1;
+				}
+
+				res.s = result;
+				if (add_avp(AVP_VAL_STR|avp_type, avp_name, res)<0){
+					LM_ERR("cannot add AVP\n");
+					return -1;
+				}
+			}
+
+
+			break;
 		case SWITCH_T:
 			if (a->elem[0].type!=SCRIPTVAR_ST){
 				LM_ALERT("BUG in switch() type %d\n",

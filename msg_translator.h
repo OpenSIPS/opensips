@@ -108,4 +108,6 @@ int branch_builder( unsigned int hash_index,
 /* check if IP address in Via != source IP address of signaling */
 int received_test( struct sip_msg *msg );
 
+char *construct_uri(str *protocol,str *username,str *domain,str *port,
+		str *params,int *len);
 #endif

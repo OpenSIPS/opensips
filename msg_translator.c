@@ -1956,3 +1956,60 @@ char* via_builder( unsigned int *len,
 	*len = via_len;
 	return line_buf;
 }
+
+static char uri_buff[1024];
+char *construct_uri(str *protocol,str *username,str *domain,str *port,
+		str *params,int *len)
+{
+	int pos = 0;
+
+	if (!protocol || !username || !domain || !port || !params || !len)
+	{
+		LM_ERR("null pointer provided for construct_uri \n");
+		return 0;
+	}
+
+	if (!protocol->s || protocol->len == 0)
+	{
+		LM_ERR("no protocol specified\n");
+		return 0;
+	}
+
+	if (!domain->s || domain->len == 0)
+	{
+		LM_ERR("no domain specified\n");
+		return 0;
+	}
+	
+	memcpy(uri_buff,protocol->s,protocol->len);
+	pos += protocol->len;
+	uri_buff[pos++] = ':';
+	
+	if (username->s && username->len != 0)
+	{
+		memcpy(uri_buff+pos,username->s,username->len);
+		pos += username->len;
+		uri_buff[pos++] = '@';
+	}
+
+	memcpy(uri_buff+pos,domain->s,domain->len);
+	pos += domain->len;
+
+	if (port->s && port->len !=0)
+	{
+		uri_buff[pos++] = ':';
+		memcpy(uri_buff+pos,port->s,port->len);
+		pos += port->len;
+	}
+
+	if (params->s && params->len !=0 )
+	{
+		uri_buff[pos++] = ';';
+		memcpy(uri_buff+pos,params->s,params->len);
+		pos += params->len;
+	}
+
+	uri_buff[pos] = 0;
+	*len = pos;
+	return uri_buff;
+}
