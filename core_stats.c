@@ -122,7 +122,7 @@ pkg_status_holder * get_pkg_status_holder(int proc_id)
 	return (pkg_status && proc_id<no_pkg_status)?&(pkg_status[proc_id]):NULL;
 }
 
-static inline void signal_pkg_status(unsigned short proc_id)
+static inline void signal_pkg_status(unsigned long proc_id)
 {
 	time_t t;
 
@@ -134,40 +134,40 @@ static inline void signal_pkg_status(unsigned short proc_id)
 	}
 }
 
-static unsigned long get_pkg_total_size( unsigned short proc_id)
+static unsigned long get_pkg_total_size( void* proc_id)
 {
-	signal_pkg_status(proc_id);
-	return pkg_status[proc_id][PKG_TOTAL_SIZE_IDX];
+	signal_pkg_status((unsigned long)proc_id);
+	return pkg_status[(unsigned long)proc_id][PKG_TOTAL_SIZE_IDX];
 }
 
-static unsigned long get_pkg_used_size( unsigned short proc_id)
+static unsigned long get_pkg_used_size( void* proc_id)
 {
-	signal_pkg_status(proc_id);
-	return pkg_status[proc_id][PKG_USED_SIZE_IDX];
+	signal_pkg_status((unsigned long)proc_id);
+	return pkg_status[(unsigned long)proc_id][PKG_USED_SIZE_IDX];
 }
 
-static unsigned long get_pkg_real_used_size( unsigned short proc_id)
+static unsigned long get_pkg_real_used_size( void* proc_id)
 {
-	signal_pkg_status(proc_id);
-	return pkg_status[proc_id][PKG_REAL_USED_SIZE_IDX];
+	signal_pkg_status((unsigned long)proc_id);
+	return pkg_status[(unsigned long)proc_id][PKG_REAL_USED_SIZE_IDX];
 }
 
-static unsigned long get_pkg_max_used_size( unsigned short proc_id)
+static unsigned long get_pkg_max_used_size( void* proc_id)
 {
-	signal_pkg_status(proc_id);
-	return pkg_status[proc_id][PKG_MAX_USED_SIZE_IDX];
+	signal_pkg_status((unsigned long)proc_id);
+	return pkg_status[(unsigned long)proc_id][PKG_MAX_USED_SIZE_IDX];
 }
 
-static unsigned long get_pkg_free_size( unsigned short proc_id)
+static unsigned long get_pkg_free_size( void* proc_id)
 {
-	signal_pkg_status(proc_id);
-	return pkg_status[proc_id][PKG_FREE_SIZE_IDX];
+	signal_pkg_status((unsigned long)proc_id);
+	return pkg_status[(unsigned long)proc_id][PKG_FREE_SIZE_IDX];
 }
 
-static unsigned long get_pkg_fragments( unsigned short proc_id)
+static unsigned long get_pkg_fragments( void*proc_id)
 {
-	signal_pkg_status(proc_id);
-	return pkg_status[proc_id][PKG_FRAGMENTS_SIZE_IDX];
+	signal_pkg_status((unsigned long)proc_id);
+	return pkg_status[(unsigned long)proc_id][PKG_FRAGMENTS_SIZE_IDX];
 }
 
 
@@ -194,42 +194,42 @@ int init_pkg_stats(int no_procs)
 
 		if ( (name=build_stat_name( &n_str,"total_size"))==0 ||
 		register_stat2("pkmem", name, (stat_var**)get_pkg_total_size,
-		STAT_NO_RESET|STAT_SHM_NAME|STAT_IS_FUNC, n)!=0 ) {
+		STAT_NO_RESET|STAT_SHM_NAME|STAT_IS_FUNC, (void*)(long)n)!=0 ) {
 			LM_ERR("failed to add stat variable\n");
 			return -1;
 		}
 
 		if ( (name=build_stat_name( &n_str,"used_size"))==0 ||
 		register_stat2("pkmem", name, (stat_var**)get_pkg_used_size,
-		STAT_NO_RESET|STAT_SHM_NAME|STAT_IS_FUNC, n)!=0 ) {
+		STAT_NO_RESET|STAT_SHM_NAME|STAT_IS_FUNC, (void*)(long)n)!=0 ) {
 			LM_ERR("failed to add stat variable\n");
 			return -1;
 		}
 
 		if ( (name=build_stat_name( &n_str,"real_used_size"))==0 ||
 		register_stat2("pkmem", name, (stat_var**)get_pkg_real_used_size,
-		STAT_NO_RESET|STAT_SHM_NAME|STAT_IS_FUNC, n)!=0 ) {
+		STAT_NO_RESET|STAT_SHM_NAME|STAT_IS_FUNC, (void*)(long)n)!=0 ) {
 			LM_ERR("failed to add stat variable\n");
 			return -1;
 		}
 
 		if ( (name=build_stat_name( &n_str,"max_used_size"))==0 ||
 		register_stat2("pkmem", name, (stat_var**)get_pkg_max_used_size,
-		STAT_NO_RESET|STAT_SHM_NAME|STAT_IS_FUNC, n)!=0 ) {
+		STAT_NO_RESET|STAT_SHM_NAME|STAT_IS_FUNC, (void*)(long)n)!=0 ) {
 			LM_ERR("failed to add stat variable\n");
 			return -1;
 		}
 
 		if ( (name=build_stat_name( &n_str,"free_size"))==0 ||
 		register_stat2("pkmem", name, (stat_var**)get_pkg_free_size,
-		STAT_NO_RESET|STAT_SHM_NAME|STAT_IS_FUNC, n)!=0 ) {
+		STAT_NO_RESET|STAT_SHM_NAME|STAT_IS_FUNC, (void*)(long)n)!=0 ) {
 			LM_ERR("failed to add stat variable\n");
 			return -1;
 		}
 
 		if ( (name=build_stat_name( &n_str,"fragments"))==0 ||
 		register_stat2("pkmem", name, (stat_var**)get_pkg_fragments,
-		STAT_NO_RESET|STAT_SHM_NAME|STAT_IS_FUNC, n)!=0 ) {
+		STAT_NO_RESET|STAT_SHM_NAME|STAT_IS_FUNC, (void*)(long)n)!=0 ) {
 			LM_ERR("failed to add stat variable\n");
 			return -1;
 		}

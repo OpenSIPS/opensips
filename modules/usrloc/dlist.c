@@ -558,7 +558,7 @@ void print_all_udomains(FILE* _f)
 /*! \brief
  *  Loops through all domains summing up the number of users. 
  */
-unsigned long get_number_of_users(unsigned short foo)
+unsigned long get_number_of_users(void* foo)
 {
 	int numberOfUsers = 0;
 
