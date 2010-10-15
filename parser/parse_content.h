@@ -78,7 +78,7 @@ struct mime_type {
 /*
  * returns the content-length value of a sip_msg as an integer
  */
-#define get_content_length(_msg_)   ((long)((_msg_)->content_length->parsed))
+#define get_content_length(_msg_)   ((long)((_msg_)->content_length?(_msg_)->content_length->parsed:0))
 
 
 /*
