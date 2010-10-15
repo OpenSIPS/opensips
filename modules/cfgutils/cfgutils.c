@@ -85,6 +85,7 @@ static int pv_get_random_val(struct sip_msg *msg, pv_param_t *param,
 
 static int fixup_prob( void** param, int param_no);
 static int fixup_pv_set(void** param, int param_no);
+static int fixup_rand_event(void** param, int param_no);
 
 static int mod_init(void);
 static void mod_destroy(void);
@@ -110,6 +111,9 @@ static cmd_export_t cmds[]={
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|
 		STARTUP_ROUTE|TIMER_ROUTE},
 	{"rand_event",      (cmd_function)rand_event, 0, 0, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|
+		STARTUP_ROUTE|TIMER_ROUTE},
+	{"rand_event",      (cmd_function)rand_event, 1, fixup_rand_event, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|
 		STARTUP_ROUTE|TIMER_ROUTE},
 	{"sleep",  (cmd_function)m_sleep,  1, fixup_spve_null, 0,
@@ -334,12 +338,53 @@ static int get_prob(struct sip_msg *bar, char *foo1, char *foo2)
 	return *probability;
 }
 
-static int rand_event(struct sip_msg *bar, char *foo1, char *foo2)
+static int fixup_rand_event(void** param, int param_no)
+{
+	pv_elem_t *model;
+	str s;
+
+	if(param_no== 0)
+		return 0;
+
+	if(*param)
+	{
+		s.s = (char*)(*param); s.len = strlen(s.s);
+		if(pv_parse_format(&s, &model)<0)
+		{
+			LM_ERR( "wrong format[%s]\n",(char*)(*param));
+			return E_UNSPEC;
+		}
+		*param = (void*)model;
+		return 0;
+	}
+	LM_ERR( "null format\n");
+	return E_UNSPEC;
+}
+
+static int rand_event(struct sip_msg *bar, char *prob_param, char *foo2)
 {
 	double tmp = ((double) rand() / RAND_MAX);
+	int prob = *probability;
+	str pr;
+
 	LM_DBG("generated random %f\n", tmp);
-	LM_DBG("my pid is %d", getpid());
-	if (tmp < ((double) (*probability) / 100)) {
+	LM_DBG("my pid is %d\n", getpid());
+
+	if (prob_param) {
+		if (((pv_elem_p)prob_param)->spec.getf!=NULL) {
+			if(pv_printf_s(bar, (pv_elem_p)prob_param, &pr)!=0 || pr.len <=0)
+				return -1;
+		} else {
+			pr = ((pv_elem_p)prob_param)->text;
+		}
+		if (str2sint(&pr, &prob) < 0) {
+			LM_ERR("invalid probability <%.*s>\n", pr.len, pr.s);
+			return -1;
+		}
+		LM_DBG("new probability is %d\n", prob);
+	}
+
+	if (tmp < ((double) (prob) / 100)) {
 		LM_DBG("return true\n");
 		return 1;
 	}
