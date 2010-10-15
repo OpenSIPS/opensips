@@ -525,7 +525,10 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 		/* a complicated combination of conditions that tell us if we need 
 		 * to send body in ACK */
 		if(!(tuple->sdp.s && bentity0->type == B2B_CLIENT))
+		{
+			LM_DBG("Don't send body because the tuple already has a body - so it was used in invite\n");
 			ack_body = body;
+		}
 
 		if(b2b_api.send_request(bentity0->type, &bentity0->key, &method,
 				extra_headers, ack_body, bentity0->dlginfo) < 0)
@@ -775,9 +778,9 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 				body.s?&body:0, extra_headers.s?&extra_headers:0,
 				peer->dlginfo) < 0)
 			{
-				LM_ERR("Sending reply failed - %d\n", statuscode);
-				if(statuscode >= 200)
-					b2bl_delete(tuple, hash_index, 0);
+				LM_ERR("Sending reply failed - %d, [%.*s]\n", statuscode,
+						peer->key.len, peer->key.s);
+			//	b2bl_delete(tuple, hash_index, 0);
 				goto done;
 			}
 
@@ -803,7 +806,7 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 				}
 				else
 				{
-					/* if reINVITE and 481 or 404 reply */
+					/* if reINVITE and 481 or 408 reply */
 					if(statuscode==481 || statuscode==408)
 					{
 						LM_DBG("Received terminate dialog reply for reINVITE\n");
@@ -1090,8 +1093,8 @@ send_usual_request:
 				extra_headers.len?&extra_headers:0, body.len?&body:0,
 				peer->dlginfo) < 0)
 			{
-				LM_ERR("Sending request failed - delete record\n");
-				b2bl_delete(tuple, hash_index, 0);
+				LM_ERR("Sending request failed [%.*s]\n", peer->key.len, peer->key.s);
+			//	b2bl_delete(tuple, hash_index, 0);
 			}
 		}
 	}
