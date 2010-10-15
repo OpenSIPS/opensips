@@ -392,10 +392,40 @@ void set_dlg_state(b2b_dlg_t* dlg, int meth)
 	}
 }
 
+b2b_dlg_t* b2bl_search_iteratively(str* callid, str* from_tag, str* ruri)
+{
+	b2b_dlg_t* dlg= NULL;
+	unsigned int hash_index;
+
+	LM_DBG("Search for record with callid= %.*s, tag= %.*s\n",
+			callid->len, callid->s, from_tag->len, from_tag->s);
+	/* must search iteratively */
+	hash_index = core_hash(callid, from_tag, server_hsize);
+
+	lock_get(&server_htable[hash_index].lock);
+	dlg = server_htable[hash_index].first;
+	while(dlg)
+	{
+		LM_DBG("Found callid= %.*s, tag= %.*s\n", dlg->callid.len, dlg->callid.s, 
+			dlg->tag[CALLER_LEG].len, dlg->tag[CALLER_LEG].s);
+		if(dlg->callid.len == callid->len && strncmp(dlg->callid.s, callid->s, callid->len)== 0 &&
+			dlg->tag[CALLER_LEG].len == from_tag->len &&
+			strncmp(dlg->tag[CALLER_LEG].s, from_tag->s, from_tag->len)== 0)
+		{
+			if(!ruri)
+				break;
+			if(ruri->len == dlg->ruri.len && strncmp(ruri->s, dlg->ruri.s, ruri->len)== 0)
+				break;
+		}
+		dlg = dlg->next;
+	}
+	return dlg;
+}
+
 int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 {
 	str b2b_key;
-	b2b_dlg_t* dlg;
+	b2b_dlg_t* dlg = 0;
 	unsigned int hash_index, local_index;
 	b2b_notify_t b2b_cback;
 	str param= {0,0};
@@ -495,25 +525,7 @@ search_dialog:
 			return 1;
 		}
 
-		LM_DBG("Search for record with callid= %.*s, tag= %.*s\n",
-			  callid.len, callid.s, from_tag.len, from_tag.s);
-		/* must search iteratively */
-		hash_index = core_hash(&callid, &from_tag, server_hsize);
-
-		lock_get(&server_htable[hash_index].lock);
-		dlg = server_htable[hash_index].first;
-		while(dlg)
-		{
-			LM_DBG("Found callid= %.*s, tag= %.*s\n", dlg->callid.len, dlg->callid.s, 
-				dlg->tag[CALLER_LEG].len, dlg->tag[CALLER_LEG].s);
-			if(ruri.len == dlg->ruri.len && strncmp(ruri.s, dlg->ruri.s, ruri.len)== 0
-					&& dlg->callid.len == callid.len &&
-					strncmp(dlg->callid.s, callid.s, callid.len)== 0 &&
-					dlg->tag[CALLER_LEG].len == from_tag.len &&
-					strncmp(dlg->tag[CALLER_LEG].s, from_tag.s, from_tag.len)== 0)
-				break;
-			dlg = dlg->next;
-		}
+		dlg = b2bl_search_iteratively(&callid, &from_tag, &ruri);
 		if(dlg == NULL)
 		{
 			lock_release(&server_htable[hash_index].lock);
@@ -586,25 +598,42 @@ search_dialog:
 		}
 		else /* if also not a client request - not for us */
 		{
-			LM_DBG("Not a b2b request\n");
-			return 1;
+			if(!method_value == METHOD_UPDATE)
+			{
+				LM_DBG("Not a b2b request\n");
+				return 1;
+			}
+			else
+			{
+				/* for server UPDATE sent before dialog confirmed */
+				dlg = b2bl_search_iteratively(&callid, &from_tag,0);
+				if(dlg == NULL)
+				{
+					lock_release(&server_htable[hash_index].lock);
+					LM_DBG("No dialog found for cancel\n");
+					return 1;
+				}
+			}
 		}
 	}
 
-	lock_get(&table[hash_index].lock);
-	dlg = b2b_search_htable_dlg(table, hash_index, local_index,
-		&to_tag, ((method_value == METHOD_UPDATE)?0:&from_tag), &callid);
-	if(dlg== NULL)
+	if(!dlg)
 	{
-		LM_DBG("No dialog found\n");
-		if(method_value != METHOD_ACK)
+		lock_get(&table[hash_index].lock);
+		dlg = b2b_search_htable_dlg(table, hash_index, local_index,
+			&to_tag, ((method_value == METHOD_UPDATE && table == client_htable )?0:&from_tag), &callid);
+		if(dlg== NULL)
 		{
-			LM_ERR("No dialog found, callid= [%.*s], method=%.*s\n",
-				callid.len, callid.s,msg->first_line.u.request.method.len,
-				msg->first_line.u.request.method.s);
+			LM_DBG("No dialog found\n");
+			if(method_value != METHOD_ACK)
+			{
+				LM_ERR("No dialog found, callid= [%.*s], method=%.*s\n",
+					callid.len, callid.s,msg->first_line.u.request.method.len,
+					msg->first_line.u.request.method.s);
+			}
+			lock_release(&table[hash_index].lock);
+			return -1;
 		}
-		lock_release(&table[hash_index].lock);
-		return -1;
 	}
 
 	if(dlg->state < B2B_CONFIRMED)
@@ -615,13 +644,6 @@ search_dialog:
 			lock_release(&table[hash_index].lock);
 			return 0;
 		}
-	}
-	else
-	if(method_value == METHOD_UPDATE)
-	{
-		LM_DBG("UPDATE received after dialog was confimed\n");
-		lock_release(&table[hash_index].lock);
-		return 0;
 	}
 
 	LM_DBG("Received request method[%.*s] for dialog[%p]\n",
@@ -1410,21 +1432,32 @@ int b2b_send_request(enum b2b_entity_type et, str* b2b_key, str* method,
 	LM_DBG("Send request method[%.*s] for dialog[%p]\n", method->len, method->s, dlg);
 	parse_method(method->s, method->s+method->len, &method_value);
 
-	if((method_value == METHOD_INVITE || method_value == METHOD_BYE) && dlg->state < B2B_CONFIRMED)
+	if(dlg->state < B2B_CONFIRMED)
 	{
-		LM_DBG("last_method= %d\n", dlg->last_method);
-		if(dlg->state==B2B_CONFIRMED && dlg->last_method == METHOD_INVITE)
+		if(method_value == METHOD_BYE && et==B2B_CLIENT) /* send CANCEL*/
 		{
-			b2b_send_indlg_req(dlg, et, b2b_key, &ack, &ehdr, body); 
-			dlg->state= B2B_CONFIRMED;
+			method_value = METHOD_CANCEL;
 		}
 		else
+		if(method_value!=METHOD_UPDATE && method_value!=METHOD_PRACK)
 		{
-			LM_ERR("State not established, can not send request %.*s\n", method->len, method->s);
+			LM_ERR("State not established, can not send request %.*s, [%.*s]\n",
+					method->len, method->s, b2b_key->len, b2b_key->s);
 			lock_release(&table[hash_index].lock);
 			return -1;
 		}
 	}
+	else
+	if(dlg->state==B2B_CONFIRMED)
+	{
+		if(dlg->last_method == METHOD_INVITE)
+		{
+			/* send it ACK so that you can send the new request */
+			b2b_send_indlg_req(dlg, et, b2b_key, &ack, &ehdr, body); 
+			dlg->state= B2B_CONFIRMED;
+		}
+	}
+
 	dlg->last_method = method_value;
 	LM_DBG("[%p] last_method= %d\n",dlg, dlg->last_method);
 	UPDATE_DBFLAG(dlg);
