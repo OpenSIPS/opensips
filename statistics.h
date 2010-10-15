@@ -54,7 +54,7 @@ typedef unsigned int stat_val;
 typedef atomic_t stat_val;
 #endif
 
-typedef unsigned long (*stat_function)(unsigned short);
+typedef unsigned long (*stat_function)(void *);
 
 struct module_stats_;
 
@@ -62,7 +62,7 @@ typedef struct stat_var_{
 	unsigned int mod_idx;
 	str name;
 	unsigned short flags;
-	unsigned short context;
+	void * context;
 	union{
 		stat_val *val;
 		stat_function f;
@@ -105,7 +105,7 @@ void destroy_stats_collector();
 		register_stat2(_mod,_name,_pvar,_flags, 0)
 
 int register_stat2( char *module, char *name, stat_var **pvar, 
-		unsigned  short flags, unsigned short context);
+		unsigned  short flags, void* context);
 
 int register_module_stats(char *module, stat_export_t *stats);
 

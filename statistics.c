@@ -255,7 +255,7 @@ static inline module_stats* add_stat_module( char *module)
 
 
 int register_stat2( char *module, char *name, stat_var **pvar,
-									unsigned short flags, unsigned short ctx)
+											unsigned short flags, void *ctx)
 {
 	module_stats* mods;
 	stat_var *stat;
