@@ -1439,7 +1439,8 @@ int b2b_send_request(enum b2b_entity_type et, str* b2b_key, str* method,
 			method_value = METHOD_CANCEL;
 		}
 		else
-		if(method_value!=METHOD_UPDATE && method_value!=METHOD_PRACK)
+		if(method_value!=METHOD_UPDATE && method_value!=METHOD_PRACK &&
+				method_value!=METHOD_CANCEL)
 		{
 			LM_ERR("State not established, can not send request %.*s, [%.*s]\n",
 					method->len, method->s, b2b_key->len, b2b_key->s);
