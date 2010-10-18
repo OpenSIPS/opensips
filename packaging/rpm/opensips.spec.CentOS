@@ -28,7 +28,7 @@ URL:          http://opensips.org/
 Vendor:       opensips.org
 BuildRoot:    %{_tmppath}/%{name}-%{ver}-buildroot
 Conflicts:    opensips-mysql < %ver, opensips-xmpp < %ver, opensips-radius < %ver, opensips-cpl < %ver, opensips-unixodbc < %ver, opensips-presence < %ver, opensips-postgres < %ver, opensips-snmpstats < %ver
-BuildPrereq:  make flex bison
+BuildPrereq:  make flex bison pcre-devel
 
 
 %description
@@ -343,7 +343,6 @@ fi
 %doc %{_docdir}/opensips/README.uri
 %doc %{_docdir}/opensips/README.userblacklist
 %doc %{_docdir}/opensips/README.usrloc
-%doc %{_docdir}/opensips/README.xlog
 
 %dir %{_sysconfdir}/opensips
 %config(noreplace) %{_sysconfdir}/opensips/*
@@ -414,7 +413,6 @@ fi
 %{_libdir}/opensips/modules/uri.so
 %{_libdir}/opensips/modules/userblacklist.so
 %{_libdir}/opensips/modules/usrloc.so
-%{_libdir}/opensips/modules/xlog.so
 
 %{_sbindir}/opensips
 %{_sbindir}/osipsconsole
@@ -538,6 +536,10 @@ fi
 
 
 %changelog
+* Mon Oct 18 2010 Marc Leurent <marc.leurent@vtx-telecom.ch>
+- Add missing dependencies pcre-devel for compilation
+- Xlog Module has been merged into core.
+
 * Mon Oct 19 2009 Marc Leurent <marc.leurent@vtx-telecom.ch>
 - Add missing config lines for packaging b2b modules
 - Add missing config lines for packaging peering module
