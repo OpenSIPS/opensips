@@ -1449,14 +1449,12 @@ int b2b_send_request(enum b2b_entity_type et, str* b2b_key, str* method,
 		}
 	}
 	else
-	if(dlg->state==B2B_CONFIRMED)
+	if(dlg->state==B2B_CONFIRMED && method_value!=METHOD_ACK &&
+			dlg->last_method == METHOD_INVITE)
 	{
-		if(dlg->last_method == METHOD_INVITE)
-		{
-			/* send it ACK so that you can send the new request */
-			b2b_send_indlg_req(dlg, et, b2b_key, &ack, &ehdr, body); 
-			dlg->state= B2B_CONFIRMED;
-		}
+		/* send it ACK so that you can send the new request */
+		b2b_send_indlg_req(dlg, et, b2b_key, &ack, &ehdr, body);
+		dlg->state= B2B_ESTABLISHED;
 	}
 
 	dlg->last_method = method_value;
