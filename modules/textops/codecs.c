@@ -208,21 +208,8 @@ int codec_init(void)
 
 int fixup_codec(void** param, int param_no)
 {
-	str * s = pkg_malloc(sizeof(str));
-
 	used = 1;
-
-	if( s == NULL)
-	{
-		LM_ERR("Out of memory\n");
-		return -1;
-	}
-
-	s->s=*param;
-	s->len = strlen(*param);
-	*param = s;
-
-	return 0;
+	return fixup_sgp_sgp(param,param_no);
 }
 
 int fixup_codec_regexp(void** param, int param_no)
@@ -704,14 +691,19 @@ end:
 	return ret;
 }
 
-
-	
-
-
 int codec_find (struct sip_msg* msg, char* str1 )
 {
-	
-	if( do_for_all_streams( msg, (str*)str1, NULL, NULL,
+	str res = {0,0};
+
+	if(fixup_get_svalue(msg, (gparam_p)str1, &res)!=0)
+	{
+		LM_ERR("no mode value\n");
+		return -1;
+	}
+
+	LM_DBG("searching for codec <%.*s> \n",res.len,res.s);
+
+	if( do_for_all_streams( msg, &res, NULL, NULL,
 		FIND, DESC_NAME) == 0)
 		return -1;
 
@@ -733,8 +725,24 @@ int codec_find_re (struct sip_msg* msg, char* str1 )
 
 int codec_find_clock (struct sip_msg* msg, char* str1,char * str2 )
 {
+	str codec = {0,0},clock = {0,0};
 
-	if( do_for_all_streams( msg, (str*)str1, (str*)str2, NULL,
+	if(fixup_get_svalue(msg, (gparam_p)str1, &codec)!=0)
+	{
+		LM_ERR("no mode value\n");
+		return -1;
+	}
+
+	if(fixup_get_svalue(msg, (gparam_p)str2, &clock)!=0)
+	{
+		LM_ERR("no mode value\n");
+		return -1;
+	}
+
+	LM_DBG("searching for codec <%.*s> with clock <%.*s> \n",codec.len,codec.s,clock.len,clock.s);
+
+
+	if( do_for_all_streams( msg, &codec, &clock, NULL,
 		FIND, DESC_NAME_AND_CLOCK) == 0)
 		return -1;
 
@@ -744,7 +752,17 @@ int codec_find_clock (struct sip_msg* msg, char* str1,char * str2 )
 
 int codec_delete (struct sip_msg* msg, char* str1 )
 {
-	if( do_for_all_streams( msg, (str*)str1, NULL, NULL,
+	str res = {0,0};
+
+	if(fixup_get_svalue(msg, (gparam_p)str1, &res)!=0)
+	{
+		LM_ERR("no mode value\n");
+		return -1;
+	}
+
+	LM_DBG("deleting codec <%.*s> \n",res.len,res.s);
+
+	if( do_for_all_streams( msg, &res, NULL, NULL,
 		DELETE, DESC_NAME) == 0)
 		return -1;
 	return 1;
@@ -771,7 +789,24 @@ int codec_delete_except_re (struct sip_msg* msg, char* str1 )
 
 int codec_delete_clock (struct sip_msg* msg, char* str1 ,char * str2)
 {
-	if( do_for_all_streams( msg, (str*)str1, (str*)str2, NULL,
+	str codec = {0,0},clock = {0,0};
+
+	if(fixup_get_svalue(msg, (gparam_p)str1, &codec)!=0)
+	{
+		LM_ERR("no mode value\n");
+		return -1;
+	}
+
+	if(fixup_get_svalue(msg, (gparam_p)str2, &clock)!=0)
+	{
+		LM_ERR("no mode value\n");
+		return -1;
+	}
+
+	LM_DBG("deleting codec <%.*s> with clock <%.*s> \n",codec.len,codec.s,clock.len,clock.s);
+
+
+	if( do_for_all_streams( msg, &codec, &clock, NULL,
 		DELETE, DESC_NAME_AND_CLOCK) == 0)
 		return -1;
 	return 1;
@@ -780,7 +815,17 @@ int codec_delete_clock (struct sip_msg* msg, char* str1 ,char * str2)
 
 int codec_move_up (struct sip_msg* msg, char* str1)
 {
-	if( do_for_all_streams( msg, (str*)str1, NULL, NULL,
+	str res = {0,0};
+
+	if(fixup_get_svalue(msg, (gparam_p)str1, &res)!=0)
+	{
+		LM_ERR("no mode value\n");
+		return -1;
+	}
+
+	LM_DBG("moving up codec <%.*s> \n",res.len,res.s);
+
+	if( do_for_all_streams( msg, &res, NULL, NULL,
 		ADD_TO_FRONT, DESC_NAME) == 0)
 		return -1;
 	return 1;
@@ -797,7 +842,23 @@ int codec_move_up_re (struct sip_msg* msg, char* str1)
 
 int codec_move_up_clock (struct sip_msg* msg, char* str1 ,char * str2)
 {
-	if( do_for_all_streams( msg, (str*)str1, (str*)str2, NULL,
+	str codec = {0,0},clock = {0,0};
+
+	if(fixup_get_svalue(msg, (gparam_p)str1, &codec)!=0)
+	{
+		LM_ERR("no mode value\n");
+		return -1;
+	}
+
+	if(fixup_get_svalue(msg, (gparam_p)str2, &clock)!=0)
+	{
+		LM_ERR("no mode value\n");
+		return -1;
+	}
+
+	LM_DBG("moving up codec <%.*s> with clock <%.*s> \n",codec.len,codec.s,clock.len,clock.s);
+
+	if( do_for_all_streams( msg, &codec, &clock, NULL,
 		ADD_TO_FRONT, DESC_NAME_AND_CLOCK) == 0)
 		return -1;
 	return 1;
@@ -807,7 +868,17 @@ int codec_move_up_clock (struct sip_msg* msg, char* str1 ,char * str2)
 
 int codec_move_down (struct sip_msg* msg, char* str1)
 {
-	if( do_for_all_streams( msg, (str*)str1, NULL, NULL,
+	str res = {0,0};
+
+	if(fixup_get_svalue(msg, (gparam_p)str1, &res)!=0)
+	{
+		LM_ERR("no mode value\n");
+		return -1;
+	}
+
+	LM_DBG("moving down codec <%.*s> \n",res.len,res.s);
+
+	if( do_for_all_streams( msg, &res, NULL, NULL,
 		ADD_TO_BACK, DESC_NAME) == 0)
 		return -1;
 	return 1;
@@ -823,11 +894,25 @@ int codec_move_down_re (struct sip_msg* msg, char* str1)
 }
 
 
-
-
 int codec_move_down_clock (struct sip_msg* msg, char* str1 ,char * str2)
 {
-	if( do_for_all_streams( msg, (str*)str1, (str*)str2, NULL,
+	str codec = {0,0},clock = {0,0};
+
+	if(fixup_get_svalue(msg, (gparam_p)str1, &codec)!=0)
+	{
+		LM_ERR("no mode value\n");
+		return -1;
+	}
+
+	if(fixup_get_svalue(msg, (gparam_p)str2, &clock)!=0)
+	{
+		LM_ERR("no mode value\n");
+		return -1;
+	}
+
+	LM_DBG("moving down codec <%.*s> with clock <%.*s> \n",codec.len,codec.s,clock.len,clock.s);
+
+	if( do_for_all_streams( msg, &codec, &clock, NULL,
 		ADD_TO_BACK, DESC_NAME_AND_CLOCK) == 0)
 		return -1;
 	return 1;

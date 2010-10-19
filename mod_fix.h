@@ -103,4 +103,7 @@ int fixup_str(void **param);
 int fixup_uint(void** param);
 int fixup_igp(void** param);
 
+int fixup_sgp(void** param);
+int fixup_sgp_null(void** param, int param_no);
+int fixup_sgp_sgp(void** param, int param_no);
 #endif
