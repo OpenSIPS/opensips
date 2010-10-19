@@ -392,15 +392,14 @@ void set_dlg_state(b2b_dlg_t* dlg, int meth)
 	}
 }
 
-b2b_dlg_t* b2bl_search_iteratively(str* callid, str* from_tag, str* ruri)
+b2b_dlg_t* b2bl_search_iteratively(str* callid, str* from_tag, str* ruri,
+		unsigned int hash_index)
 {
 	b2b_dlg_t* dlg= NULL;
-	unsigned int hash_index;
 
 	LM_DBG("Search for record with callid= %.*s, tag= %.*s\n",
 			callid->len, callid->s, from_tag->len, from_tag->s);
 	/* must search iteratively */
-	hash_index = core_hash(callid, from_tag, server_hsize);
 
 	lock_get(&server_htable[hash_index].lock);
 	dlg = server_htable[hash_index].first;
@@ -525,7 +524,8 @@ search_dialog:
 			return 1;
 		}
 
-		dlg = b2bl_search_iteratively(&callid, &from_tag, &ruri);
+		hash_index = core_hash(&callid, &from_tag, server_hsize);
+		dlg = b2bl_search_iteratively(&callid, &from_tag, &ruri, hash_index);
 		if(dlg == NULL)
 		{
 			lock_release(&server_htable[hash_index].lock);
@@ -606,7 +606,9 @@ search_dialog:
 			else
 			{
 				/* for server UPDATE sent before dialog confirmed */
-				dlg = b2bl_search_iteratively(&callid, &from_tag,0);
+				table = server_htable;
+				hash_index = core_hash(&callid, &from_tag, server_hsize);
+				dlg = b2bl_search_iteratively(&callid, &from_tag,0, hash_index);
 				if(dlg == NULL)
 				{
 					lock_release(&server_htable[hash_index].lock);
