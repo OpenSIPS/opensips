@@ -42,21 +42,22 @@ Bogdan-Andrei Iancu
               1.5.6. rtpproxy_sock (string)
               1.5.7. rtpproxy_disable_tout (integer)
               1.5.8. rtpproxy_timeout (string)
-              1.5.9. rtpproxy_tout (integer)
-              1.5.10. rtpproxy_retr (integer)
-              1.5.11. force_socket (string)
-              1.5.12. sipping_bflag (integer)
-              1.5.13. sipping_from (string)
-              1.5.14. sipping_method (string)
-              1.5.15. nortpproxy_str (string)
-              1.5.16. db_url (string)
-              1.5.17. db_table (string)
-              1.5.18. rtpp_socket_col (string)
-              1.5.19. set_id_col (string)
+              1.5.9. rtpproxy_autobridge (integer)
+              1.5.10. rtpproxy_tout (integer)
+              1.5.11. rtpproxy_retr (integer)
+              1.5.12. force_socket (string)
+              1.5.13. sipping_bflag (integer)
+              1.5.14. sipping_from (string)
+              1.5.15. sipping_method (string)
+              1.5.16. nortpproxy_str (string)
+              1.5.17. db_url (string)
+              1.5.18. db_table (string)
+              1.5.19. rtpp_socket_col (string)
+              1.5.20. set_id_col (string)
 
         1.6. Exported Functions
 
-              1.6.1. fix_nated_contact()
+              1.6.1. fix_nated_contact([uri_params])
               1.6.2. fix_nated_sdp(flags [, ip_address])
               1.6.3. set_rtp_proxy_set()
               1.6.4. force_rtp_proxy([flags [, ip_address]])
@@ -93,31 +94,32 @@ Bogdan-Andrei Iancu
    1.6. Set rtpproxy_sock parameter
    1.7. Set rtpproxy_disable_tout parameter
    1.8. Set rtpproxy_timeout parameter to 200ms
-   1.9. Set rtpproxy_retr parameter
-   1.10. Set force_socket parameter
-   1.11. Set sipping_bflag parameter
-   1.12. Set sipping_from parameter
-   1.13. Set sipping_method parameter
-   1.14. Set nortpproxy_str parameter
-   1.15. Set db_url parameter
-   1.16. Set db_table parameter
-   1.17. Set rtpp_socket_col parameter
-   1.18. Set set_id parameter
-   1.19. fix_nated_contact usage
-   1.20. fix_nated_sdp usage
-   1.21. fix_nated_contact usage
-   1.22. force_rtp_proxy usage
-   1.23. rtpproxy_offer usage
-   1.24.
-   1.25. unforce_rtp_proxy usage
-   1.26. rtpproxy_stream2xxx usage
-   1.27. add_rcv_paramer usage
-   1.28. fix_nated_register usage
-   1.29. start_recording usage
-   1.30. nh_enable_ping usage
-   1.31. nh_enable_rtpp usage
-   1.32. nh_show_rtpp usage
-   1.33. nh_reload_rtpp usage
+   1.9. Enable auto-bridging feature
+   1.10. Set rtpproxy_retr parameter
+   1.11. Set force_socket parameter
+   1.12. Set sipping_bflag parameter
+   1.13. Set sipping_from parameter
+   1.14. Set sipping_method parameter
+   1.15. Set nortpproxy_str parameter
+   1.16. Set db_url parameter
+   1.17. Set db_table parameter
+   1.18. Set rtpp_socket_col parameter
+   1.19. Set set_id parameter
+   1.20. fix_nated_contact usage
+   1.21. fix_nated_sdp usage
+   1.22. fix_nated_contact usage
+   1.23. force_rtp_proxy usage
+   1.24. rtpproxy_offer usage
+   1.25.
+   1.26. unforce_rtp_proxy usage
+   1.27. rtpproxy_stream2xxx usage
+   1.28. add_rcv_paramer usage
+   1.29. fix_nated_register usage
+   1.30. start_recording usage
+   1.31. nh_enable_ping usage
+   1.32. nh_enable_rtpp usage
+   1.33. nh_show_rtpp usage
+   1.34. nh_reload_rtpp usage
 
 Chapter 1. Admin Guide
 
@@ -130,11 +132,6 @@ Chapter 1. Admin Guide
    source address:port pair. fix_nated_sdp adds the active
    direction indication to SDP (flag 0x01) and updates source IP
    address too (flag 0x02).
-
-   Known devices that get along over NATs with nathelper are ATAs
-   (as clients) and Cisco Gateways (since 12.2(T)) as servers. See
-   http://www.cisco.com/en/US/products/sw/iosswrel/ps1839/products
-   _feature_guide09186a0080110bf9.html">
 
    Works with multipart messages that contain an SDP part, but not
    with multi-layered multipart messages.
@@ -327,23 +324,34 @@ modparam("nathelper", "rtpproxy_disable_tout", 20)
 modparam("nathelper", "rtpproxy_timeout", "0.2")
 ...
 
-1.5.9. rtpproxy_tout (integer)
+1.5.9. rtpproxy_autobridge (integer)
+
+   Enable auto-bridging feature
+
+   Default value is "0".
+
+   Example 1.9. Enable auto-bridging feature
+...
+modparam("nathelper", "rtpproxy_autobridge", 1)
+...
+
+1.5.10. rtpproxy_tout (integer)
 
    Obsolete. see rtpproxy_timeout.
 
-1.5.10. rtpproxy_retr (integer)
+1.5.11. rtpproxy_retr (integer)
 
    How many times nathelper should retry to send and receive after
    timeout was generated.
 
    Default value is "5".
 
-   Example 1.9. Set rtpproxy_retr parameter
+   Example 1.10. Set rtpproxy_retr parameter
 ...
 modparam("nathelper", "rtpproxy_retr", 2)
 ...
 
-1.5.11. force_socket (string)
+1.5.12. force_socket (string)
 
    Socket to be forced in communicating to RTPProxy. It makes
    sense only for UDP communication. If no one specified, the OS
@@ -351,12 +359,12 @@ modparam("nathelper", "rtpproxy_retr", 2)
 
    Default value is "NULL".
 
-   Example 1.10. Set force_socket parameter
+   Example 1.11. Set force_socket parameter
 ...
 modparam("nathelper", "force_socket", "localhost:33333")
 ...
 
-1.5.12. sipping_bflag (integer)
+1.5.13. sipping_bflag (integer)
 
    What branch flag should be used by the module to identify NATed
    contacts for which it should perform NAT ping via a SIP request
@@ -364,12 +372,12 @@ modparam("nathelper", "force_socket", "localhost:33333")
 
    Default value is -1 (disabled).
 
-   Example 1.11. Set sipping_bflag parameter
+   Example 1.12. Set sipping_bflag parameter
 ...
 modparam("nathelper", "sipping_bflag", 7)
 ...
 
-1.5.13. sipping_from (string)
+1.5.14. sipping_from (string)
 
    The parameter sets the SIP URI to be used in generating the SIP
    requests for NAT ping purposes. To enable the SIP request
@@ -378,24 +386,24 @@ modparam("nathelper", "sipping_bflag", 7)
 
    Default value is "NULL".
 
-   Example 1.12. Set sipping_from parameter
+   Example 1.13. Set sipping_from parameter
 ...
 modparam("nathelper", "sipping_from", "sip:pinger@siphub.net")
 ...
 
-1.5.14. sipping_method (string)
+1.5.15. sipping_method (string)
 
    The parameter sets the SIP method to be used in generating the
    SIP requests for NAT ping purposes.
 
    Default value is "OPTIONS".
 
-   Example 1.13. Set sipping_method parameter
+   Example 1.14. Set sipping_method parameter
 ...
 modparam("nathelper", "sipping_method", "INFO")
 ...
 
-1.5.15. nortpproxy_str (string)
+1.5.16. nortpproxy_str (string)
 
    The parameter sets the SDP attribute used by nathelper to mark
    the packet SDP informations have already been mangled.
@@ -409,12 +417,12 @@ Note
 
    Default value is "a=nortpproxy:yes\r\n".
 
-   Example 1.14. Set nortpproxy_str parameter
+   Example 1.15. Set nortpproxy_str parameter
 ...
 modparam("nathelper", "nortpproxy_str", "a=sdpmangled:yes\r\n")
 ...
 
-1.5.16. db_url (string)
+1.5.17. db_url (string)
 
    The database url. This parameter should be set if you want to
    use a database table from where to load or reload definitions
@@ -426,45 +434,45 @@ modparam("nathelper", "nortpproxy_str", "a=sdpmangled:yes\r\n")
 
    Default value is "NULL".
 
-   Example 1.15. Set db_url parameter
+   Example 1.16. Set db_url parameter
 ...
 modparam("nathelper", "db_url",
                 "mysql://opensips:opensipsrw@192.168.2.132/opensips")
 ...
 
 
-1.5.17. db_table (string)
+1.5.18. db_table (string)
 
    The name of the database table containing definitions of
    socket(s) used to connect to (a set) RTPProxy.
 
    Default value is "nh_sockets".
 
-   Example 1.16. Set db_table parameter
+   Example 1.17. Set db_table parameter
 ...
 modparam("nathelper", "db_table", "nh_rtpp")
 ...
 
 
-1.5.18. rtpp_socket_col (string)
+1.5.19. rtpp_socket_col (string)
 
    The name rtpp socket column in the database table.
 
    Default value is "rtpproxy_sock".
 
-   Example 1.17. Set rtpp_socket_col parameter
+   Example 1.18. Set rtpp_socket_col parameter
 ...
 modparam("nathelper", "rtpp_socket_col", "rtpp_socket")
 ...
 
 
-1.5.19. set_id_col (string)
+1.5.20. set_id_col (string)
 
    The name set id column in the database table.
 
    Default value is "set_id".
 
-   Example 1.18. Set set_id parameter
+   Example 1.19. Set set_id parameter
 ...
 modparam("nathelper", "set_id_col", "rtpp_set_id")
 ...
@@ -472,16 +480,22 @@ modparam("nathelper", "set_id_col", "rtpp_set_id")
 
 1.6. Exported Functions
 
-1.6.1.  fix_nated_contact()
+1.6.1.  fix_nated_contact([uri_params])
 
-   Rewrites Contact HF to contain request's source address:port.
+   Rewrites the URI Contact HF to contain request's source
+   address:port. If a list of URI parameter is provided, it will
+   be added to the modified contact;
 
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    BRANCH_ROUTE.
 
-   Example 1.19. fix_nated_contact usage
+   Example 1.20. fix_nated_contact usage
 ...
-if (search("User-Agent: Cisco ATA.*") {fix_nated_contact();};
+if (search("User-Agent: Cisco ATA.*") {
+    fix_nated_contact(";ata=cisco");
+} else {
+    fix_nated_contact();
+}
 ...
 
 1.6.2.  fix_nated_sdp(flags [, ip_address])
@@ -512,7 +526,7 @@ if (search("User-Agent: Cisco ATA.*") {fix_nated_contact();};
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.
 
-   Example 1.20. fix_nated_sdp usage
+   Example 1.21. fix_nated_sdp usage
 ...
 if (search("User-Agent: Cisco ATA.*") {fix_nated_sdp("3");};
 ...
@@ -529,7 +543,7 @@ if (search("User-Agent: Cisco ATA.*") {fix_nated_sdp("3");};
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    BRANCH_ROUTE.
 
-   Example 1.21. fix_nated_contact usage
+   Example 1.22. fix_nated_contact usage
 ...
 set_rtp_proxy_set("2");
 force_rtp_proxy();
@@ -600,7 +614,7 @@ force_rtp_proxy();
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.
 
-   Example 1.22. force_rtp_proxy usage
+   Example 1.23. force_rtp_proxy usage
 ...
 if (search("User-Agent: Cisco ATA.*") {force_rtp_proxy();};
 if (src_ip=1.2.3.4) {force_rtp_proxy("i");};
@@ -620,7 +634,7 @@ if (search("User-Agent: Cisco ATA.*") {force_rtp_proxy("","1.2.3.4");};
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.
 
-   Example 1.23. rtpproxy_offer usage
+   Example 1.24. rtpproxy_offer usage
 route {
 ...
     if (is_method("INVITE")) {
@@ -665,7 +679,7 @@ onreply_route[2]
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.
 
-   Example 1.24.
+   Example 1.25.
 
    See rtpproxy_offer() function example above for example.
 
@@ -676,7 +690,7 @@ onreply_route[2]
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.
 
-   Example 1.25. unforce_rtp_proxy usage
+   Example 1.26. unforce_rtp_proxy usage
 ...
 unforce_rtp_proxy();
 ...
@@ -716,7 +730,7 @@ rtpproxy_stream2uas(prompt_name, count)
        indefinitely, until appropriate rtpproxy_stop_stream2xxx is
        issued.
 
-   Example 1.26. rtpproxy_stream2xxx usage
+   Example 1.27. rtpproxy_stream2xxx usage
 ...
     if (is_method("INVITE")) {
         rtpproxy_offer();
@@ -756,7 +770,7 @@ rtpproxy_stream2uas(prompt_name, count)
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.27. add_rcv_paramer usage
+   Example 1.28. add_rcv_paramer usage
 ...
 add_rcv_param(); # add the parameter to the Contact header
 ....
@@ -772,7 +786,7 @@ add_rcv_param("1"); # add the paramter to the Contact URI
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.28. fix_nated_register usage
+   Example 1.29. fix_nated_register usage
 ...
 fix_nated_register();
 ...
@@ -808,7 +822,7 @@ fix_nated_register();
 
    This function can be used from REQUEST_ROUTE and ONREPLY_ROUTE.
 
-   Example 1.29. start_recording usage
+   Example 1.30. start_recording usage
 ...
 start_recording();
 ...
@@ -824,7 +838,7 @@ start_recording();
    The function may takean optional parameter (for set operations)
    - a number in decimal format.
 
-   Example 1.30. nh_enable_ping usage
+   Example 1.31. nh_enable_ping usage
 ...
 $ opensipsctl fifo nh_enable_ping
 Status:: 1
@@ -849,7 +863,7 @@ $
    NOTE: if a rtpproxy is defined multiple times (in the same or
    diferente sete), all its instances will be enables/disabled.
 
-   Example 1.31.  nh_enable_rtpp usage
+   Example 1.32.  nh_enable_rtpp usage
 ...
 $ opensipsctl fifo nh_enable_rtpp udp:192.168.2.133:8081 0
 ...
@@ -861,7 +875,7 @@ $ opensipsctl fifo nh_enable_rtpp udp:192.168.2.133:8081 0
 
    No parameter.
 
-   Example 1.32.  nh_show_rtpp usage
+   Example 1.33.  nh_show_rtpp usage
 ...
 $ opensipsctl fifo nh_show_rtpp
 ...
@@ -875,7 +889,7 @@ $ opensipsctl fifo nh_show_rtpp
 
    No parameter.
 
-   Example 1.33.  nh_reload_rtpp usage
+   Example 1.34.  nh_reload_rtpp usage
 ...
 $ opensipsctl fifo nh_reload_rtpp
 ...
