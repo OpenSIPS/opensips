@@ -100,7 +100,7 @@ Options:\n\
     -P file      Create a pid file\n\
     -G file      Create a pgid file\n"
 #ifdef USE_SCTP
-"    -S         Disable sctp\n\"
+"    -S         Disable sctp\n"
 #endif
 ;
 
