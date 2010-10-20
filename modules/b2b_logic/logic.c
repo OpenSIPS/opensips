@@ -846,7 +846,7 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 				b2b_api.send_reply(entity->type, &entity->key, 200, &msg, 0, 0,
 						entity->dlginfo);
 				if(entity->peer)
-					b2b_api.send_reply(entity->peer->type, &entity->key, 200, &msg, 0, 0,
+					b2b_api.send_reply(entity->peer->type, &entity->peer->key, 200, &msg, 0, 0,
 							entity->peer->dlginfo);
 			}
 			else
