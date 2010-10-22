@@ -24,6 +24,7 @@
  * History:
  * --------
  *  2006-08-15  initial version (Anca Vamanu)
+ *  2010-10-19  support for extra headers (osas)
  */
 
 #include "../../ut.h"
@@ -443,7 +444,7 @@ send_notify:
 		}
 	}
 
-	if(notify(subs, NULL, NULL, 0 )< 0)
+	if(notify(subs, NULL, NULL, 0 , NULL)< 0)
 	{
 		LM_ERR("Failed to send notify request\n");
 		goto error;
@@ -1304,7 +1305,7 @@ int handle_expired_subs(subs_t* s)
 	s->reason.len= 7;
 	s->expires= 0;
 
-	if(send_notify_request(s, NULL, NULL, 1)< 0)
+	if(send_notify_request(s, NULL, NULL, 1, NULL)< 0)
 	{
 		LM_ERR("send Notify not successful\n");
 		return -1;
@@ -2083,7 +2084,7 @@ int refresh_watcher(str* pres_uri, str* watcher_uri, str* event,
 				return -1;
 			}
 			lock_release(&subs_htable[hash_code].lock);
-			if(notify(s_copy, NULL, NULL, 0)< 0)
+			if(notify(s_copy, NULL, NULL, 0, NULL)< 0)
 			{
 				LM_ERR("in notify function\n");
 				pkg_free(s_copy);

@@ -24,6 +24,7 @@
  * History:
  * --------
  *  2006-08-15  initial version (Anca Vamanu)
+ *  2010-10-19  support for extra headers (osas)
  */
 
 #include <stdio.h>
@@ -804,29 +805,29 @@ int check_if_dialog(str body, int *is_dialog)
 
 
 int update_presentity(struct sip_msg* msg, presentity_t* presentity, str* body,
-		int new_t, int* sent_reply, char* sphere)
+		int new_t, int* sent_reply, char* sphere, str* extra_hdrs)
 {
 //	static db_ps_t my_ps_insert = NULL, my_ps_update_no_body = NULL,
 //		   my_ps_update_body = NULL;
 //	static db_ps_t my_ps_delete = NULL, my_ps_query = NULL;
-	db_key_t query_cols[12], update_keys[8], result_cols[5];
-	db_op_t  query_ops[12];
-	db_val_t query_vals[12], update_vals[8];
+	db_key_t query_cols[13], update_keys[8], result_cols[6];
+	db_op_t  query_ops[13];
+	db_val_t query_vals[13], update_vals[8];
 	db_res_t *result= NULL;
 	int n_query_cols = 0;
 	int n_update_cols = 0;
 	char* dot= NULL;
-	str etag= {0, 0};
-	str cur_etag= {0, 0};
+	str etag= {NULL, 0};
+	str cur_etag= {NULL, 0};
 	str* rules_doc= NULL;
-	str pres_uri= {0, 0};
-	int rez_body_col, rez_sender_col, n_result_cols= 0;
+	str pres_uri= {NULL, 0};
+	int rez_body_col, rez_extra_hdrs_col, rez_sender_col, n_result_cols= 0;
 	db_row_t *row = NULL ;
 	db_val_t *row_vals = NULL;
 	str old_body;
 //	str sender;
 	int bla_update_publish= 1;
-	str update_body={0, 0}, notify_body={0, 0};
+	str update_body={NULL, 0}, notify_body={NULL, 0};
 	int allocated = 0;
 	int send_notify = 1;
 
@@ -877,6 +878,7 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, str* body,
 	n_query_cols++;
 
 	result_cols[rez_body_col= n_result_cols++] = &str_body_col;
+	result_cols[rez_extra_hdrs_col= n_result_cols++] = &str_extra_hdrs_col;
 	result_cols[rez_sender_col= n_result_cols++] = &str_sender_col;
 
 	if(body)
@@ -927,6 +929,12 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, str* body,
 		query_vals[n_query_cols].type = DB_BLOB;
 		query_vals[n_query_cols].nul = 0;
 		query_vals[n_query_cols].val.str_val = *body;
+		n_query_cols++;
+
+		query_cols[n_query_cols] = &str_extra_hdrs_col;
+		query_vals[n_query_cols].type = DB_BLOB;
+		query_vals[n_query_cols].nul = 0;
+		query_vals[n_query_cols].val.str_val = *extra_hdrs;
 		n_query_cols++;
 
 		query_cols[n_query_cols] = &str_received_time_col;
@@ -1012,7 +1020,7 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, str* body,
 				if(send_notify)
 				{
 					if( publ_notify(presentity, pres_uri, notify_body.s?&notify_body:0, &presentity->etag,
-							rules_doc, 0)< 0 )
+							rules_doc, NULL, extra_hdrs)< 0 )
 					{
 						LM_ERR("while sending notify\n");
 						goto error;
@@ -1197,7 +1205,7 @@ send_notify:
 	if(send_notify)
 	{
 		if (publ_notify(presentity, pres_uri, notify_body.s?&notify_body:0,
-					NULL, rules_doc, 0)<0)
+					NULL, rules_doc, NULL, extra_hdrs)<0)
 		{
 			LM_ERR("while sending Notify requests to watchers\n");
 			goto error;
@@ -1217,7 +1225,7 @@ send_notify:
 		{
 			/* send Notify for presence */
 			presentity->event = *pres_event_p;
-			if (publ_notify(presentity, pres_uri, 0, NULL, 0, dialog_body)<0)
+			if (publ_notify(presentity, pres_uri, 0, NULL, 0, dialog_body, extra_hdrs)<0)
 			{
 				LM_ERR("while sending Notify requests to watchers\n");
 				if(dialog_body && dialog_body!=FAKED_BODY)
@@ -1577,6 +1585,7 @@ char* get_sphere(str* pres_uri)
 	n_query_cols++;
 
 	result_cols[n_result_cols++] = &str_body_col;
+	result_cols[n_result_cols++] = &str_extra_hdrs_col;
 	
 	if (pa_dbf.use_table(pa_db, &presentity_table) < 0) 
 	{
@@ -1681,6 +1690,7 @@ int contains_presence(str* pres_uri) {
 		n_query_cols++;
 
 		result_cols[n_result_cols++] = &str_body_col;
+		result_cols[n_result_cols++] = &str_extra_hdrs_col;
 
 		pa_dbf.use_table(pa_db, &presentity_table);
 

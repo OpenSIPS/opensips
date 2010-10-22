@@ -24,6 +24,7 @@
  * History:
  * --------
  *  2006-08-15  initial version (Anca Vamanu)
+ *  2010-10-19  support for extra headers (osas)
  */
 
 #include "../../str.h"
@@ -66,6 +67,7 @@ extern str str_to_user_col;
 extern str str_username_col;
 extern str str_domain_col;
 extern str str_body_col;
+extern str str_extra_hdrs_col;
 extern str str_to_domain_col;
 extern str str_watcher_username_col;
 extern str str_watcher_domain_col;
@@ -98,12 +100,12 @@ void printf_subs(subs_t* subs);
 int query_db_notify(str* pres_uri,pres_ev_t* event, subs_t* watcher_subs );
 
 int publ_notify(presentity_t* p, str pres_uri, str* body, str* offline_etag,
-		str* rules_doc, str* dialog_publish);
+		str* rules_doc, str* dialog_publish, str* extra_hdrs);
 
-int notify(subs_t* subs, subs_t* watcher_subs, str* n_body,int force_null_body);
+int notify(subs_t* subs, subs_t* watcher_subs, str* n_body,int force_null_body, str* extra_hdrs);
 
 int send_notify_request(subs_t* subs, subs_t * watcher_subs,
-		str* n_body,int force_null_body);
+		str* n_body,int force_null_body, str* extra_hdrs);
 
 char* get_status_str(int flag);
 void free_watcher_list(watcher_t* w);
