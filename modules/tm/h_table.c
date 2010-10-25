@@ -319,6 +319,7 @@ error:
 		}
 	}
 	shm_free(new_cell);
+	set_t(NULL);
 	/* unlink transaction AVP list and link back the global AVP list (bogdan)*/
 	reset_avps();
 	return NULL;
