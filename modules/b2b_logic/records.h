@@ -34,6 +34,7 @@
 #include "../../str.h"
 #include "../../lock_ops.h"
 #include "b2b_logic.h"
+#include "b2b_load.h"
 
 typedef struct b2bl_entity_id
 {
@@ -41,10 +42,13 @@ typedef struct b2bl_entity_id
 	str key;
 	str to_uri;
 	str from_uri;
+	str from_dname;
 	b2b_dlginfo_t* dlginfo;
 	int disconnected;
 	int state;
+	int no;
 	enum b2b_entity_type type;
+	b2bl_dlg_stat_t stats;
 	struct b2bl_entity_id* next;
 	struct b2bl_entity_id* peer;
 }b2bl_entity_id_t;
@@ -72,6 +76,8 @@ typedef struct b2bl_tuple
 	unsigned int lifetime;
 	str sdp;
 	int db_flag;
+	b2bl_cback_f cbf;
+	void* cb_param;
 }b2bl_tuple_t;
 
 typedef struct b2bl_entry
@@ -108,7 +114,7 @@ int process_bridge_action(struct sip_msg* msg, b2bl_entity_id_t* curr_entity,
 void destroy_b2bl_htable(void);
 
 b2bl_entity_id_t* b2bl_create_new_entity(enum b2b_entity_type type, str* entity_id,
-		str* to_uri,str* from_uri, str* ssid, struct sip_msg* msg);
+		str* to_uri,str* from_uri,str* from_dname,str* ssid,struct sip_msg* msg);
 
 void b2bl_delete_entity(b2bl_entity_id_t* entity, b2bl_tuple_t* tuple);
 

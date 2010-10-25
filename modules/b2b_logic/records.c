@@ -121,14 +121,13 @@ b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg,
 	{
 		for(i = 0; i< scenario->param_no; i++)
 		{
-			if(args[i] == NULL)
+			if(args[i]==NULL || args[i]->len==0 || args[i]->s==0)
 			{
-				LM_ERR("Too few parameters. This scenario requires %d parameters\n",
-						scenario->param_no);
-				goto error;
+				LM_DBG("Fewer parameters\n");
+				break;
 			}
 			/* must print the value of the argument */
-			if(msg)
+			if(msg && b2bl_caller != CALLER_MODULE)
 			{
 				buf_len= 255;
 				if(pv_printf(msg, (pv_elem_t*)args[i], buf, &buf_len)<0)
@@ -276,6 +275,8 @@ void b2bl_delete(b2bl_tuple_t* tuple, unsigned int hash_index,
 			hash_index, tuple->id);
 	LM_DBG("pointer [%p]\n", tuple);
 
+	if(tuple->cbf)
+		tuple->cbf(tuple->cb_param, 0, 0, B2B_DESTROY);
 	if(!not_del_b2be)
 		b2bl_db_delete(tuple);
 	if(b2bl_htable[hash_index].first == tuple)

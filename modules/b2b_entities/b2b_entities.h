@@ -40,6 +40,9 @@
 typedef int (*b2b_restore_linfo_t)(enum b2b_entity_type type, str* key,
 		b2b_notify_t cback);
 
+typedef int (*b2b_update_b2bl_param_t)(enum b2b_entity_type type, str* key,
+		str* param);
+
 typedef struct b2b_api
 {
 	b2b_server_new_t          server_new;
@@ -48,6 +51,7 @@ typedef struct b2b_api
 	b2b_send_reply_t          send_reply;
 	b2b_entity_delete_t       entity_delete;
 	b2b_restore_linfo_t       restore_logic_info;
+	b2b_update_b2bl_param_t   update_b2bl_param;
 }b2b_api_t;
 
 

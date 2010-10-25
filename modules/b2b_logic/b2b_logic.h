@@ -49,6 +49,13 @@
 
 extern b2b_api_t b2b_api;
 
+enum b2bl_caller_type {
+	CALLER_MODULE,
+	CALLER_SCRIPT,
+	CALLER_MI
+};
+extern enum b2bl_caller_type b2bl_caller;
+
 typedef struct b2b_rule
 {
 	unsigned int id;
@@ -121,13 +128,9 @@ static inline int b2b_get_request_id(str* request)
 
 b2b_scenario_t* b2b_find_scenario(b2b_scenario_t* scenario,
 		unsigned int scenario_id);
-
-
-int b2b_process_scenario_init(b2b_scenario_t* scenario_struct,struct sip_msg* msg,
-		unsigned int hash_index, str* args[], str* to, str* from);
 int b2b_add_dlginfo(str* key, str* entity_key,int src, b2b_dlginfo_t* info);
-
 int b2b_server_notify(struct sip_msg* msg, str* key, int type, void* param);
 int b2b_client_notify(struct sip_msg* msg, str* key, int type, void* param);
+b2b_scenario_t* get_scenario_id_list(str* sid, b2b_scenario_t* list);
 
 #endif

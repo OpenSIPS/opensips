@@ -98,6 +98,13 @@ str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 		LM_ERR("Wrong parameters.\n");
 		return NULL;
 	}
+	if(param && param->len > B2BL_MAX_KEY_LEN)
+	{
+		LM_ERR("parameter too long, received [%d], maximum [%d]\n",
+				param->len, B2BL_MAX_KEY_LEN);
+		return 0;
+	}
+
 
 	hash_index = core_hash(&ci->from_uri, &ci->to_uri, client_hsize);
 
@@ -109,7 +116,7 @@ str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 	/* create a dummy b2b dialog structure to be inserted in the hash table*/
 	size = sizeof(b2b_dlg_t) + ci->to_uri.len + ci->from_uri.len
 		+ ci->from_dname.len + ci->to_dname.len +
-		from_tag.len + param->len;
+		from_tag.len + B2BL_MAX_KEY_LEN;
 
 	/* create record in hash table */
 	dlg = (b2b_dlg_t*)shm_malloc(size);
@@ -129,11 +136,13 @@ str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 		CONT_COPY(dlg, dlg->from_dname, ci->from_dname);
 	CONT_COPY(dlg, dlg->tag[CALLER_LEG], from_tag);
 
-	dlg->param.s = (char*)dlg + size;
-	memcpy(dlg->param.s, param->s, param->len);
-	dlg->param.len = param->len;
-	size+= param->len;
-
+	if(param && param->s)
+	{
+		dlg->param.s = (char*)dlg + size;
+		memcpy(dlg->param.s, param->s, param->len);
+		dlg->param.len = param->len;
+		size+= B2BL_MAX_KEY_LEN;
+	}
 	dlg->b2b_cback = b2b_cback;
 	dlg->add_dlginfo = add_dlginfo;
 	if(parse_method(ci->method.s, ci->method.s+ci->method.len, &dlg->last_method)< 0)
@@ -239,13 +248,13 @@ error:
 dlg_t* b2b_client_build_dlg(b2b_dlg_t* dlg, dlg_leg_t* leg)
 {
 	dlg_t* td =NULL;
-
+/*
 	if(dlg->legs == NULL)
 	{
 		LM_ERR("Tried to send a request when no call leg info exists\n");
 		return 0;
 	}
-
+*/
 	td = (dlg_t*)pkg_malloc(sizeof(dlg_t));
 	if(td == NULL)
 	{

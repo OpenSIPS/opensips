@@ -296,7 +296,7 @@ b2b_dlg_t* b2b_dlg_copy(b2b_dlg_t* dlg)
 
 	size = sizeof(b2b_dlg_t) + dlg->callid.len+ dlg->from_uri.len+ dlg->to_uri.len+
 		dlg->tag[0].len + dlg->tag[1].len+ dlg->route_set[0].len+ dlg->route_set[1].len+
-		dlg->contact[0].len+ dlg->contact[1].len+ dlg->sdp.len+ dlg->ruri.len+ dlg->param.len+
+		dlg->contact[0].len+ dlg->contact[1].len+ dlg->sdp.len+ dlg->ruri.len+ B2BL_MAX_KEY_LEN+
 		dlg->from_dname.len + dlg->to_dname.len;
 
 	new_dlg = (b2b_dlg_t*)shm_malloc(size);
@@ -328,7 +328,12 @@ b2b_dlg_t* b2b_dlg_copy(b2b_dlg_t* dlg)
 	if(dlg->sdp.s && dlg->sdp.len)
 		CONT_COPY(new_dlg, new_dlg->sdp, dlg->sdp);
 	if(dlg->param.s)
-		CONT_COPY(new_dlg, new_dlg->param, dlg->param);
+	{
+		new_dlg->param.s= (char*)new_dlg+ size;
+		memcpy(new_dlg->param.s, dlg->param.s, dlg->param.len);
+		new_dlg->param.len= dlg->param.len;
+		size+= B2BL_MAX_KEY_LEN;
+	}
 
 	if(dlg->from_dname.s)
 		CONT_COPY(new_dlg, new_dlg->from_dname, dlg->from_dname);
@@ -598,7 +603,7 @@ search_dialog:
 		}
 		else /* if also not a client request - not for us */
 		{
-			if(!method_value == METHOD_UPDATE)
+			if(method_value != METHOD_UPDATE)
 			{
 				LM_DBG("Not a b2b request\n");
 				return 1;
@@ -629,9 +634,14 @@ search_dialog:
 			LM_DBG("No dialog found\n");
 			if(method_value != METHOD_ACK)
 			{
-				LM_ERR("No dialog found, callid= [%.*s], method=%.*s\n",
-					callid.len, callid.s,msg->first_line.u.request.method.len,
-					msg->first_line.u.request.method.s);
+				str ok = str_init("OK");
+			
+				if(method_value == METHOD_BYE)
+					tmb.t_reply(msg, 200, &ok);
+				else
+					LM_ERR("No dialog found, callid= [%.*s], method=%.*s\n",
+						callid.len, callid.s,msg->first_line.u.request.method.len,
+						msg->first_line.u.request.method.s);
 			}
 			lock_release(&table[hash_index].lock);
 			return -1;
@@ -1046,7 +1056,6 @@ int b2b_send_reply(enum b2b_entity_type et, str* b2b_key, int code, str* text,
 		return -1;
 	}
 
-	LM_DBG("Send reply [%d], for dialog[%p]\n", code, dlg);
 /*	if(dlg->callid.s == NULL)
 	{
 		LM_DBG("NULL callid. Dialog Information not completed yet\n");
@@ -1068,6 +1077,9 @@ int b2b_send_reply(enum b2b_entity_type et, str* b2b_key, int code, str* text,
 		lock_release(&table[hash_index].lock);
 		return -1;
 	}
+	
+	LM_DBG("Send reply %d %.*s, for %.*s %p\n", code, tm_tran->method.len,
+			tm_tran->method.s, b2b_key->len, b2b_key->s, dlg);
 
 	if((tm_tran->method.len == INVITE_LEN && strncmp(tm_tran->method.s, INVITE, INVITE_LEN)==0)
 			&& (dlg->state==B2B_CONFIRMED || dlg->state==B2B_ESTABLISHED))
@@ -1343,7 +1355,7 @@ int b2b_send_indlg_req(b2b_dlg_t* dlg, enum b2b_entity_type et,
 
 	tmb.setlocalTholder(0);
 
-	LM_DBG("Request sent\n");
+	LM_DBG("Request sent dlg=[%p], uac_tran=[%p]\n", dlg, dlg->uac_tran);
 	if(result < 0)
 	{
 		LM_ERR("failed to send request [%.*s]\n", method->len, method->s);
@@ -1398,7 +1410,7 @@ int b2b_send_request(enum b2b_entity_type et, str* b2b_key, str* method,
 	/* parse the key and find the position in hash table */
 	if(b2b_parse_key(b2b_key, &hash_index, &local_index) < 0)
 	{
-		LM_ERR("Wrong format for b2b key\n");
+		LM_ERR("Wrong format for b2b key [%.*s]\n", b2b_key->len, b2b_key->s);
 		return -1;
 	}
 
@@ -1418,13 +1430,15 @@ int b2b_send_request(enum b2b_entity_type et, str* b2b_key, str* method,
 		goto error;
 	}
 
+	LM_DBG("Send request %.*s, for %.*s %p\n", method->len,
+			method->s, b2b_key->len, b2b_key->s, dlg);
 	if(dlg->state == B2B_TERMINATED)
 	{
 		LM_ERR("Can not send request in terminated state\n");
 		lock_release(&table[hash_index].lock);
 		return 0;
 	}
-
+	
 	if(b2breq_complete_ehdr(extra_headers, &ehdr, body)< 0)
 	{
 		LM_ERR("Failed to complete extra headers\n");
@@ -1798,8 +1812,25 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 	 * exit*/
 	if(method_id==METHOD_INVITE && dlg->uac_tran != t)
 	{
-		LM_DBG("I don't care anymore about this transaction[%p] last_method=%d method_id=%d [%p]\n",
-				dlg, dlg->last_method, method_id, t);
+		LM_DBG("I don't care anymore about this transaction[%p] last_method=%d"
+				" method_id=%d t=[%p], dlg->uac_tran=[%p]\n",
+				dlg, dlg->last_method, method_id, t, dlg->uac_tran);
+		/* if confirmed - send ACK */
+		if(statuscode>=200 && statuscode<300)
+		{
+			leg = b2b_new_leg(msg, &to_tag, PKG_MEM_TYPE);
+			if(leg == NULL)
+			{
+				LM_ERR("Failed to add dialog leg\n");
+				lock_release(&htable[hash_index].lock);
+				return;
+			}
+			if(b2b_send_req(dlg, leg, &ack, 0) < 0)
+			{
+				LM_ERR("Failed to send ACK request\n");
+			}
+			pkg_free(leg);
+		}
 		lock_release(&htable[hash_index].lock);
 		return;
 	}
@@ -1831,6 +1862,7 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 		{
 			tmb.unref_cell(dlg->uac_tran);
 			dlg->uac_tran = 0;
+			LM_DBG("dlg=[%p], uac_tran=0\n", dlg);
 		}
 
 		if(method_id != METHOD_INVITE)
@@ -1892,6 +1924,36 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 		{
 			tmb.unref_cell(dlg->uac_tran);
 			dlg->uac_tran = 0;
+			LM_DBG("dlg=[%p], uac_tran=0\n", dlg);
+		}
+
+		/* if 200 OK received for INVITE and the dialog already ended ->
+		 * send ACK and terminate the call (it won't have a cback function) */
+		if(dlg->state == B2B_TERMINATED)
+		{
+			if(statuscode >= 200)
+			{
+				LM_DBG("Received 200 OK after the call was terminated %.*s\n",
+					b2b_key->len, b2b_key->s);
+				leg = b2b_new_leg(msg, &to_tag, PKG_MEM_TYPE);
+				if(leg == NULL)
+				{
+					LM_ERR("Failed to add dialog leg\n");
+					lock_release(&htable[hash_index].lock);
+					goto error;
+				}
+				if(b2b_send_req(dlg, leg, &ack, 0) < 0)
+				{
+					LM_ERR("Failed to send ACK request\n");
+				}
+				if(b2b_send_req(dlg, leg, &bye, 0) < 0)
+				{
+					LM_ERR("Failed to send BYE request\n");
+				}
+				pkg_free(leg);
+			}
+			lock_release(&htable[hash_index].lock);
+			goto done;
 		}
 
 		if(dlg->legs == NULL && 
@@ -2003,7 +2065,6 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 				if(dlg->state == B2B_CONFIRMED) /* if the dialog was already confirmed */
 				{
 					LM_DBG("The state is already confirmed\n");
-					str method= {"ACK", 3};
 
 					/* send an ACK followed by BYE */
 					leg = b2b_new_leg(msg, &to_tag, PKG_MEM_TYPE);
@@ -2013,12 +2074,11 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 						lock_release(&htable[hash_index].lock);
 						goto error;
 					}
-					if(b2b_send_req(dlg, leg, &method, 0) < 0)
+					if(b2b_send_req(dlg, leg, &ack, 0) < 0)
 					{
 						LM_ERR("Failed to send ACK request\n");
 					}
-					method.s = "BYE";
-					if(b2b_send_req(dlg, leg, &method, 0) < 0)
+					if(b2b_send_req(dlg, leg, &bye, 0) < 0)
 					{
 						LM_ERR("Failed to send BYE request\n");
 					}
