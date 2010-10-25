@@ -228,7 +228,7 @@ int add_lb_dsturi( struct lb_data *data, int id, int group, char *uri,
 	LM_DBG("uri=<%s>, grp=%d, res=<%s>\n",uri, group, resource);
 
 	/* parse the resources string */
-	lb_rl = parse_resorces_list( resource, 1);
+	lb_rl = parse_resources_list( resource, 1);
 	if (lb_rl==NULL) {
 		LM_ERR("failed to parse resourse string <%s>\n",resource);
 		return -1;

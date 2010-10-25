@@ -145,6 +145,8 @@ static int fixup_resources(void** param, int param_no)
 {
 	struct lb_res_str_list *lb_rl;
 	struct lb_grp_param *lbgp;
+	struct lb_res_parse *lbp;
+	pv_elem_t *model=NULL;
 	str s;
 
 	if (param_no==1) {
@@ -179,13 +181,36 @@ static int fixup_resources(void** param, int param_no)
 
 		/* parameter is string (semi-colon separated list) 
 		 * of needed resources */
-		lb_rl = parse_resorces_list( (char *)(*param), 0);
-		if (lb_rl==NULL) {
-			LM_ERR("invalid paramter %s\n",(char *)(*param));
+		lbp = (struct lb_res_parse *)pkg_malloc(sizeof(struct lb_res_parse));
+		if (!lbp) {
+			LM_ERR("no more pkg mem\n");
+			return E_OUT_OF_MEM;
+		}
+		s.s = (char*)*param;
+		s.len = strlen(s.s);
+
+		if(pv_parse_format(&s ,&model) || model==NULL) {
+			LM_ERR("wrong format [%s] in resource list!\n", s.s);
 			return E_CFG;
 		}
-		pkg_free(*param);
-		*param = (void*)lb_rl;
+		/* check if there is any pv in string */
+		if (!model->spec.getf && !model->next)
+			lbp->type = RES_TEXT;
+		else
+			lbp->type = RES_ELEM;
+
+		if (lbp->type & RES_TEXT) {
+			lb_rl = parse_resources_list( (char *)(*param), 0);
+			if (lb_rl==NULL) {
+				LM_ERR("invalid paramter %s\n",(char *)(*param));
+				return E_CFG;
+			}
+			pkg_free(*param);
+			lbp->param = (void*)(unsigned long)lb_rl;
+		} else {
+			lbp->param = (void*)(unsigned long)model;
+		}
+		*param = (void *)(unsigned long)lbp;
 
 	} else if (param_no==3) {
 
@@ -394,6 +419,10 @@ static int w_load_balance(struct sip_msg *req, char *grp, char *rl, char *al)
 	int grp_no;
 	struct lb_grp_param *lbgp = (struct lb_grp_param *)grp;
 	pv_value_t val;
+	struct lb_res_str_list *lb_rl;
+	struct lb_res_parse *lbp;
+	pv_elem_t *model;
+	str dest;
 
 	ref_read_data();
 
@@ -411,17 +440,33 @@ static int w_load_balance(struct sip_msg *req, char *grp, char *rl, char *al)
 		grp_no = lbgp->grp_no;
 	}
 
+	lbp = (struct lb_res_parse *)rl;
+	if (lbp->type & RES_ELEM) {
+		model = (pv_elem_p)lbp->param;
+		if (pv_printf_s(req, model, &dest) || dest.len <= 0) {
+			LM_ERR("cannot create resource string\n");
+			return -1;
+		}
+		lb_rl = parse_resources_list(dest.s, 0);
+		if (!lb_rl) {
+			LM_ERR("cannot create resource list\n");
+			return -1;
+		}
+	} else
+		lb_rl = (struct lb_res_str_list *)lbp->param;
+
 	/* do lb */
-	ret = do_load_balance(req, grp_no, (struct lb_res_str_list*)rl,
-				(unsigned int)(long)al, *curr_data);
+	ret = do_load_balance(req, grp_no, lb_rl,
+			(unsigned int)(long)al, *curr_data);
 
 	unref_read_data();
+	if (lbp->type & RES_ELEM)
+		pkg_free(lb_rl);
 
 	if (ret<0)
 		return ret;
 	return 1;
 }
-
 
 
 static int w_lb_disable(struct sip_msg *req)
