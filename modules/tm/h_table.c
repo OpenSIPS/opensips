@@ -164,6 +164,9 @@ void free_cell( struct cell* dead_cell )
 		if (dead_cell->uac[i].duri.s) {
 			shm_free_unsafe(dead_cell->uac[i].duri.s);
 		}
+		if (dead_cell->uac[i].user_avps) {
+			destroy_avp_list_unsafe( &dead_cell->uac[i].user_avps);
+		}
 	}
 
 	/* collected to tags */

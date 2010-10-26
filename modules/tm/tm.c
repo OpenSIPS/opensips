@@ -132,6 +132,18 @@ static char *fr_inv_timer_param = NULL;
 #define TM_CANCEL_BRANCH_OTHERS (1<<1)
 
 
+#define PV_FIELD_DELIM ", "
+#define PV_FIELD_DELIM_LEN (sizeof(PV_FIELD_DELIM) - 1)
+
+#define PV_LOCAL_BUF_SIZE	511
+static char pv_local_buf[PV_LOCAL_BUF_SIZE+1];
+
+
+int pv_get_tm_branch_avp(struct sip_msg*,  pv_param_t*, pv_value_t*);
+int pv_set_tm_branch_avp(struct sip_msg*,  pv_param_t*, int, pv_value_t*);
+struct usr_avp** get_bavp_list(void);
+
+
 /* module parameteres */
 int tm_enable_stats = 1;
 
@@ -267,6 +279,8 @@ static pv_export_t mod_items[] = {
 		 0, 0, 0, 0 },
 	{ {"T_ruri",       sizeof("T_ruri")-1},       902, pv_get_tm_ruri,       0,
 		 0, 0, 0, 0 },
+	{ {"bavp",         sizeof("bavp")-1},         903, pv_get_tm_branch_avp,
+		pv_set_tm_branch_avp, pv_parse_avp_name, pv_parse_index, 0, 0 },
 	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
 };
 
@@ -1347,3 +1361,253 @@ struct sip_msg* tm_pv_context_request(struct sip_msg* msg)
 	return trans->uas.request;
 }
 
+
+int pv_get_tm_branch_avp(struct sip_msg *msg, pv_param_t *param,
+		pv_value_t *val)
+{
+	int_str avp_name;
+	int_str avp_value;
+	unsigned short name_type;
+	int idx, idxf, res=0;
+	struct usr_avp **old_list=NULL;
+	struct usr_avp **avp_list=NULL;
+	struct usr_avp *avp;
+	int_str avp_value0;
+	struct usr_avp *avp0;
+	int n=0;
+	char *p;
+
+	if (!msg || !val)
+		goto error;
+
+	avp_list = get_bavp_list();
+	if (!avp_list) {
+		pv_get_null(msg, param, val);
+		goto success;
+	}
+
+	if (!param) {
+		LM_ERR("bad parameters\n");
+		goto error;
+	}
+
+	if (pv_get_avp_name(msg, param, &avp_name, &name_type)) {
+		LM_ALERT("BUG in getting bavp name\n");
+		goto error;
+	}
+
+	/* get the index */
+	if(pv_get_spec_index(msg, param, &idx, &idxf)!=0) {
+		LM_ERR("invalid index\n");
+		goto error;
+	}
+
+	/* setting the avp head */
+	old_list = set_avp_list(avp_list);
+	if (!old_list) {
+		LM_CRIT("no bavp head list found\n");
+		goto error;
+	}
+
+	if ((avp=search_first_avp(name_type, avp_name, &avp_value, 0))==0) {
+		pv_get_null(msg, param, val);
+		goto success;
+	}
+	val->flags = PV_VAL_STR;
+	if ( (idxf==0 || idxf==PV_IDX_INT) && idx==0) {
+		if(avp->flags & AVP_VAL_STR) {
+			val->rs = avp_value.s;
+		} else {
+			val->rs.s = sint2str(avp_value.n, &val->rs.len);
+			val->ri = avp_value.n;
+			val->flags |= PV_VAL_INT|PV_TYPE_INT;
+		}
+		goto success;
+	}
+	if(idxf==PV_IDX_ALL) {
+		p = pv_local_buf;
+		do {
+			if(avp->flags & AVP_VAL_STR) {
+				val->rs = avp_value.s;
+			} else {
+				val->rs.s = sint2str(avp_value.n, &val->rs.len);
+			}
+			
+			if(p-pv_local_buf+val->rs.len+1>PV_LOCAL_BUF_SIZE) {
+				LM_ERR("local buffer length exceeded!\n");
+				pv_get_null(msg, param, val);
+				goto success;
+			}
+			memcpy(p, val->rs.s, val->rs.len);
+			p += val->rs.len;
+			if(p-pv_local_buf+PV_FIELD_DELIM_LEN+1>PV_LOCAL_BUF_SIZE) {
+				LM_ERR("local buffer length exceeded\n");
+				pv_get_null(msg, param, val);
+				goto success;
+			}
+			memcpy(p, PV_FIELD_DELIM, PV_FIELD_DELIM_LEN);
+			p += PV_FIELD_DELIM_LEN;
+		} while ((avp=search_first_avp(name_type, avp_name,
+						&avp_value, avp))!=0);
+		*p = 0;
+		val->rs.s = pv_local_buf;
+		val->rs.len = p - pv_local_buf;
+		goto success;
+	}
+
+	/* we have a numeric index */
+	if(idx<0) {
+		n = 1;
+		avp0 = avp;
+		while ((avp0=search_first_avp(name_type, avp_name,
+						&avp_value0, avp0))!=0) n++;
+		idx = -idx;
+		if(idx>n) {
+			LM_DBG("index out of range\n");
+			pv_get_null(msg, param, val);
+			goto success;
+		}
+		idx = n - idx;
+		if(idx==0) {
+			if(avp->flags & AVP_VAL_STR) {
+				val->rs = avp_value.s;
+			} else {
+				val->rs.s = sint2str(avp_value.n, &val->rs.len);
+				val->ri = avp_value.n;
+				val->flags |= PV_VAL_INT|PV_TYPE_INT;
+			}
+			goto success;
+		}
+	}
+	n=0;
+	while(n<idx &&
+			(avp=search_first_avp(name_type, avp_name, &avp_value, avp))!=0)
+		n++;
+
+	if(avp!=0) {
+		if(avp->flags & AVP_VAL_STR) {
+			val->rs = avp_value.s;
+		} else {
+			val->rs.s = sint2str(avp_value.n, &val->rs.len);
+			val->ri = avp_value.n;
+			val->flags |= PV_VAL_INT|PV_TYPE_INT;
+		}
+	}
+
+	goto success;
+
+error:
+	res = -1;
+success:
+	if (old_list)
+		set_avp_list(old_list);
+	return res;
+}
+
+int pv_set_tm_branch_avp(struct sip_msg *msg, pv_param_t *param, int op,
+		pv_value_t *val)
+{
+	int_str avp_name;
+	int_str avp_val;
+	int flags, res=0;
+	unsigned short name_type;
+	int idx, idxf;
+	struct usr_avp **old_list=NULL;
+	struct usr_avp **avp_list=NULL;
+
+	if (!msg || !val)
+		goto error;
+
+	avp_list = get_bavp_list();
+	if (!avp_list) {
+		pv_get_null(msg, param, val);
+		goto success;
+	}
+
+	if (!param) {
+		LM_ERR("bad parameters\n");
+		goto error;
+	}
+
+	if (pv_get_avp_name(msg, param, &avp_name, &name_type)) {
+		LM_ALERT("BUG in getting bavp name\n");
+		goto error;
+	}
+
+	/* get the index */
+	if(pv_get_spec_index(msg, param, &idx, &idxf)!=0) {
+		LM_ERR("invalid index\n");
+		goto error;
+	}
+
+	/* setting the avp head */
+	old_list = set_avp_list(avp_list);
+	if (!old_list) {
+		LM_CRIT("no bavp head list found\n");
+		goto error;
+	}
+
+	if(val == NULL) {
+		if(op == COLONEQ_T || idxf == PV_IDX_ALL)
+			destroy_avps(name_type, avp_name, 1);
+		else {
+			if(idx < 0) {
+				LM_ERR("index with negative value\n");
+				goto error;
+			}
+			destroy_index_avp(name_type, avp_name, idx);
+		}
+		/* restoring head */
+		goto success;
+	}
+
+	if(op == COLONEQ_T || idxf == PV_IDX_ALL)
+		destroy_avps(name_type, avp_name, 1);
+
+	flags = name_type;
+	if(val->flags&PV_TYPE_INT) {
+		avp_val.n = val->ri;
+	} else {
+		avp_val.s = val->rs;
+		flags |= AVP_VAL_STR;
+	}
+
+	if(idxf == PV_IDX_INT || idxf == PV_IDX_PVAR) {
+		if(replace_avp(flags, avp_name, avp_val, idx)< 0) {
+			LM_ERR("failed to replace bavp\n");
+			goto error;
+		}
+	} else {
+		if (add_avp(flags, avp_name, avp_val)<0) {
+			LM_ERR("error - cannot add bavp\n");
+			goto error;
+		}
+	}
+	goto success;
+
+error:
+	res = -1;
+success:
+	if (old_list)
+		set_avp_list(old_list);
+	return res;
+}
+
+
+struct usr_avp** get_bavp_list(void)
+{
+	struct cell* t;
+
+	if (route_type!=BRANCH_ROUTE && route_type!=ONREPLY_ROUTE
+			&& route_type!=FAILURE_ROUTE) {
+		return NULL;
+	}
+	/* get the transaction */
+	t = get_t();
+	if ( t==0 || t==T_UNDEFINED ) {
+		return NULL;
+	}
+
+	/* setting the avp head */
+	return &t->uac[_tm_branch_index].user_avps;
+}

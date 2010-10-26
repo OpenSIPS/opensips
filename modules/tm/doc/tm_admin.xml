@@ -1478,6 +1478,14 @@ branch_route[1] {
 			has a transaction.
 			</para>
 		</section>
+		<section>
+		<title>$bavp(name)</title>
+			<para>
+				<emphasis>$bavp(name)</emphasis> - a particular type of avp that
+				can have different values for each branch. They can only be used in
+				BRANCH, REPLY and FAILURE routes. Otherwise NULL value is returned.
+			</para>
+		</section>
 
 	</section>
 
