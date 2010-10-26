@@ -79,6 +79,12 @@ struct pres_ev
 	str content_type;
 	int default_expires;
 	int type;
+	/* Flag that sets the requirements for body:
+	 *
+	 * 0 - body is not mandatory
+	 * 1 - body is mandatory
+	 */
+	int mandatory_body;
 	int etag_not_new;
 	/*
 	 *  0 - the standard mechanism (allocating new etag for each Publish)

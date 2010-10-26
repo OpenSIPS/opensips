@@ -130,8 +130,11 @@ int add_event(pres_ev_t* event)
 
 	if(event->content_type.s== NULL || event->content_type.len== 0)
 	{
-		LM_ERR("NULL content_type param\n");
-		return -1;
+		if (event->mandatory_body)
+		{
+			LM_ERR("NULL content_type param\n");
+			return -1;
+		}
 	}
 	
 	ev= contains_event(&event->name, &parsed_event);

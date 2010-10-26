@@ -1159,7 +1159,8 @@ str* get_p_notify_body(str pres_uri, pres_ev_t* event, str* etag,
 			len= strlen(row_vals[body_col].val.string_val);
 			if(len== 0)
 			{
-				LM_ERR("Empty notify body record\n");
+				if (event->mandatory_body)
+					LM_ERR("Empty notify body record\n");
 				goto error;
 			}
 			notify_body= (str*)pkg_malloc(sizeof(str));
@@ -1226,7 +1227,8 @@ str* get_p_notify_body(str pres_uri, pres_ev_t* event, str* etag,
 				len= strlen((char*)row_vals[body_col].val.string_val);
 				if(len== 0)
 				{
-					LM_ERR("Empty notify body record\n");
+					if (event->mandatory_body)
+						LM_ERR("Empty notify body record\n");
 					goto error;
 				}
 
@@ -1270,7 +1272,8 @@ str* get_p_notify_body(str pres_uri, pres_ev_t* event, str* etag,
 				len= strlen((char*)row_vals[body_col].val.string_val);
 				if(len== 0)
 				{
-					LM_ERR("Empty notify body record\n");
+					if (event->mandatory_body)
+						LM_ERR("Empty notify body record\n");
 					goto error;
 				}
 

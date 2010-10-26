@@ -148,7 +148,8 @@ int mwi_add_events(void)
     event.content_type.s = "application/simple-message-summary";
     event.content_type.len = 34;
 
-	event.default_expires= 3600;
+    event.mandatory_body = 1;
+    event.default_expires= 3600;
     event.type = PUBL_TYPE;
 	event.req_auth = 0;
     event.evs_publ_handl = mwi_publ_handl;

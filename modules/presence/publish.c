@@ -480,8 +480,11 @@ int handle_publish(struct sip_msg* msg, char* sender_uri, char* str2)
 		body.s = NULL;
 		if (etag_gen)
 		{
-			LM_ERR("No E-Tag and no body found\n");
-			goto error;
+			if (event->mandatory_body)
+			{
+				LM_ERR("No E-Tag and no body found\n");
+				goto error;
+			}
 		}
 	}
 	else
