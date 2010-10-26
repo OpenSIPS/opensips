@@ -58,6 +58,9 @@ int dlginfo_add_events(void)
     event.agg_nbody = dlginfo_agg_nbody;
     event.free_body = free_xml_body;
 
+    /* register the dummy dialoginfo body builder */
+    event.build_empty_pres_info = build_empty_dialoginfo;
+
     /* modify XML body for each watcher to set the correct "version" */
     event.aux_body_processing = dlginfo_body_setversion;
 

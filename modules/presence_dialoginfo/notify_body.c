@@ -442,3 +442,61 @@ error:
 		xmlFreeDoc(doc);
 	return NULL;
 }
+
+str* build_empty_dialoginfo(str* pres_uri, str* extra_hdrs)
+{
+	str* nbody;
+	xmlDocPtr doc = NULL;
+	xmlNodePtr node;
+	char* pres_uri_char = NULL;
+
+	nbody= (str*) pkg_malloc(sizeof(str));
+	if(nbody== NULL)
+	{
+		LM_ERR("No more memory\n");
+		return 0;
+	}
+
+	doc = xmlNewDoc(BAD_CAST "1.0");
+	if(doc == NULL)
+	{
+		LM_ERR("Failed to create new xml document\n");
+		goto error;
+	}
+
+	node = xmlNewNode(0, BAD_CAST "dialog-info");
+	if(node == NULL)
+	{
+		LM_ERR("Failed to create new xml node\n");
+		goto error;
+	}
+	xmlDocSetRootElement(doc, node);
+	xmlNewProp(node, BAD_CAST "xmlns", BAD_CAST "urn:ietf:params:xml:ns:dialog-info");
+	xmlNewProp(node, BAD_CAST "version", BAD_CAST "0");
+	xmlNewProp(node, BAD_CAST "state", BAD_CAST "full");
+
+	pres_uri_char = (char*)pkg_malloc(pres_uri->len + 1);
+	if(pres_uri_char == NULL)
+	{
+		LM_ERR("No more memory\n");
+		goto error;
+	}
+	memcpy(pres_uri_char, pres_uri->s, pres_uri->len);
+	pres_uri_char[pres_uri->len] = '\0';
+	xmlNewProp(node, BAD_CAST "entity", BAD_CAST pres_uri_char);
+	pkg_free(pres_uri_char);
+
+	xmlDocDumpMemory(doc,(xmlChar**)(void*)&nbody->s,
+		&nbody->len);
+
+	xmlFreeDoc(doc);
+	xmlCleanupParser();
+	xmlMemoryDump();
+
+	return nbody;
+error:
+	if(nbody)
+		pkg_free(nbody);
+	return 0;
+}
+

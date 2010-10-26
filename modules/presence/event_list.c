@@ -225,6 +225,7 @@ int add_event(pres_ev_t* event)
 	ev->aux_body_processing= event->aux_body_processing;
 	ev->aux_free_body= event->aux_free_body;
 	ev->free_body= event->free_body;
+	ev->build_empty_pres_info= event->build_empty_pres_info;
 	ev->default_expires= event->default_expires;
 
 	if(not_in_list)

@@ -769,62 +769,6 @@ error:
 
 }
 
-str* build_empty_dialoginfo(str* pres_uri)
-{
-	str* nbody;
-	xmlDocPtr doc = NULL;
-	xmlNodePtr node;
-	char* pres_uri_char = NULL;
-
-	nbody= (str*) pkg_malloc(sizeof(str));
-	if(nbody== NULL)
-	{
-		LM_ERR("No more memory\n");
-		return 0;
-	}
-
-	doc = xmlNewDoc(BAD_CAST "1.0");
-	if(doc == NULL)
-	{
-		LM_ERR("Failed to create new xml document\n");
-		goto error;
-	}
-
-	node = xmlNewNode(0, BAD_CAST "dialog-info");
-	if(node == NULL)
-	{
-		LM_ERR("Failed to create new xml node\n");
-		goto error;
-	}
-	xmlDocSetRootElement(doc, node);
-	xmlNewProp(node, BAD_CAST "xmlns", BAD_CAST "urn:ietf:params:xml:ns:dialog-info");
-	xmlNewProp(node, BAD_CAST "version", BAD_CAST "0");
-	xmlNewProp(node, BAD_CAST "state", BAD_CAST "full");
-
-	pres_uri_char = (char*)pkg_malloc(pres_uri->len + 1);
-	if(pres_uri_char == NULL)
-	{
-		LM_ERR("No more memory\n");
-		goto error;
-	}
-	memcpy(pres_uri_char, pres_uri->s, pres_uri->len);
-	pres_uri_char[pres_uri->len] = '\0';
-	xmlNewProp(node, BAD_CAST "entity", BAD_CAST pres_uri_char);
-	pkg_free(pres_uri_char);
-
-	xmlDocDumpMemory(doc,(xmlChar**)(void*)&nbody->s,
-		&nbody->len);
-
-	xmlFreeDoc(doc);
-	xmlCleanupParser();
-	xmlMemoryDump();
-
-	return nbody;
-error:
-	if(nbody)
-		pkg_free(nbody);
-	return 0;
-}
 
 static inline db_res_t* pres_search_db(struct sip_uri* uri,str* ev_name, int* body_col,
 		int* extra_hdrs_col, int* expires_col, int* etag_col)
@@ -1067,11 +1011,10 @@ str* get_p_notify_body(str pres_uri, pres_ev_t* event, str* etag,
 				if(notify_body)
 					goto done;
 			}
-			/* if event dialog - create a dummy body with no dialog (to work with Linksys) */
-			if(event->evp->parsed == EVENT_DIALOG)
+			if (event->build_empty_pres_info)
 			{
-				notify_body = build_empty_dialoginfo(&pres_uri);
-				if(notify_body == NULL)
+				notify_body = event->build_empty_pres_info(&pres_uri, extra_hdrs);
+				if(notify_body == NULL && event->mandatory_body)
 				{
 					LM_ERR("Failed to construct body\n");
 					return NULL;
@@ -1114,11 +1057,10 @@ str* get_p_notify_body(str pres_uri, pres_ev_t* event, str* etag,
 			if(notify_body)
 				goto done;
 		}
-		/* if event dialog - create a dummy body with no dialog (to work with Linksys) */
-		if(event->evp->parsed == EVENT_DIALOG)
+		if(event->build_empty_pres_info)
 		{
-			notify_body = build_empty_dialoginfo(&pres_uri);
-			if(notify_body == NULL)
+			notify_body = event->build_empty_pres_info(&pres_uri, extra_hdrs);
+			if(notify_body == NULL && event->mandatory_body)
 			{
 				LM_ERR("Failed to construct body\n");
 				return NULL;
