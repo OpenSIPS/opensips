@@ -357,12 +357,59 @@ int b2b_restore_logic_info(enum b2b_entity_type type, str* key,
 	if(dlg == NULL)
 	{
 		LM_ERR("No dialog found\n");
-		lock_release(&table[hash_index].lock);
 		return -1;
 	}
 	dlg->b2b_cback = cback;
 	return 0;
 }
+
+int b2b_update_b2bl_param(enum b2b_entity_type type, str* key,
+		str* param)
+{
+	b2b_dlg_t* dlg;
+	b2b_table table;
+	unsigned int hash_index, local_index;
+
+	if(!param)
+	{
+		LM_ERR("NULL param\n");
+		return -1;
+	}
+	if(param->len > B2BL_MAX_KEY_LEN)
+	{
+		LM_ERR("parameter too long, received [%d], maximum [%d]\n",
+				param->len, B2BL_MAX_KEY_LEN);
+		return -1;
+	}
+
+	if(type == B2B_SERVER)
+	{
+		table = server_htable;
+	}
+	else
+	{
+		table = client_htable;
+	}
+	if(b2b_parse_key(key, &hash_index, &local_index) < 0)
+	{
+		LM_ERR("Wrong format for b2b key [%.*s]\n", key->len, key->s);
+		return -1;
+	}
+	lock_get(&table[hash_index].lock);
+	dlg = b2b_search_htable(table, hash_index, local_index);
+	if(dlg == NULL)
+	{
+		LM_ERR("No dialog found\n");
+		lock_release(&table[hash_index].lock);
+		return -1;
+	}
+	memcpy(dlg->param.s, param->s, param->len);
+	dlg->param.len = param->len;
+	lock_release(&table[hash_index].lock);
+
+	return 0;
+}
+
 
 int b2b_entities_bind(b2b_api_t* api)
 {
@@ -377,6 +424,7 @@ int b2b_entities_bind(b2b_api_t* api)
 	api->send_reply         = b2b_send_reply;
 	api->entity_delete      = b2b_entity_delete;
 	api->restore_logic_info = b2b_restore_logic_info;
+	api->update_b2bl_param  = b2b_update_b2bl_param;
 
 	return 0;
 }
@@ -470,10 +518,8 @@ void store_b2b_dlg(b2b_table htable, unsigned int hsize, int type, int no_lock)
 		dlg = htable[i].first;
 		while(dlg)
 		{
-			LM_DBG("state = %d\n", dlg->state);
 			if(dlg->state == B2B_EARLY || dlg->db_flag == NO_UPDATEDB_FLAG)
 			{
-				LM_DBG("Early state or no update state\n");
 				dlg = dlg->next;
 				continue;
 			}
@@ -527,7 +573,6 @@ void store_b2b_dlg(b2b_table htable, unsigned int hsize, int type, int no_lock)
 
 			if(dlg->db_flag == INSERTDB_FLAG)
 			{
-				LM_DBG("Inserted one row\n");
 				/* insert into database */
 				if(b2be_dbf.insert(b2be_db, qcols, qvals, n_query_cols)< 0)
 				{
@@ -539,12 +584,11 @@ void store_b2b_dlg(b2b_table htable, unsigned int hsize, int type, int no_lock)
 			}
 			else
 			{
-				LM_DBG("Update\n");
 				if(b2be_dbf.update(b2be_db, qcols, 0, qvals,
 							qcols+n_start_update, qvals+n_start_update,
 							n_query_update, n_query_cols-n_start_update)< 0)
 				{
-					LM_ERR("Sql insert failed\n");
+					LM_ERR("Sql update failed\n");
 					if(!no_lock)
 						lock_release(&htable[i].lock);
 					return;

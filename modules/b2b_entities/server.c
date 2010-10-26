@@ -57,6 +57,13 @@ str* server_new(struct sip_msg* msg, b2b_notify_t b2b_cback,
 	static str reason = {"Trying", 6};
 	int ret;
 
+	if(param && param->len > B2BL_MAX_KEY_LEN)
+	{
+		LM_ERR("parameter too long, received [%d], maximum [%d]\n",
+				param->len, B2BL_MAX_KEY_LEN);
+		return 0;
+	}
+
 	/* create new entry in hash table */
 	dlg = b2b_new_dlg(msg, 0, param);
 	if( dlg == NULL )
