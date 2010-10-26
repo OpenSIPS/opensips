@@ -969,6 +969,33 @@ create_dialog();
 		</example>
 	</section>
 
+	<section>
+		<title>
+		<function moreinfo="none">fix_route_dialog()</function>
+		</title>
+		<para>
+			The function forces an in dialog SIP message to contain the ruri, route headers and 
+			dst_uri, as specified by the internal data of the dialog it belongs to.
+			The function will prevent the existence of bogus injected in-dialog 
+			requests ( like malicious BYEs )
+		</para>
+		<para>
+		This function can be used from REQUEST_ROUTE.
+		</para>
+		<example>
+		<title><function>fix_route_dialog()</function> usage</title>
+		<programlisting format="linespecific">
+...
+    if (has_totag()) {
+        loose_route();
+		if ($DLG_status!=NULL) 
+			fix_route_dialog();
+    }
+...
+</programlisting>
+		</example>
+	</section>
+
 
 	<section>
 		<title>

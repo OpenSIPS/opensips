@@ -114,6 +114,7 @@ static int fixup_get_profile2(void** param, int param_no);
 static int fixup_get_profile3(void** param, int param_no);
 static int w_create_dialog(struct sip_msg*);
 static int w_validate_dialog(struct sip_msg*);
+static int w_fix_route_dialog(struct sip_msg*);
 static int w_set_dlg_profile(struct sip_msg*, char*, char*);
 static int w_unset_dlg_profile(struct sip_msg*, char*, char*);
 static int w_is_in_profile(struct sip_msg*, char*, char*);
@@ -178,6 +179,8 @@ static cmd_export_t cmds[]={
 			0, REQUEST_ROUTE| FAILURE_ROUTE | ONREPLY_ROUTE |
 			BRANCH_ROUTE | LOCAL_ROUTE },
 	{"validate_dialog",(cmd_function)w_validate_dialog,   0,         NULL,
+			0, REQUEST_ROUTE},
+	{"fix_route_dialog",(cmd_function)w_fix_route_dialog,0,NULL,
 			0, REQUEST_ROUTE},
 	{"get_dialog_info",(cmd_function)w_get_dlg_info,      4,fixup_get_info,
 			0, REQUEST_ROUTE| FAILURE_ROUTE | ONREPLY_ROUTE |
@@ -763,7 +766,10 @@ static int w_validate_dialog(struct sip_msg *req)
 
 	dlg = get_current_dialog();
 	if (dlg==NULL)
+	{
+		LM_ERR("null dialog\n");
 		return -1;
+	}
 
 	if (dlg_validate_dialog( req, dlg )!=0)
 		return -1;
@@ -771,6 +777,19 @@ static int w_validate_dialog(struct sip_msg *req)
 	return 1;
 }
 
+static int w_fix_route_dialog(struct sip_msg *req)
+{
+	struct dlg_cell *dlg;
+
+	dlg = get_current_dialog();
+	if (dlg==NULL)
+		return -1;
+
+	if (fix_route_dialog( req, dlg )!=0)
+		return -1;
+
+	return 1;
+}
 
 static int w_set_dlg_profile(struct sip_msg *msg, char *profile, char *value)
 {

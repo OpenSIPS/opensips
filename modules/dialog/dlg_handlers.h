@@ -61,4 +61,5 @@ void dlg_ontimeout( struct dlg_tl *tl);
 
 int dlg_validate_dialog( struct sip_msg* req, struct dlg_cell *dlg);
 
+int fix_route_dialog(struct sip_msg *req,struct dlg_cell *dlg);
 #endif

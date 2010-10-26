@@ -53,6 +53,7 @@
 #include "../../pvar.h"
 #include "../../timer.h"
 #include "../../statistics.h"
+#include "../../data_lump.h"
 #include "../../parser/parse_from.h"
 #include "../../parser/parse_cseq.h"
 #include "../../parser/contact/parse_contact.h"
@@ -1017,6 +1018,105 @@ void dlg_ontimeout( struct dlg_tl *tl)
 	return;
 }
 
+#define ROUTE_STR "Route: "
+#define CRLF "\r\n"
+#define ROUTE_LEN (sizeof(ROUTE_STR) - 1)
+#define CRLF_LEN (sizeof(CRLF) - 1)
+
+
+int fix_route_dialog(struct sip_msg *req,struct dlg_cell *dlg)
+{
+	struct dlg_leg *leg;
+	struct hdr_field *it;
+	char * buf,*route;
+	struct lump* lmp = NULL;
+	int size;
+	rr_t *head = NULL;
+
+	if (last_dst_leg<0) {
+		LM_ERR("Script error - validate function before having a dialog\n");
+		return -1;
+	}
+
+	leg = & dlg->legs[ last_dst_leg ];
+
+	if (dlg->state <= DLG_STATE_EARLY)
+		return 0;
+
+	if (leg->contact.len && leg->contact.s) {
+		LM_DBG("Setting new URI to  <%.*s> \n",leg->contact.len,
+				leg->contact.s);
+
+		if (set_ruri(req,&leg->contact) != 0) {
+			LM_ERR("failed setting ruri\n");
+			return -1;
+		}
+	}
+
+	if( parse_headers( req, HDR_EOH_F, 0)<0 ) {
+		LM_ERR("failed to parse headers when looking after ROUTEs\n");
+		return -1;
+	}
+	
+	buf = req->buf;
+
+	if (req->route) {
+		for (it=req->route;it;it=it->sibling)
+			if ((lmp = del_lump(req,it->name.s - buf,it->len,HDR_ROUTE_T)) == 0) {
+				LM_ERR("del_lump failed \n");
+				return -1;
+			}
+	}
+
+	if ( leg->route_set.len !=0 && leg->route_set.s) {
+
+		lmp = anchor_lump(req,req->headers->name.s - buf,0,0);
+		if (lmp == 0)
+		{
+			LM_ERR("failed anchoring new lump\n");
+			return -1;
+		}
+
+		size = leg->route_set.len + ROUTE_LEN + CRLF_LEN;
+		route = pkg_malloc(size+1);
+		if (route == 0) {
+			LM_ERR("no more pkg memory\n");
+			return -1;
+		}
+
+		memcpy(route,ROUTE_STR,ROUTE_LEN);
+		memcpy(route+ROUTE_LEN,leg->route_set.s,leg->route_set.len);
+		memcpy(route+ROUTE_LEN+leg->route_set.len,CRLF,CRLF_LEN);
+
+		route[size] = 0;
+
+		if ((lmp = insert_new_lump_after(lmp,route,size,HDR_ROUTE_T)) == 0) {
+			LM_ERR("failed inserting new route set\n");
+			pkg_free(route);
+			return -1;
+		}
+		
+		LM_DBG("Setting route  header to <%s> \n",route);
+
+		if (parse_rr_body(leg->route_set.s,leg->route_set.len,&head) != 0) {
+			LM_ERR("failed parsing route set\n");
+			return -1;
+		}
+
+		LM_DBG("setting dst_uri to <%.*s> \n",head->nameaddr.uri.len,
+				head->nameaddr.uri.s);
+
+		if (set_dst_uri(req,&head->nameaddr.uri) !=0 ) {
+			LM_ERR("failed setting new dst uri\n");
+			free_rr(&head);
+			return -1;
+		}
+
+		free_rr(&head);
+	}
+
+	return 0;
+}
 
 int dlg_validate_dialog( struct sip_msg* req, struct dlg_cell *dlg)
 {
