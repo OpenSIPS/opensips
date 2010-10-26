@@ -59,14 +59,6 @@ struct p_modif
 
 #define MAX_NO_OF_EXTRA_HDRS 4
 
-/*
-str <EVENT_WITH_EXTRA_HEADERS>_extra_headers[] = {
-	str_init("Extra_header_1"),
-	str_init("Extra_header_2"),
-	str_init("Extra_header_3"),
-	{NULL,0},
-};
-*/
 
 void inline build_extra_hdrs(struct sip_msg* msg, const str* map, str* extra_hdrs)
 {
@@ -98,8 +90,6 @@ void inline build_extra_hdrs(struct sip_msg* msg, const str* map, str* extra_hdr
 			xtra_hdr_list[i].len = hf->len;
 			len+= hf->len;
 			i++;
-		} else {
-			LM_DBG("unable to retrieve '%.*s'\n", map->len, map->s);
 		}
 	}
 
@@ -557,13 +547,8 @@ int handle_publish(struct sip_msg* msg, char* sender_uri, char* str2)
 	}
 
 	/* build extra headers list */
-	/*
-	switch (event->evp->parsed) {
-		case <EVENT_WITH_EXTRA_HEADERS>:
-			build_extra_hdrs(msg, <EVENT_WITH_EXTRA_HEADERS>_extra_headers, &extra_hdrs);
-			break;
-	}
-	*/
+	if (event->extra_hdrs)
+		build_extra_hdrs(msg, event->extra_hdrs, &extra_hdrs);
 
 	/* querry the database and update or insert */
 	if(update_presentity(msg, presentity, &body, etag_gen, &sent_reply, sphere, &extra_hdrs) <0)

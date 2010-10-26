@@ -77,6 +77,7 @@ struct pres_ev
 	str name;
 	event_t* evp;
 	str content_type;
+	str* extra_hdrs;
 	int default_expires;
 	int type;
 	/* Flag that sets the requirements for body:

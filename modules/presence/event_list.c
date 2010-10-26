@@ -212,6 +212,8 @@ int add_event(pres_ev_t* event)
 		LM_ERR("bad event structure\n");
 		goto error;
 	}
+
+	ev->extra_hdrs= event->extra_hdrs;
 	ev->req_auth= event->req_auth;
 	ev->agg_nbody= event->agg_nbody;
 	ev->apply_auth_nbody= event->apply_auth_nbody;
