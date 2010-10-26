@@ -218,6 +218,7 @@ int add_event(pres_ev_t* event)
 	ev->get_auth_status= event->get_auth_status;
 	ev->get_rules_doc= event->get_rules_doc;
 	ev->evs_publ_handl= event->evs_publ_handl;
+	ev->mandatory_body = event->mandatory_body;
 	ev->etag_not_new= event->etag_not_new;
 	ev->aux_body_processing= event->aux_body_processing;
 	ev->aux_free_body= event->aux_free_body;
