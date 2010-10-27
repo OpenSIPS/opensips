@@ -45,6 +45,16 @@ Anca-Maria Vamanu
               1.5.1. b2b_trigger_scenario
               1.5.2. b2b_bridge
 
+   2. Developer Guide
+
+        2.1. b2b_load_api(b2b_api_t* api)
+        2.2. init
+        2.3. bridge
+        2.4. bridge_extern
+        2.5. bridge_2calls
+        2.6. terminate_call
+        2.7. set_state
+
    List of Examples
 
    1.1. Set server_hsize parameter
@@ -57,6 +67,7 @@ Anca-Maria Vamanu
    1.8. Set update_period parameter
    1.9. Set update_period parameter
    1.10. b2b_init_request usage
+   2.1. b2b_api_t structure
 
 Chapter 1. Admin Guide
 
@@ -304,3 +315,130 @@ if(is_method("INVITE") && !has_totag() && prepaid_user())
    MI FIFO Command Format:
                 opensipsctl fifo b2b_bridge 1020.30 sip:alice@opensips.o
 rg
+
+Chapter 2. Developer Guide
+
+   The module provides an API that can be used from other OpenSIPS
+   modules. The API offers the functions for instantiating b2b
+   scenarios from other modules (this comes as an addition to the
+   other two means of instantiating b2b scenarios - from script
+   and with an MI command). Also the instantiations can be
+   dynamically controlled, by commanding the bridging of an entity
+   involved in a call to another entity or the termination of the
+   call or even bridging two existing calls.
+
+2.1.  b2b_load_api(b2b_api_t* api)
+
+   This function binds the b2b_entities modules and fills the
+   structure the exported functions that will be described in
+   detail.
+
+   Example 2.1. b2b_api_t structure
+...
+typedef struct b2bl_api
+{
+        b2bl_init_f init;
+        b2bl_bridge_f bridge;
+        b2bl_bridge_extern_f bridge_extern;
+        b2bl_set_state_f set_state;
+        b2bl_bridge_2calls_t bridge_2calls;
+        b2bl_terminate_call_t terminate_call;
+}b2bl_api_t;
+...
+
+2.2.  init
+
+   Field type:
+...
+typedef str* (*b2bl_init_f)(struct sip_msg* msg, str* name, str* args[5]
+,
+                b2bl_cback_f, void* param);
+...
+
+   Initializing a b2b scenario. The last two parameters are the
+   callback function and the parameter to be called in 3
+   situations that will be listed below. The callback function has
+   the following definition:
+...
+typedef int (*b2bl_cback_f)(void* param, b2bl_dlg_stat_t* stat, int curr
+_state,
+                enum b2b_event);
+...
+
+   The first argument is the callback given in the init function.
+
+   The second argument is a structure with some statistics about
+   the call -start time, setup time, call time.
+
+   The third argument is the current state of the scenario
+   instantiation.
+
+   The last argument is the event that triggered the callback.
+   There are 3 events when the callback is called:
+     * when a BYE is received from either side- event parameter
+       will also show from which side the BYE is received, so it
+       can be B2B_BYE_E1 or B2B_BYE_E2
+     * If while bridging, a negative reply is received from the
+       second entity - the event is B2B_REJECT_E2.
+     * When the b2b logic entity is deleted- the evnet is
+       B2B_DESTROY
+
+   The return code controls what will happen with the
+   request/reply that caused the event (except for the last event,
+   when the return code does not matter)
+     * -1 - error
+     * 0 - drop the BYE or reply
+     * 1 - send the BYE or reply on the other side
+     * 2 - do what the scenario tells, if no rule defined send the
+       BYE or reply on the other side
+
+2.3.  bridge
+
+   Field type:
+...
+typedef int (*b2bl_bridge_f)(str* key, str* new_uri, str* new_from_dname
+,int entity_type);
+...
+
+   This function allows bridging an entity that is in a call
+   handled by b2b_logic to another entity.
+
+2.4.  bridge_extern
+
+   Field type:
+...
+typedef str* (*b2bl_bridge_extern_f)(str* scenario_name, str* args[5],
+                b2bl_cback_f cbf, void* cb_param);
+...
+
+   This function allows initiating an extern scenario, when the
+   B2BUA starts a call from the middle.
+
+2.5.  bridge_2calls
+
+   Field type:
+...
+typedef int (*b2bl_bridge_2calls_t)(str* key1, str* key2);
+...
+
+   With this function it is possible to bridge two existing calls.
+   The first entity from the two calls will be connected and BYE
+   will be sent to their peers.
+
+2.6.  terminate_call
+
+   Field type:
+...
+typedef int (*b2bl_terminate_call_t)(str* key);
+...
+
+   Terminates a call.
+
+2.7.  set_state
+
+   Field type:
+...
+typedef int (*b2bl_set_state_f)(str* key, int state);
+...
+
+   Set the scenario state.

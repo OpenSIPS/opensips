@@ -43,6 +43,9 @@ Anca-Maria Vamanu
         2.3. client_new
         2.4. send_request
         2.5. send_reply
+        2.6. entity_delete
+        2.7. restore_logic_info
+        2.8. update_b2bl_param
 
    List of Examples
 
@@ -201,6 +204,9 @@ typedef struct b2b_api {
         b2b_send_reply_t          send_reply;
 
         b2b_entity_delete_t       entity_delete;
+
+        b2b_restore_linfo_t       restore_logic_info;
+        b2b_update_b2bl_param_t   update_b2bl_param;
 }b2b_api_t;
 ...
 
@@ -310,3 +316,41 @@ nt code, str* text,
 
    The return value is 0 for success and a negative value for
    error.
+
+2.6.  entity_delete
+
+   Field type:
+...
+typedef void (*b2b_entity_delete_t)(enum b2b_entity_type et, str* b2b_ke
+y,
+         b2b_dlginfo_t* dlginfo);
+...
+
+   This function must be called by the upper level function to
+   delete the records in b2b_entities. The records are not cleaned
+   up by the b2b_entities module and the upper level module must
+   take care to delete them.
+
+2.7.  restore_logic_info
+
+   Field type:
+...
+typedef int (*b2b_restore_linfo_t)(enum b2b_entity_type type, str* key,
+                b2b_notify_t cback);
+...
+
+   This function is used at startup when loading the data from the
+   database to restore the pointer to the callback function.
+
+2.8.  update_b2bl_param
+
+   Field type:
+...
+typedef int (*b2b_update_b2bl_param_t)(enum b2b_entity_type type, str* k
+ey,
+                str* param);
+...
+
+   This function can be used to change the logic param stored for
+   an entity ( useful in case an entity is moved between logic
+   records).

@@ -4,6 +4,7 @@
 
 
 <!ENTITY admin SYSTEM "b2b_logic_admin.xml">
+<!ENTITY devel SYSTEM "b2b_logic_devel.xml">
 <!ENTITY faq SYSTEM "../../../doc/module_faq.xml">
 
 <!-- Include general documentation entities -->
@@ -53,6 +54,7 @@
     <toc></toc>
     
 	&admin;
+	&devel;
     &faq;
     
 </book>
