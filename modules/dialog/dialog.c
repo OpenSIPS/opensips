@@ -137,8 +137,6 @@ int pv_get_dlg_dir(struct sip_msg *msg, pv_param_t *param, pv_value_t *res);
 int pv_set_dlg_flags(struct sip_msg *msg, pv_param_t *param, int op,
 		pv_value_t *val);
 
-
-
 static cmd_export_t cmds[]={
 	{"create_dialog", (cmd_function)w_create_dialog,      0,NULL,
 			0, REQUEST_ROUTE},
@@ -494,6 +492,7 @@ int load_dlg( struct dlg_binds *dlgb )
 	dlgb->get_profile_size = get_profile_size;
 	dlgb->store_dlg_value = store_dlg_value;
 	dlgb->fetch_dlg_value = fetch_dlg_value;
+	dlgb->terminate_dlg = terminate_dlg;
 	return 1;
 }
 

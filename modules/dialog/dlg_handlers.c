@@ -1123,4 +1123,22 @@ int dlg_validate_dialog( struct sip_msg* req, struct dlg_cell *dlg)
 	return 0;
 }
 
+int terminate_dlg(unsigned int h_entry, unsigned int h_id)
+{
+	struct dlg_cell * dlg = NULL;
+	int ret = 0;
 
+	dlg = lookup_dlg(h_entry, h_id);
+
+	if(!dlg)
+		return 0;
+
+	/* lookup_dlg has incremented the reference count !! */
+	if ( dlg_end_dlg( dlg, 0) ) {
+		LM_ERR("Failed to end dialog");
+		ret = -1;
+	}
+
+	unref_dlg(dlg, 1);
+	return ret;
+}
