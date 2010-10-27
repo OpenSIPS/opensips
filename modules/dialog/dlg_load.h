@@ -48,6 +48,7 @@ struct dlg_binds {
 	get_profile_size_f   get_profile_size;
 	store_dlg_value_f    store_dlg_value;
 	fetch_dlg_value_f    fetch_dlg_value;
+	terminate_dlg_f      terminate_dlg;
 };
 
 
