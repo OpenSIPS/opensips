@@ -1725,8 +1725,13 @@ fix_nated_contact_f(struct sip_msg* msg, char* str1, char* str2)
 			pkg_free(buf);
 			return -1;
 		}
-		//c->uri.s = buf;
-		//c->uri.len = len;
+		if (params==NULL || is_enclosed) {
+			c->uri.s = buf;
+			c->uri.len = len1 - (params?params->len:0);
+		} else {
+			c->uri.s = buf + 1;
+			c->uri.len = len - 2 - params->len;
+		}
 	}
 
 	return 1;
