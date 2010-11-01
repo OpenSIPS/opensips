@@ -1691,6 +1691,9 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 	str to_tag, callid, from_tag;
 	struct hdr_field* hdr;
 	unsigned int method_id = 0;
+	struct sip_msg dummy_msg;
+	struct cseq_body cb;
+	struct hdr_field cseq;
 
 	if(ps == NULL || ps->rpl == NULL)
 	{
@@ -1850,11 +1853,9 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 		param.len = dlg->param.len;
 	}
 
-	LM_DBG("Received reply [%d] for dialog[%p]\n", statuscode, dlg);
-	if(callid.s)
-		LM_DBG("method = %.*s\n",
-		msg==FAKED_REPLY?get_cseq(ps->req)->method.len:get_cseq(msg)->method.len,
-		msg==FAKED_REPLY?get_cseq(ps->req)->method.s:get_cseq(msg)->method.s);
+	LM_DBG("Received reply [%d] for dialog [%p], method [%.*s]\n",
+		statuscode, dlg, t->method.len, t->method.s);
+	
 	if(statuscode >= 300)
 	{
 		LM_DBG("Received a negative reply\n");
@@ -1869,7 +1870,7 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 		{
 			lock_release(&htable[hash_index].lock);
 			if(msg == FAKED_REPLY)
-				goto error;
+				goto dummy_reply;
 			goto done;
 		}
 
@@ -1879,7 +1880,7 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 			LM_DBG("Non final negative reply for reINVITE\n");
 			lock_release(&htable[hash_index].lock);
 			if(msg == FAKED_REPLY)
-				goto error;
+				goto dummy_reply;
 			goto done;
 		}
 		else
@@ -1901,7 +1902,21 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 		UPDATE_DBFLAG(dlg);
 		lock_release(&htable[hash_index].lock);
 		if(msg == FAKED_REPLY)
-			goto error;
+		{
+dummy_reply:
+			memset(&dummy_msg, 0, sizeof(struct sip_msg));
+			dummy_msg.first_line.type = SIP_REPLY;
+			dummy_msg.first_line.u.reply.statuscode = statuscode;
+			memset(&cb, 0, sizeof(struct cseq_body));
+			memset(&cseq, 0, sizeof(struct hdr_field));
+			cb.method = t->method;
+			
+			cseq.parsed = &cb;
+			dummy_msg.cseq = &cseq;
+			msg = &dummy_msg;
+
+			goto done;
+		}
 	}
 	else
 	{

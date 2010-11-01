@@ -424,7 +424,7 @@ int process_bridge_bye(struct sip_msg* msg,  b2bl_tuple_t* tuple,
 }
 
 
-int process_bridge_negreply(struct sip_msg* msg, b2bl_tuple_t* tuple,
+int process_bridge_negreply(b2bl_tuple_t* tuple,
 		unsigned int hash_index, b2bl_entity_id_t* entity)
 {
 	int entity_no;
@@ -893,7 +893,7 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 				/* if a negative reply */
 				if(statuscode >= 300)
 				{
-					ret = process_bridge_negreply(msg, tuple, hash_index,entity);
+					ret = process_bridge_negreply(tuple, hash_index,entity);
 
 					if(ret < 0)
 					{
