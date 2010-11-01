@@ -8,7 +8,7 @@ Edited by
 
 Anca-Maria Vamanu
 
-   Copyright © 2009 Anca-Maria
+   Copyright � 2009 Anca-Maria
    Vamanu
    Revision History
    Revision $Revision: $ $Date: $
@@ -47,7 +47,7 @@ Anca-Maria Vamanu
 
    2. Developer Guide
 
-        2.1. b2b_load_api(b2b_api_t* api)
+        2.1. b2b_logic_bind(b2bl_api_t* api)
         2.2. init
         2.3. bridge
         2.4. bridge_extern
@@ -67,7 +67,7 @@ Anca-Maria Vamanu
    1.8. Set update_period parameter
    1.9. Set update_period parameter
    1.10. b2b_init_request usage
-   2.1. b2b_api_t structure
+   2.1. b2bl_api_t structure
 
 Chapter 1. Admin Guide
 
@@ -114,7 +114,7 @@ Chapter 1. Admin Guide
    The size of the hash table that stores the scenario
    instatiation entities.
 
-   Default value is “9” (512 records).
+   Default value is "9" (512 records).
 
    Example 1.1. Set server_hsize parameter
 ...
@@ -157,7 +157,7 @@ b_marketing.xml")
    BYE is sent in all the dialogs from that context and the
    context is deleted.
 
-   Default value is “100”.
+   Default value is "100".
 
    Example 1.4. Set cleanup_period parameter
 ...
@@ -182,7 +182,7 @@ modparam("b2b_logic", "cleanup_period", 60)
    If you wish some other headers to be passed also you should
    define them by setting this parameter.
 
-   Default value is “NULL”.
+   Default value is "NULL".
 
    Example 1.5. Set parameter
 ...
@@ -202,7 +202,7 @@ modparam("b2b_logic", "custom_headers", "User-Agent;Date")
    body for this invite. By setting this parameter, this behavior
    is enabled.
 
-   Default value is “0”.
+   Default value is "0".
 
    Example 1.6. Set parameter
 ...
@@ -223,7 +223,7 @@ pensips")
 
    The time interval at which to update the info in database.
 
-   Default value is “100”.
+   Default value is "100".
 
    Example 1.8. Set update_period parameter
 ...
@@ -234,7 +234,7 @@ modparam("b2b_logic", "update_period", 60)
 
    The maximum duration of a call.
 
-   Default value is “12 * 3600 (12 hours)”.
+   Default value is "12 * 3600 (12 hours)".
 
    Example 1.9. Set update_period parameter
 ...
@@ -327,22 +327,22 @@ Chapter 2. Developer Guide
    involved in a call to another entity or the termination of the
    call or even bridging two existing calls.
 
-2.1.  b2b_load_api(b2b_api_t* api)
+2.1.  b2b_logic_bind(b2bl_api_t* api)
 
    This function binds the b2b_entities modules and fills the
    structure the exported functions that will be described in
    detail.
 
-   Example 2.1. b2b_api_t structure
+   Example 2.1. b2bl_api_t structure
 ...
 typedef struct b2bl_api
 {
         b2bl_init_f init;
         b2bl_bridge_f bridge;
         b2bl_bridge_extern_f bridge_extern;
-        b2bl_set_state_f set_state;
         b2bl_bridge_2calls_t bridge_2calls;
         b2bl_terminate_call_t terminate_call;
+        b2bl_set_state_f set_state;
 }b2bl_api_t;
 ...
 
@@ -360,9 +360,8 @@ typedef str* (*b2bl_init_f)(struct sip_msg* msg, str* name, str* args[5]
    situations that will be listed below. The callback function has
    the following definition:
 ...
-typedef int (*b2bl_cback_f)(void* param, b2bl_dlg_stat_t* stat, int curr
-_state,
-                enum b2b_event);
+typedef int (*b2b_notify_t)(struct sip_msg* msg, str* id, int type, void
+* param);
 ...
 
    The first argument is the callback given in the init function.
@@ -432,7 +431,7 @@ typedef int (*b2bl_bridge_2calls_t)(str* key1, str* key2);
 typedef int (*b2bl_terminate_call_t)(str* key);
 ...
 
-   Terminates a call.
+   Terminate a call.
 
 2.7.  set_state
 
