@@ -24,6 +24,7 @@
  * History:
  * --------
  *  2009-08-03  initial version (Anca Vamanu)
+ *  2010-11-02  new mi function: mi_b2b_list (Ovidiu Sas)
  */
 
 #include <stdio.h>
@@ -59,6 +60,7 @@ static int load_extern_scenario(modparam_t type, void* val);
 static int fixup_b2b_logic(void** param, int param_no);
 static struct mi_root* mi_trigger_scenario(struct mi_root* cmd, void* param);
 static struct mi_root* mi_b2b_bridge(struct mi_root* cmd, void* param);
+static struct mi_root* mi_b2b_list(struct mi_root* cmd, void* param);
 void b2bl_clean(unsigned int ticks, void* param);
 void b2bl_db_update(unsigned int ticks, void* param);
 int  b2b_init_request(struct sip_msg* msg, str* arg1, str* arg2, str* arg3,
@@ -157,6 +159,7 @@ static param_export_t params[]=
 static mi_export_t mi_cmds[] = {
 	{ "b2b_trigger_scenario", mi_trigger_scenario, 0,  0,  0},
 	{ "b2b_bridge",           mi_b2b_bridge,       0,  0,  0},
+	{ "b2b_list",             mi_b2b_list,         0,  0,  0},
 	{  0,                  0,                      0,  0,  0}
 };
 
@@ -989,6 +992,155 @@ error:
 	lock_release(&b2bl_htable[hash_index].lock);
 	return 0;
 }
+
+static inline int internal_mi_print_b2bl_entity_id(struct mi_node *node1, b2bl_entity_id_t *c)
+{
+	int len;
+	char* p;
+	struct mi_node *node2=NULL;
+	struct mi_attr* attr;
+
+	if (c->scenario_id.s && c->scenario_id.len != 0)
+	{
+		attr = add_mi_attr(node1, MI_DUP_VALUE, "scenario_id", 11,
+				c->scenario_id.s, c->scenario_id.len);
+		if(attr == NULL) goto error;
+	}
+	if (c->key.s && c->key.len != 0)
+	{
+		attr = add_mi_attr(node1, MI_DUP_VALUE, "key", 3,
+					c->key.s, c->key.len);
+		if(attr == NULL) goto error;
+	}
+	p = int2str((unsigned long)(c->disconnected), &len);
+	attr = add_mi_attr(node1, MI_DUP_VALUE, "disconnected", 12, p, len);
+	if(attr == NULL) goto error;
+	p = int2str((unsigned long)(c->state), &len);
+	attr = add_mi_attr(node1, MI_DUP_VALUE, "state", 5, p, len);
+	if(attr == NULL) goto error;
+	p = int2str((unsigned long)(c->no), &len);
+	attr = add_mi_attr(node1, MI_DUP_VALUE, "no", 2, p, len);
+	if(attr == NULL) goto error;
+	p = int2str((unsigned long)(c->type), &len);
+	attr = add_mi_attr(node1, MI_DUP_VALUE, "type", 4, p, len);
+	if(attr == NULL) goto error;
+
+	if (c->to_uri.s && c->to_uri.len != 0)
+	{
+		node2 = add_mi_node_child(node1, MI_DUP_VALUE, "to_uri", 6,
+						c->to_uri.s, c->to_uri.len);
+		if(node2 == NULL) goto error;
+	}
+	if (c->from_uri.s && c->from_uri.len != 0)
+	{
+		node2 = add_mi_node_child(node1, MI_DUP_VALUE, "from_uri", 8,
+						c->from_uri.s, c->from_uri.len);
+		if(node2 == NULL) goto error;
+	}
+	if (c->from_dname.s && c->from_dname.len != 0)
+	{
+		node2 = add_mi_node_child(node1, MI_DUP_VALUE, "from_dname", 10,
+						c->from_dname.s, c->from_dname.len);
+		if(node2 == NULL) goto error;
+	}
+
+	return 0;
+error:
+	LM_ERR("failed to add node\n");
+	return -1;
+}
+
+static struct mi_root* mi_b2b_list(struct mi_root* cmd, void* param)
+{
+	int i, len, index;
+	char* p;
+	b2bl_tuple_t* tuple;
+	b2bl_entity_id_t* c;
+	struct mi_root *rpl_tree;
+	struct mi_node *node=NULL, *node1=NULL, *rpl=NULL;
+	struct mi_attr* attr;
+
+	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
+	if (rpl_tree==NULL) return NULL;
+	rpl = &rpl_tree->node;
+
+	for(i = 0; i< b2bl_hsize; i++)
+	{
+		lock_get(&b2bl_htable[i].lock);
+		tuple = b2bl_htable[i].first;
+		while(tuple)
+		{
+			p = int2str((unsigned long)(tuple->id), &len);
+			node = add_mi_node_child(rpl, MI_DUP_VALUE, "tuple", 5, p, len);
+			if(node == NULL) goto error;
+			attr = add_mi_attr(node, MI_DUP_VALUE, "key", 3,
+					tuple->key->s, tuple->key->len);
+			if(attr == NULL) goto error;
+			if (tuple->scenario)
+			{
+				attr = add_mi_attr(node, MI_DUP_VALUE, "scenario", 8,
+						tuple->scenario->id.s, tuple->scenario->id.len);
+				if(attr == NULL) goto error;
+				p = int2str((unsigned long)(tuple->scenario_state), &len);
+				attr = add_mi_attr(node, MI_DUP_VALUE, "scenario_state", 14,
+						p, len);
+				if(attr == NULL) goto error;
+				p = int2str((unsigned long)(tuple->next_scenario_state), &len);
+				attr = add_mi_attr(node, MI_DUP_VALUE, "next_scenario_state", 19,
+						p, len);
+				if(attr == NULL) goto error;
+			}
+
+			c = tuple->server;
+			index = 0;
+			while(c)
+			{
+				p = int2str((unsigned long)(index), &len);
+				node1 = add_mi_node_child(node, MI_DUP_VALUE, "server", 6, p, len);
+				if(node1 == NULL) goto error;
+				if (internal_mi_print_b2bl_entity_id(node1, c)!=0)
+					goto error;
+				index++;
+				c = c->next;
+			}
+
+			c = tuple->clients;
+			index = 0;
+			while(c)
+			{
+				p = int2str((unsigned long)(index), &len);
+				node1 = add_mi_node_child(node, MI_DUP_VALUE, "client", 6, p, len);
+				if(node1 == NULL) goto error;
+				if (internal_mi_print_b2bl_entity_id(node1, c)!=0)
+					goto error;
+				index++;
+				c = c->next;
+			}
+			for (index = 0; index < 3; index++)
+			{
+				if (tuple->bridge_entities[index] != NULL)
+				{
+					p = int2str((unsigned long)(index), &len);
+					node1 = add_mi_node_child(node, MI_DUP_VALUE,
+							"bridge_entities", 15, p, len);
+					if(node1 == NULL) goto error;
+					if (internal_mi_print_b2bl_entity_id(node1,
+							tuple->bridge_entities[index])!=0)
+						goto error;
+				}
+			}
+			tuple = tuple->next;
+		}
+		lock_release(&b2bl_htable[i].lock);
+	}
+	return rpl_tree;
+error:
+	lock_release(&b2bl_htable[i].lock);
+	LM_ERR("Unable to create reply\n");
+	free_mi_tree(rpl_tree);
+	return NULL;
+}
+
 
 void b2bl_db_delete(b2bl_tuple_t* tuple)
 {
