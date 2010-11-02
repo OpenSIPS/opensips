@@ -1025,6 +1025,16 @@ static inline int internal_mi_print_b2bl_entity_id(struct mi_node *node1, b2bl_e
 	attr = add_mi_attr(node1, MI_DUP_VALUE, "type", 4, p, len);
 	if(attr == NULL) goto error;
 
+	if (c->peer)
+	{
+		if (c->peer->key.s && c->peer->key.len != 0)
+		{
+			attr = add_mi_attr(node1, MI_DUP_VALUE, "peer", 4,
+				c->peer->key.s, c->peer->key.len);
+			if(attr == NULL) goto error;
+		}
+	}
+
 	if (c->to_uri.s && c->to_uri.len != 0)
 	{
 		node2 = add_mi_node_child(node1, MI_DUP_VALUE, "to_uri", 6,
