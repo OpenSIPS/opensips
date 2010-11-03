@@ -256,6 +256,7 @@ auth_result_t post_auth(struct sip_msg* _m, struct hdr_field* _h)
 
 			if(!is_nonce_index_valid(index)) {
 				LM_DBG("nonce index not valid\n");
+				c->stale = 1;
 				return STALE_NONCE;
 			}
 		}
