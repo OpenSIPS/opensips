@@ -33,6 +33,7 @@
 #include "../../error.h"
 #include "../../parser/parse_from.h"
 #include "../../parser/parse_content.h"
+#include "../../parser/parse_methods.h"
 #include "../../parser/parse_hname2.h"
 #include "../../ut.h"
 #include "../../trim.h"
@@ -418,7 +419,7 @@ int process_bridge_bye(struct sip_msg* msg,  b2bl_tuple_t* tuple,
 		return -1;
 	}
 
-	b2b_api.send_reply(entity->type, &entity->key, 200, &ok,
+	b2b_api.send_reply(entity->type, &entity->key, METHOD_BYE, 200, &ok,
 			0, 0, entity->dlginfo);
 
 	return process_bridge_dialog_end(tuple, entity_no, entity);
@@ -793,6 +794,7 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 	str attr;
 	int statuscode;
 	int ret;
+	unsigned int method_value;
 
 	if(b2bl_key == NULL)
 	{
@@ -855,7 +857,13 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 
 	if(type == B2B_REPLY)
 	{
-		str method = get_cseq(msg)->method;
+		method = get_cseq(msg)->method;
+		if(parse_method(method.s, method.s+method.len, &method_value)< 0)
+		{
+			LM_ERR("Failed to parse method\n");
+			goto error;
+		}
+
 		statuscode = msg->first_line.u.reply.statuscode;
 
 		/* if a disconnected entity -> do nothing */
@@ -885,10 +893,10 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 				/* if the scenario state is B2B_BRIDGING_STATE -> we should have a reply for INVITE */
 				/* extract the method from Cseq header */
 
-				if(method.len != INVITE_LEN || strncmp(method.s, INVITE, INVITE_LEN)!=0 )
+				if(method_value != METHOD_INVITE)
 				{
 					LM_ERR("Wrong scenario state [B2B_BRIDGING_STATE] for this"
-						" reply(for method %.*s).\n", method.len, method.s);
+						" reply(for method %d)\n", method_value);
 					goto error;
 				}
 				/* if a negative reply */
@@ -944,7 +952,7 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 				goto done;
 			}
 			if(b2b_api.send_reply(peer->type, &peer->key,
-				statuscode,&msg->first_line.u.reply.reason,
+				method_value,statuscode,&msg->first_line.u.reply.reason,
 				body.s?&body:0, extra_headers.s?&extra_headers:0,
 				peer->dlginfo) < 0)
 			{
@@ -955,13 +963,13 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 			}
 
 			/* if no other scenario rules defined and this is the reply for BYE */
-			if(method.len == BYE_LEN && strncmp(method.s, BYE, BYE_LEN)==0)
+			if(method_value == METHOD_BYE)
 			{
 				LM_DBG("Received reply for BYE - delete\n");
 				b2bl_delete(tuple, hash_index, 0);
 				goto done;
 			}
-			if(method.len == INVITE_LEN && strncmp(method.s, INVITE, INVITE_LEN)==0)
+			if(method_value == METHOD_INVITE)
 			{
 				if(entity->state!=DLG_CONFIRMED)
 				{
@@ -995,6 +1003,7 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 		int request_id;
 
 		method = msg->first_line.u.request.method;
+		method_value = msg->first_line.u.request.method_value;
 		/* extract body if it has a body */
 
 		LM_DBG("I was notified that a request was received[%p]\n", tuple);
@@ -1016,17 +1025,17 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 			{
 				/* it means that a BYE was already sent to this entity but it did not reply */
 				str msg = str_init("OK");
-				b2b_api.send_reply(entity->type, &entity->key, 200, &msg, 0, 0,
-						entity->dlginfo);
+				b2b_api.send_reply(entity->type, &entity->key, METHOD_BYE,
+						200, &msg, 0, 0, entity->dlginfo);
 				if(entity->peer)
-					b2b_api.send_reply(entity->peer->type, &entity->peer->key, 200, &msg, 0, 0,
-							entity->peer->dlginfo);
+					b2b_api.send_reply(entity->peer->type, &entity->peer->key, METHOD_BYE,
+							200, &msg, 0, 0, entity->peer->dlginfo);
 			}
 			else
 			{
 				str msg = str_init("Not Acceptable");
-				b2b_api.send_reply(entity->type, &entity->key, 400, &msg, 0, 0,
-						entity->dlginfo);
+				b2b_api.send_reply(entity->type, &entity->key, method_value,
+						400, &msg, 0, 0, entity->dlginfo);
 			}
 			b2bl_delete(tuple, hash_index, 0);
 			goto done;
@@ -1110,8 +1119,8 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 					if(entity->peer)
 						entity->peer->peer = 0;
 					/* send 200 OK for BYE */
-					b2b_api.send_reply(entity->type, &entity->key, 200,&ok,0, 0,
-						entity->dlginfo);
+					b2b_api.send_reply(entity->type, &entity->key, METHOD_BYE,
+							200, &ok, 0, 0, entity->dlginfo);
 					b2bl_delete_entity(entity, tuple);
 					entity = NULL;
 					goto done;
@@ -1318,8 +1327,8 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 				}
 				attr.len = strlen(attr.s);
 
-				b2b_api.send_reply(entity->type, &entity->key, code,&attr,0, 0,
-						entity->dlginfo);
+				b2b_api.send_reply(entity->type, &entity->key, method_value, code,
+						&attr, 0, 0, entity->dlginfo);
 				LM_DBG("Send reply with code [%d] and text [%s]\n", code, attr.s);
 
 				xmlFree(attr.s);
@@ -1358,8 +1367,8 @@ send_usual_request:
 		{
 			if(!peer || !peer->key.s)
 			{
-				b2b_api.send_reply(entity->type, &entity->key, 200, &ok,
-						0, 0, entity->dlginfo);
+				b2b_api.send_reply(entity->type, &entity->key, METHOD_BYE,
+						200, &ok, 0, 0, entity->dlginfo);
 				b2bl_delete(tuple, hash_index, 0);
 				goto done;
 			}
@@ -2477,7 +2486,7 @@ int b2bl_bridge(str* key, str* new_dst, str* new_from_dname, int entity_no)
 		if(old_entity->disconnected)
 		{
 			b2b_api.send_reply(old_entity->type, &old_entity->key,
-					200, &ok, 0, 0, old_entity->dlginfo);
+					METHOD_BYE, 200, &ok, 0, 0, old_entity->dlginfo);
 			b2bl_delete_entity(old_entity, tuple);
 		}
 		else
@@ -2631,7 +2640,7 @@ int b2bl_bridge_2calls(str* key1, str* key2)
 	if(e)
 	{
 		if(e->disconnected)
-			b2b_api.send_reply(e->type,&e->key,200,&ok,0,0,e->dlginfo);
+			b2b_api.send_reply(e->type,&e->key,METHOD_BYE,200,&ok,0,0,e->dlginfo);
 		else
 			b2b_end_dialog(e, tuple);
 		e->peer = NULL;
@@ -2690,7 +2699,7 @@ int b2bl_bridge_2calls(str* key1, str* key2)
 	if(e)
 	{
 		if(e->disconnected)
-			b2b_api.send_reply(e->type,&e->key,200,&ok,0,0,e->dlginfo);
+			b2b_api.send_reply(e->type,&e->key,METHOD_BYE,200,&ok,0,0,e->dlginfo);
 		b2b_end_dialog(e, tuple);
 		e->peer = NULL;
 	}

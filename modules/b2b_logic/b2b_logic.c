@@ -962,7 +962,7 @@ static struct mi_root* mi_b2b_bridge(struct mi_root* cmd, void* param)
 	if(old_entity->disconnected)
 	{
 		b2b_api.send_reply(old_entity->type, &old_entity->key,
-				200, &ok, 0, 0, old_entity->dlginfo);
+				METHOD_BYE, 200, &ok, 0, 0, old_entity->dlginfo);
 	}
 	else
 	{

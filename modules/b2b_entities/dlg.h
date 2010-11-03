@@ -116,6 +116,7 @@ typedef struct b2b_dlg
 	str                  param;
 	struct cell*         uac_tran;
 	struct cell*         uas_tran;
+	struct cell*         update_tran;
 	struct cell*         cancel_tm_tran;
 	dlg_leg_t*           legs;
 	unsigned int         last_reply_code;
@@ -128,6 +129,7 @@ typedef struct client_info
 	str from_uri;
 	str from_dname;
 	str req_uri;
+	str dst_uri;
 	str to_uri;
 	str to_dname;
 	str* extra_headers;
@@ -171,11 +173,11 @@ typedef str* (*b2b_server_new_t) (struct sip_msg* ,b2b_notify_t , str* param);
 typedef str* (*b2b_client_new_t) (client_info_t* , b2b_notify_t b2b_cback,
 		b2b_add_dlginfo_t add_dlginfo_f, str* param);
 
-int b2b_send_reply(enum b2b_entity_type et, str* b2b_key, int code, str* text,
-		str* body, str* extra_headers, b2b_dlginfo_t* dlginfo);
+int b2b_send_reply(enum b2b_entity_type et, str* b2b_key, int meth, int code,
+		str* text, str* body, str* extra_headers, b2b_dlginfo_t* dlginfo);
 
-typedef int (*b2b_send_reply_t)(enum b2b_entity_type et, str* b2b_key, int code, str* text,
-		str* body, str* extra_headers, b2b_dlginfo_t* dlginfo);
+typedef int (*b2b_send_reply_t)(enum b2b_entity_type et,str* b2b_key,int meth,
+		int code, str* text,str* body,str* extra_headers,b2b_dlginfo_t* dlginfo);
 
 typedef int (*b2b_send_request_t)(enum b2b_entity_type , str* , str* ,
 		str* , str*, b2b_dlginfo_t* );
