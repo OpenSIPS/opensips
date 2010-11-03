@@ -35,6 +35,7 @@
 #include "../../parser/parse_content.h"
 #include "../../parser/parse_hname2.h"
 #include "../../ut.h"
+#include "../../trim.h"
 #include "../../mem/shm_mem.h"
 #include "../../mem/mem.h"
 #include "../b2b_entities/dlg.h"
@@ -445,7 +446,7 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 		LM_ERR("No match found\n");
 		return -1;
 	}
-	LM_DBG("entity_no = %d\n", entity_no);
+	LM_DBG("entity_no = %d, entity=%p, be[0]= %p\n", entity_no, entity, tuple->bridge_entities[0]);
 
 	if(entity_no == 0) /* the first reply -> must send INVITE on the other side  */
 	{
@@ -508,7 +509,7 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 				return -1;
 			}
 		}
-		tuple->bridge_entities[1]->peer = bentity0;
+		tuple->bridge_entities[1]->peer = tuple->bridge_entities[0];
 		tuple->bridge_entities[0]->peer = tuple->bridge_entities[1];
 	}
 	else
@@ -1229,6 +1230,14 @@ int process_bridge_action(struct sip_msg* msg, b2bl_entity_id_t* curr_entity,
 				entity = entity->next;
 			}
 		}
+		/* if I have the 'new' child -> alter the scenario id for the old entity */
+		node = xmlNodeGetChildByName(client_node, "new");
+		if(node && entity)
+		{
+			/* write '<' everywhere - it's safe since it's not accepted in xml */
+			memset(entity->scenario_id.s, '<', entity->scenario_id.len);
+			entity = NULL;
+		}
 
 entity_search_done:
 
@@ -1261,7 +1270,7 @@ entity_search_done:
 			if(b2b_scenario_parse_uri(value_node, value_content, tuple, msg,
 						&entity_dest) < 0)
 			{
-				LM_DBG("Failed to parse entity destination specification\n");
+				LM_ERR("Failed to parse entity destination specification\n");
 				xmlFree(value_content);
 				goto error;
 			}
@@ -1283,6 +1292,12 @@ entity_search_done:
 			xmlFree(attr.s);
 		attr.s = NULL;
 		bridge_entities[count++] = entity;
+	}
+
+	if(bridge_entities[1] == bridge_entities[0])
+	{
+		LM_ERR("The scenario tells to bridge the same entity\n");
+		goto error;
 	}
 
 	/* arrange the entities in vector to have the old first */
@@ -1393,6 +1408,7 @@ entity_search_done:
 	else
 		tuple->lifetime = -1;
 
+	LM_DBG("be[0]= %p, be1=[%p]\n", tuple->bridge_entities[0], tuple->bridge_entities[1]);
 	return 0;
 
 error1:
@@ -1637,6 +1653,7 @@ int b2b_scenario_parse_uri(xmlNodePtr value_node, char* value_content,
 	{
 		struct hdr_field* sip_hdr, hdr;
 		char buf[BUF_LEN];
+		struct sip_uri sip_uri;
 
 		LM_DBG("URI of type header value\n");
 		if(msg == NULL)
@@ -1684,14 +1701,19 @@ int b2b_scenario_parse_uri(xmlNodePtr value_node, char* value_content,
 				goto error;
 			}
 		}
-
-		client_to->s = sip_hdr->body.s;
-		if(strncmp(sip_hdr->body.s + sip_hdr->body.len - 2, CRLF, CRLF_LEN) ==0)
+		*client_to = sip_hdr->body;
+		trim(client_to);
+		
+		if(client_to->s[0] == '<')
 		{
-			client_to->len = sip_hdr->body.len - 2;
+			client_to->s++;
+			client_to->len-=2;
 		}
-		else
-			client_to->len = sip_hdr->body.len;
+		if(parse_uri(client_to->s, client_to->len, &sip_uri)< 0)
+		{
+			LM_ERR("Not a valid sip uri [%.*s]\n", client_to->len, client_to->s);
+			goto error;
+		}
 	}
 	else
 	{
