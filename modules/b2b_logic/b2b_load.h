@@ -56,9 +56,9 @@ typedef struct b2bl_api
 	b2bl_init_f init;
 	b2bl_bridge_f bridge;
 	b2bl_bridge_extern_f bridge_extern;
-	b2bl_set_state_f set_state;
 	b2bl_bridge_2calls_t bridge_2calls;
 	b2bl_terminate_call_t terminate_call;
+	b2bl_set_state_f set_state;
 }b2bl_api_t;
 
 str* internal_init_scenario(struct sip_msg* msg, str* name, str* args[5],
