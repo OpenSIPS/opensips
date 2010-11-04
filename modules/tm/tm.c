@@ -962,8 +962,8 @@ inline static int w_t_reply(struct sip_msg* msg, char* code, char* text)
 	int r;
 
 	if (msg->REQ_METHOD==METHOD_ACK) {
-		LM_WARN("ACKs are not replied\n");
-		return -1;
+		LM_DBG("ACKs are not replied\n");
+		return 0;
 	}
 	switch (route_type) {
 		case FAILURE_ROUTE:
