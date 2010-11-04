@@ -149,8 +149,8 @@ int sl_send_reply_helper(struct sip_msg *msg ,int code, str *text)
 	int backup_mhomed;
 	int ret;
 
-	if ( msg->first_line.u.request.method_value==METHOD_ACK)
-		goto error;
+	if ( msg->REQ_METHOD==METHOD_ACK)
+		return 0;
 
 	update_sock_struct_from_ip( &to, msg );
 
