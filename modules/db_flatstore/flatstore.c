@@ -162,8 +162,7 @@ int flat_db_insert(const db_con_t* h, const db_key_t* k, const db_val_t* v,
 		local_timestamp = *flat_rotate;
 	}
 
-	f = CON_FILE(h);
-	if (!f) {
+	if ( !h || !CON_TAIL(h) || (f=CON_FILE(h))==NULL ) {
 		LM_ERR("uninitialized connection\n");
 		return -1;
 	}
