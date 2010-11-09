@@ -74,6 +74,15 @@ static str routed_params = {0,0};
    routes after doing loose_route() */
 int removed_routes;
 
+#define ROUTING_LL (1<<1)
+#define ROUTING_SL (1<<2)
+#define ROUTING_SS (1<<3)
+#define ROUTING_LS (1<<4)
+
+/* this is hooked into rr API and returns the type of previous and next hops
+ * in terms of loose versus strict routing */
+int routing_type;
+
 
 /*
  * Test whether we are processing pre-loaded route set
@@ -508,7 +517,9 @@ static inline int handle_sr(struct sip_msg* _m, struct hdr_field* _hdr, rr_t* _r
 	if (!del_lump(_m, rem_off - _m->buf, rem_len, 0)) {
 		LM_ERR("failed to remove Route HF\n");
 		return -9;
-	}			
+	}
+
+	_r->deleted = 1;
 
 	return 0;
 }
@@ -606,6 +617,10 @@ static inline int after_strict(struct sip_msg* _m)
 				LM_ERR("failed to remove Route HF\n");
 				return RR_ERROR;
 			}
+
+			/* mark route hdr as deleted */
+			rt->deleted = 1;
+
 			res = find_next_route(_m, &hdr);
 			if (res < 0) {
 				LM_ERR("searching next route failed\n");
@@ -635,6 +650,7 @@ static inline int after_strict(struct sip_msg* _m)
 
 	if (is_strict(&puri.params)) {
 		LM_DBG("Next hop: '%.*s' is strict router\n", uri.len, ZSW(uri.s));
+		routing_type |= ROUTING_SS;
 		/* Previous hop was a strict router and the next hop is strict
 		 * router too. There is no need to save R-URI again because it
 		 * is saved already. In fact, in this case we will behave exactly
@@ -664,9 +680,14 @@ static inline int after_strict(struct sip_msg* _m)
 			LM_ERR("failed to remove Route HF\n");
 			return RR_ERROR;
 		}
+
+		rt->deleted = 1;
+
 	} else {
 		LM_DBG("Next hop: '%.*s' is loose router\n",
 			uri.len, ZSW(uri.s));
+
+		routing_type |= ROUTING_SL;
 
 		if(get_maddr_uri(&uri, &puri)!=0) {
 			LM_ERR("failed to check maddr\n");
@@ -690,6 +711,10 @@ static inline int after_strict(struct sip_msg* _m)
 				LM_ERR("failed to remove Route HF\n");
 				return RR_ERROR;
 			}
+			
+			/* mark route hdr as deleted */
+			rt->deleted = 1;
+
 			del_rt = (rr_t*)hdr->parsed;
 		}
 
@@ -729,6 +754,8 @@ static inline int after_strict(struct sip_msg* _m)
 			LM_ERR("failed to remove Route HF\n");
 			return RR_ERROR;
 		}
+
+		del_rt->deleted = 1;
 	}
 	
 	/* run RR callbacks -bogdan */
@@ -783,14 +810,21 @@ static inline int after_loose(struct sip_msg* _m, int preloaded)
 				LM_ERR("failed to remove Route HF\n");
 				return RR_ERROR;
 			}
+
+			rt->deleted = 1;
+
 			res = find_next_route(_m, &hdr);
 			if (res < 0) {
 				LM_ERR("failed to find next route\n");
 				return RR_ERROR;
 			}
 			if (res > 0) { /* No next route found */
-				LM_DBG("No next URI found\n");
+				LM_DBG("No next URI found!\n");
 				status = (preloaded ? NOT_RR_DRIVEN : RR_DRIVEN);
+
+				/*same case as LL , if there is no next route*/
+				routing_type |= ROUTING_LL;
+
 				goto done;
 			}
 			rt = (rr_t*)hdr->parsed;
@@ -820,6 +854,9 @@ static inline int after_loose(struct sip_msg* _m, int preloaded)
 					LM_ERR("failed to remove Route HF\n");
 					return RR_ERROR;
 				}
+
+				rt->deleted = 1;
+
 				res = find_next_route(_m, &hdr);
 				if (res < 0) {
 					LM_ERR("failed to find next route\n");
@@ -828,6 +865,10 @@ static inline int after_loose(struct sip_msg* _m, int preloaded)
 				if (res > 0) { /* No next route found */
 					LM_DBG("no next URI found\n");
 					status = (preloaded ? NOT_RR_DRIVEN : RR_DRIVEN);
+
+					/* same case as LL , if there is no next route */
+					routing_type |= ROUTING_LL;
+
 					goto done;
 				}
 				rt = (rr_t*)hdr->parsed;
@@ -851,6 +892,8 @@ static inline int after_loose(struct sip_msg* _m, int preloaded)
 	LM_DBG("URI to be processed: '%.*s'\n", uri.len, ZSW(uri.s));
 	if (is_strict(&puri.params)) {
 		LM_DBG("Next URI is a strict router\n");
+
+		routing_type |= ROUTING_LS;
 		if (handle_sr(_m, hdr, rt) < 0) {
 			LM_ERR("failed to handle strict router\n");
 			return RR_ERROR;
@@ -858,6 +901,8 @@ static inline int after_loose(struct sip_msg* _m, int preloaded)
 	} else {
 		/* Next hop is loose router */
 		LM_DBG("Next URI is a loose router\n");
+
+		routing_type |= ROUTING_LL;
 
 		if(get_maddr_uri(&uri, &puri)!=0) {
 			LM_ERR("checking maddr failed\n");
@@ -876,6 +921,8 @@ static inline int after_loose(struct sip_msg* _m, int preloaded)
 				LM_ERR("failed to remove Route HF\n");
 				return RR_ERROR;
 			}
+
+			((rr_t *)hdr->parsed)->deleted = 1;
 		}
 	}
 	status = RR_DRIVEN;
@@ -895,6 +942,7 @@ int loose_route(struct sip_msg* _m, char* _s1, char* _s2)
 	int ret;
 
 	removed_routes = 0;
+	routing_type = 0;
 
 	if (find_first_route(_m) != 0) {
 		LM_DBG("There is no Route HF\n");
@@ -1104,3 +1152,110 @@ upstream:
 	return (dir==RR_FLOW_UPSTREAM)?0:-1;
 }
 
+str* get_remote_target(struct sip_msg *msg)
+{
+	int res;
+	struct hdr_field *hdr;
+	rr_t *rt,*prev;
+	str *uri;
+
+	if (msg == NULL)
+	{
+		LM_ERR("null sip msg\n");
+		return 0;
+	}
+
+	if ((routing_type & ROUTING_LL) || (routing_type & ROUTING_LS))
+		return &msg->first_line.u.request.uri;
+	else if (routing_type & ROUTING_SL)
+		/* set by loose_route(), recovered from previous strict routing */
+		return &msg->new_uri;
+	else if (routing_type & ROUTING_SS)
+	{
+		/* searching for last header field */
+		res = find_rem_target(msg, &hdr, &rt, &prev);
+		if (res < 0) 
+		{
+			LM_ERR("searching for last Route URI failed\n");
+			return 0;
+		} 
+		else if (res > 0) 
+		{
+			/* No remote target is an error */
+			LM_ERR("couldn't find any remote target !\n");
+			return 0;
+		}
+
+		uri = &rt->nameaddr.uri;
+		if(get_maddr_uri(uri, 0)!=0) 
+		{
+			LM_ERR("failed to check maddr\n");
+			return 0;
+		}
+
+		return uri;
+	}
+	else
+	{
+		LM_ERR("Invalid routing type - %d\n",routing_type);
+		return 0;
+	}
+}
+
+#define MAX_RR_HDRS 64
+str* get_route_set(struct sip_msg *msg,int *nr_routes)
+{
+	static str uris[MAX_RR_HDRS];
+	struct hdr_field *it;
+	rr_t *p;
+	int n = 0;
+
+	if (msg == NULL || msg->route == NULL)
+	{
+		LM_ERR("null sip msg or no route headers\n");
+		return 0;
+	}
+
+	if (routing_type & ROUTING_SS)
+	{
+		/* must manually insert RURI, as it was part
+		 * of the first route */
+		uris[n++] = msg->new_uri;
+	}
+
+	it = msg->route;
+	while (it != NULL)
+	{
+		if (parse_rr(it) < 0)
+		{
+			LM_ERR("failed to parse RR\n");
+			return 0;
+		}
+
+		p = (rr_t*)it->parsed;
+		while (p)
+		{
+			if (p->deleted == 0)
+			{
+				uris[n++] = p->nameaddr.uri;
+				if(n==MAX_RR_HDRS)
+				{
+					LM_ERR("too many RR\n");
+					return 0;
+				}
+			}
+			p = p->next;
+		}
+		it = it->sibling;
+	}
+
+
+	/* if SS - remove last route */
+	if (routing_type & ROUTING_SS)
+		n--;
+
+	if (nr_routes)
+		*nr_routes = n;
+
+	return uris;
+}

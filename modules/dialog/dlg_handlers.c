@@ -1023,7 +1023,6 @@ void dlg_ontimeout( struct dlg_tl *tl)
 #define ROUTE_LEN (sizeof(ROUTE_STR) - 1)
 #define CRLF_LEN (sizeof(CRLF) - 1)
 
-
 int fix_route_dialog(struct sip_msg *req,struct dlg_cell *dlg)
 {
 	struct dlg_leg *leg;
@@ -1122,9 +1121,9 @@ int dlg_validate_dialog( struct sip_msg* req, struct dlg_cell *dlg)
 {
 	struct dlg_leg *leg;
 	unsigned int n,m;
-	struct sip_uri curi;
-	int r_proto, c_proto, r_port, c_port;
-	str s;
+	struct sip_uri curi,msg_uri;
+	int r_proto, c_proto, r_port, c_port,nr_routes,i;
+	str *rr_uri,*route_uris;
 
 	if (last_dst_leg<0) {
 		LM_ERR("Script error - validate function before having a dialog\n");
@@ -1132,7 +1131,6 @@ int dlg_validate_dialog( struct sip_msg* req, struct dlg_cell *dlg)
 	}
 
 	leg = & dlg->legs[ last_dst_leg ];
-
 
 	/* first check the cseq (if it's increasing) */
 	if ( (!req->cseq && parse_headers(req,HDR_CSEQ_F,0)<0) || !req->cseq ||
@@ -1148,77 +1146,97 @@ int dlg_validate_dialog( struct sip_msg* req, struct dlg_cell *dlg)
 		return -1;
 	}
 
+	LM_DBG("CSEQ validation passed\n");
+
 	if (dlg->state <= DLG_STATE_EARLY)
 		return 0;
 
 	/* check the RURI - it must be the contact of the destination leg */
 	/* after loose_route() even if the previous hop was a strict router,
 	   opensips will set in RURI the remote contact */
+
 	if (leg->contact.len) {
-		if ( parse_sip_msg_uri(req)<0 ||
+		
+		rr_uri = d_rrb.get_remote_target(req);
+		if (rr_uri == NULL)
+		{
+			LM_ERR("failed fetching remote target from msg\n");
+			return -1;
+		}
+
+		if ( parse_uri(rr_uri->s,rr_uri->len,&msg_uri)<0 ||
 		parse_uri( leg->contact.s, leg->contact.len, &curi)!=0 ) {
 			LM_ERR("failed to parse RURI/Contacts\n");
 			return -1;
 		}
 		/* check proto */
-		r_proto = (req->parsed_uri.proto==PROTO_NONE) ?
-			PROTO_UDP : req->parsed_uri.proto;
+		r_proto = (msg_uri.proto==PROTO_NONE) ?
+			PROTO_UDP : msg_uri.proto;
 		c_proto = (curi.proto==PROTO_NONE) ?
 			PROTO_UDP : curi.proto;
 		if ( r_proto!=c_proto ) {
-			s = *GET_RURI(req);
 			LM_DBG("RURI/Contact PROTO test failed ruri=[%.*s], old=[%.*s]\n",
-				s.len,s.s,leg->contact.len,leg->contact.s);
+				rr_uri->len,rr_uri->s,leg->contact.len,leg->contact.s);
 			return -1;
 		}
 		/* check port */
-		r_port=(req->parsed_uri.port_no==0) ?
-			( (r_proto==PROTO_TLS)?5061:5060) : req->parsed_uri.port_no ;
+		r_port=(msg_uri.port_no==0) ?
+			( (r_proto==PROTO_TLS)?5061:5060) : msg_uri.port_no ;
 		c_port=(curi.port_no==0) ?
 			( (c_proto==PROTO_TLS)?5061:5060) : curi.port_no ;
 		if ( r_port!=c_port ) {
-			s = *GET_RURI(req);
 			LM_DBG("RURI/Contact PORT test failed ruri=[%.*s], old=[%.*s]\n",
-				s.len,s.s,leg->contact.len,leg->contact.s);
+				rr_uri->len,rr_uri->s,leg->contact.len,leg->contact.s);
 			return -1;
 		}
 		/* host (as string) */
-		if ( curi.host.len!=req->parsed_uri.host.len ||
-		memcmp(req->parsed_uri.host.s, curi.host.s, curi.host.len)!=0 ) {
-			s = *GET_RURI(req);
+		if ( curi.host.len!=msg_uri.host.len ||
+		memcmp(msg_uri.host.s, curi.host.s, curi.host.len)!=0 ) {
 			LM_DBG("RURI/Contact HOST test failed ruri=[%.*s], old=[%.*s]\n",
-				s.len,s.s,leg->contact.len,leg->contact.s);
+				rr_uri->len,rr_uri->s,leg->contact.len,leg->contact.s);
 			return -1;
 		}
 	}
+
+	LM_DBG("RURI succesfully validated\n");
 
 	/* check the route set - is the the same as in original request */
 	/* the route set (without the first Route) must be the same as the
 	   one stored in the destination leg */
 	/* extract the RR parts */
+
 	if( parse_headers( req, HDR_EOH_F, 0)<0 ) {
 		LM_ERR("failed to parse headers when looking after ROUTEs\n");
 		return -1;
 	}
+
 	if ( req->route==NULL) {
 		if ( leg->route_set.len!=0) {
 			LM_DBG("route check failed (req has no route, but dialog has\n");
 			return -1;
 		}
 	} else {
-		m = *(d_rrb.removed_routes); /*skip the removed routes */
-		if( print_rr_body( req->route, &s, 0/*normal oder*/, &m/*skip*/)!=0 ) {
-			LM_ERR("failed to print route headers\n");
+		route_uris = d_rrb.get_route_set(req,&nr_routes);
+		if (route_uris == NULL) {
+			LM_ERR("failed fetching route URIs from the msg\n");
 			return -1;
 		}
-		if ( s.len!=leg->route_set.len || memcmp(leg->route_set.s,s.s,s.len)){
-			LM_DBG("route check failed req=[%.*s] dlg=[%.*s]\n",
-				s.len,s.s,leg->route_set.len,leg->route_set.s);
-			pkg_free(s.s);
+
+		if (nr_routes != leg->nr_uris) {
+			LM_ERR("Different number of routes found in msg\n");
 			return -1;
 		}
-		pkg_free(s.s);
+
+		for (i=0;i<nr_routes;i++)
+			if (route_uris[i].len != leg->route_uris[i].len ||
+					memcmp(route_uris[i].s,leg->route_uris[i].s,route_uris[i].len)){
+				LM_ERR("Check failed for route number %d. req=[%.*s],dlg=[%.*s]\n",
+						i,route_uris[i].len,route_uris[i].s,leg->route_uris[i].len,
+						leg->route_uris[i].s);
+			}
 	}
+
+	LM_DBG("Route Headers succesfully validated\n");
 
 	return 0;
 }

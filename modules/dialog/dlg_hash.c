@@ -303,6 +303,7 @@ int dlg_add_leg_info(struct dlg_cell *dlg, str* tag, str *rr, str *contact,
 										str *cseq, struct socket_info *sock)
 {
 	struct dlg_leg* leg;
+	rr_t *head = NULL;
 
 	if ( (dlg->legs_no[DLG_LEGS_ALLOCED]-dlg->legs_no[DLG_LEGS_USED])==0) {
 		dlg->legs_no[DLG_LEGS_ALLOCED] += 2;
@@ -342,6 +343,23 @@ int dlg_add_leg_info(struct dlg_cell *dlg, str* tag, str *rr, str *contact,
 			leg->route_set.s = leg->contact.s + contact->len;
 			leg->route_set.len = rr->len;
 			memcpy( leg->route_set.s, rr->s, rr->len);
+
+			/* FIXME  - build str * with only the URIs 
+			 * bogus way of doing it now :
+			 * turn headers to str, and then convert str back to headers :|
+			 * */
+			if (parse_rr_body(rr->s,rr->len,&head) != 0) {
+				LM_ERR("failed parsing route set\n");
+				return -1;
+			}
+		
+			leg->nr_uris = 0;
+			while (head) {
+				leg->route_uris[leg->nr_uris++] = head->nameaddr.uri;
+				head = head->next;
+			}
+
+			free_rr(&head);
 		}
 	}
 

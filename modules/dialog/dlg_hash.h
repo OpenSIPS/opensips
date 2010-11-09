@@ -82,6 +82,8 @@ struct dlg_leg {
 	str r_cseq;
 	str route_set;
 	str contact;
+	str route_uris[64];
+	int nr_uris;
 	struct socket_info *bind_addr;
 };
 
