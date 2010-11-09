@@ -2483,7 +2483,7 @@ int b2bl_bridge(str* key, str* new_dst, str* new_from_dname, int entity_no)
 	if(old_entity)
 	{
 		old_entity->peer = NULL;
-		if(old_entity->disconnected)
+		if(old_entity->disconnected && old_entity->state==DLG_CONFIRMED)
 		{
 			b2b_api.send_reply(old_entity->type, &old_entity->key,
 					METHOD_BYE, 200, &ok, 0, 0, old_entity->dlginfo);
@@ -2639,7 +2639,7 @@ int b2bl_bridge_2calls(str* key1, str* key2)
 
 	if(e)
 	{
-		if(e->disconnected)
+		if(e->disconnected && e->state==DLG_CONFIRMED)
 			b2b_api.send_reply(e->type,&e->key,METHOD_BYE,200,&ok,0,0,e->dlginfo);
 		else
 			b2b_end_dialog(e, tuple);
@@ -2698,7 +2698,7 @@ int b2bl_bridge_2calls(str* key1, str* key2)
 	e = tuple->bridge_entities[1];
 	if(e)
 	{
-		if(e->disconnected)
+		if(e->disconnected && e->state==DLG_CONFIRMED)
 			b2b_api.send_reply(e->type,&e->key,METHOD_BYE,200,&ok,0,0,e->dlginfo);
 		b2b_end_dialog(e, tuple);
 		e->peer = NULL;

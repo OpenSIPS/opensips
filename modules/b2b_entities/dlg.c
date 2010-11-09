@@ -1076,20 +1076,23 @@ int b2b_send_reply(enum b2b_entity_type et, str* b2b_key, int sip_method,
 	else
 	{
 		tm_tran = dlg->uas_tran;
-		if(parse_method(tm_tran->method.s,
-				tm_tran->method.s + tm_tran->method.len, &method_value)< 0)
+		if(tm_tran)
 		{
-			LM_ERR("Wrong method stored in tm transaction [%.*s]\n",
-				tm_tran->method.len, tm_tran->method.s);
-			lock_release(&table[hash_index].lock);
-			return -1;
-		}
-		if(sip_method != method_value)
-		{
-			LM_ERR("Mismatch between the method in tm[%d] and the method to send reply to[%d]\n",
-					sip_method, method_value);
-			lock_release(&table[hash_index].lock);
-			return -1;
+			if(parse_method(tm_tran->method.s,
+					tm_tran->method.s + tm_tran->method.len, &method_value)< 0)
+			{
+				LM_ERR("Wrong method stored in tm transaction [%.*s]\n",
+					tm_tran->method.len, tm_tran->method.s);
+				lock_release(&table[hash_index].lock);
+				return -1;
+			}
+			if(sip_method != method_value)
+			{
+				LM_ERR("Mismatch between the method in tm[%d] and the method to send reply to[%d]\n",
+						sip_method, method_value);
+				lock_release(&table[hash_index].lock);
+				return -1;
+			}
 		}
 	}
 	if(tm_tran == NULL)
