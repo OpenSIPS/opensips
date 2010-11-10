@@ -67,7 +67,7 @@ void lb_do_probing(struct lb_data *data)
 		/* dst requires probing ? */
 		if ( dst->flags&LB_DST_STAT_NOEN_FLAG
 			|| !( (dst->flags&LB_DST_PING_PERM_FLAG)  ||  /*permanent probing*/
-					( dst->flags&LB_DST_PING_DSBL_FLAG
+					( !(dst->flags&LB_DST_PING_DSBL_FLAG)
 					&& dst->flags&LB_DST_STAT_DSBL_FLAG  /*probing on disable*/
 					)
 				)
