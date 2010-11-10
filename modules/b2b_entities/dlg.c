@@ -490,7 +490,9 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 		str reason={"OK", 2};
 		/* send 200 OK and exit */
 		tmb.t_reply(msg, 200, &reason);
-		tmb.unref_cell(tmb.t_gett());
+		tm_tran = tmb.t_gett();
+		if(tm_tran)
+			tmb.unref_cell(tm_tran);
 		goto done;
 	}
 
