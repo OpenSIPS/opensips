@@ -1670,7 +1670,7 @@ fix_nated_contact_f(struct sip_msg* msg, char* str1, char* str2)
 	struct hdr_field *hdr;
 	struct lump *anchor;
 	struct sip_uri uri;
-	str hostport;
+	str hostport, left;
 	int is_enclosed;
 	str *params = (str*)str1;
 
@@ -1682,6 +1682,8 @@ fix_nated_contact_f(struct sip_msg* msg, char* str1, char* str2)
 		hostport = uri.host;
 		if (uri.port.len > 0)
 			hostport.len = uri.port.s + uri.port.len - uri.host.s;
+		left.s = hostport.s + hostport.len;
+		left.len = c->uri.s+c->uri.len - left.s;
 
 		is_enclosed = 0;
 		if (params) {
@@ -1691,8 +1693,8 @@ fix_nated_contact_f(struct sip_msg* msg, char* str1, char* str2)
 				if (*p=='>') {is_enclosed=1;hostport.len=p-uri.host.s;break;}
 		}
 
-		LM_INFO("--removing %d |%.*s|\n",hostport.s+hostport.len-c->uri.s,
-			hostport.s+hostport.len-c->uri.s, c->uri.s);
+		//LM_DBG("--removing %d |%.*s|\n",hostport.s+hostport.len-c->uri.s,
+		//	hostport.s+hostport.len-c->uri.s, c->uri.s);
 		anchor = del_lump(msg, c->uri.s-msg->buf /* offset */,
 			hostport.s+hostport.len-c->uri.s /* len */, 0);
 		if (anchor == 0)
@@ -1700,7 +1702,7 @@ fix_nated_contact_f(struct sip_msg* msg, char* str1, char* str2)
 
 		cp = ip_addr2a(&msg->rcv.src_ip);
 		len = (hostport.s-c->uri.s) + strlen(cp) + 6 /* :port */
-			+ (params?params->len+(is_enclosed?0:2):0) + 1;
+			+ (params?params->len+(is_enclosed?0:2):0) + 1 + left.len;
 		buf = pkg_malloc(len);
 		if (buf == NULL) {
 			LM_ERR("out of pkg memory\n");
@@ -1708,30 +1710,31 @@ fix_nated_contact_f(struct sip_msg* msg, char* str1, char* str2)
 		}
 		temp = hostport.s[0]; hostport.s[0] = '\0';
 		if (params==NULL) {
-			len1 = snprintf(buf, len, "%s%s:%d", c->uri.s, cp,
-				msg->rcv.src_port);
+			len1 = snprintf(buf, len, "%s%s:%d%.*s", c->uri.s, cp,
+				msg->rcv.src_port,left.len,left.s);
 		} else if (!is_enclosed) {
 			len1 = snprintf(buf, len, "<%s%s:%d%.*s>", c->uri.s, cp,
 				msg->rcv.src_port,params->len,params->s);
 		} else {
-			len1 = snprintf(buf, len, "%s%s:%d%.*s", c->uri.s, cp,
-				msg->rcv.src_port,params->len,params->s);
+			len1 = snprintf(buf, len, "%s%s:%d%.*s%.*s", c->uri.s, cp,
+				msg->rcv.src_port,params->len,params->s,left.len,left.s);
 		}
 		if (len1 < len)
 			len = len1;
 		hostport.s[0] = temp;
-		LM_INFO("lump--- |%.*s|\n",len,buf);
+		//LM_DBG("lump--- |%.*s|\n",len,buf);
 		if (insert_new_lump_after(anchor, buf, len, HDR_CONTACT_T) == 0) {
 			pkg_free(buf);
 			return -1;
 		}
 		if (params==NULL || is_enclosed) {
 			c->uri.s = buf;
-			c->uri.len = len1 - (params?params->len:0);
+			c->uri.len = len1;
 		} else {
 			c->uri.s = buf + 1;
-			c->uri.len = len - 2 - params->len;
+			c->uri.len = len - 2;
 		}
+		//LM_DBG("new uri is--- |%.*s|\n",c->uri.len,c->uri.s);
 	}
 
 	return 1;
