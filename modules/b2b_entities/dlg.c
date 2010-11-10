@@ -490,7 +490,9 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 		str reason={"OK", 2};
 		/* send 200 OK and exit */
 		tmb.t_reply(msg, 200, &reason);
-		tmb.unref_cell(tmb.t_gett());
+		tm_tran = tmb.t_gett();
+		if(tm_tran)
+			tmb.unref_cell(tm_tran);
 		goto done;
 	}
 
@@ -689,23 +691,30 @@ logic_notify:
 		tm_tran = tmb.t_gett();
 		if(method_value != METHOD_ACK)
 		{
-			if(dlg->uas_tran && dlg->uas_tran!=T_UNDEFINED)
+			if(method_value == METHOD_UPDATE)
 			{
-				if(dlg->uas_tran->uas.request) /* there is another transaction for which no reply was sent out */
-				{
-					/* send reply */
-					LM_DBG("Received another request when the previous one was in process\n");
-					str text = str_init("Request Pending");
-					if(tmb.t_reply_with_body(dlg->uas_tran, 491, &text, 0, 0, &to_tag) < 0)
-					{
-						LM_ERR("failed to send reply with tm\n");
-					}
-					LM_DBG("Sent reply [491] and unreffed the cell %p\n", dlg->uas_tran);
-				}
-				tmb.unref_cell(dlg->uas_tran);
+				dlg->update_tran = tm_tran;
 			}
-			dlg->uas_tran = tm_tran;
-			LM_DBG("Saved transaction - [%p] uas_tran=[%p]\n", dlg, tm_tran);
+			else
+			{
+				if(dlg->uas_tran && dlg->uas_tran!=T_UNDEFINED)
+				{
+					if(dlg->uas_tran->uas.request) /* there is another transaction for which no reply was sent out */
+					{
+						/* send reply */
+						LM_DBG("Received another request when the previous one was in process\n");
+						str text = str_init("Request Pending");
+						if(tmb.t_reply_with_body(dlg->uas_tran, 491, &text, 0, 0, &to_tag) < 0)
+						{
+							LM_ERR("failed to send reply with tm\n");
+						}
+						LM_DBG("Sent reply [491] and unreffed the cell %p\n", dlg->uas_tran);
+					}
+					tmb.unref_cell(dlg->uas_tran);
+				}
+				dlg->uas_tran = tm_tran;
+				LM_DBG("Saved transaction - [%p] uas_tran=[%p]\n", dlg, tm_tran);
+			}
 		}
 		else
 		{
@@ -995,8 +1004,8 @@ b2b_dlg_t* b2b_new_dlg(struct sip_msg* msg, int on_reply, str* param)
  *	body    : the body to be included in the request(optional)
  *	extra_headers  : the extra headers to be included in the request(optional)
  * */
-int b2b_send_reply(enum b2b_entity_type et, str* b2b_key, int code, str* text,
-		str* body, str* extra_headers, b2b_dlginfo_t* dlginfo)
+int b2b_send_reply(enum b2b_entity_type et, str* b2b_key, int sip_method,
+		int code,str* text,str* body,str* extra_headers,b2b_dlginfo_t* dlginfo)
 {
 	unsigned int hash_index, local_index;
 	b2b_dlg_t* dlg;
@@ -1010,6 +1019,7 @@ int b2b_send_reply(enum b2b_entity_type et, str* b2b_key, int code, str* text,
 	b2b_table table;
 	str totag, fromtag;
 	struct to_body *pto, TO;
+	unsigned int method_value = METHOD_UPDATE;
 
 	if(et == B2B_SERVER)
 	{
@@ -1063,7 +1073,27 @@ int b2b_send_reply(enum b2b_entity_type et, str* b2b_key, int code, str* text,
 		return 0;
 	}
 */
-	tm_tran = dlg->uas_tran;
+	if(sip_method == METHOD_UPDATE)
+		tm_tran = dlg->update_tran;
+	else
+	{
+		tm_tran = dlg->uas_tran;
+		if(parse_method(tm_tran->method.s,
+				tm_tran->method.s + tm_tran->method.len, &method_value)< 0)
+		{
+			LM_ERR("Wrong method stored in tm transaction [%.*s]\n",
+				tm_tran->method.len, tm_tran->method.s);
+			lock_release(&table[hash_index].lock);
+			return -1;
+		}
+		if(sip_method != method_value)
+		{
+			LM_ERR("Mismatch between the method in tm[%d] and the method to send reply to[%d]\n",
+					sip_method, method_value);
+			lock_release(&table[hash_index].lock);
+			return -1;
+		}
+	}
 	if(tm_tran == NULL)
 	{
 		LM_DBG("code = %d, last_method= %d\n", code, dlg->last_method);
@@ -1077,12 +1107,12 @@ int b2b_send_reply(enum b2b_entity_type et, str* b2b_key, int code, str* text,
 		lock_release(&table[hash_index].lock);
 		return -1;
 	}
-	
+
 	LM_DBG("Send reply %d %.*s, for %.*s %p\n", code, tm_tran->method.len,
 			tm_tran->method.s, b2b_key->len, b2b_key->s, dlg);
 
-	if((tm_tran->method.len == INVITE_LEN && strncmp(tm_tran->method.s, INVITE, INVITE_LEN)==0)
-			&& (dlg->state==B2B_CONFIRMED || dlg->state==B2B_ESTABLISHED))
+	if(method_value==METHOD_INVITE &&
+			(dlg->state==B2B_CONFIRMED || dlg->state==B2B_ESTABLISHED))
 	{
 		LM_DBG("A retransmission of the reply\n");
 		lock_release(&table[hash_index].lock);
@@ -1091,7 +1121,7 @@ int b2b_send_reply(enum b2b_entity_type et, str* b2b_key, int code, str* text,
 
 	if(code >= 200)
 	{
-		if(tm_tran->method.len == INVITE_LEN && strncmp(tm_tran->method.s, INVITE, INVITE_LEN)==0)
+		if(method_value==METHOD_INVITE)
 		{
 			if(code < 300)
 				dlg->state = B2B_CONFIRMED;
@@ -1100,7 +1130,10 @@ int b2b_send_reply(enum b2b_entity_type et, str* b2b_key, int code, str* text,
 			UPDATE_DBFLAG(dlg);
 		}
 		LM_DBG("Reseted transaction- send final reply [%p], uas_tran=0\n", dlg);
-		dlg->uas_tran = NULL;
+		if(sip_method == METHOD_UPDATE)
+			dlg->update_tran = NULL;
+		else
+			dlg->uas_tran = NULL;
 	}
 
 	msg = tm_tran->uas.request;
@@ -1140,7 +1173,7 @@ int b2b_send_reply(enum b2b_entity_type et, str* b2b_key, int code, str* text,
 		to_tag = &pto->tag_value;
 
 	/* if sent reply for bye, delete the record */
-	if(tm_tran->method.len == BYE_LEN && strncmp(tm_tran->method.s, BYE, BYE_LEN) == 0)
+	if(method_value == METHOD_BYE)
 		dlg->state = B2B_TERMINATED;
 
 	dlg->last_reply_code = code;
@@ -1705,6 +1738,9 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 
 	statuscode = ps->code;
 
+	if(statuscode == 100)
+		return;
+
 	msg = ps->rpl;
 	b2b_key = (str*)*ps->param;
 
@@ -1818,7 +1854,7 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 				" method_id=%d t=[%p], dlg->uac_tran=[%p]\n",
 				dlg, dlg->last_method, method_id, t, dlg->uac_tran);
 		/* if confirmed - send ACK */
-		if(statuscode>=200 && statuscode<300)
+		if(statuscode>=200 && statuscode<300 && dlg->state==B2B_ESTABLISHED)
 		{
 			leg = b2b_new_leg(msg, &to_tag, PKG_MEM_TYPE);
 			if(leg == NULL)
@@ -1860,7 +1896,7 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 	if(statuscode >= 300)
 	{
 		LM_DBG("Received a negative reply\n");
-		if(dlg->uac_tran)
+		if(dlg->uac_tran == t )
 		{
 			tmb.unref_cell(dlg->uac_tran);
 			dlg->uac_tran = 0;

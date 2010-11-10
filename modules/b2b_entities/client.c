@@ -105,7 +105,6 @@ str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 		return 0;
 	}
 
-
 	hash_index = core_hash(&ci->from_uri, &ci->to_uri, client_hsize);
 
 	if(ci->from_tag)
@@ -216,6 +215,21 @@ str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 	td.T_flags=T_NO_AUTOACK_FLAG|T_PASS_PROVISIONAL_FLAG ;
 
 	td.send_sock = ci->send_sock;
+	if(ci->dst_uri.len)
+	{
+		td.route_set = (rr_t*)pkg_malloc(sizeof(rr_t)+ci->dst_uri.len);
+		if(td.route_set == NULL)
+		{
+			LM_ERR("No more memory");
+		}
+		else
+		{
+			memset(td.route_set, 0, sizeof(rr_t)+ci->dst_uri.len);
+			td.route_set->nameaddr.uri.s = (char*)td.route_set + sizeof(rr_t);
+			memcpy(td.route_set->nameaddr.uri.s, ci->dst_uri.s, ci->dst_uri.len);
+			td.route_set->nameaddr.uri.len = ci->dst_uri.len;
+		}
+	}
 
 	tmb.setlocalTholder(&dlg->uac_tran);
 	
@@ -228,6 +242,9 @@ str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 		b2b_client_tm_cback,   /* callback function*/
 		b2b_key_shm,
 		shm_free_param);       /* function to release the parameter*/
+
+	if(td.route_set)
+		pkg_free(td.route_set);
 	if(result< 0)
 	{
 		LM_ERR("while sending request with t_request\n");
