@@ -1222,8 +1222,12 @@ int dlg_validate_dialog( struct sip_msg* req, struct dlg_cell *dlg)
 			return -1;
 		}
 
+		LM_DBG("req msg has %d Route headers, dlg has %d Route headers\n",
+				nr_routes,leg->nr_uris);
+
 		if (nr_routes != leg->nr_uris) {
-			LM_ERR("Different number of routes found in msg\n");
+			LM_ERR("Different number of routes found in msg. req=%d, dlg=%d\n",
+					nr_routes,leg->nr_uris);
 			return -1;
 		}
 
@@ -1233,6 +1237,7 @@ int dlg_validate_dialog( struct sip_msg* req, struct dlg_cell *dlg)
 				LM_ERR("Check failed for route number %d. req=[%.*s],dlg=[%.*s]\n",
 						i,route_uris[i].len,route_uris[i].s,leg->route_uris[i].len,
 						leg->route_uris[i].s);
+				return -1;
 			}
 	}
 

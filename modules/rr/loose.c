@@ -495,7 +495,9 @@ static inline int handle_sr(struct sip_msg* _m, struct hdr_field* _hdr, rr_t* _r
 		return -1;
 	}
 	
-	     /* Put the first Route in Request-URI */
+	
+	/* Put the first Route in Request-URI */
+
 	uri = _r->nameaddr.uri;
 	if(get_maddr_uri(&uri, 0)!=0) {
 		LM_ERR("failed to check maddr\n");
@@ -1207,6 +1209,8 @@ str* get_route_set(struct sip_msg *msg,int *nr_routes)
 {
 	static str uris[MAX_RR_HDRS];
 	struct hdr_field *it;
+	struct sip_uri suri;
+	int proto_len;
 	rr_t *p;
 	int n = 0;
 
@@ -1237,13 +1241,29 @@ str* get_route_set(struct sip_msg *msg,int *nr_routes)
 		{
 			if (p->deleted == 0)
 			{
-				uris[n++] = p->nameaddr.uri;
+				if (parse_uri(p->nameaddr.uri.s,p->nameaddr.uri.len,&suri) != 0)
+				{
+					LM_ERR("failed to parse URI\n");
+					return 0;
+				}
+
+				uris[n].s = p->nameaddr.uri.s;
+				proto_len = (suri.type == SIP_URI_T || suri.type == TEL_URI_T)?4:5;
+				uris[n].len = proto_len + suri.user.len + suri.passwd.len + 
+					suri.host.len + suri.port.len;
+
+				LM_DBG("URI = [%.*s]\n",uris[n].len,uris[n].s);
+
+				n++;
 				if(n==MAX_RR_HDRS)
 				{
 					LM_ERR("too many RR\n");
 					return 0;
 				}
 			}
+			else
+				LM_DBG("Route [%.*s] has been deleted\n",p->nameaddr.uri.len,
+						p->nameaddr.uri.s);
 			p = p->next;
 		}
 		it = it->sibling;

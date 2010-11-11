@@ -303,6 +303,8 @@ int dlg_add_leg_info(struct dlg_cell *dlg, str* tag, str *rr, str *contact,
 										str *cseq, struct socket_info *sock)
 {
 	struct dlg_leg* leg;
+	struct sip_uri suri;
+	int proto_len;
 	rr_t *head = NULL;
 
 	if ( (dlg->legs_no[DLG_LEGS_ALLOCED]-dlg->legs_no[DLG_LEGS_USED])==0) {
@@ -344,18 +346,32 @@ int dlg_add_leg_info(struct dlg_cell *dlg, str* tag, str *rr, str *contact,
 			leg->route_set.len = rr->len;
 			memcpy( leg->route_set.s, rr->s, rr->len);
 
-			/* FIXME  - build str * with only the URIs 
-			 * bogus way of doing it now :
-			 * turn headers to str, and then convert str back to headers :|
-			 * */
-			if (parse_rr_body(rr->s,rr->len,&head) != 0) {
+			if (parse_rr_body(leg->route_set.s,leg->route_set.len,&head) != 0) {
 				LM_ERR("failed parsing route set\n");
+				shm_free(leg->tag.s);
+				shm_free(leg->r_cseq.s);
+				shm_free(leg->contact.s);
 				return -1;
 			}
 		
 			leg->nr_uris = 0;
 			while (head) {
-				leg->route_uris[leg->nr_uris++] = head->nameaddr.uri;
+				if (parse_uri(head->nameaddr.uri.s,head->nameaddr.uri.len,
+							&suri) != 0) {
+					LM_ERR("failed to parse URI\n");
+					shm_free(leg->tag.s);
+					shm_free(leg->r_cseq.s);
+					shm_free(leg->contact.s);
+					free_rr(&head);
+					return -1;
+				}
+
+				leg->route_uris[leg->nr_uris].s = head->nameaddr.uri.s;
+				proto_len = (suri.type == SIP_URI_T || suri.type == TEL_URI_T)?4:5;
+				leg->route_uris[leg->nr_uris].len = proto_len + suri.user.len + 
+					suri.passwd.len + suri.host.len + suri.port.len;
+
+				leg->nr_uris++;
 				head = head->next;
 			}
 
@@ -381,6 +397,7 @@ int dlg_add_leg_info(struct dlg_cell *dlg, str* tag, str *rr, str *contact,
 		dlg->legs_no[DLG_LEGS_USED]-1, dlg,
 		leg->tag.len,leg->tag.s,
 		leg->r_cseq.len,leg->r_cseq.s );
+
 	return 0;
 }
 
