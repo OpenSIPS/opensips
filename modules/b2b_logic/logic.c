@@ -56,6 +56,9 @@
 
 static str maxfwd_hdr={"Max-Forwards: 70\r\n", 18};
 extern b2b_scenario_t* script_scenarios;
+extern int_str b2bl_key_avp_name;
+extern unsigned short b2bl_key_avp_type;
+
 int b2b_scenario_parse_uri(xmlNodePtr value_node, char* value_content,
 		b2bl_tuple_t* tuple, struct sip_msg* msg, str* client_to);
 
@@ -817,6 +820,7 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 	int statuscode;
 	int ret;
 	unsigned int method_value;
+	int_str avp_val;
 
 	if(b2bl_key == NULL)
 	{
@@ -876,6 +880,17 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 	}
 
 	LM_DBG("b2b_entity key = %.*s\n", key->len, key->s);
+
+	if (b2bl_key_avp_name.n)
+	{
+		destroy_avps( b2bl_key_avp_type, b2bl_key_avp_name, 1);
+		avp_val.s = *b2bl_key;
+		if(add_avp(AVP_VAL_STR|b2bl_key_avp_type, b2bl_key_avp_name, avp_val)!=0)
+		{
+			LM_ERR("failed to build b2bl_key avp\n");
+			return -1;
+		}
+	}
 
 	if(type == B2B_REPLY)
 	{
@@ -2439,6 +2454,10 @@ int b2b_init_request(struct sip_msg* msg, str* arg1, str* arg2, str* arg3,
 	str* args[5];
 	b2b_scenario_t* scenario_struct;
 	str* key;
+	int_str avp_val;
+
+	if (b2bl_key_avp_name.n)
+		destroy_avps( b2bl_key_avp_type, b2bl_key_avp_name, 1);
 
 	/* find the b2b_logic key for the tuple */
 	/* it will encode the position in the hash table */
@@ -2457,7 +2476,18 @@ int b2b_init_request(struct sip_msg* msg, str* arg1, str* arg2, str* arg3,
 
 	key = init_request(msg, scenario_struct, args, 0, 0);
 	if(key)
+	{
+		if (b2bl_key_avp_name.n)
+		{
+			avp_val.s = *key;
+			if(add_avp(AVP_VAL_STR|b2bl_key_avp_type, b2bl_key_avp_name, avp_val)!=0)
+			{
+				LM_ERR("failed to build b2bl_key avp\n");
+				return -1;
+			}
+		}
 		return 1;
+	}
 	return -1;
 }
 

@@ -93,6 +93,10 @@ int use_init_sdp = 0;
 enum b2bl_caller_type b2bl_caller;
 static unsigned int max_duration = 12*3600;
 
+int_str b2bl_key_avp_name;
+unsigned short b2bl_key_avp_type;
+static str b2bl_key_avp_param = {NULL, 0};
+
 static str db_url= {0, 0};
 static db_con_t *b2bl_db = NULL;
 static db_func_t b2bl_dbf;
@@ -152,6 +156,7 @@ static param_export_t params[]=
 	{"db_url",          STR_PARAM,                &db_url.s                  },
 	{"dbtable",         STR_PARAM,                &dbtable.s                 },
 	{"max_duration",    INT_PARAM,                &max_duration              },
+	{"b2bl_key_avp",    STR_PARAM,                &b2bl_key_avp_param.s      },
 	{0,                    0,                          0                     }
 };
 
@@ -185,6 +190,7 @@ static int mod_init(void)
 {
 	char* p = NULL;
 	int i = 0, j;
+	pv_spec_t avp_spec;
 
 	LM_DBG("start\n");
 
@@ -266,6 +272,26 @@ static int mod_init(void)
 	if(b2bl_db)
 		b2bl_dbf.close(b2bl_db);
 	b2bl_db = NULL;
+
+	if (b2bl_key_avp_param.s)
+		b2bl_key_avp_param.len = strlen(b2bl_key_avp_param.s);
+
+	if (b2bl_key_avp_param.s && b2bl_key_avp_param.len > 0)
+	{
+		if (pv_parse_spec(&b2bl_key_avp_param, &avp_spec)==0 || avp_spec.type!=PVT_AVP) {
+			LM_ERR("malformed or non AVP %.*s AVP definition\n",
+				b2bl_key_avp_param.len, b2bl_key_avp_param.s);
+			return -1;
+		}
+		if (pv_get_avp_name(0, &(avp_spec.pvp), &b2bl_key_avp_name, &b2bl_key_avp_type)!=0){
+			LM_ERR("[%.*s]- invalid AVP definition\n", b2bl_key_avp_param.len,
+					b2bl_key_avp_param.s);
+			return -1;
+		}
+	} else {
+		b2bl_key_avp_name.n = 0;
+		b2bl_key_avp_type = 0;
+	}
 
 	/* parse extra headers */
 	if(custom_headers.s)
@@ -658,6 +684,7 @@ static int child_init(int rank)
 
 	return 0;
 }
+
 b2b_scenario_t* get_scenario_id_list(str* sid, b2b_scenario_t* list)
 {
 	b2b_scenario_t* scenario;
