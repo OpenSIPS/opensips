@@ -912,7 +912,8 @@ static struct mi_root* mi_b2b_bridge(struct mi_root* cmd, void* param)
 	str key;
 	b2bl_tuple_t* tuple;
 	str new_dest;
-	b2bl_entity_id_t* entity, *old_entity;
+	unsigned int flag = 0;
+	b2bl_entity_id_t* entity, *old_entity, *bridging_entity;
 	struct sip_uri uri;
 	str meth_inv = {INVITE, INVITE_LEN};
 	str meth_bye = {BYE, BYE_LEN};
@@ -955,8 +956,25 @@ static struct mi_root* mi_b2b_bridge(struct mi_root* cmd, void* param)
 	node = node->next;
 	if(node)
 	{
-		
+		if (node->value.len==1)
+		{
+			if(strncmp(node->value.s, "0", 1)==0)
+				flag = 0;
+			else if(strncmp(node->value.s, "1", 1)==0)
+				flag = 1;
+			else
+				return init_mi_tree(404, "Invalid flag parameter", 22);
+		}
+		else
+		{
+			return init_mi_tree(404, "Invalid flag parameter", 22);
+		}
 	}
+	else
+	{
+		return init_mi_tree(404, "Invalid flag parameter", 22);
+	}
+
 	if(b2bl_parse_key(&key, &hash_index, &local_index) < 0)
 	{
 		LM_ERR("Failed to parse key '%.*s'\n", key.len, key.s);
@@ -979,8 +997,23 @@ static struct mi_root* mi_b2b_bridge(struct mi_root* cmd, void* param)
 		goto error;
 	}
 
+	if (flag)
+	{
+		/* For now, this scenario is not supported */
+		LM_WARN("flag '%d' not supported for now\n", flag);
+		return init_mi_tree(404, "flag not supported", 18);
+		/*
+		old_entity = tuple->server;
+		bridging_entity = tuple->clients;
+		*/
+	}
+	else
+	{
+		old_entity = tuple->clients;
+		bridging_entity = tuple->server;
+	}
+
 	/* send BYE to old client */
-	old_entity = tuple->clients;
 	if(old_entity == NULL)
 	{
 		LM_ERR("Wrong dialog id\n");
@@ -999,16 +1032,16 @@ static struct mi_root* mi_b2b_bridge(struct mi_root* cmd, void* param)
 	}
 	old_entity->peer = NULL;
 
-	tuple->bridge_entities[0]= tuple->server;
+	tuple->bridge_entities[0]= bridging_entity;
 	tuple->bridge_entities[1]= entity;
 
-	tuple->server->peer = entity;
-	entity->peer = tuple->server;
+	bridging_entity->peer = entity;
+	entity->peer = bridging_entity;
 
 	tuple->scenario_state = B2B_BRIDGING_STATE;
 
 
-	b2b_api.send_request(B2B_SERVER, &tuple->server->key, &meth_inv,
+	b2b_api.send_request(B2B_SERVER, &bridging_entity->key, &meth_inv,
 				 0, 0, tuple->server->dlginfo);
 
 	lock_release(&b2bl_htable[hash_index].lock);
