@@ -454,7 +454,7 @@ int acc_db_init(const str* db_url)
 	}
 
 	acc_db_close();
-	
+
 	acc_db_init_keys();
 
 	return 0;
@@ -480,6 +480,7 @@ void acc_db_close(void)
 {
 	if (db_handle && acc_dbf.close)
 		acc_dbf.close(db_handle);
+	db_handle = NULL;
 }
 
 
