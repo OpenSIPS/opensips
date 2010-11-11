@@ -33,6 +33,7 @@
 #include "../../error.h"
 #include "../../parser/parse_from.h"
 #include "../../parser/parse_content.h"
+#include "../../parser/parse_methods.h"
 #include "../../parser/parse_hname2.h"
 #include "../../ut.h"
 #include "../../trim.h"
@@ -348,7 +349,7 @@ int process_bridge_bye(struct sip_msg* msg,  b2bl_tuple_t* tuple,
 		return -1;
 	}
 
-	b2b_api.send_reply(entity->type, &entity->key, 200, &ok,
+	b2b_api.send_reply(entity->type, &entity->key, METHOD_BYE, 200, &ok,
 			0, 0, entity->dlginfo);
 
 	return process_bridge_dialog_end(tuple, entity_no, entity);
@@ -527,9 +528,10 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 		 * to send body in ACK */
 		if(!(tuple->sdp.s && bentity0->type == B2B_CLIENT))
 		{
-			LM_DBG("Don't send body because the tuple already has a body - so it was used in invite\n");
 			ack_body = body;
 		}
+		else
+			LM_DBG("Don't send body because the tuple already has a body - so it was used in invite\n");
 
 		if(b2b_api.send_request(bentity0->type, &bentity0->key, &method,
 				extra_headers, ack_body, bentity0->dlginfo) < 0)
@@ -546,6 +548,8 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 			return -1;
 		}
 
+		tuple->bridge_entities[1]->peer = tuple->bridge_entities[0];
+		tuple->bridge_entities[0]->peer = tuple->bridge_entities[1];
 		/* now I have finnished the BRIDGING scenario -> mark this in the record */
 		if(tuple->bridge_entities[2] == NULL)
 		{
@@ -641,6 +645,7 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 	int state = -1;
 	str attr;
 	int statuscode;
+	unsigned int method_value;
 
 	if(b2bl_key == NULL)
 	{
@@ -703,7 +708,13 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 
 	if(type == B2B_REPLY)
 	{
-		str method = get_cseq(msg)->method;
+		method = get_cseq(msg)->method;
+		if(parse_method(method.s, method.s+method.len, &method_value)< 0)
+		{
+			LM_ERR("Failed to parse method\n");
+			goto error;
+		}
+
 		statuscode = msg->first_line.u.reply.statuscode;
 
 		/* if a disconnected entity -> do nothing */
@@ -727,7 +738,7 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 				/* if the scenario state is B2B_BRIDGING_STATE -> we should have a reply for INVITE */
 				/* extract the method from Cseq header */
 
-				if(method.len != INVITE_LEN || strncmp(method.s, INVITE, INVITE_LEN)!=0 )
+				if(method_value == METHOD_INVITE)
 				{
 					LM_ERR("Wrong scenario state [B2B_BRIDGING_STATE] for this"
 						" reply(for method %.*s).\n", method.len, method.s);
@@ -775,7 +786,7 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 				goto done;
 			}
 			if(b2b_api.send_reply(peer->type, &peer->key,
-				statuscode,&msg->first_line.u.reply.reason,
+				METHOD_BYE, statuscode,&msg->first_line.u.reply.reason,
 				body.s?&body:0, extra_headers.s?&extra_headers:0,
 				peer->dlginfo) < 0)
 			{
@@ -786,13 +797,13 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 			}
 
 			/* if no other scenario rules defined and this is the reply for BYE */
-			if(method.len == BYE_LEN && strncmp(method.s, BYE, BYE_LEN)==0)
+			if(method_value == METHOD_BYE)
 			{
 				LM_DBG("Received reply for BYE - delete\n");
 				b2bl_delete(tuple, hash_index, 0);
 				goto done;
 			}
-			if(method.len == INVITE_LEN && strncmp(method.s, INVITE, INVITE_LEN)==0)
+			if(method_value == METHOD_INVITE)
 			{
 				if(entity->state!=DLG_CONFIRMED)
 				{
@@ -822,7 +833,7 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 		int request_id;
 
 		method = msg->first_line.u.request.method;
-		/* extract body if it has a body */
+		method_value = msg->first_line.u.request.method_value;
 
 		LM_DBG("I was notified that a request was received[%p]\n", tuple);
 		request_id = b2b_get_request_id(&method);
@@ -844,17 +855,17 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 			{
 				/* it means that a BYE was already sent to this entity but it did not reply */
 				str msg = str_init("OK");
-				b2b_api.send_reply(entity->type, &entity->key, 200, &msg, 0, 0,
-						entity->dlginfo);
+				b2b_api.send_reply(entity->type, &entity->key, METHOD_BYE,
+						200, &msg, 0, 0, entity->dlginfo);
 				if(entity->peer)
-					b2b_api.send_reply(entity->peer->type, &entity->peer->key, 200, &msg, 0, 0,
-							entity->peer->dlginfo);
+					b2b_api.send_reply(entity->peer->type, &entity->peer->key, METHOD_BYE,
+							200, &msg, 0, 0, entity->peer->dlginfo);
 			}
 			else
 			{
 				str msg = str_init("Not Acceptable");
-				b2b_api.send_reply(entity->type, &entity->key, 400, &msg, 0, 0,
-						entity->dlginfo);
+				b2b_api.send_reply(entity->type, &entity->key, method_value,
+						400, &msg, 0, 0, entity->dlginfo);
 			}
 			b2bl_delete(tuple, hash_index, 0);
 			goto done;
@@ -1048,8 +1059,8 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 				}
 				attr.len = strlen(attr.s);
 
-				b2b_api.send_reply(src, &entity->key, code,&attr,0, 0,
-						entity->dlginfo);
+				b2b_api.send_reply(src, &entity->key, method_value,
+						code, &attr, 0, 0, entity->dlginfo);
 				LM_DBG("Send reply with code [%d] and text [%s]\n", code, attr.s);
 
 				xmlFree(attr.s);

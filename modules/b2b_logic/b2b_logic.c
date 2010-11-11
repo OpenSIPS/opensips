@@ -920,7 +920,7 @@ static struct mi_root* mi_b2b_bridge(struct mi_root* cmd, void* param)
 	}
 	if(b2bl_parse_key(&key, &hash_index, &local_index) < 0)
 	{
-		LM_ERR("Failed to parse key\n");
+		LM_ERR("Failed to parse key '%.*s'\n", key.len, key.s);
 		return 0;
 	}
 
