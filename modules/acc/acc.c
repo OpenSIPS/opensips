@@ -332,6 +332,7 @@ void acc_db_close(void)
 {
 	if (db_handle && acc_dbf.close)
 		acc_dbf.close(db_handle);
+	db_handle = NULL;
 }
 
 
