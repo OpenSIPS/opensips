@@ -1668,6 +1668,7 @@ int b2b_logic_bind(b2bl_api_t* api)
 	api->bridge_extern = b2bl_bridge_extern;
 	api->set_state     = b2bl_set_state;
 	api->bridge_2calls = b2bl_bridge_2calls;
+	api->bridge_msg    = b2bl_bridge_msg;
 	api->terminate_call= b2bl_terminate_call;
 
 	return 0;

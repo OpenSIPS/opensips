@@ -1946,10 +1946,12 @@ dummy_reply:
 			memset(&dummy_msg, 0, sizeof(struct sip_msg));
 			dummy_msg.first_line.type = SIP_REPLY;
 			dummy_msg.first_line.u.reply.statuscode = statuscode;
+			dummy_msg.first_line.u.reply.reason.s = "Timeout";
+			dummy_msg.first_line.u.reply.reason.len = 7;
 			memset(&cb, 0, sizeof(struct cseq_body));
 			memset(&cseq, 0, sizeof(struct hdr_field));
 			cb.method = t->method;
-			
+
 			cseq.parsed = &cb;
 			dummy_msg.cseq = &cseq;
 			msg = &dummy_msg;

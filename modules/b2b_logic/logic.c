@@ -2782,3 +2782,139 @@ error:
 	lock_release(&b2bl_htable[hash_index].lock);
 	return -1;
 }
+
+
+/* Bridge an initial Invite with an existing dialog */
+/* key and entity_no identity the existing call and the which entity from the call
+ * to bridge (0 or 1) */
+int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no)
+{
+	b2bl_tuple_t* tuple;
+	unsigned int hash_index, local_index;
+	b2bl_entity_id_t *e2= 0;
+	b2bl_entity_id_t *e;
+	str* server_id;
+	str body;
+	str to_uri, from_uri;
+
+	if(!msg || !key)
+	{
+		LM_ERR("Wrong arguments [%p] [%p]\n", msg, key);
+		return -1;
+	}
+
+	if(b2bl_parse_key(key, &hash_index, &local_index) < 0)
+	{
+		LM_ERR("Failed to parse key [%.*s]\n", key->len, key->s);
+		return -1;
+	}
+
+	/* extract the entity and delete the tuple */
+	lock_get(&b2bl_htable[hash_index].lock);
+
+	tuple = b2bl_search_tuple_safe(hash_index, local_index);
+	if(tuple == NULL)
+	{
+		LM_ERR("No entity found\n");
+		goto error;
+	}
+	if(entity_no!=0 && entity_no!=1)
+	{
+		LM_ERR("entity_no param can take only 0 or 1 value, got [%d]\n", entity_no);
+		goto error;
+	}
+
+	if(!tuple->bridge_entities[entity_no] || tuple->bridge_entities[entity_no]->disconnected)
+	{
+		LM_ERR("Can not bridge requested entity [%p]\n", tuple->bridge_entities[entity_no]);
+		goto error;
+	}
+	e2 = tuple->bridge_entities[entity_no];
+	e = tuple->bridge_entities[(entity_no?0:1)];
+
+	if(e2->state != DLG_CONFIRMED)
+	{
+		LM_ERR("Wrong state for entity ek= [%.*s], tk=[%.*s]\n",e2->key.len,
+				e2->key.s, key->len, key->s);
+		goto error;
+	}
+	if(e2->type == B2B_SERVER)
+	{
+		LM_ERR("Connecting an entity which was initially a UAS is not supported yet\n");
+		goto error;
+	}
+
+	if(e)
+	{
+		LM_DBG("terminating b2bl_entity [%p:%.*s] type [%d]\n",
+					e, e->key.len, e->key.s, e->type);
+		if(e->disconnected)
+			b2b_api.send_reply(e->type,&e->key,METHOD_BYE,200,&ok,0,0,e->dlginfo);
+		else
+			b2b_end_dialog(e, tuple);
+		e->peer = NULL;
+	}
+
+	/* create server entity from Invite */
+
+	if(b2b_msg_get_to(msg, &to_uri)< 0 || b2b_msg_get_from(msg, &from_uri)< 0)
+	{
+		LM_ERR("Failed to get to or from from the message\n");
+		return 0;
+	}
+	server_id = b2b_api.server_new(msg, b2b_server_notify, tuple->key);
+	if(server_id == NULL)
+	{
+		LM_ERR("failed to create new b2b server instance\n");
+		goto error;
+	}
+
+	tuple->server = b2bl_create_new_entity(B2B_SERVER, server_id, &to_uri, &from_uri,
+			0,0, msg);
+	if(tuple->server == NULL)
+	{
+		LM_ERR("Failed to create server entity\n");
+		goto error;
+	}
+
+	tuple->server->peer = e2;
+	e2->peer = tuple->server;
+
+	tuple->server->stats.start_time = get_ticks();
+	tuple->server->stats.call_time = 0;
+
+	/* send reInvite to the old entity*/
+	if(msg->content_length)
+	{
+		body.len = get_content_length(msg);
+		if(body.len != 0 )
+		{
+			body.s=get_body(msg);
+			if (body.s== NULL) 
+			{
+				LM_ERR("cannot extract body\n");
+				goto error;
+			}
+		}
+	}
+
+	if(b2b_api.send_request(e2->type, &e2->key, &method_invite,
+			tuple->extra_headers, &body, e2->dlginfo) > 0)
+	{
+		LM_ERR("Failed to send reInvite\n");
+		goto error;
+	}
+	tuple->lifetime = -1;
+
+	tuple->bridge_entities[0] = e2;
+	tuple->bridge_entities[1] = tuple->server;
+
+	lock_release(&b2bl_htable[hash_index].lock);
+	return 0;
+
+error:
+	if(tuple)
+		b2b_mark_todel(tuple);
+	lock_release(&b2bl_htable[hash_index].lock);
+	return -1;
+}

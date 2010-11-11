@@ -51,6 +51,9 @@ int b2bl_set_state(str* key, int state);
 int b2bl_bridge_2calls(str* key1, str* key2);
 typedef int (*b2bl_bridge_2calls_t)(str* key1, str* key2);
 
+int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no);
+typedef int (*b2bl_bridge_msg_t)(struct sip_msg* msg, str* key, int entity_no);
+
 typedef struct b2bl_api
 {
 	b2bl_init_f init;
@@ -59,6 +62,7 @@ typedef struct b2bl_api
 	b2bl_bridge_2calls_t bridge_2calls;
 	b2bl_terminate_call_t terminate_call;
 	b2bl_set_state_f set_state;
+	b2bl_bridge_msg_t bridge_msg;
 }b2bl_api_t;
 
 str* internal_init_scenario(struct sip_msg* msg, str* name, str* args[5],
