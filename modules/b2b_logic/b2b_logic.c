@@ -999,13 +999,8 @@ static struct mi_root* mi_b2b_bridge(struct mi_root* cmd, void* param)
 
 	if (flag)
 	{
-		/* For now, this scenario is not supported */
-		LM_WARN("flag '%d' not supported for now\n", flag);
-		return init_mi_tree(404, "flag not supported", 18);
-		/*
 		old_entity = tuple->server;
 		bridging_entity = tuple->clients;
-		*/
 	}
 	else
 	{
@@ -1041,8 +1036,8 @@ static struct mi_root* mi_b2b_bridge(struct mi_root* cmd, void* param)
 	tuple->scenario_state = B2B_BRIDGING_STATE;
 
 
-	b2b_api.send_request(B2B_SERVER, &bridging_entity->key, &meth_inv,
-				 0, 0, tuple->server->dlginfo);
+	b2b_api.send_request(bridging_entity->type, &bridging_entity->key, &meth_inv,
+				 0, 0, bridging_entity->dlginfo);
 
 	lock_release(&b2bl_htable[hash_index].lock);
 
