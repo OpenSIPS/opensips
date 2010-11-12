@@ -303,8 +303,6 @@ int dlg_add_leg_info(struct dlg_cell *dlg, str* tag, str *rr, str *contact,
 										str *cseq, struct socket_info *sock)
 {
 	struct dlg_leg* leg;
-	struct sip_uri suri;
-	int proto_len;
 	rr_t *head = NULL;
 
 	if ( (dlg->legs_no[DLG_LEGS_ALLOCED]-dlg->legs_no[DLG_LEGS_USED])==0) {
@@ -356,22 +354,7 @@ int dlg_add_leg_info(struct dlg_cell *dlg, str* tag, str *rr, str *contact,
 		
 			leg->nr_uris = 0;
 			while (head) {
-				if (parse_uri(head->nameaddr.uri.s,head->nameaddr.uri.len,
-							&suri) != 0) {
-					LM_ERR("failed to parse URI\n");
-					shm_free(leg->tag.s);
-					shm_free(leg->r_cseq.s);
-					shm_free(leg->contact.s);
-					free_rr(&head);
-					return -1;
-				}
-
-				leg->route_uris[leg->nr_uris].s = head->nameaddr.uri.s;
-				proto_len = (suri.type == SIP_URI_T || suri.type == TEL_URI_T)?4:5;
-				leg->route_uris[leg->nr_uris].len = proto_len + suri.user.len + 
-					suri.passwd.len + suri.host.len + suri.port.len;
-
-				leg->nr_uris++;
+				leg->route_uris[leg->nr_uris++] = head->nameaddr.uri;
 				head = head->next;
 			}
 

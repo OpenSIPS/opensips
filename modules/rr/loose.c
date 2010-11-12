@@ -489,12 +489,11 @@ static inline int handle_sr(struct sip_msg* _m, struct hdr_field* _hdr, rr_t* _r
 	char* rem_off;
 	int rem_len;
 
-	     /* Next hop is strict router, save R-URI here */
+	/* Next hop is strict router, save R-URI here */
 	if (save_ruri(_m) < 0) {
 		LM_ERR("failed to save Request-URI\n");
 		return -1;
 	}
-	
 	
 	/* Put the first Route in Request-URI */
 
@@ -520,6 +519,9 @@ static inline int handle_sr(struct sip_msg* _m, struct hdr_field* _hdr, rr_t* _r
 		LM_ERR("failed to remove Route HF\n");
 		return -9;
 	}
+
+	/* TODO - both are deleted. ME and Strict */
+	LM_ERR("deleting [%.*s]\n",rem_len,rem_off);
 
 	_r->deleted = 1;
 
@@ -757,7 +759,7 @@ static inline int after_strict(struct sip_msg* _m)
 			return RR_ERROR;
 		}
 
-		del_rt->deleted = 1;
+//		del_rt->deleted = 1;
 	}
 	
 	/* run RR callbacks -bogdan */
@@ -803,6 +805,11 @@ static inline int after_loose(struct sip_msg* _m, int preloaded)
 		routed_msg_id = _m->id;
 		routed_params = puri.params;
 		removed_routes++;
+
+		/* if last route in header, gonna get del_lumped now,
+		 * if not, it will be taken care of later
+		 * Mark it now as deleted */
+		rt->deleted = 1;
 
 		if (!rt->next) {
 			/* No next route in the same header, remove the whole header
@@ -1209,8 +1216,6 @@ str* get_route_set(struct sip_msg *msg,int *nr_routes)
 {
 	static str uris[MAX_RR_HDRS];
 	struct hdr_field *it;
-	struct sip_uri suri;
-	int proto_len;
 	rr_t *p;
 	int n = 0;
 
@@ -1220,10 +1225,10 @@ str* get_route_set(struct sip_msg *msg,int *nr_routes)
 		return 0;
 	}
 
-	if (routing_type & ROUTING_SS)
+	if (routing_type & ROUTING_SS || routing_type & ROUTING_LS)
 	{
 		/* must manually insert RURI, as it was part
-		 * of the first route */
+		 * of the route deleted to make up for strict routing */
 		uris[n++] = msg->new_uri;
 	}
 
@@ -1241,20 +1246,8 @@ str* get_route_set(struct sip_msg *msg,int *nr_routes)
 		{
 			if (p->deleted == 0)
 			{
-				if (parse_uri(p->nameaddr.uri.s,p->nameaddr.uri.len,&suri) != 0)
-				{
-					LM_ERR("failed to parse URI\n");
-					return 0;
-				}
-
-				uris[n].s = p->nameaddr.uri.s;
-				proto_len = (suri.type == SIP_URI_T || suri.type == TEL_URI_T)?4:5;
-				uris[n].len = proto_len + suri.user.len + suri.passwd.len + 
-					suri.host.len + suri.port.len;
-
+				uris[n++] = p->nameaddr.uri;
 				LM_DBG("URI = [%.*s]\n",uris[n].len,uris[n].s);
-
-				n++;
 				if(n==MAX_RR_HDRS)
 				{
 					LM_ERR("too many RR\n");
