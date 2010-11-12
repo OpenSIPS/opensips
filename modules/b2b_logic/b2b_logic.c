@@ -25,6 +25,7 @@
  * --------
  *  2009-08-03  initial version (Anca Vamanu)
  *  2010-11-02  new mi function: mi_b2b_list (Ovidiu Sas)
+ *  2010-11-12  new cmd: b2b_bridge_request (Ovidiu Sas)
  */
 
 #include <stdio.h>
@@ -40,6 +41,7 @@
 #include "../../parser/parse_content.h"
 #include "../../ut.h"
 #include "../../mem/mem.h"
+#include "../../mod_fix.h"
 
 #include "records.h"
 #include "pidf.h"
@@ -65,6 +67,7 @@ void b2bl_clean(unsigned int ticks, void* param);
 void b2bl_db_update(unsigned int ticks, void* param);
 int  b2b_init_request(struct sip_msg* msg, str* arg1, str* arg2, str* arg3,
 		str* arg4, str* arg5, str* arg6);
+int  b2b_bridge_request(struct sip_msg* msg, str* arg1, str* arg2);
 
 /** Global variables */
 b2b_api_t b2b_api;
@@ -139,6 +142,7 @@ static cmd_export_t cmds[]=
 	{"b2b_init_request", (cmd_function)b2b_init_request, 2 , fixup_b2b_logic , 0 , REQUEST_ROUTE},
 	{"b2b_init_request", (cmd_function)b2b_init_request, 1 , fixup_b2b_logic , 0 , REQUEST_ROUTE},
 	{"b2b_init_request", (cmd_function)b2b_init_request, 0 , 0               , 0 , REQUEST_ROUTE},
+	{"b2b_bridge_request",(cmd_function)b2b_bridge_request,2,fixup_pvar_pvar , 0 , REQUEST_ROUTE},
 	{"b2b_logic_bind",   (cmd_function)b2b_logic_bind,   1 , 0,  0,  0},
 	{ 0,                 0,                              0 , 0 , 0,  0}
 };
@@ -900,6 +904,52 @@ static struct mi_root* mi_trigger_scenario(struct mi_root* cmd, void* param)
 		return 0;
 	}
 	return init_mi_tree(200, "OK", 2);
+}
+
+
+int  b2b_bridge_request(struct sip_msg* msg, str* p1, str* p2)
+{
+	pv_value_t pv_val;
+	str key = {NULL, 0};
+	int entity_no;
+
+	if (p1 && (pv_get_spec_value(msg, (pv_spec_t *)p1, &pv_val) == 0))
+	{
+		if (pv_val.flags & PV_VAL_STR)
+		{
+			LM_DBG("got key:'%.*s'\n", pv_val.rs.len, pv_val.rs.s);
+			key = pv_val.rs;
+		} else {
+			LM_ERR("Unable to get key from PV that is not a string\n");
+			return -1;
+		}
+	} else {
+		LM_ERR("Unable to get key from pv:%p\n", p1);
+		return -1;
+	}
+
+	if (p2 && (pv_get_spec_value(msg, (pv_spec_t *)p2, &pv_val) == 0))
+	{
+		if (pv_val.flags & PV_VAL_INT)
+		{
+			entity_no = pv_val.ri;
+			LM_DBG("got entity_no %d\n", entity_no);
+		}
+		else if (pv_val.flags & PV_VAL_STR) {
+			if(str2int(&(pv_val.rs), (unsigned int*)&entity_no) != 0) {
+			LM_ERR("Unable to get entity_no from pv '%.*s'i\n",
+			pv_val.rs.len, pv_val.rs.s);
+			return -1;
+		}
+	} else {
+		LM_ERR("second pv not a str or int type\n");
+		return -1;
+	}
+	} else {
+		LM_ERR("Unable to get entity from pv:%p\n", p1);
+		return -1;
+	}
+	return b2bl_bridge_msg(msg, &key, entity_no);
 }
 
 
