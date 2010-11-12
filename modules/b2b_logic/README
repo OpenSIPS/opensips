@@ -8,8 +8,14 @@ Edited by
 
 Anca-Maria Vamanu
 
+Edited by
+
+Ovidiu Sas
+
    Copyright © 2009 Anca-Maria
    Vamanu
+
+   Copyright © 2010 VoIP Embedded, Inc.
    Revision History
    Revision $Revision: $ $Date: $
      __________________________________________________________
@@ -35,15 +41,18 @@ Anca-Maria Vamanu
               1.3.7. db_url (str)
               1.3.8. update_period (int)
               1.3.9. max_duration (int)
+              1.3.10. b2bl_key_avp (int)
 
         1.4. Exported Functions
 
               1.4.1. b2b_init_request
+              1.4.2. b2b_bridge_request(b2bl_key,entity_no)
 
         1.5. Exported MI Functions
 
               1.5.1. b2b_trigger_scenario
               1.5.2. b2b_bridge
+              1.5.3. b2b_list
 
    2. Developer Guide
 
@@ -54,6 +63,7 @@ Anca-Maria Vamanu
         2.5. bridge_2calls
         2.6. terminate_call
         2.7. set_state
+        2.8. bridge_msg
 
    List of Examples
 
@@ -66,7 +76,9 @@ Anca-Maria Vamanu
    1.7. Set db_url parameter
    1.8. Set update_period parameter
    1.9. Set update_period parameter
-   1.10. b2b_init_request usage
+   1.10. Set b2bl_key_avp parameter
+   1.11. b2b_init_request usage
+   1.12. b2b_bridge_request usage
    2.1. b2bl_api_t structure
 
 Chapter 1. Admin Guide
@@ -241,6 +253,24 @@ modparam("b2b_logic", "update_period", 60)
 modparam("b2b_logic", "max_duration", 7200)
 ...
 
+1.3.10. b2bl_key_avp (int)
+
+   The name of the Attribute-Value-Pair (AVP) used to store the
+   b2b_logic entity key. The avp will be set after calling
+   "b2b_init_request". The avp will be visible in b2b_entities
+   request/reply routes
+
+Note
+
+   The avp is not visible in local_route.
+
+   Default value is "NULL" (disabled).
+
+   Example 1.10. Set b2bl_key_avp parameter
+...
+modparam("b2b_logic", "b2bl_key_avp", "$avp(i:99)")
+...
+
 1.4. Exported Functions
 
 1.4.1.  b2b_init_request
@@ -259,16 +289,56 @@ modparam("b2b_logic", "max_duration", 7200)
    parameters is also specified as an attribute in the root node
    of the XML scenario.
 
-   NOTE: Do not call t_newtran() from the script on this request.
-   It will be called internally by the function. Calling
-   t_newtran() from the script will result in the transaction
-   remaining in memory for ever.
+Note
 
-   Example 1.10. b2b_init_request usage
+   Do not call t_newtran() from the script on this request. It
+   will be called internally by the function. Calling t_newtran()
+   from the script will result in the transaction remaining in
+   memory for ever.
+
+   Example 1.11. b2b_init_request usage
 ...
 if(is_method("INVITE") && !has_totag() && prepaid_user())
    b2b_init_request("prepaid", "sip:320@opensips.org:5070",
       "sip:321@opensips.org:5070"));
+...
+
+1.4.2.  b2b_bridge_request(b2bl_key,entity_no)
+
+   This function will bridge an initial INVITE with one of the
+   particapnts from an existing b2b dialog.
+
+   Parameters:
+     * b2bl_key - a pseudo-variable that contains the b2b_logic
+       key
+     * entity_no - a pseudo-variable that holds the entity of the
+       particapnt to bridge.
+
+   Example 1.12. b2b_bridge_request usage
+...
+modparam("b2b_logic", "b2bl_key_avp", "$avp(i:99)")
+...
+route(X)
+{
+   # handling b2b calls here
+   ...
+   b2b_init_request("top hiding");
+   xlog("L_INFO","[$mi] got b2bl_key='$avp(i:99)'\n");
+   # saving the b2b key into the local cache
+   cache_store("local","some_b2bl_key_identifier","$avp(i:99)");
+   ...
+}
+
+route(Y)
+{
+   # handling calls to bridge to existing b2b calls
+   ...
+   # retrieving the key of a b2b call
+   cache_fetch("local","some_b2bl_key_identifier", $avp(i:98) );
+   $var(entity) = 1;
+   b2b_bridge_request("$avp(i:98)","$var(entity)");
+   ...
+}
 ...
 
 1.5. Exported MI Functions
@@ -300,7 +370,7 @@ if(is_method("INVITE") && !has_totag() && prepaid_user())
    and BYE is set to the callee. You can instead bridge the callee
    if you send 1 as the third parameter.
 
-   Name: b2b_trigger_scenario
+   Name: b2b_bridge
 
    Parameters:
      * dialog-id : the id of the dialog. If you set the module
@@ -313,8 +383,30 @@ if(is_method("INVITE") && !has_totag() && prepaid_user())
        be bridged.
 
    MI FIFO Command Format:
-                opensipsctl fifo b2b_bridge 1020.30 sip:alice@opensips.o
-rg
+        :b2b_bridge:fifo_reply
+        1020.30
+        sip:alice@opensips.org
+        _empty_line_
+
+   opensipsctl Command Format:
+
+   opensipsctl b2b_bridge 1020.30 sip:alice@opensips.org
+
+1.5.3.  b2b_list
+
+   This command can be used to list the internals of b2b_logic
+   entities.
+
+   Name: b2b_list
+
+   Parameters: none
+
+   MI FIFO Command Format:
+        :b2b_list:_reply_fifo_file_
+        _empty_line_
+
+   opensipsctl Command Format:
+        opensipsctl fifo b2b_list
 
 Chapter 2. Developer Guide
 
@@ -343,6 +435,7 @@ typedef struct b2bl_api
         b2bl_bridge_2calls_t bridge_2calls;
         b2bl_terminate_call_t terminate_call;
         b2bl_set_state_f set_state;
+        b2bl_bridge_msg_t bridge_msg;
 }b2bl_api_t;
 ...
 
@@ -441,3 +534,21 @@ typedef int (*b2bl_set_state_f)(str* key, int state);
 ...
 
    Set the scenario state.
+
+2.8.  bridge_msg
+
+   Field type:
+...
+typedef int (*b2bl_bridge_msg_t)(struct sip_msg* msg, str* key, int enti
+ty_no);
+...
+
+   This function allows bridging an incoming call to an entity
+   from an existing call.
+
+   The first argument is the INVITE message of the current
+   incoming call.
+
+   The second argument is the b2bl_key of an existing call.
+
+   The third argument is the entity identifier.

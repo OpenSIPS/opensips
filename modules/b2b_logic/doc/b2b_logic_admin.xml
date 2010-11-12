@@ -255,6 +255,28 @@ modparam("b2b_logic", "max_duration", 7200)
 		</example>
 	</section>
 
+	<section>
+		<title><varname>b2bl_key_avp</varname> (int)</title>
+		<para>
+			The name of the Attribute-Value-Pair (AVP) used to store the
+			b2b_logic entity key.  The avp will be set after calling
+			<quote>b2b_init_request</quote>.  The avp will be visible
+			in b2b_entities request/reply routes
+		</para>
+		<note><para>The avp is not visible in local_route.</para></note>
+		<para>
+		<emphasis>Default value is <quote>NULL</quote> (disabled).</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>b2bl_key_avp</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("b2b_logic", "b2bl_key_avp", "$avp(i:99)")
+...
+	</programlisting>
+		</example>
+	</section>
+
 	</section>
 
 	<section>
@@ -268,6 +290,7 @@ modparam("b2b_logic", "max_duration", 7200)
 			on an initial INVITE for which a B2B scenario must be instantiated.
 			It is up to the script writer to decide which are the criteria to decide
 			for which messages certain scenarios must be instantiated.
+		</para>
 		<para>
 			The first parameter is the identifier for the scenario. This is defined
 			in the XML document as an attribute of the root node.
@@ -277,12 +300,11 @@ modparam("b2b_logic", "max_duration", 7200)
 			the xml scenario. The expected number of parameters is also specified as an attribute
 			in the root node of the XML scenario.
 		</para>
-	</para>
-	<para>
-		NOTE: Do not call t_newtran() from the script on this request. It will be called internally
+	<note><para>
+		Do not call t_newtran() from the script on this request. It will be called internally
 		by the function. Calling t_newtran() from the script will result in the transaction remaining
 		in memory for ever.
-	</para>
+	</para></note>
 		<example>
 			<title><function>b2b_init_request</function> usage</title>
 		<programlisting format="linespecific">
@@ -291,7 +313,57 @@ if(is_method("INVITE") &amp;&amp; !has_totag() &amp;&amp; prepaid_user())
    b2b_init_request("prepaid", "sip:320@opensips.org:5070",
       "sip:321@opensips.org:5070"));
 ...
-</programlisting>
+	</programlisting>
+		</example>
+	</section>
+	<section>
+		<title>
+		<function moreinfo="none">b2b_bridge_request(b2bl_key,entity_no)</function>
+		</title>
+		<para>
+			This function will bridge an initial INVITE with one of the
+			particapnts from an existing b2b dialog.
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>b2bl_key</emphasis> - a pseudo-variable that
+				contains the b2b_logic key
+			</para></listitem>
+			<listitem><para>
+				<emphasis>entity_no</emphasis> - a pseudo-variable that
+				holds the entity of the particapnt to bridge.
+			</para></listitem>
+		</itemizedlist>
+		<example>
+			<title><function>b2b_bridge_request</function> usage</title>
+		<programlisting format="linespecific">
+...
+modparam("b2b_logic", "b2bl_key_avp", "$avp(i:99)")
+...
+route(X)
+{
+   # handling b2b calls here
+   ...
+   b2b_init_request("top hiding");
+   xlog("L_INFO","[$mi] got b2bl_key='$avp(i:99)'\n");
+   # saving the b2b key into the local cache
+   cache_store("local","some_b2bl_key_identifier","$avp(i:99)");
+   ...
+}
+
+route(Y)
+{
+   # handling calls to bridge to existing b2b calls
+   ...
+   # retrieving the key of a b2b call
+   cache_fetch("local","some_b2bl_key_identifier", $avp(i:98) );
+   $var(entity) = 1;
+   b2b_bridge_request("$avp(i:98)","$var(entity)");
+   ...
+}
+...
+		</programlisting>
 		</example>
 	</section>
 
@@ -343,7 +415,7 @@ if(is_method("INVITE") &amp;&amp; !has_totag() &amp;&amp; prepaid_user())
 			the callee if you send 1 as the third parameter.
 		</para>
 		<para>
-		Name: <emphasis>b2b_trigger_scenario</emphasis>
+		Name: <emphasis>b2b_bridge</emphasis>
 		</para>
 		<para>Parameters:</para>
 		<itemizedlist>
@@ -361,13 +433,43 @@ if(is_method("INVITE") &amp;&amp; !has_totag() &amp;&amp; prepaid_user())
 					It is optional. If not present the caller will be bridged.</para>
 			</listitem>
 		</itemizedlist>
-		<para>
-		MI FIFO Command Format:
-		</para>
+		<para>MI FIFO Command Format:</para>
 	<programlisting  format="linespecific">
-		opensipsctl fifo b2b_bridge 1020.30 sip:alice@opensips.org
+	:b2b_bridge:fifo_reply
+	1020.30
+	sip:alice@opensips.org
+	_empty_line_
+	</programlisting>
+		<para>opensipsctl Command Format:</para>
+	<programlisting  format="linespecific">
+	</programlisting>
+	opensipsctl b2b_bridge 1020.30 sip:alice@opensips.org
+	</section>
+
+	<section>
+		<title>
+		<function moreinfo="none">b2b_list</function>
+		</title>
+		<para>
+			This command can be used to list the internals of b2b_logic entities.
+		</para>
+		<para>
+		Name: <emphasis>b2b_list</emphasis>
+		</para>
+		<para>Parameters: <emphasis>none</emphasis></para>
+		<itemizedlist>
+		</itemizedlist>
+		<para>MI FIFO Command Format:</para>
+	<programlisting  format="linespecific">
+	:b2b_list:_reply_fifo_file_
+	_empty_line_
+	</programlisting>
+		<para>opensipsctl Command Format:</para>
+	<programlisting  format="linespecific">
+	opensipsctl fifo b2b_list
 	</programlisting>
 	</section>
+
 </section>
 
 </chapter>

@@ -33,6 +33,7 @@ typedef struct b2bl_api
 	b2bl_bridge_2calls_t bridge_2calls;
 	b2bl_terminate_call_t terminate_call;
 	b2bl_set_state_f set_state;
+	b2bl_bridge_msg_t bridge_msg;
 }b2bl_api_t;
 ...
 </programlisting>
@@ -217,6 +218,33 @@ typedef int (*b2bl_set_state_f)(str* key, int state);
 </programlisting>
 	<para>
    Set the scenario state.
+	</para>
+</section>
+
+<section>
+		<title>
+		<function moreinfo="none">bridge_msg</function>
+		</title>
+		<para>
+			Field type:
+		</para>
+			<programlisting format="linespecific">
+...
+typedef int (*b2bl_bridge_msg_t)(struct sip_msg* msg, str* key, int entity_no);
+...
+</programlisting>
+	<para>
+   This function allows bridging an incoming call to an entity from an
+   existing call.
+	</para>
+	<para>
+   The first argument is the INVITE message of the current incoming call.
+	</para>
+	<para>
+   The second argument is the b2bl_key of an existing call.
+	</para>
+	<para>
+   The third argument is the entity identifier.
 	</para>
 </section>
 

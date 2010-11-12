@@ -36,13 +36,26 @@
 		    <email>anca@opensips.org</email>
 		</address>
 	    </editor>
+	    <editor>
+		<firstname>Ovidiu</firstname>
+		<surname>Sas</surname>
+		<address>
+		    <email>osas@voipembedded.com</email>
+		</address>
+	    </editor>
 	  	</authorgroup>
 	<copyright>
 		<year>2009</year>
 		<holder>
 		<firstname>Anca-Maria</firstname>
 		<surname>Vamanu</surname>
-	    </holder>
+		</holder>
+	</copyright>
+	<copyright>
+		<year>2010</year>
+		<holder>
+		<ulink url="http://www.voipembedded.com">VoIP Embedded, Inc.</ulink>
+		</holder>
 	</copyright>
 	<revhistory>
 	    <revision>
