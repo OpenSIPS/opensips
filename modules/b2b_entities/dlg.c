@@ -62,9 +62,9 @@ b2b_dlg_t* b2b_search_htable_dlg(b2b_table table, unsigned int hash_index,
 	dlg_leg_t* leg;
 
 	if(to_tag)
-		LM_DBG("search totag = %.*s\n", to_tag->len, to_tag->s);
+		LM_DBG("searching   totag [%.*s]\n", to_tag->len, to_tag->s);
 	if(from_tag)
-		LM_DBG("search fromtag = %.*s\n", from_tag->len, from_tag->s);
+		LM_DBG("searching fromtag [%.*s]\n", from_tag->len, from_tag->s);
 	dlg= table[hash_index].first;
 	while(dlg)
 	{
@@ -85,15 +85,15 @@ b2b_dlg_t* b2b_search_htable_dlg(b2b_table table, unsigned int hash_index,
 				strncmp(dlg_from_tag.s, from_tag->s, dlg_from_tag.len)==0
 				&& dlg->callid.len==callid->len && strncmp(dlg->callid.s, callid->s, callid->len)==0)
 			{
-				LM_DBG("Complete match for the server dialog %p!\n", dlg);
+				LM_DBG("Complete match for the server dialog [%p]\n", dlg);
 				return dlg;
 			}
 		
 		}
 		else
 		{
-			LM_DBG("dialog totag = %.*s\n", dlg->tag[CALLER_LEG].len, dlg->tag[CALLER_LEG].s);
-			LM_DBG("dialog state = %d\n", dlg->state);
+			LM_DBG("dialog totag [%.*s] with state %d\n",
+				dlg->tag[CALLER_LEG].len, dlg->tag[CALLER_LEG].s, dlg->state);
 			/* it is an UAC dialog (callid is the key)*/
 			if(dlg->tag[CALLER_LEG].len == to_tag->len &&
 				strncmp(dlg->tag[CALLER_LEG].s, to_tag->s, to_tag->len)== 0)
@@ -713,7 +713,7 @@ logic_notify:
 					tmb.unref_cell(dlg->uas_tran);
 				}
 				dlg->uas_tran = tm_tran;
-				LM_DBG("Saved transaction - [%p] uas_tran=[%p]\n", dlg, tm_tran);
+				LM_DBG("Saved uas_tran=[%p] for dlg[%p]\n", tm_tran, dlg);
 			}
 		}
 		else
@@ -1427,15 +1427,13 @@ int b2b_send_request(enum b2b_entity_type et, str* b2b_key, str* method,
 
 	if(et == B2B_SERVER)
 	{
-		LM_DBG("Send request to a server entity\n");
 		table = server_htable;
 	}
 	else
 	{
-		LM_DBG("Send request to a client entity\n");
 		table = client_htable;
 	}
-	LM_DBG("Method = %.*s\n", method->len, method->s);
+	LM_DBG("Send request [%.*s] to entity type %d\n", method->len, method->s, et);
 
 	if(dlginfo)
 	{
@@ -1466,8 +1464,8 @@ int b2b_send_request(enum b2b_entity_type et, str* b2b_key, str* method,
 		goto error;
 	}
 
-	LM_DBG("Send request %.*s, for %.*s %p\n", method->len,
-			method->s, b2b_key->len, b2b_key->s, dlg);
+	LM_DBG("Send request [%.*s] for dlg[%p]->[%.*s]\n", method->len, method->s,
+			dlg, b2b_key->len, b2b_key->s);
 	if(dlg->state == B2B_TERMINATED)
 	{
 		LM_ERR("Can not send request in terminated state\n");
@@ -1481,7 +1479,6 @@ int b2b_send_request(enum b2b_entity_type et, str* b2b_key, str* method,
 		goto error;
 	}
 
-	LM_DBG("Send request method[%.*s] for dialog[%p]\n", method->len, method->s, dlg);
 	parse_method(method->s, method->s+method->len, &method_value);
 
 	if(dlg->state < B2B_CONFIRMED)
@@ -1510,7 +1507,7 @@ int b2b_send_request(enum b2b_entity_type et, str* b2b_key, str* method,
 	}
 
 	dlg->last_method = method_value;
-	LM_DBG("[%p] last_method= %d\n",dlg, dlg->last_method);
+	LM_DBG("dlg[%p] with last_method [%d]\n",dlg, dlg->last_method);
 	UPDATE_DBFLAG(dlg);
 
 	/* send request */

@@ -446,7 +446,7 @@ void store_b2b_dlg(b2b_table htable, unsigned int hsize, int type, int no_lock)
 	dlg_leg_t* leg;
 	b2b_dlg_t* dlg;
 
-	LM_DBG("store in db\n");
+	LM_DBG("storing b2b_entities type '%d' in db\n", type);
 	if(b2be_dbf.use_table(b2be_db, &dbtable)< 0)
 	{
 		LM_ERR("sql use table failed\n");
@@ -913,7 +913,6 @@ error:
 
 void b2b_entities_dump(int no_lock)
 {
-	LM_DBG("\n");
 	if(!server_htable || !client_htable)
 	{
 		LM_DBG("NULL pointers for hash tables\n");
