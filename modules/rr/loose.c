@@ -520,9 +520,6 @@ static inline int handle_sr(struct sip_msg* _m, struct hdr_field* _hdr, rr_t* _r
 		return -9;
 	}
 
-	/* TODO - both are deleted. ME and Strict */
-	LM_ERR("deleting [%.*s]\n",rem_len,rem_off);
-
 	_r->deleted = 1;
 
 	return 0;
@@ -613,6 +610,9 @@ static inline int after_strict(struct sip_msg* _m)
 		}
 		removed_routes++;
 
+		/* mark route hdr as deleted */
+		rt->deleted = 1;
+
 		if (!rt->next) {
 			/* No next route in the same header, remove the whole header
 			 * field immediately
@@ -621,9 +621,6 @@ static inline int after_strict(struct sip_msg* _m)
 				LM_ERR("failed to remove Route HF\n");
 				return RR_ERROR;
 			}
-
-			/* mark route hdr as deleted */
-			rt->deleted = 1;
 
 			res = find_next_route(_m, &hdr);
 			if (res < 0) {
@@ -686,7 +683,6 @@ static inline int after_strict(struct sip_msg* _m)
 		}
 
 		rt->deleted = 1;
-
 	} else {
 		LM_DBG("Next hop: '%.*s' is loose router\n",
 			uri.len, ZSW(uri.s));
@@ -716,10 +712,9 @@ static inline int after_strict(struct sip_msg* _m)
 				return RR_ERROR;
 			}
 			
-			/* mark route hdr as deleted */
-			rt->deleted = 1;
-
 			del_rt = (rr_t*)hdr->parsed;
+			/* mark route hdr as deleted */
+			del_rt->deleted = 1;
 		}
 
 		res = find_rem_target(_m, &hdr, &rt, &prev);
@@ -741,6 +736,9 @@ static inline int after_strict(struct sip_msg* _m)
 			return RR_ERROR;
 		}
 
+		/* mark remote contact route as deleted */
+		rt->deleted = 1;
+
 		/* The first character if uri will be either '<' when it is the 
 		 * only URI in a Route header field or ',' if there is more than 
 		 * one URI in the header field */
@@ -759,7 +757,6 @@ static inline int after_strict(struct sip_msg* _m)
 			return RR_ERROR;
 		}
 
-//		del_rt->deleted = 1;
 	}
 	
 	/* run RR callbacks -bogdan */
@@ -856,6 +853,8 @@ static inline int after_loose(struct sip_msg* _m, int preloaded)
 			}
 			removed_routes++;
 
+			rt->deleted = 1;
+
 			if (!rt->next) {
 				/* No next route in the same header, remove the whole header
 				 * field immediately */
@@ -863,8 +862,6 @@ static inline int after_loose(struct sip_msg* _m, int preloaded)
 					LM_ERR("failed to remove Route HF\n");
 					return RR_ERROR;
 				}
-
-				rt->deleted = 1;
 
 				res = find_next_route(_m, &hdr);
 				if (res < 0) {
@@ -1247,7 +1244,6 @@ str* get_route_set(struct sip_msg *msg,int *nr_routes)
 			if (p->deleted == 0)
 			{
 				uris[n++] = p->nameaddr.uri;
-				LM_DBG("URI = [%.*s]\n",uris[n].len,uris[n].s);
 				if(n==MAX_RR_HDRS)
 				{
 					LM_ERR("too many RR\n");

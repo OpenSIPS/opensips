@@ -1232,6 +1232,10 @@ int dlg_validate_dialog( struct sip_msg* req, struct dlg_cell *dlg)
 		}
 
 		for (i=0;i<nr_routes;i++)
+		{
+			LM_DBG("route %d. req=[%.*s],dlg=[%.*s]\n",
+					i,route_uris[i].len,route_uris[i].s,leg->route_uris[i].len,
+					leg->route_uris[i].s);
 			if (route_uris[i].len != leg->route_uris[i].len ||
 					memcmp(route_uris[i].s,leg->route_uris[i].s,route_uris[i].len)){
 				LM_ERR("Check failed for route number %d. req=[%.*s],dlg=[%.*s]\n",
@@ -1239,6 +1243,7 @@ int dlg_validate_dialog( struct sip_msg* req, struct dlg_cell *dlg)
 						leg->route_uris[i].s);
 				return -1;
 			}
+		}
 	}
 
 	LM_DBG("Route Headers succesfully validated\n");
