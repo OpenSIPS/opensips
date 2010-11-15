@@ -341,6 +341,12 @@ int b2b_restore_logic_info(enum b2b_entity_type type, str* key,
 	b2b_table table;
 	unsigned int hash_index, local_index;
 
+	if(server_htable== NULL)
+	{
+		LM_ERR("You have to load b2b_entities module before b2b_logic module\n");
+		return -1;
+	}
+
 	if(type == B2B_SERVER)
 	{
 		table = server_htable;
