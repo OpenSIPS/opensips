@@ -442,8 +442,8 @@ route(Y)
 	</programlisting>
 		<para>opensipsctl Command Format:</para>
 	<programlisting  format="linespecific">
-	</programlisting>
 	opensipsctl b2b_bridge 1020.30 sip:alice@opensips.org
+	</programlisting>
 	</section>
 
 	<section>

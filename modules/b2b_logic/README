@@ -389,8 +389,7 @@ route(Y)
         _empty_line_
 
    opensipsctl Command Format:
-
-   opensipsctl b2b_bridge 1020.30 sip:alice@opensips.org
+        opensipsctl b2b_bridge 1020.30 sip:alice@opensips.org
 
 1.5.3.  b2b_list
 
