@@ -1043,7 +1043,7 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 		method_value = msg->first_line.u.request.method_value;
 		/* extract body if it has a body */
 
-		LM_DBG("I was notified that a request was received[%p]\n", tuple);
+		LM_DBG("request received for tuple[%p]->[%.*s]\n", tuple, tuple->key->len, tuple->key->s);
 		request_id = b2b_get_request_id(&method);
 		if(request_id < 0)
 		{
@@ -1430,7 +1430,8 @@ send_usual_request:
 		}
 		if(peer && peer->key.s)
 		{
-			LM_DBG("Send request %.*s to peer\n", method.len, method.s);
+			LM_DBG("Send request [%.*s] to peer [%.*s]\n",
+				method.len, method.s, peer->key.len, peer->key.s);
 			if(b2b_api.send_request(peer->type, &peer->key, &method,
 				extra_headers.len?&extra_headers:0, body.len?&body:0,
 				peer->dlginfo) < 0)
