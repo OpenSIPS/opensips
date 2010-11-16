@@ -676,7 +676,8 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 			b2bl_delete_entity(bentity1, tuple);
 
 			tuple->bridge_entities[1] = entity;
-			b2bl_add_client_list(tuple, entity);
+			if (0 != b2bl_add_client(tuple, entity))
+				return -1;
 		}
 		else
 		{
@@ -760,7 +761,8 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 			}
 			entity->no = 1;
 			b2bl_delete_entity(tuple->bridge_entities[2], tuple);
-			b2bl_add_client_list(tuple, entity);
+			if (0 != b2bl_add_client(tuple, entity))
+				return -1;
 			/* original destination connected in the second step */
 			tuple->bridge_entities[2]= entity;
 		}
@@ -842,13 +844,19 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 	unsigned int method_value;
 	int_str avp_val;
 
-	LM_DBG("b2b_entities notification cb\n");
-
 	if(b2bl_key == NULL)
 	{
 		LM_ERR("'param' argument NULL\n");
 		return -1;
 	}
+	if(key == NULL)
+	{
+		LM_ERR("'key' argument NULL\n");
+		return -1;
+	}
+
+	LM_DBG("b2b_entities notification cb for [%.*s] with entity [%.*s]\n",
+			b2bl_key->len, b2bl_key->s, key->len, key->s);
 
 	if(b2bl_parse_key(b2bl_key, &hash_index, &local_index)< 0)
 	{
@@ -1788,7 +1796,8 @@ entity_search_done:
 		tuple->bridge_entities[0] = entity;
 		tuple->bridge_entities[1]= bridge_entities[1];
 
-		b2bl_add_client_list(tuple, entity);
+		if (0 != b2bl_add_client(tuple, entity))
+			goto error1;
 	}
 	/* save the pointers to the bridged entities ;
 	 * the first (index 0) is the one we sent the first message ( reInvite or Invite)*/
@@ -2385,7 +2394,8 @@ str* b2b_process_scenario_init(b2b_scenario_t* scenario_struct,struct sip_msg* m
 			}
 			pkg_free(client_id);
 
-			b2bl_add_client_list(tuple, client_entity);
+			if (0 != b2bl_add_client(tuple, client_entity))
+				goto error2;
 			client_entity->no = eno++;
 			clients_no++;
 		}
@@ -3021,10 +3031,8 @@ int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no)
 		goto error;
 	}
 
-	if (tuple->servers[0])
-		tuple->servers[1] = entity;
-	else
-		tuple->servers[0] = entity;
+	if (0 != b2bl_add_server(tuple, entity))
+		goto error;
 
 	entity->peer = bridging_entity;
 	bridging_entity->peer = entity;

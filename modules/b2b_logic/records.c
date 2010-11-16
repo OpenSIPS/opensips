@@ -266,25 +266,66 @@ void b2bl_delete_entity(b2bl_entity_id_t* entity, b2bl_tuple_t* tuple)
 	b2bl_print_tuple(tuple);
 }
 
-void b2bl_add_client_list(b2bl_tuple_t* tuple, b2bl_entity_id_t* entity)
+
+int b2bl_add_client(b2bl_tuple_t* tuple, b2bl_entity_id_t* entity)
 {
 	LM_INFO("adding entity [%p]->[%.*s] to tuple [%p]->[%.*s]\n",
 		entity, entity->key.len, entity->key.s,
 		tuple, tuple->key->len, tuple->key->s);
 
 	if (tuple->clients[0] == NULL)
+	{
+		if (tuple->clients[1])
+		{
+			LM_ERR("inconsistent clients state for tuple [%p]->[%.*s]\n",
+				tuple, tuple->key->len, tuple->key->s);
+			return -1;
+		}
 		tuple->clients[0] = entity;
+	}
 	else if (tuple->clients[1] == NULL)
 		tuple->clients[1] = entity;
 	else
 	{
-		// FIXME: we might wanna change the signature of the function here and return -1
 		LM_ERR("unable to add entity [%p]->[%.*s] to tuple [%p]->[%.*s], all spots taken\n",
 			entity, entity->key.len, entity->key.s,
 			tuple, tuple->key->len, tuple->key->s);
+		return -1;
 	}
 		
 	b2bl_print_tuple(tuple);
+	return 0;
+}
+
+
+int b2bl_add_server(b2bl_tuple_t* tuple, b2bl_entity_id_t* entity)
+{
+	LM_INFO("adding entity [%p]->[%.*s] to tuple [%p]->[%.*s]\n",
+		entity, entity->key.len, entity->key.s,
+		tuple, tuple->key->len, tuple->key->s);
+
+	if (tuple->servers[0] == NULL)
+	{
+		if (tuple->servers[1])
+		{
+			LM_ERR("inconsistent servers state for tuple [%p]->[%.*s]\n",
+				tuple, tuple->key->len, tuple->key->s);
+			return -1;
+		}
+		tuple->servers[0] = entity;
+	}
+	else if (tuple->servers[1] == NULL)
+		tuple->servers[1] = entity;
+	else
+	{
+		LM_ERR("unable to add entity [%p]->[%.*s] to tuple [%p]->[%.*s], all spots taken\n",
+			entity, entity->key.len, entity->key.s,
+			tuple, tuple->key->len, tuple->key->s);
+		return -1;
+	}
+		
+	b2bl_print_tuple(tuple);
+	return 0;
 }
 
 

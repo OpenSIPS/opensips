@@ -125,7 +125,8 @@ void b2bl_delete_entity(b2bl_entity_id_t* entity, b2bl_tuple_t* tuple);
 
 int b2b_extra_headers(struct sip_msg* msg, str* b2bl_key, str* extra_headers);
 
-void b2bl_add_client_list(b2bl_tuple_t* tuple, b2bl_entity_id_t* entity);
+int b2bl_add_client(b2bl_tuple_t* tuple, b2bl_entity_id_t* entity);
+int b2bl_add_server(b2bl_tuple_t* tuple, b2bl_entity_id_t* entity);
 
 void b2bl_db_delete(b2bl_tuple_t* tuple);
 
