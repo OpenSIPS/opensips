@@ -962,7 +962,8 @@ static struct mi_root* mi_b2b_bridge(struct mi_root* cmd, void* param)
 	str key;
 	b2bl_tuple_t* tuple;
 	str new_dest;
-	unsigned int flag = 0;
+	unsigned int entity_no = 0;
+	//unsigned int index;
 	b2bl_entity_id_t* entity, *old_entity, *bridging_entity;
 	struct sip_uri uri;
 	str meth_inv = {INVITE, INVITE_LEN};
@@ -974,12 +975,12 @@ static struct mi_root* mi_b2b_bridge(struct mi_root* cmd, void* param)
 	if(node == NULL)
 		return 0;
 
-	/* scenario ID */
+	/* b2bl_key */
 	key = node->value;
 	if(key.s == NULL || key.len== 0)
 	{
-		LM_ERR("Wrong dialog id parameter\n");
-		return init_mi_tree(404, "Empty dialog ID", 15);
+		LM_ERR("Wrong b2b_logic key parameter\n");
+		return init_mi_tree(404, "Empty b2bl key", 14);
 	}
 
 	/* new destination- must be a valid SIP URI */
@@ -1009,20 +1010,20 @@ static struct mi_root* mi_b2b_bridge(struct mi_root* cmd, void* param)
 		if (node->value.len==1)
 		{
 			if(strncmp(node->value.s, "0", 1)==0)
-				flag = 0;
+				entity_no = 0;
 			else if(strncmp(node->value.s, "1", 1)==0)
-				flag = 1;
+				entity_no = 1;
 			else
-				return init_mi_tree(404, "Invalid flag parameter", 22);
+				return init_mi_tree(404, "Invalid entity no parameter", 27);
 		}
 		else
 		{
-			return init_mi_tree(404, "Invalid flag parameter", 22);
+			return init_mi_tree(404, "Invalid entity no parameter", 27);
 		}
 	}
 	else
 	{
-		return init_mi_tree(404, "Invalid flag parameter", 22);
+		return init_mi_tree(404, "Invalid entity no parameter", 27);
 	}
 
 	if(b2bl_parse_key(&key, &hash_index, &local_index) < 0)
@@ -1047,16 +1048,10 @@ static struct mi_root* mi_b2b_bridge(struct mi_root* cmd, void* param)
 		goto error;
 	}
 
-	if (flag)
-	{
-		old_entity = tuple->server;
-		bridging_entity = tuple->clients;
-	}
-	else
-	{
-		old_entity = tuple->clients;
-		bridging_entity = tuple->server;
-	}
+	b2bl_print_tuple(tuple);
+
+	bridging_entity = tuple->bridge_entities[entity_no];
+	old_entity = tuple->bridge_entities[(entity_no?0:1)];
 
 	/* send BYE to old client */
 	if(old_entity == NULL)
@@ -1074,6 +1069,15 @@ static struct mi_root* mi_b2b_bridge(struct mi_root* cmd, void* param)
 		old_entity->disconnected = 1;
 		b2b_api.send_request(old_entity->type, &old_entity->key,
 				&meth_bye, 0, 0, old_entity->dlginfo);
+	}
+
+	if (old_entity->peer->peer == old_entity)
+		old_entity->peer->peer = NULL;
+	else
+	{
+		LM_ERR("Unexpected chain: old_entity=[%p] and old_entity->peer->peer=[%p]\n",
+			old_entity, old_entity->peer->peer);
+		goto error;
 	}
 	old_entity->peer = NULL;
 
@@ -1170,7 +1174,6 @@ static struct mi_root* mi_b2b_list(struct mi_root* cmd, void* param)
 	int i, len, index;
 	char* p;
 	b2bl_tuple_t* tuple;
-	b2bl_entity_id_t* c;
 	struct mi_root *rpl_tree;
 	struct mi_node *node=NULL, *node1=NULL, *rpl=NULL;
 	struct mi_attr* attr;
@@ -1206,32 +1209,33 @@ static struct mi_root* mi_b2b_list(struct mi_root* cmd, void* param)
 				if(attr == NULL) goto error;
 			}
 
-			c = tuple->server;
-			index = 0;
-			while(c)
+			for (index = 0; index < MAX_B2BL_ENT; index++)
 			{
-				p = int2str((unsigned long)(index), &len);
-				node1 = add_mi_node_child(node, MI_DUP_VALUE, "server", 6, p, len);
-				if(node1 == NULL) goto error;
-				if (internal_mi_print_b2bl_entity_id(node1, c)!=0)
-					goto error;
-				index++;
-				c = c->next;
+				if (tuple->servers[index] != NULL)
+				{
+					p = int2str((unsigned long)(index), &len);
+					node1 = add_mi_node_child(node, MI_DUP_VALUE,
+						"servers", 7, p, len);
+					if(node1 == NULL) goto error;
+					if (internal_mi_print_b2bl_entity_id(node1,
+							tuple->servers[index])!=0)
+						goto error;
+				}
 			}
-
-			c = tuple->clients;
-			index = 0;
-			while(c)
+			for (index = 0; index < MAX_B2BL_ENT; index++)
 			{
-				p = int2str((unsigned long)(index), &len);
-				node1 = add_mi_node_child(node, MI_DUP_VALUE, "client", 6, p, len);
-				if(node1 == NULL) goto error;
-				if (internal_mi_print_b2bl_entity_id(node1, c)!=0)
-					goto error;
-				index++;
-				c = c->next;
+				if (tuple->clients[index] != NULL)
+				{
+					p = int2str((unsigned long)(index), &len);
+					node1 = add_mi_node_child(node, MI_DUP_VALUE,
+						"clients", 7, p, len);
+					if(node1 == NULL) goto error;
+					if (internal_mi_print_b2bl_entity_id(node1,
+							tuple->clients[index])!=0)
+						goto error;
+				}
 			}
-			for (index = 0; index < 3; index++)
+			for (index = 0; index < MAX_BRIDGE_ENT; index++)
 			{
 				if (tuple->bridge_entities[index] != NULL)
 				{
@@ -1481,7 +1485,7 @@ int b2bl_add_tuple(b2bl_tuple_t* tuple, str* params[])
 	shm_tuple->next_scenario_state= tuple->next_scenario_state;
 
 	/* add entities */
-	for(i=0; i< 3; i++)
+	for(i=0; i< MAX_BRIDGE_ENT; i++)
 	{
 		if(!tuple->bridge_entities[i]->to_uri.len)
 			continue;
@@ -1510,14 +1514,20 @@ int b2bl_add_tuple(b2bl_tuple_t* tuple, str* params[])
 		}
 		shm_tuple->bridge_entities[i]= entity;
 		/* put the pointer in clients or servers array */
+		// FIXME: check if the restore logic is ok
 		if(tuple->bridge_entities[i]->type == B2B_SERVER)
 		{
-			shm_tuple->server = entity;
+			if (shm_tuple->servers[0])
+				shm_tuple->servers[1] = entity;
+			else
+				shm_tuple->servers[0] = entity;
 		}
 		else
 		{
-			entity->next = shm_tuple->clients;
-			shm_tuple->clients = entity;
+			if (shm_tuple->clients[0])
+				shm_tuple->clients[1] = entity;
+			else
+				shm_tuple->clients[0] = entity;
 		}
 	}
 	if(shm_tuple->bridge_entities[1])
@@ -1549,7 +1559,7 @@ int b2b_logic_restore(void)
 	str b2bl_key;
 	str scenario_id;
 	b2bl_entity_id_t bridge_entities[3];
-	str* params[5];
+	str* params[MAX_SCENARIO_PARAMS];
 
 	if(b2bl_db == NULL)
 	{
@@ -1638,7 +1648,7 @@ int b2b_logic_restore(void)
 			memset(bridge_entities, 0, 3*sizeof(b2bl_entity_id_t));
 			tuple.scenario_state     =row_vals[sstate_col].val.int_val;
 			tuple.next_scenario_state=row_vals[next_sstate_col].val.int_val;
-			memset(params, 0, 5* sizeof(str*));
+			memset(params, 0, MAX_SCENARIO_PARAMS* sizeof(str*));
 			if(row_vals[sparam0_col].val.string_val)
 			{
 				tuple.scenario_params[0].s =(char*)row_vals[sparam0_col].val.string_val;

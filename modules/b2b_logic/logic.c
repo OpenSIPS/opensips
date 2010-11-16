@@ -436,6 +436,7 @@ int process_bridge_negreply(b2bl_tuple_t* tuple,
 	str method = str_init(ACK);
 	int ret;
 	unsigned int local_index;
+	unsigned int index;
 	b2bl_cback_f cbf;
 	void* param;
 	int etype;
@@ -496,18 +497,28 @@ int process_bridge_negreply(b2bl_tuple_t* tuple,
 			/* search for entity - if not found return 1 (not to do anything else)*/
 			if(etype == B2B_SERVER)
 			{
-				if(tuple->server != entity || tuple->server->key.len != ekey.len ||
-					strncmp(tuple->server->key.s, ekey.s, ekey.len))
+				for (index = 0; index < MAX_B2BL_ENT; index++)
 				{
-					LM_DBG("Server Entity does not exist anymore - goto done\n");
+					e = tuple->servers[index];
+					if (e == entity && e->key.len == ekey.len &&
+						strncmp(e->key.s, ekey.s, ekey.len)==0)
+					{
+						found = 1;
+						break;
+					}
+				}
+				if(!found)
+				{
+					LM_DBG("Server Entity does not exist anymore: return\n");
 					pkg_free(ekey.s);
 					return 1;
 				}
 			}
 			else
 			{
-				for(e=tuple->clients; e ; e=e->next)
+				for (index = 0; index < MAX_B2BL_ENT; index++)
 				{
+					e = tuple->clients[index];
 					if(e == entity && e->key.len == ekey.len &&
 						strncmp(e->key.s, ekey.s, ekey.len)==0)
 					{
@@ -517,7 +528,7 @@ int process_bridge_negreply(b2bl_tuple_t* tuple,
 				}
 				if(!found)
 				{
-					LM_DBG("Client Entity does not exist anymore - return\n");
+					LM_DBG("Client Entity does not exist anymore: return\n");
 					pkg_free(ekey.s);
 					return 1;
 				}
@@ -780,33 +791,42 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 
 b2bl_entity_id_t* b2bl_search_entity(b2bl_tuple_t* tuple, str* key, int src)
 {
-	b2bl_entity_id_t* entity = NULL;
+	int index;
+	b2bl_entity_id_t* e = NULL;
 
 	/* search the entity */
 	if(src == B2B_SERVER)
-		entity = tuple->server;
-	else
-	{
-		entity = tuple->clients;
-
-		while(entity)
+		for (index = 0; index < MAX_B2BL_ENT; index++)
 		{
-			LM_DBG("Key = %.*s\n",entity->key.len,entity->key.s);
-			/* search id */
-			if(entity->key.len == key->len &&
-					strncmp(entity->key.s, key->s, key->len) == 0)
+			e= tuple->servers[index];
+			if (e)
 			{
-				return entity;
+				LM_DBG("Key [%.*s]\n",e->key.len,e->key.s);
+				if (e->key.len == key->len &&
+					strncmp(e->key.s, key->s, key->len) == 0)
+					return e;
 			}
-			entity = entity->next;
 		}
-	}
-	return entity;
+	else
+		for (index = 0; index < MAX_B2BL_ENT; index++)
+		{
+			e = tuple->clients[index];
+			if (e)
+			{
+				LM_DBG("Key [%.*s]\n",e->key.len,e->key.s);
+				if (e->key.len == key->len &&
+					strncmp(e->key.s, key->s, key->len) == 0)
+					return e;
+			}
+		}
+
+	return e;
 }
 
 int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* param)
 {
 	unsigned int hash_index, local_index;
+	unsigned int index;
 	str* b2bl_key = (str*)param;
 	b2bl_tuple_t* tuple;
 	str method, body= {0, 0};
@@ -821,6 +841,8 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 	int ret;
 	unsigned int method_value;
 	int_str avp_val;
+
+	LM_DBG("b2b_entities notification cb\n");
 
 	if(b2bl_key == NULL)
 	{
@@ -909,7 +931,8 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 			LM_DBG("This entity is disconnected\n");
 			b2bl_delete_entity(entity, tuple);
 
-			if(tuple->to_del && tuple->clients==0 && tuple->server==0)
+			if(tuple->to_del && tuple->clients[0]==NULL && tuple->clients[1]==NULL &&
+						tuple->servers[0]==NULL && tuple->servers[1]==NULL)
 			{
 				LM_DBG("Received reply and there are no more entities-> delete\n");
 				b2bl_delete(tuple, hash_index, 0);
@@ -1133,8 +1156,17 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 				tuple->cbf = cbf;
 				if(etype == B2B_SERVER)
 				{
-					if(tuple->server != entity || tuple->server->key.len != ekey.len ||
-						strncmp(tuple->server->key.s, ekey.s, ekey.len))
+					for (index = 0; index < MAX_B2BL_ENT; index++)
+					{
+						e = tuple->servers[index];
+						if(e == entity && e->key.len == ekey.len &&
+							strncmp(e->key.s, ekey.s, ekey.len)==0)
+						{
+							found = 1;
+							break;
+						}
+					}
+					if(!found)
 					{
 						LM_DBG("Server Entity does not exist anymore - goto done\n");
 						pkg_free(ekey.s);
@@ -1143,8 +1175,9 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 				}
 				else
 				{
-					for(e=tuple->clients; e ; e=e->next)
+					for (index = 0; index < MAX_B2BL_ENT; index++)
 					{
+						e = tuple->clients[index];
 						if(e == entity && e->key.len == ekey.len &&
 							strncmp(e->key.s, ekey.s, ekey.len)==0)
 						{
@@ -1471,7 +1504,9 @@ int process_bridge_action(struct sip_msg* msg, b2bl_entity_id_t* curr_entity,
 	b2bl_entity_id_t* bridge_entities[3];
 	b2bl_entity_id_t* entity = NULL;
 	b2bl_entity_id_t* old_entity= NULL;
+	b2bl_entity_id_t* e;
 	int count = 0;
+	int index = 0;
 	str attr= {0, 0};
 	str entity_dest;
 	xmlNodePtr clientid_node;
@@ -1509,6 +1544,7 @@ int process_bridge_action(struct sip_msg* msg, b2bl_entity_id_t* curr_entity,
 				" bridge node. Only two entities should be defined\n");
 			break;
 		}
+		entity = NULL;
 		/* there are 3 ways to identify a client: "this", "peer" or "id" */
 		clientid_node = xmlNodeGetChildByName(client_node, "this");
 		if(clientid_node)
@@ -1555,25 +1591,23 @@ int process_bridge_action(struct sip_msg* msg, b2bl_entity_id_t* curr_entity,
 		attr.len = strlen(attr.s);
 
 		/* search through the entities */
-		if(tuple->server && tuple->server->scenario_id.len == attr.len &&
-				strncmp(tuple->server->scenario_id.s, attr.s, attr.len)== 0)
+		for (index = 0; index < MAX_B2BL_ENT; index++)
 		{
-			entity = tuple->server;
-			LM_DBG("Found entity %d for bridge - the server\n", count);
-		}
-		else
-		{
-			/* search through the client entities */
-			entity = tuple->clients;
-			while(entity)
+			e = tuple->servers[index];
+			if (e && e->scenario_id.len == attr.len &&
+					strncmp(e->scenario_id.s, attr.s, attr.len)== 0)
 			{
-				if(entity->scenario_id.len == attr.len &&
-						strncmp(entity->scenario_id.s, attr.s, attr.len) == 0)
-				{
-					LM_DBG("Found entity %d for bridge - a client\n", count);
-					break;
-				}
-				entity = entity->next;
+				entity = e;
+				LM_DBG("Found entity server [%d]\n", count);
+				break;
+			}
+			e = tuple->clients[index];
+			if (e && e->scenario_id.len == attr.len &&
+					strncmp(e->scenario_id.s, attr.s, attr.len)== 0)
+			{
+				entity = e;
+				LM_DBG("Found entity client [%d]\n", count);
+				break;
 			}
 		}
 		/* if I have the 'new' child -> alter the scenario id for the old entity */
@@ -1855,14 +1889,14 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 		goto error;
 	}
 
-	tuple->server = b2bl_create_new_entity(B2B_SERVER, server_id, &to_uri, &from_uri,
+	tuple->servers[0] = b2bl_create_new_entity(B2B_SERVER, server_id, &to_uri, &from_uri,
 			0,0, msg);
-	if(tuple->server == NULL)
+	if(tuple->servers[0] == NULL)
 	{
 		LM_ERR("Failed to create server entity\n");
 		goto error;
 	}
-	tuple->server->type = B2B_SERVER;
+	tuple->servers[0]->type = B2B_SERVER;
 	/* process the body */
 	if(msg->content_length)
 	{
@@ -1886,7 +1920,7 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 		goto error;
 	}
 	/* create new client */
-	dlginfo = tuple->server->dlginfo;
+	dlginfo = tuple->servers[0]->dlginfo;
 
 	from_tag_uac.len = MD5_LEN;
 	from_tag_uac.s = buf;
@@ -1921,28 +1955,28 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 	if(extra_headers.s)
 		pkg_free(extra_headers.s);
 
-	tuple->clients = b2bl_create_new_entity(B2B_CLIENT, client_id, &to_uri, &from_uri,
+	tuple->clients[0] = b2bl_create_new_entity(B2B_CLIENT, client_id, &to_uri, &from_uri,
 			0, 0, 0);
-	if(tuple->clients == NULL)
+	if(tuple->clients[0] == NULL)
 	{
 		LM_ERR("Failed to create server entity\n");
 		goto error;
 	}
-	LM_DBG("client %.*s\n", tuple->clients->key.len,tuple->clients->key.s);
+	LM_DBG("client %.*s\n", tuple->clients[0]->key.len,tuple->clients[0]->key.s);
 
 	memset(&dlginfo_s, 0, sizeof(b2b_dlginfo_t));
 	dlginfo_s.callid = *client_id;
 	dlginfo_s.totag = from_tag_uac;
-	if(entity_add_dlginfo(tuple->clients, &dlginfo_s)< 0)
+	if(entity_add_dlginfo(tuple->clients[0], &dlginfo_s)< 0)
 	{
 		LM_ERR("Failed to add dialoginfo\n");
 		goto error;
 	}
 
-	tuple->server->peer = tuple->clients;
-	tuple->clients->peer = tuple->server;
-	tuple->bridge_entities[0] = tuple->server;
-	tuple->bridge_entities[1] = tuple->clients;
+	tuple->servers[0]->peer = tuple->clients[0];
+	tuple->clients[0]->peer = tuple->servers[0];
+	tuple->bridge_entities[0] = tuple->servers[0];
+	tuple->bridge_entities[1] = tuple->clients[0];
 	lock_release(&b2bl_htable[hash_index].lock);
 
 	pkg_free(server_id);
@@ -2010,7 +2044,9 @@ int b2b_scenario_parse_uri(xmlNodePtr value_node, char* value_content,
 	if(xmlStrcasecmp(value_type, (unsigned char*)"initial") == 0)
 	{
 		LM_DBG("URI of type initial\n");
-		*client_to = tuple->server->to_uri;
+		// FIXME: this may not exist after a transfer that will leave us with two clients
+		if (tuple->servers[0])
+			*client_to = tuple->servers[0]->to_uri;
 	}
 	else
 	if(xmlStrcasecmp(value_type, (unsigned char*)"header") == 0)
@@ -2138,6 +2174,7 @@ str* b2b_process_scenario_init(b2b_scenario_t* scenario_struct,struct sip_msg* m
 	client_info_t ci;
 	int clients_no = 0;
 	unsigned int hash_index;
+	unsigned int index;
 	str to_uri, from_uri;
 	int eno = 0;
 
@@ -2244,11 +2281,11 @@ str* b2b_process_scenario_init(b2b_scenario_t* scenario_struct,struct sip_msg* m
 			xmlFree(entity_sid.s);
 			goto error;
 		}
-		tuple->server = b2bl_create_new_entity(B2B_SERVER, server_id, &to_uri,
+		tuple->servers[0] = b2bl_create_new_entity(B2B_SERVER, server_id, &to_uri,
 				&from_uri,0,&entity_sid,msg);
-		tuple->server->no = eno++;
-		tuple->bridge_entities[0] = tuple->server;
-		if(tuple->server == NULL)
+		tuple->servers[0]->no = eno++;
+		tuple->bridge_entities[0] = tuple->servers[0];
+		if(tuple->servers[0] == NULL)
 		{
 			LM_ERR("failed to create new server entity\n");
 			xmlFree(entity_sid.s);
@@ -2257,7 +2294,7 @@ str* b2b_process_scenario_init(b2b_scenario_t* scenario_struct,struct sip_msg* m
 		}
 		xmlFree(entity_sid.s);
 		pkg_free(server_id);
-		tuple->server->type = B2B_SERVER;
+		tuple->servers[0]->type = B2B_SERVER;
 	}
 
 	/* create client entities */
@@ -2358,28 +2395,28 @@ str* b2b_process_scenario_init(b2b_scenario_t* scenario_struct,struct sip_msg* m
 
 	/* If I have a server entity I consider it peer for all client entities,
 	 * and its peer is the first client */
-	if(tuple->server)
+	if(tuple->servers[0])
 	{
-		client_entity = tuple->clients;
-		if(client_entity == NULL)
+		if(tuple->clients[0] == NULL)
 		{
 			LM_ERR("You have to create at least 2 entities in init part\n");
 			goto error;
 		}
-		while(client_entity)
+		for (index = 0; index < MAX_B2BL_ENT; index++)
 		{
-			client_entity->peer = tuple->server;
-			client_entity = client_entity->next;
+			if (tuple->clients[index])
+				tuple->clients[index]->peer = tuple->servers[0];
+
 		}
-		tuple->bridge_entities[0] = tuple->server;
-		tuple->bridge_entities[1] = tuple->clients;
+		tuple->bridge_entities[0] = tuple->servers[0];
+		tuple->bridge_entities[1] = tuple->clients[0];
 	}
 	else
 	{
 		if(clients_no >= 2) /* make the first 2 peers */
 		{
-			tuple->bridge_entities[0]= tuple->clients;
-			tuple->bridge_entities[1]= tuple->clients->next;
+			tuple->bridge_entities[0]= tuple->clients[0];
+			tuple->bridge_entities[1]= tuple->clients[1];
 		}
 		else
 		{
@@ -2426,7 +2463,7 @@ str* init_request(struct sip_msg* msg, b2b_scenario_t* scenario_struct,
 	return b2b_process_scenario_init(scenario_struct, msg, args, cbf, cb_param);
 }
 
-str* internal_init_scenario(struct sip_msg* msg, str* name, str* args[5],
+str* internal_init_scenario(struct sip_msg* msg, str* name, str* args[MAX_SCENARIO_PARAMS],
 		b2bl_cback_f cbf, void* cb_param)
 {
 	b2b_scenario_t* scenario_struct;
@@ -2452,7 +2489,7 @@ str* internal_init_scenario(struct sip_msg* msg, str* name, str* args[5],
 int b2b_init_request(struct sip_msg* msg, str* arg1, str* arg2, str* arg3,
 		str* arg4, str* arg5, str* arg6)
 {
-	str* args[5];
+	str* args[MAX_SCENARIO_PARAMS];
 	b2b_scenario_t* scenario_struct;
 	str* key;
 	int_str avp_val;
@@ -2541,14 +2578,15 @@ int b2bl_bridge(str* key, str* new_dst, str* new_from_dname, int entity_no)
 		goto error;
 	}
 
-	if(tuple->server == NULL)
+	// FIXME: we may have no server at some point in time
+	if(tuple->servers[0] == NULL)
 	{
 		LM_ERR("Wrong usage - no server entity present\n");
 		goto error;
 	}
-	LM_DBG("Bridge server %.*s\n",tuple->server->dlginfo->callid.len,
-			tuple->server->dlginfo->callid.s);
-	old_entity = tuple->server->peer;
+	LM_DBG("Bridge server %.*s\n",tuple->servers[0]->dlginfo->callid.len,
+			tuple->servers[0]->dlginfo->callid.s);
+	old_entity = tuple->servers[0]->peer;
 	if(old_entity)
 	{
 		LM_DBG("End peer dialog [%p]\n", old_entity);	
@@ -2565,19 +2603,19 @@ int b2bl_bridge(str* key, str* new_dst, str* new_from_dname, int entity_no)
 	else
 		LM_DBG("No peer found\n");	
 
-	tuple->bridge_entities[0]= tuple->server;
+	tuple->bridge_entities[0]= tuple->servers[0];
 	tuple->bridge_entities[1]= entity;
-	tuple->server->no = 0;
+	tuple->servers[0]->no = 0;
 	entity->no = 1;
 
-	tuple->server->peer = entity;
-	entity->peer = tuple->server;
+	tuple->servers[0]->peer = entity;
+	entity->peer = tuple->servers[0];
 
 	tuple->scenario_state = B2B_BRIDGING_STATE;
-	tuple->server->stats.start_time = get_ticks();
-	tuple->server->stats.call_time = 0;
-	b2b_api.send_request(B2B_SERVER, &tuple->server->key, &method_invite,
-				 0, 0, tuple->server->dlginfo);
+	tuple->servers[0]->stats.start_time = get_ticks();
+	tuple->servers[0]->stats.call_time = 0;
+	b2b_api.send_request(B2B_SERVER, &tuple->servers[0]->key, &method_invite,
+				 0, 0, tuple->servers[0]->dlginfo);
 
 	lock_release(&b2bl_htable[hash_index].lock);
 
@@ -2661,7 +2699,7 @@ int b2bl_bridge_2calls(str* key1, str* key2)
 	b2bl_tuple_t* tuple;
 	unsigned int hash_index, local_index;
 	b2bl_entity_id_t *e2= 0, *e1= 0;
-	b2bl_entity_id_t *e, *prev_e= 0;
+	b2bl_entity_id_t *e;
 
 	if(!key1 || !key2)
 	{
@@ -2718,27 +2756,42 @@ int b2bl_bridge_2calls(str* key1, str* key2)
 		e->peer = NULL;
 	}
 
+	// FIXME: this logic may need to be updated
 	if(e2->type == B2B_SERVER)
-		tuple->server = 0;
-	else
 	{
-		if(e2 == tuple->clients)
-			tuple->clients = e2->next;
+		if(e2 == tuple->servers[0])
+		{
+			tuple->servers[0] = tuple->servers[1];
+			tuple->servers[1] = NULL;
+		}
+		else if(e2 == tuple->servers[1])
+			tuple->servers[1] = NULL;
 		else
 		{
-			for( e = tuple->clients; e; e= e->next)
-			{
-				if(e == e2)
-					break;
-				prev_e = e;
-			}
-			if(e == NULL)
-			{
-				LM_ERR("BUG - entity not found in clients list\n");
-				goto error;
-			}
-			prev_e->next = e2->next;
+			LM_ERR("BUG: server entity [%.*s] not found\n", e2->key.len, e2->key.s);
+			goto error;
 		}
+	}
+	else if (e2->type == B2B_CLIENT)
+	{
+		if(e2 == tuple->clients[0])
+		{
+			tuple->clients[0] = tuple->clients[1];
+			tuple->clients[1] = NULL;
+		}
+		else if(e2 == tuple->clients[1])
+			tuple->clients[1] = NULL;
+		else
+		{
+			LM_ERR("BUG: client entity [%.*s] not found\n", e2->key.len, e2->key.s);
+			goto error;
+		}
+	}
+	else
+	{
+		LM_ERR("BUG: unexpected entity type [%d] for [%.*s]\n",
+				e2->type, e2->key.len, e2->key.s);
+		goto error;
 	}
 	b2bl_delete(tuple, hash_index, 0);
 	lock_release(&b2bl_htable[hash_index].lock);
@@ -2778,8 +2831,10 @@ int b2bl_bridge_2calls(str* key1, str* key2)
 
 	/* put it in clients list */
 	e2->type = B2B_CLIENT;
-	e2->next = tuple->clients;
-	tuple->clients = e2;	
+	if (tuple->clients[0])
+		tuple->clients[1] = e2;	
+	else
+		tuple->clients[0] = e2;	
 	tuple->bridge_entities[1]= e2;
 
 	e1->peer = e2;
@@ -2822,8 +2877,10 @@ int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no)
 {
 	b2bl_tuple_t* tuple;
 	unsigned int hash_index, local_index;
-	b2bl_entity_id_t *e2= 0;
-	b2bl_entity_id_t *e;
+	unsigned int index;
+	b2bl_entity_id_t *bridging_entity= NULL;
+	b2bl_entity_id_t *old_entity;
+	b2bl_entity_id_t *entity;
 	str* server_id;
 	str body;
 	str to_uri, from_uri;
@@ -2860,38 +2917,94 @@ int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no)
 		LM_ERR("Can not bridge requested entity [%p]\n", tuple->bridge_entities[entity_no]);
 		goto error;
 	}
-	e2 = tuple->bridge_entities[entity_no];
-	e = tuple->bridge_entities[(entity_no?0:1)];
+	bridging_entity = tuple->bridge_entities[entity_no];
+	old_entity = tuple->bridge_entities[(entity_no?0:1)];
 
-	if(e2->state != DLG_CONFIRMED)
+/*
+	if(bridging_entity->state != DLG_CONFIRMED)
 	{
-		LM_ERR("Wrong state for entity ek= [%.*s], tk=[%.*s]\n",e2->key.len,
-				e2->key.s, key->len, key->s);
+		LM_ERR("Wrong state for entity ek= [%.*s], tk=[%.*s]\n",bridging_entity->key.len,
+				bridging_entity->key.s, key->len, key->s);
 		goto error;
 	}
-	if(e2->type == B2B_SERVER)
-	{
-		LM_ERR("Connecting an entity which was initially a UAS is not supported yet\n");
-		goto error;
-	}
+*/
 
-	if(e)
+	b2bl_print_tuple(tuple);
+
+	if(old_entity)
 	{
-		LM_DBG("terminating b2bl_entity [%p:%.*s] type [%d]\n",
-					e, e->key.len, e->key.s, e->type);
-		if(e->disconnected)
-			b2b_api.send_reply(e->type,&e->key,METHOD_BYE,200,&ok,0,0,e->dlginfo);
+		LM_DBG("terminating b2bl_entity [%p]->[%.*s] type [%d]\n",
+					old_entity, old_entity->key.len, old_entity->key.s,
+					old_entity->type);
+		if(old_entity->disconnected)
+			b2b_api.send_reply(old_entity->type,&old_entity->key,METHOD_BYE,
+					200,&ok,0,0,old_entity->dlginfo);
 		else
-			b2b_end_dialog(e, tuple);
-		e->peer = NULL;
+			b2b_end_dialog(old_entity, tuple);
+		if (old_entity->peer->peer == old_entity)
+			old_entity->peer->peer = NULL;
+		else
+		{
+			LM_ERR("Unexpected chain: old_entity=[%p] and "
+				"old_entity->peer->peer=[%p]\n",
+				old_entity, old_entity->peer->peer);
+			goto error;
+		}
+		old_entity->peer = NULL;
 	}
+
+	/* remove the disconected entity from the tuple */
+	if (old_entity->type == B2B_CLIENT)
+	{
+		for (index = 0; index < MAX_B2BL_ENT; index++)
+		{
+			if (old_entity == tuple->clients[index])
+			{
+				if (index == 0)
+				{
+					tuple->clients[index] = NULL;
+				}
+				else
+				{
+					tuple->clients[0] = tuple->clients[1];
+					tuple->clients[1] = NULL;
+				}
+				break;
+			}
+		}
+	}
+	else if (old_entity->type == B2B_SERVER)
+	{
+		for (index = 0; index < MAX_B2BL_ENT; index++)
+		{
+			if (old_entity == tuple->servers[index])
+			{
+				if (index == 0)
+				{
+					tuple->servers[index] = NULL;
+				}
+				else
+				{
+					tuple->servers[0] = tuple->servers[1];
+					tuple->servers[1] = NULL;
+				}
+				break;
+			}
+		}
+	}
+	else
+	{
+		LM_WARN("Unexpected type [%d] for entity [%p]\n", old_entity->type, old_entity);
+		goto error;
+	}
+
+	b2bl_print_tuple(tuple);
 
 	/* create server entity from Invite */
-
 	if(b2b_msg_get_to(msg, &to_uri)< 0 || b2b_msg_get_from(msg, &from_uri)< 0)
 	{
 		LM_ERR("Failed to get to or from from the message\n");
-		return 0;
+		goto error;
 	}
 	server_id = b2b_api.server_new(msg, b2b_server_notify, tuple->key);
 	if(server_id == NULL)
@@ -2900,19 +3013,27 @@ int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no)
 		goto error;
 	}
 
-	tuple->server = b2bl_create_new_entity(B2B_SERVER, server_id, &to_uri, &from_uri,
+	entity = b2bl_create_new_entity(B2B_SERVER, server_id, &to_uri, &from_uri,
 			0,0, msg);
-	if(tuple->server == NULL)
+	if(entity == NULL)
 	{
 		LM_ERR("Failed to create server entity\n");
 		goto error;
 	}
 
-	tuple->server->peer = e2;
-	e2->peer = tuple->server;
+	if (tuple->servers[0])
+		tuple->servers[1] = entity;
+	else
+		tuple->servers[0] = entity;
 
-	tuple->server->stats.start_time = get_ticks();
-	tuple->server->stats.call_time = 0;
+	entity->peer = bridging_entity;
+	bridging_entity->peer = entity;
+
+	entity->stats.start_time = get_ticks();
+	entity->stats.call_time = 0;
+
+	bridging_entity->no = 0;
+	entity->no = 1;
 
 	/* send reInvite to the old entity*/
 	if(msg->content_length)
@@ -2929,16 +3050,18 @@ int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no)
 		}
 	}
 
-	if(b2b_api.send_request(e2->type, &e2->key, &method_invite,
-			tuple->extra_headers, &body, e2->dlginfo) > 0)
+	if(b2b_api.send_request(bridging_entity->type, &bridging_entity->key, &method_invite,
+			tuple->extra_headers, &body, bridging_entity->dlginfo) > 0)
 	{
 		LM_ERR("Failed to send reInvite\n");
 		goto error;
 	}
 	tuple->lifetime = -1;
 
-	tuple->bridge_entities[0] = e2;
-	tuple->bridge_entities[1] = tuple->server;
+	tuple->bridge_entities[0] = bridging_entity;
+	tuple->bridge_entities[1] = entity;
+
+	b2bl_print_tuple(tuple);
 
 	lock_release(&b2bl_htable[hash_index].lock);
 	return 0;

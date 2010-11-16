@@ -35,20 +35,30 @@
 #include "../presence/hash.h"
 #include "records.h"
 
-
-void b2bl_print_clients_list(b2bl_tuple_t* tuple)
+static void _print_entity(int index, b2bl_entity_id_t* c)
 {
+	LM_INFO("{%d} type=%d [%p]->[%.*s] state=%d no=%d peer=[%p]\n",
+		index, c->type, c, c->key.len, c->key.s, c->state, c->no, c->peer);
+}
+
+void b2bl_print_tuple(b2bl_tuple_t* tuple)
+{
+	int index;
+	b2bl_entity_id_t* e;
+
 	if(tuple)
 	{
-		/* parcurg lista de clienti */
-		b2bl_entity_id_t* c;
-		c = tuple->clients;
-		while(c)
+		LM_INFO("[%p]->[%.*s]->\n", tuple, tuple->key->len, tuple->key->s);
+		for (index = 0; index < MAX_B2BL_ENT; index++)
 		{
-			LM_INFO("[%p] %.*s->\n", c, c->key.len, c->key.s);
-			c = c->next;
+			e = tuple->servers[index];
+			if (e) _print_entity(index, e);
 		}
-		LM_INFO("0\n");
+		for (index = 0; index < MAX_B2BL_ENT; index++)
+		{
+			e = tuple->clients[index];
+			if (e) _print_entity(index, e);
+		}
 	}
 }
 
@@ -116,7 +126,7 @@ b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg,
 	}
 
 	/* copy the function parameters that customize the scenario */
-	memset(tuple->scenario_params, 0, 5* sizeof(str));
+	memset(tuple->scenario_params, 0, MAX_SCENARIO_PARAMS* sizeof(str));
 	if(scenario && args)
 	{
 		for(i = 0; i< scenario->param_no; i++)
@@ -202,39 +212,39 @@ error:
 
 void b2bl_delete_entity(b2bl_entity_id_t* entity, b2bl_tuple_t* tuple)
 {
-	b2bl_entity_id_t* prev;
+	b2bl_entity_id_t* e;
 	unsigned int i;
+	unsigned int index;
 	int found = 0;
 
-	LM_DBG("Delete entity = %p\n", entity);
+	LM_DBG("Delete entity [%p]->[%.*s]\n", entity, entity->key.len, entity->key.s);
 
-	if(tuple->server == entity)
+	for (index = 0; index < MAX_B2BL_ENT; index++)
 	{
-		tuple->server = NULL;
-		found = 1;
-	}
-	else
-	{
-		/* search the entity to delete */
-		if(tuple->clients == entity)
+		e = tuple->servers[index];
+		if (e == entity)
 		{
-			tuple->clients = entity->next;
 			found = 1;
+			if (index == 0)
+			{
+				tuple->servers[0] = tuple->servers[1];
+				tuple->servers[1] = NULL;
+			}
+			break;
 		}
-		else
+		e = tuple->clients[index];
+		if (e == entity)
 		{
-			prev = tuple->clients;
-			while(prev && prev->next != entity)
+			found = 1;
+			if (index == 0)
 			{
-				prev = prev->next;
+				tuple->clients[0] = tuple->clients[1];
+				tuple->clients[1] = NULL;
 			}
-			if(prev)
-			{
-				prev->next = entity->next;
-				found= 1;
-			}
+			break;
 		}
 	}
+
 	if(found)
 		b2b_api.entity_delete(entity->type, &entity->key, entity->dlginfo);
 
@@ -244,7 +254,7 @@ void b2bl_delete_entity(b2bl_entity_id_t* entity, b2bl_tuple_t* tuple)
 	if(entity->peer && entity->peer->peer==entity)
 		entity->peer->peer = NULL;
 
-	for(i = 0; i< 3; i++)
+	for(i = 0; i< MAX_BRIDGE_ENT; i++)
 		if(tuple->bridge_entities[i] == entity)
 			tuple->bridge_entities[i] = NULL;
 
@@ -253,27 +263,40 @@ void b2bl_delete_entity(b2bl_entity_id_t* entity, b2bl_tuple_t* tuple)
 	shm_free(entity);
 
 	/* for debuging */
-	b2bl_print_clients_list(tuple);
+	b2bl_print_tuple(tuple);
 }
 
 void b2bl_add_client_list(b2bl_tuple_t* tuple, b2bl_entity_id_t* entity)
 {
-	entity->next = tuple->clients;
-	tuple->clients= entity;
-	LM_INFO("add [%.*s]\n", tuple->key->len, tuple->key->s);
-	b2bl_print_clients_list(tuple);
+	LM_INFO("adding entity [%p]->[%.*s] to tuple [%p]->[%.*s]\n",
+		entity, entity->key.len, entity->key.s,
+		tuple, tuple->key->len, tuple->key->s);
+
+	if (tuple->clients[0] == NULL)
+		tuple->clients[0] = entity;
+	else if (tuple->clients[1] == NULL)
+		tuple->clients[1] = entity;
+	else
+	{
+		// FIXME: we might wanna change the signature of the function here and return -1
+		LM_ERR("unable to add entity [%p]->[%.*s] to tuple [%p]->[%.*s], all spots taken\n",
+			entity, entity->key.len, entity->key.s,
+			tuple, tuple->key->len, tuple->key->s);
+	}
+		
+	b2bl_print_tuple(tuple);
 }
 
 
 void b2bl_delete(b2bl_tuple_t* tuple, unsigned int hash_index,
 		int not_del_b2be)
 {
-	b2bl_entity_id_t* entity, *next_entity;
+	b2bl_entity_id_t *e;
 	int i;
+	int index;
 
-	LM_DBG("Delete record, hash_index=[%d], local_index=[%d]\n",
-			hash_index, tuple->id);
-	LM_DBG("pointer [%p]\n", tuple);
+	LM_DBG("Delete record [%p]->[%.*s], hash_index=[%d], local_index=[%d]\n",
+			tuple, tuple->key->len, tuple->key->s, hash_index, tuple->id);
 
 	if(tuple->cbf)
 		tuple->cbf(tuple->cb_param, 0, 0, B2B_DESTROY);
@@ -293,32 +316,32 @@ void b2bl_delete(b2bl_tuple_t* tuple, unsigned int hash_index,
 			tuple->next->prev = tuple->prev;
 	}
 
-	if(tuple->server)
+	for (index = 0; index < MAX_B2BL_ENT; index++)
 	{
-		if(tuple->server->key.s && tuple->server->key.len && !not_del_b2be)
-			b2b_api.entity_delete(B2B_SERVER, &tuple->server->key,
-					tuple->server->dlginfo);
-		if(tuple->server->dlginfo)
-			shm_free(tuple->server->dlginfo);
-		shm_free(tuple->server);
-	}
-	entity = tuple->clients;
-	while(entity)
-	{
-		next_entity = entity->next;
-		if(entity->key.s && entity->key.len && !not_del_b2be)
-			b2b_api.entity_delete(B2B_CLIENT, &entity->key,
-				entity->dlginfo);
-		if(entity->dlginfo)
-			shm_free(entity->dlginfo);
-		shm_free(entity);
-		entity = next_entity;
+		e = tuple->servers[index];
+		if (e)
+		{
+			if (e->key.s && e->key.len && !not_del_b2be)
+				b2b_api.entity_delete(e->type, &e->key, e->dlginfo);
+			if(e->dlginfo)
+				shm_free(e->dlginfo);
+			shm_free(e);
+		}
+		e = tuple->clients[index];
+		if (e)
+		{
+			if (e->key.s && e->key.len && !not_del_b2be)
+				b2b_api.entity_delete(e->type, &e->key, e->dlginfo);
+			if(e->dlginfo)
+				shm_free(e->dlginfo);
+			shm_free(e);
+		}
 	}
 
 //	if(tuple->bridge_entities[1] && tuple->bridge_entities[1]->key.s != NULL)
 //		shm_free(tuple->bridge_entities[1]->key.s);
 
-	for(i = 0; i< 5; i++)
+	for(i = 0; i< MAX_SCENARIO_PARAMS; i++)
 	{
 		if(tuple->scenario_params[i].s)
 			shm_free(tuple->scenario_params[i].s);

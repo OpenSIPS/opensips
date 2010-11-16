@@ -49,7 +49,6 @@ typedef struct b2bl_entity_id
 	int no;
 	enum b2b_entity_type type;
 	b2bl_dlg_stat_t stats;
-	struct b2bl_entity_id* next;
 	struct b2bl_entity_id* peer;
 }b2bl_entity_id_t;
 
@@ -57,17 +56,21 @@ typedef struct b2bl_entity_id
 #define UPDATEDB_FLAG       1
 #define INSERTDB_FLAG       2
 
+#define MAX_B2BL_ENT		2
+#define MAX_BRIDGE_ENT		3
+#define MAX_SCENARIO_PARAMS	5
+
 typedef struct b2bl_tuple
 {
 	unsigned int id;
 	str* key;
 	b2b_scenario_t* scenario;  /* if scenario is NULL it means that the simple Topology Hiding Scenary must be applied*/
-	str scenario_params[5];
+	str scenario_params[MAX_SCENARIO_PARAMS];
 	int scenario_state;
 	int next_scenario_state;
-	b2bl_entity_id_t* server;
-	b2bl_entity_id_t* clients;
-	b2bl_entity_id_t* bridge_entities[3];
+	b2bl_entity_id_t* servers[MAX_B2BL_ENT];
+	b2bl_entity_id_t* clients[MAX_B2BL_ENT];
+	b2bl_entity_id_t* bridge_entities[MAX_BRIDGE_ENT];
 	int to_del;
 	str* extra_headers;
 	struct b2bl_tuple* next;
@@ -87,6 +90,8 @@ typedef struct b2bl_entry
 }b2bl_entry_t;
 
 typedef b2bl_entry_t* b2bl_table_t;
+
+void b2bl_print_tuple(b2bl_tuple_t* tuple);
 
 b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg,
 		unsigned int hash_index, b2b_scenario_t* scenario,
