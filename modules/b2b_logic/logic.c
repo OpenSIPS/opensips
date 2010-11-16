@@ -794,7 +794,7 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 b2bl_entity_id_t* b2bl_search_entity(b2bl_tuple_t* tuple, str* key, int src)
 {
 	int index;
-	b2bl_entity_id_t* e = NULL;
+	b2bl_entity_id_t* e;
 
 	/* search the entity */
 	if(src == B2B_SERVER)
@@ -808,6 +808,7 @@ b2bl_entity_id_t* b2bl_search_entity(b2bl_tuple_t* tuple, str* key, int src)
 					strncmp(e->key.s, key->s, key->len) == 0)
 					return e;
 			}
+			e= NULL;
 		}
 	else
 		for (index = 0; index < MAX_B2BL_ENT; index++)
@@ -820,6 +821,7 @@ b2bl_entity_id_t* b2bl_search_entity(b2bl_tuple_t* tuple, str* key, int src)
 					strncmp(e->key.s, key->s, key->len) == 0)
 					return e;
 			}
+			e= NULL;
 		}
 
 	return e;
@@ -2887,7 +2889,6 @@ int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no)
 {
 	b2bl_tuple_t* tuple;
 	unsigned int hash_index, local_index;
-	unsigned int index;
 	b2bl_entity_id_t *bridging_entity= NULL;
 	b2bl_entity_id_t *old_entity;
 	b2bl_entity_id_t *entity;
@@ -2964,47 +2965,10 @@ int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no)
 	}
 
 	/* remove the disconected entity from the tuple */
-	if (old_entity->type == B2B_CLIENT)
+	if(0 == b2bl_drop_entity(old_entity, tuple))
 	{
-		for (index = 0; index < MAX_B2BL_ENT; index++)
-		{
-			if (old_entity == tuple->clients[index])
-			{
-				if (index == 0)
-				{
-					tuple->clients[index] = NULL;
-				}
-				else
-				{
-					tuple->clients[0] = tuple->clients[1];
-					tuple->clients[1] = NULL;
-				}
-				break;
-			}
-		}
-	}
-	else if (old_entity->type == B2B_SERVER)
-	{
-		for (index = 0; index < MAX_B2BL_ENT; index++)
-		{
-			if (old_entity == tuple->servers[index])
-			{
-				if (index == 0)
-				{
-					tuple->servers[index] = NULL;
-				}
-				else
-				{
-					tuple->servers[0] = tuple->servers[1];
-					tuple->servers[1] = NULL;
-				}
-				break;
-			}
-		}
-	}
-	else
-	{
-		LM_WARN("Unexpected type [%d] for entity [%p]\n", old_entity->type, old_entity);
+		LM_WARN("Inconsistent tuple [%p]\n", tuple);
+		b2bl_print_tuple(tuple);
 		goto error;
 	}
 

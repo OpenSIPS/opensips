@@ -48,7 +48,7 @@ void b2bl_print_tuple(b2bl_tuple_t* tuple)
 
 	if(tuple)
 	{
-		LM_INFO("[%p]->[%.*s]->\n", tuple, tuple->key->len, tuple->key->s);
+		LM_INFO("[%p]->[%.*s]\n", tuple, tuple->key->len, tuple->key->s);
 		for (index = 0; index < MAX_B2BL_ENT; index++)
 		{
 			e = tuple->servers[index];
@@ -210,14 +210,12 @@ error:
 	return 0;
 }
 
-void b2bl_delete_entity(b2bl_entity_id_t* entity, b2bl_tuple_t* tuple)
+
+int b2bl_drop_entity(b2bl_entity_id_t* entity, b2bl_tuple_t* tuple)
 {
 	b2bl_entity_id_t* e;
-	unsigned int i;
 	unsigned int index;
 	int found = 0;
-
-	LM_DBG("Delete entity [%p]->[%.*s]\n", entity, entity->key.len, entity->key.s);
 
 	for (index = 0; index < MAX_B2BL_ENT; index++)
 	{
@@ -225,10 +223,20 @@ void b2bl_delete_entity(b2bl_entity_id_t* entity, b2bl_tuple_t* tuple)
 		if (e == entity)
 		{
 			found = 1;
-			if (index == 0)
+			switch(index)
 			{
-				tuple->servers[0] = tuple->servers[1];
-				tuple->servers[1] = NULL;
+				case 0:
+					tuple->servers[0] = tuple->servers[1];
+					tuple->servers[1] = NULL;
+					break;
+				case 1:
+					tuple->servers[1] = NULL;
+					if (tuple->servers[0] == NULL)
+						LM_ERR("inconsistent tuple [%p]->[%.*s]\n",
+							tuple, tuple->key->len, tuple->key->s);
+					break;
+				default:
+					LM_CRIT("we should never end up here\n");
 			}
 			break;
 		}
@@ -236,14 +244,35 @@ void b2bl_delete_entity(b2bl_entity_id_t* entity, b2bl_tuple_t* tuple)
 		if (e == entity)
 		{
 			found = 1;
-			if (index == 0)
+			switch(index)
 			{
-				tuple->clients[0] = tuple->clients[1];
-				tuple->clients[1] = NULL;
+				case 0:
+					tuple->clients[0] = tuple->clients[1];
+					tuple->clients[1] = NULL;
+					break;
+				case 1:
+					tuple->clients[1] = NULL;
+					if (tuple->clients[0] == NULL)
+						LM_ERR("inconsistent tuple [%p]->[%.*s]\n",
+							tuple, tuple->key->len, tuple->key->s);
+					break;
+				default:
+					LM_CRIT("we should never end up here\n");
 			}
 			break;
 		}
 	}
+	return found;
+}
+
+void b2bl_delete_entity(b2bl_entity_id_t* entity, b2bl_tuple_t* tuple)
+{
+	unsigned int i;
+	int found = 0;
+
+	LM_DBG("Delete entity [%p]->[%.*s]\n", entity, entity->key.len, entity->key.s);
+
+	found = b2bl_drop_entity(entity, tuple);
 
 	if(found)
 		b2b_api.entity_delete(entity->type, &entity->key, entity->dlginfo);
