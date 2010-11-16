@@ -1146,6 +1146,9 @@ enum rps relay_reply( struct cell *t, struct sip_msg *p_msg, int branch,
 	if (relay >= 0 ) {
 		/* initialize sockets for outbound reply */
 		uas_rb->activ_type=msg_status;
+
+		t->relaied_reply_branch = relay;
+
 		/* only messages known to be relayed immediately will be
 		 * be called on; we do not evoke this callback on messages
 		 * stored in shmem -- they are fixed and one cannot change them
@@ -1217,7 +1220,6 @@ enum rps relay_reply( struct cell *t, struct sip_msg *p_msg, int branch,
 
 		/* update the status ... */
 		t->uas.status = relayed_code;
-		t->relaied_reply_branch = relay;
 
 		if (is_invite(t) && relayed_msg!=FAKED_REPLY
 		&& relayed_code>=200 && relayed_code < 300
