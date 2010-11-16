@@ -1023,11 +1023,16 @@ void dlg_ontimeout( struct dlg_tl *tl)
 #define ROUTE_LEN (sizeof(ROUTE_STR) - 1)
 #define CRLF_LEN (sizeof(CRLF) - 1)
 
+#define ROUTE_PREF "Route: <"
+#define ROUTE_PREF_LEN (sizeof(ROUTE_PREF) -1)
+#define ROUTE_SUFF ">\r\n"
+#define ROUTE_SUFF_LEN (sizeof(ROUTE_SUFF) -1)
+
 int fix_route_dialog(struct sip_msg *req,struct dlg_cell *dlg)
 {
 	struct dlg_leg *leg;
 	struct hdr_field *it;
-	char * buf,*route;
+	char * buf,*route,*hdrs,*remote_contact;
 	struct lump* lmp = NULL;
 	int size;
 	rr_t *head = NULL;
@@ -1042,78 +1047,184 @@ int fix_route_dialog(struct sip_msg *req,struct dlg_cell *dlg)
 	if (dlg->state <= DLG_STATE_EARLY)
 		return 0;
 
-	if (leg->contact.len && leg->contact.s) {
-		LM_DBG("Setting new URI to  <%.*s> \n",leg->contact.len,
-				leg->contact.s);
+	if ((*(d_rrb.routing_type) & ROUTING_LL) || (*d_rrb.routing_type) & ROUTING_SL)
+	{
+		LM_DBG("Fixing message. Next hop is Loose router\n");
 
-		if (set_ruri(req,&leg->contact) != 0) {
-			LM_ERR("failed setting ruri\n");
-			return -1;
-		}
-	}
+		if (leg->contact.len && leg->contact.s) {
+			LM_DBG("Setting new URI to  <%.*s> \n",leg->contact.len,
+					leg->contact.s);
 
-	if( parse_headers( req, HDR_EOH_F, 0)<0 ) {
-		LM_ERR("failed to parse headers when looking after ROUTEs\n");
-		return -1;
-	}
-	
-	buf = req->buf;
-
-	if (req->route) {
-		for (it=req->route;it;it=it->sibling)
-			if ((lmp = del_lump(req,it->name.s - buf,it->len,HDR_ROUTE_T)) == 0) {
-				LM_ERR("del_lump failed \n");
+			if (set_ruri(req,&leg->contact) != 0) {
+				LM_ERR("failed setting ruri\n");
 				return -1;
 			}
-	}
-
-	if ( leg->route_set.len !=0 && leg->route_set.s) {
-
-		lmp = anchor_lump(req,req->headers->name.s - buf,0,0);
-		if (lmp == 0)
-		{
-			LM_ERR("failed anchoring new lump\n");
-			return -1;
 		}
 
-		size = leg->route_set.len + ROUTE_LEN + CRLF_LEN;
-		route = pkg_malloc(size+1);
-		if (route == 0) {
-			LM_ERR("no more pkg memory\n");
-			return -1;
-		}
-
-		memcpy(route,ROUTE_STR,ROUTE_LEN);
-		memcpy(route+ROUTE_LEN,leg->route_set.s,leg->route_set.len);
-		memcpy(route+ROUTE_LEN+leg->route_set.len,CRLF,CRLF_LEN);
-
-		route[size] = 0;
-
-		if ((lmp = insert_new_lump_after(lmp,route,size,HDR_ROUTE_T)) == 0) {
-			LM_ERR("failed inserting new route set\n");
-			pkg_free(route);
+		if( parse_headers( req, HDR_EOH_F, 0)<0 ) {
+			LM_ERR("failed to parse headers when looking after ROUTEs\n");
 			return -1;
 		}
 		
-		LM_DBG("Setting route  header to <%s> \n",route);
+		buf = req->buf;
 
-		if (parse_rr_body(leg->route_set.s,leg->route_set.len,&head) != 0) {
-			LM_ERR("failed parsing route set\n");
-			return -1;
+		if (req->route) {
+			for (it=req->route;it;it=it->sibling)
+				if ((lmp = del_lump(req,it->name.s - buf,it->len,HDR_ROUTE_T)) == 0) {
+					LM_ERR("del_lump failed \n");
+					return -1;
+				}
 		}
 
-		LM_DBG("setting dst_uri to <%.*s> \n",head->nameaddr.uri.len,
-				head->nameaddr.uri.s);
+		if ( leg->route_set.len !=0 && leg->route_set.s) {
 
-		if (set_dst_uri(req,&head->nameaddr.uri) !=0 ) {
-			LM_ERR("failed setting new dst uri\n");
+			lmp = anchor_lump(req,req->headers->name.s - buf,0,0);
+			if (lmp == 0)
+			{
+				LM_ERR("failed anchoring new lump\n");
+				return -1;
+			}
+
+			size = leg->route_set.len + ROUTE_LEN + CRLF_LEN;
+			route = pkg_malloc(size+1);
+			if (route == 0) {
+				LM_ERR("no more pkg memory\n");
+				return -1;
+			}
+
+			memcpy(route,ROUTE_STR,ROUTE_LEN);
+			memcpy(route+ROUTE_LEN,leg->route_set.s,leg->route_set.len);
+			memcpy(route+ROUTE_LEN+leg->route_set.len,CRLF,CRLF_LEN);
+
+			route[size] = 0;
+
+			if ((lmp = insert_new_lump_after(lmp,route,size,HDR_ROUTE_T)) == 0) {
+				LM_ERR("failed inserting new route set\n");
+				pkg_free(route);
+				return -1;
+			}
+			
+			LM_DBG("Setting route  header to <%s> \n",route);
+
+			if (parse_rr_body(leg->route_set.s,leg->route_set.len,&head) != 0) {
+				LM_ERR("failed parsing route set\n");
+				return -1;
+			}
+
+			LM_DBG("setting dst_uri to <%.*s> \n",head->nameaddr.uri.len,
+					head->nameaddr.uri.s);
+
+			if (set_dst_uri(req,&head->nameaddr.uri) !=0 ) {
+				LM_ERR("failed setting new dst uri\n");
+				free_rr(&head);
+				return -1;
+			}
+
 			free_rr(&head);
+		}
+	}
+	else
+	{
+		LM_DBG("Fixing message. Next hop is Strict router\n");
+
+		if( parse_headers( req, HDR_EOH_F, 0)<0 ) {
+			LM_ERR("failed to parse headers when looking after ROUTEs\n");
 			return -1;
 		}
+		
+		buf = req->buf;
 
-		free_rr(&head);
+		if (req->route) {
+			for (it=req->route;it;it=it->sibling)
+				if ((lmp = del_lump(req,it->name.s - buf,it->len,HDR_ROUTE_T)) == 0) {
+					LM_ERR("del_lump failed \n");
+					return -1;
+				}
+		}
+
+		if ( leg->route_set.len !=0 && leg->route_set.s) {
+
+			if (parse_rr_body(leg->route_set.s,leg->route_set.len,&head) != 0) {
+				LM_ERR("failed parsing route set\n");
+				return -1;
+			}
+
+			LM_DBG("setting R-URI to <%.*s> \n",head->nameaddr.uri.len,
+					head->nameaddr.uri.s);
+
+			if (set_ruri(req,&head->nameaddr.uri) !=0 ) {
+				LM_ERR("failed setting new dst uri\n");
+				free_rr(&head);
+				return -1;
+			}
+
+			/* If there are more routes other than the first, add them */
+			if (head->next) {
+				lmp = anchor_lump(req,req->headers->name.s - buf,0,0);
+				if (lmp == 0) {
+					LM_ERR("failed anchoring new lump\n");
+					free_rr(&head);
+					return -1;
+				}
+
+				hdrs = leg->route_set.s + head->len + 1;
+
+				size = leg->route_set.len - head->len - 1 + ROUTE_LEN + CRLF_LEN;
+				route = pkg_malloc(size);
+				if (route == 0) {
+					LM_ERR("no more pkg memory\n");
+					return -1;
+					free_rr(&head);
+				}
+
+				memcpy(route,ROUTE_STR,ROUTE_LEN);
+				memcpy(route+ROUTE_LEN,hdrs,leg->route_set.len - head->len-1);
+				memcpy(route+ROUTE_LEN+leg->route_set.len - head->len-1,CRLF,CRLF_LEN);
+
+				LM_DBG("Adding Route header : [%.*s] \n",size,route);
+
+				if ((lmp = insert_new_lump_after(lmp,route,size,HDR_ROUTE_T)) == 0) {
+					LM_ERR("failed inserting new route set\n");
+					pkg_free(route);
+					free_rr(&head);
+					return -1;
+				}
+				free_rr(&head);
+			}
+
+			if (lmp == NULL) {
+				lmp = anchor_lump(req,req->headers->name.s - buf,0,0);
+				if (lmp == 0)
+				{
+					LM_ERR("failed anchoring new lump\n");
+					return -1;
+				}
+			}
+			
+			if (leg->contact.len && leg->contact.s) {
+				size = leg->contact.len + ROUTE_PREF_LEN + ROUTE_SUFF_LEN;
+				remote_contact = pkg_malloc(size);
+				if (remote_contact == NULL) {
+					LM_ERR("no more pkg memory\n");
+					return -1;
+				}
+
+				memcpy(remote_contact,ROUTE_PREF,ROUTE_PREF_LEN);
+				memcpy(remote_contact+ROUTE_PREF_LEN,leg->contact.s,leg->contact.len);
+				memcpy(remote_contact+ROUTE_PREF_LEN+leg->contact.len,
+						ROUTE_SUFF,ROUTE_SUFF_LEN);
+
+				LM_DBG("Adding remote contact route header : [%.*s]\n",
+						size,remote_contact);
+
+				if (insert_new_lump_after(lmp,remote_contact,size,HDR_ROUTE_T) == 0) {
+					LM_ERR("failed inserting remote contact route\n");
+					pkg_free(remote_contact);
+					return -1;
+				}
+			}
+		}
 	}
-
 	return 0;
 }
 

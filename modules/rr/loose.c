@@ -54,6 +54,7 @@
 #include "loose.h"
 #include "rr_cb.h"
 #include "rr_mod.h"
+#include "api.h"
 
 
 #define RR_ERROR -1       /* An error occured while processing route set */
@@ -73,11 +74,6 @@ static str routed_params = {0,0};
 /* this is hooked into rr API and returns the number of removed
    routes after doing loose_route() */
 int removed_routes;
-
-#define ROUTING_LL (1<<1)
-#define ROUTING_SL (1<<2)
-#define ROUTING_SS (1<<3)
-#define ROUTING_LS (1<<4)
 
 /* this is hooked into rr API and returns the type of previous and next hops
  * in terms of loose versus strict routing */

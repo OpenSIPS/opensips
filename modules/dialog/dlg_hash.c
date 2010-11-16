@@ -421,6 +421,8 @@ error:
 int dlg_update_routing(struct dlg_cell *dlg, unsigned int leg,
 													str *rr, str *contact )
 {
+	rr_t *head = NULL;
+
 	LM_DBG("dialog %p[%d]: rr=<%.*s> contact=<%.*s>\n",
 		dlg, leg,
 		rr->len,rr->s,
@@ -441,6 +443,22 @@ int dlg_update_routing(struct dlg_cell *dlg, unsigned int leg,
 		dlg->legs[leg].route_set.s = dlg->legs[leg].contact.s + contact->len;
 		dlg->legs[leg].route_set.len = rr->len;
 		memcpy( dlg->legs[leg].route_set.s, rr->s, rr->len);
+
+		/* also update URI pointers */
+		if (parse_rr_body(dlg->legs[leg].route_set.s,
+					dlg->legs[leg].route_set.len,&head) != 0) {
+			LM_ERR("failed parsing route set\n");
+			shm_free(dlg->legs[leg].contact.s);
+			return -1;
+		}
+		
+		dlg->legs[leg].nr_uris = 0;
+		while (head) {
+			dlg->legs[leg].route_uris[dlg->legs[leg].nr_uris++] = head->nameaddr.uri;
+			head = head->next;
+		}
+
+		free_rr(&head);
 	}
 
 	return 0;

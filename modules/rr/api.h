@@ -40,6 +40,11 @@
 #include "loose.h"
 #include "rr_cb.h"
 
+#define ROUTING_LL (1<<1)
+#define ROUTING_SL (1<<2)
+#define ROUTING_SS (1<<3)
+#define ROUTING_LS (1<<4)
+
 typedef  int (*add_rr_param_t)(struct sip_msg*, str*);
 typedef  int (*check_route_param_t)(struct sip_msg*, regex_t*);
 typedef  int (*is_direction_t)(struct sip_msg*, int);
