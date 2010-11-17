@@ -963,7 +963,6 @@ static struct mi_root* mi_b2b_bridge(struct mi_root* cmd, void* param)
 	b2bl_tuple_t* tuple;
 	str new_dest;
 	unsigned int entity_no = 0;
-	//unsigned int index;
 	b2bl_entity_id_t* entity, *old_entity, *bridging_entity;
 	struct sip_uri uri;
 	str meth_inv = {INVITE, INVITE_LEN};
@@ -1048,17 +1047,16 @@ static struct mi_root* mi_b2b_bridge(struct mi_root* cmd, void* param)
 		goto error;
 	}
 
-	b2bl_print_tuple(tuple);
-
 	bridging_entity = tuple->bridge_entities[entity_no];
 	old_entity = tuple->bridge_entities[(entity_no?0:1)];
 
-	/* send BYE to old client */
-	if(old_entity == NULL)
+	if(old_entity == NULL || bridging_entity == NULL)
 	{
 		LM_ERR("Wrong dialog id\n");
 		goto error;
 	}
+
+	/* send BYE to old client */
 	if(old_entity->disconnected)
 	{
 		b2b_api.send_reply(old_entity->type, &old_entity->key,
@@ -1070,6 +1068,8 @@ static struct mi_root* mi_b2b_bridge(struct mi_root* cmd, void* param)
 		b2b_api.send_request(old_entity->type, &old_entity->key,
 				&meth_bye, 0, 0, old_entity->dlginfo);
 	}
+
+	b2bl_drop_entity(old_entity, tuple);
 
 	if (old_entity->peer->peer == old_entity)
 		old_entity->peer->peer = NULL;
@@ -1088,7 +1088,6 @@ static struct mi_root* mi_b2b_bridge(struct mi_root* cmd, void* param)
 	entity->peer = bridging_entity;
 
 	tuple->scenario_state = B2B_BRIDGING_STATE;
-
 
 	b2b_api.send_request(bridging_entity->type, &bridging_entity->key, &meth_inv,
 				 0, 0, bridging_entity->dlginfo);
@@ -1194,14 +1193,14 @@ static struct mi_root* mi_b2b_list(struct mi_root* cmd, void* param)
 			attr = add_mi_attr(node, MI_DUP_VALUE, "key", 3,
 					tuple->key->s, tuple->key->len);
 			if(attr == NULL) goto error;
+			p = int2str((unsigned long)(tuple->scenario_state), &len);
+			attr = add_mi_attr(node, MI_DUP_VALUE, "scenario_state", 14, p, len);
+			if(attr == NULL) goto error;
+
 			if (tuple->scenario)
 			{
 				attr = add_mi_attr(node, MI_DUP_VALUE, "scenario", 8,
 						tuple->scenario->id.s, tuple->scenario->id.len);
-				if(attr == NULL) goto error;
-				p = int2str((unsigned long)(tuple->scenario_state), &len);
-				attr = add_mi_attr(node, MI_DUP_VALUE, "scenario_state", 14,
-						p, len);
 				if(attr == NULL) goto error;
 				p = int2str((unsigned long)(tuple->next_scenario_state), &len);
 				attr = add_mi_attr(node, MI_DUP_VALUE, "next_scenario_state", 19,
