@@ -2203,7 +2203,7 @@ done:
 	}
 
 	/* run the b2b route */
-	if(reply_routeid > 0)
+	if(reply_routeid > 0 && ps->rpl!=FAKED_REPLY)
 		run_top_route(rlist[reply_routeid].a, ps->rpl);
 
 	return;
