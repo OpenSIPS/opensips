@@ -1741,6 +1741,8 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 
 	statuscode = ps->code;
 
+	LM_DBG("tm notification cb for [%d] reply\n", statuscode);
+
 	if(statuscode == 100)
 		return;
 
