@@ -243,7 +243,6 @@ b2bl_entity_id_t* b2bl_create_new_entity(enum b2b_entity_type type, str* entity_
 		LM_ERR("No more shared memory\n");
 		return 0;
 	}
-	LM_DBG("address: %p\n", entity);
 	memset(entity, 0, size);
 
 	size = sizeof(b2bl_entity_id_t);
@@ -305,6 +304,9 @@ b2bl_entity_id_t* b2bl_create_new_entity(enum b2b_entity_type type, str* entity_
 	}
 	entity->stats.start_time = get_ticks();
 	entity->stats.call_time = 0;
+
+	LM_DBG("new entity type [%d] [%p]->[%.*s]\n",
+		entity->type, entity, entity->key.len, entity->key.s);
 
 	return entity;
 }
@@ -1887,8 +1889,6 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 	tuple->cbf = cbf;
 	tuple->cb_param = cb_param;
 
-	LM_DBG("b2blogic_key = %.*s\n", b2bl_key->len, b2bl_key->s);
-
 	/* if it will not be confirmed -> delete */
 	tuple->lifetime = 60 + get_ticks();
 
@@ -1923,7 +1923,7 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 		}
 	}
 
-	LM_DBG("body = %.*s - len = %d\n", body.len, body.s, body.len);
+	LM_DBG("got body [%d]:[%.*s]\n", body.len, body.len, body.s);
 
 	if(b2b_extra_headers(msg, b2bl_key, &extra_headers)< 0)
 	{
@@ -1973,7 +1973,6 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 		LM_ERR("Failed to create server entity\n");
 		goto error;
 	}
-	LM_DBG("client %.*s\n", tuple->clients[0]->key.len,tuple->clients[0]->key.s);
 
 	memset(&dlginfo_s, 0, sizeof(b2b_dlginfo_t));
 	dlginfo_s.callid = *client_id;
@@ -1984,6 +1983,8 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 		goto error;
 	}
 
+	tuple->servers[0]->no = 0;
+	tuple->clients[0]->no = 1;
 	tuple->servers[0]->peer = tuple->clients[0];
 	tuple->clients[0]->peer = tuple->servers[0];
 	tuple->bridge_entities[0] = tuple->servers[0];

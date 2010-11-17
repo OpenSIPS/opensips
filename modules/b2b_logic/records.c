@@ -97,8 +97,6 @@ b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg,
 		tuple->sdp.len =  body->len;
 	}
 
-	LM_DBG("pointer [%p]\n", tuple);
-
 	tuple->scenario = scenario;
 
 	tuple->insert_time = get_ticks();
@@ -203,6 +201,8 @@ b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg,
 
 	*b2bl_key_s = b2bl_key;
 	tuple->db_flag = INSERTDB_FLAG;
+
+	LM_DBG("new tuple [%p]->[%.*s]\n", tuple, b2bl_key->len, b2bl_key->s);
 
 	return tuple;
 error:
