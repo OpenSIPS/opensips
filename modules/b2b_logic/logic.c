@@ -1052,6 +1052,7 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 					if(statuscode >= 200 && statuscode < 300)
 					{
 						entity->state = DLG_CONFIRMED;
+						peer->state = DLG_CONFIRMED;
 						entity->stats.setup_time = get_ticks() - entity->stats.start_time;
 						entity->stats.start_time = get_ticks();
 					}
