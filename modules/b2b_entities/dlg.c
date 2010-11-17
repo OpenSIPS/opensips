@@ -2204,7 +2204,7 @@ done:
 
 	/* run the b2b route */
 	if(reply_routeid > 0)
-		run_top_route(rlist[reply_routeid].a, msg);
+		run_top_route(rlist[reply_routeid].a, ps->rpl);
 
 	return;
 error:
