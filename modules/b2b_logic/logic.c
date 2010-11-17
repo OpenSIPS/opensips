@@ -1920,8 +1920,6 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 		}
 	}
 
-	LM_DBG("got body [%d]:[%.*s]\n", body.len, body.len, body.s);
-
 	if(b2b_extra_headers(msg, b2bl_key, &extra_headers)< 0)
 	{
 		LM_ERR("Failed to create extra headers\n");
@@ -2212,7 +2210,6 @@ str* b2b_process_scenario_init(b2b_scenario_t* scenario_struct,struct sip_msg* m
 					return 0;
 				}
 			}
-			LM_DBG("body = %.*s - len = %d\n", body.len, body.s, body.len);
 		}
 	}
 
