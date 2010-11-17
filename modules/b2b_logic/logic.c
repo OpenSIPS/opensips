@@ -466,7 +466,6 @@ int process_bridge_negreply(b2bl_tuple_t* tuple,
 		cbf = tuple->cbf;
 		if(cbf)
 		{
-			tuple->cbf = NULL;
 			param = tuple->cb_param;
 			local_index = tuple->id;
 			etype = entity->type;
@@ -495,7 +494,6 @@ int process_bridge_negreply(b2bl_tuple_t* tuple,
 				pkg_free(ekey.s);
 				return 1;
 			}
-			tuple->cbf = cbf;
 			/* search for entity - if not found return 1 (not to do anything else)*/
 			if(etype == B2B_SERVER)
 			{
@@ -1149,7 +1147,6 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 				memcpy(ekey.s, entity->key.s, entity->key.len);
 				ekey.len = entity->key.len;
 
-				tuple->cbf = NULL;
 				lock_release(&b2bl_htable[hash_index].lock);
 				LM_DBG("eno = %d\n", eno);
 				ret = cbf(param, &stat, scenario_state, eno);
@@ -1165,7 +1162,6 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 					pkg_free(ekey.s);
 					goto error;
 				}
-				tuple->cbf = cbf;
 				if(etype == B2B_SERVER)
 				{
 					for (index = 0; index < MAX_B2BL_ENT; index++)

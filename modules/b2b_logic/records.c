@@ -280,12 +280,21 @@ void b2bl_delete_entity(b2bl_entity_id_t* entity, b2bl_tuple_t* tuple)
 	if(entity->dlginfo)
 		shm_free(entity->dlginfo);
 
-	if(entity->peer && entity->peer->peer==entity)
-		entity->peer->peer = NULL;
-
 	for(i = 0; i< MAX_BRIDGE_ENT; i++)
 		if(tuple->bridge_entities[i] == entity)
 			tuple->bridge_entities[i] = NULL;
+
+/*	if(entity->peer && entity->peer->peer==entity)
+		entity->peer->peer = NULL;
+*/
+
+	for(i = 0; i< MAX_B2BL_ENT; i++)
+	{
+		if(tuple->servers[i] && tuple->servers[i]->peer==entity)
+			tuple->servers[i]->peer= NULL;
+		if(tuple->clients[i] && tuple->clients[i]->peer==entity)
+			tuple->clients[i]->peer= NULL;
+	}
 
 	LM_INFO("delete tuple [%.*s], entity [%.*s]\n",
 			tuple->key->len, tuple->key->s, entity->key.len, entity->key.s);
