@@ -563,6 +563,8 @@ search_dialog:
 		}
 		tmb.unref_cell(tmb.t_gett());
 
+		b2b_key = dlg->tag[CALLEE_LEG];
+
 		goto logic_notify;
 	}
 
