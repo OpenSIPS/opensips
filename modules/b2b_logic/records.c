@@ -121,6 +121,13 @@ b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg,
 	{
 		for(i = 0; i< scenario->param_no; i++)
 		{
+			if(args[i]==NULL)
+			{
+				LM_DBG("Fewer parameters, expected [%d] received [%d]\n",
+						scenario->param_no, i);
+				break;
+			}
+
 			if(args[i] == NULL)
 			{
 				LM_ERR("Too few parameters. This scenario requires %d parameters\n",
@@ -149,6 +156,13 @@ b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg,
 			}
 			else
 			{
+				if(args[i]->s==NULL || args[i]->len==0)
+				{
+					LM_DBG("Fewer parameters, expected [%d] received [%d]\n",
+							scenario->param_no, i);
+					break;
+				}
+
 				tuple->scenario_params[i].s = (char*)shm_malloc(args[i]->len);
 				if(tuple->scenario_params[i].s == NULL)
 				{

@@ -2031,7 +2031,7 @@ int b2b_process_scenario_init(b2b_scenario_t* scenario_struct,struct sip_msg* ms
 		}
 
 		if(b2b_scenario_parse_uri(node_aux, value_content, tuple, msg,
-					&client_to) < 0)
+					&client_to) < 0 || !client_to.s)
 		{
 			LM_ERR("Failed to get the value for the b2b client ruri\n");
 			xmlFree(value_content);
