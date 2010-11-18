@@ -92,8 +92,10 @@ b2b_dlg_t* b2b_search_htable_dlg(b2b_table table, unsigned int hash_index,
 		}
 		else
 		{
+			/*
 			LM_DBG("dialog totag [%.*s] with state %d\n",
 				dlg->tag[CALLER_LEG].len, dlg->tag[CALLER_LEG].s, dlg->state);
+			*/
 			/* it is an UAC dialog (callid is the key)*/
 			if(dlg->tag[CALLER_LEG].len == to_tag->len &&
 				strncmp(dlg->tag[CALLER_LEG].s, to_tag->s, to_tag->len)== 0)
@@ -118,10 +120,7 @@ b2b_dlg_t* b2b_search_htable_dlg(b2b_table table, unsigned int hash_index,
 				{
 					if(leg->tag.len == from_tag->len &&
 						strncmp(leg->tag.s, from_tag->s, from_tag->len)== 0)
-					{
-						LM_DBG("Found record\n");
 						return dlg;
-					}
 					leg = leg->next;
 				}
 				if(dlg->state < B2B_CONFIRMED || dlg->state>=B2B_DESTROYED) /* state not confirmed yet and a new leg */
@@ -130,7 +129,7 @@ b2b_dlg_t* b2b_search_htable_dlg(b2b_table table, unsigned int hash_index,
 		}
 		dlg = dlg->next;
 	}
-	return 0;
+	return NULL;
 }
 
 b2b_dlg_t* b2b_search_htable(b2b_table table, unsigned int hash_index,
@@ -617,7 +616,7 @@ search_dialog:
 				/* for server UPDATE sent before dialog confirmed */
 				table = server_htable;
 				hash_index = core_hash(&callid, &from_tag, server_hsize);
-				dlg = b2bl_search_iteratively(&callid, &from_tag,0, hash_index);
+				dlg = b2bl_search_iteratively(&callid, &from_tag,NULL, hash_index);
 				if(dlg == NULL)
 				{
 					lock_release(&server_htable[hash_index].lock);
@@ -632,7 +631,9 @@ search_dialog:
 	{
 		lock_get(&table[hash_index].lock);
 		dlg = b2b_search_htable_dlg(table, hash_index, local_index,
-			&to_tag, ((method_value == METHOD_UPDATE && table == client_htable )?0:&from_tag), &callid);
+			&to_tag,
+			((method_value == METHOD_UPDATE && table == client_htable)?NULL:&from_tag),
+			&callid);
 		if(dlg== NULL)
 		{
 			LM_DBG("No dialog found\n");
@@ -1290,8 +1291,8 @@ void b2b_entity_delete(enum b2b_entity_type et, str* b2b_key,
 	lock_get(&table[hash_index].lock);
 	if(dlginfo)
 		dlg = b2b_search_htable_dlg(table, hash_index, local_index,
-		dlginfo->totag.s?&dlginfo->totag:0,
-		dlginfo->fromtag.s?&dlginfo->fromtag:0, &dlginfo->callid);
+		dlginfo->totag.s?&dlginfo->totag:NULL,
+		dlginfo->fromtag.s?&dlginfo->fromtag:NULL, &dlginfo->callid);
 	else
 		dlg = b2b_search_htable(table, hash_index, local_index);
 
@@ -1393,10 +1394,10 @@ int b2b_send_indlg_req(b2b_dlg_t* dlg, enum b2b_entity_type et,
 
 	tmb.setlocalTholder(0);
 
-	LM_DBG("Request sent dlg=[%p], uac_tran=[%p]\n", dlg, dlg->uac_tran);
 	if(result < 0)
 	{
-		LM_ERR("failed to send request [%.*s]\n", method->len, method->s);
+		LM_ERR("failed to send request [%.*s] for dlg=[%p] uac_tran=[%p]\n",
+			method->len, method->s, dlg, dlg->uac_tran);
 		free_tm_dlg(td);
 		shm_free(b2b_key_shm);
 		return -1;
@@ -1435,7 +1436,6 @@ int b2b_send_request(enum b2b_entity_type et, str* b2b_key, str* method,
 	{
 		table = client_htable;
 	}
-	LM_DBG("Send request [%.*s] to entity type %d\n", method->len, method->s, et);
 
 	if(dlginfo)
 	{
@@ -1458,7 +1458,7 @@ int b2b_send_request(enum b2b_entity_type et, str* b2b_key, str* method,
 	else
 	{
 		dlg = b2b_search_htable_dlg(table, hash_index, local_index, 
-		totag.s?&totag:0, fromtag.s?&fromtag:0, &dlginfo->callid);
+		totag.s?&totag:NULL, fromtag.s?&fromtag:NULL, &dlginfo->callid);
 	}
 	if(dlg== NULL)
 	{
@@ -1466,11 +1466,12 @@ int b2b_send_request(enum b2b_entity_type et, str* b2b_key, str* method,
 		goto error;
 	}
 
-	LM_DBG("Send request [%.*s] for dlg[%p]->[%.*s]\n", method->len, method->s,
-			dlg, b2b_key->len, b2b_key->s);
 	if(dlg->state == B2B_TERMINATED)
 	{
-		LM_ERR("Can not send request in terminated state\n");
+		LM_ERR("Can not send request [%.*s] for entity type [%d] "
+			"for dlg[%p]->[%.*s] in terminated state\n",
+			method->len, method->s, et,
+			dlg, b2b_key->len, b2b_key->s);
 		lock_release(&table[hash_index].lock);
 		return 0;
 	}
@@ -1509,7 +1510,9 @@ int b2b_send_request(enum b2b_entity_type et, str* b2b_key, str* method,
 	}
 
 	dlg->last_method = method_value;
-	LM_DBG("dlg[%p] with last_method [%d]\n",dlg, dlg->last_method);
+	LM_DBG("Send request [%.*s] for entity type [%d] for dlg[%p]->[%.*s]\n",
+			method->len, method->s, et,
+			dlg, b2b_key->len, b2b_key->s);
 	UPDATE_DBFLAG(dlg);
 
 	/* send request */
@@ -1835,7 +1838,7 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 	else
 	{
 		dlg = b2b_search_htable_dlg(htable, hash_index, local_index,
-			&from_tag, (method_id==METHOD_CANCEL)?0:&to_tag, &callid);
+			&from_tag, (method_id==METHOD_CANCEL)?NULL:&to_tag, &callid);
 	}
 
 	if(dlg== NULL)
@@ -1898,12 +1901,11 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 	
 	if(statuscode >= 300)
 	{
-		LM_DBG("Received a negative reply\n");
 		if(dlg->uac_tran == t )
 		{
 			tmb.unref_cell(dlg->uac_tran);
-			dlg->uac_tran = 0;
-			LM_DBG("dlg=[%p], uac_tran=0\n", dlg);
+			dlg->uac_tran = NULL;
+			LM_DBG("dlg=[%p], uac_tran=NULL\n", dlg);
 		}
 
 		if(method_id != METHOD_INVITE)
@@ -1963,7 +1965,6 @@ dummy_reply:
 	else
 	{
 		/* if provisional or 200OK reply */
-		LM_DBG("Received a reply with statuscode = %d\n", statuscode);
 		LM_DBG("status la inceput = %d\n", dlg->state);
 
 		if(msg == FAKED_REPLY)
@@ -1980,8 +1981,8 @@ dummy_reply:
 		if(dlg->uac_tran && statuscode>= 200)
 		{
 			tmb.unref_cell(dlg->uac_tran);
-			dlg->uac_tran = 0;
-			LM_DBG("dlg=[%p], uac_tran=0\n", dlg);
+			dlg->uac_tran = NULL;
+			LM_DBG("dlg=[%p], uac_tran=NULL\n", dlg);
 		}
 
 		/* if 200 OK received for INVITE and the dialog already ended ->
