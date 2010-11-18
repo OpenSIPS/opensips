@@ -2348,7 +2348,7 @@ str* b2b_process_scenario_init(b2b_scenario_t* scenario_struct,struct sip_msg* m
 		}
 
 		if(b2b_scenario_parse_uri(node_aux, value_content, tuple, msg,
-					&client_to) < 0)
+					&client_to) < 0 || !client_to.s)
 		{
 			LM_ERR("Failed to get the value for the b2b client ruri\n");
 			xmlFree(value_content);
@@ -2504,21 +2504,18 @@ int b2b_init_request(struct sip_msg* msg, str* arg1, str* arg2, str* arg3,
 	if (b2bl_key_avp_name.n)
 		destroy_avps( b2bl_key_avp_type, b2bl_key_avp_name, 1);
 
-	/* find the b2b_logic key for the tuple */
-	/* it will encode the position in the hash table */
-	/* get the hash_index from to_uri and from_uri */
-
 	/* find the scenario with the corresponding id */
 	scenario_struct = (b2b_scenario_t*)arg1;
 	b2bl_caller = CALLER_SCRIPT;
 
-	/* call the scenario init processing function */
+	/* process the arguments */
 	args[0] = arg2;
 	args[1] = arg3;
 	args[2] = arg4;
 	args[3] = arg5;
 	args[4] = arg6;
 
+	/* call the scenario init processing function */
 	key = init_request(msg, scenario_struct, args, 0, 0);
 	if(key)
 	{
