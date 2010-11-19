@@ -107,7 +107,6 @@ typedef struct b2b_dlg
 	str                  route_set[2];
 	str                  contact[2];
 	struct socket_info*  bind_addr[2];
-	str                  sdp;
 	enum request_method  last_method;
 	struct b2b_dlg      *next;
 	struct b2b_dlg      *prev;
