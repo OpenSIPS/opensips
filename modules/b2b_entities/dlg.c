@@ -2000,6 +2000,8 @@ dummy_reply:
 					lock_release(&htable[hash_index].lock);
 					goto error;
 				}
+				if(dlg->callid.s==0 || dlg->callid.len==0)
+					dlg->callid = msg->callid->body;
 				if(b2b_send_req(dlg, leg, &ack, 0) < 0)
 				{
 					LM_ERR("Failed to send ACK request\n");
