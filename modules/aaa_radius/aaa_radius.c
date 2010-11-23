@@ -337,7 +337,7 @@ int send_auth_func(struct sip_msg* msg, str* s1, str* s2) {
 	mp = sets[index2]->parsed;
 	for (; mp; mp = mp->next) {
 
-		if ((vp = rc_avpair_get(recv, mp->value, 0))) {
+		if ((vp = rc_avpair_get(recv, ATTRID(mp->value), VENDOR(mp->value)))) {
 			memset(&pvt, 0, sizeof(pv_value_t));
 			if (vp->type == PW_TYPE_INTEGER) {
 				//LM_DBG("%.*s---->%d---->%d\n",mp->name.len, mp->name.s, vp->lvalue,
