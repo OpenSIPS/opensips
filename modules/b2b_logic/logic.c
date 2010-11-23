@@ -454,87 +454,84 @@ int process_bridge_negreply(b2bl_tuple_t* tuple,
 	}
 
 	entity->disconnected =1;
-	/* call the callback for brigding faild  */
-	if(tuple->cbf && entity == tuple->bridge_entities[1])
+	/* call the callback for brigding failed  */
+	cbf = tuple->cbf;
+	if(cbf)
 	{
-		cbf = tuple->cbf;
-		if(cbf)
+		param = tuple->cb_param;
+		local_index = tuple->id;
+		etype = entity->type;
+		stat.start_time =  entity->stats.start_time;
+		stat.setup_time = get_ticks() - entity->stats.start_time;
+		ekey.s = (char*)pkg_malloc(entity->key.len);
+		if(ekey.s == NULL)
 		{
-			param = tuple->cb_param;
-			local_index = tuple->id;
-			etype = entity->type;
-			stat.start_time =  entity->stats.start_time;
-			stat.setup_time = get_ticks() - entity->stats.start_time;
-			ekey.s = (char*)pkg_malloc(entity->key.len);
-			if(ekey.s == NULL)
-			{
-				LM_ERR("No more memory\n");
-				return -1;
-			}
-			memcpy(ekey.s, entity->key.s, entity->key.len);
-			ekey.len = entity->key.len;
+			LM_ERR("No more memory\n");
+			return -1;
+		}
+		memcpy(ekey.s, entity->key.s, entity->key.len);
+		ekey.len = entity->key.len;
 
-			lock_release(&b2bl_htable[hash_index].lock);
-				
-			ret = cbf(param, &stat, 0, B2B_REJECT_E2);
-			LM_DBG("ret = %d\n", ret);
+		lock_release(&b2bl_htable[hash_index].lock);
 			
-			lock_get(&b2bl_htable[hash_index].lock);
-			/* must search the tuple again - you can't know what might have happened with it */
-			tuple = b2bl_search_tuple_safe(hash_index, local_index);
-			if(tuple == NULL)
+		ret = cbf(param, &stat, 0, B2B_REJECT_E2);
+		LM_DBG("ret = %d\n", ret);
+		
+		lock_get(&b2bl_htable[hash_index].lock);
+		/* must search the tuple again - you can't know what might have happened with it */
+		tuple = b2bl_search_tuple_safe(hash_index, local_index);
+		if(tuple == NULL)
+		{
+			LM_DBG("B2B logic record not found anymore\n");
+			pkg_free(ekey.s);
+			return 1;
+		}
+		/* search for entity - if not found return 1 (not to do anything else)*/
+		if(etype == B2B_SERVER)
+		{
+			for (index = 0; index < MAX_B2BL_ENT; index++)
 			{
-				LM_DBG("B2B logic record not found anymore\n");
+				e = tuple->servers[index];
+				if (e == entity && e->key.len == ekey.len &&
+					strncmp(e->key.s, ekey.s, ekey.len)==0)
+				{
+					found = 1;
+					break;
+				}
+			}
+			if(!found)
+			{
+				LM_DBG("Server Entity does not exist anymore: return\n");
 				pkg_free(ekey.s);
 				return 1;
 			}
-			/* search for entity - if not found return 1 (not to do anything else)*/
-			if(etype == B2B_SERVER)
+		}
+		else
+		{
+			for (index = 0; index < MAX_B2BL_ENT; index++)
 			{
-				for (index = 0; index < MAX_B2BL_ENT; index++)
+				e = tuple->clients[index];
+				if(e == entity && e->key.len == ekey.len &&
+					strncmp(e->key.s, ekey.s, ekey.len)==0)
 				{
-					e = tuple->servers[index];
-					if (e == entity && e->key.len == ekey.len &&
-						strncmp(e->key.s, ekey.s, ekey.len)==0)
-					{
-						found = 1;
-						break;
-					}
-				}
-				if(!found)
-				{
-					LM_DBG("Server Entity does not exist anymore: return\n");
-					pkg_free(ekey.s);
-					return 1;
+					found = 1;
+					break;
 				}
 			}
-			else
+			if(!found)
 			{
-				for (index = 0; index < MAX_B2BL_ENT; index++)
-				{
-					e = tuple->clients[index];
-					if(e == entity && e->key.len == ekey.len &&
-						strncmp(e->key.s, ekey.s, ekey.len)==0)
-					{
-						found = 1;
-						break;
-					}
-				}
-				if(!found)
-				{
-					LM_DBG("Client Entity does not exist anymore: return\n");
-					pkg_free(ekey.s);
-					return 1;
-				}
-			}
-
-			pkg_free(ekey.s);
-			if(ret == 0)
-			{
-				/* drop the negative reply */
-				b2bl_delete_entity(entity, tuple);
+				LM_DBG("Client Entity does not exist anymore: return\n");
+				pkg_free(ekey.s);
 				return 1;
 			}
+		}
+
+		pkg_free(ekey.s);
+		if(ret == 0)
+		{
+			/* drop the negative reply */
+			b2bl_delete_entity(entity, tuple);
+			return 1;
 		}
 	}
 	return process_bridge_dialog_end(tuple, entity_no, entity);

@@ -1889,7 +1889,8 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 				" method_id=%d t=[%p], dlg->uac_tran=[%p]\n",
 				dlg, dlg->last_method, method_id, t, dlg->uac_tran);
 		/* if confirmed - send ACK */
-		if(statuscode>=200 && statuscode<300 && dlg->state==B2B_ESTABLISHED)
+		if(statuscode>=200 && statuscode<300 &&
+				(dlg->state==B2B_ESTABLISHED || dlg->state==B2B_TERMINATED))
 		{
 			leg = b2b_new_leg(msg, &to_tag, PKG_MEM_TYPE);
 			if(leg == NULL)
