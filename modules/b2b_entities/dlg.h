@@ -113,6 +113,7 @@ typedef struct b2b_dlg
 	b2b_notify_t         b2b_cback;
 	b2b_add_dlginfo_t    add_dlginfo;
 	str                  param;
+	str                  ack_sdp;
 	struct cell*         uac_tran;
 	struct cell*         uas_tran;
 	struct cell*         update_tran;

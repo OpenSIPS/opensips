@@ -440,6 +440,9 @@ void b2bl_delete(b2bl_tuple_t* tuple, unsigned int hash_index,
 	if(tuple->extra_headers)
 		shm_free(tuple->extra_headers);
 
+	if(tuple->b1_sdp.s)
+		shm_free(tuple->b1_sdp.s);
+
 	shm_free(tuple);
 }
 

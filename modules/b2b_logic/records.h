@@ -78,6 +78,7 @@ typedef struct b2bl_tuple
 	unsigned int insert_time;
 	unsigned int lifetime;
 	str sdp;
+	str b1_sdp; /* used for multiple attempts to bridge the first entity */
 	int db_flag;
 	b2bl_cback_f cbf;
 	void* cb_param;

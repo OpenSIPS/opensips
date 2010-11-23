@@ -810,6 +810,8 @@ void destroy_b2b_htables(void)
 				aux = dlg->next;
 				if(dlg->tag[CALLEE_LEG].s)
 					shm_free(dlg->tag[CALLEE_LEG].s);
+				if(dlg->ack_sdp.s)
+					shm_free(dlg->ack_sdp.s);
 				shm_free(dlg);
 				dlg = aux;
 			}
@@ -827,6 +829,8 @@ void destroy_b2b_htables(void)
 			{
 				aux = dlg->next;
 				b2b_delete_legs(&dlg->legs);
+				if(dlg->ack_sdp.s)
+					shm_free(dlg->ack_sdp.s);
 				shm_free(dlg);
 				dlg = aux;
 			}
@@ -1250,6 +1254,9 @@ void b2b_delete_record(b2b_dlg_t* dlg, b2b_table htable, unsigned int hash_index
 	if(dlg->uas_tran)
 		tmb.unref_cell(dlg->uas_tran);
 
+	if(dlg->ack_sdp.s)
+		shm_free(dlg->ack_sdp.s);
+
 	shm_free(dlg);
 }
 
@@ -1356,6 +1363,24 @@ int b2b_send_indlg_req(b2b_dlg_t* dlg, enum b2b_entity_type et,
 			dlg->cseq[CALLEE_LEG]--;
 		else
 			dlg->cseq[CALLER_LEG]--;
+		
+		if(dlg->ack_sdp.s)
+		{
+			shm_free(dlg->ack_sdp.s);
+			dlg->ack_sdp.s=0;
+			dlg->ack_sdp.len=0;
+		}
+		if(body && body->s)
+		{
+			dlg->ack_sdp.s = (char*)shm_malloc(body->len);
+			if(dlg->ack_sdp.s == NULL)
+			{
+				LM_ERR("No more memory\n");
+				goto error;
+			}
+			memcpy(dlg->ack_sdp.s, body->s, body->len);
+			dlg->ack_sdp.len = body->len;
+		}
 	}
 	else
 	if(method_value == METHOD_INVITE)
@@ -1383,13 +1408,17 @@ int b2b_send_indlg_req(b2b_dlg_t* dlg, enum b2b_entity_type et,
 	{
 		LM_ERR("failed to send request [%.*s] for dlg=[%p] uac_tran=[%p]\n",
 			method->len, method->s, dlg, dlg->uac_tran);
-		free_tm_dlg(td);
-		shm_free(b2b_key_shm);
-		return -1;
+		goto error;
 	}
 	free_tm_dlg(td);
 
 	return 0;
+error:
+	if(td)
+		free_tm_dlg(td);
+	if(b2b_key_shm)
+		shm_free(b2b_key_shm);
+	return -1;
 }
 
 
@@ -1674,7 +1703,7 @@ dlg_leg_t* b2b_add_leg(b2b_dlg_t* dlg, struct sip_msg* msg, str* to_tag)
 }
 
 int b2b_send_req(b2b_dlg_t* dlg, enum b2b_entity_type etype,
-		dlg_leg_t* leg, str* method, str* extra_headers)
+		dlg_leg_t* leg, str* method, str* extra_headers, str* body)
 {
 	dlg_t* td;
 	int result;
@@ -1860,8 +1889,7 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 				" method_id=%d t=[%p], dlg->uac_tran=[%p]\n",
 				dlg, dlg->last_method, method_id, t, dlg->uac_tran);
 		/* if confirmed - send ACK */
-/*	don't send it since it might require body
- * if(statuscode>=200 && statuscode<300 && dlg->state==B2B_ESTABLISHED)
+		if(statuscode>=200 && statuscode<300 && dlg->state==B2B_ESTABLISHED)
 		{
 			leg = b2b_new_leg(msg, &to_tag, PKG_MEM_TYPE);
 			if(leg == NULL)
@@ -1870,13 +1898,14 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 				lock_release(&htable[hash_index].lock);
 				return;
 			}
-			if(b2b_send_req(dlg, etype, leg, &ack, 0) < 0)
+			if(b2b_send_req(dlg, etype, leg, &ack, 0,
+						(dlg->ack_sdp.s?&dlg->ack_sdp:0)) < 0)
 			{
 				LM_ERR("Failed to send ACK request\n");
 			}
 			pkg_free(leg);
 		}
-*/
+
 		lock_release(&htable[hash_index].lock);
 		return;
 	}
@@ -2002,11 +2031,11 @@ dummy_reply:
 				}
 				if(dlg->callid.s==0 || dlg->callid.len==0)
 					dlg->callid = msg->callid->body;
-				if(b2b_send_req(dlg, etype, leg, &ack, 0) < 0)
+				if(b2b_send_req(dlg, etype, leg, &ack, 0, 0) < 0)
 				{
 					LM_ERR("Failed to send ACK request\n");
 				}
-				if(b2b_send_req(dlg, etype, leg, &bye, 0) < 0)
+				if(b2b_send_req(dlg, etype, leg, &bye, 0, 0) < 0)
 				{
 					LM_ERR("Failed to send BYE request\n");
 				}
@@ -2111,7 +2140,7 @@ dummy_reply:
 							rseq.len, rseq.s, cseq.len, cseq.s);
 					extra_headers.s = buf;
 					extra_headers.len = strlen(buf);
-					if(b2b_send_req(dlg, etype, leg, &method, &extra_headers) < 0)
+					if(b2b_send_req(dlg, etype, leg, &method, &extra_headers, 0) < 0)
 					{
 						LM_ERR("Failed to send PRACK\n");
 					}
@@ -2134,11 +2163,12 @@ dummy_reply:
 					}
 
 					/* send an ACK followed by BYE */
-					if(b2b_send_req(dlg, etype, dlg->legs, &ack, 0) < 0)
+					if(b2b_send_req(dlg, etype, dlg->legs, &ack, 0,
+								dlg->ack_sdp.s?&dlg->ack_sdp:0) < 0)
 					{
 						LM_ERR("Failed to send ACK request\n");
 					}
-					if(b2b_send_req(dlg, etype, dlg->legs, &bye, 0) < 0)
+					if(b2b_send_req(dlg, etype, dlg->legs, &bye, 0, 0) < 0)
 					{
 						LM_ERR("Failed to send BYE request\n");
 					}
