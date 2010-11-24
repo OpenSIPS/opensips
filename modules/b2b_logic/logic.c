@@ -945,7 +945,7 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 		/* if a disconnected entity -> do nothing */
 		if(entity->disconnected)
 		{
-			LM_DBG("This entity is disconnected\n");
+			LM_DBG("entity [%.*s] is disconnected\n", key->len, key->s);
 			b2bl_delete_entity(entity, tuple);
 
 			if(tuple->to_del && tuple->clients[0]==NULL && tuple->clients[1]==NULL &&
