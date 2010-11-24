@@ -1077,6 +1077,7 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 		}
 	}
 	else
+	if(type == B2B_REQUEST)
 	{
 		int request_id;
 
@@ -1487,6 +1488,11 @@ send_usual_request:
 			//	b2bl_delete(tuple, hash_index, 0);
 			}
 		}
+	}
+	else
+	{
+		LM_ERR("got notification for [%.*s] from [%.*s] with unknown event type [%d]\n",
+			b2bl_key->len, b2bl_key->s, key->len, key->s, type);
 	}
 done:
 	UPDATE_DBFLAG(tuple, tuple->db_flag);
