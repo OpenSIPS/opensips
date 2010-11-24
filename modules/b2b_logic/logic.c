@@ -67,7 +67,9 @@ int udh_to_uri(str user, str host, str port, str* uri);
 static str method_invite= {INVITE, INVITE_LEN};
 static str method_ack   = {ACK, ACK_LEN};
 static str method_bye   = {BYE, BYE_LEN};
-static str ok = {"OK", 2};
+
+static str ok = str_init("OK");
+static str notAcceptable = str_init("Not Acceptable");
 
 int entity_add_dlginfo(b2bl_entity_id_t* entity, b2b_dlginfo_t* dlginfo)
 {
@@ -1100,18 +1102,16 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 			if(request_id == B2B_BYE)
 			{
 				/* it means that a BYE was already sent to this entity but it did not reply */
-				str msg = str_init("OK");
 				b2b_api.send_reply(entity->type, &entity->key, METHOD_BYE,
-						200, &msg, 0, 0, entity->dlginfo);
+						200, &ok, 0, 0, entity->dlginfo);
 				if(entity->peer)
 					b2b_api.send_reply(entity->peer->type, &entity->peer->key, METHOD_BYE,
-							200, &msg, 0, 0, entity->peer->dlginfo);
+							200, &ok, 0, 0, entity->peer->dlginfo);
 			}
 			else
 			{
-				str msg = str_init("Not Acceptable");
 				b2b_api.send_reply(entity->type, &entity->key, method_value,
-						400, &msg, 0, 0, entity->dlginfo);
+						400, &notAcceptable, 0, 0, entity->dlginfo);
 			}
 			b2bl_delete(tuple, hash_index, 0);
 			goto done;
