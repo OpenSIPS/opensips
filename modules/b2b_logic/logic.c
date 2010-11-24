@@ -452,6 +452,8 @@ int process_bridge_negreply(b2bl_tuple_t* tuple,
 		LM_ERR("No match found\n");
 		return -1;
 	}
+	if(entity_no==0) /* mark that the first step of the bridging failed */
+		tuple->scenario_state = B2B_NONE;
 
 	entity->disconnected =1;
 	/* call the callback for brigding failed  */
@@ -530,7 +532,8 @@ int process_bridge_negreply(b2bl_tuple_t* tuple,
 		if(ret == 0)
 		{
 			/* drop the negative reply */
-			b2bl_delete_entity(entity, tuple);
+			if(entity_no == 1)
+				b2bl_delete_entity(entity, tuple);
 			return 1;
 		}
 	}
