@@ -1089,29 +1089,27 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 		request_id = b2b_get_request_id(&method);
 		if(request_id < 0)
 		{
-			LM_DBG("Not a recognized request\n");
+			LM_DBG("Not a recognized request [%d]\n", request_id);
 			goto send_usual_request;
 		}
 		/* if the request is an ACK and the tuple is marked to_del -> then delete the record and return */
 		if(tuple->to_del)
 		{
-			if(request_id == B2B_ACK)
+			switch (request_id)
 			{
-				LM_DBG("ACK for a negative reply\n");
-			}
-			else
-			if(request_id == B2B_BYE)
-			{
-				/* it means that a BYE was already sent to this entity but it did not reply */
-				b2b_api.send_reply(entity->type, &entity->key, METHOD_BYE,
+				case B2B_ACK:
+					LM_DBG("ACK for a negative reply\n");
+					break;
+				case B2B_BYE:
+					/* BYE already sent to this entity but we got no reply */
+					b2b_api.send_reply(entity->type, &entity->key, METHOD_BYE,
 						200, &ok, 0, 0, entity->dlginfo);
-				if(entity->peer)
-					b2b_api.send_reply(entity->peer->type, &entity->peer->key, METHOD_BYE,
+					if(entity->peer)
+						b2b_api.send_reply(entity->peer->type, &entity->peer->key, METHOD_BYE,
 							200, &ok, 0, 0, entity->peer->dlginfo);
-			}
-			else
-			{
-				b2b_api.send_reply(entity->type, &entity->key, method_value,
+					break;
+				default:
+					b2b_api.send_reply(entity->type, &entity->key, method_value,
 						400, &notAcceptable, 0, 0, entity->dlginfo);
 			}
 			b2bl_delete(tuple, hash_index, 0);
