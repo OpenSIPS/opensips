@@ -168,9 +168,9 @@ modparam("closeddial", "new_uri_column", "new_uri")
 
    Default value is "0 (no)".
 
-   Example 1.8. Set user_column parameter
+   Example 1.8. Set use_domain parameter
 ...
-modparam("closeddial", "user_domain", 1)
+modparam("closeddial", "use_domain", 1)
 ...
 
 1.4. Exported Functions
