@@ -176,23 +176,29 @@ int delete_db_subs(str pres_uri, str ev_stored_name, str to_tag)
 int update_subs_db(subs_t* subs, int type)
 {
 	static db_ps_t my_ps_remote = NULL, my_ps_local = NULL;
-	db_key_t query_cols[22], update_keys[7];
-	db_val_t query_vals[22], update_vals[7];
+	db_key_t query_cols[22], update_keys[8];
+	db_val_t query_vals[22], update_vals[8];
 	int n_update_cols= 0;
 	int n_query_cols = 0;
+
+	if (pa_dbf.use_table(pa_db, &active_watchers_table) < 0)
+	{
+		LM_ERR("in use table sql operation\n");	
+		return -1;
+	}
 
 	query_cols[n_query_cols] = &str_presentity_uri_col;
 	query_vals[n_query_cols].type = DB_STR;
 	query_vals[n_query_cols].nul = 0;
 	query_vals[n_query_cols].val.str_val = subs->pres_uri;
 	n_query_cols++;
-	
+
 	query_cols[n_query_cols] = &str_watcher_username_col;
 	query_vals[n_query_cols].type = DB_STR;
 	query_vals[n_query_cols].nul = 0;
 	query_vals[n_query_cols].val.str_val = subs->from_user;
 	n_query_cols++;
-	
+
 	query_cols[n_query_cols] = &str_watcher_domain_col;
 	query_vals[n_query_cols].type = DB_STR;
 	query_vals[n_query_cols].nul = 0;
@@ -249,14 +255,19 @@ int update_subs_db(subs_t* subs, int type)
 		update_keys[n_update_cols] = &str_remote_cseq_col;
 		update_vals[n_update_cols].type = DB_INT;
 		update_vals[n_update_cols].nul = 0;
-		update_vals[n_update_cols].val.int_val = subs->remote_cseq; 
+		update_vals[n_update_cols].val.int_val = subs->remote_cseq;
 		n_update_cols++;
-	
-		CON_PS_REFERENCE(pa_db) = &my_ps_remote;
 
+		update_keys[n_update_cols] = &str_contact_col;
+		update_vals[n_update_cols].type = DB_STR;
+		update_vals[n_update_cols].nul = 0;
+		update_vals[n_update_cols].val.str_val = subs->contact;
+		n_update_cols++;
+
+		CON_PS_REFERENCE(pa_db) = &my_ps_remote;
 	}
 	else
-	{	
+	{
 		update_keys[n_update_cols] = &str_local_cseq_col;
 		update_vals[n_update_cols].type = DB_INT;
 		update_vals[n_update_cols].nul = 0;
@@ -268,7 +279,7 @@ int update_subs_db(subs_t* subs, int type)
 		update_vals[n_update_cols].nul = 0;
 		update_vals[n_update_cols].val.int_val = subs->version+ 1;
 		n_update_cols++;
-		
+
 		CON_PS_REFERENCE(pa_db) = &my_ps_local;
 	}
 
@@ -283,15 +294,9 @@ int update_subs_db(subs_t* subs, int type)
 	update_vals[n_update_cols].nul = 0;
 	update_vals[n_update_cols].val.str_val = subs->reason;
 	n_update_cols++;
-	
-	if (pa_dbf.use_table(pa_db, &active_watchers_table) < 0)
-	{
-		LM_ERR("in use table sql operation\n");	
-		return -1;
-	}
-		
-	if( pa_dbf.update( pa_db,query_cols, 0, query_vals,
-				update_keys, update_vals, n_query_cols,n_update_cols)<0) 
+
+	if(pa_dbf.update( pa_db,query_cols, 0, query_vals,
+				update_keys, update_vals, n_query_cols,n_update_cols)<0)
 	{
 		LM_ERR("updating presence information\n");
 		return -1;
@@ -2259,7 +2264,7 @@ int insert_db_subs_auth(subs_t* subs)
 
 	CON_PS_REFERENCE(pa_db) = &my_ps;
 	if(pa_dbf.insert(pa_db, db_keys, db_vals, n_query_cols )< 0)
-	{	
+	{
 		LM_ERR("in sql insert\n");
 		return -1;
 	}
