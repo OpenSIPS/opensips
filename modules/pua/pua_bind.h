@@ -41,4 +41,22 @@ typedef struct pua_api {
 
 typedef int (*bind_pua_t)(pua_api_t* api);
 
+static inline int load_pua_api( pua_api_t *api)
+{
+	bind_pua_t bind_pua;
+
+	/* import the pua auto-loading function */
+	if ( !(bind_pua= (bind_pua_t)find_export("bind_pua", 1,0))) {
+		LM_ERR("failed to import bind_pua\n");
+		return -1;
+	}
+	/* let the auto-loading function load all pua stuff */
+	if (bind_pua(api) < 0)
+	{
+		LM_ERR("Can't bind pua\n");
+		return -1;
+	}
+	return 0;
+}
+
 #endif
