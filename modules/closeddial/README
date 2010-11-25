@@ -6,7 +6,7 @@ Edited by
 
 Sergio Gutierrez
 
-   Copyright © 2009
+   Copyright © 2010
    Revision History
    Revision $Revision$ $Date: 2009-02-07 18:00:00 -0500$
      __________________________________________________________
@@ -170,9 +170,9 @@ modparam("closeddial", "new_uri_column", "new_uri")
 
    Default value is "0 (no)".
 
-   Example 1.8. Set user_column parameter
+   Example 1.8. Set use_domain parameter
 ...
-modparam("closeddial", "user_domain", 1)
+modparam("closeddial", "use_domain", 1)
 ...
 
 1.4. Exported Functions
