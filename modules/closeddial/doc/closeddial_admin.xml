@@ -212,10 +212,10 @@ modparam("closeddial", "new_uri_column", "new_uri")
 		</emphasis>
 		</para>
 		<example>
-		<title>Set <varname>user_column</varname> parameter</title>
+		<title>Set <varname>use_domain</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("closeddial", "user_domain", 1)
+modparam("closeddial", "use_domain", 1)
 ...
 </programlisting>
 		</example>
