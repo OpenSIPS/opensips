@@ -1047,7 +1047,7 @@ int fix_route_dialog(struct sip_msg *req,struct dlg_cell *dlg)
 	if (dlg->state <= DLG_STATE_EARLY)
 		return 0;
 
-	if ((*(d_rrb.routing_type) & ROUTING_LL) || (*d_rrb.routing_type) & ROUTING_SL)
+	if ((*(d_rrb.routing_type) ==  ROUTING_LL) || (*d_rrb.routing_type) == ROUTING_SL)
 	{
 		LM_DBG("Fixing message. Next hop is Loose router\n");
 
@@ -1144,22 +1144,25 @@ int fix_route_dialog(struct sip_msg *req,struct dlg_cell *dlg)
 
 		if ( leg->route_set.len !=0 && leg->route_set.s) {
 
-			if (parse_rr_body(leg->route_set.s,leg->route_set.len,&head) != 0) {
-				LM_ERR("failed parsing route set\n");
-				return -1;
-			}
+			LM_DBG("setting R-URI to <%.*s> \n",leg->route_uris->len,
+					leg->route_uris->s);
 
-			LM_DBG("setting R-URI to <%.*s> \n",head->nameaddr.uri.len,
-					head->nameaddr.uri.s);
-
-			if (set_ruri(req,&head->nameaddr.uri) !=0 ) {
+			if (set_ruri(req,leg->route_uris) !=0 ) {
 				LM_ERR("failed setting new dst uri\n");
-				free_rr(&head);
 				return -1;
 			}
 
 			/* If there are more routes other than the first, add them */
-			if (head->next) {
+			if (leg->nr_uris > 1) {
+
+				/* FIXME - find a better way to skip the first route header.
+				 * Instead or parsing again the entire route set, maybe remmember
+				 * the needed pointer at the initial parsing of the route_set */
+				if (parse_rr_body(leg->route_set.s,leg->route_set.len,&head) != 0) {
+					LM_ERR("failed parsing route set\n");
+					return -1;
+				}
+
 				lmp = anchor_lump(req,req->headers->name.s - buf,0,0);
 				if (lmp == 0) {
 					LM_ERR("failed anchoring new lump\n");
@@ -1262,10 +1265,6 @@ int dlg_validate_dialog( struct sip_msg* req, struct dlg_cell *dlg)
 	if (dlg->state <= DLG_STATE_EARLY)
 		return 0;
 
-	/* check the RURI - it must be the contact of the destination leg */
-	/* after loose_route() even if the previous hop was a strict router,
-	   opensips will set in RURI the remote contact */
-
 	if (leg->contact.len) {
 		
 		rr_uri = d_rrb.get_remote_target(req);
@@ -1309,7 +1308,7 @@ int dlg_validate_dialog( struct sip_msg* req, struct dlg_cell *dlg)
 		}
 	}
 
-	LM_DBG("RURI succesfully validated\n");
+	LM_DBG("Remote contact succesfully validated\n");
 
 	/* check the route set - is the the same as in original request */
 	/* the route set (without the first Route) must be the same as the
@@ -1332,9 +1331,6 @@ int dlg_validate_dialog( struct sip_msg* req, struct dlg_cell *dlg)
 			LM_ERR("failed fetching route URIs from the msg\n");
 			return -1;
 		}
-
-		LM_DBG("req msg has %d Route headers, dlg has %d Route headers\n",
-				nr_routes,leg->nr_uris);
 
 		if (nr_routes != leg->nr_uris) {
 			LM_ERR("Different number of routes found in msg. req=%d, dlg=%d\n",

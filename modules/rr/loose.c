@@ -647,7 +647,7 @@ static inline int after_strict(struct sip_msg* _m)
 
 	if (is_strict(&puri.params)) {
 		LM_DBG("Next hop: '%.*s' is strict router\n", uri.len, ZSW(uri.s));
-		routing_type |= ROUTING_SS;
+		routing_type = ROUTING_SS;
 		/* Previous hop was a strict router and the next hop is strict
 		 * router too. There is no need to save R-URI again because it
 		 * is saved already. In fact, in this case we will behave exactly
@@ -683,7 +683,7 @@ static inline int after_strict(struct sip_msg* _m)
 		LM_DBG("Next hop: '%.*s' is loose router\n",
 			uri.len, ZSW(uri.s));
 
-		routing_type |= ROUTING_SL;
+		routing_type = ROUTING_SL;
 
 		if(get_maddr_uri(&uri, &puri)!=0) {
 			LM_ERR("failed to check maddr\n");
@@ -825,7 +825,7 @@ static inline int after_loose(struct sip_msg* _m, int preloaded)
 				status = (preloaded ? NOT_RR_DRIVEN : RR_DRIVEN);
 
 				/*same case as LL , if there is no next route*/
-				routing_type |= ROUTING_LL;
+				routing_type = ROUTING_LL;
 
 				goto done;
 			}
@@ -869,7 +869,7 @@ static inline int after_loose(struct sip_msg* _m, int preloaded)
 					status = (preloaded ? NOT_RR_DRIVEN : RR_DRIVEN);
 
 					/* same case as LL , if there is no next route */
-					routing_type |= ROUTING_LL;
+					routing_type = ROUTING_LL;
 
 					goto done;
 				}
@@ -895,7 +895,7 @@ static inline int after_loose(struct sip_msg* _m, int preloaded)
 	if (is_strict(&puri.params)) {
 		LM_DBG("Next URI is a strict router\n");
 
-		routing_type |= ROUTING_LS;
+		routing_type = ROUTING_LS;
 		if (handle_sr(_m, hdr, rt) < 0) {
 			LM_ERR("failed to handle strict router\n");
 			return RR_ERROR;
@@ -904,7 +904,7 @@ static inline int after_loose(struct sip_msg* _m, int preloaded)
 		/* Next hop is loose router */
 		LM_DBG("Next URI is a loose router\n");
 
-		routing_type |= ROUTING_LL;
+		routing_type = ROUTING_LL;
 
 		if(get_maddr_uri(&uri, &puri)!=0) {
 			LM_ERR("checking maddr failed\n");
@@ -1167,12 +1167,12 @@ str* get_remote_target(struct sip_msg *msg)
 		return 0;
 	}
 
-	if ((routing_type & ROUTING_LL) || (routing_type & ROUTING_LS))
+	if ((routing_type == ROUTING_LL) || (routing_type == ROUTING_LS))
 		return &msg->first_line.u.request.uri;
-	else if (routing_type & ROUTING_SL)
+	else if (routing_type == ROUTING_SL)
 		/* set by loose_route(), recovered from previous strict routing */
 		return &msg->new_uri;
-	else if (routing_type & ROUTING_SS)
+	else if (routing_type == ROUTING_SS)
 	{
 		/* searching for last header field */
 		res = find_rem_target(msg, &hdr, &rt, &prev);
@@ -1218,7 +1218,7 @@ str* get_route_set(struct sip_msg *msg,int *nr_routes)
 		return 0;
 	}
 
-	if (routing_type & ROUTING_SS || routing_type & ROUTING_LS)
+	if (routing_type == ROUTING_SS || routing_type == ROUTING_LS)
 	{
 		/* must manually insert RURI, as it was part
 		 * of the route deleted to make up for strict routing */
@@ -1256,7 +1256,7 @@ str* get_route_set(struct sip_msg *msg,int *nr_routes)
 
 
 	/* if SS - remove last route */
-	if (routing_type & ROUTING_SS)
+	if (routing_type == ROUTING_SS)
 		n--;
 
 	if (nr_routes)
