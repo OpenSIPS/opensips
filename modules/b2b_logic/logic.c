@@ -2466,6 +2466,9 @@ error:
 str* init_request(struct sip_msg* msg, b2b_scenario_t* scenario_struct,
 		str* args[], b2bl_cback_f cbf, void* cb_param)
 {
+	str* key;
+	int_str avp_val;
+
 	/* parse message to extract needed info */
 	if (parse_headers(msg, HDR_EOH_F, 0) < 0)
 	{
@@ -2474,15 +2477,32 @@ str* init_request(struct sip_msg* msg, b2b_scenario_t* scenario_struct,
 	}
 
 	if(scenario_struct == NULL)
-		return create_top_hiding_entities(msg, cbf, cb_param);
+		key = create_top_hiding_entities(msg, cbf, cb_param);
+	else
+		key = b2b_process_scenario_init(scenario_struct, msg, args, cbf, cb_param);
 
-	return b2b_process_scenario_init(scenario_struct, msg, args, cbf, cb_param);
+	if(key)
+	{
+		if (b2bl_key_avp_name.n)
+		{
+			avp_val.s = *key;
+			if(add_avp(AVP_VAL_STR|b2bl_key_avp_type, b2bl_key_avp_name, avp_val)!=0)
+			{
+				LM_ERR("failed to build b2bl_key avp\n");
+			}
+		}
+	}
+
+	return key;
 }
 
 str* internal_init_scenario(struct sip_msg* msg, str* name, str* args[MAX_SCENARIO_PARAMS],
 		b2bl_cback_f cbf, void* cb_param)
 {
 	b2b_scenario_t* scenario_struct;
+
+	if (b2bl_key_avp_name.n)
+		destroy_avps( b2bl_key_avp_type, b2bl_key_avp_name, 1);
 
 	if(name->len == B2B_TOP_HIDING_SCENARY_LEN &&
 		strncmp(name->s,B2B_TOP_HIDING_SCENARY,B2B_TOP_HIDING_SCENARY_LEN)==0)
@@ -2508,7 +2528,6 @@ int b2b_init_request(struct sip_msg* msg, str* arg1, str* arg2, str* arg3,
 	str* args[MAX_SCENARIO_PARAMS];
 	b2b_scenario_t* scenario_struct;
 	str* key;
-	int_str avp_val;
 
 	if (b2bl_key_avp_name.n)
 		destroy_avps( b2bl_key_avp_type, b2bl_key_avp_name, 1);
@@ -2527,18 +2546,8 @@ int b2b_init_request(struct sip_msg* msg, str* arg1, str* arg2, str* arg3,
 	/* call the scenario init processing function */
 	key = init_request(msg, scenario_struct, args, 0, 0);
 	if(key)
-	{
-		if (b2bl_key_avp_name.n)
-		{
-			avp_val.s = *key;
-			if(add_avp(AVP_VAL_STR|b2bl_key_avp_type, b2bl_key_avp_name, avp_val)!=0)
-			{
-				LM_ERR("failed to build b2bl_key avp\n");
-				return -1;
-			}
-		}
 		return 1;
-	}
+
 	return -1;
 }
 
