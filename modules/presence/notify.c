@@ -246,7 +246,7 @@ int build_str_hdr(subs_t* subs, int is_body, str* hdr, str* extra_hdrs)
 		p += CRLF_LEN;
 	}
 	
-	if(is_body)
+	if(is_body && subs->event->content_type.s && subs->event->content_type.len)
 	{	
 		memcpy(p,"Content-Type: ", 14);
 		p += 14;
