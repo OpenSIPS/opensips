@@ -599,6 +599,12 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 
 	bentity0 = tuple->bridge_entities[0];
 	bentity1 = tuple->bridge_entities[1];
+	
+	if(bentity0 == NULL)
+	{
+		LM_ERR("Bridge entities 0 is NULL\n");
+		return -1;
+	}
 
 	entity_no = bridge_get_entityno(tuple, entity);
 	if(entity_no < 0)
@@ -687,6 +693,7 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 				LM_ERR("Failed to send second ACK in bridging scenario\n");
 				return -1;
 			}
+			bentity1->state = 0;
 		}
 		tuple->bridge_entities[1]->peer = tuple->bridge_entities[0];
 		tuple->bridge_entities[0]->peer = tuple->bridge_entities[1];
@@ -784,9 +791,10 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 		if(b2b_api.send_request(bentity0->type, &bentity0->key, &method_invite,
 			extra_headers, body, bentity0->dlginfo)< 0)
 		{
-			LM_ERR("Failed to send second ACK in bridging scenario\n");
+			LM_ERR("Failed to send second Invite in bridging scenario\n");
 			return -1;
 		}
+		bentity0->state = 0;
 
 		tuple->bridge_entities[1] = tuple->bridge_entities[0];
 		tuple->bridge_entities[0] = tuple->bridge_entities[2];
@@ -1756,6 +1764,7 @@ entity_search_done:
 		/* TODO -> Do I need some other info here? */
 		b2b_api.send_request(old_entity->type, &old_entity->key, &method_invite,
 				 &maxfwd_hdr, 0, old_entity->dlginfo);
+		old_entity->state = 0;
 	}
 	else
 	{
@@ -2677,8 +2686,9 @@ int b2bl_bridge(str* key, str* new_dst, str* new_from_dname, int entity_no)
 		LM_DBG("Created new client entity [%.*s]\n", new_dst->len, new_dst->s);
 
 		tuple->scenario_state = B2B_BRIDGING_STATE;
-		b2b_api.send_request(B2B_SERVER, &tuple->servers[0]->key, &method_invite,
-				 0, 0, tuple->servers[0]->dlginfo);
+		if(b2b_api.send_request(B2B_SERVER, &tuple->servers[0]->key, &method_invite,
+				 0, 0, tuple->servers[0]->dlginfo) < 0)
+		tuple->servers[0]->state = 0; /* mark it not as CONFIRMED */
 	}
 
 	tuple->bridge_entities[0]= tuple->servers[0];
@@ -2932,6 +2942,7 @@ int b2bl_bridge_2calls(str* key1, str* key2)
 		LM_ERR("Failed to send reInvite\n");
 		goto error;
 	}
+	e1->state = 0;
 	tuple->scenario_state = B2B_BRIDGING_STATE;
 	tuple->lifetime = -1;
 	lock_release(&b2bl_htable[hash_index].lock);
@@ -3095,6 +3106,7 @@ int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no)
 		LM_ERR("Failed to send reInvite\n");
 		goto error;
 	}
+	bridging_entity->state = 0;
 	tuple->lifetime = -1;
 
 	tuple->bridge_entities[0] = bridging_entity;
