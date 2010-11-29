@@ -63,6 +63,7 @@ static int fixup_b2b_logic(void** param, int param_no);
 static struct mi_root* mi_trigger_scenario(struct mi_root* cmd, void* param);
 static struct mi_root* mi_b2b_bridge(struct mi_root* cmd, void* param);
 static struct mi_root* mi_b2b_list(struct mi_root* cmd, void* param);
+static struct mi_root* mi_b2b_terminate_call(struct mi_root* cmd, void* param);
 void b2bl_clean(unsigned int ticks, void* param);
 void b2bl_db_update(unsigned int ticks, void* param);
 int  b2b_init_request(struct sip_msg* msg, str* arg1, str* arg2, str* arg3,
@@ -166,10 +167,11 @@ static param_export_t params[]=
 
 /** MI commands */
 static mi_export_t mi_cmds[] = {
-	{ "b2b_trigger_scenario", mi_trigger_scenario, 0,  0,  0},
-	{ "b2b_bridge",           mi_b2b_bridge,       0,  0,  0},
-	{ "b2b_list",             mi_b2b_list,         0,  0,  0},
-	{  0,                  0,                      0,  0,  0}
+	{ "b2b_trigger_scenario", mi_trigger_scenario,   0,  0,  0},
+	{ "b2b_bridge",           mi_b2b_bridge,         0,  0,  0},
+	{ "b2b_list",             mi_b2b_list,           0,  0,  0},
+	{ "b2b_terminate_call",   mi_b2b_terminate_call, 0,  0,  0},
+	{  0,                  0,                        0,  0,  0}
 };
 
 /** Module interface */
@@ -953,6 +955,27 @@ int  b2b_bridge_request(struct sip_msg* msg, str* p1, str* p2)
 	return b2bl_bridge_msg(msg, &key, entity_no);
 }
 
+static struct mi_root* mi_b2b_terminate_call(struct mi_root* cmd, void* param)
+{
+	struct mi_node* node= NULL;
+	str key;
+
+	node = cmd->node.kids;
+	if(node == NULL)
+		return 0;
+
+	/* b2bl_key */
+	key = node->value;
+	if(key.s == NULL || key.len== 0)
+	{
+		LM_ERR("Wrong b2b_logic key parameter\n");
+		return init_mi_tree(404, "Empty b2bl key", 14);
+	}
+
+	b2bl_terminate_call(&key);
+
+	return init_mi_tree(200, "OK", 2);
+}
 
 /*
  * arguments: b2bl_key, new_dest, entity (1 - client)
