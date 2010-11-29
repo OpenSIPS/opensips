@@ -935,16 +935,17 @@ int  b2b_bridge_request(struct sip_msg* msg, str* p1, str* p2)
 			entity_no = pv_val.ri;
 			LM_DBG("got entity_no %d\n", entity_no);
 		}
-		else if (pv_val.flags & PV_VAL_STR) {
+		else
+		if (pv_val.flags & PV_VAL_STR) {
 			if(str2int(&(pv_val.rs), (unsigned int*)&entity_no) != 0) {
-			LM_ERR("Unable to get entity_no from pv '%.*s'i\n",
-			pv_val.rs.len, pv_val.rs.s);
+				LM_ERR("Unable to get entity_no from pv '%.*s'i\n",
+				pv_val.rs.len, pv_val.rs.s);
+				return -1;
+			}
+		} else {
+			LM_ERR("second pv not a str or int type\n");
 			return -1;
 		}
-	} else {
-		LM_ERR("second pv not a str or int type\n");
-		return -1;
-	}
 	} else {
 		LM_ERR("Unable to get entity from pv:%p\n", p1);
 		return -1;
