@@ -35,6 +35,8 @@
 #include "../presence/hash.h"
 #include "records.h"
 
+extern b2bl_cb_params_t cb_params;
+
 static void _print_entity(int index, b2bl_entity_id_t* c)
 {
 	LM_INFO("{%d} type=%d [%p]->[%.*s] state=%d no=%d peer=[%p]\n",
@@ -386,7 +388,12 @@ void b2bl_delete(b2bl_tuple_t* tuple, unsigned int hash_index,
 			tuple, tuple->key->len, tuple->key->s, hash_index, tuple->id);
 
 	if(tuple->cbf)
-		tuple->cbf(tuple->cb_param, 0, 0, B2B_DESTROY);
+	{
+		memset(&cb_params, 0, sizeof(b2bl_cb_params_t));
+		cb_params.param = tuple->cb_param;
+		cb_params.stat = NULL;
+		tuple->cbf(&cb_params, B2B_DESTROY);
+	}
 	if(!not_del_b2be)
 		b2bl_db_delete(tuple);
 	if(b2bl_htable[hash_index].first == tuple)

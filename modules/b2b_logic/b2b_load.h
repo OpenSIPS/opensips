@@ -13,14 +13,19 @@ typedef struct b2bl_dlg_stat
 	int call_time;
 }b2bl_dlg_stat_t;
 
-enum b2b_event {B2B_BYE_E1=0, B2B_BYE_E2, B2B_REJECT_E2, B2B_DESTROY};
+typedef struct b2bl_cb_params
+{
+	void *param;            /* parameter passed at callback registration */
+	b2bl_dlg_stat_t *stat;  /* b2bl_dlg statistics */
+} b2bl_cb_params_t;
 
+enum b2b_event {B2B_BYE_E1=0, B2B_BYE_E2, B2B_REJECT, B2B_DESTROY};
 
-typedef int (*b2bl_cback_f)(void* param, b2bl_dlg_stat_t* stat, int curr_state,
-		enum b2b_event);
-/* curr_state: The current scenario state, before the rules are applied
+typedef int (*b2bl_cback_f)(b2bl_cb_params_t *params, enum b2b_event);
+/*
  * event    - B2B_BYE_E1,  bye from entity 1
  *            B2B_BYE_E2,  bye from entity 2
+ *            B2B_REJECT,  negative reply for Invite when bridging
  *            B2B_DESTROY, destroy the tuple
  * Return: -1 - error
  *           0 - drop the BYE

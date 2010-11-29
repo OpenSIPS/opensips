@@ -71,6 +71,9 @@ static str method_bye   = {BYE, BYE_LEN};
 static str ok = str_init("OK");
 static str notAcceptable = str_init("Not Acceptable");
 
+b2bl_dlg_stat_t stat;
+b2bl_cb_params_t cb_params;
+
 int entity_add_dlginfo(b2bl_entity_id_t* entity, b2b_dlginfo_t* dlginfo)
 {
 	b2b_dlginfo_t* new_dlginfo= NULL;
@@ -441,11 +444,9 @@ int process_bridge_negreply(b2bl_tuple_t* tuple,
 	unsigned int local_index;
 	unsigned int index;
 	b2bl_cback_f cbf;
-	void* param;
 	int etype;
 	b2bl_entity_id_t* e;
 	int found = 0;
-	b2bl_dlg_stat_t stat;
 	str ekey={0, 0};
 
 	entity_no = bridge_get_entityno(tuple, entity);
@@ -462,7 +463,8 @@ int process_bridge_negreply(b2bl_tuple_t* tuple,
 	cbf = tuple->cbf;
 	if(cbf)
 	{
-		param = tuple->cb_param;
+		memset(&cb_params, 0, sizeof(b2bl_cb_params_t));
+		cb_params.param = tuple->cb_param;
 		local_index = tuple->id;
 		etype = entity->type;
 		stat.start_time =  entity->stats.start_time;
@@ -475,10 +477,11 @@ int process_bridge_negreply(b2bl_tuple_t* tuple,
 		}
 		memcpy(ekey.s, entity->key.s, entity->key.len);
 		ekey.len = entity->key.len;
+		cb_params.stat = &stat;
 
 		lock_release(&b2bl_htable[hash_index].lock);
-			
-		ret = cbf(param, &stat, 0, B2B_REJECT_E2);
+
+		ret = cbf(&cb_params, B2B_REJECT);
 		LM_DBG("ret = %d\n", ret);
 		
 		lock_get(&b2bl_htable[hash_index].lock);
@@ -1128,15 +1131,14 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 			entity->disconnected = 1;
 			if(tuple->cbf)
 			{
-				b2bl_dlg_stat_t stat;
 				b2bl_cback_f cbf = tuple->cbf;
-				void* param = tuple->cb_param;
-				int scenario_state = tuple->scenario_state;
 				int eno = entity->no;
 				int etype= entity->type;
 				int found = 0;
 				str ekey= {0, 0};
 
+				memset(&cb_params, 0, sizeof(b2bl_cb_params_t));
+				cb_params.param = tuple->cb_param;
 				if(tuple->scenario_state != B2B_BRIDGING_STATE)
 					entity->stats.call_time = get_ticks() - entity->stats.start_time;
 				else
@@ -1159,10 +1161,11 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 				}
 				memcpy(ekey.s, entity->key.s, entity->key.len);
 				ekey.len = entity->key.len;
+				cb_params.stat = &stat;
 
 				lock_release(&b2bl_htable[hash_index].lock);
 				LM_DBG("eno = %d\n", eno);
-				ret = cbf(param, &stat, scenario_state, eno);
+				ret = cbf(&cb_params, eno);
 				LM_DBG("ret = %d, peer= %p\n", ret, peer);
 
 				pkg_free(stat.key.s);
