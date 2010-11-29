@@ -138,3 +138,6 @@
 2010 August 06
    o Removed loading xlog module from sample configuration.
 
+2010 November 29
+   o Added support to append destination network ID by different ways.
+

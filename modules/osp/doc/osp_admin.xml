@@ -267,11 +267,31 @@ modparam("osp","append_userphone",1)
     </section>
     <section>
       <title><varname>append_networkid</varname></title>
-      <para>The append_networkid (integer) parameter instructs the OSP module if to append networkid parameter in outbound destination URIs. If this value is set to 0, the OSP module does not append networkid parameter. If this value is set to 1, the OSP module will append networkid parameter. The default value is 1</para>
+      <para>The append_networkid (integer) parameter instructs the OSP module if to append destination network ID in outbound destination URIs. If this value is set to 0, the OSP module does not append destination network ID. If this value is set to 1, the OSP module will append destination network ID. The default value is 1</para>
       <example>
         <title>Append networkid parameter</title>
         <programlisting format="linespecific">
 modparam("osp","append_networkid",1)
+        </programlisting>
+      </example>
+    </section>
+    <section>
+      <title><varname>networkid_location</varname></title>
+      <para>The networkid_location (integer) parameter instructs the OSP module where to append destination network ID in outbound destination URIs. If this value is set to 0, the OSP module appends destination network ID as URI-parameter. If this value is set to 1, the OSP module appends destination network ID as user-parameter. The default value is 0</para>
+      <example>
+        <title>Networkid parameter location</title>
+        <programlisting format="linespecific">
+modparam("osp","networkid_location",0)
+        </programlisting>
+      </example>
+    </section>
+    <section>
+      <title><varname>networkid_parameter</varname></title>
+      <para>The networkid_parameter (string) parameter instructs the OSP module to use which parameter name in outbound destination URIs to append destination network ID. The default value is "networkid"</para>
+      <example>
+        <title>Networkid parameter name</title>
+        <programlisting format="linespecific">
+modparam("osp","networkid_param","networkid")
         </programlisting>
       </example>
     </section>

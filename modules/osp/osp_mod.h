@@ -55,6 +55,8 @@
 #define OSP_DEF_REDIRURI                0   /* 0 for "xxxxxxxxxx@xxx.xxx.xxx.xxx", 1 for "<xxxxxxxxxx@xxx.xxx.xxx.xxx>" format */
 #define OSP_DEF_USERPHONE               0
 #define OSP_DEF_APPENDNID               1
+#define OSP_DEF_DNIDLOC                 0
+#define OSP_DEF_DNIDPARAM               "networkid"
 #define OSP_DEF_SRCIPAVP                "$avp(s:_osp_source_device_)"
 #define OSP_DEF_SNIDAVP                 "$avp(s:_osp_source_networkid_)"
 #define OSP_DEF_CINFOS                  8

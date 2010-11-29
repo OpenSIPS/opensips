@@ -51,9 +51,11 @@ Di-Shi Sun
               1.3.19. redirection_uri_format
               1.3.20. append_userphone
               1.3.21. append_networkid
-              1.3.22. source_device_avp
-              1.3.23. source_networkid_avp
-              1.3.24. custom_info_avp
+              1.3.22. networkid_location
+              1.3.23. networkid_parameter
+              1.3.24. source_device_avp
+              1.3.25. source_networkid_avp
+              1.3.26. custom_info_avp
 
         1.4. Exported Functions
 
@@ -95,17 +97,19 @@ Di-Shi Sun
    1.19. Setting the redirection URI format
    1.20. Append user=phone parameter
    1.21. Append networkid parameter
-   1.22. Setting the source device IP AVP
-   1.23. Setting the source network ID AVP
-   1.24. Setting the custom info AVP
-   1.25. checkospheader usage
-   1.26. validateospheader usage
-   1.27. requestosprouting usage
-   1.28. checkosproute usage
-   1.29. prepareosproute usage
-   1.30. checkcallingtranslation usage
-   1.31. prepareallosproute usage
-   1.32. reportospusage usage
+   1.22. Networkid parameter location
+   1.23. Networkid parameter name
+   1.24. Setting the source device IP AVP
+   1.25. Setting the source network ID AVP
+   1.26. Setting the custom info AVP
+   1.27. checkospheader usage
+   1.28. validateospheader usage
+   1.29. requestosprouting usage
+   1.30. checkosproute usage
+   1.31. prepareosproute usage
+   1.32. checkcallingtranslation usage
+   1.33. prepareallosproute usage
+   1.34. reportospusage usage
 
 Chapter 1. Admin Guide
 
@@ -427,15 +431,38 @@ modparam("osp","append_userphone",1)
 1.3.21. append_networkid
 
    The append_networkid (integer) parameter instructs the OSP
-   module if to append networkid parameter in outbound destination
-   URIs. If this value is set to 0, the OSP module does not append
-   networkid parameter. If this value is set to 1, the OSP module
-   will append networkid parameter. The default value is 1
+   module if to append destination network ID in outbound
+   destination URIs. If this value is set to 0, the OSP module
+   does not append destination network ID. If this value is set to
+   1, the OSP module will append destination network ID. The
+   default value is 1
 
    Example 1.21. Append networkid parameter
 modparam("osp","append_networkid",1)
 
-1.3.22. source_device_avp
+1.3.22. networkid_location
+
+   The networkid_location (integer) parameter instructs the OSP
+   module where to append destination network ID in outbound
+   destination URIs. If this value is set to 0, the OSP module
+   appends destination network ID as URI-parameter. If this value
+   is set to 1, the OSP module appends destination network ID as
+   user-parameter. The default value is 0
+
+   Example 1.22. Networkid parameter location
+modparam("osp","networkid_location",0)
+
+1.3.23. networkid_parameter
+
+   The networkid_parameter (string) parameter instructs the OSP
+   module to use which parameter name in outbound destination URIs
+   to append destination network ID. The default value is
+   "networkid"
+
+   Example 1.23. Networkid parameter name
+modparam("osp","networkid_param","networkid")
+
+1.3.24. source_device_avp
 
    The source_device_avp (string) parameter instructs the OSP
    module to use the defined AVP to pass the source device IP
@@ -445,10 +472,10 @@ modparam("osp","append_networkid",1)
    pseudo variables are described in
    http://www.opensips.org/Resources/DocsCoreVar.
 
-   Example 1.22. Setting the source device IP AVP
+   Example 1.24. Setting the source device IP AVP
 modparam("osp","source_device_avp","$avp(s:srcdev)")
 
-1.3.23. source_networkid_avp
+1.3.25. source_networkid_avp
 
    The source_networkid_avp (string) parameter instructs the OSP
    module to use the defined AVP to pass the source network ID
@@ -458,10 +485,10 @@ modparam("osp","source_device_avp","$avp(s:srcdev)")
    variables are described in
    http://www.opensips.org/Resources/DocsCoreVar.
 
-   Example 1.23. Setting the source network ID AVP
+   Example 1.25. Setting the source network ID AVP
 modparam("osp","source_networkid_avp","$avp(s:snid)")
 
-1.3.24. custom_info_avp
+1.3.26. custom_info_avp
 
    The custom_info_avp (string) parameter instructs the OSP module
    to use the defined AVP to pass the custom information values.
@@ -470,7 +497,7 @@ modparam("osp","source_networkid_avp","$avp(s:snid)")
    pseudo-variables". All pseudo variables are described in
    http://www.opensips.org/Resources/DocsCoreVar.
 
-   Example 1.24. Setting the custom info AVP
+   Example 1.26. Setting the custom info AVP
 modparam("osp","custom_info_avp","$avp(s:cinfo)")
 
 1.4. Exported Functions
@@ -482,7 +509,7 @@ modparam("osp","custom_info_avp","$avp(s:cinfo)")
 
    This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
-   Example 1.25. checkospheader usage
+   Example 1.27. checkospheader usage
 ...
 if (checkospheader()) {
   log(1,"OSP header field found.\n");
@@ -501,7 +528,7 @@ if (checkospheader()) {
 
    This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
-   Example 1.26. validateospheader usage
+   Example 1.28. validateospheader usage
 ...
 if (validateospheader()) {
   log(1,"valid OSP header found\n");
@@ -530,7 +557,7 @@ if (validateospheader()) {
 
    This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
-   Example 1.27. requestosprouting usage
+   Example 1.29. requestosprouting usage
 ...
 if (requestosprouting()) {
   log(1,"successfully queried OSP server, now relaying call\n");
@@ -546,7 +573,7 @@ if (requestosprouting()) {
 
    This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
-   Example 1.28. checkosproute usage
+   Example 1.30. checkosproute usage
 ...
 if (checkosproute()) {
   log(1,"There is at least one route for the call\n");
@@ -569,7 +596,7 @@ if (checkosproute()) {
 
    This function can be used from BRANCH_ROUTE.
 
-   Example 1.29. prepareosproute usage
+   Example 1.31. prepareosproute usage
 ...
 if (prepareosproute()) {
   log(1,"successfully prepared the route, now relaying call\n");
@@ -591,7 +618,7 @@ if (prepareosproute()) {
 
    This function can be used from BRANCH_ROUTE.
 
-   Example 1.30. checkcallingtranslation usage
+   Example 1.32. checkcallingtranslation usage
 ...
 if (checkcallingtranslation()) {
   # Remove the Remote_Party-ID from the received message
@@ -613,7 +640,7 @@ if (checkcallingtranslation()) {
 
    This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
-   Example 1.31. prepareallosproute usage
+   Example 1.33. prepareallosproute usage
 ...
 if (prepareallosproute()) {
   log(1,"Routes are prepared, now either forking or redirecting the cal
@@ -640,7 +667,7 @@ l\n");
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.32. reportospusage usage
+   Example 1.34. reportospusage usage
 ...
 if (is_direction("downstream")) {
   log(1,"This BYE message is from SOURCE\n");
