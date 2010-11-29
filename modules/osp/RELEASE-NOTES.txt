@@ -135,3 +135,9 @@
 2010 July 07
    o Changed OSP TCP port from 1080 to 5045.
 
+2010 August 06
+   o Removed loading xlog module from sample configuration.
+
+2010 November 29
+   o Added support to append destination network ID by different ways.
+

@@ -69,7 +69,9 @@ extern int _osp_use_rpid;
 extern int _osp_use_np;
 extern int _osp_redir_uri;
 extern int _osp_append_userphone;
-extern int _osp_append_networkid;
+extern int _osp_append_dnid;
+extern int _osp_dnid_location;
+extern char* _osp_dnid_param;
 extern char _osp_PRIVATE_KEY[];
 extern char _osp_LOCAL_CERTIFICATE[];
 extern char _osp_CA_CERTIFICATE[];
@@ -159,7 +161,9 @@ static param_export_t params[]={
     { "use_number_portability",           INT_PARAM, &_osp_use_np },
     { "redirection_uri_format",           INT_PARAM, &_osp_redir_uri },
     { "append_userphone",                 INT_PARAM, &_osp_append_userphone },
-    { "append_networkid",                 INT_PARAM, &_osp_append_networkid },
+    { "append_networkid",                 INT_PARAM, &_osp_append_dnid},
+    { "networkid_location",               INT_PARAM, &_osp_dnid_location},
+    { "networkid_parameter",              STR_PARAM, &_osp_dnid_param },
     { "source_device_avp",                STR_PARAM, &_osp_srcdev_avp },
     { "source_networkid_avp",             STR_PARAM, &_osp_snid_avp },
     { "custom_info_avp",                  STR_PARAM, &_osp_cinfo_avp },
@@ -321,6 +325,15 @@ static int ospVerifyParameters(void)
         result = -1;
     }
 
+    if ((_osp_dnid_location != 0) && (_osp_dnid_location != 1)) {
+        _osp_dnid_location = OSP_DEF_DNIDLOC;
+        LM_WARN("networkid_location is out of range, reset to %d\n", OSP_DEF_DNIDLOC);
+    }
+
+    if (!(_osp_dnid_param && *_osp_dnid_param)) {
+        _osp_dnid_param = OSP_DEF_DNIDPARAM;
+    }
+
     if ((_osp_work_mode == 1) && _osp_srcdev_avp && *_osp_srcdev_avp) {
         avp_str.s = _osp_srcdev_avp;
         avp_str.len = strlen(_osp_srcdev_avp);
@@ -408,7 +421,9 @@ static void ospDumpParameters(void)
     LM_INFO("    use_number_portability '%d' ", _osp_use_np);
     LM_INFO("    redirection_uri_format '%d' ", _osp_redir_uri);
     LM_INFO("    append_userphone '%d' ", _osp_append_userphone);
-    LM_INFO("    append_networkid '%d' ", _osp_append_networkid);
+    LM_INFO("    append_networkid '%d' ", _osp_append_dnid);
+    LM_INFO("    networkid_location '%d' ", _osp_dnid_location);
+    LM_INFO("    networkid_parameter '%s' ", _osp_dnid_param);
     LM_INFO("    max_destinations '%d'\n", _osp_max_dests);
     if (_osp_srcdev_avpname.n == 0) {
         LM_INFO("    source device IP disabled\n");

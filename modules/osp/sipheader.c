@@ -47,7 +47,9 @@ extern char _osp_in_device[];
 extern int _osp_use_rpid;
 extern int _osp_use_np;
 extern int _osp_append_userphone;
-extern int _osp_append_networkid;
+extern int _osp_append_dnid;
+extern int _osp_dnid_location;
+extern char* _osp_dnid_param;
 extern int_str _osp_srcdev_avpname;
 extern unsigned short _osp_srcdev_avptype;
 
@@ -639,38 +641,38 @@ int ospRebuildDestionationUri(
 {
     static const str TRANS = { ";transport=tcp", 14 };
     static const str USERPHONE = { ";user=phone", 11 };
-    static const str NETWORKID = { ";networkid=", 11 };
     char* buffer;
     int calledsize;
     int hostsize;
     int uriparamsize;
-    int npsize;
+    int userparamsize;
+    int dnidsize;
     int count;
 
     calledsize = strlen(dest->called);
     hostsize = strlen(dest->host);
     /* ";rn=" + nprn */
-    npsize = dest->nprn[0] ? 4 + strlen(dest->nprn) : 0;
+    userparamsize = dest->nprn[0] ? 4 + strlen(dest->nprn) : 0;
     /* ";cic=" + npcic */
-    npsize += dest->npcic[0] ? 5 + strlen(dest->npcic) : 0;
+    userparamsize += dest->npcic[0] ? 5 + strlen(dest->npcic) : 0;
     /* ";npdi" */
-    npsize += dest->npdi ? 5 : 0;
+    userparamsize += dest->npdi ? 5 : 0;
     /* ";spid=" */
-    npsize += dest->opname[OSPC_OPNAME_SPID][0] ? 6 + strlen(dest->opname[OSPC_OPNAME_SPID]) : 0;
+    userparamsize += dest->opname[OSPC_OPNAME_SPID][0] ? 6 + strlen(dest->opname[OSPC_OPNAME_SPID]) : 0;
     /* ";ocn=" */
-    npsize += dest->opname[OSPC_OPNAME_OCN][0] ? 5 + strlen(dest->opname[OSPC_OPNAME_OCN]) : 0;
+    userparamsize += dest->opname[OSPC_OPNAME_OCN][0] ? 5 + strlen(dest->opname[OSPC_OPNAME_OCN]) : 0;
     /* ";spn=" */
-    npsize += dest->opname[OSPC_OPNAME_SPN][0] ? 5 + strlen(dest->opname[OSPC_OPNAME_SPN]) : 0;
+    userparamsize += dest->opname[OSPC_OPNAME_SPN][0] ? 5 + strlen(dest->opname[OSPC_OPNAME_SPN]) : 0;
     /* ";altspn=" */
-    npsize += dest->opname[OSPC_OPNAME_ALTSPN][0] ? 8 + strlen(dest->opname[OSPC_OPNAME_ALTSPN]) : 0;
+    userparamsize += dest->opname[OSPC_OPNAME_ALTSPN][0] ? 8 + strlen(dest->opname[OSPC_OPNAME_ALTSPN]) : 0;
     /* ";mcc=" */
-    npsize += dest->opname[OSPC_OPNAME_MCC][0] ? 5 + strlen(dest->opname[OSPC_OPNAME_MCC]) : 0;
+    userparamsize += dest->opname[OSPC_OPNAME_MCC][0] ? 5 + strlen(dest->opname[OSPC_OPNAME_MCC]) : 0;
     /* ";mnc=" */
-    npsize += dest->opname[OSPC_OPNAME_MNC][0] ? 5 + strlen(dest->opname[OSPC_OPNAME_MNC]) : 0;
+    userparamsize += dest->opname[OSPC_OPNAME_MNC][0] ? 5 + strlen(dest->opname[OSPC_OPNAME_MNC]) : 0;
     /* ";user=phone" */
     uriparamsize = _osp_append_userphone ? USERPHONE.len : 0;
-    /* ";networkid=" */
-    uriparamsize += _osp_append_networkid && dest->networkid[0] ? NETWORKID.len + strlen(dest->networkid) : 0;
+    /* destination network ID parameter */
+    dnidsize = (_osp_append_dnid && dest->networkid[0]) ? 1 + strlen(_osp_dnid_param) + 1 + strlen(dest->networkid) : 0;
 
     LM_DBG("'%s' (%d) '%s' (%d) '%s' '%s' '%d' '%s' '%s' '%s' '%s' '%s' '%s' (%d) '%s' (%d) '%d'\n",
         dest->called,
@@ -686,7 +688,7 @@ int ospRebuildDestionationUri(
         dest->opname[OSPC_OPNAME_ALTSPN],
         dest->opname[OSPC_OPNAME_MCC],
         dest->opname[OSPC_OPNAME_MNC],
-        npsize,
+        userparamsize,
         dest->networkid,
         uriparamsize,
         format);
@@ -695,8 +697,9 @@ int ospRebuildDestionationUri(
     /* "sip:" + called + NP + "@" + host + ";user=phone SIP/2.0" for URI format 0 with user=phone */
     /* "<sip:" + called + NP + "@" + host + "> SIP/2.0" for URI format 1 */
     /* "<sip:" + called + NP + "@" + host + ";user=phone> SIP/2.0" for URI format 1 with user=phone */
-    /* "<sip:" + called + NP + "@" + host + ";user=phone" + ";networkid=" + dnid + "> SIP/2.0" */
-    if (newuri->len < (1 + 4 + calledsize + npsize + 1 + hostsize + uriparamsize + 1 + 1 + 7 + TRANS.len)) {
+    /* "<sip:" + called + NP + "@" + host + ";user=phone" + ";_osp_dnid_param=" + dnid + "> SIP/2.0" or
+       "<sip:" + called + NP + ";_osp_dnid_param=" + dnid + "@" + host + ";user=phone"> SIP/2.0" */
+    if (newuri->len < (1 + 4 + calledsize + userparamsize + 1 + hostsize + uriparamsize + dnidsize + 1 + 1 + 7 + TRANS.len)) {
         LM_ERR("new uri buffer is too small\n");
         newuri->len = 0;
         return -1;
@@ -752,6 +755,11 @@ int ospRebuildDestionationUri(
         buffer += count;
     }
 
+    if ((_osp_append_dnid != 0) && (_osp_dnid_location == 1) && (dest->networkid[0] != '\0')) {
+        count = sprintf(buffer, ";%s=%s", _osp_dnid_param, dest->networkid);
+        buffer += count;
+    }
+
     *buffer++ = '@';
 
     strncpy(buffer, dest->host, newuri->len - (buffer - newuri->s));
@@ -762,8 +770,8 @@ int ospRebuildDestionationUri(
         buffer += USERPHONE.len;
     }
 
-    if ((_osp_append_networkid != 0) && (dest->networkid[0] != '\0')) {
-        count = sprintf(buffer, "%s%s", NETWORKID.s, dest->networkid);
+    if ((_osp_append_dnid != 0) && (_osp_dnid_location == 0) && (dest->networkid[0] != '\0')) {
+        count = sprintf(buffer, ";%s=%s", _osp_dnid_param, dest->networkid);
         buffer += count;
     }
 
