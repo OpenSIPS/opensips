@@ -1877,9 +1877,9 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 	client_info_t ci;
 	char buf[MD5_LEN];
 	str src[2];
-	str to_uri, from_uri;
+	str to_uri={0, 0}, from_uri;
 
-	if(b2b_msg_get_to(msg, &to_uri)< 0 || b2b_msg_get_from(msg, &from_uri)< 0)
+	if(b2b_msg_get_from(msg, &from_uri)< 0 ||  b2b_msg_get_to(msg, &to_uri)< 0)
 	{
 		LM_ERR("Failed to get to or from from the message\n");
 		return 0;
@@ -1890,6 +1890,7 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 	if(tuple== NULL)
 	{
 		LM_ERR("Failed to insert new scenario instance record\n");
+		pkg_free(to_uri.s);
 		return 0;
 	}
 	tuple->cbf = cbf;
@@ -1977,6 +1978,8 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 		LM_ERR("Failed to create server entity\n");
 		goto error;
 	}
+	pkg_free(to_uri.s);
+	to_uri.s = 0;
 
 	memset(&dlginfo_s, 0, sizeof(b2b_dlginfo_t));
 	dlginfo_s.callid = *client_id;
@@ -1997,7 +2000,7 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 
 	pkg_free(server_id);
 	pkg_free(client_id);
-
+	
 	return b2bl_key;
 error:
 	lock_release(&b2bl_htable[hash_index].lock);
@@ -2005,6 +2008,8 @@ error:
 		pkg_free(server_id);
 	if(client_id)
 		pkg_free(client_id);
+	if(to_uri.s)
+		pkg_free(to_uri.s);
 	return 0;
 }
 
@@ -2191,10 +2196,10 @@ str* b2b_process_scenario_init(b2b_scenario_t* scenario_struct,struct sip_msg* m
 	int clients_no = 0;
 	unsigned int hash_index;
 	unsigned int index;
-	str to_uri, from_uri;
+	str to_uri={0, 0}, from_uri;
 	int eno = 0;
 
-	if(b2b_msg_get_to(msg, &to_uri)< 0 || b2b_msg_get_from(msg, &from_uri)< 0)
+	if(b2b_msg_get_from(msg, &from_uri)< 0 || b2b_msg_get_to(msg, &to_uri)< 0)
 	{
 		LM_ERR("Failed to get to or from from the message\n");
 		return 0;
@@ -2216,6 +2221,7 @@ str* b2b_process_scenario_init(b2b_scenario_t* scenario_struct,struct sip_msg* m
 				if (body.s== NULL) 
 				{
 					LM_ERR("cannot extract body\n");
+					pkg_free(to_uri.s);
 					return 0;
 				}
 			}
@@ -2311,6 +2317,8 @@ str* b2b_process_scenario_init(b2b_scenario_t* scenario_struct,struct sip_msg* m
 		pkg_free(server_id);
 		tuple->servers[0]->type = B2B_SERVER;
 	}
+	pkg_free(to_uri.s);
+	to_uri.s = 0;
 
 	/* create client entities */
 	for(node = clients_node; node; node=node->next)
@@ -2460,6 +2468,8 @@ error:
 		b2bl_delete(tuple, hash_index, 0);
 		lock_release(&b2bl_htable[hash_index].lock);
 	}
+	if(to_uri.s)
+		pkg_free(to_uri.s);
 	return 0;
 }
 
@@ -2948,7 +2958,7 @@ int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no)
 	b2bl_entity_id_t *entity;
 	str* server_id;
 	str body;
-	str to_uri, from_uri;
+	str to_uri={0,0}, from_uri;
 
 	if(!msg || !key)
 	{
@@ -3029,7 +3039,7 @@ int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no)
 	b2bl_print_tuple(tuple);
 
 	/* create server entity from Invite */
-	if(b2b_msg_get_to(msg, &to_uri)< 0 || b2b_msg_get_from(msg, &from_uri)< 0)
+	if(b2b_msg_get_from(msg, &from_uri)< 0 || b2b_msg_get_to(msg, &to_uri)< 0)
 	{
 		LM_ERR("Failed to get to or from from the message\n");
 		goto error;
@@ -3038,6 +3048,7 @@ int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no)
 	if(server_id == NULL)
 	{
 		LM_ERR("failed to create new b2b server instance\n");
+		pkg_free(to_uri.s);
 		goto error;
 	}
 
@@ -3046,8 +3057,10 @@ int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no)
 	if(entity == NULL)
 	{
 		LM_ERR("Failed to create server entity\n");
+		pkg_free(to_uri.s);
 		goto error;
 	}
+	pkg_free(to_uri.s);
 
 	if (0 != b2bl_add_server(tuple, entity))
 		goto error;
