@@ -19,7 +19,7 @@ typedef struct b2bl_cb_params
 	b2bl_dlg_stat_t *stat;  /* b2bl_dlg statistics */
 } b2bl_cb_params_t;
 
-enum b2b_event {B2B_BYE_E1=0, B2B_BYE_E2, B2B_REJECT, B2B_DESTROY};
+enum b2b_event {B2B_BYE_E1=0, B2B_BYE_E2, B2B_REJECT_E1, B2B_REJECT_E2, B2B_DESTROY};
 
 typedef int (*b2bl_cback_f)(b2bl_cb_params_t *params, enum b2b_event);
 /*

@@ -458,7 +458,6 @@ int process_bridge_negreply(b2bl_tuple_t* tuple,
 	if(entity_no==0) /* mark that the first step of the bridging failed */
 		tuple->scenario_state = B2B_NONE;
 
-	entity->disconnected =1;
 	/* call the callback for brigding failed  */
 	cbf = tuple->cbf;
 	if(cbf)
@@ -481,7 +480,7 @@ int process_bridge_negreply(b2bl_tuple_t* tuple,
 
 		lock_release(&b2bl_htable[hash_index].lock);
 
-		ret = cbf(&cb_params, B2B_REJECT);
+		ret = cbf(&cb_params, (entity_no==0?B2B_REJECT_E1:B2B_REJECT_E2));
 		LM_DBG("ret = %d\n", ret);
 		
 		lock_get(&b2bl_htable[hash_index].lock);
@@ -606,6 +605,7 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 	if(bentity0 == NULL)
 	{
 		LM_ERR("Bridge entities 0 is NULL\n");
+		b2b_mark_todel(tuple);
 		return -1;
 	}
 
@@ -2691,6 +2691,10 @@ int b2bl_bridge(str* key, str* new_dst, str* new_from_dname, int entity_no)
 		tuple->scenario_state = B2B_BRIDGING_STATE;
 		if(b2b_api.send_request(B2B_SERVER, &tuple->servers[0]->key, &method_invite,
 				 0, 0, tuple->servers[0]->dlginfo) < 0)
+		{
+			LM_ERR("Failed to send INVITE request\n");
+			goto error;
+		}
 		tuple->servers[0]->state = 0; /* mark it not as CONFIRMED */
 	}
 
