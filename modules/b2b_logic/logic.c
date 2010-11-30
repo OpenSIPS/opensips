@@ -2721,8 +2721,6 @@ int b2bl_terminate_call(str* key)
 {
 	unsigned int hash_index, local_index;
 	b2bl_tuple_t* tuple;
-	b2bl_entity_id_t* e;
-	int i;
 
 	if(b2bl_parse_key(key, &hash_index, &local_index) < 0)
 	{
@@ -2740,11 +2738,9 @@ int b2bl_terminate_call(str* key)
 		return -1;
 	}
 
-	for( i = 0; i<2; i++ )
-	{
-		e = tuple->bridge_entities[0];
-		b2b_end_dialog(e, tuple);
-	}
+	b2b_end_dialog(tuple->bridge_entities[0], tuple);
+	b2b_end_dialog(tuple->bridge_entities[1], tuple);
+
 	b2b_mark_todel(tuple);
 
 	lock_release(&b2bl_htable[hash_index].lock);
