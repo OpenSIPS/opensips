@@ -16,6 +16,10 @@ address|
 address|5
 aliases|
 aliases|1005
+b2b_entities|
+b2b_entities|1
+b2b_logic|
+b2b_logic|1
 carrierfailureroute|
 carrierfailureroute|2
 carrierroute|
