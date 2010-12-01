@@ -329,6 +329,7 @@ int rad_find(aaa_conn* rh, aaa_map *map, int flag) {
 			attr_result = rc_dict_findattr(rh, map->name);
 			if (attr_result) {
 				map->value = attr_result->value;
+				map->type = attr_result->type;
 				return 0;
 			}
 			return 1;
@@ -422,7 +423,10 @@ int rad_avp_get(aaa_conn* rh, aaa_message* message, aaa_map* attribute,
 	Radius implementation for the avp_add callback
  */
 int rad_avp_add(aaa_conn* rh, aaa_message* message, aaa_map* name, void* value,
-					int val_length, int vendor) {
+					int val_length, int vendor)
+{
+	UINT4 int4_val;
+	str s;
 
 	if (!rh) {
 		LM_ERR("invalid aaa connection argument\n");
@@ -447,8 +451,34 @@ int rad_avp_add(aaa_conn* rh, aaa_message* message, aaa_map* name, void* value,
 	if (vendor)
 		vendor = VENDOR(vendor);
 
+	/* check if this might be a string, we might have to do some conversions */
+	if (val_length > -1) {
+		if (name->type == PW_TYPE_IPADDR) {
+			char ipstr[val_length + 1];
+			memcpy( ipstr, value, val_length);
+			ipstr[val_length] = 0;
+			int4_val = rc_get_ipaddr((char*)&ipstr);
+			LM_DBG("detected TYPE_IPADDR attribute %s = %s (%u)\n",
+				name->name, ipstr, (unsigned int)int4_val);
+			value = (void *)&int4_val;
+			val_length = -1;
+		} else if (name->type == PW_TYPE_INTEGER) {
+			LM_DBG("detected TYPE_INTEGER attribute %s = %s\n",
+				name->name, (char*)value);
+			s.s = (char*)value;
+			s.len = val_length;
+			if (str2int( &s, (unsigned int*)(void*)&int4_val) != 0 ) {
+				LM_ERR("error converting string to integer");
+				return -1;
+			}
+			value = (void*)&int4_val;
+			val_length = -1;
+		}
+	}
+
 	if (rc_avpair_add (rh, (VALUE_PAIR**)(void*)&message->avpair, name->value,
-							value, val_length, vendor)) {
+	value, val_length, vendor)) {
+
 		return 0;
 	}
 
