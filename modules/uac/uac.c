@@ -64,7 +64,12 @@ static char* auth_password_avp = NULL;
 
 /* global param variables */
 str rr_from_param = str_init("vsf");
+str store_from_bavp = str_init("$bavp(i:739825)");
 str rr_to_param = str_init("vst");
+str store_to_bavp = str_init("$bavp(i:739826)");
+pv_spec_t from_bavp_spec;
+pv_spec_t to_bavp_spec;
+
 str uac_passwd = str_init("");
 int restore_mode = UAC_AUTO_RESTORE;
 struct tm_binds uac_tmb;
@@ -161,6 +166,23 @@ inline static int parse_auth_avp( char *avp_spec, pv_spec_t *avp, char *txt)
 }
 
 
+inline static int parse_store_bavp(str *s, pv_spec_t *bavp)
+{
+	s->len = strlen(s->s);
+	if (pv_parse_spec(s, bavp)==NULL) {
+		LM_ERR("malformed bavp definition %s\n", s->s);
+		return -1;
+	}
+	 /* check if there is a bavp type */
+	if (bavp->type != 903 + PVT_EXTRA) {
+		LM_ERR("store parameter must be an bavp\n");
+		return -1;
+	}
+	return 0;
+	
+}
+
+
 static int mod_init(void)
 {
 	LM_INFO("initializing...\n");
@@ -238,6 +260,12 @@ static int mod_init(void)
 					goto error;
 				}
 				LM_DBG("failed to find dialog API - is dialog module loaded?\n");
+			}
+			if (force_dialog &&
+					(parse_store_bavp(&store_to_bavp, &to_bavp_spec) ||
+					 parse_store_bavp(&store_from_bavp, &from_bavp_spec))) {
+				LM_ERR("cannot set correct store parameters\n");
+				goto error;
 			}
 
 			/* get all requests doing loose route */

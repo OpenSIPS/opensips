@@ -44,6 +44,7 @@
 #include "../tm/tm_load.h"
 #include "../rr/api.h"
 #include "../dialog/dlg_load.h"
+#include "../../usr_avp.h"
 
 #include "replace.h"
 
@@ -56,12 +57,19 @@ extern struct rr_binds uac_rrb;
 extern struct dlg_binds dlg_api;
 extern int force_dialog;
 
+extern int_str rr_from_avp;
+extern int_str rr_to_avp;
+
+extern pv_spec_t from_bavp_spec;
+extern pv_spec_t to_bavp_spec;
+
 static char enc_table64[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 		"abcdefghijklmnopqrstuvwxyz0123456789+/";
 
 static int dec_table64[256];
 
 static void restore_uris_reply(struct cell* c, int t, struct tmcb_params *p);
+void move_bavp_callback(struct cell* t, int type, struct tmcb_params *p);
 
 #define text3B64_len(_l)   ( ( ((_l)+2)/3 ) << 2 )
 
@@ -230,8 +238,9 @@ int replace_uri( struct sip_msg *msg, str *display, str *uri,
 	str param;
 	str buf;
 	int uac_flag;
-	int i;
+	int i, tf = 0;
 	struct dlg_cell *dlg = NULL;
+	pv_value_t val;
 
 	/* consistency check! in AUTO mode, do NOT allow URI changing
 	 * in sequential request */
@@ -349,16 +358,32 @@ int replace_uri( struct sip_msg *msg, str *display, str *uri,
 			}
 			dlg = dlg_api.get_dlg();
 		}
-
-		LM_DBG("Dialog got: %p\n", dlg);
 	}
 
 	/* if using dialog, store the result */
 	if (dlg) {
-		/* store string in dlg */
-		if (dlg_api.store_dlg_value(dlg, rr_param, &buf) < 0) {
-			LM_ERR("cannot store value\n");
-			goto error;
+		/* get the direction */
+		if (rr_from_param.len == rr_param->len &&
+				!memcmp(rr_from_param.s, rr_param->s, rr_param->len))
+			tf = 1;
+		val.rs = buf;
+		val.flags = AVP_VAL_STR;
+		pv_set_value(msg,(tf?&from_bavp_spec:&to_bavp_spec),EQ_T,&val);
+		/* if function call was in branch route - store in bavp */
+		if (val.rs.len && val.rs.s){
+			LM_DBG("stored <%.*s> param\n", rr_param->len, rr_param->s);
+			if (uac_tmb.register_tmcb( msg, 0, TMCB_RESPONSE_OUT,
+					move_bavp_callback,0,0)!=1) {
+				LM_ERR("failed to install TM callback\n");
+				goto error;
+			}
+		} else {
+			/* if the call wasn't in branch route - store in dlg */
+			if (dlg_api.store_dlg_value(dlg, rr_param, &buf) < 0) {
+				LM_ERR("cannot store value\n");
+				goto error;
+			}
+			LM_DBG("stored <%.*s> param in dialog\n", rr_param->len, rr_param->s);
 		}
 	} else {
 		/* encrypt parameter ;) */
@@ -609,6 +634,68 @@ static inline int restore_uri_reply(struct sip_msg *rpl,
 	return 0;
 }
 
+/* moves the selected branch avps into dialog */
+int move_bavp_dlg( struct sip_msg *msg, str* rr_param, pv_spec_t *store_spec)
+{
+	struct dlg_cell *dlg = NULL;
+	unsigned int code = 0;
+	pv_value_t value;
+
+	if (!dlg_api.get_dlg)
+		goto not_moved;
+
+	dlg = dlg_api.get_dlg();
+	if (!dlg) {
+		LM_DBG("dialog not found - cannot move branch avps\n");
+		goto not_moved;
+	}
+	
+	code = msg->first_line.u.reply.statuscode;
+	if (msg->first_line.type == SIP_REPLY && code >= 200 && code < 300) {
+		/* check to see if there are bavps stored */
+		if (pv_get_spec_value(msg, store_spec, &value)) {
+			LM_DBG("bavp not found!\n");
+			goto not_moved;
+		}
+		if (!(value.flags & PV_VAL_STR)) {
+			LM_DBG("bug - invalid bavp type\n");
+			goto not_moved;
+		}
+		if (dlg_api.store_dlg_value(dlg, rr_param, &value.rs) < 0) {
+			LM_ERR("cannot store value\n");
+			return -1;
+		}
+
+		LM_DBG("moved <%.*s> from branch avp list in dlg\n", 
+				rr_param->len, rr_param->s);
+		return 1;
+	}
+
+not_moved:
+/*	LM_DBG("nothing moved - message type %d code %u\n",
+		msg->first_line.type, code);*/
+	return 0;
+}
+
+/* callback for tm RESPONSE_OUT */
+void move_bavp_callback(struct cell* t, int type, struct tmcb_params *p)
+{
+	struct sip_msg *req;
+	struct sip_msg *rpl;
+
+	if ( !t || !t->uas.request || !p->rpl )
+		return;
+
+	req = t->uas.request;
+	rpl = p->rpl;
+	if (req->msg_flags & FL_USE_UAC_FROM && 
+			(move_bavp_dlg(rpl, &rr_from_param, &from_bavp_spec) < 0))
+		LM_ERR("failed to move bavp list\n");
+
+	if (req->msg_flags & FL_USE_UAC_TO &&
+				(move_bavp_dlg( rpl, &rr_to_param, &to_bavp_spec) < 0))
+		LM_ERR("failed to move bavp list\n");
+}
 
 /* replace the entire from HDR with the original FROM request */
 void restore_uris_reply(struct cell* t, int type, struct tmcb_params *p)
