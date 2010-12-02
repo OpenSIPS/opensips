@@ -17,6 +17,7 @@ typedef struct b2bl_cb_params
 {
 	void *param;            /* parameter passed at callback registration */
 	b2bl_dlg_stat_t *stat;  /* b2bl_dlg statistics */
+	struct sip_msg* msg;    /* the message being processed */
 } b2bl_cb_params_t;
 
 enum b2b_event {B2B_BYE_E1=0, B2B_BYE_E2, B2B_REJECT_E1, B2B_REJECT_E2, B2B_DESTROY};

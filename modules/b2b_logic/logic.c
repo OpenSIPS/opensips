@@ -437,7 +437,7 @@ int process_bridge_bye(struct sip_msg* msg,  b2bl_tuple_t* tuple,
 
 
 int process_bridge_negreply(b2bl_tuple_t* tuple,
-		unsigned int hash_index, b2bl_entity_id_t* entity)
+		unsigned int hash_index, b2bl_entity_id_t* entity, struct sip_msg* msg)
 {
 	int entity_no;
 	int ret;
@@ -477,6 +477,7 @@ int process_bridge_negreply(b2bl_tuple_t* tuple,
 		memcpy(ekey.s, entity->key.s, entity->key.len);
 		ekey.len = entity->key.len;
 		cb_params.stat = &stat;
+		cb_params.msg = msg;
 
 		lock_release(&b2bl_htable[hash_index].lock);
 
@@ -990,7 +991,7 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 				/* if a negative reply */
 				if(statuscode >= 300)
 				{
-					ret = process_bridge_negreply(tuple, hash_index,entity);
+					ret = process_bridge_negreply(tuple, hash_index, entity, msg);
 
 					if(ret < 0)
 					{
@@ -1162,6 +1163,7 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 				memcpy(ekey.s, entity->key.s, entity->key.len);
 				ekey.len = entity->key.len;
 				cb_params.stat = &stat;
+				cb_params.msg = msg;
 
 				lock_release(&b2bl_htable[hash_index].lock);
 				LM_DBG("eno = %d\n", eno);

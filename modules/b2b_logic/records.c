@@ -392,6 +392,7 @@ void b2bl_delete(b2bl_tuple_t* tuple, unsigned int hash_index,
 		memset(&cb_params, 0, sizeof(b2bl_cb_params_t));
 		cb_params.param = tuple->cb_param;
 		cb_params.stat = NULL;
+		cb_params.msg = NULL;
 		tuple->cbf(&cb_params, B2B_DESTROY);
 	}
 	if(!not_del_b2be)
