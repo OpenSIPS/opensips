@@ -621,7 +621,8 @@ static struct mi_root* mi_cleanup(struct mi_root* cmd, void* param)
 int pres_update_status(subs_t subs, str reason, db_key_t* query_cols,
         db_val_t* query_vals, int n_query_cols, subs_t** subs_array)
 {
-	static db_ps_t my_ps = NULL;
+	static db_ps_t my_del_ps = NULL;
+	static db_ps_t my_upd_ps = NULL;
 	db_key_t update_cols[5];
 	db_val_t update_vals[5];
 	int n_update_cols= 0;
@@ -677,13 +678,13 @@ int pres_update_status(subs_t subs, str reason, db_key_t* query_cols,
 			return -1;
 		}
 
-		CON_PS_REFERENCE(pa_db) = &my_ps;
-
-		/* if status is terminated and reason="deactivated", delete the record from table */
+		/* if status is terminated and reason="deactivated",
+		 * delete the record from table */
 		if(subs.status == TERMINATED_STATUS && subs.reason.len==11 &&
 				strncmp(subs.reason.s, "deactivated", 11)==0)
 		{
-			if(pa_dbf.delete(pa_db, query_cols, 0, query_vals, n_query_cols)< 0)
+			CON_PS_REFERENCE(pa_db) = &my_del_ps;
+			if(pa_dbf.delete(pa_db, query_cols, 0, query_vals, n_query_cols)<0)
 			{
 				LM_ERR( "in sql delete\n");
 				return -1;
@@ -691,6 +692,7 @@ int pres_update_status(subs_t subs, str reason, db_key_t* query_cols,
 		}
 		else
 		{
+			CON_PS_REFERENCE(pa_db) = &my_upd_ps;
 			if(pa_dbf.update(pa_db, query_cols, 0, query_vals, update_cols,
 						update_vals, n_query_cols, n_update_cols)< 0)
 			{
