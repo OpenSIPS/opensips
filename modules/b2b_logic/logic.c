@@ -1167,7 +1167,7 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 
 				lock_release(&b2bl_htable[hash_index].lock);
 				LM_DBG("eno = %d\n", eno);
-				ret = cbf(&cb_params, eno);
+				ret = cbf(&cb_params, eno==0?B2B_BYE_E1:B2B_BYE_E2);
 				LM_DBG("ret = %d, peer= %p\n", ret, peer);
 
 				pkg_free(stat.key.s);
