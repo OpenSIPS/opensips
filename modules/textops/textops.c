@@ -65,6 +65,7 @@
 #include "../../parser/parse_methods.h"
 #include "../../parser/parse_content.h"
 #include "../../parser/parse_privacy.h"
+#include "../../parser/sdp/sdp.h"
 #include "../../mod_fix.h"
 
 #include"codecs.h"
@@ -89,6 +90,8 @@
 #define TIME_FORMAT "Date: %a, %d %b %Y %H:%M:%S GMT"
 #define MAX_TIME 64
 
+#define AUDIO_STR "audio"
+#define AUDIO_STR_LEN 5
 
 static int search_f(struct sip_msg*, char*, char*);
 static int search_body_f(struct sip_msg*, char*, char*);
@@ -120,6 +123,7 @@ static int strip_body_f(struct sip_msg *msg, char *str1, char *str2 );
 static int strip_body_f2(struct sip_msg *msg, char *str1, char *str2 );
 static int add_body_f_1(struct sip_msg *msg, char *str1, char *str2 );
 static int add_body_f_2(struct sip_msg *msg, char *str1, char *str2 );
+static int is_audio_on_hold_f(struct sip_msg *msg, char *str1, char *str2 );
 
 static int fixup_substre(void**, int);
 static int hname_fixup(void** param, int param_no);
@@ -265,6 +269,9 @@ static cmd_export_t cmds[]={
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"codec_move_down",	(cmd_function)codec_move_down_clock,	2,
 		fixup_codec,0,
+		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"is_audio_on_hold",    (cmd_function)is_audio_on_hold_f,       0,
+		0, 0,
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 
 	{0,0,0,0,0,0}
@@ -1749,4 +1756,30 @@ static int add_body_f_1(struct sip_msg *msg, char *nbody, char *ctype )
 static int add_body_f_2(struct sip_msg *msg, char *nbody, char *ctype )
 {
 	return add_body_f(msg, (gparam_p)nbody, (gparam_p)ctype);
+}
+
+static int is_audio_on_hold_f(struct sip_msg *msg, char *str1, char *str2 )
+{
+	int sdp_session_num = 0, sdp_stream_num;
+	sdp_session_cell_t* sdp_session;
+	sdp_stream_cell_t* sdp_stream;
+
+	if (0 == parse_sdp(msg)) {
+		for(;;) {
+			sdp_session = get_sdp_session(msg, sdp_session_num);
+			if(!sdp_session) break;
+			sdp_stream_num = 0;
+			for(;;) {
+				sdp_stream = get_sdp_stream(msg, sdp_session_num, sdp_stream_num);
+				if(!sdp_stream) break;
+				if(sdp_stream->media.len==AUDIO_STR_LEN &&
+					strncmp(sdp_stream->media.s,AUDIO_STR,AUDIO_STR_LEN)==0 &&
+					sdp_stream->is_on_hold)
+					return 1;
+				sdp_stream_num++;
+			}
+			sdp_session_num++;
+		}
+	}
+	return -1;
 }
