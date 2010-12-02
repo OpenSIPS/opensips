@@ -1958,6 +1958,7 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 
 	memset(&ci, 0, sizeof(client_info_t));
 	ci.method        = msg->first_line.u.request.method;
+	ci.req_uri       = *(GET_RURI(msg));
 	ci.to_uri        = to_uri;
 	ci.from_uri      = from_uri;
 	ci.dst_uri       = msg->dst_uri;
