@@ -5,6 +5,12 @@
 #include "../../sr_module.h"
 #include "../b2b_entities/dlg.h"
 
+#define B2B_BYE_E1     (1<<0)
+#define B2B_BYE_E2     (1<<1)
+#define B2B_REJECT_E1  (1<<2)
+#define B2B_REJECT_E2  (1<<3)
+#define B2B_DESTROY    (1<<4)
+
 typedef struct b2bl_dlg_stat
 {
 	str key;
@@ -20,9 +26,7 @@ typedef struct b2bl_cb_params
 	struct sip_msg* msg;    /* the message being processed */
 } b2bl_cb_params_t;
 
-enum b2b_event {B2B_BYE_E1=0, B2B_BYE_E2, B2B_REJECT_E1, B2B_REJECT_E2, B2B_DESTROY};
-
-typedef int (*b2bl_cback_f)(b2bl_cb_params_t *params, enum b2b_event);
+typedef int (*b2bl_cback_f)(b2bl_cb_params_t *params, unsigned int b2b_event);
 /*
  * event    - B2B_BYE_E1,  bye from entity 1
  *            B2B_BYE_E2,  bye from entity 2
