@@ -537,7 +537,7 @@ struct dlg_cell* get_dlg_by_val(str *attr, str *val)
 		/* go through all dialogs on entry */
 		for( dlg = d_entry->first ; dlg ; dlg = dlg->next ) {
 			LM_DBG("dlg in state %d to check\n",dlg->state);
-			if ( dlg->state<=DLG_STATE_CONFIRMED )
+			if ( dlg->state>DLG_STATE_CONFIRMED )
 				continue;
 			if (check_dlg_value_unsafe( dlg, attr, val)==0) {
 				ref_dlg_unsafe( dlg, 1);
