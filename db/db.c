@@ -408,12 +408,19 @@ int db_table_version(const db_func_t* dbf, db_con_t* connection, const str* tabl
  */
 int db_check_table_version(db_func_t* dbf, db_con_t* dbh, const str* table, const unsigned int version)
 {
-	int ver = db_table_version(dbf, dbh, table);
+	int ver;
+
+	/* if DB does not support QUERY, return TRUE */
+	if (!DB_CAPABILITY(*dbf, DB_CAP_QUERY))
+		return 0;
+
+	ver = db_table_version(dbf, dbh, table);
 	if (ver < 0) {
 		LM_ERR("querying version for table %.*s\n", table->len, table->s);
 		return -1;
 	} else if (ver != version) {
-		LM_ERR("invalid version %d for table %.*s found, expected %d\n", ver, table->len, table->s, version);
+		LM_ERR("invalid version %d for table %.*s found, expected %d\n",
+			ver, table->len, table->s, version);
 		return -1;
 	}
 	return 0;
