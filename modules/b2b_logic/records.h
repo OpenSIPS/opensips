@@ -81,6 +81,7 @@ typedef struct b2bl_tuple
 	str b1_sdp; /* used for multiple attempts to bridge the first entity */
 	int db_flag;
 	b2bl_cback_f cbf;
+	unsigned int cb_mask;
 	void* cb_param;
 }b2bl_tuple_t;
 

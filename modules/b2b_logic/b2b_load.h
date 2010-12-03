@@ -40,7 +40,7 @@ typedef int (*b2bl_cback_f)(b2bl_cb_params_t *params, unsigned int b2b_event);
 
 
 typedef str* (*b2bl_init_f)(struct sip_msg* msg, str* name, str* args[5],
-		b2bl_cback_f, void* param);
+		b2bl_cback_f, void* param, unsigned int cb_mask);
 
 typedef int (*b2bl_bridge_f)(str* key, str* new_uri, str* new_from_dname,int entity_type);
 /* key - the string returned by b2bl_init_f 
@@ -76,7 +76,7 @@ typedef struct b2bl_api
 }b2bl_api_t;
 
 str* internal_init_scenario(struct sip_msg* msg, str* name, str* args[5],
-		b2bl_cback_f, void* param);
+		b2bl_cback_f, void* param, unsigned int cb_mask);
 
 typedef int(*load_b2bl_f)( b2bl_api_t *api );
 int b2b_logic_bind(b2bl_api_t* api);

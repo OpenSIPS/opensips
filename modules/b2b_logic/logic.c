@@ -443,6 +443,7 @@ int process_bridge_negreply(b2bl_tuple_t* tuple,
 	int ret;
 	unsigned int local_index;
 	unsigned int index;
+	unsigned int cb_type;
 	b2bl_cback_f cbf;
 	int etype;
 	b2bl_entity_id_t* e;
@@ -452,7 +453,7 @@ int process_bridge_negreply(b2bl_tuple_t* tuple,
 	entity_no = bridge_get_entityno(tuple, entity);
 	if(entity_no < 0)
 	{
-		LM_ERR("No match found\n");
+		LM_ERR("No match found for tuple [%p]\n", tuple);
 		return -1;
 	}
 	if(entity_no==0) /* mark that the first step of the bridging failed */
@@ -460,7 +461,21 @@ int process_bridge_negreply(b2bl_tuple_t* tuple,
 
 	/* call the callback for brigding failed  */
 	cbf = tuple->cbf;
-	if(cbf)
+	switch (entity_no)
+	{
+		case 0:
+			cb_type=B2B_REJECT_E1;
+			break;
+		case 1:
+			cb_type=B2B_REJECT_E2;
+			break;
+		default:
+			cb_type=0;
+			LM_ERR("unexpected entity_no [%d] for tuple [%p]\n",
+				entity_no, tuple);
+			return -1;
+	}
+	if(cbf && (cb_type&tuple->cb_mask))
 	{
 		memset(&cb_params, 0, sizeof(b2bl_cb_params_t));
 		cb_params.param = tuple->cb_param;
@@ -481,7 +496,7 @@ int process_bridge_negreply(b2bl_tuple_t* tuple,
 
 		lock_release(&b2bl_htable[hash_index].lock);
 
-		ret = cbf(&cb_params, (entity_no==0?B2B_REJECT_E1:B2B_REJECT_E2));
+		ret = cbf(&cb_params, cb_type);
 		LM_DBG("ret = %d\n", ret);
 		
 		lock_get(&b2bl_htable[hash_index].lock);
@@ -864,6 +879,8 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 	int ret;
 	unsigned int method_value;
 	int_str avp_val;
+	int eno;
+	unsigned int cb_type;
 
 	if(b2bl_key == NULL)
 	{
@@ -1130,13 +1147,27 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 		if(request_id == B2B_BYE)
 		{
 			entity->disconnected = 1;
-			if(tuple->cbf)
+			eno = entity->no;
+			switch (eno)
+			{
+				case 0:
+					cb_type=B2B_BYE_E1;
+					break;
+				case 1:
+					cb_type=B2B_BYE_E2;
+					break;
+				default:
+					cb_type=0;
+					LM_ERR("unexpected entity_no [%d] for tuple [%p]\n",
+						eno, tuple);
+					goto error;
+			}
+			if(tuple->cbf && (cb_type&tuple->cb_mask))
 			{
 				b2bl_cback_f cbf = tuple->cbf;
-				int eno = entity->no;
 				int etype= entity->type;
 				int found = 0;
-				str ekey= {0, 0};
+				str ekey= {NULL, 0};
 
 				memset(&cb_params, 0, sizeof(b2bl_cb_params_t));
 				cb_params.param = tuple->cb_param;
@@ -1167,7 +1198,7 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 
 				lock_release(&b2bl_htable[hash_index].lock);
 				LM_DBG("eno = %d\n", eno);
-				ret = cbf(&cb_params, eno==0?B2B_BYE_E1:B2B_BYE_E2);
+				ret = cbf(&cb_params, cb_type);
 				LM_DBG("ret = %d, peer= %p\n", ret, peer);
 
 				pkg_free(stat.key.s);
@@ -1877,7 +1908,7 @@ int b2b_client_notify(struct sip_msg* msg, str* key, int type, void* param)
 }
 
 str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
-		void* cb_param)
+		void* cb_param, unsigned int cb_mask)
 {
 	str* server_id = NULL;
 	str* client_id = NULL;
@@ -1908,6 +1939,7 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 		return 0;
 	}
 	tuple->cbf = cbf;
+	tuple->cb_mask = cb_mask;
 	tuple->cb_param = cb_param;
 
 	/* if it will not be confirmed -> delete */
@@ -2193,7 +2225,7 @@ int udh_to_uri(str user, str host, str port, str* uri)
 }
 
 str* b2b_process_scenario_init(b2b_scenario_t* scenario_struct,struct sip_msg* msg,
-		str* args[], b2bl_cback_f cbf, void* cb_param)
+		str* args[], b2bl_cback_f cbf, void* cb_param, unsigned int cb_mask)
 {
 	str* server_id= NULL, *client_id= NULL;
 	str body= {0, 0};
@@ -2467,6 +2499,7 @@ str* b2b_process_scenario_init(b2b_scenario_t* scenario_struct,struct sip_msg* m
 	tuple->bridge_entities[1]->peer = tuple->bridge_entities[0];
 
 	tuple->cbf = cbf;
+	tuple->cb_mask = cb_mask;
 	tuple->cb_param = cb_param;
 	
 	lock_release(&b2bl_htable[hash_index].lock);
@@ -2489,7 +2522,7 @@ error:
 }
 
 str* init_request(struct sip_msg* msg, b2b_scenario_t* scenario_struct,
-		str* args[], b2bl_cback_f cbf, void* cb_param)
+		str* args[], b2bl_cback_f cbf, void* cb_param, unsigned int cb_mask)
 {
 	str* key;
 	int_str avp_val;
@@ -2502,9 +2535,9 @@ str* init_request(struct sip_msg* msg, b2b_scenario_t* scenario_struct,
 	}
 
 	if(scenario_struct == NULL)
-		key = create_top_hiding_entities(msg, cbf, cb_param);
+		key = create_top_hiding_entities(msg, cbf, cb_param, cb_mask);
 	else
-		key = b2b_process_scenario_init(scenario_struct, msg, args, cbf, cb_param);
+		key = b2b_process_scenario_init(scenario_struct, msg, args, cbf, cb_param, cb_mask);
 
 	if(key)
 	{
@@ -2522,7 +2555,7 @@ str* init_request(struct sip_msg* msg, b2b_scenario_t* scenario_struct,
 }
 
 str* internal_init_scenario(struct sip_msg* msg, str* name, str* args[MAX_SCENARIO_PARAMS],
-		b2bl_cback_f cbf, void* cb_param)
+		b2bl_cback_f cbf, void* cb_param, unsigned int cb_mask)
 {
 	b2b_scenario_t* scenario_struct;
 
@@ -2544,7 +2577,7 @@ str* internal_init_scenario(struct sip_msg* msg, str* name, str* args[MAX_SCENAR
 		}
 	}
 	b2bl_caller = CALLER_MODULE;
-	return init_request(msg, scenario_struct, args, cbf, cb_param);
+	return init_request(msg, scenario_struct, args, cbf, cb_param, cb_mask);
 }
 
 int b2b_init_request(struct sip_msg* msg, str* arg1, str* arg2, str* arg3,
@@ -2569,7 +2602,7 @@ int b2b_init_request(struct sip_msg* msg, str* arg1, str* arg2, str* arg3,
 	args[4] = arg6;
 
 	/* call the scenario init processing function */
-	key = init_request(msg, scenario_struct, args, 0, 0);
+	key = init_request(msg, scenario_struct, args, 0, NULL, 0);
 	if(key)
 		return 1;
 
