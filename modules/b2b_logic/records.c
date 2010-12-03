@@ -387,13 +387,15 @@ void b2bl_delete(b2bl_tuple_t* tuple, unsigned int hash_index,
 	LM_DBG("Delete record [%p]->[%.*s], hash_index=[%d], local_index=[%d]\n",
 			tuple, tuple->key->len, tuple->key->s, hash_index, tuple->id);
 
-	if(tuple->cbf && tuple->cb_mask&B2B_DESTROY)
+	if(tuple->cbf && tuple->cb_mask&B2B_DESTROY_CB)
 	{
 		memset(&cb_params, 0, sizeof(b2bl_cb_params_t));
 		cb_params.param = tuple->cb_param;
 		cb_params.stat = NULL;
 		cb_params.msg = NULL;
-		tuple->cbf(&cb_params, B2B_DESTROY);
+		/* setting it to 0 but it has no meaning in this callback type */
+		cb_params.entity = 0;
+		tuple->cbf(&cb_params, B2B_DESTROY_CB);
 	}
 	if(!not_del_b2be)
 		b2bl_db_delete(tuple);

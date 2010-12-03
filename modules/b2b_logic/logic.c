@@ -443,7 +443,6 @@ int process_bridge_negreply(b2bl_tuple_t* tuple,
 	int ret;
 	unsigned int local_index;
 	unsigned int index;
-	unsigned int cb_type;
 	b2bl_cback_f cbf;
 	int etype;
 	b2bl_entity_id_t* e;
@@ -451,31 +450,22 @@ int process_bridge_negreply(b2bl_tuple_t* tuple,
 	str ekey={0, 0};
 
 	entity_no = bridge_get_entityno(tuple, entity);
-	if(entity_no < 0)
-	{
-		LM_ERR("No match found for tuple [%p]\n", tuple);
-		return -1;
-	}
-	if(entity_no==0) /* mark that the first step of the bridging failed */
-		tuple->scenario_state = B2B_NONE;
-
-	/* call the callback for brigding failed  */
-	cbf = tuple->cbf;
 	switch (entity_no)
 	{
 		case 0:
-			cb_type=B2B_REJECT_E1;
+			/* mark that the first step of the bridging failed */
+			tuple->scenario_state = B2B_NONE;
 			break;
-		case 1:
-			cb_type=B2B_REJECT_E2;
-			break;
+		case 1: break;
 		default:
-			cb_type=0;
 			LM_ERR("unexpected entity_no [%d] for tuple [%p]\n",
 				entity_no, tuple);
 			return -1;
 	}
-	if(cbf && (cb_type&tuple->cb_mask))
+
+	/* call the callback for brigding failure  */
+	cbf = tuple->cbf;
+	if(cbf && (tuple->cb_mask&B2B_REJECT_CB))
 	{
 		memset(&cb_params, 0, sizeof(b2bl_cb_params_t));
 		cb_params.param = tuple->cb_param;
@@ -493,10 +483,11 @@ int process_bridge_negreply(b2bl_tuple_t* tuple,
 		ekey.len = entity->key.len;
 		cb_params.stat = &stat;
 		cb_params.msg = msg;
+		cb_params.entity = entity_no;
 
 		lock_release(&b2bl_htable[hash_index].lock);
 
-		ret = cbf(&cb_params, cb_type);
+		ret = cbf(&cb_params, B2B_REJECT_CB);
 		LM_DBG("ret = %d\n", ret);
 		
 		lock_get(&b2bl_htable[hash_index].lock);
@@ -879,8 +870,7 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 	int ret;
 	unsigned int method_value;
 	int_str avp_val;
-	int eno;
-	unsigned int cb_type;
+	b2bl_cback_f cbf;
 
 	if(b2bl_key == NULL)
 	{
@@ -936,6 +926,11 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 	if(entity == NULL)
 	{
 		LM_ERR("No b2b_key match found [%.*s], src=%d\n", key->len, key->s, src);
+		goto error;
+	}
+	if (entity->no < 0 || entity->no > 1)
+	{
+		LM_ERR("unexpected entity->no [%d] for tuple [%p]\n", entity->no, tuple);
 		goto error;
 	}
 	peer = entity->peer;
@@ -1147,24 +1142,9 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 		if(request_id == B2B_BYE)
 		{
 			entity->disconnected = 1;
-			eno = entity->no;
-			switch (eno)
+			cbf = tuple->cbf;
+			if(cbf && (tuple->cb_mask&B2B_BYE_CB))
 			{
-				case 0:
-					cb_type=B2B_BYE_E1;
-					break;
-				case 1:
-					cb_type=B2B_BYE_E2;
-					break;
-				default:
-					cb_type=0;
-					LM_ERR("unexpected entity_no [%d] for tuple [%p]\n",
-						eno, tuple);
-					goto error;
-			}
-			if(tuple->cbf && (cb_type&tuple->cb_mask))
-			{
-				b2bl_cback_f cbf = tuple->cbf;
 				int etype= entity->type;
 				int found = 0;
 				str ekey= {NULL, 0};
@@ -1195,10 +1175,11 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 				ekey.len = entity->key.len;
 				cb_params.stat = &stat;
 				cb_params.msg = msg;
+				cb_params.entity = entity->no;
 
 				lock_release(&b2bl_htable[hash_index].lock);
-				LM_DBG("eno = %d\n", eno);
-				ret = cbf(&cb_params, cb_type);
+				LM_DBG("entity->no = %d\n", entity->no);
+				ret = cbf(&cb_params, B2B_BYE_CB);
 				LM_DBG("ret = %d, peer= %p\n", ret, peer);
 
 				pkg_free(stat.key.s);

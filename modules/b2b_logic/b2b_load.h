@@ -5,11 +5,9 @@
 #include "../../sr_module.h"
 #include "../b2b_entities/dlg.h"
 
-#define B2B_BYE_E1     (1<<0)
-#define B2B_BYE_E2     (1<<1)
-#define B2B_REJECT_E1  (1<<2)
-#define B2B_REJECT_E2  (1<<3)
-#define B2B_DESTROY    (1<<4)
+#define B2B_BYE_CB        (1<<0)
+#define B2B_REJECT_CB     (1<<1)
+#define B2B_DESTROY_CB    (1<<2)
 
 typedef struct b2bl_dlg_stat
 {
@@ -24,12 +22,12 @@ typedef struct b2bl_cb_params
 	void *param;            /* parameter passed at callback registration */
 	b2bl_dlg_stat_t *stat;  /* b2bl_dlg statistics */
 	struct sip_msg* msg;    /* the message being processed */
+	unsigned int entity;    /* the entity for which the callback is invocked */
 } b2bl_cb_params_t;
 
 typedef int (*b2bl_cback_f)(b2bl_cb_params_t *params, unsigned int b2b_event);
 /*
- * event    - B2B_BYE_E1,  bye from entity 1
- *            B2B_BYE_E2,  bye from entity 2
+ * event    - B2B_BYE,     bye received from an entity
  *            B2B_REJECT,  negative reply for Invite when bridging
  *            B2B_DESTROY, destroy the tuple
  * Return: -1 - error
