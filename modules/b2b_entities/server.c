@@ -99,11 +99,13 @@ str* server_new(struct sip_msg* msg, b2b_notify_t b2b_cback,
 
 	tmb.t_reply(msg, 100, &reason);
 	tmb.t_setkr(REQ_FWDED);
-	LM_DBG("Server entity = %p\n", dlg);
+
+	LM_DBG("new server entity[%p]: callid=[%.*s] tag=[%.*s] param=[%.*s]\n",
+		dlg, dlg->callid.len, dlg->callid.s, 
+		dlg->tag[CALLER_LEG].len, dlg->tag[CALLER_LEG].s,
+		dlg->param.len, dlg->param.s);
 
 	/* add the record in hash table */
-	LM_DBG("Inserted record with callid= %.*s, tag= %.*s\n", dlg->callid.len, dlg->callid.s, 
-		dlg->tag[CALLER_LEG].len, dlg->tag[CALLER_LEG].s);
 	dlg->db_flag = INSERTDB_FLAG;
 	return b2b_htable_insert(server_htable, dlg, hash_index, B2B_SERVER);
 error:

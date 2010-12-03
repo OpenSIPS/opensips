@@ -34,6 +34,7 @@
 #include "../../str.h"
 #include "../../lock_ops.h"
 #include "b2b_logic.h"
+#include "b2b_load.h"
 
 typedef struct b2bl_entity_id
 {
@@ -41,11 +42,13 @@ typedef struct b2bl_entity_id
 	str key;
 	str to_uri;
 	str from_uri;
+	str from_dname;
 	b2b_dlginfo_t* dlginfo;
 	int disconnected;
 	int state;
+	int no;
 	enum b2b_entity_type type;
-	struct b2bl_entity_id* next;
+	b2bl_dlg_stat_t stats;
 	struct b2bl_entity_id* peer;
 }b2bl_entity_id_t;
 
@@ -53,17 +56,21 @@ typedef struct b2bl_entity_id
 #define UPDATEDB_FLAG       1
 #define INSERTDB_FLAG       2
 
+#define MAX_B2BL_ENT		2
+#define MAX_BRIDGE_ENT		3
+#define MAX_SCENARIO_PARAMS	5
+
 typedef struct b2bl_tuple
 {
 	unsigned int id;
 	str* key;
 	b2b_scenario_t* scenario;  /* if scenario is NULL it means that the simple Topology Hiding Scenary must be applied*/
-	str scenario_params[5];
+	str scenario_params[MAX_SCENARIO_PARAMS];
 	int scenario_state;
 	int next_scenario_state;
-	b2bl_entity_id_t* server;
-	b2bl_entity_id_t* clients;
-	b2bl_entity_id_t* bridge_entities[3];
+	b2bl_entity_id_t* servers[MAX_B2BL_ENT];
+	b2bl_entity_id_t* clients[MAX_B2BL_ENT];
+	b2bl_entity_id_t* bridge_entities[MAX_BRIDGE_ENT];
 	int to_del;
 	str* extra_headers;
 	struct b2bl_tuple* next;
@@ -71,7 +78,10 @@ typedef struct b2bl_tuple
 	unsigned int insert_time;
 	unsigned int lifetime;
 	str sdp;
+	str b1_sdp; /* used for multiple attempts to bridge the first entity */
 	int db_flag;
+	b2bl_cback_f cbf;
+	void* cb_param;
 }b2bl_tuple_t;
 
 typedef struct b2bl_entry
@@ -81,6 +91,8 @@ typedef struct b2bl_entry
 }b2bl_entry_t;
 
 typedef b2bl_entry_t* b2bl_table_t;
+
+void b2bl_print_tuple(b2bl_tuple_t* tuple);
 
 b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg,
 		unsigned int hash_index, b2b_scenario_t* scenario,
@@ -108,13 +120,15 @@ int process_bridge_action(struct sip_msg* msg, b2bl_entity_id_t* curr_entity,
 void destroy_b2bl_htable(void);
 
 b2bl_entity_id_t* b2bl_create_new_entity(enum b2b_entity_type type, str* entity_id,
-		str* to_uri,str* from_uri, str* ssid, struct sip_msg* msg);
+		str* to_uri,str* from_uri,str* from_dname,str* ssid,struct sip_msg* msg);
 
+int b2bl_drop_entity(b2bl_entity_id_t* entity, b2bl_tuple_t* tuple);
 void b2bl_delete_entity(b2bl_entity_id_t* entity, b2bl_tuple_t* tuple);
 
 int b2b_extra_headers(struct sip_msg* msg, str* b2bl_key, str* extra_headers);
 
-void b2bl_add_client_list(b2bl_tuple_t* tuple, b2bl_entity_id_t* entity);
+int b2bl_add_client(b2bl_tuple_t* tuple, b2bl_entity_id_t* entity);
+int b2bl_add_server(b2bl_tuple_t* tuple, b2bl_entity_id_t* entity);
 
 void b2bl_db_delete(b2bl_tuple_t* tuple);
 

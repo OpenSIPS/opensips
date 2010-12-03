@@ -160,8 +160,6 @@ str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 		random_info.s = int2str(rand(), &random_info.len);
 	}
 
-	LM_DBG("Random info = %.*s\n", random_info.len, random_info.s);
-
 	dlg->id = core_hash(&from_tag, random_info.s?&random_info:0, HASH_SIZE);
 
 	/* callid must have the special format */
@@ -173,8 +171,7 @@ str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 		shm_free(dlg);
 		goto error;
 	}
-	LM_DBG("New client [%p] - key = %.*s, last method=%d\n", dlg,
-			callid->len, callid->s, dlg->last_method);
+
 	if(b2breq_complete_ehdr(ci->extra_headers, &ehdr, ci->body)< 0)
 	{
 		LM_ERR("Failed to complete extra headers\n");
@@ -196,7 +193,10 @@ str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 	td.id.call_id = *callid;
 
 	td.id.loc_tag = from_tag;
-	LM_DBG("generated tag = [%.*s]\n", td.id.loc_tag.len, td.id.loc_tag.s);
+	LM_DBG("new client entity [%p] callid=[%.*s] tag=[%.*s] param=[%.*s] last method=[%d]\n",
+			dlg, callid->len, callid->s,
+			td.id.loc_tag.len, td.id.loc_tag.s,
+			dlg->param.len, dlg->param.s, dlg->last_method);
 
 	td.id.rem_tag.s = 0;
 	td.id.rem_tag.len = 0;

@@ -24,6 +24,8 @@
  * History:
  * --------
  *  2009-08-03  initial version (Anca Vamanu)
+ *  2010-11-02  new mi function: mi_b2b_list (Ovidiu Sas)
+ *  2010-11-12  new cmd: b2b_bridge_request (Ovidiu Sas)
  */
 
 #include <stdio.h>
@@ -39,10 +41,12 @@
 #include "../../parser/parse_content.h"
 #include "../../ut.h"
 #include "../../mem/mem.h"
+#include "../../mod_fix.h"
 
 #include "records.h"
 #include "pidf.h"
 #include "b2b_logic.h"
+#include "b2b_load.h"
 
 #define TABLE_VERSION 1
 #define B2BL_FETCH_SIZE  128
@@ -58,10 +62,13 @@ static int load_extern_scenario(modparam_t type, void* val);
 static int fixup_b2b_logic(void** param, int param_no);
 static struct mi_root* mi_trigger_scenario(struct mi_root* cmd, void* param);
 static struct mi_root* mi_b2b_bridge(struct mi_root* cmd, void* param);
+static struct mi_root* mi_b2b_list(struct mi_root* cmd, void* param);
+static struct mi_root* mi_b2b_terminate_call(struct mi_root* cmd, void* param);
 void b2bl_clean(unsigned int ticks, void* param);
 void b2bl_db_update(unsigned int ticks, void* param);
 int  b2b_init_request(struct sip_msg* msg, str* arg1, str* arg2, str* arg3,
 		str* arg4, str* arg5, str* arg6);
+int  b2b_bridge_request(struct sip_msg* msg, str* arg1, str* arg2);
 
 /** Global variables */
 b2b_api_t b2b_api;
@@ -87,7 +94,12 @@ static str default_headers[HDR_DEFAULT_LEN]=
    {"Max-Forwards", 12}
 };
 int use_init_sdp = 0;
+enum b2bl_caller_type b2bl_caller;
 static unsigned int max_duration = 12*3600;
+
+int_str b2bl_key_avp_name;
+unsigned short b2bl_key_avp_type;
+static str b2bl_key_avp_param = {NULL, 0};
 
 static str db_url= {0, 0};
 static db_con_t *b2bl_db = NULL;
@@ -131,6 +143,8 @@ static cmd_export_t cmds[]=
 	{"b2b_init_request", (cmd_function)b2b_init_request, 2 , fixup_b2b_logic , 0 , REQUEST_ROUTE},
 	{"b2b_init_request", (cmd_function)b2b_init_request, 1 , fixup_b2b_logic , 0 , REQUEST_ROUTE},
 	{"b2b_init_request", (cmd_function)b2b_init_request, 0 , 0               , 0 , REQUEST_ROUTE},
+	{"b2b_bridge_request",(cmd_function)b2b_bridge_request,2,fixup_pvar_pvar , 0 , REQUEST_ROUTE},
+	{"b2b_logic_bind",   (cmd_function)b2b_logic_bind,   1 , 0,  0,  0},
 	{ 0,                 0,                              0 , 0 , 0,  0}
 };
 
@@ -147,14 +161,17 @@ static param_export_t params[]=
 	{"db_url",          STR_PARAM,                &db_url.s                  },
 	{"dbtable",         STR_PARAM,                &dbtable.s                 },
 	{"max_duration",    INT_PARAM,                &max_duration              },
+	{"b2bl_key_avp",    STR_PARAM,                &b2bl_key_avp_param.s      },
 	{0,                    0,                          0                     }
 };
 
 /** MI commands */
 static mi_export_t mi_cmds[] = {
-	{ "b2b_trigger_scenario", mi_trigger_scenario, 0,  0,  0},
-	{ "b2b_bridge",           mi_b2b_bridge,       0,  0,  0},
-	{  0,                  0,                      0,  0,  0}
+	{ "b2b_trigger_scenario", mi_trigger_scenario,   0,  0,  0},
+	{ "b2b_bridge",           mi_b2b_bridge,         0,  0,  0},
+	{ "b2b_list",             mi_b2b_list,           0,  0,  0},
+	{ "b2b_terminate_call",   mi_b2b_terminate_call, 0,  0,  0},
+	{  0,                  0,                        0,  0,  0}
 };
 
 /** Module interface */
@@ -179,6 +196,9 @@ static int mod_init(void)
 {
 	char* p = NULL;
 	int i = 0, j;
+	pv_spec_t avp_spec;
+
+	LM_DBG("start\n");
 
 	/* load b2b_entities api */
 	if(load_b2b_api(&b2b_api)< 0)
@@ -258,6 +278,26 @@ static int mod_init(void)
 	if(b2bl_db)
 		b2bl_dbf.close(b2bl_db);
 	b2bl_db = NULL;
+
+	if (b2bl_key_avp_param.s)
+		b2bl_key_avp_param.len = strlen(b2bl_key_avp_param.s);
+
+	if (b2bl_key_avp_param.s && b2bl_key_avp_param.len > 0)
+	{
+		if (pv_parse_spec(&b2bl_key_avp_param, &avp_spec)==0 || avp_spec.type!=PVT_AVP) {
+			LM_ERR("malformed or non AVP %.*s AVP definition\n",
+				b2bl_key_avp_param.len, b2bl_key_avp_param.s);
+			return -1;
+		}
+		if (pv_get_avp_name(0, &(avp_spec.pvp), &b2bl_key_avp_name, &b2bl_key_avp_type)!=0){
+			LM_ERR("[%.*s]- invalid AVP definition\n", b2bl_key_avp_param.len,
+					b2bl_key_avp_param.s);
+			return -1;
+		}
+	} else {
+		b2bl_key_avp_name.n = 0;
+		b2bl_key_avp_type = 0;
+	}
 
 	/* parse extra headers */
 	if(custom_headers.s)
@@ -650,6 +690,7 @@ static int child_init(int rank)
 
 	return 0;
 }
+
 b2b_scenario_t* get_scenario_id_list(str* sid, b2b_scenario_t* list)
 {
 	b2b_scenario_t* scenario;
@@ -734,39 +775,32 @@ b2b_scenario_t* get_scenario_id(str* sid)
 
 	return get_scenario_id_list(sid, extern_scenarios);
 }
-
-static struct mi_root* mi_trigger_scenario(struct mi_root* cmd, void* param)
+str* b2bl_bridge_extern(str* scenario_name, str* args[],
+		b2bl_cback_f cbf, void* cb_param)
 {
-	struct mi_node* node= NULL;
-	str attr;
 	b2b_scenario_t* scenario_struct;
-	str* args[B2B_INIT_MAX_PARAMNO];
-	int i = 0;
-	unsigned int hash_index = 0;
-	xmlNodePtr xml_node;
-	unsigned int state = 0;
+	unsigned int hash_index;
 	b2bl_tuple_t* tuple= NULL;
 	str* b2bl_key;
+	unsigned int state = 0;
+	xmlNodePtr xml_node;
+	str attr;
 
-	node = cmd->node.kids;
-	if(node == NULL)
-		return 0;
-
-	/* Get scenario ID */
-	attr = node->value;
-	if(attr.s == NULL || attr.len== 0)
+	if(scenario_name== NULL || args[0] == NULL || args[1]== NULL)
 	{
-		LM_ERR("Empty scenario name parameter\n");
-		return init_mi_tree(404, "Empty scenario ID", 16);
+		LM_ERR("Wrong arguments\n");
+		return 0;
 	}
-	node = node->next;
+	hash_index = core_hash(args[0], args[1], b2bl_hsize);
 
+	LM_DBG("start: bridge [%.*s] with [%.*s]\n", args[0]->len, args[0]->s, 
+			 args[1]->len, args[1]->s);
 	/* find the scenario with the corresponding id */
 	scenario_struct = extern_scenarios;
 	while(scenario_struct)
 	{
-		if(scenario_struct->id.len == attr.len && 
-				strncmp(scenario_struct->id.s, attr.s, attr.len) == 0)
+		if(scenario_struct->id.len == scenario_name->len && 
+				strncmp(scenario_struct->id.s, scenario_name->s, scenario_name->len) == 0)
 		{
 			break;
 		}
@@ -777,48 +811,16 @@ static struct mi_root* mi_trigger_scenario(struct mi_root* cmd, void* param)
 		LM_ERR("No scenario found with the specified id\n");
 		return 0;
 	}
-
-	memset(args, 0, B2B_INIT_MAX_PARAMNO* sizeof(str*));
-	/* get the other parameters */
-	while(i < B2B_INIT_MAX_PARAMNO && node)
-	{
-		if(node->value.s == NULL || node->value.len== 0)
-			break;
-
-		args[i++] = &node->value;
-
-		node = node->next;
-	}
-
-	if(i < scenario_struct->param_no)
-	{
-		return init_mi_tree(400, "Too few parameters", 18);
-	}
-	else
-	if(i > scenario_struct->param_no)
-	{
-		return init_mi_tree(400, "Too many parameters", 19);
-	}
-
-	/* compute the hash index */
-	/* if there are at least 2 parameters use them to compute the hash_index */
-	if(i >= 2)
-	{
-		hash_index = core_hash(args[0], args[1], b2bl_hsize);
-	}
-	else
-	{
-		/* the scenario must have at least 2 client - take hash index from their destinations*/
-	}
-
+	
 	/* apply the init part of the scenario */
-
 	tuple = b2bl_insert_new(0, hash_index, scenario_struct, args, 0, &b2bl_key);
 	if(tuple== NULL)
 	{
 		LM_ERR("Failed to insert new scenario instance record\n");
 		return 0;
 	}
+	tuple->cbf = cbf;
+	tuple->cb_param = cb_param;
 	tuple->lifetime = 60 + get_ticks();
 
 	/* need to get the next action */
@@ -857,12 +859,122 @@ static struct mi_root* mi_trigger_scenario(struct mi_root* cmd, void* param)
 		goto error;
 	}
 	lock_release(&b2bl_htable[hash_index].lock);
-	return init_mi_tree(200, "OK", 2);
+	return b2bl_key;
 
 error:
 	if(tuple)
 		lock_release(&b2bl_htable[hash_index].lock);
 	return 0;
+}
+
+static struct mi_root* mi_trigger_scenario(struct mi_root* cmd, void* param)
+{
+	struct mi_node* node= NULL;
+	str* args[B2B_INIT_MAX_PARAMNO];
+	int i = 0;
+	str scenario_name;
+
+	node = cmd->node.kids;
+	if(node == NULL)
+		return 0;
+
+	b2bl_caller = CALLER_MI;
+	/* Get scenario ID */
+	scenario_name = node->value;
+	if(scenario_name.s == NULL || scenario_name.len== 0)
+	{
+		LM_ERR("Empty scenario name parameter\n");
+		return init_mi_tree(404, "Empty scenario ID", 16);
+	}
+	node = node->next;
+
+	memset(args, 0, B2B_INIT_MAX_PARAMNO* sizeof(str*));
+	/* get the other parameters */
+	while(i < B2B_INIT_MAX_PARAMNO && node)
+	{
+		if(node->value.s == NULL || node->value.len== 0)
+			break;
+
+		args[i++] = &node->value;
+
+		node = node->next;
+	}
+
+	if(b2bl_bridge_extern(&scenario_name, args, 0, 0) == 0)
+	{
+		LM_ERR("Failed to initialize scenario\n");
+		return 0;
+	}
+	return init_mi_tree(200, "OK", 2);
+}
+
+
+int  b2b_bridge_request(struct sip_msg* msg, str* p1, str* p2)
+{
+	pv_value_t pv_val;
+	str key = {NULL, 0};
+	int entity_no;
+
+	if (p1 && (pv_get_spec_value(msg, (pv_spec_t *)p1, &pv_val) == 0))
+	{
+		if (pv_val.flags & PV_VAL_STR)
+		{
+			LM_DBG("got key:'%.*s'\n", pv_val.rs.len, pv_val.rs.s);
+			key = pv_val.rs;
+		} else {
+			LM_ERR("Unable to get key from PV that is not a string\n");
+			return -1;
+		}
+	} else {
+		LM_ERR("Unable to get key from pv:%p\n", p1);
+		return -1;
+	}
+
+	if (p2 && (pv_get_spec_value(msg, (pv_spec_t *)p2, &pv_val) == 0))
+	{
+		if (pv_val.flags & PV_VAL_INT)
+		{
+			entity_no = pv_val.ri;
+			LM_DBG("got entity_no %d\n", entity_no);
+		}
+		else
+		if (pv_val.flags & PV_VAL_STR) {
+			if(str2int(&(pv_val.rs), (unsigned int*)&entity_no) != 0) {
+				LM_ERR("Unable to get entity_no from pv '%.*s'i\n",
+				pv_val.rs.len, pv_val.rs.s);
+				return -1;
+			}
+		} else {
+			LM_ERR("second pv not a str or int type\n");
+			return -1;
+		}
+	} else {
+		LM_ERR("Unable to get entity from pv:%p\n", p1);
+		return -1;
+	}
+	return b2bl_bridge_msg(msg, &key, entity_no);
+}
+
+static struct mi_root* mi_b2b_terminate_call(struct mi_root* cmd, void* param)
+{
+	struct mi_node* node= NULL;
+	str key;
+
+	node = cmd->node.kids;
+	if(node == NULL)
+		return 0;
+
+	/* b2bl_key */
+	key = node->value;
+	if(key.s == NULL || key.len== 0)
+	{
+		LM_ERR("Wrong b2b_logic key parameter\n");
+		return init_mi_tree(404, "Empty b2bl key", 14);
+	}
+
+	b2bl_terminate_call(&key);
+
+	return init_mi_tree(200, "OK", 2);
 }
 
 /*
@@ -874,22 +986,24 @@ static struct mi_root* mi_b2b_bridge(struct mi_root* cmd, void* param)
 	str key;
 	b2bl_tuple_t* tuple;
 	str new_dest;
-	b2bl_entity_id_t* entity, *old_entity;
+	unsigned int entity_no = 0;
+	b2bl_entity_id_t* entity, *old_entity, *bridging_entity;
 	struct sip_uri uri;
 	str meth_inv = {INVITE, INVITE_LEN};
 	str meth_bye = {BYE, BYE_LEN};
 	unsigned int hash_index, local_index;
+	str ok= str_init("ok");
 
 	node = cmd->node.kids;
 	if(node == NULL)
 		return 0;
 
-	/* scenario ID */
+	/* b2bl_key */
 	key = node->value;
 	if(key.s == NULL || key.len== 0)
 	{
-		LM_ERR("Wrong dialog id parameter\n");
-		return init_mi_tree(404, "Empty dialog ID", 15);
+		LM_ERR("Wrong b2b_logic key parameter\n");
+		return init_mi_tree(404, "Empty b2bl key", 14);
 	}
 
 	/* new destination- must be a valid SIP URI */
@@ -916,15 +1030,32 @@ static struct mi_root* mi_b2b_bridge(struct mi_root* cmd, void* param)
 	node = node->next;
 	if(node)
 	{
-		
+		if (node->value.len==1)
+		{
+			if(strncmp(node->value.s, "0", 1)==0)
+				entity_no = 0;
+			else if(strncmp(node->value.s, "1", 1)==0)
+				entity_no = 1;
+			else
+				return init_mi_tree(404, "Invalid entity no parameter", 27);
+		}
+		else
+		{
+			return init_mi_tree(404, "Invalid entity no parameter", 27);
+		}
 	}
+	else
+	{
+		return init_mi_tree(404, "Invalid entity no parameter", 27);
+	}
+
 	if(b2bl_parse_key(&key, &hash_index, &local_index) < 0)
 	{
 		LM_ERR("Failed to parse key '%.*s'\n", key.len, key.s);
 		return 0;
 	}
 
-	entity = b2bl_create_new_entity(B2B_CLIENT, 0, &new_dest, 0, 0, 0);
+	entity = b2bl_create_new_entity(B2B_CLIENT, 0, &new_dest, 0, 0, 0, 0);
 	if(entity == NULL)
 	{
 		LM_ERR("Failed to create new b2b entity\n");
@@ -940,29 +1071,50 @@ static struct mi_root* mi_b2b_bridge(struct mi_root* cmd, void* param)
 		goto error;
 	}
 
-	/* send BYE to old client */
-	old_entity = tuple->clients;
-	if(old_entity == NULL)
+	bridging_entity = tuple->bridge_entities[entity_no];
+	old_entity = tuple->bridge_entities[(entity_no?0:1)];
+
+	if(old_entity == NULL || bridging_entity == NULL)
 	{
 		LM_ERR("Wrong dialog id\n");
 		goto error;
 	}
-	old_entity->disconnected = 1;
-	b2b_api.send_request(old_entity->type, &old_entity->key,
-			&meth_bye, 0, 0, old_entity->dlginfo);
+
+	/* send BYE to old client */
+	if(old_entity->disconnected)
+	{
+		b2b_api.send_reply(old_entity->type, &old_entity->key,
+				METHOD_BYE, 200, &ok, 0, 0, old_entity->dlginfo);
+	}
+	else
+	{
+		old_entity->disconnected = 1;
+		b2b_api.send_request(old_entity->type, &old_entity->key,
+				&meth_bye, 0, 0, old_entity->dlginfo);
+	}
+
+	b2bl_drop_entity(old_entity, tuple);
+
+	if (old_entity->peer->peer == old_entity)
+		old_entity->peer->peer = NULL;
+	else
+	{
+		LM_ERR("Unexpected chain: old_entity=[%p] and old_entity->peer->peer=[%p]\n",
+			old_entity, old_entity->peer->peer);
+		goto error;
+	}
 	old_entity->peer = NULL;
 
-	tuple->bridge_entities[0]= tuple->server;
+	tuple->bridge_entities[0]= bridging_entity;
 	tuple->bridge_entities[1]= entity;
 
-	tuple->server->peer = entity;
-	entity->peer = tuple->server;
+	bridging_entity->peer = entity;
+	entity->peer = bridging_entity;
 
 	tuple->scenario_state = B2B_BRIDGING_STATE;
 
-
-	b2b_api.send_request(B2B_SERVER, &tuple->server->key, &meth_inv,
-				 0, 0, tuple->server->dlginfo);
+	b2b_api.send_request(bridging_entity->type, &bridging_entity->key, &meth_inv,
+				 0, 0, bridging_entity->dlginfo);
 
 	lock_release(&b2bl_htable[hash_index].lock);
 
@@ -972,6 +1124,165 @@ error:
 	lock_release(&b2bl_htable[hash_index].lock);
 	return 0;
 }
+
+static inline int internal_mi_print_b2bl_entity_id(struct mi_node *node1, b2bl_entity_id_t *c)
+{
+	int len;
+	char* p;
+	struct mi_node *node2=NULL;
+	struct mi_attr* attr;
+
+	if (c->scenario_id.s && c->scenario_id.len != 0)
+	{
+		attr = add_mi_attr(node1, MI_DUP_VALUE, "scenario_id", 11,
+				c->scenario_id.s, c->scenario_id.len);
+		if(attr == NULL) goto error;
+	}
+	if (c->key.s && c->key.len != 0)
+	{
+		attr = add_mi_attr(node1, MI_DUP_VALUE, "key", 3,
+					c->key.s, c->key.len);
+		if(attr == NULL) goto error;
+	}
+	p = int2str((unsigned long)(c->disconnected), &len);
+	attr = add_mi_attr(node1, MI_DUP_VALUE, "disconnected", 12, p, len);
+	if(attr == NULL) goto error;
+	p = int2str((unsigned long)(c->state), &len);
+	attr = add_mi_attr(node1, MI_DUP_VALUE, "state", 5, p, len);
+	if(attr == NULL) goto error;
+	p = int2str((unsigned long)(c->no), &len);
+	attr = add_mi_attr(node1, MI_DUP_VALUE, "no", 2, p, len);
+	if(attr == NULL) goto error;
+	p = int2str((unsigned long)(c->type), &len);
+	attr = add_mi_attr(node1, MI_DUP_VALUE, "type", 4, p, len);
+	if(attr == NULL) goto error;
+
+	if (c->peer)
+	{
+		if (c->peer->key.s && c->peer->key.len != 0)
+		{
+			attr = add_mi_attr(node1, MI_DUP_VALUE, "peer", 4,
+				c->peer->key.s, c->peer->key.len);
+			if(attr == NULL) goto error;
+		}
+	}
+
+	if (c->to_uri.s && c->to_uri.len != 0)
+	{
+		node2 = add_mi_node_child(node1, MI_DUP_VALUE, "to_uri", 6,
+						c->to_uri.s, c->to_uri.len);
+		if(node2 == NULL) goto error;
+	}
+	if (c->from_uri.s && c->from_uri.len != 0)
+	{
+		node2 = add_mi_node_child(node1, MI_DUP_VALUE, "from_uri", 8,
+						c->from_uri.s, c->from_uri.len);
+		if(node2 == NULL) goto error;
+	}
+	if (c->from_dname.s && c->from_dname.len != 0)
+	{
+		node2 = add_mi_node_child(node1, MI_DUP_VALUE, "from_dname", 10,
+						c->from_dname.s, c->from_dname.len);
+		if(node2 == NULL) goto error;
+	}
+
+	return 0;
+error:
+	LM_ERR("failed to add node\n");
+	return -1;
+}
+
+static struct mi_root* mi_b2b_list(struct mi_root* cmd, void* param)
+{
+	int i, len, index;
+	char* p;
+	b2bl_tuple_t* tuple;
+	struct mi_root *rpl_tree;
+	struct mi_node *node=NULL, *node1=NULL, *rpl=NULL;
+	struct mi_attr* attr;
+
+	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
+	if (rpl_tree==NULL) return NULL;
+	rpl = &rpl_tree->node;
+
+	for(i = 0; i< b2bl_hsize; i++)
+	{
+		lock_get(&b2bl_htable[i].lock);
+		tuple = b2bl_htable[i].first;
+		while(tuple)
+		{
+			p = int2str((unsigned long)(tuple->id), &len);
+			node = add_mi_node_child(rpl, MI_DUP_VALUE, "tuple", 5, p, len);
+			if(node == NULL) goto error;
+			attr = add_mi_attr(node, MI_DUP_VALUE, "key", 3,
+					tuple->key->s, tuple->key->len);
+			if(attr == NULL) goto error;
+			p = int2str((unsigned long)(tuple->scenario_state), &len);
+			attr = add_mi_attr(node, MI_DUP_VALUE, "scenario_state", 14, p, len);
+			if(attr == NULL) goto error;
+
+			if (tuple->scenario)
+			{
+				attr = add_mi_attr(node, MI_DUP_VALUE, "scenario", 8,
+						tuple->scenario->id.s, tuple->scenario->id.len);
+				if(attr == NULL) goto error;
+				p = int2str((unsigned long)(tuple->next_scenario_state), &len);
+				attr = add_mi_attr(node, MI_DUP_VALUE, "next_scenario_state", 19,
+						p, len);
+				if(attr == NULL) goto error;
+			}
+
+			for (index = 0; index < MAX_B2BL_ENT; index++)
+			{
+				if (tuple->servers[index] != NULL)
+				{
+					p = int2str((unsigned long)(index), &len);
+					node1 = add_mi_node_child(node, MI_DUP_VALUE,
+						"servers", 7, p, len);
+					if(node1 == NULL) goto error;
+					if (internal_mi_print_b2bl_entity_id(node1,
+							tuple->servers[index])!=0)
+						goto error;
+				}
+			}
+			for (index = 0; index < MAX_B2BL_ENT; index++)
+			{
+				if (tuple->clients[index] != NULL)
+				{
+					p = int2str((unsigned long)(index), &len);
+					node1 = add_mi_node_child(node, MI_DUP_VALUE,
+						"clients", 7, p, len);
+					if(node1 == NULL) goto error;
+					if (internal_mi_print_b2bl_entity_id(node1,
+							tuple->clients[index])!=0)
+						goto error;
+				}
+			}
+			for (index = 0; index < MAX_BRIDGE_ENT; index++)
+			{
+				if (tuple->bridge_entities[index] != NULL)
+				{
+					p = int2str((unsigned long)(index), &len);
+					node1 = add_mi_node_child(node, MI_DUP_VALUE,
+							"bridge_entities", 15, p, len);
+					if(node1 == NULL) goto error;
+					if (internal_mi_print_b2bl_entity_id(node1,
+							tuple->bridge_entities[index])!=0)
+						goto error;
+				}
+			}
+			tuple = tuple->next;
+		}
+		lock_release(&b2bl_htable[i].lock);
+	}
+	return rpl_tree;
+error:
+	lock_release(&b2bl_htable[i].lock);
+	LM_ERR("Unable to create reply\n");
+	free_mi_tree(rpl_tree);
+	return NULL;
+}
+
 
 void b2bl_db_delete(b2bl_tuple_t* tuple)
 {
@@ -1084,7 +1395,6 @@ void b2b_logic_dump(int no_lock)
 			if(tuple->db_flag == NO_UPDATEDB_FLAG)
 				goto next;
 
-			LM_DBG("Found one tuple\n");
 			if(tuple->key == NULL)
 			{
 				LM_ERR("No key stored\n");
@@ -1170,7 +1480,7 @@ next:
 	}
 }
 
-static int b2bl_add_tuple(b2bl_tuple_t* tuple, str* params[])
+int b2bl_add_tuple(b2bl_tuple_t* tuple, str* params[])
 {
 	b2bl_tuple_t* shm_tuple= NULL;
 	unsigned int hash_index, local_index;
@@ -1198,7 +1508,7 @@ static int b2bl_add_tuple(b2bl_tuple_t* tuple, str* params[])
 	shm_tuple->next_scenario_state= tuple->next_scenario_state;
 
 	/* add entities */
-	for(i=0; i< 3; i++)
+	for(i=0; i< MAX_BRIDGE_ENT; i++)
 	{
 		if(!tuple->bridge_entities[i]->to_uri.len)
 			continue;
@@ -1217,7 +1527,7 @@ static int b2bl_add_tuple(b2bl_tuple_t* tuple, str* params[])
 		}
 		entity= b2bl_create_new_entity(tuple->bridge_entities[i]->type,
 			&tuple->bridge_entities[i]->key,&tuple->bridge_entities[i]->to_uri,
-			&tuple->bridge_entities[i]->from_uri,&tuple->bridge_entities[i]->scenario_id, 0);
+			&tuple->bridge_entities[i]->from_uri, 0, &tuple->bridge_entities[i]->scenario_id, 0);
 		if(client_id)
 			pkg_free(client_id);
 		if(entity == NULL)
@@ -1227,14 +1537,20 @@ static int b2bl_add_tuple(b2bl_tuple_t* tuple, str* params[])
 		}
 		shm_tuple->bridge_entities[i]= entity;
 		/* put the pointer in clients or servers array */
+		// FIXME: check if the restore logic is ok
 		if(tuple->bridge_entities[i]->type == B2B_SERVER)
 		{
-			shm_tuple->server = entity;
+			if (shm_tuple->servers[0])
+				shm_tuple->servers[1] = entity;
+			else
+				shm_tuple->servers[0] = entity;
 		}
 		else
 		{
-			entity->next = shm_tuple->clients;
-			shm_tuple->clients = entity;
+			if (shm_tuple->clients[0])
+				shm_tuple->clients[1] = entity;
+			else
+				shm_tuple->clients[0] = entity;
 		}
 	}
 	if(shm_tuple->bridge_entities[1])
@@ -1266,7 +1582,7 @@ int b2b_logic_restore(void)
 	str b2bl_key;
 	str scenario_id;
 	b2bl_entity_id_t bridge_entities[3];
-	str* params[5];
+	str* params[MAX_SCENARIO_PARAMS];
 
 	if(b2bl_db == NULL)
 	{
@@ -1355,7 +1671,7 @@ int b2b_logic_restore(void)
 			memset(bridge_entities, 0, 3*sizeof(b2bl_entity_id_t));
 			tuple.scenario_state     =row_vals[sstate_col].val.int_val;
 			tuple.next_scenario_state=row_vals[next_sstate_col].val.int_val;
-			memset(params, 0, 5* sizeof(str*));
+			memset(params, 0, MAX_SCENARIO_PARAMS* sizeof(str*));
 			if(row_vals[sparam0_col].val.string_val)
 			{
 				tuple.scenario_params[0].s =(char*)row_vals[sparam0_col].val.string_val;
@@ -1476,4 +1792,22 @@ error:
 	if(result)
 		b2bl_dbf.free_result(b2bl_db, result);
 	return -1;
+}
+
+int b2b_logic_bind(b2bl_api_t* api)
+{
+	if (!api)
+	{
+		LM_ERR("Invalid parameter value\n");
+		return -1;
+	}
+	api->init          = internal_init_scenario;
+	api->bridge        = b2bl_bridge;
+	api->bridge_extern = b2bl_bridge_extern;
+	api->set_state     = b2bl_set_state;
+	api->bridge_2calls = b2bl_bridge_2calls;
+	api->bridge_msg    = b2bl_bridge_msg;
+	api->terminate_call= b2bl_terminate_call;
+
+	return 0;
 }

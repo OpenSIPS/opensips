@@ -107,13 +107,13 @@ typedef struct b2b_dlg
 	str                  route_set[2];
 	str                  contact[2];
 	struct socket_info*  bind_addr[2];
-	str                  sdp;
 	enum request_method  last_method;
 	struct b2b_dlg      *next;
 	struct b2b_dlg      *prev;
 	b2b_notify_t         b2b_cback;
 	b2b_add_dlginfo_t    add_dlginfo;
 	str                  param;
+	str                  ack_sdp;
 	struct cell*         uac_tran;
 	struct cell*         uas_tran;
 	struct cell*         update_tran;
