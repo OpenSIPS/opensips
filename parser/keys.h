@@ -48,6 +48,7 @@
 #define _call_ 0x6c6c6163   /* "call" */
 #define __id2_ 0x2064692d   /* "-id " */
 #define __id1_ 0x3a64692d   /* "-id:" */
+#define __inf_ 0x666e692d   /* "-inf" for Call-Info */
 #define _cont_ 0x746e6f63   /* "cont" */
 #define _act2_ 0x20746361   /* "act " */
 #define _act1_ 0x3a746361   /* "act:" */
