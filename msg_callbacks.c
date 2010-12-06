@@ -56,12 +56,8 @@ msg_callback_add(struct sip_msg *msg, cb_type_t cb_type, cb_func_t cb_func, void
     msg_cb->cb_type = cb_type;
     msg_cb->cb_func = cb_func;
     msg_cb->cb_arg = cb_arg;
-    msg_cb->next = NULL;
-    if (msg->msg_cb == NULL) {
-        msg->msg_cb = msg_cb;
-    } else {
-        msg->msg_cb->next = msg_cb;
-    }
+    msg_cb->next = msg->msg_cb;
+    msg->msg_cb = msg_cb;
     return 0;
 }
 
