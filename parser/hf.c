@@ -205,6 +205,9 @@ void clean_hdr_field(struct hdr_field* hf)
 		case HDR_RETRY_AFTER_T:
 			break;
 
+		case HDR_CALL_INFO_T:
+			break;
+
 		default:
 			LM_CRIT("unknown header type %d\n", hf->type);
 			break;

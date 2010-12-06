@@ -88,6 +88,7 @@ enum _hdr_types_t {
 	HDR_PAI_T					     /**< P-Asserted-Identity header field */,
 	HDR_PRIVACY_T				     /**< Privacy header field */,
 	HDR_RETRY_AFTER_T			     /**< Retry-After header field */,
+	HDR_CALL_INFO_T				     /**< Call-Info header field */,
 	HDR_EOH_T					     /**< Some other header field */
 };
 
@@ -148,6 +149,7 @@ typedef unsigned long long hdr_flags_t;
 #define HDR_PAI_F					HDR_F_DEF(PAI)
 #define HDR_PRIVACY_F				HDR_F_DEF(PRIVACY)
 #define HDR_RETRY_AFTER_F			HDR_F_DEF(RETRY_AFTER)
+#define HDR_CALL_INFO_F				HDR_F_DEF(CALL_INFO)
 #define HDR_OTHER_F					HDR_F_DEF(OTHER)
 
 typedef enum _hdr_types_t hdr_types_t;
@@ -183,8 +185,8 @@ static inline int hdr_allocs_parse(struct hdr_field* hdr)
 		case HDR_EXPIRES_T:
 		case HDR_PROXYAUTH_T:
 		case HDR_EVENT_T:
-                case HDR_ACCEPT_T:
-                case HDR_CONTENTTYPE_T:
+		case HDR_ACCEPT_T:
+		case HDR_CONTENTTYPE_T:
 		case HDR_CONTENTDISPOSITION_T:
 		case HDR_DIVERSION_T:
 		case HDR_RPID_T:
