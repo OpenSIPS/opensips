@@ -24,6 +24,7 @@
  * History:
  * --------
  *  2006-08-15  initial version (Anca Vamanu)
+ *  2010-10-19  support for extra headers (osas)
  */
 
 #include <time.h>
@@ -55,6 +56,62 @@ struct p_modif
 	presentity_t* p;
 	str uri;
 };
+
+#define MAX_NO_OF_EXTRA_HDRS 4
+
+
+void inline build_extra_hdrs(struct sip_msg* msg, const str* map, str* extra_hdrs)
+{
+	struct hdr_field *hf;
+	str xtra_hdr_list[MAX_NO_OF_EXTRA_HDRS];
+	char *p;
+	int is_present, len=0, i=0;
+
+	memset(xtra_hdr_list, 0, MAX_NO_OF_EXTRA_HDRS* sizeof(str));
+	for (; map->s; map++) {
+		if (i>=MAX_NO_OF_EXTRA_HDRS) {
+			LM_WARN("maximum no of extra headers reached: "
+				"increase MAX_NO_OF_EXTRA_HDRS and recompile\n");
+			break;
+		}
+		is_present = 0;
+		for (hf=msg->headers; hf; hf=hf->next) {
+			if (hf->name.len!=map->len)
+				continue;
+			if (strncasecmp(hf->name.s,map->s,map->len)!=0)
+				continue;
+			is_present = 1;
+			break;
+		}
+		if (is_present) {
+			/* insert the header into the list */
+			LM_DBG("found '%.*s'\n", hf->len, hf->name.s);
+			xtra_hdr_list[i].s = hf->name.s;
+			xtra_hdr_list[i].len = hf->len;
+			len+= hf->len;
+			i++;
+		}
+	}
+
+	/* Concatenate found feaders */
+	if (len) {
+		p= (char*)pkg_malloc(len);
+		if (p==NULL) {
+			LM_ERR("oom: dropping extra hdrs\n");
+			return;
+		}
+		extra_hdrs->s = p;
+		extra_hdrs->len = len;
+		for (i=0;i<MAX_NO_OF_EXTRA_HDRS;i++) {
+			if (xtra_hdr_list[i].len) {
+				memcpy(p, xtra_hdr_list[i].s, xtra_hdr_list[i].len);
+				p+= xtra_hdr_list[i].len;
+			} else {
+				break;
+			}
+		}
+	}
+}
 
 void msg_presentity_clean(unsigned int ticks,void *param)
 {
@@ -214,7 +271,7 @@ no_notify:
 			LM_ERR("getting rules doc\n");
 			goto error;
 		}
-		if(publ_notify( p[i].p, p[i].uri, NULL, &p[i].p->etag, rules_doc, 0)< 0)
+		if(publ_notify( p[i].p, p[i].uri, NULL, &p[i].p->etag, rules_doc, NULL, NULL)< 0)
 		{
 			LM_ERR("sending Notify request\n");
 			goto error;
@@ -295,7 +352,8 @@ int handle_publish(struct sip_msg* msg, char* sender_uri, char* str2)
 	presentity_t* presentity = 0;
 	struct hdr_field* hdr;
 	int etag_gen = 0;
-	str etag={0, 0};
+	str etag={NULL, 0};
+	str extra_hdrs={NULL, 0};
 	str* sender= NULL;
 	static char buf[256];
 	int buf_len= 255;
@@ -414,8 +472,11 @@ int handle_publish(struct sip_msg* msg, char* sender_uri, char* str2)
 		body.s = NULL;
 		if (etag_gen)
 		{
-			LM_ERR("No E-Tag and no body found\n");
-			goto error;
+			if (event->mandatory_body)
+			{
+				LM_ERR("No E-Tag and no body found\n");
+				goto error;
+			}
 		}
 	}
 	else
@@ -487,8 +548,12 @@ int handle_publish(struct sip_msg* msg, char* sender_uri, char* str2)
 		goto error;
 	}
 
+	/* build extra headers list */
+	if (event->extra_hdrs)
+		build_extra_hdrs(msg, event->extra_hdrs, &extra_hdrs);
+
 	/* querry the database and update or insert */
-	if(update_presentity(msg, presentity, &body, etag_gen, &sent_reply, sphere) <0)
+	if(update_presentity(msg, presentity, &body, etag_gen, &sent_reply, sphere, &extra_hdrs) <0)
 	{
 		LM_ERR("when updating presentity\n");
 		reply_code = 500;
@@ -504,6 +569,8 @@ int handle_publish(struct sip_msg* msg, char* sender_uri, char* str2)
 		pkg_free(sender);
 	if(sphere)
 		pkg_free(sphere);
+	if(extra_hdrs.s)
+		pkg_free(extra_hdrs.s);
 
 	return 1;
 
@@ -534,6 +601,8 @@ error:
 		pkg_free(sender);
 	if(sphere)
 		pkg_free(sphere);
+	if(extra_hdrs.s)
+		pkg_free(extra_hdrs.s);
 
 	return -1;
 

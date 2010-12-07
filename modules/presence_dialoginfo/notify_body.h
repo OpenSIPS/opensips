@@ -36,5 +36,6 @@ str* dlginfo_agg_nbody(str* pres_user, str* pres_domain, str** body_array,
 str* dlginfo_body_setversion(subs_t *subs, str* body);
 void free_xml_body(char* body);
 int get_dialog_state_priority(char *state);
+str* build_empty_dialoginfo(str* pres_uri, str* extra_hdrs);
 
 #endif

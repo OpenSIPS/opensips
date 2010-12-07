@@ -24,6 +24,7 @@
  * History:
  * --------
  *  2006-08-15  initial version (Anca Vamanu)
+ *  2010-10-19  support for extra headers (osas)
  */
 
 #ifndef PRESENTITY_H
@@ -54,7 +55,7 @@ presentity_t* new_presentity( str* domain,str* user,int expires,
 
 /* update presentity in database */
 int update_presentity(struct sip_msg* msg,presentity_t* p,str* body,int t_new,
-		int* sent_reply, char* sphere);
+		int* sent_reply, char* sphere, str* extra_hdrs);
 
 /* free memory */
 void free_presentity(presentity_t* p);

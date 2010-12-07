@@ -1,4 +1,4 @@
-INSERT INTO version (table_name, table_version) values ('presentity','4');
+INSERT INTO version (table_name, table_version) values ('presentity','5');
 CREATE TABLE presentity (
     id INT(10) UNSIGNED AUTO_INCREMENT PRIMARY KEY NOT NULL,
     username CHAR(64) NOT NULL,
@@ -8,6 +8,7 @@ CREATE TABLE presentity (
     expires INT(11) NOT NULL,
     received_time INT(11) NOT NULL,
     body BLOB NOT NULL,
+    extra_hdrs BLOB NOT NULL,
     sender CHAR(128) NOT NULL,
     CONSTRAINT presentity_idx UNIQUE (username, domain, event, etag)
 ) ENGINE=MyISAM;

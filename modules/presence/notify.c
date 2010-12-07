@@ -24,6 +24,7 @@
  * History:
  * --------
  *  2006-08-15  initial version (Anca Vamanu)
+ *  2010-10-19  support for extra headers (osas)
  */
 
 #include <stdio.h>
@@ -57,6 +58,7 @@ str str_to_user_col = str_init("to_user");
 str str_username_col = str_init("username");
 str str_domain_col = str_init("domain");
 str str_body_col = str_init("body");
+str str_extra_hdrs_col = str_init("extra_hdrs");
 str str_to_domain_col = str_init("to_domain");
 str str_watcher_username_col = str_init("watcher_username");
 str str_watcher_domain_col = str_init("watcher_domain");
@@ -111,9 +113,10 @@ inline void printf_subs(subs_t* subs)
 		subs->contact.s,subs->record_route.len,subs->record_route.s);
 }
 
-int build_str_hdr(subs_t* subs, int is_body, str* hdr)
+int build_str_hdr(subs_t* subs, int is_body, str* hdr, str* extra_hdrs)
 {
 	int len = 0;
+	int extra_len = 0;
 	int lexpire_len;
 	char* lexpire_s;
 	char* p;
@@ -149,7 +152,10 @@ int build_str_hdr(subs_t* subs, int is_body, str* hdr)
 		subs->reason.len):9/*expires=*/ + lexpire_len) + CRLF_LEN + (is_body?
 		(14 /*Content-Type: */+subs->event->content_type.len + CRLF_LEN):0);
 
-	hdr->s = (char*)pkg_malloc(len);
+	if(extra_hdrs && extra_hdrs->s && extra_hdrs->len)
+		extra_len = extra_hdrs->len;
+
+	hdr->s = (char*)pkg_malloc(extra_len + len);
 	if(hdr->s== NULL)
 	{
 		LM_ERR("while allocating memory\n");
@@ -157,6 +163,12 @@ int build_str_hdr(subs_t* subs, int is_body, str* hdr)
 	}
 
 	p = hdr->s;
+
+	if (extra_len)
+	{
+		memcpy(p, extra_hdrs->s, extra_len);
+		p+= extra_hdrs->len;
+	}
 
 	memcpy(p,"Max-Forwards: ", 14);
 	p+= 14;
@@ -757,70 +769,14 @@ error:
 
 }
 
-str* build_empty_dialoginfo(str* pres_uri)
-{
-	str* nbody;
-	xmlDocPtr doc = NULL;
-	xmlNodePtr node;
-	char* pres_uri_char = NULL;
-
-	nbody= (str*) pkg_malloc(sizeof(str));
-	if(nbody== NULL)
-	{
-		LM_ERR("No more memory\n");
-		return 0;
-	}
-
-	doc = xmlNewDoc(BAD_CAST "1.0");
-	if(doc == NULL)
-	{
-		LM_ERR("Failed to create new xml document\n");
-		goto error;
-	}
-
-	node = xmlNewNode(0, BAD_CAST "dialog-info");
-	if(node == NULL)
-	{
-		LM_ERR("Failed to create new xml node\n");
-		goto error;
-	}
-	xmlDocSetRootElement(doc, node);
-	xmlNewProp(node, BAD_CAST "xmlns", BAD_CAST "urn:ietf:params:xml:ns:dialog-info");
-	xmlNewProp(node, BAD_CAST "version", BAD_CAST "0");
-	xmlNewProp(node, BAD_CAST "state", BAD_CAST "full");
-
-	pres_uri_char = (char*)pkg_malloc(pres_uri->len + 1);
-	if(pres_uri_char == NULL)
-	{
-		LM_ERR("No more memory\n");
-		goto error;
-	}
-	memcpy(pres_uri_char, pres_uri->s, pres_uri->len);
-	pres_uri_char[pres_uri->len] = '\0';
-	xmlNewProp(node, BAD_CAST "entity", BAD_CAST pres_uri_char);
-	pkg_free(pres_uri_char);
-
-	xmlDocDumpMemory(doc,(xmlChar**)(void*)&nbody->s,
-		&nbody->len);
-
-	xmlFreeDoc(doc);
-	xmlCleanupParser();
-	xmlMemoryDump();
-
-	return nbody;
-error:
-	if(nbody)
-		pkg_free(nbody);
-	return 0;
-}
 
 static inline db_res_t* pres_search_db(struct sip_uri* uri,str* ev_name, int* body_col,
-		int* expires_col, int* etag_col)
+		int* extra_hdrs_col, int* expires_col, int* etag_col)
 {
 /*	static db_ps_t my_ps = NULL; */
-	db_key_t query_cols[3];
-	db_val_t query_vals[3];
-	db_key_t result_cols[3];
+	db_key_t query_cols[5];
+	db_val_t query_vals[5];
+	db_key_t result_cols[5];
 	db_res_t *result = NULL;
 	int n_result_cols = 0;
 	int n_query_cols = 0;
@@ -848,6 +804,8 @@ static inline db_res_t* pres_search_db(struct sip_uri* uri,str* ev_name, int* bo
 
 	result_cols[n_result_cols] = &str_body_col;
 	*body_col=n_result_cols++;
+	result_cols[n_result_cols] = &str_extra_hdrs_col;
+	*extra_hdrs_col=n_result_cols++;
 	result_cols[n_result_cols] = &str_expires_col;
 	*expires_col=n_result_cols++;
 	result_cols[n_result_cols] = &str_etag_col;
@@ -881,7 +839,7 @@ str* get_presence_from_dialog(str* pres_uri, struct sip_uri* uri,
 		unsigned int hash_code)
 {
 	db_res_t *result = NULL;
-	int body_col, expires_col, etag_col;
+	int body_col, extra_hdrs_col, expires_col, etag_col;
 	str body;
 	str* dialog_body;
 	db_row_t *row= NULL ;
@@ -902,7 +860,7 @@ str* get_presence_from_dialog(str* pres_uri, struct sip_uri* uri,
 	}
 
 	result = pres_search_db(uri, &((*dialog_event_p)->name),
-			&body_col, &expires_col, &etag_col);
+			&body_col, &extra_hdrs_col, &expires_col, &etag_col);
 	if(result== NULL)
 		return NULL;
 
@@ -969,9 +927,9 @@ error:
 }
 
 str* get_p_notify_body(str pres_uri, pres_ev_t* event, str* etag,
-		str* contact, str* dbody)
+		str* contact, str* dbody, str* extra_hdrs)
 {
-	int body_col, expires_col, etag_col= 0;
+	int body_col, extra_hdrs_col, expires_col, etag_col= 0;
 	db_res_t *result = NULL;
 	db_row_t *row= NULL ;
 	db_val_t *row_vals;
@@ -1053,11 +1011,10 @@ str* get_p_notify_body(str pres_uri, pres_ev_t* event, str* etag,
 				if(notify_body)
 					goto done;
 			}
-			/* if event dialog - create a dummy body with no dialog (to work with Linksys) */
-			if(event->evp->parsed == EVENT_DIALOG)
+			if (event->build_empty_pres_info)
 			{
-				notify_body = build_empty_dialoginfo(&pres_uri);
-				if(notify_body == NULL)
+				notify_body = event->build_empty_pres_info(&pres_uri, extra_hdrs);
+				if(notify_body == NULL && event->mandatory_body)
 				{
 					LM_ERR("Failed to construct body\n");
 					return NULL;
@@ -1068,13 +1025,13 @@ str* get_p_notify_body(str pres_uri, pres_ev_t* event, str* etag,
 		}
 	}
 
-	result = pres_search_db(&uri,&event->name,&body_col,&expires_col,&etag_col);
+	result = pres_search_db(&uri,&event->name,&body_col,&extra_hdrs_col,&expires_col,&etag_col);
 	if(result== NULL)
 		return NULL;
 	if (result->n<=0 )
 	{
-		LM_DBG("The query returned no result\n[username]= %.*s"
-			"\t[domain]= %.*s\t[event]= %.*s\n",uri.user.len, uri.user.s,
+		LM_DBG("The query returned no result: [username]='%.*s'"
+			" [domain]='%.*s' [event]='%.*s'\n",uri.user.len, uri.user.s,
 			uri.host.len, uri.host.s, event->name.len, event->name.s);
 
 		pa_dbf.free_result(pa_db, result);
@@ -1100,11 +1057,10 @@ str* get_p_notify_body(str pres_uri, pres_ev_t* event, str* etag,
 			if(notify_body)
 				goto done;
 		}
-		/* if event dialog - create a dummy body with no dialog (to work with Linksys) */
-		if(event->evp->parsed == EVENT_DIALOG)
+		if(event->build_empty_pres_info)
 		{
-			notify_body = build_empty_dialoginfo(&pres_uri);
-			if(notify_body == NULL)
+			notify_body = event->build_empty_pres_info(&pres_uri, extra_hdrs);
+			if(notify_body == NULL && event->mandatory_body)
 			{
 				LM_ERR("Failed to construct body\n");
 				return NULL;
@@ -1122,6 +1078,21 @@ str* get_p_notify_body(str pres_uri, pres_ev_t* event, str* etag,
 			row = &result->rows[n-1];
 			row_vals = ROW_VALUES(row);
 
+			if(row_vals[extra_hdrs_col].val.string_val!= NULL)
+			{
+				if (extra_hdrs && !extra_hdrs->s)
+				{
+					len = strlen(row_vals[extra_hdrs_col].val.string_val);
+					extra_hdrs->s = (char*)pkg_malloc(len);
+					if (extra_hdrs->s == NULL)
+					{
+						ERR_MEM(PKG_MEM_STR);
+					}
+					memcpy(extra_hdrs->s, row_vals[extra_hdrs_col].val.string_val, len);
+					extra_hdrs->len = len;
+				}
+			}
+
 			if(row_vals[body_col].val.string_val== NULL)
 			{
 				LM_ERR("NULL notify body record\n");
@@ -1130,7 +1101,8 @@ str* get_p_notify_body(str pres_uri, pres_ev_t* event, str* etag,
 			len= strlen(row_vals[body_col].val.string_val);
 			if(len== 0)
 			{
-				LM_ERR("Empty notify body record\n");
+				if (event->mandatory_body)
+					LM_ERR("Empty notify body record\n");
 				goto error;
 			}
 			notify_body= (str*)pkg_malloc(sizeof(str));
@@ -1172,6 +1144,21 @@ str* get_p_notify_body(str pres_uri, pres_ev_t* event, str* etag,
 				etags.s = (char*)row_vals[etag_col].val.string_val;
 				etags.len = strlen(etags.s);
 
+				if(row_vals[extra_hdrs_col].val.string_val!= NULL)
+				{
+					if (extra_hdrs && !extra_hdrs->s)
+					{
+						len = strlen(row_vals[extra_hdrs_col].val.string_val);
+						extra_hdrs->s = (char*)pkg_malloc(len);
+						if (extra_hdrs->s == NULL)
+						{
+							ERR_MEM(PKG_MEM_STR);
+						}
+						memcpy(extra_hdrs->s, row_vals[extra_hdrs_col].val.string_val, len);
+						extra_hdrs->len = len;
+					}
+				}
+
 				LM_DBG("etag = %.*s len= %d\n", etags.len, etags.s, etags.len);
 				if( (etags.len == etag->len) && (strncmp(etags.s,
 								etag->s,etags.len)==0 ) )
@@ -1182,7 +1169,8 @@ str* get_p_notify_body(str pres_uri, pres_ev_t* event, str* etag,
 				len= strlen((char*)row_vals[body_col].val.string_val);
 				if(len== 0)
 				{
-					LM_ERR("Empty notify body record\n");
+					if (event->mandatory_body)
+						LM_ERR("Empty notify body record\n");
 					goto error;
 				}
 
@@ -1208,10 +1196,26 @@ str* get_p_notify_body(str pres_uri, pres_ev_t* event, str* etag,
 				row = &result->rows[i];
 				row_vals = ROW_VALUES(row);
 
+				if(row_vals[extra_hdrs_col].val.string_val!= NULL)
+				{
+					if (extra_hdrs && !extra_hdrs->s)
+					{
+						len = strlen(row_vals[extra_hdrs_col].val.string_val);
+						extra_hdrs->s = (char*)pkg_malloc(len);
+						if (extra_hdrs->s == NULL)
+						{
+							ERR_MEM(PKG_MEM_STR);
+						}
+						memcpy(extra_hdrs->s, row_vals[extra_hdrs_col].val.string_val, len);
+						extra_hdrs->len = len;
+					}
+				}
+
 				len= strlen((char*)row_vals[body_col].val.string_val);
 				if(len== 0)
 				{
-					LM_ERR("Empty notify body record\n");
+					if (event->mandatory_body)
+						LM_ERR("Empty notify body record\n");
 					goto error;
 				}
 
@@ -1698,9 +1702,10 @@ error:
 }
 
 int publ_notify(presentity_t* p, str pres_uri, str* body, str* offline_etag,
-		str* rules_doc, str* dialog_body)
+		str* rules_doc, str* dialog_body, str* extra_hdrs)
 {
 	str *notify_body = NULL, *aux_body = NULL;
+	str notify_extra_hdrs = {NULL, 0};
 	subs_t* subs_array= NULL, *s= NULL;
 	int ret_code= -1;
 
@@ -1716,7 +1721,7 @@ int publ_notify(presentity_t* p, str pres_uri, str* body, str* offline_etag,
 	if(p->event->agg_nbody)
 	{
 		notify_body = get_p_notify_body(pres_uri, p->event , offline_etag,
-				NULL, dialog_body);
+				NULL, dialog_body, extra_hdrs?extra_hdrs:&notify_extra_hdrs);
 		if(notify_body == NULL)
 		{
 			LM_DBG("Could not get the notify_body\n");
@@ -1732,7 +1737,8 @@ int publ_notify(presentity_t* p, str pres_uri, str* body, str* offline_etag,
 		if (p->event->aux_body_processing)
 			aux_body = p->event->aux_body_processing(s, notify_body?notify_body:body);
 
-		if(notify(s, NULL, aux_body?aux_body:(notify_body?notify_body:body), 0)< 0 )
+		if(notify(s, NULL, aux_body?aux_body:(notify_body?notify_body:body),
+			0, extra_hdrs?extra_hdrs:&notify_extra_hdrs)< 0 )
 		{
 			LM_ERR("Could not send notify for %.*s\n",
 					p->event->name.len, p->event->name.s);
@@ -1749,7 +1755,10 @@ int publ_notify(presentity_t* p, str pres_uri, str* body, str* offline_etag,
 
 done:
 	free_subs_list(subs_array, PKG_MEM_TYPE, 0);
-	
+
+	if (notify_extra_hdrs.s)
+		pkg_free(notify_extra_hdrs.s);
+
 	if(notify_body!=NULL)
 	{
 		if(notify_body->s)
@@ -1767,6 +1776,7 @@ done:
 int query_db_notify(str* pres_uri, pres_ev_t* event, subs_t* watcher_subs)
 {
 	subs_t* subs_array = NULL, *s= NULL;
+	str notify_extra_hdrs = {NULL, 0};
 	str* notify_body = NULL, *aux_body = NULL;
 	int ret_code= -1;
 
@@ -1780,7 +1790,7 @@ int query_db_notify(str* pres_uri, pres_ev_t* event, subs_t* watcher_subs)
 	
 	if(event->type & PUBL_TYPE)
 	{
-		notify_body = get_p_notify_body(*pres_uri, event, NULL, NULL, NULL);
+		notify_body = get_p_notify_body(*pres_uri, event, NULL, NULL, NULL, &notify_extra_hdrs);
 		if(notify_body == NULL)
 		{
 			LM_DBG("Could not get the notify_body\n");
@@ -1797,7 +1807,7 @@ int query_db_notify(str* pres_uri, pres_ev_t* event, subs_t* watcher_subs)
 			aux_body = event->aux_body_processing(s, notify_body);
 		}
 
-		if(notify(s, watcher_subs, aux_body?aux_body:notify_body, 0)< 0 )
+		if(notify(s, watcher_subs, aux_body?aux_body:notify_body, 0, NULL)< 0 )
 		{
 			LM_ERR("Could not send notify for [event]=%.*s\n",
 					event->name.len, event->name.s);
@@ -1817,6 +1827,10 @@ int query_db_notify(str* pres_uri, pres_ev_t* event, subs_t* watcher_subs)
 
 done:
 	free_subs_list(subs_array, PKG_MEM_TYPE, 0);
+
+	if (notify_extra_hdrs.s)
+		pkg_free(notify_extra_hdrs.s);
+
 	if(notify_body!=NULL)
 	{
 		if(notify_body->s)
@@ -1836,11 +1850,12 @@ done:
 }
 
 int send_notify_request(subs_t* subs, subs_t * watcher_subs,
-		str* n_body,int force_null_body)
+		str* n_body,int force_null_body, str* extra_hdrs)
 {
 	dlg_t* td = NULL;
 	str met = {"NOTIFY", 6};
-	str str_hdr = {0, 0};
+	str str_hdr = {NULL, 0};
+	str notify_extra_hdrs = {NULL, 0};
 	str* notify_body = NULL;
 	int result= 0;
 	c_back_param *cb_param= NULL;
@@ -1896,7 +1911,8 @@ int send_notify_request(subs_t* subs, subs_t * watcher_subs,
 			else
 			{
 				notify_body = get_p_notify_body(subs->pres_uri,
-						subs->event, NULL, (subs->contact.s)?&subs->contact:NULL, NULL);
+						subs->event, NULL, (subs->contact.s)?&subs->contact:NULL,
+						NULL, extra_hdrs?extra_hdrs:&notify_extra_hdrs);
 				if(notify_body == NULL || notify_body->s== NULL)
 				{
 					LM_DBG("Could not get the notify_body\n");
@@ -1932,7 +1948,7 @@ jump_over_body:
 	}
 
 	/* build extra headers */
-	if( build_str_hdr( subs, notify_body?1:0, &str_hdr)< 0 )
+	if( build_str_hdr( subs, notify_body?1:0, &str_hdr, extra_hdrs?extra_hdrs:&notify_extra_hdrs)< 0 )
 	{
 		LM_ERR("while building headers\n");
 		goto error;
@@ -1977,6 +1993,9 @@ jump_over_body:
 	free_tm_dlg(td);
 	
 	pkg_free(str_hdr.s);
+
+	if (notify_extra_hdrs.s)
+		pkg_free(notify_extra_hdrs.s);
 	
 	if((int)(long)n_body!= (int)(long)notify_body)
 	{
@@ -2002,6 +2021,8 @@ error:
 		free_tm_dlg(td);
 	if(str_hdr.s)
 		pkg_free(str_hdr.s);
+	if (notify_extra_hdrs.s)
+		pkg_free(notify_extra_hdrs.s);
 	
 	if((int)(long)n_body!= (int)(long)notify_body)
 	{
@@ -2024,7 +2045,7 @@ error:
 }
 
 
-int notify(subs_t* subs, subs_t * watcher_subs, str* n_body,int force_null_body)
+int notify(subs_t* subs, subs_t * watcher_subs, str* n_body, int force_null_body, str* extra_hdrs)
 {
 	/* update first in hash table and the send Notify */
 	if(subs->expires!= 0 && subs->status != TERMINATED_STATUS)
@@ -2052,7 +2073,7 @@ int notify(subs_t* subs, subs_t * watcher_subs, str* n_body,int force_null_body)
 		force_null_body = 1;
 	}
 
-	if(send_notify_request(subs, watcher_subs, n_body, force_null_body)< 0)
+	if(send_notify_request(subs, watcher_subs, n_body, force_null_body, extra_hdrs)< 0)
 	{
 		LM_ERR("sending Notify not successful\n");
 		return -1;

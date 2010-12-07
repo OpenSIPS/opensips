@@ -130,8 +130,11 @@ int add_event(pres_ev_t* event)
 
 	if(event->content_type.s== NULL || event->content_type.len== 0)
 	{
-		LM_ERR("NULL content_type param\n");
-		return -1;
+		if (event->mandatory_body)
+		{
+			LM_ERR("NULL content_type param\n");
+			return -1;
+		}
 	}
 	
 	ev= contains_event(&event->name, &parsed_event);
@@ -209,16 +212,20 @@ int add_event(pres_ev_t* event)
 		LM_ERR("bad event structure\n");
 		goto error;
 	}
+
+	ev->extra_hdrs= event->extra_hdrs;
 	ev->req_auth= event->req_auth;
 	ev->agg_nbody= event->agg_nbody;
 	ev->apply_auth_nbody= event->apply_auth_nbody;
 	ev->get_auth_status= event->get_auth_status;
 	ev->get_rules_doc= event->get_rules_doc;
 	ev->evs_publ_handl= event->evs_publ_handl;
+	ev->mandatory_body = event->mandatory_body;
 	ev->etag_not_new= event->etag_not_new;
 	ev->aux_body_processing= event->aux_body_processing;
 	ev->aux_free_body= event->aux_free_body;
 	ev->free_body= event->free_body;
+	ev->build_empty_pres_info= event->build_empty_pres_info;
 	ev->default_expires= event->default_expires;
 
 	if(not_in_list)

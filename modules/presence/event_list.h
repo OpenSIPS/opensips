@@ -45,6 +45,8 @@ typedef int (publ_handling_t)(struct sip_msg*, int* sent_event);
 
 typedef int (subs_handling_t)(struct sip_msg*);
 
+typedef str* (empty_pres_info_t)(str* pres_uri, str* extra_hdrs);
+
 typedef str* (agg_nbody_t)(str* pres_user, str* pres_domain, str** body_array, int n, int off_index);
 /* params for agg_body_t 
  *	body_array= an array with all the bodies stored for that resource
@@ -77,8 +79,15 @@ struct pres_ev
 	str name;
 	event_t* evp;
 	str content_type;
+	str* extra_hdrs;
 	int default_expires;
 	int type;
+	/* Flag that sets the requirements for body:
+	 *
+	 * 0 - body is not mandatory
+	 * 1 - body is mandatory
+	 */
+	int mandatory_body;
 	int etag_not_new;
 	/*
 	 *  0 - the standard mechanism (allocating new etag for each Publish)
@@ -103,6 +112,11 @@ struct pres_ev
 	agg_nbody_t* agg_nbody;
 	publ_handling_t  * evs_publ_handl;
 	subs_handling_t  * evs_subs_handl;
+	/* for some phones and specific events, we need to provide some dummy presence
+	 * information - like a dummy body for dialog event when no information is
+	 * available in the presentity table
+	 */
+	empty_pres_info_t  * build_empty_pres_info;
 	free_body_t* free_body;
 	/* sometimes it is necessary that a module make changes for a body for each 
 	 * active watcher (e.g. setting the "version" parameter in an XML document.
