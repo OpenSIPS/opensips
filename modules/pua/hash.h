@@ -42,6 +42,7 @@
 #define CONFERENCE_EVENT    1<<4
 #define XCAPDIFF_EVENT      1<<5
 #define DIALOG_EVENT        1<<6
+#define CALLINFO_EVENT      1<<7
 
 #define UL_PUBLISH          1<<0
 #define BLA_PUBLISH         1<<1
@@ -54,6 +55,7 @@
 #define MI_SUBSCRIBE        1<<8
 #define RLS_SUBSCRIBE       1<<9
 #define DIALOG_PUBLISH      1<<10
+#define CALLINFO_PUBLISH    1<<11
 
 #define NO_UPDATEDB_FLAG    0
 #define UPDATEDB_FLAG       1
@@ -162,6 +164,8 @@ static inline int get_event_flag(str* event)
 		case 9:
 			if (strncasecmp(event->s, "xcap-diff", 9) == 0)
 				return XCAPDIFF_EVENT;
+			if (strncasecmp(event->s, "call-info", 9) == 0)
+				return CALLINFO_EVENT;
 			break;
 		case 10:
 			if (strncasecmp(event->s, "dialog;sla", 10) == 0)
