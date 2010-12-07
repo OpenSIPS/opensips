@@ -226,17 +226,7 @@ int dp_load_db(void)
 
 	nr_rows = RES_ROW_N(res);
 
-	/* block access to data for all readers */
-	lock_get( ref_lock );
-	*reload_flag = 1;
-	lock_release( ref_lock );
-
-	/* wait for all readers to finish - it's a kind of busy waitting but
-	 * it's not critical;
-	 * at this point, data_refcnt can only be decremented */
-	while (*data_refcnt) {
-		usleep(10);
-	}
+	lock_start_write( ref_lock );
 
 	*next_idx = ((*crt_idx) == 0)? 1:0;
 
@@ -266,8 +256,7 @@ int dp_load_db(void)
 				LM_ERR("failure while fetching!\n");
 				if (res)
 					dp_dbf.free_result(dp_db_handle, res);
-				/* release the readers */
-				*reload_flag = 0;
+				lock_stop_write( ref_lock );
 				return -1;
 			}
 		} else {
@@ -282,7 +271,7 @@ end:
 	*crt_idx = *next_idx;
 
 	/* release the exclusive writing access */
-	*reload_flag = 0;
+	lock_stop_write( ref_lock );
 
 	list_hash(*crt_idx);
 
@@ -297,7 +286,7 @@ err2:
 	/* if lock defined - release the exclusive writing access */
 	if(ref_lock)
 		/* release the readers */
-		*reload_flag = 0;
+		lock_stop_write( ref_lock );
 	return -1;
 }
 
@@ -622,17 +611,7 @@ void list_hash(int h_index)
 	dpl_node_p rulep;
 
 	/* lock the data for reading */
-again:
-	lock_get( ref_lock );
-	/* if reload must be done, do un ugly busy waiting 
-	 * until reload is finished */
-	if (*reload_flag) {
-		lock_release( ref_lock );
-		usleep(5);
-		goto again;
-	}
-	*data_refcnt = *data_refcnt + 1;
-	lock_release( ref_lock );
+	lock_start_read( ref_lock );
 
 	if(!rules_hash[h_index])
 		goto done;
@@ -649,9 +628,7 @@ again:
 
 done:
 	/* we are done reading -> unref the data */
-	lock_get( ref_lock );
-	*data_refcnt = *data_refcnt - 1;
-	lock_release( ref_lock );
+	lock_stop_read( ref_lock );
 }
 
 

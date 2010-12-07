@@ -66,10 +66,8 @@ dp_param_p default_par2 = NULL;
 
 int dp_fetch_rows = 1000;
 
-/* lock, ref counter and flag used for reloading the date */
-gen_lock_t *ref_lock = NULL;
-int* data_refcnt = 0;
-int* reload_flag = 0;
+/* reader-writers lock */
+rw_lock_t *ref_lock = NULL; 
 
 
 static param_export_t mod_params[]={
@@ -181,23 +179,10 @@ static int mod_init(void)
 	}
 
 	/* create & init lock */
-	if ( (ref_lock=lock_alloc())==0) {
-		LM_CRIT("failed to alloc ref_lock\n");
+	if ((ref_lock = lock_init_rw()) == NULL) {
+		LM_CRIT("failed to init lock\n");
 		return -1;
 	}
-	if (lock_init(ref_lock)==0 ) {
-		LM_CRIT("failed to init ref_lock\n");
-		return -1;
-	}
-	data_refcnt = (int*)shm_malloc(sizeof(int));
-	reload_flag = (int*)shm_malloc(sizeof(int));
-	if(!data_refcnt || !reload_flag)
-	{
-		LM_ERR("no more shared memory\n");
-		return -1;
-	}
-	*data_refcnt = 0;
-	*reload_flag = 0;
 
 	if(dp_fetch_rows<=0)
 		dp_fetch_rows = 1000;
@@ -230,19 +215,10 @@ static void mod_destroy(void)
 	}
 	destroy_data();
 
-	/* destroy lock */
 	if (ref_lock) {
-		lock_destroy( ref_lock );
-		lock_dealloc( ref_lock );
+		lock_destroy_rw( ref_lock );
 		ref_lock = 0;
 	}
-	
-	if(reload_flag)
-		shm_free(reload_flag);
-	if(data_refcnt)
-		shm_free(data_refcnt);
-
-
 }
 
 
@@ -347,17 +323,7 @@ static int dp_translate_f(struct sip_msg* msg, char* str1, char* str2)
 	LM_DBG("input is %.*s\n", input.len, input.s);
 
 	/* ref the data for reading */
-again:
-	lock_get( ref_lock );
-	/* if reload must be done, do un ugly busy waiting 
-	 * until reload is finished */
-	if (*reload_flag) {
-		lock_release( ref_lock );
-		usleep(5);
-		goto again;
-	}
-	*data_refcnt = *data_refcnt + 1;
-	lock_release( ref_lock );
+	lock_start_read( ref_lock );
 
 	if ((idp = select_dpid(dpid)) ==0 ){
 		LM_DBG("no information available for dpid %i\n", dpid);
@@ -381,17 +347,13 @@ again:
 	}
 
 	/* we are done reading -> unref the data */
-	lock_get( ref_lock );
-	*data_refcnt = *data_refcnt - 1;
-	lock_release( ref_lock );
+	lock_stop_read( ref_lock );
 
 	return 1;
 
 error:
 	/* we are done reading -> unref the data */
-	lock_get( ref_lock );
-	*data_refcnt = *data_refcnt - 1;
-	lock_release( ref_lock );
+	lock_stop_read( ref_lock );
 
 	return -1;
 }
@@ -552,23 +514,11 @@ static struct mi_root * mi_translate(struct mi_root *cmd, void *param)
 	LM_DBG("input is %.*s\n", input.len, input.s);
 
 	/* ref the data for reading */
-again:
-	lock_get( ref_lock );
-	/* if reload must be done, do un ugly busy waiting 
-	 * until reload is finished */
-	if (*reload_flag) {
-		lock_release( ref_lock );
-		usleep(5);
-		goto again;
-	}
-	*data_refcnt = *data_refcnt + 1;
-	lock_release( ref_lock );
+	lock_start_read( ref_lock );
 
 	if ((idp = select_dpid(dpid)) ==0 ){
 		LM_ERR("no information available for dpid %i\n", dpid);
-		lock_get( ref_lock );
-		*data_refcnt = *data_refcnt - 1;
-		lock_release( ref_lock );
+		lock_stop_read( ref_lock );
 		return init_mi_tree(404, "No information available for dpid", 33);
 	}
 
@@ -578,9 +528,7 @@ again:
 		goto error1;
 	}
 	/* we are done reading -> unref the data */
-	lock_get( ref_lock );
-	*data_refcnt = *data_refcnt - 1;
-	lock_release( ref_lock );
+	lock_stop_read( ref_lock );
 
 	LM_DBG("input %.*s with dpid %i => output %.*s\n",
 			input.len, input.s, idp->dp_id, output.len, output.s);
@@ -602,9 +550,7 @@ again:
 	return rpl;
 error1:
 	/* we are done reading -> unref the data */
-	lock_get( ref_lock );
-	*data_refcnt = *data_refcnt - 1;
-	lock_release( ref_lock );
+	lock_stop_read( ref_lock );
 
 error:
 	if(rpl)

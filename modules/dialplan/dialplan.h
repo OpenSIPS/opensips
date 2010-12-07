@@ -29,7 +29,7 @@
 #define _DP_DIALPLAN_H
 
 #include "../../parser/msg_parser.h"
-#include "../../locking.h"
+#include "../../rw_locking.h"
 
 #include "../../re.h"
 #include <pcre.h>
@@ -102,8 +102,6 @@ pcre * wrap_pcre_compile(char *  pattern);
 void wrap_pcre_free( pcre*);
 
 
-extern gen_lock_t *ref_lock;
-extern int* data_refcnt;
-extern int* reload_flag;
+extern rw_lock_t *ref_lock; 
 
 #endif

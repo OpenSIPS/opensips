@@ -51,7 +51,7 @@ struct lb_res_str* search_resource_str( struct lb_res_str_list *lb_rl,
 }
 
 
-struct lb_res_str_list *parse_resorces_list(char *r_list, int has_val)
+struct lb_res_str_list *parse_resources_list(char *r_list, int has_val)
 {
 	struct lb_res_str_list *lb_rl;
 	unsigned int n;
