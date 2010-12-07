@@ -1150,8 +1150,10 @@ $var(account) = $dlg_val("account_type");
 
    Value may be:
      * NULL - Dialog not found.
-     * 2 - Dialog in early state (created but no final reply
-       received yet)
+     * 1 - Dialog unconfirmed (created but no reply received at
+       all)
+     * 2 - Dialog in early state (created provisional reply
+       received, but no final reply received yet)
      * 3 - Confirmed by a final reply but no ACK received yet.
      * 4 - Confirmed by a final reply and ACK received.
      * 5 - Dialog ended.
