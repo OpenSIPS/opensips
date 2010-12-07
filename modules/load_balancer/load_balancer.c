@@ -33,7 +33,7 @@
 #include "../../timer.h"
 #include "../../ut.h"
 #include "../../mod_fix.h"
-#include "../../locking.h"
+#include "../../rw_locking.h"
 #include "../dialog/dlg_load.h"
 #include "../tm/tm_load.h"
 #include "lb_parser.h"
@@ -51,10 +51,8 @@ static char *table_name = NULL;
 /* dialog stuff */
 struct dlg_binds lb_dlg_binds;
 
-/* lock, ref counter and flag used for reloading the date */
-static gen_lock_t *ref_lock = 0;
-static int* data_refcnt = 0;
-static int* reload_flag = 0;
+/* reader-writers lock for data reloading */
+static rw_lock_t *ref_lock = NULL; 
 static struct lb_data **curr_data = NULL;
 
 /* probing related stuff */
@@ -233,24 +231,13 @@ static inline int lb_reload_data( void )
 		return -1;
 	}
 
-	/* block access to data for all readers */
-	lock_get( ref_lock );
-	*reload_flag = 1;
-	lock_release( ref_lock );
-
-	/* wait for all readers to finish - it's a kind of busy waitting but
-	 * it's not critical;
-	 * at this point, data_refcnt can only be decremented */
-	while (*data_refcnt) {
-		usleep(10);
-	}
+	lock_start_write( ref_lock );
 
 	/* no more activ readers -> do the swapping */
 	old_data = *curr_data;
 	*curr_data = new_data;
 
-	/* release the readers */
-	*reload_flag = 0;
+	lock_stop_write( ref_lock );
 
 	/* destroy old data */
 	if (old_data)
@@ -283,22 +270,10 @@ static int mod_init(void)
 	*curr_data = 0;
 
 	/* create & init lock */
-	if ( (ref_lock=lock_alloc())==0) {
-		LM_CRIT("failed to alloc ref_lock\n");
+	if ((ref_lock = lock_init_rw()) == NULL) {
+		LM_CRIT("failed to init lock\n");
 		return -1;
 	}
-	if (lock_init(ref_lock)==0 ) {
-		LM_CRIT("failed to init ref_lock\n");
-		return -1;
-	}
-	data_refcnt = (int*) shm_malloc(sizeof(int));
-	reload_flag = (int*) shm_malloc(sizeof(int));
-	if(!data_refcnt || !reload_flag) {
-		LM_ERR("No more shared memory\n");
-		return -1;
-	}
-	*data_refcnt = 0;
-	*reload_flag = 0;
 
 	/* init and open DB connection */
 	if (init_lb_db(&db_url, table_name)!=0) {
@@ -381,36 +356,10 @@ static void mod_destroy(void)
 
 	/* destroy lock */
 	if (ref_lock) {
-		lock_destroy( ref_lock );
-		lock_dealloc( ref_lock );
+		lock_destroy_rw( ref_lock );
 		ref_lock = 0;
 	}
-
-	if(data_refcnt)
-		shm_free(data_refcnt);
-	if(reload_flag)
-		shm_free(reload_flag);
 }
-
-
-#define ref_read_data() \
- again:\
-	lock_get( ref_lock ); \
-	/* if reload must be done, do un ugly busy waiting \
-	 * until reload is finished */ \
-	if (*reload_flag) { \
-		lock_release( ref_lock ); \
-		usleep(5); \
-		goto again; \
-	} \
-	*data_refcnt = *data_refcnt + 1; \
-	lock_release( ref_lock );
-
-
-#define unref_read_data() \
-	lock_get( ref_lock ); \
-	*data_refcnt = *data_refcnt - 1; \
-	lock_release( ref_lock );
 
 
 static int w_load_balance(struct sip_msg *req, char *grp, char *rl, char *al)
@@ -424,7 +373,7 @@ static int w_load_balance(struct sip_msg *req, char *grp, char *rl, char *al)
 	pv_elem_t *model;
 	str dest;
 
-	ref_read_data();
+	lock_start_read( ref_lock );
 
 	if (lbgp->grp_pv) {
 		if (pv_get_spec_value( req, (pv_spec_p)lbgp->grp_pv, &val)!=0) {
@@ -459,7 +408,7 @@ static int w_load_balance(struct sip_msg *req, char *grp, char *rl, char *al)
 	ret = do_load_balance(req, grp_no, lb_rl,
 			(unsigned int)(long)al, *curr_data);
 
-	unref_read_data();
+	lock_stop_read( ref_lock );
 	if (lbp->type & RES_ELEM)
 		pkg_free(lb_rl);
 
@@ -473,12 +422,12 @@ static int w_lb_disable(struct sip_msg *req)
 {
 	int ret;
 
-	ref_read_data();
+	lock_start_read( ref_lock );
 
 	/* do lb */
 	ret = do_lb_disable( req , *curr_data);
 
-	unref_read_data();
+	lock_stop_read( ref_lock );
 
 	if (ret<0)
 		return ret;
@@ -506,22 +455,22 @@ void set_dst_state_from_rplcode( int id, int code)
 {
 	struct lb_dst *dst;
 
-	ref_read_data();
+	lock_start_read( ref_lock );
 
 	for( dst=(*curr_data)->dsts ; dst && dst->id!=id ; dst=dst->next);
 	if (dst==NULL) {
-		unref_read_data();
+		lock_stop_read( ref_lock );
 		return;
 	}
 
 	if ((code == 200) || check_options_rplcode(code)) {
 		/* re-enable to DST  (if allowed) */
 		if ( dst->flags&LB_DST_STAT_NOEN_FLAG ) {
-			unref_read_data();
+			lock_stop_read( ref_lock );
 			return;
 		}
 		dst->flags &= ~LB_DST_STAT_DSBL_FLAG;
-		unref_read_data();
+		lock_stop_read( ref_lock );
 		return;
 	}
 
@@ -529,19 +478,19 @@ void set_dst_state_from_rplcode( int id, int code)
 		dst->flags |= LB_DST_STAT_DSBL_FLAG;
 	}
 
-	unref_read_data();
+	lock_stop_read( ref_lock );
 }
 
 
 
 static void lb_prob_handler(unsigned int ticks, void* param)
 {
-	ref_read_data();
+	lock_start_read( ref_lock );
 
 	/* do probing */
 	lb_do_probing(*curr_data);
 
-	unref_read_data();
+	lock_stop_read( ref_lock );
 }
 
 
@@ -596,7 +545,7 @@ static struct mi_root* mi_lb_resize(struct mi_root *cmd, void *param)
 	if (str2int( &node->value, &size) < 0)
 		goto bad_syntax;
 
-	ref_read_data();
+	lock_start_read( ref_lock );
 
 	/* get destination */
 	for( dst=(*curr_data)->dsts ; dst && dst->id!=id ; dst=dst->next);
@@ -617,7 +566,7 @@ static struct mi_root* mi_lb_resize(struct mi_root *cmd, void *param)
 		}
 	}
 
-	unref_read_data();
+	lock_stop_read( ref_lock );
 
 	return rpl_tree;
 bad_syntax:
@@ -647,7 +596,7 @@ static struct mi_root* mi_lb_status(struct mi_root *cmd, void *param)
 	if (str2int( &node->value, &id) < 0)
 		return init_mi_tree( 400, MI_SSTR(MI_BAD_PARM_S));
 
-	ref_read_data();
+	lock_start_read( ref_lock );
 
 	/* status (param 2) */
 	node = node->next;
@@ -692,13 +641,13 @@ static struct mi_root* mi_lb_status(struct mi_root *cmd, void *param)
 					dst->flags |= 
 						LB_DST_STAT_DSBL_FLAG|LB_DST_STAT_NOEN_FLAG;
 				}
-				unref_read_data();
+				lock_stop_read( ref_lock );
 				return init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
 			}
 		}
 	}
 
-	unref_read_data();
+	lock_stop_read( ref_lock );
 
 	return rpl_tree;
 }
@@ -721,7 +670,7 @@ static struct mi_root* mi_lb_list(struct mi_root *cmd_tree, void *param)
 	if (rpl_tree==NULL)
 		return NULL;
 
-	ref_read_data();
+	lock_start_read( ref_lock );
 
 	/* go through all destination */
 	for( dst=(*curr_data)->dsts ; dst ; dst=dst->next) {
@@ -780,10 +729,10 @@ static struct mi_root* mi_lb_list(struct mi_root *cmd_tree, void *param)
 		}
 	}
 
-	unref_read_data();
+	lock_stop_read( ref_lock );
 	return rpl_tree;
 error:
-	unref_read_data();
+	lock_stop_read( ref_lock );
 	free_mi_tree(rpl_tree);
 	return 0;
 }

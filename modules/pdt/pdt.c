@@ -49,7 +49,7 @@
 #include "../../parser/parse_uri.h"
 #include "../../timer.h"
 #include "../../ut.h"
-#include "../../locking.h"
+#include "../../rw_locking.h"
 #include "../../action.h"
 #include "../../mod_fix.h"
 #include "../../parser/parse_from.h"
@@ -84,10 +84,8 @@ str prefix = {"", 0};
 /* List of allowed chars for a prefix*/
 str pdt_char_list = {"0123456789", 10};
 
-/* lock, ref counter and flag used for reloading the date */
-static gen_lock_t *pdt_lock = 0;
-static int* pdt_tree_refcnt = 0;
-static int* pdt_reload_flag = 0;
+/* reader-writers lock */
+static rw_lock_t *pdt_lock = NULL; 
 
 static int  w_prefix2domain(struct sip_msg* msg, char* str1, char* str2);
 static int  w_prefix2domain_1(struct sip_msg* msg, char* mode, char* str2);
@@ -210,24 +208,11 @@ static int mod_init(void)
 	}
 	LM_DBG("database connection opened successfully\n");
 	
-	if ( (pdt_lock=lock_alloc())==0) {
-		LM_CRIT("failed to alloc lock\n");
-		goto error1;
-	}
-	if (lock_init(pdt_lock)==0 ) {
+	/* create & init lock */
+	if ((pdt_lock = lock_init_rw()) == NULL) {
 		LM_CRIT("failed to init lock\n");
 		goto error1;
 	}
-
-	pdt_tree_refcnt = (int*)shm_malloc(sizeof(int));
-	pdt_reload_flag = (int*)shm_malloc(sizeof(int));
-	if(!pdt_tree_refcnt || !pdt_reload_flag)
-	{
-		LM_ERR("No more shared memory");
-		goto error1;
-	}
-	*pdt_tree_refcnt = 0;
-	*pdt_reload_flag = 0;
 	
 	/* tree pointer in shm */
 	_ptree = (pdt_tree_t**)shm_malloc( sizeof(pdt_tree_t*) );
@@ -257,8 +242,7 @@ static int mod_init(void)
 error1:
 	if (pdt_lock)
 	{
-		lock_destroy( pdt_lock );
-		lock_dealloc( pdt_lock );
+		lock_destroy_rw( pdt_lock );
 		pdt_lock = 0;
 	}
 	if(_ptree!=0)
@@ -317,15 +301,9 @@ static void mod_destroy(void)
 		/* destroy lock */
 	if (pdt_lock)
 	{
-		lock_destroy( pdt_lock );
-		lock_dealloc( pdt_lock );
+		lock_destroy_rw( pdt_lock );
 		pdt_lock = 0;
 	}
-
-	if(pdt_tree_refcnt)
-		shm_free(pdt_tree_refcnt);
-	if(pdt_reload_flag)
-		shm_free(pdt_reload_flag);
 
 }
 
@@ -429,15 +407,7 @@ static int prefix2domain(struct sip_msg* msg, int mode, int sd_en)
 	p.s   = msg->parsed_uri.user.s + prefix.len;
 	p.len = msg->parsed_uri.user.len - prefix.len;
 
-again:
-	lock_get( pdt_lock );
-	if (*pdt_reload_flag) {
-		lock_release( pdt_lock );
-		sleep_us(5);
-		goto again;
-	}
-	*pdt_tree_refcnt = *pdt_tree_refcnt + 1;
-	lock_release( pdt_lock );
+	lock_start_read( pdt_lock );
 
 	if(sd_en==2)
 	{	
@@ -507,15 +477,11 @@ again:
 		goto error;
 	}
 
-	lock_get( pdt_lock );
-	*pdt_tree_refcnt  = *pdt_tree_refcnt - 1;
-	lock_release( pdt_lock );
+	lock_stop_read( pdt_lock );
 	return 1;
 
 error:
-	lock_get( pdt_lock );
-	*pdt_tree_refcnt  = *pdt_tree_refcnt - 1;
-	lock_release( pdt_lock );
+	lock_stop_read( pdt_lock );
 	return -1;
 }
 
@@ -667,18 +633,12 @@ static int pdt_load_db(void)
 
 
 	/* block all readers */
-	lock_get( pdt_lock );
-	*pdt_reload_flag = 1;
-	lock_release( pdt_lock );
-
-	while (*pdt_tree_refcnt) {
-		sleep_us(10);
-	}
+	lock_start_write( pdt_lock );
 
 	old_tree = *_ptree;
 	*_ptree = _ptree_new;
 
-	*pdt_reload_flag = 0;
+	lock_stop_write( pdt_lock );
 
 	/* free old data */
 	if (old_tree!=NULL)
