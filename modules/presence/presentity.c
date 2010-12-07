@@ -1128,6 +1128,15 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, str* body,
 			}
 			n_update_cols++;
 
+			if(extra_hdrs)
+			{
+				update_keys[n_update_cols] = &str_extra_hdrs_col;
+				update_vals[n_update_cols].type = DB_BLOB;
+				update_vals[n_update_cols].nul = 0;
+				update_vals[n_update_cols].val.str_val = *extra_hdrs;
+				n_update_cols++;
+			}
+
 			if(body && body->s && bla_update_publish)
 			{
 				update_keys[n_update_cols] = &str_body_col;

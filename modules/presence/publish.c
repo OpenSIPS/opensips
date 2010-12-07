@@ -481,18 +481,21 @@ int handle_publish(struct sip_msg* msg, char* sender_uri, char* str2)
 	}
 	else
 	{
-		body.s=get_body(msg);
-		if (body.s== NULL) 
+		if ( event->content_type.len )
 		{
-			LM_ERR("cannot extract body\n");
-			goto error;
-		}
-		body.len= get_content_length( msg );
+			body.s=get_body(msg);
+			if (body.s== NULL) 
+			{
+				LM_ERR("cannot extract body\n");
+				goto error;
+			}
+			body.len= get_content_length( msg );
 
-		if(sphere_enable && event->evp->parsed == EVENT_PRESENCE &&
+			if(sphere_enable && event->evp->parsed == EVENT_PRESENCE &&
 				get_content_type(msg)== SUBTYPE_PIDFXML)
-		{
-			sphere= extract_sphere(body);
+			{
+				sphere= extract_sphere(body);
+			}
 		}
 	}
 
