@@ -8,6 +8,12 @@
 #define B2B_BYE_CB        (1<<0)
 #define B2B_REJECT_CB     (1<<1)
 #define B2B_DESTROY_CB    (1<<2)
+#define B2B_RE_INVITE_CB  (1<<3)
+
+#define B2B_ERROR_CB_RET          -1
+#define B2B_DROP_MSG_CB_RET        0
+#define B2B_SEND_MSG_CB_RET        1
+#define B2B_FOLLOW_SCENARIO_CB_RET 2
 
 typedef struct b2bl_dlg_stat
 {
@@ -22,18 +28,21 @@ typedef struct b2bl_cb_params
 	void *param;            /* parameter passed at callback registration */
 	b2bl_dlg_stat_t *stat;  /* b2bl_dlg statistics */
 	struct sip_msg* msg;    /* the message being processed */
-	unsigned int entity;    /* the entity for which the callback is invocked */
+	unsigned int entity;    /* the entity for which the callback is invoked */
 } b2bl_cb_params_t;
 
 typedef int (*b2bl_cback_f)(b2bl_cb_params_t *params, unsigned int b2b_event);
 /*
- * event    - B2B_BYE,     bye received from an entity
- *            B2B_REJECT,  negative reply for Invite when bridging
- *            B2B_DESTROY, destroy the tuple
- * Return: -1 - error
- *           0 - drop the BYE
- *           1 - send the BYE on the other side 
- *           2 - do what the scenario tells, if no rule defined send the BYE on the other side
+ * event    - B2B_BYE_CB,       bye received from an entity
+ *            B2B_REJECT_CB,    negative reply for invite when bridging
+ *            B2B_DESTROY_CB,   destroy the tuple
+ *            B2B_RE_INVITE_CB, re-invite received from an entity
+ * Return:
+ *     B2B_ERROR_CB_RET           - error
+ *     B2B_DROP_MSG_CB_RET        - drop the request
+ *     B2B_SEND_MSG_CB_RET        - send the request on the other side 
+ *     B2B_FOLLOW_SCENARIO_CB_RET - do what the scenario tells,
+ *               if no rule defined send the request on the other side
  **/
 
 

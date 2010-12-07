@@ -443,7 +443,7 @@ int process_bridge_negreply(b2bl_tuple_t* tuple,
 	int ret;
 	unsigned int local_index;
 	unsigned int index;
-	b2bl_cback_f cbf;
+	b2bl_cback_f cbf = NULL;
 	int etype;
 	b2bl_entity_id_t* e;
 	int found = 0;
@@ -540,7 +540,7 @@ int process_bridge_negreply(b2bl_tuple_t* tuple,
 		}
 
 		pkg_free(ekey.s);
-		if(ret == 0)
+		if(ret == B2B_DROP_MSG_CB_RET)
 		{
 			/* drop the negative reply */
 			if(entity_no == 1)
@@ -852,6 +852,7 @@ b2bl_entity_id_t* b2bl_search_entity(b2bl_tuple_t* tuple, str* key, int src)
 	return e;
 }
 
+
 int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* param)
 {
 	unsigned int hash_index, local_index;
@@ -870,7 +871,8 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 	int ret;
 	unsigned int method_value;
 	int_str avp_val;
-	b2bl_cback_f cbf;
+	b2bl_cback_f cbf = NULL;
+	str ekey= {NULL, 0};
 
 	if(b2bl_key == NULL)
 	{
@@ -1139,15 +1141,16 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 			b2bl_delete(tuple, hash_index, 0);
 			goto done;
 		}
-		if(request_id == B2B_BYE)
-		{
+
+		cbf = tuple->cbf;
+
+		switch (request_id) {
+		case B2B_BYE:
 			entity->disconnected = 1;
-			cbf = tuple->cbf;
 			if(cbf && (tuple->cb_mask&B2B_BYE_CB))
 			{
 				int etype= entity->type;
 				int found = 0;
-				str ekey= {NULL, 0};
 
 				memset(&cb_params, 0, sizeof(b2bl_cb_params_t));
 				cb_params.param = tuple->cb_param;
@@ -1233,13 +1236,13 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 				pkg_free(ekey.s);
 
 				peer = entity->peer;
-				if(ret< 0 )
+				if(ret< B2B_DROP_MSG_CB_RET )
 				{
 					LM_ERR("The callback function was unsuccessful\n");
 					goto send_usual_request;
 				}
 				else
-				if(ret == 0)
+				if(ret == B2B_DROP_MSG_CB_RET)
 				{
 					entity->peer = 0;
 					/* send 200 OK for BYE */
@@ -1250,7 +1253,7 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 					goto done;
 				}
 				else
-				if(ret == 1)
+				if(ret == B2B_SEND_MSG_CB_RET)
 					goto send_usual_request;
 			}
 
@@ -1271,7 +1274,9 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 
 				goto done;
 			}
+			break;
 		}
+
 		if(!scenario || !scenario->request_rules[request_id])
 		{
 			if(request_id == B2B_BYE)
