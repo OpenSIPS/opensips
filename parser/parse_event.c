@@ -62,6 +62,13 @@
 #define DIALOG_SLA_STR "dialog;sla"
 #define DIALOG_SLA_STR_LEN 10
 
+#define CALL_INFO_STR "call-info"
+#define CALL_INFO_STR_LEN 9
+
+#define LINE_SEIZE_STR "line-seize"
+#define LINE_SEIZE_STR_LEN 10
+
+
 static inline char* skip_token(char* _b, int _l)
 {
 	int i = 0;
@@ -121,6 +128,12 @@ int event_parser(char* _s, int _l, event_t* _e)
 	} else if ((_e->text.len == MWI_STR_LEN) && 
 		   !strncasecmp(MWI_STR, tmp.s, _e->text.len)) {
 		_e->parsed = EVENT_MWI;
+	} else if ((_e->text.len == CALL_INFO_STR_LEN) &&
+		   !strncasecmp(CALL_INFO_STR, tmp.s, _e->text.len)) {
+		_e->parsed = EVENT_CALL_INFO;
+	} else if ((_e->text.len == LINE_SEIZE_STR_LEN) &&
+		   !strncasecmp(LINE_SEIZE_STR, tmp.s, _e->text.len)) {
+		_e->parsed = EVENT_LINE_SEIZE;
 	} else {
 		_e->parsed = EVENT_OTHER;
 	}
