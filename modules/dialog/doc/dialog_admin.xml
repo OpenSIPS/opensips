@@ -1696,6 +1696,10 @@ $var(account) = $dlg_val("account_type");
 					<emphasis>NULL</emphasis> - Dialog not found.
 				</para></listitem>
 				<listitem><para>
+					<emphasis>2</emphasis> - Dialog in early state (created
+					but no final reply received yet)
+				</para></listitem>
+				<listitem><para>
 					<emphasis>3</emphasis> - Confirmed by a final reply but 
 					no ACK received yet.
 				</para></listitem>
