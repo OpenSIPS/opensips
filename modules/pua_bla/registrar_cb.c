@@ -72,7 +72,6 @@ void bla_cb(ucontact_t* c, int type, void* param)
 
 	memcpy(uri.s+ uri.len, c->aor->s, c->aor->len);
 	uri.len+= c->aor->len;
-//    LM_INFO("aor = %.*s\n", c->aor->len, c->aor->s);
 	at = memchr(c->aor->s, '@', c->aor->len);
 	if(!at)
 	{
@@ -84,6 +83,7 @@ void bla_cb(ucontact_t* c, int type, void* param)
 		}
 		LM_DBG("domain not found - added default= %.*s\n",
 			default_domain.len, default_domain.s);
+
 		uri.s[uri.len++]= '@';
 		memcpy(uri.s+ uri.len, default_domain.s, default_domain.len);
 		uri.len+= default_domain.len;
@@ -94,7 +94,6 @@ void bla_cb(ucontact_t* c, int type, void* param)
 		subs.expires= 0;
 	else
 		subs.expires= c->expires - (int)time(NULL);
-		
 
 	subs.source_flag= BLA_SUBSCRIBE;
 	subs.event= BLA_EVENT;
