@@ -93,6 +93,7 @@ str* build_dialoginfo(char *state, struct to_body *entity, struct to_body *peer,
 			BAD_CAST "urn:ietf:params:xml:ns:dialog-info");
 	/* we set the version to 0 but it should be set to the correct value
        in the pua module */
+	xmlNewProp(root_node, BAD_CAST "version", BAD_CAST "00000000000");
 	xmlNewProp(root_node, BAD_CAST  "state",
 			BAD_CAST "partial" );
 	xmlNewProp(root_node, BAD_CAST "entity", 

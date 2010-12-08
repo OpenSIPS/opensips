@@ -2176,7 +2176,7 @@ str* create_winfo_xml(watcher_t* watchers, char* version,
 			goto error;
 		}
 	}
-	else	
+	else
 	{	
 		if( xmlNewProp(root_node, BAD_CAST "state", 
 					BAD_CAST "partial")== NULL) 

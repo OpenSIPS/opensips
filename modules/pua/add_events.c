@@ -175,11 +175,8 @@ int bla_process_body(publ_info_t* publ, str** fin_body, int ver, str* tuple)
 	char* version;
 	str* body= NULL;
 	int len;
-	str* init_body;
 
-	init_body= publ->body;
-
-	doc= xmlParseMemory(init_body->s, init_body->len );
+	doc= xmlParseMemory(publ->body->s, publ->body->len );
 	if(doc== NULL)
 	{
 		LM_ERR("while parsing xml memory\n");
@@ -217,7 +214,6 @@ int bla_process_body(publ_info_t* publ, str** fin_body, int ver, str* tuple)
 
 	xmlMemoryDump();
 	xmlCleanupParser();
-	LM_DBG("successful\n");
 	return 1;
 
 error:
