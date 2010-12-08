@@ -88,7 +88,7 @@ void bla_cb(ucontact_t* c, int type, void* param)
 		memcpy(uri.s+ uri.len, default_domain.s, default_domain.len);
 		uri.len+= default_domain.len;		
 	}
-	
+
 	subs.watcher_uri= &uri;
 	if(type & UL_CONTACT_DELETE || type & UL_CONTACT_EXPIRE )
 		subs.expires= 0;
