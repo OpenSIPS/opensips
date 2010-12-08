@@ -86,7 +86,7 @@ void bla_cb(ucontact_t* c, int type, void* param)
 
 		uri.s[uri.len++]= '@';
 		memcpy(uri.s+ uri.len, default_domain.s, default_domain.len);
-		uri.len+= default_domain.len;		
+		uri.len+= default_domain.len;
 	}
 
 	subs.watcher_uri= &uri;
@@ -94,7 +94,6 @@ void bla_cb(ucontact_t* c, int type, void* param)
 		subs.expires= 0;
 	else
 		subs.expires= c->expires - (int)time(NULL);
-		
 
 	subs.source_flag= BLA_SUBSCRIBE;
 	subs.event= BLA_EVENT;
