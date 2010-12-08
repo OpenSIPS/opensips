@@ -853,6 +853,68 @@ b2bl_entity_id_t* b2bl_search_entity(b2bl_tuple_t* tuple, str* key, int src)
 }
 
 
+int post_cb_sanity_check(b2bl_tuple_t **tuple, unsigned int hash_index, unsigned int local_index,
+			b2bl_entity_id_t **entity, int etype, str *ekey)
+{
+	int index;
+	int found = 0;
+	b2bl_entity_id_t *e;
+
+	*tuple = b2bl_search_tuple_safe(hash_index, local_index);
+	if(*tuple == NULL)
+	{
+		LM_DBG("B2B logic record doesn't exist after B2B_BYE_CB\n");
+		return -1;
+	}
+	if(etype == B2B_SERVER)
+	{
+		for (index = 0; index < MAX_B2BL_ENT; index++)
+		{
+			e = (*tuple)->servers[index];
+			if(e == *entity && e->key.len == ekey->len &&
+				strncmp(e->key.s, ekey->s, ekey->len)==0)
+			{
+				found = 1;
+				break;
+			}
+		}
+		if(!found)
+		{
+			LM_DBG("Server Entity does not exist anymore\n");
+			return -2;
+		}
+	}
+	else
+	if(etype == B2B_CLIENT)
+	{
+		for (index = 0; index < MAX_B2BL_ENT; index++)
+		{
+			e = (*tuple)->clients[index];
+			LM_DBG("[%p] vs [%p]\n", e, *entity);
+			if (e && ekey)
+				LM_DBG("[%.*s] vs [%.*s]\n", e->key.len, e->key.s, ekey->len, ekey->s);
+			if(e == *entity && e->key.len == ekey->len &&
+				strncmp(e->key.s, ekey->s, ekey->len)==0)
+			{
+				found = 1;
+				break;
+			}
+		}
+		if(!found)
+		{
+			LM_DBG("Client Entity does not exist anymore\n");
+			return -3;
+		}
+	}
+	else
+	{
+		LM_ERR("Unexpected entity type [%d]\n", etype);
+		return -4;
+	}
+	return 0;
+}
+
+
 int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* param)
 {
 	unsigned int hash_index, local_index;
@@ -1273,6 +1335,68 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 				}
 
 				goto done;
+			}
+			break;
+
+		case B2B_INVITE:
+			if(cbf)
+			{
+				/* saving the entity key for later sanity check */
+				ekey.s = (char*)pkg_malloc(entity->key.len);
+				if(ekey.s == NULL)
+				{
+					LM_ERR("No more memory\n");
+					goto error;
+				}
+				ekey.len = entity->key.len;
+				memcpy(ekey.s, entity->key.s, entity->key.len);
+				LM_DBG("ekey [%p]->[%.*s]\n", &ekey, ekey.len, ekey.s);
+				/* preparing the cb params */
+				memset(&cb_params, 0, sizeof(b2bl_cb_params_t));
+				cb_params.param = tuple->cb_param;
+				cb_params.stat = NULL;
+				cb_params.msg = msg;
+				cb_params.entity = entity->no;
+				lock_release(&b2bl_htable[hash_index].lock);
+
+				LM_DBG("entity->no = %d\n", entity->no);
+				ret = cbf(&cb_params, B2B_RE_INVITE_CB);
+				LM_DBG("ret = %d, peer= %p\n", ret, peer);
+
+				lock_get(&b2bl_htable[hash_index].lock);
+				/* must search the tuple again
+				 * you can't know what might have happened with it */
+				if (0!=post_cb_sanity_check(&tuple, hash_index, local_index,
+							&entity, entity->type, &ekey))
+				{
+					pkg_free(ekey.s);
+					goto error;
+				}
+				pkg_free(ekey.s);
+
+				peer = entity->peer;
+				switch (ret) {
+				case B2B_DROP_MSG_CB_RET:
+					/* send 400 Not Acceptable for INVITE */
+					b2b_api.send_reply(entity->type, &entity->key, METHOD_INVITE,
+							400, &notAcceptable, 0, 0, entity->dlginfo);
+					goto done;
+					break;
+				case B2B_SEND_MSG_CB_RET:
+					goto send_usual_request;
+					break;
+				case B2B_FOLLOW_SCENARIO_CB_RET:
+					/* just continue with normal processing */
+					break;
+				case B2B_ERROR_CB_RET:
+					LM_ERR("The callback function was unsuccessful\n");
+					goto send_usual_request;
+					break;
+				default:
+					LM_ERR("Unexpected return code [%d]\n", ret);
+					goto send_usual_request;
+				}
+				
 			}
 			break;
 		}
