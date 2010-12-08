@@ -158,6 +158,12 @@ struct dlg_cell *get_current_dialog();
 	((_dlg)->legs_no[DLG_LEGS_USED]>_leg)?(_dlg)->legs[_leg]._field.len:4, \
 	((_dlg)->legs_no[DLG_LEGS_USED]>_leg)?(_dlg)->legs[_leg]._field.s:"NULL"
 
+#define dlg_lock_dlg(_dlg) \
+	dlg_lock( d_table, &(d_table->entries[_dlg->h_entry]))
+
+#define dlg_unlock_dlg(_dlg) \
+	dlg_unlock( d_table, &(d_table->entries[_dlg->h_entry]))
+
 
 inline void unlink_unsafe_dlg(struct dlg_entry *d_entry, struct dlg_cell *dlg);
 inline void destroy_dlg(struct dlg_cell *dlg);

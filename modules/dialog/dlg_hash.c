@@ -822,6 +822,8 @@ static inline int internal_mi_print_dlg(struct mi_node *rpl,
 	struct mi_node* node= NULL;
 	struct mi_node* node1 = NULL;
 	struct mi_attr* attr= NULL;
+	struct dlg_profile_link *dl;
+	struct dlg_val* dv;
 	int len;
 	char* p;
 	int i;
@@ -941,7 +943,19 @@ static inline int internal_mi_print_dlg(struct mi_node *rpl,
 		node1 = add_mi_node_child(node, 0, "context", 7, 0, 0);
 		if(node1 == 0)
 			goto error;
-		run_dlg_callbacks( DLGCB_MI_CONTEXT, dlg, NULL, 
+		/* print dlg values -> iterate the list */
+		for( dv=dlg->vals ; dv ; dv=dv->next) {
+			addf_mi_node_child(node1, MI_DUP_VALUE, MI_SSTR("value"),
+				"%.*s = %.*s",dv->name.len,dv->name.s,dv->val.len,dv->val.s);
+		}
+		/* print dlg profiles */
+		for( dl=dlg->profile_links ; dl ; dl=dl->next) {
+			addf_mi_node_child(node1, MI_DUP_VALUE, MI_SSTR("profile"),
+				"%.*s = %.*s",dl->profile->name.len,dl->profile->name.s,
+				dl->value.len,ZSW(dl->value.s));
+		}
+		/* print external context info */
+		run_dlg_callbacks( DLGCB_MI_CONTEXT, dlg, NULL,
 			DLG_DIR_NONE, (void *)node1);
 	}
 
@@ -1016,6 +1030,12 @@ static int match_downstream_dialog(struct dlg_cell *dlg,
 	return 1;
 }
 
+
+/*
+ * IMPORTANT: if a dialog reference is returned, the dialog hash entry will
+   be kept locked when this function returns
+   NOTE: if a reply tree is returned, no dialog reference is returned.
+ */
 static inline struct mi_root* process_mi_params(struct mi_root *cmd_tree,
 			struct dlg_cell **dlg_p, unsigned int *idx, unsigned int *cnt)
 {
@@ -1069,7 +1089,6 @@ static inline struct mi_root* process_mi_params(struct mi_root *cmd_tree,
 				break;
 			} else {
 				*dlg_p = dlg;
-				dlg_unlock( d_table, d_entry);
 				return 0;
 			}
 		}
@@ -1089,12 +1108,12 @@ struct mi_root * mi_print_dlgs(struct mi_root *cmd_tree, void *param )
 
 	rpl_tree = process_mi_params( cmd_tree, &dlg, &idx, &cnt);
 	if (rpl_tree)
-		/* param error */
+		/* param error - no dialog returned */
 		return rpl_tree;
 
 	rpl_tree = init_mi_tree( 200, MI_SSTR(MI_OK));
 	if (rpl_tree==0)
-		return 0;
+		goto error;
 	rpl = &rpl_tree->node;
 
 	if (dlg==NULL) {
@@ -1103,11 +1122,16 @@ struct mi_root * mi_print_dlgs(struct mi_root *cmd_tree, void *param )
 	} else {
 		if ( internal_mi_print_dlg(rpl,dlg,0)!=0 )
 			goto error;
+		/* done with the dialog -> unlock it */
+		dlg_unlock_dlg(dlg);
 	}
 
 	return rpl_tree;
 error:
-	free_mi_tree(rpl_tree);
+	/* if a dialog ref was returned, unlock it now */
+	if (dlg) dlg_unlock_dlg(dlg);
+	/* trash everything that was built so far */
+	if (rpl_tree) free_mi_tree(rpl_tree);
 	return NULL;
 }
 
@@ -1126,7 +1150,7 @@ struct mi_root * mi_print_dlgs_ctx(struct mi_root *cmd_tree, void *param )
 
 	rpl_tree = init_mi_tree( 200, MI_SSTR(MI_OK));
 	if (rpl_tree==0)
-		return 0;
+		goto error;
 	rpl = &rpl_tree->node;
 
 	if (dlg==NULL) {
@@ -1135,11 +1159,16 @@ struct mi_root * mi_print_dlgs_ctx(struct mi_root *cmd_tree, void *param )
 	} else {
 		if ( internal_mi_print_dlg(rpl,dlg,1)!=0 )
 			goto error;
+		/* done with the dialog -> unlock it */
+		dlg_unlock_dlg(dlg);
 	}
 
 	return rpl_tree;
 error:
-	free_mi_tree(rpl_tree);
+	/* if a dialog ref was returned, unlock it now */
+	if (dlg) dlg_unlock_dlg(dlg);
+	/* trash everything that was built so far */
+	if (rpl_tree) free_mi_tree(rpl_tree);
 	return NULL;
 }
 
