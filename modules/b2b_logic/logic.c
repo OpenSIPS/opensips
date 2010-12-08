@@ -62,6 +62,8 @@ extern unsigned short b2bl_key_avp_type;
 int b2b_scenario_parse_uri(xmlNodePtr value_node, char* value_content,
 		b2bl_tuple_t* tuple, struct sip_msg* msg, str* client_to);
 
+int post_cb_sanity_check(b2bl_tuple_t **tuple, unsigned int hash_index, unsigned int local_index,
+			b2bl_entity_id_t **entity, int etype, str *ekey);
 b2bl_entity_id_t* b2bl_search_entity(b2bl_tuple_t* tuple, str* key, int src);
 int udh_to_uri(str user, str host, str port, str* uri);
 static str method_invite= {INVITE, INVITE_LEN};
@@ -442,11 +444,7 @@ int process_bridge_negreply(b2bl_tuple_t* tuple,
 	int entity_no;
 	int ret;
 	unsigned int local_index;
-	unsigned int index;
 	b2bl_cback_f cbf = NULL;
-	int etype;
-	b2bl_entity_id_t* e;
-	int found = 0;
 	str ekey={0, 0};
 
 	entity_no = bridge_get_entityno(tuple, entity);
@@ -470,7 +468,6 @@ int process_bridge_negreply(b2bl_tuple_t* tuple,
 		memset(&cb_params, 0, sizeof(b2bl_cb_params_t));
 		cb_params.param = tuple->cb_param;
 		local_index = tuple->id;
-		etype = entity->type;
 		stat.start_time =  entity->stats.start_time;
 		stat.setup_time = get_ticks() - entity->stats.start_time;
 		ekey.s = (char*)pkg_malloc(entity->key.len);
@@ -491,55 +488,16 @@ int process_bridge_negreply(b2bl_tuple_t* tuple,
 		LM_DBG("ret = %d\n", ret);
 		
 		lock_get(&b2bl_htable[hash_index].lock);
-		/* must search the tuple again - you can't know what might have happened with it */
-		tuple = b2bl_search_tuple_safe(hash_index, local_index);
-		if(tuple == NULL)
+		/* must search the tuple again
+		 * you can't know what might have happened with it */
+		if (0!=post_cb_sanity_check(&tuple, hash_index, local_index,
+					&entity, entity->type, &ekey))
 		{
-			LM_DBG("B2B logic record not found anymore\n");
 			pkg_free(ekey.s);
 			return 1;
 		}
-		/* search for entity - if not found return 1 (not to do anything else)*/
-		if(etype == B2B_SERVER)
-		{
-			for (index = 0; index < MAX_B2BL_ENT; index++)
-			{
-				e = tuple->servers[index];
-				if (e == entity && e->key.len == ekey.len &&
-					strncmp(e->key.s, ekey.s, ekey.len)==0)
-				{
-					found = 1;
-					break;
-				}
-			}
-			if(!found)
-			{
-				LM_DBG("Server Entity does not exist anymore: return\n");
-				pkg_free(ekey.s);
-				return 1;
-			}
-		}
-		else
-		{
-			for (index = 0; index < MAX_B2BL_ENT; index++)
-			{
-				e = tuple->clients[index];
-				if(e == entity && e->key.len == ekey.len &&
-					strncmp(e->key.s, ekey.s, ekey.len)==0)
-				{
-					found = 1;
-					break;
-				}
-			}
-			if(!found)
-			{
-				LM_DBG("Client Entity does not exist anymore: return\n");
-				pkg_free(ekey.s);
-				return 1;
-			}
-		}
-
 		pkg_free(ekey.s);
+
 		if(ret == B2B_DROP_MSG_CB_RET)
 		{
 			/* drop the negative reply */
@@ -918,14 +876,13 @@ int post_cb_sanity_check(b2bl_tuple_t **tuple, unsigned int hash_index, unsigned
 int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* param)
 {
 	unsigned int hash_index, local_index;
-	unsigned int index;
 	str* b2bl_key = (str*)param;
 	b2bl_tuple_t* tuple;
 	str method, body= {0, 0};
 	str extra_headers = {0, 0};
 	b2b_scenario_t* scenario;
 	b2b_rule_t* rule;
-	b2bl_entity_id_t* entity, *peer, *e;
+	b2bl_entity_id_t* entity, *peer;
 	xmlNodePtr bridge_node, node;
 	int state = -1;
 	str attr;
@@ -1211,9 +1168,6 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 			entity->disconnected = 1;
 			if(cbf && (tuple->cb_mask&B2B_BYE_CB))
 			{
-				int etype= entity->type;
-				int found = 0;
-
 				memset(&cb_params, 0, sizeof(b2bl_cb_params_t));
 				cb_params.param = tuple->cb_param;
 				if(tuple->scenario_state != B2B_BRIDGING_STATE)
@@ -1249,51 +1203,13 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 
 				pkg_free(stat.key.s);
 				lock_get(&b2bl_htable[hash_index].lock);
-				/* must search the tuple again - you can't know what might have happened with it */
-				tuple = b2bl_search_tuple_safe(hash_index, local_index);
-				if(tuple == NULL)
+				/* must search the tuple again
+				 * you can't know what might have happened with it */
+				if (0!=post_cb_sanity_check(&tuple, hash_index, local_index,
+							&entity, entity->type, &ekey))
 				{
-					LM_DBG("B2B logic record not found anymore\n");
 					pkg_free(ekey.s);
 					goto error;
-				}
-				if(etype == B2B_SERVER)
-				{
-					for (index = 0; index < MAX_B2BL_ENT; index++)
-					{
-						e = tuple->servers[index];
-						if(e == entity && e->key.len == ekey.len &&
-							strncmp(e->key.s, ekey.s, ekey.len)==0)
-						{
-							found = 1;
-							break;
-						}
-					}
-					if(!found)
-					{
-						LM_DBG("Server Entity does not exist anymore - goto done\n");
-						pkg_free(ekey.s);
-						goto done;
-					}
-				}
-				else
-				{
-					for (index = 0; index < MAX_B2BL_ENT; index++)
-					{
-						e = tuple->clients[index];
-						if(e == entity && e->key.len == ekey.len &&
-							strncmp(e->key.s, ekey.s, ekey.len)==0)
-						{
-							found = 1;
-							break;
-						}
-					}
-					if(!found)
-					{
-						LM_DBG("Client Entity does not exist anymore - goto done\n");
-						pkg_free(ekey.s);
-						goto done;
-					}
 				}
 				pkg_free(ekey.s);
 
