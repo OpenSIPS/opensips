@@ -1686,12 +1686,10 @@ fix_nated_contact_f(struct sip_msg* msg, char* str1, char* str2)
 		left.len = c->uri.s+c->uri.len - left.s;
 
 		is_enclosed = 0;
-		if (params) {
-			p = hostport.s + hostport.len; /*start searching after ip:port */
-			cp = (c->name.s?c->name.s:c->uri.s) + c->len; /* where to end */
-			for( ; p<cp ; p++ )
-				if (*p=='>') {is_enclosed=1;hostport.len=p-uri.host.s;break;}
-		}
+		p = hostport.s + hostport.len; /*start searching after ip:port */
+		cp = (c->name.s?c->name.s:c->uri.s) + c->len; /* where to end */
+		for( ; p<cp ; p++ )
+			if (*p=='>') {is_enclosed=1;hostport.len=p-uri.host.s;break;}
 
 		//LM_DBG("--removing %d |%.*s|\n",hostport.s+hostport.len-c->uri.s,
 		//	hostport.s+hostport.len-c->uri.s, c->uri.s);
