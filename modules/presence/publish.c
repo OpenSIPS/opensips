@@ -134,7 +134,6 @@ void msg_presentity_clean(unsigned int ticks,void *param)
 	str* rules_doc= NULL;
 	static str query_str = str_init("username");
 
-
 	if (pa_dbf.use_table(pa_db, &presentity_table) < 0) 
 	{
 		LM_ERR("in use_table\n");
