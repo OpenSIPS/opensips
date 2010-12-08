@@ -445,6 +445,28 @@ modparam("presence", "bla_fix_remote_target", 0)
 	</section>
 
 
+	<section>
+		<title><varname>notify_offline_body</varname> (int)</title>
+		<para>
+			If this parameter is set, when no published info is found for
+			a user, the presence server will generate a dummy body with status
+			'closed' and use it when sending Notify, instead of notifying with no
+			body.
+		</para>
+		<para>
+			<emphasis>Default value is <quote>0</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>notify_offline_body</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("presence", "notify_offline_body", 1)
+...
+	</programlisting>
+		</example>
+	</section>
+
 
 </section>
 

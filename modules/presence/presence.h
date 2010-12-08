@@ -64,6 +64,7 @@ extern int sphere_enable;
 extern int shtable_size;
 extern shtable_t subs_htable;
 extern int mix_dialog_presence;
+extern int notify_offline_body;
 
 extern int phtable_size;
 extern phtable_t* pres_htable;
