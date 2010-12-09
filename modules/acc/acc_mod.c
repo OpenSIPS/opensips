@@ -351,6 +351,10 @@ static int mod_init( void )
 	if (load_dlg_api(&dlg_api)!=0)
 		LM_DBG("failed to find dialog API - is dialog module loaded?\n");
 
+	if (cdr_flag && !dlg_api.get_dlg) {
+		LM_WARN("error loading dialog module - cdrs cannot be generated\n");
+		cdr_flag = 0;
+	}
 	/* if detect_direction is enabled, load rr also */
 	if (detect_direction) {
 		if (load_rr_api(&rrb)!=0) {

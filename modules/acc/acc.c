@@ -434,7 +434,7 @@ int acc_db_init(const str* db_url)
 		return -1;
 	}
 
-	/* Check database cabilities */
+	/* Check database capabilities */
 	if (!DB_CAPABILITY(acc_dbf, DB_CAP_INSERT)) {
 		LM_ERR("database module does not implement insert function\n");
 		return -1;

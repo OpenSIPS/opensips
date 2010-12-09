@@ -47,7 +47,7 @@
 #define ACC_ACKED ACC"request acknowledged: "
 #define ACC_ACKED_LEN (sizeof(ACC_ACKED)-1)
 #define ACC_ENDED ACC"call ended: "
-#define ACC_ENDED_LEN (sizeof(ACC_MISSED)-1)
+#define ACC_ENDED_LEN (sizeof(ACC_ENDED)-1)
 
 /* syslog attribute names */
 #define A_METHOD "method"
