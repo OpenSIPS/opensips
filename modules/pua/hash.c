@@ -190,10 +190,8 @@ ua_pres_t* search_htable(ua_pres_t* pres, unsigned int hash_code)
 		}
 	}
 
-	if(p)
-		LM_DBG("found record\n");
-	else
-		LM_DBG("record not found\n");
+	if(p && p->expires < (int)time(NULL))
+		return 0;
 
 	return p;
 }
