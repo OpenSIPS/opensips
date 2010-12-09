@@ -474,17 +474,11 @@ static int fixup_get_info(void** param, int param_no)
 
 
 
-static struct dlg_cell *w_get_dlg(void)
-{
-	return current_dlg_pointer;
-}
-
-
 int load_dlg( struct dlg_binds *dlgb )
 {
 	dlgb->register_dlgcb = register_dlgcb;
 	dlgb->create_dlg = w_create_dialog;
-	dlgb->get_dlg = w_get_dlg;
+	dlgb->get_dlg = get_current_dialog;
 	dlgb->add_profiles = add_profile_definitions;
 	dlgb->search_profile = search_dlg_profile;
 	dlgb->set_profile = set_dlg_profile;

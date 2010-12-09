@@ -54,6 +54,7 @@
 #include "../rr/api.h"
 
 #include "../../aaa/aaa.h"
+#include "../dialog/dlg_load.h"
 
 #ifdef DIAM_ACC
 #include "diam_dict.h"
@@ -65,7 +66,7 @@
 #include "acc_extra.h"
 #include "acc_logic.h"
 
-
+struct dlg_binds dlg_api;
 struct tm_binds tmb;
 struct rr_binds rrb;
 
@@ -90,6 +91,7 @@ int failed_transaction_flag = -1;
 /* multi call-leg support */
 static char* leg_info_str = 0;
 struct acc_extra *leg_info = 0;
+int cdr_flag = -1;
 
 
 /* ----- SYSLOG acc variables ----------- */
@@ -155,6 +157,9 @@ str acc_callid_col     = str_init("callid");
 str acc_sipcode_col    = str_init("sip_code");
 str acc_sipreason_col  = str_init("sip_reason");
 str acc_time_col       = str_init("time");
+str acc_duration_col   = str_init("duration");
+str acc_setuptime_col  = str_init("setuptime");
+str acc_created_col    = str_init("created");
 
 /* ------------- fixup function --------------- */
 static int acc_fixup(void** param, int param_no);
@@ -188,6 +193,7 @@ static param_export_t params[] = {
 	{"report_cancels",          INT_PARAM, &report_cancels          },
 	{"multi_leg_info",          STR_PARAM, &leg_info_str            },
 	{"detect_direction",        INT_PARAM, &detect_direction        },
+	{"cdr_flag",                INT_PARAM, &cdr_flag                },
 	/* syslog specific */
 	{"log_flag",             INT_PARAM, &log_flag             },
 	{"log_missed_flag",      INT_PARAM, &log_missed_flag      },
@@ -333,12 +339,22 @@ static int mod_init( void )
 	if (flag_idx2mask(&failed_transaction_flag)<0)
 		return -1;
 
+	if (flag_idx2mask(&cdr_flag)<0)
+		return -1;
+
 	/* load the TM API */
 	if (load_tm_api(&tmb)!=0) {
 		LM_ERR("can't load TM API\n");
 		return -1;
 	}
 
+	if (load_dlg_api(&dlg_api)!=0)
+		LM_DBG("failed to find dialog API - is dialog module loaded?\n");
+
+	if (cdr_flag && !dlg_api.get_dlg) {
+		LM_WARN("error loading dialog module - cdrs cannot be generated\n");
+		cdr_flag = 0;
+	}
 	/* if detect_direction is enabled, load rr also */
 	if (detect_direction) {
 		if (load_rr_api(&rrb)!=0) {

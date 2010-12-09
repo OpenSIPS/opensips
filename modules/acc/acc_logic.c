@@ -37,6 +37,8 @@
 #include "../tm/tm_load.h"
 #include "../rr/api.h"
 
+#include "../dialog/dlg_load.h"
+#include "../dialog/dlg_hash.h"
 #include "../../aaa/aaa.h"
 
 #ifdef DIAM_ACC
@@ -68,6 +70,8 @@ struct acc_enviroment acc_env;
 #define is_db_acc_on(_rq)     is_acc_flag_set(_rq,db_flag)
 #define is_db_mc_on(_rq)      is_acc_flag_set(_rq,db_missed_flag)
 
+#define is_cdr_acc_on(_rq)     is_acc_flag_set(_rq,cdr_flag)
+
 #ifdef DIAM_ACC
 	#define is_diam_acc_on(_rq)     is_acc_flag_set(_rq,diameter_flag)
 	#define is_diam_mc_on(_rq)      is_acc_flag_set(_rq,diameter_missed_flag)
@@ -92,6 +96,8 @@ struct acc_enviroment acc_env;
 
 
 static void tmcb_func( struct cell* t, int type, struct tmcb_params *ps );
+static void acc_dlg_callback(struct dlg_cell *dlg, int type,
+		struct dlg_cb_params *_params);
 
 
 static inline struct hdr_field* get_rpl_to( struct cell *t,
@@ -229,6 +235,14 @@ void acc_onreq( struct cell* t, int type, struct tmcb_params *ps )
 			TMCB_RESPONSE_IN |
 			/* report on missed calls */
 			((is_invite && is_mc_on(ps->req))?TMCB_ON_FAILURE:0) ;
+
+		/* if cdr accounting is enabled */
+		if (is_cdr_acc_on(ps->req)) {
+			if (is_invite && create_acc_dlg(ps->req) < 0) {
+				LM_ERR("cannot use dialog accounting module\n");
+				return;
+			}
+		}
 		if (tmb.register_tmcb( 0, t, tmcb_types, tmcb_func, 0, 0 )<=0) {
 			LM_ERR("cannot register additional callbacks\n");
 			return;
@@ -348,6 +362,7 @@ static inline void acc_onreply( struct cell* t, struct sip_msg *req,
 {
 	str new_uri_bk;
 	str dst_uri_bk;
+	struct dlg_cell *dlg = NULL;
 
 	/* acc_onreply is bound to TMCB_REPLY which may be called
 	   from _reply, like when FR hits; we should not miss this
@@ -373,18 +388,52 @@ static inline void acc_onreply( struct cell* t, struct sip_msg *req,
 	env_set_to( get_rpl_to(t,reply) );
 	env_set_code_status( code, reply);
 
-	if ( is_log_acc_on(req) ) {
-		env_set_text( ACC_ANSWERED, ACC_ANSWERED_LEN);
-		acc_log_request( req, reply );
+	if (is_cdr_acc_on(req) && (dlg=dlg_api.get_dlg()) != NULL) {
+		/* if dialog module loaded and INVITE and success reply */
+		if (is_invite(t) && code >= 200 && code < 300) {
+			if (store_core_leg_values(dlg, req) < 0) {
+				LM_ERR("cannot store core and leg values\n");
+				return;
+			}
+
+			if(is_log_acc_on(req) && store_log_extra_values(dlg,req,reply)<0){
+				LM_ERR("cannot store string values\n");
+				return;
+			}
+
+			if(is_aaa_acc_on(req) && store_aaa_extra_values(dlg, req, reply)<0){
+				LM_ERR("cannot store aaa extra values\n");
+				return;
+			}
+
+			if (is_db_acc_on(req) && store_db_extra_values(dlg,req,reply)<0) {
+				LM_ERR("cannot store database extra values\n");
+				return;
+			}
+
+			/* register database callbacks */
+			if (dlg_api.register_dlgcb(dlg, DLGCB_TERMINATED |
+					DLGCB_EXPIRED, acc_dlg_callback,(void *)(long)req->flags,0) != 0) {
+				LM_ERR("cannot register callback for database accounting\n");
+				return;
+			}
+		}
+	} else {
+		/* do old accounting */
+		if ( is_log_acc_on(req) ) {
+			env_set_text( ACC_ANSWERED, ACC_ANSWERED_LEN);
+			acc_log_request( req, reply );
+		}
+
+		if (is_aaa_acc_on(req))
+			acc_aaa_request( req, reply );
+	
+		if (is_db_acc_on(req)) {
+			env_set_text( db_table_acc.s, db_table_acc.len);
+			acc_db_request( req, reply );
+		}
 	}
 
-	if (is_aaa_acc_on(req))
-		acc_aaa_request( req, reply );
-
-	if (is_db_acc_on(req)) {
-		env_set_text( db_table_acc.s, db_table_acc.len);
-		acc_db_request( req, reply );
-	}
 /* DIAMETER */
 #ifdef DIAM_ACC
 	if (is_diam_acc_on(req))
@@ -398,7 +447,32 @@ static inline void acc_onreply( struct cell* t, struct sip_msg *req,
 	}
 }
 
+static void acc_dlg_callback(struct dlg_cell *dlg, int type,
+		struct dlg_cb_params *_params)
+{
+	unsigned int flags = (unsigned int)(long)(*_params->param);
 
+	if (flags & log_flag) {
+		env_set_text( ACC_ENDED, ACC_ENDED_LEN);
+		if (acc_log_cdrs_request(dlg) < 0) {
+			LM_ERR("Cannot log values\n");
+			return;
+		}
+	}
+
+	if (flags & db_flag) {
+		env_set_text( db_table_acc.s, db_table_acc.len);
+		if (acc_db_cdrs_request(dlg) < 0) {
+			LM_ERR("Cannot insert into database\n");
+			return;
+		}
+	}
+
+	if ((flags & aaa_flag) && acc_aaa_cdrs_request(dlg) < 0) {
+		LM_ERR("Cannot create radius accounting\n");
+		return;
+	}
+}
 
 static inline void acc_onack( struct cell* t, struct sip_msg *req,
 		struct sip_msg *ack, int code)

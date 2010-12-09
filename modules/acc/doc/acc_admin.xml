@@ -76,11 +76,9 @@
 		</listitem>
 		<listitem>
 			<para>
-			There is no session/dialog accounting (yet) -- &osips; maintains
-			no sessions. If one needs to correlate INVITEs with BYEs for 
-			generating proper CDRs for example for purpose of billing, then 
-			it is better done in the entity which processes accounting 
-			information.
+			&osips; now supports session/dialog accounting. It can
+			automatically correlate INVITEs with BYEs for generating proper CDRs,
+			for example for purpose of billing.
 			</para>
 		</listitem>
 		<listitem>
@@ -303,6 +301,40 @@ if (uri=~"sip:+40") /* calls to Romania */ {
 		</section>
 	</section>
 
+	<section id="ACC-cdr-id">
+		<title>CDRs accounting</title>
+		<section>
+			<title>Overview</title>
+			<para>
+			ACC module can now also maintain session/dialog accounting. This
+			allows you to log useful information like call duration, call 
+			start time and setup time.
+			</para>
+		</section>
+		<section>
+			<title>Configuration</title>
+			<para>
+			In order to have CDRs accounting, first you need to specify the 
+			<emphasis>cdr_flag</emphasis> parameter. In the script, you
+			must set the corresponding flag	for the calls that you want to log.
+			The flag is only meant to be set on the initial INVITE of the dialog.
+			</para>
+		</section>
+		<section>
+			<title>How it works</title>
+			<para>
+			This type of accounting is based on the dialog module. When
+			an initial INVITE is received, if the <emphasis>cdr_flag</emphasis>
+			is set, then the dialog creation time is saved. Once the call is
+			answered and the ACK is received, other information like extra values
+			or leg values are saved. When the corresponding BYE is received,
+			the call duration is computed and all information is stored to
+			the desired backend.
+			</para>
+		</section>
+	</section>
+
+
 
 	<section>
 		<title>Dependencies</title>
@@ -326,6 +358,11 @@ if (uri=~"sip:+40") /* calls to Romania */ {
 				</listitem>
 				<listitem>
 				<para><emphasis>an aaa module</emphasis></para>
+			</listitem>
+				<listitem>
+				<para><emphasis>dialog</emphasis> -- Dialog, if
+				<quote>cdr_flag</quote> is set.
+				</para>
 				</listitem>
 			</itemizedlist>
 			</para>
@@ -916,6 +953,22 @@ modparam("acc", "diameter_client_port", 3000)
 		<title>diameter_extra example</title>
 		<programlisting format="linespecific">
 modparam("acc", "diameter_extra", "7846=$hdr(Content-type);7847=$avp(s:email)")
+</programlisting>
+		</example>
+	</section>
+	<section>
+		<title><varname>cdr_flag</varname> (integer)</title>
+		<para>
+		Request flag which needs to be set to account a 
+		transaction, including CDR details.
+		</para>
+		<para>
+		Default value is not-set (no flag).
+		</para>
+		<example>
+		<title>cdr_flag example</title>
+		<programlisting format="linespecific">
+modparam("acc", "cdr_flag", 1)
 </programlisting>
 		</example>
 	</section>
