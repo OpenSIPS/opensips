@@ -9,6 +9,7 @@
 #define B2B_REJECT_CB     (1<<1)
 #define B2B_DESTROY_CB    (1<<2)
 #define B2B_RE_INVITE_CB  (1<<3)
+#define B2B_CONFIRMED_CB  (1<<4)
 
 #define B2B_ERROR_CB_RET          -1
 #define B2B_DROP_MSG_CB_RET        0

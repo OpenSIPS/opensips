@@ -1107,6 +1107,41 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 						peer->state = DLG_CONFIRMED;
 						entity->stats.setup_time = get_ticks() - entity->stats.start_time;
 						entity->stats.start_time = get_ticks();
+						cbf = tuple->cbf;
+						if(cbf && (tuple->cb_mask&B2B_CONFIRMED_CB))
+						{
+							/* saving the entity key for later sanity check */
+							ekey.s = (char*)pkg_malloc(entity->key.len);
+							if(ekey.s == NULL)
+							{
+								LM_ERR("No more memory\n");
+								goto error;
+							}
+							ekey.len = entity->key.len;
+							memcpy(ekey.s, entity->key.s, entity->key.len);
+							/* preparing the cb params */
+							memset(&cb_params, 0, sizeof(b2bl_cb_params_t));
+							cb_params.param = tuple->cb_param;
+							cb_params.stat = NULL;
+							cb_params.msg = msg;
+							cb_params.entity = entity->no;
+
+							lock_release(&b2bl_htable[hash_index].lock);
+							ret = cbf(&cb_params, B2B_CONFIRMED_CB);
+							lock_get(&b2bl_htable[hash_index].lock);
+
+							/* must search the tuple again
+							 * you can't know what might have happened with it */
+							if (0!=post_cb_sanity_check(&tuple, hash_index, local_index,
+								&entity, entity->type, &ekey))
+							{
+								pkg_free(ekey.s);
+								goto error;
+							}
+							pkg_free(ekey.s);
+
+							peer = entity->peer;
+						}
 					}
 				}
 				else
