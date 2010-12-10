@@ -1505,7 +1505,7 @@ void update_db_subs(db_con_t *db,db_func_t dbf, shtable_t hash_table,
 	LM_DBG("delete expired\n");
 	update_vals[0].val.int_val= (int)time(NULL);
 	update_ops[0]= OP_LT;
-	CON_PS_REFERENCE(pa_db) = &my_ps_delete;
+	CON_PS_REFERENCE(db) = &my_ps_delete;
 	if(dbf.use_table(db, &active_watchers_table) < 0)
 	{
 		LM_ERR("deleting expired information from database\n");
