@@ -78,6 +78,7 @@
 
     <column>
         <name>extra_hdrs</name>
+	<default/>
         <type>binary</type>
     </column>
 
