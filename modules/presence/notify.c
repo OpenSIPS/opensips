@@ -2084,6 +2084,8 @@ int notify(subs_t* subs, subs_t * watcher_subs, str* n_body, int force_null_body
 
 void p_tm_callback( struct cell *t, int type, struct tmcb_params *ps)
 {
+	c_back_param* cb;
+
 	if(ps->param==NULL || *ps->param==NULL || 
 			((c_back_param*)(*ps->param))->pres_uri.s == NULL || 
 			((c_back_param*)(*ps->param))->ev_name.s== NULL ||
@@ -2094,25 +2096,31 @@ void p_tm_callback( struct cell *t, int type, struct tmcb_params *ps)
 			free_cbparam((c_back_param*)(*ps->param));
 		return;
 	}
-	
-	LM_DBG("completed with status %d [to_tag:%.*s]\n",
-			ps->code,((c_back_param*)(*ps->param))->to_tag.len,
-			((c_back_param*)(*ps->param))->to_tag.s);
+
+	cb = (c_back_param*)(*ps->param);
+
+	if(ps->code == 200)
+	{
+		LM_DBG("completed with status [%d] and to_tag [%.*s]\n",
+			ps->code, cb?cb->to_tag.len:0, cb?cb->to_tag.s:"");
+	}
+	else
+	{
+		LM_WARN("completed with status [%d] and to_tag [%.*s]\n",
+			ps->code, cb?cb->to_tag.len:0, cb?cb->to_tag.s:"");
+	}
 
 	if(ps->code == 481)
 	{
 		unsigned int hash_code;
 
-		c_back_param*  cb= (c_back_param*)(*ps->param);
-
 		hash_code= core_hash(&cb->pres_uri, &cb->ev_name, shtable_size);
 		delete_shtable(subs_htable, hash_code, cb->to_tag);
-
 		delete_db_subs(cb->pres_uri, cb->ev_name, cb->to_tag);
 	}
 	
-	if(*ps->param !=NULL  )
-		free_cbparam((c_back_param*)(*ps->param));
+	if(cb != NULL)
+		free_cbparam(cb);
 	return ;
 }
 
