@@ -77,10 +77,11 @@
 ...
 modparam("b2b_entities", "server_address", "sip:sa@10.10.10.10:5060")
 ...
-	</programlisting>
+</programlisting>
 		</example>
-	</section>
-	<section>
+		</section>
+
+		<section>
 		<title><varname>server_hsize</varname> (int)</title>
 		<para>
 			The size of the hash table that stores the b2b server entities.
@@ -97,11 +98,11 @@ modparam("b2b_entities", "server_address", "sip:sa@10.10.10.10:5060")
 ...
 modparam("b2b_entities", "server_hsize", 10)
 ...
-	</programlisting>
+</programlisting>
 		</example>
-	</section>
+		</section>
 
-	<section>
+		<section>
 		<title><varname>client_hsize</varname> (int)</title>
 		<para>
 			The size of the hash table that stores the b2b client entities.
@@ -118,11 +119,11 @@ modparam("b2b_entities", "server_hsize", 10)
 ...
 modparam("b2b_entities", "client_hsize", 10)
 ...
-	</programlisting>
+</programlisting>
 		</example>
-	</section>
+		</section>
 
-	<section>
+		<section>
 		<title><varname>script_req_route</varname> (str)</title>
 		<para>
 			The name of the b2b script route that will be called when
@@ -134,11 +135,11 @@ modparam("b2b_entities", "client_hsize", 10)
 ...
 modparam("b2b_entities", "script_req_route", "b2b_request")
 ...
-	</programlisting>
+</programlisting>
 		</example>
-	</section>
+		</section>
 
-	<section>
+		<section>
 		<title><varname>script_reply_route</varname> (str)</title>
 		<para>
 			The name of the b2b script route that will be called when
@@ -150,10 +151,44 @@ modparam("b2b_entities", "script_req_route", "b2b_request")
 ...
 modparam("b2b_entities", "script_reply_route", "b2b_reply")
 ...
-	</programlisting>
+</programlisting>
 		</example>
-	</section>
+		</section>
 
+		<section>
+		<title><varname>db_url</varname> (str)</title>
+		<para>
+		Database URL.
+		</para>
+		<example>
+		<title>Set <varname>db_url</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("b2b_entities", "db_url", "mysql://opensips:opensipsrw@127.0.0.1/opensips")
+...
+</programlisting>
+		</example>
+		</section>
+
+		<section>
+		<title><varname>update_period</varname> (int)</title>
+		<para>
+		The time interval at which to update the info in database.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>100</quote>.</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>update_period</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("b2b_logic", "update_period", 60)
+...
+</programlisting>
+		</example>
+		</section>
+
+	</section>
 
 	<section>
 		<title>Exported Functions</title>
@@ -162,7 +197,6 @@ modparam("b2b_entities", "script_reply_route", "b2b_reply")
 	</section>	
 
 
-</section>
 
 </chapter>
 
