@@ -53,6 +53,7 @@
 #include "../../pvar.h"
 #include "../../timer.h"
 #include "../../statistics.h"
+#include "../../data_lump.h"
 #include "../../parser/parse_from.h"
 #include "../../parser/parse_cseq.h"
 #include "../../parser/contact/parse_contact.h"
@@ -1017,14 +1018,24 @@ void dlg_ontimeout( struct dlg_tl *tl)
 	return;
 }
 
+#define ROUTE_STR "Route: "
+#define CRLF "\r\n"
+#define ROUTE_LEN (sizeof(ROUTE_STR) - 1)
+#define CRLF_LEN (sizeof(CRLF) - 1)
 
-int dlg_validate_dialog( struct sip_msg* req, struct dlg_cell *dlg)
+#define ROUTE_PREF "Route: <"
+#define ROUTE_PREF_LEN (sizeof(ROUTE_PREF) -1)
+#define ROUTE_SUFF ">\r\n"
+#define ROUTE_SUFF_LEN (sizeof(ROUTE_SUFF) -1)
+
+int fix_route_dialog(struct sip_msg *req,struct dlg_cell *dlg)
 {
 	struct dlg_leg *leg;
-	unsigned int n,m;
-	struct sip_uri curi;
-	int r_proto, c_proto, r_port, c_port;
-	str s;
+	struct hdr_field *it;
+	char * buf,*route,*hdrs,*remote_contact;
+	struct lump* lmp = NULL;
+	int size;
+	rr_t *head = NULL;
 
 	if (last_dst_leg<0) {
 		LM_ERR("Script error - validate function before having a dialog\n");
@@ -1033,6 +1044,207 @@ int dlg_validate_dialog( struct sip_msg* req, struct dlg_cell *dlg)
 
 	leg = & dlg->legs[ last_dst_leg ];
 
+	if (dlg->state <= DLG_STATE_EARLY)
+		return 0;
+
+	if ((*(d_rrb.routing_type) ==  ROUTING_LL) || (*d_rrb.routing_type) == ROUTING_SL)
+	{
+		LM_DBG("Fixing message. Next hop is Loose router\n");
+
+		if (leg->contact.len && leg->contact.s) {
+			LM_DBG("Setting new URI to  <%.*s> \n",leg->contact.len,
+					leg->contact.s);
+
+			if (set_ruri(req,&leg->contact) != 0) {
+				LM_ERR("failed setting ruri\n");
+				return -1;
+			}
+		}
+
+		if( parse_headers( req, HDR_EOH_F, 0)<0 ) {
+			LM_ERR("failed to parse headers when looking after ROUTEs\n");
+			return -1;
+		}
+		
+		buf = req->buf;
+
+		if (req->route) {
+			for (it=req->route;it;it=it->sibling)
+				if ((lmp = del_lump(req,it->name.s - buf,it->len,HDR_ROUTE_T)) == 0) {
+					LM_ERR("del_lump failed \n");
+					return -1;
+				}
+		}
+
+		if ( leg->route_set.len !=0 && leg->route_set.s) {
+
+			lmp = anchor_lump(req,req->headers->name.s - buf,0,0);
+			if (lmp == 0)
+			{
+				LM_ERR("failed anchoring new lump\n");
+				return -1;
+			}
+
+			size = leg->route_set.len + ROUTE_LEN + CRLF_LEN;
+			route = pkg_malloc(size+1);
+			if (route == 0) {
+				LM_ERR("no more pkg memory\n");
+				return -1;
+			}
+
+			memcpy(route,ROUTE_STR,ROUTE_LEN);
+			memcpy(route+ROUTE_LEN,leg->route_set.s,leg->route_set.len);
+			memcpy(route+ROUTE_LEN+leg->route_set.len,CRLF,CRLF_LEN);
+
+			route[size] = 0;
+
+			if ((lmp = insert_new_lump_after(lmp,route,size,HDR_ROUTE_T)) == 0) {
+				LM_ERR("failed inserting new route set\n");
+				pkg_free(route);
+				return -1;
+			}
+			
+			LM_DBG("Setting route  header to <%s> \n",route);
+
+			if (parse_rr_body(leg->route_set.s,leg->route_set.len,&head) != 0) {
+				LM_ERR("failed parsing route set\n");
+				return -1;
+			}
+
+			LM_DBG("setting dst_uri to <%.*s> \n",head->nameaddr.uri.len,
+					head->nameaddr.uri.s);
+
+			if (set_dst_uri(req,&head->nameaddr.uri) !=0 ) {
+				LM_ERR("failed setting new dst uri\n");
+				free_rr(&head);
+				return -1;
+			}
+
+			free_rr(&head);
+		}
+	}
+	else
+	{
+		LM_DBG("Fixing message. Next hop is Strict router\n");
+
+		if( parse_headers( req, HDR_EOH_F, 0)<0 ) {
+			LM_ERR("failed to parse headers when looking after ROUTEs\n");
+			return -1;
+		}
+		
+		buf = req->buf;
+
+		if (req->route) {
+			for (it=req->route;it;it=it->sibling)
+				if ((lmp = del_lump(req,it->name.s - buf,it->len,HDR_ROUTE_T)) == 0) {
+					LM_ERR("del_lump failed \n");
+					return -1;
+				}
+		}
+
+		if ( leg->route_set.len !=0 && leg->route_set.s) {
+
+			LM_DBG("setting R-URI to <%.*s> \n",leg->route_uris->len,
+					leg->route_uris->s);
+
+			if (set_ruri(req,leg->route_uris) !=0 ) {
+				LM_ERR("failed setting new dst uri\n");
+				return -1;
+			}
+
+			/* If there are more routes other than the first, add them */
+			if (leg->nr_uris > 1) {
+
+				/* FIXME - find a better way to skip the first route header.
+				 * Instead or parsing again the entire route set, maybe remmember
+				 * the needed pointer at the initial parsing of the route_set */
+				if (parse_rr_body(leg->route_set.s,leg->route_set.len,&head) != 0) {
+					LM_ERR("failed parsing route set\n");
+					return -1;
+				}
+
+				lmp = anchor_lump(req,req->headers->name.s - buf,0,0);
+				if (lmp == 0) {
+					LM_ERR("failed anchoring new lump\n");
+					free_rr(&head);
+					return -1;
+				}
+
+				hdrs = leg->route_set.s + head->len + 1;
+
+				size = leg->route_set.len - head->len - 1 + ROUTE_LEN + CRLF_LEN;
+				route = pkg_malloc(size);
+				if (route == 0) {
+					LM_ERR("no more pkg memory\n");
+					return -1;
+					free_rr(&head);
+				}
+
+				memcpy(route,ROUTE_STR,ROUTE_LEN);
+				memcpy(route+ROUTE_LEN,hdrs,leg->route_set.len - head->len-1);
+				memcpy(route+ROUTE_LEN+leg->route_set.len - head->len-1,CRLF,CRLF_LEN);
+
+				LM_DBG("Adding Route header : [%.*s] \n",size,route);
+
+				if ((lmp = insert_new_lump_after(lmp,route,size,HDR_ROUTE_T)) == 0) {
+					LM_ERR("failed inserting new route set\n");
+					pkg_free(route);
+					free_rr(&head);
+					return -1;
+				}
+				free_rr(&head);
+			}
+
+			if (lmp == NULL) {
+				lmp = anchor_lump(req,req->headers->name.s - buf,0,0);
+				if (lmp == 0)
+				{
+					LM_ERR("failed anchoring new lump\n");
+					return -1;
+				}
+			}
+			
+			if (leg->contact.len && leg->contact.s) {
+				size = leg->contact.len + ROUTE_PREF_LEN + ROUTE_SUFF_LEN;
+				remote_contact = pkg_malloc(size);
+				if (remote_contact == NULL) {
+					LM_ERR("no more pkg memory\n");
+					return -1;
+				}
+
+				memcpy(remote_contact,ROUTE_PREF,ROUTE_PREF_LEN);
+				memcpy(remote_contact+ROUTE_PREF_LEN,leg->contact.s,leg->contact.len);
+				memcpy(remote_contact+ROUTE_PREF_LEN+leg->contact.len,
+						ROUTE_SUFF,ROUTE_SUFF_LEN);
+
+				LM_DBG("Adding remote contact route header : [%.*s]\n",
+						size,remote_contact);
+
+				if (insert_new_lump_after(lmp,remote_contact,size,HDR_ROUTE_T) == 0) {
+					LM_ERR("failed inserting remote contact route\n");
+					pkg_free(remote_contact);
+					return -1;
+				}
+			}
+		}
+	}
+	return 0;
+}
+
+int dlg_validate_dialog( struct sip_msg* req, struct dlg_cell *dlg)
+{
+	struct dlg_leg *leg;
+	unsigned int n,m;
+	struct sip_uri curi,msg_uri;
+	int r_proto, c_proto, r_port, c_port,nr_routes,i;
+	str *rr_uri,*route_uris;
+
+	if (last_dst_leg<0) {
+		LM_ERR("Script error - validate function before having a dialog\n");
+		return -1;
+	}
+
+	leg = & dlg->legs[ last_dst_leg ];
 
 	/* first check the cseq (if it's increasing) */
 	if ( (!req->cseq && parse_headers(req,HDR_CSEQ_F,0)<0) || !req->cseq ||
@@ -1048,77 +1260,100 @@ int dlg_validate_dialog( struct sip_msg* req, struct dlg_cell *dlg)
 		return -1;
 	}
 
+	LM_DBG("CSEQ validation passed\n");
+
 	if (dlg->state <= DLG_STATE_EARLY)
 		return 0;
 
-	/* check the RURI - it must be the contact of the destination leg */
-	/* after loose_route() even if the previous hop was a strict router,
-	   opensips will set in RURI the remote contact */
 	if (leg->contact.len) {
-		if ( parse_sip_msg_uri(req)<0 ||
+		
+		rr_uri = d_rrb.get_remote_target(req);
+		if (rr_uri == NULL)
+		{
+			LM_ERR("failed fetching remote target from msg\n");
+			return -1;
+		}
+
+		if ( parse_uri(rr_uri->s,rr_uri->len,&msg_uri)<0 ||
 		parse_uri( leg->contact.s, leg->contact.len, &curi)!=0 ) {
 			LM_ERR("failed to parse RURI/Contacts\n");
 			return -1;
 		}
 		/* check proto */
-		r_proto = (req->parsed_uri.proto==PROTO_NONE) ?
-			PROTO_UDP : req->parsed_uri.proto;
+		r_proto = (msg_uri.proto==PROTO_NONE) ?
+			PROTO_UDP : msg_uri.proto;
 		c_proto = (curi.proto==PROTO_NONE) ?
 			PROTO_UDP : curi.proto;
 		if ( r_proto!=c_proto ) {
-			s = *GET_RURI(req);
 			LM_DBG("RURI/Contact PROTO test failed ruri=[%.*s], old=[%.*s]\n",
-				s.len,s.s,leg->contact.len,leg->contact.s);
+				rr_uri->len,rr_uri->s,leg->contact.len,leg->contact.s);
 			return -1;
 		}
 		/* check port */
-		r_port=(req->parsed_uri.port_no==0) ?
-			( (r_proto==PROTO_TLS)?5061:5060) : req->parsed_uri.port_no ;
+		r_port=(msg_uri.port_no==0) ?
+			( (r_proto==PROTO_TLS)?5061:5060) : msg_uri.port_no ;
 		c_port=(curi.port_no==0) ?
 			( (c_proto==PROTO_TLS)?5061:5060) : curi.port_no ;
 		if ( r_port!=c_port ) {
-			s = *GET_RURI(req);
 			LM_DBG("RURI/Contact PORT test failed ruri=[%.*s], old=[%.*s]\n",
-				s.len,s.s,leg->contact.len,leg->contact.s);
+				rr_uri->len,rr_uri->s,leg->contact.len,leg->contact.s);
 			return -1;
 		}
 		/* host (as string) */
-		if ( curi.host.len!=req->parsed_uri.host.len ||
-		memcmp(req->parsed_uri.host.s, curi.host.s, curi.host.len)!=0 ) {
-			s = *GET_RURI(req);
+		if ( curi.host.len!=msg_uri.host.len ||
+		memcmp(msg_uri.host.s, curi.host.s, curi.host.len)!=0 ) {
 			LM_DBG("RURI/Contact HOST test failed ruri=[%.*s], old=[%.*s]\n",
-				s.len,s.s,leg->contact.len,leg->contact.s);
+				rr_uri->len,rr_uri->s,leg->contact.len,leg->contact.s);
 			return -1;
 		}
 	}
+
+	LM_DBG("Remote contact succesfully validated\n");
 
 	/* check the route set - is the the same as in original request */
 	/* the route set (without the first Route) must be the same as the
 	   one stored in the destination leg */
 	/* extract the RR parts */
+
 	if( parse_headers( req, HDR_EOH_F, 0)<0 ) {
 		LM_ERR("failed to parse headers when looking after ROUTEs\n");
 		return -1;
 	}
+
 	if ( req->route==NULL) {
 		if ( leg->route_set.len!=0) {
 			LM_DBG("route check failed (req has no route, but dialog has\n");
 			return -1;
 		}
 	} else {
-		m = *(d_rrb.removed_routes); /*skip the removed routes */
-		if( print_rr_body( req->route, &s, 0/*normal oder*/, &m/*skip*/)!=0 ) {
-			LM_ERR("failed to print route headers\n");
+		route_uris = d_rrb.get_route_set(req,&nr_routes);
+		if (route_uris == NULL) {
+			LM_ERR("failed fetching route URIs from the msg\n");
 			return -1;
 		}
-		if ( s.len!=leg->route_set.len || memcmp(leg->route_set.s,s.s,s.len)){
-			LM_DBG("route check failed req=[%.*s] dlg=[%.*s]\n",
-				s.len,s.s,leg->route_set.len,leg->route_set.s);
-			pkg_free(s.s);
+
+		if (nr_routes != leg->nr_uris) {
+			LM_ERR("Different number of routes found in msg. req=%d, dlg=%d\n",
+					nr_routes,leg->nr_uris);
 			return -1;
 		}
-		pkg_free(s.s);
+
+		for (i=0;i<nr_routes;i++)
+		{
+			LM_DBG("route %d. req=[%.*s],dlg=[%.*s]\n",
+					i,route_uris[i].len,route_uris[i].s,leg->route_uris[i].len,
+					leg->route_uris[i].s);
+			if (route_uris[i].len != leg->route_uris[i].len ||
+					memcmp(route_uris[i].s,leg->route_uris[i].s,route_uris[i].len)){
+				LM_ERR("Check failed for route number %d. req=[%.*s],dlg=[%.*s]\n",
+						i,route_uris[i].len,route_uris[i].s,leg->route_uris[i].len,
+						leg->route_uris[i].s);
+				return -1;
+			}
+		}
 	}
+
+	LM_DBG("Route Headers succesfully validated\n");
 
 	return 0;
 }

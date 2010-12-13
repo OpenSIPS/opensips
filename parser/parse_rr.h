@@ -42,6 +42,7 @@ typedef struct rr {
 	param_t* r2;          /* Hook to r2 parameter */
 	param_t* params;      /* Linked list of other parameters */
 	int len;              /* Length of the whole route field */
+	int deleted;		  /* is this header to be removed ? */
 	struct rr* next;      /* Next RR in the list */
 } rr_t;
 

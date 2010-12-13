@@ -41,6 +41,7 @@
 #define RR_FLOW_UPSTREAM    (1<<1)
 
 extern int removed_routes;
+extern int routing_type;
 
 
 /*! \brief
@@ -71,4 +72,10 @@ int get_route_param( struct sip_msg *msg, str *name, str *val);
  * Gets all route params as a string
  */
 int get_route_params(struct sip_msg *msg, str *val);
+
+/* returns the remote contact, based on the routing decisions made */
+str* get_remote_target(struct sip_msg *msg);
+
+/* returns an array of the URIs in all Route Headers */
+str* get_route_set(struct sip_msg *msg,int *nr_routes);
 #endif /* LOOSE_H */

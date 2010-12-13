@@ -47,8 +47,11 @@ int load_rr( struct rr_binds *rrb )
 	rrb->is_direction      = is_direction;
 	rrb->get_route_param   = get_route_param;
 	rrb->register_rrcb     = register_rrcb;
+	rrb->get_remote_target = get_remote_target;
+	rrb->get_route_set	   = get_route_set;
 	rrb->append_fromtag    = append_fromtag;
 	rrb->removed_routes    = &removed_routes;
+	rrb->routing_type	   = &routing_type;
 
 	return 1;
 }

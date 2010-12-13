@@ -40,10 +40,17 @@
 #include "loose.h"
 #include "rr_cb.h"
 
+#define ROUTING_LL (1<<1)
+#define ROUTING_SL (1<<2)
+#define ROUTING_SS (1<<3)
+#define ROUTING_LS (1<<4)
+
 typedef  int (*add_rr_param_t)(struct sip_msg*, str*);
 typedef  int (*check_route_param_t)(struct sip_msg*, regex_t*);
 typedef  int (*is_direction_t)(struct sip_msg*, int);
 typedef  int (*get_route_param_t)(struct sip_msg*, str*, str*);
+typedef  str* (*get_remote_target_t)(struct sip_msg*);
+typedef  str* (*get_route_set_t)(struct sip_msg*,int *nr_routes);
 
 struct rr_binds {
 	add_rr_param_t      add_rr_param;
@@ -51,8 +58,11 @@ struct rr_binds {
 	is_direction_t      is_direction;
 	get_route_param_t   get_route_param;
 	register_rrcb_t     register_rrcb;
+	get_remote_target_t get_remote_target;
+	get_route_set_t		get_route_set;
 	int                 append_fromtag;
 	int*                removed_routes;
+	int*				routing_type;
 };
 
 typedef  int (*load_rr_f)( struct rr_binds* );
