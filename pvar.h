@@ -238,6 +238,7 @@ int pv_free_extra_list(void);
 
 /*! \brief PV helper functions */
 int pv_parse_index(pv_spec_p sp, str *in);
+int pv_parse_avp_name(pv_spec_p sp, str *in);
 
 int pv_get_null(struct sip_msg *msg, pv_param_t *param, pv_value_t *res);
 
