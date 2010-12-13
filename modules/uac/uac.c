@@ -225,7 +225,7 @@ static int mod_init(void)
 				goto error;
 			}
 			/* get all requests doing loose route */
-			if (uac_rrb.register_rrcb( rr_checker, 0)!=0) {
+			if (uac_rrb.register_rrcb( rr_checker, 0, 2)!=0) {
 				LM_ERR("failed to install RR callback\n");
 				goto error;
 			}
