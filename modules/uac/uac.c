@@ -260,12 +260,12 @@ static int mod_init(void)
 					goto error;
 				}
 				LM_DBG("failed to find dialog API - is dialog module loaded?\n");
-			}
-			if (force_dialog &&
-					(parse_store_bavp(&store_to_bavp, &to_bavp_spec) ||
+			} else {
+				if ( (parse_store_bavp(&store_to_bavp, &to_bavp_spec) ||
 					 parse_store_bavp(&store_from_bavp, &from_bavp_spec))) {
-				LM_ERR("cannot set correct store parameters\n");
-				goto error;
+					LM_ERR("cannot set correct store parameters\n");
+					goto error;
+				}
 			}
 
 			/* get all requests doing loose route */
@@ -276,9 +276,8 @@ static int mod_init(void)
 		}
 	}
 
-	/* init from replacer only if cannot use dialog module */
-	if (!force_dialog)
-		init_from_replacer();
+	/* init from replacer */
+	init_from_replacer();
 
 	return 0;
 error:
