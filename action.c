@@ -1236,12 +1236,12 @@ int do_action(struct action* a, struct sip_msg* msg)
 			ret=1; /* continue processing */
 			break;
 		case NEXT_BRANCHES_T:
-			if (next_branches(msg)!=0) {
+			if ((ret=next_branches(msg))<0) {
 				LM_ERR("next_branches failed\n");
 				ret=E_UNSPEC;
 				break;
 			}
-			ret=1; /* continue processing */
+			/* continue processing */
 			break;
 		case EQ_T:
 		case COLONEQ_T:
