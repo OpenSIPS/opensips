@@ -635,7 +635,7 @@ int expand_tag_list( struct sip_msg* msg,json_tag * start)
 
 			if( cur->type & TAG_IDX )
 			{
-				if( ! val.flags & PV_VAL_INT)
+				if( !(val.flags & PV_VAL_INT) )
 				{
 					LM_ERR("Non integer value in index\n");
 					return -1;
@@ -646,7 +646,7 @@ int expand_tag_list( struct sip_msg* msg,json_tag * start)
 
 			if( cur->type & TAG_KEY )
 			{
-				if( ! val.flags & PV_VAL_STR)
+				if( !(val.flags & PV_VAL_STR) )
 				{
 					LM_ERR("Non string value in key\n");
 					return -1;
@@ -726,7 +726,7 @@ int get_value(int state, json_name * id, char *start, char * cur)
 	in.len = cur-start;
 
 	if( state != ST_TEST )
-		LM_DBG("JSON tag type=%d value=%.*s\n",state,cur-start,start);
+		LM_DBG("JSON tag type=%d value=%.*s\n",state,(int)(cur-start),start);
 		
 	switch(state)
 	{
@@ -811,7 +811,7 @@ int get_value(int state, json_name * id, char *start, char * cur)
 			if( sscanf( start, "%d", &node->idx ) != 1)
 			{
 				LM_ERR("Index value is not an integer:[%.*s]\n",
-					cur-start, start );
+					(int)(cur-start), start );
 				return -1;
 			}
 			
@@ -898,7 +898,7 @@ int pv_parse_json_name (pv_spec_p sp, str *in)
 		if( next_state == ST_ERR)
 		{
 			LM_ERR("Unexpected char at position: %d in :(%.*s)\n",
-				cur-in->s,in->len,in->s);
+				(int)(cur-in->s),in->len,in->s);
 			return -1;
 		}
 
