@@ -279,6 +279,7 @@ extern int line;
 %token XLOG
 %token XLOG_BUF_SIZE
 %token XLOG_FORCE_COLOR
+%token CONSTRUCT_URI
 
 /* config vars. */
 %token DEBUG
@@ -2445,6 +2446,20 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 				mk_action1($$, XLOG_T, STR_ST, $3); }
 		| XLOG LPAREN STRING COMMA STRING RPAREN {
 				mk_action2($$, XLOG_T, STR_ST, STR_ST, $3, $5); }
+		| CONSTRUCT_URI LPAREN STRING COMMA STRING COMMA STRING COMMA STRING COMMA STRING COMMA script_var RPAREN {
+				elems[0].type = STR_ST; 
+				elems[0].u.data = $3; 
+				elems[1].type = STR_ST; 
+				elems[1].u.data = $5; 
+				elems[2].type = STR_ST; 
+				elems[2].u.data = $7; 
+				elems[3].type = STR_ST; 
+				elems[3].u.data = $9;
+				elems[4].type = STR_ST; 
+				elems[4].u.data = $11;
+				elems[5].type = SCRIPTVAR_ST; 
+				elems[5].u.data = $13;
+				$$ = mk_action(CONSTRUCT_URI_T,6,elems,line); }
 
 
 
