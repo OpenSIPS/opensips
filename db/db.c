@@ -46,6 +46,7 @@
 #include "../dprint.h"
 #include "../sr_module.h"
 #include "../mem/mem.h"
+#include "../mem/meminfo.h"
 #include "../ut.h"
 #include "db_cap.h"
 #include "db_id.h"
@@ -56,7 +57,25 @@ char *db_version_table = VERSION_TABLE;
 
 /** maximal length of a SQL URL */
 static unsigned int MAX_URL_LENGTH = 255;
+#define COLUMN_OVERHEAD	256
 
+int estimate_available_rows(int payload_size, int column_count)
+{
+	struct mem_info info;
+	memset(&info, 0, sizeof (struct mem_info));
+
+
+#ifdef pkg_info
+
+	pkg_info(&info);
+	return (int) (info.free / (payload_size + column_count * COLUMN_OVERHEAD));
+#else
+
+	return 0;
+#endif
+
+
+}
 
 int db_check_api(db_func_t* dbf, char *mname)
 {
