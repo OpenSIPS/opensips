@@ -670,6 +670,116 @@ int do_action(struct action* a, struct sip_msg* msg)
 			else
 				ret = 1;
 			break;
+		case SET_DSTHOST_T:
+		case SET_DSTPORT_T:
+			if (a->elem[0].type!=STR_ST){
+				LM_ALERT("BUG in domain setting type %d\n",
+							a->elem[0].type);
+				ret=E_BUG;
+				break;
+			}
+
+			tmp = msg->dst_uri.s;
+			len = msg->dst_uri.len;
+
+			if (tmp == NULL || len == 0) {
+				LM_ERR("failure - null uri\n");
+				ret = E_UNSPEC;
+				break;
+			}
+			if (a->type == SET_DSTHOST_T &&
+					(a->elem[0].u.s.s == NULL || a->elem[0].u.s.len == 0)) {
+				LM_ERR("cannot set a null uri domain\n");
+				break;
+			}
+			if (parse_uri(tmp, len, &uri)<0) {
+				LM_ERR("bad uri <%.*s>, dropping packet\n", len, tmp);
+				break;
+			}
+			new_uri=pkg_malloc(MAX_URI_SIZE);
+			if (new_uri == NULL) {
+				LM_ERR("memory allocation failure\n");
+				ret=E_OUT_OF_MEM;
+				break;
+			}
+			end=new_uri+MAX_URI_SIZE;
+			crt=new_uri;
+			len = (uri.user.len?uri.user.s:uri.host.s) - tmp;
+			if (crt+len>end) goto error_uri;
+			memcpy(crt,tmp,len);
+			crt += len;
+			/* user */
+			tmp = uri.user.s;
+			len = uri.user.len;
+			if (tmp) {
+				if (crt+len>end) goto error_uri;
+				memcpy(crt,tmp,len);
+				crt += len;
+				user = 1;
+			}
+			/* passwd */
+			tmp = uri.passwd.s;
+			len = uri.passwd.len;
+			if (user || tmp) {
+				if (crt+len+1>end) goto error_uri;
+				*crt++=':';
+				memcpy(crt, tmp, len);
+				crt += len;
+			}
+			/* host */
+			if (a->type==SET_DSTHOST_T) {
+				tmp = a->elem[0].u.s.s;
+				len = a->elem[0].u.s.len;
+			} else {
+				tmp = uri.host.s;
+				len = uri.host.len;
+			}
+			if (tmp) {
+				if (user) {
+					if (crt+1>end) goto error_uri;
+					*crt++='@';
+				}
+				if (crt+len+1>end) goto error_uri;
+				memcpy(crt, tmp, len);
+				crt += len;
+			}
+			/* port */
+			if (a->type==SET_DSTPORT_T) {
+				tmp = a->elem[0].u.s.s;
+				len = a->elem[0].u.s.len;
+			} else {
+				tmp = uri.port.s;
+				len = uri.port.len;
+			}
+			if (tmp) {
+				if (crt+len+1>end) goto error_uri;
+				*crt++=':';
+				memcpy(crt, tmp, len);
+				crt += len;
+			}
+			/* params */
+			tmp=uri.params.s;
+			if (tmp){
+				len=uri.params.len; if(crt+len+1>end) goto error_uri;
+				*crt++=';';
+				memcpy(crt,tmp,len);
+				crt += len;
+			}
+			/* headers */
+			tmp=uri.headers.s;
+			if (tmp){
+				len=uri.headers.len; if(crt+len+1>end) goto error_uri;
+				*crt++='?';
+				memcpy(crt,tmp,len);
+				crt += len;
+			}
+			*crt=0; /* null terminate the thing */
+			/* copy it to the msg */
+			pkg_free(msg->dst_uri.s);
+			msg->dst_uri.s=new_uri;
+			msg->dst_uri.len=crt-new_uri;
+			ret = 1;
+			break;
 		case RESET_DSTURI_T:
 			if(msg->dst_uri.s!=0)
 				pkg_free(msg->dst_uri.s);
