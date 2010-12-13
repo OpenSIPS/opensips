@@ -164,6 +164,9 @@ void free_cell( struct cell* dead_cell )
 		if (dead_cell->uac[i].duri.s) {
 			shm_free_unsafe(dead_cell->uac[i].duri.s);
 		}
+		if (dead_cell->uac[i].user_avps) {
+			destroy_avp_list_unsafe( &dead_cell->uac[i].user_avps);
+		}
 	}
 
 	/* collected to tags */
@@ -178,6 +181,10 @@ void free_cell( struct cell* dead_cell )
 	/* free the avp list */
 	if (dead_cell->user_avps)
 		destroy_avp_list_unsafe( &dead_cell->user_avps );
+
+	/* extra hdrs */
+	if ( dead_cell->extra_hdrs.s )
+		shm_free_unsafe( dead_cell->extra_hdrs.s );
 
 	/* the cell's body */
 	shm_free_unsafe( dead_cell );
@@ -274,6 +281,7 @@ struct cell*  build_cell( struct sip_msg* p_msg )
 			new_cell->tmcb_hl = tmcb_pending_hl;
 			tmcb_pending_hl.first = 0;
 		}
+		set_t(new_cell);
 
 		/* enter callback, which may potentially want to parse some stuff,
 		 * before the request is shmem-ized */
@@ -314,6 +322,7 @@ error:
 		}
 	}
 	shm_free(new_cell);
+	set_t(NULL);
 	/* unlink transaction AVP list and link back the global AVP list (bogdan)*/
 	reset_avps();
 	return NULL;

@@ -994,7 +994,6 @@ static inline int new_t(struct sip_msg *p_msg)
 	} 
 
 	insert_into_hash_table_unsafe( new_cell, p_msg->hash_index );
-	set_t(new_cell);
 	INIT_REF_UNSAFE(T);
 	/* init pointers to headers needed to construct local
 	   requests such as CANCEL/ACK

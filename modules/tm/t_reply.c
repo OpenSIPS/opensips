@@ -651,7 +651,7 @@ static inline int is_3263_failure(struct cell *t)
 				return 0;
 			/* we do not care about the Retry-After header in 503
 			 * as following discussion on sip-implementers list :
-			 * without or without a RA header, a 503 should fire DNS
+			 * with or without a RA header, a 503 should fire DNS
 			 * based failover - bogdan
 			 */
 			return 1;

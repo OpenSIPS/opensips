@@ -161,6 +161,8 @@ typedef struct ua_client
 	int              br_flags;
 	/* the onreply_route to be processed only for this branch */
 	unsigned int     on_reply;
+	/* head list for avps */
+	struct usr_avp *user_avps;
 }ua_client_type;
 
 
@@ -285,6 +287,9 @@ typedef struct cell
 
 	/* holders for higher contexts */
 	void *dialog_ctx;
+
+	/* extra T headers */
+	str extra_hdrs;
 }cell_type;
 
 
