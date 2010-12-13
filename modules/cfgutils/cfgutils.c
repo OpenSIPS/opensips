@@ -60,6 +60,7 @@
 #include "../../globals.h"
 #include <stdlib.h>
 #include "shvar.h"
+#include "env_var.h"
 
 
 static int set_prob(struct sip_msg*, char *, char *);
@@ -166,6 +167,8 @@ static pv_export_t mod_items[] = {
 		pv_set_shvar, pv_parse_shvar_name, 0, 0, 0},
 	{ {"time", (sizeof("time")-1)}, 1002, pv_get_time,
 		0, pv_parse_time_name, 0, 0, 0},
+	{ {"env", (sizeof("env")-1)}, 1002, pv_get_env,
+		0, pv_parse_env_name, 0, 0, 0},
 
 	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
 };

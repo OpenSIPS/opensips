@@ -172,10 +172,11 @@ modparam("cfgutils", "varset", "gw=s:sip:11.11.11.11;transport=tcp")
     <section>
 	<title>Exported Functions</title>
 	<section>
-		<title><function moreinfo="none">rand_event()</function></title>
+		<title><function moreinfo="none">rand_event([probability])</function></title>
 		<para>
 			Return true or false, depending on a random value and a
-			probability value.
+			probability value. If probability parameter is given, it will
+			override the global parameter set by rand_set_prob() function.
 		</para>
 		<example>
 			<title><function moreinfo="none">rand_event()</function> usage</title>
@@ -585,8 +586,21 @@ $ opensipsctl fifo shv_get
 	
 <section>
 	<title>Exported pseudo-variables</title>
-		
 		<section>
+			<title><varname>$env(name)</varname></title>
+			<para>
+				This PV provides access to the environment variable 'name'.
+			</para>
+			<example>
+				<title><function moreinfo="none">env(name) pseudo-variable</function> usage</title>
+				<programlisting format="linespecific">
+...
+xlog("PATH environment variable is $env(PATH)\n");
+...
+				 </programlisting>
+			</example>
+	</section>
+	<section>
 			<title><varname>$RANDOM</varname></title>
 			<para>
 				Returns a random value from the [0 - 2^31) range.
