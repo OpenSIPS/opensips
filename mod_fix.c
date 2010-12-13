@@ -657,6 +657,45 @@ int fixup_igp(void** param)
 	return 0;
 }
 
+int fixup_sgp(void** param)
+{
+	str s;
+	gparam_p gp = NULL;
+	
+	gp = (gparam_p)pkg_malloc(sizeof(gparam_t));
+	if(gp == NULL)
+	{
+		LM_ERR("no more memory\n");
+		return E_UNSPEC;
+	}
+	memset(gp, 0, sizeof(gparam_t));
+	s.s = (char*)*param; s.len = strlen(s.s);
+	if(s.s[0]==PV_MARKER)
+	{
+		gp->type = GPARAM_TYPE_PVS;
+		gp->v.pvs = (pv_spec_t*)pkg_malloc(sizeof(pv_spec_t));
+		if (gp->v.pvs == NULL)
+		{
+			LM_ERR("no pkg memory left for pv_spec_t\n");
+		    pkg_free(gp);
+		    return E_UNSPEC;
+		}
+
+		if(pv_parse_spec(&s, gp->v.pvs)==NULL)
+		{
+			LM_ERR("Unsupported User Field identifier\n");
+		    pkg_free(gp->v.pvs);
+		    pkg_free(gp);
+			return E_UNSPEC;
+		}
+	} else {
+		gp->type = GPARAM_TYPE_STR;
+		gp->v.sval = s;
+	}
+	*param = (void*)gp;
+
+	return 0;
+}
 /*! \brief
  * fixup for functions that get one parameter
  * - first parameter is converted to gparam_t (int or PV)
@@ -669,6 +708,16 @@ int fixup_igp_null(void** param, int param_no)
 		return E_UNSPEC;
 	}
 	return fixup_igp(param);
+}
+
+int fixup_sgp_null(void** param, int param_no)
+{
+	if (param_no != 1)
+	{
+		LM_ERR("invalid parameter number %d\n", param_no);
+		return E_UNSPEC;
+	}
+	return fixup_sgp(param);
 }
 
 /*! \brief
@@ -686,6 +735,15 @@ int fixup_igp_igp(void** param, int param_no)
 	return fixup_igp(param);
 }
 
+int fixup_sgp_sgp(void** param, int param_no)
+{
+	if (param_no != 1 && param_no != 2 )
+	{
+		LM_ERR("invalid parameter number %d\n", param_no);
+		return E_UNSPEC;
+	}
+	return fixup_sgp(param);
+}
 /*! \brief
  * fixup for functions that get three parameters
  * - first parameter is converted to gparam_t (int or PV)
