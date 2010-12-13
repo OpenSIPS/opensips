@@ -36,7 +36,7 @@
 
 #include "../../str.h"
 #include "../../ip_addr.h"
-#include "dr_time.h"
+#include "../../time_rec.h"
 
 #define PTREE_CHILDREN 10
 #define IS_DECIMAL_DIGIT(d) \

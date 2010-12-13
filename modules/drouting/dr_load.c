@@ -41,11 +41,11 @@
 #include "../../route.h"
 #include "../../db/db.h"
 #include "../../mem/shm_mem.h"
+#include "../../time_rec.h"
 
 #include "dr_load.h"
 #include "routing.h"
 #include "prefix_tree.h"
-#include "dr_time.h"
 #include "parse.h"
 
 
@@ -181,18 +181,19 @@ static void free_tmp_gw_list(void)
 
 static inline tmrec_t* parse_time_def(char *time_str)
 {
-	tmrec_t *time_rec;
+	tmrec_p time_rec;
 	char *p,*s;
 
 	p = time_str;
 	time_rec = 0;
 
-	time_rec = (tmrec_t*)shm_malloc(sizeof(tmrec_t));
+/*	time_rec = (tmrec_t*)shm_malloc(sizeof(tmrec_t)); */
+	time_rec = tmrec_new(SHM_ALLOC);
 	if (time_rec==0) {
-		LM_ERR("no more pkg mem\n");
+		LM_ERR("no more shm mem\n");
 		goto error;
 	}
-	memset( time_rec, 0, sizeof(tmrec_t));
+/*	memset( time_rec, 0, sizeof(tmrec_t)); */
 
 	/* empty definition? */
 	if ( time_str==0 || *time_str==0 )

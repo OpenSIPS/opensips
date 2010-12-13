@@ -35,8 +35,8 @@
 
 #include "../../str.h"
 #include "../../usr_avp.h"
+#include "../../time_rec.h"
 #include "prefix_tree.h"
-#include "dr_time.h"
 
 #define RG_HASH_SIZE
 #define RG_INIT_LEN 4;
