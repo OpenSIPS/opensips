@@ -659,7 +659,7 @@ int dlg_create_dialog(struct cell* t, struct sip_msg *req)
 error:
 	unref_dlg(dlg,2);
 	dialog_cleanup( req, NULL);
-	update_stat(failed_dlgs, 1);
+	if_update_stat(dlg_enable_stats, failed_dlgs, 1);
 	return -1;
 }
 

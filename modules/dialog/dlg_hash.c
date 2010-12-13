@@ -380,6 +380,7 @@ int dlg_add_leg_info(struct dlg_cell *dlg, str* tag, str *rr, str *contact,
 		dlg->legs_no[DLG_LEGS_USED]-1, dlg,
 		leg->tag.len,leg->tag.s,
 		leg->r_cseq.len,leg->r_cseq.s );
+
 	return 0;
 }
 
@@ -442,7 +443,7 @@ int dlg_update_routing(struct dlg_cell *dlg, unsigned int leg,
 		dlg->legs[leg].route_set.s = dlg->legs[leg].contact.s + contact->len;
 		dlg->legs[leg].route_set.len = rr->len;
 		memcpy( dlg->legs[leg].route_set.s, rr->s, rr->len);
-		
+
 		/* also update URI pointers */
 		if (parse_rr_body(dlg->legs[leg].route_set.s,
 					dlg->legs[leg].route_set.len,&head) != 0) {
