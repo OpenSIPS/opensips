@@ -473,7 +473,6 @@ static int fixup_get_info(void** param, int param_no)
 }
 
 
-
 int load_dlg( struct dlg_binds *dlgb )
 {
 	dlgb->register_dlgcb = register_dlgcb;
@@ -634,7 +633,7 @@ static int mod_init(void)
 	}
 
 	/* listen for all routed requests  */
-	if ( d_rrb.register_rrcb( dlg_onroute, 0 ) <0 ) {
+	if ( d_rrb.register_rrcb( dlg_onroute, 0, 1 ) <0 ) {
 		LM_ERR("cannot register RR callback\n");
 		return -1;
 	}
