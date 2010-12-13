@@ -425,7 +425,7 @@ int rad_avp_get(aaa_conn* rh, aaa_message* message, aaa_map* attribute,
 int rad_avp_add(aaa_conn* rh, aaa_message* message, aaa_map* name, void* value,
 					int val_length, int vendor)
 {
-	UINT4 int4_val;
+	uint32_t int4_val;
 	str s;
 
 	if (!rh) {
@@ -478,7 +478,6 @@ int rad_avp_add(aaa_conn* rh, aaa_message* message, aaa_map* name, void* value,
 
 	if (rc_avpair_add (rh, (VALUE_PAIR**)(void*)&message->avpair, name->value,
 	value, val_length, vendor)) {
-
 		return 0;
 	}
 
