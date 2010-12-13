@@ -53,7 +53,7 @@ int pua_add_events(void)
 
 	/* add message-summary*/
 	if(add_pua_event(MSGSUM_EVENT, "message-summary", 
-				"application/simple-message-summary", mwi_process_body)< 0)
+				"application/simple-message-summary", 0)< 0)
 	{
 		LM_ERR("while adding event presence\n");
 		return -1;
@@ -208,7 +208,7 @@ int bla_process_body(publ_info_t* publ, str** fin_body, int ver, str* tuple)
 
 	xmlFreeDoc(doc);
 	doc= NULL;
-	*fin_body= body;	
+	*fin_body= body;
 	if(*fin_body== NULL)
 		LM_DBG("NULL fin_body\n");
 
@@ -225,11 +225,5 @@ error:
 	xmlMemoryDump();
 	xmlCleanupParser();
 	return -1;
-}
-
-int mwi_process_body(publ_info_t* publ, str** fin_body, int ver, str* tuple)
-{
-	*fin_body= publ->body;
-	return 0;
 }
 

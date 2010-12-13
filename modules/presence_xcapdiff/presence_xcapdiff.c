@@ -55,14 +55,6 @@ struct module_exports exports= {
     0                           /* per-child init function */
 };
 
-
-int
-xcapdiff_process_body(publ_info_t *publ, str **fin_body, int ver, str *tuple)
-{
-    *fin_body = publ->body;
-    return 0;
-}
-
 static int
 mod_init(void)
 {
@@ -103,7 +95,7 @@ mod_init(void)
             return -1;
         }
 
-        if(pua.add_event(XCAPDIFF_EVENT, s_event_name.s, s_content_type.s, xcapdiff_process_body) < 0) {
+        if(pua.add_event(XCAPDIFF_EVENT, s_event_name.s, s_content_type.s, 0) < 0) {
             LM_ERR("could not add xcap-diff event to pua\n");
             return -1;
         }
