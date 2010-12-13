@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding='ISO-8859-1'?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN"
+"http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd" [
+
+
+<!ENTITY admin SYSTEM "presence_callinfo_admin.xml">
+<!ENTITY faq SYSTEM "../../../doc/module_faq.xml">
+
+<!-- Include general documentation entities -->
+<!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
+%docentities;
+
+]>
+
+<book>
+    <bookinfo>
+	<title>Presence_CallInfo Module</title>
+	<productname class="trade">&osipsname;</productname>
+	<authorgroup>
+	    <author>
+		<firstname>Ovidiu</firstname>
+		<surname>Sas</surname>
+		<email>osas@voipembedded.com</email>
+	    </author>
+	    <editor>
+		<firstname>Ovidiu</firstname>
+		<surname>Sas</surname>
+  	        <email>osas@voipembedded.com</email>
+	    </editor>
+	</authorgroup>
+	<copyright>
+	    <year>2010</year>
+	    <holder>
+		<ulink url="http://www.voipembedded.com">VoIP Embedded, Inc.</ulink>
+	    </holder>
+	</copyright>
+	<revhistory>
+	    <revision>
+		<revnumber>$Revision: 5901 $</revnumber>
+		<date>$Date: 2009-07-21 03:45:05 -0400 (Tue, 21 Jul 2009) $</date>
+	    </revision>
+	</revhistory>
+    </bookinfo>
+    <toc></toc>
+    
+    &admin;
+    &faq;
+    
+</book>
+
+
