@@ -154,15 +154,25 @@ modparam("aaa_radius", "radius_config", "/etc/radiusclient-ng/radiusclient.conf"
 			radius authentication request. The function takes two parameters.
 		</para>
 		<para>
-			The first parameter represents the name of the set that contains the 
-			list of attributes and pvars that will form the authentication request.
+			The first parameter represents the name of the set that contains 
+			the list of attributes and pvars that will form the authentication 
+			request (see the <quote>sets</quote> module parameter).
 		</para>
 		<para>
-			The second parameter represents the name of the set that contains the 
-			list of attributes and pvars that will be extracted form the authentication reply.
+			The second parameter represents the name of the set that contains 
+			the list of attributes and pvars that will be extracted form the 
+			authentication reply (see the <quote>sets</quote> module 
+			parameter).
 		</para>
-		<para>	
-			The sets must be defined using the "sets" exported parameter.
+		<para>
+			The sets must be defined using the <quote>sets</quote> exported 
+			parameter.
+		</para>
+		<para>
+			The function return TRUE (retcode 1) if authentication was 
+			successful, FALSE (retcode -1) if an error (any kind of error) 
+			occured during authentication processes or FALSE (retcode -2) if
+			authentication was rejected or denied by RADIUS server.
 		</para>
 		<para>
 			This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, ONREPLY_ROUTE, BRANCH_ROUTE, ERROR_ROUTE and LOCAL_ROUTE.
@@ -173,6 +183,17 @@ modparam("aaa_radius", "radius_config", "/etc/radiusclient-ng/radiusclient.conf"
 		
 ...
 radius_send_auth("set1","set2");
+switch ($rc) {
+	case 1:
+		xlog("authentication ok \n");
+		break;
+	case -1:
+		xlog("error during authentication\n");
+		break;
+	case -2:
+		xlog("authentication denied \n");
+		break;
+}
 ...
 
 		</programlisting>

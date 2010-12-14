@@ -143,13 +143,19 @@ nt.conf")
 
    The first parameter represents the name of the set that
    contains the list of attributes and pvars that will form the
-   authentication request.
+   authentication request (see the "sets" module parameter).
 
    The second parameter represents the name of the set that
    contains the list of attributes and pvars that will be
-   extracted form the authentication reply.
+   extracted form the authentication reply (see the "sets" module
+   parameter).
 
    The sets must be defined using the "sets" exported parameter.
+
+   The function return TRUE (retcode 1) if authentication was
+   successful, FALSE (retcode -1) if an error (any kind of error)
+   occured during authentication processes or FALSE (retcode -2)
+   if authentication was rejected or denied by RADIUS server.
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    ONREPLY_ROUTE, BRANCH_ROUTE, ERROR_ROUTE and LOCAL_ROUTE.
@@ -158,6 +164,17 @@ nt.conf")
 
 ...
 radius_send_auth("set1","set2");
+switch ($rc) {
+        case 1:
+                xlog("authentication ok \n");
+                break;
+        case -1:
+                xlog("error during authentication\n");
+                break;
+        case -2:
+                xlog("authentication denied \n");
+                break;
+}
 ...
 
 
