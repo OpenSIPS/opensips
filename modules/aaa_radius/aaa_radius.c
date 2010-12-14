@@ -287,7 +287,7 @@ int make_send_message(struct sip_msg* msg, int index, VALUE_PAIR **send) {
 
 int send_auth_func(struct sip_msg* msg, str* s1, str* s2) {
 
-	int i;
+	int i, res;
 	int index1 = -1, index2 = -1;
 	map_list *mp;
 	pv_value_t pvt;
@@ -301,8 +301,6 @@ int send_auth_func(struct sip_msg* msg, str* s1, str* s2) {
 			return -1;
 		}
 	}
-
-//	LM_DBG("*******************************************\n");
 
 	for (i = 0; i < set_size; i++) {
 		if (sets[i]->set_name.len == s1->len &&
@@ -328,39 +326,33 @@ int send_auth_func(struct sip_msg* msg, str* s1, str* s2) {
 		return -1;
 	}
 
-	if (rc_auth(rh, SIP_PORT, send, &recv, mess) != OK_RC) {
-		LM_ERR("radius authentication message failed to send\n");
+	res = rc_auth(rh, SIP_PORT, send, &recv, mess);
+	if (res!=OK_RC && res!=BADRESP_RC) {
+		LM_ERR("radius authentication message failed with %s\n",
+			(res==TIMEOUT_RC)?"TIMEOUT":"ERROR");
 		goto error;
 	}
 
 	LM_DBG("radius authentication message sent\n");
-	mp = sets[index2]->parsed;
-	for (; mp; mp = mp->next) {
 
+	for ( mp=sets[index2]->parsed; mp ; mp = mp->next) {
 		if ((vp = rc_avpair_get(recv, ATTRID(mp->value), VENDOR(mp->value)))) {
 			memset(&pvt, 0, sizeof(pv_value_t));
 			if (vp->type == PW_TYPE_INTEGER) {
-				//LM_DBG("%.*s---->%d---->%d\n",mp->name.len, mp->name.s, vp->lvalue,
-				//		mp->value);
 				pvt.flags = PV_VAL_INT|PV_TYPE_INT;
 				pvt.ri = vp->lvalue;
-
 			}
 			else
 			if (vp->type == PW_TYPE_STRING) {
-				//LM_DBG("%.*s----->%s---->%d\n",mp->name.len, mp->name.s,
-				//		vp->strvalue , mp->value);
 				pvt.flags = PV_VAL_STR;
 				pvt.rs.s = vp->strvalue;
 				pvt.rs.len = vp->lvalue;
 			}
-
 			if (pv_set_value(msg, mp->pv, (int)EQ_T, &pvt) < 0) {
-				LM_ERR("setting avp failed\n");
-				goto error;
+				LM_ERR("setting avp failed....skipping\n");
 			}
 		} else {
-			LM_ERR("attribute was not found in received radius message\n");
+			LM_DBG("attribute was not found in received radius message\n");
 		}
 	}
 
@@ -372,11 +364,8 @@ int send_auth_func(struct sip_msg* msg, str* s1, str* s2) {
 	if (send) rc_avpair_free(send);
 	if (recv) rc_avpair_free(recv);
 
-//	LM_DBG("*******************************************\n");
-	return 1;
+	return (res==OK_RC)?1:-2;
 error:
-
-//	LM_DBG("*******************************************\n");
 	if (send) rc_avpair_free(send);
 	if (recv) rc_avpair_free(recv);
 	return -1;
