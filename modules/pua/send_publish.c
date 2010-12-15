@@ -493,7 +493,7 @@ send_publish:
 	if(body && ev->process_body)
 	{
 		if(body->s)
-			free(body->s);
+			xmlFree(body->s);
 		pkg_free(body);
 	}
 
@@ -503,7 +503,7 @@ error:
 	if(body && ev->process_body)
 	{
 		if(body->s)
-			free(body->s);
+			xmlFree(body->s);
 		pkg_free(body);
 	}
 	if(str_hdr)

@@ -357,7 +357,7 @@ int update_shtable(shtable_t htable,unsigned int hash_code,
 		subs->local_cseq= s->local_cseq++;
 		s->version= subs->version+ 1;
 	}
-	
+
 	if(strncmp(s->contact.s, subs->contact.s, subs->contact.len))
 	{
 		shm_free(s->contact.s);
@@ -382,7 +382,6 @@ int update_shtable(shtable_t htable,unsigned int hash_code,
 		s->db_flag = NO_UPDATEDB_FLAG;
 
 	lock_release(&htable[hash_code].lock);
-	
 	return 0;
 }
 

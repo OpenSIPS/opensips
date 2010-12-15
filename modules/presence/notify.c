@@ -1704,7 +1704,7 @@ error:
 int publ_notify(presentity_t* p, str pres_uri, str* body, str* offline_etag,
 		str* rules_doc, str* dialog_body, str* extra_hdrs)
 {
-	str *notify_body = NULL, *aux_body = NULL;
+	str *notify_body = NULL;
 	str notify_extra_hdrs = {NULL, 0};
 	subs_t* subs_array= NULL, *s= NULL;
 	int ret_code= -1;
@@ -1733,21 +1733,11 @@ int publ_notify(presentity_t* p, str pres_uri, str* body, str* offline_etag,
 	while(s)
 	{
 		s->auth_rules_doc= rules_doc;
-		
-		if (p->event->aux_body_processing)
-			aux_body = p->event->aux_body_processing(s, notify_body?notify_body:body);
-
-		if(notify(s, NULL, aux_body?aux_body:(notify_body?notify_body:body),
+		if(notify(s, NULL, notify_body?notify_body:body,
 			0, extra_hdrs?extra_hdrs:&notify_extra_hdrs)< 0 )
 		{
 			LM_ERR("Could not send notify for %.*s\n",
 					p->event->name.len, p->event->name.s);
-		}
-
-		if(aux_body!=NULL) {
-			if(aux_body->s)
-				p->event->aux_free_body(aux_body->s);
-			pkg_free(aux_body);
 		}
 		s= s->next;
 	}
@@ -1777,7 +1767,7 @@ int query_db_notify(str* pres_uri, pres_ev_t* event, subs_t* watcher_subs)
 {
 	subs_t* subs_array = NULL, *s= NULL;
 	str notify_extra_hdrs = {NULL, 0};
-	str* notify_body = NULL, *aux_body = NULL;
+	str* notify_body = NULL;
 	int ret_code= -1;
 
 	subs_array= get_subs_dialog(pres_uri, event , NULL);
@@ -1787,7 +1777,7 @@ int query_db_notify(str* pres_uri, pres_ev_t* event, subs_t* watcher_subs)
 		ret_code= 1;
 		goto done;
 	}
-	
+
 	if(event->type & PUBL_TYPE)
 	{
 		notify_body = get_p_notify_body(*pres_uri, event, NULL, NULL, NULL, &notify_extra_hdrs);
@@ -1796,29 +1786,16 @@ int query_db_notify(str* pres_uri, pres_ev_t* event, subs_t* watcher_subs)
 			LM_DBG("Could not get the notify_body\n");
 			/* goto error; */
 		}
-	}	
+	}
 
 	s= subs_array;
-	
+
 	while(s)
 	{
-
-		if (event->aux_body_processing) {
-			aux_body = event->aux_body_processing(s, notify_body);
-		}
-
-		if(notify(s, watcher_subs, aux_body?aux_body:notify_body, 0, NULL)< 0 )
+		if(notify(s, watcher_subs, notify_body, 0, NULL)< 0 )
 		{
 			LM_ERR("Could not send notify for [event]=%.*s\n",
 					event->name.len, event->name.s);
-			goto done;
-		}
-
-		if(aux_body!=NULL) {
-			if(aux_body->s)	{
-				event->aux_free_body(aux_body->s);
-			}
-			pkg_free(aux_body);
 		}
 		s= s->next;
 	}
@@ -1860,6 +1837,7 @@ int send_notify_request(subs_t* subs, subs_t * watcher_subs,
 	int result= 0;
 	c_back_param *cb_param= NULL;
 	str* final_body= NULL;
+	str* aux_body = 0;
 
 	LM_DBG("enter: have_body=%d force_null=%d dialog info:\n",
 	  (n_body!=0&&n_body->s!=0)?1:0, force_null_body);
@@ -1938,6 +1916,7 @@ int send_notify_request(subs_t* subs, subs_t * watcher_subs,
 		}
 	}
 
+
 jump_over_body:
 
 	if(subs->expires<= 0)
@@ -1971,14 +1950,23 @@ jump_over_body:
 		goto error;
 	}
 
+	if (notify_body && subs->event->aux_body_processing)
+		aux_body = subs->event->aux_body_processing(subs, notify_body);
+
 	result = tmb.t_request_within
-		(&met,              /* method*/
-		&str_hdr,           /* extra headers*/
-		notify_body,        /* body*/
-		td,                 /* dialog structure*/
-		p_tm_callback,      /* callback function*/
-		(void*)cb_param,    /* callback parameter*/
+		(&met,                          /* method*/
+		&str_hdr,                       /* extra headers*/
+		aux_body?aux_body:notify_body,  /* body*/
+		td,                             /* dialog structure*/
+		p_tm_callback,                  /* callback function*/
+		(void*)cb_param,                /* callback parameter*/
 		NULL);
+
+	if(aux_body) {
+		if(aux_body->s)
+			subs->event->aux_free_body(aux_body->s);
+		pkg_free(aux_body);
+	}
 
 	if(result< 0)
 	{
@@ -2079,6 +2067,7 @@ int notify(subs_t* subs, subs_t * watcher_subs, str* n_body, int force_null_body
 		LM_ERR("sending Notify not successful\n");
 		return -1;
 	}
+
 	return 0;
 }
 
