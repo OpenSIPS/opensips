@@ -105,6 +105,80 @@
 	</section>
 
 	<section>
+	<title>RTPProxy timeout notifications</title>
+	<para>
+		Nathelper module can also receive timeout notifications from multiple
+		rtpproxies. RTPProxy can be configured to send notifications when
+		a session doesn't receive any media for a configurable interval of
+		time. The nathelper modules has implemented a listener for such
+		notifications and when received it terminates the dialog at SIP
+		level (send BYE to both ends), with the help of dialog module.
+	</para>
+	<para>
+		In our tests with RTPProxy we observed some limitations and also
+		provide a patch for it against git version Mon Nov 1 04:00:44 2010.
+		It contains an addition and implements separate timeout parameters
+		for the phases of session establishment and ongoing sessions.
+		In the official code a single timeout parameter controls
+		both session establishment and rtp timeout and the timeout
+		notification is also sent in the call establishment phase.
+		This is a problem since we want to detect rtp timeout fast, but also
+		allow a longer period for call establishment.
+	</para>
+	<para>
+		To enable timeout notification there are several steps that you must follow:
+		<para>
+			Start &osips; timeout detection by setting the following module
+			parameters in your configuration script:
+			<itemizedlist>
+				<listitem><quote>detect_rtp_idle</quote> - enable timeout
+						detection.
+				</listitem>
+				<listitem><quote>rtpp_notify_socket</quote> - the socket 
+					where further notification will be received from
+					rtpproxies. This socket must be a TCP or UNIX socket.
+				</listitem>
+			</itemizedlist>
+		</para>
+		<para>
+			Configure RTPProxy to use timeout notification by adding
+			the following command line parameters:
+			<itemizedlist>
+				<listitem>
+					<para><quote> -n timeout_socket</quote> - specifies
+						where the notifications will be sent. This socket
+						must be the same as <quote>rtpp_notify_socket</quote>
+						&osips; module parameter. This parameter is mandatory.
+					</para>
+				</listitem>
+				<listitem>
+					<para><quote> -T ttl</quote> - limits the rtp session
+						timeout to <quote>ttl</quote>. This parameter
+						is optional and the default value is 60 seconds.
+					</para>
+				</listitem>
+				<listitem>
+					<para><quote> -W ttl</quote> - limits the session
+						establishment timeout to <quote>ttl</quote>.
+						This parameter is optional and the default value 
+						is 60 seconds.
+					</para>
+				</listitem>
+			</itemizedlist>
+		</para>
+			<para>
+				All of the previous parameters can be used with the offical
+				RTPProxy release, except for the last one. It has been
+				added, among with other modifications to RTPProxy in order
+				to work properly, in a separate patch located in the
+				<emphasis>patches</emphasis> directory from the module
+				directory.
+			</para>
+	</para>
+	</section>
+
+
+	<section>
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
@@ -122,6 +196,13 @@
 				<emphasis>a database</emphasis> module - only if you want
 				to load use a database table from where to load the rtp proxies
 				sets.
+			</para>
+			</listitem>
+
+			<listitem>
+			<para>
+				<emphasis>dialog</emphasis> module - if using the engage_rtp_proxy
+				functions or RTPProxy timeout notifications.
 			</para>
 			</listitem>
 
@@ -582,6 +663,49 @@ modparam("nathelper", "set_id_col", "rtpp_set_id")
 		</example>
 	</section>
 
+	<section>
+		<title><varname>rtpp_notify_socket</varname> (string)</title>
+		<para>
+			The name set id column in the database table.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>NULL</quote>.
+		</emphasis>
+		</para>
+
+		<example>
+		<title>Set <varname>rtpp_notify_socket</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("nathelper", "rtpp_notify_socket", "tcp://10.10.10.10:9999")
+...
+
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>detect_rtp_idle</varname> (integer)</title>
+		<para>
+			Enables timeout detection.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>0</quote>.
+		</emphasis>
+		</para>
+
+		<example>
+		<title>Set <varname>detect_rtp_idle</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("nathelper", "detect_rtp_idle", "1")
+...
+
+</programlisting>
+		</example>
+	</section>
 
 
 </section>

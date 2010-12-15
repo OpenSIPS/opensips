@@ -28,6 +28,7 @@
 #define _NATHELPER_NATHELPER_H
 
 #include "../../str.h"
+#include "../dialog/dlg_load.h"
 
 /* Handy macros */
 #define STR2IOVEC(sx, ix)       do {(ix).iov_base = (sx).s; (ix).iov_len = (sx).len;} while(0)
@@ -64,6 +65,32 @@ struct rtpp_set_head{
 	struct rtpp_set		*rset_last;
 };
 
+struct force_rtpp_args {
+    char *arg1;
+    char *arg2;
+    int offer;
+    str body;
+    str callid;
+    struct rtpp_node *node;
+    str raddr;
+};
+
+/* used in timeout_listener_process */
+struct rtpp_notify_node {
+	int index;
+	int fd;
+	int mode;
+	char* addr;
+	struct rtpp_notify_node *next;
+};
+
+struct rtpp_notify_head {
+	int changed;
+	gen_lock_t *lock;
+	struct rtpp_notify_node *rtpp_list;
+};
+
+
 /* parameter type for set_rtp_proxy_set() */
 
 #define NH_VAL_SET_FIXED              0
@@ -76,6 +103,14 @@ typedef struct rtpp_set_param{
                 pv_spec_t var_set;
         } v;
 } nh_set_param_t;
+
+extern str rtpp_notify_socket;
+extern struct dlg_binds dlg_api;
+extern int detect_rtp_idle;
+extern struct rtpp_set_head * rtpp_set_list;
+extern struct rtpp_notify_head * rtpp_notify_h;
+int init_rtpp_notify_list();
+void timeout_listener_process(int rank);
 
 /* Functions from nathelper */
 struct rtpp_node *select_rtpp_node(str, int);

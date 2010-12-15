@@ -1,0 +1,140 @@
+diff --git a/main.c b/main.c
+index 15ec6ee..7740191 100644
+--- a/main.c
++++ b/main.c
+@@ -68,6 +68,7 @@
+ static const char *cmd_sock = CMD_SOCK;
+ static const char *pid_file = PID_FILE;
+ static rtpp_log_t glog;
++static char *notify_socket = NULL;
+ 
+ static void usage(void);
+ static void send_packet(struct cfg *, struct rtpp_session *, int,
+@@ -117,6 +118,7 @@ init_config(struct cfg *cf, int argc, char **argv)
+     cf->port_max = PORT_MAX;
+ 
+     cf->max_ttl = SESSION_TIMEOUT;
++    cf->max_setup_ttl = SESSION_TIMEOUT;
+     cf->tos = TOS;
+     cf->rrtcp = 1;
+     cf->ttl_mode = TTL_UNIFIED;
+@@ -126,7 +128,7 @@ init_config(struct cfg *cf, int argc, char **argv)
+     if (getrlimit(RLIMIT_NOFILE, &(cf->nofile_limit)) != 0)
+ 	err(1, "getrlimit");
+ 
+-    while ((ch = getopt(argc, argv, "vf2Rl:6:s:S:t:r:p:T:L:m:M:u:Fin:Pad:")) != -1)
++    while ((ch = getopt(argc, argv, "vf2Rl:6:s:S:t:r:p:T:W:L:m:M:u:Fin:Pad:")) != -1)
+ 	switch (ch) {
+ 	case 'f':
+ 	    cf->nodaemon = 1;
+@@ -205,6 +207,10 @@ init_config(struct cfg *cf, int argc, char **argv)
+ 	    cf->max_ttl = atoi(optarg);
+ 	    break;
+ 
++	case 'W':
++	    cf->max_setup_ttl = atoi(optarg);
++	    break;
++
+ 	case 'L':
+ 	    cf->nofile_limit.rlim_cur = cf->nofile_limit.rlim_max = atoi(optarg);
+ 	    if (setrlimit(RLIMIT_NOFILE, &(cf->nofile_limit)) != 0)
+@@ -266,9 +272,7 @@ init_config(struct cfg *cf, int argc, char **argv)
+ 		optarg += 5;
+ 	    if(strlen(optarg) == 0)
+ 		errx(1, "timeout notification socket name too short");
+-	    cf->timeout_handler = rtpp_notify_init(optarg);
+-	    if (cf->timeout_handler == NULL)
+-		errx(1, "can't start notification thread");
++	    notify_socket = strdup(optarg);
+ 	    break;
+ 
+ 	case 'P':
+@@ -764,6 +768,14 @@ main(int argc, char **argv)
+     atexit(ehandler);
+     rtpp_log_write(RTPP_LOG_INFO, cf.glog, "rtpproxy started, pid %d", getpid());
+ 
++	if (notify_socket) {
++		cf.timeout_handler = rtpp_notify_init(notify_socket);
++		if (!cf.timeout_handler) {
++			rtpp_log_ewrite(RTPP_LOG_ERR, cf.glog, "can't start notification thread");
++			exit(1);
++		}
++	}
++
+     i = open(pid_file, O_WRONLY | O_CREAT | O_TRUNC, DEFFILEMODE);
+     if (i >= 0) {
+ 	len = sprintf(buf, "%u\n", (unsigned int)getpid());
+@@ -772,7 +784,7 @@ main(int argc, char **argv)
+     } else {
+ 	rtpp_log_ewrite(RTPP_LOG_ERR, cf.glog, "can't open pidfile for writing");
+     }
+-
++	
+     signal(SIGHUP, fatsignal);
+     signal(SIGINT, fatsignal);
+     signal(SIGKILL, fatsignal);
+diff --git a/rtpp_command.c b/rtpp_command.c
+index a2c126f..02fa7e3 100644
+--- a/rtpp_command.c
++++ b/rtpp_command.c
+@@ -795,8 +795,14 @@ handle_command(struct cfg *cf, int controlfd, double dtime)
+ 	lia[0] = spa->laddr[i];
+ 	pidx = (i == 0) ? 1 : 0;
+ 	spa->ttl_mode = cf->ttl_mode;
+-	spa->ttl[0] = cf->max_ttl;
+-	spa->ttl[1] = cf->max_ttl;
++	if (op == UPDATE) {
++		spa->ttl[0] = cf->max_setup_ttl;
++		spa->ttl[1] = cf->max_setup_ttl;
++	} else {
++		spa->ttl[0] = cf->max_ttl;
++		spa->ttl[1] = cf->max_ttl;
++	}
++
+ 	if (op == UPDATE) {
+ 	    rtpp_log_write(RTPP_LOG_INFO, spa->log,
+ 	      "adding %s flag to existing session, new=%d/%d/%d",
+@@ -882,8 +888,8 @@ handle_command(struct cfg *cf, int controlfd, double dtime)
+ 	spb->fds[0] = fds[1];
+ 	spa->ports[0] = lport;
+ 	spb->ports[0] = lport + 1;
+-	spa->ttl[0] = cf->max_ttl;
+-	spa->ttl[1] = cf->max_ttl;
++	spa->ttl[0] = cf->max_setup_ttl;
++	spa->ttl[1] = cf->max_setup_ttl;
+ 	spb->ttl[0] = -1;
+ 	spb->ttl[1] = -1;
+ 	spa->log = rtpp_log_open(cf, "rtpproxy", spa->call_id, 0);
+diff --git a/rtpp_defines.h b/rtpp_defines.h
+index 0c54838..c0c761b 100644
+--- a/rtpp_defines.h
++++ b/rtpp_defines.h
+@@ -95,6 +95,7 @@ struct cfg {
+     unsigned long long sessions_created;
+     int sessions_active;
+     int max_ttl;
++	int max_setup_ttl;
+     /*
+      * The first address is for external interface, the second one - for
+      * internal one. Second can be NULL, in this case there is no bridge
+diff --git a/rtpp_notify.c b/rtpp_notify.c
+index 20e6990..33dff2d 100644
+--- a/rtpp_notify.c
++++ b/rtpp_notify.c
+@@ -207,6 +207,7 @@ parse_timeout_sock(const char *sock_name, struct rtpp_timeout_handler *timeout_h
+     return 0;
+ }
+ 
++
+ struct rtpp_timeout_handler *
+ rtpp_notify_init(const char *socket_name)
+ {
+@@ -331,7 +332,7 @@ reconnect_timeout_handler(rtpp_log_t log, struct rtpp_timeout_handler *th)
+         assert (parse_hostport(th->socket_name, host, sizeof(host), port, sizeof(port), 0) == 0);
+         n = resolve(sstosa(&remote.i), AF_INET, host, port, AI_PASSIVE);
+         if (n != 0) {
+-            rtpp_log_write(RTPP_LOG_ERR, log, "reconnect_timeout_handler: getaddrinfo('%s:s'): %s",
++            rtpp_log_write(RTPP_LOG_ERR, log, "reconnect_timeout_handler: getaddrinfo('%s:%s'): %s",
+               host, port, gai_strerror(n));
+             return;
+         }
