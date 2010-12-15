@@ -534,6 +534,14 @@ int bla_aggregate_state(str* old_body, str* notify_body, str* update_body,
 			LM_ERR("failed to copy dialog node\n");
 			goto error;
 		}
+		if(aux_dlg_node->ns != NULL)
+		{
+			/* dump redundant namespace added by xmlCopyNode */
+			xmlFreeNsList(aux_dlg_node->nsDef);
+			aux_dlg_node->nsDef = NULL;
+			aux_dlg_node->ns = NULL;
+		}
+
 		if(xmlAddChild(old_doc->children, aux_dlg_node)== NULL)
 		{
 			LM_ERR("while adding child\n");
