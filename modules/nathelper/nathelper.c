@@ -227,6 +227,7 @@
 #include "../../msg_callbacks.h"
 
 #include "../dialog/dlg_load.h"
+#include "../../rw_locking.h"
 
 #define NH_TABLE_VERSION  0
 
@@ -282,7 +283,7 @@
 #define	REQ_CPROTOVER	"20050322"
 /* Additional version necessary for re-packetization support */
 #define	REP_CPROTOVER	"20071116"
-#define	PTL_CPROTOVER	"20081102"
+#define	PTL_CPROTOVER	"20081104"
 /* Support for auto-bridging */
 #define	ABR_CPROTOVER	"20090810"
 
@@ -343,12 +344,16 @@ static struct mi_root* mi_reload_rtpproxies(struct mi_root* cmd_tree,
 void free_rtpp_sets();
 
 static usrloc_api_t ul;
-static struct dlg_binds dlg_api;
+struct dlg_binds dlg_api;
 
 static int cblen = 0;
 static int natping_interval = 0;
 struct socket_info* force_socket = 0;
+int detect_rtp_idle = 0;
+struct rtpp_notify_head * rtpp_notify_h = 0;
 
+int connect_rtpproxies();
+int update_rtpp_proxies();
 
 static struct {
 	const char *cnetaddr;
@@ -402,10 +407,11 @@ static char *natping_socket = 0;
 static int raw_sock = -1;
 static unsigned int raw_ip = 0;
 static unsigned short raw_port = 0;
+str rtpp_notify_socket = {0, 0};
 
-
-static char ** rtpp_strings=0;
-static int rtpp_sets=0; /*used in rtpproxy_set_store()*/
+/* used in rtpproxy_set_store() */
+static int rtpp_sets=0; 
+static char **rtpp_strings=0;
 static int rtpp_set_count = 0;
 static unsigned int current_msg_id = (unsigned int)-1;
 /* RTP proxy balancing list */
@@ -414,8 +420,11 @@ struct rtpp_set * selected_rtpp_set =0;
 struct rtpp_set ** default_rtpp_set=0;
 
 /* array with the sockets used by rtpporxy (per process)*/
-static unsigned int rtpp_no = 0;
 static int *rtpp_socks = 0;
+static unsigned int *rtpp_no = 0;
+static unsigned int *list_version;
+static unsigned int my_version = 0;
+static unsigned int rtpp_number = 0;
 
 
 /*0-> disabled, 1 ->enabled*/
@@ -429,9 +438,7 @@ static str set_id_col = str_init("set_id");
 static db_con_t *db_connection = NULL;
 static db_func_t db_functions;
 
-static gen_lock_t *nh_lock=NULL;
-static int* reload_flag;
-static int* data_refcnt;
+static rw_lock_t *nh_lock=NULL;
 
 static cmd_export_t cmds[] = {
 	{"fix_nated_contact",  (cmd_function)fix_nated_contact_f,    0,
@@ -527,10 +534,12 @@ static param_export_t params[] = {
 	{"sipping_bflag",         INT_PARAM, &sipping_flag          },
 	{"natping_processes",     INT_PARAM, &natping_processes     },
 	{"natping_socket",        STR_PARAM, &natping_socket        },
-	{"db_url",	        	  STR_PARAM, &db_url.s		        },
-	{"db_table",              STR_PARAM, &table.s		        },
-	{"rtpp_socket_col",       STR_PARAM, &rtpp_sock_col.s		},
-	{"set_id_col",            STR_PARAM, &set_id_col.s	        },
+	{"db_url",                STR_PARAM, &db_url.s              },
+	{"db_table",              STR_PARAM, &table.s               },
+	{"rtpp_socket_col",       STR_PARAM, &rtpp_sock_col.s       },
+	{"set_id_col",            STR_PARAM, &set_id_col.s          },
+	{"detect_rtp_idle",       INT_PARAM, &detect_rtp_idle       },
+	{"rtpp_notify_socket",    STR_PARAM, &rtpp_notify_socket.s  },
 	{0, 0, 0}
 };
 
@@ -543,6 +552,11 @@ static mi_export_t mi_cmds[] = {
 	{ 0, 0, 0, 0, 0}
 };
 
+static proc_export_t procs[] = {
+	{"RTPP timeout receiver",  0,  0, timeout_listener_process, 1, 0},
+	{0,0,0,0,0,0}
+};
+
 
 struct module_exports exports = {
 	"nathelper",
@@ -553,7 +567,7 @@ struct module_exports exports = {
 	0,           /* exported statistics */
 	mi_cmds,     /* exported MI functions */
 	0,           /* exported pseudo-variables */
-	0,           /* extra processes */
+	procs,       /* extra processes */
 	mod_init,
 	0,           /* reply processing */
 	mod_destroy, /* destroy function */
@@ -638,7 +652,8 @@ static int add_rtpproxy_socks(struct rtpp_set * rtpp_list,
 			return -1;
 		}
 		memset(pnode, 0, sizeof(*pnode));
-		pnode->idx = rtpp_no++;
+		pnode->idx = *rtpp_no;
+		*rtpp_no = *rtpp_no + 1;
 		pnode->rn_recheck_ticks = 0;
 		pnode->rn_weight = weight;
 		pnode->rn_umode = 0;
@@ -736,7 +751,7 @@ static int nathelper_add_rtpproxy_set( char * rtp_proxies, int set_id)
 
 	if(!(*rtp_proxies)){
 		LM_ERR("script error -empty rtp_proxy list\n");
-		return -1;;
+		return -1;
 	}
 
 	/*search for the current_id*/
@@ -888,8 +903,7 @@ static int fixup_fix_nated_register(void** param, int param_no)
 
 static int fixup_engage(void** param, int param_no)
 {
-	if (!dlg_api.create_dlg)
-	{
+	if (!dlg_api.create_dlg) {
 		LM_ERR("Dialog module not loaded. Can't use engage_rtp_proxy function\n");
 		return -1;
 	}
@@ -1017,34 +1031,36 @@ static struct mi_root* mi_reload_rtpproxies(struct mi_root* cmd_tree, void* para
 		return init_mi_tree( 400, MI_BAD_PARM_S, MI_BAD_PARM_LEN);
 	}
 
-	/* writer lock */
-	/* block access to data for all readers */
-	lock_get( nh_lock );
-	*reload_flag = 1;
-	lock_release( nh_lock );
-
-	/* wait for all readers to finish */
-	while (*data_refcnt) {
-		usleep(10);
+	lock_start_write( nh_lock );
+	if(rtpp_set_list) {
+		free_rtpp_sets();
 	}
+	*rtpp_no = 0;
+	(*list_version)++;
 
-	/* no more activ readers */
-	if(rtpp_set_list != NULL) {
-		free_rtpp_sets();	
-	}
+	/* notify timeout process that the rtpp proxy list changes */
+	lock_get( rtpp_notify_h->lock );
+	rtpp_notify_h->changed = 1;
 
 	if(_add_proxies_from_database() < 0) {
-		lock_release(nh_lock);
-		return init_mi_tree( 500, MI_INTERNAL_ERR_S, MI_INTERNAL_ERR_LEN);
+		lock_release( rtpp_notify_h->lock );
+		goto error;
 	}
+	lock_release( rtpp_notify_h->lock );
+	
+	if (update_rtpp_proxies())
+		goto error;
 
 	/* update pointer to default_rtpp_set*/
 	*default_rtpp_set = select_rtpp_set(DEFAULT_RTPP_SET_ID);
 	
 	/* release the readers */
-	*reload_flag = 0;
+	lock_stop_write( nh_lock );
 
 	return init_mi_tree(200, MI_OK_S, MI_OK_LEN);
+error:
+	lock_stop_write( nh_lock );
+	return init_mi_tree( 500, MI_INTERNAL_ERR_S, MI_INTERNAL_ERR_LEN);
 }
 
 static struct mi_root* mi_show_rtpproxies(struct mi_root* cmd_tree, 
@@ -1170,6 +1186,7 @@ static int get_natping_socket(char *socket,
 
 	return 0;
 }
+
 
 
 static int
@@ -1336,6 +1353,17 @@ mod_init(void)
 				LM_ERR("error during table version check\n");
 				return -1;
 		}
+		
+		rtpp_no = (unsigned int*)shm_malloc(sizeof(unsigned int));
+		*rtpp_no = 0;
+		list_version = (unsigned int*)shm_malloc(sizeof(unsigned int));
+		*list_version = 0;
+		my_version = 0;
+		
+		if(!rtpp_no || !list_version) {
+			LM_ERR("No more shared memory\n");
+			return -1;
+		}
 
 		if(_add_proxies_from_database() != 0) {
 			return -1;
@@ -1343,28 +1371,10 @@ mod_init(void)
 		
 		db_functions.close(db_connection);
 		db_connection = NULL;
-
-		nh_lock = lock_alloc();
-
-		if(nh_lock == NULL) {
-			LM_ERR("failed to alloc lock\n");
+		if ((nh_lock = lock_init_rw()) == NULL) {
+			LM_CRIT("failed to init lock\n");
 			return -1;
 		}
-		if (lock_init(nh_lock)==0 ) {
-			LM_CRIT("failed to init ref_lock\n");
-			return -1;
-		}
-		
-		reload_flag = (int*)shm_malloc(sizeof(int));
-		data_refcnt = (int*)shm_malloc(sizeof(int));
-		
-		if(!reload_flag || !data_refcnt)
-		{
-			LM_ERR("No more shared memory\n");
-			return -1;
-		}
-		*data_refcnt = 0;
-		*reload_flag = 0;
 	}
 	
 	default_rtpp_set = (struct rtpp_set**)shm_malloc(sizeof(struct rtpp_set*));
@@ -1401,6 +1411,47 @@ mod_init(void)
 	if (load_dlg_api(&dlg_api)!=0)
 		LM_DBG("dialog module not loaded.\n");
 
+    if(detect_rtp_idle) {
+        /* check if the notify socket parameter is set */
+        if(rtpp_notify_socket.s == NULL) {
+            LM_ERR("If you want to detect RTP idle, you need to define rtpp_notify_socket\n");
+            return -1;
+        }
+        rtpp_notify_socket.len = strlen(rtpp_notify_socket.s);
+        if(dlg_api.get_dlg == 0) {
+            LM_ERR("You need to load dialog module if you want to use the"
+                    " detect_rtp_idle feature\n");
+            return -1;
+        }
+
+		rtpp_notify_h = (struct rtpp_notify_head *)
+			shm_malloc(sizeof(struct rtpp_notify_head));
+		if (!rtpp_notify_h) {
+			LM_ERR("no more shm memory\n");
+			return -1;
+		}
+		rtpp_notify_h->lock = lock_alloc();
+		if(!rtpp_notify_h->lock) {
+			LM_ERR("failed to alloc timeout notify lock\n");
+			return -1;
+		}
+		if (!lock_init(rtpp_notify_h->lock)) {
+			LM_CRIT("failed to init timeout notify lock\n");
+			return -1;
+		}
+		rtpp_notify_h->changed = 0;
+		rtpp_notify_h->rtpp_list = NULL;
+
+		if (init_rtpp_notify_list() < 0) {
+			LM_ERR("cannot find any valid rtpproxy to use\n");
+			return -1;
+		}
+    }
+    else
+    {
+        exports.procs = 0;
+    }
+
 	return 0;
 }
 
@@ -1423,10 +1474,7 @@ static int mi_child_init(void)
 	
 	LM_DBG("Database connection opened successfully\n");
 
-
-
 	return 0;
-
 }
 
 static int _add_proxies_from_database(void) {
@@ -1503,26 +1551,37 @@ error:
 static int
 child_init(int rank)
 {
-	int n;
-	char *cp;
-	struct addrinfo hints, *res;
-	struct rtpp_set  *rtpp_list;
-	struct rtpp_node *pnode;
-
 	if (rank<=0 && rank!=PROC_TIMER)
 		return 0;
 
 	if(rtpp_set_list==NULL )
 		return 0;
 
-	/* Iterate known RTP proxies - create sockets */
 	mypid = getpid();
 
-	rtpp_socks = (int*)pkg_malloc( sizeof(int)*rtpp_no );
-	if (rtpp_socks==NULL) {
-		LM_ERR("no more pkg memory\n");
-		return -1;
+	return connect_rtpproxies();
+}
+
+int connect_rtpproxies(void)
+{
+	int n;
+	char *cp;
+	struct addrinfo hints, *res;
+	struct rtpp_set  *rtpp_list;
+	struct rtpp_node *pnode;
+
+
+	if(rtpp_set_list==NULL )
+		return 0;
+
+	if (*rtpp_no > rtpp_number) {
+		rtpp_socks = (int*)pkg_realloc(rtpp_socks, *rtpp_no * sizeof(int) );
+		if (rtpp_socks==NULL) {
+			LM_ERR("no more pkg memory\n");
+			return -1;
+		}
 	}
+	rtpp_number = *rtpp_no;
 
 	for(rtpp_list = rtpp_set_list->rset_first; rtpp_list != 0;
 		rtpp_list = rtpp_list->rset_next){
@@ -1581,6 +1640,7 @@ child_init(int rank)
 				return -1;
 			}
 			freeaddrinfo(res);
+			LM_DBG("connected %s\n", pnode->rn_address);
 rptest:
 			pnode->rn_disabled = rtpp_test(pnode, 0, 1);
 		}
@@ -1588,6 +1648,20 @@ rptest:
 
 	return 0;
 }
+
+int update_rtpp_proxies(void) {
+	int i;
+
+	LM_DBG("updating list from %d to %d\n", my_version, *list_version);
+	my_version = *list_version;
+	for (i = 0; i < rtpp_number; i++) {
+		shutdown(rtpp_socks[i], SHUT_RDWR);
+		close(rtpp_socks[i]);
+	}
+
+	return connect_rtpproxies();
+}
+
 
 void free_rtpp_sets(void)
 {	
@@ -1630,14 +1704,10 @@ static void mod_destroy(void)
 	free_rtpp_sets();
 	shm_free(rtpp_set_list);
 
-	if(reload_flag)
-		shm_free(reload_flag);
-	if(data_refcnt)
-		shm_free(data_refcnt);
 	if(nh_lock)
 	{
-		lock_destroy(nh_lock);
-		lock_dealloc(nh_lock);
+		lock_destroy_rw( nh_lock );
+		nh_lock = NULL;
 	}
 }
 
@@ -2548,7 +2618,8 @@ send_rtpp_command(struct rtpp_node *node, struct iovec *v, int vcnt)
 				len = writev(rtpp_socks[node->idx], v, vcnt);
 			} while (len == -1 && (errno == EINTR || errno == ENOBUFS));
 			if (len <= 0) {
-				LM_ERR("can't send command to a RTP proxy\n");
+				LM_ERR("can't send command to a RTP proxy %s\n",
+						strerror(errno));
 				goto badproxy;
 			}
 			while ((poll(fds, 1, rtpproxy_tout) == 1) &&
@@ -2625,6 +2696,12 @@ select_rtpp_node(str callid, int do_test)
 	struct rtpp_node* node;
 	int was_forced;
 
+	/* check last list version */
+	if (my_version != *list_version && update_rtpp_proxies() < 0) {
+		LM_ERR("cannot update rtpp proxies list\n");
+		return 0;
+	}
+	
 	if(!selected_rtpp_set){
 		LM_ERR("script error -no valid set selected\n");
 		return NULL;
@@ -2712,22 +2789,7 @@ unforce_rtp_proxy_f(struct sip_msg* msg, char* str1, char* str2)
 	STR2IOVEC(from_tag, v[5]);
 	STR2IOVEC(to_tag, v[7]);
 
-	if(nh_lock)
-	{
-	/* lock the data for reading */
-	/* ref the data for reading */
-again:
-	lock_get( nh_lock );
-	/* if reload must be done, do un ugly busy waiting 
-	 * until reload is finished */
-	if (*reload_flag) {
-		lock_release( nh_lock );
-		usleep(5);
-		goto again;
-	}
-	*data_refcnt = *data_refcnt + 1;
-	lock_release( nh_lock );
-	}
+	lock_start_read( nh_lock );
 
 	if(msg->id != current_msg_id){
 		selected_rtpp_set = *default_rtpp_set;
@@ -2743,9 +2805,7 @@ again:
 	if(nh_lock)
 	{
 		/* we are done reading -> unref the data */
-		lock_get( nh_lock );
-		*data_refcnt = *data_refcnt - 1;
-		lock_release( nh_lock );
+		lock_stop_read( nh_lock );
 	}
 
 	return 1;
@@ -2753,9 +2813,7 @@ error:
 	if(!nh_lock)
 		return -1;
 	/* we are done reading -> unref the data */
-	lock_get( nh_lock );
-	*data_refcnt = *data_refcnt - 1;
-	lock_release( nh_lock );
+	lock_stop_read( nh_lock );
 
 	return -1;
 }
@@ -2842,6 +2900,13 @@ pkg_strdup(char *cp)
 static int
 rtpproxy_offer2_f(struct sip_msg *msg, char *param1, char *param2)
 {
+	if(detect_rtp_idle)
+	{
+		/* if an initial request - create a new dialog */
+		if(get_to(msg)->tag_value.s == NULL)
+			dlg_api.create_dlg(msg);
+	}
+
 	return force_rtp_proxy(msg, param1, param2, 1);
 }
 
@@ -2871,8 +2936,8 @@ static void engage_callback(struct dlg_cell *dlg, int type,
 		struct dlg_cb_params *_params)
 {
 	int offer = 0;
-	str param1_val,param2_val,value;
 	int method_id;
+	str param1_val,param2_val,value;
 
 	/* parse cseq header */
 	if(parse_headers(_params->msg,HDR_CSEQ_F,0) < 0) {
@@ -2928,9 +2993,10 @@ engage_rtp_proxy2_f(struct sip_msg *msg, char *param1, char *param2)
 	struct to_body *pto, TO;
 	struct dlg_cell *dlg;
 
+	LM_DBG("engage called\n");
 	if (!(msg->first_line.type == SIP_REQUEST &&
 	    msg->first_line.u.request.method_value == METHOD_INVITE)) {
-		LM_ERR("this function can only be called from invite");
+		LM_ERR("this function can only be called from invite\n");
 		return -1;
 	}
 
@@ -2947,29 +3013,33 @@ engage_rtp_proxy2_f(struct sip_msg *msg, char *param1, char *param2)
 		LM_ERR("function can only be called from the initial invite");
 		return -1;
 	}
-		
+
 	if(force_rtp_proxy(msg,param1,param2,1) < 0) {
 		LM_ERR("error forcing rtp proxy");
 		return -1;
 	}
-
+		
 	if (dlg_api.create_dlg(msg) < 0) {
 		LM_ERR("error creating dialog");
 		return -1;
 	}
 
 	dlg = dlg_api.get_dlg();
+	if (!dlg) {
+		LM_ERR("cannot get dialog\n");
+		return -1;
+	}
 
 	param1_val.s = param1;
-	param1_val.len = strlen(param1);
+	param1_val.len = strlen(param1)+1;
 
 	param2_val.s = param2;
-	param2_val.len = strlen(param2);
+	param2_val.len = strlen(param2)+1;
 
 	if ( dlg_api.store_dlg_value(dlg, &param1_name, &param1_val) < 0) {
 		LM_ERR("cannot store first param into dialog\n");
 		return -1;
-	}	
+	}
 	if ( dlg_api.store_dlg_value(dlg, &param2_name, &param2_val) < 0) {
 		LM_ERR("cannot store second param into dialog\n");
 		return -1;
@@ -3183,13 +3253,18 @@ force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args)
 		{" ", 1},	/* separator */
 		{NULL, 0},	/* to_tag */
 		{";", 1},	/* separator */
-		{NULL, 0}	/* medianum */
+		{NULL, 0},	/* medianum */
+		{" ", 1},	/* separator */
+		{NULL, 0},	/* notify socket name */
+		{" ", 1},	/* separator */
+		{NULL, 0}	/* notify tag */
 	};
 	char *v1p, *v2p, *c1p, *c2p, *m1p, *m2p, *bodylimit, *o1p, *r2p;
 	char medianum_buf[20];
 	int medianum, media_multi;
 	str medianum_str, tmpstr1;
 	int c1p_altered;
+	int vcnt;
 
 	memset(&opts, '\0', sizeof(opts));
 	memset(&rep_opts, '\0', sizeof(rep_opts));
@@ -3298,7 +3373,7 @@ force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args)
 	} else {
 		create = 0;
 	}
-	
+
 	to_tag.s = 0;
 	if (get_to_tag(msg, &to_tag) == -1) {
 		LM_ERR("can't get To tag\n");
@@ -3361,29 +3436,46 @@ force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args)
 	v2p = v1p;
 	medianum = 0;
 
-	if(nh_lock)
-	{
-	/* lock for reading */
-	/* ref the data for reading */
-again:
-		lock_get( nh_lock );
-		/* if reload must be done, do un ugly busy waiting 
-		 * until reload is finished */
-		if (*reload_flag) {
-			lock_release( nh_lock );
-			usleep(5);
-			goto again;
-		}
-		*data_refcnt = *data_refcnt + 1;
-		lock_release( nh_lock );
-	}
+	lock_start_read( nh_lock );
 
 	opts.s.s[0] = (create == 0) ? 'L' : 'U';
 	v[1].iov_base = opts.s.s;
 	v[1].iov_len = opts.oidx;
 	STR2IOVEC(args->callid, v[5]);
 	STR2IOVEC(from_tag, v[11]);
+	to_tag.s="tag";
+	to_tag.len=3;
 	STR2IOVEC(to_tag, v[15]);
+
+	if(detect_rtp_idle && opts.s.s[0] == 'U')
+	{
+		struct dlg_cell * dlg;
+		char buf[32];
+		str notify_tag;
+
+		dlg = dlg_api.get_dlg();
+		if(dlg == NULL)
+		{
+			LM_ERR("Failed to get dialog\n");
+			goto error;
+		}
+		/* construct the notify tag from dualog ids */
+		notify_tag.len= sprintf(buf, "%d.%d", dlg->h_entry, dlg->h_id);
+		notify_tag.s = buf;
+		LM_DBG("notify_tag= %s\n", notify_tag.s);
+
+		if (strncmp(rtpp_notify_socket.s, "tcp:", 4) == 0) {
+			rtpp_notify_socket.s += 4;
+			rtpp_notify_socket.len -= 4;
+		} else if (strncmp(rtpp_notify_socket.s, "unix:", 5) == 0) {
+			rtpp_notify_socket.s += 5;
+			rtpp_notify_socket.len -= 5;
+		}
+		LM_DBG("rtpp_notify_socket= %.*s\n", rtpp_notify_socket.len, rtpp_notify_socket.s);
+
+		STR2IOVEC(rtpp_notify_socket, v[19]);
+		STR2IOVEC(notify_tag, v[21]);
+	}
 
 	for(;;) {
 		/* Per-session iteration. */
@@ -3516,7 +3608,13 @@ again:
 				} else {
 					v[3].iov_len = 0;
 				}
-				cp = send_rtpp_command(args->node, v, (to_tag.len > 0) ? 18 : 14);
+				if(detect_rtp_idle && opts.s.s[0] == 'U')
+  					vcnt = 22;
+  				else
+  				{
+  					vcnt = (to_tag.len > 0) ? 18 : 14;
+  				}
+  				cp = send_rtpp_command(args->node, v, vcnt);
 			} while (cp == NULL);
 			LM_DBG("proxy reply: %s\n", cp);
 			/* Parse proxy reply to <argc,argv> */
@@ -3632,9 +3730,7 @@ again:
 	if(nh_lock)
 	{
 		/* we are done reading -> unref the data */
-		lock_get( nh_lock );
-		*data_refcnt = *data_refcnt - 1;
-		lock_release( nh_lock );
+		lock_stop_read( nh_lock );
 	}
 
 	if (proxied == 0 && nortpproxy_str.len) {
@@ -3665,9 +3761,7 @@ error:
 		FORCE_RTP_PROXY_RET (-1);
 
 	/* we are done reading -> unref the data */
-	lock_get( nh_lock );
-	*data_refcnt = *data_refcnt - 1;
-	lock_release( nh_lock );
+	lock_stop_read( nh_lock );
 
 	FORCE_RTP_PROXY_RET (-1);
 }
@@ -4073,22 +4167,7 @@ static int start_recording_f(struct sip_msg* msg, char *foo, char *bar)
 	STR2IOVEC(from_tag, v[5]);
 	STR2IOVEC(to_tag, v[7]);
 	
-	if(nh_lock)
-	{
-	/* lock for reading */
-	/* ref the data for reading */
-again:
-		lock_get( nh_lock );
-		/* if reload must be done, do un ugly busy waiting 
-		 * until reload is finished */
-		if (*reload_flag) {
-			lock_release( nh_lock );
-			usleep(5);
-			goto again;
-		}
-		*data_refcnt = *data_refcnt + 1;
-		lock_release( nh_lock );
-	}
+	lock_start_read( nh_lock );
 
 	if(msg->id != current_msg_id){
 		selected_rtpp_set = *default_rtpp_set;
@@ -4117,9 +4196,7 @@ again:
 	if(nh_lock)
 	{
 		/* we are done reading -> unref the data */
-		lock_get( nh_lock );
-		*data_refcnt = *data_refcnt - 1;
-		lock_release( nh_lock );
+		lock_stop_read( nh_lock );
 	}
 	return 1;
 
@@ -4128,9 +4205,7 @@ error:
 		return -1;
 
 	/* we are done reading -> unref the data */
-	lock_get( nh_lock );
-	*data_refcnt = *data_refcnt - 1;
-	lock_release( nh_lock );
+	lock_stop_read( nh_lock );
 	return -1;
 }
 
