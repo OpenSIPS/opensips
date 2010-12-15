@@ -47,13 +47,12 @@ str* agregate_xmls(str* pres_user, str* pres_domain, str** body_array, int n);
 str* build_dialoginfo(str* pres_user, str* pres_domain);
 extern int force_single_dialog;
 
+#define VERSION_HOLDER "00000000000"
+
 void free_xml_body(char* body)
 {
-	if(body== NULL)
-		return;
-
-	xmlFree(body);
-	body= NULL;
+	if(body)
+		xmlFree(body);
 }
 
 
@@ -180,7 +179,7 @@ str* agregate_xmls(str* pres_user, str* pres_domain, str** body_array, int n)
 	   use signed int as presence module stores "version" in DB as
 	   signed int) has max. 10 characters + 1 character for the sign
 	*/
-    xmlNewProp(root_node, BAD_CAST "version", BAD_CAST "00000000000");
+    xmlNewProp(root_node, BAD_CAST "version", BAD_CAST VERSION_HOLDER);
     xmlNewProp(root_node, BAD_CAST "state",  BAD_CAST "partial" );
     xmlNewProp(root_node, BAD_CAST "entity",  BAD_CAST buf);
 
@@ -320,7 +319,6 @@ str *dlginfo_body_setversion(subs_t *subs, str *body) {
 	version_len = snprintf(version, MAX_INT_LEN + 2,"%d\"", subs->version);
 	if (version_len >= MAX_INT_LEN + 2) {
 		LM_ERR("failed to convert 'version' to string\n");
-		memcpy(version_start, "00000000000\"", 12);
 		return NULL;
 	}
 	/* Replace the placeholder 00000000000 with the version.
@@ -328,7 +326,7 @@ str *dlginfo_body_setversion(subs_t *subs, str *body) {
 	 */
 	LM_DBG("replace version with \"%s\n",version);
 	memcpy(version_start, version, version_len);
-	memset(version_start + version_len, ' ', 12 - version_len);
+	memset(version_start + version_len, ' ', MAX_INT_LEN + 2 - version_len);
 
 	return NULL;
 }
@@ -386,12 +384,9 @@ str* build_dialoginfo(str* pres_user, str* pres_domain)
 			BAD_CAST "urn:ietf:params:xml:ns:dialog-info");
 	/* we set the version to 0 but it should be set to the correct value
        in the pua module */
-	xmlNewProp(root_node, BAD_CAST "version",
-			BAD_CAST "00000000000");
-	xmlNewProp(root_node, BAD_CAST  "state",
-			BAD_CAST "partial" );
-	xmlNewProp(root_node, BAD_CAST "entity", 
-			BAD_CAST buf);
+	xmlNewProp(root_node, BAD_CAST "version", BAD_CAST  VERSION_HOLDER);
+	xmlNewProp(root_node, BAD_CAST "state",   BAD_CAST "partial" );
+	xmlNewProp(root_node, BAD_CAST "entity",  BAD_CAST buf);
 	/* dialog tag */
 	dialog_node =xmlNewChild(root_node, NULL, BAD_CAST "dialog", NULL) ;
 	if( dialog_node ==NULL)
@@ -445,7 +440,7 @@ error:
 
 str* build_empty_dialoginfo(str* pres_uri, str* extra_hdrs)
 {
-	str* nbody;
+	str* nbody= 0;
 	xmlDocPtr doc = NULL;
 	xmlNodePtr node;
 	char* pres_uri_char = NULL;
@@ -471,9 +466,10 @@ str* build_empty_dialoginfo(str* pres_uri, str* extra_hdrs)
 		goto error;
 	}
 	xmlDocSetRootElement(doc, node);
-	xmlNewProp(node, BAD_CAST "xmlns", BAD_CAST "urn:ietf:params:xml:ns:dialog-info");
-	xmlNewProp(node, BAD_CAST "version", BAD_CAST "0");
-	xmlNewProp(node, BAD_CAST "state", BAD_CAST "full");
+	xmlNewProp(node, BAD_CAST "xmlns",
+			BAD_CAST "urn:ietf:params:xml:ns:dialog-info");
+	xmlNewProp(node, BAD_CAST "version", BAD_CAST VERSION_HOLDER);
+	xmlNewProp(node, BAD_CAST "state",   BAD_CAST "full");
 
 	pres_uri_char = (char*)pkg_malloc(pres_uri->len + 1);
 	if(pres_uri_char == NULL)
@@ -495,6 +491,8 @@ str* build_empty_dialoginfo(str* pres_uri, str* extra_hdrs)
 
 	return nbody;
 error:
+	if(doc)
+		xmlFreeDoc(doc);
 	if(nbody)
 		pkg_free(nbody);
 	return 0;

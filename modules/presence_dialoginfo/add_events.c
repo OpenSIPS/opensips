@@ -39,7 +39,7 @@
 int dlginfo_add_events(void)
 {
     pres_ev_t event;
-	
+
     /* constructing message-summary event */
     memset(&event, 0, sizeof(pres_ev_t));
     event.name.s = "dialog";
@@ -64,11 +64,9 @@ int dlginfo_add_events(void)
     /* modify XML body for each watcher to set the correct "version" */
     event.aux_body_processing = dlginfo_body_setversion;
 
-	
     if (pres_add_event(&event) < 0) {
-	LM_ERR("failed to add event \"dialog\"\n");
-	return -1;
-    }		
-	
+       LM_ERR("failed to add event \"dialog\"\n");
+       return -1;
+    }
     return 0;
 }
