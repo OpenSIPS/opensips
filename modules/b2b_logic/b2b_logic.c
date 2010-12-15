@@ -813,7 +813,7 @@ str* b2bl_bridge_extern(str* scenario_name, str* args[],
 	}
 	
 	/* apply the init part of the scenario */
-	tuple = b2bl_insert_new(0, hash_index, scenario_struct, args, 0, &b2bl_key);
+	tuple = b2bl_insert_new(NULL, hash_index, scenario_struct, args, NULL, NULL, &b2bl_key);
 	if(tuple== NULL)
 	{
 		LM_ERR("Failed to insert new scenario instance record\n");
@@ -1496,8 +1496,8 @@ int b2bl_add_tuple(b2bl_tuple_t* tuple, str* params[])
 		LM_ERR("Wrong formatted b2b logic key\n");
 		return -1;
 	}
-	shm_tuple = b2bl_insert_new(0, hash_index, tuple->scenario, params,
-			(tuple->sdp.s?&tuple->sdp:0), &b2bl_key);
+	shm_tuple = b2bl_insert_new(NULL, hash_index, tuple->scenario, params,
+			(tuple->sdp.s?&tuple->sdp:NULL), NULL, &b2bl_key);
 	if(shm_tuple == NULL)
 	{
 		LM_ERR("Failed to insert new tuple\n");

@@ -957,7 +957,7 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 	peer = entity->peer;
 
 	/* build extra headers */
-	if(b2b_extra_headers(msg, 0, &extra_headers)< 0)
+	if(b2b_extra_headers(msg, NULL, NULL, &extra_headers)< 0)
 	{
 		LM_ERR("Failed to construct extra headers\n");
 		goto error;
@@ -1969,7 +1969,7 @@ int b2b_client_notify(struct sip_msg* msg, str* key, int type, void* param)
 }
 
 str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
-		void* cb_param, unsigned int cb_mask)
+		void* cb_param, unsigned int cb_mask, str* custom_hdrs)
 {
 	str* server_id = NULL;
 	str* client_id = NULL;
@@ -1992,7 +1992,7 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 	}
 	hash_index = core_hash(&to_uri, &from_uri, b2bl_hsize);
 
-	tuple = b2bl_insert_new(msg, hash_index, 0, 0, 0, &b2bl_key);
+	tuple = b2bl_insert_new(msg, hash_index, NULL, NULL, NULL, custom_hdrs, &b2bl_key);
 	if(tuple== NULL)
 	{
 		LM_ERR("Failed to insert new scenario instance record\n");
@@ -2037,7 +2037,7 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 		}
 	}
 
-	if(b2b_extra_headers(msg, b2bl_key, &extra_headers)< 0)
+	if(b2b_extra_headers(msg, b2bl_key, custom_hdrs, &extra_headers)< 0)
 	{
 		LM_ERR("Failed to create extra headers\n");
 		goto error;
@@ -2286,7 +2286,7 @@ int udh_to_uri(str user, str host, str port, str* uri)
 }
 
 str* b2b_process_scenario_init(b2b_scenario_t* scenario_struct,struct sip_msg* msg,
-		str* args[], b2bl_cback_f cbf, void* cb_param, unsigned int cb_mask)
+	str* args[], b2bl_cback_f cbf, void* cb_param, unsigned int cb_mask, str* custom_hdrs)
 {
 	str* server_id= NULL, *client_id= NULL;
 	str body= {0, 0};
@@ -2356,7 +2356,7 @@ str* b2b_process_scenario_init(b2b_scenario_t* scenario_struct,struct sip_msg* m
 
 	/* create new scenario instance record */
 	tuple = b2bl_insert_new(msg, hash_index, scenario_struct,
-			args, body.s?&body:0, &b2bl_key);
+			args, body.s?&body:NULL, custom_hdrs, &b2bl_key);
 	if(tuple== NULL)
 	{
 		LM_ERR("Failed to insert new scenario instance record\n");
@@ -2583,7 +2583,7 @@ error:
 }
 
 str* init_request(struct sip_msg* msg, b2b_scenario_t* scenario_struct,
-		str* args[], b2bl_cback_f cbf, void* cb_param, unsigned int cb_mask)
+	str* args[], b2bl_cback_f cbf, void* cb_param, unsigned int cb_mask, str* custom_hdrs)
 {
 	str* key;
 	int_str avp_val;
@@ -2596,9 +2596,10 @@ str* init_request(struct sip_msg* msg, b2b_scenario_t* scenario_struct,
 	}
 
 	if(scenario_struct == NULL)
-		key = create_top_hiding_entities(msg, cbf, cb_param, cb_mask);
+		key = create_top_hiding_entities(msg, cbf, cb_param, cb_mask, custom_hdrs);
 	else
-		key = b2b_process_scenario_init(scenario_struct, msg, args, cbf, cb_param, cb_mask);
+		key = b2b_process_scenario_init(scenario_struct, msg, args,
+					cbf, cb_param, cb_mask, custom_hdrs);
 
 	if(key)
 	{
@@ -2616,7 +2617,7 @@ str* init_request(struct sip_msg* msg, b2b_scenario_t* scenario_struct,
 }
 
 str* internal_init_scenario(struct sip_msg* msg, str* name, str* args[MAX_SCENARIO_PARAMS],
-		b2bl_cback_f cbf, void* cb_param, unsigned int cb_mask)
+		b2bl_cback_f cbf, void* cb_param, unsigned int cb_mask, str* custom_hdrs)
 {
 	b2b_scenario_t* scenario_struct;
 
@@ -2638,7 +2639,7 @@ str* internal_init_scenario(struct sip_msg* msg, str* name, str* args[MAX_SCENAR
 		}
 	}
 	b2bl_caller = CALLER_MODULE;
-	return init_request(msg, scenario_struct, args, cbf, cb_param, cb_mask);
+	return init_request(msg, scenario_struct, args, cbf, cb_param, cb_mask, custom_hdrs);
 }
 
 int b2b_init_request(struct sip_msg* msg, str* arg1, str* arg2, str* arg3,
@@ -2663,7 +2664,7 @@ int b2b_init_request(struct sip_msg* msg, str* arg1, str* arg2, str* arg3,
 	args[4] = arg6;
 
 	/* call the scenario init processing function */
-	key = init_request(msg, scenario_struct, args, 0, NULL, 0);
+	key = init_request(msg, scenario_struct, args, 0, NULL, 0, NULL);
 	if(key)
 		return 1;
 

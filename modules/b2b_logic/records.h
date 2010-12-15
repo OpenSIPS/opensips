@@ -97,7 +97,7 @@ void b2bl_print_tuple(b2bl_tuple_t* tuple);
 
 b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg,
 		unsigned int hash_index, b2b_scenario_t* scenario,
-		str* args[], str* body, str** b2bl_key_s);
+		str* args[], str* body, str* custom_hdrs, str** b2bl_key_s);
 
 str* b2bl_generate_key(unsigned int hash_index, unsigned int local_index);
 
@@ -126,7 +126,7 @@ b2bl_entity_id_t* b2bl_create_new_entity(enum b2b_entity_type type, str* entity_
 int b2bl_drop_entity(b2bl_entity_id_t* entity, b2bl_tuple_t* tuple);
 void b2bl_delete_entity(b2bl_entity_id_t* entity, b2bl_tuple_t* tuple);
 
-int b2b_extra_headers(struct sip_msg* msg, str* b2bl_key, str* extra_headers);
+int b2b_extra_headers(struct sip_msg* msg, str* b2bl_key, str* custom_hdrs, str* extra_headers);
 
 int b2bl_add_client(b2bl_tuple_t* tuple, b2bl_entity_id_t* entity);
 int b2bl_add_server(b2bl_tuple_t* tuple, b2bl_entity_id_t* entity);

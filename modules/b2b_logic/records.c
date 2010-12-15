@@ -67,7 +67,7 @@ void b2bl_print_tuple(b2bl_tuple_t* tuple)
 /* Function that inserts a new b2b_logic record - the lock remains taken */
 b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg,
 		unsigned int hash_index, b2b_scenario_t* scenario,
-		str* args[], str* body, str** b2bl_key_s)
+		str* args[], str* body, str* custom_hdrs, str** b2bl_key_s)
 {
 	b2bl_tuple_t * it, *prev_it;
 	b2bl_tuple_t* tuple;
@@ -105,7 +105,7 @@ b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg,
 
 	if(msg)
 	{
-		if(b2b_extra_headers(msg, 0, &extra_headers)< 0)
+		if(b2b_extra_headers(msg, NULL, custom_hdrs, &extra_headers)< 0)
 		{
 			LM_ERR("Failed to create extra headers\n");
 			goto error;
@@ -574,7 +574,7 @@ void destroy_b2bl_htable(void)
  *	Session-Expires
  *	Min-SE
 */
-int b2b_extra_headers(struct sip_msg* msg, str* b2bl_key, str* extra_headers)
+int b2b_extra_headers(struct sip_msg* msg, str* b2bl_key, str* custom_hdrs, str* extra_headers)
 {
 	char* p;
 	struct hdr_field* require_hdr;
@@ -584,6 +584,7 @@ int b2b_extra_headers(struct sip_msg* msg, str* b2bl_key, str* extra_headers)
 	int hdrs_no = 0;
 	int len = 0;
 	int i;
+	int custom_hdrs_len = 0;
 
 	if(msg->content_type)
 		hdrs[hdrs_no++] = msg->content_type;
@@ -627,6 +628,11 @@ int b2b_extra_headers(struct sip_msg* msg, str* b2bl_key, str* extra_headers)
 	if(len == 0)
 		return 0;
 
+	if(custom_hdrs && custom_hdrs->s && custom_hdrs->len)
+	{
+		custom_hdrs_len = custom_hdrs->len;
+		len += custom_hdrs_len;
+	}
 	extra_headers->s = (char*)pkg_malloc(len);
 	if(extra_headers->s == NULL)
 	{
@@ -641,6 +647,11 @@ int b2b_extra_headers(struct sip_msg* msg, str* b2bl_key, str* extra_headers)
 	{
 		memcpy(p, hdrs[i]->name.s, hdrs[i]->len);
 		p += hdrs[i]->len;
+	}
+	if(custom_hdrs_len)
+	{
+		memcpy(p, custom_hdrs->s, custom_hdrs_len);
+		p += custom_hdrs_len;
 	}
 	extra_headers->len = p - extra_headers->s;
 
