@@ -663,7 +663,7 @@ ua_pres_t* subscribe_cbparam(subs_info_t* subs, int ua_flag)
 		memcpy(hentity->outbound_proxy->s, subs->outbound_proxy->s, subs->outbound_proxy->len);
 		hentity->outbound_proxy->len= subs->outbound_proxy->len;
 		size+= subs->outbound_proxy->len;
-	}	
+	}
 	if(subs->expires< 0)
 		hentity->desired_expires= 0;
 	else

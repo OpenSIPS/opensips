@@ -40,6 +40,7 @@
 #include "notify_body.h"
 #include "add_events.h"
 #include "presence_xml.h"
+#include "pidf.h"
 
 static str pu_415_rpl  = str_init("Unsupported media type");
 
@@ -86,7 +87,61 @@ error:
 	xmlMemoryDump();
 	return -1;
 
-}	
+}
+
+str* bla_set_version(subs_t* subs, str* body)
+{
+	xmlNodePtr node= NULL;
+	xmlDocPtr doc= NULL;
+	char* version;
+	str* new_body= NULL;
+	int len;
+
+	doc= xmlParseMemory(body->s, body->len );
+	if(doc== NULL)
+	{
+		LM_ERR("while parsing xml memory\n");
+		goto error;
+	}
+	/* change version */
+	node= xmlDocGetNodeByName(doc, "dialog-info", NULL);
+	if(node == NULL)
+	{
+		LM_ERR("while extracting dialog-info node\n");
+		goto error;
+	}
+	version= int2str(subs->version, &len);
+	version[len]= '\0';
+
+	LM_DBG("set version %.*s %d\n", subs->callid.len, subs->callid.s, subs->version);
+	if( xmlSetProp(node, (const xmlChar *)"version",(const xmlChar*)version)== NULL)
+	{
+		LM_ERR("while setting version attribute\n");
+		goto error;
+	}
+	new_body= (str*)pkg_malloc(sizeof(str));
+	if(new_body== NULL)
+	{
+		LM_ERR("NO more memory left\n");
+		goto error;
+	}
+	memset(new_body, 0, sizeof(str));
+	xmlDocDumpMemory(doc, (xmlChar**)(void*)&new_body->s, &new_body->len);
+
+	xmlFreeDoc(doc);
+
+	xmlMemoryDump();
+	xmlCleanupParser();
+	return new_body;
+
+error:
+	if(doc)
+		xmlFreeDoc(doc);
+	xmlMemoryDump();
+	xmlCleanupParser();
+	return 0;
+}
+
 int xml_add_events(void)
 {
 	pres_ev_t event;
@@ -145,6 +200,8 @@ int xml_add_events(void)
 	event.content_type.len= 27;
 	event.type= PUBL_TYPE;
 	event.free_body= free_xml_body;
+	event.aux_body_processing = bla_set_version;
+	event.aux_free_body = free_xml_body;
 	event.default_expires= 3600;
 	if(pres_add_event(&event)< 0)
 	{
@@ -154,4 +211,5 @@ int xml_add_events(void)
 	
 	return 0;
 }
+
 

@@ -372,9 +372,9 @@ int handle_publish(struct sip_msg* msg, char* sender_uri, char* str2)
 		goto error;
 	}
 	memset(&body, 0, sizeof(str));
-	
+
 	/* inspecting the Event header field */
-	
+
 	if(msg->event && msg->event->body.len > 0)
 	{
 		if (!msg->event->parsed && (parse_event(msg->event) < 0))
@@ -383,7 +383,7 @@ int handle_publish(struct sip_msg* msg, char* sender_uri, char* str2)
 			goto error;
 		}
 		if(((event_t*)msg->event->parsed)->parsed == EVENT_OTHER)
-		{	
+		{
 			goto unsupported_event;
 		}
 	}
@@ -412,7 +412,7 @@ int handle_publish(struct sip_msg* msg, char* sender_uri, char* str2)
 		}
 		etag.len=(strlen(etag.s));
 		etag_gen=1;
-		LM_DBG("new etag  = %.*s \n", etag.len,	etag.s);
+		LM_DBG("new etag  = %.*s \n", etag.len, etag.s);
 	}
 	else
 	{
@@ -481,7 +481,7 @@ int handle_publish(struct sip_msg* msg, char* sender_uri, char* str2)
 		if ( event->content_type.len )
 		{
 			body.s=get_body(msg);
-			if (body.s== NULL) 
+			if (body.s== NULL)
 			{
 				LM_ERR("cannot extract body\n");
 				goto error;
