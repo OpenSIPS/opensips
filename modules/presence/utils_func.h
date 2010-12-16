@@ -71,54 +71,37 @@ static inline int uandd_to_uri(str user,  str domain, str *out)
 	return 0;
 }
 
-static inline str* get_local_contact(struct sip_msg* msg)
+static inline int get_local_contact(struct sip_msg* msg, str* contact)
 {
 	str ip;
 	char* proto;
 	int port;
 	int len;
-	str* contact;
+	static char buf[LCONTACT_BUF_SIZE];
 
-	contact= (str*)pkg_malloc(sizeof(str));
-	if(contact== NULL)
-	{
-		LM_ERR("No more memory\n");
-		return NULL;
-	}
-	contact->s= (char*)pkg_malloc(LCONTACT_BUF_SIZE);
-	if(contact->s== NULL)
-	{
-		LM_ERR("No more memory\n");
-		pkg_free(contact);
-		return NULL;
-	}
-
-	memset(contact->s, 0, LCONTACT_BUF_SIZE);
+	contact->s = buf;
 	contact->len= 0;
-	
-	if(msg->rcv.proto== PROTO_NONE || msg->rcv.proto==PROTO_UDP)
-		proto= "udp";
-	else
-	if(msg->rcv.proto== PROTO_TLS )
-			proto= "tls";
-	else	
-	if(msg->rcv.proto== PROTO_TCP)
-		proto= "tcp";
-	else
+	memset(buf, 0, LCONTACT_BUF_SIZE);
+
+	switch (msg->rcv.proto)
 	{
-		LM_ERR("unsupported proto\n");
-		pkg_free(contact->s);
-		pkg_free(contact);
-		return NULL;
-	}	
-	
+		case PROTO_NONE:
+		case PROTO_UDP:
+			proto= "udp"; break;
+		case PROTO_TCP:
+			proto= "tcp"; break;
+		case PROTO_TLS:
+			proto= "tls"; break;
+		default:
+			LM_ERR("wrong proto\n");
+			return -1;
+	}
+
 	ip.s= ip_addr2a(&msg->rcv.dst_ip);
 	if(ip.s== NULL)
 	{
 		LM_ERR("transforming ip_addr to ascii\n");
-		pkg_free(contact->s);
-		pkg_free(contact);
-		return NULL;
+		return -1;
 	}
 	ip.len= strlen(ip.s);
 	port = msg->rcv.dst_port;
@@ -127,31 +110,27 @@ static inline str* get_local_contact(struct sip_msg* msg)
 	{
 		strncpy(contact->s, "sip:", 4);
 		contact->len+= 4;
-	}	
+	}
+
 	strncpy(contact->s+contact->len, ip.s, ip.len);
 	contact->len += ip.len;
 	if(contact->len> LCONTACT_BUF_SIZE - 21)
 	{
 		LM_ERR("buffer overflow\n");
-		pkg_free(contact->s);
-		pkg_free(contact);
-		return NULL;
+		return -1;
+	}
 
-	}	
 	len= sprintf(contact->s+contact->len, ":%d;transport=" , port);
 	if(len< 0)
 	{
 		LM_ERR("unsuccessful sprintf\n");
-		pkg_free(contact->s);
-		pkg_free(contact);
-		return NULL;
-	}	
+		return -1;
+	}
 	contact->len+= len;
 	strncpy(contact->s+ contact->len, proto, 3);
 	contact->len += 3;
-	
-	return contact;
-	
+
+	return 0;
 }
 
 //str* int_to_str(long int n);
