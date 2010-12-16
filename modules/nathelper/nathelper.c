@@ -1306,6 +1306,18 @@ mod_init(void)
 			abort();
 		nets_1918[i].netaddr = ntohl(addr.s_addr) & nets_1918[i].mask;
 	}
+	
+	rtpp_no = (unsigned int*)shm_malloc(sizeof(unsigned int));
+	list_version = (unsigned int*)shm_malloc(sizeof(unsigned int));
+	*rtpp_no = 0;
+	*list_version = 0;
+	my_version = 0;
+	
+	if(!rtpp_no || !list_version) {
+		LM_ERR("No more shared memory\n");
+		return -1;
+	}
+
 
 	if(db_url.s == NULL)
 	{
@@ -1352,17 +1364,6 @@ mod_init(void)
 					NH_TABLE_VERSION) < 0){
 				LM_ERR("error during table version check\n");
 				return -1;
-		}
-		
-		rtpp_no = (unsigned int*)shm_malloc(sizeof(unsigned int));
-		*rtpp_no = 0;
-		list_version = (unsigned int*)shm_malloc(sizeof(unsigned int));
-		*list_version = 0;
-		my_version = 0;
-		
-		if(!rtpp_no || !list_version) {
-			LM_ERR("No more shared memory\n");
-			return -1;
 		}
 
 		if(_add_proxies_from_database() != 0) {
@@ -2789,7 +2790,9 @@ unforce_rtp_proxy_f(struct sip_msg* msg, char* str1, char* str2)
 	STR2IOVEC(from_tag, v[5]);
 	STR2IOVEC(to_tag, v[7]);
 
-	lock_start_read( nh_lock );
+	if (nh_lock) {
+		lock_start_read( nh_lock );
+	}
 
 	if(msg->id != current_msg_id){
 		selected_rtpp_set = *default_rtpp_set;
@@ -3436,7 +3439,9 @@ force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args)
 	v2p = v1p;
 	medianum = 0;
 
-	lock_start_read( nh_lock );
+	if (nh_lock) {
+		lock_start_read( nh_lock );
+	}
 
 	opts.s.s[0] = (create == 0) ? 'L' : 'U';
 	v[1].iov_base = opts.s.s;
@@ -4167,7 +4172,9 @@ static int start_recording_f(struct sip_msg* msg, char *foo, char *bar)
 	STR2IOVEC(from_tag, v[5]);
 	STR2IOVEC(to_tag, v[7]);
 	
-	lock_start_read( nh_lock );
+	if (nh_lock) {
+		lock_start_read( nh_lock );
+	}
 
 	if(msg->id != current_msg_id){
 		selected_rtpp_set = *default_rtpp_set;
