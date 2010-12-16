@@ -220,7 +220,6 @@
 #include "../../parser/parse_content.h"
 #include "../../parser/msg_parser.h"
 #include "../../parser/parse_multipart.h"
-#include "../../msg_callbacks.h"
 
 #include "../dialog/dlg_load.h"
 #include "../../rw_locking.h"
