@@ -672,11 +672,6 @@ int handle_subscribe(struct sip_msg* msg, char* force_active_param, char* str2)
 	
 	if(subs.pres_uri.s)
 		pkg_free(subs.pres_uri.s);
-	
-	if((!server_address.s) || (server_address.len== 0))
-	{
-		pkg_free(subs.local_contact.s);
-	}
 	if(subs.record_route.s)
 		pkg_free(subs.record_route.s);
 
@@ -708,12 +703,6 @@ error_free:
 	}
 	if(reason.s)
 		pkg_free(reason.s);
-
-	if(((!server_address.s) || (server_address.len== 0)) && subs.local_contact.s)
-	{
-		pkg_free(subs.local_contact.s);
-	}
-
 	if(subs.record_route.s)
 		pkg_free(subs.record_route.s);
 
@@ -726,7 +715,6 @@ int extract_sdialog_info(subs_t* subs,struct sip_msg* msg, int mexp, int* init_r
 {
 	str rec_route= {0, 0};
 	int rt  = 0;
-	str* contact= NULL;
 	contact_body_t *b;
 	struct to_body *pto, *pfrom = NULL, TO;
 	int lexpire;
@@ -878,7 +866,7 @@ int extract_sdialog_info(subs_t* subs,struct sip_msg* msg, int mexp, int* init_r
 	subs->contact = b->contacts->uri;
 	
 	LM_DBG("subs->contact= %.*s - len = %d\n",subs->contact.len,
-			subs->contact.s, subs->contact.len);	
+			subs->contact.s, subs->contact.len);
 
 	if(subs->event->evp->parsed== EVENT_DIALOG_SLA)
 	{
@@ -949,24 +937,19 @@ int extract_sdialog_info(subs_t* subs,struct sip_msg* msg, int mexp, int* init_r
 
 	subs->version = 0;
 	
-	if((!local_address.s) || (local_address.len== 0))
+	if(!local_address.s || !local_address.len)
 	{
-		contact= get_local_contact(msg);
-		if(contact== NULL)
+		if(get_local_contact(msg, &subs->local_contact) < 0)
 		{
 			LM_ERR("in function get_local_contact\n");
 			err_ret = -2;
 			goto error;
 		}
-		subs->local_contact= *contact;
 	}
 	else
 		subs->local_contact= local_address;
-	
 	return 0;
-	
 error:
-
 	return err_ret;
 	/*
 	 *  -1 - bad message
