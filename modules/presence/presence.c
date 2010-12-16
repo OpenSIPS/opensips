@@ -198,15 +198,24 @@ static int mod_init(void)
 	if(db_url.s== NULL)
 		library_mode= 1;
 
+	EvList= init_evlist();
+	if(!EvList)
+	{
+		LM_ERR("initializing event list\n");
+		return -1;
+	}
+
+	pres_event_p = (pres_ev_t**)shm_malloc(sizeof(pres_ev_t*));
+	dialog_event_p = (pres_ev_t**)shm_malloc(sizeof(pres_ev_t*));
+	if(pres_event_p == NULL || dialog_event_p == NULL)
+	{
+		LM_ERR("No more shared memory\n");
+		return -1;
+	}
+
 	if(library_mode== 1)
 	{
 		LM_DBG("presence module used for library purpose only\n");
-		EvList= init_evlist();
-		if(!EvList)
-		{
-			LM_ERR("unsuccessful initialize event list\n");
-			return -1;
-		}
 		return 0;
 	}
 
@@ -274,13 +283,6 @@ static int mod_init(void)
 		(db_check_table_version(&pa_dbf, pa_db, &watchers_table, S_TABLE_VERSION) < 0)) {
 			LM_ERR("error during table version check\n");
 			return -1;
-	}
-
-	EvList= init_evlist();
-	if(!EvList)
-	{
-		LM_ERR("initializing event list\n");
-		return -1;
 	}
 
 	if(shtable_size< 1)
@@ -352,14 +354,6 @@ static int mod_init(void)
 	}
 	if(waiting_subs_daysno > 0)
 		waiting_subs_time = waiting_subs_daysno*24*3600;
-
-	pres_event_p = (pres_ev_t**)shm_malloc(sizeof(pres_ev_t*));
-	dialog_event_p = (pres_ev_t**)shm_malloc(sizeof(pres_ev_t*));
-	if(pres_event_p == NULL || dialog_event_p == NULL)
-	{
-		LM_ERR("No more shared memory\n");
-		return -1;
-	}
 
 	if(bla_presentity_spec_param.s)
 	{
