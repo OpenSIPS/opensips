@@ -704,14 +704,18 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 		/* store this sdp */
 		if(tuple->b1_sdp.s)
 			shm_free(tuple->b1_sdp.s);
-		tuple->b1_sdp.s	= (char*)shm_malloc(body->len);
-		if(tuple->b1_sdp.s == NULL)
+		tuple->b1_sdp.s = 0;
+		if(body)
 		{
-			LM_ERR("No more memory\n");
-			return -1;
+			tuple->b1_sdp.s	= (char*)shm_malloc(body->len);
+			if(tuple->b1_sdp.s == NULL)
+			{
+				LM_ERR("No more memory\n");
+				return -1;
+			}
+			memcpy(tuple->b1_sdp.s, body->s, body->len);
+			tuple->b1_sdp.len = body->len;
 		}
-		memcpy(tuple->b1_sdp.s, body->s, body->len);
-		tuple->b1_sdp.len = body->len;
 	}
 	else
 	if(entity_no == 1) /* from provisional media server or from final destination */
@@ -2656,7 +2660,7 @@ int b2bl_bridge(str* key, str* new_dst, str* new_from_dname, int entity_no)
 		ci.from_uri      = tuple->servers[0]->to_uri;
 		ci.from_dname    = *new_from_dname;
 		ci.extra_headers = tuple->extra_headers;
-		ci.body          = &tuple->b1_sdp;
+		ci.body          = tuple->b1_sdp.s?&tuple->b1_sdp:0;
 		ci.cseq          = 1;
 	
 		client_id = b2b_api.client_new(&ci, b2b_client_notify,
