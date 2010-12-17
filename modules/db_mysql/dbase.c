@@ -51,46 +51,100 @@
 
 
 
-#define run_mysql_cmd( _con, _cmd, _ret, _retry ) \
-	do {\
-		if ( !CON_DISCON(_con) && (_ret = _cmd) ==0 ) \
-			break; \
-		/* error -> get and check the code */ \
-		_ret = mysql_errno(CON_CONNECTION(_con)); \
-		if ( (_ret!=CR_SERVER_GONE_ERROR && _ret!=CR_SERVER_LOST && \
-		_ret!=CR_CONNECTION_ERROR && _ret!=CR_CONN_HOST_ERROR && \
-		_ret!=ER_UNKNOWN_STMT_HANDLER) || \
-		(_ret==0 && memcmp(mysql_error(CON_CONNECTION(_con)), \
-		"Lost",4)!=0 && memcmp(mysql_error(CON_CONNECTION(_con)), \
-		"Unknown prepared statement",26)!=0 && \
-		memcmp(mysql_error(CON_CONNECTION(_con)), \
-		"MySQL server has gone",20)!=0) ) { \
-			/* generic error */  \
-			LM_ERR("driver error: %s\n", mysql_error(CON_CONNECTION(_con))); \
-			_ret = -1; \
-			break; \
-		} \
-		/* we got disconnected */ \
-		LM_INFO("disconect event for %p\n",(void*)_con->tail); \
-		if (CON_DISCON(_con) == 0) { \
-			CON_DISCON(_con) = 1; \
-			reset_all_statements(_con); \
-		} \
-		int _i_c; \
-		for (_i_c = 0 ; _i_c<3 ; _i_c++) { \
-			if ((_ret=db_mysql_connect((struct my_con*)(_con)->tail))==0) { \
-				/* we reconnected back */ \
-				CON_DISCON(_con) = 0; \
-				LM_INFO("re-connected successful for %p\n",(void*)_con->tail);\
-				_ret = (_retry)? (_cmd) : 1 ; \
-				break;\
-			}\
-		};\
-	}while( 0 )\
+static inline int wrapper_single_mysql_stmt_prepare(const db_con_t *conn,
+												const struct my_stmt_ctx *ctx)
+{
+	int code, error;
+	if (CON_DISCON(conn))
+		return -1;
+
+	code = mysql_stmt_prepare(ctx->stmt, ctx->query.s, ctx->query.len);
+	if (code == 0)
+		return 0;
+
+	error = mysql_stmt_errno(ctx->stmt);
+	switch (error) {
+		case CR_SERVER_GONE_ERROR:
+		case CR_SERVER_LOST:
+		case CR_COMMANDS_OUT_OF_SYNC:
+			return -1; /* reconnection error -> <0 */
+		default:
+			LM_CRIT("driver error (%i): %s\n",
+				error, mysql_stmt_error(ctx->stmt));
+			return code; /* oter mysql errors -> >0 */
+	}
+}
 
 
+static inline int wrapper_single_mysql_stmt_execute(const db_con_t *conn,
+															MYSQL_STMT *stmt)
+{
+	int code, error;
+	if (CON_DISCON(conn))
+		return -1;
 
-static void reset_all_statements(const db_con_t* conn)
+	code = mysql_stmt_execute(stmt);
+	if (code == 0)
+		return 0;
+
+	error = mysql_stmt_errno(stmt);
+	switch (error) {
+		case CR_SERVER_GONE_ERROR:
+		case CR_SERVER_LOST:
+		case CR_COMMANDS_OUT_OF_SYNC:
+			return -1; /* reconnection error -> <0 */
+		default:
+			LM_CRIT("driver error (%i): %s\n", error, mysql_stmt_error(stmt));
+			return code; /* other mysql errors -> >0 */
+	}
+}
+
+
+static inline int wrapper_single_mysql_real_query(const db_con_t *conn,
+															const str *query)
+{
+	int code, error;
+	if (CON_DISCON(conn))
+		return -1;
+
+	code = mysql_real_query(CON_CONNECTION(conn), query->s, query->len);
+	if (code == 0)
+		return 0;
+
+	error = mysql_errno(CON_CONNECTION(conn));
+	switch (error) {
+		case CR_SERVER_GONE_ERROR:
+		case CR_SERVER_LOST:
+		case CR_COMMANDS_OUT_OF_SYNC:
+			return -1; /* reconnection error -> <0 */
+		default:
+			LM_CRIT("driver error (%i): %s\n", error,
+				mysql_error(CON_CONNECTION(conn)));
+			return code; /* other mysql errors -> >0 */
+	}
+}
+
+
+static inline int connect_with_retry(const db_con_t *conn, const int max_tries)
+{
+	int try, code;
+
+	for (try = 0 ; try<max_tries ; try++) {
+		if ((code = db_mysql_connect((struct my_con*)(conn)->tail)) == 0) {
+			/* we reconnected back */
+			CON_DISCON(conn) = 0;
+			LM_INFO("re-connected successful for %p\n", (void*)conn->tail);
+			return 0;
+		} else {
+			LM_INFO("temporary re-connect failure for %p\n",(void*)conn->tail);
+		}
+	}
+	LM_ERR("permanent re-connect failure for %p\n", (void*)conn->tail);
+	return 1;
+}
+
+
+static inline void reset_all_statements(const db_con_t* conn)
 {
 	struct prep_stmt *pq_ptr;
 	struct my_stmt_ctx *ctx;
@@ -111,6 +165,15 @@ static void reset_all_statements(const db_con_t* conn)
 }
 
 
+static inline void switch_state_to_disconnected(const db_con_t *conn) {
+	LM_INFO("disconnect event for %p\n",(void*)conn->tail);
+	if (CON_DISCON(conn) == 0) {
+		CON_DISCON(conn) = 1;
+		reset_all_statements(conn);
+	}
+}
+
+
 /**
  * \brief Send a SQL query to the server.
  *
@@ -122,7 +185,7 @@ static void reset_all_statements(const db_con_t* conn)
  */
 static int db_mysql_submit_query(const db_con_t* _h, const str* _s)
 {
-	int  code;
+	int  code, i;
 
 	if (!_h || !_s || !_s->s) {
 		LM_ERR("invalid parameter value\n");
@@ -133,10 +196,25 @@ static int db_mysql_submit_query(const db_con_t* _h, const str* _s)
 	 * LM_DBG("submit_query(): %.*s\n", _s->len, _s->s);
 	 */
 
-	run_mysql_cmd( _h,
-		mysql_real_query(CON_CONNECTION(_h),_s->s,_s->len),
-		code, 1);
-	if (code==0) return 0;
+	for (i=0; i<2; i++) {
+		code = wrapper_single_mysql_real_query(_h, _s);
+		if (code < 0) {
+			/* got disconnected during call */
+			switch_state_to_disconnected(_h);
+			if (connect_with_retry(_h, 3) != 0) {
+				/* mysql reconnection problem */
+				LM_ERR("failed to reconnect before trying "
+					"mysql_stmt_prepare()\n");
+				break;
+			}
+			/* if reconnected, run the loop again */
+		} else if (code > 0) {
+			/* other problems - error already logged by the wrapper */
+			return -2;
+		} else
+			return 0; /* success */
+	}
+	LM_CRIT("too many mysql server reconnection failures\n");
 
 	return -2;
 }
@@ -206,12 +284,83 @@ static int has_stmt_ctx(const db_con_t* conn, struct my_stmt_ctx **ctx_p)
 	return 0;
 }
 
+
+static int re_init_statement(const db_con_t* conn, struct prep_stmt *pq_ptr,
+										struct my_stmt_ctx *ctx, int free_ctx)
+{
+	struct my_stmt_ctx *ctx1, *ctx2;
+	int code;
+	int i;
+
+	LM_INFO(" query  is <%.*s>, ptr=%p\n",
+		ctx->query.len, ctx->query.s, ctx->stmt);
+	
+	for( i=0 ; i<2 ; i++ ) {
+		/* re-init the statement */
+		if ( !(ctx->stmt=mysql_stmt_init(CON_CONNECTION(conn))) ) {
+			LM_ERR("failed while mysql_stmt_init()\n");
+			goto error;
+		}
+		
+		code = wrapper_single_mysql_stmt_prepare(conn, ctx);
+		if (code < 0) {
+			/* got disconnected during call */
+			switch_state_to_disconnected(conn);
+			if (connect_with_retry(conn, 3) != 0) {
+				/* mysql reconnection problem */
+				LM_ERR("failed to reconnect before trying "
+					"mysql_stmt_prepare()\n");
+				break;
+			}
+			/* if reconnected, run the loop again */
+		} else if (code > 0) {
+			/* other problems */
+			goto error;
+		} else
+			return 0; /* success */
+	}
+
+	/* destroy the statement only, but keep the context */
+	if (ctx->stmt)
+		mysql_stmt_close(ctx->stmt);
+	else
+		LM_ERR("statement already uninitialised while trying to clean up\n");
+	ctx->stmt = NULL;
+	return -1;
+
+error:
+	/* error -> destroy the context only */
+	if (ctx->stmt)
+		mysql_stmt_close(ctx->stmt);
+	else
+		LM_ERR("statement already uninitialised while trying to "
+			"clean up after error\n");
+
+	if (free_ctx) {
+		/* remove the context from STMT list */
+		for( ctx1=NULL,ctx2=pq_ptr->stmts ; ctx2 ; ) {
+			if (ctx2==ctx) {
+				if (ctx1)
+					ctx1->next = ctx2->next;
+				else
+					pq_ptr->stmts = ctx2->next;
+				break;
+			}
+			ctx1 = ctx2;
+			ctx2 = ctx2->next;
+		}
+		pkg_free(ctx);
+	} else
+		ctx->stmt = NULL;
+
+	return -1;
+}
+
+
 static struct my_stmt_ctx * get_new_stmt_ctx(const db_con_t* conn,
 														const str *query)
 {
 	struct my_stmt_ctx *ctx;
-	int code;
-	int i;
 
 	/* new one */
 	ctx = (struct my_stmt_ctx*)pkg_malloc
@@ -231,26 +380,13 @@ static struct my_stmt_ctx * get_new_stmt_ctx(const db_con_t* conn,
 	ctx->next = 0;
 	ctx->has_out = 0;
 
-	for( i=0 ; i<2 ; i++ ) {
-		/* initialize the statement */
-		if ( ! (ctx->stmt=mysql_stmt_init(CON_CONNECTION(conn))) ) {
-			LM_ERR("failed while mysql_stmt_init()\n");
-			return NULL;
-		}
-		run_mysql_cmd( conn,
-			mysql_stmt_prepare(ctx->stmt, query->s, query->len),
-			code, 0);
-		if (code==0) break;
-		if (code<0) {
-			LM_ERR("failed while mysql_stmt_prepare()\n");
-			mysql_stmt_close(ctx->stmt);
-			pkg_free(ctx);
-			return NULL;
-		}
-		/* if code==1 (reconnect happend, we try once more */
+	if (re_init_statement(conn, NULL, ctx, 0) == 0)
+		return ctx;
+	else {
+		/* make sure ctx is freed on every error in re_init_statement */
+		pkg_free(ctx);
+		return NULL;
 	}
-
-	return ctx;
 }
 
 
@@ -309,59 +445,6 @@ static struct prep_stmt* alloc_new_prepared_stmt(const db_val_t* v, int n,
 
 	return pq_ptr;
 }
-
-
-static int re_init_statement(const db_con_t* conn, struct prep_stmt *pq_ptr,
-													struct my_stmt_ctx *ctx)
-{
-	struct my_stmt_ctx *ctx1, *ctx2;
-	int code;
-	int i;
-
-	LM_INFO(" query  is <%.*s>, ptr=%p\n",
-		ctx->query.len, ctx->query.s, ctx->stmt);
-	
-	for( i=0 ; i<2 ; i++ ) {
-		/* re-init the statement */
-		if ( !(ctx->stmt=mysql_stmt_init(CON_CONNECTION(conn))) ) {
-			LM_ERR("failed while mysql_stmt_init()\n");
-			goto error;
-		}
-		run_mysql_cmd( conn,
-			mysql_stmt_prepare(ctx->stmt, ctx->query.s, ctx->query.len),
-			code, 0);
-		if (code==0) return 0; /* success */
-		if (code<0) {
-			LM_ERR("failed while mysql_stmt_prepare()\n");
-			break;
-		}
-		/* if code==1, it means a reconnect happened, so we try once more */
-	}
-
-	/* destroy the statement only, but keep the context */
-	mysql_stmt_close(ctx->stmt);
-	ctx->stmt = NULL;
-	return -1;
-
-error:
-	/* error -> destroy the context only */
-	mysql_stmt_close(ctx->stmt);
-	/* remove the context from STMT list */
-	for( ctx1=NULL,ctx2=pq_ptr->stmts ; ctx2 ; ) {
-		if (ctx2==ctx) {
-			if (ctx1)
-				ctx1->next = ctx2->next;
-			else
-				pq_ptr->stmts = ctx2->next;
-			break;
-		}
-		ctx1 = ctx2;
-		ctx2 = ctx2->next;
-	}
-	pkg_free(ctx);
-	return -1;
-}
-
 
 
 /**	Try to exec SQL query using prepared statements API
@@ -429,7 +512,7 @@ static int db_mysql_do_prepared_query(const db_con_t* conn, const str *query,
 			pq_ptr->ctx = ctx;
 		} else {
 			ctx = pq_ptr->ctx;
-			if ( ctx->stmt==NULL && re_init_statement(conn, pq_ptr, ctx)!=0 ) {
+			if ( ctx->stmt==NULL && re_init_statement(conn, pq_ptr, ctx, 1)!=0 ) {
 				LM_ERR("failed to re-init statement!\n");
 				return -1;
 			}
@@ -476,20 +559,32 @@ static int db_mysql_do_prepared_query(const db_con_t* conn, const str *query,
 			cols = mysql_num_fields(CON_RESULT(conn));
 		}
 
-		run_mysql_cmd( conn, mysql_stmt_execute(ctx->stmt) , code , 0);
-		if (code<0)
-			return -1;
-		if (code==1) {
-			/* re-init current statement/context */
+		code = wrapper_single_mysql_stmt_execute(conn, ctx->stmt);
+		if (code < 0) {
+			/* got disconnected during call */
+			switch_state_to_disconnected(conn);
+			if (connect_with_retry(conn, 3) != 0) {
+				/* mysql reconnection problem */
+				LM_ERR("failed to reconnect before trying mysql_stmt_prepare()\n");
+				break;
+			}
+			/* if reconnected, run the loop again */
 			LM_INFO("reconnected to mysql server -> re-init the statement\n");
-			if ( re_init_statement(conn, pq_ptr, ctx)!=0 ) {
+			if ( re_init_statement(conn, pq_ptr, ctx, 1)!=0 ) {
 				LM_ERR("failed to re-init statement!\n");
 				return -1;
 			}
+			i++;
+		} else if (code > 0) {
+			/* other problems */
+			return -1;
 		}
-		i++;
-
 	} while (code!=0 && i<2 );
+
+	if (code != 0) {
+		LM_CRIT("too many mysql server reconnection failures\n");
+		return -1;
+	}
 
 	/* check and get results */
 	if ( cols>0 ) {
