@@ -23,8 +23,10 @@ ifeq ($(HAS_PCRECFG),YES)
 else
 
 	DEFS+=-I$(SYSBASE)/include/pcre -I$(LOCALBASE)/include/pcre \
-			-I$(LOCALBASE)/include
-	LIBS=-I$(LOCALBASE)/lib -lpcre
+			-I$(LOCALBASE)/include -I/opt/csw/include -I/usr/sfw/include \
+			-I/usr/local/include
+	LIBS=-I$(LOCALBASE)/lib -L/opt/csw/lib -L/usr/sfw/lib -L/usr/local/lib \
+			-lpcre
 
 endif
 
