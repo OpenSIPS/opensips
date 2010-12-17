@@ -337,12 +337,10 @@ struct dlg_binds dlg_api;
 static int cblen = 0;
 static int natping_interval = 0;
 struct socket_info* force_socket = 0;
-int detect_rtp_idle = 0;
 struct rtpp_notify_head * rtpp_notify_h = 0;
 
 int connect_rtpproxies();
 int update_rtpp_proxies();
-
 
 static struct {
 	const char *cnetaddr;
@@ -516,7 +514,6 @@ static param_export_t params[] = {
 	{"db_table",              STR_PARAM, &table.s               },
 	{"rtpp_socket_col",       STR_PARAM, &rtpp_sock_col.s       },
 	{"set_id_col",            STR_PARAM, &set_id_col.s          },
-	{"detect_rtp_idle",       INT_PARAM, &detect_rtp_idle       },
 	{"rtpp_notify_socket",    STR_PARAM, &rtpp_notify_socket.s  },
 	{0, 0, 0}
 };
@@ -1378,16 +1375,12 @@ mod_init(void)
 	if (load_dlg_api(&dlg_api)!=0)
 		LM_DBG("dialog module not loaded.\n");
 
-    if(detect_rtp_idle) {
+    if(rtpp_notify_socket.s) {
         /* check if the notify socket parameter is set */
-        if(rtpp_notify_socket.s == NULL) {
-            LM_ERR("If you want to detect RTP idle, you need to define rtpp_notify_socket\n");
-            return -1;
-        }
         rtpp_notify_socket.len = strlen(rtpp_notify_socket.s);
         if(dlg_api.get_dlg == 0) {
             LM_ERR("You need to load dialog module if you want to use the"
-                    " detect_rtp_idle feature\n");
+                    " timeout notification feature\n");
             return -1;
         }
 
@@ -2802,7 +2795,7 @@ rtpproxy_offer1_f(struct sip_msg *msg, char *str1, char *str2)
 static int
 rtpproxy_offer2_f(struct sip_msg *msg, char *param1, char *param2)
 {
-	if(detect_rtp_idle)
+	if(rtpp_notify_socket.s)
 	{
 		/* if an initial request - create a new dialog */
 		if(get_to(msg)->tag_value.s == NULL)
@@ -2944,7 +2937,7 @@ force_rtp_proxy_body(struct sip_msg* msg, char* str1, char* str2, int offer, str
 	str body1, oldport, oldip, newport, newip ,nextport;
 	str callid, from_tag, to_tag, tmp, payload_types;
 	int create, port, len, asymmetric, flookup, argc, proxied, real;
-	int orgip, commip;
+	int orgip, commip, enable_notification;
 	int pf, pf1, force;
 	struct options opts, rep_opts, pt_opts;
 	char *cp, *cp1;
@@ -2991,7 +2984,7 @@ force_rtp_proxy_body(struct sip_msg* msg, char* str1, char* str2, int offer, str
 		LM_ERR("out of pkg memory\n");
 		FORCE_RTP_PROXY_RET (-1);
 	}
-	asymmetric = flookup = force = real = orgip = commip = 0;
+	asymmetric = flookup = force = real = orgip = commip = enable_notification = 0;
 	for (cp = str1; cp != NULL && *cp != '\0'; cp++) {
 		switch (*cp) {
 		case 'a':
@@ -3046,6 +3039,11 @@ force_rtp_proxy_body(struct sip_msg* msg, char* str1, char* str2, int offer, str
 		case 'o':
 		case 'O':
 			orgip = 1;
+			break;
+
+		case 'n':
+		case 'N':
+			enable_notification = 1;
 			break;
 
 		case 'w':
@@ -3163,11 +3161,16 @@ force_rtp_proxy_body(struct sip_msg* msg, char* str1, char* str2, int offer, str
 	v[1].iov_len = opts.oidx;
 	STR2IOVEC(callid, v[5]);
 	STR2IOVEC(from_tag, v[11]);
-	to_tag.s="tag";
-	to_tag.len=3;
 	STR2IOVEC(to_tag, v[15]);
 
-	if(detect_rtp_idle && opts.s.s[0] == 'U')
+	if (enable_notification &&
+			(rtpp_notify_socket.s == 0 || rtpp_notify_socket.len == 0)) {
+		LM_DBG("cannot receive timeout notifications because"
+				"rtpp_notify_socket parameter is not specified\n");
+		enable_notification = 0;
+	}
+
+	if(enable_notification && opts.s.s[0] == 'U')
 	{
 		struct dlg_cell * dlg;
 		char buf[32];
@@ -3176,7 +3179,7 @@ force_rtp_proxy_body(struct sip_msg* msg, char* str1, char* str2, int offer, str
 		dlg = dlg_api.get_dlg();
 		if(dlg == NULL)
 		{
-			LM_ERR("Failed to create dialog\n");
+			LM_ERR("Failed to get dialog\n");
 			goto error;
 		}
 		/* construct the notify tag from dualog ids */
@@ -3191,7 +3194,6 @@ force_rtp_proxy_body(struct sip_msg* msg, char* str1, char* str2, int offer, str
 			rtpp_notify_socket.s += 5;
 			rtpp_notify_socket.len -= 5;
 		}
-		LM_DBG("rtpp_notify_socket= %.*s\n", rtpp_notify_socket.len, rtpp_notify_socket.s);
 
 		STR2IOVEC(rtpp_notify_socket, v[19]);
 		STR2IOVEC(notify_tag, v[21]);
@@ -3333,7 +3335,7 @@ force_rtp_proxy_body(struct sip_msg* msg, char* str1, char* str2, int offer, str
 				} else {
 					v[3].iov_len = 0;
 				}
- 				if(detect_rtp_idle && opts.s.s[0] == 'U')
+				if(enable_notification && opts.s.s[0] == 'U')
  					vcnt = 22;
  				else
  				{

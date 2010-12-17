@@ -16,7 +16,7 @@ Bogdan-Andrei Iancu
 
    Copyright © 2005 voice-system.ro
    Revision History
-   Revision $Revision$ $Date: 2009-07-21 03:45:05 -0400
+   Revision $Revision$ $Date: 2009-07-21 10:45:05 +0300
                               (Tue, 21 Jul 2009) $
      __________________________________________________________
 
@@ -56,7 +56,6 @@ Bogdan-Andrei Iancu
               1.6.19. rtpp_socket_col (string)
               1.6.20. set_id_col (string)
               1.6.21. rtpp_notify_socket (string)
-              1.6.22. detect_rtp_idle (integer)
 
         1.7. Exported Functions
 
@@ -109,22 +108,21 @@ Bogdan-Andrei Iancu
    1.18. Set rtpp_socket_col parameter
    1.19. Set set_id parameter
    1.20. Set rtpp_notify_socket parameter
-   1.21. Set detect_rtp_idle parameter
-   1.22. fix_nated_contact usage
-   1.23. fix_nated_sdp usage
-   1.24. fix_nated_contact usage
-   1.25. engage_rtp_proxy usage
-   1.26. rtpproxy_offer usage
-   1.27. rtpproxy_answer usage
-   1.28. unforce_rtp_proxy usage
-   1.29. rtpproxy_stream2xxx usage
-   1.30. add_rcv_paramer usage
-   1.31. fix_nated_register usage
-   1.32. start_recording usage
-   1.33. nh_enable_ping usage
-   1.34. nh_enable_rtpp usage
-   1.35. nh_show_rtpp usage
-   1.36. nh_reload_rtpp usage
+   1.21. fix_nated_contact usage
+   1.22. fix_nated_sdp usage
+   1.23. fix_nated_contact usage
+   1.24. engage_rtp_proxy usage
+   1.25. rtpproxy_offer usage
+   1.26. rtpproxy_answer usage
+   1.27. unforce_rtp_proxy usage
+   1.28. rtpproxy_stream2xxx usage
+   1.29. add_rcv_paramer usage
+   1.30. fix_nated_register usage
+   1.31. start_recording usage
+   1.32. nh_enable_ping usage
+   1.33. nh_enable_rtpp usage
+   1.34. nh_show_rtpp usage
+   1.35. nh_reload_rtpp usage
 
 Chapter 1. Admin Guide
 
@@ -214,12 +212,13 @@ Chapter 1. Admin Guide
    To enable timeout notification there are several steps that you
    must follow:
 
-   Start OpenSIPS timeout detection by setting the following
-   module parameters in your configuration script:
-     * "detect_rtp_idle" - enable timeout detection.
-     * "rtpp_notify_socket" - the socket where further
-       notification will be received from rtpproxies. This socket
-       must be a TCP or UNIX socket.
+   Start OpenSIPS timeout detection by setting the
+   "rtpp_notify_socket" module parameter in your configuration
+   script. This is the socket where further notification will be
+   received from rtpproxies. This socket must be a TCP or UNIX
+   socket. Also, for all the calls that require notification, the
+   rtpproxy_offer() and rtpproxy_answer() functions must be called
+   with the "n" flag.
 
    Configure RTPProxy to use timeout notification by adding the
    following command line parameters:
@@ -543,19 +542,7 @@ modparam("nathelper", "set_id_col", "rtpp_set_id")
 
    Example 1.20. Set rtpp_notify_socket parameter
 ...
-modparam("nathelper", "rtpp_notify_socket", "tcp://10.10.10.10:9999")
-...
-
-
-1.6.22. detect_rtp_idle (integer)
-
-   Enables timeout detection.
-
-   Default value is "0".
-
-   Example 1.21. Set detect_rtp_idle parameter
-...
-modparam("nathelper", "detect_rtp_idle", "1")
+modparam("nathelper", "rtpp_notify_socket", "tcp:10.10.10.10:9999")
 ...
 
 
@@ -570,7 +557,7 @@ modparam("nathelper", "detect_rtp_idle", "1")
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    BRANCH_ROUTE.
 
-   Example 1.22. fix_nated_contact usage
+   Example 1.21. fix_nated_contact usage
 ...
 if (search("User-Agent: Cisco ATA.*") {
     fix_nated_contact(";ata=cisco");
@@ -607,7 +594,7 @@ if (search("User-Agent: Cisco ATA.*") {
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.
 
-   Example 1.23. fix_nated_sdp usage
+   Example 1.22. fix_nated_sdp usage
 ...
 if (search("User-Agent: Cisco ATA.*") {fix_nated_sdp("3");};
 ...
@@ -624,7 +611,7 @@ if (search("User-Agent: Cisco ATA.*") {fix_nated_sdp("3");};
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    BRANCH_ROUTE.
 
-   Example 1.24. fix_nated_contact usage
+   Example 1.23. fix_nated_contact usage
 ...
 set_rtp_proxy_set("2");
 rtpproxy_offer();
@@ -685,7 +672,7 @@ rtpproxy_offer();
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE.
 
-   Example 1.25. engage_rtp_proxy usage
+   Example 1.24. engage_rtp_proxy usage
                 ...
                 if (is_method("INVITE") &&
                 has_totag()) {engage_rtp_proxy();};
@@ -704,7 +691,7 @@ rtpproxy_offer();
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.
 
-   Example 1.26. rtpproxy_offer usage
+   Example 1.25. rtpproxy_offer usage
 route {
 ...
     if (is_method("INVITE")) {
@@ -748,7 +735,7 @@ onreply_route[2]
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.
 
-   Example 1.27. rtpproxy_answer usage
+   Example 1.26. rtpproxy_answer usage
 
    See rtpproxy_offer() function example above for example.
 
@@ -759,7 +746,7 @@ onreply_route[2]
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.
 
-   Example 1.28. unforce_rtp_proxy usage
+   Example 1.27. unforce_rtp_proxy usage
 ...
 unforce_rtp_proxy();
 ...
@@ -799,7 +786,7 @@ rtpproxy_stream2uas(prompt_name, count)
        indefinitely, until appropriate rtpproxy_stop_stream2xxx is
        issued.
 
-   Example 1.29. rtpproxy_stream2xxx usage
+   Example 1.28. rtpproxy_stream2xxx usage
 ...
     if (is_method("INVITE")) {
         rtpproxy_offer();
@@ -839,7 +826,7 @@ rtpproxy_stream2uas(prompt_name, count)
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.30. add_rcv_paramer usage
+   Example 1.29. add_rcv_paramer usage
 ...
 add_rcv_param(); # add the parameter to the Contact header
 ....
@@ -855,7 +842,7 @@ add_rcv_param("1"); # add the paramter to the Contact URI
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.31. fix_nated_register usage
+   Example 1.30. fix_nated_register usage
 ...
 fix_nated_register();
 ...
@@ -891,7 +878,7 @@ fix_nated_register();
 
    This function can be used from REQUEST_ROUTE and ONREPLY_ROUTE.
 
-   Example 1.32. start_recording usage
+   Example 1.31. start_recording usage
 ...
 start_recording();
 ...
@@ -907,7 +894,7 @@ start_recording();
    The function may takean optional parameter (for set operations)
    - a number in decimal format.
 
-   Example 1.33. nh_enable_ping usage
+   Example 1.32. nh_enable_ping usage
 ...
 $ opensipsctl fifo nh_enable_ping
 Status:: 1
@@ -932,7 +919,7 @@ $
    NOTE: if a rtpproxy is defined multiple times (in the same or
    diferente sete), all its instances will be enables/disabled.
 
-   Example 1.34.  nh_enable_rtpp usage
+   Example 1.33.  nh_enable_rtpp usage
 ...
 $ opensipsctl fifo nh_enable_rtpp udp:192.168.2.133:8081 0
 ...
@@ -944,7 +931,7 @@ $ opensipsctl fifo nh_enable_rtpp udp:192.168.2.133:8081 0
 
    No parameter.
 
-   Example 1.35.  nh_show_rtpp usage
+   Example 1.34.  nh_show_rtpp usage
 ...
 $ opensipsctl fifo nh_show_rtpp
 ...
@@ -958,7 +945,7 @@ $ opensipsctl fifo nh_show_rtpp
 
    No parameter.
 
-   Example 1.36.  nh_reload_rtpp usage
+   Example 1.35.  nh_reload_rtpp usage
 ...
 $ opensipsctl fifo nh_reload_rtpp
 ...

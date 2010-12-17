@@ -128,17 +128,12 @@
 	<para>
 		To enable timeout notification there are several steps that you must follow:
 		<para>
-			Start &osips; timeout detection by setting the following module
-			parameters in your configuration script:
-			<itemizedlist>
-				<listitem><quote>detect_rtp_idle</quote> - enable timeout
-						detection.
-				</listitem>
-				<listitem><quote>rtpp_notify_socket</quote> - the socket 
-					where further notification will be received from
-					rtpproxies. This socket must be a TCP or UNIX socket.
-				</listitem>
-			</itemizedlist>
+			Start &osips; timeout detection by setting the <quote>rtpp_notify_socket</quote>
+			module parameter in your configuration script. This is the socket where further
+			notification will be received from rtpproxies. This socket must be a TCP or 
+			UNIX socket. Also, for all the calls that require notification, the
+			rtpproxy_offer() and rtpproxy_answer() functions must be called with
+			the <quote>n</quote> flag.   
 		</para>
 		<para>
 			Configure RTPProxy to use timeout notification by adding
@@ -678,35 +673,12 @@ modparam("nathelper", "set_id_col", "rtpp_set_id")
 		<title>Set <varname>rtpp_notify_socket</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("nathelper", "rtpp_notify_socket", "tcp://10.10.10.10:9999")
+modparam("nathelper", "rtpp_notify_socket", "tcp:10.10.10.10:9999")
 ...
 
 </programlisting>
 		</example>
 	</section>
-
-	<section>
-		<title><varname>detect_rtp_idle</varname> (integer)</title>
-		<para>
-			Enables timeout detection.
-		</para>
-		<para>
-		<emphasis>
-			Default value is <quote>0</quote>.
-		</emphasis>
-		</para>
-
-		<example>
-		<title>Set <varname>detect_rtp_idle</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("nathelper", "detect_rtp_idle", "1")
-...
-
-</programlisting>
-		</example>
-	</section>
-
 
 </section>
 
