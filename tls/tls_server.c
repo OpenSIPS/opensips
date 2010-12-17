@@ -217,7 +217,7 @@ static void tls_dump_verification_failure(long verification_result)
  * Wrapper around SSL_accept, returns -1 on error, 0 on success 
  */
 static int
-tls_accept(struct tcp_connection *c)
+tls_accept(struct tcp_connection *c, short *poll_events)
 {
 	int ret, err;
 	SSL *ssl;
@@ -280,10 +280,12 @@ tls_accept(struct tcp_connection *c)
 				return -1;
 		
 			case SSL_ERROR_WANT_READ:
+				if (poll_events)
+					*poll_events = POLLIN;
+				return 0;
 			case SSL_ERROR_WANT_WRITE:
-				/*
-				* nothing to do here 
-				*/
+				if (poll_events)
+					*poll_events = POLLOUT;
 				return 0;
 		
 			default:
@@ -304,7 +306,7 @@ tls_accept(struct tcp_connection *c)
  * wrapper around SSL_connect, returns 0 on success, -1 on error 
  */
 static int
-tls_connect(struct tcp_connection *c)
+tls_connect(struct tcp_connection *c, short *poll_events)
 {
 	int ret, err;
 	SSL *ssl;
@@ -358,10 +360,12 @@ tls_connect(struct tcp_connection *c)
 				return -1;
 		
 			case SSL_ERROR_WANT_READ:
+				if (poll_events)
+					*poll_events = POLLIN;
+				return 0;
 			case SSL_ERROR_WANT_WRITE:
-				/*
-				* nothing to do here 
-				*/
+				if (poll_events)
+					*poll_events = POLLOUT;
 				return 0;
 		
 			case SSL_ERROR_SYSCALL:
@@ -436,7 +440,7 @@ tls_shutdown(struct tcp_connection *c)
  * -1 on error, 0 when it would block 
  */
 static int
-tls_write(struct tcp_connection *c, int fd, const void *buf, size_t len)
+tls_write(struct tcp_connection *c, int fd, const void *buf, size_t len, short *poll_events)
 {
 	int             ret,
 					err;
@@ -460,7 +464,12 @@ tls_write(struct tcp_connection *c, int fd, const void *buf, size_t len)
 			return -1;
 	
 		case SSL_ERROR_WANT_READ:
+			if (poll_events)
+				*poll_events = POLLIN;
+			return 0;
 		case SSL_ERROR_WANT_WRITE:
+			if (poll_events)
+				*poll_events = POLLOUT;
 			return 0;
 	
 		default:
@@ -686,12 +695,11 @@ size_t
 tls_blocking_write(struct tcp_connection *c, int fd, const char *buf,
 		size_t len)
 {
-	#define MAX_SSL_RETRIES 320
+	#define MAX_SSL_RETRIES 32
 	int             written, n;
 	int             timeout, retries;
 	struct pollfd   pf;
 	pf.fd = fd;
-	pf.events = POLLOUT | POLLIN;	/* we need both because of ssl library */
 
 	written = 0;
 	retries = 0;
@@ -702,21 +710,22 @@ tls_blocking_write(struct tcp_connection *c, int fd, const char *buf,
 	timeout = tls_send_timeout;
 again:
 	n = 0;
+	pf.events = 0;
 	switch (c->state) {
 		case S_CONN_ACCEPT:
-			if (tls_accept(c) < 0)
+			if (tls_accept(c, &(pf.events)) < 0)
 				goto error;
 			timeout = tls_handshake_timeout * 1000;
 			break;
 	
 		case S_CONN_CONNECT:
-			if (tls_connect(c) < 0)
+			if (tls_connect(c, &(pf.events)) < 0)
 				goto error;
 			timeout = tls_handshake_timeout * 1000;
 			break;
 	
 		case S_CONN_OK:
-			n = tls_write(c, fd, buf, len);
+			n = tls_write(c, fd, buf, len, &(pf.events));
 			timeout = tls_send_timeout * 1000;
 			break;
 	
@@ -730,9 +739,12 @@ again:
 		goto error;
 	}
 
-	/* avoid looping if nothing happens */
+	/* nothing happens */
 	if (n==0) {
+		switch (SSL_get_error( (SSL *)c->extra_data, int ret);
+)
 		retries++;
+		/* avoid looping */
 		if (retries==MAX_SSL_RETRIES) {
 			LM_ERR("too many retries with no operation\n");
 			goto error;
@@ -756,6 +768,12 @@ again:
 		return written;
 	}
 
+	/*
+	* 
+	*/
+	if (pf.events == 0)
+		pf.events = POLLOUT;
+		
 poll_loop:
 	while (1) {
 		/*
@@ -870,13 +888,13 @@ tls_fix_read_conn(struct tcp_connection *c)
 		case S_CONN_ACCEPT:
 			ret = tls_update_fd(c, c->fd);
 			if (!ret) 
-				ret = tls_accept(c);
+				ret = tls_accept(c, NULL);
 			break;
 	
 		case S_CONN_CONNECT:
 			ret = tls_update_fd(c, c->fd);
 			if (!ret)
-				ret = tls_connect(c);
+				ret = tls_connect(c, NULL);
 			break;
 	
 		default:	/* fall through */
