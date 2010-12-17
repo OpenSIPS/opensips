@@ -741,8 +741,6 @@ again:
 
 	/* nothing happens */
 	if (n==0) {
-		switch (SSL_get_error( (SSL *)c->extra_data, int ret);
-)
 		retries++;
 		/* avoid looping */
 		if (retries==MAX_SSL_RETRIES) {
