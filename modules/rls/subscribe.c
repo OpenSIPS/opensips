@@ -759,7 +759,7 @@ int update_rlsubs( subs_t* subs, unsigned int hash_code,
 
 	s->expires= subs->expires+ (int)time(NULL);
 	
-	if(s->db_flag & NO_UPDATEDB_FLAG)
+	if(s->db_flag == NO_UPDATEDB_FLAG)
 		s->db_flag= UPDATEDB_FLAG;
 	
 	if(	s->remote_cseq>= subs->remote_cseq)
