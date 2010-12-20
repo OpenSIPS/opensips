@@ -329,7 +329,7 @@ static int w_replace_from(struct sip_msg* msg, char* p1, char* p2)
 	str uri_s;
 	str dsp_s;
 	str *uri;
-	str *dsp;
+	str *dsp=NULL;
 
 	if (p2==NULL) {
 		p2 = p1;
@@ -379,7 +379,7 @@ static int w_replace_to(struct sip_msg* msg, char* p1, char* p2)
 	str uri_s;
 	str dsp_s;
 	str *uri;
-	str *dsp;
+	str *dsp=NULL;
 
 	if (p2==NULL) {
 		p2 = p1;
