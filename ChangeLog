@@ -982,7 +982,7 @@
 	* [7299] :
 
 	backport from trunk (rev #7298):
-- statistic functions take as param a VOID* instead of UNSIGNED SHORT
+	statistic functions take as param a VOID* instead of UNSIGNED SHORT
 
 
 2010-10-15 17:45:30  Ovidiu Sas <osas at voipembedded dot com> 
@@ -1122,7 +1122,7 @@
 2010-09-27 13:58:32  Anca Vamanu, <anca at voice-system dot ro> 
 	* [7238] :
 
-	- dialog event - empty dialog node body when no record if found also in no fallback2db (applied patch from Ovidiu Sas
+	- dialog event - empty dialog node body when no record if found also in no fallback2db (applied patch from Ovidiu Sas)
 
 
 2010-09-27 12:47:50  Anca Vamanu, <anca at voice-system dot ro> 
@@ -1231,15 +1231,6 @@
 	* [7203] :
 
 	- fixed sending reply twice for Publish ( reported by Kennard White )
-	--Ths line, and those below, will be ignored--
-
-	M    presence/publish.c
-	M    presence/event_list.h
-	M    presence_mwi/add_events.c
-	M    presence_xcapdiff/presence_xcapdiff.c
-	M    presence_xml/add_events.h
-	M    presence_xml/notify_body.c
-	M    presence_xml/add_events.c
 
 
 2010-09-13 19:18:13  Bogdan-Andrei Iancu, <bogdan at voice-system dot ro> 
