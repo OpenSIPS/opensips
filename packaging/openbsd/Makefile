@@ -8,9 +8,9 @@
 COMMENT= "OpenSIPS"
 
 PORTNAME= opensips
-PORTVERSION= 1.6.3-notls
+PORTVERSION= 1.6.4-notls
 CATEGORIES= net
-MASTER_SITES= http://opensips.org/pub/opensips/1.6.3/src/
+MASTER_SITES= http://opensips.org/pub/opensips/1.6.4/src/
 
 MAINTAINER= bogdan@voice-system.ro
 

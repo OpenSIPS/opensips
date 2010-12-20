@@ -1,17 +1,19 @@
 #!/usr/bin/make -f
 # Sample debian/rules that uses debhelper.
 # GNU copyright 1997 to 1999 by Joey Hess.
+# 2010/08/24: Allow building of individual modules (kennard)
+
+# To control which packages get built, set BUILD_MODPKG_LIST to list
+# of packages to build (see ALL_MODPKG_LIST for candiate names).  Set to
+# 'NONE' to not build any module packages (the primary package is always
+# built). By default all delcared packages (debian/control) will be built.
+
+
+# Supported DEB_BUILD_OPTIONS:
+#	noopt,nostrip,debug -- standard
+#	upstreamcflags -- don't set cflags, let upstream package Makefile do it
 
 DEB_HOST_ARCH ?= $(shell dpkg-architecture -qDEB_HOST_ARCH)
-
-ALL_PACKAGES = opensips opensips-mysql-module opensips-postgres-module \
-	opensips-jabber-module opensips-cpl-module opensips-radius-modules \
-	opensips-unixodbc-module opensips-presence-modules opensips-xmlrpc-module \
-	opensips-perl-modules opensips-snmpstats-module opensips-xmpp-module \
-	opensips-carrierroute-module opensips-berkeley-module \
-	opensips-ldap-modules opensips-geoip-module opensips-regex-module \
-	opensips-identity-module opensips-b2bua-module opensips-dbhttp-module \
-	opensips-console
 
 DEBVERSION:=$(shell head -n 1 debian/changelog \
                     | sed -e 's/^[^(]*(\([^)]*\)).*/\1/')
@@ -32,82 +34,116 @@ include /usr/share/dpatch/dpatch.make
 # Disabled by default due to license issues, set to non-void to enable
 TLS=
 
-# modules depending on mysql
+
+# List of all debian module packages we will build
+# Used to index the make variable below, which has details about each package
+ALL_MODPKG_LIST := \
+	MYSQL POSTGRES UNIXODBC JABBER CPL RADIUS \
+	PRESENCE XMLRPC PERL SNMPSTATS XMPP CROUTE BERKELEY LDAP \
+	GEOIP REGEX IDENTITY B2BUA DBHTTP DIALPLAN
+
+ifeq ($(BUILD_MODPKG_LIST),NONE)
+override BUILD_MODPKG_LIST :=
+else
+ifeq ($(BUILD_MODPKG_LIST),)
+override BUILD_MODPKG_LIST := $(ALL_MODPKG_LIST)
+endif
+endif
+
+# FOO_MODULES is the directory name within modules/ that belongs to the package
+# FOO_MOD_PATH is same as FOO_MODULES, but with 'modules/' prepended
+
+MYSQL_PKGNAME = opensips-mysql-module 
 MYSQL_MODULES = db_mysql
-# modules depending on postgres
-POSTGRES_MODULES = db_postgres
-# modules depending on unixODBC
-UNIXODBC_MODULES=db_unixodbc
-# jabber module
-JABBER_MODULES = jabber
-# cpl related modules
-CPL_MODULES = cpl-c
-# module depending on radiusclient
-RADIUS_MODULES = aaa_radius peering
-# presence related modules
-PRESENCE_MODULES = presence presence_dialoginfo presence_xml presence_mwi presence_xcapdiff pua pua_bla pua_dialoginfo pua_mi pua_usrloc pua_xmpp rls xcap_client
-# XMLRPC module
-XMLRPC_MODULES = mi_xmlrpc
-# Perl module
-PERL_MODULES = perl perlvdb
-# SNMPstats module
-SNMPSTATS_MODULES = snmpstats
-# XMPP module
-XMPP_MODULES = xmpp
-# Carrierroute module
-CROUTE_MODULES = carrierroute
-# Berkeley DB module
-BERKELEY_MODULES = db_berkeley
-# LDAP modules
-LDAP_MODULES = ldap h350
-# GEOIP module
-GEOIP_MODULES = mmgeoip
-# REGEX module
-REGEX_MODULES = regex
-# IDENTITY module
-IDENTITY_MODULES = identity
-# B2BUA module
-B2BUA_MODULES = b2b_entities b2b_logic
-# DBHTTP module
-DBHTTP_MODULES = db_http
-
-ALL_MODULES = $(MYSQL_MODULES) $(POSTGRES_MODULES) $(UNIXODBC_MODULES) $(JABBER_MODULES) $(CPL_MODULES) $(RADIUS_MODULES) $(PRESENCE_MODULES) $(XMLRPC_MODULES) $(PERL_MODULES) $(SNMPSTATS_MODULES) $(XMPP_MODULES) $(CROUTE_MODULES) $(BERKELEY_MODULES) $(LDAP_MODULES) $(GEOIP_MODULES) $(REGEX_MODULES) $(IDENTITY_MODULES) $(B2BUA_MODULES) $(DBHTTP_MODULES)
-
-
-# modules not in the "main" package or unstable modules
-EXCLUDED_MODULES = $(ALL_MODULES) osp
-
-# the same but with path prepended (needed for modules="...")
 MYSQL_MOD_PATH=$(addprefix modules/, $(MYSQL_MODULES))
+POSTGRES_PKGNAME = opensips-postgres-module
+POSTGRES_MODULES = db_postgres
 POSTGRES_MOD_PATH=$(addprefix modules/, $(POSTGRES_MODULES))
+UNIXODBC_PKGNAME = opensips-unixodbc-module 
+UNIXODBC_MODULES=db_unixodbc
 UNIXODBC_MOD_PATH=$(addprefix modules/, $(UNIXODBC_MODULES))
+JABBER_PKGNAME = opensips-jabber-module 
+JABBER_MODULES = jabber
 JABBER_MOD_PATH=$(addprefix modules/, $(JABBER_MODULES))
+CPL_PKGNAME = opensips-cpl-module 
+CPL_MODULES = cpl-c
 CPL_MOD_PATH=$(addprefix modules/, $(CPL_MODULES))
+RADIUS_PKGNAME = opensips-radius-modules
+RADIUS_MODULES = aaa_radius peering
 RADIUS_MOD_PATH=$(addprefix modules/, $(RADIUS_MODULES))
+PRESENCE_PKGNAME = opensips-presence-modules 
+PRESENCE_MODULES = presence presence_dialoginfo presence_xml presence_mwi presence_xcapdiff pua pua_bla pua_dialoginfo pua_mi pua_usrloc pua_xmpp rls xcap_client
 PRESENCE_MOD_PATH=$(addprefix modules/, $(PRESENCE_MODULES))
+XMLRPC_PKGNAME = opensips-xmlrpc-module
+XMLRPC_MODULES = mi_xmlrpc
 XMLRPC_MOD_PATH=$(addprefix modules/, $(XMLRPC_MODULES))
+PERL_PKGNAME = opensips-perl-modules
+PERL_MODULES = perl perlvdb
 PERL_MOD_PATH=$(addprefix modules/, $(PERL_MODULES))
+SNMPSTATS_PKGNAME = opensips-snmpstats-module
+SNMPSTATS_MODULES = snmpstats
 SNMPSTATS_MOD_PATH=$(addprefix modules/, $(SNMPSTATS_MODULES))
+XMPP_PKGNAME = opensips-xmpp-module
+XMPP_MODULES = xmpp
 XMPP_MOD_PATH=$(addprefix modules/, $(XMPP_MODULES))
+CROUTE_PKGNAME = opensips-carrierroute-module 
+CROUTE_MODULES = carrierroute
 CROUTE_MOD_PATH=$(addprefix modules/, $(CROUTE_MODULES))
+BERKELEY_PKGNAME = opensips-berkeley-module
+BERKELEY_MODULES = db_berkeley
 BERKELEY_MOD_PATH=$(addprefix modules/, $(BERKELEY_MODULES))
+LDAP_PKGNAME = opensips-ldap-modules 
+LDAP_MODULES = ldap h350
 LDAP_MOD_PATH=$(addprefix modules/, $(LDAP_MODULES))
+GEOIP_PKGNAME = opensips-geoip-module 
+GEOIP_MODULES = mmgeoip
 GEOIP_MOD_PATH=$(addprefix modules/, $(GEOIP_MODULES))
+REGEX_PKGNAME = opensips-regex-module
+REGEX_MODULES = regex
 REGEX_MOD_PATH=$(addprefix modules/, $(REGEX_MODULES))
+IDENTITY_PKGNAME = opensips-identity-module 
+IDENTITY_MODULES = identity
 IDENTITY_MOD_PATH=$(addprefix modules/, $(IDENTITY_MODULES))
+B2BUA_PKGNAME = opensips-b2bua-module 
+B2BUA_MODULES = b2b_entities b2b_logic
 B2BUA_MOD_PATH=$(addprefix modules/, $(B2BUA_MODULES))
+DBHTTP_PKGNAME = opensips-dbhttp-module
+DBHTTP_MODULES = db_http
 DBHTTP_MOD_PATH=$(addprefix modules/, $(DBHTTP_MODULES))
+DIALPLAN_PKGNAME = opensips-dialplan-module
+DIALPLAN_MODULES = dialplan
+DIALPLAN_MOD_PATH=$(addprefix modules/, $(DIALPLAN_MODULES))
+
+
+# Need this per-package variables available in environment so accessible
+# to shell. Since have underscore in them, need to explicitly export
+export $(foreach pkg,$(ALL_MODPKG_LIST),$(pkg)_PKGNAME $(pkg)_MODULES $(pkg)_MOD_PATH)
+
+# not needed anymore
+#ALL_PACKAGES = opensips $(foreach pkg,$(ALL_MODPKG_LIST),$($(pkg)_PKGNAME)) \
+#	opensips-console
+ALL_MODULES = $(foreach pkg,$(ALL_MODPKG_LIST),$($(pkg)_MODULES))
+BUILD_MODULE_PATHS = $(foreach pkg,$(BUILD_MODPKG_LIST),$($(pkg)_MOD_PATH))
+
+## modules not in the "main" package or unstable modules that we never want to build
+## Everything we don't specifically exclude here will get built into the primary package
+NONCORE_MODULES = $(ALL_MODULES) osp
+
 
 ifeq (cc, $(CC))
 	CC = gcc
 endif
 
+ifneq (,$(findstring upstreamcflags,$(DEB_BUILD_OPTIONS)))
+CFLAGS=
+else
 CFLAGS = -Wall -g
 
 ifneq (,$(findstring noopt,$(DEB_BUILD_OPTIONS)))
         CFLAGS += -O0
 else
 	CFLAGS += -O2
+endif
 endif
 
 # force lib (versus lib64) and SMP support all the time
@@ -130,27 +166,10 @@ build-stamp: patch-stamp configure-stamp
 	dh_testdir
 
 	# Add here commands to compile the package.
-	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) all skip_modules="$(EXCLUDED_MODULES)" cfg-target=/etc/opensips/
-	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) modules modules="$(MYSQL_MOD_PATH)" cfg-target=/etc/opensips/
-	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) modules modules="$(POSTGRES_MOD_PATH)" cfg-target=/etc/opensips/
-	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) modules modules="$(UNIXODBC_MOD_PATH)" cfg-target=/etc/opensips/
-	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) modules modules="$(JABBER_MOD_PATH)" cfg-target=/etc/opensips/
-	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) modules modules="$(CPL_MOD_PATH)" cfg-target=/etc/opensips/
-	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) modules modules="$(RADIUS_MOD_PATH)" cfg-target=/etc/opensips/
-	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) modules modules="$(PRESENCE_MOD_PATH)" cfg-target=/etc/opensips/
-	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) modules modules="$(XMLRPC_MOD_PATH)" cfg-target=/etc/opensips/
-	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) modules modules="$(PERL_MOD_PATH)" cfg-target=/etc/opensips/
-	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) modules modules="$(SNMPSTATS_MOD_PATH)" cfg-target=/etc/opensips/
-	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) modules modules="$(XMPP_MOD_PATH)" cfg-target=/etc/opensips/
-	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) modules modules="$(CROUTE_MOD_PATH)" cfg-target=/etc/opensips/
-	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) modules modules="$(BERKELEY_MOD_PATH)" cfg-target=/etc/opensips/
-	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) modules modules="$(LDAP_MOD_PATH)" cfg-target=/etc/opensips/
-	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) modules modules="$(GEOIP_MOD_PATH)" cfg-target=/etc/opensips/
-	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) modules modules="$(REGEX_MOD_PATH)" cfg-target=/etc/opensips/
-	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) modules modules="$(IDENTITY_MOD_PATH)" cfg-target=/etc/opensips/
-	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) modules modules="$(B2BUA_MOD_PATH)" cfg-target=/etc/opensips/
-	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) modules modules="$(DBHTTP_MOD_PATH)" cfg-target=/etc/opensips/
-
+	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) app \
+	  modules skip_modules="$(NONCORE_MODULES)" cfg-target=/etc/opensips/
+	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) \
+	  modules modules="$(BUILD_MODULE_PATHS)" cfg-target=/etc/opensips/
 	# generate the utils db_berkeley
 	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) utils include_modules="db_berkeley"
 
@@ -170,6 +189,19 @@ real-clean:
 
 	dh_clean
 
+show-env:
+	env
+
+show-mod-info:
+	set -e;\
+	for mod in $(ALL_MODPKG_LIST) ; do\
+	    eval mod_pkgname=\$$$${mod}_PKGNAME;\
+	    eval mod_modules=\$$$${mod}_MODULES;\
+	    eval mod_paths=\$$$${mod}_MOD_PATH;\
+	    echo "MODULE $${mod} AS $${mod_pkgname} FROM $${mod_modules} PATHS $${mod_paths}";\
+	done
+	@echo "ALL_MOD_PATHS: $(ALL_MODULE_PATHS)"
+
 install: build
 	dh_testdir
 	dh_testroot
@@ -178,7 +210,8 @@ install: build
 
 	# Add here commands to install the package into debian/opensips
 	# opensips base package
-	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) install skip_modules="$(EXCLUDED_MODULES)" \
+	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) install-app \
+		install-modules-all skip_modules="$(NONCORE_MODULES)" \
 		basedir=$(CURDIR)/debian/opensips \
 		prefix=/usr \
 		cfg-prefix=$(CURDIR)/debian/opensips \
@@ -187,169 +220,33 @@ install: build
 
 	find $(CURDIR)/debian/opensips/etc/opensips -type f -exec chmod -x {} \;
 	sed -i -e "s/^PATH.*//" $(CURDIR)/debian/opensips/usr/sbin/opensipsctl
-	rm -f  $(CURDIR)/debian/opensips/usr/sbin/osipsconsole
+	# not needed anymore with makefile restructring
+	#rm -f  $(CURDIR)/debian/opensips/usr/sbin/osipsconsole
 
-	# install only the mysql module
-	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) install-modules-all modules="$(MYSQL_MOD_PATH)"  \
-		basedir=$(CURDIR)/debian/opensips-mysql-module \
+	set -e;\
+	for pkg in $(BUILD_MODPKG_LIST) ; do\
+	    eval pkg_pkgname=\$$$${pkg}_PKGNAME;\
+	    eval pkg_modules=\$$$${pkg}_MODULES;\
+	    eval pkg_paths=\$$$${pkg}_MOD_PATH;\
+	    echo "rules: Installing $${pkg} as $${pkg_pkgname} from $${pkg_modules} ...";\
+	    CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) install-modules-all \
+		modules="$${pkg_paths}"  \
+		basedir=$(CURDIR)/debian/$${pkg_pkgname} \
 		prefix=/usr \
-		cfg-prefix=$(CURDIR)/debian/opensips-mysql-module \
+		cfg-prefix=$(CURDIR)/debian/$${pkg_pkgname} \
 		cfg-target=/etc/opensips/ \
-		doc-dir=share/doc/opensips-mysql-module
-
-	# install only the postgres module
-	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) install-modules-all modules="$(POSTGRES_MOD_PATH)"  \
-		basedir=$(CURDIR)/debian/opensips-postgres-module \
-		prefix=/usr \
-		cfg-prefix=$(CURDIR)/debian/opensips-postgres-module \
-		cfg-target=/etc/opensips/ \
-		doc-dir=share/doc/opensips-postgres-module
-
-	# install only the unixodbc module
-	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) install-modules-all modules="$(UNIXODBC_MOD_PATH)"  \
-		basedir=$(CURDIR)/debian/opensips-unixodbc-module \
-		prefix=/usr \
-		cfg-prefix=$(CURDIR)/debian/opensips-unixodbc-module \
-		cfg-target=/etc/opensips/ \
-		doc-dir=share/doc/opensips-unixodbc-module
-
-	# install only the jabber module
-	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) install-modules-all modules="$(JABBER_MOD_PATH)"  \
-		basedir=$(CURDIR)/debian/opensips-jabber-module \
-		prefix=/usr \
-		cfg-prefix=$(CURDIR)/debian/opensips-jabber-module \
-		cfg-target=/etc/opensips/ \
-		doc-dir=share/doc/opensips-jabber-module
-
-	# install only the cpl module
-	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) install-modules-all modules="$(CPL_MOD_PATH)"  \
-		basedir=$(CURDIR)/debian/opensips-cpl-module \
-		prefix=/usr \
-		cfg-prefix=$(CURDIR)/debian/opensips-cpl-module \
-		cfg-target=/etc/opensips/ \
-		doc-dir=share/doc/opensips-cpl-module
-
-	# install only the radius modules
-	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) install-modules-all modules="$(RADIUS_MOD_PATH)"  \
-		basedir=$(CURDIR)/debian/opensips-radius-modules \
-		prefix=/usr \
-		cfg-prefix=$(CURDIR)/debian/opensips-radius-modules \
-		cfg-target=/etc/opensips/ \
-		doc-dir=share/doc/opensips-radius-modules
-
-	# install only the presence modules
-	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) install-modules-all modules="$(PRESENCE_MOD_PATH)"  \
-		basedir=$(CURDIR)/debian/opensips-presence-modules \
-		prefix=/usr \
-		cfg-prefix=$(CURDIR)/debian/opensips-presence-modules \
-		cfg-target=/etc/opensips/ \
-		doc-dir=share/doc/opensips-presence-modules
-
-	# install only the xmlrpc module
-	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) install-modules-all modules="$(XMLRPC_MOD_PATH)"  \
-		basedir=$(CURDIR)/debian/opensips-xmlrpc-module \
-		prefix=/usr \
-		cfg-prefix=$(CURDIR)/debian/opensips-xmlrpc-module \
-		cfg-target=/etc/opensips/ \
-		doc-dir=share/doc/opensips-xmlrpc-module
-
-	# install only the perl modules
-	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) install-modules-all modules="$(PERL_MOD_PATH)"  \
-		basedir=$(CURDIR)/debian/opensips-perl-modules \
-		prefix=/usr \
-		cfg-prefix=$(CURDIR)/debian/opensips-perl-modules \
-		cfg-target=/etc/opensips/ \
-		doc-dir=share/doc/opensips-perl-modules
-
-	# install only the snmpstats module
-	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) install-modules-all modules="$(SNMPSTATS_MOD_PATH)"  \
-		basedir=$(CURDIR)/debian/opensips-snmpstats-module \
-		prefix=/usr \
-		cfg-prefix=$(CURDIR)/debian/opensips-snmpstats-module \
-		cfg-target=/etc/opensips/ \
-		doc-dir=share/doc/opensips-snmpstats-module
-
-	# install only the xmpp module
-	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) install-modules-all modules="$(XMPP_MOD_PATH)"  \
-		basedir=$(CURDIR)/debian/opensips-xmpp-module \
-		prefix=/usr \
-		cfg-prefix=$(CURDIR)/debian/opensips-xmpp-module \
-		cfg-target=/etc/opensips/ \
-		doc-dir=share/doc/opensips-xmpp-module
-
-	# install only the carrierroute module
-	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) install-modules-all modules="$(CROUTE_MOD_PATH)"  \
-		basedir=$(CURDIR)/debian/opensips-carrierroute-module \
-		prefix=/usr \
-		cfg-prefix=$(CURDIR)/debian/opensips-carrierroute-module \
-		cfg-target=/etc/opensips/ \
-		doc-dir=share/doc/opensips-carrierroute-module
-
-	# install only the db_berkeley module
-	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) install-modules-all modules="$(BERKELEY_MOD_PATH)"  \
-		basedir=$(CURDIR)/debian/opensips-berkeley-module \
-		prefix=/usr \
-		cfg-prefix=$(CURDIR)/debian/opensips-berkeley-module \
-		cfg-target=/etc/opensips/ \
-		doc-dir=share/doc/opensips-berkeley-module
-
-	# install only the ldap modules
-	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) install-modules-all modules="$(LDAP_MOD_PATH)"  \
-		basedir=$(CURDIR)/debian/opensips-ldap-modules \
-		prefix=/usr \
-		cfg-prefix=$(CURDIR)/debian/opensips-ldap-modules \
-		cfg-target=/etc/opensips/ \
-		doc-dir=share/doc/opensips-ldap-modules
-
-	# install only the geoip modules
-	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) install-modules-all modules="$(GEOIP_MOD_PATH)"  \
-		basedir=$(CURDIR)/debian/opensips-geoip-module \
-		prefix=/usr \
-		cfg-prefix=$(CURDIR)/debian/opensips-geoip-module \
-		cfg-target=/etc/opensips/ \
-		doc-dir=share/doc/opensips-geoip-module
-
-	# install only the regex modules
-	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) install-modules-all modules="$(REGEX_MOD_PATH)"  \
-		basedir=$(CURDIR)/debian/opensips-regex-module \
-		prefix=/usr \
-		cfg-prefix=$(CURDIR)/debian/opensips-regex-module \
-		cfg-target=/etc/opensips/ \
-		doc-dir=share/doc/opensips-regex-module
-
-	# install only the identity modules
-	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) install-modules-all modules="$(IDENTITY_MOD_PATH)"  \
-		basedir=$(CURDIR)/debian/opensips-identity-module \
-		prefix=/usr \
-		cfg-prefix=$(CURDIR)/debian/opensips-identity-module \
-		cfg-target=/etc/opensips/ \
-		doc-dir=share/doc/opensips-identity-module
-
-	# install only the b2bua modules
-	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) install-modules-all modules="$(B2BUA_MOD_PATH)"  \
-		basedir=$(CURDIR)/debian/opensips-b2bua-module \
-		prefix=/usr \
-		cfg-prefix=$(CURDIR)/debian/opensips-b2bua-module \
-		cfg-target=/etc/opensips/ \
-		doc-dir=share/doc/opensips-b2bua-module
-
-	# install only the db_http modules
-	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) install-modules-all modules="$(DBHTTP_MOD_PATH)"  \
-		basedir=$(CURDIR)/debian/opensips-dbhttp-module \
-		prefix=/usr \
-		cfg-prefix=$(CURDIR)/debian/opensips-dbhttp-module \
-		cfg-target=/etc/opensips/ \
-		doc-dir=share/doc/opensips-dbhttp-module
+		doc-dir=share/doc/$${pkg_pkgname} \
+		;\
+	done
 
 	# install only the opensips console tool
 	$(MAKE) install-console \
 		basedir=$(CURDIR)/debian/opensips-console \
 		prefix=/usr
 
-	# the modules packages all ship an empty /usr/sbin directory, 
-	# let's clean that up
-	for p in $(ALL_PACKAGES); \
-		do rmdir --ignore-fail-on-non-empty $(CURDIR)/debian/$$p/usr/sbin; done
+	# the modules packages all ship an empty /usr/sbin directory. clean it up
+	# not needed anymore with makefile restructuring
+	#-rmdir $(patsubst %,$(CURDIR)/debian/%/usr/sbin,$(ALL_PACKAGES))
 
 # This single target is used to build all the packages, all at once, or
 # one at a time. So keep in mind: any options passed to commands here will

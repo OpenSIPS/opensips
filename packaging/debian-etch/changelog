@@ -1,25 +1,32 @@
-opensips (1.6.3-1) unstable; urgency=low
+opensips (1.6.4-0) unstable; urgency=low
 
-  * Minor Public Release.
+  * Major Public Release.
+
+ -- Bogdan-Andrei Iancu <bogdan@voice-system.ro>  Mon, 20 Dec 2010 09:00:00 +0200
+
+
+opensips (1.6.3-0) unstable; urgency=low
+
+  * Major Public Release.
 
  -- Bogdan-Andrei Iancu <bogdan@voice-system.ro>  Mon, 02 Aug 2010 09:00:00 +0200
 
 
-opensips (1.6.2-1) unstable; urgency=low
+opensips (1.6.2-0) unstable; urgency=low
 
-  * Minor Public Release.
+  * Major Public Release.
 
  -- Bogdan-Andrei Iancu <bogdan@voice-system.ro>  Thu, 11 Mar 2010 09:00:00 +0200
 
 
-opensips (1.6.1-1) unstable; urgency=low
+opensips (1.6.1-0) unstable; urgency=low
 
   * Minor Public Release.
 
  -- Bogdan-Andrei Iancu <bogdan@voice-system.ro>  Mon, 21 Dec 2009 09:00:00 +0200
 
 
-opensips (1.6.0-1) unstable; urgency=low
+opensips (1.6.0-0) unstable; urgency=low
 
   * Major Public Release.
 
