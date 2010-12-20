@@ -162,7 +162,7 @@ int get_user_group(struct sip_msg *req, char *user, char *avp)
 		goto error;
 	}
 
-	*(int*)(void*)uri_buf = htonl(('s'<<24) + ('i'<<16) + ('p'<<8) + ':');
+	*(int*)uri_buf = htonl(('s'<<24) + ('i'<<16) + ('p'<<8) + ':');
 	c = uri_buf + 4;
 	memcpy( c, username.s, username.len);
 	c += username.len;
