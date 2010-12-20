@@ -360,7 +360,7 @@ static void run_timer_process(struct sr_timer_process *tpl)
 	}
 
 	LM_DBG("tv = %ld, %ld , m=%d\n",
-		o_tv.tv_sec,o_tv.tv_usec,multiple);
+		(long)o_tv.tv_sec,(long)o_tv.tv_usec,multiple);
 
 	if (tpl->utimer_list==NULL) {
 		for( ; ; ) {
@@ -413,7 +413,7 @@ static void run_timer_process_jif(void)
 	multiple = ((TIMER_TICK*1000000)) / (UTIMER_TICK);
 
 	LM_DBG("tv = %ld, %ld , m=%d\n",
-		o_tv.tv_sec,o_tv.tv_usec,multiple);
+		(long)o_tv.tv_sec,(long)o_tv.tv_usec,multiple);
 
 	for( cnt=1 ; ; cnt++ ) {
 		tv = o_tv;
