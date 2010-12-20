@@ -1050,11 +1050,6 @@ int enum_pv_query_3(struct sip_msg* _msg, char* _sp, char* _suffix,
 		return -1;
 	}
 
-	if (is_e164(&(_msg->parsed_uri.user)) == -1) {
-		LM_ERR("R-URI user is not an E164 number\n");
-		return -1;
-	}
-
 	user_s = _msg->parsed_uri.user.s;
 	user_len = _msg->parsed_uri.user.len;
 
