@@ -75,7 +75,6 @@ static inline int get_local_contact(struct sip_msg* msg, str* contact)
 {
 	str ip;
 	char* proto;
-	int port;
 	int len;
 	static char buf[LCONTACT_BUF_SIZE];
 
@@ -97,14 +96,6 @@ static inline int get_local_contact(struct sip_msg* msg, str* contact)
 			return -1;
 	}
 
-	ip.s= ip_addr2a(&msg->rcv.dst_ip);
-	if(ip.s== NULL)
-	{
-		LM_ERR("transforming ip_addr to ascii\n");
-		return -1;
-	}
-	ip.len= strlen(ip.s);
-	port = msg->rcv.dst_port;
 
 	if(strncasecmp(ip.s, "sip:", 4)!=0)
 	{
@@ -112,6 +103,12 @@ static inline int get_local_contact(struct sip_msg* msg, str* contact)
 		contact->len+= 4;
 	}
 
+	ip = msg->rcv.bind_address->address_str;
+	if(strncasecmp(ip.s, "sip:", 4)!=0)
+	{
+		strncpy(contact->s, "sip:", 4);
+		contact->len+= 4;
+	}
 	strncpy(contact->s+contact->len, ip.s, ip.len);
 	contact->len += ip.len;
 	if(contact->len> LCONTACT_BUF_SIZE - 21)
@@ -120,7 +117,7 @@ static inline int get_local_contact(struct sip_msg* msg, str* contact)
 		return -1;
 	}
 
-	len= sprintf(contact->s+contact->len, ":%d;transport=" , port);
+	len= sprintf(contact->s+contact->len, ":%d;transport=", msg->rcv.dst_port);
 	if(len< 0)
 	{
 		LM_ERR("unsuccessful sprintf\n");
