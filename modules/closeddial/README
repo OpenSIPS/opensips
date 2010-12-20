@@ -6,7 +6,7 @@ Edited by
 
 Sergio Gutierrez
 
-   Copyright © 2010
+   Copyright © 2009
    Revision History
    Revision $Revision$ $Date: 2009-02-07 18:00:00 -0500$
      __________________________________________________________
@@ -47,7 +47,7 @@ Sergio Gutierrez
    1.5. Set user_column parameter
    1.6. Set cd_domain_column parameter
    1.7. Set new_uri_column parameter
-   1.8. Set user_column parameter
+   1.8. Set use_domain parameter
    1.9. cd_lookup usage
 
 Chapter 1. Admin Guide

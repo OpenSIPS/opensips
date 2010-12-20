@@ -62,20 +62,19 @@ Bogdan-Andrei Iancu
               1.7.1. fix_nated_contact([uri_params])
               1.7.2. fix_nated_sdp(flags [, ip_address])
               1.7.3. set_rtp_proxy_set()
-              1.7.4. engage_rtp_proxy([flags [, ip_address]])
-              1.7.5. rtpproxy_offer([flags [, ip_address]])
-              1.7.6. rtpproxy_answer([flags [, ip_address]])
-              1.7.7. unforce_rtp_proxy()
-              1.7.8. rtpproxy_stream2uac(prompt_name, count),
+              1.7.4. rtpproxy_offer([flags [, ip_address]])
+              1.7.5. rtpproxy_answer([flags [, ip_address]])
+              1.7.6. unforce_rtp_proxy()
+              1.7.7. rtpproxy_stream2uac(prompt_name, count),
                       rtpproxy_stream2uas(prompt_name, count)
 
-              1.7.9. rtpproxy_stop_stream2uac(),
+              1.7.8. rtpproxy_stop_stream2uac(),
                       rtpproxy_stop_stream2uas()
 
-              1.7.10. add_rcv_param([flag]),
-              1.7.11. fix_nated_register()
-              1.7.12. nat_uac_test(flags)
-              1.7.13. start_recording()
+              1.7.9. add_rcv_param([flag]),
+              1.7.10. fix_nated_register()
+              1.7.11. nat_uac_test(flags)
+              1.7.12. start_recording()
 
         1.8. MI Commands
 
@@ -111,18 +110,17 @@ Bogdan-Andrei Iancu
    1.21. fix_nated_contact usage
    1.22. fix_nated_sdp usage
    1.23. fix_nated_contact usage
-   1.24. engage_rtp_proxy usage
-   1.25. rtpproxy_offer usage
-   1.26. rtpproxy_answer usage
-   1.27. unforce_rtp_proxy usage
-   1.28. rtpproxy_stream2xxx usage
-   1.29. add_rcv_paramer usage
-   1.30. fix_nated_register usage
-   1.31. start_recording usage
-   1.32. nh_enable_ping usage
-   1.33. nh_enable_rtpp usage
-   1.34. nh_show_rtpp usage
-   1.35. nh_reload_rtpp usage
+   1.24. rtpproxy_offer usage
+   1.25. rtpproxy_answer usage
+   1.26. unforce_rtp_proxy usage
+   1.27. rtpproxy_stream2xxx usage
+   1.28. add_rcv_paramer usage
+   1.29. fix_nated_register usage
+   1.30. start_recording usage
+   1.31. nh_enable_ping usage
+   1.32. nh_enable_rtpp usage
+   1.33. nh_show_rtpp usage
+   1.34. nh_reload_rtpp usage
 
 Chapter 1. Admin Guide
 
@@ -247,8 +245,6 @@ Chapter 1. Admin Guide
        pinged.
      * a database module - only if you want to load use a database
        table from where to load the rtp proxies sets.
-     * dialog module - if using the engage_rtp_proxy functions or
-       RTPProxy timeout notifications.
 
 1.5.2. External Libraries or Applications
 
@@ -617,13 +613,12 @@ set_rtp_proxy_set("2");
 rtpproxy_offer();
 ...
 
-1.7.4.  engage_rtp_proxy([flags [, ip_address]])
+1.7.4.  rtpproxy_offer([flags [, ip_address]])
 
    Rewrites SDP body to ensure that media is passed through an RTP
-   proxy. It uses the dialog module facilities to keep track when
-   the rtpproxy session must be updated. Function must only be
-   called for the initial INVITE and internally takes care of
-   rewriting the body of 200 OKs and ACKs.
+   proxy. To be invoked on INVITE for the cases the SDPs are in
+   INVITE and 200 OK and on 200 OK when SDPs are in 200 OK and
+   ACK.
 
    Meaning of the parameters is as follows:
      * flags - flags to turn on some features.
@@ -669,29 +664,10 @@ rtpproxy_offer();
             to 100ms saves two thirds of the network bandwith.
      * ip_address - new SDP IP address.
 
-   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
-   BRANCH_ROUTE.
-
-   Example 1.24. engage_rtp_proxy usage
-                ...
-                if (is_method("INVITE") &&
-                has_totag()) {engage_rtp_proxy();};
-                ...
-
-1.7.5.  rtpproxy_offer([flags [, ip_address]])
-
-   Rewrites SDP body to ensure that media is passed through an RTP
-   proxy. To be invoked on INVITE for the cases the SDPs are in
-   INVITE and 200 OK and on 200 OK when SDPs are in 200 OK and
-   ACK.
-
-   See engage_rtp_proxy() function description above for the
-   meaning of the parameters.
-
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.
 
-   Example 1.25. rtpproxy_offer usage
+   Example 1.24. rtpproxy_offer usage
 route {
 ...
     if (is_method("INVITE")) {
@@ -723,35 +699,35 @@ onreply_route[2]
 ...
 }
 
-1.7.6.  rtpproxy_answer([flags [, ip_address]])
+1.7.5.  rtpproxy_answer([flags [, ip_address]])
 
    Rewrites SDP body to ensure that media is passed through an RTP
    proxy. To be invoked on 200 OK for the cases the SDPs are in
    INVITE and 200 OK and on ACK when SDPs are in 200 OK and ACK.
 
-   See engage_rtp_proxy() function description above for the
-   meaning of the parameters.
+   See rtpproxy_offer() function description above for the meaning
+   of the parameters.
 
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.
 
-   Example 1.26. rtpproxy_answer usage
+   Example 1.25. rtpproxy_answer usage
 
    See rtpproxy_offer() function example above for example.
 
-1.7.7.  unforce_rtp_proxy()
+1.7.6.  unforce_rtp_proxy()
 
    Tears down the RTPProxy session for the current call.
 
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.
 
-   Example 1.27. unforce_rtp_proxy usage
+   Example 1.26. unforce_rtp_proxy usage
 ...
 unforce_rtp_proxy();
 ...
 
-1.7.8.  rtpproxy_stream2uac(prompt_name, count),
+1.7.7.  rtpproxy_stream2uac(prompt_name, count),
 rtpproxy_stream2uas(prompt_name, count)
 
    Instruct the RTPproxy to stream prompt/announcement pre-encoded
@@ -786,7 +762,7 @@ rtpproxy_stream2uas(prompt_name, count)
        indefinitely, until appropriate rtpproxy_stop_stream2xxx is
        issued.
 
-   Example 1.28. rtpproxy_stream2xxx usage
+   Example 1.27. rtpproxy_stream2xxx usage
 ...
     if (is_method("INVITE")) {
         rtpproxy_offer();
@@ -799,7 +775,7 @@ rtpproxy_stream2uas(prompt_name, count)
     };
 ...
 
-1.7.9.  rtpproxy_stop_stream2uac(), rtpproxy_stop_stream2uas()
+1.7.8.  rtpproxy_stop_stream2uac(), rtpproxy_stop_stream2uas()
 
    Stop streaming of announcement/prompt/MOH started previously by
    the respective rtpproxy_stream2xxx. The uac/uas suffix selects
@@ -808,7 +784,7 @@ rtpproxy_stream2uas(prompt_name, count)
 
    These functions can be used from REQUEST_ROUTE, ONREPLY_ROUTE.
 
-1.7.10.  add_rcv_param([flag]),
+1.7.9.  add_rcv_param([flag]),
 
    Add received parameter to Contact header fields or Contact URI.
    The parameter will contain URI created from the source IP,
@@ -826,14 +802,14 @@ rtpproxy_stream2uas(prompt_name, count)
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.29. add_rcv_paramer usage
+   Example 1.28. add_rcv_paramer usage
 ...
 add_rcv_param(); # add the parameter to the Contact header
 ....
 add_rcv_param("1"); # add the paramter to the Contact URI
 ...
 
-1.7.11.  fix_nated_register()
+1.7.10.  fix_nated_register()
 
    The function creates a URI consisting of the source IP, port,
    and protocol and stores the URI in an Attribute-Value-Pair. The
@@ -842,12 +818,12 @@ add_rcv_param("1"); # add the paramter to the Contact URI
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.30. fix_nated_register usage
+   Example 1.29. fix_nated_register usage
 ...
 fix_nated_register();
 ...
 
-1.7.12.  nat_uac_test(flags)
+1.7.11.  nat_uac_test(flags)
 
    Tries to guess if client's request originated behind a nat. The
    parameter determines what heuristics is used.
@@ -871,14 +847,14 @@ fix_nated_register();
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.
 
-1.7.13.  start_recording()
+1.7.12.  start_recording()
 
    This command will send a signal to the RTP-Proxy to record the
    RTP stream on the RTP-Proxy.
 
    This function can be used from REQUEST_ROUTE and ONREPLY_ROUTE.
 
-   Example 1.31. start_recording usage
+   Example 1.30. start_recording usage
 ...
 start_recording();
 ...
@@ -894,7 +870,7 @@ start_recording();
    The function may takean optional parameter (for set operations)
    - a number in decimal format.
 
-   Example 1.32. nh_enable_ping usage
+   Example 1.31. nh_enable_ping usage
 ...
 $ opensipsctl fifo nh_enable_ping
 Status:: 1
@@ -919,7 +895,7 @@ $
    NOTE: if a rtpproxy is defined multiple times (in the same or
    diferente sete), all its instances will be enables/disabled.
 
-   Example 1.33.  nh_enable_rtpp usage
+   Example 1.32.  nh_enable_rtpp usage
 ...
 $ opensipsctl fifo nh_enable_rtpp udp:192.168.2.133:8081 0
 ...
@@ -931,7 +907,7 @@ $ opensipsctl fifo nh_enable_rtpp udp:192.168.2.133:8081 0
 
    No parameter.
 
-   Example 1.34.  nh_show_rtpp usage
+   Example 1.33.  nh_show_rtpp usage
 ...
 $ opensipsctl fifo nh_show_rtpp
 ...
@@ -945,7 +921,7 @@ $ opensipsctl fifo nh_show_rtpp
 
    No parameter.
 
-   Example 1.35.  nh_reload_rtpp usage
+   Example 1.34.  nh_reload_rtpp usage
 ...
 $ opensipsctl fifo nh_reload_rtpp
 ...
