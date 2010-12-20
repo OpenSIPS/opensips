@@ -1,6 +1,6 @@
 /* $Id: nathelper.c 6682 2010-03-09 17:46:14Z bogdan_iancu $
  *
- * Copyright (C) 2003-2008 Sippy Software, Inc., http://www.sippysoft.com
+ * Copyright (C) 2010 Voice System
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -40,6 +40,10 @@
 #include "../../sr_module.h"
 
 #include "nathelper.h"
+
+#if !defined(AF_LOCAL)
+#define AF_LOCAL AF_UNIX
+#endif
 
 #define BUF_LEN				255
 #define POLL_DEFAULT_SIZE	8
