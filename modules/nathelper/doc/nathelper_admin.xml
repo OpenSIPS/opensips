@@ -132,8 +132,8 @@
 			module parameter in your configuration script. This is the socket where further
 			notification will be received from rtpproxies. This socket must be a TCP or 
 			UNIX socket. Also, for all the calls that require notification, the
-			rtpproxy_offer() and rtpproxy_answer() functions must be called with
-			the <quote>n</quote> flag.   
+			rtpproxy_offer() and rtpproxy_answer() functions must
+			be called with the <quote>n</quote> flag.   
 		</para>
 		<para>
 			Configure RTPProxy to use timeout notification by adding
@@ -191,13 +191,6 @@
 				<emphasis>a database</emphasis> module - only if you want
 				to load use a database table from where to load the rtp proxies
 				sets.
-			</para>
-			</listitem>
-
-			<listitem>
-			<para>
-				<emphasis>dialog</emphasis> module - if using the engage_rtp_proxy
-				functions or RTPProxy timeout notifications.
 			</para>
 			</listitem>
 
@@ -798,18 +791,17 @@ rtpproxy_offer();
 </programlisting>
 		</example>
 	</section>
-		<section>
-				<title>
-				<function moreinfo="none">engage_rtp_proxy([flags [, ip_address]])</function>
-				</title>
 
-				<para>
-                Rewrites &sdp; body to ensure that media is passed through
-				an &rtp; proxy. It uses the dialog module facilities to keep track
-				when the rtpproxy session must be updated. Function must only be
-				called for the initial INVITE
-				and internally takes care of rewriting the body of 200 OKs and ACKs.
-				</para>
+        <section>
+                <title>
+                <function moreinfo="none">rtpproxy_offer([flags [, ip_address]])</function>
+                </title>
+		<para>
+		Rewrites &sdp; body to ensure that media is passed through
+		an &rtp; proxy. To be invoked
+		on INVITE for the cases the SDPs are in INVITE and 200 OK and on 200 OK
+		when SDPs are in 200 OK and ACK.
+		</para>
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
@@ -881,38 +873,11 @@ rtpproxy_offer();
 		<emphasis>ip_address</emphasis> - new SDP IP address.
 		</para></listitem>
 		</itemizedlist>
-				<para>
-				This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, BRANCH_ROUTE.
-				</para>
-				<example>
-				<title><function>engage_rtp_proxy</function> usage</title>
-				<programlisting format="linespecific">
-		...
-		if (is_method("INVITE") &amp;&amp;
-		has_totag()) {engage_rtp_proxy();};
-		...
-		</programlisting>
-				</example>
-			</section>
 
-        <section>
-                <title>
-                <function moreinfo="none">rtpproxy_offer([flags [, ip_address]])</function>
-                </title>
-                <para>
-                Rewrites &sdp; body to ensure that media is passed through
-                an &rtp; proxy. To be invoked
-		on INVITE for the cases the SDPs are in INVITE and 200 OK and on 200 OK
-		when SDPs are in 200 OK and ACK.
-                </para>
-                <para>
-		See engage_rtp_proxy() function description above for the meaning of the
-		parameters.
-		</para>
 		<para>
 		This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 		FAILURE_ROUTE, BRANCH_ROUTE.
-                </para>
+		</para>
 		<example>
 		<title><function>rtpproxy_offer</function> usage</title>
 		<programlisting format="linespecific">
@@ -960,7 +925,7 @@ onreply_route[2]
 		when SDPs are in 200 OK and ACK.
 		</para>
 		<para>
-		See engage_rtp_proxy() function description above for the meaning of the
+		See rtpproxy_offer() function description above for the meaning of the
 		parameters.
 		</para>
 		<para>
