@@ -232,12 +232,12 @@ static inline int build_rr(struct lump* _l, struct lump* _l2, str* user,
 	_l2 = insert_new_lump_before(_l2, suffix, suffix_len, HDR_RECORDROUTE_T);
 	if (_l2 == 0)
 		goto lump_err;
+	suffix = 0;
 	if (rr_param_buf.len) {
 		_l2 = insert_rr_param_lump(_l2, rr_param_buf.s, rr_param_buf.len);
 		if (_l2 == 0)
 			goto lump_err;
 	}
-	suffix = 0;
 	if (!(_l2 = insert_new_lump_before(_l2, term, RR_TERM_LEN, 0)))
 		goto lump_err;
 	term = 0;
