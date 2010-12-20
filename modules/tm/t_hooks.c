@@ -176,18 +176,20 @@ int register_tmcb( struct sip_msg* p_msg, struct cell *t, int types,
 }
 
 
-static struct tmcb_params params = {0,0,0,0,0,0};
+static void *tmcb_extra1 = NULL;
+static void *tmcb_extra2 = NULL;
 
 void set_extra_tmcb_params(void *extra1, void *extra2)
 {
-	params.extra1 = extra1;
-	params.extra2 = extra2;
+	tmcb_extra1 = extra1;
+	tmcb_extra2 = extra2;
 }
 
 
 void run_trans_callbacks( int type , struct cell *trans,
 						struct sip_msg *req, struct sip_msg *rpl, int code )
 {
+	struct tmcb_params params;
 	struct tm_callback    *cbp;
 	struct usr_avp **backup;
 	struct cell *trans_backup = get_t();
@@ -195,6 +197,8 @@ void run_trans_callbacks( int type , struct cell *trans,
 	params.req = req;
 	params.rpl = rpl;
 	params.code = code;
+	params.extra1 = tmcb_extra1;
+	params.extra2 = tmcb_extra2;
 
 	if (trans->tmcb_hl.first==0 || ((trans->tmcb_hl.reg_types)&type)==0 )
 		return;
@@ -210,7 +214,7 @@ void run_trans_callbacks( int type , struct cell *trans,
 	}
 	/* env cleanup */
 	set_avp_list( backup );
-	params.extra1 = params.extra2 = 0;
+	tmcb_extra1 = tmcb_extra2 = 0;
 	set_t(trans_backup);
 }
 
@@ -218,6 +222,7 @@ void run_trans_callbacks( int type , struct cell *trans,
 
 void run_reqin_callbacks( struct cell *trans, struct sip_msg *req, int code )
 {
+	struct tmcb_params params;
 	struct tm_callback    *cbp;
 	struct usr_avp **backup;
 	struct cell *trans_backup = get_t();
@@ -225,6 +230,8 @@ void run_reqin_callbacks( struct cell *trans, struct sip_msg *req, int code )
 	params.req = req;
 	params.rpl = 0;
 	params.code = code;
+	params.extra1 = tmcb_extra1;
+	params.extra2 = tmcb_extra2;
 
 	if (req_in_tmcb_hl->first==0)
 		return;
@@ -237,7 +244,7 @@ void run_reqin_callbacks( struct cell *trans, struct sip_msg *req, int code )
 		cbp->callback( trans, cbp->types, &params );
 	}
 	set_avp_list( backup );
-	params.extra1 = params.extra2 = 0;
+	tmcb_extra1 = tmcb_extra2 = 0;
 	set_t(trans_backup);
 }
 
