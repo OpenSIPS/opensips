@@ -145,7 +145,7 @@ int wrap_memcached_get(str* attr, str* res,void * memc)
 		}
 		else
 		{
-			err = memcached_strerror(memc,rc);
+			err = (char*)memcached_strerror(memc,rc);
 			LM_ERR("Failed to get: %s\n",err );
 			return -1;
 		}
