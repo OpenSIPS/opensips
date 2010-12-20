@@ -96,13 +96,6 @@ static inline int get_local_contact(struct sip_msg* msg, str* contact)
 			return -1;
 	}
 
-
-	if(strncasecmp(ip.s, "sip:", 4)!=0)
-	{
-		strncpy(contact->s, "sip:", 4);
-		contact->len+= 4;
-	}
-
 	ip = msg->rcv.bind_address->address_str;
 	if(strncasecmp(ip.s, "sip:", 4)!=0)
 	{
