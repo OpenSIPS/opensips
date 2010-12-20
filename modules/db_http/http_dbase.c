@@ -183,7 +183,7 @@ static int append_keys (var_str * q,const char * name, const db_key_t* k,
 		if( *started )
 			CHECK(append_const(q,"&"),0,error);
 
-		CHECK(append_const(q,(char*)name),0,error);
+		CHECK(append_const(q,(char*)(void*)name),0,error);
 		CHECK(append_const(q,"="),0,error);
 		
 		for(i=0;i<n;i++)
@@ -213,7 +213,7 @@ static int append_values (var_str * q,const char * name, const db_val_t* v,
 		if( *started )
 			CHECK(append_const(q,"&"),0,error);
 
-		CHECK(append_const(q,(char*)name),0,error);
+		CHECK(append_const(q,(char*)(void*)name),0,error);
 		CHECK(append_const(q,"="),0,error);
 
 		for(i=0;i<n;i++)
@@ -243,7 +243,7 @@ static int append_ops(var_str * q,const char * name, const db_op_t* op,
 		if( *started )
 			CHECK(append_const(q,"&"),0,error);
 
-		CHECK(append_const(q,(char*)name),0,error);
+		CHECK(append_const(q,(char*)(void*)name),0,error);
 		CHECK(append_const(q,"="),0,error);
 
 		for(i=0;i<n;i++)
