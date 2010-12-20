@@ -988,8 +988,9 @@ create_dialog();
 ...
     if (has_totag()) {
         loose_route();
-		if ($DLG_status!=NULL) 
-			fix_route_dialog();
+        if ($DLG_status!=NULL)
+            if (!validate_dialog())
+                fix_route_dialog();
     }
 ...
 </programlisting>
