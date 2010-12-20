@@ -1,6 +1,17 @@
 #!/usr/bin/make -f
 # Sample debian/rules that uses debhelper.
 # GNU copyright 1997 to 1999 by Joey Hess.
+# 2010/08/24: Allow building of individual modules (kennard)
+
+# To control which packages get built, set BUILD_MODPKG_LIST to list
+# of packages to build (see ALL_MODPKG_LIST for candiate names).  Set to
+# 'NONE' to not build any module packages (the primary package is always
+# built). By default all delcared packages (debian/control) will be built.
+
+
+# Supported DEB_BUILD_OPTIONS:
+#	noopt,nostrip,debug -- standard
+#	upstreamcflags -- don't set cflags, let upstream package Makefile do it
 
 DEB_HOST_ARCH ?= $(shell dpkg-architecture -qDEB_HOST_ARCH)
 
@@ -29,13 +40,13 @@ TLS=
 ALL_MODPKG_LIST := \
 	MYSQL POSTGRES UNIXODBC JABBER CPL RADIUS \
 	PRESENCE XMLRPC PERL SNMPSTATS XMPP CROUTE BERKELEY LDAP \
-	GEOIP REGEX IDENTITY B2BUA DBHTTP
+	GEOIP REGEX IDENTITY B2BUA DBHTTP DIALPLAN
 
 ifeq ($(BUILD_MODPKG_LIST),NONE)
-BUILD_MODPKG_LIST :=
+override BUILD_MODPKG_LIST :=
 else
 ifeq ($(BUILD_MODPKG_LIST),)
-BUILD_MODPKG_LIST := $(ALL_MODPKG_LIST)
+override BUILD_MODPKG_LIST := $(ALL_MODPKG_LIST)
 endif
 endif
 
@@ -99,6 +110,10 @@ B2BUA_MOD_PATH=$(addprefix modules/, $(B2BUA_MODULES))
 DBHTTP_PKGNAME = opensips-dbhttp-module
 DBHTTP_MODULES = db_http
 DBHTTP_MOD_PATH=$(addprefix modules/, $(DBHTTP_MODULES))
+DIALPLAN_PKGNAME = opensips-dialplan-module
+DIALPLAN_MODULES = dialplan
+DIALPLAN_MOD_PATH=$(addprefix modules/, $(DIALPLAN_MODULES))
+
 
 # Need this per-package variables available in environment so accessible
 # to shell. Since have underscore in them, need to explicitly export
@@ -119,12 +134,16 @@ ifeq (cc, $(CC))
 	CC = gcc
 endif
 
+ifneq (,$(findstring upstreamcflags,$(DEB_BUILD_OPTIONS)))
+CFLAGS=
+else
 CFLAGS = -Wall -g
 
 ifneq (,$(findstring noopt,$(DEB_BUILD_OPTIONS)))
         CFLAGS += -O0
 else
 	CFLAGS += -O2
+endif
 endif
 
 # force lib (versus lib64) and SMP support all the time
@@ -148,9 +167,9 @@ build-stamp: patch-stamp configure-stamp
 
 	# Add here commands to compile the package.
 	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) app \
-	  modules skip_modules="$(NONCORE_MODULES)"
+	  modules skip_modules="$(NONCORE_MODULES)" cfg-target=/etc/opensips/
 	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) \
-	  modules modules="$(ALL_MODULE_PATHS)" cfg-target=/etc/opensips/
+	  modules modules="$(BUILD_MODULE_PATHS)" cfg-target=/etc/opensips/
 	# generate the utils db_berkeley
 	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) utils include_modules="db_berkeley"
 

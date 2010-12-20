@@ -3,14 +3,14 @@ Section: net
 Priority: optional
 Maintainer: Bogdan Iancu <bogdan@voice-system.ro>
 Uploaders: Bogdan Iancu <bogdan@voice-system.ro>
-Build-Depends: debhelper (>= 5), dpatch, libmysqlclient15-dev, libexpat1-dev, libxml2-dev, libpq-dev, libradiusclient-ng-dev, flex, bison, zlib1g-dev, unixodbc-dev, libxmlrpc-c3-dev, libperl-dev, libsnmp-dev, dpkg-dev (>= 1.13.19), libdb-dev (>= 4.6.19), xsltproc, libconfuse-dev, libldap2-dev, libcurl4-gnutls-dev, libgeoip-dev (>= 1.4.4), libpcre3-dev
+Build-Depends: debhelper (>= 5), dpatch, libmysqlclient15-dev, libexpat1-dev, libxml2-dev, libpq-dev, libradiusclient-ng-dev, flex, bison, zlib1g-dev, unixodbc-dev, libxmlrpc-c3-dev, libperl-dev, libsnmp-dev, dpkg-dev (>= 1.13.19), libdb-dev (>= 4.6.19), xsltproc, libconfuse-dev, libldap2-dev, libcurl4-gnutls-dev, libgeoip-dev (>= 1.4.4)
 Standards-Version: 3.8.0
 Homepage: http://www.opensips.org/
 
 Package: opensips
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}, adduser
-Suggests: opensips-mysql-module, opensips-postgres-module, opensips-unixodbc-module, opensips-jabber-module, opensips-cpl-module, opensips-radius-modules, opensips-presence-modules, opensips-xmlrpc-module, opensips-perl-modules, opensips-snmpstats-module, opensips-xmpp-module, opensips-carrierroute-module, opensips-berkeley-module, opensips-ldap-modules, opensips-geoip-module, opensips-regex-module, opensips-identity-module, opensips-b2bua-module, opensips-dbhttp-module, opensips-console
+Suggests: opensips-mysql-module, opensips-postgres-module, opensips-unixodbc-module, opensips-jabber-module, opensips-cpl-module, opensips-radius-modules, opensips-presence-modules, opensips-xmlrpc-module, opensips-perl-modules, opensips-snmpstats-module, opensips-xmpp-module, opensips-carrierroute-module, opensips-berkeley-module, opensips-ldap-modules, opensips-geoip-module, opensips-regex-module, opensips-identity-module, opensips-b2bua-module, opensips-dbhttp-module, opensips-dialplan-module, opensips-console
 Description: very fast and configurable SIP server
  OpenSIPS is a very fast and flexible SIP (RFC3261)
  server. Written entirely in C, OpenSIPS can handle thousands calls
@@ -238,8 +238,8 @@ Description: B2B User Agent modules for OpenSIPS
  server. Written entirely in C, OpenSIPS can handle thousands calls
  per second even on low-budget hardware.
  .
- This package provides modules for B2BUA suppor in OpenSIPS. Both the 
- implementation and controll (XML based scenario description) are included.
+ This package provides modules for B2BUA support in OpenSIPS. Both the 
+ implementation and control (XML based scenario description) are included.
 
 Package: opensips-dbhttp-module
 Architecture: any
@@ -250,6 +250,16 @@ Description: HTTP database connectivity module for OpenSIPS
  per second even on low-budget hardware.
  .
  This package provides the HTTP-based database driver for OpenSIPS
+
+Package: opensips-dialplan-module
+Architecture: any
+Depends: ${shlibs:Depends}, opensips (= ${binary:Version}), libpcre3-dev
+Description: HTTP database connectivity module for OpenSIPS
+ OpenSIPS is a very fast and flexible SIP (RFC3261)
+ server. Written entirely in C, OpenSIPS can handle thousands calls
+ per second even on low-budget hardware.
+ .
+ This package provides dialplan management for OpenSIPS
 
 Package: opensips-console
 Architecture: any
