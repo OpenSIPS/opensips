@@ -232,6 +232,7 @@ int create_lumps(struct sip_msg * msg)
 	if(parse_sdp(msg))
 	{
 		LM_DBG("Message has no SDP\n");
+		lumps_len = -1;
 		return -1;
 	}
 
@@ -353,6 +354,10 @@ int find_flagged_lumps(struct sip_msg * msg)
 			}
 			cur = cur->next;
 		}
+
+	} else {
+
+		lumps_len = -1;
 
 	}
 
