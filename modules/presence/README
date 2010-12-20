@@ -225,11 +225,7 @@ modparam("presence", "db_update_period", 100)
 
 1.3.7. expires_offset (int)
 
-   The value that should be subtracted from the expires value to
-   be inserted in the Expires header of 200OK replies for Publish
-   and Subscribe messages and expires parameter for Notifies'
-   Subscription-Status header. It is used for forcing the client
-   cu send an update before the dialog expires.
+   The extra time to store a subscription/publication.
 
    Default value is “0”.
 

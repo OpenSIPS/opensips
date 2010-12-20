@@ -65,7 +65,6 @@ int send_2XX_reply(struct sip_msg * msg, int reply_code, int lexpire,
 	int len;
 	char *p;
 
-	lexpire -= expires_offset;
 	if(lexpire < 0 )
 		lexpire = 0;
 
@@ -384,7 +383,7 @@ int update_subscription(struct sip_msg* msg, subs_t* subs, int init_req)
 			}
 			goto send_notify;
 		}
-
+		subs->expires+= expires_offset;
 		if(update_shtable(subs_htable, hash_code, subs, REMOTE_TYPE)< 0)
 		{
 			LM_DBG("updating subscription record in hash table failed\n");
@@ -418,6 +417,7 @@ int update_subscription(struct sip_msg* msg, subs_t* subs, int init_req)
 
 		if(subs->expires!= 0)
 		{
+			subs->expires += expires_offset;
 			if(insert_shtable(subs_htable,hash_code,subs)< 0)
 			{
 				LM_ERR("inserting new record in subs_htable\n");
