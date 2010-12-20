@@ -1727,7 +1727,7 @@ restore_keepalive_state(void)
     res = fscanf(f, STATE_FILE_HEADER); // skip header
 
     while (True) {
-        res = fscanf(f, "%63s %63s %ld %ld", uri, socket, &rtime, &stime);
+        res = fscanf(f, "%63s %63s %ld %ld", uri, socket, (long*)(void*)&rtime, (long*)(void*)&stime);
         if (res == EOF) {
             if (ferror(f))
                 LM_ERR("error while reading keepalive state file: %s\n", strerror(errno));
