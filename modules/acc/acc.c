@@ -439,6 +439,7 @@ int acc_db_init(const str* db_url)
 		LM_ERR("database module does not implement insert function\n");
 		return -1;
 	}
+
 	db_handle=acc_dbf.init(db_url);
 
 	if (db_handle==0){
@@ -469,6 +470,7 @@ int acc_db_init_child(const str *db_url)
 		LM_ERR("unable to connect to the database\n");
 		return -1;
 	}
+
 	return 0;
 }
 
@@ -1088,6 +1090,7 @@ error:
 }
 
 #endif
+
 
 /* Functions used to store values into dlg */
 
