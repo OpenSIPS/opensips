@@ -523,13 +523,17 @@ void destroy(void)
 
 int handle_expired_record(subs_t* s)
 {
+	int expires = s->expires;
+	s->expires = 0;
 	/* send Notify with state terminated*/	
 	if( rls_send_notify(s, NULL, NULL, NULL)< 0)
 	{
 		LM_ERR("in function send_notify\n");
+		s->expires = expires;
 		return -1;
 	}
-	
+	s->expires = expires;
+
 	return 0;
 }
 
