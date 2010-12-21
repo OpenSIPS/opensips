@@ -31,8 +31,8 @@ run_query "- Adding new 'created' field in ACC table" "ALTER TABLE acc ADD COLUM
 
 run_query "- Updating DROUTING table version" "UPDATE version SET table_version=4 WHERE table_name ='dr_gateways'"
 run_query "- Adding new 'probe_mode' field in DR_GATEWAYS table" "ALTER TABLE dr_gateways ADD COLUMN probe_mode INT(11) UNSIGNED DEFAULT 0 NOT NULL"
-run_query "- Adding new 'attrs' field in DR_GATEWAYS table" "ALTER TABLE dr_gateways ADD COLUMN attrs CHAR(255) DEFAULT NULL"
-run_query "- Modifying 'groupid' field in DR_RULES table" "ALTER TABLE dr_rules MODIFY COLUMN groupid INT(11) UNSIGNED DEFAULT 0 NOT NULL"
+run_query "- Adding new 'attrs' field in DR_RULES table" "ALTER TABLE dr_rules ADD COLUMN attrs CHAR(255) DEFAULT NULL"
+run_query "- Modifying 'groupid' field in DR_GROUPS table" "ALTER TABLE dr_groups MODIFY COLUMN groupid INT(11) UNSIGNED DEFAULT 0 NOT NULL"
 
 # LOAD_BALANCER modifications
 
