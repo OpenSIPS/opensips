@@ -41,7 +41,7 @@ run_query "- Creating INDEX on dst_uri column in load_balancer table" "CREATE IN
 # PRESENCE modifications
 
 run_query "- Updating PRESENTITY table version" "UPDATE version SET table_version=5 WHERE table_name ='presentity'"
-run_query "- Adding new 'extra_hdrs' field in PRESENTITY table" "ALTER TABLE acc ADD COLUMN extra_hdrs BLOB DEFAULT '' NOT NULL"
+run_query "- Adding new 'extra_hdrs' field in PRESENTITY table" "ALTER TABLE presentity ADD COLUMN extra_hdrs BLOB DEFAULT '' NOT NULL"
 run_query "- Modifying 'contact' field in ACTIVE_WATCHERS table" "ALTER TABLE active_watchers MODIFY COLUMN contact CHAR(128) NOT NULL"
 
 # PUA modifications
