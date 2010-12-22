@@ -107,7 +107,7 @@ str* subs_build_hdr(str* contact, int expires, int event, str* extra_headers)
 	memcpy(str_hdr->s+ str_hdr->len ,"Expires: ", 9);
 	str_hdr->len += 9;
 
-	subs_expires= int2str(expires+ 10, &len);
+	subs_expires= int2str(expires, &len);
 
 	if(subs_expires == NULL || len == 0)
 	{
