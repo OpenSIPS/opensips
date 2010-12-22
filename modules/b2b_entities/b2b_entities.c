@@ -183,51 +183,50 @@ static int mod_init(void)
 		LM_ERR("Failed to initialize b2b table\n");
 		return -1;
 	}
+	memset(&b2be_dbf, 0, sizeof(db_func_t));
 	if(db_url.s)
+	{
 		db_url.len = strlen(db_url.s);
-	else
-	{
-		LM_ERR("DB_URL parameter not set\n");
-		return -1;
-	}
-	/* binding to database module  */
-	if (db_bind_mod(&db_url, &b2be_dbf))
-	{
-		LM_ERR("Database module not found\n");
-		return -1;
-	}
 
-	if (!DB_CAPABILITY(b2be_dbf, DB_CAP_ALL))
-	{
-		LM_ERR("Database module does not implement all functions"
-				" needed by b2b_entities module\n");
-		return -1;
-	}
+		/* binding to database module  */
+		if (db_bind_mod(&db_url, &b2be_dbf))
+		{
+			LM_ERR("Database module not found\n");
+			return -1;
+		}
 
-	b2be_db = b2be_dbf.init(&db_url);
-	if(!b2be_db)
-	{
-		LM_ERR("connecting to database failed\n");
-		return -1;
-	}
+		if (!DB_CAPABILITY(b2be_dbf, DB_CAP_ALL))
+		{
+			LM_ERR("Database module does not implement all functions"
+					" needed by b2b_entities module\n");
+			return -1;
+		}
 
-	/*verify table versions */
-	if(db_check_table_version(&b2be_dbf, b2be_db, &dbtable, TABLE_VERSION) < 0)
-	{
-		LM_ERR("error during table version check\n");
-		return -1;
-	}
+		b2be_db = b2be_dbf.init(&db_url);
+		if(!b2be_db)
+		{
+			LM_ERR("connecting to database failed\n");
+			return -1;
+		}
 
-	/* reload data */
-	if(b2b_entities_restore() < 0)
-	{
-		LM_ERR("Failed to restore data from database\n");
-		return -1;
-	}
+		/*verify table versions */
+		if(db_check_table_version(&b2be_dbf, b2be_db, &dbtable, TABLE_VERSION) < 0)
+		{
+			LM_ERR("error during table version check\n");
+			return -1;
+		}
 
-	if(b2be_db)
-		b2be_dbf.close(b2be_db);
-	b2be_db = NULL;
+		/* reload data */
+		if(b2b_entities_restore() < 0)
+		{
+			LM_ERR("Failed to restore data from database\n");
+			return -1;
+		}
+
+		if(b2be_db)
+			b2be_dbf.close(b2be_db);
+		b2be_db = NULL;
+	}
 
 	if(register_script_cb( b2b_prescript_f, PRE_SCRIPT_CB|REQ_TYPE_CB, 0 ) < 0)
 	{
@@ -259,7 +258,8 @@ static int mod_init(void)
 		LM_ERR("Wrong parameter - b2b_update_period [%d]\n", b2b_update_period);
 		return -1;
 	}
-	register_timer(b2be_db_update, 0, b2b_update_period);
+	if(db_url.s)
+		register_timer(b2be_db_update, 0, b2b_update_period);
 	//register_timer(b2be_clean,  0, b2b_update_period);
 
 	return 0;
@@ -307,19 +307,23 @@ void check_htables(void)
 /** Module child initialize function */
 static int child_init(int rank)
 {
-	if (b2be_dbf.init==0)
+	/* if database is needed */
+	if (db_url.s)
 	{
-		LM_CRIT("child_init: database not bound\n");
-		return -1;
-	}
+		if (b2be_dbf.init==0)
+	    {
+	        LM_CRIT("child_init: database not bound\n");
+	        return -1;
+	    }
 
-	b2be_db = b2be_dbf.init(&db_url);
-	if(!b2be_db)
-	{
-		LM_ERR("connecting to database failed\n");
-		return -1;
+		b2be_db = b2be_dbf.init(&db_url);
+		if(!b2be_db)
+		{
+			LM_ERR("connecting to database failed\n");
+			return -1;
+		}
+		LM_DBG("child %d: Database connection opened successfully\n", rank);
 	}
-	LM_DBG("child %d: Database connection opened successfully\n", rank);
 	check_htables();
 	return 0;
 }
@@ -451,6 +455,9 @@ void store_b2b_dlg(b2b_table htable, unsigned int hsize, int type, int no_lock)
 	int n_start_update;
 	dlg_leg_t* leg;
 	b2b_dlg_t* dlg;
+
+	if (!b2be_dbf.init)
+		return;
 
 	LM_DBG("storing b2b_entities type '%d' in db\n", type);
 	if(b2be_dbf.use_table(b2be_db, &dbtable)< 0)
@@ -935,7 +942,7 @@ void b2b_db_delete(b2b_dlg_t* dlg, int type)
 	int n_query_cols= 0;
 	int type_col, tag0_col, tag1_col, callid_col;
 
-	if(dlg->db_flag== INSERTDB_FLAG)
+	if(!b2be_db || dlg->db_flag== INSERTDB_FLAG)
 		return;
 
 
