@@ -868,8 +868,10 @@ struct mi_root * mi_profile_list(struct mi_root *cmd_tree, void *param )
 
 			if( found )
 
-				if( mi_print_dlg( rpl, cur_dlg, 0) )
+				if( mi_print_dlg( rpl, cur_dlg, 0) ) {
+					lock_set_release(d_table->locks,d_entry->lock_idx);
 					goto error;
+				}
 
 			cur_dlg = cur_dlg->next;
 		}
