@@ -65,21 +65,6 @@
 
 	<section>
 		<title>Exported Parameters</title>
-		<section>
-		<title><varname>server_address</varname> (str)</title>
-		<para>
-			The IP address of the machine that will be used as Contact in
-			the sent messages.
-		</para>
-		<example>
-		<title>Set <varname>server_address</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("b2b_entities", "server_address", "sip:sa@10.10.10.10:5060")
-...
-	</programlisting>
-		</example>
-	</section>
 	<section>
 		<title><varname>server_hsize</varname> (int)</title>
 		<para>

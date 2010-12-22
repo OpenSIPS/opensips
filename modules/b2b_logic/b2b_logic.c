@@ -106,6 +106,8 @@ static db_con_t *b2bl_db = NULL;
 static db_func_t b2bl_dbf;
 static str dbtable= str_init("b2b_logic");
 
+str server_address = {0, 0};
+
 static str str_key_col         = str_init("si_key");
 static str str_scenario_col    = str_init("scenario");
 static str str_sstate_col      = str_init("sstate");
@@ -162,6 +164,7 @@ static param_export_t params[]=
 	{"dbtable",         STR_PARAM,                &dbtable.s                 },
 	{"max_duration",    INT_PARAM,                &max_duration              },
 	{"b2bl_key_avp",    STR_PARAM,                &b2bl_key_avp_param.s      },
+	{"server_address",  STR_PARAM,                &server_address.s          },
 	{0,                    0,                          0                     }
 };
 
@@ -215,6 +218,19 @@ static int mod_init(void)
 		return -1;
 	}
 	b2bl_hsize = 1<<b2bl_hsize;
+
+	if(server_address.s == NULL)
+	{
+		if(extern_scenarios)
+		{
+			LM_ERR("'server_address' parameter not set. This parameter is"
+				" compulsory if you want to use extern scenarios. It must"
+				" be set to the IP address of the machine\n");
+			return -1;
+		}
+	}
+	else
+		server_address.len = strlen(server_address.s);
 
 	if(init_b2bl_htable() < 0)
 	{

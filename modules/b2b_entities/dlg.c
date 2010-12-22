@@ -337,8 +337,6 @@ b2b_dlg_t* b2b_dlg_copy(b2b_dlg_t* dlg)
 	if(dlg->to_dname.s)
 		CONT_COPY(new_dlg, new_dlg->to_dname, dlg->to_dname);
 
-	new_dlg->bind_addr[0]     = dlg->bind_addr[0];
-	new_dlg->bind_addr[1]     = dlg->bind_addr[1];
 	new_dlg->cseq[0]          = dlg->cseq[0];
 	new_dlg->cseq[1]          = dlg->cseq[1];
 	new_dlg->id               = dlg->id;
@@ -347,6 +345,7 @@ b2b_dlg_t* b2b_dlg_copy(b2b_dlg_t* dlg)
 	new_dlg->add_dlginfo      = dlg->add_dlginfo;
 	new_dlg->last_invite_cseq = dlg->last_invite_cseq;
 	new_dlg->db_flag          = dlg->db_flag;
+	new_dlg->send_sock        = dlg->send_sock;
 
 	return new_dlg;
 }
@@ -439,6 +438,10 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 	str callid;
 	struct cell* tm_tran;
 	int ret;
+	struct socket_info* sock_list;
+	int found = 0;
+	str host;
+	int port;
 
 	/* check if a b2b request */
 	if (parse_headers(msg, HDR_EOH_F, 0) < 0)
@@ -465,20 +468,39 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 		LM_ERR("Failed to parse uri\n");
 		return -1;
 	}
+	host = msg->parsed_uri.host;
+	port = msg->parsed_uri.port_no;
 
-	if(method_value!= METHOD_CANCEL &&
-		!((msg->parsed_uri.host.len == srv_addr_uri.host.len ) &&
-		strncmp(msg->parsed_uri.host.s, srv_addr_uri.host.s, srv_addr_uri.host.len) == 0
-		&& (msg->parsed_uri.port_no == srv_addr_uri.port_no ||
-		(msg->parsed_uri.port_no==0 && srv_addr_uri.port_no==5060)||
-		(msg->parsed_uri.port_no==5060 && srv_addr_uri.port_no==0))))
+	if (msg->rcv.proto==PROTO_NONE)
+		sock_list=udp_listen;
+	else
+		sock_list=*get_sock_info_list(msg->rcv.proto);
+
+	/* check if RURI points to me */
+	if(method_value!= METHOD_CANCEL)
 	{
-		LM_DBG("RURI does not point to me\n");
-		LM_DBG("caut %.*s:%d, gasesc %.*s:%d\n", 
-			msg->parsed_uri.host.len, msg->parsed_uri.host.s,
-			msg->parsed_uri.port_no, srv_addr_uri.host.len,srv_addr_uri.host.s,
-			srv_addr_uri.port_no);
-		return 1;
+		LM_DBG("host = %.*s\n", host.len, host.s);
+		LM_DBG("port = %d\n", port);
+		while(sock_list)
+		{
+			LM_DBG("address_str= %.*s\n", sock_list->address_str.len, sock_list->address_str.s);
+			LM_DBG("port= %d\n", sock_list->port_no);
+			if(host.len == sock_list->address_str.len &&
+			strncmp(host.s,sock_list->address_str.s,sock_list->address_str.len)==0
+			&&  ((port == sock_list->port_no) || (port_no==0 && sock_list->port_no==5060) ||
+				(port_no==5060 && sock_list->port_no==0) ))
+			{
+				found =1;
+				break;
+			}
+			sock_list = sock_list->next;
+		}
+
+		if(!found)
+		{
+			LM_DBG("RURI does not point to me\n");
+			return 1;
+		}
 	}
 
 	if(method_value == METHOD_PRACK)
@@ -840,7 +862,8 @@ void destroy_b2b_htables(void)
 }
 
 
-b2b_dlg_t* b2b_new_dlg(struct sip_msg* msg, int on_reply, str* param)
+b2b_dlg_t* b2b_new_dlg(struct sip_msg* msg, str* local_contact,
+		int on_reply, str* param)
 {
 	struct to_body *pto, *pfrom = NULL, TO;
 	b2b_dlg_t dlg;
@@ -961,7 +984,11 @@ b2b_dlg_t* b2b_new_dlg(struct sip_msg* msg, int on_reply, str* param)
 		}
 	}
 
-	dlg.bind_addr[CALLER_LEG]= msg->rcv.bind_address;
+	dlg.send_sock = msg->rcv.bind_address;
+	if(on_reply)
+		dlg.contact[CALLER_LEG]=*local_contact;
+	else
+		dlg.contact[CALLEE_LEG]=*local_contact;
 
 	if (!msg->content_length) 
 	{
@@ -1012,6 +1039,7 @@ int b2b_send_reply(enum b2b_entity_type et, str* b2b_key, int sip_method,
 	str totag, fromtag;
 	struct to_body *pto, TO;
 	unsigned int method_value = METHOD_UPDATE;
+	str local_contact;
 
 	if(et == B2B_SERVER)
 	{
@@ -1065,6 +1093,11 @@ int b2b_send_reply(enum b2b_entity_type et, str* b2b_key, int sip_method,
 		return 0;
 	}
 */
+	if(et == B2B_CLIENT)
+		local_contact = dlg->contact[CALLER_LEG];
+	else
+		local_contact = dlg->contact[CALLEE_LEG];
+
 	if(sip_method == METHOD_UPDATE)
 		tm_tran = dlg->update_tran;
 	else
@@ -1175,7 +1208,8 @@ int b2b_send_reply(enum b2b_entity_type et, str* b2b_key, int sip_method,
 	UPDATE_DBFLAG(dlg);
 	lock_release(&table[hash_index].lock);
 	
-	if((extra_headers?extra_headers->len:0) + 14 + server_address.len + 20 + CRLF_LEN > BUF_LEN)
+	if((extra_headers?extra_headers->len:0) + 14 + local_contact.len
+			+ 20 + CRLF_LEN > BUF_LEN)
 	{
 		LM_ERR("Buffer overflow!\n");
 		goto error;
@@ -1187,18 +1221,8 @@ int b2b_send_reply(enum b2b_entity_type et, str* b2b_key, int sip_method,
 		memcpy(p, extra_headers->s, extra_headers->len);
 		p += extra_headers->len;
 	}
-	len = sprintf(p,"Contact: <%.*s", server_address.len, server_address.s);
+	len = sprintf(p,"Contact: <%.*s>", local_contact.len, local_contact.s);
 	p += len;
-	if (msg->rcv.proto!=PROTO_UDP) {
-		memcpy(p,";transport=",11);
-		p += 11;
-		p = proto2str(msg->rcv.proto, p);
-		if (p==NULL) {
-			LM_ERR("invalid proto\n");
-			goto error;
-		}
-	}
-	*(p++) = '>';
 	memcpy(p, CRLF, CRLF_LEN);
 	p += CRLF_LEN;
 	ehdr.len = p -buffer;
@@ -1489,8 +1513,9 @@ int b2b_send_request(enum b2b_entity_type et, str* b2b_key, str* method,
 		lock_release(&table[hash_index].lock);
 		return 0;
 	}
-	
-	if(b2breq_complete_ehdr(extra_headers, &ehdr, body)< 0)
+
+	if(b2breq_complete_ehdr(extra_headers, &ehdr, body,
+			((et==B2B_SERVER)?&dlg->contact[CALLEE_LEG]:&dlg->contact[CALLER_LEG]))< 0)
 	{
 		LM_ERR("Failed to complete extra headers\n");
 		goto error;
@@ -1674,8 +1699,6 @@ dlg_leg_t* b2b_new_leg(struct sip_msg* msg, str* to_tag, int mem_type)
 		LM_ERR("failed to parse cseq number - not an integer\n");
 		goto error;
 	}
-
-	new_leg->bind_addr= msg->rcv.bind_address;
 
 	return new_leg;
 
@@ -2051,7 +2074,8 @@ dummy_reply:
 		{
 			b2b_dlg_t* new_dlg;
 
-			new_dlg = b2b_new_dlg(msg, 1, &dlg->param);
+			new_dlg = b2b_new_dlg(msg, &dlg->contact[CALLER_LEG],
+					1, &dlg->param);
 			if(new_dlg == NULL)
 			{
 				LM_ERR("Failed to create b2b dialog structure\n");
@@ -2246,12 +2270,13 @@ error:
 }
 
 
-int b2breq_complete_ehdr(str* extra_headers, str* ehdr_out, str* body)
+int b2breq_complete_ehdr(str* extra_headers, str* ehdr_out, str* body,
+		str* local_contact)
 {
 	static char buf[BUF_LEN];
 	str ehdr= {0,0};
 
-	if((extra_headers?extra_headers->len:0) + 14 + server_address.len > BUF_LEN)
+	if((extra_headers?extra_headers->len:0) + 14 + local_contact->len > BUF_LEN)
 	{
 		LM_ERR("Buffer too small\n");
 		return -1;
@@ -2264,7 +2289,7 @@ int b2breq_complete_ehdr(str* extra_headers, str* ehdr_out, str* body)
 		ehdr.len = extra_headers->len;
 	}
 	ehdr.len += sprintf(ehdr.s+ ehdr.len, "Contact: <%.*s>\r\n",
-		server_address.len, server_address.s);
+		local_contact->len, local_contact->s);
 
 	/* if not present and body present add content type */
 	if(body && !strstr(ehdr.s, "Content-Type:"))

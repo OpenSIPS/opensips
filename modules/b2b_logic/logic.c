@@ -85,7 +85,7 @@ int entity_add_dlginfo(b2bl_entity_id_t* entity, b2b_dlginfo_t* dlginfo)
 	if( dlginfo->totag.s)
 		size += dlginfo->totag.len;
 	if(dlginfo->fromtag.s)
-		  size+= dlginfo->fromtag.len;
+		size+= dlginfo->fromtag.len;
 	new_dlginfo = (b2b_dlginfo_t*)shm_malloc(size);
 	memset(new_dlginfo, 0, size);
 	if(new_dlginfo == NULL)
@@ -100,7 +100,7 @@ int entity_add_dlginfo(b2bl_entity_id_t* entity, b2b_dlginfo_t* dlginfo)
 	if(dlginfo->fromtag.s)
 		CONT_COPY(new_dlginfo, new_dlginfo->fromtag, dlginfo->fromtag);
 	CONT_COPY(new_dlginfo, new_dlginfo->callid, dlginfo->callid);
-	
+
 	entity->dlginfo = new_dlginfo;
 
 	return 0;
@@ -524,6 +524,8 @@ b2bl_entity_id_t* b2bl_new_client(str* to_uri, str* from_uri,
 	ci.body          = (tuple->sdp.s?&tuple->sdp:0);
 	ci.from_tag      = 0;
 	ci.send_sock     = msg?msg->rcv.bind_address:0;
+	ci.local_contact = tuple->local_contact;
+
 	if(msg)
 	{
 		if (str2int( &(get_cseq(msg)->number), &ci.cseq)!=0 )
@@ -619,6 +621,8 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 			ci.body          = body;
 			ci.from_tag      = 0;
 			ci.send_sock     = msg->rcv.bind_address;
+			ci.local_contact = tuple->local_contact;
+
 			if (str2int( &(get_cseq(msg)->number), &ci.cseq)!=0 )
 			{
 				LM_ERR("cannot parse cseq number\n");
@@ -1882,6 +1886,8 @@ entity_search_done:
 		ci.body          = 0;
 		ci.from_tag      = 0;
 		ci.send_sock     = msg?msg->rcv.bind_address:0;
+		ci.local_contact = tuple->local_contact;
+
 		if(msg)
 		{
 			if (str2int( &(get_cseq(msg)->number), &ci.cseq)!=0 )
@@ -2011,7 +2017,8 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 	tuple->lifetime = 60 + get_ticks();
 
 	/* create new server */
-	server_id = b2b_api.server_new(msg, b2b_server_notify, b2bl_key);
+	server_id = b2b_api.server_new(msg, &tuple->local_contact,
+			b2b_server_notify, b2bl_key);
 	if(server_id == NULL)
 	{
 		LM_ERR("failed to create new b2b server instance\n");
@@ -2065,6 +2072,8 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 	ci.body          = (body.s?&body:NULL);
 	ci.from_tag      = &from_tag_uac;
 	ci.send_sock     = msg->rcv.bind_address;
+	ci.local_contact = tuple->local_contact;
+
 	if (str2int( &(get_cseq(msg)->number), &ci.cseq)!=0 )
 	{
 		LM_ERR("cannot parse cseq number\n");
@@ -2273,10 +2282,13 @@ int udh_to_uri(str user, str host, str port, str* uri)
 	if(uri==0)
 		return -1;
 	size = user.len + host.len + port.len+7;
+	LM_DBG("user=%.*s\n", user.len, user.s);
+	LM_DBG("host=%.*s\n", host.len, host.s);
+	LM_DBG("port=%.*s\n", port.len, port.s);
 	uri->s = (char*)pkg_malloc(size);
 	if(uri->s == NULL)
 	{
-		LM_ERR("No more memory\n");
+		LM_ERR("No more memory [%d]\n", size);
 		return -1;
 	}
 
@@ -2407,7 +2419,8 @@ str* b2b_process_scenario_init(b2b_scenario_t* scenario_struct,struct sip_msg* m
 		entity_sid.len = strlen(entity_sid.s);
 
 		/* create new server entity */
-		server_id = b2b_api.server_new(msg, b2b_server_notify, b2bl_key);
+		server_id = b2b_api.server_new(msg, &tuple->local_contact,
+				b2b_server_notify, b2bl_key);
 		if(server_id == NULL)
 		{
 			LM_ERR("failed to create new b2b server instance\n");
@@ -2495,6 +2508,8 @@ str* b2b_process_scenario_init(b2b_scenario_t* scenario_struct,struct sip_msg* m
 			ci.body          = (body.s?&body:NULL);
 			ci.from_tag      = 0;
 			ci.send_sock     = msg->rcv.bind_address;
+			ci.local_contact = tuple->local_contact;
+
 			if (str2int( &(get_cseq(msg)->number), &ci.cseq)!=0 )
 			{
 				LM_ERR("cannot parse cseq number\n");
@@ -2741,7 +2756,7 @@ int b2bl_bridge(str* key, str* new_dst, str* new_from_dname, int entity_no)
 			b2b_end_dialog(old_entity, tuple);
 	}
 	else
-		LM_DBG("No peer found\n");	
+		LM_DBG("No peer found\n");
 
 	if(tuple->scenario_state == B2B_BRIDGING_STATE &&
 			tuple->bridge_entities[0]== tuple->servers[0] &&
@@ -2757,7 +2772,8 @@ int b2bl_bridge(str* key, str* new_dst, str* new_from_dname, int entity_no)
 		ci.extra_headers = tuple->extra_headers;
 		ci.body          = tuple->b1_sdp.s?&tuple->b1_sdp:0;
 		ci.cseq          = 1;
-	
+		ci.local_contact = tuple->local_contact;
+
 		client_id = b2b_api.client_new(&ci, b2b_client_notify,
 				b2b_add_dlginfo, tuple->key);
 		if(client_id == NULL)
@@ -3160,7 +3176,8 @@ int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no)
 		LM_ERR("Failed to get to or from from the message\n");
 		goto error;
 	}
-	server_id = b2b_api.server_new(msg, b2b_server_notify, tuple->key);
+	server_id = b2b_api.server_new(msg, &tuple->local_contact,
+			b2b_server_notify, tuple->key);
 	if(server_id == NULL)
 	{
 		LM_ERR("failed to create new b2b server instance\n");

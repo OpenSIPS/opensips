@@ -277,6 +277,26 @@ modparam("b2b_logic", "b2bl_key_avp", "$avp(i:99)")
 		</example>
 	</section>
 
+	<section>
+		<title><varname>server_address</varname> (str)</title>
+		<para>
+			The IP address of the machine that will be used as Contact in
+			the generated messages. This is compulsory only when using external
+			scenarios. For the script scenarios, if it is not set, it is constructed
+			dynamically from the socket where the initiating request was received.
+			This socket will be used to send all the requests, replies for that
+			scenario instantiation.
+		</para>
+		<example>
+		<title>Set <varname>server_address</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("b2b_entities", "server_address", "sip:sa@10.10.10.10:5060")
+...
+	</programlisting>
+		</example>
+	</section>
+
 	</section>
 
 	<section>

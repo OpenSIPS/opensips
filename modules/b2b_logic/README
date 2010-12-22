@@ -12,10 +12,10 @@ Edited by
 
 Ovidiu Sas
 
-   Copyright � 2009 Anca-Maria
+   Copyright © 2009 Anca-Maria
    Vamanu
 
-   Copyright � 2010 VoIP Embedded, Inc.
+   Copyright © 2010 VoIP Embedded, Inc.
    Revision History
    Revision $Revision: $ $Date: $
      __________________________________________________________
@@ -42,6 +42,7 @@ Ovidiu Sas
               1.3.8. update_period (int)
               1.3.9. max_duration (int)
               1.3.10. b2bl_key_avp (int)
+              1.3.11. server_address (str)
 
         1.4. Exported Functions
 
@@ -77,8 +78,9 @@ Ovidiu Sas
    1.8. Set update_period parameter
    1.9. Set update_period parameter
    1.10. Set b2bl_key_avp parameter
-   1.11. b2b_init_request usage
-   1.12. b2b_bridge_request usage
+   1.11. Set server_address parameter
+   1.12. b2b_init_request usage
+   1.13. b2b_bridge_request usage
    2.1. b2bl_api_t structure
 
 Chapter 1. Admin Guide
@@ -126,7 +128,7 @@ Chapter 1. Admin Guide
    The size of the hash table that stores the scenario
    instatiation entities.
 
-   Default value is "9" (512 records).
+   Default value is “9” (512 records).
 
    Example 1.1. Set server_hsize parameter
 ...
@@ -169,7 +171,7 @@ b_marketing.xml")
    BYE is sent in all the dialogs from that context and the
    context is deleted.
 
-   Default value is "100".
+   Default value is “100”.
 
    Example 1.4. Set cleanup_period parameter
 ...
@@ -194,7 +196,7 @@ modparam("b2b_logic", "cleanup_period", 60)
    If you wish some other headers to be passed also you should
    define them by setting this parameter.
 
-   Default value is "NULL".
+   Default value is “NULL”.
 
    Example 1.5. Set parameter
 ...
@@ -214,7 +216,7 @@ modparam("b2b_logic", "custom_headers", "User-Agent;Date")
    body for this invite. By setting this parameter, this behavior
    is enabled.
 
-   Default value is "0".
+   Default value is “0”.
 
    Example 1.6. Set parameter
 ...
@@ -235,7 +237,7 @@ pensips")
 
    The time interval at which to update the info in database.
 
-   Default value is "100".
+   Default value is “100”.
 
    Example 1.8. Set update_period parameter
 ...
@@ -246,7 +248,7 @@ modparam("b2b_logic", "update_period", 60)
 
    The maximum duration of a call.
 
-   Default value is "12 * 3600 (12 hours)".
+   Default value is “12 * 3600 (12 hours)”.
 
    Example 1.9. Set update_period parameter
 ...
@@ -257,18 +259,32 @@ modparam("b2b_logic", "max_duration", 7200)
 
    The name of the Attribute-Value-Pair (AVP) used to store the
    b2b_logic entity key. The avp will be set after calling
-   "b2b_init_request". The avp will be visible in b2b_entities
+   “b2b_init_request”. The avp will be visible in b2b_entities
    request/reply routes
 
 Note
 
    The avp is not visible in local_route.
 
-   Default value is "NULL" (disabled).
+   Default value is “NULL” (disabled).
 
    Example 1.10. Set b2bl_key_avp parameter
 ...
 modparam("b2b_logic", "b2bl_key_avp", "$avp(i:99)")
+...
+
+1.3.11. server_address (str)
+
+   The IP address of the machine that will be used as Contact in
+   the generated messages. This is compulsory only when using
+   external scenarios. For the script scenarios, if it is not set,
+   it is constructed dynamically from the socket where the
+   initiating request was received. This socket will be used to
+   send all the requests, replies for that scenario instantiation.
+
+   Example 1.11. Set server_address parameter
+...
+modparam("b2b_entities", "server_address", "sip:sa@10.10.10.10:5060")
 ...
 
 1.4. Exported Functions
@@ -296,7 +312,7 @@ Note
    from the script will result in the transaction remaining in
    memory for ever.
 
-   Example 1.11. b2b_init_request usage
+   Example 1.12. b2b_init_request usage
 ...
 if(is_method("INVITE") && !has_totag() && prepaid_user())
    b2b_init_request("prepaid", "sip:320@opensips.org:5070",
@@ -314,7 +330,7 @@ if(is_method("INVITE") && !has_totag() && prepaid_user())
      * entity_no - a pseudo-variable that holds the entity of the
        particapnt to bridge.
 
-   Example 1.12. b2b_bridge_request usage
+   Example 1.13. b2b_bridge_request usage
 ...
 modparam("b2b_logic", "b2bl_key_avp", "$avp(i:99)")
 ...

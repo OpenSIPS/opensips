@@ -59,8 +59,6 @@ void b2be_db_update(unsigned int ticks, void* param);
 /** Global variables */
 unsigned int server_hsize = 9;
 unsigned int client_hsize = 9;
-str server_address = {0, 0};
-struct sip_uri srv_addr_uri;
 static char* script_req_route = NULL;
 static char* script_reply_route = NULL;
 int req_routeid  = -1;
@@ -96,7 +94,6 @@ static str str_leg_cseq_col     = str_init("leg_cseq");
 static str str_leg_route_col    = str_init("leg_route");
 static str str_leg_contact_col  = str_init("leg_contact");
 static str str_sockinfo_srv_col = str_init("sockinfo_srv");
-static str str_leg_sockinfo_col = str_init("leg_sockinfo");
 static str str_param_col        = str_init("param");
 
 #define DB_COLS_NO  26
@@ -113,7 +110,6 @@ static cmd_export_t cmds[]=
 
 /** Exported parameters */
 static param_export_t params[]={
-	{ "server_address",        STR_PARAM,    &server_address.s   },
 	{ "server_hsize",          INT_PARAM,    &server_hsize       },
 	{ "client_hsize",          INT_PARAM,    &client_hsize       },
 	{ "script_req_route",      STR_PARAM,    &script_req_route   },
@@ -157,18 +153,6 @@ static int mod_init(void)
 	server_hsize = 1<<server_hsize;
 	client_hsize = 1<<client_hsize;
 
-	if(server_address.s == NULL)
-	{
-		LM_ERR("'server_address parameter not set. This parameter is compulsory"
-				" and must be set to the IP address of the server running b2b\n");
-		return -1;
-	}
-	server_address.len = strlen(server_address.s);
-	if(parse_uri(server_address.s, server_address.len, &srv_addr_uri) < 0)
-	{
-		LM_ERR("Bad format for server address - not a SIP URI\n");
-		return -1;
-	}
 	/* load all TM stuff */
 	if(load_tm_api(&tmb)==-1)
 	{
@@ -448,8 +432,8 @@ void store_b2b_dlg(b2b_table htable, unsigned int hsize, int type, int no_lock)
 	int tag0_col, tag1_col, cseq0_col, cseq1_col, route0_col;
 	int route1_col, contact0_col, contact1_col, lm_col, lrc_col;
 	int ruri_col, lic_col, from_dname_col, to_dname_col, leg_tag_col;
-	int leg_cseq_col, leg_route_col, leg_contact_col, leg_sockinfo_col;
-	int sockinfo_srv_col, param_col;
+	int leg_cseq_col, leg_route_col, leg_contact_col;
+	int sockinfo_col, param_col;
 	int i;
 	int n_query_cols= 0, n_query_update;
 	int n_start_update;
@@ -492,8 +476,8 @@ void store_b2b_dlg(b2b_table htable, unsigned int hsize, int type, int no_lock)
 	qvals[route0_col].type                = DB_STR;
 	qcols[route1_col=n_query_cols++]      = &str_route1_col;
 	qvals[route1_col].type                = DB_STR;
-	qcols[sockinfo_srv_col=n_query_cols++]= &str_sockinfo_srv_col;
-	qvals[sockinfo_srv_col].type          = DB_STR;
+	qcols[sockinfo_col=n_query_cols++]    = &str_sockinfo_srv_col;
+	qvals[sockinfo_col].type              = DB_STR;
 	qcols[param_col=n_query_cols++]       = &str_param_col;
 	qvals[param_col].type                 = DB_STR;
 	n_start_update = n_query_cols;
@@ -518,8 +502,6 @@ void store_b2b_dlg(b2b_table htable, unsigned int hsize, int type, int no_lock)
 	qvals[leg_route_col].type             = DB_STR;
 	qcols[leg_contact_col=n_query_cols++] = &str_leg_contact_col;
 	qvals[leg_contact_col].type           = DB_STR;
-	qcols[leg_sockinfo_col=n_query_cols++]= &str_leg_sockinfo_col;
-	qvals[leg_sockinfo_col].type          = DB_STR;
 	qcols[contact0_col=n_query_cols++]    = &str_contact0_col;
 	qvals[contact0_col].type              = DB_STR;
 	qcols[contact1_col=n_query_cols++]    = &str_contact1_col;
@@ -550,12 +532,12 @@ void store_b2b_dlg(b2b_table htable, unsigned int hsize, int type, int no_lock)
 				qvals[param_col].val.str_val      = dlg->param;
 				qvals[from_dname_col].val.str_val = dlg->from_dname;
 				qvals[to_dname_col].val.str_val   = dlg->to_dname;
-				if(dlg->bind_addr[CALLER_LEG])
-					qvals[sockinfo_srv_col].val.str_val= dlg->bind_addr[CALLER_LEG]->sock_str;
+				if(dlg->send_sock)
+					qvals[sockinfo_col].val.str_val= dlg->send_sock->sock_str;
 				else
 				{
-					qvals[sockinfo_srv_col].val.str_val.s = 0;
-					qvals[sockinfo_srv_col].val.str_val.len = 0;
+					qvals[sockinfo_col].val.str_val.s = 0;
+					qvals[sockinfo_col].val.str_val.len = 0;
 				}
 			}
 
@@ -575,14 +557,6 @@ void store_b2b_dlg(b2b_table htable, unsigned int hsize, int type, int no_lock)
 				qvals[leg_cseq_col].val.int_val= leg->cseq;
 				qvals[leg_contact_col].val.str_val= leg->contact;
 				qvals[leg_route_col].val.str_val= leg->route_set;
-
-				if(leg->bind_addr)
-					qvals[leg_sockinfo_col].val.str_val= leg->bind_addr->sock_str;
-				else
-				{
-					qvals[leg_sockinfo_col].val.str_val.s = 0;
-					qvals[leg_sockinfo_col].val.str_val.len = 0;
-				}
 			}
 
 			if(dlg->db_flag == INSERTDB_FLAG)
@@ -658,7 +632,6 @@ dlg_leg_t* b2b_dup_leg(dlg_leg_t* leg, int mem_type)
 	new_leg->tag.len = leg->tag.len;
 	size += leg->tag.len;
 
-	new_leg->bind_addr = leg->bind_addr;
 	new_leg->cseq = leg->cseq;
 	new_leg->id = leg->id;
 
@@ -682,8 +655,8 @@ int b2b_entities_restore(void)
 	int tag0_col, tag1_col, cseq0_col, cseq1_col, route0_col;
 	int route1_col, contact0_col, contact1_col, lm_col, lrc_col;
 	int ruri_col, lic_col, from_dname_col, to_dname_col, leg_tag_col;
-	int leg_cseq_col, leg_route_col, leg_contact_col, leg_sockinfo_col;
-	int sockinfo_srv_col, param_col;
+	int leg_cseq_col, leg_route_col, leg_contact_col;
+	int sockinfo_col, param_col;
 	unsigned int hash_index, local_index;
 	int nr_rows;
 	str* b2b_key;
@@ -727,8 +700,7 @@ int b2b_entities_restore(void)
 	result_cols[leg_cseq_col    = n_result_cols++] =&str_leg_cseq_col;
 	result_cols[leg_route_col   = n_result_cols++] =&str_leg_route_col;
 	result_cols[leg_contact_col = n_result_cols++] =&str_leg_contact_col;
-	result_cols[leg_sockinfo_col= n_result_cols++] =&str_leg_sockinfo_col;
-	result_cols[sockinfo_srv_col= n_result_cols++] =&str_sockinfo_srv_col;
+	result_cols[sockinfo_col    = n_result_cols++] =&str_sockinfo_srv_col;
 	result_cols[param_col       = n_result_cols++] =&str_param_col;
 
 	if (DB_CAPABILITY(b2be_dbf, DB_CAP_FETCH))
@@ -820,7 +792,7 @@ int b2b_entities_restore(void)
 			dlg.last_invite_cseq = row_vals[lic_col].val.int_val;
 			dlg.param.s          = (char*)row_vals[param_col].val.string_val;
 			dlg.param.len        = strlen(dlg.param.s);
-			sockinfo_str.s       = (char*)row_vals[sockinfo_srv_col].val.string_val;
+			sockinfo_str.s       = (char*)row_vals[sockinfo_col].val.string_val;
 			if(sockinfo_str.s)
 			{
 				sockinfo_str.len = strlen(sockinfo_str.s);
@@ -833,7 +805,7 @@ int b2b_entities_restore(void)
 								sockinfo_str.len, sockinfo_str.s);
 						goto error;
 					}
-					dlg.bind_addr[CALLER_LEG] = grep_sock_info(&host, (unsigned short) port,
+					dlg.send_sock = grep_sock_info(&host, (unsigned short) port,
 							(unsigned short) proto);
 				}
 			}
@@ -864,24 +836,6 @@ int b2b_entities_restore(void)
 			leg.route_set.s   = (char*)row_vals[leg_route_col].val.string_val;
 			leg.route_set.len = leg.route_set.s?strlen(leg.route_set.s):0;
 			leg.cseq          = row_vals[leg_cseq_col].val.int_val;
-
-			sockinfo_str.s    = (char*)row_vals[leg_sockinfo_col].val.string_val;
-			if (sockinfo_str.s)
-			{
-				sockinfo_str.len = strlen(sockinfo_str.s);
-				if(sockinfo_str.len)
-				{
-					if (parse_phostport (sockinfo_str.s, sockinfo_str.len, &host.s,
-							&host.len, &port, &proto )< 0)
-					{
-						LM_ERR("bad format for stored sockinfo string [%.*s]\n",
-								sockinfo_str.len, sockinfo_str.s);
-						goto error;
-					}
-					leg.bind_addr = grep_sock_info(&host, (unsigned short) port,
-							(unsigned short) proto);
-				}
-			}
 
 			new_leg = b2b_dup_leg(&leg, SHM_MEM_TYPE);
 			if(new_leg== NULL)

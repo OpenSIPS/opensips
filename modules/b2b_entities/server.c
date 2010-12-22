@@ -49,8 +49,8 @@
  *	Return value: the dialog key allocated in private memory
  *	*/
 
-str* server_new(struct sip_msg* msg, b2b_notify_t b2b_cback,
-		str* param)
+str* server_new(struct sip_msg* msg, str* local_contact,
+		b2b_notify_t b2b_cback, str* param)
 {
 	b2b_dlg_t* dlg;
 	unsigned int hash_index;
@@ -65,7 +65,7 @@ str* server_new(struct sip_msg* msg, b2b_notify_t b2b_cback,
 	}
 
 	/* create new entry in hash table */
-	dlg = b2b_new_dlg(msg, 0, param);
+	dlg = b2b_new_dlg(msg, local_contact, 0, param);
 	if( dlg == NULL )
 	{
 		LM_ERR("failed to create new dialog structure entry\n");
@@ -73,7 +73,7 @@ str* server_new(struct sip_msg* msg, b2b_notify_t b2b_cback,
 	}
 	hash_index = core_hash(&dlg->callid, &dlg->tag[CALLER_LEG], server_hsize);
 
-	/* check if record does not exist already */	
+	/* check if record does not exist already */
 
 	dlg->state = B2B_NEW;
 	dlg->b2b_cback = b2b_cback;
@@ -149,9 +149,9 @@ dlg_t* b2b_server_build_dlg(b2b_dlg_t* dlg)
 			LM_ERR("failed to parse record route body\n");
 			goto error;
 		}
-	}	
+	}
 	td->state= DLG_CONFIRMED ;
-	td->send_sock = dlg->bind_addr[CALLER_LEG];
+	td->send_sock = dlg->send_sock;
 
 	return td;
 error:

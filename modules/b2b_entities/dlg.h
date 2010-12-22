@@ -80,7 +80,6 @@ typedef struct b2b_dlg_leg {
 	unsigned int cseq;
 	str route_set;
 	str contact;
-	struct socket_info *bind_addr;
 	struct b2b_dlg_leg* next;
 }dlg_leg_t;
 
@@ -106,7 +105,6 @@ typedef struct b2b_dlg
 	unsigned int         last_invite_cseq;
 	str                  route_set[2];
 	str                  contact[2];
-	struct socket_info*  bind_addr[2];
 	enum request_method  last_method;
 	struct b2b_dlg      *next;
 	struct b2b_dlg      *prev;
@@ -119,6 +117,7 @@ typedef struct b2b_dlg
 	struct cell*         update_tran;
 	struct cell*         cancel_tm_tran;
 	dlg_leg_t*           legs;
+	struct socket_info*  send_sock;
 	unsigned int         last_reply_code;
 	int                  db_flag;
 }b2b_dlg_t;
@@ -135,6 +134,7 @@ typedef struct client_info
 	str* extra_headers;
 	str* body;
 	str* from_tag;
+	str local_contact;
 	unsigned int cseq;
 	struct socket_info* send_sock;
 }client_info_t;
@@ -165,11 +165,13 @@ b2b_dlg_t* b2b_dlg_copy(b2b_dlg_t* dlg);
 
 int init_b2b_htables(void);
 void destroy_b2b_htables();
-b2b_dlg_t* b2b_new_dlg(struct sip_msg* msg, int flag, str* param);
+b2b_dlg_t* b2b_new_dlg(struct sip_msg* msg, str* local_contact,
+		int flag, str* param);
 
 int b2b_prescript_f(struct sip_msg *msg, void* param);
 
-typedef str* (*b2b_server_new_t) (struct sip_msg* ,b2b_notify_t , str* param);
+typedef str* (*b2b_server_new_t) (struct sip_msg* , str* local_contact,
+		b2b_notify_t , str* param);
 typedef str* (*b2b_client_new_t) (client_info_t* , b2b_notify_t b2b_cback,
 		b2b_add_dlginfo_t add_dlginfo_f, str* param);
 
@@ -205,7 +207,8 @@ void b2b_tm_cback(struct cell* t, b2b_table htable, struct tmcb_params *ps);
 
 void print_b2b_entities(void);
 
-int b2breq_complete_ehdr(str* extra_headers, str* ehdr_out, str* body);
+int b2breq_complete_ehdr(str* extra_headers, str* ehdr_out, str* body,
+		str* contact);
 
 void b2b_db_delete(b2b_dlg_t* dlg, int type);
 

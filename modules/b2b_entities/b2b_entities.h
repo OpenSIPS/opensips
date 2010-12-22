@@ -57,8 +57,6 @@ typedef struct b2b_api
 
 extern unsigned int server_hsize;
 extern unsigned int client_hsize;
-extern str server_address;
-extern struct sip_uri srv_addr_uri;
 extern struct tm_binds tmb;
 extern int req_routeid;
 extern int reply_routeid;
