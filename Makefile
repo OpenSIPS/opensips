@@ -437,7 +437,7 @@ install-app: app mk-install-dirs install-cfg install-bin \
 install-modules-all: install-modules install-modules-doc
 
 # Install everything (except modules-docbook?)
-install: install-app install-console install-modules
+install: install-app install-console install-modules-all
 
 
 .PHONY: dbschema
@@ -792,11 +792,9 @@ install-modules-doc: $(doc-prefix)/$(doc-dir)
 	-@for r in $(modules_basenames) "" ; do \
 		if [ -n "$$r" ]; then \
 			if [ -f modules/"$$r"/README ]; then \
-				$(INSTALL_TOUCH)  $(doc-prefix)/$(doc-dir)/README ; \
+				$(INSTALL_TOUCH)  $(doc-prefix)/$(doc-dir)/README."$$r" ; \
 				$(INSTALL_DOC)  modules/"$$r"/README  \
-									$(doc-prefix)/$(doc-dir)/README ; \
-				mv -f $(doc-prefix)/$(doc-dir)/README \
-						$(doc-prefix)/$(doc-dir)/README."$$r" ; \
+									$(doc-prefix)/$(doc-dir)/README."$$r" ; \
 			fi ; \
 		fi ; \
 	done 
