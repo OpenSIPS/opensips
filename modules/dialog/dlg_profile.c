@@ -806,7 +806,7 @@ struct mi_root * mi_profile_list(struct mi_root *cmd_tree, void *param )
 	struct dlg_profile_table *profile;
 	str *profile_name;
 	str *value;
-	unsigned int i,found;
+	unsigned int i,found,n;
 	struct dlg_entry *d_entry;
 	struct dlg_cell    *cur_dlg;
 	struct dlg_profile_link *cur_link;
@@ -839,7 +839,7 @@ struct mi_root * mi_profile_list(struct mi_root *cmd_tree, void *param )
 
 	/* go through the hash and print the dialogs */
 
-	for( i=0; i<d_table->size; i++)
+	for( n=0,i=0; i<d_table->size; i++)
 	{
 		d_entry = &(d_table->entries[i]);
 		lock_set_get(d_table->locks,d_entry->lock_idx);
@@ -866,12 +866,18 @@ struct mi_root * mi_profile_list(struct mi_root *cmd_tree, void *param )
 				cur_link = cur_link->next;
 			}
 
-			if( found )
+			if( found ) {
 
 				if( mi_print_dlg( rpl, cur_dlg, 0) ) {
 					lock_set_release(d_table->locks,d_entry->lock_idx);
 					goto error;
 				}
+
+				n++;
+
+				if ( (n % 50) == 0 )
+					flush_mi_tree(rpl_tree);
+			}
 
 			cur_dlg = cur_dlg->next;
 		}
