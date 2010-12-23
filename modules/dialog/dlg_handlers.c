@@ -1176,8 +1176,8 @@ int fix_route_dialog(struct sip_msg *req,struct dlg_cell *dlg)
 				route = pkg_malloc(size);
 				if (route == 0) {
 					LM_ERR("no more pkg memory\n");
-					return -1;
 					free_rr(&head);
+					return -1;
 				}
 
 				memcpy(route,ROUTE_STR,ROUTE_LEN);
