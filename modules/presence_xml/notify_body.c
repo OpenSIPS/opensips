@@ -696,8 +696,8 @@ str* offline_nbody(str* body)
 		goto error;
 	}
 
-    new_doc = xmlNewDoc(BAD_CAST "1.0");
-    if(new_doc==0)
+	new_doc = xmlNewDoc(BAD_CAST "1.0");
+	if(new_doc==0)
 		goto error;
 	root_node= xmlCopyNode(pres_node, 2);
 	if(root_node== NULL)
@@ -712,7 +712,8 @@ str* offline_nbody(str* body)
 		root_node->nsDef = NULL;
 		root_node->ns = NULL;
 	}
-
+	xmlNewProp(root_node, BAD_CAST "xmlns",
+			BAD_CAST "urn:ietf:params:xml:ns:pidf");
 	xmlDocSetRootElement(new_doc, root_node);
 
 	tuple_node= xmlCopyNode(tuple_node, 2);
@@ -728,7 +729,6 @@ str* offline_nbody(str* body)
 		tuple_node->nsDef = NULL;
 		tuple_node->ns = NULL;
 	}
-
 
 	xmlAddChild(root_node, tuple_node);
 
@@ -771,6 +771,4 @@ error:
 	if(new_doc)
 		xmlFreeDoc(new_doc);
 	return NULL;
-
-}		
-
+}
