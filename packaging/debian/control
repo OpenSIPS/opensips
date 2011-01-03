@@ -86,7 +86,7 @@ Description: CPL module (CPL interpreter engine) for OpenSIPS
 Package: opensips-radius-modules
 Architecture: any
 Depends: ${shlibs:Depends}, opensips (= ${binary:Version})
-Description: radius modules for OpenSIPS
+Description: Radius modules for OpenSIPS
  OpenSIPS is a very fast and flexible SIP (RFC3261)
  server. Written entirely in C, OpenSIPS can handle thousands calls
  per second even on low-budget hardware.
@@ -254,18 +254,18 @@ Description: HTTP database connectivity module for OpenSIPS
 Package: opensips-dialplan-module
 Architecture: any
 Depends: ${shlibs:Depends}, opensips (= ${binary:Version}), libpcre3-dev
-Description: HTTP database connectivity module for OpenSIPS
+Description: Generic string translation module for OpenSIPS
  OpenSIPS is a very fast and flexible SIP (RFC3261)
  server. Written entirely in C, OpenSIPS can handle thousands calls
  per second even on low-budget hardware.
  .
- This package provides dialplan management for OpenSIPS
+ This package provides dialplan module that implements generic string translations based on matching and replacement rules. It can be used to manipulate R-URI or a PV and to translated to a new format/value.
 
 Package: opensips-console
 Architecture: any
 Depends: ${shlibs:Depends}, opensips (= ${binary:Version}), python-mysqldb, libfrontier-rpc-perl, libnet-ip-perl, libberkeleydb-perl
 Suggests: opensips-mysql-module, opensips-postgres-module, opensips-unixodbc-module, opensips-xmlrpc-module, opensips-berkeley-module 
-Description: 
+Description: Generic tool for OpenSIPS provisioning
  OpenSIPS is a very fast and flexible SIP (RFC3261)
  server. Written entirely in C, OpenSIPS can handle thousands calls
  per second even on low-budget hardware.
