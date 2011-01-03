@@ -506,7 +506,7 @@ void store_b2b_dlg(b2b_table htable, unsigned int hsize, int type, int no_lock)
 	qcols[leg_tag_col=n_query_cols++]     = &str_leg_tag_col;
 	qvals[leg_tag_col].type               = DB_STR;
 	qcols[leg_cseq_col=n_query_cols++]    = &str_leg_cseq_col;
-	qvals[leg_cseq_col].type              = DB_STR;
+	qvals[leg_cseq_col].type              = DB_INT;
 	qcols[leg_route_col=n_query_cols++]   = &str_leg_route_col;
 	qvals[leg_route_col].type             = DB_STR;
 	qcols[leg_contact_col=n_query_cols++] = &str_leg_contact_col;
