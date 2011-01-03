@@ -115,7 +115,7 @@ str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 	/* create a dummy b2b dialog structure to be inserted in the hash table*/
 	size = sizeof(b2b_dlg_t) + ci->to_uri.len + ci->from_uri.len
 		+ ci->from_dname.len + ci->to_dname.len +
-		from_tag.len + B2BL_MAX_KEY_LEN;
+		from_tag.len + ci->local_contact.len + B2BL_MAX_KEY_LEN;
 
 	/* create record in hash table */
 	dlg = (b2b_dlg_t*)shm_malloc(size);
@@ -134,6 +134,7 @@ str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 	if(ci->from_dname.s)
 		CONT_COPY(dlg, dlg->from_dname, ci->from_dname);
 	CONT_COPY(dlg, dlg->tag[CALLER_LEG], from_tag);
+	CONT_COPY(dlg, dlg->contact[CALLER_LEG], ci->local_contact);
 
 	if(param && param->s)
 	{
@@ -172,7 +173,8 @@ str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 		goto error;
 	}
 
-	if(b2breq_complete_ehdr(ci->extra_headers, &ehdr, ci->body)< 0)
+	if(b2breq_complete_ehdr(ci->extra_headers, &ehdr, ci->body,
+				&ci->local_contact)< 0)
 	{
 		LM_ERR("Failed to complete extra headers\n");
 		goto error;
@@ -305,7 +307,9 @@ dlg_t* b2b_client_build_dlg(b2b_dlg_t* dlg, dlg_leg_t* leg)
 		}
 	}
 	td->state= DLG_CONFIRMED ;
-	td->send_sock = leg->bind_addr;
+	td->send_sock = dlg->send_sock;
+	LM_DBG("*** send sock= %.*s\n", dlg->send_sock->address_str.len,
+			dlg->send_sock->address_str.s);
 
 	return td;
 error:

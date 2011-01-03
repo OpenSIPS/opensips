@@ -33,6 +33,7 @@
 #include "../../mem/shm_mem.h"
 #include "../../ut.h"
 #include "../presence/hash.h"
+#include "../presence/utils_func.h"
 #include "records.h"
 
 extern b2bl_cb_params_t cb_params;
@@ -77,8 +78,18 @@ b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg,
 	int buf_len= 255;
 	int size;
 	str extra_headers={0, 0};
+	str local_contact= server_address;
 
-	size = sizeof(b2bl_tuple_t);
+	if(msg)
+	{
+		if(get_local_contact(msg, &local_contact)< 0)
+		{
+			LM_ERR("Failed to get received address\n");
+			local_contact= server_address;
+		}
+	}
+
+	size = sizeof(b2bl_tuple_t) + local_contact.len;
 	if(body && use_init_sdp)
 	{
 		size+= body->len;
@@ -88,19 +99,24 @@ b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg,
 	if(tuple == NULL)
 	{
 		LM_ERR("No more shared memory\n");
-		return NULL;
+		goto error;
 	}
 	memset(tuple, 0, size);
 
+	size = sizeof(b2bl_tuple_t);
 	if(body && use_init_sdp)
 	{
 		tuple->sdp.s = (char*)tuple + sizeof(b2bl_tuple_t);
 		memcpy(tuple->sdp.s, body->s, body->len);
 		tuple->sdp.len =  body->len;
+		size += body->len;
 	}
 
-	tuple->scenario = scenario;
+	tuple->local_contact.s = (char*)tuple + size;
+	memcpy(tuple->local_contact.s, local_contact.s, local_contact.len);
+	tuple->local_contact.len = local_contact.len;
 
+	tuple->scenario = scenario;
 	tuple->insert_time = get_ticks();
 
 	if(msg)
