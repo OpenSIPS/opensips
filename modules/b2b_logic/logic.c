@@ -2776,6 +2776,39 @@ int b2bl_terminate_call(str* key)
 	return 0;
 }
 
+int b2bl_get_stats(str* key, b2bl_dlg_stat_t* stat)
+{
+	unsigned int hash_index, local_index;
+	b2bl_tuple_t* tuple;
+
+	if(b2bl_parse_key(key, &hash_index, &local_index) < 0)
+	{
+		LM_ERR("Failed to parse key\n");
+		return -1;
+	}
+
+	lock_get(&b2bl_htable[hash_index].lock);
+
+	tuple = b2bl_search_tuple_safe(hash_index, local_index);
+	if(tuple == NULL)
+	{
+		LM_ERR("No entity found\n");
+		lock_release(&b2bl_htable[hash_index].lock);
+		return -1;
+	}
+	
+	if(stat && tuple->bridge_entities[0])
+	{
+		stat->start_time = tuple->bridge_entities[0]->stats.start_time;
+		stat->setup_time = tuple->bridge_entities[0]->stats.setup_time;
+		stat->call_time  = get_ticks() - stat->start_time;	
+	}
+
+	lock_release(&b2bl_htable[hash_index].lock);
+
+	return 0;
+}
+
 int b2bl_set_state(str* key, int state)
 {
 	unsigned int hash_index, local_index;
