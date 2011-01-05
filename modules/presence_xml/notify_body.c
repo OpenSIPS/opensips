@@ -512,8 +512,7 @@ str* agregate_xmls(str* pres_user, str* pres_domain, str** body_array, int n)
 			goto error;
 		}
 		j++;
-
-	} 
+	}
 
 	if(j== 0)  /* no body */
 	{
@@ -594,13 +593,6 @@ append_label:
 				{
 					LM_ERR("while copying node [%s]\n", node->name);
 					goto error;
-				}
-				if(add_node->ns != NULL)
-				{
-					/* dump redundant namespace added by xmlCopyNode */
-					xmlFreeNsList(add_node->nsDef);
-					add_node->nsDef = NULL;
-					add_node->ns = NULL;
 				}
 
 				if(xmlAddChild(p_root, add_node)== NULL)
@@ -705,13 +697,6 @@ str* offline_nbody(str* body)
 		LM_ERR("while copying root node\n");
 		goto error;
 	}
-	if(root_node->ns != NULL)
-	{
-		/* dump redundant namespace added by xmlCopyNode */
-		xmlFreeNsList(root_node->nsDef);
-		root_node->nsDef = NULL;
-		root_node->ns = NULL;
-	}
 	xmlNewProp(root_node, BAD_CAST "xmlns",
 			BAD_CAST "urn:ietf:params:xml:ns:pidf");
 	xmlDocSetRootElement(new_doc, root_node);
@@ -722,13 +707,6 @@ str* offline_nbody(str* body)
 		LM_ERR("no tuple node found\n");
 		goto error;
 	}
-	if(tuple_node->ns != NULL)
-	{
-		/* dump redundant namespace added by xmlCopyNode */
-		xmlFreeNsList(tuple_node->nsDef);
-		tuple_node->nsDef = NULL;
-		tuple_node->ns = NULL;
-	}
 
 	xmlAddChild(root_node, tuple_node);
 
@@ -737,13 +715,6 @@ str* offline_nbody(str* body)
 	{
 		LM_ERR("while copying node\n");
 		goto error;
-	}
-	if(add_node->ns != NULL)
-	{
-		/* dump redundant namespace added by xmlCopyNode */
-		xmlFreeNsList(add_node->nsDef);
-		add_node->nsDef = NULL;
-		add_node->ns = NULL;
 	}
 
 	xmlAddChild(tuple_node, add_node);
