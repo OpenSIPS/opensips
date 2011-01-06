@@ -24,6 +24,7 @@
  * History:
  * --------
  *  2009-08-03  initial version (Anca Vamanu)
+ *  2011-01-04  new mi function: mi_b2be_list (Ovidiu Sas)
  */
 
 #include <stdio.h>
@@ -55,6 +56,7 @@ int b2b_entities_bind(b2b_api_t* api);
 void b2b_entities_dump(int no_lock);
 int b2b_entities_restore(void);
 void b2be_db_update(unsigned int ticks, void* param);
+static struct mi_root* mi_b2be_list(struct mi_root* cmd, void* param);
 
 /** Global variables */
 unsigned int server_hsize = 9;
@@ -123,6 +125,11 @@ static param_export_t params[]={
 	{ 0,                       0,            0                   }
 };
 
+/** MI commands */
+static mi_export_t mi_cmds[] = {
+	{ "b2be_list", mi_b2be_list, 0,  0,  0},
+	{  0,          0,            0,  0,  0}
+};
 /** Module interface */
 struct module_exports exports= {
 	"b2b_entities",                 /* module name */
@@ -131,7 +138,7 @@ struct module_exports exports= {
 	cmds,                           /* exported functions */
 	params,                         /* exported parameters */
 	0,                              /* exported statistics */
-	0,                              /* exported MI functions */
+	mi_cmds,                        /* exported MI functions */
 	0,                              /* exported pseudo-variables */
 	0,                              /* extra processes */
 	mod_init,                       /* module initialization function */
@@ -944,4 +951,193 @@ void b2b_db_delete(b2b_dlg_t* dlg, int type)
 	}
 }
 
+
+
+static inline int mi_print_b2be_dlg(struct mi_node *rpl, b2b_table htable, unsigned int hsize)
+{
+	int i, len;
+	char* p;
+	b2b_dlg_t* dlg;
+	dlg_leg_t* leg;
+	struct mi_node *node=NULL, *node1=NULL;
+	struct mi_attr* attr;
+
+	for(i = 0; i< hsize; i++)
+	{
+		lock_get(&htable[i].lock);
+		dlg = htable[i].first;
+		while(dlg)
+		{
+			p = int2str((unsigned long)(dlg->id), &len);
+			node = add_mi_node_child(rpl, MI_DUP_VALUE, "dlg", 3, p, len);
+			if(node == NULL) goto error;
+			attr = add_mi_attr(node, MI_DUP_VALUE, "param", 5,
+					dlg->param.s, dlg->param.len);
+			if(attr == NULL) goto error;
+			p = int2str((unsigned long)(dlg->state), &len);
+			attr = add_mi_attr(node, MI_DUP_VALUE, "state", 5, p, len);
+			if(attr == NULL) goto error;
+			p = int2str((unsigned long)(dlg->last_invite_cseq), &len);
+			attr = add_mi_attr(node, MI_DUP_VALUE, "last_invite_cseq", 16, p, len);
+			if(attr == NULL) goto error;
+			p = int2str((unsigned long)(dlg->last_method), &len);
+			attr = add_mi_attr(node, MI_DUP_VALUE, "last_method", 11, p, len);
+			if(attr == NULL) goto error;
+			if (dlg->last_reply_code)
+			{
+				p = int2str((unsigned long)(dlg->last_reply_code), &len);
+				attr = add_mi_attr(node,MI_DUP_VALUE,"last_reply_code",15,p,len);
+				if(attr == NULL) goto error;
+			}
+			p = int2str((unsigned long)(dlg->db_flag), &len);
+			attr = add_mi_attr(node, MI_DUP_VALUE, "db_flag", 7, p, len);
+			if(attr == NULL) goto error;
+
+			if (dlg->ruri.len)
+			{
+				node1 = add_mi_node_child(node, MI_DUP_VALUE, "ruri", 4,
+						dlg->ruri.s, dlg->ruri.len);
+				if(node1 == NULL) goto error;
+			}
+
+			node1 = add_mi_node_child(node, MI_DUP_VALUE, "callid", 6,
+					dlg->callid.s, dlg->callid.len);
+			if(node1 == NULL) goto error;
+
+			node1 = add_mi_node_child(node, MI_DUP_VALUE, "from", 4,
+					dlg->from_dname.s, dlg->from_dname.len);
+			if(node1 == NULL) goto error;
+			attr = add_mi_attr(node1, MI_DUP_VALUE, "uri", 3,
+					dlg->from_uri.s, dlg->from_uri.len);
+			if(attr == NULL) goto error;
+			attr = add_mi_attr(node1, MI_DUP_VALUE, "tag", 3,
+					dlg->tag[0].s, dlg->tag[0].len);
+			if(attr == NULL) goto error;
+
+			node1 = add_mi_node_child(node, MI_DUP_VALUE, "to", 2,
+					dlg->to_dname.s, dlg->to_dname.len);
+			if(node1 == NULL) goto error;
+			attr = add_mi_attr(node1, MI_DUP_VALUE, "uri", 3,
+					dlg->to_uri.s, dlg->to_uri.len);
+			if(attr == NULL) goto error;
+			attr = add_mi_attr(node1, MI_DUP_VALUE, "tag", 3,
+					dlg->tag[1].s, dlg->tag[1].len);
+			if(attr == NULL) goto error;
+
+			node1 = add_mi_node_child(node, MI_DUP_VALUE, "cseq", 4, NULL, 0);
+			if(node1 == NULL) goto error;
+			p = int2str((unsigned long)(dlg->cseq[0]), &len);
+			attr = add_mi_attr(node1, MI_DUP_VALUE, "caller", 6, p, len);
+			if(attr == NULL) goto error;
+			p = int2str((unsigned long)(dlg->cseq[1]), &len);
+			attr = add_mi_attr(node1, MI_DUP_VALUE, "callee", 6, p, len);
+			if(attr == NULL) goto error;
+
+			if (dlg->route_set[0].len||dlg->route_set[1].len)
+			{
+				node1 = add_mi_node_child(node,MI_DUP_VALUE,"route_set",9,NULL,0);
+				if(node1 == NULL) goto error;
+				if (dlg->route_set[0].len)
+				{
+					attr = add_mi_attr(node1, MI_DUP_VALUE, "caller", 6,
+							dlg->route_set[0].s, dlg->route_set[0].len);
+					if(attr == NULL) goto error;
+				}
+				if (dlg->route_set[1].len)
+				{
+					attr = add_mi_attr(node1, MI_DUP_VALUE, "callee", 6,
+							dlg->route_set[1].s, dlg->route_set[1].len);
+					if(attr == NULL) goto error;
+				}
+			}
+
+			node1 = add_mi_node_child(node, MI_DUP_VALUE, "contact", 7, NULL, 0);
+			if(node1 == NULL) goto error;
+			attr = add_mi_attr(node1, MI_DUP_VALUE, "caller", 6,
+					dlg->contact[0].s, dlg->contact[0].len);
+			if(attr == NULL) goto error;
+			attr = add_mi_attr(node1, MI_DUP_VALUE, "callee", 6,
+					dlg->contact[1].s, dlg->contact[1].len);
+			if(attr == NULL) goto error;
+
+			node1 = add_mi_node_child(node, MI_DUP_VALUE, "send_sock", 9,
+					dlg->send_sock->name.s, dlg->send_sock->name.len);
+			if(node1 == NULL) goto error;
+
+			if(dlg->uac_tran||dlg->uas_tran||dlg->update_tran||dlg->cancel_tm_tran)
+			{
+				node1 = add_mi_node_child(node, MI_DUP_VALUE, "tm_tran", 7, NULL, 0);
+				if(node1 == NULL) goto error;
+				if(dlg->uac_tran)
+					attr = add_mi_attr(node1,MI_DUP_VALUE,"uac",3,NULL,0);
+					if(attr == NULL) goto error;
+				if(dlg->uas_tran)
+					attr = add_mi_attr(node1,MI_DUP_VALUE,"uas",3,NULL,0);
+					if(attr == NULL) goto error;
+				if(dlg->update_tran)
+					attr = add_mi_attr(node1,MI_DUP_VALUE,"update",6,NULL,0);
+					if(attr == NULL) goto error;
+				if(dlg->cancel_tm_tran)
+					attr = add_mi_attr(node1,MI_DUP_VALUE,"cancel_tm",9,NULL,0);
+					if(attr == NULL) goto error;
+			}
+
+			leg=dlg->legs;
+			while(leg)
+			{
+				p = int2str((unsigned long)(leg->id), &len);
+				node1 = add_mi_node_child(node, MI_DUP_VALUE, "leg", 3, p, len);
+				if(node1 == NULL) goto error;
+				attr = add_mi_attr(node1, MI_DUP_VALUE, "tag", 3,
+						leg->tag.s, leg->tag.len);
+				if(attr == NULL) goto error;
+				p = int2str((unsigned long)(leg->cseq), &len);
+				attr = add_mi_attr(node1, MI_DUP_VALUE, "cseq", 4, p, len);
+				if(attr == NULL) goto error;
+				attr = add_mi_attr(node1, MI_DUP_VALUE, "contact", 7,
+						leg->contact.s, leg->contact.len);
+				if(attr == NULL) goto error;
+				if(leg->route_set.len)
+				{
+					attr = add_mi_attr(node1, MI_DUP_VALUE, "route_set", 8,
+						leg->route_set.s, leg->route_set.len);
+					if(attr == NULL) goto error;
+				}
+
+				leg=leg->next;
+			}
+
+			dlg = dlg->next;
+		}
+		lock_release(&htable[i].lock);
+	}
+	return 0;
+error:
+	lock_release(&htable[i].lock);
+	LM_ERR("failed to add node\n");
+	return -1;
+}
+
+static struct mi_root* mi_b2be_list(struct mi_root* cmd, void* param)
+{
+	struct mi_root *rpl_tree;
+	struct mi_node *rpl=NULL;
+
+	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
+	if (rpl_tree==NULL) return NULL;
+	rpl = &rpl_tree->node;
+
+	if (server_htable)
+		if (mi_print_b2be_dlg(rpl, server_htable, server_hsize)!=0)
+			goto error;
+	if (client_htable)
+		if (mi_print_b2be_dlg(rpl, client_htable, client_hsize)!=0)
+			goto error;
+
+	return rpl_tree;
+error:
+	LM_ERR("Unable to create reply\n");
+	free_mi_tree(rpl_tree);
+	return NULL;
+}
 
