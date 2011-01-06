@@ -40,9 +40,7 @@
 #include "dlg.h"
 #include "b2b_entities.h"
 
-#define B2B_KEY_PREFIX       "B2B"
-#define B2B_KEY_PREFIX_LEN   strlen("B2B")
-#define B2B_MAX_KEY_SIZE     (B2B_KEY_PREFIX_LEN+ 5*3 + 40)
+#define B2B_MAX_KEY_SIZE     (B2B_MAX_PREFIX_LEN + 5*3 + 40)
 #define BUF_LEN              1024
 
 str ack = str_init(ACK);
@@ -174,8 +172,6 @@ str* b2b_htable_insert(b2b_table table, b2b_dlg_t* dlg, int hash_index, int src)
 		}
 		prev_it->next = dlg;
 		dlg->prev = prev_it;
-		if(!replication_mode)
-			dlg->id = prev_it->id + 1;
 	}
 	/* if an insert in server_htable -> copy the b2b_key in the to_tag */
 	b2b_key = b2b_generate_key(hash_index, dlg->id);
@@ -214,14 +210,14 @@ int b2b_parse_key(str* key, unsigned int* hash_index, unsigned int* local_index)
 	if(!key || !key->s)
 		return -1;
 
-	if(strncmp(key->s, B2B_KEY_PREFIX, B2B_KEY_PREFIX_LEN) != 0 || 
-			key->len<( B2B_KEY_PREFIX_LEN +4) || key->s[B2B_KEY_PREFIX_LEN]!='.')
+	if(strncmp(key->s, b2b_key_prefix.s, b2b_key_prefix.len) != 0 || 
+			key->len<(b2b_key_prefix.len +4) || key->s[b2b_key_prefix.len]!='.')
 	{
 		LM_DBG("Does not have b2b_entities prefix\n");
 		return -1;
 	}
 
-	s.s = key->s + B2B_KEY_PREFIX_LEN+1;
+	s.s = key->s + b2b_key_prefix.len+1;
 	p= strchr(s.s, '.');
 	if(p == NULL || ((p-s.s) > key->len) )
 	{
@@ -256,7 +252,7 @@ str* b2b_generate_key(unsigned int hash_index, unsigned int local_index)
 	str* b2b_key;
 	int len;
 
-	len = sprintf(buf, "%s.%d.%d", B2B_KEY_PREFIX, hash_index, local_index);
+	len = sprintf(buf, "%s.%d.%d", b2b_key_prefix.s, hash_index, local_index);
 
 	b2b_key = (str*)pkg_malloc(sizeof(str)+ len);
 	if(b2b_key== NULL)

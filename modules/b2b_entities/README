@@ -32,6 +32,7 @@ Anca-Maria Vamanu
               1.3.4. script_reply_route (str)
               1.3.5. db_url (str)
               1.3.6. update_period (int)
+              1.3.7. b2b_key_prefix (string)
 
         1.4. Exported Functions
 
@@ -54,6 +55,7 @@ Anca-Maria Vamanu
    1.4. Set script_repl_route parameter
    1.5. Set db_url parameter
    1.6. Set update_period parameter
+   1.7. Set b2b_key_prefix parameter
    2.1. b2b_api_t structure
 
 Chapter 1. Admin Guide
@@ -143,7 +145,8 @@ modparam("b2b_entities", "script_reply_route", "b2b_reply")
 
 1.3.5. db_url (str)
 
-   Database URL.
+   Database URL. It is not compulsory, if not set data is not
+   stored in database.
 
    Example 1.5. Set db_url parameter
 ...
@@ -159,7 +162,23 @@ modparam("b2b_entities", "db_url", "mysql://opensips:opensipsrw@127.0.0.
 
    Example 1.6. Set update_period parameter
 ...
-modparam("b2b_logic", "update_period", 60)
+modparam("b2b_entities", "update_period", 60)
+...
+
+1.3.7. b2b_key_prefix (string)
+
+   The string to use when generating the key ( it is inserted in
+   the SIP messages as callid or to tag. It is useful to set this
+   prefix if you use more instances of opensips B2BUA cascaded in
+   the same architecture. Sometimes opensips B2BUA looks at the
+   callid or totag to see if it has the format it uses to
+   determine if the request was sent by it.
+
+   Default value is “B2B”.
+
+   Example 1.7. Set b2b_key_prefix parameter
+...
+modparam("b2b_entities", "b2b_key_prefix", "B2B1")
 ...
 
 1.4. Exported Functions

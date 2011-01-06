@@ -69,6 +69,7 @@ static db_con_t *b2be_db = NULL;
 static db_func_t b2be_dbf;
 static str dbtable= str_init("b2b_entities");
 static int b2b_update_period = 100;
+str b2b_key_prefix = str_init("B2B");
 
 static str str_type_col         = str_init("type");
 static str str_state_col        = str_init("state");
@@ -118,6 +119,7 @@ static param_export_t params[]={
 	{ "db_url",                STR_PARAM,    &db_url.s           },
 	{ "dbtable",               STR_PARAM,    &dbtable.s          },
 	{ "update_period",         INT_PARAM,    &b2b_update_period  },
+	{ "b2b_key_prefix",        STR_PARAM,    &b2b_key_prefix.s   },
 	{ 0,                       0,            0                   }
 };
 
@@ -152,6 +154,17 @@ static int mod_init(void)
 	}
 	server_hsize = 1<<server_hsize;
 	client_hsize = 1<<client_hsize;
+
+	if(b2b_key_prefix.s)
+	{
+		b2b_key_prefix.len = strlen(b2b_key_prefix.s);
+		if(b2b_key_prefix.len > B2B_MAX_PREFIX_LEN)
+		{
+			LM_ERR("b2b_key_prefix [%s] too long. Maximum size %d\n",
+					b2b_key_prefix.s, B2B_MAX_PREFIX_LEN);
+			return -1;
+		}
+	}
 
 	/* load all TM stuff */
 	if(load_tm_api(&tmb)==-1)

@@ -37,6 +37,9 @@
 #include "client.h"
 #include "server.h"
 
+extern str b2b_key_prefix;
+#define B2B_MAX_PREFIX_LEN    5
+
 typedef int (*b2b_restore_linfo_t)(enum b2b_entity_type type, str* key,
 		b2b_notify_t cback);
 
