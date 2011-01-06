@@ -889,7 +889,6 @@ b2b_dlg_t* b2b_new_dlg(struct sip_msg* msg, str* local_contact,
 	if(msg->to->parsed != NULL)
 	{
 		pto = (struct to_body*)msg->to->parsed;
-		LM_DBG("'To' header ALREADY PARSED: <%.*s>\n",pto->uri.len,pto->uri.s);
 	}
 	else
 	{
