@@ -1060,9 +1060,12 @@ static inline int mi_print_b2be_dlg(struct mi_node *rpl, b2b_table htable, unsig
 					dlg->contact[1].s, dlg->contact[1].len);
 			if(attr == NULL) goto error;
 
-			node1 = add_mi_node_child(node, MI_DUP_VALUE, "send_sock", 9,
+			if (dlg->send_sock)
+			{
+				node1 = add_mi_node_child(node, MI_DUP_VALUE, "send_sock", 9,
 					dlg->send_sock->name.s, dlg->send_sock->name.len);
-			if(node1 == NULL) goto error;
+				if(node1 == NULL) goto error;
+			}
 
 			if(dlg->uac_tran||dlg->uas_tran||dlg->update_tran||dlg->cancel_tm_tran)
 			{
