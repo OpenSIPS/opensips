@@ -197,15 +197,15 @@ Chapter 1. Admin Guide
    with the help of dialog module.
 
    In our tests with RTPProxy we observed some limitations and
-   also provide a patch for it against git version Mon Nov 1
-   04:00:44 2010. It contains an addition and implements separate
-   timeout parameters for the phases of session establishment and
-   ongoing sessions. In the official code a single timeout
-   parameter controls both session establishment and rtp timeout
-   and the timeout notification is also sent in the call
-   establishment phase. This is a problem since we want to detect
-   rtp timeout fast, but also allow a longer period for call
-   establishment.
+   also provide a patch for it against git commit
+   "600c80493793bafd2d69427bc22fcb43faad98c5". It contains an
+   addition and implements separate timeout parameters for the
+   phases of session establishment and ongoing sessions. In the
+   official code a single timeout parameter controls both session
+   establishment and rtp timeout and the timeout notification is
+   also sent in the call establishment phase. This is a problem
+   since we want to detect rtp timeout fast, but also allow a
+   longer period for call establishment.
 
    To enable timeout notification there are several steps that you
    must follow:
@@ -232,9 +232,20 @@ Chapter 1. Admin Guide
 
    All of the previous parameters can be used with the offical
    RTPProxy release, except for the last one. It has been added,
-   among with other modifications to RTPProxy in order to work
-   properly, in a separate patch located in the patches directory
-   from the module directory.
+   together with other modifications to RTPProxy in order to work
+   properly. The patch is located in the patches directory in the
+   module.
+
+   To get the patched version from git you must follow theese
+   steps:
+     * Get the latest source code: "git clone
+       git://sippy.git.sourceforge.net/gitroot/sippy/rtpproxy"
+     * Make a branch from the commit: "git checkout -b branch_name
+       600c80493793bafd2d69427bc22fcb43faad98c5"
+     * Patch RTPProxy: "patch < path_to_rtpproxy_patch"
+
+   The patched version can also be found at:
+   http://opensips.org/pub/rtpproxy/
 
 1.5. Dependencies
 

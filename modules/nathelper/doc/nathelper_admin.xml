@@ -116,7 +116,8 @@
 	</para>
 	<para>
 		In our tests with RTPProxy we observed some limitations and also
-		provide a patch for it against git version Mon Nov 1 04:00:44 2010.
+		provide a patch for it against git commit
+		<quote>600c80493793bafd2d69427bc22fcb43faad98c5</quote>.
 		It contains an addition and implements separate timeout parameters
 		for the phases of session establishment and ongoing sessions.
 		In the official code a single timeout parameter controls
@@ -164,10 +165,35 @@
 			<para>
 				All of the previous parameters can be used with the offical
 				RTPProxy release, except for the last one. It has been
-				added, among with other modifications to RTPProxy in order
-				to work properly, in a separate patch located in the
-				<emphasis>patches</emphasis> directory from the module
-				directory.
+				added, together with other modifications to RTPProxy in order
+				to work properly. The patch is located in the
+				<emphasis>patches</emphasis> directory in the module.
+			</para>
+			<para>
+				To get the patched version from git you must follow theese steps:
+				<itemizedlist>
+					<listitem>
+						<para>
+							Get the latest source code: <quote>git clone git://sippy.git.sourceforge.net/gitroot/sippy/rtpproxy</quote>
+						</para>
+					</listitem>
+					<listitem>
+						<para>
+							Make a branch from the commit: <quote>git checkout
+								-b branch_name 600c80493793bafd2d69427bc22fcb43faad98c5</quote>
+						</para>
+					</listitem>
+					<listitem>
+						<para>
+							Patch RTPProxy: <quote>patch &lt;
+								path_to_rtpproxy_patch</quote>
+						</para>
+					</listitem>
+				</itemizedlist>
+			</para>
+			<para>
+				The patched version can also be found at:
+				http://opensips.org/pub/rtpproxy/
 			</para>
 	</para>
 	</section>
