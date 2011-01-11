@@ -435,7 +435,15 @@ int bla_aggregate_state(str* old_body, str* notify_body, str* update_body,
 	dlg_node = xmlNodeGetChildByName(old_doc->children, "dialog");
 	if(dlg_node == NULL)
 	{
-		*update_body = *notify_body;
+		/* change the state to full */
+		if( xmlSetProp(n_dlg_node, BAD_CAST "version", BAD_CAST "full")== NULL)
+		{
+			LM_ERR("while setting version attribute\n");
+			goto error;
+		}
+
+		xmlDocDumpMemory(notify_doc,(xmlChar**)(void*)&update_body->s,
+			&update_body->len);
 		*bla_update_publish = 1;
 		goto done;
 	}
@@ -1112,7 +1120,7 @@ done:
 	if(pres_uri.s)
 		pkg_free(pres_uri.s);
 	if(bla_update_publish && update_body.s && update_body.s!=notify_body.s)
-			xmlFree(update_body.s);
+		xmlFree(update_body.s);
 	if(allocated)
 		xmlFree(notify_body.s);
 	return 0;
@@ -1131,7 +1139,7 @@ error:
 	if(pres_uri.s)
 		pkg_free(pres_uri.s);
 	if(bla_update_publish && update_body.s && update_body.s!=notify_body.s)
-			xmlFree(update_body.s);
+		xmlFree(update_body.s);
 	if(allocated)
 		xmlFree(notify_body.s);
 	return -1;
