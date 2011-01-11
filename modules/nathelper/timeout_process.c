@@ -303,6 +303,7 @@ void timeout_listener_process(int rank)
 						break;
 				if (!rtpp_lst) {
 					LM_ERR("BUG - rtpproxy not found\n");
+					lock_release(rtpp_notify_h->lock);
 					continue;
 				}
 				rtpp_lst->index = 0;
@@ -321,6 +322,7 @@ void timeout_listener_process(int rank)
 						break;
 				if (!rtpp_lst) {
 					LM_ERR("BUG - rtpproxy index mismatch\n");
+					lock_release(rtpp_notify_h->lock);
 					continue;
 				}
 				rtpp_lst->index = i;
