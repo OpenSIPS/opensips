@@ -64,7 +64,7 @@ MAIN_NAME=opensips
 VERSION = 1
 PATCHLEVEL = 6
 SUBLEVEL = 4
-EXTRAVERSION =
+EXTRAVERSION = 2
 
 RELEASE=$(VERSION).$(PATCHLEVEL).$(SUBLEVEL)$(EXTRAVERSION)
 OS = $(shell uname -s | sed -e s/SunOS/solaris/ | tr "[A-Z/]" "[a-z_]")
