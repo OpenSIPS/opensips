@@ -264,7 +264,7 @@ int make_send_message(struct sip_msg* msg, int index, VALUE_PAIR **send) {
 			//LM_DBG("%.*s---->%d---->%d---->%d\n",mp->name.len, mp->name.s, 
 			//		pt.ri, mp->value, pt.flags);
 
-			if (!rc_avpair_add(rh, send, mp->value, &pt.ri, -1, 0))
+			if (!rc_avpair_add(rh, send, ATTRID(mp->value), &pt.ri, -1, VENDOR(mp->value)))
 				return -1;
 		}
 		else
@@ -273,10 +273,10 @@ int make_send_message(struct sip_msg* msg, int index, VALUE_PAIR **send) {
 			//		mp->name.s, pt.rs.len, pt.rs.s, mp->value, pt.flags, pt.rs.len);
 			if (rc_dict_getattr(rh,mp->value)->type == PW_TYPE_IPADDR) {
 				uint32_t ipaddr=rc_get_ipaddr(pt.rs.s);
-				if (!rc_avpair_add(rh, send, mp->value, &ipaddr, -1, 0))
+				if (!rc_avpair_add(rh, send, ATTRID(mp->value), &ipaddr, -1, VENDOR(mp->value)))
 					return -1;
 			} else {
-				if (!rc_avpair_add(rh, send, mp->value, pt.rs.s, pt.rs.len, 0))
+				if (!rc_avpair_add(rh, send, ATTRID(mp->value), pt.rs.s, pt.rs.len, VENDOR(mp->value)))
 					return -1;
 			}
 		}
