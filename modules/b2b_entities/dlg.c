@@ -56,7 +56,7 @@ b2b_dlg_t* b2b_search_htable_dlg(b2b_table table, unsigned int hash_index,
 		unsigned int local_index, str* to_tag, str* from_tag, str* callid)
 {
 	b2b_dlg_t* dlg;
-	str dlg_from_tag={0, 0};
+	str dlg_from_tag={NULL, 0};
 	dlg_leg_t* leg;
 
 	if(to_tag)
@@ -76,14 +76,15 @@ b2b_dlg_t* b2b_search_htable_dlg(b2b_table table, unsigned int hash_index,
 		if(table == server_htable)
 		{
 			if(!from_tag)
-				return 0;
+				return NULL;
 			dlg_from_tag= dlg->tag[CALLER_LEG];
 			/* check from tag and callid */
 			 if(dlg_from_tag.len==from_tag->len &&
 				strncmp(dlg_from_tag.s, from_tag->s, dlg_from_tag.len)==0
 				&& dlg->callid.len==callid->len && strncmp(dlg->callid.s, callid->s, callid->len)==0)
 			{
-				LM_DBG("Complete match for the server dialog [%p]\n", dlg);
+				LM_DBG("Match for server dlg [%p] dlg->uas_tran=[%p]\n",
+					dlg, dlg->uas_tran);
 				return dlg;
 			}
 		
@@ -102,13 +103,15 @@ b2b_dlg_t* b2b_search_htable_dlg(b2b_table table, unsigned int hash_index,
 				leg = dlg->legs;
 				if(dlg->state < B2B_CONFIRMED || dlg->state>=B2B_DESTROYED)
 				{
-					if(from_tag == 0 || from_tag->len==0 || leg==0)
+					if(from_tag == NULL || from_tag->len==0 || leg==NULL)
 					{
-						LM_DBG("Found match\n");
+						LM_DBG("Match for client dlg [%p] last_method=%d"
+							" dlg->uac_tran=[%p]\n",
+							dlg, dlg->last_method, dlg->uac_tran);
 						return dlg;
 					}
 				}
-				if(from_tag == 0 || from_tag->s==0)
+				if(from_tag == NULL || from_tag->s==NULL)
 				{
 					dlg = dlg->next;
 					continue;
@@ -179,7 +182,7 @@ str* b2b_htable_insert(b2b_table table, b2b_dlg_t* dlg, int hash_index, int src)
 	{
 		lock_release(&table[hash_index].lock);
 		LM_ERR("Failed to generate b2b key\n");
-		return 0;
+		return NULL;
 	}
 
 	if(src == B2B_SERVER)
@@ -424,7 +427,7 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 	b2b_dlg_t* dlg = 0;
 	unsigned int hash_index, local_index;
 	b2b_notify_t b2b_cback;
-	str param= {0,0};
+	str param= {NULL,0};
 	b2b_table table = NULL;
 	int method_value;
 	struct to_body TO;
@@ -1023,7 +1026,7 @@ int b2b_send_reply(enum b2b_entity_type et, str* b2b_key, int sip_method,
 {
 	unsigned int hash_index, local_index;
 	b2b_dlg_t* dlg;
-	str* to_tag = 0;
+	str* to_tag = NULL;
 	struct cell* tm_tran;
 	struct sip_msg* msg;
 	char buffer[BUF_LEN];
@@ -1131,8 +1134,8 @@ int b2b_send_reply(enum b2b_entity_type et, str* b2b_key, int sip_method,
 		return -1;
 	}
 
-	LM_DBG("Send reply %d %.*s, for %.*s %p\n", code, tm_tran->method.len,
-			tm_tran->method.s, b2b_key->len, b2b_key->s, dlg);
+	LM_DBG("Send reply %d %.*s, for dlg [%p]->[%.*s]\n", code, tm_tran->method.len,
+			tm_tran->method.s, dlg, b2b_key->len, b2b_key->s);
 
 	if(method_value==METHOD_INVITE &&
 			(dlg->state==B2B_CONFIRMED || dlg->state==B2B_ESTABLISHED))
@@ -1386,7 +1389,7 @@ int b2b_send_indlg_req(b2b_dlg_t* dlg, enum b2b_entity_type et,
 		if(dlg->ack_sdp.s)
 		{
 			shm_free(dlg->ack_sdp.s);
-			dlg->ack_sdp.s=0;
+			dlg->ack_sdp.s=NULL;
 			dlg->ack_sdp.len=0;
 		}
 		if(body && body->s)
@@ -1455,9 +1458,9 @@ int b2b_send_request(enum b2b_entity_type et, str* b2b_key, str* method,
 {
 	unsigned int hash_index, local_index;
 	b2b_dlg_t* dlg;
-	str ehdr = {0, 0};
+	str ehdr = {NULL, 0};
 	b2b_table table;
-	str totag={0,0}, fromtag={0, 0};
+	str totag={NULL,0}, fromtag={NULL, 0};
 	unsigned int method_value;
 	int ret;
 
@@ -1615,8 +1618,8 @@ dlg_leg_t* b2b_find_leg(b2b_dlg_t* dlg, str to_tag)
 
 dlg_leg_t* b2b_new_leg(struct sip_msg* msg, str* to_tag, int mem_type)
 {
-	str contact = {0, 0};
-	str route_set= {0, 0};
+	str contact = {NULL, 0};
+	str route_set= {NULL, 0};
 	dlg_leg_t* new_leg;
 	contact_body_t* b;
 	int size;
@@ -1750,11 +1753,11 @@ int b2b_send_req(b2b_dlg_t* dlg, enum b2b_entity_type etype,
 	result= tmb.t_request_within
 		(method,            /* method*/
 		extra_headers,      /* extra headers*/
-		0,                  /* body*/
+		NULL,               /* body*/
 		td,                 /* dialog structure*/
-		0,                  /* callback function*/
-		0,                  /* callback parameter*/
-		0);
+		NULL,               /* callback function*/
+		NULL,               /* callback parameter*/
+		NULL);
 	pkg_free(td);
 	return result;
 }
@@ -1766,7 +1769,7 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 	unsigned int hash_index, local_index;
 	b2b_notify_t b2b_cback;
 	b2b_dlg_t* dlg;
-	str param= {0, 0};
+	str param= {NULL, 0};
 	int statuscode = 0;
 	dlg_leg_t* leg;
 	struct to_body* pto, TO;
@@ -1791,7 +1794,7 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 
 	statuscode = ps->code;
 
-	LM_DBG("tm notification cb for [%d] reply\n", statuscode);
+	LM_DBG("tm [%p] notification cb for [%d] reply\n", t, statuscode);
 
 	if(statuscode == 100)
 		return;
@@ -1903,8 +1906,8 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 	 * exit*/
 	if(method_id==METHOD_INVITE && dlg->uac_tran != t)
 	{
-		LM_DBG("I don't care anymore about this transaction[%p] last_method=%d"
-				" method_id=%d t=[%p], dlg->uac_tran=[%p]\n",
+		LM_DBG("I don't care anymore about this transaction for dlg [%p] last_method=%d"
+				" method_id=%d t=[%p] dlg->uac_tran=[%p]\n",
 				dlg, dlg->last_method, method_id, t, dlg->uac_tran);
 		/* if confirmed - send ACK */
 		if(statuscode>=200 && statuscode<300 &&
@@ -2118,7 +2121,7 @@ dummy_reply:
 				}
 
 				leg = b2b_add_leg(dlg, msg, &to_tag);
-				if(leg == 0)
+				if(leg == NULL)
 				{
 					LM_ERR("Failed to add dialog leg\n");
 					lock_release(&htable[hash_index].lock);
@@ -2269,7 +2272,7 @@ int b2breq_complete_ehdr(str* extra_headers, str* ehdr_out, str* body,
 		str* local_contact)
 {
 	static char buf[BUF_LEN];
-	str ehdr= {0,0};
+	str ehdr= {NULL,0};
 
 	if((extra_headers?extra_headers->len:0) + 14 + local_contact->len > BUF_LEN)
 	{

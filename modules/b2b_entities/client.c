@@ -194,13 +194,7 @@ str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 	td.loc_seq.is_set = 1;
 
 	td.id.call_id = *callid;
-
 	td.id.loc_tag = from_tag;
-	LM_DBG("new client entity [%p] callid=[%.*s] tag=[%.*s] param=[%.*s] last method=[%d]\n",
-			dlg, callid->len, callid->s,
-			td.id.loc_tag.len, td.id.loc_tag.s,
-			dlg->param.len, dlg->param.s, dlg->last_method);
-
 	td.id.rem_tag.s = 0;
 	td.id.rem_tag.len = 0;
 
@@ -253,16 +247,22 @@ str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 		LM_ERR("while sending request with t_request\n");
 		pkg_free(callid);
 		shm_free(b2b_key_shm);
-		return 0;
+		return NULL;
 	}
-	tmb.setlocalTholder(0);
+	tmb.setlocalTholder(NULL);
+
+	LM_DBG("new client entity [%p] callid=[%.*s] tag=[%.*s] param=[%.*s]"
+			" last method=[%d] dlg->uac_tran=[%p]\n",
+			dlg, callid->len, callid->s,
+			dlg->tag[CALLER_LEG].len, dlg->tag[CALLER_LEG].s,
+			dlg->param.len, dlg->param.s, dlg->last_method, dlg->uac_tran);
 
 	return callid;
 
 error:
 	if(callid)
 		pkg_free(callid);
-	return 0;
+	return NULL;
 }
 
 dlg_t* b2b_client_build_dlg(b2b_dlg_t* dlg, dlg_leg_t* leg)

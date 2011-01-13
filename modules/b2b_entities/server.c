@@ -61,7 +61,7 @@ str* server_new(struct sip_msg* msg, str* local_contact,
 	{
 		LM_ERR("parameter too long, received [%d], maximum [%d]\n",
 				param->len, B2BL_MAX_KEY_LEN);
-		return 0;
+		return NULL;
 	}
 
 	/* create new entry in hash table */
@@ -100,10 +100,10 @@ str* server_new(struct sip_msg* msg, str* local_contact,
 	tmb.t_reply(msg, 100, &reason);
 	tmb.t_setkr(REQ_FWDED);
 
-	LM_DBG("new server entity[%p]: callid=[%.*s] tag=[%.*s] param=[%.*s]\n",
+	LM_DBG("new server entity[%p]: callid=[%.*s] tag=[%.*s] param=[%.*s] dlg->uas_tran=[%p]\n",
 		dlg, dlg->callid.len, dlg->callid.s, 
 		dlg->tag[CALLER_LEG].len, dlg->tag[CALLER_LEG].s,
-		dlg->param.len, dlg->param.s);
+		dlg->param.len, dlg->param.s, dlg->uas_tran);
 
 	/* add the record in hash table */
 	dlg->db_flag = INSERTDB_FLAG;
@@ -111,7 +111,7 @@ str* server_new(struct sip_msg* msg, str* local_contact,
 error:
 	if(dlg)
 		shm_free(dlg);
-	return 0;
+	return NULL;
 }
 
 
@@ -158,7 +158,7 @@ error:
 	if(td)
 		pkg_free(td);
 
-	return 0;
+	return NULL;
 }
 
 void b2b_server_tm_cback( struct cell *t, int type, struct tmcb_params *ps)
