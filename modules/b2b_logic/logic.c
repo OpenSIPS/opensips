@@ -30,6 +30,7 @@
 #include <stdlib.h>
 #include <libxml/parser.h>
 #include "../../dprint.h"
+#include "../../dset.h"
 #include "../../error.h"
 #include "../../parser/parse_from.h"
 #include "../../parser/parse_content.h"
@@ -248,7 +249,7 @@ b2bl_entity_id_t* b2bl_create_new_entity(enum b2b_entity_type type, str* entity_
 	if(entity == NULL)
 	{
 		LM_ERR("No more shared memory\n");
-		return 0;
+		return NULL;
 	}
 	memset(entity, 0, size);
 
@@ -306,7 +307,7 @@ b2bl_entity_id_t* b2bl_create_new_entity(enum b2b_entity_type type, str* entity_
 		{
 			LM_ERR("Failed to add dialog information to b2b_logic entity\n");
 			shm_free(entity);
-			return 0;
+			return NULL;
 		}
 	}
 	entity->stats.start_time = get_ticks();
@@ -445,7 +446,7 @@ int process_bridge_negreply(b2bl_tuple_t* tuple,
 	int ret;
 	unsigned int local_index;
 	b2bl_cback_f cbf = NULL;
-	str ekey={0, 0};
+	str ekey={NULL, 0};
 
 	entity_no = bridge_get_entityno(tuple, entity);
 	switch (entity_no)
@@ -521,9 +522,9 @@ b2bl_entity_id_t* b2bl_new_client(str* to_uri, str* from_uri,
 	ci.to_uri        = *to_uri;
 	ci.from_uri      = *from_uri;
 	ci.extra_headers = tuple->extra_headers;
-	ci.body          = (tuple->sdp.s?&tuple->sdp:0);
-	ci.from_tag      = 0;
-	ci.send_sock     = msg?msg->rcv.bind_address:0;
+	ci.body          = (tuple->sdp.s?&tuple->sdp:NULL);
+	ci.from_tag      = NULL;
+	ci.send_sock     = msg?msg->rcv.bind_address:NULL;
 	ci.local_contact = tuple->local_contact;
 
 	if(msg)
@@ -531,7 +532,7 @@ b2bl_entity_id_t* b2bl_new_client(str* to_uri, str* from_uri,
 		if (str2int( &(get_cseq(msg)->number), &ci.cseq)!=0 )
 		{
 			LM_ERR("cannot parse cseq number\n");
-			return 0;
+			return NULL;
 		}
 	}
 	LM_DBG("Send Invite without a body to a new client entity\n");
@@ -540,7 +541,7 @@ b2bl_entity_id_t* b2bl_new_client(str* to_uri, str* from_uri,
 	if(client_id == NULL)
 	{
 		LM_ERR("Failed to create client id\n");
-		return 0;
+		return NULL;
 	}
 	/* save the client_id in the structure */
 	entity = b2bl_create_new_entity(B2B_CLIENT, client_id, &ci.to_uri,
@@ -549,7 +550,7 @@ b2bl_entity_id_t* b2bl_new_client(str* to_uri, str* from_uri,
 	{
 		LM_ERR("failed to create new client entity\n");
 		pkg_free(client_id);
-		return 0;
+		return NULL;
 	}
 	pkg_free(client_id);
 
@@ -619,7 +620,7 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 
 			ci.extra_headers = extra_headers;
 			ci.body          = body;
-			ci.from_tag      = 0;
+			ci.from_tag      = NULL;
 			ci.send_sock     = msg->rcv.bind_address;
 			ci.local_contact = tuple->local_contact;
 
@@ -665,7 +666,7 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 				LM_ERR("Failed to send second ACK in bridging scenario\n");
 				return -1;
 			}
-			bentity1->state = 0;
+			bentity1->state = DLG_NEW;
 		}
 		tuple->bridge_entities[1]->peer = tuple->bridge_entities[0];
 		tuple->bridge_entities[0]->peer = tuple->bridge_entities[1];
@@ -886,8 +887,8 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 	unsigned int hash_index, local_index;
 	str* b2bl_key = (str*)param;
 	b2bl_tuple_t* tuple;
-	str method, body= {0, 0};
-	str extra_headers = {0, 0};
+	str method, body= {NULL, 0};
+	str extra_headers = {NULL, 0};
 	b2b_scenario_t* scenario;
 	b2b_rule_t* rule;
 	b2bl_entity_id_t* entity, *peer;
@@ -1638,18 +1639,18 @@ int process_bridge_action(struct sip_msg* msg, b2bl_entity_id_t* curr_entity,
 	b2bl_entity_id_t* e;
 	int count = 0;
 	int index = 0;
-	str attr= {0, 0};
+	str attr= {NULL, 0};
 	str entity_dest;
 	xmlNodePtr clientid_node;
 	xmlNodePtr dest_node;
 	xmlNodePtr client_node;
 	xmlNodePtr lft_node;
 	xmlNodePtr node;
-	str provmedia_uri={0,0};
+	str provmedia_uri={NULL,0};
 	client_info_t ci;
 	str* client_id;
 	char* fdname_content= 0;
-	str from_dname= {0, 0};
+	str from_dname= {NULL, 0};
 	xmlNodePtr value_node;
 	char* value_content= 0;
 
@@ -1983,8 +1984,8 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 {
 	str* server_id = NULL;
 	str* client_id = NULL;
-	str body = {0, 0};
-	str extra_headers = {0, 0};
+	str body = {NULL, 0};
+	str extra_headers = {NULL, 0};
 	str* b2bl_key;
 	b2bl_tuple_t* tuple;
 	unsigned int hash_index;
@@ -1993,7 +1994,10 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 	client_info_t ci;
 	char buf[MD5_LEN];
 	str src[2];
-	str to_uri={0, 0}, from_uri;
+	str to_uri={NULL, 0}, from_uri;
+	int idx;
+	str uri;
+	qvalue_t q;
 
 	if(b2b_msg_get_from(msg, &from_uri)< 0 ||  b2b_msg_get_to(msg, &to_uri)< 0)
 	{
@@ -2085,12 +2089,8 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 	if(client_id == NULL)
 	{
 		LM_ERR("failed to create new b2b client instance\n");
-		if(extra_headers.s)
-			pkg_free(extra_headers.s);
 		goto error;
 	}
-	if(extra_headers.s)
-		pkg_free(extra_headers.s);
 
 	tuple->clients[0] = b2bl_create_new_entity(B2B_CLIENT, client_id, &to_uri, &from_uri,
 			0, 0, 0);
@@ -2100,7 +2100,7 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 		goto error;
 	}
 	pkg_free(to_uri.s);
-	to_uri.s = 0;
+	to_uri.s = NULL;
 
 	memset(&dlginfo_s, 0, sizeof(b2b_dlginfo_t));
 	dlginfo_s.callid = *client_id;
@@ -2119,8 +2119,15 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 	tuple->bridge_entities[1] = tuple->clients[0];
 	lock_release(&b2bl_htable[hash_index].lock);
 
+	for( idx=0 ; (uri.s=get_branch(idx,&uri.len,&q,0,0,0,0))!=0 ; idx++ )
+	{
+		LM_DBG("dropping branch ruri [%.*s]\n", uri.len, uri.s);
+	}
+
 	pkg_free(server_id);
 	pkg_free(client_id);
+	if(extra_headers.s)
+		pkg_free(extra_headers.s);
 	
 	return b2bl_key;
 error:
@@ -2131,7 +2138,9 @@ error:
 		pkg_free(client_id);
 	if(to_uri.s)
 		pkg_free(to_uri.s);
-	return 0;
+	if(extra_headers.s)
+		pkg_free(extra_headers.s);
+	return NULL;
 }
 
 /* Function that processes destination node.
@@ -2305,7 +2314,7 @@ str* b2b_process_scenario_init(b2b_scenario_t* scenario_struct,struct sip_msg* m
 	str* args[], b2bl_cback_f cbf, void* cb_param, unsigned int cb_mask, str* custom_hdrs)
 {
 	str* server_id= NULL, *client_id= NULL;
-	str body= {0, 0};
+	str body= {NULL, 0};
 	str method = {INVITE, INVITE_LEN};
 	str* b2bl_key = NULL;
 	b2bl_tuple_t* tuple= NULL;
@@ -2320,13 +2329,13 @@ str* b2b_process_scenario_init(b2b_scenario_t* scenario_struct,struct sip_msg* m
 	int clients_no = 0;
 	unsigned int hash_index;
 	unsigned int index;
-	str to_uri={0, 0}, from_uri;
+	str to_uri={NULL, 0}, from_uri;
 	int eno = 0;
 
 	if(b2b_msg_get_from(msg, &from_uri)< 0 || b2b_msg_get_to(msg, &to_uri)< 0)
 	{
 		LM_ERR("Failed to get to or from from the message\n");
-		return 0;
+		return NULL;
 	}
 	hash_index = core_hash(&to_uri, &from_uri, b2bl_hsize);
 
@@ -2346,7 +2355,7 @@ str* b2b_process_scenario_init(b2b_scenario_t* scenario_struct,struct sip_msg* m
 				{
 					LM_ERR("cannot extract body\n");
 					pkg_free(to_uri.s);
-					return 0;
+					return NULL;
 				}
 			}
 		}
@@ -2598,7 +2607,7 @@ error:
 	}
 	if(to_uri.s)
 		pkg_free(to_uri.s);
-	return 0;
+	return NULL;
 }
 
 str* init_request(struct sip_msg* msg, b2b_scenario_t* scenario_struct,
@@ -2611,7 +2620,7 @@ str* init_request(struct sip_msg* msg, b2b_scenario_t* scenario_struct,
 	if (parse_headers(msg, HDR_EOH_F, 0) < 0)
 	{
 		LM_ERR("failed to parse message\n");
-		return 0;
+		return NULL;
 	}
 
 	if(scenario_struct == NULL)
@@ -2654,7 +2663,7 @@ str* internal_init_scenario(struct sip_msg* msg, str* name, str* args[MAX_SCENAR
 		if(!scenario_struct)
 		{
 			LM_ERR("No scenario found with id [%s]\n", name->s);
-			return 0;
+			return NULL;
 		}
 	}
 	b2bl_caller = CALLER_MODULE;
@@ -3123,7 +3132,7 @@ int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no)
 	b2bl_entity_id_t *entity;
 	str* server_id;
 	str body;
-	str to_uri={0,0}, from_uri;
+	str to_uri={NULL,0}, from_uri;
 
 	if(!msg || !key)
 	{
