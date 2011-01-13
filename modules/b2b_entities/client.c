@@ -153,6 +153,7 @@ str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 	}
 	dlg->state = B2B_NEW;
 	dlg->cseq[CALLER_LEG] =(ci->cseq?ci->cseq:1);
+	dlg->send_sock = ci->send_sock;
 
 	/* if the callid should be the same in more instances running at the same time (replication)*/
 	if(!replication_mode)
@@ -289,7 +290,7 @@ dlg_t* b2b_client_build_dlg(b2b_dlg_t* dlg, dlg_leg_t* leg)
 	td->id.loc_tag = dlg->tag[CALLER_LEG];
 	td->id.rem_tag = leg->tag;
 
-	LM_DBG("*** Rem_target = %.*s\n", leg->contact.len, leg->contact.s);
+	LM_DBG("Rem_target = %.*s\n", leg->contact.len, leg->contact.s);
 	td->rem_target = leg->contact;
 
 	td->loc_uri = dlg->from_uri;
@@ -308,7 +309,8 @@ dlg_t* b2b_client_build_dlg(b2b_dlg_t* dlg, dlg_leg_t* leg)
 	}
 	td->state= DLG_CONFIRMED ;
 	td->send_sock = dlg->send_sock;
-	LM_DBG("*** send sock= %.*s\n", dlg->send_sock->address_str.len,
+	if(dlg->send_sock)
+		LM_DBG("send sock= %.*s\n", dlg->send_sock->address_str.len,
 			dlg->send_sock->address_str.s);
 
 	return td;
