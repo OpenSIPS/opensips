@@ -233,21 +233,21 @@ int db_postgres_convert_rows(const db_con_t* _h, db_res_t* _r)
 				} else {
 					s = PQgetvalue(CON_RESULT(_h), row, col);
 					LM_DBG("PQgetvalue(%p,%d,%d)=[%.*s]\n", _h, row,col,len,s);
-					
-					row_buf[col] = pkg_malloc(len+1);
-					if (!row_buf[col]) {
-						LM_ERR("no private memory left\n");
-						return -1;
-					}
-					memset(row_buf[col], 0, len+1);
-					LM_DBG("allocated %d bytes for row_buf[%d] at %p\n",
-						len, col, row_buf[col]);
-
-					strncpy(row_buf[col], s, len);
-					LM_DBG("[%d][%d] Column[%.*s]=[%s]\n",
-						row, col, RES_NAMES(_r)[col]->len,
-						RES_NAMES(_r)[col]->s, row_buf[col]);
 				}
+			
+				row_buf[col] = pkg_malloc(len+1);
+				if (!row_buf[col]) {
+					LM_ERR("no private memory left\n");
+					return -1;
+				}
+				memset(row_buf[col], 0, len+1);
+				LM_DBG("allocated %d bytes for row_buf[%d] at %p\n",
+					len, col, row_buf[col]);
+
+				strncpy(row_buf[col], s, len);
+				LM_DBG("[%d][%d] Column[%.*s]=[%s]\n",
+					row, col, RES_NAMES(_r)[col]->len,
+					RES_NAMES(_r)[col]->s, row_buf[col]);
 			}
 		}
 
