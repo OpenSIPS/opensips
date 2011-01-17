@@ -904,7 +904,18 @@ int ospGetNpParameters(
 
         if (_osp_use_np != 0) {
             if (parse_sip_msg_uri(msg) >= 0) {
-                sv = msg->parsed_uri.user;
+                switch (msg->parsed_uri.type) {
+                case TEL_URI_T:
+                case TELS_URI_T:
+                    sv = msg->parsed_uri.params;
+                    break;
+                case ERROR_URI_T:
+                case SIP_URI_T:
+                case SIPS_URI_T:
+                default:
+                    sv = msg->parsed_uri.user;
+                    break;
+                }
                 parse_params(&sv, CLASS_ANY, &phooks, &params);
                 for (pit = params; pit; pit = pit->next) {
                     if ((pit->name.len == OSP_RN_SIZE) &&
@@ -971,7 +982,18 @@ int ospGetOperatorName(
 
         if (_osp_use_np != 0) {
             if (parse_sip_msg_uri(msg) >= 0) {
-                sv = msg->parsed_uri.user;
+                switch (msg->parsed_uri.type) {
+                case TEL_URI_T:
+                case TELS_URI_T:
+                    sv = msg->parsed_uri.params;
+                    break;
+                case ERROR_URI_T:
+                case SIP_URI_T:
+                case SIPS_URI_T:
+                default:
+                    sv = msg->parsed_uri.user;
+                    break;
+                }
                 parse_params(&sv, CLASS_ANY, &phooks, &params);
                 for (pit = params; pit; pit = pit->next) {
                     switch (type) {

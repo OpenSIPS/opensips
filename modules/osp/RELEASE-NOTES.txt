@@ -141,3 +141,8 @@
 2010 November 29
    o Added support to append destination network ID by different ways.
 
+2011 January 17
+   o Added unsupport char check in From/To user part.
+   o Fixed number portability parameter parsing issue caused by user=phone.
+
+
