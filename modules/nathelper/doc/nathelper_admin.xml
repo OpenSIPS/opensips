@@ -427,25 +427,6 @@ modparam("nathelper", "rtpproxy_timeout", "0.2")
 		</example>
 	</section>
 	<section>
-		<title><varname>rtpproxy_autobridge</varname> (integer)</title>
-		<para>
-		Enable auto-bridging feature
-		</para>
-		<para>
-		<emphasis>
-			Default value is <quote>0</quote>.
-		</emphasis>
-		</para>
-		<example>
-		<title>Enable auto-bridging feature</title>
-		<programlisting format="linespecific">
-...
-modparam("nathelper", "rtpproxy_autobridge", 1)
-...
-</programlisting>
-		</example>
-	</section>
-	<section>
 		<title><varname>rtpproxy_tout</varname> (integer)</title>
 		<para>
 		Obsolete. see rtpproxy_timeout.
