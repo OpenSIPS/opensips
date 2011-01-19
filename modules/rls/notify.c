@@ -248,7 +248,7 @@ int agg_body_sendn_update(str* rl_uri, str bstr, str* rlmi_body,
 	len+= sprintf(body.s+ len , "Content-Transfer-Encoding: binary\r\n");
 	len+= sprintf(body.s+ len , "Content-ID: <%.*s>\r\n", cid.len, cid.s);	
 	len+= sprintf(body.s+ len , 
-			"Content-Type: application/rlmi+xml;charset=\"UTF-8r\"\r\n");
+			"Content-Type: application/rlmi+xml;charset=\"UTF-8\"\r\n");
 	len+= sprintf(body.s+ len, "\r\n"); /*blank line*/
 	body_len = rlmi_body->len;
 	if(rlmi_body->s[rlmi_body->len-1]== '\n')
