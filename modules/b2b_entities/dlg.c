@@ -52,7 +52,7 @@ str bye = str_init(BYE);
 }while(0)
 
 
-b2b_dlg_t* b2b_search_htable_dlg(b2b_table table, unsigned int hash_index,
+b2b_dlg_t* b2b_search_htable_next_dlg(b2b_dlg_t* start_dlg, b2b_table table, unsigned int hash_index,
 		unsigned int local_index, str* to_tag, str* from_tag, str* callid)
 {
 	b2b_dlg_t* dlg;
@@ -63,7 +63,7 @@ b2b_dlg_t* b2b_search_htable_dlg(b2b_table table, unsigned int hash_index,
 		LM_DBG("searching   totag [%.*s]\n", to_tag->len, to_tag->s);
 	if(from_tag)
 		LM_DBG("searching fromtag [%.*s]\n", from_tag->len, from_tag->s);
-	dlg= table[hash_index].first;
+	dlg= start_dlg?start_dlg->next:table[hash_index].first;
 	while(dlg)
 	{
 		if(dlg->id != local_index)
@@ -133,12 +133,19 @@ b2b_dlg_t* b2b_search_htable_dlg(b2b_table table, unsigned int hash_index,
 	return NULL;
 }
 
-b2b_dlg_t* b2b_search_htable(b2b_table table, unsigned int hash_index,
+b2b_dlg_t* b2b_search_htable_dlg(b2b_table table, unsigned int hash_index,
+		unsigned int local_index, str* to_tag, str* from_tag, str* callid)
+{
+	return b2b_search_htable_next_dlg(NULL, table, hash_index, local_index,
+					to_tag, from_tag, callid);
+}
+
+b2b_dlg_t* b2b_search_htable_next(b2b_dlg_t* start_dlg, b2b_table table, unsigned int hash_index,
 		unsigned int local_index)
 {
 	b2b_dlg_t* dlg;
 
-	dlg= table[hash_index].first;
+	dlg= start_dlg?start_dlg->next:table[hash_index].first;
 	while(dlg && dlg->id != local_index)
 		dlg = dlg->next;
 
@@ -150,6 +157,12 @@ b2b_dlg_t* b2b_search_htable(b2b_table table, unsigned int hash_index,
 	}
 
 	return dlg;
+}
+
+b2b_dlg_t* b2b_search_htable(b2b_table table, unsigned int hash_index,
+		unsigned int local_index)
+{
+	return b2b_search_htable_next(NULL, table, hash_index, local_index);
 }
 
 str* b2b_htable_insert(b2b_table table, b2b_dlg_t* dlg, int hash_index, int src)
@@ -1300,7 +1313,6 @@ void b2b_entity_delete(enum b2b_entity_type et, str* b2b_key,
 		LM_ERR("Wrong format for b2b key\n");
 		return;
 	}
-	LM_DBG("Deleted %.*s\n", b2b_key->len, b2b_key->s);
 
 	lock_get(&table[hash_index].lock);
 	if(dlginfo)
@@ -1316,6 +1328,8 @@ void b2b_entity_delete(enum b2b_entity_type et, str* b2b_key,
 		lock_release(&table[hash_index].lock);
 		return;
 	}
+	LM_DBG("Deleted dlg [%p]->[%.*s] with dlginfo [%p]\n",
+			dlg, b2b_key->len, b2b_key->s, dlginfo);
 
 	b2b_db_delete(dlg, et);
 	b2b_delete_record(dlg, table, hash_index);
@@ -1768,7 +1782,7 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 	str* b2b_key;
 	unsigned int hash_index, local_index;
 	b2b_notify_t b2b_cback;
-	b2b_dlg_t* dlg;
+	b2b_dlg_t *dlg, *previous_dlg;
 	str param= {NULL, 0};
 	int statuscode = 0;
 	dlg_leg_t* leg;
@@ -1780,6 +1794,7 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 	struct cseq_body cb;
 	struct hdr_field cseq;
 	enum b2b_entity_type etype=(htable==server_htable?B2B_SERVER:B2B_CLIENT);
+	int dlg_based_search = 0;
 
 	if(ps == NULL || ps->rpl == NULL)
 	{
@@ -1878,8 +1893,11 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 		callid.len = 0;
 	}
 
+	if(callid.s)
+		dlg_based_search = 1;
+
 	lock_get(&htable[hash_index].lock);
-	if(!callid.s)
+	if(!dlg_based_search)
 	{
 		dlg = b2b_search_htable(htable, hash_index, local_index);
 	}
@@ -1902,34 +1920,49 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 		lock_release(&htable[hash_index].lock);
 		return;
 	}
-	/* if the transaction is no longer saved or is not the same as the one that the reply belongs to
-	 * exit*/
-	if(method_id==METHOD_INVITE && dlg->uac_tran != t)
-	{
-		LM_DBG("I don't care anymore about this transaction for dlg [%p] last_method=%d"
-				" method_id=%d t=[%p] dlg->uac_tran=[%p]\n",
-				dlg, dlg->last_method, method_id, t, dlg->uac_tran);
-		/* if confirmed - send ACK */
-		if(statuscode>=200 && statuscode<300 &&
-				(dlg->state==B2B_ESTABLISHED || dlg->state==B2B_TERMINATED))
-		{
-			leg = b2b_new_leg(msg, &to_tag, PKG_MEM_TYPE);
-			if(leg == NULL)
-			{
-				LM_ERR("Failed to add dialog leg\n");
-				lock_release(&htable[hash_index].lock);
-				return;
-			}
-			if(b2b_send_req(dlg, etype, leg, &ack, 0,
-						(dlg->ack_sdp.s?&dlg->ack_sdp:0)) < 0)
-			{
-				LM_ERR("Failed to send ACK request\n");
-			}
-			pkg_free(leg);
-		}
 
-		lock_release(&htable[hash_index].lock);
-		return;
+	previous_dlg = dlg;
+	while (dlg && method_id==METHOD_INVITE && dlg->uac_tran != t) {
+		LM_DBG("Got unmatching dlg [%p] dlg->uac_tran=[%p] for transaction [%p]\n",
+				dlg, dlg->uac_tran, t);
+		if(dlg_based_search)
+			dlg = b2b_search_htable_next_dlg(previous_dlg,htable,hash_index,local_index,
+				&from_tag, (method_id==METHOD_CANCEL)?NULL:&to_tag, &callid);
+		else
+			dlg = b2b_search_htable_next(previous_dlg, htable, hash_index, local_index);
+
+		if (dlg) {
+			previous_dlg = dlg;
+		}
+		else {
+			dlg = previous_dlg;
+			/* if the transaction is no longer saved or is not the same as the one
+			 * that the reply belongs to => exit*/
+			LM_DBG("I don't care anymore about this transaction for dlg [%p]"
+				" last_method=%d method_id=%d t=[%p] dlg->uac_tran=[%p]\n",
+					dlg, dlg->last_method, method_id, t, dlg->uac_tran);
+			/* if confirmed - send ACK */
+			if(statuscode>=200 && statuscode<300 &&
+					(dlg->state==B2B_ESTABLISHED || dlg->state==B2B_TERMINATED))
+			{
+				leg = b2b_new_leg(msg, &to_tag, PKG_MEM_TYPE);
+				if(leg == NULL)
+				{
+					LM_ERR("Failed to add dialog leg\n");
+					lock_release(&htable[hash_index].lock);
+					return;
+				}
+				if(b2b_send_req(dlg, etype, leg, &ack, 0,
+							(dlg->ack_sdp.s?&dlg->ack_sdp:0)) < 0)
+				{
+					LM_ERR("Failed to send ACK request\n");
+				}
+				pkg_free(leg);
+			}
+
+			lock_release(&htable[hash_index].lock);
+			return;
+		}
 	}
 
 	b2b_cback = dlg->b2b_cback;
