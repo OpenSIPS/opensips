@@ -3390,6 +3390,11 @@ force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args)
 			FORCE_RTP_PROXY_RET (-1);
 		}
 		create = 0;
+		if (msg->first_line.type==SIP_REQUEST) {
+			tmp = from_tag;
+			from_tag = to_tag;
+			to_tag = tmp;
+		}
 	} else if ((msg->first_line.type==SIP_REPLY && args->offer!=0)||
 	(msg->first_line.type == SIP_REQUEST && args->offer == 0) ) {
 		if (to_tag.len == 0) {
