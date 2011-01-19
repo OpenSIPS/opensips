@@ -303,7 +303,7 @@ int dlg_add_leg_info(struct dlg_cell *dlg, str* tag, str *rr, str *contact,
 										str *cseq, struct socket_info *sock)
 {
 	struct dlg_leg* leg;
-	rr_t *head = NULL;
+	rr_t *head = NULL, *rrp;
 
 	if ( (dlg->legs_no[DLG_LEGS_ALLOCED]-dlg->legs_no[DLG_LEGS_USED])==0) {
 		dlg->legs_no[DLG_LEGS_ALLOCED] += 2;
@@ -351,13 +351,12 @@ int dlg_add_leg_info(struct dlg_cell *dlg, str* tag, str *rr, str *contact,
 				shm_free(leg->contact.s);
 				return -1;
 			}
-		
+			rrp = head;
 			leg->nr_uris = 0;
-			while (head) {
-				leg->route_uris[leg->nr_uris++] = head->nameaddr.uri;
-				head = head->next;
+			while (rrp) {
+				leg->route_uris[leg->nr_uris++] = rrp->nameaddr.uri;
+				rrp = rrp->next;
 			}
-
 			free_rr(&head);
 		}
 	}
@@ -421,7 +420,7 @@ error:
 int dlg_update_routing(struct dlg_cell *dlg, unsigned int leg,
 													str *rr, str *contact )
 {
-	rr_t *head = NULL;
+	rr_t *head = NULL, *rrp;
 
 	LM_DBG("dialog %p[%d]: rr=<%.*s> contact=<%.*s>\n",
 		dlg, leg,
@@ -451,13 +450,12 @@ int dlg_update_routing(struct dlg_cell *dlg, unsigned int leg,
 			shm_free(dlg->legs[leg].contact.s);
 			return -1;
 		}
-		
+		rrp = head;
 		dlg->legs[leg].nr_uris = 0;
-		while (head) {
-			dlg->legs[leg].route_uris[dlg->legs[leg].nr_uris++] = head->nameaddr.uri;
-			head = head->next;
+		while (rrp) {
+			dlg->legs[leg].route_uris[dlg->legs[leg].nr_uris++] = rrp->nameaddr.uri;
+			rrp = rrp->next;
 		}
-
 		free_rr(&head);
 	}
 
