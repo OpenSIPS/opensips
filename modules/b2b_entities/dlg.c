@@ -483,8 +483,8 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 			LM_DBG("port= %d\n", sock_list->port_no);
 			if(host.len == sock_list->address_str.len &&
 			strncmp(host.s,sock_list->address_str.s,sock_list->address_str.len)==0
-			&&  ((port == sock_list->port_no) || (port_no==0 && sock_list->port_no==5060) ||
-				(port_no==5060 && sock_list->port_no==0) ))
+			&&  ((port == sock_list->port_no) || (port==0 && sock_list->port_no==5060) ||
+				(port==5060 && sock_list->port_no==0) ))
 			{
 				found =1;
 				break;
