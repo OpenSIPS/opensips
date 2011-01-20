@@ -90,7 +90,7 @@ b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg,
 	}
 
 	size = sizeof(b2bl_tuple_t) + local_contact.len;
-	if(body && use_init_sdp)
+	if(body && (use_init_sdp || scenario->use_init_sdp))
 	{
 		size+= body->len;
 	}
@@ -104,7 +104,7 @@ b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg,
 	memset(tuple, 0, size);
 
 	size = sizeof(b2bl_tuple_t);
-	if(body && use_init_sdp)
+	if(body && (use_init_sdp || scenario->use_init_sdp))
 	{
 		tuple->sdp.s = (char*)tuple + sizeof(b2bl_tuple_t);
 		memcpy(tuple->sdp.s, body->s, body->len);

@@ -1979,6 +1979,24 @@ int b2b_client_notify(struct sip_msg* msg, str* key, int type, void* param)
 	return b2b_logic_notify(B2B_CLIENT, msg, key, type, param);
 }
 
+static char fromtag_buf[MD5_LEN];
+static void gen_fromtag(str* callid, str* fromtag, struct sip_msg* msg, str* from_tag_uac)
+{
+	int i = 0;
+	str src[3];
+
+	from_tag_uac->len = MD5_LEN;
+	from_tag_uac->s = fromtag_buf;
+
+	src[i++] = *callid;
+	src[i++] = *fromtag;
+	if(msg)
+		src[i++] = msg->via1->branch->value;
+	MD5StringArray(from_tag_uac->s, src, i);
+	LM_DBG("Gen from_tag= %s\n", fromtag_buf);
+}
+
+
 str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 		void* cb_param, unsigned int cb_mask, str* custom_hdrs)
 {
@@ -1989,15 +2007,13 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 	str* b2bl_key;
 	b2bl_tuple_t* tuple;
 	unsigned int hash_index;
-	str from_tag_uac;
 	b2b_dlginfo_t* dlginfo, dlginfo_s;
 	client_info_t ci;
-	char buf[MD5_LEN];
-	str src[2];
 	str to_uri={NULL, 0}, from_uri;
 	int idx;
 	str uri;
 	qvalue_t q;
+	str from_tag_gen= {0, 0};
 
 	if(b2b_msg_get_from(msg, &from_uri)< 0 ||  b2b_msg_get_to(msg, &to_uri)< 0)
 	{
@@ -2058,13 +2074,6 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 		goto error;
 	}
 	/* create new client */
-	dlginfo = tuple->servers[0]->dlginfo;
-
-	from_tag_uac.len = MD5_LEN;
-	from_tag_uac.s = buf;
-	src[0] =  dlginfo->callid;
-	src[1] =  dlginfo->fromtag;
-	MD5StringArray(from_tag_uac.s, src, 2);
 
 	memset(&ci, 0, sizeof(client_info_t));
 	ci.method        = msg->first_line.u.request.method;
@@ -2074,9 +2083,12 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 	ci.dst_uri       = msg->dst_uri;
 	ci.extra_headers = &extra_headers;
 	ci.body          = (body.s?&body:NULL);
-	ci.from_tag      = &from_tag_uac;
 	ci.send_sock     = msg->rcv.bind_address;
 	ci.local_contact = tuple->local_contact;
+
+	dlginfo = tuple->servers[0]->dlginfo;
+	gen_fromtag(&dlginfo->callid, &dlginfo->fromtag, msg, &from_tag_gen);
+	ci.from_tag = &from_tag_gen;
 
 	if (str2int( &(get_cseq(msg)->number), &ci.cseq)!=0 )
 	{
@@ -2104,7 +2116,7 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 
 	memset(&dlginfo_s, 0, sizeof(b2b_dlginfo_t));
 	dlginfo_s.callid = *client_id;
-	dlginfo_s.totag = from_tag_uac;
+	dlginfo_s.totag = from_tag_gen;
 	if(entity_add_dlginfo(tuple->clients[0], &dlginfo_s)< 0)
 	{
 		LM_ERR("Failed to add dialoginfo\n");
@@ -2515,7 +2527,6 @@ str* b2b_process_scenario_init(b2b_scenario_t* scenario_struct,struct sip_msg* m
 			ci.from_uri      = from_uri;
 			ci.extra_headers = tuple->extra_headers;
 			ci.body          = (body.s?&body:NULL);
-			ci.from_tag      = 0;
 			ci.send_sock     = msg->rcv.bind_address;
 			ci.local_contact = tuple->local_contact;
 
@@ -3081,9 +3092,9 @@ int b2bl_bridge_2calls(str* key1, str* key2)
 	/* put it in clients list */
 	e2->type = B2B_CLIENT;
 	if (tuple->clients[0])
-		tuple->clients[1] = e2;	
+		tuple->clients[1] = e2;
 	else
-		tuple->clients[0] = e2;	
+		tuple->clients[0] = e2;
 	tuple->bridge_entities[1]= e2;
 
 	e1->peer = e2;
@@ -3096,7 +3107,7 @@ int b2bl_bridge_2calls(str* key1, str* key2)
 		LM_ERR("Failed to update b2bl parameter in b2b_entities\n");
 		goto error;
 	}
-	LM_DBG("Updated b2bl param for entity [%.*s]\n", e2->key.len, e2->key.s);	
+	LM_DBG("Updated b2bl param for entity [%.*s]\n", e2->key.len, e2->key.s);
 	e1->stats.start_time = get_ticks();
 	e1->stats.call_time = 0;
 	if(b2b_api.send_request(e1->type, &e1->key, &method_invite, &maxfwd_hdr,

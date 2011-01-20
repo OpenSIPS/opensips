@@ -82,6 +82,7 @@ typedef struct b2b_scenario
 {
 	str id;
 	unsigned int param_no;
+	char use_init_sdp;
 	xmlDocPtr doc;
 	xmlNodePtr init_node;
 	b2b_rule_t* request_rules[B2B_METHODS_NO];

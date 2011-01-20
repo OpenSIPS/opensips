@@ -193,6 +193,7 @@ modparam("b2b_logic", "custom_headers", "User-Agent;Date")
 		that not many gateways support this. So, the solution is to use the sdp
 		received in the first Invite from the caller and put it as the body for this
 		invite. By setting this parameter, this behavior is enabled.
+		You can also set use_init_sdp per scenario and overwrite this global value.
 		</para>
 		<para>
 		<emphasis>Default value is <quote>0</quote>.</emphasis>
