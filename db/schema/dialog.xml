@@ -87,14 +87,14 @@
 	<column>
 		<name>caller_cseq</name>
 		<type>string</type>
-		<size>7</size>
+		<size>&cseq_len;</size>
 		<description>Last Cseq number on the caller side.</description>
 	</column>
 
 	<column>
 		<name>callee_cseq</name>
 		<type>string</type>
-		<size>7</size>
+		<size>&cseq_len;</size>
 		<description>Last Cseq number on the caller side.</description>
 	</column>
 
