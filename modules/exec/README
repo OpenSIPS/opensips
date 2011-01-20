@@ -8,7 +8,7 @@ Edited by
 
 Jan Janak
 
-   Copyright � 2003 FhG FOKUS
+   Copyright © 2003 FhG FOKUS
    Revision History
    Revision $Revision$ $Date: 2009-07-21 10:45:05 +0300
                               (Tue, 21 Jul 2009) $
@@ -40,8 +40,8 @@ Jan Janak
 
    List of Examples
 
-   1.1. Set "setvars" parameter
-   1.2. Set "time_to_kill" parameter
+   1.1. Set “setvars” parameter
+   1.2. Set “time_to_kill” parameter
    1.3. exec_dset usage
    1.4. exec_msg usage
    1.5. exec_avp usage
@@ -53,7 +53,7 @@ Chapter 1. Admin Guide
 
    Exec module allows to start an external command from a OpenSIPS
    script. The commands may be any valid shell commands--the
-   command string is passed to shell using "popen" command.
+   command string is passed to shell using “popen” command.
    OpenSIPS passes additionally lot of information about request
    in environment variables:
      * SIP_HF_<hf_name> contains value of each header field in
@@ -100,7 +100,7 @@ Chapter 1. Admin Guide
 
    Default value is 1.
 
-   Example 1.1. Set "setvars" parameter
+   Example 1.1. Set “setvars” parameter
 ...
 modparam("exec", "setvars", 1)
 ...
@@ -112,7 +112,7 @@ modparam("exec", "setvars", 1)
 
    Default value is 0.
 
-   Example 1.2. Set "time_to_kill" parameter
+   Example 1.2. Set “time_to_kill” parameter
 ...
 modparam("exec", "time_to_kill", 20)
 ...
@@ -182,7 +182,8 @@ exec_msg("echo TEST > /tmp/$rU.txt");
    character in it, the var needs to be placed inside quotes, for
    ex: exec_avp("print-contact.sh '$ct'");
 
-   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
+   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+   LOCAL_ROUTE, STARTUP_ROUTE.
 
    Example 1.5. exec_avp usage
 ...
@@ -205,7 +206,8 @@ exec_avp("echo TEST", "$avp(s:test)");
    character in it, the var needs to be placed inside quotes, for
    ex: exec_getenv("'$ct'");
 
-   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
+   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+   LOCAL_ROUTE, STARTUP_ROUTE.
 
    Example 1.6. exec_getenv usage
 ...
