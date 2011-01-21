@@ -973,6 +973,9 @@ static int check_addr_fixup(void** param, int param_no) {
 			*param = NULL;
 			return 0;
 		case 6:
+			if (*param && strlen((char*)*param))
+				return fixup_spve(param);
+			*param = NULL;
 			return 0;
 	}
 	return E_UNSPEC;
@@ -996,6 +999,9 @@ static int check_src_addr_fixup(void** param, int param_no) {
 			*param = NULL;
 			return 0;
 		case 3:
+			if (*param && strlen((char*)*param))
+				return fixup_spve(param);
+			*param = NULL;
 			return 0;
 	}
 	return E_UNSPEC;
