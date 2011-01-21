@@ -401,9 +401,9 @@ int check_addr_6(struct sip_msg* msg,
 		char* info, char* pattern) {
 
 	unsigned int port;
-	int group, proto;
+	int group, proto, ret = 1;
 	struct ip_addr *ip;
-	str str_ip, str_proto, str_port;
+	str str_ip, str_proto, str_port, pattern_s;
 
 	memset(&str_ip, 0, sizeof(str));
 	memset(&str_proto, 0, sizeof(str));
@@ -478,15 +478,30 @@ int check_addr_6(struct sip_msg* msg,
 	} else
 		port = 0;
 
+	if (pattern) {
+		if (fixup_get_svalue(msg, (gparam_p)pattern, &pattern_s) < 0) {
+			LM_ERR("cannot get pattern value\n");
+			return -1;
+		}
+		pattern = pkg_malloc(pattern_s.len + 1);
+		if (!pattern) {
+			LM_ERR("no more pkg mem\n");
+			return -1;
+		}
+		memcpy(pattern, pattern_s.s, pattern_s.len);
+		pattern[pattern_s.len] = 0;
+	}
 
 	LM_DBG("Looking for : <%d, %.*s, %.*s, %d, %s>\n", group, str_ip.len,
 			str_ip.s, str_proto.len, str_proto.s, port, pattern);
 
 	if (hash_match(msg, *hash_table, group, ip, port,
 				proto, pattern, info) == -1)
-		return match_subnet_table(msg, *subnet_table, group,
+		ret = match_subnet_table(msg, *subnet_table, group,
 				ip, port, proto, pattern, info);
-	return 1;
+	if (pattern)
+		pkg_free(pattern);
+	return ret;
 }
 
 int check_addr_4(struct sip_msg *msg,
@@ -504,10 +519,11 @@ int check_addr_5(struct sip_msg *msg,
 int check_src_addr_3(struct sip_msg *msg,
 		                char *grp, char *info, char* pattern) {
 
-	int group;
+	int group, ret = 1;
 	struct in_addr in;
 	str str_ip;
 	struct ip_addr *ip;
+	str pattern_s;
 
 	if (grp) {
 		if (fixup_get_ivalue(msg, (gparam_p)grp, &group)) {
@@ -537,6 +553,19 @@ int check_src_addr_3(struct sip_msg *msg,
 				group, str_ip.len, str_ip.s,
 				msg->rcv.src_port,
 				msg->rcv.proto);
+	if (pattern) {
+		if (fixup_get_svalue(msg, (gparam_p)pattern, &pattern_s) < 0) {
+			LM_ERR("cannot get pattern value\n");
+			return -1;
+		}
+		pattern = pkg_malloc(pattern_s.len + 1);
+		if (!pattern) {
+			LM_ERR("no more pkg mem\n");
+			return -1;
+		}
+		memcpy(pattern, pattern_s.s, pattern_s.len);
+		pattern[pattern_s.len] = 0;
+	}
 
 	if (hash_match(msg, *hash_table, group,
 				ip,
@@ -544,13 +573,15 @@ int check_src_addr_3(struct sip_msg *msg,
 				msg->rcv.proto,
 				pattern,
 				info) == -1)
-		return match_subnet_table(msg, *subnet_table, group,
+		ret = match_subnet_table(msg, *subnet_table, group,
 				ip,
 				msg->rcv.src_port,
 				msg->rcv.proto,
 				pattern,
 				info);
-	return 1;
+	if (pattern)
+		pkg_free(pattern);
+	return ret;
 }
 
 
