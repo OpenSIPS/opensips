@@ -998,7 +998,7 @@ if(has_body("application/sdp"))
 
 	<section>
 		<title>
-		<function moreinfo="none">is_audio_on_hold()</function>,
+		<function moreinfo="none">is_audio_on_hold()</function>
 		</title>
 		<para>
 		The function returns <emphasis>true</emphasis> if the SIP message
@@ -1013,7 +1013,7 @@ if(has_body("application/sdp"))
 		<title><function>is_audio_on_hold</function> usage</title>
 		<programlisting format="linespecific">
 ...
-if(s_audio_on_hold())
+if(is_audio_on_hold())
 {
     # do interesting stuff here
 }
