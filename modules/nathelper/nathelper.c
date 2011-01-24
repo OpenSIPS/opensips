@@ -2687,9 +2687,9 @@ static struct rtpp_set * select_rtpp_set(int id_set ){
 struct rtpp_node *
 select_rtpp_node(str callid, int do_test)
 {
-	unsigned sum, sumcut, weight_sum;
+	unsigned sum, weight_sum;
 	struct rtpp_node* node;
-	int was_forced;
+	int was_forced, sumcut, found;
 
 	/* check last list version */
 	if (my_version != *list_version && update_rtpp_proxies() < 0) {
@@ -2717,16 +2717,19 @@ select_rtpp_node(str callid, int do_test)
 	was_forced = 0;
 retry:
 	weight_sum = 0;
+	found = 0;
 	for (node=selected_rtpp_set->rn_first; node!=NULL; node=node->rn_next) {
 
 		if (node->rn_disabled && node->rn_recheck_ticks <= get_ticks()){
 			/* Try to enable if it's time to try. */
 			node->rn_disabled = rtpp_test(node, 1, 0);
 		}
-		if (!node->rn_disabled)
+		if (!node->rn_disabled) {
 			weight_sum += node->rn_weight;
+			found = 1;
+		}
 	}
-	if (weight_sum == 0) {
+	if (found == 0) {
 		/* No proxies? Force all to be redetected, if not yet */
 		if (was_forced)
 			return NULL;
@@ -2736,7 +2739,7 @@ retry:
 		}
 		goto retry;
 	}
-	sumcut = sum % weight_sum;
+	sumcut = weight_sum ? sum % weight_sum : -1;
 	/*
 	 * sumcut here lays from 0 to weight_sum-1.
 	 * Scan proxy list and decrease until appropriate proxy is found.
@@ -2744,7 +2747,7 @@ retry:
 	for (node=selected_rtpp_set->rn_first; node!=NULL; node=node->rn_next) {
 		if (node->rn_disabled)
 			continue;
-		if (sumcut < node->rn_weight)
+		if (sumcut < (int)node->rn_weight)
 			goto found;
 		sumcut -= node->rn_weight;
 	}

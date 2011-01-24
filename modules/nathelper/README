@@ -173,7 +173,10 @@ Chapter 1. Admin Guide
    syntax description.
 
    The balancing inside a set is done automatically by the module
-   based on the weight of each rtpproxy from the set.
+   based on the weight of each rtpproxy from the set. Note that if
+   rtpproxy has weight 0, it will be used only when no other
+   rtpproxies (with a different weight value than 0) respond.
+   Default weight is 1.
 
    The selection of the set is done from script prior using
    unforce_rtp_proxy(), rtpproxy_offer() or rtpproxy_answer()
@@ -184,7 +187,7 @@ Chapter 1. Admin Guide
    unforce_rtp_proxy(), rtpproxy_offer() or rtpproxy_answer() the
    0 id set will be used.
 
-   IMPORTANT: if you use nultiple sets, take care and use the same
+   IMPORTANT: if you use multiple sets, take care and use the same
    set for both rtpproxy_offer()/rtpproxy_answer() and
    unforce_rtpproxy()!!
 
@@ -355,8 +358,8 @@ modparam("nathelper", "received_avp", "$avp(i:42)")
 
    Example 1.6. Set rtpproxy_sock parameter
 ...
-# single rtproxy
-modparam("nathelper", "rtpproxy_sock", "udp:localhost:12221")
+# single rtproxy with specific weight
+modparam("nathelper", "rtpproxy_sock", "udp:localhost:12221=2")
 # multiple rtproxies for LB
 modparam("nathelper", "rtpproxy_sock",
         "udp:localhost:12221 udp:localhost:12222")
