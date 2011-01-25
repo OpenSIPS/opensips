@@ -86,7 +86,7 @@ static str caller_spec_param= {0, 0};
 static str callee_spec_param= {0, 0};
 static pv_spec_t caller_spec;
 static pv_spec_t callee_spec;
-
+static int osips_ps = 1;
 
 
 /** module functions */
@@ -111,6 +111,7 @@ static param_export_t params[]={
 	{"presence_server",     STR_PARAM, &presence_server.s },
 	{"caller_spec_param",   STR_PARAM, &caller_spec_param.s },
 	{"callee_spec_param",   STR_PARAM, &callee_spec_param.s },
+	{"osips_ps",            INT_PARAM, &osips_ps },
 	{0, 0, 0 }
 };
 
@@ -377,13 +378,72 @@ error:
 		pkg_free(entity_uri.s);
 }
 
+int dialoginfo_process_body(struct publ_info* publ, str** fin_body,
+									   int ver, str* tuple)
+{
+	xmlNodePtr node = NULL;
+	xmlDocPtr doc = NULL;
+	char* version;
+	str* body = NULL;
+	int len;
+
+	doc = xmlParseMemory(publ->body->s, publ->body->len);
+	if (doc == NULL) {
+		LM_ERR("while parsing xml memory\n");
+		goto error;
+	}
+	/* change version */
+	node = doc->children;
+	if (node == NULL)
+	{
+		LM_ERR("while extracting dialog-info node\n");
+		goto error;
+	}
+	version = int2str(ver, &len);
+	version[len] = '\0';
+
+	if (!xmlNewProp(node, BAD_CAST "version", BAD_CAST version))
+	{
+		LM_ERR("while setting version attribute\n");
+		goto error;
+	}
+	body = (str*)pkg_malloc(sizeof(str));
+	if (body == NULL)
+	{
+		LM_ERR("NO more memory left\n");
+		goto error;
+	}
+	memset(body, 0, sizeof(str));
+	xmlDocDumpMemory(doc, (xmlChar**)(void*)&body->s, &body->len);
+	LM_DBG(">>> publish body: >%*s<\n", body->len, body->s);
+
+	xmlFreeDoc(doc);
+	*fin_body = body;
+	if (*fin_body == NULL)
+		LM_DBG("NULL fin_body\n");
+
+	xmlMemoryDump();
+	xmlCleanupParser();
+	return 1;
+
+	error:
+	if (doc)
+		xmlFreeDoc(doc);
+	if (body)
+		pkg_free(body);
+	xmlMemoryDump();
+	xmlCleanupParser();
+	return -1;
+}
+
 /**
  * init module function
  */
 static int mod_init(void)
 {
 	bind_pua_t bind_pua;
-	
+	evs_process_body_t* evp=0;
+
 	bind_pua= (bind_pua_t)find_export("bind_pua", 1,0);
 	if (!bind_pua)
 	{
@@ -403,8 +463,11 @@ static int mod_init(void)
 	}
 	pua_send_publish= pua.send_publish;
 
+	if(!osips_ps)
+		evp = dialoginfo_process_body;
+
 	/* add event in pua module */
-	if(pua.add_event(DIALOG_EVENT, "dialog", "application/dialog-info+xml", 0) < 0) {
+	if(pua.add_event(DIALOG_EVENT, "dialog", "application/dialog-info+xml", evp) < 0) {
 		LM_ERR("failed to add 'dialog' event to pua module\n");
 		return -1;
 	}

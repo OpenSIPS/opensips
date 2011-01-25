@@ -348,6 +348,30 @@ modparam("pua_dialoginfo", "callee_spec_param", "$avp(i:11)")
 		</example>
 	</section>
 
+	<section>
+		<title><varname>osips_ps</varname> (int)</title>
+		<para>
+			It is advisable to specify if you use a different presence server
+			than OpenSIPS presence server, by setting this parameter to 0.
+			By default, a trick (version in the Publish body is set '0000000') is
+			used when working with Opensips Presence Server
+			to make the processing faster and this might not be accepted by other
+			presence servers.
+		</para>
+		<para>
+			<emphasis>Default value is <quote>1</quote>.</emphasis>
+		</para>
+		<example>
+			<title>Set <varname>osips_ps</varname> parameter</title>
+			<programlisting format="linespecific">
+...
+modparam("pua_dialoginfo", "osips_ps", 0)
+...
+		</programlisting>
+		</example>
+	</section>
+
+
 	</section>
 
 	<section>

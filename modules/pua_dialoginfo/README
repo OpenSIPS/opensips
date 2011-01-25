@@ -46,6 +46,7 @@ Klaus Darilion
               1.3.5. presence_server (string)
               1.3.6. caller_spec_param (string)
               1.3.7. callee_spec_param (string)
+              1.3.8. osips_ps (int)
 
         1.4. Exported Functions
 
@@ -59,8 +60,9 @@ Klaus Darilion
    1.4. Set caller_confirmed parameter
    1.5. Set presence_server parameter
    1.6. Set caller_spec_param parameter
-   1.7. Set callee_spec_param parameter
-   1.8. dialoginfo_set usage
+   1.7. Set caller_spec_param parameter
+   1.8. Set osips_ps parameter
+   1.9. dialoginfo_set usage
 
 Chapter 1. Admin Guide
 
@@ -325,9 +327,25 @@ modparam("pua_dialoginfo", "caller_spec_param", "$avp(i:10)")
    string to set this pseudovariable to is the same as described
    in caller_spec_param section.
 
-   Example 1.7. Set callee_spec_param parameter
+   Example 1.7. Set caller_spec_param parameter
 ...
 modparam("pua_dialoginfo", "callee_spec_param", "$avp(i:11)")
+...
+
+1.3.8. osips_ps (int)
+
+   It is advisable to specify if you use a different presence
+   server than OpenSIPS presence server, by setting this parameter
+   to 0. By default, a trick (version in the Publish body is set
+   '0000000') is used when working with Opensips Presence Server
+   to make the processing faster and this might not be accepted by
+   other presence servers.
+
+   Default value is “1”.
+
+   Example 1.8. Set osips_ps parameter
+...
+modparam("pua_dialoginfo", "osips_ps", 0)
 ...
 
 1.4. Exported Functions
@@ -342,7 +360,7 @@ modparam("pua_dialoginfo", "callee_spec_param", "$avp(i:11)")
      * side (optional) - can be "A" or "B" for caller or callee
        PUBLISH only - if missing, both sides will be published.
 
-   Example 1.8. dialoginfo_set usage
+   Example 1.9. dialoginfo_set usage
 ...
         if(is_method("INVITE"))
                 if(uri =~ "opensips.org")

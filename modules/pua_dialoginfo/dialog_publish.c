@@ -45,7 +45,6 @@
 extern int include_callid;
 extern int include_localremote;
 extern int include_tags;
-str dlginfo_id=str_init("DIALOG_PUBLISH");
 
 /* for debug purpose only */
 void print_publ(publ_info_t* p)
@@ -89,15 +88,11 @@ str* build_dialoginfo(char *state, struct to_body *entity, struct to_body *peer,
     
 	xmlDocSetRootElement(doc, root_node);
 
-    xmlNewProp(root_node, BAD_CAST "xmlns",
-			BAD_CAST "urn:ietf:params:xml:ns:dialog-info");
-	/* we set the version to 0 but it should be set to the correct value
-       in the pua module */
-	xmlNewProp(root_node, BAD_CAST "version", BAD_CAST "00000000000");
-	xmlNewProp(root_node, BAD_CAST  "state",
-			BAD_CAST "partial" );
-	xmlNewProp(root_node, BAD_CAST "entity", 
-			BAD_CAST buf);
+	xmlNewProp(root_node, BAD_CAST "xmlns", BAD_CAST "urn:ietf:params:xml:ns:dialog-info");
+	xmlNewProp(root_node, BAD_CAST  "state", BAD_CAST "partial" );
+	xmlNewProp(root_node, BAD_CAST "entity", BAD_CAST buf);
+
+    /* version is set by dialoginfo_process_body() */
 
 	/* RFC 3245 differs between id and call-id. For example if a call
 	   is forked and 2 early dialogs are established, we should send 2
@@ -313,7 +308,7 @@ void dialog_publish(char *state, struct to_body* entity, struct to_body *peer, s
 	publ.pres_uri= &entity->uri;
 	publ.body = body;
 
-	publ.id = dlginfo_id;
+	publ.id = *callid;
 
 	publ.content_type.s= "application/dialog-info+xml";
 	publ.content_type.len= 27;
