@@ -1756,7 +1756,7 @@ int b2b_send_req(b2b_dlg_t* dlg, enum b2b_entity_type etype,
 		0,                  /* callback function*/
 		0,                  /* callback parameter*/
 		0);
-	pkg_free(td);
+	free_tm_dlg(td);
 	return result;
 }
 
