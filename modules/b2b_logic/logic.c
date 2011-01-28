@@ -2010,6 +2010,7 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 	b2b_dlginfo_t* dlginfo, dlginfo_s;
 	client_info_t ci;
 	str to_uri={NULL, 0}, from_uri;
+	b2bl_entity_id_t* client_entity = NULL;
 	int idx;
 	str uri;
 	qvalue_t q;
@@ -2104,31 +2105,31 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 		goto error;
 	}
 
-	tuple->clients[0] = b2bl_create_new_entity(B2B_CLIENT, client_id, &to_uri, &from_uri,
+	client_entity = b2bl_create_new_entity(B2B_CLIENT, client_id, &to_uri, &from_uri,
 			0, 0, 0);
-	if(tuple->clients[0] == NULL)
+	if(client_entity == NULL)
 	{
 		LM_ERR("Failed to create server entity\n");
 		goto error;
 	}
-	pkg_free(to_uri.s);
-	to_uri.s = NULL;
 
 	memset(&dlginfo_s, 0, sizeof(b2b_dlginfo_t));
 	dlginfo_s.callid = *client_id;
 	dlginfo_s.totag = from_tag_gen;
-	if(entity_add_dlginfo(tuple->clients[0], &dlginfo_s)< 0)
+	if(entity_add_dlginfo(client_entity, &dlginfo_s)< 0)
 	{
 		LM_ERR("Failed to add dialoginfo\n");
 		goto error;
 	}
 
+	tuple->clients[0] = client_entity;
 	tuple->servers[0]->no = 0;
 	tuple->clients[0]->no = 1;
 	tuple->servers[0]->peer = tuple->clients[0];
 	tuple->clients[0]->peer = tuple->servers[0];
 	tuple->bridge_entities[0] = tuple->servers[0];
 	tuple->bridge_entities[1] = tuple->clients[0];
+
 	lock_release(&b2bl_htable[hash_index].lock);
 
 	for( idx=0 ; (uri.s=get_branch(idx,&uri.len,&q,0,0,0,0))!=0 ; idx++ )
@@ -2136,6 +2137,7 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 		LM_DBG("dropping branch ruri [%.*s]\n", uri.len, uri.s);
 	}
 
+	pkg_free(to_uri.s);
 	pkg_free(server_id);
 	pkg_free(client_id);
 	if(extra_headers.s)
