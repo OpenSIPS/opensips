@@ -73,7 +73,7 @@ int db_virtual_bind_api(const str* mod, db_func_t *dbb);
 
 
 struct mi_root *db_get_info(struct mi_root *cmd, void *param);
-struct mi_root* info_set_info(struct mi_root* cmd, void* param);
+struct mi_root* db_set_info(struct mi_root* cmd, void* param);
 //struct mi_root* db_add_url(struct mi_root* cmd, void* param);
 
 static int store_urls( modparam_t type, void* val);
@@ -102,7 +102,7 @@ static param_export_t params[] = {
  */
 static mi_export_t mi_cmds[] = {
         {"db_get",      db_get_info,       MI_NO_INPUT_FLAG,  0,  0 },
-        {"info_set",      info_set_info,       0,  0,  0 },
+        {"db_set",      db_set_info,       0,  0,  0 },
         //{"db_add",      db_add_url,        0,  0,  0 },
 	{ 0, 0, 0, 0, 0}
 };
@@ -615,7 +615,7 @@ error:
 }
 
 
-struct mi_root* info_set_info(struct mi_root* cmd, void* param){
+struct mi_root* db_set_info(struct mi_root* cmd, void* param){
     
     struct mi_node* node= NULL;
 
