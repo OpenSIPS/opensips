@@ -2958,7 +2958,7 @@ static pv_export_t _pv_names_table[] = {
 	{{"an", (sizeof("an")-1)}, /* */
 		PVT_AUTH_NONCE, pv_get_authattr, 0,
 		0, 0, pv_init_iname, 6},
-	{{"ar", (sizeof("ar")-1)}, /* */
+	{{"auth.resp", (sizeof("auth.resp")-1)}, /* */
 		PVT_AUTH_RESPONSE, pv_get_authattr, 0,
 		0, 0, pv_init_iname, 7},
 	{{"aU", (sizeof("aU")-1)}, /* */
