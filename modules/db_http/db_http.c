@@ -72,7 +72,7 @@ static param_export_t params[] = {
 	{"cap_insert_update", INT_PARAM  , &cap_insert_update},
 	{"field_delimiter", STR_PARAM | USE_FUNC_PARAM ,set_col_delim},
 	{"row_delimiter", STR_PARAM | USE_FUNC_PARAM ,set_line_delim},
-	{"qoute_delimiter", STR_PARAM | USE_FUNC_PARAM ,set_quote_delim},
+	{"quote_delimiter", STR_PARAM | USE_FUNC_PARAM ,set_quote_delim},
 	{0, 0, 0}
 };
 
