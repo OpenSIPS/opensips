@@ -489,7 +489,7 @@ static int load_scenario(b2b_scenario_t** scenario_list,char* filename)
 		goto error;
 	}
 
-	node = xmlNodeGetNodeByName(scenario->init_node, "use_init_sdp");
+	node = xmlNodeGetChildByName(scenario->init_node, "use_init_sdp");
 	if(node)
 	{
 		scenario->use_init_sdp = 1;
