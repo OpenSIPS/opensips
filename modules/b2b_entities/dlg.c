@@ -491,12 +491,12 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 	/* check if RURI points to me */
 	if(method_value!= METHOD_CANCEL)
 	{
-		LM_DBG("host = %.*s\n", host.len, host.s);
-		LM_DBG("port = %d\n", port);
+		LM_DBG("<uri> host:port [%.*s][%d]\n", host.len, host.s, port);
 		while(sock_list)
 		{
-			LM_DBG("address_str= %.*s\n", sock_list->address_str.len, sock_list->address_str.s);
-			LM_DBG("port= %d\n", sock_list->port_no);
+			LM_DBG("<socket> address:port [%.*s][%d]\n",
+				sock_list->address_str.len, sock_list->address_str.s,
+				sock_list->port_no);
 			if(host.len == sock_list->address_str.len &&
 			strncmp(host.s,sock_list->address_str.s,sock_list->address_str.len)==0
 			&&  ((port == sock_list->port_no) || (port==0 && sock_list->port_no==5060) ||
