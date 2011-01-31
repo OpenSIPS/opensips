@@ -70,6 +70,8 @@ int  b2b_init_request(struct sip_msg* msg, str* arg1, str* arg2, str* arg3,
 		str* arg4, str* arg5, str* arg6);
 int  b2b_bridge_request(struct sip_msg* msg, str* arg1, str* arg2);
 
+void b2b_mark_todel( b2bl_tuple_t* tuple);
+
 /** Global variables */
 b2b_api_t b2b_api;
 b2bl_table_t b2bl_htable;
@@ -1115,7 +1117,12 @@ static struct mi_root* mi_b2b_bridge(struct mi_root* cmd, void* param)
 				&meth_bye, 0, 0, old_entity->dlginfo);
 	}
 
-	b2bl_drop_entity(old_entity, tuple);
+	if (0 == b2bl_drop_entity(old_entity, tuple))
+	{
+		LM_WARN("Inconsistent tuple [%p]\n", tuple);
+		b2bl_print_tuple(tuple);
+		goto error;
+	}
 
 	if (old_entity->peer->peer == old_entity)
 		old_entity->peer->peer = NULL;
@@ -1143,6 +1150,8 @@ static struct mi_root* mi_b2b_bridge(struct mi_root* cmd, void* param)
 	return init_mi_tree(200, "OK", 2);
 
 error:
+	if(tuple)
+		b2b_mark_todel(tuple);
 	lock_release(&b2bl_htable[hash_index].lock);
 	return 0;
 }
