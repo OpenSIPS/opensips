@@ -913,28 +913,16 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 		return -1;
 	}
 
-	LM_DBG("b2b_entities notification cb for [%.*s] with entity [%.*s]\n",
-			b2bl_key->len, b2bl_key->s, key->len, key->s);
-
 	if(b2bl_parse_key(b2bl_key, &hash_index, &local_index)< 0)
 	{
 		LM_ERR("Failed to parse b2b logic key [%.*s]\n", b2bl_key->len, b2bl_key->s);
 		return -1;
 	}
 
-	lock_get(&b2bl_htable[hash_index].lock);
-	tuple = b2bl_search_tuple_safe(hash_index, local_index);
-	if(tuple == NULL)
-	{
-		LM_ERR("B2B logic record not found\n");
-		goto error;
-	}
-	scenario = tuple->scenario;
-
 	if (parse_headers(msg, HDR_EOH_F, 0) < 0)
 	{
 		LM_ERR("failed to parse message\n");
-		goto error;
+		return -1;
 	}
 
 	/* extract body if it has one */
@@ -948,10 +936,30 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 			if (body.s== NULL) 
 			{
 				LM_ERR("cannot extract body\n");
-				goto error;
+				return -1;
 			}
 		}
 	}
+
+	/* build extra headers */
+	if(b2b_extra_headers(msg, NULL, NULL, &extra_headers)< 0)
+	{
+		LM_ERR("Failed to construct extra headers\n");
+		return -1;
+	}
+
+	LM_DBG("b2b_entities notification cb for [%.*s] with entity [%.*s]\n",
+			b2bl_key->len, b2bl_key->s, key->len, key->s);
+
+	lock_get(&b2bl_htable[hash_index].lock);
+	tuple = b2bl_search_tuple_safe(hash_index, local_index);
+	if(tuple == NULL)
+	{
+		LM_ERR("B2B logic record not found\n");
+		goto error;
+	}
+	scenario = tuple->scenario;
+
 	entity = b2bl_search_entity(tuple, key, src);
 	if(entity == NULL)
 	{
@@ -964,13 +972,6 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 		goto error;
 	}
 	peer = entity->peer;
-
-	/* build extra headers */
-	if(b2b_extra_headers(msg, NULL, NULL, &extra_headers)< 0)
-	{
-		LM_ERR("Failed to construct extra headers\n");
-		goto error;
-	}
 
 	LM_DBG("b2b_entity key = %.*s\n", key->len, key->s);
 
