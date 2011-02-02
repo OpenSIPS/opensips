@@ -882,25 +882,747 @@ int post_cb_sanity_check(b2bl_tuple_t **tuple, unsigned int hash_index, unsigned
 }
 
 
-int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* param)
+int b2b_logic_notify_reply(int src, struct sip_msg* msg, str* key, str* body, str* extra_headers,
+		str* b2bl_key, unsigned int hash_index, unsigned int local_index)
 {
-	unsigned int hash_index, local_index;
-	str* b2bl_key = (str*)param;
 	b2bl_tuple_t* tuple;
-	str method, body= {NULL, 0};
-	str extra_headers = {NULL, 0};
+	str method;
 	b2b_scenario_t* scenario;
-	b2b_rule_t* rule;
 	b2bl_entity_id_t* entity, *peer;
-	xmlNodePtr bridge_node, node;
-	int state = -1;
-	str attr;
 	int statuscode;
 	int ret;
 	unsigned int method_value;
 	int_str avp_val;
 	b2bl_cback_f cbf = NULL;
 	str ekey= {NULL, 0};
+
+	lock_get(&b2bl_htable[hash_index].lock);
+	tuple = b2bl_search_tuple_safe(hash_index, local_index);
+	if(tuple == NULL)
+	{
+		LM_ERR("B2B logic record not found\n");
+		goto error;
+	}
+	scenario = tuple->scenario;
+
+	entity = b2bl_search_entity(tuple, key, src);
+	if(entity == NULL)
+	{
+		LM_ERR("No b2b_key match found [%.*s], src=%d\n", key->len, key->s, src);
+		goto error;
+	}
+	if (entity->no < 0 || entity->no > 1)
+	{
+		LM_ERR("unexpected entity->no [%d] for tuple [%p]\n", entity->no, tuple);
+		goto error;
+	}
+	peer = entity->peer;
+
+	LM_DBG("b2b_entity key = %.*s\n", key->len, key->s);
+
+	if (b2bl_key_avp_name.n)
+	{
+		destroy_avps( b2bl_key_avp_type, b2bl_key_avp_name, 1);
+		avp_val.s = *b2bl_key;
+		if(add_avp(AVP_VAL_STR|b2bl_key_avp_type, b2bl_key_avp_name, avp_val)!=0)
+		{
+			LM_ERR("failed to build b2bl_key avp\n");
+			return -1;
+		}
+	}
+
+	method = get_cseq(msg)->method;
+	if(parse_method(method.s, method.s+method.len, &method_value)< 0)
+	{
+		LM_ERR("Failed to parse method\n");
+		goto error;
+	}
+
+	statuscode = msg->first_line.u.reply.statuscode;
+
+	/* if a disconnected entity -> do nothing */
+	if(entity->disconnected)
+	{
+		LM_DBG("entity [%.*s] is disconnected\n", key->len, key->s);
+		b2bl_delete_entity(entity, tuple);
+
+		if(tuple->to_del && tuple->clients[0]==NULL && tuple->clients[1]==NULL &&
+					tuple->servers[0]==NULL && tuple->servers[1]==NULL)
+		{
+			LM_DBG("Received reply and there are no more entities-> delete\n");
+			b2bl_delete(tuple, hash_index, 0);
+		}
+		goto done;
+	}
+
+	/* if a reply from the client side was received, 
+	* tell the server side to send a reply also */
+
+	if((scenario && 
+			scenario->reply_rules) || tuple->scenario_state == B2B_BRIDGING_STATE)
+	{
+		if(tuple->scenario_state == B2B_BRIDGING_STATE) /* if in a predefined state */
+		{
+			LM_DBG("Received a reply [%d] while in BRIDGING scenario\n",
+				statuscode);
+			/* if the scenario state is B2B_BRIDGING_STATE -> we should have a reply for INVITE */
+			/* extract the method from Cseq header */
+
+			if(method_value != METHOD_INVITE)
+			{
+				LM_ERR("Wrong scenario state [B2B_BRIDGING_STATE] for this"
+					" reply(for method %d)\n", method_value);
+				goto error;
+			}
+			/* if a negative reply */
+			if(statuscode >= 300)
+			{
+				ret = process_bridge_negreply(tuple, hash_index, entity, msg);
+
+				if(ret < 0)
+				{
+					LM_ERR("Failed to process negative reply while in bridging state\n");
+					goto error;
+				}
+				else
+				if(ret == 1)
+					goto done1;
+
+				if(!entity->peer || !entity->peer->key.s)
+				{
+					LM_DBG("Delete this b2bl record\n");
+					b2bl_delete(tuple, hash_index, 0);
+				}
+				goto done;
+			}
+			else
+			if(statuscode < 200)
+			{
+				goto done;
+			}
+
+			/* if a reply with 200 OK -> we have two possibilities- either the first 200OK or the final */
+			if(process_bridge_200OK(msg, tuple->extra_headers,
+						(body->s?body:0), tuple, entity)< 0)
+			{
+				LM_ERR("Failed to process bridging 200OK for Invite\n");
+				goto error;
+			}
+		}
+		if(scenario && scenario->reply_rules)
+		{
+			/* TODO -> process and apply reply rules */
+		}
+		if(statuscode >= 300)
+		{
+			tuple->to_del = 1;
+			tuple->lifetime = 30 + get_ticks();
+		}
+	}
+	else
+	{
+		if(!peer)
+		{
+			LM_DBG("No peer found\n");
+			goto done;
+		}
+		if(b2b_api.send_reply(peer->type, &peer->key,
+			method_value,statuscode,&msg->first_line.u.reply.reason,
+			body->s?body:0, extra_headers->s?extra_headers:0,
+			peer->dlginfo) < 0)
+		{
+			LM_ERR("Sending reply failed - %d, [%.*s]\n", statuscode,
+					peer->key.len, peer->key.s);
+		//	b2bl_delete(tuple, hash_index, 0);
+			goto done;
+		}
+
+		/* if no other scenario rules defined and this is the reply for BYE */
+		if(method_value == METHOD_BYE)
+		{
+			LM_DBG("Received reply for BYE - delete\n");
+			b2bl_delete(tuple, hash_index, 0);
+			goto done;
+		}
+		if(method_value == METHOD_INVITE)
+		{
+			if(entity->state!=DLG_CONFIRMED)
+			{
+				if(statuscode >= 300)
+				{
+					LM_DBG("Negative reply [%d] - delete[%p]\n", statuscode, tuple);
+					b2b_mark_todel(tuple);
+				}
+				else
+				if(statuscode >= 200 && statuscode < 300)
+				{
+					entity->state = DLG_CONFIRMED;
+					peer->state = DLG_CONFIRMED;
+					entity->stats.setup_time = get_ticks() - entity->stats.start_time;
+					entity->stats.start_time = get_ticks();
+					cbf = tuple->cbf;
+					if(cbf && (tuple->cb_mask&B2B_CONFIRMED_CB))
+					{
+						/* saving the entity key for later sanity check */
+						ekey.s = (char*)pkg_malloc(entity->key.len);
+						if(ekey.s == NULL)
+						{
+							LM_ERR("No more memory\n");
+							goto error;
+						}
+						ekey.len = entity->key.len;
+						memcpy(ekey.s, entity->key.s, entity->key.len);
+						/* preparing the cb params */
+						memset(&cb_params, 0, sizeof(b2bl_cb_params_t));
+						cb_params.param = tuple->cb_param;
+						cb_params.stat = NULL;
+						cb_params.msg = msg;
+						cb_params.entity = entity->no;
+
+						lock_release(&b2bl_htable[hash_index].lock);
+						ret = cbf(&cb_params, B2B_CONFIRMED_CB);
+						lock_get(&b2bl_htable[hash_index].lock);
+
+						/* must search the tuple again
+						 * you can't know what might have happened with it */
+						if (0!=post_cb_sanity_check(&tuple, hash_index, local_index,
+							&entity, entity->type, &ekey))
+						{
+							pkg_free(ekey.s);
+							goto error;
+						}
+						pkg_free(ekey.s);
+
+						peer = entity->peer;
+					}
+				}
+			}
+			else
+			{
+				/* if reINVITE and 481 or 408 reply */
+				if(statuscode==481 || statuscode==408)
+				{
+					LM_DBG("Received terminate dialog reply for reINVITE\n");
+					tuple->lifetime = 30 + get_ticks();
+				}
+			}
+		}
+	}
+
+done:
+	UPDATE_DBFLAG(tuple, tuple->db_flag);
+done1:
+	lock_release(&b2bl_htable[hash_index].lock);
+	return 0;
+
+error:
+	lock_release(&b2bl_htable[hash_index].lock);
+	return -1;
+}
+
+
+int b2b_logic_notify_request(int src, struct sip_msg* msg, str* key, str* body, str* extra_headers,
+		str* b2bl_key, unsigned int hash_index, unsigned int local_index)
+{
+	b2bl_tuple_t* tuple;
+	str method;
+	b2b_scenario_t* scenario;
+	b2b_rule_t* rule;
+	b2bl_entity_id_t* entity, *peer;
+	xmlNodePtr bridge_node, node;
+	int state = -1;
+	str attr;
+	int ret;
+	unsigned int method_value;
+	int_str avp_val;
+	b2bl_cback_f cbf = NULL;
+	str ekey= {NULL, 0};
+	int request_id;
+
+	lock_get(&b2bl_htable[hash_index].lock);
+	tuple = b2bl_search_tuple_safe(hash_index, local_index);
+	if(tuple == NULL)
+	{
+		LM_ERR("B2B logic record not found\n");
+		goto error;
+	}
+	scenario = tuple->scenario;
+
+	entity = b2bl_search_entity(tuple, key, src);
+	if(entity == NULL)
+	{
+		LM_ERR("No b2b_key match found [%.*s], src=%d\n", key->len, key->s, src);
+		goto error;
+	}
+	if (entity->no < 0 || entity->no > 1)
+	{
+		LM_ERR("unexpected entity->no [%d] for tuple [%p]\n", entity->no, tuple);
+		goto error;
+	}
+	peer = entity->peer;
+
+	LM_DBG("b2b_entity key = %.*s\n", key->len, key->s);
+
+	if (b2bl_key_avp_name.n)
+	{
+		destroy_avps( b2bl_key_avp_type, b2bl_key_avp_name, 1);
+		avp_val.s = *b2bl_key;
+		if(add_avp(AVP_VAL_STR|b2bl_key_avp_type, b2bl_key_avp_name, avp_val)!=0)
+		{
+			LM_ERR("failed to build b2bl_key avp\n");
+			return -1;
+		}
+	}
+
+	method = msg->first_line.u.request.method;
+	method_value = msg->first_line.u.request.method_value;
+	/* extract body if it has a body */
+
+	LM_DBG("request received for tuple[%p]->[%.*s]\n", tuple, tuple->key->len, tuple->key->s);
+	request_id = b2b_get_request_id(&method);
+	if(request_id < 0)
+	{
+		LM_DBG("Not a recognized request [%d]\n", request_id);
+		goto send_usual_request;
+	}
+	/* if the request is an ACK and the tuple is marked to_del -> then delete the record and return */
+	if(tuple->to_del)
+	{
+		switch (request_id)
+		{
+			case B2B_ACK:
+				LM_DBG("ACK for a negative reply\n");
+				break;
+			case B2B_BYE:
+				/* BYE already sent to this entity but we got no reply */
+				b2b_api.send_reply(entity->type, &entity->key, METHOD_BYE,
+					200, &ok, 0, 0, entity->dlginfo);
+				if(entity->peer)
+					b2b_api.send_reply(entity->peer->type, &entity->peer->key, METHOD_BYE,
+						200, &ok, 0, 0, entity->peer->dlginfo);
+				break;
+			default:
+				b2b_api.send_reply(entity->type, &entity->key, method_value,
+					400, &notAcceptable, 0, 0, entity->dlginfo);
+		}
+		b2bl_delete(tuple, hash_index, 0);
+		goto done;
+	}
+
+	cbf = tuple->cbf;
+
+	switch (request_id) {
+	case B2B_BYE:
+		entity->disconnected = 1;
+		if(cbf && (tuple->cb_mask&B2B_BYE_CB))
+		{
+			memset(&cb_params, 0, sizeof(b2bl_cb_params_t));
+			cb_params.param = tuple->cb_param;
+			if(tuple->scenario_state != B2B_BRIDGING_STATE)
+				entity->stats.call_time = get_ticks() - entity->stats.start_time;
+			else
+				entity->stats.call_time = 0;
+			memcpy(&stat, &entity->stats, sizeof(b2bl_dlg_stat_t));
+			stat.key.s = (char*)pkg_malloc(tuple->key->len);
+			if(stat.key.s == NULL)
+			{
+				LM_ERR("No more memory\n");
+				goto error;
+			}
+			memcpy(stat.key.s, tuple->key->s, tuple->key->len);
+			stat.key.len = tuple->key->len;
+			ekey.s = (char*)pkg_malloc(entity->key.len);
+			if(ekey.s == NULL)
+			{
+				LM_ERR("No more memory\n");
+				pkg_free(stat.key.s);
+				goto error;
+			}
+			memcpy(ekey.s, entity->key.s, entity->key.len);
+			ekey.len = entity->key.len;
+			cb_params.stat = &stat;
+			cb_params.msg = msg;
+			cb_params.entity = entity->no;
+
+			lock_release(&b2bl_htable[hash_index].lock);
+			LM_DBG("entity->no = %d\n", entity->no);
+			ret = cbf(&cb_params, B2B_BYE_CB);
+			LM_DBG("ret = %d, peer= %p\n", ret, peer);
+
+			pkg_free(stat.key.s);
+			lock_get(&b2bl_htable[hash_index].lock);
+			/* must search the tuple again
+			 * you can't know what might have happened with it */
+			if (0!=post_cb_sanity_check(&tuple, hash_index, local_index,
+						&entity, entity->type, &ekey))
+			{
+				pkg_free(ekey.s);
+				goto error;
+			}
+			pkg_free(ekey.s);
+
+			peer = entity->peer;
+			if(ret< B2B_DROP_MSG_CB_RET )
+			{
+				LM_ERR("The callback function was unsuccessful\n");
+				goto send_usual_request;
+			}
+			else
+			if(ret == B2B_DROP_MSG_CB_RET)
+			{
+				entity->peer = 0;
+				/* send 200 OK for BYE */
+				b2b_api.send_reply(entity->type, &entity->key, METHOD_BYE,
+						200, &ok, 0, 0, entity->dlginfo);
+				b2bl_delete_entity(entity, tuple);
+				entity = NULL;
+				goto done;
+			}
+			else
+			if(ret == B2B_SEND_MSG_CB_RET)
+				goto send_usual_request;
+		}
+
+		if(tuple->scenario_state == B2B_BRIDGING_STATE)
+		{
+			LM_DBG("Scenario is in bridging state\n");
+			if(process_bridge_bye(msg, tuple, entity) < 0)
+			{
+				LM_ERR("Failed to process BYE received in bridging state\n");
+				goto error;
+			}
+			
+			if(tuple->to_del && entity->peer==NULL)
+			{
+				LM_DBG("Delete this b2bl record after process_bridge_bye\n");
+				b2bl_delete(tuple, hash_index, 0);
+			}
+
+			goto done;
+		}
+		break;
+
+	case B2B_INVITE:
+		if(cbf)
+		{
+			/* saving the entity key for later sanity check */
+			ekey.s = (char*)pkg_malloc(entity->key.len);
+			if(ekey.s == NULL)
+			{
+				LM_ERR("No more memory\n");
+				goto error;
+			}
+			ekey.len = entity->key.len;
+			memcpy(ekey.s, entity->key.s, entity->key.len);
+			LM_DBG("ekey [%p]->[%.*s]\n", &ekey, ekey.len, ekey.s);
+			/* preparing the cb params */
+			memset(&cb_params, 0, sizeof(b2bl_cb_params_t));
+			cb_params.param = tuple->cb_param;
+			cb_params.stat = NULL;
+			cb_params.msg = msg;
+			cb_params.entity = entity->no;
+			lock_release(&b2bl_htable[hash_index].lock);
+
+			LM_DBG("entity->no = %d\n", entity->no);
+			ret = cbf(&cb_params, B2B_RE_INVITE_CB);
+			LM_DBG("ret = %d, peer= %p\n", ret, peer);
+
+			lock_get(&b2bl_htable[hash_index].lock);
+			/* must search the tuple again
+			 * you can't know what might have happened with it */
+			if (0!=post_cb_sanity_check(&tuple, hash_index, local_index,
+						&entity, entity->type, &ekey))
+			{
+				pkg_free(ekey.s);
+				goto error;
+			}
+			pkg_free(ekey.s);
+
+			peer = entity->peer;
+			switch (ret) {
+			case B2B_DROP_MSG_CB_RET:
+				/* send 400 Not Acceptable for INVITE */
+				b2b_api.send_reply(entity->type, &entity->key, METHOD_INVITE,
+						400, &notAcceptable, 0, 0, entity->dlginfo);
+				goto done;
+				break;
+			case B2B_SEND_MSG_CB_RET:
+				goto send_usual_request;
+				break;
+			case B2B_FOLLOW_SCENARIO_CB_RET:
+				/* just continue with normal processing */
+				break;
+			case B2B_ERROR_CB_RET:
+				LM_ERR("The callback function was unsuccessful\n");
+				goto send_usual_request;
+				break;
+			default:
+				LM_ERR("Unexpected return code [%d]\n", ret);
+				goto send_usual_request;
+			}
+			
+		}
+		break;
+	}
+
+	if(!scenario || !scenario->request_rules[request_id])
+	{
+		if(request_id == B2B_BYE)
+		{
+			/* even though I don;t receive a reply, 
+			I should delete this record*/
+			tuple->lifetime = 30 + get_ticks();
+		}
+		goto send_usual_request;
+	}
+	else
+	{
+		rule = scenario->request_rules[request_id];
+		if(tuple->scenario_state != B2B_NOTDEF_STATE)
+		{
+			while(rule)
+			{
+				if(tuple->scenario_state == rule->cond_state)
+				{
+					break;
+				}
+				else
+				{
+					LM_DBG("State does not match found [%d], required [%d]\n",
+							tuple->scenario_state, rule->cond_state);
+				}
+				rule = rule->next;
+			}
+		}
+		if(!rule)
+		{
+			LM_DBG("Did not find a rule to apply for this request -> do normal pass through\n");
+			goto send_usual_request;
+		}
+		else
+		{
+			LM_DBG("Found rule with id [%d]\n", rule->id);
+		}
+		/* if a match was found -> check the condition part */
+		if(rule->cond_node)
+		{
+			node = xmlNodeGetChildByName(rule->cond_node, "sender");
+			if(node)
+			{
+				LM_DBG("Found a sender condition\n");
+				/* get the sender type */
+
+				attr.s = (char*)xmlNodeGetNodeContentByName(node, "type", NULL);
+				if(attr.s == NULL)
+				{
+					LM_ERR("Bad scenario document - sender condition node"
+							" without a type child\n");
+					goto error;
+				}
+
+				if(xmlStrcasecmp((unsigned char*)attr.s,(unsigned char*) "server") == 0)
+				{
+					/* check if it is a server request */
+					if(src != B2B_SERVER)
+					{
+						xmlFree(attr.s);
+						goto send_usual_request;
+					}
+				}
+				else
+				if(xmlStrcasecmp((unsigned char*) attr.s, (unsigned char*)"client") == 0)
+				{
+					if(src != B2B_CLIENT)
+					{
+						xmlFree(attr.s);
+						goto send_usual_request;
+					}
+				}
+				else
+				{
+					LM_ERR("Bad scenario document - sender condition type not"
+							" known\n");
+					xmlFree(attr.s);
+					goto error;
+				}
+				xmlFree(attr.s);
+
+				/* check the id */
+				attr.s = xmlNodeGetNodeContentByName(node, "id", NULL);
+				if(attr.s)
+				{
+					attr.len = strlen(attr.s);
+					if((attr.len != entity->scenario_id.len ||
+							strncmp(attr.s, entity->scenario_id.s, attr.len) != 0))
+					{
+						LM_DBG("Scenary id did not match - do not apply the rule"
+								" found [%.*s] , required [%s]\n", 
+								entity->scenario_id.len, entity->scenario_id.s, attr.s);
+						xmlFree(attr.s);
+						goto send_usual_request;
+					}
+					xmlFree(attr.s);
+				}
+				LM_DBG("Sender condition match\n");
+			}
+			/* TODO - process other conditions */
+		}
+
+		/* apply actions */
+
+		/* get next state */
+		node = xmlNodeGetChildByName(rule->action_node, "state");
+		if(node)
+		{
+			attr.s = (char*)xmlNodeGetContent(node);
+			if(attr.s == NULL)
+			{
+				LM_ERR("No state node content found\n");
+				goto error;
+			}
+			attr.len = strlen(attr.s);
+
+			if(str2int(&attr, (unsigned int*)&state)< 0)
+			{
+				LM_ERR("Bad scenario. Scenary state not an integer\n");
+				xmlFree(attr.s);
+				goto error;
+			}
+			LM_DBG("Next scenario state is [%d]\n", state);
+			xmlFree(attr.s);
+		}
+
+	/* handle bridge action */
+
+		bridge_node = xmlNodeGetChildByName(rule->action_node, "bridge");
+		if(bridge_node)
+		{
+			LM_DBG("Found a bridge node\n");
+
+			if(process_bridge_action(msg, entity, tuple, bridge_node) < 0)
+			{
+				LM_ERR("Failed to process bridge action\n");
+				goto send_usual_request;
+			}
+			/* save next state */
+			tuple->next_scenario_state = state;
+		}
+		else
+		{
+			/* set the next state now because the action has only one step */
+			if(state >= 0)
+				tuple->scenario_state = state;
+		}
+
+		node = xmlNodeGetChildByName(rule->action_node, "send_reply");
+		if(node)
+		{
+			unsigned int code;
+
+			LM_DBG("Found a send reply node\n");
+			/* get code and text */
+			attr.s = xmlNodeGetNodeContentByName(node, "code", NULL);
+			if(attr.s == NULL)
+			{
+				LM_ERR("Bad scenario document - No code defined for send_reply node\n");
+				goto error;
+			}
+			attr.len = strlen(attr.s);
+			if(str2int(&attr, &code) < 0)
+			{
+				LM_ERR("Bad scenario - wrong reply code, not an integer\n");
+				xmlFree(attr.s);
+				goto error;
+			}
+			xmlFree(attr.s);
+
+			attr.s = xmlNodeGetNodeContentByName(node, "reason", NULL);
+			if(attr.s == NULL)
+			{
+				LM_ERR("Bad scenario document - No code defined for send_reply node\n");
+				goto error;
+			}
+			attr.len = strlen(attr.s);
+
+			b2b_api.send_reply(entity->type, &entity->key, method_value, code,
+					&attr, 0, 0, entity->dlginfo);
+			LM_DBG("Send reply with code [%d] and text [%s]\n", code, attr.s);
+
+			xmlFree(attr.s);
+		}
+		/* end_dialog_leg option */
+		node = xmlNodeGetChildByName(rule->action_node, "end_dialog_leg");
+		if(node)
+		{
+			LM_DBG("End dialog\n");
+			entity->disconnected = 1;
+			b2b_api.send_request(entity->type, &entity->key,
+					&method_bye, 0, 0, entity->dlginfo);
+			if(entity->peer)
+				entity->peer->peer = NULL;
+			peer = entity->peer = NULL;
+		}
+
+		node = xmlNodeGetChildByName(rule->action_node, "delete_entity");
+		if(node)
+		{
+			if(entity->peer)
+				entity->peer->peer = 0;
+			b2bl_delete_entity(entity, tuple);
+			entity = NULL;
+			LM_DBG("Deleted current entity\n");
+		}
+	}
+
+	goto done;
+
+send_usual_request:
+		if(request_id == B2B_CANCEL)
+			tuple->scenario_state = B2B_CANCEL_STATE;
+		else
+		if(request_id == B2B_BYE)
+		{
+			if(!peer || !peer->key.s)
+			{
+				b2b_api.send_reply(entity->type, &entity->key, METHOD_BYE,
+						200, &ok, 0, 0, entity->dlginfo);
+				b2bl_delete(tuple, hash_index, 0);
+				goto done;
+			}
+			else
+				b2b_mark_todel(tuple);
+		}
+		if(peer && peer->key.s)
+		{
+			LM_DBG("Send request [%.*s] to peer [%.*s]\n",
+				method.len, method.s, peer->key.len, peer->key.s);
+			if(b2b_api.send_request(peer->type, &peer->key, &method,
+				extra_headers->len?extra_headers:0, body->len?body:0,
+				peer->dlginfo) < 0)
+			{
+				LM_ERR("Sending request failed [%.*s]\n", peer->key.len, peer->key.s);
+			//	b2bl_delete(tuple, hash_index, 0);
+			}
+		}
+
+done:
+	UPDATE_DBFLAG(tuple, tuple->db_flag);
+
+	lock_release(&b2bl_htable[hash_index].lock);
+	return 0;
+
+error:
+	lock_release(&b2bl_htable[hash_index].lock);
+	return -1;
+}
+
+
+int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* param)
+{
+	unsigned int hash_index, local_index;
+	str* b2bl_key = (str*)param;
+	str body= {NULL, 0};
+	str extra_headers = {NULL, 0};
 
 	if(b2bl_key == NULL)
 	{
@@ -951,674 +1673,23 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 	LM_DBG("b2b_entities notification cb for [%.*s] with entity [%.*s]\n",
 			b2bl_key->len, b2bl_key->s, key->len, key->s);
 
-	lock_get(&b2bl_htable[hash_index].lock);
-	tuple = b2bl_search_tuple_safe(hash_index, local_index);
-	if(tuple == NULL)
-	{
-		LM_ERR("B2B logic record not found\n");
-		goto error;
-	}
-	scenario = tuple->scenario;
-
-	entity = b2bl_search_entity(tuple, key, src);
-	if(entity == NULL)
-	{
-		LM_ERR("No b2b_key match found [%.*s], src=%d\n", key->len, key->s, src);
-		goto error;
-	}
-	if (entity->no < 0 || entity->no > 1)
-	{
-		LM_ERR("unexpected entity->no [%d] for tuple [%p]\n", entity->no, tuple);
-		goto error;
-	}
-	peer = entity->peer;
-
-	LM_DBG("b2b_entity key = %.*s\n", key->len, key->s);
-
-	if (b2bl_key_avp_name.n)
-	{
-		destroy_avps( b2bl_key_avp_type, b2bl_key_avp_name, 1);
-		avp_val.s = *b2bl_key;
-		if(add_avp(AVP_VAL_STR|b2bl_key_avp_type, b2bl_key_avp_name, avp_val)!=0)
-		{
-			LM_ERR("failed to build b2bl_key avp\n");
-			return -1;
-		}
-	}
-
 	if(type == B2B_REPLY)
 	{
-		method = get_cseq(msg)->method;
-		if(parse_method(method.s, method.s+method.len, &method_value)< 0)
-		{
-			LM_ERR("Failed to parse method\n");
-			goto error;
-		}
-
-		statuscode = msg->first_line.u.reply.statuscode;
-
-		/* if a disconnected entity -> do nothing */
-		if(entity->disconnected)
-		{
-			LM_DBG("entity [%.*s] is disconnected\n", key->len, key->s);
-			b2bl_delete_entity(entity, tuple);
-
-			if(tuple->to_del && tuple->clients[0]==NULL && tuple->clients[1]==NULL &&
-						tuple->servers[0]==NULL && tuple->servers[1]==NULL)
-			{
-				LM_DBG("Received reply and there are no more entities-> delete\n");
-				b2bl_delete(tuple, hash_index, 0);
-			}
-			goto done;
-		}
-
-		/* if a reply from the client side was received, 
-		* tell the server side to send a reply also */
-
-		if((scenario && 
-				scenario->reply_rules) || tuple->scenario_state == B2B_BRIDGING_STATE)
-		{
-			if(tuple->scenario_state == B2B_BRIDGING_STATE) /* if in a predefined state */
-			{
-				LM_DBG("Received a reply [%d] while in BRIDGING scenario\n",
-					statuscode);
-				/* if the scenario state is B2B_BRIDGING_STATE -> we should have a reply for INVITE */
-				/* extract the method from Cseq header */
-
-				if(method_value != METHOD_INVITE)
-				{
-					LM_ERR("Wrong scenario state [B2B_BRIDGING_STATE] for this"
-						" reply(for method %d)\n", method_value);
-					goto error;
-				}
-				/* if a negative reply */
-				if(statuscode >= 300)
-				{
-					ret = process_bridge_negreply(tuple, hash_index, entity, msg);
-
-					if(ret < 0)
-					{
-						LM_ERR("Failed to process negative reply while in bridging state\n");
-						goto error;
-					}
-					else
-					if(ret == 1)
-						goto done1;
-
-					if(!entity->peer || !entity->peer->key.s)
-					{
-						LM_DBG("Delete this b2bl record\n");
-						b2bl_delete(tuple, hash_index, 0);
-					}
-					goto done;
-				}
-				else
-				if(statuscode < 200)
-				{
-					goto done;
-				}
-
-				/* if a reply with 200 OK -> we have two possibilities- either the first 200OK or the final */
-				if(process_bridge_200OK(msg, tuple->extra_headers,
-							(body.s?&body:0), tuple, entity)< 0)
-				{
-					LM_ERR("Failed to process bridging 200OK for Invite\n");
-					goto error;
-				}
-			}
-			if(scenario && scenario->reply_rules)
-			{
-				/* TODO -> process and apply reply rules */
-			}
-			if(statuscode >= 300)
-			{
-				tuple->to_del = 1;
-				tuple->lifetime = 30 + get_ticks();
-			}
-		}
-		else
-		{
-			if(!peer)
-			{
-				LM_DBG("No peer found\n");
-				goto done;
-			}
-			if(b2b_api.send_reply(peer->type, &peer->key,
-				method_value,statuscode,&msg->first_line.u.reply.reason,
-				body.s?&body:0, extra_headers.s?&extra_headers:0,
-				peer->dlginfo) < 0)
-			{
-				LM_ERR("Sending reply failed - %d, [%.*s]\n", statuscode,
-						peer->key.len, peer->key.s);
-			//	b2bl_delete(tuple, hash_index, 0);
-				goto done;
-			}
-
-			/* if no other scenario rules defined and this is the reply for BYE */
-			if(method_value == METHOD_BYE)
-			{
-				LM_DBG("Received reply for BYE - delete\n");
-				b2bl_delete(tuple, hash_index, 0);
-				goto done;
-			}
-			if(method_value == METHOD_INVITE)
-			{
-				if(entity->state!=DLG_CONFIRMED)
-				{
-					if(statuscode >= 300)
-					{
-						LM_DBG("Negative reply [%d] - delete[%p]\n", statuscode, tuple);
-						b2b_mark_todel(tuple);
-					}
-					else
-					if(statuscode >= 200 && statuscode < 300)
-					{
-						entity->state = DLG_CONFIRMED;
-						peer->state = DLG_CONFIRMED;
-						entity->stats.setup_time = get_ticks() - entity->stats.start_time;
-						entity->stats.start_time = get_ticks();
-						cbf = tuple->cbf;
-						if(cbf && (tuple->cb_mask&B2B_CONFIRMED_CB))
-						{
-							/* saving the entity key for later sanity check */
-							ekey.s = (char*)pkg_malloc(entity->key.len);
-							if(ekey.s == NULL)
-							{
-								LM_ERR("No more memory\n");
-								goto error;
-							}
-							ekey.len = entity->key.len;
-							memcpy(ekey.s, entity->key.s, entity->key.len);
-							/* preparing the cb params */
-							memset(&cb_params, 0, sizeof(b2bl_cb_params_t));
-							cb_params.param = tuple->cb_param;
-							cb_params.stat = NULL;
-							cb_params.msg = msg;
-							cb_params.entity = entity->no;
-
-							lock_release(&b2bl_htable[hash_index].lock);
-							ret = cbf(&cb_params, B2B_CONFIRMED_CB);
-							lock_get(&b2bl_htable[hash_index].lock);
-
-							/* must search the tuple again
-							 * you can't know what might have happened with it */
-							if (0!=post_cb_sanity_check(&tuple, hash_index, local_index,
-								&entity, entity->type, &ekey))
-							{
-								pkg_free(ekey.s);
-								goto error;
-							}
-							pkg_free(ekey.s);
-
-							peer = entity->peer;
-						}
-					}
-				}
-				else
-				{
-					/* if reINVITE and 481 or 408 reply */
-					if(statuscode==481 || statuscode==408)
-					{
-						LM_DBG("Received terminate dialog reply for reINVITE\n");
-						tuple->lifetime = 30 + get_ticks();
-					}
-				}
-			}
-		}
+		return b2b_logic_notify_reply(src, msg, key, &body, &extra_headers,
+                				b2bl_key, hash_index, local_index);
 	}
 	else
 	if(type == B2B_REQUEST)
 	{
-		int request_id;
-
-		method = msg->first_line.u.request.method;
-		method_value = msg->first_line.u.request.method_value;
-		/* extract body if it has a body */
-
-		LM_DBG("request received for tuple[%p]->[%.*s]\n", tuple, tuple->key->len, tuple->key->s);
-		request_id = b2b_get_request_id(&method);
-		if(request_id < 0)
-		{
-			LM_DBG("Not a recognized request [%d]\n", request_id);
-			goto send_usual_request;
-		}
-		/* if the request is an ACK and the tuple is marked to_del -> then delete the record and return */
-		if(tuple->to_del)
-		{
-			switch (request_id)
-			{
-				case B2B_ACK:
-					LM_DBG("ACK for a negative reply\n");
-					break;
-				case B2B_BYE:
-					/* BYE already sent to this entity but we got no reply */
-					b2b_api.send_reply(entity->type, &entity->key, METHOD_BYE,
-						200, &ok, 0, 0, entity->dlginfo);
-					if(entity->peer)
-						b2b_api.send_reply(entity->peer->type, &entity->peer->key, METHOD_BYE,
-							200, &ok, 0, 0, entity->peer->dlginfo);
-					break;
-				default:
-					b2b_api.send_reply(entity->type, &entity->key, method_value,
-						400, &notAcceptable, 0, 0, entity->dlginfo);
-			}
-			b2bl_delete(tuple, hash_index, 0);
-			goto done;
-		}
-
-		cbf = tuple->cbf;
-
-		switch (request_id) {
-		case B2B_BYE:
-			entity->disconnected = 1;
-			if(cbf && (tuple->cb_mask&B2B_BYE_CB))
-			{
-				memset(&cb_params, 0, sizeof(b2bl_cb_params_t));
-				cb_params.param = tuple->cb_param;
-				if(tuple->scenario_state != B2B_BRIDGING_STATE)
-					entity->stats.call_time = get_ticks() - entity->stats.start_time;
-				else
-					entity->stats.call_time = 0;
-				memcpy(&stat, &entity->stats, sizeof(b2bl_dlg_stat_t));
-				stat.key.s = (char*)pkg_malloc(tuple->key->len);
-				if(stat.key.s == NULL)
-				{
-					LM_ERR("No more memory\n");
-					goto error;
-				}
-				memcpy(stat.key.s, tuple->key->s, tuple->key->len);
-				stat.key.len = tuple->key->len;
-				ekey.s = (char*)pkg_malloc(entity->key.len);
-				if(ekey.s == NULL)
-				{
-					LM_ERR("No more memory\n");
-					pkg_free(stat.key.s);
-					goto error;
-				}
-				memcpy(ekey.s, entity->key.s, entity->key.len);
-				ekey.len = entity->key.len;
-				cb_params.stat = &stat;
-				cb_params.msg = msg;
-				cb_params.entity = entity->no;
-
-				lock_release(&b2bl_htable[hash_index].lock);
-				LM_DBG("entity->no = %d\n", entity->no);
-				ret = cbf(&cb_params, B2B_BYE_CB);
-				LM_DBG("ret = %d, peer= %p\n", ret, peer);
-
-				pkg_free(stat.key.s);
-				lock_get(&b2bl_htable[hash_index].lock);
-				/* must search the tuple again
-				 * you can't know what might have happened with it */
-				if (0!=post_cb_sanity_check(&tuple, hash_index, local_index,
-							&entity, entity->type, &ekey))
-				{
-					pkg_free(ekey.s);
-					goto error;
-				}
-				pkg_free(ekey.s);
-
-				peer = entity->peer;
-				if(ret< B2B_DROP_MSG_CB_RET )
-				{
-					LM_ERR("The callback function was unsuccessful\n");
-					goto send_usual_request;
-				}
-				else
-				if(ret == B2B_DROP_MSG_CB_RET)
-				{
-					entity->peer = 0;
-					/* send 200 OK for BYE */
-					b2b_api.send_reply(entity->type, &entity->key, METHOD_BYE,
-							200, &ok, 0, 0, entity->dlginfo);
-					b2bl_delete_entity(entity, tuple);
-					entity = NULL;
-					goto done;
-				}
-				else
-				if(ret == B2B_SEND_MSG_CB_RET)
-					goto send_usual_request;
-			}
-
-			if(tuple->scenario_state == B2B_BRIDGING_STATE)
-			{
-				LM_DBG("Scenario is in bridging state\n");
-				if(process_bridge_bye(msg, tuple, entity) < 0)
-				{
-					LM_ERR("Failed to process BYE received in bridging state\n");
-					goto error;
-				}
-				
-				if(tuple->to_del && entity->peer==NULL)
-				{
-					LM_DBG("Delete this b2bl record after process_bridge_bye\n");
-					b2bl_delete(tuple, hash_index, 0);
-				}
-
-				goto done;
-			}
-			break;
-
-		case B2B_INVITE:
-			if(cbf)
-			{
-				/* saving the entity key for later sanity check */
-				ekey.s = (char*)pkg_malloc(entity->key.len);
-				if(ekey.s == NULL)
-				{
-					LM_ERR("No more memory\n");
-					goto error;
-				}
-				ekey.len = entity->key.len;
-				memcpy(ekey.s, entity->key.s, entity->key.len);
-				LM_DBG("ekey [%p]->[%.*s]\n", &ekey, ekey.len, ekey.s);
-				/* preparing the cb params */
-				memset(&cb_params, 0, sizeof(b2bl_cb_params_t));
-				cb_params.param = tuple->cb_param;
-				cb_params.stat = NULL;
-				cb_params.msg = msg;
-				cb_params.entity = entity->no;
-				lock_release(&b2bl_htable[hash_index].lock);
-
-				LM_DBG("entity->no = %d\n", entity->no);
-				ret = cbf(&cb_params, B2B_RE_INVITE_CB);
-				LM_DBG("ret = %d, peer= %p\n", ret, peer);
-
-				lock_get(&b2bl_htable[hash_index].lock);
-				/* must search the tuple again
-				 * you can't know what might have happened with it */
-				if (0!=post_cb_sanity_check(&tuple, hash_index, local_index,
-							&entity, entity->type, &ekey))
-				{
-					pkg_free(ekey.s);
-					goto error;
-				}
-				pkg_free(ekey.s);
-
-				peer = entity->peer;
-				switch (ret) {
-				case B2B_DROP_MSG_CB_RET:
-					/* send 400 Not Acceptable for INVITE */
-					b2b_api.send_reply(entity->type, &entity->key, METHOD_INVITE,
-							400, &notAcceptable, 0, 0, entity->dlginfo);
-					goto done;
-					break;
-				case B2B_SEND_MSG_CB_RET:
-					goto send_usual_request;
-					break;
-				case B2B_FOLLOW_SCENARIO_CB_RET:
-					/* just continue with normal processing */
-					break;
-				case B2B_ERROR_CB_RET:
-					LM_ERR("The callback function was unsuccessful\n");
-					goto send_usual_request;
-					break;
-				default:
-					LM_ERR("Unexpected return code [%d]\n", ret);
-					goto send_usual_request;
-				}
-				
-			}
-			break;
-		}
-
-		if(!scenario || !scenario->request_rules[request_id])
-		{
-			if(request_id == B2B_BYE)
-			{
-				/* even though I don;t receive a reply, 
-				I should delete this record*/
-				tuple->lifetime = 30 + get_ticks();
-			}
-			goto send_usual_request;
-		}
-		else
-		{
-			rule = scenario->request_rules[request_id];
-			if(tuple->scenario_state != B2B_NOTDEF_STATE)
-			{
-				while(rule)
-				{
-					if(tuple->scenario_state == rule->cond_state)
-					{
-						break;
-					}
-					else
-					{
-						LM_DBG("State does not match found [%d], required [%d]\n",
-								tuple->scenario_state, rule->cond_state);
-					}
-					rule = rule->next;
-				}
-			}
-			if(!rule)
-			{
-				LM_DBG("Did not find a rule to apply for this request -> do normal pass through\n");
-				goto send_usual_request;
-			}
-			else
-			{
-				LM_DBG("Found rule with id [%d]\n", rule->id);
-			}
-			/* if a match was found -> check the condition part */
-			if(rule->cond_node)
-			{
-				node = xmlNodeGetChildByName(rule->cond_node, "sender");
-				if(node)
-				{
-					LM_DBG("Found a sender condition\n");
-					/* get the sender type */
-
-					attr.s = (char*)xmlNodeGetNodeContentByName(node, "type", NULL);
-					if(attr.s == NULL)
-					{
-						LM_ERR("Bad scenario document - sender condition node"
-								" without a type child\n");
-						goto error;
-					}
-
-					if(xmlStrcasecmp((unsigned char*)attr.s,(unsigned char*) "server") == 0)
-					{
-						/* check if it is a server request */
-						if(src != B2B_SERVER)
-						{
-							xmlFree(attr.s);
-							goto send_usual_request;
-						}
-					}
-					else
-					if(xmlStrcasecmp((unsigned char*) attr.s, (unsigned char*)"client") == 0)
-					{
-						if(src != B2B_CLIENT)
-						{
-							xmlFree(attr.s);
-							goto send_usual_request;
-						}
-					}
-					else
-					{
-						LM_ERR("Bad scenario document - sender condition type not"
-								" known\n");
-						xmlFree(attr.s);
-						goto error;
-					}
-					xmlFree(attr.s);
-
-					/* check the id */
-					attr.s = xmlNodeGetNodeContentByName(node, "id", NULL);
-					if(attr.s)
-					{
-						attr.len = strlen(attr.s);
-						if((attr.len != entity->scenario_id.len ||
-								strncmp(attr.s, entity->scenario_id.s, attr.len) != 0))
-						{
-							LM_DBG("Scenary id did not match - do not apply the rule"
-									" found [%.*s] , required [%s]\n", 
-									entity->scenario_id.len, entity->scenario_id.s, attr.s);
-							xmlFree(attr.s);
-							goto send_usual_request;
-						}
-						xmlFree(attr.s);
-					}
-					LM_DBG("Sender condition match\n");
-				}
-				/* TODO - process other conditions */
-			}
-
-			/* apply actions */
-
-			/* get next state */
-			node = xmlNodeGetChildByName(rule->action_node, "state");
-			if(node)
-			{
-				attr.s = (char*)xmlNodeGetContent(node);
-				if(attr.s == NULL)
-				{
-					LM_ERR("No state node content found\n");
-					goto error;
-				}
-				attr.len = strlen(attr.s);
-
-				if(str2int(&attr, (unsigned int*)&state)< 0)
-				{
-					LM_ERR("Bad scenario. Scenary state not an integer\n");
-					xmlFree(attr.s);
-					goto error;
-				}
-				LM_DBG("Next scenario state is [%d]\n", state);
-				xmlFree(attr.s);
-			}
-
-		/* handle bridge action */
-
-			bridge_node = xmlNodeGetChildByName(rule->action_node, "bridge");
-			if(bridge_node)
-			{
-				LM_DBG("Found a bridge node\n");
-
-				if(process_bridge_action(msg, entity, tuple, bridge_node) < 0)
-				{
-					LM_ERR("Failed to process bridge action\n");
-					goto send_usual_request;
-				}
-				/* save next state */
-				tuple->next_scenario_state = state;
-			}
-			else
-			{
-				/* set the next state now because the action has only one step */
-				if(state >= 0)
-					tuple->scenario_state = state;
-			}
-
-			node = xmlNodeGetChildByName(rule->action_node, "send_reply");
-			if(node)
-			{
-				unsigned int code;
-
-				LM_DBG("Found a send reply node\n");
-				/* get code and text */
-				attr.s = xmlNodeGetNodeContentByName(node, "code", NULL);
-				if(attr.s == NULL)
-				{
-					LM_ERR("Bad scenario document - No code defined for send_reply node\n");
-					goto error;
-				}
-				attr.len = strlen(attr.s);
-				if(str2int(&attr, &code) < 0)
-				{
-					LM_ERR("Bad scenario - wrong reply code, not an integer\n");
-					xmlFree(attr.s);
-					goto error;
-				}
-				xmlFree(attr.s);
-
-				attr.s = xmlNodeGetNodeContentByName(node, "reason", NULL);
-				if(attr.s == NULL)
-				{
-					LM_ERR("Bad scenario document - No code defined for send_reply node\n");
-					goto error;
-				}
-				attr.len = strlen(attr.s);
-
-				b2b_api.send_reply(entity->type, &entity->key, method_value, code,
-						&attr, 0, 0, entity->dlginfo);
-				LM_DBG("Send reply with code [%d] and text [%s]\n", code, attr.s);
-
-				xmlFree(attr.s);
-			}
-			/* end_dialog_leg option */
-			node = xmlNodeGetChildByName(rule->action_node, "end_dialog_leg");
-			if(node)
-			{
-				LM_DBG("End dialog\n");
-				entity->disconnected = 1;
-				b2b_api.send_request(entity->type, &entity->key,
-						&method_bye, 0, 0, entity->dlginfo);
-				if(entity->peer)
-					entity->peer->peer = NULL;
-				peer = entity->peer = NULL;
-			}
-
-			node = xmlNodeGetChildByName(rule->action_node, "delete_entity");
-			if(node)
-			{
-				if(entity->peer)
-					entity->peer->peer = 0;
-				b2bl_delete_entity(entity, tuple);
-				entity = NULL;
-				LM_DBG("Deleted current entity\n");
-			}
-		}
-
-		goto done;
-
-send_usual_request:
-		if(request_id == B2B_CANCEL)
-			tuple->scenario_state = B2B_CANCEL_STATE;
-		else
-		if(request_id == B2B_BYE)
-		{
-			if(!peer || !peer->key.s)
-			{
-				b2b_api.send_reply(entity->type, &entity->key, METHOD_BYE,
-						200, &ok, 0, 0, entity->dlginfo);
-				b2bl_delete(tuple, hash_index, 0);
-				goto done;
-			}
-			else
-				b2b_mark_todel(tuple);
-		}
-		if(peer && peer->key.s)
-		{
-			LM_DBG("Send request [%.*s] to peer [%.*s]\n",
-				method.len, method.s, peer->key.len, peer->key.s);
-			if(b2b_api.send_request(peer->type, &peer->key, &method,
-				extra_headers.len?&extra_headers:0, body.len?&body:0,
-				peer->dlginfo) < 0)
-			{
-				LM_ERR("Sending request failed [%.*s]\n", peer->key.len, peer->key.s);
-			//	b2bl_delete(tuple, hash_index, 0);
-			}
-		}
+		return b2b_logic_notify_request(src, msg, key, &body, &extra_headers,
+                				b2bl_key, hash_index, local_index);
 	}
 	else
 	{
 		LM_ERR("got notification for [%.*s] from [%.*s] with unknown event type [%d]\n",
 			b2bl_key->len, b2bl_key->s, key->len, key->s, type);
 	}
-done:
-	UPDATE_DBFLAG(tuple, tuple->db_flag);
-done1:
-	lock_release(&b2bl_htable[hash_index].lock);
-	if(extra_headers.s)
-		pkg_free(extra_headers.s);
-	return 0;
 
-error:
-	lock_release(&b2bl_htable[hash_index].lock);
-	if(extra_headers.s)
-		pkg_free(extra_headers.s);
 	return -1;
 }
 
