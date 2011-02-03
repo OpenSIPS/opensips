@@ -1,5 +1,5 @@
 %define name    opensips
-%define ver     1.6.3
+%define ver     1.6.4
 %define rel     0
 %define _sharedir %{_prefix}/share
 
@@ -296,7 +296,6 @@ fi
 %doc %{_docdir}/opensips/README.db_text
 %doc %{_docdir}/opensips/README.db_virtual
 %doc %{_docdir}/opensips/README.dialog
-%doc %{_docdir}/opensips/README.dialplan
 %doc %{_docdir}/opensips/README.dispatcher
 %doc %{_docdir}/opensips/README.diversion
 %doc %{_docdir}/opensips/README.domain
@@ -366,7 +365,6 @@ fi
 %{_libdir}/opensips/modules/db_text.so
 %{_libdir}/opensips/modules/db_virtual.so
 %{_libdir}/opensips/modules/dialog.so
-%{_libdir}/opensips/modules/dialplan.so
 %{_libdir}/opensips/modules/dispatcher.so
 %{_libdir}/opensips/modules/diversion.so
 %{_libdir}/opensips/modules/domain.so
@@ -477,6 +475,7 @@ fi
 %files presence
 %defattr(-,root,root)
 %doc %{_docdir}/opensips/README.presence
+%doc %{_docdir}/opensips/README.presence_callinfo
 %doc %{_docdir}/opensips/README.presence_dialoginfo
 %doc %{_docdir}/opensips/README.presence_mwi
 %doc %{_docdir}/opensips/README.presence_xcapdiff
@@ -491,6 +490,7 @@ fi
 %doc %{_docdir}/opensips/README.xcap_client
 
 %{_libdir}/opensips/modules/presence.so
+%{_libdir}/opensips/modules/presence_callinfo.so
 %{_libdir}/opensips/modules/presence_dialoginfo.so
 %{_libdir}/opensips/modules/presence_mwi.so
 %{_libdir}/opensips/modules/presence_xcapdiff.so
