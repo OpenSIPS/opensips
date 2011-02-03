@@ -1037,15 +1037,16 @@ int b2b_logic_notify_reply(int src, struct sip_msg* msg, str* key, str* body, st
 			goto done;
 		}
 
-		/* if no other scenario rules defined and this is the reply for BYE */
-		if(method_value == METHOD_BYE)
+		switch (method_value)
 		{
+		case METHOD_BYE:
+			/* if no other scenario rules defined and this is the reply for BYE */
 			LM_DBG("Received reply for BYE - delete\n");
 			b2bl_delete(tuple, hash_index, 0);
 			goto done;
-		}
-		if(method_value == METHOD_INVITE)
-		{
+			break;
+
+		case METHOD_INVITE:
 			if(entity->state!=DLG_CONFIRMED)
 			{
 				if(statuscode >= 300)
@@ -1106,6 +1107,7 @@ int b2b_logic_notify_reply(int src, struct sip_msg* msg, str* key, str* body, st
 					tuple->lifetime = 30 + get_ticks();
 				}
 			}
+			break;
 		}
 	}
 
@@ -1492,7 +1494,7 @@ int b2b_logic_notify_request(int src, struct sip_msg* msg, str* key, str* body, 
 			xmlFree(attr.s);
 		}
 
-	/* handle bridge action */
+		/* handle bridge action */
 
 		bridge_node = xmlNodeGetChildByName(rule->action_node, "bridge");
 		if(bridge_node)
@@ -1577,11 +1579,13 @@ int b2b_logic_notify_request(int src, struct sip_msg* msg, str* key, str* body, 
 	goto done;
 
 send_usual_request:
-		if(request_id == B2B_CANCEL)
-			tuple->scenario_state = B2B_CANCEL_STATE;
-		else
-		if(request_id == B2B_BYE)
+		switch (request_id)
 		{
+		case B2B_CANCEL:
+			tuple->scenario_state = B2B_CANCEL_STATE;
+			break;
+
+		case B2B_BYE:
 			if(!peer || !peer->key.s)
 			{
 				b2b_api.send_reply(entity->type, &entity->key, METHOD_BYE,
@@ -1591,7 +1595,9 @@ send_usual_request:
 			}
 			else
 				b2b_mark_todel(tuple);
+			break;
 		}
+
 		if(peer && peer->key.s)
 		{
 			LM_DBG("Send request [%.*s] to peer [%.*s]\n",
