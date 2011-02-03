@@ -2383,9 +2383,8 @@ int udh_to_uri(str user, str host, str port, str* uri)
 	if(uri==0)
 		return -1;
 	size = user.len + host.len + port.len+7;
-	LM_DBG("user=%.*s\n", user.len, user.s);
-	LM_DBG("host=%.*s\n", host.len, host.s);
-	LM_DBG("port=%.*s\n", port.len, port.s);
+	LM_DBG("user:host:port [%.*s][%.*s][%.*s]\n",
+		user.len, user.s, host.len, host.s, port.len, port.s);
 	uri->s = (char*)pkg_malloc(size);
 	if(uri->s == NULL)
 	{
