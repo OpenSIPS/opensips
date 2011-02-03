@@ -1037,14 +1037,19 @@ static struct mi_root* mi_reload_rtpproxies(struct mi_root* cmd_tree, void* para
 	(*list_version)++;
 
 	/* notify timeout process that the rtpp proxy list changes */
-	lock_get( rtpp_notify_h->lock );
-	rtpp_notify_h->changed = 1;
+	if (rtpp_notify_h) {
+		lock_get( rtpp_notify_h->lock );
+		rtpp_notify_h->changed = 1;
+	}
 
 	if(_add_proxies_from_database() < 0) {
-		lock_release( rtpp_notify_h->lock );
+		if (rtpp_notify_h)
+			lock_release( rtpp_notify_h->lock );
 		goto error;
 	}
-	lock_release( rtpp_notify_h->lock );
+
+	if (rtpp_notify_h)
+		lock_release( rtpp_notify_h->lock );
 	
 	if (update_rtpp_proxies())
 		goto error;
