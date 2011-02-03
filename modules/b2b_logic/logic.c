@@ -2058,16 +2058,17 @@ int b2b_client_notify(struct sip_msg* msg, str* key, int type, void* param)
 }
 
 static char fromtag_buf[MD5_LEN];
-static void gen_fromtag(str* callid, str* fromtag, struct sip_msg* msg, str* from_tag_uac)
+static void gen_fromtag(str* callid, str* fromtag, str* uri, struct sip_msg* msg, str* from_tag_uac)
 {
 	int i = 0;
-	str src[3];
+	str src[4];
 
 	from_tag_uac->len = MD5_LEN;
 	from_tag_uac->s = fromtag_buf;
 
 	src[i++] = *callid;
 	src[i++] = *fromtag;
+	src[i++] = *uri;
 	if(msg)
 		src[i++] = msg->via1->branch->value;
 	MD5StringArray(from_tag_uac->s, src, i);
@@ -2166,7 +2167,7 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 	ci.local_contact = tuple->local_contact;
 
 	dlginfo = tuple->servers[0]->dlginfo;
-	gen_fromtag(&dlginfo->callid, &dlginfo->fromtag, msg, &from_tag_gen);
+	gen_fromtag(&dlginfo->callid, &dlginfo->fromtag, &ci.req_uri, msg, &from_tag_gen);
 	ci.from_tag = &from_tag_gen;
 
 	if (str2int( &(get_cseq(msg)->number), &ci.cseq)!=0 )
