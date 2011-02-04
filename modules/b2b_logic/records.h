@@ -94,7 +94,7 @@ typedef struct b2bl_entry
 
 typedef b2bl_entry_t* b2bl_table_t;
 
-void b2bl_print_tuple(b2bl_tuple_t* tuple);
+void b2bl_print_tuple(b2bl_tuple_t* tuple, int log_level);
 
 b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg,
 		unsigned int hash_index, b2b_scenario_t* scenario,

@@ -1119,8 +1119,8 @@ static struct mi_root* mi_b2b_bridge(struct mi_root* cmd, void* param)
 
 	if (0 == b2bl_drop_entity(old_entity, tuple))
 	{
-		LM_WARN("Inconsistent tuple [%p]\n", tuple);
-		b2bl_print_tuple(tuple);
+		LM_ERR("Inconsistent tuple [%p]\n", tuple);
+		b2bl_print_tuple(tuple, L_ERR);
 		goto error;
 	}
 

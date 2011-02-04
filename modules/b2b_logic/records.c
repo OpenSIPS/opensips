@@ -38,29 +38,37 @@
 
 extern b2bl_cb_params_t cb_params;
 
-static void _print_entity(int index, b2bl_entity_id_t* c)
+static void _print_entity(int index, b2bl_entity_id_t* c, int log_level)
 {
-	LM_INFO("{%d} type=%d [%p]->[%.*s] state=%d no=%d peer=[%p]\n",
-		index, c->type, c, c->key.len, c->key.s, c->state, c->no, c->peer);
+	LM_GEN1(log_level, "{%d} type=%d [%p]->[%.*s] state=%d no=%d"
+		" dlginfo=[%p] peer=[%p]\n",
+		index, c->type, c, c->key.len, c->key.s, c->state, c->no,
+		c->dlginfo, c->peer);
+	if (c->dlginfo)
+		LM_GEN1(log_level, "> dlginfo=[%p] callid=[%.*s]"
+			" fromtag=[%.*s] totag=[%.*s]\n",
+			c->dlginfo, c->dlginfo->callid.len, c->dlginfo->callid.s,
+			c->dlginfo->fromtag.len, c->dlginfo->fromtag.s,
+			c->dlginfo->totag.len, c->dlginfo->totag.s);
 }
 
-void b2bl_print_tuple(b2bl_tuple_t* tuple)
+void b2bl_print_tuple(b2bl_tuple_t* tuple, int log_level)
 {
 	int index;
 	b2bl_entity_id_t* e;
 
 	if(tuple)
 	{
-		LM_INFO("[%p]->[%.*s]\n", tuple, tuple->key->len, tuple->key->s);
+		LM_GEN1(log_level, "[%p]->[%.*s]\n", tuple, tuple->key->len, tuple->key->s);
 		for (index = 0; index < MAX_B2BL_ENT; index++)
 		{
 			e = tuple->servers[index];
-			if (e) _print_entity(index, e);
+			if (e) _print_entity(index, e, log_level);
 		}
 		for (index = 0; index < MAX_B2BL_ENT; index++)
 		{
 			e = tuple->clients[index];
-			if (e) _print_entity(index, e);
+			if (e) _print_entity(index, e, log_level);
 		}
 	}
 }
@@ -327,7 +335,7 @@ void b2bl_delete_entity(b2bl_entity_id_t* entity, b2bl_tuple_t* tuple)
 	shm_free(entity);
 
 	/* for debuging */
-	b2bl_print_tuple(tuple);
+	b2bl_print_tuple(tuple, L_DBG);
 }
 
 
@@ -357,7 +365,7 @@ int b2bl_add_client(b2bl_tuple_t* tuple, b2bl_entity_id_t* entity)
 		return -1;
 	}
 		
-	b2bl_print_tuple(tuple);
+	b2bl_print_tuple(tuple, L_DBG);
 	return 0;
 }
 
@@ -388,7 +396,7 @@ int b2bl_add_server(b2bl_tuple_t* tuple, b2bl_entity_id_t* entity)
 		return -1;
 	}
 		
-	b2bl_print_tuple(tuple);
+	b2bl_print_tuple(tuple, L_DBG);
 	return 0;
 }
 

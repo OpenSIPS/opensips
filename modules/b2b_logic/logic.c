@@ -3271,7 +3271,7 @@ int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no)
 	}
 */
 
-	b2bl_print_tuple(tuple);
+	b2bl_print_tuple(tuple, L_DBG);
 
 	if(old_entity)
 	{
@@ -3298,12 +3298,12 @@ int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no)
 	/* remove the disconected entity from the tuple */
 	if(0 == b2bl_drop_entity(old_entity, tuple))
 	{
-		LM_WARN("Inconsistent tuple [%p]\n", tuple);
-		b2bl_print_tuple(tuple);
+		LM_ERR("Inconsistent tuple [%p]\n", tuple);
+		b2bl_print_tuple(tuple, L_ERR);
 		goto error;
 	}
 
-	b2bl_print_tuple(tuple);
+	b2bl_print_tuple(tuple, L_DBG);
 
 	/* create server entity from Invite */
 	if(b2b_msg_get_from(msg, &from_uri, &from_dname)< 0 || b2b_msg_get_to(msg, &to_uri)< 0)
@@ -3369,7 +3369,7 @@ int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no)
 	tuple->bridge_entities[0] = bridging_entity;
 	tuple->bridge_entities[1] = entity;
 
-	b2bl_print_tuple(tuple);
+	b2bl_print_tuple(tuple, L_DBG);
 
 	lock_release(&b2bl_htable[hash_index].lock);
 	return 0;
