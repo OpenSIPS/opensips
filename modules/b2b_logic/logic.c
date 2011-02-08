@@ -3358,7 +3358,7 @@ int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no)
 	}
 
 	if(b2b_api.send_request(bridging_entity->type, &bridging_entity->key, &method_invite,
-			tuple->extra_headers, &body, bridging_entity->dlginfo) > 0)
+			NULL, &body, bridging_entity->dlginfo) > 0)
 	{
 		LM_ERR("Failed to send reInvite\n");
 		goto error;
