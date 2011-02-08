@@ -3262,14 +3262,12 @@ int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no)
 	bridging_entity = tuple->bridge_entities[entity_no];
 	old_entity = tuple->bridge_entities[(entity_no?0:1)];
 
-/*
 	if(bridging_entity->state != DLG_CONFIRMED)
 	{
 		LM_ERR("Wrong state for entity ek= [%.*s], tk=[%.*s]\n",bridging_entity->key.len,
 				bridging_entity->key.s, key->len, key->s);
 		goto error;
 	}
-*/
 
 	b2bl_print_tuple(tuple, L_DBG);
 
@@ -3298,7 +3296,7 @@ int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no)
 	/* remove the disconected entity from the tuple */
 	if(0 == b2bl_drop_entity(old_entity, tuple))
 	{
-		LM_ERR("Inconsistent tuple [%p]\n", tuple);
+		LM_ERR("Inconsistent entity [%p] on tuple [%p]\n", old_entity, tuple);
 		b2bl_print_tuple(tuple, L_ERR);
 		goto error;
 	}
