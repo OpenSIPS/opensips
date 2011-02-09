@@ -3325,6 +3325,13 @@ int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no)
 		goto error;
 	}
 
+	/* destroy the old_entity */
+	b2b_api.entity_delete(old_entity->type, &old_entity->key, old_entity->dlginfo);
+	if(old_entity->dlginfo)
+		shm_free(old_entity->dlginfo);
+	shm_free(old_entity);
+	old_entity = NULL;
+
 	b2bl_print_tuple(tuple, L_DBG);
 
 	/* create server entity from Invite */
