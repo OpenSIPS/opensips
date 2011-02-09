@@ -2158,6 +2158,8 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 		goto error;
 	}
 	tuple->servers[0]->type = B2B_SERVER;
+	tuple->servers[0]->no = 0;
+
 	/* process the body */
 	if(msg->content_length)
 	{
@@ -2227,20 +2229,21 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 		goto error;
 	}
 
+	client_entity->no = 1;
+	client_entity->peer = tuple->servers[0];
 	tuple->clients[0] = client_entity;
-	tuple->servers[0]->no = 0;
-	tuple->clients[0]->no = 1;
-	tuple->servers[0]->peer = tuple->clients[0];
-	tuple->clients[0]->peer = tuple->servers[0];
-	tuple->bridge_entities[0] = tuple->servers[0];
-	tuple->bridge_entities[1] = tuple->clients[0];
-
-	lock_release(&b2bl_htable[hash_index].lock);
 
 	for( idx=0 ; (uri.s=get_branch(idx,&uri.len,&q,0,0,0,0))!=0 ; idx++ )
 	{
 		LM_DBG("dropping branch ruri [%.*s]\n", uri.len, uri.s);
 	}
+
+	tuple->servers[0]->peer = tuple->clients[0];
+	tuple->bridge_entities[0] = tuple->servers[0];
+	tuple->bridge_entities[1] = tuple->clients[0];
+	b2bl_print_tuple(tuple, L_DBG);
+
+	lock_release(&b2bl_htable[hash_index].lock);
 
 	pkg_free(to_uri.s);
 	pkg_free(server_id);
