@@ -1263,7 +1263,6 @@ static int prebuild_string(str *value_str, struct dlg_cell *dlg, str *core_s,
 {
 	int cdrs_pos;
 	short extra_len, nr;
-	time_t current_time, *time_val;
 
 	if (!leg_idx) {
 		LM_ERR("null pointer to leg index\n");
@@ -1293,8 +1292,7 @@ static int prebuild_string(str *value_str, struct dlg_cell *dlg, str *core_s,
 	complete_dlg_values(core_s, val_arr, ACC_CORE_LEN+1);
 
 	/* get the time value then overwrite it */
-	time_val = (time_t *)val_arr[ACC_CORE_LEN].s;
-	*start = *time_val;
+	memcpy(start, val_arr[ACC_CORE_LEN].s, val_arr[ACC_CORE_LEN].len);
 	nr = ACC_CORE_LEN;
 
 	extra_s->len = 2;
@@ -1307,13 +1305,10 @@ static int prebuild_string(str *value_str, struct dlg_cell *dlg, str *core_s,
 		LM_ERR("error fetching base dlg value\n");
 		return -1;
 	}
-
-	time_val = (time_t *)val_arr[cdrs_pos+2].s;
-	*created = *time_val;
+	memcpy(created, val_arr[cdrs_pos+2].s, val_arr[cdrs_pos+2].len);
 
 	/* calculate duration and setup time */
-	current_time = time(NULL);
-	val_arr[cdrs_pos].len = current_time - *start;
+	val_arr[cdrs_pos].len = time(NULL) - *start;
 	val_arr[cdrs_pos+1].len = *start - *created;
 
 	return 1;
