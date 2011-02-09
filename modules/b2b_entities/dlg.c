@@ -1512,7 +1512,8 @@ int b2b_send_request(enum b2b_entity_type et, str* b2b_key, str* method,
 	}
 	if(dlg== NULL)
 	{
-		LM_ERR("No dialog found\n");
+		LM_ERR("No dialog found for b2b key [%.*s] and dlginfo=[%p]\n",
+			b2b_key->len, b2b_key->s, dlginfo);
 		goto error;
 	}
 
