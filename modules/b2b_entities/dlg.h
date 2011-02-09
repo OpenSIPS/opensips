@@ -34,7 +34,7 @@
 #include "../tm/h_table.h"
 #include "../tm/dlg.h"
 #include "../dialog/dlg_load.h"
-//#include "../b2b_logic/b2b_logic.h"
+#include "b2b_common.h"
 
 #define CALLER_LEG   0
 #define CALLEE_LEG   1
@@ -43,8 +43,6 @@
 #define B2B_REPLY     1
 
 #define DLG_ESTABLISHED   1
-
-#define B2BL_MAX_KEY_LEN     21
 
 enum b2b_entity_type {B2B_SERVER=0, B2B_CLIENT, B2B_NONE};
 

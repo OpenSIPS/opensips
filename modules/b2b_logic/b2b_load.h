@@ -3,6 +3,7 @@
 #define B2BUA_LOGIC_LOAD_
 
 #include "../../sr_module.h"
+#include "../b2b_entities/b2b_common.h"
 #include "../b2b_entities/dlg.h"
 
 #define B2B_BYE_CB        (1<<0)
