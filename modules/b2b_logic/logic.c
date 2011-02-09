@@ -1043,12 +1043,11 @@ int b2b_logic_notify_reply(int src, struct sip_msg* msg, str* key, str* body, st
 			goto done;
 		}
 
-		SEND_REPLY_TO_PEER_OR_GOTO_DONE;
-
 		switch (method_value)
 		{
 		case METHOD_BYE:
 			/* if no other scenario rules defined and this is the reply for BYE */
+			SEND_REPLY_TO_PEER_OR_GOTO_DONE;
 			LM_DBG("Received reply for BYE - delete\n");
 			b2bl_delete(tuple, hash_index, 0);
 			goto done;
@@ -1059,12 +1058,14 @@ int b2b_logic_notify_reply(int src, struct sip_msg* msg, str* key, str* body, st
 			{
 				if(statuscode >= 300)
 				{
+					SEND_REPLY_TO_PEER_OR_GOTO_DONE;
 					LM_DBG("Negative reply [%d] - delete[%p]\n", statuscode, tuple);
 					b2b_mark_todel(tuple);
 				}
 				else
 				if(statuscode >= 200 && statuscode < 300)
 				{
+					SEND_REPLY_TO_PEER_OR_GOTO_DONE;
 					entity->state = DLG_CONFIRMED;
 					peer->state = DLG_CONFIRMED;
 					entity->stats.setup_time = get_ticks() - entity->stats.start_time;
@@ -1105,10 +1106,16 @@ int b2b_logic_notify_reply(int src, struct sip_msg* msg, str* key, str* body, st
 						peer = entity->peer;
 					}
 				}
+				else
+				{
+					/* Provisional replies end up here */
+					SEND_REPLY_TO_PEER_OR_GOTO_DONE;
+				}
 			}
 			else
 			{
 				/* if reINVITE and 481 or 408 reply */
+				SEND_REPLY_TO_PEER_OR_GOTO_DONE;
 				if(statuscode==481 || statuscode==408)
 				{
 					LM_DBG("Received terminate dialog reply for reINVITE\n");
@@ -1116,6 +1123,9 @@ int b2b_logic_notify_reply(int src, struct sip_msg* msg, str* key, str* body, st
 				}
 			}
 			break;
+
+		default:
+			SEND_REPLY_TO_PEER_OR_GOTO_DONE;
 		}
 	}
 
