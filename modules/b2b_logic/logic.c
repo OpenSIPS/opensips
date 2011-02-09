@@ -883,6 +883,21 @@ int post_cb_sanity_check(b2bl_tuple_t **tuple, unsigned int hash_index, unsigned
 }
 
 
+#define SEND_REPLY_TO_PEER_OR_GOTO_DONE				\
+do{								\
+	if(b2b_api.send_reply(peer->type, &peer->key,		\
+			method_value, statuscode,		\
+			&msg->first_line.u.reply.reason,	\
+			body->s?body:NULL,			\
+			extra_headers->s?extra_headers:NULL,	\
+			peer->dlginfo) < 0)			\
+	{							\
+		LM_ERR("Sending reply failed - %d, [%.*s]\n",	\
+			statuscode, peer->key.len, peer->key.s);\
+		goto done;					\
+	}							\
+}while(0)
+
 int b2b_logic_notify_reply(int src, struct sip_msg* msg, str* key, str* body, str* extra_headers,
 		str* b2bl_key, unsigned int hash_index, unsigned int local_index)
 {
@@ -1027,16 +1042,8 @@ int b2b_logic_notify_reply(int src, struct sip_msg* msg, str* key, str* body, st
 			LM_DBG("No peer found\n");
 			goto done;
 		}
-		if(b2b_api.send_reply(peer->type, &peer->key,
-			method_value,statuscode,&msg->first_line.u.reply.reason,
-			body->s?body:0, extra_headers->s?extra_headers:0,
-			peer->dlginfo) < 0)
-		{
-			LM_ERR("Sending reply failed - %d, [%.*s]\n", statuscode,
-					peer->key.len, peer->key.s);
-		//	b2bl_delete(tuple, hash_index, 0);
-			goto done;
-		}
+
+		SEND_REPLY_TO_PEER_OR_GOTO_DONE;
 
 		switch (method_value)
 		{
