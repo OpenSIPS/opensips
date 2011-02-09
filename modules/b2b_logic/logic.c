@@ -70,6 +70,7 @@ int udh_to_uri(str user, str host, str port, str* uri);
 static str method_invite= {INVITE, INVITE_LEN};
 static str method_ack   = {ACK, ACK_LEN};
 static str method_bye   = {BYE, BYE_LEN};
+static str method_cancel= {CANCEL, CANCEL_LEN};
 
 static str ok = str_init("OK");
 static str notAcceptable = str_init("Not Acceptable");
@@ -335,7 +336,7 @@ static inline int bridge_get_entityno(b2bl_tuple_t* tuple, b2bl_entity_id_t* ent
 
 void b2b_end_dialog(b2bl_entity_id_t* bentity, b2bl_tuple_t* tuple)
 {
-	str method;
+	str *method;
 
 	if(!bentity)
 		return;
@@ -346,16 +347,14 @@ void b2b_end_dialog(b2bl_entity_id_t* bentity, b2bl_tuple_t* tuple)
 		{
 			if(bentity->state == DLG_CONFIRMED)
 			{
-				method.s = BYE;
-				method.len = BYE_LEN;
+				method = &method_bye;
 			}
 			else
 			{
-				method.s = CANCEL;
-				method.len = CANCEL_LEN;
+				method = &method_cancel;
 			}
 
-			b2b_api.send_request(bentity->type, &bentity->key, &method,
+			b2b_api.send_request(bentity->type, &bentity->key, method,
 				0, 0, bentity->dlginfo);
 
 			bentity->disconnected = 1;
