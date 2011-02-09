@@ -824,7 +824,7 @@ int post_cb_sanity_check(b2bl_tuple_t **tuple, unsigned int hash_index, unsigned
 			b2bl_entity_id_t **entity, int etype, str *ekey)
 {
 	int index;
-	int found = 0;
+	int not_found = 1;
 	b2bl_entity_id_t *e;
 
 	*tuple = b2bl_search_tuple_safe(hash_index, local_index);
@@ -841,14 +841,18 @@ int post_cb_sanity_check(b2bl_tuple_t **tuple, unsigned int hash_index, unsigned
 			if(e == *entity && e->key.len == ekey->len &&
 				strncmp(e->key.s, ekey->s, ekey->len)==0)
 			{
-				found = 1;
+				not_found = 0;
 				break;
 			}
 		}
-		if(!found)
+		if(not_found)
 		{
 			LM_DBG("Server Entity does not exist anymore\n");
 			return -2;
+		}
+		else
+		{
+			return 0;
 		}
 	}
 	else
@@ -863,14 +867,18 @@ int post_cb_sanity_check(b2bl_tuple_t **tuple, unsigned int hash_index, unsigned
 			if(e == *entity && e->key.len == ekey->len &&
 				strncmp(e->key.s, ekey->s, ekey->len)==0)
 			{
-				found = 1;
+				not_found = 0;
 				break;
 			}
 		}
-		if(!found)
+		if(not_found)
 		{
 			LM_DBG("Client Entity does not exist anymore\n");
 			return -3;
+		}
+		else
+		{
+			return 0;
 		}
 	}
 	else
@@ -878,7 +886,7 @@ int post_cb_sanity_check(b2bl_tuple_t **tuple, unsigned int hash_index, unsigned
 		LM_ERR("Unexpected entity type [%d]\n", etype);
 		return -4;
 	}
-	return 0;
+	return -5;
 }
 
 
