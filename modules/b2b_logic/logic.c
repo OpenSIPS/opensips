@@ -928,7 +928,7 @@ int b2b_logic_notify_reply(int src, struct sip_msg* msg, str* key, str* body, st
 	b2bl_tuple_t* tuple;
 	str method;
 	b2b_scenario_t* scenario;
-	b2bl_entity_id_t* entity, *peer;
+	b2bl_entity_id_t *entity, *peer, *e, *ent;
 	b2bl_entity_id_t** entity_head = NULL;
 	int statuscode;
 	int ret;
@@ -1083,16 +1083,68 @@ int b2b_logic_notify_reply(int src, struct sip_msg* msg, str* key, str* body, st
 			{
 				if(statuscode >= 300)
 				{
-					SEND_REPLY_TO_PEER_OR_GOTO_DONE;
-					LM_DBG("Negative reply [%d] - delete[%p]\n", statuscode, tuple);
-					b2b_mark_todel(tuple);
+					b2bl_print_tuple(tuple, L_DBG);
+					if (entity->prev || entity->next)
+					{
+						LM_DBG("detaching entity[%p] from tuple[%p]\n",
+								entity, tuple);
+						b2bl_remove_single_entity(entity, entity_head);
+						/* FIXME: 
+						 * bridge_entities might be out of sync here */
+						peer->peer = *entity_head;
+					}
+					else
+					{
+						SEND_REPLY_TO_PEER_OR_GOTO_DONE;
+						LM_DBG("Negative reply [%d] - delete[%p]\n",
+							statuscode, tuple);
+						b2b_mark_todel(tuple);
+					}
+					b2bl_print_tuple(tuple, L_DBG);
 				}
 				else
 				if(statuscode >= 200 && statuscode < 300)
 				{
+					b2bl_print_tuple(tuple, L_DBG);
+					if (entity->prev || entity->next)
+					{
+						unchain_ent(entity, entity_head);
+						/* send CANCEL to all other entities in the list */
+						e = *entity_head;
+						while (e)
+						{
+							LM_DBG("Send request [%.*s]"
+								" to entity [%.*s]\n",
+								method_cancel.len, method_cancel.s,
+								e->key.len, e->key.s);
+							if(b2b_api.send_request(e->type, &e->key,
+										&method_cancel,
+										NULL, NULL,
+										e->dlginfo) < 0)
+							{
+								LM_ERR("Sending request"
+									" failed [%.*s]\n",
+									e->key.len, e->key.s);
+							}
+							b2b_api.entity_delete(e->type, &e->key,
+										e->dlginfo);
+							LM_DBG("destroying dlginfo=[%p]\n",
+									e->dlginfo);
+							if(e->dlginfo)
+								shm_free(e->dlginfo);
+							ent = e->next;
+							shm_free(e);
+							e = ent;
+						}
+						*entity_head = entity;
+						peer->peer = entity;
+						tuple->bridge_entities[0] = tuple->servers[0];
+						tuple->bridge_entities[1] = tuple->clients[0];
+					}
 					SEND_REPLY_TO_PEER_OR_GOTO_DONE;
 					entity->state = DLG_CONFIRMED;
 					peer->state = DLG_CONFIRMED;
+					b2bl_print_tuple(tuple, L_DBG);
 					entity->stats.setup_time = get_ticks() - entity->stats.start_time;
 					entity->stats.start_time = get_ticks();
 					cbf = tuple->cbf;
@@ -1642,7 +1694,7 @@ send_usual_request:
 			break;
 		}
 
-		if(peer && peer->key.s)
+		while (peer && peer->key.s)
 		{
 			LM_DBG("Send request [%.*s] to peer [%.*s]\n",
 				method.len, method.s, peer->key.len, peer->key.s);
@@ -1651,8 +1703,8 @@ send_usual_request:
 				peer->dlginfo) < 0)
 			{
 				LM_ERR("Sending request failed [%.*s]\n", peer->key.len, peer->key.s);
-			//	b2bl_delete(tuple, hash_index, 0);
 			}
+			peer = peer->next;
 		}
 
 done:
@@ -1848,20 +1900,38 @@ int process_bridge_action(struct sip_msg* msg, b2bl_entity_id_t* curr_entity,
 		for (index = 0; index < MAX_B2BL_ENT; index++)
 		{
 			e = tuple->servers[index];
-			if (e && e->scenario_id.len == attr.len &&
-					strncmp(e->scenario_id.s, attr.s, attr.len)== 0)
+			if(e)
 			{
-				entity = e;
-				LM_DBG("Found entity server [%d]\n", count);
-				break;
+				if(e->next || e->prev)
+				{
+					LM_ERR("Inconsistent entity [%p]\n", old_entity);
+					b2bl_print_tuple(tuple, L_ERR);
+					goto error;
+				}
+				if (e->scenario_id.len == attr.len &&
+					strncmp(e->scenario_id.s, attr.s, attr.len)== 0)
+				{
+					entity = e;
+					LM_DBG("Found entity server [%d]\n", count);
+					break;
+				}
 			}
 			e = tuple->clients[index];
-			if (e && e->scenario_id.len == attr.len &&
-					strncmp(e->scenario_id.s, attr.s, attr.len)== 0)
+			if(e)
 			{
-				entity = e;
-				LM_DBG("Found entity client [%d]\n", count);
-				break;
+				if(e->next || e->prev)
+				{
+					LM_ERR("Inconsistent entity [%p]\n", old_entity);
+					b2bl_print_tuple(tuple, L_ERR);
+					goto error;
+				}
+				if (e && e->scenario_id.len == attr.len &&
+					strncmp(e->scenario_id.s, attr.s, attr.len)== 0)
+				{
+					entity = e;
+					LM_DBG("Found entity client [%d]\n", count);
+					break;
+				}
 			}
 		}
 		/* if I have the 'new' child -> alter the scenario id for the old entity */
@@ -2254,7 +2324,40 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 
 	for( idx=0 ; (uri.s=get_branch(idx,&uri.len,&q,0,0,0,0))!=0 ; idx++ )
 	{
-		LM_DBG("dropping branch ruri [%.*s]\n", uri.len, uri.s);
+		LM_DBG("got branch ruri [%.*s]\n", uri.len, uri.s);
+		gen_fromtag(&dlginfo->callid, &dlginfo->fromtag, &uri, msg, &from_tag_gen);
+		ci.from_tag = &from_tag_gen;
+		ci.req_uri = uri;
+		client_id = b2b_api.client_new(&ci, b2b_client_notify,
+			b2b_add_dlginfo, b2bl_key);
+		if(client_id == NULL)
+		{
+			LM_ERR("failed to create new b2b client instance\n");
+			goto error;
+		}
+		client_entity = b2bl_create_new_entity(B2B_CLIENT, client_id, &to_uri, &from_uri,
+			0, 0, 0);
+		if (client_entity == NULL)
+		{
+			LM_ERR("Failed to create client entity\n");
+			goto error;
+		}
+		client_entity->no = 1;
+		client_entity->peer = tuple->servers[0];
+
+		memset(&dlginfo_s, 0, sizeof(b2b_dlginfo_t));
+		dlginfo_s.callid = *client_id;
+		dlginfo_s.totag = from_tag_gen;
+		if(entity_add_dlginfo(client_entity, &dlginfo_s)< 0)
+		{
+			LM_ERR("Failed to add dialoginfo\n");
+			goto error;
+		}
+
+		/* Add the client entity to the list */
+		tuple->clients[0]->prev = client_entity;
+		client_entity->next = tuple->clients[0];
+		tuple->clients[0] = client_entity;
 	}
 
 	tuple->servers[0]->peer = tuple->clients[0];
