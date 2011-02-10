@@ -49,7 +49,7 @@ static void _print_entity(int index, b2bl_entity_id_t* e, int log_level)
 			c->type, index, c, c->key.len, c->key.s, c->state, c->no,
 			c->dlginfo, c->peer, c->prev, c->next);
 		if (c->dlginfo)
-			LM_GEN1(log_level, "..dlginfo=[%p]->[%.*s][%.*s][%.*s]\n",
+			LM_GEN1(log_level, "..........dlginfo=[%p]->[%.*s][%.*s][%.*s]\n",
 				c->dlginfo, c->dlginfo->callid.len, c->dlginfo->callid.s,
 				c->dlginfo->fromtag.len, c->dlginfo->fromtag.s,
 				c->dlginfo->totag.len, c->dlginfo->totag.s);
@@ -64,9 +64,12 @@ void b2bl_print_tuple(b2bl_tuple_t* tuple, int log_level)
 
 	if(tuple)
 	{
-		LM_GEN1(log_level, "[%p]->[%.*s] to_del=[%d] insert_time=[%d] lifetime=[%d]\n",
+		LM_GEN1(log_level, "[%p]->[%.*s] to_del=[%d] insert_time=[%d] lifetime=[%d]"
+			" bridge_entities[%p][%p][%p]\n",
 			tuple, tuple->key->len, tuple->key->s,
-			tuple->to_del, tuple->insert_time, tuple->lifetime);
+			tuple->to_del, tuple->insert_time, tuple->lifetime,
+			tuple->bridge_entities[0], tuple->bridge_entities[1],
+			tuple->bridge_entities[2]);
 		for (index = 0; index < MAX_B2BL_ENT; index++)
 		{
 			e = tuple->servers[index];
@@ -75,6 +78,11 @@ void b2bl_print_tuple(b2bl_tuple_t* tuple, int log_level)
 		for (index = 0; index < MAX_B2BL_ENT; index++)
 		{
 			e = tuple->clients[index];
+			if (e) _print_entity(index, e, log_level);
+		}
+		for (index = 0; index < MAX_BRIDGE_ENT; index++)
+		{
+			e = tuple->bridge_entities[index];
 			if (e) _print_entity(index, e, log_level);
 		}
 	}
