@@ -304,12 +304,19 @@ void b2bl_delete_entity(b2bl_entity_id_t* entity, b2bl_tuple_t* tuple)
 	unsigned int i;
 	int found = 0;
 
-	LM_DBG("Delete entity [%p]->[%.*s]\n", entity, entity->key.len, entity->key.s);
-
 	found = b2bl_drop_entity(entity, tuple);
 
 	if(found)
+	{
+		LM_DBG("delete entity [%p]->[%.*s] from tuple [%.*s]\n",
+			entity, entity->key.len, entity->key.s, tuple->key->len, tuple->key->s);
 		b2b_api.entity_delete(entity->type, &entity->key, entity->dlginfo);
+	}
+	else
+	{
+		LM_WARN("entity [%p]->[%.*s] not found for tuple [%.*s]\n",
+			entity, entity->key.len, entity->key.s, tuple->key->len, tuple->key->s);
+	}
 
 	if(entity->dlginfo)
 		shm_free(entity->dlginfo);
