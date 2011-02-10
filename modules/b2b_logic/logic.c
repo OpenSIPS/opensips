@@ -65,7 +65,7 @@ int b2b_scenario_parse_uri(xmlNodePtr value_node, char* value_content,
 
 int post_cb_sanity_check(b2bl_tuple_t **tuple, unsigned int hash_index, unsigned int local_index,
 			b2bl_entity_id_t **entity, int etype, str *ekey);
-b2bl_entity_id_t* b2bl_search_entity(b2bl_tuple_t* tuple, str* key, int src);
+b2bl_entity_id_t* b2bl_search_entity(b2bl_tuple_t* tuple, str* key, int src, b2bl_entity_id_t*** head);
 int udh_to_uri(str user, str host, str port, str* uri);
 static str method_invite= {INVITE, INVITE_LEN};
 static str method_ack   = {ACK, ACK_LEN};
@@ -112,6 +112,7 @@ int b2b_add_dlginfo(str* key, str* entity_key, int src, b2b_dlginfo_t* dlginfo)
 {
 	b2bl_tuple_t* tuple;
 	b2bl_entity_id_t* entity = NULL;
+	b2bl_entity_id_t** ent_head = NULL;
 	unsigned int hash_index, local_index;
 
 	if(b2bl_parse_key(key, &hash_index, &local_index) < 0)
@@ -130,7 +131,7 @@ int b2b_add_dlginfo(str* key, str* entity_key, int src, b2b_dlginfo_t* dlginfo)
 	}
 	/* a connected call */
 	tuple->lifetime = 0;
-	entity = b2bl_search_entity(tuple, entity_key, src);
+	entity = b2bl_search_entity(tuple, entity_key, src, &ent_head);
 	if(entity == NULL)
 	{
 		LM_ERR("No b2b_key match found\n");
@@ -789,7 +790,7 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 	return 0;
 }
 
-b2bl_entity_id_t* b2bl_search_entity(b2bl_tuple_t* tuple, str* key, int src)
+b2bl_entity_id_t* b2bl_search_entity(b2bl_tuple_t* tuple, str* key, int src, b2bl_entity_id_t*** head)
 {
 	int index;
 	b2bl_entity_id_t* e;
@@ -798,28 +799,30 @@ b2bl_entity_id_t* b2bl_search_entity(b2bl_tuple_t* tuple, str* key, int src)
 	if(src == B2B_SERVER)
 		for (index = 0; index < MAX_B2BL_ENT; index++)
 		{
+			*head = &tuple->servers[index];
 			e= tuple->servers[index];
-			if (e)
+			while (e)
 			{
 				LM_DBG("Key [%.*s]\n",e->key.len,e->key.s);
 				if (e->key.len == key->len &&
 					strncmp(e->key.s, key->s, key->len) == 0)
 					return e;
+				e = e->next;
 			}
-			e= NULL;
 		}
 	else
 		for (index = 0; index < MAX_B2BL_ENT; index++)
 		{
+			*head = &tuple->clients[index];
 			e = tuple->clients[index];
-			if (e)
+			while (e)
 			{
 				LM_DBG("Key [%.*s]\n",e->key.len,e->key.s);
 				if (e->key.len == key->len &&
 					strncmp(e->key.s, key->s, key->len) == 0)
 					return e;
+				e = e->next;
 			}
-			e= NULL;
 		}
 
 	return e;
@@ -841,14 +844,18 @@ int post_cb_sanity_check(b2bl_tuple_t **tuple, unsigned int hash_index, unsigned
 	}
 	if(etype == B2B_SERVER)
 	{
-		for (index = 0; index < MAX_B2BL_ENT; index++)
+		for (index = 0; index < MAX_B2BL_ENT && not_found; index++)
 		{
 			e = (*tuple)->servers[index];
-			if(e == *entity && e->key.len == ekey->len &&
-				strncmp(e->key.s, ekey->s, ekey->len)==0)
+			while (e)
 			{
-				not_found = 0;
-				break;
+				if(e == *entity && e->key.len == ekey->len &&
+					strncmp(e->key.s, ekey->s, ekey->len)==0)
+				{
+					not_found = 0;
+					break;
+				}
+				e = e->next;
 			}
 		}
 		if(not_found)
@@ -864,17 +871,21 @@ int post_cb_sanity_check(b2bl_tuple_t **tuple, unsigned int hash_index, unsigned
 	else
 	if(etype == B2B_CLIENT)
 	{
-		for (index = 0; index < MAX_B2BL_ENT; index++)
+		for (index = 0; index < MAX_B2BL_ENT && not_found; index++)
 		{
 			e = (*tuple)->clients[index];
-			LM_DBG("[%p] vs [%p]\n", e, *entity);
-			if (e && ekey)
-				LM_DBG("[%.*s] vs [%.*s]\n", e->key.len, e->key.s, ekey->len, ekey->s);
-			if(e == *entity && e->key.len == ekey->len &&
-				strncmp(e->key.s, ekey->s, ekey->len)==0)
+			while (e)
 			{
-				not_found = 0;
-				break;
+				LM_DBG("[%p] vs [%p]\n", e, *entity);
+				if (e && ekey)
+					LM_DBG("[%.*s] vs [%.*s]\n", e->key.len, e->key.s, ekey->len, ekey->s);
+				if(e == *entity && e->key.len == ekey->len &&
+					strncmp(e->key.s, ekey->s, ekey->len)==0)
+				{
+					not_found = 0;
+					break;
+				}
+				e = e->next;
 			}
 		}
 		if(not_found)
@@ -918,6 +929,7 @@ int b2b_logic_notify_reply(int src, struct sip_msg* msg, str* key, str* body, st
 	str method;
 	b2b_scenario_t* scenario;
 	b2bl_entity_id_t* entity, *peer;
+	b2bl_entity_id_t** entity_head = NULL;
 	int statuscode;
 	int ret;
 	unsigned int method_value;
@@ -934,7 +946,7 @@ int b2b_logic_notify_reply(int src, struct sip_msg* msg, str* key, str* body, st
 	}
 	scenario = tuple->scenario;
 
-	entity = b2bl_search_entity(tuple, key, src);
+	entity = b2bl_search_entity(tuple, key, src, &entity_head);
 	if(entity == NULL)
 	{
 		LM_ERR("No b2b_key match found [%.*s], src=%d\n", key->len, key->s, src);
@@ -1162,6 +1174,7 @@ int b2b_logic_notify_request(int src, struct sip_msg* msg, str* key, str* body, 
 	b2b_scenario_t* scenario;
 	b2b_rule_t* rule;
 	b2bl_entity_id_t* entity, *peer;
+	b2bl_entity_id_t** entity_head = NULL;
 	xmlNodePtr bridge_node, node;
 	int state = -1;
 	str attr;
@@ -1181,7 +1194,7 @@ int b2b_logic_notify_request(int src, struct sip_msg* msg, str* key, str* body, 
 	}
 	scenario = tuple->scenario;
 
-	entity = b2bl_search_entity(tuple, key, src);
+	entity = b2bl_search_entity(tuple, key, src, &entity_head);
 	if(entity == NULL)
 	{
 		LM_ERR("No b2b_key match found [%.*s], src=%d\n", key->len, key->s, src);
