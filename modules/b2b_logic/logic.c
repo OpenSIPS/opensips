@@ -341,6 +341,12 @@ void b2b_end_dialog(b2bl_entity_id_t* bentity, b2bl_tuple_t* tuple)
 	if(!bentity)
 		return;
 
+	if (bentity->next || bentity->prev)
+	{
+		LM_ERR("Inconsistent state for entity [%pp\n", bentity);
+		b2bl_print_tuple(tuple, L_ERR);
+		return;
+	}
 	if(bentity->key.s)
 	{
 		if(!bentity->disconnected)
@@ -2873,6 +2879,12 @@ int b2bl_bridge(str* key, str* new_dst, str* new_from_dname, int entity_no)
 	old_entity = tuple->servers[0]->peer;
 	if(old_entity)
 	{
+		if(old_entity->next || old_entity->prev)
+		{
+			LM_ERR("Inconsistent entity [%p]\n", old_entity);
+			b2bl_print_tuple(tuple, L_ERR);
+			goto error;
+		}
 		LM_DBG("End peer dialog [%p]\n", old_entity);	
 		old_entity->peer = NULL;
 		if(old_entity->disconnected && old_entity->state==DLG_CONFIRMED)
@@ -3288,6 +3300,12 @@ int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no)
 	}
 	bridging_entity = tuple->bridge_entities[entity_no];
 	old_entity = tuple->bridge_entities[(entity_no?0:1)];
+
+	if(old_entity->next || old_entity->prev)
+	{
+		LM_ERR("Can not disconnect multiple entities\n");
+		goto error;
+	}
 
 	if(bridging_entity->state != DLG_CONFIRMED)
 	{

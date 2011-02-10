@@ -50,6 +50,8 @@ typedef struct b2bl_entity_id
 	enum b2b_entity_type type;
 	b2bl_dlg_stat_t stats;
 	struct b2bl_entity_id* peer;
+	struct b2bl_entity_id* prev;
+	struct b2bl_entity_id* next;
 }b2bl_entity_id_t;
 
 #define NO_UPDATEDB_FLAG    0

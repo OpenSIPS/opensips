@@ -1104,6 +1104,13 @@ static struct mi_root* mi_b2b_bridge(struct mi_root* cmd, void* param)
 		goto error;
 	}
 
+	if(old_entity->next || old_entity->prev)
+	{
+		LM_ERR("Can not disconnect entity [%p]\n", old_entity);
+		b2bl_print_tuple(tuple, L_ERR);
+		goto error;
+	}
+
 	/* send BYE to old client */
 	if(old_entity->disconnected)
 	{
