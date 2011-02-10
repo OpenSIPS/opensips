@@ -252,6 +252,26 @@ error:
 }
 
 
+void unchain_ent(b2bl_entity_id_t *ent, b2bl_entity_id_t **first_ent)
+{
+	if(*first_ent == ent)
+	{
+		*first_ent = ent->next;
+		if(ent->next)
+			ent->next->prev = NULL;
+	}
+	else
+	{
+		if(ent->prev)
+			ent->prev->next = ent->next;
+		if(ent->next)
+			ent->next->prev = ent->prev;
+	}
+	ent->prev = NULL;
+	ent->next = NULL;
+}
+
+
 int b2bl_drop_entity(b2bl_entity_id_t* entity, b2bl_tuple_t* tuple)
 {
 	b2bl_entity_id_t* e;
@@ -304,6 +324,19 @@ int b2bl_drop_entity(b2bl_entity_id_t* entity, b2bl_tuple_t* tuple)
 		}
 	}
 	return found;
+}
+
+
+void b2bl_remove_single_entity(b2bl_entity_id_t *entity, b2bl_entity_id_t **head)
+{
+	unchain_ent(entity, head);
+	b2b_api.entity_delete(entity->type, &entity->key, entity->dlginfo);
+	LM_DBG("destroying dlginfo=[%p]\n", entity->dlginfo);
+	if(entity->dlginfo)
+		shm_free(entity->dlginfo);
+	shm_free(entity);
+
+	return;
 }
 
 void b2bl_delete_entity(b2bl_entity_id_t* entity, b2bl_tuple_t* tuple)

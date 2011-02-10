@@ -126,6 +126,8 @@ void destroy_b2bl_htable(void);
 b2bl_entity_id_t* b2bl_create_new_entity(enum b2b_entity_type type, str* entity_id,
 		str* to_uri,str* from_uri,str* from_dname,str* ssid,struct sip_msg* msg);
 
+void unchain_ent(b2bl_entity_id_t *ent, b2bl_entity_id_t **head);
+void b2bl_remove_single_entity(b2bl_entity_id_t *entity, b2bl_entity_id_t **head);
 int b2bl_drop_entity(b2bl_entity_id_t* entity, b2bl_tuple_t* tuple);
 void b2bl_delete_entity(b2bl_entity_id_t* entity, b2bl_tuple_t* tuple);
 
