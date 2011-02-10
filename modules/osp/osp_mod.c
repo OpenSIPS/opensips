@@ -402,7 +402,7 @@ static void ospDumpParameters(void)
         LM_INFO("    sp%d_uri '%s' sp%d_weight '%ld' ",
             osp_index[i], _osp_sp_uris[i], osp_index[i], _osp_sp_weights[i]);
     }
-    LM_INFO("    device_ip '%s' ", _osp_device_ip);
+    LM_INFO("    device_ip '%s' ", _osp_in_device);
     LM_INFO("    use_security_features '%d' ", _osp_use_security);
     if (_osp_use_security != 0) {
         LM_INFO("    private_key '%s' ", _osp_private_key);

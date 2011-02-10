@@ -145,4 +145,7 @@
    o Added unsupport char check in From/To user part.
    o Fixed number portability parameter parsing issue caused by user=phone.
 
+2011 February 10
+   o Fixed NULL string issue on Solaris.
+   o Added install_module_custom in Makefile.
 

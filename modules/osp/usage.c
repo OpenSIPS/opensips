@@ -230,7 +230,8 @@ static int ospReportUsageFromCookie(
     OSPTTRANHANDLE transaction = -1;
     int errorcode;
 
-    LM_DBG("'%s' type '%d'\n", cookie, type);
+    LM_DBG("cookie '%s' type '%d'\n", cookie == NULL ? "NULL" : cookie, type);
+
     if (cookie != NULL) {
         for (token = strtok_r(cookie, "_", &tmp);
             token;
