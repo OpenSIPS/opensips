@@ -3000,8 +3000,13 @@ engage_rtp_proxy2_f(struct sip_msg *msg, char *param1, char *param2)
 
 	LM_DBG("engage called\n");
 	if (!(msg->first_line.type == SIP_REQUEST &&
-	    msg->first_line.u.request.method_value == METHOD_INVITE)) {
+		msg->first_line.u.request.method_value == METHOD_INVITE)) {
 		LM_ERR("this function can only be called from invite\n");
+		return -1;
+	}
+
+	if ( (!msg->to && parse_headers(msg, HDR_TO_F, 0)<0) || !msg->to ) {
+		LM_ERR("bad request or missing TO hdr\n");
 		return -1;
 	}
 
@@ -3023,7 +3028,7 @@ engage_rtp_proxy2_f(struct sip_msg *msg, char *param1, char *param2)
 		LM_ERR("error forcing rtp proxy");
 		return -1;
 	}
-		
+
 	if (dlg_api.create_dlg(msg) < 0) {
 		LM_ERR("error creating dialog");
 		return -1;
