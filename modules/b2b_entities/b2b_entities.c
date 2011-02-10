@@ -534,7 +534,7 @@ void store_b2b_dlg(b2b_table htable, unsigned int hsize, int type, int no_lock)
 		dlg = htable[i].first;
 		while(dlg)
 		{
-			if(dlg->state == B2B_EARLY || dlg->db_flag == NO_UPDATEDB_FLAG)
+			if(dlg->state < B2B_CONFIRMED || dlg->db_flag == NO_UPDATEDB_FLAG)
 			{
 				dlg = dlg->next;
 				continue;
