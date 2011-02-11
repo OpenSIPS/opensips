@@ -46,7 +46,6 @@
         <name>sstate</name>
         <type>int</type>
         <size>2</size>
-        <null/>
         <description>Scenario State</description>
     </column>
 
@@ -54,7 +53,6 @@
         <name>next_sstate</name>
         <type>int</type>
         <size>2</size>
-        <null/>
         <description>Next Scenario State</description>
     </column>
 
@@ -62,6 +60,7 @@
         <name>sparam0</name>
         <type>string</type>
         <size>&user_len;</size>
+        <null/>
         <description>Scenario id</description>
     </column>
 
@@ -69,6 +68,7 @@
         <name>sparam1</name>
         <type>string</type>
         <size>&user_len;</size>
+        <null/>
         <description>Scenario id</description>
     </column>
 
@@ -76,6 +76,7 @@
         <name>sparam2</name>
         <type>string</type>
         <size>&user_len;</size>
+        <null/>
         <description>Scenario id</description>
     </column>
 
@@ -83,6 +84,7 @@
         <name>sparam3</name>
         <type>string</type>
         <size>&user_len;</size>
+        <null/>
         <description>Scenario id</description>
     </column>
 
@@ -90,6 +92,7 @@
         <name>sparam4</name>
         <type>string</type>
         <size>&user_len;</size>
+        <null/>
         <description>Scenario id</description>
     </column>
 
@@ -97,6 +100,7 @@
         <name>sdp</name>
         <type>text</type>
         <size>&user_len;</size>
+        <null/>
         <description>Scenario id</description>
     </column>
 
@@ -104,7 +108,6 @@
         <name>e1_type</name>
         <type>int</type>
         <size>2</size>
-        <null/>
         <description>E1 type</description>
     </column>
 
@@ -141,7 +144,6 @@
         <name>e2_type</name>
         <type>int</type>
         <size>2</size>
-        <null/>
         <description>E2 type</description>
     </column>
 
@@ -185,6 +187,7 @@
         <name>e3_sid</name>
         <type>string</type>
         <size>&user_len;</size>
+        <null/>
         <description>E3 Scenario ID</description>
     </column>
 
@@ -193,6 +196,7 @@
         <name>e3_from</name>
         <type>string</type>
         <size>&uri_len;</size>
+        <null/>
         <description>E3 From URI</description>
     </column>
 
@@ -200,6 +204,7 @@
         <name>e3_to</name>
         <type>string</type>
         <size>&uri_len;</size>
+        <null/>
         <description>E3 To URI</description>
     </column>
 
@@ -207,6 +212,7 @@
         <name>e3_key</name>
         <type>string</type>
         <size>&user_len;</size>
+        <null/>
         <description>E3 Key</description>
     </column>
 
