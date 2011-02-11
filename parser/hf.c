@@ -50,6 +50,7 @@
 #include "parse_allow.h"
 #include "parse_sst.h"
 #include "parse_content.h"
+#include "parse_call_info.h"
 
 
 /*
@@ -206,6 +207,8 @@ void clean_hdr_field(struct hdr_field* hf)
 			break;
 
 		case HDR_CALL_INFO_T:
+			free_call_info(hf->parsed);
+			hf->parsed = NULL;
 			break;
 
 		default:

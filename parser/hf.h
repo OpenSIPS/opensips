@@ -194,6 +194,7 @@ static inline int hdr_allocs_parse(struct hdr_field* hdr)
 		case HDR_SESSION_EXPIRES_T:
 		case HDR_PPI_T:
 		case HDR_PAI_T:
+		case HDR_CALL_INFO_T:
 			return 1;
 		default:
 			return 0;
