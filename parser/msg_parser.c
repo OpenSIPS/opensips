@@ -710,7 +710,7 @@ int set_ruri(struct sip_msg* msg, str* uri)
 		memcpy(msg->new_uri.s, uri->s, uri->len);
 		msg->new_uri.len = uri->len;
 	} else {
-		ptr = (char*)pkg_malloc(uri->len);
+		ptr = (char*)pkg_malloc(uri->len+1);
 		if (!ptr) {
 			LM_ERR("not enough pkg memory (%d)\n",uri->len);
 			return -1;
