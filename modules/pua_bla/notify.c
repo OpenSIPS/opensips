@@ -208,6 +208,11 @@ int bla_handle_notify(struct sip_msg* msg, char* s1, char* s2)
 		}
 	}
 
+	/* +2 for ": " between header name and value */
+	if ((header_name.len + 2 + contact.len + CRLF_LEN) >= sizeof(buf)) {
+		LM_ERR("Sender header too large");
+		return -1;
+	}
 
 	/* build extra_headers with Sender*/
 	extra_headers.s= buf;
@@ -219,7 +224,8 @@ int bla_handle_notify(struct sip_msg* msg, char* s1, char* s2)
 	extra_headers.len+= contact.len;
 	memcpy(extra_headers.s+ extra_headers.len, CRLF, CRLF_LEN);
 	extra_headers.len+= CRLF_LEN;
-   
+
+	publ.id= contact;
 	publ.body= &body;
 	publ.source_flag= BLA_PUBLISH;
 	publ.expires= expires;
@@ -232,7 +238,7 @@ int bla_handle_notify(struct sip_msg* msg, char* s1, char* s2)
 		LM_ERR("failed to send Publish message\n");
 		return -1;
 	}
-	  
+
 	return 1;
 }
 
