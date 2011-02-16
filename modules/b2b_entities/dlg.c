@@ -1727,6 +1727,9 @@ int b2b_send_req(b2b_dlg_t* dlg, enum b2b_entity_type etype,
 	dlg_t* td;
 	int result;
 
+	if(!dlg->callid.s || !dlg->callid.len)
+		return -1;
+
 	LM_DBG("start type=%d\n", etype);
 	if(etype== B2B_SERVER)
 		td = b2b_server_build_dlg(dlg);
@@ -1918,6 +1921,8 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 				lock_release(&htable[hash_index].lock);
 				return;
 			}
+			if(dlg->callid.s==0 || dlg->callid.len==0)
+				dlg->callid = msg->callid->body;
 			if(b2b_send_req(dlg, etype, leg, &ack, 0,
 						(dlg->ack_sdp.s?&dlg->ack_sdp:0)) < 0)
 			{
@@ -2161,6 +2166,9 @@ dummy_reply:
 							rseq.len, rseq.s, cseq.len, cseq.s);
 					extra_headers.s = buf;
 					extra_headers.len = strlen(buf);
+						
+					if(dlg->callid.s==0 || dlg->callid.len==0)
+						dlg->callid = msg->callid->body;
 					if(b2b_send_req(dlg, etype, leg, &method, &extra_headers, 0) < 0)
 					{
 						LM_ERR("Failed to send PRACK\n");
@@ -2183,6 +2191,8 @@ dummy_reply:
 						goto error;
 					}
 
+					if(dlg->callid.s==0 || dlg->callid.len==0)
+						dlg->callid = msg->callid->body;
 					/* send an ACK followed by BYE */
 					if(b2b_send_req(dlg, etype, dlg->legs, &ack, 0,
 								dlg->ack_sdp.s?&dlg->ack_sdp:0) < 0)
