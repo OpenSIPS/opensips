@@ -89,7 +89,7 @@ Chapter 1. Admin Guide
 
 1.2.1. OpenSIPS Modules
 
-     * tm
+     * tm, a db module
 
 1.2.2. External Libraries or Applications
 
