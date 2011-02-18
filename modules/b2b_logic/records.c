@@ -36,8 +36,6 @@
 #include "../presence/utils_func.h"
 #include "records.h"
 
-extern b2bl_cb_params_t cb_params;
-
 static void _print_entity(int index, b2bl_entity_id_t* e, int log_level)
 {
 	b2bl_entity_id_t* c = e;
@@ -469,6 +467,7 @@ void b2bl_delete(b2bl_tuple_t* tuple, unsigned int hash_index,
 	b2bl_entity_id_t *e;
 	int i;
 	int index;
+	b2bl_cb_params_t cb_params;
 
 	LM_DBG("Delete record [%p]->[%.*s], hash_index=[%d], local_index=[%d]\n",
 			tuple, tuple->key->len, tuple->key->s, hash_index, tuple->id);
