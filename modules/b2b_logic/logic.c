@@ -71,9 +71,6 @@ static str method_bye   = {BYE, BYE_LEN};
 static str ok = str_init("OK");
 static str notAcceptable = str_init("Not Acceptable");
 
-b2bl_dlg_stat_t stat;
-b2bl_cb_params_t cb_params;
-
 int entity_add_dlginfo(b2bl_entity_id_t* entity, b2b_dlginfo_t* dlginfo)
 {
 	b2b_dlginfo_t* new_dlginfo= NULL;
@@ -448,6 +445,8 @@ int process_bridge_negreply(b2bl_tuple_t* tuple,
 	b2bl_entity_id_t* e;
 	int found = 0;
 	str ekey={0, 0};
+	b2bl_cb_params_t cb_params;
+	b2bl_dlg_stat_t stats;
 
 	entity_no = bridge_get_entityno(tuple, entity);
 	if(entity_no < 0)
@@ -466,8 +465,8 @@ int process_bridge_negreply(b2bl_tuple_t* tuple,
 		cb_params.param = tuple->cb_param;
 		local_index = tuple->id;
 		etype = entity->type;
-		stat.start_time =  entity->stats.start_time;
-		stat.setup_time = get_ticks() - entity->stats.start_time;
+		stats.start_time =  entity->stats.start_time;
+		stats.setup_time = get_ticks() - entity->stats.start_time;
 		ekey.s = (char*)pkg_malloc(entity->key.len);
 		if(ekey.s == NULL)
 		{
@@ -476,7 +475,7 @@ int process_bridge_negreply(b2bl_tuple_t* tuple,
 		}
 		memcpy(ekey.s, entity->key.s, entity->key.len);
 		ekey.len = entity->key.len;
-		cb_params.stat = &stat;
+		cb_params.stat = &stats;
 		cb_params.msg = msg;
 
 		lock_release(&b2bl_htable[hash_index].lock);
@@ -872,6 +871,8 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 	int ret;
 	unsigned int method_value;
 	int_str avp_val;
+	b2bl_cb_params_t cb_params;
+	b2bl_dlg_stat_t stats;
 
 	if(b2bl_key == NULL)
 	{
@@ -1152,25 +1153,25 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 					entity->stats.call_time = get_ticks() - entity->stats.start_time;
 				else
 					entity->stats.call_time = 0;
-				memcpy(&stat, &entity->stats, sizeof(b2bl_dlg_stat_t));
-				stat.key.s = (char*)pkg_malloc(tuple->key->len);
-				if(stat.key.s == NULL)
+				memcpy(&stats, &entity->stats, sizeof(b2bl_dlg_stat_t));
+				stats.key.s = (char*)pkg_malloc(tuple->key->len);
+				if(stats.key.s == NULL)
 				{
 					LM_ERR("No more memory\n");
 					goto error;
 				}
-				memcpy(stat.key.s, tuple->key->s, tuple->key->len);
-				stat.key.len = tuple->key->len;
+				memcpy(stats.key.s, tuple->key->s, tuple->key->len);
+				stats.key.len = tuple->key->len;
 				ekey.s = (char*)pkg_malloc(entity->key.len);
 				if(ekey.s == NULL)
 				{
 					LM_ERR("No more memory\n");
-					pkg_free(stat.key.s);
+					pkg_free(stats.key.s);
 					goto error;
 				}
 				memcpy(ekey.s, entity->key.s, entity->key.len);
 				ekey.len = entity->key.len;
-				cb_params.stat = &stat;
+				cb_params.stat = &stats;
 				cb_params.msg = msg;
 
 				lock_release(&b2bl_htable[hash_index].lock);
@@ -1178,7 +1179,7 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 				ret = cbf(&cb_params, eno==0?B2B_BYE_E1:B2B_BYE_E2);
 				LM_DBG("ret = %d, peer= %p\n", ret, peer);
 
-				pkg_free(stat.key.s);
+				pkg_free(stats.key.s);
 				lock_get(&b2bl_htable[hash_index].lock);
 				/* must search the tuple again - you can't know what might have happened with it */
 				tuple = b2bl_search_tuple_safe(hash_index, local_index);
