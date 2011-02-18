@@ -184,8 +184,9 @@ static inline struct sip_msg* buf_to_sip_msg(char *buf, unsigned int len,
 		return NULL;
 	}
 	req.rcv.proto = dialog->send_sock->proto;
-	req.rcv.src_ip = dialog->send_sock->address;
-	req.rcv.src_port = dialog->send_sock->port_no;
+	req.rcv.src_ip = req.rcv.dst_ip = dialog->send_sock->address;
+	req.rcv.src_port = req.rcv.dst_port = dialog->send_sock->port_no;
+	req.rcv.bind_address = dialog->send_sock;
 
 	return &req;
 }
