@@ -59,6 +59,7 @@
 #include "dset.h"
 #include "usr_avp.h"
 #include "core_stats.h"
+#include "ut.h"
 
 
 #include "tcp_server.h" /* for tcpconn_add_alias */
@@ -86,6 +87,7 @@ unsigned int get_next_msg_no(void)
 int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info) 
 {
 	struct sip_msg* msg;
+	struct timeval start;
 
 	msg=pkg_malloc(sizeof(struct sip_msg));
 	if (msg==0) {
@@ -111,6 +113,7 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info)
 	}
 	LM_DBG("After parse_msg...\n");
 
+	start_expire_timer(start,execmsgthreshold);
 
 	/* ... clear branches from previous message */
 	clear_branches();
@@ -206,6 +209,7 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info)
 	}
 
 end:
+	stop_expire_timer(start,execmsgthreshold,"msg processing");
 	/* free possible loaded avps -bogdan */
 	reset_avps();
 	LM_DBG("cleaning up\n");

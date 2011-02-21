@@ -215,6 +215,10 @@ int check_via =  0;
 /* debugging level for memory stats */
 int memlog = L_DBG + 10;
 int memdump = L_DBG + 10;
+/* debugging in case msg processing takes too long disabled by default */
+int execmsgthreshold = 0;
+/* debugging in case dns takes too long disabled by default */
+int execdnsthreshold = 0;
 /* should replies include extensive warnings? by default yes,
    good for trouble-shooting
 */
@@ -660,6 +664,7 @@ static int main_loop(void)
 	pid_t pid;
 	struct socket_info* si;
 	int* startup_done = NULL;
+	atomic_t *load_p;
 
 	chd_rank=0;
 
@@ -709,8 +714,17 @@ static int main_loop(void)
 			run_startup_route();
 
 		is_main=1;
-		return udp_rcv_loop();
+		load_p = shm_malloc(sizeof(atomic_t));
+		if (!load_p) {
+		/* highly improbable */
+			LM_ERR("no more shm\n");
+			goto error;
+		}
+		memset(load_p,0,sizeof(atomic_t));
+		pt[process_no].load = load_p;
 
+		register_udp_load_stat(&udp_listen->sock_str,load_p);
+		return udp_rcv_loop();
 	} else {  /* don't fork */
 
 		for(si=udp_listen;si;si=si->next){
@@ -796,6 +810,15 @@ static int main_loop(void)
 
 		/* udp processes */
 		for(si=udp_listen; si; si=si->next){
+			load_p = shm_malloc(sizeof(atomic_t));
+			if (!load_p) {
+			/* highly improbable */
+				LM_ERR("no more shm\n");
+				goto error;
+			}
+			memset(load_p,0,sizeof(atomic_t));
+			register_udp_load_stat(&si->sock_str,load_p);
+
 			for(i=0;i<children_no;i++){
 				chd_rank++;
 				if ( (pid=internal_fork( "UDP receiver"))<0 ) {
@@ -821,6 +844,9 @@ static int main_loop(void)
 							*startup_done = 1;
 						}
 
+						/* all UDP listeners on same interface
+						 * have same SHM load pointer */
+						pt[process_no].load = load_p;
 						udp_rcv_loop();
 						exit(-1);
 					}

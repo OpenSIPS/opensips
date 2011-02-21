@@ -66,6 +66,8 @@
 #include "io_wait.h"
 #include <fcntl.h> /* must be included after io_wait.h if SIGIO_RT is used */
 #include "forward.h"
+#include "atomic.h"
+#include "pt.h"
 
 enum fd_types { F_NONE, F_TCPMAIN, F_TCPCONN };		/*!< types used in io_wait* */
 
@@ -515,6 +517,7 @@ again:
 				goto end_req;
 			}
 			/* if we are here everything is nice and ok*/
+			atomic_inc(pt[process_no].load);
 			resp=CONN_RELEASE;
 #ifdef EXTRA_DEBUG
 			LM_DBG("calling receive_msg(%p, %d, )\n",
@@ -548,7 +551,9 @@ again:
 				goto end_req;
 			}
 			*req->parsed=c;
-			
+		
+			atomic_dec(pt[process_no].load);
+
 			/* prepare for next request */
 			size=req->pos-req->parsed;
 			if (size) memmove(req->buf, req->parsed, size);

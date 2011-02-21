@@ -590,6 +590,33 @@ static inline int str_strcasecmp(const str *stra, const str *strb)
 		return 0;
 }
 
+#define start_expire_timer(begin,threshold) \
+	do { \
+		if ((threshold))	\
+			gettimeofday(&(start), NULL); \
+	} while(0) \
+
+#define stop_expire_timer(begin,threshold,func_info) \
+	do { \
+		if ((threshold)) \
+		log_expiry(&(begin),(threshold),(func_info)); \
+	} while(0)
+
+static inline void log_expiry(struct timeval *begin,int expire,
+								const char *func_info)
+{
+	struct timeval end;
+	long seconds,useconds,mtime;
+
+	gettimeofday(&end,NULL);
+	seconds  = end.tv_sec  - begin->tv_sec;
+	useconds = end.tv_usec - begin->tv_usec;
+	mtime = ((seconds) * 1000000 + useconds);
+
+	if (mtime > expire)
+		LM_WARN("threshold exceeded : %s took too long - %ld us\n",func_info,mtime);
+}
+
 int user2uid(int* uid, int* gid, char* user);
 
 int group2gid(int* gid, char* group);

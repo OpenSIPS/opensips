@@ -260,6 +260,8 @@ CHILDREN children
 CHECK_VIA	check_via
 MEMLOG		"memlog"|"mem_log"
 MEMDUMP		"memdump"|"mem_dump"
+EXECMSGTHRESHOLD		"execmsgthreshold"|"exec_msg_threshold"
+EXECDNSTHRESHOLD		"execdnsthreshold"|"exec_dns_threshold"
 SIP_WARNING sip_warning
 SERVER_SIGNATURE server_signature
 SERVER_HEADER server_header
@@ -505,6 +507,8 @@ WHITESPACE	[ \t\r\n]
 <INITIAL>{CHECK_VIA}	{ count(); yylval.strval=yytext; return CHECK_VIA; }
 <INITIAL>{MEMLOG}	{ count(); yylval.strval=yytext; return MEMLOG; }
 <INITIAL>{MEMDUMP}	{ count(); yylval.strval=yytext; return MEMDUMP; }
+<INITIAL>{EXECMSGTHRESHOLD}	{ count(); yylval.strval=yytext; return EXECMSGTHRESHOLD; }
+<INITIAL>{EXECDNSTHRESHOLD}	{ count(); yylval.strval=yytext; return EXECDNSTHRESHOLD; }
 <INITIAL>{SIP_WARNING}	{ count(); yylval.strval=yytext; return SIP_WARNING; }
 <INITIAL>{USER}		{ count(); yylval.strval=yytext; return USER; }
 <INITIAL>{GROUP}	{ count(); yylval.strval=yytext; return GROUP; }

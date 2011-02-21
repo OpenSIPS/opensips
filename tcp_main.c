@@ -1652,6 +1652,7 @@ int tcp_init_children(int *chd_rank)
 	int reader_fd[2]; /* for comm. with the tcp children read  */
 	pid_t pid;
 	struct socket_info *si;
+	atomic_t *load_p;
 	
 	/* estimate max fd. no:
 	 * 1 tcp send unix socket/all_proc, 
@@ -1669,6 +1670,12 @@ int tcp_init_children(int *chd_rank)
 	/* create the tcp sock_info structures */
 	/* copy the sockets --moved to main_loop*/
 	
+	load_p = shm_malloc(sizeof(atomic_t));
+	if (!load_p)
+		goto error;
+	memset(load_p,0,sizeof(atomic_t));
+	register_tcp_load_stat(load_p);
+
 	/* fork children & create the socket pairs*/
 	for(r=0; r<tcp_children_no; r++){
 		/*if (socketpair(AF_UNIX, SOCK_STREAM, 0, sockfd)<0){
@@ -1697,12 +1704,14 @@ int tcp_init_children(int *chd_rank)
 			/* child */
 			set_proc_attrs("TCP receiver");
 			pt[process_no].idx=r;
+			pt[process_no].load = load_p;
 			bind_address=0; /* force a SEGFAULT if someone uses a non-init.
 							   bind address on tcp */
 			if (init_child(*chd_rank) < 0) {
 				LM_ERR("init_children failed\n");
 				exit(-1);
 			}
+	
 			tcp_receive_loop(reader_fd[1]);
 			exit(-1);
 		}

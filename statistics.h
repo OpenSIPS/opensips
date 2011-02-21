@@ -99,6 +99,9 @@ char *build_stat_name( str* prefix, char *var_name);
 
 int init_stats_collector();
 
+int register_udp_load_stat(str *name,atomic_t *ctx);
+int register_tcp_load_stat(atomic_t *ctx);
+
 void destroy_stats_collector();
 
 #define register_stat(_mod,_name,_pvar,_flags) \

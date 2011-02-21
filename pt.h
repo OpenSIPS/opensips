@@ -36,6 +36,7 @@
 #include "globals.h"
 #include "timer.h"
 #include "socket_info.h"
+#include "atomic.h"
 
 #define MAX_PT_DESC	128
 
@@ -46,6 +47,7 @@ struct process_table {
 	int idx; /* tcp child index, -1 for other processes */
 #endif
 	char desc[MAX_PT_DESC];
+	atomic_t *load;
 };
 
 typedef void(*forked_proc_func)(int i);

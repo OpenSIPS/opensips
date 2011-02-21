@@ -186,6 +186,7 @@ static inline void switch_state_to_disconnected(const db_con_t *conn) {
 static int db_mysql_submit_query(const db_con_t* _h, const str* _s)
 {
 	int  code, i;
+	struct timeval start;
 
 	if (!_h || !_s || !_s->s) {
 		LM_ERR("invalid parameter value\n");
@@ -197,7 +198,9 @@ static int db_mysql_submit_query(const db_con_t* _h, const str* _s)
 	 */
 
 	for (i=0; i<2; i++) {
+		start_expire_timer(start,db_mysql_exec_query_threshold);
 		code = wrapper_single_mysql_real_query(_h, _s);
+		stop_expire_timer(start,db_mysql_exec_query_threshold,"mysql query");
 		if (code < 0) {
 			/* got disconnected during call */
 			switch_state_to_disconnected(_h);
@@ -461,6 +464,7 @@ static int db_mysql_do_prepared_query(const db_con_t* conn, const str *query,
 	struct prep_stmt *pq_ptr;
 	struct my_stmt_ctx *ctx;
 	MYSQL_BIND *mysql_bind;
+	struct timeval start;
 
 	LM_DBG("conn=%p (tail=%ld) MC=%p\n",conn, conn->tail,CON_CONNECTION(conn));
 
@@ -559,7 +563,9 @@ static int db_mysql_do_prepared_query(const db_con_t* conn, const str *query,
 			cols = mysql_num_fields(CON_RESULT(conn));
 		}
 
+		start_expire_timer(start,db_mysql_exec_query_threshold);
 		code = wrapper_single_mysql_stmt_execute(conn, ctx->stmt);
+		stop_expire_timer(start,db_mysql_exec_query_threshold,"mysql prep stmt");
 		if (code < 0) {
 			/* got disconnected during call */
 			switch_state_to_disconnected(conn);

@@ -304,6 +304,8 @@ extern int line;
 %token CHECK_VIA
 %token MEMLOG
 %token MEMDUMP
+%token EXECMSGTHRESHOLD
+%token EXECDNSTHRESHOLD
 %token SIP_WARNING
 %token SOCK_MODE
 %token SOCK_USER
@@ -622,6 +624,10 @@ assign_stm: DEBUG EQUAL snumber {
 		| MEMLOG EQUAL error { yyerror("int value expected"); }
 		| MEMDUMP EQUAL NUMBER { memdump=$3; }
 		| MEMDUMP EQUAL error { yyerror("int value expected"); }
+		| EXECMSGTHRESHOLD EQUAL NUMBER { execmsgthreshold=$3; }
+		| EXECMSGTHRESHOLD EQUAL error { yyerror("int value expected"); }
+		| EXECDNSTHRESHOLD EQUAL NUMBER { execdnsthreshold=$3; }
+		| EXECDNSTHRESHOLD EQUAL error { yyerror("int value expected"); }
 		| SIP_WARNING EQUAL NUMBER { sip_warning=$3; }
 		| SIP_WARNING EQUAL error { yyerror("boolean value expected"); }
 		| USER EQUAL STRING     { user=$3; }

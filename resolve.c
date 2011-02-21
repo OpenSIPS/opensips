@@ -543,8 +543,11 @@ struct rdata* get_record(char* name, int type)
 	struct rdata* rd;
 	struct srv_rdata* srv_rd;
 	struct srv_rdata* crt_srv;
+	struct timeval start;
 
+	start_expire_timer(start,execdnsthreshold);
 	size=res_search(name, C_IN, type, buff.buff, sizeof(buff));
+	stop_expire_timer(start,execdnsthreshold,"dns");
 	if (size<0) {
 		LM_DBG("lookup(%s, %d) failed\n", name, type);
 		goto not_found;

@@ -43,6 +43,8 @@
 #include "locking.h"
 #include "core_stats.h"
 #include "statistics.h"
+#include "pt.h"
+#include "atomic.h"
 
 #ifdef STATISTICS
 
@@ -121,6 +123,40 @@ char *build_stat_name( str* prefix, char *var_name)
 	return s;
 }
 
+unsigned int calc_udp_load(void *ctx)
+{
+	atomic_t *load = (atomic_t *)ctx;
+	return (load->counter * 100)/children_no;
+}
+
+unsigned int calc_tcp_load(void *ctx)
+{
+	atomic_t *load = (atomic_t *)ctx;
+	return (load->counter * 100)/tcp_children_no;
+}
+
+int register_udp_load_stat(str *name,atomic_t *ctx)
+{
+	char *stat_name;
+
+	if ( (stat_name = build_stat_name(name,"load")) == 0 || 
+			register_stat2("load",stat_name,(stat_var**)calc_udp_load,STAT_IS_FUNC,ctx) != 0) {
+		LM_ERR("failed to add load stat\n");
+		return -1;
+	}
+
+	return 0;
+}
+
+int register_tcp_load_stat(atomic_t *ctx)
+{
+	if (register_stat2("load","tcp-load",(stat_var**)calc_tcp_load,STAT_IS_FUNC,ctx) != 0) {
+		LM_ERR("failed to add load stat\n");
+		return -1;
+	}
+
+	return 0;
+}
 
 int init_stats_collector(void)
 {
@@ -162,6 +198,7 @@ int init_stats_collector(void)
 		LM_ERR("failed to register network statistics\n");
 		goto error;
 	}
+
 	LM_DBG("statistics manager successfully initialized\n");
 
 	return 0;
