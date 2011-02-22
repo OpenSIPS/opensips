@@ -144,5 +144,30 @@ update_stat("$var(reg_counter)");
 		</example>
 	</section>
 	</section>
+
+	<section>
+	<title>Exported pseudo-variables</title>
+
+		<section>
+			<title><varname>$stat</varname></title>
+			<para>
+			Allows to get and reset core and modules exported statistics.
+			The pseudo-variable receives as parameter the name of the
+			statistic that it want to get or reset.
+			</para>
+			<example>
+			<title><varname>$stat</varname> usage</title>
+			<programlisting format="linespecific">
+...
+xlog("SHM used size = $stat(used_size) \n");
+...
+$stat(err_requests) = 0;
+...
+			</programlisting>
+			</example>
+
+		</section>
+		</section>
+
 </chapter>
 
