@@ -548,6 +548,7 @@ again:
 			&con->rcv)<0) {
 				*req->parsed=c;
 				resp=CONN_ERROR;
+				atomic_dec(pt[process_no].load);
 				goto end_req;
 			}
 			*req->parsed=c;

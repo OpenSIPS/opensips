@@ -457,7 +457,6 @@ int udp_rcv_loop(void)
 		}
 #endif
 
-		atomic_inc(pt[process_no].load);
 		if(buf[0] == 0){    /* stun specific */
 			for(p = cb_list; p; p = p->next){
 				if(p->b == buf[1]){
@@ -491,6 +490,8 @@ int udp_rcv_loop(void)
 			continue;
 		}
 		
+		atomic_inc(pt[process_no].load);
+
 		/* receive_msg must free buf too!*/
 		receive_msg(buf, len, &ri);
 		
