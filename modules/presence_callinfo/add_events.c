@@ -28,6 +28,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "../../parser/parse_call_info.h"
 #include "../presence/event_list.h"
 #include "presence_callinfo.h"
 
@@ -43,7 +44,7 @@ static str dummy_header=str_init("Call-Info: <sip:localhost>;appearance-index=*;
  */
 int callinfo_publ_handl(struct sip_msg* msg, int* sent_reply)
 {
-    if ( parse_headers(msg,HDR_EOH_F, 0)==-1 ) {
+    if (parse_headers(msg,HDR_EOH_F, 0) == -1) {
 	LM_ERR("parsing headers\n");
 	return -1;
     }
@@ -53,6 +54,12 @@ int callinfo_publ_handl(struct sip_msg* msg, int* sent_reply)
 	LM_ERR("No 'Call-Info' header\n");
 	return -1;
     }
+/*
+    if (0 != parse_call_info_header(msg)) {
+	LM_ERR("Unable to parse Call-Info\n");
+	return -1;
+    }
+*/
 
     return 1;
 }
