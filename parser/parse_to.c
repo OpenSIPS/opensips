@@ -230,7 +230,9 @@ static inline char* parse_to_param(char *buffer, char *end,
 								break;
 							default:
 								tmp++;
+								break;
 						}
+						break;
 					default:
 						goto parse_error;
 				}
