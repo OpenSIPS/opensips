@@ -54,12 +54,10 @@ int callinfo_publ_handl(struct sip_msg* msg, int* sent_reply)
 	LM_ERR("No 'Call-Info' header\n");
 	return -1;
     }
-/*
     if (0 != parse_call_info_header(msg)) {
 	LM_ERR("Unable to parse Call-Info\n");
 	return -1;
     }
-*/
 
     return 1;
 }
