@@ -10,16 +10,66 @@
 	    <para> 
 		The module enable &osips; to register itself on a remote SIP registrar.
 		Several registrant accounts can be defined, each account is
-		specified by the uac parameter.
+		specified by the "uac" parameter.
 	    </para>
 	    <para>
-		At startup, the registrant records are loaded into a hash table in memory and a timer is started.
+		At startup, the registrant records are loaded into
+		a hash table in memory and a timer is started.
 		The hash index is computed over the AOR field.
 		For better hash distribution, the size of the hash table is configurable.
 		When the timer fires for the first time, the first hash table will be checked and
 		REGISTERs will be sent out for each record that is found.
-		On the next fire, the second hash table will be checked and so on.
+		On the next timeout fire, the second hash table will be checked and so on.
 		The timer interval is configurable.
+	    </para>
+	    <para>
+		Each registrant has it's own state.
+		Registranr's status can be inspected via "reg_list" MI comand.
+	    </para>
+	    <para>
+		Registrant states:
+		<itemizedlist>
+			<listitem>
+			<para><emphasis>0</emphasis>
+				- NOT_REGISTERED_STATE -
+				the initial state (no REGISTER has been sent out yet);</para>
+			</listitem>
+			<listitem>
+			<para><emphasis>1</emphasis>
+				- REGISTERING_STATE - waiting for a reply from the registrar
+				after a REGISTER without authentication header was sent;</para>
+			</listitem>
+			<listitem>
+			<para><emphasis>2</emphasis>
+				- AUTHENTICATING_STATE - waiting for a reply from the registrar
+			 	after a REGISTER with authentication header was sent;</para>
+			</listitem>
+			<listitem>
+			<para><emphasis>3</emphasis>
+				- REGISTERED_STATE - the uac is successfully registered;</para>
+			</listitem>
+			<listitem>
+			<para><emphasis>4</emphasis>
+				- REGISTER_TIMEOUT_STATE :
+				no reply received from the registrar;</para>
+			</listitem>
+			<listitem>
+			<para><emphasis>5</emphasis>
+				- INTERNAL_ERROR_STATE -
+				some errors were found/encountered during the
+				processing of a reply;</para>
+			</listitem>
+			<listitem>
+			<para><emphasis>6</emphasis>
+				- WRONG_CREDENTIALS_STATE -
+				credentials rejected by the registrar;</para>
+			</listitem>
+			<listitem>
+			<para><emphasis>7</emphasis>
+				- REGISTRAR_ERROR_STATE -
+				error reply received from the registrar;</para>
+			</listitem>
+		</itemizedlist>
 	    </para>
 	</section>
 
@@ -133,7 +183,7 @@ modparam("registrant", "timer_interval", 120)
 		<para>
 		<emphasis>
 			There is no default value.
-			There can be several UAC defined in the config file.
+			There can be several uac defined in the config file.
 		</emphasis>
                 </para>
 		<example>
@@ -162,8 +212,8 @@ modparam("registrant", "uac",
 		<para>Parameters: <emphasis>none</emphasis></para>
 		<para>MI FIFO Command Format:</para>
 		<programlisting  format="linespecific">
-		:reg_list:_reply_fifo_file_
-		_empty_line_
+:reg_list:_reply_fifo_file_
+_empty_line_
 		</programlisting>
 	</section>
 	</section>
