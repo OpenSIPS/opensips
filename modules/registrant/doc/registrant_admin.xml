@@ -1,0 +1,171 @@
+<!-- Module User's Guide -->
+
+<chapter>
+	
+
+	<title>&adminguide;</title>
+	
+	<section>
+	  <title>Overview</title>
+	    <para> 
+		The module enable &osips; to register itself on a remote SIP registrar.
+		Several registrant accounts can be defined, each account is
+		specified by the uac parameter.
+	    </para>
+	    <para>
+		At startup, the registrant records are loaded into a hash table in memory and a timer is started.
+		The hash index is computed over the AOR field.
+		For better hash distribution, the size of the hash table is configurable.
+		When the timer fires for the first time, the first hash table will be checked and
+		REGISTERs will be sent out for each record that is found.
+		On the next fire, the second hash table will be checked and so on.
+		The timer interval is configurable.
+	    </para>
+	</section>
+
+	<section>
+	  <title>Dependencies</title>
+	  <section>
+	  <title>&osips; Modules</title>
+		<para>None.</para>
+	  </section>
+
+	  <section>
+		<title>External Libraries or Applications</title>
+		<para>None.</para>
+	  </section>
+	</section>
+	
+	<section>
+	<title>Exported Parameters</title>
+        <section>
+		<title><varname>hash_size</varname> (integer)</title>
+		<para>
+		The size of the hash table internally used to keep the registrants.
+		A larger table distributes better the registration load in time but consumes more memory.
+		The hash size is a power of number two. 
+		</para>
+		<para>
+		<emphasis>
+			Default value is 1.
+		</emphasis>
+                </para>
+		<example>
+		<title>Set <varname>hash_size</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("registrant", "hash_size", 2)
+...
+</programlisting>
+		</example>
+	</section>
+        <section>
+		<title><varname>timer_interval</varname> (integer)</title>
+		<para>
+		Defines the periodic timer for checking the registrations status.
+		</para>
+		<para>
+		<emphasis>
+			Default value is 100.
+		</emphasis>
+                </para>
+		<example>
+		<title>Set <varname>timer_interval</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("registrant", "timer_interval", 120)
+...
+</programlisting>
+		</example>
+	</section>
+	<section>
+		<title><varname>uac</varname> (csv string)</title>
+		<para>
+		Defines the field parameters of a registration.
+		Each field is separated by ','.
+		</para>
+		<para>Meaning of the fields is as follows:</para>
+		<itemizedlist>
+			<listitem>
+			<para><emphasis>registrar</emphasis>
+				- URI pointing to the remote registrar (mandatory field);</para>
+			</listitem>
+			<listitem>
+			<para><emphasis>outbound proxy</emphasis>
+				- URI pointing to the outbond proxy (not implemented yet).
+				An empty value means no putbound proxy (not mandatory);</para>
+			</listitem>
+			<listitem>
+			<para><emphasis>aor</emphasis>
+				- URI defining the address of record (mandatory field);</para>
+			</listitem>
+			<listitem>
+			<para><emphasis>third party registrant</emphasis>
+				- URI defining the third party registrant (not mandatory);</para>
+			</listitem>
+			<listitem>
+			<para><emphasis>username</emphasis>
+				- username for authentication
+				(mandatory if the registrar requires authentication);</para>
+			</listitem>
+			<listitem>
+			<para><emphasis>password</emphasis>
+				- password for authentication
+				(mandatory if the registrar requires authntication);</para>
+			</listitem>
+			<listitem>
+			<para><emphasis>binding URI</emphasis>
+				- contact URI in REGISTER (mandatory field);</para>
+			</listitem>
+			<listitem>
+			<para><emphasis>binding params</emphasis>
+				- contact params in REGISTER (not mandatory);</para>
+			</listitem>
+			<listitem>
+			<para><emphasis>expiry</emphasis>
+				- expiration time  (not mandatory).  Default value: 3600;</para>
+			</listitem>
+			<listitem>
+			<para><emphasis>forced socket</emphasis>
+				- socket for sending the REGISTER (not mandatory).</para>
+			</listitem>
+		</itemizedlist>
+		<para>
+		<emphasis>
+			There is no default value.
+			There can be several UAC defined in the config file.
+		</emphasis>
+                </para>
+		<example>
+		<title>Set <varname>uac</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("registrant", "uac",
+"sip:opensips.org,,sip:user@opensips.org,,user,password,sip:user@ip,,,")
+...
+</programlisting>
+		</example>
+	</section>
+	</section>
+
+	<section>
+	<title>Exported Functions</title>
+	      <para>None to be used in configuration file.</para>
+	</section>
+
+	<section>
+	<title>Exported MI Functions</title>
+	<section>
+	<title><function moreinfo="none">reg_list</function></title>
+		<para>Lists the registrant records and their status.</para>
+		<para>Name: <emphasis>reg_list</emphasis></para>
+		<para>Parameters: <emphasis>none</emphasis></para>
+		<para>MI FIFO Command Format:</para>
+		<programlisting  format="linespecific">
+		:reg_list:_reply_fifo_file_
+		_empty_line_
+		</programlisting>
+	</section>
+	</section>
+</chapter>
+
