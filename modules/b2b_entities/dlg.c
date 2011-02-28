@@ -992,7 +992,9 @@ b2b_dlg_t* b2b_new_dlg(struct sip_msg* msg, str* local_contact,
 		return 0;
 	}
 
-	dlg.id = core_hash(&dlg.tag[CALLER_LEG], 0, server_hsize);
+	if(!on_reply)
+		dlg.id = core_hash(&dlg.tag[CALLER_LEG], &dlg.ruri, server_hsize);
+
 	if(param)
 		dlg.param = *param;
 	dlg.db_flag = INSERTDB_FLAG;
