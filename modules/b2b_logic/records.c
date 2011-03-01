@@ -81,7 +81,10 @@ void b2bl_print_tuple(b2bl_tuple_t* tuple, int log_level)
 		for (index = 0; index < MAX_BRIDGE_ENT; index++)
 		{
 			e = tuple->bridge_entities[index];
-			if (e) _print_entity(index, e, log_level);
+			if (e)
+				LM_GEN1(log_level, ".type=[%d] index=[%d] [%p]"
+					" peer=[%p] prev:next=[%p][%p]\n",
+					e->type, index, e, e->peer, e->prev, e->next);
 		}
 	}
 }
