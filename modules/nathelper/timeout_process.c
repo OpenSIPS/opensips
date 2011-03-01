@@ -77,7 +77,7 @@ void timeout_listener_process(int rank)
 	struct sockaddr rtpp_info;
 	struct rtpp_notify_node *rtpp_lst;
 
-	if (init_child(process_no) != 0) {
+	if (init_child(PROC_MODULE) != 0) {
 		LM_ERR("cannot init child process");
 		return;
 	}
