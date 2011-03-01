@@ -1089,9 +1089,9 @@ int b2b_logic_notify_reply(int src, struct sip_msg* msg, str* key, str* body, st
 						LM_DBG("detaching entity[%p] from tuple[%p]\n",
 								entity, tuple);
 						b2bl_remove_single_entity(entity, entity_head);
-						/* FIXME: 
-						 * bridge_entities might be out of sync here */
 						peer->peer = *entity_head;
+						tuple->bridge_entities[0] = tuple->servers[0];
+						tuple->bridge_entities[1] = tuple->clients[0];
 					}
 					else
 					{
