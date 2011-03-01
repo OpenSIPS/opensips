@@ -36,8 +36,6 @@
 #include "../presence/utils_func.h"
 #include "records.h"
 
-extern b2bl_cb_params_t cb_params;
-
 static void _print_entity(int index, b2bl_entity_id_t* c)
 {
 	LM_INFO("{%d} type=%d [%p]->[%.*s] state=%d no=%d peer=[%p]\n",
@@ -90,7 +88,7 @@ b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg,
 	}
 
 	size = sizeof(b2bl_tuple_t) + local_contact.len;
-	if(body && use_init_sdp)
+	if(body && (use_init_sdp || (scenario && scenario->use_init_sdp)))
 	{
 		size+= body->len;
 	}
@@ -104,7 +102,7 @@ b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg,
 	memset(tuple, 0, size);
 
 	size = sizeof(b2bl_tuple_t);
-	if(body && use_init_sdp)
+	if(body && (use_init_sdp || (scenario && scenario->use_init_sdp)))
 	{
 		tuple->sdp.s = (char*)tuple + sizeof(b2bl_tuple_t);
 		memcpy(tuple->sdp.s, body->s, body->len);
@@ -399,6 +397,7 @@ void b2bl_delete(b2bl_tuple_t* tuple, unsigned int hash_index,
 	b2bl_entity_id_t *e;
 	int i;
 	int index;
+	b2bl_cb_params_t cb_params;
 
 	LM_DBG("Delete record [%p]->[%.*s], hash_index=[%d], local_index=[%d]\n",
 			tuple, tuple->key->len, tuple->key->s, hash_index, tuple->id);
