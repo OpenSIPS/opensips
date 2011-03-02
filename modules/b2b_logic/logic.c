@@ -3443,7 +3443,11 @@ int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no)
 			b2b_api.send_reply(old_entity->type,&old_entity->key,METHOD_BYE,
 					200,&ok,0,0,old_entity->dlginfo);
 		else
-			b2b_end_dialog(old_entity, tuple);
+		{
+			b2b_api.send_request(old_entity->type, &old_entity->key, &method_bye,
+						0, 0, old_entity->dlginfo, 1);
+			old_entity->disconnected = 1;
+		}
 		if (old_entity->peer->peer == old_entity)
 			old_entity->peer->peer = NULL;
 		else
