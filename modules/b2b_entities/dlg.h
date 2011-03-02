@@ -180,10 +180,10 @@ typedef int (*b2b_send_reply_t)(enum b2b_entity_type et,str* b2b_key,int meth,
 		int code, str* text,str* body,str* extra_headers,b2b_dlginfo_t* dlginfo);
 
 typedef int (*b2b_send_request_t)(enum b2b_entity_type , str* , str* ,
-		str* , str*, b2b_dlginfo_t* );
+		str* , str*, b2b_dlginfo_t*, unsigned int );
 
 int b2b_send_request(enum b2b_entity_type et, str* b2b_key, str* method,
-		str* extra_headers, str* body, b2b_dlginfo_t*);
+		str* extra_headers, str* body, b2b_dlginfo_t*, unsigned int no_cb);
 
 void b2b_delete_record(b2b_dlg_t* dlg, b2b_table htable, unsigned int hash_index);
 

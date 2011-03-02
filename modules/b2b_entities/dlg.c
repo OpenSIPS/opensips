@@ -1358,7 +1358,7 @@ void free_tm_dlg(dlg_t* td)
 }
 
 int b2b_send_indlg_req(b2b_dlg_t* dlg, enum b2b_entity_type et,
-		str* b2b_key, str* method, str* ehdr, str* body)
+		str* b2b_key, str* method, str* ehdr, str* body, unsigned int no_cb)
 {
 	str* b2b_key_shm;
 	dlg_t* td = NULL;
@@ -1429,16 +1429,30 @@ int b2b_send_indlg_req(b2b_dlg_t* dlg, enum b2b_entity_type et,
 		tmb.setlocalTholder(&dlg->uac_tran);
 	}
 
-	td->T_flags=T_NO_AUTOACK_FLAG|T_PASS_PROVISIONAL_FLAG ;
 
-	result= tmb.t_request_within
-		(method,            /* method*/
-		ehdr,               /* extra headers*/
-		body,               /* body*/
-		td,                 /* dialog structure*/
-		tm_cback,           /* callback function*/
-		b2b_key_shm,        /* callback parameter*/
-		shm_free_param);
+	if (no_cb)
+	{
+		result= tmb.t_request_within
+			(method,            /* method*/
+			ehdr,               /* extra headers*/
+			body,               /* body*/
+			td,                 /* dialog structure*/
+			NULL,               /* callback function*/
+			NULL,               /* callback parameter*/
+			NULL);
+	}
+	else
+	{
+		td->T_flags = T_NO_AUTOACK_FLAG|T_PASS_PROVISIONAL_FLAG;
+		result= tmb.t_request_within
+			(method,            /* method*/
+			ehdr,               /* extra headers*/
+			body,               /* body*/
+			td,                 /* dialog structure*/
+			tm_cback,           /* callback function*/
+			b2b_key_shm,        /* callback parameter*/
+			shm_free_param);
+	}
 
 	tmb.setlocalTholder(0);
 
@@ -1468,9 +1482,11 @@ error:
  *	method  : the method for the request
  *	extra_headers  : the extra headers to be included in the request(optional)
  *	body    : the body to be included in the request(optional)
+ *	dlginfo : extra params for matching the dialog
+ *	no_cb   : no callback required
  * */
 int b2b_send_request(enum b2b_entity_type et, str* b2b_key, str* method,
-		str* extra_headers, str* body, b2b_dlginfo_t* dlginfo)
+		str* extra_headers, str* body, b2b_dlginfo_t* dlginfo, unsigned int no_cb)
 {
 	unsigned int hash_index, local_index;
 	b2b_dlg_t* dlg;
@@ -1559,7 +1575,7 @@ int b2b_send_request(enum b2b_entity_type et, str* b2b_key, str* method,
 			dlg->last_method == METHOD_INVITE)
 	{
 		/* send it ACK so that you can send the new request */
-		b2b_send_indlg_req(dlg, et, b2b_key, &ack, &ehdr, body);
+		b2b_send_indlg_req(dlg, et, b2b_key, &ack, &ehdr, body, no_cb);
 		dlg->state= B2B_ESTABLISHED;
 	}
 
@@ -1590,15 +1606,15 @@ int b2b_send_request(enum b2b_entity_type et, str* b2b_key, str* method,
 		{
 			if(dlg->state == B2B_CONFIRMED)
 			{
-				b2b_send_indlg_req(dlg, et, b2b_key, &ack, &ehdr, 0);
+				b2b_send_indlg_req(dlg, et, b2b_key, &ack, &ehdr, 0, no_cb);
 			}
-			ret = b2b_send_indlg_req(dlg, et, b2b_key, &bye, &ehdr, body);
+			ret = b2b_send_indlg_req(dlg, et, b2b_key, &bye, &ehdr, body, no_cb);
 			method_value = METHOD_BYE;
 		}
 	}
 	else
 	{
-		ret = b2b_send_indlg_req(dlg, et, b2b_key, method, &ehdr, body);
+		ret = b2b_send_indlg_req(dlg, et, b2b_key, method, &ehdr, body, no_cb);
 	}
 
 	if(ret < 0)

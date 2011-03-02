@@ -359,7 +359,7 @@ void b2b_end_dialog(b2bl_entity_id_t* bentity, b2bl_tuple_t* tuple)
 			}
 
 			b2b_api.send_request(bentity->type, &bentity->key, method,
-				0, 0, bentity->dlginfo);
+				0, 0, bentity->dlginfo, 0);
 
 			bentity->disconnected = 1;
 		}
@@ -667,7 +667,7 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 			bentity1->stats.call_time = 0;
 
 			if(b2b_api.send_request(bentity1->type, &bentity1->key, &method_invite,
-				extra_headers, body, bentity1->dlginfo)< 0)
+				extra_headers, body, bentity1->dlginfo, 0)< 0)
 			{
 				LM_ERR("Failed to send second ACK in bridging scenario\n");
 				return -1;
@@ -716,7 +716,7 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 			LM_DBG("Don't send body because the tuple already has a body - so it was used in invite\n");
 
 		if(b2b_api.send_request(bentity0->type, &bentity0->key, &method_ack,
-				extra_headers, ack_body, bentity0->dlginfo) < 0)
+				extra_headers, ack_body, bentity0->dlginfo, 0) < 0)
 		{
 			LM_ERR("Failed to send first ACK in bridging scenario\n");
 			return -1;
@@ -724,7 +724,7 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 
 		/* send ACK without a body to the second entity */
 		if(b2b_api.send_request(bentity1->type, &bentity1->key, &method_ack,
-			 0, 0, bentity1->dlginfo)< 0)
+			 0, 0, bentity1->dlginfo, 0)< 0)
 		{
 			LM_ERR("Failed to send second ACK in bridging scenario\n");
 			return -1;
@@ -772,7 +772,7 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 		bentity0->stats.setup_time = get_ticks() - bentity0->stats.start_time;
 		bentity0->stats.start_time = get_ticks();
 		if(b2b_api.send_request(bentity0->type, &bentity0->key, &method_invite,
-			extra_headers, body, bentity0->dlginfo)< 0)
+			extra_headers, body, bentity0->dlginfo, 0)< 0)
 		{
 			LM_ERR("Failed to send second Invite in bridging scenario\n");
 			return -1;
@@ -1120,7 +1120,7 @@ int b2b_logic_notify_reply(int src, struct sip_msg* msg, str* key, str* body, st
 							if(b2b_api.send_request(e->type, &e->key,
 										&method_cancel,
 										NULL, NULL,
-										e->dlginfo) < 0)
+										e->dlginfo, 0) < 0)
 							{
 								LM_ERR("Sending request"
 									" failed [%.*s]\n",
@@ -1657,7 +1657,7 @@ int b2b_logic_notify_request(int src, struct sip_msg* msg, str* key, str* body, 
 			LM_DBG("End dialog\n");
 			entity->disconnected = 1;
 			b2b_api.send_request(entity->type, &entity->key,
-					&method_bye, 0, 0, entity->dlginfo);
+					&method_bye, 0, 0, entity->dlginfo, 0);
 			if(entity->peer)
 				entity->peer->peer = NULL;
 			peer = entity->peer = NULL;
@@ -1702,7 +1702,7 @@ send_usual_request:
 				method.len, method.s, peer->key.len, peer->key.s);
 			if(b2b_api.send_request(peer->type, &peer->key, &method,
 				extra_headers->len?extra_headers:0, body->len?body:0,
-				peer->dlginfo) < 0)
+				peer->dlginfo, 0) < 0)
 			{
 				LM_ERR("Sending request failed [%.*s]\n", peer->key.len, peer->key.s);
 			}
@@ -2063,7 +2063,7 @@ entity_search_done:
 		old_entity->stats.call_time = 0;
 		/* TODO -> Do I need some other info here? */
 		b2b_api.send_request(old_entity->type, &old_entity->key, &method_invite,
-				 &maxfwd_hdr, 0, old_entity->dlginfo);
+				 &maxfwd_hdr, 0, old_entity->dlginfo, 0);
 		old_entity->state = 0;
 	}
 	else
@@ -3067,7 +3067,7 @@ int b2bl_bridge(str* key, str* new_dst, str* new_from_dname, int entity_no)
 
 		tuple->scenario_state = B2B_BRIDGING_STATE;
 		if(b2b_api.send_request(B2B_SERVER, &tuple->servers[0]->key, &method_invite,
-				 0, 0, tuple->servers[0]->dlginfo) < 0)
+				 0, 0, tuple->servers[0]->dlginfo, 0) < 0)
 		{
 			LM_ERR("Failed to send INVITE request\n");
 			goto error;
@@ -3350,7 +3350,7 @@ int b2bl_bridge_2calls(str* key1, str* key2)
 	e1->stats.start_time = get_ticks();
 	e1->stats.call_time = 0;
 	if(b2b_api.send_request(e1->type, &e1->key, &method_invite, &maxfwd_hdr,
-			0, e1->dlginfo) > 0)
+			0, e1->dlginfo, 0) > 0)
 	{
 		LM_ERR("Failed to send reInvite\n");
 		goto error;
@@ -3526,7 +3526,7 @@ int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no)
 	}
 
 	if(b2b_api.send_request(bridging_entity->type, &bridging_entity->key, &method_invite,
-			NULL, &body, bridging_entity->dlginfo) > 0)
+			NULL, &body, bridging_entity->dlginfo, 0) > 0)
 	{
 		LM_ERR("Failed to send reInvite\n");
 		goto error;

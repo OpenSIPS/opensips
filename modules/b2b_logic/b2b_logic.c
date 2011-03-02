@@ -407,13 +407,13 @@ void b2bl_clean(unsigned int ticks, void* param)
 							!tuple->bridge_entities[0]->disconnected)
 						b2b_api.send_request(tuple->bridge_entities[0]->type,
 							&tuple->bridge_entities[0]->key, &bye, 0, 0,
-							 tuple->bridge_entities[0]->dlginfo);
+							 tuple->bridge_entities[0]->dlginfo, 0);
 					if(tuple->bridge_entities[1]->dlginfo &&
 							tuple->bridge_entities[1]->dlginfo->totag.s &&
 							!tuple->bridge_entities[1]->disconnected)
 						b2b_api.send_request(tuple->bridge_entities[1]->type,
 						&tuple->bridge_entities[1]->key, &bye, 0, 0,
-						tuple->bridge_entities[1]->dlginfo);
+						tuple->bridge_entities[1]->dlginfo, 0);
 				}
 				b2bl_delete(tuple, i, 0);
 			}
@@ -1121,7 +1121,7 @@ static struct mi_root* mi_b2b_bridge(struct mi_root* cmd, void* param)
 	{
 		old_entity->disconnected = 1;
 		b2b_api.send_request(old_entity->type, &old_entity->key,
-				&meth_bye, 0, 0, old_entity->dlginfo);
+				&meth_bye, 0, 0, old_entity->dlginfo, 0);
 	}
 
 	if (0 == b2bl_drop_entity(old_entity, tuple))
@@ -1150,7 +1150,7 @@ static struct mi_root* mi_b2b_bridge(struct mi_root* cmd, void* param)
 	tuple->scenario_state = B2B_BRIDGING_STATE;
 
 	b2b_api.send_request(bridging_entity->type, &bridging_entity->key, &meth_inv,
-				 0, 0, bridging_entity->dlginfo);
+				 0, 0, bridging_entity->dlginfo, 0);
 
 	lock_release(&b2bl_htable[hash_index].lock);
 
