@@ -3454,24 +3454,24 @@ int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no)
 			goto error;
 		}
 		old_entity->peer = NULL;
+
+		/* remove the disconected entity from the tuple */
+		if(0 == b2bl_drop_entity(old_entity, tuple))
+		{
+			LM_ERR("Inconsistent entity [%p] on tuple [%p]\n", old_entity, tuple);
+			b2bl_print_tuple(tuple, L_ERR);
+			goto error;
+		}
+
+		/* destroy the old_entity */
+		b2b_api.entity_delete(old_entity->type, &old_entity->key, old_entity->dlginfo);
+		if(old_entity->dlginfo)
+			shm_free(old_entity->dlginfo);
+		shm_free(old_entity);
+		old_entity = NULL;
+
+		b2bl_print_tuple(tuple, L_DBG);
 	}
-
-	/* remove the disconected entity from the tuple */
-	if(0 == b2bl_drop_entity(old_entity, tuple))
-	{
-		LM_ERR("Inconsistent entity [%p] on tuple [%p]\n", old_entity, tuple);
-		b2bl_print_tuple(tuple, L_ERR);
-		goto error;
-	}
-
-	/* destroy the old_entity */
-	b2b_api.entity_delete(old_entity->type, &old_entity->key, old_entity->dlginfo);
-	if(old_entity->dlginfo)
-		shm_free(old_entity->dlginfo);
-	shm_free(old_entity);
-	old_entity = NULL;
-
-	b2bl_print_tuple(tuple, L_DBG);
 
 	/* create server entity from Invite */
 	if(b2b_msg_get_from(msg, &from_uri, &from_dname)< 0 || b2b_msg_get_to(msg, &to_uri)< 0)
