@@ -993,7 +993,7 @@ b2b_dlg_t* b2b_new_dlg(struct sip_msg* msg, str* local_contact,
 	}
 
 	if(!on_reply)
-		dlg.id = core_hash(&dlg.tag[CALLER_LEG], &dlg.ruri, server_hsize);
+		dlg.id = core_hash(&dlg.ruri, &msg->via1->branch->value, server_hsize);
 
 	if(param)
 		dlg.param = *param;
