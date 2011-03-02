@@ -851,7 +851,7 @@ int calculate_routeset_length(dlg_t* _d)
 	len = 0;
 	ptr = _d->hooks.first_route;
 
-	if (ptr) {
+	if (ptr || _d->hooks.last_route) {
 		len = ROUTE_PREFIX_LEN;
 		len += CRLF_LEN;
 	}
@@ -860,11 +860,12 @@ int calculate_routeset_length(dlg_t* _d)
 		len += ptr->len;
 		ptr = ptr->next;
 		if (ptr) len += ROUTE_SEPARATOR_LEN;
-	} 
+	}
 
 	if (_d->hooks.last_route) {
-		len += ROUTE_SEPARATOR_LEN + 2; /* < > */
-		len += _d->hooks.last_route->len;
+		if (_d->hooks.first_route) 
+			len += ROUTE_SEPARATOR_LEN;
+		len += _d->hooks.last_route->len + 2; /* < > */
 	}
 
 	return len;
@@ -895,7 +896,7 @@ char* print_routeset(char* buf, dlg_t* _d)
 			memcpy(buf, ROUTE_SEPARATOR, ROUTE_SEPARATOR_LEN);
 			buf += ROUTE_SEPARATOR_LEN;
 		}
-	} 
+	}
 
 	if (_d->hooks.last_route) {
 		if (_d->hooks.first_route) {
