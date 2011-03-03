@@ -60,6 +60,8 @@ extern b2b_scenario_t* script_scenarios;
 extern int_str b2bl_key_avp_name;
 extern unsigned short b2bl_key_avp_type;
 
+struct to_body* get_b2bl_from(struct sip_msg* msg);
+
 int b2b_scenario_parse_uri(xmlNodePtr value_node, char* value_content,
 		b2bl_tuple_t* tuple, struct sip_msg* msg, str* client_to);
 
@@ -212,6 +214,14 @@ int b2b_msg_get_to(struct sip_msg* msg, str* to_uri)
 int b2b_msg_get_from(struct sip_msg* msg, str* from_uri, str* from_dname)
 {
 	struct to_body *pfrom;
+
+	pfrom = get_b2bl_from(msg);
+	if (pfrom)
+	{
+		*from_uri = pfrom->uri;
+		*from_dname = pfrom->display;
+		return 0;
+	}
 
 	/* examine the from header */
 	if (!msg->from || !msg->from->body.s)

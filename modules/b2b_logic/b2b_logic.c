@@ -40,6 +40,7 @@
 #include "../../parser/parse_from.h"
 #include "../../parser/parse_content.h"
 #include "../../ut.h"
+#include "../../trim.h"
 #include "../../mem/mem.h"
 #include "../../mod_fix.h"
 
@@ -102,6 +103,14 @@ static unsigned int max_duration = 12*3600;
 int_str b2bl_key_avp_name;
 unsigned short b2bl_key_avp_type;
 static str b2bl_key_avp_param = {NULL, 0};
+
+static str b2bl_from_spec_param = {NULL, 0};
+static pv_spec_t b2bl_from_spec;
+static pv_value_t b2bl_from_tok;
+static struct to_body b2bl_from;
+
+#define B2BL_FROM_BUF_LEN    255
+static char b2bl_from_buf[B2BL_FROM_BUF_LEN + 1];
 
 static str db_url= {0, 0};
 static db_con_t *b2bl_db = NULL;
@@ -166,6 +175,7 @@ static param_export_t params[]=
 	{"dbtable",         STR_PARAM,                &dbtable.s                 },
 	{"max_duration",    INT_PARAM,                &max_duration              },
 	{"b2bl_key_avp",    STR_PARAM,                &b2bl_key_avp_param.s      },
+	{"b2bl_from_spec_param",STR_PARAM,            &b2bl_from_spec_param.s    },
 	{"server_address",  STR_PARAM,                &server_address.s          },
 	{0,                    0,                          0                     }
 };
@@ -315,6 +325,26 @@ static int mod_init(void)
 	} else {
 		b2bl_key_avp_name.n = 0;
 		b2bl_key_avp_type = 0;
+	}
+
+	if(b2bl_from_spec_param.s)
+	{
+		b2bl_from_spec_param.len = strlen(b2bl_from_spec_param.s);
+		if(pv_parse_spec(&b2bl_from_spec_param, &b2bl_from_spec)==NULL)
+		{
+			LM_ERR("failed to parse b2bl_from spec\n");
+			return E_CFG;
+		}
+		switch(b2bl_from_spec.type) {
+			case PVT_NONE:
+			case PVT_EMPTY:
+			case PVT_NULL:
+			case PVT_MARKER:
+			case PVT_COLOR:
+				LM_ERR("invalid b2bl_from spec\n");
+				return -1;
+			default: ;
+		}
 	}
 
 	/* parse extra headers */
@@ -780,6 +810,58 @@ static int fixup_b2b_logic(void** param, int param_no)
 	LM_ERR( "null format\n");
 	return E_UNSPEC;
 }
+
+
+struct to_body* get_b2bl_from(struct sip_msg* msg)
+{
+	int len = 0;
+
+	if(b2bl_from_spec_param.s)
+	{
+		memset(&b2bl_from_tok, 0, sizeof(pv_value_t));
+		if(pv_get_spec_value(msg, &b2bl_from_spec, &b2bl_from_tok) < 0)
+		{
+			LM_ERR("Failed to get b2bl_from value\n");
+			return NULL;
+		}
+		//LM_DBG("got b2bl_from_spec_param flags [%d]\n", b2bl_from_tok.flags);
+		if(b2bl_from_tok.flags&PV_VAL_STR)
+		{
+			//LM_DBG("got PV_SPEC b2bl_from [%.*s]\n",
+			//	b2bl_from_tok.rs.len, b2bl_from_tok.rs.s);
+			if(b2bl_from_tok.rs.len+CRLF_LEN > B2BL_FROM_BUF_LEN) {
+				LM_ERR("Buffer overflow");
+				return NULL;
+			}
+			trim(&b2bl_from_tok.rs);
+			memcpy(b2bl_from_buf, b2bl_from_tok.rs.s,
+				b2bl_from_tok.rs.len);
+			len = b2bl_from_tok.rs.len;
+			if(strncmp(b2bl_from_tok.rs.s + len - CRLF_LEN, CRLF, CRLF_LEN)) {
+				memcpy(b2bl_from_buf + len, CRLF, CRLF_LEN);
+				len+= CRLF_LEN;
+			}
+
+			parse_to(b2bl_from_buf, b2bl_from_buf+len,
+				&b2bl_from);
+			if (b2bl_from.error != PARSE_OK) {
+				LM_ERR("Failed to parse PV_SPEC b2bl_from [%.*s]\n",
+					len, b2bl_from_buf);
+				return NULL;
+			}
+			if (parse_uri(b2bl_from.uri.s, b2bl_from.uri.len,
+					&b2bl_from.parsed_uri)<0) {
+				LM_ERR("failed to parse PV_SPEC b2bl_from uri [%.*s]\n",
+					b2bl_from.uri.len, b2bl_from.uri.s);
+				return NULL;
+			}
+			return &b2bl_from;
+		}
+	}
+
+	return NULL;
+}
+
 
 b2b_scenario_t* get_scenario_id(str* sid)
 {
