@@ -257,7 +257,7 @@ modparam("b2b_logic", "max_duration", 7200)
 	</section>
 
 	<section>
-		<title><varname>b2bl_key_avp</varname> (int)</title>
+		<title><varname>b2bl_key_avp</varname> (string)</title>
 		<para>
 			The name of the Attribute-Value-Pair (AVP) used to store the
 			b2b_logic entity key.  The avp will be set after calling
@@ -274,6 +274,34 @@ modparam("b2b_logic", "max_duration", 7200)
 ...
 modparam("b2b_logic", "b2bl_key_avp", "$avp(i:99)")
 ...
+	</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>b2bl_from_param_spec</varname> (string)</title>
+		<para>
+			The name of the pseudo variable for storing the new
+			<quote>From</quote> header.
+			The PV must be set before calling <quote>b2b_init_request</quote>.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>NULL</quote> (disabled).</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>b2bl_from_param_spec</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("b2b_logic", "b2bl_from_param_spec", "$var(b2bl_from)")
+...
+route{
+	...
+	# setting the From header
+	$var(b2bl_from) = "\"Call ID\" &lt;sip:user@opensips.org&gt;";
+	...
+	b2b_init_request("top hiding");
+	...
+}
 	</programlisting>
 		</example>
 	</section>
