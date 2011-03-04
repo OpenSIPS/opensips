@@ -816,10 +816,8 @@ static int do_routing_12(struct sip_msg* msg, char* grp, char* order)
 
 static int use_next_gw(struct sip_msg* msg)
 {
-	struct usr_avp *avp,*avp2;
+	struct usr_avp *avp, *avp_ru,*avp2;
 	int_str val;
-	
-	
 	str ruri;
 	int ok;
 	pgw_t * dst;
@@ -827,15 +825,15 @@ static int use_next_gw(struct sip_msg* msg)
 	while(1)
 	{
 		/* search for the first RURI AVP containing a string */
+		avp_ru = NULL;
 		do {
-			avp = search_first_avp(ruri_avp.type, ruri_avp.name, &val, 0);
-		}while (avp && (avp->flags&AVP_VAL_STR)==0 );
+			if (avp_ru) destroy_avp(avp_ru);
+			avp_ru = search_first_avp( ruri_avp.type, ruri_avp.name, &val, 0);
+		}while (avp_ru && (avp_ru->flags&AVP_VAL_STR)==0 );
 
-		if (!avp) return -1;
+		if (!avp_ru) return -1;
 
 		ruri = val.s;
-
-		destroy_avp(avp);
 		LM_DBG("new RURI set to <%.*s>\n", val.s.len,val.s.s);
 
 		/* remove the old attrs */
@@ -853,39 +851,36 @@ static int use_next_gw(struct sip_msg* msg)
 			avp = search_first_avp(gw_id_avp.type, gw_id_avp.name, NULL, 0);
 		}while (avp && (avp->flags&AVP_VAL_STR)!=0 );
 
-
-		/* get value for next gw ID from avp,
-		 * remove old gw ID
-		 */
+		/* get value for next gw ID from avp, remove old gw ID */
 		avp2 = NULL;
-		if (avp)
-		{
+		if (avp) {
 			avp2 = search_next_avp(avp,&val);
 			destroy_avp(avp);
 		}
 
-		if( avp2 != NULL)
-		{
-			lock_start_read( ref_lock );
-
-			ok = 0;
-			for(dst=(*rdata)->pgw_l; dst ;dst=dst->next)
-			{
-				if( dst->id == val.n && (dst->flags & DR_DST_STAT_DSBL_FLAG)  == 0 )
-					ok = 1;
-			}
-		
-			lock_stop_read( ref_lock );
-
-			if( ok )
-				break;
-
-		}
-		else
-		{
+		/* if no other ID found, simply use the GW as good */
+		if( avp2==NULL)
 			break;
+
+		/* we have an ID, so we can check the GW state */
+		lock_start_read( ref_lock );
+
+		for( ok=0,dst=(*rdata)->pgw_l; dst ;dst=dst->next) {
+			if ( dst->id == val.n) {
+				/*GW found */
+				if ((dst->flags & DR_DST_STAT_DSBL_FLAG) == 0 )
+					ok = 1;
+				break;
+			}
 		}
 
+		lock_stop_read( ref_lock );
+
+		if ( ok )
+			break;
+
+		/* search for the next available GW*/
+		destroy_avp(avp_ru);
 	}
 
 	if (set_ruri( msg, &ruri)==-1) {
@@ -893,6 +888,7 @@ static int use_next_gw(struct sip_msg* msg)
 		return -1;
 	}
 
+	destroy_avp(avp_ru);
 
 	return 1;
 }
