@@ -825,6 +825,11 @@ struct to_body* get_b2bl_from(struct sip_msg* msg)
 			return NULL;
 		}
 		//LM_DBG("got b2bl_from_spec_param flags [%d]\n", b2bl_from_tok.flags);
+		if(b2bl_from_tok.flags&PV_VAL_INT)
+		{
+			/* the PV might be empty */
+			return NULL;
+		}
 		if(b2bl_from_tok.flags&PV_VAL_STR)
 		{
 			//LM_DBG("got PV_SPEC b2bl_from [%.*s]\n",
