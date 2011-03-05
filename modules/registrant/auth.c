@@ -63,25 +63,8 @@ static str cnonce = {"o", 1};
 struct hdr_field *get_autenticate_hdr(struct sip_msg *rpl,
 																int rpl_code)
 {
-	struct hdr_field *hdr;
+	struct hdr_field *hdr = NULL;
 	str hdr_name;
-
-	/* what hdr should we look for */
-	if (rpl_code==WWW_AUTH_CODE)
-	{
-		hdr_name.s = WWW_AUTH_HDR;
-		hdr_name.len = WWW_AUTH_HDR_LEN;
-	} else if (rpl_code==PROXY_AUTH_CODE) {
-		hdr_name.s = PROXY_AUTH_HDR;
-		hdr_name.len = PROXY_AUTH_HDR_LEN;
-	} else {
-		LM_ERR("reply is not an "
-			"auth request\n");
-		goto error;
-	}
-
-	LM_DBG("looking for header \"%.*s\"\n",
-		hdr_name.len, hdr_name.s);
 
 	/* search the auth hdr, but first parse them all */
 	if (parse_headers( rpl, HDR_EOH_F, 0)<0)
@@ -89,7 +72,23 @@ struct hdr_field *get_autenticate_hdr(struct sip_msg *rpl,
 		LM_ERR("failed to parse reply\n");
 		goto error;
 	}
-	hdr = get_header_by_name( rpl , hdr_name.s, hdr_name.len);
+
+	/* what hdr should we look for */
+	if (rpl_code==WWW_AUTH_CODE)
+	{
+		hdr_name.s = WWW_AUTH_HDR;
+		hdr_name.len = WWW_AUTH_HDR_LEN;
+		hdr = rpl->www_authenticate;
+	} else if (rpl_code==PROXY_AUTH_CODE) {
+		hdr_name.s = PROXY_AUTH_HDR;
+		hdr_name.len = PROXY_AUTH_HDR_LEN;
+		hdr = rpl->proxy_authenticate;
+	} else {
+		LM_ERR("reply is not an "
+			"auth request\n");
+		goto error;
+	}
+
 	if (hdr)
 		return hdr;
 
