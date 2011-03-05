@@ -66,6 +66,8 @@
 #define _ards_ 0x73647261   /* "ards" */
 #define _prox_ 0x786f7270   /* "prox" */
 #define _y_au_ 0x75612d79   /* "y-au" */
+#define _then_ 0x6e656874   /* "then" */
+#define _tica_ 0x61636974   /* "tica" */
 #define _thor_ 0x726f6874   /* "thor" */
 #define _izat_ 0x74617a69   /* "izat" */
 #define _ion2_ 0x206e6f69   /* "ion " */

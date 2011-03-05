@@ -211,6 +211,12 @@ void clean_hdr_field(struct hdr_field* hf)
 			hf->parsed = NULL;
 			break;
 
+		case HDR_WWW_AUTHENTICATE_T:
+			break;
+
+		case HDR_PROXY_AUTHENTICATE_T:
+			break;
+
 		default:
 			LM_CRIT("unknown header type %d\n", hf->type);
 			break;

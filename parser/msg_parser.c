@@ -225,6 +225,8 @@ char* get_hdr_field(char* buf, char* end, struct hdr_field* hdr)
 		case HDR_PRIVACY_T:
 		case HDR_RETRY_AFTER_T:
 		case HDR_CALL_INFO_T:
+		case HDR_WWW_AUTHENTICATE_T:
+		case HDR_PROXY_AUTHENTICATE_T:
 		case HDR_OTHER_T:
 			/* just skip over it */
 			hdr->body.s=tmp;
@@ -447,6 +449,14 @@ int parse_headers(struct sip_msg* msg, hdr_flags_t flags, int next)
 			case HDR_CALL_INFO_T:
 				link_sibling_hdr(call_info,hf);
 				msg->parsed_flag|=HDR_CALL_INFO_F;
+				break;
+			case HDR_WWW_AUTHENTICATE_T:
+				link_sibling_hdr(www_authenticate,hf);
+				msg->parsed_flag|=HDR_WWW_AUTHENTICATE_F;
+				break;
+			case HDR_PROXY_AUTHENTICATE_T:
+				link_sibling_hdr(proxy_authenticate,hf);
+				msg->parsed_flag|=HDR_PROXY_AUTHENTICATE_F;
 				break;
 			case HDR_REFER_TO_T:
 				if (msg->refer_to==0) msg->refer_to = hf;

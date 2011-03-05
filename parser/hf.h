@@ -89,6 +89,8 @@ enum _hdr_types_t {
 	HDR_PRIVACY_T				     /**< Privacy header field */,
 	HDR_RETRY_AFTER_T			     /**< Retry-After header field */,
 	HDR_CALL_INFO_T				     /**< Call-Info header field */,
+	HDR_WWW_AUTHENTICATE_T				/**< WWW-Authenticate header field */,
+	HDR_PROXY_AUTHENTICATE_T			/**< Proxy-Authenticate header field */,
 	HDR_EOH_T					     /**< Some other header field */
 };
 
@@ -150,6 +152,8 @@ typedef unsigned long long hdr_flags_t;
 #define HDR_PRIVACY_F				HDR_F_DEF(PRIVACY)
 #define HDR_RETRY_AFTER_F			HDR_F_DEF(RETRY_AFTER)
 #define HDR_CALL_INFO_F				HDR_F_DEF(CALL_INFO)
+#define HDR_WWW_AUTHENTICATE_F			HDR_F_DEF(WWW_AUTHENTICATE)
+#define HDR_PROXY_AUTHENTICATE_F		HDR_F_DEF(PROXY_AUTHENTICATE)
 #define HDR_OTHER_F					HDR_F_DEF(OTHER)
 
 typedef enum _hdr_types_t hdr_types_t;

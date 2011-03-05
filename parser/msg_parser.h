@@ -222,6 +222,8 @@ struct sip_msg {
 	struct hdr_field* pai;
 	struct hdr_field* privacy;
 	struct hdr_field* call_info;
+	struct hdr_field* www_authenticate;
+	struct hdr_field* proxy_authenticate;
 
 	struct sdp_info* sdp;
 

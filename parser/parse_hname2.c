@@ -88,6 +88,7 @@ static inline char* skip_ws(char* p, unsigned int size)
 #include "case_p_as.h"     /* P-Asserted-Identity */
 #include "case_priv.h"     /* Privacy */
 #include "case_retr.h"     /* Retry-After */
+#include "case_www.h"      /* WWW-Authenticate */
 
 
 #define READ(val) \
@@ -127,6 +128,7 @@ static inline char* skip_ws(char* p, unsigned int size)
 	case _p_as_: p_as_CASE; \
 	case _priv_: priv_CASE; \
 	case _retr_: retr_CASE; \
+	case _www__: www_CASE;  \
 
 
 #define PARSE_COMPACT(id)          \

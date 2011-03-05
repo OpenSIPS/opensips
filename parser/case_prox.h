@@ -55,16 +55,35 @@
                 goto other;        \
         }
 
+#define TE_CASE                                                      \
+	if ( LOWER_BYTE(*p) == 't'  && LOWER_BYTE(*(p+1)) == 'e' ) { \
+		hdr->type = HDR_PROXY_AUTHENTICATE_T;                \
+		p += 2;                                              \
+		goto dc_end;                                         \
+	}
 
-#define THOR_CASE                  \
+#define TICA_CASE                  \
         switch(LOWER_DWORD(val)) { \
-        case _thor_:               \
+        case _tica_:               \
                 p += 4;            \
                 val = READ(p);     \
-                IZAT_CASE;         \
+                TE_CASE;           \
                 goto other;        \
         }
 
+#define TH2_CASE                   \
+	switch(LOWER_DWORD(val)) { \
+	case _thor_:               \
+		p += 4;            \
+		val = READ(p);     \
+		IZAT_CASE;         \
+		goto other;        \
+	case _then_:               \
+		p += 4;            \
+		val = READ(p);     \
+		TICA_CASE;         \
+		goto other;        \
+	}
 
 #define QUIR_CASE                                     \
         switch(LOWER_DWORD(val)) {                    \
@@ -85,7 +104,7 @@
         case _y_au_:               \
                 p += 4;            \
                 val = READ(p);     \
-                THOR_CASE;         \
+                TH2_CASE;          \
                 goto other;        \
                                    \
         case _y_re_:               \
