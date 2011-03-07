@@ -37,47 +37,140 @@
 #include "../../pvar.h"
 #include "../../data_lump.h"
 #include "../../mem/mem.h"
+#include "../../md5global.h"
+#include "../../md5.h"
+#include "../../parser/parse_authenticate.h"
 #include "../tm/tm_load.h"
 
-#include "../../parser/parse_authenticate.h"
-
 #include "auth.h"
-#include "auth_alg.h"
-#include "auth_hdr.h"
-
-
-#define  duplicate_str(_strd, _strs, _error) \
-	do { \
-		_strd.s = (char*)pkg_malloc(_strs.len); \
-		if (_strd.s==0) \
-		{ \
-			LM_ERR("no more pkg memory\n");\
-			goto _error; \
-		} \
-		memcpy( _strd.s, _strs.s, _strs.len); \
-		_strd.len = _strs.len; \
-	}while(0)
 
 
 static str nc = {"00000001", 8};
 static str cnonce = {"o", 1};
 
-struct authenticate_body *get_autenticate_info(struct sip_msg *rpl,
-																int rpl_code)
-{
-	/* what hdr should we look for */
-	if (rpl_code==WWW_AUTH_CODE) {
-		if (0 == parse_www_authenticate_header(rpl))
-			return rpl->www_authenticate->parsed;
-	} else if (rpl_code==PROXY_AUTH_CODE) {
-		if (0 == parse_proxy_authenticate_header(rpl))
-			return rpl->proxy_authenticate->parsed;
-	} else {
-		LM_ERR("reply is not an auth request\n");
-		return NULL;
-	}
 
-	return NULL;
+static inline void cvt_hex(HASH bin, HASHHEX hex)
+{
+	unsigned short i;
+	unsigned char j;
+
+	for (i = 0; i<HASHLEN; i++)
+	{
+		j = (bin[i] >> 4) & 0xf;
+		if (j <= 9)
+		{
+			hex[i * 2] = (j + '0');
+		} else {
+			hex[i * 2] = (j + 'a' - 10);
+		}
+
+		j = bin[i] & 0xf;
+
+		if (j <= 9)
+		{
+			hex[i * 2 + 1] = (j + '0');
+		} else {
+			hex[i * 2 + 1] = (j + 'a' - 10);
+		}
+	};
+
+	hex[HASHHEXLEN] = '\0';
+}
+
+
+
+/* 
+ * calculate H(A1)
+ */
+void uac_calc_HA1( struct uac_credential *crd,
+		struct authenticate_body *auth,
+		str* cnonce,
+		HASHHEX sess_key)
+{
+	MD5_CTX Md5Ctx;
+	HASH HA1;
+
+	MD5Init(&Md5Ctx);
+	MD5Update(&Md5Ctx, crd->user.s, crd->user.len);
+	MD5Update(&Md5Ctx, ":", 1);
+	MD5Update(&Md5Ctx, crd->realm.s, crd->realm.len);
+	MD5Update(&Md5Ctx, ":", 1);
+	MD5Update(&Md5Ctx, crd->passwd.s, crd->passwd.len);
+	MD5Final(HA1, &Md5Ctx);
+
+	if ( auth->flags& AUTHENTICATE_MD5SESS )
+	{
+		MD5Init(&Md5Ctx);
+		MD5Update(&Md5Ctx, HA1, HASHLEN);
+		MD5Update(&Md5Ctx, ":", 1);
+		MD5Update(&Md5Ctx, auth->nonce.s, auth->nonce.len);
+		MD5Update(&Md5Ctx, ":", 1);
+		MD5Update(&Md5Ctx, cnonce->s, cnonce->len);
+		MD5Final(HA1, &Md5Ctx);
+	};
+
+	cvt_hex(HA1, sess_key);
+}
+
+
+
+/* 
+ * calculate H(A2)
+ */
+void uac_calc_HA2( str *method, str *uri,
+		struct authenticate_body *auth,
+		HASHHEX hentity,
+		HASHHEX HA2Hex )
+{
+	MD5_CTX Md5Ctx;
+	HASH HA2;
+
+	MD5Init(&Md5Ctx);
+	MD5Update(&Md5Ctx, method->s, method->len);
+	MD5Update(&Md5Ctx, ":", 1);
+	MD5Update(&Md5Ctx, uri->s, uri->len);
+
+	if ( auth->flags&QOP_AUTH_INT)
+	{
+		MD5Update(&Md5Ctx, ":", 1);
+		MD5Update(&Md5Ctx, hentity, HASHHEXLEN);
+	};
+
+	MD5Final(HA2, &Md5Ctx);
+	cvt_hex(HA2, HA2Hex);
+}
+
+
+
+/* 
+ * calculate request-digest/response-digest as per HTTP Digest spec 
+ */
+void uac_calc_response( HASHHEX ha1, HASHHEX ha2,
+		struct authenticate_body *auth,
+		str* nc, str* cnonce,
+		HASHHEX response)
+{
+	MD5_CTX Md5Ctx;
+	HASH RespHash;
+
+	MD5Init(&Md5Ctx);
+	MD5Update(&Md5Ctx, ha1, HASHHEXLEN);
+	MD5Update(&Md5Ctx, ":", 1);
+	MD5Update(&Md5Ctx, auth->nonce.s, auth->nonce.len);
+	MD5Update(&Md5Ctx, ":", 1);
+
+	if ( auth->qop.len)
+	{
+		MD5Update(&Md5Ctx, nc->s, nc->len);
+		MD5Update(&Md5Ctx, ":", 1);
+		MD5Update(&Md5Ctx, cnonce->s, cnonce->len);
+		MD5Update(&Md5Ctx, ":", 1);
+		MD5Update(&Md5Ctx, auth->qop.s, auth->qop.len);
+		MD5Update(&Md5Ctx, ":", 1);
+	};
+	MD5Update(&Md5Ctx, ha2, HASHHEXLEN);
+	MD5Final(RespHash, &Md5Ctx);
+	cvt_hex(RespHash, response);
 }
 
 
@@ -109,5 +202,149 @@ void do_uac_auth(str *method, str *uri, struct uac_credential *crd,
 	}
 }
 
+
+
+#define AUTHORIZATION_HDR_START       "Authorization: Digest "
+#define AUTHORIZATION_HDR_START_LEN   (sizeof(AUTHORIZATION_HDR_START)-1)
+
+#define PROXY_AUTHORIZATION_HDR_START      "Proxy-Authorization: Digest "
+#define PROXY_AUTHORIZATION_HDR_START_LEN  \
+	(sizeof(PROXY_AUTHORIZATION_HDR_START)-1)
+
+#define USERNAME_FIELD_S         "username=\""
+#define USERNAME_FIELD_LEN       (sizeof(USERNAME_FIELD_S)-1)
+#define REALM_FIELD_S            "realm=\""
+#define REALM_FIELD_LEN          (sizeof(REALM_FIELD_S)-1)
+#define NONCE_FIELD_S            "nonce=\""
+#define NONCE_FIELD_LEN          (sizeof(NONCE_FIELD_S)-1)
+#define URI_FIELD_S              "uri=\""
+#define URI_FIELD_LEN            (sizeof(URI_FIELD_S)-1)
+#define OPAQUE_FIELD_S           "opaque=\""
+#define OPAQUE_FIELD_LEN         (sizeof(OPAQUE_FIELD_S)-1)
+#define RESPONSE_FIELD_S         "response=\""
+#define RESPONSE_FIELD_LEN       (sizeof(RESPONSE_FIELD_S)-1)
+#define ALGORITHM_FIELD_S        "algorithm=MD5"
+#define ALGORITHM_FIELD_LEN       (sizeof(ALGORITHM_FIELD_S)-1)
+#define FIELD_SEPARATOR_S        "\", "
+#define FIELD_SEPARATOR_LEN      (sizeof(FIELD_SEPARATOR_S)-1)
+#define FIELD_SEPARATOR_UQ_S     ", "
+#define FIELD_SEPARATOR_UQ_LEN   (sizeof(FIELD_SEPARATOR_UQ_S)-1)
+
+#define QOP_FIELD_S              "qop="
+#define QOP_FIELD_LEN            (sizeof(QOP_FIELD_S)-1)
+#define NC_FIELD_S               "nc="
+#define NC_FIELD_LEN             (sizeof(NC_FIELD_S)-1)
+#define CNONCE_FIELD_S           "cnonce=\""
+#define CNONCE_FIELD_LEN         (sizeof(CNONCE_FIELD_S)-1)
+
+#define add_string( _p, _s, _l) \
+	do {\
+		memcpy( _p, _s, _l);\
+		_p += _l; \
+	}while(0)
+
+
+str* build_authorization_hdr(int code, str *uri, 
+		struct uac_credential *crd, struct authenticate_body *auth,
+		struct authenticate_nc_cnonce *auth_nc_cnonce, char *response)
+{
+	static str hdr;
+	char *p;
+	int len;
+	int response_len;
+
+	response_len = strlen(response);
+
+	/* compile then len */
+	len = (code==401?
+		AUTHORIZATION_HDR_START_LEN:PROXY_AUTHORIZATION_HDR_START_LEN) +
+		USERNAME_FIELD_LEN + crd->user.len + FIELD_SEPARATOR_LEN +
+		REALM_FIELD_LEN + crd->realm.len + FIELD_SEPARATOR_LEN +
+		NONCE_FIELD_LEN + auth->nonce.len + FIELD_SEPARATOR_LEN +
+		URI_FIELD_LEN + uri->len + FIELD_SEPARATOR_LEN +
+		(auth->opaque.len?
+			(OPAQUE_FIELD_LEN + auth->opaque.len + FIELD_SEPARATOR_LEN):0) +
+		RESPONSE_FIELD_LEN + response_len + FIELD_SEPARATOR_LEN +
+		ALGORITHM_FIELD_LEN + CRLF_LEN;
+	if((auth->flags&QOP_AUTH) || (auth->flags&QOP_AUTH_INT))
+		len += QOP_FIELD_LEN + 4 /*auth*/ + FIELD_SEPARATOR_UQ_LEN +
+				NC_FIELD_LEN + auth_nc_cnonce->nc->len + FIELD_SEPARATOR_UQ_LEN +
+				CNONCE_FIELD_LEN + auth_nc_cnonce->cnonce->len + FIELD_SEPARATOR_LEN;
+
+	hdr.s = (char*)pkg_malloc( len + 1);
+	if (hdr.s==0)
+	{
+		LM_ERR("no more pkg mem\n");
+		goto error;
+	}
+
+	p = hdr.s;
+	/* header start */
+	if (code==401)
+	{
+		add_string( p, AUTHORIZATION_HDR_START USERNAME_FIELD_S,
+			AUTHORIZATION_HDR_START_LEN+USERNAME_FIELD_LEN);
+	} else {
+		add_string( p, PROXY_AUTHORIZATION_HDR_START USERNAME_FIELD_S,
+			PROXY_AUTHORIZATION_HDR_START_LEN+USERNAME_FIELD_LEN);
+	}
+	/* username */
+	add_string( p, crd->user.s, crd->user.len);
+	/* REALM */
+	add_string( p, FIELD_SEPARATOR_S REALM_FIELD_S,
+		FIELD_SEPARATOR_LEN+REALM_FIELD_LEN);
+	add_string( p, crd->realm.s, crd->realm.len);
+	/* NONCE */
+	add_string( p, FIELD_SEPARATOR_S NONCE_FIELD_S, 
+		FIELD_SEPARATOR_LEN+NONCE_FIELD_LEN);
+	add_string( p, auth->nonce.s, auth->nonce.len);
+	/* URI */
+	add_string( p, FIELD_SEPARATOR_S URI_FIELD_S,
+		FIELD_SEPARATOR_LEN+URI_FIELD_LEN);
+	add_string( p, uri->s, uri->len);
+	/* OPAQUE */
+	if (auth->opaque.len )
+	{
+		add_string( p, FIELD_SEPARATOR_S OPAQUE_FIELD_S, 
+			FIELD_SEPARATOR_LEN+OPAQUE_FIELD_LEN);
+		add_string( p, auth->opaque.s, auth->opaque.len);
+	}
+	if((auth->flags&QOP_AUTH) || (auth->flags&QOP_AUTH_INT))
+	{
+		add_string( p, FIELD_SEPARATOR_S QOP_FIELD_S, 
+			FIELD_SEPARATOR_LEN+QOP_FIELD_LEN);
+		add_string( p, "auth", 4);
+		add_string( p, FIELD_SEPARATOR_UQ_S NC_FIELD_S, 
+			FIELD_SEPARATOR_UQ_LEN+NC_FIELD_LEN);
+		add_string( p, auth_nc_cnonce->nc->s, auth_nc_cnonce->nc->len);
+		add_string( p, FIELD_SEPARATOR_UQ_S CNONCE_FIELD_S, 
+			FIELD_SEPARATOR_UQ_LEN+CNONCE_FIELD_LEN);
+		add_string( p, auth_nc_cnonce->cnonce->s, auth_nc_cnonce->cnonce->len);
+	}
+	/* RESPONSE */
+	add_string( p, FIELD_SEPARATOR_S RESPONSE_FIELD_S,
+		FIELD_SEPARATOR_LEN+RESPONSE_FIELD_LEN);
+	add_string( p, response, response_len);
+	/* ALGORITHM */
+	add_string( p, FIELD_SEPARATOR_S ALGORITHM_FIELD_S CRLF,
+		FIELD_SEPARATOR_LEN+ALGORITHM_FIELD_LEN+CRLF_LEN);
+
+	hdr.len = p - hdr.s;
+
+	if (hdr.len!=len)
+	{
+		LM_CRIT("BUG: bad buffer computation "
+			"(%d<>%d)\n",len,hdr.len);
+		pkg_free( hdr.s );
+		goto error;
+	}
+
+	LM_DBG("hdr is <%.*s>\n",
+		hdr.len,hdr.s);
+
+	return &hdr;
+error:
+	return 0;
+}
 
 

@@ -38,7 +38,7 @@
 #include "../../parser/parse_authenticate.h"
 #include "../../parser/contact/parse_contact.h"
 #include "reg_records.h"
-#include "auth_hdr.h"
+#include "auth.h"
 
 
 #define UAC_REGISTRAR_URI_PARAM			1
@@ -60,11 +60,6 @@
 #define RXS(m, str, i) (str) + (m)[i].rm_so
 
 #define RX_L_S(m, str, i) _l=(int)((m)[i].rm_eo - (m)[i].rm_so);_s=(str) + (m)[i].rm_so
-
-
-void do_uac_auth(str *method, str *uri, struct uac_credential *crd,
-		struct authenticate_body *auth, struct authenticate_nc_cnonce *auth_nc_cnonce,
-		HASHHEX response);
 
 
 /** Functions declarations */
@@ -416,7 +411,7 @@ void reg_tm_cback(struct cell *t, int type, struct tmcb_params *ps)
 	struct hdr_field *c_ptr, *head_contact;
 	struct uac_credential crd;
 	contact_t *contact;
-	struct authenticate_body *auth;
+	struct authenticate_body *auth = NULL;
 	static struct authenticate_nc_cnonce auth_nc_cnonce;
 	HASHHEX response;
 	str *new_hdr;
@@ -541,7 +536,13 @@ void reg_tm_cback(struct cell *t, int type, struct tmcb_params *ps)
 			return;
 		}
 
-		auth = get_autenticate_info(msg, statuscode);
+		if (statuscode==WWW_AUTH_CODE) {
+			if (0 == parse_www_authenticate_header(msg))
+				auth = get_www_authenticate(msg);
+		} else if (statuscode==PROXY_AUTH_CODE) {
+			if (0 == parse_proxy_authenticate_header(msg))
+				auth = get_proxy_authenticate(msg);
+		}
 		if (auth == NULL) {
 			LM_ERR("Unable to extract authentication info\n");
 			goto done;

@@ -41,6 +41,9 @@
 #define PROXY_AUTH_HDR_LEN  (sizeof(PROXY_AUTH_HDR)-1)
 
 
+#define HASHLEN 16
+typedef char HASH[HASHLEN];
+
 #define HASHHEXLEN 32
 typedef char HASHHEX[HASHHEXLEN+1];
 
@@ -50,8 +53,18 @@ struct uac_credential {
 	str passwd;
 };
 
+struct authenticate_nc_cnonce {
+	str *nc;
+	str *cnonce;
+};
+
 
 int uac_auth( struct sip_msg *msg);
-struct authenticate_body *get_autenticate_info(struct sip_msg *rpl, int rpl_code);
+void do_uac_auth(str *method, str *uri, struct uac_credential *crd,
+		struct authenticate_body *auth, struct authenticate_nc_cnonce *auth_nc_cnonce,
+		HASHHEX response);
+str* build_authorization_hdr(int code, str *uri,
+		struct uac_credential *crd, struct authenticate_body *auth,
+		struct authenticate_nc_cnonce *auth_nc_cnonce, char *response);
 
 #endif
