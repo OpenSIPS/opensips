@@ -51,6 +51,7 @@
 #include "parse_sst.h"
 #include "parse_content.h"
 #include "parse_call_info.h"
+#include "parse_authenticate.h"
 
 
 /*
@@ -212,9 +213,9 @@ void clean_hdr_field(struct hdr_field* hf)
 			break;
 
 		case HDR_WWW_AUTHENTICATE_T:
-			break;
-
 		case HDR_PROXY_AUTHENTICATE_T:
+			free_authenticate((struct authenticate_body *)hf->parsed);
+			hf->parsed = NULL;
 			break;
 
 		default:
