@@ -39,6 +39,8 @@
 #include "../../mem/mem.h"
 #include "../tm/tm_load.h"
 
+#include "../../parser/parse_authenticate.h"
+
 #include "auth.h"
 #include "auth_alg.h"
 #include "auth_hdr.h"
@@ -60,47 +62,28 @@
 static str nc = {"00000001", 8};
 static str cnonce = {"o", 1};
 
-struct hdr_field *get_autenticate_hdr(struct sip_msg *rpl,
+struct authenticate_body *get_autenticate_info(struct sip_msg *rpl,
 																int rpl_code)
 {
-	struct hdr_field *hdr = NULL;
-	str hdr_name;
-
-	/* search the auth hdr, but first parse them all */
-	if (parse_headers( rpl, HDR_EOH_F, 0)<0)
-	{
-		LM_ERR("failed to parse reply\n");
-		goto error;
-	}
-
 	/* what hdr should we look for */
-	if (rpl_code==WWW_AUTH_CODE)
-	{
-		hdr_name.s = WWW_AUTH_HDR;
-		hdr_name.len = WWW_AUTH_HDR_LEN;
-		hdr = rpl->www_authenticate;
+	if (rpl_code==WWW_AUTH_CODE) {
+		if (0 == parse_www_authenticate_header(rpl))
+			return rpl->www_authenticate->parsed;
 	} else if (rpl_code==PROXY_AUTH_CODE) {
-		hdr_name.s = PROXY_AUTH_HDR;
-		hdr_name.len = PROXY_AUTH_HDR_LEN;
-		hdr = rpl->proxy_authenticate;
+		if (0 == parse_proxy_authenticate_header(rpl))
+			return rpl->proxy_authenticate->parsed;
 	} else {
-		LM_ERR("reply is not an "
-			"auth request\n");
-		goto error;
+		LM_ERR("reply is not an auth request\n");
+		return NULL;
 	}
 
-	if (hdr)
-		return hdr;
-
-	LM_ERR("reply has no "
-		"auth hdr (%.*s)\n", hdr_name.len, hdr_name.s);
-error:
-	return 0;
+	return NULL;
 }
 
 
 void do_uac_auth(str *method, str *uri, struct uac_credential *crd,
-		struct authenticate_body *auth, HASHHEX response)
+		struct authenticate_body *auth, struct authenticate_nc_cnonce *auth_nc_cnonce,
+		HASHHEX response)
 {
 	HASHHEX ha1;
 	HASHHEX ha2;
@@ -115,8 +98,8 @@ void do_uac_auth(str *method, str *uri, struct uac_credential *crd,
 		uac_calc_HA2( method, uri, auth, 0/*hentity*/, ha2 );
 
 		uac_calc_response( ha1, ha2, auth, &nc, &cnonce, response);
-		auth->nc = &nc;
-		auth->cnonce = &cnonce;
+		auth_nc_cnonce->nc = &nc;
+		auth_nc_cnonce->cnonce = &cnonce;
 	} else {
 		/* do authentication */
 		uac_calc_HA1( crd, auth, 0/*cnonce*/, ha1);

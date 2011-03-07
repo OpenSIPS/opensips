@@ -35,6 +35,7 @@
 #include "../../sr_module.h"
 #include "../../timer.h"
 #include "../../parser/parse_uri.h"
+#include "../../parser/parse_authenticate.h"
 #include "../../parser/contact/parse_contact.h"
 #include "reg_records.h"
 #include "auth_hdr.h"
@@ -62,7 +63,8 @@
 
 
 void do_uac_auth(str *method, str *uri, struct uac_credential *crd,
-		struct authenticate_body *auth, HASHHEX response);
+		struct authenticate_body *auth, struct authenticate_nc_cnonce *auth_nc_cnonce,
+		HASHHEX response);
 
 
 /** Functions declarations */
@@ -411,11 +413,11 @@ void reg_tm_cback(struct cell *t, int type, struct tmcb_params *ps)
 	int statuscode = 0;
 	unsigned int exp = 0;
 	reg_record_t *rec;
-	struct hdr_field *auth_hdr;
 	struct hdr_field *c_ptr, *head_contact;
 	struct uac_credential crd;
 	contact_t *contact;
-	static struct authenticate_body auth;
+	struct authenticate_body *auth;
+	static struct authenticate_nc_cnonce auth_nc_cnonce;
 	HASHHEX response;
 	str *new_hdr;
 	time_t now;
@@ -539,24 +541,19 @@ void reg_tm_cback(struct cell *t, int type, struct tmcb_params *ps)
 			return;
 		}
 
-		auth_hdr = get_autenticate_hdr(msg, statuscode);
-		if (!auth_hdr) {
-			LM_ERR("No auth header\n");
+		auth = get_autenticate_info(msg, statuscode);
+		if (auth == NULL) {
+			LM_ERR("Unable to extract authentication info\n");
 			goto done;
 		}
-		LM_DBG("got auth header [%.*s]\n", auth_hdr->body.len, auth_hdr->body.s);
-		if (parse_authenticate_body(&auth_hdr->body, &auth)<0) {
-			LM_ERR("failed to parse auth hdr body [%.*s]\n",
-				auth_hdr->body.len, auth_hdr->body.s);
-			goto done;
-		}
-		LM_DBG("flags=[%d] realm=[%.*s] domain=[%.*s] nonce=[%.*s] opaque=[%.*s] qop=[%.*s]"
-			" nc=[%p] cnonce=[%p]\n",
-			auth.flags,
-			auth.realm.len, auth.realm.s, auth.domain.len, auth.domain.s,
-			auth.nonce.len, auth.nonce.s, auth.opaque.len, auth.opaque.s,
-			auth.qop.len, auth.qop.s,
-			auth.nc, auth.cnonce);
+		LM_DBG("flags=[%d] realm=[%.*s] domain=[%.*s] nonce=[%.*s]"
+			" opaque=[%.*s] qop=[%.*s]\n",
+			auth->flags,
+			auth->realm.len, auth->realm.s,
+			auth->domain.len, auth->domain.s,
+			auth->nonce.len, auth->nonce.s,
+			auth->opaque.len, auth->opaque.s,
+			auth->qop.len, auth->qop.s);
 
 		switch(rec->state) {
 		case REGISTERING_STATE:
@@ -575,19 +572,20 @@ void reg_tm_cback(struct cell *t, int type, struct tmcb_params *ps)
 		}
 
 		/* perform authentication */
-		if (auth.realm.s && auth.realm.len) {
-			crd.realm.s = auth.realm.s; crd.realm.len = auth.realm.len;
+		if (auth->realm.s && auth->realm.len) {
+			crd.realm.s = auth->realm.s; crd.realm.len = auth->realm.len;
 		} else {
-			LM_ERR("No realm found in auth header [%.*s]\n",
-					auth_hdr->body.len, auth_hdr->body.s);
+			LM_ERR("No realm found\n");
 			goto done;
 		}
 		crd.user.s = rec->auth_user.s; crd.user.len = rec->auth_user.len;
 		crd.passwd.s = rec->auth_password.s; crd.passwd.len = rec->auth_password.len;
 
-		do_uac_auth(&register_method, &rec->td.rem_target, &crd, &auth, response);
+		memset(&auth_nc_cnonce, 0, sizeof(struct authenticate_nc_cnonce));
+		do_uac_auth(&register_method, &rec->td.rem_target, &crd,
+					auth, &auth_nc_cnonce, response);
 		new_hdr = build_authorization_hdr(statuscode, &rec->td.rem_target,
-							&crd, &auth, response);
+					&crd, auth, &auth_nc_cnonce, response);
 		if (!new_hdr) {
 			LM_ERR("failed to build authorization hdr\n");
 			goto done;

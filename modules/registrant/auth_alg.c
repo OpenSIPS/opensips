@@ -30,6 +30,7 @@
 #include "../../md5global.h"
 #include "../../md5.h"
 
+#include "../../parser/parse_authenticate.h"
 #include "auth_alg.h"
 
 

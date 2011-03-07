@@ -52,6 +52,6 @@ struct uac_credential {
 
 
 int uac_auth( struct sip_msg *msg);
-struct hdr_field *get_autenticate_hdr(struct sip_msg *rpl, int rpl_code);
+struct authenticate_body *get_autenticate_info(struct sip_msg *rpl, int rpl_code);
 
 #endif
