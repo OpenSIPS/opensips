@@ -74,6 +74,7 @@
 str created_str = str_init("accX_created");
 str core_str = str_init("accX_core");
 str leg_str = str_init("accX_leg");
+str flags_str = str_init("accX_flags");
 str db_extra_str = str_init("accX_db");
 str log_extra_str = str_init("accX_log");
 str aaa_extra_str = str_init("accX_aaa");

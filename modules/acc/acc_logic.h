@@ -60,6 +60,9 @@ int w_acc_aaa_request(struct sip_msg *rq, char *comment, char *foo);
 
 int w_acc_db_request(struct sip_msg *rq, char *comment, char *table);
 
+void acc_loaded_callback(struct dlg_cell *dlg, int type,
+			struct dlg_cb_params *_params);
+
 #ifdef DIAM_ACC
 int w_acc_diam_request(struct sip_msg *rq, char *comment, char *foo);
 #endif

@@ -375,6 +375,13 @@ static int mod_init( void )
 		return -1;
 	}
 
+	/* load callbacks */
+	if (cdr_flag && dlg_api.get_dlg && dlg_api.register_dlgcb(NULL,
+				DLGCB_LOADED,acc_loaded_callback, NULL, NULL) < 0)
+			LM_ERR("cannot register callback for dialog loaded - accounting "
+					"for ongoing calls will be lost after restart\n");
+
+
 	/* init the extra engine */
 	init_acc_extra();
 

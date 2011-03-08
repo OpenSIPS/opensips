@@ -52,6 +52,7 @@
 
 extern struct tm_binds tmb;
 extern struct rr_binds rrb;
+extern str flags_str; 
 
 struct acc_enviroment acc_env;
 
@@ -355,6 +356,30 @@ static inline void on_missed(struct cell *t, struct sip_msg *req,
 }
 
 
+/* restore callbacks */
+void acc_loaded_callback(struct dlg_cell *dlg, int type,
+			struct dlg_cb_params *_params) {
+		str flags_s;
+		unsigned int flags_l;
+
+		if (!dlg) {
+			LM_ERR("null dialog - cannot fetch message flags\n");
+			return;
+		}
+
+		if (dlg_api.fetch_dlg_value(dlg, &flags_str, &flags_s, 0) < 0) {
+			LM_ERR("cannot fetch flags string value\n");
+			return;
+		}
+		flags_l = (unsigned int)*flags_s.s;
+
+		/* register database callbacks */
+		if (dlg_api.register_dlgcb(dlg, DLGCB_TERMINATED |
+				DLGCB_EXPIRED, acc_dlg_callback, (void*)(long)flags_l, 0)){
+			LM_ERR("cannot register callback for database accounting\n");
+			return;
+		}
+}
 
 /* initiate a report if we previously enabled accounting for this t */
 static inline void acc_onreply( struct cell* t, struct sip_msg *req,
@@ -363,6 +388,7 @@ static inline void acc_onreply( struct cell* t, struct sip_msg *req,
 	str new_uri_bk;
 	str dst_uri_bk;
 	struct dlg_cell *dlg = NULL;
+	str flags_s;
 
 	/* acc_onreply is bound to TMCB_REPLY which may be called
 	   from _reply, like when FR hits; we should not miss this
@@ -408,6 +434,15 @@ static inline void acc_onreply( struct cell* t, struct sip_msg *req,
 
 			if (is_db_acc_on(req) && store_db_extra_values(dlg,req,reply)<0) {
 				LM_ERR("cannot store database extra values\n");
+				return;
+			}
+
+			flags_s.s = (char*)&req->flags;
+			flags_s.len = sizeof(unsigned int);
+			
+			/* store flags into dlg */ 
+			if ( dlg_api.store_dlg_value(dlg, &flags_str, &flags_s) < 0) {
+				LM_ERR("cannot store flag value into dialog\n");
 				return;
 			}
 
